@@ -62,6 +62,12 @@ sub submit
 	    return Globus::GRAM::Error::JOBTYPE_NOT_SUPPORTED;
 	}
     }
+    if( $description->directory eq "")
+    {
+	return Globus::GRAM::Error::RSL_DIRECTORY();
+    }
+    chdir $description->directory() or
+        return Globus::GRAM::Error::BAD_DIRECTORY();
     if( $description->executable eq "")
     {
 	return Globus::GRAM::Error::RSL_EXECUTABLE();
