@@ -94,7 +94,7 @@ globus_l_globus_get_performance(globus_abstime_t *  time_stop,
 const char * oneline_usage
     = "globus-url-copy [-help] [-usage] [-version] [-b | -a] [-bs <size>]\n"
       "                        [-s <subject>] [-ds <subject>] [-ss <subject>]\n"
-      "                        [-tcp-bs <size>] [-p <parallelism>]\n"
+      "                        [-tcp-bs <size>] [-p <parallelism>] [-notpt]\n"
       "                        sourceURL destURL";
 
 const char * long_usage =
@@ -125,6 +125,8 @@ const char * long_usage =
 "\t      underlying transfer methods\n"
 "\t -p <parallelism> | -parallel <parallelism>\n"
 "\t      specify the number of streams to be used in the ftp transfer\n"
+"\t -notpt | -no-third-party-transfers\n"
+"\t      turn third-party transfers off (on by default)\n"
 "\n";
 
 /***********
@@ -173,7 +175,7 @@ test_integer( char *   value,
 }
 
 enum { arg_a = 1, arg_b, arg_s, arg_p, arg_vb, arg_ss, arg_ds, arg_tcp_bs, 
-       arg_bs, arg_num = arg_bs };
+       arg_bs, arg_notpt, arg_num = arg_notpt };
 
 #define listname(x) x##_aliases
 #define namedef(id,alias1,alias2) \
@@ -196,6 +198,7 @@ globus_args_option_descriptor_t defname(id) = \
 flagdef(arg_a, "-a", "-ascii");
 flagdef(arg_b, "-b", "-binary");
 flagdef(arg_vb, "-vb", "-verbose");
+flagdef(arg_notpt, "-notpt", "-no-third-party-transfers");
 
 oneargdef(arg_bs, "-bs", "-block-size", test_integer, GLOBUS_NULL);
 oneargdef(arg_tcp_bs, "-tcp-bs", "-tcp-buffer-size", test_integer, GLOBUS_NULL);
@@ -212,7 +215,7 @@ static globus_args_option_descriptor_t args_options[arg_num];
 #define globus_url_copy_i_args_init() \
     setupopt(arg_a); setupopt(arg_b); setupopt(arg_s); setupopt(arg_vb); \
     setupopt(arg_ss); setupopt(arg_ds); setupopt(arg_tcp_bs); \
-    setupopt(arg_bs); setupopt(arg_p);
+    setupopt(arg_bs); setupopt(arg_p); setupopt(arg_notpt);
 
 static globus_bool_t globus_l_globus_url_copy_ctrlc = GLOBUS_FALSE;
 static globus_bool_t globus_l_globus_url_copy_ctrlc_handled = GLOBUS_FALSE;
@@ -257,6 +260,7 @@ main(int argc, char **argv)
     globus_ftp_control_tcpbuffer_t     tcp_buffer;
     int                                num_streams = 0;
     globus_ftp_control_parallelism_t   parallelism;
+    globus_bool_t                      no_third_party_transfers = GLOBUS_FALSE;
     char *                             subject = GLOBUS_NULL;
     char *                             source_subject = GLOBUS_NULL;
     char *                             dest_subject = GLOBUS_NULL;
@@ -351,6 +355,9 @@ main(int argc, char **argv)
 	case arg_p:
 	    num_streams = atoi(instance->values[0]);
 	    break;
+	case arg_notpt:
+	    no_third_party_transfers = GLOBUS_TRUE;
+	    break;
         default:
             globus_url_copy_l_args_error_fmt("parse panic, arg id = %d",
                                        instance->id_number );
@@ -395,6 +402,10 @@ main(int argc, char **argv)
     if (block_size > 0)
        globus_gass_copy_set_buffer_length(&gass_copy_handle, block_size);
 
+    if(no_third_party_transfers)
+      globus_gass_copy_set_no_third_party_transfers(&gass_copy_handle,
+						    GLOBUS_TRUE);
+						    
     /* Verify that the source and destination are valid URLs */
     if (strcmp(sourceURL,"-"))
     {
