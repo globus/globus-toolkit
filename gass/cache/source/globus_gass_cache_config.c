@@ -46,20 +46,17 @@ static void strtrimtail(char* str)
  * Returns:
  *  - GLOBUS_SUCCESS upon success
  */
-int globus_l_gass_cache_config_init(char*                        file,
-				    globus_l_gass_cache_config_t *config)
+int
+globus_l_gass_cache_config_init(
+    char *                          file,
+    globus_l_gass_cache_config_t *  config)
 {
-    globus_off_t               length;
-    int                        i, n, fd, rc, status;
-    char                       *p, *q, *r;
-    char                       *key, *value;
+    globus_off_t                    length;
+    int                             i, n, fd, rc, status;
+    char                            *p, *q, *r;
+    char                            *key, *value;
 
     memset(config, '\0', sizeof(globus_l_gass_cache_config_t));
-
-#ifdef assert
-#undef assert
-#endif
-#define assert(x,e) if (!(x)) { status=e; goto cleanup; }
 
     status = GLOBUS_SUCCESS;
 
@@ -67,28 +64,54 @@ int globus_l_gass_cache_config_init(char*                        file,
 
     /* open the config file, figure out size, then read the file into
        a buffer */
-    assert( 0 <= (fd = globus_libc_open(file, O_RDONLY)),
-	    GLOBUS_L_ERROR_CONFIG_FILE_NOT_FOUND );
+    fd = globus_libc_open(file, O_RDONLY);
 
-    assert( 0 < (length = globus_libc_lseek(fd,0,SEEK_END)),
-	    GLOBUS_L_ERROR_CONFIG_FILE_READ );
+    if (fd < 0)
+    {
+        status = GLOBUS_L_ERROR_CONFIG_FILE_NOT_FOUND;
+        goto cleanup;
+    }
 
-    assert( config->buf = globus_libc_malloc(length+1),
-	    GLOBUS_GASS_CACHE_ERROR_NO_MEMORY );
+    length = globus_libc_lseek(fd,0,SEEK_END);
+    if (length <= 0)
+    {
+        status = GLOBUS_L_ERROR_CONFIG_FILE_READ;
+        goto cleanup;
+    }
 
-    assert( 0 == globus_libc_lseek(fd,0,SEEK_SET),
-	    GLOBUS_L_ERROR_CONFIG_FILE_READ );
+    config->buf = globus_libc_malloc(length+1);
+    if (config->buf == NULL)
+    {
+        status = GLOBUS_GASS_CACHE_ERROR_NO_MEMORY;
+        goto cleanup;
+    }
+
+    if (globus_libc_lseek(fd,0,SEEK_SET) != 0)
+    {
+        status = GLOBUS_L_ERROR_CONFIG_FILE_READ ;
+        goto free_config_buf;
+    }
 
     for (i=0; i<length; i+=n)
     {
-         n = read(fd, config->buf+i, length-i);
-         assert( n>0, GLOBUS_L_ERROR_CONFIG_FILE_READ );
+        n = read(fd, config->buf+i, length-i);
+
+        if (n <= 0)
+        {
+            status = GLOBUS_L_ERROR_CONFIG_FILE_READ;
+            goto free_config_buf;
+        }
     }
     *(config->buf+length) = '\0';
     
     rc = globus_hashtable_init(&config->table, 16, 
 			       (void*) globus_hashtable_string_hash,
 			       (void*) globus_hashtable_string_keyeq);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        status = GLOBUS_GASS_CACHE_ERROR_NO_MEMORY;
+        goto free_config_buf;
+    }
 
     for (p=config->buf; (p-config->buf)<length; p=q+1)
     {
@@ -101,8 +124,15 @@ int globus_l_gass_cache_config_init(char*                        file,
 	strtrimtail(p);
 	if (*p=='#' || !strlen(p))     /* a comment or empty line */
 	    continue;
-	
-	assert( r = strchr(p, '='), GLOBUS_L_ERROR_CONFIG_FILE_PARSE_ERROR );
+
+	r = strchr(p, '=');
+        if (r == NULL)
+        {
+            status = GLOBUS_L_ERROR_CONFIG_FILE_PARSE_ERROR;
+
+            goto destroy_hashtable;
+        }
+
 	*r = 0;
 	key = p;
 	value = r+1;
@@ -114,16 +144,26 @@ int globus_l_gass_cache_config_init(char*                        file,
 				(void *) key,
 				(void *) value);
     }
-
- cleanup:
     if (fd >= 0)
     {
         globus_libc_close(fd);
     }
 
     return status;
-} 
 
+destroy_hashtable:
+    globus_hashtable_destroy(&config->table);
+free_config_buf:
+    globus_libc_free(config->buf);
+    config->buf = NULL;
+cleanup:
+    if (fd >= 0)
+    {
+        globus_libc_close(fd);
+    }
+    return status;
+}
+/* globus_l_gass_cache_config_init() */
 
 /*
  * globus_l_gass_cache_config_destroy()
