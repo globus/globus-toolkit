@@ -253,8 +253,6 @@ GSS_CALLCONV gss_import_sec_context(
             goto exit;
         }
 
-        session->peer = X509_dup(sk_X509_value(cert_chain, 0));
-
         local_result = 
             globus_gsi_callback_set_cert_chain(context->callback_data,
                                                cert_chain);
@@ -341,6 +339,11 @@ GSS_CALLCONV gss_import_sec_context(
 
 exit:
 
+    if(session)
+    {
+        SSL_SESSION_free(session);
+    }
+    
     if(bp)
     {
         BIO_free(bp);
