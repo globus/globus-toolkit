@@ -15,7 +15,7 @@ AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION)
 GLOBUS_FINALIZE
 
 AC_OUTPUT(
-	Makefile
+    Makefile
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
 )

@@ -1181,6 +1181,7 @@ static void doit()
     char                                identity_buffer[256];
     char *                              userid = NULL;
     struct passwd *                     pw;
+    char *                              mapping = NULL;
 
 
     /* Now do stdout, so it points at the socket too */
@@ -1405,6 +1406,12 @@ static void doit()
         if (strncmp(tmpbuf,"ping/",5)==0)
             got_ping_request = 1;
 
+        if ((mapping = strchr(tmpbuf, '@')) != NULL)
+        {
+            *mapping = '\0';
+            mapping = strdup(++mapping);
+        }
+
         service_name = strdup(++p);
         free(tmpbuf);
     }
@@ -1417,7 +1424,7 @@ static void doit()
 
     result = globus_gss_assist_map_and_authorize(context_handle,
                                                  service_name,
-                                                 NULL,
+                                                 mapping,
                                                  identity_buffer, 256);
 
     if (result != GLOBUS_SUCCESS)
@@ -1431,6 +1438,10 @@ static void doit()
         failure2(FAILED_AUTHORIZATION,
                  "globus_gss_assist_gridmap() failed authorization."
                  " %s\n", error_message);
+    }
+    else if (mapping != NULL)
+    {
+        strncpy(&identity_buffer[0], mapping, sizeof(identity_buffer));
     }
 
     userid = identity_buffer;

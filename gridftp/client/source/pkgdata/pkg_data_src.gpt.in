@@ -2,7 +2,7 @@
 <!DOCTYPE gpt_package_metadata SYSTEM "package.dtd">
 <gpt_package_metadata Format_Version="0.02" Name="globus_ftp_client" >
 
-    <Aging_Version Age="1" Major="2" Minor="7" />
+    <Aging_Version Age="1" Major="2" Minor="8" />
   <Description >GridFTP Client Library</Description>
   <Functional_Group >FileAccess</Functional_Group>
   <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@" />
@@ -13,7 +13,7 @@
 
     <Source_Dependencies Type="compile" >
       <Dependency Name="globus_common" > <Version > <Simple_Version Major="4" /> </Version> </Dependency>
-      <Dependency Name="globus_core" > <Version > <Simple_Version Major="3" /> </Version> </Dependency>
+      <Dependency Name="globus_core" > <Version > <Simple_Version Major="4" /> </Version> </Dependency>
       <Dependency Name="globus_ftp_control" > <Version > <Simple_Version Major="1" /> </Version> </Dependency>
     </Source_Dependencies>
 

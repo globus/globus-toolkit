@@ -2,8 +2,8 @@ include $(top_srcdir)/globus_automake_pre
 include $(top_srcdir)/globus_automake_pre_top
 
 SUBDIRS= \
-	pkgdata \
-	drivers 
+	drivers \
+	pkgdata 
 
 Sources=                                \
 	test_common.h                   \
@@ -22,14 +22,16 @@ Sources=                                \
 	block_barrier_test.c            \
 	read_barrier_test.c
 
-INCLUDES += -I$(top_srcdir)/drivers $(GPT_INCLUDES)
+INCLUDES = $(GPT_INCLUDES)
 
 test_PROGRAMS=                          \
 	framework_test			\
 	http_header_test		\
 	http_post_test			\
 	http_put_test			\
-	http_get_test
+	http_get_test			\
+	http_pingpong_test		\
+	http_throughput_test
 
 Data =                                  \
 	headers				\
@@ -61,6 +63,8 @@ Scripts = 				\
 	http-header-test.pl		\
 	http-post-test.pl		\
 	http-put-test.pl		\
+        http-pingpong-test.pl		\
+	http-throughput-test.pl		\
 	test-common.pl                  \
 	run-http-tests.pl               \
 	run-xio-tests.pl                \
@@ -78,6 +82,8 @@ framework_test_LDFLAGS = $(GPT_LDFLAGS)
 
 HTTP_COMMON_Sources = http_test_common.h http_test_common.c
 
+HTTP_PERFORMANCE_Sources = globus_utp.h globus_utp_private.h globus_utp_main.c http_performance_common.h http_performance_common.c
+
 http_header_test_SOURCES = http_header_test.c $(HTTP_COMMON_Sources)
 http_header_test_LDFLAGS = $(GPT_LDFLAGS)
 
@@ -89,6 +95,12 @@ http_put_test_LDFLAGS = $(GPT_LDFLAGS)
 
 http_get_test_SOURCES = http_get_test.c $(HTTP_COMMON_Sources)
 http_get_test_LDFLAGS = $(GPT_LDFLAGS)
+
+http_pingpong_test_SOURCES = http_pingpong_test.c $(HTTP_PERFORMANCE_Sources)
+http_pingpong_test_LDFLAGS = $(GPT_LDFLAGS)
+
+http_throughput_test_SOURCES = http_throughput_test.c $(HTTP_PERFORMANCE_Sources)
+http_throughput_test_LDFLAGS = $(GPT_LDFLAGS)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

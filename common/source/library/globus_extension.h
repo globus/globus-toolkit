@@ -71,6 +71,7 @@ typedef struct
 {
     globus_hashtable_t                  table;
     globus_bool_t                       initialized;
+    globus_bool_t                       user_hashing;
 } globus_extension_registry_t;
 
 /* these two calls are only to be called from within an extensions activate
@@ -80,18 +81,31 @@ typedef struct
  * some other module, or NULL.  It's purpose is to specify the module that
  * is associated with the error objects that might come from use of this
  * addition to the registry.
+ * 
+ * symbol is a char * by default.  the key can be changed by calling
+ * globus_extension_registry_set_hashing() before it is accessed.
+ * 
+ * regardless, the memory pointed to by symbol must exist as long as the entry
+ * is in the registry
  */
 int
 globus_extension_registry_add(
     globus_extension_registry_t *       registry,
-    const char *                        symbol,
+    void *                              symbol,
     globus_module_descriptor_t *        module,
     void *                              data);
 
 void *
 globus_extension_registry_remove(
     globus_extension_registry_t *       registry,
-    const char *                        symbol);
+    void *                              symbol);
+
+int
+globus_extension_registry_set_hashing(
+    globus_extension_registry_t *       registry,
+    globus_hashtable_hash_func_t        hash_func,
+    globus_hashtable_keyeq_func_t       keyeq_func);
+    
 
 /**
  * Get the datum associated with symbol in this registry.
@@ -104,12 +118,15 @@ globus_extension_registry_remove(
  * release() could potentially block as a result of module deactivation and
  * unloading.  ensuring that globus_extension_deactivate() is not called with
  * outstanding references will prevent that.
+ * 
+ * symbol is a char * by default.  the key can be changed by calling
+ * globus_extension_registry_set_hashing() before it is accessed.
  */
 void *
 globus_extension_lookup(
     globus_extension_handle_t *         handle,
     globus_extension_registry_t *       registry,
-    const char *                        symbol);
+    void *                              symbol);
 
 void
 globus_extension_release(
@@ -162,7 +179,7 @@ globus_extension_register_builtins(
 void
 globus_extension_unregister_builtins(
     globus_extension_builtin_t *        builtins);
-   
+
 EXTERN_C_END
 
 #endif

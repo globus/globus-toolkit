@@ -10,7 +10,7 @@ INCLUDES = \
 	-DGLOBUS_FLAVOR_NAME=\"@GLOBUS_FLAVOR_NAME@\" \
 	-I$(top_srcdir) \
 	-I$(top_srcdir)/include \
-	-I$(GLOBUS_LOCATION)/include/libxml25 \
+	-I$(GLOBUS_LOCATION)/include/libxml2 \
 	$(XMLSEC_DEFINES) \
 	$(LIBXSLT_CFLAGS) \
 	$(LIBXML_CFLAGS) \

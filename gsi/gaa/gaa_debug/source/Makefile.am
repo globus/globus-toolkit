@@ -9,7 +9,9 @@ Sources = \
 	gaa_debug.c \
 	gaa_debug.h 
 
-INCLUDES += $(GPT_INCLUDES)
+INCLUDES = $(GPT_INCLUDES)
+
+EXTRA_DIST=
 
 flavorinclude_HEADERS= \
 	gaa_debug.h

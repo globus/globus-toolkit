@@ -77,7 +77,10 @@ typedef enum
     GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_REFRESH,
     GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_CLOSE,
     GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_OPEN,
-    GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_CLOSE_OUTPUT
+    GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_CLOSE_OUTPUT,
+    GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_QUERY1,
+    GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_QUERY2,
+    GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_PROXY_REFRESH
 }
 globus_gram_jobmanager_state_t;
 
@@ -594,6 +597,11 @@ int
 globus_gram_job_manager_gsi_update_proxy_timeout(
     globus_gram_jobmanager_request_t *	request,
     gss_cred_id_t			cred);
+
+int
+globus_gram_job_manager_gsi_relocate_proxy(
+    globus_gram_jobmanager_request_t *  request,
+    const char *                        new_proxy);
 
 /* globus_gram_job_manager_query.c */
 void

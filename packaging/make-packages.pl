@@ -16,7 +16,9 @@ use Cwd;
 use Pod::Usage;
 
 # Where do things go?
-my $top_dir = cwd();
+chomp(my $top_dir = `dirname $0`);
+chdir $top_dir or die "Can't cd to $top_dir: $!\n";
+$top_dir = cwd();
 my $cvs_prefix = $top_dir . "/source-trees/";
 my $log_dir = $top_dir . "/log-output";
 my $pkglog = $log_dir . "/package-logs";
@@ -43,8 +45,8 @@ my %cvs_archives = (
      'gt2' => [ "/home/globdev/CVS/globus-packages", "gp", $cvs_prefix . "gt2-cvs", "HEAD" ],
      'gt3' => [ "/home/globdev/CVS/globus-packages", "gs", $cvs_prefix . "ogsa-cvs", "HEAD" ],
      'gt4' => [ "/home/globdev/CVS/globus-packages", "ws", $cvs_prefix . "wsrf-cvs", "HEAD" ],
-     'cbindings' => [ "/home/globdev/CVS/globus-packages", "ogsa-c", $cvs_prefix . "cbindings", "HEAD" ],
-     'autotools' => [ "/home/globdev/CVS/globus-packages", "side_tools", $cvs_prefix . "autotools", "HEAD" ]
+     'cbindings' => [ "/home/globdev/CVS/globus-packages", "wsc", $cvs_prefix . "cbindings", "HEAD" ],
+     'autotools' => [ "/home/globdev/CVS/globus-packages", "autotools", $cvs_prefix . "autotools", "HEAD" ]
       );
 
 # package_name => [ tree, subdir, custom_build, (patch-n-build file, if exists) ]
@@ -61,6 +63,9 @@ my %package_build_hash;
 my @cvs_build_list;
 my %cvs_build_hash;
 
+# Which GPT should I use for the builds and the installer
+my $gpt_ver = "gpt-3.2autotools2004";
+
 # What flavor shall things be built as?
 my $flavor = "gcc32dbg";
 my $thread = "pthr";
@@ -70,13 +75,13 @@ my ($install, $installer, $anonymous, $force,
     $skipbundle, $faster, $paranoia, $version, $uncool,
     $binary, $inplace, $gt2dir, $gt3dir, $doxygen,
     $autotools, $deps, $graph, $listpack, $listbun,
-    $cvsuser ) =
+    $cvsuser, $gpt, $enable_64bit ) =
    (0, 0, 0, 0,
     0, 0, 0, 0, 0, 
     0, 0, 1, "1.0", 0, 
     0, 0, "", "", 0,
     1, 0, 0, 0, 0,
-    "");
+    "", 1, "");
 
 my @user_bundles;
 my @user_packages;
@@ -105,6 +110,7 @@ GetOptions( 'i|install=s' => \$install,
 	    'inplace!' => \$inplace,
 	    'doxygen!' => \$doxygen,
 	    'autotools!' => \$autotools,
+	    'gpt!' => \$gpt,
 	    'd|deps!' => \$deps,
 	    'graph!' => \$graph,
 	    'lp|list-packages!' => \$listpack,
@@ -136,6 +142,10 @@ if ( $gt3dir )
     $cvs_archives{cbindings}[2] = $gt3dir;
 }
 
+if ( $flavor =~ /64/ ) {
+    $enable_64bit = "--enable-64bit";
+}
+
 
 # main ()
 
@@ -151,6 +161,7 @@ if ( not $noupdates )
     # Need autotools for gt2 or gt3
     if ($cvs_build_hash{'gt2'} eq 1 or
 	$cvs_build_hash{'gt3'} eq 1 or
+	$cvs_build_hash{'gt4'} eq 1 or
 	$cvs_build_hash{'cbindings'} eq 1)
     {
 	if ( $cvs_build_hash{'autotools'} ne 1)
@@ -226,7 +237,7 @@ sub generate_dependency_tree()
 
     if ( not defined(@cvs_build_list) )
     {
-	@cvs_build_list = ("autotools", "gt2", "gt3", "cbindings");
+	@cvs_build_list = ("autotools", "gt2", "gt3", "gt4", "cbindings");
     }
 
     foreach my $tree (@cvs_build_list)
@@ -260,6 +271,19 @@ sub generate_dependency_tree()
 	    print GRAPH "}";
 	    close GRAPH;
         }
+	
+	# To interact well with installs, need to make
+	# a new bundle that contains everything that was
+	# pulled in via --deps, so that GPT may sort them
+	# for us.  Otherwise we install in the wrong order.
+        push @{$bundle_list{"custom-deps"}}, $flavor;
+        push @{$bundle_list{"custom-deps"}}, "";  # No flags
+        for my $pk (keys %package_build_hash)
+        {
+           push @{$bundle_list{"custom-deps"}}, $pk;
+        }
+
+	@bundle_build_list = ( "custom-deps" );
     }
 }
 
@@ -635,11 +659,12 @@ sub populate_package_build_hash()
 sub build_prerequisites()
 # --------------------------------------------------------------------
 {
-    install_gpt();
+    install_gpt() if $gpt;
 
     if ( $cvs_build_hash{'autotools'} eq 1 or
 	 $cvs_build_hash{'gt2'} eq 1 or
 	 $cvs_build_hash{'gt3'} eq 1 or
+	 $cvs_build_hash{'gt4'} eq 1 or
 	 $cvs_build_hash{'cbindings'})
     {
 	install_gt2_autotools() if $autotools;
@@ -647,6 +672,7 @@ sub build_prerequisites()
 
     if ( $cvs_build_hash{'gt2'} eq 1 or 
 	 $cvs_build_hash{'gt3'} eq 1 or
+	 $cvs_build_hash{'gt4'} eq 1 or
 	 $cvs_build_hash{'cbindings'} eq 1)
     {
 	install_globus_core();
@@ -708,17 +734,24 @@ sub log_system
 sub install_gpt()
 # --------------------------------------------------------------------
 {
-    my $gpt_ver = "gpt-3.0.1";
     my $gpt_dir = $top_dir . "/$gpt_ver";
+    my $target;
 
-    $ENV{'GPT_LOCATION'}=$gpt_dir;
+    if ( $install )
+    {
+        $target=$install;
+    } else {
+        $target=$gpt_dir;
+    }
     
-    if ( -e "${gpt_dir}/sbin/gpt-build" )
+    $ENV{'GPT_LOCATION'} = $target;
+
+    if ( -e "$target/sbin/gpt-build" )
     {
 	print "GPT is already built, skipping.\n";
-	print "\tDelete $gpt_dir to force rebuild.\n";
+	print "\tDelete $target to force rebuild.\n";
     } else {
-	print "Installing $gpt_ver\n";
+	print "Installing $gpt_ver to $target\n";
 	print "Logging to ${log_dir}/$gpt_ver.log\n";
 	chdir $top_dir;
 	system("tar xzf fait_accompli/${gpt_ver}-src.tar.gz");
@@ -730,13 +763,13 @@ sub install_gpt()
 	# Newer GPTs will unset LANG automatically in build_gpt.
 	my $OLANG = $ENV{'LANG'};
 	$ENV{'LANG'} = "";
-	system("./build_gpt > $log_dir/$gpt_ver.log 2>&1");
+	system("./build_gpt $verbose > $log_dir/$gpt_ver.log 2>&1");
 	$ENV{'LANG'} = $OLANG;
 
-	paranoia("Trouble with ./build_gpt.  See $log_dir/$gpt_ver.log");
+        paranoia("Trouble with ./build_gpt.  See $log_dir/$gpt_ver.log");
     }
 
-    @INC = (@INC, "$gpt_dir/lib/perl", "$gpt_dir/lib/perl/$Config{'archname'}");
+    @INC = (@INC, "$target/lib/perl", "$target/lib/perl/$Config{'archname'}");
     print "\n";
 }
 
@@ -763,19 +796,20 @@ sub install_gt2_autotools()
     my $res;
     chdir cvs_subdir('autotools');
 
-    if ( -e 'autotools/bin/automake' )
+    if ( -e 'bin/automake' )
     {
 	print "Using existing GT2 autotools installation.\n";
     } else {
 	print "Building GT2 autotools.\n";
 	print "Logging to ${log_dir}/gt2-autotools.log\n";
 
-	if ( -e "side_tools/build-autotools" )
+	if ( -e "autotools/install-autotools" )
 	{	    
-	    $res = log_system("./side_tools/build-autotools",
+	    chdir('autotools');
+	    $res = log_system("./install-autotools " . cvs_subdir('autotools'),
 		    "${log_dir}/gt2-autotools.log");
 	} else {
-	    die "ERROR: side_tools/build-autotools doesn't exist.  Check cvs logs.";
+	    die "ERROR: autotools/install-autotools doesn't exist.  Check cvs logs.";
 	}
 
 	if ( $? ne 0 )
@@ -783,8 +817,8 @@ sub install_gt2_autotools()
 	    print "\tAutotools dies the first time through sometimes due to\n";
 	    print "\temacs .texi issues.  I am trying again.\n";
 
-	    log_system("./side_tools/build-autotools", 
-		       "${log_dir}/gt2-autotools.log");
+	    log_system("./install-autotools " . cvs_subdir('autotools'),
+		    "${log_dir}/gt2-autotools.log");
 	    if ( $? ne 0 )
 	    {
 		die "ERROR: Error building autotools.  Check log.\n";
@@ -794,7 +828,7 @@ sub install_gt2_autotools()
 	}
     }
 
-    $ENV{'PATH'} = cwd() . "/autotools/bin:$ENV{'PATH'}";
+    $ENV{'PATH'} = cvs_subdir('autotools') . "/bin:$ENV{'PATH'}";
 
     print "\n";
 }
@@ -808,7 +842,13 @@ sub install_gt2_autotools()
 sub install_globus_core()
 # --------------------------------------------------------------------
 {
-    system("$ENV{GPT_LOCATION}/sbin/gpt-build -nosrc $flavor");
+    if ( $inplace ) {
+        my $dir = $cvs_archives{gt2}[2];
+        system("pushd ${dir}/core/source; ./bootstrap; popd");
+        system("$ENV{GPT_LOCATION}/sbin/gpt-build -force $verbose -coresrc=${dir}/core/source -nosrc $flavor");
+    } else {
+        system("$ENV{GPT_LOCATION}/sbin/gpt-build -nosrc $verbose $flavor");
+    }
 
     if ( $? ne 0 )
     {
@@ -939,10 +979,10 @@ sub cvs_checkout_subdir
 
     if ( ! -d "$dir" ) 
     { 
-	log_system("cvs -d $cvsroot co $cvsopts $dir",
+	log_system("cvs -d $cvsroot co $cvsopts -P $dir",
 		   "$cvs_logs/" . $locallog . ".log");
     } else { 
-	log_system("cvs -d $cvsroot update $dir", 
+	log_system("cvs -d $cvsroot update -dP $dir", 
 		   "$cvs_logs/" . $locallog . ".log");
     }
 }
@@ -954,6 +994,10 @@ sub cvs_checkout_package
     my ( $package ) = @_;
     my $tree = package_tree($package);
     my $subdir = $package_list{$package}[1];
+
+    if (! defined($tree)) {
+        die "ERROR: There was a dependency on package $package which I know nothing about.\n";
+    }
 
     print "Checking out $subdir from $tree.\n";
     cvs_checkout_subdir($tree, $subdir);
@@ -1052,9 +1096,11 @@ sub package_sources()
 
 	if ( $faster )
 	{
-	    if ( -e <$package_output/${package}-.*> )
+	    my ($glob) = glob("$package_output/${package}-*");
+	    if ( -f $glob )
 	    {
-		print "-faster set.  ${package} exists, skipping.\n";
+		my $file = `basename $glob`;
+                print "On $package, --faster set.  Using existing $file";
 		next;
 	    }
 	}
@@ -1087,7 +1133,7 @@ sub inplace_build()
     my ($package, $subdir, $tree) = @_;
 
     chdir $subdir;
-    log_system("$ENV{'GPT_LOCATION'}/sbin/gpt-build --srcdir=. $flavor", "$pkglog/$package");
+    log_system("$ENV{'GPT_LOCATION'}/sbin/gpt-build $doxygen $verbose $force --srcdir=. $flavor", "$pkglog/$package");
     paranoia("Inplace build of $package failed!");
 
 }
@@ -1100,7 +1146,7 @@ sub package_source_gpt()
     
     if ( ! -d $subdir )
     {
-	print "$subdir does not exist, skipping\n";
+	die "$subdir does not exist, for package $package in tree $tree\n";
     } else {
 	#This causes GPT not to worry about whether dependencies
 	#have been installed while doing configure/make dist.
@@ -1156,7 +1202,7 @@ sub package_source_gpt()
 		       "$pkglog/$package");
 	    paranoia "system() call failed.  See $pkglog/$package.";
 	} else {	
-	    log_system("./configure --with-flavor=$flavor",
+	    log_system("./configure --with-flavor=$flavor $enable_64bit",
 		       "$pkglog/$package");
 	    paranoia "configure failed.  See $pkglog/$package.";
 	    log_system("make dist", "$pkglog/$package");
@@ -1238,7 +1284,7 @@ sub package_source_tar()
     
     if ( ! -d $subdir )
     {
-	print "$subdir does not exist, skipping\n";
+	print "$subdir does not exist for package $package.\n";
     } else {
 	print "Creating source directory for $package\n";
 	log_system("rm -fr $destdir", "$pkglog/$package");
@@ -1254,15 +1300,16 @@ sub package_source_tar()
 	    log_system("cp $destdir/pkgdata/pkg_data_src.gpt $destdir/pkgdata/pkg_data_src.gpt.in",
 		       "$pkglog/$package");
 	    paranoia "Metadata copy failed for $package.";
-	    if ( -e "$destdir/pkgdata/filelist" )
+	    if (!( -e "$destdir/filelist" ))
 	    {
-		log_system("cp $destdir/pkgdata/filelist $destdir", "$pkglog/$package");
-		paranoia "Filelist copy failed for $package.";
-            } else {
-		print "\tPartially cool.  Still got filelist from package-list.\n";
-		log_system("cp $top_dir/package-list/$package/filelist 	$destdir/", "$pkglog/$package");
-		paranoia "Filelist copy from package-list failed for $package.";
-	    }
+	      if ( -e "$destdir/pkgdata/filelist" )
+	      {
+	  	  log_system("cp $destdir/pkgdata/filelist $destdir", "$pkglog/$package");
+		  paranoia "Filelist copy failed for $package.";
+              } else {
+		  print "\tNo filelist found for $package.\n";
+	      }
+            }
 	} else {
 	    log_system("mkdir -p $destdir/pkgdata/", "$pkglog/$package");
 	    paranoia "mkdir failed during $package.";
@@ -1334,16 +1381,109 @@ sub create_installer()
     print INS << "EOF";
 #!/bin/sh
 
-if [ x\$1 = "x" ]; then
-        echo \$0: Usage: \$0 install-directory
-        exit;
+short_usage="\$0 [-help] [-verbose] [-flavor <flavor>] <install-dir>";
+long_usage()
+{
+   cat 1>&2 <<END
+
+\${short_usage}
+
+    Installs GT3 to the directory <install-dir>.
+
+    By default, a non-threaded, debug-enabled flavor is
+    installed. This can be modified by the -flavor option,
+    where <flavor> is specified as <compiler><bits>[dbg]
+    where the choices are
+    <compiler>: one of gcc,mpicc,vendorcc
+    <bits>    : one of 32,64
+    'dbg'       compiles with debug information
+
+    Example: \$0 -flavor gcc64dbg /opt/gt3
+END
+}
+
+case "`uname`" in
+   HP-UX)
+        FLAVOR=vendorcc32dbg
+        ;;
+   OSF1)
+        FLAVOR=vendorcc64dbg
+        ;;
+   *)
+        case "`uname -m`" in
+            alpha|ia64)
+                FLAVOR=gcc64dbg
+                ;;
+            *)
+                FLAVOR=gcc32dbg
+                ;;
+        esac
+        ;;
+esac
+
+THREAD=pthr
+
+if [ \$# -eq 0 ]; then
+    echo "Usage: \${short_usage}"
+    exit 1;
 fi
 
-mkdir -p \$1
-if [ \$? -ne 0 ]; then
-        echo Unable to make directory \$1.  Exiting.
-        exit
+while [ -n "\$1" ]; do
+    case "\$1" in
+        -help)
+            long_usage;
+            exit 0
+            ;;
+        -verbose)
+            verbose="-verbose"
+            ;;
+        -flavor)
+            if [ -z "\$2" ]; then
+                echo "Error: -flavor requires a flavor";
+                exit 1;
+            fi
+            FLAVOR="\$2";
+            shift
+            ;;
+        *)
+            if [ \$# -gt 1 ]; then
+                echo "Unrecognized option \$1"
+                exit 1;
+            fi
+            destdir=\$1
+            ;;
+    esac
+    shift
+done
+
+if [ -z "\${destdir}" ]; then
+    echo "" >&2
+    echo "ERROR: install-dir is missing" >&2
+    echo "\${short_usage}"
+    exit 1
 fi
+
+mkdir -p \$destdir
+
+if [ \$? -ne 0 ]; then
+        echo "Unable to make directory \$destdir.  Exiting."
+        echo \${short_usage}
+        exit 1
+fi
+
+MYDIR=`pwd`
+cd \$destdir
+
+INSDIR=`pwd`
+GPT_LOCATION="\$INSDIR"
+GLOBUS_LOCATION="\$INSDIR"
+GT3_LOCATION="\$INSDIR"
+GPT_BUILD="\$GPT_LOCATION/sbin/gpt-build \$verbose "
+GPT_INSTALL="\$GPT_LOCATION/sbin/gpt-install \$verbose "
+
+cd \$MYDIR
+
+export GPT_LOCATION GLOBUS_LOCATION GT3_LOCATION
 EOF
 
 print INS "echo Build environment:\n";
@@ -1372,51 +1512,16 @@ print INS "type gcc\n"
 print INS "echo\n\n";
 
 print INS << "EOF";
-MYDIR=`pwd`
 
-cd \$1
-
-INSDIR=`pwd`
-GPT_LOCATION="\$INSDIR"
-GLOBUS_LOCATION="\$INSDIR"
-GT3_LOCATION="\$INSDIR"
-GPT_BUILD="\$GPT_LOCATION"/sbin/gpt-build
-GPT_INSTALL="\$GPT_LOCATION"/sbin/gpt-install
-
-cd \$MYDIR
-
-export GPT_LOCATION GLOBUS_LOCATION GT3_LOCATION
-
-case "`uname`" in
-   HP-UX)
-        FLAVOR=vendorcc32dbg
-        ;;
-   OSF1)
-        FLAVOR=vendorcc64dbg
-        ;;
-   *)
-        case "`uname -m`" in
-            alpha|ia64)
-                FLAVOR=gcc64dbg
-                ;;
-            *)
-                FLAVOR=gcc32dbg
-                ;;
-        esac
-        ;;
-esac
-
-THREAD=pthr
-
-if [ ! -f gpt-3.0.1/sbin/gpt-build ]; then
+if [ ! -f $gpt_ver/sbin/gpt-build ]; then
     echo Building GPT ...
-    gzip -dc gpt-3.0.1-src.tar.gz | tar xf -
-    cd gpt-3.0.1
+    gzip -dc $gpt_ver-src.tar.gz | tar xf -
+    cd $gpt_ver
 
     LANG="" ./build_gpt
     if [ \$? -ne 0 ]; then
         echo Error building GPT
-        exit;
+        exit 1;
     fi
 
     cd ..
@@ -1490,22 +1595,14 @@ sub install_bundles
 sub install_packages
 # --------------------------------------------------------------------
 {
-    chdir $package_output;
+   chdir $package_output;
 
-    if ( $deps )
-    {
-	print "Installing all dependencies in flavor $flavor pulled in.\n";
-	system("$ENV{'GPT_LOCATION'}/sbin/gpt-bundle -srcdir=. -bn=deps -all");
-	system("$ENV{'GPT_LOCATION'}/sbin/gpt-build $force $verbose deps-*.tar.gz $flavor");
-    } else 
-    {
-	for my $pkg ( @user_packages )
-	{
-	    print "Installing user requested package $pkg to $install using flavor $flavor.\n";
-	    system("$ENV{'GPT_LOCATION'}/sbin/gpt-build $force $verbose ${pkg}-*.tar.gz $flavor");
-	    paranoia("Building of $pkg failed.\n");
-	}
-    }
+   for my $pkg ( @user_packages )
+   {
+       print "Installing user requested package $pkg to $install using flavor $flavor.\n";
+       system("$ENV{'GPT_LOCATION'}/sbin/gpt-build $force $verbose ${pkg}-*.tar.gz $flavor");
+       paranoia("Building of $pkg failed.\n");
+   }
 }
 
 # --------------------------------------------------------------------
@@ -1549,10 +1646,13 @@ Options:
     --skipbundle           Don't create source bundles
     --install=<dir>        Install into <dir>
     --anonymous            Use anonymous cvs checkouts
+    --cvsuser=<user>       Use "user" as account on CVS server
     --no-updates           Don't update CVS checkouts
+    --noautotools	   Don't build autotools
+    --nogpt		   Don't build gpt
     --force                Force
     --faster               Don't repackage if packages exist already
-    --flavor               Set flavor base.  Default gcc32dbg
+    --flavor=<flv>         Set flavor base.  Default gcc32dbg
     --gt2-tag (-t2)        Set GT2 and autotools tags.  Default HEAD
     --gt3-tag (-t3)        Set GT3 and cbindings tags.  Default HEAD
     --gt2-dir (-d2)        Set GT2 and autotools CVS directory.
@@ -1560,7 +1660,8 @@ Options:
     --verbose              Be verbose.  Also sends logs to screen.
     --bundles="b1,b2,..."  Create bundles b1,b2,...
     --packages="p1,p2,..." Create packages p1,p2,...
-    --trees="t1,t2,..."    Work on trees t1,t2,... Default "gt2,gt3,cbindings"
+    --deps		   Automatically include dependencies
+    --trees="t1,t2,..."    Work on trees t1,t2,... Default "gt2,gt3,gt4,cbindings"
     --noparanoia           Don't exit at first error.
     --help                 Print usage message
     --man                  Print verbose usage page
@@ -1588,6 +1689,11 @@ version is "-i=".
 Use anonymous cvs checkouts.  Otherwise it defaults to using
 CVS_RSH=ssh.  Short version is "-a"
 
+=item B<--cvsuser=user>
+
+Use "user@" as the prefix in the remote CVSROOT.  Useful if
+your local account name is different than the CVS account name.
+
 =item B<--no-updates>
 
 Don't update CVS checkouts.  This is useful if you have local
@@ -1595,6 +1701,16 @@ modifications.  Note, however, that make-packages won't
 check that your CVS tags match the requested CVS tags.
 Short version is "-n"
  
+=item B<--noautotools>
+
+Don't build the GT2 autotools.  You must have the autotools
+already on your PATH for this to work.
+
+=item B<--nogpt>
+
+Don't build GPT.  You must have the correct version of GPT
+on your PATH already for this to work.
+
 =item B<--faster>
 
 Faster doesn't work correctly.  It is supposed to not try 
@@ -1626,10 +1742,15 @@ etc/*/bundles
 Create packages p1,p2,....  Packages are defined under
 etc/*/package-list
 
-=item B<--paranoia>
+=item B<--deps>
 
-Exit at first error.  This can save you a lot of time
-and debugging effort.  Disable with --noparanoia.
+Automatically pull in dependencies.  Useful if you
+want to build one package or bundle, and only want to
+build the packages that it requires.
+
+=item B<--noparanoia>
+
+Don't exit at first error.  Strongly discouraged.
 
 =back
 

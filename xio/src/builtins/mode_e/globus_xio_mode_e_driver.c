@@ -50,23 +50,6 @@ typedef enum globus_i_xio_mode_e_state_s
 
 } globus_i_xio_mode_e_state_t;
 
-
-enum
-{
-
-    GLOBUS_XIO_MODE_E_HANDLE_ERROR,
-    GLOBUS_XIO_MODE_E_ACCEPT_ERROR,
-    GLOBUS_XIO_MODE_E_OPEN_ERROR,
-    GLOBUS_XIO_MODE_E_READ_ERROR,
-    GLOBUS_XIO_MODE_E_WRITE_ERROR,
-    GLOBUS_XIO_MODE_E_OVERFLOW_ERROR
-
-};
-
-typedef globus_result_t
-(*globus_xio_mode_e_attr_cntl_callback_t)(
-    globus_xio_attr_t                   attr);
-
 typedef globus_result_t
 (*globus_xio_mode_e_handle_cntl_callback_t)(
     globus_xio_handle_t                 xio_handle);
@@ -79,7 +62,6 @@ typedef struct
     globus_xio_attr_t                   xio_attr;       
     globus_xio_mode_e_attr_cntl_callback_t      
                                         attr_cntl_cb;
-    globus_bool_t                       close;
     globus_bool_t                       eof;
 } globus_l_xio_mode_e_attr_t;
 
@@ -90,8 +72,7 @@ static globus_l_xio_mode_e_attr_t       globus_l_xio_mode_e_attr_default =
     1,  
     GLOBUS_NULL,
     GLOBUS_NULL,
-    GLOBUS_TRUE,
-    GLOBUS_FALSE
+    GLOBUS_TRUE
 };
 
 typedef struct
@@ -124,6 +105,8 @@ typedef struct
     globus_off_t                        offset;
     globus_xio_operation_t              outstanding_op;
     int                                 ref_count;
+    globus_xio_stack_t                  stack;
+    globus_xio_driver_t                 driver;
 } globus_l_xio_mode_e_handle_t;
 
 typedef struct
@@ -158,9 +141,10 @@ int
 globus_l_xio_mode_e_deactivate(void);
 
 static
-globus_l_xio_mode_e_handle_t *
+globus_result_t
 globus_l_xio_mode_e_handle_create(
-    globus_l_xio_mode_e_attr_t *  attr);
+    globus_l_xio_mode_e_handle_t **     out_handle,
+    globus_l_xio_mode_e_attr_t *        attr);
 
 static
 globus_result_t
@@ -234,18 +218,7 @@ GlobusXIODefineModule(mode_e) =
 };
 
 
-#define GlobusXIOModeEHandleError()                                         \
-    globus_error_put(                                                       \
-        globus_error_construct_error(                                       \
-            GlobusXIOMyModule(mode_e),                                      \
-            GLOBUS_NULL,                                                    \
-            GLOBUS_XIO_MODE_E_HANDLE_ERROR,                                 \
-            __FILE__,                                                       \
-            _xio_name,                                                      \
-            __LINE__,                                                       \
-            "Handle creation error"))
-
-#define GlobusXIOModeEOpenError()                                           \
+#define GlobusXIOModeEOpenError(reason)                                     \
     globus_error_put(                                                       \
         globus_error_construct_error(                                       \
             GlobusXIOMyModule(mode_e),                                      \
@@ -254,9 +227,9 @@ GlobusXIODefineModule(mode_e) =
             __FILE__,                                                       \
             _xio_name,                                                      \
             __LINE__,                                                       \
-            "Open failed"))
+            "Open failed: %s", (reason)))
 
-#define GlobusXIOModeEReadError()                                           \
+#define GlobusXIOModeEReadError(reason)                                     \
     globus_error_put(                                                       \
         globus_error_construct_error(                                       \
             GlobusXIOMyModule(mode_e),                                      \
@@ -265,9 +238,9 @@ GlobusXIODefineModule(mode_e) =
             __FILE__,                                                       \
             _xio_name,                                                      \
             __LINE__,                                                       \
-            "Read failed"))
+            "Read failed: %s", (reason)))
 
-#define GlobusXIOModeEWriteError()                                          \
+#define GlobusXIOModeEWriteError(reason)                                    \
     globus_error_put(                                                       \
         globus_error_construct_error(                                       \
             GlobusXIOMyModule(mode_e),                                      \
@@ -276,18 +249,8 @@ GlobusXIODefineModule(mode_e) =
             __FILE__,                                                       \
             _xio_name,                                                      \
             __LINE__,                                                       \
-            "Write failed"))
+            "Write failed: %s", (reason)))
 
-#define GlobusXIOModeEOverflowError()                                       \
-    globus_error_put(                                                       \
-        globus_error_construct_error(                                       \
-            GlobusXIOMyModule(mode_e),                                      \
-            GLOBUS_NULL,                                                    \
-            GLOBUS_XIO_MODE_E_OVERFLOW_ERROR,                               \
-            __FILE__,                                                       \
-            _xio_name,                                                      \
-            __LINE__,                                                       \
-            "Overflow Error"))            
 
 static
 int
@@ -348,18 +311,20 @@ globus_l_xio_mode_e_handle_destroy(
     globus_l_xio_mode_e_handle_t *      handle)
 {
     globus_result_t                     result;
+    globus_bool_t			stack = GLOBUS_FALSE;
     GlobusXIOName(globus_l_xio_mode_e_handle_destroy);
 
     GlobusXIOModeEDebugEnter();
-    if (handle->attr)
+    if (!handle->attr->stack)
     {
-        result = globus_l_xio_mode_e_attr_destroy(handle->attr);
-        if(result != GLOBUS_SUCCESS)
-        {
-            result = GlobusXIOErrorWrapFailed(
-                "globus_l_xio_mode_e_attr_destroy", result);
-            goto error;
-        }
+	stack = GLOBUS_TRUE;
+    }
+    result = globus_l_xio_mode_e_attr_destroy(handle->attr);
+    if(result != GLOBUS_SUCCESS)
+    {
+        result = GlobusXIOErrorWrapFailed(
+            "globus_l_xio_mode_e_attr_destroy", result);
+        goto error;
     }
     globus_fifo_destroy(&handle->connection_q);
     globus_fifo_destroy(&handle->eod_q);
@@ -370,6 +335,10 @@ globus_l_xio_mode_e_handle_destroy(
     if (handle->server)
     {
         globus_xio_server_close(handle->server);
+    }
+    if (stack)
+    {
+        globus_xio_stack_destroy(handle->stack);
     }
     globus_free(handle);
     GlobusXIOModeEDebugExit();
@@ -390,7 +359,7 @@ globus_i_xio_mode_e_header_encode(
     globus_off_t                        x;
     int                                 i;
     globus_size_t                       offset_size;
-    GlobusXIOName(globus_i_xio_mode_e_header_decode);
+    GlobusXIOName(globus_i_xio_mode_e_header_encode);
 
     GlobusXIOModeEDebugEnter();
     offset_size = sizeof(globus_off_t);
@@ -435,7 +404,7 @@ globus_i_xio_mode_e_header_decode(
          */ 
         if (buf[GLOBUS_XIO_MODE_E_MAX_OFFSET_SIZE - i] != 0)
         {
-            result = GlobusXIOModeEOverflowError();
+            result = GlobusXIOModeEReadError("Error decoding header");
             goto overflow;
         }
     }
@@ -461,8 +430,9 @@ overflow:
  *  allocate the memory for and initialize an internal handle
  */
 static 
-globus_l_xio_mode_e_handle_t *
+globus_result_t
 globus_l_xio_mode_e_handle_create(
+    globus_l_xio_mode_e_handle_t **     out_handle,
     globus_l_xio_mode_e_attr_t *        attr)
 {
     globus_l_xio_mode_e_handle_t *      handle;
@@ -476,23 +446,53 @@ globus_l_xio_mode_e_handle_create(
                 globus_malloc(sizeof(globus_l_xio_mode_e_handle_t));
     if (handle == GLOBUS_NULL)
     {
+        result = GlobusXIOErrorMemory("handle");
         goto error_handle;
     }
     if (!attr)
     {
        result = globus_l_xio_mode_e_attr_init((void**)&handle->attr); 
+        if (result != GLOBUS_SUCCESS)
+        {
+            result = GlobusXIOErrorWrapFailed(
+                "globus_l_xio_mode_e_attr_init", result);
+            goto error_attr;
+        }
     }
     else
     {
         result = globus_l_xio_mode_e_attr_copy(
                                 (void**)&handle->attr, (void*)attr);
+        if (result != GLOBUS_SUCCESS)
+        {
+            result = GlobusXIOErrorWrapFailed(
+                "globus_l_xio_mode_e_attr_copy", result);
+            goto error_attr;
+        }
     }
-    if (result != GLOBUS_SUCCESS)
+    if (!handle->attr->stack)
     {
-        result = GlobusXIOErrorWrapFailed(
-            "globus_l_xio_mode_e_attr_copy", result);
-        goto error_attr;
+        result = globus_xio_driver_load("tcp", &handle->driver);
+        if (result != GLOBUS_SUCCESS)
+        {
+            goto error_driver_load;
+        }
+        result = globus_xio_stack_init(&handle->stack, NULL);
+        if (result != GLOBUS_SUCCESS)
+        {
+            goto error_stack_init;
+        }
+        result = globus_xio_stack_push_driver(handle->stack, handle->driver);
+        if (result != GLOBUS_SUCCESS)
+        {
+            goto error_push_driver;
+        }
     }
+    else
+    {
+        handle->stack = handle->attr->stack;
+    }
+
     result = globus_fifo_init(&handle->connection_q);
     if (result != GLOBUS_SUCCESS)
     {
@@ -524,20 +524,32 @@ globus_l_xio_mode_e_handle_create(
     handle->accepted_handle = GLOBUS_NULL;
     handle->offset = 0;
     handle->ref_count = 1;
+    *out_handle = handle;
     GlobusXIOModeEDebugExit();
-    return handle;
+    return GLOBUS_SUCCESS;
 
 error_io_q_init:
     globus_fifo_destroy(&handle->eod_q);
 error_eod_q_init:
     globus_fifo_destroy(&handle->connection_q);
 error_connection_q_init:
+error_push_driver:
+    if (!handle->attr->stack)
+    {
+        globus_xio_stack_destroy(handle->stack); 
+    }
+error_stack_init:
+    if (!handle->attr->stack)
+    {
+        globus_xio_driver_unload(handle->driver);
+    }
+error_driver_load:
     globus_l_xio_mode_e_attr_destroy(handle->attr);
 error_attr:
     globus_free(handle);
 error_handle:
     GlobusXIOModeEDebugExitWithError();
-    return GLOBUS_NULL;
+    return result;
 }
 
 
@@ -557,16 +569,15 @@ globus_l_xio_mode_e_server_init(
 
     GlobusXIOModeEDebugEnter();
     attr = (globus_l_xio_mode_e_attr_t *) driver_attr;
-    handle = globus_l_xio_mode_e_handle_create(attr);
+    result = globus_l_xio_mode_e_handle_create(&handle, attr);
+    if (result != GLOBUS_SUCCESS)
+    {
+        goto error_handle_create;
+    }   
     if (!attr)
     {
         attr = handle->attr;
     }    
-    if (handle == GLOBUS_NULL)
-    {
-        result = GlobusXIOModeEHandleError();
-        goto error_handle_create;
-    }   
     result = globus_xio_attr_init(&attr->xio_attr);
     if (result != GLOBUS_SUCCESS)
     {
@@ -581,7 +592,7 @@ globus_l_xio_mode_e_server_init(
         }
     }   
     result = globus_xio_server_create(
-            &handle->server, attr->xio_attr, attr->stack);
+            &handle->server, attr->xio_attr, handle->stack);
     if (result != GLOBUS_SUCCESS)
     {
         goto error_server_create;
@@ -833,7 +844,7 @@ static
 void
 globus_l_xio_mode_e_server_connection_handle_init(
     globus_l_xio_mode_e_connection_handle_t *
-					connection_handle)
+                                        connection_handle)
 {
     GlobusXIOName(globus_l_xio_mode_e_server_connection_handle_init);
     GlobusXIOModeEDebugEnter();
@@ -847,12 +858,13 @@ globus_l_xio_mode_e_server_connection_handle_init(
 
 
 static
-void
+globus_result_t
 globus_l_xio_mode_e_process_header(
     globus_l_xio_mode_e_header_t *      header,
     globus_l_xio_mode_e_connection_handle_t *      
                                         connection_handle)
 {
+    globus_result_t                     result;
     GlobusXIOName(globus_l_xio_mode_e_process_header);
 
     GlobusXIOModeEDebugEnter();
@@ -870,17 +882,34 @@ globus_l_xio_mode_e_process_header(
     {
         connection_handle->outstanding_data_len = 0;
         connection_handle->outstanding_data_offset = 0;
-        globus_i_xio_mode_e_header_decode(
+        result = globus_i_xio_mode_e_header_decode(
             header->offset, &connection_handle->mode_e_handle->eod_count);
+        if (result != GLOBUS_SUCCESS)
+        {
+            goto error;
+        }
     }
     else
     {
-        globus_i_xio_mode_e_header_decode(
+        result = globus_i_xio_mode_e_header_decode(
             header->count, &connection_handle->outstanding_data_len);
-        globus_i_xio_mode_e_header_decode(
+        if (result != GLOBUS_SUCCESS)
+        {
+            goto error;
+        }
+        result = globus_i_xio_mode_e_header_decode(
             header->offset, &connection_handle->outstanding_data_offset);
+        if (result != GLOBUS_SUCCESS)
+        {
+            goto error;
+        }
     }
     GlobusXIOModeEDebugExit();
+    return GLOBUS_SUCCESS;
+
+error:
+    GlobusXIOModeEDebugExitWithError();
+    return result;
 }
 
 
@@ -935,31 +964,31 @@ globus_l_xio_mode_e_process_eod(
      * or not, If i dont get close, i reset the connection objects put in
      * the eod_q (globus_l_xio_mode_e_reset_connections). There i increment
      * the connection count again
-     */	
+     */ 
     if (connection_handle->close)
     {
-	globus_xio_register_close(
-		connection_handle->xio_handle,
-		NULL,
-		globus_l_xio_mode_e_close_cb,
-		handle);
-	globus_free(connection_handle);
+        globus_xio_register_close(
+                connection_handle->xio_handle,
+                NULL,
+                globus_l_xio_mode_e_close_cb,
+                handle);
+        globus_free(connection_handle);
     }
     else
     {
-	globus_fifo_enqueue(&handle->eod_q, connection_handle);
+        globus_fifo_enqueue(&handle->eod_q, connection_handle);
     }
     if (handle->eod_count == handle->eods_received)
     {
-	eof = GLOBUS_TRUE;
-	while (!globus_fifo_empty(&handle->io_q))
-	{
-	    requestor = (globus_i_xio_mode_e_requestor_t*)
-			    globus_fifo_dequeue(&handle->io_q);
-	    globus_fifo_enqueue(&op_q, requestor->op);
-	    globus_memory_push_node(&handle->requestor_memory,
-						    requestor);
-	}
+        eof = GLOBUS_TRUE;
+        while (!globus_fifo_empty(&handle->io_q))
+        {
+            requestor = (globus_i_xio_mode_e_requestor_t*)
+                            globus_fifo_dequeue(&handle->io_q);
+            globus_fifo_enqueue(&op_q, requestor->op);
+            globus_memory_push_node(&handle->requestor_memory,
+                                                    requestor);
+        }
     }
     GlobusXIOModeEDebugExit();
     return eof;
@@ -999,47 +1028,54 @@ globus_l_xio_mode_e_read_header_cb(
     if (result == GLOBUS_SUCCESS)
     {   
         header = (globus_l_xio_mode_e_header_t *) buffer;
-        globus_l_xio_mode_e_process_header(header, connection_handle);
+        result = globus_l_xio_mode_e_process_header(header, connection_handle);
+        if (result != GLOBUS_SUCCESS)
+        {
+            /* next read would fail */
+            handle->state = GLOBUS_XIO_MODE_E_ERROR;
+            goto error;
+        }
         globus_memory_push_node(&handle->header_memory, (void*)buffer);
         if (connection_handle->outstanding_data_len > 0)
         {
             globus_l_xio_mode_e_process_outstanding_data(connection_handle);
         }
         else if (connection_handle->eod)
-	{
-	    eof = globus_l_xio_mode_e_process_eod(connection_handle, op_q);
-	    if (eof) 
-	    {
-		if (globus_fifo_empty(&op_q))
-		{
-		    if (handle->state == GLOBUS_XIO_MODE_E_OPEN)
-		    {
-			handle->state = GLOBUS_XIO_MODE_E_EOF_RECEIVED;
-		    }
-		}
-		else
-		{
-		    op = (globus_xio_operation_t) globus_fifo_peek(&op_q);
-		    globus_xio_driver_set_eof_received(op);
-		    res = GlobusXIOErrorEOF();
-		    finish = GLOBUS_TRUE;
-		    if (handle->state == GLOBUS_XIO_MODE_E_OPEN)
-		    {
-			handle->state = GLOBUS_XIO_MODE_E_EOF_DELIVERED;
-		    }
-		}
-	    }
-	}
-	else
-	{
-	    result = globus_i_xio_mode_e_register_read_header(
-						    	connection_handle);
-	    if (result != GLOBUS_SUCCESS)
-	    {
-		/* next read would fail */
-		handle->state = GLOBUS_XIO_MODE_E_ERROR;
-	    }
-	}
+        {
+            eof = globus_l_xio_mode_e_process_eod(connection_handle, op_q);
+            if (eof) 
+            {
+                if (globus_fifo_empty(&op_q))
+                {
+                    if (handle->state == GLOBUS_XIO_MODE_E_OPEN)
+                    {
+                        handle->state = GLOBUS_XIO_MODE_E_EOF_RECEIVED;
+                    }
+                }
+                else
+                {
+                    op = (globus_xio_operation_t) globus_fifo_peek(&op_q);
+                    globus_xio_driver_set_eof_received(op);
+                    res = GlobusXIOErrorEOF();
+                    finish = GLOBUS_TRUE;
+                    if (handle->state == GLOBUS_XIO_MODE_E_OPEN)
+                    {
+                        handle->state = GLOBUS_XIO_MODE_E_EOF_DELIVERED;
+                    }
+                }
+            }
+        }
+        else
+        {
+            result = globus_i_xio_mode_e_register_read_header(
+                                                        connection_handle);
+            if (result != GLOBUS_SUCCESS)
+            {
+                /* next read would fail */
+                handle->state = GLOBUS_XIO_MODE_E_ERROR;
+                goto error;
+            }
+        }
     }
     globus_mutex_unlock(&handle->mutex);
     if (finish)
@@ -1057,6 +1093,11 @@ globus_l_xio_mode_e_read_header_cb(
     }
     globus_fifo_destroy(&op_q);
     GlobusXIOModeEDebugExit();
+    return;
+
+error:
+    globus_mutex_unlock(&handle->mutex);
+    GlobusXIOModeEDebugExitWithError();
     return;
 }
 
@@ -1085,7 +1126,7 @@ globus_l_xio_mode_e_open_cb(
                                     globus_l_xio_mode_e_connection_handle_t));
         if (!connection_handle)
         {
-            result = GlobusXIOModeEOpenError();
+            result = GlobusXIOModeEOpenError("Memory error");
             goto error_connection_handle;
         }
         handle->state = GLOBUS_XIO_MODE_E_OPEN;
@@ -1265,7 +1306,7 @@ globus_l_xio_mode_e_server_open_cb(
     {
         if (handle->state == GLOBUS_XIO_MODE_E_ERROR)
         {
-            result = GlobusXIOModeEOpenError();
+            result = GlobusXIOModeEOpenError("Invalid state");
             goto error;
         }
         else
@@ -1326,7 +1367,7 @@ globus_l_xio_mode_e_open_new_stream(
             goto error_attr_cntl;
         }
     }
-    result = globus_xio_handle_create(&xio_handle, attr->stack);
+    result = globus_xio_handle_create(&xio_handle, handle->stack);
     if (result != GLOBUS_SUCCESS)
     {
         goto error_handle_create;
@@ -1425,10 +1466,9 @@ globus_l_xio_mode_e_open(
     attr = (globus_l_xio_mode_e_attr_t *) driver_attr;
     if (!handle) /* Client */
     {
-        handle = globus_l_xio_mode_e_handle_create(attr);
-        if (!handle)
+        result = globus_l_xio_mode_e_handle_create(&handle, attr);
+        if (result != GLOBUS_SUCCESS)
         {
-            result = GlobusXIOModeEHandleError();    
             goto error_handle_create;
         }
         result = globus_xio_contact_info_to_string(
@@ -1442,7 +1482,7 @@ globus_l_xio_mode_e_open(
                         handle, globus_l_xio_mode_e_open_cb);
         if (result != GLOBUS_SUCCESS)
         {
-            result = GlobusXIOModeEOpenError();
+            result = GlobusXIOModeEOpenError("Error opening a stream");
             goto error_open_new_stream;
         }
     }
@@ -1532,7 +1572,7 @@ globus_l_xio_mode_e_read_cb(
     {
         iovec[connection_handle->iovec_index].iov_len = 
                                         connection_handle->iovec_index_len;
-	connection_handle->iovec_index = -1;
+        connection_handle->iovec_index = -1;
     }
     globus_mutex_lock(&handle->mutex); 
     if (result == GLOBUS_SUCCESS)
@@ -1547,24 +1587,24 @@ globus_l_xio_mode_e_read_cb(
             eof = globus_l_xio_mode_e_process_eod(connection_handle, op_q);
             if (eof)
             {
-		globus_xio_driver_set_eof_received(connection_handle->op);
+                globus_xio_driver_set_eof_received(connection_handle->op);
                 res = GlobusXIOErrorEOF();
-		if (handle->state == GLOBUS_XIO_MODE_E_OPEN)
-		{
-		    handle->state = GLOBUS_XIO_MODE_E_EOF_DELIVERED;
-		}
+                if (handle->state == GLOBUS_XIO_MODE_E_OPEN)
+                {
+                    handle->state = GLOBUS_XIO_MODE_E_EOF_DELIVERED;
+                }
             }
         }
-	else
-	{
-	    result = globus_i_xio_mode_e_register_read_header(
-						    	connection_handle);
-	    if (result != GLOBUS_SUCCESS)
-	    {
-		/* next read would fail */
-		handle->state = GLOBUS_XIO_MODE_E_ERROR;
-	    }
-	}
+        else
+        {
+            result = globus_i_xio_mode_e_register_read_header(
+                                                        connection_handle);
+            if (result != GLOBUS_SUCCESS)
+            {
+                /* next read would fail */
+                handle->state = GLOBUS_XIO_MODE_E_ERROR;
+            }
+        }
     }
     globus_mutex_unlock(&handle->mutex); 
     globus_xio_driver_data_descriptor_cntl(
@@ -1684,7 +1724,8 @@ globus_l_xio_mode_e_read(
     wait_for = globus_xio_operation_get_wait_for(op);
     if (wait_for != 1)
     {
-        result = GlobusXIOModeEReadError();
+        result = GlobusXIOModeEReadError(
+                        "Waitforbytes parameter is not equal to one");
         goto error_wait_for;
     }
     globus_mutex_lock(&handle->mutex);
@@ -1693,11 +1734,11 @@ globus_l_xio_mode_e_read(
         case GLOBUS_XIO_MODE_E_EOF_RECEIVED:
             globus_xio_driver_set_eof_received(op);
             handle->state = GLOBUS_XIO_MODE_E_EOF_DELIVERED;
-	    result = GlobusXIOErrorEOF();
-	    goto error_eof;
+            result = GlobusXIOErrorEOF();
+            goto error_eof;
         case GLOBUS_XIO_MODE_E_EOF_DELIVERED:
             if (globus_xio_driver_eof_received(op) || 
-					handle->connection_count == 0)
+                                        handle->connection_count == 0)
             {
                 result = GlobusXIOErrorEOF();
                 goto error_eof;
@@ -1734,7 +1775,7 @@ globus_l_xio_mode_e_read(
             }
             break;
         default:
-            result = GlobusXIOModeEReadError();
+            result = GlobusXIOModeEReadError("Invalid state");
             goto error_invalid_state;
     }
     globus_mutex_unlock(&handle->mutex);
@@ -1835,12 +1876,12 @@ globus_l_xio_mode_e_write_header_cb(
     globus_result_t                     res;
     globus_l_xio_mode_e_connection_handle_t *
                                         connection_handle;
-    globus_l_xio_mode_e_handle_t *	handle;
+    globus_l_xio_mode_e_handle_t *      handle;
     const globus_xio_iovec_t *          iovec;
     int                                 iovec_count;
     globus_size_t                       iovec_len;
-    globus_xio_operation_t		op;
-    globus_off_t			offset;
+    globus_xio_operation_t              op;
+    globus_off_t                        offset;
     GlobusXIOName(globus_l_xio_mode_e_write_header_cb);
 
     GlobusXIOModeEDebugEnter();
@@ -1882,10 +1923,10 @@ error:
     globus_fifo_enqueue(&handle->connection_q, connection_handle);
     globus_mutex_unlock(&handle->mutex);
     globus_xio_driver_data_descriptor_cntl(
-		    op,
-		    NULL,
-		    GLOBUS_XIO_DD_SET_OFFSET,
-		    offset);
+                    op,
+                    NULL,
+                    GLOBUS_XIO_DD_SET_OFFSET,
+                    offset);
     globus_xio_driver_finished_write(op, res, 0);
     GlobusXIOModeEDebugExitWithError();
     return;
@@ -1992,7 +2033,8 @@ globus_l_xio_mode_e_write(
                         handle, globus_i_xio_mode_e_open_cb);
             if (result != GLOBUS_SUCCESS)
             {
-                result = GlobusXIOModeEWriteError();
+                result = GlobusXIOModeEWriteError(
+                                "Error opening a new stream");
                 goto error_open_new_stream;
             }
         }
@@ -2035,22 +2077,22 @@ globus_l_xio_mode_e_close_cb(
     globus_mutex_lock(&handle->mutex);
     if (--handle->connection_count == 0)
     {
-	switch (handle->state)
-	{
-	    case GLOBUS_XIO_MODE_E_CLOSING:
-		finish = GLOBUS_TRUE;
-		op = handle->outstanding_op;
-		if (--handle->ref_count == 0)
-		{
-		    destroy = GLOBUS_TRUE;
-		}
-		break;
-	    case GLOBUS_XIO_MODE_E_EOF_RECEIVED:
-	    case GLOBUS_XIO_MODE_E_EOF_DELIVERED:
-		break;
-	    default:
-		globus_assert(0 && "Unexpected state in mode_e_close_cb");
-	}
+        switch (handle->state)
+        {
+            case GLOBUS_XIO_MODE_E_CLOSING:
+                finish = GLOBUS_TRUE;
+                op = handle->outstanding_op;
+                if (--handle->ref_count == 0)
+                {
+                    destroy = GLOBUS_TRUE;
+                }
+                break;
+            case GLOBUS_XIO_MODE_E_EOF_RECEIVED:
+            case GLOBUS_XIO_MODE_E_EOF_DELIVERED:
+                break;
+            default:
+                globus_assert(0 && "Unexpected state in mode_e_close_cb");
+        }
     }
     globus_mutex_unlock(&handle->mutex);
     if (finish)
@@ -2098,14 +2140,14 @@ globus_l_xio_mode_e_write_eod_cb(
                 handle->attr->xio_attr,
                 globus_l_xio_mode_e_close_cb,
                 handle);
-	globus_free(connection_handle);
+        globus_free(connection_handle);
     }
     else
     {
         globus_fifo_enqueue(&handle->eod_q, connection_handle);
         if (handle->eods_sent == handle->connection_count)
         {
-	    globus_fifo_move(&handle->connection_q, &handle->eod_q);
+            globus_fifo_move(&handle->connection_q, &handle->eod_q);
             op = connection_handle->op;
             finish = GLOBUS_TRUE;
         }
@@ -2180,23 +2222,23 @@ error:
 static
 void
 globus_l_xio_mode_e_close_connections(
-    globus_fifo_t *			connection_q)
+    globus_fifo_t *                     connection_q)
 {
     globus_l_xio_mode_e_connection_handle_t *
-					connection_handle;
+                                        connection_handle;
     GlobusXIOName(globus_l_xio_mode_e_close_connections);
 
     GlobusXIOModeEDebugEnter();
     while (!globus_fifo_empty(connection_q))
     {
-	connection_handle = (globus_l_xio_mode_e_connection_handle_t *)
-			    globus_fifo_dequeue(connection_q);
-	globus_xio_register_close(
-	    connection_handle->xio_handle, 
-	    NULL, 
-	    globus_l_xio_mode_e_close_cb,
-	    connection_handle->mode_e_handle);
-	globus_free(connection_handle);
+        connection_handle = (globus_l_xio_mode_e_connection_handle_t *)
+                            globus_fifo_dequeue(connection_q);
+        globus_xio_register_close(
+            connection_handle->xio_handle, 
+            NULL, 
+            globus_l_xio_mode_e_close_cb,
+            connection_handle->mode_e_handle);
+        globus_free(connection_handle);
     }
     GlobusXIOModeEDebugExit();
 }
@@ -2239,15 +2281,15 @@ globus_l_xio_mode_e_close(
     {
         connection_handle = (globus_l_xio_mode_e_connection_handle_t *)
                                 globus_fifo_dequeue(&handle->connection_q);
-	handle->state = GLOBUS_XIO_MODE_E_CLOSING;
+        handle->state = GLOBUS_XIO_MODE_E_CLOSING;
         globus_l_xio_mode_e_register_eod(
-                        connection_handle, attr->close, attr->eof);
+                        connection_handle, GLOBUS_TRUE, attr->eof);
         while (!globus_fifo_empty(&handle->connection_q))
         {
             connection_handle = (globus_l_xio_mode_e_connection_handle_t *)
                                     globus_fifo_dequeue(&handle->connection_q);
             result = globus_l_xio_mode_e_register_eod(
-                            connection_handle, attr->close, GLOBUS_FALSE);
+                            connection_handle, GLOBUS_TRUE, GLOBUS_FALSE);
         }
     }
     else
@@ -2262,8 +2304,8 @@ globus_l_xio_mode_e_close(
         }
         else
         {
-	    globus_l_xio_mode_e_close_connections(&handle->connection_q);
-	    globus_l_xio_mode_e_close_connections(&handle->eod_q);
+            globus_l_xio_mode_e_close_connections(&handle->connection_q);
+            globus_l_xio_mode_e_close_connections(&handle->eod_q);
             handle->state = GLOBUS_XIO_MODE_E_CLOSING;
         }
     }
@@ -2315,8 +2357,6 @@ globus_l_xio_mode_e_attr_init(
     void **                             out_attr)
 {
     globus_l_xio_mode_e_attr_t *        attr;
-    globus_xio_driver_t                 tcp_driver;
-    globus_xio_stack_t                  stack;
     globus_result_t                     result;
     GlobusXIOName(globus_l_xio_mode_e_attr_init);
 
@@ -2333,32 +2373,10 @@ globus_l_xio_mode_e_attr_init(
     }
     memcpy(attr, &globus_l_xio_mode_e_attr_default, 
                         sizeof(globus_l_xio_mode_e_attr_t));
-    result = globus_xio_driver_load("tcp", &tcp_driver);
-    if (result != GLOBUS_SUCCESS)
-    {
-        goto error_driver_load;
-    }
-    result = globus_xio_stack_init(&stack, NULL);
-    if (result != GLOBUS_SUCCESS)
-    {
-        goto error_stack_init;
-    }
-    result = globus_xio_stack_push_driver(stack, tcp_driver);
-    if (result != GLOBUS_SUCCESS)
-    {
-        goto error_push_driver;
-    }
-    attr->stack = stack;
     *out_attr = attr;
     GlobusXIOModeEDebugExit();
     return GLOBUS_SUCCESS;
 
-error_push_driver:
-    globus_xio_stack_destroy(stack); 
-error_stack_init:
-    globus_xio_driver_unload(tcp_driver);
-error_driver_load:
-    globus_free(attr);
 error_attr:
     GlobusXIOModeEDebugExitWithError();
     return result;
@@ -2404,18 +2422,6 @@ globus_l_xio_mode_e_attr_cntl(
             globus_xio_mode_e_attr_cntl_callback_t attr_cntl_cb;
             attr_cntl_cb = va_arg(ap, globus_xio_mode_e_attr_cntl_callback_t);
             attr->attr_cntl_cb = attr_cntl_cb;
-            break;
-        }
-        case GLOBUS_XIO_MODE_E_SET_CLOSE:
-        {
-            globus_bool_t close = va_arg(ap, globus_bool_t);
-            attr->close = close;
-            break;
-        }
-        case GLOBUS_XIO_MODE_E_GET_CLOSE:
-        {
-            globus_bool_t * close = va_arg(ap, globus_bool_t*);
-            *close = attr->close;
             break;
         }
         case GLOBUS_XIO_MODE_E_SET_EOF:

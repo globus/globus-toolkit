@@ -7,9 +7,9 @@ SUBDIRS= \
 Sources= \
 	globus_openssl_error_test.c
 
-AM_CFLAGS += $(GPT_CFLAGS) 
+AM_CFLAGS = $(GPT_CFLAGS) 
 
-INCLUDES += $(GPT_INCLUDES)
+INCLUDES = $(GPT_INCLUDES)
 
 Scripts= \
 	TESTS.pl \

@@ -169,6 +169,23 @@ typedef enum
  */
 typedef enum
 {
+    /**GlobusVarArgEnum(attr)
+     * Change the default attr values.
+     * @ingroup tcp_driver_cntls
+     * 
+     * @param affect_global
+     *      If GLOBUS_TRUE, any future cntls on this attr will access
+     *      the global default attr (which all new attrs are initialized from)
+     *      The default is GLOBUS_FALSE.  Note:  this should only be used at
+     *      the application level and there should only be one.  There is no
+     *      mutex protecting the global attr.  This feature should not be
+     *      abused.  There are some attrs that make no sense to change
+     *      globally.  Attrs that do include the tcp port range stuff, socket
+     *      buffer sizes, etc.
+     */
+    /* globus_bool_t                    affect_global */
+    GLOBUS_XIO_TCP_AFFECT_ATTR_DEFAULTS,
+    
     /** GlobusVarArgEnum(attr)
      * Set the tcp service name to bind to.
      * @ingroup tcp_driver_cntls

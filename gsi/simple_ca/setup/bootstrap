@@ -14,25 +14,6 @@ if [ ! -f ${GLOBUS_LOCATION}/libexec/globus-bootstrap.sh ]; then
     exit
 fi
 
-autoconf_location=`type autoconf 2> /dev/null`
-if test $? = 0; then
-        autoconf_location=`type autoconf | sed -e "s|autoconf is ||"`
-fi
-                                                                                
-globus_autotools_path=`echo $autoconf_location | sed -e "s|/bin/autoconf$||"`
-if test -d "$globus_autotools_path/openssl_tools/bin"; then
-        openssl_autotools_path="$globus_autotools_path/openssl_tools/bin"
-else
-        echo ""
-        echo "bootstrap FAILED:  You need to have the Globus autotools at the front of your PATH before running bootstrap"
-        echo ""
-        exit 1
-fi
-                                                                                
-CURRENT_PATH=$PATH
-PATH=$openssl_autotools_path:$PATH
-export PATH
-
 . ${GLOBUS_LOCATION}/libexec/globus-bootstrap.sh
 
 chmod 755 setup-simple-ca

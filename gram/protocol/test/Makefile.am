@@ -31,7 +31,7 @@ pkgtest_PROGRAMS= \
 
 EXTRA_DIST=$(Scripts) globus-gram-protocol-run-tests.pl.in $(Data)
 
-INCLUDES += $(GPT_INCLUDES)
+INCLUDES = $(GPT_INCLUDES)
 
 LDADD = $(GPT_PGM_LINKS)
 globus_gram_protocol_pack_test_SOURCES = globus_gram_protocol_pack_test.c

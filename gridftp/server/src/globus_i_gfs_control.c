@@ -3,6 +3,8 @@
 #include "globus_i_gridftp_server.h"
 #include <grp.h>
 
+#define FTP_SERVICE_NAME "file"
+
 globus_result_t
 globus_l_gfs_op_attr_init(
     globus_i_gfs_op_attr_t **   u_attr)
@@ -111,7 +113,8 @@ globus_l_gfs_channel_close_cb(
         GLOBUS_I_GFS_LOG_INFO,
         "Closed connection from %s\n",
         instance->remote_contact);
-    
+
+    globus_i_gfs_data_session_stop(NULL, instance->session_id);
     globus_free(instance->remote_contact);
     globus_free(instance);
     globus_i_gfs_server_closed();
@@ -119,7 +122,7 @@ globus_l_gfs_channel_close_cb(
 
 static
 void
-globus_l_gfs_abort_cb(
+globus_l_gfs_request_abort(
     globus_gridftp_server_control_op_t      op,
     void *                                  user_arg)
 {
@@ -145,6 +148,7 @@ globus_l_gfs_done_cb(
     instance = (globus_i_gfs_server_instance_t *) user_arg;
     
     globus_gridftp_server_control_destroy(instance->u.control.server);
+
     result = globus_xio_register_close(
         instance->xio_handle,
         GLOBUS_NULL,
@@ -159,17 +163,93 @@ globus_l_gfs_done_cb(
     }
 }
 
+typedef struct globus_l_gfs_auth_info_s
+{
+    uid_t                               uid;
+    const char *                        username;
+    const char *                        password;
+    const char *                        subject;
+    globus_gridftp_server_control_op_t  control_op;
+    globus_gridftp_server_control_response_t response;
+    char *                              msg;
+    globus_i_gfs_server_instance_t *    instance;
+    int                                 id;
+} globus_l_gfs_auth_info_t;
+
 static
 void
-globus_l_gfs_auth_request(
+globus_l_gfs_auth_session_cb(
+    globus_gfs_data_reply_t *           reply,
+    void *                              user_arg)
+{
+    globus_l_gfs_auth_info_t *          auth_info;  
+
+    auth_info = (globus_l_gfs_auth_info_t *) user_arg;
+
+    auth_info->instance->session_id = reply->session_id;
+    if(reply->result != GLOBUS_SUCCESS)
+    {
+        globus_gridftp_server_control_finished_auth(
+            auth_info->control_op, 
+            NULL, 
+            GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_PANIC, 
+            "internal error: session_cb");
+    }
+    else
+    {
+        globus_gridftp_server_control_finished_auth(
+            auth_info->control_op, 
+            auth_info->username, 
+            GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS,
+            NULL);
+    }    
+
+}
+
+static
+void
+globus_l_gfs_auth_data_cb(
+    const char *                        resource_id,
+    void *                              user_arg,
+    globus_result_t                     result)
+{
+    globus_l_gfs_auth_info_t *          auth_info;  
+
+    auth_info = (globus_l_gfs_auth_info_t *) user_arg;
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto err;
+    }
+
+    globus_i_gfs_data_session_start(
+        NULL,
+        0,
+        auth_info->username,
+        globus_l_gfs_auth_session_cb,
+        auth_info);
+
+    return;
+
+  err:
+    globus_gridftp_server_control_finished_auth(
+        auth_info->control_op, 
+        NULL, 
+        GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_PANIC, 
+        "internal error");
+}    
+
+static
+void
+globus_l_gfs_request_auth(
     globus_gridftp_server_control_op_t  op,
     globus_gridftp_server_control_security_type_t secure_type,
+    gss_ctx_id_t                        context,
     const char *                        subject,
     const char *                        user_name,
     const char *                        pw,
     void *                              user_arg)
 {
-    globus_result_t                     result; 
     int                                 rc;
     char *                              local_name;
     struct passwd *                     pwent;
@@ -179,11 +259,24 @@ globus_l_gfs_auth_request(
     uid_t                               current_uid;
     gid_t                               gid;
     char *                              err_msg = GLOBUS_NULL;
+    globus_result_t                     res;
+    globus_l_gfs_auth_info_t *          auth_info;  
+    globus_i_gfs_server_instance_t *    instance;
+    char *                              remote_cs;
 
 /* XXX add error responses */
-    result = GLOBUS_FAILURE;
     
+    instance = (globus_i_gfs_server_instance_t *) user_arg;
     current_uid = getuid();
+    auth_info = (globus_l_gfs_auth_info_t *) 
+        globus_calloc(1, sizeof(globus_l_gfs_auth_info_t));
+
+    auth_info->control_op = op;
+    auth_info->instance = instance;
+    auth_info->subject = globus_libc_strdup(subject);
+    auth_info->password = globus_libc_strdup(pw);
+               
+    remote_cs = globus_i_gfs_config_string("remote");
     
     if(secure_type == GLOBUS_GRIDFTP_SERVER_LIBRARY_GSSAPI)
     {
@@ -222,20 +315,12 @@ globus_l_gfs_auth_request(
                     "Could not set user or group");
                 goto error;
             }
-        }        
-    }
-    else if(globus_i_gfs_config_bool("allow_anonymous"))
-    {   
-        if(current_uid != 0)
-        {
-            globus_gridftp_server_control_finished_auth(
-                op, 
-                current_uid, 
-                GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS, 
-                GLOBUS_NULL);
-            return;    
         }
-        else if(globus_i_gfs_config_bool("inetd") || 
+        auth_info->username = globus_libc_strdup(pwent->pw_name);
+    }
+    else if(globus_i_gfs_config_bool("allow_anonymous") && current_uid == 0)
+    {   
+        if(globus_i_gfs_config_bool("inetd") || 
             globus_i_gfs_config_bool("daemon"))
         {            
             anon_usr = globus_i_gfs_config_string("anonymous_user");
@@ -243,7 +328,6 @@ globus_l_gfs_auth_request(
             if(anon_usr)
             {   
                 pwent = getpwnam(anon_usr);
-                globus_free(anon_usr);
                 if(pwent == NULL)
                 {
                     err_msg = globus_common_create_string(
@@ -260,7 +344,6 @@ globus_l_gfs_auth_request(
             if(anon_grp)
             {
                 group = getgrnam(anon_grp);
-                globus_free(anon_grp);
                 if(group == NULL)
                 {
                     err_msg = globus_common_create_string(
@@ -274,7 +357,7 @@ globus_l_gfs_auth_request(
                 gid = pwent->pw_gid;
             }
 
-            rc = setgid(gid);
+        rc = setgid(gid);
             if(rc != 0)
             {
                err_msg = globus_common_create_string(
@@ -295,52 +378,73 @@ globus_l_gfs_auth_request(
                 "Invalid authentication method");
             goto error;
         }
+
     }     
                       
-    globus_gridftp_server_control_finished_auth(
-        op, 
-        pwent->pw_uid, 
-        GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS, 
-        GLOBUS_NULL);
+    auth_info->response = 
+        GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS;
 
+    rc = globus_i_gfs_acl_init(
+        &instance->acl_handle,
+        context,
+        FTP_SERVICE_NAME,
+        user_name,
+        &res,
+        globus_l_gfs_auth_data_cb,
+        auth_info);
+    if(rc < 0)
+    {
+        err_msg = globus_common_create_string("acl init failed");
+        goto error;
+    }
+    else if(rc == GLOBUS_GFS_ACL_COMPLETE)
+    {
+        globus_l_gfs_auth_data_cb(NULL, auth_info, res);
+    }
+    
     return;
 
 error:
     globus_gridftp_server_control_finished_auth(
         op, 
-        0, 
+        NULL, 
         GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED, 
         err_msg);
+    if(err_msg != NULL)
+    {
+        globus_free(err_msg);
+    }
+
 }
 
 static
 void
-globus_l_gfs_ipc_resource_cb(
-    globus_i_gfs_server_instance_t *    instance,
-    globus_result_t                     result,
-    globus_gridftp_server_stat_t *      stat_info,
-    int                                 stat_count,
+globus_l_gfs_data_stat_cb(
+    globus_gfs_data_reply_t *           reply,
     void *                              user_arg)
 {
     globus_gridftp_server_control_op_t  op;
-
-    op = (globus_gridftp_server_control_op_t) user_arg;
+    globus_i_gfs_server_instance_t *    instance;
+    instance = (globus_i_gfs_server_instance_t *) user_arg;
+    op = instance->op;    
     
-    if(result != GLOBUS_SUCCESS)
+    if(reply->result != GLOBUS_SUCCESS)
     {
         globus_gridftp_server_control_finished_resource(
             op,
-            stat_info, 
-            stat_count, 
+            reply->info.stat.stat_array, 
+            reply->info.stat.stat_count, 
+            reply->info.stat.uid,
             GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED, 
-            globus_error_print_friendly(globus_error_peek(result)));
+            globus_error_print_friendly(globus_error_peek(reply->result)));
     }
     else
     {
         globus_gridftp_server_control_finished_resource(
             op,
-            stat_info, 
-            stat_count, 
+            reply->info.stat.stat_array, 
+            reply->info.stat.stat_count,
+            reply->info.stat.uid,
             GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS, 
             GLOBUS_NULL);
     }    
@@ -348,7 +452,7 @@ globus_l_gfs_ipc_resource_cb(
 
 static
 void
-globus_l_gfs_resource_request(
+globus_l_gfs_request_stat(
     globus_gridftp_server_control_op_t  op,
     const char *                        path,
     globus_gridftp_server_control_resource_mask_t mask,
@@ -357,85 +461,106 @@ globus_l_gfs_resource_request(
     globus_result_t                     result;
     globus_i_gfs_server_instance_t *    instance;
     char *                              fullpath;
-    GlobusGFSName(globus_l_gfs_resource_request);
+    GlobusGFSName(globus_l_gfs_request_stat);
     
     instance = (globus_i_gfs_server_instance_t *) user_arg;
+    instance->op = op;
 
     globus_l_gfs_get_full_path(instance, path, &fullpath);
+    
+    {
+    globus_gfs_stat_info_t *           stat_info;
+    
+    stat_info = (globus_gfs_stat_info_t *) 
+        globus_calloc(1, sizeof(globus_gfs_stat_info_t));
+    
+    stat_info->pathname = fullpath;
+    stat_info->file_only = 
+        (mask & GLOBUS_GRIDFTP_SERVER_CONTROL_RESOURCE_FILE_ONLY) ? 
+            GLOBUS_TRUE : GLOBUS_FALSE;
 
-    result = globus_i_gfs_ipc_resource_request(
-        instance,
-        fullpath,
-        mask & GLOBUS_GRIDFTP_SERVER_CONTROL_RESOURCE_FILE_ONLY
-            ? GLOBUS_TRUE
-            : GLOBUS_FALSE,
-        globus_l_gfs_ipc_resource_cb,
-        op);
+
+    result = globus_i_gfs_data_request_stat(
+        NULL,
+        instance->session_id,
+        0,
+        stat_info,
+        globus_l_gfs_data_stat_cb,
+        instance);
+    }
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusGFSErrorWrapFailed(
-            "globus_i_gfs_ipc_resource_request", result);
-        goto error_ipc;
+            "globus_i_gfs_data_request_stat", result);
+        goto error_data;
     }
     
     return;
-error_ipc:     
-    globus_gridftp_server_control_finished_resource(
+error_data:     
+/*    globus_gridftp_server_control_finished_resource(
         op, 
         GLOBUS_NULL, 
-        0, 
-        GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED, 
+        0,
+        0,
+        GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED,
         globus_error_print_friendly(globus_error_peek(result)));
+*/
+    return;
 }
 
 static
 void
-globus_l_gfs_ipc_command_cb(
-    globus_i_gfs_server_instance_t *    instance,
-    globus_result_t                     result,
-    globus_i_gfs_cmd_attr_t *           cmd_attr,
+globus_l_gfs_data_command_cb(
+    globus_gfs_data_reply_t *            reply,
     void *                              user_arg)
 {
     globus_gridftp_server_control_op_t  op;
     char *                              msg;
-    
-    op = (globus_gridftp_server_control_op_t) user_arg;
+    globus_i_gfs_server_instance_t *    instance;
+    instance = (globus_i_gfs_server_instance_t *) user_arg;
+    op = instance->op;    
 
-    switch(cmd_attr->command)
+    if(reply->result == GLOBUS_SUCCESS)
     {
-      case GLOBUS_I_GFS_CMD_RMD:
-      case GLOBUS_I_GFS_CMD_DELE:
-      case GLOBUS_I_GFS_CMD_RNTO:
-      case GLOBUS_I_GFS_CMD_SITE_CHMOD:
-        globus_gsc_959_finished_command(op, "250 OK.\r\n"); 
-        break;
-      case GLOBUS_I_GFS_CMD_MKD:
-        msg = globus_common_create_string(
-            "257 Directory \"%s\" created successfully.\r\n", 
-            cmd_attr->pathname);
-        globus_gsc_959_finished_command(op, msg);
-        globus_free(msg);
-        break;      
-      case GLOBUS_I_GFS_CMD_RNFR:
-        globus_gsc_959_finished_command(op, "350 Waiting for RNTO.\r\n"); 
-        break;
-      case GLOBUS_I_GFS_CMD_CKSM:
-        msg = globus_common_create_string(
-            "213 %s\r\n", cmd_attr->cksm_response);
-        globus_gsc_959_finished_command(op, msg); 
-        globus_free(msg);
-        break;
-      
-      default:
-        globus_gsc_959_finished_command(op, "500 Unknown error.\r\n"); 
-        break;
+        switch(reply->info.command.command)
+        {
+          case GLOBUS_GFS_CMD_RMD:
+          case GLOBUS_GFS_CMD_DELE:
+          case GLOBUS_GFS_CMD_RNTO:
+          case GLOBUS_GFS_CMD_SITE_CHMOD:
+            globus_gsc_959_finished_command(op, "250 OK.\r\n"); 
+            break;
+          case GLOBUS_GFS_CMD_MKD:
+            msg = globus_common_create_string(
+                "257 Directory \"%s\" created successfully.\r\n", 
+                reply->info.command.created_dir);
+            globus_gsc_959_finished_command(op, msg);
+            globus_free(msg);
+            break;      
+          case GLOBUS_GFS_CMD_RNFR:
+            globus_gsc_959_finished_command(op, "350 Waiting for RNTO.\r\n"); 
+            break;
+          case GLOBUS_GFS_CMD_CKSM:
+            msg = globus_common_create_string(
+                "213 %s\r\n", reply->info.command.checksum);
+            globus_gsc_959_finished_command(op, msg); 
+            globus_free(msg);
+            break;
+          
+          default:
+            globus_gsc_959_finished_command(op, "500 Unknown error.\r\n"); 
+            break;
+        }
     }
-       
+    else
+    {
+        globus_gsc_959_finished_command(op, "500 Unknown error.\r\n"); 
+    }       
 }
 
 static
 void
-globus_l_gfs_command_request(
+globus_l_gfs_request_command(
     globus_gsc_959_op_t                 op,
     const char *                        full_command,
     char **                             cmd_array,
@@ -445,13 +570,16 @@ globus_l_gfs_command_request(
     globus_result_t                     result;
     globus_i_gfs_server_instance_t *    instance;
     globus_i_gfs_cmd_attr_t             cmd_attr;
-    GlobusGFSName(globus_l_gfs_command_request);
+    GlobusGFSName(globus_l_gfs_request_command);
     
     instance = (globus_i_gfs_server_instance_t *) user_arg;
+    instance->op = op;
+
+    memset(&cmd_attr, 0, sizeof(globus_i_gfs_cmd_attr_t));
     
     if(strcmp(cmd_array[0], "MKD") == 0)
     {
-        cmd_attr.command = GLOBUS_I_GFS_CMD_MKD;
+        cmd_attr.command = GLOBUS_GFS_CMD_MKD;
         globus_l_gfs_get_full_path(instance, cmd_array[1], &cmd_attr.pathname);
         if(cmd_attr.pathname == NULL)
         {
@@ -460,7 +588,7 @@ globus_l_gfs_command_request(
     }
     else if(strcmp(cmd_array[0], "RMD") == 0)
     {
-        cmd_attr.command = GLOBUS_I_GFS_CMD_RMD;
+        cmd_attr.command = GLOBUS_GFS_CMD_RMD;
         globus_l_gfs_get_full_path(instance, cmd_array[1], &cmd_attr.pathname);
         if(cmd_attr.pathname == NULL)
         {
@@ -469,7 +597,7 @@ globus_l_gfs_command_request(
     }
     else if(strcmp(cmd_array[0], "DELE") == 0)
     {
-        cmd_attr.command = GLOBUS_I_GFS_CMD_DELE;
+        cmd_attr.command = GLOBUS_GFS_CMD_DELE;
         globus_l_gfs_get_full_path(instance, cmd_array[1], &cmd_attr.pathname);
         if(cmd_attr.pathname == NULL)
         {
@@ -479,7 +607,7 @@ globus_l_gfs_command_request(
     else if(strcmp(cmd_array[0], "RNFR") == 0)
     {
         /* XXX */
-        cmd_attr.command = GLOBUS_I_GFS_CMD_RNFR;
+        cmd_attr.command = GLOBUS_GFS_CMD_RNFR;
         globus_l_gfs_get_full_path(instance, cmd_array[1], &cmd_attr.pathname);
         instance->rnfr_pathname = globus_libc_strdup(cmd_attr.pathname);
         if(cmd_attr.pathname == NULL)
@@ -492,7 +620,7 @@ globus_l_gfs_command_request(
     }
     else if(strcmp(cmd_array[0], "RNTO") == 0)
     {
-        cmd_attr.command = GLOBUS_I_GFS_CMD_RNTO;
+        cmd_attr.command = GLOBUS_GFS_CMD_RNTO;
         globus_l_gfs_get_full_path(instance, cmd_array[1], &cmd_attr.pathname);
         if(cmd_attr.pathname == NULL)
         {
@@ -507,7 +635,7 @@ globus_l_gfs_command_request(
     }
     else if(strcmp(cmd_array[0], "CKSM") == 0)
     {
-        cmd_attr.command = GLOBUS_I_GFS_CMD_CKSM;
+        cmd_attr.command = GLOBUS_GFS_CMD_CKSM;
         globus_l_gfs_get_full_path(instance, cmd_array[4], &cmd_attr.pathname);
         if(cmd_attr.pathname == NULL)
         {
@@ -527,7 +655,7 @@ globus_l_gfs_command_request(
     else if(strcmp(cmd_array[0], "SITE") == 0 && 
         strcmp(cmd_array[1], "CHMOD") == 0)
     {
-        cmd_attr.command = GLOBUS_I_GFS_CMD_SITE_CHMOD;
+        cmd_attr.command = GLOBUS_GFS_CMD_SITE_CHMOD;
         globus_l_gfs_get_full_path(instance, cmd_array[3], &cmd_attr.pathname);
         if(cmd_attr.pathname == NULL)
         {
@@ -539,30 +667,49 @@ globus_l_gfs_command_request(
     {
         goto err;
     }
+    
+    {
+    globus_gfs_command_info_t *        command_info;
 
-    result = globus_i_gfs_ipc_command_request(
-        instance,
-        &cmd_attr,
-        globus_l_gfs_ipc_command_cb,
-        op);
+    command_info = (globus_gfs_command_info_t *) 
+        globus_calloc(1, sizeof(globus_gfs_command_info_t));
+        
+    command_info->command = cmd_attr.command;
+    command_info->pathname = cmd_attr.pathname;
+    command_info->cksm_offset = cmd_attr.cksm_offset;
+    command_info->cksm_length = cmd_attr.cksm_length;
+    command_info->cksm_alg = cmd_attr.cksm_alg;
+    command_info->chmod_mode = cmd_attr.chmod_mode;
+    command_info->rnfr_pathname = cmd_attr.rnfr_pathname; 
+    
+    result = globus_i_gfs_data_request_command(
+        NULL,
+        instance->session_id,
+        0,
+        command_info,
+        globus_l_gfs_data_command_cb,
+        instance);
+    }
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusGFSErrorWrapFailed(
-            "globus_i_gfs_ipc_command_request", result);
-        goto error_ipc;
+            "globus_i_gfs_data_request_command", result);
+        goto error_data;
     }
     
     return;
 err:
-error_ipc:  
+
     globus_gsc_959_finished_command(op,
         "501 Invalid command arguments.\r\n");
 
+error_data:  
+    return;
 }
 
 static
 void
-globus_l_gfs_transfer_event(
+globus_l_gfs_request_transfer_event(
     globus_gridftp_server_control_op_t      op,
     int                                     event_type,
     void *                                  user_arg)
@@ -571,7 +718,10 @@ globus_l_gfs_transfer_event(
     
     instance = (globus_i_gfs_server_instance_t *) user_arg;
     
-    globus_i_gfs_ipc_transfer_event(instance, event_type);
+    globus_i_gfs_data_request_transfer_event(
+        NULL, 
+        instance->session_id,
+        instance->transfer_id, event_type);
     
     return;
 }
@@ -579,37 +729,49 @@ globus_l_gfs_transfer_event(
 
 static
 void
-globus_l_gfs_ipc_event_cb(
-    globus_i_gfs_server_instance_t *    instance,
-    globus_i_gfs_event_t                type,
-    void *                              data,
+globus_l_gfs_data_event_cb(
+    globus_gfs_data_event_reply_t *      reply,
     void *                              user_arg)
 {
     globus_gridftp_server_control_op_t  op;
     char                                mode;
-    
-    op = (globus_gridftp_server_control_op_t) user_arg;
-    
-    switch(type)
+
+    /* XXX */
+    globus_i_gfs_server_instance_t *    instance;
+    instance = (globus_i_gfs_server_instance_t *) user_arg;
+    op = instance->op;    
+    switch(reply->type)
     {
-      case GLOBUS_I_GFS_EVENT_TRANSFER_BEGIN:
+      case GLOBUS_GFS_EVENT_TRANSFER_BEGIN:
+        instance->transfer_id = reply->transfer_id;
         globus_gridftp_server_control_begin_transfer(
             op,
             GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_PERF | 
             GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_RESTART,
-            globus_l_gfs_transfer_event,
+            globus_l_gfs_request_transfer_event,
             instance);
         break;
       
-      case GLOBUS_I_GFS_EVENT_DISCONNECTED:
+      case GLOBUS_GFS_EVENT_DISCONNECTED:
         globus_gridftp_server_control_get_mode(op, &mode);
         if(mode != 'E')
         {
-            globus_gridftp_server_control_disconnected(
+/*            globus_gridftp_server_control_disconnected(
                 instance->u.control.server, data);
+*/
         }
         break;
-        
+
+      case GLOBUS_GFS_EVENT_BYTES_RECVD:
+        globus_gridftp_server_control_event_send_perf(
+            op, reply->node_ndx, reply->recvd_bytes);
+        break;
+            
+      case GLOBUS_GFS_EVENT_RANGES_RECVD:
+        globus_gridftp_server_control_event_send_restart(
+           op, reply->recvd_ranges);  
+       break;
+
       default:
         globus_assert(0 && "Unexpected event type");
         break;
@@ -618,21 +780,26 @@ globus_l_gfs_ipc_event_cb(
 
 static
 void
-globus_l_gfs_ipc_transfer_cb(
+globus_l_gfs_data_transfer_cb(
+    globus_gfs_data_reply_t *            reply,
+    void *                              user_arg)
+/*
     globus_i_gfs_server_instance_t *    instance,
     globus_result_t                     result,
     void *                              user_arg)
+*/
 {
     globus_gridftp_server_control_op_t  op;
+    globus_i_gfs_server_instance_t *    instance;
+    instance = (globus_i_gfs_server_instance_t *) user_arg;
+    op = instance->op;    
     
-    op = (globus_gridftp_server_control_op_t) user_arg;
-    
-    if(result != GLOBUS_SUCCESS)
+    if(reply->result != GLOBUS_SUCCESS)
     {
         globus_gridftp_server_control_finished_transfer(
             op,
             GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED, 
-            globus_error_print_friendly(globus_error_peek(result)));
+            globus_error_print_friendly(globus_error_peek(reply->result)));
     }
     else
     {
@@ -645,7 +812,7 @@ globus_l_gfs_ipc_transfer_cb(
 
 static
 void
-globus_l_gfs_send_request(
+globus_l_gfs_request_send(
     globus_gridftp_server_control_op_t  op,
     void *                              data_handle,
     const char *                        path,
@@ -657,17 +824,14 @@ globus_l_gfs_send_request(
     globus_result_t                     result;
     globus_i_gfs_server_instance_t *    instance;
     globus_i_gfs_op_attr_t *            op_attr;            
-    globus_i_gfs_ipc_data_handle_t *    data;
     int                                 args;
     char *                              fullpath;
-    GlobusGFSName(globus_l_gfs_send_request);
-    
-    data = (globus_i_gfs_ipc_data_handle_t *) data_handle;
-    
+    GlobusGFSName(globus_l_gfs_request_send);
+        
     instance = (globus_i_gfs_server_instance_t *) user_arg;
 
     result = globus_gridftp_server_abort_enable(
-        op, globus_l_gfs_abort_cb, instance);
+        op, globus_l_gfs_request_abort, instance);
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusGFSErrorWrapFailed(
@@ -696,39 +860,55 @@ globus_l_gfs_send_request(
             &op_attr->partial_length);
             
         globus_assert(args == 2);
-    } 
-        
-    result = globus_i_gfs_ipc_send_request(
-        instance,
-        op_attr,
-        data,
-        fullpath,
-        GLOBUS_NULL,
-        GLOBUS_NULL,
-        globus_l_gfs_ipc_transfer_cb,
-        globus_l_gfs_ipc_event_cb,
-        op);
+    }
+     
+    {
+    globus_gfs_transfer_info_t *       send_info;
+    
+    send_info = (globus_gfs_transfer_info_t *) 
+        globus_calloc(1, sizeof(globus_gfs_transfer_info_t));
+    
+    send_info->pathname = fullpath;
+    send_info->partial_offset = op_attr->partial_offset;
+    send_info->partial_length = op_attr->partial_length;
+    send_info->range_list = range_list;
+    send_info->stripe_count = 1;
+    send_info->node_count = 1;
+    send_info->data_handle_id = (int) data_handle;
+    instance->op = op;
+    
+    result = globus_i_gfs_data_request_send(
+        NULL,
+        instance->session_id,
+        0,
+        send_info,
+        globus_l_gfs_data_transfer_cb,
+        globus_l_gfs_data_event_cb,
+        instance);
+    }
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusGFSErrorWrapFailed(
-            "globus_i_gfs_ipc_send_request", result);
-        goto error_ipc;
+            "globus_i_gfs_data_request_send", result);
+        goto error_data;
     }
     
     return;
 
-error_ipc:
+error_data:
     globus_i_gfs_op_attr_destroy(op_attr);
 error_attr:
-    globus_gridftp_server_control_finished_transfer(
+/*    globus_gridftp_server_control_finished_transfer(
         op,
         GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED, 
         globus_error_print_friendly(globus_error_peek(result)));
+*/
+    return;
 }
 
 static
 void
-globus_l_gfs_recv_request(
+globus_l_gfs_request_recv(
     globus_gridftp_server_control_op_t  op,
     void *                              data_handle,
     const char *                        path,
@@ -740,17 +920,14 @@ globus_l_gfs_recv_request(
     globus_result_t                     result;
     globus_i_gfs_server_instance_t *    instance;
     globus_i_gfs_op_attr_t *            op_attr;            
-    globus_i_gfs_ipc_data_handle_t *    data;
     int                                 args;
     char *                              fullpath;
-    GlobusGFSName(globus_l_gfs_recv_request);
-    
-    data = (globus_i_gfs_ipc_data_handle_t *) data_handle;
+    GlobusGFSName(globus_l_gfs_request_recv);
     
     instance = (globus_i_gfs_server_instance_t *) user_arg;
 
     result = globus_gridftp_server_abort_enable(
-        op, globus_l_gfs_abort_cb, instance);
+        op, globus_l_gfs_request_abort, instance);
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusGFSErrorWrapFailed(
@@ -779,123 +956,148 @@ globus_l_gfs_recv_request(
             
         globus_assert(args == 1);
     }            
+    {
+    globus_gfs_transfer_info_t *       recv_info;
+    
+    recv_info = (globus_gfs_transfer_info_t *) 
+        globus_calloc(1, sizeof(globus_gfs_transfer_info_t));
 
-    result = globus_i_gfs_ipc_recv_request(
-        instance,
-        op_attr,
-        data,
-        fullpath,
-        mod_name,
-        mod_parms,
-        globus_l_gfs_ipc_transfer_cb,
-        globus_l_gfs_ipc_event_cb,
-        op);
+    recv_info->pathname = fullpath;
+    recv_info->partial_offset = op_attr->partial_offset;
+    recv_info->partial_length = op_attr->partial_length;
+    recv_info->range_list = range_list;
+    recv_info->stripe_count = 1;
+    recv_info->node_count = 1;
+    recv_info->data_handle_id = (int) data_handle;
+    instance->op = op;
+
+    result = globus_i_gfs_data_request_recv(
+        NULL,
+        instance->session_id,
+        0,
+        recv_info,
+        globus_l_gfs_data_transfer_cb,
+        globus_l_gfs_data_event_cb,
+        instance);
+    }
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusGFSErrorWrapFailed(
-            "globus_i_gfs_ipc_recv_request", result);
-        goto error_ipc;
+            "globus_i_gfs_data_request_recv", result);
+        goto error_data;
     }
     
     return;
     
-error_ipc:
+error_data:
     globus_i_gfs_op_attr_destroy(op_attr);
 error_attr:
-    globus_gridftp_server_control_finished_transfer(
+/*    globus_gridftp_server_control_finished_transfer(
         op,
         GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED, 
         globus_error_print_friendly(globus_error_peek(result)));
+*/
+    return;
 }
 
 static
 void
-globus_l_gfs_list_request(
+globus_l_gfs_request_list(
     globus_gridftp_server_control_op_t  op,
     void *                              data_handle,
     const char *                        path,
+    const char *                        list_type,
     void *                              user_arg)
 {
     globus_result_t                     result;
     globus_i_gfs_server_instance_t *    instance;
-    globus_i_gfs_ipc_data_handle_t *    data;
     char *                              fullpath;
-    GlobusGFSName(globus_l_gfs_list_request);
+    GlobusGFSName(globus_l_gfs_request_list);
     
-    data = (globus_i_gfs_ipc_data_handle_t *) data_handle;
-
     instance = (globus_i_gfs_server_instance_t *) user_arg;
 
     result = globus_gridftp_server_abort_enable(
-        op, globus_l_gfs_abort_cb, instance);
+        op, globus_l_gfs_request_abort, instance);
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusGFSErrorWrapFailed(
             "globus_gridftp_server_abort_enable", result);
-        goto error_ipc;
+        goto error_data;
     }
     
     globus_l_gfs_get_full_path(instance, path, &fullpath);
-
-    result = globus_i_gfs_ipc_list_request(
-        instance,
-        data,
-        fullpath,
-        globus_l_gfs_ipc_transfer_cb,
-        globus_l_gfs_ipc_event_cb,
-        op);
+    {
+    globus_gfs_transfer_info_t *       list_info;
+    
+    list_info = (globus_gfs_transfer_info_t *) 
+        globus_calloc(1, sizeof(globus_gfs_transfer_info_t));
+    
+    list_info->pathname = fullpath;
+    list_info->list_type = globus_libc_strdup(list_type);
+    list_info->data_handle_id = (int) data_handle;
+    list_info->stripe_count = 1;
+    list_info->node_count = 1;
+    instance->op = op;
+    
+    result = globus_i_gfs_data_request_list(
+        NULL,
+        instance->session_id,
+        0,
+        list_info,
+        globus_l_gfs_data_transfer_cb,
+        globus_l_gfs_data_event_cb,
+        instance);
+    }
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusGFSErrorWrapFailed(
-            "globus_i_gfs_ipc_list_request", result);
-        goto error_ipc;
+            "globus_i_gfs_data_request_list", result);
+        goto error_data;
     }
     return;
-error_ipc:     
-    globus_gridftp_server_control_finished_transfer(
+error_data:     
+/*    globus_gridftp_server_control_finished_transfer(
         op,
         GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED, 
         globus_error_print_friendly(globus_error_peek(result)));
+*/
+    return;
 }
 
 static
 void
-globus_l_gfs_ipc_passive_data_cb(
-    globus_i_gfs_server_instance_t *    instance,
-    globus_result_t                     result,
-    globus_i_gfs_ipc_data_handle_t *    data_handle,
-    globus_bool_t                       bi_directional,
-    const char **                       contact_strings,
-    int                                 cs_count,
+globus_l_gfs_data_passive_data_cb(
+    globus_gfs_data_reply_t *            reply,
     void *                              user_arg)
 {
     globus_gridftp_server_control_op_t  op;
-    
-    op = (globus_gridftp_server_control_op_t) user_arg;
+    globus_i_gfs_server_instance_t *    instance;
+    instance = (globus_i_gfs_server_instance_t *) user_arg;
+    op = instance->op;    
 
-    if(result != GLOBUS_SUCCESS)
+    if(reply->result != GLOBUS_SUCCESS)
     {
         globus_gridftp_server_control_finished_passive_connect(
             op,
-            data_handle,
-            bi_directional 
+            (void *) reply->info.data.data_handle_id,
+            reply->info.data.bi_directional 
                 ? GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_DIR_BI
                 : GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_DIR_SEND,
-            contact_strings,
-            cs_count,
+            reply->info.data.contact_strings,
+            reply->info.data.cs_count,
             GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED, 
-            globus_error_print_friendly(globus_error_peek(result)));
+            globus_error_print_friendly(globus_error_peek(reply->result)));
     }
     else
     {
         globus_gridftp_server_control_finished_passive_connect(
             op,
-            data_handle,
-            bi_directional 
+            (void *) reply->info.data.data_handle_id,
+            reply->info.data.bi_directional 
                 ? GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_DIR_BI
                 : GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_DIR_SEND,
-            contact_strings,
-            cs_count,
+            reply->info.data.contact_strings,
+            reply->info.data.cs_count,
             GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS, 
             GLOBUS_NULL);
     }    
@@ -947,15 +1149,18 @@ globus_l_gfs_op_to_attr(
         (char *) &attr->prot, 
         &attr->delegated_cred);
     globus_assert(result == GLOBUS_SUCCESS);
+    
+    attr->blocksize = globus_i_gfs_config_int("blocksize");
                 
 }
 
 static
 void
-globus_l_gfs_passive_data_connect(
+globus_l_gfs_request_passive_data(
     globus_gridftp_server_control_op_t  op,
     globus_gridftp_server_control_network_protocol_t net_prt,
     int                                 max,
+    const char *                        pathname,
     void *                              user_arg)
 {
     globus_result_t                     result;
@@ -970,21 +1175,44 @@ globus_l_gfs_passive_data_connect(
      */
     
     instance = (globus_i_gfs_server_instance_t *) user_arg;
+    instance->op = op;
+
+    {
+    globus_gfs_data_info_t *               data_info;
     
-    result = globus_i_gfs_ipc_passive_data_request(
-        instance,
-        &attr,
-        globus_l_gfs_ipc_passive_data_cb,
-        op);
+    data_info = (globus_gfs_data_info_t *) 
+        globus_calloc(1, sizeof(globus_gfs_data_info_t));
+    
+        data_info->ipv6 = attr.ipv6;       
+        data_info->nstreams = attr.nstreams;   
+        data_info->mode = attr.mode;       
+        data_info->type = attr.type;       
+        data_info->tcp_bufsize = attr.tcp_bufsize;
+        data_info->blocksize = attr.blocksize;  
+        data_info->prot = attr.prot;       
+        data_info->subject = attr.dcau.subject.subject;
+        data_info->dcau = attr.dcau.mode;
+        data_info->pathname = globus_libc_strdup(pathname);
+        data_info->max_cs = max;
+    data_info->del_cred = attr.delegated_cred;
+        
+    result = globus_i_gfs_data_request_passive(
+        NULL,
+        instance->session_id,
+        0,
+        data_info,
+        globus_l_gfs_data_passive_data_cb,
+        instance);
+    }
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusGFSErrorWrapFailed(
-            "globus_i_gfs_ipc_passive_data_request", result);
-        goto error_ipc;
+            "globus_i_gfs_data_request_passive_data", result);
+        goto error_data;
     }
     
     return;
-error_ipc:     
+error_data:     
     globus_gridftp_server_control_finished_passive_connect(
         op,
         GLOBUS_NULL,
@@ -997,34 +1225,32 @@ error_ipc:
 
 static
 void
-globus_l_gfs_ipc_active_data_cb(
-    globus_i_gfs_server_instance_t *    instance,
-    globus_result_t                     result,
-    globus_i_gfs_ipc_data_handle_t *    data_handle,
-    globus_bool_t                       bi_directional,
+globus_l_gfs_data_active_data_cb(
+    globus_gfs_data_reply_t *            reply,
     void *                              user_arg)
 {
     globus_gridftp_server_control_op_t  op;
+    globus_i_gfs_server_instance_t *    instance;
+    instance = (globus_i_gfs_server_instance_t *) user_arg;
+    op = instance->op;    
     
-    op = (globus_gridftp_server_control_op_t) user_arg;
-    
-    if(result != GLOBUS_SUCCESS)
+    if(reply->result != GLOBUS_SUCCESS)
     {
         globus_gridftp_server_control_finished_active_connect(
             op,
-            data_handle,
-            bi_directional 
+            (void *) reply->info.data.data_handle_id,
+            reply->info.data.bi_directional 
                 ? GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_DIR_BI
                 : GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_DIR_SEND,
             GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED, 
-            globus_error_print_friendly(globus_error_peek(result)));
+            globus_error_print_friendly(globus_error_peek(reply->result)));
     }
     else
     {
         globus_gridftp_server_control_finished_active_connect(
             op,
-            data_handle,
-            bi_directional 
+            (void *) reply->info.data.data_handle_id,
+            reply->info.data.bi_directional 
                 ? GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_DIR_BI
                 : GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_DIR_SEND,
             GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS, 
@@ -1034,7 +1260,7 @@ globus_l_gfs_ipc_active_data_cb(
 
 static
 void
-globus_l_gfs_active_data_connect(
+globus_l_gfs_request_active_data(
     globus_gridftp_server_control_op_t  op,
     globus_gridftp_server_control_network_protocol_t net_prt,
     const char **                       cs,
@@ -1049,23 +1275,44 @@ globus_l_gfs_active_data_connect(
     globus_l_gfs_op_to_attr(op, &attr, net_prt);
 
     instance = (globus_i_gfs_server_instance_t *) user_arg;
-        
-    result = globus_i_gfs_ipc_active_data_request(
-        instance,
-        &attr,
-        cs,
-        cs_count,
-        globus_l_gfs_ipc_active_data_cb,
-        op);
+    {
+    globus_gfs_data_info_t *               data_info;
+    
+    instance->op = op;
+   
+    data_info = (globus_gfs_data_info_t *) 
+        globus_calloc(1, sizeof(globus_gfs_data_info_t));
+    
+        data_info->ipv6 = attr.ipv6;       
+        data_info->nstreams = attr.nstreams;   
+        data_info->mode = attr.mode;       
+        data_info->type = attr.type;       
+        data_info->tcp_bufsize = attr.tcp_bufsize;
+        data_info->blocksize = attr.blocksize;  
+        data_info->prot = attr.prot;       
+        data_info->subject = attr.dcau.subject.subject;
+        data_info->dcau = attr.dcau.mode;
+    data_info->contact_strings = cs;
+    data_info->cs_count = cs_count;
+    data_info->del_cred = attr.delegated_cred;
+
+    result = globus_i_gfs_data_request_active(
+        NULL,
+        instance->session_id,
+        0,
+        data_info,
+        globus_l_gfs_data_active_data_cb,
+        instance);
+    }
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusGFSErrorWrapFailed(
-            "globus_i_gfs_ipc_active_data_request", result);
-        goto error_ipc;
+            "globus_i_gfs_data_request_active_data", result);
+        goto error_data;
     }
     
     return;
-error_ipc:     
+error_data:     
     globus_gridftp_server_control_finished_active_connect(
         op,
         GLOBUS_NULL,
@@ -1076,15 +1323,17 @@ error_ipc:
 
 static
 void
-globus_l_gfs_data_destroy(
+globus_l_gfs_request_data_destroy(
     void *                              user_data_handle,
     void *                              user_arg)
 {
-    globus_i_gfs_ipc_data_handle_t *    data_handle;
+    globus_i_gfs_server_instance_t *    instance;
+    GlobusGFSName(globus_l_gfs_request_data_destroy);
     
-    data_handle = (globus_i_gfs_ipc_data_handle_t *) user_data_handle;
+    instance = (globus_i_gfs_server_instance_t *) user_arg;
     
-    globus_i_gfs_ipc_data_destroy(data_handle);
+    globus_i_gfs_data_destroy_handle(
+        NULL, instance->session_id, (int) user_data_handle);
 }
 
 static
@@ -1139,7 +1388,7 @@ globus_l_gfs_add_commands(
     result = globus_gsc_959_command_add(
         control_handle,
         "MKD",
-        globus_l_gfs_command_request,
+        globus_l_gfs_request_command,
         GLOBUS_GSC_COMMAND_POST_AUTH,
         2,
         2,
@@ -1152,7 +1401,7 @@ globus_l_gfs_add_commands(
     result = globus_gsc_959_command_add(
         control_handle,
         "RMD",
-        globus_l_gfs_command_request,
+        globus_l_gfs_request_command,
         GLOBUS_GSC_COMMAND_POST_AUTH,
         2,
         2,
@@ -1165,7 +1414,7 @@ globus_l_gfs_add_commands(
     result = globus_gsc_959_command_add(
         control_handle,
         "DELE",
-        globus_l_gfs_command_request,
+        globus_l_gfs_request_command,
         GLOBUS_GSC_COMMAND_POST_AUTH,
         2,
         2,
@@ -1178,7 +1427,7 @@ globus_l_gfs_add_commands(
     result = globus_gsc_959_command_add(
         control_handle,
         "SITE CHMOD",
-        globus_l_gfs_command_request,
+        globus_l_gfs_request_command,
         GLOBUS_GSC_COMMAND_POST_AUTH,
         4,
         4,
@@ -1191,7 +1440,7 @@ globus_l_gfs_add_commands(
     result = globus_gsc_959_command_add(
         control_handle,
         "CKSM",
-        globus_l_gfs_command_request,
+        globus_l_gfs_request_command,
         GLOBUS_GSC_COMMAND_POST_AUTH,
         5,
         5,
@@ -1204,7 +1453,7 @@ globus_l_gfs_add_commands(
     result = globus_gsc_959_command_add(
         control_handle,
         "RNFR",
-        globus_l_gfs_command_request,
+        globus_l_gfs_request_command,
         GLOBUS_GSC_COMMAND_POST_AUTH,
         2,
         2,
@@ -1217,7 +1466,7 @@ globus_l_gfs_add_commands(
     result = globus_gsc_959_command_add(
         control_handle,
         "RNTO",
-        globus_l_gfs_command_request,
+        globus_l_gfs_request_command,
         GLOBUS_GSC_COMMAND_POST_AUTH,
         2,
         2,
@@ -1304,7 +1553,6 @@ globus_i_gfs_control_start(
         {
             goto error_attr_setup;
         }
-        globus_free(banner);
     }
 
     login_msg = globus_i_gfs_config_string("login_msg");
@@ -1316,53 +1564,52 @@ globus_i_gfs_control_start(
         {
             goto error_attr_setup;
         }
-        globus_free(login_msg);
     }
 
     result = globus_gridftp_server_control_attr_set_auth(
-        attr, globus_l_gfs_auth_request, instance);
+        attr, globus_l_gfs_request_auth, instance);
     if(result != GLOBUS_SUCCESS)
     {
         goto error_attr_setup;
     }
 
     result = globus_gridftp_server_control_attr_set_resource(
-        attr, globus_l_gfs_resource_request, instance);
+        attr, globus_l_gfs_request_stat, instance);
     if(result != GLOBUS_SUCCESS)
     {
         goto error_attr_setup;
     }    
     
     result = globus_gridftp_server_control_attr_add_recv(
-        attr, GLOBUS_NULL, globus_l_gfs_recv_request, instance);
+        attr, GLOBUS_NULL, globus_l_gfs_request_recv, instance);
     if(result != GLOBUS_SUCCESS)
     {
         goto error_attr_setup;
     }
 
     result = globus_gridftp_server_control_attr_add_recv(
-        attr, "A", globus_l_gfs_recv_request, instance);
+        attr, "A", globus_l_gfs_request_recv, instance);
     if(result != GLOBUS_SUCCESS)
     {
         goto error_attr_setup;
     }
     
     result = globus_gridftp_server_control_attr_add_send(
-        attr, GLOBUS_NULL, globus_l_gfs_send_request, instance);
+        attr, GLOBUS_NULL, globus_l_gfs_request_send, instance);
     if(result != GLOBUS_SUCCESS)
     {
         goto error_attr_setup;
     }
 
     result = globus_gridftp_server_control_attr_add_send(
-        attr, "P", globus_l_gfs_send_request, instance);
+        attr, "P", globus_l_gfs_request_send, instance);
     if(result != GLOBUS_SUCCESS)
     {
         goto error_attr_setup;
     }
 
     result = globus_gridftp_server_control_attr_set_list(
-        attr, globus_l_gfs_list_request, instance);
+        attr, globus_l_gfs_request_list, instance);
     if(result != GLOBUS_SUCCESS)
     {
         goto error_attr_setup;
@@ -1370,11 +1617,11 @@ globus_i_gfs_control_start(
     
     result = globus_gridftp_server_control_attr_data_functions(
         attr,
-        globus_l_gfs_active_data_connect,
+        globus_l_gfs_request_active_data,
         instance,
-        globus_l_gfs_passive_data_connect,
+        globus_l_gfs_request_passive_data,
         instance,
-        globus_l_gfs_data_destroy,
+        globus_l_gfs_request_data_destroy,
         instance);
     if(result != GLOBUS_SUCCESS)
     {

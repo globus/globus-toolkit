@@ -1,6 +1,6 @@
 
 
-AC_DEFUN(CHECK_NEED_LSOCKET, [
+AC_DEFUN([CHECK_NEED_LSOCKET], [
 
 dnl
 dnl Check whether we need -lsocket
@@ -31,7 +31,7 @@ AC_MSG_RESULT($lac_cv_lsocket)
 ])
 
 
-AC_DEFUN(CHECK_NEED_LNSL, [
+AC_DEFUN([CHECK_NEED_LNSL], [
 
 dnl
 dnl Check whether we need -lnsl

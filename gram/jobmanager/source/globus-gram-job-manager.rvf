@@ -293,3 +293,7 @@ Attribute: sub_job_comms_type
 Description: "DUROC attribute"
 ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
 Publish: false
+
+Attribute: username
+Description: Verify that the job is running as this user.
+ValidWhen: GLOBUS_GRAM_JOB_SUBMIT

@@ -97,6 +97,19 @@ sub new
 
     bless $self, $class;
 
+    if ($self->expand_globus_home()) {
+        my $home = (getpwuid($<))[7];
+        foreach my $key (keys %{$self}) {
+            if ($key =~ m/^[^_]/) {
+                my $arrayref = $self->{$key};
+
+                for ($i = 0; $i < scalar(@{$arrayref}); $i++) {
+                    $arrayref->[$i] =~ s/\${GLOBUS_USER_HOME}/$home/g;
+                }
+            }
+        }
+    }
+
     return $self;
 }
 

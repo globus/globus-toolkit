@@ -5,7 +5,7 @@
     This version number pertains to this package in general.  So, when this
     package changes in any way the version should change.
     e.g. for a bug fix increment the minor version number.
-    <Aging_Version Age="0" Major="2" Minor="2"/>
+    <Aging_Version Age="0" Major="2" Minor="3"/>
     <Description >Common Setup</Description>
     <Functional_Group >Common</Functional_Group>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
@@ -15,7 +15,7 @@
         <Source_Dependencies Type="compile">
 	        <Dependency Name="globus_core"> 
                 <Version>
-                    <Simple_Version Major="3"/>
+                    <Simple_Version Major="4"/>
                 </Version>
             </Dependency>
 	    </Source_Dependencies>

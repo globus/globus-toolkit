@@ -22,6 +22,7 @@ my $startargs = '-log never ';
     globus-gram-job-manager-failure-test.pl
     globus-gram-job-manager-proxy-expire-test.pl
     globus-gram-job-manager-rsl-size-test.pl
+    globus-gram-job-manager-user-test.pl
 );
 
 chdir $Globus::Core::Paths::exec_prefix . "/test/@PACKAGE@";

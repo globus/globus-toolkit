@@ -59,6 +59,11 @@ void
 globus_l_gram_job_manager_cancel_queries(
     globus_gram_jobmanager_request_t *	request);
 
+static
+int
+globus_l_gram_job_manager_validate_username(
+    globus_gram_jobmanager_request_t *	request);
+
 #ifdef BUILD_DEBUG
 
 #   define GLOBUS_GRAM_JOB_MANAGER_INVALID_STATE(request) \
@@ -142,7 +147,7 @@ globus_gram_job_manager_state_machine(
     globus_callout_handle_t             authz_handle;
     char *                              filename;
     globus_object_t *                   error;
-
+    globus_gram_jobmanager_state_t      next_state;
 
     GLOBUS_GRAM_JOB_MANAGER_DEBUG_STATE(request, "entering");
 
@@ -936,7 +941,17 @@ globus_gram_job_manager_state_machine(
                 p = (q) ? q+1 : GLOBUS_NULL;
             }
         }
-                
+
+        rc = globus_l_gram_job_manager_validate_username(
+                request);
+        if (rc != 0)
+        {
+            request->failure_code = rc;
+            request->jobmanager_state =
+                GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
+            break;
+        }
+
 	globus_gram_job_manager_reporting_file_start_cleaner(request);
 
 	if(globus_gram_job_manager_rsl_need_scratchdir(request) &&
@@ -1635,6 +1650,17 @@ globus_gram_job_manager_state_machine(
 	break;
 
       case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY1:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_QUERY1:
+        if (request->jobmanager_state ==
+                GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY1)
+        {
+            next_state = GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2;
+        }
+        else
+        {
+            next_state = GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_QUERY2;
+        }
+
 	/*
 	 * timer cancelled since last poll, because we may have some
 	 * queries to process
@@ -1653,16 +1679,14 @@ globus_gram_job_manager_state_machine(
 	    if(!query->rsl)
 	    {
 		query->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
-	        request->jobmanager_state = 
-		    GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2;
+	        request->jobmanager_state = next_state;
 		break;
 	    }
 	    rc = globus_rsl_assist_attributes_canonicalize(query->rsl);
 	    if(rc != GLOBUS_SUCCESS)
 	    {
 		query->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
-	        request->jobmanager_state = 
-		    GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2;
+	        request->jobmanager_state = next_state;
 		break;
 	    }
 	    original_rsl = request->rsl;
@@ -1673,8 +1697,7 @@ globus_gram_job_manager_state_machine(
 	    if(rc != GLOBUS_SUCCESS)
 	    {
 		query->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
-	        request->jobmanager_state = 
-		    GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2;
+	        request->jobmanager_state = next_state;
 		request->rsl = original_rsl;
 		break;
 	    }
@@ -1683,8 +1706,7 @@ globus_gram_job_manager_state_machine(
 	    {
 		query->failure_code =
 		    GLOBUS_GRAM_PROTOCOL_ERROR_RSL_EVALUATION_FAILED;
-		request->jobmanager_state =
-		    GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2;
+	        request->jobmanager_state = next_state;
 		request->rsl = original_rsl;
 		break;
 	    }
@@ -1697,19 +1719,28 @@ globus_gram_job_manager_state_machine(
 	    {
 		request->rsl = original_rsl;
 		query->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_BAD_RSL;
-	        request->jobmanager_state = 
-		    GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2;
+	        request->jobmanager_state = next_state;
 		break;
 	    }
 
-	    request->jobmanager_state =
-		GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_CLOSE;
+            if (next_state == GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2)
+            {
+                request->jobmanager_state =
+                    GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_CLOSE;
 
-	    rc = globus_gram_job_manager_output_close(request);
-	    if(rc == GLOBUS_SUCCESS)
-	    {
-		event_registered = GLOBUS_TRUE;
-	    }
+                rc = globus_gram_job_manager_output_close(request);
+                if(rc == GLOBUS_SUCCESS)
+                {
+                    event_registered = GLOBUS_TRUE;
+                }
+            }
+            else
+            {
+                /* When STDIO_UPDATE occurs before commit, we don't need
+                 * to open/close any files
+                 */
+	        request->jobmanager_state = next_state;
+            }
 	    break;
 	}
 	else if(query->type == GLOBUS_GRAM_JOB_MANAGER_SIGNAL)
@@ -1726,8 +1757,17 @@ globus_gram_job_manager_state_machine(
 	}
 	else if(query->type == GLOBUS_GRAM_JOB_MANAGER_PROXY_REFRESH)
 	{
-	    request->jobmanager_state =
-		GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_REFRESH;
+            if (request->jobmanager_state ==
+                    GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2)
+            {
+                request->jobmanager_state =
+                    GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_REFRESH;
+            }
+            else
+            {
+                request->jobmanager_state =
+                    GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_PROXY_REFRESH;
+            }
 	    rc = globus_gram_protocol_accept_delegation(
 		    query->handle,
 		    GSS_C_NO_OID_SET,
@@ -1746,8 +1786,7 @@ globus_gram_job_manager_state_machine(
 	}
 	if(rc == GLOBUS_SUCCESS)
 	{
-	    request->jobmanager_state =
-		GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2;
+	    request->jobmanager_state = next_state;
 
 	    event_registered = GLOBUS_TRUE;
 	}
@@ -1764,6 +1803,38 @@ globus_gram_job_manager_state_machine(
 		    GLOBUS_GRAM_JOB_MANAGER_STATE_POLL2;
 	    }
 	}
+	break;
+
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_QUERY2:
+	query = globus_fifo_dequeue(&request->pending_queries);
+
+	/* Frees the query */
+	globus_gram_job_manager_query_reply(
+		request,
+		query);
+
+	if(globus_fifo_empty(&request->pending_queries))
+	{
+            GlobusTimeReltimeSet(delay_time,
+                                 request->two_phase_commit,
+                                 0);
+
+            globus_callback_register_oneshot(
+                    &request->poll_timer,
+                    &delay_time,
+                    globus_gram_job_manager_state_machine_callback,
+                    request);
+
+            request->jobmanager_state =
+                GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE;
+
+            event_registered = GLOBUS_TRUE;
+	}
+        else
+        {
+            request->jobmanager_state =
+                GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_QUERY1;
+        }
 	break;
 
       case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2:
@@ -1793,12 +1864,23 @@ globus_gram_job_manager_state_machine(
 	break;
     
       case GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_REFRESH:
+      case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_PROXY_REFRESH:
 	query = globus_fifo_peek(&request->pending_queries);
 
 	globus_assert(query->type == GLOBUS_GRAM_JOB_MANAGER_PROXY_REFRESH);
 
-	request->jobmanager_state =
-		GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2;
+        if (request->jobmanager_state ==
+                GLOBUS_GRAM_JOB_MANAGER_STATE_PROXY_REFRESH)
+        {
+            request->jobmanager_state =
+                    GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY2;
+        }
+        else if (request->jobmanager_state ==
+                GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_PROXY_REFRESH)
+        {
+            request->jobmanager_state =
+                    GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_QUERY2;
+        }
 
 	if(query->delegated_credential != GSS_C_NO_CREDENTIAL)
 	{
@@ -2746,7 +2828,9 @@ globus_l_gram_job_manager_state_string(
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_CLOSE)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_STDIO_UPDATE_OPEN)
         STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_CLOSE_OUTPUT)
-
+        STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_QUERY1)
+        STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_QUERY2)
+        STRING_CASE(GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_PROXY_REFRESH)
 	/* Don't put a default case here. */
     }
     return "UNKNOWN";
@@ -2774,3 +2858,110 @@ globus_l_gram_job_manager_cancel_queries(
     }
 }
 /* globus_l_gram_job_manager_cancel_queries() */
+
+/**
+ * Validate that the job manager is running as the username specified in the
+ * RSL if it is present.
+ *
+ * @param request
+ *     Request which contains information about the job. We'll only look at
+ *     the RSL in the request to check for presence of the username attribute.
+ *
+ * @retval GLOBUS_SUCCESS
+ *     Either the username RSL attribute was not present, or it was present
+ *     and its value matched the account this process is running as.
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED
+ *     Some system call failed when we tried to look up the user id.
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_USER_NAME
+ *     This process is not running as the desired user.
+ */
+static
+int
+globus_l_gram_job_manager_validate_username(
+    globus_gram_jobmanager_request_t *	request)
+{
+    char *                              tmp_str = NULL;
+    char *                              buffer = NULL;
+    struct passwd                       pwd;
+    struct passwd *                     pwd_result = NULL;
+    int                                 rc = GLOBUS_SUCCESS;
+
+    /* Validate username RSL attribute if present */
+    rc = globus_gram_job_manager_rsl_eval_one_attribute(
+            request,
+            GLOBUS_GRAM_PROTOCOL_USER_NAME,
+            &tmp_str);
+
+    if (rc != 0)
+    {
+        globus_gram_job_manager_request_log(
+                request,
+                "JM: eval of %s failed\n",
+                GLOBUS_GRAM_PROTOCOL_USER_NAME);
+
+        return rc;
+    }
+
+    if (tmp_str != NULL)
+    {
+        buffer = malloc(1024);
+
+        if (buffer == NULL)
+        {
+            globus_gram_job_manager_request_log(
+                    request,
+                    "JM: allocating buffer for getpwnam_r failed\n");
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+            goto free_tmp_str_exit;
+        }
+
+        rc = globus_libc_getpwnam_r(
+                tmp_str,
+                &pwd,
+                buffer,
+                sizeof(1024),
+                &pwd_result);
+
+        if (rc != 0 || pwd_result == NULL)
+        {
+            globus_gram_job_manager_request_log(
+                    request,
+                    "JM: getpwnam_r failed\n");
+
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+
+            goto free_buffer_exit;
+        }
+
+        if (pwd.pw_uid != getuid())
+        {
+            globus_gram_job_manager_request_log(
+                    request,
+                    "JM: job manager is NOT running as %s (uid=%lu)"
+                    "---running as uid=%lu\n",
+                    tmp_str,
+                    (unsigned long )pwd.pw_uid,
+                    (unsigned long) getuid());
+
+            rc = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_USER_NAME;
+
+            goto free_buffer_exit;
+        }
+    }
+
+free_buffer_exit:
+    if (buffer != NULL)
+    {
+        free(buffer);
+    }
+
+free_tmp_str_exit:
+    if (tmp_str != NULL)
+    {
+        free(tmp_str);
+    }
+
+    return rc;
+}
+/* globus_l_gram_job_manager_validate_username() */

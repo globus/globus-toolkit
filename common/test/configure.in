@@ -36,7 +36,6 @@ AC_SUBST(THREAD_TEST)
 GLOBUS_FINALIZE
 
 AC_OUTPUT(
-	Makefile
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
         run-common-tests.pl

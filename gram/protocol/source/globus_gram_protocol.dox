@@ -71,7 +71,7 @@ The values of the message-specific strings are
     <dt><em>job-manager-name</em></dt>
     <dd>The name of the service to have the gatekeeper check. The service
     name corresponds to one of the gatekeeper's configured grid-services,
-    and is usually of the form "jobmanager/<em>scheduler-type</em>".</dd>
+    and is usually of the form "jobmanager-<em>scheduler-type</em>".</dd>
     <dt><em>host-name</em></dt>
     <dd>The name of the host on which the gatekeeper is running. This exists
 	only for compatibility with the HTTP/1.1 protocol.</dd>
@@ -92,7 +92,7 @@ the name of the service to use to schedule the job. The format of a job request
 message consists of the following:
 
 <pre>
-    POST <em>job-manager-name</em> HTTP/1.1
+    POST <em>job-manager-name</em>[\@<em>user-name</em>] HTTP/1.1
     Host: <em>host-name</em>
     Content-Type: application/x-globus-gram
     Content-Length: <em>message-size</em>
@@ -108,7 +108,15 @@ The values of the emphasized text items are as below:
     <dt><em>job-manager-name</em></dt>
     <dd>The name of the service to submit the job request to. The service
     name corresponds to one of the gatekeeper's configured grid-services,
-    and is usually of the form "jobmanager/<em>scheduler-type</em>".</dd>
+    and is usually of the form "jobmanager-<em>scheduler-type</em>".</dd>
+    <dt><em>user-name</em></dt>
+    <dd>Starting with GT4.0, a client may request that a certain account
+    by used by the gatekeeper to start the job manager. This is done optionally
+    by appending the @ symbol and the local user name that the job should
+    be run as to the <em>job-manager-name</em>. If the @ and username are not
+    present, then the first grid map entry will be used. If the client
+    credential is not authorized in the grid map to use the specified account,
+    an authorization error will occur in the gatekeeper.</dd>
     <dt><em>host-name</em></dt>
     <dd>The name of the host on which the gatekeeper is running. This exists
 	only for compatibility with the HTTP/1.1 protocol.</dd>
@@ -394,4 +402,7 @@ Gatekeeper:
 - Messages must be wrapped with support for the delegation message. When
   using Globus I/O, this is accomplished by using the the
   GLOBUS_IO_SECURE_CHANNEL_MODE_GSI_WRAP wrapping mode.
+
+<h4>Changes</h4>
+2004-08-11 Added information about gridmap choosing
 */

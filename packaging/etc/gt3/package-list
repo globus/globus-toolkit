@@ -9,7 +9,7 @@ filestreaming		data_management/filestreaming
 globus_filestreaming_setup  data_management/filestreaming-setup		gpt
 globus_grim_devel	program_execution/globus_grim/source		gpt
 globus_grim		program_execution/globus_grim/programs		gpt
-globus_libxml2		ogsa-c/tools/libxml2				gpt
+#globus_libxml2		ogsa-c/tools/libxml2				gpt
 grim			program_execution/grim
 globus_grim_setup       program_execution/grim-setup			gpt
 gt3_hostinfo		information_services/glue/hostinfo		gpt

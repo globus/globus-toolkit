@@ -335,6 +335,7 @@ globus_l_gsc_cmd_mdtm_cb(
     char *                                  path,
     globus_gridftp_server_control_stat_t *  stat_info,
     int                                     stat_count,
+    uid_t                                   uid,
     void *                                  user_arg)
 {
     int                                     code;
@@ -482,6 +483,67 @@ globus_l_gsc_cmd_type(
     }
 }
 
+/*
+ *  lang
+ */
+static void
+globus_l_gsc_cmd_lang(
+    globus_i_gsc_op_t *                     op,
+    const char *                            full_command,
+    char **                                 cmd_a,
+    int                                     argc,
+    void *                                  user_arg)
+{
+    char *                                  lang = NULL;
+
+    
+    char *                                  msg;
+
+    globus_i_gsc_log(op->server_handle, full_command,
+        GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_TRANSFER_STATE);
+    if (cmd_a[1]==NULL)
+    {
+	    /*nothing specified after LANG, keep default*/
+        msg = globus_common_create_string("200 lang set to %s.\r\n", lang);
+	op->server_handle->lang = lang;
+    }
+    else
+    {
+        lang = strdup(cmd_a[1]);
+    }
+
+    if(lang == NULL)
+    {
+        msg = globus_common_create_string("200 lang set to %s.\r\n", "EN");
+    }
+    else
+    {
+	/*Check if it is a supported language*/
+	/*As internationalization continues, this will be discovered
+	 * from configuration--hardcoded for now
+	 */
+	if (strcmp(lang, "EN")==0)
+	{	
+           msg = globus_common_create_string("200 lang set to %s.\r\n", lang);
+           op->server_handle->lang = lang;
+	}
+	else
+	{
+           msg = globus_common_create_string(
+            "501 '%s' unrecognized language.\r\n", full_command);
+	}
+    }
+    if(msg == NULL)
+    {
+        globus_i_gsc_command_panic(op);
+    }
+    else
+    {
+        globus_gsc_959_finished_command(op, msg);
+        globus_free(msg);
+    }
+}
+
 /*************************************************************************
  *                      directory functions
  *                      -------------------
@@ -526,6 +588,7 @@ globus_l_gsc_cmd_cwd_cb(
     char *                                  path,
     globus_gridftp_server_control_stat_t *  stat_info,
     int                                     stat_count,
+    uid_t                                   uid,
     void *                                  user_arg)
 {
     int                                     code;
@@ -568,7 +631,7 @@ globus_l_gsc_cmd_cwd_cb(
     else
     {
         if(!(S_IXOTH & stat_info->mode && S_IROTH & stat_info->mode) &&
-            !(stat_info->uid == op->server_handle->uid && 
+            !(stat_info->uid == uid && 
                 S_IXUSR & stat_info->mode && S_IRUSR & stat_info->mode))
         {
             code = 550;
@@ -698,6 +761,7 @@ globus_l_gsc_cmd_stat_cb(
     char *                                  path,
     globus_gridftp_server_control_stat_t *  stat_info,
     int                                     stat_count,
+    uid_t                                   uid,
     void *                                  user_arg)
 {
     int                                     code;
@@ -736,8 +800,7 @@ globus_l_gsc_cmd_stat_cb(
         else
         {
             tmp_ptr = globus_i_gsc_mlsx_line_single(
-                op->server_handle->opts.mlsx_fact_str, op->server_handle->uid, 
-                stat_info);
+                op->server_handle->opts.mlsx_fact_str, uid, stat_info);
         }
         code = 213;
         msg =  globus_common_create_string(
@@ -830,6 +893,7 @@ globus_l_gsc_cmd_size_cb(
     char *                                  path,
     globus_gridftp_server_control_stat_t *  stat_info,
     int                                     stat_count,
+    uid_t                                   uid,
     void *                                  user_arg)
 {
     int                                     code;
@@ -1231,6 +1295,7 @@ globus_l_gsc_cmd_opts(
     int                                     argc,
     void *                                  user_arg)
 {
+    globus_bool_t                           done = GLOBUS_FALSE;
     int                                     tmp_i;
     char                                    tmp_s[1024];
     char *                                  msg;
@@ -1253,28 +1318,42 @@ globus_l_gsc_cmd_opts(
     }
     else if(strcmp("RETR", cmd_a[1]) == 0)
     {
-        msg = "200 OPTS Command Successful.\r\n";
-        if(sscanf(cmd_a[2], "Parallelism=%d,%*d,%*d;", &tmp_i) == 1)
+        tmp_ptr = cmd_a[2];
+
+        done = GLOBUS_FALSE;
+        while(*tmp_ptr != '\0')
         {
-            opts->parallelism = tmp_i;
-        }
-        else if(sscanf(cmd_a[2], "PacketSize=%d;", &tmp_i) == 1)
-        {
-            opts->packet_size = tmp_i;
-        }
-        else if(sscanf(cmd_a[2], "WindowSize=%d;", &tmp_i) == 1)
-        {
-            opts->send_buf = tmp_i;
-        }
-        else if(sscanf(cmd_a[2], "StripeLayout=%s;", tmp_s) == 1)
-        {
-        }
-        else if(sscanf(cmd_a[2], "BlockSize=%d;", &tmp_i) == 1)
-        {
-        }
-        else
-        {
-            msg = "500 OPTS failed.\r\n";
+            msg = "200 OPTS Command Successful.\r\n";
+            if(sscanf(tmp_ptr, "Parallelism=%d,%*d,%*d;", &tmp_i) == 1)
+            {
+                opts->parallelism = tmp_i;
+            }
+            else if(sscanf(tmp_ptr, "PacketSize=%d;", &tmp_i) == 1)
+            {
+                opts->packet_size = tmp_i;
+            }
+            else if(sscanf(tmp_ptr, "WindowSize=%d;", &tmp_i) == 1)
+            {
+                opts->send_buf = tmp_i;
+            }
+            else if(sscanf(tmp_ptr, "StripeLayout=%s;", tmp_s) == 1)
+            {
+            }
+            else if(sscanf(tmp_ptr, "BlockSize=%d;", &tmp_i) == 1)
+            {
+            }
+            else
+            {
+                msg = "500 OPTS failed.\r\n";
+                done = GLOBUS_TRUE;
+            }
+            tmp_ptr = strchr(tmp_ptr, ';');
+            if(tmp_ptr == NULL)
+            {
+                msg = "500 OPTS failed.\r\n";
+                done = GLOBUS_TRUE;
+            }
+            tmp_ptr++;
         }
     }
     else if(strcmp("PASV", cmd_a[1]) == 0 || 
@@ -1876,6 +1955,7 @@ globus_l_gsc_cmd_pasv(
             op,
             wrapper->max,
             wrapper->prt,
+            NULL,
             globus_l_gsc_cmd_pasv_cb,
             wrapper);
         if(res != GLOBUS_SUCCESS)
@@ -2312,7 +2392,7 @@ globus_l_gsc_cmd_transfer(
                 globus_l_gsc_data_cb,
                 wrapper);
             break;
-
+	    
         default:
             globus_assert(GLOBUS_FALSE);
             break;
@@ -2512,6 +2592,7 @@ globus_l_gsc_cmd_stor_retr(
             wrapper->op,
             wrapper->max,
             wrapper->prt,
+            wrapper->path,
             globus_l_gsc_cmd_pasv_cb,
             wrapper);
         if(res != GLOBUS_SUCCESS)
@@ -3017,13 +3098,27 @@ globus_i_gsc_add_commands(
         "SITE HELP: help on server commands",
         NULL);
 
+    globus_gsc_959_command_add(
+        server_handle,
+        "LANG", 
+        globus_l_gsc_cmd_lang,
+        GLOBUS_GSC_COMMAND_POST_AUTH,
+        1,
+        2,
+        "LANG: set language for messages",
+        NULL);
+    
     /* add features */
     globus_gridftp_server_control_add_feature(server_handle, "MDTM");
     globus_gridftp_server_control_add_feature(server_handle, "REST STREAM");
+    globus_gridftp_server_control_add_feature(server_handle, "SPOR");
+    globus_gridftp_server_control_add_feature(server_handle, "SPAS");
     globus_gridftp_server_control_add_feature(server_handle, "ESTO");
     globus_gridftp_server_control_add_feature(server_handle, "ERET");
     globus_gridftp_server_control_add_feature(server_handle, "MLST Type*;Size*;Modify*;Perm*;Charset;UNIX.mode*;Unique*;");    
     globus_gridftp_server_control_add_feature(server_handle, "SIZE");    
     globus_gridftp_server_control_add_feature(server_handle, "PARALLEL");    
     globus_gridftp_server_control_add_feature(server_handle, "DCAU");    
+    globus_gridftp_server_control_add_feature(server_handle, "LANG EN");    
+    globus_gridftp_server_control_add_feature(server_handle, "UTF8");
 }

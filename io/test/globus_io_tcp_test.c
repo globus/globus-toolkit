@@ -1,6 +1,8 @@
 #include "globus_io.h"
 #include "gssapi.h"
+#ifndef WIN32
 #include <arpa/inet.h>
+#endif
 
 void test1(void);
 void test2(void);

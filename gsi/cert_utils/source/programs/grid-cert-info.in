@@ -38,7 +38,7 @@ ${short_usage}
     argument is given, the default location of the file containing the
     certficate is assumed:
 
-      -- The location pointed to by the $X509_USER_CERT.
+      -- The location pointed to by the X509_USER_CERT.
       -- If X509_USER_CERT not set, $HOME/.globus/usercert.pem.
 
     Several options can be given: The output of

@@ -148,18 +148,10 @@ static char * test1[] = {
     "globus_args_test", "-foo", GLOBUS_NULL };    /* ok */
 
 static char * test2[] = {
-#ifndef TARGET_ARCH_WIN32
     "globus_args_test", "-file", "globus_common_args_test", GLOBUS_NULL };   /* ok */
-#else
-    "globus_args_test", "-file", "ArgsTest.exe", GLOBUS_NULL };   /* ok */
-#endif
 
 static char * test3[] = {
-#ifndef TARGET_ARCH_WIN32
     "globus_args_test", "-rep", "globus_common_args_test", "3", GLOBUS_NULL };   /* ok */
-#else
-    "globus_args_test", "-rep", "ArgsTest.exe", "3", GLOBUS_NULL };   /* ok */
-#endif
 
 static char * test4[] = {
     "globus_args_test", "-np", "12", GLOBUS_NULL };   /* ok */

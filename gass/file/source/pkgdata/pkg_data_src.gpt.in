@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Format_Version="0.02" Name="globus_gass_file" >
 
-  <Aging_Version Age="0" Major="2" Minor="4" />
+  <Aging_Version Age="0" Major="2" Minor="5" />
   <Description >Globus Gass File</Description>
   <Functional_Group >FileAccess</Functional_Group>
   <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@" />
@@ -14,7 +14,7 @@
 
     <Source_Dependencies Type="compile" >
       <Dependency Name="globus_common" > <Version > <Simple_Version Major="3" /> </Version> </Dependency>
-      <Dependency Name="globus_core" > <Version > <Simple_Version Major="3" /> </Version> </Dependency>
+      <Dependency Name="globus_core" > <Version > <Simple_Version Major="4" /> </Version> </Dependency>
       <Dependency Name="globus_gass_cache" > <Version > <Simple_Version Major="5" /> </Version> </Dependency>
       <Dependency Name="globus_gass_copy" > <Version > <Simple_Version Major="2" /> </Version> </Dependency>
       <Dependency Name="globus_gass_transfer" > <Version > <Simple_Version Major="2" /> </Version> </Dependency>

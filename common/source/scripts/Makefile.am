@@ -14,7 +14,7 @@ bin_SCRIPTS = \
 	globus-makefile-header.gpt1
 
 globus-domainname: globus-hostname
-	cp $(srcdir)/globus-hostname $(builddir)/scripts/globus-domainname
+	cp $(srcdir)/globus-hostname $(builddir)/globus-domainname
 
 EXTRA_DIST = \
 	globus-args-parser-header \

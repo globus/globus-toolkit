@@ -3,7 +3,7 @@ dnl
 dnl Like AC_CHECK_SIZEOF, but allows extra headers to be included 
 dnl before the check
 dnl
-AC_DEFUN(LAC_CHECK_SIZEOF,
+AC_DEFUN([LAC_CHECK_SIZEOF],
 [changequote(<<, >>)dnl
 dnl The name to #define.
 define(<<AC_TYPE_NAME>>, translit(sizeof_$1, [a-z *], [A-Z_P]))dnl
@@ -30,7 +30,7 @@ undefine([AC_CV_NAME])dnl
 ])
 
 
-AC_DEFUN(CHECK_SIZES, [
+AC_DEFUN([CHECK_SIZES], [
 
 LAC_CHECK_SIZEOF(off_t, 4, [#include <sys/types.h>])
 

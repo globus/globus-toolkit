@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Name="globus_sasl_gssapi_gsi" Format_Version="0.02">
 
-  <Aging_Version Major="0" Minor="2" Age="0"/>
+  <Aging_Version Major="0" Minor="3" Age="0"/>
   <Description >SASL library</Description>
   <Functional_Group >Security</Functional_Group>
   <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@" />
@@ -11,7 +11,7 @@
   <src_pkg>
 
     <Source_Dependencies Type="compile" >
-      <Dependency Name="globus_core"><Version><Simple_Version Major="3"></Simple_Version></Version></Dependency>
+      <Dependency Name="globus_core"><Version><Simple_Version Major="4"></Simple_Version></Version></Dependency>
       <Dependency Name="globus_gssapi_gsi"><Version><Simple_Version Major="3"></Simple_Version></Version></Dependency>
       <Dependency Name="globus_cyrus-sasl"><Version><Simple_Version Major="0"></Simple_Version></Version></Dependency>
     </Source_Dependencies>

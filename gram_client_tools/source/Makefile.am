@@ -7,7 +7,7 @@ SUBDIRS= \
 	pkgdata \
 	doxygen
 
-INCLUDES += $(GPT_INCLUDES)
+INCLUDES = $(GPT_INCLUDES)
 
 bin_SCRIPTS = \
 	globus-job-run \

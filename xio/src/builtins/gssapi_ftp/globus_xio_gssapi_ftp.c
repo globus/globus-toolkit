@@ -9,6 +9,85 @@
 #include "gssapi.h"
 #include <string.h>
 
+#define GlobusXIOGssapiBadParameter()                                       \
+    globus_error_put(                                                       \
+        globus_error_construct_error(                                       \
+            GLOBUS_XIO_MODULE,                                              \
+            GLOBUS_NULL,                                                    \
+            GLOBUS_XIO_GSSAPI_FTP_BAD_PARAMETER,                            \
+            __FILE__,                                                       \
+            _xio_name,                                                      \
+            __LINE__,                                                       \
+            "Bad Parameter"))
+                                                                                
+#define GlobusXIOGssapiFTPOutstandingOp()                                   \
+    globus_error_put(                                                       \
+        globus_error_construct_error(                                       \
+            GLOBUS_XIO_MODULE,                                              \
+            GLOBUS_NULL,                                                    \
+            GLOBUS_XIO_GSSAPI_FTP_OUTSTANDING_OP,                           \
+            __FILE__,                                                       \
+            _xio_name,                                                      \
+            __LINE__,                                                       \
+            "Operation is outstanding"))
+                                                                                
+#define GlobusXIOGssapiFTPEncodingError()                                   \
+    globus_error_put(                                                       \
+        globus_error_construct_error(                                       \
+            GLOBUS_XIO_MODULE,                                              \
+            GLOBUS_NULL,                                                    \
+            GLOBUS_XIO_GSSAPI_FTP_ERROR_ENCODING,                           \
+            __FILE__,                                                       \
+            _xio_name,                                                      \
+            __LINE__,                                                       \
+            "Error encoding."))
+                                                                                
+#define GlobusXIOGssapiFTPAllocError()                                      \
+    globus_error_put(                                                       \
+        globus_error_construct_error(                                       \
+            GLOBUS_XIO_MODULE,                                              \
+            GLOBUS_NULL,                                                    \
+            GLOBUS_XIO_GSSAPI_FTP_ERROR_ALLOC,                              \
+            __FILE__,                                                       \
+            _xio_name,                                                      \
+            __LINE__,                                                       \
+            "Operation is outstanding"))
+
+#define GlobusXIOGssapiFTPGSIAuthFailure(maj, min)                          \
+    globus_error_put(                                                       \
+        globus_error_wrap_gssapi_error(                                     \
+            GLOBUS_XIO_MODULE,                                              \
+            (maj),                                                          \
+            (min),                                                          \
+            GLOBUS_XIO_GSSAPI_FTP_ERROR_AUTH,                               \
+            __FILE__,                                                       \
+            _xio_name,                                                      \
+            __LINE__,                                                       \
+            "Authentication Error"))
+                                                                                
+#define GlobusXIOGssapiFTPAuthenticationFailure(str)                         \
+     globus_error_put(                                                       \
+         globus_error_construct_error(                                       \
+             GLOBUS_XIO_MODULE,                                              \
+             GLOBUS_NULL,                                                    \
+             GLOBUS_XIO_GSSAPI_FTP_ERROR_AUTH,                               \
+             __FILE__,                                                       \
+             _xio_name,                                                      \
+             __LINE__,                                                       \
+             "Authentication Error: %s",                                     \
+             str))
+                                                                                
+#define GlobusXIOGssapiFTPQuit()                                             \
+     globus_error_put(                                                       \
+         globus_error_construct_error(                                       \
+             GLOBUS_XIO_MODULE,                                              \
+             GLOBUS_NULL,                                                    \
+             GLOBUS_XIO_GSSAPI_FTP_ERROR_QUIT,                               \
+             __FILE__,                                                       \
+             _xio_name,                                                      \
+             __LINE__,                                                       \
+             "Pre mature Quit, close connection"))
+
 GlobusDebugDefine(GLOBUS_XIO_GSSAPI_FTP);
 
 #define GlobusXIOGssapiftpDebugPrintf(level, message)                      \
@@ -2554,6 +2633,7 @@ globus_l_xio_gssapi_ftp_handle_cntl(
     int                                 cmd,
     va_list                             ap)
 {
+    gss_ctx_id_t *                      out_context;
     char **                             out_subject;
     int *                               out_type;
     gss_cred_id_t *                     out_cred;
@@ -2570,6 +2650,7 @@ globus_l_xio_gssapi_ftp_handle_cntl(
     {
         case GLOBUS_XIO_DRIVER_GSSAPI_FTP_GET_AUTH:
             out_type = va_arg(ap, int *);
+            out_context = va_arg(ap, gss_ctx_id_t *);
             out_cred = va_arg(ap, gss_cred_id_t *);
             out_del_cred = va_arg(ap, gss_cred_id_t *);
             out_subject = va_arg(ap, char **);
@@ -2587,6 +2668,7 @@ globus_l_xio_gssapi_ftp_handle_cntl(
                     break;
             }
 
+            *out_context = ds_handle->gssapi_context;
             *out_cred = ds_handle->cred_handle;
             *out_del_cred = ds_handle->delegated_cred_handle;
             *out_subject = ds_handle->auth_gssapi_subject;

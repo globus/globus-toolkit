@@ -14,9 +14,9 @@ Sources= \
 EXTRA_DIST= \
 	mkgssname
 
-INCLUDES += $(GPT_INCLUDES)
+INCLUDES = $(GPT_INCLUDES)
 
-AM_CFLAGS += $(GPT_CFLAGS) 
+AM_CFLAGS = $(GPT_CFLAGS) 
 
 sasllib_LTLIBRARIES = libgssapiv2_gsi_$(GLOBUS_FLAVOR_NAME).la
 
