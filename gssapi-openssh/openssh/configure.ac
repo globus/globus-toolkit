@@ -597,26 +597,42 @@ if test "x$gsi_path" != "xno" ; then
 	AC_MSG_RESULT($globus_dev_dir)
 
 	# Find GLOBUS/GSI flavor Directory
-	AC_MSG_CHECKING(for Globus flavor type)
 
+	AC_MSG_CHECKING(for Globus flavor type)
         if test "x$globus_flavor_type" = "xno" ; then
                 AC_MSG_ERROR(No Globus flavor type specified)
         elif test "x$globus_flavor_type" = "xyes" ; then
                 AC_MSG_ERROR(No Globus flavor type specified)
 	else
                 GLOBUS_FLAVOR_TYPE_INCL_DIR="${globus_dev_dir}/include/${globus_flavor_type}"
-
 		if test ! -d "$GLOBUS_FLAVOR_TYPE_INCL_DIR" ; then
 			AC_MSG_ERROR(Cannot find Globus flavor-specific include directory: ${GLOBUS_FLAVOR_TYPE_INCL_DIR})
                 fi
-
-		AC_MSG_RESULT($globus_flavor_type)
-		if test "$GSSAPI" = "mechglue"; then
-			GSI_LIBS="${gsi_path}/lib/libglobus_gss_assist_${globus_flavor_type}.a"
-		else
-			GSI_LIBS="${gsi_path}/lib/libglobus_gss_assist_${globus_flavor_type}.a ${gsi_path}/lib/libglobus_gssapi_gsi_${globus_flavor_type}.a"
-		fi
 		GSI_CPPFLAGS="-I${GLOBUS_FLAVOR_TYPE_INCL_DIR}"
+	fi
+	AC_MSG_RESULT($globus_flavor_type)
+
+	# Build possible libraries off of the flavor name
+
+        libglobus_gss_assist="${gsi_path}/lib/libglobus_gss_assist_${globus_flavor_type}.a"
+        libglobus_gssapi_gsi="${gsi_path}/lib/libglobus_gssapi_gsi_${globus_flavor_type}.a"
+
+	# Test that the base gss_assist library is present
+
+	if test -r ${libglobus_gss_assist} ; then
+		LIBS="$LIBS ${libglobus_gss_assist}"
+	else
+		AC_MSG_ERROR(All of the required Globus Toolkit libraries are not present/configured correctly)
+	fi
+
+	# If we aren't using mechglue, test that gssapi_gsi is present
+
+	if test "$GSSAPI" != "mechglue"; then
+		if test -r ${libglobus_gssapi_gsi} ; then
+			LIBS="$LIBS ${libglobus_gssapi_gsi}"
+		else
+			AC_MSG_ERROR(All of the required Globus Toolkit libraries are not present/configured correctly)
+		fi
 	fi
 
 	LIBS="$LIBS $GSI_LIBS"
