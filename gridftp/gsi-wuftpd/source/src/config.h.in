@@ -221,6 +221,11 @@
 #undef GSSAPI_GLOBUS
 
 /*
+ *  LBL striped server
+ */
+#undef STRIPED_SERVER_BACKEND
+
+/*
  * Define this in order to enable the running of a post authentication
  * process after the user is authentication and authorized.
  */

@@ -35,9 +35,6 @@ static globus_bool_t                            g_send_range;
     signal(SIGPIPE, lostconn);     \
 }
 
-
-#define BACKEND_STRIPED_SERVER 1
-
 typedef struct
 {
     globus_size_t		offset;
@@ -241,7 +238,7 @@ g_start()
               &host_port);
     assert(res == GLOBUS_SUCCESS);
 
-#   if defined(BACKEND_STRIPED_SERVER)
+#   if defined(STRIPED_SERVER_BACKEND)
     {
         res = globus_ftp_control_local_send_eof(
                   &g_data_handle,

@@ -386,3 +386,23 @@ AC_SUBST(GLOBUS_DATA_CFLAGS)
 AC_SUBST(GLOBUS_DATA_LDFLAGS)
 AC_SUBST(GLOBUS_DATA_LIBS)
 ])
+
+AC_DEFUN(STRIPED_SERVER_CONFIG,[
+AC_ARG_ENABLE(striped-server, [  --striped-server=<path to striped server code>   use this server as a backend to a striped server],
+	[ striped_server=$enableval ], [ striped_server="none" ])
+
+
+if test $striped_server = "none"; then
+    LBL_STRIPED_SERVER_DIR=""
+else
+    LBL_STRIPED_SERVER_LDFLAGS=-L$striped_server
+    LBL_STRIPED_SERVER_CFLAGS=-I$striped_server
+    LBL_STRIPED_SERVER_LIBS=-lftputils
+    AC_DEFINE(STRIPED_SERVER_BACKEND)
+fi
+
+AC_SUBST(LBL_STRIPED_SERVER_LIBS)
+AC_SUBST(LBL_STRIPED_SERVER_LDFLAGS)
+AC_SUBST(LBL_STRIPED_SERVER_CFLAGS)
+
+])
