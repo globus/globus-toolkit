@@ -47,6 +47,10 @@ CVS Information:
 #include "globus_gss_assist.h"
 #include "version.h" /* provides local_version */
 
+#ifndef _HAVE_GSI_EXTENDED_GSSAPI
+#include "globus_gss_ext_compat.h"
+#endif
+
 /******************************************************************************
                                Type definitions
 ******************************************************************************/
