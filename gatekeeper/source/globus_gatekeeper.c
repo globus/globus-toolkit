@@ -726,9 +726,9 @@ main(int xargc,
         {
             fprintf(stderr,"Local user id (uid)      : root\n");
         }
-		fprintf(stderr,"home %s\n", 
+	fprintf(stderr,"Home directory           : %s\n", 
 			(gatekeeperhome) ? gatekeeperhome : "(not defined)");
-		fprintf(stderr,"libexec: %s\n",
+	fprintf(stderr,"Libexec directory        : %s\n",
 				(libexecdir) ? libexecdir : "(not defined)");
 
         run_from_inetd = 0;
