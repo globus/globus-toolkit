@@ -546,6 +546,18 @@ globus_ssl_utils_sign(
     ASN1_BIT_STRING **                  signature,
     EVP_PKEY *                          private_key);
 
+int
+globus_ssl_utils_verify_signature(
+    ASN1_OCTET_STRING *                 data,
+    ASN1_BIT_STRING *                   signature,
+    X509 *                              cert);
+
+int
+globus_ssl_utils_verify_cert(
+    X509 *                              end_entity_cert,
+    STACK_OF(X509) *                    cert_chain,
+    char *                              ca_cert_dir);
+
 EXTERN_C_END
 
 #endif /* _SSLUTILS_H */

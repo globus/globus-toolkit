@@ -5165,7 +5165,96 @@ globus_ssl_utils_sign(
     return result;
 }
 
+int
+globus_ssl_utils_verify_signature(
+    ASN1_OCTET_STRING *                 data,
+    ASN1_BIT_STRING *                   signature,
+    X509 *                              cert)
+{
+    X509_ALGOR *                        algorithm;
+    EVP_PKEY *                          key;
+    EVP_MD *                            digest;
+    int                                 result;
+    
+    digest = EVP_sha1();
+    
+    algorithm = X509_ALGOR_new();
 
+    algorithm->algorithm = OBJ_nid2obj(digest->type);
+
+    key = X509_get_pubkey(cert);
+    
+    result = ASN1_verify((int (*)())i2d_ASN1_OCTET_STRING,
+                         algorithm,
+                         signature,
+                         (char *) data,
+                         key);
+
+    X509_ALGOR_free(algorithm);
+    EVP_PKEY_free(key);
+    
+    return result;
+}
+
+int
+globus_ssl_utils_verify_cert(
+    X509 *                              end_entity_cert,
+    STACK_OF(X509) *                    cert_chain,
+    char *                              ca_cert_dir)
+{
+    X509_STORE *                        cert_store = NULL;
+    X509_STORE_CTX *                    store_context = NULL;
+    X509_LOOKUP *                       lookup = NULL;
+    proxy_verify_desc                   pvd;
+    proxy_verify_ctx_desc               pvxd;
+    int                                 result = 0;
+    
+    if(cert_chain == NULL ||
+       end_entity_cert == NULL ||
+       ca_cert_dir == NULL)
+    {
+        return -1;
+    }
+
+    proxy_verify_ctx_init(&pvxd);
+
+    pvxd.certdir = ca_cert_dir;
+    
+    proxy_verify_init(&pvd,&pvxd);
+    
+    cert_store = X509_STORE_new();
+    store_context = X509_STORE_CTX_new();
+    
+    lookup = X509_STORE_add_lookup(cert_store,
+                                   X509_LOOKUP_hash_dir());
+    
+    X509_STORE_CTX_init(store_context,
+                        cert_store,
+                        end_entity_cert,
+                        cert_chain);
+
+    store_context->check_issued = proxy_check_issued;
+
+    X509_STORE_CTX_set_verify_cb(store_context,
+                                 proxy_verify_callback);
+
+    X509_STORE_CTX_set_ex_data(store_context,
+                               PVD_STORE_EX_DATA_IDX,
+                               (void *) &pvd);
+
+    if(!X509_verify_cert(store_context))
+    {
+        result = 1;
+    }
+    
+    proxy_verify_release(&pvd);
+
+    X509_STORE_free(cert_store);
+
+    X509_STORE_CTX_free(store_context);
+    
+    return result;
+}
 
 /* Thought I'd need the below, but didn't. Might come in handy some
  * day -Sam
