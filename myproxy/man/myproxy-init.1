@@ -73,7 +73,7 @@ and
 to delegate to the 
 .BR myproxy-server (8).
 To specify an alternate location for the source certificate and key
-file to delegate, use the
+to delegate, use the
 .B X509_USER_CERT
 and
 .B X509_USER_KEY
@@ -262,13 +262,19 @@ alternative DN.
 Specifies a non-standard location for the certificate from which the
 proxy credential is created.
 The location may be the path to an end-entity certificate
-(ex. $(HOME)/.globus/usercert.pem) or a proxy (ex. /tmp/x509up_u500).
+(ex. 
+.IR ~/.globus/usercert.pem ) 
+or a proxy (ex. 
+.IR /tmp/x509up_u<uid> ).
 .TP
 .B X509_USER_KEY
 Specifies a non-standard location for the private key from which the
 proxy credential is created.
 The location may be the path to an end-entity certificate
-(ex. $(HOME)/.globus/usercert.pem) or a proxy (ex. /tmp/x509up_u500).
+(ex. 
+.IR ~/.globus/usercert.pem ) 
+or a proxy (ex. 
+.IR /tmp/x509up_u<uid> ).
 .TP
 .B GT_PROXY_MODE
 Set to "old" to store a "legacy globus proxy" in the MyProxy
