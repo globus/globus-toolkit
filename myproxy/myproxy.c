@@ -563,27 +563,27 @@ myproxy_free(myproxy_socket_attrs_t *attrs,
 	     myproxy_request_t *request, 
 	     myproxy_response_t *response)
 { 
-    if ((attrs == NULL) || (request == NULL) || (response == NULL)) 
-      return;
-  
-    if (attrs->pshost != NULL) 
-      free(attrs->pshost);
+    if (attrs != NULL) {
+       if (attrs->pshost != NULL) 
+	  free(attrs->pshost);
+       GSI_SOCKET_destroy(attrs->gsi_socket);
+       close(attrs->socket_fd);
+       free(attrs);
+    }
 
-    if (request->version != NULL)     
-      free(request->version);
+    if (request != NULL) {
+       if (request->version != NULL)     
+	  free(request->version);
+       if (request->username != NULL) 
+    	  free(request->username);
+       free(request);
+    }
     
-    if (request->username != NULL) 
-      free(request->username);
-    
-    if (response->version != NULL) 
-      free(response->version);
-
-    GSI_SOCKET_destroy(attrs->gsi_socket);
-    close(attrs->socket_fd);
-
-    free(attrs);
-    free(request);
-    free(response);
+    if (response != NULL) {
+       if (response->version != NULL) 
+    	  free(response->version);
+       free(response);
+    }
 }
 
 /*--------- Helper functions ------------*/
@@ -724,6 +724,9 @@ convert_message(const char			*buffer,
     return_value = strlen(line);
     
   error:
+    if (buffer_copy)
+       free(buffer_copy);
+
     if (return_value == -1)
     {
 	/* Don't return anything in line on error */
