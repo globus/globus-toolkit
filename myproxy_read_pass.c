@@ -148,3 +148,118 @@ int myproxy_read_passphrase_stdin(char		*buffer,
     return read_passphrase_stdin(buffer, buffer_len, prompt ? prompt : PROMPT,
 				 0 /* No verify */);
 }
+
+/*
+ * Check for good passphrases:
+ * 1. Make sure the passphrase is at least MIN_PASS_PHRASE_LEN long.
+ * 2. Optionally run an external passphrase policy program.
+ *
+ * Returns 0 if passphrase is accepted and -1 otherwise.
+ */
+int
+myproxy_check_passphrase_policy(const char *passphrase,
+				const char *passphrase_policy_pgm,
+				const char *username,
+				const char *credname,
+				const char *retrievers,
+				const char *renewers,
+				const char *client_name)
+{
+    pid_t childpid;
+    int p0[2], p1[2], p2[2];
+    size_t passphrase_len = 0;
+    int exit_status;
+
+    if (passphrase) {
+	passphrase_len = strlen(passphrase);
+    }
+
+    /* Zero length passphrase is allowed, for authentication methods
+       that don't use a passphrase, like credential renewal
+       or Kerberos. */
+    if (passphrase_len != 0 && passphrase_len < MIN_PASS_PHRASE_LEN) {
+	verror_put_string("Pass phrase too short.  "
+			  "Must be at least %d characters long.",
+			  MIN_PASS_PHRASE_LEN);
+	return -1;
+    }
+
+    if (!passphrase_policy_pgm) return 0;
+
+    myproxy_debug("Running passphrase policy program: %s",
+		  passphrase_policy_pgm);
+
+    if (pipe(p0) < 0 || pipe(p1) < 0 || pipe(p2) < 0) {
+	verror_put_string("pipe() failed");
+	verror_put_errno(errno);
+	return -1;
+    }
+
+    /* fork/exec passphrase policy program */
+    if ((childpid = fork()) < 0) {
+	verror_put_string("fork() failed");
+	verror_put_errno(errno);
+	return -1;
+    }
+    
+    if (childpid == 0) {	/* child */
+	close(p0[1]); close(p1[0]); close(p2[0]);
+	if (dup2(p0[0], 0) < 0 ||
+	    dup2(p1[1], 1) < 0 ||
+	    dup2(p2[1], 2) < 0)	{
+	    perror("dup2");
+	    exit(1);
+	}
+	execl(passphrase_policy_pgm,
+	      passphrase_policy_pgm,
+	      username,
+	      client_name,
+	      (credname) ? credname : "",
+	      (retrievers) ? retrievers : "",
+	      (renewers) ? renewers : "",
+	      NULL);
+	fprintf(stderr, "failed to run %s: %s\n",
+		passphrase_policy_pgm, strerror(errno));
+	exit(1);
+    }
+
+    close(p0[0]); close(p1[1]); close(p2[1]);
+
+    /* send passphrase to child's stdin */
+    if (passphrase_len) {
+	write(p0[1], passphrase, passphrase_len);
+    }
+    write(p0[1], "\n", 1);
+    close(p0[1]); 
+
+    /* wait for child */
+    if (wait4(childpid, &exit_status, 0, NULL) < 0) {
+	verror_put_string("wait() failed for passphrase policy child");
+	verror_put_errno(errno);
+	return -1;
+    }
+
+    if (exit_status != 0) { /* passphrase not allowed */
+	FILE *fp = NULL;
+	char buf[100];
+	verror_put_string("Pass phrase violates local policy.");
+	fp = fdopen(p1[0], "r");
+	if (fp) {
+	    while (fgets(buf, 100, fp) != NULL) {
+		verror_put_string(buf);
+	    }
+	}
+	fclose(fp);
+	fp = fdopen(p2[0], "r");
+	if (fp) {
+	    while (fgets(buf, 100, fp) != NULL) {
+		verror_put_string(buf);
+	    }
+	}
+	fclose(fp);
+	return -1;
+    }
+
+    close(p1[0]); close(p2[0]);
+    return 0;
+}
