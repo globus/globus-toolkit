@@ -8,7 +8,7 @@ use HTTP::Request::Common qw(POST);
 
 my $database="globusbld";
 my $user="globus";
-my $dbhost="yeah.mcs.anl.gov";
+my $dbhost="right.mcs.anl.gov";
 my $build_table="build";
 my $test_table="tests";
 my $pass="globustst";
@@ -27,11 +27,13 @@ my $LOG_LOCATION=$PACKAGING . "/build.log";
 my $POSTINSTALL_LOG=$PACKAGING . "/postinstall.log";
 
 #GT2 and GT3 tags
-my ($t2,$t3) = ("HEAD", "HEAD");
+my ($t2,$t3) = ("globus_3_2_branch", "globus_3_2_branch");
 
 my ($install, $report, $test) = (1, 1, 1);
 GetOptions( 'i|install!' => \$install,
 	    'r|report!' => \$report,
+	    't2=s' => \$t2,
+	    't3=s' => \$t3,
 	    't|test!' => \$test
           ) or die "Unknown options";
 
@@ -102,7 +104,7 @@ sub setup_environment_postbuild()
 #-------------------------------------------------------------------------------
 {
     $ENV{'LD_LIBRARY_PATH'} = "$GLOBUS_LOCATION/lib:" . $ENV{'LD_LIBRARY_PATH'};
-    $ENV{'PATH'} = "$GLOBUS_LOCATION/bin:" . $ENV{'PATH'};
+    $ENV{'PATH'} = "$GLOBUS_LOCATION/sbin:$GLOBUS_LOCATION/bin:" . $ENV{'PATH'};
 }
 
 #-------------------------------------------------------------------------------
@@ -182,7 +184,7 @@ sub run_build()
 #-------------------------------------------------------------------------------
 {
     chdir $PACKAGING;
-    log_system("./make-packages.pl --anonymous --paranoia --bundles='gt3-all-src,globus-data-management-server,globus-data-management-client,globus-data-management-sdk,globus-resource-management-server,globus-resource-management-client,globus-resource-management-sdk,ogsi-cbindings,gt3-extras,mmjfs,mmjfs-static,scheduler-fork,all-test' --install=$GLOBUS_LOCATION", $LOG_LOCATION); 
+    log_system("./make-packages.pl -t2=$t2 -t3=$t3 --anonymous --paranoia --bundles='gt3-all-src,globus-data-management-server,globus-data-management-client,globus-data-management-sdk,globus-resource-management-server,globus-resource-management-client,globus-resource-management-sdk,ogsi-cbindings,gt3-extras,mmjfs,mmjfs-static,scheduler-fork,all-test' --install=$GLOBUS_LOCATION", $LOG_LOCATION); 
 
     if ( $? eq 0)
     {
@@ -318,7 +320,7 @@ sub build_core_tests()
     my $LOG = "$TESTING_ROOT/core-tests.log";
 
     chdir "$TESTING_ROOT";
-    log_system("./make-packages.pl --anonymous --trees=gt3 --packages=core", $LOG);
+    log_system("./make-packages.pl -t3=$t3 --anonymous --trees=gt3 --packages=core", $LOG);
     chdir "source-output/core-src";
     log_system("ant -f impl/java/build.xml buildUnitTest", $LOG);
 }
@@ -380,9 +382,10 @@ sub mjs_tests()
     chdir "bundle-output/BUILD/mjs-src";
 
     system("rm -f $MJS_LOG");
-    log_system("ant testMjs -Dogsa.root=/home/bacon/tests/packaging/source-output/core-src/impl/java -Dtest.server.url=http://localhost:8080/ogsa/services/", "$MJS_LOG");
+    log_system("ant testMjs -Dogsa.root=/home/bacon/tests/packaging/source-output/core-src/impl/java -Dtest.server.url=http://", `hostname`, ":8080/ogsa/services/", "$MJS_LOG");
 
-    if ( $? eq 0 )
+    my $res = system("grep FAILED $MJS_LOG");
+    if ( $res != 0 )
     {
         report_test("mjsJunit", "success");
     } else {
