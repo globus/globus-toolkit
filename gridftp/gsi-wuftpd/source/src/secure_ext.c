@@ -420,6 +420,7 @@ decode_secure_message(char *smessage, char *message, int message_size)
 int
 encode_secure_message(char *message, char *smessage, int smessage_size)
 {
+    char unwrapped_buf[LARGE_BUFSIZE];	/* Message with \r\n */
     char wrapped_buf[LARGE_BUFSIZE];	/* Wrapped data */
     int wrapped_buf_size = sizeof(wrapped_buf);
     char encoded_buf[LARGE_BUFSIZE];	/* Wrapped and radix encoded data */
@@ -461,6 +462,12 @@ encode_secure_message(char *message, char *smessage, int smessage_size)
 	       continue_char);
     
     /*
+     * Append \r\n to message. Yes, we could use encoded_buf here, but
+     * let's just keep things orderly.
+     */
+    sprintf(unwrapped_buf, "%s\r\n", message);
+    
+    /*
      * Do authentication type specific protection and then radix encoding.
      * If we get an error, don't bother to try to send it to the client
      * since we probably can't for the same reason we got an error.
@@ -472,7 +479,7 @@ encode_secure_message(char *message, char *smessage, int smessage_size)
 	if (msg_prot_level == PROT_E)
 	    msg_prot_level = PROT_P;
 	
-	if (gssapi_wrap_message(message, wrapped_buf, &wrapped_buf_size,
+	if (gssapi_wrap_message(unwrapped_buf, wrapped_buf, &wrapped_buf_size,
 				msg_prot_level) < 0) {
 	    *smessage = '\0';
 	    return -1;

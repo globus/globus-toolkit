@@ -19,6 +19,7 @@
 #include <errno.h>
 #include <netdb.h>
 #include <string.h>
+#include <sys/stat.h>
 #ifdef HAVE_SYS_SYSLOG_H
 #include <sys/syslog.h>
 #endif
@@ -61,6 +62,14 @@ extern int h_errno;
 
 static int gssapi_reply_error();
 
+/*
+ * Environment variables pointing to delegated credentials
+ */
+static char *delegation_env[] = {
+  "X509_USER_PROXY",		/* GSSAPI/SSLeay */
+  "KRB5CCNAME",			/* Krb5 and possibly SSLeay */
+  NULL
+};
 
 
 /*
@@ -74,7 +83,9 @@ static int gssapi_reply_error();
 void
 gssapi_setup_environment()
 {
-    char	ccname[40];
+    char		ccname[50];	/* Big enough to hold KRB5CCNAME */
+    struct stat		st;
+    int			index = 0;
     
     /*
      * Just in case we're using Kerberos, setup a private
@@ -83,12 +94,158 @@ gssapi_setup_environment()
      * want it.
      */
     sprintf(ccname, "FILE:/tmp/krb5cc_gsiftpd_p%d", getpid());
+
+    /* Make sure we have a unique name */
+    while(stat(ccname, &st) == 0) {
+	sprintf(ccname, "FILE:/tmp/krb5cc_gsiftpd_p%d.%d", getpid(), index++);
+    }
+    
     setenv("KRB5CCNAME", ccname, 1);
     if (debug)
 	syslog(LOG_DEBUG, "Setting KRB5CCNAME to %s", ccname);
     
 }
 
+
+/*
+ * Fix up our environment
+ */
+int
+gssapi_fix_env(void)
+{
+  int status = 0;
+
+
+  if (debug)
+      syslog(LOG_DEBUG, "gssapi_fix_env() called");
+
+#ifdef GSSAPI_GLOBUS
+  /*
+   * The gssapi library puts the user's credentials into
+   * X509_USER_DELEG_PROXY. We need to copy that over into
+   * X509_USER_PROXY for actual use.
+   */
+  if (getenv("X509_USER_DELEG_PROXY")) {
+      if (debug)
+	  syslog(LOG_DEBUG, "Setting X509_USER_PROXY to '%s'",
+		 getenv("X509_USER_DELEG_PROXY"));
+      
+      if (setenv("X509_USER_PROXY", getenv("X509_USER_DELEG_PROXY"), 1)) {
+	  syslog(LOG_ERR, "Failed to set X509_USER_PROXY environment variable");
+	  status = 1;
+      }
+  }
+
+  /*
+   * Unset X509_USER_KEY and X509_USER_CERT that might be set to point
+   * at the host key and certificate for authentication.
+   * This isn't a security problem, just possibly confusing.
+   */
+  unsetenv("X509_USER_KEY");
+  unsetenv("X509_USER_CERT");
+
+#endif /* GSSAPI_GLOBUS */
+
+  return status;
+}
+
+/*
+ * Fix the ownership on delegated credentials. Returns 0 on success,
+ * non-zero on error.
+ */
+int
+gssapi_chown_delegation(uid_t uid, gid_t gid)
+{
+    char *envstr;
+    int envstr_index;
+    char *cred_path;
+    int status = 0;
+    struct stat buf;
+
+
+    if (debug)
+	syslog(LOG_DEBUG, "gssapi_chown_delegation(%d, %d) called",
+	       uid, gid);
+    
+    for (envstr_index = 0;
+	 (envstr = delegation_env[envstr_index]) != NULL;
+	 envstr_index++) {
+      
+	cred_path = getenv(envstr);
+
+	if (!cred_path)
+	    continue;
+
+	/* For Kerberos strip leading 'FILE:' if present */
+	if (strncmp(cred_path, "FILE:", 5) == 0)
+	    cred_path += 5;
+
+	if (stat(cred_path, &buf) != 0)
+	    continue;		/* File does not exist */
+
+	if (debug)
+	    syslog(LOG_DEBUG, "Changing ownership of credentials cache '%s'",
+		   cred_path);
+
+	if (chown(cred_path, uid, gid) != 0) {
+	    syslog(LOG_ERR, "chown of '%s' failed (errno = %d)",
+		   cred_path, errno);
+	    status = 1;
+	}
+    }
+
+    return status;
+}
+
+/*
+ * Remove the forwarded proxy credentials
+ */
+int
+gssapi_remove_delegation(void)
+{
+    char *envstr;
+    int envstr_index;
+    char *cred_path;
+    struct stat buf;
+
+
+    if (debug)
+	syslog(LOG_DEBUG, "gssapi_remove_delegation() called");
+    
+    for (envstr_index = 0;
+	 (envstr = delegation_env[envstr_index]) != NULL;
+	 envstr_index++) {
+
+	cred_path = getenv(envstr);
+
+	if (!cred_path)
+	    continue;
+
+	/* For Kerberos strip leading 'FILE:' if present */
+	if (strncmp(cred_path, "FILE:", 5) == 0)
+	    cred_path += 5;
+    
+	/*
+	 * If this is a DCE context, then don't remove it as we may
+	 * be sharing it with other PAGSs
+	 */
+	if (strncmp(cred_path, "/opt/declocal/var/security/creds", 32) == 0)
+	    continue;
+
+	if (stat(cred_path, &buf) != 0)
+	    continue;		/* File does not exist */
+
+	if (debug)
+	    syslog(LOG_DEBUG, "Removing delegated credentials in %s", cred_path);
+	
+	if (remove(cred_path) != 0) {
+	    if (debug)
+		syslog(LOG_INFO, "Error removing credentials cache '%s' (errno = %d)",
+		       cred_path, errno);
+	}
+    }
+    return(0);
+}
 
 /*
  * gssapi_identity()
@@ -457,6 +614,7 @@ gssapi_handle_auth_data(char *data, int length)
     gss_cred_id_t server_creds;     
     static gss_name_t client;
     OM_uint32 ret_flags = 0;
+    struct gss_channel_bindings_struct *pchan;
 #ifndef GSSAPI_GLOBUS
     struct gss_channel_bindings_struct chan;
 #endif /* !GSSAPI_GLOBUS */
@@ -489,7 +647,9 @@ gssapi_handle_auth_data(char *data, int length)
 
     
 
-#ifndef GSSAPI_GLOBUS
+#ifdef GSSAPI_GLOBUS
+    pchan = GSS_C_NO_CHANNEL_BINDINGS;
+#else /* GSSAPI_GLOBUS */
     chan.initiator_addrtype = GSS_C_AF_INET;
     chan.initiator_address.length = 4;
     chan.initiator_address.value = &his_addr.sin_addr.s_addr;
@@ -498,6 +658,7 @@ gssapi_handle_auth_data(char *data, int length)
     chan.acceptor_address.value = &ctrl_addr.sin_addr.s_addr;
     chan.application_data.length = 0;
     chan.application_data.value = 0;
+    pchan = &chan
 #endif /* !GSSAPI_GLOBUS */
 
     in_tok.value = data;
@@ -574,11 +735,7 @@ gssapi_handle_auth_data(char *data, int length)
 					    &gcontext, /* context_handle */
 					    server_creds, /* verifier_cred_handle */
 					    &in_tok, /* input_token */
-#ifndef GSSAPI_GLOBUS
-					    &chan, /* channel bindings */
-#else /* GSSAPI_GLOBUS */
-					    GSS_C_NO_CHANNEL_BINDINGS,
-#endif /* GSSAPI_GLOBUS */
+					    pchan, /* channel bindings */
 					    &client, /* src_name */
 					    &mechid, /* mech_type */
 					    &out_tok, /* output_token */

@@ -2372,14 +2372,18 @@ int allowedgid(gid_t gid)
 
 void end_login(void)
 {
+#ifdef GSSAPI
+	gssapi_remove_delegation();
+#endif /* GSSAPI */
+
     delay_signaling();		/* we can't allow any signals while euid==0: kinch */
     (void) seteuid((uid_t) 0);
     if (logged_in)
 	if (wtmp_logging)
 	    wu_logwtmp(ttyline, pw->pw_name, remotehost, 0);
     pw = NULL;
-#ifdef AFS_AUTH
-    ktc_ForgetAllTokens();
+#if defined(AFS)
+    afs_logout();
 #endif
     logged_in = 0;
     anonymous = 0;
@@ -2879,6 +2883,17 @@ void pass(char *passwd)
     }
     logged_in = 1;
 
+#ifdef GSSAPI
+    /* Fix our GSSAPI environment and credentials */
+    gssapi_fix_env();
+    gssapi_chown_delegation(pw->pw_uid, pw->pw_gid);
+#endif /* GSSAPI */
+
+#ifdef AFS
+	/* Create pagesh for AFS */
+	afs_pagsh();
+#endif /* AFS */
+	
     expand_id();
 
 #ifdef QUOTA
@@ -3177,6 +3192,9 @@ void pass(char *passwd)
     }
 #endif
     if (!anonymous && !guest) {
+#ifdef POST_AUTH_PROCESS
+	run_post_auth_process();
+#endif /* POST_AUTH_PROCESS */	
 	if (chdir(pw->pw_dir) < 0) {
 #ifdef PARANOID
 #ifdef VERBOSE_ERROR_LOGING
@@ -6060,9 +6078,12 @@ void dologout(int status)
     acl_remove();
     close(data);		/* H* fix: clean up a little better */
     close(pdata);
-#ifdef AFS_AUTH
-    ktc_ForgetAllTokens();
+#ifdef AFS
+    afs_logout();
 #endif
+#ifdef GSSAPI
+	gssapi_remove_delegation();
+#endif /* GSSAPI */
     /* beware of flushing buffers after a SIGPIPE */
     _exit(status);
 }
@@ -7406,3 +7427,57 @@ void fixpath(char *path)
     *out = '\0';
 }
 
+
+#ifdef POST_AUTH_PROCESS
+/*
+ * Run the post authentication process on the user's behalf.
+ * pw should be the user's passwd information.	
+ */
+int
+run_post_auth_process(struct passwd *pw)
+{
+    struct stat st;
+    char *program = POST_AUTH_PROCESS;
+
+
+    if (stat(program, &st) == 0) {
+	int pid;
+	int testpid;
+
+
+	if (debug)
+	    syslog(LOG_DEBUG,
+		   "Running post authentication process \"%s\"",
+		   program);
+
+	/*
+	 * Run the process under the user's actual ID. This is because many
+	 * programs we want to run here (aklog, sslk5) need to be run
+	 * under the real ID of the user.
+	 */
+	pid = fork();
+
+	if (pid == 0) {			/* CHILD */
+	    seteuid(0);
+	    setuid(pw->pw_uid);
+	    if (pw->pw_dir) {
+		setenv("HOME", pw->pw_dir, 1);
+	    }
+	    system(program);
+	    exit(0);
+	}
+
+	/* PARENT */
+	while ((testpid = wait(NULL)) != pid &&
+	       testpid != -1)
+	    { /* EMPTY LOOP */ }
+
+
+    } else {
+	syslog(LOG_ERR,
+	       "Error accessing post authentication program \"%s\"",
+	       program);
+    }
+    return(0);
+}
+#endif /* POST_AUTH_PROCESS */
