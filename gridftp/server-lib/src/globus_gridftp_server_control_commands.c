@@ -389,7 +389,8 @@ globus_l_gsc_cmd_stat_cb(
         else
         {
             tmp_ptr = globus_i_gsc_mlsx_line_single(
-                op->server_handle, stat_info);
+                op->server_handle->mlsx_fact_str, op->server_handle->uid, 
+                stat_info);
         }
         msg =  globus_common_create_string(
             "213-status of %s\r\n %s\r\n213 End of Status\r\n", 
@@ -1722,14 +1723,6 @@ globus_l_gsc_cmd_port(
  ************************************************************************/
 
 static void 
-globus_l_gsc_event_cb(
-    globus_i_gsc_op_t *                     op,
-    globus_result_t                         res,
-    void *                                  user_arg)
-{
-}
-
-static void 
 globus_l_gsc_data_cb(
     globus_i_gsc_op_t *                     op,
     globus_result_t                         res,
@@ -1776,7 +1769,6 @@ globus_l_gsc_cmd_transfer(
                 wrapper->mod_name,
                 wrapper->mod_parms,
                 globus_l_gsc_data_cb,
-                globus_l_gsc_event_cb,
                 wrapper);
             break;
 
@@ -1787,7 +1779,6 @@ globus_l_gsc_cmd_transfer(
                 wrapper->mod_name,
                 wrapper->mod_parms,
                 globus_l_gsc_data_cb,
-                globus_l_gsc_event_cb,
                 wrapper);
             break;
 

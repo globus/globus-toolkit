@@ -160,8 +160,8 @@ typedef enum globus_i_gsc_data_dir_e
  */
 typedef enum globus_gridftp_server_control_event_type_e
 {
-    GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_PERF_MARKER,
-    GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_BEGIN_TRANSFER = 150
+    GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_PERF = 0x01,
+    GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_RESTART = 0x02
 } globus_gridftp_server_control_event_type_t;
 
 /**
@@ -264,7 +264,6 @@ globus_gridftp_server_control_list_buffer_alloc(
 
 void
 globus_gridftp_server_control_list_buffer_free(
-    globus_gridftp_server_control_op_t      op,
     globus_byte_t *                         buffer);
 
 typedef void
@@ -494,7 +493,7 @@ globus_gridftp_server_control_get_mode(
 globus_result_t
 globus_gridftp_server_control_get_type(
     globus_gridftp_server_control_op_t      op,
-    char *                                  ou_type);
+    char *                                  out_type);
 
 globus_result_t
 globus_gridftp_server_control_get_cwd(
@@ -505,6 +504,11 @@ globus_result_t
 globus_gridftp_server_control_get_dcau(
     globus_gridftp_server_control_t         server,
     char *                                  dcau);
+
+globus_result_t
+globus_gridftp_server_control_get_list_type(
+    globus_gridftp_server_control_op_t      op,
+    int *                                   out_type);
 
 globus_bool_t
 globus_gridftp_server_control_authenticated(
@@ -584,7 +588,8 @@ globus_gridftp_server_control_disconnected(
  */
 globus_result_t
 globus_gridftp_server_control_begin_transfer(
-    globus_gridftp_server_control_op_t      op);
+    globus_gridftp_server_control_op_t      op,
+    int                                     event_mask);
 
 /**
  *  a data transfer requested has been completed.

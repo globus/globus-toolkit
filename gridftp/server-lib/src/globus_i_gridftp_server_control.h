@@ -196,12 +196,6 @@ typedef void
     globus_result_t                         result,
     void *                                  user_arg);
 
-typedef void
-(*globus_i_gsc_event_cb_t)(
-    struct globus_i_gsc_op_s *              op,
-    globus_result_t                         result,
-    void *                                  user_arg);
-
 typedef struct globus_i_gsc_data_s
 {
     void *                                  user_handle;
@@ -260,7 +254,6 @@ typedef struct globus_i_gsc_op_s
     globus_i_gsc_passive_cb_t               passive_cb;
     globus_i_gsc_port_cb_t                  port_cb;
     globus_i_gsc_transfer_cb_t              transfer_cb;
-    globus_i_gsc_event_cb_t                 event_cb;
 
     void *                                  old_data_obj;
 
@@ -473,7 +466,6 @@ globus_i_gsc_send(
     const char *                            mod_name,
     const char *                            mod_parms,
     globus_i_gsc_transfer_cb_t              data_cb,
-    globus_i_gsc_event_cb_t                 event_cb,
     void *                                  user_arg);
 
 globus_result_t
@@ -483,7 +475,6 @@ globus_i_gsc_recv(
     const char *                            mod_name,
     const char *                            mod_parms,
     globus_i_gsc_transfer_cb_t              data_cb,
-    globus_i_gsc_event_cb_t                 event_cb,
     void *                                  user_arg);
 
 void
@@ -515,7 +506,8 @@ globus_i_gsc_nlst_line(
 
 char *
 globus_i_gsc_mlsx_line_single(
-    globus_i_gsc_server_handle_t *          server_handle,
+    const char *                            mlsx_fact_string,
+    int                                     uid,
     globus_gridftp_server_control_stat_t *  stat_info);
 
 char *

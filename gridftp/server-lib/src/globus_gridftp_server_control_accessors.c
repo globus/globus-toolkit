@@ -99,6 +99,24 @@ globus_gridftp_server_control_get_type(
 }
 
 globus_result_t
+globus_gridftp_server_control_get_list_type(
+    globus_gridftp_server_control_op_t      op,
+    int *                                   out_type)
+{
+    if(op == NULL)
+    {
+    }
+
+    globus_mutex_lock(&op->server_handle->mutex);
+    {
+        *out_type = op->type;
+    }
+    globus_mutex_unlock(&op->server_handle->mutex);
+
+    return GLOBUS_SUCCESS;
+}
+
+globus_result_t
 globus_gridftp_server_control_get_cwd(
     globus_gridftp_server_control_t         server,
     char **                                 cwd_string)

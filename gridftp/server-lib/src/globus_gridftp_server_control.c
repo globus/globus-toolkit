@@ -1912,18 +1912,29 @@ globus_i_gsc_nlst_line(
     int                                     stat_count)
 {
     int                                     ctr;
+    int                                     tmp_i;
     char *                                  buf;
     char *                                  tmp_ptr;
+    globus_size_t                           buf_len;
+    globus_size_t                           buf_left;
 
-    buf = strdup("");
+    /* take a guess at the size needed */
+    buf_len = stat_count * sizeof(char) * 32;
+    buf_left = buf_len;
+    buf = globus_malloc(buf_len);
+    tmp_ptr = buf;
     for(ctr = 0; ctr < stat_count; ctr++)
     {
-        tmp_ptr = globus_common_create_string(
-            "%s%s\r\n",
-            buf,
-            stat_info[ctr].name);
-        globus_free(buf);
-        buf = tmp_ptr;
+        tmp_i = strlen(stat_info[ctr].name);
+        if(buf_left < tmp_i)
+        {
+            buf_len *= 2;
+            buf = globus_libc_realloc(buf, buf_len);
+        }
+
+        sprintf(tmp_ptr, "%s\r\n", stat_info[ctr].name);
+        tmp_ptr += tmp_i;
+        buf_left -= tmp_i;
     }
 
     return buf;
@@ -1931,7 +1942,8 @@ globus_i_gsc_nlst_line(
 
 char *
 globus_i_gsc_mlsx_line_single(
-    globus_i_gsc_server_handle_t *          server_handle,
+    const char *                            mlsx_fact_str,
+    int                                     uid,
     globus_gridftp_server_control_stat_t *  stat_info)
 {
     char *                                  out_buf;
@@ -1948,7 +1960,7 @@ globus_i_gsc_mlsx_line_single(
     out_buf = globus_malloc(buf_len);
 
     tmp_ptr = out_buf;
-    for(fact = server_handle->mlsx_fact_str; *fact != '\0'; fact++)
+    for(fact = (char *)mlsx_fact_str; *fact != '\0'; fact++)
     {
         is_readable = 0;
         is_writable = 0;
@@ -2015,7 +2027,7 @@ globus_i_gsc_mlsx_line_single(
             case GLOBUS_GSC_MLSX_FACT_PERM:
                 sprintf(tmp_ptr, "Perm=");
                 tmp_ptr += 5;
-                if(server_handle->uid == stat_info->uid)
+                if(uid == stat_info->uid)
                 {
                     if(stat_info->mode & S_IRUSR)
                     {
@@ -2030,7 +2042,7 @@ globus_i_gsc_mlsx_line_single(
                         is_executable = 1;
                     }
                 }
-                if(server_handle->uid == stat_info->gid)
+                if(uid == stat_info->gid)
                 {
                     if(stat_info->mode & S_IRGRP)
                     {
@@ -2126,7 +2138,9 @@ globus_i_gsc_mlsx_line(
     {
         tmp_ptr = globus_common_create_string("%s%s\r\n",
             buf,
-            globus_i_gsc_mlsx_line_single(server_handle, &stat_info[ctr]));
+            globus_i_gsc_mlsx_line_single(
+                server_handle->mlsx_fact_str, server_handle->uid, 
+                &stat_info[ctr]));
         globus_free(buf);
         buf = tmp_ptr;
     }
@@ -2563,7 +2577,6 @@ globus_i_gsc_send(
     const char *                            mod_name,
     const char *                            mod_parms,
     globus_i_gsc_transfer_cb_t              transfer_cb,
-    globus_i_gsc_event_cb_t                 event_cb,
     void *                                  user_arg)
 {
     globus_gridftp_server_control_transfer_cb_t user_cb;
@@ -2612,7 +2625,6 @@ globus_i_gsc_send(
         op->mod_parms = globus_libc_strdup(mod_parms);
     }
     op->transfer_cb = transfer_cb;
-    op->event_cb = event_cb;
     op->user_arg = user_arg;
 
     if(user_cb != NULL)
@@ -2639,7 +2651,6 @@ globus_i_gsc_recv(
     const char *                            mod_name,
     const char *                            mod_parms,
     globus_i_gsc_transfer_cb_t              transfer_cb,
-    globus_i_gsc_event_cb_t                 event_cb,
     void *                                  user_arg)
 {
     globus_gridftp_server_control_transfer_cb_t user_cb;
@@ -2688,7 +2699,6 @@ globus_i_gsc_recv(
         op->mod_parms = globus_libc_strdup(mod_parms);
     }
     op->transfer_cb = transfer_cb;
-    op->event_cb = event_cb;
     op->user_arg = user_arg;
 
     if(user_cb != NULL)
@@ -2795,7 +2805,7 @@ globus_gridftp_server_control_finished_auth(
         if(res == GLOBUS_SUCCESS)
         {
             op->server_handle->authenticated = GLOBUS_TRUE;
-            op->uid = uid;
+            op->server_handle->uid = uid;
         }
         op->res = res;
         if(op->auth_cb != NULL)
@@ -2858,7 +2868,6 @@ globus_gridftp_server_control_finished_active_connect(
 {
     globus_i_gsc_data_t *                   data_obj;
     GlobusGridFTPServerName(globus_gridftp_server_control_finished_active_connect);
-
 
     if(op == NULL)
     {
@@ -2991,7 +3000,8 @@ globus_gridftp_server_control_disconnected(
                                                                                 
 globus_result_t
 globus_gridftp_server_control_begin_transfer(
-    globus_gridftp_server_control_op_t      op)
+    globus_gridftp_server_control_op_t      op,
+    int                                     event_mask)
 {
     globus_result_t                         res;
     GlobusGridFTPServerName(globus_gridftp_server_control_begin_transfer);
@@ -3039,37 +3049,6 @@ globus_gridftp_server_control_finished_transfer(
 
     GlobusLGSCRegisterInternalCB(op);
     return GLOBUS_SUCCESS;
-}
-
-globus_result_t
-globus_gridftp_server_control_send_event(
-    globus_gridftp_server_control_op_t      op,
-    globus_gridftp_server_control_event_type_t type,
-    const char *                            in_msg)
-{
-    char *                                  msg;
-    globus_result_t                         res;
-    GlobusGridFTPServerName(globus_gridft_server_control_send_event);
-
-    if(op == NULL)
-    {
-        return GlobusGridFTPServerErrorParameter("op");
-    }
-    if(op->type != GLOBUS_L_GSC_OP_TYPE_SEND &&
-        op->type != GLOBUS_L_GSC_OP_TYPE_RECV)
-    {
-        return GlobusGridFTPServerErrorParameter("op");
-    }
-    if(msg == NULL)
-    {
-        return GlobusGridFTPServerErrorParameter("msg");
-    }
-
-    msg = globus_common_create_string("%d %s\r\n", type, in_msg);
-    res = globus_i_gsc_intermediate_reply(op, msg);
-    globus_free(msg);
-
-    return res;
 }
 
 globus_result_t
@@ -3131,7 +3110,6 @@ globus_gridftp_server_control_list_buffer_alloc(
 
 void
 globus_gridftp_server_control_list_buffer_free(
-    globus_gridftp_server_control_op_t      op,
     globus_byte_t *                         buffer)
 {
     /* TODO: better verification if buffers get optimized,
