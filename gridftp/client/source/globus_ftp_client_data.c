@@ -818,7 +818,9 @@ globus_l_ftp_client_data_callback(
 
     if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART)
     {
-	if(client_handle->op == GLOBUS_FTP_CLIENT_GET)
+	if(client_handle->op == GLOBUS_FTP_CLIENT_GET  ||
+	   client_handle->op == GLOBUS_FTP_CLIENT_LIST ||
+	   client_handle->op == GLOBUS_FTP_CLIENT_NLST )
 	{
 	    eof = GLOBUS_FALSE;
 	    dispatch_final = GLOBUS_FALSE;
@@ -907,7 +909,9 @@ globus_l_ftp_client_read_all_callback(
 
     target = client_handle->source;
 
-    globus_assert(client_handle->op == GLOBUS_FTP_CLIENT_GET);
+    globus_assert(client_handle->op == GLOBUS_FTP_CLIENT_GET  ||
+	          client_handle->op == GLOBUS_FTP_CLIENT_LIST ||
+	          client_handle->op == GLOBUS_FTP_CLIENT_NLST );
 
     if(bytes_read > 0 &&
        offset_read + bytes_read > client_handle->read_all_biggest_offset)
@@ -1025,6 +1029,8 @@ globus_l_ftp_client_read_all_callback(
     globus_assert(
 	client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_SOURCE_RETR_OR_ERET
 	|| client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_DEST_STOR_OR_ESTO 
+	|| client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_SOURCE_LIST
+	|| client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_SOURCE_NLST
 	|| client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE
 	|| client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT 
 	|| client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART);

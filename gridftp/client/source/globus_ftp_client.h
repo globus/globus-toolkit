@@ -1,3 +1,6 @@
+#ifndef GLOBUS_INCLUDE_FTP_CLIENT_H
+#define GLOBUS_INCLUDE_FTP_CLIENT_H
+
 /**
  * @anchor globus_ftp_client_api
  * @mainpage Globus FTP Client API
@@ -49,9 +52,6 @@
  */
 #include "globus_ftp_control.h"
 #include "globus_priority_q.h"
-
-#ifndef GLOBUS_INCLUDE_FTP_CLIENT_H
-#define GLOBUS_INCLUDE_FTP_CLIENT_H
 
 #ifndef EXTERN_C_BEGIN
 #ifdef __cplusplus

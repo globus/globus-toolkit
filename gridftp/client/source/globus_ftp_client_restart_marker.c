@@ -362,7 +362,7 @@ copy_rest:
  *        The network ascii representation of the offset.
  *
  * @see globus_ftp_client_restart_marker_insert_range(),
- * @globus_ftp_client_restart_marker_set_offset(),
+ * globus_ftp_client_restart_marker_set_offset(),
  * globus_ftp_client_operationattr_set_mode(),
  * globus_ftp_client_operationattr_set_type()
  */
