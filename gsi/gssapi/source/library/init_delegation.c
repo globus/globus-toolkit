@@ -48,6 +48,7 @@ GSS_CALLCONV gss_init_delegation(
     X509_EXTENSION *                    ex = NULL;
     STACK_OF(X509_EXTENSION) *          extensions = NULL;
     int                                 i;
+    int                                 cert_chain_length;
     
 #ifdef DEBUG
     fprintf(stderr, "init_delegation:\n") ;
@@ -227,9 +228,23 @@ GSS_CALLCONV gss_init_delegation(
         i2d_X509_bio(context->gs_sslbio,ncert);
 
         /* push the number of certs in the cert chain */
+
+        cert_chain_length = sk_X509_num(cred->pcd->cert_chain);
         
-        i2d_integer_bio(context->gs_sslbio,
-                        sk_X509_num(cred->pcd->cert_chain) + 1);
+        /*
+         * XXX: Look at me. Seems like sk_X509_num() returns -1 if the
+         *      chain is uninitialized. Maybe it's indicating an error?
+         */
+        if (cert_chain_length == -1)
+        {
+            cert_chain_length = 0;
+        }
+        
+        /* Add one for the issuer's certificate */
+        cert_chain_length++;
+        
+        i2d_integer_bio(context->gs_sslbio, cert_chain_length);
+
         for(i=sk_X509_num(cred->pcd->cert_chain)-1;i>=0;i--)
         {
             cert = sk_X509_value(cred->pcd->cert_chain,i);
