@@ -102,6 +102,7 @@ globus_l_gram_client_error_strings[] =
 /*  91 */     "an incoming HTTP message did not contain the expected information",
 /*  92 */     "the job manager does not support the service that the client requested",
 /*  93 */     "the gatekeeper failed to find the requested service"
+/*  94 */     "the jobmanager does not accept any new requests (shutting down)"
 };
 
 const char *

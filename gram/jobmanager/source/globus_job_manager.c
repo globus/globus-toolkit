@@ -259,14 +259,15 @@ static nexus_endpointattr_t        graml_EpAttr;
 static nexus_endpoint_t            graml_GlobalEndpoint;
 static globus_mutex_t              graml_api_mutex;
 static globus_cond_t               graml_api_cond;
-static int                         graml_api_mutex_is_initialized = 0;
-static int                         graml_jm_done = 0;
 static int                         graml_stdout_count;
 static int                         graml_stderr_count;
+static globus_bool_t               graml_api_mutex_is_initialized = GLOBUS_FALSE;
+static globus_bool_t               graml_jm_done = GLOBUS_FALSE;
+static globus_bool_t               graml_jm_can_exit = GLOBUS_TRUE;
  
 #define GRAM_LOCK { \
     int err; \
-    assert (graml_api_mutex_is_initialized==1); \
+    assert (graml_api_mutex_is_initialized); \
     err = globus_mutex_lock (&graml_api_mutex); assert (!err); \
 }
 
@@ -431,14 +432,14 @@ int main(int argc,
 
     globus_nexus_enable_fault_tolerance(NULL, NULL);
 
-    if ( graml_api_mutex_is_initialized == 0 )
+    if (! graml_api_mutex_is_initialized)
     {
         /* initialize mutex which makes the client thread-safe */
         int err;
 		 
         err = globus_mutex_init (&graml_api_mutex, NULL); assert (!err);
         err = globus_cond_init (&graml_api_cond, NULL); assert (!err);
-        graml_api_mutex_is_initialized = 1;
+        graml_api_mutex_is_initialized = GLOBUS_TRUE;
     }
 
     GRAM_LOCK;
@@ -882,7 +883,7 @@ int main(int argc,
 	    {
 		GRAM_UNLOCK;
 		grami_fprintf( request->jobmanager_log_fp,
-			       "JM: Cannot open http body file\n" );
+			       "JM: Cannot open HTTP Body file\n" );
 		exit(1);
 	    }
 	}
@@ -892,13 +893,13 @@ int main(int argc,
         if (jrbuf_size > GLOBUS_GRAM_CLIENT_MAX_MSG_SIZE) 
         {
             grami_fprintf( request->jobmanager_log_fp,
-                "JM: test file to big\n");
+                "JM: RSL file to big\n");
             exit (1);
         }
         if (read(args_fd, buffer, jrbuf_size) != jrbuf_size)
         {
             grami_fprintf( request->jobmanager_log_fp,
-                "JM: Error reading the test file\n");
+                "JM: Error reading the RSL file\n");
             exit (1);
         }
         (void *) close(args_fd);
@@ -1402,9 +1403,16 @@ int main(int argc,
         }
     }
 
-    globus_libc_setenv( "X509_USER_PROXY",
-			graml_env_x509_user_proxy,
-			GLOBUS_TRUE );
+    if (graml_env_x509_user_proxy)
+    {
+	globus_libc_setenv( "X509_USER_PROXY",
+			    graml_env_x509_user_proxy,
+			    GLOBUS_TRUE );
+
+	grami_fprintf( request->jobmanager_log_fp, 
+		       "JM: set JM env X509_USER_PROXY to point to %s\n",
+		       graml_env_x509_user_proxy);
+    }
 
     fflush(request->jobmanager_log_fp);
 
@@ -1645,11 +1653,22 @@ int main(int argc,
 	    }
         } /* endwhile */
 
+	/* 
+	 * make sure we issue any last outstanding queries (no new ones are
+	 * accepted once graml_jm_done = TRUE
+	 */
+	while (!graml_jm_can_exit)
+	{
+	    GRAM_UNLOCK;
+	    globus_poll_nonblocking();
+	    GRAM_LOCK;
+	    globus_cond_wait(&graml_api_cond, &graml_api_mutex);
+	}
+
 	GRAM_UNLOCK;
 	globus_callback_unregister(stat_cleanup_poll_handle);
 	globus_callback_unregister(gass_poll_handle);
 
-	globus_poll_nonblocking();
     } /* endif */
 
     globus_gram_http_callback_disallow(graml_job_contact);
@@ -3255,7 +3274,8 @@ globus_l_gram_user_proxy_relocate(globus_gram_jobmanager_request_t * req)
         }
 
         if ((new_proxy_fd = open(cache_user_proxy_filename,
-                                 O_CREAT|O_WRONLY|O_TRUNC, 0400)) < 0)
+                                 O_CREAT|O_WRONLY|O_TRUNC,
+				 0600)) < 0)
         {
             grami_fprintf( req->jobmanager_log_fp, 
                 "JM: Unable to open cache file for the user proxy %s\n",
@@ -3280,6 +3300,8 @@ globus_l_gram_user_proxy_relocate(globus_gram_jobmanager_request_t * req)
 
         close(proxy_fd);
         close(new_proxy_fd);
+
+	chmod(cache_user_proxy_filename, 0400);
         
         rc = globus_gass_cache_add_done(&globus_l_cache_handle,
                                         unique_file_name,
@@ -3293,7 +3315,7 @@ globus_l_gram_user_proxy_relocate(globus_gram_jobmanager_request_t * req)
             if (remove(user_proxy_path) != 0)
             {
                 grami_fprintf( req->jobmanager_log_fp, 
-                  "JM: Cannot remove user proxy file --> %s\n",user_proxy_path);
+                  "JM: Cannot remove user proxy file %s\n",user_proxy_path);
             }
             globus_libc_free(unique_file_name);
             return(GLOBUS_NULL);
@@ -3307,7 +3329,7 @@ globus_l_gram_user_proxy_relocate(globus_gram_jobmanager_request_t * req)
         if (remove(user_proxy_path) != 0)
         {
             grami_fprintf( req->jobmanager_log_fp, 
-                "JM: Cannot remove user proxy file --> %s\n",user_proxy_path);
+                "JM: Cannot remove user proxy file %s\n",user_proxy_path);
         }
         globus_libc_free(unique_file_name);
         return(GLOBUS_NULL);
@@ -3316,7 +3338,7 @@ globus_l_gram_user_proxy_relocate(globus_gram_jobmanager_request_t * req)
     if (remove(user_proxy_path) != 0)
     {
         grami_fprintf( req->jobmanager_log_fp, 
-            "JM: Cannot remove user proxy file --> %s\n",user_proxy_path);
+            "JM: Cannot remove user proxy file %s\n",user_proxy_path);
     }
 
     return(cache_user_proxy_filename);
@@ -3890,29 +3912,34 @@ globus_l_jm_http_query_callback( void *               arg,
     char *                               url;
     int                                  mask;
     int                                  status;
-    int                                  failure;
     int                                  rc;
+    globus_bool_t                        done;
 
+
+    GRAM_LOCK;
+    graml_jm_can_exit = GLOBUS_FALSE;
+    done = graml_jm_done;
+    GRAM_UNLOCK;
 
     rc = errorcode;
+
+    if ((rc==GLOBUS_SUCCESS) && done)
+	rc = GLOBUS_GRAM_CLIENT_ERROR_JOB_QUERY_DENIAL;
+    else
+    {    
+	rc = globus_gram_http_unpack_status_request(
+	    buf,
+	    nbytes,
+	    &query );
+
+	globus_libc_free(buf);
+    }
 
     if (rc != GLOBUS_SUCCESS)
 	goto globus_l_jm_http_query_send_reply;
 
     globus_io_handle_get_user_pointer( handle,
 				       (void **) &request );
-    
-    rc = globus_gram_http_unpack_status_request(
-	    buf,
-	    nbytes,
-	    &query );
-
-    globus_libc_free(buf);
-
-    if (rc != GLOBUS_SUCCESS)
-    {
-	goto globus_l_jm_http_query_send_reply;
-    }
 
     grami_fprintf( request->jobmanager_log_fp,
 		   "JM : in globus_l_gram_http_query_callback, query=%s\n",
@@ -3921,16 +3948,23 @@ globus_l_jm_http_query_callback( void *               arg,
     rest = strchr(query,' ');
     if (rest)
 	*rest++ = '\0';
+
+    /* 
+     * do opposite of what API says: let rc (==failure_code) decide whether to
+     * trust status, no the opposite (if status==FAILED, read failure_code).
+     */
     
-    status  = GLOBUS_SUCCESS;  /* if status==FAILED, error code is */
-    failure = GLOBUS_SUCCESS;  /* found in failure                 */
+    rc     = GLOBUS_SUCCESS;
+    status = GLOBUS_SUCCESS;
     
     if (strcmp(query,"cancel")==0)
     {
 	GRAM_LOCK;
-	failure = globus_jobmanager_request_cancel(request);
-	request->status = GLOBUS_GRAM_CLIENT_JOB_STATE_FAILED;
-	status = request->status;
+	rc = globus_jobmanager_request_cancel(request);
+ 	/*
+	 * NOTE: old code set state to FAILED. Shouldn't it be DONE?
+	 */
+	status = request->status = GLOBUS_GRAM_CLIENT_JOB_STATE_FAILED;  
 	graml_jm_done = 1;
 	globus_cond_signal(&graml_api_cond);
 	GRAM_UNLOCK;
@@ -3949,30 +3983,30 @@ globus_l_jm_http_query_callback( void *               arg,
 	else
 	{
 	    callback = my_malloc(globus_l_gram_client_contact_t,1);
-	    callback->contact = strdup(url);
+	    callback->contact = globus_libc_strdup(url);
 	    callback->job_state_mask = mask;
 	    callback->failed_count   = 0;
 	    
 	    GRAM_LOCK;
-	    failure = globus_list_insert(
+	    rc = globus_list_insert(
 		&globus_l_gram_client_contacts,
 		(void *) callback);
 	    status = request->status;
 	    GRAM_UNLOCK;
 	    
-	    if (failure != GLOBUS_SUCCESS)
-		status = GLOBUS_GRAM_CLIENT_ERROR_INSERTING_CLIENT_CONTACT;
+	    if (rc != GLOBUS_SUCCESS)
+		rc = GLOBUS_GRAM_CLIENT_ERROR_INSERTING_CLIENT_CONTACT;
 	}
 	globus_libc_free(url);
     }
     else if (strcmp(query,"unregister")==0)
     {
 	url = rest;
-	if (strlen(url) == 0)
+	if (!url || strlen(url)==0)
 	    rc = GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;
 	else
 	{
-	    failure = GLOBUS_GRAM_CLIENT_ERROR_CLIENT_CONTACT_NOT_FOUND;
+	    rc = GLOBUS_GRAM_CLIENT_ERROR_CLIENT_CONTACT_NOT_FOUND;
 	    GRAM_LOCK;
 	    tmp_list = globus_l_gram_client_contacts;
 	    while(!globus_list_empty(tmp_list))
@@ -3989,9 +4023,8 @@ globus_l_jm_http_query_callback( void *               arg,
 					    tmp_list);
 		    globus_libc_free (callback->contact);
 		    globus_libc_free (callback);
-		    status = GLOBUS_SUCCESS;
+		    rc = GLOBUS_SUCCESS;
 		}
-		    
 		tmp_list = next_list;
 	    }
 	    status = request->status;
@@ -4000,17 +4033,23 @@ globus_l_jm_http_query_callback( void *               arg,
     }
     else
     {
-	status = GLOBUS_GRAM_CLIENT_JOB_STATE_FAILED;
-	failure = GLOBUS_GRAM_CLIENT_ERROR_INVALID_JOB_QUERY;
+	rc = GLOBUS_GRAM_CLIENT_ERROR_INVALID_JOB_QUERY;
     }
 
 globus_l_jm_http_query_send_reply:
-	
-    if (rc == GLOBUS_SUCCESS)
+
+    if (rc != GLOBUS_SUCCESS)
+	status = GLOBUS_GRAM_CLIENT_JOB_STATE_FAILED;
+
+    grami_fprintf( request->jobmanager_log_fp,
+		   "JM : reply: (status=%d failure code=%d (%s))\n",
+		   status, rc, globus_gram_client_error_string(rc));
+
+    if (rc != GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED)
     {
 	rc = globus_gram_http_pack_status_reply(
 	    status,
-	    failure,
+	    rc,
 	    &reply,
 	    &replysize );
     }
@@ -4036,13 +4075,27 @@ globus_l_jm_http_query_send_reply:
 	globus_libc_free(reply);
     if (query)
 	globus_libc_free(query);
-    
+
+    {
+	int i;
+	grami_fprintf( request->jobmanager_log_fp, "JM : sending reply:\n");
+	for (i=0; i<sendsize; i++)
+	{
+	    grami_fprintf( request->jobmanager_log_fp, "%c", i);
+	}
+	grami_fprintf( request->jobmanager_log_fp, "-------------------\n");
+    }
+
     globus_io_register_write(
 	handle,
 	sendbuf,
 	sendsize,
 	globus_gram_http_close_after_write,
 	GLOBUS_NULL );
+
+    GRAM_LOCK;
+    graml_jm_can_exit = GLOBUS_TRUE;
+    GRAM_UNLOCK;
 }
     
 

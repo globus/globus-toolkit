@@ -148,16 +148,12 @@ globus_l_gram_http_parse_reply(
 
 /* GRAM Protocol Strings */
 #define CRLF		"\015\012"
-#define CR		"\015"
 
 #define GLOBUS_GRAM_HTTP_REQUEST_LINE \
 			"POST %s HTTP/1.1" CRLF
 
 #define GLOBUS_GRAM_HTTP_HOST_LINE \
 			"Host: %s" CRLF
-
-#define GLOBUS_GRAM_HTTP_PROTOCOL_VERSION_LINE \
-			"Gram-Protocol-Version: %d" CRLF
 
 #define GLOBUS_GRAM_HTTP_CONTENT_TYPE_LINE \
 			"Content-Type: application/x-globus-gram" CRLF
@@ -204,7 +200,7 @@ typedef enum
 #define my_free(ptr)   globus_free(ptr)
 
 
-#if 1
+#if 0
 #define verbose(q) q
 #else
 #define verbose(q) { }
@@ -855,7 +851,7 @@ globus_gram_http_post_and_get( char *                         url,
 	my_free(handle);
 	my_free(status);
 	globus_url_destroy(&parsed_url);
-	return GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;	
+	return rc;
     }
 
     globus_url_destroy(&parsed_url);
@@ -907,7 +903,7 @@ globus_gram_http_setup_attr(globus_io_attr_t *  attr)
 			&auth_data))
 	 || (res = globus_io_attr_set_secure_channel_mode(
 	                attr,
-			GLOBUS_IO_SECURE_CHANNEL_MODE_GSI_WRAP)) )
+			GLOBUS_IO_SECURE_CHANNEL_MODE_SSL_WRAP)) )
     {
 	globus_object_t *  err = globus_error_get(res);
 	globus_object_free(err);
@@ -1177,7 +1173,6 @@ globus_gram_http_frame_request(char *             uri,
      * HTTP request message framing:
      *    POST <uri> HTTP/1.1<CR><LF>
      *    Host: <hostname><CR><LF>
-     *    Gram-Protocol-Version: <GLOBUS_GRAM_PROTOCOL_VERSION><CR><LF>
      *    Content-Type: application/x-globus-gram<CR><LF>
      *    Content-Length: <msgsize><CR><LF>
      *    <CR><LF>
@@ -1185,15 +1180,6 @@ globus_gram_http_frame_request(char *             uri,
      */
     tmp = msgsize;
 
-    do
-    {
-	tmp /= 10;
-	digits++;
-    }
-    while(tmp > 0);
-
-    tmp = GLOBUS_GRAM_PROTOCOL_VERSION;
-    
     do
     {
 	tmp /= 10;
@@ -1933,7 +1919,6 @@ globus_l_gram_http_parse_request(
     int rc;
     char *uri;
     char *host;
-    int protocol_version;
 
     uri = (char *) globus_malloc(strlen((char *) buf));
     host = (char *) globus_malloc(strlen((char *) buf));
@@ -1942,23 +1927,17 @@ globus_l_gram_http_parse_request(
     rc = sscanf( (char *) buf,
 		 GLOBUS_GRAM_HTTP_REQUEST_LINE
 		 GLOBUS_GRAM_HTTP_HOST_LINE
-		 GLOBUS_GRAM_HTTP_PROTOCOL_VERSION_LINE
 		 GLOBUS_GRAM_HTTP_CONTENT_TYPE_LINE
 		 GLOBUS_GRAM_HTTP_CONTENT_LENGTH_LINE
 		 CRLF,
 		 uri,
 		 host,
-		 &protocol_version,
 		 payload_length);
     globus_libc_unlock();
-    if(rc != 4)
+    if(rc != 3)
     {
 	rc = GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;
 	*payload_length = 0;
-    }
-    else if(protocol_version != GLOBUS_GRAM_PROTOCOL_VERSION)
-    {
-	rc = GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH;
     }
     else
     {
