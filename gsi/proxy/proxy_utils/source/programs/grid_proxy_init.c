@@ -759,12 +759,33 @@ main(
             pw_cb);
         if(result != GLOBUS_SUCCESS)
         {
-            globus_libc_fprintf(
-                stderr,
-                "\n\nERROR: Couldn't read user key. This is likely caused by\n"
-                "either giving the wrong passphrase or bad file permissions\n" 
-                "key file location: %s\n\n",
-                user_key_filename);
+            globus_object_t *           error;
+
+            error = globus_error_get(result);
+
+            if(globus_error_match_openssl_error(error,
+                                                ERR_LIB_PEM,
+                                                PEM_F_PEM_DO_HEADER,
+                                                PEM_R_BAD_DECRYPT)
+               == GLOBUS_TRUE)
+            { 
+                globus_libc_fprintf(
+                    stderr,
+                    "\n\nERROR: Couldn't read user key: Bad passphrase\n"
+                    "key file location: %s\n\n",
+                    user_key_filename);
+            }
+            else
+            {
+                globus_libc_fprintf(
+                    stderr,
+                    "\n\nERROR: Couldn't read user key.\n"
+                    "key file location: %s\n\n",
+                    user_key_filename);
+            }
+
+            result = globus_error_put(error);
+            
             GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
         }
     }
