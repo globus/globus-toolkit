@@ -11,13 +11,13 @@ Optional software:
 
 Overview:
 ========
-    1.  Installing GT3.9.5
+    1.  Installing Globus Toolkit 4.0.0
     2.  Installing optional bundles
-    3.  Installing only a subset of GT3.9.5
+    3.  Installing only a subset of GT4.0.0
     4.  Platform-specific notes
 
 
-1. Installing GT 3.9.5 (defaults)
+1. Installing Globus Toolki 4.0.0
 =================================
 First, download the required software.  Be aware that apache ant
 will use the java referred to by JAVA_HOME, not necessarily the first
@@ -34,10 +34,10 @@ globus$ ./configure --prefix=/path/to/install
 globus$ make
 
 If you do not specify a prefix, it will try to install into
-/usr/local/globus-3.9.5  The build will only be successful if
+/usr/local/globus-4.0.0 The build will only be successful if
 the globus user has write access to the target directory.
 
-Then see http://www-unix.globus.org/toolkit/docs/development/3.9.5/
+Then see http://www-unix.globus.org/toolkit/docs/4.0/
 for setup details.
 
 
@@ -51,7 +51,7 @@ option to your configure line:
 --enable-wsgram-pbs           For PBS
 
 If you installed IODBC for RLS, add the following two items:
---enable-rls --with-iodbc-path=/path/to/iodbc
+--enable-rls --with-iodbc=/path/to/iodbc
 
 If you want to enable internationalization, say:
 --enable-i18n
@@ -59,12 +59,12 @@ If you want to enable internationalization, say:
 If you want to install the Data Replication Service tech preview:
 --enable-drs
 
-3. Installing only a subset of GT3.9.5
+3. Installing only a subset of GT4.0.0
 ======================================
 You do not have to build every subcomponent of this release.  The
 makefile specifies subtargets for different functional subpieces.
 See the component map at
-http://www-unix.globus.org/toolkit/docs/development/4.0-drafts/GT4Facts/index.html
+http://www-unix.globus.org/toolkit/docs/4.0/GT4Facts/index.html
 for more details.
 
 Makefile targets:
@@ -96,7 +96,7 @@ $ make gridftp postinstall
 4. Platform notes
 =================
 The latest platform notes are at:
-http://www-unix.globus.org/toolkit/docs/development/4.0-drafts/admin/platforms.html
+http://www-unix.globus.org/toolkit/docs/4.0/admin/platforms.html
 
     * Apple MacOS X
     * Debian
