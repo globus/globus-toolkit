@@ -229,7 +229,8 @@ globus_l_gfs_ipc_finished_cb(
         reply->result,
         reply);
     
-    node_info = globus_list_first(bounce_info->node_list);
+    node_info = globus_list_remove(
+        &bounce_info->node_list, bounce_info->node_list);
     result = globus_l_gfs_remote_node_release(
         bounce_info->my_handle,
         node_info);
@@ -1140,23 +1141,16 @@ globus_l_gfs_remote_data_destroy(
     globus_result_t                     result;
     globus_l_gfs_remote_handle_t *      my_handle;
     globus_l_gfs_remote_node_info_t *   node_info;
-    globus_list_t *                     node_list;
     globus_list_t *                     list;
-    int                                 node_count;
     GlobusGFSName(globus_l_gfs_remote_data_destroy);
     
     my_handle = (globus_l_gfs_remote_handle_t *) user_arg;
 
-    node_list = (globus_list_t *) data_arg;
-
-    node_count = globus_list_size(node_list);
-
-    for(list = node_list;
-        !globus_list_empty(list);
-        list = globus_list_rest(list))
+    list = (globus_list_t *) data_arg;
+    while(!globus_list_empty(list))
     {
         node_info = (globus_l_gfs_remote_node_info_t *) 
-            globus_list_first(list);
+            globus_list_remove(&list, list);
                 
         result = globus_gfs_ipc_request_data_destroy(
             node_info->ipc_handle,
