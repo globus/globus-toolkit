@@ -1,8 +1,0 @@
-name=hostinfo
-subdir=information_services/glue/hostinfo
-build="export GLOBUS_LOCATION=`pwd`/gt2-installation
-\$GPT_LOCATION/sbin/gpt-build -nosrc gcc32
-./bootstrap 
-\$GPT_LOCATION/sbin/gpt-build gcc32
-\$GPT_LOCATION/sbin/gpt-pkg -all"
-gar=binaries/gt3_hostinfo-1.0-i686-pc-linux-gnu-noflavor-pgm.tar.gz
