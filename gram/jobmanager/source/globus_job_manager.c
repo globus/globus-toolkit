@@ -197,7 +197,7 @@ main(int argc,
         {
             gram_print_debug = 1;
         }
-        else if ((strcmp(argv[i], "-h") == 0)
+        else if ((strcmp(argv[i], "-home") == 0)
                  && (i + 1 < argc))
         {
             grami_jm_home_dir = argv[i+1];
