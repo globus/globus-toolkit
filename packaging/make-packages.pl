@@ -68,12 +68,12 @@ my ($install, $installer, $anonymous, $force,
     $noupdates, $help, $man, $verbose, $skippackage,
     $skipbundle, $faster, $paranoia, $version, $uncool,
     $binary, $inplace, $gt2dir, $gt3dir, $doxygen,
-    $deps, $graph, $listpack, $listbun ) =
+    $autotools, $deps, $graph, $listpack, $listbun ) =
    (0, 0, 0, 0,
     0, 0, 0, 0, 0, 
     0, 0, 1, "1.0", 0, 
     0, 0, "", "", 0,
-    0, 0, 0, 0);
+    1, 0, 0, 0, 0);
 
 my @user_bundles;
 my @user_packages;
@@ -101,6 +101,7 @@ GetOptions( 'i|install=s' => \$install,
 	    'uncool!' => \$uncool,
 	    'inplace!' => \$inplace,
 	    'doxygen!' => \$doxygen,
+	    'autotools!' => \$autotools,
 	    'd|deps!' => \$deps,
 	    'graph!' => \$graph,
 	    'lp|list-packages!' => \$listpack,
@@ -637,7 +638,7 @@ sub build_prerequisites()
 	 $cvs_build_hash{'gt3'} eq 1 or
 	 $cvs_build_hash{'cbindings'})
     {
-	install_gt2_autotools();
+	install_gt2_autotools() if $autotools;
     }
 
     if ( $cvs_build_hash{'gt2'} eq 1 or 
@@ -1229,7 +1230,6 @@ sub package_source_tar()
     
     if ( ! -d $subdir )
     {
-	print "CWD is " . cwd() . "\n";
 	print "$subdir does not exist, skipping\n";
     } else {
 	print "Creating source directory for $package\n";
