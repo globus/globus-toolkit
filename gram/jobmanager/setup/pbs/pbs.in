@@ -7,13 +7,15 @@ package Globus::GRAM::JobManager::pbs;
 
 @ISA = qw(Globus::GRAM::JobManager);
 
-my ($mpirun, $qsub, $qstat);
+my ($mpirun, $qsub, $qstat, $host_type, $remote_shell);
 
 BEGIN
 {
     $mpirun = '@MPIRUN@';
     $qsub =   '@QSUB@';
     $qstat =  '@QSTAT@';
+    $host_type = '@HOST_TYPE@'; # cluster|smp|chiba_cluster
+    $remote_shell = '@REMOTE_SHELL@';
 }
 
 sub new
@@ -36,6 +38,7 @@ sub submit
     my $errfile = "";
     my $queue;
     my $job_id;
+    my $rsh_env;
 
     $self->log("Entering pbs submit");
 
@@ -95,8 +98,11 @@ sub submit
                              "/pbs_job_script.$$";
     $pbs_job_script = new IO::File($pbs_job_script_name, '>');
 
-    $pbs_job_script->print(
-        "# PBS batch job script built by Globus job manager\n");
+    $pbs_job_script->print(<<EOF);
+#! /bin/sh
+# PBS batch job script built by Globus job manager
+# PBS -S /bin/sh
+EOF
 
     if(defined($queue))
     {
@@ -148,9 +154,13 @@ sub submit
 	                       $description->host_count().
 			       "\n");
     }
+    $rsh_env = "";
+
     foreach my $tuple ($description->environment())
     {
-	push(@new_env, @{$tuple}[0] . "=" . @{$tuple}[1]);
+	push(@new_env, ${@{$tuple}}[0] . "=" . ${@{$tuple}}[1]);
+	$rsh_env .= ${@{$tuple}}[0] . "=" . ${@{$tuple}}[1] . ";"
+	         .  "export " . @{$tuple}[0] . ";";
     }
     $pbs_job_script->print("#PBS -v " .  join(',', @new_env));
 
@@ -167,21 +177,18 @@ sub submit
     }
     if($description->jobtype() eq "mpi")
     {
-	if($self->{is_cluster})
+	$pbs_job_script->print("$mpirun -np " . $description->count());
+
+	if($host_type eq 'chiba_cluster' ||
+	   $host_type eq 'cluster')
 	{
-	    $pbs_job_script->print("$mpirun -np " . $description->count() . 
-	                           " -machinefile \$PBS_NODEFILE " .
-				   $description->executable() .
-				   " $args < " . $description->stdin() . "\n");
+	    $pbs_job_script->print(" -machinefile \$PBS_NODEFILE ");
 	}
-	else
-	{
-	    $pbs_job_script->print("$mpirun -np " . $description->count() .
-	                           " " . $description->executable() .
-				   " $args <". $description->stdin() . "\n");
-	}
+	$pbs_job_script->print($description->executable()
+	                       . " $args < "
+			       . $description->stdin() . "\n");
     }
-    elsif($description->jobtype() eq 'multiple')
+    elsif($description->jobtype() eq 'multiple' && $host_type eq 'smp')
     {
 	for(my $i = 0; $i < $description->count(); $i++)
 	{
@@ -190,12 +197,37 @@ sub submit
 	}
 	$pbs_job_script->print("wait\n");
     }
+    elsif($description->jobtype() eq 'multiple')
+    {
+	my $count = $description->count;
+	my $cmd;
+	my $stdin = $description->stdin();
+
+	$cmd = "cd " . $description->directory() . ";" . $rsh_env
+	     . $description->executable() . " $args";
+
+	$pbs_job_script->print(<<EOF);
+	hosts=\`cat \$PBS_NODEFILE\`;
+	counter=0
+	while test \$counter -lt $count; do
+	    for host in \$hosts; do
+		if test \$counter -lt \$count; then
+		    $remote_shell \$host '/bin/sh -c "$cmd"' < $stdin &
+		    counter=\`expr \$counter + 1\`
+		else
+		    break
+		fi
+	    done
+	done
+	wait
+EOF
+    }
     else
     {
 	$pbs_job_script->print($description->executable() . " $args <" .
 	                       $description->stdin() . "\n");
     }
-    if($self->{is_cluster})
+    if($host_type eq 'chiba_cluster')
     {
 	$pbs_job_script->print("#ctrans nfs_in " .
 	                       $description->directory() . "\n");

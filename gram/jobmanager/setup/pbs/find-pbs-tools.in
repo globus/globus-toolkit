@@ -24,6 +24,23 @@ AC_PATH_PROG(QSUB, qsub, no)
 if test "$QSUB" = "no" ; then
     AC_MSG_ERROR("Cannot locate qsub")
 fi
+HOST_TYPE=no
+AC_ARG_WITH(host-type,
+    [ --with-host-type=cluster|smp|chiba_cluster],
+    [case $withval in
+      cluster|chiba_cluster|smp)
+          HOST_TYPE=$withval
+	  AC_SUBST(HOST_TYPE)
+	  ;;
+    esca])
+
+if test "$HOST_TYPE" = no; then
+    AC_MSG_ERROR("Missing required --with-host-type=cluster|smp|chiba_cluster")
+fi
+AC_PATH_PROGS(REMOTE_SHELL, ssh rsh, no)
+if test "$REMOTE_SHELL" = "no" && ( test "$HOST_TYPE" = cluster || test "$HOST_TYPE" = chiba_cluster ; then
+    AC_MSG_ERROR("Cannot locate a remote shell program")
+fi
 
 prefix='$(GLOBUS_LOCATION)'
 exec_prefix='$(GLOBUS_LOCATION)'
