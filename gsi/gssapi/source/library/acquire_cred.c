@@ -78,25 +78,29 @@ GSS_CALLCONV gss_acquire_cred(
             getenv("HOME")?getenv("HOME"):"NO_HOME");
 #endif /* DEBUG */
   
-    /* 
-     * We are going to use the SSL error routines, get them
-     * initilized early. They may be called more then once. 
-     */
-
-    ERR_load_gsserr_strings(0);  /* load our gss ones as well */
-
     *minor_status = 0;
   
-    if (actual_mechs != NULL) {
+    /* module activation if not already done by calling
+     * globus_module_activate
+     */
+    
+    globus_thread_once(
+        &once_control,
+        (void (*)(void))globus_i_gsi_gssapi_module.activation_func);
+
+    if (actual_mechs != NULL)
+    {
         major_status = gss_indicate_mechs(minor_status,
                                           actual_mechs);
-        if (major_status != GSS_S_COMPLETE) {
+        if (major_status != GSS_S_COMPLETE)
+        {
             *minor_status = gsi_generate_minor_status();
             return  major_status;
         }
     }
 
-    if (time_rec != NULL) {
+    if (time_rec != NULL)
+    {
         *time_rec = GSS_C_INDEFINITE ;
     }
 

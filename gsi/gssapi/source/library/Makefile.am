@@ -31,6 +31,7 @@ Sources = \
 	$(Sources_GSS_EXTENSIONS)
 
 Sources_GSS_EXTENSIONS = \
+	module.c \
 	accept_delegation.c \
 	import_cred.c \
 	export_cred.c \
@@ -50,7 +51,7 @@ flavorinclude_HEADERS = \
 
 lib_LTLIBRARIES = libglobus_gssapi_gsi_$(GLOBUS_FLAVOR_NAME).la
 
-INCLUDES = $(GPT_INCLUDES)
+INCLUDES = -I.. $(GPT_INCLUDES)
 
 libglobus_gssapi_gsi___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 

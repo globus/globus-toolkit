@@ -11,7 +11,7 @@ Description:
 **********************************************************************/
 
 #ifndef NO_GSSAPI_CONFIG_H
-#include "gssapi_config.h"
+#include "globus_gssapi_config.h"
 #endif
 
 #ifndef DEFAULT_SECURE_TMP_DIR
@@ -34,15 +34,15 @@ Description:
 #include <stdlib.h>
 #include <string.h>
 
-#include "buffer.h"
-#include "crypto.h"
-#include "objects.h"
-#include "asn1.h"
-#include "evp.h"
-#include "x509.h"
-#include "pem.h"
-#include "ssl.h"
-#include "rsa.h"
+#include "openssl/buffer.h"
+#include "openssl/crypto.h"
+#include "openssl/objects.h"
+#include "openssl/asn1.h"
+#include "openssl/evp.h"
+#include "openssl/x509.h"
+#include "openssl/pem.h"
+#include "openssl/ssl.h"
+#include "openssl/rsa.h"
 
 #ifdef USE_PKCS11
 #include "scutils.h"

@@ -21,6 +21,10 @@ CVS Information:
                              Include header files
 **********************************************************************/
 
+#if defined(WIN32)
+#   include "windows.h"
+#endif
+
 #include "gssapi.h"
 #include "sslutils.h"
 #include <stdio.h>
@@ -283,7 +287,7 @@ typedef enum
     GS_DELEGATION_START,
     GS_DELEGATION_DONE,
     GS_DELEGATION_COMPLETE_CRED,
-    GS_DELEGATION_SIGN_CERT,
+    GS_DELEGATION_SIGN_CERT
 } gs_delegation_state_t;
 
 typedef struct gss_name_desc_struct {
@@ -302,6 +306,7 @@ typedef struct gss_cred_id_desc_struct {
 } gss_cred_id_desc ;
 
 typedef struct gss_ctx_id_desc_struct{
+    globus_mutex_t                      mutex;
     proxy_verify_desc                   pvd; /* used for verify_callback */
     proxy_verify_ctx_desc               pvxd;
     gss_name_desc *                     source_name;                 
@@ -335,16 +340,19 @@ typedef struct gss_ctx_id_desc_struct{
 **********************************************************************/
 
 extern
-const gss_OID_desc * const gss_mech_globus_gssapi_ssleay;
+const gss_OID_desc * const              gss_mech_globus_gssapi_ssleay;
 
 extern
-const gss_OID_desc * const gss_restrictions_extension;
+const gss_OID_desc * const              gss_restrictions_extension;
 
 extern
-const gss_OID_desc * const gss_trusted_group;
+const gss_OID_desc * const              gss_trusted_group;
 
 extern
-const gss_OID_desc * const gss_untrusted_group;
+const gss_OID_desc * const              gss_untrusted_group;
+
+extern
+globus_thread_once_t                    once_control;
 
 /**********************************************************************
                                Function prototypes

@@ -27,6 +27,10 @@ static char *rcsid = "$Header$";
  * @param input_token
  *        The token that was produced by a prior call to
  *        gss_init_delegation. 
+ * @param req_flags
+ *        Flags that modify the behavior of the function. Currently
+ *        only GSS_C_GLOBUS_SSL_COMPATIBLE is checked for. This flag
+ *        results in tokens that aren't wrapped.
  * @param time_req
  *        The requested period of validity (seconds) of the delegated
  *        credential. May be NULL.
@@ -56,18 +60,22 @@ GSS_CALLCONV gss_accept_delegation(
     const gss_OID_set                   extension_oids,
     const gss_buffer_set_t              extension_buffers,
     const gss_buffer_t                  input_token,
+    OM_uint32                           req_flags,
     OM_uint32                           time_req,
     OM_uint32 *                         time_rec,
     gss_cred_id_t *                     delegated_cred_handle,
     gss_OID *                           mech_type, 
     gss_buffer_t                        output_token)
 {
-    OM_uint32 		                major_status = 0;
+    BIO *                               bio = NULL;
+    BIO *                               read_bio = NULL;
+    BIO *                               write_bio = NULL;
+    OM_uint32                           major_status = 0;
     gss_ctx_id_desc *                   context;
     X509_REQ *                          reqp = NULL;
     X509 *                              dcert = NULL;
     STACK_OF(X509) *                    cert_chain;
-    int                                 cert_chain_length;
+    int                                 cert_chain_length = 0;
     int                                 i;
     char                                dbuf[1];
     
@@ -93,7 +101,6 @@ GSS_CALLCONV gss_accept_delegation(
     if(context_handle == GSS_C_NO_CONTEXT)
     {
         GSSerr(GSSERR_F_ACCEPT_DELEGATION,GSSERR_R_BAD_ARGUMENT);
-        *minor_status = gsi_generate_minor_status();
         major_status = GSS_S_FAILURE;
         goto err;
     }
@@ -101,7 +108,6 @@ GSS_CALLCONV gss_accept_delegation(
     if(delegated_cred_handle == NULL)
     {
         GSSerr(GSSERR_F_ACCEPT_DELEGATION,GSSERR_R_BAD_ARGUMENT);
-        *minor_status = gsi_generate_minor_status();
         major_status = GSS_S_FAILURE;
         goto err;
     }
@@ -111,7 +117,6 @@ GSS_CALLCONV gss_accept_delegation(
         extension_oids->count != extension_buffers->count))
     {
         GSSerr(GSSERR_F_ACCEPT_DELEGATION,GSSERR_R_BAD_ARGUMENT);
-        *minor_status = gsi_generate_minor_status();
         major_status = GSS_S_FAILURE;
         goto err;
     }
@@ -119,7 +124,6 @@ GSS_CALLCONV gss_accept_delegation(
     if(output_token == GSS_C_NO_BUFFER)
     {
         GSSerr(GSSERR_F_ACCEPT_DELEGATION,GSSERR_R_BAD_ARGUMENT);
-        *minor_status = gsi_generate_minor_status();
         major_status = GSS_S_FAILURE;
         goto err;
     }
@@ -133,13 +137,28 @@ GSS_CALLCONV gss_accept_delegation(
     *minor_status = 0;
     output_token->length = 0;
     context = (gss_ctx_id_desc *) context_handle;
+
+    if(req_flags & GSS_C_GLOBUS_SSL_COMPATIBLE)
+    {
+        bio = BIO_new(BIO_s_mem());
+        read_bio = bio;
+        write_bio = bio;
+    }
+    else
+    {
+        bio = context->gs_sslbio;
+    }
     
-    major_status = gs_put_token(context, input_token);
+    /* lock the context mutex */
+    
+    globus_mutex_lock(&context->mutex);
+
+    major_status = gs_put_token(context, read_bio, input_token);
 
     if (major_status != GSS_S_COMPLETE)
     {
         *minor_status = gsi_generate_minor_status();
-        return major_status;
+        goto err_unlock;
     }
 
     switch(context->delegation_state)
@@ -149,7 +168,7 @@ GSS_CALLCONV gss_accept_delegation(
 
         /* generate the proxy */
 
-        BIO_read(context->gs_sslbio,dbuf,1);
+        BIO_read(bio,dbuf,1);
 #ifdef DEBUG
         fprintf(stderr,"delegation flag:%.1s\n",dbuf);
 #endif
@@ -165,23 +184,21 @@ GSS_CALLCONV gss_accept_delegation(
             {
                 /* can we get more error stuff here? */
                 major_status = GSS_S_FAILURE;
-                *minor_status = gsi_generate_minor_status();
-                goto err;
+                goto err_unlock;
             }
 
             
 #ifdef DEBUG
             X509_REQ_print_fp(stderr,reqp);
 #endif
-            i2d_X509_REQ_bio(context->gs_sslbio,reqp);
+            i2d_X509_REQ_bio(bio,reqp);
             X509_REQ_free(reqp);
             context->delegation_state = GS_DELEGATION_COMPLETE_CRED;
         }
         else
         {
             major_status = GSS_S_FAILURE;
-            *minor_status = gsi_generate_minor_status();
-            goto err;
+            goto err_unlock;
         }
         
         break;
@@ -191,27 +208,26 @@ GSS_CALLCONV gss_accept_delegation(
          * the cred structure
          */
 
-        dcert = d2i_X509_bio(context->gs_sslbio, NULL);
+        dcert = d2i_X509_bio(bio, NULL);
 
         if(dcert == NULL)
         {
             major_status = GSS_S_FAILURE;
-            *minor_status = gsi_generate_minor_status();
-            goto err;
+            goto err_unlock;
         }
         
 #ifdef DEBUG
         X509_print_fp(stderr,dcert);
 #endif
-        d2i_integer_bio(context->gs_sslbio, (long *) &cert_chain_length);
 
         cert_chain = sk_X509_new_null();
 
-        for(i=0;i<cert_chain_length;i++)
+        while(BIO_pending(bio))
         {
             sk_X509_insert(cert_chain,
-                           d2i_X509_bio(context->gs_sslbio, NULL),
-                           i);
+                           d2i_X509_bio(bio, NULL),
+                           cert_chain_length);
+            cert_chain_length++;
         }
 
         major_status = gss_create_and_fill_cred(delegated_cred_handle,
@@ -230,7 +246,7 @@ GSS_CALLCONV gss_accept_delegation(
 
         if(major_status != GSS_S_COMPLETE)
         {
-            goto err;
+            goto err_unlock;
         }
 
 
@@ -253,19 +269,42 @@ GSS_CALLCONV gss_accept_delegation(
 
     /* returns empty token when there is no output */
     
-    gs_get_token(context, output_token);
+    gs_get_token(context, write_bio, output_token);
 
     if (context->delegation_state != GS_DELEGATION_START)
     {
         major_status |= GSS_S_CONTINUE_NEEDED;
     }
 
-    return major_status;
+    if(req_flags & GSS_C_GLOBUS_SSL_COMPATIBLE)
+    {
+        BIO_free(bio);
+    }
     
+    globus_mutex_unlock(&context->mutex);
+    
+    return major_status;
+
+err_unlock:
+    globus_mutex_unlock(&context->mutex);
 err:
-    
-    *minor_status = gsi_generate_minor_status();
+
+    if(req_flags & GSS_C_GLOBUS_SSL_COMPATIBLE)
+    {
+        BIO_free(bio);
+    }
+
+    if(minor_status)
+    {
+        *minor_status = gsi_generate_minor_status();
+    }
 
     return major_status;
-
 }
+
+
+
+
+
+
+

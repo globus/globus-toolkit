@@ -32,6 +32,7 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
     OM_uint32                           tmp_minor_status;
     gss_ctx_id_desc *                   context;
     int                                 i;
+    int                                 k;
     int                                 cert_count;
     STACK_OF(X509_EXTENSION) *          extensions;
     X509_EXTENSION *                    ex;
@@ -81,12 +82,16 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
     }
 
     *data_set = NULL;
+
+    /* lock the context mutex */
+    
+    globus_mutex_lock(&context->mutex);
     
     cert_count = context->pvd.cert_depth;
 
     if(cert_count == 0)
     {
-        return major_status;
+        goto err;
     }
     
     major_status = gss_create_empty_buffer_set(minor_status, data_set);
@@ -96,9 +101,9 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
         goto err;
     }
     
-    while(cert_count-- &&
-          (cert = sk_X509_value(context->pvd.cert_chain,cert_count)))
+    for(k=0;k<cert_count;k++)
     {
+        cert = sk_X509_value(context->pvd.cert_chain,k);
         extensions = cert->cert_info->extensions;
         data_set_buffer.value = NULL;
         data_set_buffer.length = 0;
@@ -141,10 +146,17 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
     } 
 
 err:
-    return major_status;
 
+    /* unlock the context mutex */
     
+    globus_mutex_unlock(&context->mutex);
+    
+    return major_status;
 }
+
+
+
+
 
 
 

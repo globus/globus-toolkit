@@ -83,6 +83,14 @@ GSS_CALLCONV gss_accept_sec_context(
 
     context = *context_handle_P;
 
+    /* module activation if not already done by calling
+     * globus_module_activate
+     */
+    
+    globus_thread_once(
+        &once_control,
+        (void (*)(void))globus_i_gsi_gssapi_module.activation_func);
+    
     if (context == (gss_ctx_id_t) GSS_C_NO_CONTEXT ||
         !(context->ctx_flags & GSS_I_CTX_INITIALIZED))
     {
@@ -92,13 +100,6 @@ GSS_CALLCONV gss_accept_sec_context(
                 getuid(), getpid()) ;
 #endif /* DEBUG */
 
-        /* 
-         * We are going to use the SSL error routines, get them
-         * initilized early. They may be called more then once. 
-         */
-
-        ERR_load_gsserr_strings(0); 
-                
         /* accept does not have req_flags, so we will use ret_flags */
         if (ret_flags)
         {
@@ -151,7 +152,7 @@ GSS_CALLCONV gss_accept_sec_context(
      * put token data onto the SSL bio so it can be read
      */
 
-    major_status = gs_put_token(context, input_token);
+    major_status = gs_put_token(context, NULL, input_token);
     if (major_status != GSS_S_COMPLETE)
     {
         *minor_status = gsi_generate_minor_status();
@@ -230,7 +231,7 @@ GSS_CALLCONV gss_accept_sec_context(
          * we dont want to do delegation, so we are done
          */
 
-        if (context->req_flags & GSS_C_GLOBUS_SSL_COMPATABLE)
+        if (context->req_flags & GSS_C_GLOBUS_SSL_COMPATIBLE)
         {
             context->gs_state = GS_CON_ST_DONE;
             break;
@@ -349,7 +350,7 @@ GSS_CALLCONV gss_accept_sec_context(
      * about the error (i.e. an SSL alert message) we want to send to the other
      * side.
      */
-    gs_get_token(context, output_token);
+    gs_get_token(context, NULL, output_token);
 
     if (context->gs_state != GS_CON_ST_DONE)
     {

@@ -27,18 +27,6 @@ static char *rcsid = "$Header$";
 #include <stdlib.h>
 
 /**********************************************************************
-                               Type definitions
-**********************************************************************/
-
-/**********************************************************************
-                          Module specific prototypes
-**********************************************************************/
-
-/**********************************************************************
-                       Define module specific variables
-**********************************************************************/
-
-/**********************************************************************
 Function: gss_copy_name_to_name() 
 
 Description:
@@ -165,7 +153,8 @@ gss_create_and_fill_context(
     context->locally_initiated = (cred_usage == GSS_C_INITIATE);
     context->ctx_flags |= GSS_I_CTX_INITIALIZED;
     context->goodtill = 0;
-    
+    globus_mutex_init(&context->mutex, NULL);
+
     proxy_verify_ctx_init(&(context->pvxd));
     proxy_verify_init(&(context->pvd), &(context->pvxd));
 
@@ -232,40 +221,16 @@ gss_create_and_fill_context(
         major_status = gss_copy_name_to_name(&context->target_name,
                                              context->cred_handle->globusid);
     }
-
-    /* Set the verify callback to test our proxy 
-     * policies. 
-     * The SSL_set_verify does not appear to work as 
-     * expected. The SSL_CTX_set_verify does more,
-     * it also sets the X509_STORE_set_verify_cb_func
-     * which is what we want. This occurs in both 
-     * SSLeay 0.8.1 and 0.9.0 
-     */
-
+    
     if (context->cred_handle->pcd->certdir)
     {
         context->pvxd.certdir = strdup(context->cred_handle->pcd->certdir);
     }
 
-    SSL_CTX_set_verify(context->cred_handle->pcd->gs_ctx,
-                       SSL_VERIFY_PEER,
-                       proxy_verify_callback);
 
 #ifdef DEBUG
     fprintf(stderr,"SSL_CTX_set_app_data to pvd %p\n",
             context->pvd);
-#endif
-#if SSLEAY_VERSION_NUMBER >= 0x0090581fL
-    /*
-     * for now we will accept any purpose, as Globus does
-     * nor have any restrictions such as this is an SSL client
-     * or SSL server. Globus certificates are not required
-     * to have these fields set today.
-     * DEE - Need  to look at this in future if we use 
-     * certificate extensions...  
-     */
-    SSL_CTX_set_purpose(context->cred_handle->pcd->gs_ctx,
-			X509_PURPOSE_ANY);
 #endif
 
     /* setup the SSL  for the gs_shuffle routine */
@@ -416,29 +381,44 @@ Parameters:
 Returns:
 **********************************************************************/
 OM_uint32
-gs_put_token 
-(const gss_ctx_id_desc*         context_handle,
- const gss_buffer_t             input_token)
+gs_put_token(
+    const gss_ctx_id_desc*              context_handle,
+    BIO *                               bio,
+    const gss_buffer_t                  input_token)
 {
+    BIO *                               read_bio;
+
+    if(bio)
+    {
+        read_bio = bio;
+    }
+    else
+    {
+        read_bio = context_handle->gs_rbio;
+    }
 
 	/* add any input data onto the input for the SSL BIO */
 
 #ifdef DEBUG
 	fprintf(stderr,"input token: len=%d\n",input_token->length);
 #endif
-	if (input_token->length > 0) {
-		BIO_write(context_handle->gs_rbio,
-		input_token->value,
-		input_token->length);
+	if (input_token->length > 0)
+    {
+		BIO_write(read_bio,
+                  input_token->value,
+                  input_token->length);
 #ifdef DEBUG
 		BIO_dump(context_handle->cred_handle->gs_bio_err,
-		input_token->value,
-		input_token->length);
+                 input_token->value,
+                 input_token->length);
 #endif
-	} else {
+	}
+    else
+    {
 		return GSS_S_DEFECTIVE_TOKEN;
 	}
-	return GSS_S_COMPLETE;
+
+    return GSS_S_COMPLETE;
 }
 
 
@@ -455,22 +435,35 @@ Returns:
 **********************************************************************/
 OM_uint32
 gs_get_token(
-    const gss_ctx_id_desc*         context_handle,
-    const gss_buffer_t             output_token)
+    const gss_ctx_id_desc*              context_handle,
+    BIO *                               bio,
+    const gss_buffer_t                  output_token)
 {
+    BIO *                               write_bio;
 
+    if(bio)
+    {
+        write_bio = bio;
+    }
+    else
+    {
+        write_bio = context_handle->gs_wbio;
+    }
+    
 	/* make out token */
-	output_token->length = BIO_pending(context_handle->gs_wbio);
-	if (output_token->length > 0) {
+	output_token->length = BIO_pending(write_bio);
+	if (output_token->length > 0)
+    {
 		output_token->value = (char *) malloc(output_token->length);
-		if (output_token->value == NULL) {
+		if (output_token->value == NULL)
+        {
 			output_token->length = 0 ;
 			GSSerr(GSSERR_F_GS_HANDSHAKE, GSSERR_R_OUT_OF_MEMORY);
 			return GSS_S_FAILURE;
 		}
-		BIO_read(context_handle->gs_wbio,
-		output_token->value,
-		output_token->length);
+		BIO_read(write_bio,
+                 output_token->value,
+                 output_token->length);
 #ifdef DEBUG
 		fprintf(stderr,"output token: len=%d\n",output_token->length);
 #endif
@@ -479,7 +472,9 @@ gs_get_token(
 				output_token->value,
 				output_token->length);
 #endif
-	} else {
+	}
+    else
+    {
 		output_token->value = NULL;
 	}
 	return GSS_S_COMPLETE;
@@ -726,7 +721,8 @@ gs_retrieve_peer(
     STACK *                             group = NULL;
     ASN1_BIT_STRING *                   group_types = NULL;
     int                                 i;
-    int                                 j=0;
+    int                                 j = 0;
+    int                                 k;
     int                                 cert_count;
     char *                              subgroup;
         
@@ -810,10 +806,10 @@ gs_retrieve_peer(
             goto err;
         }
     
-        while(cert_count-- &&
-              (cert = sk_X509_value(context_handle->pvd.cert_chain,
-                                    cert_count)))
+        for(k=0;k<cert_count;k++)
         {
+            cert = sk_X509_value(context_handle->pvd.cert_chain,k);
+
             extensions = cert->cert_info->extensions;
 
             for (i=0;i<sk_X509_EXTENSION_num(extensions);i++)
@@ -1059,6 +1055,7 @@ gss_create_and_fill_cred(
     int                                 status;
     int                                 i;
     int                                 j = 0;
+    int                                 k;
     int                                 cert_count;
     char *                              subgroup;
 
@@ -1243,11 +1240,13 @@ gss_create_and_fill_cred(
     proxy_get_base_name(newcred->globusid->x509n);
 
     
-    cert_count = 1;
-
     if(newcred->pcd->cert_chain)
     {
-        cert_count += sk_X509_num(newcred->pcd->cert_chain);
+        cert_count = sk_X509_num(newcred->pcd->cert_chain);
+    }
+    else
+    {
+        cert_count = 0;
     }
         
     newcred->globusid->group = sk_new_null();
@@ -1270,7 +1269,7 @@ gss_create_and_fill_cred(
 
     cert = newcred->pcd->ucert;
     previous_cert=NULL;
-    cert_count--;
+    k = 0;
 
     do
     {
@@ -1368,8 +1367,9 @@ gss_create_and_fill_cred(
 
         }
         
-    } while(cert_count-- &&
-            (cert = sk_X509_value(newcred->pcd->cert_chain,cert_count)));
+    } while(k < cert_count &&
+            (cert = sk_X509_value(newcred->pcd->cert_chain,k)) &&
+            k++);
 
     *output_cred_handle = newcred;
     

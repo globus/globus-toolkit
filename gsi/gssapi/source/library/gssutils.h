@@ -81,11 +81,13 @@ gs_handshake(
 OM_uint32
 gs_get_token(
     const gss_ctx_id_desc *             context_handle,
+    BIO *                               bio,
     const gss_buffer_t                  output_token);
 
 OM_uint32
 gs_put_token(
     const gss_ctx_id_desc *             context_handle,
+    BIO *                               bio,
     const gss_buffer_t                  input_token);
 
 OM_uint32
