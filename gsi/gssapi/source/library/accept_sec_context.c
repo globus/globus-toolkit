@@ -392,19 +392,22 @@ GSS_CALLCONV gss_accept_sec_context(
                 break;
             }
 
-            major_status = globus_i_gsi_gss_create_cred(
-                &local_minor_status,
-                GSS_C_BOTH,
-                delegated_cred_handle_P,
-                &delegated_cred);
-            if(GSS_ERROR(major_status))
+            if(delegated_cred_handle_P)
             {
-                globus_gsi_cred_handle_destroy(delegated_cred);
-                GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-                    minor_status, local_minor_status,
-                    GLOBUS_GSI_GSSAPI_ERROR_WITH_DELEGATION);
-                break;
-            }            
+                major_status = globus_i_gsi_gss_create_cred(
+                    &local_minor_status,
+                    GSS_C_BOTH,
+                    delegated_cred_handle_P,
+                    &delegated_cred);
+                if(GSS_ERROR(major_status))
+                {
+                    globus_gsi_cred_handle_destroy(delegated_cred);
+                    GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                        minor_status, local_minor_status,
+                        GLOBUS_GSI_GSSAPI_ERROR_WITH_DELEGATION);
+                    break;
+                }            
+            }
 
             context->ret_flags |= GSS_C_DELEG_FLAG;
             
