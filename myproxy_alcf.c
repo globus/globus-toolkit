@@ -9,7 +9,6 @@
 
 #define MYPROXY_DEFAULT_PROXY  "/tmp/myproxy-proxy"
 #define	SECONDS_PER_HOUR (60 * 60)
-static int use_empty_passwd = 0;
 static int dn_as_username = 0;
 
 static char usage[] = \
@@ -46,7 +45,6 @@ static char usage[] = \
 "                                         instead of the LOGNAME env. var.\n"
 "       -k | --credname       <name>      Specifies credential name\n"
 "       -K | --creddesc       <desc>      Specifies credential description\n"
-"       -p | --passphrase     <pass>      Specifies the credential passphrase\n"
 "\n";
 
 struct option long_options[] =
@@ -60,7 +58,6 @@ struct option long_options[] =
   {"username",        required_argument, NULL, 'l'},
   {"verbose",               no_argument, NULL, 'v'},
   {"version",               no_argument, NULL, 'V'},
-  {"no_passphrase",         no_argument, NULL, 'n'},
   {"dn_as_username",        no_argument, NULL, 'd'},
   {"allow_anonymous_retrievers", no_argument, NULL, 'a'},
   {"allow_anonymous_renewers", no_argument, NULL, 'A'},
@@ -70,13 +67,12 @@ struct option long_options[] =
   {"match_cn_only", 	    no_argument, NULL, 'X'},
   {"credname",	      required_argument, NULL, 'k'},
   {"creddesc",	      required_argument, NULL, 'K'},
-  {"passphrase",      required_argument, NULL, 'p'},
   {0, 0, 0, 0}
 };
 
 /*colon following an option indicates option takes an argument */
 
-static char short_options[] = "uhl:vVndr:R:xXaAk:K:t:c:y:s:p:";
+static char short_options[] = "uhl:vVdr:R:xXaAk:K:t:c:y:s:";
 
 static char *certfile   = NULL;  /* certificate file name */
 static char *keyfile    = NULL;  /* key file name */
@@ -85,12 +81,14 @@ static char version[] =
 "myproxy-alcf version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
 
 void init_arguments(int argc, char *argv[], myproxy_creds_t *my_creds);
+int file2buf(const char filename[], char **buf);
+int makeproxy(const char certfile[], const char keyfile[],
+	      const char proxyfile[]);
 
 int main(int argc, char *argv[])
 {
     SSL_CREDENTIALS *creds;
     myproxy_creds_t my_creds = {0};
-    myproxy_server_context_t server_context = {0}; /* for server config */
     char proxyfile[64] = "";
     int rval=1;
 
@@ -111,44 +109,16 @@ int main(int argc, char *argv[])
 	goto cleanup;
     }
 
-    if (ssl_certificate_load_from_file(creds, certfile) != SSL_SUCCESS) {
-	myproxy_log_verror();
-	fprintf (stderr, "Unable to load certificate. %s\n",
-		 verror_get_string()); 
-	goto cleanup;
-    }
-	
-    /* Read private key */
-    if (ssl_private_key_load_from_file(creds, keyfile, NULL,
-				       "Enter GRID pass phrase: ")
-	== SSL_ERROR) {
-	fprintf (stderr, "Error reading private key: %s\n",
-		 verror_get_string());
-	goto cleanup;
-    }
-
-    /* Read new credential passphrase */
-    if (!use_empty_passwd && !my_creds.passphrase) {
-	my_creds.passphrase =
-	    (char *)malloc((MAX_PASS_LEN+1)*sizeof(char));
-	if (myproxy_read_verified_passphrase(my_creds.passphrase,
-					     MAX_PASS_LEN, NULL) == -1) {
-	    fprintf(stderr, "%s\n", verror_get_string());
-	    goto cleanup;
-	}
-    }
-
     sprintf(proxyfile, "%s.%u", MYPROXY_DEFAULT_PROXY, (unsigned)getuid());
     /* Remove proxyfile if it already exists. */
     ssl_proxy_file_destroy(proxyfile);
     verror_clear();
-		
-    if (ssl_proxy_store_to_file(creds, proxyfile,
-				my_creds.passphrase) != SSL_SUCCESS) {
-	fprintf(stderr, "%s\n", verror_get_string());
+
+    if (makeproxy(certfile, keyfile, proxyfile) < 0) {
+	fprintf(stderr, "Failed to create temporary credentials file.\n");
 	goto cleanup;
     }
-
+		
     if (my_creds.username == NULL) { /* set default username */
 	if (dn_as_username) {
 	    if (ssl_get_base_subject_file(proxyfile,
@@ -174,24 +144,6 @@ int main(int argc, char *argv[])
 	goto cleanup;
     }
     my_creds.location = strdup(proxyfile);
-
-    if (myproxy_server_config_read(&server_context) < 0) {
-	myproxy_log_verror();
-	fprintf(stderr, "Failed to read myproxy server configuration file.\n");
-	goto cleanup;
-    }
-
-    if (myproxy_check_passphrase_policy(my_creds.passphrase,
-					server_context.passphrase_policy_pgm,
-					my_creds.username,
-					my_creds.credname,
-					my_creds.retrievers,
-					my_creds.renewers,
-					my_creds.owner_name) < 0) {
-	fprintf(stderr, verror_get_string());
-	fprintf(stderr, "Credential not stored.\n");
-	goto cleanup;
-    }
 
     if (myproxy_creds_store(&my_creds) < 0) {
 	myproxy_log_verror();
@@ -267,10 +219,6 @@ init_arguments(int argc,
 		fprintf(stderr, "Only one -a or -r option may be specified.\n");
 		exit(1);
 	    }
-	    if (use_empty_passwd) {
-		fprintf(stderr, "-r is incompatible with -n.  A passphrase is required for credential retrieval.\n");
-		exit(1);
-	    }
 	    if (expr_type == REGULAR_EXP)  /*copy as is */
 		my_creds->retrievers = strdup (gnu_optarg);
 	    else
@@ -302,15 +250,6 @@ init_arguments(int argc,
 			      my_creds->renewers);
 		my_creds->renewers = strcat (my_creds->renewers,gnu_optarg);
 	    }
-	    use_empty_passwd = 1;
-	    break;
-	case 'n':   /* use an empty passwd == require certificate based
-		       authorization while getting the creds */
-	    if (my_creds->retrievers) {
-		fprintf(stderr, "-n is incompatible with -r and -a.\nA passphrase is required for credential retrieval.\n");
-		exit(1);
-	    }
-	    use_empty_passwd = 1;
 	    break;
 	case 'd':   /* use the certificate subject (DN) as the default
 		       username instead of LOGNAME */
@@ -331,10 +270,6 @@ init_arguments(int argc,
 	    }
 	    if (my_creds->retrievers) {
 		fprintf(stderr, "Only one -a or -r option may be specified.\n");
-		exit(1);
-	    }
-	    if (use_empty_passwd) {
-		fprintf(stderr, "-a is incompatible with -n.  A passphrase is required for credential retrieval.\n");
 		exit(1);
 	    }
 	    my_creds->retrievers = strdup ("*");
@@ -358,9 +293,6 @@ init_arguments(int argc,
 	case 'K':  /*credential description*/
 	    my_creds->creddesc = strdup (gnu_optarg);
 	    break;
-	case 'p':  /* credential passphrase */
-	    my_creds->passphrase = strdup(gnu_optarg);
-	    break;
 
         default:        /* print usage and exit */ 
             fprintf(stderr, usage);
@@ -368,4 +300,149 @@ init_arguments(int argc,
             break;	
         }
     }
+}
+
+int file2buf(const char filename[], char **buf)
+{
+    int fd, size, rval;
+    char *b;
+
+    if ((fd = open(filename, O_RDONLY)) < 0) {
+	perror("open"); return -1;
+    }
+    if ((size = (int)lseek(fd, 0, SEEK_END)) < 0) {
+	perror("lseek"); return -1;
+    }
+    if (lseek(fd, 0, SEEK_SET) < 0) {
+	perror("lseek"); return -1;
+    }
+    *buf = b = (char *)malloc(size+1);
+    if (b == NULL) {
+	perror("malloc"); return -1;
+    }
+    while (size) {
+	if ((rval = read(fd, b, size)) < 0) {
+	    perror("read"); return -1;
+	}
+	size -= rval;
+	b += rval;
+    }
+    *b = '\0';
+    
+    return 0;
+}
+
+int makeproxy(const char certfile[], const char keyfile[],
+	      const char proxyfile[]) 
+{
+    static char BEGINCERT[] = "-----BEGIN CERTIFICATE-----";
+    static char ENDCERT[] = "-----END CERTIFICATE-----";
+    static char BEGINKEY[] = "-----BEGIN RSA PRIVATE KEY-----";
+    static char ENDKEY[] = "-----END RSA PRIVATE KEY-----";
+    char *certbuf=NULL, *keybuf=NULL, *certstart, *certend, *keystart, *keyend;
+    int return_value = -1, size, rval, fd=0;
+
+    /* Read the certificate(s) into a buffer. */
+    if (file2buf(certfile, &certbuf) < 0) {
+	fprintf(stderr, "Failed to read %s\n", certfile);
+	goto cleanup;
+    }
+
+    /* Read the key into a buffer. */
+    if (file2buf(keyfile, &keybuf) < 0) {
+	fprintf(stderr, "Failed to read %s\n", keyfile);
+	goto cleanup;
+    }
+
+    /* Open the output file. */
+    if ((fd = open(proxyfile, O_CREAT | O_EXCL | O_WRONLY)) < 0) {
+	fprintf(stderr, "open(%s) failed: %s\n", proxyfile, strerror(errno));
+	goto cleanup;
+    }
+
+    /* Write the first certificate. */
+    if ((certstart = strstr(certbuf, BEGINCERT)) == NULL) {
+	fprintf(stderr, "%s doesn't contain '%s'.\n", certfile, BEGINCERT);
+	goto cleanup;
+    }
+
+    if ((certend = strstr(certstart, ENDCERT)) == NULL) {
+	fprintf(stderr, "%s doesn't contain '%s'.\n", certfile, ENDCERT);
+	goto cleanup;
+    }
+    certend += strlen(ENDCERT);
+    size = certend-certstart;
+
+    while (size) {
+	if ((rval = write(fd, certstart, size)) < 0) {
+	    perror("write");
+	    goto cleanup;
+	}
+	size -= rval;
+	certstart += rval;
+    }
+    if (write(fd, "\n", 1) < 0) {
+	perror("write");
+	goto cleanup;
+    }
+
+    /* Write the key. */
+    if ((keystart = strstr(keybuf, BEGINKEY)) == NULL) {
+	fprintf(stderr, "%s doesn't contain '%s'.\n", keyfile, BEGINKEY);
+	goto cleanup;
+    }
+
+    if ((keyend = strstr(keystart, ENDKEY)) == NULL) {
+	fprintf(stderr, "%s doesn't contain '%s'.\n", keyfile, ENDKEY);
+	goto cleanup;
+    }
+    keyend += strlen(ENDKEY);
+    size = keyend-keystart;
+
+    while (size) {
+	if ((rval = write(fd, keystart, size)) < 0) {
+	    perror("write");
+	    goto cleanup;
+	}
+	size -= rval;
+	keystart += rval;
+    }
+    if (write(fd, "\n", 1) < 0) {
+	perror("write");
+	goto cleanup;
+    }
+
+    /* Write any remaining certificates. */
+    while ((certstart = strstr(certstart, BEGINCERT)) != NULL) {
+
+	if ((certend = strstr(certstart, ENDCERT)) == NULL) {
+	    fprintf(stderr, "Can't find matching '%s' in %s.\n", ENDCERT,
+		    certfile);
+	    goto cleanup;
+	}
+	certend += strlen(ENDCERT);
+	size = certend-certstart;
+
+	while (size) {
+	    if ((rval = write(fd, certstart, size)) < 0) {
+		perror("write");
+		goto cleanup;
+	    }
+	    size -= rval;
+	    certstart += rval;
+	}
+	if (write(fd, "\n", 1) < 0) {
+	    perror("write");
+	    goto cleanup;
+	}
+    }
+
+    return_value = 0;
+
+ cleanup:
+    if (certbuf) free(certbuf);
+    if (keybuf) free(keybuf);
+    if (fd) close(fd);
+
+    return return_value;
 }
