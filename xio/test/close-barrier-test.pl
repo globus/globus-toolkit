@@ -4,42 +4,12 @@ use strict;
 use POSIX;
 use Test;
 
+require "test-common.pl";
+
 my @tests;
 my @todo;
 my $test_exec="./framework_test";
-
-sub run_test
-{
-    my $cmd=(shift);
-    my ($errors,$rc) = ("",0);
-
-    unlink("core");
-
-    my $command = "$test_exec $cmd >/dev/null 2>/dev/null";
-
-    $rc = system($command);
-    if($rc != 0)
-    {
-        $errors .= "\n # Tests :$command: exited with  $rc.";
-    }
-    if(-r 'core')
-    {
-        my $core_str = "something.core";
-        system("mv core $core_str");
-        $errors .= "\n# Core file generated.";
-    }
-
-    if($errors eq "")
-    {
-        ok('success', 'success');
-    }
-    else
-    {
-        $errors = "\n# Test failed\n# $command\n# " . $errors;
-        ok($errors, 'success');
-    }
-}
-
+my $test_name="close_barrier";
 
 my $inline_finish;
 my $buffer_size=2048;
@@ -63,7 +33,6 @@ push(@drivers, "-D test_bounce_transform -D debug -D test_bounce_transform");
 
 sub close_barrier
 {
-    my $test_name="close_barrier";
     my $inline_finish="-i";
 
     for(my $i = 0; $i < 2; $i++)
@@ -73,13 +42,13 @@ sub close_barrier
             my $c = $_;
             foreach(@drivers)
             {
-                push(@tests, "$test_name -w 1 -r 0 -c $c -b $buffer_size $inline_finish $_");
-                push(@tests, "$test_name -w 0 -r 1 -c $c -b $buffer_size $inline_finish $_");
+                push(@tests, "$test_exec $test_name -w 1 -r 0 -c $c -b $buffer_size $inline_finish $_");
+                push(@tests, "$test_exec $test_name -w 0 -r 1 -c $c -b $buffer_size $inline_finish $_");
                 for(my $write_count = 1; $write_count <= 8; $write_count *= 2)
                 {
                     for(my $read_count = 1; $read_count <= 8; $read_count *= 2)
                     {
-                        push(@tests, "$test_name -w $write_count -r $read_count -c $c -b $buffer_size $inline_finish $_");
+                        push(@tests, "$test_exec $test_name -w $write_count -r $read_count -c $c -b $buffer_size $inline_finish $_");
                     }
                 }
             }
@@ -90,7 +59,10 @@ sub close_barrier
 
 &close_barrier();
 plan tests => scalar(@tests), todo => \@todo;
+my $cnt=0;
 foreach(@tests)
 {
-    &run_test($_);    
+    my $test_str="$test_name.$cnt";
+    &run_test($_, $test_str);
+    $cnt++;
 }
