@@ -115,8 +115,8 @@ extern globus_bool_t                      g_globus_i_io_use_netlogger;
 
 extern globus_mutex_t			globus_i_io_mutex;
 extern globus_cond_t			globus_l_io_cond;
-extern volatile int			globus_i_io_mutex_cnt;
-extern volatile int			globus_l_io_cond_cnt;
+extern int			        globus_i_io_mutex_cnt;
+extern int			        globus_l_io_cond_cnt;
 
 extern globus_bool_t *                  globus_i_io_tcp_used_port_table;
 extern unsigned short                   globus_i_io_tcp_used_port_min;
@@ -195,7 +195,7 @@ typedef struct
     globus_cond_t			cond;
     globus_object_t *			err;
     globus_bool_t			use_err;
-    volatile globus_bool_t		done;
+    globus_bool_t		        done;
     globus_size_t			nbytes;
     void *                              data;
 } globus_i_io_monitor_t;
@@ -207,6 +207,11 @@ globus_i_common_get_env_pair(
     char * env_name,
     int * min,
     int * max);
+
+globus_result_t
+globus_i_io_copy_fileattr_to_handle(
+    globus_io_attr_t *			attr,
+    globus_io_handle_t *		handle);
 
 void
 globus_i_io_securesocket_copy_attr(
