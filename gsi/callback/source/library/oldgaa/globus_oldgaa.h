@@ -8,8 +8,12 @@ Description:
 #ifndef _OLDGAA_API_H
 #define _OLDGAA_API_H_
 
+#ifdef WIN32
+#undef HAVE_SYS_TIME_H
+#else
 #ifndef HAVE_SYS_TIME_H
 #define HAVE_SYS_TIME_H 1
+#endif
 #endif
 
 #ifndef EXTERN_C_BEGIN
