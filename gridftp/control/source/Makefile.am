@@ -58,10 +58,9 @@ libglobus_ftp_control___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
 libglobus_ftp_control___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS)
 
 
-
+EXTRA_DIST = globus_gridftp_protocol_extensions.doc
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
 
-EXTRA_DIST += \
-	globus_gridftp_protocol_extensions.doc
+
