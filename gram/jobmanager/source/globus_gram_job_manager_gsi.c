@@ -187,7 +187,7 @@ globus_l_gram_job_manager_gsi_register_proxy_timeout(
 
     if(major_status == GSS_S_COMPLETE)
     {
-	if (lifetime - request->proxy_timeout <= 0)
+	if ((int) lifetime - request->proxy_timeout <= 0)
 	{
 	    request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
 	    request->failure_code =
