@@ -13,7 +13,7 @@ else
 fi
 export GPT_LOCATION=`pwd`/gpt-2.2.9
 
-./make-packages.pl -t2=$TAG2 -t3=$TAG3 --uncool --bundles="$INSTALL_BUNDLES" $INSTALL $@
+./make-packages.pl -t2=$TAG2 -t3=$TAG3 --bundles="$INSTALL_BUNDLES" $INSTALL $@
 if [ $? -ne 0 ]; then
 	echo Packaging failed.
 	exit
