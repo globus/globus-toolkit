@@ -53,4 +53,3 @@ EXTRA_DIST = globus-personal-gatekeeper $(validation_DATA) \
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
-
