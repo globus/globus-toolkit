@@ -860,7 +860,7 @@ globus_ftp_client_plugin_restart_get(
     globus_ftp_client_handle_t *		handle,
     const char *				url,
     const globus_ftp_client_operationattr_t *	attr,
-    globus_ftp_client_restart_marker_t *	restart,
+    globus_ftp_client_restart_marker_t *	restart_marker,
     const globus_abstime_t *            	when);
 
 globus_result_t
@@ -868,7 +868,7 @@ globus_ftp_client_plugin_restart_put(
     globus_ftp_client_handle_t *		handle,
     const char *				url,
     const globus_ftp_client_operationattr_t *	attr,
-    globus_ftp_client_restart_marker_t *	restart,
+    globus_ftp_client_restart_marker_t *	restart_marker,
     const globus_abstime_t *            	when);
 
 globus_result_t
@@ -878,7 +878,7 @@ globus_ftp_client_plugin_restart_third_party_transfer(
     const globus_ftp_client_operationattr_t *	source_attr,
     const char *				dest_url,
     const globus_ftp_client_operationattr_t *	dest_attr,
-    globus_ftp_client_restart_marker_t *	restart,
+    globus_ftp_client_restart_marker_t *	restart_marker,
     const globus_abstime_t *            	when);
 
 globus_result_t
