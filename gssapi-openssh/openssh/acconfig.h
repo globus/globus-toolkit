@@ -380,6 +380,19 @@
 /* Define if your platform needs to skip post auth file descriptor passing */
 #undef DISABLE_FD_PASSING
 
+/* Silly mkstemp() */
+#undef HAVE_STRICT_MKSTEMP
+
+/* Setproctitle emulation */
+#undef SETPROCTITLE_STRATEGY
+#undef SETPROCTITLE_PS_PADDING
+
+/* Some systems put this outside of libc */
+#undef HAVE_NANOSLEEP
+
+/* Pushing STREAMS modules incorrectly acquires a controlling TTY */
+#undef STREAMS_PUSH_ACQUIRES_CTTY
+
 @BOTTOM@
 
 /* ******************* Shouldn't need to edit below this line ************** */

@@ -43,6 +43,10 @@ It does not function on HP-UX with a trusted system
 configuration.  PAMAuthenticationViaKbdInt does not function with
 privsep.
 
+On Compaq Tru64 Unix, only the pre-authentication part of privsep is
+supported.  Post-authentication privsep is disabled automatically (so
+you won't see the additional process mentioned below).
+
 Note that for a normal interactive login with a shell, enabling privsep
 will require 1 additional process per login session.
 
