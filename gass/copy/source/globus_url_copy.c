@@ -284,6 +284,8 @@ main(int argc, char **argv)
     globus_gass_copy_handle_t          gass_copy_handle;
     char                               buffer[512];
     globus_result_t                    result;
+    globus_netlogger_handle_t          gnl_handle;
+    globus_ftp_client_handleattr_t     ftp_handleattr;
     globus_gass_copy_handleattr_t      gass_copy_handleattr;
     globus_io_attr_t                   io_attr;
 
