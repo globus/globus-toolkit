@@ -32,6 +32,7 @@ int X509_SIG_cmp(
     const X509_SIG *                    b);
 
 int X509_SIG_print(
+    BIO *                               bp,
     X509_SIG *                          signature);
 
 int X509_SIG_print_fp(

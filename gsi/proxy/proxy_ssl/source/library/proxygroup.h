@@ -67,6 +67,7 @@ int PROXYGROUP_cmp(
     const PROXYGROUP *                  b);
 
 int PROXYGROUP_print(
+    BIO *                               bp,
     PROXYGROUP *                        group);
 
 int PROXYGROUP_print_fp(
@@ -84,7 +85,7 @@ char * PROXYGROUP_get_name(
 
 int PROXYGROUP_set_attached(
     PROXYGROUP *                        group,
-    ASN1_BOOLEAN *                      attached);
+    ASN1_BOOLEAN                        attached);
 
 ASN1_BOOLEAN * PROXYGROUP_get_attached(
     PROXYGROUP *                        group);

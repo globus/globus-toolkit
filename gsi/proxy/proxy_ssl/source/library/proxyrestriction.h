@@ -66,6 +66,7 @@ int PROXYRESTRICTION_cmp(
     const PROXYRESTRICTION *            b);
 
 int PROXYRESTRICTION_print(
+    BIO *                               bp,
     PROXYRESTRICTION *                  restriction);
 
 int PROXYRESTRICTION_print_fp(

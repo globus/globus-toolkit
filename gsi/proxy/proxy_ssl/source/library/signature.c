@@ -62,7 +62,7 @@ int X509_SIG_cmp(
     int ret;
     ret  = (OBJ_obj2nid((ASN1_OBJECT *)a->algor) == 
 	    OBJ_obj2nid((ASN1_OBJECT *)b->algor));
-    ret &= ANS1_BIT_STRING_cmp(a->digest, b->digest);
+    ret &= ASN1_STRING_cmp(a->digest, b->digest);
     return (ret);
 }
 
@@ -70,14 +70,19 @@ int X509_SIG_cmp(
  * @ingroup signature
  * Prints the X509_SIG structure to stdout
  * 
+ * @param bp  a BIO pointer to print to
  * @param signature pointer to the X509_SIG to be printed
  *
  * @return 1 on success, 0 on error
  */
 int X509_SIG_print(
+    BIO *                         bp,
     X509_SIG *                    signature) 
 {
-    return X509_SIG_print_fp(stdout, signature);
+    int ret;
+    ret = BIO_printf(bp, "Signing Algorithm: %s\n", signature->algor->algorithm->ln);
+    ret &= ASN1_STRING_print(bp, (ASN1_STRING *) signature->digest);
+    return (ret);
 }
 
 /**
@@ -93,12 +98,13 @@ int X509_SIG_print_fp(
     FILE *                              fp,
     X509_SIG *                    signature) {
 
-    BIO * bp;
     int ret;
+    BIO * bp = BIO_new(BIO_s_file());
     
     BIO_set_fp(bp, fp, BIO_NOCLOSE);
-    ret = BIO_fprintf(bp, "Signing Algorithm: %s\n", OBJ_obj2ln(signature->algor));
-    ret &= ASN1_STRING_print(bp, (ASN1_STRING *) signature->digest);
+    ret = X509_SIG_print(bp, signature);
+    BIO_free(bp);
+
     return (ret);
 }
 
@@ -158,9 +164,9 @@ int X509_SIG_set_signature(
     X509_SIG *                    signature,
     X509 *                              cert)
 {    
-    return ASN1_BIT_STRING_set(signature->digest,
-			       cert->signature->data, 
-			       cert->signature->length);
+    return ASN1_STRING_set(signature->digest,
+			   cert->signature->data, 
+			   cert->signature->length);
 }
 
 /**

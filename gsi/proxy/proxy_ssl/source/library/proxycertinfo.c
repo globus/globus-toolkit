@@ -41,6 +41,7 @@ PROXYCERTINFO * PROXYCERTINFO_new()
     PROXYCERTINFO * ret = NULL;
     ASN1_CTX c;
     M_ASN1_New_Malloc(ret, PROXYCERTINFO);
+    ret->pC = (ASN1_BOOLEAN *)OPENSSL_malloc(sizeof(ASN1_BOOLEAN));
     *(ret->pC) = 0;
     M_ASN1_New(ret->path_length, M_ASN1_INTEGER_new);
     M_ASN1_New(ret->restriction, PROXYRESTRICTION_new);
@@ -62,7 +63,8 @@ void PROXYCERTINFO_free(
     PROXYCERTINFO *                     cert_info)
 {
     if(cert_info == NULL) return;
-    M_ASN1_BOOLEAN_free(cert_info->pC);
+    OPENSSL_free(cert_info->pC);
+    cert_info->pC = NULL;
     PROXYRESTRICTION_free(cert_info->path_length);
     PROXYGROUP_free(cert_info->group);
     X509_SIG_free(cert_info->issuer_signature);
@@ -123,9 +125,32 @@ int PROXYCERTINFO_cmp(
  * @return 1 on success, 0 on error
  */
 int PROXYCERTINFO_print(
+    BIO *                               bp,
     PROXYCERTINFO *                     cert_info) 
 {
-    return PROXYCERTINFO_print_fp(stdout, cert_info);
+    int ret;
+    ret = BIO_printf(bp, 
+		      "PROXYCERTINFO::ProxyCertificate: %s\n", 
+		      cert_info->pC ? "TRUE" : "FALSE");
+    if(cert_info->path_length != NULL)
+    {
+	ret &= BIO_printf(bp, 
+			  "PROXYCERTINFO::ProxyCertificatePathLength: %d\n", 
+			  cert_info->path_length);
+    }
+    if(cert_info->restriction != NULL)
+    {
+	ret &= PROXYRESTRICTION_print(bp, cert_info->restriction);
+    }
+    if(cert_info->group)
+    {
+	ret &= PROXYGROUP_print(bp, cert_info->group);
+    }
+    if(cert_info->issuer_signature != NULL)
+    {
+	ret &= X509_SIG_print(bp, cert_info->issuer_signature);
+    }
+    return (ret);
 }
 
 /**
@@ -143,19 +168,12 @@ int PROXYCERTINFO_print_fp(
     FILE *                              fp,
     PROXYCERTINFO *                     cert_info)
 {
-    BIO * bp;
     int ret;
+    BIO * bp = BIO_new(BIO_s_file());
     
     BIO_set_fp(bp, fp, BIO_NOCLOSE);
-    ret = BIO_fprintf(bp, 
-		      "PROXYCERTINFO::ProxyCertificate: %s\n", 
-		      cert_info->pC ? "TRUE" : "FALSE");
-    ret &= BIO_fprintf(bp, 
-		      "PROXYCERTINFO::ProxyCertificatePathLength: %d\n", 
-		      cert_info->path_length);
-    ret &= PROXYRESTRICTION_print_fp(fp, cert_info->restriction);
-    ret &= PROXYGROUP_print_fp(fp, cert_info->group);
-    ret &= X509_SIG_print_fp(fp, cert_info->issuer_signature);
+    ret =  PROXYCERTINFO_print(bp, cert_info);
+    BIO_free(bp);
 
     return (ret);
 }   
@@ -163,7 +181,50 @@ int PROXYCERTINFO_print_fp(
 /**
  * @ingroup proxycertinfo
  *
+ * Returns the boolean pC value of the PROXYCERTINFO
+ * structure
+ *
+ * @param cert_info the PROXYCERTINFO structure to get the pC value of
+ *
+ * @return the boolean pC value
+ */
+ASN1_BOOLEAN * PROXYCERTINFO_get_pC(
+    PROXYCERTINFO *                     cert_info)
+{
+    return cert_info->pC;
+}
+
+/**
+ * @ingroup proxycertinfo
+ * 
+ * Sets the boolean pC (proxy cert) value of the PROXYCERTINFO
+ * structure
+ *
+ * @param cert_info the PROXYCERTINFO structure to set
+ * @param pC the boolean value to set it to
+ *
+ * @return 1 on success, 0 on error
+ */
+int PROXYCERTINFO_set_pC(
+    PROXYCERTINFO *                     cert_info,
+    ASN1_BOOLEAN                        pC)
+{
+    *(cert_info->pC) = pC;
+    return 1;
+}
+
+/**
+ * @ingroup proxycertinfo
+ *
  * Sets the group of this PROXYCERTINFO structure
+ * Since this is an optional value in the ASN1 encoding
+ * it can be set to NULL here - which means that when
+ * the PROXYCERTINFO struct is converted to its DER encoded
+ * form, the group field won't be included.  
+ *
+ * This function makes
+ * a copy of the PROXYGROUP variable passed in, and
+ * the copy becomes the current value for the group field.
  *
  * @param cert_info the PROXYCERTINFO structure to set
  * @param group the group to set it to
@@ -174,12 +235,16 @@ int PROXYCERTINFO_set_group(
     PROXYCERTINFO *                     cert_info,
     PROXYGROUP *                        group)
 {
-    if(group != NULL) 
+    PROXYGROUP_free(cert_info->group);
+    if(group != NULL)
     {
-	cert_info->group = group;
-	return 1;
+	cert_info->group = PROXYGROUP_dup(group);
     }
-    return 0;
+    else
+    {
+	cert_info->group = NULL;
+    }
+    return 1;
 }
 
 /**
@@ -202,6 +267,11 @@ PROXYGROUP * PROXYCERTINFO_get_group(
  * @ingroup proxycertinfo
  *
  * Sets the restriction on the PROXYCERTINFO
+ * Since this is an optional field in the
+ * ASN1 encoding, this variable can be set
+ * to NULL through this function - which
+ * means that when the PROXYCERTINFO is encoded
+ * the restriction won't be included.
  *
  * @param cert_info the PROXYCERTINFO object
  * to set the restriction of
@@ -214,12 +284,16 @@ int PROXYCERTINFO_set_restriction(
     PROXYCERTINFO *                     cert_info,
     PROXYRESTRICTION *                  restriction)
 {
+    PROXYRESTRICTION_free(cert_info->restriction);
     if(restriction != NULL)
     {
-	cert_info->restriction = restriction;
-	return 1;
+	cert_info->restriction = PROXYRESTRICTION_dup(restriction);
     }
-    return 0;
+    else
+    {
+	cert_info->restriction = NULL;
+    }
+    return 1;
 }
 
 /**
@@ -244,6 +318,10 @@ PROXYRESTRICTION * PROXYCERTINFO_get_restriction(
  * the maximum depth of the path of the Proxy Certificates that
  * can be signed by an End Entity Certificate (EEC) or Proxy Certificate.
  *
+ * Since this is an optional field in its ASN1 coded representation,
+ * it can be set to NULL through this function - which means
+ * that it won't be included in the encoding.
+ *
  * @param cert_info the PROXYCERTINFO to set the path length of
  * @param path_length the path length to set it to
  *
@@ -251,12 +329,19 @@ PROXYRESTRICTION * PROXYCERTINFO_get_restriction(
  */
 int PROXYCERTINFO_set_path_length(
     PROXYCERTINFO *                     cert_info,
-    ASN1_INTEGER                        path_length)
+    long *                               path_length)
 {
     if(cert_info != NULL) 
     {
-	*(cert_info->path_length) = path_length;
-	return 1;
+	if(path_length != NULL)
+	{
+	    return ASN1_INTEGER_set(cert_info->path_length, *path_length);
+	}
+	else
+	{
+	    cert_info->path_length = NULL;
+	    return 1;
+	}
     }
     return 0;
 }
@@ -282,7 +367,10 @@ ASN1_INTEGER * PROXYCERTINFO_get_path_length(
  * @ingroup proxycertinfo
  *
  * Sets the signed cert digest of the issuer's cert
- * for a PROXYCERTINFO
+ * for a PROXYCERTINFO.  Since this field is optional
+ * in the ASN1 encoding, this variable can be set 
+ * to NULL - which means that it won't be included
+ * in the ASN1 encoding.
  *
  * @param cert_info the PROXYCERTINFO to set the 
  * signed cert digest of
@@ -295,11 +383,18 @@ int PROXYCERTINFO_set_issuer_cert_digest(
     PROXYCERTINFO *                     cert_info,
     X509_SIG *                          cert_digest)
 {
-    if(cert_digest != NULL) {
-	cert_info->issuer_signature = cert_digest;
-	return 1;
+    X509_SIG_free(cert_info->issuer_signature);
+    if(cert_digest != NULL) 
+    {
+	cert_info->issuer_signature = (X509_SIG *) ASN1_dup((int (*)())   i2d_X509_SIG, 
+							    (char *(*)()) d2i_X509_SIG, 
+							    (char *)      cert_digest);
     }
-    return 0;
+    else
+    {
+	cert_info->issuer_signature = NULL;
+    }
+    return 1;
 }
 
 /**
@@ -417,5 +512,3 @@ PROXYCERTINFO * d2i_PROXYCERTINFO(
 		      PROXYCERTINFO_free, 
 		      ASN1_F_D2I_PROXYCERTINFO);
 }
-    
-

@@ -42,6 +42,7 @@ PROXYGROUP * PROXYGROUP_new()
     PROXYGROUP * ret = NULL;
     M_ASN1_New_Malloc(ret, PROXYGROUP);
     M_ASN1_New(ret->group_name, M_ASN1_OCTET_STRING_new);
+    ret->attached_group = (ASN1_BOOLEAN *)OPENSSL_malloc(sizeof(ASN1_BOOLEAN));
     *(ret->attached_group) = 0;
     return (ret);
     M_ASN1_New_Error(ASN1_F_PROXYGROUP_NEW);
@@ -60,7 +61,8 @@ void PROXYGROUP_free(
 {
     if(group == NULL) return;
     M_ASN1_OCTET_STRING_free(group->group_name);
-    M_ASN1_BOOLEAN_free(group->attached_group);
+    OPENSSL_free(group->attached_group);
+    group->attached_group = NULL;
     OPENSSL_free(group);
 }
 
@@ -102,28 +104,34 @@ int PROXYGROUP_cmp(
     int ret;
     
     ret =  ASN1_OCTET_STRING_cmp(a->group_name, b->group_name);
-    ret &= ASN1_BOOLEAN_cmp(a->attached_group,  b->attached_group);
+    ret &= (a->attached_group == b->attached_group);
     return (ret);
 }
 
 int PROXYGROUP_print(
+    BIO *                               bp,
     PROXYGROUP *                        group)
 {
-    return PROXYGROUP_print_fp(stdout, group);
+    int ret;
+
+    ret = BIO_printf(bp, "PROXYGROUP::GroupName: ");
+    ret &= ASN1_STRING_print(bp, group->group_name);
+    ret &= BIO_printf(bp, "PROXYGROUP::AttachedGroup: %s", 
+		       group->attached_group ? "TRUE" : "FALSE");
+    return (ret);
 }
 
 int PROXYGROUP_print_fp(
     FILE *                              fp,
     PROXYGROUP *                        group)
 {
-    BIO * bp;
     int ret;
-    
+
+    BIO * bp = BIO_new(BIO_s_file());
     BIO_set_fp(bp, fp, BIO_NOCLOSE);
-    ret = BIO_fprintf(bp, "PROXYGROUP::GroupName: ");
-    ret &= ASN1_OCTET_STRING_print(bp, group->group_name);
-    ret &= BIO_fprintf(bp, "PROXYGROUP::AttachedGroup: %s", 
-		       group->attached_group ? "TRUE" : "FALSE");
+    ret = PROXYGROUP_print(bp, group);
+    BIO_free(bp);
+
     return (ret);
 }
 
@@ -149,9 +157,9 @@ char * PROXYGROUP_get_name(
 
 int PROXYGROUP_set_attached(
     PROXYGROUP *                        group,
-    ASN1_BOOLEAN *                      attached)
+    ASN1_BOOLEAN                        attached)
 {
-    group->attached_group = attached;
+    *(group->attached_group) = attached;
     return 1;
 }
 

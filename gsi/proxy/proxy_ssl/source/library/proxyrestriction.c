@@ -33,8 +33,8 @@ void PROXYRESTRICTION_free(
     PROXYRESTRICTION *                  restriction)
 {
     if(restriction == NULL) return;
-    M_ASN1_OBJECT_free(restriction->policy_language);
-    M_ASN1_OCTECT_STRING_free(restriction->policy);
+    ASN1_OBJECT_free(restriction->policy_language);
+    M_ASN1_OCTET_STRING_free(restriction->policy);
     OPENSSL_free(restriction);
 }
 
@@ -51,27 +51,40 @@ int PROXYRESTRICTION_cmp(
     const PROXYRESTRICTION *            b)
 {
     int ret;
-    ret  = ASN1_OBJECT_cmp(a->policy_language, b->policy_language);
-    ret &= ASN1_OCTECT_STRING_cmp(a->policy, b->policy);
+    ret  = (a->policy_language->nid == b->policy_language->nid);
+    ret &= ASN1_STRING_cmp((ASN1_STRING *)a->policy, (ASN1_STRING *)b->policy);
     return (ret);
 }
 
 int PROXYRESTRICTION_print(
+    BIO *                               bp,
     PROXYRESTRICTION *                  restriction)
 {
-    return PROXYRESTRICTION_print_fp(stdout, restriction);
+    int ret;
+    ret  = BIO_printf(bp, "RESTRICTION::PolicyLanguage: %s, %s, %d\n", 
+		      restriction->policy_language->ln,
+		      restriction->policy_language->sn,
+		      restriction->policy_language->nid);
+    ret &= BIO_dump(bp,
+		    restriction->policy_language->data,
+		    restriction->policy_language->length);
+
+    ret &= ASN1_STRING_print(bp, (ASN1_STRING *) restriction->policy);
+
+    return (ret);
 }
 
 int PROXYRESTRICTION_print_fp(
     FILE *                              fp,
     PROXYRESTRICTION *                  restriction)
 {
-    BIO * bp;
     int ret;
-    
+
+    BIO * bp = BIO_new(BIO_s_file());    
     BIO_set_fp(bp, fp, BIO_NOCLOSE);
-    ret  = ASN1_OBJECT_print(bp, restriction->policy_language);
-    ret &= ASN1_OCTECT_STRING_print(bp, restriction->policy);
+    ret = PROXYRESTRICTION_print(bp, restriction);
+    BIO_free(bp);
+
     return (ret);
 }
 
@@ -81,7 +94,8 @@ int PROXYRESTRICTION_set_policy_language(
 {
     if(policy_language != NULL) 
     {
-	restriction->policy_language = policy_language;
+	ASN1_OBJECT_free(restriction->policy_language);
+	restriction->policy_language = OBJ_dup(policy_language);
 	return 1;
     }
     return 0;

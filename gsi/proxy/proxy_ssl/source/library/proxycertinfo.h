@@ -81,6 +81,7 @@ int PROXYCERTINFO_cmp(
     const PROXYCERTINFO *               b);
 
 int PROXYCERTINFO_print(
+    BIO *                               bp,
     PROXYCERTINFO *                     cert_info);
 
 int PROXYCERTINFO_print_fp(
@@ -90,6 +91,13 @@ int PROXYCERTINFO_print_fp(
 int PROXYCERTINFO_set_group(
     PROXYCERTINFO *                     cert_info,
     PROXYGROUP *                        group);
+
+ASN1_BOOLEAN * PROXYCERTINFO_get_pC(
+    PROXYCERTINFO *                     cert_info);
+
+int PROXYCERTINFO_set_pC(
+    PROXYCERTINFO *                     cert_info,
+    ASN1_BOOLEAN                        pC);
 
 PROXYGROUP * PROXYCERTINFO_get_group(
     PROXYCERTINFO *                     cert_info);
@@ -103,7 +111,7 @@ PROXYRESTRICTION * PROXYCERTINFO_get_restriction(
 
 int PROXYCERTINFO_set_path_length(
     PROXYCERTINFO *                     cert_info,
-    ASN1_INTEGER                        path_length);
+    long *                              path_length);
 
 ASN1_INTEGER * PROXYCERTINFO_get_path_length(
     PROXYCERTINFO *                     cert_info);
