@@ -122,6 +122,22 @@ globus_version_print(
     FILE *                              stream,
     globus_bool_t                       verbose);
 
+
+int
+globus_module_set_args(
+    int                                 argc,
+    char **                             argv);
+
+int
+globus_module_get_args(
+    int *                               argc,
+    char ***                            argv);
+
+int
+globus_module_free_args();
+
+
+
 #ifndef SWIG
 EXTERN_C_END
 
