@@ -309,8 +309,6 @@ get_default_policy_file(oldgaa_data_ptr policy_db)
 
   if (ca_policy_file_path)
   {
-    struct stat stat_buf;
-
     sprintf(ca_policy_file_path, "%s/%s", cert_dir, ca_policy_filename);
 
     policy_db->str = oldgaa_strcopy(ca_policy_file_path, policy_db->str) ;
@@ -660,7 +658,6 @@ oldgaa_globus_parse_policy (policy_file_context_ptr  pcontext,
   char                  str[MAX_STRING_SIZE] = {NUL};
   int                   cond_present     = FALSE;
   int                   new_entry        = TRUE; 
-  int                   line_number;
  
   end_of_file    = 0;
   *policy_handle = NULL;
@@ -805,7 +802,7 @@ oldgaa_globus_parse_principals(policy_file_context_ptr  pcontext,
                             oldgaa_principals_ptr      *start)
 {
   char               str[MAX_STRING_SIZE],*type;
-  int                first     = TRUE, ret_val;
+  int                first     = TRUE;
   oldgaa_principals_ptr principal = NULL;
 
 #ifdef DEBUG
@@ -926,7 +923,7 @@ oldgaa_globus_parse_rights(policy_file_context_ptr  pcontext,
                         int                     *end_of_entry)
 {
   char            str[MAX_STRING_SIZE];
-  int             first  = TRUE, ret_val;
+  int             first  = TRUE;
   oldgaa_rights_ptr  rights = NULL;
   
 #ifdef DEBUG
@@ -1021,7 +1018,7 @@ oldgaa_globus_parse_conditions(policy_file_context_ptr  pcontext,
                             int                     *end_of_entry )
 {
   char                  str[MAX_STRING_SIZE];
-  int                   first = TRUE, ret_val;
+  int                   first = TRUE;
   oldgaa_conditions_ptr    cond;
   oldgaa_cond_bindings_ptr cond_bind;
   uint32        inv_minor_status = 0, inv_major_status = 0;
