@@ -283,9 +283,18 @@ globus_common_v_create_nstring(
     const char *                        format,
     va_list                             ap);
 
-#ifndef HAVE_MEMMOVE
-#  define memmove(d, s, n) bcopy ((s), (d), (n))
-#  define HAVE_MEMMOVE
+#ifdef HAVE_MEMMOVE
+#  define globus_libc_memmove(d, s, n) memmove((d), (s), (n)) 
+#else
+#  define globus_libc_memmove(d, s, n) bcopy ((s), (d), (n))
+#endif
+
+#ifdef TARGET_ARCH_HPUX
+#   define   globus_libc_setegid(a)  setresgid(-1,a,-1)
+#   define   globus_libc_seteuid(a)  setresuid(-1,a,-1)
+#else
+#   define   globus_libc_setegid(a)  setegid(a)
+#   define   globus_libc_seteuid(a)  seteuid(a)
 #endif
 
 EXTERN_C_END

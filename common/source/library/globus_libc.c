@@ -201,6 +201,13 @@ globus_libc_strncasecmp(
     return(rc);
 }
 
+int
+globus_libc_setuid(
+    uid_t                                   uid)
+{
+
+}
+
 
 #if !defined(HAVE_THREAD_SAFE_SELECT) && !defined(BUILD_LITE)
 
@@ -2924,6 +2931,3 @@ globus_l_libc_i00afunc (long address)
 #endif /* CRAY */
 #endif /* !defined (__GNUC__) || __GNUC__ < 2 */
 #endif /* TARGET_ARCH_CRAYT3E */
-
-
-
