@@ -6,31 +6,31 @@ dnl
 
 
 
-AC_DEFUN(LAC_DOXYGEN_PROJECT,dnl
+AC_DEFUN([LAC_DOXYGEN_PROJECT],dnl
 [
     lac_doxygen_project=`echo "$1" | sed -e 's/_/ /g'`
     AC_SUBST(lac_doxygen_project)
 ])
 
-AC_DEFUN(LAC_DOXYGEN_SOURCE_DIRS,dnl
+AC_DEFUN([LAC_DOXYGEN_SOURCE_DIRS],dnl
 [
     lac_doxygen_srcdirs=[$1]
     AC_SUBST(lac_doxygen_srcdirs)
 ])
 
-AC_DEFUN(LAC_DOXYGEN_INPUT_FILTER,dnl
+AC_DEFUN([LAC_DOXYGEN_INPUT_FILTER],dnl
 [
     lac_doxygen_input_filter=[$1]
     AC_SUBST(lac_doxygen_input_filter)
 ])
 
-AC_DEFUN(LAC_DOXYGEN_OUTPUT_TAGFILE,dnl
+AC_DEFUN([LAC_DOXYGEN_OUTPUT_TAGFILE],dnl
 [
     lac_doxygen_output_tagfile=[$1]
     AC_SUBST(lac_doxygen_output_tagfile)
 ])
 
-AC_DEFUN(LAC_DOXYGEN_TAGFILES,dnl
+AC_DEFUN([LAC_DOXYGEN_TAGFILES],dnl
 [
     lac_doxygen_tagfiles=""
     for x in "" $1; do
@@ -47,22 +47,22 @@ AC_DEFUN(LAC_DOXYGEN_TAGFILES,dnl
     AC_SUBST(lac_doxygen_installdox)
 ])
 
-AC_DEFUN(LAC_DOXYGEN_FILE_PATTERNS,dnl
+AC_DEFUN([LAC_DOXYGEN_FILE_PATTERNS],dnl
 [
     lac_doxygen_file_patterns=[$1]
 ])
 
-AC_DEFUN(LAC_DOXYGEN_EXAMPLE_DIR,dnl
+AC_DEFUN([LAC_DOXYGEN_EXAMPLE_DIR],dnl
 [
     lac_doxygen_examples=[$1]
 ])
 
-AC_DEFUN(LAC_DOXYGEN_PREDEFINES,dnl
+AC_DEFUN([LAC_DOXYGEN_PREDEFINES],dnl
 [
     lac_doxygen_predefines=[$1]
 ])
 
-AC_DEFUN(LAC_DOXYGEN,dnl
+AC_DEFUN([LAC_DOXYGEN],dnl
 [
     AC_ARG_ENABLE(doxygen,
     changequote(<<, >>)dnl  

@@ -18,7 +18,9 @@ Sources = \
 	gaa_policy.c \
 	gaa_str.c
 
-INCLUDES += $(GPT_INCLUDES)
+INCLUDES = $(GPT_INCLUDES)
+
+EXTRA_DIST=
 
 flavorinclude_HEADERS= \
 	gaa.h \

@@ -18,17 +18,17 @@ flavorinclude_HEADERS= \
 	globus_gsi_authz.h
 
 
-INCLUDES += $(GPT_INCLUDES) 
+INCLUDES = $(GPT_INCLUDES) 
 
 lib_LTLIBRARIES = libglobus_authz_$(GLOBUS_FLAVOR_NAME).la
 
 libglobus_authz___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 
-libglobus_authz___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
+libglobus_authz___GLOBUS_FLAVOR_NAME__la_LDFLAGS = \
+    $(GPT_LDFLAGS) \
+    $(GPT_LDADD)
 
 libglobus_authz___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS)
-
-libglobus_authz___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDADD)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

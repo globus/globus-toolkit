@@ -8,7 +8,7 @@ mandir=$(GLOBUS_LOCATION)/man/man1
 SUBDIRS = pkgdata doxygen
 
 perldoc_DATA = globus-job-manager-service.html
-man_DATA = globus-job-manager-service.1
+man_MANS = globus-job-manager-service.1
 
 setup_SCRIPTS = \
     globus-job-manager-script.in \
@@ -24,7 +24,7 @@ EXTRA_DIST = \
     setup-globus-gram-job-manager.pl \
     globus-job-manager-service.in \
     globus-job-manager-mds-provider.in \
-    $(perldoc_DATA) $(man_DATA) \
+    $(perldoc_DATA) $(man_MANS) \
     globus_gram_job_manager_program_setup.dox
 
 SUFFIXES = .html .1 .in

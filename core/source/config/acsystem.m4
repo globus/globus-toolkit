@@ -1,4 +1,4 @@
-AC_DEFUN(CHECK_HEADERS, [
+AC_DEFUN([CHECK_HEADERS], [
 
 dnl
 dnl System header files
@@ -82,7 +82,7 @@ AC_MSG_RESULT($ac_have_socklen_t)
 
 ])
 
-AC_DEFUN(CHECK_FUNCS, [
+AC_DEFUN([CHECK_FUNCS], [
 dnl
 dnl System function
 dnl

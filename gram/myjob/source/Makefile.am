@@ -13,7 +13,7 @@ Sources = \
 	globus_gram_myjob_duct.c \
 	globus_gram_myjob_mp.c    
 
-INCLUDES += $(GPT_INCLUDES)
+INCLUDES = $(GPT_INCLUDES)
 
 flavorinclude_HEADERS=globus_gram_myjob.h
 

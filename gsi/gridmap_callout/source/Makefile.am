@@ -5,7 +5,9 @@ SUBDIRS = \
 	pkgdata \
 	doxygen
 
-INCLUDES += $(GPT_INCLUDES)
+INCLUDES = $(GPT_INCLUDES)
+
+EXTRA_DIST=
 
 lib_LTLIBRARIES = libglobus_gridmap_callout_$(GLOBUS_FLAVOR_NAME).la
 

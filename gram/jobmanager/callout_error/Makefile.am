@@ -5,7 +5,7 @@ SUBDIRS = \
 	pkgdata \
 	doxygen
 
-INCLUDES += $(GPT_INCLUDES)
+INCLUDES = $(GPT_INCLUDES)
 
 flavorinclude_HEADERS= \
 	globus_gram_jobmanager_callout_error.h
@@ -19,6 +19,8 @@ libglobus_gram_job_manager_callout_error___GLOBUS_FLAVOR_NAME__la_SOURCES = \
 	globus_gram_jobmanager_callout_error.h
 libglobus_gram_job_manager_callout_error___GLOBUS_FLAVOR_NAME__la_LDFLAGS = \
 	@GPT_LDFLAGS@
+
+EXTRA_DIST=
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

@@ -68,7 +68,7 @@ dnl
 dnl
 
 dnl LAC_COMPILERS_ARGS()
-AC_DEFUN(LAC_COMPILERS_ARGS,
+AC_DEFUN([LAC_COMPILERS_ARGS],
 [
 AC_ARG_WITH(threads,
         [  --with-threads=TYPE          build target with threads],
@@ -103,8 +103,14 @@ AC_ARG_ENABLE(insure,
         ])
 ])
 
-AC_DEFUN(LAC_COMPILERS,
+AC_DEFUN([LAC_COMPILERS],
 [
+
+dnl this is to prevent AC_PROG_CC being called
+dnl automatically from autoconf dependencies
+AC_PROVIDE([AC_PROG_CC])
+
+AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
 LAC_COMPILERS_ARGS
 LAC_THREADS
@@ -136,7 +142,7 @@ LAC_SUBSTITUTE_COMPILER_VAR(NM)
 ])
 
 dnl LAC_SUBSTITUTE_COMPILER_VAR
-AC_DEFUN(LAC_SUBSTITUTE_COMPILER_VAR,
+AC_DEFUN([LAC_SUBSTITUTE_COMPILER_VAR],
 [
     if test -n "[$]lac_cv_$1"; then
         $1=[$]lac_cv_$1
@@ -145,7 +151,7 @@ AC_DEFUN(LAC_SUBSTITUTE_COMPILER_VAR,
 ])
 
 dnl LAC_COMPILERS_SET(THREAD-TYPE)
-AC_DEFUN(LAC_COMPILERS_SET,
+AC_DEFUN([LAC_COMPILERS_SET],
 [
 echo "checking for compilers..."
 LAC_COMPILERS_SET_ALL_VARS($1)
@@ -153,7 +159,7 @@ LAC_COMPILERS_SET_ALL_VARS($1)
 
 
 dnl LAC_COMPILERS_SET_ALL_VARS(THREAD-TYPE)
-AC_DEFUN(LAC_COMPILERS_SET_ALL_VARS,
+AC_DEFUN([LAC_COMPILERS_SET_ALL_VARS],
 [
 lac_CFLAGS="$CFLAGS "
 lac_CPPFLAGS="$CPPFLAGS -I$GLOBUS_LOCATION/include -I$GLOBUS_LOCATION/include/$globus_cv_flavor"
@@ -584,7 +590,7 @@ case ${host}--$1 in
                     lac_ARFLAGS="-X64 $lac_ARFLAGS"
                     lac_CFLAGS="-q64 -D_ALL_SOURCE $lac_CFLAGS"
                     lac_CXXFLAGS="-q64 -D_ALL_SOURCE $lac_CXXFLAGS"
-                    lac_LDFLAGS="-b64 $lac_LDFLAGS"
+                    lac_LDFLAGS="-b64 -brtl $lac_LDFLAGS"
                     lac_NM="/usr/bin/nm -X64 -B"
                     lac_OBJECT_MODE="64"
                 else
@@ -592,7 +598,7 @@ case ${host}--$1 in
                     lac_ARFLAGS="-X32 $lac_ARFLAGS"
                     lac_CFLAGS="-q32 -D_ALL_SOURCE $lac_CFLAGS"
                     lac_CXXFLAGS="-q32 -D_ALL_SOURCE $lac_CXXFLAGS"
-                    lac_LDFLAGS="-b32 $lac_LDFLAGS"
+                    lac_LDFLAGS="-b32 -brtl $lac_LDFLAGS"
                     lac_NM="/usr/bin/nm -X32 -B"
                     lac_OBJECT_MODE="32"
                 fi
@@ -681,7 +687,7 @@ case ${host}--$1 in
                     lac_ARFLAGS="-X64 $lac_ARFLAGS"
                     lac_CFLAGS="-q64 -D_ALL_SOURCE $lac_CFLAGS"
                     lac_CXXFLAGS="-q64 -D_ALL_SOURCE $lac_CXXFLAGS"
-                    lac_LDFLAGS="-b64 $lac_LDFLAGS"
+                    lac_LDFLAGS="-b64 -brtl $lac_LDFLAGS"
                     lac_NM="/usr/bin/nm -X64 -B"
                     lac_OBJECT_MODE="64"
                 else
@@ -689,7 +695,7 @@ case ${host}--$1 in
                     lac_ARFLAGS="-X32 $lac_ARFLAGS"
                     lac_CFLAGS="-q32 -D_ALL_SOURCE $lac_CFLAGS"
                     lac_CXXFLAGS="-q32 -D_ALL_SOURCE $lac_CXXFLAGS"
-                    lac_LDFLAGS="-b32 $lac_LDFLAGS"
+                    lac_LDFLAGS="-b32 -brtl $lac_LDFLAGS"
                     lac_NM="/usr/bin/nm -X32 -B"
                     lac_OBJECT_MODE="32"
                 fi
@@ -896,6 +902,11 @@ fi
 GLOBUS_DEBUG="$lac_cv_debug"
 AC_SUBST(GLOBUS_DEBUG)
 
+dnl we have to run AC_PROG_CC to get the all the other
+dnl autoconf macros to work correctly
+CC=$lac_cv_CC
+AC_PROG_CC()
+
 LAC_PROG_CC_GNU([$lac_cv_CC $lac_CFLAGS],
 [
     lac_CFLAGS="$lac_CFLAGS -Wall"
@@ -939,18 +950,30 @@ OBJECT_MODE="$lac_OBJECT_MODE"
 ])
 
 dnl LAC_PROG_CC_GNU(COMPILER, ACTION-IF-TRUE, ACTION-IF-FALSE)
-AC_DEFUN(LAC_PROG_CC_GNU,
+AC_DEFUN([LAC_PROG_CC_GNU],
 [
 if test "X$1" != "X" ; then
-	_SAVED_CC="$CC"
-	CC="$1"
-	AC_PROG_CC_GNU
-	CC="$_SAVED_CC"
+    _SAVED_CC="$CC"
+    CC="$1"
+    AC_TRY_COMPILE([],
+                   [#ifndef __GNUC__
+    choke me
+#endif
+],
+    [lac_compiler_gnu=yes],
+    [lac_compiler_gnu=no])
+    CC="$_SAVED_CC"
 else
-	AC_PROG_CC_GNU
+    AC_TRY_COMPILE([],
+                   [#ifndef __GNUC__
+    choke me
+#endif
+],
+    [lac_compiler_gnu=yes],
+    [lac_compiler_gnu=no])
 fi
 
-if test "$ac_cv_prog_gcc" = "yes" ; then
+if test "$lac_compiler_gnu" = "yes" ; then
     :
     $2
 else
@@ -961,7 +984,7 @@ fi])
 
 dnl LAC_CHECK_CC_PROTOTYPES(true-action, false-action)
 dnl Check that the compiler accepts ANSI prototypes.
-AC_DEFUN(LAC_CHECK_CC_PROTOTYPES,[
+AC_DEFUN([LAC_CHECK_CC_PROTOTYPES],[
 AC_MSG_CHECKING(that the compiler $CC accepts ANSI prototypes)
 AC_TRY_COMPILE([int f(double a){return 0;}],,
   eval "ac_cv_ccworks=yes",
@@ -978,7 +1001,7 @@ fi
 dnl
 dnl LAC_CHECK_CFLAGS(compiler,flags,true-action,false-action)
 dnl
-AC_DEFUN(LAC_CHECK_CFLAGS,[
+AC_DEFUN([LAC_CHECK_CFLAGS],[
 AC_MSG_CHECKING(that the compiler $1 accepts arguments $2)
 cat > conftest.c <<EOF
 #include "confdefs.h"
@@ -999,7 +1022,7 @@ fi
 dnl
 dnl LAC_CHECK_LDFLAGS(compiler,cflags,ldflags,true-action,false-action)
 dnl
-AC_DEFUN(LAC_CHECK_LDFLAGS,[
+AC_DEFUN([LAC_CHECK_LDFLAGS],[
 AC_MSG_CHECKING(that the compiler accepts compiler/link flags $2 $3)
 cat > conftest.c <<EOF
 #include "confdefs.h"

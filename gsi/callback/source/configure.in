@@ -27,5 +27,4 @@ AC_OUTPUT(
 	doxygen/Doxyfile 
 	doxygen/Doxyfile-internal
 	version.h
-        library/oldgaa/config.h
 )

@@ -10,7 +10,9 @@ Sources = \
 	gaa_test_utils.c \
 	gaa_test_utils.h
 
-INCLUDES += $(GPT_INCLUDES)
+EXTRA_DIST=
+
+INCLUDES = $(GPT_INCLUDES)
 
 gaa_test_with_assertion_file_SOURCES = gaa_test_with_assertion_file.c gaa_test_utils.c
 gaa_test_with_assertion_file_LDFLAGS = $(GPT_LDFLAGS)

@@ -4,8 +4,10 @@ include $(top_srcdir)/globus_automake_pre_top
 SUBDIRS= \
 	pkgdata
 
-INCLUDES += $(GPT_INCLUDES)
+INCLUDES = $(GPT_INCLUDES)
 LDADD = $(GPT_PGM_LINKS) @LIBOBJS@ @UNICOS_LIBS@
+
+EXTRA_DIST=
 
 sbin_PROGRAMS= \
 	globus-gatekeeper

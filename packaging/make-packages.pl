@@ -731,7 +731,7 @@ sub log_system
 sub install_gpt()
 # --------------------------------------------------------------------
 {
-    my $gpt_ver = "gpt-3.0.1";
+    my $gpt_ver = "gpt-3.2autotools2004";
     my $gpt_dir = $top_dir . "/$gpt_ver";
     my $target;
 
@@ -764,7 +764,7 @@ sub install_gpt()
 	system("./build_gpt $verbose > $log_dir/$gpt_ver.log 2>&1");
 	$ENV{'LANG'} = $OLANG;
 
-	paranoia("Trouble with ./build_gpt.  See $log_dir/$gpt_ver.log");
+        paranoia("Trouble with ./build_gpt.  See $log_dir/$gpt_ver.log");
     }
 
     @INC = (@INC, "$target/lib/perl", "$target/lib/perl/$Config{'archname'}");

@@ -103,7 +103,7 @@ test_PROGRAMS= \
 	globus-ftp-client-caching-transfer-test \
 	globus-ftp-client-user-auth-test
 
-INCLUDES += $(GPT_INCLUDES)
+INCLUDES = $(GPT_INCLUDES)
 LDADD = libglobus_ftp_client_test_$(GLOBUS_FLAVOR_NAME).la $(GPT_PGM_LINKS)
 
 globus_ftp_client_create_destroy_test_SOURCES = globus_ftp_client_create_destroy_test.c $(LibHeaders)

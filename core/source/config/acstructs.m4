@@ -1,4 +1,4 @@
-AC_DEFUN(CHECK_FOR_TIMESPEC, [
+AC_DEFUN([CHECK_FOR_TIMESPEC], [
 AC_TRY_COMPILE(
          [
 #            include <sys/time.h>
@@ -17,7 +17,7 @@ fi
 
 ])
 
-AC_DEFUN(CHECK_FOR_IOVEC, [
+AC_DEFUN([CHECK_FOR_IOVEC], [
 dnl check for struct iovec in <sys/uio.h>
 AC_MSG_CHECKING(for struct iovec in sys/uio.h)
     lac_iovec_result="no"
@@ -153,7 +153,7 @@ AC_MSG_RESULT($ac_max_iov_result)
 
 ])
 
-AC_DEFUN(CHECK_FOR_MEMMOVE, [
+AC_DEFUN([CHECK_FOR_MEMMOVE], [
 dnl check for availablility of atexit or on_exit
 AC_MSG_CHECKING(checking for memmove)
 lac_cv_memmove="no"
@@ -164,7 +164,7 @@ AC_TRY_LINK([#include <string.h>
 AC_MSG_RESULT($lac_cv_memmove)
 ])
 
-AC_DEFUN(CHECK_FOR_ATEXIT, [
+AC_DEFUN([CHECK_FOR_ATEXIT], [
 dnl check for availablility of atexit or on_exit
 AC_MSG_CHECKING(how to execute a function on program exit)
 lac_cv_atexit="no"

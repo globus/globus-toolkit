@@ -4,9 +4,9 @@ include $(top_srcdir)/globus_automake_pre_top
 SUBDIRS= \
 	pkgdata
 
-AM_CFLAGS += $(GPT_CFLAGS) 
+AM_CFLAGS = $(GPT_CFLAGS) 
 
-INCLUDES += $(GPT_INCLUDES)
+INCLUDES = $(GPT_INCLUDES)
 
 Scripts= \
 	TESTS.pl \
@@ -20,7 +20,7 @@ Scripts= \
 	gssapi-acquire-test.pl \
 	gssapi-inquire-sec-ctx-by-oid-test.pl \
 	run-gssapi-tests.pl
-#	gssapi-group-test.pl \
+#	gssapi-group-test.pl
 
 Data= \
 	gssapi-anonymous-test.stdout \
@@ -35,7 +35,7 @@ Data= \
 	dc31a685.0 \
 	dc31a685.signing_policy \
 	testcred.pem
-#	gssapi-group-test.stdout \
+#	gssapi-group-test.stdout
 
 test_DATA = $(Data)
 

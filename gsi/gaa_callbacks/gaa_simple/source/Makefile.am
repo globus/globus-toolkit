@@ -33,13 +33,15 @@ libglobus_gaa_simple___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS)
 
 libglobus_gaa_simple___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDADD) 
 
-xml_sig_test_SOURCES = xml_sig_test.c xml_sig.c
+xml_sig_test_SOURCES = xml_sig_test.c
 xml_sig_test_LDFLAGS = $(GPT_LDFLAGS)
-xml_sig_test_LDADD = $(GPT_PGM_LINKS) 
+xml_sig_test_LDADD = $(GPT_PGM_LINKS) \
+                     libglobus_gaa_simple_$(GLOBUS_FLAVOR_NAME).la
 
-nametest_SOURCES = nametest.c read_saml.c parse_saml_assertion.c xml_sig.c
+nametest_SOURCES = nametest.c
 nametest_LDFLAGS = $(GPT_LDFLAGS)
-nametest_LDADD = $(GPT_PGM_LINKS) 
+nametest_LDADD = $(GPT_PGM_LINKS) \
+                 libglobus_gaa_simple_$(GLOBUS_FLAVOR_NAME).la
 
 test_PROGRAMS=xml_sig_test nametest
 
