@@ -2762,7 +2762,7 @@ globus_l_gfs_data_finish_connected(
                     op);
                 if(result != GLOBUS_SUCCESS)
                 {
-                    globus_i_gfs_log_result(
+                    globus_i_gfs_log_result_warn(
                         "write_eof error", result);
                     op->cached_res = result;
                     globus_callback_register_oneshot(
@@ -3336,10 +3336,10 @@ globus_l_gfs_data_write_eof_cb(
             callback after a finsihed_transfer() from the user.  we
             could still get events or disconnects, but the abort process
             does not touch the data_handle->state */
-        globus_i_gfs_log_result(
-            "write_eof_cb error", result);
-        globus_l_gfs_data_cb_error(op->data_handle);
         op->cached_res = globus_error_put(globus_object_copy(error));
+        globus_i_gfs_log_result_warn(
+            "write_eof_cb error", op->cached_res);
+        globus_l_gfs_data_cb_error(op->data_handle);
         end = GLOBUS_TRUE;
     }
     else
@@ -3389,7 +3389,7 @@ globus_l_gfs_data_write_eof_cb(
                     }
                     if(result != GLOBUS_SUCCESS)
                     {
-                        globus_i_gfs_log_result(
+                        globus_i_gfs_log_result_warn(
                             "ERROR", result);
                         op->cached_res = result;
                         end = GLOBUS_TRUE;
@@ -3449,7 +3449,7 @@ globus_l_gfs_data_send_eof(
                     op);
                 if(result != GLOBUS_SUCCESS)
                 {
-                    globus_i_gfs_log_result(
+                    globus_i_gfs_log_result_warn(
                         "send_eof error", result);
                     op->cached_res = result;
                     globus_callback_register_oneshot(
@@ -3835,14 +3835,22 @@ globus_i_gfs_data_request_transfer_event(
                         break;
 
                     case GLOBUS_L_GFS_DATA_FINISH_WITH_ERROR:
-                        result = globus_ftp_control_data_force_close(
-                            &op->data_handle->data_channel,
-                            globus_l_gfs_data_complete_fc_cb,
-                            op);
-                        if(result != GLOBUS_SUCCESS)
+                        if(op->data_handle->is_mine)
                         {
-                            globus_i_gfs_log_result("force_close", result);
-                            globus_l_gfs_data_fc_return(op);
+                            result = globus_ftp_control_data_force_close(
+                                &op->data_handle->data_channel,
+                                globus_l_gfs_data_complete_fc_cb,
+                                op);
+                            if(result != GLOBUS_SUCCESS)
+                            {
+                                globus_i_gfs_log_result_warn(
+                                    "force_close", result);
+                                globus_l_gfs_data_fc_return(op);
+                                pass = GLOBUS_TRUE;
+                            }
+                        }
+                        else
+                        {
                             pass = GLOBUS_TRUE;
                         }
                         op->state = GLOBUS_L_GFS_DATA_COMPLETING;
