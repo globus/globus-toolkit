@@ -40,12 +40,35 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
 
     
     *minor_status = 0;
-
     major_status = GSS_S_COMPLETE;
-
     context = (gss_ctx_id_desc *) context_handle;
 
-    /* need to check for GSS_C_NO_BUFFER_SET */
+    /* parameter checking goes here */
+
+    if(minor_status == NULL)
+    {
+        GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_IMPEXP_BAD_PARMS);
+        *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
+        major_status = GSS_S_FAILURE;
+        goto err;
+    }
+    
+    if(context_handle == GSS_C_NO_CONTEXT)
+    {
+        GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_IMPEXP_BAD_PARMS);
+        *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
+        major_status = GSS_S_FAILURE;
+        goto err;
+    }
+
+
+    if(desired_object != GSS_C_NO_OID)
+    {
+        GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_IMPEXP_BAD_PARMS);
+        *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
+        major_status = GSS_S_FAILURE;
+        goto err;
+    }
 
     if(data_set == GSS_C_NO_BUFFER_SET)
     {
@@ -55,13 +78,23 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
         goto err;
     }
     
-    cert_count = 1 + sk_X509_num(context->cred_handle->pcd->cert_chain);
+    cert_count = 0;
     
-    data_set->count = cert_count;
+    data_set->count = 1 + sk_X509_num(context->cred_handle->pcd->cert_chain);
 
     data_set->elements = (gss_buffer_desc *) malloc(
         sizeof(gss_buffer_desc) *
         data_set->count);
+
+    if(data_set->elements == NULL)
+    {
+        GSSerr(GSSERR_F_INIT_DELEGATION,ERR_R_MALLOC_FAILURE);
+        /* what is the the correct minor status ?*/
+        major_status = GSS_S_FAILURE;
+        goto err;
+    }
+    
+    memset(data_set->elements,0,sizeof(gss_buffer_desc) * data_set->count);
 
     cert = context->cred_handle->pcd->ucert;
     
@@ -87,11 +120,26 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
                 
                 data_set->elements[cert_count].value =
                     malloc(asn1_oct_string->length);
+
+                if(data_set->elements[cert_count].value == NULL)
+                {
+                    for(j=0;j<cert_count;j++)
+                    {
+                        gss_release_buffer(minor_status,
+                                           &data_set->elements[j]);
+                    }
+                    
+                    free(data_set->elements);
+                    GSSerr(GSSERR_F_INIT_DELEGATION,ERR_R_MALLOC_FAILURE);
+                    /* what is the the correct minor status ?*/
+                    major_status = GSS_S_FAILURE;
+                    goto err;
+                }
                 
                 data_set->elements[cert_count].length =
                     asn1_oct_string->length;
                 
-                memcpy(data_set->elements[1].value,
+                memcpy(data_set->elements[cert_count].value,
                        asn1_oct_string->data,
                        asn1_oct_string->length);
                 
@@ -101,11 +149,11 @@ GSS_CALLCONV gss_inquire_sec_context_by_oid(
             }
         }
 
-        cert_count--;
+        cert_count++;
         
-    } while(cert_count &&
+    } while(cert_count < data_set->count &&
             (cert = sk_X509_value(context->cred_handle->pcd->cert_chain,
-                                 cert_count - 1)));
+                                 cert_count)));
 
 err:
     return major_status;

@@ -337,3 +337,4 @@ convert_minor_codes(const int lib, const int reason)
              retval = (unsigned long) GSSERR_PRXY_R_MALLOC_FAILURE;
             return retval;
 }
+

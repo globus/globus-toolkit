@@ -50,9 +50,18 @@ GSS_CALLCONV gss_accept_delegation(
 
     /* parameter checking goes here */
 
+    if(minor_status == NULL)
+    {
+        GSSerr(GSSERR_F_ACCEPT_DELEGATION,GSSERR_R_IMPEXP_BAD_PARMS);
+        *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
+        major_status = GSS_S_FAILURE;
+        goto err;
+    }
+
+
     if(context_handle == GSS_C_NO_CONTEXT)
     {
-        GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_IMPEXP_BAD_PARMS);
+        GSSerr(GSSERR_F_ACCEPT_DELEGATION,GSSERR_R_IMPEXP_BAD_PARMS);
         *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
         major_status = GSS_S_FAILURE;
         goto err;
@@ -60,7 +69,7 @@ GSS_CALLCONV gss_accept_delegation(
 
     if(delegated_cred_handle == NULL)
     {
-        GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_IMPEXP_BAD_PARMS);
+        GSSerr(GSSERR_F_ACCEPT_DELEGATION,GSSERR_R_IMPEXP_BAD_PARMS);
         *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
         major_status = GSS_S_FAILURE;
         goto err;
@@ -68,7 +77,7 @@ GSS_CALLCONV gss_accept_delegation(
 
     if(mech_type == NULL)
     {
-        GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_IMPEXP_BAD_PARMS);
+        GSSerr(GSSERR_F_ACCEPT_DELEGATION,GSSERR_R_IMPEXP_BAD_PARMS);
         *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
         major_status = GSS_S_FAILURE;
         goto err;
@@ -78,7 +87,7 @@ GSS_CALLCONV gss_accept_delegation(
        (restriction_buffers == GSS_C_NO_BUFFER_SET ||
         restriction_oids->count != restriction_buffers->count))
     {
-        GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_IMPEXP_BAD_PARMS);
+        GSSerr(GSSERR_F_ACCEPT_DELEGATION,GSSERR_R_IMPEXP_BAD_PARMS);
         *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
         major_status = GSS_S_FAILURE;
         goto err;
@@ -86,7 +95,15 @@ GSS_CALLCONV gss_accept_delegation(
 
     if(output_token == GSS_C_NO_BUFFER)
     {
-        GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_IMPEXP_BAD_PARMS);
+        GSSerr(GSSERR_F_ACCEPT_DELEGATION,GSSERR_R_IMPEXP_BAD_PARMS);
+        *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
+        major_status = GSS_S_FAILURE;
+        goto err;
+    }
+
+    if(input_token == GSS_C_NO_BUFFER)
+    {
+        GSSerr(GSSERR_F_ACCEPT_DELEGATION,GSSERR_R_IMPEXP_BAD_PARMS);
         *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
         major_status = GSS_S_FAILURE;
         goto err;

@@ -60,6 +60,14 @@ GSS_CALLCONV gss_init_delegation(
         
     /* parameter checking goes here */
 
+    if(minor_status == NULL)
+    {
+        GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_IMPEXP_BAD_PARMS);
+        *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
+        major_status = GSS_S_FAILURE;
+        goto err;
+    }
+    
     if(context_handle == GSS_C_NO_CONTEXT)
     {
         GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_IMPEXP_BAD_PARMS);
@@ -119,7 +127,14 @@ GSS_CALLCONV gss_init_delegation(
             return major_status;
     	}
     }
-    
+    else if(context->delegation_state != GS_DELEGATION_START)
+    {
+        GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_IMPEXP_BAD_PARMS);
+        *minor_status = GSSERR_R_IMPEXP_BAD_PARMS;
+        major_status = GSS_S_FAILURE;
+        goto err;
+    }
+
     /* delegation state machine */
     
     switch (context->delegation_state)
@@ -151,7 +166,7 @@ GSS_CALLCONV gss_init_delegation(
         {
             GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_ADD_EXT);
             major_status = GSS_S_FAILURE;
-            return major_status;
+            goto err;
         }
 
         /* add the restrictions here */
@@ -181,24 +196,26 @@ GSS_CALLCONV gss_init_delegation(
             }
         }
 
-        proxy_sign_ext(0,
-                       cred->pcd->ucert,
-                       cred->pcd->upkey,
-                       EVP_md5(),
-                       reqp,
-                       &ncert,
-                       0,
-                       /*time_req, why can we use GSS_C_INDEFINITE here?*/
-                       0, /* don't want limited proxy */
-                       0,
-                       "proxy",
-                       extensions);
-		
-        if (extensions)
+        if(!proxy_sign_ext(0,
+                           cred->pcd->ucert,
+                           cred->pcd->upkey,
+                           EVP_md5(),
+                           reqp,
+                           &ncert,
+                           0,
+                           /*time_req, why can we use GSS_C_INDEFINITE here?*/
+                           0, /* don't want limited proxy */
+                           0,
+                           "proxy",
+                           extensions))
         {
-            sk_X509_EXTENSION_pop_free(extensions, 
-                                       X509_EXTENSION_free);
+            /* should probably return a error related to not being
+               able to sign the cert */
+            GSSerr(GSSERR_F_INIT_DELEGATION,GSSERR_R_ADD_EXT);
+            major_status = GSS_S_FAILURE;
+            goto err;
         }
+		
 #ifdef DEBUG
         X509_print_fp(stderr,ncert);
 #endif
@@ -248,6 +265,12 @@ GSS_CALLCONV gss_init_delegation(
 
 err:
 
+    if (extensions)
+    {
+        sk_X509_EXTENSION_pop_free(extensions, 
+                                   X509_EXTENSION_free);
+    }
+    
     return major_status;
 }
 

@@ -831,6 +831,12 @@ typedef struct gss_buffer_set_desc_struct {
     gss_buffer_t                        elements;
 } gss_buffer_set_desc, *gss_buffer_set_t;
 
+   GSS_MAKE_TYPEDEF
+   OM_uint32 
+   GSS_CALLCONV GSS_FUNC(gss_release_buffer_set)
+              (OM_uint32 *,        /* minor_status */
+               gss_buffer_set_t   /* buffer set to be freed */
+              );
 
    GSS_MAKE_TYPEDEF
    OM_uint32 

@@ -30,6 +30,7 @@ Sources = \
 	import_cred.c \
 	export_cred.c \
 	release_buffer.c \
+	release_buffer_set.c \
 	gssapi_working.c \
 	gssapi.h \
 	gssapi_ssleay.h	
