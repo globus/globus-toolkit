@@ -126,11 +126,13 @@ static int
 globus_l_globusrun_signal(int signum, RETSIGTYPE (*func)(int));
 
 #if defined(BUILD_LITE)
-    static int globus_l_globusrun_signal_wakeup(
-                   globus_abstime_t *               time_stop,
-                   void *                           user_args);
+    static void globus_l_globusrun_signal_wakeup(
+                   const globus_abstime_t *            time_now,
+                   const globus_abstime_t *            time_stop,
+                   void *                              user_args);
 
-#   define globus_l_globusrun_remove_cancel_poll() globus_callback_unregister(globus_l_run_callback_handle);
+#   define globus_l_globusrun_remove_cancel_poll()  \
+    globus_callback_unregister(globus_l_run_callback_handle, GLOBUS_NULL, GLOBUS_NULL);
 #else
 #   define globus_l_globusrun_remove_cancel_poll()
 #endif
@@ -1241,7 +1243,10 @@ globus_l_globusrun_gramrun(char * request_string,
                                   SIG_DFL);
 #       if defined(BUILD_LITE)
 	{
-	    globus_callback_unregister(globus_l_run_callback_handle);
+	    globus_callback_unregister(
+	        globus_l_run_callback_handle,
+	        GLOBUS_NULL,
+	        GLOBUS_NULL);
 	}
 #       endif
     }
@@ -1472,7 +1477,10 @@ globus_l_globusrun_durocrun(char *request_string,
                                   SIG_DFL);
 #       if defined(BUILD_LITE)
 	{
-	    globus_callback_unregister(globus_l_run_callback_handle);
+	    globus_callback_unregister(
+	        globus_l_run_callback_handle,
+	        GLOBUS_NULL,
+	        GLOBUS_NULL);
 	}
 #       endif
     }
@@ -2152,11 +2160,17 @@ Parameters:
 
 Returns:
 ******************************************************************************/
-static int
-globus_l_globusrun_signal_wakeup(globus_abstime_t *  time_stop,
-				 void *              user_args)
+static
+void
+globus_l_globusrun_signal_wakeup(
+    const globus_abstime_t *            time_now,
+    const globus_abstime_t *            time_stop,
+    void *                              user_args)
 {
-    return globus_l_globusrun_ctrlc;
+    if(globus_l_globusrun_ctrlc)
+    {
+        globus_callback_signal_poll();
+    }
 } /* globus_l_globusrun_signal_wakeup() */
 #endif
 

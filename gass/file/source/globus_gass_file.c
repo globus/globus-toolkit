@@ -126,10 +126,11 @@ globus_l_gass_add_and_get(
     int					mode);
 
 static
-globus_bool_t
+void
 globus_l_gass_file_append_callback(
-    globus_abstime_t *          time_stop,
-    void *			callback_arg);
+    const globus_abstime_t *            time_now,
+    const globus_abstime_t *            time_stop,
+    void *			        callback_arg);
 
 static
 void
@@ -1052,14 +1053,14 @@ globus_l_gass_add_and_trunc(
 /* globus_l_gass_add_and_trunc() */
 
 static
-globus_bool_t
+void
 globus_l_gass_file_append_callback(
-    globus_abstime_t *          time_stop,
-    void *			callback_arg)
+    const globus_abstime_t *            time_now,
+    const globus_abstime_t *            time_stop,
+    void *	                        callback_arg)
 {
     globus_fifo_t		processed;
     globus_l_gass_file_tailf_t *cur;
-    globus_bool_t		handled_event = GLOBUS_FALSE;
 
     globus_fifo_init(&processed);
     
@@ -1078,7 +1079,7 @@ globus_l_gass_file_append_callback(
 	      cur->closing == GLOBUS_TRUE ||
 	      cur->ignore == GLOBUS_TRUE))
 	{
-	    handled_event |= globus_l_gass_file_handle_append(cur);
+	    globus_l_gass_file_handle_append(cur);
 	}
 							  
 	globus_fifo_enqueue(&processed,
@@ -1099,8 +1100,6 @@ globus_l_gass_file_append_callback(
 	
  end:
     globus_gass_file_exit();
-
-    return handled_event;
 }
 /* globus_l_gass_file_append_callback() */
 
