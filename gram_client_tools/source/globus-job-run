@@ -345,6 +345,7 @@ parse_fileopt ()
 	file=`normalize_filename "$2" | stringify`
 	result=`echo '$(GLOBUSRUN_GASS_URL)' '#' "${file}"`
 	eval ${stagevar}=true
+	stage_executable=true
 	return 3
 	;;
     -l | -local)
@@ -789,7 +790,7 @@ then
     if [ ${job_needs_gass_output} = true ]; then
 	gassflag="-o"
     fi
-    if [ ${job_needs_gass_read}   = true ]; then
+    if [ ${job_needs_gass_read}   = true ] || [ ${stage_executable} = true ]; then
 	gassflag="-s"
     fi
     if [ ${job_needs_gass_write}  = true ]; then
@@ -802,7 +803,7 @@ then
 	    error_exit 1
 	    ;;
 	*submit:false)
-	    globusrun_args="-b -r \"${job_contact}\" -f ${rslfile}"
+	    globusrun_args="${gassflag} -b -r \"${job_contact}\" -f ${rslfile}"
 	    ;;
 	*run:true)
 	    globusrun_args="${gassflag} -f ${rslfile}"
