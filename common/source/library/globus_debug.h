@@ -76,7 +76,7 @@ globus_debug_init(
  *    otherwise, the default is to append to the existing (if one exists)
  * <show tids> is 0 or 1 to show thread ids on all messages.  0 by default
  * 
- * Also, user's can use the ALL level in their env setting to turn on 
+ * Also, users can use the ALL level in their env setting to turn on 
  * all levels or precede the list of levels with '^' to enable all levels
  * except those.
  */
