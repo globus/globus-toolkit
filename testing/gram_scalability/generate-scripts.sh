@@ -24,6 +24,15 @@ for scheduler in $schedulers; do
     cat $template | sed "s/$keyword/$scheduler/" > $filename
     chmod +x $filename
 
+    template="deactivation-SCHEDULER-mmjfs-test.in"
+    filename="deactivation-$scheduler-mmjfs-test.sh"
+    if [ -r $filename ]; then
+        rm $filename
+    fi
+    echo "generating $filename"
+    cat $template | sed "s/$keyword/$scheduler/" > $filename
+    chmod +x $filename
+
     template="kill-SCHEDULER-mjfs-job.in"
     filename="kill-$scheduler-mjfs-job.sh"
     if [ -r $filename ]; then

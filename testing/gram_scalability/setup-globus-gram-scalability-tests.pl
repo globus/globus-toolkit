@@ -59,19 +59,21 @@ my %stat_pgms=(
     "Lsf"                   => $ENV{GLOBUS_SH_BJOBS},
     "Pbs"                   => $ENV{GLOBUS_SH_QSTAT});
 my %templates=(
-    "stress"    => "stress-SCHEDULER-mmjfs-test.in",
-    "submit"    => "submit-SCHEDULER-mmjfs-test.in",
-    "kill"      => "kill-SCHEDULER-mjfs-job.in",
-    "monitor"   => "monitor-SCHEDULER-jobs.in");
+    "stress"        => "stress-SCHEDULER-mmjfs-test.in",
+    "submit"        => "submit-SCHEDULER-mmjfs-test.in",
+    "deactivation"  => "deactivation-SCHEDULER-mmjfs-test.in",
+    "kill"          => "kill-SCHEDULER-mjfs-job.in",
+    "monitor"       => "monitor-SCHEDULER-jobs.in");
 
 my $directory = "$ENV{GLOBUS_LOCATION}/test/globus_gram_scalability_test";
 my $keyword = "SCHEDULER";
 
 foreach my $scheduler (keys(%small_names)) {
     my %filenames=(
-        "stress"    => "stress-$small_names{$scheduler}-mmjfs-test.sh",
-        "submit"    => "submit-$small_names{$scheduler}-mmjfs-test.sh",
-        "kill"      => "kill-$small_names{$scheduler}-mjfs-job.sh");
+        "stress"       => "stress-$small_names{$scheduler}-mmjfs-test.sh",
+        "submit"       => "submit-$small_names{$scheduler}-mmjfs-test.sh",
+        "deactivation" => "deactivation-$small_names{$scheduler}-mmjfs-test.sh",
+        "kill"         => "kill-$small_names{$scheduler}-mjfs-job.sh");
         #"monitor"   => "monitor-$small_names{$scheduler}-jobs.sh");
 
     foreach my $script_type (keys(%filenames)) {
