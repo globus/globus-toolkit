@@ -1,5 +1,0 @@
-lib/libgdbm.a
-lib/libgdbm.la
-man/man3/gdbm.3
-info/gdbm.info
-include/gdbm.h
