@@ -9,6 +9,8 @@ make drivers use their own error macros
 
 --------------------
 
+make sure test suite deals with close correctly (on failed opens)
+
 add 'no cancel' to the close attr
 
 need a kickout utility for drivers so their driver specific cntls can respect callback space

@@ -21,10 +21,21 @@ sub run_test
     $rc = system("rm -f $output_dir/$test_str.out");
 
     $ENV{"INSURE_REPORT_FILE_NAME"} = "$output_dir/$test_str.insure";
-    $ENV{"GLOBUS_XIO_DEBUG"} = "127,#$output_dir/$test_str.dbg,1";
-    $ENV{"GLOBUS_CALLBACK_POLLING_THREADS"} = "2";
+    if(!defined($ENV{"XIO_TEST_NO_DEBUG"}))
+    {
+        $ENV{"GLOBUS_XIO_DEBUG"} = "ALL,#$output_dir/$test_str.dbg,1";
+    }
+    if(!defined($ENV{"GLOBUS_CALLBACK_POLLING_THREADS"}))
+    {
+        $ENV{"GLOBUS_CALLBACK_POLLING_THREADS"} = "2";
+    }
 
     my $command = "$cmd > $output_dir/$test_str.out 2> $output_dir/$test_str.err";
+    if(defined($ENV{"XIO_TEST_EF"}))
+    {
+        $command = "ef $command";
+    }
+
     $rc = system($command);
     if($rc != 0)
     {
