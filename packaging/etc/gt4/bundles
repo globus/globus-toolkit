@@ -26,10 +26,15 @@ BUNDLE gt4-c-ws-core
 	globus_handler_debug
         globus_c_wsrf_resource
         globus_js
+        globus_xio
         globus_xio_buffer
         globus_c_wsrf_providers
         globus_notification_consumer
         globus_c_ws_security
+        globus_java_ws_core_common 
+        globus_java_ws_core_tools
+        globus_ws_core_schema 
+        globus_libxml2
 
 BUNDLE gt4-c-ws-core-test
         globus_c_wsrf_core_test_interop_bindings
