@@ -2155,6 +2155,7 @@ globus_l_xio_gssapi_ftp_write(
     globus_byte_t *                     tmp_ptr;
     globus_byte_t *                     tmp_ptr2;
     int                                 tmp_i;
+    int                                 tmp_i2;
     GlobusXIOName(globus_l_xio_gssapi_ftp_write);
 
     GlobusXIOGssapiftpDebugEnter();
@@ -2221,14 +2222,18 @@ globus_l_xio_gssapi_ftp_write(
                 tmp_ptr = handle->write_buffer;
                 while(tmp_ptr - handle->write_buffer < length)
                 {
-                    if(out_buf) out_buf[tmp_i] = '-';
+                    if(out_buf)
+                    {
+                        out_buf[tmp_i] = '-';
+                        tmp_i += tmp_i2;
+                    }
                     next_ptr = strstr(tmp_ptr, "\r\n");
                     len = next_ptr - tmp_ptr + 2;
 
                     res = globus_l_xio_gssapi_ftp_wrap(
                         handle, tmp_ptr, len,
                         &encoded_buf, handle->client);
-                    tmp_i += strlen(encoded_buf);
+                    tmp_i2 = strlen(encoded_buf);
 
                     if(out_buf == NULL)
                     {
