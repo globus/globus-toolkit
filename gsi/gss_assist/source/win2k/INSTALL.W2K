@@ -1,0 +1,11 @@
+Before Installing and files you must first build the package.  See README.W2K
+for details.
+
+
+Installing
+----------
+
+The following files need to be copied to the given location:
+
+...\win2k\Build\globus_gss_assist.lib         --> %GLOBUS_LOCATION%\lib
+...\source\library\globus_gss_assist.h        --> %GLOBUS_LOCATION%\include

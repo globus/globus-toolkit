@@ -1,0 +1,10 @@
+Building under windows 2000
+---------------------------
+
+Requirements:
+
+1) the globus gssapi package and all of it dependencies
+
+Install
+
+Open up the gss_assist.sln solution file in Visual C++ and compile it.
