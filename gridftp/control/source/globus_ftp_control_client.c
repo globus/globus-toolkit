@@ -374,7 +374,7 @@ globus_ftp_control_connect(
     int                                         result;
     char                                        localhost[MAXHOSTNAMELEN];
     struct hostent *                            hp;
-    char *                                      tmp_hostname;
+    char                                        tmp_hostname[4];
     globus_ftp_control_rw_queue_element_t *     element;
 
     globus_i_ftp_control_debug_printf(1,
@@ -481,33 +481,17 @@ globus_ftp_control_connect(
             goto unlock_exit;
         }
 
-        tmp_hostname = strdup(handle->cc_handle.server.h_name);
-
-        if(tmp_hostname == GLOBUS_NULL)
-        {
-            rc = globus_error_put(
-                globus_error_construct_string(
-                    GLOBUS_FTP_CONTROL_MODULE,
-                    GLOBUS_NULL,
-                    "globus_ftp_control_connect: strdup failed")
-            );
-            
-            globus_libc_free(element);
-            goto unlock_exit;
-        }
-
+        memcpy(tmp_hostname, handle->cc_handle.server.h_addr_list[0], 4);
         
         hp = globus_libc_gethostbyaddr_r(
             tmp_hostname,
-            strlen(tmp_hostname),
+            4,
             AF_INET,
             &(handle->cc_handle.server),
             handle->cc_handle.server_buffer,
             GLOBUS_FTP_CONTROL_HOSTENT_BUFFER_SIZE,
             &errno);
 
-        free(tmp_hostname);
-        
         if(hp == GLOBUS_NULL)
         {
             rc = globus_error_put(
