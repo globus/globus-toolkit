@@ -236,7 +236,8 @@ globus_l_xio_http_open(
         if (http_handle->request_info.http_version
                 == GLOBUS_XIO_HTTP_VERSION_1_0)
         {
-            if (!http_handle->request_info.headers.content_length_set &&
+            if (!GLOBUS_I_XIO_HTTP_HEADER_IS_CONTENT_LENGTH_SET(
+                        &http_handle->request_info.headers) &&
                 !http_handle->request_info.delay_write_header)
             {
                 result = GlobusXIOHttpErrorInvalidHeader(
@@ -443,7 +444,7 @@ globus_i_xio_http_read(
     {
         if (header_info->transfer_encoding !=
                 GLOBUS_XIO_HTTP_TRANSFER_ENCODING_CHUNKED &&
-            header_info->content_length_set &&
+            GLOBUS_I_XIO_HTTP_HEADER_IS_CONTENT_LENGTH_SET(header_info) &&
             header_info->content_length == 0)
         {
             /* Synthesize EOF if we've read all of the entity content */
@@ -576,8 +577,8 @@ globus_i_xio_http_parse_residue(
                 {
                     /* Haven't pre-read enough, pass to transport */
                     if (http_handle->parse_state
-                            == GLOBUS_XIO_HTTP_IDENTITY_BODY
-                                && headers->content_length_set)
+                            == GLOBUS_XIO_HTTP_IDENTITY_BODY &&
+                        GLOBUS_I_XIO_HTTP_HEADER_IS_CONTENT_LENGTH_SET(headers))
                     {
                         max_content = headers->content_length;
                     }
@@ -665,7 +666,7 @@ globus_l_xio_http_copy_residue(
     {
         headers = &http_handle->request_info.headers;
     }
-    if (headers->content_length_set)
+    if (GLOBUS_I_XIO_HTTP_HEADER_IS_CONTENT_LENGTH_SET(headers))
     {
         /* Don't wait beyond content-length */
         if (http_handle->read_operation.wait_for >
@@ -696,7 +697,7 @@ globus_l_xio_http_copy_residue(
         /* Don't copy more than content-length */
         if (headers->transfer_encoding !=
                 GLOBUS_XIO_HTTP_TRANSFER_ENCODING_CHUNKED &&
-            headers->content_length_set &&
+            GLOBUS_I_XIO_HTTP_HEADER_IS_CONTENT_LENGTH_SET(headers) &&
             headers->content_length < to_copy)
         {
             to_copy = headers->content_length;
@@ -734,7 +735,7 @@ globus_l_xio_http_copy_residue(
 
         if (headers->transfer_encoding
                 != GLOBUS_XIO_HTTP_TRANSFER_ENCODING_CHUNKED &&
-                headers->content_length_set)
+                GLOBUS_I_XIO_HTTP_HEADER_IS_CONTENT_LENGTH_SET(headers))
         {
             headers->content_length -= to_copy;
         }
@@ -802,7 +803,7 @@ globus_l_xio_http_read_callback(
 
     if (headers->transfer_encoding
             != GLOBUS_XIO_HTTP_TRANSFER_ENCODING_CHUNKED &&
-        headers->content_length_set)
+        GLOBUS_I_XIO_HTTP_HEADER_IS_CONTENT_LENGTH_SET(headers))
     {
         headers->content_length -= nbytes;
 
@@ -883,7 +884,7 @@ globus_l_xio_http_read_chunk_header_callback(
     {
         if (headers->transfer_encoding !=
                 GLOBUS_XIO_HTTP_TRANSFER_ENCODING_CHUNKED &&
-            headers->content_length_set &&
+            GLOBUS_I_XIO_HTTP_HEADER_IS_CONTENT_LENGTH_SET(headers) &&
             headers->content_length == 0)
         {
             /* Synthesize EOF if we've read all of the entity content */
@@ -1443,7 +1444,7 @@ globus_i_xio_http_write_callback(
          */
         globus_libc_free(http_handle->write_operation.iov);
     }
-    else if (headers->content_length_set)
+    else if (GLOBUS_I_XIO_HTTP_HEADER_IS_CONTENT_LENGTH_SET(headers))
     {
         headers->content_length -= nbytes;
 
@@ -1512,8 +1513,8 @@ globus_i_xio_http_close(
                  * "Connection: close" header when we want to close if
                  * we haven't sent our status line yet.
                  */
-                http_handle->response_info.headers.connection_close
-                        = GLOBUS_TRUE;
+                http_handle->response_info.headers.flags |=
+                        GLOBUS_I_XIO_HTTP_HEADER_CONNECTION_CLOSE;
             }
             /* FALLSTHROUGH */
         case GLOBUS_XIO_HTTP_CHUNK_BODY:
@@ -1619,7 +1620,8 @@ globus_i_xio_http_close_internal(
     if (http_handle->target_info.is_client &&
         http_handle->user_close &&
         http_handle->request_info.http_version == GLOBUS_XIO_HTTP_VERSION_1_1 &&
-        (!http_handle->response_info.headers.connection_close) &&
+        (!GLOBUS_I_XIO_HTTP_HEADER_IS_CONNECTION_CLOSE(
+                &http_handle->response_info.headers)) &&
         http_handle->parse_state == GLOBUS_XIO_HTTP_EOF)
     {
         GlobusTimeReltimeSet(delay, 0, 0);

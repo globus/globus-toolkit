@@ -514,7 +514,8 @@ globus_l_xio_http_write_eof_callback(
         result = globus_i_xio_http_close_internal(http_handle);
     }
     else if ((! http_handle->target_info.is_client) &&
-             (! http_handle->response_info.headers.connection_close) &&
+             (! GLOBUS_I_XIO_HTTP_HEADER_IS_CONNECTION_CLOSE(
+                    &http_handle->response_info.headers)) &&
              (  http_handle->response_info.http_version ==
                     GLOBUS_XIO_HTTP_VERSION_1_1))
     {

@@ -113,6 +113,38 @@ typedef struct
 globus_i_xio_http_target_t;
 
 
+typedef enum
+{
+    /**
+     * Body needed flag
+     *
+     * This should be set when the request or response requires that a entity
+     * be sent along with the request, and that has not yet been done.
+     * This should be unset when the request does not require a entity, or
+     * it has already been sent, or some error prevents it from being sent.
+     */
+    GLOBUS_I_XIO_HTTP_HEADER_ENTITY_NEEDED = 1 << 0,
+    /**
+     * Content-Length header was supplied.
+     */
+    GLOBUS_I_XIO_HTTP_HEADER_CONTENT_LENGTH_SET = 1 << 1,
+    /**
+     * Connection will be closed after response flag.
+     */
+    GLOBUS_I_XIO_HTTP_HEADER_CONNECTION_CLOSE = 1 << 2
+}
+globus_i_xio_http_header_flags_t;
+
+/** Flag accessor */
+/*@{*/
+#define GLOBUS_I_XIO_HTTP_HEADER_IS_ENTITY_NEEDED(header) \
+    ((header)->flags & GLOBUS_I_XIO_HTTP_HEADER_ENTITY_NEEDED)
+#define GLOBUS_I_XIO_HTTP_HEADER_IS_CONTENT_LENGTH_SET(header) \
+    ((header)->flags & GLOBUS_I_XIO_HTTP_HEADER_CONTENT_LENGTH_SET)
+#define GLOBUS_I_XIO_HTTP_HEADER_IS_CONNECTION_CLOSE(header) \
+    ((header)->flags & GLOBUS_I_XIO_HTTP_HEADER_CONNECTION_CLOSE)
+/*@}*/
+
 /**
  * Internal information about a header set for a request or response.
  */
@@ -127,34 +159,18 @@ typedef struct
      */
     globus_hashtable_t                  headers;
     /**
-     * Body needed flag
-     *
-     * - GLOBUS_TRUE when the request or response requires that a entity be
-     *   sent along with the request, and that has not yet been done.
-     * - GLOBUS_FALSE when the request does not require a entity, or
-     *   it has already been sent, or some error prevents it from being sent.
-     */
-    globus_bool_t                       entity_needed;
-
-    /**
      * Content-Length header's value, if present
      */
     globus_size_t                       content_length;
-
-    /**
-     * Content-Length header was supplied.
-     */
-    globus_bool_t                       content_length_set;
-
     /**
      * Transfer-Encoding header's value, if present.
      */
     globus_i_xio_http_transfer_encoding_t
                                         transfer_encoding;
     /**
-     * Connection will be closed after response flag.
+     * Special processing headers present
      */
-    globus_bool_t                       connection_close;
+    globus_i_xio_http_header_flags_t    flags;
 }
 globus_i_xio_http_header_info_t;
 

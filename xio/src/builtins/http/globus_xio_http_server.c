@@ -372,14 +372,17 @@ globus_i_xio_http_server_write_response(
     /*
      * Special headers we generate.
      */
-    if (http_handle->response_info.headers.connection_close ||
+    if (GLOBUS_I_XIO_HTTP_HEADER_IS_CONNECTION_CLOSE(
+                &http_handle->response_info.headers) ||
             (http_handle->request_info.http_version ==
                 GLOBUS_XIO_HTTP_VERSION_1_0) ||
             (http_handle->response_info.headers.transfer_encoding
                 == GLOBUS_XIO_HTTP_TRANSFER_ENCODING_IDENTITY &&
-             http_handle->response_info.headers.content_length_set))
+             GLOBUS_I_XIO_HTTP_HEADER_IS_CONTENT_LENGTH_SET(
+                &http_handle->response_info.headers)))
     {
-        http_handle->response_info.headers.connection_close = GLOBUS_TRUE;
+        http_handle->response_info.headers.flags |= 
+                GLOBUS_I_XIO_HTTP_HEADER_CONNECTION_CLOSE;
 
         GLOBUS_XIO_HTTP_COPY_BLOB(&iovecs,
                 "Connection: close\r\n",
@@ -396,7 +399,8 @@ globus_i_xio_http_server_write_response(
                 == GLOBUS_XIO_HTTP_VERSION_1_0 ||
             (http_handle->response_info.headers.transfer_encoding
                 == GLOBUS_XIO_HTTP_TRANSFER_ENCODING_IDENTITY &&
-             http_handle->response_info.headers.content_length_set))
+             GLOBUS_I_XIO_HTTP_HEADER_IS_CONTENT_LENGTH_SET(
+                     &http_handle->response_info.headers)))
         {
             http_handle->response_info.headers.transfer_encoding
                 = GLOBUS_XIO_HTTP_TRANSFER_ENCODING_IDENTITY;
@@ -413,7 +417,8 @@ globus_i_xio_http_server_write_response(
              * When we know the content-length beforehand we can set it here,
              * otherwise, we will use the connection: close header
              */
-            if (http_handle->response_info.headers.content_length_set)
+            if (GLOBUS_I_XIO_HTTP_HEADER_IS_CONTENT_LENGTH_SET(
+                    &http_handle->response_info.headers))
             {
                 GLOBUS_XIO_HTTP_COPY_BLOB(&iovecs,
                         "Content-Length: ",
@@ -639,7 +644,8 @@ globus_l_xio_http_server_write_response_callback(
     else
     {
         if (http_handle->send_state == GLOBUS_XIO_HTTP_EOF &&
-            !http_handle->response_info.headers.connection_close)
+            !GLOBUS_I_XIO_HTTP_HEADER_IS_CONNECTION_CLOSE(
+                    &http_handle->response_info.headers))
         {
             result = globus_i_xio_http_server_read_next_request(http_handle);
 
@@ -747,14 +753,17 @@ globus_i_xio_http_server_read_request_callback(
     {
         http_handle->parse_state = GLOBUS_XIO_HTTP_CHUNK_LINE;
     }
-    else if (http_handle->request_info.headers.content_length_set)
+    else if (GLOBUS_I_XIO_HTTP_HEADER_IS_CONTENT_LENGTH_SET(
+                &http_handle->request_info.headers))
     {
         http_handle->parse_state = GLOBUS_XIO_HTTP_IDENTITY_BODY;
     }
 
-    if (http_handle->request_info.headers.connection_close)
+    if (GLOBUS_I_XIO_HTTP_HEADER_IS_CONNECTION_CLOSE(
+                &http_handle->request_info.headers))
     {
-        http_handle->response_info.headers.connection_close = GLOBUS_TRUE;
+        http_handle->response_info.headers.flags |= 
+                GLOBUS_I_XIO_HTTP_HEADER_CONNECTION_CLOSE;
     }
 
     globus_mutex_unlock(&http_handle->mutex);
@@ -1089,14 +1098,17 @@ globus_i_xio_http_server_read_next_request_callback(
     {
         http_handle->parse_state = GLOBUS_XIO_HTTP_CHUNK_LINE;
     }
-    else if (http_handle->request_info.headers.content_length_set)
+    else if (GLOBUS_I_XIO_HTTP_HEADER_IS_CONTENT_LENGTH_SET(
+                &http_handle->request_info.headers))
     {
         http_handle->parse_state = GLOBUS_XIO_HTTP_IDENTITY_BODY;
     }
 
-    if (http_handle->request_info.headers.connection_close)
+    if (GLOBUS_I_XIO_HTTP_HEADER_IS_CONNECTION_CLOSE(
+                &http_handle->request_info.headers))
     {
-        http_handle->response_info.headers.connection_close = GLOBUS_TRUE;
+        http_handle->response_info.headers.flags |=
+                GLOBUS_I_XIO_HTTP_HEADER_CONNECTION_CLOSE;
     }
 
     globus_xio_driver_operation_destroy(
