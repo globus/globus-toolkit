@@ -897,6 +897,13 @@ extends GridServiceImpl {
                             }
                         }
                         
+                    } else {
+                        try {
+                            logger.debug("no more transfers");
+                            closeAll();
+                        } catch (Exception e) {
+                            logger.error(e);
+                        }
                     }
                 }
                 }
