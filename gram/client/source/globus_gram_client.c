@@ -198,11 +198,12 @@ globus_l_gram_client_parse_gatekeeper_contact( char *    contact_string,
 					       char **   gatekeeper_dn )
 {
     char *                duplicate;
-    char *                host = NULL;
-    char *                port = NULL;
-    char *                dn = NULL;
+    char *                host = GLOBUS_NULL;
+    char *                port = GLOBUS_NULL;
+    char *                dn = GLOBUS_NULL;
     char *                service;
     unsigned short        iport;
+    globus_url_t          some_struct;
 
     /*
      *  the gatekeeper contact format: [https://]<host>:<port>[/<service>]:<dn>
@@ -242,13 +243,24 @@ globus_l_gram_client_parse_gatekeeper_contact( char *    contact_string,
 	           iport = (unsigned short) atoi(port);
             }
 	}
+        else
+        {
+            dn = GLOBUS_NULL;
+        }
     } 
     else 
     {
 	grami_fprintf(globus_l_print_fp, "strdup failed for contact_string\n");
-	return(1);
+        return(GLOBUS_GRAM_CLIENT_ERROR_BAD_GATEKEEPER_CONTACT);
     }
     
+    if (! *host)
+    {
+       globus_libc_free(duplicate);
+       grami_fprintf(globus_l_print_fp, "empty host value in contact_string\n");
+       return(GLOBUS_GRAM_CLIENT_ERROR_BAD_GATEKEEPER_CONTACT);
+    }
+
     *gatekeeper_url = globus_libc_malloc(strlen(host) +
 					 10 + 
 					 strlen("https://:/"));
@@ -256,6 +268,15 @@ globus_l_gram_client_parse_gatekeeper_contact( char *    contact_string,
     globus_libc_sprintf(*gatekeeper_url, "https://%s:%d/",
 			host,
 			(int) iport);    
+
+    if (globus_url_parse(*gatekeeper_url, &some_struct) != GLOBUS_SUCCESS)
+    {
+       globus_libc_free(*gatekeeper_url);
+       globus_libc_free(duplicate);
+       return(GLOBUS_GRAM_CLIENT_ERROR_BAD_GATEKEEPER_CONTACT);
+    }
+    globus_url_destroy(&some_struct);
+
     /* 
      * done with the port, can now put the slash back
      */
