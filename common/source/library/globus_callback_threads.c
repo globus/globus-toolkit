@@ -205,7 +205,7 @@ globus_l_callback_space_destructor(
         globus_cond_destroy(&i_space->cond);
         
         globus_memory_push_node(
-        &globus_l_callback_space_memory, i_space);
+            &globus_l_callback_space_memory, i_space);
     }
 }
 
@@ -268,6 +268,8 @@ globus_l_callback_activate()
     
     /* init global 'space' */
     globus_l_callback_global_space.handle = GLOBUS_CALLBACK_GLOBAL_SPACE;
+    globus_l_callback_global_space.behavior = 
+        GLOBUS_CALLBACK_SPACE_BEHAVIOR_THREADED;
     globus_priority_q_init(
         &globus_l_callback_global_space.queue,
         (globus_priority_q_cmp_func_t) globus_abstime_cmp);
@@ -1826,7 +1828,7 @@ globus_l_callback_thread_poll(
         if(callback_info)
         {
             /* if function does not have its own thread */
-            if(gets_own_thread)
+            if(!gets_own_thread)
             {
                 globus_bool_t           unregister;
                 globus_callback_func_t  unregister_callback;
