@@ -4,7 +4,6 @@ XX denotes unlikely that this will be in 4.0
 
 auth:
 XX authz instrumentation
--- password file / plaintext password authentication
 
 protocol:
 -- correct FEAT response?
@@ -21,8 +20,8 @@ striping:
 ** verify _get_read_range()
 ** file trunc issue
     send first _ipc_request_recv() with trunc set, wait for BEGIN,
-    then send the rest with no trunc.    
-
+    then send the rest with no trunc.  
+    
 ipc:
 ** encryption
 XX connect backwards
@@ -67,3 +66,5 @@ DONE
 ** dynamic adjust recieving server parallelism
     query data channel for number of streams, use that as reply to 
     _get_optimal_concurrency
+-- password file / plaintext password authentication
+

@@ -111,6 +111,7 @@ typedef enum globus_gfs_buffer_type_e
  *     int                              mode;
  *     int                              nlink;
  *     char                             name[MAXPATHLEN];
+ *     char                             symlink_target[MAXPATHLEN];
  *     uid_t                            uid;
  *     gid_t                            gid;
  *     globus_size_t                    size;

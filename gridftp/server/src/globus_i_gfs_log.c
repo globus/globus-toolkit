@@ -20,6 +20,14 @@ globus_i_gfs_log_open(void)
     if(logfilename != NULL)
     {
         log_file = fopen(logfilename, "a");
+        if(globus_i_gfs_config_bool("log_public"))
+        {
+            chmod(logfilename, 0644);
+        }
+        else
+        {
+            chmod(logfilename, 0600);
+        }            
     }
     if(log_file == NULL)
     {
