@@ -28,9 +28,11 @@
 #include <fcntl.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+
 #if defined(HAVE_NETINET_TCP_H)
 #   include <netinet/tcp.h>
 #endif
+
 #include <netdb.h>
 #include <stdlib.h>
 
@@ -52,6 +54,15 @@
 /*
  *  NETLOGGER
  */
+/*
+ *  If this is a Netlogger aware build, include the logging headers
+ */
+#if defined(GLOBUS_BUILD_WITH_NETLOGGER)
+#include "NetLogger.h"
+#else
+typedef void NLhandle;
+#endif
+
 
 #define GLOBUS_IO_NL_EVENT_START_READ     "GIO_READ_START"
 #define GLOBUS_IO_NL_EVENT_END_READ       "GIO_READ_END"
@@ -60,9 +71,14 @@
 
 struct globus_netlogger_handle_s
 {   
-    char *                                nl_event_str;
-    char *                                desc;
     NLhandle *                            nl_handle;
+    char *                                hostname;
+    char *                                progname;
+    char *                                gsid;
+    char *                                pid;
+    char *                                desc;
+
+    char *                                main_str;
 };
 
 /*

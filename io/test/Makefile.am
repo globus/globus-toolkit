@@ -31,8 +31,8 @@ INCLUDES += $(GPT_INCLUDES)
 # libexec is $prefix/libexec
 # You can also use any directory defined by a macro of the form 
 # <directory_name>dir
+
 test_PROGRAMS= \
-	globus_io_authorization_test \
 	globus_io_tcp_test \
 	globus_io_tcp_test_server \
 	globus_io_tcp_test_client \

@@ -12,7 +12,9 @@
 /**
  * RCS Identification of this source file
  */
+
 static char *rcsid = "$Header$";
+
 #endif
 
 /*
@@ -250,358 +252,19 @@ globus_io_attr_netlogger_set_handle(
 }
 
 globus_result_t
-globus_netlogger_set_desc(
-    globus_netlogger_handle_t *       nl_handle,
-    const char *                      desc)
-{
-    struct globus_netlogger_handle_s *       s_nl_handle;
-
-    static char *                            myname=
-                               "globus_netlogger_set_desc";
-
-    if(nl_handle == GLOBUS_NULL)
-    {
-        return globus_error_put(
-            globus_io_error_construct_null_parameter(
-                GLOBUS_IO_MODULE,
-                GLOBUS_NULL,
-                "nl_handle",
-                1,
-                myname));
-    }
-    if(desc == GLOBUS_NULL)
-    {
-        return globus_error_put(
-            globus_io_error_construct_null_parameter(
-                GLOBUS_IO_MODULE,
-                GLOBUS_NULL,
-                "desc",
-                2,
-                myname));
-    }
-
-    if(!g_globus_i_io_use_netlogger)
-    {
-        return globus_error_put(
-                   globus_error_construct_string(
-                       GLOBUS_IO_MODULE,
-                       GLOBUS_NULL,
-                       "[%s] NetLogger is not enabled.",
-                       GLOBUS_IO_MODULE->module_name));
-    }
-
-    s_nl_handle = *nl_handle;
-
-    if(s_nl_handle->desc != GLOBUS_NULL)
-    {
-        free(s_nl_handle->desc);
-    }
-    s_nl_handle->desc = strdup(desc);
-
-    return GLOBUS_SUCCESS;
-
-
-}
-
-globus_result_t
-globus_io_attr_netlogger_copy_handle(
-    globus_netlogger_handle_t *              src,
-    globus_netlogger_handle_t *              dst)
-{
-    struct globus_netlogger_handle_s *       s_nl_handle;
-
-    static char *                            myname=
-                               "globus_io_attr_netlogger_copy_handle";
-
-    if(src == GLOBUS_NULL)
-    {
-        return globus_error_put(
-            globus_io_error_construct_null_parameter(
-                GLOBUS_IO_MODULE,
-                GLOBUS_NULL,
-                "src",
-                1,
-                myname));
-    }
-    if(dst == GLOBUS_NULL)
-    {
-        return globus_error_put(
-            globus_io_error_construct_null_parameter(
-                GLOBUS_IO_MODULE,
-                GLOBUS_NULL,
-                "dst",
-                2,
-                myname));
-    }
-
-    if(!g_globus_i_io_use_netlogger)
-    {
-        return globus_error_put(
-                   globus_error_construct_string(
-                       GLOBUS_IO_MODULE,
-                       GLOBUS_NULL,
-                       "[%s] NetLogger is not enabled.",
-                       GLOBUS_IO_MODULE->module_name));
-    }
-
-    s_nl_handle = *src;
-
-    globus_netlogger_handle_init(dst, s_nl_handle->nl_handle);
-
-    return GLOBUS_SUCCESS;
-}
-
-/*
- *  change the current event_id string sent with the
- *  net logger messages
- */
-globus_result_t
-globus_netlogger_add_attribute_string(
-    globus_netlogger_handle_t *              nl_handle,
-    const char *                             attribute_name,
-    const char *                             attribute_value)
-{
-    struct globus_netlogger_handle_s *       s_nl_handle;
-    char *                                   tmp_str;
-    char *                                   tmp_ptr;
-    char *                                   rm_start;
-    char *                                   rm_end;
-    int                                      size;
-    int                                      str_len;
-    int                                      offset;
-    static char *                            myname=
-                               "globus_netlogger_add_attribute_string";
-
-    if(nl_handle == GLOBUS_NULL)
-    {
-        return globus_error_put(
-            globus_io_error_construct_null_parameter(
-                GLOBUS_IO_MODULE,
-                GLOBUS_NULL,
-                "handle",
-                1,
-                myname));
-    }
-    if(attribute_name == GLOBUS_NULL)
-    {
-        return globus_error_put(
-            globus_io_error_construct_null_parameter(
-                GLOBUS_IO_MODULE,
-                GLOBUS_NULL,
-                "attribute_name",
-                2,
-                myname));
-    }
-    if(attribute_value == GLOBUS_NULL)
-    {
-        return globus_error_put(
-            globus_io_error_construct_null_parameter(
-                GLOBUS_IO_MODULE,
-                GLOBUS_NULL,
-                "attribute_value",
-                3,
-                myname));
-    }
-
-    if(!g_globus_i_io_use_netlogger)
-    {
-        return globus_error_put(
-                   globus_error_construct_string(
-                       GLOBUS_IO_MODULE,
-                       GLOBUS_NULL,
-                       "[%s] NetLogger is not enabled.",
-                       GLOBUS_IO_MODULE->module_name));
-    }
-
-    s_nl_handle = *nl_handle;
-    globus_i_io_mutex_lock();
-
-    size = strlen(attribute_name) + strlen(attribute_value) + 2;
-    if(s_nl_handle->nl_event_str != GLOBUS_NULL)
-    {
-        tmp_str = s_nl_handle->nl_event_str;
-
-        rm_start = strstr(tmp_str, attribute_name);
-        /*
-         *  if this attribute is already in string
-         */
-        if(rm_start != NULL)
-        {
-            rm_end = strchr(rm_start, ' ');
-            /*
-             *  If space not found it must be the end of the string
-             *  simply terminate at start_point.
-             */
-            if(rm_end == NULL)
-            {
-                *rm_start = '\0';
-            }
-            else
-            {
-                str_len = strlen(tmp_str) - (rm_end - rm_start);;
-                /*
-                 * If removing the entire string
-                 */
-                if(str_len < 3)
-                {
-                    s_nl_handle->nl_event_str = strdup("");
-                    free(tmp_str);
-                }
-                /*
-                 *  if only taking out this section
-                 */
-                else
-                {
-                    s_nl_handle->nl_event_str = malloc(str_len + 1);
-                    strncpy(s_nl_handle->nl_event_str, tmp_str, rm_start - tmp_str);
-                    strcpy(&s_nl_handle->nl_event_str[rm_start - tmp_str],
-                        rm_end);
-                    free(tmp_str);
-                }
-            }
-        }
-        size += (strlen(s_nl_handle->nl_event_str) + 1);
-    }
-
-    tmp_str = (char *) globus_malloc(size);
-    offset = 0;
-    if(s_nl_handle->nl_event_str != GLOBUS_NULL)
-    {
-        tmp_ptr = s_nl_handle->nl_event_str;
-        while(isspace(*tmp_ptr))
-        {
-            tmp_ptr++;
-        }
-        strcpy(tmp_str, tmp_ptr);
-        offset = strlen(tmp_str);
-        tmp_str[offset] = ' ';
-        offset++;
-        tmp_str[offset] = '\0';
-        
-        free(s_nl_handle->nl_event_str);
-    }
-    strcpy(&tmp_str[offset], attribute_name);
-    offset += strlen(&tmp_str[offset]);
-    tmp_str[offset] = '=';
-    offset++;
-    strcpy(&tmp_str[offset], attribute_value);
-
-    s_nl_handle->nl_event_str = tmp_str;
-
-    globus_i_io_mutex_unlock();
-
-    return GLOBUS_SUCCESS;
-}
-
-globus_result_t
-globus_netlogger_set_attribute_string(
-    globus_netlogger_handle_t *              nl_handle,
-    const char *                             attr_str)
-{
-    struct globus_netlogger_handle_s *       s_nl_handle;
-    static char *                            myname=
-                               "globus_netlogger_set_attribute_string";
-
-    if(nl_handle == GLOBUS_NULL)
-    {
-        return globus_error_put(
-            globus_io_error_construct_null_parameter(
-                GLOBUS_IO_MODULE,
-                GLOBUS_NULL,
-                "handle",
-                1,
-                myname));
-    }
-    if(attr_str == GLOBUS_NULL)
-    {
-        return globus_error_put(
-            globus_io_error_construct_null_parameter(
-                GLOBUS_IO_MODULE,
-                GLOBUS_NULL,
-                "attribute_name",
-                2,
-                myname));
-    }
-
-    if(!g_globus_i_io_use_netlogger)
-    {
-        return globus_error_put(
-                   globus_error_construct_string(
-                       GLOBUS_IO_MODULE,
-                       GLOBUS_NULL,
-                       "[%s] NetLogger is not enabled.",
-                       GLOBUS_IO_MODULE->module_name));
-    }
-
-    s_nl_handle = *nl_handle;
-
-    globus_i_io_mutex_lock();
-    if(s_nl_handle->nl_event_str != GLOBUS_NULL)
-    {
-        free(s_nl_handle->nl_event_str);
-    }
-    s_nl_handle->nl_event_str = strdup(attr_str);
-    globus_i_io_mutex_unlock();
-
-    return GLOBUS_SUCCESS;
-}
-
-globus_result_t
-globus_netlogger_get_attribute_string(
-    globus_netlogger_handle_t *              nl_handle,
-    const char **                            attr_str)
-{
-    struct globus_netlogger_handle_s *       s_nl_handle;
-    static char *                            myname=
-                                   "globus_io_netlogger_get_attribute_string";
-
-    if(nl_handle == GLOBUS_NULL)
-    {
-        return globus_error_put(
-            globus_io_error_construct_null_parameter(
-                GLOBUS_IO_MODULE,
-                GLOBUS_NULL,
-                "handle",
-                1,
-                myname));
-    }
-    if(attr_str == GLOBUS_NULL)
-    {
-        return globus_error_put(
-            globus_io_error_construct_null_parameter(
-                GLOBUS_IO_MODULE,
-                GLOBUS_NULL,
-                "attribute_name",
-                2,
-                myname));
-    }
- 
-    *attr_str = GLOBUS_NULL;
-    if(!g_globus_i_io_use_netlogger)
-    {
-        return globus_error_put(
-                   globus_error_construct_string(
-                       GLOBUS_IO_MODULE,
-                       GLOBUS_NULL,
-                       "[%s] NetLogger is not enabled.",
-                       GLOBUS_IO_MODULE->module_name));
-    }
-
-    s_nl_handle = *nl_handle;
-    *attr_str = s_nl_handle->nl_event_str;
-
-    return GLOBUS_SUCCESS;
-}
-
-globus_result_t
 globus_netlogger_write(
     globus_netlogger_handle_t *              nl_handle,
     const char *                             event,
+    const char *                             id,
+    const char *                             level,
     const char *                             tag)
 {
     struct globus_netlogger_handle_s *       s_nl_handle;
+    char *                                   outstr;
+    int                                      outstr_len;
+    int                                      rc;
     static char *                            myname=
-                                                  "globus_netlogger_write";
+        "globus_netlogger_write";
 
     if(nl_handle == GLOBUS_NULL)
     {
@@ -613,6 +276,7 @@ globus_netlogger_write(
                 1,
                 myname));
     }
+
     if(event == GLOBUS_NULL)
     {
         return globus_error_put(
@@ -623,6 +287,7 @@ globus_netlogger_write(
                 2,
                 myname));
     }
+
     if(!g_globus_i_io_use_netlogger)
     {
         return globus_error_put(
@@ -651,77 +316,89 @@ globus_netlogger_write(
      */
 #   if defined(GLOBUS_BUILD_WITH_NETLOGGER)
     {
-            NetLoggerWrite(
-                s_nl_handle->nl_handle,
-                (char *)event,
-                (char *)tag, 
-                s_nl_handle->desc == NULL ?
-                    "" : "SOCK_DESC=%s",
-                s_nl_handle->desc == NULL ?
-                    "" : s_nl_handle->desc);
+        outstr_len = strlen(s_nl_handle->main_str) + 1;
+        if(level != GLOBUS_NULL)
+        { 
+            outstr_len += strlen(" LVL=") + strlen(level) + 1;
+        }
+        if(tag != GLOBUS_NULL)
+        {
+            outstr_len += strlen(tag);
+        }
+        if(id != GLOBUS_NULL)
+        {
+            outstr_len += strlen(" ID=") + strlen(id);
+        }
+        if(s_nl_handle->desc != GLOBUS_NULL)
+        {
+            outstr_len += strlen(" SOCK_DESC=") + strlen(s_nl_handle->desc);
+        }
+        outstr = (char *)globus_malloc(outstr_len);
+        /*
+         * apparently strcpy is much faster than sprintf
+         */
+        strcpy(outstr, s_nl_handle->main_str);
+        if(level != GLOBUS_NULL)
+        { 
+            strcat(outstr, " LVL=");
+            strcat(outstr, level);
+        }
+        if(id != GLOBUS_NULL)
+        {
+            strcat(outstr, " ID=");
+            strcat(outstr, id);
+        }
+        if(s_nl_handle->desc != GLOBUS_NULL)
+        {
+            strcat(outstr, " SOCK_DESC=");
+            strcat(outstr, s_nl_handle->desc);
+        }
+        if(tag != GLOBUS_NULL)
+        {
+            strcat(outstr, " ");
+            strcat(outstr, tag);
+        }
+
+        rc = NetLoggerWrite(
+                 s_nl_handle->nl_handle,
+                 (char *)event,
+                 (char *)outstr,
+                 "");
+        if(rc != 1)
+        {
+            return globus_error_put(
+                   globus_error_construct_string(
+                       GLOBUS_IO_MODULE,
+                       GLOBUS_NULL,
+                       "[%s] NetLoggerWrite failed.",
+                       GLOBUS_IO_MODULE->module_name));
+        }
     }
 #   endif
 
     return GLOBUS_SUCCESS;
 }
 
+
 /*
  *  netlogger handle init
  */
+
 globus_result_t
 globus_netlogger_handle_init(
-    globus_netlogger_handle_t *              nl_handle,
-    NLhandle *                               handle)
+    globus_netlogger_handle_t *              gnl_handle,
+    const char *                             hostname,
+    const char *                             progname,
+    const char *                             pid)
 {
-    struct globus_netlogger_handle_s *       s_nl_handle;
+    struct globus_netlogger_handle_s *       s_gnl_handle;
+    char *                                   main_str;
+    int                                      ms_len = 0;
+    NLhandle *                               nl_handle;
     static char *                            myname=
-                                                "globus_netlogger_handle_init";
+        "globus_netlogger_handle_init";
 
-    if(nl_handle == GLOBUS_NULL)
-    {
-        return globus_error_put(
-            globus_io_error_construct_null_parameter(
-                GLOBUS_IO_MODULE,
-                GLOBUS_NULL,
-                "handle",
-                1,
-                myname));
-    }
-
-    /*
-     *  make sure netlogger is active
-     */
-    if(!g_globus_i_io_use_netlogger)
-    {
-        return globus_error_put(
-                   globus_error_construct_string(
-                       GLOBUS_IO_MODULE,
-                       GLOBUS_NULL,
-                       "[%s] NetLogger is not enabled.",
-                       GLOBUS_IO_MODULE->module_name));
-    }
-
-    s_nl_handle = globus_malloc(sizeof(struct globus_netlogger_handle_s));
-    *nl_handle = s_nl_handle;
-
-    s_nl_handle->nl_handle = GLOBUS_NULL;
-    s_nl_handle->nl_event_str = GLOBUS_NULL;
-    s_nl_handle->desc = GLOBUS_NULL;
-    s_nl_handle->nl_handle = handle;
-
-    return GLOBUS_SUCCESS;
-}
-
-globus_result_t
-globus_netlogger_get_nlhandle(
-    globus_netlogger_handle_t *              nl_handle,
-    NLhandle **                              handle)
-{
-    struct globus_netlogger_handle_s *       s_nl_handle;
-    static char *                            myname=
-                                        "globus_netlogger_get_nlhandle";
-
-    if(nl_handle == GLOBUS_NULL)
+    if(gnl_handle == GLOBUS_NULL)
     {
         return globus_error_put(
             globus_io_error_construct_null_parameter(
@@ -731,20 +408,33 @@ globus_netlogger_get_nlhandle(
                 1,
                 myname));
     }
-    if(handle == GLOBUS_NULL)
+
+    if(hostname == GLOBUS_NULL)
     {
         return globus_error_put(
             globus_io_error_construct_null_parameter(
                 GLOBUS_IO_MODULE,
                 GLOBUS_NULL,
-                "handle",
-                2,
+                "hostname",
+                3,
                 myname));
     }
 
-    /*  
+    if(progname == GLOBUS_NULL)
+    {
+        return globus_error_put(
+            globus_io_error_construct_null_parameter(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "progname",
+                4,
+                myname));
+    }
+
+    /*
      *  make sure netlogger is active
      */
+
     if(!g_globus_i_io_use_netlogger)
     {
         return globus_error_put(
@@ -755,8 +445,51 @@ globus_netlogger_get_nlhandle(
                        GLOBUS_IO_MODULE->module_name));
     }
 
-    s_nl_handle = *nl_handle;
-    *handle = s_nl_handle->nl_handle;
+    s_gnl_handle = globus_malloc(sizeof(struct globus_netlogger_handle_s));
+    *gnl_handle = s_gnl_handle;
+
+    s_gnl_handle->nl_handle = GLOBUS_NULL;
+#   if defined(GLOBUS_BUILD_WITH_NETLOGGER)
+    {
+        s_gnl_handle->nl_handle = NetLoggerOpen((char *)progname, NULL, NL_ENV);
+        if(s_gnl_handle->nl_handle == GLOBUS_NULL)
+        {
+            return globus_error_put(
+                   globus_error_construct_string(
+                       GLOBUS_IO_MODULE,
+                       GLOBUS_NULL,
+                       "[%s] NetLogger failed to open handle.",
+                       GLOBUS_IO_MODULE->module_name));
+        }
+    }
+#   else
+    {
+        return globus_error_put(
+                   globus_error_construct_string(
+                       GLOBUS_IO_MODULE,
+                       GLOBUS_NULL,
+                       "[%s] NetLogger is not built in.",
+                       GLOBUS_IO_MODULE->module_name));
+    }
+#   endif
+
+    ms_len = 1;
+    if(pid != GLOBUS_NULL)
+    {
+        ms_len += strlen("PID=") + strlen(pid) + 1;
+        s_gnl_handle->pid = strdup(pid);
+    }
+    main_str = (char *)globus_malloc(ms_len);
+    main_str[0] = '\0';
+    if(pid != GLOBUS_NULL)
+    {
+        strcat(main_str, " PID=");
+        strcat(main_str, pid);
+    }
+    s_gnl_handle->hostname = strdup(hostname);
+    s_gnl_handle->progname = strdup(progname);
+    s_gnl_handle->main_str = main_str;
+    s_gnl_handle->desc = GLOBUS_NULL;
 
     return GLOBUS_SUCCESS;
 }
@@ -764,13 +497,168 @@ globus_netlogger_get_nlhandle(
 /*
  *  netlogger handle destroy
  */
+
 globus_result_t
 globus_netlogger_handle_destroy(
-    globus_netlogger_handle_t *              nl_handle)
+    globus_netlogger_handle_t *              gnl_handle)
+{
+    struct globus_netlogger_handle_s *       s_gnl_handle;
+    static char *                            myname=
+        "globus_netlogger_handle_destroy";
+
+    if(gnl_handle == GLOBUS_NULL)
+    {
+        return globus_error_put(
+            globus_io_error_construct_null_parameter(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "gnl_handle",
+                1,
+                myname));
+    }
+
+    /*
+     *  make sure netlogger is active
+     */
+
+    if(!g_globus_i_io_use_netlogger)
+    {
+        return globus_error_put(
+                   globus_error_construct_string(
+                       GLOBUS_IO_MODULE,
+                       GLOBUS_NULL,
+                       "[%s] NetLogger is not enabled.",
+                       GLOBUS_IO_MODULE->module_name));
+    }
+
+    s_gnl_handle = *gnl_handle;
+
+    if(s_gnl_handle == GLOBUS_NULL)
+    {
+        return globus_error_put(
+                   globus_error_construct_string(
+                       GLOBUS_IO_MODULE,
+                       GLOBUS_NULL,
+                       "[%s] NetLogger handle has not been initialized.",
+                       GLOBUS_IO_MODULE->module_name));
+    }
+#   if defined(GLOBUS_BUILD_WITH_NETLOGGER)
+    {
+        NetLoggerClose(s_gnl_handle->nl_handle);
+    }
+#   endif
+    if(s_gnl_handle->hostname != NULL)
+    {
+        free(s_gnl_handle->hostname);
+    }
+    if(s_gnl_handle->progname != NULL)
+    {
+        free(s_gnl_handle->progname);
+    }
+    if(s_gnl_handle->pid != NULL)
+    {
+        free(s_gnl_handle->pid);
+    }
+    if(s_gnl_handle->main_str != NULL)
+    {
+        free(s_gnl_handle->main_str);
+    }
+    if(s_gnl_handle->desc != NULL)
+    {
+        free(s_gnl_handle->desc);
+    }
+
+    globus_free(s_gnl_handle);
+    *gnl_handle = GLOBUS_NULL;
+
+    return GLOBUS_SUCCESS;
+}
+
+/*
+ *  copy a handle
+ */
+
+globus_result_t
+globus_io_attr_netlogger_copy_handle(
+    globus_netlogger_handle_t *              src,
+    globus_netlogger_handle_t *              dst)
+{
+    struct globus_netlogger_handle_s *       s_gnl_handle;
+    struct globus_netlogger_handle_s *       d_gnl_handle;
+
+    static char *                            myname=
+        "globus_io_attr_netlogger_copy_handle";
+
+    if(src == GLOBUS_NULL)
+    {
+        return globus_error_put(
+            globus_io_error_construct_null_parameter(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "src",
+                1,
+                myname));
+    }
+
+    if(dst == GLOBUS_NULL)
+    {
+        return globus_error_put(
+            globus_io_error_construct_null_parameter(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "dst",
+                2,
+                myname));
+    }
+
+    if(!g_globus_i_io_use_netlogger)
+    {
+        return globus_error_put(
+                   globus_error_construct_string(
+                       GLOBUS_IO_MODULE,
+                       GLOBUS_NULL,
+                       "[%s] NetLogger is not enabled.",
+                       GLOBUS_IO_MODULE->module_name));
+    }
+
+    s_gnl_handle = *src;
+
+    d_gnl_handle = globus_malloc(sizeof(struct globus_netlogger_handle_s));
+    *dst = d_gnl_handle;
+
+    d_gnl_handle->nl_handle = s_gnl_handle->nl_handle;
+    if(s_gnl_handle->hostname != GLOBUS_NULL)
+    {
+        d_gnl_handle->hostname = strdup(s_gnl_handle->hostname);
+    }
+    if(s_gnl_handle->progname != GLOBUS_NULL)
+    {
+        d_gnl_handle->progname = strdup(s_gnl_handle->progname);
+    }
+    if(s_gnl_handle->main_str != GLOBUS_NULL)
+    {
+        d_gnl_handle->main_str = strdup(s_gnl_handle->main_str);
+    }
+    if(s_gnl_handle->pid != GLOBUS_NULL)
+    {
+        d_gnl_handle->pid = strdup(s_gnl_handle->pid);
+    }
+    if(s_gnl_handle->desc != GLOBUS_NULL)
+    {
+        d_gnl_handle->desc = strdup(s_gnl_handle->desc);
+    }
+
+    return GLOBUS_SUCCESS;
+}
+
+globus_result_t
+globus_netlogger_set_desc(
+    globus_netlogger_handle_t *              nl_handle,
+    char *                                   desc)
 {
     struct globus_netlogger_handle_s *       s_nl_handle;
     static char *                            myname=
-                                        "globus_netlogger_handle_destroy";
+                                        "globus_netlogger_set_desc";
 
     if(nl_handle == GLOBUS_NULL)
     {
@@ -780,6 +668,16 @@ globus_netlogger_handle_destroy(
                 GLOBUS_NULL,
                 "nl_handle",
                 1,
+                myname));
+    }
+    if(desc == GLOBUS_NULL)
+    {
+        return globus_error_put(
+            globus_io_error_construct_null_parameter(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "desc",
+                2,
                 myname));
     }
 
@@ -797,16 +695,11 @@ globus_netlogger_handle_destroy(
     }
 
     s_nl_handle = *nl_handle;
-    if(s_nl_handle->desc != NULL)
+    if(s_nl_handle->desc != GLOBUS_NULL)
     {
         free(s_nl_handle->desc);
     }
-    if(s_nl_handle->nl_event_str != NULL)
-    {
-        free(s_nl_handle->nl_event_str);
-    }
-    globus_free(s_nl_handle);
-    *nl_handle = GLOBUS_NULL;
+    s_nl_handle->desc = strdup(desc);
 
     return GLOBUS_SUCCESS;
 }

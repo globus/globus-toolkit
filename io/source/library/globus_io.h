@@ -44,18 +44,6 @@ EXTERN_C_BEGIN
 #include "globus_gss_assist.h"
 #endif
 
-/*
-#define GLOBUS_BUILD_WITH_NETLOGGER 1
-*/
-
-/*
- *  If this is a Netlogger aware build, include the logging headers
- */
-#if defined(GLOBUS_BUILD_WITH_NETLOGGER)
-#include "NetLogger.h"
-#else
-typedef void NLhandle;
-#endif
 
 struct globus_netlogger_handle_s;
 typedef struct globus_netlogger_handle_s *  globus_netlogger_handle_t;
@@ -1331,41 +1319,24 @@ globus_io_attr_netlogger_set_handle(
     globus_netlogger_handle_t *         nl_handle);
 
 globus_result_t
-globus_netlogger_set_desc(
-    globus_netlogger_handle_t *       nl_handle,
-    const char *                      desc);
-
-globus_result_t
 globus_io_attr_netlogger_copy_handle(
     globus_netlogger_handle_t *              src,
     globus_netlogger_handle_t *              dst);
 
 globus_result_t
-globus_netlogger_add_attribute_string(
-    globus_netlogger_handle_t *       nl_handle,
-    const char *                      attribute_name,
-    const char *                      attribute_value);
-
-globus_result_t
-globus_netlogger_set_attribute_string(
-    globus_netlogger_handle_t *       nl_handle,
-    const char *                      attr_str);
-
-globus_result_t
-globus_netlogger_get_attribute_string(
-    globus_netlogger_handle_t *       nl_handle,
-    const char **                     attr_str);
-
-globus_result_t
 globus_netlogger_write(
     globus_netlogger_handle_t *       nl_handle,
     const char *                      event,
+    const char *                      id,
+    const char *                      level,
     const char *                      tag);
 
 globus_result_t
 globus_netlogger_handle_init(
-    globus_netlogger_handle_t *       nl_handle,
-    NLhandle *                        handle);
+    globus_netlogger_handle_t *       gnl_handle,
+    const char *                      hostname,
+    const char *                      progname,
+    const char *                      pid);
 
 globus_result_t
 globus_netlogger_handle_destroy(
@@ -1374,7 +1345,12 @@ globus_netlogger_handle_destroy(
 globus_result_t
 globus_netlogger_get_nlhandle(
     globus_netlogger_handle_t *       nl_handle,
-    NLhandle **                       handle);
+    void **                           handle);
+
+globus_result_t
+globus_netlogger_set_desc(
+    globus_netlogger_handle_t *       nl_handle,
+    char *                            desc);
 
 /* NETLOGGER handle */
 

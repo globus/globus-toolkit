@@ -655,6 +655,27 @@ globus_i_io_securesocket_register_connect_callback(
     flags |= GSS_C_MUTUAL_FLAG;
     break;
     case GLOBUS_IO_SECURE_AUTHORIZATION_MODE_SELF:
+        if(handle->securesocket_attr.credential == GSS_C_NO_CREDENTIAL)
+	{
+	    maj_stat = globus_gss_assist_acquire_cred(
+		&min_stat,
+		GSS_C_INITIATE,
+		&handle->securesocket_attr.credential);
+	    if(maj_stat != GSS_S_COMPLETE)
+	    {
+		
+		err = globus_io_error_construct_no_credentials(
+		    GLOBUS_IO_MODULE,
+		    GLOBUS_NULL,
+		    handle,
+		    (int) maj_stat,
+		    (int) min_stat,
+		    0);
+		goto error_exit;
+	    }
+	}
+        flags |= GSS_C_MUTUAL_FLAG;
+        break;
     case GLOBUS_IO_SECURE_AUTHORIZATION_MODE_IDENTITY:
         flags |= GSS_C_MUTUAL_FLAG;
         break;
@@ -2195,8 +2216,11 @@ globus_l_io_write_auth_token(
 	if(init_info->output_offset == init_info->output_buflen)
 	{
 	    /* sent entire token, so free token length and token */
-	    globus_free(init_info->output_buffer_header);
-	    init_info->output_buffer_header = GLOBUS_NULL;
+            if(init_info->output_buffer_header)
+            {
+                globus_free(init_info->output_buffer_header);
+	        init_info->output_buffer_header = GLOBUS_NULL;
+            }
 	    init_info->output_header_len = 0;
 	    init_info->output_header_offset = 0;
 

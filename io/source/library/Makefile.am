@@ -18,16 +18,16 @@ Sources= \
 	globus_io_write.c \
 	globus_l_io.h
 
-include_HEADERS = \
+flavorinclude_HEADERS = \
 	globus_io.h \
 	globus_io_error_hierarchy.h
 
 lib_LTLIBRARIES = libglobus_io_$(GLOBUS_FLAVOR_NAME).la
 
-INCLUDES = $(GPT_INCLUDES)
+INCLUDES = $(GPT_INCLUDES) $(NETLOGGER_INCLUDES)
 
 libglobus_io___GLOBUS_FLAVOR_NAME__la_LDFLAGS = @GPT_LDFLAGS@
-libglobus_io___GLOBUS_FLAVOR_NAME__la_LIBADD = @GPT_LIB_LINKS@
+libglobus_io___GLOBUS_FLAVOR_NAME__la_LIBADD = @GPT_LIB_LINKS@ $(NETLOGGER_LIBS)
 
 libglobus_io___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 
