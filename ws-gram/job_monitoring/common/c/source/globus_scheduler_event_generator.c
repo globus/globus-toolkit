@@ -913,7 +913,7 @@ globus_l_seg_writev_callback(
     globus_scheduler_event_generator_fault_handler_t
                                         handler = NULL;
     void *                              arg;
-    globus_bool_t                       reregister_write;
+    globus_bool_t                       reregister_write = GLOBUS_FALSE;
     int                                 do_shutdown = 0;
 
     for (i = 0; i < count; i++)
