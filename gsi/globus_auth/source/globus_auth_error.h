@@ -58,7 +58,7 @@ globus_result_duplicate(
 globus_auth_result_t
 globus_result_get_error_type(
         globus_auth_result_t                 result,
-        int *                           errnum);
+        int *                                errnum);
 
 /* Extract the string error from a error structure */
 globus_auth_result_t

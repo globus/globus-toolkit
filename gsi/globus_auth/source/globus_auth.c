@@ -54,9 +54,9 @@ globus_authorization_handle_init(
     (*handle)->gaa_sc = 0;
     (*handle)->gss_context = 0;
     (*handle)->policy_source = 0;
-    #ifdef DEBUG
+#ifdef DEBUG
        (*handle)->debug_answer = 0; 
-    #endif
+#endif
 
     return(GLOBUS_SUCCESS);
 }
@@ -95,10 +95,10 @@ globus_authorization_handle_destroy(
     
     /*gss_delete_sec_context?*/
     (*handle)->gss_context = NULL;
-    #ifdef DEBUG
+#ifdef DEBUG
         if ((*handle)->debug_answer) gaa_free_answer((*handle)->debug_answer);
         (*handle)->debug_answer = NULL;
-    #endif
+#endif
     return GLOBUS_SUCCESS;
 }
 
@@ -392,12 +392,12 @@ globus_authorization_eval(
         
     /*Check for null object, service type, action?*/
     
-    #ifdef DEBUG
+#ifdef DEBUG
         if (handle->debug_answer) gaa_free_answer(handle->debug_answer);
         handle->debug_answer = NULL;
         fprintf(stderr,"object=%s, service_type=%s, action=%s\n",
             object, service_type, action);
-    #endif
+#endif
 
     /*Get policy info for the filename*/
     if((status = gaa_get_object_policy_info(object, handle->gaa,
@@ -492,12 +492,12 @@ globus_authorization_eval(
     //if(handle->policy) gaa_free_policy(handle->policy);
     
     
-    #ifdef DEBUG
+#ifdef DEBUG
         handle->debug_answer = answer;
-    #else
+#else
         gaa_free_answer(answer);    
         answer = NULL;
-    #endif
+#endif
     
     return ret_val;
 }
@@ -541,9 +541,9 @@ globus_authorization_handle_set_policy_source(
                                 )); 
 
     handle->policy_source = (gaa_string_data)strdup(policy_source); 
-    #ifdef DEBUG
+#ifdef DEBUG
         fprintf(stderr,"Policy_source = %s\n",policy_source);
-    #endif
+#endif
     return GLOBUS_SUCCESS;
 
 }
