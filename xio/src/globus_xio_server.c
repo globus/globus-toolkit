@@ -64,7 +64,7 @@
  *  when in a register the finish function kicks this out as a oneshot
  */
 void
-globus_l_xio_server_driver_op_kickout(
+globus_l_xio_driver_op_kickout(
     void *                                      user_arg)
 {
     globus_i_xio_op_t *                         xio_op;

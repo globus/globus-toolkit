@@ -103,6 +103,7 @@ struct globus_i_xio_stack_s
 typedef struct globus_i_xio_server_entry_s
 {
     globus_xio_driver_t                         driver;
+    void *                                      server_handle;
 } globus_i_xio_server_entry_t;
 /* 
  *  

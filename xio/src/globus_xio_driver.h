@@ -471,9 +471,8 @@ typedef globus_result_t
  */
 typedef globus_result_t
 (*globus_xio_driver_transform_open_t)(
-    void **                                     driver_handle,
-    void *                                      driver_attr,
     void *                                      driver_target,
+    void *                                      open_attr,
     globus_xio_driver_operation_t               op);
 
 /**
@@ -481,9 +480,8 @@ typedef globus_result_t
  */
 typedef globus_result_t
 (*globus_xio_driver_transport_open_t)(
-    void **                                     driver_handle,
-    void *                                      driver_attr,
     void *                                      driver_target,
+    void *                                      open_attr,
     globus_xio_driver_context_t                 context,
     globus_xio_driver_operation_t               op);
 
@@ -543,6 +541,7 @@ globus_xio_driver_open(
 globus_result_t
 globus_xio_driver_finished_open(
     globus_xio_driver_context_t                 context,
+    void *                                      driver_handle,
     globus_xio_driver_operation_t               open_op,
     globus_result_t                             result);
 
