@@ -27,6 +27,14 @@ build it by following the directions at
 NOTE: This prerequisite applies only for building myproxy.  You can
 use the myproxy binaries with any recent GSI or Globus distribution.
 
+myproxy uses a backend database to store credentials. This feature has 
+been provided starting from version 0.4.x to make myproxy more scalable.
+The connectivity to the backend database is provided through Open Database 
+Connectivity (ODBC). The current version of myproxy requires MySQL 3.23.49a 
+and MyODBC 3.51.02. MyODBC requires iODBC 3.00 or later. These are available
+on
+<http://www.mysql.com> and <http://www.iodbc.org>
+
 2. Building the myproxy software
 --------------------------------
 
