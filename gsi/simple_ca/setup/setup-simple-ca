@@ -73,10 +73,20 @@ if test -d "${GRID_CA_DIR}"; then
 	exit;
     fi
 else
-    if test ! -d "${HOME}/.globus"; then
+    if test ! -d "${HOME}/.globus" && test -n "${default_loc}"; then
 	${GLOBUS_SH_MKDIR-mkdir} ${HOME}/.globus
+        if test $? -ne 0; then
+            echo "ERROR: Couldn't create directory: ${HOME}/.globus/"
+            echo "       make sure you have valid permissions set."
+            exit 1;
+        fi
     fi
     ${GLOBUS_SH_MKDIR-mkdir} ${GRID_CA_DIR}
+    if test $? -ne 0; then
+        echo "ERROR: Couldn't create directory: ${GRID_CA_DIR}"
+        echo "       make sure you have valid permissions set."
+        exit 1;
+    fi
 fi
 
 CA_KEY_FILE=${GRID_CA_DIR}/private/cakey.pem
@@ -149,8 +159,9 @@ while test -z "${got_subject}" ; do
 
     read _answer
     answer=${_answer:-y}
+    first_char_answer="`echo ${answer} | ${GLOBUS_SH_TR-tr} 'A-Z' 'a-z' | ${GLOBUS_SH_CUT-cut} -c1`";
 
-    if test "`echo ${answer} | ${GLOBUS_SH_TR-tr} 'A-Z' 'a-z' | ${GLOBUS_SH_CUT-cut} -c1`" = 'n'; then
+    if test "${first_char_answer}" = "n"; then
     
 	echo ""
 	recho "Enter a unique subject name for this CA: "
@@ -168,7 +179,7 @@ while test -z "${got_subject}" ; do
 		got_subject="yes"
 	    fi
 	fi
-     else
+     elif test "${first_char_answer}" = "y"; then
 	got_subject="yes"
      fi
 
@@ -565,8 +576,62 @@ fi
 . ${GLOBUS_LOCATION}/libexec/globus-script-initializer
 globus_source ${libexecdir}/globus-sh-tools.sh
 
+PROGRAM_NAME=`echo $0 | ${GLOBUS_SH_SED-sed} 's|.*/||g'`
+
+short_usage="$PROGRAM_NAME [-help] [ options ...]"
+
+long_usage () {
+    ${GLOBUS_SH_CAT-cat} >&2 <<EOF
+
+${short_usage}
+
+  Options:
+    -dir <loc>         : Will put the Simple CA in <loc>
+EOF
+}
+
+. $libexecdir/globus-args-parser-header
+
+readCommandLine () {
+  # Expects $* from the shell invocation
+
+  while test ! "X$1" =  "X"
+  do
+    case $1 in
+      -\?|-h|-help|-usage)
+         long_usage
+         exit 0
+         ;;
+     -dir)
+         tmp_ca_dir="$2"
+         if -z "${tmp_ca_dir}"; then
+            echo "ERROR: the -dir option expects a directory."
+            exit 1;
+         fi
+         if test "`echo ${tmp_ca_dir} | cut -c1`" = "/"; then
+            GRID_CA_DIR=${tmp_ca_dir}
+         else
+            GRID_CA_DIR=$PWD/$tmp_ca_dir
+         fi
+         
+         shift ; shift
+         ;;
+     *)
+         globus_args_unrecognized_option "$1"
+         ;;
+    esac
+  done
+}
+
+readCommandLine $@;
+
 # setup variables used by the script
-GRID_CA_DIR=${HOME}/.globus/simpleCA/
+
+if test -z "${GRID_CA_DIR}"; then
+    GRID_CA_DIR=${HOME}/.globus/simpleCA/
+    default_loc="yes"
+fi
+
 CA_DIR_PERMS=0700
 CA_ORG_NAME=""
 

@@ -163,6 +163,8 @@ echo "y
 y
 " > $tmp_input_file
 
+do_sign() {
+ 
 tmp_output=/tmp/tmp_output.$$
 ${openssl_cmd} ca -config ${grid_ca_conf} -key "${password}" \
                   -in ${TMP_REQ_FILE} -out ${TMP_CERT_FILE} \
@@ -234,10 +236,8 @@ if test "${openssl_result}" = "1"; then
             ${GLOBUS_SH_RM-rm} -f ${tmp_revoke_output}
 
             echo "Signing new certificate"
-
-            ${openssl_cmd} ca -config ${grid_ca_conf} -key "${password}" \
-                          -in ${TMP_REQ_FILE} -out ${TMP_CERT_FILE} \
-                          < $tmp_input_file 2> $tmp_output
+            do_sign;
+            return;
 
         else
             echo ""
@@ -281,17 +281,28 @@ if test "${openssl_result}" = "1"; then
     exit 1
 fi
 
+}
+
+do_sign;
+
 NEW_SERIAL=`${openssl_cmd} x509 -in ${TMP_CERT_FILE} -noout -serial | ${GLOBUS_SH_SED-sed} -e "s|serial=||"`
 
 echo ""
 echo "The new signed certificate is at: ${GRID_CA_DIR}/newcerts/${NEW_SERIAL}.pem"
 echo ""
-    
-CERT_OUTPUT_DIR="`echo ${SIGNED_OUTPUT_FILE} | ${GLOBUS_SH_SED-sed} -e \"s|\(.*\)/.*|\1|\"`"
 
+CERT_OUTPUT_DIR=`dirname ${SIGNED_OUTPUT_FILE}`
 if test -w "${CERT_OUTPUT_DIR}"; then
     ${GLOBUS_SH_CP-cp} ${TMP_CERT_FILE} ${SIGNED_OUTPUT_FILE}
+else
+    echo ""
+    echo "ERROR: Cannot create the requested output certificate file"
+    echo "   ${SIGNED_OUTPUT_FILE}"
+    echo "Instead manually copy and rename the new signed certificate at"
+    echo "   ${GRID_CA_DIR}/newcerts/${NEW_SERIAL}.pem"
+    echo ""
 fi
 
 do_cleanup
 exit
+

@@ -240,7 +240,6 @@ readCommandLine () {
             nondefaultca=$2
             shift
          else
-            echo "nondefaultca=true"
             nondefaultca="true"
          fi
 	     set_nondefaultca
