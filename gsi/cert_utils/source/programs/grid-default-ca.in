@@ -156,14 +156,32 @@ short_usage="$PROGRAM_NAME [-help] [ options ...]"
 
 readCommandLine "$@"
 
-if [ -z "$secconfdir" ]; then
-    secconfdir=${GRID_SECURITY_DIR-/etc/grid-security/}
-fi
-
-trusted_certs_dir=$secconfdir/certificates/
-
-if [ $secconfdir = "${GLOBUS_LOCATION}/etc/" ]; then
-    trusted_certs_dir=${GLOBUS_LOCATION}/share/certificates/
+if [ ! -z "${GRID_SECURITY_DIR}" ] ; then
+    if [ -r "${GRID_SECURITY_DIR}/globus-user-ssl.conf" ] && 
+       [ -r "${GRID_SECURITY_DIR}/globus-host-ssl.conf" ] ; then
+        secconfdir="${GRID_SECURITY_DIR}"
+        trusted_certs_dir="${secconfdir}/certificates"
+    else
+        echo "Can't find valid CA config files in " \
+             "GRID_SECURITY_DIR  = ${GRID_SECURITY_DIR}." 
+        echo "Please make sure that you have installed and " \
+             "setup a CA setup package."
+        echo ""
+        exit 1   
+    fi
+elif [ -r "/etc/grid-security/globus-user-ssl.conf" ] && 
+     [ -r "/etc/grid-security/globus-host-ssl.conf" ] ; then
+    secconfdir="/etc/grid-security"
+    trusted_certs_dir="${secconfdir}/certificates"
+elif [ -r "${GLOBUS_LOCATION}/etc/globus-user-ssl.conf" ] &&
+     [ -r "${GLOBUS_LOCATION}/etc/globus-host-ssl.conf" ] ; then
+    secconfdir="${GLOBUS_LOCATION}/etc"
+    trusted_certs_dir="${GLOBUS_LOCATION}/share/certificates"
+else
+    echo "Can't find valid CA config files. Please make sure"
+    echo "that you have installed and setup a CA setup package."
+    echo ""
+    exit 1
 fi
 
 if [ ! -d "${secconfdir}" ] || [ ! -d "${trusted_certs_dir}" ]; then
