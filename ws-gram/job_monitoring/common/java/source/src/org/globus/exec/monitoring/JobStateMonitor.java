@@ -430,8 +430,8 @@ public class JobStateMonitor {
 
         synchronized (mapping) {
             logger.debug("dispatching " + e.toString());
-            listener.jobStateChanged(resourceKey, e.getTimeStamp(),
-                    e.getState(), e.getExitCode());
+            listener.jobStateChanged(resourceKey, e.getLocalId(),
+                    e.getTimeStamp(), e.getState(), e.getExitCode());
 
             synchronized (cachedEvents) {
                 /* If called from a DispatcherThread, the event may
