@@ -299,8 +299,10 @@ globus_libc_join(
     const char **                       array,
     int                                 count);
     
+#ifndef WIN32
 globus_size_t
 globus_libc_strlen(const char * string);
+#endif
 
 int
 globus_libc_vprintf_length(const char * fmt, va_list ap);
