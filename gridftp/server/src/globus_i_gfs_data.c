@@ -271,6 +271,10 @@ void
 globus_l_gfs_data_operation_destroy(
     globus_l_gfs_data_operation_t *     op)
 {
+    if(op->list_type)
+    {
+        globus_free((char *) op->list_type);
+    }
     if(op->recvd_ranges)
     {
         globus_range_list_destroy(op->recvd_ranges);
@@ -1224,14 +1228,19 @@ globus_l_gfs_data_list_stat_cb(
     op = (globus_gfs_operation_t) user_arg;
     bounce_info = (globus_l_gfs_data_bounce_t *) op->user_arg;
 
+    if(reply->result != GLOBUS_SUCCESS)
+    {
+        result = reply->result;
+        goto error;
+    }
+    
     result = globus_gridftp_server_control_list_buffer_alloc(
             op->list_type,
             op->uid,
             reply->info.stat.stat_array, 
             reply->info.stat.stat_count,
             &list_buffer,
-            &buffer_len);
-    
+            &buffer_len);    
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusGFSErrorWrapFailed(
@@ -1249,7 +1258,6 @@ globus_l_gfs_data_list_stat_cb(
         -1,
         globus_l_gfs_data_list_write_cb,
         bounce_info);
-
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusGFSErrorWrapFailed(
@@ -1311,7 +1319,7 @@ globus_i_gfs_data_request_list(
     data_op->writing = GLOBUS_TRUE;
     data_op->data_handle = data_handle;
     data_handle->op = data_op;
-    data_op->list_type = list_info->list_type;
+    data_op->list_type = globus_libc_strdup(list_info->list_type);
     data_op->uid = getuid();
     /* XXX */
     data_op->callback = cb;
