@@ -58,7 +58,8 @@ void perf_plugin_marker_cb(
 static
 void perf_plugin_complete_cb(
     globus_ftp_client_handle_t *                    handle,
-    void *                                          user_specific)
+    void *                                          user_specific,
+    globus_bool_t                                   success)
 {
     globus_libc_fprintf(stderr, "perf_plugin_complete_cb\n");
 }
