@@ -608,12 +608,6 @@ globus_l_gfs_data_command_cb(
     {
         switch(reply->info.command.command)
         {
-          case GLOBUS_GFS_CMD_RMD:
-          case GLOBUS_GFS_CMD_DELE:
-          case GLOBUS_GFS_CMD_RNTO:
-          case GLOBUS_GFS_CMD_SITE_CHMOD:
-            globus_gsc_959_finished_command(op, "250 OK.\r\n");
-            break;
           case GLOBUS_GFS_CMD_MKD:
             msg = globus_common_create_string(
                 "257 Directory \"%s\" created successfully.\r\n",
@@ -632,7 +626,7 @@ globus_l_gfs_data_command_cb(
             break;
 
           default:
-            globus_gsc_959_finished_command(op, "500 Unknown error.\r\n");
+            globus_gsc_959_finished_command(op, "250 OK.\r\n");
             break;
         }
     }
@@ -796,6 +790,16 @@ globus_l_gfs_request_command(
         strcmp(cmd_array[1], "DSI") == 0)
     {
         command_info->command = GLOBUS_GFS_CMD_SITE_DSI;
+        command_info->pathname = strdup(cmd_array[2]);
+        if(command_info->pathname == NULL)
+        {
+            goto err;
+        }
+    }
+    else if(strcmp(cmd_array[0], "SITE") == 0 &&
+        strcmp(cmd_array[1], "RDEL") == 0)
+    {
+        command_info->command = GLOBUS_GFS_CMD_SITE_RDEL;
         command_info->pathname = strdup(cmd_array[2]);
         if(command_info->pathname == NULL)
         {
@@ -1722,6 +1726,19 @@ globus_l_gfs_add_commands(
         2,
         2,
         "DELE <sp> pathname",
+        instance);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+    result = globus_gsc_959_command_add(
+        control_handle,
+        "SITE RDEL",
+        globus_l_gfs_request_command,
+        GLOBUS_GSC_COMMAND_POST_AUTH,
+        3,
+        3,
+        "SITE RDEL <sp> pathname",
         instance);
     if(result != GLOBUS_SUCCESS)
     {

@@ -6,7 +6,7 @@ protocol:
 -- correct FEAT response?
 -- reply codes - verify.
 -- verify that dsi api is correct wrt to errors
--- error out usefully to server and client when cred problem in gssapi driver
+-- error out usefully to server and client when cred problem in gssapi_ftp driver
 
 striping:
 -- verify eofc handling, should move out of remote into data.c
@@ -23,7 +23,6 @@ logging:
 -- instrument code
 -- verify output format
 -- specify log format by configuration
--- syslog module for globus_logging
 
 Pre-Auth Timeout
 

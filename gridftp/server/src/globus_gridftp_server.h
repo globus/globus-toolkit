@@ -88,6 +88,7 @@ typedef enum globus_gfs_command_type_e
     GLOBUS_GFS_CMD_MKD = 1,
     GLOBUS_GFS_CMD_RMD,
     GLOBUS_GFS_CMD_DELE,
+    GLOBUS_GFS_CMD_SITE_RDEL,
     GLOBUS_GFS_CMD_RNTO,
     GLOBUS_GFS_CMD_RNFR,
     GLOBUS_GFS_CMD_CKSM,

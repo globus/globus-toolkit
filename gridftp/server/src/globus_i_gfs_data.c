@@ -1012,6 +1012,10 @@ globus_l_gfs_data_operation_destroy(
     {
         globus_free(op->pathname);
     }
+    if(op->cksm_response)
+    {
+        globus_free(op->cksm_response);
+    }
     if(op->remote_ip)
     {
         globus_free(op->remote_ip);
@@ -1222,6 +1226,7 @@ globus_i_gfs_data_request_command(
             break;
 
         case GLOBUS_GFS_CMD_DELE:
+        case GLOBUS_GFS_CMD_SITE_RDEL:
             action = "delete";
             break;
 
