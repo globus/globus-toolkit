@@ -1,6 +1,16 @@
-reexamine build process
+
+attr only on server init and open
+
+get rid of context in transport
+get rid of context close
 
 need clean method of getting contact string
+
+get rid of macros so we can hide types
+
+--------------------
+
+add 'no cancel' to the close attr
 
 need a kickout utility for drivers so their driver specific cntls can respect callback space
 
@@ -13,16 +23,12 @@ also, if something like target init or server accept fails somewhere along the w
 -- take ref on driver handle to prevent close barrier
 -- something to do with target destroy
 
-check thread id before doing oneshot due to in_register...  too many unnecessary ones in threaded builds
-
 should pass close respect cancel?  definitely not when TOP LEVEL op is open
 
 caching shit needs to be finished
 
-get rid of close attr
+dont do unnecessary error_get/puts
 
-blocking opt
+reexamine build process
 
-attr only on server init and open
-
-
+documentation

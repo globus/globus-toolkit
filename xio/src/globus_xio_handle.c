@@ -218,7 +218,8 @@ globus_l_xio_hande_pre_close(
     globus_i_xio_handle_t *                 handle,
     globus_xio_attr_t                       attr,
     globus_xio_callback_t                   cb,
-    void *                                  user_arg)
+    void *                                  user_arg,
+    globus_bool_t                           blocking)
 {
     void *                                  driver_attr;
     int                                     ctr;
@@ -336,7 +337,12 @@ globus_l_xio_hande_pre_close(
     op->_op_cb = cb;
     op->user_arg = user_arg;
     op->entry[0].prev_ndx = -1;/*for first pass there is no return*/
-
+    op->blocking = blocking;
+    if(blocking)
+    {
+        op->blocked_thread = GlobusXIOThreadSelf();
+    }
+    
     GlobusXIODebugInternalExit();
     return GLOBUS_SUCCESS;
 
@@ -414,7 +420,7 @@ globus_i_xio_close_handles(
                         {
                             /* i suspect that res will always be true here */
                             res = globus_l_xio_hande_pre_close(
-                                handle, NULL, NULL, NULL);
+                                handle, NULL, NULL, NULL, GLOBUS_FALSE);
                             if(res != GLOBUS_SUCCESS)
                             {
                                 /* if pree close fails we will not wait on 
@@ -749,7 +755,9 @@ globus_l_xio_open_close_callback_kickout(
                 }
             }
         }
-
+        
+        /* necessary for all states except GLOBUS_XIO_HANDLE_STATE_CLOSED */
+        handle->open_op = NULL;
         switch(handle->state)
         {
             case GLOBUS_XIO_HANDLE_STATE_OPEN:
@@ -757,7 +765,6 @@ globus_l_xio_open_close_callback_kickout(
                 break;
 
             case GLOBUS_XIO_HANDLE_STATE_OPENING_FAILED:
-                handle->open_op = NULL;
                 globus_assert(op->type == GLOBUS_XIO_OPERATION_TYPE_OPEN);
 
                 GlobusXIOHandleStateChange(handle,
@@ -782,7 +789,6 @@ globus_l_xio_open_close_callback_kickout(
                     GLOBUS_XIO_HANDLE_STATE_CLOSING);
 
                 /* start the close */
-                handle->open_op = NULL;
                 start_close = GLOBUS_TRUE;
                 close_op = handle->close_op;
                 break;
@@ -1523,7 +1529,6 @@ globus_l_xio_register_open(
             globus_l_xio_timeout_callback,
             &handle->open_timeout_period);
     }
-    handle->open_op = op;
 
     /* add reference count for the pass.  does not need to be done locked
        since no one has op until it is passed  */
@@ -2250,7 +2255,8 @@ globus_xio_register_close(
         }
         else
         {
-            res = globus_l_xio_hande_pre_close(handle, attr, cb, user_arg);
+            res = globus_l_xio_hande_pre_close(
+                handle, attr, cb, user_arg, GLOBUS_FALSE);
             op = handle->close_op;
             if(handle->state == GLOBUS_XIO_HANDLE_STATE_OPENING_AND_CLOSING)
             {
@@ -2554,7 +2560,8 @@ globus_xio_open(
     op->entry[0].prev_ndx = -1; /* for first pass there is no return */
     op->_op_context = context;
     op->blocking = GLOBUS_TRUE;
-
+    op->blocked_thread = GlobusXIOThreadSelf();
+    
     /* initialize the handle */
     handle->ref = 2; /* itself, operation */
     handle->context = context;
@@ -2722,7 +2729,8 @@ globus_xio_read(
     op->_op_wait_for = waitforbytes;
     op->user_arg = info;
     op->blocking = GLOBUS_TRUE;
-
+    op->blocked_thread = GlobusXIOThreadSelf();
+    
     info->op = op;
     
     globus_mutex_lock(&info->mutex);
@@ -2843,7 +2851,8 @@ globus_xio_readv(
     op->_op_wait_for = waitforbytes;
     op->user_arg = info;
     op->blocking = GLOBUS_TRUE;
-
+    op->blocked_thread = GlobusXIOThreadSelf();
+    
     info->op = op;
 
     globus_mutex_lock(&info->mutex);
@@ -2969,6 +2978,7 @@ globus_xio_write(
     op->_op_wait_for = waitforbytes;
     op->user_arg = info;
     op->blocking = GLOBUS_TRUE;
+    op->blocked_thread = GlobusXIOThreadSelf();
 
     info->op = op;
 
@@ -3090,6 +3100,7 @@ globus_xio_writev(
     op->_op_wait_for = waitforbytes;
     op->user_arg = info;
     op->blocking = GLOBUS_TRUE;
+    op->blocked_thread = GlobusXIOThreadSelf();
 
     info->op = op;
 
@@ -3170,13 +3181,12 @@ globus_xio_close(
         else
         {
             res = globus_l_xio_hande_pre_close(
-                handle, attr, globus_l_xio_blocking_cb, info);
+                handle, attr, globus_l_xio_blocking_cb, info, GLOBUS_TRUE);
             if(handle->state == GLOBUS_XIO_HANDLE_STATE_OPENING_AND_CLOSING)
             {
                 pass = GLOBUS_FALSE;
             }
         }
-        handle->close_op->blocking = GLOBUS_TRUE;
     }
     globus_mutex_unlock(&handle->context->mutex);
 

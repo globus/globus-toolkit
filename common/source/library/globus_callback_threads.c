@@ -94,7 +94,7 @@ typedef struct globus_l_callback_space_s
     globus_cond_t                       cond;
     globus_bool_t                       shutdown;
     int                                 idle_count;
-    /* only used for serialized space shutdowns */
+    /* only for serialized space shutdowns and single depth */
     int                                 thread_count; 
 } globus_l_callback_space_t;
 
@@ -1143,11 +1143,10 @@ globus_callback_space_init(
         i_space->shutdown = GLOBUS_FALSE;
         i_space->idle_count = 0;
         
-        /* this is only tracked for serialized spaces */
-        i_space->thread_count = 1;
-        
         if(behavior == GLOBUS_CALLBACK_SPACE_BEHAVIOR_SERIALIZED)
         {
+            i_space->thread_count = 1;
+            
             globus_mutex_lock(&globus_l_callback_thread_lock);
             {
                 if(!globus_l_callback_shutting_down)
@@ -1162,6 +1161,11 @@ globus_callback_space_init(
                 }
             }
             globus_mutex_unlock(&globus_l_callback_thread_lock);
+        }
+        else
+        {
+            /* this is used as a depth indicator for single spaces */
+            i_space->thread_count = 0;
         }
         
         *space = i_space->handle;
@@ -1695,13 +1699,14 @@ globus_callback_space_poll(
     yield = GLOBUS_TRUE;
     post_stop_counter = GLOBUS_L_CALLBACK_POST_STOP_ONESHOTS;
     
+    globus_mutex_lock(&i_space->lock);
+    i_space->thread_count++;
+    
     do
     {
         globus_l_callback_info_t *      callback_info;
         globus_abstime_t                next_ready_time;
         globus_bool_t                   ready_oneshot;
-        
-        globus_mutex_lock(&i_space->lock);
         
         callback_info = globus_l_callback_get_next(
             i_space, &time_now, &next_ready_time);
@@ -1742,6 +1747,8 @@ globus_callback_space_poll(
                     done = GLOBUS_TRUE;
                 }
             }
+            
+            globus_mutex_lock(&i_space->lock);
         }
         else
         {
@@ -1776,8 +1783,6 @@ globus_callback_space_poll(
                 done = GLOBUS_TRUE;
             }
                 
-            globus_mutex_unlock(&i_space->lock);
-            
             if(!done)
             {
                 GlobusTimeAbstimeGetCurrent(time_now);
@@ -1788,7 +1793,9 @@ globus_callback_space_poll(
             }
         }
     } while(!done);
-
+    
+    i_space->thread_count--;
+    globus_mutex_unlock(&i_space->lock);
     /*
      * If I was signaled, I need to pass that signal on to my parent poller
      * because I cant be sure that the signal was just for me
@@ -2215,6 +2222,40 @@ globus_callback_space_get(
     return GLOBUS_SUCCESS;
 }
 
+/**
+ * globus_callback_space_get_depth
+ *
+ * allow a user to get the current nesting level of a space
+ */
+int
+globus_callback_space_get_depth(
+    globus_callback_space_t             space)
+{
+    globus_l_callback_space_t *         i_space;
+    
+    if(space == GLOBUS_CALLBACK_GLOBAL_SPACE)
+    {
+        return 0;
+    }
+    
+    globus_mutex_lock(&globus_l_callback_space_lock);
+    {
+        i_space = (globus_l_callback_space_t *)
+            globus_handle_table_lookup(
+                &globus_l_callback_space_table, space);
+    }
+    globus_mutex_unlock(&globus_l_callback_space_lock);
+    
+    if(!i_space)
+    {
+        return 0;
+    }
+    
+    return i_space->behavior == GLOBUS_CALLBACK_SPACE_BEHAVIOR_SINGLE
+        ? i_space->thread_count
+        : 0;
+}
+ 
 globus_bool_t
 globus_callback_space_is_single(
     globus_callback_space_t             space)

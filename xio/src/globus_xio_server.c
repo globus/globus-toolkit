@@ -1090,7 +1090,8 @@ globus_xio_server_accept(
     xio_op->_op_server = xio_server;
     xio_op->stack_size = xio_server->stack_size;
     xio_op->blocking = GLOBUS_TRUE;
-   
+    xio_op->blocked_thread = GlobusXIOThreadSelf();
+    
     globus_mutex_lock(&info->mutex);
     {
         res = globus_l_xio_server_register_accept(xio_op, accept_attr);
@@ -1243,6 +1244,7 @@ globus_xio_server_close(
     globus_mutex_lock(&info->mutex);
     {
         xio_server->blocking = GLOBUS_TRUE;
+        
         res = globus_xio_server_register_close(xio_server, 
                 globus_l_xio_server_close_cb, info);
 

@@ -83,6 +83,7 @@ typedef struct globus_l_callback_space_s
     globus_callback_space_t             handle;
     globus_priority_q_t                 timed_queue;
     globus_l_callback_ready_queue_t     ready_queue;
+    int                                 depth;
 } globus_l_callback_space_t;
 
 typedef struct
@@ -292,7 +293,8 @@ globus_l_callback_activate()
     globus_priority_q_init(
         &globus_l_callback_global_space.timed_queue,
         (globus_priority_q_cmp_func_t) globus_abstime_cmp);
-
+    globus_l_callback_global_space.depth = 0;
+    
     globus_memory_init(
         &globus_l_callback_info_memory,
         sizeof(globus_l_callback_info_t),
@@ -926,7 +928,8 @@ globus_callback_space_init(
     i_space->handle =
         globus_handle_table_insert(
             &globus_l_callback_space_table, i_space, 1);
-
+    i_space->depth = 0;
+    
     *space = i_space->handle;
 
     return GLOBUS_SUCCESS;
@@ -1143,6 +1146,12 @@ globus_callback_space_poll(
     done = GLOBUS_FALSE;
     post_stop_counter = GLOBUS_L_CALLBACK_POST_STOP_ONESHOTS;
     
+    globus_l_callback_global_space.depth++;
+    if(i_space)
+    {
+        i_space->depth++;
+    }
+    
     do
     {
         globus_l_callback_info_t *      callback_info;
@@ -1290,7 +1299,12 @@ globus_callback_space_poll(
             }
         }
     } while(!done);
-
+    
+    globus_l_callback_global_space.depth--;
+    if(i_space)
+    {
+        i_space->depth--;
+    }
     /*
      * If I was signaled, I need to pass that signal on to my parent poller
      * because I cant be sure that the signal was just for me
@@ -1338,6 +1352,35 @@ globus_callback_space_get(
     *space = globus_l_callback_restart_info->callback_info->my_space->handle;
     
     return GLOBUS_SUCCESS;
+}
+
+/**
+ * globus_callback_space_get_depth
+ *
+ * allow a user to get the current nesting level of a space
+ */
+int
+globus_callback_space_get_depth(
+    globus_callback_space_t             space)
+{
+    globus_l_callback_space_t *         i_space;
+    
+    if(space == GLOBUS_CALLBACK_GLOBAL_SPACE)
+    {
+        i_space = &globus_l_callback_global_space;
+    }
+    else
+    {
+        i_space = (globus_l_callback_space_t *)
+            globus_handle_table_lookup(
+                &globus_l_callback_space_table, space);
+        if(!i_space)
+        {
+            return -1;
+        }
+    }
+    
+    return i_space->depth;
 }
 
 globus_bool_t

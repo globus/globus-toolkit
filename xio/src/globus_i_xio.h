@@ -10,11 +10,18 @@
 #define GLOBUS_XIO_ATTR_ARRAY_BASE_SIZE             16
 #define GLOBUS_XIO_HANDLE_DEFAULT_OPERATION_COUNT   4
 
-
 /***************************************************************************
  *                         internal macros
  *                         ---------------
  **************************************************************************/
+
+#ifdef BUILD_LITE
+#define GlobusXIOThreadSelf()                                               \
+    globus_callback_space_get_depth(GLOBUS_CALLBACK_GLOBAL_SPACE)
+#else
+#define GlobusXIOThreadSelf()   globus_thread_self()
+#endif
+
 GlobusDebugDeclare(GLOBUS_XIO);
 
 #define GlobusXIODebugPrintf(level, message)                                \
@@ -138,6 +145,11 @@ do                                                                          \
         GLOBUS_XIO_DEBUG_INFO,                                              \
         ("[%s] Registering one shot due to in_register.\n", _xio_name))
 
+#define GlobusXIODebugDelayedFinish()                                       \
+    GlobusXIODebugPrintf(                                                   \
+        GLOBUS_XIO_DEBUG_INFO,                                              \
+        ("[%s] Delaying finish due to in_register and blocking op.\n",      \
+        _xio_name))
 
 #define GlobusXIOOperationCreate(_out_op, _in_c)                            \
 do                                                                          \
@@ -328,7 +340,7 @@ typedef struct globus_i_xio_server_s
     globus_callback_space_t                 space;
 
     globus_bool_t                           blocking;
-
+    
     int                                     stack_size;
     globus_i_xio_server_entry_t             entry[1];
 } globus_i_xio_server_t;
@@ -473,7 +485,6 @@ typedef struct globus_i_xio_op_entry_s
 #define _op_handle_timeout_cb               type_u.handle_s.timeout_cb
 
 #define _op_server                          type_u.target_s.server
-#define _op_in_register                     type_u.target_s.in_register
 #define _op_server_timeout_cb               type_u.target_s.timeout_cb
 
 /*
@@ -527,7 +538,6 @@ typedef struct globus_i_xio_op_s
         {
             globus_i_xio_server_t *         server;
             void *                          target;
-            globus_bool_t                   in_register;
             globus_xio_timeout_server_callback_t  timeout_cb;
         } target_s;
     } type_u;
@@ -546,6 +556,9 @@ typedef struct globus_i_xio_op_s
 
     globus_bool_t                           restarted;
     globus_bool_t                           blocking;
+    globus_thread_t                         blocked_thread;
+    globus_bool_t                           finished_delayed;
+    
     /* result code saved in op for kickouts */
     globus_object_t *                       cached_obj;
 
@@ -657,6 +670,10 @@ void
 globus_l_xio_driver_open_op_kickout(
     void *                                  user_arg);
 
+void
+globus_i_xio_driver_resume_op(
+    globus_i_xio_op_t *                     op);
+    
 /*
  *  time stuff
  */

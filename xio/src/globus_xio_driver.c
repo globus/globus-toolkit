@@ -306,6 +306,40 @@ globus_i_xio_op_destroy(
 }
 
 void
+globus_i_xio_driver_resume_op(
+    globus_i_xio_op_t *                     op)
+{
+    GlobusXIOName(globus_i_xio_driver_resume_op);
+
+    GlobusXIODebugInternalEnter();
+
+    switch(op->entry[op->ndx - 1].type)
+    {
+        case GLOBUS_XIO_OPERATION_TYPE_OPEN:
+            globus_l_xio_driver_open_op_kickout(op);
+            break;
+
+        case GLOBUS_XIO_OPERATION_TYPE_READ:
+            globus_l_xio_driver_op_read_kickout(op);
+            break;
+
+        case GLOBUS_XIO_OPERATION_TYPE_WRITE:
+            globus_l_xio_driver_op_write_kickout(op);
+            break;
+        
+        case GLOBUS_XIO_OPERATION_TYPE_CLOSE:
+            globus_l_xio_driver_op_close_kickout(op);
+            break;
+
+        default:
+            globus_assert(0 &&
+                "Unexpected state in globus_i_xio_driver_resume_op");
+            break;
+    }
+    GlobusXIODebugInternalExit();
+}
+
+void
 globus_i_xio_driver_deliver_op(
     globus_i_xio_op_t *                     op,
     int                                     ndx,
@@ -654,6 +688,16 @@ globus_i_xio_driver_start_close(
         my_op->in_register = GLOBUS_TRUE;
         globus_xio_driver_finished_close(op, res);
         my_op->in_register = GLOBUS_FALSE;
+    }
+    
+    if((res == GLOBUS_SUCCESS || !can_fail) && my_op->prev_ndx == 0)
+    {
+        while(op->finished_delayed)
+        {
+            /* reuse this blocked thread to finish the operation */
+            op->finished_delayed = GLOBUS_FALSE;
+            globus_i_xio_driver_resume_op(op);
+        }
     }
 
     globus_mutex_lock(&context->mutex);
