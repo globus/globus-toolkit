@@ -2312,7 +2312,7 @@ int
 ssl_get_base_subject_file(const char *proxyfile, char **subject)
 {
    SSL_CREDENTIALS	*creds = NULL;
-   int			return_value = SSL_ERROR;
+   int			return_value = -1;
    char			path[MAXPATHLEN];
 
    if (proxyfile == NULL) {
@@ -2334,7 +2334,7 @@ ssl_get_base_subject_file(const char *proxyfile, char **subject)
    if (ssl_get_base_subject(creds, subject) != SSL_SUCCESS)
        goto error;
 
-   return_value = SSL_SUCCESS;
+   return_value = 0;
 
    error:
    if (creds) ssl_credentials_destroy(creds);
