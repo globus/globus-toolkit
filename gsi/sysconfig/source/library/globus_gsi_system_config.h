@@ -369,4 +369,6 @@ globus_result_t
 globus_gsi_sysconfig_get_unique_proxy_filename(
     char **                             unique_filename);
 
+EXTERN_C_END
+
 #endif /* GLOBUS_GSI_SYSTEM_CONFIG_H */

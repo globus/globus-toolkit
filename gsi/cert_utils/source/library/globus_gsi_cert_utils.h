@@ -118,4 +118,6 @@ globus_gsi_cert_utils_v_create_nstring(
 
 #endif /* DOXYGEN */
 
+EXTERN_C_END
+
 #endif /* GLOBUS_GSI_CERT_UTILS_H */
