@@ -1212,9 +1212,10 @@ globus_l_gfs_remote_data_destroy(
         }
         node_info->data_arg = NULL;
         node_info->stripe_count = 0;
-
-/*        list = globus_list_rest(list); */
     }
+   
+    /* can't free this until we are sure that transfer_complete is done 
+    globus_free(node_handle); */
     node_handle->node_list = NULL;
                         
     return;
