@@ -77,7 +77,7 @@ static char *
 genfilename(char * prefix, char * path, char * sufix);
 
 static void
-graml_stage_file(char *url, int mode);
+graml_stage_file(char **url, int mode);
 
 static int
 globus_l_job_manager_duct_environment(int count,
@@ -1130,8 +1130,8 @@ grami_jm_request_params(globus_rsl_t * description_tree,
     /* GEM: Stage pgm and std_in to local filesystem, if they are URLs.
        Do this before paradyn rewriting.
      */
-    graml_stage_file(params->pgm, 0700);
-    graml_stage_file(params->std_in, 0400);
+    graml_stage_file(&(params->pgm), 0700);
+    graml_stage_file(&(params->std_in), 0400);
     
     if (grami_is_paradyn_job(params))
     {
@@ -1140,7 +1140,7 @@ grami_jm_request_params(globus_rsl_t * description_tree,
             return (GLOBUS_GRAM_CLIENT_ERROR_INVALID_PARADYN);
 	}
 
-        graml_stage_file(params->pgm, 0700);
+        graml_stage_file(&(params->pgm), 0700);
     }
 
     return(0);
@@ -1322,7 +1322,7 @@ Parameters:
 Returns:
 ******************************************************************************/
 static void
-graml_stage_file(char *url, int mode)
+graml_stage_file(char **url, int mode)
 {
     globus_url_t gurl;
     int rc;
@@ -1331,14 +1331,14 @@ graml_stage_file(char *url, int mode)
     {
         return;
     }
-    if(strlen(url) == 0)
+    if(strlen(*url) == 0)
     {
 	return;
     }
     grami_fprintf( grami_log_fp, 
-                   "JM: staging file = %s\n", url);
+                   "JM: staging file = %s\n", *url);
 
-    rc = globus_url_parse(url, &gurl);
+    rc = globus_url_parse(*url, &gurl);
     if(rc == GLOBUS_SUCCESS)	/* this is a valid URL */
     {
 	globus_gass_cache_t cache;
@@ -1349,7 +1349,7 @@ graml_stage_file(char *url, int mode)
 			       &cache);
 	
 	rc = globus_gass_cache_add(&cache,
-				   url,
+				   *url,
 				   graml_job_contact,
 				   GLOBUS_TRUE,
 				   &timestamp,
@@ -1357,7 +1357,7 @@ graml_stage_file(char *url, int mode)
 	if(rc == GLOBUS_GASS_CACHE_ADD_EXISTS)
 	{
 	    globus_gass_cache_add_done(&cache,
-				       url,
+				       *url,
 				       graml_job_contact,
 				       timestamp);
 	}
@@ -1380,7 +1380,7 @@ graml_stage_file(char *url, int mode)
 	    }
 	    else
 	    {
-		globus_gass_client_get_fd(url,
+		globus_gass_client_get_fd(*url,
 					  GLOBUS_NULL,
 					  fd,
 					  GLOBUS_GASS_LENGTH_UNKNOWN,
@@ -1390,18 +1390,17 @@ graml_stage_file(char *url, int mode)
 	    }
 	    close(fd);
 	    globus_gass_cache_add_done(&cache,
-				       url,
+				       *url,
 				       graml_job_contact,
 				       timestamp);
 	}
-	strncpy(url, tmpname, GLOBUS_GRAM_CLIENT_PARAM_SIZE);
-	url[GLOBUS_GRAM_CLIENT_PARAM_SIZE-1] = '\0';
-	globus_free(tmpname);
+	globus_free(*url);
+        *url = tmpname;
 	globus_gass_cache_close(&cache);
     }
     globus_url_destroy(&gurl);
     grami_fprintf( grami_log_fp, 
-                   "JM: new name = %s\n", url);
+                   "JM: new name = %s\n", *url);
 }
 
 /******************************************************************************
