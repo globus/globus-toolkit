@@ -6,7 +6,7 @@
   <Aging_Version Major="0" Minor="4" Age="0"/>
   <Description >Openssl Library</Description>
   <Functional_Group >Openssl</Functional_Group>
-  <Version_Stability Release="alpha" />
+  <Version_Stability Release="production" />
 
   <src_pkg>
 
