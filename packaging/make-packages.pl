@@ -107,13 +107,6 @@ if ( $help or $man ) {
 
 # main ()
 
-if ( `whoami` ne "bacon\n" )
-{
-    print `whoami`;
-    print "Not for using.  Please use make-packages.\n";
-    exit 1;
-}
-
 cleanup();
 setup_environment();
 
