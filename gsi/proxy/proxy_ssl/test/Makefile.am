@@ -6,12 +6,21 @@ SUBDIRS = \
 
 Scripts = test_pci.pl
 
+Data = \
+	test_pci.norm1.stdout \
+	test_pci.norm2.stdout \
+	test_pci.norm3.stdout \
+	test_pci.norm4.stdout \
+	test_pci.norm5.stdout
+
 test_PROGRAMS = \
 	test_pci
 
+test_DATA = $(Data)
+
 test_SCRIPTS = $(Scripts)
 
-EXTRA_DIST = $(Scripts)
+EXTRA_DIST = $(Scripts) $(Data)
 
 INCLUDES += $(GPT_INCLUDES)
 

@@ -116,6 +116,11 @@ int main(int argc, char * argv[])
 
 	PROXYCERTINFO_print_fp(stderr, pcinfo);
 	
+	if(!ASN1_i2d_fp(i2d_PROXYCERTINFO, stdout, (unsigned char *)pcinfo))
+	{
+	    fprintf(stderr, "Could not print the proxy cert info struct\n");
+	}
+
 	fclose(instream);
     }
     else
