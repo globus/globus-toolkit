@@ -14,37 +14,53 @@ typedef struct globus_l_gfs_data_operation_s * globus_gfs_operation_t;
 
 void
 globus_gridftp_server_operation_finished(
-    globus_gfs_operation_t   op,
+    globus_gfs_operation_t              op,
     globus_result_t                     result,
     globus_gridftp_server_finished_t    finished_state);
 
 void
 globus_gridftp_server_operation_event(
-    globus_gfs_operation_t   op,
+    globus_gfs_operation_t              op,
     globus_result_t                     result,
     globus_gridftp_server_event_t       event_state);
 
 void
 globus_gridftp_server_begin_transfer(
-    globus_gfs_operation_t   op);
+    globus_gfs_operation_t              op);
 
 void
 globus_gridftp_server_finished_transfer(
-    globus_gfs_operation_t   op, 
+    globus_gfs_operation_t              op, 
     globus_result_t                     result);
 
 void
 globus_gridftp_server_finished_command(
-    globus_gfs_operation_t   op, 
+    globus_gfs_operation_t              op, 
     globus_result_t                     result,
     char *                              command_response);
     
 void
 globus_gridftp_server_finished_stat(
-    globus_gfs_operation_t   op, 
+    globus_gfs_operation_t              op, 
     globus_result_t                     result,
     globus_gridftp_server_stat_t *      stat_info,
     int                                 stat_count);
+
+void
+globus_gridftp_server_finished_active_data(
+    globus_gfs_operation_t              op, 
+    globus_result_t                     result,
+    int                                 data_handle_id,
+    globus_bool_t                       bi_directional);
+
+void
+globus_gridftp_server_finished_passive_data(
+    globus_gfs_operation_t              op, 
+    globus_result_t                     result,
+    int                                 data_handle_id,
+    globus_bool_t                       bi_directional
+    const char **                       contact_strings,
+    int                                 cs_count);
 
 
 

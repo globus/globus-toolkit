@@ -2,7 +2,8 @@
 #include "globus_i_gridftp_server.h"
 #include "globus_gridftp_server_module.h"
 
-static globus_gridftp_server_storage_iface_t * dsi;
+static globus_gridftp_server_storage_iface_t *  dsi = NULL;
+static void *                                   dsi_user_arg = NULL;
 
 void
 globus_i_gfs_data_init()
@@ -15,6 +16,15 @@ globus_i_gfs_data_init()
     {
         dsi = &globus_gfs_file_dsi_iface;
     }
+    
+    if(dsi->init_func != NULL)
+    {
+        dsi->init_func((const char *) globus_libc_getenv("USER"), &dsi_user_arg);
+    }
+    else
+    {
+        dsi_user_arg = NULL;
+    }    
 }
 
 typedef enum
@@ -759,67 +769,82 @@ globus_i_gfs_data_request_passive(
     globus_sockaddr_t                   addr;
     char *                              cs;
     globus_l_gfs_data_passive_bounce_t * bounce_info;
-    GlobusGFSName(globus_i_gfs_data_passive_request);
+    globus_l_gfs_data_operation_t *     op;
+    GlobusGFSName(globus_i_gfs_data_request_passive);
     
-    /* gotta get data_attr_t info here (from kept state) */
-    result = globus_l_gfs_data_handle_init(&handle, data_state);
-    if(result != GLOBUS_SUCCESS)
+    if(dsi->active_func != NULL)
     {
-        result = GlobusGFSErrorWrapFailed(
-            "globus_l_gfs_data_handle_init", result);
-        goto error_handle;
+        result = globus_l_gfs_data_operation_init(&op);
+        if(result != GLOBUS_SUCCESS)
+        {
+            result = GlobusGFSErrorWrapFailed(
+                "globus_l_gfs_data_operation_init", result);
+            goto error_op;
+        }
+        
+        result = dsi->passive_func(op, data_state, dsi_user_arg);
     }
-    
-    address.host[0] = 1; /* prevent address lookup */
-    address.port = 0;
-    result = globus_ftp_control_local_pasv(&handle->data_channel, &address);
-    if(result != GLOBUS_SUCCESS)
+    else
     {
-        result = GlobusGFSErrorWrapFailed(
-            "globus_ftp_control_local_pasv", result);
-        goto error_control;
-    }
-          
-    GlobusLibcSockaddrSetFamily(addr, AF_INET);
-    GlobusLibcSockaddrSetPort(addr, address.port);
-    result = globus_libc_addr_to_contact_string(
-        &addr, GLOBUS_LIBC_ADDR_LOCAL | GLOBUS_LIBC_ADDR_NUMERIC, &cs);
-    if(result != GLOBUS_SUCCESS)
-    {
-        result = GlobusGFSErrorWrapFailed(
-            "globus_libc_addr_to_contact_string", result);
-        goto error_control;
-    }
     
-    bounce_info = (globus_l_gfs_data_passive_bounce_t *)
-        globus_malloc(sizeof(globus_l_gfs_data_passive_bounce_t));
-    if(!bounce_info)
-    {
-        result = GlobusGFSErrorMemory("bounce_info");
-        goto error_alloc;
+        result = globus_l_gfs_data_handle_init(&handle, data_state);
+        if(result != GLOBUS_SUCCESS)
+        {
+            result = GlobusGFSErrorWrapFailed(
+                "globus_l_gfs_data_handle_init", result);
+            goto error_handle;
+        }
+        
+        address.host[0] = 1; /* prevent address lookup */
+        address.port = 0;
+        result = globus_ftp_control_local_pasv(&handle->data_channel, &address);
+        if(result != GLOBUS_SUCCESS)
+        {
+            result = GlobusGFSErrorWrapFailed(
+                "globus_ftp_control_local_pasv", result);
+            goto error_control;
+        }
+              
+        GlobusLibcSockaddrSetFamily(addr, AF_INET);
+        GlobusLibcSockaddrSetPort(addr, address.port);
+        result = globus_libc_addr_to_contact_string(
+            &addr, GLOBUS_LIBC_ADDR_LOCAL | GLOBUS_LIBC_ADDR_NUMERIC, &cs);
+        if(result != GLOBUS_SUCCESS)
+        {
+            result = GlobusGFSErrorWrapFailed(
+                "globus_libc_addr_to_contact_string", result);
+            goto error_control;
+        }
+        
+        bounce_info = (globus_l_gfs_data_passive_bounce_t *)
+            globus_malloc(sizeof(globus_l_gfs_data_passive_bounce_t));
+        if(!bounce_info)
+        {
+            result = GlobusGFSErrorMemory("bounce_info");
+            goto error_alloc;
+        }
+        
+        bounce_info->ipc_handle = ipc_handle;
+        bounce_info->id = id;
+        bounce_info->handle = handle;
+        bounce_info->bi_directional = GLOBUS_TRUE; /* XXX MODE S only */
+        bounce_info->contact_string = cs;
+        bounce_info->callback = cb;
+        bounce_info->user_arg = user_arg;
+        
+        result = globus_callback_register_oneshot(
+            GLOBUS_NULL,
+            GLOBUS_NULL,
+            globus_l_gfs_data_passive_kickout,
+            bounce_info);
+        if(result != GLOBUS_SUCCESS)
+        {
+            result = GlobusGFSErrorWrapFailed(
+                "globus_callback_register_oneshot", result);
+            goto error_oneshot;
+        }
     }
-    
-    bounce_info->ipc_handle = ipc_handle;
-    bounce_info->id = id;
-    bounce_info->handle = handle;
-    bounce_info->bi_directional = GLOBUS_TRUE; /* XXX MODE S only */
-    bounce_info->contact_string = cs;
-    bounce_info->callback = cb;
-    bounce_info->user_arg = user_arg;
-    
-    result = globus_callback_register_oneshot(
-        GLOBUS_NULL,
-        GLOBUS_NULL,
-        globus_l_gfs_data_passive_kickout,
-        bounce_info);
-    if(result != GLOBUS_SUCCESS)
-    {
-        result = GlobusGFSErrorWrapFailed(
-            "globus_callback_register_oneshot", result);
-        goto error_oneshot;
-    }
-    
-    return GLOBUS_SUCCESS;
+    return result;
 
 error_oneshot:
     globus_free(bounce_info);
@@ -831,6 +856,7 @@ error_control:
     globus_i_gfs_data_destroy_handle(handle);
     
 error_handle:
+error_op:
     return result;
 }
 
@@ -903,91 +929,106 @@ globus_i_gfs_data_request_active(
     globus_ftp_control_host_port_t *    addresses;
     int                                 i;
     globus_l_gfs_data_active_bounce_t * bounce_info;
-    GlobusGFSName(globus_i_gfs_data_active_request);
-    
-    result = globus_l_gfs_data_handle_init(&handle, data_state);
-    if(result != GLOBUS_SUCCESS)
+    globus_l_gfs_data_operation_t *     op;
+    GlobusGFSName(globus_i_gfs_data_request_active);
+
+    if(dsi->active_func != NULL)
     {
-        result = GlobusGFSErrorWrapFailed(
-            "globus_l_gfs_data_handle_init", result);
-        goto error_handle;
-    }
-    addresses = (globus_ftp_control_host_port_t *)
-        globus_malloc(sizeof(globus_ftp_control_host_port_t) * 
-            data_state->cs_count);
-    if(!addresses)
-    {
-        result = GlobusGFSErrorMemory("addresses");
-        goto error_addresses;
-    }
-    
-    for(i = 0; i < data_state->cs_count; i++)
-    {
-        int                             rc;
-        
-        rc = sscanf(
-            data_state->contact_strings[i],
-            "%d.%d.%d.%d:%hu",
-            &addresses[i].host[0],
-            &addresses[i].host[1],
-            &addresses[i].host[2], 
-            &addresses[i].host[3], 
-            &addresses[i].port);
-        if(rc < 5)
+        result = globus_l_gfs_data_operation_init(&op);
+        if(result != GLOBUS_SUCCESS)
         {
-            result = GlobusGFSErrorGeneric("Bad contact string");
-            goto error_format;
+            result = GlobusGFSErrorWrapFailed(
+                "globus_l_gfs_data_operation_init", result);
+            goto error_op;
         }
-    }
-    
-    
-    if(data_state->cs_count == 1)
-    {
-        result = globus_ftp_control_local_port(
-            &handle->data_channel, addresses);
+        
+        result = dsi->active_func(op, data_state, dsi_user_arg);
     }
     else
     {
-        result = globus_ftp_control_local_spor(
-            &handle->data_channel, addresses, data_state->cs_count);
+        result = globus_l_gfs_data_handle_init(&handle, data_state);
+        if(result != GLOBUS_SUCCESS)
+        {
+            result = GlobusGFSErrorWrapFailed(
+                "globus_l_gfs_data_handle_init", result);
+            goto error_handle;
+        }
+        addresses = (globus_ftp_control_host_port_t *)
+            globus_malloc(sizeof(globus_ftp_control_host_port_t) * 
+                data_state->cs_count);
+        if(!addresses)
+        {
+            result = GlobusGFSErrorMemory("addresses");
+            goto error_addresses;
+        }
+        
+        for(i = 0; i < data_state->cs_count; i++)
+        {
+            int                             rc;
+            
+            rc = sscanf(
+                data_state->contact_strings[i],
+                "%d.%d.%d.%d:%hu",
+                &addresses[i].host[0],
+                &addresses[i].host[1],
+                &addresses[i].host[2], 
+                &addresses[i].host[3], 
+                &addresses[i].port);
+            if(rc < 5)
+            {
+                result = GlobusGFSErrorGeneric("Bad contact string");
+                goto error_format;
+            }
+        }
+        
+        
+        if(data_state->cs_count == 1)
+        {
+            result = globus_ftp_control_local_port(
+                &handle->data_channel, addresses);
+        }
+        else
+        {
+            result = globus_ftp_control_local_spor(
+                &handle->data_channel, addresses, data_state->cs_count);
+        }
+        if(result != GLOBUS_SUCCESS)
+        {
+            result = GlobusGFSErrorWrapFailed(
+                "globus_ftp_control_local_port/spor", result);
+            goto error_control;
+        }
+        
+        bounce_info = (globus_l_gfs_data_active_bounce_t *)
+            globus_malloc(sizeof(globus_l_gfs_data_active_bounce_t));
+        if(!bounce_info)
+        {
+            result = GlobusGFSErrorMemory("bounce_info");
+            goto error_alloc;
+        }
+        
+        bounce_info->ipc_handle = ipc_handle;
+        bounce_info->id = id;
+        bounce_info->handle = handle;
+        bounce_info->bi_directional = GLOBUS_TRUE; /* XXX MODE S only */
+        bounce_info->callback = cb;
+        bounce_info->user_arg = user_arg;
+        
+        result = globus_callback_register_oneshot(
+            GLOBUS_NULL,
+            GLOBUS_NULL,
+            globus_l_gfs_data_active_kickout,
+            bounce_info);
+        if(result != GLOBUS_SUCCESS)
+        {
+            result = GlobusGFSErrorWrapFailed(
+                "globus_callback_register_oneshot", result);
+            goto error_oneshot;
+        }
+        
+        globus_free(addresses);
     }
-    if(result != GLOBUS_SUCCESS)
-    {
-        result = GlobusGFSErrorWrapFailed(
-            "globus_ftp_control_local_port/spor", result);
-        goto error_control;
-    }
-    
-    bounce_info = (globus_l_gfs_data_active_bounce_t *)
-        globus_malloc(sizeof(globus_l_gfs_data_active_bounce_t));
-    if(!bounce_info)
-    {
-        result = GlobusGFSErrorMemory("bounce_info");
-        goto error_alloc;
-    }
-    
-    bounce_info->ipc_handle = ipc_handle;
-    bounce_info->id = id;
-    bounce_info->handle = handle;
-    bounce_info->bi_directional = GLOBUS_TRUE; /* XXX MODE S only */
-    bounce_info->callback = cb;
-    bounce_info->user_arg = user_arg;
-    
-    result = globus_callback_register_oneshot(
-        GLOBUS_NULL,
-        GLOBUS_NULL,
-        globus_l_gfs_data_active_kickout,
-        bounce_info);
-    if(result != GLOBUS_SUCCESS)
-    {
-        result = GlobusGFSErrorWrapFailed(
-            "globus_callback_register_oneshot", result);
-        goto error_oneshot;
-    }
-    
-    globus_free(addresses);
-    
-    return GLOBUS_SUCCESS;
+    return result;
 
 error_oneshot:
     globus_free(bounce_info);
@@ -999,8 +1040,8 @@ error_format:
     
 error_addresses:
     globus_i_gfs_data_destroy_handle(handle);
-    
 error_handle:
+error_op:
     return result;
 }
 
@@ -1277,29 +1318,41 @@ globus_i_gfs_data_request_list(
     data_op->event_callback = event_cb;
     data_op->user_arg = user_arg;
     
-    result = globus_l_gfs_data_operation_init(&stat_op);
-    if(result != GLOBUS_SUCCESS)
+    if(dsi->list_func != NULL)
     {
-        result = GlobusGFSErrorWrapFailed(
-            "globus_l_gfs_data_operation_init", result);
-        goto error_op;
+        result = dsi->list_func(data_op, list_state, dsi_user_arg);
+        if(result != GLOBUS_SUCCESS)
+        {
+            result = GlobusGFSErrorWrapFailed("list_hook", result);
+            goto error_hook1;
+        }
     }
-    stat_op->state = GLOBUS_L_GFS_DATA_REQUESTING;
-    stat_op->callback = globus_l_gfs_data_list_stat_cb;
-    stat_op->user_arg = data_op;
-    
-    stat_state = (globus_gfs_stat_state_t *) 
-        globus_calloc(1, sizeof(globus_gfs_stat_state_t));
-    
-    stat_state->pathname = list_state->pathname;
-    stat_state->file_only = GLOBUS_FALSE;
-
-    /* XXX */
-    result = dsi->stat_func(stat_op, stat_state, NULL);
-    if(result != GLOBUS_SUCCESS)
+    else
     {
-        result = GlobusGFSErrorWrapFailed("list_hook", result);
-        goto error_hook;
+        result = globus_l_gfs_data_operation_init(&stat_op);
+        if(result != GLOBUS_SUCCESS)
+        {
+            result = GlobusGFSErrorWrapFailed(
+                "globus_l_gfs_data_operation_init", result);
+            goto error_op;
+        }
+        stat_op->state = GLOBUS_L_GFS_DATA_REQUESTING;
+        stat_op->callback = globus_l_gfs_data_list_stat_cb;
+        stat_op->user_arg = data_op;
+        
+        stat_state = (globus_gfs_stat_state_t *) 
+            globus_calloc(1, sizeof(globus_gfs_stat_state_t));
+        
+        stat_state->pathname = list_state->pathname;
+        stat_state->file_only = GLOBUS_FALSE;
+    
+        /* XXX */
+        result = dsi->stat_func(stat_op, stat_state, dsi_user_arg);
+        if(result != GLOBUS_SUCCESS)
+        {
+            result = GlobusGFSErrorWrapFailed("list_hook", result);
+            goto error_hook2;
+        }
     }
 
     globus_mutex_lock(&stat_op->lock);
@@ -1313,9 +1366,10 @@ globus_i_gfs_data_request_list(
     
     return GLOBUS_SUCCESS;
 
-error_hook:
-    globus_l_gfs_data_operation_destroy(data_op);
+error_hook2:
     globus_l_gfs_data_operation_destroy(stat_op);
+error_hook1:
+    globus_l_gfs_data_operation_destroy(data_op);
 
 error_op:
 error_handle:
