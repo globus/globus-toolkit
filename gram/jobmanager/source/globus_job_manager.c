@@ -54,6 +54,9 @@ static int
 attach_requested(void * arg,
                  char * url,
                  nexus_startpoint_t * sp);
+static int 
+status_file_gen(char * job_status);
+
 static void 
 tree_free(gram_specification_t * sp);
 
@@ -76,6 +79,8 @@ static nexus_endpointattr_t        EpAttr;
 static nexus_endpoint_t            GlobalEndpoint;
 static char                        callback_contact[GRAM_MAX_MSG_SIZE];
 static char                        job_contact[GRAM_MAX_MSG_SIZE];
+static char                        my_globusid[GRAM_MAX_MSG_SIZE];
+static int                         my_count;
 
 static FILE *                      log_fp;
 
@@ -136,6 +141,7 @@ main(int argc,
     char                   logfile[GRAM_MAX_MSG_SIZE];
     char *                 tmp_ptr;
     char *                 my_host;
+    char *                 globusid_ptr;
     unsigned short         my_port;
     FILE *                 args_fp;
     nexus_byte_t           type;
@@ -211,6 +217,15 @@ main(int argc,
 
     fprintf(log_fp, "grami_jm_libexecdir = %s\n", grami_jm_libexecdir);
 
+    if ((globusid_ptr = (char*) getenv("GLOBUSID")) == NULL)
+    {
+        strcpy(my_globusid, "unknown_globusid");
+    }
+    else
+    {
+        strcpy(my_globusid, globusid_ptr);
+    }
+ 
     /*
      *  if a test_dat_file has been defined, read data from the file 
      *  instead of from stdin.
@@ -400,6 +415,28 @@ grami_jm_callback(int state, int errorcode)
     
     fprintf(log_fp, "in grami_jm_callback\n");
 
+    if (state == GRAM_JOB_STATE_ACTIVE)
+    {
+       status_file_gen("INIT");
+       status_file_gen("ACTIVE");
+    }
+    else if (state == GRAM_JOB_STATE_PENDING)
+    {
+       status_file_gen("PENDING");
+    }
+    else if (state == GRAM_JOB_STATE_DONE)
+    {
+       status_file_gen("DONE");
+    }
+    else if (state == GRAM_JOB_STATE_FAILED)
+    {
+       status_file_gen("FAILED");
+    }
+    else
+    {
+       status_file_gen("UNKNOWN");
+    }
+ 
     rc = nexus_attach(callback_contact, &sp);
     
     if (rc == 0)
@@ -426,6 +463,46 @@ grami_jm_callback(int state, int errorcode)
     }
 
 } /* grami_jm_callback() */
+
+/******************************************************************************
+Function:       status_file_gen()
+Description:
+Parameters:
+Returns:
+******************************************************************************/
+static int 
+status_file_gen(char * my_job_status)
+{
+    char               status_file[256];
+    FILE *             status_fp;
+
+    fprintf(log_fp, "in status_file_gen\n");
+
+    sprintf(status_file, "%s/%s_%d_%s_%lu",
+            STATUS_FILE_DIR,
+            my_globusid,
+            my_count,
+            my_job_status,
+            (unsigned long) time(0) );
+    fprintf(log_fp, "status_file = %s\n", status_file);
+
+    if ((status_fp = fopen(status_file, "a")) == NULL)
+    {
+        fprintf(log_fp, "\n--------------------------\n");
+        fprintf(log_fp, "Cannot open status file --> %s\n", status_file);
+        fprintf(log_fp, "job contact = %s\n", job_contact);
+        fprintf(log_fp, "MDS will NOT be updated!!!\n");
+        fprintf(log_fp, "--------------------------\n\n");
+        return(1);
+    }
+    else
+    {
+        fprintf(status_fp, "%s\n", job_contact);
+        fclose(status_fp);
+    }
+
+    return(0);
+} /* status_file_gen() */
 
 /******************************************************************************
 Function:       grami_jm_request_params()
@@ -469,6 +546,9 @@ grami_jm_request_params(gram_specification_t * description_tree,
 
     if (params->count < 1)
         return (GRAM_ERROR_INVALID_REQUEST);
+
+    /* save count parameter for reporting to MDS */ 
+    my_count = params->count;
 
     if (strlen(params->pgm) == 0)
        strcpy(params->pgm, GRAM_DEFAULT_EXE);
