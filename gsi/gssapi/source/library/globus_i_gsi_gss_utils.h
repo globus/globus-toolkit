@@ -172,8 +172,8 @@ extern FILE *                           globus_i_gsi_gssapi_debug_fstream;
                     _function_name_))
 
 
-typedef enum {
-    
+typedef enum
+{
     GLOBUS_I_GSI_GSS_DEFAULT_CONTEXT,
     GLOBUS_I_GSI_GSS_ANON_CONTEXT
 } globus_i_gsi_gss_context_type_t;
@@ -210,7 +210,7 @@ globus_i_gsi_gss_cred_read(
     OM_uint32 *                         minor_status,
     const gss_cred_usage_t              cred_usage,
     gss_cred_id_t *                     cred_handle,
-    const char *                        desired_subject);
+    const X509_NAME *                   desired_subject);
 
 OM_uint32
 globus_i_gsi_gss_cred_set(

@@ -149,8 +149,7 @@ globus_gsi_cred_handle_init_ssl_context(
 
 globus_result_t globus_gsi_cred_read(
     globus_gsi_cred_handle_t            handle,
-    char *                              desired_subject,
-    char *                              service_name);
+    X509_NAME *                         desired_subject);
 
 globus_result_t globus_gsi_cred_read_proxy(
     globus_gsi_cred_handle_t            handle,

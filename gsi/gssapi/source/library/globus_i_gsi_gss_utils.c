@@ -1337,15 +1337,12 @@ globus_i_gsi_gss_cred_read(
     OM_uint32 *                         minor_status,
     const gss_cred_usage_t              cred_usage,
     gss_cred_id_t *                     cred_handle,
-    const char *                        desired_subject) 
+    const X509_NAME *                   desired_subject) 
 {
     globus_result_t                     local_result;
     globus_gsi_cred_handle_t            local_cred_handle;
     OM_uint32                           local_minor_status;
     OM_uint32                           major_status = GSS_S_COMPLETE;
-    char *                              local_desired_subject = NULL;
-    char *                              actual_subject = NULL;
-    char *                              service_name = NULL;
     static char *                       _function_name_ =
         "globus_i_gsi_gss_cred_read";
 
@@ -1361,34 +1358,8 @@ globus_i_gsi_gss_cred_read(
         goto exit;
     }
 
-    /* split the service name from the subject */
-    if(desired_subject != NULL)
-    {
-        local_desired_subject = strdup(desired_subject);
-        actual_subject = strstr(local_desired_subject, "/CN=");
-        if(actual_subject == local_desired_subject)
-        {
-            /* assume its a host or service cert */
-            local_desired_subject += 4;
-
-            actual_subject = strrchr(local_desired_subject, '/');
-            if(!actual_subject)
-            {
-                actual_subject = local_desired_subject;
-            }
-            else
-            {
-                local_desired_subject[actual_subject - 
-                                     local_desired_subject] = '\0';
-                service_name = local_desired_subject;
-                actual_subject++;
-            }
-        }
-    }
-    
     local_result = globus_gsi_cred_read(local_cred_handle, 
-                                        (char *) desired_subject,
-                                        service_name);
+                                        desired_subject);
     if(local_result != GLOBUS_SUCCESS)
     {
         GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
@@ -1396,12 +1367,6 @@ globus_i_gsi_gss_cred_read(
             GLOBUS_GSI_GSSAPI_ERROR_WITH_GSS_CREDENTIAL);
         major_status = GSS_S_FAILURE;
         goto exit;
-    }
-
-    if(local_desired_subject)
-    {
-        free(local_desired_subject);
-        local_desired_subject = NULL;
     }
 
     major_status = globus_i_gsi_gss_create_cred(&local_minor_status,

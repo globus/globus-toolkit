@@ -119,6 +119,16 @@ globus_l_gsi_credential_deactivate(void)
 }
 /* globus_l_gsi_credential_deactivate() */
 
+static globus_result_t
+globus_l_gsi_cred_get_service(
+    X509_NAME *                         subject,
+    char **                             service);
+
+static globus_result_t
+globus_l_gsi_cred_subject_cmp(
+    X509_NAME *                   actual_subject,
+    X509_NAME *                   desired_subject);
+
 #endif
 
 /**
@@ -140,16 +150,10 @@ globus_l_gsi_credential_deactivate(void)
  *        should already be initialized using globus_gsi_cred_handle_init.
  * @param desired_subject
  *        The subject to check for when reading in a credential.  The
- *        desired_subject will be a substring of the matching cert's
- *        subject, so if looking for a host cert, the desired subject 
- *        should just be the FQDN of that host.  If null, the credential read
- *        in is the first match based on the system configuration
- *        (paths and environment variables)
- * @param service_name
- *        The service name that defines the type of certificate to
- *        search for.  This variable sets the location to search
- *        for the cert to be read in.  If null, a service cert
- *        is not searched for
+ *        desired_subject should be either a exact match of the read cert's
+ *        subject or should just contain the /CN entry. If null, the
+ *        credential read in is the first match based on the system
+ *        configuration (paths and environment variables)
  * @return
  *        GLOBUS_SUCCESS if no errors occured, otherwise, an error object
  *        identifier is returned.
@@ -159,8 +163,7 @@ globus_l_gsi_credential_deactivate(void)
  */
 globus_result_t globus_gsi_cred_read(
     globus_gsi_cred_handle_t            handle,
-    char *                              desired_subject,
-    char *                              service_name)
+    X509_NAME *                         desired_subject)
 {
     time_t                              lifetime = 0;
     int                                 index = 0;
@@ -168,10 +171,11 @@ globus_result_t globus_gsi_cred_read(
     int                                 result_count = 0;
     globus_result_t                     result = GLOBUS_SUCCESS;
     globus_result_t                     results[4];
-    char *                              found_subject = NULL;
+    X509_NAME *                         found_subject = NULL;
     char *                              cert = NULL;
     char *                              key = NULL;
     char *                              proxy = NULL;
+    char *                              service_name = NULL;
 
     static char *                       _function_name_ =
         "globus_gsi_cred_read";
@@ -228,7 +232,7 @@ globus_result_t globus_gsi_cred_read(
             
             if(desired_subject != NULL)
             {
-                results[result_index] = globus_gsi_cred_get_subject_name(
+                results[result_index] = globus_gsi_cred_get_X509_subject_name(
                     handle, 
                     &found_subject);
                 if(results[result_index] != GLOBUS_SUCCESS)
@@ -239,25 +243,19 @@ globus_result_t globus_gsi_cred_read(
                     goto exit;
                 }
 
-                if(!strstr(found_subject, desired_subject))
-                {  
-                    GLOBUS_GSI_CRED_ERROR_RESULT(
-                        results[result_index],
-                        GLOBUS_GSI_CRED_ERROR_READING_PROXY_CRED,
-                        ("Desired subject and actual subject of proxy:"
-                         " %s do not match.\n"
-                         "     Desired subject: %s\n"
-                         "     Actual subject: %s\n",
-                         proxy,
-                         desired_subject,
-                         found_subject));
-                    free(found_subject);
-                    found_subject = NULL;
-                    break;
-                }
+                results[result_index] = globus_l_gsi_cred_subject_cmp(found_subject,
+                                                                      desired_subject);
 
-                free(found_subject);
-                found_subject = NULL;
+                X509_NAME_free(found_subject);
+                found_subject = NULL;                
+                
+                if(results[result_index] != GLOBUS_SUCCESS)
+                {
+                    GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
+                        results[result_index],
+                        GLOBUS_GSI_CRED_ERROR_READING_PROXY_CRED);
+                    goto exit;
+                }
             }
 
             results[result_index] = globus_gsi_cred_get_lifetime(
@@ -352,7 +350,7 @@ globus_result_t globus_gsi_cred_read(
 
             if(desired_subject != NULL)
             {
-                results[result_index] = globus_gsi_cred_get_subject_name(
+                results[result_index] = globus_gsi_cred_get_X509_subject_name(
                     handle, 
                     &found_subject);
                 if(results[result_index] != GLOBUS_SUCCESS)
@@ -363,26 +361,19 @@ globus_result_t globus_gsi_cred_read(
                     goto exit;
                 }
 
-                if(!strstr(found_subject, desired_subject))
-                {
-                    GLOBUS_GSI_CRED_ERROR_RESULT(
-                        results[result_index],
-                        GLOBUS_GSI_CRED_ERROR_READING_CRED,
-                        ("Desired subject and actual subject of "
-                         "user credential:"
-                         " %s do not match.\n"
-                         "     Desired subject: %s\n"
-                         "     Actual subject:  %s\n",
-                         cert,
-                         desired_subject,
-                         found_subject));
-                    free(found_subject);
-                    found_subject = NULL;
-                    break;
-                }
+                results[result_index] = globus_l_gsi_cred_subject_cmp(found_subject,
+                                                                      desired_subject);
 
-                free(found_subject);
-                found_subject = NULL;
+                X509_NAME_free(found_subject);
+                found_subject = NULL;                
+                
+                if(results[result_index] != GLOBUS_SUCCESS)
+                {
+                    GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
+                        results[result_index],
+                        GLOBUS_GSI_CRED_ERROR_READING_CRED);
+                    goto exit;
+                }
             }
 
             results[result_index] = globus_gsi_cred_get_lifetime(
@@ -476,21 +467,10 @@ globus_result_t globus_gsi_cred_read(
 
             if(desired_subject != NULL)
             {
-                char *                  tmp_hostname = NULL;
-                char *                  hostname_subject = NULL;
-                if(strstr(desired_subject, "/CN=host/"))
-                {
-                    tmp_hostname = strrchr(desired_subject, '/');
-                    tmp_hostname++;
-                    
-                    hostname_subject = 
-                        globus_gsi_cert_utils_create_string(
-                            "/CN=%s", tmp_hostname);
-                }
-                
-                results[result_index] = globus_gsi_cred_get_subject_name(
+                results[result_index] = globus_gsi_cred_get_X509_subject_name(
                     handle, 
                     &found_subject);
+                
                 if(results[result_index] != GLOBUS_SUCCESS)
                 {
                     GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
@@ -499,32 +479,19 @@ globus_result_t globus_gsi_cred_read(
                     goto exit;
                 }
                 
-                if(!strstr(found_subject, desired_subject) &&
-                   !strstr(found_subject, hostname_subject))
-                {
-                    GLOBUS_GSI_CRED_ERROR_RESULT(
-                        results[result_index],
-                        GLOBUS_GSI_CRED_ERROR_READING_HOST_CRED,
-                        ("Desired subject and actual subject"
-                         " of host certificate: %s do not match.\n"
-                         "%s%s%s%s%s%s%s",
-                         cert,
-                         "     Desired subject",
-                         hostname_subject ? "s: " : ": ",
-                         desired_subject,
-                         hostname_subject ? 
-                         "\n                     : " : "",
-                         hostname_subject ? hostname_subject : "",
-                         "\n     Actual subject:  ",
-                         found_subject));
-                    free(found_subject);
-                    found_subject = NULL;
-                    break;
-                }
+                results[result_index] = globus_l_gsi_cred_subject_cmp(found_subject,
+                                                                      desired_subject);
 
-                free(found_subject);
-                free(hostname_subject);
-                found_subject = NULL;
+                X509_NAME_free(found_subject);
+                found_subject = NULL;                
+                
+                if(results[result_index] != GLOBUS_SUCCESS)
+                {
+                    GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
+                        results[result_index],
+                        GLOBUS_GSI_CRED_ERROR_READING_HOST_CRED);
+                    goto exit;
+                }
             }
             
             results[result_index] = globus_gsi_cred_get_lifetime(
@@ -562,9 +529,21 @@ globus_result_t globus_gsi_cred_read(
             goto exit;
             
         case GLOBUS_SERVICE:
-            
-            if(service_name)
-            {
+
+            if(desired_subject != NULL)
+            { 
+                results[result_index] =
+                    globus_l_gsi_cred_get_service(desired_subject,
+                                                  &service_name);
+          
+                if(results[result_index] != GLOBUS_SUCCESS)
+                {
+                    GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
+                        results[result_index],
+                        GLOBUS_GSI_CRED_ERROR_READING_SERVICE_CRED);
+                    break;
+                }                    
+                
                 results[result_index] = 
                     GLOBUS_GSI_SYSCONFIG_GET_SERVICE_CERT_FILENAME(
                         service_name, &cert, &key);
@@ -622,7 +601,7 @@ globus_result_t globus_gsi_cred_read(
 
                 if(desired_subject != NULL)
                 {
-                    results[result_index] = globus_gsi_cred_get_subject_name(
+                    results[result_index] = globus_gsi_cred_get_X509_subject_name(
                         handle, 
                         &found_subject);
                     if(results[result_index] != GLOBUS_SUCCESS)
@@ -633,25 +612,19 @@ globus_result_t globus_gsi_cred_read(
                         goto exit;
                     }
                     
-                    if(!strstr(found_subject, desired_subject))
+                    results[result_index] = globus_l_gsi_cred_subject_cmp(found_subject,
+                                                                          desired_subject);
+
+                    X509_NAME_free(found_subject);
+                    found_subject = NULL;                
+                
+                    if(results[result_index] != GLOBUS_SUCCESS)
                     {
-                        GLOBUS_GSI_CRED_ERROR_RESULT(
+                        GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
                             results[result_index],
-                            GLOBUS_GSI_CRED_ERROR_READING_SERVICE_CRED,
-                            ("Desired subject and actual subject of "
-                             "service certificate: %s do not match.\n"
-                             "     Desired subject: %s\n"
-                             "     Actual subject: %s\n",
-                             cert,
-                             desired_subject,
-                             found_subject));
-                        free(found_subject);
-                        found_subject = NULL;
+                            GLOBUS_GSI_CRED_ERROR_READING_SERVICE_CRED);
                         break;
                     }
-                
-                    free(found_subject);
-                    found_subject = NULL;
                 }
             
                 results[result_index] = globus_gsi_cred_get_lifetime(
@@ -948,6 +921,7 @@ globus_result_t globus_gsi_cred_read_proxy_bio(
     }
 
     result = globus_i_gsi_cred_goodtill(handle, &(handle->goodtill));
+
     if(result != GLOBUS_SUCCESS)
     {
         GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
@@ -1123,6 +1097,16 @@ globus_result_t globus_gsi_cred_read_cert(
         handle->cert_chain = NULL;
     }
 
+    result = globus_i_gsi_cred_goodtill(handle, &(handle->goodtill));
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
+            result,
+            GLOBUS_GSI_CRED_ERROR_WITH_CRED);
+        goto exit;
+    }
+    
     result = GLOBUS_SUCCESS;
 
  exit:
@@ -1664,5 +1648,384 @@ globus_i_gsi_cred_password_callback_no_prompt(
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return -1;
 }
+
+static globus_result_t
+globus_l_gsi_cred_subject_cmp(
+    X509_NAME *                         actual_subject,
+    X509_NAME *                         desired_subject)
+{
+    int                                 cn_index;
+    char *                              desired_cn = NULL;
+    char *                              actual_cn = NULL;
+    char *                              desired_sub_cn;
+    char *                              actual_sub_cn;
+    char *                              desired_service;
+    char *                              actual_service;
+    char *                              desired_host;
+    char *                              actual_host;
+    char *                              desired_str = NULL;
+    char *                              actual_str = NULL;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    int                                 length;
+    static char *                       _function_name_ =
+        "globus_l_gsi_cred_subject_cmp";
+
+    GLOBUS_I_GSI_CRED_DEBUG_ENTER;
+
+    
+    /* if desired subject is NULL return success */
+    
+    if(!desired_subject)
+    {
+        goto exit;
+    }
+
+    /* check for single /CN entry */
+    
+    if(X509_NAME_entry_count(desired_subject) == 1)
+    {
+        /* make sure we actually got a common name */
+
+        cn_index = X509_NAME_get_index_by_NID(desired_subject, NID_commonName, -1);
+
+        if(cn_index < 0)
+        {
+            desired_str = X509_NAME_oneline(desired_subject, NULL, 0);
+            GLOBUS_GSI_CRED_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_CRED_ERROR_SUBJECT_CMP,
+                ("No Common Name found in desired subject %s.\n", desired_str));
+            goto exit;
+        }
+
+        /* find /CN entry in actual subject */
+
+        cn_index = X509_NAME_get_index_by_NID(actual_subject, NID_commonName, -1);
+
+        /* error if no common name was found */
+        
+        if(cn_index < 0)
+        {
+            actual_str = X509_NAME_oneline(actual_subject, NULL, 0);
+            GLOBUS_GSI_CRED_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_CRED_ERROR_SUBJECT_CMP,
+                ("No Common Name found in subject %s.\n", actual_str));
+            goto exit;
+        }
+
+        /* check that actual subject only has one CN entry */
+        
+        if(X509_NAME_get_index_by_NID(actual_subject, NID_commonName, cn_index) != -1)
+        {
+            actual_str = X509_NAME_oneline(actual_subject, NULL, 0);
+            GLOBUS_GSI_CRED_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_CRED_ERROR_SUBJECT_CMP,
+                ("More than one Common Name found in subject %s.\n", actual_str));
+            goto exit;
+        }
+
+        /* get CN text for desired subject */
+
+        length = X509_NAME_get_text_by_NID(desired_subject, NID_commonName,
+                                           NULL, 1024) + 1;
+        
+        desired_cn = malloc(length);
+
+        X509_NAME_get_text_by_NID(desired_subject, NID_commonName,
+                                  desired_cn, length);
+
+        /* get CN text for actual subject */
+
+        length = X509_NAME_get_text_by_NID(actual_subject, NID_commonName,
+                                           NULL, 1024) + 1;
+        
+        actual_cn = malloc(length);
+
+        X509_NAME_get_text_by_NID(actual_subject, NID_commonName,
+                                  actual_cn, length);
+
+        /* straight comparison */
+
+        if(!strcmp(desired_cn,actual_cn))
+        {
+            goto exit;
+        }
+
+        /* strip /CN= */
+        
+        actual_sub_cn = actual_cn + 4;
+        desired_sub_cn = desired_cn + 4;
+
+        actual_host = strchr(actual_sub_cn,'/');
+
+        if(actual_host == NULL)
+        {
+            actual_host = actual_sub_cn;
+            actual_service = NULL;
+        }
+        else
+        {
+            actual_host = '\0';
+            actual_service = actual_sub_cn;
+            actual_host++;
+        }
+        
+        desired_host = strchr(desired_sub_cn,'/');
+
+        if(desired_host == NULL)
+        {
+            desired_host = desired_sub_cn;
+            desired_service = NULL;
+        }
+        else
+        {
+            desired_host = '\0';
+            desired_service = desired_sub_cn;
+            desired_host++;
+        }
+        
+        if(desired_service == NULL &&
+           actual_service == NULL)
+        {
+            actual_str = X509_NAME_oneline(actual_subject, NULL, 0);
+            desired_str = X509_NAME_oneline(desired_subject, NULL, 0);
+
+            GLOBUS_GSI_CRED_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_CRED_ERROR_SUBJECT_CMP,
+                ("Desired subject and actual subject of certificate"
+                 " do not match.\n"
+                 "     Desired subject: %s\n"
+                 "     Actual subject: %s\n",
+                 desired_str,
+                 actual_str));
+
+            goto exit;
+        }
+        else if(desired_service == NULL)
+        {
+            if(strcmp("host",actual_service))
+            {
+                actual_str = X509_NAME_oneline(actual_subject, NULL, 0);
+                desired_str = X509_NAME_oneline(desired_subject, NULL, 0);
+                
+                GLOBUS_GSI_CRED_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CRED_ERROR_SUBJECT_CMP,
+                    ("Desired subject and actual subject of certificate"
+                     " do not match.\n"
+                     "     Desired subject: %s\n"
+                     "     Actual subject: %s\n",
+                     desired_str,
+                     actual_str));
+            }
+            
+            goto exit;
+        }
+        else if(actual_service == NULL)
+        {
+            if(strcmp("host",actual_service))
+            {
+                actual_str = X509_NAME_oneline(actual_subject, NULL, 0);
+                desired_str = X509_NAME_oneline(desired_subject, NULL, 0);
+                
+                GLOBUS_GSI_CRED_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CRED_ERROR_SUBJECT_CMP,
+                    ("Desired subject and actual subject of certificate"
+                     " do not match.\n"
+                     "     Desired subject: %s\n"
+                     "     Actual subject: %s\n",
+                     desired_str,
+                     actual_str));
+            }
+            
+            goto exit;            
+        }
+        else
+        {
+            if(strcmp(desired_service,actual_service))
+            {
+                actual_str = X509_NAME_oneline(actual_subject, NULL, 0);
+                desired_str = X509_NAME_oneline(desired_subject, NULL, 0);
+                
+                GLOBUS_GSI_CRED_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CRED_ERROR_SUBJECT_CMP,
+                    ("Desired subject and actual subject of certificate"
+                     " do not match.\n"
+                     "     Desired subject: %s\n"
+                     "     Actual subject: %s\n",
+                     desired_str,
+                     actual_str));
+            }
+            
+            goto exit;
+
+        }
+    }
+    else
+    {
+        /* full subject name, don't care about equivalence classes */
+
+        if(X509_NAME_cmp(desired_subject, actual_subject))
+        {
+            actual_str = X509_NAME_oneline(actual_subject, NULL, 0);
+            desired_str = X509_NAME_oneline(desired_subject, NULL, 0);
+            
+            GLOBUS_GSI_CRED_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_CRED_ERROR_SUBJECT_CMP,
+                ("Desired subject and actual subject of certificate"
+                 " do not match.\n"
+                 "     Desired subject: %s\n"
+                 "     Actual subject: %s\n",
+                 desired_str,
+                 actual_str));
+        }
+        goto exit;
+    }
+    
+ exit:
+
+    if(actual_cn)
+    {
+        free(actual_cn);
+    }
+
+    if(desired_cn)
+    {
+        free(desired_cn);
+    }
+    
+    if(actual_str)
+    {
+        free(actual_str);
+    }
+
+    if(desired_str)
+    {
+        free(desired_str);
+    }
+
+    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
+    
+    return result;
+}
+
+static globus_result_t
+globus_l_gsi_cred_get_service(
+    X509_NAME *                         subject,
+    char **                             service)
+{
+    int                                 cn_index;
+    int                                 length;
+    char *                              cn = NULL;
+    char *                              sub_cn;
+    char *                              host;
+    char *                              subject_str = NULL;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    static char *                       _function_name_ =
+        "globus_l_gsi_cred_get_service";
+
+    GLOBUS_I_GSI_CRED_DEBUG_ENTER;
+
+    *service = NULL;
+    
+    /* if desired subject is NULL return success */
+    
+    if(!subject)
+    {
+        goto exit;
+    }
+
+    /* find /CN entry in subject */
+
+    cn_index = X509_NAME_get_index_by_NID(subject, NID_commonName, 0);
+
+    /* error if no common name was found */
+        
+    if(cn_index < 0)
+    {
+        subject_str = X509_NAME_oneline(subject, NULL, 0);
+        GLOBUS_GSI_CRED_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CRED_ERROR_GETTING_SERVICE_NAME,
+            ("No Common Name found in subject %s.\n", subject_str));
+        goto exit;
+    }
+
+    /* check that subject only has one CN entry */
+        
+    if(X509_NAME_get_index_by_NID(subject, NID_commonName, cn_index) != -1)
+    {
+        subject_str = X509_NAME_oneline(subject, NULL, 0);
+        GLOBUS_GSI_CRED_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CRED_ERROR_GETTING_SERVICE_NAME,
+            ("More than one Common Name found in subject %s.\n", subject_str));
+        goto exit;
+    }
+
+    /* get CN text for subject */
+
+    length = X509_NAME_get_text_by_NID(subject, NID_commonName,
+                                       NULL, 1024) + 1;
+    
+    cn = malloc(length);
+    
+    X509_NAME_get_text_by_NID(subject, NID_commonName,
+                              cn, length);
+        
+    sub_cn = cn + 4;
+    
+    host = strchr(sub_cn,'/');
+
+    if(host == NULL)
+    {
+        subject_str = X509_NAME_oneline(subject, NULL, 0);
+        GLOBUS_GSI_CRED_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CRED_ERROR_GETTING_SERVICE_NAME,
+            ("No service name found in subject %s.\n", subject_str));
+        goto exit;
+    }
+
+    host = '\0';
+
+    if(strcmp("host",sub_cn))
+    {
+        *service = strdup(sub_cn);
+    }
+    else
+    {
+        subject_str = X509_NAME_oneline(subject, NULL, 0);
+        GLOBUS_GSI_CRED_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CRED_ERROR_GETTING_SERVICE_NAME,
+            ("No service name found in subject %s.\n", subject_str));        
+    }
+    
+    goto exit;
+
+ exit:
+
+    if(cn)
+    {
+        free(cn);
+    }
+
+    if(subject_str)
+    {
+        free(subject_str);
+    }
+
+    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
+    
+    return result;
+}
+
 
 #endif

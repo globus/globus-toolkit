@@ -20,28 +20,30 @@ globus_l_gsi_cred_error_strings[GLOBUS_GSI_CRED_ERROR_LAST] =
 {
 
 /* 0 */   "Success",
-/* 1 */   "Error Reading Proxy Credential",
-/* 2 */   "Error Reading Host Credential",
-/* 3 */   "Error Reading Service Credential",
-/* 4 */   "Error Reading User Credential",
-/* 5 */   "Error Writing Credential",
-/* 6 */   "Error Writing Proxy Credential",
-/* 7 */   "Error Checking For Proxy Credential",
-/* 8 */   "Error Verifying Credential",
-/* 9 */   "Error with Credential",
-/* 10 */  "Error with Credential's Certificate",
-/* 11 */  "Error with Credential's Private Key",
-/* 12 */  "Error with Credential's Cert Chain",
-/* 13 */  "System Error",
-/* 14 */  "Error with System Configuration",
-/* 15 */  "Error with Credential Handle Attributes",
-/* 16 */  "Error with Credential's SSL context",
+/* 1 */   "Error reading proxy credential",
+/* 2 */   "Error reading host credential",
+/* 3 */   "Error reading service credential",
+/* 4 */   "Error reading user credential",
+/* 5 */   "Error writing credential",
+/* 6 */   "Error writing proxy credential",
+/* 7 */   "Error checking for proxy credential",
+/* 8 */   "Error verifying credential",
+/* 9 */   "Error with credential",
+/* 10 */  "Error with credential's certificate",
+/* 11 */  "Error with credential's private key",
+/* 12 */  "Error with credential's cert chain",
+/* 13 */  "System error",
+/* 14 */  "Error with system configuration",
+/* 15 */  "Error with credential handle attributes",
+/* 16 */  "Error with credential's SSL context",
 /* 17 */  "Error with callback data",
 /* 18 */  "Error verifying new proxy certificate",
 /* 19 */  "Error creating two errors from one",
 /* 20 */  "Key is password protected",
-/* 21 */  "Valid Credentials could not be found in any of the"
-          " possible locations specified by the credential search order."
+/* 21 */  "Valid credentials could not be found in any of the"
+          " possible locations specified by the credential search order.",
+/* 22 */  "Error comparing subject names.",
+/* 23 */  "Error determining service name."
 };
 
 /* ERROR FUNCTIONS */

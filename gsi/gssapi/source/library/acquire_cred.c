@@ -75,7 +75,8 @@ GSS_CALLCONV gss_acquire_cred(
     char *                              desired_name_string = NULL;
     OM_uint32                           major_status = GSS_S_NO_CRED;
     OM_uint32                           local_minor_status;
-
+    X509_NAME *                         desired_name = NULL;
+    
     static char *                       _function_name_ =
         "gss_acquire_cred";
 
@@ -113,24 +114,14 @@ GSS_CALLCONV gss_acquire_cred(
 
     if(desired_name_P)
     {
-        desired_name_string = X509_NAME_oneline(
-            ((gss_name_desc *)desired_name_P)->x509n,
-            NULL, 0);
-        if(!desired_name_string)
-        {
-            GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
-                minor_status,
-                GLOBUS_GSI_GSSAPI_ERROR_WITH_OPENSSL,
-                ("Couldn't get subject name of desired name struct"));
-            goto error;
-        }
+        desired_name = ((gss_name_desc *)desired_name_P)->x509n;
     }
 
     major_status = globus_i_gsi_gss_cred_read(
         &local_minor_status,
         cred_usage,
         output_cred_handle_P,
-        desired_name_string);
+        desired_name);
 
     if(GSS_ERROR(major_status))
     {
