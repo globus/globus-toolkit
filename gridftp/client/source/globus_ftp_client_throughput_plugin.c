@@ -74,7 +74,9 @@ static
 void
 throughput_plugin_begin_cb(
     globus_ftp_client_handle_t *                handle,
-    void *                                      user_specific)
+    void *                                      user_specific,
+    const char *                                source_url,
+    const char *                                dest_url)
 {
     throughput_plugin_info_t *                  info;
 
@@ -82,7 +84,11 @@ throughput_plugin_begin_cb(
 
     if(info->begin_cb)
     {
-        info->begin_cb(handle, info->user_arg);
+        info->begin_cb(
+            handle,
+            info->user_arg,
+            source_url,
+            dest_url);
     }
 
     info->start_time = time(NULL);

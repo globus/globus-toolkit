@@ -64,13 +64,21 @@ globus_module_descriptor_t globus_i_ftp_client_perf_plugin_module;
  *        or, if a copy method was not specified, the value passed to
  *        init
  *
+ * @param source_url
+ *        source of the transfer (GLOBUS_NULL if 'put')
+ *
+ * @param dest_url
+ *        dest of the transfer (GLOBUS_NULL if 'get')
+ *
  * @return
  *        - n/a
  */
 
 typedef void (*globus_ftp_client_perf_plugin_begin_cb_t)(
     globus_ftp_client_handle_t *                    handle,
-    void *                                          user_specific);
+    void *                                          user_specific,
+    const char *                                    source_url,
+    const char *                                    dest_url);
 
 /**
  * Performance marker received callback

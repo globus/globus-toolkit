@@ -272,7 +272,9 @@ perf_plugin_get_cb(
     {
         ps->begin_cb(
             handle,
-            ps->user_specific);
+            ps->user_specific,
+            url,
+            GLOBUS_NULL);
     }
 }
 
@@ -323,7 +325,9 @@ perf_plugin_put_cb(
     {
         ps->begin_cb(
             handle,
-            ps->user_specific);
+            ps->user_specific,
+            GLOBUS_NULL,
+            url);
     }
 }
 
@@ -363,7 +367,9 @@ perf_plugin_transfer_cb(
     {
         ps->begin_cb(
             handle,
-            ps->user_specific);
+            ps->user_specific,
+            source_url,
+            dest_url);
     }
 }
 

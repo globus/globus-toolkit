@@ -32,7 +32,9 @@ globus_l_ftp_client_test_perf_plugin_deactivate(void)
 static
 void perf_plugin_begin_cb(
     globus_ftp_client_handle_t *                    handle,
-    void *                                          user_specific)
+    void *                                          user_specific,
+    const char *                                    source_url,
+    const char *                                    dest_url)
 {
     globus_libc_fprintf(stderr, "perf_plugin_begin_cb\n");
 }
