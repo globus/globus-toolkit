@@ -16,6 +16,33 @@ EXTERN_C_BEGIN
 
 #include <globus_io.h>
 
+
+#define GLOBUS_GRAM_HTTP_TRACE_MALLOC 0
+
+
+#if !(GLOBUS_GRAM_HTTP_TRACE_MALLOC)
+
+#define globus_gram_http_malloc(type,count) \
+               (type *) globus_libc_malloc(count*sizeof(type))
+#define globus_gram_http_free(ptr) \
+               if (ptr) globus_libc_free(ptr)
+
+#else
+
+void*
+globus_gram_http_real_malloc(globus_size_t asize, char * file, int line);
+
+void
+globus_gram_http_real_free(void * ptr, char * file, int line);
+
+#define globus_gram_http_malloc(type,n) \
+    (type *) globus_gram_http_real_malloc(n*sizeof(type), __FILE__, __LINE__)
+
+#define globus_gram_http_free(ptr) if (ptr) \
+    globus_gram_http_real_free(ptr,__FILE__,__LINE__)
+
+#endif
+
 #define GRAM_GOES_HTTP 1
 #define GLOBUS_GRAM_HTTP_BUFSIZE     1024
 
@@ -102,11 +129,11 @@ globus_gram_http_close_callback( void *                arg,
  * callback that frees the handle and sendbuf after write
  */
 void
-globus_gram_http_close_after_write_callback( void *                arg,
-					     globus_io_handle_t *  handle,
-					     globus_result_t       result,
-					     globus_byte_t *       buf,
-					     globus_size_t         nbytes);
+globus_gram_http_close_after_write( void *                arg,
+				    globus_io_handle_t *  handle,
+				    globus_result_t       result,
+				    globus_byte_t *       buf,
+				    globus_size_t         nbytes);
 
 /*
  * callback to bridge between globus_io_read_callback_t and
@@ -122,12 +149,14 @@ globus_gram_http_client_callback( void *                arg,
 
 int
 globus_gram_http_post( char *                         url,
+		       globus_io_attr_t *             attr,
 		       globus_byte_t *                message,
 		       globus_size_t                  msgsize,
 		       globus_gram_http_monitor_t *   monitor);
 
 int
 globus_gram_http_post_and_get( char *                         url,
+			       globus_io_attr_t *             attr,
 			       globus_byte_t *                message,
 			       globus_size_t *                msgsize,
 			       globus_gram_http_monitor_t *   monitor);

@@ -147,11 +147,72 @@
 #include <string.h>
 #endif
 
-#define my_malloc(type,count) (type *) globus_libc_malloc(count*sizeof(type))
-#define my_free(ptr) if (ptr) globus_libc_free(ptr)
+
+#define my_malloc(t,n) globus_gram_http_malloc(t,n)
+#define my_free(ptr)   globus_gram_http_free(ptr)
+
+
+#if !(GLOBUS_GRAM_HTTP_TRACE_MALLOC)
+
+static globus_list_t * malloc_table = GLOBUS_NULL;
+
+void *
+globus_gram_http_real_malloc(globus_size_t asize, char * file, int line )
+{
+    void *  p = globus_libc_malloc(asize);
+    globus_libc_printf("%s:%d : malloc size %ld, ptr = %x\n", 
+		       strrchr(file,'/'), line, asize, p );
+    globus_list_insert( &malloc_table,
+			p );
+    return p;
+}
+
+void
+globus_gram_http_real_free(void * ptr, char * file, int line)
+{
+    globus_list_t *  list;
+    globus_bool_t    done = GLOBUS_FALSE;
+
+    globus_libc_printf("%s:%d : free ptr = %x\n", 
+		       strrchr(file,'/'), line, ptr );
+
+    list = malloc_table;
+    while (!done && !globus_list_empty(list))
+    {
+	if (globus_list_first(list) == ptr)
+	{
+	    globus_free(globus_list_remove(&malloc_table,
+					   list));
+	    done = GLOBUS_TRUE;
+	}
+	else
+	    list = globus_list_rest(list);
+    }
+
+    globus_assert(done == GLOBUS_TRUE);
+}
+
+static void
+report_leaks()
+{
+    while(!globus_list_empty(malloc_table))
+    {
+	globus_libc_printf("failed to free buffer %x\n",
+			   globus_list_first(malloc_table));
+	globus_free(globus_list_remove(&malloc_table,
+				       malloc_table ));
+    }
+}
+
+#else
+
+#define report_leaks() { }
+
+#endif
+
 
 #define notice globus_libc_printf
-#if 0
+#if 1
 #define verbose(q) q
 #else
 #define verbose(q) { }
@@ -196,27 +257,30 @@ typedef struct
 	globus_mutex_unlock(&monitor->mutex); \
     }
 
-#if 0
-#define initialize_read_t(read_t,func,arg,userptr,monitor,buf,size) 
-#endif
 
-void initialize_read_t(globus_gram_http_read_t *read_t,
-		       void * func, void * arg, void * userptr,
-		       globus_gram_http_monitor_t *monitor,
-		       globus_byte_t *buf, globus_size_t * size) 
-           { \
-	       read_t = my_malloc(globus_gram_http_read_t,1); \
-	       read_t->got_header     = GLOBUS_FALSE; \
-	       read_t->buf            = GLOBUS_NULL; \
-	       read_t->n_read         = 0; \
-	       read_t->n_total        = 0; \
-               read_t->callback_func  = (globus_gram_http_callback_t) func; \
-	       read_t->callback_arg   = (void *) arg; \
-	       read_t->user_pointer   = (void *) userptr; \
-               read_t->monitor        = monitor; \
-    	       read_t->reply_buf      = buf; \
-               read_t->reply_size     = size; \
-	   }
+/* for some reason, this couldn't be defined as a macro. ? */
+void 
+globus_gram_http_initialize_read_t( globus_gram_http_read_t **    read_t,
+				    void *                        func,
+				    void *                        arg,
+				    void *                        userptr,
+				    globus_gram_http_monitor_t *  monitor,
+				    globus_byte_t *               buf, 
+				    globus_size_t *               bufsize) 
+{ 
+    *read_t = my_malloc(globus_gram_http_read_t,1);
+    
+    (*read_t)->got_header     = GLOBUS_FALSE; 
+    (*read_t)->buf            = GLOBUS_NULL; 
+    (*read_t)->n_read         = 0; 
+    (*read_t)->n_total        = 0; 
+    (*read_t)->callback_func  = (globus_gram_http_callback_t) func; 
+    (*read_t)->callback_arg   = arg; 
+    (*read_t)->user_pointer   = userptr; 
+    (*read_t)->monitor        = monitor; 
+    (*read_t)->reply_buf      = buf; 
+    (*read_t)->reply_size     = bufsize;
+}
 
 #define start_http_read(res,status,handle) \
 { \
@@ -309,6 +373,7 @@ int
 globus_gram_http_activate()
 {
     globus_i_gram_http_listeners = GLOBUS_NULL;
+    return GLOBUS_SUCCESS;
 }
 
 int
@@ -336,31 +401,36 @@ globus_gram_http_deactivate()
 	globus_libc_free(listener);
     }
 
+    report_leaks();
+
     globus_i_gram_http_listeners = GLOBUS_NULL;
+    return GLOBUS_SUCCESS;
 }
 
 /************************  callback functions  *****************************/
 
 void
-globus_gram_http_close_callback( void *                arg,
+globus_gram_http_close_callback( void *                ignored,
 				 globus_io_handle_t *  handle,
 				 globus_result_t       result)
 {
     globus_io_attr_t              attr;
     void *                        user_ptr;
 
-    verbose(notice("close_callback : listener %d is done\n", handle->fd));
-
-    globus_io_tcp_get_attr(handle, &attr);
-    globus_io_tcpattr_destroy(&attr);
+    verbose(notice("close_callback : handle %d is done\n", handle->fd));
 
     if (globus_io_get_handle_type(handle) ==
 	GLOBUS_IO_HANDLE_TYPE_TCP_LISTENER )
     {
+	verbose(notice("close_callback : handle %d was listener\n",
+		       handle->fd));
 	globus_io_handle_get_user_pointer( handle,
 					   &user_ptr );
 	globus_libc_free(user_ptr);
     }
+
+    globus_io_tcp_get_attr(handle, &attr);
+    globus_io_tcpattr_destroy(&attr);
 
     globus_libc_free(handle);
 }
@@ -374,7 +444,7 @@ globus_gram_http_close_after_write( void * arg,
 				    globus_size_t nbytes)
 {
     verbose(notice("close_after_write : res=%ld, buf=%x, handle=%d\n",
-		   res, buf, handle->fd));
+		   result, buf, handle->fd));
 
     globus_libc_free(buf);
     globus_io_register_close(handle,
@@ -393,21 +463,22 @@ globus_l_gram_http_listen_callback( void *                ignored,
     void **                       p;
     
     verbose(notice("listen_callback : got connection on listener %d\n",
-		   listener_handle));
+		   listener_handle->fd));
     
     if (result == GLOBUS_SUCCESS)
     {
 	globus_io_handle_get_user_pointer( listener_handle,
 					   (void **) &p );
 
-	initialize_read_t( status,
-			   p[0],             /* userfunc   */
-			   p[1],             /* userarg    */
-			   p[2],             /* userptr    */
-			   GLOBUS_NULL,      /* monitor    */
-			   GLOBUS_NULL,      /* replybuf   */
-			   GLOBUS_NULL );    /* replysize  */
-
+	globus_gram_http_initialize_read_t(
+	    &status,
+	    p[0],             /* userfunc   */
+	    p[1],             /* userarg    */
+	    p[2],             /* userptr    */
+	    GLOBUS_NULL,      /* monitor    */
+	    GLOBUS_NULL,      /* replybuf   */
+	    GLOBUS_NULL );    /* replysize  */
+	
 	handle = my_malloc(globus_io_handle_t,1);
 
 	result = globus_io_tcp_register_accept(
@@ -495,9 +566,8 @@ globus_l_gram_http_parse_callback( void *                 read_t,
     globus_byte_t *            newbuf;
     globus_size_t              bufsize;
 
-    verbose(notice("parse_callback : done read %x on %d\n",
-		   buf,
-		   handle->fd));
+    verbose(notice("parse_callback : done read %x on %d, res=%d total=%d\n",
+		   buf, handle->fd, res, status->n_total));
 
     if (res != GLOBUS_SUCCESS)
     {
@@ -507,10 +577,22 @@ globus_l_gram_http_parse_callback( void *                 read_t,
     }
     else
     {
+	status->buf[status->n_total] = '\0';
+
+	verbose(notice("parse_callback : http message =\n%s----\n", 
+		       status->buf));
+
 	rc = globus_gram_http_unframe( status->buf,
 				       status->n_total,
 				       &newbuf,
 				       &bufsize );
+
+	newbuf[bufsize] = 0;
+
+	verbose(notice("parse_callback : unframe rc=%d, size=%d, msg =\n%s----\n",
+		       rc, bufsize, (char *) newbuf ));
+
+
     }
 
     my_free(status->buf);
@@ -539,32 +621,32 @@ globus_l_gram_http_read_callback( void *                 read_t,
     globus_result_t              res    = result;
     globus_size_t                chunk  = 2;
     globus_io_read_callback_t    func   = globus_l_gram_http_read_callback;
+    globus_size_t                len;
+    char *                       p;
 
-    verbose(notice("read_callback : handle = %d, bytes=%ld, res = %ld\n",
-		   handle->fd, nbytes, result ));
-    
     if (res == GLOBUS_SUCCESS)
     {
 	status->n_read += nbytes;
+	status->buf[status->n_read] = '\0';
 
-	/*
-	 * STEVE A:
-	 *
-	 * scan status->buf[0 .. status->n_read-1] for
-	 * "\n\n"
-	 */
-	
-	if ("\n\n exists")
+	if (strstr((const char *)status->buf,"\n\n"))
 	{
 	    status->got_header = GLOBUS_TRUE;
-	    /* 
-	     * set status->n_total = whole_message_size_including_http_header
-	     *
-	     */
 
-	    chunk = status->n_total = status->n_read;
+	    sscanf((const char *)status->buf,"#HTTP %d\n\n", &len);
+
+	    p = strchr((const char *)status->buf,'\n');
+	    ++p;
+	    ++p;
+
+	    status->n_total = (globus_size_t)(p - (char *)(status->buf))+len;
+
+	    chunk = status->n_total - status->n_read;
 	    func  = globus_l_gram_http_parse_callback;
 	}
+
+	verbose(notice("read_callback : handle = %d, chunk=%ld read=%d total=%d\n",
+		       handle->fd, chunk, status->n_read, status->n_total));
 
 	res = globus_io_register_read( handle,
 				       status->buf + status->n_read,
@@ -646,7 +728,7 @@ globus_l_gram_http_post_done_callback( void *                read_t,
     int                         rc;
 
     verbose(notice("post_done_callback : done writing %x on %d\n",
-		   buf,
+		   buf, 
 		   handle->fd));
 
     status = (globus_gram_http_read_t *) read_t;
@@ -690,7 +772,7 @@ globus_l_gram_http_get_callback( void *                read_t,
     if ((errorcode == GLOBUS_SUCCESS) &&
 	(res == GLOBUS_SUCCESS)  )
     {
-	bcopy(status->reply_buf, buf, nbytes);
+	bcopy(buf, status->reply_buf, nbytes);
 	*status->reply_size = nbytes;
     }
 
@@ -757,7 +839,6 @@ globus_gram_http_allow_attach( unsigned short *             port,
     globus_result_t                        res;
     globus_io_handle_t *                   handle;
     globus_io_attr_t                       attr;
-    globus_io_secure_authorization_data_t  auth_data;
     globus_i_gram_http_listener_t *        new_listener;
     void **                                buf;
 
@@ -858,7 +939,7 @@ globus_gram_http_callback_disallow(char *   httpsurl)
     while (!handle && !globus_list_empty(list))
     {
 	listener = globus_list_first(list);
-	if (listener->port = port)
+	if (listener->port == port)
 	{
 	    handle = listener->handle;
 	    globus_free(globus_list_remove(&globus_i_gram_http_listeners,
@@ -956,6 +1037,8 @@ globus_gram_http_attach( char *                job_contact,
 				 url.port,
 				 attr,
 				 handle );
+
+    verbose(notice("connect: res=%ld, got new handle %d\n", res, handle->fd));
     
     if (res != GLOBUS_SUCCESS)
     {   
@@ -994,10 +1077,23 @@ globus_gram_http_frame(globus_byte_t *    msg,
 		       globus_byte_t **   framedmsg,
 		       globus_size_t *    framedsize)
 {
+    char *  p;
+    char *  buf;
 
-    /*
-     * STEVE A: your code here...
-     */
+    buf = (char *) my_malloc(globus_byte_t,GLOBUS_GRAM_HTTP_BUFSIZE);
+
+    globus_libc_sprintf(buf, "#HTTP %d\n\n", msgsize);
+
+    p = strchr(buf, '\n');
+    ++p;
+    ++p;
+
+    bcopy(msg, p, msgsize);
+    
+    p[msgsize] = '\0';
+
+    *framedsize = (globus_size_t)(p - buf) + msgsize;
+    *framedmsg = (globus_byte_t *) buf;
 
     return GLOBUS_SUCCESS;
 }
@@ -1008,10 +1104,13 @@ globus_gram_http_frame_error(int                 errorcode,
 			     globus_byte_t **    msg,
 			     globus_size_t *     msgsize)
 {
+    char *  buf;
+    
+    buf = (char *) my_malloc(globus_byte_t,GLOBUS_GRAM_HTTP_BUFSIZE);
 
-    /*
-     * STEVE A: your code here...
-     */
+    globus_libc_sprintf(buf, "HTTP 0\n\n");
+    *msgsize = strlen(buf);
+    *msg = (globus_byte_t *) buf;
 
     return GLOBUS_SUCCESS;
 }
@@ -1023,9 +1122,20 @@ globus_gram_http_unframe(globus_byte_t *    httpmsg,
 			 globus_byte_t **   message,
 			 globus_size_t *    msgsize )
 {
-    /*
-     * STEVE A: your code here...
-     */
+    char *  buf;
+    char *  p;
+
+    buf = (char *) my_malloc(globus_byte_t,GLOBUS_GRAM_HTTP_BUFSIZE);
+
+    sscanf((char*) httpmsg, "#HTTP %d\n\n", msgsize);
+    p = strchr((char *)httpmsg, '\n');
+    ++p;
+    ++p;
+
+    bcopy(p, buf, *msgsize);
+
+    buf[*msgsize] = '\0';
+    *message = (globus_byte_t *) buf;
 
     return GLOBUS_SUCCESS;
 }
@@ -1035,6 +1145,7 @@ globus_gram_http_unframe(globus_byte_t *    httpmsg,
 
 int
 globus_l_gram_http_post( char *                          url,
+			 globus_io_attr_t *              attr,
 			 globus_byte_t *                 message,
 			 globus_size_t                   msgsize,
 			 globus_gram_http_read_t *       status,
@@ -1048,7 +1159,7 @@ globus_l_gram_http_post( char *                          url,
 
     handle  = my_malloc(globus_io_handle_t,1);
 
-    if ((rc = globus_gram_http_attach(url, handle, GLOBUS_NULL))
+    if ((rc = globus_gram_http_attach(url, handle, attr))
 	|| (rc = globus_gram_http_frame( message,
 					 msgsize,
 					 &sendbuf,
@@ -1056,11 +1167,11 @@ globus_l_gram_http_post( char *                          url,
     {
 	my_free(handle);
 	my_free(status);
+	return GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;	
     }
 
-    verbose(notice("http_post : writing on %d\n%s----\n",
-		   handle->fd,
-		   (char *) sendbuf));
+    verbose(notice("http_post : writing size=%d on %d\n%s----\n",
+		   sendbufsize, handle->fd, (char *) sendbuf));
     
     res = globus_io_register_write( handle,
 				    sendbuf,
@@ -1082,22 +1193,25 @@ globus_l_gram_http_post( char *                          url,
 
 int
 globus_gram_http_post( char *                         url,
+		       globus_io_attr_t *             attr,
 		       globus_byte_t *                message,
 		       globus_size_t                  msgsize,
-		       globus_gram_http_monitor_t *   monitor)
+		       globus_gram_http_monitor_t *   monitor )
 {
     globus_gram_http_read_t *       status;
 
     initialize_monitor(monitor);
-    initialize_read_t( status,
-		       GLOBUS_NULL,              /* userfunc   */
-		       GLOBUS_NULL,              /* userarg    */
-		       GLOBUS_NULL,              /* userptr    */
-		       monitor,                  /* monitor    */
-		       GLOBUS_NULL,              /* replybuf   */
-		       GLOBUS_NULL );            /* replysize  */
+    globus_gram_http_initialize_read_t(
+	&status,
+	GLOBUS_NULL,              /* userfunc   */
+	GLOBUS_NULL,              /* userarg    */
+	GLOBUS_NULL,              /* userptr    */
+	monitor,                  /* monitor    */
+	GLOBUS_NULL,              /* replybuf   */
+	GLOBUS_NULL );            /* replysize  */
 
     return globus_l_gram_http_post( url,
+				    attr,
 				    message,
 				    msgsize,
 				    status,
@@ -1107,22 +1221,27 @@ globus_gram_http_post( char *                         url,
 
 int
 globus_gram_http_post_and_get( char *                         url,
+			       globus_io_attr_t *             attr,
 			       globus_byte_t *                message,
 			       globus_size_t *                msgsize,
-			       globus_gram_http_monitor_t *   monitor)
+			       globus_gram_http_monitor_t *   monitor )
 {
     globus_gram_http_read_t *       status;
 
     initialize_monitor(monitor);
-    initialize_read_t( status,
-		       (void *)globus_l_gram_http_get_callback,    /* userfunc   */
-		       status,                             /* userarg    */
-		       GLOBUS_NULL,                        /* userptr    */
-		       monitor,                            /* monitor    */
-		       message,                            /* replybuf   */
-		       msgsize );                          /* replysize  */
+    globus_gram_http_initialize_read_t(
+	&status,
+	(void *)globus_l_gram_http_get_callback,    /* userfunc   */
+	GLOBUS_NULL,                                /* userarg    */
+	GLOBUS_NULL,                                /* userptr    */
+	monitor,                                    /* monitor    */
+	message,                                    /* replybuf   */
+	msgsize );                                  /* replysize  */
+
+    status->callback_arg = (void *) status;
 
     return globus_l_gram_http_post( url,
+				    attr,
 				    message,
 				    *msgsize,
 				    status,
