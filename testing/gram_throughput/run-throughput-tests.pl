@@ -15,7 +15,7 @@ my ($parallelism,   $duration,  $factoryType,   $help,  $man) =
 GetOptions(
     "verbose!"      => \$verbose,
     "h|host=s"      => \$host,
-    "port=s"        => \$port,
+    "p|port=s"        => \$port,
     "startLoad=s"   => \$startLoad,
     "endLoad=s"     => \$endLoad,
     "l|parallelism=s" => \$parallelism,
@@ -40,9 +40,8 @@ if ($verbose) {
           . "Port: $port\n"
           . "Start Load: $startLoad\n"
           . "End Load: $endLoad\n"
-          . "Load: $load\n"
           . "Parallelism: $parallelism\n"
-          . "Duration: $duratiin\n";
+          . "Duration: $duration\n";
 }
 
 STDOUT->autoflush(1);
@@ -110,11 +109,15 @@ Options:
                                     to test against (default is 8080)
     --type=<type>                   Specify the factory type to test against
                                     (default is "Fork")
-    --startcount=<count>            Specify the first test case's job count
-                                    (default is 1)
-    --endcount=<count>              Specify the last test case's job count,
-                                    rouneded to the last power of 2
-                                    (default is 1)
+    --startload=<load>              Specify the first test case's per-client
+                                    job load (default is 1)
+    --endload=<load>                Specify the last test case's per-client
+                                    job count, rouneded to the last power
+                                    of 2 (default is 1)
+    --parallelism=<parallelism>     Specify the number of client threads
+                                    (NOT CURRENTLY SUPPORTED)
+    --duration=<duration>           Specify the duration of each test case in
+                                    milliseconds.
     --help                          Print short usage.
     --man                           Print long usage.
 
@@ -137,21 +140,42 @@ to "8080".
 Specify the factory type to test against.  Usual values are "Fork", "Pbs", "Lsf"
 , and "CondorIntelLinux".  This options defaults to "Fork".
 
-=item B<--startcount>
+=item B<--startload>
 
-Specify the first test case's job count (default is 1).  The job count is the
-number of jobs to run in parallel.  Test cases will be run starting with the
-startcount and ending with endcount with endcount by powers of 2.  For example,
-if one specifies -startcount=4 and -endcount=40, test cases will be run with job
-counts of 4, 8, 16, and 32.
+Specify the first test case's per-client job count (default is 1).
+The job load is number of jobs to maintain at the service for each client
+thread.  Test cases will be run starting with startload and ending with endload 
+by powers of 2.  For example, if one specifies -startload=4 and -endload=40,
+test cases will be run with job loads of 4, 8, 16, and 32.
 
 =item B<--endcount>
 
-Specify the last test case's job count, rounded to the last power of 2 (default
-is 1).  The job count is the number of jobs to run in parallel.  Test cases will
-be run starting with the startcount and ending with endcount with endcount by
-powers of 2.  For example, if one specifies -startcount=4 and -endcount=40, test
-cases will be run with job counts of 4, 8, 16, and 32.
+Specify the first test case's per-client job count, rounded to the last power of
+2 (default is 1).
+The job load is number of jobs to maintain at the service for each client
+thread.  Test cases will be run starting with startload and ending with endload 
+by powers of 2.  For example, if one specifies -startload=4 and -endload=40,
+test cases will be run with job loads of 4, 8, 16, and 32.
+
+=item B<--parallelism>
+
+Specify the number of client threads.  Each client thread will be required to
+maintain the current test case's job load for the duration specified with the
+duration options.
+
+=item B<--duration>
+
+Specify the duration of each test case (NOT CURRENTLY SUPPORTED).  The duration
+is the length of time each client thread is to continue to maintain the current
+test case's job load.
+
+=item B<--type>
+
+Specify the factory type that jobs are submitted to.  The factory type
+represents the type of queue scheduler that the factory (MMJFS) is associated
+with.  Commone values are "Fork", "Pbs", "Lsf", and "CondorIntelLinux" (default
+is "Fork").
+
 
 =item B<--help>
 

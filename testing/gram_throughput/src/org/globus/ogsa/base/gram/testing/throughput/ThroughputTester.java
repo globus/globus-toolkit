@@ -1,28 +1,34 @@
 package org.globus.ogsa.base.gram.testing.throughput;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.net.URL;
 import java.util.Hashtable;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.Vector;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import org.globus.ogsa.impl.base.gram.utils.rsl.JobAttributes;
+import org.globus.ogsa.impl.base.gram.utils.rsl.RslParser;
+import org.globus.ogsa.impl.base.gram.utils.rsl.RslParserFactory;
 import org.globus.ogsa.utils.PerformanceLog;
 
 public class ThroughputTester {
 
     static Log logger = LogFactory.getLog(ThroughputTester.class.getName());
 
-    String factoryUrl = null;
+    URL factoryUrl = null;
     String rslFile = null;
+    String rsl = null;
     int load = 1;
     int parallelism = 1;
     long duration = 1;
-    SingleJobThread[] jobList = null;
-    int[] jobPhaseState = null;
-    boolean[] completedList = null;
-    int createdCount = 0;
-    int startedCount = 0;
+    ClientThread[] clients = null;
     int completedCount = 0;
-    int stoppedCount = 0;
+    boolean durationElapsed = false;
 
     PerformanceLog perfLog = new PerformanceLog(
         ThroughputTester.class.getName());
@@ -32,232 +38,59 @@ public class ThroughputTester {
     public ThroughputTester() { }
 
     public synchronized void run() {
-        createAll();
-
-        startAll();
-
-        waitForAllToComplete();
-
-        cleanupAll();
-    }
-
-    protected void createAll() {
-        this.jobList = new SingleJobThread[this.load];
-        this.jobPhaseState = new int[this.load];
-
-        //START TIMMING createService
-        if (logger.isDebugEnabled()) {
-            logger.debug("creating " + this.load + " job(s)");
-            logger.debug("perf log start [createService]");
-        }
-        this.perfLog.start();
-
-        for (int i=0; i<this.load; i++) {
-            this.jobList[i] = new SingleJobThread(this, i);
-            new Thread(this.jobList[i]).start();
-        }
-
-        int oldCreatedCount = -1;
-        while (this.createdCount < this.load) {
-            if (logger.isDebugEnabled()) {
-                if (oldCreatedCount != this.createdCount) {
-                    logger.debug("waiting for "
-                                + (this.load - this.createdCount)
-                                + " job(s) to be created");
-                    oldCreatedCount = this.createdCount;
-                }
+        //retrieve, parse, and validate the RSL
+        BufferedReader rslReader = null;
+        StringBuffer rslBuffer = null;
+        try {
+            rslReader = new BufferedReader(new FileReader(rslFile));
+            rslBuffer = new StringBuffer();
+            String rslLine = rslReader.readLine();
+            while (rslLine != null) {
+                rslBuffer.append(rslLine);
+                rslLine = rslReader.readLine();
             }
-
-            try {
-                wait(5000);
-            } catch (Exception e) {
-                logger.error("unabled to wait", e);
+        } catch (java.io.IOException ioe) {
+            logger.error("unable to read rsl file " + rslFile, ioe);
+            System.exit(1);
+        } finally {
+            if (rslReader != null) {
+                try {
+                    rslReader.close();
+                } catch (Exception e) { }
             }
         }
+        this.rsl = rslBuffer.toString();
 
-        //STOP TIMMING createService
-        this.perfLog.stop("createService");
-        if (logger.isDebugEnabled()) {
-            logger.debug("all jobs created");
-        }
-    }
-
-    protected void startAll() {
-        if (logger.isDebugEnabled()) {
-            logger.debug("starting " + this.load + " job(s)");
+        this.clients = new ClientThread[this.parallelism];
+        for (int index=0; index<this.clients.length; index++) {
+            this.clients[index] = new ClientThread(this);
+            new Thread(this.clients[index]).start();
         }
 
-        //START TIMMING start
-        if (logger.isDebugEnabled()) {
-            logger.debug("starting " + this.load + " job(s)");
-            logger.debug("perf log start [start]");
-        }
-        this.perfLog.start();
-
-        for (int i=0; i<this.jobList.length; i++) {
-            if (this.jobList[i].getIndex() >= 0) {
-                this.jobList[i].start();
-            }
-        }
-
-        boolean startedTimmingComplete = false;
-        int oldStartedCount = -1;
-        while (this.startedCount < this.load) {
-            if (logger.isDebugEnabled()) {
-                if (oldStartedCount != this.startedCount) {
-                    logger.debug("waiting for "
-                                + (this.load - this.startedCount)
-                                + " job(s) to be started");
-                    oldStartedCount = this.startedCount;
-                }
-            }
-
-            try {
-                wait(5000);
-            } catch (Exception e) {
-                logger.error("unabled to wait", e);
-            }
-
-            if (!startedTimmingComplete) {
-                //START TIMMING complete
-                if (logger.isDebugEnabled()) {
-                    logger.debug("starting " + this.load + " job(s)");
-                    logger.debug("perf log start [start]");
-                }
-                this.completePerfLog.start();
-                startedTimmingComplete = true;
-            }
-        }
-
-        //STOP TIMMING start
-        this.perfLog.stop("start");
-        if (logger.isDebugEnabled()) {
-            logger.debug("all jobs started");
-        }
-    }
-
-    protected void waitForAllToComplete() {
-        this.completedList = new boolean[this.load];
-        for (int index=0; index<this.load; index++) {
-            this.completedList[index] = false;
-        }
-        int oldCompletedCount = -1;
-        while (this.completedCount < this.load) {
-            if (logger.isDebugEnabled()) {
-                if (oldCompletedCount != this.completedCount) {
-                    logger.debug("waiting for "
-                                + (this.load - this.completedCount)
-                                + " job(s) to be completed");
-                    oldCompletedCount = this.completedCount;
-                }
-            }
-
-            try {
-                wait(5000);
-            } catch (Exception e) {
-                logger.error("unabled to wait", e);
-            }
-            this.completedCount = 0;
-            for (int index=0; index<this.load; index++) {
-                if (this.completedList[index]) {
-                    this.completedCount++;
-                } else {
-                    if (logger.isDebugEnabled()) {
-                        logger.debug("Waiting for job #" + index);
-                    }
-                }
-            }
-        }
-
-        //STOP TIMMING start
-        this.completePerfLog.stop("complete");
-        if (logger.isDebugEnabled()) {
-            logger.debug("all jobs completed");
-        }
-
-        for (int index=0; index<this.load; index++) {
-            if (!this.completedList[index]) {
-                if (logger.isDebugEnabled()) {
-                    logger.debug("False notify for job #" + index);
-                }
-            }
-        }
-    }
-
-    protected void cleanupAll() {
-        //send signal to all job threads to cleanup and exit
-        for (int i=0; i<this.jobList.length; i++) {
-            this.jobList[i].stop();
-        }
-
-        int oldStoppedCount = -1;
-        while (this.stoppedCount < this.load) {
-            if (logger.isDebugEnabled()) {
-                if (oldStoppedCount != this.stoppedCount) {
-                    logger.debug("waiting for "
-                                + (this.load - this.stoppedCount)
-                                + " job(s) to be stopped");
-                    oldStoppedCount = this.stoppedCount;
-                }
-            }
-
-            try {
-                wait(5000);
-            } catch (Exception e) {
-                logger.error("unabled to wait", e);
-            }
-        }
-
-        this.perfLog.stop("complete");
-
-        if (logger.isDebugEnabled()) {
-            logger.debug("all jobs stopped");
-        }
+        //start a timer to stop the madness when the time is right
+        QuitTimerTask quitTimerTask = new QuitTimerTask(this);
+        Timer quitTimer = new Timer();
+        quitTimer.schedule(quitTimerTask, this.duration);
     }
 
     synchronized void notifyError() {
-        this.load--;
-        notifyAll();
+        logger.error("unable to proceed with test");
+        System.exit(1);
     }
 
-    synchronized void notifyCreated(int jobIndex) {
+    synchronized void notifyCompleted(int clientIndex) {
         if (logger.isDebugEnabled()) {
-            logger.debug("got created signal from job #" + jobIndex);
+            logger.debug("got completed signal from client #" + clientIndex);
         }
-        this.createdCount++;
+        this.completedCount++;
         notifyAll();
     }
 
-    synchronized void notifyStarted(int jobIndex) {
-        if (logger.isDebugEnabled()) {
-            logger.debug("got started signal from job #" + jobIndex);
-        }
-        this.startedCount++;
-        notifyAll();
-    }
-
-    synchronized void notifyCompleted(int jobIndex) {
-        if (logger.isDebugEnabled()) {
-            logger.debug("got completed signal from job #" + jobIndex);
-        }
-        //this.completedCount++;
-        this.completedList[jobIndex] = true;
-        notifyAll();
-    }
-
-    synchronized void notifyStopped(int jobIndex) {
-        if (logger.isDebugEnabled()) {
-            logger.debug("got stopped signal from job #" + jobIndex);
-        }
-        this.stoppedCount++;
-        notifyAll();
-    }
-
-    public void setFactoryUrl(String factoryUrl) {
+    public void setFactoryUrl(URL factoryUrl) {
         this.factoryUrl = factoryUrl;
     }
 
-    public String getFactoryUrl() {
+    public URL getFactoryUrl() {
         return this.factoryUrl;
     }
 
@@ -267,6 +100,10 @@ public class ThroughputTester {
 
     public String getRslFile() {
         return this.rslFile;
+    }
+
+    public String getRsl() {
+        return this.rsl;
     }
 
     public void setLoad(int load) {
@@ -291,6 +128,14 @@ public class ThroughputTester {
 
     public long getDuration() {
         return this.duration;
+    }
+
+    public boolean isDurationElapsed() {
+        return this.durationElapsed;
+    }
+
+    void setDurationElapsed(boolean durationElapsed) {
+        this.durationElapsed = durationElapsed;
     }
 
     public static void printUsage(String customMessage) {
@@ -388,7 +233,15 @@ public class ThroughputTester {
         }
 
         ThroughputTester harness = new ThroughputTester();
-        harness.setFactoryUrl((String)options.get("factory"));
+        URL factoryUrl = null;
+        try {
+            factoryUrl = new URL((String)options.get("factory"));
+        } catch (Exception e) {
+            logger.error("invalid factory URL: "
+                        + (String)options.get("factory"));
+            System.exit(1);
+        }
+        harness.setFactoryUrl(factoryUrl);
         harness.setRslFile((String)options.get("file"));
         harness.setLoad(Integer.parseInt((String)options.get("load")));
 
@@ -396,6 +249,17 @@ public class ThroughputTester {
             Integer.parseInt((String)options.get("parallelism")));
         harness.setDuration(Long.parseLong((String)options.get("duration")));
 
-        //harness.run();
+        harness.run();
+    }
+}
+
+class QuitTimerTask extends TimerTask {
+    ThroughputTester harness = null;
+    public QuitTimerTask(ThroughputTester harness) {
+        this.harness = harness;
+    }
+
+    public void run() {
+        this.harness.setDurationElapsed(true);
     }
 }
