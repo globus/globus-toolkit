@@ -45,6 +45,7 @@
 #include <pwd.h>
 #include <setjmp.h>
 #include "mlsx.h"
+#include "cksmcmd.h"
 
 #ifdef HAVE_SYS_SYSLOG_H
 #include <sys/syslog.h>
@@ -230,7 +231,7 @@ extern int port_allowed(const char *remoteaddr);
     STRIPELAYOUT    PARTITIONED BLOCKED BLOCKSIZE
     PARALLELISM     DELAYED_PASV
 
-    LEXERR
+    LEXERR	CKSM
 
 %union {
     char *String;
@@ -1600,6 +1601,25 @@ cmd: USER SP username CRLF
 		free($4);
 	}
 
+
+        /*
+         * CKSM*
+         */
+    | CKSM check_login SP STRING SP pathname CRLF
+        =       {
+            if(exit_at == CKSM)
+            {   
+                dologout(0);
+            }
+            if (log_commands)
+             /*   syslog(LOG_INFO, "CKSM %"GLOBUS_OFF_T_FORMAT " %s", CHECKNULL ($3), CHECKNULL($5)); */
+            if ($4 && $6 && !restrict_check($6))
+            {
+                cksmcmd($6,$4,0,0);
+            }
+            if ($6 != NULL)
+                free($6);
+        }
 	/*
 	 * MDTM is not in RFC959, but Postel has blessed it and
 	 * it will be in the updated RFC.
@@ -2357,6 +2377,14 @@ extern jmp_buf errcatch;
 #define NEWARGS 19		/* miscellaneous word/number
 				 * arguments, with punctuation */
 #define OPTSARGS 20             /* a command token, followed by newargs */
+#define CKSMARGS 21		/* SP STRING SP STRING optional SP o
+				   optional NUMBER opt SP opt NUMBER */
+#define CARGS1 22
+#define CARGS2 23
+#define CARGS3 24
+#define CARGS4 25
+#define CARGS5 26
+
 struct tab cmdtab[] =
 {				/* In order defined in RFC 765 */
     {"USER", USER, STR1, 1, "<sp> username"},
@@ -2407,6 +2435,7 @@ struct tab cmdtab[] =
     {"XCUP", CDUP, ARGS, 1, "(change to parent directory)"},
     {"STOU", STOU, STR1, 1, "<sp> file-name"},
     {"SIZE", SIZE, OSTR, 1, "<sp> path-name"},
+    {"CKSM", CKSM, CKSMARG, 1, "<sp> path-name"},
 #ifdef FTP_SECURITY_EXTENSIONS
     { "AUTH", AUTH, STR1, 1,	"<sp> auth-type" },
     { "ADAT", ADAT, STR1, 1,	"<sp> auth-data" },
@@ -2465,6 +2494,7 @@ char * feattab[] =
     "MDTM",
     "MLST Type*;Size*;Modify*;Perm*;Charset;UNIX.mode*;Unique*;", 
     "SIZE",
+    "CKSM",
 #ifdef USE_GLOBUS_DATA_CODE
     "PARALLEL",
     "DCAU",
@@ -2965,6 +2995,81 @@ int yylex(void)
 #endif                    
 		}
 		break;
+
+	    case CKSMARGS:
+	    case CARGS2:
+		 if (cbuf[cpos] == ' ') {
+                    cpos++;
+                    state++;
+                    return (SP);
+                }
+                break;
+	    case CARGS4:
+		if (cbuf[cpos] == '\n') {
+                state = CMD;
+                return (CRLF);
+                }
+ 		if (cbuf[cpos] == ' ') {
+                    cpos++;
+                    state++;
+                    return (SP);
+                }
+            /* FALLTHROUGH */
+
+	    case CARGS5:
+	 	/* pull of a number,  */
+                if (isdigit(cbuf[cpos])) {
+                    cp = &cbuf[cpos];
+                    while (isdigit(cbuf[++cpos]));
+                    c = cbuf[cpos];
+                    cbuf[cpos] = '\0';
+#ifdef USE_GLOBUS_DATA_CODE
+                    sscanf(cp,"%"GLOBUS_OFF_T_FORMAT, &yylval.Bignum);
+#else
+                    yylval.Number = atoi(cp);
+#endif
+                    cbuf[cpos] = c; 
+
+                    state = CARGS4;
+    
+#ifdef USE_GLOBUS_DATA_CODE 
+                    return (BIGNUM);
+#else               
+                    return(NUMBER);
+#endif                    
+                }         
+                break;	
+	    case CARGS1:
+	    case CARGS3:
+            	/*cp = &cbuf[cpos];
+            	cp2 = strpbrk(cp, " \n");
+            	if (cp2 != NULL) {
+                	c = *cp2;
+                	*cp2 = '\0';
+            	}
+            	n = strlen(cp);
+            	cpos += n; */
+            	/*
+             	* Make sure the string is nonempty and SP terminated.
+             	*/
+            	/*if ((cp2 - cp) > 1) {
+                	yylval.String = copy(cp);
+                	cbuf[cpos] = c;
+                	state++;
+                	return (STRING);
+            	}*/
+ /* must be a word of some sort */
+            	cp = &cbuf[cpos];
+            	while(isalnum(cbuf[++cpos]));
+
+            	c = cbuf[cpos];
+            	cbuf[cpos] = '\0';
+     		yylval.String = copy(cp);
+                cbuf[cpos] = c;
+                return STRING;
+              break;
+
+
 	    case OPTSARGS:
 		if (cbuf[cpos] == ' ') {
 		    cpos++;
@@ -3271,6 +3376,8 @@ void sizecmd(char *filename)
 	reply(504, "SIZE not implemented for Type %c.", "?AEIL"[type]);
     }
 }
+
+
 
 void site_exec(char *cmd)
 {
