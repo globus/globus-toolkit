@@ -737,7 +737,7 @@ void put_proxy(myproxy_socket_attrs_t *attrs,
     }
 
     /* Clean up temporary delegation */
-    if (unlink(delegfile) != 0) {
+    if (ssl_proxy_file_destroy(delegfile) != SSL_SUCCESS) {
 	myproxy_log_perror("Removal of temporary credentials file %s failed",
 			   delegfile);
     }

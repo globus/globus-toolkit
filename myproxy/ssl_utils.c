@@ -1890,7 +1890,7 @@ ssl_proxy_store_to_file(SSL_CREDENTIALS		*proxy_creds,
 	if (return_status == SSL_ERROR)
 	{
 	    /* Remove any file we created */
-	    unlink(path);
+	    ssl_proxy_file_destroy(path);
 	}
     }
 
