@@ -39,8 +39,8 @@ int main(int argc, char * argv[])
     globus_ftp_client_operationattr_t		attr;
     globus_result_t				result;
     globus_ftp_client_handleattr_t		handle_attr;
-    char *					src;
-    char *					dst;
+    char *					src = NULL;
+    char *					dst = NULL;
 
     globus_module_activate(GLOBUS_FTP_CLIENT_MODULE);
     globus_ftp_client_handleattr_init(&handle_attr);
@@ -59,6 +59,9 @@ int main(int argc, char * argv[])
     globus_ftp_client_operationattr_set_type(&attr,
 	                                     GLOBUS_FTP_CONTROL_TYPE_ASCII);
 
+    globus_ftp_client_handleattr_set_cache_all(&handle_attr,
+                                               GLOBUS_TRUE);
+    
     globus_ftp_client_handle_init(&handle,  &handle_attr);
 
     done = GLOBUS_FALSE;
@@ -79,6 +82,27 @@ int main(int argc, char * argv[])
     }
     globus_mutex_unlock(&lock);
 
+    if(dst != NULL)
+    {
+        done = GLOBUS_FALSE;
+        result = globus_ftp_client_delete(&handle,
+                                          dst,
+                                          &attr,
+                                          done_cb,
+                                          0);
+        if(result != GLOBUS_SUCCESS)
+        {
+            done = GLOBUS_TRUE;
+        }
+
+        globus_mutex_lock(&lock);
+        while(!done)
+        {
+            globus_cond_wait(&cond, &lock);
+        }
+        globus_mutex_unlock(&lock);
+    }
+    
     globus_ftp_client_handle_destroy(&handle);
     globus_module_deactivate_all();
 
