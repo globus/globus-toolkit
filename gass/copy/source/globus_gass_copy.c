@@ -639,6 +639,7 @@ globus_l_gass_copy_read_from_queue(
 	} /* if(state->source.status == GLOBUS_I_GASS_COPY_TARGET_READY) */
     }/* while loop */
     globus_mutex_unlock(&(state->source.mutex));
+    printf("read_from_queue(): returning\n");
 } /* globus_l_gass_copy_read_from_queue() */
 
 
@@ -781,10 +782,10 @@ globus_l_gass_copy_gass_setup_callback(
                state->source.url =
                    globus_gass_transfer_referral_get_url(&referral, 0);
 
-               globus_gass_transfer_referral_destroy(&referral);
+               
 	       printf("REQUEST_REFERRED: about to globus_gass_transfer_register_get() again with: %s\n",state->source.url);
                if ( (rc = globus_gass_transfer_register_get(
-                     &request,
+                     &(state->source.data.gass.request),
                      &(state->source.attr.gass_requestattr),
                      state->source.url,
                      globus_l_gass_copy_gass_setup_callback,
@@ -795,8 +796,10 @@ globus_l_gass_copy_gass_setup_callback(
 		   if(rc==GLOBUS_GASS_ERROR_BAD_URL)
 		       printf("rc == GLOBUS_GASS_ERROR_BAD_URL\n");
                    state->err = rc;
+		   globus_gass_transfer_referral_destroy(&referral);
                    goto wakeup_state;
                }
+	       globus_gass_transfer_referral_destroy(&referral);
            }
            else
            {
@@ -1399,7 +1402,7 @@ globus_gass_copy_register_url_to_url(
 
     /* comes from source_attr, or defaults */
     /* FIXX - set buffer_length properly */
-    state->buffer_length = 100;
+    state->buffer_length = 128 *1024;
 	
     if (   (source_url_scheme == GLOBUS_I_GASS_COPY_URL_SCHEME_FTP)
 	&& (dest_url_scheme == GLOBUS_I_GASS_COPY_URL_SCHEME_FTP) )
