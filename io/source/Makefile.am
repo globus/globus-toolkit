@@ -3,7 +3,8 @@ include $(top_srcdir)/globus_automake_targets
 
 SUBDIRS= \
 	library \
-	pkgdata
+	pkgdata \
+	doxygen
 
 
 include $(top_srcdir)/globus_automake_rules
