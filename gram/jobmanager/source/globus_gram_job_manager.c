@@ -947,7 +947,8 @@ globus_l_gram_signal_fork(globus_gram_jobmanager_request_t * request)
      */
     if (request->signal != GLOBUS_GRAM_CLIENT_JOB_SIGNAL_CANCEL)
     {
-        return(GLOBUS_SUCCESS);
+        request->failure_code = GLOBUS_GRAM_CLIENT_ERROR_UNKNOWN_SIGNAL_TYPE;
+        return(GLOBUS_FAILURE);
     }
 
     graml_child_pid_ptr = graml_child_pid_head;
@@ -1033,16 +1034,13 @@ globus_l_gram_signal_shell(globus_gram_jobmanager_request_t * request)
                          "JM: Cannot remove argument file --> %s\n",
                          graml_script_arg_file);
         }
-
         request->status = GLOBUS_GRAM_CLIENT_JOB_STATE_FAILED;
     }
 
     if (rc == GLOBUS_FAILURE)
     {
         grami_fprintf( request->jobmanager_log_fp,
-              "JMI: received error from script: %d\n", rc );
-        grami_fprintf( request->jobmanager_log_fp,
-              "JMI: returning job state failed.\n" );
+              "JMI: received error from script: %d\n", request->failure_code );
         return(GLOBUS_FAILURE);
     }
 
