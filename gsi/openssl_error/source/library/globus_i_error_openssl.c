@@ -101,25 +101,17 @@ globus_l_error_openssl_printable(
     handle = (globus_openssl_error_handle_t)
              globus_object_get_local_instance_data(error);
 
-    if(!globus_openssl_error_handle_get_filename(handle) &&
-       !globus_openssl_error_handle_get_linenumber(handle) &&
-       !globus_openssl_error_handle_get_library(handle) &&
-       !globus_openssl_error_handle_get_function(handle) &&
-       !globus_openssl_error_handle_get_reason(handle))
-    {
-        error_string = globus_error_openssl_create_error_string(
-            "Unkown OpenSSL Error.");
-    }
-    else
-    {
-        error_string = globus_error_openssl_create_error_string(
-            "OpenSSL Error: %s:%d: in library: %s, function %s: %s",
-            globus_openssl_error_handle_get_filename(handle),
-            globus_openssl_error_handle_get_linenumber(handle),
-            globus_openssl_error_handle_get_library(handle),
-            globus_openssl_error_handle_get_function(handle),
-            globus_openssl_error_handle_get_reason(handle));
-    }
+    error_string = globus_error_openssl_create_error_string(
+        "OpenSSL Error: %s:%d: in library: %s, function %s: %s",
+        globus_openssl_error_handle_get_filename(handle) == NULL ? "(null)" :
+        globus_openssl_error_handle_get_filename(handle),
+        globus_openssl_error_handle_get_linenumber(handle),
+        globus_openssl_error_handle_get_library(handle) == NULL ? "(null)" :
+        globus_openssl_error_handle_get_library(handle),
+        globus_openssl_error_handle_get_function(handle) == NULL ? "(null)" :
+        globus_openssl_error_handle_get_function(handle),
+        globus_openssl_error_handle_get_reason(handle) == NULL ? "(null)" :
+        globus_openssl_error_handle_get_reason(handle));
 
  done:
 
