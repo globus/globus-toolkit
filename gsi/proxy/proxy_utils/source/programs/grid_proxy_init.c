@@ -1053,5 +1053,6 @@ globus_i_gsi_proxy_utils_print_error(
                             "Use -debug for further information.\n\n");
     }
     globus_object_free(error_obj);
+    globus_module_deactivate_all();
     exit(1);
 }
