@@ -34,6 +34,7 @@ dnl
 save_LD=$LD
 LD=
 AM_PROG_LIBTOOL
+mv ./libtool libtool-$GLOBUS_FLAVOR_NAME
 LD=$save_LD
 
 dnl
@@ -45,6 +46,17 @@ if test "$GLOBUS_THREADS" = "no" ; then
 fi
 AC_SUBST(GLOBUS_THREADS)
 
+# checking for the GLOBUS_INSTALL_PATH
+
+if test "x$GLOBUS_INSTALL_PATH" = "x"; then
+    echo "ERROR Please specify GLOBUS_INSTALL_PATH" >&2
+    exit 1
+fi
+
+prefix='$(GLOBUS_INSTALL_PATH)'
+exec_prefix='$(GLOBUS_INSTALL_PATH)'
+
 
 AC_OUTPUT(Makefile
-          globus-build-env-${globus_cv_flavor}.sh:globus-build-env.sh.in)
+          globus-build-env-${globus_cv_flavor}.sh:globus-build-env.sh.in
+	aclocal/Makefile)
