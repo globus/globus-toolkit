@@ -1126,38 +1126,45 @@ graml_stage_file(char *url, int mode)
     rc = globus_url_parse(url, &gurl);
     if(rc == GLOBUS_SUCCESS)	/* this is a valid URL */
     {
-	if(gurl.scheme_type == GLOBUS_URL_SCHEME_FILE)
+	gass_cache_t cache;
+	unsigned long timestamp;
+	char *tmpname;
+	
+	gass_cache_open(GLOBUS_NULL,
+			&cache);
+	
+	rc = gass_cache_add(&cache,
+			    url,
+			    graml_job_contact,
+			    GLOBUS_TRUE,
+			    &timestamp,
+			    &tmpname);
+	if(rc == GASS_CACHE_ADD_EXISTS)
 	{
-	    strncpy(url, gurl.url_path, GRAM_PARAM_SIZE);
-	}
-	else
-	{
-	    gass_cache_t cache;
-	    unsigned long timestamp;
-	    char *tmpname;
-	    
-	    gass_cache_open(GLOBUS_NULL,
-			    &cache);
-	    
-	    rc = gass_cache_add(&cache,
+	    gass_cache_add_done(&cache,
 				url,
 				graml_job_contact,
-				GLOBUS_TRUE,
-				&timestamp,
-				&tmpname);
-	    if(rc == GASS_CACHE_ADD_EXISTS)
+				timestamp);
+	}
+	else if(rc == GASS_CACHE_ADD_NEW)
+	{
+	    int fd = open(tmpname,
+			  O_WRONLY|O_TRUNC,
+			  mode);
+	    if(gurl.scheme_type == GLOBUS_URL_SCHEME_FILE)
 	    {
-		gass_cache_add_done(&cache,
-				    url,
-				    graml_job_contact,
-				    timestamp);
-	    }
-	    else if(rc == GASS_CACHE_ADD_NEW)
-	    {
-		int fd = open(tmpname,
-			      O_WRONLY|O_TRUNC,
-			      mode);
+		char buf[512];
+		int ofd = open(gurl.url_path, O_RDONLY);
 		
+		while((rc = read(ofd, buf, sizeof(buf))) > 0)
+		{
+		    write(fd, buf, rc);
+		}
+
+		close(ofd);
+	    }
+	    else
+	    {
 		gass_client_get_fd(url,
 				   GLOBUS_NULL,
 				   fd,
@@ -1165,17 +1172,17 @@ graml_stage_file(char *url, int mode)
 				   &timestamp,
 				   GLOBUS_NULL,
 				   GLOBUS_NULL);
-		close(fd);
-		gass_cache_add_done(&cache,
-				    url,
-				    graml_job_contact,
-				    timestamp);
 	    }
-	    strncpy(url, tmpname, GRAM_PARAM_SIZE);
-	    url[GRAM_PARAM_SIZE-1] = '\0';
-	    globus_free(tmpname);
-	    gass_cache_close(&cache);
+	    close(fd);
+	    gass_cache_add_done(&cache,
+				url,
+				graml_job_contact,
+				timestamp);
 	}
+	strncpy(url, tmpname, GRAM_PARAM_SIZE);
+	url[GRAM_PARAM_SIZE-1] = '\0';
+	globus_free(tmpname);
+	gass_cache_close(&cache);
     }
     globus_url_destroy(&gurl);
     grami_fprintf( grami_log_fp, 
