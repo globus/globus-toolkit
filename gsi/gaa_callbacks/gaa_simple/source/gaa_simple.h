@@ -1,6 +1,7 @@
 #ifndef _GAA_SIMPLE_H_
 #define _GAA_SIMPLE_H_
 
+#include <stdio.h>
 struct gaa_simple_eacl_args {
     char *dirname;
     FILE *errfile;

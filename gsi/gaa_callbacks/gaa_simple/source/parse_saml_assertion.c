@@ -10,9 +10,15 @@
 #include <stdlib.h>
 #include <time.h>
 
+#include "gaa.h"
 #include "saml.h"
+#include "xml_sig.h"
 
-assertionPtr
+/**
+ * getConditions -- return 0 on success, nonzero on failure
+ */
+
+static int
 getConditions(xmlNodePtr cur, assertionPtr Assertion)
 {
 #ifdef debug
@@ -20,14 +26,23 @@ getConditions(xmlNodePtr cur, assertionPtr Assertion)
   printf("NotOnOrAfter=%s\n", xmlGetProp(cur, (const xmlChar *) "NotOnOrAfter"));
 #endif
 
-  // These two are optional.
-  // So, if a field does not exist, NULL will be assigned.
+/*
+ * These two are optional.
+ * So, if a field does not exist, NULL will be assigned.
+ */
   Assertion->NotBefore = xmlGetProp(cur, (const xmlChar *) "NotBefore");
   Assertion->NotOnOrAfter = xmlGetProp(cur, (const xmlChar *) "NotOnOrAfter");
  
-  // We are ignoring <Condition> and <AudienceRestrictionCondition> for now.
-
-  return Assertion;
+  /*
+   * Reject any other conditions.
+   */
+  if (xmlGetProp(cur, (const xmlChar *) "Condition") ||
+      xmlGetProp(cur, (const xmlChar *) "AudienceRestrictionCondition"))
+  {
+      gaa_set_callback_err("unrecognized condition in assertion");
+      return(-1);
+  }
+  return 0;
 }
 
 
@@ -68,7 +83,7 @@ handleSubject(xmlDocPtr doc, xmlNodePtr cur, assertionPtr Assertion)
   if (!xmlStrcmp(cur->name, (const xmlChar *)"NameIdentifier")) {
 #ifdef debug
     printf("NameIdentifier=%s\n", (cur->xmlChildrenNode)->content);
-  // This does the same thing as below line xmlNodeListGetString().
+    /* This does the same thing as below line xmlNodeListGetString(). */
     printf("NameIDFormat=%s\n", xmlGetProp(cur, (const xmlChar *) "Format"));
     printf("NameQualifier=%s\n", xmlGetProp(cur, (const xmlChar *) "NameQualifier"));
 #endif
@@ -98,14 +113,14 @@ handleAction(xmlDocPtr doc, xmlNodePtr cur, assertionPtr Assertion)
   
   new_action = (actionPtr) malloc(sizeof(action));
   if (new_action== NULL) {
-    fprintf(stderr,"out of memory\n");
+    gaa_set_callback_err("out of memory\n");
     xmlFreeDoc(doc);
     return(NULL);
   }
   memset(new_action, 0, sizeof(action));
   
   if (!Assertion->ads) {
-    fprintf(stderr,"Error: NULL ads\n");
+    gaa_set_callback_err("Error: NULL ads\n");
     xmlFreeDoc(doc);
     return(NULL);
   }
@@ -139,7 +154,7 @@ handleAction(xmlDocPtr doc, xmlNodePtr cur, assertionPtr Assertion)
   return Assertion;
 }
 
-// Parse <AuthorizationDecisionStatement>
+/* Parse <AuthorizationDecisionStatement> */
 assertionPtr
 parseADS(xmlDocPtr doc, xmlNsPtr ns, xmlNodePtr cur, assertionPtr Assertion)
 {
@@ -161,18 +176,18 @@ parseADS(xmlDocPtr doc, xmlNsPtr ns, xmlNodePtr cur, assertionPtr Assertion)
       isAction = 1;
     }
     else {
-      // For now, we ignore the rest.
+	/* For now, we ignore the rest. */
     }
     cur = cur->next;
   }
   if (!(isSubject && isAction)) {
-    fprintf(stderr,"Wrong input: <Subject> and/or <Action> is not found\n");
+    gaa_set_callback_err("Wrong input: <Subject> and/or <Action> is not found\n");
 #ifdef debug
     xmlDocDump ( stderr, doc );
-    fprintf(stderr,"xmlDocDump finished\n");
+    gaa_set_callback_err("xmlDocDump finished\n");
 #endif
     xmlFreeDoc(doc);
-    // XXX: todo -- Need to free the nested structures...
+    /*  XXX: todo -- Need to free the nested structures... */
     free(Assertion);
     return(NULL);
   }
@@ -182,25 +197,36 @@ parseADS(xmlDocPtr doc, xmlNsPtr ns, xmlNodePtr cur, assertionPtr Assertion)
 
 
 assertionPtr
-parseSAMLassertion(char *filename) {
-  xmlDocPtr doc;
+parseSAMLassertion(char *saml_assertion, int verify_signature) {
+  xmlDocPtr doc = 0;
   xmlNsPtr ns;
   xmlNodePtr cur;
-  assertionPtr TheAssertion;
+  assertionPtr TheAssertion = 0;
   adsPtr new_ads, cur_ads;
+  assertionPtr retval = 0;
   
   int isADS = 0;
   
   /* COMPAT: Do not generate nodes for formatting spaces */
   LIBXML_TEST_VERSION
-    xmlKeepBlanksDefault(0);
+/*    xmlKeepBlanksDefault(0); */
 
   
   /*
    * build an XML tree from a saml file;
    */
-  doc = xmlParseFile(filename);
-  if (doc == NULL) return(NULL);
+  xmlInitParser();
+  xmlLoadExtDtdDefaultValue = XML_DETECT_IDS | XML_COMPLETE_ATTRS;
+  xmlSubstituteEntitiesDefault(1);
+
+  doc = xmlParseMemory(saml_assertion, strlen(saml_assertion));
+  if (doc == NULL) goto end;
+
+  if (verify_signature) {
+      if (gaa_simple_i_verify_xml_sig(doc) != GAA_S_SUCCESS) {
+	  goto end;
+      }
+  }
 
   /*
    * Check the document is of the right kind
@@ -208,21 +234,18 @@ parseSAMLassertion(char *filename) {
     
   cur = xmlDocGetRootElement(doc);
   if (cur == NULL) {
-    fprintf(stderr,"empty document\n");
-    xmlFreeDoc(doc);
-    return(NULL);
+    gaa_set_callback_err("empty document\n");
+    goto end;
   }
   ns = xmlSearchNsByHref(doc, cur, (const xmlChar *) SAML_NS_URN);
   if (ns == NULL) {
-    fprintf(stderr, "Wrong input, SAML assertion Namespace not found\n");
-    xmlFreeDoc(doc);
-    return(NULL);
+    gaa_set_callback_err( "Wrong input, SAML assertion Namespace not found\n");
+    goto end;
   }
 
   if (xmlStrcmp(cur->name, (const xmlChar *) "Assertion")) {
-    fprintf(stderr,"Wrong input, root node must be Assertion");
-    xmlFreeDoc(doc);
-    return(NULL);
+    gaa_set_callback_err("Wrong input, root node must be Assertion");
+    goto end;
   }
   
   /*
@@ -230,9 +253,8 @@ parseSAMLassertion(char *filename) {
    */
   TheAssertion = (assertionPtr) malloc(sizeof(assertion));
   if (TheAssertion == NULL) {
-    fprintf(stderr,"out of memory\n");
-    xmlFreeDoc(doc);
-    return(NULL);
+    gaa_set_callback_err("out of memory\n");
+    goto end;
   }
   memset(TheAssertion, 0, sizeof(assertion));
   
@@ -249,13 +271,17 @@ parseSAMLassertion(char *filename) {
   /* At the first level we expect ADS.  Conditions are optional. */
   while (cur != NULL) {
     if (!xmlStrcmp(cur->name, (const xmlChar *) "Conditions"))
-      TheAssertion = getConditions(cur, TheAssertion);
+    {
+	if (getConditions(cur, TheAssertion))
+	{
+	    goto end;
+	}
+    }
     else if  (!xmlStrcmp(cur->name, (const xmlChar *) ADS)) {
       new_ads = (adsPtr) malloc(sizeof(ads));
       if (new_ads== NULL) {
-        fprintf(stderr,"out of memory\n");
-        xmlFreeDoc(doc);
-        return(NULL);
+        gaa_set_callback_err("out of memory\n");
+	goto end;
       }
       memset(new_ads, 0, sizeof(ads));
 
@@ -273,27 +299,34 @@ parseSAMLassertion(char *filename) {
       isADS = 1;
     }
     else {
-      //      printf("Do nothing\n");
-      // For now, we ignore others.
+	/* For now, we ignore others. */
     }
     cur = cur->next;
   }
   
   if (!isADS) {
-    fprintf(stderr,"Wrong input: AuthorizationDecisionStatement is not found\n");
+    gaa_set_callback_err("Wrong input: AuthorizationDecisionStatement is not found\n");
 #ifdef debug
     xmlDocDump ( stderr, doc );
-    fprintf(stderr,"xmlDocDump finished\n");
+    gaa_set_callback_err("xmlDocDump finished\n");
 #endif
-    xmlFreeDoc(doc);
-    free(TheAssertion);
-    return(NULL);
+    goto end;
   }
-  
+
+  retval = TheAssertion;
+
+ end:
+
+  if (retval == 0)
+      free(TheAssertion);
+
+  if (doc)
+    xmlFreeDoc(doc);
+
   /* Clean up everything else before quitting. */
   xmlCleanupParser();
   
-  return(TheAssertion);
+  return(retval);
 }
 
 

@@ -3,12 +3,31 @@
 #include "gaa_util.h"
 
 #include "saml.h"
+#define WILDCARD_MATCH_NAME "FTPDirectoryTree|"
+#define TIME_NS "utctime"
+
+
+#ifndef COMPILE_NAME_TEST
+static int
+gaa_simple_l_name_matches(char *policyname, char *objectname, char *ebuf, int ebuflen);
+#endif /* COMPILE_NAME_TEST */
+
+static gaa_status
+gaa_simple_l_add_ads_rights (gaa_ptr		gaa,
+			     gaa_policy *	policy,
+			     adsPtr		ads,
+			     xmlChar *		NotBefore,
+			     xmlChar *		NotOnOrAfter,
+			     int *		found_rights,
+			     char *		ebuf,
+			     int		ebuflen);
+
 
 /** gaa_simple_read_saml()
  *
  * @ingroup gaa_simple
  *
- * Create a GAA policy from an extended access control list.  This function
+ * Create a GAA policy from a signed saml assertion.  This function
  * is meant to be used as a GAA getpolicy callback function.
  *
  * @param gaa
@@ -16,9 +35,9 @@
  * @param policy
  *        output policy pointer
  * @param object
- *        name of the object that the policy is associated with
+ *        name of the object whose policies are being queried.
  * @param params
- *        input (char **) pointer to name of SAML assertion file with full path name.
+ *        input (char **) pointer to a signed saml assertion
  *
  * @retval GAA_S_SUCCESS
  *         success
@@ -36,171 +55,71 @@ gaa_simple_read_saml(gaa_ptr		      gaa,
 {
   gaa_status	status = GAA_S_SUCCESS;
   char				ebuf[2048];
-  char 				type[50];
-  char        auth[128], *auth_p = 0;
-  char        val[256],  *val_p = 0;
-  static int	i = 0;
-  gaa_policy_right *right = 0;
-  gaa_condition    *cond = 0;
-  int					pri = -1;
-  int					num = -1;
-  int         valid = 0;
-  char        *filename = 0;
-
+  char        *saml_assertion = 0;
   assertionPtr Assertion = 0;
-  adsPtr cur_ads = 0;
-  actionPtr cur_action = 0;
+  adsPtr ads = 0;
+  int rights_added = 0;
+  int found_rights = 0;
   
   if (gaa == 0 || policy == 0 || object == 0 || params == 0)  {
     gaa_set_callback_err("gaa_simple_read_saml: called with null gaa, policy, or samldir pointer");
-    return(GAA_STATUS(GAA_S_INVALID_ARG, 0));
+    return(GAA_S_INVALID_ARG);
   }
 
-  if ((filename = *(char **)params) == 0)  {
-    gaa_set_callback_err("gaa_simple_read_saml: called with null saml file name");
-    return(GAA_STATUS(GAA_S_INVALID_ARG, 0));
-  }
-  
-  /**
-  if (strlen(filename) + strlen(object) + 2 >= sizeof(buf))    {
-    gaa_set_callback_err("gaa_simple_read_saml: object name too long");
-    return(GAA_STATUS(GAA_S_INVALID_ARG, 0));
+  if ((saml_assertion = *(char **)params) == 0)  {
+    gaa_set_callback_err("gaa_simple_read_saml: called with null saml string");
+    return(GAA_S_INVALID_ARG);
   }
 
-  sprintf(buf, "%s/%s", dirname, object);
-  **/
-  
-  Assertion = parseSAMLassertion(filename);
+  Assertion = parseSAMLassertion(saml_assertion, 1);
 
   if (!Assertion) {
-    snprintf(ebuf, sizeof(ebuf), "gaa_simple_read_saml: Error parsing SAML assertion file %s\n", filename);
-    gaa_set_callback_err(ebuf);
-    return(GAA_STATUS(GAA_S_POLICY_PARSING_FAILURE, 0));
+      gaa_set_callback_err("gaa_simple_read_saml: Error parsing SAML assertion");
+      return(GAA_STATUS(GAA_S_POLICY_PARSING_FAILURE, 0));
   }
 
   if ((status = gaa_new_policy(policy)) != GAA_S_SUCCESS)
-    return(status);
+  {
+      goto end;
+  }
 
-  cur_ads = Assertion->ads;
-  
-  while (cur_ads != NULL) {  // Traverse each ADS
-    
-    cur_action = cur_ads->action;
+  for (ads = Assertion->ads; ads != NULL; ads = ads->next)
+  {
+      if (ads->resource &&
+	  gaa_simple_l_name_matches(ads->resource,
+				    object,
+				    ebuf,
+				    sizeof(ebuf)))
+      {
+	  if ((status = gaa_simple_l_add_ads_rights(gaa,
+						     *policy,
+						     ads,
+						     Assertion->NotBefore,
+						     Assertion->NotOnOrAfter,
+						     &found_rights,
+						     ebuf,
+						     sizeof(ebuf))) == GAA_S_SUCCESS)
+	  {
+	      if (found_rights)
+	      {
+		  rights_added = 1;
+	      }
+	  }
+      }
+  }
 
-    /* If the resource name on SAML does not match the object,
-       skip the whole thing */
-    if (strcasecmp(cur_ads->resource, object))
-      goto next;
-    else
-      valid = 1;
-    
-    ///--------------
-    
-    while (cur_action != NULL) {  // Traverse each Action in an ADS
-      if (right) {
-        if ((status = gaa_add_policy_entry((*policy), right, pri, num))
-            != GAA_S_SUCCESS) {
-          snprintf(ebuf, sizeof(ebuf),
-                   "gaa_simple_read_eacl: failed to add right at line %d: %s\n",
-                   i, gaa_x_majstat_str(status));
-          gaa_set_callback_err(ebuf);
-          return (status);
-        }
-        right = 0;
-      }
-      auth_p = (char *)cur_action->ActionNS;
-      val_p = (char *)cur_action->Action;
-      
-      while (isspace(*val_p))
-        val_p++;
-      
-      if (strcasecmp(cur_ads->decision, "permit") == 0)	{
-        gaa_new_policy_right(gaa, &right, gaa_pos_access_right, auth_p, val_p);
-      }
-      else if (strcasecmp(cur_ads->decision, "deny") == 0){ 
-        gaa_new_policy_right(gaa, &right, gaa_neg_access_right, auth_p, val_p);
-      }
-      else { // Indeterminate or something else
-        snprintf(ebuf, sizeof(ebuf), "gaa_simple_read_saml: Wrong decision value in SAML assertion file %s\n", filename);
-        gaa_set_callback_err(ebuf);
-        return(GAA_STATUS(GAA_S_INVALID_POLICY_RIGHT_HNDL, 0));
-      }
-      num++;
-  
-      /* Conditions */
-
-      if (cur_ads->NameIDformat) {
-        strcpy(type, "subject");  // not sure what to put here
-        
-        strcpy (auth, (char *)cur_ads->NameIDformat);  // not sure what to put here
-        strcpy (val, (char *)cur_ads->NameID);
-        val_p = val;
-        while (isspace(*val_p))
-          val_p++;
-        
-        if ((status = gaa_new_condition(&cond, type, auth, val_p)) != GAA_S_SUCCESS)
-          return status;
-        
-        if ((status = gaa_add_condition(right, cond)) != GAA_S_SUCCESS)
-          return status;
-      }
-      
-      if (Assertion->NotBefore) {
-        strcpy(type, "NotBefore");  // not sure what to put here
-        
-        strcpy (auth, (char *)cur_action->ActionNS); // not sure what to put here
-        strcpy (val, (char *)Assertion->NotBefore);
-        
-        if ((status = gaa_new_condition(&cond, type, auth, val)) != GAA_S_SUCCESS)
-          return status;
-        
-        if ((status = gaa_add_condition(right, cond)) != GAA_S_SUCCESS)
-          return status;
-      }
-      
-      if (Assertion->NotOnOrAfter) {
-        strcpy(type, "NotOnOrAfter");  // not sure what to put here
-        
-        strcpy (auth, (char *)cur_action->ActionNS); // not sure what to put here
-        strcpy (val, (char *)Assertion->NotOnOrAfter);
-        
-        if ((status = gaa_new_condition(&cond, type, auth, val)) != GAA_S_SUCCESS)
-          return status;
-        
-        if ((status = gaa_add_condition(right, cond)) != GAA_S_SUCCESS)
-          return status;
-      }
-      
-      cur_action = cur_action->next;
-    } // End of all Action in an ADS
-    next:
-    cur_ads = cur_ads->next;
-  } // End of all ADS in an Assertion
-
-  if (right)
-    if ((status = gaa_add_policy_entry((*policy), right, pri,
-                                       num)) != GAA_S_SUCCESS)    {
-	    snprintf(ebuf, sizeof(ebuf),
-               "gaa_simple_read_eacl: failed to add right at line %d: %s\n", i,
-               gaa_x_majstat_str(status));
-	    gaa_set_callback_err(ebuf);
-	    return (status);
-    }
-
-  /** If there was no resource name that matches the object name,
-      something must be wrong.  **/
-  if (valid == 0) {
-    snprintf(ebuf, sizeof(ebuf),
-             "gaa_simple_read_eacl: No matching object (%s) found in the SAML assertion: %s\n", object, gaa_x_majstat_str(status));
-    gaa_set_callback_err(ebuf);
-    return(GAA_STATUS(GAA_S_NO_MATCHING_ENTRIES, 0));
+  if ((rights_added == 0) && (status == GAA_S_SUCCESS))
+  {
+      snprintf(ebuf, sizeof(ebuf),
+	       "gaa_simple_read_saml: No matching object (%s) found in the SAML assertion: %s\n", object, gaa_x_majstat_str(status));
+      gaa_set_callback_err(ebuf);
+      status = GAA_S_NO_MATCHING_ENTRIES;
   }
   
+ end:
   freeAssertion(Assertion);
-  
-  return status;
+  return(status);
 }
-
 
 void
 freeAssertion(assertionPtr Assertion)
@@ -225,3 +144,321 @@ freeAssertion(assertionPtr Assertion)
   }
 }
 
+#ifndef COMPILE_NAME_TEST
+static int
+#endif /* COMPILE_NAME_TEST */
+gaa_simple_l_name_matches(char *	policyname,
+			  char *	objectname,
+			  char *	ebuf,
+			  int 		ebuflen)
+{
+    int prlen;
+    char *policybuf = 0;
+    int matches = 0;
+    
+    /*
+     * We know how to parse only policy resource names that start with
+     * WILDCARD_MATCH_NAME.  Verify that it does.
+     */
+    if (strncmp(policyname, WILDCARD_MATCH_NAME,
+		sizeof(WILDCARD_MATCH_NAME)-1))
+    {
+	snprintf(ebuf, ebuflen,
+		 "ignoring resource in policy assertion -- name does not begin with '%s'",
+		 WILDCARD_MATCH_NAME);
+	gaa_set_callback_err(ebuf);
+	goto end;
+    }
+    
+    /*
+     * For comparison purposes, use only the part of policyname name that
+     * comes after WILDCARD_MATCH_NAME.
+     */
+    policybuf = strdup(policyname + sizeof(WILDCARD_MATCH_NAME) - 1);
+      
+    if (policybuf == 0)
+    {
+	gaa_set_callback_err("Malloc failed");
+	goto end;
+    }
+
+    if (*policybuf == '\0')
+    {
+	snprintf(ebuf, ebuflen,
+		 "ignoring null %s resource in policy assertion",
+		 WILDCARD_MATCH_NAME);
+	gaa_set_callback_err(ebuf);
+	goto end;
+    }
+      
+    /* Now check that the resource and object names match */
+    prlen = strlen(policybuf);
+    /* The name "*" matches everything */
+    if ((prlen == 1) && policybuf[0] == '*')
+    {
+	matches = 1;
+	goto end;
+    }
+    
+    /*
+     * Names like "/foo/bar/ *" match anything that starts with /foo/bar
+     * or /foo/bar/blech/, but not /fooo.
+     */
+    if ((prlen > 1) &&
+	(policybuf[prlen-2] == '/') &&
+	(policybuf[prlen-1] == '*'))
+    {
+	if (strncmp(objectname, policybuf, prlen-1) == 0)
+	{
+	    matches = 1;
+	    goto end;
+	}
+	
+	/*
+	 * Names like "/foo/bar/ *" also match /foo/bar/ and /foo/bar
+	 */
+	policybuf[prlen-1] = '\0';
+	if (strcmp(policybuf, objectname) == 0)
+	{
+	    matches = 1;
+	    goto end;
+	}
+	
+	policybuf[prlen-2] = '\0';
+	if (strcmp(policybuf, objectname) == 0)
+	{
+	    matches = 1;
+	    goto end;
+	}
+    } else {
+	if (strcmp(policybuf, objectname) == 0)
+	{
+	    matches = 1;
+	    goto end;
+	}
+    }
+
+ end:
+    if (policybuf)
+	free(policybuf);
+
+    return(matches);
+}
+
+/** gaa_simple_l_add_ads_rights
+ *
+ * Add all policy rights from this ads.
+ *
+ * @param policy
+ *	  input/output - policy to add rights to.
+ * @param ads
+ * 	  input - ads to read rights from
+ * @param found_rights
+ *	  output - 1 if any rights were added, 0 otherwise
+ * @param ebuf
+ *	  output - buffer to hold error string
+ * @param ebuflen
+ *        input - length of ebuf
+ */
+static gaa_status
+gaa_simple_l_add_ads_rights (gaa_ptr 		gaa,
+			     gaa_policy *	policy,
+			     adsPtr		ads,
+			     xmlChar *		NotBefore,
+			     xmlChar *		NotOnOrAfter,
+			     int *		found_rights,
+			     char *		ebuf,
+			     int		ebuflen)
+{
+    gaa_policy_right *right = 0;
+    gaa_condition    *cond = 0;
+    char *auth_p;
+    char *val_p;
+    gaa_right_type right_type;
+    int pri = 1;
+    int num = 0;
+    struct action *action;
+    gaa_status status = GAA_S_SUCCESS;
+    *found_rights = 0;
+
+    if (strcasecmp(ads->decision, "permit") == 0)
+    {
+	right_type = gaa_pos_access_right;
+    }
+    else  if (strcasecmp(ads->decision, "deny") == 0)
+    {
+	right_type = gaa_neg_access_right;
+    }
+    else {
+	gaa_set_callback_err("Unrecognized decision value in SAML assertion");
+	return(GAA_STATUS(GAA_S_INVALID_POLICY_RIGHT_HNDL, 0));
+    }
+
+    for (action = ads->action, num = 0; action; action = action->next, num++)
+    {
+	auth_p = (char *)action->ActionNS;
+	val_p = (char *)action->Action;
+	
+	if (auth_p == 0 || val_p == 0) /* null action */
+	{
+	    return(GAA_S_POLICY_PARSING_FAILURE);
+	}
+	
+	/*
+	 * TODO -- figure out whether all this val_p skipping over spaces
+	 * is necessary, and whether it can't be done when the saml assertion
+	 * is parsed instead of here.  For now, I'm putting these where Dongho
+	 * had them.
+	 */
+	while (isspace(*val_p))
+	{
+	    val_p++;
+	}
+
+	/* Create right */
+	if ((status = gaa_new_policy_right(gaa,
+					   &right,
+					   right_type,
+					   auth_p,
+					   val_p)) != GAA_S_SUCCESS)
+	{
+	    goto end;
+	}
+  
+	/* Add Conditions */
+
+	if (ads->NameIDformat)
+	{
+	    val_p = ads->NameID;
+	    while (isspace(*val_p))
+	    {
+		val_p++;
+	    }
+
+	    if ((status = gaa_new_condition(&cond,
+					    "identity",
+					    ads->NameIDformat,
+					    val_p)) != GAA_S_SUCCESS)
+	    {
+		goto end;
+	    }
+
+	    if ((status = gaa_add_condition(right, cond)) != GAA_S_SUCCESS)
+	    {
+		gaa_free_condition(cond);
+		goto end;
+	    }
+	}
+
+	if (NotBefore)
+	{
+	    if ((status = gaa_new_condition(&cond, "NotBefore",
+					    TIME_NS,
+					    NotBefore)) != GAA_S_SUCCESS)
+	    {
+		goto end;
+	    }
+        
+	    if ((status = gaa_add_condition(right, cond)) != GAA_S_SUCCESS)
+	    {
+		gaa_free_condition(cond);
+		goto end;
+	    }
+	}
+
+	if (NotOnOrAfter)
+	{
+	    if ((status = gaa_new_condition(&cond, "NotOnOrAfter",
+					    TIME_NS,
+					    NotOnOrAfter)) != GAA_S_SUCCESS)
+	    {
+		goto end;
+	    }
+	    
+	    if ((status = gaa_add_condition(right, cond)) != GAA_S_SUCCESS)
+	    {
+		gaa_free_condition(cond);
+		goto end;
+	    }
+	}
+      
+	if (right) {
+	    if ((status = gaa_add_policy_entry(policy,
+					       right,
+					       pri,
+					       num++)) == GAA_S_SUCCESS)
+	    {
+		*found_rights = 1;
+	    }
+	    else
+	    {
+		snprintf(ebuf, sizeof(ebuf),
+			 "gaa_simple_read_eacl: failed to add right in saml assertion: %s\n",
+			 gaa_x_majstat_str(status));
+		gaa_set_callback_err(ebuf);
+		goto end;
+	    }
+	}
+    }
+
+ end:
+    if (status != GAA_S_SUCCESS)
+    {
+	gaa_free_policy_right(right);
+    }
+    return(status);
+}
+    
+gaa_status
+gaa_simple_get_saml_signer_identity(gaa_ptr		*gaa,
+				    char **		identity_ptr,
+				    void *		params)
+{
+    char *			saml_assertion = 0;
+    void *			policy_params = 0;
+    gaa_status			status = GAA_S_SUCCESS;
+    char			errbuf[1024];
+    xmlDocPtr			doc;
+    
+    if (gaa == 0 || identity_ptr == 0 || params == 0)  {
+	gaa_set_callback_err("gaa_simple_get_saml_signer_identity: called with null gaa or identity pointer or params");
+	return(GAA_S_INVALID_ARG);
+    }
+
+    *identity_ptr = 0;
+
+    xmlInitParser();
+    xmlLoadExtDtdDefaultValue = XML_DETECT_IDS | XML_COMPLETE_ATTRS;
+    xmlSubstituteEntitiesDefault(1);
+
+    if ((saml_assertion = *(char **)params) == 0)  {
+	goto end;
+    }
+
+    if (*saml_assertion == '\0') {
+	goto end;
+    }
+
+    doc = xmlParseMemory(saml_assertion, strlen(saml_assertion));
+
+    status = gaa_simple_i_find_signer(doc,
+				      identity_ptr,
+				      errbuf,
+				      sizeof(errbuf));
+
+    if (status != GAA_S_SUCCESS)
+    {
+	gaa_set_callback_err(errbuf);
+    }
+
+ end:
+
+    if (doc)
+	xmlFreeDoc(doc);
+    
+    /* Clean up everything else before quitting. */
+    xmlCleanupParser();
+ 
+    return(status);
+
+}
