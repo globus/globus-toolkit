@@ -488,11 +488,11 @@ globus_gram_client_job_request(char * gatekeeper_url,
 
     /* TODO: pass attr into this */
     rc = globus_l_gram_pack_http_job_request (
-		       query,
-		       &query_size,
-		       job_state_mask /* integer */,
-		       callback_url /* user's state listener URL */,
-		       description /* user's RSL */);
+		       &query,	/* OUT */
+		       &query_size, /* OUT */
+		       job_state_mask /* integer (IN) */,
+		       callback_url /* user's state listener URL (IN) */,
+		       description /* user's RSL (IN) */);
 
     rc = globus_gram_http_post_and_get(
 	    gatekeeper_url,
@@ -514,20 +514,20 @@ globus_gram_client_job_request(char * gatekeeper_url,
 
     if (rc == GLOBUS_SUCCESS)
     {
-      char * result_contact;
+      char * result_contact;	/* Need to fix this. */
       int    result_status;
 
-	if ( globus_gram_http_version (query) 
-	     != GLOBUS_GRAM_PROTOCOL_VERSION ) {
-	  rc = GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH;
-	}
+      /* TODO: XXX STEVE A: Return the proper error code from unpack
+	 rc = GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;
+      */
+      /* TODO:  nuke globus_gram_http_version (query), search for
+	 other occurrences of it.  */ 
 
-	if ( globus_l_gram_unpack_http_job_request_result (
+	if ( rc = globus_l_gram_unpack_http_job_request_result(
 			   query,
 			   &result_status, /* GLOBUS_SUCCESS or a failure */
-			   &result_contact /* NULL if not SUCCESS */)
-	     != GLOBUS_SUCCESS ) {
-	  rc = GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;
+			   &result_contact /* NULL if not SUCCESS */) ) {
+	  /* rc already set */
 	}
 	else {
 	  rc = result_status;
