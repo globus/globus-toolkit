@@ -1,3 +1,4 @@
+include $(top_srcdir)/globus_automake_config
 include $(top_srcdir)/globus_automake_targets
 
 Scripts= \
