@@ -62,8 +62,6 @@ globus_error_initialize_string(
     len = globus_libc_vprintf_length(fmt,ap_copy) + 1;
     va_end(ap_copy);
     
-    len = vfprintf(f, fmt, ap) + 1;
-
     globus_libc_lock();
 
     instance_data = malloc(len);
