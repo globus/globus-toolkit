@@ -14,7 +14,7 @@ sub pod2usage;
 #****************************************************************
 
 my $flavor;
-my $link;
+my $link="static";
 my $gpt=$ENV{GPT_LOCATION};
 my $gpath = $ENV{GPT_LOCATION};
 if (!defined($gpath))
@@ -30,6 +30,7 @@ if (!defined($gpath))
      @INC = (@INC, "$gpath/lib/perl");
 
 require Grid::GPT::Dependencies;
+require Grid::GPT::DepOrdering;
 require Grid::GPT::Package;
 require Grid::GPT::Version;  
 my $cflagslist;
@@ -106,8 +107,8 @@ print OUT "GLOBUS_PKG_LIBS=\"$pkglibslist\"\n";
 #print OUT "GLOBUS_PGM_LINKS=\"$pgm_linkslist\"\n";
 #print OUT "GLOBUS_LIB_LINKS=\"$lib_linkslist\"\n"; 
 #pgm_links and lib_links are broken at the moment, so we'll put in a hack:
-print OUT "GLOBUS_PGM_LINKS=\"$pkglibslist\"\n";
-print OUT "GLOBUS_LIB_LINKS=\"$pkglibslist\"\n";
+#print OUT "GLOBUS_PGM_LINKS=\"$pkglibslist\"\n";
+#print OUT "GLOBUS_LIB_LINKS=\"$pkglibslist\"\n";
 
 print OUT "GLOBUS_LIBTOOL=$globus/sbin/libtool-$flavor\n";
 
@@ -331,7 +332,16 @@ my ($help, $man);
         }else{
 				#we're good on dependencies, let's find our interesting values
 
-foreach my $dep (@{$dependencies->{packagelist}}) {
+#first let's dependency order the list:
+my @deporderlist;
+for my $package (@{$dependencies->{packagelist}}){
+	        push @deporderlist, $$package;
+	}
+	 
+	my @results=Grid::GPT::DepOrdering->dep_ordering(@deporderlist);
+
+#foreach my $dep (@{$dependencies->{packagelist}}) {
+foreach my $dep (@results){
 	my $cflags;
 	my $includes;
 	my $libs;
