@@ -146,11 +146,18 @@ EXTERN_C_BEGIN
 
 #define PVD_MAGIC_NUMBER        22222
 #define PVXD_MAGIC_NUMBER       33333
+
+/* Used by ERR_set_continue_needed as a flag for error routines */
+#define ERR_DISPLAY_CONTINUE_NEEDED     64
+
+/* Location relative to ERR_LIB_USER where PRXYERR library will be stored */
+#define ERR_USER_LIB_PRXYERR_NUMBER     ERR_LIB_USER
+
 /*
  * Use the SSLeay error facility with the ERR_LIB_USER
  */
 
-#define PRXYerr(f,r) ERR_PUT_error(ERR_user_lib_prxyerr_num(),(f),(r),ERR_file_name,__LINE__)
+#define PRXYerr(f,r) ERR_PUT_error(ERR_USER_LIB_PRXYERR_NUMBER,(f),(r),ERR_file_name,__LINE__)
 
 /* 
  * SSLeay 0.9.0 added the error_data feature. We may be running
@@ -165,6 +172,9 @@ void ERR_add_error_data( VAR_PLIST( int, num ) );
 unsigned long ERR_get_error_line_data(char **file,int *line,
                                       char **data, int *flags);
 #endif
+
+void
+ERR_set_continue_needed(void);
 
 /*
  * defines for function codes our minor error codes
@@ -188,60 +198,66 @@ unsigned long ERR_get_error_line_data(char **file,int *line,
  */
 
 
-#define PRXYERR_R_PROCESS_PROXY_KEY     101
-#define PRXYERR_R_PROCESS_REQ           102
-#define PRXYERR_R_PROCESS_SIGN          103
-#define PRXYERR_R_MALFORM_REQ           104
-#define PRXYERR_R_SIG_VERIFY            105
-#define PRXYERR_R_SIG_BAD               106
-#define PRXYERR_R_PROCESS_PROXY         107
-#define PRXYERR_R_PROXY_NAME_BAD        108
-#define PRXYERR_R_PROCESS_SIGNC         109
-#define PRXYERR_R_BAD_PROXY_ISSUER      110
-#define PRXYERR_R_PROBLEM_PROXY_FILE    111
-#define PRXYERR_R_SIGN_NOT_CA           112
-#define PRXYERR_R_PROCESS_KEY           113
-#define PRXYERR_R_PROCESS_CERT          114
-#define PRXYERR_R_PROCESS_CERTS         115
-#define PRXYERR_R_NO_TRUSTED_CERTS      116
-#define PRXYERR_R_PROBLEM_KEY_FILE      117
-#define PRXYERR_R_ZERO_LENGTH_KEY_FILE  118
-#define PRXYERR_R_ZERO_LENGTH_CERT_FILE 119
+#define PRXYERR_R_PROCESS_PROXY_KEY            101
+#define PRXYERR_R_PROCESS_REQ                  102
+#define PRXYERR_R_PROCESS_SIGN                 103
+#define PRXYERR_R_MALFORM_REQ                  104
+#define PRXYERR_R_SIG_VERIFY                   105
+#define PRXYERR_R_SIG_BAD                      106
+#define PRXYERR_R_PROCESS_PROXY                107
+#define PRXYERR_R_PROXY_NAME_BAD               108
+#define PRXYERR_R_PROCESS_SIGNC                109
+#define PRXYERR_R_BAD_PROXY_ISSUER             110
+#define PRXYERR_R_PROBLEM_PROXY_FILE           111
+#define PRXYERR_R_SIGN_NOT_CA                  112
+#define PRXYERR_R_PROCESS_KEY                  113
+#define PRXYERR_R_PROCESS_CERT                 114
+#define PRXYERR_R_PROCESS_CERTS                115
+#define PRXYERR_R_NO_TRUSTED_CERTS             116
+#define PRXYERR_R_PROBLEM_KEY_FILE             117
+#define PRXYERR_R_USER_ZERO_LENGTH_KEY_FILE    118
+#define PRXYERR_R_SERVER_ZERO_LENGTH_KEY_FILE  119
+#define PRXYERR_R_ZERO_LENGTH_CERT_FILE        120
 
-#define PRXYERR_R_PROBLEM_NOCERT_FILE   120
-#define PRXYERR_R_PROBLEM_NOKEY_FILE    121
-#define PRXYERR_R_USER_CERT_EXPIRED     122
-#define PRXYERR_R_SERVER_CERT_EXPIRED   123
-#define PRXYERR_R_CRL_SIGNATURE_FAILURE 124
-#define PRXYERR_R_CRL_NEXT_UPDATE_FIELD 125
-#define PRXYERR_R_CRL_HAS_EXPIRED       126
-#define PRXYERR_R_CERT_REVOKED          127
-#define PRXYERR_R_NO_HOME               128
-#define PRXYERR_R_LPROXY_MISSED_USED    129
-#define PRXYERR_R_LPROXY_REJECTED       130
-#define PRXYERR_R_KEY_CERT_MISMATCH     131
-#define PRXYERR_R_WRONG_PASSPHRASE      132
-#define PRXYERR_R_CA_POLICY_VIOLATION   133
-#define PRXYERR_R_CA_POLICY_RETRIEVE    134
-#define PRXYERR_R_CA_POLICY_PARSE       135
-#define PRXYERR_R_PROBLEM_CLIENT_CA     136
-#define PRXYERR_R_CB_NO_PW              137
-#define PRXYERR_R_CB_CALLED_WITH_ERROR  138
-#define PRXYERR_R_CLASS_ADD_OID         139
-#define PRXYERR_R_CLASS_ADD_EXT         140
-#define PRXYERR_R_DELEGATE_VERIFY       141
-#define PRXYERR_R_EXT_ADD               142
-#define PRXYERR_R_DELEGATE_COPY         143
-#define PRXYERR_R_DELEGATE_CREATE       144
-#define PRXYERR_R_BUFFER_TOO_SMALL      145
-#define PRXYERR_R_PROXY_EXPIRED         146
-#define PRXYERR_R_NO_PROXY              147
-#define PRXYERR_R_CA_UNKNOWN            148
-#define PRXYERR_R_CA_NOPATH             149
-#define PRXYERR_R_CA_NOFILE             150
-#define PRXYERR_R_CA_POLICY_ERR         151
-#define PRXYERR_R_INVALID_CERT          152
-#define PRXYERR_R_CERT_NOT_YET_VALID    153
+#define PRXYERR_R_PROBLEM_USER_NOCERT_FILE     121
+#define PRXYERR_R_PROBLEM_SERVER_NOCERT_FILE   122
+#define PRXYERR_R_PROBLEM_USER_NOKEY_FILE      123
+#define PRXYERR_R_PROBLEM_SERVER_NOKEY_FILE    124
+#define PRXYERR_R_USER_CERT_EXPIRED            125
+#define PRXYERR_R_SERVER_CERT_EXPIRED          126
+#define PRXYERR_R_CRL_SIGNATURE_FAILURE        127
+#define PRXYERR_R_CRL_NEXT_UPDATE_FIELD        128
+#define PRXYERR_R_CRL_HAS_EXPIRED              129
+#define PRXYERR_R_CERT_REVOKED                 130
+#define PRXYERR_R_NO_HOME                      131
+#define PRXYERR_R_LPROXY_MISSED_USED           132
+#define PRXYERR_R_LPROXY_REJECTED              133
+#define PRXYERR_R_KEY_CERT_MISMATCH            134
+#define PRXYERR_R_WRONG_PASSPHRASE             135
+#define PRXYERR_R_CA_POLICY_VIOLATION          136
+#define PRXYERR_R_CA_POLICY_RETRIEVE           137
+#define PRXYERR_R_CA_POLICY_PARSE              138
+#define PRXYERR_R_PROBLEM_CLIENT_CA            139
+#define PRXYERR_R_CB_NO_PW                     140
+#define PRXYERR_R_CB_CALLED_WITH_ERROR         141
+#define PRXYERR_R_CB_ERROR_MSG                 142
+#define PRXYERR_R_CLASS_ADD_OID                143
+#define PRXYERR_R_CLASS_ADD_EXT                144
+#define PRXYERR_R_DELEGATE_VERIFY              145
+#define PRXYERR_R_EXT_ADD                      146
+#define PRXYERR_R_DELEGATE_COPY                147
+#define PRXYERR_R_DELEGATE_CREATE              148
+#define PRXYERR_R_BUFFER_TOO_SMALL             149
+#define PRXYERR_R_PROXY_EXPIRED                150
+#define PRXYERR_R_NO_PROXY                     151
+#define PRXYERR_R_CA_UNKNOWN                   152
+#define PRXYERR_R_CA_NOPATH                    153
+#define PRXYERR_R_CA_NOFILE                    154
+#define PRXYERR_R_CA_POLICY_ERR                155
+#define PRXYERR_R_INVALID_CERT                 156
+#define PRXYERR_R_CERT_NOT_YET_VALID           157
+#define PRXYERR_R_LOCAL_CA_UNKNOWN             158
+#define PRXYERR_R_REMOTE_CRED_EXPIRED          159
 
 /* constants for gsi error messages 
  *  this information is kept internally by the
@@ -252,9 +268,6 @@ unsigned long ERR_get_error_line_data(char **file,int *line,
 #define CRED_TYPE_PROXY                 1
 #define CRED_OWNER_SERVER               0  
 #define CRED_OWNER_USER                 1 
-
-
-
 
 /**********************************************************************
                                Type definitions
@@ -309,8 +322,6 @@ struct proxy_verify_desc_struct {
 /**********************************************************************
                                Function prototypes
 **********************************************************************/
-int 
-ERR_user_lib_prxyerr_num();
 
 int
 ERR_load_prxyerr_strings(int i);
