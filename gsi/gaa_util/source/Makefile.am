@@ -9,7 +9,9 @@ Sources = \
 	util.c \
 	gaa_util.h 
 
-INCLUDES += $(GPT_INCLUDES)
+INCLUDES = $(GPT_INCLUDES)
+
+EXTRA_DIST=
 
 flavorinclude_HEADERS= \
 	gaa_util.h

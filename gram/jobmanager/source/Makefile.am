@@ -43,7 +43,7 @@ globus_gram_rsl_reporter_SOURCES = \
 	globus_gram_job_manager_validation.h
 
 # Compiler flags
-INCLUDES += $(GPT_INCLUDES)
+INCLUDES = $(GPT_INCLUDES)
 globus_job_manager_LDFLAGS = $(GPT_LDFLAGS)
 globus_job_manager_LDADD = \
 	./libglobus_gram_job_manager_$(GLOBUS_FLAVOR_NAME).la $(GPT_PGM_LINKS)

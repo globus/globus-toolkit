@@ -12,17 +12,17 @@ Sources = \
 
 EXTRA_DIST = version.h.in
 
-INCLUDES += $(GPT_INCLUDES) 
+INCLUDES = $(GPT_INCLUDES) 
 
 lib_LTLIBRARIES = libglobus_authz_null_callout_$(GLOBUS_FLAVOR_NAME).la
 
 libglobus_authz_null_callout___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 
-libglobus_authz_null_callout___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
+libglobus_authz_null_callout___GLOBUS_FLAVOR_NAME__la_LDFLAGS = \
+   $(GPT_LDFLAGS) \
+   $(GPT_LDADD)
 
 libglobus_authz_null_callout___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS)
-
-libglobus_authz_null_callout___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDADD)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
