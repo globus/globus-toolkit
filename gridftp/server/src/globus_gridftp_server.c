@@ -403,7 +403,20 @@ globus_l_gfs_be_daemon(void)
     {
         struct sigaction                act;
         struct sigaction                oldact;
-        
+
+        signal(SIGUSR2, SIG_IGN);	
+	signal(SIGPIPE, SIG_IGN);
+	signal(SIGALRM, SIG_IGN);
+	signal(SIGTSTP, SIG_IGN);
+	signal(SIGTTIN, SIG_IGN);
+	signal(SIGTTOU, SIG_IGN);
+	signal(SIGURG, SIG_IGN);
+	signal(SIGXCPU, SIG_IGN);
+	signal(SIGXFSZ, SIG_IGN);
+	signal(SIGVTALRM, SIG_IGN);
+	signal(SIGPROF, SIG_IGN);
+	signal(SIGIO, SIG_IGN);
+	
         act.sa_handler = globus_l_gfs_sigchld;
         sigaction(SIGCHLD, &act, &oldact); 
     }

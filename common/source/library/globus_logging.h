@@ -3,7 +3,7 @@
 
 #include <globus_libc.h>
 
-#define GLOBUS_LOGGING_INLINE           0x80000000
+#define GLOBUS_LOGGING_INLINE           0x08000000
 
 typedef struct globus_l_logging_handle_s * globus_logging_handle_t;
 

@@ -32,7 +32,7 @@ static const globus_l_gfs_config_option_t option_list[] =
  {"inetd", "inetd", NULL, "-inetd", "-i", GLOBUS_L_GFS_CONFIG_BOOL, {0, NULL}},
  {"no_gssapi", "no_gssapi", NULL, "-no-gssapi", "-ng", GLOBUS_L_GFS_CONFIG_BOOL, {0, NULL}},
  {"allow_clear", "allow_clear", NULL, "-allow-clear", "-ac", GLOBUS_L_GFS_CONFIG_BOOL, {0, NULL}},
- {"data_node", "data_node", NULL, "-data-node", "-d", GLOBUS_L_GFS_CONFIG_BOOL, {0, NULL}},
+ {"data_node", "data_node", NULL, "-data-node", "-dn", GLOBUS_L_GFS_CONFIG_BOOL, {0, NULL}},
  {"terse_banner", "terse_banner", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_BOOL, {0, NULL}},
  {"banner", "banner", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, {0, NULL}},
  {"banner_file", "banner_file", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, {0, NULL}},
@@ -45,6 +45,9 @@ static const globus_l_gfs_config_option_t option_list[] =
  {"tcp_port_range", "tcp_port_range", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, {0, NULL}},
  {"hostname", "hostname", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, {0, NULL}},
  {"idle_timeout", "idle_timeout", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_INT, {0, NULL}},
+ {"globus_location", "globus_location", "GLOBUS_LOCATION", NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, {0, NULL}},
+ {"logfile", "logfile", NULL, "-logfile", "-l", GLOBUS_L_GFS_CONFIG_STRING, {0, NULL}},
+ {"debug_level", "debug_level", NULL, "-debug", "-d", GLOBUS_L_GFS_CONFIG_INT, {1, NULL}},
  {"last_option", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_BOOL, {0, NULL}}
 };
 
@@ -525,6 +528,7 @@ globus_l_gfs_config_misc()
     
     return GLOBUS_SUCCESS;
 }
+    
 
 /**
  * load configuration.  read from defaults, file, env, and command line 
@@ -541,6 +545,8 @@ globus_i_gfs_config_init(
 {
     char *                              local_config_file;
     char *                              global_config_file;
+    int                                 arg_num;
+    char *                              argp;
     
     globus_hashtable_init(
         &option_table,
@@ -549,8 +555,23 @@ globus_i_gfs_config_init(
         globus_hashtable_string_keyeq);
 
     /* XXX read config filename from commandline */
-    global_config_file = "/etc/gridftp.conf";
-    local_config_file = "gridftp.conf";
+    global_config_file = "/etc/grid-security/gridftp.conf";
+    local_config_file = NULL;
+
+    for(arg_num = 0; arg_num < argc; ++arg_num)
+    {
+        argp = argv[arg_num];
+        if(*argp == '-' && *++argp == 'c' && argv[arg_num + 1])
+        {
+            local_config_file = globus_libc_strdup(argv[arg_num + 1]);
+            arg_num = argc;
+        }
+    }
+    if(local_config_file == NULL)
+    {
+        local_config_file = globus_common_create_string(
+        "%s/etc/gridftp.conf", globus_libc_getenv("GLOBUS_LOCATION"));
+    }
             
     globus_l_gfs_config_load_defaults();
     globus_l_gfs_config_load_config_file(global_config_file);
