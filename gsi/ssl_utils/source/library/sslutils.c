@@ -146,9 +146,13 @@ static ERR_STRING_DATA prxyerr_str_reasons[]=
     {PRXYERR_R_NO_HOME, "Can't determine HOME directory"},
     {PRXYERR_R_KEY_CERT_MISMATCH, "Key and certificate don't match"},
     {PRXYERR_R_WRONG_PASSPHRASE, "Wrong pass phrase"},
-    {PRXYERR_R_CA_POLICY, "CA policy violation"},
+    {PRXYERR_R_CA_POLICY, "certificate does not match CA policy"},
+    {PRXYERR_R_CA_POLICY_ERR,"misconfigured CA policy"}, 
+    {PRXYERR_R_CA_NOFILE,"could not find CA policy file"}, 
+    {PRXYERR_R_CA_NOPATH,"could not determine path to CA policy file"}, 
     {PRXYERR_R_CA_POLICY_RETRIEVE, "CA policy retrieve problems"},
     {PRXYERR_R_CA_POLICY_PARSE, "CA policy parse problems"},
+    {PRXYERR_R_CA_UNKNOWN,"Certificate signed by unknown CA"},
     {PRXYERR_R_PROBLEM_CLIENT_CA, "Problems geting client_CA list"},
     {PRXYERR_R_CB_NO_PW, "Run grid-proxy-init or wgpi first"},
     {PRXYERR_R_CB_CALLED_WITH_ERROR,"Certificate verify failed:"},
@@ -2111,6 +2115,8 @@ proxy_verify_callback(
                 
             if (ca_policy_file_path == NULL)
             {
+                PRXYerr(PRXYERR_F_VERIFY_CB, PRXYERR_R_CA_NOPATH);
+                ctx->error = X509_V_ERR_INVALID_PURPOSE; 
                 goto fail_verify;
             }
 
@@ -2120,8 +2126,8 @@ proxy_verify_callback(
              */
             if (checkstat(ca_policy_file_path) == 1)
             {
-                PRXYerr(PRXYERR_F_VERIFY_CB, PRXYERR_R_CA_POLICY_PARSE);
-                ERR_add_error_data(2,"File=",ca_policy_file_path);
+                PRXYerr(PRXYERR_F_VERIFY_CB, PRXYERR_R_CA_NOFILE);
+                ERR_add_error_data(2, "\n        File=", ca_policy_file_path); 
                 ctx->error = X509_V_ERR_INVALID_PURPOSE;
                 goto fail_verify;
             }
@@ -2202,8 +2208,24 @@ proxy_verify_callback(
                                                      rights, 
                                                      options,
                                                      &detailed_answer);
-
                 
+                if (!detailed_answer)
+                {
+                    PRXYerr(PRXYERR_F_VERIFY_CB, PRXYERR_R_CA_POLICY_ERR);
+                    ERR_add_error_data(2, "\n        File=", ca_policy_file_path);
+                    ctx->error = X509_V_ERR_INVALID_PURPOSE; 
+                    
+                    if (subject_name) free(subject_name);
+                    if (issuer_name) free(issuer_name);     
+                    
+                    oldgaa_globus_cleanup(&oldgaa_sc,
+                                          &rights,
+                                          options,
+                                          &detailed_answer,  
+                                          policy_db,
+                                          NULL);
+                    goto fail_verify;
+                }
 #ifdef DEBUG
                 fprintf(stderr,
                         "oldgaa result: %d(0 yes, 1 no, -1 maybe)\n",
@@ -2224,6 +2246,9 @@ proxy_verify_callback(
                 {
                     oldgaa_release_principals(&minor_status, &policy_handle);
                 }
+                
+                
+
 
                 oldgaa_globus_cleanup(&oldgaa_sc,
                                       &rights,
@@ -2249,7 +2274,9 @@ proxy_verify_callback(
                 if (result != 0)
                 {
                     PRXYerr(PRXYERR_F_VERIFY_CB, PRXYERR_R_CA_POLICY);
-                    ctx->error = X509_V_ERR_CERT_CHAIN_TOO_LONG;
+
+                    ERR_add_error_data(2, "\n        File=", ca_policy_file_path); 
+                    ctx->error = X509_V_ERR_INVALID_PURPOSE; 
                                 
                     if (error_string != NULL)
                     {
@@ -2325,14 +2352,24 @@ fail_verify:
         issuer_s = X509_NAME_oneline(
             X509_get_issuer_name(ctx->current_cert),NULL,0);
 
-        PRXYerr(PRXYERR_F_VERIFY_CB,PRXYERR_R_CB_CALLED_WITH_ERROR);
-        ERR_add_error_data(6,"\n        error=",
+        /* using our own error string instead of openssl's */
+        if (ctx->error==X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN)
+        {
+             PRXYerr(PRXYERR_F_VERIFY_CB,PRXYERR_R_CA_UNKNOWN);
+             ERR_add_error_data(2,
+                           "\n        issuer =",
+                            issuer_s ? issuer_s : "UNKNOWN");
+        }
+        else
+        {    
+            PRXYerr(PRXYERR_F_VERIFY_CB,PRXYERR_R_CB_CALLED_WITH_ERROR);
+            ERR_add_error_data(6,"\n        error=",
                            X509_verify_cert_error_string(ctx->error),
                            "\n        subject=",
                            subject_s ? subject_s : "UNKNOWN",
                            "\n        issuer =",
                            issuer_s ? issuer_s : "UNKNOWN");
-
+        }
         free(subject_s);
         free(issuer_s);
     }

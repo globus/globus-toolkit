@@ -222,6 +222,10 @@ unsigned long ERR_get_error_line_data(char **file,int *line,
 #define PRXYERR_R_DELEGATE_CREATE       141
 #define PRXYERR_R_BUFFER_TOO_SMALL      142
 #define PRXYERR_R_PROXY_EXPIRED         143
+#define PRXYERR_R_CA_UNKNOWN            144
+#define PRXYERR_R_CA_NOPATH             145
+#define PRXYERR_R_CA_NOFILE             146
+#define PRXYERR_R_CA_POLICY_ERR         147
 
 /* constants for gsi error messages 
  *  this information is kept internally by the
