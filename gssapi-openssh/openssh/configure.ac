@@ -654,11 +654,7 @@ if test "x$gsi_path" != "xno" ; then
 	)
 
 	CPPFLAGS="$CPPFLAGS $GSI_CPPFLAGS"
-	INSTALL_GSISSH="yes"
-else
-	INSTALL_GSISSH=""
 fi
-AC_SUBST(INSTALL_GSISSH)
 # End Globus/GSI section
 
 # Check whether user wants S/Key support
