@@ -22,6 +22,10 @@
         />
         <parameter name="handlerClass"
                    value="org.globus.ogsa.handlers.RPCURIProvider"/>
+	<parameter name="securityConfig"
+	           value="org/globus/ogsa/impl/security/descriptor/gsi-factory-security-config.xml"
+	/>
+
         <!--Factory Parameters-->
         <parameter name="instance-schemaPath"
                    value="schema/base/streaming/file_stream_factory_service.wsdl"/>
