@@ -400,6 +400,85 @@ grami_jm_callback(int state, int errorcode)
 
 } /* grami_jm_callback() */
 
+/******************************************************************************
+Function:       grami_jm_request_params()
+Description:
+Parameters:
+Returns:
+******************************************************************************/
+int 
+grami_jm_request_params(gram_specification_t * description_tree,
+                        gram_request_param_t * params)
+{
+    char pgm_count[GRAM_PARAM_SIZE];
+    char * tmp_dir;
+    struct stat statbuf;
+
+    if (description_tree == NULL)
+        return(GRAM_ERROR_INVALID_REQUEST);
+ 
+    *(params->pgm)       = '\0';
+    *(params->pgm_args)  = '\0';
+    *(params->pgm_env)   = '\0';
+    *(params->dir)       = '\0';
+    *(params->std_in)    = '\0';
+    *(params->std_out)   = '\0';
+    *(params->std_err)   = '\0';
+    *pgm_count = '\0';
+
+    grami_jm_param_get(description_tree, GRAM_EXECUTABLE_PARAM, params->pgm);
+    grami_jm_param_get(description_tree, GRAM_ARGUMENTS_PARAM, params->pgm_args);
+    grami_jm_param_get(description_tree, GRAM_ENVIRONMENT_PARAM, params->pgm_env);
+    grami_jm_param_get(description_tree, GRAM_DIR_PARAM, params->dir);
+    grami_jm_param_get(description_tree, GRAM_COUNT_PARAM, pgm_count);
+    grami_jm_param_get(description_tree, GRAM_STDIN_PARAM, params->std_in);
+    grami_jm_param_get(description_tree, GRAM_STDOUT_PARAM, params->std_out);
+    grami_jm_param_get(description_tree, GRAM_STDERR_PARAM, params->std_err);
+
+    if (strlen(pgm_count) == 0)
+        params->processes_requested = 1;
+    else
+        params->processes_requested = atoi(pgm_count);
+
+    if (params->processes_requested < 1)
+        return (GRAM_ERROR_INVALID_REQUEST);
+
+    if (strlen(params->pgm) == 0)
+       strcpy(params->pgm, GRAM_DEFAULT_EXE);
+
+    if (strlen(params->dir) == 0)
+    {
+        tmp_dir = getenv("HOME");
+        strcpy(params->dir, tmp_dir);
+    }
+
+    if (strlen(params->std_in) == 0)
+    {
+       strcpy(params->std_in, GRAM_DEFAULT_STDIN);
+    }
+
+    /*
+     * Verify the std_in file exists, Otherwise error out.
+     */
+    if (stat(params->std_in, &statbuf) != 0)
+    {
+        return(GRAM_ERROR_STDIN_NOTFOUND);
+    }
+
+    if (strlen(params->std_out) == 0)
+    {
+       strcpy(params->std_out, GRAM_DEFAULT_STDOUT);
+    }
+
+    if (strlen(params->std_err) == 0)
+    {
+       strcpy(params->std_err, GRAM_DEFAULT_STDERR);
+    }
+
+    return(0);
+
+} /* grami_jm_request_params() */
+
 
 /******************************************************************************
 Function:       grami_jm_param_get()
