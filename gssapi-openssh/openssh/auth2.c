@@ -299,16 +299,24 @@ userauth_finish(Authctxt *authctxt, int authenticated, char *method)
 #endif /* WITH_AIXAUTHENTICATE */
 			packet_disconnect(AUTH_FAIL_MSG, authctxt->user);
 		}
+		if (!compat20) {
+		/*
+		 * Break out of the dispatch loop now and go back to
+	         * SSH1 code.  We need to set the 'success' flag to
+	         * break out of the loop.  Set the 'postponed' flag to
+	         * tell the SSH1 code that authentication failed.  The
+	         * SSH1 code will handle sending SSH_SMSG_FAILURE.
+		*/
+		authctxt->success = authctxt->postponed = 1;
+		} else {
 		methods = authmethods_get();
-		if (!compat20)
-		packet_disconnect("GSSAPI authentication failed");
-		else
 		packet_start(SSH2_MSG_USERAUTH_FAILURE);
 		packet_put_cstring(methods);
 		packet_put_char(0);	/* XXX partial success, unused */
 		packet_send();
 		packet_write_wait();
 		xfree(methods);
+		}
 	}
 }
 

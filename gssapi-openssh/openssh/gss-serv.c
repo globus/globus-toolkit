@@ -641,6 +641,10 @@ input_gssapi_exchange_complete(int type, u_int32_t plen, void *ctxt)
 			packet_send();
 			packet_write_wait();
 			gss_release_buffer(&min_status,&msg_tok);
+		} else {
+		    packet_start(SSH_MSG_AUTH_GSSAPI_ABORT);
+		    packet_send();
+		    packet_write_wait();
 		}
 	}
 
