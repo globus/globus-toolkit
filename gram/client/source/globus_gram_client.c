@@ -34,6 +34,10 @@ CVS Information:
 #include <netdb.h>
 #endif
 
+#ifdef GSS_AUTHENTICATION
+#include "grami_ggg.h"
+#endif
+
 /******************************************************************************
                                Type definitions
 ******************************************************************************/
@@ -224,6 +228,31 @@ gram_job_request(char * gatekeeper_url,
     }
 
     /* Do gss authentication here */
+#ifdef GSS_AUTHENTICATION
+    /* For now will will use the hostname as the globusid of the 
+     * gatekeeper to which we whish to authenticate. Later theis will
+     * need to be supplied. 
+     * DEE 8/11/97
+     */
+
+	printf("Starting authentication to %s\n", gatekeeper_host);
+
+    rc =  grami_ggg_init(gatekeeper_host,
+                   grami_ggg_get_token_socket,
+                   (void *)&gatekeeper_fd,
+                   grami_ggg_send_token_socket,
+                   (void *)&gatekeeper_fd);
+
+    if (rc != 0)
+    {
+        fprintf(stderr, "GSS authentication failed. rc = %8.8x\n", rc);
+        return (GRAM_ERROR_AUTHORIZATION);
+    }
+
+    printf("Authentication complete\n");
+#else
+    printf("WARNING: No authentication being performed\n");
+#endif /* GSS_AUTHENTICATION */
 
     rc = nexus_fd_register_for_write(gatekeeper_fd,
                                     (char *) contact_msg_buffer,
