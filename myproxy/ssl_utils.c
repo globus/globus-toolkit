@@ -70,6 +70,11 @@ struct _ssl_proxy_restrictions
  *
  */
 
+/*
+ * Holder for pass phrase so callback function can find it.
+ */
+static const char *_ssl_pass_phrase = NULL;
+
 /**********************************************************************
  *
  * Internal functions.
@@ -574,6 +579,36 @@ my_init()
 }
 
 	
+/*
+ * my_pass_phrase_callback()
+ *
+ * Callback from PEM_read_PrivateKey() in ssl_load_user_key()
+ * to return the passphrase stored in _ssl_pass_phrase.
+ */
+static int
+my_pass_phrase_callback(char			*buffer,
+			 int			buffer_len,
+			 int			verify /* Ignored */,
+			void                    *u)
+{
+    /* SSL libs supply these, make sure they are reasonable */
+    assert(buffer != NULL);
+    assert(buffer_len > 0);
+    
+    if (_ssl_pass_phrase == NULL)
+    {
+	strcpy(buffer, "");
+    }
+    else
+    {
+	strncpy(buffer, _ssl_pass_phrase, buffer_len);
+	buffer[buffer_len - 1] = '\0';
+    }
+
+    return strlen(buffer);
+}
+	     
+
 /*
  * ssl_keys_check_match()
  *
@@ -1352,6 +1387,11 @@ ssl_private_key_load_from_file(SSL_CREDENTIALS	*creds,
     
     my_init();
     
+    /* 
+     * Put pass phrase where the callback function can find it.
+     */
+    _ssl_pass_phrase = pass_phrase;
+    
     key_file = fopen(path, "r");
     
     if (key_file == NULL)
@@ -1362,7 +1402,7 @@ ssl_private_key_load_from_file(SSL_CREDENTIALS	*creds,
     }
 
     if (PEM_read_PrivateKey(key_file, &(key),
-			    NULL, (char *)pass_phrase) == NULL)
+			    PEM_CALLBACK(my_pass_phrase_callback)) == NULL)
     {
 	unsigned long error;
 	
@@ -1421,6 +1461,8 @@ ssl_proxy_from_pem(SSL_CREDENTIALS		*creds,
     /* 
      * Put pass phrase where the callback function can find it.
      */
+    _ssl_pass_phrase = pass_phrase;
+
     bio = bio_from_buffer(buffer, buffer_len);
 
     if (bio == NULL)
@@ -1443,7 +1485,7 @@ ssl_proxy_from_pem(SSL_CREDENTIALS		*creds,
 
     /* Read proxy private key */
     if (PEM_read_bio_PrivateKey(bio, &(key),
-				NULL, (char *)pass_phrase) == NULL)
+				PEM_CALLBACK(my_pass_phrase_callback)) == NULL)
     {
 	unsigned long error;
 	
@@ -1647,7 +1689,7 @@ ssl_proxy_to_pem(SSL_CREDENTIALS		*creds,
     {
 	/* Encrypt with pass phrase */
 	/* XXX This is my best guess at a cipher */
-	cipher = EVP_des_cbc();
+	cipher = EVP_des_ede3_cbc();
 	pass_phrase_len = strlen(pass_phrase);
     }
 
