@@ -61,7 +61,7 @@ globus_xio_driver_hook_t globus_i_xio_##driver_name##_hook =                \
     init_func,                                                              \
     destroy_func,                                                           \
     0                                                                       \
-};
+}
 
 
 /* internal activate funcs */
