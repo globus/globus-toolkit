@@ -592,37 +592,29 @@ sub remote_io_file_create
     my $cache_pgm = "$Globus::Core::Paths::bindir/globus-gass-cache";
     my $tag = $description->cache_tag() or $ENV{GLOBUS_GRAM_JOB_CONTACT};
     my $filename = "${tag}dev/remote_io_url";
-    my $tmpname = POSIX::tmpnam();
-    my $tmpfile = new IO::File(">$tmpname");
-    my $tmpcachefile;
     my $fh;
     my $result;
-
-    $tmpfile->print($description->remote_io_url() . "\n");
-    $tmpfile->close();
 
     chomp($result = `$cache_pgm -query -t $tag $filename`);
 
     if($result eq '')
     {
 	# no remote_io_url in the cache yet
+	my $tmpname = POSIX::tmpnam();
+	my $tmpfile = new IO::File(">$tmpname");
+	$tmpfile->print($description->remote_io_url() . "\n");
+	$tmpfile->close();
 	system("$cache_pgm -add -t $tag -n $filename file:$tmpname "
 	       . ">/dev/null");
+	unlink($tmpname);
     }
     else
     {
 	# already in cache
-	system("$cache_pgm -add -t $tag -n $filename.$$ file:$tmpname "
-	       . ">/dev/null");
-        if($? == 0)
-	{
-	    chomp($tmpcachefile = `$cache_pgm -q -t $tag $filename.$$`);
-	    rename($tmpcachefile, $result);
-	}
-	system("$cache_pgm -cleanup-url $filename.$$");
+	my $tmpfile = new IO::File(">$result");
+	$tmpfile->print($description->remote_io_url() . "\n");
+	$tmpfile->close();
     }
-
-    unlink($tmpname);
 
     if($? != 0)
     {

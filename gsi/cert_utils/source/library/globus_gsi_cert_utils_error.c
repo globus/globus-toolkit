@@ -22,8 +22,12 @@ globus_l_gsi_cert_utils_error_strings[GLOBUS_GSI_CERT_UTILS_ERROR_LAST] =
 /* 0 */   "Success",
 /* 1 */   "Error getting name entry of subject",
 /* 2 */   "Error copying subject name of cert",
-/* 3 */   "Error getting the Common Name of the Cert's Subject",
-/* 4 */   "Error adding Common Name to the Cert's Subject"
+/* 3 */   "Error getting the Common Name of the cert's subject",
+/* 4 */   "Error adding Common Name to the cert's subject",
+/* 5 */   "Out of memory",
+/* 6 */   "Error parsing subject name",
+/* 7 */   "Proxy does not comply with proxy certificate standard"
+/* 8 */   "Error determining certificate type"
 };
 
 /* ERROR FUNCTIONS */

@@ -14,8 +14,6 @@
 #define DEFAULT_KEY_BITS                512
 #define DEFAULT_PUB_EXPONENT            RSA_F4  /* 65537 */
 #define DEFAULT_SIGNING_ALGORITHM       EVP_md5()
-#define DEFAULT_TIME_VALID              (0)       /* actually in minutes */
-                                                  /* 0 means infinity */
 #define DEFAULT_CLOCK_SKEW              (5*60)    /* actually in seconds */
 
 #define GLOBUS_GSI_PROXY_HANDLE_ATTRS_MALLOC_ERROR \
@@ -83,7 +81,6 @@ globus_gsi_proxy_handle_attrs_init(
     attrs->key_bits = DEFAULT_KEY_BITS;
     attrs->init_prime = DEFAULT_PUB_EXPONENT;
     attrs->signing_algorithm = DEFAULT_SIGNING_ALGORITHM;
-    attrs->time_valid = DEFAULT_TIME_VALID;
     attrs->clock_skew = DEFAULT_CLOCK_SKEW;
     attrs->key_gen_callback = NULL;
     
@@ -327,20 +324,20 @@ globus_gsi_proxy_handle_attrs_set_signing_algorithm(
 
 
 /**
- * @name Set Signing Algorithm
+ * @name Get Signing Algorithm
  */
 /* @{ */
 /**
- * Sets the Signing Algorithm to be used to sign
+ * Gets the Signing Algorithm to used to sign
  * the certificate request.  In most cases, the
  * signing party will ignore this value, and sign
  * with an algorithm of its choice.
  * @ingroup globus_gsi_proxy_handle
  *
  * @param handle_attrs
- *        The proxy handle_attrs to set the signing algorithm of
+ *        The proxy handle_attrs to get the signing algorithm of
  * @param algorithm
- *        The signing algorithm to set 
+ *        Parameter used to return the signing algorithm used
  * @return
  *        Returns 
  *        GLOBUS_SUCCESS if the handle is valid, otherwise
@@ -373,107 +370,6 @@ globus_gsi_proxy_handle_attrs_get_signing_algorithm(
 
  exit:
     
-    GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
-    return result;
-}
-/* @} */
-
-
-/**
- * @name Set Minutes Valid
- */
-/* @{ */
-/**
- * Set the number of minutes the proxy certificate
- * is valid for.  This is only a suggestion
- * for the signer, who can accept or reject
- * @ingroup globus_gsi_proxy_handle
- *
- * @param handle_attrs
- *        The handle_attrs containing the minutes valid field to be set
- * @param minutes
- *        The valid minutes the proxy cert has before expiring.
- * @return 
- *        GLOBUS_SUCCESS if the handle is valid, otherwise 
- *        an error is returned.
- */
-globus_result_t
-globus_gsi_proxy_handle_attrs_set_time_valid(
-    globus_gsi_proxy_handle_attrs_t     handle_attrs,
-    int                                 time_valid)
-{
-    globus_result_t                     result;
-    static char *                       _function_name_ =
-        "globus_gsi_proxy_handle_attrs_set_time_valid";
-
-    GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
-
-    if(handle_attrs == NULL)
-    {
-        GLOBUS_GSI_PROXY_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS,
-            ("NULL handle attributes passed to function: %s", 
-             _function_name_));
-        goto exit;
-    }
-    handle_attrs->time_valid = time_valid;
-    
-    result = GLOBUS_SUCCESS;
-
- exit:
-
-    GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
-    return result;
-}
-/* @} */
-
-
-/**
- * @name Get Minutes Valid
- */
-/* @{ */
-/**
- * Get the number of minutes this proxy certificate
- * will be valid for when signed, assuming the
- * signer accepts that length of time.
- * @ingroup globus_gsi_proxy_handle
- *
- * @param handle_attrs
- *        The handle attributes containing the valid minutes to get
- * @param minutes
- *        The number of minutes this certificate will be
- *        valid for when signed
- * @return
- *        GLOBUS_SUCCESS if handle is valid, otherwise
- *        an error is returned
- */
-globus_result_t
-globus_gsi_proxy_handle_attrs_get_time_valid(
-    globus_gsi_proxy_handle_attrs_t     handle_attrs,
-    int *                               time_valid)
-{
-    globus_result_t                     result;
-    static char *                       _function_name_ =
-        "globus_gsi_proxy_handle_attrs_get_time_valid";
-
-    GLOBUS_I_GSI_PROXY_DEBUG_ENTER;
-
-    if(handle_attrs == NULL)
-    {
-        GLOBUS_GSI_PROXY_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE_ATTRS,
-            ("NULL handle attributes passed to function: %s",
-             _function_name_));
-        goto exit;
-    }
-    *time_valid = handle_attrs->time_valid;
-
-    result = GLOBUS_SUCCESS;
-
- exit:
-
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
     return result;
 }
@@ -732,7 +628,6 @@ globus_gsi_proxy_handle_attrs_copy(
     (*b)->key_bits = a->key_bits;
     (*b)->init_prime = a->init_prime;
     (*b)->signing_algorithm = a->signing_algorithm;
-    (*b)->time_valid = a->time_valid;
     (*b)->clock_skew = a->clock_skew;
     (*b)->key_gen_callback = a->key_gen_callback;
 

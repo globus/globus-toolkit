@@ -233,7 +233,7 @@ GSS_CALLCONV gss_import_sec_context(
                 GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
                     minor_status, major_status,
                     ("Couldn't read DER encoded peer cert from BIO"));
-                sk_X509_pop_free(cert_chain, X509_free);
+                sk_X509_pop_free(cert_chain, X509_free);        
                 goto exit;
             }
             
@@ -250,14 +250,18 @@ GSS_CALLCONV gss_import_sec_context(
                 minor_status, local_result,
                 GLOBUS_GSI_GSSAPI_ERROR_WITH_CALLBACK_DATA);
             major_status = GSS_S_FAILURE;
+            sk_X509_pop_free(cert_chain, X509_free);        
             goto exit;
         }
 
-        session->peer = sk_X509_value(cert_chain, 0);
+        session->peer = X509_dup(sk_X509_value(cert_chain, 0));
 
         local_result = 
             globus_gsi_callback_set_cert_chain(context->callback_data,
                                                cert_chain);
+
+        sk_X509_pop_free(cert_chain, X509_free);
+        
         if(local_result != GLOBUS_SUCCESS)
         {
             GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
@@ -349,6 +353,7 @@ exit:
                                (gss_ctx_id_t *) &context,
                                GSS_C_NO_BUFFER);
     }
+
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;

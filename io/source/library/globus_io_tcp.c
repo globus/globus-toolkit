@@ -1675,6 +1675,7 @@ globus_io_tcp_get_security_context(
 	   "handle",
 	   1,
 	   myname);
+	goto error_exit;
     }
 
     if(handle->securesocket_attr.authentication_mode ==
@@ -1776,6 +1777,7 @@ globus_io_tcp_get_delegated_credential(
 	   "handle",
 	   1,
 	   myname);
+	goto error_exit;
     }
 
     if(handle->securesocket_attr.authentication_mode ==

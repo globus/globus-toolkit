@@ -1,6 +1,6 @@
 include $(top_srcdir)/globus_automake_pre
 
-EXTRA_DIST = aclargefile.m4 \
+EXTRA_DIST = \
 	acreentrant.m4 \
 	acstructs.m4 \
 	acsystem.m4 \

@@ -11,6 +11,9 @@ Sources= \
 	gssapi.c \
 	gssname.c
 
+EXTRA_DIST= \
+	mkgssname
+
 INCLUDES += $(GPT_INCLUDES)
 
 AM_CFLAGS += $(GPT_CFLAGS) 

@@ -1,6 +1,8 @@
 #ifndef GLOBUS_ARGS_H
 #define GLOBUS_ARGS_H
 
+EXTERN_C_BEGIN
+
 #include "globus_module.h"
 #include "globus_list.h"
 

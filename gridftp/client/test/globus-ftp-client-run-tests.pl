@@ -112,9 +112,8 @@ sub setup_server()
 
     system('chmod go-rw testcred.pem');
      
-    $subject = `grid-proxy-info -subject`;
+    $subject = `grid-proxy-info -identity`;
     chomp($subject);
-    $subject =~ s|/CN=proxy||g;
     
     $ENV{GRIDMAP}="gridmap";
     

@@ -416,7 +416,8 @@ globus_i_io_securesocket_register_accept(
 
     accept_info->iteration = globus_l_io_accept_sec_context;
     accept_info->any_token_received = GLOBUS_FALSE;
-        
+    accept_info->delegation_callback = GLOBUS_NULL;
+    
     handle->state = GLOBUS_IO_HANDLE_STATE_AUTHENTICATING;
 
     /* I need a token before I can start the iterations, so:
@@ -780,7 +781,8 @@ globus_i_io_securesocket_register_connect_callback(
 
     init_info->iteration = globus_l_io_init_sec_context;
     init_info->any_token_received = GLOBUS_FALSE;
-        
+    init_info->delegation_callback = GLOBUS_NULL;
+    
     handle->state = GLOBUS_IO_HANDLE_STATE_AUTHENTICATING;
 
     globus_i_io_mutex_unlock();
@@ -2458,8 +2460,13 @@ globus_l_io_write_auth_token(
         /* If this is not an SSL token, then we must prepend a
          * four-byte length header
          */
-        if(handle->securesocket_attr.channel_mode !=
-           GLOBUS_IO_SECURE_CHANNEL_MODE_SSL_WRAP ||
+        if(handle->securesocket_attr.channel_mode ==
+           GLOBUS_IO_SECURE_CHANNEL_MODE_GSI_WRAP ||
+           (handle->securesocket_attr.channel_mode ==
+            GLOBUS_IO_SECURE_CHANNEL_MODE_CLEAR &&
+            (handle->securesocket_attr.delegation_mode !=
+             GLOBUS_IO_SECURE_DELEGATION_MODE_NONE ||
+             init_info->delegation_callback != NULL))||
            ! globus_l_io_is_ssl_packet(init_info->output_buffer) )
         {
             init_info->output_buffer_header = globus_malloc(4);

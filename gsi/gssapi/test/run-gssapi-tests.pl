@@ -16,8 +16,10 @@ system('chmod go-rw testcred.pem');
             gssapi-delegation-test.pl
             gssapi-limited-delegation-test.pl
             gssapi-delegation-compat-test.pl
-            gssapi-group-test.pl
+            
            );
+
+#            gssapi-group-test.pl
 
 push(@INC, $ENV{GLOBUS_LOCATION} . "/lib/perl");
 

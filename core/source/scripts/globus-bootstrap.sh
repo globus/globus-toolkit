@@ -5,9 +5,12 @@ for file in 'globus_automake_pre' \
     'globus_automake_pre_top' \
     'globus_automake_post_top'
 do
-    if test ! -h "$file" ; then
-        echo "installing $file link"
-        ln -s $GLOBUS_LOCATION/share/globus_aclocal/$file $file
+    if test ! -f "${file}" ; then
+        if test -h "${file}" ; then
+            rm ${file}
+        fi
+        echo "installing ${file} link"
+        ln -s $GLOBUS_LOCATION/share/globus_aclocal/${file} ${file}
     fi
 done
 

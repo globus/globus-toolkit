@@ -187,7 +187,7 @@ globus_l_gram_job_manager_gsi_register_proxy_timeout(
 
     if(major_status == GSS_S_COMPLETE)
     {
-	if (lifetime - request->proxy_timeout <= 0)
+	if ((int) lifetime - request->proxy_timeout <= 0)
 	{
 	    request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
 	    request->failure_code =
@@ -302,14 +302,10 @@ globus_gram_job_manager_gsi_relocate_proxy(
     int					rc = 0;
     char *				cred_url = NULL;
     char *				cred_file = NULL;
-    char *				temp_cred_url = NULL;
-    char *				temp_cred_file = NULL;
     FILE *				infp = NULL;
     FILE *				outfp = NULL;
     char *				cred_data = NULL;
     globus_bool_t			delete_cred = GLOBUS_FALSE;
-    globus_bool_t			delete_tmp = GLOBUS_FALSE;
-    globus_bool_t			locked_tmp = GLOBUS_FALSE;
 
     rc = stat(new_proxy, &statbuf);
 
@@ -387,125 +383,50 @@ globus_gram_job_manager_gsi_relocate_proxy(
     if(rc == GLOBUS_GASS_CACHE_ADD_NEW)
     {
 	delete_cred = GLOBUS_TRUE;
-	outfp = fopen(cred_file, "w");
-	if(outfp == NULL)
-	{
-	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_USER_PROXY;
-
-	    goto fopen_cred_file_failed;
-	}
-	rc = fchmod(fileno(outfp), 0600);
-        if(rc != 0)
-	{
-	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_USER_PROXY;
-
-	    goto fchown_cred_file_failed;
-	}
-
-	rc = fwrite(cred_data, (size_t) statbuf.st_size, 1, outfp);
-	if(rc != 1)
-	{
-	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE_USER_PROXY;
-
-	    goto cred_fwrite_failed;
-	}
-	fclose(outfp);
-	outfp = NULL;
-        rc = globus_gass_cache_add_done(
-		&request->cache_handle,
-		cred_url,
-		request->cache_tag,
-		timestamp);
-	if(rc != 0)
-	{
-	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE_USER_PROXY;
-
-	    goto cred_url_add_done_failed;
-	}
-	globus_libc_setenv("X509_USER_PROXY",
-		           globus_libc_strdup(cred_file),
-			   1);
     }
-    else if(rc == GLOBUS_GASS_CACHE_ADD_EXISTS)
+    else
     {
-	temp_cred_url =
-	    globus_libc_malloc(GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE);
-	
-	if(temp_cred_url == NULL)
-	{
-	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
+        delete_cred = GLOBUS_FALSE;
+    }
+    outfp = fopen(cred_file, "w");
+    if(outfp == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_USER_PROXY;
 
-	    goto temp_cred_url_malloc_failed;
-	}
+        goto fopen_cred_file_failed;
+    }
+    rc = fchmod(fileno(outfp), 0600);
+    if(rc != 0)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_USER_PROXY;
 
-	rc = sprintf(temp_cred_url,
-		     "%sx509_deleg_proxy",
-		     request->cache_tag);
-	if(rc < 0)
-	{
-	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE_USER_PROXY;
-
-	    goto temp_cred_url_sprintf_failed;
-	}
-	rc = globus_gass_cache_add(&request->cache_handle,
-				   temp_cred_url,
-				   request->cache_tag,
-				   GLOBUS_TRUE,
-				   &timestamp,
-				   &temp_cred_file);
-
-	delete_tmp = GLOBUS_TRUE;
-
-	if(rc == GLOBUS_GASS_CACHE_ADD_NEW)
-	{
-	    locked_tmp = GLOBUS_TRUE;
-	}
-	else if(rc != GLOBUS_GASS_CACHE_ADD_EXISTS)
-	{
-	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE_USER_PROXY;
-
-	    goto temp_cred_cache_add_failed;
-	}
-
-	outfp = fopen(temp_cred_file, "w");
-	if(outfp == NULL)
-	{
-	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE_USER_PROXY;
-
-	    goto temp_cred_file_fopen_failed;
-	}
-	rc = fchmod(fileno(outfp), 0600);
-	if(rc != 0)
-	{
-	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE_USER_PROXY;
-
-	    goto temp_cred_file_fchown_failed;
-	}
-	rc = fwrite(cred_data, (size_t) statbuf.st_size, 1, outfp);
-	if(rc != 1)
-	{
-	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE_USER_PROXY;
-
-	    goto temp_cred_fwrite_failed;
-	}
-	fclose(outfp);
-	outfp = NULL;
-
-	rc = rename(temp_cred_file, cred_file);
-	if(rc != 0)
-	{
-	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE_USER_PROXY;
-
-	    goto rename_failed;
-	}
-	globus_libc_setenv("X509_USER_PROXY",
-		           globus_libc_strdup(cred_file),
-			   1);
+        goto fchown_cred_file_failed;
     }
 
-rename_failed:
-temp_cred_file_fchown_failed:
-temp_cred_fwrite_failed:
+    rc = fwrite(cred_data, (size_t) statbuf.st_size, 1, outfp);
+    if(rc != 1)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE_USER_PROXY;
+
+        goto cred_fwrite_failed;
+    }
+    fclose(outfp);
+    outfp = NULL;
+    rc = globus_gass_cache_add_done(
+            &request->cache_handle,
+            cred_url,
+            request->cache_tag,
+            timestamp);
+    if(rc != 0)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE_USER_PROXY;
+
+        goto cred_url_add_done_failed;
+    }
+    globus_libc_setenv("X509_USER_PROXY",
+                       globus_libc_strdup(cred_file),
+                       1);
+
 cred_url_add_done_failed:
 fchown_cred_file_failed:
 cred_fwrite_failed:
@@ -528,28 +449,6 @@ fopen_cred_file_failed:
 				 timestamp,
 				 GLOBUS_TRUE);
     }
-temp_cred_file_fopen_failed:
-    if(delete_tmp)
-    {
-	globus_gass_cache_delete(&request->cache_handle,
-				 temp_cred_url,
-				 request->cache_tag,
-				 timestamp,
-				 locked_tmp);
-    }
-temp_cred_cache_add_failed:
-    if(temp_cred_file)
-    {
-	globus_libc_free(temp_cred_file);
-	temp_cred_file = NULL;
-    }
-temp_cred_url_sprintf_failed:
-    if(temp_cred_url)
-    {
-	globus_libc_free(temp_cred_url);
-	temp_cred_url = NULL;
-    }
-temp_cred_url_malloc_failed:
 cred_url_cache_add_failed:
 cred_url_sprintf_failed:
     if(cred_url)
@@ -597,7 +496,6 @@ globus_l_gram_job_manager_proxy_expiration(
     switch(request->jobmanager_state)
     {
       case GLOBUS_GRAM_JOB_MANAGER_STATE_START:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_PRE_MAKE_SCRATCHDIR:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_MAKE_SCRATCHDIR:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_REMOTE_IO_FILE_CREATE:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_OPEN_OUTPUT:
@@ -609,7 +507,6 @@ globus_l_gram_job_manager_proxy_expiration(
 	  break;
 
       case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_COMMIT_EXTEND:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_COMMITTED:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_STAGE_IN:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_SUBMIT:
@@ -656,19 +553,6 @@ globus_l_gram_job_manager_proxy_expiration(
 	{
 	    request->jobmanager_state =
 		GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE;
-	}
-	break;
-
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_TWO_PHASE_END_COMMIT_EXTEND:
-        if(request->save_state)
-	{
-	    request->jobmanager_state =
-		GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT;
-	}
-	else 
-	{
-	    request->jobmanager_state =
-		GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE_COMMIT_EXTEND;
 	}
 	break;
 
@@ -735,7 +619,6 @@ globus_l_gram_job_manager_proxy_expiration(
       case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_CLOSE_OUTPUT:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE:
-      case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE_COMMIT_EXTEND:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_TWO_PHASE_COMMITTED:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_FILE_CLEAN_UP:
       case GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_SCRATCH_CLEAN_UP:
