@@ -73,20 +73,28 @@ va_dcl
     
 } /* globus_fatal() */
 
+/* this isnt guaranteed to work since globus_l_callback_main_thread can be set 
+ * from a thread... hopefully not
+ */
+pid_t globus_l_callback_main_thread;
 void globus_dump_stack()
 {
     char s[1024];
     char filename[1024];
     int count;
     
-    sprintf(s, "/proc/%d/exe", getpid());
+#ifdef BUILD_LITE
+    globus_l_callback_main_thread = getpid();
+#endif
+
+    sprintf(s, "/proc/%d/exe", globus_l_callback_main_thread);
     count = readlink(s, filename, 1024);
     filename[count] = 0;
 
 #ifdef BUILD_LITE
-    sprintf(s, "echo 'set pagination off\nfile %s\nattach %d\nwhere\nquit' | gdb -n -batch -x /dev/stdin", filename, getpid());
-#else    
-    sprintf(s, "echo 'set pagination off\nfile %s\nattach %d\nthread apply all where\nquit' | gdb -n -batch -x /dev/stdin", filename, getpid());
+    sprintf(s, "(echo 'set pagination off\nfile %s\nattach %d\nwhere\nquit' | gdb -n -batch -x /dev/stdin) 1>&2", filename, globus_l_callback_main_thread);
+#else
+    sprintf(s, "(echo 'set pagination off\nfile %s\nattach %d\nthread apply all where\nquit' | gdb -n -batch -x /dev/stdin) 1>&2", filename, globus_l_callback_main_thread);
 #endif
     system(s);
 }

@@ -295,7 +295,7 @@ void globus_dump_stack();
             fprintf(stderr, "Assertion " #assertion			\
 		    " failed in file %s at line %d\n",			\
 		    __FILE__, __LINE__);				\
-	    
+	                                                \
 	    GLOBUS_DUMP_STACK(); \
 	    abort();							\
          }								\

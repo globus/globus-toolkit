@@ -12,6 +12,8 @@
  */
 #define GLOBUS_L_CALLBACK_OWN_THREAD_PERIOD 5000   /* 5 ms */
 
+extern pid_t                        globus_l_callback_main_thread;
+
 static
 int
 globus_l_callback_activate();
@@ -219,7 +221,15 @@ globus_l_callback_activate()
     int                                 rc;
     int                                 i;
     char *                              tmp_string;
-
+    
+    if(!globus_l_callback_main_thread)
+    {
+        /* this is used by globus_dump_stack because linux threads have
+         * different pids (and gdb can only attach to the main thread
+         */
+        globus_l_callback_main_thread = getpid();
+    }
+    
     rc = globus_module_activate(GLOBUS_THREAD_MODULE);
     if(rc != GLOBUS_SUCCESS)
     {
