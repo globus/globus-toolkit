@@ -13,7 +13,8 @@ typedef enum
     GLOBUS_L_GFS_DATA_PENDING,
     GLOBUS_L_GFS_DATA_COMPLETE,
     GLOBUS_L_GFS_DATA_ERROR,
-    GLOBUS_L_GFS_DATA_ERROR_COMPLETE
+    GLOBUS_L_GFS_DATA_ERROR_COMPLETE,
+    GLOBUS_L_GFS_DATA_ABORTING
 } globus_l_gfs_data_state_t;
 
 typedef struct
@@ -1504,6 +1505,7 @@ globus_i_gfs_data_request_transfer_event(
     globus_result_t                     result;
     globus_l_gfs_data_trev_bounce_t *   bounce_info;
     globus_l_gfs_data_session_t *       session_handle;
+    globus_l_gfs_data_operation_t *     op;
     GlobusGFSName(globus_i_gfs_data_kickoff_event);
 
     session_handle = (globus_l_gfs_data_session_t *) session_id;
@@ -1516,37 +1518,57 @@ globus_i_gfs_data_request_transfer_event(
             /* destroy the transfer op here */
         }
     }
-    else if(event_type == GLOBUS_GFS_EVENT_TRANSFER_COMPLETE)
-    {
-        /* destroy the transfer op here */
-    }
     else
-    {    
-        bounce_info = (globus_l_gfs_data_trev_bounce_t *)
-            globus_malloc(sizeof(globus_l_gfs_data_trev_bounce_t));
-        if(!bounce_info)
+    {   
+        switch(event_type)
         {
-            result = GlobusGFSErrorMemory("bounce_info");
-            goto error_alloc;
-        }
-        
-        bounce_info->event_type = event_type;
-        bounce_info->op = (globus_l_gfs_data_operation_t *) transfer_id;
-        
-        result = globus_callback_register_oneshot(
-            GLOBUS_NULL,
-            GLOBUS_NULL,
-            globus_l_gfs_data_transfer_event_kickout,
-            bounce_info);
-        if(result != GLOBUS_SUCCESS)
-        {
-            result = GlobusGFSErrorWrapFailed(
-                "globus_callback_register_oneshot", result);
-            goto error_oneshot;
+            case GLOBUS_GFS_EVENT_TRANSFER_COMPLETE:
+            /* destroy the transfer op here */
+                break;
+            
+            case GLOBUS_GFS_EVENT_TRANSFER_ABORT:
+                op = (globus_l_gfs_data_operation_t *) transfer_id;
+                globus_mutex_lock(&op->lock);
+                {    
+                    op->state = GLOBUS_L_GFS_DATA_ABORTING;
+                }
+                globus_mutex_unlock(&op->lock);
+                globus_gridftp_server_finished_transfer(op, GLOBUS_FAILURE);
+                break;
+            
+            case GLOBUS_GFS_EVENT_BYTES_RECVD:   
+            case GLOBUS_GFS_EVENT_RANGES_RECVD:   
+                bounce_info = (globus_l_gfs_data_trev_bounce_t *)
+                    globus_malloc(sizeof(globus_l_gfs_data_trev_bounce_t));
+                if(!bounce_info)
+                {
+                    result = GlobusGFSErrorMemory("bounce_info");
+                    goto error_alloc;
+                }
+                
+                bounce_info->event_type = event_type;
+                bounce_info->op = (globus_l_gfs_data_operation_t *) transfer_id;
+                
+                result = globus_callback_register_oneshot(
+                    GLOBUS_NULL,
+                    GLOBUS_NULL,
+                    globus_l_gfs_data_transfer_event_kickout,
+                    bounce_info);
+                if(result != GLOBUS_SUCCESS)
+                {
+                    result = GlobusGFSErrorWrapFailed(
+                        "globus_callback_register_oneshot", result);
+                    goto error_oneshot;
+                }
+                break;
+            default:
+                goto error;
+                break;
         }
     }    
     return;
-    
+
+error:
 error_oneshot:
 error_alloc:
     return;  
@@ -1969,7 +1991,7 @@ error_connect:
 
 void
 globus_gridftp_server_finished_transfer(
-    globus_gfs_operation_t   op,
+    globus_gfs_operation_t              op,
     globus_result_t                     result)
 {
     globus_gfs_ipc_event_reply_t *      event_reply;   
@@ -2085,6 +2107,7 @@ globus_gridftp_server_finished_transfer(
       
       /* this state always means this was called internally */
       case GLOBUS_L_GFS_DATA_ERROR:
+      case GLOBUS_L_GFS_DATA_ABORTING:
         reply = (globus_gfs_ipc_reply_t *) 
             globus_calloc(1, sizeof(globus_gfs_ipc_reply_t));
         event_reply = (globus_gfs_ipc_event_reply_t *) 
