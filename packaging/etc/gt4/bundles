@@ -34,6 +34,7 @@ BUNDLE gt4-gram
         globus_scheduler_event_generator            
         globus_wsrf_gram_job_monitoring_common_java_source
         globus_fork_starter
+        globus_gram_job_manager_setup_fork
         
 BUNDLE gt4-gram-pbs
         globus_gram_job_manager_setup_pbs
