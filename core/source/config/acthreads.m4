@@ -356,13 +356,6 @@ AC_MSG_CHECKING(for pthreads)
                 lac_cv_threads_LIBS="-lpthread"
                 lac_cv_threads_CFLAGS="$lac_cv_threads_CFLAGS -D_REENTRANT"
               ;;
-              *-darwin* )
-                LAC_THREADS_ADD_DEFINE(HAVE_PTHREAD_DRAFT_10)
-                LAC_THREADS_ADD_DEFINE(HAVE_THREAD_SAFE_STDIO)
-                LAC_THREADS_ADD_DEFINE(HAVE_THREAD_SAFE_SELECT) 
-                lac_cv_threads_LIBS="-lpthread"
-                lac_cv_threads_CFLAGS="$lac_cv_threads_CFLAGS -D_REENTRANT"
-              ;;
               * )
                 LAC_THREADS_ADD_DEFINE(HAVE_PTHREAD_DRAFT_10)
                 LAC_THREADS_ADD_DEFINE(HAVE_PTHREAD_PREEMPTIVE)
@@ -392,12 +385,11 @@ AC_MSG_CHECKING(for pthreads)
             esac
           ;;
           bsd_pthread )
-            LAC_THREADS_ADD_DEFINE(_REENTRANT)
             LAC_THREADS_ADD_DEFINE(HAVE_PTHREAD_DRAFT_10)
             LAC_THREADS_ADD_DEFINE(HAVE_PTHREAD_PREEMPTIVE)
             LAC_THREADS_ADD_DEFINE(HAVE_THREAD_SAFE_STDIO)
             LAC_THREADS_ADD_DEFINE(HAVE_THREAD_SAFE_SELECT)
-            lac_cv_threads_CFLAGS="-pthread"
+            lac_cv_threads_CFLAGS="-pthread -D_REENTRANT"
           ;;
         esac
     fi
