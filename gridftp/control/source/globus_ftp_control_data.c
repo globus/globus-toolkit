@@ -7263,6 +7263,7 @@ globus_l_ftp_io_close_callback(
     globus_l_ftp_data_callback_info_t *          callback_info;
     globus_ftp_control_data_callback_t          eof_callback = GLOBUS_NULL;
     globus_l_ftp_handle_table_entry_t *         eof_cb_ent;
+    globus_bool_t                               poll;
 
     callback_info = (globus_l_ftp_data_callback_info_t *)arg;
 
@@ -7310,13 +7311,13 @@ globus_l_ftp_io_close_callback(
 
     globus_mutex_lock(&dc_handle->mutex);
     {
-        globus_l_ftp_control_dc_dec_ref(transfer_handle);
+        poll = !globus_l_ftp_control_dc_dec_ref(transfer_handle);
         /*
          *  decrement the reference the callbacks had
          */
         if(eof_callback != GLOBUS_NULL)
         {
-            globus_l_ftp_control_dc_dec_ref(transfer_handle);
+            poll = !globus_l_ftp_control_dc_dec_ref(transfer_handle);
         }
     }
     globus_mutex_unlock(&dc_handle->mutex);
@@ -7338,7 +7339,10 @@ globus_l_ftp_io_close_callback(
         }
     }
 
-    globus_l_ftp_data_stripe_poll(dc_handle);
+    if(poll)
+    {
+        globus_l_ftp_data_stripe_poll(dc_handle);
+    }
 }
 
 

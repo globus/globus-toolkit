@@ -468,14 +468,13 @@ globus_l_gsc_read_cb(
 
     server_handle = (globus_i_gsc_server_handle_t *) user_arg;
 
-    if(result != GLOBUS_SUCCESS)
-    {
-        res = result;
-        goto err;
-    }
-
     globus_mutex_lock(&server_handle->mutex);
     {
+        if(result != GLOBUS_SUCCESS)
+        {
+            res = result;
+            goto err;
+        }
         switch(server_handle->state)
         {
             /* OPEN: add command to the queue, it will be imediatly processed */
@@ -563,8 +562,13 @@ globus_l_gsc_read_cb(
 
                         server_handle->outstanding_op->aborted = GLOBUS_TRUE;
                         if(server_handle->outstanding_op->event.event_mask &
-                            GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_ABORT)
+                            GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_ABORT &&
+                            /* this last codition make deal with a race of an
+                                abort and a finished transfer */
+                            server_handle->data_object->state == 
+                                GLOBUS_L_GSC_DATA_OBJ_INUSE)
                         {
+assert(server_handle->data_object->state == GLOBUS_L_GSC_DATA_OBJ_INUSE);
                             server_handle->outstanding_op->event.user_cb(
                                 server_handle->outstanding_op,
                                 GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_ABORT,
@@ -600,7 +604,6 @@ globus_l_gsc_read_cb(
 err_unlock:
     globus_i_gsc_op_destroy(op);
 err_alloc_unlock:
-    globus_mutex_unlock(&server_handle->mutex);
 
   err:
     if(command_name != NULL)
@@ -611,6 +614,7 @@ err_alloc_unlock:
     server_handle->ref--;
     globus_i_gsc_terminate(server_handle);
     globus_l_gsc_server_ref_check(server_handle);
+    globus_mutex_unlock(&server_handle->mutex);
 
     return;
 }
@@ -713,7 +717,11 @@ globus_i_gsc_terminate(
             {
                 server_handle->outstanding_op->aborted = GLOBUS_TRUE;
                 if(server_handle->outstanding_op->event.event_mask &
-                    GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_ABORT)
+                    GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_ABORT &&
+                    /* this last codition make deal with a race of an
+                        abort and a finished transfer */
+                    server_handle->data_object->state == 
+                        GLOBUS_L_GSC_DATA_OBJ_INUSE)
                 {
                     server_handle->outstanding_op->event.user_cb(
                         server_handle->outstanding_op,
@@ -2444,20 +2452,24 @@ globus_gsc_959_finished_command(
 
     server_handle = op->server_handle;
 
-    if(server_handle->reply_outstanding)
+    globus_mutex_lock(&server_handle->mutex);
     {
-        reply_ent = (globus_l_gsc_reply_ent_t *)
-            globus_malloc(sizeof(globus_l_gsc_reply_ent_t));
-        reply_ent->msg = globus_libc_strdup(reply_msg);
-        reply_ent->op = op;
-        reply_ent->final = GLOBUS_TRUE;
+        if(server_handle->reply_outstanding)
+        {
+            reply_ent = (globus_l_gsc_reply_ent_t *)
+                globus_malloc(sizeof(globus_l_gsc_reply_ent_t));
+            reply_ent->msg = globus_libc_strdup(reply_msg);
+            reply_ent->op = op;
+            reply_ent->final = GLOBUS_TRUE;
 
-        globus_fifo_enqueue(&server_handle->reply_q, reply_ent);
+            globus_fifo_enqueue(&server_handle->reply_q, reply_ent);
+        }
+        else
+        {
+            globus_l_gsc_finished_op(op, reply_msg);
+        }
     }
-    else
-    {
-        globus_l_gsc_finished_op(op, reply_msg);
-    }
+    globus_mutex_unlock(&server_handle->mutex);
 }
 
 globus_result_t
