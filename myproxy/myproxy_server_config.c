@@ -420,13 +420,12 @@ myproxy_server_check_client(myproxy_server_context_t *context,
 			    const char *client_name)
 {
     int return_code = -1;
-    int allowed = 0;
     
     if ((context == NULL) ||
 	(client_name == NULL))
     {
 	verror_put_errno(EINVAL);
-	return -1;
+	goto error;
     }
 
     /* Why is this cast needed? */
@@ -442,13 +441,12 @@ myproxy_server_check_service(myproxy_server_context_t *context,
 			     const char *service_name)
 {
     int return_code = -1;
-    int allowed = 0;
     
     if ((context == NULL) ||
 	(service_name == NULL))
     {
 	verror_put_errno(EINVAL);
-	return -1;
+	goto error;
     }
 
     /* Why is this cast needed? */
