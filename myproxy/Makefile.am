@@ -44,9 +44,9 @@ ServerSources= \
 INCLUDES += $(GPT_INCLUDES)
 
 Scripts= \
-	myproxy.cron.in
+	myproxy.cron
 
-bin_SCRIPTS = $(Scripts)
+sbin_SCRIPTS = $(Scripts)
 EXTRA_DIST = $(Scripts)
 include_HEADERS= \
 	myproxy.h \
@@ -63,8 +63,9 @@ libmyproxy___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS)
 bin_PROGRAMS= \
 	myproxy-init \
 	myproxy-destroy \
-	myproxy-server \
 	myproxy-get-delegation
+
+sbin_PROGRAMS= myproxy-server
 
 myproxy_init_SOURCES = 	myproxy_init.c
 
