@@ -56,8 +56,8 @@ How to Add your own Packet Formats:
    There are three methods you must implement:
     public boolean doCodesMatch(short componentCode, short versionCode);
 
-    this should return true if componentCode and versionCode match the code numbers
-    that you want to handle.
+    this should return true if componentCode and versionCode match the
+    code numbers that you want to handle.
 
     public UsageMonitorPacket instantiatePacket(ByteBuffer rawBytes);
 
@@ -84,7 +84,8 @@ How to Add your own Packet Formats:
 3. Register the handler:
    When you create a Receiver object in your monitor program, you can pass an
    instance of your PacketHandler class to receiver.registerHandler().  The
-   methods of your PacketHandler will be called when an appropriate packet comes in.
+   methods of your PacketHandler will be called when an appropriate packet
+   comes in.
 
 4. Write a sender which creates and sends your packets:
 
@@ -99,10 +100,11 @@ How to Add your own Packet Formats:
 Known Issues / To-do list:
 *******************************************
 
-1.  InetAddress.getLocalHost() will return an internal IP address if called on a
-    computer behind a NAT box.  This internal IP address is fairly meaningless to
-    external logging software elsewhere.  We should think about how we want to
-    handle this.  The change would be in the Sender class.
+1.  InetAddress.getLocalHost() will return an internal IP address if
+    called on a computer behind a NAT box.  This internal IP address
+    is fairly meaningless to external logging software elsewhere.  We
+    should think about how we want to handle this.  The change would
+    be in the Sender class.
 
 2.  Sending to multiple recievers -- I think it works, but this has not yet
     been tested.
@@ -119,8 +121,6 @@ Known Issues / To-do list:
     probably naiive.  For instance, I had to hard-code parts of the SQL
     strings, which I know is not portable.
 
-5.  All parts of the program should be modified to use logger4j instead of
-    sending all this stuff to System.err.println().
 
 *******************************************
 SQL SCHEMA:

@@ -1,7 +1,9 @@
 <project name="UDPUsage" default="compile" basedir=".">
 
-  <path id="mysql.classpath">
-    <fileset file="./lib/mysql-connector-java-3.1.6-bin.jar"/>
+  <path id="lib.classpath">
+    <fileset dir="./lib/"/>
+      <include name="**/*.jar"/>
+    </fileset>
   </path>
 
   <target name="clean">
@@ -20,7 +22,7 @@
     <mkdir dir="./dist"/>
     <javac srcdir="./src/" destdir="./dist/">
       <classpath>
-	<path refid="mysql.classpath"/>
+	<path refid="lib.classpath"/>
       </classpath>
     </javac>
     <jar destfile = "UDPSender.jar">
@@ -31,6 +33,7 @@
 	<include name="ExampleGFTPSender.class"/>
       </fileset>
       <fileset file="./udpUsage.properties"/>
+      <fileset file="./log4j.properties"/>
     </jar>
     <jar destfile = "UDPReceiver.jar">
       <fileset dir="./dist/">
@@ -45,6 +48,7 @@
         <include name="UsageMonitorPacket.java"/>
       </fileset>
       <fileset file="./udpUsage.properties"/>
+      <fileset file="./log4j.properties"/>
     </jar>
   </target>
 
@@ -52,7 +56,7 @@
     <java classname="org.globus.usage.ReceiverExample" fork="true">
       <classpath>
 	<pathelement location="./Usage_UDPReceiver.jar"/>
-	<path refid="mysql.classpath"/>
+	<path refid="lib.classpath"/>
       </classpath>
     </java>
   </target>
@@ -61,6 +65,7 @@
     <java classname="org.globus.usage.ExampleGFTPSender">
       <classpath>
 	<pathelement location="./Usage_UDPSender.jar"/>
+        <path refid="lib.classpath"/>
       </classpath>
     </java>
   </target>
