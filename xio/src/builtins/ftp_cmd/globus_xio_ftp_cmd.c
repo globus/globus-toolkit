@@ -367,7 +367,7 @@ globus_l_xio_ftp_cmd_read_cb(
                     end_offset--;
                 }
                 /* copy it into its own buffer */
-                done_buf = globus_malloc(end_offset);
+                done_buf = globus_malloc(end_offset+1);
                 memcpy(done_buf, handle->buffer, end_offset+1);
                 done_buf[end_offset] = '\0';
                 globus_fifo_enqueue(&handle->read_q, done_buf);
@@ -421,6 +421,22 @@ globus_l_xio_ftp_cmd_read(
     return res;
 }
 
+static void
+globus_l_xio_ftp_cmd_close_cb(
+    globus_xio_operation_t                  op,
+    globus_result_t                         result,
+    void *                                  user_arg)
+{
+    globus_l_xio_ftp_cmd_handle_t *         handle;
+
+    handle = (globus_l_xio_ftp_cmd_handle_t *) user_arg;
+
+    GlobusXIODriverFinishedClose(op, result);
+
+    globus_free(handle->buffer);
+    globus_free(handle);
+}
+
 static globus_result_t
 globus_l_xio_ftp_cmd_close(
     void *                                  driver_handle,
@@ -429,14 +445,11 @@ globus_l_xio_ftp_cmd_close(
     globus_xio_operation_t                  op)
 {
     globus_result_t                         res;
-    globus_l_xio_ftp_cmd_handle_t *          handle;
+    globus_l_xio_ftp_cmd_handle_t *         handle;
 
     handle = (globus_l_xio_ftp_cmd_handle_t *) driver_handle;
 
-    GlobusXIODriverPassClose(res, op, NULL, NULL);
-
-    globus_free(handle->buffer);
-    globus_free(handle);
+    GlobusXIODriverPassClose(res, op, globus_l_xio_ftp_cmd_close_cb, handle);
 
     return res;
 }
