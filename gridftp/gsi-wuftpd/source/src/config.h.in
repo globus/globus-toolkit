@@ -88,20 +88,6 @@
 #undef NEED_VALUES_H
 #undef NEED_BSD_BSD_H
 #undef NEED_SYS_PARAM_H
-
-/*
- * Number of bits in a file offset, on hosts where this is settable.
- */
-#undef _FILE_OFFSET_BITS
-/*
- * Define to make fseeko etc. visible, on some hosts.
- */
-#undef LARGEFILE_SOURCE
-/*
- * Define for large files, on AIX-style hosts.
- */
-#undef _LARGE_FILES
-
 #if defined(HAVE_SYS_PARAM_H) && defined(NEED_SYS_PARAM_H)
 #include <sys/param.h>
 #endif
@@ -233,8 +219,6 @@
 #undef GSSAPI
 #undef GSSAPI_KRB5
 #undef GSSAPI_GLOBUS
-
-#undef GRIDMAP_WITH_KRB5
 
 /*
  *  LBL striped server
