@@ -106,7 +106,8 @@ int send_token(s, tok)
      int s;
      gss_buffer_t tok;
 {
-     int len, ret;
+     int ret;
+     long len;
 
      len = htonl(tok->length);
 
