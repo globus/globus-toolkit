@@ -280,6 +280,7 @@ globus_ftp_client_throughput_nl_plugin_init(
 {
     globus_result_t                                     result;
     NLhandle *                                          nl_handle;
+    throughput_nl_plugin_info_t *                       info;
     static char *                                       myname =
         "globus_ftp_client_throughput_nl_plugin_init";
 
@@ -307,7 +308,14 @@ globus_ftp_client_throughput_nl_plugin_init(
         nl_handle,
         opaque_string);
 
-    if(result != GLOBUS_SUCCESS)
+    if(result == GLOBUS_SUCCESS)
+    {
+        globus_ftp_client_throughput_plugin_get_user_specific(
+            plugin,
+            (void **) &info);
+        info->destroy_handle = GLOBUS_TRUE;
+    }
+    else
     {
         NetLoggerClose(nl_handle);
     }
@@ -473,7 +481,11 @@ globus_ftp_client_throughput_nl_plugin_destroy(
         globus_libc_free(info->opaque_string);
     }
 
-    NetLoggerClose(info->nl_handle);
+    if(info->destroy_handle)
+    {
+        NetLoggerClose(info->nl_handle);
+    }
+
     globus_free(info);
 
     return globus_ftp_client_throughput_plugin_destroy(plugin);
