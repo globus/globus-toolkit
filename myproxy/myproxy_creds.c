@@ -21,6 +21,7 @@
 #include <sys/param.h>
 #include <assert.h>
 #include <sys/stat.h>
+#include <stdlib.h>
 
 /* Files should only be readable by me */
 #define FILE_MODE		0600
@@ -649,7 +650,7 @@ myproxy_creds_retrieve(struct myproxy_creds *creds)
     return_code = 0;
     
   error:
-    if (return_code == -1)
+    if (return_code < 0)
     {
 	/*
 	 * Don't want to free user_name or pass_phrase as caller supplied
