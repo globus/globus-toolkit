@@ -112,7 +112,7 @@ GSS_CALLCONV gss_display_status(
     }
     else if(status_type == GSS_C_MECH_CODE)
     {
-        error_obj = globus_error_get((globus_result_t) status_value);
+        error_obj = globus_error_peek((globus_result_t) status_value);
         error_chain_string = globus_error_print_friendly(error_obj);
 
         status_string->value = globus_common_create_string(
@@ -120,7 +120,6 @@ GSS_CALLCONV gss_display_status(
             error_chain_string == NULL ? "(null)" : error_chain_string);
         
         globus_libc_free(error_chain_string);
-        globus_object_free(error_obj);
 
         status_string->length = strlen(status_string->value);
         major_status = GSS_S_COMPLETE;
