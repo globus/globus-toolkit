@@ -48,6 +48,7 @@ globus_wsrf_mds_archive                     ws-mds/archive/source
 globus_wsrf_mds_ganglia                     ws-mds/ganglia/source
 globus_wsrf_mds_usefulrp                    ws-mds/usefulrp/source
 globus_wsrf_mds_usefulrp_schema             ws-mds/usefulrp/schema
+globus_wsrf_mds_hawkeye                     ws-mds/hawkeye/source
 globus_wsrf_servicegroup                    ws-mds/servicegroup/source
 globus_ws_core_schema                       wsrf/schema
 globus_java_ws_core_common                  wsrf/java/common/source
