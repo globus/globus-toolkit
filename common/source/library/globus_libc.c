@@ -3100,6 +3100,55 @@ globus_l_libc_i00afunc (long address)
 #endif /* TARGET_ARCH_CRAYT3E */
 
 /* IPv6 utils */
+#ifdef TARGET_ARCH_AIX5
+#define GLOBUS_HAVE_BROKEN_GETADDRINFO 1
+#endif
+
+#ifdef GLOBUS_HAVE_BROKEN_GETADDRINFO
+static
+int
+globus_l_libc_copy_addrinfo(
+    globus_addrinfo_t **                out_addrinfo,
+    globus_addrinfo_t *                 in_addrinfo)
+{
+    globus_addrinfo_t *                 new_addrinfo;
+    globus_addrinfo_t *                 addrinfo;
+    char *                              canonname = NULL;
+    
+    addrinfo = in_addrinfo;
+    if(addrinfo)
+    {
+        new_addrinfo = (globus_addrinfo_t *) 
+            globus_malloc(sizeof(globus_addrinfo_t));
+        memcpy(new_addrinfo, addrinfo, sizeof(globus_addrinfo_t));
+        new_addrinfo->ai_addr = (struct sockaddr *)
+            globus_malloc(addrinfo->ai_addrlen);
+        memcpy(new_addrinfo->ai_addr, addrinfo->ai_addr, addrinfo->ai_addrlen);
+        if(addrinfo->ai_canonname)
+        {
+            canonname = globus_libc_strdup(addrinfo->ai_canonname);
+            new_addrinfo->ai_canonname = canonname;
+        }
+        *out_addrinfo = new_addrinfo;
+        for(addrinfo = addrinfo->ai_next;
+            addrinfo;
+            addrinfo = addrinfo->ai_next)
+        {
+            new_addrinfo->ai_next = (globus_addrinfo_t *) 
+                globus_malloc(sizeof(globus_addrinfo_t));
+            new_addrinfo = new_addrinfo->ai_next;
+            memcpy(new_addrinfo, addrinfo, sizeof(globus_addrinfo_t));
+            new_addrinfo->ai_addr = (struct sockaddr *)
+                globus_malloc(addrinfo->ai_addrlen);
+            memcpy(new_addrinfo->ai_addr, addrinfo->ai_addr, 
+                addrinfo->ai_addrlen);
+            new_addrinfo->ai_canonname = canonname;
+        }
+    }
+    
+    return 0;       
+}
+#endif
 
 globus_result_t
 globus_libc_getaddrinfo(
@@ -3153,9 +3202,9 @@ globus_libc_getaddrinfo(
                     "%s",
                     gai_strerror(rc)));
         }
+        goto error;
     }
 #ifdef TARGET_ARCH_AIX5
-    else
     {
         globus_addrinfo_t *             addrinfo;
         
@@ -3171,7 +3220,7 @@ globus_libc_getaddrinfo(
                 GlobusLibcSockaddrSetFamily(
                     *addrinfo->ai_addr, addrinfo->ai_family);
                 GlobusLibcSockaddrSetLen(
-                    *addrinfo->ai_addr, addrinfo->ai_addrlen);
+                   *addrinfo->ai_addr, addrinfo->ai_addrlen);
                 if(port_str != service)
                 {
                     GlobusLibcSockaddrSetPort(*addrinfo->ai_addr, 0);
@@ -3181,6 +3230,42 @@ globus_libc_getaddrinfo(
     }
 #endif
 
+#ifdef GLOBUS_HAVE_BROKEN_GETADDRINFO
+    {
+        /* some getaddrinfo() don't do reverse-lookups to fill in ai_canonname,
+         * so if node was a numerical address, ai_canonname will be too.
+         * copy addrinfos and fill in ai_canonname with a getnameinfo lookup */
+        globus_addrinfo_t *             addrinfo;
+
+        globus_l_libc_copy_addrinfo(&addrinfo, *res);
+        freeaddrinfo(*res);
+        *res = addrinfo;
+        if(addrinfo && hints && hints->ai_flags & GLOBUS_AI_CANONNAME &&
+            addrinfo->ai_canonname && 
+            (isdigit(addrinfo->ai_canonname[0]) || 
+            strchr(addrinfo->ai_canonname, ':')))
+        {
+            char                    hostbuf[MAXHOSTNAMELEN];
+            result = globus_libc_getnameinfo(
+                (const globus_sockaddr_t *) addrinfo->ai_addr,
+                hostbuf,
+                MAXHOSTNAMELEN,
+                NULL,
+                0,
+                0);
+            if(result != GLOBUS_SUCCESS)
+            {
+                goto error;
+            }
+            globus_free(addrinfo->ai_canonname);
+            addrinfo->ai_canonname = globus_libc_strdup(hostbuf);
+        }
+    }
+#endif
+
+    return result;
+
+error:
     return result;
 }
 
@@ -3188,7 +3273,23 @@ void
 globus_libc_freeaddrinfo(
     globus_addrinfo_t *                 res)
 {
+#ifdef GLOBUS_HAVE_BROKEN_GETADDRINFO
+    globus_addrinfo_t *                 next;
+    
+    if(res && res->ai_canonname)
+    {
+        globus_free(res->ai_canonname);
+    }
+    while(res)
+    {
+        next = res->ai_next; 
+        globus_free(res->ai_addr); 
+        globus_free(res); 
+        res = next; 
+    }
+#else
     freeaddrinfo(res);
+#endif
 }
 
 globus_result_t
@@ -3213,7 +3314,10 @@ globus_libc_getnameinfo(
         servbuf,
         servbuf_len,
         flags);
-#ifdef TARGET_ARCH_DARWIN
+
+    /* some getnameinfo (darwin) return success but leave the hostbuf empty.
+     * in this case we'll just fill in hostbuf with the ip address
+     */
     if(rc == 0 && !*hostbuf && !(flags & GLOBUS_NI_NUMERICHOST))
     {
         rc = getnameinfo(
@@ -3225,7 +3329,6 @@ globus_libc_getnameinfo(
             servbuf_len,
             flags | GLOBUS_NI_NUMERICHOST);
     }
-#endif
 
     if(rc != 0)
     {
