@@ -19,13 +19,6 @@ EXTERN_C_BEGIN
 #define GRAM_GOES_HTTP 1
 #define GLOBUS_GRAM_HTTP_BUFSIZE     64000
 
-#define GLOBUS_GRAM_HTTP_QUERY_JOB_STATUS      1
-#define GLOBUS_GRAM_HTTP_QUERY_JOB_CANCEL      2
-#define GLOBUS_GRAM_HTTP_QUERY_JOB_REGISTER    3
-#define GLOBUS_GRAM_HTTP_QUERY_JOB_UNREGISTER  4
-#define GLOBUS_GRAM_HTTP_QUERY_JOB_START_TIME  5
-
-
 typedef struct
 {
     globus_mutex_t             mutex;
@@ -39,7 +32,6 @@ typedef void (*globus_gram_http_callback_t)( void  *               arg,
 					     globus_byte_t *       message,
 					     globus_size_t         msgsize,
 					     int                   errorcode);
-
 
 /*
  * part of GRAM_CLIENT activation
@@ -126,89 +118,110 @@ globus_gram_http_post_and_get( char *                         url,
 			       globus_byte_t *                request_message,
 			       globus_size_t                  request_size,
 			       globus_byte_t **               reply_message,
-			       globus_size_t *                reply_sizep,
+			       globus_size_t *                reply_size,
 			       globus_gram_http_monitor_t *   monitor);
 
 
 /* Frame a request message with HTTP headers */
 int
-globus_gram_http_frame_request(globus_byte_t *	  uri,
-			       globus_byte_t *	  hostname,
+globus_gram_http_frame_request(char *             uri,
+			       char *             hostname,
 			       globus_byte_t *    msg,
 			       globus_size_t	  msgsize,
 			       globus_byte_t **   framedmsg,
 			       globus_size_t *	  framedsize);
 
-/* Frame a response message with HTTP headers */
+/* Frame a reply message with HTTP headers */
 int
-globus_gram_http_frame_response(int		   code,
-				globus_byte_t *    msg,
-				globus_size_t      msgsize,
-				globus_byte_t **   framedmsg,
-				globus_size_t *    framedsize);
+globus_gram_http_frame_reply(int		   code,
+			     globus_byte_t *    msg,
+			     globus_size_t      msgsize,
+			     globus_byte_t **   framedmsg,
+			     globus_size_t *    framedsize);
 
 /************************ "HTTP" pack/unpack functions *********************/
 
-/* These functions pack and unpack GRAM requests into HTTP format
-   There are now no fixed-buffer forms left; the  _alloc forms
-   allocate enough memory for their needs return values, memory which
-   must be freed by the caller.
-
-   The returned buffers are always null-terminated, so we
-   don't even need to worry about the buffer_size returns. 
-
-   --Steve A  7/20/99, 7/22/99
-*/
-
-extern
 int
-globus_i_gram_pack_http_job_request(
-    int job_state_mask		/* integer (IN) */,
-    const char *callback_url	/* user's state listener URL (IN) */,
-    const char *description	/* user's RSL (IN) */,
-    globus_byte_t **query_startp /* OUT */,
-    globus_size_t *query_sizep	/* OUT; optional (NULL OK) */);
-
-extern
-int
-globus_i_gram_unpack_http_job_request(
-    globus_byte_t *query,	/* IN */
-    globus_size_t query_size,	/* IN */
-    int *job_state_maskp,	/* OUT */
-    globus_byte_t **client_contact_strp,	/* OUT */
-    globus_size_t *client_contact_strsizep, /* OUT, optional */
-    globus_byte_t **rslp,	/* OUT */
-    globus_size_t *rslsizep); /* OUT, optional */
-
-
-extern
-int
-globus_i_gram_pack_http_job_request_result(
-    int gram_status_code	/* IN */,
-    const char *graml_job_contact /* IN */,
-    globus_byte_t **reply_startp /* OUT */,
-    globus_size_t *reply_sizep	/* OUT, optionally NULL */);
-
-
-
-
-extern
-int
-globus_i_gram_unpack_http_job_request_result(
-    globus_byte_t *query,
-    globus_size_t query_size,
-    int *result_statusp /* GLOBUS_SUCCESS or a failure */,
-    globus_byte_t **result_contactp /* NULL if not SUCCESS */,
-    globus_size_t *result_contactsizep);
+globus_gram_http_pack_job_request(
+    const int               job_state_mask,
+    const char *            callback_url,
+    const char *            rsl,
+    globus_byte_t **        query,
+    globus_size_t *         querysize );
 
 
 int
-globus_i_gram_http_pack_status_message(
-    const char *graml_job_contact /* IN */,
-    int status			/* IN */,
-    int failure_code		/* IN */,
-    globus_byte_t *message	/* OUT */,
-    globus_size_t *message_sizep /* OUT */);
+globus_gram_http_unpack_job_request(
+    globus_byte_t *         query,
+    globus_size_t           querysize,
+    int  *                  job_state_mask,
+    char **                 callback_url,
+    char **                 description );
+
+
+int
+globus_gram_http_pack_job_request_reply(
+    int                      status,
+    char *                   job_contact,    /* may be null */
+    globus_byte_t **         reply,
+    globus_size_t *          replysize );
+
+
+int
+globus_gram_http_unpack_job_request_reply(
+    globus_byte_t *          reply,
+    globus_size_t            replysize,
+    int *                    status,
+    char **                  job_contact );
+
+
+int
+globus_gram_http_pack_status_request(
+    char *              status_request,
+    globus_byte_t **    query,
+    globus_size_t *     querysize );
+
+
+int
+globus_gram_http_unpack_status_request(
+    globus_byte_t *    query,
+    globus_size_t      querysize,
+    char **            status_requst );
+
+
+int
+globus_gram_http_pack_status_reply(
+    int                 job_status,
+    int                 failure_code,
+    globus_byte_t **    reply,
+    globus_size_t *     replysize );
+
+
+int
+globus_gram_http_unpack_status_reply(
+    globus_byte_t *    reply,
+    globus_size_t      replysize,
+    int *              job_status,
+    int *              failure_code );
+
+
+int
+globus_gram_http_pack_status_update_message(   
+    char *                   job_contact,
+    int                      status,            
+    int                      failure_code,
+    globus_byte_t **         reply,
+    globus_size_t *          replysize );
+
+
+int
+globus_gram_http_unpack_status_update_message(
+    globus_byte_t *          reply,
+    globus_size_t            replysize,
+    char **                  job_contact,
+    int *                    status,
+    int *                    failure_code );
+
 
 
 EXTERN_C_END

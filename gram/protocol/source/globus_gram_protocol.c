@@ -29,7 +29,7 @@
 	The function must forward information B:
 	    monitor       : a monitor to signal done and error codes
 	    reply_message : pointer to pointer to buf with parsed reply in
-	    reply_sizep   : pointer to size_t, updated to reply size
+	    reply_size    : pointer to size_t, updated to reply size
 
    Typedefs:
    ---------
@@ -90,12 +90,6 @@
 	    if write was successful, uses send buffer to recv an HTTP
 	    message (replicate functionality of accept_callback)
 
-        post_done_callback:                                    [CLIENT ONLY]
-	    always signals monitor from read_t "done with success"
-	    or "done with error".
-
-	    always frees sendbuf, closes handle, and frees read_t.
-
 
     Defined globus_gram_http_callback_t's :
     ---------------------------------------
@@ -131,17 +125,10 @@
 
 #include <globus_io.h>
 #include <stdlib.h>
-#include <ctype.h>		/* isxdigit(), tog */
 
-/* HAVE_STRING_H is somehow not getting set by configure running on
-   VANUATU.ISI.EDU, running Solaris 2.6.  Yet we need <string.h> for the
-   prototypes it contains; moreover, <string.h> is a mandatory part of
-   ANSI C (See section 4.11 of the ANSI C standard, XC.159-1989), so I
-   feel comfortable depending upon it. 
-   --Steve A */
-/* #ifdef HAVE_STRING_H  */
+#ifdef HAVE_STRING_H
 #include <string.h>
-/* #endif */
+#endif
 
 static
 char *
@@ -155,7 +142,7 @@ globus_l_gram_http_parse_request(
 
 static
 int
-globus_l_gram_http_parse_response(
+globus_l_gram_http_parse_reply(
     globus_byte_t *			buf,
     globus_size_t *			payload_length);
 
@@ -178,22 +165,44 @@ globus_l_gram_http_parse_response(
 #define GLOBUS_GRAM_HTTP_CONTENT_LENGTH_LINE \
 			"Content-Length: %d" CRLF
 
-#define GLOBUS_GRAM_HTTP_RESPONSE_LINE \
+#define GLOBUS_GRAM_HTTP_REPLY_LINE \
 			"HTTP/1.1 %3d %s" CRLF
 
-#define GLOBUS_GRAM_HTTP_PARSE_RESPONSE_LINE \
+#define GLOBUS_GRAM_HTTP_PARSE_REPLY_LINE \
 			"HTTP/1.1 %3d %[^" CRLF "]" CRLF
 #define GLOBUS_GRAM_HTTP_CONNECTION_LINE \
 			"Connection: Close" CRLF
 
+#define GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE \
+		        "protocol-version: %d" CRLF	
+
+#define GLOBUS_GRAM_HTTP_PACK_JOB_STATE_MASK_LINE \
+		        "job-state-mask: %d" CRLF	
+
+#define GLOBUS_GRAM_HTTP_PACK_CALLBACK_URL_LINE \
+		        "callback-url: %s" CRLF	
+
+#define GLOBUS_GRAM_HTTP_PACK_STATUS_LINE \
+		        "status: %d" CRLF	
+
+#define GLOBUS_GRAM_HTTP_PACK_FAILURE_CODE_LINE \
+		        "failure-code: %d" CRLF	
+
+#define GLOBUS_GRAM_HTTP_PACK_JOB_MANAGER_URL_LINE \
+		        "job-manager-url: %s" CRLF	
+
+#define GLOBUS_GRAM_HTTP_PACK_CLIENT_REQUEST_LINE \
+		        "%s" CRLF	
+
 typedef enum
 {
     GLOBUS_GRAM_HTTP_REQUEST,
-    GLOBUS_GRAM_HTTP_RESPONSE
+    GLOBUS_GRAM_HTTP_REPLY
 } globus_gram_http_read_type_t;
 
 #define my_malloc(t,n) (t *) globus_libc_malloc(n * sizeof(t))
 #define my_free(ptr)   globus_free(ptr)
+
 
 #if 1
 #define verbose(q) q
@@ -214,9 +223,8 @@ typedef struct
     globus_gram_http_callback_t    callback_func;
     void *                         callback_arg;
     void *                         user_pointer;
-    globus_byte_t **                reply_bufp;
-    globus_size_t *                reply_sizep	/* may be NULL if user doesn't
-						   care. */;
+    globus_byte_t **               reply_buf;
+    globus_size_t *                reply_size;
     globus_gram_http_monitor_t *   monitor;
 } globus_gram_http_read_t;
 
@@ -252,8 +260,8 @@ globus_gram_http_initialize_read_t( globus_gram_http_read_t **    read_t,
 				    void *                        arg,
 				    void *                        userptr,
 				    globus_gram_http_monitor_t *  monitor,
-				    globus_byte_t **              bufp, 
-				    globus_size_t *               bufsizep) 
+				    globus_byte_t **              buf, 
+				    globus_size_t *               bufsize) 
 { 
     *read_t = my_malloc(globus_gram_http_read_t,1);
     
@@ -265,8 +273,8 @@ globus_gram_http_initialize_read_t( globus_gram_http_read_t **    read_t,
     (*read_t)->callback_arg   = arg; 
     (*read_t)->user_pointer   = userptr; 
     (*read_t)->monitor        = monitor; 
-    (*read_t)->reply_bufp      = bufp; 
-    (*read_t)->reply_sizep     = bufsizep;
+    (*read_t)->reply_buf      = buf;
+    (*read_t)->reply_size     = bufsize;
 }
 
 
@@ -321,13 +329,6 @@ globus_l_gram_http_post_callback( void * arg,
 				  globus_result_t result,
 				  globus_byte_t * buf,
 				  globus_size_t nbytes);
-
-void
-globus_l_gram_http_post_done_callback( void * arg,
-				       globus_io_handle_t * handle,
-				       globus_result_t result,
-				       globus_byte_t * buf,
-				       globus_size_t nbytes );
 
 void
 globus_l_gram_http_read_callback( void * arg,
@@ -503,7 +504,9 @@ globus_gram_http_client_callback( void *                 arg,
 				  int                    errorcode)
 {
     globus_gram_client_callback_func_t *   userfunc;
-    char                                   url[1000];
+    globus_byte_t *                        reply;
+    globus_size_t                          replysize;
+    char *                                 url;
     int                                    job_status;
     int                                    failure_code;
     int                                    version;
@@ -516,35 +519,40 @@ globus_gram_http_client_callback( void *                 arg,
     if (rc != GLOBUS_SUCCESS || nbytes <= 0)
     {
 	job_status   = GLOBUS_GRAM_CLIENT_JOB_STATE_FAILED;
-	failure_code = GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;
+	failure_code = rc;
     }
-    else if (4 != sscanf((char *) buf,
-			 "%d %s %d %d",
-			 &version,
-			 url,
-			 &job_status,
-			 &failure_code))
+    else
     {
-	job_status   = GLOBUS_GRAM_CLIENT_JOB_STATE_FAILED;
-	failure_code = GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;
-    }
-    else if (version != GLOBUS_GRAM_PROTOCOL_VERSION)
-    {
-	job_status   = GLOBUS_GRAM_CLIENT_JOB_STATE_FAILED;
-	failure_code = GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH;
+	rc = globus_gram_http_unpack_status_update_message(
+	    buf,
+	    nbytes,
+	    &url,
+	    &job_status,
+	    &failure_code );
     }
 
     my_free(buf);
+
+    rc = globus_gram_http_frame_reply( 200,
+				       GLOBUS_NULL,
+				       0,
+				       &reply,
+				       &replysize );
     
+    globus_io_register_write( handle,
+			      reply,
+			      replysize,
+			      globus_gram_http_close_after_write,
+			      GLOBUS_NULL );
+
     globus_io_handle_get_user_pointer( handle,
 				       (void *) userfunc );
     
     (*userfunc)(arg, url, job_status, failure_code);
 
-    globus_io_register_close( handle,
-			      globus_gram_http_close_callback,
-			      GLOBUS_NULL );
+    my_free(url);
 }	      
+
  
 void
 globus_l_gram_http_read_callback( void *                 read_t,
@@ -556,10 +564,12 @@ globus_l_gram_http_read_callback( void *                 read_t,
     globus_gram_http_read_t *    status = (globus_gram_http_read_t *) read_t;
     globus_result_t              res    = result;
     globus_size_t                chunk  = 1;
-    globus_io_read_callback_t    func   = globus_l_gram_http_read_callback;
     char *			 p;
     globus_size_t		 payload_length;
     int				 rc = GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;
+
+    verbose(notice("read_callback : handle = %d, just read %d, total=%d\n",
+		   handle->fd, nbytes, status->n_read));
 
     /* Error doing read */
     if (res != GLOBUS_SUCCESS)
@@ -585,7 +595,7 @@ globus_l_gram_http_read_callback( void *                 read_t,
 	    }
 	    else
 	    {
-		rc = globus_l_gram_http_parse_response(
+		rc = globus_l_gram_http_parse_reply(
 		    status->buf,
 		    &payload_length);
 	    }
@@ -609,16 +619,12 @@ globus_l_gram_http_read_callback( void *                 read_t,
 	    status->buf = (globus_byte_t *) p;
 	    status->bufsize = status->n_read + chunk + 1;
 	}
-/*
-  verbose(notice("read_callback : handle = %d, chunk=%ld read=%d\n",
-		       handle->fd, (long) chunk, status->n_read));
-*/
 
 	res = globus_io_register_read( handle,
 				       status->buf + status->n_read,
 				       chunk,
 				       chunk,
-				       func,
+				       globus_l_gram_http_read_callback,
 				       read_t );
 	if(res != GLOBUS_SUCCESS)
 	{
@@ -694,41 +700,8 @@ globus_l_gram_http_post_callback( void *                read_t,
     res = result;
     status->buf = buf;
 
-    start_http_read(res,status,handle,GLOBUS_GRAM_HTTP_RESPONSE);
+    start_http_read(res,status,handle,GLOBUS_GRAM_HTTP_REPLY);
 }
-
-
-
-void
-globus_l_gram_http_post_done_callback( void *                read_t,
-				       globus_io_handle_t *  handle,
-				       globus_result_t       result,
-				       globus_byte_t *       buf,
-				       globus_size_t         nbytes)
-{
-    globus_gram_http_read_t *   status;
-    globus_result_t             res;
-    int                         rc;
-
-    verbose(notice("post_done_callback : done writing %ld on %d\n",
-		   (long) nbytes, handle->fd));
-
-    status = (globus_gram_http_read_t *) read_t;
-
-    my_free(buf);
-
-    res = globus_io_register_close( handle,
-				    globus_gram_http_close_callback,
-				    GLOBUS_NULL );
-
-    if (res != GLOBUS_NULL || result != GLOBUS_NULL)
-	rc = GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;
-    
-    monitor_signal_done( status->monitor, rc );
-
-    my_free(status);
-}
-
 
 
 void
@@ -752,11 +725,15 @@ globus_l_gram_http_get_callback( void *                read_t,
 				    GLOBUS_NULL );
 
     if ((errorcode == GLOBUS_SUCCESS) &&
-	(res == GLOBUS_SUCCESS)  )
+	(res == GLOBUS_SUCCESS) )
     {
-	*status->reply_bufp = buf;
-	if (status->reply_sizep)
-	    *status->reply_sizep = nbytes;
+	if (status->reply_buf)
+	    (*status->reply_buf) = buf;
+	else
+	    my_free(buf);
+	
+	if (status->reply_size)
+	    *status->reply_size = nbytes;
     }
     else
     {
@@ -772,6 +749,90 @@ globus_l_gram_http_get_callback( void *                read_t,
 
     monitor_signal_done(status->monitor, rc);
 }
+
+
+/************************ "HTTP" post/get functions ************************/
+int
+globus_gram_http_post_and_get( char *                         url,
+			       globus_io_attr_t *             attr,
+			       globus_byte_t *                request_message,
+			       globus_size_t                  request_size,
+			       globus_byte_t **               reply_message,
+			       globus_size_t *                reply_size,
+			       globus_gram_http_monitor_t *   monitor)
+{
+    int                             rc;
+    globus_gram_http_read_t *       status;
+    globus_io_handle_t *            handle;
+    globus_byte_t *                 sendbuf;
+    globus_size_t                   sendbufsize;
+    globus_result_t                 res;
+    globus_url_t		    parsed_url;
+    globus_size_t                   i;
+
+
+    rc = globus_url_parse(url, &parsed_url);
+
+    if(rc != GLOBUS_SUCCESS)
+    {
+	return GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;
+    }
+
+    if (monitor)
+	initialize_monitor(monitor);
+
+    globus_gram_http_initialize_read_t(
+	&status,
+	(void *)globus_l_gram_http_get_callback,    /* userfunc after get */
+	GLOBUS_NULL,                                /* userarg            */
+	GLOBUS_NULL,                                /* userptr            */
+	monitor,                                    /* monitor            */
+	reply_message,                              /* replybuf           */
+	reply_size );                               /* replysize          */
+
+    status->callback_arg = (void *) status;
+
+    handle  = my_malloc(globus_io_handle_t,1);
+
+    if ((rc = globus_gram_http_attach(url, handle, attr))
+	|| (rc = globus_gram_http_frame_request( url,
+						 parsed_url.host,
+						 request_message,
+						 request_size,
+						 &sendbuf,
+						 &sendbufsize)))
+    {
+	my_free(handle);
+	my_free(status);
+	globus_url_destroy(&parsed_url);
+	return GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;	
+    }
+
+    globus_url_destroy(&parsed_url);
+    verbose(notice("http_post : writing size=%d on %d\n",
+		   sendbufsize, handle->fd));
+    for(i = 0; i < sendbufsize; i++)
+    {
+	verbose(notice("%c", sendbuf[i]));
+    }
+    verbose(notice("---\n"));
+
+    res = globus_io_register_write( handle,
+				    sendbuf,
+				    sendbufsize,
+				    globus_l_gram_http_post_callback,
+				    status );
+    if (res != GLOBUS_SUCCESS)
+    {
+	my_free(sendbuf);
+	my_free(handle);
+	my_free(status);
+	return GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;
+    }
+    return GLOBUS_SUCCESS;
+}
+
+
 
 
 /************************* help function *********************************/
@@ -1050,8 +1111,8 @@ globus_gram_http_attach( char *                job_contact,
  *
  */
 int
-globus_gram_http_frame_request(globus_byte_t *	  uri,
-			       globus_byte_t *	  hostname,
+globus_gram_http_frame_request(char *             uri,
+			       char *             hostname,
 			       globus_byte_t *    msg,
 			       globus_size_t	  msgsize,
 			       globus_byte_t **   framedmsg,
@@ -1133,15 +1194,15 @@ globus_gram_http_frame_request(globus_byte_t *	  uri,
 
 
 /*
- * Function:	globus_gram_http_frame_response()
+ * Function:	globus_gram_http_frame_reply()
  *
  */
 int
-globus_gram_http_frame_response(int		   code,
-				globus_byte_t *    msg,
-				globus_size_t      msgsize,
-				globus_byte_t **   framedmsg,
-				globus_size_t *    framedsize)
+globus_gram_http_frame_reply(int		code,
+			     globus_byte_t *    msg,
+			     globus_size_t      msgsize,
+			     globus_byte_t **   framedmsg,
+			     globus_size_t *    framedsize)
 {
     char *					buf;
     char *					reason;
@@ -1150,7 +1211,7 @@ globus_gram_http_frame_response(int		   code,
     globus_size_t				framedlen;
 
     /*
-     * HTTP response message framing:
+     * HTTP reply message framing:
      *    HTTP/1.1 <3 digit code> Reason String<CR><LF>
      *    Gram-Protocol-Version: <GLOBUS_GRAM_PROTOCOL_VERSION><CR><LF>
      *    Connection: close<CR><LF>
@@ -1178,7 +1239,7 @@ globus_gram_http_frame_response(int		   code,
 	while(tmp > 0);
 
 	framedlen = 0;
-	framedlen += strlen(GLOBUS_GRAM_HTTP_RESPONSE_LINE);
+	framedlen += strlen(GLOBUS_GRAM_HTTP_REPLY_LINE);
 	framedlen += strlen(reason);
 	framedlen += strlen(GLOBUS_GRAM_HTTP_PROTOCOL_VERSION_LINE);
 	framedlen += digits;
@@ -1188,7 +1249,7 @@ globus_gram_http_frame_response(int		   code,
 
 	tmp = 0;
 	tmp += globus_libc_sprintf(buf + tmp,
-				   GLOBUS_GRAM_HTTP_RESPONSE_LINE,
+				   GLOBUS_GRAM_HTTP_REPLY_LINE,
 				   code,
 				   reason);
 	tmp += globus_libc_sprintf(buf + tmp,
@@ -1219,7 +1280,7 @@ globus_gram_http_frame_response(int		   code,
 	while(tmp > 0);
 
 	framedlen = 0;
-	framedlen += strlen(GLOBUS_GRAM_HTTP_RESPONSE_LINE);
+	framedlen += strlen(GLOBUS_GRAM_HTTP_REPLY_LINE);
 	framedlen += strlen(reason);
 	framedlen += strlen(GLOBUS_GRAM_HTTP_PROTOCOL_VERSION_LINE);
 	framedlen += strlen(GLOBUS_GRAM_HTTP_CONTENT_TYPE_LINE);
@@ -1230,23 +1291,27 @@ globus_gram_http_frame_response(int		   code,
 
 	buf = (char *) globus_malloc(framedlen);
 	tmp = 0;
-	tmp += sprintf(buf + tmp,
-		       GLOBUS_GRAM_HTTP_RESPONSE_LINE,
-		       code,
-		       reason);
+	tmp += globus_libc_sprintf(buf + tmp,
+				   GLOBUS_GRAM_HTTP_REPLY_LINE,
+				   code,
+				   reason);
 	tmp += globus_libc_sprintf(buf + tmp,
 				   GLOBUS_GRAM_HTTP_PROTOCOL_VERSION_LINE,
 				   GLOBUS_GRAM_PROTOCOL_VERSION);
-	tmp += sprintf(buf + tmp,
+	tmp += globus_libc_sprintf(buf + tmp,
 		       GLOBUS_GRAM_HTTP_CONTENT_TYPE_LINE);
-	tmp += sprintf(buf + tmp,
+	tmp += globus_libc_sprintf(buf + tmp,
 		       GLOBUS_GRAM_HTTP_CONTENT_LENGTH_LINE,
 		       msgsize);
-	tmp += sprintf(buf + tmp,
+	tmp += globus_libc_sprintf(buf + tmp,
 		       CRLF);
-	memcpy(buf + tmp,
-	       msg,
-	       msgsize);
+
+	if (msgsize > 0)   /* this allows msg = NULL */
+	{
+	    memcpy(buf + tmp,
+		   msg,
+		   msgsize);
+	}
     }
 
 
@@ -1259,421 +1324,457 @@ globus_gram_http_frame_response(int		   code,
 
 /************************ "HTTP" pack/unpack functions *********************/
 
-/* These functions pack and unpack GRAM requests into HTTP format
-   There are now no fixed-buffer forms left; the  _alloc forms
-   allocate enough memory for their needs return values, memory which
-   must be freed by the caller.
-
-   The returned buffers are always null-terminated, so we
-   don't even need to worry about the buffer_size returns. 
-
-   --Steve A  7/20/99, 7/22/99
-*/
-
-/* Helper functions for pack/unpack */
-/* These interfaces now have the output parameters last, for
-   consistency with the _pack_ functions in this file. --swa, 7/21/99 */
-
 static
-int
-globus_l_gram_http_field_value_quote_string(
-    const globus_byte_t *in,
-    globus_size_t insize,
-    globus_byte_t **out_startp	/* OUT */,
-    globus_size_t *outsizep	/* OUT */)
+globus_size_t
+globus_l_gram_http_quote_string(
+    const char *        in,
+    globus_byte_t *     bufp )   /* assumes bufp has sufficient memory */
 {
-    char *out;
-	/* Assume worst case, every character in the input string is a
-	   " or a \, and therefore needs escaping.
-	   That doubles the length.  Add 2 for open and close "", add 1
-	   for null termination. */
-    *out_startp = my_malloc(globus_byte_t, 2 * insize + 2 + 1);
-    out  = (char *) *out_startp;
+    char *  out = (char *) bufp;
 
-    globus_assert(insize == strlen((char *)in));
     *out++='"';			/* Start the quoted string */
-    while (*in) {
-	if (*in == '"' || *in == '\\') {
-	    /* Special character; escape it with a backslash. */
+    while (*in)
+    {
+	if (*in == '"' || *in == '\\')   /* need escaping */
 	    *out++ = '\\';
-	    /* Deliberate fall through: */
-	}
 	*out++ = *in;
     }
     *out++ = '"';		/* End the quoted string. */
-    if (outsizep)
-	*outsizep = (globus_byte_t)(out - (char *)out_startp);
-    return GLOBUS_SUCCESS;
+    *out   = '\0';
+
+    return (globus_size_t)(out - (char *)bufp);
 }
 
-/* TODO: Add unquoting for the % HEX HEX mechanism. */
+
+/*
+ * 
+ * TODO: Add unquoting for the % HEX HEX mechanism.
+ *
+ */
 static
 int
-globus_l_gram_http_field_value_unquote_string(
-    const globus_byte_t *in	/* Will be incremented to point past
-				   the end */, 
-    globus_size_t insize,
-    globus_byte_t **out_startp,
-    globus_size_t *outsizep)
+globus_l_gram_http_unquote_string(
+    const globus_byte_t *  inbuf, 
+    globus_size_t          insize,
+    char *                 out )  /* assumes enough mem alloc'd */
 {
-    int in_quote = GLOBUS_FALSE;
-    /* Unquoting shrinks, so allocating enough for the existing quoted
-       message is fine.   Plus one for null termination. */
-    globus_byte_t *out = *out_startp = my_malloc(globus_byte_t, insize + 1);
+    globus_bool_t  in_quote = GLOBUS_FALSE;
+    globus_bool_t  done     = GLOBUS_FALSE;
+    char *         in       = (char *) inbuf;
 
-    if (*in == '"') {
+    if (*in == '"')
+    {
 	in_quote = GLOBUS_TRUE;
 	++in;
     }
-    while (*in) {
-	if (in_quote) {
-	    if(*in == '"') {
+    while (!done && ((globus_size_t)(in - (char *)inbuf) < insize))
+    {
+	if (!*in)
+	{
+	    done = GLOBUS_TRUE;
+	    continue;
+	}
+	if (in_quote)
+	{
+	    if (*in == '"')  /* done */
+	    {
 		++in;
-		*outsizep = out - *out_startp;
-		/* Skip to the start of the next line, if any. */
-		if (strstr(in, "\r\n")) {
-		    in = strstr(in, "\r\n") + 2;
-		} else {
-		    while (*in)
-			++in;
-		}
-		return GLOBUS_SUCCESS;
-	    } else if (*in == '\\') {
-		*out++ = *++in;
-	    } else if (!*in) {
-		/* Ended early! */
-		/* No closing quote. */
-		return GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED; 
-	    } else {
-		*out++ = *(in++);
-	    }
-	} else {		/* not in a quote */
-
-	    if (*in == '%') {
-		/* Handle % HEX HEX */
-
-#		define ch(x) ((unsigned char) (x))
-#		define hexdigit2uchar(x) \
-			((unsigned char) (isdigit(ch(x)) ? ((ch(x)) - '0') \
-				: (tolower(ch(x)) - 'a')))
-#		define hexbyte(x1,x2) \
-			((hexdigit2uchar(x1) << 4) + hexdigit2uchar(x2))
-
-		/* This tests against a short string too (null bytes) */
-		if (!isxdigit(ch(in[1])) || !isxdigit(ch(in[2])))
-		    return GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;
-		*out = (globus_byte_t) hexbyte(in[1], in[2]);
-		in += 2;	/* Skip over the digits. */
-#		undef hexdigit2uchar
-#		undef hexbyte
-	    }
-	    if (*in == '\r')	/* this is the end of the line. */ {
-	        if (*++in != '\n') {
-		    /* Malformed line; pick a better error message. */
-		    return GLOBUS_FAILURE;
+		in_quote = GLOBUS_FALSE;
+		done = GLOBUS_TRUE;
+		continue;
+	    } 
+	    else if (*in == '\\')   /* escaped characeter, do next instead */
+		*out++ = *(++in);
+	    else 
+		*out++ = *in++;
+	} 
+	else   /* no quote */
+	{
+	    if (*in == '\r')	/* end of the line. */ 
+	    {
+	        if (*(++in) != '\n')
+		{
+		    /* Malformed line */
+		    return GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;
 		}
 	    }
-	    *out++ = *(in++);
+	    /* TODO: Recognize % HEX HEX here. */
+	    *out++ = *in++;
 	}
     }
+
+    if (in_quote)
+	return GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;
+
+    *out  = '\0';
     return GLOBUS_SUCCESS;
 }
 
-/* pack/unpack themselves. */
-
 
 int
-globus_i_gram_pack_http_job_request(
-    int job_state_mask		/* integer (IN) */,
-    const char *callback_url	/* user's state listener URL (IN) */,
-    const char *rsl	/* user's RSL (IN) */,
-    globus_byte_t **query_startp /* OUT */,
-    globus_size_t *query_sizep	/* OUT; optional (NULL OK) */)
+globus_gram_http_pack_job_request(
+    const int               job_state_mask,
+    const char *            callback_url,
+    const char *            rsl,
+    globus_byte_t **        query,
+    globus_size_t *         querysize )
 {
-    int rc;
-    char * o = (char *) *query_startp 
-	= my_malloc(globus_byte_t, 
-		    /* Output pointer */
-		    100 + strlen(callback_url) + 2 * strlen(rsl));
-    globus_byte_t *quoted = GLOBUS_NULL;
-    globus_size_t qsize;
+    int          rc;
+    int          len;
 
-#define advance_o() do { while(*o) ++o; } while(0)
+    *query = my_malloc( globus_byte_t,
+			strlen(GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE) +
+			strlen(GLOBUS_GRAM_HTTP_PACK_JOB_STATE_MASK_LINE) +
+			strlen(GLOBUS_GRAM_HTTP_PACK_CALLBACK_URL_LINE) +
+			strlen(callback_url) + 2 * strlen(rsl) + 10);
+
+    len = globus_libc_sprintf((char *) *query, 
+			      GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE
+			      GLOBUS_GRAM_HTTP_PACK_JOB_STATE_MASK_LINE
+			      GLOBUS_GRAM_HTTP_PACK_CALLBACK_URL_LINE
+			      "rsl: ",
+			      GLOBUS_GRAM_PROTOCOL_VERSION,
+			      job_state_mask,
+			      callback_url);
     
-    sprintf(o, 
-	    "protocol-version: %d\r\n"
-	    "job-state-mask: %d\r\n"
-	    "callback-url: %s\r\n"
-	    "rsl: ",
-	    GLOBUS_GRAM_PROTOCOL_VERSION,
-	    job_state_mask,
-	    callback_url);
-    advance_o();
+    len += globus_l_gram_http_quote_string( rsl,
+					    (*query)+len );
 
-    rc = globus_l_gram_http_field_value_quote_string(
-	          rsl, strlen(rsl), 
-		  &quoted, &qsize);
-    if (rc)			/* can't happen */
-	return rc;
-    strcpy(o, quoted);
-    o += qsize;
-    globus_free(quoted);
-    quoted = GLOBUS_NULL;
-    if (query_sizep)
-	*query_sizep = (globus_size_t) (o - (char *) *query_startp);
+    globus_libc_sprintf((char *)(query+len), CRLF);
+    *querysize = (globus_size_t)(len+3);
 
     return GLOBUS_SUCCESS;
 }
 
-
-#define advance_q() do						\
-{								\
-    /* Look for \r\n */						\
-    if ((q = strstr(q,"\r\n")) == NULL)				\
-	return GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;	\
-    /* Pass over the \r\n */					\
-    q += 2;							\
-} while(0)   
-
-
-/* Returns GLOBUS_SUCCESS or an error code. */
-static 
-int 
-globus_l_gram_http_parse_and_check_protocol_version( char **qp /* IN/OUT */)
-{
-    char *q = *qp;
-    int protocol_version;
-
-    if(sscanf(q, "protocol-version: %d", &protocol_version) != 1)
-	return GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;
-    advance_q();
-    *qp = q;
-    if (protocol_version != GLOBUS_GRAM_PROTOCOL_VERSION)
-	return GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH;
-
-    return GLOBUS_SUCCESS;
-}
 
 int
-globus_i_gram_unpack_http_job_request(
-    globus_byte_t *query,	/* IN */
-    globus_size_t query_size,	/* IN */
-    int *job_state_maskp,	/* OUT */
-    globus_byte_t **client_contact_strp,	/* OUT */
-    globus_size_t *client_contact_strsizep, /* OUT, optional */
-    globus_byte_t **rslp,	/* OUT */
-    globus_size_t *rslsizep) /* OUT, optional */
+globus_gram_http_unpack_job_request(
+    globus_byte_t *         query,
+    globus_size_t           querysize,
+    int  *                  job_state_mask,
+    char **                 callback_url,
+    char **                 description )
 {
-    int     rc;
-    char *  q = (char *) query;
+    int              protocol_version;
+    int              rc;
+    globus_size_t    rsl_count;
+    char *           q = (char *) query;
+    char *           p;
 
-    /* TODO --Steve A XXX */
-    globus_assert(" Must fix client_contact_strp allocation."); 
-    if ((rc = globus_l_gram_http_parse_and_check_protocol_version(&q)))
-	return rc;
-    if (sscanf(q, "job-state-mask: %d", job_state_maskp) != 1)
-	return GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;
-    advance_q();
-    /* Figure out buffer size. */
-    if (!strchr(q, '\r'))
-	return GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;
-    *client_contact_strp 
-	/* +1 for null termination */
-	= my_malloc(globus_byte_t, (strchr(q, '\r') - q + 1)); 
+    p = strstr(q, CRLF"rsl: ");
+    if (!p)
+	return GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;	
 
-    /* Parse the results. */
-    if (sscanf(q, "callback-url: %s", *client_contact_strp) != 1)
-	return GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;
-    if (client_contact_strsizep)
-	*client_contact_strsizep = strlen(*client_contact_strp);
+    p+=strlen(CRLF"rsl: ");
+    rsl_count = querysize - (globus_size_t)(p-q);
 
-    advance_q();
-    if (strncmp(q, "rsl: ", 5) != 0)
-	return GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;	/* TODO: Parse_error error code */
-    q += 5;
-    rc = globus_l_gram_http_field_value_unquote_string(
-	          q, strlen(q),
-		  rslp, rslsizep);
+    *callback_url = my_malloc(char,(p-q));
+    *description  = my_malloc(char,rsl_count);
+
+    if (sscanf( q,
+		GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE
+		GLOBUS_GRAM_HTTP_PACK_JOB_STATE_MASK_LINE
+		GLOBUS_GRAM_HTTP_PACK_CALLBACK_URL_LINE,
+		&protocol_version,
+		job_state_mask,
+		*callback_url ) != 3)
+    {
+	rc = GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;
+	goto globus_gram_http_unpack_job_request_done;
+    }
+    if (protocol_version != GLOBUS_GRAM_PROTOCOL_VERSION)
+    {
+	rc = GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH;
+	goto globus_gram_http_unpack_job_request_done;
+    }	
+    rc = globus_l_gram_http_unquote_string(
+	          (globus_byte_t*) p,
+		  rsl_count-5,
+		  *description );
+
+globus_gram_http_unpack_job_request_done:
+    if (rc != GLOBUS_SUCCESS)
+    {
+	my_free(*callback_url);
+	my_free(*description);
+	*callback_url = GLOBUS_NULL;
+	*description = GLOBUS_NULL;
+    }
     return rc;
 }
 
 
-
-
-/* NULL graml_job_contact is OK, in some status return
-   conditions. --Steve A */ 
 int
-globus_i_gram_pack_http_job_request_result(
-    int gram_status_code	/* IN */,
-    const char *graml_job_contact /* IN */,
-    globus_byte_t **reply_startp /* OUT */,
-    globus_size_t *reply_sizep	/* OUT, optionally NULL */)
+globus_gram_http_pack_job_request_reply(
+    int                      status,
+    char *                   job_contact,    /* may be null */
+    globus_byte_t **         reply,
+    globus_size_t *          replysize )
 {
-    char * o = (char *) *reply_startp 
-	/* 100 is more than enough for all the fixed text and the ASCII
-	   representation of the numbers (%d sprintf conversion). */
-	= (char *) my_malloc(globus_byte_t, strlen(graml_job_contact) + 100);
-    sprintf(o,
-	    "protocol-version: %d\r\n"
-	    "status: %d\r\n",
-	    GLOBUS_GRAM_PROTOCOL_VERSION, 
-	    gram_status_code);
-    advance_o();
-
-    if (graml_job_contact)
-    {
-	sprintf(o, "job-manager-url: %s\r\n", graml_job_contact);
-	advance_o();
-    }
-    if (reply_sizep)
-	*reply_sizep = (globus_size_t) (o - (char *)*reply_startp);
-
+    *reply = my_malloc(globus_byte_t,
+		       strlen(GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE) +
+		       strlen(GLOBUS_GRAM_HTTP_PACK_STATUS_LINE) +
+		       strlen(GLOBUS_GRAM_HTTP_PACK_JOB_MANAGER_URL_LINE) +
+		       ((job_contact) ? strlen(job_contact) + 3 : 3));
+    
+    if (job_contact)
+	globus_libc_sprintf( (char *) *reply,
+			     GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE
+			     GLOBUS_GRAM_HTTP_PACK_STATUS_LINE
+			     GLOBUS_GRAM_HTTP_PACK_JOB_MANAGER_URL_LINE,
+			     GLOBUS_GRAM_PROTOCOL_VERSION, 
+			     status,
+			     job_contact );
+    else
+	globus_libc_sprintf( (char *) *reply,
+			     GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE
+			     GLOBUS_GRAM_HTTP_PACK_STATUS_LINE,
+			     GLOBUS_GRAM_PROTOCOL_VERSION,
+			     status );
+		 
+    *replysize = (globus_size_t)(strlen((char *)reply) + 1);
     return GLOBUS_SUCCESS;
 }
 
 
-/* pass in result_contactp as a pointer to a null character pointer.
-   This will be malloced. */
-int
-globus_i_gram_unpack_http_job_request_result(
-    globus_byte_t *query,
-    globus_size_t query_size,
-    int *result_statusp /* GLOBUS_SUCCESS or a failure */,
-    globus_byte_t **result_contactp /* NULL if not SUCCESS */,
-    globus_size_t *result_contactsizep)
-{
-    int     protocol_version;
-    char *  q = (char *) query;
 
-    if(sscanf(q, "protocol-version: %d", &protocol_version) != 1)
-	return GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;	/* TODO: Better parse error code. */
+int
+globus_gram_http_unpack_job_request_reply(
+    globus_byte_t *          reply,
+    globus_size_t            replysize,
+    int *                    status,
+    char **                  job_contact )
+{
+    int      rc;
+    int      protocol_version;
+    char *   p;
+
+    rc = GLOBUS_SUCCESS;
+
+    p = strstr((char *)reply, CRLF"job-manager-url:");
+    if (p)
+    {
+	*job_contact = my_malloc(
+	    char,
+	    replysize - strlen(GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE));
+	
+	p+=2;  /* crlf */
+    }
+
+    if (sscanf( (char *) reply,
+		GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE
+		GLOBUS_GRAM_HTTP_PACK_STATUS_LINE,
+		&protocol_version,
+		status ) != 2 )
+    {
+	rc = GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;
+	goto globus_gram_http_unpack_job_request_done;
+    }
     if (protocol_version != GLOBUS_GRAM_PROTOCOL_VERSION)
-	return GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH;
-    advance_q();
-    if (sscanf(q, "status: %d", result_statusp) != 1)
-	return GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;
-    advance_q();
-    if (sscanf(q, "job-manager-url: %s", *result_contactp) != 1)
-	return GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;
-    return GLOBUS_SUCCESS;	
+    {
+	rc = GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH;
+	goto globus_gram_http_unpack_job_request_done;
+    }	
+
+    if (p)
+    {
+	if (sscanf( p,
+		    GLOBUS_GRAM_HTTP_PACK_JOB_MANAGER_URL_LINE,
+		    *job_contact ) != 1 )
+	{
+	    rc = GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;
+	}
+    }
+
+globus_gram_http_unpack_job_request_done:
+
+    if (rc != GLOBUS_SUCCESS)
+    {
+	my_free(*job_contact);
+	*job_contact = NULL;
+    }
+
+    return rc;
 } 
 
 
 int
-globus_i_gram_http_pack_status_message(
-    const char *graml_job_contact /* IN */,
-    int status			/* IN */,
-    int failure_code		/* IN */,
-    globus_byte_t *message	/* OUT */,
-    globus_size_t *message_sizep /* OUT */)
+globus_gram_http_pack_status_request(
+    char *              status_request,
+    globus_byte_t **    query,
+    globus_size_t *     querysize )
 {
-    /* TODO: Not clear to me what should go here.  We already return a numeric
-       status code.  --Steve A */
+    *query = my_malloc(globus_byte_t,
+		       strlen(GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE) +
+		       strlen(GLOBUS_GRAM_HTTP_PACK_CLIENT_REQUEST_LINE) +
+		       strlen(status_request));
+
+    globus_libc_sprintf( (char *) *query,	
+			 GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE
+			 GLOBUS_GRAM_HTTP_PACK_CLIENT_REQUEST_LINE,
+			 GLOBUS_GRAM_PROTOCOL_VERSION,
+			 status_request );
     
-    fprintf(stderr, "unimplemented function\n");
-    abort();
-    return GLOBUS_FAILURE;	/* TODO: FILL IN --Steve A */
-}
+    *querysize = (globus_size_t)(strlen((char*)*query) + 1);
 
-#undef advance_o
-#undef advance_q
-
-/************************ "HTTP" post/get functions ************************/
-
-int
-globus_l_gram_http_post( char *                          url,
-			 globus_io_attr_t *              attr,
-			 globus_byte_t *                 message,
-			 globus_size_t                   msgsize,
-			 globus_gram_http_read_t *       status,
-			 globus_io_write_callback_t      callback )
-{
-    globus_io_handle_t *            handle;
-    globus_byte_t *                 sendbuf;
-    globus_size_t                   sendbufsize;
-    globus_result_t                 res;
-    int                             rc;
-    globus_url_t		    parsed_url;
-    globus_size_t                   i;
-
-    rc = globus_url_parse(url,
-			  &parsed_url);
-    if(rc != GLOBUS_SUCCESS)
-    {
-	return GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;
-    }
-
-    handle  = my_malloc(globus_io_handle_t,1);
-    if ((rc = globus_gram_http_attach(url, handle, attr))
-	|| (rc = globus_gram_http_frame_request( url,
-						 parsed_url.host,
-						 message,
-						 msgsize,
-						 &sendbuf,
-						 &sendbufsize)))
-    {
-	my_free(handle);
-	my_free(status);
-	globus_url_destroy(&parsed_url);
-	return GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;	
-    }
-    globus_url_destroy(&parsed_url);
-    verbose(notice("http_post : writing size=%d on %d\n",
-		   sendbufsize, handle->fd));
-    for(i = 0; i < sendbufsize; i++)
-    {
-	verbose(notice("%c", sendbuf[i]));
-    }
-    verbose(notice("---\n"));
-
-    res = globus_io_register_write( handle,
-				    sendbuf,
-				    sendbufsize,
-				    callback,
-				    status );
-    if (res != GLOBUS_SUCCESS)
-    {
-	my_free(sendbuf);
-	my_free(handle);
-	my_free(status);
-	return GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;
-    }
     return GLOBUS_SUCCESS;
 }
 
 
 int
-globus_gram_http_post_and_get( char *                         url,
-			       globus_io_attr_t *             attr,
-			       globus_byte_t *                request_message,
-			       globus_size_t                  request_size,
-			       globus_byte_t **               reply_message,
-			       globus_size_t * reply_sizep /* May be NULL */,
-			       globus_gram_http_monitor_t *   monitor)
+globus_gram_http_unpack_status_request(
+    globus_byte_t *    query,
+    globus_size_t      querysize,
+    char **            status_request )
 {
-    globus_gram_http_read_t *       status;
+    int       rc;
+    int       protocol_version;
+    char *    p;
 
-    if (monitor)
-	initialize_monitor(monitor);
-    globus_gram_http_initialize_read_t(
-	&status,
-	(void *)globus_l_gram_http_get_callback,    /* userfunc after get */
-	GLOBUS_NULL,                                /* userarg            */
-	GLOBUS_NULL,                                /* userptr            */
-	monitor,                                    /* monitor            */
-	reply_message,                              /* replybuf           */
-	reply_sizep);                               /* replysize          */
+    *status_request = my_malloc(char, querysize);   
+    rc = GLOBUS_SUCCESS;
 
-    status->callback_arg = (void *) status;
+    if (sscanf( (char *) query,
+		GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE
+		GLOBUS_GRAM_HTTP_PACK_CLIENT_REQUEST_LINE,
+		&protocol_version,
+		*status_request) != 2 )
+    {
+	rc = GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;
+    }
+    else if (protocol_version != GLOBUS_GRAM_PROTOCOL_VERSION)
+    {
+	rc = GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH;
+    }	
 
-    return globus_l_gram_http_post( url,
-				    attr,
-				    request_message,
-				    request_size,
-				    status,
-				    globus_l_gram_http_post_callback );
+    if (rc != GLOBUS_SUCCESS)
+    {
+	my_free(*status_request);
+	*status_request = GLOBUS_NULL;
+    }
 
+    return rc;
 }
+
+
+int
+globus_gram_http_pack_status_reply(
+    int                 job_status,
+    int                 failure_code,
+    globus_byte_t **    reply,
+    globus_size_t *     replysize )
+{
+    *reply = my_malloc( globus_byte_t,
+			strlen(GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE) +
+			strlen(GLOBUS_GRAM_HTTP_PACK_STATUS_LINE) +
+			strlen(GLOBUS_GRAM_HTTP_PACK_FAILURE_CODE_LINE)
+			+ 4 );
+
+    globus_libc_sprintf( (char *)*reply,
+			 GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE
+			 GLOBUS_GRAM_HTTP_PACK_STATUS_LINE
+			 GLOBUS_GRAM_HTTP_PACK_FAILURE_CODE_LINE,
+			 GLOBUS_GRAM_PROTOCOL_VERSION,
+			 job_status,
+			 failure_code );
+    
+    *replysize = (globus_size_t)(strlen((char *)*reply) + 1);
+
+    return GLOBUS_SUCCESS;
+}
+
+
+int
+globus_gram_http_unpack_status_reply(
+    globus_byte_t *    reply,
+    globus_size_t      replysize,
+    int *              job_status,
+    int *              failure_code )
+{
+    int     protocol_version;
+
+    if (sscanf( (char *) reply,
+		GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE
+		GLOBUS_GRAM_HTTP_PACK_STATUS_LINE
+		GLOBUS_GRAM_HTTP_PACK_FAILURE_CODE_LINE,
+		&protocol_version,
+		job_status,
+		failure_code ) != 3)
+    {
+	return GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;
+    }
+    else if (protocol_version != GLOBUS_GRAM_PROTOCOL_VERSION)
+    {
+	return GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH;
+    }		
+
+    return GLOBUS_SUCCESS;
+}
+
+
+
+int
+globus_gram_http_pack_status_update_message(   
+    char *                   job_contact,
+    int                      status,            
+    int                      failure_code,
+    globus_byte_t **         reply,
+    globus_size_t *          replysize )
+{
+    *reply = my_malloc( 
+	globus_byte_t,
+	strlen(GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE) +
+	strlen(GLOBUS_GRAM_HTTP_PACK_JOB_MANAGER_URL_LINE) +
+	strlen(GLOBUS_GRAM_HTTP_PACK_STATUS_LINE) +
+	strlen(GLOBUS_GRAM_HTTP_PACK_FAILURE_CODE_LINE) +
+	strlen(job_contact) + 5 );
+
+    globus_libc_sprintf( (char *) *reply,
+			 GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE
+			 GLOBUS_GRAM_HTTP_PACK_JOB_MANAGER_URL_LINE
+			 GLOBUS_GRAM_HTTP_PACK_STATUS_LINE
+			 GLOBUS_GRAM_HTTP_PACK_FAILURE_CODE_LINE,
+			 GLOBUS_GRAM_PROTOCOL_VERSION,
+			 job_contact,
+			 status,
+			 failure_code );
+	     
+    return GLOBUS_SUCCESS;
+}
+
+
+int
+globus_gram_http_unpack_status_update_message(
+    globus_byte_t *          reply,
+    globus_size_t            replysize,
+    char **                  job_contact,
+    int *                    status,
+    int *                    failure_code )
+{
+    int   protocol_version;
+
+    *job_contact = my_malloc(char, replysize);
+
+    if (sscanf( (char *) *reply,
+		GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE
+		GLOBUS_GRAM_HTTP_PACK_JOB_MANAGER_URL_LINE
+		GLOBUS_GRAM_HTTP_PACK_STATUS_LINE
+		GLOBUS_GRAM_HTTP_PACK_FAILURE_CODE_LINE,
+		&protocol_version,
+		*job_contact,
+		status,
+		failure_code ) != 4)
+    {
+        return GLOBUS_GRAM_CLIENT_ERROR_HTTP_UNPACK_FAILED;
+    }
+    else if (protocol_version != GLOBUS_GRAM_PROTOCOL_VERSION)
+    {
+        return GLOBUS_GRAM_CLIENT_ERROR_VERSION_MISMATCH;
+    }
+
+    return GLOBUS_SUCCESS;
+}
+
 
 
 static
@@ -1766,21 +1867,21 @@ globus_l_gram_http_parse_request(
     char *host;
     int protocol_version;
 
-    uri = (char *) globus_malloc(strlen(buf));
-    host = (char *) globus_malloc(strlen(buf));
+    uri = (char *) globus_malloc(strlen((char *) buf));
+    host = (char *) globus_malloc(strlen((char *) buf));
     
     globus_libc_lock();
-    rc = sscanf(buf,
-		GLOBUS_GRAM_HTTP_REQUEST_LINE
-		GLOBUS_GRAM_HTTP_HOST_LINE
-		GLOBUS_GRAM_HTTP_PROTOCOL_VERSION_LINE
-		GLOBUS_GRAM_HTTP_CONTENT_TYPE_LINE
-		GLOBUS_GRAM_HTTP_CONTENT_LENGTH_LINE
-		CRLF,
-		uri,
-		host,
-		&protocol_version,
-		payload_length);
+    rc = sscanf( (char *) buf,
+		 GLOBUS_GRAM_HTTP_REQUEST_LINE
+		 GLOBUS_GRAM_HTTP_HOST_LINE
+		 GLOBUS_GRAM_HTTP_PROTOCOL_VERSION_LINE
+		 GLOBUS_GRAM_HTTP_CONTENT_TYPE_LINE
+		 GLOBUS_GRAM_HTTP_CONTENT_LENGTH_LINE
+		 CRLF,
+		 uri,
+		 host,
+		 &protocol_version,
+		 payload_length);
     globus_libc_unlock();
 		       
     if(rc != 4)
@@ -1803,9 +1904,10 @@ globus_l_gram_http_parse_request(
     return rc;
 }
 
+
 static
 int
-globus_l_gram_http_parse_response(
+globus_l_gram_http_parse_reply(
     globus_byte_t *			buf,
     globus_size_t *			payload_length)
 {
@@ -1815,18 +1917,18 @@ globus_l_gram_http_parse_response(
     int offset;
     char * reason;
 
-    reason = (char *) globus_malloc(strlen(buf));
+    reason = (char *) globus_malloc(strlen((char *)buf));
 
     *payload_length = 0;
     
     globus_libc_lock();
-    rc = sscanf(buf,
-		GLOBUS_GRAM_HTTP_PARSE_RESPONSE_LINE
-		GLOBUS_GRAM_HTTP_PROTOCOL_VERSION_LINE "%n",
-		&code,
-		reason,
-		&protocol_version,
-		&offset);
+    rc = sscanf( (char *) buf,
+		 GLOBUS_GRAM_HTTP_PARSE_REPLY_LINE
+		 GLOBUS_GRAM_HTTP_PROTOCOL_VERSION_LINE "%n",
+		 &code,
+		 reason,
+		 &protocol_version,
+		 &offset);
     globus_libc_unlock();
 		       
     if(rc < 3)
@@ -1840,10 +1942,10 @@ globus_l_gram_http_parse_response(
     else if(code == 200)
     {
 	globus_libc_lock();
-	rc = sscanf(buf + offset,
-		    GLOBUS_GRAM_HTTP_CONTENT_TYPE_LINE
-		    GLOBUS_GRAM_HTTP_CONTENT_LENGTH_LINE,
-		    payload_length);
+	rc = sscanf( (char *)buf + offset,
+		     GLOBUS_GRAM_HTTP_CONTENT_TYPE_LINE
+		     GLOBUS_GRAM_HTTP_CONTENT_LENGTH_LINE,
+		     payload_length);
 	globus_libc_unlock();
 	if(rc != 1)
 	{
@@ -1864,3 +1966,6 @@ globus_l_gram_http_parse_response(
     
     return rc;
 }
+
+
+
