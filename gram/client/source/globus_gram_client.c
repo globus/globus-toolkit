@@ -589,7 +589,6 @@ globus_gram_client_ping_attr_failed:
 globus_gram_client_ping_parse_failed:
     globus_mutex_destroy(&monitor.mutex);
     globus_cond_destroy(&monitor.cond);
-    globus_io_tcpattr_destroy (&attr);
     return rc;
 } /* globus_gram_client_ping() */
 
