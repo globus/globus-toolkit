@@ -530,4 +530,5 @@ void globus_print_error(
     globus_libc_fprintf(stderr, "%s\n", error_string);
     globus_libc_free(error_string);
     globus_object_free(error_obj);
-};
+}
+
