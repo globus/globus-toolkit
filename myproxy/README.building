@@ -21,19 +21,14 @@ $ make dist
 
 To make a source bundle, first setup a subdirectory named src-packages
 with all the needed source packages (Globus and MyProxy):
-$ ls -l src-packages
-total 3224
--rw-rw-r--    1 jbasney  jbasney    270054 Apr 18 14:43 globus_common-2.0.tar.gz
--rw-rw-r--    1 jbasney  jbasney    116106 Apr 18 14:43 globus_common_setup-2.0.tar.gz
--rw-rw-r--    1 jbasney  jbasney    164070 Apr 18 14:42 globus_core-2.1.tar.gz
--rw-rw-r--    1 jbasney  jbasney    129978 Apr 18 14:43 globus_core_setup-2.0.tar.gz
--rw-rw-r--    1 jbasney  jbasney    167719 Apr 18 14:43 globus_gssapi_gsi-2.0.tar.gz
--rw-rw-r--    1 jbasney  jbasney    125560 Apr 18 14:43 globus_gss_assist-2.0.tar.gz
--rw-rw-r--    1 jbasney  jbasney   1628757 Aug  9 15:39 globus_openssl-0.9.tar.gz
--rw-rw-r--    1 jbasney  jbasney    206050 Apr 18 14:43 globus_ssl_utils-2.1.tar.gz
--rw-rw-r--    1 jbasney  jbasney    121261 Apr 18 14:43 globus_ssl_utils_setup-2.0.tar.gz
--rw-rw-r--    1 jbasney  jbasney    110666 Apr 18 14:43 globus_user_env-2.1.tar.gz
--rw-rw-r--    1 jbasney  jbasney    195396 Aug 27 10:21 myproxy-1.0.tar.gz
+$ ls src-packages/
+globus_common-2.0.tar.gz        globus_openssl-0.9.tar.gz
+globus_common_setup-2.0.tar.gz  globus_ssl_utils-2.1.tar.gz
+globus_core-2.1.tar.gz          globus_ssl_utils_setup-2.0.tar.gz
+globus_core_setup-2.0.tar.gz    globus_user_env-2.1.tar.gz
+globus_gssapi_gsi-2.0.tar.gz    myproxy-1.0.tar.gz
+globus_gss_assist-2.0.tar.gz
+
 Then, build a source bundle in the current working directory with:
 $ $GPT_LOCATION/sbin/gpt-bundle -srcdir=src-packages myproxy globus_core_setup globus_ssl_utils_setup -output=myproxy_bundle-1.0-src.tar.gz
 
