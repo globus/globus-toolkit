@@ -46,6 +46,8 @@ if test ! -h globus_automake_targets; then
     globus_automake_targets
     ln -s $GLOBUS_LOCATION/share/globus_aclocal/automake_rules \
     globus_automake_rules
+    ln -s $GLOBUS_LOCATION/share/globus_aclocal/automake_doxygen_rules \
+    globus_automake_doxygen_rules
     ln -s $GLOBUS_LOCATION/share/globus_aclocal/automake_top_rules \
     globus_automake_top_rules
     ln -s $GLOBUS_LOCATION/share/globus_aclocal/automake_config \
