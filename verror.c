@@ -224,7 +224,7 @@ char *
 verror_get_string()
 {
     if (!my_context.string) {
-	return "unknown error";
+	return "unknown error\n";
     }
     return my_context.string;
 }
@@ -274,5 +274,9 @@ verror_clear()
 void
 verror_print_error(FILE *stream)
 {
-    fprintf(stream, "%s %s\n", verror_get_string(), verror_strerror());
+    if (my_context.number) {
+	fprintf(stream, "%s%s\n", verror_get_string(), verror_strerror());
+    } else {
+	fprintf(stream, "%s", verror_get_string());
+    }
 }
