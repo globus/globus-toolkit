@@ -4,6 +4,7 @@
 Makefile
 Makefile.in
 aclocal.m4
+BUILD
 config.cache
 config.guess
 config.h
@@ -16,6 +17,7 @@ ltconfig
 ltmain.sh
 missing
 mkinstalldirs
+myproxy-*.tar.gz
 myproxy-admin-change-pass
 myproxy-admin-load-credential
 myproxy-admin-query
