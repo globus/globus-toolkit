@@ -62,7 +62,7 @@ open(CONF, "+>> $target_dir/gsi-authz.conf") ||
 
 while(<CONF>)
 {
-    if($_ =~ /^globus_gram_jobmanager_authz.*/i)
+    if($_ =~ /^\s*globus_gram_jobmanager_authz.*/i)
     {
         $found = 1;
         if(defined($opt_force))
