@@ -51,6 +51,53 @@ typedef void
     int                                 cs_count,
     void *                              user_arg);
 
+
+
+globus_result_t
+globus_i_gfs_data_resource_request(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    int                                 id,
+    globus_gfs_resource_state_t *       resource_state);
+
+globus_result_t
+globus_i_gfs_data_recv_request(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    int                                 id,
+    globus_gfs_transfer_state_t *       recv_state);
+
+globus_result_t
+globus_i_gfs_data_send_request(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    int                                 id,
+    globus_gfs_transfer_state_t *       send_state);
+
+globus_result_t
+globus_i_gfs_data_list_request(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    int                                 id,
+    globus_gfs_transfer_state_t *       list_state);
+
+globus_result_t
+globus_i_gfs_data_command_request(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    int                                 id,
+    globus_gfs_command_state_t *        command_state);
+
+globus_result_t
+globus_i_gfs_data_passive_request(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    int                                 id,
+    globus_gfs_data_state_t *           data_state);
+
+globus_result_t
+globus_i_gfs_data_active_request(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    int                                 id,
+    globus_gfs_data_state_t *           data_state);
+
+
+
+
 #if 0
 
 globus_result_t
@@ -127,7 +174,6 @@ void
 globus_i_gfs_data_transfer_event(
     globus_i_gfs_server_instance_t *    instance,
     int                                 event_type);
-
 
 
 #endif

@@ -177,7 +177,7 @@ typedef struct globus_i_gfs_ipc_handle_s
     globus_bool_t                       local;
 
     globus_hashtable_t                  call_table;
-    globus_gfs_ipc_iface_t              iface;
+    globus_gfs_ipc_iface_t *            iface;
 
     globus_bool_t                       writing;
     globus_fifo_t                       write_q;
@@ -204,7 +204,7 @@ typedef struct globus_gfs_ipc_request_s
     globus_gfs_ipc_callback_t           cb;
     globus_gfs_ipc_callback_t           event_cb;
     void *                              user_arg;
-    globus_gfs_ipc_reply_t              reply;
+    globus_gfs_ipc_reply_t *            reply;
 } globus_gfs_ipc_request_t;
 
 static globus_xio_stack_t               globus_l_gfs_ipc_stack;
@@ -256,7 +256,7 @@ globus_l_gfs_ipc_open_cb(
 globus_result_t
 globus_gfs_ipc_open(
     globus_gfs_ipc_handle_t *           ipc_handle,
-    globus_gfs_ipc_iface_t              iface,
+    globus_gfs_ipc_iface_t *            iface,
     const char *                        contact_string,
     globus_gfs_ipc_open_close_callback_t open_cb,
     void *                              open_arg,
@@ -279,7 +279,7 @@ globus_gfs_ipc_open(
     }
 
     ipc = (globus_i_gfs_ipc_handle_t *)
-        globus_calloc(1, sizeof(globus_gfs_ipc_handle_t));
+        globus_calloc(1, sizeof(globus_i_gfs_ipc_handle_t));
     if(ipc == NULL)
     {
         res = GlobusGFSErrorMemory("ipc");
@@ -301,7 +301,7 @@ globus_gfs_ipc_open(
     /* if local fake the callback */
     if(ipc->contact_string == NULL)
     {
-        ipc->local = GLOBUS_FALSE;
+        ipc->local = GLOBUS_TRUE;
         res = globus_callback_register_oneshot(
             NULL,
             NULL,
@@ -311,6 +311,7 @@ globus_gfs_ipc_open(
     /* do xio open */
     else
     {
+        ipc->local = GLOBUS_FALSE;
         res = globus_xio_handle_create(
             &ipc->xio_handle, globus_l_gfs_ipc_stack);
         if(res != GLOBUS_SUCCESS)
@@ -350,7 +351,7 @@ globus_gfs_ipc_open(
 globus_result_t
 globus_gfs_ipc_handle_create(
     globus_gfs_ipc_handle_t *           ipc_handle,
-    globus_gfs_ipc_iface_t              iface,
+    globus_gfs_ipc_iface_t *            iface,
     globus_xio_handle_t                 xio_handle,
     globus_gfs_ipc_error_callback_t     error_cb,
     void *                              error_arg)
@@ -371,7 +372,7 @@ globus_gfs_ipc_handle_create(
     }
 
     ipc = (globus_i_gfs_ipc_handle_t *)
-        globus_calloc(1, sizeof(globus_gfs_ipc_handle_t));
+        globus_calloc(1, sizeof(globus_i_gfs_ipc_handle_t));
     if(ipc == NULL)
     {
         res = GlobusGFSErrorMemory("ipc");
@@ -650,7 +651,7 @@ globus_l_gfs_ipc_finished_reply_kickout(
     request->cb(
         request->ipc, 
         GLOBUS_SUCCESS,
-        &request->reply,
+        request->reply,
         request->user_arg);
 
     /* free the resources */
@@ -668,7 +669,7 @@ globus_l_gfs_ipc_event_reply_kickout(
     request->event_cb(
         request->ipc,
         GLOBUS_SUCCESS,
-        &request->reply,
+        request->reply,
         request->user_arg);
 
     /* free the resources */
@@ -736,6 +737,9 @@ globus_gfs_ipc_reply_finished(
                 goto err;
             }
 
+            request->reply = reply;
+            request->type = reply->type;
+            
             globus_callback_register_oneshot(
                 NULL,
                 NULL,
@@ -1349,12 +1353,13 @@ globus_gfs_ipc_request_command(
             {
                 goto err;
             }
-
-            globus_hashtable_insert(
-                &ipc->call_table,
-                (void *)request->id,
-                request);
         }
+
+        globus_hashtable_insert(
+            &ipc->call_table,
+            (void *)request->id,
+            request);
+
     }
     globus_mutex_unlock(&ipc->mutex);
 

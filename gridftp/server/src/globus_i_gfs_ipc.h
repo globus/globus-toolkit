@@ -5,7 +5,6 @@
 // will be outa there when ipc_handle handling shit is in control.c
 // after local version / single stripe is working i guess.
 // typedef struct globus_i_gfs_ipc_handle_s * globus_gfs_ipc_handle_t;
-typedef struct globus_i_gfs_ipc_iface_s *  globus_gfs_ipc_iface_t;
 
 
 typedef enum
@@ -243,7 +242,7 @@ globus_gfs_ipc_set_cred(
  *
  *  tell the remote process to receive a file
  */
-typedef void
+typedef globus_result_t
 (*globus_gfs_ipc_iface_recv_t)(
     globus_gfs_ipc_handle_t             ipc_handle,
     int                                 id,
@@ -263,7 +262,7 @@ globus_gfs_ipc_request_recv(
  *  
  *  tell remote process to send a file
  */
-typedef void
+typedef globus_result_t
 (*globus_gfs_ipc_iface_send_t)(
     globus_gfs_ipc_handle_t             ipc_handle,
     int                                 id,
@@ -279,7 +278,7 @@ globus_gfs_ipc_request_send(
     void *                              user_arg);
 
 
-typedef void
+typedef globus_result_t
 (*globus_gfs_ipc_iface_list_t)(
     globus_gfs_ipc_handle_t             ipc_handle,
     int                                 id,
@@ -300,7 +299,7 @@ globus_gfs_ipc_request_list(
  *
  *  tell remote side to execute the given command
  */
-typedef void
+typedef globus_result_t
 (*globus_gfs_ipc_iface_command_t)(
     globus_gfs_ipc_handle_t             ipc_handle,
     int                                 id,
@@ -319,7 +318,7 @@ globus_gfs_ipc_request_command(
  *
  *  tell remote side to create an active data connection
  */
-typedef void
+typedef globus_result_t
 (*globus_gfs_ipc_iface_active_data_t)(
     globus_gfs_ipc_handle_t             ipc_handle,
     int                                 id,
@@ -338,7 +337,7 @@ globus_gfs_ipc_request_active_data(
  *
  *  tell remote side to do passive data connection
  */
-typedef void
+typedef globus_result_t
 (*globus_gfs_ipc_iface_passive_data_t)(
     globus_gfs_ipc_handle_t             ipc_handle,
     int                                 id,
@@ -355,7 +354,7 @@ globus_gfs_ipc_request_passive_data(
 /*
  *  send resource request
  */
-typedef void
+typedef globus_result_t
 (*globus_gfs_ipc_iface_resource_t)(
     globus_gfs_ipc_handle_t             ipc_handle,
     int                                 id,
@@ -381,29 +380,6 @@ globus_gfs_ipc_data_destroy(
     globus_gfs_ipc_handle_t             ipc_handle,
     int                                 data_connection_id);
 
-globus_result_t
-globus_gfs_ipc_open(
-    globus_gfs_ipc_handle_t *           ipc_handle,
-    globus_gfs_ipc_iface_t              iface,
-    const char *                        contact_string,
-    globus_gfs_ipc_open_close_callback_t open_cb,
-    void *                              open_arg,
-    globus_gfs_ipc_error_callback_t     error_cb,
-    void *                              error_arg);
-
-globus_result_t
-globus_gfs_ipc_handle_create(
-    globus_gfs_ipc_handle_t *           ipc_handle,
-    globus_gfs_ipc_iface_t              iface,
-    globus_xio_handle_t                 xio_handle,
-    globus_gfs_ipc_error_callback_t     error_cb,
-    void *                              error_arg);
-
-globus_result_t
-globus_gfs_ipc_close(
-    globus_gfs_ipc_handle_t *           ipc_handle,
-    globus_gfs_ipc_open_close_callback_t cb,
-    void *                              user_arg);
 
 typedef struct globus_i_gfs_ipc_iface_s
 {
@@ -415,7 +391,33 @@ typedef struct globus_i_gfs_ipc_iface_s
     globus_gfs_ipc_iface_data_destroy_t data_destroy_func;
     globus_gfs_ipc_iface_resource_t     resource_func;
     globus_gfs_ipc_iface_list_t         list_func;
-} globus_i_gfs_ipc_iface_t;
+} globus_gfs_ipc_iface_t;
+
+
+globus_result_t
+globus_gfs_ipc_open(
+    globus_gfs_ipc_handle_t *           ipc_handle,
+    globus_gfs_ipc_iface_t *            iface,
+    const char *                        contact_string,
+    globus_gfs_ipc_open_close_callback_t open_cb,
+    void *                              open_arg,
+    globus_gfs_ipc_error_callback_t     error_cb,
+    void *                              error_arg);
+
+globus_result_t
+globus_gfs_ipc_handle_create(
+    globus_gfs_ipc_handle_t *           ipc_handle,
+    globus_gfs_ipc_iface_t *            iface,
+    globus_xio_handle_t                 xio_handle,
+    globus_gfs_ipc_error_callback_t     error_cb,
+    void *                              error_arg);
+
+globus_result_t
+globus_gfs_ipc_close(
+    globus_gfs_ipc_handle_t *           ipc_handle,
+    globus_gfs_ipc_open_close_callback_t cb,
+    void *                              user_arg);
+
 
 
 #endif

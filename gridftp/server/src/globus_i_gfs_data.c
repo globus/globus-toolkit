@@ -109,12 +109,14 @@ void
 globus_l_gfs_data_operation_destroy(
     globus_l_gfs_data_operation_t *     op)
 {
-    if(op->recvd_ranges)
+/*
+    if(op->if(op->recvd_ranges)
     {
         globus_range_list_destroy(op->recvd_ranges);
     }
     globus_mutex_destroy(&op->lock);
     globus_free(op);
+*/
 }
 
 /* XXX */
@@ -149,7 +151,10 @@ globus_i_gfs_data_resource_request(
         goto error_op;
     }
     
+    op->ipc_handle = ipc_handle;
     op->id = id;
+    op->uid = getuid();
+    
     op->state = GLOBUS_L_GFS_DATA_REQUESTING;
 //    op->resource_callback = callback;
 //    op->user_arg = user_arg;
@@ -188,7 +193,7 @@ typedef struct
     globus_l_gfs_data_operation_t *     op;
     globus_object_t *                   error;
     int                                 stat_count;
-    globus_gridftp_server_stat_t        stat_info_array[1];
+    globus_gridftp_server_stat_t *      stat_info_array;
 } globus_l_gfs_data_resource_bounce_t;
 
 static
@@ -270,7 +275,7 @@ globus_gridftp_server_finished_command(
     reply->result = result;
     reply->info.command.command = op->command;
     reply->info.command.checksum = op->cksm_response;
-
+    reply->info.command.created_dir = op->pathname;
     globus_gfs_ipc_reply_finished(
         op->ipc_handle,
         reply);
@@ -296,6 +301,7 @@ globus_gridftp_server_finished_resource(
 {
     globus_bool_t                       delay;
     globus_l_gfs_data_resource_bounce_t * bounce_info;
+    globus_gridftp_server_stat_t *      stat_copy;
     GlobusGFSName(globus_gridftp_server_finished_resource);
     
     globus_mutex_lock(&op->lock);
@@ -313,12 +319,17 @@ globus_gridftp_server_finished_resource(
     }
     globus_mutex_unlock(&op->lock);
     
+    stat_copy = (globus_gridftp_server_stat_t *)
+        globus_malloc(sizeof(globus_gridftp_server_stat_t) * stat_count);
+    memcpy(
+        stat_copy,
+        stat_info_array,
+        sizeof(globus_gridftp_server_stat_t) * stat_count);
+
     if(delay)
     {
         bounce_info = (globus_l_gfs_data_resource_bounce_t *)
-            globus_malloc(
-                sizeof(globus_l_gfs_data_resource_bounce_t) + 
-                sizeof(globus_gridftp_server_stat_t) * stat_count);
+            globus_malloc(sizeof(globus_l_gfs_data_resource_bounce_t));
         if(!bounce_info)
         {
             result = GlobusGFSErrorMemory("bounce_info");
@@ -329,11 +340,7 @@ globus_gridftp_server_finished_resource(
         bounce_info->error = result == GLOBUS_SUCCESS 
             ? GLOBUS_NULL : globus_error_get(result);
         bounce_info->stat_count = stat_count;
-        memcpy(
-            bounce_info->stat_info_array,
-            stat_info_array,
-            sizeof(globus_gridftp_server_stat_t) * stat_count);
-        
+        bounce_info->stat_info_array = stat_copy;
         result = globus_callback_register_oneshot(
             GLOBUS_NULL,
             GLOBUS_NULL,
@@ -366,7 +373,7 @@ globus_gridftp_server_finished_resource(
             reply->type = GLOBUS_GFS_IPC_TYPE_RESOURCE;
             reply->id = op->id;
             reply->result = result;
-            reply->info.resource.stat_info = stat_info_array;
+            reply->info.resource.stat_info = stat_copy;
             reply->info.resource.stat_count = stat_count;
             reply->info.resource.uid = op->uid;
             
@@ -444,9 +451,11 @@ globus_i_gfs_data_command_request(
             "globus_l_gfs_data_operation_init", result);
         goto error_op;
     }
-    
+    op->ipc_handle = ipc_handle;
     op->id = id;
     op->state = GLOBUS_L_GFS_DATA_REQUESTING;
+    op->command = cmd_state->command;
+    op->pathname = cmd_state->pathname;
 //    op->command_callback = callback;
 //    op->user_arg = user_arg;
     
@@ -1088,7 +1097,7 @@ globus_i_gfs_data_recv_request(
             "globus_l_gfs_data_operation_init", result);
         goto error_op;
     }
-    
+    op->ipc_handle = ipc_handle;    
     op->id = id;
     op->state = GLOBUS_L_GFS_DATA_REQUESTING;
     op->data_handle = data_handle;
@@ -1176,7 +1185,7 @@ globus_i_gfs_data_send_request(
             "globus_l_gfs_data_operation_init", result);
         goto error_op;
     }
-        
+    op->ipc_handle = ipc_handle;    
     op->id = id;
     op->state = GLOBUS_L_GFS_DATA_REQUESTING;
     op->data_handle = data_handle;
@@ -1333,6 +1342,7 @@ globus_i_gfs_data_list_request(
         goto error_op;
     }
 
+    data_op->ipc_handle = ipc_handle;    
     data_op->id = id;
     data_op->state = GLOBUS_L_GFS_DATA_PENDING;
     data_op->data_handle = data_handle;

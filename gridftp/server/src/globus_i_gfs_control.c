@@ -159,6 +159,19 @@ globus_l_gfs_done_cb(
     }
 }
 
+globus_gfs_ipc_iface_t  globus_gfs_ipc_local_iface = 
+{
+    globus_i_gfs_data_recv_request,
+    globus_i_gfs_data_send_request,
+    globus_i_gfs_data_command_request,
+    globus_i_gfs_data_active_request,
+    globus_i_gfs_data_passive_request,
+    NULL,
+    globus_i_gfs_data_resource_request,
+    globus_i_gfs_data_list_request
+};
+
+
 static
 void
 globus_l_gfs_request_auth(
@@ -233,6 +246,23 @@ globus_l_gfs_request_auth(
                 NULL, 
                 GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS, 
                 GLOBUS_NULL);
+{
+            globus_i_gfs_server_instance_t *        instance;
+            globus_gfs_ipc_handle_t                 ipc_handle;
+            
+            instance = (globus_i_gfs_server_instance_t *) user_arg;
+                    
+            globus_gfs_ipc_open(
+                &ipc_handle,
+                &globus_gfs_ipc_local_iface,
+                NULL,
+                NULL,
+                NULL,
+                NULL,
+                NULL);
+        
+            instance->ipc_handle = ipc_handle;
+}
             return;    
         }
         else if(globus_i_gfs_config_bool("inetd") || 
@@ -303,6 +333,23 @@ globus_l_gfs_request_auth(
         GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS, 
         GLOBUS_NULL);
 
+{
+    globus_i_gfs_server_instance_t *        instance;
+    globus_gfs_ipc_handle_t                 ipc_handle;
+    
+    instance = (globus_i_gfs_server_instance_t *) user_arg;
+    
+    globus_gfs_ipc_open(
+        &ipc_handle,
+        &globus_gfs_ipc_local_iface,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL);
+
+    instance->ipc_handle = ipc_handle;
+}
     return;
 
 error:
@@ -384,7 +431,7 @@ globus_l_gfs_request_resource(
             GLOBUS_TRUE : GLOBUS_FALSE;
 
 
-    globus_gfs_ipc_request_resource(
+    result = globus_gfs_ipc_request_resource(
         instance->ipc_handle,
         &request_id,
         resource_state,
@@ -594,7 +641,7 @@ globus_l_gfs_request_command(
     command_state->chmod_mode = cmd_attr.chmod_mode;
     command_state->rnfr_pathname = cmd_attr.rnfr_pathname; 
 
-    globus_gfs_ipc_request_command(
+    result = globus_gfs_ipc_request_command(
         instance->ipc_handle,
         &request_id,
         command_state,
