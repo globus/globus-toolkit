@@ -18,7 +18,8 @@
 #define PROXY_EXTENSION			"proxy"
 #define LIMITED_PROXY_EXTENSION		"limited proxy"
 
-#define PROXY_DEFAULT_LIFETIME		24 * 60 * 60 /* seconds */
+#define PROXY_DEFAULT_LIFETIME		-1L /* magic # for lifetime */
+                                            /*   of signing cert    */
 
 /* Amount of clock skew to allow for when generating certificates */
 #define PROXY_CLOCK_SKEW_ALLOWANCE	60 * 5 /* seconds */
