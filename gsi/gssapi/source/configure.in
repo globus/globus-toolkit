@@ -11,7 +11,6 @@ dnl config header goes here
 
 dnl Initialize the automake rules the last argument
 AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION, 0)
-AM_CONFIG_HEADER(library/globus_gssapi_config.h library/gssapi.h)
 
 if test "$cross_compiling" = "no"; then
     AC_C_BIGENDIAN
@@ -43,7 +42,7 @@ GLOBUS_FINALIZE
 
 AC_OUTPUT(
 	Makefile
-    version.h
+        version.h
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
 	library/Makefile
