@@ -257,6 +257,11 @@ perf_plugin_get_cb(
 {
     perf_plugin_info_t *                        ps;
 
+    if(restart)
+    {
+        return;
+    }
+
     ps = (perf_plugin_info_t *) plugin_specific;
 
     ps->use_data = GLOBUS_TRUE;
@@ -293,6 +298,11 @@ perf_plugin_put_cb(
     perf_plugin_info_t *                        ps;
     globus_ftp_control_mode_t                   mode;
     globus_result_t                             result;
+
+    if(restart)
+    {
+        return;
+    }
 
     ps = (perf_plugin_info_t *) plugin_specific;
 
@@ -339,6 +349,11 @@ perf_plugin_transfer_cb(
     globus_bool_t                               restart)
 {
     perf_plugin_info_t *                        ps;
+
+    if(restart)
+    {
+        return;
+    }
 
     ps = (perf_plugin_info_t *) plugin_specific;
 
