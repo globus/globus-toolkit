@@ -3764,7 +3764,7 @@ abort:
 
     return globus_error_put(err);
 }
-/* globus_ftp_client_modification_time() */
+/* globus_ftp_client_size() */
 /*@}*/
 
 /**

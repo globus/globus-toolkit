@@ -221,7 +221,6 @@ case $maketarget in
 	rm -f edit
 	rm -f pathnames.h
 	rm -f y.tab.h
-	rm -f vers.c
         echo "Cleaning util/privatepw directory."
         echo "Cleaning bin directory."
         cd ..

@@ -176,7 +176,7 @@ FILE *ftpd_popen(char *program, char *type, int closestderr)
 	setuid(i);
 	enable_signaling();	/* we can allow signals once again: kinch */
 	/* end CERT suggested fixes */
-	execv(gargv[0], gargv);
+	execvp(gargv[0], gargv);
 	_exit(1);
     }
     /* parent; assume fdopen can't fail...  */
