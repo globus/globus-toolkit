@@ -2150,7 +2150,7 @@ int main(int argc,
                 final_rsl_spec = (char *) globus_libc_strdup("RSL UNKNOWN");
 
             job_status_dir = globus_l_gram_genfilename(conf.globus_location,
-						       "tmp",
+						       "var",
 						       NULL);
 
             sprintf( job_status_file_path,
