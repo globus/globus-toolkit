@@ -56,6 +56,27 @@ globus_fifo_destroy ( globus_fifo_t * fifo)
     globus_free(s_fifo);
 }
 
+void
+globus_fifo_destroy_all(
+    globus_fifo_t *                     fifo,
+    void                                (*datum_free)(void *))
+{
+    struct globus_fifo_s *              s_fifo;
+    
+    if (fifo == GLOBUS_NULL) 
+    {
+        return;
+    }
+    
+    s_fifo = *fifo;
+    globus_list_destroy_all(s_fifo->head, datum_free);
+    s_fifo->head = GLOBUS_NULL;
+    s_fifo->tail = GLOBUS_NULL;
+    s_fifo->size = 0;
+    
+    globus_free(s_fifo);
+}
+
 int 
 globus_fifo_empty ( const globus_fifo_t * fifo)
 {

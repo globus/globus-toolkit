@@ -37,6 +37,19 @@ globus_fifo_destroy(
     globus_fifo_t *                                     fifo);
 
 /**
+ *  Destroy the fifo data structure.
+ *
+ *  This function destroys the memory associate with the fifo data structure.
+ *  It calls datum_free() on behalf of all remaining nodes in the queue.
+ *  For every call to globus_fifo_init() there must be a corresponding call to
+ *  globus_fifo_destroy()
+ */
+void
+globus_fifo_destroy_all(
+    globus_fifo_t *                     fifo,
+    void                                (*datum_free)(void *));
+
+/**
  *  This function returns a boolean indicating whether or not the 
  *  fifo is empty.
  */
