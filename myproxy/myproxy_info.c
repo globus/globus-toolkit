@@ -185,11 +185,6 @@ main(int argc, char *argv[])
         fprintf(stderr, "Received ERROR_RESPONSE: %s\n", (server_response->data).error_str);
         break;
     case MYPROXY_OK_RESPONSE:
-	//if (server_response->cred_owner && strlen(server_response->cred_owner))
-	  // printf("proxy owned by : %s\n", server_response->cred_owner); 
-
-//#if defined (MULTICRED_FEATURE)
-
 	for (i = 0; i < (server_response->data).creds.num_creds; i ++)
 	{
 		if ((server_response->data).creds.info_creds[i].credname)
@@ -198,9 +193,6 @@ main(int argc, char *argv[])
 		if ((server_response->data).creds.info_creds[i].creddesc)
 			printf ("Credential Description: %s\n", (server_response->data).creds.info_creds[i].creddesc);
 
-	//	if ((server_response->data).creds.info_creds[i].cred_start_time)
-	//		printf ("Credential Start Time: %ld\n", (server_response->data).creds.info_creds[i].cred_start_time);
-			
 		printf ("Credential Owner: %s\n", (server_response->data).creds.info_creds[i].cred_owner);
 
 		if ((server_response->data).creds.info_creds[i].retriever_str)
@@ -220,20 +212,6 @@ main(int argc, char *argv[])
 	       			(long)time_diff % 60 );
 	
 	}
-#ifdef TO_BE_REMOVED
-	   //printf ("%s\n", server_response->response_string);
-	if (server_response->cred_end_time == 0)
-	   break;
-	printf("timeleft       : %ld:%02ld:%02ld", 
-	       (long)(time_diff / 3600),
-	       (long)(time_diff % 3600) / 60,
-	       (long)time_diff % 60 );
-	
-	if (time_diff > 3600 * 24)
-	   printf("  (%.1f days)", (float)(time_diff / 3600) / 24.0);
-	printf("\n");
-	printf("expires on     : %s\n", ctime(&server_response->cred_end_time));
-#endif
 	break;
     default:
         fprintf(stderr, "Invalid response type received.\n");
