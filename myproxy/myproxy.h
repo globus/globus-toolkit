@@ -100,18 +100,6 @@ typedef struct
     int		   		 force_credential_overwrite;
 } myproxy_request_t;
 
-/*structure for myproxy-info*/
-typedef struct
-{
-  char		*credname;
-  char		*creddesc;
-  time_t 	cred_start_time;
-  time_t 	cred_end_time;
-  char 		cred_owner[2048];
-  char		*retriever_str;
-  char		*renewer_str;
-} myproxy_info_t;
-
 /* A server response object */
 typedef struct
 {
@@ -119,10 +107,7 @@ typedef struct
   myproxy_proto_response_type_t response_type;
   authorization_data_t		**authorization_data;
   char				*error_str;
-
-    /* credentials info for myproxy-info */
-  myproxy_info_t 	*info_creds;
-  int num_creds;
+  myproxy_creds_t		*info_creds;
 } myproxy_response_t;
 
   
