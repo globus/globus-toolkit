@@ -976,6 +976,8 @@ globus_l_gfs_request_recv(
     globus_gfs_transfer_info_t *        recv_info;
     globus_l_gfs_request_info_t *       request;
     globus_result_t                     result;
+    globus_off_t                        length = GLOBUS_RANGE_LIST_MAX;
+    globus_off_t                        offset = 0;
     GlobusGFSName(globus_l_gfs_request_recv);
 
     instance = (globus_l_gfs_server_instance_t *) user_arg;
@@ -990,12 +992,29 @@ globus_l_gfs_request_recv(
     recv_info = (globus_gfs_transfer_info_t *)
         globus_calloc(1, sizeof(globus_gfs_transfer_info_t));
 
+    /* if restart range is anything but 0-MAX then we don't trunc the file */
+    if(globus_range_list_size(range_list))
+    {
+        globus_range_list_at(range_list, 0, &offset, &length);
+    }
+    if(offset == 0 && length == GLOBUS_RANGE_LIST_MAX)
+    {
+        recv_info->truncate = GLOBUS_TRUE;
+    }
+
     if(mod_name && strcmp("A", mod_name) == 0)
     {
         args = sscanf(
             mod_parms,
             "%"GLOBUS_OFF_T_FORMAT,
             &recv_info->partial_offset);
+        recv_info->partial_length = -1;
+        
+        /* it seems that ESTO A 0 /file is not the same as
+            STOR /file... ESTO doesn't truncate the file.  I'm not sure
+            if I like that, but it is how the test suite expects it 
+        */
+        recv_info->truncate = GLOBUS_FALSE;
 
         globus_assert(args == 1);
     }
@@ -1004,7 +1023,7 @@ globus_l_gfs_request_recv(
         recv_info->partial_offset = 0;
         recv_info->partial_length = -1;
     }
-
+        
     globus_l_gfs_get_full_path(instance, path, &recv_info->pathname);
     recv_info->range_list = range_list;
     recv_info->stripe_count = 1;

@@ -232,6 +232,9 @@ typedef struct globus_gfs_transfer_info_s
     globus_off_t                        partial_length;
     /** list or ranges for a restart */
     globus_range_list_t                 range_list;
+    /** length of partial transfer */
+    globus_bool_t                       truncate;
+    
     /** unique key that identifies the associated data_handle */
     int                                 data_handle_id;
     /** number of eof that sender should send  xxx might need to be array here */

@@ -1055,8 +1055,8 @@ error_attr:
 static
 void
 globus_l_gfs_file_recv(
-    globus_gfs_operation_t   op,
-    globus_gfs_transfer_info_t *       transfer_info,
+    globus_gfs_operation_t              op,
+    globus_gfs_transfer_info_t *        transfer_info,
     void *                              user_arg)
 {
     globus_result_t                     result;
@@ -1092,7 +1092,7 @@ globus_l_gfs_file_recv(
     open_flags = GLOBUS_XIO_FILE_BINARY | 
         GLOBUS_XIO_FILE_CREAT | 
         GLOBUS_XIO_FILE_WRONLY;
-    if(offset == 0 && length == -1)
+    if(transfer_info->truncate)
     {
         open_flags |= GLOBUS_XIO_FILE_TRUNC;
     }

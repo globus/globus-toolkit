@@ -1065,6 +1065,7 @@ globus_l_gfs_ipc_unpack_transfer(
     int                                 range_size;
     globus_off_t                        offset;
     globus_off_t                        length;
+    char                                ch;
 
     trans_info = (globus_gfs_transfer_info_t *)
         globus_malloc(sizeof(globus_gfs_transfer_info_t));
@@ -1086,6 +1087,8 @@ globus_l_gfs_ipc_unpack_transfer(
     GFSDecodeUInt32(buffer, len, trans_info->node_count);
     GFSDecodeUInt32(buffer, len, trans_info->node_ndx);
     GFSDecodeUInt32(buffer, len, trans_info->nstreams);
+    GFSDecodeChar(buffer, len, ch);
+    trans_info->truncate = (globus_bool_t) ch;
 
     /* unpack range list */
     GFSDecodeUInt32(buffer, len, range_size);
@@ -2510,6 +2513,7 @@ globus_l_gfs_ipc_transfer_pack(
     GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, trans_info->node_count);
     GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, trans_info->node_ndx);
     GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, trans_info->nstreams);
+    GFSEncodeChar(buffer, ipc->buffer_size, ptr, trans_info->truncate);
 
     /* pack range list */
     range_size = globus_range_list_size(trans_info->range_list);
