@@ -38,7 +38,7 @@ do                                                                      \
         goto decode_err;                                                \
     }                                                                   \
     memcpy(&_cw, _buf, 4);                                              \
-    _w = htonl((uint32_t)_cw);                                          \
+    (uint32_t)_w = htonl((uint32_t)_cw);                                          \
     _buf += 4;                                                          \
     _len -= 4;                                                          \
 } while(0)
@@ -512,14 +512,12 @@ typedef void
 (*globus_gfs_ipc_iface_transfer_event_t)(
     globus_gfs_ipc_handle_t             ipc_handle,
     void *                              session_handle,
-    int                                 transfer_id,
     globus_gfs_event_info_t *           event_info);
 
 
 globus_result_t
 globus_gfs_ipc_request_transfer_event(
     globus_gfs_ipc_handle_t             ipc_handle,
-    int                                 transfer_id,
     globus_gfs_event_info_t *           event_info);
 
 
@@ -530,12 +528,12 @@ typedef void
 (*globus_gfs_ipc_iface_data_destroy_t)(
     globus_gfs_ipc_handle_t             ipc_handle,
     void *                              session_handle,
-    int                                 data_connection_id);
+    void *                              data_arg);
 
 globus_result_t
 globus_gfs_ipc_request_data_destroy(
     globus_gfs_ipc_handle_t             ipc_handle,
-    int                                 data_connection_id);
+    void *                              data_arg);
 
 typedef struct globus_i_gfs_ipc_iface_s
 {
