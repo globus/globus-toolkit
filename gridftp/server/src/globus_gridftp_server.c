@@ -80,7 +80,7 @@ globus_l_gfs_new_server_cb(
     
     if(result != GLOBUS_SUCCESS)
     {
-        globus_i_gfs_log_result(NULL, result);
+        globus_i_gfs_log_result("Connection failed", result);
         goto error_start;
     }
     

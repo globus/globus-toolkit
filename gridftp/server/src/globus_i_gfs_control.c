@@ -214,7 +214,6 @@ globus_l_gfs_resource_request(
     }
     
     return;
-error_malloc:
 error_ipc:     
     globus_gridftp_server_control_finished_resource(
         op, result, GLOBUS_NULL, 0);
@@ -420,6 +419,7 @@ globus_l_gfs_ipc_event_cb(
     void *                              user_arg)
 {
     globus_gridftp_server_control_op_t  op;
+    char                                mode;
     
     op = (globus_gridftp_server_control_op_t) user_arg;
     
@@ -435,7 +435,12 @@ globus_l_gfs_ipc_event_cb(
         break;
       
       case GLOBUS_I_GFS_EVENT_DISCONNECTED:
-           /* globus_gridftp_server_control_disconnected(data); */
+        globus_gridftp_server_control_get_mode(op, &mode);
+        if(mode != 'E')
+        {
+            globus_gridftp_server_control_disconnected(
+                instance->u.control.server, data);
+        }
         break;
         
       default:
@@ -520,7 +525,6 @@ globus_l_gfs_send_request(
     
     return;
 
-error_malloc:
 error_ipc:
     globus_i_gfs_op_attr_destroy(op_attr);
 error_attr:
@@ -589,7 +593,6 @@ globus_l_gfs_recv_request(
     
     return;
     
-error_malloc:    
 error_ipc:
     globus_i_gfs_op_attr_destroy(op_attr);
 error_attr:
@@ -628,7 +631,6 @@ globus_l_gfs_list_request(
     }
     
     return;
-error_malloc:
 error_ipc:     
     globus_gridftp_server_control_finished_resource(
         op, result, GLOBUS_NULL, 0);
@@ -743,7 +745,6 @@ globus_l_gfs_passive_data_connect(
     }
     
     return;
-error_malloc:
 error_ipc:     
     globus_gridftp_server_control_finished_passive_connect(
         op, GLOBUS_NULL, result, 0, GLOBUS_NULL, 0);
@@ -804,7 +805,6 @@ globus_l_gfs_active_data_connect(
     }
     
     return;
-error_malloc:
 error_ipc:     
     globus_gridftp_server_control_finished_active_connect(
         op, GLOBUS_NULL, result, 0);
@@ -1157,16 +1157,16 @@ globus_i_gfs_control_start(
         instance);
     if(result != GLOBUS_SUCCESS)
     {
+        globus_l_gfs_done_cb(instance->u.control.server, result, instance);
+        globus_gridftp_server_control_attr_destroy(attr);
         goto error_start;
     }
     
     globus_gridftp_server_control_attr_destroy(attr);
-    
+
     return GLOBUS_SUCCESS;
 
 error_add_commands:
-error_start:
-    globus_gridftp_server_control_destroy(instance->u.control.server);
 error_init:
 error_attr_setup:
     globus_gridftp_server_control_attr_destroy(attr);
@@ -1176,7 +1176,7 @@ error_attr:
     
 error_strdup:
     globus_free(instance);
-    
+error_start:
 error_malloc:
     return result;
 }

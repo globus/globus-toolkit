@@ -3,6 +3,7 @@
 
 typedef enum
 {
+    GLOBUS_I_GFS_LOG_NONE,
     GLOBUS_I_GFS_LOG_ERR,
     GLOBUS_I_GFS_LOG_INFO,
     GLOBUS_I_GFS_LOG_CONTROL
