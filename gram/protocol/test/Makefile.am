@@ -6,6 +6,7 @@ SUBDIRS= \
 
 Scripts = \
 	  globus-gram-protocol-allow-attach-test.pl \
+	  globus-gram-protocol-error-test.pl \
 	  globus-gram-protocol-io-test.pl \
 	  globus-gram-protocol-pack-test.pl \
 	  globus-gram-protocol-run-tests.pl
@@ -13,6 +14,7 @@ Scripts = \
 test_SCRIPTS=$(Scripts)
 test_PROGRAMS= \
 	globus-gram-protocol-allow-attach-test \
+        globus-gram-protocol-error-test \
 	globus-gram-protocol-io-test \
 	globus-gram-protocol-pack-test
 
@@ -28,6 +30,9 @@ globus_gram_protocol_io_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_gram_protocol_allow_attach_test_SOURCES = globus_gram_protocol_allow_attach_test.c
 globus_gram_protocol_allow_attach_test_LDFLAGS = $(GPT_LDFLAGS)
+
+globus_gram_protocol_error_test_SOURCES = globus_gram_protocol_error_test.c
+globus_gram_protocol_error_test_LDFLAGS = $(GPT_LDFLAGS)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

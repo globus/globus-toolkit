@@ -11,6 +11,7 @@ my $contact;
 
 @tests = qw(
     globus-gram-protocol-allow-attach-test.pl
+    globus-gram-protocol-error-test.pl
     globus-gram-protocol-io-test.pl
     globus-gram-protocol-pack-test.pl
 );
