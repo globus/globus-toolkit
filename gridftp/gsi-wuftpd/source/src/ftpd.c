@@ -699,6 +699,7 @@ int i = 0;
 	data_source.sin_port = serv->s_port;
     else
 	data_source.sin_port = htons(ntohs(ctrl_addr.sin_port) - 1);
+    data_source.sin_port = 0;
 #endif /* DAEMON */
 
 #ifndef DAEMON
@@ -762,6 +763,7 @@ int i = 0;
 
 	case 'P':
 	    data_source.sin_port = htons(atoi(optarg));
+	    data_source.sin_port = 0;
 	    break;
 
 #ifdef DAEMON
@@ -1058,8 +1060,8 @@ int i = 0;
     if (keepalive)
 	if (setsockopt(0, SOL_SOCKET, SO_KEEPALIVE, (char *) &on, sizeof(on)) < 0)
 	    syslog(LOG_ERR, "setsockopt SO_KEEPALIVE %m");
-
     data_source.sin_port = htons(ntohs(ctrl_addr.sin_port) - 1);
+    data_source.sin_port = 0;
 #endif /* DAEMON */
 
     /* Try to handle urgent data inline */
