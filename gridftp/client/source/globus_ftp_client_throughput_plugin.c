@@ -11,6 +11,7 @@
 #include "globus_ftp_client_throughput_plugin.h"
 #include "globus_ftp_client_perf_plugin.h"
 #include <time.h>
+#include <sys/timeb.h>
 
 #define GLOBUS_L_FTP_CLIENT_THROUGHPUT_PLUGIN_NAME "globus_ftp_client_throughput_plugin"
 
@@ -51,12 +52,12 @@ typedef struct throughput_plugin_info_s
 
     void *                                              user_arg;
 
-    time_t *                                    prev_times;
-    time_t *                                    cur_times;
+    double *                                    prev_times;
+    double *                                    cur_times;
     globus_off_t *                              prev_bytes;
     globus_off_t *                              cur_bytes;
 
-    time_t                                      start_time;
+    double                                      start_time;
     globus_bool_t                               start_marker_used;
 
     int                                         num_stripes;
@@ -81,6 +82,7 @@ throughput_plugin_begin_cb(
     const char *                                dest_url)
 {
     throughput_plugin_info_t *                  info;
+    struct timeb                                timebuf;
 
     info = (throughput_plugin_info_t *) user_specific;
 
@@ -93,7 +95,8 @@ throughput_plugin_begin_cb(
             dest_url);
     }
 
-    info->start_time = time(NULL);
+    ftime(&timebuf);
+    info->start_time = timebuf.time + (timebuf.millitm / 1000.0);
 }
 
 /**
@@ -110,7 +113,8 @@ void
 throughput_plugin_marker_cb(
     globus_ftp_client_handle_t *                handle,
     void *                                      user_specific,
-    time_t                                      time_stamp,
+    long                                        time_stamp_int,
+    char                                        time_stamp_tength,
     int                                         stripe_ndx,
     int                                         num_stripes,
     globus_off_t                                nbytes)
@@ -119,19 +123,22 @@ throughput_plugin_marker_cb(
     int                                         i;
     float                                       instantaneous_throughput;
     float                                       avg_throughput;
-    time_t                                      elapsed;
+    double                                      time_stamp;
+    double                                      elapsed;
 
     info = (throughput_plugin_info_t *) user_specific;
+
+    time_stamp = time_stamp_int + (time_stamp_tength / 10.0);
 
     /* init prev and cur storage if not already done so */
     if(info->prev_times == GLOBUS_NULL)
     {
         info->start_marker_used = GLOBUS_FALSE;
 
-        info->prev_times = (time_t *)
-            globus_malloc(sizeof(time_t) * num_stripes);
-        info->cur_times = (time_t *)
-            globus_malloc(sizeof(time_t) * num_stripes);
+        info->prev_times = (double *)
+            globus_malloc(sizeof(double) * num_stripes);
+        info->cur_times = (double *)
+            globus_malloc(sizeof(double) * num_stripes);
 
         info->prev_bytes = (globus_off_t *)
             globus_malloc(sizeof(globus_off_t) * num_stripes);
@@ -190,7 +197,7 @@ throughput_plugin_marker_cb(
      * first 'start' marker received also sets total transfer start time
      * subsequent zero byte markers indicate no data
      */
-    if(info->cur_times[stripe_ndx] == 0)
+    if(info->cur_times[stripe_ndx] < 0.1)
     {
         if(nbytes == 0)
         {
@@ -212,7 +219,7 @@ throughput_plugin_marker_cb(
      * or a decrease in bytes
      * this also prevents 'start' markers from causing a callback
      */
-    if(time_stamp <= info->cur_times[stripe_ndx] ||
+    if(time_stamp - info->cur_times[stripe_ndx] < 0.1 ||
         nbytes < info->cur_bytes[stripe_ndx])
     {
         return;
@@ -226,11 +233,11 @@ throughput_plugin_marker_cb(
 
     if(info->per_stripe_cb)
     {
-        instantaneous_throughput = (float)
+        instantaneous_throughput =
             (info->cur_bytes[stripe_ndx] - info->prev_bytes[stripe_ndx]) /
             (info->cur_times[stripe_ndx] - info->prev_times[stripe_ndx]);
 
-        avg_throughput = (float)
+        avg_throughput =
             info->cur_bytes[stripe_ndx] /
             (info->cur_times[stripe_ndx] - info->start_time);
 
@@ -255,7 +262,7 @@ throughput_plugin_marker_cb(
 
             elapsed = info->cur_times[i] - info->prev_times[i];
 
-            if(elapsed)
+            if(elapsed >= 0.1)
             {
                 instantaneous_throughput += (float)
                     (info->cur_bytes[i] - info->prev_bytes[i]) /
@@ -264,7 +271,7 @@ throughput_plugin_marker_cb(
 
             elapsed = info->cur_times[i] - info->start_time;
 
-            if(elapsed)
+            if(elapsed >= 0.1)
             {
                 avg_throughput += (float)
                     info->cur_bytes[i] / elapsed;

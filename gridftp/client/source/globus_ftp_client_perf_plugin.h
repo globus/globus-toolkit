@@ -119,7 +119,8 @@ typedef void (*globus_ftp_client_perf_plugin_begin_cb_t)(
 typedef void (*globus_ftp_client_perf_plugin_marker_cb_t)(
     globus_ftp_client_handle_t *                    handle,
     void *                                          user_specific,
-    time_t                                          time_stamp,
+    long                                            time_stamp_int,
+    char                                            time_stamp_tength,
     int                                             stripe_ndx,
     int                                             num_stripes,
     globus_off_t                                    nbytes);

@@ -13,6 +13,11 @@
 #include <stdio.h>
 #include <time.h>
 #include <string.h>
+#include <ctype.h>
+#include <sys/timeb.h>
+
+/* for 'get' mode (in seconds) */
+#define MIN_CB_INTERVAL 1
 
 #define GLOBUS_L_FTP_CLIENT_PERF_PLUGIN_NAME "globus_ftp_client_perf_plugin"
 
@@ -57,7 +62,7 @@ typedef struct perf_plugin_info_s
 
     /* used for get command or put (when put not in EB mode) only */
     globus_bool_t                                   use_data;
-    time_t                                          last_time;
+    double                                          last_time;
     globus_off_t                                    nbytes;
     globus_mutex_t                                  lock;
 
@@ -157,7 +162,8 @@ perf_plugin_response_cb(
     char *                                      buffer;
     char *                                      tmp_ptr;
     int                                         count;
-    time_t                                      time_stamp;
+    long                                        time_stamp_int;
+    char                                        time_stamp_tenght;
     int                                         stripe_ndx;
     int                                         num_stripes;
     globus_off_t                                nbytes;
@@ -178,10 +184,31 @@ perf_plugin_response_cb(
         {
             return;
         }
-        count = sscanf(tmp_ptr + sizeof("Timestamp:"),
-            " %ld", &time_stamp);
-        if(count != 1)
+
+        tmp_ptr += sizeof("Timestamp:");
+        while(isspace(*tmp_ptr))
         {
+            tmp_ptr++;
+        }
+
+        time_stamp_int = 0;
+        while(isdigit(*tmp_ptr))
+        {
+            time_stamp_int = (time_stamp_int * 10) + (*tmp_ptr - '0');
+            tmp_ptr++;
+        }
+
+        time_stamp_tenght = 0;
+        if(*tmp_ptr == '.')
+        {
+            tmp_ptr++;
+            time_stamp_tenght = *tmp_ptr - '0';
+            tmp_ptr++;
+        }
+
+        if(!isspace(*tmp_ptr))
+        {
+            /* invalid value */
             return;
         }
 
@@ -227,7 +254,8 @@ perf_plugin_response_cb(
         ps->marker_cb(
             handle,
             ps->user_specific,
-            time_stamp,
+            time_stamp_int,
+            time_stamp_tenght,
             stripe_ndx,
             num_stripes,
             nbytes);
@@ -256,7 +284,8 @@ perf_plugin_data_cb(
     globus_bool_t                               eof)
 {
     perf_plugin_info_t *                        ps;
-    time_t                                      time_now;
+    struct timeb                                timebuf;
+    double                                      time_now;
 
     ps = (perf_plugin_info_t *) plugin_specific;
 
@@ -264,17 +293,19 @@ perf_plugin_data_cb(
     {
         globus_mutex_lock(&ps->lock);
 
-        time_now = time(NULL);
+        ftime(&timebuf);
+        time_now = timebuf.time + (timebuf.millitm / 1000.0);
         ps->nbytes += length;
 
-        if(ps->marker_cb && time_now > ps->last_time)
+        if(ps->marker_cb && (time_now - ps->last_time) > MIN_CB_INTERVAL)
         {
             ps->last_time = time_now;
 
             ps->marker_cb(
                 handle,
                 ps->user_specific,
-                time_now,
+                timebuf.time,
+                timebuf.millitm / 100,
                 0,
                 1,
                 ps->nbytes);
