@@ -3,60 +3,14 @@ dnl
 AC_REVISION($Revision$)
 AC_INIT(Makefile.am)
 
-AC_ARG_WITH(flavor,
-	[ --with-flavor=<FL>     Specify the globus build flavor or without-flavor for a flavor independent  ],
+GLOBUS_INIT
 
-	[
-	case $withval in
-	no)
-		NO_FLAVOR="yes"
-		;;
-	yes)
-		echo "Please specify a globus build flavor" >&2
-		exit 1
-		;;
-	*)
-		FL=$withval
-		;;
-	esac
-	],
-
-	[ 
-	echo "Please specify a globus build flavor" >&2
-	exit 1
-	]
-)
-
-AM_CONDITIONAL(WITHOUT_FLAVORS, test "$NO_FLAVOR" = "yes")
-AC_SUBST(FL)
-
-# checking for the GLOBUS_INSTALL_PATH
-
-if test "x$GLOBUS_INSTALL_PATH" = "x"; then
-    echo "ERROR Please specify GLOBUS_INSTALL_PATH" >&2
-    exit 1
-fi
-
-# get the environment scripts
-. $GLOBUS_INSTALL_PATH/etc/globus-sh-tools.sh
-
-. $GLOBUS_INSTALL_PATH/etc/globus-build-env-$FL.sh
-
-prefix='$(GLOBUS_INSTALL_PATH)'
-exec_prefix='$(GLOBUS_INSTALL_PATH)'
-
+AM_PROG_LIBTOOL
 
 dnl config header goes here
 
-dnl Need to fix a bug in AM_INIT_AUTOMAKE
-AC_PROG_CC
-
 dnl Initialize the automake rules the last argument
 AM_INIT_AUTOMAKE(globus_common, 2.0.0)
-
-dnl Configure a libtool script for the distribution
-AM_PROG_LIBTOOL
-
 
 dnl Determine thread library flags
 if test "x$NO_FLAVOR" = "x"; then
