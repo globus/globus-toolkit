@@ -152,7 +152,7 @@ if ( not $skipbundle )
 if ( $install )
 {
     install_bundles();
-
+    install_packages();
 } else {
     print "Not installing bundle because -install= not set.\n";
 }
@@ -1203,6 +1203,21 @@ sub install_bundles
 	print "Installing $bundle to $install using flavor $flava, flags $flags.\n";
 	system("$ENV{'GPT_LOCATION'}/sbin/gpt-build $verbose $flags ${bundle}-*.tar.gz $flava");
 	paranoia("Building of $bundle failed.\n");
+    }
+
+}
+
+# --------------------------------------------------------------------
+sub install_packages
+# --------------------------------------------------------------------
+{
+    chdir $package_output;
+
+    for my $pkg ( @user_packages )
+    {
+	print "Installing user requested package $pkg to $install using flavor $flavor.\n";
+	system("$ENV{'GPT_LOCATION'}/sbin/gpt-build $verbose ${pkg}-*.tar.gz $flavor");
+	paranoia("Building of $pkg failed.\n");
     }
 
 }
