@@ -17,13 +17,13 @@ CVS Information:
 /******************************************************************************
 			     Include header files
 ******************************************************************************/
-#include "config.h"
 #include "globus_common.h"
 
 #include <assert.h>
 
 globus_mutex_t                     globus_i_memory_mutex;
 
+#define I_ALIGN_SIZE               sizeof(long)
 
 globus_bool_t
 globus_i_memory_pre_activate(void)
@@ -40,8 +40,13 @@ globus_memory_init(
     int                       node_size,
     int                       node_count)
 {
-    mem_info->total_size = node_count * node_size;
-    mem_info->node_size = node_size;
+    int                       pad;
+
+    pad = node_size % I_ALIGN_SIZE;
+
+    mem_info->total_size = node_count * (node_size + pad);
+
+    mem_info->node_size = node_size + pad;
     mem_info->node_count = node_count;
     mem_info->nodes_used = 0;
     mem_info->node_count_per_malloc = node_count;
