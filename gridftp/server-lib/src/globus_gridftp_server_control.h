@@ -357,6 +357,26 @@ typedef void
     globus_gridftp_server_control_op_t      op,
     void *                                  user_arg);
 
+globus_result_t
+globus_gridftp_server_control_enable_abort(
+    globus_gridftp_server_control_op_t      op,
+    globus_gridftp_server_control_abort_cb_t abort_cb,
+    void *                                  user_arg);
+
+globus_result_t
+globus_gridftp_server_control_disable_abort(
+    globus_gridftp_server_control_op_t      op);
+
+globus_result_t
+globus_gridftp_server_abort_enable(
+    globus_gridftp_server_control_op_t  op,
+    globus_gridftp_server_control_abort_cb_t abort_cb,
+    void *                                  user_arg);
+
+globus_result_t
+globus_gridftp_server_abort_disable(
+    globus_gridftp_server_control_op_t  op);
+
 /**
  *  data connection interface functions
  *

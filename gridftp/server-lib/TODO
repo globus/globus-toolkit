@@ -3,16 +3,23 @@ PBSZ
 
 TREV
 
-clear text attr for gssapi
--- currently it will automatically allow clear text commands until AUTH
-   is received.  need to add an attr to allow users to disable this.
-
 merge _init() with _start() and _destroy() with _stop()
 -- deal with adding commands
 
 data object destroy
 -- need a function that commands can call to destroy data channel on
    prot dcau pasv and port.
+
+abort
+-- make sure ABOR works
+-- make sure connection dropping works
+
+test
+--crazy messages sent to server
+
+errors
+-- create error codes for user
+-- check proper replys etc
 
 logging
 -- will come from a seprate module.

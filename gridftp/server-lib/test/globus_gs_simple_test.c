@@ -21,6 +21,9 @@ char *  CONTACT_STRINGS[]     = {"127.0.0.1:2", NULL};
 
 #define CONTACT_STRINGS_COUNT   1
 
+static globus_mutex_t                       gs_l_mutex;
+static globus_cond_t                        gs_l_cond;
+
 static void
 globus_gs_cmd_site(
     globus_gridftp_server_control_op_t      op,
@@ -166,6 +169,18 @@ data_destroy_cb(
     globus_assert(user_data_handle == USER_DATA_HANDLE);
 }
 
+void
+abort_cb(
+    globus_gridftp_server_control_op_t      op,
+    void *                                  user_arg)
+{
+    globus_mutex_lock(&gs_l_mutex);
+    {
+        globus_l_done = GLOBUS_TRUE;
+        globus_cond_signal(&gs_l_cond);
+    }
+    globus_mutex_unlock(&gs_l_mutex);
+}
 
 static void
 transfer(
@@ -179,23 +194,35 @@ transfer(
     int                                     ctr;
     globus_size_t                           off = 0;
     globus_size_t                           len = 256;
+    globus_abstime_t                        abstime;
+
+    globus_gridftp_server_abort_enable(op, abort_cb, NULL);
 
     globus_gridftp_server_control_begin_transfer(op, 255);
 
-    for(ctr = 0; ctr < 500; ctr++)
+    globus_mutex_lock(&gs_l_mutex);
     {
-        globus_poll();
-        usleep(50000);
-        globus_gridftp_server_control_update_bytes(op, 0, off, len);
-        off += len;
+        for(ctr = 0; ctr < 500 && !globus_l_done; ctr++)
+        {
+            GlobusTimeAbstimeSet(abstime, 0, 50000);
+            globus_macro_cond_timedwait(&gs_l_cond, &gs_l_mutex, &abstime);
+            globus_gridftp_server_control_update_bytes(op, 0, off, len);
+            off += len;
+        }
     }
+    globus_mutex_unlock(&gs_l_mutex);
+
     globus_gridftp_server_control_finished_transfer(op, GLOBUS_SUCCESS);
+
+    globus_gridftp_server_abort_disable(op);
+
+    globus_l_done = GLOBUS_FALSE;
 }
 
 void
 auth_func(
     globus_gridftp_server_control_op_t      op,
-    int                                     type,
+    globus_gridftp_server_control_security_type_t type,
     const char *                            subject,
     const char *                            user_name,
     const char *                            pw)
@@ -230,6 +257,9 @@ main(
 
     globus_module_activate(GLOBUS_XIO_MODULE);
     globus_module_activate(GLOBUS_GRIDFTP_SERVER_CONTROL_MODULE);
+
+    globus_mutex_init(&gs_l_mutex, NULL);
+    globus_cond_init(&gs_l_cond, NULL);
 
     /*
      *  set up the xio handle
@@ -292,7 +322,7 @@ main(
     test_res(res, __LINE__);
 
     res = globus_gridftp_server_control_attr_set_idle_time(
-        ftp_attr, 15);
+        ftp_attr, 900);
     test_res(res, __LINE__);
 
     res = globus_gridftp_server_control_attr_data_functions(

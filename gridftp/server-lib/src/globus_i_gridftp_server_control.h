@@ -187,7 +187,6 @@ typedef struct globus_i_gsc_user_funcs_s
     globus_gridftp_server_control_list_cb_t             list_cb;
     globus_gridftp_server_control_resource_cb_t         resource_cb;
     globus_gridftp_server_control_cb_t                  done_cb;
-    globus_gridftp_server_control_abort_cb_t            abort_cb;
 } globus_i_gsc_user_funcs_t;
 
 typedef struct globus_i_gsc_restart_s
@@ -245,6 +244,10 @@ typedef struct globus_i_gsc_op_s
 
     globus_i_gsc_restart_t *                restart_marker;
     globus_i_gsc_event_data_t               event;
+
+    globus_bool_t                           aborted;
+    globus_gridftp_server_control_abort_cb_t abort_cb;
+    void *                                  abort_user_arg;
 
     void *                                  user_arg;
 } globus_i_gsc_op_t;
@@ -332,7 +335,6 @@ typedef struct globus_i_gsc_server_handle_s
      *  user function pointers
      */
     void *                              user_arg;
-    void *                              abort_arg;
 
     globus_i_gsc_restart_t *            restart_marker;
 

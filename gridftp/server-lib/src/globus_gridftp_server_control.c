@@ -502,20 +502,12 @@ globus_l_gsc_read_cb(
                          */
                         globus_assert(server_handle->outstanding_op!=NULL);
 
-                        /*
-                         *  notify user that an abort is requested if they
-                         *  are interested in hearing about it.
-                         *  In any case  we will just wait for them to 
-                         *  finish 
-                         *  to respond to the abort.  Their notification cb
-                         *  is simply a way to allow *them* to cancel what 
-                         *  they are doing, this can be called locked
-                         */
-                        if(server_handle->funcs.abort_cb != NULL)
+                        server_handle->outstanding_op->aborted = GLOBUS_TRUE;
+                        if(server_handle->outstanding_op->abort_cb != NULL)
                         {
-                            server_handle->funcs.abort_cb(
+                            server_handle->outstanding_op->abort_cb(
                                 server_handle->outstanding_op,
-                                    server_handle->abort_arg);
+                                server_handle->outstanding_op->abort_user_arg);
                         }
                     }
                 }
@@ -619,11 +611,12 @@ globus_i_gsc_terminate(
             server_handle->state = GLOBUS_L_GSC_STATE_ABORTING_STOPPING;
             globus_assert(server_handle->outstanding_op != NULL);
 
-            if(server_handle->funcs.abort_cb != NULL)
+            server_handle->outstanding_op->aborted = GLOBUS_TRUE;
+            if(server_handle->outstanding_op->abort_cb != NULL)
             {
-                server_handle->funcs.abort_cb(
+                server_handle->outstanding_op->abort_cb(
                     server_handle->outstanding_op,
-                    server_handle->abort_arg);
+                    server_handle->outstanding_op->abort_user_arg);
             }
             /* ignore return code, we are stopping so it doesn' matter */
             globus_l_gsc_flush_reads(
@@ -1961,7 +1954,6 @@ globus_gridftp_server_control_start(
         server_handle->funcs.list_cb = i_attr->funcs.list_cb;
         server_handle->funcs.resource_cb = i_attr->funcs.resource_cb;
         server_handle->funcs.done_cb = done_cb;
-        server_handle->funcs.abort_cb = i_attr->funcs.abort_cb;
 
         globus_hashtable_copy(
             &server_handle->funcs.send_cb_table, 
@@ -3643,4 +3635,60 @@ globus_gridftp_server_control_list_buffer_free(
     globus_byte_t *                     buffer)
 {
     globus_free(buffer);
+}
+
+globus_result_t
+globus_gridftp_server_abort_enable(
+    globus_gridftp_server_control_op_t  op,
+    globus_gridftp_server_control_abort_cb_t abort_cb,
+    void *                              user_arg)
+{
+    GlobusGridFTPServerName(globus_gridftp_server_abort_enable);
+
+    if(op == NULL)
+    {
+        return GlobusGridFTPServerErrorParameter("op");
+    }
+
+    globus_mutex_lock(&op->server_handle->mutex);
+    {
+        if(op->aborted && op->abort_cb != NULL)
+        {
+            op->aborted == GLOBUS_FALSE;
+            abort_cb(op, user_arg);
+        }
+        else
+        {
+            op->abort_cb = abort_cb;
+            op->abort_user_arg = user_arg;
+        }
+    }
+    globus_mutex_unlock(&op->server_handle->mutex);
+
+    return GLOBUS_SUCCESS;
+}
+
+globus_result_t
+globus_gridftp_server_abort_disable(
+    globus_gridftp_server_control_op_t  op)
+{
+    GlobusGridFTPServerName(globus_gridftp_server_abort_disable);
+
+    if(op == NULL)
+    {
+        return GlobusGridFTPServerErrorParameter("op");
+    }
+
+    globus_mutex_lock(&op->server_handle->mutex);
+    {
+        if(op->aborted && op->abort_cb != NULL)
+        {
+            op->abort_cb(op, op->abort_user_arg);
+        }
+        op->abort_cb = NULL;
+        op->abort_user_arg = NULL;
+    }
+    globus_mutex_unlock(&op->server_handle->mutex);
+
+    return GLOBUS_SUCCESS;
 }
