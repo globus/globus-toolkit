@@ -20,7 +20,8 @@ EXTRA_DIST = \
 	globus_common.txt
 
 RESNAME=globus_common
-GENRB=$(shell $(GLOBUS_LOCATION)/bin/icu-config --invoke=genrb)
+GENRB= LD_LIBRARY_PATH=$(LD_LIBRARY_PATH):$(GLOBUS_LOCATION)/lib; \
+	$(GLOBUS_LOCATION)/bin/genrb
 GENRBOPT=--package-name $(RESNAME)
 $(RESNAME)_root.res: $(RESNAME).txt
 	@echo "generating $@"
