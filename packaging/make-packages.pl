@@ -539,7 +539,8 @@ sub install_gt2_autotools()
 	    print "\tAutotools dies the first time through sometimes due to\n";
 	    print "\temacs .texi issues.  I am trying again.\n";
 
-	    log_system("./side_tools/build-autotools >> ${log_dir}/gt2-autotools.log 2>&1");
+	    log_system("./side_tools/build-autotools", 
+		       "${log_dir}/gt2-autotools.log");
 	    if ( $? ne 0 )
 	    {
 		die "ERROR: Error building autotools.  Check log.\n";
@@ -839,7 +840,7 @@ sub package_source_gpt()
 	    
 	    # The dir we are tarring is probably called "source" in CVS.
 	    # mv it to package name.
-	    log_system("mv $tardir $package-$version)",
+	    log_system("mv $tardir $package-$version",
 		       "$pkglog/$package");
 	    paranoia "system() call failed.  See $pkglog/$package.";
 	    log_system("tar cf $package_output/$tarfile.tar $package-$version",
@@ -1043,7 +1044,7 @@ Options:
     --flavor               Set flavor base.  Default gcc32dbg
     --gt2-tag              Set GT2 tag.  Default HEAD
     --gt3-tag              Set GT3 tag.  Default HEAD
-    --verbose              Be verbose
+    --verbose              Be verbose.  Also sends logs to screen.
     --bundles="b1,b2,..."  Create bundles b1,b2,...
     --packages="p1,p2,..." Create packages p1,p2,...
     --trees="t1,t2,..."    Work on trees t1,t2,... Default "gt2,gt3,cbindings"
