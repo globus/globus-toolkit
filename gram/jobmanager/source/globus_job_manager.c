@@ -517,10 +517,10 @@ main(int argc,
      */
     description_tree = globus_rsl_parse(description);
 
-    /* 
+/*
         printf("\n------------  after parse  ---------------\n\n");
         globus_rsl_print_recursive(description_tree);
-    */
+*/
 
     my_globus_prefix = (char *) globus_malloc(sizeof(char *) * 
                                             strlen(GLOBUS_PREFIX) + 1);
@@ -561,10 +561,10 @@ main(int argc,
     }
     else
     {
-        /* 
+/*
             printf("\n------------  after eval  ---------------\n\n");
             globus_rsl_print_recursive(description_tree);
-        */
+*/
 
         /*
          * Start the job.  If successful reply with graml_job_contact else
@@ -902,11 +902,13 @@ graml_status_file_gen(int job_status)
              * gram-reporter is expecting it.
              *
              */
+            fprintf(status_fp, "---___start___---\n");
             fprintf(status_fp, "%s;%s;%s;%d\n",
 		    graml_my_globusid,
 		    job_status_str,
 		    graml_job_contact,
 		    graml_my_count);
+            fprintf(status_fp, "---___end___---\n");
             fclose(status_fp);
         }
     }
@@ -936,9 +938,13 @@ grami_jm_request_params(globus_rsl_t * description_tree,
     /********************************** 
      *  GET PROGRAM (executable) PARAM
      */
-    globus_rsl_param_get(description_tree,
-		       GLOBUS_GRAM_CLIENT_EXECUTABLE_PARAM,
-		       &tmp_param);
+    if (globus_rsl_param_get(description_tree,
+                             GLOBUS_GRAM_CLIENT_EXECUTABLE_PARAM,
+		             &tmp_param) != 0)
+    {
+        return(1);
+    }
+
     if (tmp_param[0])
         params->pgm = (tmp_param)[0];
     else
@@ -949,16 +955,23 @@ grami_jm_request_params(globus_rsl_t * description_tree,
     /********************************** 
      *  GET PROGRAM ARGUMENTS PARAM
      */
-    globus_rsl_param_get(description_tree,
+    if (globus_rsl_param_get(description_tree,
 		       GLOBUS_GRAM_CLIENT_ARGUMENTS_PARAM, 
-                       &(params->pgm_args));
+                       &(params->pgm_args)) != 0)
+    {
+        return(1);
+    }
 
     /********************************** 
      *  GET DIR PARAM
      */
-    globus_rsl_param_get(description_tree,
-		       GLOBUS_GRAM_CLIENT_DIR_PARAM,
-		       &tmp_param);
+    if (globus_rsl_param_get(description_tree,
+		             GLOBUS_GRAM_CLIENT_DIR_PARAM,
+		             &tmp_param) != 0)
+    {
+        return(1);
+    }
+
     if (tmp_param[0])
         params->dir = tmp_param[0];
     else
@@ -967,9 +980,13 @@ grami_jm_request_params(globus_rsl_t * description_tree,
     /********************************** 
      *  GET STDIN PARAM
      */
-    globus_rsl_param_get(description_tree,
-		       GLOBUS_GRAM_CLIENT_STDIN_PARAM,
-		       &tmp_param);
+    if (globus_rsl_param_get(description_tree,
+                             GLOBUS_GRAM_CLIENT_STDIN_PARAM,
+		             &tmp_param) != 0)
+    {
+        return(1);
+    }
+
     if (tmp_param[0])
         params->std_in = tmp_param[0];
     else
@@ -978,9 +995,13 @@ grami_jm_request_params(globus_rsl_t * description_tree,
     /********************************** 
      *  GET STDOUT PARAM
      */
-    globus_rsl_param_get(description_tree,
-		       GLOBUS_GRAM_CLIENT_STDOUT_PARAM,
-		       &tmp_param);
+    if (globus_rsl_param_get(description_tree,
+                             GLOBUS_GRAM_CLIENT_STDOUT_PARAM,
+		             &tmp_param) != 0)
+    {
+        return(1);
+    }
+
     if (tmp_param[0])
         params->std_out = tmp_param[0];
     else
@@ -989,9 +1010,13 @@ grami_jm_request_params(globus_rsl_t * description_tree,
     /********************************** 
      *  GET STDERR PARAM
      */
-    globus_rsl_param_get(description_tree,
-		       GLOBUS_GRAM_CLIENT_STDERR_PARAM,
-		       &tmp_param);
+    if (globus_rsl_param_get(description_tree,
+                             GLOBUS_GRAM_CLIENT_STDERR_PARAM,
+		             &tmp_param) != 0)
+    {
+        return(1);
+    }
+
     if (tmp_param[0])
         params->std_err = tmp_param[0];
     else
@@ -1000,9 +1025,13 @@ grami_jm_request_params(globus_rsl_t * description_tree,
     /********************************** 
      *  GET COUNT PARAM
      */
-    globus_rsl_param_get(description_tree,
-		       GLOBUS_GRAM_CLIENT_COUNT_PARAM,
-		       &tmp_param);
+    if (globus_rsl_param_get(description_tree,
+                             GLOBUS_GRAM_CLIENT_COUNT_PARAM,
+		             &tmp_param) != 0)
+    {
+        return(1);
+    }
+
     if (tmp_param[0])
     {
 
@@ -1022,9 +1051,13 @@ grami_jm_request_params(globus_rsl_t * description_tree,
     /********************************** 
      *  GET MAXTIME PARAM
      */
-    globus_rsl_param_get(description_tree,
-		       GLOBUS_GRAM_CLIENT_MAXTIME_PARAM,
-		       &tmp_param);
+    if (globus_rsl_param_get(description_tree,
+                             GLOBUS_GRAM_CLIENT_MAXTIME_PARAM,
+		             &tmp_param) != 0)
+    {
+        return(1);
+    }
+
     if (tmp_param[0])
     {
         params->maxtime = atoi(tmp_param[0]);
@@ -1040,9 +1073,13 @@ grami_jm_request_params(globus_rsl_t * description_tree,
     /********************************** 
      *  GET HOST_COUNT PARAM
      */
-    globus_rsl_param_get(description_tree,
-		       GLOBUS_GRAM_CLIENT_HOST_COUNT_PARAM,
-		       &tmp_param);
+    if (globus_rsl_param_get(description_tree,
+                             GLOBUS_GRAM_CLIENT_HOST_COUNT_PARAM,
+		             &tmp_param) != 0)
+    {
+        return(1);
+    }
+
     if (tmp_param[0])
     {
         params->host_count = atoi(tmp_param[0]);
@@ -1058,9 +1095,13 @@ grami_jm_request_params(globus_rsl_t * description_tree,
     /********************************** 
      *  GET PARADYN PARAM
      */
-    globus_rsl_param_get(description_tree,
-		       GLOBUS_GRAM_CLIENT_PARADYN_PARAM,
-		       &tmp_param);
+    if (globus_rsl_param_get(description_tree,
+                             GLOBUS_GRAM_CLIENT_PARADYN_PARAM,
+		             &tmp_param) != 0)
+    {
+        return(1);
+    }
+
     if (tmp_param[0])
         params->paradyn = tmp_param[0];
     else
@@ -1069,9 +1110,13 @@ grami_jm_request_params(globus_rsl_t * description_tree,
     /********************************** 
      *  GET JOBTYPE PARAM
      */
-    globus_rsl_param_get(description_tree,
-		       GLOBUS_GRAM_CLIENT_JOBTYPE_PARAM,
-		       &tmp_param);
+    if (globus_rsl_param_get(description_tree,
+                             GLOBUS_GRAM_CLIENT_JOBTYPE_PARAM,
+		             &tmp_param) != 0)
+    {
+        return(1);
+    }
+
     if (tmp_param[0])
         params->jobtype = tmp_param[0];
     else
@@ -1080,9 +1125,13 @@ grami_jm_request_params(globus_rsl_t * description_tree,
     /********************************** 
      *  GET MYJOB PARAM
      */
-    globus_rsl_param_get(description_tree,
-		       GLOBUS_GRAM_CLIENT_MYJOB_PARAM,
-		       &tmp_param);
+    if (globus_rsl_param_get(description_tree,
+                             GLOBUS_GRAM_CLIENT_MYJOB_PARAM,
+		             &tmp_param) != 0)
+    {
+        return(1);
+    }
+
     if (tmp_param[0])
         params->gram_myjob = tmp_param[0];
     else
@@ -1091,9 +1140,13 @@ grami_jm_request_params(globus_rsl_t * description_tree,
     /**********************************
      *  GET QUEUE PARAM
      */
-    globus_rsl_param_get(description_tree,
-                       GLOBUS_GRAM_CLIENT_QUEUE_PARAM,
-                       &tmp_param);
+    if (globus_rsl_param_get(description_tree,
+                             GLOBUS_GRAM_CLIENT_QUEUE_PARAM,
+		             &tmp_param) != 0)
+    {
+        return(1);
+    }
+
     if (tmp_param[0])
         params->queue = tmp_param[0];
     else
@@ -1102,9 +1155,13 @@ grami_jm_request_params(globus_rsl_t * description_tree,
     /**********************************
      *  GET PROJECT PARAM
      */
-    globus_rsl_param_get(description_tree,
-                       GLOBUS_GRAM_CLIENT_PROJECT_PARAM,
-                       &tmp_param);
+    if (globus_rsl_param_get(description_tree,
+                             GLOBUS_GRAM_CLIENT_PROJECT_PARAM,
+		             &tmp_param) != 0)
+    {
+        return(1);
+    }
+
     if (tmp_param[0])
         params->project = tmp_param[0];
     else
@@ -1113,9 +1170,13 @@ grami_jm_request_params(globus_rsl_t * description_tree,
     /********************************** 
      *  GET ENVIRONMENT PARAM
      */
-    globus_rsl_param_get(description_tree,
-		       GLOBUS_GRAM_CLIENT_ENVIRONMENT_PARAM, 
-                       &(params->pgm_env));
+    if (globus_rsl_param_get(description_tree,
+	                     GLOBUS_GRAM_CLIENT_ENVIRONMENT_PARAM, 
+                             &(params->pgm_env)) != 0)
+    {
+        return(1);
+    }
+
 
     {
 	char *newvar;
