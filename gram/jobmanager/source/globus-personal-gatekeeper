@@ -147,7 +147,8 @@ findit ()
 {
     foundit=false
     for dir in `${GLOBUS_SH_FIND-find} ${file_location} \
-        -name ${file_prefix}\* -type d 2>/dev/null`
+        -name .gass_cache -prune -exec /bin/true {} \; -o \
+        -name ${file_prefix}\* -type d -print 2>/dev/null`
     do
         if [ -n "${dir}" ]; then
             found=true
@@ -175,7 +176,8 @@ listem ()
     found=false
     foundold=false
     for dir in `${GLOBUS_SH_FIND-find} ${file_location} \
-        -name ${file_prefix}\* -type d 2>/dev/null`
+        -name .gass_cache -prune -exec /bin/true {} \; -o \
+        -name ${file_prefix}\* -type d -print 2>/dev/null`
     do
         if [ -n "${dir}" ]; then
             found=true
