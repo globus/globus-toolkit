@@ -134,7 +134,7 @@ OM_uint32 ssh_gssapi_sign(Gssctxt *, gss_buffer_t, gss_buffer_t);
 OM_uint32 ssh_gssapi_server_ctx(Gssctxt **, gss_OID);
 void ssh_gssapi_buildmic(Buffer *, const char *, const char *, const char *);
 
-int ssh_gssapi_check_mechanism(gss_OID oid, char *host);
+int ssh_gssapi_check_mechanism(gss_OID oid, const char *host);
 
 /* In the server */
 char *ssh_gssapi_server_mechanisms();
