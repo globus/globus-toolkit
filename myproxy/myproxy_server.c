@@ -117,6 +117,8 @@ void info_proxy(myproxy_creds_t *creds, myproxy_response_t *response);
 
 void destroy_proxy(myproxy_creds_t *creds, myproxy_response_t *response);
 
+void change_passwd(myproxy_creds_t *creds, myproxy_response_t *response);
+
 static void failure(const char *failure_message); 
 
 static void my_failure(const char *failure_message);
@@ -487,6 +489,15 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
 
         destroy_proxy(client_creds, server_response);
         break;
+
+    case MYPROXY_CHANGE_CRED_PASSPHRASE:
+	/* change credential passphrase*/
+	myproxy_log("Received client %s command: CHANGE_PASS", client_name);
+	myproxy_debug("  Username is \"%s\"", client_request->username);
+
+    	client_creds->passphrase = strdup(client_request->new_passphrase); 
+	change_passwd(client_creds,server_response);
+
     default:
 	/* log request type */
         (server_response->data).error_str = strdup("Invalid client request command.\n");
@@ -726,7 +737,6 @@ void get_proxy(myproxy_socket_attrs_t *attrs,
         myproxy_log("Delegating credentials for %s lifetime=%d",
 		    creds->owner_name, min_lifetime);
 	response->response_type = MYPROXY_OK_RESPONSE;
-	//response->response_string = strdup ("OK");  //REMOVE
     } 
 }
 
@@ -761,7 +771,6 @@ void put_proxy(myproxy_socket_attrs_t *attrs,
         (response->data).error_str = strdup("Unable to store credentials.\n"); 
     } else {
 	response->response_type = MYPROXY_OK_RESPONSE;
-	//response->response_string = strdup ("OK");
     }
 
     /* Clean up temporary delegation */
@@ -799,7 +808,21 @@ void destroy_proxy(myproxy_creds_t *creds, myproxy_response_t *response) {
         (response->data).error_str = strdup("Unable to delete credential.\n"); 
     } else {
 	response->response_type = MYPROXY_OK_RESPONSE;
-	//response->response_string = strdup ("Credential successfully deleted");   REMOVE
+    }
+ 
+}
+
+void change_passwd(myproxy_creds_t *creds, myproxy_response_t *response) {
+    
+    myproxy_debug("Changing passphrase for username \"%s\"", creds->username);
+    myproxy_debug("  Owner is \"%s\"", creds->owner_name);
+    
+    if (myproxy_creds_pass_change(creds) < 0) { 
+	myproxy_log_verror();
+        response->response_type =  MYPROXY_ERROR_RESPONSE; 
+        (response->data).error_str = strdup("Unable to change passphrase.\n"); 
+    } else {
+	response->response_type = MYPROXY_OK_RESPONSE;
     }
  
 }
@@ -1106,7 +1129,6 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
        break;
 
    case MYPROXY_INFO_PROXY:
-       /* Is this client authorized to store credentials here? */
        authorization_ok =
 	   myproxy_server_check_policy_list((const char **)context->accepted_credential_dns, client_name);
        if (!(authorization_ok == 1)) {
@@ -1119,7 +1141,30 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
           stored under this username. */
 
        break;
+
+   case MYPROXY_CHANGE_CRED_PASSPHRASE:
+	/*Change password of credential */
+
+       if (get_client_authdata(attrs, client_request, client_name,
+                               &auth_data) < 0) {
+           verror_put_string("Unable to get client authorization data");
+           goto end;
+       }
+        // get information about credential
+       if (myproxy_creds_fetch_entry(client_request->username, client_request->credname, &creds) < 0) {
+           verror_put_string("%s", "Unable to retrieve credential information");
+           goto end;
+       }       
+       /* Does passphrase match? */
+       authorization_ok =
+             authorization_check(&auth_data, &creds, client_name);
+       if (authorization_ok != 1) {
+           verror_put_string("invalid pass phrase");
+           goto end;
+       }
+       break;
    }
+
    if (authorization_ok == -1) {
       verror_put_string("%s","Error checking authorization");
       goto end;

@@ -164,7 +164,7 @@ main(int argc, char *argv[])
       goto cleanup;
     }
     
-    /* Create a proxy by running [grid-proxy-init] */
+    /* Create a proxy by running [GRID-PROXy-init] */
     sprintf(proxyfile, "%s.%u", MYPROXY_DEFAULT_PROXY, (unsigned) getuid());
 
     /* Run grid-proxy-init to create a proxy */
@@ -429,7 +429,7 @@ grid_proxy_init(int seconds, const char *proxyfile) {
 
     hours = seconds / SECONDS_PER_HOUR;
     
-    sprintf(command, "grid-proxy-init -hours %d -out %s", hours, proxyfile);
+    sprintf(command, "grid-proxy-init -valid %d:0 -out %s", hours, proxyfile);
     rc = system(command);
 
     return rc;
