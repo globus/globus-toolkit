@@ -17,6 +17,7 @@ CVS Information:
 
 **********************************************************************/
 
+
 static char *rcsid = "$Header$";
 
 /**********************************************************************
@@ -586,48 +587,30 @@ err:
 #else
         char *file;
 #endif
-        const char *data;
-        int line;
-        
-        /* WIN32 does not have the ERR_get_error_line_data */ 
-        /* exported, so simulate it till it is fixed */
-        /* in SSLeay-0.9.0 */
-        
-        while ( ERR_peek_error() != 0 )
-        {
-            int i;
-            ERR_STATE *es;
-            
-            es = ERR_get_state();
-            i=(es->bottom+1)%ERR_NUM_ERRORS;
-            
-            if (es->err_data[i] == NULL)
-                data = "";
-            else
-                data = es->err_data[i];
-            
-            l=ERR_get_error_line(&file,&line);
-            if (debug)
-                /*fprintf(stderr,
-                  "%s%s:\nLocation: %s:%d\n",
-                  ERR_error_string(l,buf),
-                  data,
-                  file,
-                  line);*/
-
+	const char *data;
+	int line;
+        int flags;
+	
+	while ( ERR_peek_error() != 0 )
+	{
+	    l=ERR_get_error_line_data(&file,&line,&data,&flags);
+	    if (debug)
+            {
                 fprintf(stderr,
                         "%s:%s:%d%s\n",
                         ERR_error_string(l,buf),
                         file,
                         line,
                         data);
-
+            }
             else
+            {
                 fprintf(stderr,
                         "%s%s\nFunction: %s\n",
                         ERR_reason_error_string(l),
                         data,
                         ERR_func_error_string(l));
+            }
         }
     }
     exit(3);
