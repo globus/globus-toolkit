@@ -1,4 +1,4 @@
-%define ver 3.2.3p1
+%define ver 3.3p1
 %define rel 1
 
 # OpenSSH privilege separation requires a user & group ID
@@ -25,6 +25,9 @@
 
 # Disable IPv6 (avoids DNS hangs on some glibc versions)
 %define noip6 0
+
+# Do we want kerberos5 support (1=yes 0=no)
+%define kerberos5 1
 
 # Reserve options to override askpass settings with:
 # rpm -ba|--rebuild --define 'skip_xxx 1'
@@ -55,6 +58,11 @@
 # Is this a build for the rescue CD (without PAM, with MD5)? (1=yes 0=no)
 %define rescue 0
 %{?build_rescue:%define rescue 1}
+
+# Turn off some stuff for resuce builds
+%if %{rescue}
+%define kerberos5 0
+%endif
 
 Summary: The OpenSSH implementation of SSH protocol versions 1 and 2.
 Name: openssh
@@ -185,9 +193,12 @@ CFLAGS="$RPM_OPT_FLAGS -Os"; export CFLAGS
 	--with-ipv4-default \
 %endif
 %if %{rescue}
-	--without-pam --with-md5-passwords
+	--without-pam --with-md5-passwords \
 %else
-	--with-pam --with-kerberos5=/usr/kerberos
+	--with-pam \
+%endif
+%if %{kerberos5}
+         --with-kerberos5=/usr/kerberos \
 %endif
 
 
@@ -306,6 +317,8 @@ fi
 %attr(0755,root,root) %{_bindir}/ssh-keygen
 %attr(0644,root,root) %{_mandir}/man1/ssh-keygen.1*
 %attr(0755,root,root) %dir %{_libexecdir}/openssh
+%attr(4711,root,root) %{_libexecdir}/openssh/ssh-keysign
+%attr(0644,root,root) %{_mandir}/man8/ssh-keysign.8*
 %endif
 %if %{scard}
 %attr(0755,root,root) %dir %{_datadir}/openssh
@@ -314,8 +327,9 @@ fi
 
 %files clients
 %defattr(-,root,root)
-%attr(4755,root,root) %{_bindir}/ssh
+%attr(0755,root,root) %{_bindir}/ssh
 %attr(0644,root,root) %{_mandir}/man1/ssh.1*
+%attr(0644,root,root) %{_mandir}/man5/ssh_config.5*
 %attr(0644,root,root) %config(noreplace) %{_sysconfdir}/ssh/ssh_config
 %attr(-,root,root) %{_bindir}/slogin
 %attr(-,root,root) %{_mandir}/man1/slogin.1*
@@ -337,6 +351,7 @@ fi
 %attr(0755,root,root) %{_sbindir}/sshd
 %attr(0755,root,root) %{_libexecdir}/openssh/sftp-server
 %attr(0644,root,root) %{_mandir}/man8/sshd.8*
+%attr(0644,root,root) %{_mandir}/man5/sshd_config.5*
 %attr(0644,root,root) %{_mandir}/man8/sftp-server.8*
 %attr(0755,root,root) %dir %{_sysconfdir}/ssh
 %attr(0600,root,root) %config(noreplace) %{_sysconfdir}/ssh/sshd_config
@@ -362,6 +377,11 @@ fi
 %endif
 
 %changelog
+* Fri Jun 21 2002 Damien Miller <djm@mindrot.org>
+- Merge in spec changes from seba@iq.pl (Sebastian Pachuta)
+- Add new {ssh,sshd}_config.5 manpages
+- Add new ssh-keysign program and remove setuid from ssh client
+
 * Fri May 10 2002 Damien Miller <djm@mindrot.org>
 - Merge in spec changes from RedHat, reorgansie a little
 - Add Privsep user, group and directory

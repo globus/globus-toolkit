@@ -1,5 +1,3 @@
-/*	$OpenBSD: sshconnect.h,v 1.17 2002/06/19 00:27:55 deraadt Exp $	*/
-
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  *
@@ -23,47 +21,49 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef SSHCONNECT_H
-#define SSHCONNECT_H
 
-typedef struct Sensitive Sensitive;
-struct Sensitive {
-	Key	**keys;
-	int	nkeys;
-	int	external_keysign;
-};
+#include "includes.h"
+RCSID("$OpenBSD: auth2-kbdint.c,v 1.2 2002/05/31 11:35:15 markus Exp $");
 
-int
-ssh_connect(const char *, struct sockaddr_storage *, u_short, int, int,
-    int, const char *);
+#include "packet.h"
+#include "auth.h"
+#include "log.h"
+#include "servconf.h"
+#include "xmalloc.h"
 
-void
-ssh_login(Sensitive *, const char *, struct sockaddr *, struct passwd *);
+/* import */
+extern ServerOptions options;
 
-int	 verify_host_key(char *, struct sockaddr *, Key *);
+static int
+userauth_kbdint(Authctxt *authctxt)
+{
+	int authenticated = 0;
+	char *lang, *devs;
 
-void	 ssh_kex(char *, struct sockaddr *);
-void	 ssh_kex2(char *, struct sockaddr *);
+	lang = packet_get_string(NULL);
+	devs = packet_get_string(NULL);
+	packet_check_eom();
 
-void	 ssh_userauth1(const char *, const char *, char *, Sensitive *);
-void	 ssh_userauth2(const char *, const char *, char *, Sensitive *);
+	debug("keyboard-interactive devs %s", devs);
 
-void	 ssh_put_password(char *);
+	if (options.challenge_response_authentication)
+		authenticated = auth2_challenge(authctxt, devs);
 
-
-/*
- * Macros to raise/lower permissions.
- */
-#define PRIV_START do {				\
-	int save_errno = errno;			\
-	(void)seteuid(original_effective_uid);	\
-	errno = save_errno;			\
-} while (0)
-
-#define PRIV_END do {				\
-	int save_errno = errno;			\
-	(void)seteuid(original_real_uid);	\
-	errno = save_errno;			\
-} while (0)
-
+#ifdef USE_PAM
+	if (authenticated == 0 && options.pam_authentication_via_kbd_int)
+		authenticated = auth2_pam(authctxt);
 #endif
+	xfree(devs);
+	xfree(lang);
+#ifdef HAVE_CYGWIN
+	if (check_nt_auth(0, authctxt->pw) == 0)
+		return(0);
+#endif
+	return authenticated;
+}
+
+Authmethod method_kbdint = {
+	"keyboard-interactive",
+	userauth_kbdint,
+	&options.kbd_interactive_authentication
+};

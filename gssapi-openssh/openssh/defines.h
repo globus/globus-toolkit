@@ -460,10 +460,10 @@ struct winsize {
 # define OPENSSL_free(x) Free(x)
 #endif
 
-#if defined(HAVE___func__)
-#  define __FUNCTION__ __func__
-#elif !defined(HAVE___FUNCTION__)
-#  define __FUNCTION__ ""
+#if !defined(HAVE___func__) && defined(HAVE___FUNCTION__)
+#  define __func__ __FUNCTION__
+#elif !defined(HAVE___func__)
+#  define __func__ ""
 #endif
 
 /*

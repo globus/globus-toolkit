@@ -827,8 +827,6 @@ Optional Features:
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --disable-largefile     omit support for large files
-  --enable-suid-ssh       Install ssh as suid root (default)
-  --disable-suid-ssh      Install ssh without suid bit
   --disable-lastlog       disable use of lastlog even if detected no
   --disable-utmp          disable use of utmp even if detected no
   --disable-utmpx         disable use of utmpx even if detected no
@@ -3666,6 +3664,10 @@ _ACEOF
 @%:@define NO_X11_UNIX_SOCKETS 1
 _ACEOF
 
+	cat >>confdefs.h <<\_ACEOF
+@%:@define SETGROUPS_NOOP 1
+_ACEOF
+
 	;;
 *-*-dgux*)
 	cat >>confdefs.h <<\_ACEOF
@@ -4100,7 +4102,6 @@ _ACEOF
 *-*-sysv4.2*)
 	CPPFLAGS="$CPPFLAGS -I/usr/local/include"
 	LDFLAGS="$LDFLAGS -L/usr/local/lib"
-#	enable_suid_ssh=no
 	cat >>confdefs.h <<\_ACEOF
 @%:@define USE_PIPES 1
 _ACEOF
@@ -4109,7 +4110,6 @@ _ACEOF
 *-*-sysv5*)
 	CPPFLAGS="$CPPFLAGS -I/usr/local/include"
 	LDFLAGS="$LDFLAGS -L/usr/local/lib"
-#	enable_suid_ssh=no
 	cat >>confdefs.h <<\_ACEOF
 @%:@define USE_PIPES 1
 _ACEOF
@@ -6427,6 +6427,8 @@ fi;
 
 
 
+
+
 for ac_func in arc4random b64_ntop bcopy bindresvport_sa \
 	clock fchmod fchown freeaddrinfo futimes gai_strerror \
 	getaddrinfo getcwd getgrouplist getnameinfo getopt \
@@ -6434,10 +6436,10 @@ for ac_func in arc4random b64_ntop bcopy bindresvport_sa \
 	inet_ntop innetgr login_getcapbool md5_crypt memmove \
 	mkdtemp mmap ngetaddrinfo openpty ogetaddrinfo readpassphrase \
 	realpath recvmsg rresvport_af sendmsg setdtablesize setegid \
-	setenv seteuid setlogin setproctitle setresgid setreuid setrlimit \
-	setsid setvbuf sigaction sigvec snprintf socketpair strerror \
-	strlcat strlcpy strmode strsep sysconf tcgetpgrp truncate utimes \
-	vhangup vsnprintf waitpid __b64_ntop _getpty
+	setenv seteuid setgroups setlogin setproctitle setresgid setreuid \
+	setrlimit setsid setpcred setvbuf sigaction sigvec snprintf \
+	socketpair strerror strlcat strlcpy strmode strsep sysconf tcgetpgrp \
+	truncate utimes vhangup vsnprintf waitpid __b64_ntop _getpty
 do
 as_ac_var=`echo "ac_cv_func_$ac_func" | $as_tr_sh`
 echo "$as_me:$LINENO: checking for $ac_func" >&5
@@ -7337,142 +7339,6 @@ _ACEOF
  
 fi
 done
-
-
-echo "$as_me:$LINENO: checking for getuserattr" >&5
-echo $ECHO_N "checking for getuserattr... $ECHO_C" >&6
-if test "${ac_cv_func_getuserattr+set}" = set; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-else
-  cat >conftest.$ac_ext <<_ACEOF
-#line $LINENO "configure"
-#include "confdefs.h"
-/* System header to define __stub macros and hopefully few prototypes,
-    which can conflict with char getuserattr (); below.  */
-#include <assert.h>
-/* Override any gcc2 internal prototype to avoid an error.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-/* We use char because int might match the return type of a gcc2
-   builtin and then its argument prototype would still apply.  */
-char getuserattr ();
-char (*f) ();
-
-#ifdef F77_DUMMY_MAIN
-#  ifdef __cplusplus
-     extern "C"
-#  endif
-   int F77_DUMMY_MAIN() { return 1; }
-#endif
-int
-main ()
-{
-/* The GNU C library defines this for functions which it implements
-    to always fail with ENOSYS.  Some functions are actually named
-    something starting with __ and the normal name is an alias.  */
-#if defined (__stub_getuserattr) || defined (__stub___getuserattr)
-choke me
-#else
-f = getuserattr;
-#endif
-
-  ;
-  return 0;
-}
-_ACEOF
-rm -f conftest.$ac_objext conftest$ac_exeext
-if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
-  (eval $ac_link) 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); } &&
-         { ac_try='test -s conftest$ac_exeext'
-  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
-  (eval $ac_try) 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); }; }; then
-  ac_cv_func_getuserattr=yes
-else
-  echo "$as_me: failed program was:" >&5
-cat conftest.$ac_ext >&5
-ac_cv_func_getuserattr=no
-fi
-rm -f conftest.$ac_objext conftest$ac_exeext conftest.$ac_ext
-fi
-echo "$as_me:$LINENO: result: $ac_cv_func_getuserattr" >&5
-echo "${ECHO_T}$ac_cv_func_getuserattr" >&6
-if test $ac_cv_func_getuserattr = yes; then
-  cat >>confdefs.h <<\_ACEOF
-@%:@define HAVE_GETUSERATTR 1
-_ACEOF
-
-else
-  echo "$as_me:$LINENO: checking for getuserattr in -ls" >&5
-echo $ECHO_N "checking for getuserattr in -ls... $ECHO_C" >&6
-if test "${ac_cv_lib_s_getuserattr+set}" = set; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-ls  $LIBS"
-cat >conftest.$ac_ext <<_ACEOF
-#line $LINENO "configure"
-#include "confdefs.h"
-
-/* Override any gcc2 internal prototype to avoid an error.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-/* We use char because int might match the return type of a gcc2
-   builtin and then its argument prototype would still apply.  */
-char getuserattr ();
-#ifdef F77_DUMMY_MAIN
-#  ifdef __cplusplus
-     extern "C"
-#  endif
-   int F77_DUMMY_MAIN() { return 1; }
-#endif
-int
-main ()
-{
-getuserattr ();
-  ;
-  return 0;
-}
-_ACEOF
-rm -f conftest.$ac_objext conftest$ac_exeext
-if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
-  (eval $ac_link) 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); } &&
-         { ac_try='test -s conftest$ac_exeext'
-  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
-  (eval $ac_try) 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); }; }; then
-  ac_cv_lib_s_getuserattr=yes
-else
-  echo "$as_me: failed program was:" >&5
-cat conftest.$ac_ext >&5
-ac_cv_lib_s_getuserattr=no
-fi
-rm -f conftest.$ac_objext conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-echo "$as_me:$LINENO: result: $ac_cv_lib_s_getuserattr" >&5
-echo "${ECHO_T}$ac_cv_lib_s_getuserattr" >&6
-if test $ac_cv_lib_s_getuserattr = yes; then
-  LIBS="$LIBS -ls"; cat >>confdefs.h <<\_ACEOF
-@%:@define HAVE_GETUSERATTR 1
-_ACEOF
-
-fi
-
-
-fi
 
 
 echo "$as_me:$LINENO: checking for daemon" >&5
@@ -13961,35 +13827,34 @@ if test "${ac_cv_have_accrights_in_msghdr+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
   
-	cat >conftest.$ac_ext <<_ACEOF
+	if test "$cross_compiling" = yes; then
+  { { echo "$as_me:$LINENO: error: cannot run test program while cross compiling" >&5
+echo "$as_me: error: cannot run test program while cross compiling" >&2;}
+   { (exit 1); exit 1; }; }
+else
+  cat >conftest.$ac_ext <<_ACEOF
 #line $LINENO "configure"
 #include "confdefs.h"
 
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/uio.h>
-		
-#ifdef F77_DUMMY_MAIN
-#  ifdef __cplusplus
-     extern "C"
-#  endif
-   int F77_DUMMY_MAIN() { return 1; }
+int main() {
+#ifdef msg_accrights
+exit(1);
 #endif
-int
-main ()
-{
- struct msghdr m; m.msg_accrights = 0; 
-  ;
-  return 0;
+struct msghdr m;
+m.msg_accrights = 0;
+exit(0);
 }
+		
 _ACEOF
-rm -f conftest.$ac_objext
-if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
-  (eval $ac_compile) 2>&5
+rm -f conftest$ac_exeext
+if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
+  (eval $ac_link) 2>&5
   ac_status=$?
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); } &&
-         { ac_try='test -s conftest.$ac_objext'
+  (exit $ac_status); } && { ac_try='./conftest$ac_exeext'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -13997,12 +13862,15 @@ if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (exit $ac_status); }; }; then
    ac_cv_have_accrights_in_msghdr="yes" 
 else
-  echo "$as_me: failed program was:" >&5
+  echo "$as_me: program exited with status $ac_status" >&5
+echo "$as_me: failed program was:" >&5
 cat conftest.$ac_ext >&5
+( exit $ac_status )
  ac_cv_have_accrights_in_msghdr="no" 
 	
 fi
-rm -f conftest.$ac_objext conftest.$ac_ext
+rm -f core core.* *.core conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
+fi
 
 fi
 echo "$as_me:$LINENO: result: $ac_cv_have_accrights_in_msghdr" >&5
@@ -14020,35 +13888,34 @@ if test "${ac_cv_have_control_in_msghdr+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
   
-	cat >conftest.$ac_ext <<_ACEOF
+	if test "$cross_compiling" = yes; then
+  { { echo "$as_me:$LINENO: error: cannot run test program while cross compiling" >&5
+echo "$as_me: error: cannot run test program while cross compiling" >&2;}
+   { (exit 1); exit 1; }; }
+else
+  cat >conftest.$ac_ext <<_ACEOF
 #line $LINENO "configure"
 #include "confdefs.h"
 
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/uio.h>
-		
-#ifdef F77_DUMMY_MAIN
-#  ifdef __cplusplus
-     extern "C"
-#  endif
-   int F77_DUMMY_MAIN() { return 1; }
+int main() {
+#ifdef msg_control
+exit(1);
 #endif
-int
-main ()
-{
- struct msghdr m; m.msg_control = 0; 
-  ;
-  return 0;
+struct msghdr m;
+m.msg_control = 0;
+exit(0);
 }
+		
 _ACEOF
-rm -f conftest.$ac_objext
-if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
-  (eval $ac_compile) 2>&5
+rm -f conftest$ac_exeext
+if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
+  (eval $ac_link) 2>&5
   ac_status=$?
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); } &&
-         { ac_try='test -s conftest.$ac_objext'
+  (exit $ac_status); } && { ac_try='./conftest$ac_exeext'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -14056,12 +13923,15 @@ if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (exit $ac_status); }; }; then
    ac_cv_have_control_in_msghdr="yes" 
 else
-  echo "$as_me: failed program was:" >&5
+  echo "$as_me: program exited with status $ac_status" >&5
+echo "$as_me: failed program was:" >&5
 cat conftest.$ac_ext >&5
+( exit $ac_status )
  ac_cv_have_control_in_msghdr="no" 
 	
 fi
-rm -f conftest.$ac_objext conftest.$ac_ext
+rm -f core core.* *.core conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
+fi
 
 fi
 echo "$as_me:$LINENO: result: $ac_cv_have_control_in_msghdr" >&5
@@ -15989,31 +15859,6 @@ _ACEOF
 
 fi; 
 
-echo "$as_me:$LINENO: checking whether to install ssh as suid root" >&5
-echo $ECHO_N "checking whether to install ssh as suid root... $ECHO_C" >&6
-# Check whether --enable-suid-ssh or --disable-suid-ssh was given.
-if test "${enable_suid_ssh+set}" = set; then
-  enableval="$enable_suid_ssh"
-   case "$enableval" in
-  no)
-       echo "$as_me:$LINENO: result: no" >&5
-echo "${ECHO_T}no" >&6
-       SSHMODE=0711
-       ;;
-  *)   echo "$as_me:$LINENO: result: yes" >&5
-echo "${ECHO_T}yes" >&6
-       SSHMODE=4711
-       ;;
-  esac 
-else
-  echo "$as_me:$LINENO: result: yes" >&5
-echo "${ECHO_T}yes" >&6
-  SSHMODE=4711
-
-fi; 
-
-
-
 # Where to place sshd.pid
 piddir=/var/run
 # make sure the directory exists
@@ -17175,7 +17020,6 @@ s,@NROFF@,$NROFF,;t t
 s,@MANTYPE@,$MANTYPE,;t t
 s,@mansubdir@,$mansubdir,;t t
 s,@user_path@,$user_path,;t t
-s,@SSHMODE@,$SSHMODE,;t t
 s,@piddir@,$piddir,;t t
 CEOF
 

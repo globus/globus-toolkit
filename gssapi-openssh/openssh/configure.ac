@@ -85,6 +85,7 @@ case "$host" in
 	AC_DEFINE(IPV4_DEFAULT)
 	AC_DEFINE(IP_TOS_IS_BROKEN)
 	AC_DEFINE(NO_X11_UNIX_SOCKETS)
+	AC_DEFINE(SETGROUPS_NOOP)
 	;;
 *-*-dgux*)
 	AC_DEFINE(IP_TOS_IS_BROKEN)
@@ -230,13 +231,11 @@ mips-sony-bsd|mips-sony-newsos4)
 *-*-sysv4.2*)
 	CPPFLAGS="$CPPFLAGS -I/usr/local/include"
 	LDFLAGS="$LDFLAGS -L/usr/local/lib"
-#	enable_suid_ssh=no
 	AC_DEFINE(USE_PIPES)
 	;;
 *-*-sysv5*)
 	CPPFLAGS="$CPPFLAGS -I/usr/local/include"
 	LDFLAGS="$LDFLAGS -L/usr/local/lib"
-#	enable_suid_ssh=no
 	AC_DEFINE(USE_PIPES)
 	;;
 *-*-sysv*)
@@ -571,10 +570,10 @@ AC_CHECK_FUNCS(arc4random b64_ntop bcopy bindresvport_sa \
 	inet_ntop innetgr login_getcapbool md5_crypt memmove \
 	mkdtemp mmap ngetaddrinfo openpty ogetaddrinfo readpassphrase \
 	realpath recvmsg rresvport_af sendmsg setdtablesize setegid \
-	setenv seteuid setlogin setproctitle setresgid setreuid setrlimit \
-	setsid setvbuf sigaction sigvec snprintf socketpair strerror \
-	strlcat strlcpy strmode strsep sysconf tcgetpgrp truncate utimes \
-	vhangup vsnprintf waitpid __b64_ntop _getpty)
+	setenv seteuid setgroups setlogin setproctitle setresgid setreuid \
+	setrlimit setsid setpcred setvbuf sigaction sigvec snprintf \
+	socketpair strerror strlcat strlcpy strmode strsep sysconf tcgetpgrp \
+	truncate utimes vhangup vsnprintf waitpid __b64_ntop _getpty)
 
 dnl IRIX and Solaris 2.5.1 have dirname() in libgen
 AC_CHECK_FUNCS(dirname, [AC_CHECK_HEADERS(libgen.h)] ,[
@@ -621,11 +620,6 @@ AC_CHECK_FUNCS(utmpname)
 dnl    Checks for utmpx functions
 AC_CHECK_FUNCS(endutxent getutxent getutxid getutxline pututxline )
 AC_CHECK_FUNCS(setutxent utmpxname)
-
-AC_CHECK_FUNC(getuserattr, 
-	[AC_DEFINE(HAVE_GETUSERATTR)],
-	[AC_CHECK_LIB(s, getuserattr, [LIBS="$LIBS -ls"; AC_DEFINE(HAVE_GETUSERATTR)])]
-)
 
 AC_CHECK_FUNC(daemon, 
 	[AC_DEFINE(HAVE_DAEMON)],
@@ -2095,25 +2089,6 @@ AC_ARG_WITH(bsd-auth,
 		fi
 	]
 )
-
-AC_MSG_CHECKING(whether to install ssh as suid root)
-AC_ARG_ENABLE(suid-ssh,
-[  --enable-suid-ssh       Install ssh as suid root (default)
-  --disable-suid-ssh      Install ssh without suid bit],
-[ case "$enableval" in
-  no)
-       AC_MSG_RESULT(no)
-       SSHMODE=0711
-       ;;
-  *)   AC_MSG_RESULT(yes)
-       SSHMODE=4711
-       ;;
-  esac ],
-  AC_MSG_RESULT(yes)
-  SSHMODE=4711
-)
-AC_SUBST(SSHMODE)
-
 
 # Where to place sshd.pid
 piddir=/var/run
