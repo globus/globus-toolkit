@@ -214,7 +214,14 @@ globus_l_xio_verify_open(
 {
     globus_result_t                     res;
     globus_xio_context_t                context;
-  
+    char *                              tst_str;
+
+    tst_str = (char *) driver_target;
+    if(strcmp(tst_str, _TARGET) != 0)
+    {
+        globus_assert(!"Server string doesn't match");
+    }
+
     GlobusXIODriverPassOpen(res, context, op, \
         globus_l_xio_verify_open_cb, NULL);
 
