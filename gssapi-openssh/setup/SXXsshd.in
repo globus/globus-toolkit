@@ -11,15 +11,13 @@ PID_FILE=${localstatedir}/sshd.pid
 case "$1" in
     start)
         if [ ! -f $PID_FILE ]; then
+            if [ ! -d $localstatedir ]; then
+                mkdir -p $localstatedir
+            fi
             echo "Starting up GSI-OpenSSH sshd server"
-            ${sbindir}/sshd &
+            ${sbindir}/sshd -p 3000 > /dev/null 2>&1 &
             if [ $? -ne 0 ] ; then
                 echo "Failed to start up GSI-OpenSSH sshd server"
-            else
-                if [ ! -d $localstatedir ]; then
-                    mkdir -p $localstatedir
-                fi
-                echo $! > $PID_FILE
             fi
         else
             echo "GSI-OpenSSH sshd is already running..."
@@ -28,9 +26,10 @@ case "$1" in
 
     stop)
         if [ -f $PID_FILE ] ; then
-            kill -TERM `cat $PID_FILE`
+            pid=`cat $PID_FILE`
+            kill -TERM $pid
             sleep 2
-            kill -TERM `cat $PID_FILE` 2> /dev/null
+            kill -TERM $pid 2> /dev/null
             rm -f $PID_FILE
         fi
         ;;
@@ -41,4 +40,3 @@ case "$1" in
 esac
 
 exit 0
-
