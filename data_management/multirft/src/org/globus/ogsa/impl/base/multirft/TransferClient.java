@@ -40,6 +40,7 @@ import org.globus.ogsa.base.multirft.RFTOptionsType;
 import org.globus.ogsa.impl.base.multirft.MyMarkerListener;
 import org.globus.ogsa.impl.base.multirft.TransferDbOptions;
 import org.globus.ogsa.impl.base.multirft.util.FileSystemUtil;
+import org.globus.ogsa.impl.base.multirft.util.URLExpander;
 import org.globus.ogsa.utils.MessageUtils;
 
 import org.globus.util.GlobusURL;
@@ -254,8 +255,15 @@ public class TransferClient {
 
             setTransferParams(destinationHost, this.credential);
             setTransferParams(sourceHost, this.credential);
-            size = sourceHost.getSize(sourcePath);
             //this.fileSystemUtil.makeDirectory("/sandbox/madduri/tmp");
+            if (this.sourcePath.endsWith("/")) {
+                logger.debug("Source url contains a directory");
+                logger.debug("More processing needs to be done");
+                URLExpander urlExpander = new URLExpander(this.sourceHost,this.destinationHost,sourcePath,destinationPath);
+                urlExpander.start();
+                this.status = 2;
+        }else {
+            size = sourceHost.getSize(sourcePath);    
             markerListener = new MyMarkerListener(dbOptions, transferProgress, 
                                                   serviceData, 
                                                   transferProgressData, size, 
@@ -267,6 +275,7 @@ public class TransferClient {
                                                   gridFTPPerfMarkerElement);
             markerListener.setTransferId(transferid);
             logger.debug("Transfer Id in TransferClient : " + transferid);
+        }
         } catch (MalformedURLException mue) {
             status = 2;
             logger.error("Error in TransferClient:Invalid URLs", mue);
@@ -276,6 +285,7 @@ public class TransferClient {
             logger.error("Error in TransferClient", e);
             throw new RemoteException(MessageUtils.toString(e));
         }
+       
     }
 
     /**

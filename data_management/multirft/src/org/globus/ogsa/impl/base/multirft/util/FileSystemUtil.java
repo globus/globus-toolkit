@@ -21,19 +21,15 @@ public class FileSystemUtil {
     /* this method takes a string which has a set of directories
     *   that are delimited by / 
     */
-    public void makeDirectory(String dirString)
+    public void makeDirectory(String dir)
     throws IOException,ServerException {
-        StringTokenizer st;
         try {
-            st = new StringTokenizer(dirString,"/");
-            while(st.hasMoreTokens()) {
-                this.gridFTPClient.makeDir(st.nextToken());
-            }
+                this.gridFTPClient.makeDir(dir);
+            
         } catch(ServerException e) {
             System.out.println("Error Code : " + ((UnexpectedReplyCodeException)(e.getRootCause())).getReply().getCode());
             throw new RemoteException("Exception while making directories"+e.getMessage());
-            
-        }
+        }       
     }
     /* this method takes a string and cd's to that location
     */
