@@ -81,6 +81,8 @@ typedef struct globus_l_openssl_error_handle_s
     unsigned long                       error_code;
     const char *                        filename;
     int                                 linenumber;
+    const char *                        data;
+    int                                 flags;
 } globus_i_openssl_error_handle_t;
 
 globus_openssl_error_handle_t

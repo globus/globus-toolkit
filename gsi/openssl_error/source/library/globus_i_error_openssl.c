@@ -101,17 +101,35 @@ globus_l_error_openssl_printable(
     handle = (globus_openssl_error_handle_t)
              globus_object_get_local_instance_data(error);
 
-    error_string = globus_error_openssl_create_error_string(
-        "OpenSSL Error: %s:%d: in library: %s, function %s: %s",
-        globus_openssl_error_handle_get_filename(handle) == NULL ? "(null)" :
-        globus_openssl_error_handle_get_filename(handle),
-        globus_openssl_error_handle_get_linenumber(handle),
-        globus_openssl_error_handle_get_library(handle) == NULL ? "(null)" :
-        globus_openssl_error_handle_get_library(handle),
-        globus_openssl_error_handle_get_function(handle) == NULL ? "(null)" :
-        globus_openssl_error_handle_get_function(handle),
-        globus_openssl_error_handle_get_reason(handle) == NULL ? "(null)" :
-        globus_openssl_error_handle_get_reason(handle));
+    if(globus_openssl_error_handle_get_data_flags(handle) & ERR_TXT_STRING)
+    {
+        error_string = globus_error_openssl_create_error_string(
+            "OpenSSL Error: %s:%d: in library: %s, function %s: %s %s",
+            globus_openssl_error_handle_get_filename(handle) == NULL ? "(null)" :
+            globus_openssl_error_handle_get_filename(handle),
+            globus_openssl_error_handle_get_linenumber(handle),
+            globus_openssl_error_handle_get_library(handle) == NULL ? "(null)" :
+            globus_openssl_error_handle_get_library(handle),
+            globus_openssl_error_handle_get_function(handle) == NULL ? "(null)" :
+            globus_openssl_error_handle_get_function(handle),
+            globus_openssl_error_handle_get_reason(handle) == NULL ? "(null)" :
+            globus_openssl_error_handle_get_reason(handle),
+            globus_openssl_error_handle_get_data(handle));
+    }
+    else
+    {
+        error_string = globus_error_openssl_create_error_string(
+            "OpenSSL Error: %s:%d: in library: %s, function %s: %s",
+            globus_openssl_error_handle_get_filename(handle) == NULL ? "(null)" :
+            globus_openssl_error_handle_get_filename(handle),
+            globus_openssl_error_handle_get_linenumber(handle),
+            globus_openssl_error_handle_get_library(handle) == NULL ? "(null)" :
+            globus_openssl_error_handle_get_library(handle),
+            globus_openssl_error_handle_get_function(handle) == NULL ? "(null)" :
+            globus_openssl_error_handle_get_function(handle),
+            globus_openssl_error_handle_get_reason(handle) == NULL ? "(null)" :
+            globus_openssl_error_handle_get_reason(handle));        
+    }
 
  done:
 
@@ -154,6 +172,8 @@ globus_i_openssl_error_handle_init()
 
     new_handle = malloc(sizeof(globus_i_openssl_error_handle_t));
 
+    assert(new_handle);
+    
     memset(new_handle, (int)NULL, sizeof(globus_i_openssl_error_handle_t));
 
     GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_EXIT;
@@ -183,7 +203,12 @@ globus_i_openssl_error_handle_destroy(
     GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_ENTER;
 
     if(handle != NULL)
-    { 
+    {
+        if(handle->data)
+        {
+            free(handle->data);
+        }
+        
         free(handle);
     }
 
