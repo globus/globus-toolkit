@@ -763,7 +763,7 @@ my_ssl_init(int verify, int peer_has_proxy)
     int				load_err = 0;
     proxy_cred_desc		*cred_handle;
 
-    proxy_get_filenames(NULL,1,NULL,&certdir,&userproxy,&certfile,&keyfile);
+    myproxy_get_filenames(NULL,1,NULL,&certdir,&userproxy,&certfile,&keyfile);
     cred_handle = proxy_cred_desc_new();
 
     /* load credentials if they're available */
@@ -1089,7 +1089,7 @@ GSI_SOCKET_authentication_accept(GSI_SOCKET *self)
     SSL_set_ssl_method(self->ssl,SSLv23_method());
     SSL_set_options(self->ssl,SSL_OP_NO_SSLv2|SSL_OP_NO_TLSv1);
     
-    proxy_get_filenames(NULL,1,NULL,&certdir,NULL,NULL,NULL);
+    myproxy_get_filenames(NULL,1,NULL,&certdir,NULL,NULL,NULL);
 #ifdef GSI_NEW
     proxy_verify_ctx_init(&verify_ctx_area);
     proxy_verify_init(&verify_area,&verify_ctx_area);

@@ -2278,7 +2278,7 @@ ssl_get_base_subject_file(const char *proxyfile, char **subject)
    if (proxyfile == NULL) {
       char *user_cert = NULL;
       
-      proxy_get_filenames(NULL, 0, NULL, NULL, NULL, &user_cert, NULL);
+      myproxy_get_filenames(NULL, 0, NULL, NULL, NULL, &user_cert, NULL);
       strncpy(path, user_cert, sizeof(path));
       free(user_cert);
    } else
@@ -2436,7 +2436,7 @@ ssl_verify_gsi_chain(SSL_CREDENTIALS *chain, X509 **peer)
       goto end;
    }
 
-   proxy_get_filenames(NULL, 0, NULL, &certdir, NULL, NULL, NULL);
+   myproxy_get_filenames(NULL, 0, NULL, &certdir, NULL, NULL, NULL);
    if (certdir == NULL) {
       verror_put_string("proxy_get_filenames()");
       ssl_error_to_verror();
