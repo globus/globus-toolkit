@@ -66,9 +66,6 @@ if(!open(MOVEXPORTS,'>',"MoveExports.bat")) {
     print "Can't Open Batch File \"MoveExports.bat\"\n";
     exit(0);
     }
-# zzz
-print "Created \"MoveExports.bat\"\n";
-# zzz
 
 # Open The Modules File
 if(!open(MODULES,"WinModules")) {
@@ -198,9 +195,6 @@ my @stemp;
             print LIBPARSER "while \(\<SYMBOLS\>\) \{\n";
             print LIBPARSER "    \@temp = split;\n";
             print LIBPARSER "    if\(\$temp[1] eq \"T\"\) \{\n";
-            print LIBPARSER "        print EXPORTS \"\$temp[2]\\n\";\n";
-            print LIBPARSER "        \}\n";
-            print LIBPARSER "    if\(\$temp[1] eq \"D\"\) \{\n";
             print LIBPARSER "        print EXPORTS \"\$temp[2]\\n\";\n";
             print LIBPARSER "        \}\n";
             print LIBPARSER "    \}\n";
