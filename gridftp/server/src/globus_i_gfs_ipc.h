@@ -367,4 +367,23 @@ globus_gfs_ipc_call_list(
     globus_gfs_ipc_callback_t           event_cb,
     void *                              user_arg);
 
+typedef struct globus_gfs_ipc_iface_s
+{
+    globus_gfs_ipc_iface_state_t        state_func;
+    globus_gfs_ipc_iface_recv_t         recv_func;
+    globus_gfs_ipc_iface_send_t         send_func;
+    globus_gfs_ipc_iface_command_t      command_func;
+    globus_gfs_ipc_iface_active_data_t  active_func;
+    globus_gfs_ipc_iface_passive_data_t passive_func;
+    globus_gfs_ipc_iface_data_destroy_t data_destory_func;
+    globus_gfs_ipc_iface_resource_t     resource_func;
+    globus_gfs_ipc_iface_list_t         list_func;
+} globus_gfs_ipc_iface_t;
+
+globus_result_t
+globus_gfs_ipc_init(
+    globus_gfs_ipc_handle_t *           ipc_handle,
+    globus_gfs_ipc_iface_t *            iface,
+    globus_xio_handle_t                 xio_handle);
+
 #endif
