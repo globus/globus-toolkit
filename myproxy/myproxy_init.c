@@ -54,6 +54,11 @@ static char usage[] = \
 "       -d | --dn_as_username             Use the proxy certificate subject\n"
 "                                         (DN) as the default username,\n"
 "                                         instead of the LOGNAME env. var.\n"
+#if defined (MULTICRED_FEATURE)
+"	-k | --credname <name>		  Specifies credential name\n"
+"	-K | --creddesc <description>	  Specifies credential description\n"
+"	-f | --force			  Force Credential Overwrite\n"
+#endif
 "\n";
 
 struct option long_options[] =
@@ -75,10 +80,20 @@ struct option long_options[] =
   {"renewable_by",    required_argument, NULL, 'R'},
   {"regex_dn_match",        no_argument, NULL, 'x'},
   {"match_cn_only", 	    no_argument, NULL, 'X'},
+#if defined (MULTICRED_FEATURE)
+  {"credname",	      required_argument, NULL, 'k'},
+  {"creddesc",	      required_argument, NULL, 'K'},
+  {"force",	      	    no_argument, NULL, 'f'},
+#endif
   {0, 0, 0, 0}
 };
 
-static char short_options[] = "uhs:p:t:c:l:vVndr:R:xXaA";  //colon following an option indicates option takes an argument
+#if defined (MULTICRED_FEATURE)
+static char short_options[] = "uhD:s:p:t:c:l:vVndr:R:xXaAk:K:f";  //colon following an option indicates option takes an argument
+
+#else
+static char short_options[] = "uhD:s:p:t:c:l:vVndr:R:xXaA";  //colon following an option indicates option takes an argument
+#endif
 
 static char version[] =
 "myproxy-init version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
@@ -180,7 +195,7 @@ main(int argc, char *argv[])
     if (!use_empty_passwd) {
 	if (myproxy_read_verified_passphrase(client_request->passphrase,
 					     sizeof(client_request->passphrase)) == -1) {
-	    fprintf(stderr, "error in myproxy_read_passphrase(): %s\n",
+	    fprintf(stderr, "%s\n",
 		    verror_get_string());
 	    goto cleanup;
 	}
@@ -188,7 +203,7 @@ main(int argc, char *argv[])
     
     /* Set up client socket attributes */
     if (myproxy_init_client(socket_attrs) < 0) {
-        fprintf(stderr, "error in myproxy_init_client(): %s\n", 
+        fprintf(stderr, "%s\n", 
 		verror_get_string());
         goto cleanup;
     }
@@ -202,7 +217,7 @@ main(int argc, char *argv[])
 
     /* Authenticate client to server */
     if (myproxy_authenticate_init(socket_attrs, proxyfile) < 0) {
-        fprintf(stderr, "error in myproxy_authenticate_init(): %s\n", 
+        fprintf(stderr, "%s\n", 
 		verror_get_string());
         goto cleanup;
     }
@@ -211,7 +226,7 @@ main(int argc, char *argv[])
     requestlen = myproxy_serialize_request(client_request, 
                                            request_buffer, sizeof(request_buffer));
     if (requestlen < 0) {
-        fprintf(stderr, "error in myproxy_serialize_request()\n");
+        fprintf(stderr, "%s\n",verror_get_string());
 	goto cleanup;
     }
 
@@ -219,21 +234,21 @@ main(int argc, char *argv[])
     myproxy_debug("Request buffer = %s", request_buffer);
 
     if (myproxy_send(socket_attrs, request_buffer, requestlen) < 0) {
-        fprintf(stderr, "error in myproxy_send_request(): %s\n", 
+        fprintf(stderr, "%s\n", 
 		verror_get_string());
 	goto cleanup;
     }
 
     /* Continue unless the response is not OK */
     if (myproxy_recv_response(socket_attrs, server_response) != 0) {
-        fprintf(stderr, "error in myproxy_recv_response(): %s\n", 
+        fprintf(stderr, "%s\n", 
 		verror_get_string());
         goto cleanup;
     }
     
     /* Delegate credentials to server using the default lifetime of the cert. */
     if (myproxy_init_delegation(socket_attrs, proxyfile, cred_lifetime) < 0) {
-	fprintf(stderr, "error in myproxy_init_delegation(): %s\n", 
+	fprintf(stderr, "%s\n", 
 		verror_get_string());
 	goto cleanup;
     }
@@ -247,7 +262,7 @@ main(int argc, char *argv[])
     
     /* Get final response from server */
     if (myproxy_recv_response(socket_attrs, server_response) != 0) {
-        fprintf(stderr, "error in myproxy_recv_response(): %s\n", 
+        fprintf(stderr, "%s\n", 
 		verror_get_string());
         goto cleanup;
     }
@@ -281,6 +296,7 @@ init_arguments(int argc,
 
     int arg;
 
+    request->force_credential_overwrite = 0;
     while((arg = gnu_getopt_long(argc, argv, short_options, 
 				 long_options, NULL)) != EOF) 
     {
@@ -364,6 +380,18 @@ init_arguments(int argc,
 	    request->renewers = strdup ("*");
 	    myproxy_debug("anonymous renewers allowed");
 	    break;
+#if defined (MULTICRED_FEATURE)
+	case 'k':  /*credential name*/
+	    request->credname = strdup (gnu_optarg);
+	    break;
+	case 'K':  /*credential description*/
+	    request->creddesc = strdup (gnu_optarg);
+	    break;
+	case 'f':  /*force credential overwrite*/
+	    request->force_credential_overwrite = 1;
+	    break;
+#endif
+
         default:  
 	    fprintf(stderr, usage);
 	    return -1;

@@ -6,14 +6,17 @@
 #ifndef __MYPROXY_CREDS_H
 #define __MYPROXY_CREDS_H
 
+#include <time.h>
+#include "my_utility.h" 
+
 #define REGULAR_EXP 1
 #define MATCH_CN_ONLY 0
 
 #include <time.h>
 
 struct myproxy_creds {
-    char *user_name;
-    char *pass_phrase;
+    char *username;
+    char *passphrase;
     char *owner_name;
     char *location;
     char *retrievers;
@@ -21,6 +24,9 @@ struct myproxy_creds {
     char *renewers;
     int renewer_expr_type;
     int lifetime;
+    char *credname;
+    char *creddesc;
+    int force_credential_overwrite;
     void *restrictions;
     time_t start_time;
     time_t end_time;
@@ -39,10 +45,15 @@ typedef struct myproxy_creds myproxy_creds_t;
 int myproxy_creds_store(const struct myproxy_creds *creds);
 
 /*
+ * myproxy_creds_fetch_entry ()
+ */
+int myproxy_creds_fetch_entry (char *username, char *credname, struct myproxy_creds *creds);
+
+/*
  * myproxy_creds_retrieve()
  *
- * Retrieve the credentials associated with the given username in the
- * given myproxy_creds structure. The pass_phrase field in the structure
+ * Retrieve the credentials associated with the given username and credential name in the
+ * given myproxy_creds structure. The passphrase field in the structure
  * should also be filled in and will be checked.
  *
  * Returns -1 on error, 0 on success.
@@ -53,8 +64,8 @@ int myproxy_creds_retrieve(struct myproxy_creds *creds);
  * myproxy_creds_delete()
  *
  * Delete any stored credentials held for the given user as indiciated
- * by the user_name field in the given myproxy_creds structure.
- * Either the pass_phrase or the owner_name field in the structure should
+ * by the username field in the given myproxy_creds structure.
+ * Either the passphrase or the owner_name field in the structure should
  * be filled in and match those in the credentials.
  *
  * Returns -1 on error, 0 on success.
@@ -68,17 +79,17 @@ int myproxy_creds_delete(const struct myproxy_creds *creds);
  *
  * Returns 1 if the user does, 0 if they do not, -1 on error.
  */
-int myproxy_creds_exist(const char *user_name);
+int myproxy_creds_exist(const char *username, const char *credname);
 
 /*
  * myproxy_creds_is_owner()
  *
  * Check to see if the given client is the owner of the credentials
- * referenced by user_name.
+ * referenced by username.
  *
  * Returns 1 if the client owns the credentials, 0 if they do not, -1 on error.
  */
-int myproxy_creds_is_owner(const char *username,
+int myproxy_creds_is_owner(const char *username, const char *credname,
 			   const char *client_name);
 
 /*
@@ -95,5 +106,54 @@ void myproxy_creds_free_contents(struct myproxy_creds *creds);
  * Change default storage directory.
  * Returns -1 on error, 0 on success.
  */
-int myproxy_set_storage_dir(const char *dir);
-#endif /* __MYPROXY_CREDS_H */
+void myproxy_set_storage_dir(const char *dir);
+
+#if defined (BACKEND_DATABASE)
+/*
+ * freedbase ()
+ *
+ * free allotted database
+ *
+ */
+void freedbase (struct myproxy_database *dbase);
+
+/*
+ * my_retrieve()
+ *
+ * retrieve one row of data from result set
+ *
+*/
+int myretrieve(SQLHDBC hdbc, SQLHSTMT hstmt);
+
+/*
+ * my_param_insert()
+ */
+int my_param_insert(SQLHDBC hdbc, SQLHSTMT hstmt);
+
+/*
+ * read_from_database_for_info ()
+ * 
+ * read owner, credential name and credential description fields from database for myproxy-info
+ */
+
+char *read_from_database_for_info ();
+
+/*
+ * retreive_cred_from_database()
+ *
+ * retrieves credential from database for specified username and credential name
+ */
+
+int retrieve_cred_from_database_given_username_credname(char *username, char *credname, struct myproxy_creds *retrieved_creds);
+
+/*
+ * copy_credential_to_file()
+ *
+ * copies credential in database to file. GSI requires credential in a file before delegation
+ *
+ */
+
+int copy_credential_to_file(struct myproxy_creds *creds, char *filename);
+#endif
+#endif
+

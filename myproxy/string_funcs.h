@@ -10,6 +10,12 @@
 #include <sys/types.h>
 #include <stdarg.h>
 
+/*
+ * strip_char()
+ *
+ * Strips a given string of a given character
+ */
+void strip_char (char *buf, char ch);
 
 /*
  * concatenate_strings()
