@@ -29,25 +29,30 @@ sub new
 sub submit
 {
     my $self = shift;
-    my $description = self->{JobDescription};
+    my $description = $self->{JobDescription};
     my $status;
     my $pbs_job_script;
     my $pbs_job_script_name;
+    my $errfile = "";
+    my $queue;
+    my $job_id;
 
     $self->log("Entering pbs submit");
 
     # verify existence of queue
     if(defined($description->queue()))
     {
-	system("$qstat -Q " . $description->queue() '>/dev/null 2>/dev/null');
+        $queue = $description->queue();
+
+	system("$qstat -Q $queue >/dev/null 2>/dev/null");
 	if($? != 0)
 	{
-	    $self->log('Queue ' . $description->queue() . ' not found.');
+	    $self->log("Queue $queue not found.");
 	    return Globus::GRAM::Error::INVALID_QUEUE;
 	}
     }
     # check jobtype
-    if(defined($description->jobtype())
+    if(defined($description->jobtype()))
     {
 	if($description->jobtype !~ /^(mpi|single|multiple)$/)
 	{
@@ -86,17 +91,18 @@ sub submit
 
     $self->log('Building job script');
 
-    $pbs_job_script_name = "$local_tmpdir/pbs_job_script.$$";
+    $pbs_job_script_name = "$Globus::Core::Paths::local_tmpdir" .
+                             "/pbs_job_script.$$";
     $pbs_job_script = new IO::File($pbs_job_script_name, '>');
 
     $pbs_job_script->print(
         "# PBS batch job script built by Globus job manager\n");
 
-    if(defined($description->queue())
+    if(defined($queue))
     {
-	$pbs_job_script->print("#PBS -q " . $description->queue() . "\n");
+	$pbs_job_script->print("#PBS -q $queue\n");
     }
-    if(defined($description->project())
+    if(defined($description->project()))
     {
 	$pbs_job_script->print("#PBS -A " . $description->project() . "\n");
     }
@@ -146,10 +152,10 @@ sub submit
     {
 	push(@new_env, @{$tuple}[0] . "=" . @{$tuple}[1]);
     }
-    $pbs_job_script->print("#PBS -v " .  join(',', @new_env);
+    $pbs_job_script->print("#PBS -v " .  join(',', @new_env));
 
-    $psb_job_script->print("\n#Change to directory requested by user\n");
-    $pbs_job_script->print('cd ' . $description->directory());
+    $pbs_job_script->print("\n#Change to directory requested by user\n");
+    $pbs_job_script->print('cd ' . $description->directory() . "\n");
 
     if($description->arguments())
     {
@@ -198,7 +204,20 @@ sub submit
     }
     $pbs_job_script->close();
 
-    system("$qsub < $pbs_job_script_name >$PBS_JOB_OUT 2>$PBS_JOB_ERR");
+    if($description->logfile() ne "")
+    {
+        $errfile = "2>" . $description->logfile();
+    }
+    chomp($job_id = `$qsub < $pbs_job_script_name $errfile`);
+    if($? == 0)
+    {
+        # truncate off the domain name
+	$job_id =~ s/([^\.]*).([^\.]*)\..*/$1.$2/;
+	return {JOB_ID => $job_id};
+    }
+    unlink($pbs_job_script_name);
+
+    return Globus::GRAM::Error::INVALID_SCRIPT_REPLY;
 }
 
 sub poll
@@ -207,10 +226,15 @@ sub poll
     my $description = $self->{JobDescription};
     my $job_id = $description->jobid();
     my $state;
+    my $status_line;
 
     $self->log("polling job $job_id");
 
-    $_ = (split(/\s+/, grep(/$job_id/, `$qstat $job_id`)))[4];
+    # Get first line matching job id
+    $_ = (grep(/$job_id/, `qstat $job_id`))[0];
+
+    # Get 4th field (status)
+    $_ = (split(/\s+/))[4];
 
     if(/Q|W|T/)
     {
@@ -229,7 +253,7 @@ sub poll
 	$state = Globus::GRAM::JobState::DONE;
     }
 
-    return {(job_state => $state)};
+    return {JOB_STATE => $state};
 }
 
 sub cancel
@@ -242,7 +266,7 @@ sub cancel
 
     system("$qdel $job_id >/dev/null 2>/dev/null");
 
-    return 0;
+    return {};
 }
 
 1;
