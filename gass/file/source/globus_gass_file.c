@@ -294,7 +294,8 @@ globus_gass_open(
     
     if(globus_l_gass_file_inited == GLOBUS_FALSE)
     {
-	return(-GLOBUS_GASS_TRANSFER_ERROR_NOT_INITIALIZED);
+	/* return(-GLOBUS_GASS_TRANSFER_ERROR_NOT_INITIALIZED); */
+	return(-1);
     }
 
     rc = globus_url_parse(url, &globus_url);
@@ -517,7 +518,8 @@ globus_gass_open(
     default:
 	globus_free(file);
 	globus_gass_file_exit();
-	return GLOBUS_GASS_TRANSFER_ERROR_NOT_SUPPORTED;
+	/* return GLOBUS_GASS_TRANSFER_ERROR_NOT_SUPPORTED; */
+	return -1;
     }
     globus_gass_file_exit();
     return file->fd;
@@ -783,26 +785,12 @@ globus_gass_close(
 		  {
 		      globus_libc_fprintf(stderr, "error: %s\n",
 			      globus_object_printable_to_string(globus_error_get(result)));
-		      rc = GLOBUS_GASS_TRANSFER_ERROR_TRANSFER_FAILED;
+		      /* rc = GLOBUS_GASS_TRANSFER_ERROR_TRANSFER_FAILED; */
+		      rc = -1;
 		  }
 		  globus_gass_copy_handle_destroy(&gass_copy_handle);
 		  globus_libc_free(tmp_filename);
 		  
-	/* 	rc = globus_gass_transfer_assist_put_file_to_url( */
-/* 		    &request, */
-/* 		    GLOBUS_NULL, */
-/* 		    file->url, */
-/* 		    file->filename, */
-/* 		    GLOBUS_NULL, */
-/* 		    GLOBUS_TRUE); */
-
-/* 		if(rc != GLOBUS_SUCCESS || */
-/* 		   globus_gass_transfer_request_get_status(request) != */
-/* 		   GLOBUS_GASS_TRANSFER_REQUEST_DONE) */
-/* 		{ */
-/* 		    rc = GLOBUS_GASS_TRANSFER_ERROR_TRANSFER_FAILED; */
-/* 		} */
-/* 		globus_gass_transfer_request_destroy(request); */
 	      }
 	        globus_gass_cache_delete(&globus_l_gass_file_cache_handle,
 					 file->url,
