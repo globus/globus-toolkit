@@ -1438,10 +1438,22 @@ globus_l_globusrun_gramrun(char * request_string,
 	err = monitor.failure_code;
     }
 
-    globus_libc_fprintf(stderr,
-                        "GRAM Job failed because %s (error code %d)\n",
-                        globus_gram_protocol_error_string(err),
-                        err);
+    if((err == GLOBUS_GRAM_PROTOCOL_ERROR_DRYRUN) &&
+             (options & GLOBUSRUN_ARG_DRYRUN))
+    {
+        if(verbose)
+        {
+            globus_libc_fprintf(stderr,
+                                "Dryrun successful\n");
+        }
+    }
+    else if(err != GLOBUS_SUCCESS)
+    {
+        globus_libc_fprintf(stderr,
+                            "GRAM Job failed because %s (error code %d)\n",
+                            globus_gram_protocol_error_string(err),
+                            err);
+    }
 hard_exit:
 
     if(job_contact != GLOBUS_NULL)
