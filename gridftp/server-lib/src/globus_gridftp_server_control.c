@@ -303,12 +303,9 @@ globus_gridftp_server_control_start(
         i_server->user_arg = user_arg;
         i_server->ref = 1; /* reference until user tells it to stop */
 
-        /* NOTE: This is called locked */
-        res = i_server->pmod->start_func(
+        res = globus_l_gsc_959_start(
                 server, 
-                i_server->xio_handle, 
-                &i_server->proto_arg);
-
+                xio_handle);
         if(res != GLOBUS_SUCCESS)
         {
             i_server->ref = 0;

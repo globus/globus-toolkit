@@ -921,9 +921,7 @@ globus_l_gsc_pmod_959_cmd_user(
     char *                                  msg;
     int                                     sc;
     GlobusGridFTPServerName(globus_l_gsc_pmod_959_cmd_user);
-
     cmd_handle = (globus_l_gsc_959_handle_t *) user_arg;
-
     if(cmd_handle->username != NULL)
     {
         globus_free(cmd_handle->username);
@@ -951,12 +949,9 @@ globus_l_gsc_pmod_959_cmd_user(
     {
         goto err;
     }
-
     globus_gsc_pmod_959_finished_op(op, msg);
     globus_free(msg);
-
     return;
-
   err:
     if(cmd_handle->username != NULL)
     {

@@ -2,7 +2,6 @@
 #define GLOBUS_I_GRIDFTP_SERVER_CONTROL_H 1
 
 #include "globus_gridftp_server_control.h"
-#include "globus_gridftp_server_control_pmod.h"
 
 #define GLOBUS_GRIDFTP_SERVER_HASHTABLE_SIZE    256
 #define GLOBUS_GRIDFTP_VERSION_CTL              1
@@ -181,8 +180,6 @@ typedef struct globus_i_gsc_server_s
     int                                             version_ctl;
 
     globus_mutex_t                                  mutex;
-    globus_xio_handle_t                             xio_handle;
-
     /*
      *  authentication information
      */
@@ -227,9 +224,6 @@ typedef struct globus_i_gsc_server_s
      */
     char *                                          syst;
     char *                                          help;
-
-    globus_i_gridftp_server_control_pmod_t *        pmod;
-    void *                                          proto_arg;
 
     void *                                          user_arg;
 
@@ -305,7 +299,6 @@ typedef struct globus_i_gsc_attr_s
     globus_hashtable_t                              recv_func_table;
     globus_gridftp_server_control_resource_callback_t resource_func;
     globus_gridftp_server_control_callback_t        done_func;
-    globus_i_gridftp_server_control_pmod_t *        pmod;
     globus_i_gs_state_t                             start_state;
     char *                                          modes;
     char *                                          types;
@@ -338,44 +331,17 @@ typedef enum globus_gridftp_server_command_desc_e
     GLOBUS_GRIDFTP_SERVER_CONTROL_COMMAND_DESC_PRE_AUTH = 0x04
 } globus_gridftp_server_command_desc_t;
 
-globus_result_t
-globus_i_gridftp_server_control_get_auth_cb(
-    globus_gridftp_server_control_t                 server,
-    globus_gridftp_server_control_auth_callback_t * auth_cb);
-
-globus_result_t
-globus_i_gridftp_server_control_get_resource_cb(
-    globus_gridftp_server_control_t                 server,
-    globus_gridftp_server_control_resource_callback_t * resource_cb);
-
-globus_result_t
-globus_i_gridftp_server_control_get_status(
-    globus_gridftp_server_control_t                 server,
-    char **                                         status);
-
-void
-globus_i_gridftp_server_control_finished_cmd(
-    globus_gridftp_server_control_operation_t       op,
-    globus_result_t                                 result,
-    void **                                         argv,
-    int                                             argc,
-    globus_bool_t                                   complete);
-
 /*
- *   959 Stuff
+ *   959 Structures
  */
-
 typedef enum globus_l_gsc_959_state_e
 {
     GLOBUS_L_GSP_959_STATE_OPEN,
     GLOBUS_L_GSP_959_STATE_PROCESSING,
-    GLOBUS_L_GSP_959_STATE_PROCESSING_STOPPING,
     GLOBUS_L_GSP_959_STATE_ABORTING,
     GLOBUS_L_GSP_959_STATE_ABORTING_STOPPING,
     GLOBUS_L_GSP_959_STATE_STOPPING,
     GLOBUS_L_GSP_959_STATE_STOPPED,
-    GLOBUS_L_GSP_959_STATE_PANIC,
-    GLOBUS_L_GSP_959_STATE_PANIC_STOPPING
 } globus_l_gsc_state_t;
 
 typedef struct globus_l_gsc_959_handle_s
@@ -384,11 +350,9 @@ typedef struct globus_l_gsc_959_handle_s
     globus_i_gsc_server_t *                 server;
     globus_xio_handle_t                     xio_handle;
     globus_l_gsc_state_t                    state;
-    int                                     ref;
     globus_fifo_t                           read_q;
     globus_fifo_t                           reply_q;
     int                                     abort_cnt;
-    globus_gridftp_server_control_stopped_cb_t stop_cb;
     globus_hashtable_t                      cmd_table;
     globus_gsc_959_abort_func_t             abort_func;
     void *                                  abort_arg;
@@ -399,7 +363,7 @@ typedef struct globus_l_gsc_959_cmd_ent_s
 {
     int                                     cmd;
     char                                    cmd_name[16]; /* only 5 needed */
-    globus_gsc_pmod_959_command_func_t      cmd_func;
+    globus_gsc_959_command_func_t           cmd_func;
     globus_gsc_959_command_desc_t           desc;
     char *                                  help;
     void *                                  user_arg;
@@ -420,5 +384,40 @@ typedef struct globus_gsc_op_959_s
     globus_i_gsc_server_t *                 server;
 } globus_gsc_op_959_t;
 
+/* 
+ *  959 reader functions
+ */
+globus_result_t
+globus_i_gsc_959_start(
+    globus_i_gsc_server_t *                 server,
+    globus_xio_handle_t                     xio_handle);
+
+void
+globus_i_gsc_959_terminate(
+    globus_l_gsc_959_handle_t *             handle);
+
+globus_result_t
+globus_i_gsc_959_command_add(
+    globus_l_gsc_959_handle_t *             handle,
+    const char *                            command_name,
+    globus_gsc_959_command_func_t           command_func,
+    globus_gsc_959_command_desc_t           desc,
+    const char *                            help,
+    void *                                  user_arg);
+
+char *
+globus_i_gsc_959_get_help(
+    globus_l_gsc_959_handle_t *             handle,
+    const char *                            command_name);
+
+globus_result_t
+globus_i_gsc_959_intermediate_reply(
+    globus_gsc_op_959_t *                   op,
+    char *                                  reply_msg);
+
+void
+globus_i_gsc_959_finished_op(
+    globus_gsc_op_959_t *                   op,
+    char *                                  reply_msg);
 
 #endif
