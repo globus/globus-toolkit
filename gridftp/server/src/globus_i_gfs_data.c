@@ -1230,6 +1230,14 @@ globus_i_gfs_data_request_list(
     data_op->callback = cb;
     data_op->event_callback = event_cb;
     data_op->user_arg = user_arg;
+    data_op->node_ndx = list_info->node_ndx;
+    data_op->write_stripe = 0;
+    data_op->stripe_chunk = list_info->node_ndx;
+    data_op->node_count = list_info->node_count;    
+    data_op->stripe_count = list_info->stripe_count;
+    data_op->nstreams = list_info->nstreams;
+    data_op->eof_count = (int *) 
+        globus_malloc(data_op->stripe_count * sizeof(int));
     
     if(globus_l_gfs_dsi->list_func != NULL)
     {
@@ -2606,6 +2614,7 @@ globus_gridftp_server_register_write(
             }
             if(op->write_stripe >= op->stripe_count)
             {
+                globus_assert(op->stripe_count && "stripe_count must be > 0");
                 op->write_stripe %= op->stripe_count;
             }    
             result = globus_ftp_control_data_write_stripe(

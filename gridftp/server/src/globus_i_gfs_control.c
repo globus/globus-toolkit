@@ -854,7 +854,31 @@ globus_l_gfs_data_transfer_cb(
         request->transfer_id,
         GLOBUS_GFS_EVENT_TRANSFER_COMPLETE);
 
-    globus_l_gfs_request_info_destroy(request);
+   /* still getting events after this?
+   globus_l_gfs_request_info_destroy(request);
+   
+==11527== Invalid read of size 4
+==11527==    at 0x40236757: globus_l_gfs_request_transfer_event (globus_i_gfs_control.c:756)
+==11527==    by 0x4027B376: globus_i_gsc_terminate (globus_gridftp_server_control.c:644)
+==11527==    by 0x4027B221: globus_l_gsc_read_cb (globus_gridftp_server_control.c:565)
+==11527==    by 0x40299AA6: globus_l_xio_read_write_callback_kickout (globus_xio_handle.c:1127)
+==11527==    by 0x402999B4: globus_i_xio_read_write_callback (globus_xio_handle.c:1095)
+==11527==    by 0x402A05C4: globus_l_xio_driver_op_read_kickout (globus_xio_driver.c:574)
+==11527==    by 0x402ABF11: globus_xio_driver_finished_read (globus_xio_pass.c:1216)
+==11527==    by 0x402BD97C: globus_l_xio_gssapi_ftp_server_read_cb (globus_xio_gssapi_ftp.c:1343)
+==11527==    by 0x402A0669: globus_l_xio_driver_op_read_kickout (globus_xio_driver.c:589)
+==11527==    by 0x402ABF11: globus_xio_driver_finished_read (globus_xio_pass.c:1216)
+==11527==    Address 0x44767C7C is 8 bytes inside a block of size 12 free'd
+==11527==    at 0x40026E8B: free (vg_replace_malloc.c:231)
+==11527==    by 0x402358F5: globus_l_gfs_request_info_destroy (globus_i_gfs_control.c:68)
+==11527==    by 0x4023690F: globus_l_gfs_data_transfer_cb (globus_i_gfs_control.c:857)
+==11527==    by 0x40229C31: globus_l_gfs_data_end_transfer_kickout (globus_i_gfs_data.c:1382)
+==11527==    by 0x40229D99: globus_l_gfs_data_end_read_kickout (globus_i_gfs_data.c:1459)
+==11527==    by 0x403881A4: globus_callback_space_poll (globus_callback_nothreads.c:1341)
+==11527==    by 0x804BA58: main (globus_gridftp_server.c:735)
+==11527==    by 0x410037F6: __libc_start_main (in /lib/i686/libc-2.3.1.so)
+==11527==    by 0x804ACD0: (within /sandbox/mlink/gridftp-server3-branch/INSTALL/sbin/globus-gridftp-server)
+     */
 }
 
 static

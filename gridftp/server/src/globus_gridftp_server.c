@@ -166,7 +166,7 @@ globus_l_gfs_signal_init()
 
 #   ifdef SIGKILL
     {
-        signal(SIGKILL, globus_l_gfs_bad_signal_handler);
+        //signal(SIGKILL, globus_l_gfs_bad_signal_handler);
     }
 #   endif
 #   ifdef SIGSEGV
@@ -224,7 +224,7 @@ globus_l_gfs_signal_init()
 #   endif
 #   ifdef SIGSTOP
     {
-        signal(SIGSTOP, globus_l_gfs_bad_signal_handler);
+        //signal(SIGSTOP, globus_l_gfs_bad_signal_handler);
     }
 
 #   endif
