@@ -35,6 +35,9 @@ globus_i_gfs_monitor_signal(
     globus_i_gfs_monitor_t *            monitor);
 
 void
+globus_i_gfs_ipc_stop();
+
+void
 globus_i_gfs_control_stop();
 
 void

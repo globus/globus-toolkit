@@ -92,7 +92,14 @@ globus_l_gfs_sigint(
         }
         else
         {
-            globus_i_gfs_control_stop();
+            if(globus_i_gfs_config_bool("data_node"))
+            {
+                globus_i_gfs_ipc_stop();
+            }
+            else
+            {
+                globus_i_gfs_control_stop();
+            }
         }
     }
     globus_mutex_unlock(&globus_l_gfs_mutex);
@@ -439,6 +446,7 @@ globus_l_gfs_ipc_error_cb(
     void *                              user_arg)
 {
     globus_i_gfs_log_result("IPC ERROR", result);
+    globus_l_gfs_server_closed(user_arg);
 }
 
 static
