@@ -1,5 +1,5 @@
 include $(top_srcdir)/aclocal/automake_targets
-aclocaldir = $(GLOBUS_INSTALL_PATH)/share/globus_aclocal
+aclocaldir = $(GLOBUS_LOCATION)/share/globus_aclocal
 
 aclocal_DATA = globus_package.m4 \
 	automake_targets \
@@ -17,5 +17,12 @@ EXTRA_DIST = $(aclocal_DATA) \
 	progs.am \
 	scripts.am \
 	subdirs.am
+
+install-data-local:
+	@if test ! -f "$(GLOBUS_LOCATION)/share/globus_aclocal/gpt_autoconf_macros.m4"; then \
+		echo "linking GPT macros into Globus Installation"; \
+		ln -s "$(GPT_LOCATION)/share/globus_aclocal/gpt_autoconf_macros.m4" \
+		"$(GLOBUS_LOCATION)/share/globus_aclocal/gpt_autoconf_macros.m4"; \
+	fi
 
 include $(top_srcdir)/aclocal/automake_rules

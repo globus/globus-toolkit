@@ -62,15 +62,19 @@ if test "$GLOBUS_THREADS" = "no" ; then
 fi
 AC_SUBST(GLOBUS_THREADS)
 
-# checking for the GLOBUS_INSTALL_PATH
+# checking for the GLOBUS_LOCATION
 
-if test "x$GLOBUS_INSTALL_PATH" = "x"; then
-    echo "ERROR Please specify GLOBUS_INSTALL_PATH" >&2
+if test "x$GLOBUS_LOCATION" = "x"; then
+    echo "ERROR Please specify GLOBUS_LOCATION" >&2
     exit 1
 fi
 
-prefix='$(GLOBUS_INSTALL_PATH)'
-exec_prefix='$(GLOBUS_INSTALL_PATH)'
+if test "x$GPT_LOCATION" = "x"; then
+    export GPT_LOCATION=$GLOBUS_LOCATION
+fi
+
+prefix='$(GLOBUS_LOCATION)'
+exec_prefix='$(GLOBUS_LOCATION)'
 
 dnl check for perl
 
@@ -95,11 +99,10 @@ AC_OUTPUT(Makefile
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
 	,
-	$GLOBUS_INSTALL_PATH/sbin/gpt_generate_bin_pkg_data  \
+	$GPT_LOCATION/sbin/gpt_generate_bin_pkg_data  \
 	--flavor=$GLOBUS_FLAVOR_NAME "./pkgdata/pkg_data_src.gpt"
 	,
 	GLOBUS_FLAVOR_NAME=$GLOBUS_FLAVOR_NAME
-
 	)
 
 

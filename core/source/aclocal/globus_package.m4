@@ -63,21 +63,24 @@ AC_ARG_ENABLE(internal-doc,
 AM_CONDITIONAL(WITHOUT_FLAVORS, test "$NO_FLAVOR" = "yes")
 AC_SUBST(GLOBUS_FLAVOR_NAME)
 
-# checking for the GLOBUS_INSTALL_PATH
+# checking for the GLOBUS_LOCATION
 
-if test "x$GLOBUS_INSTALL_PATH" = "x"; then
-    echo "ERROR Please specify GLOBUS_INSTALL_PATH" >&2
+if test "x$GLOBUS_LOCATION" = "x"; then
+    echo "ERROR Please specify GLOBUS_LOCATION" >&2
     exit 1
+fi
+if test "x$GPT_LOCATION" = "x"; then
+    GPT_LOCATION=$GLOBUS_LOCATION
 fi
 
 # get the environment scripts
-. $GLOBUS_INSTALL_PATH/libexec/globus-sh-tools.sh
+. $GLOBUS_LOCATION/libexec/globus-sh-tools.sh
 
-. $GLOBUS_INSTALL_PATH/libexec/globus-build-env-$GLOBUS_FLAVOR_NAME.sh
+. $GLOBUS_LOCATION/libexec/globus-build-env-$GLOBUS_FLAVOR_NAME.sh
 
 
-prefix='$(GLOBUS_INSTALL_PATH)'
-exec_prefix='$(GLOBUS_INSTALL_PATH)'
+prefix='$(GLOBUS_LOCATION)'
+exec_prefix='$(GLOBUS_LOCATION)'
 
 AC_SUBST(CC)
 AC_SUBST(CPP)
@@ -106,7 +109,7 @@ GPT_INIT
 
 
 define([AM_PROG_LIBTOOL],[
-	LIBTOOL='$(SHELL) $(GLOBUS_INSTALL_PATH)/sbin/libtool-$(GLOBUS_FLAVOR_NAME)'
+	LIBTOOL='$(SHELL) $(GLOBUS_LOCATION)/sbin/libtool-$(GLOBUS_FLAVOR_NAME)'
 	AC_SUBST(LIBTOOL)
 	AC_SUBST(LN_S)
 ])
