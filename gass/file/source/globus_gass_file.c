@@ -749,7 +749,7 @@ globus_gass_close(
 				     &globus_l_gass_file_mutex);
 		}
 		globus_gass_transfer_request_destroy(file->append->request);
-
+                globus_io_close(&file->append->read_handle);
 		globus_free(file->append);
 
 		globus_gass_cache_delete(globus_l_gass_file_cache_handle,
