@@ -15,7 +15,12 @@ if [ ! -z "${GRID_SECURITY_DIR}" ] ; then
     if [ -r "${GRID_SECURITY_DIR}/globus-user-ssl.conf" ] && 
        [ -r "${GRID_SECURITY_DIR}/globus-host-ssl.conf" ] ; then
         secconfdir="${GRID_SECURITY_DIR}"
-        trusted_certs_dir="${secconfdir}/certificates"
+        if test "X`echo ${GRID_SECURITY_DIR}|sed 's/etc$//'|sed 's/\/$//'`" = \
+            "X`echo ${GLOBUS_LOCATION}|sed 's/\/$//'`" ; then
+            trusted_certs_dir="${GLOBUS_LOCATION}/share/certificates"
+        else
+            trusted_certs_dir="${secconfdir}/certificates"
+        fi
     else
         echo "Can't find valid CA config files in " \
              "GRID_SECURITY_DIR  = ${GRID_SECURITY_DIR}." 
