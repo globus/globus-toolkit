@@ -103,7 +103,7 @@ globus_gass_cache_error_strings[] =
     "GLOBUS_GASS_CACHE_ERROR_CAN_NOT_WRITE",
     "GLOBUS_GASS_CACHE_ERROR_CAN_NOT_READ",
     "GLOBUS_GASS_CACHE_ERROR_CAN_NOT_DELETE_DATA_F",
-    "GLOBUS_GASS_CACHE_ERROR_CACHE_NOT_OPENEDED",
+    "GLOBUS_GASS_CACHE_ERROR_CACHE_NOT_OPENED",
     "GLOBUS_GASS_CACHE_ERROR_CACHE_ALREADY_OPENED",
     "GLOBUS_GASS_CACHE_ERROR_INVALID_PARRAMETER",
     "GLOBUS_GASS_CACHE_ERROR_INVALID_VERSION"
@@ -1119,7 +1119,7 @@ globus_l_gass_cache_lock_file(char* file_to_be_locked)
 	    if (lock_tout> LOCK_TOUT)
 	    {
 		/* check the age of the file to lock */
-		while ( stat(file_to_be_locked ,&file_stat) != 0)
+		while ( stat(lock_file ,&file_stat) != 0)
 		{
 		    if (errno != EINTR)
 		    {
