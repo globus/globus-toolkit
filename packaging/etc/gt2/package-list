@@ -100,5 +100,6 @@ globus_test			test/
 globus_trusted_ca_42864e48_setup	gsi/trusted_ca/setup
 globus_user_env			user_env/source
 gssapi_error			gsi/gssapi_error/source
+globus_gcs_b38b4d8c_setup       gsi/gcs/setup
 globus_simple_ca                gsi/simple_ca/source
 globus_simple_ca_setup          gsi/simple_ca/setup

@@ -1,10 +1,39 @@
 #!/bin/sh
 
 BASEDIR=$PWD
-GT2PKGS="core common xio user_env side_tools"
+GT2PKGS="core common xio gsi callout user_env side_tools mds/libtool tarfiles"
 GT3PKGS=chosting
 
-PKGLIST=globus_core,globus_common,globus_common_setup,globus_user_env,globus_axiscpp,globus_expat,globus_axiscpp_wsdl2ws,globus_axiscpp_transport_stdio,globus_axis_server_engine,globus_axis_server_test,globus_service_GetQuoteCPP
+PKGLIST=\
+globus_core,\
+globus_common,\
+globus_common_setup,\
+globus_user_env,\
+globus_xio,\
+globus_proxy_utils,\
+globus_gssapi_gsi,\
+gssapi_error,\
+globus_gss_assist,\
+globus_callout,\
+globus_libtool,\
+globus_gsi_proxy_core,\
+globus_gsi_credential,\
+globus_gsi_callback,\
+globus_gsi_sysconfig,\
+globus_gsi_cert_utils,\
+globus_openssl_module,\
+globus_gsi_proxy_ssl,\
+globus_gsi_openssl_error,\
+globus_proxy_wrapper,\
+globus_openssl,\
+globus_gcs_b38b4d8c_setup,\
+globus_axiscpp,\
+globus_expat,\
+globus_axiscpp_wsdl2ws,\
+globus_axiscpp_transport_stdio,\
+globus_axis_server_engine,\
+globus_axis_server_test,\
+globus_service_GetQuoteCPP
 
 if test ! -d $BASEDIR/source-trees; then
 	mkdir $BASEDIR/source-trees
@@ -23,12 +52,12 @@ if test ! -d $BASEDIR/source-trees/autotools; then
 fi
 
 
-if test -z "$CVSROOT"; then
-	echo ""
-	echo "ERROR: Please set CVSROOT to your standard GT2/3 checkout location"
-	echo ""
-	exit 1
-fi
+#if test -z "$CVSROOT"; then
+#	echo ""
+#	echo "ERROR: Please set CVSROOT to your standard GT2/3 checkout location"
+#	echo ""
+#	exit 1
+#fi
 
 
 CVSCHECK=`echo $CVSROOT | sed -e "s|.*\(:\).*|\1|"`
@@ -38,6 +67,7 @@ else
 	CVSBASE=`echo $CVSROOT | sed -e "s|\(.*\):.*|\1|"`
 fi
 
+CVSBASE=:pserver:anonymous@cvs.globus.org
 GT2CVS=$CVSBASE:/home/globdev/CVS/globus-packages
 GT3CVS=$CVSBASE:/home/globdev/CVS/gridservices
 
@@ -71,6 +101,7 @@ if test ! $? = 0; then
 	exit 1
 fi
 
+
 cd $BASEDIR
 ./make-packages.pl -no-updates -packages="$PKGLIST"
 if test ! $? = 0; then
@@ -90,14 +121,18 @@ if test ! $? = 0; then
 	exit 1
 fi
 
-echo "GLOBUS LOCATION IS: :$GLOBUS_LOCATION:"
+echo "GLOBUS LOCATION IS: :${GLOBUS_LOCATION}:"
 
 if test -z "$GLOBUS_LOCATION"; then
 	echo ""
 	echo "Setting GLOBUS_LOCATION to $BASEDIR/GT.chosting"
 	echo ""
 	export GLOBUS_LOCATION=$BASEDIR/GT.chosting
+	mkdir $GLOBUS_LOCATION
+	$GPT_LOCATION/sbin/gpt-build -force -nosrc gcc32dbg
 fi
+
+echo "GLOBUS_LOCATION IS: :${GLOBUS_LOCATION}:"
 
 $GPT_LOCATION/sbin/gpt-build globus_chosting-0.1-src_bundle.tar.gz gcc32dbg
 if test ! $? = 0; then
