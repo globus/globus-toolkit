@@ -53,6 +53,10 @@ EXTRA_DIST = globus-personal-gatekeeper $(validation_DATA) \
 	globus_gram_job_manager_rsl.dox \
 	dirt.sh
 
+BUILT_SOURCES = globus_gram_job_manager_rsl.dox
+
+Makefile: $(BUILT_SOURCES)
+
 globus_gram_job_manager_rsl.dox: globus-gram-job-manager.rvf
 	perl scripts/create_rsl_documentation.pl \
 	    < globus-gram-job-manager.rvf \
