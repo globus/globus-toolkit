@@ -109,7 +109,8 @@ int main(int argc, char *argv[])
 	goto cleanup;
     }
 
-    sprintf(proxyfile, "%s.%u", MYPROXY_DEFAULT_PROXY, (unsigned)getpid());
+    sprintf(proxyfile, "%s.%u.%u", MYPROXY_DEFAULT_PROXY,
+	    (unsigned)getuid(), (unsigned)getpid());
     /* Remove proxyfile if it already exists. */
     ssl_proxy_file_destroy(proxyfile);
     verror_clear();

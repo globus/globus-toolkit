@@ -157,7 +157,8 @@ main(int argc, char *argv[])
     }
 
     /* Create a proxy by running [grid-proxy-init] */
-    sprintf(proxyfile, "%s.%u", MYPROXY_DEFAULT_PROXY, (unsigned)getpid());
+    sprintf(proxyfile, "%s.%u.%u", MYPROXY_DEFAULT_PROXY,
+	    (unsigned)getuid(), (unsigned)getpid());
 
     /* Run grid-proxy-init to create a proxy */
     if (grid_proxy_init(cred_lifetime, proxyfile) != 0) {

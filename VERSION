@@ -4,7 +4,7 @@ This version should be compatible with all versions since v0.2.
 Version History
 ---------------
 XXXX
-  - write temp proxy to /tmp/myproxy-proxy.<pid> instead of
+  - write temp proxy to /tmp/myproxy-proxy.<uid>.<pid> instead of
     /tmp/myproxy-proxy.<uid> so we can run more than one myproxy-init
     in an account at a time
   - increased myproxy-server's listen(2) backlog for improved
