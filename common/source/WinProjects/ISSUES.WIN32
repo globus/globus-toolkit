@@ -157,3 +157,13 @@ globus_libc.c
    are some that I am going to try to remove.
 
 ---------------------------------------------------------------
+TODO:
+
+need to document doxygen style
+
+data structures are largely hidden.  a few remain for the sake
+of not breaking the rest of the build.
+
+globus_list
+globus_module
+---------------------------------------------------------------
