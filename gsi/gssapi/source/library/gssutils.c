@@ -788,7 +788,8 @@ gss_create_and_fill_cred(
             major_status = GSS_S_NO_CRED;
         }
 
-        *minor_status = convert_minor_codes(ERR_user_lib_prxyerr_num(), status);
+        *minor_status = convert_minor_codes(ERR_GET_LIB(ERR_peek_error()),
+            ERR_GET_REASON(ERR_peek_error()));
  
         goto err;
     }
