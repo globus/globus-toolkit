@@ -51,6 +51,10 @@ RCSID("$OpenBSD: monitor_wrap.c,v 1.11 2002/06/19 18:01:00 markus Exp $");
 #include "channels.h"
 #include "session.h"
 
+#ifdef GSSAPI
+#include "ssh-gss.h"
+#endif
+
 /* Imports */
 extern int compat20;
 extern Newkeys *newkeys[];
@@ -937,3 +941,137 @@ mm_auth_rsa_verify_response(Key *key, BIGNUM *p, u_char response[16])
 
 	return (success);
 }
+#ifdef GSSAPI
+OM_uint32
+mm_ssh_gssapi_server_ctx(Gssctxt **ctx, gss_OID oid) {
+        Buffer m;
+        OM_uint32 major;
+                
+        /* Client doesn't get to see the context */
+        *ctx=NULL;
+
+        buffer_init(&m);
+        buffer_put_string(&m,oid->elements,oid->length);
+
+        mm_request_send(pmonitor->m_recvfd, MONITOR_REQ_GSSSETUP, &m);
+
+        debug3("%s: waiting for MONITOR_ANS_GSSSETUP",__func__);
+        mm_request_receive_expect(pmonitor->m_recvfd, MONITOR_ANS_GSSSETUP, &m);
+        major=buffer_get_int(&m);
+
+        return(major);
+}
+
+OM_uint32
+mm_ssh_gssapi_accept_ctx(Gssctxt *ctx, gss_buffer_desc *in,
+                         gss_buffer_desc *out, OM_uint32 *flags) {
+
+        Buffer m;
+        OM_uint32 major;
+
+        buffer_init(&m);
+        buffer_put_string(&m, in->value, in->length);
+        mm_request_send(pmonitor->m_recvfd, MONITOR_REQ_GSSSTEP, &m);
+
+        debug3("%s: waiting for MONITOR_ANS_GSSSTEP", __func__);
+        mm_request_receive_expect(pmonitor->m_recvfd, MONITOR_ANS_GSSSTEP, &m);
+
+        major=buffer_get_int(&m);
+        out->value=buffer_get_string(&m,&out->length);
+        if (flags) *flags=buffer_get_int(&m);
+
+        return(major);
+}
+
+int
+mm_ssh_gssapi_userok(char *user) {
+        Buffer m;
+        int authenticated = 0;
+
+        buffer_init(&m);
+        mm_request_send(pmonitor->m_recvfd, MONITOR_REQ_GSSUSEROK, &m);
+
+        debug3("%s: waiting for MONITOR_ANS_GSSUSEROK", __func__);
+        mm_request_receive_expect(pmonitor->m_recvfd, MONITOR_ANS_GSSUSEROK,
+                                  &m);
+
+        authenticated = buffer_get_int(&m);
+
+        buffer_free(&m);
+        debug3("%s: user %sauthenticated",__func__, authenticated ? "" : "not ");
+        return(authenticated);
+}
+
+int
+mm_ssh_gssapi_localname(char **lname)
+{
+        Buffer m;
+
+	buffer_init(&m);
+        mm_request_send(pmonitor->m_recvfd, MONITOR_REQ_GSSLOCALNAME, &m);
+
+        debug3("%s: waiting for MONITOR_ANS_GSSLOCALNAME", __func__);
+        mm_request_receive_expect(pmonitor->m_recvfd, MONITOR_ANS_GSSLOCALNAME,
+                                  &m);
+
+	*lname = buffer_get_string(&m, NULL);
+
+        buffer_free(&m);
+	if (lname[0] == '\0') {
+	    debug3("%s: gssapi identity mapping failed", __func__);
+	} else {
+	    debug3("%s: gssapi identity mapped to %s", __func__, *lname);
+	}
+	
+        return(0);
+}
+
+OM_uint32
+mm_ssh_gssapi_sign(Gssctxt *ctx, gss_buffer_desc *data, gss_buffer_desc *hash) {
+        Buffer m;
+        OM_uint32 major;
+
+        buffer_init(&m);
+        buffer_put_string(&m, data->value, data->length);
+
+        mm_request_send(pmonitor->m_recvfd, MONITOR_REQ_GSSSIGN, &m);
+
+        debug3("%s: waiting for MONITOR_ANS_GSSSIGN",__func__);
+        mm_request_receive_expect(pmonitor->m_recvfd, MONITOR_ANS_GSSSIGN, &m);
+        major=buffer_get_int(&m);
+        hash->value = buffer_get_string(&m, &hash->length);
+
+        return(major);
+}
+#endif /* GSSAPI */
+
+#ifdef GSI
+
+int mm_gsi_gridmap(char *subject_name, char **lname)
+{
+        Buffer m;
+
+	buffer_init(&m);
+	buffer_put_cstring(&m, subject_name);
+        mm_request_send(pmonitor->m_recvfd, MONITOR_REQ_GSIGRIDMAP, &m);
+
+        debug3("%s: waiting for MONITOR_ANS_GSIGRIDMAP", __func__);
+        mm_request_receive_expect(pmonitor->m_recvfd, MONITOR_ANS_GSIGRIDMAP,
+                                  &m);
+
+	*lname = buffer_get_string(&m, NULL);
+
+        buffer_free(&m);
+	if (lname[0] == '\0') {
+	    debug3("%s: gssapi identity %s mapping failed", __func__,
+		   subject_name);
+	} else {
+	    debug3("%s: gssapi identity %s mapped to %s", __func__,
+		   subject_name, *lname);
+	}
+	
+        return(0);
+    
+}
+
+#endif /* GSI */

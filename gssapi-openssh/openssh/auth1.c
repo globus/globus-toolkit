@@ -15,6 +15,7 @@ RCSID("$OpenBSD: auth1.c,v 1.41 2002/06/19 00:27:55 deraadt Exp $");
 #include "xmalloc.h"
 #include "rsa.h"
 #include "ssh1.h"
+#include "dispatch.h"
 #include "packet.h"
 #include "buffer.h"
 #include "mpaux.h"
@@ -29,6 +30,128 @@ RCSID("$OpenBSD: auth1.c,v 1.41 2002/06/19 00:27:55 deraadt Exp $");
 
 /* import */
 extern ServerOptions options;
+extern Authmethod method_gssapi;
+
+
+
+#ifdef GSSAPI
+#ifdef GSI
+#include "globus_gss_assist.h"
+#endif
+
+int     userauth_gssapi(Authctxt *authctxt);
+
+void
+auth1_gss_protocol_error(int type, u_int32_t plen, void *ctxt)
+{
+  Authctxt *authctxt = ctxt;
+  /* Other side told us to abort, dont need to tell him */ 
+  /* maybe we can us some other method. */
+  if (type == SSH_MSG_AUTH_GSSAPI_ABORT) {
+      log("auth1: GSSAPI aborting");
+      dispatch_set(SSH_MSG_AUTH_GSSAPI_TOKEN, NULL);
+      authctxt->success = 1; /* get out of loop*/
+      return;
+  }
+
+  log("auth1: protocol error: type %d plen %d", type, plen);
+  packet_disconnect("Protocol error during GSSAPI authentication: "
+          "Unknown packet type %d", type);
+}
+
+#ifdef GSI
+int
+gsi_gridmap(char *subject_name, char **mapped_name)
+{
+    return(globus_gss_assist_gridmap(subject_name, mapped_name) == 0);
+}
+#endif
+
+/*
+ * SSH1 GSSAPI clients may send us a user name of the form:
+ *
+ *   (1) username:x:SSL Subject Name
+ *     or
+ *   (2) username:i:SSL Subject Name
+ *     or
+ *   (3) username
+ *
+ *  if case 1, then uname is an explicit name (ssh -l uname). Keep this
+ *  name always, rewrite the user parameter to be just uname. We'll pull
+ *  the GSSAPI idenity out and deal with (or skip it) later.
+ *  
+ *  if case 2, then uname is implicit (user didn't use the -l option), so
+ *  use the default gridmap mapping and replace uname with whatever
+ *  the gridmap maps to. If the gridmap mapping fails, drop down
+ *  to just uname
+ *  
+ *  if case 3, then leave it be.
+ *
+ *  This function may return the original pointer to the orginal string,
+ *  the original pointer to a modified string, or a completely new pointer.
+ */
+static char *
+ssh1_gssapi_parse_userstring(char *userstring)
+{
+  char name_type = '\0';	/* explicit 'x' or implicit 'i' */
+  char *ssl_subject_name = NULL;
+  char *delim = NULL;
+
+  debug("Looking at username '%s' for gssapi-ssleay type name", userstring);
+  if((delim = strchr(userstring, ':')) != NULL) {
+      /* Parse and split into components */
+      ssl_subject_name = strchr(delim + 1, ':');
+
+      if (ssl_subject_name) {
+	/* Successful parse, split into components */
+	*delim = '\0';
+	name_type = *(delim + 1);
+	*ssl_subject_name = '\0';
+	ssl_subject_name++;
+
+	debug("Name parsed. type = '%c'. ssl subject name is \"%s\"",
+	      name_type, ssl_subject_name);
+
+      } else {
+
+	debug("Don't understand name format. Letting it pass.");
+      }	
+  }	
+
+#ifdef GSI
+  if(ssl_subject_name) {
+    char *gridmapped_name = NULL;
+    switch (name_type) {
+    case 'x':
+      debug("explicit name given, using %s as username", userstring);
+      break;
+
+    case 'i':
+      /* gridmap check */
+      debug("implicit name given. gridmapping '%s'", ssl_subject_name);
+
+      PRIVSEP(gsi_gridmap(ssl_subject_name, &gridmapped_name));
+      if (gridmapped_name && gridmapped_name[0] != '\0') {
+	userstring = gridmapped_name;
+	debug("I gridmapped and got %s", userstring);
+
+      } else {
+	debug("I gridmapped and got null, reverting to %s", userstring);
+      }
+      break;
+
+    default:
+      debug("Unknown name type '%c'. Ignoring.", name_type);
+      break;
+    }
+  } else {
+    debug("didn't find any :'s so I assume it's just a user name");
+  }
+#endif /* GSI */
+
+  return userstring;
+}
+#endif
 
 /*
  * convert ssh auth msg type into description
@@ -52,6 +175,10 @@ get_authname(int type)
 #if defined(KRB4) || defined(KRB5)
 	case SSH_CMSG_AUTH_KERBEROS:
 		return "kerberos";
+#endif
+#if defined(GSSAPI)
+	case SSH_CMSG_AUTH_GSSAPI:
+	    	return "gssapi";
 #endif
 	}
 	snprintf(buf, sizeof buf, "bad-auth-msg-%d", type);
@@ -150,6 +277,39 @@ do_authloop(Authctxt *authctxt)
 			break;
 #endif /* KRB4 || KRB5 */
 
+#ifdef GSSAPI
+		case SSH_CMSG_AUTH_GSSAPI:
+			if (!options.gss_authentication) {
+				verbose("GSSAPI authentication disabled.");
+				break;
+			}
+			/*
+			* GSSAPI was first added to ssh1 in ssh-1.2.27, and
+			* was added to the SecurtCRT product. In order
+			* to continue operating with these, we will add
+			* the equivelent GSSAPI support to SSH1. 
+			* Will use the gssapi routines from the ssh2 as
+			* they are almost identical. But they use dispatch
+			* so we need to setup the dispatch tables here 
+			* auth1.c for use only by the gssapi code. 
+			* Since we already have the packet, we will call
+			* userauth_gssapi then start the dispatch loop.
+			*/
+			if (!authctxt->valid) {
+			packet_disconnect("Authentication rejected for invalid user");
+			}
+			dispatch_init(&auth1_gss_protocol_error);
+			method_gssapi.userauth(authctxt);
+			dispatch_run(DISPATCH_BLOCK, &authctxt->success, authctxt);
+			if (authctxt->postponed) { /* failed, try other methods */
+				authctxt->success = 0;
+				authctxt->postponed = 0;
+				break;
+			}
+			authenticated = 1;
+			break;
+#endif /* GSSAPI */
+			
 #if defined(AFS) || defined(KRB5)
 			/* XXX - punt on backward compatibility here. */
 		case SSH_CMSG_HAVE_KERBEROS_TGT:
@@ -355,6 +515,11 @@ do_authentication(void)
 	/* Get the user name. */
 	user = packet_get_string(&ulen);
 	packet_check_eom();
+
+#ifdef GSSAPI
+	/* Parse GSSAPI identity from userstring */
+	user = ssh1_gssapi_parse_userstring(user);
+#endif /* GSSAPI */
 
 	if ((style = strchr(user, ':')) != NULL)
 		*style++ = '\0';
