@@ -32,6 +32,14 @@ static globus_module_descriptor_t       globus_i_xio_udp_module =
             "[%s:%d] No addrs for INET family",                             \
             _xio_name, __LINE__))
 
+#define GlobusXIOUdpErrorShortWrite()                                       \
+    globus_error_put(                                                       \
+        globus_error_construct_error(                                       \
+            &globus_i_xio_udp_module,                                       \
+            GLOBUS_NULL,                                                    \
+            GLOBUS_XIO_UDP_ERROR_SHORT_WRITE,                               \
+            "[%s:%d] Unable to write full request",                         \
+            _xio_name, __LINE__))
 
 #define GlobusIXIOUdpCloseFd(fd)                                            \
     do                                                                      \
@@ -1288,20 +1296,6 @@ globus_l_xio_udp_read(
     }
 }
 
-static
-void
-globus_l_xio_udp_system_write_cb(
-    globus_result_t                     result,
-    globus_size_t                       nbytes,
-    void *                              user_arg)
-{
-    globus_xio_operation_t              op;
-    GlobusXIOName(globus_l_xio_udp_system_write_cb);
-    
-    op = (globus_xio_operation_t) user_arg;
-    globus_xio_driver_finished_write(op, result, nbytes);
-}
-
 /*
  *  write to a udp
  */
@@ -1316,6 +1310,10 @@ globus_l_xio_udp_write(
     globus_l_handle_t *                 handle;
     globus_l_attr_t *                   attr;
     globus_sockaddr_t *                 addr;
+    globus_size_t                       nbytes;
+    globus_result_t                     result;
+    int                                 total;
+    int                                 i;
     GlobusXIOName(globus_l_xio_udp_write);
 
     handle = (globus_l_handle_t *) driver_specific_handle;
@@ -1330,34 +1328,37 @@ globus_l_xio_udp_write(
         }
     }
 
-    if(GlobusXIOOperationGetWaitFor(op) == 0)
+    /* for UDP sockets, this is supposed to write the entire thing at all
+     * times if it fits in buffer
+     */
+    result = globus_xio_system_try_write_ex(
+        handle->handle, iovec, iovec_count, 0, addr, &nbytes);
+    if(result != GLOBUS_SUCCESS)
     {
-        globus_size_t                   nbytes;
-        globus_result_t                 result;
-        
-        result = globus_xio_system_try_write_ex(
-            handle->handle, iovec, iovec_count, 0, addr, &nbytes);
-            
-        globus_xio_driver_finished_write(op, result, nbytes);
-        /* Since I am finishing the request in the callstack,
-         * the choice to pass the result in the finish instead of below
-         * is arbitrary.
-         */
-        return GLOBUS_SUCCESS;
+        result = GlobusXIOErrorWrapFailed(
+            "globus_xio_system_try_write_ex", result);
+        goto error_write;
     }
-    else
+    
+    total = 0;
+    for(i = 0; i < iovec_count; i++)
     {
-        return globus_xio_system_register_write_ex(
-            op,
-            handle->handle,
-            iovec,
-            iovec_count,
-            GlobusXIOOperationGetWaitFor(op),
-            0,
-            addr,
-            globus_l_xio_udp_system_write_cb,
-            op);
+        total += iovec[i].iov_len;
     }
+    
+    if(nbytes != total)
+    {
+        result = GlobusXIOUdpErrorShortWrite();
+    }
+    
+    globus_xio_driver_finished_write(op, result, nbytes);
+    /* Since I actually perform the write here and some bytes may be written
+     * I have to 'finish' with any errors and return success for the request
+     */
+    return GLOBUS_SUCCESS;
+
+error_write:
+    return result;
 }
 
 static
