@@ -70,6 +70,11 @@ typedef struct
     int                                 ref;
     globus_gfs_storage_iface_t *        dsi;
     globus_extension_handle_t           dsi_handle;
+
+    char *                              mod_dsi_name;
+    globus_gfs_storage_iface_t *        mod_dsi;
+    globus_extension_handle_t           mod_dsi_handle;
+
     globus_handle_table_t               data_table;
     int                                 node_ndx;
 } globus_l_gfs_data_session_t;
@@ -145,6 +150,8 @@ typedef struct globus_l_gfs_data_operation_s
     int                                 ref;
     globus_result_t                     cached_res;
     void *                              info;
+
+    globus_gfs_storage_iface_t *        dsi;
 } globus_l_gfs_data_operation_t;
 
 typedef struct
@@ -253,13 +260,13 @@ globus_l_gfs_blocking_dispatch_kickout(
 
         case GLOBUS_L_GFS_DATA_INFO_TYPE_SEND:
             transfer_info = (globus_gfs_transfer_info_t *) op->info_struct;
-            op->session_handle->dsi->send_func(
+            op->dsi->send_func(
                 op, transfer_info, op->session_handle->session_arg);
             break;
 
         case GLOBUS_L_GFS_DATA_INFO_TYPE_RECV:
             transfer_info = (globus_gfs_transfer_info_t *) op->info_struct;
-            op->session_handle->dsi->recv_func(
+            op->dsi->recv_func(
                 op, transfer_info, op->session_handle->session_arg);
             break;
 
@@ -317,6 +324,106 @@ globus_i_gfs_monitor_signal(
     }
     globus_mutex_unlock(&monitor->mutex);
 }
+
+static
+globus_gfs_storage_iface_t *
+globus_i_gfs_data_new_dsi(
+    globus_extension_handle_t *         dsi_handle,
+    const char *                        dsi_name)
+{
+    globus_gfs_storage_iface_t *        new_dsi;
+
+    /* see if we already have this name loaded, if so use it */
+    new_dsi = (globus_gfs_storage_iface_t *) globus_extension_lookup(
+        dsi_handle, GLOBUS_GFS_DSI_REGISTRY, dsi_name);
+    if(new_dsi == NULL)
+    {
+        /* if not already load it, activate it */
+        char                            buf[256];
+
+        snprintf(buf, 256, "globus_gridftp_server_%s", dsi_name);
+        buf[255] = 0;
+
+        if(globus_extension_activate(buf) != GLOBUS_SUCCESS)
+        {
+            globus_i_gfs_log_message(
+                GLOBUS_I_GFS_LOG_ERR, "Unable to activate %s\n", buf);
+        }
+        else
+        {
+            new_dsi = (globus_gfs_storage_iface_t *) 
+                globus_extension_lookup(
+                    dsi_handle,
+                    GLOBUS_GFS_DSI_REGISTRY,
+                    dsi_name);
+        }
+    }
+    return new_dsi;
+}
+
+static
+globus_gfs_storage_iface_t *
+globus_l_gfs_data_new_dsi(
+    globus_l_gfs_data_session_t *       session_handle,
+    const char *                        in_module_name)
+{
+    globus_gfs_storage_iface_t *        dsi;
+    char *                              module_name;
+
+    if(in_module_name == NULL)
+    {
+        return session_handle->dsi;
+    }
+    if(!(session_handle->dsi->descriptor & GLOBUS_GFS_DSI_DESCRIPTOR_SENDER))
+    {
+        goto type_error;
+    }
+
+    module_name = globus_i_gfs_config_get_module_name(in_module_name);
+    if(module_name == NULL)
+    {
+        goto type_error;
+    }
+    /* if there was a prevous loaded module */
+    if(session_handle->mod_dsi_name != NULL)
+    {
+        /* if there was a last module and it is this one use it */
+        if(strcmp(module_name, session_handle->mod_dsi_name) != 0)
+        {
+            globus_free(session_handle->mod_dsi_name);
+            globus_extension_release(session_handle->mod_dsi_handle);
+
+            session_handle->mod_dsi_name = module_name;
+            session_handle->mod_dsi = globus_i_gfs_data_new_dsi(
+                &session_handle->mod_dsi_handle,
+                session_handle->mod_dsi_name);
+            if(session_handle->mod_dsi == NULL)
+            {
+                goto error;
+            }
+        }
+    }
+    else
+    {
+        session_handle->mod_dsi_name = module_name;
+        session_handle->mod_dsi = globus_i_gfs_data_new_dsi(
+            &session_handle->mod_dsi_handle,
+            session_handle->mod_dsi_name);
+        if(session_handle->mod_dsi == NULL)
+        {
+            goto error;
+        }
+        dsi = session_handle->mod_dsi;
+    }
+
+    return session_handle->mod_dsi;
+
+error:
+    globus_free(session_handle->mod_dsi_name);
+type_error:
+    return NULL;
+}
+
 
 static
 void
@@ -854,6 +961,7 @@ globus_i_gfs_data_request_command(
 {
     globus_l_gfs_data_operation_t *     op;
     globus_result_t                     result;
+    globus_extension_handle_t           new_dsi_handle;
     globus_gfs_storage_iface_t *        new_dsi;
     globus_l_gfs_data_session_t *       session_handle;
     char *                              dsi_name;
@@ -883,31 +991,7 @@ globus_i_gfs_data_request_command(
     if(cmd_info->command == GLOBUS_GFS_CMD_SITE_DSI &&
         session_handle->dsi->descriptor & GLOBUS_GFS_DSI_DESCRIPTOR_SENDER)
     {
-        /* see if we already have this name loaded, if so use it */
-        new_dsi = (globus_gfs_storage_iface_t *) globus_extension_lookup(
-            &session_handle->dsi_handle, GLOBUS_GFS_DSI_REGISTRY, dsi_name);
-        if(new_dsi == NULL)
-        {
-            /* if not already load it, activate it */
-            char                            buf[256];
-
-            snprintf(buf, 256, "globus_gridftp_server_%s", dsi_name);
-            buf[255] = 0;
-
-            if(globus_extension_activate(buf) != GLOBUS_SUCCESS)
-            {
-                globus_i_gfs_log_message(
-                    GLOBUS_I_GFS_LOG_ERR, "Unable to activate %s\n", buf);
-            }
-            else
-            {
-                new_dsi = (globus_gfs_storage_iface_t *) 
-                    globus_extension_lookup(
-                        &session_handle->dsi_handle,
-                        GLOBUS_GFS_DSI_REGISTRY,
-                        dsi_name);
-            }
-        }
+        new_dsi = globus_i_gfs_data_new_dsi(&new_dsi_handle, dsi_name);
 
         /* if we couldn't load it, error */
         if(new_dsi == NULL)
@@ -928,6 +1012,7 @@ globus_i_gfs_data_request_command(
                 globus_extension_release(session_handle->dsi_handle);
             }
             /* set to new dsi */
+            session_handle->dsi_handle = new_dsi_handle;
             op->session_handle->dsi = new_dsi;
         }
     }
@@ -1957,7 +2042,14 @@ globus_i_gfs_data_request_recv(
         function */
     globus_assert(data_handle->state == GLOBUS_L_GFS_DATA_HANDLE_VALID);
     data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_INUSE;
-    
+
+    op->dsi = globus_l_gfs_data_new_dsi(session_handle, recv_info->module_name);
+    if(op->dsi == NULL)
+    {
+        globus_gridftp_server_finished_transfer(
+            op, GlobusGFSErrorGeneric("bad module"));
+    }
+
     if(session_handle->dsi->descriptor & GLOBUS_GFS_DSI_DESCRIPTOR_BLOCKING)
     {
         globus_callback_register_oneshot(
@@ -1968,7 +2060,7 @@ globus_i_gfs_data_request_recv(
     }
     else
     {
-        session_handle->dsi->recv_func(
+        op->dsi->recv_func(
             op, recv_info, session_handle->session_arg);
     }
 
@@ -2048,6 +2140,12 @@ globus_i_gfs_data_request_send(
     globus_assert(data_handle->state == GLOBUS_L_GFS_DATA_HANDLE_VALID);
     data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_INUSE;
 
+    op->dsi = globus_l_gfs_data_new_dsi(session_handle, send_info->module_name);
+    if(op->dsi == NULL)
+    {
+        globus_gridftp_server_finished_transfer(
+            op, GlobusGFSErrorGeneric("bad module"));
+    }
     if(session_handle->dsi->descriptor & GLOBUS_GFS_DSI_DESCRIPTOR_BLOCKING)
     {
         globus_callback_register_oneshot(
@@ -2058,7 +2156,7 @@ globus_i_gfs_data_request_send(
     }
     else
     {
-        session_handle->dsi->send_func(
+        op->dsi->send_func(
             op, send_info, session_handle->session_arg);
     }
 
@@ -2515,12 +2613,12 @@ globus_l_gfs_data_end_transfer_kickout(
                 op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_VALID;
                 break;
 
+            case GLOBUS_L_GFS_DATA_HANDLE_CLOSING:
             case GLOBUS_L_GFS_DATA_HANDLE_CLOSED:
                 disconnect = GLOBUS_TRUE;
                 break;
 
             case GLOBUS_L_GFS_DATA_HANDLE_CLOSING_AND_DESTROYED:
-            case GLOBUS_L_GFS_DATA_HANDLE_CLOSING:
             case GLOBUS_L_GFS_DATA_HANDLE_VALID:
             default:
                 globus_assert(0 && "possible memory corruption");
@@ -2643,25 +2741,31 @@ globus_l_gfs_data_end_read_kickout(
     
     globus_mutex_lock(&op->session_handle->mutex);
     {
-        globus_assert(op->data_handle->state == GLOBUS_L_GFS_DATA_HANDLE_INUSE);
+        switch(op->data_handle->state)
+        {
+            case GLOBUS_L_GFS_DATA_HANDLE_INUSE:
+                /* if not mode e we need to close it */
+                if(op->data_handle->info.mode != 'E')
+                {
+                    op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_CLOSING;
+                    result = globus_ftp_control_data_force_close(
+                        &op->data_handle->data_channel,
+                        globus_l_gfs_data_finish_fc_cb,
+                        op);
+                    if(result != GLOBUS_SUCCESS)
+                    {
+                        op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_CLOSED;
+                        end = GLOBUS_TRUE;
+                    }
+                }
+                else
+                {
+                    end = GLOBUS_TRUE;
+                }
+                break;
 
-        /* if not mode e we need to close it */
-        if(op->data_handle->info.mode != 'E')
-        {
-            op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_CLOSING;
-            result = globus_ftp_control_data_force_close(
-                &op->data_handle->data_channel,
-                globus_l_gfs_data_finish_fc_cb,
-                op);
-            if(result != GLOBUS_SUCCESS)
-            {
-                op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_CLOSED;
-                end = GLOBUS_TRUE;
-            }
-        }
-        else
-        {
-            end = GLOBUS_TRUE;
+            default:
+                break;
         }
     }
     globus_mutex_unlock(&op->session_handle->mutex);
@@ -2758,63 +2862,69 @@ globus_l_gfs_data_write_eof_cb(
     {
         globus_mutex_lock(&op->session_handle->mutex);
         {
-            if(op->data_handle->info.mode == 'E')
-            {        
-                result = globus_ftp_control_data_send_eof(
-                    &op->data_handle->data_channel,
-                    op->eof_count,
-                    op->stripe_count,
-                    op->node_ndx == 0 ? GLOBUS_TRUE : GLOBUS_FALSE,
-                    globus_l_gfs_data_send_eof_cb,
-                    op);
-                if(op->node_ndx != 0)
-                {
-                   /* I think we want the eof event to kick off even
-                    though we may have an error here since someone is 
-                    expecting it.  The transfer should still error out
-                    normally */    
-                    globus_gfs_ipc_event_reply_t        event_reply;
-                    memset(&event_reply, '\0', 
-                        sizeof(globus_gfs_ipc_event_reply_t));
-                    event_reply.id = op->id;
-                    event_reply.eof_count = op->eof_count;
-                    event_reply.type = GLOBUS_GFS_EVENT_PARTIAL_EOF_COUNT;
-                    event_reply.node_count = op->node_count;
-                    if(op->event_callback != NULL)
-                    {
-                        op->event_callback(
-                            &event_reply,
-                            op->user_arg);
-                    }
-                    else
-                    {
-                        globus_gfs_ipc_reply_event(
-                            op->ipc_handle,
-                            &event_reply);
-                    }                        
-                }
-                if(result != GLOBUS_SUCCESS)
-                {
-                    globus_i_gfs_log_result(
-                        "ERROR", result);
-                    op->cached_res = result;
-                    globus_l_gfs_data_end_transfer_kickout(op);
-                }
-            }
-            else
+            switch(op->data_handle->state)
             {
-                globus_assert(
-                    op->data_handle->state == GLOBUS_L_GFS_DATA_HANDLE_INUSE);
-                op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_CLOSING;
-                result = globus_ftp_control_data_force_close(
-                    &op->data_handle->data_channel,
-                    globus_l_gfs_data_finish_fc_cb,
-                    op);
-                if(result != GLOBUS_SUCCESS)
-                {
-                    op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_CLOSED;
-                    end = GLOBUS_TRUE;
+                case GLOBUS_L_GFS_DATA_HANDLE_INUSE:
+                /* if not mode e we need to close it */
+                if(op->data_handle->info.mode == 'E')
+                {        
+                    result = globus_ftp_control_data_send_eof(
+                        &op->data_handle->data_channel,
+                        op->eof_count,
+                        op->stripe_count,
+                        op->node_ndx == 0 ? GLOBUS_TRUE : GLOBUS_FALSE,
+                        globus_l_gfs_data_send_eof_cb,
+                        op);
+                    if(op->node_ndx != 0)
+                    {
+                       /* I think we want the eof event to kick off even
+                        though we may have an error here since someone is 
+                        expecting it.  The transfer should still error out
+                        normally */    
+                        globus_gfs_ipc_event_reply_t        event_reply;
+                        memset(&event_reply, '\0', 
+                            sizeof(globus_gfs_ipc_event_reply_t));
+                        event_reply.id = op->id;
+                        event_reply.eof_count = op->eof_count;
+                        event_reply.type = GLOBUS_GFS_EVENT_PARTIAL_EOF_COUNT;
+                        event_reply.node_count = op->node_count;
+                        if(op->event_callback != NULL)
+                        {
+                                op->event_callback(
+                                &event_reply,
+                                op->user_arg);
+                        }
+                        else
+                        {
+                            globus_gfs_ipc_reply_event(
+                                op->ipc_handle,
+                                &event_reply);
+                        }                        
+                    }
+                    if(result != GLOBUS_SUCCESS)
+                    {
+                        globus_i_gfs_log_result(
+                            "ERROR", result);
+                        op->cached_res = result;
+                        globus_l_gfs_data_end_transfer_kickout(op);
+                    }
                 }
+                else
+                {
+                    op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_CLOSING;
+                    result = globus_ftp_control_data_force_close(
+                        &op->data_handle->data_channel,
+                        globus_l_gfs_data_finish_fc_cb,
+                        op);
+                    if(result != GLOBUS_SUCCESS)
+                    {
+                        op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_CLOSED;
+                        end = GLOBUS_TRUE;
+                    }
+                }
+
+                default:
+                    break;
             }
         }
         globus_mutex_unlock(&op->session_handle->mutex);

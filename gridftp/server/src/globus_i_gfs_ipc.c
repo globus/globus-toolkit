@@ -3222,7 +3222,6 @@ globus_l_gfs_ipc_reply_read_header_cb(
         }
         globus_mutex_unlock(&ipc->mutex);
     }
-// !!cut    ipc->iface->session_stop_func(ipc, ipc->user_arg);
 
     globus_free(buffer);
 
