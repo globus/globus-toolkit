@@ -16,8 +16,8 @@
     <parameter name="instanceSchemaPath" value="schema/base/reliabletransfer/reliable_transfer_service.wsdl"/>
     <parameter name="handlerClass" value="org.globus.ogsa.handlers.RPCURIProvider"/>
     <parameter name="JdbcDriver" value="org.postgresql.Driver"/>
-    <parameter name="connectionURL" value="jdbc:postgresql://arbat.mcs.anl.gov/testDatabase"/>
-    <parameter name="username" value="tester"/>
+    <parameter name="connectionURL" value="jdbc:postgresql://127.0.0.1/rftDb"/>
+    <parameter name="username" value="globus"/>
     <parameter name="password" value="dummy"/>
     <parameter name="maxAttempts" value="10"/>
     <parameter name="instanceLifecycle" value="persistent"/>
