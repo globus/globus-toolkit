@@ -5,11 +5,17 @@
 
 static globus_mutex_t                   globus_l_mutex;
 static globus_cond_t                    globus_l_cond;
-static globus_bool_t                    globus_l_close_called = GLOBUS_FALSE;
 static globus_bool_t                    globus_l_closed = GLOBUS_FALSE;
 
-#define OP_COUNT                            8
-#define SLEEP_TIME                          3
+
+static globus_bool_t
+timeout_cb(
+    globus_xio_handle_t                         handle,
+    globus_xio_operation_type_t                 type)
+{
+    return GLOBUS_TRUE;
+}
+
 
 void
 close_cb(
@@ -39,29 +45,12 @@ data_cb(
 
     globus_mutex_lock(&globus_l_mutex);
     {
-        if(!globus_l_close_called)
-        {
-            globus_l_close_called = GLOBUS_TRUE;
-            res = globus_xio_register_close(
-                    handle,
-                    NULL,
-                    close_cb,
-                    user_arg);
-            test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
-        }
-    }
-    globus_mutex_unlock(&globus_l_mutex);
-
-    globus_thread_blocking_will_block();
-    sleep(SLEEP_TIME);
-
-    globus_mutex_lock(&globus_l_mutex);
-    {
-        if(globus_l_closed)
-        {
-            failed_exit("the close callback occurred prior to all data"
-                        "callbacks returning");
-        }
+        res = globus_xio_register_close(
+                handle,
+                NULL,
+                close_cb,
+                user_arg);
+        test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
     }
     globus_mutex_unlock(&globus_l_mutex);
 }
@@ -73,40 +62,36 @@ open_cb(
     void *                                      user_arg)
 {
     globus_result_t                             res;
-    int                                         ctr;
     globus_byte_t *                             buffer;
     globus_size_t                               buffer_length = 1024;
 
-    for(ctr = 0; ctr < OP_COUNT; ctr++)
+    if(globus_l_test_info.write_count > 0)
     {
-        if(globus_l_test_info.write_count > 0)
-        {
-            res = globus_xio_register_write(
-                    handle,
-                    buffer,
-                    buffer_length,
-                    buffer_length,
-                    NULL,
-                    data_cb,
-                    user_arg);
-        }
-        else
-        {
-            res = globus_xio_register_read(
-                    handle,
-                    buffer,
-                    buffer_length,
-                    buffer_length,
-                    NULL,
-                    data_cb,
-                    user_arg);
-        }
-        test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
+        res = globus_xio_register_write(
+                handle,
+                buffer,
+                buffer_length,
+                buffer_length,
+                NULL,
+                data_cb,
+                user_arg);
     }
+    else
+    {
+        res = globus_xio_register_read(
+                handle,
+                buffer,
+                buffer_length,
+                buffer_length,
+                NULL,
+                data_cb,
+                user_arg);
+    }
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
 }
 
 int
-main(
+timeout_main(
     int                                     argc,
     char **                                 argv)
 {
@@ -116,8 +101,8 @@ main(
     globus_xio_driver_t                     driver;
     globus_xio_target_t                     target;
     globus_result_t                         res;
-    globus_abstime_t                        end_time;
     globus_xio_attr_t                       attr;
+    int                                     opt_offset;
 
     rc = globus_module_activate(GLOBUS_XIO_MODULE);
     globus_assert(rc == 0);
@@ -127,7 +112,40 @@ main(
     res = globus_xio_attr_init(&attr);
     test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
 
-    parse_parameters(argc, argv, driver, attr);
+    opt_offset = parse_parameters(argc, argv, driver, attr);
+
+    /* set up timeouts */
+    if(strcmp(argv[opt_offset], "O") == 0)
+    {
+        res = globus_xio_attr_cntl(attr, NULL, 
+                    GLOBUS_XIO_ATTR_SET_TIMEOUT_OPEN,
+                    timeout_cb,
+                    &globus_l_test_info.delay);
+    }
+    else if(strcmp(argv[opt_offset], "D") == 0)
+    {
+        res = globus_xio_attr_cntl(attr, NULL,
+                    GLOBUS_XIO_ATTR_SET_TIMEOUT_READ,
+                    timeout_cb,
+                    &globus_l_test_info.delay);
+        res = globus_xio_attr_cntl(attr, NULL, 
+                    GLOBUS_XIO_ATTR_SET_TIMEOUT_WRITE,
+                    timeout_cb,
+                    &globus_l_test_info.delay);
+    }
+    else if(strcmp(argv[opt_offset], "C") == 0)
+    {
+        res = globus_xio_attr_cntl(attr, NULL, 
+                    GLOBUS_XIO_ATTR_SET_TIMEOUT_CLOSE,
+                    timeout_cb,
+                    &globus_l_test_info.delay);
+    }
+    else
+    {
+        fprintf(stderr, "ERROR: No timeout registered.\n");
+        return 1;
+    }
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__);
 
     globus_mutex_init(&globus_l_mutex, NULL);
     globus_cond_init(&globus_l_cond, NULL);
@@ -155,8 +173,6 @@ main(
         {
             globus_cond_wait(&globus_l_cond, &globus_l_mutex);
         }
-        GlobusTimeAbstimeSet(end_time, SLEEP_TIME, 0);
-        globus_cond_timedwait(&globus_l_cond, &globus_l_mutex, &end_time);
     }
     globus_mutex_unlock(&globus_l_mutex);
     

@@ -28,6 +28,8 @@ typedef struct test_info_s
 
     globus_bool_t                           server;
 
+    globus_reltime_t                        delay;
+
     globus_mutex_t                          mutex;
 } test_info_t;
 
