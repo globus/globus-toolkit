@@ -63,7 +63,7 @@ if test $CONDOR_OS = 'no'; then
 	 CONDOR_OS=SOLARIS28
 	 ;;
        *)
-         AC_MSG_WARN([unknown CONDOR_OS])
+         AC_MSG_ERROR([unknown CONDOR_OS])
 	 ;;
     esac
 fi
@@ -76,11 +76,17 @@ if test $CONDOR_ARCH = 'no'; then
         i?86*:*:*)
 	  CONDOR_ARCH=INTEL
 	  ;;
+        ia64:*:*)
+         CONDOR_ARCH=IA64
+         ;;
+        x86_64:*:*)
+         CONDOR_ARCH=x86_64
+         ;;
         sun4*:*:*)
 	  CONDOR_ARCH=`uname -m | tr '[a-z]' '[A-Z]'`
 	  ;;
        *)
-         AC_MSG_WARN([unknown CONDOR_ARCH])
+         AC_MSG_ERROR([unknown CONDOR_ARCH])
       esac
 fi
 
