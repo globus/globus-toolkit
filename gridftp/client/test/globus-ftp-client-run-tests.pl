@@ -45,7 +45,7 @@ if(defined($runserver))
     $server_pid = setup_server();
 }
 
-if(0 != system("grid-proxy-info -exists -hours 2") / 256)
+if(0 != system("grid-proxy-info -exists -hours 2 >/dev/null 2>&1") / 256)
 {
     print "Security proxy required to run the tests.\n";
     exit 1;
@@ -95,7 +95,7 @@ sub setup_server()
     my $server_args = "-a -s -p $server_port";
     my $subject;
     
-    if(0 != system("grid-proxy-info -exists -hours 2") / 256)
+    if(0 != system("grid-proxy-info -exists -hours 2 >/dev/null 2>&1") / 256)
     {
         $ENV{X509_CERT_DIR} = cwd();
         $ENV{X509_USER_PROXY} = "testcred.pem";
