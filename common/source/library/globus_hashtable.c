@@ -248,7 +248,7 @@ globus_hashtable_destroy_all(
 
     if(table == GLOBUS_NULL || *table == GLOBUS_NULL)
     {
-        return GLOBUS_FAILURE;
+        return;
     }
 
     s_table = *table;
