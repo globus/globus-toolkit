@@ -68,6 +68,7 @@ bin_PROGRAMS= \
 	myproxy-get-delegation \
 	myproxy-change-pass-phrase \
 	myproxy-acpp \
+	myproxy-alcf \
 	myproxy-arq
 
 sbin_PROGRAMS= myproxy-server
@@ -118,6 +119,12 @@ myproxy_arq_SOURCES = myproxy_arq.c myproxy_creds.c myproxy_creds.h
 myproxy_arq_LDFLAGS = $(GPT_LDFLAGS)
 
 myproxy_arq_LDADD = $(GPT_PGM_LINKS) ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
+
+myproxy_alcf_SOURCES = myproxy_alcf.c ssl_utils.c ssl_utils.h myproxy_creds.c myproxy_creds.h
+
+myproxy_alcf_LDFLAGS = $(GPT_LDFLAGS)
+
+myproxy_alcf_LDADD = $(GPT_PGM_LINKS) ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
 
 noinst_PROGRAMS = gsi_socket_test
 

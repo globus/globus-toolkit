@@ -24,6 +24,8 @@
 
 static char usage[] = \
 "\n"\
+"Admin Repository Query Tool\n"\
+"\n"\
 " Syntax:  "  BINARY_NAME "[-usage|-help] [-version]\n"\
 "\n"\
 "    Options\n"\
