@@ -1,0 +1,6 @@
+name=index
+subdir=information_services/index
+build="ant stubs -Dogsacore.javadir=\$OGSA_HOME
+ant gar -Dogsacore.javadir=\$OGSA_HOME
+cp etc/indexservice.providers \$destdir"
+gar="lib/index.gar"

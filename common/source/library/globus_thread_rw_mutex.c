@@ -12,13 +12,6 @@ typedef struct globus_i_rw_mutex_waiter_s
     struct globus_i_rw_mutex_waiter_s * pnext;
 } globus_i_rw_mutex_waiter_t;
 
-typedef enum
-{
-    GLOBUS_I_RW_MUTEX_IDLE = 0,
-    GLOBUS_I_RW_MUTEX_READ,
-    GLOBUS_I_RW_MUTEX_WRITE
-} globus_i_rw_mutex_status;
-
 static
 int
 globus_i_rw_mutex_wait(
@@ -184,25 +177,13 @@ globus_rw_mutex_init(
     globus_rw_mutex_t *                 rw_lock,
     globus_rw_mutexattr_t *             attr)
 {
-    int                                 rc;
-
     rw_lock->waiters = GLOBUS_NULL;
     rw_lock->tail = &rw_lock->waiters;
     rw_lock->idle = GLOBUS_NULL;
     rw_lock->writing = GLOBUS_FALSE;
     rw_lock->readers = 0;
 
-    rc = globus_thread_key_create(&rw_lock->key, GLOBUS_NULL);
-    if(rc == 0)
-    {
-        rc = globus_mutex_init(&rw_lock->mutex, GLOBUS_NULL);
-        if(rc != 0)
-        {
-            globus_thread_key_delete(rw_lock->key);
-        }
-    }
-
-    return rc;
+    return globus_mutex_init(&rw_lock->mutex, GLOBUS_NULL);
 }
 
 int
@@ -210,29 +191,12 @@ globus_rw_mutex_readlock(
     globus_rw_mutex_t *                 rw_lock)
 {
     int                                 rc;
-    globus_i_rw_mutex_status            status;
-
-    status = (globus_i_rw_mutex_status)
-        globus_thread_getspecific(rw_lock->key);
-    if(status != GLOBUS_I_RW_MUTEX_IDLE)
-    {
-        globus_assert(
-            0 && "globus_rw_mutex_readlock() rw_mutex already locked");
-
-        return -1;
-    }
 
     globus_mutex_lock(&rw_lock->mutex);
     {
         rc = globus_i_rw_mutex_readlock(rw_lock);
     }
     globus_mutex_unlock(&rw_lock->mutex);
-
-    if(rc == 0)
-    {
-        globus_thread_setspecific(
-            rw_lock->key, (void *) GLOBUS_I_RW_MUTEX_READ);
-    }
 
     return rc;
 }
@@ -242,29 +206,12 @@ globus_rw_mutex_writelock(
     globus_rw_mutex_t *                 rw_lock)
 {
     int                                 rc;
-    globus_i_rw_mutex_status            status;
-
-    status = (globus_i_rw_mutex_status)
-        globus_thread_getspecific(rw_lock->key);
-    if(status != GLOBUS_I_RW_MUTEX_IDLE)
-    {
-        globus_assert(
-            0 && "globus_rw_mutex_writelock() rw_mutex already locked");
-
-        return -1;
-    }
 
     globus_mutex_lock(&rw_lock->mutex);
     {
         rc = globus_i_rw_mutex_writelock(rw_lock);
     }
     globus_mutex_unlock(&rw_lock->mutex);
-
-    if(rc == 0)
-    {
-        globus_thread_setspecific(
-            rw_lock->key, (void *) GLOBUS_I_RW_MUTEX_WRITE);
-    }
 
     return rc;
 }
@@ -273,26 +220,11 @@ int
 globus_rw_mutex_readunlock(
     globus_rw_mutex_t *                 rw_lock)
 {
-    globus_i_rw_mutex_status            status;
-
-    status = (globus_i_rw_mutex_status)
-        globus_thread_getspecific(rw_lock->key);
-    if(status != GLOBUS_I_RW_MUTEX_READ)
-    {
-        globus_assert(
-            0 &&
-            "globus_rw_mutex_readunlock() rw_mutex NOT locked for reading");
-
-        return -1;
-    }
-
     globus_mutex_lock(&rw_lock->mutex);
     {
         globus_i_rw_mutex_readunlock(rw_lock);
     }
     globus_mutex_unlock(&rw_lock->mutex);
-
-    globus_thread_setspecific(rw_lock->key, (void *) GLOBUS_I_RW_MUTEX_IDLE);
 
     return 0;
 }
@@ -301,26 +233,11 @@ int
 globus_rw_mutex_writeunlock(
     globus_rw_mutex_t *                 rw_lock)
 {
-    globus_i_rw_mutex_status            status;
-
-    status = (globus_i_rw_mutex_status)
-        globus_thread_getspecific(rw_lock->key);
-    if(status != GLOBUS_I_RW_MUTEX_WRITE)
-    {
-        globus_assert(
-            0 &&
-            "globus_rw_mutex_writeunlock() rw_mutex NOT locked for writing");
-
-        return -1;
-    }
-
     globus_mutex_lock(&rw_lock->mutex);
     {
         globus_i_rw_mutex_writeunlock(rw_lock);
     }
     globus_mutex_unlock(&rw_lock->mutex);
-
-    globus_thread_setspecific(rw_lock->key, (void *) GLOBUS_I_RW_MUTEX_IDLE);
 
     return 0;
 }
@@ -356,7 +273,6 @@ globus_rw_mutex_destroy(
     globus_mutex_unlock(&rw_lock->mutex);
 
     globus_mutex_destroy(&rw_lock->mutex);
-    globus_thread_key_delete(rw_lock->key);
 
     return 0;
 }
@@ -366,21 +282,14 @@ globus_rw_cond_wait(
     globus_cond_t *                     cond,
     globus_rw_mutex_t *                 rw_lock)
 {
-    globus_i_rw_mutex_status            status;
     int                                 rc;
-
-    status = (globus_i_rw_mutex_status)
-        globus_thread_getspecific(rw_lock->key);
-    if(status == GLOBUS_I_RW_MUTEX_IDLE)
-    {
-        globus_assert(0 && "globus_rw_cond_wait() rw_mutex NOT locked");
-
-        return -1;
-    }
+    globus_bool_t                       reading;
 
     globus_mutex_lock(&rw_lock->mutex);
     {
-        if(status == GLOBUS_I_RW_MUTEX_READ)
+        reading = (rw_lock->readers > 0);
+
+        if(reading)
         {
             globus_i_rw_mutex_readunlock(rw_lock);
         }
@@ -391,7 +300,7 @@ globus_rw_cond_wait(
 
         rc = globus_cond_wait(cond, &rw_lock->mutex);
 
-        if(status == GLOBUS_I_RW_MUTEX_READ)
+        if(reading)
         {
             globus_i_rw_mutex_readlock(rw_lock);
         }
@@ -411,21 +320,14 @@ globus_rw_cond_timedwait(
     globus_rw_mutex_t *                 rw_lock,
     globus_abstime_t *                  abstime)
 {
-    globus_i_rw_mutex_status            status;
     int                                 rc;
-
-    status = (globus_i_rw_mutex_status)
-        globus_thread_getspecific(rw_lock->key);
-    if(status == GLOBUS_I_RW_MUTEX_IDLE)
-    {
-        globus_assert(0 && "globus_rw_cond_timedwait() rw_mutex NOT locked");
-
-        return -1;
-    }
+    globus_bool_t                       reading;
 
     globus_mutex_lock(&rw_lock->mutex);
     {
-        if(status == GLOBUS_I_RW_MUTEX_READ)
+        reading = (rw_lock->readers > 0);
+
+        if(reading)
         {
             globus_i_rw_mutex_readunlock(rw_lock);
         }
@@ -436,7 +338,7 @@ globus_rw_cond_timedwait(
 
         rc = globus_cond_timedwait(cond, &rw_lock->mutex, abstime);
 
-        if(status == GLOBUS_I_RW_MUTEX_READ)
+        if(reading)
         {
             globus_i_rw_mutex_readlock(rw_lock);
         }

@@ -1,0 +1,8 @@
+
+WinSources= \
+    win_ltdl.h \
+    win_ltdl.c
+
+LibDependencies = \
+    Ws2_32.lib \
+    libglobus_common_$(GLOBUS_FLAVOR_NAME).lib 

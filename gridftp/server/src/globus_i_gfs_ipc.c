@@ -82,6 +82,7 @@ void
 globus_l_gfs_data_command_cb(
     globus_i_gfs_server_instance_t *    instance,
     globus_result_t                     result,
+    globus_i_gfs_cmd_attr_t *           cmd_attr,
     void *                              user_arg)
 {
     globus_l_gfs_ipc_bounce_t *         bounce_info;
@@ -90,7 +91,7 @@ globus_l_gfs_data_command_cb(
     bounce_info = (globus_l_gfs_ipc_bounce_t *) user_arg;
     callback = (globus_i_gfs_ipc_command_cb_t) bounce_info->callback1;
 
-    callback(instance, result, bounce_info->user_arg);
+    callback(instance, result, cmd_attr, bounce_info->user_arg);
     
     globus_free(bounce_info);    
 }
@@ -477,3 +478,14 @@ globus_i_gfs_ipc_data_destroy(
 {
     globus_i_gfs_data_handle_destroy(&data_handle->data);
 }
+
+void
+globus_i_gfs_ipc_transfer_event(
+    globus_i_gfs_server_instance_t *    instance,
+    int                                 event_type)
+{
+    globus_i_gfs_data_transfer_event(instance, event_type);
+    
+    return;
+}
+

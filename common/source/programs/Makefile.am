@@ -1,7 +1,9 @@
 include $(top_srcdir)/globus_automake_pre
 
 bin_SCRIPTS = globus-sh-exec
-sbin_SCRIPTS = globus-update-doxygen-index
+sbin_SCRIPTS = globus-update-doxygen-index \
+        globus-vararg-enums-doxygen-filter.pl
+
 libexec_PROGRAMS = globus-libc-hostname globus-is-local-user
 
 EXTRA_DIST = $(sbin_SCRIPTS) globus-sh-exec.in

@@ -38,11 +38,6 @@ CVS Information:
 #include "globus_gass_server_ez.h"
 #include "globus_rsl.h"
 
-#if 0
-#include "lber.h"
-#include "ldap.h"
-#endif
-
 #include "globus_rsl_assist.h"
 #include "globus_gss_assist.h"
 #include "version.h" /* provides local_version */
@@ -109,13 +104,6 @@ int
 globus_l_globusrun_stop_manager(
     char *			job_contact);
 
-#if 0 /* unimplemented */
-
-static int
-globus_l_globusrun_list_jobs(void);
-
-#endif
-
 static char *
 globus_l_globusrun_get_credential(void);
 
@@ -162,7 +150,8 @@ enum
     GLOBUSRUN_ARG_IGNORE_CTRLC          = 256,
     GLOBUSRUN_ARG_BATCH                 = 512,
     GLOBUSRUN_ARG_STATUS                = 1024,
-    GLOBUSRUN_ARG_LIST                  = 2048
+    GLOBUSRUN_ARG_LIST                  = 2048,
+    GLOBUSRUN_ARG_BATCH_FAST            = 4096
 };
 
 static globus_byte_t globus_l_globusrun_file_version=1;
@@ -239,6 +228,11 @@ static char *  long_usage = \
 "           and stderr will not be redirected.\n"\
 "           The \"handle\" or job ID of the submitted job will be written on\n"\
 "           stdout.\n"\
+"    -F | -fast-batch\n"\
+"           Similar to -b but will exit as soon as the job has been sent\n"\
+"           to the GRAM job manager service without waiting for a callback\n"\
+"           with job submission state. Useful for hosts which are not able\n"\
+"           to receive job state callbacks.\n"\
 "    -refresh-proxy | -y <job ID>\n"\
 "           Cause globusrun to delegate a new proxy to the job named by the\n"\
 "           <job ID>\n"\
@@ -354,7 +348,8 @@ enum { arg_i = 1, arg_q, arg_o, arg_s, arg_w, arg_n, arg_l, arg_b,
 	     arg_r, arg_f, arg_k, arg_y, arg_mpirun, arg_status,
 	     arg_stop_manager,
 	     arg_mdshost, arg_mdsport, arg_mdsbasedn, arg_mdstimeout,
-	     arg_num = arg_mdstimeout };
+             arg_F,
+	     arg_num = arg_F };
 
 #define listname(x) x##_aliases
 #define namedef(id,alias1,alias2) \
@@ -385,6 +380,7 @@ flagdef(arg_b, "-b", "-batch");
 flagdef(arg_p, "-p", "-parse");
 flagdef(arg_d, "-d", "-dryrun");
 flagdef(arg_a, "-a", "-authenticate-only");
+flagdef(arg_F, "-F", "-fast-batch");
 
 static int arg_f_mode = O_RDONLY;
 
@@ -411,7 +407,7 @@ static int arg_f_mode = O_RDONLY;
 	setupopt(arg_r); setupopt(arg_f); setupopt(arg_k); setupopt(arg_y); \
 	setupopt(arg_mpirun); setupopt(arg_stop_manager); \
 	setupopt(arg_status); setupopt(arg_mdshost); setupopt(arg_mdsport); \
-	setupopt(arg_mdsbasedn); setupopt(arg_mdstimeout);
+	setupopt(arg_mdsbasedn); setupopt(arg_mdstimeout); setupopt(arg_F);
 
     static globus_bool_t globus_l_globusrun_ctrlc = GLOBUS_FALSE;
     static globus_bool_t globus_l_globusrun_ctrlc_handled = GLOBUS_FALSE;
@@ -445,7 +441,7 @@ static int arg_f_mode = O_RDONLY;
 	globus_gass_transfer_listenerattr_t * attr		 =GLOBUS_NULL;
 	char *                             scheme		 =GLOBUS_NULL;
 	globus_gass_transfer_requestattr_t * reqattr	 =GLOBUS_NULL;
-	char *                             activation_err    = GLOBUS_NULL;
+	const char *                             activation_err  = GLOBUS_NULL;
 
 	err = globus_module_activate(GLOBUS_COMMON_MODULE);
 	if ( err != GLOBUS_SUCCESS )
@@ -569,12 +565,6 @@ static int arg_f_mode = O_RDONLY;
 		options |= GLOBUSRUN_ARG_PARSE_ONLY;
 		break;
 
-#if 0 /* unimplemented */
-	    case arg_l:
-		options |= GLOBUSRUN_ARG_LIST;
-		break;
-#endif
-
 	    case arg_b:
 		options |= GLOBUSRUN_ARG_BATCH;
 		break;
@@ -582,6 +572,10 @@ static int arg_f_mode = O_RDONLY;
 	    case arg_d:
 		options |= GLOBUSRUN_ARG_DRYRUN;
 		break;
+
+            case arg_F:
+                options |= GLOBUSRUN_ARG_BATCH_FAST|GLOBUSRUN_ARG_BATCH;
+                break;
 
 	    case arg_r:
 		rm_contact=globus_libc_strdup(instance->values[0]);
@@ -638,21 +632,6 @@ static int arg_f_mode = O_RDONLY;
     }
 
     globus_args_option_instance_list_free( &options_found );
-
-#if 0 /* unimplemented */
-    if ((options & GLOBUSRUN_ARG_LIST) &&
-	(options & !GLOBUSRUN_ARG_LIST) )
-    {
-	globusrun_l_args_error("option -list cannot be used with any other option");
-    }
-
-    if (options & GLOBUSRUN_ARG_LIST)
-    {
-	err = globus_l_globusrun_list_jobs();
-	globus_module_deactivate_all();
-	return err;
-    }
-#endif
 
     if ( (options & GLOBUSRUN_ARG_BATCH) &&
 	 (options & GLOBUSRUN_ARG_INTERACTIVE) )
@@ -1401,20 +1380,33 @@ globus_l_globusrun_gramrun(char * request_string,
 
     globus_mutex_lock(&monitor.mutex);
 
-    /* Don't need to wait for state change for job to be submitted or killed
-     * if that's already happened or if we aren't doing any file staging in
-     * batch mode
+    /* If we're running in fast batch mode, and don't need to allow GASS
+     * reads for staging, we will exit immediately without waiting for any
+     * job state callbacks.
      */
-    if((options & (GLOBUSRUN_ARG_BATCH)) &&
-       (monitor.job_state != 0 &&
-        monitor.job_state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_UNSUBMITTED &&
-        monitor.job_state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_STAGE_IN))
+    if((options &
+            (GLOBUSRUN_ARG_BATCH | GLOBUSRUN_ARG_ALLOW_READS
+                | GLOBUSRUN_ARG_BATCH_FAST))
+        == (GLOBUSRUN_ARG_BATCH|GLOBUSRUN_ARG_BATCH_FAST))
     {
         monitor.done = GLOBUS_TRUE;
     }
 
     while(!monitor.done)
     {
+        /* If we're running in batch mode and need to allow for GASS reads
+         * we have to wait until the job is submitted and finished staging
+         */
+        if ((options & GLOBUSRUN_ARG_BATCH) &&
+            (options & GLOBUSRUN_ARG_ALLOW_READS) &&
+            (monitor.job_state != 0 &&
+             monitor.job_state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_UNSUBMITTED
+                    &&
+             monitor.job_state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_STAGE_IN))
+        {
+            monitor.done = GLOBUS_TRUE;
+            continue;
+        }
 	globus_cond_wait(&monitor.cond, &monitor.mutex);
 	if(globus_l_globusrun_ctrlc && (!globus_l_globusrun_ctrlc_handled))
 	{
@@ -1426,23 +1418,32 @@ globus_l_globusrun_gramrun(char * request_string,
 	    globus_gram_client_job_cancel(monitor.job_contact);
 	    globus_l_globusrun_ctrlc_handled = GLOBUS_TRUE;
 	}
-        if((options & GLOBUSRUN_ARG_BATCH) &&
-           (monitor.job_state != 0 &&
-            monitor.job_state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_UNSUBMITTED &&
-            monitor.job_state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_STAGE_IN))
-        {
-            monitor.done = GLOBUS_TRUE;
-        }
     }
     globus_mutex_unlock(&monitor.mutex);
 
-    if(send_commit == GLOBUS_TRUE)
+    /* If we're using two phase commits then we need to send commit end
+     * signal if the job is DONE
+     */
+    err = GLOBUS_SUCCESS;
+    if (monitor.job_state == GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE ||
+        monitor.job_state == GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED)
     {
-	err = globus_gram_client_job_signal(monitor.job_contact,
-				GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_COMMIT_END,
-					    "commit",
-					    &tmp1,
-					    &tmp2);
+        if(send_commit == GLOBUS_TRUE)
+        {
+            err = globus_gram_client_job_signal(monitor.job_contact,
+                    GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_COMMIT_END,
+                    "commit",
+                    &tmp1,
+                    &tmp2);
+        }
+        if (monitor.job_state == GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED)
+        {
+            err = monitor.failure_code;
+        }
+    }
+    else
+    {
+        err = monitor.failure_code;
     }
 
     if (options & GLOBUSRUN_ARG_BATCH)
@@ -1459,11 +1460,6 @@ globus_l_globusrun_gramrun(char * request_string,
 
     globus_mutex_destroy(&monitor.mutex);
     globus_cond_destroy(&monitor.cond);
-
-    if(monitor.job_state != GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE)
-    {
-	err = monitor.failure_code;
-    }
 
     if((err == GLOBUS_GRAM_PROTOCOL_ERROR_DRYRUN) &&
              (options & GLOBUSRUN_ARG_DRYRUN))
@@ -2071,82 +2067,6 @@ globus_l_globusrun_fault_callback (void *user_arg, int fault_code)
     return 0;
 } /* globus_l_globusrun_fault_callback() */
 
-
-/******************************************************************************
-Function: globus_l_globusrun_list_jobs()
-
-Description:
-
-Parameters:
-
-Returns:
-******************************************************************************/
-
-/* unimplemented */
-#if 0
-
-static
-int
-globus_l_globusrun_list_jobs(void)
-{
-    char          *   my_name;
-    globus_list_t *   job_contact_list = GLOBUS_NULL;
-    char *            job_contact = GLOBUS_NULL;
-    int               rc;
-
-    /* get my name */
-    if ((my_name = globus_l_globusrun_get_credential())== GLOBUS_NULL)
-    {
-	globus_libc_printf("Failed to get user credentials");
-	return -1;
-    }
-
-    /* get the list of all the jobs */
-    rc = globus_i_rsl_assist_get_user_job_list(my_name,
-					       &job_contact_list);
-
-    globus_libc_free(my_name);
-
-    if (rc!= GLOBUS_SUCCESS)
-    {
-	globus_libc_printf("Failed to get list of jobs\n");
-	return -1;
-    }
-    if (job_contact_list==GLOBUS_NULL)
-    {
-	/* no job at all */
-	return GLOBUS_SUCCESS;
-    }
-
-    /* parse each job, eliminate the one which are not mine
-     * and formating the others */
-    while (!globus_list_empty(job_contact_list))
-    {
-	char * globus_id;
-
-	job_contact =
-	    globus_list_remove(&job_contact_list, job_contact_list);
-	if (job_contact==GLOBUS_NULL)
-	{
-	    globus_libc_fprintf(stderr,
-				"globusrun : Internal Error: extracted "
-				"a NULL entry from none empty list...\n");
-	}
-	else
-	{
-	    if (strcmp("none", job_contact))
-	    {
-		globus_libc_printf("%s\n",
-				   job_contact);
-	    }
-	    globus_libc_free(job_contact);
-	}
-    }
-
-    return GLOBUS_SUCCESS;
-} /* globus_l_globusrun_list_jobs() */
-
-#endif /* unimplemented */
 
 /******************************************************************************
 Function: globus_l_globusrun_kill_job()

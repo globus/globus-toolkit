@@ -422,6 +422,16 @@ globus_gram_job_manager_state_machine(
                                 (void *) "GLOBUS_GRAM_JOB_CONTACT",
                                 (void *) request->job_contact);
 
+        rc = globus_gram_job_manager_output_make_job_dir(request);
+
+        if (rc != GLOBUS_SUCCESS)
+        {
+            request->failure_code = rc;
+	    request->jobmanager_state =
+		GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
+	    break;
+        }
+
 	if(request->scratch_dir_base)
 	{
 	    globus_gram_job_manager_request_log(
@@ -552,6 +562,7 @@ globus_gram_job_manager_state_machine(
 		request->cache_location,
 		GLOBUS_TRUE);
 	}
+
 	globus_gram_job_manager_reporting_file_set(request);
         globus_gram_job_manager_history_file_set(request);
 
@@ -559,19 +570,39 @@ globus_gram_job_manager_state_machine(
 		           request->job_contact,
 			   1);
 
+        rc = globus_gram_job_manager_output_get_cache_name(
+            request,
+            "stdout",
+            &tmp_str);
+        if (rc != GLOBUS_SUCCESS)
+        {
+            request->failure_code = rc;
+	    request->jobmanager_state = 
+	        GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
+
+            break;
+        }
 	globus_symboltable_insert(
 		&request->symbol_table,
 		"GLOBUS_CACHED_STDOUT",
-		globus_gram_job_manager_output_get_cache_name(
-		    request,
-		    "stdout"));
+                tmp_str);
 
+        rc = globus_gram_job_manager_output_get_cache_name(
+		    request,
+		    "stderr",
+                    &tmp_str);
+        if (rc != GLOBUS_SUCCESS)
+        {
+            request->failure_code = rc;
+	    request->jobmanager_state = 
+	        GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
+
+            break;
+        }
 	globus_symboltable_insert(
 		&request->symbol_table,
 		"GLOBUS_CACHED_STDERR",
-		globus_gram_job_manager_output_get_cache_name(
-		    request,
-		    "stderr"));
+                tmp_str);
 
 	if(request->jm_restart)
 	{
@@ -1205,18 +1236,20 @@ globus_gram_job_manager_state_machine(
 		    request,
 		    "JM: GSSAPI type is GSI.. relocating proxy\n");
 
-	    rc = globus_gram_job_manager_gsi_relocate_proxy(
-		    request,
-		    globus_libc_strdup(tmp_str));
+            rc = globus_gram_job_manager_gsi_relocate_proxy(
+                    request,
+                    globus_libc_strdup(tmp_str));
+ 
+            if(rc != GLOBUS_SUCCESS)
+            {
+                request->jobmanager_state =
+                    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
+                request->failure_code = rc;
+                break;
+            }
+ 
+            request->relocated_proxy = GLOBUS_TRUE;
 
-	    if(rc != GLOBUS_SUCCESS)
-	    {
-		request->jobmanager_state = 
-		    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
-		request->failure_code = rc;
-	    }
-
-	    request->relocated_proxy = GLOBUS_TRUE;
 	    rc = globus_gram_job_manager_script_proxy_relocate(request);
 
 	    if(rc == GLOBUS_SUCCESS)
@@ -1254,6 +1287,8 @@ globus_gram_job_manager_state_machine(
 		}
 		break;
 	    }
+
+	    request->relocated_proxy = GLOBUS_TRUE;
 
 	    if(request->x509_user_proxy)
 	    {

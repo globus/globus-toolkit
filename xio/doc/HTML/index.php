@@ -5,7 +5,7 @@ include_once( "/mcs/www-unix.globus.org/include/globus_header.inc" );
     <body>
         <CENTER>
             <B><H2> Globus XIO</H2></B>
-            <IMG SRC="http://www.mcs.anl.gov/~bresnaha/xio/xio-logo.jpg">
+            <IMG SRC="xio-logo.jpg">
             <P>The eXtensible Input Output library for the Globus Toolkit (tm).</P>
         </CENTER>
        <UL>

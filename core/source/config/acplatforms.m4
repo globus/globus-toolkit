@@ -26,6 +26,10 @@ case "$host" in
     AC_DEFINE(TARGET_ARCH_AIX)
     AC_DEFINE(TARGET_ARCH_AIX5)
   ;;
+  *-ibm-aix5* )
+    AC_DEFINE(TARGET_ARCH_AIX)
+    AC_DEFINE(TARGET_ARCH_AIX4)
+  ;;
   *-*-hpux11*)
     AC_DEFINE(TARGET_ARCH_HPUX)
     AC_DEFINE(TARGET_ARCH_HPUX11)
@@ -63,6 +67,10 @@ case "$host" in
   i*86-*-linux* )
     AC_DEFINE(TARGET_ARCH_LINUX)
     AC_DEFINE(TARGET_ARCH_X86)
+  ;;
+  *x86_64-*linux* )
+    AC_DEFINE(TARGET_ARCH_LINUX)
+    AC_DEFINE(TARGET_ARCH_X86_64)
   ;;
   *ia64-*linux* )
     AC_DEFINE(TARGET_ARCH_LINUX)

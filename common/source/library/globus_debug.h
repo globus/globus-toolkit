@@ -146,16 +146,17 @@ globus_debug_init(
 
 #else
 
-#define GlobusDebugThreadId()
+#define GlobusDebugThreadId()                                   0
 #define GlobusDebugDeclare(module_name)
 #define GlobusDebugDefine(module_name)
-#define GlobusDebugInit(module_name, levels)
-#define GlobusDebugDestroy(module_name)
-#define GlobusDebugPrintf(module_name, level, message)
-#define GlobusDebugFwrite(module_name, level, buffer, size, count)
-#define GlobusDebugMyPrintf(module_name, message)
-#define GlobusDebugMyFwrite(module_name, buffer, size, count)
-#define GlobusDebugTrue(module_name, level) 0
+#define GlobusDebugInit(module_name, levels)                    do {} while(0)
+#define GlobusDebugDestroy(module_name)                         do {} while(0)
+#define GlobusDebugPrintf(module_name, level, message)          do {} while(0)
+#define GlobusDebugFwrite(module_name, level, buffer, size, count)          \
+                                                                do {} while(0)
+#define GlobusDebugMyPrintf(module_name, message)               do {} while(0)
+#define GlobusDebugMyFwrite(module_name, buffer, size, count)   do {} while(0)
+#define GlobusDebugTrue(module_name, level)                     0
 
 #endif
 

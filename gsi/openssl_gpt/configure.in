@@ -74,6 +74,7 @@ AC_OUTPUT(
     tools/Makefile
     tools/c_rehash
     apps/CA.pl
+    apps/der_chop
     apps/Makefile
     test/Makefile
     certs/Makefile

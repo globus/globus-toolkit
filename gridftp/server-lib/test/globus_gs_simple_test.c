@@ -17,9 +17,47 @@
 
 #define USER_DATA_HANDLE    ((void *) 0xFF)
 
-char *  CONTACT_STRINGS[]     = {"127.0.0.1:2", "192.168.0.1:5566", NULL};
+char *  CONTACT_STRINGS[]     = {"127.0.0.1:2", NULL};
 
-#define CONTACT_STRINGS_COUNT   2
+#define CONTACT_STRINGS_COUNT   1
+
+static globus_mutex_t                       gs_l_mutex;
+static globus_cond_t                        gs_l_cond;
+
+static void
+logging_func(
+    globus_gridftp_server_control_t     server_handle,
+    const char *                        full_command,
+    int                                 cls,
+    void *                              user_arg)
+{
+    time_t tm = time(NULL);
+    char * tm_str = ctime(&tm);
+    int len = strlen(tm_str);
+
+    tm_str[len - 1] = '\0';
+
+    fprintf(stdout, "%s::  %s", tm_str, full_command);
+}
+
+static void
+globus_gs_cmd_site(
+    globus_gridftp_server_control_op_t      op,
+    const char *                            full_command,
+    char **                                 cmd_a,
+    int                                     argc,
+    void *                                  user_arg)
+{
+    if(strcmp(cmd_a[1], "MINE") == 0)
+    {
+        globus_gsc_959_finished_command(
+            op, "200 successful sire interception\r\n");
+    }
+    else
+    {
+        globus_assert(0);
+    }
+}
 
 
 static globus_mutex_t                       globus_l_mutex;
@@ -66,19 +104,24 @@ static void
 globus_l_resource_cb(
     globus_gridftp_server_control_op_t      op,
     const char *                            path,
-    globus_gridftp_server_control_resource_mask_t mask)
+    globus_gridftp_server_control_resource_mask_t mask,
+    void *                                  user_arg)
 {
     globus_result_t                         res;
+    globus_gridftp_server_control_response_t response_type;
     globus_gridftp_server_control_stat_t    stat_info;
     struct stat                             st;
+    static int                              x = 0;
+    char *                                  msg;
 
     if(stat(path, &st) < 0)
     {
         globus_gridftp_server_control_finished_resource(
             op,
-            globus_error_put(GLOBUS_ERROR_NO_INFO),
             NULL,
-            0);
+            0,
+            GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED,
+            NULL);
         return;
     }
 
@@ -92,37 +135,76 @@ globus_l_resource_cb(
     stat_info.mtime = st.st_mtime;
     strcpy(stat_info.name, path);
 
+    switch(x % 4)
+    {
+        case 0:
+            msg = "GOOD";
+            response_type = GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS;
+            break;
+        case 1:
+            msg = "Pretend bad";
+            response_type = GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_PATH_INVALID;
+            break;
+        case 2:
+            msg = "Mr. Rogers";
+            response_type = GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_INVALID_FILE_TYPE;
+            break;
+        case 3:
+            msg = "Ice Cream.";
+            response_type = GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACCESS_DENINED;
+            break;
+    }
     res = globus_gridftp_server_control_finished_resource(
         op,
-        GLOBUS_SUCCESS,
         &stat_info,
-        1);
+        1,
+        response_type,
+        msg);
     globus_assert(res == GLOBUS_SUCCESS);
+
+    x++;
+}
+
+static void
+event_cb(
+    globus_gridftp_server_control_op_t      op,
+    int                                     event_type,
+    void *                                  user_arg)
+{
+    static globus_size_t                    nbytes = 0;
+
+    nbytes += 1048576;
+
+    globus_gridftp_server_control_event_send_perf(op, 0, nbytes);
 }
 
 static void
 list_cb(
     globus_gridftp_server_control_op_t      op,
     void *                                  data_handle,
-    const char *                            path)
+    const char *                            path,
+    void *                                  user_arg)
 {
-    globus_gridftp_server_control_begin_transfer(op, 0);
-    globus_gridftp_server_control_finished_transfer(op, GLOBUS_SUCCESS);
+    globus_gridftp_server_control_begin_transfer(op, 0, NULL, NULL);
+    globus_gridftp_server_control_finished_transfer(
+        op, GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS, NULL);
 }
 
 static void
 passive_connect(
     globus_gridftp_server_control_op_t      op,
     globus_gridftp_server_control_network_protocol_t net_prt,
-    int                                     max)
+    int                                     max,
+    void *                                  user_arg)
 {
     globus_gridftp_server_control_finished_passive_connect(
         op,
         USER_DATA_HANDLE,
-        GLOBUS_SUCCESS,
         GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_DIR_BI,
         (const char **)CONTACT_STRINGS,
-        CONTACT_STRINGS_COUNT);
+        CONTACT_STRINGS_COUNT,
+        GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS,
+        NULL);
 }
 
 static void
@@ -130,23 +212,38 @@ active_connect(
     globus_gridftp_server_control_op_t      op,
     globus_gridftp_server_control_network_protocol_t net_prt,
     const char **                           cs,
-    int                                     cs_count)
+    int                                     cs_count,
+    void *                                  user_arg)
 {
     globus_gridftp_server_control_finished_active_connect(
         op,
         USER_DATA_HANDLE,
-        GLOBUS_SUCCESS,
-        GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_DIR_BI);
+        GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_DIR_BI,
+        GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS,
+        NULL);
 }
 
 static void
 data_destroy_cb(
-    void *                                  user_data_handle)
+    void *                                  user_data_handle,
+    void *                                  user_arg)
 {
     fprintf(stdout, "data_destroy_cb()\n");
     globus_assert(user_data_handle == USER_DATA_HANDLE);
 }
 
+void
+abort_cb(
+    globus_gridftp_server_control_op_t      op,
+    void *                                  user_arg)
+{
+    globus_mutex_lock(&gs_l_mutex);
+    {
+        globus_l_done = GLOBUS_TRUE;
+        globus_cond_signal(&gs_l_cond);
+    }
+    globus_mutex_unlock(&gs_l_mutex);
+}
 
 static void
 transfer(
@@ -155,31 +252,60 @@ transfer(
     const char *                            local_target,
     const char *                            mod_name,
     const char *                            mod_parms,
-    globus_gridftp_server_control_restart_t restart)
+    globus_range_list_t                     range_list,
+    void *                                  user_arg)
 {
-    globus_gridftp_server_control_begin_transfer(op, 0);
-    globus_gridftp_server_control_finished_transfer(op, globus_error_put(GLOBUS_ERROR_NO_INFO));
+    int                                     ctr;
+    globus_size_t                           off = 0;
+    globus_size_t                           len = 256;
+    globus_abstime_t                        abstime;
+
+    globus_gridftp_server_abort_enable(op, abort_cb, NULL);
+
+    globus_gridftp_server_control_begin_transfer(
+        op, GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_PERF |
+                GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_RESTART,
+        event_cb, NULL);
+
+    globus_mutex_lock(&gs_l_mutex);
+    {
+        for(ctr = 0; ctr < 500 && !globus_l_done; ctr++)
+        {
+            GlobusTimeAbstimeSet(abstime, 0, 50000);
+            globus_macro_cond_timedwait(&gs_l_cond, &gs_l_mutex, &abstime);
+            off += len;
+        }
+    }
+    globus_mutex_unlock(&gs_l_mutex);
+
+    globus_gridftp_server_control_finished_transfer(
+        op, GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS, NULL);
+
+    globus_gridftp_server_abort_disable(op);
+
+    globus_l_done = GLOBUS_FALSE;
 }
-
-
 
 void
 auth_func(
     globus_gridftp_server_control_op_t      op,
+    globus_gridftp_server_control_security_type_t type,
     const char *                            subject,
     const char *                            user_name,
-    const char *                            pw)
+    const char *                            pw,
+    void *                                  user_arg)
 {
-    fprintf(stderr, "User: %s Pass: %s\n", user_name, pw);
+    fprintf(stderr, "User: %s Pass: %s: type = %d\n", user_name, pw, type);
 
     if(strcmp(user_name, "failme") == 0)
     {
-        globus_gridftp_server_control_finished_auth(op, (globus_result_t)1, 0);
+        globus_gridftp_server_control_finished_auth(
+            op, 0, GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_ACTION_FAILED, NULL);
     }
     else
     {
         globus_gridftp_server_control_finished_auth(
-            op, GLOBUS_SUCCESS, getuid());
+            op, getuid(), GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS, NULL);
     }
 }
 
@@ -200,6 +326,9 @@ main(
 
     globus_module_activate(GLOBUS_XIO_MODULE);
     globus_module_activate(GLOBUS_GRIDFTP_SERVER_CONTROL_MODULE);
+
+    globus_mutex_init(&gs_l_mutex, NULL);
+    globus_cond_init(&gs_l_cond, NULL);
 
     /*
      *  set up the xio handle
@@ -241,7 +370,8 @@ main(
     if(argc > 1)
     {
         globus_gridftp_server_control_attr_set_security(
-            ftp_attr, GLOBUS_GRIDFTP_SERVER_LIBRARY_GSSAPI);
+            ftp_attr, GLOBUS_GRIDFTP_SERVER_LIBRARY_GSSAPI | 
+                GLOBUS_GRIDFTP_SERVER_LIBRARY_NONE);
     }
     else
     {
@@ -249,27 +379,59 @@ main(
             ftp_attr, GLOBUS_GRIDFTP_SERVER_LIBRARY_NONE);
     }
 
-    res = globus_gridftp_server_control_attr_set_auth(ftp_attr, auth_func);
+    res = globus_gridftp_server_control_attr_set_auth(
+        ftp_attr, auth_func, NULL);
     test_res(res, __LINE__);
 
     res = globus_gridftp_server_control_attr_set_resource(
-        ftp_attr, globus_l_resource_cb);
+        ftp_attr, globus_l_resource_cb, NULL);
     test_res(res, __LINE__);
 
     res = globus_gridftp_server_control_attr_set_list(
-        ftp_attr, list_cb);
+        ftp_attr, list_cb, NULL);
+    test_res(res, __LINE__);
+
+    res = globus_gridftp_server_control_attr_set_idle_time(
+        ftp_attr, 900);
+    test_res(res, __LINE__);
+
+    res = globus_gridftp_server_control_attr_set_banner(
+        ftp_attr, "This is 1 line of banner\nthis is line 2\nline 3");
+    test_res(res, __LINE__);
+
+    res = globus_gridftp_server_control_attr_set_message(
+        ftp_attr, "Setting the message after login, 1 line\n");
+    test_res(res, __LINE__);
+
+    res = globus_gridftp_server_control_attr_set_log(
+        ftp_attr, logging_func, GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_ALL, NULL);
     test_res(res, __LINE__);
 
     res = globus_gridftp_server_control_attr_data_functions(
-        ftp_attr, active_connect, passive_connect, data_destroy_cb);
+        ftp_attr, active_connect, NULL, 
+        passive_connect, NULL, data_destroy_cb, NULL);
 
     res = globus_gridftp_server_control_attr_add_send(
-        ftp_attr, NULL, transfer);
+        ftp_attr, NULL, transfer, NULL);
+    test_res(res, __LINE__);
+
+    res = globus_gridftp_server_control_attr_add_recv(
+        ftp_attr, NULL, transfer, NULL);
     test_res(res, __LINE__);
 
     res = globus_xio_handle_cntl(xio_handle, tcp_driver,
             GLOBUS_XIO_TCP_GET_HANDLE, &system_handle);
     test_res(res, __LINE__);
+
+    globus_gsc_959_command_add(
+        ftp_server,
+        "SITE MINE",
+        globus_gs_cmd_site,
+        GLOBUS_GSC_COMMAND_POST_AUTH,
+        2,
+        2,
+        "SITE <sp> MINE!!!!",
+        NULL);
 
     globus_mutex_lock(&globus_l_mutex);
     {
@@ -285,6 +447,7 @@ main(
     }
     globus_mutex_unlock(&globus_l_mutex);
 
+    globus_xio_close(xio_handle, NULL);
     fprintf(stdout, "Ending...\n");
     res = globus_gridftp_server_control_attr_destroy(ftp_attr);
     test_res(res, __LINE__);

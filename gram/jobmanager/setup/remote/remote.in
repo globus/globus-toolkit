@@ -40,7 +40,7 @@ sub submit
     my $remote_stdout;
     my $remote_stderr;
     my $description = $self->{JobDescription};
-    my $tag = $description->cache_tag or $ENV{GLOBUS_GRAM_JOB_CONTACT};
+    my $tag = $description->cache_tag or $tag = $ENV{GLOBUS_GRAM_JOB_CONTACT};
     my $stdout_url = "$ENV{GLOBUS_GRAM_JOB_CONTACT}dev/stdout";
     my $stderr_url = "$ENV{GLOBUS_GRAM_JOB_CONTACT}dev/stderr";
 
@@ -82,7 +82,7 @@ sub poll
     my $local_file;
     my $remote_cmd;
     my $type;
-    my $tag = $description->cache_tag or $ENV{GLOBUS_GRAM_JOB_CONTACT};
+    my $tag = $description->cache_tag or $tag = $ENV{GLOBUS_GRAM_JOB_CONTACT};
     my $stdout_url = "$ENV{GLOBUS_GRAM_JOB_CONTACT}dev/stdout";
     my $stderr_url = "$ENV{GLOBUS_GRAM_JOB_CONTACT}dev/stderr";
     my %local_files = ('stdout' => $description->stdout(),

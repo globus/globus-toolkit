@@ -20,11 +20,15 @@ for ARG in "$@" ; do
 	-help)
             if test "X${GT_PROXY_MODE}" = "Xold" ; then
                 ${BINDIR}/grid-proxy-init-bin -help 2>&1 | \
-                    sed -e '/-old/s/$/ (default)/' \
-		        -e '/-old/a\    -new                      Creates a new-style globus proxy' 1>&2
+                    sed -e 's/grid-proxy-init-bin/grid-proxy-init/' \
+                        -e '/-old/s/$/ (default)/' \
+		        -e '/-old/a\
+    -new                      Creates a new-style globus proxy' 1>&2
             else
                 ${BINDIR}/grid-proxy-init-bin -help 2>&1 | \
-                    sed -e '/-old/a\    -new                      Creates a new-style globus proxy (default)' 1>&2
+                    sed -e 's/grid-proxy-init-bin/grid-proxy-init/' \
+                        -e '/-old/a\
+    -new                      Creates a new-style globus proxy (default)' 1>&2
             fi
 	    exit 0
 	    ;;

@@ -33,7 +33,6 @@ sub submit
 {
     my $self = shift;
     my $description = $self->{JobDescription};
-    my $tag = $description->cache_tag() or $ENV{GLOBUS_GRAM_JOB_CONTACT};
     my $status;
     my $pbs_job_script;
     my $pbs_job_script_name;
@@ -41,7 +40,6 @@ sub submit
     my $errfile = '';
     my $job_id;
     my $rsh_env;
-    my $script_url;
     my @arguments;
     my $email_when = '';
     my $cache_pgm = "$Globus::Core::Paths::bindir/globus-gass-cache";
@@ -126,13 +124,7 @@ sub submit
 
     $self->log('Building job script');
 
-    $script_url = "$tag/pbs_job_script.$$"; 
-    $pbs_job_script_name = $self->_add_to_cache($script_url);
-
-    if($pbs_job_script_name eq '')
-    {
-	return Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED();
-    }
+    $pbs_job_script_name = $self->job_dir() . '/scheduler_pbs_job_script';
 
     local(*JOB);
     open( JOB, '>' . $pbs_job_script_name );
@@ -258,6 +250,8 @@ EOF
     {
 	if($library_vars{$_} == 0)
 	{
+            my $library_path = $description->library_path();
+
 	    push(@new_env, $_ . '=' . $library_path);
 	    $rsh_env .= "$_=$library_path;\n"
 	              . "export $_;\n";
@@ -318,21 +312,11 @@ EOF
     elsif($description->jobtype() eq 'multiple')
     {
 	my $count = $description->count;
-	my $cmd_script_url ;
 	my $cmd_script_name ;
 	my $cmd_script ;
 	my $stdin = $description->stdin();
 
-        $cmd_script_url = "$tag/pbs_cmd_script.$$";
-	$self->fork_and_exec_cmd( $cache_pgm, '-add', '-t', $tag, '-n', 
-				  $cmd_script_url, 'file:/dev/null' );
-	$cmd_script_name = $self->pipe_out_cmd( $cache_pgm, '-q', '-t', $tag,
-						$cmd_script_url );
-	$cmd_script_name =~ s/[\r\n]+$//; # chomp is unsafe
-	if($cmd_script_name eq '')
-	{
-            return Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED();
-	}
+        $cmd_script_name = $self->job_dir() . '/scheduler_pbs_cmd_script';
 
 	local(*CMD);
 	if ( open( CMD, ">$cmd_script_name" ) ) 
@@ -373,7 +357,7 @@ EOF
     }
     close(JOB);
 
-    $pbs_qsub_err_name = $self->_add_to_cache("$tag/pbs_qsub_err.$$"); 
+    $pbs_qsub_err_name = $self->job_dir() . '/scheduler_pbs_submit_stderr';
     $errfile = "2>$pbs_qsub_err_name";
 
     $self->nfssync( $pbs_job_script_name );
@@ -383,8 +367,6 @@ EOF
 
     if($? == 0)
     {
-	#system("$cache_pgm -cleanup-url $script_url");
-
         $self->log("job submission successful, setting state to PENDING");
 	return {JOB_ID => $job_id,
 	        JOB_STATE => Globus::GRAM::JobState::PENDING };
@@ -408,7 +390,6 @@ EOF
 
         $self->respond({GT3_FAILURE_MESSAGE => $stderr });
     }
-    #system("$cache_pgm -cleanup-url $tag/pbs_job_script.$$");
 
     return Globus::GRAM::Error::JOB_EXECUTION_FAILED();
 }
@@ -493,23 +474,6 @@ sub cancel
     }
 
     return Globus::GRAM::Error::JOB_CANCEL_FAILED();
-}
-
-sub _add_to_cache
-{
-    my $self = shift;
-    my $url = shift;
-    my $description = $self->{JobDescription};
-    my $tag = $description->cache_tag() or $ENV{GLOBUS_GRAM_JOB_CONTACT};
-    my $cache_pgm = "$Globus::Core::Paths::bindir/globus-gass-cache";
-    my $name ;
-
-    $self->fork_and_exec_cmd( $cache_pgm, '-add', '-t', $tag, 
-			      '-n', $url, 'file:/dev/null' );
-    $name = $self->pipe_out_cmd( $cache_pgm, '-query', '-t', 
-						$tag, $url );
-    chomp($name);
-    return $name;
 }
 
 1;

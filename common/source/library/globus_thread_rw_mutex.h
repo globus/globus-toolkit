@@ -12,7 +12,6 @@ EXTERN_C_BEGIN
 typedef struct
 {
     globus_mutex_t                      mutex;
-    globus_thread_key_t                 key;
     struct globus_i_rw_mutex_waiter_s * waiters;
     struct globus_i_rw_mutex_waiter_s ** tail;
     struct globus_i_rw_mutex_waiter_s * idle;

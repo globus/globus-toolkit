@@ -26,19 +26,14 @@ sub submit
 {
     my $self = shift;
     my $description = $self->{JobDescription};
-    my $tag = $description->cache_tag() or $tag = $ENV{GLOBUS_GRAM_JOB_CONTACT};
     my $status;
-    my $lsf_job_script;
     my $lsf_job_script_name;
-    my $lsf_job_err;
     my $lsf_job_err_name;
     my $queue;
     my $job_id;
-    my $script_url;
     my @arguments;
     my $email_when = '';
     my $library_path;
-    my $cache_pgm = "$Globus::Core::Paths::bindir/globus-gass-cache";
     my @library_vars;
 
     $self->log('Entering lsf submit');
@@ -127,17 +122,8 @@ sub submit
 
     $self->log('Building job script');
 
-    $script_url = "$tag/lsf_job_script.$$"; 
-    $self->fork_and_exec_cmd( $cache_pgm, '-add', '-t', $tag, 
-			      '-n', $script_url, 'file:/dev/null' );
-    $lsf_job_script_name = $self->pipe_out_cmd( $cache_pgm, '-query', '-t', 
-						$tag, $script_url );
-    chomp($lsf_job_script_name);
-    if($lsf_job_script_name eq '')
-    {
-	return Globus::GRAM::ERROR::TEMP_SCRIPT_FILE_FAILED();
-    }
-
+    $lsf_job_script_name = $self->job_dir() . '/scheduler_lsf_submit_script';
+    
     local(*JOB);
     open( JOB, '>' . $lsf_job_script_name );
     print JOB<<"EOF";
@@ -274,34 +260,20 @@ EOF
     close(JOB);
     chmod 0755, $lsf_job_script_name;
 
-    $self->log("about to add job error file to cache");
-
-    $lsf_job_err = "$tag/lsf_job_err.$$";
-    $self->fork_and_exec_cmd( $cache_pgm, '-add', '-t', $tag,
-                            '-n', $lsf_job_err, 'file:/dev/null');
-    $lsf_job_err_name = $self->pipe_out_cmd( $cache_pgm, '-query', '-t', 
-					     $tag, $lsf_job_err );
+    $lsf_job_err_name = $self->job_dir() . '/scheduler_bsub_stderr';
     $self->log("job err is at $lsf_job_err_name");
-    if($lsf_job_err_name eq '')
-    {
-	return Globus::GRAM::ERROR::TEMP_SCRIPT_FILE_FAILED();
-    }
 
     $self->log("about to submit job");
     $self->nfssync( $lsf_job_script_name );
     $self->nfssync( $lsf_job_err_name );
     $job_id = (grep(/is submitted/,
-                       split(/\n/, `$bsub < $lsf_job_script_name 2> $lsf_job_err_name`)))[0];
+                   split(/\n/, `$bsub < $lsf_job_script_name 2> $lsf_job_err_name`)))[0];
 
     if($? == 0)
     {
 	$job_id =~ m/<([^>]*)>/;
 	$job_id = $1;
 
-	$self->fork_and_exec_cmd( $cache_pgm, '-cleanup-url', 
-				  "$script_url");
-	$self->fork_and_exec_cmd( $cache_pgm, '-cleanup-url', 
-				  "$lsf_job_err");
 	return {
 	           JOB_ID => $job_id,
 		   JOB_STATE => Globus::GRAM::JobState::PENDING
@@ -327,11 +299,6 @@ EOF
 
         $self->respond({ GT3_FAILURE_MESSAGE => $stderr });
     }
-
-    $self->fork_and_exec_cmd( $cache_pgm, '-cleanup-url', 
-			      "$script_url");
-    $self->fork_and_exec_cmd( $cache_pgm, '-cleanup-url', 
-			      "$lsf_job_err");
 
     return Globus::GRAM::Error::JOB_EXECUTION_FAILED;
 }
@@ -457,8 +424,8 @@ sub cancel
     my $job_id = $description->jobid();
 
     $self->log("cancel job $job_id");
-    #system("$bkill $job_id >/dev/null 2>/dev/null");
-    $self->fork_and_exec_cmd( $bkill, $job_id );
+    system("$bkill $job_id >/dev/null 2>/dev/null");
+    #$self->fork_and_exec_cmd( $bkill, $job_id );
 
     if($? == 0)
     {

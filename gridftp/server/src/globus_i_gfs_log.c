@@ -7,16 +7,49 @@
  * 
  * if this fails, just print to stderr.
  */
+ 
+static globus_logging_handle_t          log_handle;
+static FILE *                           log_file = NULL;
+
 void
 globus_i_gfs_log_open(void)
 {
+    char *                              logfilename;
     
+    logfilename = globus_i_gfs_config_string("logfile");
+    if(logfilename != NULL)
+    {
+        log_file = fopen(logfilename, "a");
+    }
+    if(log_file == NULL)
+    {
+        log_file = stderr;
+    }
+    globus_logging_init(
+        &log_handle,
+        GLOBUS_NULL, /* no buffered logs */
+        16384,
+        globus_i_gfs_config_int("debug_level"), 
+        &globus_logging_stdio_module,
+        log_file);
+    
+    /* XXX put this somewhere else */
+    if(globus_i_gfs_config_bool("inetd") || globus_i_gfs_config_bool("detach"))
+    {
+        freopen("/dev/null", "w", stderr);
+        freopen("/dev/null", "w", stdout);
+    }
 }
 
 void
 globus_i_gfs_log_close(void)
 {
-    
+    globus_logging_flush(log_handle);
+    globus_logging_destroy(log_handle);
+    if(log_file != stderr && log_file != NULL)
+    {
+        fclose(log_file);
+    }
 }
 
 void
@@ -28,11 +61,7 @@ globus_i_gfs_log_message(
     va_list                             ap;
     
     va_start(ap, format);
-    
-    if(!globus_i_gfs_config_bool("inetd") && !globus_i_gfs_config_bool("fork"))
-    {
-        globus_libc_vfprintf(stderr, format, ap);
-    }
+    globus_logging_vwrite(log_handle, type, format, ap);
     va_end(ap);
 }
 

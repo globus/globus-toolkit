@@ -2676,6 +2676,11 @@ globus_common_v_create_string(
 
     va_end(ap_copy);
 
+    if(len < 0)
+    {
+        return NULL;
+    }
+    
     len++;
 
     if((new_string = malloc(len)) == NULL)
@@ -3231,7 +3236,7 @@ globus_libc_getnameinfo(
     result = GLOBUS_SUCCESS;
     rc = getnameinfo(
         (const struct sockaddr *) addr,
-        sizeof(globus_sockaddr_t),
+        GlobusLibcSockaddrLen(addr),
         hostbuf,
         hostbuf_len,
         servbuf,

@@ -86,7 +86,17 @@
         *(queue)->tail = callback_info;                                     \
         (queue)->tail = &callback_info->next;                               \
     } while(0)
-    
+
+#define GlobusICallbackReadyEnqueueFirst(queue, callback_info)              \
+    do {                                                                    \
+        (callback_info)->next = (queue)->head;                              \
+        if(!(queue)->head)                                                  \
+        {                                                                   \
+            (queue)->tail = &callback_info->next;                           \
+        }                                                                   \
+        (queue)->head = (callback_info);                                    \
+    } while(0)
+
 #define GlobusICallbackReadyDequeue(queue, callback_info)                   \
     do {                                                                    \
         (callback_info) = (queue)->head;                                    \

@@ -1,0 +1,5 @@
+name=sdb
+subdir=ogsa_client/sdb
+build="ant -Dogsa.root=\$OGSA_HOME
+cp etc/* \$destdir"
+gar=build/lib/sdb.gar

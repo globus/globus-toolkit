@@ -20,7 +20,6 @@ CVS Information:
 #include <stdio.h>
 #include <fcntl.h>
 #include <string.h>
-#include <signal.h>
 
 #include "globus_gass_copy.h"
 #include "globus_ftp_client_debug_plugin.h"
@@ -92,40 +91,11 @@ typedef struct
                           Module specific prototypes
 *****************************************************************************/
 
-static globus_callback_handle_t          globus_l_callback_handle;
-
 static 
 void
 globus_l_url_copy_monitor_callback(void * callback_arg,
                                     globus_gass_copy_handle_t * handle,
                                     globus_object_t * result);
-
-static 
-void
-globus_l_url_copy_cancel_callback(void * callback_arg,
-                                    globus_gass_copy_handle_t * handle,
-                                    globus_object_t * result);
-
-/**** Support for SIGINT handling ****/
-static RETSIGTYPE
-globus_l_globus_url_copy_sigint_handler(int dummy);
-
-#if defined(BUILD_LITE)
-static
-void
-globus_l_globus_url_copy_signal_wakeup(
-    void *                              user_args);
-
-#define globus_l_globus_url_copy_remove_cancel_poll() \
-    globus_callback_unregister(globus_l_callback_handle, GLOBUS_NULL, GLOBUS_NULL, GLOBUS_NULL)
-#else
-#define globus_l_globus_url_copy_remove_cancel_poll()
-#endif
-
-#ifndef TARGET_ARCH_WIN32
-static int
-globus_l_globus_url_copy_signal(int signum, RETSIGTYPE (*func)(int));
-#endif
 
 static
 void
@@ -507,6 +477,23 @@ static char *        g_err_msg;
     globus_netlogger_handle_t                       gnl_handle;
 #endif
 
+static
+void
+globus_l_guc_interrupt_handler(
+    void *                              user_arg)
+{
+    my_monitor_t *                      monitor;
+    
+    monitor = (my_monitor_t *) user_arg;
+    
+    globus_mutex_lock(&monitor->mutex);
+    {
+        globus_l_globus_url_copy_ctrlc = GLOBUS_TRUE;
+        globus_cond_signal(&monitor->cond);
+    }
+    globus_mutex_unlock(&monitor->mutex);
+}
+
 /*
 #define GLOBUS_BUILD_WITH_NETLOGGER 1
 */
@@ -579,22 +566,6 @@ main(int argc, char **argv)
         globus_gass_copy_attr_set_io(
             &dest_gass_copy_attr,
             &io_attr);
-    }
-#   endif
-
-#   if defined(BUILD_LITE)
-    {
-        globus_reltime_t          delay_time;
-        globus_reltime_t          period_time;
-
-        GlobusTimeReltimeSet(delay_time, 0, 0);
-        GlobusTimeReltimeSet(period_time, 0, 500000);
-        globus_callback_register_periodic(
-            &globus_l_callback_handle,
-            &delay_time,
-            &period_time,
-            globus_l_globus_url_copy_signal_wakeup,
-            GLOBUS_NULL);
     }
 #   endif
 
@@ -679,100 +650,6 @@ globus_l_url_copy_monitor_callback(void * callback_arg,
 
     return;
 } /* globus_l_url_copy_monitor_callback() */
-
-
-/******************************************************************************
-Function: globus_l_url_copy_cancel_callback()
-Description:
-Parameters:
-Returns:
-******************************************************************************/
-static void
-globus_l_url_copy_cancel_callback(void * callback_arg,
-    globus_gass_copy_handle_t * handle,
-    globus_object_t * error)
-{
-    my_monitor_t *               monitor;
-    globus_bool_t                use_err = GLOBUS_FALSE;
-    monitor = (my_monitor_t * )  callback_arg;
-
-    if (error != GLOBUS_SUCCESS)
-    {
-        use_err = GLOBUS_TRUE;
-    }
-
-    globus_mutex_lock(&monitor->mutex);
-    monitor->done = GLOBUS_TRUE;
-    if (use_err)
-    {
-        monitor->use_err = GLOBUS_TRUE;
-        monitor->err = globus_object_copy(error);
-    }
-    globus_cond_signal(&monitor->cond);
-    globus_mutex_unlock(&monitor->mutex);
-
-    return;
-} /* globus_l_url_copy_cancel_callback() */
-
-
-/******************************************************************************
-Function: globus_l_globus_url_copy_sigint_handler()
-Description:
-Parameters:
-Returns:
-******************************************************************************/
-static RETSIGTYPE
-globus_l_globus_url_copy_sigint_handler(int dummy)
-{
-    globus_l_globus_url_copy_ctrlc = GLOBUS_TRUE;
-
-#ifndef TARGET_ARCH_WIN32
-    /* don't trap any more signals */
-    globus_l_globus_url_copy_signal(SIGINT, SIG_DFL);
-#endif
-
-} /* globus_l_globus_url_copy_sigint_handler() */
-
-
-/******************************************************************************
-Function: globus_l_globus_url_copy_signal_wakeup()
-Description:
-Parameters:
-Returns:
-******************************************************************************/
-static 
-void
-globus_l_globus_url_copy_signal_wakeup(
-    void *                              user_args)
-{
-    if(globus_l_globus_url_copy_ctrlc)
-    {
-        globus_callback_signal_poll();
-    }
-} /* globus_l_globus_url_copy_signal_wakeup() */
-
-
-/******************************************************************************
-Function: globus_l_globus_url_copy_signal()
-Description:
-Parameters:
-Returns:
-******************************************************************************/
-#ifndef TARGET_ARCH_WIN32
-static 
-int
-globus_l_globus_url_copy_signal(int signum, RETSIGTYPE (*func)(int))
-{
-    struct sigaction act;
-
-    memset(&act, '\0', sizeof(struct sigaction));
-    sigemptyset(&(act.sa_mask));
-    act.sa_handler = func;
-    act.sa_flags = 0;
-
-    return sigaction(signum, &act, GLOBUS_NULL);
-} /* globus_l_globus_url_copy_signal() */
-#endif
 
 /******************************************************************************
 Function: globus_l_gass_copy_performance_cb()
@@ -1023,6 +900,12 @@ globus_l_guc_transfer_files(
     
     globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
     globus_cond_init(&monitor.cond, GLOBUS_NULL);
+
+    globus_callback_register_signal_handler(
+        GLOBUS_SIGNAL_INTERRUPT,
+        GLOBUS_FALSE,
+        globus_l_guc_interrupt_handler,
+        &monitor);
 
     guc_info->cancelled = GLOBUS_FALSE;
 
@@ -1277,11 +1160,9 @@ globus_l_guc_transfer_files(
             {
                 fprintf(stderr, "\nCancelling copy...\n");
                 guc_info->cancelled = GLOBUS_TRUE;
-                globus_l_globus_url_copy_remove_cancel_poll();
+                
                 globus_gass_copy_cancel(
-                    gass_copy_handle,
-                    globus_l_url_copy_cancel_callback,
-                    (void *) &monitor);
+                    gass_copy_handle, GLOBUS_NULL, GLOBUS_NULL);
                 globus_l_globus_url_copy_ctrlc_handled = GLOBUS_TRUE;
             }
         }
@@ -1340,6 +1221,13 @@ globus_l_guc_transfer_files(
     {
         globus_free(dst_url_base);
     }
+    
+    if(!globus_l_globus_url_copy_ctrlc_handled)
+    {
+        globus_callback_unregister_signal_handler(
+            GLOBUS_SIGNAL_INTERRUPT, GLOBUS_NULL, GLOBUS_NULL);
+    }
+    
     globus_cond_destroy(&monitor.cond);
     globus_mutex_destroy(&monitor.mutex);
 
@@ -1380,6 +1268,13 @@ error_dirlist:
     {
         globus_free(dst_url_base);
     }
+    
+    if(!globus_l_globus_url_copy_ctrlc_handled)
+    {
+        globus_callback_unregister_signal_handler(
+            GLOBUS_SIGNAL_INTERRUPT, GLOBUS_NULL, GLOBUS_NULL);
+    }
+    
     globus_cond_destroy(&monitor.cond);
     globus_mutex_destroy(&monitor.mutex);
 
@@ -2079,13 +1974,6 @@ globus_l_guc_init_gass_copy_handle(
             fprintf(stderr, "Continuing without performance info\n");
         }
     }
-
-#   ifndef TARGET_ARCH_WIN32
-    {
-        globus_l_globus_url_copy_signal(SIGINT,
-                              globus_l_globus_url_copy_sigint_handler);
-    }
-#   endif
 
 
     if(g_use_restart)

@@ -6,6 +6,7 @@ use strict;
 use POSIX;
 use Test;
 use IO::File;
+use File::Path;
 
 my $test_exec = './globus-gram-client-two-phase-commit-test';
 
@@ -50,30 +51,35 @@ sub two_phase_test
     }
     else
     {
+        my ($host, $uniq_id, $dropping_dir);
+        $tag =~ m|https://([^:]+):\d+/(\d+/\d+)/|;
+        $host = $1;
+        $uniq_id = $2;
+        $uniq_id =~ s|/|.|;
         sleep($timeout+5);
-        $cache_cmd = "$gpath/bin/globus-gass-cache -list -t \"$tag\"";
 
-        $fh = new IO::File("$cache_cmd|");
-        $output = join('', <$fh>);
-        $fh->close();
-        chomp($output);
+
+        $dropping_dir = "$ENV{HOME}/.globus/job/$host/$uniq_id";
 
         if (($mode eq 'no-commit-end') && ($save_state eq 'yes'))
         {
-            if($output eq "")
+            if(! -r $dropping_dir)
             {
-                $errors .= "Test should have left droppings in the cache";
+                $errors .= "Test should have left droppings";
+            }
+            else
+            {
+                rmtree([$dropping_dir]);
             }
         }
         else
         {
-            if($output ne "")
+            if(-r $dropping_dir)
             {
                 $errors .= "Test left unexpected droppings in the cache";
+                rmtree([$dropping_dir]);
             }
         }
-        $cache_cmd = "$gpath/bin/globus-gass-cache -cleanup-tag -t \"$tag\"";
-        system($cache_cmd . ">/dev/null 2>/dev/null");
     }
 
     if($errors eq "")

@@ -75,7 +75,7 @@ GSS_CALLCONV gss_import_name(
         output_name->name_oid = input_name_type;
         output_name->x509n = NULL;
         *output_name_P = output_name;
-        goto free_output_name;
+        goto exit;
     }
     
     x509n = X509_NAME_new();

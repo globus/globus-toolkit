@@ -42,7 +42,8 @@ globus_gridftp_server_finished_resource(
 void
 globus_gridftp_server_finished_command(
     globus_gridftp_server_operation_t   op,
-    globus_result_t                     result);
+    globus_result_t                     result,
+    const char *                        command_data);
 
 void
 globus_gridftp_server_finished_transfer(
@@ -112,16 +113,19 @@ globus_gridftp_server_get_block_size(
     globus_size_t *                     block_size);
 
 void
-globus_gridftp_server_get_partial_offset(
+globus_gridftp_server_get_read_range(
     globus_gridftp_server_operation_t   op,
     globus_off_t *                      offset,
-    globus_off_t *                      length);
+    globus_off_t *                      length,
+    globus_off_t *                      write_delta);
 
 void
-globus_gridftp_server_get_restart_offset(
+globus_gridftp_server_get_write_range(
     globus_gridftp_server_operation_t   op,
     globus_off_t *                      offset,
-    globus_off_t *                      length);
+    globus_off_t *                      length,
+    globus_off_t *                      write_delta,
+    globus_off_t *                      transfer_delta);
 
 void
 globus_i_gfs_server_closed();

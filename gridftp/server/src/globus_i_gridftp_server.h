@@ -8,6 +8,8 @@ typedef struct
 {
     globus_xio_handle_t             xio_handle;
     char *                          remote_contact;
+    char *                          rnfr_pathname;
+    globus_gridftp_server_operation_t op;
     
     union
     {
@@ -36,7 +38,6 @@ typedef struct
     globus_ftp_control_protection_t     prot;
     globus_ftp_control_dcau_t           dcau;
     gss_cred_id_t                       delegated_cred;
-    globus_bool_t                       use_dcau;
 } globus_i_gfs_data_attr_t;
 
 typedef struct
@@ -44,7 +45,7 @@ typedef struct
     /* XXX this shouldn't be passed from control->data*/
     globus_gridftp_server_control_op_t  control_op;
 
-    globus_gridftp_server_control_restart_t restart_marker;
+    globus_range_list_t                 range_list;
     globus_off_t                        partial_offset;
     globus_off_t                        partial_length;
             
@@ -66,7 +67,15 @@ typedef struct
 {
     globus_i_gfs_command_t              command;
     char *                              pathname;
+
+    globus_off_t                        cksm_offset;
+    globus_off_t                        cksm_length;
+    char *                              cksm_alg;
+    char *                              cksm_response;
     
+    mode_t                              chmod_mode;
+    
+    char *                              rnfr_pathname;    
 /* XXX use a union here when we get into commands with different args */
             
 } globus_i_gfs_cmd_attr_t;

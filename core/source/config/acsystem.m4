@@ -63,6 +63,23 @@ AC_CHECK_TYPE(size_t, unsigned int)
 AC_TYPE_SIGNAL
 AC_HEADER_DIRENT
 
+AC_MSG_CHECKING(for socklen_t)
+AC_TRY_COMPILE([
+#include <sys/types.h>
+#include <sys/socket.h>
+],
+[
+socklen_t len = 1;
+return 0;
+],
+ac_have_socklen_t=yes,
+ac_have_socklen_t=no)
+
+if test "$ac_have_socklen_t" = "yes"; then
+  AC_DEFINE(HAVE_SOCKLEN_T, 1, [socklen_t found])
+fi
+AC_MSG_RESULT($ac_have_socklen_t)
+
 ])
 
 AC_DEFUN(CHECK_FUNCS, [

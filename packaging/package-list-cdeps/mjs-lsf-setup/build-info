@@ -1,0 +1,4 @@
+name=mjs_lsf_setup
+subdir=program_execution/mjs-lsf-setup
+build="custom"
+output=mjs_lsf_setup-*.tar.gz

@@ -79,7 +79,7 @@ main(
         res = globus_xio_readv(xio_handle, &readv, 1, 1, &len, NULL);
         test_res(res, __LINE__);
         fwrite(readv.iov_base, 1, readv.iov_len, stdout);
-        if(strncmp(readv.iov_base, "150", 3) == 0)
+        if(*((char *)readv.iov_base) == '1')
         {
         }
         else if(fgets(line, LINE_LEN, stdin) == NULL)

@@ -34,7 +34,9 @@ client_callback(
     int					errorcode,
     char *				uri);
 
-int main()
+int main(
+    int                                 argc,
+    char *                              argv[])
 {
     int					rc;
     char *				server_callback_contact;
@@ -78,6 +80,12 @@ int main()
 	goto disallow_error;
     }
 
+    if (argc > 1 && !strcmp(argv[1], "invalid_host"))
+    {
+        server_callback_contact = globus_libc_strdup(
+                "https://bogushost.globus.org:7777/7777");
+    }
+
     rc = globus_gram_protocol_post(server_callback_contact,
 	                           GLOBUS_NULL,
 				   GLOBUS_NULL,
@@ -97,7 +105,7 @@ int main()
 
     globus_mutex_unlock(&monitor.mutex);
     globus_mutex_destroy(&monitor.mutex);
-    globus_cond_destroy(&monitor.mutex);
+    globus_cond_destroy(&monitor.cond);
 
     if(monitor.job_status[0] != monitor.job_status[1] ||
        monitor.failure_code[0] != monitor.failure_code[1] ||
@@ -120,7 +128,7 @@ disallow_error:
 unlock_error:
     globus_mutex_unlock(&monitor.mutex);
     globus_mutex_destroy(&monitor.mutex);
-    globus_cond_destroy(&monitor.mutex);
+    globus_cond_destroy(&monitor.cond);
     globus_module_deactivate(GLOBUS_GRAM_PROTOCOL_MODULE);
     return rc;
 }

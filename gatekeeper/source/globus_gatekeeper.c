@@ -192,10 +192,6 @@ static char     tmpbuf[1024];
 #define failure3(t,a,b,c) {sprintf(tmpbuf, a,b,c); failure(t,tmpbuf);}
 #define failure4(t,a,b,c,d) {sprintf(tmpbuf, a,b,c,d); failure(t,tmpbuf);}
 
-#if ! defined(TARGET_ARCH_LINUX) & ! defined(TARGET_ARCH_FREEBSD) & ! defined(TARGET_ARCH_DARWIN)
-extern char *   sys_errlist[];
-#endif
-
 extern int      errno;
 
 static int      connection_fd;
@@ -1068,7 +1064,7 @@ main(int xargc,
 
             if (pid < 0)
             {
-                failure2(FAILED_SERVER, "Fork failed: %s\n", sys_errlist[errno]);
+                failure2(FAILED_SERVER, "Fork failed: %s\n", strerror(errno));
             }
 
             if (pid == 0)
@@ -1844,14 +1840,14 @@ static void doit()
 
     if (pipe(p1) != 0)
     {
-        failure2(FAILED_SERVER, "Cannot create pipe: %s", sys_errlist[errno]);
+        failure2(FAILED_SERVER, "Cannot create pipe: %s", strerror(errno));
     }
     close_on_exec_read_fd = p1[0];
     close_on_exec_write_fd = p1[1];
 
     if (fcntl(close_on_exec_write_fd, F_SETFD, 1) != 0)
     {
-        failure2(FAILED_SERVER, "fcntl F_SETFD failed: %s", sys_errlist[errno]);
+        failure2(FAILED_SERVER, "fcntl F_SETFD failed: %s", strerror(errno));
     }
 
     setenv("GLOBUS_ID",client_name,1);
@@ -1997,7 +1993,7 @@ static void doit()
     pid = fork();
     if (pid < 0)
     {
-        failure2(FAILED_SERVER, "fork failed: %s", sys_errlist[errno]);
+        failure2(FAILED_SERVER, "fork failed: %s", strerror(errno));
     }
 
     if (pid == 0)
@@ -2036,7 +2032,7 @@ static void doit()
 
         if (execv(execp, args) != 0)
         {
-            sprintf(tmpbuf, "Exec failed: %s\n", sys_errlist[errno]);
+            sprintf(tmpbuf, "Exec failed: %s\n", strerror(errno));
             write(close_on_exec_write_fd, tmpbuf, strlen(tmpbuf));
             exit(0);
         }
@@ -2118,9 +2114,13 @@ net_setup_listener(int backlog,
 {
     netlen_t        sinlen;
     struct sockaddr_in sin;
+    int one=1;
 
     *skt = socket(AF_INET, SOCK_STREAM, 0);
     error_check(*skt,"net_setup_anon_listener socket");
+
+    error_check(setsockopt(*skt, SOL_SOCKET, SO_REUSEADDR, (char *)&one, sizeof(one)),
+                "net_setup_anon_listener setsockopt");
 
     sin.sin_family = AF_INET;
     sin.sin_addr.s_addr = INADDR_ANY;
@@ -2176,7 +2176,7 @@ logging_startup(void)
             if ((usrlog_fp = fopen(logfilename, "a")) == NULL)
             {
                 fprintf(stderr, "Cannot open logfile %s: %s\n",
-                        logfilename, sys_errlist[errno]);
+                        logfilename, strerror(errno));
                 syslog(LOG_ERR, "Cannot open logfile %s\n", logfilename);
 
                 return(1);
@@ -2355,11 +2355,11 @@ error_check(int val,
     if (val < 0)
     {
         failure3(FAILED_SERVER, 
-                 "error check %s: %s\n", str, sys_errlist[errno]);
+                 "error check %s: %s\n", str, strerror(errno));
 /*
   fprintf(usrlog_fp, "%s: %s\n",
   str,
-  sys_errlist[errno]);
+  strerror(errno));
   exit(1);
 */
     }

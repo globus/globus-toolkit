@@ -1189,6 +1189,23 @@ globus_gsi_proxy_sign_req(
             X509_EXTENSION_free(pci_ext);
         }
         
+        #ifdef WIN32
+        /* In Win32 can't mix library and OpenSSL versions of free */
+        /*     so pci_DER can't be freed in ASN1_OCTET_STRING_free */
+        if(pci_DER_string)
+        {
+            if(pci_DER)
+            {
+                free(pci_DER);
+    			pci_DER = NULL;
+            }
+            pci_DER_string->data = NULL;
+            pci_DER_string->length = 0;
+            ASN1_OCTET_STRING_free(pci_DER_string);
+			pci_DER_string = NULL;
+        }
+        #else
+        
         if(pci_DER_string)
         {
             ASN1_OCTET_STRING_free(pci_DER_string);
@@ -1197,7 +1214,8 @@ globus_gsi_proxy_sign_req(
         {
             free(pci_DER);
         }
-        
+        #endif
+                
         if(serial_number)
         {
             ASN1_INTEGER_free(serial_number);

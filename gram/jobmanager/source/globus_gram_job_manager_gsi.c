@@ -346,49 +346,16 @@ globus_gram_job_manager_gsi_relocate_proxy(
     fclose(infp);
     infp = NULL;
 
-    cred_url = globus_libc_malloc(GLOBUS_GRAM_PROTOCOL_MAX_MSG_SIZE);
+    rc = globus_gram_job_manager_output_get_cache_name(
+            request,
+            "x509_up",
+            &cred_file);
     
-    if(cred_url == NULL)
+    if(rc != 0)
     {
-	rc = GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
-
-	goto cred_url_malloc_failed;
+	goto cred_file_malloc_failed;
     }
 
-    rc = sprintf(cred_url,
-	         "%sx509_user_proxy",
-		 request->cache_tag);
-
-    if(rc < 0)
-    {
-	rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_USER_PROXY;
-
-	goto cred_url_sprintf_failed;
-    }
-
-    rc = globus_gass_cache_add(request->cache_handle,
-	                       cred_url,
-			       request->cache_tag,
-			       GLOBUS_TRUE,
-			       &timestamp,
-			       &cred_file);
-
-    if(rc != GLOBUS_GASS_CACHE_ADD_NEW &&
-       rc != GLOBUS_GASS_CACHE_ADD_EXISTS)
-    {
-	rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE_USER_PROXY;
-
-	goto cred_url_cache_add_failed;
-    }
-
-    if(rc == GLOBUS_GASS_CACHE_ADD_NEW)
-    {
-	delete_cred = GLOBUS_TRUE;
-    }
-    else
-    {
-        delete_cred = GLOBUS_FALSE;
-    }
     outfp = fopen(cred_file, "w");
     if(outfp == NULL)
     {
@@ -411,24 +378,14 @@ globus_gram_job_manager_gsi_relocate_proxy(
 
         goto cred_fwrite_failed;
     }
+    rc = 0;
     fclose(outfp);
     outfp = NULL;
-    rc = globus_gass_cache_add_done(
-            request->cache_handle,
-            cred_url,
-            request->cache_tag,
-            timestamp);
-    if(rc != 0)
-    {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_CACHE_USER_PROXY;
 
-        goto cred_url_add_done_failed;
-    }
     globus_libc_setenv("X509_USER_PROXY",
                        globus_libc_strdup(cred_file),
                        1);
 
-cred_url_add_done_failed:
 fchown_cred_file_failed:
 cred_fwrite_failed:
     if(outfp)
@@ -442,21 +399,7 @@ cred_fwrite_failed:
 	cred_file = NULL;
     }
 fopen_cred_file_failed:
-    if(rc != GLOBUS_SUCCESS && delete_cred)
-    {
-	globus_gass_cache_delete(request->cache_handle,
-		                 cred_url,
-				 request->cache_tag,
-				 timestamp,
-				 GLOBUS_TRUE);
-    }
-cred_url_cache_add_failed:
-cred_url_sprintf_failed:
-    if(cred_url)
-    {
-	globus_libc_free(cred_url);
-    }
-cred_url_malloc_failed:
+cred_file_malloc_failed:
 fread_new_proxy_failed:
     if(infp != NULL)
     {
@@ -469,7 +412,6 @@ fopen_new_proxy_failed:
     }
 cred_data_malloc_failed:
 stat_failed:
-
     if(rc == GLOBUS_SUCCESS)
     {
 	remove(new_proxy);

@@ -138,8 +138,8 @@ EXTERN_C_BEGIN
  *  globus_xio_data_descriptor_init(&desc);
  *  globus_xio_data_descriptor_cntl(desc, 
  *      tcp_driver,
- *      GLOBUS_XIO_TCP_SEND_OOB,
- *      GLOBUS_TRUE);
+ *      GLOBUS_XIO_TCP_SET_SEND_FLAGS,
+ *      GLOBUS_XIO_TCP_SEND_OOB);
  *  \endcode
  */
 
@@ -477,7 +477,8 @@ enum globus_xio_handle_attr_cmd_t
 typedef globus_bool_t
 (*globus_xio_timeout_callback_t)(
     globus_xio_handle_t                 handle,
-    globus_xio_operation_type_t         type);
+    globus_xio_operation_type_t         type,
+    void *                              user_arg);
 
 typedef globus_bool_t
 (*globus_xio_timeout_server_callback_t)(
@@ -515,7 +516,12 @@ globus_xio_data_descriptor_destroy(
     globus_xio_data_descriptor_t        data_desc);
 
 /**
+ *  Touch driver specific data in data descriptors
  *  @ingroup GLOBUS_XIO_API
+ * 
+ *  This function allows the user to comunicate directly with a driver
+ *  in association with a data descriptors.  The driver defines what operations
+ *  can be preformed.
  */
 globus_result_t
 globus_xio_data_descriptor_cntl(
@@ -602,6 +608,19 @@ globus_xio_handle_cntl(
  * an already open handle used the information contaned in that handle
  * will be destoyed.
  * 
+ * @param handle
+ *     The handle created with @ref globus_xio_handle_create() or 
+ *     @ref globus_xio_server_register_accept() that is to be opened.
+ * 
+ * @param attr
+ *         how to open attribute.  can be NULL
+ *
+ * @param cb
+ *         The function to be called when the open operation completes.
+ *
+ * @param user_arg
+ *         A user pointer that will be threaded through to the callback.
+ * 
  * @param contact_string
  *     An url describing the resource.  NULL is allowed.
  *     Drivers interpret the various parts
@@ -612,19 +631,19 @@ globus_xio_handle_cntl(
  * 
  *  the following are examples of valid formats:
  *  <pre>
- *    &lt;path to file&gt;
- *    host-name ":" &lt;service or port&gt;
- *    "file:" &lt;path to file&gt;
- *    &lt;scheme&gt; "://" [ "/" [ &lt;path to resource&gt; ]  ]
- *    &lt;scheme&gt; "://" location [ "/" [ &lt;path to resource&gt; ] ]
+ *    \<path to file\>
+ *    host-name ":" \<service or port\>
+ *    "file:" \<path to file\>
+ *    \<scheme\> "://" [ "/" [ \<path to resource\> ]  ]
+ *    \<scheme\> "://" location [ "/" [ \<path to resource\> ] ]
  *      location:
  *          [ auth-part ] host-part
  *      auth-part:
- *          &lt;user&gt; [ ":" &lt;password&gt; ] "@" 
+ *          \<user\> [ ":" \<password\> ] "@" 
  *      host-part:
- *          [ "&lt;" &lt;subject&gt; "&gt;" ] host-name [ ":" &lt;port or service&gt; ]
+ *          [ "<" \<subject\> ">" ] host-name [ ":" \<port or service\> ]
  *      host-name:
- *          &lt;hostname&gt; | &lt;dotted quad&gt; | "[" &lt;ipv6 address&gt; "]"
+ *          \<hostname\> | \<dotted quad\> | "[" \<ipv6 address\> "]"
  *    </pre>
  *
  *    Except for use as the above delimeters, the following special characters
@@ -632,9 +651,9 @@ globus_xio_handle_cntl(
  *    
  *    <pre>
  *    "/" and "@" in location except subject
- *    "&lt;" and "&gt;" in location
- *    ":" everywhere except subject
- *    "%" everywhere (can be encoded with %HH or %%)
+ *    "<" and ">" in location
+ *    ":" everywhere except ipv6 address and subject
+ *    "%" everywhere (can be encoded with \%HH or \%%)
  *    </pre>
  */
 globus_result_t

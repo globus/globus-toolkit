@@ -1616,11 +1616,12 @@ globus_l_ftp_control_auth_read_cb(
                         "globus_l_ftp_control_auth_read_cb: malloc failed");
                     goto error_cmd_destroy;
                 }
-
+                
+                length = recv_tok.length;
                 rc=globus_i_ftp_control_radix_decode(
                     command.adat.string_arg, 
                     recv_tok.value, 
-                    &recv_tok.length);
+                    &length);
                 
                 if(rc != GLOBUS_SUCCESS)
                 {
@@ -3125,6 +3126,7 @@ globus_i_ftp_control_encode_reply(
     OM_uint32                              maj_stat;
     OM_uint32                              min_stat;
     int                                    conf_state;
+    int                                    length;
     
     if(auth_info == GLOBUS_NULL ||
        reply == GLOBUS_NULL ||
@@ -3183,14 +3185,15 @@ globus_i_ftp_control_encode_reply(
     {
         strcat(*encoded_reply,"631 ");
     }
-
+    
+    length = out_buf.length;
     globus_i_ftp_control_radix_encode(
         out_buf.value,&((*encoded_reply)[4]), 
-        &out_buf.length);
+        &length);
 
-    (*encoded_reply)[out_buf.length+4]='\r';
-    (*encoded_reply)[out_buf.length+5]='\n';
-    (*encoded_reply)[out_buf.length+6]='\0';
+    (*encoded_reply)[length+4]='\r';
+    (*encoded_reply)[length+5]='\n';
+    (*encoded_reply)[length+6]='\0';
 
     gss_release_buffer(&min_stat, &out_buf);
     

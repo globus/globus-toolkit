@@ -285,6 +285,10 @@ globus_i_gsi_proxy_utils_clear_and_remove(
         fprintf(stderr, "Would remove %s\n", filename ? filename : "(null)");
     else
     {
+        #ifdef WIN32
+        _chmod(filename, S_IREAD|S_IWRITE);
+        #endif
+        
         f = open(filename, O_RDWR);
         if (f) 
         {

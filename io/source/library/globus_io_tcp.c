@@ -2677,3 +2677,164 @@ globus_l_io_tcp_bind_socket(
     }
     return GLOBUS_SUCCESS;
 }
+
+
+/* globus_io_get_credential and globus_io_get_credential routines below were */
+/* added for backward compatibility With XIO  - 2/26/04 rcg */
+
+/* globus_io_tcp_get_credential() */
+globus_result_t
+globus_io_tcp_get_credential(
+    globus_io_handle_t *    handle,
+    gss_cred_id_t *         cred)
+{
+   globus_object_t *        err;
+   static char *            myname="globus_io_tcp_get_credential";
+
+    if(handle == GLOBUS_NULL)
+    {
+    return globus_error_put(
+        globus_io_error_construct_null_parameter(
+        GLOBUS_IO_MODULE,
+        GLOBUS_NULL,
+        "handle",
+        1,
+        myname));
+    }
+    if(cred == GLOBUS_NULL)
+    {
+    return globus_error_put(
+        globus_io_error_construct_null_parameter(
+        GLOBUS_IO_MODULE,
+        GLOBUS_NULL,
+        "cred",
+        2,
+        myname));
+    }
+    globus_i_io_mutex_lock();
+    if(handle->type != GLOBUS_IO_HANDLE_TYPE_TCP_CONNECTED)
+    {
+    err = globus_io_error_construct_invalid_type(
+        GLOBUS_IO_MODULE,
+        GLOBUS_NULL,
+        "handle",
+        1,
+        myname,
+        "GLOBUS_IO_HANDLE_TYPE_TCP_CONNECTED");
+
+    goto error_exit;
+    }
+
+    switch(handle->state)
+    {
+      case GLOBUS_IO_HANDLE_STATE_CONNECTED:
+    break;
+      default:
+    err = globus_io_error_construct_not_initialized(
+       GLOBUS_IO_MODULE,
+       GLOBUS_NULL,
+       "handle",
+       1,
+       myname);
+    goto error_exit;
+    }
+
+    if(handle->securesocket_attr.authentication_mode ==
+       GLOBUS_IO_SECURE_AUTHENTICATION_MODE_NONE)
+    {
+        *cred = GSS_C_NO_CREDENTIAL;
+    }
+    else
+    {
+        *cred = handle->delegated_credential;
+    }
+
+    globus_i_io_mutex_unlock();
+
+    return GLOBUS_SUCCESS;
+
+  error_exit:
+    globus_i_io_mutex_unlock();
+
+    return globus_error_put(err);
+}
+/* globus_io_tcp_get_credential() */
+
+
+/* globus_io_tcp_set_credential() */
+globus_result_t
+globus_io_tcp_set_credential(
+    globus_io_handle_t *    handle,
+    gss_cred_id_t           cred)
+{
+   globus_object_t *        err;
+   static char *            myname="globus_io_tcp_set_credential";
+
+    if(handle == GLOBUS_NULL)
+    {
+    return globus_error_put(
+        globus_io_error_construct_null_parameter(
+        GLOBUS_IO_MODULE,
+        GLOBUS_NULL,
+        "handle",
+        1,
+        myname));
+    }
+    if(cred == GLOBUS_NULL)
+    {
+    return globus_error_put(
+        globus_io_error_construct_null_parameter(
+        GLOBUS_IO_MODULE,
+        GLOBUS_NULL,
+        "cred",
+        2,
+        myname));
+    }
+    globus_i_io_mutex_lock();
+    if(handle->type != GLOBUS_IO_HANDLE_TYPE_TCP_CONNECTED)
+    {
+    err = globus_io_error_construct_invalid_type(
+        GLOBUS_IO_MODULE,
+        GLOBUS_NULL,
+        "handle",
+        1,
+        myname,
+        "GLOBUS_IO_HANDLE_TYPE_TCP_CONNECTED");
+
+    goto error_exit;
+    }
+
+    switch(handle->state)
+    {
+      case GLOBUS_IO_HANDLE_STATE_CONNECTED:
+    break;
+      default:
+    err = globus_io_error_construct_not_initialized(
+       GLOBUS_IO_MODULE,
+       GLOBUS_NULL,
+       "handle",
+       1,
+       myname);
+    goto error_exit;
+    }
+
+    if(handle->securesocket_attr.authentication_mode ==
+       GLOBUS_IO_SECURE_AUTHENTICATION_MODE_NONE)
+    {
+        handle->delegated_credential = GSS_C_NO_CREDENTIAL;
+    }
+    else
+    {
+        handle->delegated_credential = cred;
+    }
+
+    globus_i_io_mutex_unlock();
+
+    return GLOBUS_SUCCESS;
+
+  error_exit:
+    globus_i_io_mutex_unlock();
+
+    return globus_error_put(err);
+}
+/* globus_io_tcp_set_credential() */

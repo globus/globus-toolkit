@@ -1,0 +1,4 @@
+name=mjs_fork_setup
+subdir=program_execution/mjs-fork-setup
+build="custom"
+output=mjs_fork_setup-*.tar.gz

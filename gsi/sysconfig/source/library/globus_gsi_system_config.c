@@ -901,17 +901,12 @@ globus_gsi_sysconfig_dir_exists_win32(
  * 
  * @param filename
  *        The name of the file to check the status of
- * @param status
- *        The status of the file being checked
- *        see @ref globus_gsi_statcheck_t for possible values
- *        of this variable 
  *
  * @return 
  *        GLOBUS_SUCCESS if the status of the file was able
  *        to be determined.  Otherwise, an error object
  *        identifier
  *
- * @see globus_gsi_statcheck_t
  */
 globus_result_t
 globus_gsi_sysconfig_check_keyfile_win32(
@@ -1024,17 +1019,12 @@ globus_gsi_sysconfig_check_keyfile_win32(
  * 
  * @param filename
  *        The name of the file to check the status of
- * @param status
- *        The status of the file being checked
- *        see @ref globus_gsi_statcheck_t for possible values
- *        of this variable 
  *
  * @return 
  *        GLOBUS_SUCCESS if the status of the file was able
  *        to be determined.  Otherwise, an error object
  *        identifier
  *
- * @see globus_gsi_statcheck_t
  */
 globus_result_t
 globus_gsi_sysconfig_check_certfile_win32(
@@ -1235,7 +1225,7 @@ globus_gsi_sysconfig_make_absolute_path_for_filename_win32(
 
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_ENTER;
 
-    if(filename[0] != '\\')
+    if(filename[0] != '\\' && !(filename[1] == ':' && filename[2] == '\\'))
     {
         result = GLOBUS_GSI_SYSCONFIG_GET_CURRENT_WORKING_DIR(&cwd);
         if(result != GLOBUS_SUCCESS)

@@ -1,5 +1,5 @@
 #include "globus_xio.h"
-#include "globus_xio_udt_driver.h"
+#include "globus_xio_udt.h"
 
 
 void

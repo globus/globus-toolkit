@@ -1,5 +1,5 @@
 #!/usr/bin/env perl
 
-exit system('./globus-gram-client-run-tests.pl');
+exit (0 != system('./globus-gram-client-run-tests.pl'));
 
 
