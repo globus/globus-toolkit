@@ -501,6 +501,7 @@ cmd: USER SP username CRLF
 		  case PROT_P:
 		    globus_ftp_control_local_prot(&g_data_handle,
 		         GLOBUS_FTP_CONTROL_PROTECTION_PRIVATE);
+		    break;
 		  case PROT_S:
 		    globus_ftp_control_local_prot(&g_data_handle,
 		         GLOBUS_FTP_CONTROL_PROTECTION_SAFE);
