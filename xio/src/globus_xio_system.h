@@ -2,6 +2,7 @@
 #define GLOBUS_XIO_SYSTEM_INCLUDE
 
 #include "globus_common.h"
+#include "globus_xio_driver.h"
 
 EXTERN_C_BEGIN
 
@@ -43,19 +44,18 @@ typedef enum
 
 typedef void
 (*globus_xio_system_callback_t)(
-    globus_xio_system_handle_t          handle,
     globus_result_t                     result,
     void *                              user_arg);
 
 typedef void
 (*globus_xio_system_data_callback_t)(
-    globus_xio_system_handle_t          handle,
     globus_result_t                     result,
     globus_size_t                       nbytes,
     void *                              user_arg);
 
 globus_result_t
 globus_xio_system_register_open(
+    globus_xio_driver_operation_t       op,
     const char *                        pathname,
     int                                 flags,
     int                                 mode,
@@ -65,6 +65,7 @@ globus_xio_system_register_open(
 
 globus_result_t
 globus_xio_system_register_connect(
+    globus_xio_driver_operation_t       op,
     globus_xio_system_handle_t          handle,
     const globus_sockaddr_t *           addr,
     globus_xio_system_callback_t        callback,
@@ -72,6 +73,7 @@ globus_xio_system_register_connect(
 
 globus_result_t
 globus_xio_system_register_accept(
+    globus_xio_driver_operation_t       op,
     globus_xio_system_handle_t          listener_handle,
     globus_xio_system_handle_t *        out_handle,
     globus_xio_system_callback_t        callback,
@@ -79,6 +81,7 @@ globus_xio_system_register_accept(
 
 globus_result_t
 globus_xio_system_register_read(
+    globus_xio_driver_operation_t       op,
     globus_xio_system_handle_t          handle,
     const globus_xio_iovec_t *          iov,
     int                                 iovc,
@@ -88,6 +91,7 @@ globus_xio_system_register_read(
 
 globus_result_t
 globus_xio_system_register_read_ex(
+    globus_xio_driver_operation_t       op,
     globus_xio_system_handle_t          handle,
     const globus_xio_iovec_t *          iov,
     int                                 iovc,
@@ -99,6 +103,7 @@ globus_xio_system_register_read_ex(
 
 globus_result_t
 globus_xio_system_register_write(
+    globus_xio_driver_operation_t       op,
     globus_xio_system_handle_t          handle,
     const globus_xio_iovec_t *          iov,
     int                                 iovc,
@@ -107,6 +112,7 @@ globus_xio_system_register_write(
 
 globus_result_t
 globus_xio_system_register_write_ex(
+    globus_xio_driver_operation_t       op,
     globus_xio_system_handle_t          handle,
     const globus_xio_iovec_t *          iov,
     int                                 iovc,
@@ -117,29 +123,10 @@ globus_xio_system_register_write_ex(
 
 globus_result_t
 globus_xio_system_register_close(
+    globus_xio_driver_operation_t       op,
     globus_xio_system_handle_t          handle,
     globus_xio_system_callback_t        callback,
     void *                              user_arg);
-
-globus_result_t
-globus_xio_system_cancel_open(
-    globus_xio_system_handle_t          handle);
-
-globus_result_t
-globus_xio_system_cancel_connect(
-    globus_xio_system_handle_t          handle);
-
-globus_result_t
-globus_xio_system_cancel_accept(
-    globus_xio_system_handle_t          listener_handle);
-
-globus_result_t
-globus_xio_system_cancel_read(
-    globus_xio_system_handle_t          handle);
-
-globus_result_t
-globus_xio_system_cancel_write(
-    globus_xio_system_handle_t          handle);
 
 EXTERN_C_END
 

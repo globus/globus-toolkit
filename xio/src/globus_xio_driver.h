@@ -695,7 +695,7 @@ globus_xio_driver_close(
  */
 globus_result_t
 globus_xio_driver_finished_close(
-    globus_xio_operation_t                      op,
+    globus_xio_driver_operation_t               op,
     globus_result_t                             result);
 
 /**
@@ -741,7 +741,7 @@ globus_xio_driver_context_close(
  */
 typedef void
 (*globus_xio_driver_callback_t)(
-    globus_xio_operation_t                      op,
+    globus_xio_driver_operation_t               op,
     globus_result_t                             result,
     void *                                      user_arg);
 
@@ -768,7 +768,7 @@ typedef void
  */
 typedef void
 (*globus_xio_driver_data_callback_t)(
-    globus_xio_operation_t                      op,
+    globus_xio_driver_operation_t               op,
     globus_result_t                             result,
     globus_size_t                               nbytes,
     void *                                      user_arg);

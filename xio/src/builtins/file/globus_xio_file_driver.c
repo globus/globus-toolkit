@@ -300,23 +300,22 @@ globus_l_xio_file_target_destroy(
 static
 void
 globus_l_xio_file_system_open_cb(
-    globus_xio_system_handle_t          handle,
     globus_result_t                     result,
     void *                              user_arg)
 {
     globus_xio_driver_operation_t       op;
     globus_xio_driver_context_t         context;
-    globus_l_handle_t *                 file_handle;
+    globus_l_handle_t *                 handle;
     
     op = (globus_xio_driver_operation_t) user_arg;
     
     context = GlobusXIOOperationGetContext(op);
-    file_handle = GlobusXIOOperationGetDriverHandle(op);
+    handle = GlobusXIOOperationGetDriverHandle(op);
     
     globus_xio_driver_finished_open(context, op, result);
     if(result != GLOBUS_SUCCESS)
     {
-        globus_free(file_handle);
+        globus_free(handle);
     }
 }
 
@@ -368,6 +367,7 @@ globus_l_xio_file_open(
         }
 #endif
         result = globus_xio_system_register_open(
+            op,
             target->pathname,
             flags,
             attr->mode,
@@ -387,9 +387,6 @@ globus_l_xio_file_open(
     return GLOBUS_SUCCESS;
     
 error_register:
-    globus_free(info);
-
-error_info:
     globus_free(handle);  
 
 error_handle:
@@ -399,22 +396,21 @@ error_handle:
 static
 void
 globus_l_xio_file_system_close_cb(
-    globus_xio_system_handle_t          handle,
     globus_result_t                     result,
     void *                              user_arg)
 {
     globus_xio_driver_operation_t       op;
     globus_xio_driver_context_t         context;
-    globus_l_handle_t *                 file_handle;
+    globus_l_handle_t *                 handle;
     
     op = (globus_xio_driver_operation_t) user_arg;
     
     context = GlobusXIOOperationGetContext(op);
-    file_handle = GlobusXIOOperationGetDriverHandle(op);
+    handle = GlobusXIOOperationGetDriverHandle(op);
     
     globus_xio_driver_finished_close(op, result);
     globus_xio_driver_context_close(context);
-    globus_free(file_handle);
+    globus_free(handle);
 }
 
 /*
@@ -433,6 +429,7 @@ globus_l_xio_file_close(
     handle = (globus_l_handle_t *) driver_handle;
         
     result = globus_xio_system_register_close(
+        op,
         handle->handle,
         globus_l_xio_file_system_close_cb,
         op);
@@ -453,7 +450,6 @@ error_register:
 static
 void
 globus_l_xio_file_system_read_cb(
-    globus_xio_system_handle_t          handle,
     globus_result_t                     result,
     globus_size_t                       nbytes,
     void *                              user_arg)
@@ -480,6 +476,7 @@ globus_l_xio_file_read(
     handle = (globus_l_handle_t *) driver_handle;
 
     return globus_xio_system_register_read(
+        op,
         handle->handle,
         iovec,
         iovec_count,
@@ -491,7 +488,6 @@ globus_l_xio_file_read(
 static
 void
 globus_l_xio_file_system_write_cb(
-    globus_xio_system_handle_t          handle,
     globus_result_t                     result,
     globus_size_t                       nbytes,
     void *                              user_arg)
@@ -518,6 +514,7 @@ globus_l_xio_file_write(
     handle = (globus_l_handle_t *) driver_handle;
 
     return globus_xio_system_register_write(
+        op,
         handle->handle,
         iovec,
         iovec_count,

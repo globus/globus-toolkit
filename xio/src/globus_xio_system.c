@@ -46,6 +46,13 @@ typedef enum
     GLOBUS_L_OPERATION_SENDMSG
 } globus_l_operation_type_t;
 
+typedef enum
+{
+    GLOBUS_L_OPERATION_PENDING,
+    GLOBUS_L_OPERATION_COMPLETE,
+    GLOBUS_L_OPERATION_CANCELED
+} globus_l_operation_state_t;
+
 #define _op_nbytes          op.data.nbytes
 #define _op_single          op.data.buf.single
 #define _op_iovecCom        op.data.buf.iovec
@@ -56,6 +63,8 @@ typedef struct
 {
     /* common members */
     globus_l_operation_type_t                   type;
+    globus_l_operation_state_t                  state;
+    globus_xio_driver_operation_t               op;
     int                                         fd;
     globus_result_t                             result;
     void *                                      user_arg;
@@ -133,8 +142,8 @@ static fd_set *                     globus_l_xio_system_read_fds;
 static fd_set *                     globus_l_xio_system_write_fds;
 static fd_set *                     globus_l_xio_system_ready_reads;
 static fd_set *                     globus_l_xio_system_ready_writes;
-static fd_set *                     globus_l_xio_system_canceled_reads;
-static fd_set *                     globus_l_xio_system_canceled_writes;
+static globus_list_t *              globus_l_xio_system_canceled_reads;
+static globus_list_t *              globus_l_xio_system_canceled_writes;
 static globus_l_operation_info_t ** globus_l_xio_system_read_operations;
 static globus_l_operation_info_t ** globus_l_xio_system_write_operations;
 static globus_memory_t              globus_l_xio_system_op_info_memory;
@@ -187,7 +196,7 @@ globus_l_xio_system_activate(void)
     }
     
     i = globus_l_xio_system_fd_allocsize;
-    block = (char *) globus_calloc(i * 6);
+    block = (char *) globus_calloc(i * 4);
     if(!block)
     {
         goto error_fdsets;
@@ -196,8 +205,9 @@ globus_l_xio_system_activate(void)
     globus_l_xio_system_write_fds        = (fd_set *) (block + i * 1);
     globus_l_xio_system_ready_reads      = (fd_set *) (block + i * 2);
     globus_l_xio_system_ready_writes     = (fd_set *) (block + i * 3);
-    globus_l_xio_system_canceled_reads   = (fd_set *) (block + i * 4);
-    globus_l_xio_system_canceled_writes  = (fd_set *) (block + i * 5);
+    
+    globus_l_xio_system_canceled_reads   = GLOBUS_NULL;
+    globus_l_xio_system_canceled_writes  = GLOBUS_NULL;
 
     globus_l_xio_system_read_operations = (globus_l_operation_info_t **) 
         globus_calloc(
@@ -312,6 +322,8 @@ globus_l_xio_system_deactivate(void)
     GlobusIXIOSystemCloseFd(globus_l_xio_system_wakeup_pipe[0]);
     GlobusIXIOSystemCloseFd(globus_l_xio_system_wakeup_pipe[1]);
     
+    globus_list_free(globus_l_xio_system_canceled_reads);
+    globus_list_free(globus_l_xio_system_canceled_writes);
     globus_free(globus_l_xio_system_read_operations);
     globus_free(globus_l_xio_system_read_fds);
     
@@ -324,6 +336,7 @@ globus_l_xio_system_deactivate(void)
 
 globus_result_t
 globus_xio_system_register_open(
+    globus_xio_driver_operation_t       op,
     const char *                        pathname,
     int                                 flags,
     int                                 mode,
@@ -356,6 +369,8 @@ globus_xio_system_register_open(
     }
 
     op_info->type = GLOBUS_L_OPERATION_OPEN;
+    op_info->state = GLOBUS_L_OPERATION_PENDING;
+    op_info->op = op;
     op_info->fd = fd;
     op_info->user_arg = user_arg;
     op_info->op.non_data.callback = callback;
@@ -390,6 +405,7 @@ error_close:
 
 globus_result_t
 globus_xio_system_register_connect(
+    globus_xio_driver_operation_t       op,
     globus_xio_system_handle_t          fd,
     const globus_sockaddr_t *           addr,
     globus_xio_system_callback_t        callback,
@@ -443,6 +459,8 @@ globus_xio_system_register_connect(
     }
 
     op_info->type = GLOBUS_L_OPERATION_CONNECT;
+    op_info->state = GLOBUS_L_OPERATION_PENDING;
+    op_info->op = op;
     op_info->fd = fd;
     op_info->user_arg = user_arg;
     op_info->op.non_data.callback = callback;
@@ -469,6 +487,7 @@ error_nonblocking:
 
 globus_result_t
 globus_xio_system_register_accept(
+    globus_xio_driver_operation_t       op,
     globus_xio_system_handle_t          listener_fd,
     globus_xio_system_handle_t *        out_fd,
     globus_xio_system_callback_t        callback,
@@ -477,7 +496,6 @@ globus_xio_system_register_accept(
     globus_result_t                     result;
     globus_l_operation_info_t *         op_info;
     
-    *out_fd = -1;
     GlobusIXIOSystemAllocOperation(op_info);
     if(!op_info)
     {
@@ -487,6 +505,8 @@ globus_xio_system_register_accept(
     }
 
     op_info->type = GLOBUS_L_OPERATION_ACCEPT;
+    op_info->state = GLOBUS_L_OPERATION_PENDING;
+    op_info->op = op;
     op_info->fd = listener_fd;
     op_info->user_arg = user_arg;
     op_info->op.non_data.callback = callback;
@@ -510,6 +530,7 @@ error_op_info:
 
 globus_result_t
 globus_xio_system_register_read(
+    globus_xio_driver_operation_t       op,
     globus_xio_system_handle_t          fd,
     const globus_xio_iovec_t *          u_iov,
     int                                 u_iovc,
@@ -553,7 +574,9 @@ globus_xio_system_register_read(
         op_info->_op_iovecCom.start_iovc = u_iovc;
         op_info->_op_iovec.iovc = u_iovc;
     }
-
+    
+    op_info->state = GLOBUS_L_OPERATION_PENDING;
+    op_info->op = op;
     op_info->fd = fd;
     op_info->user_arg = user_arg;
     op_info->op.data.callback = callback;
@@ -582,6 +605,7 @@ error_op_info:
 
 globus_result_t
 globus_xio_system_register_read_ex(
+    globus_xio_driver_operation_t       op,
     globus_xio_system_handle_t          fd,
     const globus_xio_iovec_t *          u_iov,
     int                                 u_iovc,
@@ -656,7 +680,9 @@ globus_xio_system_register_read_ex(
         op_info->_op_msg.msghdr = msghdr;
         op_info->_op_msg.flags = flags;
     }
-
+    
+    op_info->state = GLOBUS_L_OPERATION_PENDING;
+    op_info->op = op;
     op_info->fd = fd;
     op_info->user_arg = user_arg;
     op_info->op.data.callback = callback;
@@ -688,6 +714,7 @@ error_op_info:
 
 globus_result_t
 globus_xio_system_register_write(
+    globus_xio_driver_operation_t       op,
     globus_xio_system_handle_t          fd,
     const globus_xio_iovec_t *          u_iov,
     int                                 u_iovc,
@@ -730,7 +757,9 @@ globus_xio_system_register_write(
         op_info->_op_iovecCom.start_iovc = u_iovc;
         op_info->_op_iovec.iovc = u_iovc;
     }
-
+    
+    op_info->state = GLOBUS_L_OPERATION_PENDING;
+    op_info->op = op;
     op_info->fd = fd;
     op_info->user_arg = user_arg;
     op_info->op.data.callback = callback;
@@ -758,6 +787,7 @@ error_op_info:
 
 globus_result_t
 globus_xio_system_register_write_ex(
+    globus_xio_driver_operation_t       op,
     globus_xio_system_handle_t          fd,
     const globus_xio_iovec_t *          u_iov,
     int                                 u_iovc,
@@ -831,7 +861,9 @@ globus_xio_system_register_write_ex(
         op_info->_op_msg.msghdr = msghdr;
         op_info->_op_msg.flags = flags;
     }
-
+    
+    op_info->state = GLOBUS_L_OPERATION_PENDING;
+    op_info->op = op;
     op_info->fd = fd;
     op_info->user_arg = user_arg;
     op_info->op.data.callback = callback;
@@ -876,13 +908,14 @@ globus_l_xio_system_close_kickout(
 
     close_info = (globus_l_xio_system_close_info_t *) user_arg;
 
-    close_info->callback(close_info->fd, GLOBUS_SUCCESS, close_info->user_arg);
+    close_info->callback(GLOBUS_SUCCESS, close_info->user_arg);
 
     globus_free(close_info);
 }
 
 globus_result_t
 globus_xio_system_register_close(
+    globus_xio_driver_operation_t       op,
     globus_xio_system_handle_t          fd,
     globus_xio_system_callback_t        callback,
     void *                              user_arg)
@@ -912,7 +945,6 @@ globus_xio_system_register_close(
         goto error_close_info;
     }
     
-    close_info->fd = fd;
     close_info->callback = callback;
     close_info->user_arg = user_arg;
 
@@ -936,408 +968,119 @@ error_close:
     return result;
 }
 
-globus_result_t
-globus_xio_system_cancel_open(
-    globus_xio_system_handle_t          fd)
+static
+void 
+globus_l_xio_system_cancel_cb(
+    globus_xio_driver_operation_t       op,
+    globus_xio_driver_cancel_reason_t   reason,
+    void *                              user_arg)
 {
     globus_l_operation_info_t *         op_info;
-    globus_bool_t                       read_op;
-    globus_result_t                     result;
-
-    op_info = GLOBUS_NULL;
-
+    
+    op_info = (globus_l_operation_info_t *) user_arg;
+    
     globus_mutex_lock(&globus_l_xio_system_cancel_mutex);
     {
         globus_mutex_lock(&globus_l_xio_system_fdset_mutex);
         {
-            if(FD_ISSET(fd, globus_l_xio_system_read_fds))
+            if(op_info->state == GLOBUS_L_OPERATION_COMPLETE)
             {
-                read_op = GLOBUS_TRUE;
-                op_info = globus_l_xio_system_read_operations[fd];
-            }
-            else if(FD_ISSET(fd, globus_l_xio_system_write_fds))
-            {
-                read_op = GLOBUS_FALSE;
-                op_info = globus_l_xio_system_write_operations[fd];
-            }
-
-            if(!op_info || op_info->type != GLOBUS_L_OPERATION_OPEN)
-            {
-                result = GLOBUS_I_XIO_SYSTEM_CONSTRUCT_NOT_REGISTERED(
-                    "globus_xio_system_cancel_open");
-                goto error_not_registered;
-            }
-
-            if((read_op && FD_ISSET(fd, globus_l_xio_system_canceled_reads)) ||
-               (!read_op && FD_ISSET(fd, globus_l_xio_system_canceled_writes)))
-            {
-                result = GLOBUS_I_XIO_SYSTEM_CONSTRUCT_OPERATION_CANCELED(
-                    "globus_xio_system_cancel_open");
-                goto error_already_canceled;
-            }
-            
-            if(globus_l_xio_system_select_active)
-            {
-                /* pend the cancel for after select wakes up */
-                FD_SET(
-                    fd,
-                    (read_op ?
-                        globus_l_xio_system_canceled_reads :
-                        globus_l_xio_system_canceled_writes));
-                if(!globus_l_xio_system_wakeup_pending)
+                if(reason == GLOBUS_XIO_CANCEL_TIMEOUT)
                 {
-                    globus_l_xio_system_select_wakeup();
+                    /* I completed before the timeout, clear it */
+                    GlobusXIOOperationCancelClear(op);
                 }
             }
             else
             {
-                /* unregister and kickout now */
-                op_info->result =
-                    GLOBUS_I_XIO_SYSTEM_CONSTRUCT_OPERATION_CANCELED(
-                        "globus_xio_system_cancel_open");
-
-                result = globus_callback_register_oneshot(
-                    GLOBUS_NULL,
-                    GLOBUS_NULL,
-                    globus_l_xio_system_kickout,
-                    op_info);
-                if(result != GLOBUS_SUCCESS)
+                globus_bool_t           pend;
+                globus_bool_t           read_op;
+                
+                if(globus_l_xio_system_select_active)
                 {
-                    goto error_register;
+                    op_info->state = GLOBUS_L_OPERATION_CANCELED;
+                    
+                    /* pend the cancel for after select wakes up */
+                    if(!globus_l_xio_system_wakeup_pending)
+                    {
+                        globus_l_xio_system_select_wakeup();
+                    }
+                    
+                    pend = GLOBUS_TRUE;
+                }
+                else
+                {
+                    globus_result_t     result;
+                    
+                    op_info->state = GLOBUS_L_OPERATION_COMPLETE;
+                    
+                    /* unregister and kickout now */
+                    op_info->result =
+                        GLOBUS_I_XIO_SYSTEM_CONSTRUCT_OPERATION_CANCELED(
+                            "globus_l_xio_system_cancel_cb");
+    
+                    result = globus_callback_register_oneshot(
+                        GLOBUS_NULL,
+                        GLOBUS_NULL,
+                        globus_l_xio_system_kickout,
+                        op_info);
+                    /* really cant do anything else */
+                    globus_assert(result == GLOBUS_SUCCESS);
+                    
+                    pend = GLOBUS_FALSE;
+                }
+                
+                read_op = GLOBUS_FALSE;
+                switch(op_info->type)
+                {
+                  case GLOBUS_L_OPERATION_OPEN:
+                    if(FD_ISSET(fd, globus_l_xio_system_read_fds))
+                    {
+                        read_op = GLOBUS_TRUE;
+                    }
+                    break;
+                  
+                  case GLOBUS_L_OPERATION_READ:
+                  case GLOBUS_L_OPERATION_READV:
+                  case GLOBUS_L_OPERATION_RECV:
+                  case GLOBUS_L_OPERATION_RECVFROM:
+                  case GLOBUS_L_OPERATION_RECVMSG:
+                    read_op = GLOBUS_TRUE;
+                    break;
+                  
+                  default:
+                    break;
                 }
                 
                 if(read_op)
                 {
-                    globus_l_xio_system_unregister_read(fd);
+                    if(pend)
+                    {
+                        globus_list_insert(
+                            &globus_l_xio_system_canceled_reads, (void *) fd);
+                    }
+                    else
+                    {
+                        globus_l_xio_system_unregister_read(fd);
+                    }
                 }
                 else
                 {
-                    globus_l_xio_system_unregister_write(fd);
+                    if(pend)
+                    {
+                        globus_list_insert(
+                            &globus_l_xio_system_canceled_writes, (void *) fd);
+                    }
+                    else
+                    {
+                        globus_l_xio_system_unregister_write(fd);
+                    }
                 }
             }
         }
         globus_mutex_unlock(&globus_l_xio_system_fdset_mutex);
     }
     globus_mutex_unlock(&globus_l_xio_system_cancel_mutex);
-
-    return GLOBUS_SUCCESS;
-
-error_register:
-error_already_canceled:
-error_not_registered:
-    globus_mutex_unlock(&globus_l_xio_system_fdset_mutex);
-    globus_mutex_unlock(&globus_l_xio_system_cancel_mutex);
-    return result;
-}
-
-globus_result_t
-globus_xio_system_cancel_connect(
-    globus_xio_system_handle_t          fd)
-{
-    globus_l_operation_info_t *         op_info;
-    globus_result_t                     result;
-
-    op_info = GLOBUS_NULL;
-
-    globus_mutex_lock(&globus_l_xio_system_cancel_mutex);
-    {
-        globus_mutex_lock(&globus_l_xio_system_fdset_mutex);
-        {
-            if(FD_ISSET(fd, globus_l_xio_system_write_fds))
-            {
-                op_info = globus_l_xio_system_write_operations[fd];
-            }
-
-            if(!op_info || op_info->type != GLOBUS_L_OPERATION_CONNECT)
-            {
-                result = GLOBUS_I_XIO_SYSTEM_CONSTRUCT_NOT_REGISTERED(
-                    "globus_xio_system_cancel_connect");
-                goto error_not_registered;
-            }
-
-            if(FD_ISSET(fd, globus_l_xio_system_canceled_writes))
-            {
-                result = GLOBUS_I_XIO_SYSTEM_CONSTRUCT_OPERATION_CANCELED(
-                    "globus_xio_system_cancel_connect");
-                goto error_already_canceled;
-            }
-            
-            if(globus_l_xio_system_select_active)
-            {
-                /* pend the cancel for after select wakes up */
-                FD_SET(fd, globus_l_xio_system_canceled_writes);
-                if(!globus_l_xio_system_wakeup_pending)
-                {
-                    globus_l_xio_system_select_wakeup();
-                }
-            }
-            else
-            {
-                /* unregister and kickout now */
-                op_info->result =
-                    GLOBUS_I_XIO_SYSTEM_CONSTRUCT_OPERATION_CANCELED(
-                        "globus_xio_system_cancel_connect");
-
-                result = globus_callback_register_oneshot(
-                    GLOBUS_NULL,
-                    GLOBUS_NULL,
-                    globus_l_xio_system_kickout,
-                    op_info);
-                if(result != GLOBUS_SUCCESS)
-                {
-                    goto error_register;
-                }
-                
-                globus_l_xio_system_unregister_write(fd);
-            }
-        }
-        globus_mutex_unlock(&globus_l_xio_system_fdset_mutex);
-    }
-    globus_mutex_unlock(&globus_l_xio_system_cancel_mutex);
-
-    return GLOBUS_SUCCESS;
-
-error_register:
-error_already_canceled:
-error_not_registered:
-    globus_mutex_unlock(&globus_l_xio_system_fdset_mutex);
-    globus_mutex_unlock(&globus_l_xio_system_cancel_mutex);
-    return result;
-}
-
-globus_result_t
-globus_xio_system_cancel_accept(
-    globus_xio_system_handle_t          listener_fd)
-{
-    globus_l_operation_info_t *         op_info;
-    globus_result_t                     result;
-
-    op_info = GLOBUS_NULL;
-
-    globus_mutex_lock(&globus_l_xio_system_cancel_mutex);
-    {
-        globus_mutex_lock(&globus_l_xio_system_fdset_mutex);
-        {
-            if(FD_ISSET(listener_fd, globus_l_xio_system_read_fds))
-            {
-                op_info = globus_l_xio_system_read_operations[listener_fd];
-            }
-
-            if(!op_info || op_info->type != GLOBUS_L_OPERATION_ACCEPT)
-            {
-                result = GLOBUS_I_XIO_SYSTEM_CONSTRUCT_NOT_REGISTERED(
-                    "globus_xio_system_cancel_accept");
-                goto error_not_registered;
-            }
-
-            if(FD_ISSET(listener_fd, globus_l_xio_system_canceled_reads))
-            {
-                result = GLOBUS_I_XIO_SYSTEM_CONSTRUCT_OPERATION_CANCELED(
-                    "globus_xio_system_cancel_accept");
-                goto error_already_canceled;
-            }
-            
-            if(globus_l_xio_system_select_active)
-            {
-                /* pend the cancel for after select wakes up */
-                FD_SET(listener_fd, globus_l_xio_system_canceled_reads);
-                if(!globus_l_xio_system_wakeup_pending)
-                {
-                    globus_l_xio_system_select_wakeup();
-                }
-            }
-            else
-            {
-                /* unregister and kickout now */
-                op_info->result =
-                    GLOBUS_I_XIO_SYSTEM_CONSTRUCT_OPERATION_CANCELED(
-                        "globus_xio_system_cancel_accept");
-
-                result = globus_callback_register_oneshot(
-                    GLOBUS_NULL,
-                    GLOBUS_NULL,
-                    globus_l_xio_system_kickout,
-                    op_info);
-                if(result != GLOBUS_SUCCESS)
-                {
-                    goto error_register;
-                }
-                
-                globus_l_xio_system_unregister_read(listener_fd);
-            }
-        }
-        globus_mutex_unlock(&globus_l_xio_system_fdset_mutex);
-    }
-    globus_mutex_unlock(&globus_l_xio_system_cancel_mutex);
-
-    return GLOBUS_SUCCESS;
-
-error_register:
-error_already_canceled:
-error_not_registered:
-    globus_mutex_unlock(&globus_l_xio_system_fdset_mutex);
-    globus_mutex_unlock(&globus_l_xio_system_cancel_mutex);
-    return result;
-}
-
-globus_result_t
-globus_xio_system_cancel_read(
-    globus_xio_system_handle_t          fd)
-{
-    globus_l_operation_info_t *         op_info;
-    globus_result_t                     result;
-
-    op_info = GLOBUS_NULL;
-
-    globus_mutex_lock(&globus_l_xio_system_cancel_mutex);
-    {
-        globus_mutex_lock(&globus_l_xio_system_fdset_mutex);
-        {
-            if(FD_ISSET(fd, globus_l_xio_system_read_fds))
-            {
-                op_info = globus_l_xio_system_read_operations[fd];
-            }
-
-            if(!op_info ||
-                !(op_info->type == GLOBUS_L_OPERATION_READ      ||
-                op_info->type == GLOBUS_L_OPERATION_READV       ||
-                op_info->type == GLOBUS_L_OPERATION_RECV        ||
-                op_info->type == GLOBUS_L_OPERATION_RECVFROM    ||
-                op_info->type == GLOBUS_L_OPERATION_RECVMSG))
-            {
-                result = GLOBUS_I_XIO_SYSTEM_CONSTRUCT_NOT_REGISTERED(
-                    "globus_xio_system_cancel_read");
-                goto error_not_registered;
-            }
-
-            if(FD_ISSET(fd, globus_l_xio_system_canceled_reads))
-            {
-                result = GLOBUS_I_XIO_SYSTEM_CONSTRUCT_OPERATION_CANCELED(
-                    "globus_xio_system_cancel_read");
-                goto error_already_canceled;
-            }
-            
-            if(globus_l_xio_system_select_active)
-            {
-                /* pend the cancel for after select wakes up */
-                FD_SET(fd, globus_l_xio_system_canceled_reads);
-                if(!globus_l_xio_system_wakeup_pending)
-                {
-                    globus_l_xio_system_select_wakeup();
-                }
-            }
-            else
-            {
-                /* unregister and kickout now */
-                op_info->result =
-                    GLOBUS_I_XIO_SYSTEM_CONSTRUCT_OPERATION_CANCELED(
-                        "globus_xio_system_cancel_read");
-
-                result = globus_callback_register_oneshot(
-                    GLOBUS_NULL,
-                    GLOBUS_NULL,
-                    globus_l_xio_system_kickout,
-                    op_info);
-                if(result != GLOBUS_SUCCESS)
-                {
-                    goto error_register;
-                }
-                
-                globus_l_xio_system_unregister_read(fd);
-            }
-        }
-        globus_mutex_unlock(&globus_l_xio_system_fdset_mutex);
-    }
-    globus_mutex_unlock(&globus_l_xio_system_cancel_mutex);
-
-    return GLOBUS_SUCCESS;
-
-error_register:
-error_already_canceled:
-error_not_registered:
-    globus_mutex_unlock(&globus_l_xio_system_fdset_mutex);
-    globus_mutex_unlock(&globus_l_xio_system_cancel_mutex);
-    return result;
-}
-
-globus_result_t
-globus_xio_system_cancel_write(
-    globus_xio_system_handle_t          fd)
-{
-    globus_l_operation_info_t *         op_info;
-    globus_result_t                     result;
-
-    op_info = GLOBUS_NULL;
-
-    globus_mutex_lock(&globus_l_xio_system_cancel_mutex);
-    {
-        globus_mutex_lock(&globus_l_xio_system_fdset_mutex);
-        {
-            if(FD_ISSET(fd, globus_l_xio_system_write_fds))
-            {
-                op_info = globus_l_xio_system_write_operations[fd];
-            }
-
-            if(!op_info ||
-                !(op_info->type == GLOBUS_L_OPERATION_WRITE ||
-                op_info->type == GLOBUS_L_OPERATION_WRITEV  ||
-                op_info->type == GLOBUS_L_OPERATION_SEND    ||
-                op_info->type == GLOBUS_L_OPERATION_SENDTO  ||
-                op_info->type == GLOBUS_L_OPERATION_SENDMSG))
-            {
-                result = GLOBUS_I_XIO_SYSTEM_CONSTRUCT_NOT_REGISTERED(
-                    "globus_xio_system_cancel_write");
-                goto error_not_registered;
-            }
-
-            if(FD_ISSET(fd, globus_l_xio_system_canceled_writes))
-            {
-                result = GLOBUS_I_XIO_SYSTEM_CONSTRUCT_OPERATION_CANCELED(
-                    "globus_xio_system_cancel_write");
-                goto error_already_canceled;
-            }
-            
-            if(globus_l_xio_system_select_active)
-            {
-                /* pend the cancel for after select wakes up */
-                FD_SET(fd, globus_l_xio_system_canceled_writes);
-                if(!globus_l_xio_system_wakeup_pending)
-                {
-                    globus_l_xio_system_select_wakeup();
-                }
-            }
-            else
-            {
-                /* unregister and kickout now */
-                op_info->result =
-                    GLOBUS_I_XIO_SYSTEM_CONSTRUCT_OPERATION_CANCELED(
-                        "globus_xio_system_cancel_write");
-
-                result = globus_callback_register_oneshot(
-                    GLOBUS_NULL,
-                    GLOBUS_NULL,
-                    globus_l_xio_system_kickout,
-                    op_info);
-                if(result != GLOBUS_SUCCESS)
-                {
-                    goto error_register;
-                }
-                
-                globus_l_xio_system_unregister_write(fd);
-            }
-        }
-        globus_mutex_unlock(&globus_l_xio_system_fdset_mutex);
-    }
-    globus_mutex_unlock(&globus_l_xio_system_cancel_mutex);
-
-    return GLOBUS_SUCCESS;
-
-error_register:
-error_already_canceled:
-error_not_registered:
-    globus_mutex_unlock(&globus_l_xio_system_fdset_mutex);
-    globus_mutex_unlock(&globus_l_xio_system_cancel_mutex);
-    return result;
 }
 
 static
@@ -1347,9 +1090,20 @@ globus_l_xio_system_register_read(
     globus_l_operation_info_t *         read_info)
 {
     globus_result_t                     result;
-
+    
+    GlobusXIOOperationCancelAllow(
+        read_info->op, globus_l_xio_system_cancel_cb, read_info);
+            
     globus_mutex_lock(&globus_l_xio_system_fdset_mutex);
     {
+        /* this really shouldnt be possible, but to be thorough ... */
+        if(read_info->state == GLOBUS_L_OPERATION_CANCELED)
+        {
+            result = GLOBUS_I_XIO_SYSTEM_CONSTRUCT_OPERATION_CANCELED(
+                "globus_l_xio_system_register_read");
+            goto error_canceled;
+        }
+        
         if(fd >= GLOBUS_L_OPEN_MAX)
         {
             result = GLOBUS_I_XIO_SYSTEM_CONSTRUCT_TOO_MANY_FDS(
@@ -1379,11 +1133,14 @@ globus_l_xio_system_register_read(
         }
     }
     globus_mutex_unlock(&globus_l_xio_system_fdset_mutex);
-
+    
     return GLOBUS_SUCCESS;
 
+error_canceled:
 error_already_registered:
 error_too_many_fds:
+    GlobusXIOOperationCancelDisallow(read_info->op);
+    globus_mutex_unlock(&globus_l_xio_system_fdset_mutex);
     return result;
 }
 
@@ -1394,9 +1151,20 @@ globus_l_xio_system_register_write(
     globus_l_operation_info_t *         write_info)
 {
     globus_result_t                     result;
-
+    
+    GlobusXIOOperationCancelAllow(
+        write_info->op, globus_l_xio_system_cancel_cb, write_info);
+            
     globus_mutex_lock(&globus_l_xio_system_fdset_mutex);
     {
+        /* this really shouldnt be possible, but to be thorough ... */
+        if(write_info->state == GLOBUS_L_OPERATION_CANCELED)
+        {
+            result = GLOBUS_I_XIO_SYSTEM_CONSTRUCT_OPERATION_CANCELED(
+                "globus_l_xio_system_register_write");
+            goto error_canceled;
+        }
+        
         if(fd >= GLOBUS_L_OPEN_MAX)
         {
             result = GLOBUS_I_XIO_SYSTEM_CONSTRUCT_TOO_MANY_FDS(
@@ -1429,8 +1197,11 @@ globus_l_xio_system_register_write(
 
     return GLOBUS_SUCCESS;
 
+error_canceled:
 error_already_registered:
 error_too_many_fds:
+    GlobusXIOOperationCancelDisallow(write_info->op);
+    globus_mutex_unlock(&globus_l_xio_system_fdset_mutex);
     return result;
 }
 
@@ -1464,21 +1235,21 @@ globus_l_xio_system_kickout(
     globus_l_operation_info_t *         op_info;
 
     op_info = (globus_l_operation_info_t *) user_arg;
-
+    
+    GlobusXIOOperationCancelDisallow(op_info->op);
+    
     switch(op_info->type)
     {
       case GLOBUS_L_OPERATION_OPEN:
       case GLOBUS_L_OPERATION_CONNECT:
       case GLOBUS_L_OPERATION_ACCEPT:
         op_info->op.non_data.callback(
-            op_info->fd,
             op_info->result,
             op_info->user_arg);
         break;
 
       default:
         op_info->op.data.callback(
-            op_info->fd,
             op_info->result,
             op_info->_op_nbytes,
             op_info->user_arg);
@@ -1556,7 +1327,15 @@ globus_l_xio_system_handle_read(
     handled_it = GLOBUS_FALSE;
     read_info = globus_l_xio_system_read_operations[fd];
     result = GLOBUS_SUCCESS;
-
+    
+    if(read_info->state == GLOBUS_L_OPERATION_CANCELED)
+    {
+        result = GLOBUS_I_XIO_SYSTEM_CONSTRUCT_OPERATION_CANCELED(
+            "globus_l_xio_system_handle_read");
+        goto error_canceled;
+    }
+    GlobusXIOOperationRefreshTimeout(read_info->op);
+    
     switch(read_info->type)
     {
       case GLOBUS_L_OPERATION_OPEN:
@@ -1683,6 +1462,7 @@ globus_l_xio_system_handle_read(
     {
         handled_it = GLOBUS_TRUE;
         read_info->result = result;
+        read_info->state = GLOBUS_L_OPERATION_COMPLETE;
 
         globus_mutex_lock(&globus_l_xio_system_fdset_mutex);
         {
@@ -1715,7 +1495,15 @@ globus_l_xio_system_handle_write(
     handled_it = GLOBUS_FALSE;
     result = GLOBUS_SUCCESS;
     write_info = globus_l_xio_system_write_operations[fd];
-
+    
+    if(write_info->state == GLOBUS_L_OPERATION_CANCELED)
+    {
+        result = GLOBUS_I_XIO_SYSTEM_CONSTRUCT_OPERATION_CANCELED(
+            "globus_l_xio_system_handle_write");
+        goto error_canceled;
+    }
+    GlobusXIOOperationRefreshTimeout(write_info->op);
+    
     switch(write_info->type)
     {
       case GLOBUS_L_OPERATION_OPEN:
@@ -1903,9 +1691,11 @@ globus_l_xio_system_handle_write(
 
     if(!work_remaining || result != GLOBUS_SUCCESS)
     {
+error_canceled:
         handled_it = GLOBUS_TRUE;
         write_info->result = result;
-
+        write_info->state = GLOBUS_L_OPERATION_COMPLETE;
+        
         globus_mutex_lock(&globus_l_xio_system_fdset_mutex);
         {
             globus_l_xio_system_unregister_write(fd);
@@ -1923,58 +1713,6 @@ globus_l_xio_system_handle_write(
 
 static
 void
-globus_l_xio_system_handle_canceled_read(
-    int                                 fd)
-{
-    globus_l_operation_info_t *         read_info;
-    globus_result_t                     result;
-
-    read_info = globus_l_xio_system_read_operations[fd];
-
-    FD_CLR(fd, globus_l_xio_system_canceled_reads);
-    globus_mutex_lock(&globus_l_xio_system_fdset_mutex);
-    {
-        globus_l_xio_system_unregister_read(fd);
-    }
-    globus_mutex_unlock(&globus_l_xio_system_fdset_mutex);
-
-    read_info->result = GLOBUS_I_XIO_SYSTEM_CONSTRUCT_OPERATION_CANCELED(
-        "globus_l_xio_system_handle_canceled_read");
-
-    result = globus_callback_register_oneshot(
-        GLOBUS_NULL, GLOBUS_NULL, globus_l_xio_system_kickout, read_info);
-    /* really cant do anything else */
-    globus_assert(result == GLOBUS_SUCCESS);
-}
-
-static
-void
-globus_l_xio_system_handle_canceled_write(
-    int                                 fd)
-{
-    globus_l_operation_info_t *         write_info;
-    globus_result_t                     result;
-
-    write_info = globus_l_xio_system_write_operations[fd];
-
-    FD_CLR(fd, globus_l_xio_system_canceled_writes);
-    globus_mutex_lock(&globus_l_xio_system_fdset_mutex);
-    {
-        globus_l_xio_system_unregister_write(fd);
-    }
-    globus_mutex_unlock(&globus_l_xio_system_fdset_mutex);
-
-    write_info->result = GLOBUS_I_XIO_SYSTEM_CONSTRUCT_OPERATION_CANCELED(
-        "globus_l_xio_system_handle_canceled_write");
-
-    result = globus_callback_register_oneshot(
-        GLOBUS_NULL, GLOBUS_NULL, globus_l_xio_system_kickout, write_info);
-    /* really cant do anything else */
-    globus_assert(result == GLOBUS_SUCCESS);
-}
-
-static
-void
 globus_l_xio_system_poll(
     void *                              user_args)
 {
@@ -1988,6 +1726,7 @@ globus_l_xio_system_poll(
         int                             num;
         int                             nready;
         int                             select_errno;
+        int                             fd;
 
         time_left_is_zero = GLOBUS_FALSE;
         time_left_is_infinity = GLOBUS_FALSE;
@@ -2037,8 +1776,6 @@ globus_l_xio_system_poll(
 
             if(nready > 0)
             {
-                int                     fd;
-
                 fd = globus_l_xio_system_wakeup_pipe[0];
                 if(FD_ISSET(fd, globus_l_xio_system_ready_reads))
                 {
@@ -2046,49 +1783,60 @@ globus_l_xio_system_poll(
                     FD_CLR(fd, globus_l_xio_system_ready_reads);
                     nready--;
                 }
-
-                for(fd = 0; nready; fd++)
-                {
-                    if(FD_ISSET(fd, globus_l_xio_system_ready_reads))
-                    {
-                        nready--;
-
-                        if(!FD_ISSET(fd, globus_l_xio_system_canceled_reads))
-                        {
-                            if(globus_l_xio_system_handle_read(fd))
-                            {
-                                handled_something = GLOBUS_TRUE;
-                            }
-                        }
-                        else
-                        {
-                            globus_l_xio_system_handle_canceled_read(fd);
-                            handled_something = GLOBUS_TRUE;
-                        }
-                    }
-
-                    if(FD_ISSET(fd, globus_l_xio_system_ready_writes))
-                    {
-                        nready--;
-
-                        if(!FD_ISSET(fd, globus_l_xio_system_canceled_writes))
-                        {
-                            if(globus_l_xio_system_handle_write(fd))
-                            {
-                                handled_something = GLOBUS_TRUE;
-                            }
-                        }
-                        else
-                        {
-                            globus_l_xio_system_handle_canceled_write(fd);
-                            handled_something = GLOBUS_TRUE;
-                        }
-                    }
-                }
             }
             else if(nready == 0 || select_errno != EINTR)
             {
                 time_left_is_zero = GLOBUS_TRUE;
+                nready = 0;
+            }
+            
+            while(globus_l_xio_system_canceled_reads)
+            {
+                fd = (int) globus_list_remove(
+                    &globus_l_xio_system_canceled_reads,
+                    globus_l_xio_system_canceled_reads);
+                
+                if(!FD_ISSET(fd, globus_l_xio_system_ready_reads))
+                {
+                    FD_SET(fd, globus_l_xio_system_ready_reads);
+                    nready++;
+                }
+            }
+            
+            while(globus_l_xio_system_canceled_writes)
+            {
+                fd = (int) globus_list_remove(
+                    &globus_l_xio_system_canceled_writes,
+                    globus_l_xio_system_canceled_writes);
+                
+                if(!FD_ISSET(fd, globus_l_xio_system_ready_writes))
+                {
+                    FD_SET(fd, globus_l_xio_system_ready_writes);
+                    nready++;
+                }
+            }
+            
+            for(fd = 0; nready; fd++)
+            {
+                if(FD_ISSET(fd, globus_l_xio_system_ready_reads))
+                {
+                    nready--;
+
+                    if(globus_l_xio_system_handle_read(fd))
+                    {
+                        handled_something = GLOBUS_TRUE;
+                    }
+                }
+
+                if(FD_ISSET(fd, globus_l_xio_system_ready_writes))
+                {
+                    nready--;
+
+                    if(globus_l_xio_system_handle_write(fd))
+                    {
+                        handled_something = GLOBUS_TRUE;
+                    }
+                }
             }
         }
         globus_mutex_unlock(&globus_l_xio_system_cancel_mutex);
