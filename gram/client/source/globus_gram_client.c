@@ -31,8 +31,10 @@
 #include <stdio.h>
 #include <malloc.h>
 #include <string.h>
+#ifndef TARGET_ARCH_WIN32
 #include <sys/param.h>
 #include <sys/time.h>
+#endif
 #include <globus_io.h>
 
 #if defined(TARGET_ARCH_SOLARIS)
