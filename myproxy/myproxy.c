@@ -20,6 +20,8 @@
 #include <unistd.h>
 #include <assert.h>
 
+int convert_message(const char *buffer, const char *varname, 
+                    char *line, const int linelen);
 
 int 
 myproxy_init_client(myproxy_socket_attrs_t *attrs) 
@@ -64,8 +66,7 @@ myproxy_init_client(myproxy_socket_attrs_t *attrs)
 }
 
 int 
-myproxy_init_server(myproxy_socket_attrs_t *attrs,
-		    int port_number) 
+myproxy_init_server(myproxy_socket_attrs_t *attrs, int port_number) 
 {
     int on = 1;
     int listen_sock;
@@ -92,24 +93,30 @@ myproxy_init_server(myproxy_socket_attrs_t *attrs,
     sin.sin_port = htons(attrs->psport);
 
     if (bind(listen_sock, (struct sockaddr *) &sin, sizeof(sin)) < 0) {
-	    perror("bind");
+	    perror("Error in bind\n");
         return -1;
     }
 
     if (listen(listen_sock, 5) < 0) {
-	    perror("listen");
+	    perror("Error in listen\n");
 	    return -1;
     }
-	
-    attrs->socket_fd = listen_sock;
 
-    /* Success */
-    return 0;
+    return listen_sock;
+
 }
     
-int myproxy_authenticate_init(myproxy_socket_attrs_t *attrs) 
+int myproxy_authenticate_init(myproxy_socket_attrs_t *attrs, const char *proxyfile) 
 {
    char error_string[1024];
+
+   if (GSI_SOCKET_use_creds(attrs->gsi_socket, proxyfile) == GSI_SOCKET_ERROR) {
+       GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
+                                   sizeof(error_string));
+       fprintf(stderr, "Error setting credentials to use: %s\n", error_string);
+       return -1;
+   }
+   
    if (GSI_SOCKET_authentication_init(attrs->gsi_socket) == GSI_SOCKET_ERROR) {
        GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
                                    sizeof(error_string));
@@ -151,28 +158,14 @@ myproxy_authenticate_accept(myproxy_socket_attrs_t *attrs, char *client_name, co
 int
 myproxy_init_delegation(myproxy_socket_attrs_t *attrs, const char *delegfile)
 {
-  char file[1024];
+ 
   char error_string[1024];
-  if (delegfile == NULL) {
-    sprintf(file, "%s", MYPROXY_DEFAULT_PROXY);
-  } else {
-    sprintf(file, "%s", delegfile);
-  }
  
   if (attrs == NULL)
     return -1;
 
-  /*
-    if (GSI_SOCKET_delegation_init_ext(attrs->gsi_socket, 
-				     file,
-				     0,
-				     0,
-				     NULL) == GSI_SOCKET_ERROR)
-   */
-
-
   if (GSI_SOCKET_delegation_init_ext(attrs->gsi_socket, 
-				     NULL /* delegation file */,
+				     delegfile /* delegation file */,
 				     0 /* flags */,
 				     0 /* lifetime */,
 				     NULL /* restrictions */) == GSI_SOCKET_ERROR) {
@@ -331,15 +324,13 @@ myproxy_serialize_response(const myproxy_response_t *response,
     totlen += len;
 
     /* Only add error string if necessary */
-    if (response->error_string != NULL) {
-      if (!strcmp(response->error_string, "")) {
+    if (strcmp(response->error_string, "") != 0) {
         len = snprintf(&data[totlen], datalen - totlen, 
-                     "%s%s\n", MYPROXY_ERROR_STRING, response->error_string);
+                       "%s%s\n", MYPROXY_ERROR_STRING, response->error_string);
         if (len < 0)
             return -1;
 
         totlen += len;
-      }
     }
 
 #ifdef DEBUG    
@@ -357,12 +348,10 @@ myproxy_deserialize_response(myproxy_response_t *response,
     int len;
     char version_str[128];
     char response_str[128];
-    char error_str[1024];
 
     assert(data != NULL); 
       
-    response->version = NULL;
-    response->error_string = NULL;
+    strcpy(response->error_string, "");
 
     len = convert_message(data, (const char*)MYPROXY_VERSION_STRING, version_str, sizeof(version_str));
     if (len > 0) {
@@ -380,10 +369,10 @@ myproxy_deserialize_response(myproxy_response_t *response,
     }
 
     /* It's ok if ERROR_STRING not present */
-    len = convert_message(data, MYPROXY_ERROR_STRING, error_str, sizeof(error_str));
+    len = convert_message(data, MYPROXY_ERROR_STRING, 
+                          response->error_string, sizeof(response->error_string));
     if (len > 0) {
-      response->error_string = (char *)malloc((len+1)*sizeof(char));
-      strcpy(response->error_string, error_str);
+      response->error_string[len] = '\0';
     }
     return 0;
 }
@@ -448,9 +437,6 @@ myproxy_destroy(myproxy_socket_attrs_t *attrs,
     
     if (response->version != NULL) 
       free(response->version);
- 
-    if (response->error_string != NULL) 
-      free(response->error_string);
 
     GSI_SOCKET_destroy(attrs->gsi_socket);
     close(attrs->socket_fd);
@@ -460,7 +446,16 @@ myproxy_destroy(myproxy_socket_attrs_t *attrs,
 }
 
 /*--------- Helper functions ------------*/
-
+/*
+ * convert_message()
+ *
+ * Searches a buffer and locates varname. Stores contents of varname into line
+ * e.g. convert_message(buf, "VERSION=", version, sizeof(version));
+ * If multiple varnames exist, the contents are concatenated following a newline
+ *
+ * return the number of characters copied into the line 
+ * (not including the terminating '\0'), or -1 if varname not found or error
+ */
 int convert_message(const char *buffer, const char *varname, 
 		    char *line, const int linelen) {
 
