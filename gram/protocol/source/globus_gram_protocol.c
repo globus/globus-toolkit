@@ -1531,6 +1531,7 @@ globus_l_gram_http_post( char *                          url,
     globus_result_t                 res;
     int                             rc;
     globus_url_t		    parsed_url;
+    globus_size_t                   i;
 
     rc = globus_url_parse(url,
 			  &parsed_url);
@@ -1553,8 +1554,15 @@ globus_l_gram_http_post( char *                          url,
 	globus_url_destroy(&parsed_url);
 	return GLOBUS_GRAM_CLIENT_ERROR_PROTOCOL_FAILED;	
     }
-    verbose(notice("http_post : writing size=%d on %d\n%s----\n",
-		   sendbufsize, handle->fd, (char *) sendbuf));
+    globus_url_destroy(&parsed_url);
+    verbose(notice("http_post : writing size=%d on %d\n",
+		   sendbufsize, handle->fd));
+    for(i = 0; i < sendbufsize; i++)
+    {
+	verbose(notice("%c", sendbuf[i]));
+    }
+    verbose(notice("---\n"));
+
     res = globus_io_register_write( handle,
 				    sendbuf,
 				    sendbufsize,
