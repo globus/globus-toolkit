@@ -4552,11 +4552,24 @@ globus_gass_copy_register_url_to_url(
             "register_url_to_url(): source or dest is URL_MODE_UNSUPPORTED\n");
 #endif
 	if(source_url_mode == GLOBUS_GASS_COPY_URL_MODE_UNSUPPORTED)
+	{
 	    sprintf(src_msg, "  %s,  GLOBUS_GASS_COPY_URL_MODE_UNSUPPORTED.",
-                    source_url);
+                source_url);
+        }
+        else
+        {
+            *src_msg = '\0';
+        }
+
 	if(dest_url_mode == GLOBUS_GASS_COPY_URL_MODE_UNSUPPORTED)
-	    sprintf(src_msg, "  %s,  GLOBUS_GASS_COPY_URL_MODE_UNSUPPORTED.",
-                    dest_url);
+	{
+	    sprintf(dest_msg, "  %s,  GLOBUS_GASS_COPY_URL_MODE_UNSUPPORTED.",
+                dest_url);
+        }
+        else
+        {
+            *dest_msg = '\0';
+        }
 
 	handle->status = GLOBUS_GASS_COPY_STATUS_DONE_FAILURE;
 	err = globus_error_construct_string(
