@@ -16,6 +16,7 @@ import org.apache.commons.logging.LogFactory;
 import org.globus.usage.receiver.Receiver;
 import org.globus.usage.receiver.handlers.GridFTPPacketHandler;
 import org.globus.usage.receiver.handlers.RFTPacketHandler;
+import org.globus.usage.receiver.handlers.JavaCorePacketHandler;
 
 /*An example of how the Receiver class can be used in a program:*/
 public class ExampleReceiver {
@@ -25,6 +26,7 @@ public class ExampleReceiver {
     public static void main(String[] args) {
         int port = 0;
         String databaseDriverClass, databaseURL, defaultTable, gftpTable;
+	String jwsCoreTable;
 	String rftTable;
 	int ringBufferSize = 0;
         Properties props;
@@ -32,6 +34,7 @@ public class ExampleReceiver {
         Receiver receiver;
         GridFTPPacketHandler gftpHandler;
 	RFTPacketHandler rftHandler;
+	JavaCorePacketHandler jwsCoreHandler;
 
         /*Open properties file (which gets compiled into jar) to read
           default port and database connection information:*/
@@ -50,6 +53,7 @@ public class ExampleReceiver {
             defaultTable = props.getProperty("default-table");
             gftpTable = props.getProperty("gftp-table");
 	    rftTable = props.getProperty("rft-table");
+	    jwsCoreTable = props.getProperty("jws-core-table");
             ringBufferSize = Integer.parseInt(props.getProperty("ringbuffer-size"));
 
             if (args.length == 1)
@@ -86,7 +90,8 @@ public class ExampleReceiver {
 	    rftHandler = new RFTPacketHandler(databaseURL, rftTable);
 	    receiver.registerHandler(rftHandler);
 
-	    //Other handlers can be registered here.
+	    jwsCoreHandler = new JavaCorePacketHandler(databaseURL, jwsCoreTable);
+	    receiver.registerHandler(jwsCoreHandler);
 
 	    //start the control socket thread:
 	    new ControlSocketThread(receiver, 4811).start();

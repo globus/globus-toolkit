@@ -60,3 +60,15 @@ CREATE TABLE gftp_summaries(
     avg_speed BIGINT,
     PRIMARY KEY (id)
 );
+
+CREATE TABLE java_ws_core_packets(
+    id SERIAL,
+    component_code SMALLINT NOT NULL,
+    version_code SMALLINT NOT NULL,
+    send_time DATETIME,
+    ip_address VARCHAR(64) NOT NULL,
+    container_id INT,
+    container_type SMALLINT,
+    event_type SMALLINT,
+    service_list TEXT
+);
