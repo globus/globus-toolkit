@@ -103,9 +103,7 @@ GSS_CALLCONV gss_accept_delegation(
 
     if(input_token == GSS_C_NO_BUFFER)
     {
-        GSSerr(GSSERR_F_ACCEPT_DELEGATION,GSSERR_R_BAD_ARGUMENT);
-        *minor_status = gsi_generate_minor_status();
-        major_status = GSS_S_FAILURE;
+        major_status |= GSS_S_CONTINUE_NEEDED;
         goto err;
     }
 
