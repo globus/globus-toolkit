@@ -34,7 +34,7 @@ globus_l_gsi_cred_error_strings[GLOBUS_GSI_CRED_ERROR_LAST] =
 /* 12 */  "Error with Credential's Cert Chain",
 /* 13 */  "System Error",
 /* 14 */  "Error with System Configuration",
-/* 15 */  "Error with Credential Handle Attributes"
+/* 15 */  "Error with Credential Handle Attributes",
 /* 16 */  "Error with Credential's SSL context"
 };
 
