@@ -37,6 +37,7 @@ AC_ARG_WITH(gssapi,
      gssapi_type="none"
 fi])
 
+
 case $gssapi_type in
   no|none)	# No support
 		AC_MSG_RESULT(none)
@@ -180,8 +181,20 @@ elif test "$gssapi_type" = "krb5" ; then
 	fi
 	AC_MSG_RESULT($krb5_install_dir)
 
-	GSSAPI_LIBS="-lgssapi_krb5 -lkrb5 -lcrypto -lcom_err"
-  GSSAPI_LDFLAGS="-L${krb5_install_dir}/lib"
+	GSSAPI_LDFLAGS="-L${krb5_install_dir}/lib"
+
+	# In v1.1 of the MIT release libcrypto was renamed to libk5crypto
+  # so check from libcrypto and use it if found, otherwise assume
+  # libk5crypto
+	save_LDFLAGS=${LDFLAGS}
+	LDFLAGS=${GSSAPI_LDFLAGS}
+	AC_CHECK_LIB(crypto, mit_des_string_to_key,
+		[krb5_crypto_lib=crypto],
+	  [krb5_crypto_lib=k5crypto])
+	LDFLAGS=${save_LDFLAGS}
+
+	GSSAPI_LIBS="-lgssapi_krb5 -lkrb5 -l${krb5_crypto_lib} -lcom_err"
+
 	# For <krb5.h>
 	GSSAPI_CFLAGS="-I${krb5_install_dir}/include $GSSAPI_CFLAGS"
 	# For <gssapi.h>
