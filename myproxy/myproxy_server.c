@@ -509,9 +509,6 @@ handle_client(myproxy_socket_attrs_t *attrs,
         break;
     }
 
-//printf( "SLEEP 10\n" );
-//sleep(10);
-    
     /* return server response */
     send_response(attrs, server_response, client_name);
 
@@ -523,6 +520,7 @@ handle_client(myproxy_socket_attrs_t *attrs,
 	myproxy_creds_free_contents(client_creds);
 	free(client_creds);
     }
+
     myproxy_free(attrs, client_request, server_response);
 
     return 0;
@@ -598,18 +596,10 @@ init_arguments(int argc, char *argv[],
         case 'd':
             debug = 1;
             break;
-        default:        /* print usage and exit */ 
-            fprintf(stderr, usage);
-	    exit(1);
-            break;
+        default: /* ignore unknown */ 
+            arg_error = -1;
+            break;	
         }
-    }
-
-    if (gnu_optind != argc) {
-	fprintf(stderr, "%s: invalid option -- %s\n", argv[0],
-		argv[gnu_optind]);
-	fprintf(stderr, usage);
-	exit(1);
     }
 
     return arg_error;
@@ -668,7 +658,7 @@ myproxy_init_server(myproxy_socket_attrs_t *attrs)
 	}
 	failure("Error in bind()");
     }
-    if (listen(listen_sock, INT_MAX) < 0) {
+    if (listen(listen_sock, 5) < 0) {
 	    failure("Error in listen()");
     }
     return listen_sock;
@@ -793,10 +783,9 @@ void get_credentials(myproxy_socket_attrs_t *attrs,
                                 request->passphrase) < 0) {
       myproxy_log_verror();
       response->response_type =  MYPROXY_ERROR_RESPONSE;
-      response->error_string = strdup("Unable to delegate credentials.\n");
+      response->error_string = strdup("Unable to retrieve credentials.\n");
     } else {
-      myproxy_log("Delegating credentials for %s lifetime=%d",
-                   creds->owner_name, min_lifetime);
+      myproxy_log("Delegating credentials for %s", creds->owner_name);
       response->response_type = MYPROXY_OK_RESPONSE;
     }
 }
@@ -1078,8 +1067,8 @@ write_pidfile(const char path[])
 
     f = fopen(path, "wb");
     if (f == NULL) {
-	myproxy_log("Couldn't create pid file \"%s\": %s",
-		    path, strerror(errno));
+	myproxy_debug("Couldn't create pid file \"%s\": %s",
+		      path, strerror(errno));
     } else {
 	fprintf(f, "%ld\n", (long) getpid());
 	fclose(f);

@@ -144,8 +144,6 @@ myproxy_init_client(myproxy_socket_attrs_t *attrs) {
     struct sockaddr_in sin;
     struct hostent *host_info;
     char *port_range;
-    int on = 1;
-    struct linger lin = {0,0};
     
     attrs->socket_fd = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -154,12 +152,6 @@ myproxy_init_client(myproxy_socket_attrs_t *attrs) {
 	verror_put_string("socket() failed");
         return -1;
     } 
-
-    /* Allow reuse of socket */
-    setsockopt(attrs->socket_fd, SOL_SOCKET, SO_REUSEADDR,
-	       (void *) &on, sizeof(on));
-    setsockopt(attrs->socket_fd, SOL_SOCKET, SO_LINGER,
-	       (char *) &lin, sizeof(lin));
 
     host_info = gethostbyname(attrs->pshost); 
 
@@ -173,16 +165,8 @@ myproxy_init_client(myproxy_socket_attrs_t *attrs) {
 	    sin.sin_port = htons(port);
 	    while (bind(attrs->socket_fd, (struct sockaddr *)&sin,
 			sizeof(sin)) < 0) {
-		if (errno != EADDRINUSE) {
-		    verror_put_errno(errno);
+		if (errno != EADDRINUSE || port >= max_port) {
 		    verror_put_string("Error in bind()");
-		    return -1;
-		}
-		if (port >= max_port) {
-		    verror_put_string("No available ports in %s.",
-				      getenv("MYPROXY_TCP_PORT_RANGE") ?
-				      "MYPROXY_TCP_PORT_RANGE" :
-				      "GLOBUS_TCP_PORT_RANGE");
 		    return -1;
 		}
 		sin.sin_port = htons(++port);
@@ -1823,6 +1807,10 @@ encode_command(const myproxy_proto_request_type_t	command_value)
 
       case MYPROXY_RETRIEVE_CERT:
         string = "6";
+        break;
+
+      case MYPROXY_CONTINUE:
+        string = "7";
         break;
 	
       default:
