@@ -263,6 +263,7 @@ Section D
 
  ====
 
+
 Section E
 ------- -
 
@@ -316,4 +317,44 @@ Section E
     the Epoch (00:00:00 UTC January 1, 1970). The <subject_name> field
     contains DN of the proxy's owner.
 
+ 5) At this point, both sides should close the connection.
+ 
+======
+
+Section F
+------- -
+
+MyProxyChangePasswd <-> MyProxyServer protocol
+
+ The following illustrates a MyProxyChangePasswd process connecting to a
+ MyProxyServer process and changes password of a proxy.
+
+ 1) MyProxyChangePasswd makes a connection to the MyProxyServer as
+    indicated by its configuration or arguments.
+
+ 2) MyProxyChangePasswd will initiate the GSSAPI context setup loop, with
+    MyProxyServer accepting. See section A.1. 
+ 
+ 3) MyProxyChangePasswd will then send a message to MyProxyServer containing
+    the following strings:
+ 
+    VERSION=MYPROXYv2
+    COMMAND=4
+    USERNAME=<username>
+    PASSPHRASE=<credential pass phrase>
+    NEW_PHRASE=<new pass phrase>
+ 
+    The message can also contain an optional string :
+    CRED_NAME=<credential name>
+
+    The intent of the VERSION string is to allow the server to know
+    if it is dealing with an outdated or newer client.
+ 
+    <username> and <credential pass phrase> are the strings supplied
+    by the user for authentication. <new pass phrase> is the new pass
+    phrase assigned to the credential.
+
+ 4) MyProxyServer will then respond with either a OK or an ERROR message.
+    See section A.6 for details.
+ 
  5) At this point, both sides should close the connection.

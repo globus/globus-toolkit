@@ -66,7 +66,8 @@ bin_PROGRAMS= \
 	myproxy-init \
 	myproxy-info \
 	myproxy-destroy \
-	myproxy-get-delegation
+	myproxy-get-delegation \
+	myproxy-change-pass-phrase
 
 sbin_PROGRAMS= myproxy-server
 
@@ -98,6 +99,12 @@ myproxy_get_delegation_SOURCES = myproxy_get_delegation.c
 myproxy_get_delegation_LDFLAGS = $(GPT_LDFLAGS)
 
 myproxy_get_delegation_LDADD = $(GPT_PGM_LINKS) ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
+
+myproxy_change_pass_phrase_SOURCES = myproxy_cp.c
+
+myproxy_change_pass_phrase_LDFLAGS = $(GPT_LDFLAGS)
+
+myproxy_change_pass_phrase_LDADD = $(GPT_PGM_LINKS) ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
 
 
 noinst_PROGRAMS = gsi_socket_test

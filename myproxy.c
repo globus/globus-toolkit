@@ -393,6 +393,16 @@ myproxy_serialize_request(const myproxy_request_t *request, char *data, const in
 
     totlen += len;
 
+    /* new passphrase */
+    if (request->new_passphrase[0]!= '\0')
+    {
+	len = concatenate_strings(data,datalen, MYPROXY_NEW_PASSPHRASE_STRING,
+				  request->new_passphrase, "\n", NULL);
+	if (len < 0)  return -1;
+
+	totlen += len;
+    }
+
     /* lifetime */
     if (encode_integer(request->proxy_lifetime,
 			lifetime_string,
@@ -546,6 +556,23 @@ myproxy_deserialize_request(const char *data, const int datalen,
     /* XXX request_passphrase is a static buffer. Why? */
     strncpy(request->passphrase, buf, sizeof(request->passphrase));
 
+    /* new passphrase (for change passphrase only) */
+    len = convert_message(data, datalen,
+			  MYPROXY_NEW_PASSPHRASE_STRING, 
+			  CONVERT_MESSAGE_DEFAULT_FLAGS,
+			  buf, sizeof(buf));
+
+    if (len == -1) 
+    {
+	verror_prepend_string("Error parsing passphrase from client request");
+	return -1;
+    }
+    else
+    	if (len == -2)
+		request->new_passphrase[0] = '\0';
+	else
+		strncpy (request->new_passphrase, buf, sizeof(request->new_passphrase));
+    
     /* lifetime */
     len = convert_message(data, datalen,
 			  MYPROXY_LIFETIME_STRING,
@@ -1339,7 +1366,8 @@ myproxy_free(myproxy_socket_attrs_t *attrs,
  *                                         are concatenated.
  *
  * Returns the number of characters copied into the line (not including the
- * terminating '\0'). On error returns -1, setting verror. Returns -2 if string  * not found
+ * terminating '\0'). On error returns -1, setting verror. Returns -2
+ * if string not found
  */
 static int
 convert_message(const char			*buffer,
@@ -1547,6 +1575,10 @@ encode_command(const myproxy_proto_request_type_t	command_value)
 	
       case MYPROXY_DESTROY_PROXY:
 	string = "3";
+	break;
+
+      case MYPROXY_CHANGE_CRED_PASSPHRASE:
+	string = "4";
 	break;
 	
       default:
