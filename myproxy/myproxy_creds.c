@@ -77,7 +77,7 @@ mystrdup(const char *string)
     if (dup == NULL)
     {
         verror_put_errno(errno);
-        verror_put_string("strdup() failed");
+        //verror_put_string("strdup() failed");
     }
     
     return dup;

@@ -403,7 +403,7 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     }
 
     /* XXX Put real pass word policy here */
-    if (client_request->passphrase && strlen(client_request->passphrase) 
+    if (client_request->passphrase //&& strlen(client_request->passphrase) 
 	&& strlen(client_request->passphrase) < MIN_PASS_PHRASE_LEN)
     {
 	myproxy_log(DBG_LO, debug_level, "client %s Pass phrase too short",
@@ -1247,6 +1247,7 @@ get_client_authdata(myproxy_socket_attrs_t *attrs,
 
    authorization_init_server(&server_response.authorization_data);
    server_response.response_type = MYPROXY_AUTHORIZATION_RESPONSE;
+   server_response.response_string = strdup ("");
    send_response(attrs, &server_response, client_name);
 
    /* Wait for client's response. Its first four bytes are supposed to

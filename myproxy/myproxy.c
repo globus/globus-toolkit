@@ -471,7 +471,7 @@ myproxy_deserialize_request(const char *data, const int datalen,
     
     if (request->version == NULL)
     {
-	verror_put_string("strdup() failed");
+	//verror_put_string("strdup() failed");
 	verror_put_errno(errno);
 	return -1;
     }
@@ -508,7 +508,7 @@ myproxy_deserialize_request(const char *data, const int datalen,
 
     if (request->username == NULL)
     {
-	verror_put_string("strdup() failed");
+	//verror_put_string("strdup() failed");
 	verror_put_errno(errno);
 	return -1;
     }
@@ -564,7 +564,7 @@ myproxy_deserialize_request(const char *data, const int datalen,
     
       if (request->retrievers == NULL)
       {
-	verror_put_string("strdup() failed");
+	//verror_put_string("strdup() failed");
 	verror_put_errno(errno);
 	return -1;
       }
@@ -591,7 +591,7 @@ myproxy_deserialize_request(const char *data, const int datalen,
     
          if (request->renewers == NULL)
          {
-	  verror_put_string("strdup() failed");
+	  //verror_put_string("strdup() failed");
 	  verror_put_errno(errno);
 	  return -1;
          }
@@ -617,7 +617,7 @@ myproxy_deserialize_request(const char *data, const int datalen,
     
          if (request->credname == NULL)
          {
-	  verror_put_string("strdup() failed");
+	  //verror_put_string("strdup() failed");
 	  verror_put_errno(errno);
 	  return -1;
          }
@@ -643,7 +643,7 @@ myproxy_deserialize_request(const char *data, const int datalen,
     
          if (request->cred_desc == NULL)
          {
-	  verror_put_string("strdup() failed");
+	  //verror_put_string("strdup() failed");
 	  verror_put_errno(errno);
 	  return -1;
          }
@@ -672,7 +672,7 @@ myproxy_deserialize_request(const char *data, const int datalen,
     if (len >= 0) {
 	request->authorized_service_dns = make_string_list(buf, len);
 	if (request->authorized_service_dns == NULL) {
-	    verror_put_string("make_string_list() failed");
+	    //verror_put_string("make_string_list() failed");
 	    verror_put_errno(errno);
 	    return -1;
 	}
@@ -685,7 +685,7 @@ myproxy_deserialize_request(const char *data, const int datalen,
     if (len >= 0) {
 	request->authorized_client_dns = make_string_list(buf, len);
 	if (request->authorized_client_dns == NULL) {
-	    verror_put_string("make_string_list() failed");
+	    //verror_put_string("make_string_list() failed");
 	    verror_put_errno(errno);
 	    return -1;
 	}
@@ -855,7 +855,7 @@ myproxy_deserialize_response(myproxy_response_t *response,
 
     if (response->version == NULL)
     {
-	verror_put_string("strdup() failed");
+	//verror_put_string("strdup() failed");
 	verror_put_errno(errno);
 	return -1;
     }
@@ -1028,13 +1028,13 @@ myproxy_recv_response(myproxy_socket_attrs_t *attrs, myproxy_response_t *respons
     /* Receive a response from the server */
     responselen = myproxy_recv(attrs, response_buffer, sizeof(response_buffer));
     if (responselen < 0) {
-        verror_put_string("Error in myproxy_recv()");
+        //verror_put_string("Error in myproxy_recv()");
         return(-1);
     }
 
     /* Make a response object from the response buffer */
     if (myproxy_deserialize_response(response, response_buffer, responselen) < 0) {
-      verror_put_string("Error in myproxy_deserialize_response()");
+      //verror_put_string("Error in myproxy_deserialize_response()");
       return(-1);
     }
 
@@ -1147,7 +1147,7 @@ convert_message(const char			*buffer,
     
     if (buffer_copy == NULL)
     {
-	verror_put_string("malloc(%d) failed", buffer_len);
+	//verror_put_string("malloc(%d) failed", buffer_len);
 	verror_put_errno(errno);
 	goto error;
     }
@@ -1600,7 +1600,7 @@ parse_entry(char *buffer, authorization_data_t *data)
 
    data->server_data = malloc(strlen(str) + 1);
    if (data->server_data == NULL) {
-      verror_put_string("malloc()");
+      //verror_put_string("malloc()");
       verror_put_errno(errno);
       return NULL;
    }
@@ -1629,7 +1629,7 @@ parse_auth_data(char *buffer, authorization_data_t ***auth_data)
 
    data = malloc(sizeof(*data));
    if (data == NULL) {
-      verror_put_string("malloc()");
+      //verror_put_string("malloc()");
       verror_put_errno(errno);
       return -1;
    }
@@ -1646,7 +1646,7 @@ parse_auth_data(char *buffer, authorization_data_t ***auth_data)
 
       tmp = realloc(data, (num_data + 1 + 1) * sizeof(*data));
       if (tmp == NULL) {
-	 verror_put_string("realloc()");
+	 //verror_put_string("realloc()");
 	 verror_put_errno(errno);
 	 goto end;
       }
@@ -1654,7 +1654,7 @@ parse_auth_data(char *buffer, authorization_data_t ***auth_data)
 
       data[num_data] = malloc(sizeof(entry));
       if (data[num_data] == NULL) {
-	 verror_put_string("malloc()");
+	 //verror_put_string("malloc()");
 	 verror_put_errno(errno);
 	 goto end;
       }
