@@ -145,7 +145,7 @@ test_integer( char *   value,
     return res;
 }
 
-enum { arg_a = 1, arg_b, arg_s, arg_ss, arg_ds, arg_bs,
+enum { arg_a = 1, arg_b, arg_s, arg_ss, arg_ds, arg_tcp_bs, arg_bs,
        arg_num = arg_bs };
 
 #define listname(x) x##_aliases
@@ -170,6 +170,7 @@ flagdef(arg_a, "-a", "-ascii");
 flagdef(arg_b, "-b", "-binary");
 
 oneargdef(arg_bs, "-bs", "-block-size", test_integer, GLOBUS_NULL);
+oneargdef(arg_tcp_bs, "-tcp-bs", "-tcp-buffer-size", test_integer, GLOBUS_NULL);
 oneargdef(arg_s, "-s", "-subject", GLOBUS_NULL, GLOBUS_NULL);
 oneargdef(arg_ss, "-ss", "-source-subject", GLOBUS_NULL, GLOBUS_NULL);
 oneargdef(arg_ds, "-ds", "-dest-subject", GLOBUS_NULL, GLOBUS_NULL);
@@ -180,7 +181,7 @@ static globus_args_option_descriptor_t args_options[arg_num];
 
 #define globus_url_copy_i_args_init() \
     setupopt(arg_a); setupopt(arg_b); setupopt(arg_s); setupopt(arg_ss); \
-    setupopt(arg_ds); setupopt(arg_bs);
+    setupopt(arg_ds); setupopt(arg_tcp_bs); setupopt(arg_bs);
 
 static globus_bool_t globus_l_globus_url_copy_ctrlc = GLOBUS_FALSE;
 static globus_bool_t globus_l_globus_url_copy_ctrlc_handled = GLOBUS_FALSE;
@@ -216,6 +217,8 @@ main(int argc, char **argv)
     globus_gass_copy_url_mode_t        dest_url_mode;
     int                                err;
     int                                block_size = 0;
+    int                                tcp_buffer_size = 0;
+    globus_ftp_control_tcpbuffer_t *   tcp_buffer;
     char *                             subject = GLOBUS_NULL;
     char *                             source_subject = GLOBUS_NULL;
     char *                             dest_subject = GLOBUS_NULL;
@@ -289,6 +292,9 @@ main(int argc, char **argv)
             options |= GLOBUS_URL_COPY_ARG_BINARY;
         case arg_bs:
             block_size = atoi(instance->values[0]);
+            break;
+        case arg_tcp_bs:
+            tcp_buffer_size = atoi(instance->values[0]);
             break;
         case arg_s:
             subject = globus_libc_strdup(instance->values[0]);
@@ -365,14 +371,15 @@ main(int argc, char **argv)
                               (sizeof(globus_ftp_client_attr_t));
             globus_ftp_client_attr_init(source_ftp_attr);
 
-/*
-            globus_ftp_client_attr_set_authorization(
-                                  source_ftp_attr,
-                                  source_url.user,
-                                  source_url.password,
-                                  "bester",
-                                  source_subject);
- temp hack */
+            if (tcp_buffer_size > 0)
+            {
+                tcp_buffer = globus_libc_malloc
+                               (sizeof(globus_ftp_control_tcpbuffer_t));
+                tcp_buffer->mode = GLOBUS_GSIFTP_CONTROL_TCPBUFFER_FIXED;
+                tcp_buffer->fixed.size = tcp_buffer_size;
+                globus_ftp_client_attr_set_tcp_buffer(source_ftp_attr,
+                                                      tcp_buffer);
+            }
 
             if (source_subject  ||
                 source_url.user ||
@@ -451,6 +458,19 @@ main(int argc, char **argv)
             dest_ftp_attr = globus_libc_malloc
                               (sizeof(globus_ftp_client_attr_t));
             globus_ftp_client_attr_init(dest_ftp_attr);
+
+            if (tcp_buffer_size > 0)
+            {
+                if (tcp_buffer == GLOBUS_NULL)
+                {
+                    tcp_buffer = globus_libc_malloc
+                               (sizeof(globus_ftp_control_tcpbuffer_t));
+                    tcp_buffer->mode = GLOBUS_GSIFTP_CONTROL_TCPBUFFER_FIXED;
+                    tcp_buffer->fixed.size = tcp_buffer_size;
+                }
+                globus_ftp_client_attr_set_tcp_buffer(dest_ftp_attr,
+                                                      tcp_buffer);
+            }
 
             if (dest_subject  ||
                 dest_url.user ||
