@@ -531,14 +531,6 @@ AC_ARG_WITH(mechglue,
 		LIBS="$LIBS ${mechglue_lib}"
 		AC_MSG_RESULT(${mechglue_lib})
 
-#		if test -e ${withval}/gssapi.h ; then
-#		    CPPFLAGS="$CPPFLAGS -I${withval}"
-#		elif test -e ${withval}/include/gssapi.h ; then
-#		    CPPFLAGS="$CPPFLAGS -I${withval}/include"
-#		else
-#		    AC_MSG_ERROR("Can't find gssapi.h in ${withval}");
-#		fi
-		
 		AC_CHECK_LIB(dl, dlopen, , )
 		if test $ac_cv_lib_dl_dlopen = yes; then
 		   LDFLAGS="$LDFLAGS -ldl -Wl,-Bsymbolic"
@@ -546,7 +538,6 @@ AC_ARG_WITH(mechglue,
 
 		AC_DEFINE(GSSAPI)
 		AC_DEFINE(MECHGLUE)
-		AC_DEFINE(HAVE_GSSAPI_EXT)
 		GSSAPI="mechglue"
 
 	]
@@ -580,6 +571,7 @@ AC_ARG_WITH(globus-flavor,
 
 if test "x$gsi_path" != "xno" ; then
 	# Globus GSSAPI configuration
+	AC_MSG_CHECKING(for Globus GSI)
 	AC_DEFINE(GSI)
 
 	if test "$GSSAPI" -a "$GSSAPI" != "mechglue"; then
@@ -590,79 +582,50 @@ if test "x$gsi_path" != "xno" ; then
 		GSSAPI="GSI"
 	fi
 
-	# Find GLOBUS/GSI installation Directory
-	AC_MSG_CHECKING(for Globus/GSI installation directory)
-
-	globus_install_dir=$gsi_path
-
 	if test "x$globus_install_dir" = "xyes" ; then
-                AC_MSG_ERROR(Cannot find Globus/GSI installation directory -- a path must be specified!)
+                AC_MSG_ERROR(--with-globus=PATH must specify a path)
 	fi
-	AC_MSG_RESULT($globus_install_dir)
-
-	# Find GLOBUS/GSI development directory
-	AC_MSG_CHECKING(for Globus/GSI development directory)
-
-	if test -d ${globus_install_dir}/lib ; then
-		# Looks like a flat directory structure from configure/make
-		# and not globus-install or gsi-install
-		globus_dev_dir=$globus_install_dir
-
-	else
-		# Assume a true globus installation with architecture
-		# directories and run globus-development-path to find
-		# the development directory
-
-		# Set GLOBUS_INSTALL_PATH
-		GLOBUS_INSTALL_PATH=$globus_install_dir
-		export GLOBUS_INSTALL_PATH
-
-		dev_path_program=${globus_install_dir}/bin/globus-development-path
-
-		if test ! -x ${dev_path_program} ; then
-			AC_MSG_ERROR(Cannot find Globus/GSI installation directory: program ${dev_path_program} does not exist or is not executable)
-		fi
-
-		globus_dev_dir=`${dev_path_program}`
-
-		if test -z "$globus_dev_dir" -o "X$globus_dev_dir" = "X<not found>" ; then
-			AC_MSG_ERROR(Cannot find Globus/GSI development directory)
-		fi
-
-		if test ! -d "$globus_dev_dir" ; then
-			AC_MSG_ERROR(Cannot find Globus/GSI development directory: $globus_dev_dir does not exist)
-		fi
-	fi
-	AC_MSG_RESULT($globus_dev_dir)
-
-	# Find GLOBUS/GSI flavor Directory
-	AC_MSG_CHECKING(for Globus flavor type)
 
         if test "x$globus_flavor_type" = "xno" ; then
-		if test "$GSSAPI" = "mechglue"; then
-			GSI_LIBS="-lglobus_gss_assist -lglobus_gaa"
-		else
-			GSI_LIBS="-lglobus_gss_assist -lglobus_gss -lglobus_gaa"
-		fi
-		GSI_LDFLAGS="-L${globus_dev_dir}/lib"
-		GSI_CPPFLAGS="-I${globus_dev_dir}/include"
-		AC_MSG_RESULT(none)
+                AC_MSG_ERROR(--with-globus-flavor=TYPE must be specified)
+	fi
+        if test "x$globus_flavor_type" = "xyes" ; then
+                AC_MSG_ERROR(--with-globus-flavor=TYPE must specify a flavor type)
+	fi
+
+	GLOBUS_INCLUDE="${gsi_path}/include/${globus_flavor_type}"
+	if test ! -d "$GLOBUS_INCLUDE" ; then
+		AC_MSG_ERROR(Cannot find Globus flavor-specific include directory: ${GLOBUS_INCLUDE})
+	fi
+	GSI_CPPFLAGS="-I${GLOBUS_INCLUDE}"
+	
+	if test -x ${gsi_path}/bin/globus-makefile-header ; then
+		GSI_LIBS=`${gsi_path}/bin/globus-makefile-header -static -flavor=${globus_flavor_type} globus_gss_assist | perl -n -e 'if (/GLOBUS_PKG_LIBS = (.*)/){print $1;}'`
+	elif test -x ${gsi_path}/sbin/globus-makefile-header ; then
+		GSI_LDFLAGS="-L${gsi_path}/lib"
+		GSI_LIBS=`${gsi_path}/sbin/globus-makefile-header -flavor=${globus_flavor_type} globus_gss_assist | perl -n -e 'if (/GLOBUS_PKG_LIBS = (.*)/){print $1;}'`
 	else
-		AC_DEFINE(HAVE_GSSAPI_EXT)
-                GLOBUS_FLAVOR_TYPE_INCL_DIR="${globus_dev_dir}/include/${globus_flavor_type}"
-
-		if test ! -d "$GLOBUS_FLAVOR_TYPE_INCL_DIR" ; then
-			AC_MSG_ERROR(Cannot find Globus flavor-specific include directory: ${GLOBUS_FLAVOR_TYPE_INCL_DIR})
-                fi
-
-		AC_MSG_RESULT($globus_flavor_type)
-		GSI_LIBS="${gsi_path}/lib/libglobus_gss_assist_${globus_flavor_type}.a ${gsi_path}/lib/libglobus_gssapi_gsi_${globus_flavor_type}.a"
-		GSI_CPPFLAGS="-I${GLOBUS_FLAVOR_TYPE_INCL_DIR}"
+		AC_MSG_ERROR(Cannot find globus-makefile-header: Globus installation is incomplete)
+	fi
+	if test -z "$GSI_LIBS" ; then
+		AC_MSG_ERROR(globus-makefile-header failed)
 	fi
 
 	LIBS="$LIBS $GSI_LIBS"
 	LDFLAGS="$LDFLAGS $GSI_LDFLAGS"
 	CPPFLAGS="$CPPFLAGS $GSI_CPPFLAGS"
+
+	# test that we got the libraries OK
+	AC_TRY_LINK(
+		[],
+		[],
+		[
+			AC_MSG_RESULT(yes)
+		],
+		[
+			AC_MSG_ERROR(link with Globus libraries failed)
+		]
+	)
 	INSTALL_GSISSH="yes"
 else
 	INSTALL_GSISSH=""
@@ -963,79 +926,9 @@ AC_ARG_WITH(ssl-dir,
 		fi
 	]
 )
-
-# Patch up SSL libraries for GSI authentication as needed
-if test "x$globus_flavor_type" != "xno" ; then
-	#
-	# For Globus 2, always link with the static libraries
-	#
-
-	libssl_utils="${gsi_path}/lib/libglobus_ssl_utils_${globus_flavor_type}.a"
-
-	#
-	# Trouble arrives at GT 2.1.3+ with the reorg of globus_ssl_utils.  Compensating for
-	# the new library linking required here through file tests to see which libraries to 
-	# link against.
-	#
-
-	libgsi_proxy_core="${gsi_path}/lib/libglobus_gsi_proxy_core_${globus_flavor_type}.a"
-	libgsi_credential="${gsi_path}/lib/libglobus_gsi_credential_${globus_flavor_type}.a"
-	libgsi_callback="${gsi_path}/lib/libglobus_gsi_callback_${globus_flavor_type}.a"
-	liboldgaa="${gsi_path}/lib/libglobus_oldgaa_${globus_flavor_type}.a"
-	libgsi_sysconfig="${gsi_path}/lib/libglobus_gsi_sysconfig_${globus_flavor_type}.a"
-	libproxy_ssl="${gsi_path}/lib/libglobus_proxy_ssl_${globus_flavor_type}.a"
-	libgsi_cert_utils="${gsi_path}/lib/libglobus_gsi_cert_utils_${globus_flavor_type}.a"
-	libopenssl_error="${gsi_path}/lib/libglobus_openssl_error_${globus_flavor_type}.a"
-	libopenssl="${gsi_path}/lib/libglobus_openssl_${globus_flavor_type}.a"
-
-	if test -r ${libgsi_proxy_core} \
-	     -a -r ${libgsi_credential} \
-	     -a -r ${libgsi_callback} \
-	     -a -r ${liboldgaa} \
-	     -a -r ${libgsi_sysconfig} \
-	     -a -r ${libproxy_ssl} \
-	     -a -r ${libgsi_cert_utils} \
-	     -a -r ${libopenssl_error} \
-	     -a -r ${libopenssl} ; then
-		LIBS="$LIBS ${libgsi_proxy_core}"
-		LIBS="$LIBS ${libgsi_credential}"
-		LIBS="$LIBS ${libgsi_callback}"
-		LIBS="$LIBS ${liboldgaa}"
-		LIBS="$LIBS ${libgsi_sysconfig}"
-		LIBS="$LIBS ${libproxy_ssl}"
-		LIBS="$LIBS ${libgsi_cert_utils}"
-		LIBS="$LIBS ${libopenssl_error}"
-		LIBS="$LIBS ${libopenssl}"
-	elif test -r ${libssl_utils}; then
-		LIBS="$LIBS ${libssl_utils}"
-	else
-		AC_MSG_ERROR(All of the required Globus Toolkit libraries are not present/configured correctly)
-	fi
-
-	#
-	# Standard openssl libraries.  They need to appear near the end of the link line.
-	#
-
-	LIBS="$LIBS ${gsi_path}/lib/libssl_${globus_flavor_type}.a"
-	LIBS="$LIBS ${gsi_path}/lib/libcrypto_${globus_flavor_type}.a"
-
-	#
-	# Another "GT 2.1.3+"ism.
-	#
-
-	libcommon_path="${gsi_path}/lib/libglobus_common_${globus_flavor_type}.a"
-	if test -r ${libcommon_path}; then
-		LIBS="$LIBS ${libcommon_path}"
-	fi
-else
-	if test "x$gsi_path" != "xno" ; then
-		# Older GSI needs -lssl too
-		LIBS="$LIBS -lssl -lcrypto"
-	else # if no GSI authentication (i.e., OpenSSL default)
-		LIBS="$LIBS -lcrypto"
-	fi
-fi # globus_flavor_type
-
+if test -z "$GSI_LIBS" ; then
+LIBS="$LIBS -lcrypto"
+fi
 AC_TRY_LINK_FUNC(RAND_add, AC_DEFINE(HAVE_OPENSSL),
 	[
 		dnl Check default openssl install dir
