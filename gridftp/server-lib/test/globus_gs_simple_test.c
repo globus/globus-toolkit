@@ -1,5 +1,5 @@
 #include "globus_xio.h"
-#include "globus_gridftp_server.h"
+#include "globus_gridftp_server_control.h"
 #include "globus_xio_tcp_driver.h"
 #include "globus_xio_ftp_cmd.h"
 
@@ -30,7 +30,7 @@ test_res(
 
 static void
 globus_l_done_cb(
-    globus_gridftp_server_t                 server,
+    globus_gridftp_server_control_t         server,
     globus_result_t                         res,
     void *                                  user_arg)
 {
@@ -45,22 +45,42 @@ globus_l_done_cb(
     globus_mutex_unlock(&globus_l_mutex);
 }
 
+void
+auth_func(
+    globus_gridftp_server_control_operation_t   op,
+    const char *                            user_name,
+    const char *                            pw,
+    gss_cred_id_t                           cred,
+    gss_cred_id_t                           del_cred)
+{
+    fprintf(stderr, "User: %s Pass: %s\n", user_name, pw);
+
+    if(strcmp(user_name, "failme") == 0)
+    {
+        globus_gridftp_server_control_finished_auth(op, (void *)1);
+    }
+    else
+    {
+        globus_gridftp_server_control_finished_auth(op, GLOBUS_SUCCESS);
+    }
+}
+
 globus_result_t
 resource_func(
-    globus_gridftp_server_operation_t       op,
-    const char *                            path,
-    int                                     mask)
+    globus_gridftp_server_control_operation_t       op,
+    const char *                                    path,
+    globus_gridftp_server_control_resource_mask_t   mask)
 {
-    struct stat                             stat_buf;
-    int                                     rc;
-    globus_gridftp_server_stat_t *          gs_stat_buf;
+    struct stat                                     stat_buf;
+    int                                             rc;
+    globus_gridftp_server_control_stat_t *          gs_stat_buf;
 
     rc = stat(path, &stat_buf);
 
     if(rc == 0)
     {
-        gs_stat_buf = (globus_gridftp_server_stat_t *)
-            globus_malloc(sizeof(globus_gridftp_server_stat_t));
+        gs_stat_buf = (globus_gridftp_server_control_stat_t *)
+            globus_malloc(sizeof(globus_gridftp_server_control_stat_t));
         gs_stat_buf->st_mode = stat_buf.st_mode;
         gs_stat_buf->st_uid = stat_buf.st_uid;
         gs_stat_buf->st_gid = stat_buf.st_gid;
@@ -70,13 +90,13 @@ resource_func(
         gs_stat_buf->st_size = stat_buf.st_size;
         gs_stat_buf->st_nlink = stat_buf.st_nlink;
 
-        globus_gridftp_server_finished_resource(
-            op, GLOBUS_SUCCESS, gs_stat_buf, 1);
+//        globus_gridftp_server_control_finished_resource(
+//            op, GLOBUS_SUCCESS, gs_stat_buf, 1);
     }
     else
     {
-        globus_gridftp_server_finished_resource(
-            op, (void *)1, NULL, 0);
+//        globus_gridftp_server_control_finished_resource(
+//            op, (void *)1, NULL, 0);
     }
 
     return GLOBUS_SUCCESS;
@@ -95,11 +115,11 @@ main(
     globus_xio_server_t                     server;
     globus_result_t                         res;
     char *                                  cs;
-    globus_gridftp_server_attr_t            ftp_attr;
-    globus_gridftp_server_t                 ftp_server;
+    globus_gridftp_server_control_attr_t    ftp_attr;
+    globus_gridftp_server_control_t         ftp_server;
 
     globus_module_activate(GLOBUS_XIO_MODULE);
-    globus_module_activate(GLOBUS_GRIDFTP_SERVER_MODULE);
+    globus_module_activate(GLOBUS_GRIDFTP_SERVER_CONTROL_MODULE);
 
     /*
      *  set up the xio handle
@@ -140,21 +160,24 @@ main(
     /*
      *  server connection is all set up, hand it to server_lib
      */
-    res = globus_gridftp_server_init(&ftp_server);
+    res = globus_gridftp_server_control_init(&ftp_server);
     test_res(res, __LINE__);
 
-    res = globus_gridftp_server_attr_init(&ftp_attr);
+    res = globus_gridftp_server_control_attr_init(&ftp_attr);
     test_res(res, __LINE__);
 
-    res = globus_gridftp_server_attr_set_resource(ftp_attr, resource_func);
+    res = globus_gridftp_server_control_attr_set_resource(ftp_attr, resource_func);
     test_res(res, __LINE__);
 
-    res = globus_gridftp_server_attr_set_done(ftp_attr, globus_l_done_cb);
+    res = globus_gridftp_server_control_attr_set_auth(ftp_attr, auth_func);
+    test_res(res, __LINE__);
+
+    res = globus_gridftp_server_control_attr_set_done(ftp_attr, globus_l_done_cb);
     test_res(res, __LINE__);
 
     globus_mutex_lock(&globus_l_mutex);
     {
-        res = globus_gridftp_server_start(
+        res = globus_gridftp_server_control_start(
             ftp_server, ftp_attr, xio_handle, FTP_USER_ARG);
 
         while(!globus_l_done)
@@ -168,7 +191,7 @@ main(
     res = globus_xio_close(xio_handle, NULL);
     test_res(res, __LINE__);
 
-    globus_module_deactivate(GLOBUS_GRIDFTP_SERVER_MODULE);
+    globus_module_deactivate(GLOBUS_GRIDFTP_SERVER_CONTROL_MODULE);
     globus_module_deactivate(GLOBUS_XIO_MODULE);
 
     return 0;
