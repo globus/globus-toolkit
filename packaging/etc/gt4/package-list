@@ -12,7 +12,7 @@ globus_scheduler_event_generator_fork_setup ws-gram/job_monitoring/fork/c/setup 
 globus_scheduler_event_generator            ws-gram/job_monitoring/common/c/source gpt
 globus_wsrf_gram_job_monitoring_common_java_source ws-gram/job_monitoring/common/java/source
 globus_fork_starter                         ws-gram/job_management/fork/c/source  gpt
-globus_wsrf_job_management_fork_setup       ws-gram/job_management/fork/setup
+globus_wsrf_job_management_fork_setup       ws-gram/job_management/fork/setup  gpt
 globus_wsrf_mds_index                       ws-mds/index/source
 globus_wsrf_mds_ganglia                     ws-mds/ganglia/source
 globus_wsrf_servicegroup                    ws-mds/servicegroup/source
