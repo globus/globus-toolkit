@@ -606,16 +606,34 @@ if test "x$gsi_path" != "xno" ; then
 	GSI_CPPFLAGS="-I${GLOBUS_INCLUDE}"
 	AC_MSG_RESULT(yes)
 
-	AC_MSG_CHECKING(for Globus linkline)
+	#
+	# Find GPT linkline helper
+	#
+
+	AC_MSG_CHECKING(for GPT linkline helper)
 	if test -x $GPT_LOCATION/sbin/gpt_build_config ; then
-		$GPT_LOCATION/sbin/gpt_build_config -f ${globus_flavor_type} -link shared -src pkg_data_src.gpt
-		. ./gpt_build_temp.sh
-		GSI_LDFLAGS="-L${gsi_path}/lib"
-		GSI_LIBS="$GPT_CONFIG_PGM_LINKS"
-		export LD_LIBRARY_PATH="${gsi_path}/lib:$LD_LIBRARY_PATH"
+		gpt_linkline_helper="$GPT_LOCATION/sbin/gpt_build_config"
+	elif test -x ${gsi_path}/sbin/gpt_build_config ; then
+		gpt_linkline_helper="${gsi_path}/sbin/gpt_build_config"
 	else
 		AC_MSG_ERROR(Cannot find gpt_build_config: GPT installation is incomplete)
 	fi
+
+	#
+	# Build Globus linkline
+	#
+
+	${gpt_linkline_helper} -f ${globus_flavor_type} -link shared -src pkg_data_src.gpt
+	. ./gpt_build_temp.sh
+	GSI_LDFLAGS="-L${gsi_path}/lib"
+	GSI_LIBS="$GPT_CONFIG_PGM_LINKS"
+	export LD_LIBRARY_PATH="${gsi_path}/lib:$LD_LIBRARY_PATH"
+
+	#
+	# Test Globus linkline
+	#
+
+	AC_MSG_CHECKING(for Globus linkline)
 	if test -z "$GSI_LIBS" ; then
 		AC_MSG_ERROR(gpt_build_config failed)
 	fi
