@@ -11,6 +11,8 @@ use vars qw(@tests);
 	     globus-common-poll-test.pl @THREAD_TEST@
 	     globus-common-timedwait-test.pl
 	     globus-common-url-test.pl
+	     globus-common-error-stg-test.pl
+	     globus-common-hash-test.pl
 	     );
 
 runtests(@tests);
