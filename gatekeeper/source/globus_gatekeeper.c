@@ -1474,7 +1474,7 @@ static void doit()
 	    (got_ping_request) ? "[PING ONLY]" : "");
 
     if ((rc = globus_gatekeeper_util_globusxmap(
-		genfilename(gatekeeperhome,grid_services,NULL), 
+		genfilename(gatekeeperhome,grid_services,service_name), 
 		service_name, 
 		&service_line)) != 0)
       {
