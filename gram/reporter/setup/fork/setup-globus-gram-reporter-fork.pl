@@ -46,15 +46,17 @@ if($action != 0)
     $action = "-remove";
     my $action_comment = "removing";
     print "Un-setting up $type gram reporter in MDS\n";
+    print "-----------------------------------------\n";
+    system("rm -f $globusdir/libexec/globus-script-fork-queue");
 }
 else
 {
     $action = "-add";
     my $action_comment = "adding";
     print "Setting up $type gram reporter in MDS\n";
+    print "-----------------------------------------\n";
+    system("cp globus-script-fork-queue $globusdir/libexec");
 }
-
-print "--------------------------------\n";
 
 # un/setup reporter entries in MDS
 #----------------------------------------------------------
