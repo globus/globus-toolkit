@@ -2089,6 +2089,7 @@ globus_io_tcp_register_accept(
     ihandle->xio_server = GLOBUS_NULL;
     ihandle->xio_target = GLOBUS_NULL;
     ihandle->xio_attr = GLOBUS_NULL;
+    ihandle->authz_data = GLOBUS_NULL;
     bounce_info->handle = ihandle;
     bounce_info->cb.non_io = callback;
     bounce_info->user_arg = callback_arg;
