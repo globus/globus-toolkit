@@ -331,10 +331,11 @@ globus_l_xio_ftp_cmd_request_data(
     else
     {
         handle->out_iovec[0].iov_base = globus_fifo_dequeue(&handle->read_q);
-        handle->out_iovec[0].iov_len = strlen(handle->out_iovec[0].iov_base);
+        handle->out_iovec[0].iov_len = 
+            strlen((char*)handle->out_iovec[0].iov_base);
 
         globus_xio_driver_finished_read(
-            op, GLOBUS_SUCCESS, handle->iovec.iov_len);
+            op, GLOBUS_SUCCESS, handle->out_iovec[0].iov_len);
     }
 
     return res;
