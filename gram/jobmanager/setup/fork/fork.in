@@ -441,11 +441,11 @@ sub escape_for_starter
 {
     my $str = shift;
 
-    $str =~ s/\\\\/\\/g;
-    $str =~ s/\\;/;/g;
-    $str =~ s/\\,/,/g;
-    $str =~ s/\\n/\n/g;
-    $str =~ s/\\=/=/g;
+    $str =~ s/\\/\\\\/g;
+    $str =~ s/;/\\;/g;
+    $str =~ s/,/\\,/g;
+    $str =~ s/\n/\\n/g;
+    $str =~ s/=/\\=/g;
 
     return $str;
 }
