@@ -183,7 +183,7 @@ globus_gass_server_ez_init(globus_gass_transfer_listener_t * listener,
 							   scheme);
     }
     rc=globus_gass_transfer_create_listener(listener,
-					    GLOBUS_NULL,
+					    attr,
 					    scheme);
 
 
