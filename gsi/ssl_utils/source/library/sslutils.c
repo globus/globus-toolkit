@@ -25,6 +25,7 @@ static char *rcsid = "$Header$";
 **********************************************************************/
 
 #include "sslutils.h"
+#include "config.h"
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>

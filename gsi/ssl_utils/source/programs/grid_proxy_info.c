@@ -15,6 +15,7 @@ CVS Information:
 
 static char *rcsid = "$Header$";
 
+#include "config.h"
 
 
 #ifndef DEFAULT_SECURE_TMP_DIR

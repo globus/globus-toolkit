@@ -20,6 +20,7 @@ static char *rcsid = "$Header$";
 /**********************************************************************
                              Include header files
 **********************************************************************/
+#include "config.h"
 
 
 #ifndef DEFAULT_SECURE_TMP_DIR
