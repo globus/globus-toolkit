@@ -17,8 +17,8 @@ Overview:
     4.  Platform-specific notes
 
 
-1. Installing Globus Toolki 4.0.0
-=================================
+1. Installing Globus Toolkit 4.0.0
+==================================
 First, download the required software.  Be aware that apache ant
 will use the java referred to by JAVA_HOME, not necessarily the first
 java executable on your PATH.  Be sure to set JAVA_HOME to the
