@@ -77,6 +77,11 @@ globus_gsc_959_panic(
     globus_gsc_pmod_959_op_t                op,
     globus_result_t                         res);
 
+globus_result_t
+globus_gsc_pmod_959_get_server(
+    globus_gridftp_server_control_t *               out_server,
+    globus_gsc_pmod_959_handle_t                    handle);
+
 extern globus_i_gridftp_server_control_pmod_t       globus_i_gsc_959_proto_mod;
 
 #endif
