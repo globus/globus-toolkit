@@ -57,7 +57,10 @@ If you installed IODBC for RLS, add the following two items:
 If you want to enable internationalization, say:
 --enable-i18n
 
-You can see configure --help for the full list of available options.
+There are also Makefile targets for contributed code:
+"make myproxy" to build MyProxy.
+"make gsi_openssh gsi_openssh_setup postinstall" to build GSI-OpenSSH.
+"make gt4-webmds" to build WebMDS.
 
 
 3. Installing only a subset of GT3.9.4
