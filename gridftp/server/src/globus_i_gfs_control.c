@@ -1308,6 +1308,13 @@ globus_l_gfs_request_recv(
         goto error_init;
     }
 
+    result = globus_gridftp_server_control_get_allocated(
+        op, &recv_info->alloc_size);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_init;
+    }
+    
     /* if restart range is anything but 0-MAX then we don't trunc the file */
     if(globus_range_list_size(range_list))
     {

@@ -172,7 +172,7 @@ globus_i_gfs_log_open()
     globus_logging_init(
         &globus_l_gfs_log_handle,
         &flush,
-        2048,
+        65536,
         log_mask, 
         log_mod,
         log_arg);
