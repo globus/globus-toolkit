@@ -917,3 +917,106 @@
 2 while(0)
 
 
+/************************************************************************
+ *                          accept
+ *                          ------
+ ***********************************************************************/
+
+1 void
+1 globus_xio_driver_pass_accept_DEBUG(
+1     globus_result_t *                               _out_res,
+1     globus_xio_operation_t                          _in_op,
+1     globus_xio_driver_callback_t                    _in_cb,
+1     void *                                          _in_user_arg)
+2 #define GlobusXIODriverPassAccept_DEBUG(_out_res, _in_op, _in_cb,         \
+2             _in_user_arg)                                                 \
+2 do                                                                        \
+{                                                                           \
+    globus_i_xio_op_t *                             _op;                    \
+    globus_i_xio_server_t *                         _server;                \
+    globus_i_xio_server_entry_t *                   _my_server;             \
+    globus_i_xio_op_entry_t *                       _my_op;                 \
+    int                                             _caller_ndx;            \
+    globus_result_t                                 _res;                   \
+    globus_xio_driver_t                             _driver;                \
+    GlobusXIOName(GlobusXIODriverPassServerAccept);                         \
+                                                                            \
+    _op = (globus_i_xio_op_t *)(_in_op);                                    \
+    globus_assert(_op->ndx < _op->stack_size);                              \
+    _server = _op->_op_server;                                              \
+    _op->progress = GLOBUS_TRUE;                                            \
+    _op->block_timeout = GLOBUS_FALSE;                                      \
+                                                                            \
+    if(_op->canceled)                                                       \
+    {                                                                       \
+        _res = GlobusXIOErrorCanceled();                                    \
+    }                                                                       \
+    else                                                                    \
+    {                                                                       \
+        _caller_ndx = _op->ndx;                                             \
+        do                                                                  \
+        {                                                                   \
+            _my_op = &_op->entry[_op->ndx];                                 \
+            _my_server = &_server->entry[_op->ndx];                         \
+            _driver = _my_server->driver;                                   \
+            _op->ndx++;                                                     \
+        }                                                                   \
+        while(_driver->server_accept_func == NULL);                         \
+                                                                            \
+        _my_op->cb = (_in_cb);                                              \
+        _my_op->user_arg = (_in_user_arg);                                  \
+        _my_op->in_register = GLOBUS_TRUE;                                  \
+                                                                            \
+        _res = _driver->server_accept_func(                                 \
+                    _my_server->server_handle,                              \
+                    _my_op->attr,                                           \
+                    _op);                                                   \
+        _my_op->in_register = GLOBUS_FALSE;                                 \
+    }                                                                       \
+    GlobusXIODebugSetOut(_out_res, _res);                                   \
+}                                                                           \
+2 while(0)
+
+
+1 void
+1 globus_xio_driver_finished_accept_DEBUG(
+1     globus_xio_operation_t                          _in_op,
+1     globus_xio_target_t                             _in_target,
+1     globus_result_t                                 _in_res)
+2 #define GlobusXIODriverFinishedAccept_DEBUG(_in_op, _in_target, _in_res)  \
+2 do                                                                        \
+{                                                                           \
+    globus_i_xio_op_t *                             _op;                    \
+    int                                             _caller_ndx;            \
+    globus_i_xio_op_entry_t *                       _my_op;                 \
+                                                                            \
+    _op = (globus_i_xio_op_t *)(_in_op);                                    \
+    globus_assert(_op->ndx > 0);                                            \
+    _op->progress = GLOBUS_TRUE;                                            \
+    _op->block_timeout = GLOBUS_FALSE;                                      \
+                                                                            \
+    _my_op = &_op->entry[_op->ndx - 1];                                     \
+    _op->cached_res = (_in_res);                                            \
+                                                                            \
+    _caller_ndx = _my_op->caller_ndx;                                       \
+    _op->ndx = _caller_ndx;                                                 \
+    _my_op->target = (_in_target);                                          \
+                                                                            \
+    if(_op->entry[_op->ndx].in_register)                                    \
+    {                                                                       \
+        globus_callback_space_register_oneshot(                             \
+            NULL,                                                           \
+            NULL,                                                           \
+            globus_l_xio_driver_op_kickout,                                 \
+            (void *)_op,                                                    \
+            GLOBUS_CALLBACK_GLOBAL_SPACE);                                  \
+    }                                                                       \
+    else                                                                    \
+    {                                                                       \
+        _op->ndx = _caller_ndx;                                             \
+        _my_op->cb(_op, _op->cached_res, _my_op->user_arg);                 \
+    }                                                                       \
+}                                                                           \
+2 while(0)
+
+

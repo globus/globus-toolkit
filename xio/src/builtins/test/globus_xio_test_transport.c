@@ -2,12 +2,12 @@
 #include "globus_common.h"
 #include "globus_xio_test_transport.h"
 
-#define XIOTestCreateOpWraper(ow, dh, op, res, nb)                      \
+#define XIOTestCreateOpWraper(ow, _in_dh, _in_op, res, nb)              \
 {                                                                       \
     ow = (globus_l_xio_test_op_wrapper_t *)                             \
             globus_malloc(sizeof(globus_l_xio_test_op_wrapper_t));      \
-    ow->dh = dh;                                                        \
-    ow->op = op;                                                        \
+    ow->dh = _in_dh;                                                    \
+    ow->op = (_in_op);                                                  \
     ow->res = res;                                                      \
     ow->nbytes = nb;                                                    \
 }
@@ -220,7 +220,6 @@ globus_l_xio_operation_kickout(
     void *                              user_arg)
 {
     globus_l_xio_test_op_wrapper_t *    ow;
-    globus_size_t                       nbytes;
 
     ow = (globus_l_xio_test_op_wrapper_t *) user_arg;
 
@@ -246,6 +245,10 @@ globus_l_xio_operation_kickout(
             GlobusXIODriverFinishedWrite(ow->op, ow->res, ow->nbytes);
             break;
 
+        case GLOBUS_XIO_OPERATION_TYPE_ACCEPT:
+            GlobusXIODriverFinishedAccept(ow->op, NULL, ow->res);
+            break;
+
         default:
             globus_assert(0);
     }    
@@ -256,7 +259,6 @@ globus_l_xio_operation_kickout(
  *  server stuff
  *********************************/
 
-globus_result_t
 static globus_result_t
 globus_l_xio_test_server_init(
     void **                             out_server,
@@ -264,7 +266,7 @@ globus_l_xio_test_server_init(
 {
     globus_l_xio_test_handle_t *        server;
 
-    if(attr == NULL)
+    if(driver_attr == NULL)
     {
         driver_attr = &globus_l_default_attr;
     }
@@ -283,32 +285,33 @@ globus_l_xio_test_accept(
     void *                              driver_attr,
     globus_xio_operation_t              accept_op)
 {
-    globus_l_xio_test_handle_t *        attr;
+    globus_l_xio_test_handle_t *        server;
+    globus_result_t                     res;
 
-    attr = (globus_l_xio_test_handle_t *) driver_server;
+    server = (globus_l_xio_test_handle_t *) driver_server;
 
-    if(attr->failure & GLOBUS_XIO_TEST_FAIL_PASS_ACCEPT)
+    if(server->failure & GLOBUS_XIO_TEST_FAIL_PASS_ACCEPT)
     {
         return GlobusXIOErrorLazy();
     }
-    else if(attr->failure & GLOBUS_XIO_TEST_FAIL_FINISH_ACCEPT)
+    else if(server->failure & GLOBUS_XIO_TEST_FAIL_FINISH_ACCEPT)
     {
         res = GlobusXIOErrorLazy();
     }
 
-    if(dh->inline_finish)
+    if(server->inline_finish)
     {
-        GlobusXIODriverFinishedAccept(context, dh, op, res);
+        GlobusXIODriverFinishedAccept(accept_op, NULL, res);
     }
     else
     {
         globus_l_xio_test_op_wrapper_t *    ow;
 
-        XIOTestCreateOpWraper(ow, attr, op, res, 0);
+        XIOTestCreateOpWraper(ow, server, accept_op, res, 0);
 
         globus_callback_space_register_oneshot(
             NULL,
-            &dh->delay,
+            &server->delay,
             globus_l_xio_operation_kickout,
             (void *) ow,
             GLOBUS_CALLBACK_GLOBAL_SPACE);
@@ -323,7 +326,7 @@ globus_l_xio_test_server_cntl(
     int                                 cmd,
     va_list                             ap)
 {
-    globus_l_xio_test_handle_t *        attr;
+    return GLOBUS_SUCCESS;
 }
 
 static globus_result_t
@@ -331,6 +334,7 @@ globus_l_xio_test_server_destroy(
     void *                              driver_server)
 {
     globus_free(driver_server);
+    return GLOBUS_SUCCESS;
 }
 
 
@@ -580,8 +584,8 @@ static struct globus_i_xio_driver_s globus_l_xio_test_info =
      */
     globus_l_xio_test_server_init,               /* server_init_func    */
     globus_l_xio_test_accept,                    /* server_accept_func  */
-    NULL,                                        /* server_destroy_func */
-    NULL,                                        /* server_cntl_func    */
+    globus_l_xio_test_server_destroy,            /* server_destroy_func */
+    globus_l_xio_test_server_cntl,               /* server_cntl_func    */
 
     /*
      *  driver attr functions.  All or none may be NULL
