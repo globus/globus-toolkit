@@ -144,11 +144,11 @@ if ($response eq "n")
 print "\n";
 
 makeConfDir();
+copyPRNGFile();
 $keyhash = determineKeys();
 runKeyGen($keyhash->{gen});
 copyKeyFiles($keyhash->{copy});
 copyConfigFiles();
-copyPRNGFile();
 
 my $metadata = new Grid::GPT::Setup(package_name => "gsi_openssh_setup");
 
