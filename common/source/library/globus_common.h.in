@@ -300,7 +300,7 @@ globus_common_tools_path(    char **   bufp );
 globus_result_t
 globus_common_deploy_path(   char **   bufp );
 
-/* returns value of GLOBUS_INSTALL_PATH in the deploy dir config file */
+/* returns value of GLOBUS_LOCATION in the deploy dir config file */
 globus_result_t
 globus_common_get_attribute_from_config_file( char *   deploy_path,
 					      char *   file_location,

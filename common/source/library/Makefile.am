@@ -94,10 +94,9 @@ include_HEADERS = \
 
 lib_LTLIBRARIES = libglobus_common_$(GLOBUS_FLAVOR_NAME).la
 
-INCLUDES = -I $(GLOBUS_INSTALL_PATH)/include/$(GLOBUS_FLAVOR_NAME) -I . \
-	-I $(srcdir)/library @GPT_INCLUDES@
+INCLUDES = @GPT_INCLUDES@
 
-libglobus_common___GLOBUS_FLAVOR_NAME__la_LIBADD = @GPT_LIBS@
+libglobus_common___GLOBUS_FLAVOR_NAME__la_LIBADD = @GPT_LIB_LINKS@
 
 libglobus_common___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 
@@ -117,3 +116,4 @@ EXTRA_DIST = \
 
 
 include $(top_srcdir)/globus_automake_rules
+

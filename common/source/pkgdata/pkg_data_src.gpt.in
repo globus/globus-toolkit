@@ -3,10 +3,13 @@
 
 <gpt_package_metadata Name="globus_common" Format_Version="0.02">
 <Aging_Version Major="2" Minor="0" Age="0"/>
+<Description>
+</Description>
+<Version_Stability Release="experimental"/>
 <src_pkg>
 
 <Source_Dependencies Type="compile" >
-<Dependency Name="globus_core" Package="dev">
+<Dependency Name="globus_core">
 <Version><Simple_Version Major="2"></Simple_Version></Version></Dependency>
 </Source_Dependencies>
 

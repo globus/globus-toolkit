@@ -118,12 +118,12 @@ globus_result_t
 globus_common_install_path( char **   bufp )
 {
 #if 1
-     return globus_l_common_env_path(bufp, "GLOBUS_INSTALL_PATH");
+     return globus_l_common_env_path(bufp, "GLOBUS_LOCATION");
 #else    
     /* NOTE: this is temporarily, to ease development. */
     globus_result_t  res;
 
-    res = globus_l_common_env_path(bufp, "GLOBUS_INSTALL_PATH");
+    res = globus_l_common_env_path(bufp, "GLOBUS_LOCATION");
 
     if (res == GLOBUS_SUCCESS)
 	return GLOBUS_SUCCESS;
