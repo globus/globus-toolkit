@@ -8,8 +8,8 @@
 
 static char usage[] = \
 "\n"
-"Syntax: myproxy-cp [-l username] [-k credname] ... \n"
-"        myproxy-cp [-usage|-help] [-version]\n"
+"Syntax: myproxy-change-pass-phrase [-l username] [-k credname] ... \n"
+"        myproxy-change-pass-phrase [-usage|-help] [-version]\n"
 "\n"
 "   Options\n"
 "       -h | --help                       Displays usage\n"
@@ -42,10 +42,11 @@ struct option long_options[] =
     {0, 0, 0, 0}
 };
 
-static char short_options[] = "hus:p:l:t:vVdk:S";
+static char short_options[] = "hus:p:l:vVdk:S";
 
 static char version[] =
-"myproxy-cp version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
+"myproxy-change-pass-phrase version " MYPROXY_VERSION " ("
+MYPROXY_VERSION_DATE ") "  "\n";
 
 void 
 init_arguments(int argc, char *argv[], 
