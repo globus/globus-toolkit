@@ -65,8 +65,6 @@ int grid_proxy_init(int hours, const char *proxyfile);
 
 int grid_proxy_destroy(const char *proxyfile);
 
-int receive_response(myproxy_socket_attrs_t *attrs, myproxy_response_t *response); 
-
 #define		SECONDS_PER_HOUR			(60 * 60)
 
 int
@@ -172,7 +170,7 @@ main(int argc, char *argv[])
     }
 
     /* Continue unless the response is not OK */
-    if (receive_response(socket_attrs, server_response) != 0) {
+    if (myproxy_recv_response(socket_attrs, server_response) != 0) {
         goto cleanup;
     }
     
@@ -191,7 +189,7 @@ main(int argc, char *argv[])
     cleanup_user_proxy = 0;
     
     /* Get final response from server */
-    if (receive_response(socket_attrs, server_response) != 0) {
+    if (myproxy_recv_response(socket_attrs, server_response) != 0) {
         goto cleanup;
     }
 
@@ -320,44 +318,4 @@ grid_proxy_destroy(const char *proxyfile) {
     rc = system(command);
 
     return rc;
-}
-
-int
-receive_response(myproxy_socket_attrs_t *attrs, myproxy_response_t *response) {
-    int responselen;
-    char response_buffer[1024];
-
-    /* Receive a response from the server */
-    responselen = myproxy_recv(attrs, response_buffer, sizeof(response_buffer));
-    if (responselen < 0) {
-        fprintf(stderr, "error in myproxy_recv()\n");
-        return -1;
-    }
-
-    /* Make a response object from the response buffer */
-    if (myproxy_deserialize_response(response, response_buffer, responselen) < 0) {
-      fprintf(stderr, "error in myproxy_deserialize_response()\n");
-      return -1;
-    }
-
-    /* Check version */
-    if (strcmp(response->version, MYPROXY_VERSION) != 0) {
-      fprintf(stderr, "Received invalid version number from server\n");
-      return -1;
-    } 
-
-    /* Check response */
-    switch(response->response_type) {
-        case MYPROXY_ERROR_RESPONSE:
-            fprintf(stderr, "Received ERROR: %s\n", response->error_string);
-	    return -1;
-            break;
-        case MYPROXY_OK_RESPONSE:
-            break;
-        default:
-            fprintf(stderr, "Received unknown response type\n");
-	    return -1;
-            break;
-    }
-    return 0;
 }
