@@ -1095,6 +1095,7 @@ globus_l_xio_gsi_read_token_cb(
     int                                 iovec_count;
     globus_size_t                       wait_for = 0;
     globus_size_t                       offset = 0;
+    globus_size_t                       prev_offset = 0;
     int                                 header;
     
     GlobusXIOName(globus_l_xio_gsi_read_token_cb);
@@ -1135,6 +1136,7 @@ globus_l_xio_gsi_read_token_cb(
             header = 0;
         }
 
+        prev_offset = offset;
         offset = offset + wait_for + header;
     
         GlobusXIOGSIDebugPrintf(
@@ -1150,6 +1152,13 @@ globus_l_xio_gsi_read_token_cb(
         {
             if(handle->eof == GLOBUS_FALSE)
             { 
+                handle->bytes_read -= prev_offset;
+                memmove(handle->read_buffer,
+                        &handle->read_buffer[prev_offset],
+                        handle->bytes_read);
+
+                offset -= prev_offset;
+                
                 /* grow read buffer so we can read a full token */
                 
                 if(offset > handle->attr->buffer_size)
