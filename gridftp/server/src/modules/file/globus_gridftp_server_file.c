@@ -240,6 +240,7 @@ error_alloc2:
 error_open:
 error_alloc1:
 error_stat1:
+    globus_gridftp_server_finished_stat(op, result, NULL, 0);
     return result;
 }
 
@@ -503,6 +504,15 @@ globus_l_gfs_file_command(
         break;
     }
 
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+    
+    return GLOBUS_SUCCESS;
+
+error:
+    globus_gridftp_server_finished_command(op, result, NULL);    
     return result;
 }
 
@@ -1100,6 +1110,7 @@ error_open:
     globus_l_gfs_recv_monitor_destroy(monitor);
     
 error_alloc:
+    globus_gridftp_server_finished_transfer(op, result);
     return result;
 }
 
@@ -1497,8 +1508,8 @@ error_open:
 static
 globus_result_t
 globus_l_gfs_file_send(
-    globus_gfs_operation_t   op,
-    globus_gfs_transfer_info_t *       transfer_info,
+    globus_gfs_operation_t              op,
+    globus_gfs_transfer_info_t *        transfer_info,
     void *                              user_arg)
 {
     globus_result_t                     result;
@@ -1537,7 +1548,8 @@ globus_l_gfs_file_send(
 error_open:
     globus_l_gfs_send_monitor_destroy(monitor);
     
-error_alloc:
+error_alloc:  
+    globus_gridftp_server_finished_transfer(op, result);
     return result;
 }
 

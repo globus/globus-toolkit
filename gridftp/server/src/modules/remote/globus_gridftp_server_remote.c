@@ -32,6 +32,27 @@ globus_l_gfs_remote_ipc_error_cb(
     return;
 }
 
+#define GlobusGFSErrorOpFinished(_op, _result)                              \
+do                                                                          \
+{                                                                           \
+    globus_gfs_finished_info_t *    _finished_info;                         \
+                                                                            \
+    _finished_info = (globus_gfs_finished_info_t *)                         \
+        globus_calloc(1, sizeof(globus_gfs_finished_info_t));               \
+                                                                            \
+    _finished_info->type = GLOBUS_GFS_OP_FINAL_REPLY;                       \
+    _finished_info->code = 0;                                               \
+    _finished_info->msg =                                                   \
+        globus_error_print_friendly(globus_error_peek(_result));            \
+    _finished_info->result = _result;                                       \
+                                                                            \
+    globus_gridftp_server_operation_finished(                               \
+        _op,                                                                \
+        _result,                                                            \
+        _finished_info);                                                    \
+} while(0)                                                                  
+
+
 
 static
 void
@@ -338,6 +359,7 @@ globus_l_gfs_remote_stat_kickout(
 
     result = globus_gfs_ipc_request_stat(
         ipc_handle,
+        (int) bounce_info->my_handle,
         &request_id,
         (globus_gfs_stat_info_t *) bounce_info->state,
         globus_l_gfs_ipc_finished_cb,
@@ -376,6 +398,12 @@ globus_l_gfs_remote_stat(
         globus_l_gfs_remote_ipc_error_cb,
         bounce_info);        
                     
+    
+    if(result != GLOBUS_SUCCESS)
+    {
+        globus_gridftp_server_finished_stat(op, result, NULL, 0);
+    }
+
     return result;
 }
 
@@ -394,11 +422,16 @@ globus_l_gfs_remote_command_kickout(
 
     result = globus_gfs_ipc_request_command(
         ipc_handle,
+        (int) bounce_info->my_handle,
         &request_id,
         (globus_gfs_command_info_t *) bounce_info->state,
         globus_l_gfs_ipc_finished_cb,
         bounce_info); 
 
+    if(result != GLOBUS_SUCCESS)
+    {
+        GlobusGFSErrorOpFinished(bounce_info->op, result);
+    }
     return;
 }
 
@@ -431,6 +464,10 @@ globus_l_gfs_remote_command(
         globus_l_gfs_remote_ipc_error_cb,
         bounce_info);        
                     
+    if(result != GLOBUS_SUCCESS)
+    {
+        globus_gridftp_server_finished_command(op, result, NULL);
+    }
     return result;
 }
 
@@ -449,11 +486,16 @@ globus_l_gfs_remote_list_kickout(
 
     result = globus_gfs_ipc_request_list(
         ipc_handle,
+        (int) bounce_info->my_handle,
         &request_id,
         (globus_gfs_transfer_info_t *) bounce_info->state,
         globus_l_gfs_ipc_finished_cb,
         globus_l_gfs_ipc_event_cb,
         bounce_info); 
+    if(result != GLOBUS_SUCCESS)
+    {
+        GlobusGFSErrorOpFinished(bounce_info->op, result);
+    }
 
     return;
 }
@@ -487,7 +529,11 @@ globus_l_gfs_remote_list(
         globus_l_gfs_remote_ipc_error_cb,
         bounce_info);        
                     
-    return result;
+    if(result != GLOBUS_SUCCESS)
+    {
+        GlobusGFSErrorOpFinished(op, result);
+    }
+    return result;    
 }
 
 static
@@ -505,6 +551,7 @@ globus_l_gfs_remote_recv_kickout(
 
     result = globus_gfs_ipc_request_recv(
         ipc_handle,
+        (int) bounce_info->my_handle,
         &request_id,
         (globus_gfs_transfer_info_t *) bounce_info->state,
         globus_l_gfs_ipc_finished_cb,
@@ -513,6 +560,10 @@ globus_l_gfs_remote_recv_kickout(
         
     bounce_info->my_handle->ipc_handle = ipc_handle;
     
+    if(result != GLOBUS_SUCCESS)
+    {
+        GlobusGFSErrorOpFinished(bounce_info->op, result);
+    }
     return;
 }
 
@@ -572,6 +623,7 @@ globus_l_gfs_remote_recv(
         
         result = globus_gfs_ipc_request_recv(
             stripe_info->ipc_handle,
+            (int) bounce_info->my_handle,
             &request_id,
             new_transfer_info,
             globus_l_gfs_ipc_transfer_cb,
@@ -579,6 +631,10 @@ globus_l_gfs_remote_recv(
             bounce_info); 
     }
 
+    if(result != GLOBUS_SUCCESS)
+    {
+        globus_gridftp_server_finished_transfer(op, result);
+    }
     return result;
 }
 
@@ -597,6 +653,7 @@ globus_l_gfs_remote_send_kickout(
 
     result = globus_gfs_ipc_request_send(
         ipc_handle,
+        (int) bounce_info->my_handle,
         &request_id,
         (globus_gfs_transfer_info_t *) bounce_info->state,
         globus_l_gfs_ipc_finished_cb,
@@ -605,6 +662,10 @@ globus_l_gfs_remote_send_kickout(
 
     bounce_info->my_handle->ipc_handle = ipc_handle;
     
+    if(result != GLOBUS_SUCCESS)
+    {
+        GlobusGFSErrorOpFinished(bounce_info->op, result);
+    }
     return;
 }
 
@@ -665,11 +726,16 @@ globus_l_gfs_remote_send(
         
         result = globus_gfs_ipc_request_send(
             stripe_info->ipc_handle,
+            (int) bounce_info->my_handle,
             &request_id,
             new_transfer_info,
             globus_l_gfs_ipc_transfer_cb,
             globus_l_gfs_ipc_event_cb,
             bounce_info); 
+    }
+    if(result != GLOBUS_SUCCESS)
+    {
+        globus_gridftp_server_finished_transfer(op, result);
     }
     return result;
 }
@@ -704,11 +770,16 @@ globus_l_gfs_remote_active_kickout(
     
     result = globus_gfs_ipc_request_active_data(
         ipc_handle,
+        (int) bounce_info->my_handle,
         &request_id,
         tmp_data_info,
         globus_l_gfs_ipc_active_cb,
         bounce_info); 
 
+    if(result != GLOBUS_SUCCESS)
+    {
+        GlobusGFSErrorOpFinished(bounce_info->op, result);
+    }
     return;
 }
 
@@ -741,6 +812,10 @@ globus_l_gfs_remote_active(
         globus_l_gfs_remote_ipc_error_cb,
         bounce_info);        
                     
+    if(result != GLOBUS_SUCCESS)
+    {
+        GlobusGFSErrorOpFinished(op, result);
+    }
     return result;
 }
 
@@ -761,11 +836,16 @@ globus_l_gfs_remote_passive_kickout(
 
     result = globus_gfs_ipc_request_passive_data(
         ipc_handle,
+        (int) bounce_info->my_handle,
         &request_id,
         (globus_gfs_data_info_t *) bounce_info->state,
         globus_l_gfs_ipc_passive_cb,
         bounce_info); 
 
+    if(result != GLOBUS_SUCCESS)
+    {
+        GlobusGFSErrorOpFinished(bounce_info->op, result);
+    }
     return;
 }
 
@@ -800,6 +880,12 @@ globus_l_gfs_remote_passive(
         globus_l_gfs_remote_ipc_error_cb,
         bounce_info); 
                
+
+    
+    if(result != GLOBUS_SUCCESS)
+    {
+        GlobusGFSErrorOpFinished(op, result);
+    }
     return result;
 }
 
@@ -818,6 +904,7 @@ globus_l_gfs_remote_data_destroy_kickout(
 
     result = globus_gfs_ipc_request_data_destroy(
         ipc_handle,
+        (int) bounce_info->my_handle,
         (int) bounce_info->state); 
 
     return;
@@ -883,6 +970,7 @@ globus_l_gfs_remote_trev(
         
         result = globus_gfs_ipc_request_transfer_event(
             stripe_info->ipc_handle,
+            (int) my_handle,
             stripe_info->transfer_id,
             event_type);
     }                              
