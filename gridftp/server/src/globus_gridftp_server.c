@@ -368,9 +368,15 @@ globus_l_gfs_spawn_child(
         rc = execv(new_argv[0], new_argv);
         if(rc == -1)
         {
+            char *                      error_msg;
+
+            error_msg = globus_common_create_string("%s\n%s\n%s",
+                _GSSL("Could not exec child process."),
+                _GSSL("Please verify that a gridftp server is located at: "),
+                new_argv[0]);
             result = GlobusGFSErrorSystemError("execv", errno);
-            globus_i_gfs_log_result(
-                _GSSL("Could not exec child process"), result);
+            globus_i_gfs_log_result(error_msg, result);
+
             goto child_error;
         }
     } 
