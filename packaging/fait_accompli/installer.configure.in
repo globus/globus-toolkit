@@ -45,20 +45,17 @@ AC_SUBST(buildopts, $buildopts)
 
 dnl AC_SUBST(globusloc, prefix)
 dnl Pre-webservices code
-prewsgram="globus-resource-management-server globus-resource-management-client\
- globus-resource-management-sdk globus-resource-management-sdk-thr"
+prewsgram="prewsgram"
 AC_ARG_ENABLE(prewsgram, AC_HELP_STRING([--disable-prewsgram],\
    [Don't build pre-webservices [GRAM].  Default is enabled.]),\
    [if test $enableval = "no"; then prewsgram=" "; fi], [])
 AC_SUBST(prewsgram, $prewsgram)
-prewsgridftp="globus-data-management-server globus-data-management-client\
- globus-data-management-sdk globus-data-management-sdk-thr"
+prewsgridftp="prewsgridftp"
 AC_ARG_ENABLE(prewsgridftp, AC_HELP_STRING([--disable-gridftp],\
    [Don't build GridFTP.  Default is enabled.]),\
    [if test $enableval = "no"; then prewsgridftp=" "; fi], [])
 AC_SUBST(prewsgridftp, $prewsgridftp)
-prewsmds="globus-information-services-server\
- globus-information-services-client globus-information-services-sdk"
+prewsmds="prewsmds"
 AC_ARG_ENABLE(prewsmds, AC_HELP_STRING([--disable-prewsmds],\
    [Don't build pre-webservices mds.  Default is enabled.]),
    [if test $enableval = "no"; then prewsmds=" "; fi], [])

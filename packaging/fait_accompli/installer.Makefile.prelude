@@ -7,9 +7,30 @@ BUILD_OPTS=@buildopts@
 FLAVOR=@flavor@
 THR=@thr@
 
+# Functional group dependencies, expressed in bundles.
+prewsgram: globus-resource-management-server globus-resource-management-client globus-resource-management-sdk globus-resource-management-sdk-thr
+prewsgridftp: globus-data-management-server globus-data-management-client globus-data-management-sdk globus-data-management-sdk-thr
+prewsmds: globus-information-services-server globus-information-services-client globus-information-services-sdk
+wsjava: gt4-java-ws-core
+wsmds: wsjava gt4-mds
+wsdel: wsjava gt4-delegation
+wsrft: wsjava gt4-rft
+wsgram: globus-resource-management-server globus-data-management-server wsjava wsrft gt4-gram
+wscas: wsjava gt4-cas
+wsc: gt4-c-ws-core
+
+# GPT targets
 gpt:
 	cd gpt-3.2autotools2004 && ./build_gpt
-
 postinstall:
 	${GPT_LOCATION}/sbin/gpt-postinstall
 
+# Contrib targets
+myproxy:
+	${GPT_LOCATION}/sbin/gpt-build ${BUILD_OPTS} -srcdir=contrib/myproxy-1.15 ${FLAVOR}
+gsi_openssh:
+	${GPT_LOCATION}/sbin/gpt-build ${BUILD_OPTS} -srcdir=contrib/gsi_openssh-3.5-src ${FLAVOR}
+gsi_openssh_setup:
+	${GPT_LOCATION}/sbin/gpt-build ${BUILD_OPTS} -srcdir=contrib/gsi_openssh_setup-3.5-src ${FLAVOR}
+
+# Bundle dependencies, expressed in packages.
