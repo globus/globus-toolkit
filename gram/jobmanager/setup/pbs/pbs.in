@@ -275,7 +275,7 @@ EOF
     }
     if($description->jobtype() eq "mpi")
     {
-	$pbs_job_script->print("$mpirun -np " . $description->count());
+	$pbs_job_script->print("$mpirun -np " . $description->count() . " ");
 
 	if($cluster)
 	{
