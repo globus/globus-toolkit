@@ -1,12 +1,18 @@
-The GSI-OpenSSH development team announces the release of version 3.3 of
-the GSI-Enabled OpenSSH software distribution.  GSI-OpenSSH 3.3 is based
+The GSI-OpenSSH development team announces the release of version 3.4 of
+the GSI-Enabled OpenSSH software distribution.  GSI-OpenSSH 3.4 is based
 on OpenSSH 3.8.1p1 and NCSA's latest GSI patch for that version of
 OpenSSH.  A summary of the major changes found in this version is given
 at the end of this document.
 
-GSI-OpenSSH 3.3 is available for download from
+    ***  This release fixes a serious security vulnerability,  ***
+    ***  as reported in the security advisory at               ***
+    ***  <http://grid.ncsa.uiuc.edu/ssh/implicitlogin.adv>.    ***
+    ***  We strongly recommend upgrading all installations     ***
+    ***  to this new release immediately.                      ***
+				   
+GSI-OpenSSH 3.4 is available for download from
 
-  <ftp://ftp.ncsa.uiuc.edu/aces/gssapi-openssh/bundle/3.3/>
+  <ftp://ftp.ncsa.uiuc.edu/aces/gssapi-openssh/bundle/3.4/>
 
 For installation instructions, please see
 
@@ -18,23 +24,17 @@ team.  This bugzilla system is located at:
 
    <https://bugzilla.ncsa.uiuc.edu/index.cgi>
 
-GSI-OpenSSH 3.3 Major changes
+GSI-OpenSSH 3.4 Major changes
 
    New features
 
-      * Migrated to OpenSSH 3.8.1p1 codebase.
+      * None.
 
    Bugs fixed
 
-      * Added configure.ac fix for Darwin build.
+      * Fixed serious security vulnerability reported at
+        <http://grid.ncsa.uiuc.edu/ssh/implicitlogin.adv>.
+	Upgrading to this release immediately is strongly advised.
 
-      * Fixed GSSAPI key exchange to not abort when given a limited
-        GSI proxy but to complete successfully and simply not accept
-        the limited GSI proxy for user authentication, falling back to
-        non-GSI user authentication methods.
-        https://bugzilla.ncsa.uiuc.edu/show_bug.cgi?id=236
-
-      * Pass variants on LD_LIBRARY_PATH (LIBPATH,
-        SHLIB_PATH, LD_LIBRARYN32_PATH, LD_LIBRARY64_PATH) to child
-        processes to find GSI shared libraries on different platforms.
-	https://bugzilla.ncsa.uiuc.edu/show_bug.cgi?id=238
+      * Fixed GSSAPI user authentication to always use
+        fully-qualified hostnames for server authentication.
