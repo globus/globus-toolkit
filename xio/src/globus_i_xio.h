@@ -140,7 +140,16 @@ typedef struct globus_i_xio_handle_s
     int                                         stack_size;
     globus_i_xio_context_t *                    context_array;
 
-    globus_list_t *                             op_list;
+    globus_i_xio_handle_state_t                 state;
+
+    /* since only 1 open or close can be outstanding at a time we don't
+       need a list */
+    globus_i_xio_operationt_t *                 open_close_op;
+    globus_list_t *                             write_op_list;
+    globus_list_t *                             read_op_list;
+
+    /* counts outstanding read and write operations */
+    int                                         outstanding_operations;
 
     globus_xio_timeout_callback_t               open_timeout;
     globus_reltime_t                            open_timeout_period;
@@ -215,7 +224,10 @@ typedef struct globus_i_xio_operation_s
     globus_xio_timeout_callback_t               timeout_cb;
 
     /* reference count for destruction */
+
     int                                         ref;
+
+    globus_list_t *                             op_list;
 
 
     globus_i_xio_handle_t *                     xio_handle;
@@ -239,6 +251,27 @@ typedef struct globus_i_xio_operation_s
 } globus_i_xio_operation_t;
 
 
+typedef enum globus_i_xio_handle_state_e
+{
+    GLOBUS_XIO_HANDLE_STATE_OPENING,
+    GLOBUS_XIO_HANDLE_STATE_OPEN,
+    GLOBUS_XIO_HANDLE_STATE_EOF_RECEIVED,
+    GLOBUS_XIO_HANDLE_STATE_EOF_DELIVERED,
+    GLOBUS_XIO_HANDLE_STATE_EOF_RECEIVED_AND_CLOSING,
+    GLOBUS_XIO_HANDLE_STATE_EOF_DELIVERED_AND_CLOSING,
+    GLOBUS_XIO_HANDLE_STATE_CLOSING,
+    GLOBUS_XIO_HANDLE_STATE_CLOSED,
+} globus_i_xio_handle_state_t;
+
+typedef enum globus_i_xio_operation_type_e
+{
+    GLOBUS_XIO_OPERATION_TYPE_FINISHED,
+    GLOBUS_XIO_OPERATION_TYPE_OPEN,
+    GLOBUS_XIO_OPERATION_TYPE_CLOSE,
+    GLOBUS_XIO_OPERATION_TYPE_READ,
+    GLOBUS_XIO_OPERATION_TYPE_WRITE,
+    GLOBUS_XIO_OPERATION_TYPE_EOF,
+} globus_i_xio_operation_type_t;
 
 /***************************************************************************
  *                    Driver accessor macros
