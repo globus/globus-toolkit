@@ -21,6 +21,8 @@ libgssapiv2_gsi___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
 
 libgssapiv2_gsi___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS)
 
+libgssapiv2_gsi___GLOBUS_FLAVOR_NAME__la_CFLAGS = $(GPT_CFLAGS)
+
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
