@@ -2952,6 +2952,10 @@ globus_ftp_control_local_dcau(
 		GLOBUS_IO_SECURE_AUTHENTICATION_MODE_GSSAPI,
 		handle->cc_handle.auth_info.delegated_credential_handle);
 
+            globus_io_attr_set_secure_proxy_mode(
+                &dc_handle->io_attr,
+		GLOBUS_IO_SECURE_PROXY_MODE_MANY);
+            
 	    switch(dc_handle->dcau.mode)
 	    {
 	      case GLOBUS_FTP_CONTROL_DCAU_SELF:
