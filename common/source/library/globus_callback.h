@@ -787,6 +787,25 @@ globus_callback_space_init(
     globus_callback_space_attr_t        attr);
 
 /**
+ * Take a reference to a space
+ *
+ * A library which has been 'given' a space to provide callbacks on would use
+ * this to take a reference on the user's space.  This prevents mayhem should
+ * a user destroy a space before the library is done with it.  This reference
+ * should be destroyed with globus_callback_space_destroy() (think dup())
+ *
+ * @param space
+ *        space to reference
+ *
+ * @return
+ *        - GLOBUS_CALLBACK_ERROR_INVALID_SPACE
+ *        - GLOBUS_SUCCESS
+ */
+globus_result_t
+globus_callback_space_reference(
+    globus_callback_space_t             space);
+
+/**
  * Destroy a user space
  *
  * This will destroy a previously initialized space.  Space will not actually
@@ -884,23 +903,6 @@ globus_result_t
 globus_callback_space_attr_get_behavior(
     globus_callback_space_attr_t        attr,
     globus_callback_space_behavior_t *  behavior);
-
-/**
- * Verify a space is valid
- *
- * Simple sanity check function which can be used by libraries that accept
- * a user space.
- *
- * @param space
- *        space to check
- *
- * @return
- *        - GLOBUS_TRUE if the space is valid, else
- *        - GLOBUS_FALSE
- */
-globus_bool_t
-globus_callback_space_is_valid(
-    globus_callback_space_t             space);
 
 /**
  * Retrieve the space of a currently running callback

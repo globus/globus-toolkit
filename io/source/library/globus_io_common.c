@@ -260,12 +260,9 @@ globus_io_cancel(
     monitor.use_err = GLOBUS_FALSE;
     
     /* we're going to poll on global space, save users space */
-    if(handle)
-    {
-        saved_space = handle->space;
-        handle->space = GLOBUS_CALLBACK_GLOBAL_SPACE;
-    }
-    
+    globus_i_io_get_callback_space(handle, &saved_space);
+    globus_i_io_set_callback_space(handle, GLOBUS_CALLBACK_GLOBAL_SPACE);
+
     result = globus_io_register_cancel(handle,
 				      perform_callbacks,
 				      globus_i_io_monitor_callback,
@@ -285,10 +282,7 @@ globus_io_cancel(
     }
     globus_mutex_unlock(&monitor.mutex);
     
-    if(handle)
-    {
-        handle->space = saved_space;
-    }
+    globus_i_io_set_callback_space(handle, saved_space);
     
     globus_mutex_destroy(&monitor.mutex);
 
@@ -352,11 +346,8 @@ globus_io_close(
     monitor.use_err = GLOBUS_FALSE;
 
     /* we're going to poll on global space, save users space */
-    if(handle)
-    {
-        saved_space = handle->space;
-        handle->space = GLOBUS_CALLBACK_GLOBAL_SPACE;
-    }
+    globus_i_io_get_callback_space(handle, &saved_space);
+    globus_i_io_set_callback_space(handle, GLOBUS_CALLBACK_GLOBAL_SPACE);
     
     result = globus_io_register_close(handle,
 				      globus_i_io_monitor_callback,
@@ -376,11 +367,8 @@ globus_io_close(
     }
     globus_mutex_unlock(&monitor.mutex);
     
-    if(handle)
-    {
-        handle->space = saved_space;
-    }
-    
+    globus_i_io_set_callback_space(handle, saved_space);
+
     globus_mutex_destroy(&monitor.mutex);
 
     globus_cond_destroy(&monitor.cond);
@@ -521,11 +509,8 @@ globus_io_listen(
     monitor.use_err = GLOBUS_FALSE;
 
     /* we're going to poll on global space, save users space */
-    if(handle)
-    {
-        saved_space = handle->space;
-        handle->space = GLOBUS_CALLBACK_GLOBAL_SPACE;
-    }
+    globus_i_io_get_callback_space(handle, &saved_space);
+    globus_i_io_set_callback_space(handle, GLOBUS_CALLBACK_GLOBAL_SPACE);
     
     result = globus_io_register_listen(handle,
 				       globus_i_io_monitor_callback,
@@ -546,11 +531,8 @@ globus_io_listen(
     }
     globus_mutex_unlock(&monitor.mutex);
     
-    if(handle)
-    {
-        handle->space = saved_space;
-    }
-    
+    globus_i_io_set_callback_space(handle, saved_space);
+
     globus_mutex_destroy(&monitor.mutex);
 
     globus_cond_destroy(&monitor.cond);
@@ -653,6 +635,8 @@ globus_i_io_handle_destroy(
 			       &handle->securesocket_attr.credential);
        handle->securesocket_attr.credential = GSS_C_NO_CREDENTIAL;
     }
+    
+    globus_callback_space_destroy(handle->socket_attr.space);
 }
 
 /* callbacks */
@@ -870,7 +854,8 @@ globus_i_io_initialize_handle(
     handle->state = GLOBUS_IO_HANDLE_STATE_INVALID;
     handle->user_pointer = GLOBUS_NULL;
     
-    handle->space = GLOBUS_CALLBACK_GLOBAL_SPACE;
+    globus_callback_space_reference(GLOBUS_CALLBACK_GLOBAL_SPACE);
+    handle->socket_attr.space = GLOBUS_CALLBACK_GLOBAL_SPACE;
     
     return GLOBUS_SUCCESS;
 }

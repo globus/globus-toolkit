@@ -930,6 +930,29 @@ globus_callback_space_init(
     return GLOBUS_SUCCESS;
 }
 
+globus_result_t
+globus_callback_space_reference(
+    globus_callback_space_t             space)
+{
+    globus_bool_t                       in_table;
+    
+    if(space == GLOBUS_CALLBACK_GLOBAL_SPACE)
+    {
+        return GLOBUS_SUCCESS;
+    }
+    
+    in_table = globus_handle_table_increment_reference(
+        &globus_l_callback_space_table, space);
+        
+    if(!in_table)
+    {
+        return GLOBUS_L_CALLBACK_CONSTRUCT_INVALID_SPACE(
+            "globus_callback_space_reference");
+    }
+
+    return GLOBUS_SUCCESS;
+}
+
 /**
  * globus_callback_space_destroy
  *
@@ -943,7 +966,12 @@ globus_callback_space_destroy(
     globus_callback_space_t             space)
 {
     globus_l_callback_space_t *         i_space;
-
+    
+    if(space == GLOBUS_CALLBACK_GLOBAL_SPACE)
+    {
+        return GLOBUS_SUCCESS;
+    }
+    
     i_space = (globus_l_callback_space_t *)
         globus_handle_table_lookup(
                 &globus_l_callback_space_table, space);
@@ -958,32 +986,6 @@ globus_callback_space_destroy(
     return GLOBUS_SUCCESS;
 }
 
-/**
- * Just a predicate for other libraries to verify that this is a valid space
- */
-globus_bool_t
-globus_callback_space_is_valid(
-    globus_callback_space_t             space)
-{
-    globus_l_callback_space_t *         i_space;
-    
-    if(space == GLOBUS_CALLBACK_GLOBAL_SPACE)
-    {
-        return GLOBUS_TRUE;
-    }
-    
-    i_space = (globus_l_callback_space_t *)
-        globus_handle_table_lookup(
-                &globus_l_callback_space_table, space);
-    if(!i_space)
-    {
-        return GLOBUS_FALSE;
-    }
-
-    return GLOBUS_TRUE;
-}
-
- 
 /**
  * globus_callback_space_attr_*
  *

@@ -152,6 +152,9 @@ globus_i_io_attr_activate(void)
     globus_l_io_socketattr_default.oobinline = GLOBUS_FALSE;
     globus_l_io_socketattr_default.sndbuf = 0;
     globus_l_io_socketattr_default.rcvbuf = 0;
+    
+    globus_callback_space_reference(GLOBUS_CALLBACK_GLOBAL_SPACE);
+    globus_l_io_socketattr_default.space = GLOBUS_CALLBACK_GLOBAL_SPACE;
 
     /* secure socket layer options */
     globus_l_io_securesocketattr_default.authentication_mode =
@@ -209,8 +212,10 @@ globus_i_io_attr_activate(void)
  * a space is associated with a globus io handle, all callbacks that are 
  * delivered on that handle are only delivered to the supplied callback space;
  *
- * The defualt is for callbacks to go to the 'global' space, 
- * GLOBUS_CALLBACK_GLOBAL_SPACE
+ * The default is for callbacks to go to the 'global' space, 
+ * GLOBUS_CALLBACK_GLOBAL_SPACE.
+ *
+ * This attr only applies to socket attrs,  file attrs are ignored.
  *
  * @param attr
  *        attr to associate space with
@@ -236,10 +241,13 @@ globus_io_attr_set_callback_space(
     globus_io_attr_t *                  attr, 
     globus_callback_space_t             space)
 {
-    static char *                            myname =
+    globus_object_t *                   socketattr;
+    globus_i_io_socketattr_instance_t * instance;
+    globus_result_t                     result;
+    static char *                       myname =
         "globus_io_attr_set_callback_space";
-    
-    if(!attr)
+        
+    if(attr == GLOBUS_NULL)
     {
         return globus_error_put(
             globus_io_error_construct_null_parameter(
@@ -249,20 +257,51 @@ globus_io_attr_set_callback_space(
                 1,
                 myname));
     }
-    
-    if(!globus_callback_space_is_valid(space)) 
+    if(attr->attr == GLOBUS_NULL)
     {
         return globus_error_put(
-           globus_error_construct_string(
-               GLOBUS_IO_MODULE,
-               GLOBUS_NULL,
-               "[%s] Callback space is not valid.",
-               myname));
+            globus_io_error_construct_not_initialized(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "attr",
+                1,
+                myname));
+    }
+ 
+    socketattr = globus_object_upcast(
+        attr->attr, GLOBUS_IO_OBJECT_TYPE_SOCKETATTR);
+        
+    if(socketattr == GLOBUS_NULL)
+    {
+        /* ignore for other attrs */
+        return GLOBUS_SUCCESS;
+    }
+
+    instance = (globus_i_io_socketattr_instance_t *)
+        globus_object_get_local_instance_data(socketattr);
+
+    if(instance == GLOBUS_NULL)
+    {
+        return globus_error_put(
+            globus_io_error_construct_bad_parameter(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "attr",
+                1,
+                myname));
     }
     
-    attr->space = space;
+    result = globus_callback_space_reference(space);
     
-    return GLOBUS_SUCCESS;
+    if(result == GLOBUS_SUCCESS)
+    {
+        /* destroy reference to previous space */
+        globus_callback_space_destroy(instance->space);
+    
+        instance->space = space;
+    }
+    
+    return result;
 }
 
 /**
@@ -270,6 +309,8 @@ globus_io_attr_set_callback_space(
  * @ingroup attr
  *
  * Use this to get the callback space associated with a globus_io_attr_t. 
+ * Note: you are NOT given a reference to the space passed back.
+ * should you need one, call globus_callback_space_reference()
  *
  * @param attr
  *        attr to associate space with
@@ -294,10 +335,12 @@ globus_io_attr_get_callback_space(
     globus_io_attr_t *                  attr, 
     globus_callback_space_t *           space)
 {
-    static char *                            myname =
+    globus_object_t *                   socketattr;
+    globus_i_io_socketattr_instance_t * instance;
+    static char *                       myname =
         "globus_io_attr_get_callback_space";
-
-    if(!attr)
+    
+    if(attr == GLOBUS_NULL)
     {
         return globus_error_put(
             globus_io_error_construct_null_parameter(
@@ -307,8 +350,7 @@ globus_io_attr_get_callback_space(
                 1,
                 myname));
     }
-    
-    if(!space)
+    if(space == GLOBUS_NULL)
     {
         return globus_error_put(
             globus_io_error_construct_null_parameter(
@@ -318,12 +360,68 @@ globus_io_attr_get_callback_space(
                 2,
                 myname));
     }
+    if(attr->attr == GLOBUS_NULL)
+    {
+        return globus_error_put(
+            globus_io_error_construct_not_initialized(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "attr",
+                1,
+                myname));
+    }
     
-    *space = attr->space;
+    socketattr = globus_object_upcast(
+        attr->attr, GLOBUS_IO_OBJECT_TYPE_SOCKETATTR);
+        
+    if(socketattr == GLOBUS_NULL)
+    {
+        /* ignore for other attr types */
+        *space = GLOBUS_CALLBACK_GLOBAL_SPACE;
+        return GLOBUS_SUCCESS;
+    }
+
+    instance = (globus_i_io_socketattr_instance_t *)
+        globus_object_get_local_instance_data(socketattr);
+
+    if(instance == GLOBUS_NULL)
+    {
+        return globus_error_put(
+            globus_io_error_construct_bad_parameter(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "attr",
+                1,
+                myname));
+    }
     
+    *space = instance->space;
     return GLOBUS_SUCCESS;
 }
 /* @} */
+
+
+void
+globus_i_io_get_callback_space(
+    globus_io_handle_t *		handle,
+    globus_callback_space_t *           space)
+{
+    if(handle)
+    {
+        *space = handle->socket_attr.space;
+    }
+}
+
+void
+globus_i_io_set_callback_space(
+    globus_io_handle_t *		handle,
+    globus_callback_space_t             space)
+{
+    if(handle)
+    {   
+        handle->socket_attr.space = space;
+    }
+}
 
 /****************************************************************
  *                      NETLOGGER
@@ -1454,6 +1552,8 @@ globus_l_io_socketattr_copy(
 	memcpy(*dst_instance_data,
 	       src_instance_data,
 	       sizeof(globus_i_io_socketattr_instance_t));
+	       
+	globus_callback_space_reference((*dst_instance_data)->space);
     }
 }
 /* globus_l_io_socketattr_copy() */
@@ -1475,6 +1575,8 @@ globus_l_io_socketattr_destroy(
 {
     if(instance_data)
     {
+        globus_callback_space_destroy(instance_data->space);
+        
 	globus_free(instance_data);
     }
 }
@@ -5303,10 +5405,13 @@ globus_i_io_socket_copy_attr(
     globus_i_io_socketattr_instance_t *	dst,
     globus_i_io_socketattr_instance_t *	src)
 {
+    globus_callback_space_destroy(src->space);
+    
     memcpy(dst,
 	   src,
 	   sizeof(globus_i_io_socketattr_instance_t));
     
+    globus_callback_space_reference(dst->space);
 }
 /* globus_i_io_socket_copy_attr() */
 
@@ -5451,8 +5556,6 @@ globus_i_io_copy_socketattr_to_handle(
 	       &handle->socket_attr,
 	       instance);
 	
-	handle->space = attr->space;
-	
 	return GLOBUS_SUCCESS;
     }
     else
@@ -5525,7 +5628,6 @@ globus_i_io_copy_securesocketattr_to_handle(
 	    globus_i_io_securesocket_copy_attr(
 		&handle->securesocket_attr,
 		instance);
-            handle->space = attr->space;
             
 	    return GLOBUS_SUCCESS;
 	}
@@ -5611,7 +5713,6 @@ globus_i_io_copy_tcpattr_to_handle(
                    &instance->interface[0],
                    16);
 	    
-	    handle->space = attr->space;
 	    return GLOBUS_SUCCESS;
 	}
     }
@@ -5699,8 +5800,6 @@ globus_i_io_copy_udpattr_to_handle(
 	    handle->udp_attr.interface = instance->interface;
 	    handle->udp_attr.restrict_port = instance->restrict_port;
             
-            handle->space = attr->space;
-            
 	    return GLOBUS_SUCCESS;
 	}
     }
@@ -5770,7 +5869,6 @@ globus_i_io_copy_fileattr_to_handle(
 		globus_object_get_local_instance_data(attr->attr);
 
 	    handle->file_attr.file_type = instance->file_type;
-	    handle->space = attr->space;
 	    
 	    return GLOBUS_SUCCESS;
 	}
@@ -5811,8 +5909,6 @@ globus_i_io_securesocket_get_attr(
     globus_i_io_securesocket_copy_attr(
 	instance,
 	&handle->securesocket_attr);
-    
-    attr->space = handle->space;
     
     return GLOBUS_SUCCESS;
 }

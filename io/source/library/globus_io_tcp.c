@@ -395,8 +395,8 @@ globus_io_tcp_connect(
     /* we're going to poll on global space, save users space */
     if(attr)
     {
-        saved_space = attr->space;
-        attr->space = GLOBUS_CALLBACK_GLOBAL_SPACE;
+        globus_io_attr_get_callback_space(attr, &saved_space);
+        globus_io_attr_set_callback_space(attr, GLOBUS_CALLBACK_GLOBAL_SPACE);
     }
     
     result = globus_io_tcp_register_connect(host,
@@ -422,11 +422,13 @@ globus_io_tcp_connect(
     
     if(attr)
     {
-        attr->space = saved_space;
-        if(handle)
-        {
-            handle->space = saved_space;
-        }
+        /* by resetting the attr with this call, i end up with an extra ref,
+         * so, I destroy one ref 
+         */
+        globus_io_attr_set_callback_space(attr, saved_space);
+        globus_i_io_set_callback_space(handle, saved_space);
+        
+        globus_callback_space_destroy(saved_space);
     }
 
     globus_mutex_destroy(&monitor.mutex);
@@ -1043,17 +1045,17 @@ globus_io_tcp_accept(
     monitor.use_err = GLOBUS_FALSE;
     monitor.err = GLOBUS_NULL;
     
-/* we're going to poll on global space, save users space */
-    
+    /* we're going to poll on global space, save users space */
     if(attr)
     {
-        saved_space = attr->space;
-        attr->space = GLOBUS_CALLBACK_GLOBAL_SPACE;
+        globus_io_attr_get_callback_space(attr, &saved_space);
+        globus_io_attr_set_callback_space(attr, GLOBUS_CALLBACK_GLOBAL_SPACE);
     }
-    else if(listener_handle)
+    else
     {
-        saved_space = listener_handle->space;
-        listener_handle->space = GLOBUS_CALLBACK_GLOBAL_SPACE;
+        globus_i_io_get_callback_space(listener_handle, &saved_space);
+        globus_i_io_set_callback_space(
+            listener_handle, GLOBUS_CALLBACK_GLOBAL_SPACE);
     }
     
     result = globus_io_tcp_register_accept(listener_handle,
@@ -1079,18 +1081,20 @@ globus_io_tcp_accept(
     
     if(attr)
     {
-        attr->space = saved_space;
+        /* by resetting the attr with this call, i end up with an extra ref,
+         * this extra ref will be 'applied' towards the new handle
+         */
+        globus_io_attr_set_callback_space(attr, saved_space);
+        globus_i_io_set_callback_space(handle, saved_space);
     }
-    else if(listener_handle)
+    else
     {
-        listener_handle->space = saved_space;
+        globus_i_io_set_callback_space(listener_handle, saved_space);
+        
+        globus_callback_space_reference(saved_space);
+        globus_i_io_set_callback_space(handle, saved_space);
     }
     
-    if(handle)
-    {
-        handle->space = saved_space;
-    }
-        
     globus_mutex_destroy(&monitor.mutex);
     globus_cond_destroy(&monitor.cond);
     
@@ -1181,8 +1185,6 @@ globus_io_tcp_get_attr(
     globus_i_io_tcp_copy_attr(
 	instance,
 	&handle->tcp_attr);
-    
-    attr->space = handle->space;
     
     return GLOBUS_SUCCESS;
 
@@ -1278,7 +1280,6 @@ globus_io_tcp_set_attr(
 	globus_object_get_local_instance_data(attr->attr);
 
     handle->nl_handle = attr->nl_handle;
-    handle->space = attr->space;
 
     /* set local socket options */
     if(instance->nodelay != handle->tcp_attr.nodelay)
@@ -1632,7 +1633,6 @@ globus_io_tcpattr_init(
      *  NETLOGGER
      */
     attr->nl_handle = GLOBUS_NULL;
-    attr->space = GLOBUS_CALLBACK_GLOBAL_SPACE;
 
     return GLOBUS_SUCCESS;
 }
@@ -1709,6 +1709,7 @@ globus_io_tcp_posix_convert(
     globus_io_attr_t *			attributes,
     globus_io_handle_t *		handle)
 {
+    globus_callback_space_t             space;
     static char *			myname="globus_io_tcp_posix_convert";
 
     if(handle == GLOBUS_NULL)
@@ -1727,8 +1728,15 @@ globus_io_tcp_posix_convert(
     handle->state = GLOBUS_IO_HANDLE_STATE_CONNECTED;
     if(attributes)
     {
-        handle->space = attributes->space;
+        globus_io_attr_get_callback_space(attributes, &space);
     }
+    else
+    {
+        space = GLOBUS_CALLBACK_GLOBAL_SPACE;
+    }
+    
+    globus_callback_space_reference(space);
+    globus_i_io_set_callback_space(handle, space);
     
     return GLOBUS_SUCCESS;
 }
@@ -1765,6 +1773,7 @@ globus_io_tcp_posix_convert_listener(
     globus_io_attr_t *			attributes,
     globus_io_handle_t *		handle)
 {
+    globus_callback_space_t             space;
     static char *			myname="globus_io_tcp_posix_convert_listener";
 
     if(handle == GLOBUS_NULL)
@@ -1783,8 +1792,15 @@ globus_io_tcp_posix_convert_listener(
     handle->state = GLOBUS_IO_HANDLE_STATE_LISTENING;
     if(attributes)
     {
-        handle->space = attributes->space;
+        globus_io_attr_get_callback_space(attributes, &space);
     }
+    else
+    {
+        space = GLOBUS_CALLBACK_GLOBAL_SPACE;
+    }
+    
+    globus_callback_space_reference(space);
+    globus_i_io_set_callback_space(handle, space);
     
     return GLOBUS_SUCCESS;
 }

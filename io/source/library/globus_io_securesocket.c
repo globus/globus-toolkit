@@ -329,7 +329,7 @@ globus_i_io_securesocket_register_accept(
                 (void *) info,
                 GLOBUS_NULL /* wakeup func */,
                 GLOBUS_NULL /* wakeup arg */,
-                handle->space);
+                handle->socket_attr.space);
             return GLOBUS_SUCCESS;
         }
     }
@@ -368,7 +368,7 @@ globus_i_io_securesocket_register_accept(
                 (void *) info,
                 GLOBUS_NULL /* wakeup func */,
                 GLOBUS_NULL /* wakeup arg */,
-                handle->space);
+                handle->socket_attr.space);
             return GLOBUS_SUCCESS;
         }
     }
@@ -3011,12 +3011,9 @@ globus_io_init_delegation(
     monitor.data = globus_malloc(sizeof(globus_io_delegation_data_t));
 
     /* we're going to poll on global space, save users space */
-    if(handle)
-    {
-        saved_space = handle->space;
-        handle->space = GLOBUS_CALLBACK_GLOBAL_SPACE;
-    }
-    
+    globus_i_io_get_callback_space(handle, &saved_space);
+    globus_i_io_set_callback_space(handle, GLOBUS_CALLBACK_GLOBAL_SPACE);
+
     rc = globus_io_register_init_delegation(handle,
                                             cred_handle,
                                             restriction_oids,
@@ -3040,11 +3037,8 @@ globus_io_init_delegation(
     }
     globus_mutex_unlock(&monitor.mutex);
     
-    if(handle)
-    {
-        handle->space = saved_space;
-    }
-    
+    globus_i_io_set_callback_space(handle, saved_space);
+
     globus_mutex_destroy(&monitor.mutex);
     globus_cond_destroy(&monitor.cond);
     globus_free(monitor.data);
@@ -3264,12 +3258,9 @@ globus_io_accept_delegation(
     monitor.data = globus_malloc(sizeof(globus_io_delegation_data_t));
     
     /* we're going to poll on global space, save users space */
-    if(handle)
-    {
-        saved_space = handle->space;
-        handle->space = GLOBUS_CALLBACK_GLOBAL_SPACE;
-    }
-    
+    globus_i_io_get_callback_space(handle, &saved_space);
+    globus_i_io_set_callback_space(handle, GLOBUS_CALLBACK_GLOBAL_SPACE);
+
     rc = globus_io_register_accept_delegation(handle,
                                               restriction_oids,
                                               restriction_buffers,
@@ -3292,10 +3283,7 @@ globus_io_accept_delegation(
     }
     globus_mutex_unlock(&monitor.mutex);
     
-    if(handle)
-    {
-        handle->space = saved_space;
-    }
+    globus_i_io_set_callback_space(handle, saved_space);
     
     globus_mutex_destroy(&monitor.mutex);
     globus_cond_destroy(&monitor.cond);

@@ -1187,9 +1187,9 @@ globus_io_write(
     monitor.err = GLOBUS_NULL;
     monitor.use_err = GLOBUS_FALSE;
 
-/* we're going to poll on global space, save users space */
-    saved_space = handle->space;
-    handle->space = GLOBUS_CALLBACK_GLOBAL_SPACE;
+    /* we're going to poll on global space, save users space */
+    globus_i_io_get_callback_space(handle, &saved_space);
+    globus_i_io_set_callback_space(handle, GLOBUS_CALLBACK_GLOBAL_SPACE);
     
     result = globus_io_register_write(handle,
 				     buf + try_wrote,
@@ -1213,7 +1213,7 @@ globus_io_write(
 
     globus_mutex_unlock(&monitor.mutex);
     
-    handle->space = saved_space;
+    globus_i_io_set_callback_space(handle, saved_space);
 
     if(nbytes_written)
     {
@@ -1322,8 +1322,8 @@ globus_io_send(
     monitor.use_err = GLOBUS_FALSE;
     
     /* we're going to poll on global space, save users space */
-    saved_space = handle->space;
-    handle->space = GLOBUS_CALLBACK_GLOBAL_SPACE;
+    globus_i_io_get_callback_space(handle, &saved_space);
+    globus_i_io_set_callback_space(handle, GLOBUS_CALLBACK_GLOBAL_SPACE);
 
     result = globus_io_register_send(handle,
 				     buf + try_wrote,
@@ -1348,7 +1348,7 @@ globus_io_send(
 
     globus_mutex_unlock(&monitor.mutex);
     
-    handle->space = saved_space;
+    globus_i_io_set_callback_space(handle, saved_space);
     
     if(nbytes_written)
     {
@@ -1437,9 +1437,9 @@ globus_io_writev(
     monitor.err = GLOBUS_NULL;
     monitor.use_err = GLOBUS_FALSE;
 
-/* we're going to poll on global space, save users space */
-    saved_space = handle->space;
-    handle->space = GLOBUS_CALLBACK_GLOBAL_SPACE;
+    /* we're going to poll on global space, save users space */
+    globus_i_io_get_callback_space(handle, &saved_space);
+    globus_i_io_set_callback_space(handle, GLOBUS_CALLBACK_GLOBAL_SPACE);
 
     result = globus_io_register_writev(handle,
 				       iov,
@@ -1463,7 +1463,8 @@ globus_io_writev(
 
     globus_mutex_unlock(&monitor.mutex);
 
-    handle->space = saved_space;
+    globus_i_io_set_callback_space(handle, saved_space);
+
 
     if(nbytes_written)
     {

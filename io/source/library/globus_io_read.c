@@ -487,9 +487,9 @@ globus_io_read(
     monitor.use_err = GLOBUS_FALSE;
 
     /* we're going to poll on global space, save users space */
-    saved_space = handle->space;
-    handle->space = GLOBUS_CALLBACK_GLOBAL_SPACE;
-    
+    globus_i_io_get_callback_space(handle, &saved_space);
+    globus_i_io_set_callback_space(handle, GLOBUS_CALLBACK_GLOBAL_SPACE);
+
     result = globus_io_register_read(handle,
 				     buf + try_read,
 				     max_nbytes - try_read,
@@ -516,7 +516,7 @@ globus_io_read(
 
     globus_mutex_unlock(&monitor.mutex);
 
-    handle->space = saved_space;
+    globus_i_io_set_callback_space(handle, saved_space);
 
     if(nbytes_read)
     {

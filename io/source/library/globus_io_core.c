@@ -481,7 +481,8 @@ globus_l_io_internal_handle_create(
     handle->fd = fd;
     handle->type = GLOBUS_IO_HANDLE_TYPE_INTERNAL;
     handle->state = GLOBUS_IO_HANDLE_STATE_CONNECTED;
-    handle->space = GLOBUS_CALLBACK_GLOBAL_SPACE;
+    
+    handle->socket_attr.space = GLOBUS_CALLBACK_GLOBAL_SPACE;
     
     globus_i_io_debug_printf(3,
         (stderr, "globus_l_io_internal_handle_create(): exiting\n"));
@@ -1986,7 +1987,7 @@ globus_l_io_handle_events(
                 select_info,
                 GLOBUS_NULL,
                 GLOBUS_NULL,
-                handle->space);
+                handle->socket_attr.space);
 	    globus_assert(result == GLOBUS_SUCCESS);
 	    
 	    /* We've handled an event, so we don't need to
@@ -2021,7 +2022,7 @@ globus_l_io_handle_events(
                 cancel_info,
                 GLOBUS_NULL,
                 GLOBUS_NULL,
-                cancel_info->handle->space);
+                cancel_info->handle->socket_attr.space);
             globus_assert(result == GLOBUS_SUCCESS);
 	    
             if(!time_left_is_zero)
@@ -2182,7 +2183,7 @@ globus_l_io_handle_events(
                             select_info,
                             GLOBUS_NULL,
                             GLOBUS_NULL,
-                            handle->space);
+                            handle->socket_attr.space);
                         globus_assert(result == GLOBUS_SUCCESS);
                     }
 
@@ -2216,7 +2217,7 @@ globus_l_io_handle_events(
                             select_info,
                             GLOBUS_NULL,
                             GLOBUS_NULL,
-                            handle->space);
+                            handle->socket_attr.space);
                         globus_assert(result == GLOBUS_SUCCESS);
 		    }
 		    
@@ -2250,7 +2251,7 @@ globus_l_io_handle_events(
                             select_info,
                             GLOBUS_NULL,
                             GLOBUS_NULL,
-                            handle->space);
+                            handle->socket_attr.space);
                         globus_assert(result == GLOBUS_SUCCESS);
 		    }
 

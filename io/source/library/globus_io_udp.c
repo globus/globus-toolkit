@@ -237,7 +237,6 @@ globus_io_udp_set_attr(
 			     globus_object_get_local_instance_data(attr->attr);
 
     globus_l_io_setup_udp_socket(handle, udp_attr);
-    handle->space = attr->space;
     
     return GLOBUS_SUCCESS;
 }
@@ -300,7 +299,6 @@ globus_io_udpattr_init(
      *  NETLOGGER
      */
     attr->nl_handle = GLOBUS_NULL;
-    attr->space = GLOBUS_CALLBACK_GLOBAL_SPACE;
     
     return GLOBUS_SUCCESS;
 }
@@ -714,11 +712,8 @@ globus_io_udp_recvfrom(
     monitor->nbytes_received = nbytes_received;
     
     /* we're going to poll on global space, save users space */
-    if(handle)
-    {
-        saved_space = handle->space;
-        handle->space = GLOBUS_CALLBACK_GLOBAL_SPACE;
-    }
+    globus_i_io_get_callback_space(handle, &saved_space);
+    globus_i_io_set_callback_space(handle, GLOBUS_CALLBACK_GLOBAL_SPACE);
     
     result = globus_io_udp_register_recvfrom(
 				    handle,
@@ -745,11 +740,8 @@ globus_io_udp_recvfrom(
     }
     globus_mutex_unlock(&monitor->mutex);
     
-    if(handle)
-    {
-        handle->space = saved_space;
-    }
-    
+    globus_i_io_set_callback_space(handle, saved_space);
+
     globus_mutex_destroy(&monitor->mutex);
     globus_cond_destroy(&monitor->cond);
     if(monitor->use_err)

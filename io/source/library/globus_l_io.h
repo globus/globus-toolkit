@@ -328,6 +328,16 @@ globus_i_io_socket_set_attr(
     globus_io_handle_t *		handle,
     globus_io_attr_t *			attr);
 
+void
+globus_i_io_get_callback_space(
+    globus_io_handle_t *		handle,
+    globus_callback_space_t *           space);
+
+void
+globus_i_io_set_callback_space(
+    globus_io_handle_t *		handle,
+    globus_callback_space_t             space);
+
 typedef struct
 {
     globus_io_handle_t *		handle;

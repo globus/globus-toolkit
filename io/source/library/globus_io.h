@@ -158,8 +158,6 @@ typedef struct
      * NETLOGGER
      */
     globus_netlogger_handle_t *         nl_handle;
-    globus_callback_space_t             space;
-
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 } globus_io_attr_t;
 
@@ -666,6 +664,9 @@ typedef struct
     globus_bool_t				oobinline;
     int						sndbuf;
     int						rcvbuf;
+    
+    globus_callback_space_t                     space;
+    
 } globus_i_io_socketattr_instance_t;
 #endif
 
@@ -883,9 +884,6 @@ struct globus_io_handle_s
      */
     char *                                      nl_event_id;
     globus_netlogger_handle_t *                 nl_handle;
-    
-    globus_callback_space_t                     space;
-
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 };
 
