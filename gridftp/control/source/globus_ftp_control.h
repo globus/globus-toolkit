@@ -311,8 +311,7 @@ typedef enum globus_ftp_data_connection_state_e
     GLOBUS_FTP_DATA_STATE_CONNECT_READ, /* connected for reading */
     GLOBUS_FTP_DATA_STATE_CONNECT_WRITE, /* connected for writing */
     GLOBUS_FTP_DATA_STATE_CLOSING, /* closing all connections */
-    GLOBUS_FTP_DATA_STATE_EOF /* user has received eof */
-
+    GLOBUS_FTP_DATA_STATE_EOF, /* user has received eof */
     GLOBUS_FTP_DATA_STATE_SEND_EOF, /* not used for state at all */
 } globus_ftp_data_connection_state_t;
 
