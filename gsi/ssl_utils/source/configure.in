@@ -77,8 +77,6 @@ AC_OUTPUT(
 	library/Makefile
 	library/oldgaa/Makefile
 	programs/Makefile
-	programs/grid-change-pass-phrase
-	programs/grid-cert-request
 	,
 	$GPT_LOCATION/sbin/gpt_generate_bin_pkg_data \
 	--flavor=$GLOBUS_FLAVOR_NAME "./pkgdata/pkg_data_src.gpt"
