@@ -63,6 +63,9 @@ my %package_build_hash;
 my @cvs_build_list;
 my %cvs_build_hash;
 
+# Which GPT should I use for the builds and the installer
+my $gpt_ver = "gpt-3.2autotools2004";
+
 # What flavor shall things be built as?
 my $flavor = "gcc32dbg";
 my $thread = "pthr";
@@ -731,7 +734,6 @@ sub log_system
 sub install_gpt()
 # --------------------------------------------------------------------
 {
-    my $gpt_ver = "gpt-3.2autotools2004";
     my $gpt_dir = $top_dir . "/$gpt_ver";
     my $target;
 
@@ -1511,10 +1513,10 @@ print INS "echo\n\n";
 
 print INS << "EOF";
 
-if [ ! -f gpt-3.0.1/sbin/gpt-build ]; then
+if [ ! -f $gpt_ver/sbin/gpt-build ]; then
     echo Building GPT ...
-    gzip -dc gpt-3.0.1-src.tar.gz | tar xf -
-    cd gpt-3.0.1
+    gzip -dc $gpt_ver-src.tar.gz | tar xf -
+    cd $gpt_ver
 
     LANG="" ./build_gpt
     if [ \$? -ne 0 ]; then
