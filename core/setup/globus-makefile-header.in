@@ -128,7 +128,7 @@ while(<IN>)
 
 #END of Section one:  prepending GLOBUS_
 close (IN);
-open(IN, "$globus/libexec/globus-sh-tools.sh") || die "Cannot open GLOBUS_LOCATION/libexec/globus-sh-tools.sh\n";
+open(IN, "$globus/libexec/globus-sh-tools-vars.sh") || die "Cannot open GLOBUS_LOCATION/libexec/globus-sh-tools-vars.sh\n";
 while(<IN>) 
 {
 	if(m!\S!)  
