@@ -269,7 +269,9 @@ sub wait_command()
             # kill after $timeout seconds
             if($counter == $timeout)
             {
+                $self->debug( "wait_command: killing pid: $pid" );
                 kill(9,$pid);
+                $self->debug( "wait_command: killed pid: $pid" );
                 sleep(1);
                 $output = "Command timed out (timeout $timeout seconds).\n";
                 $self->debug( "wait_command: command timed out!" );
