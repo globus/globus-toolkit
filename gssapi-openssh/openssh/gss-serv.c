@@ -460,6 +460,7 @@ userauth_gssapi(Authctxt *authctxt)
 	gss_OID_set	supported;
 	int		present;
 	OM_uint32	ms;
+	u_int		len;
 	
 	if (!authctxt->valid || authctxt->user == NULL)
 		return 0;
@@ -473,7 +474,8 @@ userauth_gssapi(Authctxt *authctxt)
 	do {
 		if (oid.elements)
 			xfree(oid.elements);
-		oid.elements = packet_get_string(NULL);
+		oid.elements = packet_get_string(&len);
+		oid.length = len;
 		gss_test_oid_set_member(&ms, &oid, supported, &present);
 		mechs--;
 	} while (mechs>0 && !present);
