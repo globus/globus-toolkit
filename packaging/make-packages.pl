@@ -354,8 +354,8 @@ sub generate_build_list()
 
     if ( $listpack )
     {
-       install_globus_core();
        install_gt2_autotools();
+       install_globus_core();
        print "Final package build list:\n";
 
        # First list all the bundles as targets, followed by their depordered
@@ -964,23 +964,22 @@ sub install_gt2_autotools()
 sub install_globus_core()
 # --------------------------------------------------------------------
 {
+    system("mkdir -p $pkglog");
     if ( $inplace ) {
         my $dir = $cvs_archives{gt2}[2];
         my $_cwd = cwd();
         chdir $dir . "/core/source";
         if ( !$avoid_bootstrap || ! -e 'configure') {
-           system("./bootstrap");
+           log_system("./bootstrap", "$pkglog/globus_core");
+           paranoia("Bootstrap of globus_core in CVS failed.");
         }
-        system("$ENV{GPT_LOCATION}/sbin/gpt-build -force $verbose $flavor");
+        log_system("$ENV{GPT_LOCATION}/sbin/gpt-build -force $verbose $flavor", "$pkglog/globus_core");
+        paranoia("gpt-build of globus_core from CVS failed.");
         chdir $_cwd;
     } else {
         print "$ENV{PWD}";
-        system("$ENV{GPT_LOCATION}/sbin/gpt-build -nosrc $verbose $flavor");
-    }
-
-    if ( $? ne 0 )
-    {
-        die "ERROR: Error building gpt_core from $ENV{GPT_LOCATION}/sbin/gpt-build -nosrc $flavor.\n";
+        log_system("$ENV{GPT_LOCATION}/sbin/gpt-build -nosrc $verbose $flavor", "$pkglog/globus_core");
+        paranoia("gpt-build of globus_core from GPT failed.");
     }
 }
 
@@ -1428,6 +1427,7 @@ sub package_source_bootstrap()
     if ( $custom eq "gpt" ){
        if ( !$avoid_bootstrap || ! -e 'configure') {
            log_system("./bootstrap", "$pkglog/$package");
+           paranoia("bootstrap failed for package $package");
        }
     } elsif ( $custom eq "pnb" ){
        patch_package($package);
