@@ -84,14 +84,6 @@ static int		globus_l_is_initialized = 0;
 
 #define GLOBUS_L_CHECK_IF_INITIALIZED assert(globus_l_is_initialized==1)
 
-#ifdef GSS_AUTHENTICATION
-/*
- * GSSAPI - credential handle for this process
- */
-static gss_cred_id_t credential_handle = GSS_C_NO_CREDENTIAL;
-#endif
-
-
 /******************************************************************************
 Function:	globus_i_gram_client_activate()
 Description:	Initialize variables
@@ -117,15 +109,13 @@ globus_i_gram_client_activate(void)
     {
 	return(rc);
     }
-    
-    #if GRAM_GOES_HTTP
+    rc = globus_module_activate(GLOBUS_GRAM_HTTP_MODULE);
+    if (rc != GLOBUS_SUCCESS)
     {
-	rc = globus_gram_http_activate();
-	if (rc != GLOBUS_SUCCESS)
-	    return(rc);
+	return(rc);
     }
-    #endif
 
+    
     if ( globus_l_is_initialized == 0 )
     {
 	/* initialize mutex which makes the client thread-safe */
@@ -136,31 +126,6 @@ globus_i_gram_client_activate(void)
     }
     
     globus_l_print_fp = NULL;
-
-    /*
-     * Get the GSSAPI security credential for this process.
-     * we save it in static storage, since it is only
-     * done once and can be shared by many threads.
-     * with some GSSAPI implementations a prompt to the user
-     * may be done from this routine.
-     *
-     * we will use the assist version of acquire_cred
-     */
-
-    major_status = globus_gss_assist_acquire_cred(&minor_status,
-                        GSS_C_INITIATE,
-                        &credential_handle);
-
-    if (major_status != GSS_S_COMPLETE)
-    {
-        globus_gss_assist_display_status(stderr,
-                "gram_init failure:",
-                major_status,
-                minor_status,
-                0);
-
-        return GRAM_ERROR_AUTHORIZATION; /* need better return code */
-    }
 
     return 0;
 } /* globus_i_gram_client_activate() */
@@ -183,30 +148,14 @@ globus_i_gram_client_deactivate(void)
     }
     else
     {
-	int err;
-
- 	/*
-	 * GSSAPI - cleanup of the credential
-	 * don't really care about returned status
-	 */
-
-	if (credential_handle != GSS_C_NO_CREDENTIAL) 
-	{
-	    OM_uint32 minor_status;
-	    gss_release_cred(&minor_status,
-			     &credential_handle);
-	}
-	
 	globus_l_is_initialized = 0;
     }
     
-    #if GRAM_GOES_HTTP
+    rc = globus_module_deactivate(GLOBUS_GRAM_HTTP_MODULE);
+    if (rc != GLOBUS_SUCCESS)
     {
-	rc = globus_gram_http_deactivate();
-	if (rc != GLOBUS_SUCCESS)
 	    return(rc);
     }
-    #endif
 
     rc = globus_module_deactivate(GLOBUS_IO_MODULE);
     if (rc != GLOBUS_SUCCESS)
@@ -337,7 +286,7 @@ globus_l_gram_client_setup_attr_t(
 	 || (res = globus_io_attr_set_secure_authentication_mode(
 	     attrp,
 	     GLOBUS_IO_SECURE_AUTHENTICATION_MODE_GSSAPI,
-	     GSS_C_NO_CREDENTIAL))
+	     globus_i_gram_http_credential))
 	 || (res = globus_io_secure_authorization_data_set_identity(
 	     &auth_data,
 	     gatekeeper_dn))
