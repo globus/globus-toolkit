@@ -20,7 +20,7 @@ AC_CHECK_HEADERS(sys/select.h)
 AC_CHECK_HEADERS(string.h)
 AC_CHECK_HEADERS(dce/cma_ux.h)
 
-GPT_SET_LIBS("-lglobus_common_$GLOBUS_FLAVOR_NAME -lglobus_gss_assist_$GLOBUS_FLAVOR_NAME -lglobus_gssapi_gsi_$GLOBUS_FLAVOR_NAME -lglobus_ssl_utils_$GLOBUS_FLAVOR_NAME -lssl_$GLOBUS_FLAVOR_NAME -lcrypto_$GLOBUS_FLAVOR_NAME")
+dnl GPT_SET_LIBS("-lglobus_common_$GLOBUS_FLAVOR_NAME -lglobus_gss_assist_$GLOBUS_FLAVOR_NAME -lglobus_gssapi_gsi_$GLOBUS_FLAVOR_NAME -lglobus_ssl_utils_$GLOBUS_FLAVOR_NAME -lssl_$GLOBUS_FLAVOR_NAME -lcrypto_$GLOBUS_FLAVOR_NAME")
 
 AC_OUTPUT(
 	Makefile

@@ -35,7 +35,9 @@ else
     echo "guessing size of long... $ac_cv_sizeof_long"
 fi
 
-GPT_SET_LIBS("-lglobus_ssl_utils_$GLOBUS_FLAVOR_NAME")
+dnl this was for before dependencies worked, so it would build.  not deleted
+dnl yet, just for reference.  EBB
+dnl GPT_SET_LIBS("-lglobus_ssl_utils_$GLOBUS_FLAVOR_NAME")
 
 GLOBUS_FINALIZE
 

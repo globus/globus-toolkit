@@ -5,6 +5,21 @@
 <Aging_Version Major="2" Minor="0" Age="0"/>
 <src_pkg>
 
+<Source_Dependencies Type="compile" >
+<Dependency Name="globus_core" Package="dev"><Version><Simple_Version Major="2"></Simple_Version></Version></Dependency>
+<Dependency Name="globus_core" Package="pgm"><Version><Simple_Version Major="2"></Simple_Version></Version></Dependency>
+<Dependency Name="globus_gssapi_gsi" Package="dev"><Version><Simple_Version Major="2"></Simple_Version></Version></Dependency>
+</Source_Dependencies>
+ 
+<Source_Dependencies Type="pgm_link" >
+<Dependency Name="globus_gssapi_gsi" Package="rtl"><Version><Simple_Version Major="2"></Simple_Version></Version></Dependency>
+</Source_Dependencies>
+
+<Source_Dependencies Type="lib_link" >
+<Dependency Name="globus_gssapi_gsi" Package="dev"><Version><Simple_Version Major="2"></Simple_Version></Version></Dependency>
+</Source_Dependencies>
+                       
+
 <With_Flavors build="yes" />
 <Build_Environment>
 <cflags>@GPT_CFLAGS@</cflags>
