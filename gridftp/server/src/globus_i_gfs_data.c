@@ -10,6 +10,18 @@ typedef enum
     GLOBUS_L_GFS_DATA_ERROR_COMPLETE
 } globus_l_gfs_data_state_t;
 
+typedef struct
+{
+    globus_gridftp_server_operation_t   op;
+    
+    union
+    {
+        globus_gridftp_server_write_cb_t write;
+        globus_gridftp_server_read_cb_t  read;
+    } callback;
+    void *                              user_arg;
+} globus_l_gfs_data_bounce_t;
+
 typedef struct globus_l_gfs_data_operation_s
 {
     globus_i_gfs_server_instance_t *    instance;
@@ -17,13 +29,9 @@ typedef struct globus_l_gfs_data_operation_s
     globus_mutex_t                      lock;
     globus_i_gfs_data_handle_t *        data_handle;
     globus_bool_t                       sending;
-    
-    union
-    {
-        globus_i_gfs_data_resource_cb_t resource;
-        globus_i_gfs_data_transfer_cb_t transfer;
-    } callback;
-    
+
+    globus_i_gfs_data_resource_cb_t     resource_callback;
+    globus_i_gfs_data_transfer_cb_t     transfer_callback;
     globus_i_gfs_data_transfer_event_cb_t event_callback;
     void *                              user_arg;
 } globus_l_gfs_data_operation_t;
@@ -103,7 +111,7 @@ globus_i_gfs_data_resource_request(
     }
     
     op->state = GLOBUS_L_GFS_DATA_REQUESTING;
-    op->callback.resource = callback;
+    op->resource_callback = callback;
     op->user_arg = user_arg;
     
     /* XXX */
@@ -150,7 +158,7 @@ globus_l_gfs_data_resource_kickout(
     
     bounce_info = (globus_l_gfs_data_resource_bounce_t *) user_arg;
     
-    bounce_info->op->callback.resource(
+    bounce_info->op->resource_callback(
         bounce_info->op->instance,
         bounce_info->error
             ? globus_error_put(bounce_info->error) : GLOBUS_SUCCESS,
@@ -223,7 +231,7 @@ globus_gridftp_server_finished_resource(
     }
     else
     {
-        op->callback.resource(
+        op->resource_callback(
             op->instance,
             result,
             stat_info_array,
@@ -733,7 +741,7 @@ globus_i_gfs_data_recv_request(
     op->state = GLOBUS_L_GFS_DATA_REQUESTING;
     op->data_handle = data_handle;
     op->sending = GLOBUS_FALSE;
-    op->callback.transfer = callback;
+    op->transfer_callback = callback;
     op->event_callback = event_callback;
     op->user_arg = user_arg;
     
@@ -803,7 +811,7 @@ globus_i_gfs_data_send_request(
     op->state = GLOBUS_L_GFS_DATA_REQUESTING;
     op->data_handle = data_handle;
     op->sending = GLOBUS_TRUE;
-    op->callback.transfer = callback;
+    op->transfer_callback = callback;
     op->event_callback = event_callback;
     op->user_arg = user_arg;
     
@@ -833,6 +841,163 @@ error_op:
 error_handle:
     return result;
 }
+
+static
+void
+globus_l_gfs_data_list_write_cb(
+    globus_gridftp_server_operation_t   op,
+    globus_result_t                     result,
+    globus_byte_t *                     buffer,
+    globus_size_t                       nbytes,
+    void *                              user_arg)
+{
+    globus_l_gfs_data_bounce_t *        bounce_info;
+    globus_gridftp_server_control_op_t  control_op;
+    
+    bounce_info = (globus_l_gfs_data_bounce_t *) user_arg;
+    control_op = (globus_gridftp_server_control_op_t) bounce_info->user_arg;
+    
+    globus_gridftp_server_control_list_buffer_free(control_op, buffer);
+    
+    globus_gridftp_server_finished_transfer(op, result); 
+        
+}
+
+
+static
+void
+globus_l_gfs_data_list_resource_cb(
+    globus_i_gfs_server_instance_t *    instance,
+    globus_result_t                     result,
+    globus_gridftp_server_stat_t *      stat_info,
+    int                                 stat_count,
+    void *                              user_arg)
+{
+    globus_gridftp_server_operation_t   op;
+    globus_byte_t *                     list_buffer;
+    globus_size_t                       buffer_len;
+    globus_gridftp_server_control_op_t  control_op;
+    globus_object_t                     error;
+    
+    globus_l_gfs_data_bounce_t *        bounce_info;
+    
+ 
+    op = (globus_gridftp_server_operation_t) user_arg;
+    bounce_info = (globus_l_gfs_data_bounce_t *) op->user_arg;
+    control_op = (globus_gridftp_server_control_op_t) bounce_info->user_arg;
+
+    result = globus_gridftp_server_control_list_buffer_alloc(
+            control_op, 
+            stat_info, 
+            stat_count,
+            &list_buffer,
+            &buffer_len);
+    
+    if(result != GLOBUS_SUCCESS)
+    {
+//        error = GlobusGFSErrorObjWrapFailed(
+//           "globus_gridftp_server_control_list_buffer_alloc", result);
+        goto error;
+    }
+    
+    globus_gridftp_server_begin_transfer(op);
+    
+    result = globus_gridftp_server_register_write(
+        op,
+        list_buffer,  
+        buffer_len,
+        0,
+        -1,
+        globus_l_gfs_data_list_write_cb,
+        bounce_info);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+//        error = GlobusGFSErrorObjWrapFailed(
+//            "globus_gridftp_server_register_write", result);
+        goto error;
+    }
+
+error:
+
+    
+}
+
+globus_result_t
+globus_i_gfs_data_list_request(
+    globus_i_gfs_server_instance_t *    instance,
+    globus_i_gfs_data_handle_t *        data_handle,
+    const char *                        pathname,
+    globus_i_gfs_data_transfer_cb_t     callback,
+    globus_i_gfs_data_transfer_event_cb_t event_callback,
+    void *                              user_arg)
+{
+    globus_l_gfs_data_operation_t *     resource_op;
+    globus_l_gfs_data_operation_t *     data_op;
+    globus_result_t                     result;
+    GlobusGFSName(globus_i_gfs_data_list_request);
+    
+    if(data_handle->closed)
+    {
+        result = GlobusGFSErrorData("Data handle has been closed");
+        goto error_handle;
+    }
+
+    result = globus_l_gfs_data_operation_init(&data_op, instance);
+    if(result != GLOBUS_SUCCESS)
+    {
+        result = GlobusGFSErrorWrapFailed(
+            "globus_l_gfs_data_operation_init", result);
+        goto error_op;
+    }
+
+    data_op->state = GLOBUS_L_GFS_DATA_PENDING;
+    data_op->data_handle = data_handle;
+    data_op->sending = GLOBUS_TRUE;
+    data_op->transfer_callback = callback;
+    data_op->event_callback = event_callback;
+    data_op->user_arg = user_arg;
+    
+    result = globus_l_gfs_data_operation_init(&resource_op, instance);
+    if(result != GLOBUS_SUCCESS)
+    {
+        result = GlobusGFSErrorWrapFailed(
+            "globus_l_gfs_data_operation_init", result);
+        goto error_op;
+    }
+    resource_op->state = GLOBUS_L_GFS_DATA_REQUESTING;
+    resource_op->resource_callback = globus_l_gfs_data_list_resource_cb;
+    resource_op->user_arg = data_op;
+
+    /* XXX */
+    result = globus_l_gfs_file_resource(
+        resource_op, pathname, 0);
+    if(result != GLOBUS_SUCCESS)
+    {
+        result = GlobusGFSErrorWrapFailed("list_hook", result);
+        goto error_hook;
+    }
+    
+    globus_mutex_lock(&resource_op->lock);
+    {
+        if(resource_op->state == GLOBUS_L_GFS_DATA_REQUESTING)
+        {
+            resource_op->state = GLOBUS_L_GFS_DATA_PENDING;
+        }
+    }
+    globus_mutex_unlock(&resource_op->lock);
+    
+    return GLOBUS_SUCCESS;
+
+error_hook:
+    globus_l_gfs_data_operation_destroy(data_op);
+    globus_l_gfs_data_operation_destroy(resource_op);
+
+error_op:
+error_handle:
+    return result;
+}
+
 
 void
 globus_gridftp_server_begin_transfer(
@@ -893,7 +1058,7 @@ globus_l_gfs_data_write_eof_cb(
         op->data_handle,
         op->user_arg);
         
-    op->callback.transfer(
+    op->transfer_callback(
         op->instance,
         error ? globus_error_put(globus_object_copy(error)) : GLOBUS_SUCCESS,
         op->user_arg);
@@ -935,7 +1100,7 @@ globus_gridftp_server_finished_transfer(
                 op->data_handle,
                 op->user_arg);
                 
-            op->callback.transfer(
+            op->transfer_callback(
                 op->instance,
                 result,
                 op->user_arg);
@@ -959,7 +1124,7 @@ globus_gridftp_server_finished_transfer(
             op->data_handle,
             op->user_arg);
         
-        op->callback.transfer(
+        op->transfer_callback(
             op->instance,
             result,
             op->user_arg);
@@ -973,17 +1138,6 @@ globus_gridftp_server_finished_transfer(
     }
 }
 
-typedef struct
-{
-    globus_gridftp_server_operation_t   op;
-    
-    union
-    {
-        globus_gridftp_server_write_cb_t write;
-        globus_gridftp_server_read_cb_t  read;
-    } callback;
-    void *                              user_arg;
-} globus_l_gfs_data_bounce_t;
 
 static
 void

@@ -216,6 +216,54 @@ error_alloc:
     return result;
 }
 
+globus_result_t
+globus_i_gfs_ipc_list_request(
+    globus_i_gfs_server_instance_t *    instance,
+    globus_i_gfs_ipc_data_handle_t *    data_handle,
+    const char *                        pathname,
+    globus_i_gfs_ipc_transfer_cb_t      callback,
+    globus_i_gfs_ipc_transfer_event_cb_t event_callback,
+    void *                              user_arg)
+{
+    globus_l_gfs_ipc_bounce_t *         bounce_info;
+    globus_result_t                     result;
+    GlobusGFSName(globus_i_gfs_ipc_list_request);
+    
+    bounce_info = (globus_l_gfs_ipc_bounce_t *)
+        globus_malloc(sizeof(globus_l_gfs_ipc_bounce_t));
+    if(!bounce_info)
+    {
+        result = GlobusGFSErrorMemory("bounce_info");
+        goto error_alloc;
+    }
+    
+    bounce_info->callback1 = callback;
+    bounce_info->callback2 = event_callback;
+    bounce_info->user_arg = user_arg;
+    
+    result = globus_i_gfs_data_list_request(
+        instance,
+        &data_handle->data,
+        pathname,
+        globus_l_gfs_data_transfer_cb,
+        globus_l_gfs_data_event_cb,
+        bounce_info);
+    if(result != GLOBUS_SUCCESS)
+    {
+        result = GlobusGFSErrorWrapFailed(
+            "globus_i_gfs_data_list_request", result);
+        goto error_data;
+    }
+    
+    return GLOBUS_SUCCESS;
+
+error_data:
+    globus_free(bounce_info);
+    
+error_alloc:
+    return result;
+}
+
 static
 void
 globus_l_gfs_data_passive_cb(

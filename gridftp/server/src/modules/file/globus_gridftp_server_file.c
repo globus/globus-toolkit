@@ -140,6 +140,9 @@ globus_l_gfs_file_copy_stat(
     stat_info->mtime    = stat_buf->st_mtime;
     stat_info->atime    = stat_buf->st_atime;
     stat_info->ctime    = stat_buf->st_ctime;
+    stat_info->dev      = stat_buf->st_dev;
+    stat_info->ino      = stat_buf->st_ino;
+    
     strcpy(stat_info->name, filename);
 }
 

@@ -224,6 +224,42 @@ error_ipc:
 
 static
 void
+globus_l_gfs_list_request(
+    globus_gridftp_server_control_op_t              op,
+    void *                                          data_handle,
+    const char *                                    path,
+    globus_gridftp_server_control_resource_mask_t   mask)
+{
+    globus_result_t                     result;
+    globus_i_gfs_server_instance_t *    instance;
+    globus_i_gfs_ipc_data_handle_t *    data;
+    GlobusGFSName(globus_l_gfs_list_request);
+    
+    data = (globus_i_gfs_ipc_data_handle_t *) data_handle;
+        
+    result = globus_i_gfs_ipc_list_request(
+        instance,
+        data,
+        path,
+        globus_l_gfs_ipc_transfer_cb,
+        globus_l_gfs_ipc_event_cb,
+        op);
+    if(result != GLOBUS_SUCCESS)
+    {
+        result = GlobusGFSErrorWrapFailed(
+            "globus_i_gfs_ipc_list_request", result);
+        goto error_ipc;
+    }
+    
+    return;
+
+error_ipc:     
+    globus_gridftp_server_control_finished_resource(
+        op, result, GLOBUS_NULL, 0);
+}
+
+static
+void
 globus_l_gfs_ipc_passive_data_cb(
     globus_i_gfs_server_instance_t *    instance,
     globus_result_t                     result,
@@ -243,7 +279,7 @@ globus_l_gfs_ipc_passive_data_cb(
         result,
         bi_directional 
             ? GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_DIR_BI
-            : GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_DIR_STOR,
+            : GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_DIR_SEND,
         contact_strings,
         cs_count);
 }
@@ -344,7 +380,7 @@ globus_l_gfs_ipc_active_data_cb(
         result,
         bi_directional 
             ? GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_DIR_BI
-            : GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_DIR_RETR);
+            : GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_DIR_RECV);
 }
 
 static
@@ -457,6 +493,13 @@ globus_i_gfs_control_start(
     
     result = globus_gridftp_server_control_attr_add_send(
         attr, GLOBUS_NULL, globus_l_gfs_send_request);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_attr_setup;
+    }
+
+    result = globus_gridftp_server_control_attr_set_list(
+        attr, globus_l_gfs_list_request);
     if(result != GLOBUS_SUCCESS)
     {
         goto error_attr_setup;
