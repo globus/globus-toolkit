@@ -20,6 +20,7 @@ typedef struct
     char *                              source_cs;
     char *                              dest_cs;
     globus_bool_t                       eof_received;
+    globus_bool_t                       source_is_open;
     globus_object_t *                   error;
     globus_size_t                       buffer_size;
     
@@ -62,6 +63,7 @@ help()
         "-dC <contact string>   The contact string to be used for the dest\n"
         "-s                     The source is a server.\n"
         "-b <buffer size>       The buffer size to use.\n"
+        "-i                     Interactive use. Will write stdin to source.\n"
         "\n"
         "-----------------\n"
         "example uses:\n"
@@ -169,7 +171,6 @@ close_handles_and_wakeup_main(
      */
     wakeup_main(copy_info, result);
 }
-
 
 static
 void 
@@ -388,6 +389,17 @@ source_open_callback(
         goto error;
     }
     
+    /**
+     * This signal here is for the interactive support.  Ignore it if you're
+     * using this example to learn the async model
+     */
+    globus_mutex_lock(&copy_info->lock);
+    {
+        copy_info->source_is_open = GLOBUS_TRUE;
+        globus_cond_signal(&copy_info->cond);
+    }
+    globus_mutex_unlock(&copy_info->lock);
+    
     return;
     
 error:
@@ -452,7 +464,8 @@ main(
     copy_info_t                         copy_info;
     globus_list_t *                     driver_list = NULL;
     int                                 rc = 0;
-
+    globus_bool_t                       interactive = GLOBUS_FALSE;
+    
     if(argc < 2)
     {
         help();
@@ -508,6 +521,10 @@ main(
         {
             buffer_size = atoi(argv[++i]);
         }
+        else if(strcmp(argv[i], "-i") == 0)
+        {
+            interactive = GLOBUS_TRUE;
+        }
     }
 
     if(!dest_cs)
@@ -524,6 +541,7 @@ main(
     copy_info.dest_cs = dest_cs;
     copy_info.buffer_size = buffer_size;
     copy_info.eof_received = GLOBUS_FALSE;
+    copy_info.source_is_open = GLOBUS_FALSE;
     globus_mutex_init(&copy_info.lock, NULL);
     globus_cond_init(&copy_info.cond, NULL);
     copy_info.cb_count = 1;
@@ -566,6 +584,71 @@ main(
             source_open_callback,
             &copy_info);
         test_result(result);
+    }
+    
+    /**
+     * ignore this if you're using this example to learn the async programming
+     * model
+     */
+    if(interactive && source_is_server)
+    {
+        globus_xio_stack_t              stdin_stack;
+        globus_xio_handle_t             stdin_handle;
+        globus_byte_t                   buffer[1024];
+        
+        result = globus_xio_driver_load("file", &driver);
+        test_result(result);
+        result = globus_xio_stack_init(&stdin_stack, NULL);
+        test_result(result);
+        result = globus_xio_stack_push_driver(stdin_stack, driver);
+        test_result(result);
+        result = globus_xio_handle_create(&stdin_handle, stdin_stack);
+        test_result(result);
+        globus_xio_stack_destroy(stdin_stack);
+        result = globus_xio_open(stdin_handle, "stdin://", NULL);
+        test_result(result);
+        
+        /**
+         * wait for source to connect
+         */
+        globus_mutex_lock(&copy_info.lock);
+        {
+            while(!copy_info.source_is_open && !copy_info.error)
+            {
+                globus_cond_wait(&copy_info.cond, &copy_info.lock);
+            }
+        }
+        globus_mutex_unlock(&copy_info.lock);
+        
+        if(copy_info.source_is_open)
+        {
+            printf("Source has connected\n");
+        }
+        
+        /**
+         * copy stdin to source.
+         */
+        while(result == GLOBUS_SUCCESS && 
+            !copy_info.eof_received && !copy_info.error)
+        {
+            size_t                      nbytes;
+            
+            result = globus_xio_read(stdin_handle,
+                buffer, sizeof(buffer), 1, &nbytes, NULL);
+            if(nbytes > 0 && !copy_info.eof_received && !copy_info.error)
+            {
+                result = globus_xio_write(copy_info.source_handle,
+                    buffer, nbytes, nbytes, &nbytes, NULL);
+            }
+        }
+        
+        globus_xio_close(stdin_handle, NULL);
+        globus_xio_driver_unload(driver);
+        if(!copy_info.eof_received && !copy_info.error)
+        {
+            globus_xio_handle_cancel_operations(
+                copy_info.source_handle, GLOBUS_XIO_CANCEL_READ);
+        }
     }
     
     /* wait for it to all be done */
