@@ -95,6 +95,9 @@ gnu_getopt_long.o: gnu_getopt_long.c
 depend:
 	makedepend $(CFLAGS) *.c
 
+etags:
+	etags *.c
+
 clean:
 	rm -f *.o *~
 	rm -f $(SERVER_PROGS) $(CLIENT_PROGS) $(TOOL_PROGS) $(TEST_PROGS)
