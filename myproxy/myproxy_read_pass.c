@@ -12,7 +12,7 @@
  *
  */
 
-#define PROMPT	"Enter MyProxy Pass Phrase:"
+#define PROMPT	"Enter MyProxy pass phrase:"
 
 /**********************************************************************
  *
@@ -125,20 +125,26 @@ read_passphrase_stdin(char			*buffer,
  */
 
 int myproxy_read_passphrase(char		*buffer,
-			    int			buffer_len)
+			    int			buffer_len,
+			    const char		*prompt)
 {
-    return read_passphrase(buffer, buffer_len, PROMPT, 0 /* No verify */);
+    return read_passphrase(buffer, buffer_len, prompt ? prompt : PROMPT,
+			   0 /* No verify */);
 }
 
 
 int myproxy_read_verified_passphrase(char	*buffer,
-				     int	buffer_len)
+				     int	buffer_len,
+				     const char *prompt)
 {
-    return read_passphrase(buffer, buffer_len, PROMPT, 1 /* Verify */);
+    return read_passphrase(buffer, buffer_len, prompt ? prompt : PROMPT,
+			   1 /* Verify */);
 }
 
 int myproxy_read_passphrase_stdin(char		*buffer,
-				  int		buffer_len)
+				  int		buffer_len,
+				  const char	*prompt)
 {
-    return read_passphrase_stdin(buffer, buffer_len, PROMPT,0 /* No verify */);
+    return read_passphrase_stdin(buffer, buffer_len, prompt ? prompt : PROMPT,
+				 0 /* No verify */);
 }
