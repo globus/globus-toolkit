@@ -74,7 +74,7 @@ globus_xio_contact_info_to_encoded_string(
         GLOBUS_XIO_ERROR_CANCELED,                                          \
         __FILE__,                                                           \
         _xio_name,                                                          \
-        __LINE__,                                                           \
+        __LINE__,							    \
         "Operation was canceled")                                          
                                                                             
 #define GlobusXIOErrorObjEOF()                                              \
@@ -354,11 +354,17 @@ globus_xio_contact_info_to_encoded_string(
     do                                                                      \
     {                                                                       \
         int                             _i;                                 \
-        out_len = 0;                                                        \
-        for(_i = 0; _i < iovc; _i++)                                        \
+        const struct iovec *            _iov;                               \
+        int                             _iovc;                              \
+        globus_size_t                   _out_len;                           \
+        _iov = (iov);							    \
+        _iovc = (iovc);							    \
+        _out_len = 0;                                                       \
+        for(_i = 0; _i < _iovc; _i++)                                       \
         {                                                                   \
-            out_len += iov[_i].iov_len;                                     \
+            _out_len += _iov[_i].iov_len;                                   \
         }                                                                   \
+        out_len = _out_len;						    \
     } while(0)
 
 #define GlobusXIOUtilIovSerialize(                                          \
