@@ -1671,6 +1671,7 @@ globus_l_gass_copy_io_target_populate(
     target->data.io.handle = io_handle;
 
     target->n_pending = 0;
+    target->n_complete = 0;
     target->status = GLOBUS_I_GASS_COPY_TARGET_INITIAL;
 
     target->mode = GLOBUS_GASS_COPY_URL_MODE_IO;
