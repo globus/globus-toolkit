@@ -70,7 +70,7 @@ static char version[] =
 "myproxy-server version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
 
 static char default_config_file[] =
-MYPROXY_SERVER_DIR "/etc/myproxy-server.config";
+MYPROXY_SERVER_ETC_DIR "/myproxy-server.config";
 
 /* Signal handling */
 typedef void Sigfunc(int);  
