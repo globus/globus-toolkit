@@ -358,6 +358,7 @@ globus_i_xio_will_block_cb(
             {
                 GlobusXIOOpInc(op);
                 deliver_type = *op->entry[ndx].deliver_type;
+                *op->entry[ndx].deliver_type = GLOBUS_XIO_OPERATION_TYPE_NONE;
                 op->entry[ndx].deliver_type = NULL;
             }
             else

@@ -226,6 +226,8 @@ globus_xio_driver_open_delivered(
         if(deliver_type == NULL ||
             *deliver_type == GLOBUS_XIO_OPERATION_TYPE_NONE)
         {
+            GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
+                ("[%s] : Already delivered\n", _xio_name));
             GlobusXIOOpDec(op);
             if(op->ref == 0)
             {
@@ -751,6 +753,8 @@ globus_xio_driver_write_delivered(
         if(deliver_type == NULL ||
             *deliver_type == GLOBUS_XIO_OPERATION_TYPE_NONE)
         {
+            GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
+                ("[%s] : Already delivered\n", _xio_name));
             GlobusXIOOpDec(op);
             if(op->ref == 0)
             {
@@ -1093,6 +1097,8 @@ globus_xio_driver_read_delivered(
         if(deliver_type == NULL || 
             *deliver_type == GLOBUS_XIO_OPERATION_TYPE_NONE)
         {
+            GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
+                ("[%s] : Already delivered\n", _xio_name));
             GlobusXIOOpDec(op);
             if(op->ref == 0)
             {
