@@ -55,10 +55,6 @@ ${short_usage}
 
       -all                        Whole certificate
       -subject           |-s      Subject string of the cert
-      -organization      |-o      O  of the subject
-      -organizationunit  |-ou     OU of the subject
-      -organizationunit2 |-ou2    2nd OU of subject (if applicable)
-      -commonname        |-cn     CN of the subject
       -issuer            |-i      Issuer
       -startdate         |-sd     Validity of cert: start date
       -enddate           |-ed     Validity of cert: end date
@@ -103,18 +99,6 @@ while [ "X$1" != "X" ]; do
 	;;
     -subject|-s)
 	toprint="$toprint SUBJECT"
-	;;
-    -organization|-o)
-	toprint="$toprint O"
-	;;
-    -organizationunit|-ou)
-	toprint="$toprint OU"
-	;;
-    -organizationunit2|-ou2)
-	toprint="$toprint OU2"
-	;;
-    -commonname|-cn)
-	toprint="$toprint CN"
 	;;
     -issuer|-i)
 	toprint="$toprint -issuer"
@@ -171,9 +155,6 @@ for i in "$@"; do
 	# print second instance of O or OU.
 	o=`echo $i | ${GLOBUS_SH_SED-sed} 's/2//'`
 	echo "${subject}" | ${GLOBUS_SH_AWK-awk} -F/ '{for (i=1;i<=NF;i++) printf "%s\n", $i;}' | ${GLOBUS_SH_GREP-grep} "^${o}=" | ${GLOBUS_SH_SED-sed} -e 1d -e 's/^[A-z]*=//'
-	;;
-    *)
-	echo "${subject}" | ${GLOBUS_SH_AWK-awk} -F/ '{for (i=1;i<=NF;i++) printf "%s\n", $i;}' | ${GLOBUS_SH_GREP-grep} "^${i}=" | ${GLOBUS_SH_SED-sed} -n -e '1s/^[A-z]*=//p'
 	;;
     esac
 done
