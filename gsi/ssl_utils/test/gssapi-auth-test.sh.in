@@ -78,7 +78,7 @@ echo "Runing basic gssapi authentication test"
 # Subroutines
 #
 
-echo "Spawning server ${GSS+SERVER}..."
+echo "Spawning server ${GSS_SERVER}..."
 echo "  server log is ${GSS_SERVER_LOG}"
 
 (
