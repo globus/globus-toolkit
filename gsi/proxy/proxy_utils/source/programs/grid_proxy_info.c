@@ -125,6 +125,7 @@ main(
     int                                 arg_index;
     char *                              argp;
     char *                              proxy_filename = NULL;
+    globus_gsi_statcheck_t              status;
     char *                              subject;
     char *                              issuer;
     globus_gsi_cert_utils_proxy_type_t  proxy_type;
@@ -291,14 +292,39 @@ main(
 	    args_error(arg_index, argp, "unrecognized option");
     }
 
-    result = GLOBUS_GSI_SYSCONFIG_GET_PROXY_FILENAME(&proxy_filename,
-                                                     GLOBUS_PROXY_FILE_INPUT);
-    if(result != GLOBUS_SUCCESS)
+    if(proxy_filename)
     {
-        globus_libc_fprintf(
-            stderr,
-            "\n\nERROR: Couldn't find a valid proxy.\n");
-        GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
+        result = GLOBUS_GSI_SYSCONFIG_CHECK_KEYFILE(proxy_filename,
+                                                    &status);
+
+        if(result != GLOBUS_SUCCESS)
+        {
+            globus_libc_fprintf(
+                stderr,
+                "\n\nERROR: Couldn't find a valid proxy.\n");
+            GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
+        }
+
+        if(status != GLOBUS_FILE_VALID)
+        {
+            globus_libc_fprintf(
+                stderr,
+                "\n\nERROR: Couldn't find a valid proxy.\n");
+            exit(1);
+        }
+    }
+    else
+    { 
+        result = GLOBUS_GSI_SYSCONFIG_GET_PROXY_FILENAME(
+            &proxy_filename,
+            GLOBUS_PROXY_FILE_INPUT);
+        if(result != GLOBUS_SUCCESS)
+        {
+            globus_libc_fprintf(
+                stderr,
+                "\n\nERROR: Couldn't find a valid proxy.\n");
+            GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
+        }
     }
 
     result = globus_gsi_cred_handle_init(&proxy_cred, NULL);
