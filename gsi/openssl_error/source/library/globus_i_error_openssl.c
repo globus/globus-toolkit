@@ -200,8 +200,6 @@ globus_error_openssl_create_error_string(
 
     GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_ENTER;
 
-    globus_libc_lock();
-
     va_start(ap, format);
 
     if((error_string = malloc(len)) == NULL)
@@ -233,8 +231,6 @@ globus_error_openssl_create_error_string(
     }
 
     va_end(ap);
-
-    globus_libc_unlock();
 
     GLOBUS_I_GSI_OPENSSL_ERROR_DEBUG_EXIT;
     return error_string;

@@ -80,7 +80,7 @@ GSS_CALLCONV gss_inquire_cred(
             GSS_C_INDEFINITE,
             GSS_C_NO_OID_SET,
             GSS_C_BOTH,
-            &cred_handle,
+            (gss_cred_id_t *) &cred_handle,
             NULL,
             NULL);
 
@@ -141,7 +141,7 @@ GSS_CALLCONV gss_inquire_cred(
     if(cred_handle_P == GSS_C_NO_CREDENTIAL &&
        cred_handle != GSS_C_NO_CREDENTIAL)
     {
-        gss_release_cred(&local_minor_status, &cred_handle);
+        gss_release_cred(&local_minor_status, (gss_cred_id_t *) &cred_handle);
     }
     
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;

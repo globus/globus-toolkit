@@ -165,29 +165,44 @@ GSS_CALLCONV gss_init_sec_context(
         local_result = globus_gsi_callback_get_error(
             context->callback_data,
             &callback_error);
-        if(callback_error != GLOBUS_SUCCESS)
-        {
-            local_result = callback_error;
-        }
-
         if(local_result != GLOBUS_SUCCESS)
         {
             GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
                 minor_status, local_result,
-                GLOBUS_GSI_GSSAPI_ERROR_REMOTE_CERT_VERIFY_FAILED);
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_CALLBACK_DATA);
             major_status = GSS_S_FAILURE;
             break;
         }
 
-        /* if failed, may have SSL alert message too */
-        if (GSS_ERROR(major_status))
+        if(callback_error != GLOBUS_SUCCESS && GSS_ERROR(major_status))
+        {
+            local_result = globus_i_gsi_gssapi_error_join_chains_result(
+                (globus_result_t) local_minor_status,
+                callback_error);
+
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_result,
+                GLOBUS_GSI_GSSAPI_ERROR_REMOTE_CERT_VERIFY_FAILED);
+            context->gss_state = GSS_CON_ST_DONE;
+            break;
+        }
+        else if(callback_error != GLOBUS_SUCCESS)
+        {
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, callback_error,
+                GLOBUS_GSI_GSSAPI_ERROR_REMOTE_CERT_VERIFY_FAILED);
+            context->gss_state = GSS_CON_ST_DONE;
+            major_status = GSS_S_FAILURE;
+            break;
+        }
+        else if(GSS_ERROR(major_status))
         {
             GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
                 minor_status, local_minor_status,
                 GLOBUS_GSI_GSSAPI_ERROR_HANDSHAKE);
             context->gss_state = GSS_CON_ST_DONE;
             break;
-        } 
+        }
 
         /* make sure we are talking to the correct server */
         major_status = globus_i_gsi_gss_retrieve_peer(&local_minor_status,

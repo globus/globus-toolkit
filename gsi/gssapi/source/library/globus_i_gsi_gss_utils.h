@@ -17,49 +17,81 @@
 
 /* ERROR MACROS */
 
-#define GLOBUS_GSI_GSSAPI_ERROR_RESULT(_MIN_RESULT_, _MIN_,             \
-                                       _ERRSTR_)                        \
-    {                                                                   \
-         char *                         tmpstr =                        \
-             globus_gsi_cert_utils_create_string _ERRSTR_;              \
-         *_MIN_RESULT_ = (OM_uint32) globus_i_gsi_gssapi_error_result(  \
-             _MIN_, __FILE__, _function_name_,                          \
-             __LINE__, tmpstr);                                         \
-         globus_libc_free(tmpstr);                                      \
+#define GLOBUS_GSI_GSSAPI_ERROR_RESULT(_MIN_RESULT_, _MIN_, \
+                                       _ERRSTR_) \
+    { \
+         char *                         tmpstr = \
+             globus_gsi_cert_utils_create_string _ERRSTR_; \
+         *_MIN_RESULT_ = (OM_uint32) globus_i_gsi_gssapi_error_result( \
+             _MIN_, __FILE__, _function_name_, \
+             __LINE__, tmpstr, NULL); \
+         globus_libc_free(tmpstr); \
     }
 
-#define GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(_MIN_RESULT_,            \
+#define GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(_MIN_RESULT_, \
                                                _ERRORTYPE_, _ERRORSTR_) \
-    {                                                                   \
-         char *                         tmpstr =                        \
-             globus_gsi_cert_utils_create_string _ERRORSTR_;            \
-         *_MIN_RESULT_ =                                                \
-             (OM_uint32) globus_i_gsi_gssapi_openssl_error_result(      \
-             _ERRORTYPE_, __FILE__, _function_name_, __LINE__, tmpstr); \
-         globus_libc_free(tmpstr);                                      \
+    { \
+         char *                         tmpstr = \
+             globus_gsi_cert_utils_create_string _ERRORSTR_; \
+         *_MIN_RESULT_ = \
+             (OM_uint32) globus_i_gsi_gssapi_openssl_error_result( \
+             _ERRORTYPE_, __FILE__, _function_name_, __LINE__, tmpstr, NULL); \
+         globus_libc_free(tmpstr); \
     }
 
 #define GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(_MIN_RESULT_, _TOP_RESULT_, \
-                                             _ERRORTYPE_)                \
-    *_MIN_RESULT_ = (OM_uint32) globus_i_gsi_gssapi_error_chain_result(  \
-                                 (globus_result_t)_TOP_RESULT_,          \
-                                 _ERRORTYPE_, __FILE__,                  \
-                                 _function_name_, __LINE__, NULL)
+                                             _ERRORTYPE_) \
+    *_MIN_RESULT_ = (OM_uint32) globus_i_gsi_gssapi_error_chain_result( \
+                                 (globus_result_t)_TOP_RESULT_, \
+                                 _ERRORTYPE_, __FILE__, \
+                                 _function_name_, __LINE__, NULL, NULL)
 
-#define GLOBUS_GSI_GSSAPI_MALLOC_ERROR(_MIN_RESULT_)       \
-    {                                                      \
-        char *                          _tmp_str_ =        \
-        globus_l_gsi_gssapi_error_strings[                 \
-            GLOBUS_GSI_GSSAPI_ERROR_OUT_OF_MEMORY];        \
-        *_MIN_RESULT_ = (OM_uint32) globus_error_put(      \
-            globus_error_wrap_errno_error(                 \
-                GLOBUS_GSI_GSSAPI_MODULE,                  \
-                errno,                                     \
-                GLOBUS_GSI_GSSAPI_ERROR_OUT_OF_MEMORY,     \
-                "%s:%d: %s: %s",                           \
-                __FILE__, __LINE__, _function_name_,       \
-                _tmp_str_));                               \
-        globus_libc_free(_tmp_str_);                       \
+#define GLOBUS_GSI_GSSAPI_LONG_ERROR_RESULT(_MIN_RESULT_, _MIN_, \
+                                            _ERRSTR_, _LONG_DESC_) \
+    { \
+         char *                         tmpstr = \
+             globus_gsi_cert_utils_create_string _ERRSTR_; \
+         *_MIN_RESULT_ = (OM_uint32) globus_i_gsi_gssapi_error_result( \
+             _MIN_, __FILE__, _function_name_, \
+             __LINE__, tmpstr, _LONG_DESC_); \
+         globus_libc_free(tmpstr); \
+    }
+
+#define GLOBUS_GSI_GSSAPI_OPENSSL_LONG_ERROR_RESULT(_MIN_RESULT_, \
+                                                    _ERRORTYPE_, \
+                                                    _ERRORSTR_, \
+                                                    _LONG_DESC_) \
+    { \
+         char *                         tmpstr = \
+             globus_gsi_cert_utils_create_string _ERRORSTR_; \
+         *_MIN_RESULT_ = \
+             (OM_uint32) globus_i_gsi_gssapi_openssl_error_result( \
+             _ERRORTYPE_, __FILE__, _function_name_, \
+             __LINE__, tmpstr, _LONG_DESC_); \
+         globus_libc_free(tmpstr); \
+    }
+
+#define GLOBUS_GSI_GSSAPI_LONG_ERROR_CHAIN_RESULT(_MIN_RESULT_, _TOP_RESULT_, \
+                                                  _ERRORTYPE_, _LONG_DESC_) \
+    *_MIN_RESULT_ = (OM_uint32) globus_i_gsi_gssapi_error_chain_result( \
+                                 (globus_result_t)_TOP_RESULT_, \
+                                 _ERRORTYPE_, __FILE__, \
+                                 _function_name_, __LINE__, NULL, _LONG_DESC_)
+
+#define GLOBUS_GSI_GSSAPI_MALLOC_ERROR(_MIN_RESULT_) \
+    { \
+        char *                          _tmp_str_ = \
+        globus_l_gsi_gssapi_error_strings[ \
+            GLOBUS_GSI_GSSAPI_ERROR_OUT_OF_MEMORY]; \
+        *_MIN_RESULT_ = (OM_uint32) globus_error_put( \
+            globus_error_wrap_errno_error( \
+                GLOBUS_GSI_GSSAPI_MODULE, \
+                errno, \
+                GLOBUS_GSI_GSSAPI_ERROR_OUT_OF_MEMORY, \
+                "%s:%d: %s: %s", \
+                __FILE__, __LINE__, _function_name_, \
+                _tmp_str_)); \
+        globus_libc_free(_tmp_str_); \
     }
 
 /* DEBUG MACROS */
@@ -255,6 +287,7 @@ globus_i_gsi_gssapi_openssl_error_result(
     const char *                        filename,
     const char *                        function_name,
     int                                 line_number,
+    const char *                        short_desc,
     const char *                        long_desc);
 
 globus_result_t
@@ -263,6 +296,7 @@ globus_i_gsi_gssapi_error_result(
     const char *                        filename,
     const char *                        function_name,
     int                                 line_number,
+    const char *                        short_desc,
     const char *                        long_desc);
 
 globus_result_t
@@ -272,6 +306,12 @@ globus_i_gsi_gssapi_error_chain_result(
     const char *                        filename,
     const char *                        function_name,
     int                                 line_number,
+    const char *                        short_desc,
     const char *                        long_desc);
+
+globus_result_t
+globus_i_gsi_gssapi_error_join_chains_result(
+    globus_result_t                     outter_error,
+    globus_result_t                     inner_error);
 
 #endif /* GLOBUS_I_GSI_GSS_UTILS_H */

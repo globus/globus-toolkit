@@ -571,15 +571,11 @@ globus_gsi_cert_utils_create_string(
     
     GLOBUS_I_GSI_CERT_UTILS_DEBUG_ENTER;
 
-    globus_libc_lock();
-    
     va_start(ap, format);
 
     new_string = globus_gsi_cert_utils_v_create_string(format, ap);
 
     va_end(ap);
-
-    globus_libc_unlock();
 
     GLOBUS_I_GSI_CERT_UTILS_DEBUG_EXIT;
     return new_string;
@@ -598,15 +594,11 @@ globus_gsi_cert_utils_create_nstring(
     
     GLOBUS_I_GSI_CERT_UTILS_DEBUG_ENTER;
 
-    globus_libc_lock();
-    
     va_start(ap, format);
 
     new_string = globus_gsi_cert_utils_v_create_nstring(length, format, ap);
 
     va_end(ap);
-
-    globus_libc_unlock();
 
     GLOBUS_I_GSI_CERT_UTILS_DEBUG_EXIT;
     return new_string;

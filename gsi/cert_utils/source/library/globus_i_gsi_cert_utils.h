@@ -90,51 +90,98 @@ extern char *                    globus_l_gsi_cert_utils_error_strings[];
 
 #define GLOBUS_GSI_CERT_UTILS_OPENSSL_ERROR_RESULT(_RESULT_, \
                                                    _ERRORTYPE_, _ERRSTR_) \
-    {                                                                         \
-        char *                          _tmp_str_ =                           \
-            globus_gsi_cert_utils_create_string _ERRSTR_;                   \
-        _RESULT_ = globus_i_gsi_cert_utils_openssl_error_result(_ERRORTYPE_,  \
-                                                          __FILE__,           \
-                                                          _function_name_,    \
-                                                          __LINE__,           \
-                                                          _tmp_str_);         \
-        globus_libc_free(_tmp_str_);                                          \
+    { \
+        char *                          _tmp_str_ = \
+            globus_gsi_cert_utils_create_string _ERRSTR_; \
+        _RESULT_ = globus_i_gsi_cert_utils_openssl_error_result(_ERRORTYPE_, \
+                                                          __FILE__, \
+                                                          _function_name_, \
+                                                          __LINE__, \
+                                                          _tmp_str_, \
+                                                          NULL); \
+        globus_libc_free(_tmp_str_); \
     }
 
 #define GLOBUS_GSI_CERT_UTILS_ERROR_RESULT(_RESULT_, _ERRORTYPE_, _ERRSTR_) \
-    {                                                                       \
-        char *                          _tmp_str_ =                         \
-            globus_gsi_cert_utils_create_string _ERRSTR_;                 \
-        _RESULT_ = globus_i_gsi_cert_utils_error_result(_ERRORTYPE_,        \
-                                                  __FILE__,                 \
-                                                  _function_name_,          \
-                                                  __LINE__,                 \
-                                                  _tmp_str_);               \
-        globus_libc_free(_tmp_str_);                                        \
+    { \
+        char *                          _tmp_str_ = \
+            globus_gsi_cert_utils_create_string _ERRSTR_; \
+        _RESULT_ = globus_i_gsi_cert_utils_error_result(_ERRORTYPE_, \
+                                                  __FILE__, \
+                                                  _function_name_, \
+                                                  __LINE__, \
+                                                  _tmp_str_, \
+                                                  NULL); \
+        globus_libc_free(_tmp_str_); \
     }
 
 #define GLOBUS_GSI_CERT_UTILS_ERROR_CHAIN_RESULT(_TOP_RESULT_, _ERRORTYPE_) \
     _TOP_RESULT_ = globus_i_gsi_cert_utils_error_chain_result(_TOP_RESULT_, \
-                                                        _ERRORTYPE_,        \
-                                                        __FILE__,           \
-                                                        _function_name_,    \
-                                                        __LINE__,           \
+                                                        _ERRORTYPE_, \
+                                                        __FILE__, \
+                                                        _function_name_, \
+                                                        __LINE__, \
+                                                        NULL, \
                                                         NULL)
 
-#define GLOBUS_GSI_CERT_UTILS_MALLOC_ERROR(_MIN_RESULT_)   \
-    {                                                      \
-        char *                          _tmp_str_ =        \
-        globus_l_gsi_cert_utils_error_strings[             \
-            GLOBUS_GSI_CERT_UTILS_ERROR_OUT_OF_MEMORY];    \
-        _MIN_RESULT_ = globus_error_put(                   \
-            globus_error_wrap_errno_error(                 \
-                GLOBUS_GSI_CERT_UTILS_MODULE,              \
-                errno,                                     \
+#define GLOBUS_GSI_CERT_UTILS_OPENSSL_LONG_ERROR_RESULT(_RESULT_, \
+                                                        _ERRORTYPE_, \
+                                                        _ERRSTR_, \
+                                                        _LONG_DESC_) \
+    { \
+        char *                          _tmp_str_ = \
+            globus_gsi_cert_utils_create_string _ERRSTR_; \
+        _RESULT_ = globus_i_gsi_cert_utils_openssl_error_result( \
+             _ERRORTYPE_, \
+             __FILE__, \
+             _function_name_, \
+             __LINE__, \
+             _tmp_str_, \
+             _LONG_DESC_); \
+        globus_libc_free(_tmp_str_); \
+    }
+
+#define GLOBUS_GSI_CERT_UTILS_LONG_ERROR_RESULT(_RESULT_, \
+                                                _ERRORTYPE_, \
+                                                _ERRSTR_, \
+                                                _LONG_DESC_) \
+    { \
+        char *                          _tmp_str_ = \
+            globus_gsi_cert_utils_create_string _ERRSTR_; \
+        _RESULT_ = globus_i_gsi_cert_utils_error_result(_ERRORTYPE_, \
+                                                        __FILE__, \
+                                                        _function_name_, \
+                                                        __LINE__, \
+                                                        _tmp_str_, \
+                                                        _LONG_DESC_); \
+        globus_libc_free(_tmp_str_); \
+    }
+
+#define GLOBUS_GSI_CERT_UTILS_LONG_ERROR_CHAIN_RESULT(_TOP_RESULT_, \
+                                                      _ERRORTYPE_, \
+                                                      _LONG_DESC_) \
+    _TOP_RESULT_ = globus_i_gsi_cert_utils_error_chain_result(_TOP_RESULT_, \
+                                                        _ERRORTYPE_, \
+                                                        __FILE__, \
+                                                        _function_name_, \
+                                                        __LINE__, \
+                                                        NULL, \
+                                                        _LONG_DESC_)
+
+#define GLOBUS_GSI_CERT_UTILS_MALLOC_ERROR(_MIN_RESULT_) \
+    { \
+        char *                          _tmp_str_ = \
+        globus_l_gsi_cert_utils_error_strings[ \
+            GLOBUS_GSI_CERT_UTILS_ERROR_OUT_OF_MEMORY]; \
+        _MIN_RESULT_ = globus_error_put( \
+            globus_error_wrap_errno_error( \
+                GLOBUS_GSI_CERT_UTILS_MODULE, \
+                errno, \
                 GLOBUS_GSI_CERT_UTILS_ERROR_OUT_OF_MEMORY, \
-                "%s:%d: %s: %s",                           \
-                __FILE__, __LINE__, _function_name_,       \
-                _tmp_str_));                               \
-        globus_libc_free(_tmp_str_);                       \
+                "%s:%d: %s: %s", \
+                __FILE__, __LINE__, _function_name_, \
+                _tmp_str_)); \
+        globus_libc_free(_tmp_str_); \
     }
 
 globus_result_t
@@ -143,6 +190,7 @@ globus_i_gsi_cert_utils_openssl_error_result(
     const char *                        filename,
     const char *                        function_name,
     int                                 line_number,
+    const char *                        short_desc,
     const char *                        long_desc);
 
 globus_result_t
@@ -151,6 +199,7 @@ globus_i_gsi_cert_utils_error_result(
     const char *                        filename,
     const char *                        function_name,
     int                                 line_number,
+    const char *                        short_desc,
     const char *                        long_desc);
 
 globus_result_t
@@ -160,6 +209,7 @@ globus_i_gsi_cert_utils_error_chain_result(
     const char *                        filename,
     const char *                        function_name,
     int                                 line_number,
+    const char *                        short_desc,
     const char *                        long_desc);
 
 EXTERN_C_END

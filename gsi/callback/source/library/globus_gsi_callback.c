@@ -111,7 +111,7 @@ static
 int
 globus_l_gsi_callback_deactivate(void)
 {
-    int                                 result;
+    int                                 result = (int) GLOBUS_SUCCESS;
     static char *                       _function_name_ =
         "globus_l_gsi_callback_deactivate";
 
@@ -413,7 +413,13 @@ globus_i_gsi_callback_cred_verify(
                     GLOBUS_GSI_CALLBACK_ERROR_CERT_HAS_EXPIRED,
                     ("Remote credential has expired"));
             }
-
+            else
+            {
+                GLOBUS_GSI_CALLBACK_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CALLBACK_ERROR_VERIFY_CRED,
+                    (X509_verify_cert_error_string(x509_context->error)));
+            }
             goto exit;
         }
         

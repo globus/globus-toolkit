@@ -1044,12 +1044,11 @@ gssapi_reply_error(code, maj_stat, min_stat, s)
     OM_uint32 codes[2] = { GSS_C_GSS_CODE, GSS_C_MECH_CODE };
     int code_num;
     
-    
     for (code_num = 0; code_num < 2 ; code_num++) {
 	msg_ctx = 0;
 	while (!msg_ctx) {
 	    gmaj_stat = gss_display_status(&gmin_stat,
-                                           code_num ? maj_stat : min_stat,
+                                           code_num ? min_stat : maj_stat,
 					   codes[code_num],
 					   GSS_C_NULL_OID,
 					   &msg_ctx, &msg);

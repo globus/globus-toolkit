@@ -197,7 +197,7 @@ int main(
     {
         globus_libc_fprintf(
             stderr,
-            "Proxy file doesn't exist or has bad permissions", 
+            "\nERROR: Proxy file: %s doesn't exist or has bad permissions\n", 
             default_full_file);
         GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
     }
@@ -210,8 +210,8 @@ int main(
         {
             globus_libc_fprintf(
                 stderr,
-                "Couldn't remove the all the files "
-                "owned by you in secure tmp directory.");
+                "\nERROR: Couldn't remove the all the files "
+                "owned by you in secure tmp directory.\n");
             GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
         }
     }
@@ -283,36 +283,25 @@ globus_i_gsi_proxy_utils_print_error(
     int                                 line)
 {
     globus_object_t *                   error_obj;
-    globus_object_t *                   base_error_obj;
 
     error_obj = globus_error_get(result);
     if(debug)
     {
         char *                          error_string = NULL;
         globus_libc_fprintf(stderr,
-                            "\n\n%s:%d:",
+                            "\n%s:%d:",
                             filename, line);
         error_string = globus_error_print_chain(error_obj);
         globus_libc_fprintf(stderr, "%s\n", error_string);
-        base_error_obj = error_obj;
-        while(1)
+        if(error_string)
         {
-            if(!globus_error_get_cause(base_error_obj) || 
-               globus_object_get_type(
-                   globus_error_get_cause(base_error_obj)) 
-               == GLOBUS_ERROR_TYPE_OPENSSL)
-            {
-                break;
-            }
-            base_error_obj = globus_error_get_cause(base_error_obj);
+            globus_libc_free(error_string);
         }
-        globus_libc_fprintf(stderr, "\nBASE CAUSE: %s\n\n", 
-                            globus_error_get_long_desc(base_error_obj)); 
     }
     else 
     {
         globus_libc_fprintf(stderr,
-                            "\nUse -debug for further information.\n\n");
+                            "Use -debug for further information.\n\n");
     }
     globus_object_free(error_obj);
     exit(1);

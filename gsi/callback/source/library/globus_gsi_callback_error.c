@@ -47,6 +47,7 @@ globus_i_gsi_callback_openssl_error_result(
     const char *                        filename,
     const char *                        function_name,
     int                                 line_number,
+    const char *                        short_desc,
     const char *                        long_desc)
 {
     globus_object_t *                   error_object;
@@ -61,13 +62,18 @@ globus_i_gsi_callback_openssl_error_result(
         globus_error_wrap_openssl_error(
             GLOBUS_GSI_CALLBACK_MODULE,
             error_type,
-            "%s:%d: %s: %s",
+            "%s:%d: %s: %s%s%s",
             filename,
             line_number,
             function_name,
-            globus_l_gsi_callback_error_strings[error_type]);    
+            globus_l_gsi_callback_error_strings[error_type],
+            short_desc ? ": " : "",
+            short_desc ? short_desc : "");    
 
-    globus_error_set_long_desc(error_object, long_desc);
+    if(long_desc)
+    {
+        globus_error_set_long_desc(error_object, long_desc);
+    }
 
     result = globus_error_put(error_object);
     
@@ -82,6 +88,7 @@ globus_i_gsi_callback_error_result(
     const char *                        filename,
     const char *                        function_name,
     int                                 line_number,
+    const char *                        short_desc,
     const char *                        long_desc)
 {
     globus_object_t *                   error_object;
@@ -96,11 +103,16 @@ globus_i_gsi_callback_error_result(
         GLOBUS_GSI_CALLBACK_MODULE,
         NULL,
         error_type,
-        "%s:%d: %s: %s",
+        "%s:%d: %s: %s%s%s",
         filename, line_number, function_name, 
-        globus_l_gsi_callback_error_strings[error_type]);
+        globus_l_gsi_callback_error_strings[error_type],
+        short_desc ? ": " : "",
+        short_desc ? short_desc : "");
 
-    globus_error_set_long_desc(error_object, long_desc);
+    if(long_desc)
+    {
+        globus_error_set_long_desc(error_object, long_desc);
+    }
 
     result = globus_error_put(error_object);
 
@@ -116,6 +128,7 @@ globus_i_gsi_callback_error_chain_result(
     const char *                        filename,
     const char *                        function_name,
     int                                 line_number,
+    const char *                        short_desc,
     const char *                        long_desc)
 {
     globus_object_t *                   error_object;
@@ -131,9 +144,11 @@ globus_i_gsi_callback_error_chain_result(
             GLOBUS_GSI_CALLBACK_MODULE,
             globus_error_get(chain_result),
             error_type,
-            "%s:%d: %s: %s",
+            "%s:%d: %s: %s%s%s",
             filename, line_number, function_name, 
-            globus_l_gsi_callback_error_strings[error_type]);
+            globus_l_gsi_callback_error_strings[error_type],
+            short_desc ? ": " : "",
+            short_desc ? short_desc : "");
 
     if(long_desc)
     {

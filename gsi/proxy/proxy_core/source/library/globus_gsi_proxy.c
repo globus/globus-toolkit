@@ -138,7 +138,7 @@ static
 int
 globus_l_gsi_proxy_deactivate(void)
 {
-    int                                 result;
+    int                                 result = GLOBUS_SUCCESS;
     static char *                       _function_name_ = 
         "globus_i_gsi_proxy_deactivate";
 

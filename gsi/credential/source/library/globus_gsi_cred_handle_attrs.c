@@ -47,7 +47,6 @@ globus_result_t
 globus_gsi_cred_handle_attrs_init(
     globus_gsi_cred_handle_attrs_t *    handle_attrs)
 {
-    char *                              error_string = NULL;
     globus_result_t                     result;
 
     static char *                       _function_name_ =
@@ -80,8 +79,6 @@ globus_gsi_cred_handle_attrs_init(
     if((result = GLOBUS_GSI_SYSCONFIG_GET_CERT_DIR(
         &(*handle_attrs)->ca_cert_dir)) != GLOBUS_SUCCESS)
     {
-        error_string = __FILE__":""__LINE__"
-            ": error in cred_handle_attrs_init";
         goto error_exit;
     }
 
