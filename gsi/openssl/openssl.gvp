@@ -87,7 +87,7 @@
 <File>libssl.a</File>
 </Filelist>
 
-<Filelist Dir="misc" Flavored="no">
+<Filelist Dir="ssl/misc" Flavored="no">
 <File>CA.pl</File>
 <File>CA.sh</File>
 <File>c_hash</File>
