@@ -6,6 +6,13 @@
 #define REPLY_220 "220 Hello there\r\n"
 #define FTP_USER_ARG (void*)0x15
 
+#define USER_DATA_HANDLE    ((void *) 0xFF)
+
+char *  CONTACT_STRINGS[]     = {"127.0.0.1:2", "192.168.0.1:5566", NULL};
+
+#define CONTACT_STRINGS_COUNT   2
+
+
 static globus_mutex_t                       globus_l_mutex;
 static globus_cond_t                        globus_l_cond;
 static globus_bool_t                        globus_l_done = GLOBUS_FALSE;
@@ -82,6 +89,55 @@ globus_l_resource_cb(
         1);
     globus_assert(res == GLOBUS_SUCCESS);
 }
+
+static void
+passive_connect(
+    globus_gridftp_server_control_op_t      op,
+    globus_gridftp_server_control_network_protocol_t net_prt,
+    int                                     max)
+{
+    globus_gridftp_server_control_finished_passive_connect(
+        op,
+        USER_DATA_HANDLE,
+        GLOBUS_SUCCESS,
+        GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_DIR_BI,
+        (const char **)CONTACT_STRINGS,
+        CONTACT_STRINGS_COUNT);
+}
+
+static void
+active_connect(
+    globus_gridftp_server_control_op_t      op,
+    globus_gridftp_server_control_network_protocol_t net_prt,
+    const char **                           cs,
+    int                                     cs_count)
+{
+    globus_gridftp_server_control_finished_active_connect(
+        op,
+        USER_DATA_HANDLE,
+        GLOBUS_SUCCESS,
+        GLOBUS_GRIDFTP_SERVER_CONTROL_DATA_DIR_BI);
+}
+
+static void
+data_destroy_cb(
+    void *                                  user_data_handle)
+{
+    globus_assert(user_data_handle == USER_DATA_HANDLE);
+}
+
+
+static void
+transfer(
+    globus_gridftp_server_control_op_t      op,
+    void *                                  data_handle,
+    const char *                            local_target,
+    const char *                            mod_name,
+    const char *                            mod_parms)
+{
+}
+
+
 
 void
 auth_func(
@@ -172,6 +228,8 @@ main(
         ftp_attr, globus_l_resource_cb);
     test_res(res, __LINE__);
 
+    res = globus_gridftp_server_control_attr_data_functions(
+        ftp_attr, active_connect, passive_connect, data_destroy_cb);
     globus_mutex_lock(&globus_l_mutex);
     {
         res = globus_gridftp_server_control_start(
