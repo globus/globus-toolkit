@@ -1,15 +1,4 @@
-2000-09-22  Von Welch  <vwelch@ncsa.uiuc.edu>
+2000-10-03  Von Welch  <vwelch@ncsa.uiuc.edu>
 
-	* Makefile.in myproxy.h myproxy_destroy.c myproxy_get_delegation.c
-	myproxy_init.c: Use myproxy_read_pass.c functions now. Removing
-	any concept of a minimum pass phrase length (this will be
-	implemented in the server) and making the maximum 1024 characters.
-	
-	* myproxy_read_pass.c myproxy_read_pass.h: Added these files.
-	
-	* myproxy_log.c (myproxy_log_verror): Avoid logging a NULL verror
-	string.
-	
-	* ChangeLog: File created.
-	
+	* ChangeLog: Created after 0.2alpha1 release
 
