@@ -20,7 +20,9 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
+#ifndef TARGET_ARCH_WIN32
 #include <strings.h>
+#endif
 #include "version.h"
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
@@ -3182,7 +3184,11 @@ globus_l_gass_transfer_http_response_callback(
 			    break;
 			}
 		    }
+#ifndef TARGET_ARCH_WIN32
 		    if(strncasecmp(tmp, "chunked", strlen("chunked")) == 0)
+#else
+		    if(strnicmp(tmp, "chunked", strlen("chunked")) == 0)
+#endif
 		    {
 			proto->recv_buffer =
 			    globus_l_gass_transfer_http_receive;
@@ -3685,7 +3691,11 @@ globus_l_gass_transfer_http_request_callback(
 		break;
 	    }
 	}
+#ifndef TARGET_ARCH_WIN32
 	if(strncasecmp(tmp, "chunked", strlen("chunked")) == 0)
+#else
+	if(strnicmp(tmp, "chunked", strlen("chunked")) == 0)
+#endif
 	{
 	    proto->recv_buffer =
 		globus_l_gass_transfer_http_receive;
