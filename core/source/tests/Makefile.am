@@ -4,7 +4,7 @@ all:
 
 MY_TESTS = simple_dep.sh
 
-EXTRA_DIST = ${MY_TESTS} generate_parameters_file.sh
+EXTRA_DIST = ${MY_TESTS} generate_parameter_files.sh
 
 noinst_SCRIPTS = ${MY_TESTS}
 

@@ -11,6 +11,7 @@ $(GLOBUS_FLAVOR_NAME).filelist: filelist_file filelist
 .PHONY: $(GLOBUS_FLAVOR_NAME).filelist
 
 filelist_file:
+	mydir=`pwd`; \
 	if test -f "$$mydir/$(GLOBUS_FLAVOR_NAME).filelist"; then \
 		rm $(FILELIST_FILE); \
 	fi
