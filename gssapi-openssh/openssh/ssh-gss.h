@@ -107,7 +107,6 @@ void ssh_gssapi_set_oid_data(Gssctxt *ctx, void *data, size_t len);
 void ssh_gssapi_set_oid(Gssctxt *ctx, gss_OID oid);
 void ssh_gssapi_supported_oids(gss_OID_set *oidset);
 ssh_gssapi_mech *ssh_gssapi_get_ctype(Gssctxt *ctxt);
-gss_OID ssh_gssapi_id_kex(Gssctxt *ctx, char *name);
 
 OM_uint32 ssh_gssapi_import_name(Gssctxt *ctx, const char *host);
 OM_uint32 ssh_gssapi_acquire_cred(Gssctxt *ctx);
