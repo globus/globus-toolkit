@@ -40,6 +40,7 @@ EXTRA_DIST = \
 	grid-cert-request-config.in \
 	grid-security-config.in \
 	grid-security.conf \
+	globus-ssl.conf \
 	42864e48.0 \
 	42864e48.signing_policy
 
