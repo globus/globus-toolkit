@@ -4,7 +4,7 @@
 
 #include "saml.h"
 #define WILDCARD_MATCH_NAME "FTPDirectoryTree|"
-#define TIME_NS "time"
+#define TIME_NS "utctime"
 
 
 #ifndef COMPILE_NAME_TEST
@@ -334,7 +334,7 @@ gaa_simple_l_add_ads_rights (gaa_ptr 		gaa,
 	    {
 		val_p++;
 	    }
-        
+
 	    if ((status = gaa_new_condition(&cond,
 					    "identity",
 					    ads->NameIDformat,
@@ -342,14 +342,14 @@ gaa_simple_l_add_ads_rights (gaa_ptr 		gaa,
 	    {
 		goto end;
 	    }
-        
+
 	    if ((status = gaa_add_condition(right, cond)) != GAA_S_SUCCESS)
 	    {
 		gaa_free_condition(cond);
 		goto end;
 	    }
 	}
-      
+
 	if (NotBefore)
 	{
 	    if ((status = gaa_new_condition(&cond, "NotBefore",

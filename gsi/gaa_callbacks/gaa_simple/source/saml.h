@@ -43,10 +43,6 @@ typedef struct action {
 } action, *actionPtr;
 
 assertionPtr
-getConditions(xmlNodePtr cur, assertionPtr Assertion);
-
-
-assertionPtr
 getADSattributes(xmlDocPtr doc, xmlNodePtr cur, assertionPtr Assertion);
 
 

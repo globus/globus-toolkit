@@ -205,7 +205,8 @@ load_ca_certs(xmlSecKeysMngrPtr mngr, char *errbuf, int errbuflen)
     int keysloaded = 0;
     
     /* Add CA certs to the key manager */
-    
+
+    globus_module_activate(GLOBUS_GSI_SYSCONFIG_MODULE);
     if (GLOBUS_GSI_SYSCONFIG_GET_CERT_DIR(&ca_cert_dir))
     {
 	snprintf(errbuf, errbuflen, "Error: failed to get CA cert directory");
