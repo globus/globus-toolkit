@@ -38,9 +38,9 @@ sub new($$)
 
     $self->{JobDescription} = $description;
 
-    if(exists($description->{logfile}))
+    if(defined($description->logfile()))
     {
-	$self->{log} = new IO::File($description->{logfile}, '>>');
+	$self->{log} = new IO::File($description->logfile(), '>>');
     }
 
     bless $self, $class;
