@@ -627,8 +627,6 @@ globus_l_url_copy_monitor_callback(void * callback_arg,
     globus_bool_t                use_err = GLOBUS_FALSE;
     monitor = (my_monitor_t * )  callback_arg;
 
-    printf("i'm in the callback\n");
-
     if (error != GLOBUS_SUCCESS)
     {
         fprintf(stderr, " url copy error: %s\n",
@@ -664,8 +662,6 @@ globus_l_url_copy_cancel_callback(void * callback_arg,
     my_monitor_t *               monitor;
     globus_bool_t                use_err = GLOBUS_FALSE;
     monitor = (my_monitor_t * )  callback_arg;
-
-    printf("i'm in the cancel callback\n");
 
     if (error != GLOBUS_SUCCESS)
     {
