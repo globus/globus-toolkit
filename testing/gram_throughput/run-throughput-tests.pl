@@ -3,21 +3,34 @@
 use strict;
 use IO::Handle;
 use Getopt::Long;
+use Pod::Usage;
 
-my ($verbose,   $host,  $port,  $startCount,    $endCount) =
-   (1,          "",     8080,   1,              1);
+my $hostname = `$ENV{GLOBUS_LOCATION}/libexec/globus-libc-hostname`;
+
+my ($verbose,   $host,  $port,  $startCount,    $endCount,  $factoryType) =
+   (1,          "",     8080,   1,              1,          "Fork");
+my ($help,  $man) =
+   (0,      0);
 
 GetOptions(
-    "v|verbose!"        => \$verbose,
-    "h|host=s"          => \$host,
-    "p|port=s"          => \$port,
-    "s|startcount=s"    => \$startCount,
-    "e|endcount=s"      => \$endCount)
+    "verbose!"      => \$verbose,
+    "host=s"        => \$host,
+    "port=s"        => \$port,
+    "startcount=s"  => \$startCount,
+    "endcount=s"    => \$endCount,
+    "type=s"        => \$factoryType,
+    "help"          => \$help,
+    "man"           => \$man)
     or pod2usage(2);
 
+if ($help or $man) {
+    pod2usage(2) if $help;
+    pod2usage(1) if $man;
+}
+
 if (!length($host)) {
-    print "ERROR: no host specified\n";
-    exit 1;
+    chomp($hostname);
+    $host = $hostname;
 }
 
 if ($verbose) {
@@ -37,6 +50,7 @@ for (my $index=$startCount; $index<=$endCount; $index*=2) {
                  . "-Dservice.host=$host "
                  . "-Dservice.port=$port "
                  . "-Djob.count=$index "
+                 . "-Dfactory.type=$factoryType "
                  . "-Dogsa.root=$ENV{GLOBUS_LOCATION} "
                  . "runTestApp";
 
@@ -69,3 +83,54 @@ for (my $index=$startCount; $index<=$endCount; $index*=2) {
     close EXEC;
     close TIMINGSLOG;
 }
+END{};
+1;
+
+=head1 NAME
+
+run-throughput-tests.pl - MJS throughput test script
+
+=head1 SYNOPSIS
+
+run-throughput-tests.pl [options]
+
+Options:
+
+    --host=<host>                   Specify the host of the running MHE
+                                    to test against (default is the
+                                    hostname of the local machine)
+    --port=<port>                   Specify the port of the running MHE
+                                    to test against (default is 8080)
+    --type=<type>                   Specify the factory type to test against
+                                    (default is "Fork")
+    --help                          Print short usage.
+    --man                           Print long usage.
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<--host>
+
+Specify the host of the running MHE to test against.  This option will default
+to the hostname of the current machine.
+
+=item B<--port>
+
+Specify the port of the running MHE to test against.  This options will default
+to "8080".
+
+=item B<--type>
+
+Specify the factory type to test against.  Usual values are "Fork", "Pbs", "Lsf"
+, and "CondorIntelLinux".  This options defaults to "Fork".
+
+=item B<--help>
+
+Print short usage.
+
+=item B<--man>
+
+Print long usage.
+
+=cut

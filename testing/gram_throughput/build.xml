@@ -32,6 +32,8 @@
   <property name="log.dir" value="logs" />
   <property name="service.host" value="localhost" />
   <property name="service.port" value="8080" />
+  <property name="factory.type" value="Fork" />
+  <property name="factory.url"  value="http://${service.host}:${service.port}/ogsa/services/base/gram/Master${factory.type}ManagedJobFactoryService"/>
 
   <target name="setenv">
     <!--provide a property for when we must be-->
@@ -303,7 +305,7 @@
           fork="yes"
           classpathref="classpath" failonerror="true" >
 
-      <arg value="http://${service.host}:${service.port}/ogsa/services/base/gram/MasterForkManagedJobFactoryService"/>
+      <arg value="${factory.url}"/>
       <arg value="./date.xml"/>
       <arg value="${job.count}"/>
     </java>
