@@ -3,7 +3,7 @@ globus_version_t local_version =
 {
     0,
     1,
-    1058356507,
+    1059596358,
     99999
 };
 

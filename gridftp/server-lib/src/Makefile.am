@@ -5,22 +5,22 @@ SUBDIRS=\
     pkgdata
 
 Sources= \
-    globus_gridftp_server.c                     \
-    globus_gridftp_server_cmd.c                 \
-	globus_gridftp_server_attr.c                \
-    globus_gridftp_server_pmod_959_cmd.c        \
-    globus_gridftp_server_pmod_959.c
+    globus_gridftp_server_control.c                     \
+	globus_gridftp_server_control_attr.c                \
+    globus_gridftp_server_control_pmod_959_cmd.c        \
+    globus_gridftp_server_control_pmod_959.c
 
 flavorinclude_HEADERS = \
-    globus_gridftp_server.h
+    globus_gridftp_server_control.h
 
-lib_LTLIBRARIES = libglobus_gridftp_server_$(GLOBUS_FLAVOR_NAME).la
+lib_LTLIBRARIES = libglobus_gridftp_server_control_$(GLOBUS_FLAVOR_NAME).la
 
 INCLUDES = $(GPT_INCLUDES)
 
-libglobus_gridftp_server___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources) 
-libglobus_gridftp_server___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
-libglobus_gridftp_server___GLOBUS_FLAVOR_NAME__la_LIBADD = \
+libglobus_gridftp_server_control___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources) 
+libglobus_gridftp_server_control___GLOBUS_FLAVOR_NAME__la_LDFLAGS = \
+    $(GPT_LDFLAGS)
+libglobus_gridftp_server_control___GLOBUS_FLAVOR_NAME__la_LIBADD = \
 	$(GPT_LIB_LINKS)
 
 EXTRA_DIST = \
