@@ -446,8 +446,11 @@ case ${host}--$1 in
 	lac_CFLAGS="-D_ALL_SOURCE $lac_CFLAGS"
 	lac_CXXFLAGS="-D_ALL_SOURCE $lac_CXXFLAGS"
         if test "$lac_cv_debug" = "yes"; then
-	    lac_CFLAGS="-qfullpath $lac_CFLAGS"
-	    lac_CXXFLAGS="-qfullpath $lac_CXXFLAGS"
+	   LAC_PROG_CC_GNU($lac_cv_CC,
+	       [
+	    	lac_CFLAGS="-qfullpath $lac_CFLAGS"
+	    	lac_CXXFLAGS="-qfullpath $lac_CXXFLAGS"
+	       ])
 	fi
       ;;
     *-ibm-aix*--no )
@@ -471,8 +474,11 @@ case ${host}--$1 in
 	lac_CFLAGS="-D_ALL_SOURCE $lac_CFLAGS"
 	lac_CXXFLAGS="-D_ALL_SOURCE $lac_CXXFLAGS"
         if test "$lac_cv_debug" = "yes"; then
-	    lac_CFLAGS="-qfullpath $lac_CFLAGS"
-	    lac_CXXFLAGS="-qfullpath $lac_CXXFLAGS"
+	   LAC_PROG_CC_GNU($lac_cv_CC,
+	       [
+	    	lac_CFLAGS="-qfullpath $lac_CFLAGS"
+	    	lac_CXXFLAGS="-qfullpath $lac_CXXFLAGS"
+	       ])
 	fi
       ;;
     alpha-dec-osf[45]* )
