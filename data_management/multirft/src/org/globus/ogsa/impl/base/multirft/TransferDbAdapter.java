@@ -236,6 +236,7 @@ public class TransferDbAdapter {
 
         Connection c = getDBConnection();
         TransferType[] transfers = transferRequest.getTransferArray();
+        RFTOptionsType globalRFTOptions = transferRequest.getRftOptions();
         int returnInt = -1;
 
         for (int i = 0; i < transfers.length; i++) {
@@ -254,6 +255,10 @@ public class TransferDbAdapter {
                         "',");
 
                 RFTOptionsType rftOptions = transfer.getRftOptions();
+                if(rftOptions == null) {
+                    rftOptions = globalRFTOptions;
+                    logger.debug("Setting global rft options");
+                }
                 query.append(rftOptions.isDcau()).append(",").append(rftOptions.getParallelStreams())
                      .append(",").append(rftOptions.getTcpBufferSize()).append(
                         ",").append(rftOptions.getBlockSize()).append(",").append(rftOptions.isNotpt())
@@ -372,7 +377,7 @@ public class TransferDbAdapter {
                 rftOptions.setBlockSize(rs.getInt(10));
                 rftOptions.setNotpt(rs.getBoolean(11));
                 rftOptions.setBinary(rs.getBoolean(12));
-                transfer.setRftOptions(rftOptions);
+               transfer.setRftOptions(rftOptions);
                 transferJob = new TransferJob(transfer, status, attempts);
                 activeTransfers.add(transferJob);
             }

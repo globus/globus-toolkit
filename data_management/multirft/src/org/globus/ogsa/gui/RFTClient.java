@@ -126,11 +126,9 @@ public class RFTClient {
 
             for (int j = 0; j < transfers1.length; j++) {
                 transfers1[j] = new TransferType();
-                transfers1[j].setTransferId(j);
                 transfers1[j].setSourceUrl((String)requestData.elementAt(i++));
                 transfers1[j].setDestinationUrl(
                         (String)requestData.elementAt(i++));
-                transfers1[j].setRftOptions(multirftOptions);
             }
 
             TransferRequestType transferRequest = new TransferRequestType();
@@ -142,6 +140,7 @@ public class RFTClient {
                 System.exit(0);
             }
 
+            transferRequest.setRftOptions(multirftOptions);
             transferRequest.setConcurrency(concurrency);
 
             TransferRequestElement requestElement = new TransferRequestElement();
@@ -157,6 +156,8 @@ public class RFTClient {
             /* ((Stub)factory)._setProperty(GSIConstants.GSI_AUTHORIZATION, NoAuthorization.getInstance());
              ((Stub)factory)._setProperty(GSIConstants.GSI_MODE, GSIConstants.GSI_MODE_FULL_DELEG);
              ((Stub)factory)._setProperty(Constants.MSG_SEC_TYPE, Constants.SIGNATURE);*/
+            org.apache.axis.client.Stub s = (org.apache.axis.client.Stub) factory;
+            s.setTimeout(100000000);
             LocatorType locator = gridFactory.createService(extension);
             System.out.println("Created an instance of Multi-RFT");
 
@@ -176,6 +177,8 @@ public class RFTClient {
              //AnyHelper.setAny(extension,requestElement);
             //  extension.set_any(any); 
             */
+            org.apache.axis.client.Stub s2 = (org.apache.axis.client.Stub) rftPort;
+            s2.setTimeout(100000000);
             int requestid = rftPort.start();
             System.out.println("Request id: " + requestid);
 

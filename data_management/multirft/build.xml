@@ -239,6 +239,7 @@ Southern California. All Rights Reserved.
         <exclude name="base/multirft/multirft_types.wsdl"/>
         </fileset>
     </delete>
+    <delete dir="${stubs.dir}"/>
 </target>
 
   <!-- Generate java docs -->  

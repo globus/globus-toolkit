@@ -112,6 +112,7 @@ public class RftImpl
     private boolean check = false; // check to update transferids of Status SDEs
     Vector activeTransferThreads;
     Vector transferClients;
+    RFTOptionsType globalRFTOptionsType;
 
     public RftImpl() {
         super("MultifileRFTService");
@@ -124,6 +125,7 @@ public class RftImpl
         String name = "MultifileRFTService";
 
         this.transferRequest = transferRequest;
+        this.globalRFTOptionsType=transferRequest.getRftOptions();
 
         if (transferRequest == null) {
             logger.debug("transfer request is null");
@@ -322,7 +324,7 @@ public class RftImpl
 
                     //converting recovered transfers to transfer types
                     transfers[i] = new TransferType();
-                    transfers[i].setTransferId(transferJob.getTransferId());
+                   // transfers[i].setTransferId(transferJob.getTransferId());
                     transfers[i].setSourceUrl(transferJob.getSourceUrl());
                     transfers[i].setDestinationUrl(transferJob.getDestinationUrl());
                     transfers[i].setRftOptions(transferJob.getRftOptions());
@@ -570,6 +572,10 @@ public class RftImpl
                 int tempId = transferJob.getTransferId();
                 TransferThread transferThread;
                 RFTOptionsType rftOptions = transferJob.getRftOptions();
+                if(rftOptions==null) {
+                    logger.debug("Setting globalRFTOptions");
+                    rftOptions = globalRFTOptionsType;
+                }
                 String proxyLocation = dbAdapter.getProxyLocation(requestId);
                 logger.debug(
                         "Proxy location" + proxyLocation + " " + requestId);
