@@ -40,7 +40,6 @@
 
 . ${GLOBUS_LOCATION}/libexec/globus-script-initializer
 
-globus_source ${libexecdir}/globus-gram-protocol-constants.sh
 globus_source ${libexecdir}/globus-sh-tools.sh
 globus_source ${libexecdir}/globus-gram-job-manager-tools.sh
 

@@ -18,7 +18,6 @@ CVS Information:
 #include "globus_common.h"
 #include <stdio.h>
 #include "globus_rsl.h"
-#include "globus_gss_assist.h"
 #include "globus_gram_scheduler.h"
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -45,8 +44,6 @@ typedef struct globus_l_gram_conf_values_s
     char *         home_dir;
     char *         rdn;
     char *         dmdn;
-    char *         host_dn;
-    char *         org_dn;
     char *         gate_host;
     char *         gate_port;
     char *         gate_subject;
@@ -57,6 +54,7 @@ typedef struct globus_l_gram_conf_values_s
     char *         osversion;
     char *         cputype;
     char *         manufacturer;
+    char *         job_reporting_dir;
     char *         machine_type;
     char *         platform;
     int            keep_to_seconds;
@@ -123,11 +121,12 @@ static void
 print_usage()
 {
     fprintf(stderr, "\n");
-    fprintf(stderr, "Usage: %s %s %s %s %s %s %s %s %s\n",
+    fprintf(stderr, "Usage: %s %s %s %s %s %s %s %s %s %s\n",
             "globus-gram-scheduler",
             "[-condor-arch archetecture] [-condor-os operating system]",
             "[-conf job manager configuration file]",
             "[-cldif cldif file to append information]",
+            "[-home installations root directory ]",
             "[-rdn service part of the gram contact]",
             "[-dmdn directory manager DN]",
             "[-keep-to seconds]",
@@ -180,16 +179,6 @@ globus_l_gram_show_conf_data(globus_l_gram_conf_values_t * vals)
         printf("rdn = %s\n", vals->rdn);
     else
         printf("rdn = NULL\n");
-       
-    if (vals->host_dn)
-        printf("host_dn = %s\n", vals->host_dn);
-    else
-        printf("host_dn = NULL\n");
-       
-    if (vals->org_dn)
-        printf("org_dn = %s\n", vals->org_dn);
-    else
-        printf("org_dn = NULL\n");
        
     if (vals->gate_host)
         printf("gate_host = %s\n", vals->gate_host);
@@ -294,7 +283,6 @@ globus_l_gram_write_gram_cldif_file(globus_l_gram_conf_values_t * vals,
     fprintf(vals->cldif_fp, "dn: Mds-Software-deployment=%s, %s\n",
                 vals->rdn,
                 vals->dmdn);
-                /* vals->host_dn); */
     fprintf(vals->cldif_fp, "objectclass: Mds\n");
     fprintf(vals->cldif_fp, "objectclass: MdsSoftware\n");
     fprintf(vals->cldif_fp, "objectclass: MdsService\n");
@@ -352,7 +340,6 @@ globus_l_gram_write_gram_cldif_file(globus_l_gram_conf_values_t * vals,
                     q_node->queuename,
                     vals->rdn,
                 vals->dmdn);
-                    /* vals->host_dn); */
         fprintf(vals->cldif_fp, "objectclass: Mds\n");
         fprintf(vals->cldif_fp, "objectclass: MdsSoftware\n");
         fprintf(vals->cldif_fp, "objectclass: MdsJobQueue\n");
@@ -440,7 +427,6 @@ globus_l_gram_write_gram_cldif_file(globus_l_gram_conf_values_t * vals,
                          q_node->queuename,
                          vals->rdn,
                 vals->dmdn);
-                         /* vals->host_dn); */
             fprintf(vals->cldif_fp, "objectclass: Mds\n");
             fprintf(vals->cldif_fp, "objectclass: MdsJob\n");
             fprintf(vals->cldif_fp, "objectclass: MdsGramJob\n");
@@ -515,7 +501,7 @@ globus_l_gram_write_gram_cldif_file(globus_l_gram_conf_values_t * vals,
 
 
 /******************************************************************************
-Function:       globus_l_gram_get_globus_values()
+Function:       globus_l_gram_check_globus_jobs()
 Description:
 Parameters:
 Returns:
@@ -526,8 +512,7 @@ globus_l_gram_check_globus_jobs( globus_l_gram_conf_values_t * vals,
 {
     globus_gram_scheduler_t *  q_node;
     char stat_file_path[256];
-    char jobmanager_status_dir[256];
-    DIR * status_dir;
+    DIR * reporting_dir;
     struct stat statbuf;
     struct dirent * dir_entry;
     char match_str[56];
@@ -542,28 +527,29 @@ globus_l_gram_check_globus_jobs( globus_l_gram_conf_values_t * vals,
     if (!vals->publish_jobs)
        return;
 
-    sprintf(jobmanager_status_dir, "%s/var", vals->home_dir);
+    if (vals->job_reporting_dir == GLOBUS_NULL)
+       return;
 
-    status_dir = globus_libc_opendir(jobmanager_status_dir);
-    if(status_dir == GLOBUS_NULL)
+    reporting_dir = globus_libc_opendir(vals->job_reporting_dir);
+    if(reporting_dir == GLOBUS_NULL)
     {
         fprintf(stderr, 
             "ERROR: unable to open jobmanager status directory.\n");
         fprintf(stderr, 
-            "     directory = %s.\n", jobmanager_status_dir);
+            "     directory = %s.\n", vals->job_reporting_dir);
         return;
     }
 
     now = (unsigned long) time(NULL);
     sprintf(match_str, "%s_", vals->rdn);
 
-    for(globus_libc_readdir_r(status_dir, &dir_entry);
+    for(globus_libc_readdir_r(reporting_dir, &dir_entry);
         dir_entry != GLOBUS_NULL;
-        globus_libc_readdir_r(status_dir, &dir_entry))
+        globus_libc_readdir_r(reporting_dir, &dir_entry))
     {
         if ( strstr(dir_entry->d_name, match_str) )
         {
-            sprintf(stat_file_path, "%s/%s", jobmanager_status_dir,
+            sprintf(stat_file_path, "%s/%s", vals->job_reporting_dir,
                                       dir_entry->d_name);
 
             if (stat(stat_file_path, &statbuf) == 0)
@@ -590,7 +576,7 @@ globus_l_gram_check_globus_jobs( globus_l_gram_conf_values_t * vals,
         q_node->entry_list = globus_list_copy_reverse(q_node->entry_list);
     }
 
-    globus_libc_closedir(status_dir);
+    globus_libc_closedir(reporting_dir);
 
 } /* globus_l_gram_check_globus_jobs() */
 
@@ -716,11 +702,6 @@ globus_l_gram_add_to_job_entries( globus_l_gram_conf_values_t * vals,
                 {
                     q_entry_node->global_user_name = 
                          (char *) globus_libc_strdup(globus_id);
-/*
- *                  globus_gss_assist_map_local_user(
- *                        q_entry_node->local_user_name,
- *                        &q_entry_node->global_user_name);
- */
                 }
 
                 if ( ! q_entry_node->specification )
@@ -848,22 +829,21 @@ globus_l_gram_conf_values_init(globus_l_gram_conf_values_t * vals)
     vals->type = GLOBUS_NULL;
     vals->curr_gmt_time = GLOBUS_NULL;
     vals->home_dir = GLOBUS_NULL;
-    vals->host_dn = GLOBUS_NULL;
-    vals->org_dn = GLOBUS_NULL;
-    vals->gate_host = GLOBUS_NULL;
-    vals->gate_port = GLOBUS_NULL;
-    vals->gate_subject = GLOBUS_NULL;
+    vals->gate_host = "unknown";
+    vals->gate_port = "unknown";
+    vals->gate_subject = "unknown";
     vals->rdn = GLOBUS_NULL;
     vals->dmdn = GLOBUS_NULL;
-    vals->cputype = GLOBUS_NULL;
-    vals->manufacturer = GLOBUS_NULL;
-    vals->osname = GLOBUS_NULL;
-    vals->osversion = GLOBUS_NULL;
-    vals->condor_arch = GLOBUS_NULL;
-    vals->condor_os = GLOBUS_NULL;
+    vals->cputype = "unknown";
+    vals->manufacturer = "unknown";
+    vals->osname = "unknown";
+    vals->osversion = "unknown";
+    vals->condor_arch = "unknown";
+    vals->condor_os = "unknown";
     vals->conf_file = GLOBUS_NULL;
     vals->cldif_file = GLOBUS_NULL;
-    vals->machine_type = GLOBUS_NULL;
+    vals->job_reporting_dir = GLOBUS_NULL;
+    vals->machine_type = "unknown";
     vals->publish_jobs = GLOBUS_TRUE;
     vals->platform = GLOBUS_NULL;
     vals->valid_from[0] = '\0';
@@ -967,7 +947,7 @@ globus_l_gram_get_conf_values(globus_l_gram_conf_values_t * vals)
     {
         fprintf(stderr, "Unable to read parameters from configuration "
                         "file\n");
-        return(1);
+        return(2);
     }
     conf_contents[i] = '\0';
     close(pfd);
@@ -1008,7 +988,7 @@ globus_l_gram_get_conf_values(globus_l_gram_conf_values_t * vals)
         arg[z] = tmp_str;
         z++;
         if (z >= 52)
-            return(1);
+            return(2);
         cp = (char *) strtok(NULL, " \t\n");
     }
 
@@ -1022,16 +1002,6 @@ globus_l_gram_get_conf_values(globus_l_gram_conf_values_t * vals)
              && (i + 1 < z))
         {
             vals->home_dir = arg[i+1];
-        }
-        else if ((strcasecmp(arg[i], "-globus-org-dn") == 0)
-                 && (i + 1 < z))
-        {
-            vals->org_dn = arg[i+1];
-        }
-        else if ((strcasecmp(arg[i], "-globus-host-dn") == 0)
-                 && (i + 1 < z))
-        {
-            vals->host_dn = arg[i+1];
         }
         else if ((strcasecmp(arg[i], "-globus-gatekeeper-host") == 0)
                  && (i + 1 < z))
@@ -1067,6 +1037,11 @@ globus_l_gram_get_conf_values(globus_l_gram_conf_values_t * vals)
                  && (i + 1 < z))
         {
             vals->cputype = arg[i+1];
+        }
+        else if ((strcasecmp(arg[i], "-job-reporting-dir") == 0)
+                 && (i + 1 < z))
+        {
+            vals->job_reporting_dir = arg[i+1];
         }
         else if ((strcasecmp(arg[i], "-machine-type") == 0)
                  && (i + 1 < z))
@@ -1109,26 +1084,6 @@ globus_l_gram_get_conf_values(globus_l_gram_conf_values_t * vals)
     vals->curr_gmt_time = (char *) globus_libc_malloc (sizeof(char *) *
                               strlen(tmp_date_str) + 1);
     strcpy(vals->curr_gmt_time, tmp_date_str);
-
-/*
- *       !vals->host_dn         ||
- *       !vals->org_dn         ||
- */
-
-    if ( !vals->home_dir ||
-         !vals->gate_host       ||
-         !vals->gate_port       ||
-         !vals->gate_subject    ||
-         !vals->cputype         ||
-         !vals->osname          ||
-         !vals->osversion       ||
-         !vals->manufacturer    ||
-         !vals->machine_type )
-    {
-        fprintf(stderr, "Failed to find all required parameters from the "
-                        "configuration file - %s\n", vals->conf_file);
-        return(1);
-    }
 
     return(0);
 
@@ -1177,6 +1132,12 @@ int main (int argc, char **argv)
             conf_values.condor_os = argv[i+1];
             for (t=conf_values.condor_os; *t!='\0'; t++)
                 *t = tolower(*t);
+            i++;
+        }
+        else if ((strcasecmp(argv[i], "-home") == 0)
+                 && (i + 1 < argc))
+        {
+            conf_values.home_dir = argv[i+1];
             i++;
         }
         else if ((strcasecmp(argv[i], "-type") == 0)
@@ -1244,6 +1205,12 @@ int main (int argc, char **argv)
         }
     }
 
+    if ( conf_values.home_dir == NULL )
+    {
+        fprintf(stderr, "Error: -home parameter is required.\n");
+        print_usage();
+        exit(1);
+    }
         
     if ( conf_values.conf_file == NULL )
     {
@@ -1283,7 +1250,7 @@ int main (int argc, char **argv)
     if (verbose)
         fprintf(stdout, "reading configuration file...............\n");
 
-    if (globus_l_gram_get_conf_values(&conf_values) != 0)
+    if (globus_l_gram_get_conf_values(&conf_values) > 1)
     {
         exit(1);
     }
