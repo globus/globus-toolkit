@@ -224,7 +224,7 @@ EOF
 	    return Globus::GRAM::Error::RSL_ARGUMENTS;
 	}
     }
-    if($arguments[0])
+    if($#arguments >= 0)
     {
         foreach(@arguments)
         {
@@ -240,6 +240,12 @@ EOF
     {
 	$args = '';
     }
+
+    if ($description->executable() =~ m|^[^/]|)
+    {
+        $description->add('executable', './' . $description->executable());
+    }
+
     if($description->jobtype() eq 'mpi')
     {
 	print JOB "$mpirun -np ", $description->count(), ' ';
