@@ -1228,7 +1228,6 @@ globus_io_udp_sendvto(
     struct iovec *                      iov,
     int                                 iovc,
     int                                 flags,
-    globus_size_t                       nbytes,
     char *                              host,
     unsigned short                      port,
     globus_size_t *                     bytes_sent);

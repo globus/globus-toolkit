@@ -993,7 +993,6 @@ globus_io_udp_sendvto(
     struct iovec *                      iov,
     int                                 iovc,
     int                                 flags,
-    globus_size_t                       nbytes,
     char *                              host,
     unsigned short                      port,
     globus_size_t *                     bytes_sent)
@@ -1040,16 +1039,6 @@ globus_io_udp_sendvto(
                 GLOBUS_IO_MODULE,
                 GLOBUS_NULL,
                 "host",
-                1,
-                myname));
-    }
-    if(nbytes <= 0)
-    {
-        return globus_error_put(
-            globus_io_error_construct_null_parameter(
-                GLOBUS_IO_MODULE,
-                GLOBUS_NULL,
-                "nbytes",
                 1,
                 myname));
     }
