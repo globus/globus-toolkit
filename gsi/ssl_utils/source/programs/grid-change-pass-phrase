@@ -41,14 +41,6 @@ EOF
 
 . $libexecdir/globus-args-parser-header
 
-if [ -z "$GLOBUS_LOCATION" ]; then
-   if [ ! -r ${sysconfdir}/globus-paths.sh ] ; then
-      echo "ERROR: ${sysconfdir}/globus-paths.sh not found" >&2
-      exit 1
-   fi
-   . ${sysconfdir}/globus-paths.sh
-fi
-
 # SSL related need
 PATH="${GLOBUS_LOCATION}/bin:${PATH}"
 SSLEAY=${GLOBUS_LOCATION}/bin/ssleay

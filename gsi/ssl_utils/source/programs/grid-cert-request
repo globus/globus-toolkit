@@ -10,6 +10,7 @@ fi
 
 . ${GLOBUS_LOCATION}/libexec/globus-script-initializer
 
+secconfdir=/etc/grid-security
 
 #
 # Sample script to generate a certificate request which can be sent 
@@ -49,9 +50,9 @@ EOF
 #SSL related needs
 PATH=${GLOBUS_LOCATION}/bin:${PATH}
 SSL_EXEC="${GLOBUS_LOCATION}/bin/openssl"
-SSL_CONFIG="${sysconfdir}/globus-user-ssl.conf"
-SSL_USER_CONFIG="${sysconfdir}/globus-user-ssl.conf"
-SSL_HOST_CONFIG="${sysconfdir}/globus-host-ssl.conf"
+SSL_CONFIG="${secconfdir}/globus-user-ssl.conf"
+SSL_USER_CONFIG="${secconfdir}/globus-user-ssl.conf"
+SSL_HOST_CONFIG="${secconfdir}/globus-host-ssl.conf"
 
 
 # TEMP FILES
@@ -87,7 +88,7 @@ cleanup () {
 
 trap cleanup 0
 
-security_conf=${sysconfdir}/grid-security.conf
+security_conf=${secconfdir}/grid-security.conf
 
 # See if we can proceed
 . ${security_conf}
