@@ -6,7 +6,8 @@ my @all_jm_types = ('condor', 'easymcs', 'fork', 'glunix', 'grd', 'loadleveler',
 
 
 GetOptions( 'type=s' => \$selected_jm_type,
-            'help' => \$help)
+            'force'  => \$force,
+            'help'   => \$help)
   or pod2usage(1);
 
 pod2usage(0) if $help;
@@ -15,6 +16,8 @@ sub pod2usage {
   my $ex = shift;
   print "setup-globus-gram-job-manager [ \\
                -help \\
+               -force \\
+                  overwrite any existing file this script creates\\
                -type=[ @all_jm_types ]\\
                      (fork is default)\\
               ]\n";
@@ -73,7 +76,7 @@ else
 
 my $jm_service = "$globusdir/etc/grid-services/$rdn";
 
-if ( -f "$jm_conf" )
+if ( -f "$jm_conf" and ! defined $force )
 {
    print "Found existing job manager configuration file, not overwriting...\n";
 }
@@ -165,7 +168,7 @@ if ( ! -d "$globusdir/etc/grid-services" )
 }
 else
 {
-   if ( -f "$jm_service" )
+   if ( -f "$jm_service" and ! defined $force )
    {
       print "Found existing job manager service file, not overwriting...\n";
    }
