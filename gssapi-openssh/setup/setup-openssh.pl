@@ -267,12 +267,23 @@ sub fixpaths
         # sorry for the whacky regex, but i need to verify a whole line
         #
 
-        if ( /^\s*Subsystem\s+sftp\s+\S+\s*$/ )
+        $line = $_;
+        if ( $line =~ /^\s*Subsystem\s+sftp\s+\S+\s*$/ )
         {
-            $_ = "Subsystem\tsftp\t$gpath/libexec/sftp-server\n";
-            $_ =~ s:/+:/:g;
+            $newline = "Subsystem\tsftp\t$gpath/libexec/sftp-server\n";
+            $newline =~ s:/+:/:g;
         }
-        print OUT "$_";
+        elsif ( $line =~ /^\s*PidFile.*$/ )
+        {
+            $newline = "PidFile\t$gpath/var/sshd.pid\n";
+            $newline =~ s:/+:/:g;
+        }
+        else
+        {
+            $newline = $line;
+        }
+
+        print OUT "$newline";
     } # while <IN>
 
     close(OUT);
