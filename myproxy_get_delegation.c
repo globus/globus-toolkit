@@ -117,28 +117,27 @@ main(int argc, char *argv[])
 				   sizeof(client_request->passphrase)) == -1)
        {
 	   fprintf(stderr, "Error reading passphrase\n");
-	   exit(1);
+	   return 1;
        }
     }
 
     if (dn_as_username && creds_to_authorization) {
-	char *username = NULL;
-	if (ssl_get_base_subject_file(creds_to_authorization,
-		                     &username)) {
-	  fprintf(stderr, "Cannot get subject name from your certificate %s\n",
-		  creds_to_authorization);
-	  exit(1);
-	}
 	if (client_request->username) {
 	    free(client_request->username);
+	    client_request->username = NULL;
 	}
-	client_request->username = strdup(username);
+	if (ssl_get_base_subject_file(creds_to_authorization,
+		                     &client_request->username)) {
+	  fprintf(stderr, "Cannot get subject name from your certificate %s\n",
+		  creds_to_authorization);
+	  return 1;
+	}
     }
 
     if (myproxy_get_delegation(socket_attrs, client_request, 
 	    creds_to_authorization, server_response, outputfile)!=0) {
 	fprintf(stderr, "Failed to receive a proxy.\n");
-	exit(1);
+	return 1;
     }
     printf("A proxy has been received for user %s in %s\n",
            client_request->username, outputfile);
@@ -147,7 +146,7 @@ main(int argc, char *argv[])
 
     /* free memory allocated */
     myproxy_free(socket_attrs, client_request, server_response);
-    exit(0);
+    return 0;
 }
 
 void 
