@@ -353,7 +353,8 @@ int makeproxy(const char certfile[], const char keyfile[],
     }
 
     /* Open the output file. */
-    if ((fd = open(proxyfile, O_CREAT | O_EXCL | O_WRONLY)) < 0) {
+    if ((fd = open(proxyfile, O_CREAT | O_EXCL | O_WRONLY,
+		   S_IRUSR | S_IWUSR)) < 0) {
 	fprintf(stderr, "open(%s) failed: %s\n", proxyfile, strerror(errno));
 	goto cleanup;
     }
