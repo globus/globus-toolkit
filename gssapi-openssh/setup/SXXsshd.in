@@ -1,0 +1,37 @@
+#!/bin/sh
+
+GLOBUS_LOCATION=@GLOBUS_LOCATION@
+
+export GLOBUS_LOCATION
+
+. ${GLOBUS_LOCATION}/libexec/globus-script-initializer
+. ${libexecdir}/globus-sh-tools.sh
+. ${sysconfdir}/grid-info.conf
+
+PID_FILE=${localstatedir}/sshd.pid
+
+case "$1" in
+  start)
+    echo "Starting up GSI-OpenSSH sshd server"
+    ${sbindir}/sshd &
+    if [ $? -ne 0 ] ; then
+      echo "Failed to start up GSI-OpenSSH sshd server"
+    fi
+    ;;
+
+  stop)
+    if [ -f $PID_FILE ] ; then
+      kill -TERM `cat $PID_FILE`
+      sleep 2
+      kill -TERM `cat $PID_FILE` 2> /dev/null
+      rm -f $PID_FILE
+    fi
+    ;;
+
+  *)
+    echo "Usage: $0 ( start | stop )"
+    exit 1
+esac
+
+exit 0
+
