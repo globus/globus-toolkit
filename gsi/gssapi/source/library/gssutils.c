@@ -41,7 +41,7 @@ static char *rcsid = "$Header$";
  *        GSS_F_FAILURE - failed to copy
  */
 OM_uint32 
-gss_copy_name_to_name(
+globus_i_gsi_gss_copy_name_to_name(
     gss_name_desc **                    output,
     const gss_name_desc *               input)
 {
@@ -52,7 +52,7 @@ gss_copy_name_to_name(
     int                                 i;
 
     static char *                       _function_name_ =
-        "gss_copy_name_to_name";
+        "globus_i_gsi_gss_copy_name_to_name";
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
     
@@ -119,7 +119,7 @@ gss_copy_name_to_name(
 
 
 OM_uint32
-gss_create_and_fill_context(
+globus_i_gsi_gss_create_and_fill_context(
     OM_uint32 *                         minor_status,
     gss_ctx_id_desc **                  context_handle_P,
     gss_cred_id_desc *                  cred_handle,
@@ -136,7 +136,7 @@ gss_create_and_fill_context(
     OM_uint32                           return_value;
 
     static char *                       _function_name_ =
-        "gss_create_and_fill_context";
+        "globus_i_gsi_gss_create_and_fill_context";
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
@@ -378,7 +378,7 @@ gss_create_and_fill_context(
 
 
 /**********************************************************************
-Function:  gss_put_token()
+Function:  globus_i_gsi_gssput_token()
 
 Description:
 	Called by init_sec_context and accept_sec_context.
@@ -389,7 +389,7 @@ Parameters:
 Returns:
 **********************************************************************/
 OM_uint32
-gss_put_token(
+globus_i_gsi_gss_put_token(
     OM_uint32                           minor_status,
     const gss_ctx_id_desc*              context_handle,
     BIO *                               bio,
@@ -398,7 +398,7 @@ gss_put_token(
     BIO *                               read_bio;
     OM_uint32                           return_value;
     static char *                       _function_name_ =
-        "gss_put_token";
+        "globus_i_gsi_gss_put_token";
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
@@ -455,7 +455,7 @@ Parameters:
 Returns:
 **********************************************************************/
 OM_uint32
-gss_get_token(
+globus_i_gsi_gss_get_token(
     OM_unt32 *                          minor_status,
     const gss_ctx_id_desc*              context_handle,
     BIO *                               bio,
@@ -465,7 +465,7 @@ gss_get_token(
     BIO *                               write_bio;
 
     static char *                       _function_name_ =
-        "gss_get_token";
+        "globus_i_gsi_gss_get_token";
     
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
@@ -530,27 +530,30 @@ Returns:
 **********************************************************************/
 
 OM_uint32    
-gss_handshake(
+globus_i_gsi_gss_handshake(
     OM_unt32 *                          minor_status,
     gss_ctx_id_desc *                   context_handle)
 {
     OM_uint32 major_status = 0;
     int rc;
     
+    static char *                       _function_name_ =
+        "globus_i_gsi_gss_handshake";
+
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
     /*
-	 * do the BIO_do_handshake which may produce output,
-	 * and endup waiting for input
-	 * when completed without error, connection established
-	 */
+     * do the BIO_do_handshake which may produce output,
+     * and endup waiting for input
+     * when completed without error, connection established
+     */
     rc = BIO_do_handshake(context_handle->gss_sslbio);
     if (rc <= 0) {
         if (!BIO_should_retry(context_handle->gss_sslbio) || 
             !BIO_should_read(context_handle->gss_sslbio)) {
-
+            
             /* problem! */
-
+            
             GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
                 2, (stderr,"disp=%d,level=%d,desc=%d,left=%d\n",
                     context_handle->gss_ssl->s3->alert_dispatch,
@@ -621,6 +624,8 @@ gss_handshake(
             major_status = GSS_S_CONTINUE_NEEDED ;
         }
     }
+
+    GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
   
     return major_status ;
 }
@@ -640,7 +645,7 @@ Returns:
 
 
 OM_uint32
-gss_retrieve_peer(
+globus_i_gsi_gss_retrieve_peer(
     OM_uint32                           minor_status,
     gss_ctx_id_desc *                   context_handle,
     const gss_cred_usage_t              cred_usage) 
@@ -660,7 +665,7 @@ gss_retrieve_peer(
     char *                              subgroup;
 
     static char *                       _function_name_ =
-        "gss_retrieve_peer";
+        "globus_i_gsi_gss_retrieve_peer";
     
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
     
@@ -765,7 +770,7 @@ gss_retrieve_peer(
 }
 
 OM_uint32
-gss_create_anonymous_cred(
+globus_i_gsi_gss_create_anonymous_cred(
     OM_unit32 *                         minor_status,
     gss_cred_id_t *                     output_cred_handle,
     const gss_cred_usage_t              cred_usage)
@@ -775,7 +780,7 @@ gss_create_anonymous_cred(
     OM_uint32                           local_minor_status;
 
     static char *                       _function_name_ =
-        "gss_create_anonymous_cred";
+        "globus_i_gsi_gss_create_anonymous_cred";
     
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
@@ -993,7 +998,7 @@ err:
     return major_status;
 }
 
-int gss_verify_extensions_callback(
+int globus_i_gsi_gss_verify_extensions_callback(
     globus_gsi_cred_callback_data_t     callback_data,
     X509_EXTENSION *                    extension)
 {
@@ -1004,7 +1009,7 @@ int gss_verify_extensions_callback(
     gss_OID_desc                        oid;
 
     static char *                       _function_name_ =
-        "gss_verify_extensions_callback";
+        "globus_i_gsi_gss_verify_extensions_callback";
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
     
