@@ -10,7 +10,7 @@ import org.globus.usage.packets.UsageMonitorPacket;
 /*Handler which writes RFTUsageMonitor packets to database.*/
 public class RFTPacketHandler extends DefaultPacketHandler {
 
-    private static Log log = LogFactory.getLog(GridFTPPacketHandler.class);
+    private static Log log = LogFactory.getLog(RFTPacketHandler.class);
 
     public RFTPacketHandler(String driverClass, String db, String table) {
         super(driverClass, db, table);
