@@ -323,7 +323,7 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     //client_creds->creddesc = strdup ("This is the default credential description");
 #endif
 
-    server_response->response_string = strdup (""); 
+    //server_response->response_string = strdup ("");  //REMOVE
     /* Create a new gsi socket */
     attrs->gsi_socket = GSI_SOCKET_new(attrs->socket_fd);
     if (attrs->gsi_socket == NULL) {
@@ -452,7 +452,7 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     
     /* Set response OK unless error... */
     server_response->response_type =  MYPROXY_OK_RESPONSE;
-    server_response->response_string = strdup ("OK");
+    //server_response->data).response_string = strdup ("OK"); //TODO:remove
       
     /* Handle client request */
     switch (client_request->command_type) {
@@ -618,7 +618,7 @@ handle_client(myproxy_socket_attrs_t *attrs, myproxy_server_context_t *context)
     default:
 	/* log request type */
         myproxy_log(DBG_LO, debug_level,"Received client %s command: Invalid request type");
-        strcat(server_response->error_string, "Invalid client request command.\n");
+        (server_response->data).error_str = strdup("Invalid client request command.\n");
         break;
     }
     
@@ -783,8 +783,8 @@ respond_with_error_and_die(myproxy_socket_attrs_t *attrs,
     response.version = strdup(MYPROXY_VERSION);
     response.response_type = MYPROXY_ERROR_RESPONSE;
     response.authorization_data = NULL;
-    response.response_string = strdup ("");
-    my_strncpy(response.error_string, error, sizeof(response.error_string));
+    //response.response_string = strdup ("");  REMOVE
+    my_strncpy(response.data.error_str, error, sizeof(response.data.error_str));
     
     responselen = myproxy_serialize_response(&response,
 					     response_buffer,
@@ -804,7 +804,7 @@ respond_with_error_and_die(myproxy_socket_attrs_t *attrs,
 }
 
 void send_response(myproxy_socket_attrs_t *attrs, myproxy_response_t *response, char *client_name) {
-    char server_buffer[1024];
+    char server_buffer[10240];
     int responselen;
     assert(response != NULL);
 
@@ -822,7 +822,7 @@ void send_response(myproxy_socket_attrs_t *attrs, myproxy_response_t *response, 
     if (response->response_type == MYPROXY_OK_RESPONSE) {
       myproxy_debug("Sending OK response to client %s", client_name);
     } else if (response->response_type == MYPROXY_ERROR_RESPONSE) {
-      myproxy_debug("Sending ERROR response \"%s\" to client %s", response->error_string, client_name);
+      myproxy_debug("Sending ERROR response \"%s\" to client %s", (response->data).error_str, client_name);
     }
 
     if (myproxy_send(attrs, server_buffer, responselen) < 0) {
@@ -850,11 +850,11 @@ void get_proxy(myproxy_socket_attrs_t *attrs,
 
         myproxy_log_verror();
 	response->response_type =  MYPROXY_ERROR_RESPONSE; 
-	strcat(response->error_string, "Unable to delegate credentials.\n");
+	(response->data).error_str = strdup("Unable to delegate credentials.\n");
     } else {
         myproxy_log(DBG_IN, debug_level,"Delegating credentials for %s lifetime=%d", creds->owner_name, min_lifetime);
 	response->response_type = MYPROXY_OK_RESPONSE;
-	response->response_string = strdup ("OK");
+	//response->response_string = strdup ("OK");  //REMOVE
     } 
 }
 
@@ -872,7 +872,7 @@ void put_proxy(myproxy_socket_attrs_t *attrs,
     if (myproxy_accept_delegation(attrs, delegfile, sizeof(delegfile)) < 0) {
 	myproxy_log_verror();
         response->response_type =  MYPROXY_ERROR_RESPONSE; 
-        strcat(response->error_string, "Failed to accept credentials.\n"); 
+        (response->data).error_str = strdup("Failed to accept credentials.\n"); 
 	return;
     }
 
@@ -883,10 +883,10 @@ void put_proxy(myproxy_socket_attrs_t *attrs,
     if (myproxy_creds_store(creds) < 0) {
 	myproxy_log_verror();
         response->response_type = MYPROXY_ERROR_RESPONSE; 
-        strcat(response->error_string, "Unable to store credentials.\n"); 
+        (response->data).error_str = strdup("Unable to store credentials.\n"); 
     } else {
 	response->response_type = MYPROXY_OK_RESPONSE;
-	response->response_string = strdup ("OK");
+	//response->response_string = strdup ("OK");
     }
 
     /* Clean up temporary delegation */
@@ -898,25 +898,24 @@ void put_proxy(myproxy_socket_attrs_t *attrs,
 }
 
 void info_proxy(myproxy_creds_t *creds, myproxy_response_t *response) {
-    char *recs;
 
 #if defined (MULTICRED_FEATURE)
-    if (myproxy_creds_info(creds, &recs) < 0) {
+    if (myproxy_creds_info(creds, response) < 0) {
 #else
     if (myproxy_creds_info(creds) < 0) {
 #endif
        myproxy_log_verror();
        response->response_type =  MYPROXY_ERROR_RESPONSE;
-       strcat(response->error_string, "Unable to check credential.\n");
-       strcat(response->error_string, verror_get_string());
+       (response->data).error_str= strdup("Unable to check credential.\n");
+       (response->data).error_str = strdup(verror_get_string());
     } else { 
        response->response_type = MYPROXY_OK_RESPONSE;
-       response->response_string = strdup (recs);
-       response->cred_start_time = creds->start_time;
-       response->cred_end_time = creds->end_time;
-       if (creds->owner_name && strlen(creds->owner_name) > 0)
-	  strncpy(response->cred_owner, creds->owner_name,
-	          sizeof(response->cred_owner));
+       //response->response_string = strdup (recs);  // REMOVE ALL
+       //response->cred_start_time = creds->start_time;
+       //response->cred_end_time = creds->end_time;
+    //   if (creds->owner_name && strlen(creds->owner_name) > 0)
+//	  strncpy(response->cred_owner, creds->owner_name,
+//	          sizeof(response->cred_owner));
     }
 }
 
@@ -929,10 +928,10 @@ void destroy_proxy(myproxy_creds_t *creds, myproxy_response_t *response) {
     if (myproxy_creds_delete(creds) < 0) { 
 	myproxy_log_verror();
         response->response_type =  MYPROXY_ERROR_RESPONSE; 
-        strcat(response->error_string, "Unable to delete credential.\n"); 
+        (response->data).error_str = strdup("Unable to delete credential.\n"); 
     } else {
 	response->response_type = MYPROXY_OK_RESPONSE;
-	response->response_string = strdup ("Credential successfully deleted");
+	//response->response_string = strdup ("Credential successfully deleted");   REMOVE
     }
  
 }
@@ -1236,7 +1235,7 @@ get_client_authdata(myproxy_socket_attrs_t *attrs,
 
    authorization_init_server(&server_response.authorization_data);
    server_response.response_type = MYPROXY_AUTHORIZATION_RESPONSE;
-   server_response.response_string = strdup ("");
+   //server_response.response_string = strdup ("");  REMOVE
    send_response(attrs, &server_response, client_name);
 
    /* Wait for client's response. Its first four bytes are supposed to

@@ -6,11 +6,8 @@
  * See myproxy_creds.h for documentation.
  */
 
+#include "myproxy.h"
 #include "myproxy_creds.h"
-
-#if defined (DATABASE_BACKEND)
-#include "my_utility.h"
-#endif
 
 #include "myproxy_server.h"
 
@@ -32,13 +29,6 @@
 #include <sys/stat.h>
 #include <stdlib.h>
 #include <unistd.h>
-
-#if defined (DATABASE_BACKEND)
-struct myproxy_database mydbase; //database structure
-
-extern char *mydsn, *myuid, *mypwd;
-char *dbase_name; //database name
-#endif
 
 /*
  * Doesn't always seem to be define in <unistd.h>
@@ -135,171 +125,6 @@ file_exists(const char *path)
     return return_value;
 }
 
-#if defined (DATABASE_BACKEND)
-/********************************************************
-* initialize tables                                     *
-*********************************************************/
-int my_init_table(SQLHDBC hdbc, SQLHSTMT hstmt)
-{
-  SQLRETURN   rc;
-
-  printf("\nmy_init_table:\n");
-
- /* create the table 'main' */
-  printf(" creating table 'main'\n");
-
-    rc = SQLExecDirect(hstmt,"CREATE TABLE IF NOT EXISTS main(\
-                                owner VARCHAR(255) ,\
-                                passphrase VARCHAR(255),\
-				username VARCHAR(255) NOT NULL, \
-                                lifetime INT (10) UNSIGNED, \
-                                retrievers VARCHAR(255), \
-                                renewers VARCHAR(255), \
-                                credname VARCHAR(200) NOT NULL, \
-                                creddesc TEXT, \
-                                credentials TEXT, \
-				PRIMARY KEY (username, credname))", SQL_NTS);
-    mystmt(hstmt,rc);
-
-    /* commit the transaction*/
-    rc = SQLEndTran(SQL_HANDLE_DBC, hdbc, SQL_COMMIT);
-    mycon(hdbc,rc);
-
-   return 0;
-}
-
-/* Retrieve data		                          *
-*********************************************************/
-int my_retrieve(SQLHDBC hdbc, SQLHSTMT hstmt)
-{
-  SQLRETURN   rc;
-  SQLINTEGER  id, lifetime;
-  SQLCHAR owner[MAX_VARCHAR_LEN];
-  SQLCHAR  passphrase[MAX_VARCHAR_LEN], retrievers[MAX_VARCHAR_LEN], renewers[MAX_VARCHAR_LEN];
-  SQLCHAR credname[CRED_NAME_LEN], creddesc[MAX_TEXT_LEN];
-
-   printf ("mpi-0");
-  printf("\nmy_retrieve:\n");
-
-   rc = SQLBindCol(hstmt,1, SQL_C_CHAR, owner,  
-                      MAX_VARCHAR_LEN,NULL);
-   mystmt(hstmt,rc);
-   
-   rc = SQLBindCol(hstmt,2, SQL_C_CHAR, credname,  
-                      CRED_NAME_LEN,NULL);
-   mystmt(hstmt,rc);
-    
-   rc = SQLBindCol(hstmt,3, SQL_C_CHAR, creddesc,  
-                      MAX_TEXT_LEN,NULL);
-   mystmt(hstmt,rc);
-    
-   printf ("mpi-9");
-   rc = SQLFetch (hstmt);
-
-   if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)  //failed
-	return -1;
-
-   mystmt (hstmt,rc);
-   printf ("mpi-10");
-
-   mydbase.owner = strdup (owner);
-   mydbase.credname = strdup (credname);
-   mydbase.creddesc = strdup (creddesc);
-   return 0;
-}
-
-
-/* Insert data using parameters                          *
-*********************************************************/
-int my_param_insert(SQLHDBC hdbc, SQLHSTMT hstmt)
-{
-  SQLRETURN   rc;
-  SQLINTEGER  id;
-  SQLCHAR     name[50];
-
-   printf ("mpi-0");
-  printf("\nmy_param_insert:\n");
-
-    /* prepare the insert statement with parameters */
-    if (mydbase.force_credential_overwrite)  
-       rc = SQLPrepare(hstmt,"REPLACE main SET owner=?,passphrase=?,lifetime=?, retrievers=?, renewers=?, credname=?, creddesc=?, credentials=?, username=?",SQL_NTS);   //force database write
-    else
-       rc = SQLPrepare(hstmt,"INSERT INTO main (owner,passphrase,lifetime, retrievers, renewers, credname, creddesc, credentials, username) VALUES (?,?,?,?,?,?,?,?,?)",SQL_NTS);
-
-    mystmt(hstmt,rc);
-    
-   printf ("mpi-1");
-
-   rc = SQLBindParameter (hstmt, 1, SQL_PARAM_INPUT, /*SQL_VARCHAR*/ SQL_C_CHAR, /*SQL_C_CHAR*/ SQL_CHAR, 255, 0, mydbase.owner, strlen(mydbase.owner) , NULL);
-   mystmt (hstmt, rc);
-    
-   printf ("mpi-2");
-   rc = SQLBindParameter (hstmt, 2, SQL_PARAM_INPUT, /*SQL_VARCHAR*/SQL_C_CHAR, SQL_C_CHAR, 255, 0, mydbase.passphrase, strlen (mydbase.passphrase), NULL);
-   mystmt (hstmt, rc);
-
-   printf ("mpi-3");
-   rc = SQLBindParameter (hstmt, 3, SQL_PARAM_INPUT, SQL_INTEGER, SQL_C_ULONG, 10, 0, &(mydbase.lifetime) , sizeof(mydbase.lifetime), NULL);
-   mystmt (hstmt, rc);
-
-   printf ("mpi-4");
-   if (mydbase.retrievers == NULL)
-        rc = SQLBindParameter (hstmt, 4, SQL_PARAM_INPUT, /*SQL_VARCHAR*/ SQL_C_CHAR, SQL_C_CHAR, 255, 0, "", 0, NULL);
-   else
-        rc = SQLBindParameter (hstmt, 4, SQL_PARAM_INPUT, /*SQL_VARCHAR*/ SQL_C_CHAR, SQL_C_CHAR, 255, 0, mydbase.retrievers, strlen (mydbase.retrievers), NULL);
-
-   mystmt (hstmt, rc);
-
-   printf ("mpi-5");
-   if (mydbase.renewers == NULL)
-       rc = SQLBindParameter (hstmt, 5, SQL_PARAM_INPUT, /*SQL_VARCHAR*/ SQL_C_CHAR, SQL_C_CHAR, 255, 0, "",0, NULL);
-   else
-       rc = SQLBindParameter (hstmt, 5, SQL_PARAM_INPUT, /*SQL_VARCHAR*/ SQL_C_CHAR, SQL_C_CHAR, 255, 0, mydbase.renewers, strlen (mydbase.renewers), NULL);
-
-   mystmt (hstmt, rc);
-
-   printf ("mpi-6");
-   if (mydbase.credname == NULL)
-       rc = SQLBindParameter (hstmt,6, SQL_PARAM_INPUT, /*SQL_VARCHAR*/SQL_C_CHAR, SQL_C_CHAR, 255, 0, "", 0, NULL);
-   else
-       rc = SQLBindParameter (hstmt,6, SQL_PARAM_INPUT, /*SQL_VARCHAR*/SQL_C_CHAR, SQL_C_CHAR, 255, 0, mydbase.credname, strlen (mydbase.credname), NULL);
-   mystmt (hstmt, rc);
-
-   printf ("mpi-7");
-   if (mydbase.creddesc == NULL)
-       rc = SQLBindParameter (hstmt, 7, SQL_PARAM_INPUT, /*SQL_VARCHAR*/SQL_C_CHAR, SQL_C_CHAR, 65535, 0, "", 0, NULL);
-   else
-       rc = SQLBindParameter (hstmt, 7, SQL_PARAM_INPUT, /*SQL_VARCHAR*/SQL_C_CHAR, SQL_C_CHAR, 65535, 0, mydbase.creddesc, strlen(mydbase.creddesc), NULL);
-   mystmt (hstmt, rc);
-
-   printf ("mpi-8");
-   if (mydbase.credentials == NULL)
-       rc = SQLBindParameter (hstmt, 8, SQL_PARAM_INPUT, /*SQL_VARCHAR*/SQL_C_CHAR, SQL_C_CHAR, 65535, 0, "",0, NULL);
-   else
-       rc = SQLBindParameter (hstmt, 8, SQL_PARAM_INPUT, /*SQL_VARCHAR*/SQL_C_CHAR, SQL_C_CHAR, 65535, 0, mydbase.credentials, strlen (mydbase.credentials), NULL);
-   mystmt (hstmt, rc);
-
-       rc = SQLBindParameter (hstmt, 9, SQL_PARAM_INPUT, /*SQL_VARCHAR*/SQL_C_CHAR, SQL_C_CHAR, 65535, 0, mydbase.username, strlen (mydbase.username), NULL);
-
-   printf ("mpi-9");
-   rc = SQLExecute (hstmt);
-   mystmt (hstmt, rc);
-   printf ("mpi-10");
-
-    /* Free statement param resorces */
-    rc = SQLFreeStmt(hstmt, SQL_RESET_PARAMS);
-    mystmt(hstmt,rc);
-
-    /* Free statement cursor resorces */
-    rc = SQLFreeStmt(hstmt, SQL_CLOSE);
-    mystmt(hstmt,rc);
-
-    /* commit the transaction */
-    rc = SQLEndTran(SQL_HANDLE_DBC, hdbc, SQL_COMMIT);
-    mycon(hdbc,rc);
-
-    return 0;
-}
-#endif
 /*
  * check_storage_directory()
  *
@@ -514,139 +339,6 @@ get_storage_locations(const char *username,
     return return_code;
 }
 
-#if defined (DATABASE_BACKEND)
-/*
- * freedbase ()
- *
- * free dbase structure
- *
-*/
-
-void freedbase (struct myproxy_database *pdbase)
-{
-  if (pdbase== NULL)
-     return;
-
-  if (pdbase->owner != NULL)
-     free(pdbase->owner);
-    
-  if (pdbase->passphrase != NULL)
-     free(pdbase->passphrase);
-    
-  if (pdbase->retrievers != NULL)
-     free(pdbase->retrievers);
-    
-  if (pdbase->renewers != NULL)
-     free(pdbase->renewers);
-    
-  if (pdbase->credname != NULL)
-     free(pdbase->credname);
-    
-  if (pdbase->creddesc != NULL)
-     free(pdbase->creddesc);
-  return;
-}
-
-/*
- * copy_credential_to_file()
- *
- * Copy credential in database to a file. The GSI delegation function requires the credential 
- * to be in a file.
- *
- * Returns 0 on success, -1 or error.
- */
-int 
-copy_credential_to_file(struct myproxy_creds *creds, char *filename)
-{
-    char buffer[MAX_TEXT_LEN];
-    int dst_fd = -1;	
-    int dst_flags = O_WRONLY | O_CREAT | O_TRUNC;
-    mode_t data_file_mode = FILE_MODE;
-    char creds_path[MAXPATHLEN];
-    char data_path[MAXPATHLEN]; //+4 to add a suffix 
-    SQLHENV    henv;
-    SQLHDBC    hdbc;
-    SQLHSTMT   hstmt;
-    SQLRETURN   rc;
-    int cred_length;
-    int return_code = -1;
-    char *tmp_data_file;
-
-    if (get_storage_locations(creds->username,
-                              creds_path, sizeof(creds_path),
-                              data_path, sizeof(data_path), creds->credname) == -1)
-    {
-        goto error;
-    }
-    
-
-    mydsn = strdup (dbase_name);
-    myuid = strdup ("root");
-    mypwd = strdup ("");
-   /*
-    * connect to MySQL server
-    */ 
-    if (myconnect(&henv,&hdbc,&hstmt) < 0)
-	return -1;
-
-    /*
-     * retrieve data
-    */
-
-   rc = SQLPrepare (hstmt, "Select credentials from main where username=? and credname=?", SQL_NTS);
-   mystmt (hstmt,rc);
-   rc = SQLBindParameter (hstmt, 1, SQL_PARAM_INPUT, /*SQL_VARCHAR*/SQL_C_CHAR, SQL_C_CHAR, 255, 0, creds->username, strlen(creds->username), NULL);
-   mystmt (hstmt, rc);
-   rc = SQLBindParameter (hstmt, 2, SQL_PARAM_INPUT, /*SQL_VARCHAR*/SQL_C_CHAR, SQL_C_CHAR, 255, 0, creds->credname, strlen(creds->credname), NULL);
-   mystmt (hstmt, rc);
-
-   rc = SQLExecute (hstmt);
-   mycon(hdbc,rc);
-
-   rc = SQLBindCol(hstmt,1, SQL_C_CHAR, buffer, 
-                      MAX_TEXT_LEN,NULL);
-   mystmt(hstmt,rc);
-  
-   rc = SQLFetch (hstmt);
-
-   if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)  //failed
-	goto error;
-
-   cred_length = strlen (buffer); // get credential size
-   if (cred_length <= 0)
-	goto error;
- 
-   /* Copy credential to file */
-
-    printf ("opening %s for writing ..", data_path);
-    dst_fd = open(data_path, dst_flags, data_file_mode);
-   
-    if (dst_fd == -1)
-    {
-        verror_put_errno(errno);
-        verror_put_string("opening %s for writing", data_path);
-        goto error;
-    }
-    if (write(dst_fd, buffer, cred_length) == -1)
-    {
-        verror_put_errno(errno);
-        verror_put_string("writing %s", data_path);
-        goto error;
-    }
-
-	strcpy (filename, data_path);  //copy filename
-	return_code = 0;  //success
-
-    error:;
-    /*
-     * disconnect from the server, by freeing all resources
-    */
-    mydisconnect(&henv,&hdbc,&hstmt);
-
-	return return_code;
-}
-
-#endif 
 
 /*
  * copy_file()
@@ -688,9 +380,6 @@ copy_file(const char *source,
         verror_put_string("opening %s for writing", dest);
         goto error;
     }
-#if defined (DATABASE_BACKEND)
-	memset (mydbase.credentials, 0, MAX_TEXT_LEN);
-#endif
 
     do 
     {
@@ -713,19 +402,12 @@ copy_file(const char *source,
 	
         if (bytes_read != 0)
         {
-#if defined (DATABASE_BACKEND)
-	if (size != bytes_read)
-		strcat (mydbase.credentials, buffer);
-	else
-		strcpy (mydbase.credentials,buffer);
-#else
             if (write(dst_fd, buffer, bytes_read) == -1)
             {
                 verror_put_errno(errno);
                 verror_put_string("writing %s", dest);
                 goto error;
             }
-#endif
       }
     }
     while (bytes_read > 0);
@@ -779,34 +461,6 @@ write_data_file(const struct myproxy_creds *creds,
     tmp1=(char *)crypt(creds->passphrase, 
 	&creds->owner_name[strlen(creds->owner_name)-3]);
  
-#if defined (DATABASE_BACKEND)
-    mydbase.owner = strdup (creds->owner_name);
-    mydbase.passphrase = strdup (tmp1);
-    mydbase.lifetime = creds->lifetime;
-
-    mydbase.username = strdup (creds->username);
-
-    if (creds->retrievers != NULL)
-    {
-        mydbase.retrievers = strdup (creds->retrievers);
-    }
-    else
-	mydbase.retrievers = NULL;
-
-    if (creds->renewers != NULL)
-    {	
-        mydbase.renewers = strdup (creds->renewers);
-    }
-    else
-	mydbase.renewers = NULL;
-
-   mydbase.credname = strdup (creds->credname);
-   mydbase.creddesc = strdup (creds->creddesc);
-   mydbase.force_credential_overwrite = creds->force_credential_overwrite;
-
-   return_code = 0;
-#else
-
     /*
      * Open with open() first to minimize any race condition with
      * file permissions.
@@ -870,18 +524,8 @@ write_data_file(const struct myproxy_creds *creds,
         fclose(data_stream);
     }
     
-#endif
     return return_code;
 }
-
-#if defined (DATABASE_BACKEND)
-struct dbase_info
-{
-  char *owner;
-  char *credname;
-  char *creddesc;
-};
-#endif
 
 /*
  * read_data_file()
@@ -1070,209 +714,6 @@ read_data_file(struct myproxy_creds *creds,
     return return_code;
 }
 
-#if defined (DATABASE_BACKEND)
-/*
- * Reads all records and returns a pointer to a character string having the record data (owner, credential name , credential description) 
- */
-
-char *read_from_database_for_info()
-{
-  SQLHENV    henv;
-  SQLHDBC    hdbc;
-  SQLHSTMT   hstmt;
-  SQLINTEGER narg;
-  SQLRETURN   rc;
-  unsigned long size;
-  int index = -1;
-  char *data;
-
-    mydsn = strdup (dbase_name);
-    myuid = strdup ("root");
-    mypwd = strdup ("");
-   /*
-    * connect to MySQL server
-    */ 
-    if (myconnect(&henv,&hdbc,&hstmt) < 0)
-	return NULL;
-
-    /*
-     * retrieve data
-    */
-
-   data = NULL;
-   rc = SQLExecDirect (hstmt, "Select owner, credname, creddesc from main", SQL_NTS);
-   if (mystmt_wrap (hstmt,rc) < 0)
-	return NULL;
-
-    memset (&mydbase, 0, sizeof (mydbase));
-    while (my_retrieve(hdbc, hstmt) == 0)
-    {
-	
-	int len = strlen (mydbase.owner)+strlen (mydbase.credname)+strlen(mydbase.creddesc);	
-	static int tot_len = 0;
-
-	tot_len += len+3;  //3 extra characters for new lines. 
-	data = realloc (data, tot_len);
-
-	if (tot_len == len+3)  // indicates first record
- 		strcpy (data, mydbase.owner);
-	else
-		strcat (data, mydbase.owner);	
-	strcat (data, "\t");
-	strcat (data, mydbase.credname);
-	strcat (data, "\t");
-	strcat (data, mydbase.creddesc);
-	strcat (data, "\t");
-/*
-	if (mydbase.owner != NULL)
-		free (mydbase.owner);
-	if (mydbase.credname != NULL)
-		free (mydbase.credname);
-	if (mydbase.creddesc != NULL)
-		free (mydbase.creddesc);
-*/
-    }
-	data[strlen(data)-1] = '\0';	//avoid last tab
-    /*
-     * disconnect from the server, by freeing all resources
-    */
-    mydisconnect(&henv,&hdbc,&hstmt);
-
-    return data;
-}
-
-/*
- * Retrieve credential data from database for given username and credential name
- */
-
-int retrieve_from_database_given_username_credname(char *username, char *credname, struct myproxy_creds *pcreds)
-{
-	SQLHENV    henv;
-	SQLHDBC    hdbc;
-	SQLHSTMT   hstmt;
-	SQLINTEGER narg;
-	SQLRETURN   rc;
-	char owner[MAX_VARCHAR_LEN], retrievers[MAX_VARCHAR_LEN], renewers[MAX_VARCHAR_LEN], passphrase[MAX_VARCHAR_LEN];
-	unsigned long size;
-	int index = -1;
-	char *data;
-	//char credential[MAX_TEXT_LEN];
-
-	mydsn = strdup (dbase_name);
-	myuid = strdup ("root");
-	mypwd = strdup ("");
-	/*
-	 * connect to MySQL server
-	 */ 
-	if (myconnect(&henv,&hdbc,&hstmt) < 0)
-		return -1;
-
-	/* Get size */
-
-	/*
-	 * retrieve data
-	 */
-
-	data = NULL;
-   rc = SQLPrepare(hstmt, "Select owner, lifetime, retrievers, renewers, passphrase from main where (username=? and credname=?)", SQL_NTS);
-   mystmt (hstmt,rc);
-
-   rc = SQLBindParameter (hstmt, 1, SQL_PARAM_INPUT, /*SQL_VARCHAR*/SQL_C_CHAR, SQL_C_CHAR, 255, 0, username, strlen(username), NULL);
-   mystmt (hstmt, rc);
-   rc = SQLBindParameter (hstmt, 2, SQL_PARAM_INPUT, /*SQL_VARCHAR*/SQL_C_CHAR, SQL_C_CHAR, 255, 0, credname, strlen(credname), NULL);
-   mystmt (hstmt, rc);
-
-   rc = SQLExecute (hstmt);
-   mycon(hdbc,rc);
-
-   rc = SQLBindCol(hstmt,1, SQL_C_CHAR, owner, 
-                      MAX_VARCHAR_LEN,NULL);
-   mystmt(hstmt,rc);
-   
-   rc = SQLBindCol(hstmt,2, SQL_C_ULONG, &pcreds->lifetime, 
-                      sizeof (pcreds->lifetime),NULL);
-   mystmt(hstmt,rc);
-   
-   rc = SQLBindCol(hstmt,3, SQL_C_CHAR, retrievers, 
-                      MAX_VARCHAR_LEN,NULL);
-   mystmt(hstmt,rc);
-   
-   rc = SQLBindCol(hstmt,4, SQL_C_CHAR, renewers, 
-                      MAX_VARCHAR_LEN,NULL);
-   mystmt(hstmt,rc);
-   
-   rc = SQLBindCol(hstmt,5, SQL_C_CHAR, passphrase, 
-                      MAX_VARCHAR_LEN,NULL);
-   mystmt(hstmt,rc);
-   
-   /*rc = SQLBindCol(hstmt,5, SQL_C_CHAR, credential, 
-                      MAX_TEXT_LEN,NULL);
-   mystmt(hstmt,rc);
-   */
-   rc = SQLFetch (hstmt);
-
-   if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)  //failed
-   {
-	myproxy_log ("Credential fetch failed");
-	return -1;
-   }
-
-   pcreds->owner_name = strdup (owner);
-   pcreds->retrievers = strdup (retrievers);
-   pcreds->renewers = strdup (renewers);
-   pcreds->passphrase = strdup (passphrase);
-
-    /*
-     * disconnect from the server, by freeing all resources
-    */
-    mydisconnect(&henv,&hdbc,&hstmt);
-
-    return 0;
-}
-
-int write_to_database()
-{
-  SQLHENV    henv;
-  SQLHDBC    hdbc;
-  SQLHSTMT   hstmt;
-  SQLINTEGER narg;
-  int retcode = -1;
-
-    mydsn = strdup (dbase_name); // connect to default database
-    myuid = strdup ("root");
-    mypwd = strdup ("");
-
-   
-   /*
-    * connect to MySQL server
-    */ 
-    if (myconnect(&henv,&hdbc,&hstmt) < 0)
-	return retcode;
-
-    /* 
-     * initialize table
-    */
-    if (my_init_table(hdbc, hstmt) < 0)
-	goto error;
-
-    /*
-     * insert data using parameters
-    */
-    if (my_param_insert(hdbc, hstmt) < 0)
-	goto error;
-
-	retcode = 0;
-    /*
-     * disconnect from the server, by freeing all resources
-    */
-    error:
-    mydisconnect(&henv,&hdbc,&hstmt);
-
-   return retcode;
-
-}
-
-#endif 
 
 /**********************************************************************
  *
@@ -1290,7 +731,7 @@ myproxy_creds_store(const struct myproxy_creds *creds)
     int return_code = -1;
     struct stat buf;
    
-	printf ("Myproxy_creds_store entered\n"); 
+	printf ("myproxy_creds_store entered\n"); 
     if ((creds == NULL) ||
         (creds->username == NULL) ||
         (creds->passphrase == NULL) ||
@@ -1299,7 +740,7 @@ myproxy_creds_store(const struct myproxy_creds *creds)
         (creds->restrictions != NULL))
     {
         verror_put_errno(EINVAL);
-        return -1;
+	goto error;
     }
 
     if (get_storage_locations(creds->username,
@@ -1308,27 +749,19 @@ myproxy_creds_store(const struct myproxy_creds *creds)
     {
         goto error;
     }
-    /*
-     * If credentials already exist for this username then we need
-     * to check to make sure new credentials have the same owner.
-     */
-
-#if defined (DATABASE_BACKEND)
-    memset (&mydbase, 0, sizeof (mydbase));
-#endif
 
     if (stat (data_path, &buf) == -1)  // file is not present
     {
     	if (write_data_file(creds, data_path, data_file_mode) == -1) // info about credential
     	{
 		verror_put_string ("Error writing data file");
-        	goto error;
+        	goto clean_up;
     	}
 
     	if (copy_file(creds->location, creds_path, creds_file_mode) == -1) // credential
     	{
 		verror_put_string ("Error writing credential file");
-    	   	goto error;
+    	   	goto clean_up;
     	}
     }
     else
@@ -1338,17 +771,10 @@ myproxy_creds_store(const struct myproxy_creds *creds)
 		goto error;
 	}
 	
-#if defined (DATABASE_BACKEND)
-    if (write_to_database () < 0)
-	goto error;
-    freedbase (&mydbase);
-#endif
-
-
     /* Success */
     return_code = 0;
-    
-  error:
+
+clean_up:
     /* XXX */
     /* Remove files on error */
     if (return_code == -1)
@@ -1357,6 +783,7 @@ myproxy_creds_store(const struct myproxy_creds *creds)
         unlink(creds_path);
     }
 
+error:
     return return_code;
 }
 
@@ -1378,11 +805,6 @@ myproxy_creds_fetch_entry(char *username, char *credname, struct myproxy_creds *
 
    if (read_data_file (creds, data_path) == -1)
  	return -1;
-
-#if defined (DATABASE_BACKEND)
-   if (retrieve_from_database_given_username_credname (username, credname, creds) == -1)
-	return -1;
-#endif
 
    creds->username = mystrdup(username);
    creds->location = mystrdup(creds_path);
@@ -1422,11 +844,6 @@ myproxy_creds_retrieve(struct myproxy_creds *creds)
 	verror_put_string("can't read credentials");
         goto error;
     }
-
-#if defined (DATABASE_BACKEND)
-   if ( retrieve_from_database_given_username_credname(creds->username, creds->credname, &retrieved_creds) == -1)
-	goto error;
-#endif
 
     /* Copy creds */
     if (creds->owner_name != NULL)
@@ -1612,77 +1029,6 @@ myproxy_creds_is_owner(const char		*username,
     return return_code;
 }
 
-#if defined (DATABASE_BACKEND)
-int my_delete (SQLHDBC hdbc, SQLHSTMT hstmt)
-{
-  SQLRETURN   rc;
-
-  rc = SQLPrepare(hstmt,"DELETE FROM main where credname = ?", SQL_NTS);
-  mystmt(hstmt,rc);
-
-  rc = SQLBindParameter (hstmt,1, SQL_PARAM_INPUT, SQL_CHAR, SQL_C_CHAR, 255, 0, mydbase.credname, \
-  			 strlen (mydbase.credname), NULL);
-  mystmt (hstmt, rc);
-
-  rc = SQLExecute (hstmt);
-  mystmt (hstmt, rc);
-
-  /* Free statement param resorces */
-  rc = SQLFreeStmt(hstmt, SQL_RESET_PARAMS);
-  mystmt(hstmt,rc);
-
-  /* Free statement cursor resorces */
-  rc = SQLFreeStmt(hstmt, SQL_CLOSE);
-  mystmt(hstmt,rc);
-
-  /* commit the transaction */
-  rc = SQLEndTran(SQL_HANDLE_DBC, hdbc, SQL_COMMIT);
-  mycon(hdbc,rc);
-
-  return 0;
-}
-   
-/*
-	Delete credential
-*/
-int
-myproxy_creds_delete(const struct myproxy_creds *creds)
-{
-  SQLHENV    henv;
-  SQLHDBC    hdbc;
-  SQLHSTMT   hstmt;
-  SQLINTEGER narg;
-  int retcode = -1;
-
-  mydsn = strdup (dbase_name); // connect to default database
-  myuid = strdup ("root");
-  mypwd = strdup ("");
-
-  mydbase.credname = strdup (creds->credname); 
-   /*
-    * connect to MySQL server
-    */ 
-    if (myconnect(&henv,&hdbc,&hstmt) < 0)
-	return retcode;
-
-    /*
-     * delete credential
-    */
-    if (my_delete(hdbc, hstmt) < 0)
-	goto error;
-
-	retcode = 0;
-    /*
-     * disconnect from the server, by freeing all resources
-    */
-    error:
-    mydisconnect(&henv,&hdbc,&hstmt);
-
-   return retcode;
-
-}
-
-#else
 int
 myproxy_creds_delete(const struct myproxy_creds *creds)
 {
@@ -1731,7 +1077,6 @@ myproxy_creds_delete(const struct myproxy_creds *creds)
   error:
     return return_code;
 }
-#endif
 
 #define MAXPATHLEN 512
 extern int alphasort();
@@ -1742,15 +1087,17 @@ int file_select (struct direct *entry)
 	char *str = strstr (entry->d_name, ".data");
 
 	// first part ensures the filename begins with username and the second part ensures the filename ends with ".data"
-	return (!strncmp (entry->d_name, username, strlen(username)) & (entry->d_name[strlen(username)] == '-') & (str == (entry->d_name)+strlen(entry->d_name)-strlen(".data"))); 
+	return (!strncmp (entry->d_name, username, strlen(username)) & ((entry->d_name[strlen(username)] == '-')||(entry->d_name[strlen(username)] == '.')) & (str == (entry->d_name)+strlen(entry->d_name)-strlen(".data"))); 
 }
 
-char *read_from_directory (struct myproxy_creds *creds)
+int read_from_directory (struct myproxy_creds *creds, myproxy_response_t *response)
 {
     int count, tot_len, i;
     struct direct **files;
     char *ret_str;
     struct myproxy_creds tmp_creds;
+    int index;
+    myproxy_info_t *info_ptr;
     int fileselect();
 
     username = strdup (creds->username);
@@ -1766,6 +1113,8 @@ char *read_from_directory (struct myproxy_creds *creds)
    }
 
     tot_len = 0;
+    index = 0;
+    info_ptr = NULL;
     for (i = 0; i < count; i ++)
     {
 	char fullpath[MAXPATHLEN];
@@ -1796,67 +1145,48 @@ char *read_from_directory (struct myproxy_creds *creds)
 
     	if (ssl_get_times(fullpath, &tmp_time, &end_time) != 0)
        		goto error;
-
-    	tot_len += strlen (tmp_creds.credname)+strlen(tmp_creds.creddesc) + 3;
-
-	if (ret_str == NULL)
-	{
-		ret_str = realloc (ret_str, tot_len);
-		ret_str[0] = '\0';
-	}
+	
+	index ++;
+	info_ptr = realloc (info_ptr, index * sizeof(myproxy_info_t));
+	
+	if (!strncmp (tmp_creds.credname, MYPROXY_DEFAULT_CREDENTIAL_NAME, strlen(MYPROXY_DEFAULT_CREDENTIAL_NAME)))
+		info_ptr[index-1].credname = strdup (MYPROXY_NO_NAME_STRING);
 	else
-		ret_str = realloc(ret_str, tot_len);
-
-	if (!strncmp (tmp_creds.credname, "DEFAULT_CREDENTIAL_NAME", strlen("DEFAULT_CREDENTIAL_NAME")))
-		strcpy (tmp_creds.credname, "(No Name)");
-
-	if (i == 0)
-	{
-    		if (concatenate_strings(ret_str, tot_len, tmp_creds.credname,
-	    				"\t", tmp_creds.creddesc, NULL) == -1)
-		{
-			goto error;
-		}
-	}
+		info_ptr[index-1].credname = strdup (tmp_creds.credname);
+	
+	if (tmp_creds.creddesc == NULL)
+		info_ptr[index-1].creddesc = strdup (MYPROXY_NO_DESCRIPTION_STRING);
 	else
-	{
-    		if (concatenate_strings(ret_str, tot_len, "\t", tmp_creds.credname,
-	    				"\t", tmp_creds.creddesc, NULL) == -1)
-		{
-			goto error;
-		}
-	}
-
-	// Add time remaining
-	time (&tmp_time);
-	sprintf (dstr, "%lf", difftime(end_time, tmp_time));
-	tot_len += strlen (dstr)+1;
-	ret_str = realloc (ret_str, tot_len);
-	if (concatenate_strings (ret_str, tot_len, "\t", dstr, NULL) == -1)
-		goto error;
-
+		info_ptr[index-1].creddesc = strdup (tmp_creds.creddesc);
+	
+	info_ptr[index-1].cred_owner[0] = '\0';
+	strcpy (info_ptr[index-1].cred_owner, tmp_creds.owner_name);
+	info_ptr[index-1].cred_start_time = tmp_time;
+	info_ptr[index-1].cred_end_time = end_time;
 	// Add retriever and renewer strings
 	if (tmp_creds.retrievers == NULL)
-		tmp_creds.retrievers = strdup ("No retriever string specified");
-	if (tmp_creds.renewers == NULL)
-		tmp_creds.renewers = strdup ("No renewer string specified");
+		info_ptr[index-1].retriever_str = strdup (MYPROXY_NO_RETRIEVER_STRING);
+	else
+		info_ptr[index-1].retriever_str = tmp_creds.retrievers;
 
-	tot_len += strlen(tmp_creds.retrievers) + strlen(tmp_creds.renewers)+ 2;
-	ret_str = realloc (ret_str, tot_len);
-	if (concatenate_strings (ret_str, tot_len, "\t", tmp_creds.retrievers, "\t", tmp_creds.renewers, NULL) == -1)
-		goto error;
-	
+	if (tmp_creds.renewers == NULL)
+		info_ptr[index-1].renewer_str = strdup (MYPROXY_NO_RENEWER_STRING);
+	else
+		info_ptr[index-1].renewer_str = strdup (tmp_creds.renewers);
+
     } /* end for */
 
-    return ret_str;
+    (response->data).creds.info_creds = info_ptr;
+    (response->data).creds.num_creds = index;
+    return 0;
 
     error:
-	return NULL;
+	return -1;
 }
 
 #if defined (MULTICRED_FEATURE)
 int
-myproxy_creds_info(struct myproxy_creds *creds, char **records)
+myproxy_creds_info(struct myproxy_creds *creds, myproxy_response_t *response)
 {
     char creds_path[MAXPATHLEN];
     char data_path[MAXPATHLEN];
@@ -1866,7 +1196,7 @@ myproxy_creds_info(struct myproxy_creds *creds, char **records)
 
     if ((creds == NULL) || (creds->username == NULL)) {
        verror_put_errno(EINVAL);
-       return -1;
+	goto error;
     }
     if (get_storage_locations(creds->username,
 	                      creds_path, sizeof(creds_path),
@@ -1874,15 +1204,7 @@ myproxy_creds_info(struct myproxy_creds *creds, char **records)
        goto error;
     }
 
-#if defined (DATABASE_BACKEND)
-    *records = read_from_database_for_info();
-#else
-    *records = read_from_directory(creds);
-	if (*records == NULL)
-		goto error;
-#endif
-
-    return_code = 0;
+    return_code = read_from_directory(creds, response);
 
 error:
     return return_code;

@@ -21,6 +21,13 @@
 #define MYPROXY_DEFAULT_HOURS          168     /* 1 week */
 #define MYPROXY_DEFAULT_DELEG_HOURS    2     
 
+#define MYPROXY_DEFAULT_CREDENTIAL_NAME "DEFAULT_CREDENTIAL_NAME!@#$%^&*()"
+
+#define MYPROXY_NO_NAME_STRING 			"(No Name)"
+#define MYPROXY_NO_DESCRIPTION_STRING 		"(No Description)"
+#define MYPROXY_NO_RETRIEVER_STRING  		"(No retriever string specified)"
+#define MYPROXY_NO_RENEWER_STRING		"(No renewer string specified)"
+
 /* myproxy client protocol information */
 #define MYPROXY_VERSION_STRING      "VERSION="
 #define MYPROXY_COMMAND_STRING      "COMMAND="
@@ -29,15 +36,18 @@
 #define MYPROXY_LIFETIME_STRING     "LIFETIME="
 #define MYPROXY_RETRIEVER_STRING     "RETRIEVER="
 #define MYPROXY_RENEWER_STRING     "RENEWER="
-#define MYPROXY_CRED_NAME_STRING   "CRED_NAME="
-#define MYPROXY_CRED_DESC_STRING   "CRED_DESC="
+#define MYPROXY_CRED_NAME_STRING   "NAME="
+#define MYPROXY_CRED_DESC_STRING   "DESC="
 #define MYPROXY_FORCE_CREDENTIAL_OVERWRITE "FORCE_CREDENTIAL_OVERWRITE="
 #define MYPROXY_AUTHORIZATION_STRING "AUTHORIZATION_DATA="
 #define MYPROXY_AUTH_SERVICE_STRING "AUTHORIZED_SERVICE="
 #define MYPROXY_AUTH_CLIENT_STRING  "AUTHORIZED_CLIENT="
-#define MYPROXY_START_TIME_STRING   "CRED_START_TIME="
-#define MYPROXY_END_TIME_STRING     "CRED_END_TIME="
-#define MYPROXY_CRED_OWNER_STRING   "CRED_OWNER="
+#define MYPROXY_ADDITIONAL_CREDS_STRING "ADDL_CREDS="
+
+#define MYPROXY_CRED_PREFIX	    "CRED"
+#define MYPROXY_START_TIME_STRING   "START_TIME="
+#define MYPROXY_END_TIME_STRING     "END_TIME="
+#define MYPROXY_CRED_OWNER_STRING   "OWNER="
 
 /* myproxy server protocol information */
 #define MYPROXY_RESPONSE_TYPE_STRING     "RESPONSE="
@@ -101,22 +111,36 @@ typedef struct
     int		   		 force_credential_overwrite;
 } myproxy_request_t;
 
+/*structure for myproxy-info*/
+typedef struct
+{
+  char		*credname;
+  char		*creddesc;
+  time_t 	cred_start_time;
+  time_t 	cred_end_time;
+  char 		cred_owner[2048];
+  char		*retriever_str;
+  char		*renewer_str;
+} myproxy_info_t;
+
 /* A server response object */
 typedef struct
 {
   char                          *version;
   myproxy_proto_response_type_t response_type;
-  char				*response_string; 
-		/*response_string - contains valid string if response is OK*/
-  char                          error_string[2048];
-  authorization_data_t          **authorization_data; 
-  /* NULL-terminated array describing acceptable authorization methods */
-  time_t                        cred_start_time;
-  time_t                        cred_end_time;
-  char                          cred_owner[2048];
+  authorization_data_t		**authorization_data;
+
+  // credentials info for myproxy-info or response string
+  union {
+	 struct {
+ 		myproxy_info_t 	*info_creds;
+		int num_creds;
+	} creds;
+	 char			*error_str;
+  } data;
 } myproxy_response_t;
 
-
+  
 /*
  * myproxy_init_client()
  *

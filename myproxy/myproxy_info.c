@@ -60,8 +60,9 @@ int
 main(int argc, char *argv[])
 {
     char *username, *pshost;
-    char request_buffer[1024], response_buffer[1024];
+    char request_buffer[1024], response_buffer[10240];
     int requestlen, responselen;
+    int i;
     time_t time_diff;
 
     myproxy_socket_attrs_t *socket_attrs;
@@ -176,41 +177,45 @@ main(int argc, char *argv[])
     /* Check response */
     switch(server_response->response_type) {
     case MYPROXY_ERROR_RESPONSE:
-        fprintf(stderr, "Received ERROR_RESPONSE: %s\n", server_response->error_string);
+        fprintf(stderr, "Received ERROR_RESPONSE: %s\n", (server_response->data).error_str);
         break;
     case MYPROXY_OK_RESPONSE:
-	time_diff = server_response->cred_end_time - time(NULL);
 	//if (server_response->cred_owner && strlen(server_response->cred_owner))
 	  // printf("proxy owned by : %s\n", server_response->cred_owner); 
 
-#if defined (MULTICRED_FEATURE)
-#define TABS_PER_ENTRY 5
-	if (server_response->response_string)
-	{
-	   int i;
-	   int len = strlen (server_response->response_string);
-	
-	   printf ("\n\n=================== Credentials Present ==============");
-	   printf ("\n\nCredential 1:\n");
-	   for (i = 0; i < len; i ++)
-	   {
-		static int tab_count=0; 
-		if (server_response->response_string[i] == '\t')
-		{
-		    	tab_count ++;
+//#if defined (MULTICRED_FEATURE)
 
-			if (tab_count %TABS_PER_ENTRY	 == 0)
-			{
-				printf ("\n\nCredential %d:\n",tab_count/TABS_PER_ENTRY+1);
-				continue;
-			}
-		}
-			printf ("%c", server_response->response_string[i]);
-	    }
-	}
-#endif
-	
+	for (i = 0; i < (server_response->data).creds.num_creds; i ++)
+	{
+		if ((server_response->data).creds.info_creds[i].credname)
+			printf ("Credential Name: %s\n", (server_response->data).creds.info_creds[i].credname);
+
+		if ((server_response->data).creds.info_creds[i].creddesc)
+			printf ("Credential Description: %s\n", (server_response->data).creds.info_creds[i].creddesc);
+
+	//	if ((server_response->data).creds.info_creds[i].cred_start_time)
+	//		printf ("Credential Start Time: %ld\n", (server_response->data).creds.info_creds[i].cred_start_time);
 			
+		printf ("Credential Owner: %s\n", (server_response->data).creds.info_creds[i].cred_owner);
+
+		if ((server_response->data).creds.info_creds[i].retriever_str)
+			printf ("Retrievers : %s\n", (server_response->data).creds.info_creds[i].retriever_str);
+
+		if ((server_response->data).creds.info_creds[i].renewer_str)
+			printf ("Renewers: %s\n", (server_response->data).creds.info_creds[i].renewer_str);
+		
+		if ((server_response->data).creds.info_creds[i].cred_end_time == 0)
+			continue;
+
+		time_diff = (server_response->data).creds.info_creds[i].cred_end_time - time(NULL);
+
+		printf("timeleft       : %ld:%02ld:%02ld\n", 
+	    		   	(long)(time_diff / 3600),
+			       	(long)(time_diff % 3600) / 60,
+	       			(long)time_diff % 60 );
+	
+	}
+#ifdef TO_BE_REMOVED
 	   //printf ("%s\n", server_response->response_string);
 	if (server_response->cred_end_time == 0)
 	   break;
@@ -223,7 +228,7 @@ main(int argc, char *argv[])
 	   printf("  (%.1f days)", (float)(time_diff / 3600) / 24.0);
 	printf("\n");
 	printf("expires on     : %s\n", ctime(&server_response->cred_end_time));
-
+#endif
 	break;
     default:
         fprintf(stderr, "Invalid response type received.\n");
