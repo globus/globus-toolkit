@@ -5,15 +5,29 @@
 # chkconfig: 345 99 06
 # description: MyProxy online credential repository
 
-MYPROXY=/usr/local/myproxy/sbin/myproxy-server
+# Set GLOBUS_LOCATION as appropriate for your installation.
+GLOBUS_LOCATION="/usr/grid"
+export GLOBUS_LOCATION
+
+. ${GLOBUS_LOCATION}/libexec/globus-script-initializer
+. ${libexecdir}/globus-sh-tools.sh
+
+MYPROXY=${GLOBUS_LOCATION}/sbin/myproxy-server
 
 PS="/bin/ps -e"
+
+# Optional server configuration arguments follow.
+# Uncomment and modify to change default settings.
+#PORT=-p 7512
+#CONFIG=-c ${GLOBUS_LOCATION}/etc/myproxy-server.config
+#STORE=-s ${GLOBUS_LOCATION}/var/myproxy
+#VERBOSE=-verbose
 
 case $1 in
 'start')
     if [ -x $MYPROXY ]; then
         echo "Starting up MyProxy"
-        $MYPROXY
+        $MYPROXY $PORT $CONFIG $STORE $VERBOSE
     else
         echo "$MYPROXY is not executable.  Skipping MyProxy startup."
         exit 1
@@ -36,4 +50,3 @@ case $1 in
     ;;
 
 esac
-
