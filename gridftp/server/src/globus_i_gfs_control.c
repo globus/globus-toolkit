@@ -187,12 +187,23 @@ globus_l_gfs_auth_session_cb(
     auth_info = (globus_l_gfs_auth_info_t *) user_arg;
 
     auth_info->instance->session_id = reply->session_id;
+    if(reply->result != GLOBUS_SUCCESS)
+    {
+        globus_gridftp_server_control_finished_auth(
+            auth_info->control_op, 
+            NULL, 
+            GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_PANIC, 
+            "internal error: session_cb");
+    }
+    else
+    {
+        globus_gridftp_server_control_finished_auth(
+            auth_info->control_op, 
+            auth_info->username, 
+            GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS,
+            NULL);
+    }    
 
-    globus_gridftp_server_control_finished_auth(
-        auth_info->control_op, 
-        auth_info->username, 
-        reply->code,
-        reply->msg);
 }
 
 static
