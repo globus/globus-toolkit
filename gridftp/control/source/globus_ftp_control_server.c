@@ -462,7 +462,7 @@ globus_ftp_control_command_init(
     unsigned int                                port[2];
     char                                        tmp[16];
     char                                        cmd[5];
-    char *                                      decoded_cmd;
+    char *                                      decoded_cmd = GLOBUS_NULL;
     char *                                      tmp_ptr;
     globus_result_t                             rc;
     globus_ftp_l_command_hash_entry_t *         command_hash_entry;
