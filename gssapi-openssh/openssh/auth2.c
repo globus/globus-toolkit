@@ -36,7 +36,6 @@ RCSID("$OpenBSD: auth2.c,v 1.93 2002/05/31 11:35:15 markus Exp $");
 #include "dispatch.h"
 #include "pathnames.h"
 #include "monitor_wrap.h"
-#include "misc.h"
 
 #ifdef GSSAPI
 #include "ssh-gss.h"
