@@ -285,7 +285,7 @@ g_passive(globus_bool_t spas)
     globus_ftp_control_host_port_t              host_port;
     int                                         hi;
     int                                         low;
-    char *                                      a;
+    unsigned char *                             a;
 
     if (!logged_in)   
     {
@@ -305,7 +305,7 @@ g_passive(globus_bool_t spas)
         return;
     }
 
-    a = (char *)&ctrl_addr.sin_addr;
+    a = (unsigned char *)&ctrl_addr.sin_addr;
     host_port.host[0] = (int) a[0];
     host_port.host[1] = (int) a[1];
     host_port.host[2] = (int) a[2];
