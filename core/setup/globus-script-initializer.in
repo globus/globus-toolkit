@@ -8,15 +8,15 @@ deployed='FALSE'              # This line is overwritten during deployment
 	    echo "ERROR: environment variable GLOBUS_DEPLOY_PATH not defined"  1>&2
 	    exit 1
 	fi
-	if [ -z "${GLOBUS_INSTALL_PATH}" ]; then
-	    if [ ! -r "${GLOBUS_DEPLOY_PATH}/etc/globus-install-path.sh" ]; then
-	        echo "ERROR: cannot read ${GLOBUS_DEPLOY_PATH}/etc/globus-install-path.sh" 1>&2
+	if [ -z "${GLOBUS_INSTALL_PATH}" -o -z "${GLOBUS_SSL_PATH}" ]; then
+	    if [ ! -r "${GLOBUS_DEPLOY_PATH}/etc/globus-paths.sh" ]; then
+	        echo "ERROR: cannot read ${GLOBUS_DEPLOY_PATH}/etc/globus-paths.sh" 1>&2
 		exit 1
 	    fi
-	    . "${GLOBUS_DEPLOY_PATH}/etc/globus-install-path.sh"
+	    . "${GLOBUS_DEPLOY_PATH}/etc/globus-paths.sh"
 	    if [ -z "${GLOBUS_INSTALL_PATH}" ]; then
 		echo "ERROR: environment variable GLOBUS_INSTALL_PATH not defined"  1>&2
-		echo "in ${GLOBUS_DEPLOY_PATH}/etc/globus-install-path.sh"         1>&2
+		echo "in ${GLOBUS_DEPLOY_PATH}/etc/globus-paths.sh"         1>&2
 		exit 1
 	    fi
 	fi
@@ -26,6 +26,19 @@ deployed='FALSE'              # This line is overwritten during deployment
 	    # we really should do a exit 1 here, but for easier development
 	    # testing, fall back on ${prefix}.
 	    GLOBUS_INSTALL_PATH=@prefix@
+	fi
+	if [ -z "${GLOBUS_SSL_PATH}" ]; then
+	    if [ ! -r "${GLOBUS_INSTALL_PATH}/etc/globus-paths.sh" ]; then
+	        echo "ERROR: cannot read ${GLOBUS_INSTALL_PATH}/etc/globus-paths.sh" 1>&2
+		exit 1
+	    fi
+	    . "${GLOBUS_INSTALL_PATH}/etc/globus-paths.sh"
+	    if [ -z "${GLOBUS_SSL_PATH}" ]; then
+		echo "ERROR: environment variable GLOBUS_SSL_PATH not defined"  1>&2
+		echo "in ${GLOBUS_INSTALL_PATH}/etc/globus-paths.sh"         1>&2
+		exit 1
+	    fi
+
 	fi
     fi
     if [ "X${deployed}" = "XTRUE" ]; then
