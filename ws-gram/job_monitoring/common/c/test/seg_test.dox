@@ -1,0 +1,11 @@
+/**
+ * @mainpage SEG Tests
+ *
+ * - @ref seg_load_test "Load module test"
+
+ * - Timestamp test
+ * - Pending test
+ * - Active test
+ * - Done test
+ * - Failed test
+ */
