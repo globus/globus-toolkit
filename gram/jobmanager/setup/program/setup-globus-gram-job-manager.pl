@@ -67,7 +67,7 @@ if ( ( -d "$globusdir/etc/grid-services" ) &&
    else
    {
       #service arguments must be on the same line
-      print SERVICE "jobmanager stderr_log,local_cred - ".
+      print SERVICE "stderr_log,local_cred - ".
                     "$globusdir/libexec/globus-job-manager ".
                     "globus-job-manager ".
                     "-conf $globusdir/etc/globus-job-manager.conf ".
