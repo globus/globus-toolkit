@@ -45,6 +45,48 @@
 char*
 globus_i_rsl_assist_get_rm_contact(char* resourceManagerName);
 
+/*
+ * Structure: job_listing_entry_t
+ *
+ * This structure is used by the function
+ * globus_rsl_assist_get_job_contact_list() to return a list of job contact,
+ * job rsl and job status
+ */
+
+/*
+  typedef struct
+{
+    char *    job_contact;
+    char *    rsl_string;
+    char *    status;
+} globus_i_rsl_assist_job_listing_entry_t;
+*/
+
+typedef char * globus_i_rsl_assist_job_listing_entry_t;
+
+/*
+ * globus_rsl_assist_get_job_contact_list()
+ *
+ *     By querying the MDS, return the list of job contact currently
+ *     registerd in the MDS, the rsl for each job and the status of the job.
+ *     The user code must free each string of the structure and string
+ *     itself when it is not usefull anymore.
+ *     
+ *
+ * Parameters:
+ *     None; Remarq: It uses the "globus environment variable" defining
+ *     the MDS host and port to contact.
+ *    
+ *
+ * Returns:
+ *    A pointer to the head of a list of  
+ *    globus_i_rsl_assist_job_listing_entry_t defined above.
+ *    OR
+ *    GLOBUS_NULL in case of failure.
+ */
+int
+globus_i_rsl_assist_get_job_contact_list(globus_list_t ** job_contact_list);
+
 #endif
 
 

@@ -28,9 +28,6 @@
 #include "globus_common.h"
 #include "globus_rsl.h"
 
-#define GLOBUS_RSL_ASSIST_ERROR_GETTING_MANAGER_CONTACT     -1
-#define GLOBUS_RSL_ASSIST_ERROR_RSL_INVALID                 -2
-#define GLOBUS_RSL_ASSIST_ERROR_MANAGER_NAME_IS_NOT_LITERAL -3
 
 /*
  * Function: globus_rsl_assist_replace_manager_name()
@@ -52,16 +49,19 @@
  * and extracting the contact value for that object.
  * 
  * Parameters: 
- *     rsl - Poiter to the RSL structure in which you want to replace the
- *     manager Name by its Contact
+ *     rsl - Pointer to the RSL structure in which you want to
+ *           replace the manager Name by its Contact.
+ *
+ *     NOTE: The RSL MUST have been created using globus_rsl_parse, because
+ *     the rsl might be reallocated by this function !! (required when
+ *     the rsl is only a simple relation equal : resourceManagerName=x
+ *
  * Returns:
- *     GLOBUS_SUCCESS or
- *     Error code: GLOBUS_RSL_ASSIST_ERROR_GETTING_MANAGER_CONTACT,
- *                 GLOBUS_RSL_ASSIST_ERROR_RSL_INVALID or  
- *                 GLOBUS_RSL_ASSIST_ERROR_MANAGER_NAME_IS_NOT_LITERAL
+ *     Pointer to the new RSL (Might be equal to the original one) or
+ *     GLOBUS_NULL in case of failure
  *     
  */
-int
+globus_rsl_t *
 globus_rsl_assist_replace_manager_name(globus_rsl_t * rsl);
 
 /*
