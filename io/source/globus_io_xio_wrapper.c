@@ -3276,8 +3276,7 @@ globus_io_eof(
     }
 }
 
-#if 0
-
+/* XXXXX */
 globus_result_t
 globus_io_tcp_posix_convert(
     int                                 socket,
@@ -3372,8 +3371,7 @@ globus_io_tcp_set_attr(
     return GLOBUS_SUCCESS;
 }
 
-#endif
-
+/* XXXXX */
 
 globus_result_t
 globus_io_tcp_get_security_context(
