@@ -37,9 +37,9 @@ static char usage[] = \
 "					  Can also set MYPROXY_SERVER env. var.\n"
 "       -p | --psport          <port #>   Port of the myproxy-server\n"
 "       -n | --no_passphrase              Disable passphrase authentication\n"
-"	-d | --dn_as_username             Use the proxy certificate subject\n"
-"                                         (DN) as the default username\n"
-"                                         of the LOGNAME env. var.\n"
+"       -d | --dn_as_username             Use the proxy certificate subject\n"
+"                                         (DN) as the default username,\n"
+"                                         instead of the LOGNAME env. var.\n"
 "\n";
 
 struct option long_options[] =
