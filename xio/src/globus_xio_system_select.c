@@ -2348,7 +2348,9 @@ error_op_info:
     return result;
 }
 
-/* XXX should modify these read calls to set the lo watermark opt */
+/* XXX should modify these read calls to set the lo watermark opt 
+ * (may affect timeout refresh)
+ */
 globus_result_t
 globus_xio_system_register_read(
     globus_xio_operation_t              op,
@@ -2553,7 +2555,9 @@ error_op_info:
     return result;
 }
 
-/* XXX should modify these write calls to set the lo watermark opt */
+/* XXX should modify these write calls to set the lo watermark opt
+ * (may affect timeout refresh)
+ */
 globus_result_t
 globus_xio_system_register_write(
     globus_xio_operation_t              op,

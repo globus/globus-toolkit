@@ -1520,7 +1520,8 @@ globus_xio_driver_operation_cancel(
 
     globus_mutex_lock(&context->cancel_mutex);
     {
-        res = globus_i_xio_operation_cancel(op);
+        /* XXX pass driver's index here instead */
+        res = globus_i_xio_operation_cancel(op, op->start_ndx + 1);
     }
     globus_mutex_unlock(&context->cancel_mutex);
 

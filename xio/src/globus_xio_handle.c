@@ -178,6 +178,7 @@ globus_l_xio_oneshot_wrapper_cb(
     globus_free(space_info);
 }
 
+static
 globus_result_t
 globus_l_xio_hande_pre_close(
     globus_i_xio_handle_t *                 handle,
@@ -208,7 +209,8 @@ globus_l_xio_hande_pre_close(
                 ("[%s] : canceling open op @ 0x%x\n", 
                 _xio_name, handle->open_op));
             /* we delay the pass close until the open callback */
-            globus_i_xio_operation_cancel(handle->open_op);
+            globus_i_xio_operation_cancel(
+                handle->open_op, handle->open_op->start_ndx);
 
             /* this next line is strange.  what happens is this,
                typically, if open comes back with a failure we
@@ -230,7 +232,7 @@ globus_l_xio_hande_pre_close(
                 GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
                     ("[%s] : canceling read op @ 0x%x\n", 
                     _xio_name, tmp_op));
-                globus_i_xio_operation_cancel(tmp_op);
+                globus_i_xio_operation_cancel(tmp_op, tmp_op->start_ndx);
             }
     
             for(list = handle->write_op_list;
@@ -241,7 +243,7 @@ globus_l_xio_hande_pre_close(
                 GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
                     ("[%s] : canceling write op @ 0x%x\n", 
                     _xio_name, tmp_op));
-                globus_i_xio_operation_cancel(tmp_op);
+                globus_i_xio_operation_cancel(tmp_op, tmp_op->start_ndx);
             }
         }
     }
@@ -968,7 +970,8 @@ globus_l_xio_read_write_callback_kickout(
  */
 globus_result_t
 globus_i_xio_operation_cancel(
-    globus_i_xio_op_t *                     op)
+    globus_i_xio_op_t *                     op,
+    int                                     source_ndx)
 {
     globus_bool_t                           tmp_rc;
     GlobusXIOName(globus_i_xio_operation_cancel);
@@ -998,7 +1001,7 @@ globus_i_xio_operation_cancel(
      * if a driver has a registered callback it will be called
      * if it doesn't the next pass or finished will pick it up
      */
-    op->canceled = op->start_ndx + 1;
+    op->canceled = source_ndx;
     if(op->cancel_cb != NULL)
     {
         GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
@@ -1627,11 +1630,13 @@ globus_l_xio_handle_cancel_operations(
     {
         if(mask & GLOBUS_XIO_CANCEL_OPEN && xio_handle->open_op != NULL)
         {
-            globus_i_xio_operation_cancel(xio_handle->open_op);
+            globus_i_xio_operation_cancel(
+                xio_handle->open_op, xio_handle->open_op->start_ndx);
         }
         if(mask & GLOBUS_XIO_CANCEL_CLOSE && xio_handle->close_op != NULL)
         {
-            globus_i_xio_operation_cancel(xio_handle->close_op);
+            globus_i_xio_operation_cancel(
+                xio_handle->close_op, xio_handle->close_op->start_ndx);
         }
         if(mask & GLOBUS_XIO_CANCEL_READ)
         {
@@ -1641,7 +1646,7 @@ globus_l_xio_handle_cancel_operations(
                 list = globus_list_rest(list))
             {
                 tmp_op = (globus_i_xio_op_t *) globus_list_first(list);
-                globus_i_xio_operation_cancel(tmp_op);
+                globus_i_xio_operation_cancel(tmp_op, tmp_op->start_ndx);
             }
         }
         if(mask & GLOBUS_XIO_CANCEL_WRITE)
@@ -1651,7 +1656,7 @@ globus_l_xio_handle_cancel_operations(
                 list = globus_list_rest(list))
             {
                 tmp_op = (globus_i_xio_op_t *) globus_list_first(list);
-                globus_i_xio_operation_cancel(tmp_op);
+                globus_i_xio_operation_cancel(tmp_op, tmp_op->start_ndx);
             }
         }
     }

@@ -771,7 +771,8 @@ globus_i_xio_close_handles(
 
 globus_result_t
 globus_i_xio_operation_cancel(
-    globus_i_xio_op_t *                     op);
+    globus_i_xio_op_t *                     op,
+    int                                     source_ndx);
 
 void
 globus_i_xio_driver_deliver_op(
