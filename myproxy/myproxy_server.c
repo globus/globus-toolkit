@@ -6,6 +6,8 @@
 
 #include "myproxy_common.h"	/* all needed headers included here */
 
+#include <krb5.h>
+
 
 #define MIN(x,y) ((x) < (y) ? (x) : (y))
 
@@ -109,6 +111,9 @@ static int get_client_authdata(myproxy_socket_attrs_t *attrs,
                                myproxy_request_t *client_request,
 			       char *client_name,
 			       authorization_data_t *auth_data);
+
+static int auth_sasl_negotiate_server(myproxy_socket_attrs_t *attrs,
+                      char *client_name);
 
 static int debug = 0;
 
@@ -751,7 +756,7 @@ void send_response_sasl_data(myproxy_socket_attrs_t *attrs,
     char	buf[SASL_BUFFER_SIZE];
     int		len, result;
     
-    sasl_encode64(data, data_len, buf, SASL_BUFFER_SIZE, &len);
+    result = sasl_encode64(data, data_len, buf, SASL_BUFFER_SIZE, &len);
     buf[len] = '\0';
     if (result != SASL_OK) {
        verror_put_string("Encoding data in base64 failed.\n");
@@ -1174,6 +1179,15 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 
        case AUTHORIZETYPE_SASL: /* retrieval */
 	   myproxy_debug("SASL authorization mechanism.");
+	   /* check per-credential policy */
+	   if (creds.retrievers) {
+	       authorization_ok =
+		   myproxy_server_check_policy(creds.retrievers, client_name);
+	       if (authorization_ok != 1) {
+		   verror_put_string("\"%s\" not authorized by credential's retriever policy", client_name);
+		   goto end;
+	       }
+	   }
 	   authorization_ok =
 	       authorization_check(&auth_data, &creds, client_name);
 	   if (authorization_ok != 1) {
@@ -1415,6 +1429,7 @@ get_client_authdata(myproxy_socket_attrs_t *attrs,
 
    if (auth_data->method == AUTHORIZETYPE_SASL) {
 	if (auth_sasl_negotiate_server(attrs, client_name) != SASL_OK)
+		/* it fills the client_name with Kerberos principal name */
 		goto end;
 
    }
@@ -1437,11 +1452,12 @@ auth_sasl_negotiate_server(myproxy_socket_attrs_t *attrs,
 
    unsigned len, count;
    const char *data;
-   const char *buf;
    sasl_security_properties_t secprops;
    int result;
 
-   printf("client name is %s\n", client_name);
+   /* init client_name */
+   sprintf(client_name, "/CN=anonymous");
+
    /* Init defaults... */
    memset(&secprops, 0L, sizeof(secprops));
    secprops.maxbufsize = SASL_BUFFER_SIZE;
@@ -1561,19 +1577,32 @@ auth_sasl_negotiate_server(myproxy_socket_attrs_t *attrs,
    myproxy_debug("SASL negotiation complete.");
 
    if (result == SASL_OK) {
+
       if ( sasl_getprop(conn, SASL_USERNAME, (const void **)&data) != SASL_OK) {
          myproxy_log("Error: Kerberos username is NULL.");
          return SASL_FAIL;
-      } else {
-         myproxy_debug("Username: %s\n", data);
       }
 
+      sprintf(client_name, "/CN=%s@", data);
+      
       if ( sasl_getprop(conn, SASL_DEFUSERREALM, (const void **)&data) != SASL_OK) {
          myproxy_log("Error: Kerberos realm is NULL.");
          return SASL_FAIL;
-      } else {
-         myproxy_debug("Realm: %s\n", data);
       }
+      
+      if (data == NULL) {
+      		krb5_context context;
+    		if (krb5_init_context(&context)) {
+          		myproxy_log("Error: init krb5_context\n");
+    		}
+		krb5_get_default_realm(context, &data);
+         	myproxy_debug("default realm: %s", data);
+		krb5_free_context(context);
+      } 
+
+      strcat(client_name, data);
+
+      myproxy_debug("Kerberos client principal: %s", client_name);
    }
 
    return result;

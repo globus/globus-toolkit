@@ -1,8 +1,9 @@
 #include "myproxy_common.h"	/* all needed headers included here */
 
+#include <krb5.h>
+
 static int
-auth_sasl_negotiate_client(myproxy_socket_attrs_t *attrs,
-		       char *user_id);
+auth_sasl_negotiate_client(myproxy_socket_attrs_t *attrs);
 
 static int copy_file(const char *source,
 		     const char *dest,
@@ -11,7 +12,7 @@ static int copy_file(const char *source,
 static int myproxy_authorize_init(myproxy_socket_attrs_t *attrs,
                                   char *passphrase,
 				  char *certfile,
-				  char *kerberos_username);
+				  int  use_kerberos);
 
 int myproxy_set_delegation_defaults(
     myproxy_socket_attrs_t *socket_attrs,
@@ -43,7 +44,7 @@ int myproxy_get_delegation(
     myproxy_socket_attrs_t *socket_attrs,
     myproxy_request_t      *client_request,
     char *certfile,
-    char *kerberos_username,
+    int use_kerberos,
     myproxy_response_t     *server_response,
     char *outfile)
 {    
@@ -85,7 +86,7 @@ int myproxy_get_delegation(
 
     /* Continue unless the response is not OK */
     if (myproxy_authorize_init(socket_attrs, client_request->passphrase,
-	                       certfile, kerberos_username) < 0) {
+	                       certfile, use_kerberos) < 0) {
 	  fprintf(stderr, "%s\n",
 	          verror_get_string());
 	  return(1);
@@ -208,7 +209,7 @@ static int
 myproxy_authorize_init(myproxy_socket_attrs_t *attrs,
                        char *passphrase,
 		       char *certfile,
-		       char *kerberos_username)
+		       int  use_kerberos)
 {
    myproxy_response_t *server_response = NULL;
    myproxy_response_t *server_buf = NULL;
@@ -235,12 +236,12 @@ myproxy_authorize_init(myproxy_socket_attrs_t *attrs,
 			       AUTHORIZETYPE_CERT,
 			       certfile,
 			       strlen(certfile) + 1);
-	 else if (kerberos_username != NULL) {
+	 else if (use_kerberos > 0) {
 	    d = authorization_create_response(
 		               server_response->authorization_data,
 			       AUTHORIZETYPE_SASL,
-			       kerberos_username,
-			       strlen(kerberos_username) + 1);
+			       "",
+			       1);
 	 }
 	 else 
 	    d = authorization_create_response(
@@ -267,9 +268,8 @@ myproxy_authorize_init(myproxy_socket_attrs_t *attrs,
 	    goto end;
 	 }
 	 
-	 if (kerberos_username != NULL) {
-//	 	printf("Client: begin SASL negotiation...\n");
-		if (auth_sasl_negotiate_client(attrs, kerberos_username) < 0)
+	 if (use_kerberos > 0) {
+		if (auth_sasl_negotiate_client(attrs) < 0)
 			goto end;
 	 }
 
@@ -380,6 +380,19 @@ getpath(void *context,
   } else {
       *path = SASL_LIBRARY_PATH;
   }
+
+  return SASL_OK;
+}
+
+
+static int getrealm(void *context,
+                    int id,
+                    const char **availrealms __attribute__((unused)),
+                    const char **result)
+{
+  if (id!=SASL_CB_GETREALM) return SASL_FAIL;
+
+  *result=(char *) context;
 
   return SASL_OK;
 }
@@ -514,8 +527,7 @@ prompt(void *context __attribute__((unused)),
 
 
 static int
-auth_sasl_negotiate_client(myproxy_socket_attrs_t *attrs,
-		       char *user_id)
+auth_sasl_negotiate_client(myproxy_socket_attrs_t *attrs)
 {
     char server_buffer[SASL_BUFFER_SIZE];
     const char *data;
@@ -535,6 +547,44 @@ auth_sasl_negotiate_client(myproxy_socket_attrs_t *attrs,
         *searchpath = SASL_LIBRARY_PATH,
         *service = "host";
     char fqdn[1024];
+
+    krb5_context context;
+    krb5_ccache ccache;
+    krb5_principal principal;
+    char *user_id = NULL;
+    char *realm = NULL;
+
+    if (krb5_init_context(&context)) {
+	verror_put_string("Failed to initiate krb5_context.");
+	return SASL_FAIL;
+    }
+    if (krb5_cc_default(context, &ccache)) {
+	verror_put_string("Failed to get the credential cache.");
+        krb5_free_context(context);
+	return SASL_FAIL;
+    }
+    if (krb5_cc_get_principal(context, ccache, &principal)) {
+	verror_put_string("Failed to get principal from the credential cache.");
+        krb5_free_context(context);
+	return SASL_FAIL;
+    }
+    if (krb5_unparse_name(context, principal, &user_id)) {
+	verror_put_string("Failed to unparse name from principal.");
+        krb5_free_principal(context, principal);
+        krb5_free_context(context);
+	return SASL_FAIL;
+    }
+    printf("Kerberos principal name: %s\n", user_id);
+    krb5_free_principal(context, principal);
+    krb5_free_context(context);
+
+    realm = strchr(user_id, '@');
+    if (realm) {
+        *realm = '\0';
+        realm++;
+    }
+
+    // printf("User name: %s, realm: %s\n", user_id, realm);
 
     strcpy(fqdn, attrs->pshost);
    
@@ -558,11 +608,18 @@ auth_sasl_negotiate_client(myproxy_socket_attrs_t *attrs,
 
     /* user */
     if (user_id) {
-//	printf("User (authorization) id to request: %s\n", user_id);
         callback->id = SASL_CB_USER;
         callback->proc = &simple;
         callback->context = user_id;
         ++callback;
+    }
+
+    if (realm)
+    {
+        callback->id = SASL_CB_GETREALM;
+        callback->proc = &getrealm;
+        callback->context = realm;
+        callback++;
     }
 
     /* password */

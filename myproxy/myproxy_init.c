@@ -311,10 +311,12 @@ init_arguments(int argc,
 	    break;
 	case 'n':   /* use an empty passwd == require certificate based
 		       authorization while getting the creds */
+/*
 	    if (request->retrievers) {
 		fprintf(stderr, "-n is incompatible with -r and -a.\nA passphrase is required for credential retrieval.\n");
 		return -1;
 	    }
+*/
 	    use_empty_passwd = 1;
 	    break;
 	case 'd':   /* use the certificate subject (DN) as the default
@@ -330,10 +332,12 @@ init_arguments(int argc,
 		fprintf(stderr, "Only one -a or -r option may be specified.\n");
 		return -1;
 	    }
+/*
 	    if (use_empty_passwd) {
 		fprintf(stderr, "-r is incompatible with -n.  A passphrase is required for credential retrieval.\n");
 		return -1;
 	    }
+*/
 	    if (expr_type == REGULAR_EXP)  /*copy as is */
 	      request->retrievers = strdup (gnu_optarg);
 	    else
