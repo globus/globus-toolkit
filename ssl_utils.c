@@ -1607,8 +1607,10 @@ ssl_get_base_subject(SSL_CREDENTIALS *creds, char **subject)
    }
 
 #if defined(GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY) /* gotta love API changes */
+   sk_unshift(creds->certificate_chain, (char *)creds->certificate);
    globus_gsi_cert_utils_get_base_name(client_subject,
 				       creds->certificate_chain);
+   sk_shift(creds->certificate_chain);
 #else   
    globus_gsi_cert_utils_get_base_name(client_subject);
 #endif
