@@ -717,6 +717,14 @@ globus_l_gfs_ipc_read_body_cb(
     globus_i_gfs_ipc_handle_t *         ipc;
     globus_result_t                     res;
     globus_gfs_command_state_t *        cmd_state;
+    globus_gfs_transfer_state_t *       trans_state;
+    globus_gfs_data_state_t *           data_state;
+    globus_gfs_resource_state_t *       resource_state;
+    int                                 rc;
+    int                                 data_connection_id;
+    gss_buffer_desc                     gsi_buffer;
+    gss_cred_id_t                       cred;
+    char *                              user_dn;
 
     request = (globus_gfs_ipc_request_t *) user_arg;
     ipc = request->ipc;
@@ -733,19 +741,88 @@ globus_l_gfs_ipc_read_body_cb(
     {
         case GLOBUS_GFS_IPC_TYPE_FINAL_REPLY:
         case GLOBUS_GFS_IPC_TYPE_INTERMEDIATE_REPLY:
+            break;
+
+        case GLOBUS_GFS_IPC_TYPE_AUTH:
+            rc = globus_l_gfs_ipc_unpack_cred(ipc, buffer, len, &gsi_buffer);
+            if(rc != 0)
+            {
+            }
+            ipc->iface->set_cred(ipc, request->id, cred);
+            break;
+
+        case GLOBUS_GFS_IPC_TYPE_USER:
+            user_dn = globus_l_gfs_ipc_unpack_user(ipc, buffer, len);
+            if(user_dn == NULL)
+            {
+            }
+            ipc->iface->set_user(ipc, request->id, user_dn);
+            break;
+
+        case GLOBUS_GFS_IPC_TYPE_RESOURCE:
+            resource_state = globus_l_gfs_ipc_unpack_resource(
+                ipc, buffer, len);
+            if(resource_state == NULL)
+            {
+            }
+            ipc->iface->resource_func(ipc, request->id, resource_state);
+            break;
 
         case GLOBUS_GFS_IPC_TYPE_RECV:
+            trans_state = globus_l_gfs_ipc_unpack_transfer(ipc, buffer, len);
+            if(trans_state == NULL)
+            {
+            }
+            ipc->iface->recv_func(ipc, request->id, trans_state);
+            break;
+
         case GLOBUS_GFS_IPC_TYPE_SEND:
+            trans_state = globus_l_gfs_ipc_unpack_transfer(ipc, buffer, len);
+            if(trans_state == NULL)
+            {
+            }
+            ipc->iface->send_func(ipc, request->id, trans_state);
+            break;
+
         case GLOBUS_GFS_IPC_TYPE_LIST:
+            trans_state = globus_l_gfs_ipc_unpack_transfer(ipc, buffer, len);
+            if(trans_state == NULL)
+            {
+            }
+            ipc->iface->list_func(ipc, request->id, trans_state);
             break;
 
         case GLOBUS_GFS_IPC_TYPE_COMMAND:
             cmd_state = globus_l_gfs_ipc_unpack_command(ipc, buffer, len);
+            if(cmd_state == NULL)
+            {
+            }
+            ipc->iface->command_func(ipc, request->id, cmd_state);
             break;
 
         case GLOBUS_GFS_IPC_TYPE_PASSIVE:
+            data_state = globus_l_gfs_ipc_unpack_data(ipc, buffer, len);
+            if(data_state == NULL)
+            {
+            }
+            ipc->iface->passive_func(ipc, request->id, data_state);
+            break;
+
         case GLOBUS_GFS_IPC_TYPE_ACTIVE:
+            data_state = globus_l_gfs_ipc_unpack_data(ipc, buffer, len);
+            if(data_state == NULL)
+            {
+            }
+            ipc->iface->active_func(ipc, request->id, data_state);
+            break;
+
         case GLOBUS_GFS_IPC_TYPE_DESTROY:
+            rc = globus_l_gfs_ipc_unpack_data_destroy(
+                ipc, buffer, len, &data_connection_id);
+            if(rc != 0)
+            {
+            }
+            ipc->iface->data_destroy_func(data_connection_id);
 
         default:
             break;
