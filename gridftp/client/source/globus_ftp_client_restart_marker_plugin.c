@@ -96,6 +96,30 @@ restart_marker_plugin_complete_cb(
 }
 
 /**
+ * Plugin abort callback
+ * @ingroup globus_ftp_client_restart_marker_plugin
+ *
+ * This callback will be called when an abort has been requested
+ */
+
+static
+void
+restart_marker_plugin_abort_cb(
+    globus_ftp_client_plugin_t *                plugin,
+    void *                                      plugin_specific,
+    globus_ftp_client_handle_t *                handle)
+{
+    restart_marker_plugin_info_t  *             ps;
+
+    ps = (restart_marker_plugin_info_t *) plugin_specific;
+
+    ps->error_obj = globus_error_construct_string(
+        GLOBUS_FTP_CLIENT_MODULE,
+        GLOBUS_NULL,
+        "[restart_marker_plugin_abort_cb] Transfer aborted by user\n");
+}
+
+/**
  * Plugin fault callback
  * @ingroup globus_ftp_client_restart_marker_plugin
  *
@@ -525,6 +549,10 @@ restart_marker_plugin_destroy_cb(
     globus_ftp_client_plugin_t *                plugin,
     void *                                      plugin_specific)
 {
+    restart_marker_plugin_info_t *              ps;
+
+    ps = (restart_marker_plugin_info_t *) plugin_specific;
+
     globus_ftp_client_restart_marker_plugin_destroy(plugin);
     globus_free(plugin);
 }
@@ -642,6 +670,8 @@ globus_ftp_client_restart_marker_plugin_init(
         restart_marker_plugin_complete_cb);
     globus_ftp_client_plugin_set_fault_func(plugin,
         restart_marker_plugin_fault_cb);
+    globus_ftp_client_plugin_set_abort_func(plugin,
+        restart_marker_plugin_abort_cb);
 
     return GLOBUS_SUCCESS;
 }

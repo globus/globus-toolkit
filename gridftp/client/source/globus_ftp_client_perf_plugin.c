@@ -99,7 +99,7 @@ perf_plugin_complete_cb(
 
 /**
  * Plugin abort callback
- * @ingroup globus_ftp_client_restart_marker_plugin
+ * @ingroup globus_ftp_client_perf_plugin
  *
  * This callback will be called when an abort has been requested
  */
