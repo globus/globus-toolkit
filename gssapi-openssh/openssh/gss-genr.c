@@ -433,15 +433,31 @@ ssh_gssapi_import_name(Gssctxt *ctx, const char *host) {
 
 	/* Make sure we have the FQDN. Some GSSAPI implementations don't do
 	 * this for us themselves */
-	
 	hostinfo = gethostbyname(xhost);
 	
+	/* Use local hostname when coming in on loopback interface because
+	   we won't have 'localhost' credentials. */
+	if (hostinfo &&
+	    hostinfo->h_addrtype == AF_INET) {
+	    struct in_addr addr;
+	    addr = *(struct in_addr *)(hostinfo->h_addr);
+	    if (ntohl(addr.s_addr) == INADDR_LOOPBACK) {
+		char buf[4096];
+		if (gethostname(buf, 4096) == 0) {
+		    hostinfo = gethostbyname(buf);
+		}
+	    }
+	}
+
+	/* Go to the resolver to get the official hostname for our target.
+	   WARNING: This makes us vulnerable to DNS spoofing. */
 	if ((hostinfo == NULL) || (hostinfo->h_name == NULL)) {
 		debug("Unable to get FQDN for \"%s\"", xhost);
 	} else {
 	    	addr = xmalloc(hostinfo->h_length);
 		memcpy(addr, hostinfo->h_addr, hostinfo->h_length);
-		hostinfo = gethostbyaddr(addr, hostinfo->h_length, AF_INET);
+		hostinfo = gethostbyaddr(addr, hostinfo->h_length,
+					 hostinfo->h_addrtype);
 		xfree(addr);
 		if ((hostinfo == NULL) || (hostinfo->h_name == NULL)) {
 		    debug("Unable to get FQDN for \"%s\"", xhost);

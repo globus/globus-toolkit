@@ -1093,6 +1093,19 @@ int try_gssapi_authentication(char *host, Options *options)
    */
   hostinfo = gethostbyname(host);
 
+  /* Use local hostname when coming in on loopback interface because
+     we won't have 'localhost' credentials. */
+  if (hostinfo && hostinfo->h_addrtype == AF_INET) {
+      struct in_addr addr;
+      addr = *(struct in_addr *)(hostinfo->h_addr);
+      if (ntohl(addr.s_addr) == INADDR_LOOPBACK) {
+	  char buf[4096];
+	  if (gethostname(buf, 4096) == 0) {
+	      hostinfo = gethostbyname(buf);
+	  }
+      }
+  }
+
   if ((hostinfo == NULL) || (hostinfo->h_addr == NULL)) {
       debug("GSSAPI authentication: Unable to get FQDN for \"%s\"", host);
       goto cleanup;
@@ -1103,6 +1116,8 @@ int try_gssapi_authentication(char *host, Options *options)
   hostinfo = gethostbyaddr(addr, hostinfo->h_length, AF_INET);
   xfree(addr);
 
+  /* Go to the resolver to get the official hostname for our target.
+     WARNING: This makes us vulnerable to DNS spoofing. */
   if ((hostinfo == NULL) || (hostinfo->h_name == NULL)) {
       debug("GSSAPI authentication: Unable to get FQDN for \"%s\"", host);
       goto cleanup;
