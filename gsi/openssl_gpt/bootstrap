@@ -7,26 +7,15 @@ if test "x$GLOBUS_LOCATION" = "x"; then
     exit 1
 fi
 
-
-for file in 'globus_automake_pre' \
-    'globus_automake_post' \
-    'globus_automake_pre_top' \
-    'globus_automake_post_top'
-do
-    if test ! -h "$file" ; then
-        echo "installing $file link"
-        ln -s $GLOBUS_LOCATION/share/globus_aclocal/$file $file
-    fi
-done
-
-if test "x$GPT_LOCATION" = "x"; then
-    GPT_LOCATION=$GLOBUS_LOCATION
+if [ ! -f ${GLOBUS_LOCATION}/libexec/globus-bootstrap.sh ]; then
+    echo "ERROR: Unable to locate \${GLOBUS_LOCATION}/libexec/globus-bootstrap.sh"
+    echo "       Please ensure that you have installed the globus-core package and"
+    echo "       that GLOBUS_LOCATION is set to the proper directory"
+    exit
 fi
 
-if test ! -h pkgdata/Makefile.am ; then
-    echo "installing Makefile.am in the pkgdata directory"
-    ln -s $GPT_LOCATION/share/gpt_amdir/pkgdata_Makefile.am \
-    pkgdata/Makefile.am
-fi
+# set up local aclocal includes
 
-exit 0
+aclocal_includes="-I ./aclocal"
+
+. ${GLOBUS_LOCATION}/libexec/globus-bootstrap.sh

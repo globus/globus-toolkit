@@ -1,6 +1,8 @@
 dnl
 
+
 AC_REVISION($Revision$)
+
 AC_INIT(Makefile.am)
 
 OPENSSL_INIT
@@ -13,8 +15,6 @@ AM_CONFIG_HEADER(crypto/opensslconf.h:crypto/opensslconf.h.in)
 dnl static linking hack
 
 if test $GPT_LINKTYPE = "static"; then
-    GPT_LDFLAGS="-static -L${GLOBUS_LOCATION}/lib"
-    AC_SUBST(GPT_LDFLAGS)
     AC_ENABLE_SHARED([no])
 else
     AC_ENABLE_SHARED([yes])
@@ -38,6 +38,10 @@ LD=$save_LD
 
 dnl config header goes here
 
+# Decide if we should use assembly code
+
+LAC_ASM
+
 # Figure out the defines
 
 LAC_CRYPTO
@@ -45,10 +49,6 @@ LAC_CRYPTO
 # Figure out the compiler flags
 
 LAC_COMPILER
-
-# Decide if we should use assembly code
-
-LAC_ASM
 
 # On solaris openssl needs the socket and nsl library
 

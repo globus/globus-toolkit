@@ -118,7 +118,7 @@ noinst_HEADERS = \
 	testdsa.h \
 	testrsa.h
 
-INCLUDES = $(GPT_INCLUDES) -I$(top_srcdir)/include
+INCLUDES = -I$(top_srcdir)/include $(GPT_INCLUDES)
 
 bin_PROGRAMS = \
 	openssl

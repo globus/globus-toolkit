@@ -11,7 +11,6 @@ dnl LAC_ASM_ARGS()
 
 AC_DEFUN(LAC_ASM_ARGS,
 [
-
     AC_ARG_ENABLE(asm,
         [  --disable-asm                disable use of handcoded assembler],
 	    [lac_asm="$enableval"],
@@ -26,7 +25,9 @@ AC_DEFUN(LAC_ASM,
     AC_REQUIRE([LAC_CPU])
     LAC_ASM_ARGS
 
-    if test "$enable_debug" = "yes"; then
+    # disable asm if debug is turned on
+
+    if test "$GLOBUS_DEBUG" = "yes"; then
         lac_asm="no"
     fi
 
@@ -114,7 +115,7 @@ AC_DEFUN(LAC_ASM_SET,
                 case ${lac_cv_CPU} in
                     *mips3*|*mips4*)
                         dnl this needs testing
-                        dnl lac_BN_OBJ="asm/mips3.lo"
+                        lac_BN_OBJ="asm/mips3.lo"
                     ;;
                 esac
             ;;

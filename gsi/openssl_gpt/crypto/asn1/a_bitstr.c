@@ -233,7 +233,7 @@ int ASN1_BIT_STRING_set_bit(ASN1_BIT_STRING *a, int n, int value)
 	if (a == NULL) return(0);
 	if ((a->length < (w+1)) || (a->data == NULL))
 		{
-                if (!value) return(1); /* Don't need to set */
+		if (!value) return(1); /* Don't need to set */
 		if (a->data == NULL)
 			c=(unsigned char *)OPENSSL_malloc(w+1);
 		else
@@ -243,12 +243,7 @@ int ASN1_BIT_STRING_set_bit(ASN1_BIT_STRING *a, int n, int value)
 		a->data=c;
 		a->length=w+1;
 	}
-        
-        if(value)
-                a->data[w] |= v;
-        else
-                a->data[w] &= iv;
-        
+	a->data[w]=((a->data[w])&iv)|v;
 	while ((a->length > 0) && (a->data[a->length-1] == 0))
 		a->length--;
 	return(1);

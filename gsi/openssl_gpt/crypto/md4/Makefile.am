@@ -16,7 +16,7 @@ noinst_HEADERS = \
 
 noinst_LTLIBRARIES = libmd4_$(GLOBUS_FLAVOR_NAME).la
 
-INCLUDES = $(GPT_INCLUDES) -I$(top_srcdir)/include -I.. 
+INCLUDES = -I$(top_srcdir)/include $(GPT_INCLUDES)
 
 libmd4___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 

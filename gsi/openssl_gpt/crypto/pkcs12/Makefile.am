@@ -24,7 +24,7 @@ opensslinclude_HEADERS= \
 
 noinst_LTLIBRARIES = libpkcs12_$(GLOBUS_FLAVOR_NAME).la
 
-INCLUDES = $(GPT_INCLUDES) -I$(top_srcdir)/include
+INCLUDES = -I$(top_srcdir)/include $(GPT_INCLUDES)
 
 libpkcs12___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 

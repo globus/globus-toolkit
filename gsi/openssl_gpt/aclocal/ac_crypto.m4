@@ -35,6 +35,7 @@ AC_DEFUN(LAC_CRYPTO,
     LAC_DEFINE_VAR(DES_LONG)
     LAC_DEFINE_VAR(BN_LLONG)
     LAC_DEFINE_VAR(BN_DIV2W)
+    LAC_DEFINE_VAR(BN_DIV3W)
     LAC_DEFINE_VAR(BF_PTR)
     LAC_DEFINE_VAR(RC4_CHUNK)
     LAC_DEFINE_VAR(RC4_INDEX)
@@ -62,6 +63,7 @@ AC_DEFUN(LAC_CRYPTO_SET,
     lac_DES_LONG="unsigned long"
     lac_BN_LLONG=""
     lac_BN_DIV2W=""
+    lac_BN_DIV3W=""
     lac_BF_PTR=""
     lac_RC4_CHUNK=""
     lac_RC4_INDEX=""
@@ -165,20 +167,20 @@ AC_DEFUN(LAC_CRYPTO_SET,
                 ;;
             esac
         ;;
-        *irix64*)
-            # gcc and vendor
-            lac_RC4_INT="unsigned char"
-            lac_RC4_CHUNK="unsigned long"
-            lac_DES_RISC2="1"
-            lac_DES_PTR="1"
-            lac_DES_UNROLL="1"
-            lac_BF_PTR="1"
-            lac_SIXTY_FOUR_BIT_LONG="1"
-            lac_THIRTY_TWO_BIT=""
-        ;;
         *irix6*)
-            case ${lac_cv_CPU} in
-                *mips3* | *mips4* )
+            case ${GLOBUS_FLAVOR_NAME} in
+                *64* )
+                    # gcc and vendor
+                    lac_BN_DIV3W="1"
+                    lac_RC4_INT="unsigned char"
+                    lac_RC4_CHUNK="unsigned long"
+                    lac_DES_RISC2="1"
+                    lac_DES_UNROLL="1"
+                    lac_SIXTY_FOUR_BIT_LONG="1"
+                    lac_THIRTY_TWO_BIT=""
+                ;;
+                *32* )
+                    lac_BN_DIV3W="1"
                     lac_SIXTY_FOUR_BIT="1"
                     lac_THIRTY_TWO_BIT=""
                     lac_RC4_INT="unsigned char"
@@ -230,6 +232,9 @@ AC_DEFUN(LAC_CRYPTO_SET,
         ;;
     esac
 ])
+
+
+
 
 
 

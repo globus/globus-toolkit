@@ -41,7 +41,7 @@ Test_Sources = \
 
 noinst_LTLIBRARIES = libbn_$(GLOBUS_FLAVOR_NAME).la
 
-INCLUDES = $(GPT_INCLUDES) -I$(top_srcdir)/include
+INCLUDES = -I$(top_srcdir)/include $(GPT_INCLUDES)
 
 libbn___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 
@@ -97,6 +97,12 @@ asm/sparcv8plus.lo: asm/sparcv8plus.S
 
 asm/ia64.lo: asm/ia64.S
 	$(LTCOMPILE) -c asm/ia64.S -o asm/ia64.lo
+
+# mips
+
+asm/mips3.lo: asm/mips3.s
+	$(LTCOMPILE) -c asm/mips3.s -o asm/mips3.lo
+
 
 # generate the input
 

@@ -589,6 +589,7 @@ static int do_ssl3_write(SSL *s, int type, const unsigned char *buf,
 		mac_size=EVP_MD_size(s->write_hash);
 
 	/* 'create_empty_fragment' is true only when this function calls itself */
+	s->s3->empty_fragment_done = 1;
 	if (!clear && !create_empty_fragment && !s->s3->empty_fragment_done)
 		{
 		/* countermeasure against known-IV weakness in CBC ciphersuites
