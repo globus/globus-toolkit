@@ -13,6 +13,16 @@
 <Simple_Version Major="0" />
 </Version>
 </Dependency>
+<Dependency Name="gaa_gss_generic" >
+<Version >
+<Simple_Version Major="1" />
+</Version>
+</Dependency>
+<Dependency Name="gaa_core" >
+<Version >
+<Simple_Version Major="1" />
+</Version>
+</Dependency>
 <Dependency Name="globus_common" >
 <Version >
 <Simple_Version Major="3" />
