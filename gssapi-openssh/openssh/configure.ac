@@ -672,23 +672,30 @@ AC_ARG_WITH(mechglue,
 # Check whether the user wants GSI (Globus) support
 gsi_path="no"
 AC_ARG_WITH(gsi,
-	[  --with-gsi=PATH         Enable GSI/Globus authentication support],
+	[  --with-gsi              Enable Globus GSI authentication support],
 	[
 		gsi_path="$withval"
 	]
 )
 
 AC_ARG_WITH(globus,
-	[  --with-globus=PATH      Enable GSI/Globus authentication support],
+	[  --with-globus           Enable Globus GSI authentication support],
 	[
 		gsi_path="$withval"
+	]
+)
+
+AC_ARG_WITH(globus-static,
+	[  --with-globus-static    Link statically with Globus GSI libraries],
+	[
+		gsi_static="-static"
 	]
 )
 
 # Check whether the user has a Globus flavor type
 globus_flavor_type="no"
 AC_ARG_WITH(globus-flavor,
-	[  --with-globus-flavor=TYPE         Describe Globus flavor type (ex: gcc32dbg, etc.)],
+	[  --with-globus-flavor=TYPE  Specify Globus flavor type (ex: gcc32dbg)],
 	[
 		globus_flavor_type="$withval"
 		if test "x$gsi_path" == "xno" ; then
@@ -703,7 +710,7 @@ if test "x$gsi_path" != "xno" ; then
 	AC_DEFINE(GSI)
 
 	if test "$GSSAPI" -a "$GSSAPI" != "mechglue"; then
-		AC_MSG_ERROR([Previously configured GSSAPI library conflicts with Globus/GSI.])
+		AC_MSG_ERROR([Previously configured GSSAPI library conflicts with Globus GSI.])
 	fi
 	if test -z "$GSSAPI"; then
 		AC_DEFINE(GSSAPI)
@@ -712,15 +719,15 @@ if test "x$gsi_path" != "xno" ; then
 
 	if test "x$gsi_path" = "xyes" ; then
 		if test -z "$GLOBUS_LOCATION" ; then
-			AC_MSG_ERROR(--with-globus=PATH must specify a path)
+			AC_MSG_ERROR(GLOBUS_LOCATION environment variable must be set.)
 		else
 			gsi_path="$GLOBUS_LOCATION"
 		fi
 	fi
-
-	if test -z "$GLOBUS_LOCATION" ; then
-		GLOBUS_LOCATION="$gsi_path"
-		export GLOBUS_LOCATION
+	GLOBUS_LOCATION="$gsi_path"
+	export GLOBUS_LOCATION
+	if test ! -d "$GLOBUS_LOCATION" ; then
+		AC_MSG_ERROR(Cannot find Globus installation.  Set GLOBUS_LOCATION environment variable.)
 	fi
 
         if test "x$globus_flavor_type" = "xno" ; then
@@ -737,9 +744,9 @@ if test "x$gsi_path" != "xno" ; then
 	GSI_CPPFLAGS="-I${GLOBUS_INCLUDE}"
 	
 	if test -x ${gsi_path}/bin/globus-makefile-header ; then
-		GSI_LIBS=`${gsi_path}/bin/globus-makefile-header --flavor=${globus_flavor_type} globus_gss_assist | perl -n -e 'if (/GLOBUS_PKG_LIBS = (.*)/){print $1;}'`
+		GSI_LIBS=`${gsi_path}/bin/globus-makefile-header --flavor=${globus_flavor_type} ${gsi_static} globus_gss_assist | perl -n -e 'if (/GLOBUS_PKG_LIBS = (.*)/){print $1;}'`
 	elif test -x ${gsi_path}/sbin/globus-makefile-header ; then
-		GSI_LIBS=`${gsi_path}/sbin/globus-makefile-header --flavor=${globus_flavor_type} globus_gss_assist | perl -n -e 'if (/GLOBUS_PKG_LIBS = (.*)/){print $1;}'`
+		GSI_LIBS=`${gsi_path}/sbin/globus-makefile-header --flavor=${globus_flavor_type} ${gsi_static} globus_gss_assist | perl -n -e 'if (/GLOBUS_PKG_LIBS = (.*)/){print $1;}'`
 	else
 		AC_MSG_ERROR(Cannot find globus-makefile-header: Globus installation is incomplete)
 	fi
