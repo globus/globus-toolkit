@@ -454,6 +454,9 @@ gs_get_token(
 	output_token->length = BIO_pending(write_bio);
 	if (output_token->length > 0)
     {
+                int len = 0;
+                int rc;
+
 		output_token->value = (char *) malloc(output_token->length);
 		if (output_token->value == NULL)
         {
@@ -461,9 +464,24 @@ gs_get_token(
 			GSSerr(GSSERR_F_GS_HANDSHAKE, GSSERR_R_OUT_OF_MEMORY);
 			return GSS_S_FAILURE;
 		}
-		BIO_read(write_bio,
-                 output_token->value,
-                 output_token->length);
+
+		while(len < output_token->length)
+		  { 
+            
+		    rc = BIO_read(write_bio,
+				  ((char *) output_token->value) + len,
+				  output_token->length - len);
+		    if(rc > 0)
+		      {
+			len += rc;
+		      }
+		    else
+		      {
+			GSSerr(GSSERR_F_GS_HANDSHAKE, GSSERR_R_IMPEXP_BIO_SSL);
+			return GSS_S_FAILURE;
+		      }
+		  }       
+
 #ifdef DEBUG
 		fprintf(stderr,"output token: len=%d\n",output_token->length);
 #endif
