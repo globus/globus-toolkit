@@ -2122,7 +2122,6 @@ globus_l_xio_gssapi_ftp_user_server_write_cb(
     {
         handle->write_posted = GLOBUS_FALSE;
 
-    GlobusXIOGssapiftpDebugFinishWrite();
         globus_xio_driver_finished_write(op, result, nbytes);
     }
     globus_mutex_unlock(&handle->mutex);
@@ -2172,15 +2171,7 @@ globus_l_xio_gssapi_ftp_write(
         }
 
         /* deconstipation */
-        /* if the server is not yet open
-            really just a special case for 220 message */
-        if(handle->state != GSSAPI_FTP_STATE_OPEN && !handle->client)
-        {
-            handle->auth_write_iov.iov_len = length;
-            handle->auth_write_iov.iov_base = handle->write_buffer;
-            cb = globus_l_xio_gssapi_ftp_user_server_write_cb;
-        }
-        else
+        if(handle->client)
         {
             res = globus_l_xio_gssapi_ftp_wrap(
                     handle, handle->write_buffer, length, 
@@ -2196,8 +2187,23 @@ globus_l_xio_gssapi_ftp_write(
             handle->auth_write_iov.iov_len = globus_libc_strlen(encoded_buf);
             cb = globus_l_xio_gssapi_ftp_write_cb;
         }
+        else
+        {
+            /* if the server is not yet open but can write unwrapped stuff
+            really just a special case for 220 message */
+            if(handle->state != GSSAPI_FTP_STATE_OPEN)
+            {
+                handle->auth_write_iov.iov_len = length;
+                handle->auth_write_iov.iov_base = handle->write_buffer;
+                cb = globus_l_xio_gssapi_ftp_user_server_write_cb;
+            }
+            /* check multiline replies */
+            else
+            {
 
-            GlobusXIOGssapiftpDebugPassWrite();
+            }
+        }
+
         res = globus_xio_driver_pass_write(
             op, 
             &handle->auth_write_iov, 
@@ -2404,6 +2410,7 @@ globus_l_xio_gssapi_ftp_handle_cntl(
     int                                 cmd,
     va_list                             ap)
 {
+    char **                             out_subject;
     gss_cred_id_t *                     out_cred;
     gss_cred_id_t *                     out_del_cred;
     globus_result_t                     res = GLOBUS_SUCCESS;
@@ -2419,8 +2426,10 @@ globus_l_xio_gssapi_ftp_handle_cntl(
         case GLOBUS_XIO_DRIVER_GSSAPI_FTP_GET_DATA_CRED:
             out_cred = va_arg(ap, gss_cred_id_t *);
             out_del_cred = va_arg(ap, gss_cred_id_t *);
+            out_subject = va_arg(ap, char **);
             *out_cred = ds_handle->cred_handle;
             *out_del_cred = ds_handle->delegated_cred_handle;
+            *out_subject = ds_handle->auth_gssapi_subject;
             break;
 
         default:
