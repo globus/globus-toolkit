@@ -1,6 +1,20 @@
 <html>
-    <head><title>Globus XIO Architecture</title></head>
+<HEAD>
+    <title>Globus XIO Architecture</title>
+    <style type="text/css">
+        <!--
+            h3 { background-color: #DCE1FF; background-position: left}
+        -->
+    </style>
+</HEAD>
+
     <body>
+        <CENTER><B><H1>UNDER CONSTRUCTION</H1></B></CENTER>
+        <P>
+        Read this page at your own risk.  I am adding doc to this as i 
+        mold the code.  For the time bieng it will not flow well and will
+        look a lot like source code documentation (guess why).
+        </P>
         <CENTER><B><H2>Globus XIO</H2></B></CENTER>
         <BR>
         When designing globus_xio extreme care has been taken to provide an 
@@ -8,5 +22,32 @@
         it is often the case that efficiency must be sacrificed.  This is not
         the case with globus_xio.  The arcitecture of globus_xio is described
         here.
+        <BR>
+
+        <H3>Target</H3>
+        <PRE>
+/*
+ *  used by: handle, and target, operation
+ *
+ *  lifecycle
+ *  ---------
+ *  When created by target it lives as long as the target does.  Essentially
+ *  The user stack is converted into this structure and maintained by the 
+ *  target.  Ass soon and the target is destroyed the driver stack is
+ *  destroyed.
+ *
+ *  When used by the handle it is "created" on open from a target (the one in
+ *  target is simply reused).  When the handle is destroyed this adt is 
+ *  destroyed with it.
+ *
+ *  Operations simply reference the driver stack maintained by the handle. 
+ *  Operations are only allowed to live as long as the handle from which they 
+ *  came, so there is no reference counting needed here.
+ *
+ *  Not all members are used by target.
+ */
+
+        </PRE>
+
     </body>
 </html>
