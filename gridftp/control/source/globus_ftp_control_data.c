@@ -8444,6 +8444,11 @@ globus_l_ftp_eb_accept_callback(
                       sizeof(globus_l_ftp_eb_header_t),
                       globus_l_ftp_eb_read_header_callback,
                       (void *)data_conn);
+            if(res != GLOBUS_SUCCESS)
+            {
+                error = globus_error_get(res);
+                globus_l_ftp_control_stripes_destroy(dc_handle, error);
+            }
             globus_assert(res == GLOBUS_SUCCESS);
         }
         /*
