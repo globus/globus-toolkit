@@ -143,6 +143,15 @@ int myproxy_creds_unlock(const struct myproxy_creds *creds);
 int myproxy_creds_change_passphrase(const struct myproxy_creds *creds,
 				    const char *new_passphrase);
  
+
+/*
+ * myproxy_creds_encrypted()
+ *
+ * Returns 1 if credentials are encrypted, 0 if unencrypted, and -1 on
+ * error.
+ */
+int myproxy_creds_encrypted(const struct myproxy_creds *creds);
+
 /*
  * myproxy_creds_verify_passphrase()
  *
