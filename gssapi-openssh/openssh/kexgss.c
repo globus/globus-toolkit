@@ -319,7 +319,7 @@ kexgss_server(Kex *kex)
 	
 	if (GSS_ERROR(PRIVSEP(ssh_gssapi_server_ctx(&ctxt,oid))))
 	   packet_disconnect("Unable to acquire credentials for the server");
-                                                                                                                                
+
 	do {
 		debug("Wait SSH2_MSG_GSSAPI_INIT");
 		type = packet_read();
