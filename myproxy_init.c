@@ -33,6 +33,7 @@ static char usage[] = \
 "       -t | --portal_lifetime <hours>    Lifetime of delegated proxy on\n" 
 "                                         the portal (default 2 hours)\n"
 "       -s | --pshost          <hostname> Hostname of the myproxy-server\n"
+"					  Can also set MYPROXY_SERVER env. var.\n"
 "       -p | --psport          <port #>   Port of the myproxy-server\n"
 "\n";
 
@@ -49,7 +50,7 @@ struct option long_options[] =
   {0, 0, 0, 0}
 };
 
-static char short_options[] = "uhs:p:t:c:t:v";
+static char short_options[] = "uhs:p:t:c:l:v";
 
 static char version[] =
 "myproxy-init version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
@@ -243,6 +244,7 @@ init_arguments(int argc,
     }
     /* Check to see if myproxy-server specified */
     if (attrs->pshost == NULL) {
+	fprintf(stderr, usage);
 	fprintf(stderr, "Unspecified myproxy-server! Either set the MYPROXY_SERVER environment variable or explicitly set the myproxy-server via the -s flag\n");
 	exit(1);
     }
