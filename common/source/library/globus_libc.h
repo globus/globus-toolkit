@@ -459,6 +459,10 @@ globus_libc_addr_to_contact_string(
     const globus_sockaddr_t *           addr,
     int                                 opts_mask,
     char **                             contact_string);
+
+int
+globus_libc_gethostaddr(
+    globus_sockaddr_t *                 addr);
     
 EXTERN_C_END
 

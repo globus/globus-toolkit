@@ -1000,6 +1000,48 @@ globus_libc_gethostname(char *name, int len)
     return(0);
 } /* globus_libc_gethostname() */
 
+int
+globus_libc_gethostaddr(
+    globus_sockaddr_t *                 addr)
+{
+    int                                 rc;
+    char                                hostname[MAXHOSTNAMELEN];
+    globus_addrinfo_t                   hints;
+    globus_addrinfo_t *                 save_addrinfo;
+    globus_addrinfo_t *                 addrinfo;
+    globus_result_t                     result;
+    
+    rc = globus_libc_gethostname(hostname, sizeof(hostname));
+    if(rc < 0)
+    {
+        return rc;
+    }
+    
+    memset(&hints, 0, sizeof(globus_addrinfo_t));
+    hints.ai_flags = 0;
+    hints.ai_family = PF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_protocol = 0;
+    
+    result = globus_libc_getaddrinfo(
+        hostname, GLOBUS_NULL, &hints, &save_addrinfo);
+    if(result != GLOBUS_SUCCESS)
+    {
+        return -1;
+    }
+
+    for(addrinfo = save_addrinfo; addrinfo; addrinfo = addrinfo->ai_next)
+    {
+        if(GlobusLibcProtocolFamilyIsIP(addrinfo->ai_family))
+        {
+            memcpy(addr, addrinfo->ai_addr, addrinfo->ai_addrlen);
+            
+            break;
+        }
+    }
+    
+    return 0;
+}
 
 /*
  *  The windows definition of the following funtions differs
@@ -3123,45 +3165,45 @@ globus_libc_addr_to_contact_string(
     char **                             contact_string)
 {
     globus_result_t                     result;
-    char                                host[GLOBUS_NI_MAXHOST];
+    globus_sockaddr_t                   myaddr;
+    char                                host[MAXHOSTNAMELEN];
     char                                port[10];
     int                                 port_no;
     int                                 ni_flags;
     char *                              cs;
     
-    ni_flags = GLOBUS_NI_NUMERICSERV;
-    
-    if(opts_mask & GLOBUS_LIBC_ADDR_NUMERIC)
-    {
-        ni_flags |= GLOBUS_NI_NUMERICHOST;
-    }
-    
     if(opts_mask & GLOBUS_LIBC_ADDR_LOCAL ||
         globus_libc_addr_is_loopback(addr) || 
         globus_libc_addr_is_wildcard(addr))
     {
-        if(globus_libc_gethostname(host, sizeof(host)) != 0)
+        if(globus_libc_gethostaddr(&myaddr) != 0)
         {
             result = globus_error_put(
                 globus_error_construct_error(
                    GLOBUS_COMMON_MODULE,
                    GLOBUS_NULL,
                    0,
-                   "[globus_libc_addr_to_string] globus_libc_gethostname fsiled"));
+                   "[globus_libc_addr_to_string] globus_libc_gethostaddr failed"));
             goto error_nameinfo;
         }
         
         GlobusLibcSockaddrGetPort(*addr, port_no);
-        sprintf(port, "%d", port_no);
+        GlobusLibcSockaddrSetPort(myaddr, port_no);
+        addr = &myaddr;
     }
-    else
+    
+    ni_flags = GLOBUS_NI_NUMERICSERV;
+
+    if(opts_mask & GLOBUS_LIBC_ADDR_NUMERIC)
     {
-        result = globus_libc_getnameinfo(
-            addr, host, sizeof(host), port, sizeof(port), ni_flags);
-        if(result != GLOBUS_SUCCESS)
-        {
-            goto error_nameinfo;
-        }
+        ni_flags |= GLOBUS_NI_NUMERICHOST;
+    }
+
+    result = globus_libc_getnameinfo(
+        addr, host, sizeof(host), port, sizeof(port), ni_flags);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_nameinfo;
     }
     
     cs = globus_malloc(strlen(host) + strlen(port) + 2);
@@ -3176,8 +3218,15 @@ globus_libc_addr_to_contact_string(
         goto error_memory;
     }
     
-    /* XXX need to see if host is ipv6 format ip... if so, enclose in [] */
-    sprintf(cs, "%s:%s", host, port);
+    if(strchr(host, ':'))
+    {
+        sprintf(cs, "[%s]:%s", host, port);
+    }
+    else
+    {
+        sprintf(cs, "%s:%s", host, port);
+    }
+    
     *contact_string = cs;
     
     return GLOBUS_SUCCESS;
