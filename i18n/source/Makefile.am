@@ -17,7 +17,7 @@ INCLUDES = @GPT_INCLUDES@
 libglobus_i18n___GLOBUS_FLAVOR_NAME__la_LIBADD = @GPT_LIB_LINKS@
 
 libglobus_i18n___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
-libglobus_i18n___GLOBUS_FLAVOR_NAME__la_LDFLAGS = @GPT_LDFLAGS@
+libglobus_i18n___GLOBUS_FLAVOR_NAME__la_LDFLAGS = @GPT_LDFLAGS@ -module 
 
 globus_i18n_resource_init_SOURCES = globus_i18n_resource_init.c
 globus_i18n_resource_init_LDFLAGS = @GPT_LDFLAGS@

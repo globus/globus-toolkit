@@ -8,38 +8,6 @@
 static globus_thread_key_t              globus_l_libtool_key;
 static globus_rmutex_t                  globus_l_libtool_mutex;
 static globus_hashtable_t               globus_l_resourcebundle_loaded;
-/*
- * static globus_hashtable_t               globus_l_extension_mappings;
- * */
-
-static
-void
-globus_l_libtool_mutex_lock(void)
-{
-    globus_rmutex_lock(&globus_l_libtool_mutex);
-}
-
-static
-void
-globus_l_libtool_mutex_unlock(void)
-{
-    globus_rmutex_unlock(&globus_l_libtool_mutex);
-}
-
-static
-void
-globus_l_libtool_set_error(
-    const char *                        error)
-{
-    globus_thread_setspecific(globus_l_libtool_key, (void *) error);
-}
-
-static
-const char *
-globus_l_libtool_get_error(void)
-{
-    return (char *) globus_thread_getspecific(globus_l_libtool_key);
-}
 
 
 static
@@ -48,7 +16,6 @@ globus_l_my_module_activate(void)
 {
 
     char                                library[1024];
-    lt_dlhandle                         dlhandle;
 
     globus_hashtable_init(
             &globus_l_resourcebundle_loaded,
@@ -63,29 +30,6 @@ globus_l_my_module_activate(void)
     globus_rmutex_init(&globus_l_libtool_mutex, NULL);
     globus_thread_key_create(&globus_l_libtool_key, NULL);
 
-    if(lt_dlinit() != 0)
-    {
-        /*goto error_dlinit;*/
-    }
-    if(lt_dlmutex_register(
-            globus_l_libtool_mutex_lock,
-            globus_l_libtool_mutex_unlock,
-            globus_l_libtool_set_error,
-            globus_l_libtool_get_error) != 0)
-    {
-        /*goto error_dlmutex;*/
-    }
-
-
-    /*lt_dlsym(dlhandle, "globus_extension_module");*/
-    snprintf(library, 1024, "lib%s_%s", "icui18n", build_flavor);
-    library[1023] = 0;
-    dlhandle = lt_dlopenext(library);
-
-    snprintf(library, 1024, "lib%s_%s", "icuuc", build_flavor);
-    library[1023] = 0;
-    dlhandle = lt_dlopenext(library);
-    
     return GLOBUS_SUCCESS;
 }
 
