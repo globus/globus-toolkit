@@ -1988,7 +1988,8 @@ globus_l_gram_protocol_post(
     
     if(res != GLOBUS_SUCCESS)
     {
-        rc = GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES;
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_CONNECTION_FAILED;
+
 	goto remove_connection_exit;
     }
     
