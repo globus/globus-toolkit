@@ -3,10 +3,10 @@ Required software
     * Ant 1.5+
     * C compiler. If gcc, version 3.2.1 or higher.
     * GNU tar
-    * JDBC compliant database. For instance, postgres 7.x
+    * JDBC compliant database. For instance, postgres 7.1+
 
 Optional software:
-    * IODBC (for RLS)
+    * IODBC (for RLS.  For instance, version 3.0.5)
     * Tomcat (for WSRF container)
     * junit (for java unit tests)
 

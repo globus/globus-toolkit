@@ -1,6 +1,6 @@
 #!/bin/sh
 
-VERSION="3.9.3rc2"
+VERSION="3.9.3"
 TAGOPTS="-t2=HEAD -t3=HEAD"
 INSTALLER="gt${VERSION}-wsrf-source-installer"
 GPT="fait_accompli/gpt-3.2autotools2004-src.tar.gz"
@@ -31,7 +31,7 @@ cp bundle-output/*.tar.gz  $INSTALLER/schedulers
 # copy in test bundles
 mkdir $INSTALLER/tests
 rm -fr *-output
-./make-packages.pl -n --bundles=prews-test,gt4-java-ws-core-test,gt4-mds-test --version=$VERSION
+./make-packages.pl -n --bundles=prews-test,gt4-java-ws-core-test,gt4-mds-test,gt4-cas-delegation-test --version=$VERSION
 cp bundle-output/*.tar.gz $INSTALLER/tests
 
 if [ -d contrib ]; then
