@@ -207,7 +207,7 @@ globus_l_gfs_auth_data_cb(
 
     auth_info = (globus_l_gfs_auth_info_t *) user_arg;
 
-    if(result == GLOBUS_SUCCESS)
+    if(result != GLOBUS_SUCCESS)
     {
         goto err;
     }
