@@ -19,7 +19,7 @@ set -f
 #  http://bugzilla.globus.org/globus/show_bug.cgi?id=1723 for more
 #  information about this.
 #
-GLOBUS_VERSION="3.9.4"
+GLOBUS_VERSION="3.9.5"
 
 DIRT_TIMESTAMP="@DIRT_TIMESTAMP@"
 DIRT_BRANCH_ID="@DIRT_BRANCH_ID@"
