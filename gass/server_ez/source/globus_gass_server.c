@@ -147,16 +147,6 @@ static globus_bool_t done = GLOBUS_FALSE;
 globus_mutex_t mutex;
 globus_cond_t cond;
 
-#if defined(BUILD_LITE)
-static int globus_sleepy_callback(globus_time_t time_can_block,
-				  void *        user_args)
-{
-    globus_libc_usleep(10000);
-
-    return GLOBUS_FALSE;
-}
-#endif
-
 
 void client_shutdown_callback()
 {
@@ -180,11 +170,11 @@ int main(int argc, char **argv)
     int                                rc;
     globus_gass_transfer_listener_t    listener;
     globus_gass_transfer_listenerattr_t * attr;
-    char *                             scheme;
+    char *                             scheme = GLOBUS_NULL;
     globus_gass_transfer_requestattr_t * reqattr;
 
     
-    globus_module_activate(GLOBUS_NEXUS_MODULE);
+    globus_module_activate(GLOBUS_GASS_SERVER_EZ_MODULE);
 
     globus_mutex_init(&mutex, NULL);
     globus_cond_init(&cond, NULL);
@@ -289,19 +279,6 @@ int main(int argc, char **argv)
     if(options == 0)
 	options = default_options;
 
-    
-#   if defined(BUILD_LITE)
-    {
-        globus_callback_register_periodic(GLOBUS_NULL,
-					  0,
-					  0,
-					  globus_sleepy_callback,
-					  GLOBUS_NULL,
-					  GLOBUS_NULL,
-					  GLOBUS_NULL);
-    }
-#   endif
-     
     rc = globus_gass_server_ez_init(
 		&listener,
         	attr,
@@ -349,7 +326,7 @@ int main(int argc, char **argv)
     
     globus_gass_server_ez_shutdown(port);
 
-    globus_module_deactivate(GLOBUS_NEXUS_MODULE);
+    globus_module_deactivate(GLOBUS_GASS_SERVER_EZ_MODULE);
     return 0;
 }
 
