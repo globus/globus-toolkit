@@ -53,24 +53,28 @@ Returns:
 **********************************************************************/
 
 OM_uint32 
-gss_copy_name_to_name
-(
- gss_name_desc** 				output,
- const gss_name_desc* 			input)
+gss_copy_name_to_name(
+    gss_name_desc **                    output,
+    const gss_name_desc *               input)
 {
-	gss_name_desc* output_name ;
-	X509_NAME * x509n;
+    gss_name_desc *                     output_name;
+    X509_NAME *                         x509n = NULL;
 
 	output_name = (gss_name_desc *) malloc(sizeof(gss_name_desc));
-	if (output_name == NULL) {
+	if (output_name == NULL)
+        {
 		GSSerr(GSSERR_F_NAME_TO_NAME, GSSERR_R_OUT_OF_MEMORY);
 		return GSS_S_FAILURE ;
 	}
- 
-	x509n = X509_NAME_dup(input->x509n);
- 	if (x509n == NULL) {
+
+        if(input->x509n != NULL)
+        {
+            x509n = X509_NAME_dup(input->x509n);
+            if (x509n == NULL)
+            {
 		return GSS_S_FAILURE;
-	}   
+            }
+        }
 
 	output_name->name_oid = input->name_oid;
 
@@ -691,7 +695,6 @@ gs_retrieve_peer(
 	gss_name_desc *                 outname;
 	X509 *                          peer = NULL;
 	X509_NAME *                     subject;
-        X509_NAME_ENTRY *               name_entry; 
 
 	if (context_handle->gs_ssl->session)
         {
@@ -708,29 +711,7 @@ gs_retrieve_peer(
         
 	if (peer == NULL)
         {
-            subject = X509_NAME_new();
-
-            if (subject == NULL)
-            {
-                GSSerr(GSSERR_F_GS_RETRIEVE_PEER,GSSERR_R_OUT_OF_MEMORY);
-                return GSS_S_FAILURE;
-            }
-
-            if ((name_entry = X509_NAME_ENTRY_create_by_NID(
-                     NULL,
-                     NID_commonName,
-                     V_ASN1_APP_CHOOSE,
-                     (unsigned char *)"anonymous",
-                     -1)) == NULL)
-            {
-                GSSerr(GSSERR_F_GS_RETRIEVE_PEER,GSSERR_R_OUT_OF_MEMORY);
-                return GSS_S_FAILURE;
-            }
-            
-            X509_NAME_add_entry(subject,
-                                name_entry,
-                                X509_NAME_entry_count(subject),
-                                0);
+            subject = NULL;
 
             outname->name_oid =  GSS_C_NT_ANONYMOUS;
 	}
@@ -783,7 +764,6 @@ gss_create_anonymous_cred(
     gss_cred_id_desc *                  newcred;
     OM_uint32                           major_status = GSS_S_FAILURE;
     OM_uint32                           minor_status;
-    X509_NAME_ENTRY *                   name_entry; 
     
 #ifdef DEBUG
     fprintf(stderr,"gss_create_anonymous_cred\n");
@@ -811,29 +791,7 @@ gss_create_anonymous_cred(
     
     newcred->globusid->name_oid = GSS_C_NT_ANONYMOUS;
 
-    newcred->globusid->x509n = X509_NAME_new();
-
-    if (newcred->globusid->x509n == NULL)
-    {
-        GSSerr(GSSERR_F_ACQUIRE_CRED,GSSERR_R_OUT_OF_MEMORY);
-        goto err;
-    }
-
-    if ((name_entry = X509_NAME_ENTRY_create_by_NID(
-             NULL,
-             NID_commonName,
-             V_ASN1_APP_CHOOSE,
-             (unsigned char *)"anonymous",
-             -1)) == NULL)
-    {
-        GSSerr(GSSERR_F_ACQUIRE_CRED,GSSERR_R_OUT_OF_MEMORY);
-        goto err;
-    }
-    
-    X509_NAME_add_entry(newcred->globusid->x509n,
-                        name_entry,
-                        X509_NAME_entry_count(newcred->globusid->x509n),
-                        0);
+    newcred->globusid->x509n = NULL;
     
     newcred->gs_bio_err = BIO_new_fp(stderr,BIO_NOCLOSE);
 

@@ -99,6 +99,16 @@ GSS_CALLCONV gss_import_name(
         goto err;
     } 
 
+    if(g_OID_equal(input_name_type,
+                   GSS_C_NT_ANONYMOUS))
+    {
+        output_name->name_oid = input_name_type;
+        output_name->x509n = NULL;
+        output_name->group = NULL;
+        *output_name_P = output_name;
+        return GSS_S_COMPLETE ;
+    }
+    
     x509n = X509_NAME_new();
     if (x509n == NULL)
     {

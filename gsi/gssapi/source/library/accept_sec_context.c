@@ -185,7 +185,8 @@ GSS_CALLCONV gss_accept_sec_context(
             break;
         }
 
-        if(context->source_name->name_oid == GSS_C_NT_ANONYMOUS)
+        if(g_OID_equal(context->source_name->name_oid,
+                       GSS_C_NT_ANONYMOUS))
         {
             context->ret_flags |= GSS_C_ANON_FLAG;
         }

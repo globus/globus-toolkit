@@ -74,8 +74,6 @@ GSS_CALLCONV gss_init_sec_context(
     X509 *                              current_cert = NULL;
     int  			        rc;
     char 			        cbuf[1];
-    X509_EXTENSION *                    ex = NULL;
-    STACK_OF(X509_EXTENSION) *          extensions = NULL;
     time_t                              goodtill = 0;
     int                                 cert_count = 0;
 
@@ -340,57 +338,15 @@ GSS_CALLCONV gss_init_sec_context(
         X509_REQ_print_fp(stderr,reqp);
 #endif
 
-        if ((extensions = sk_X509_EXTENSION_new_null()) == NULL)
-        {
-            GSSerr(GSSERR_F_INIT_SEC,GSSERR_R_CLASS_ADD_EXT);
-            *minor_status = gsi_generate_minor_status();
-            major_status = GSS_S_FAILURE;
-            return major_status;
-        }
-
-#ifdef CLASS_ADD
-        /* add channel binding data as class-add extension */
-
-        if (input_chan_bindings && 
-            input_chan_bindings->application_data.length > 0)
-        {
-            if ((ex = proxy_extension_class_add_create(
-                     input_chan_bindings->application_data.value,
-                     input_chan_bindings->application_data.length)) 
-                == NULL)
-            {
-                GSSerr(GSSERR_F_INIT_SEC,GSSERR_R_CLASS_ADD_EXT);
-                *minor_status = gsi_generate_minor_status();
-                major_status = GSS_S_FAILURE;
-                return major_status;
-            }
-
-
-            if (!sk_X509_EXTENSION_push(extensions, ex))
-            {
-                GSSerr(GSSERR_F_INIT_SEC,GSSERR_R_CLASS_ADD_EXT);
-                *minor_status = gsi_generate_minor_status();
-                major_status = GSS_S_FAILURE;
-                return major_status;
-            }
-        }
-#endif
         proxy_sign(context->cred_handle->pcd->ucert,
                    context->cred_handle->pcd->upkey,
                    reqp,
                    &ncert,
                    time_req,
-                   extensions,
+                   NULL,
                    (context->req_flags &
                     GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG)? 1:0);
 
-		
-        if (extensions)
-        {
-            sk_X509_EXTENSION_pop_free(extensions, 
-                                       X509_EXTENSION_free);
-        }
-			
 #ifdef DEBUG
         X509_print_fp(stderr,ncert);
 #endif
