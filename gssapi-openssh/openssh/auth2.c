@@ -213,12 +213,12 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
 #endif
 		setproctitle("%s%s", authctxt->valid ? user : "unknown",
 		    use_privsep ? " [net]" : "");
-		if (authctxt->service == NULL) /* only set once */
+		if (authctxt->attempt == 1) {
 		    authctxt->service = xstrdup(service);
-		if (authctxt->style == NULL) /* only set once */
 		    authctxt->style = style ? xstrdup(style) : NULL;
-		if (use_privsep && (authctxt->attempt == 1))
+		    if (use_privsep)
 			mm_inform_authserv(service, style);
+		}
 	}
 	if (strcmp(service, authctxt->service) != 0) {
 		packet_disconnect("Change of service not allowed: "
