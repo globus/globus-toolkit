@@ -52,7 +52,7 @@ static int
 globus_l_xio_gsi_deactivate();
 
 
-static globus_module_descriptor_t       globus_i_xio_gsi_module =
+GlobusXIODefineModule(gsi) =
 {
     "globus_xio_gsi",
     globus_l_xio_gsi_activate,
@@ -3293,14 +3293,13 @@ globus_l_xio_gsi_cntl(
  * Driver load function
  */
 static globus_result_t
-globus_l_xio_gsi_load(
-    globus_xio_driver_t *               out_driver,
-    va_list                             ap)
+globus_l_xio_gsi_init(
+    globus_xio_driver_t *               out_driver)
 {
     globus_xio_driver_t                 driver;
     globus_result_t                     result;
 
-    GlobusXIOName(globus_l_xio_gsi_load);
+    GlobusXIOName(globus_l_xio_gsi_init);
     GlobusXIOGSIDebugEnter();
 
     result = globus_xio_driver_init(&driver, "gsi", NULL);
@@ -3346,15 +3345,23 @@ globus_l_xio_gsi_load(
  * Driver unload function
  */
 static void
-globus_l_xio_gsi_unload(
+globus_l_xio_gsi_destroy(
     globus_xio_driver_t                 driver)
 {
-    GlobusXIOName(globus_l_xio_gsi_unload);
+    GlobusXIOName(globus_l_xio_gsi_destroy);
     GlobusXIOGSIDebugEnter();
     globus_xio_driver_destroy(driver);
     GlobusXIOGSIDebugExit();
     return;
 }
+
+/*
+ * Driver definition
+ */
+GlobusXIODefineDriver(
+    gsi,
+    globus_l_xio_gsi_init,
+    globus_l_xio_gsi_destroy);
 
 /*
  * Module activation
@@ -3368,7 +3375,11 @@ globus_l_xio_gsi_activate(void)
     GlobusXIOName(globus_l_xio_gsi_activate);
     GlobusDebugInit(GLOBUS_XIO_GSI, TRACE INTERNAL_TRACE);
     GlobusXIOGSIDebugEnter();
-    rc = globus_module_activate(GLOBUS_COMMON_MODULE);
+    rc = globus_module_activate(GLOBUS_XIO_MODULE);
+    if(rc == GLOBUS_SUCCESS)
+    {
+        GlobusXIORegisterDriver(gsi);
+    }
     globus_mutex_init(&connection_mutex,NULL);
     GlobusXIOGSIDebugExit();
     return rc;
@@ -3384,19 +3395,10 @@ globus_l_xio_gsi_deactivate(void)
     int                                 rc;
     GlobusXIOName(globus_l_xio_gsi_deactivate);
     GlobusXIOGSIDebugEnter();
-    rc = globus_module_deactivate(GLOBUS_COMMON_MODULE);
+    GlobusXIOUnRegisterDriver(gsi);
+    rc = globus_module_deactivate(GLOBUS_XIO_MODULE);
     globus_mutex_destroy(&connection_mutex);
     GlobusXIOGSIDebugExit();
     GlobusDebugDestroy(GLOBUS_XIO_GSI);
     return rc;
 }
-
-
-/*
- * Driver definition
- */
-GlobusXIODefineDriver(
-    gsi,
-    &globus_i_xio_gsi_module,
-    globus_l_xio_gsi_load,
-    globus_l_xio_gsi_unload);

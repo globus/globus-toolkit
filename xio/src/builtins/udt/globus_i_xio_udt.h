@@ -34,12 +34,12 @@ enum globus_l_xio_error_levels
     GLOBUS_L_XIO_UDT_DEBUG_INTERNAL_TRACE       = 2
 };
 
-extern globus_module_descriptor_t globus_i_xio_udt_module;
+GlobusXIODeclareModule(udt);
 
 #define GlobusXIOUdtErrorOpenFailed()                                       \
     globus_error_put(                                                       \
         globus_error_construct_error(                                       \
-            &globus_i_xio_udt_module,                                       \
+            GlobusXIOMyModule(udt),                                         \
             GLOBUS_NULL,                                                    \
             GLOBUS_XIO_UDT_ERROR_OPEN_FAILED,                               \
             __FILE__,                                                       \
@@ -50,7 +50,7 @@ extern globus_module_descriptor_t globus_i_xio_udt_module;
 #define GlobusXIOUdtErrorBrokenConnection()                                 \
     globus_error_put(                                                       \
         globus_error_construct_error(                                       \
-            &globus_i_xio_udt_module,                                       \
+            GlobusXIOMyModule(udt),                                         \
             GLOBUS_NULL,                                                    \
             GLOBUS_XIO_UDT_ERROR_BROKEN_CONNECTION,                         \
             __FILE__,                                                       \
@@ -61,7 +61,7 @@ extern globus_module_descriptor_t globus_i_xio_udt_module;
 #define GlobusXIOUdtErrorReadBufferFull()                                   \
     globus_error_put(                                                       \
         globus_error_construct_error(                                       \
-            &globus_i_xio_udt_module,                                       \
+            GlobusXIOMyModule(udt),                                         \
             GLOBUS_NULL,                                                    \
             GLOBUS_XIO_UDT_ERROR_READ_BUFFER_FULL,                          \
             __FILE__,                                                       \

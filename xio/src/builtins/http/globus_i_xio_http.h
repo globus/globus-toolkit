@@ -674,8 +674,8 @@ globus_i_xio_http_close_callback(
     globus_result_t                     result,
     void *                              handle);
 
-extern globus_module_descriptor_t       globus_i_xio_http_module;
-#define GLOBUS_XIO_HTTP_MODULE &globus_i_xio_http_module
+GlobusXIODeclareModule(http);
+#define GLOBUS_XIO_HTTP_MODULE GlobusXIOMyModule(http)
 
 #define GlobusXIOHttpErrorObjParse(token, context)                          \
         globus_error_construct_error(                                       \

@@ -50,6 +50,12 @@ typedef struct
     lt_dlhandle                         dlhandle;
 } globus_l_extension_module_t;
 
+typedef struct
+{
+    char *                              extension_name;
+    globus_module_descriptor_t *        module;
+} globus_l_extension_builtin_t;
+
 typedef struct globus_l_extension_handle_s
 {
     globus_l_extension_module_t *       owner;
@@ -62,10 +68,10 @@ static globus_thread_key_t              globus_l_extension_owner_key;
 static globus_thread_key_t              globus_l_libtool_key;
 static globus_rmutex_t                  globus_l_libtool_mutex;
 static globus_rmutex_t                  globus_l_extension_mutex;
-static globus_hashtable_t               globus_l_extension_dlls;
+static globus_hashtable_t               globus_l_extension_loaded;
+static globus_hashtable_t               globus_l_extension_builtins;
 /*
 static globus_hashtable_t               globus_l_extension_mappings;
-static globus_hashtable_t               globus_l_extension_builtins;
 */
 
 static
@@ -132,10 +138,16 @@ globus_l_extension_activate(void)
         }
         
         globus_hashtable_init(
-            &globus_l_extension_dlls,
+            &globus_l_extension_loaded,
             32,
             globus_hashtable_string_hash,
             globus_hashtable_string_keyeq);
+        globus_hashtable_init(
+            &globus_l_extension_builtins,
+            32,
+            globus_hashtable_string_hash,
+            globus_hashtable_string_keyeq);
+            
         globus_rmutex_init(&globus_l_extension_mutex, NULL);
         globus_thread_key_create(&globus_l_extension_owner_key, NULL);
         
@@ -185,7 +197,7 @@ globus_l_extension_shutdown_extension(
         module = extension->module;
         extension->module = NULL;
         globus_hashtable_remove(
-            &globus_l_extension_dlls, extension->library_name);
+            &globus_l_extension_loaded, extension->library_name);
         if(module->deactivation_func)
         {
             module->deactivation_func();
@@ -201,7 +213,10 @@ globus_l_extension_shutdown_extension(
      */
     if(extension->ref == 0)
     {
-        lt_dlclose(extension->dlhandle);
+        if(extension->dlhandle)
+        {
+            lt_dlclose(extension->dlhandle);
+        }
         globus_free(extension->library_name);
         globus_free(extension);
     }
@@ -238,6 +253,7 @@ globus_extension_activate(
 {
     globus_l_extension_module_t *       extension;
     globus_l_extension_module_t *       last_extension;
+    globus_l_extension_builtin_t *      builtin;
     char                                library[1024];
     const char *                        dlerror;
     int                                 rc;
@@ -257,7 +273,7 @@ globus_extension_activate(
     globus_rmutex_lock(&globus_l_extension_mutex);
     {
         extension = (globus_l_extension_module_t *)
-            globus_hashtable_lookup(&globus_l_extension_dlls, library);
+            globus_hashtable_lookup(&globus_l_extension_loaded, library);
         if(!extension)
         {
             extension = (globus_l_extension_module_t *)
@@ -275,32 +291,45 @@ globus_extension_activate(
                 goto error_strdup;
             }
             
-            extension->dlhandle = lt_dlopenext(extension->library_name);
-            if(!extension->dlhandle)
+            builtin = (globus_l_extension_builtin_t *)
+                globus_hashtable_lookup(
+                    &globus_l_extension_builtins, (void *) extension_name);
+            if(builtin)
             {
-                GlobusExtensionDebugPrintf(
-                    GLOBUS_L_EXTENSION_DEBUG_DLL,
-                    ("Couldn't dlopen %s: %s\n",
-                     extension->library_name,
-                     (dlerror = lt_dlerror()) ? dlerror : "(null)"));
-                goto error_dll;
+                extension->dlhandle = NULL;
+                extension->module = builtin->module;
             }
-            
-            extension->module = lt_dlsym(
-                extension->dlhandle, "globus_extension_module");
-            if(!extension->module)
+            else
             {
-                GlobusExtensionDebugPrintf(
-                    GLOBUS_L_EXTENSION_DEBUG_DLL,
-                    ("Couldn't find module descriptor named "
-                        "'globus_extension_module' in %s: %s\n",
-                    extension->library_name,
-                    (dlerror = lt_dlerror()) ? dlerror : "(null)"));
-                goto error_module;
+                extension->dlhandle = lt_dlopenext(extension->library_name);
+                if(!extension->dlhandle)
+                {
+                    GlobusExtensionDebugPrintf(
+                        GLOBUS_L_EXTENSION_DEBUG_DLL,
+                        ("Couldn't dlopen %s: %s\n",
+                         extension->library_name,
+                         (dlerror = lt_dlerror()) ? dlerror : "(null)"));
+                    goto error_dll;
+                }
+                
+                extension->module = (globus_module_descriptor_t *) 
+                    lt_dlsym(extension->dlhandle, "globus_extension_module");
+                if(!extension->module)
+                {
+                    GlobusExtensionDebugPrintf(
+                        GLOBUS_L_EXTENSION_DEBUG_DLL,
+                        ("Couldn't find module descriptor named "
+                            "'globus_extension_module' in %s: %s\n",
+                        extension->library_name,
+                        (dlerror = lt_dlerror()) ? dlerror : "(null)"));
+                    goto error_module;
+                }
             }
             
             globus_hashtable_insert(
-                &globus_l_extension_dlls, extension->library_name, extension);
+                &globus_l_extension_loaded,
+                extension->library_name,
+                extension);
                 
             last_extension = (globus_l_extension_module_t *)
                 globus_thread_getspecific(globus_l_extension_owner_key);
@@ -331,9 +360,12 @@ globus_extension_activate(
 
 error_activate:
     globus_hashtable_remove(
-        &globus_l_extension_dlls, extension->library_name);
+        &globus_l_extension_loaded, extension->library_name);
 error_module:
-    lt_dlclose(extension->dlhandle);
+    if(extension->dlhandle)
+    {
+        lt_dlclose(extension->dlhandle);
+    }
 error_dll:
     globus_free(extension->library_name);
 error_strdup:
@@ -367,7 +399,7 @@ globus_extension_deactivate(
     globus_rmutex_lock(&globus_l_extension_mutex);
     {
         extension = (globus_l_extension_module_t *)
-            globus_hashtable_lookup(&globus_l_extension_dlls, library);
+            globus_hashtable_lookup(&globus_l_extension_loaded, library);
         if(!extension)
         {
             goto error_lookup;
@@ -585,6 +617,122 @@ globus_extension_release(
     globus_rmutex_unlock(&globus_l_extension_mutex);
     
     GlobusExtensionDebugExit();
+}
+
+globus_bool_t
+globus_extension_error_match(
+    globus_extension_handle_t           handle,
+    globus_object_t *                   error,
+    int                                 type)
+{
+    globus_bool_t                       match = GLOBUS_FALSE;
+    GlobusFuncName(globus_extension_registry_put);
+    
+    GlobusExtensionDebugEnter();
+    
+    if(!handle || !error)
+    {
+        goto error_param;
+    }
+    
+    match = globus_error_match(error, handle->owner->module, type);
+    
+    GlobusExtensionDebugExit();
+    return match;
+
+error_param:
+    GlobusExtensionDebugExitWithError();
+    return GLOBUS_FALSE;
+}
+
+void
+globus_extension_register_builtin(
+    const char *                        extension_name,
+    globus_module_descriptor_t *        module_descriptor)
+{
+    globus_l_extension_builtin_t *      builtin;
+    GlobusFuncName(globus_extension_register_builtin);
+    
+    GlobusExtensionDebugEnter();
+    
+    builtin = (globus_l_extension_builtin_t *)
+        globus_malloc(sizeof(globus_l_extension_builtin_t));
+    if(!builtin)
+    {
+        goto error_alloc;
+    }
+    
+    builtin->module = module_descriptor;
+    builtin->extension_name = globus_libc_strdup(extension_name);
+    if(!builtin->extension_name)
+    {
+        goto error_strdup;
+    }
+    
+    globus_rmutex_lock(&globus_l_extension_mutex);
+    {
+        globus_hashtable_insert(
+            &globus_l_extension_builtins, builtin->extension_name, builtin);
+    }
+    globus_rmutex_unlock(&globus_l_extension_mutex);
+    
+    GlobusExtensionDebugExit();
+    return;
+
+error_strdup:
+    globus_free(builtin);
+error_alloc:
+    GlobusExtensionDebugExitWithError();
+}
+
+void
+globus_extension_unregister_builtin(
+    const char *                        extension_name)
+{
+    globus_l_extension_builtin_t *      builtin;
+    GlobusFuncName(globus_extension_register_builtin);
+    
+    GlobusExtensionDebugEnter();
+    
+    globus_rmutex_lock(&globus_l_extension_mutex);
+    {
+        builtin = (globus_l_extension_builtin_t *)
+            globus_hashtable_remove(
+                &globus_l_extension_builtins, (void *) extension_name);
+        if(builtin)
+        {
+            globus_free(builtin->extension_name);
+            globus_free(builtin);
+        }
+    }
+    globus_rmutex_unlock(&globus_l_extension_mutex);
+    
+    GlobusExtensionDebugExit();
+}
+
+void
+globus_extension_register_builtins(
+    globus_extension_builtin_t *        builtins)
+{
+    while(builtins->extension_name)
+    {
+        globus_extension_register_builtin(
+            builtins->extension_name, builtins->module_descriptor);
+            
+        builtins++;
+    }
+}
+
+void
+globus_extension_unregister_builtins(
+    globus_extension_builtin_t *        builtins)
+{
+    while(builtins->extension_name)
+    {
+        globus_extension_unregister_builtin(builtins->extension_name);
+            
+        builtins++;
+    }
 }
 
 globus_module_descriptor_t              globus_i_extension_module =

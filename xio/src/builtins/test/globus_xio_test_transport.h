@@ -6,7 +6,7 @@
 #define GlobusXIOErrorTestError(location)                               \
     globus_error_put(                                                   \
         globus_error_construct_error(                                   \
-            GLOBUS_XIO_TEST_TRANSPORT_DRIVER_MODULE,                    \
+            GlobusXIOMyModule(test),                                    \
             NULL,                                                       \
             location,                                                   \
             __FILE__,                                                   \

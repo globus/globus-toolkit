@@ -35,7 +35,7 @@ typedef struct globus_l_xio_op_handle_s
 
 #include "version.h"
 
-static globus_module_descriptor_t  globus_i_xio_op_module =
+GlobusXIODefineModule(op) =
 {
     "globus_xio_op",
     globus_l_xio_op_activate,
@@ -287,9 +287,8 @@ globus_l_xio_op_write(
 }
 
 static globus_result_t
-globus_l_xio_op_load(
-    globus_xio_driver_t *               out_driver,
-    va_list                             ap)
+globus_l_xio_op_init(
+    globus_xio_driver_t *               out_driver)
 {
     globus_xio_driver_t                 driver;
     globus_result_t                     res;
@@ -315,12 +314,16 @@ globus_l_xio_op_load(
 }
 
 static void
-globus_l_xio_op_unload(
+globus_l_xio_op_destroy(
     globus_xio_driver_t                 driver)
 {
     globus_xio_driver_destroy(driver);
 }
 
+GlobusXIODefineDriver(
+    op,
+    globus_l_xio_op_init,
+    globus_l_xio_op_destroy);
 
 static
 int
@@ -328,8 +331,11 @@ globus_l_xio_op_activate(void)
 {
     int                                 rc;
 
-    rc = globus_module_activate(GLOBUS_COMMON_MODULE);
-
+    rc = globus_module_activate(GLOBUS_XIO_MODULE);
+    if(rc == GLOBUS_SUCCESS)
+    {
+        GlobusXIORegisterDriver(op);
+    }
     return rc;
 }
 
@@ -337,11 +343,6 @@ static
 int
 globus_l_xio_op_deactivate(void)
 {
-    return globus_module_deactivate(GLOBUS_COMMON_MODULE);
+    GlobusXIOUnRegisterDriver(op);
+    return globus_module_deactivate(GLOBUS_XIO_MODULE);
 }
-
-GlobusXIODefineDriver(
-    op,
-    &globus_i_xio_op_module,
-    globus_l_xio_op_load,
-    globus_l_xio_op_unload);

@@ -9,7 +9,7 @@
 #include "gssapi.h"
 #include "globus_error_gssapi.h"
 
-#define GLOBUS_XIO_GSI_DRIVER_MODULE &globus_i_xio_gsi_module
+#define GLOBUS_XIO_GSI_DRIVER_MODULE GlobusXIOMyModule(gsi)
 
 /* create/calculate a token header */
 

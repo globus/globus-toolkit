@@ -16,7 +16,7 @@ int
 globus_l_xio_udt_deactivate(void);
 
 
-globus_module_descriptor_t       globus_i_xio_udt_module =
+GlobusXIODefineModule(udt) =
 {
     "globus_xio_udt",
     globus_l_xio_udt_activate,
@@ -25,107 +25,6 @@ globus_module_descriptor_t       globus_i_xio_udt_module =
     GLOBUS_NULL,
     &local_version
 };
-
-
-static
-int                                     
-globus_l_xio_udt_activate(void)                 
-{                                       
-    globus_result_t result;                     
-    GlobusXIOName(globus_l_xio_udt_activate);
-    
-    GlobusDebugInit(GLOBUS_XIO_UDT, TRACE);
-    
-    GlobusXIOUdtDebugEnter();           
-    
-    result = globus_module_activate(GLOBUS_XIO_SYSTEM_MODULE);
-    if (result != GLOBUS_SUCCESS)               
-    {
-        goto error_activate;                    
-    }
-    result = globus_xio_driver_load("udp", &globus_l_xio_udt_udp_driver); 
-    if (result != GLOBUS_SUCCESS)               
-    {
-        goto error_load_udp_driver;
-    }
-    result = globus_xio_driver_load("udp",      
-        &globus_l_xio_udt_server_udp_driver);   
-    if (result != GLOBUS_SUCCESS)
-    {
-        goto error_load_server_udp_driver;
-    }
-    result = globus_xio_stack_init(&globus_l_xio_udt_server_stack, NULL);
-    if (result != GLOBUS_SUCCESS)
-    {
-        goto error_stack_init;
-    }
-    result = globus_xio_stack_push_driver(globus_l_xio_udt_server_stack,                globus_l_xio_udt_server_udp_driver);
-    if (result != GLOBUS_SUCCESS)
-    {
-        goto error_push_driver;
-    }
-
-    GlobusXIOUdtDebugExit();
-    return result;
-
-error_push_driver:
-   globus_xio_stack_destroy(globus_l_xio_udt_server_stack);
-
-error_stack_init:
-    globus_xio_driver_unload(globus_l_xio_udt_server_udp_driver);
-
-error_load_server_udp_driver:
-    globus_xio_driver_unload(globus_l_xio_udt_udp_driver);
-
-error_load_udp_driver:
-    globus_module_deactivate(GLOBUS_XIO_SYSTEM_MODULE);
-
-error_activate:
-    GlobusXIOUdtDebugExitWithError();
-    GlobusDebugDestroy(GLOBUS_XIO_UDT);
-    return result;
-}
-
-static
-int
-globus_l_xio_udt_deactivate(void)
-{
-    globus_result_t result;
-    GlobusXIOName(globus_l_xio_udt_deactivate);
-
-    GlobusXIOUdtDebugEnter();
-
-/*    result = globus_xio_stack_destroy(globus_l_xio_udt_server_stack);
-    if (result != GLOBUS_SUCCESS)
-    {
-        goto error_deactivate;
-    }
-    result = globus_xio_driver_unload(globus_l_xio_udt_server_udp_driver);
-    if (result != GLOBUS_SUCCESS)
-    {
-        goto error_deactivate;
-    }
-*/
-    result = globus_xio_driver_unload(globus_l_xio_udt_udp_driver);
-    if (result != GLOBUS_SUCCESS)
-    {
-        goto error_deactivate;
-    }
-    result = globus_module_deactivate(GLOBUS_XIO_SYSTEM_MODULE);
-    if (result != GLOBUS_SUCCESS)
-    {
-        goto error_deactivate;
-    }
-
-    GlobusXIOUdtDebugExit();
-    GlobusDebugDestroy(GLOBUS_XIO_UDT);
-    return result;
-
-error_deactivate:
-    GlobusXIOUdtDebugExitWithError();
-    GlobusDebugDestroy(GLOBUS_XIO_UDT);
-    return result;
-}
 
 static
 globus_result_t
@@ -151,8 +50,7 @@ globus_l_xio_udt_push_driver(
 static  
 globus_result_t
 globus_l_xio_udt_init(
-    globus_xio_driver_t *               out_driver,
-    va_list                             ap)
+    globus_xio_driver_t *               out_driver)
 {       
     globus_xio_driver_t                 driver;
     globus_result_t                     result;
@@ -213,10 +111,110 @@ globus_l_xio_udt_destroy(
     globus_xio_driver_destroy(driver);
 }
 
-
 GlobusXIODefineDriver(
     udt,
-    &globus_i_xio_udt_module,
     globus_l_xio_udt_init,
     globus_l_xio_udt_destroy);
 
+static
+int                                     
+globus_l_xio_udt_activate(void)                 
+{                                       
+    globus_result_t result;                     
+    GlobusXIOName(globus_l_xio_udt_activate);
+    
+    GlobusDebugInit(GLOBUS_XIO_UDT, TRACE);
+    
+    GlobusXIOUdtDebugEnter();           
+    
+    result = globus_module_activate(GLOBUS_XIO_SYSTEM_MODULE);
+    if (result != GLOBUS_SUCCESS)               
+    {
+        goto error_activate;                    
+    }
+    result = globus_xio_driver_load("udp", &globus_l_xio_udt_udp_driver); 
+    if (result != GLOBUS_SUCCESS)               
+    {
+        goto error_load_udp_driver;
+    }
+    result = globus_xio_driver_load("udp",      
+        &globus_l_xio_udt_server_udp_driver);   
+    if (result != GLOBUS_SUCCESS)
+    {
+        goto error_load_server_udp_driver;
+    }
+    result = globus_xio_stack_init(&globus_l_xio_udt_server_stack, NULL);
+    if (result != GLOBUS_SUCCESS)
+    {
+        goto error_stack_init;
+    }
+    result = globus_xio_stack_push_driver(globus_l_xio_udt_server_stack,                globus_l_xio_udt_server_udp_driver);
+    if (result != GLOBUS_SUCCESS)
+    {
+        goto error_push_driver;
+    }
+    
+    GlobusXIORegisterDriver(udt);
+    GlobusXIOUdtDebugExit();
+    return result;
+
+error_push_driver:
+   globus_xio_stack_destroy(globus_l_xio_udt_server_stack);
+
+error_stack_init:
+    globus_xio_driver_unload(globus_l_xio_udt_server_udp_driver);
+
+error_load_server_udp_driver:
+    globus_xio_driver_unload(globus_l_xio_udt_udp_driver);
+
+error_load_udp_driver:
+    globus_module_deactivate(GLOBUS_XIO_SYSTEM_MODULE);
+
+error_activate:
+    GlobusXIOUdtDebugExitWithError();
+    GlobusDebugDestroy(GLOBUS_XIO_UDT);
+    return result;
+}
+
+static
+int
+globus_l_xio_udt_deactivate(void)
+{
+    globus_result_t result;
+    GlobusXIOName(globus_l_xio_udt_deactivate);
+
+    GlobusXIOUdtDebugEnter();
+    
+    GlobusXIOUnRegisterDriver(udt);
+    
+/*    result = globus_xio_stack_destroy(globus_l_xio_udt_server_stack);
+    if (result != GLOBUS_SUCCESS)
+    {
+        goto error_deactivate;
+    }
+    result = globus_xio_driver_unload(globus_l_xio_udt_server_udp_driver);
+    if (result != GLOBUS_SUCCESS)
+    {
+        goto error_deactivate;
+    }
+*/
+    result = globus_xio_driver_unload(globus_l_xio_udt_udp_driver);
+    if (result != GLOBUS_SUCCESS)
+    {
+        goto error_deactivate;
+    }
+    result = globus_module_deactivate(GLOBUS_XIO_SYSTEM_MODULE);
+    if (result != GLOBUS_SUCCESS)
+    {
+        goto error_deactivate;
+    }
+
+    GlobusXIOUdtDebugExit();
+    GlobusDebugDestroy(GLOBUS_XIO_UDT);
+    return result;
+
+error_deactivate:
+    GlobusXIOUdtDebugExitWithError();
+    GlobusDebugDestroy(GLOBUS_XIO_UDT);
+    return result;
+}

@@ -1,15 +1,18 @@
 #ifndef GLOBUS_XIO_LOAD_INCLUDE
 #define GLOBUS_XIO_LOAD_INCLUDE
 
-#include "globus_xio.h"
+#include "globus_xio_types.h"
+#include "globus_common.h"
 
 EXTERN_C_BEGIN
+
+extern globus_extension_registry_t      globus_i_xio_driver_registry;
+#define GLOBUS_XIO_DRIVER_REGISTRY &globus_i_xio_driver_registry
 
 typedef
 globus_result_t
 (*globus_xio_driver_init_t)(
-    globus_xio_driver_t *               out_driver,
-    va_list                             ap);
+    globus_xio_driver_t *               out_driver);
 
 typedef
 void
@@ -19,20 +22,14 @@ void
 typedef struct
 {
     const char *                        name;
-    globus_module_descriptor_t *        module;
-    globus_xio_driver_init_t            load;
-    globus_xio_driver_destroy_t         unload;
-    int                                 ref_count;
+    globus_xio_driver_init_t            init;
+    globus_xio_driver_destroy_t         destroy;
 } globus_xio_driver_hook_t;
 
-/* if you call this in a module activate func, you MUST call
- * globus_xio_driver_unload in module deactivate func
- */
 globus_result_t
 globus_xio_driver_load(
     const char *                        driver_name,
-    globus_xio_driver_t *               out_driver,
-    ...);
+    globus_xio_driver_t *               out_driver);
 
 globus_result_t
 globus_xio_driver_unload(
@@ -41,22 +38,37 @@ globus_xio_driver_unload(
 /**
  * GlobusXIODefineDriver(
  *      label                           driver_name,
- *      globus_module_descriptor_t *    module,
  *      globus_xio_driver_init_t        init_func,
  *      globus_xio_driver_destroy_t     destroy_func)
  * 
  *  NOTE: driver_name is not a string.  Just put the unquoted name there.
+ *  This needs to precede use of GlobusXIO{Un}RegisterDriver()
  */
-#define GlobusXIODefineDriver(driver_name, module, init_func, destroy_func) \
-globus_xio_driver_hook_t globus_i_xio_##driver_name##_hook =                \
+#define GlobusXIODefineDriver(driver_name, init_func, destroy_func)         \
+static globus_xio_driver_hook_t globus_i_xio_##driver_name##_hook =         \
 {                                                                           \
     #driver_name,                                                           \
-    module,                                                                 \
     init_func,                                                              \
     destroy_func,                                                           \
-    0                                                                       \
 }
 
+#define GlobusXIORegisterDriver(driver_name)                                \
+    globus_extension_registry_add(                                          \
+        GLOBUS_XIO_DRIVER_REGISTRY,                                         \
+        "globus_xio_" #driver_name "_driver",                               \
+        &globus_i_xio_##driver_name##_hook)
+
+#define GlobusXIOUnRegisterDriver(driver_name)                              \
+    globus_extension_registry_remove(                                       \
+        GLOBUS_XIO_DRIVER_REGISTRY,                                         \
+        "globus_xio_" #driver_name "_driver")
+ 
+#define GlobusXIODefineModule(driver_name)                                  \
+    GlobusExtensionDefineModule(globus_xio_##driver_name##_driver)
+#define GlobusXIODeclareModule(driver_name)                                 \
+    GlobusExtensionDeclareModule(globus_xio_##driver_name##_driver)
+#define GlobusXIOMyModule(driver_name)                                      \
+    GlobusExtensionMyModule(globus_xio_##driver_name##_driver)
 
 /* internal activate funcs */
 int

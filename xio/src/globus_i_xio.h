@@ -5,6 +5,7 @@
 #include "globus_xio_driver.h"
 #include "globus_common.h"
 #include "globus_xio_util.h"
+#include "globus_xio_load.h"
 
 #define GLOBUS_XIO_ATTR_ARRAY_BASE_SIZE             16
 #define GLOBUS_XIO_HANDLE_DEFAULT_OPERATION_COUNT   4
@@ -582,6 +583,11 @@ typedef struct globus_i_xio_driver_s
 {
     char *                              name;
     void *                              user_data;
+    /* these are filled in by the driver loader */
+    globus_xio_driver_hook_t *          hook;
+    globus_extension_handle_t           extension_handle;
+    globus_bool_t                       extension_activated;
+    
     /*
      *  main io interface functions
      */

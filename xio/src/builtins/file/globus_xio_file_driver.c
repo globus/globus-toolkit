@@ -37,7 +37,7 @@ static
 int
 globus_l_xio_file_deactivate(void);
 
-static globus_module_descriptor_t       globus_i_xio_file_module =
+GlobusXIODefineModule(file) =
 {
     "globus_xio_file",
     globus_l_xio_file_activate,
@@ -80,49 +80,6 @@ typedef struct
     globus_xio_system_handle_t          handle;
     globus_bool_t                       converted;
 } globus_l_handle_t;
-
-static
-int
-globus_l_xio_file_activate(void)
-{
-    int                                 rc;
-    
-    GlobusXIOName(globus_l_xio_file_activate);
-    
-    GlobusDebugInit(GLOBUS_XIO_FILE, TRACE INFO);
-    
-    GlobusXIOFileDebugEnter();
-    
-    rc = globus_module_activate(GLOBUS_XIO_SYSTEM_MODULE);
-    if(rc != GLOBUS_SUCCESS)
-    {
-        goto error_activate;
-    }
-    
-    GlobusXIOFileDebugExit();
-    return GLOBUS_SUCCESS;
-
-error_activate:
-    GlobusXIOFileDebugExitWithError();
-    GlobusDebugDestroy(GLOBUS_XIO_FILE);
-    return rc;
-}
-
-static
-int
-globus_l_xio_file_deactivate(void)
-{
-    GlobusXIOName(globus_l_xio_file_deactivate);
-    
-    GlobusXIOFileDebugEnter();
-    
-    globus_module_deactivate(GLOBUS_XIO_SYSTEM_MODULE);
-    
-    GlobusXIOFileDebugExit();
-    GlobusDebugDestroy(GLOBUS_XIO_FILE);
-    
-    return GLOBUS_SUCCESS;
-}
 
 /*
  *  initialize a driver attribute
@@ -774,8 +731,7 @@ globus_l_xio_file_cntl(
 static
 globus_result_t
 globus_l_xio_file_init(
-    globus_xio_driver_t *               out_driver,
-    va_list                             ap)
+    globus_xio_driver_t *               out_driver)
 {
     globus_xio_driver_t                 driver;
     globus_result_t                     result;
@@ -834,6 +790,51 @@ globus_l_xio_file_destroy(
 
 GlobusXIODefineDriver(
     file,
-    &globus_i_xio_file_module,
     globus_l_xio_file_init,
     globus_l_xio_file_destroy);
+
+static
+int
+globus_l_xio_file_activate(void)
+{
+    int                                 rc;
+    
+    GlobusXIOName(globus_l_xio_file_activate);
+    
+    GlobusDebugInit(GLOBUS_XIO_FILE, TRACE INFO);
+    
+    GlobusXIOFileDebugEnter();
+    
+    rc = globus_module_activate(GLOBUS_XIO_SYSTEM_MODULE);
+    if(rc != GLOBUS_SUCCESS)
+    {
+        goto error_activate;
+    }
+    
+    GlobusXIORegisterDriver(file);
+    
+    GlobusXIOFileDebugExit();
+    return GLOBUS_SUCCESS;
+
+error_activate:
+    GlobusXIOFileDebugExitWithError();
+    GlobusDebugDestroy(GLOBUS_XIO_FILE);
+    return rc;
+}
+
+static
+int
+globus_l_xio_file_deactivate(void)
+{
+    GlobusXIOName(globus_l_xio_file_deactivate);
+    
+    GlobusXIOFileDebugEnter();
+    
+    GlobusXIOUnRegisterDriver(file);
+    globus_module_deactivate(GLOBUS_XIO_SYSTEM_MODULE);
+    
+    GlobusXIOFileDebugExit();
+    GlobusDebugDestroy(GLOBUS_XIO_FILE);
+    
+    return GLOBUS_SUCCESS;
+}

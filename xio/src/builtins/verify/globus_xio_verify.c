@@ -16,7 +16,7 @@ globus_l_xio_verify_deactivate();
 
 #include "version.h"
 
-static globus_module_descriptor_t  globus_i_xio_verify_module =
+GlobusXIODefineModule(verify) =
 {
     "globus_xio_verify",
     globus_l_xio_verify_activate,
@@ -346,9 +346,8 @@ globus_l_xio_verify_cntl(
 }
 
 static globus_result_t
-globus_l_xio_verify_load(
-    globus_xio_driver_t *               out_driver,
-    va_list                             ap)
+globus_l_xio_verify_init(
+    globus_xio_driver_t *               out_driver)
 {
     globus_xio_driver_t                 driver;
     globus_result_t                     res;
@@ -390,12 +389,16 @@ globus_l_xio_verify_load(
 }
 
 static void
-globus_l_xio_verify_unload(
+globus_l_xio_verify_destroy(
     globus_xio_driver_t                 driver)
 {
     globus_xio_driver_destroy(driver);
 }
 
+GlobusXIODefineDriver(
+    verify,
+    globus_l_xio_verify_init,
+    globus_l_xio_verify_destroy);
 
 static
 int
@@ -403,8 +406,11 @@ globus_l_xio_verify_activate(void)
 {
     int                                 rc;
 
-    rc = globus_module_activate(GLOBUS_COMMON_MODULE);
-
+    rc = globus_module_activate(GLOBUS_XIO_MODULE);
+    if(rc == GLOBUS_SUCCESS)
+    {
+        GlobusXIORegisterDriver(verify);
+    }
     return rc;
 }
 
@@ -412,11 +418,6 @@ static
 int
 globus_l_xio_verify_deactivate(void)
 {
-    return globus_module_deactivate(GLOBUS_COMMON_MODULE);
+    GlobusXIOUnRegisterDriver(verify);
+    return globus_module_deactivate(GLOBUS_XIO_MODULE);
 }
-
-GlobusXIODefineDriver(
-    verify,
-    &globus_i_xio_verify_module,
-    globus_l_xio_verify_load,
-    globus_l_xio_verify_unload);

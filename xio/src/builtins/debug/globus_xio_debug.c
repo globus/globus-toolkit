@@ -11,7 +11,7 @@ globus_l_xio_debug_deactivate();
 
 #include "version.h"
 
-static globus_module_descriptor_t              globus_i_xio_debug_module =
+GlobusXIODefineModule(debug) =
 {
     "globus_xio_debug",
     globus_l_xio_debug_activate,
@@ -260,9 +260,8 @@ globus_l_xio_debug_cntl(
 }
 
 static globus_result_t
-globus_l_xio_debug_load(
-    globus_xio_driver_t *               out_driver,
-    va_list                             ap)
+globus_l_xio_debug_init(
+    globus_xio_driver_t *               out_driver)
 {
     globus_xio_driver_t                 driver;
     globus_result_t                     res;
@@ -297,12 +296,16 @@ globus_l_xio_debug_load(
 }
 
 static void
-globus_l_xio_debug_unload(
+globus_l_xio_debug_destroy(
     globus_xio_driver_t                 driver)
 {
     globus_xio_driver_destroy(driver);
 }
 
+GlobusXIODefineDriver(
+    debug,
+    globus_l_xio_debug_init,
+    globus_l_xio_debug_destroy);
 
 static
 int
@@ -310,8 +313,12 @@ globus_l_xio_debug_activate(void)
 {
     int                                 rc;
 
-    rc = globus_module_activate(GLOBUS_COMMON_MODULE);
-
+    rc = globus_module_activate(GLOBUS_XIO_MODULE);
+    if(rc == GLOBUS_SUCCESS)
+    {
+        GlobusXIORegisterDriver(debug);
+    }
+    
     return rc;
 }
 
@@ -319,11 +326,6 @@ static
 int
 globus_l_xio_debug_deactivate(void)
 {
-    return globus_module_deactivate(GLOBUS_COMMON_MODULE);
+    GlobusXIOUnRegisterDriver(debug);
+    return globus_module_deactivate(GLOBUS_XIO_MODULE);
 }
-
-GlobusXIODefineDriver(
-    debug,
-    &globus_i_xio_debug_module,
-    globus_l_xio_debug_load,
-    globus_l_xio_debug_unload);

@@ -47,7 +47,7 @@ globus_l_xio_ftp_cmd_read_cb(
  *************************************************************************/
 #include "version.h"
 
-globus_module_descriptor_t       globus_i_xio_ftp_cmd_module =
+GlobusXIODefineModule(ftp_cmd) =
 {
     "globus_xio_ftp_cmd",
     globus_l_xio_ftp_cmd_activate,
@@ -512,13 +512,12 @@ globus_l_xio_ftp_cmd_close(
 }
 
 static globus_result_t
-globus_l_xio_ftp_cmd_load(
-    globus_xio_driver_t *               out_driver,
-    va_list                             ap)
+globus_l_xio_ftp_cmd_init(
+    globus_xio_driver_t *               out_driver)
 {
     globus_xio_driver_t                 driver;
     globus_result_t                     res;
-    GlobusXIOName(globus_l_xio_ftp_cmd_load);
+    GlobusXIOName(globus_l_xio_ftp_cmd_init);
 
     res = globus_xio_driver_init(&driver, "ftp_cmd", NULL);
     if(res != GLOBUS_SUCCESS)
@@ -557,13 +556,17 @@ globus_l_xio_ftp_cmd_load(
 }
 
 static void
-globus_l_xio_ftp_cmd_unload(
+globus_l_xio_ftp_cmd_destroy(
     globus_xio_driver_t                 driver)
 {
-    GlobusXIOName(globus_l_xio_ftp_cmd_unload);
+    GlobusXIOName(globus_l_xio_ftp_cmd_destroy);
     globus_xio_driver_destroy(driver);
 }
 
+GlobusXIODefineDriver(
+    ftp_cmd,
+    globus_l_xio_ftp_cmd_init,
+    globus_l_xio_ftp_cmd_destroy);
 
 static int
 globus_l_xio_ftp_cmd_activate(void)
@@ -571,8 +574,12 @@ globus_l_xio_ftp_cmd_activate(void)
     int                                 rc;
     GlobusXIOName(globus_l_xio_ftp_cmd_activate);
 
-    rc = globus_module_activate(GLOBUS_COMMON_MODULE);
-
+    rc = globus_module_activate(GLOBUS_XIO_MODULE);
+    if(rc == GLOBUS_SUCCESS)
+    {
+        GlobusXIORegisterDriver(ftp_cmd);
+    }
+    
     return rc;
 }
 
@@ -580,12 +587,6 @@ static int
 globus_l_xio_ftp_cmd_deactivate(void)
 {
     GlobusXIOName(globus_l_xio_ftp_cmd_deactivate);
-    return globus_module_deactivate(GLOBUS_COMMON_MODULE);
+    GlobusXIOUnRegisterDriver(ftp_cmd);
+    return globus_module_deactivate(GLOBUS_XIO_MODULE);
 }
-
-GlobusXIODefineDriver(
-    ftp_cmd,
-    &globus_i_xio_ftp_cmd_module,
-    globus_l_xio_ftp_cmd_load,
-    globus_l_xio_ftp_cmd_unload);
-

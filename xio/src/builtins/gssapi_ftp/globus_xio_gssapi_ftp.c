@@ -249,7 +249,7 @@ globus_l_xio_gssapi_ftp_client_incoming(
  *************************************************************************/
 #include "version.h"
 
-static globus_module_descriptor_t       globus_i_xio_gssapi_ftp_module =
+GlobusXIODefineModule(gssapi_ftp) =
 {
     "globus_xio_gssapi_ftp",
     globus_l_xio_gssapi_ftp_activate,
@@ -2608,13 +2608,12 @@ globus_l_xio_gssapi_ftp_handle_cntl(
  *  This section has function that handle writes
  ***********************************************************************/
 static globus_result_t
-globus_l_xio_gssapi_ftp_load(
-    globus_xio_driver_t *               out_driver,
-    va_list                             ap)
+globus_l_xio_gssapi_ftp_init(
+    globus_xio_driver_t *               out_driver)
 {
     globus_xio_driver_t                 driver;
     globus_result_t                     res;
-    GlobusXIOName(globus_l_xio_gssapi_ftp_load);
+    GlobusXIOName(globus_l_xio_gssapi_ftp_init);
 
     GlobusXIOGssapiftpDebugEnter();
 
@@ -2658,10 +2657,10 @@ globus_l_xio_gssapi_ftp_load(
 
 
 static void
-globus_l_xio_gssapi_ftp_unload(
+globus_l_xio_gssapi_ftp_destroy(
     globus_xio_driver_t                 driver)
 {
-    GlobusXIOName(globus_l_xio_gssapi_ftp_unload);
+    GlobusXIOName(globus_l_xio_gssapi_ftp_destroy);
 
     GlobusXIOGssapiftpDebugEnter();
 
@@ -2670,6 +2669,10 @@ globus_l_xio_gssapi_ftp_unload(
     GlobusXIOGssapiftpDebugExit();
 }
 
+GlobusXIODefineDriver(
+    gssapi_ftp,
+    globus_l_xio_gssapi_ftp_init,
+    globus_l_xio_gssapi_ftp_destroy);
 
 static int
 globus_l_xio_gssapi_ftp_activate(void)
@@ -2681,16 +2684,17 @@ globus_l_xio_gssapi_ftp_activate(void)
 
     GlobusXIOGssapiftpDebugEnter();
 
-    rc = globus_module_activate(GLOBUS_COMMON_MODULE);
+    rc = globus_module_activate(GLOBUS_XIO_MODULE);
     rc = globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE);
     globus_module_activate(GLOBUS_GSI_OPENSSL_ERROR_MODULE);
-
+    
     res = globus_xio_driver_load("telnet", &globus_l_gssapi_telnet_driver);
     if(res != GLOBUS_SUCCESS)
     {
         return GLOBUS_FAILURE;
     }
-
+    
+    GlobusXIORegisterDriver(gssapi_ftp);
     GlobusXIOGssapiftpDebugExit();
     return rc;
 }
@@ -2701,18 +2705,11 @@ globus_l_xio_gssapi_ftp_deactivate(void)
     GlobusXIOName(globus_l_xio_gssapi_ftp_deactivate);
 
     GlobusXIOGssapiftpDebugEnter();
-
+    GlobusXIOUnRegisterDriver(gssapi_ftp);
     globus_module_deactivate(GLOBUS_GSI_GSS_ASSIST_MODULE);
     globus_module_deactivate(GLOBUS_GSI_OPENSSL_ERROR_MODULE);
     globus_xio_driver_unload(globus_l_gssapi_telnet_driver);
 
     GlobusXIOGssapiftpDebugExit();
-    return globus_module_deactivate(GLOBUS_COMMON_MODULE);
+    return globus_module_deactivate(GLOBUS_XIO_MODULE);
 }
-
-GlobusXIODefineDriver(
-    gssapi_ftp,
-    &globus_i_xio_gssapi_ftp_module,
-    globus_l_xio_gssapi_ftp_load,
-    globus_l_xio_gssapi_ftp_unload);
-

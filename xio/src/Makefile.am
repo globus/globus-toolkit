@@ -40,6 +40,7 @@ libglobus_xio___GLOBUS_FLAVOR_NAME__la_LIBADD = \
 
 EXTRA_DIST = \
 	version.h.in \
+	extensions.h.in \
 	configure.in.in
 
 include $(top_srcdir)/globus_automake_post

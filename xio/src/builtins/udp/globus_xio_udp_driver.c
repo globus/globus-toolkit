@@ -12,7 +12,7 @@ static
 int
 globus_l_xio_udp_deactivate(void);
 
-static globus_module_descriptor_t       globus_i_xio_udp_module =
+GlobusXIODefineModule(udp) =
 {
     "globus_xio_udp",
     globus_l_xio_udp_activate,
@@ -25,7 +25,7 @@ static globus_module_descriptor_t       globus_i_xio_udp_module =
 #define GlobusXIOUdpErrorNoAddrs()                                          \
     globus_error_put(                                                       \
         globus_error_construct_error(                                       \
-            &globus_i_xio_udp_module,                                       \
+            GlobusXIOMyModule(udp),                                         \
             GLOBUS_NULL,                                                    \
             GLOBUS_XIO_UDP_ERROR_NO_ADDRS,                                  \
             __FILE__,                                                       \
@@ -36,7 +36,7 @@ static globus_module_descriptor_t       globus_i_xio_udp_module =
 #define GlobusXIOUdpErrorShortWrite()                                       \
     globus_error_put(                                                       \
         globus_error_construct_error(                                       \
-            &globus_i_xio_udp_module,                                       \
+            GlobusXIOMyModule(udp),                                         \
             GLOBUS_NULL,                                                    \
             GLOBUS_XIO_UDP_ERROR_SHORT_WRITE,                               \
             __FILE__,                                                       \
@@ -131,36 +131,6 @@ globus_l_xio_udp_get_env_pair(
     }
 
     return GLOBUS_FALSE;
-}
-
-static
-int
-globus_l_xio_udp_activate(void)
-{
-    int                                 min;
-    int                                 max;
-    GlobusXIOName(globus_l_xio_udp_activate);
-    
-    if(globus_l_xio_udp_get_env_pair(
-        "GLOBUS_UDP_PORT_RANGE", &min, &max) && min <= max)
-    {
-        globus_l_xio_udp_attr_default.listener_min_port = min;
-        globus_l_xio_udp_attr_default.listener_max_port = max;
-    }
-    
-    return globus_module_activate(GLOBUS_XIO_SYSTEM_MODULE);
-}
-
-static
-int
-globus_l_xio_udp_deactivate(void)
-{
-    GlobusXIOName(globus_l_xio_udp_deactivate);
-    
-    globus_l_xio_udp_attr_default.listener_min_port = 0;
-    globus_l_xio_udp_attr_default.listener_max_port = 0;
-        
-    return globus_module_deactivate(GLOBUS_XIO_SYSTEM_MODULE);
 }
 
 /*
@@ -1421,8 +1391,7 @@ error_sockopt:
 static
 globus_result_t
 globus_l_xio_udp_init(
-    globus_xio_driver_t *               out_driver,
-    va_list                             ap)
+    globus_xio_driver_t *               out_driver)
 {
     globus_xio_driver_t                 driver;
     globus_result_t                     result;
@@ -1471,6 +1440,42 @@ globus_l_xio_udp_destroy(
 
 GlobusXIODefineDriver(
     udp,
-    &globus_i_xio_udp_module,
     globus_l_xio_udp_init,
     globus_l_xio_udp_destroy);
+
+static
+int
+globus_l_xio_udp_activate(void)
+{
+    int                                 min;
+    int                                 max;
+    int                                 rc;
+    GlobusXIOName(globus_l_xio_udp_activate);
+    
+    if(globus_l_xio_udp_get_env_pair(
+        "GLOBUS_UDP_PORT_RANGE", &min, &max) && min <= max)
+    {
+        globus_l_xio_udp_attr_default.listener_min_port = min;
+        globus_l_xio_udp_attr_default.listener_max_port = max;
+    }
+    
+    rc = globus_module_activate(GLOBUS_XIO_SYSTEM_MODULE);
+    if(rc == GLOBUS_SUCCESS)
+    {
+        GlobusXIORegisterDriver(udp);
+    }
+    return rc;
+}
+
+static
+int
+globus_l_xio_udp_deactivate(void)
+{
+    GlobusXIOName(globus_l_xio_udp_deactivate);
+    
+    globus_l_xio_udp_attr_default.listener_min_port = 0;
+    globus_l_xio_udp_attr_default.listener_max_port = 0;
+    
+    GlobusXIOUnRegisterDriver(udp);
+    return globus_module_deactivate(GLOBUS_XIO_SYSTEM_MODULE);
+}

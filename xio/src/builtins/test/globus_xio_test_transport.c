@@ -4,8 +4,6 @@
 #include "globus_common.h"
 #include "globus_xio_test_transport.h"
 
-#define GLOBUS_XIO_TEST_TRANSPORT_DRIVER_MODULE &globus_i_xio_test_module
-
 #define MAX_DELAY 100000
 
 #define XIOTestCreateOpWraper(ow, _in_dh, _in_op, res, nb)              \
@@ -65,7 +63,7 @@ static globus_l_xio_test_handle_t       globus_l_default_attr;
 
 #include "version.h"
 
-static globus_module_descriptor_t       globus_i_xio_test_module =
+GlobusXIODefineModule(test) =
 {
     "globus_xio_test",
     globus_l_xio_test_activate,
@@ -801,9 +799,8 @@ globus_l_xio_test_cntl(
 }
 
 static globus_result_t
-globus_l_xio_test_transport_load(
-    globus_xio_driver_t *               out_driver,
-    va_list                             ap)
+globus_l_xio_test_transport_init(
+    globus_xio_driver_t *               out_driver)
 {
     globus_xio_driver_t                 driver;
     globus_result_t                     res;
@@ -844,13 +841,16 @@ globus_l_xio_test_transport_load(
 }
 
 static void
-globus_l_xio_test_transport_unload(
+globus_l_xio_test_transport_destroy(
     globus_xio_driver_t                 driver)
 {
     globus_xio_driver_destroy(driver);
 }
 
-
+GlobusXIODefineDriver(
+    test,
+    globus_l_xio_test_transport_init,
+    globus_l_xio_test_transport_destroy);
 
 static
 int
@@ -859,7 +859,7 @@ globus_l_xio_test_activate(void)
     int                                 rc;
     globus_l_xio_test_handle_t *        attr;
 
-    rc = globus_module_activate(GLOBUS_COMMON_MODULE);
+    rc = globus_module_activate(GLOBUS_XIO_MODULE);
     if(rc != GLOBUS_SUCCESS)
     {
         return rc;
@@ -873,7 +873,8 @@ globus_l_xio_test_activate(void)
     GlobusTimeReltimeSet(attr->delay, 0, 0);
     attr->read_nbytes = -1; /* default is no EOF (close only) */
     attr->chunk_size = -1; /* default: entire chunk requested */
-
+    
+    GlobusXIORegisterDriver(test);
     return GLOBUS_SUCCESS;
 }
 
@@ -881,11 +882,6 @@ static
 int
 globus_l_xio_test_deactivate(void)
 {
-    return globus_module_deactivate(GLOBUS_COMMON_MODULE);
+    GlobusXIOUnRegisterDriver(test);
+    return globus_module_deactivate(GLOBUS_XIO_MODULE);
 }
-
-GlobusXIODefineDriver(
-    test,
-    &globus_i_xio_test_module,
-    globus_l_xio_test_transport_load,
-    globus_l_xio_test_transport_unload);

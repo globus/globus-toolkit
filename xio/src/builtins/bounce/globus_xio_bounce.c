@@ -14,7 +14,7 @@ globus_l_xio_bounce_deactivate();
 
 #include "version.h"
 
-static globus_module_descriptor_t              globus_i_xio_bounce_module =
+GlobusXIODefineModule(bounce) =
 {
     "globus_xio_bounce",
     globus_l_xio_bounce_activate,
@@ -512,13 +512,12 @@ globus_l_xio_bounce_cntl(
 }
 
 static globus_result_t
-globus_l_xio_bounce_load(
-    globus_xio_driver_t *               out_driver,
-    va_list                             ap)
+globus_l_xio_bounce_init(
+    globus_xio_driver_t *               out_driver)
 {
     globus_xio_driver_t                 driver;
     globus_result_t                     res;
-    GlobusXIOName(globus_l_xio_bounce_load);
+    GlobusXIOName(globus_l_xio_bounce_init);
 
     GlobusXIODebugInternalEnter();
     res = globus_xio_driver_init(&driver, "bounce", NULL);
@@ -543,35 +542,38 @@ globus_l_xio_bounce_load(
 }
 
 static void
-globus_l_xio_bounce_unload(
+globus_l_xio_bounce_destroy(
     globus_xio_driver_t                 driver)
 {
-    GlobusXIOName(globus_l_xio_bounce_unload);
+    GlobusXIOName(globus_l_xio_bounce_destroy);
 
     GlobusXIODebugInternalEnter();
     globus_xio_driver_destroy(driver);
     GlobusXIODebugInternalExit();
 }
 
+GlobusXIODefineDriver(
+    bounce,
+    globus_l_xio_bounce_init,
+    globus_l_xio_bounce_destroy);
 
 static int
 globus_l_xio_bounce_activate(void)
 {
     int                                 rc;
 
-    rc = globus_module_activate(GLOBUS_COMMON_MODULE);
-
+    rc = globus_module_activate(GLOBUS_XIO_MODULE);
+    if(rc == GLOBUS_SUCCESS)
+    {
+        GlobusXIORegisterDriver(bounce);
+    }
+    
     return rc;
 }
 
 static int
 globus_l_xio_bounce_deactivate(void)
 {
-    return globus_module_deactivate(GLOBUS_COMMON_MODULE);
+    GlobusXIOUnRegisterDriver(bounce);
+    return globus_module_deactivate(GLOBUS_XIO_MODULE);
 }
-
-GlobusXIODefineDriver(
-    bounce,
-    &globus_i_xio_bounce_module,
-    globus_l_xio_bounce_load,
-    globus_l_xio_bounce_unload);

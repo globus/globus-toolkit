@@ -26,10 +26,12 @@ echo -n "Checking for builtin drivers... "
 XIO_BUILTIN_DIRS=
 XIO_BUILTIN_DOXY_DIRS=
 XIO_BUILTIN_LIBS=
-XIO_BUILTIN_HOOKS_DEC=
-XIO_BUILTIN_HOOKS_DEF=
+BUILTIN_EXTENSIONS_DEC=
+BUILTIN_EXTENSIONS_DEF=
 builtins=`ls builtins | grep -v CVS | grep -v Makefile`
 delim=
+prefix="extern globus_module_descriptor_t "
+suffix=
 if test "X$builtins" != "X" ; then
   echo
   for builtin in $builtins ; do
@@ -39,9 +41,11 @@ if test "X$builtins" != "X" ; then
       lib_name="builtins/${builtin}/libglobus_xio_${builtin}_driver_${GLOBUS_FLAVOR_NAME}.la"
       XIO_BUILTIN_LIBS="$XIO_BUILTIN_LIBS $lib_name"
     
-      XIO_BUILTIN_HOOKS_DEC="$XIO_BUILTIN_HOOKS_DEC $delim globus_i_xio_${builtin}_hook"
-      XIO_BUILTIN_HOOKS_DEF="$XIO_BUILTIN_HOOKS_DEF $delim &globus_i_xio_${builtin}_hook"
+      BUILTIN_EXTENSIONS_DEC="$prefix $BUILTIN_EXTENSIONS_DEC $delim globus_xio_${builtin}_driver_module"
+      BUILTIN_EXTENSIONS_DEF="$BUILTIN_EXTENSIONS_DEF {\"globus_xio_${builtin}_driver\", &globus_xio_${builtin}_driver_module},"
       delim=","
+      prefix=
+      suffix=";"
       echo "Including driver: $builtin"
     fi
   done
@@ -49,11 +53,14 @@ else
   echo "none found"
 fi
 
+BUILTIN_EXTENSIONS_DEC="$BUILTIN_EXTENSIONS_DEC $suffix"
+
 AC_SUBST(XIO_BUILTIN_DIRS)
 AC_SUBST(XIO_BUILTIN_LIBS)
-AC_SUBST(XIO_BUILTIN_HOOKS_DEC)
-AC_SUBST(XIO_BUILTIN_HOOKS_DEF)
+AC_SUBST(BUILTIN_EXTENSIONS_DEC)
+AC_SUBST(BUILTIN_EXTENSIONS_DEF)
 
+CFLAGS="$CFLAGS -DGLOBUS_BUILTIN"
 LAC_DOXYGEN("../ $XIO_BUILTIN_DOXY_DIRS", 
             "*.doc", 
             "$GLOBUS_LOCATION/sbin/globus-vararg-enums-doxygen-filter.pl")
@@ -72,5 +79,5 @@ AC_OUTPUT(
     doxygen/Doxyfile
     doxygen/Doxyfile-internal
     version.h
-    globus_xio_load.c
+    extensions.h
 dnl NOTE: do not put anything below this line!

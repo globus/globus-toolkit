@@ -89,7 +89,7 @@ globus_l_xio_telnet_request_data(
  *************************************************************************/
 #include "version.h"
 
-globus_module_descriptor_t       globus_i_xio_telnet_module =
+GlobusXIODefineModule(telnet) =
 {
     "globus_xio_telnet",
     globus_l_xio_telnet_activate,
@@ -654,13 +654,12 @@ globus_l_xio_telnet_close(
 }
 
 static globus_result_t
-globus_l_xio_telnet_load(
-    globus_xio_driver_t *               out_driver,
-    va_list                             ap)
+globus_l_xio_telnet_init(
+    globus_xio_driver_t *               out_driver)
 {
     globus_xio_driver_t                 driver;
     globus_result_t                     res;
-    GlobusXIOName(globus_l_xio_telnet_load);
+    GlobusXIOName(globus_l_xio_telnet_init);
 
     res = globus_xio_driver_init(&driver, "telnet", NULL);
     if(res != GLOBUS_SUCCESS)
@@ -699,13 +698,17 @@ globus_l_xio_telnet_load(
 }
 
 static void
-globus_l_xio_telnet_unload(
+globus_l_xio_telnet_destroy(
     globus_xio_driver_t                 driver)
 {
-    GlobusXIOName(globus_l_xio_telnet_unload);
+    GlobusXIOName(globus_l_xio_telnet_destroy);
     globus_xio_driver_destroy(driver);
 }
 
+GlobusXIODefineDriver(
+    telnet,
+    globus_l_xio_telnet_init,
+    globus_l_xio_telnet_destroy);
 
 static int
 globus_l_xio_telnet_activate(void)
@@ -713,8 +716,11 @@ globus_l_xio_telnet_activate(void)
     int                                 rc;
     GlobusXIOName(globus_l_xio_telnet_activate);
 
-    rc = globus_module_activate(GLOBUS_COMMON_MODULE);
-
+    rc = globus_module_activate(GLOBUS_XIO_MODULE);
+    if(rc == GLOBUS_SUCCESS)
+    {
+        GlobusXIORegisterDriver(telnet);
+    }
     return rc;
 }
 
@@ -722,12 +728,6 @@ static int
 globus_l_xio_telnet_deactivate(void)
 {
     GlobusXIOName(globus_l_xio_telnet_deactivate);
-    return globus_module_deactivate(GLOBUS_COMMON_MODULE);
+    GlobusXIOUnRegisterDriver(telnet);
+    return globus_module_deactivate(GLOBUS_XIO_MODULE);
 }
-
-GlobusXIODefineDriver(
-    telnet,
-    &globus_i_xio_telnet_module,
-    globus_l_xio_telnet_load,
-    globus_l_xio_telnet_unload);
-

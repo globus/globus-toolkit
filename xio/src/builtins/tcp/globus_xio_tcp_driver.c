@@ -38,7 +38,7 @@ static
 int
 globus_l_xio_tcp_deactivate(void);
 
-static globus_module_descriptor_t       globus_i_xio_tcp_module =
+GlobusXIODefineModule(tcp) =
 {
     "globus_xio_tcp",
     globus_l_xio_tcp_activate,
@@ -51,7 +51,7 @@ static globus_module_descriptor_t       globus_i_xio_tcp_module =
 #define GlobusXIOTcpErrorNoAddrs()                                          \
     globus_error_put(                                                       \
         globus_error_construct_error(                                       \
-            &globus_i_xio_tcp_module,                                       \
+            GlobusXIOMyModule(tcp),                                         \
             GLOBUS_NULL,                                                    \
             GLOBUS_XIO_TCP_ERROR_NO_ADDRS,                                  \
             __FILE__,                                                       \
@@ -173,69 +173,6 @@ globus_l_xio_tcp_get_env_pair(
     }
 
     return GLOBUS_FALSE;
-}
-
-static
-int
-globus_l_xio_tcp_activate(void)
-{
-    int                                 min;
-    int                                 max;
-    int                                 rc;
-    GlobusXIOName(globus_l_xio_tcp_activate);
-    
-    GlobusDebugInit(GLOBUS_XIO_TCP, TRACE);
-    
-    GlobusXIOTcpDebugEnter();
-    
-    if(globus_l_xio_tcp_get_env_pair(
-        "GLOBUS_TCP_PORT_RANGE", &min, &max) && min <= max)
-    {
-        globus_l_xio_tcp_attr_default.listener_min_port = min;
-        globus_l_xio_tcp_attr_default.listener_max_port = max;
-    }
-    
-    if(globus_l_xio_tcp_get_env_pair(
-        "GLOBUS_TCP_SOURCE_RANGE", &min, &max) && min <= max)
-    {
-        globus_l_xio_tcp_attr_default.connector_min_port = min;
-        globus_l_xio_tcp_attr_default.connector_max_port = max;
-    }
-    
-    rc = globus_module_activate(GLOBUS_XIO_SYSTEM_MODULE);
-    if(rc != GLOBUS_SUCCESS)
-    {
-        goto error_activate;
-    }
-    
-    GlobusXIOTcpDebugExit();
-    return GLOBUS_SUCCESS;
-    
-error_activate:
-    GlobusXIOTcpDebugExitWithError();
-    GlobusDebugDestroy(GLOBUS_XIO_TCP);
-    return rc;
-}
-
-static
-int
-globus_l_xio_tcp_deactivate(void)
-{
-    GlobusXIOName(globus_l_xio_tcp_deactivate);
-    
-    GlobusXIOTcpDebugEnter();
-    
-    globus_l_xio_tcp_attr_default.listener_min_port = 0;
-    globus_l_xio_tcp_attr_default.listener_max_port = 0;
-    globus_l_xio_tcp_attr_default.connector_min_port = 0;
-    globus_l_xio_tcp_attr_default.connector_max_port = 0;
-        
-    globus_module_deactivate(GLOBUS_XIO_SYSTEM_MODULE);
-    
-    GlobusXIOTcpDebugExit();
-    GlobusDebugDestroy(GLOBUS_XIO_TCP);
-    
-    return GLOBUS_SUCCESS;
 }
 
 /*
@@ -2353,8 +2290,7 @@ error_sockopt:
 static
 globus_result_t
 globus_l_xio_tcp_init(
-    globus_xio_driver_t *               out_driver,
-    va_list                             ap)
+    globus_xio_driver_t *               out_driver)
 {
     globus_xio_driver_t                 driver;
     globus_result_t                     result;
@@ -2410,11 +2346,80 @@ void
 globus_l_xio_tcp_destroy(
     globus_xio_driver_t                 driver)
 {
+    GlobusXIOName(globus_l_xio_tcp_destroy);
+    
+    GlobusXIOTcpDebugEnter();
     globus_xio_driver_destroy(driver);
+    GlobusXIOTcpDebugExit();
 }
 
 GlobusXIODefineDriver(
     tcp,
-    &globus_i_xio_tcp_module,
     globus_l_xio_tcp_init,
     globus_l_xio_tcp_destroy);
+
+static
+int
+globus_l_xio_tcp_activate(void)
+{
+    int                                 min;
+    int                                 max;
+    int                                 rc;
+    GlobusXIOName(globus_l_xio_tcp_activate);
+    
+    GlobusDebugInit(GLOBUS_XIO_TCP, TRACE);
+    
+    GlobusXIOTcpDebugEnter();
+    
+    if(globus_l_xio_tcp_get_env_pair(
+        "GLOBUS_TCP_PORT_RANGE", &min, &max) && min <= max)
+    {
+        globus_l_xio_tcp_attr_default.listener_min_port = min;
+        globus_l_xio_tcp_attr_default.listener_max_port = max;
+    }
+    
+    if(globus_l_xio_tcp_get_env_pair(
+        "GLOBUS_TCP_SOURCE_RANGE", &min, &max) && min <= max)
+    {
+        globus_l_xio_tcp_attr_default.connector_min_port = min;
+        globus_l_xio_tcp_attr_default.connector_max_port = max;
+    }
+    
+    rc = globus_module_activate(GLOBUS_XIO_SYSTEM_MODULE);
+    if(rc != GLOBUS_SUCCESS)
+    {
+        goto error_activate;
+    }
+    
+    GlobusXIORegisterDriver(tcp);
+    
+    GlobusXIOTcpDebugExit();
+    return GLOBUS_SUCCESS;
+    
+error_activate:
+    GlobusXIOTcpDebugExitWithError();
+    GlobusDebugDestroy(GLOBUS_XIO_TCP);
+    return rc;
+}
+
+static
+int
+globus_l_xio_tcp_deactivate(void)
+{
+    GlobusXIOName(globus_l_xio_tcp_deactivate);
+    
+    GlobusXIOTcpDebugEnter();
+    
+    globus_l_xio_tcp_attr_default.listener_min_port = 0;
+    globus_l_xio_tcp_attr_default.listener_max_port = 0;
+    globus_l_xio_tcp_attr_default.connector_min_port = 0;
+    globus_l_xio_tcp_attr_default.connector_max_port = 0;
+        
+    GlobusXIOUnRegisterDriver(tcp);
+    globus_module_deactivate(GLOBUS_XIO_SYSTEM_MODULE);
+    
+    GlobusXIOTcpDebugExit();
+    GlobusDebugDestroy(GLOBUS_XIO_TCP);
+    
+    return GLOBUS_SUCCESS;
+}
