@@ -1204,7 +1204,6 @@ globus_l_gsc_finished_op(
         /* after receiving the servers reply to the abor we 
            clear everything in the Q and respond */
         case GLOBUS_L_GSC_STATE_ABORTING_STOPPING:
-            stopping = GLOBUS_TRUE;
         case GLOBUS_L_GSC_STATE_ABORTING:
 
             /* if user considers this command incomplete it does not
