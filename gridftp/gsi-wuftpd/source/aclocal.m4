@@ -371,7 +371,7 @@ AC_DEFUN(CHECK_GLOBUS_DEVELOPMENT_PATH,[dnl
 	else
 	    AC_MSG_ERROR(missing)
 	fi
-        GLOBUS_LIBTOOL=${GPT_LOCATION}/sbin/libtool-${GLOBUS_FLAVOR_NAME}
+        GLOBUS_LIBTOOL=${GLOBUS_LOCATION}/sbin/libtool-${GLOBUS_FLAVOR_NAME}
 	globus_cv_development_path=${GLOBUS_LOCATION}
     fi
 ])dnl CHECK_GLOBUS_DEVELOPMENT_PATH
