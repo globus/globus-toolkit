@@ -59,8 +59,7 @@ Scripts= \
 
 bin_SCRIPTS = $(Scripts)
 EXTRA_DIST = globus-gass-server-shutdown.in \
-	version.h.in \
-	dirt.sh
+	version.h.in
 
 
 # bin_PROGRAMS is an automake macro which contains

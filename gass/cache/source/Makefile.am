@@ -8,8 +8,7 @@ SUBDIRS= \
 	doxygen
 
 EXTRA_DIST = \
-	version.h.in \
-	dirt.sh
+	version.h.in
 
 # Sources contains all of the source files in the directory.
 # Header files are included because automake will generate dependency targets 

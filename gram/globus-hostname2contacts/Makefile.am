@@ -31,8 +31,7 @@ bin_SCRIPTS = globus-hostname2contacts
 
 # EXTRA_DIST is used to include files in
 # a source distribution that automake fails to detect.
-EXTRA_DIST = globus-hostname2contacts.in \
-	dirt.sh
+EXTRA_DIST = globus-hostname2contacts.in 
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
