@@ -37,9 +37,9 @@ if test "$globus_cv_flavor" = "notset" \
     AC_MSG_ERROR([A flavor description string must be specified!])
 fi
 
-AC_SYS_LARGEFILE
 LAC_COMPILERS
 LAC_TARGET_ARCH
+AC_SYS_LARGEFILE
 CHECK_HEADERS
 CHECK_FUNCS
 CHECK_FOR_TIMESPEC
