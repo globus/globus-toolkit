@@ -97,6 +97,11 @@ extern struct sockaddr_in his_addr;
 /**********************************************************n
  * local function prototypes
  ************************************************************/
+int 
+g_seek(
+    FILE *                               fin,
+    int                                  ndx);
+
 void
 g_force_close(
     int                                         cb_count);
@@ -603,7 +608,8 @@ g_send_data(
 
         for(ctr = 0; ctr < count_a && !eof; ctr++)
         {
-            lseek(filefd, offset_a[ctr], SEEK_SET);
+            g_seek(instr, offset_a[ctr]);
+
             offset = offset_a[ctr];
             length = length_a[ctr];
             jb_count = 0;
@@ -803,7 +809,7 @@ g_send_data(
 
 	goto bail1;
     }
-
+ 
   /* 
    *  DATA_ERR
    */
@@ -1514,6 +1520,39 @@ globus_l_wu_perf_update(
     monitor->last_perf_update = tv;
 
     return GLOBUS_TRUE;
+}
+
+int 
+g_seek(
+    FILE *                               fin,
+    int                                  ndx)
+{
+    register int i;
+    register int n;
+    register int c;
+
+    if (type == TYPE_A) 
+    {
+        n = ndx;
+        i = 0;
+        while (i++ < n) 
+        {
+            if ((c = getc(fin)) == EOF) 
+            {
+                return -1;
+            }
+            if (c == '\n')
+            {
+                i++;
+            }
+        }
+    }
+    else if (lseek(fileno(fin), ndx, SEEK_SET) < 0) 
+    {
+        return -1;
+    }
+
+    return 0;
 }
     
 #endif /* USE_GLOBUS_DATA_CODE */

@@ -4406,26 +4406,6 @@ void retrieve(char *cmd, char *name, int offset, int length)
         tmp_restart = 0;
     }
 
-    if (tmp_restart) {
-	if (type == TYPE_A) {
-	    register int i, n, c;
-
-	    n = tmp_restart;
-	    i = 0;
-	    while (i++ < n) {
-		if ((c = getc(fin)) == EOF) {
-		    perror_reply(550, name);
-		    goto done;
-		}
-		if (c == '\n')
-		    i++;
-	    }
-	}
-	else if (lseek(fileno(fin), tmp_restart, SEEK_SET) < 0) {
-	    perror_reply(550, name);
-	    goto done;
-	}
-    }
 
 #   if defined(USE_GLOBUS_DATA_CODE)
     {
@@ -4446,6 +4426,29 @@ void retrieve(char *cmd, char *name, int offset, int length)
     }
 #   else
     {
+        if (tmp_restart) 
+        {
+            if (type == TYPE_A) 
+            {
+                register int i, n, c;
+
+	        n = tmp_restart;
+                i = 0;
+	        while (i++ < n) {
+	    	    if ((c = getc(fin)) == EOF) {
+		        perror_reply(550, name);
+		        goto done;
+		    }
+		    if (c == '\n')
+		        i++;
+	        }
+	    }
+	    else if (lseek(fileno(fin), tmp_restart, SEEK_SET) < 0) {
+	        perror_reply(550, name);
+	        goto done;
+	    }
+        }
+
         dout = dataconn(name, st.st_size, "w");
         if (dout == NULL)
         {
