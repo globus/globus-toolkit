@@ -29,6 +29,7 @@ CVS Information:
 #endif
 
 #include "globus_gass_server.h"
+#include "globus_gass_transfer.h"
 
 EXTERN_C_BEGIN
 
@@ -49,20 +50,46 @@ EXTERN_C_BEGIN
 #endif
 
 typedef void (*globus_gass_server_ez_client_shutdown_t) (void);
+/*
+typedef globus_object_t globus_gass_transfer_listener_t;
+typedef globus_object_t globus_gass_transfer_listenerattr_t;
+typedef globus_object_t globus_gass_transfer_requestattr_t;
+*/
+
 
 int
-globus_gass_server_ez_init(unsigned short *port,
-		    char **url,
-		    unsigned long options,
-		    globus_gass_server_ez_client_shutdown_t callback);
-int
-globus_gass_server_ez_shutdown(unsigned short port);
+globus_gass_server_ez_init(globus_gass_transfer_listener_t * listener,
+                           globus_gass_transfer_listenerattr_t * attr,
+                           char * scheme,
+                           globus_gass_transfer_requestattr_t * reqattr,
+                           unsigned long options,
+                           globus_gass_server_ez_client_shutdown_t callback);
 
-#define globus_gass_server_ez_poll() globus_gass_server_poll()
+int
+globus_gass_server_ez_shutdown(globus_gass_transfer_listener_t listener);
+
+#define globus_gass_server_ez_poll() globus_poll()
 /******************************************************************************
  *                    Module Definition
  *****************************************************************************/
-#define GLOBUS_GASS_SERVER_EZ_MODULE (&globus_gass_server_ez_module)
+extern int
+globus_l_gass_server_ez_activate(void);
+
+extern int
+globus_l_gass_server_ez_deactivate(void);
+
+static globus_module_descriptor_t globus_l_gass_server_ez_module =
+{
+    "globus_gass_server_ez",
+    globus_l_gass_server_ez_activate,
+    globus_l_gass_server_ez_deactivate,
+    GLOBUS_NULL
+};
+
+#define GLOBUS_L_GASS_SERVER_EZ_MODULE (&globus_l_gass_server_ez_module)
+#define GLOBUS_GASS_SERVER_EZ_MODULE (&globus_l_gass_server_ez_module)
+
+/*#define GLOBUS_GASS_SERVER_EZ_MODULE (&globus_gass_server_ez_module)
 
 static globus_module_descriptor_t globus_gass_server_ez_module =
 {
@@ -70,7 +97,8 @@ static globus_module_descriptor_t globus_gass_server_ez_module =
     GLOBUS_NULL,
     GLOBUS_NULL,
     GLOBUS_NULL
-};
+};*/
+
 
 
 EXTERN_C_END
