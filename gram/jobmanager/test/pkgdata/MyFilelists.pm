@@ -16,7 +16,7 @@ sub new {
   return $me;
 }
 
-# added perl modules to unflavored data
+# don't put files in /test into the data package
 sub data_files {
   my $self = shift;
   my $result = [];
