@@ -89,7 +89,7 @@ EXTERN_C_BEGIN
 extern
 globus_module_descriptor_t		globus_i_gsi_gssapi_module;
 
-#define _GGSL(s) globus_common_i18n_get_string(GLOBUS_GSSAPI_GSI_MODULE,\
+#define _GGSL(s) globus_common_i18n_get_string(GLOBUS_GSI_GSSAPI_MODULE,\
 		                s)
 
 /*
