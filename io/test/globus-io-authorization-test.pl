@@ -12,7 +12,7 @@ use Cwd;
 my @tests;
 my @todo;
 
-my $test_prog = 'globus_io_authorization_test';
+my $test_prog = './globus_io_authorization_test';
 
 my $diff = 'diff';
 

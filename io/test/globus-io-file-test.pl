@@ -12,7 +12,7 @@ use strict;
 use POSIX;
 use Test;
 
-my $test_prog = 'globus_io_file_test';
+my $test_prog = './globus_io_file_test';
 my $diff = 'diff';
 my @tests;
 my @todo;
