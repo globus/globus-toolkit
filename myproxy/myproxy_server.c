@@ -71,8 +71,7 @@ static char short_options[] = "dhc:p:s:vVuD:";
 static char version[] =
 "myproxy-server version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
 
-static char default_config_file[] =
-MYPROXY_SERVER_ETC_DIR "/myproxy-server.config";
+static const char default_config_file[] = "/etc/myproxy-server.config";
 
 /* Signal handling */
 typedef void Sigfunc(int);  
@@ -164,12 +163,26 @@ main(int argc, char *argv[])
 		  server_context->default_renewer_dns);
    if (server_context->config_file == NULL)
     {
-        server_context->config_file = strdup(default_config_file);
-
-	if (server_context->config_file == NULL)
-	{
-	    perror("strdup()");
-	    exit(1);
+	if (access(default_config_file, R_OK) == 0) {
+	    server_context->config_file = strdup(default_config_file);
+	    if (server_context->config_file == NULL) {
+		perror("strdup()");
+		exit(1);
+	    }
+	} else {
+	    char *conf, *GL;
+	    GL = getenv("GLOBUS_LOCATION");
+	    conf = (char *)malloc(strlen(GL)+strlen(default_config_file)+1);
+	    if (!conf) {
+		perror("malloc()");
+		exit(1);
+	    }
+	    sprintf(conf, "%s%s", GL, default_config_file);
+	    if (access(conf, R_OK) < 0) {
+		fprintf(stderr, "%s not found.\n", conf);
+		exit(1);
+	    }
+	    server_context->config_file = conf;
 	}
     }
 

@@ -41,7 +41,7 @@ char *crypt(const char *key, const char *salt);
  *
  */
 
-char *storage_dir = MYPROXY_SERVER_STORE_DIR;
+static char *storage_dir = NULL;
 
 /**********************************************************************
  *
@@ -122,34 +122,76 @@ file_exists(const char *path)
 /*
  * check_storage_directory()
  *
- * Check for existance and permissions on given storage directory.
+ * Check for existance and permissions on storage directory.
+ * Create storage directory if it doesn't exist.
  *
  * Returns 0 if ok, -1 on error.
  */
 static int
-check_storage_directory(const char *path)
+check_storage_directory()
 {
     struct stat statbuf;
     int return_code = -1;
-    
-    
-    if (stat(path, &statbuf) == -1)
-    {
-        verror_put_errno(errno);
-        verror_put_string("could not stat directory %s", path);
-        goto error;
+
+    if (storage_dir == NULL) { /* Choose a default storage directory */
+	char *GL;
+	GL = getenv("GLOBUS_LOCATION");
+	if (stat("/var/myproxy", &statbuf) == 0) {
+	    myproxy_log("using storage directory %s", "/var/myproxy");
+	    storage_dir = mystrdup("/var/myproxy");
+	    if (!storage_dir) goto error;
+	} else if (GL) {
+	    storage_dir =
+		(char *)malloc(strlen(GL)+strlen("/var/myproxy")+1);
+	    if (!storage_dir) {
+		verror_put_errno(errno);
+		verror_put_string("malloc() failed");
+		goto error;
+	    }
+	    sprintf(storage_dir, "%s/var", GL);
+	    if (stat(storage_dir, &statbuf) == -1) {
+		if (mkdir(storage_dir, 0755) < 0) {
+		    verror_put_errno(errno);
+		    verror_put_string("mkdir(%s) failed", storage_dir);
+		    goto error;
+		}
+	    }
+	    sprintf(storage_dir, "%s/var/myproxy", GL);
+	    if (stat(storage_dir, &statbuf) == -1) {
+		if (mkdir(storage_dir, 0700) < 0) {
+		    verror_put_errno(errno);
+		    verror_put_string("mkdir(%s) failed", storage_dir);
+		    goto error;
+		}
+		if (stat(storage_dir, &statbuf) == -1) {
+		    verror_put_errno(errno);
+		    verror_put_string("could not stat directory %s",
+				      storage_dir);
+		    goto error;
+		}
+	    }
+	} else {
+	    verror_put_string("no credential storage directory specified and GLOBUS_LOCATION undefined");
+	    goto error;
+	}
+    } else { /* storage directory already chosen; just check it */
+	if (stat(storage_dir, &statbuf) == -1) {
+	    verror_put_errno(errno);
+	    verror_put_string("could not stat directory %s", storage_dir);
+	    goto error;
+	}
     }
     
     if (!S_ISDIR(statbuf.st_mode))
     {
-        verror_put_string("%s is not a directory", path);
+        verror_put_string("%s is not a directory", storage_dir);
         goto error;
     }
     
     /* Make sure it's owned by me */
     if (statbuf.st_uid != getuid())
     {
-        verror_put_string("bad ownership on %s", path);
+        verror_put_string("bad ownership on %s", storage_dir);
         goto error;
     }
     
@@ -157,7 +199,7 @@ check_storage_directory(const char *path)
     if ((statbuf.st_mode & S_IRWXG) ||
         (statbuf.st_mode & S_IRWXO))
     {
-        verror_put_string("bad permissions on %s", path);
+        verror_put_string("bad permissions on %s", storage_dir);
         goto error;
     }
     
@@ -254,9 +296,8 @@ get_storage_locations(const char *username,
     assert(username != NULL);
     assert(creds_path != NULL);
     assert(data_path != NULL);
-    assert(storage_dir != NULL);
-    
-    if (check_storage_directory(storage_dir) == -1)
+
+    if (check_storage_directory() == -1)
     {
         goto error;
     }
@@ -1056,7 +1097,17 @@ void myproxy_creds_free_contents(struct myproxy_creds *creds)
     }
 }
 
-void myproxy_set_storage_dir(char *dir)
-{ 
-    storage_dir=dir;
+int myproxy_set_storage_dir(const char *dir)
+{
+    if (storage_dir) {
+	free(storage_dir);
+	storage_dir = NULL;
+    }
+    storage_dir=strdup(dir);
+    if (!storage_dir) {
+	verror_put_errno(errno);
+	verror_put_string("strdup() failed");
+	return -1;
+    }
+    return 0;
 }
