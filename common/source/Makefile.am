@@ -3,6 +3,7 @@ include $(top_srcdir)/globus_automake_pre_top
 
 SUBDIRS= \
 	library \
+	programs \
 	pkgdata \
 	config \
 	doxygen

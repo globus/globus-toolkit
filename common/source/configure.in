@@ -57,6 +57,7 @@ AC_OUTPUT(
 	pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
 	library/Makefile
+	programs/Makefile
 	config/Makefile
 	doxygen/Makefile
 	doxygen/Doxyfile 
