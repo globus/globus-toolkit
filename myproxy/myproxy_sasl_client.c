@@ -208,9 +208,10 @@ auth_sasl_negotiate_client(myproxy_socket_attrs_t *attrs,
     char *service = "myproxy",
 	*iplocal = NULL,
         *ipremote = NULL;
-    char fqdn[1024];
+    char *fqdn = NULL;
 
-    strcpy(fqdn, attrs->pshost);
+    fqdn = strdup(attrs->pshost);
+    myproxy_resolve_hostname(&fqdn);
    
     memset(server_buffer, 0, sizeof(*server_buffer));
 
@@ -218,20 +219,23 @@ auth_sasl_negotiate_client(myproxy_socket_attrs_t *attrs,
     prompt = malloc(strlen(client_request->username)+strlen(fqdn)+15);
     if (!prompt) {
 	verror_put_string("malloc() failed in auth_sasl_negotiate_client");
-	return SASL_FAIL;
+	result = SASL_FAIL;
+	goto error;
     }
     sprintf(prompt, "%s@%s's password: ", client_request->username, fqdn);
 
     result = sasl_client_init(callbacks);
     if (result != SASL_OK) {
         verror_put_string("Allocating sasl connection state failed");
-	return SASL_FAIL;
+	result = SASL_FAIL;
+	goto error;
     }
 
     result = sasl_client_new(service, fqdn, iplocal, ipremote, NULL, 0, &conn);
     if (result != SASL_OK) {
         verror_put_string("Allocating sasl connection state failed");
-	return SASL_FAIL;
+	result = SASL_FAIL;
+	goto error;
     }
 
     /* don't need integrity or privacy, since we're over SSL already.
@@ -240,14 +244,16 @@ auth_sasl_negotiate_client(myproxy_socket_attrs_t *attrs,
     result = sasl_setprop(conn, SASL_SEC_PROPS, &secprops);
     if (result != SASL_OK) {
         verror_put_string("Setting security properties failed");
-	return SASL_FAIL;
+	result = SASL_FAIL;
+	goto error;
     }
 
     server_len = recv_response_sasl_data(attrs, &server_response,
 					 server_buffer);
     if (server_len < 0) {
        verror_put_string("SASL negotiation failed");
-       return SASL_FAIL;
+       result = SASL_FAIL;
+       goto error;
     }
 
     myproxy_debug("Server sent SASL mechs %s.\n", server_buffer);
@@ -261,7 +267,8 @@ auth_sasl_negotiate_client(myproxy_socket_attrs_t *attrs,
 
     if (result != SASL_OK && result != SASL_CONTINUE) {
         verror_put_string("SASL error: %s\n", sasl_errdetail(conn));
-        return SASL_FAIL;
+        result = SASL_FAIL;
+	goto error;
     }
 
     myproxy_debug("Using SASL mechanism %s\n", chosenmech);
@@ -269,7 +276,8 @@ auth_sasl_negotiate_client(myproxy_socket_attrs_t *attrs,
     if (data) {
         if (SASL_BUFFER_SIZE - strlen(server_buffer) - 1 < len) {
             verror_put_string("Not enough buffer space for SASL");
-	    return SASL_FAIL;
+	    result = SASL_FAIL;
+	    goto error;
         }
         memcpy(server_buffer + strlen(server_buffer) + 1, data, len);
         len += strlen(server_buffer) + 1;
@@ -287,13 +295,14 @@ auth_sasl_negotiate_client(myproxy_socket_attrs_t *attrs,
 	server_len = recv_response_sasl_data(attrs, &server_response,
 					     server_buffer);
         if (server_len < 0) 
-	    return result;
+	    goto error;
 
         result = sasl_client_step(conn, server_buffer, server_len, NULL,
                               &data, &len);
         if (result != SASL_OK && result != SASL_CONTINUE) {
             verror_put_string("Performing SASL negotiation failed");
-	    return SASL_FAIL;
+	    result = SASL_FAIL;
+	    goto error;
         }
         if (data && len) {
 	    send_response_sasl_data(attrs, &server_response, data, len);
@@ -306,6 +315,9 @@ auth_sasl_negotiate_client(myproxy_socket_attrs_t *attrs,
 
     myproxy_debug("SASL negotiation finished.");
 
+ error:
+    if (fqdn) free(fqdn);
+    
     return result;
 }
 
