@@ -633,6 +633,8 @@ globus_l_ftp_client_restart_plugin_fault(
 		    &d->source_attr,
 		    &when);
 	    break;
+    default: /* Only state left is FTP_CLIENT_IDLE */
+	  globus_assert(0 && "Unexpected state");
     }
 
     if(d->backoff)

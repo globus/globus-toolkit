@@ -505,7 +505,6 @@ globus_ftp_client_handle_add_plugin(
     globus_ftp_client_plugin_t *		plugin)
 {
     globus_object_t *				err;
-    globus_result_t				result;
     globus_i_ftp_client_handle_t *		i_handle;
     globus_list_t *				node;
     globus_ftp_client_plugin_t *		tmp;
