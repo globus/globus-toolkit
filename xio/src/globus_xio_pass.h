@@ -762,7 +762,7 @@ do                                                                          \
     _my_op->_op_ent_nbytes += nbytes;                                       \
     _op->ndx = _caller_ndx;                                                 \
                                                                             \
-    if(_res != GLOBUS_SUCCESS && GlobusXIOErrorIsEOF(_res))                 \
+    if(_res != GLOBUS_SUCCESS && globus_xio_error_is_eof(_res))             \
     {                                                                       \
         globus_mutex_lock(&_my_context->mutex);                             \
         {                                                                   \
