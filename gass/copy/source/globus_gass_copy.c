@@ -87,8 +87,10 @@ globus_l_gass_copy_perf_cancel_ftp_callback(
 { \
     if(handle->err == GLOBUS_NULL) \
     { \
-        handle->err = globus_error_get(result); \
-	result = globus_error_put(handle->err); \
+        globus_object_t *tmp_err; \
+        tmp_err = globus_error_get(result); \
+        handle->err = globus_object_copy(tmp_err); \
+	result = globus_error_put(tmp_err); \
     } \
 }
 
@@ -1005,9 +1007,10 @@ globus_gass_copy_register_performance_cb(
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
 static
-globus_bool_t
+void
 globus_l_gass_copy_perf_local_cb(
-    globus_abstime_t *                      time_stop,
+    const globus_abstime_t *                timenow,
+    const globus_abstime_t *                time_stop,
     void *                                  user_arg)
 {
     globus_gass_copy_perf_info_t *          perf_info;
@@ -1017,7 +1020,9 @@ globus_l_gass_copy_perf_local_cb(
     globus_off_t                            bytes_now;
     double                                  time_elapsed;
     struct timeb                            timebuf;
-
+    globus_gass_copy_handle_t *             handle;
+    globus_gass_copy_performance_cb_t       callback;
+    
     perf_info = (globus_gass_copy_perf_info_t *) user_arg;
 
     globus_mutex_lock(&perf_info->lock);
@@ -1025,43 +1030,45 @@ globus_l_gass_copy_perf_local_cb(
         ftime(&timebuf);
         time_now = timebuf.time + (timebuf.millitm / 1000.0);
         bytes_now = perf_info->live_bytes;
+    
+        time_elapsed = time_now - perf_info->prev_time;
+        if(time_elapsed < 0.1)
+        {
+            /* shouldnt be possible (callback delay is 2 secs) */
+            time_elapsed = 0.1;
+        }
+    
+        instantaneous_throughput =
+            (bytes_now - perf_info->prev_bytes) /
+            time_elapsed;
+    
+        time_elapsed = time_now - perf_info->start_time;
+        if(time_elapsed < 0.1)
+        {
+            /* shouldnt be possible (callback delay is 2 secs) */
+            time_elapsed = 0.1;
+        }
+    
+        avg_throughput =
+            bytes_now /
+            time_elapsed;
+    
+        perf_info->prev_time = time_now;
+        perf_info->prev_bytes = bytes_now;
+        
+        handle = perf_info->copy_handle;
+        user_arg = perf_info->user_arg;
+        
+        callback = perf_info->callback;
     }
     globus_mutex_unlock(&perf_info->lock);
 
-    time_elapsed = time_now - perf_info->prev_time;
-    if(time_elapsed < 0.1)
-    {
-        /* shouldnt be possible (callback delay is 2 secs) */
-        time_elapsed = 0.1;
-    }
-
-    instantaneous_throughput =
-        (bytes_now - perf_info->prev_bytes) /
-        time_elapsed;
-
-    time_elapsed = time_now - perf_info->start_time;
-    if(time_elapsed < 0.1)
-    {
-        /* shouldnt be possible (callback delay is 2 secs) */
-        time_elapsed = 0.1;
-    }
-
-    avg_throughput =
-        bytes_now /
-        time_elapsed;
-
-    perf_info->prev_time = time_now;
-    perf_info->prev_bytes = bytes_now;
-
-    perf_info->callback(
-        perf_info->user_arg,
-        perf_info->copy_handle,
+    callback(
+        user_arg,
+        handle,
         bytes_now,
         instantaneous_throughput,
         avg_throughput);
-
-    /* user may have changed something */
-    return GLOBUS_TRUE;
 }
 
 static
@@ -1107,9 +1114,7 @@ globus_l_gass_copy_perf_setup_local_callback(
         &delay_time,
         &period_time,
         globus_l_gass_copy_perf_local_cb,
-        perf_info,
-        GLOBUS_NULL,
-        GLOBUS_NULL);
+        perf_info);
 }
 
 static
@@ -1127,7 +1132,8 @@ void
 globus_l_gass_copy_perf_cancel_local_callback(
     globus_gass_copy_perf_info_t *          perf_info)
 {
-    globus_callback_unregister(perf_info->local_cb_handle);
+    globus_callback_unregister(
+        perf_info->local_cb_handle, GLOBUS_NULL, GLOBUS_NULL, GLOBUS_NULL);
 }
 
 static
@@ -1984,7 +1990,7 @@ globus_l_gass_copy_transfer_start(
 		rc);
 	    globus_i_gass_copy_set_error(handle, err);
 
-	    result = globus_error_put(handle->err);
+	    result = globus_error_put(err);
 	}
 	break;
 
@@ -2076,7 +2082,7 @@ globus_l_gass_copy_transfer_start(
 		rc);
 	    globus_i_gass_copy_set_error(handle, err);
 
-	    result = globus_error_put(handle->err);
+	    result = globus_error_put(err);
 	}
 
 	break;
@@ -2254,7 +2260,7 @@ globus_l_gass_copy_read_from_queue(
 			myname,
 			handle->buffer_length);
 		    globus_i_gass_copy_set_error(handle, err);
-		    result = globus_error_put(handle->err);
+		    result = globus_error_put(err);
 		} /* if(buffer == GLOBUS_NULL), the create failed*/
 	    } /* if(buffer == GLOBUS_NULL), we need to create a buffer */
 
@@ -2842,7 +2848,7 @@ globus_l_gass_copy_ftp_transfer_callback(
 
         if (copy_handle->status != GLOBUS_GASS_COPY_STATUS_CANCEL)
         {
-	    copy_handle->err = error;
+	    globus_i_gass_copy_set_error(copy_handle, error);
 	    copy_handle->status = GLOBUS_GASS_COPY_STATUS_FAILURE;
         }
 
@@ -2896,7 +2902,11 @@ globus_l_gass_copy_ftp_transfer_callback(
 	    copy_handle->callback_arg,
 	    copy_handle,
 	    err);
-
+    
+    if(err)
+    {
+        globus_object_free(err);
+    }
 } /* globus_l_gass_copy_ftp_transfer_callback() */
 
 void
@@ -3720,7 +3730,7 @@ globus_l_gass_copy_register_write(
 		myname,
 		rc);
 	    globus_i_gass_copy_set_error(handle, err);
-	    result = globus_error_put(handle->err);
+	    result = globus_error_put(err);
 	}
 	else result = GLOBUS_SUCCESS;
 
@@ -5515,7 +5525,7 @@ globus_l_gass_copy_target_cancel(
 		     rc);
 		     globus_i_gass_copy_set_error(cancel_info->handle, err);
 
-		     result = globus_error_put(cancel_info->handle->err);
+		     result = globus_error_put(err);
 		}
 		else
 		{
@@ -5669,6 +5679,9 @@ globus_l_gass_copy_generic_cancel(
 	  break;
 	}
 
+        err = handle->err;
+	handle->err = GLOBUS_NULL;
+	
 	if(handle->user_cancel_callback != GLOBUS_NULL)
         {
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
@@ -5678,11 +5691,8 @@ globus_l_gass_copy_generic_cancel(
 	    handle->user_cancel_callback(
 		handle->cancel_callback_arg,
 		handle,
-		handle->err);
+		err);
         }
-
-	err = handle->err;
-	handle->err = GLOBUS_NULL;
 
 	if(handle->user_callback != GLOBUS_NULL)
         {

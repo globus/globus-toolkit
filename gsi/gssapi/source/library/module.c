@@ -13,6 +13,7 @@
 #include "gssapi.h"
 #include "version.h"
 #include "globus_openssl.h"
+#include "sslutils.h"
 
 static int globus_l_gsi_gssapi_activate(void);
 static int globus_l_gsi_gssapi_deactivate(void);
@@ -51,6 +52,7 @@ globus_l_gsi_gssapi_activate(void)
     {
         globus_module_activate(GLOBUS_COMMON_MODULE);
         globus_module_activate(GLOBUS_OPENSSL_MODULE);
+        globus_module_activate(GLOBUS_GSI_SSL_UTILS_MODULE);
         ERR_load_gsserr_strings(0);
         active = 1;
     }
@@ -68,6 +70,7 @@ globus_l_gsi_gssapi_deactivate(void)
 {
     globus_module_deactivate(GLOBUS_COMMON_MODULE);
     globus_module_deactivate(GLOBUS_OPENSSL_MODULE);
+    globus_module_deactivate(GLOBUS_GSI_SSL_UTILS_MODULE);
     active = 0;
     return GLOBUS_SUCCESS;
 }

@@ -2,6 +2,7 @@
 #include "globus_common.h"
 #include "globus_object_cache.h"
 #include "version.h"
+#include <string.h>
 
 /**********************************************************************
  * Error Types

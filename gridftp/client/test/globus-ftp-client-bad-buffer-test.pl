@@ -5,8 +5,9 @@
 use strict;
 use POSIX;
 use Test;
+use FtpTestLib;
 
-my $test_exec = $ENV{GLOBUS_LOCATION} . '/test/' . 'globus-ftp-client-bad-buffer-test';
+my $test_exec = './globus-ftp-client-bad-buffer-test';
 
 my $gpath = $ENV{GLOBUS_LOCATION};
 
@@ -20,6 +21,8 @@ if (!defined($gpath))
 my @tests;
 my @todo;
 
+my ($source_host, $source_file, $local_copy) = setup_remote_source();
+
 # Test 1: Bad buffer test
 # Success if the transfer fails with exit code 2
 sub bad_buffer
@@ -28,12 +31,12 @@ sub bad_buffer
     my ($output);
 
     unlink('core');
-
-    system("$test_exec >/dev/null 2>/dev/null");
-    $rc = $?>> 8;
+    
+    my $command = "$test_exec -s gsiftp://$source_host$source_file >/dev/null 2>&1";
+    $rc = system($command) / 256;
     if($rc != 2)
     {
-        $errors .= "Test exited with $rc. ";
+        $errors .= "\n# Test exited with $rc. ";
     }
     if(-r 'core')
     {
@@ -46,15 +49,27 @@ sub bad_buffer
     }
     else
     {
+        $errors = "\n# Test failed\n# $command\n# " . $errors;
         ok($errors, 'success');
     }
 }
 push(@tests, "bad_buffer");
 
-# Now that the tests are defined, set up the Test to deal with them.
-plan tests => scalar(@tests), todo => \@todo;
-
-foreach (@tests)
+if(@ARGV)
 {
-    eval "&$_";
+    plan tests => scalar(@ARGV);
+
+    foreach (@ARGV)
+    {
+        eval "&$tests[$_-1]";
+    }
+}
+else
+{
+    plan tests => scalar(@tests), todo => \@todo;
+
+    foreach (@tests)
+    {
+        eval "&$_";
+    }
 }

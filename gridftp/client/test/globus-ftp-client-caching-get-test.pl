@@ -9,7 +9,7 @@ use Test;
 use FtpTestLib;
 use Globus::URL;
 
-my $test_exec = $ENV{GLOBUS_LOCATION} . '/test/' . 'globus-ftp-client-caching-get-test';
+my $test_exec = './globus-ftp-client-caching-get-test';
 my @tests;
 my @todo;
 
@@ -22,7 +22,7 @@ if (!defined($gpath))
 
 @INC = (@INC, "$gpath/lib/perl");
 
-my ($test_url, $local_copy) = FtpTestLib::stage_source_url();
+my ($source_host, $source_file, $local_copy) = setup_remote_source();
 
 # Test #1-2. Basic functionality: Do a simple get (twice, caching the url)
 # of $test_url (with and without a valid proxy).
@@ -41,10 +41,12 @@ sub basic_func
     {
         FtpTestLib::push_proxy("/dev/null");
     }
-    $rc = system("$test_exec -s '$test_url' >'$tmpname' 2>/dev/null") / 256;
+    
+    my $command = "$test_exec -s gsiftp://$source_host$source_file >'$tmpname' 2>/dev/null";
+    $rc = system($command) / 256;
     if(($use_proxy && $rc != 0) || (!$use_proxy && $rc == 0))
     {
-        $errors .= "Test exited with $rc. ";
+        $errors .= "\n# Test exited with $rc. ";
     }
     if(-r 'core')
     {
@@ -55,7 +57,7 @@ sub basic_func
         my ($newtmp)=(POSIX::tmpnam());
 	system("cat '$local_copy' '$local_copy' > $newtmp");
 
-	$errors .= FtpTestLib::compare_local_files($newtmp, $tmpname);
+	$errors .= compare_local_files($newtmp, $tmpname);
 
 	unlink($newtmp);	
     }
@@ -66,6 +68,7 @@ sub basic_func
     }
     else
     {
+        $errors = "\n# Test failed\n# $command\n# " . $errors;
         ok($errors, 'success');
     }
     unlink($tmpname);
@@ -84,13 +87,13 @@ sub bad_url
 {
     my $tmpname = POSIX::tmpnam();
     my ($errors,$rc) = ("",0);
-    my ($bogus_url) = new Globus::URL($test_url);
+    my ($bogus_url) = new Globus::URL("gsiftp://$source_host$source_file");
 
     $bogus_url->{path} = "/no-such-file-here";
     unlink('core');
-
-    $rc = system("$test_exec -s '".
-		 $bogus_url->to_string()."' >/dev/null 2>/dev/null") / 256;
+    
+    my $command = "$test_exec -s ".$bogus_url->to_string()." >/dev/null 2>/dev/null";
+    $rc = system($command) / 256;
     if($rc != 2)
     {
         $errors .= "\n# Test exited with $rc.";
@@ -106,6 +109,7 @@ sub bad_url
     }
     else
     {
+        $errors = "\n# Test failed\n# $command\n# " . $errors;
         ok($errors, 'success');
     }
     unlink($tmpname);
@@ -125,7 +129,8 @@ sub abort_test
 
     unlink('core', $tmpname);
 
-    $rc = system("$test_exec -s '$test_url' -a $abort_point >/dev/null 2>/dev/null") / 256;
+    my $command = "$test_exec -a $abort_point -s gsiftp://$source_host$source_file >/dev/null 2>/dev/null";
+    $rc = system($command) / 256;
     if(-r 'core')
     {
         $errors .= "\n# Core file generated.";
@@ -137,6 +142,7 @@ sub abort_test
     }
     else
     {
+        $errors = "\n# Test failed\n# $command\n# " . $errors;
         ok($errors, 'success');
     }
     unlink($tmpname);
@@ -159,10 +165,11 @@ sub restart_test
 
     unlink('core', $tmpname);
 
-    $rc = system("$test_exec -s '$test_url' -r $restart_point > $tmpname 2>/dev/null") / 256;
+    my $command = "$test_exec -r $restart_point -s gsiftp://$source_host$source_file >'$tmpname' 2>/dev/null";
+    $rc = system($command) / 256;
     if($rc != 0)
     {
-        $errors .= "Test exited with $rc. ";
+        $errors .= "\n# Test exited with $rc. ";
     }
     if(-r 'core')
     {
@@ -171,7 +178,7 @@ sub restart_test
     my ($newtmp)=(POSIX::tmpnam());
     system("cat '$local_copy' '$local_copy' > $newtmp");
 
-    $errors .= FtpTestLib::compare_local_files($newtmp, $tmpname);
+    $errors .= compare_local_files($newtmp, $tmpname);
 
     unlink($newtmp);	
 
@@ -181,7 +188,8 @@ sub restart_test
     }
     else
     {
-        ok("\n# $test_exec -r $restart_point\n#$errors", 'success');
+        $errors = "\n# Test failed\n# $command\n# " . $errors;
+        ok($errors, 'success');
     }
     unlink($tmpname);
 }
@@ -190,11 +198,21 @@ for(my $i = 1; $i <= 41; $i++)
     push(@tests, "restart_test($i);");
 }
 
-# Now that the tests are defined, set up the Test to deal with them.
-plan tests => scalar(@tests), todo => \@todo;
-
-# And run them all.
-foreach (@tests)
+if(@ARGV)
 {
-    eval "&$_";
+    plan tests => scalar(@ARGV);
+
+    foreach (@ARGV)
+    {
+        eval "&$tests[$_-1]";
+    }
+}
+else
+{
+    plan tests => scalar(@tests), todo => \@todo;
+
+    foreach (@tests)
+    {
+        eval "&$_";
+    }
 }

@@ -152,6 +152,9 @@ globus_i_io_attr_activate(void)
     globus_l_io_socketattr_default.oobinline = GLOBUS_FALSE;
     globus_l_io_socketattr_default.sndbuf = 0;
     globus_l_io_socketattr_default.rcvbuf = 0;
+    
+    globus_callback_space_reference(GLOBUS_CALLBACK_GLOBAL_SPACE);
+    globus_l_io_socketattr_default.space = GLOBUS_CALLBACK_GLOBAL_SPACE;
 
     /* secure socket layer options */
     globus_l_io_securesocketattr_default.authentication_mode =
@@ -194,6 +197,226 @@ globus_i_io_attr_activate(void)
 
     /* file options */
     globus_l_io_fileattr_default.file_type = GLOBUS_IO_FILE_TYPE_BINARY;
+}
+
+/**
+ * @name Callback Spaces
+ * */
+/* @{ */
+/**
+ * globus_io_attr_set_callback_space
+ * @anchor globus_io_attr_set_callback_space_anchor
+ * @ingroup attr
+ *
+ * Use this to associate a callback space with a globus_io_handle_t.  When
+ * a space is associated with a globus io handle, all callbacks that are 
+ * delivered on that handle are only delivered to the supplied callback space.
+ * This function takes a refernce to the passed space.  In order for that space
+ * to ever be freed, this attr must be destroyed when its use is complete.
+ *
+ * The default is for callbacks to go to the 'global' space, 
+ * GLOBUS_CALLBACK_GLOBAL_SPACE.
+ *
+ * This attr only applies to socket attrs,  file attrs are ignored.
+ *
+ * @param attr
+ *        attr to associate space with
+ *
+ * @param space
+ *        a callback space handle, previously initialized with
+ *        globus_callback_space_init
+ *
+ * @return
+ *        - Error on invalid space or null attr
+ *        - GLOBUS_SUCCESS
+ *
+ * @see 
+ * @htmlonly
+ * <a class="el" href="../../globus_common/html/group__globus__callback__spaces.html">
+ *    Globus Callback Spaces
+ * </a>
+ * @endhtmlonly
+ */
+
+globus_result_t 
+globus_io_attr_set_callback_space( 
+    globus_io_attr_t *                  attr, 
+    globus_callback_space_t             space)
+{
+    globus_object_t *                   socketattr;
+    globus_i_io_socketattr_instance_t * instance;
+    globus_result_t                     result;
+    static char *                       myname =
+        "globus_io_attr_set_callback_space";
+        
+    if(attr == GLOBUS_NULL)
+    {
+        return globus_error_put(
+            globus_io_error_construct_null_parameter(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "attr",
+                1,
+                myname));
+    }
+    if(attr->attr == GLOBUS_NULL)
+    {
+        return globus_error_put(
+            globus_io_error_construct_not_initialized(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "attr",
+                1,
+                myname));
+    }
+ 
+    socketattr = globus_object_upcast(
+        attr->attr, GLOBUS_IO_OBJECT_TYPE_SOCKETATTR);
+        
+    if(socketattr == GLOBUS_NULL)
+    {
+        /* ignore for other attrs */
+        return GLOBUS_SUCCESS;
+    }
+
+    instance = (globus_i_io_socketattr_instance_t *)
+        globus_object_get_local_instance_data(socketattr);
+
+    if(instance == GLOBUS_NULL)
+    {
+        return globus_error_put(
+            globus_io_error_construct_bad_parameter(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "attr",
+                1,
+                myname));
+    }
+    
+    result = globus_callback_space_reference(space);
+    
+    if(result == GLOBUS_SUCCESS)
+    {
+        /* destroy reference to previous space */
+        globus_callback_space_destroy(instance->space);
+    
+        instance->space = space;
+    }
+    
+    return result;
+}
+
+/**
+ * globus_io_attr_get_callback_space
+ * @ingroup attr
+ *
+ * Use this to get the callback space associated with a globus_io_attr_t. 
+ * Note: you are NOT given a reference to the space passed back.
+ * should you need one, call globus_callback_space_reference()
+ *
+ * @param attr
+ *        attr to associate space with
+ *
+ * @param space
+ *        storage for a callback space handle, result will be stored here
+ *
+ * @return
+ *        - Error on null attrs
+ *        - GLOBUS_SUCCESS
+ *
+ * @see 
+ * @htmlonly
+ * <a class="el" href="../../globus_common/html/group__globus__callback__spaces.html">
+ *    Globus Callback Spaces
+ * </a>
+ * @endhtmlonly
+ */
+
+globus_result_t 
+globus_io_attr_get_callback_space( 
+    globus_io_attr_t *                  attr, 
+    globus_callback_space_t *           space)
+{
+    globus_object_t *                   socketattr;
+    globus_i_io_socketattr_instance_t * instance;
+    static char *                       myname =
+        "globus_io_attr_get_callback_space";
+    
+    if(attr == GLOBUS_NULL)
+    {
+        return globus_error_put(
+            globus_io_error_construct_null_parameter(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "attr",
+                1,
+                myname));
+    }
+    if(space == GLOBUS_NULL)
+    {
+        return globus_error_put(
+            globus_io_error_construct_null_parameter(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "space",
+                2,
+                myname));
+    }
+    if(attr->attr == GLOBUS_NULL)
+    {
+        return globus_error_put(
+            globus_io_error_construct_not_initialized(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "attr",
+                1,
+                myname));
+    }
+    
+    socketattr = globus_object_upcast(
+        attr->attr, GLOBUS_IO_OBJECT_TYPE_SOCKETATTR);
+        
+    if(socketattr == GLOBUS_NULL)
+    {
+        /* ignore for other attr types */
+        *space = GLOBUS_CALLBACK_GLOBAL_SPACE;
+        return GLOBUS_SUCCESS;
+    }
+
+    instance = (globus_i_io_socketattr_instance_t *)
+        globus_object_get_local_instance_data(socketattr);
+
+    if(instance == GLOBUS_NULL)
+    {
+        return globus_error_put(
+            globus_io_error_construct_bad_parameter(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                "attr",
+                1,
+                myname));
+    }
+    
+    *space = instance->space;
+    return GLOBUS_SUCCESS;
+}
+/* @} */
+
+
+void
+globus_i_io_set_callback_space(
+    globus_io_handle_t *		handle,
+    globus_callback_space_t             space)
+{
+    handle->socket_attr.space = space;
+}
+
+void
+globus_i_io_get_callback_space(
+    globus_io_handle_t *		handle,
+    globus_callback_space_t *           space)
+{
+    *space = handle->socket_attr.space;
 }
 
 /****************************************************************
@@ -260,9 +483,6 @@ globus_netlogger_write(
     const char *                             tag)
 {
     struct globus_netlogger_handle_s *       s_nl_handle;
-    char *                                   outstr;
-    int                                      outstr_len;
-    int                                      rc;
     static char *                            myname=
         "globus_netlogger_write";
 
@@ -392,7 +612,6 @@ globus_netlogger_handle_init(
     struct globus_netlogger_handle_s *       s_gnl_handle;
     char *                                   main_str;
     int                                      ms_len = 0;
-    NLhandle *                               nl_handle;
     static char *                            myname=
         "globus_netlogger_handle_init";
 
@@ -474,7 +693,7 @@ globus_netlogger_handle_init(
     if(pid != GLOBUS_NULL)
     {
         ms_len += strlen("PID=") + strlen(pid) + 1;
-        s_gnl_handle->pid = strdup(pid);
+        s_gnl_handle->pid = globus_libc_strdup(pid);
     }
     main_str = (char *)globus_malloc(ms_len);
     main_str[0] = '\0';
@@ -483,8 +702,8 @@ globus_netlogger_handle_init(
         strcat(main_str, " PID=");
         strcat(main_str, pid);
     }
-    s_gnl_handle->hostname = strdup(hostname);
-    s_gnl_handle->progname = strdup(progname);
+    s_gnl_handle->hostname = globus_libc_strdup(hostname);
+    s_gnl_handle->progname = globus_libc_strdup(progname);
     s_gnl_handle->main_str = main_str;
     s_gnl_handle->desc = GLOBUS_NULL;
 
@@ -625,23 +844,23 @@ globus_io_attr_netlogger_copy_handle(
     d_gnl_handle->nl_handle = s_gnl_handle->nl_handle;
     if(s_gnl_handle->hostname != GLOBUS_NULL)
     {
-        d_gnl_handle->hostname = strdup(s_gnl_handle->hostname);
+        d_gnl_handle->hostname = globus_libc_strdup(s_gnl_handle->hostname);
     }
     if(s_gnl_handle->progname != GLOBUS_NULL)
     {
-        d_gnl_handle->progname = strdup(s_gnl_handle->progname);
+        d_gnl_handle->progname = globus_libc_strdup(s_gnl_handle->progname);
     }
     if(s_gnl_handle->main_str != GLOBUS_NULL)
     {
-        d_gnl_handle->main_str = strdup(s_gnl_handle->main_str);
+        d_gnl_handle->main_str = globus_libc_strdup(s_gnl_handle->main_str);
     }
     if(s_gnl_handle->pid != GLOBUS_NULL)
     {
-        d_gnl_handle->pid = strdup(s_gnl_handle->pid);
+        d_gnl_handle->pid = globus_libc_strdup(s_gnl_handle->pid);
     }
     if(s_gnl_handle->desc != GLOBUS_NULL)
     {
-        d_gnl_handle->desc = strdup(s_gnl_handle->desc);
+        d_gnl_handle->desc = globus_libc_strdup(s_gnl_handle->desc);
     }
 
     return GLOBUS_SUCCESS;
@@ -695,7 +914,7 @@ globus_netlogger_set_desc(
     {
         free(s_nl_handle->desc);
     }
-    s_nl_handle->desc = strdup(desc);
+    s_nl_handle->desc = globus_libc_strdup(desc);
 
     return GLOBUS_SUCCESS;
 }
@@ -1319,6 +1538,8 @@ globus_l_io_socketattr_copy(
     void *				src_instance_data,
     void **				dst_instance_data)
 {
+    globus_i_io_socketattr_instance_t *	instance;
+    
     globus_assert(dst_instance_data != GLOBUS_NULL);
     
     *dst_instance_data =
@@ -1329,6 +1550,9 @@ globus_l_io_socketattr_copy(
 	memcpy(*dst_instance_data,
 	       src_instance_data,
 	       sizeof(globus_i_io_socketattr_instance_t));
+	
+	instance = (globus_i_io_socketattr_instance_t *) *dst_instance_data;
+	globus_callback_space_reference(instance->space);
     }
 }
 /* globus_l_io_socketattr_copy() */
@@ -1348,8 +1572,14 @@ void
 globus_l_io_socketattr_destroy(
     void *				instance_data)
 {
+    globus_i_io_socketattr_instance_t *	instance;
+    
     if(instance_data)
     {
+        instance = (globus_i_io_socketattr_instance_t *) instance_data;
+        
+        globus_callback_space_destroy(instance->space);
+        
 	globus_free(instance_data);
     }
 }
@@ -2963,8 +3193,6 @@ globus_io_attr_set_tcp_interface(
     globus_object_t *			tcpattr;
     globus_i_io_tcpattr_instance_t *	instance;
     unsigned int			address[4];
-    struct in_addr			addr;
-    int					rc;
     static char *			myname=
 	                                "globus_io_attr_set_tcp_interface";
 
@@ -3028,7 +3256,7 @@ globus_io_attr_set_tcp_interface(
 		myname));
     }
 
-    sprintf(instance->interface, "%u.%u.%u.%u",
+    sprintf((char *)instance->interface, "%u.%u.%u.%u",
             address[0], address[1], address[2], address[3]);
 
     return GLOBUS_SUCCESS;
@@ -5180,10 +5408,13 @@ globus_i_io_socket_copy_attr(
     globus_i_io_socketattr_instance_t *	dst,
     globus_i_io_socketattr_instance_t *	src)
 {
+    globus_callback_space_destroy(dst->space);
+    
     memcpy(dst,
 	   src,
 	   sizeof(globus_i_io_socketattr_instance_t));
     
+    globus_callback_space_reference(dst->space);
 }
 /* globus_i_io_socket_copy_attr() */
 
@@ -5400,7 +5631,7 @@ globus_i_io_copy_securesocketattr_to_handle(
 	    globus_i_io_securesocket_copy_attr(
 		&handle->securesocket_attr,
 		instance);
-
+            
 	    return GLOBUS_SUCCESS;
 	}
     }
@@ -5484,6 +5715,7 @@ globus_i_io_copy_tcpattr_to_handle(
             memcpy(&handle->tcp_attr.interface[0],
                    &instance->interface[0],
                    16);
+	    
 	    return GLOBUS_SUCCESS;
 	}
     }
@@ -5570,7 +5802,7 @@ globus_i_io_copy_udpattr_to_handle(
 	    handle->udp_attr.address = instance->address;
 	    handle->udp_attr.interface = instance->interface;
 	    handle->udp_attr.restrict_port = instance->restrict_port;
-
+            
 	    return GLOBUS_SUCCESS;
 	}
     }
@@ -5640,6 +5872,7 @@ globus_i_io_copy_fileattr_to_handle(
 		globus_object_get_local_instance_data(attr->attr);
 
 	    handle->file_attr.file_type = instance->file_type;
+	    
 	    return GLOBUS_SUCCESS;
 	}
     }

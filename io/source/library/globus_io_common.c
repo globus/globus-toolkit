@@ -90,8 +90,8 @@ globus_io_register_close(
     static char *			myname="globus_io_register_close";
 
     globus_i_io_debug_printf(2,
-		            ("%s(): entering: handle=%p, handle->state = %d, fd=%d\n",
-			     myname, handle, handle->state, handle->fd));
+		            (stderr, "%s(): entering: handle=%p, handle->state = %d, fd=%d\n",
+			     myname, (void *)handle, handle->state, handle->fd));
     if(handle == GLOBUS_NULL)
     {
 	err = globus_io_error_construct_null_parameter(
@@ -258,6 +258,8 @@ globus_io_cancel(
     monitor.err = GLOBUS_NULL;
     monitor.use_err = GLOBUS_FALSE;
     
+    handle->blocking_cancel = GLOBUS_TRUE;
+    
     result = globus_io_register_cancel(handle,
 				      perform_callbacks,
 				      globus_i_io_monitor_callback,
@@ -276,7 +278,9 @@ globus_io_cancel(
 	globus_cond_wait(&monitor.cond, &monitor.mutex);
     }
     globus_mutex_unlock(&monitor.mutex);
-
+    
+    handle->blocking_cancel = GLOBUS_FALSE;
+    
     globus_mutex_destroy(&monitor.mutex);
 
     globus_cond_destroy(&monitor.cond);
@@ -337,6 +341,8 @@ globus_io_close(
     monitor.err = GLOBUS_NULL;
     monitor.use_err = GLOBUS_FALSE;
     
+    handle->blocking_cancel = GLOBUS_TRUE;
+    
     result = globus_io_register_close(handle,
 				      globus_i_io_monitor_callback,
 				      (void *) &monitor);
@@ -354,7 +360,9 @@ globus_io_close(
 	globus_cond_wait(&monitor.cond, &monitor.mutex);
     }
     globus_mutex_unlock(&monitor.mutex);
-
+    
+    handle->blocking_cancel = GLOBUS_FALSE;
+    
     globus_mutex_destroy(&monitor.mutex);
 
     globus_cond_destroy(&monitor.cond);
@@ -451,21 +459,17 @@ globus_io_register_listen(
 	goto error_exit;
     }
     
+    rc = globus_i_io_register_quick_operation(
+        handle,
+        callback,
+        callback_arg,
+        GLOBUS_NULL,
+        GLOBUS_TRUE,
+        GLOBUS_I_IO_READ_OPERATION);
 
-    rc = globus_i_io_register_read_func(handle,
-					callback,
-					callback_arg,
-					GLOBUS_NULL,
-					GLOBUS_TRUE);
-    if(rc != GLOBUS_SUCCESS)
-    {
-	err = globus_error_get(rc);
-	goto error_exit;
-    }
-    
     globus_i_io_mutex_unlock();
 
-    return GLOBUS_SUCCESS;
+    return rc;
 
   error_exit:
     globus_i_io_mutex_unlock();
@@ -493,6 +497,8 @@ globus_io_listen(
     monitor.err = GLOBUS_NULL;
     monitor.use_err = GLOBUS_FALSE;
     
+    handle->blocking_read = GLOBUS_TRUE;
+    
     result = globus_io_register_listen(handle,
 				       globus_i_io_monitor_callback,
 				       (void *) &monitor);
@@ -511,7 +517,9 @@ globus_io_listen(
 	globus_cond_wait(&monitor.cond, &monitor.mutex);
     }
     globus_mutex_unlock(&monitor.mutex);
-
+    
+    handle->blocking_read = GLOBUS_FALSE;
+    
     globus_mutex_destroy(&monitor.mutex);
 
     globus_cond_destroy(&monitor.cond);
@@ -614,6 +622,8 @@ globus_i_io_handle_destroy(
 			       &handle->securesocket_attr.credential);
        handle->securesocket_attr.credential = GSS_C_NO_CREDENTIAL;
     }
+    
+    globus_callback_space_destroy(handle->socket_attr.space);
 }
 
 /* callbacks */
@@ -746,20 +756,14 @@ globus_i_io_connect_callback(
     }
     if(result == GLOBUS_SUCCESS)
     {
-	    handle->state = GLOBUS_IO_HANDLE_STATE_CONNECTED;
-
-	    info->callback(info->callback_arg,
-		           handle,
-		           result);
+        handle->state = GLOBUS_IO_HANDLE_STATE_CONNECTED;
     }
     else
     {
 	handle->state = GLOBUS_IO_HANDLE_STATE_INVALID;
-
-	info->callback(info->callback_arg,
-		       handle,
-		       result);
     }
+    
+    info->callback(info->callback_arg, handle, result);
 
     globus_free(info);
 }
@@ -830,6 +834,18 @@ globus_i_io_initialize_handle(
     handle->type = type;
     handle->state = GLOBUS_IO_HANDLE_STATE_INVALID;
     handle->user_pointer = GLOBUS_NULL;
-
+    
+    globus_callback_space_reference(GLOBUS_CALLBACK_GLOBAL_SPACE);
+    handle->socket_attr.space = GLOBUS_CALLBACK_GLOBAL_SPACE;
+    
+    handle->blocking_read = GLOBUS_FALSE;
+    handle->blocking_write = GLOBUS_FALSE;
+    handle->blocking_except = GLOBUS_FALSE;
+    handle->blocking_cancel = GLOBUS_FALSE;
+    
+    handle->read_operation = GLOBUS_NULL;
+    handle->write_operation = GLOBUS_NULL;
+    handle->except_operation = GLOBUS_NULL;
+    
     return GLOBUS_SUCCESS;
 }

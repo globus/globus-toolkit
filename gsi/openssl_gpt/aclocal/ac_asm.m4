@@ -27,7 +27,7 @@ AC_DEFUN(LAC_ASM,
 
     # disable asm if debug is turned on
 
-    if test "$GLOBUS_DEBUG" != "yes"; then
+    if test "$GLOBUS_DEBUG" = "yes"; then
         lac_asm="no"
     fi
 

@@ -12,7 +12,7 @@ use Test;
 use FtpTestLib;
 use Globus::URL;
 
-my $test_exec = $ENV{GLOBUS_LOCATION} . '/test/' . 'globus-ftp-client-get-test';
+my $test_exec = './globus-ftp-client-get-test';
 my @tests;
 my @todo;
 
@@ -25,7 +25,7 @@ if (!defined($gpath))
 
 @INC = (@INC, "$gpath/lib/perl");
 
-my ($test_url, $local_copy) = FtpTestLib::stage_source_url();
+my ($source_host, $source_file, $local_copy) = setup_remote_source();
 
 =head2 I<basic_func> (Test 1-2)
 
@@ -58,10 +58,11 @@ sub basic_func
     {
         FtpTestLib::push_proxy("/dev/null");
     }
-    $rc = system("$test_exec -s '$test_url' >'$tmpname' 2>/dev/null") / 256;
+    my $command = "$test_exec -s 'gsiftp://$source_host$source_file' > $tmpname 2>/dev/null";
+    $rc = system($command) / 256;
     if(($use_proxy && $rc != 0) || (!$use_proxy && $rc == 0))
     {
-        $errors .= "Test exited with $rc. ";
+        $errors .= "\n# Test exited with $rc. ";
     }
     if(-r 'core')
     {
@@ -69,7 +70,7 @@ sub basic_func
     }
     if($use_proxy)
     {
-        $errors .= FtpTestLib::compare_local_files($local_copy, $tmpname);
+        $errors .= compare_local_files($local_copy, $tmpname);
     }
 
     if($errors eq "")
@@ -78,6 +79,7 @@ sub basic_func
     }
     else
     {
+        $errors = "\n# Test failed\n# $command\n# " . $errors;
         ok($errors, 'success');
     }
     unlink($tmpname);
@@ -106,15 +108,14 @@ and no core file is generated.
 =cut
 sub bad_url
 {
-    my $tmpname = POSIX::tmpnam();
     my ($errors,$rc) = ("",0);
-    my ($bogus_url) = new Globus::URL($test_url);
+    my ($bogus_url) = new Globus::URL("gsiftp://$source_host$source_file");
 
     $bogus_url->{path} = "/no-such-file-here";
     unlink('core');
-
-    $rc = system("$test_exec -s '".
-		 $bogus_url->to_string()."' >/dev/null 2>/dev/null") / 256;
+    
+    my $command = "$test_exec -s ".$bogus_url->to_string()." >/dev/null 2>/dev/null";
+    $rc = system($command) / 256;
     if($rc != 1)
     {
         $errors .= "\n# Test exited with $rc.";
@@ -130,9 +131,9 @@ sub bad_url
     }
     else
     {
+        $errors = "\n# Test failed\n# $command\n# " . $errors;
         ok($errors, 'success');
     }
-    unlink($tmpname);
 }
 
 push(@tests, "bad_url");
@@ -149,13 +150,13 @@ use a stronger measure of success here)
 =cut
 sub abort_test
 {
-    my $tmpname = POSIX::tmpnam();
     my ($errors,$rc) = ("", 0);
     my ($abort_point) = shift;
 
-    unlink('core', $tmpname);
+    unlink('core');
 
-    $rc = system("$test_exec -s '$test_url' -a $abort_point >/dev/null 2>&1") / 256;
+    my $command = "$test_exec -a $abort_point -s 'gsiftp://$source_host$source_file' >/dev/null 2>&1";
+    $rc = system($command) / 256;
     if(-r 'core')
     {
         $errors .= "\n# Core file generated.";
@@ -167,9 +168,9 @@ sub abort_test
     }
     else
     {
+        $errors = "\n# Test failed\n# $command\n# " . $errors;
         ok($errors, 'success');
     }
-    unlink($tmpname);
 }
 for(my $i = 1; $i <= 41; $i++)
 {
@@ -191,10 +192,11 @@ sub restart_test
 
     unlink('core');
 
-    $rc = system("$test_exec -s '$test_url' -r $restart_point >$tmpname 2>/dev/null") / 256;
+    my $command = "$test_exec -r $restart_point -s 'gsiftp://$source_host$source_file' > $tmpname 2>/dev/null";
+    $rc = system($command) / 256;
     if($rc != 0)
     {
-        $errors .= "Test exited with $rc. ";
+        $errors .= "\n# Test exited with $rc. ";
     }
     if(-r 'core')
     {
@@ -202,7 +204,7 @@ sub restart_test
     }
     if($errors eq "")
     {
-        $errors .= FtpTestLib::compare_local_files($local_copy, $tmpname);
+        $errors .= compare_local_files($local_copy, $tmpname);
     }
 
     if($errors eq "")
@@ -211,7 +213,8 @@ sub restart_test
     }
     else
     {
-        ok("\n# $test_exec -r $restart_point\n#$errors", 'success');
+        $errors = "\n# Test failed\n# $command\n# " . $errors;
+        ok($errors, 'success');
     }
     unlink($tmpname);
 }
@@ -255,10 +258,11 @@ sub dcau_test
 
     unlink('core');
 
-    $rc = system("$test_exec -s '$test_url' -c $dcau >$tmpname 2>/dev/null") / 256;
+    my $command = "$test_exec -c $dcau -s 'gsiftp://$source_host$source_file' > $tmpname 2>/dev/null";
+    $rc = system($command) / 256;
     if($rc != $desired_rc)
     {
-        $errors .= "Test exited with $rc. ";
+        $errors .= "\n# Test exited with $rc. ";
     }
     if(-r 'core')
     {
@@ -266,7 +270,7 @@ sub dcau_test
     }
     if($errors eq "" && $desired_rc == 0)
     {
-        $errors .= FtpTestLib::compare_local_files($local_copy, $tmpname);
+        $errors .= compare_local_files($local_copy, $tmpname);
     }
 
     if($errors eq "")
@@ -275,7 +279,8 @@ sub dcau_test
     }
     else
     {
-        ok("\n# $test_exec -c $dcau\n#$errors", 'success');
+        $errors = "\n# Test failed\n# $command\n# " . $errors;
+        ok($errors, 'success');
     }
     unlink($tmpname);
 }
@@ -319,10 +324,11 @@ sub prot_test
 
     unlink('core');
 
-    $rc = system("$test_exec -s '$test_url' -c self -t $prot >$tmpname 2>/dev/null") / 256;
+    my $command = "$test_exec -c self -t $prot -s 'gsiftp://$source_host$source_file' > $tmpname 2>/dev/null";
+    $rc = system($command) / 256;
     if($rc != $desired_rc)
     {
-        $errors .= "Test exited with $rc. ";
+        $errors .= "\n# Test exited with $rc. ";
     }
     if(-r 'core')
     {
@@ -330,7 +336,7 @@ sub prot_test
     }
     if($errors eq "" && $desired_rc == 0)
     {
-        $errors .= FtpTestLib::compare_local_files($local_copy, $tmpname);
+        $errors .= compare_local_files($local_copy, $tmpname);
     }
 
     if($errors eq "")
@@ -339,7 +345,8 @@ sub prot_test
     }
     else
     {
-        ok("\n# $test_exec -c self -t $prot\n#$errors", 'success');
+        $errors = "\n# Test failed\n# $command\n# " . $errors;
+        ok($errors, 'success');
     }
     unlink($tmpname);
 }
@@ -362,10 +369,11 @@ sub perf_test
 
     unlink('core');
 
-    $rc = system("$test_exec -s '$test_url' -M >$tmpname 2>/dev/null") / 256;
+    my $command = "$test_exec -M -s 'gsiftp://$source_host$source_file' > $tmpname 2>/dev/null";
+    $rc = system($command) / 256;
     if($rc != 0)
     {
-        $errors .= "Test exited with $rc. ";
+        $errors .= "\n# Test exited with $rc. ";
     }
     if(-r 'core')
     {
@@ -373,7 +381,7 @@ sub perf_test
     }
     if($errors eq "")
     {
-        $errors .= FtpTestLib::compare_local_files($local_copy, $tmpname);
+        $errors .= compare_local_files($local_copy, $tmpname);
     }
 
     if($errors eq "")
@@ -382,7 +390,8 @@ sub perf_test
     }
     else
     {
-        ok("\n# $test_exec -M\n#$errors", 'success');
+        $errors = "\n# Test failed\n# $command\n# " . $errors;
+        ok($errors, 'success');
     }
     unlink($tmpname);
 }
@@ -403,10 +412,11 @@ sub throughput_test
 
     unlink('core');
 
-    $rc = system("$test_exec -s '$test_url' -T >$tmpname 2>/dev/null") / 256;
+    my $command = "$test_exec -T -s 'gsiftp://$source_host$source_file' > $tmpname 2>/dev/null";
+    $rc = system($command) / 256;
     if($rc != 0)
     {
-        $errors .= "Test exited with $rc. ";
+        $errors .= "\n# Test exited with $rc. ";
     }
     if(-r 'core')
     {
@@ -414,7 +424,7 @@ sub throughput_test
     }
     if($errors eq "")
     {
-        $errors .= FtpTestLib::compare_local_files($local_copy, $tmpname);
+        $errors .= compare_local_files($local_copy, $tmpname);
     }
 
     if($errors eq "")
@@ -423,7 +433,8 @@ sub throughput_test
     }
     else
     {
-        ok("\n# $test_exec -T\n#$errors", 'success');
+        $errors = "\n# Test failed\n# $command\n# " . $errors;
+        ok($errors, 'success');
     }
     unlink($tmpname);
 }
@@ -453,16 +464,17 @@ sub restart_plugin_test
 	$other_args = "";
     }
 
-    $rc = system("$test_exec -s '$test_url' -f 0,0,0,0 $other_args >'$tmpname' 2>/dev/null") / 256;
+    my $command = "$test_exec -s 'gsiftp://$source_host$source_file' -f 0,0,0,0 $other_args > $tmpname 2>/dev/null";
+    $rc = system($command) / 256;
     if($rc != 0)
     {
-        $errors .= "Test exited with $rc. ";
+        $errors .= "\n# Test exited with $rc. ";
     }
     if(-r 'core')
     {
         $errors .= "\n# Core file generated.";
     }
-    $errors .= FtpTestLib::compare_local_files($local_copy, $tmpname);
+    $errors .= compare_local_files($local_copy, $tmpname);
 
     if($errors eq "")
     {
@@ -470,6 +482,7 @@ sub restart_plugin_test
     }
     else
     {
+        $errors = "\n# Test failed\n# $command\n# " . $errors;
         ok($errors, 'success');
     }
     delete $ENV{GLOBUS_FTP_CLIENT_FAULT_MODE};
@@ -484,14 +497,25 @@ push(@tests, "restart_plugin_test('PROT', '-c self -t safe')");
 push(@tests, "restart_plugin_test('DCAU', '-c self -t safe')");
 push(@tests, "restart_plugin_test('PBSZ', '-c self -t safe')");
 
-# Now that the tests are defined, set up the Test to deal with them.
-plan tests => scalar(@tests), todo => \@todo;
-
-# And run them all.
-foreach (@tests)
+if(@ARGV)
 {
-    eval "&$_";
+    plan tests => scalar(@ARGV);
+
+    foreach (@ARGV)
+    {
+        eval "&$tests[$_-1]";
+    }
 }
+else
+{
+    plan tests => scalar(@tests), todo => \@todo;
+
+    foreach (@tests)
+    {
+        eval "&$_";
+    }
+}
+
 
 unlink($local_copy);
 

@@ -27,17 +27,7 @@ if test x$have_pthread_h = xyes; then
 		*-hp-hpux10* | *-hp-hpux11* ) other_libs="-lm";;
 		* ) other_libs=;;
 	esac
-
-	AC_CHECK_LIB(pthread, main,
-	[GLOBUS_HAVE_PTHREADS="yes"	
-	 PTHREAD_LIB_FLAGS="-lpthread $other_libs"
-	],
-	[
-	AC_CHECK_LIB(pthreads, main,
-	[GLOBUS_HAVE_PTHREADS="yes"	
-	 PTHREAD_LIB_FLAGS="-lpthreads $other_libs"
-	],,$other_libs)
-	],$other_libs)
+        GLOBUS_HAVE_PTHREADS="yes"
 fi
 
 # Decide on one thread package

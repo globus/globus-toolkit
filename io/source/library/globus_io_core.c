@@ -65,51 +65,60 @@ globus_bool_t                      g_globus_i_io_use_netlogger = GLOBUS_FALSE;
  * reading data from an SSL stream, where buffering may occur)
  *
  */
+
+typedef struct globus_io_operation_info_s
+{
+    globus_io_handle_t *                handle;
+    globus_i_io_operation_type_t        op;
+    globus_bool_t                       canceled;
+    globus_bool_t                       need_select;
+    globus_callback_handle_t            callback_handle;
+    
+    globus_io_callback_t                callback;
+    void *                              arg;
+    globus_io_destructor_t              arg_destructor;
+    
+    int                                 refs;
+} globus_io_operation_info_t;
+
 typedef struct globus_io_select_info_s
 {
-    globus_io_handle_t *	handle;
-
-    globus_io_callback_t	read_callback;
-    void *			read_arg;
-    globus_io_destructor_t	read_destructor;
-    globus_bool_t		read_select;
-
-    globus_io_callback_t	write_callback;
-    void *			write_arg;
-    globus_io_destructor_t	write_destructor;
-
-    globus_io_callback_t	except_callback;
-    void *			except_arg;
+    globus_io_operation_info_t *        read;
+    globus_io_operation_info_t *        write;
+    globus_io_operation_info_t *        except;
 } globus_io_select_info_t;
+
 #endif
 
 typedef struct globus_io_cancel_info_s
 {
-    globus_io_handle_t *		handle;
-    globus_io_callback_t 		read_callback;
-    void *				read_arg;
-    globus_bool_t			read_dispatched;
-    globus_io_destructor_t		read_destructor;
-    globus_io_callback_t		write_callback;
-    void *				write_arg;
-    globus_bool_t			write_dispatched;
-    globus_io_destructor_t		write_destructor;
-    globus_io_callback_t		except_callback;
-    void *				except_arg;
-    globus_bool_t			except_dispatched;
-    globus_io_callback_t		cancel_callback;
-    void *				cancel_arg;
-    globus_bool_t			cancel_dispatched;
-    globus_io_destructor_t		cancel_destructor;
-    struct globus_io_cancel_info_s *	next;
+    globus_io_handle_t *                handle;
+    globus_callback_handle_t            callback_handle;
+    
+    globus_io_operation_info_t *        read;
+    globus_io_operation_info_t *        write;
+    globus_io_operation_info_t *        except;
+    
+    globus_io_callback_t                callback;
+    void *                              arg;
+    globus_io_destructor_t              arg_destructor;
+    
+    struct globus_io_cancel_info_s *    next;
 } globus_io_cancel_info_t;
 
-static void
-globus_l_io_handler_wakeup(void *arg);
+typedef struct
+{
+    globus_i_io_operation_type_t        op;
+    globus_io_callback_t		callback_func;
+    void *				callback_arg;
+    globus_io_destructor_t              arg_destructor;
+} globus_i_io_quick_operation_info_t;
 
-static globus_bool_t
+static 
+void
 globus_l_io_poll(
-    globus_abstime_t *                  time_stop,
+    const globus_abstime_t *            time_now,
+    const globus_abstime_t *            time_stop,
     void *                              user_args);
 
 /*
@@ -186,6 +195,8 @@ static globus_size_t			globus_l_io_highest_fd;
  * FD corresponding to an I/O handle.
  */
 static globus_io_select_info_t **	globus_l_io_fd_table;
+
+static globus_memory_t              globus_l_io_operation_info_memory;
 /**
  * The read FD mask for select().
  */
@@ -233,7 +244,7 @@ static int				globus_l_io_fd_num_set;
  * handler thread which is blocked in a select that the fd_table is 
  * different than when it was called, and therefore should not be trusted.
  */
-static volatile globus_bool_t		globus_l_io_fd_table_modified;
+static globus_bool_t		        globus_l_io_fd_table_modified;
 /**
  * Queue of pending cancels to be dispatched at the next pass through
  * the event driver
@@ -249,40 +260,48 @@ static globus_io_cancel_info_t *	globus_l_io_cancel_tail;
  */
 static globus_io_cancel_info_t *	globus_l_io_cancel_free_list;
 /**
+ * The cancel structures that have callbacks waiting to fire them
+ */
+static globus_io_cancel_info_t *	globus_l_io_cancel_pending_list;
+
+/**
  * List of pending read operations which do not need the select to be
  * done in order to complete them. This is used to dispatch buffered
  * reads, which were introduced to support GSSAPI wrapping of messages.
  */
-static globus_list_t *			globus_l_io_reads;
+static globus_list_t *			globus_l_io_operations;
 /**
  * Number of times select has been called. This is used to work
  * around an IRIX bug which caused hangage when closing a FD
  * currently being monitored by select().
  */
-static volatile int	          	globus_l_io_select_count;
+static int	          	        globus_l_io_select_count;
 /**
  * Flag which lets us know if a blocking select() is happening
  * right now. We use this to decide whether to write to the pipe
  * to wake it up if we change the select mask.
  */
-static volatile globus_bool_t	        globus_l_io_select_active;
+static globus_bool_t	                globus_l_io_select_active;
 /**
  * Flag which lets us know if wakeup has been sent to the event
  * handler already, so that we don't repeat it.
  */
-static volatile globus_bool_t	        globus_l_io_wakeup_pending;
+static globus_bool_t	                globus_l_io_wakeup_pending;
 /**
  * Flag which lets us know if deactivation is in progress, so that
  * we don't re-register again.
  */
-static volatile globus_bool_t	        globus_l_io_shutdown_called;
-
+static globus_bool_t	                globus_l_io_shutdown_called;
+/**
+ * memory for callback_info structures
+ */
+#define GLOBUS_L_IO_CALLBACK_MEMORY_BLOCK_COUNT 256
 /**
  * Pipe to myself.
  *
  * This is used to wakeup the select() loop when the FD masks have changed;
  * <br>globus_l_io_wakeup_pip[0] = read
- * <br>globus_l_io_wakeup_pip[0] = write
+ * <br>globus_l_io_wakeup_pip[1] = write
  */
 static int			        globus_l_io_wakeup_pipe[2];
 /**
@@ -302,6 +321,8 @@ static globus_io_handle_t	        globus_l_io_wakeup_pipe_handle;
  */
 static globus_callback_handle_t         globus_l_io_callback_handle;
 
+static int                              globus_l_io_pending_count;
+
 globus_bool_t *                         globus_i_io_tcp_used_port_table;
 globus_bool_t *                         globus_i_io_udp_used_port_table;
 unsigned short                          globus_i_io_tcp_used_port_min;
@@ -311,10 +332,9 @@ unsigned short                          globus_i_io_udp_used_port_max;
 
 globus_mutex_t                          globus_i_io_mutex;
 globus_cond_t                           globus_i_io_cond;
-volatile int                            globus_i_io_mutex_cnt;
-volatile int                            globus_i_io_cond_cnt;
+int                                     globus_i_io_mutex_cnt;
+int                                     globus_i_io_cond_cnt;
 
-globus_wakeup_func_t                    globus_l_io_core_wakeup_func_ptr;
 static globus_l_io_adaptive_skip_poll_t globus_l_io_skip_poll_info;
 static globus_bool_t                    globus_l_io_use_skip_poll;
 
@@ -369,7 +389,8 @@ globus_l_io_table_remove_fd(
 
 static
 int
-globus_l_io_handle_events(void);
+globus_l_io_handle_events(
+    globus_reltime_t *                  time_left);
 
 
 /******************************************************************************
@@ -394,7 +415,8 @@ globus_l_io_select_wakeup(void)
     char				byte = '\0';
     int					rc;
 
-    globus_i_io_debug_printf(3, ("globus_l_io_select_wakeup(): entering\n"));
+    globus_i_io_debug_printf(3, 
+        (stderr, "globus_l_io_select_wakeup(): entering\n"));
 
     if(!globus_l_io_mutex_acquired())
     {
@@ -408,7 +430,7 @@ globus_l_io_select_wakeup(void)
     }
 
     globus_i_io_debug_printf(5,
-		       ("globus_l_io_select_wakeup(): poking handler thread\n"));
+        (stderr, "globus_l_io_select_wakeup(): poking handler thread\n"));
 
     while ((rc = globus_libc_write(globus_l_io_wakeup_pipe[1],
 				   &byte,
@@ -429,7 +451,8 @@ globus_l_io_select_wakeup(void)
     }
 
   fn_exit:
-    globus_i_io_debug_printf(3, ("globus_l_io_select_wakeup(): exiting\n"));
+    globus_i_io_debug_printf(3, 
+        (stderr, "globus_l_io_select_wakeup(): exiting\n"));
 
     return rc;
 #else
@@ -457,8 +480,7 @@ globus_l_io_internal_handle_create(
     globus_io_handle_t *		handle)
 {
     globus_i_io_debug_printf(3,
-		       ("globus_l_io_handle_create(): entering, fd=%d\n",
-			fd));
+        (stderr, "globus_l_io_handle_create(): entering, fd=%d\n", fd));
 
     /*    GlobusAssert2((globus_l_io_mutex_acquired()),
      *			("globus_l_io_table_add()\n"));
@@ -468,7 +490,14 @@ globus_l_io_internal_handle_create(
     handle->type = GLOBUS_IO_HANDLE_TYPE_INTERNAL;
     handle->state = GLOBUS_IO_HANDLE_STATE_CONNECTED;
     
-    globus_i_io_debug_printf(3, ("globus_l_io_internal_handle_create(): exiting\n"));
+    handle->socket_attr.space = GLOBUS_CALLBACK_GLOBAL_SPACE;
+    
+    handle->read_operation = GLOBUS_NULL;
+    handle->write_operation = GLOBUS_NULL;
+    handle->except_operation = GLOBUS_NULL;
+    
+    globus_i_io_debug_printf(3,
+        (stderr, "globus_l_io_internal_handle_create(): exiting\n"));
 
     return GLOBUS_SUCCESS;
 }
@@ -488,43 +517,31 @@ globus_l_io_internal_handle_create(
 static
 void
 globus_l_io_table_add(
-    globus_io_handle_t *		handle)
+    globus_io_handle_t *        handle)
 {
-    globus_io_select_info_t *		select_info;
-
-    globus_i_io_debug_printf(3,
-		       ("globus_l_io_table_add(): entering, fd=%d\n",
-			handle->fd));
+    globus_io_select_info_t *       select_info;
 
     /*    GlobusAssert2((globus_l_io_mutex_acquired()),
-     *			("globus_l_io_table_add()\n"));
+     *          ("globus_l_io_table_add()\n"));
      */
 
     if (globus_l_io_fd_table[handle->fd])
     {
-	globus_l_io_fd_table[handle->fd]->handle = handle;
-
-	goto fn_exit;
+        return;
     }
-    select_info = (globus_io_select_info_t *)
-	globus_malloc(sizeof(globus_io_select_info_t));
     
-    select_info->handle = handle;
-    select_info->read_callback = GLOBUS_NULL;
-    select_info->read_arg = GLOBUS_NULL;
-    select_info->write_callback = GLOBUS_NULL;
-    select_info->write_arg = GLOBUS_NULL;
-    select_info->except_callback = GLOBUS_NULL;
-    select_info->except_arg = GLOBUS_NULL;
+    select_info = (globus_io_select_info_t *)
+        globus_malloc(sizeof(globus_io_select_info_t));
+    
+    select_info->read = GLOBUS_NULL;
+    select_info->write = GLOBUS_NULL;
+    select_info->except = GLOBUS_NULL;
 
     globus_l_io_fd_table[handle->fd] = select_info;
     if(globus_l_io_highest_fd < handle->fd)
     {
-	globus_l_io_highest_fd = handle->fd;
+        globus_l_io_highest_fd = handle->fd;
     }
-
-  fn_exit:
-    globus_i_io_debug_printf(3, ("globus_l_io_table_add(): exiting\n"));
 }
 /* globus_l_io_table_add() */
 
@@ -547,12 +564,12 @@ globus_l_io_table_remove(
     globus_io_handle_t *		handle)
 {
     globus_i_io_debug_printf(3,
-		       ("globus_l_io_table_remove(): entering, fd=%d\n",
-			handle->fd));
+        (stderr, "globus_l_io_table_remove(): entering, fd=%d\n", handle->fd));
 
     globus_l_io_table_remove_fd(handle->fd);
 
-    globus_i_io_debug_printf(3, ("globus_l_io_table_remove(): exiting\n"));
+    globus_i_io_debug_printf(3, 
+        (stderr, "globus_l_io_table_remove(): exiting\n"));
     return GLOBUS_SUCCESS;
 }
 /* globus_l_io_table_remove() */
@@ -577,8 +594,7 @@ globus_l_io_table_remove_fd(
     globus_io_select_info_t *		select_info;
 
     globus_i_io_debug_printf(3,
-		       ("globus_l_io_table_remove_fd(): entering, fd=%d\n",
-			fd));
+        (stderr, "globus_l_io_table_remove_fd(): entering, fd=%d\n", fd));
 
     /*
      *    GlobusAssert2((globus_l_io_mutex_acquired()),
@@ -593,384 +609,514 @@ globus_l_io_table_remove_fd(
 	globus_free(select_info);
     }
 
-    globus_i_io_debug_printf(3, ("globus_l_io_table_remove_fd(): exiting\n"));
+    globus_i_io_debug_printf(3,
+        (stderr, "globus_l_io_table_remove_fd(): exiting\n"));
     return GLOBUS_SUCCESS;
 }
 /* globus_l_io_table_remove() */
 
-/*
- * Function:	globus_i_io_register_read_func()
- *
- * Description:	add the specified file descriptor to the read select list and
- *		register an associated callback function
- *
- *		Note: the FD mutex must be acquired before calling this func
- *
- * Parameters:	
- *
- *Returns:	
- */
+
 globus_result_t
-globus_i_io_register_read_func(
-    globus_io_handle_t *		handle,
-    globus_io_callback_t		callback_func,
+globus_i_io_start_operation(
+    globus_io_handle_t *                handle,
+    globus_i_io_operation_type_t        ops)
+{
+    globus_io_select_info_t *           select_info;
+    globus_io_operation_info_t *        operation_info;
+    globus_result_t                     result;
+    static char *                       myname = 
+        "globus_i_io_start_operation";
+
+    globus_i_io_debug_printf(3,
+        (stderr, "%s(): entering, fd=%d\n", myname, handle->fd));
+    
+    if(ops & GLOBUS_I_IO_READ_OPERATION && handle->read_operation)
+    {
+        result = globus_error_put(
+            globus_io_error_construct_read_already_registered(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                handle));
+        
+        goto exit_error;
+    }
+    
+    if(ops & GLOBUS_I_IO_WRITE_OPERATION && handle->write_operation)
+    {
+        result = globus_error_put(
+            globus_io_error_construct_write_already_registered(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                handle));
+        
+        goto exit_error;
+    }
+    
+    if(ops & GLOBUS_I_IO_EXCEPT_OPERATION && handle->except_operation)
+    {
+        result = globus_error_put(
+            globus_io_error_construct_except_already_registered(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                handle));
+        
+        goto exit_error;
+    }
+    
+    operation_info = (globus_io_operation_info_t *)
+        globus_memory_pop_node(&globus_l_io_operation_info_memory);
+    
+    operation_info->handle = handle;
+    operation_info->canceled = GLOBUS_FALSE;
+    operation_info->callback = GLOBUS_NULL;
+    operation_info->refs = 0;
+    
+    globus_l_io_table_add(handle);
+    select_info = globus_l_io_fd_table[handle->fd];
+    
+    if(ops & GLOBUS_I_IO_READ_OPERATION)
+    {
+        select_info->read = operation_info;
+        handle->read_operation = operation_info;
+    }
+    
+    if(ops & GLOBUS_I_IO_WRITE_OPERATION)
+    {
+        select_info->write = operation_info;
+        handle->write_operation = operation_info;
+    }
+    
+    if(ops & GLOBUS_I_IO_EXCEPT_OPERATION)
+    {
+        select_info->except = operation_info;
+        handle->except_operation = operation_info;
+    }
+
+    globus_i_io_debug_printf(3,
+        (stderr, "%s(): exiting, fd=%d\n", myname, handle->fd));
+
+    return GLOBUS_SUCCESS;
+    
+exit_error:
+    globus_i_io_debug_printf(3,
+        (stderr, "%s(): exiting with error, fd=%d\n", myname, handle->fd));
+    
+    return result;
+}
+
+void
+globus_i_io_end_operation(
+    globus_io_handle_t *                handle,
+    globus_i_io_operation_type_t        ops)
+{
+    globus_io_select_info_t *           select_info;
+    globus_io_operation_info_t *        operation_info;
+    static char *                       myname = 
+        "globus_i_io_end_operation";
+
+    globus_i_io_debug_printf(3,
+        (stderr, "%s(): entering, fd=%d\n", myname, handle->fd));
+    
+    operation_info = GLOBUS_NULL;
+    
+    if(ops & GLOBUS_I_IO_READ_OPERATION)
+    {
+        operation_info = handle->read_operation;
+    }
+    else if(ops & GLOBUS_I_IO_WRITE_OPERATION)
+    {
+        operation_info = handle->write_operation;
+    }
+    else if(ops & GLOBUS_I_IO_EXCEPT_OPERATION)
+    {
+        operation_info = handle->except_operation;
+    }
+    
+    if(!operation_info)
+    {
+        globus_assert(0 && "operation never started");
+    }
+    
+    /* clear out all operations bound to this structure */
+    if(handle->read_operation == operation_info)
+    {
+        handle->read_operation = GLOBUS_NULL;
+    }
+    
+    if(handle->write_operation == operation_info)
+    {
+        handle->write_operation = GLOBUS_NULL;
+    }
+    
+    if(handle->except_operation == operation_info)
+    {
+        handle->except_operation = GLOBUS_NULL;
+    }
+        
+    if(!operation_info->canceled)
+    {
+        select_info = globus_l_io_fd_table[handle->fd];
+        
+        if(select_info->read == operation_info)
+        {
+            select_info->read = GLOBUS_NULL;
+        }
+        
+        if(select_info->write == operation_info)
+        {
+            select_info->write = GLOBUS_NULL;
+        }
+        
+        if(select_info->except == operation_info)
+        {
+            select_info->except = GLOBUS_NULL;
+        }
+    }
+    
+    globus_memory_push_node(
+        &globus_l_io_operation_info_memory, operation_info);
+    
+    globus_i_io_debug_printf(3,
+        (stderr, "%s(): exiting, fd=%d\n", myname, handle->fd));
+}
+
+globus_result_t
+globus_i_io_register_operation(
+    globus_io_handle_t *                handle,
+    globus_io_callback_t                callback_func,
+    void *                              callback_arg,
+    globus_io_destructor_t              arg_destructor,
+    globus_bool_t                       needs_select,
+    globus_i_io_operation_type_t        op)
+{
+    globus_io_operation_info_t *        operation_info;
+    globus_result_t                     result;
+    static char *                       myname =
+        "globus_i_io_register_operation";
+
+    globus_i_io_debug_printf(3,
+        (stderr, "%s(): entering, fd=%d\n", myname, handle->fd));
+    
+    switch(op)
+    {
+      case GLOBUS_I_IO_READ_OPERATION:
+        operation_info = handle->read_operation;
+        break;
+      
+      case GLOBUS_I_IO_WRITE_OPERATION:
+        operation_info = handle->write_operation;
+        break;
+        
+      case GLOBUS_I_IO_EXCEPT_OPERATION:
+        operation_info = handle->except_operation;
+        break;
+        
+      default:
+        globus_assert(0 && "invalid op");
+        break;
+    }
+    
+    if(!operation_info)
+    {
+        result = globus_error_put(
+            globus_io_error_construct_internal_error(
+	            GLOBUS_IO_MODULE,
+	            GLOBUS_NULL,
+	            myname));
+        
+        goto exit_error;
+    }
+    
+    if(operation_info->canceled)
+    {
+        result = globus_error_put(
+            globus_io_error_construct_io_cancelled(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                handle));
+        
+        goto exit_error;
+    }
+    
+    switch(op)
+    {
+      case GLOBUS_I_IO_READ_OPERATION:
+        if(operation_info->callback)
+        {
+            result = globus_error_put(
+                globus_io_error_construct_read_already_registered(
+                    GLOBUS_IO_MODULE,
+                    GLOBUS_NULL,
+                    handle));
+            
+            goto exit_error;
+        }
+        
+        FD_SET(handle->fd, globus_l_io_read_fds);
+        break;
+      
+      case GLOBUS_I_IO_WRITE_OPERATION:
+        if(operation_info->callback)
+        {
+            result = globus_error_put(
+                globus_io_error_construct_write_already_registered(
+                    GLOBUS_IO_MODULE,
+                    GLOBUS_NULL,
+                    handle));
+            
+            goto exit_error;
+        }
+        
+        FD_SET(handle->fd, globus_l_io_write_fds);
+        break;
+        
+      case GLOBUS_I_IO_EXCEPT_OPERATION:
+        if(operation_info->callback)
+        {
+            result = globus_error_put(
+                globus_io_error_construct_except_already_registered(
+                    GLOBUS_IO_MODULE,
+                    GLOBUS_NULL,
+                    handle));
+            
+            goto exit_error;
+        }
+        
+        FD_SET(handle->fd, globus_l_io_except_fds);
+        break;
+    }
+    
+    globus_l_io_fd_num_set++;
+    
+    operation_info->op = op;
+    operation_info->callback = callback_func;
+    operation_info->arg = callback_arg;
+    operation_info->arg_destructor = arg_destructor;
+    operation_info->need_select = needs_select;
+    operation_info->callback_handle = GLOBUS_NULL_HANDLE;
+    operation_info->refs++;
+
+    if(!needs_select)
+    {
+        globus_list_insert(&globus_l_io_operations, operation_info);
+    }
+    
+    if(globus_l_io_select_active)
+    {
+        globus_l_io_select_wakeup();
+    }
+    
+    globus_i_io_debug_printf(3,
+        (stderr, "%s(): exiting, fd=%d\n", myname, handle->fd));
+    
+    return GLOBUS_SUCCESS;
+    
+exit_error:
+    globus_i_io_debug_printf(3,
+        (stderr, "%s(): exiting with error, fd=%d\n", myname, handle->fd));
+    
+    return result;
+}
+    
+globus_result_t
+globus_i_io_unregister_operation(
+    globus_io_handle_t *                handle,
+    globus_bool_t                       call_destructor,
+    globus_i_io_operation_type_t        op)
+{
+    globus_io_operation_info_t *        operation_info;
+    globus_result_t                     result;
+    static char *                       myname =
+        "globus_i_io_unregister_operation";
+
+    globus_i_io_debug_printf(3,
+        (stderr, "%s(): entering, fd=%d\n", myname, handle->fd));
+    
+    switch(op)
+    {
+      case GLOBUS_I_IO_READ_OPERATION:
+        operation_info = handle->read_operation;
+        break;
+      
+      case GLOBUS_I_IO_WRITE_OPERATION:
+        operation_info = handle->write_operation;
+        break;
+        
+      case GLOBUS_I_IO_EXCEPT_OPERATION:
+        operation_info = handle->except_operation;
+        break;
+        
+      default:
+        globus_assert(0 && "invalid op");
+        break;
+    }
+    
+    if(!operation_info || operation_info->op != op)
+    {
+        result = globus_error_put(
+            globus_io_error_construct_internal_error(
+	            GLOBUS_IO_MODULE,
+	            GLOBUS_NULL,
+	            myname));
+        
+        goto exit_error;
+    }
+    
+    switch(op)
+    {
+      case GLOBUS_I_IO_READ_OPERATION:
+        if(!FD_ISSET(handle->fd, globus_l_io_read_fds))
+        {
+            result = globus_error_put(
+                globus_io_error_construct_internal_error(
+                    GLOBUS_IO_MODULE,
+                    GLOBUS_NULL,
+                    myname));
+            
+            goto exit_error;
+        }
+        
+        FD_CLR(handle->fd, globus_l_io_read_fds);
+        break;
+      
+      case GLOBUS_I_IO_WRITE_OPERATION:
+        if(!FD_ISSET(handle->fd, globus_l_io_write_fds))
+        {
+            result = globus_error_put(
+                globus_io_error_construct_internal_error(
+                    GLOBUS_IO_MODULE,
+                    GLOBUS_NULL,
+                    myname));
+            
+            goto exit_error;
+        }
+        
+        FD_CLR(handle->fd, globus_l_io_write_fds);
+        break;
+        
+      case GLOBUS_I_IO_EXCEPT_OPERATION:
+        if(!FD_ISSET(handle->fd, globus_l_io_except_fds))
+        {
+            result = globus_error_put(
+                globus_io_error_construct_internal_error(
+                    GLOBUS_IO_MODULE,
+                    GLOBUS_NULL,
+                    myname));
+            
+            goto exit_error;
+        }
+        
+        FD_CLR(handle->fd, globus_l_io_except_fds);
+        break;
+    }
+    
+    if(!operation_info->need_select)
+    {
+        globus_list_remove(&globus_l_io_operations,
+               globus_list_search(globus_l_io_operations, operation_info));
+    }
+    
+    if(call_destructor)
+    {
+        if(operation_info->arg_destructor && operation_info->arg)
+        {
+            operation_info->arg_destructor(operation_info->arg);
+        }
+        
+        globus_i_io_end_operation(handle, op);
+    }
+
+    globus_l_io_fd_num_set--;
+    globus_l_io_fd_table_modified = GLOBUS_TRUE;
+    
+    globus_i_io_debug_printf(3,
+        (stderr, "%s(): exiting, fd=%d\n", myname, handle->fd));
+    
+    return GLOBUS_SUCCESS;
+    
+exit_error:
+    globus_i_io_debug_printf(3,
+        (stderr, "%s(): exiting with error, fd=%d\n", myname, handle->fd));
+    
+    return result;
+}
+
+void
+globus_i_io_quick_operation_destructor(
+    void *				arg)
+{
+    globus_i_io_quick_operation_info_t *quick_info;
+    
+    quick_info = (globus_i_io_quick_operation_info_t *) arg;
+    
+    if(quick_info->arg_destructor && quick_info->callback_arg)
+    {
+        quick_info->arg_destructor(quick_info->callback_arg);
+    }
+    
+    globus_free(quick_info);
+}
+
+void
+globus_i_io_quick_operation_kickout(
     void *				callback_arg,
-    globus_io_destructor_t		arg_destructor,
-    globus_bool_t			register_select)
-{
-    globus_io_select_info_t *		select_info;
-    static char *			myname="globus_i_io_register_read_func";
-
-    globus_i_io_debug_printf(3,
-		       ("%s(): entering, fd=%d\n", myname, handle->fd));
-
-    globus_l_io_table_add(handle);
-    select_info = globus_l_io_fd_table[handle->fd];
-
-    if(FD_ISSET(handle->fd, globus_l_io_read_fds))
-    {
-	globus_object_t *		err;
-
-	err = globus_io_error_construct_read_already_registered(
-	    GLOBUS_IO_MODULE,
-	    GLOBUS_NULL,
-	    handle);
-	
-	return globus_error_put(err);
-    }
-    
-    select_info->read_callback = callback_func;
-    select_info->read_arg = callback_arg;
-    select_info->read_destructor = arg_destructor;
-    select_info->read_select = register_select;
-    
-    FD_SET(handle->fd, globus_l_io_read_fds);
-    globus_l_io_fd_num_set++;
-
-    if(!register_select)
-    {
-	globus_list_insert(&globus_l_io_reads,
-			   select_info);
-    }
-    
-    if (globus_l_io_select_active)
-    {
-	globus_l_io_select_wakeup();
-    }
-
-    globus_i_io_debug_printf(3, ("%s(): exiting\n",myname));
-    return GLOBUS_SUCCESS;
-}
-/* globus_i_io_register_read_func() */
-
-
-/*
- * Function:	globus_i_io_unregister_read()
- *
- * Description:	
- *
- *		Note: the FD mutex must be acquired before calling this func
- *
- * Parameters:	
- *
- * Returns:	
- */
-globus_result_t
-globus_i_io_unregister_read(
     globus_io_handle_t *		handle,
-    globus_bool_t			call_destructor)
+    globus_result_t			result)
 {
-    globus_io_select_info_t *		select_info;
-    static char *			myname="globus_i_io_unregister_read";
-
-    globus_i_io_debug_printf(3,
-		       ("%s(): entering, fd=%d\n", myname, handle->fd));
-
-    globus_l_io_table_add(handle);
-    select_info = globus_l_io_fd_table[handle->fd];
-
-    if(!FD_ISSET(handle->fd, globus_l_io_read_fds))
-    {
-	globus_object_t *		err;
-
-	globus_assert(FD_ISSET(handle->fd, globus_l_io_read_fds));
-
-	err = globus_io_error_construct_internal_error(
-	    GLOBUS_IO_MODULE,
-	    GLOBUS_NULL,
-	    myname);
-
-	return globus_error_put(err);
-    }
-    else if( (!select_info->read_select) &&
-	     select_info->read_callback )
-    {
-	globus_list_remove(&globus_l_io_reads,
-			   globus_list_search(globus_l_io_reads,
-					      select_info));
-    }
+    globus_i_io_quick_operation_info_t *quick_info;
     
-    select_info->read_callback = GLOBUS_NULL;
-    select_info->read_select = GLOBUS_FALSE;
-
-    if(call_destructor != GLOBUS_FALSE &&
-       select_info->read_destructor != GLOBUS_NULL &&
-       select_info->read_arg)
-    {
-	select_info->read_destructor(select_info->read_arg);
-    }
-    select_info->read_arg = GLOBUS_NULL;
-    select_info->read_destructor = GLOBUS_NULL;
-
-    FD_CLR(handle->fd, globus_l_io_read_fds);
-    globus_l_io_fd_num_set--;
-    globus_l_io_fd_table_modified = GLOBUS_TRUE;
+    quick_info = (globus_i_io_quick_operation_info_t *) callback_arg;
     
-    globus_i_io_debug_printf(3, ("%s(): exiting\n",myname));
-    return GLOBUS_SUCCESS;
+    globus_i_io_end_operation(handle, quick_info->op);
+    
+    quick_info->callback_func(quick_info->callback_arg, handle, result);
+    
+    globus_free(quick_info);
 }
-/* globus_i_io_unregister_read() */
 
-
-/*
- * Function:	globus_i_io_register_write_func()
- *
- * Description:	add the specified file descriptor to the write select list and
- *		register an associated callback function
- *
- *		Note: the FD mutex must be acquired before calling this func
- *
- * Parameters:	
- *
- * Returns:	
+/* this handles the start, register and end operation steps 
+ * only good for one step operations
  */
 globus_result_t
-globus_i_io_register_write_func(
-    globus_io_handle_t *		handle,
-    globus_io_callback_t		callback_func,
-    void *				callback_arg,
-    globus_io_destructor_t		write_destructor)
+globus_i_io_register_quick_operation(
+    globus_io_handle_t *                handle,
+    globus_io_callback_t                callback_func,
+    void *                              callback_arg,
+    globus_io_destructor_t              arg_destructor,
+    globus_bool_t                       needs_select,
+    globus_i_io_operation_type_t        op)
 {
-    globus_io_select_info_t *		select_info;
-    static char *			myname="globus_i_io_register_write_func";
-
-    globus_i_io_debug_printf(3,
-		       ("%s(): entering, fd=%d\n", myname, handle->fd));
-
-    /*
-     *    GlobusAssert2((globus_l_io_mutex_acquired()),
-     *		 ("globus_i_io_register_write_func()\n"));
-     */
-    globus_l_io_table_add(handle);
-    select_info = globus_l_io_fd_table[handle->fd];
-
-    if(FD_ISSET(handle->fd, globus_l_io_write_fds))
+    globus_i_io_quick_operation_info_t *quick_info;
+    globus_result_t                     rc;
+    
+    rc = globus_i_io_start_operation(handle, op);
+    if(rc != GLOBUS_SUCCESS)
     {
-	globus_object_t *		err;
-
-	err = globus_io_error_construct_write_already_registered(
-	    GLOBUS_IO_MODULE,
-	    GLOBUS_NULL,
-	    handle);
-
-	return globus_error_put(err);
+        return rc;
+    }
+        
+    quick_info = (globus_i_io_quick_operation_info_t *)
+        globus_malloc(sizeof(globus_i_io_quick_operation_info_t));
+    quick_info->op = op;
+    quick_info->callback_func = callback_func;
+    quick_info->callback_arg = callback_arg;
+    quick_info->arg_destructor = arg_destructor;
+    
+    rc = globus_i_io_register_operation(
+        handle,
+        globus_i_io_quick_operation_kickout,
+        quick_info,
+        globus_i_io_quick_operation_destructor,
+        needs_select,
+        op);
+    if(rc != GLOBUS_SUCCESS)
+    {
+        globus_free(quick_info);
+        globus_i_io_end_operation(handle, op);
     }
     
-    FD_SET(handle->fd, globus_l_io_write_fds);
-    select_info->write_callback = callback_func;
-    select_info->write_arg = callback_arg;
-    select_info->write_destructor = write_destructor;
-    
-    globus_l_io_fd_num_set++;
-
-    if (globus_l_io_select_active)
-    {
-	globus_l_io_select_wakeup();
-    }
-
-    globus_i_io_debug_printf(3, ("%s(): exiting\n", myname));
-    return GLOBUS_SUCCESS;
+    return rc;
 }
-/* globus_i_io_register_write_func() */
-
-
-/*
- *
- * Function:	globus_i_io_unregister_write()
- *
- * Description:	
- *
- *		Note: the FD mutex must be acquired before calling this func
- *
- * Parameters:	
- *
- * Returns:	
- */
-globus_result_t
-globus_i_io_unregister_write(
-    globus_io_handle_t *		handle,
-    globus_bool_t			call_destructor)
-{
-    globus_io_select_info_t *		select_info;
-    static char *			myname="globus_i_io_unregister_write";
-
-    globus_i_io_debug_printf(3, ("%s(): entering, fd=%d\n",
-				 myname,
-				 handle->fd));
-    /* 
-     *    GlobusAssert2((globus_l_io_mutex_acquired()),
-     *		 ("globus_i_io_unregister_write()\n"));
-     */
-    globus_l_io_table_add(handle);
-    select_info = globus_l_io_fd_table[handle->fd];
-
-    if(!FD_ISSET(handle->fd, globus_l_io_write_fds))
-    {
-	globus_object_t *		err;
-
-	globus_assert(FD_ISSET(handle->fd, globus_l_io_write_fds));
-
-	err = globus_io_error_construct_internal_error(
-	    GLOBUS_IO_MODULE,
-	    GLOBUS_NULL,
-	    myname);
-
-	return globus_error_put(err);
-    }
-    
-    select_info->write_callback = GLOBUS_NULL;
-    if(call_destructor != GLOBUS_FALSE &&
-       select_info->write_destructor != GLOBUS_NULL &&
-       select_info->write_arg)
-    {
-	select_info->write_destructor(select_info->write_arg);
-    }
-    select_info->write_arg = GLOBUS_NULL;
-    select_info->write_destructor = GLOBUS_NULL;
-
-    FD_CLR(handle->fd, globus_l_io_write_fds);
-    globus_l_io_fd_num_set--;
-    globus_l_io_fd_table_modified = GLOBUS_TRUE;
-    
-    globus_i_io_debug_printf(3, ("%s(): exiting\n",myname));
-
-    return GLOBUS_SUCCESS;
-}
-/* globus_i_io_unregister_write() */
-
-
-/*
- * Function:	globus_i_io_register_except_func()
- * 
- * Description:	add the specified file descriptor to the exception select list
- *		and register an associated callback function
- *
- *		Note: the FD mutex must be acquired before calling this func
- *
- * Parameters:	
- *
- * Returns:	
- */
-globus_result_t
-globus_i_io_register_except_func(
-    globus_io_handle_t *		handle,
-    globus_io_callback_t		callback_func,
-    void *				callback_arg)
-{
-    globus_io_select_info_t *		select_info;
-    static char *			myname = "globus_i_io_register_except_func";
-
-    globus_i_io_debug_printf(3,
-			     ("%s(): entering, fd=%d\n", myname, handle->fd));
-    /*
-     *    GlobusAssert2((globus_l_io_mutex_acquired()),
-     *		 ("globus_i_io_register_except_func()\n"));
-     */
-    globus_l_io_table_add(handle);
-    select_info = globus_l_io_fd_table[handle->fd];
-
-    if(FD_ISSET(handle->fd, globus_l_io_except_fds))
-    {
-	globus_object_t *		err;
-
-	err = globus_io_error_construct_except_already_registered(
-	    GLOBUS_IO_MODULE,
-	    GLOBUS_NULL,
-	    handle);
-
-	return globus_error_put(err);
-    }
-    
-    select_info->except_callback = callback_func;
-    select_info->except_arg = callback_arg;
-
-    FD_SET(handle->fd, globus_l_io_except_fds);
-    globus_l_io_fd_num_set++;
-
-    if (globus_l_io_select_active)
-    {
-	globus_l_io_select_wakeup();
-    }
-
-    globus_i_io_debug_printf(3, ("%s(): exiting\n",myname));
-    return GLOBUS_SUCCESS;
-}
-/* globus_i_io_register_except_func() */
-
-
-/*
- * Function:	globus_i_io_unregister_except()
- *
- * Description:	
- *
- *		Note: the FD mutex must be acquired before calling this func
- *
- * Parameters:	
- *
- * Returns:	
- */
-globus_result_t
-globus_i_io_unregister_except(
-    globus_io_handle_t *		handle)
-{
-    globus_io_select_info_t *		select_info;
-    static char *			myname="globus_i_io_unregister_except";
-
-    globus_i_io_debug_printf( 3, ("%s(): entering, fd=%d\n",
-				  myname,
-				  handle->fd));
-
-    /*
-     *      GlobusAssert2((globus_l_io_mutex_acquired()),
-     *		 ("globus_i_io_unregister_except()\n"));
-     */
-    globus_l_io_table_add(handle);
-    select_info = globus_l_io_fd_table[handle->fd];
-
-    if(!FD_ISSET(handle->fd, globus_l_io_except_fds))
-    {
-	globus_object_t *		err;
-
-	globus_assert(!FD_ISSET(handle->fd, globus_l_io_except_fds));
-	err = globus_io_error_construct_internal_error(
-	    GLOBUS_IO_MODULE,
-	    GLOBUS_NULL,
-	    myname);
-
-	return globus_error_put(err);
-    }
-    
-    select_info->except_callback = GLOBUS_NULL;
-    select_info->except_arg = GLOBUS_NULL;
-
-    FD_CLR(handle->fd, globus_l_io_except_fds);
-    globus_l_io_fd_num_set--;
-    globus_l_io_fd_table_modified = GLOBUS_TRUE;
-    
-    globus_i_io_debug_printf(3, ("%s(): exiting\n",myname));
-    return GLOBUS_SUCCESS;
-}
-/* globus_i_io_unregister_except() */
 
 /*
  * Function:	globus_i_io_close()
@@ -995,9 +1141,8 @@ globus_i_io_close(
     static char *			myname="globus_i_io_close";
     int					flags;
     
-    globus_i_io_debug_printf(3, ("%s(): entering, fd=%d\n",
-				 myname,
-				 handle->fd));
+    globus_i_io_debug_printf(3,
+        (stderr, "%s(): entering, fd=%d\n", myname, handle->fd));
 
     /*
      *    GlobusAssert2((globus_l_io_mutex_acquired()),
@@ -1006,7 +1151,8 @@ globus_i_io_close(
 
     if(globus_l_io_read_isregistered(handle))
     {
-	globus_i_io_unregister_read(handle, GLOBUS_TRUE);
+        globus_i_io_unregister_operation(
+            handle, GLOBUS_TRUE, GLOBUS_I_IO_READ_OPERATION);
 
         /* Don't create an error if we are closing the pipe
          * handle
@@ -1024,7 +1170,9 @@ globus_i_io_close(
 
     if(globus_l_io_write_isregistered(handle))
     {
-	globus_i_io_unregister_write(handle, GLOBUS_TRUE);
+        globus_i_io_unregister_operation(
+            handle, GLOBUS_TRUE, GLOBUS_I_IO_WRITE_OPERATION);
+            
 	if(rc == GLOBUS_SUCCESS)
 	{
 	    err = globus_io_error_construct_internal_error(
@@ -1037,7 +1185,9 @@ globus_i_io_close(
 
     if(globus_l_io_except_isregistered(handle))
     {
-	globus_i_io_unregister_except(handle);
+        globus_i_io_unregister_operation(
+            handle, GLOBUS_TRUE, GLOBUS_I_IO_EXCEPT_OPERATION);
+            
 	if(rc == GLOBUS_SUCCESS)
 	{
 	    err = globus_io_error_construct_internal_error(
@@ -1150,7 +1300,7 @@ globus_i_io_close(
 	}
     }
 
-    globus_i_io_debug_printf(3, ("%s(): exiting\n",myname));
+    globus_i_io_debug_printf(3, (stderr, "%s(): exiting\n",myname));
 
     return(rc);
 }
@@ -1173,7 +1323,6 @@ globus_io_fd_tablesize()
     return(globus_l_io_fd_tablesize);
 }
 /* globus_io_fd_tablesize() */
-
 
 /**
  * Register functions to be called when the handle is ready for
@@ -1224,7 +1373,6 @@ globus_io_register_select(
     void *				except_callback_arg)
 {
     globus_result_t			rc = GLOBUS_SUCCESS;
-    globus_object_t *			err = GLOBUS_NULL;
     static char *			myname="globus_io_register_select";
     
     if(handle == GLOBUS_NULL)
@@ -1238,211 +1386,348 @@ globus_io_register_select(
 		myname));
     }
     
-    globus_i_io_debug_printf(3, ("%s(): entering\n",myname));
+    globus_i_io_debug_printf(3, (stderr, "%s(): entering\n",myname));
 
     globus_i_io_mutex_lock();
 
     switch(handle->state)
     {
       case GLOBUS_IO_HANDLE_STATE_INVALID:
-	err = globus_io_error_construct_not_initialized(
+	rc = globus_error_put(globus_io_error_construct_not_initialized(
 	    GLOBUS_IO_MODULE,
 	    GLOBUS_NULL,
 	    "handle",
 	    1,
-	    myname);
+	    myname));
         goto error_exit;
       case GLOBUS_IO_HANDLE_STATE_CLOSING:
-	err = globus_io_error_construct_close_already_registered(
+	rc = globus_error_put(globus_io_error_construct_close_already_registered(
 	    GLOBUS_IO_MODULE,
 	    GLOBUS_NULL,
-	    handle);
+	    handle));
         goto error_exit;
       default:
         break;
     }
-    if (read_callback_func != GLOBUS_NULL)
+    
+    if(read_callback_func)
     {
-	rc = globus_i_io_register_read_func(handle,
-					    read_callback_func,
-					    read_callback_arg,
-					    GLOBUS_NULL,
-					    GLOBUS_TRUE);
-	if(rc != GLOBUS_SUCCESS)
-	{
-	   err = globus_error_get(rc);
-
-	   goto read_failed;
-	}
+        rc = globus_i_io_register_quick_operation(
+            handle,
+            read_callback_func,
+            read_callback_arg,
+            GLOBUS_NULL,
+            GLOBUS_TRUE,
+            GLOBUS_I_IO_READ_OPERATION);
+        if(rc != GLOBUS_SUCCESS)
+        {
+            goto read_failed;
+        }
     }
 
-    if (write_callback_func != GLOBUS_NULL)
+    if(write_callback_func)
     {
-	rc = globus_i_io_register_write_func(handle,
-					write_callback_func,
-					write_callback_arg,
-					GLOBUS_FALSE);
-
-	if(rc != GLOBUS_SUCCESS)
-	{
-	    err = globus_error_get(rc);
-
-	    goto write_failed;
-	}
+        rc = globus_i_io_register_quick_operation(
+            handle,
+            write_callback_func,
+            write_callback_arg,
+            GLOBUS_NULL,
+            GLOBUS_TRUE,
+            GLOBUS_I_IO_WRITE_OPERATION);
+        if(rc != GLOBUS_SUCCESS)
+        {
+            goto write_failed;
+        }
+    }
+    
+    if(except_callback_func)
+    {
+        rc = globus_i_io_register_quick_operation(
+            handle,
+            except_callback_func,
+            except_callback_arg,
+            GLOBUS_NULL,
+            GLOBUS_TRUE,
+            GLOBUS_I_IO_EXCEPT_OPERATION);
+        if(rc != GLOBUS_SUCCESS)
+        {
+            goto except_failed;
+        }
     }
 
-    if (except_callback_func != GLOBUS_NULL)
-    {
-	rc = globus_i_io_register_except_func(handle,
-					 except_callback_func,
-					 except_callback_arg);
-	if(rc != GLOBUS_SUCCESS)
-	{
-	    err = globus_error_get(rc);
-
-	    goto except_failed;
-	}
-    }
-
-    goto done;
+    globus_i_io_mutex_unlock();
+    globus_i_io_debug_printf(3, 
+        (stderr, "%s(): exiting\n", myname));
+        
+    return GLOBUS_SUCCESS;
 			 
   except_failed:
     if (write_callback_func != GLOBUS_NULL)
     {
-	rc = globus_i_io_unregister_write(handle,
-					  GLOBUS_FALSE);
-	
-	globus_assert(rc == GLOBUS_SUCCESS);
+        rc = globus_i_io_unregister_operation(
+            handle, GLOBUS_TRUE, GLOBUS_I_IO_WRITE_OPERATION);
+        globus_assert(rc == GLOBUS_SUCCESS);
     }
   write_failed:
-    if (write_callback_func != GLOBUS_NULL)
+    if (read_callback_func != GLOBUS_NULL)
     {
-	rc = globus_i_io_unregister_read(handle,
-					  GLOBUS_FALSE);
-	globus_assert(rc == GLOBUS_SUCCESS);
+        rc = globus_i_io_unregister_operation(
+            handle, GLOBUS_TRUE, GLOBUS_I_IO_READ_OPERATION);
+        globus_assert(rc == GLOBUS_SUCCESS);
     }
   read_failed:
   error_exit:
     globus_i_io_mutex_unlock();
-    globus_i_io_debug_printf(3, ("%s(): exiting\n", myname));
+    globus_i_io_debug_printf(3, 
+        (stderr, "%s(): exiting with error\n", myname));
 
-    return(globus_error_put(err));
-
-  done:
-    globus_i_io_mutex_unlock();
-    return GLOBUS_SUCCESS;
+    return rc;
 }
 /* globus_io_register_select() */
 
+/* the entire globus io cancel method has been completely complicated by the
+ * new 'register all callbacks' method of firing user callbacks.
+ *
+ * an operation can be canceled in one of 4 places...
+ * 1 - before a callback is ever registered
+ * 2 - after the callback is registered but before the kickout callback is 
+ *     fired (globus_callback_unregister active == false)
+ * 3 - after the kickout callback is fired, but before user callback is called
+ * 4 - after user callback is called
+ *
+ * this entire file really should just be re-written before ever trying to
+ * understand it
+ * JL
+ */
 void
 globus_i_io_register_cancel(
-    globus_io_handle_t *		handle,
-    globus_bool_t			perform_callbacks,
-    globus_io_callback_t		cancel_callback,
-    void *				cancel_arg,
-    globus_io_destructor_t		cancel_destructor)
+    globus_io_handle_t *                handle,
+    globus_bool_t                       perform_callbacks,
+    globus_io_callback_t                cancel_callback,
+    void *                              cancel_arg,
+    globus_io_destructor_t              cancel_destructor)
 {
-    globus_io_select_info_t *		select_info;
-    globus_io_cancel_info_t *		cancel_info = GLOBUS_NULL;
-
+    globus_io_select_info_t *           select_info;
+    globus_io_cancel_info_t *           cancel_info = GLOBUS_NULL;
+    globus_io_operation_info_t *        operation_info;
+    globus_bool_t                       active;
+    
     globus_l_io_table_add(handle);
 
     select_info = globus_l_io_fd_table[handle->fd];
     
-    if(cancel_callback != GLOBUS_NULL ||
-       perform_callbacks)
+    if(cancel_callback || perform_callbacks)
     {
-	/* create data structure to be used in the next poll to perform
-	 * the callbacks
-	 */
-	if(globus_l_io_cancel_free_list)
-	{
-	    cancel_info = globus_l_io_cancel_free_list;
-	    
-	    globus_l_io_cancel_free_list =
-		globus_l_io_cancel_free_list->next;
-	    
-	    cancel_info->next = GLOBUS_NULL;
-	}
-	else
-	{
-	    cancel_info = globus_malloc(sizeof(globus_io_cancel_info_t));
-	}
-	memset(cancel_info,
-	       '\0',
-	       sizeof(globus_io_cancel_info_t));
-
-	cancel_info->handle = select_info->handle;
-    }
-    
-    /* store any callbacks in the cancel_info structure, and unregister
-     * from the select masks
+    /* create data structure to be used in the next poll to perform
+     * the callbacks
      */
-    if (globus_l_io_read_isregistered(select_info->handle))
-    {
-	globus_bool_t			call_destructor = GLOBUS_FALSE;
-	
-	if(perform_callbacks)
-	{
-	    cancel_info->read_callback = select_info->read_callback;
-	    cancel_info->read_arg = select_info->read_arg;
-	    cancel_info->read_dispatched = GLOBUS_FALSE;
-	    cancel_info->read_destructor = select_info->read_destructor;
-	}
-	else if(select_info->read_destructor != GLOBUS_NULL)
-	{
-	    call_destructor = GLOBUS_TRUE;
-	    cancel_info->read_destructor = GLOBUS_NULL;
-	}
-	
-	globus_i_io_unregister_read(select_info->handle,
-				    call_destructor);
-    }
-
-    if (globus_l_io_write_isregistered(select_info->handle))
-    {
-	globus_bool_t			call_destructor = GLOBUS_FALSE;
-	
-	if(perform_callbacks)
-	{
-	    cancel_info->write_callback = select_info->write_callback;
-	    cancel_info->write_arg = select_info->write_arg;
-	    cancel_info->write_dispatched = GLOBUS_FALSE;
-	    cancel_info->write_destructor = select_info->write_destructor;
-	}
-	else if(select_info->write_destructor != GLOBUS_NULL)
-	{
-	    call_destructor = GLOBUS_TRUE;
-	    cancel_info->write_destructor = GLOBUS_NULL;
-	}
-	
-	globus_i_io_unregister_write(select_info->handle,
-				     call_destructor);
+        if(globus_l_io_cancel_free_list)
+        {
+            cancel_info = globus_l_io_cancel_free_list;
+            
+            globus_l_io_cancel_free_list = globus_l_io_cancel_free_list->next;
+        }
+        else
+        {
+            cancel_info = globus_malloc(sizeof(globus_io_cancel_info_t));
+        }
+        memset(cancel_info, '\0', sizeof(globus_io_cancel_info_t));
     }
     
-    if (globus_l_io_except_isregistered(select_info->handle))
-    {
-	if(perform_callbacks)
-	{
-	    cancel_info->except_callback = select_info->except_callback;
-	    cancel_info->except_arg = select_info->except_arg;
-	    cancel_info->except_dispatched = GLOBUS_FALSE;
-	}
-	
-	globus_i_io_unregister_except(select_info->handle);
+    operation_info = select_info->read;
+    if(operation_info && operation_info->op == GLOBUS_I_IO_READ_OPERATION)
+    { 
+        if(operation_info->callback)
+        {
+            if(globus_l_io_read_isregistered(handle))
+            {
+                /* 1 */
+                globus_i_io_unregister_operation(
+                    handle,
+                    GLOBUS_FALSE,
+                    GLOBUS_I_IO_READ_OPERATION);
+                
+                operation_info->refs--;
+            }
+            else
+            {
+                /* cancel pending callback */
+                globus_callback_unregister(
+                    operation_info->callback_handle,
+                    GLOBUS_NULL,
+                    GLOBUS_NULL,
+                    &active);
+                
+                if(!active)
+                {
+                    /* 2 */
+                    operation_info->refs--;
+                    globus_l_io_pending_count--;
+                }
+                /* else */
+                /* 3 */
+            }
+            
+            if(perform_callbacks)
+            {
+                cancel_info->read = operation_info;
+                operation_info->refs++;
+            }
+            else
+            {
+                if(operation_info->arg_destructor && operation_info->arg)
+                {
+                    operation_info->arg_destructor(operation_info->arg);
+                }
+            }
+        
+            if(operation_info->refs == 0)
+            {
+                globus_i_io_end_operation(
+                    handle, GLOBUS_I_IO_READ_OPERATION);
+            }
+        }
+        /* else */
+        /* 4 */
+        
+        operation_info->canceled = GLOBUS_TRUE;
     }
-
+    
+    operation_info = select_info->write;
+    if(operation_info && operation_info->op == GLOBUS_I_IO_WRITE_OPERATION)
+    { 
+        if(operation_info->callback)
+        {
+            if(globus_l_io_write_isregistered(handle))
+            {
+                /* 1 */
+                globus_i_io_unregister_operation(
+                    handle,
+                    GLOBUS_FALSE,
+                    GLOBUS_I_IO_WRITE_OPERATION);
+                
+                operation_info->refs--;
+            }
+            else
+            {
+                /* cancel pending callback */
+                globus_callback_unregister(
+                    operation_info->callback_handle,
+                    GLOBUS_NULL,
+                    GLOBUS_NULL,
+                    &active);
+                
+                if(!active)
+                {
+                    /* 2 */
+                    operation_info->refs--;
+                    globus_l_io_pending_count--;
+                }
+                /* else */
+                /* 3 */
+            }
+            
+            if(perform_callbacks)
+            {
+                cancel_info->write = operation_info;
+                operation_info->refs++;
+            }
+            else
+            {
+                if(operation_info->arg_destructor && operation_info->arg)
+                {
+                    operation_info->arg_destructor(operation_info->arg);
+                }
+            }
+            
+            if(operation_info->refs == 0)
+            {
+                globus_i_io_end_operation(
+                    handle, GLOBUS_I_IO_WRITE_OPERATION);
+            }
+        }
+        /* else */
+        /* 4 */
+        
+        operation_info->canceled = GLOBUS_TRUE;
+    }
+    
+    operation_info = select_info->except;
+    if(operation_info && operation_info->op == GLOBUS_I_IO_EXCEPT_OPERATION)
+    { 
+        if(operation_info->callback)
+        {
+            if(globus_l_io_except_isregistered(handle))
+            {
+                /* 1 */
+                globus_i_io_unregister_operation(
+                    handle,
+                    GLOBUS_FALSE,
+                    GLOBUS_I_IO_EXCEPT_OPERATION);
+                
+                operation_info->refs--;
+            }
+            else
+            {
+                /* cancel pending callback */
+                globus_callback_unregister(
+                    operation_info->callback_handle,
+                    GLOBUS_NULL,
+                    GLOBUS_NULL,
+                    &active);
+                
+                if(!active)
+                {
+                    /* 2 */
+                    operation_info->refs--;
+                    globus_l_io_pending_count--;
+                }
+                /* else */
+                /* 3 */
+            }
+            
+            if(perform_callbacks)
+            {
+                cancel_info->except = operation_info;
+                operation_info->refs++;
+            }
+            else
+            {
+                if(operation_info->arg_destructor && operation_info->arg)
+                {
+                    operation_info->arg_destructor(operation_info->arg);
+                }
+            }
+            
+            if(operation_info->refs == 0)
+            {
+                globus_i_io_end_operation(
+                    handle, GLOBUS_I_IO_EXCEPT_OPERATION);
+            }
+        }
+        /* else */
+        /* 4 */
+        
+        operation_info->canceled = GLOBUS_TRUE;
+    }
+    
+    select_info->read = GLOBUS_NULL;
+    select_info->write = GLOBUS_NULL;
+    select_info->except = GLOBUS_NULL;
+    
     /* if we are performing any callbacks, add ourselves to the list */
     if(cancel_info)
     {
-	cancel_info->cancel_dispatched = GLOBUS_FALSE;
-	cancel_info->cancel_callback = cancel_callback;
-	cancel_info->cancel_arg = cancel_arg;
-	cancel_info->cancel_destructor = cancel_destructor;
-	
-	globus_l_io_enqueue(globus_l_io_cancel_list,
-			    globus_l_io_cancel_tail,
-			    cancel_info);
+        cancel_info->handle = handle;
+        cancel_info->callback_handle = GLOBUS_NULL_HANDLE;
+        cancel_info->callback = cancel_callback;
+        cancel_info->arg = cancel_arg;
+        cancel_info->arg_destructor = cancel_destructor;
+        
+        globus_l_io_enqueue(
+            globus_l_io_cancel_list,
+            globus_l_io_cancel_tail,
+            cancel_info);
     }
 
     /* wake up select loop
@@ -1464,7 +1749,7 @@ globus_io_register_cancel(
     globus_object_t *			err;
     static char *			myname="globus_io_register_cancel";
 
-    globus_i_io_debug_printf(3, ("%s(): entering\n", myname));
+    globus_i_io_debug_printf(3, (stderr, "%s(): entering\n", myname));
 
     if(handle == GLOBUS_NULL)
     {
@@ -1503,10 +1788,11 @@ globus_io_register_cancel(
 				perform_callbacks,
 				cancel_callback,
 				cancel_arg,
-				GLOBUS_FALSE);
+				GLOBUS_NULL);
     
     globus_i_io_mutex_unlock();
-    globus_i_io_debug_printf(3, ("globus_io_register_cancel(): exiting\n"));
+    globus_i_io_debug_printf(3,
+        (stderr, "globus_io_register_cancel(): exiting\n"));
     
     return(GLOBUS_SUCCESS);
 
@@ -1516,6 +1802,315 @@ globus_io_register_cancel(
 }
 /* globus_io_register_cancel() */
 
+static
+void
+globus_l_io_kickout_cb(
+    const globus_abstime_t *            time_now,
+    const globus_abstime_t *            time_stop,
+    void *                              user_args)
+{
+    globus_io_operation_info_t *        operation_info;
+    globus_io_callback_t                callback;
+    globus_io_handle_t *                handle;
+    
+    operation_info = (globus_io_operation_info_t *) user_args;
+    
+    handle = operation_info->handle;
+    
+    globus_i_io_debug_printf(6, (stderr, 
+        "globus_l_io_kickout_cb(): entering, fd=%d\n", handle->fd));
+        
+    /* see if I was canceled */
+    globus_i_io_mutex_lock();
+    {
+        operation_info->refs--;
+        
+        if(!operation_info->canceled && !globus_l_io_shutdown_called)
+        {
+            globus_callback_unregister(
+                operation_info->callback_handle,
+                GLOBUS_NULL,
+                GLOBUS_NULL,
+                GLOBUS_NULL);
+            
+            callback = operation_info->callback;
+            
+            operation_info->callback = GLOBUS_NULL;
+            operation_info->arg_destructor = GLOBUS_NULL;
+        }
+        else
+        {
+            if(operation_info->canceled && operation_info->refs == 0)
+            {
+                globus_i_io_end_operation(handle, operation_info->op);
+            }
+            
+            /* someone canceled me */
+            goto exit;
+        }
+    }
+    globus_i_io_mutex_unlock();
+
+    callback(operation_info->arg, handle, GLOBUS_SUCCESS);
+
+    globus_i_io_mutex_lock();
+    {
+exit:
+        globus_i_io_debug_printf(6, (stderr, 
+            "globus_l_io_kickout_read_cb(): exiting, fd=%d\n", 
+            handle->fd));
+    
+        globus_l_io_pending_count--;
+        if(globus_l_io_shutdown_called && globus_l_io_pending_count == 0)
+        {
+            globus_l_io_cond_signal();
+        }
+    }
+    globus_i_io_mutex_unlock();
+}
+
+static
+void
+globus_l_io_kickout_cancel_cb(
+    const globus_abstime_t *            time_now,
+    const globus_abstime_t *            time_stop,
+    void *                              user_args)
+{
+    globus_io_cancel_info_t *           cancel_info;
+    globus_object_t *                   err;
+    globus_io_handle_t *                handle;
+    globus_io_operation_info_t *        read_operation_info;
+    globus_io_operation_info_t *        write_operation_info;
+    globus_io_operation_info_t *        except_operation_info;
+    globus_bool_t                       clean_up;
+    globus_callback_space_t             space;
+    globus_result_t                     result;
+    
+    cancel_info = (globus_io_cancel_info_t *) user_args;
+
+    globus_i_io_mutex_lock();
+    {
+        globus_io_cancel_info_t **          ci;
+        
+        if(globus_l_io_shutdown_called)
+        {
+            goto exit;
+        }
+        
+        handle = cancel_info->handle;
+        
+        globus_i_io_debug_printf(6, (stderr, 
+            "globus_l_io_kickout_cancel_cb(): entering, fd=%d\n", handle->fd));
+
+        globus_callback_unregister(
+            cancel_info->callback_handle,
+            GLOBUS_NULL,
+            GLOBUS_NULL,
+            GLOBUS_NULL);
+        
+        /* need to see if a two phase cancel is going to be necessary */
+        clean_up = GLOBUS_TRUE;
+        globus_callback_space_get(&space);
+        
+        /* if this were a blocking cancel, the first phase callback would be
+         * registered to global space regardless of user's space
+         */
+        if(space != handle->socket_attr.space)
+        {
+            read_operation_info = GLOBUS_NULL;
+            write_operation_info = GLOBUS_NULL;
+            except_operation_info = GLOBUS_NULL;
+            
+            if(cancel_info->read)
+            {
+                /* blocking calls are registered to global space too */
+                if(handle->blocking_read)
+                {
+                    read_operation_info = cancel_info->read;
+                    
+                    cancel_info->read = GLOBUS_NULL;
+                }
+                else
+                {
+                    clean_up = GLOBUS_FALSE;
+                }
+            }
+            
+            if(cancel_info->write)
+            {
+                if(handle->blocking_write)
+                {
+                    write_operation_info = cancel_info->write;
+                    
+                    cancel_info->write = GLOBUS_NULL;
+                }
+                else
+                {
+                    clean_up = GLOBUS_FALSE;
+                }
+            }
+            
+            if(cancel_info->except)
+            {
+                if(handle->blocking_except)
+                {
+                    except_operation_info = cancel_info->except;
+                    
+                    cancel_info->except = GLOBUS_NULL;
+                }
+                else
+                {
+                    clean_up = GLOBUS_FALSE;
+                }
+            }
+            
+            /* since the cancel callback might call the internal close callback
+             * I need to save a ref to the space for the two phase cancel
+             */
+            if(!clean_up)
+            {
+                space = handle->socket_attr.space;
+                globus_callback_space_reference(space);
+            }
+        }
+        else
+        {
+            read_operation_info = cancel_info->read;
+            write_operation_info = cancel_info->write;
+            except_operation_info = cancel_info->except;
+        }
+        
+        /* remove from pending list */
+        ci = &globus_l_io_cancel_pending_list;
+        while(*ci && *ci != cancel_info)
+        {
+            ci = &(*ci)->next;
+        }
+        
+        if(*ci)
+        {
+            *ci = (*ci)->next;
+        }
+    }
+    globus_i_io_mutex_unlock();
+    
+    if(read_operation_info)
+    {
+        globus_i_io_debug_printf(6, (stderr, 
+            "globus_l_io_kickout_cancel_cb(): cancel read, fd=%d\n",
+            handle->fd));
+
+        err = globus_io_error_construct_io_cancelled(
+            GLOBUS_IO_MODULE,
+            GLOBUS_NULL,
+            handle);
+
+        read_operation_info->callback(
+            read_operation_info->arg,
+            handle,
+            globus_error_put(err));
+    }
+    
+    if(write_operation_info)
+    {
+        globus_i_io_debug_printf(6, (stderr, 
+            "globus_l_io_kickout_cancel_cb(): cancel write, fd=%d\n",
+            handle->fd));
+
+        err = globus_io_error_construct_io_cancelled(
+            GLOBUS_IO_MODULE,
+            GLOBUS_NULL,
+            handle);
+
+        write_operation_info->callback(
+            write_operation_info->arg,
+            handle,
+            globus_error_put(err));
+    }
+    
+    if(except_operation_info)
+    {
+        globus_i_io_debug_printf(6, (stderr, 
+            "globus_l_io_kickout_cancel_cb(): cancel except, fd=%d\n",
+            handle->fd));
+
+        err = globus_io_error_construct_io_cancelled(
+            GLOBUS_IO_MODULE,
+            GLOBUS_NULL,
+            handle);
+
+        except_operation_info->callback(
+            except_operation_info->arg,
+            handle,
+            globus_error_put(err));
+    }
+    
+    if(cancel_info->callback)
+    {
+        globus_i_io_debug_printf(6, (stderr, 
+            "globus_l_io_kickout_cancel_cb(): cancel kickout, fd=%d\n",
+            handle->fd));
+
+        cancel_info->callback(
+            cancel_info->arg,
+            handle,
+            GLOBUS_SUCCESS);
+        
+        cancel_info->callback = GLOBUS_NULL;
+    }
+    
+    /* push cancel info */
+    globus_i_io_mutex_lock();
+    {
+        if(clean_up)
+        {
+            cancel_info->next = globus_l_io_cancel_free_list;
+            globus_l_io_cancel_free_list = cancel_info;
+        }
+        else if(!globus_l_io_shutdown_called)
+        {
+            /* need to register for second phase of this cancel... this will
+             * provide callbacks to reads/writes registered to a user's space
+             */
+            cancel_info->next = globus_l_io_cancel_pending_list;
+            globus_l_io_cancel_pending_list = cancel_info;
+            
+            globus_l_io_pending_count++;
+            
+            result = globus_callback_space_register_oneshot(
+                &cancel_info->callback_handle,
+                &globus_i_reltime_zero,
+                globus_l_io_kickout_cancel_cb,
+                cancel_info,
+                handle->socket_attr.space);
+            globus_assert(result == GLOBUS_SUCCESS);
+        }
+        else
+        {
+            /* we're shutting down, put this on cancel list so destructors can
+             * be called
+             */
+            cancel_info->next = globus_l_io_cancel_list;
+            globus_l_io_cancel_list = cancel_info;
+        }
+        
+        /* destroy the extra reference now */
+        if(!clean_up)
+        {
+            globus_callback_space_destroy(space);
+        }
+        
+        globus_i_io_debug_printf(6, (stderr, 
+            "globus_l_io_kickout_cancel_cb(): exiting, fd=%d\n", handle->fd));
+exit:
+        globus_l_io_pending_count--;
+        if(globus_l_io_shutdown_called && globus_l_io_pending_count == 0)
+        {
+            globus_l_io_cond_signal();
+        }
+    }
+    globus_i_io_mutex_unlock();
+}
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
@@ -1555,429 +2150,394 @@ globus_io_register_cancel(
  */
 static
 int
-globus_l_io_handle_events(void)
+globus_l_io_handle_events(
+    globus_reltime_t *                  time_left)
 {
-    globus_bool_t			done;
-    int					n_ready;
-    int					n_checked;
-    globus_io_handle_t *		handle;
-    int					select_errno;
-    globus_io_select_info_t *		select_info;
-    void *				arg;
-    globus_io_callback_t		callback;
-    static char *			myname="globus_l_io_handle_events";
-    globus_reltime_t                    time_left;
+    globus_bool_t                       done;
+    int                                 n_ready;
+    int                                 n_checked;
+    globus_io_handle_t *                handle;
+    int                                 select_errno;
+    globus_io_select_info_t *           select_info;
+    globus_io_operation_info_t *        operation_info;
+    static char *                       myname="globus_l_io_handle_events";
     globus_bool_t                       use_timeout;
-    int					n_fdcopy;
-    globus_bool_t                       time_left_is_zero = GLOBUS_FALSE;
-    globus_bool_t			handled_something = GLOBUS_FALSE;
+    int                                 n_fdcopy;
+    globus_bool_t                       time_left_is_zero;
+    globus_bool_t                       handled_something = GLOBUS_FALSE;
     int                                 select_highest_fd;
-
+    globus_abstime_t                    time_now;
+    globus_result_t                     result;
+    
     globus_i_io_debug_printf(5,
-		       ("%s(): entering\n",
-			myname));
-
-    globus_callback_get_timeout(&time_left);
-
-    globus_l_io_fd_table_modified = GLOBUS_FALSE;
+        (stderr, "%s(): entering\n", myname));
 
     done = GLOBUS_FALSE;
-    while (!done && !globus_l_io_shutdown_called)
+    while(!done && !globus_l_io_shutdown_called)
     {
-	/* Handle any cancel or secure read callbacks right away.
-	 * They do not need to block on the select but will 
-	 * kick out events.
-	 */
-	while(!globus_list_empty(globus_l_io_reads))
-	{
-	    globus_io_select_info_t *	select_info;
-
-	    select_info = globus_list_first(globus_l_io_reads);
-	    handle = select_info->handle;
-	    callback = select_info->read_callback;
-	    arg = select_info->read_arg;
-	    globus_i_io_debug_printf(5,
-				     ("%s(): non-selecting read, fd=%d\n",
-				      myname, handle->fd));
-	    globus_i_io_unregister_read(handle,
-					GLOBUS_FALSE);
-	    globus_i_io_mutex_unlock();
-	    (*callback)(arg, handle, GLOBUS_SUCCESS);
-	    globus_i_io_mutex_lock();
-
-	    /* We've handled an event, so we don't need to
-	     * block in the select
-	     */
-            GlobusTimeReltimeSet(time_left, 0, 0);
-	    handled_something = GLOBUS_TRUE;
-
-	    /* Drop out of handling events if we've been
-	     * restarted, or we are deactivating
-	     */
-	    if(globus_l_io_shutdown_called ||
-	       globus_callback_was_restarted())
-	    {
-		goto handle_abort;
-	    }
-	}
-	while(globus_l_io_cancel_list)
-	{
-	    globus_io_cancel_info_t *	cancel_info;
-	    globus_object_t *		err;
-
-	    /*
-	     * We can safely peek at the head of the cancel list
-	     * until we've been restarted.
-	     */
-	    cancel_info = globus_l_io_cancel_list;
-
-	    if(cancel_info->read_dispatched == GLOBUS_FALSE &&
-	       cancel_info->read_callback)
-	    {
-
-		cancel_info->read_dispatched = GLOBUS_TRUE;
-		handle = cancel_info->handle;
-		callback = cancel_info->read_callback;
-		arg = cancel_info->read_arg;
-
-		err = globus_io_error_construct_io_cancelled(
-		    GLOBUS_IO_MODULE,
-		    GLOBUS_NULL,
-		    handle);
-
-		globus_i_io_mutex_unlock();
-		(*callback)(arg, handle, globus_error_put(err));
-		globus_i_io_mutex_lock();
-
-		handled_something = GLOBUS_TRUE;
-		if(globus_callback_was_restarted() ||
-		   globus_l_io_shutdown_called)
-		{
-		    goto end_cancel_handling;
-		}
-	    }
-	    if(cancel_info->write_dispatched == GLOBUS_FALSE &&
-	       cancel_info->write_callback)
-	    {
-		cancel_info->write_dispatched = GLOBUS_TRUE;
-		handle = cancel_info->handle;
-		callback = cancel_info->write_callback;
-		arg = cancel_info->write_arg;
-
-		err = globus_io_error_construct_io_cancelled(
-		    GLOBUS_IO_MODULE,
-		    GLOBUS_NULL,
-		    handle);
-		globus_i_io_mutex_unlock();
-		(*callback)(arg, handle, globus_error_put(err));
-		globus_i_io_mutex_lock();
-
-		handled_something = GLOBUS_TRUE;
-		if(globus_callback_was_restarted() ||
-		   globus_l_io_shutdown_called)
-		{
-		    goto end_cancel_handling;
-		}
-	    }
-	    if(cancel_info->except_dispatched == GLOBUS_FALSE &&
-	       cancel_info->except_callback)
-	    {
-		cancel_info->except_dispatched = GLOBUS_TRUE;
-		handle = cancel_info->handle;
-		callback = cancel_info->except_callback;
-		arg = cancel_info->except_arg;
-		
-		err = globus_io_error_construct_io_cancelled(
-		    GLOBUS_IO_MODULE,
-		    GLOBUS_NULL,
-		    handle);
-		globus_i_io_mutex_unlock();
-		(*callback)(arg, handle, globus_error_put(err));
-		globus_i_io_mutex_lock();
-
-		handled_something = GLOBUS_TRUE;
-		if(globus_callback_was_restarted() ||
-		   globus_l_io_shutdown_called)
-		{
-		    goto end_cancel_handling;
-		}
-	    }
-	    if(cancel_info->cancel_dispatched == GLOBUS_FALSE &&
-	       cancel_info->cancel_callback)
-	    {
-		cancel_info->cancel_dispatched = GLOBUS_TRUE;
-		handle = cancel_info->handle;
-		callback = cancel_info->cancel_callback;
-		arg = cancel_info->cancel_arg;
-		globus_i_io_mutex_unlock();
-		(*callback)(arg, handle, GLOBUS_SUCCESS);
-		globus_i_io_mutex_lock();
-
-		handled_something = GLOBUS_TRUE;
-	    }
-	    if(!globus_callback_was_restarted())
-	    {
-		/*
-		 * remove it from the fifo after we've dispatched
-		 * all of the callbacks for this cancel_info.
-		 */
-		globus_assert(globus_l_io_cancel_list == cancel_info);
-		globus_l_io_dequeue(globus_l_io_cancel_list,
-				    globus_l_io_cancel_tail,
-				    cancel_info);
-		
-		cancel_info->next = globus_l_io_cancel_free_list;
-		globus_l_io_cancel_free_list = cancel_info;
-	    }
-
-	end_cancel_handling:
-	    if(handled_something)
-	    {
-                GlobusTimeReltimeSet(time_left, 0, 0);
-	    }
-	    /* Drop out of handling events if we've been
-	     * restarted, or we are deactivating
-	     */
-	    if(globus_l_io_shutdown_called ||
-	       globus_callback_was_restarted())
-	    {
-		goto handle_abort;
-	    }
-	}
-
-	if (globus_l_io_fd_num_set <= 0)
-	{
-	    done = GLOBUS_TRUE;
-	    continue;
-	}
-
-	/*
-	 * round the highest fd to the nearest 64 bits, since we
-	 * do not know where in the struct it will be located
-	 * because of endian differences
-	 */
-	n_fdcopy = (globus_l_io_highest_fd+63)/8;
-	memcpy(globus_l_io_active_read_fds, globus_l_io_read_fds, n_fdcopy);
-	memcpy(globus_l_io_active_write_fds, globus_l_io_write_fds, n_fdcopy);
-	memcpy(globus_l_io_active_except_fds, globus_l_io_except_fds, n_fdcopy);
-
+        if(globus_reltime_cmp(time_left, &globus_i_reltime_zero) == 0)
+        {
+            time_left_is_zero = GLOBUS_TRUE;
+        }
+        else
+        {
+            time_left_is_zero = GLOBUS_FALSE;
+        }
+        
+        GlobusTimeAbstimeGetCurrent(time_now);
+        
+        /* Handle any cancel or secure read callbacks right away.
+         * They do not need to block on the select but will 
+         * kick out events.
+         */
+        while(!globus_list_empty(globus_l_io_operations))
+        {
+            operation_info = (globus_io_operation_info_t *)
+                globus_list_first(globus_l_io_operations);
+            
+            handle = operation_info->handle;
+            
+            globus_i_io_debug_printf(5,
+                (stderr, "%s(): non-selecting read, fd=%d\n",
+                    myname, handle->fd));
+                       
+            /* this removes operation_info from globus_l_io_operations */
+            result = globus_i_io_unregister_operation(
+                handle, GLOBUS_FALSE, operation_info->op);
+            globus_assert(result == GLOBUS_SUCCESS);
+            
+            globus_l_io_pending_count++;
+            
+            result = globus_callback_space_register_abstime_oneshot(
+                &operation_info->callback_handle,
+                &time_now,
+                globus_l_io_kickout_cb,
+                operation_info,
+                handle->blocking_read
+                    ? GLOBUS_CALLBACK_GLOBAL_SPACE
+                    : handle->socket_attr.space);
+            globus_assert(result == GLOBUS_SUCCESS);
+            
+            /* We've handled an event, so we don't need to
+             * block in the select
+             */
+            if(!time_left_is_zero)
+            {
+                GlobusTimeReltimeCopy(*time_left, globus_i_reltime_zero);
+                time_left_is_zero = GLOBUS_TRUE;
+            }
+            handled_something = GLOBUS_TRUE;
+        }
+        
+        while(globus_l_io_cancel_list)
+        {
+            globus_io_cancel_info_t *   cancel_info;
+    
+            cancel_info = globus_l_io_cancel_list;
+            globus_l_io_dequeue(
+                globus_l_io_cancel_list,
+                globus_l_io_cancel_tail,
+                cancel_info);
+                
+            cancel_info->next = globus_l_io_cancel_pending_list;
+            globus_l_io_cancel_pending_list = cancel_info;
+            
+            globus_l_io_pending_count++;
+            
+            result = globus_callback_space_register_abstime_oneshot(
+                &cancel_info->callback_handle,
+                &time_now,
+                globus_l_io_kickout_cancel_cb,
+                cancel_info,
+                cancel_info->handle->blocking_cancel
+                    ? GLOBUS_CALLBACK_GLOBAL_SPACE
+                    : cancel_info->handle->socket_attr.space);
+            globus_assert(result == GLOBUS_SUCCESS);
+        
+            if(!time_left_is_zero)
+            {
+                GlobusTimeReltimeCopy(*time_left, globus_i_reltime_zero);
+                time_left_is_zero = GLOBUS_TRUE;
+            }
+            handled_something = GLOBUS_TRUE;
+        }
+    
+        if (globus_l_io_fd_num_set <= 0)
+        {
+            done = GLOBUS_TRUE;
+            continue;
+        }
+    
+        /*
+         * round the highest fd to the nearest 64 bits, since we
+         * do not know where in the struct it will be located
+         * because of endian differences
+         */
+        globus_l_io_fd_table_modified = GLOBUS_FALSE;
+        
+        n_fdcopy = (globus_l_io_highest_fd+63)/8;
+        memcpy(globus_l_io_active_read_fds, globus_l_io_read_fds, n_fdcopy);
+        memcpy(globus_l_io_active_write_fds, globus_l_io_write_fds, n_fdcopy);
+        memcpy(globus_l_io_active_except_fds, globus_l_io_except_fds, n_fdcopy);
+    
 #       if !defined(HAVE_THREAD_SAFE_SELECT)
-	{
-            GlobusTimeReltimeSet(time_left, 0, 0);
-	}
+        {
+            if(!time_left_is_zero)
+            {
+                GlobusTimeReltimeCopy(*time_left, globus_i_reltime_zero);
+                time_left_is_zero = GLOBUS_TRUE;
+            }
+        }
 #       endif
-
-        if(globus_reltime_cmp(
-               &time_left, 
-               (globus_reltime_t *)&globus_i_reltime_infinity) == 0)
+    
+        if(globus_time_reltime_is_infinity(time_left))
         {
             use_timeout = GLOBUS_FALSE;
-        }	
+        }   
         else
         {
             use_timeout = GLOBUS_TRUE;
         }
-	
-        if (globus_reltime_cmp(&time_left, 
-                           (globus_reltime_t *) &globus_i_reltime_zero) == 0)
-        {
-            time_left_is_zero = GLOBUS_TRUE;
-        }
-	/*
-	 * If we were using a timeout on select() then we must release the
-	 * FD mutex so that other threads can do some work
-	 */
+        
+        /*
+         * If we were using a timeout on select() then we must release the
+         * FD mutex so that other threads can do some work
+         */
         select_highest_fd = globus_l_io_highest_fd;
-	if (!time_left_is_zero)
-	{
-	    globus_l_io_select_active = GLOBUS_TRUE;
-	    globus_i_io_mutex_unlock();
-	}
-	globus_i_io_debug_printf(1,("%s(): Calling select()\n",myname));
-	n_ready = select(select_highest_fd + 1,
-			 NEXUS_FD_SET_CAST globus_l_io_active_read_fds,
-			 NEXUS_FD_SET_CAST globus_l_io_active_write_fds,
-			 NEXUS_FD_SET_CAST globus_l_io_active_except_fds,
-			 (use_timeout ? &time_left : GLOBUS_NULL));
-	select_errno = errno;
-	globus_i_io_debug_printf(1,
-			   ("%s(): select() returned\n",myname));
-
-	/*
-	 * If we were using a timeout on select() then we must reacquire the
-	 * FD mutex and verify that our state hasn't changed
-	 */
-	if (!time_left_is_zero)
-	{
-	    globus_i_io_mutex_lock();
-	    globus_l_io_select_active = GLOBUS_FALSE;
-
-	    /*
-	     * Increase the select() counter and signal any waiting threads
-	     * that the current select has completed.  The select() counter is
-	     * used by routines like globus_i_io_close() to determine when it's
-	     * file descriptor has been removed from the select list.
-	     */
-	    globus_l_io_select_count++;
-	    globus_l_io_cond_signal();
-
-	    /*
-	     * If the FD table has been modified in a way which invalidates the
-	     * information returned by select(), then reset the modification
-	     * flag and retry the select()
-	     */
-	    if (globus_l_io_fd_table_modified)
-	    {
-		globus_l_io_fd_table_modified = GLOBUS_FALSE;
-                globus_callback_get_timeout(&time_left);
-	
-		continue;
-	    }
-
-	    /*
-	     * If shutdown has been called, then just bail out, ignoring any
-	     * pending communication requests
-	     */
-	    if (globus_l_io_shutdown_called)
-	    {
-		break;
-	    }
-	}
-
-	if (n_ready < 0)
-	{
-	    if (select_errno == EINTR)
-	    {
-		continue;
-	    }
-	    else
-	    {
-		goto handle_abort;
-	    }
-	}
-	else if (n_ready > 0)
-	{
-	    int fd;
-	   
-	    done = GLOBUS_TRUE;
-	    handled_something = GLOBUS_TRUE;
+        if(!time_left_is_zero)
+        {
+            globus_l_io_select_active = GLOBUS_TRUE;
+            globus_i_io_mutex_unlock();
+        }
+        
+        globus_i_io_debug_printf(5,
+            (stderr, "%s(): Calling select()\n",myname));
+        n_ready = select(select_highest_fd + 1,
+                 NEXUS_FD_SET_CAST globus_l_io_active_read_fds,
+                 NEXUS_FD_SET_CAST globus_l_io_active_write_fds,
+                 NEXUS_FD_SET_CAST globus_l_io_active_except_fds,
+                 (use_timeout ? time_left : GLOBUS_NULL));
+        select_errno = errno;
+        globus_i_io_debug_printf(5,
+            (stderr, "%s(): select() returned\n",myname));
     
-	    for (n_checked = 0, fd = globus_l_io_select_count%(select_highest_fd+1);
-		 n_checked < n_ready;
-		 fd++)
-	    {
-                if(fd == select_highest_fd+1)
+        /*
+         * If we were using a timeout on select() then we must reacquire the
+         * FD mutex and verify that our state hasn't changed
+         */
+        if(!time_left_is_zero)
+        {
+            globus_i_io_mutex_lock();
+            globus_l_io_select_active = GLOBUS_FALSE;
+                
+            /*
+             * Increase the select() counter and signal any waiting threads
+             * that the current select has completed.  The select() counter is
+             * used by routines like globus_i_io_close() to determine when it's
+             * file descriptor has been removed from the select list.
+             */
+            globus_l_io_select_count++;
+            globus_l_io_cond_broadcast();
+    
+            /*
+             * If the FD table has been modified in a way which invalidates the
+             * information returned by select(), then reset the modification
+             * flag and retry the select()
+             */
+            if(globus_l_io_fd_table_modified)
+            {
+                globus_l_io_fd_table_modified = GLOBUS_FALSE;
+                globus_callback_get_timeout(time_left);
+        
+                continue;
+            }
+    
+            /*
+             * If shutdown has been called, then just bail out, ignoring any
+             * pending communication requests
+             */
+            if(globus_l_io_shutdown_called)
+            {
+                break;
+            }
+        }
+            
+            
+        /* see if we were woken up by pipe 
+         * this needs to happen immediately and cant be 'registered' like
+         * the rest of the callbacks
+         */
+        if(FD_ISSET(
+            globus_l_io_wakeup_pipe_handle.fd, globus_l_io_active_read_fds))
+        {
+            FD_CLR(
+                globus_l_io_wakeup_pipe_handle.fd,
+                globus_l_io_active_read_fds);
+        
+            globus_l_io_wakeup_pipe_callback(
+                GLOBUS_NULL,
+                &globus_l_io_wakeup_pipe_handle,
+                GLOBUS_SUCCESS);
+            
+            n_ready--;
+        }
+            
+        if(n_ready < 0)
+        {
+            if(select_errno == EINTR)
+            {
+                globus_callback_get_timeout(time_left);
+                continue;
+            }
+            else
+            {
+                goto handle_abort;
+            }
+        }
+        else if(n_ready > 0)
+        {
+            int fd;
+            
+            if(!time_left_is_zero)
+            {
+                GlobusTimeAbstimeGetCurrent(time_now);
+            }
+            
+            done = GLOBUS_TRUE;
+            handled_something = GLOBUS_TRUE;
+        
+            for(fd = 0, n_checked = 0; n_checked < n_ready; fd++)
+            {
+                if(FD_ISSET(fd, globus_l_io_active_read_fds))
                 {
-		    fd = 0;
-                }
-		if (FD_ISSET(fd, globus_l_io_active_read_fds))
-		{
                     n_checked++;
 
                     /* Only do the callback if we are still interested
                      * in the FD
                      */
-                    if (FD_ISSET(fd, globus_l_io_read_fds))
+                    if(FD_ISSET(fd, globus_l_io_read_fds))
                     {
-		        select_info = globus_l_io_fd_table[fd];
-		        handle = select_info->handle;
-		        callback = select_info->read_callback;
-		        arg = select_info->read_arg;
-		        globus_i_io_debug_printf(5,
-				           ("%s(): read, fd=%d\n", myname, fd));
-		        globus_i_io_unregister_read(handle,
-						    GLOBUS_FALSE);
-
-		        globus_i_io_mutex_unlock();
-		        (*callback)(arg, handle, GLOBUS_SUCCESS);
-		        globus_i_io_mutex_lock();
-
-		        if (globus_callback_was_restarted())
-		        {
-			    goto handle_abort;
-		        }
+                        select_info = globus_l_io_fd_table[fd];
+                        operation_info = select_info->read;
+                        
+                        globus_i_io_debug_printf(5,
+                            (stderr, "%s(): read, fd=%d\n", myname, fd));
+                        
+                        handle = operation_info->handle;    
+                        
+                        result = globus_i_io_unregister_operation(
+                            handle, GLOBUS_FALSE, GLOBUS_I_IO_READ_OPERATION);
+                        globus_assert(result == GLOBUS_SUCCESS);
+                        
+                        globus_l_io_pending_count++;
+                        
+                        result = globus_callback_space_register_abstime_oneshot(
+                            &operation_info->callback_handle,
+                            &time_now,
+                            globus_l_io_kickout_cb,
+                            operation_info,
+                            handle->blocking_read
+                                ? GLOBUS_CALLBACK_GLOBAL_SPACE
+                                : handle->socket_attr.space);
+                        globus_assert(result == GLOBUS_SUCCESS);
                     }
 
-                    if (n_checked == n_ready)
-		    {
-		        break;
-		    }
-		}
-		if (FD_ISSET(fd, globus_l_io_active_write_fds))
-		{
-		    n_checked++;
-
+                    if(n_checked == n_ready)
+                    {
+                        break;
+                    }
+                }
+                
+                if(FD_ISSET(fd, globus_l_io_active_write_fds))
+                {
+                    n_checked++;
+        
                     /* Only do the callback if we are still interested
                      * in the FD
                      */
-                    if (FD_ISSET(fd, globus_l_io_write_fds))
+                    if(FD_ISSET(fd, globus_l_io_write_fds))
                     {
-		        globus_i_io_debug_printf(5,
-				           ("%s(): write, fd=%d\n", myname, fd));
-		        select_info = globus_l_io_fd_table[fd];
-		        handle = select_info->handle;
-		        callback = select_info->write_callback;
-		        arg = select_info->write_arg;
-		        globus_i_io_unregister_write(handle, GLOBUS_FALSE);
+                        select_info = globus_l_io_fd_table[fd];
+                        operation_info = select_info->write;
+                        
+                        globus_i_io_debug_printf(5,
+                            (stderr, "%s(): write, fd=%d\n", myname, fd));
+                        
+                        handle = operation_info->handle;    
+                                
+                        result = globus_i_io_unregister_operation(
+                            handle, GLOBUS_FALSE, GLOBUS_I_IO_WRITE_OPERATION);
+                        globus_assert(result == GLOBUS_SUCCESS);
 
-		        globus_i_io_mutex_unlock();
-		        (*callback)(arg, handle, GLOBUS_SUCCESS);
-		        globus_i_io_mutex_lock();
-
-
-		        if (globus_callback_was_restarted())
-		        {
-			    goto handle_abort;
-		        }
-		    }
-		    if (n_checked == n_ready)
-		    {
-			break;
-		    }
-		}
-		if (FD_ISSET(fd, globus_l_io_active_except_fds))
-		{
-		    n_checked++;
-
+                        globus_l_io_pending_count++;
+                        
+                        result = globus_callback_space_register_abstime_oneshot(
+                            &operation_info->callback_handle,
+                            &time_now,
+                            globus_l_io_kickout_cb,
+                            operation_info,
+                            handle->blocking_write
+                                ? GLOBUS_CALLBACK_GLOBAL_SPACE
+                                : handle->socket_attr.space);
+                        globus_assert(result == GLOBUS_SUCCESS);
+                    }
+                    
+                    if(n_checked == n_ready)
+                    {
+                        break;
+                    }
+                }
+                
+                if(FD_ISSET(fd, globus_l_io_active_except_fds))
+                {
+                    n_checked++;
+        
                     /* Only do the callback if we are still interested
                      * in the FD
                      */
-		    if (FD_ISSET(fd, globus_l_io_except_fds))
+                    if(FD_ISSET(fd, globus_l_io_except_fds))
                     {
-		        globus_i_io_debug_printf(5,
-				           ("%s(): except, fd=%d\n", myname, fd));
-		        select_info = globus_l_io_fd_table[fd];
-		        handle = select_info->handle;
-		        callback = select_info->except_callback;
-		        arg = select_info->except_arg;
-		        globus_i_io_unregister_except(handle);
-
-		        globus_i_io_mutex_unlock();
-		        (*callback)(arg, handle, GLOBUS_SUCCESS);
-		        globus_i_io_mutex_lock();
-
-		        if (globus_callback_was_restarted())
-		        {
-			    goto handle_abort;
-		        }
-		    }
-
-		    if (n_checked == n_ready)
-		    {
-			break;
-		    }
-		}
-	    } /* for */
-	} /* endif */
-
-	if ( n_ready == 0 )
-	{
-	    done = GLOBUS_TRUE;
-	}
+                        select_info = globus_l_io_fd_table[fd];
+                        operation_info = select_info->except;
+                        
+                        globus_i_io_debug_printf(5,
+                            (stderr, "%s(): except, fd=%d\n", myname, fd));
+                        
+                        handle = operation_info->handle;    
+                                
+                        result = globus_i_io_unregister_operation(
+                            handle, GLOBUS_FALSE, GLOBUS_I_IO_EXCEPT_OPERATION);
+                        globus_assert(result == GLOBUS_SUCCESS);
+                        
+                        globus_l_io_pending_count++;
+                        
+                        result = globus_callback_space_register_abstime_oneshot(
+                            &operation_info->callback_handle,
+                            &time_now,
+                            globus_l_io_kickout_cb,
+                            operation_info,
+                            handle->blocking_except
+                                ? GLOBUS_CALLBACK_GLOBAL_SPACE
+                                : handle->socket_attr.space);
+                        globus_assert(result == GLOBUS_SUCCESS);
+                    }
+        
+                    if(n_checked == n_ready)
+                    {
+                        break;
+                    }
+                }
+            } /* for */
+        } /* endif */
+    
+        if(n_ready == 0)
+        {
+            done = GLOBUS_TRUE;
+        }
     }
 
 handle_abort:
-    globus_i_io_debug_printf(5, ("%s(): exiting\n",myname));
+    globus_i_io_debug_printf(5, (stderr, "%s(): exiting\n",myname));
     return handled_something;
 }
 /* globus_l_io_handle_events */
@@ -2000,6 +2560,9 @@ globus_l_io_wakeup_pipe_callback(
     char				buf;
     ssize_t				done = 0;
 
+    globus_i_io_debug_printf(3, 
+        (stderr, "globus_l_io_wakeup_pipe_callback(): entering\n"));
+
     while (!done)
     {
 	done = globus_libc_read(handle->fd, &buf, sizeof(buf));
@@ -2018,37 +2581,44 @@ globus_l_io_wakeup_pipe_callback(
 	}
     }
 
-    globus_i_io_mutex_lock();
     globus_l_io_wakeup_pending = GLOBUS_FALSE;
-    if(globus_l_io_shutdown_called == GLOBUS_FALSE)
-    {	
-	globus_i_io_register_read_func(handle,
-				       globus_l_io_wakeup_pipe_callback,
-				       GLOBUS_NULL,
-				       GLOBUS_NULL,
-				       GLOBUS_TRUE);
-    }
-    globus_i_io_mutex_unlock();
+    
+    globus_i_io_debug_printf(3, 
+        (stderr, "globus_l_io_wakeup_pipe_callback(): exiting\n"));
+
 }
 /* globus_l_io_wakeup_pipe_callback() */
 
 
-static globus_bool_t
+static 
+void
 globus_l_io_poll(
-    globus_abstime_t *                  time_stop,
+    const globus_abstime_t *            time_now,
+    const globus_abstime_t *            time_stop,
     void *                              user_args)
 {
     int                                 events_handled=0;
-
+    globus_reltime_t                    time_left;
+    
+    if(globus_time_abstime_is_infinity(time_stop))
+    {
+        GlobusTimeReltimeCopy(time_left, globus_i_reltime_infinity);
+    }
+    else
+    {
+        GlobusTimeAbstimeDiff(time_left, *time_now, *time_stop);
+    }
+    
     globus_i_io_mutex_lock();
+    
     do
     {
         events_handled = 
-            globus_l_io_handle_events();
+            globus_l_io_handle_events(&time_left);
     }
-    while(events_handled == 00 &&
+    while(events_handled == 0 &&
 	  !globus_l_io_shutdown_called &&
-          !globus_callback_has_time_expired());
+          !globus_callback_get_timeout(&time_left));
 
     /* adjust skip-poll delay */
 #   if defined(BUILD_LITE)
@@ -2066,7 +2636,7 @@ globus_l_io_poll(
                 &new_period)) 
             {
                 globus_callback_adjust_period(
-                    &globus_l_io_callback_handle,
+                    globus_l_io_callback_handle,
                     &new_period);
             }
         }
@@ -2074,13 +2644,6 @@ globus_l_io_poll(
 #   endif
 
     globus_i_io_mutex_unlock();
-    return (events_handled > 0);
-}
-
-static void
-globus_l_io_handler_wakeup(void *arg)
-{
-    globus_l_io_shutdown_called = GLOBUS_TRUE;
 }
 
 /*
@@ -2108,6 +2671,7 @@ globus_l_io_activate(void)
     int                                 fd_allocsize;
     int					num_fds;
     globus_reltime_t                    delay;
+    globus_result_t                     result;
 
     /* In the pre-activation of the thread module, we
      * are setting up some code to block the SIGPIPE
@@ -2151,19 +2715,25 @@ globus_l_io_activate(void)
     }
 #   endif
 
-    globus_i_io_debug_printf(3, ("globus_l_io_activate(): entering\n"));
-
-    globus_l_io_core_wakeup_func_ptr = GLOBUS_NULL;
+    globus_i_io_debug_printf(3,
+        (stderr, "globus_l_io_activate(): entering\n"));
+    
     globus_l_io_shutdown_called = GLOBUS_FALSE;
 
     globus_mutex_init(&globus_i_io_mutex, (globus_mutexattr_t *) GLOBUS_NULL);
     globus_cond_init(&globus_i_io_cond, (globus_condattr_t *) GLOBUS_NULL);
-
+    
+    globus_memory_init(
+        &globus_l_io_operation_info_memory,
+        sizeof(globus_io_operation_info_t),
+        64);
+    
     globus_l_io_cancel_list = GLOBUS_NULL;
     globus_l_io_cancel_tail = GLOBUS_NULL;
     globus_l_io_cancel_free_list = GLOBUS_NULL;
+    globus_l_io_cancel_pending_list = GLOBUS_NULL;
 
-    globus_l_io_reads = GLOBUS_NULL;
+    globus_l_io_operations = GLOBUS_NULL;
 
     /* set up used port table */
     globus_i_io_tcp_used_port_table = GLOBUS_NULL;
@@ -2216,13 +2786,6 @@ globus_l_io_activate(void)
     /* setup default attributes */
     globus_i_io_attr_activate();
 
-#   if defined (HAVE_THREAD_SAFE_SELECT)
-    {
-        globus_l_io_core_wakeup_func_ptr = globus_l_io_handler_wakeup;
-    }
-#   endif
-
-
     globus_l_io_fd_table_modified = GLOBUS_FALSE;
     globus_l_io_select_count = 0;
     globus_l_io_select_active = GLOBUS_FALSE;
@@ -2235,14 +2798,15 @@ globus_l_io_activate(void)
     /* Initialize the fd tables and fd_set's */
     globus_l_io_fd_tablesize = GLOBUS_L_IO_NUM_FDS;
     globus_l_io_highest_fd = 0;
-
+    globus_l_io_pending_count = 0;
+    
     globus_l_io_fd_table = (globus_io_select_info_t **)
-	globus_malloc(sizeof(globus_io_select_info_t *) *
-		      globus_l_io_fd_tablesize);
+        globus_malloc(sizeof(globus_io_select_info_t *) *
+            globus_l_io_fd_tablesize);
     
     for (i = 0; i < globus_l_io_fd_tablesize; i++)
     {
-	globus_l_io_fd_table[i] = (globus_io_select_info_t *) GLOBUS_NULL;
+	globus_l_io_fd_table[i] = GLOBUS_NULL;
     }
     globus_l_io_fd_table_modified = GLOBUS_FALSE;
 
@@ -2298,12 +2862,29 @@ globus_l_io_activate(void)
     }
     
     globus_i_io_setup_nonblocking(&globus_l_io_wakeup_pipe_handle);
-    globus_i_io_register_read_func(&globus_l_io_wakeup_pipe_handle,
-				   globus_l_io_wakeup_pipe_callback,
-				   GLOBUS_NULL,
-				   GLOBUS_NULL,
-				   GLOBUS_TRUE);
-
+    
+    /* not using a callback here... just holding a place for this fd */
+    result = globus_i_io_start_operation(
+        &globus_l_io_wakeup_pipe_handle,
+        GLOBUS_I_IO_READ_OPERATION);
+    
+    if(result == GLOBUS_SUCCESS)
+    {
+        result = globus_i_io_register_operation(
+            &globus_l_io_wakeup_pipe_handle,
+            GLOBUS_NULL,
+            GLOBUS_NULL,
+            GLOBUS_NULL,
+            GLOBUS_TRUE,
+            GLOBUS_I_IO_READ_OPERATION);
+    }
+    
+    if(result != GLOBUS_SUCCESS)
+    {
+        rc = -3;
+	    goto unlock_and_abort;
+    }
+    
     /* if not using skip poll register as periodic for efficiency */
 
     /* get skip poll value */
@@ -2317,23 +2898,43 @@ globus_l_io_activate(void)
     }
 #endif
     GlobusTimeReltimeSet(delay, 0, 0);
-    globus_callback_register_periodic(
+    result = globus_callback_register_periodic(
 			     &globus_l_io_callback_handle,
                              &delay,
                              &delay,
                		     globus_l_io_poll,
-			     GLOBUS_NULL,
-			     globus_l_io_core_wakeup_func_ptr,
 			     GLOBUS_NULL);
-
+    globus_assert(result == GLOBUS_SUCCESS);
+	    
   unlock_and_abort:
     globus_i_io_mutex_unlock();
 
-    globus_i_io_debug_printf(3, ("globus_l_io_activate(): exiting\n"));
+    globus_i_io_debug_printf(3, (stderr, "globus_l_io_activate(): exiting\n"));
     
     return rc;
 }
 /* globus_l_io_activate() */
+
+/**
+ * unregister callback callback
+ */
+static
+void
+globus_l_unregister_periodic_cb(
+    const globus_abstime_t *            time_now,
+    const globus_abstime_t *            time_stop,
+    void *                              user_args)
+{
+    globus_i_io_mutex_lock();
+    {
+        globus_l_io_pending_count--;
+        if(globus_l_io_pending_count == 0)
+        {
+            globus_l_io_cond_signal();
+        }
+    }
+    globus_i_io_mutex_unlock();
+}
 
 /*
  * globus_l_io_deactivate()
@@ -2347,8 +2948,9 @@ globus_l_io_deactivate(void)
 {
     int					fd;
     int					rc = 0;
-
-    globus_i_io_debug_printf(3, ("globus_l_io_deactivate(): entering\n"));
+    globus_bool_t                   active;
+    
+    globus_i_io_debug_printf(3, (stderr, "globus_l_io_deactivate(): entering\n"));
 
     globus_i_io_mutex_lock();
 
@@ -2361,27 +2963,147 @@ globus_l_io_deactivate(void)
     {
 	globus_l_io_select_wakeup();
     }
-
+    
+    /* cancel any outstanding callbacks */
+    for (fd = 0; fd < globus_l_io_fd_tablesize; fd++)
+    {
+        globus_io_select_info_t *	    select_info;
+        globus_io_operation_info_t *    operation_info;
+        
+        select_info = globus_l_io_fd_table[fd];
+        
+        if(select_info)
+        {
+            operation_info = select_info->read;
+            if(operation_info && operation_info->callback)
+            {
+                if(operation_info->callback_handle != GLOBUS_NULL_HANDLE)
+                {
+                    /* cancel pending callback */
+                    globus_callback_unregister(
+                        operation_info->callback_handle,
+                        GLOBUS_NULL,
+                        GLOBUS_NULL,
+                        &active);
+                    
+                    if(!active)
+                    {
+                        globus_l_io_pending_count--;
+                    }
+                }
+                
+                if(operation_info->arg_destructor && operation_info->arg)
+                {
+                    operation_info->arg_destructor(operation_info->arg);
+            	}
+            	
+            	operation_info->callback = GLOBUS_NULL;
+            }
+            
+            operation_info = select_info->write;
+            if(operation_info && operation_info->callback)
+            {
+                if(operation_info->callback_handle != GLOBUS_NULL_HANDLE)
+                {
+                    /* cancel pending callback */
+                    globus_callback_unregister(
+                        operation_info->callback_handle,
+                        GLOBUS_NULL,
+                        GLOBUS_NULL,
+                        &active);
+                    
+                    if(!active)
+                    {
+                        globus_l_io_pending_count--;
+                    }
+                }
+                
+                if(operation_info->arg_destructor && operation_info->arg)
+                {
+                    operation_info->arg_destructor(operation_info->arg);
+            	}
+            	
+            	operation_info->callback = GLOBUS_NULL;
+            }
+            
+            operation_info = select_info->except;
+            if(operation_info && operation_info->callback)
+            {
+                if(operation_info->callback_handle != GLOBUS_NULL_HANDLE)
+                {
+                    /* cancel pending callback */
+                    globus_callback_unregister(
+                        operation_info->callback_handle,
+                        GLOBUS_NULL,
+                        GLOBUS_NULL,
+                        &active);
+                    
+                    if(!active)
+                    {
+                        globus_l_io_pending_count--;
+                    }
+                }
+                
+                if(operation_info->arg_destructor && operation_info->arg)
+                {
+                    operation_info->arg_destructor(operation_info->arg);
+            	}
+            	
+            	operation_info->callback = GLOBUS_NULL;
+            }
+        }
+    }
+    
+    /* cancel any outstanding cancels */
+    while(globus_l_io_cancel_pending_list)
+    {
+        globus_io_cancel_info_t *	cancel_info;
+        
+        cancel_info = globus_l_io_cancel_pending_list;
+        
+        globus_callback_unregister(
+            cancel_info->callback_handle,
+            GLOBUS_NULL,
+            GLOBUS_NULL,
+            &active);
+        
+        if(!active)
+        {
+            globus_l_io_pending_count--;
+        }
+        
+        /* take this out of the pending list and put it on the 
+         * active list so the destructors can be called later
+         */
+        globus_l_io_cancel_pending_list = cancel_info->next;
+        
+        cancel_info->next = globus_l_io_cancel_list;
+        globus_l_io_cancel_list = cancel_info;
+    }
     /*
      * Wait for any outstanding calls into the handler (or handler thread)
-     * to complete. This will deadlock if the deactivate is called from
-     * a handler thread.
+     * to complete. 
      */
-    globus_i_io_mutex_unlock();
+    globus_l_io_pending_count++;
+    globus_callback_unregister(
+        globus_l_io_callback_handle,
+        globus_l_unregister_periodic_cb,
+        GLOBUS_NULL,
+        GLOBUS_NULL);
+    
+    while(globus_l_io_pending_count > 0)
     {
-	globus_i_callback_blocking_cancel(&globus_l_io_callback_handle);
+        globus_l_io_cond_wait();
     }
-    globus_i_io_mutex_lock();
 
     globus_i_io_close(&globus_l_io_wakeup_pipe_handle);
     
     while(globus_libc_close(globus_l_io_wakeup_pipe[1]) < 0)
     {
-	int save_errno = errno;
-	if(save_errno != EINTR)
-	{
-	    break;
-	}
+        if(errno != EINTR)
+        {
+            break;
+        }
     }
     
     /*
@@ -2389,67 +3111,69 @@ globus_l_io_deactivate(void)
      */
     for (fd = 0; fd < globus_l_io_fd_tablesize; fd++)
     {
-	globus_io_select_info_t *	select_info;
-
-	select_info = globus_l_io_fd_table[fd];
-
-	if(select_info != GLOBUS_NULL)
-	{
-	    if(select_info->read_arg &&
-	       select_info->read_destructor)
-	    {
-		select_info->read_destructor(select_info->read_arg);
-	    }
-	    if(select_info->write_arg &&
-	       select_info->write_destructor)
-	    {
-		select_info->write_destructor(select_info->write_arg);
-	    }
-	    globus_l_io_table_remove_fd(fd);
-	}
+        if(globus_l_io_fd_table[fd])
+        {
+            globus_l_io_table_remove_fd(fd);
+        }
     }
     globus_free(globus_l_io_fd_table);
 
     /* free any cancel data structures */
     while(globus_l_io_cancel_list)
     {
-	globus_io_cancel_info_t *	tmp;
+        globus_io_cancel_info_t *       tmp;
+        globus_io_operation_info_t *    operation_info;
+        
+        globus_l_io_dequeue(
+            globus_l_io_cancel_list,
+            globus_l_io_cancel_tail,
+            tmp);
+        
+        operation_info = tmp->read;
+        if(operation_info &&
+            operation_info->callback &&
+            operation_info->arg_destructor &&
+            operation_info->arg)
+        {
+            operation_info->arg_destructor(operation_info->arg);
+        }
+        
+        operation_info = tmp->write;
+        if(operation_info &&
+            operation_info->callback &&
+            operation_info->arg_destructor &&
+            operation_info->arg)
+        {
+            operation_info->arg_destructor(operation_info->arg);
+        }
+        
+        operation_info = tmp->except;
+        if(operation_info &&
+            operation_info->callback &&
+            operation_info->arg_destructor &&
+            operation_info->arg)
+        {
+            operation_info->arg_destructor(operation_info->arg);
+        }
 
-	globus_l_io_dequeue(globus_l_io_cancel_list,
-			    globus_l_io_cancel_tail,
-			    tmp);
-	
-	if(tmp->read_arg &&
-	   tmp->read_destructor &&
-	   (!tmp->read_dispatched))
-	{
-	    tmp->read_destructor(tmp->read_arg);
-	}
-	if(tmp->write_arg &&
-	   tmp->write_destructor &&
-	   (!tmp->write_dispatched))
-	{
-	    tmp->write_destructor(tmp->write_arg);
-	}
-	if(tmp->cancel_arg &&
-	   tmp->cancel_destructor &&
-	   (!tmp->cancel_dispatched))
-	{
-	    tmp->cancel_destructor(tmp->cancel_arg);
-	}
-	globus_free(tmp);
+        if(tmp->callback &&
+            tmp->arg_destructor &&
+            tmp->arg)
+        {
+            tmp->arg_destructor(tmp->arg);
+        }
+        globus_free(tmp);
     }
+    
     while(globus_l_io_cancel_free_list)
     {
-	globus_io_cancel_info_t *	tmp;
-	globus_l_io_dequeue(globus_l_io_cancel_free_list,
-			    GLOBUS_NULL,
-			    tmp);
-	globus_free(tmp);
+        globus_io_cancel_info_t *   tmp;
+        globus_l_io_dequeue(globus_l_io_cancel_free_list, GLOBUS_NULL, tmp);
+        globus_free(tmp);
     }
 
     /* Free up list of non-selecting reads */
-    globus_list_free(globus_l_io_reads);
+    globus_list_free(globus_l_io_operations);
     
     if(globus_i_io_tcp_used_port_table) 
     {
@@ -2459,8 +3183,12 @@ globus_l_io_deactivate(void)
     {
         globus_free(globus_i_io_udp_used_port_table);
     }
+    
+    globus_memory_destroy(&globus_l_io_operation_info_memory);
+    
     globus_i_io_mutex_unlock();
-    globus_i_io_debug_printf(3, ("globus_l_io_deactivate(): exiting\n"));
+    globus_i_io_debug_printf(3,
+        (stderr, "globus_l_io_deactivate(): exiting\n"));
 
     globus_module_deactivate(GLOBUS_ERROR_MODULE);
     globus_mutex_destroy(&globus_i_io_mutex);

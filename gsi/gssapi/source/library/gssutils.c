@@ -595,8 +595,8 @@ Returns:
 **********************************************************************/
 
 OM_uint32    
-gs_handshake 
-(gss_ctx_id_desc*               context_handle)
+gs_handshake(
+    gss_ctx_id_desc*               context_handle)
 {
 	OM_uint32 major_status = 0;
 	int rc;

@@ -91,7 +91,7 @@ Test_Targets = \
 	test_ca \
 	test_ssl
 
-INCLUDES = $(GPT_INCLUDES) -I$(top_srcdir)/include
+INCLUDES = -I$(top_srcdir)/include $(GPT_INCLUDES)
 
 LDADD = $(top_srcdir)/ssl/libssl_$(GLOBUS_FLAVOR_NAME).la $(top_srcdir)/crypto/libcrypto_$(GLOBUS_FLAVOR_NAME).la $(GPT_LIB_LINKS)
 

@@ -36,6 +36,7 @@ test_parse_args(int argc,
     long interval;
     long deadline;
     char * p;
+    char * subject;
 
     *src = GLOBUS_NULL;
     *dst = GLOBUS_NULL;
@@ -215,13 +216,19 @@ test_parse_args(int argc,
 	    exit(0);
 	}
     }
-    if((*src) == GLOBUS_NULL)
+    
+    subject = globus_libc_getenv("GLOBUS_FTP_CLIENT_TEST_SUBJECT");
+    if(subject)
     {
-	(*src) = "gsiftp://localhost/etc/group";
-    }
-    if((*dst) == GLOBUS_NULL)
-    {
-	(*dst) = "gsiftp://localhost/tmp/etc_group";
+        subject = globus_libc_strdup(subject);
+    
+        globus_ftp_client_operationattr_set_authorization(
+            operation_attr,
+            GSS_C_NO_CREDENTIAL,
+            ":globus-mapping:",
+            "",
+            GLOBUS_NULL,
+            subject);
     }
 }
 

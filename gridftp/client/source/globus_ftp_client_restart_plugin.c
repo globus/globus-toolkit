@@ -428,6 +428,7 @@ globus_l_ftp_client_restart_plugin_move(
     d->source_url = globus_libc_strdup(source_url);
     globus_ftp_client_operationattr_copy(&d->source_attr, attr);
     d->dest_url = globus_libc_strdup(dest_url);
+    globus_ftp_client_operationattr_copy(&d->dest_attr, attr);
 }
 /* globus_l_ftp_client_restart_plugin_move() */
 
@@ -633,6 +634,8 @@ globus_l_ftp_client_restart_plugin_fault(
 		    &d->source_attr,
 		    &when);
 	    break;
+    default: /* Only state left is FTP_CLIENT_IDLE */
+	  globus_assert(0 && "Unexpected state");
     }
 
     if(d->backoff)
@@ -824,13 +827,13 @@ globus_l_ftp_client_restart_plugin_genericify(
     if(d->source_url)
     {
 	globus_libc_free(d->source_url);
+	globus_ftp_client_operationattr_destroy(&d->source_attr);
     }
     if(d->dest_url)
     {
 	globus_libc_free(d->dest_url);
+	globus_ftp_client_operationattr_destroy(&d->dest_attr);
     }
-    globus_ftp_client_operationattr_destroy(&d->source_attr);
-    globus_ftp_client_operationattr_destroy(&d->dest_attr);
 
     d->operation = GLOBUS_FTP_CLIENT_IDLE;
     d->abort_pending = GLOBUS_FALSE;

@@ -202,7 +202,6 @@ globus_i_io_socket_get_attr(
 	   instance,
 	   &handle->socket_attr);
     
-    
     return GLOBUS_SUCCESS;
 }
 /* globus_io_socket_get_attr() */
@@ -415,6 +414,7 @@ globus_i_io_socket_set_attr(
     {
 	handle->socket_attr.rcvbuf = rcvbuf;
     }
+    
     return GLOBUS_SUCCESS;
     
     /* undo any changes, then return an error */

@@ -38,54 +38,9 @@ EXTERN_C_BEGIN
 #include <time.h>
 #include "openssl/crypto.h"
 #include "openssl/pkcs12.h"
+#include "globus_common.h"
 
-
-#if SSLEAY_VERSION_NUMBER < 0x0090581fL
-#define RAND_add(a,b,c) RAND_seed(a,b)
-#define RAND_status() 1
-#endif
-
-#if SSLEAY_VERSION_NUMBER >= 0x00904100L
-/* Support both OpenSSL 0.9.4 and SSLeay 0.9.0 */
 #define OPENSSL_PEM_CB(A,B)  A, B
-#else
-#define RAND_add(a,b,c) RAND_seed(a,b)
-#define OPENSSL_PEM_CB(A,B)  A
-
-#define STACK_OF(A) STACK
-
-#define sk_X509_num  sk_num
-#define sk_X509_value  (X509 *)sk_value
-#define sk_X509_push(A, B) sk_push(A, (char *) B)
-#define sk_X509_insert(A,B,C)  sk_insert(A, (char *) B, C)
-#define sk_X509_delete  sk_delete
-#define sk_X509_new_null sk_new_null
-#define sk_X509_pop_free sk_pop_free
-
-#define sk_X509_NAME_ENTRY_num  sk_num
-#define sk_X509_NAME_ENTRY_value  (X509_NAME_ENTRY *)sk_value
-
-#define sk_SSL_CIPHER_num  sk_num
-#define sk_SSL_CIPHER_value  (SSL_CIPHER*)sk_value
-#define sk_SSL_CIPHER_insert(A,B,C)  sk_insert(A, (char *) B, C)
-#define sk_SSL_CIPHER_delete  sk_delete
-#define sk_SSL_CIPHER_push(A, B) sk_push(A, (char *) B)
-#define sk_SSL_CIPHER_shift(A) sk_shift(A)
-#define sk_SSL_CIPHER_dup(A) sk_dup(A)
-#define sk_SSL_CIPHER_unshift(A, B) sk_unshift(A, (char *) B)
-#define sk_SSL_CIPHER_pop(A) sk_pop(A)
-#define sk_SSL_CIPHER_delete_ptr(A, B) sk_delete_ptr(A, B)
-
-#define sk_X509_EXTENSION_num sk_num
-#define sk_X509_EXTENSION_value (X509_EXTENSION *)sk_value
-#define sk_X509_EXTENSION_push(A, B) sk_push(A, (char *) B)
-#define sk_X509_EXTENSION_new_null sk_new_null
-#define sk_X509_EXTENSION_pop_free sk_pop_free
-
-#define sk_X509_REVOKED_num sk_num
-#define sk_X509_REVOKED_value (X509_REVOKED*)sk_value
-
-#endif
 
 #include "openssl/ssl.h"
 #include "openssl/err.h"
@@ -93,6 +48,48 @@ EXTERN_C_BEGIN
 #include "openssl/pem.h"
 #include "openssl/x509.h"
 #include "openssl/stack.h"
+
+
+/**
+ * @defgroup globus_gsi_ssl_utils_activation Activation
+ *
+ * Globus GSI ssl_utils uses standard Globus module activation and
+ * deactivation. Before any Globus GSI ssl_utils functions are called,
+ * the following function should be called:
+ *
+ * @code
+ *      globus_module_activate(GLOBUS_GSI_SSL_UTILS_MODULE)
+ * @endcode
+ *
+ *
+ * This function returns GLOBUS_SUCCESS if Globus GSI ssl_utils was
+ * successfully initialized, and you are therefore allowed to
+ * subsequently call Globus GSI ssl_utils functions.  Otherwise, an error
+ * code is returned, and Globus GSI ssl_utils functions should not 
+ * subsequently be called. This function may be called multiple times.
+ *
+ * To deactivate Globus GSI ssl_utils, the following function should be called:
+ *
+ * @code
+ *    globus_module_deactivate(GLOBUS_GSI_SSL_UTILS_MODULE)
+ * @endcode
+ *
+ * This function should be called once for each time Globus GSI ssl_utils
+ * was activated. 
+ *
+ * Note that it is not mandatory to call the above functions.
+ */
+
+/** Module descriptor
+ * @ingroup globus_gsi_ssl_utils_activation
+ * @hideinitializer
+ */
+#define GLOBUS_GSI_SSL_UTILS_MODULE (&globus_i_gsi_ssl_utils_module)
+
+extern
+globus_module_descriptor_t		globus_i_gsi_ssl_utils_module;
+
+
 
 /**********************************************************************
                                Define constants
@@ -161,19 +158,6 @@ EXTERN_C_BEGIN
 
 #define PRXYerr(f,r) ERR_PUT_error(ERR_USER_LIB_PRXYERR_NUMBER,(f),(r),ERR_file_name,__LINE__)
 
-/* 
- * SSLeay 0.9.0 added the error_data feature. We may be running
- * with 0.8.1 which does not have it, if so, define a dummy
- * ERR_add_error_data and ERR_get_error_line_data
-        
-*/
-
-#if SSLEAY_VERSION_NUMBER < 0x0900
-void ERR_add_error_data( VAR_PLIST( int, num ) );
-
-unsigned long ERR_get_error_line_data(char **file,int *line,
-                                      char **data, int *flags);
-#endif
 
 void
 ERR_set_continue_needed(void);

@@ -18,6 +18,9 @@
 #    endif
 #endif
 
+
+#include "globus_common.h"
+
 #include <sys/types.h>
 #include <sys/prctl.h>
 #include <ulocks.h>
@@ -43,12 +46,14 @@ typedef struct
 globus_threadattr_t;
 
 typedef int				globus_mutexattr_t;
-typedef int				globus_condattr_t;
+typedef int                             globus_condattr_t;
 typedef ulock_t				globus_mutex_t;
 typedef struct
 {
     globus_mutex_t			mutex;
     globus_fifo_t			queue;
+    globus_bool_t                       poll_space;
+    int                                 space;
 }
 globus_cond_t;
 
@@ -171,6 +176,20 @@ globus_cond_wait(
 extern int	globus_cond_timedwait(globus_cond_t *cond,
 				      globus_mutex_t *mutex,
 				      globus_abstime_t *abstime);
+
+extern int
+globus_condattr_setspace(
+    globus_condattr_t *                 attr,
+    int                                 space);
+
+extern int
+globus_condattr_getspace(
+    globus_condattr_t *                 attr,
+    int *                               space);
+
+extern int		globus_condattr_init (globus_condattr_t *attr);
+extern int		globus_condattr_destroy (globus_condattr_t *attr);
+
 globus_bool_t
 globus_thread_preemptive_threads(void);
 

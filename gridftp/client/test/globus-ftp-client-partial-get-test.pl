@@ -8,8 +8,9 @@ use strict;
 use POSIX;
 use Test;
 use FileHandle;
+use FtpTestLib;
 
-my $test_exec = $ENV{GLOBUS_LOCATION} . '/test/' . 'globus-ftp-client-partial-get-test';
+my $test_exec = './globus-ftp-client-partial-get-test';
 my @tests;
 my @todo;
 my $fh = new FileHandle;
@@ -24,7 +25,9 @@ if (!defined($gpath))
 
 @INC = (@INC, "$gpath/lib/perl");
 
-open($fh, "</etc/group");
+my ($source_host, $source_file, $local_copy) = setup_remote_source();
+
+open($fh, "<$local_copy");
 my $size = (stat($fh))[7];
 my $range = int($size / 4) . " " . int(2*int($size/4));
 my $num_bytes = int(2*int($size/4)) - int($size / 4);
@@ -45,21 +48,22 @@ sub basic_func
 
     unlink('core', $tmpname);
 
-    $rc = system("$test_exec -R $range >$tmpname 2>/dev/null") / 256;
+    my $command = "$test_exec -R $range -s gsiftp://$source_host$source_file  >$tmpname 2>/dev/null";
+    $rc = system($command) / 256;
     if($rc != 0)
     {
-        $errors .= "Test exited with $rc. ";
-        $errors .= "\n# $test_exec -R $range";
+        $errors .= "\n# Test exited with $rc. ";
     }
     if(-r 'core')
     {
         $errors .= "\n# Core file generated.";
     }
+    
     $rc = &compare_data($data, $tmpname);
 	
     if($rc != 0)
     {
-	$errors .= "\n# Differences between /etc/group and output.";
+	$errors .= "\n# Differences between $local_copy and output.";
     }
 
     if($errors eq "")
@@ -68,6 +72,7 @@ sub basic_func
     }
     else
     {
+        $errors = "\n# Test failed\n# $command\n# " . $errors;
         ok($errors, 'success');
     }
     unlink($tmpname);
@@ -86,11 +91,11 @@ sub abort_test
 
     unlink('core', $tmpname);
 
-    $rc = system("$test_exec -a $abort_point -R $range >/dev/null 2>/dev/null") / 256;
+    my $command = "$test_exec -a $abort_point -R $range -s gsiftp://$source_host$source_file  >/dev/null 2>/dev/null";
+    $rc = system($command) / 256;
     if(-r 'core')
     {
         $errors .= "\n# Core file generated.";
-        $errors .= "\n# $test_exec -a $abort_point -R $range";
     }
 
     if($errors eq "")
@@ -99,6 +104,7 @@ sub abort_test
     }
     else
     {
+        $errors = "\n# Test failed\n# $command\n# " . $errors;
         ok($errors, 'success');
     }
     unlink($tmpname);
@@ -121,10 +127,11 @@ sub restart_test
 
     unlink('core', $tmpname);
 
-    $rc = system("$test_exec -r $restart_point -R $range > $tmpname 2>/dev/null ") / 256;
+    my $command = "$test_exec -r $restart_point -R $range -s gsiftp://$source_host$source_file  >$tmpname 2>/dev/null";
+    $rc = system($command) / 256;
     if($rc != 0)
     {
-        $errors .= "Test exited with $rc. ";
+        $errors .= "\n# Test exited with $rc. ";
     }
     if(-r 'core')
     {
@@ -142,7 +149,8 @@ sub restart_test
     }
     else
     {
-        ok("\n# $test_exec -r $restart_point -R $range \n#$errors", 'success');
+        $errors = "\n# Test failed\n# $command\n# " . $errors;
+        ok($errors, 'success');
     }
     unlink($tmpname);
 }
@@ -151,13 +159,23 @@ for(my $i = 1; $i <= 41; $i++)
     push(@tests, "restart_test($i);");
 }
 
-# Now that the tests are defined, set up the Test to deal with them.
-plan tests => scalar(@tests), todo => \@todo;
-
-# And run them all.
-foreach (@tests)
+if(@ARGV)
 {
-    eval "&$_";
+    plan tests => scalar(@ARGV);
+
+    foreach (@ARGV)
+    {
+        eval "&$tests[$_-1]";
+    }
+}
+else
+{
+    plan tests => scalar(@tests), todo => \@todo;
+
+    foreach (@tests)
+    {
+        eval "&$_";
+    }
 }
 
 sub compare_data

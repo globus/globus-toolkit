@@ -30,43 +30,66 @@ globus_module_descriptor_t globus_i_ftp_control_module =
     &local_version
 };
 
+/**
+ * Debugging level
+ *
+ * 1 thru 3 enable debug output for control channel
+ * 4 thru 6 enable debug output for control and data channel
+ */
+int globus_i_ftp_control_debug_level = 0;
+
 static
 int
 globus_l_ftp_control_activate(void)
 {
     int                                rc;
+    char *                              tmp_string;
 
     rc = globus_module_activate(GLOBUS_IO_MODULE);
     if(rc != GLOBUS_SUCCESS)
     {
         return rc;
     }
+    
+    tmp_string = globus_module_getenv("GLOBUS_FTP_CONTROL_DEBUG_LEVEL");
+    if(tmp_string != GLOBUS_NULL)
+    {
+	globus_i_ftp_control_debug_level = atoi(tmp_string);
+
+	if(globus_i_ftp_control_debug_level < 0)
+	{
+	    globus_i_ftp_control_debug_level = 0;
+	}
+    }
+    
+    globus_i_ftp_control_debug_printf(1,
+        (stderr, "globus_l_ftp_control_activate() entering\n"));
+        
     rc = globus_module_activate(GLOBUS_THREAD_MODULE);
     if(rc != GLOBUS_SUCCESS)
     {
-        return rc;
+        goto exit;
     }
     rc = globus_module_activate(GLOBUS_COMMON_MODULE);
     if(rc != GLOBUS_SUCCESS)
     {
-        return rc;
+        goto exit;
     }
     rc = (int)globus_i_ftp_control_server_activate();
     if(rc != GLOBUS_SUCCESS)
     {
-        return rc;
+        goto exit;
     }
     rc = (int)globus_i_ftp_control_client_activate();
     if(rc != GLOBUS_SUCCESS)
     {
-        return rc;
+        goto exit;
     }
     rc = (int)globus_i_ftp_control_data_activate();
-    if(rc != GLOBUS_SUCCESS)
-    {
-        return rc;
-    }
 
+exit:
+    globus_i_ftp_control_debug_printf(1,
+        (stderr, "globus_l_ftp_control_activate() exiting\n"));
     return rc;
 }
 
@@ -75,38 +98,40 @@ int
 globus_l_ftp_control_deactivate(void)
 {
     int                             rc;
-
+    
+    globus_i_ftp_control_debug_printf(1,
+        (stderr, "globus_l_ftp_control_deactivate() entering\n"));
+        
     rc = (int)globus_i_ftp_control_data_deactivate();
     if(rc != GLOBUS_SUCCESS)
     {
-        return rc;
+        goto exit;
     }
     rc = (int)globus_i_ftp_control_client_deactivate();
     if(rc != GLOBUS_SUCCESS)
     {
-        return rc;
+        goto exit;
     }
     rc = (int)globus_i_ftp_control_server_deactivate();
     if(rc != GLOBUS_SUCCESS)
     {
-        return rc;
+        goto exit;
     }
     rc = globus_module_deactivate(GLOBUS_IO_MODULE);
     if(rc != GLOBUS_SUCCESS)
     {
-        return rc;
+        goto exit;
     }
     rc = globus_module_deactivate(GLOBUS_THREAD_MODULE);
     if(rc != GLOBUS_SUCCESS)
     {
-        return rc;
+        goto exit;
     }
     rc = globus_module_deactivate(GLOBUS_COMMON_MODULE);
-    if(rc != GLOBUS_SUCCESS)
-    {
-        return rc;
-    }
-    
+
+exit:    
+    globus_i_ftp_control_debug_printf(1,
+        (stderr, "globus_l_ftp_control_deactivate() exiting\n"));
     return rc;
 }
 

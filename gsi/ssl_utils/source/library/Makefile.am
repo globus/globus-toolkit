@@ -6,7 +6,8 @@ Sources= \
 	scutils.c \
 	scutils.h \
 	sslutils.c \
-	sslutils.h
+	sslutils.h \
+	module.c
 
 flavorinclude_HEADERS= \
 	scutils.h \

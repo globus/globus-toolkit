@@ -1482,6 +1482,7 @@ globus_l_gram_fork_execute(globus_gram_jobmanager_request_t * request,
 	    {
 		char **new_pgm_args;
 		int pgm_argc;
+		int openfds;
 
 		for(pgm_argc = 0; (request->arguments)[pgm_argc]; pgm_argc++)
 		    ;
@@ -1506,6 +1507,18 @@ globus_l_gram_fork_execute(globus_gram_jobmanager_request_t * request,
 			   pgm_argc,
 			   new_pgm_args[pgm_argc]);
 			   
+		}
+
+		/* Close all files except stdin/out/err and the pipe to
+		 * our parent.
+		 */
+		openfds = getdtablesize();
+		for(i=3; i < openfds; i++)
+		{
+		    if ( i != wr )
+		    {
+			close(i);
+		    }
 		}
 
 		if ((request->environment)[0])
