@@ -404,6 +404,7 @@ globus_l_gfs_recv_request(
     }            
 
     op_attr->restart_marker = restart_marker;
+    op_attr->control_op = op;
 
     result = globus_i_gfs_ipc_recv_request(
         instance,

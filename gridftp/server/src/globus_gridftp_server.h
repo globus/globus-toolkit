@@ -92,7 +92,9 @@ globus_gridftp_server_flush_queue(
 void
 globus_gridftp_server_update_bytes_written(
     globus_gridftp_server_operation_t   op,
-    globus_size_t                       nbytes);
+    int                                 stripe_ndx,
+    globus_off_t                        offset,
+    globus_off_t                        length);
 
 void
 globus_gridftp_server_get_optimal_concurrency(

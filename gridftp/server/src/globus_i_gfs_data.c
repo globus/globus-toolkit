@@ -793,7 +793,7 @@ globus_l_gfs_file_recv(
 globus_result_t
 globus_i_gfs_data_recv_request(
     globus_i_gfs_server_instance_t *    instance,
-    globus_i_gfs_op_attr_t *    op_attr,
+    globus_i_gfs_op_attr_t *            op_attr,
     globus_i_gfs_data_handle_t *        data_handle,
     const char *                        pathname,
     const char *                        module_name,
@@ -1385,9 +1385,18 @@ globus_gridftp_server_flush_queue(
 void
 globus_gridftp_server_update_bytes_written(
     globus_gridftp_server_operation_t   op,
-    globus_size_t                       nbytes)
+    int                                 stripe_ndx,
+    globus_off_t                        offset,
+    globus_off_t                        length)
 {
     GlobusGFSName(globus_gridftp_server_update_bytes_written);
+    
+    globus_gridftp_server_control_update_bytes(
+        op->op_attr->control_op,
+        stripe_ndx,
+        offset,
+        length);
+
 }
 
 void

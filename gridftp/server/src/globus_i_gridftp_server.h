@@ -32,7 +32,7 @@ typedef struct
     char                                type;
     int                                 tcp_bufsize;
     globus_size_t                       blocksize;
-    
+        
     globus_ftp_control_protection_t     prot;
     globus_ftp_control_dcau_t           dcau;
     gss_cred_id_t                       delegated_cred;
@@ -41,6 +41,9 @@ typedef struct
 
 typedef struct
 {
+    /* XXX this shouldn't be passed from control->data*/
+    globus_gridftp_server_control_op_t  control_op;
+
     globus_gridftp_server_control_restart_t restart_marker;
     globus_off_t                        partial_offset;
     globus_off_t                        partial_length;

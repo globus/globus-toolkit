@@ -410,7 +410,10 @@ globus_l_gfs_file_write_cb(
         monitor->pending_write--;
         monitor->file_offset += nbytes;
         globus_gridftp_server_update_bytes_written(
-            monitor->op, nbytes);
+            monitor->op, 
+            0,
+            monitor->file_offset - nbytes,
+            nbytes);
 
         if(result != GLOBUS_SUCCESS && monitor->error == GLOBUS_NULL)
         {
@@ -1078,7 +1081,6 @@ globus_l_gfs_file_server_write_cb(
     globus_mutex_lock(&monitor->lock);
     { 
         monitor->pending_writes--;
-        globus_gridftp_server_update_bytes_written(monitor->op, nbytes);
 
         if(result != GLOBUS_SUCCESS && monitor->error == GLOBUS_NULL)
         {
