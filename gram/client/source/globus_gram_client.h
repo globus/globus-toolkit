@@ -106,6 +106,13 @@ typedef struct
     int dumb_time;
 } globus_gram_client_time_t;
 
+typedef enum
+{
+    GLOBUS_GRAM_CLIENT_JOB_SIGNAL_CANCEL   = 1,
+    GLOBUS_GRAM_CLIENT_JOB_SIGNAL_SUSPEND  = 2,
+    GLOBUS_GRAM_CLIENT_JOB_SIGNAL_RESUME   = 3,
+    GLOBUS_GRAM_CLIENT_JOB_SIGNAL_PRIORITY = 4
+} globus_gram_client_job_signal_t;
 
 /******************************************************************************
                                Global variables
@@ -133,6 +140,13 @@ globus_gram_client_job_cancel(char * job_contact);
 
 extern int
 globus_gram_client_job_status(char * job_contact,
+                              int * job_status,
+                              int * failure_code);
+
+extern int
+globus_gram_client_job_signal(char * job_contact,
+                              globus_gram_client_job_signal_t signal,
+                              char * signal_arg,
                               int * job_status,
                               int * failure_code);
 

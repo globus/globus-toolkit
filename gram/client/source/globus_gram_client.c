@@ -728,6 +728,45 @@ globus_gram_client_job_cancel(char * job_contact)
 
 
 /******************************************************************************
+Function:	globus_gram_client_job_signal()
+Description:	
+Parameters:
+Returns:
+******************************************************************************/
+int 
+globus_gram_client_job_signal(char * job_contact,
+                              globus_gram_client_job_signal_t signal,
+                              char * signal_arg,
+			      int  * job_status,
+                              int * failure_code)
+{
+    int       rc;
+    char  *   request;
+
+    GLOBUS_L_CHECK_IF_INITIALIZED;
+
+    /* 'signal' = 6, allow 10-digit integer, 2 spaces and null  */
+    request = (char *) globus_libc_malloc( 
+	                  strlen(signal_arg)
+			  + 6 + 10 + 2 + 1 );
+
+    globus_libc_sprintf(request,
+			"signal %d %s",
+                        signal,
+			signal_arg);
+
+    rc = globus_l_gram_client_to_jobmanager( job_contact,
+					     request,
+					     &job_status,
+					     failure_code );
+
+    globus_libc_free(request);
+
+    return rc;
+}
+
+
+/******************************************************************************
 Function:       globus_gram_client_job_status()
 Description:    sending cancel request to job manager
 Parameters:

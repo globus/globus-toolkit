@@ -114,7 +114,8 @@ globus_l_gram_client_error_strings[GLOBUS_GRAM_CLIENT_ERROR_LAST] =
 /* 103 */     "the provided RSL 'max_cpu_time' parameter is invalid",
 /* 104 */     "the RSL 'max_cpu_time' value is not zero or greater",
 /* 105 */     "the job manager is misconfigured, a scheduler script is missing. ",
-/* 106 */     "the job manager is misconfigured, a scheduler script has invalid permissions. "
+/* 106 */     "the job manager is misconfigured, a scheduler script has invalid permissions. ",
+/* 107 */     "the job manager failed to signal the job. "
 };
 
 static char *
