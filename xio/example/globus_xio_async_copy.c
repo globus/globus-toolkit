@@ -13,8 +13,6 @@
  * size.
  */
  
-#define COPY_BUFFER_SIZE    (64 * 1024)
-
 typedef struct
 {
     globus_xio_handle_t                 source_handle;
@@ -23,6 +21,7 @@ typedef struct
     char *                              dest_cs;
     globus_bool_t                       eof_received;
     globus_object_t *                   error;
+    globus_size_t                       buffer_size;
     
     globus_mutex_t                      lock;
     globus_cond_t                       cond;
@@ -54,14 +53,15 @@ help()
         "    -dD <destination driver>      -dC <contact string>\n"
         "-----------------\n"
         "options:\n"
-        "-h:                    Print this help\n"
-        "-sD <driver>:          The driver for the source of the copy\n"
-        "-dD <driver>:          The driver for the dest of the copy\n"
+        "-h                     Print this help\n"
+        "-sD <driver>           The driver for the source of the copy\n"
+        "-dD <driver>           The driver for the dest of the copy\n"
         "    The above two commands can be used more than once\n"
         "    The stack will be setup in the order listed\n"
         "-sC <contact string>   The contact string to be used for the source\n"
         "-dC <contact string>   The contact string to be used for the dest\n"
-        "-s:                    The source is a server.\n"
+        "-s                     The source is a server.\n"
+        "-b <buffer size>       The buffer size to use.\n"
         "\n"
         "-----------------\n"
         "example uses:\n"
@@ -69,13 +69,12 @@ help()
         " %% globus-xio-async-copy -sD file -sC <source_file> -dD file -dC <dest_file>\n"
         "a tcp server source to a file destination:\n"
         " %% globus-xio-async-copy -sD tcp -s -dD file -dC <output_file>\n"
-        "       The contact info of the tcp server will be printed\n"
-        "       globus-xio-client -D tcp <contact info> can be used to communicate"
-        " with this server\n"
+        "       - The contact info of the tcp server will be printed\n"
+        "       - globus-xio-client -D tcp <contact info> can be used to\n"
+        "            communicate with this server\n"
         "\n"
-        "Hints: the file driver supports stdin://, stdout:// stderr:// for"
-        " contact strings\n"
-        "Their usage should be obvious\n");
+        "Hints: the file driver supports stdin://, stdout://, and stderr:// for\n"
+        " contact strings.  Their usage should be obvious\n");
 }
 
 static
@@ -214,7 +213,7 @@ dest_write_callback(
         result = globus_xio_register_read(
             copy_info->source_handle,
             buffer,
-            COPY_BUFFER_SIZE,
+            copy_info->buffer_size,
             1,
             NULL,
             source_read_callback,
@@ -318,7 +317,7 @@ dest_open_callback(
         goto error;
     }
     
-    buffer = (globus_byte_t *) globus_malloc(COPY_BUFFER_SIZE);
+    buffer = (globus_byte_t *) globus_malloc(copy_info->buffer_size);
     if(!buffer)
     {
         result = globus_error_put(
@@ -339,7 +338,7 @@ dest_open_callback(
     result = globus_xio_register_read(
         copy_info->source_handle,
         buffer,
-        COPY_BUFFER_SIZE,
+        copy_info->buffer_size,
         1, /* for high throughput, you would set this to the full buffer length
             * but, since I don't know how we're being used, I'll just wait for
             * any data
@@ -446,6 +445,7 @@ main(
     globus_xio_server_t                 server;
     char *                              source_cs = NULL;
     char *                              dest_cs = NULL;
+    globus_size_t                       buffer_size = 64 * 1024;
     globus_bool_t                       source_is_server = GLOBUS_FALSE;
     globus_result_t                     result;
     int                                 i;
@@ -504,6 +504,10 @@ main(
         {
             source_is_server = GLOBUS_TRUE;
         }
+        else if(strcmp(argv[i], "-b") == 0 && i + 1 < argc)
+        {
+            buffer_size = atoi(argv[++i]);
+        }
     }
 
     if(!dest_cs)
@@ -518,6 +522,7 @@ main(
     copy_info.dest_handle = NULL;
     copy_info.source_cs = source_cs;
     copy_info.dest_cs = dest_cs;
+    copy_info.buffer_size = buffer_size;
     copy_info.eof_received = GLOBUS_FALSE;
     globus_mutex_init(&copy_info.lock, NULL);
     globus_cond_init(&copy_info.cond, NULL);
