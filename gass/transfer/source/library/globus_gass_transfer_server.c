@@ -48,11 +48,11 @@ globus_l_gass_transfer_callback_close_callback(
  *
  * @retval GLOBUS_SUCCESS
  *         The listener was successfully created.
- * @retval GLOBUS_GASS_ERROR_NULL_POINTER
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER
  *         The @a listener or @a scheme parameter was NULL
- * @retval GLOBUS_GASS_ERROR_NOT_IMPLEMENTED
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_NOT_IMPLEMENTED
  *         The @a scheme is not supported by any protocol module.
- * @retval GLOBUS_GASS_ERROR_MALLOC_FAILED
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_MALLOC_FAILED
  *         Data structures associated with the transfer could not be
  *         allocated.
  */
@@ -68,11 +68,11 @@ globus_gass_transfer_create_listener(
 
     if(listener == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     if(scheme == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
 
     globus_i_gass_transfer_lock();
@@ -82,13 +82,13 @@ globus_gass_transfer_create_listener(
     if(protocol == GLOBUS_NULL ||
        protocol->new_listener == GLOBUS_NULL)
     {
-	rc = GLOBUS_GASS_ERROR_NOT_IMPLEMENTED;
+	rc = GLOBUS_GASS_TRANSFER_ERROR_NOT_IMPLEMENTED;
 	goto error_exit;
     }
     l = globus_malloc(sizeof(globus_gass_transfer_listener_struct_t));
     if(l == GLOBUS_NULL)
     {
-	rc = GLOBUS_GASS_ERROR_MALLOC_FAILED;
+	rc = GLOBUS_GASS_TRANSFER_ERROR_MALLOC_FAILED;
 	goto error_exit;
     }
     l->base_url = GLOBUS_NULL;
@@ -150,11 +150,11 @@ globus_gass_transfer_create_listener(
  *
  * @retval GLOBUS_SUCCESS
  *         The close operation was successfully registered on the listener.
- * @retval GLOBUS_GASS_ERROR_INVALID_USE
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_INVALID_USE
  *         The listener handle was invalid.
- * @retval GLOBUS_GASS_ERROR_NOT_INITIALIZED
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_NOT_INITIALIZED
  *         The listener handle was not properly initialized.
- * @retval GLOBUS_GASS_ERROR_DONE
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_DONE
  *         A close has already been registered on the listener.
  */
 int
@@ -172,7 +172,7 @@ globus_gass_transfer_close_listener(
 
     if(l == GLOBUS_NULL)
     {
-	rc =  GLOBUS_GASS_ERROR_INVALID_USE;
+	rc =  GLOBUS_GASS_TRANSFER_ERROR_INVALID_USE;
 	goto finish;
     }
 
@@ -206,13 +206,13 @@ globus_gass_transfer_close_listener(
  *
  * @retval GLOBUS_SUCCESS
  *         The listen callback has been registered with the protocol module.
- * @retval GLOBUS_GASS_ERROR_INVALID_USE
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_INVALID_USE
  *         An invalid @a listener handle was passed to this function.
- * @retval GLOBUS_GASS_ERROR_NOT_INITIALIZED
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_NOT_INITIALIZED
  *         An uninitialized @a listener handle was passed to this function.
- * @retval GLOBUS_GASS_ERROR_ALREADY_REGISTERED
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_ALREADY_REGISTERED
  *         The listener has already been registered for a new connection.
- * @retval GLOBUS_GASS_ERROR_DONE
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_DONE
  *         The listener has been registered for closing.
  *
  * @see globus_gass_transfer_register_accept();
@@ -232,18 +232,18 @@ globus_gass_transfer_register_listen(
 
     if(l == GLOBUS_NULL)
     {
-	rc =  GLOBUS_GASS_ERROR_INVALID_USE;
+	rc =  GLOBUS_GASS_TRANSFER_ERROR_INVALID_USE;
 	goto error_exit;
     }
     else if(callback == GLOBUS_NULL)
     {
-        rc = GLOBUS_GASS_ERROR_NULL_POINTER;
+        rc = GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
 	goto error_exit;
     }
     switch(l->status)
     {
       case GLOBUS_GASS_TRANSFER_LISTENER_INVALID:
-	rc = GLOBUS_GASS_ERROR_NOT_INITIALIZED;
+	rc = GLOBUS_GASS_TRANSFER_ERROR_NOT_INITIALIZED;
 	goto error_exit;
       case GLOBUS_GASS_TRANSFER_LISTENER_STARTING:
 	l->status = GLOBUS_GASS_TRANSFER_LISTENER_LISTENING;
@@ -256,13 +256,13 @@ globus_gass_transfer_register_listen(
       case GLOBUS_GASS_TRANSFER_LISTENER_READY:
       case GLOBUS_GASS_TRANSFER_LISTENER_LISTENING:
       case GLOBUS_GASS_TRANSFER_LISTENER_ACCEPTING:
-	rc = GLOBUS_GASS_ERROR_ALREADY_REGISTERED;
+	rc = GLOBUS_GASS_TRANSFER_ERROR_ALREADY_REGISTERED;
 	break;
 
       case GLOBUS_GASS_TRANSFER_LISTENER_CLOSING1:
       case GLOBUS_GASS_TRANSFER_LISTENER_CLOSING2:
       case GLOBUS_GASS_TRANSFER_LISTENER_CLOSED:
-	rc = GLOBUS_GASS_ERROR_DONE;
+	rc = GLOBUS_GASS_TRANSFER_ERROR_DONE;
 	break;
     }
     
@@ -298,11 +298,11 @@ globus_gass_transfer_register_listen(
  *
  * @retval GLOBUS_SUCCESS
  *         The listen callback has been registered with the protocol module.
- * @retval GLOBUS_GASS_ERROR_INVALID_USE
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_INVALID_USE
  *         An invalid @a listener handle was passed to this function.
- * @retval GLOBUS_GASS_ERROR_NOT_INITIALIZED
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_NOT_INITIALIZED
  *         An uninitialized @a listener handle was passed to this function.
- * @retval GLOBUS_GASS_ERROR_INTERNAL_ERROR
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_INTERNAL_ERROR
  *         The request could not be initialized due to some internal resource
  *         depletion.
  * @retval GLOBUS_GASS_NOT_REGISTERED.
@@ -310,7 +310,7 @@ globus_gass_transfer_register_listen(
  *         yet been called.
  * @retval GLOBUS_GASS_ALREADY_REGISTERED.
  *         The listener is already processing a new request.
- * @retval GLOBUS_GASS_ERROR_DONE
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_DONE
  *         The listener has been registered for closing.
  *
  * @see globus_gass_transfer_register_listen();
@@ -333,18 +333,18 @@ globus_gass_transfer_register_accept(
 
     if(l == GLOBUS_NULL)
     {
-	rc =  GLOBUS_GASS_ERROR_INVALID_USE;
+	rc =  GLOBUS_GASS_TRANSFER_ERROR_INVALID_USE;
 	goto error_exit;
     }
     else if(request == GLOBUS_NULL || callback == GLOBUS_NULL)
     {
-        rc = GLOBUS_GASS_ERROR_NULL_POINTER;
+        rc = GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
 	goto error_exit;
     }
     switch(l->status)
     {
       case GLOBUS_GASS_TRANSFER_LISTENER_INVALID:
-	rc = GLOBUS_GASS_ERROR_NOT_INITIALIZED;
+	rc = GLOBUS_GASS_TRANSFER_ERROR_NOT_INITIALIZED;
 	goto error_exit;
       case GLOBUS_GASS_TRANSFER_LISTENER_READY:
 	globus_i_gass_transfer_request_init(request,
@@ -356,7 +356,7 @@ globus_gass_transfer_register_accept(
 
 	if(*request == GLOBUS_HANDLE_TABLE_NO_HANDLE)
 	{
-	    rc = GLOBUS_GASS_ERROR_INTERNAL_ERROR;
+	    rc = GLOBUS_GASS_TRANSFER_ERROR_INTERNAL_ERROR;
 	    goto error_exit;
 	}
 
@@ -365,7 +365,7 @@ globus_gass_transfer_register_accept(
 
 	if(req== GLOBUS_NULL)
 	{
-	    rc = GLOBUS_GASS_ERROR_INTERNAL_ERROR;
+	    rc = GLOBUS_GASS_TRANSFER_ERROR_INTERNAL_ERROR;
 	    goto error_exit;
 	}
 	req->status = GLOBUS_GASS_TRANSFER_REQUEST_ACCEPTING;
@@ -377,15 +377,15 @@ globus_gass_transfer_register_accept(
 			 attr);
 	break;
       case GLOBUS_GASS_TRANSFER_LISTENER_STARTING:
-	rc = GLOBUS_GASS_ERROR_NOT_REGISTERED;
+	rc = GLOBUS_GASS_TRANSFER_ERROR_NOT_REGISTERED;
 	goto error_exit;
       case GLOBUS_GASS_TRANSFER_LISTENER_LISTENING:
       case GLOBUS_GASS_TRANSFER_LISTENER_ACCEPTING:
-	rc = GLOBUS_GASS_ERROR_ALREADY_REGISTERED;
+	rc = GLOBUS_GASS_TRANSFER_ERROR_ALREADY_REGISTERED;
       case GLOBUS_GASS_TRANSFER_LISTENER_CLOSING1:
       case GLOBUS_GASS_TRANSFER_LISTENER_CLOSING2:
       case GLOBUS_GASS_TRANSFER_LISTENER_CLOSED:
-	rc = GLOBUS_GASS_ERROR_DONE;
+	rc = GLOBUS_GASS_TRANSFER_ERROR_DONE;
 	break;
     }
     
@@ -450,7 +450,7 @@ globus_gass_transfer_listener_get_user_pointer(
  *
  * @retval GLOBUS_SUCCESS
  *         The user pointer was successfully set.
- * @retval GLOBUS_GASS_ERROR_INVALID_USE
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_INVALID_USE
  *         The @a listener handle was invalid.
  *
  * @see globus_gass_transfer_listener_get_user_pointer()
@@ -467,7 +467,7 @@ globus_gass_transfer_listener_set_user_pointer(
 
     if(l == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_INVALID_USE;
+	return GLOBUS_GASS_TRANSFER_ERROR_INVALID_USE;
     }
     else
     {
@@ -537,11 +537,11 @@ globus_gass_transfer_listener_get_base_url(
  * @param num_urls
  *        The length of the @a urls array.
  *
- * @retval GLOBUS_GASS_ERROR_INVALID_USE
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_INVALID_USE
  *         The request handle was not valid, not created by calling
  *         globus_gass_transfer_register_accept(), or has already been
  *         denied or authorized.
- * @retval GLOBUS_GASS_ERROR_NOT_IMPLEMENTED
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_NOT_IMPLEMENTED
  *         The protocol module does not support referrals.
  *
  * @see globus_gass_transfer_deny(), globus_gass_transfer_authorize()
@@ -562,22 +562,22 @@ globus_gass_transfer_refer(
 
     if(req == GLOBUS_NULL)
     {
-	rc = GLOBUS_GASS_ERROR_INVALID_USE;
+	rc = GLOBUS_GASS_TRANSFER_ERROR_INVALID_USE;
 	goto error_exit;
     }
     else if(req->client_side == GLOBUS_TRUE)
     {
-        rc = GLOBUS_GASS_ERROR_INVALID_USE;
+        rc = GLOBUS_GASS_TRANSFER_ERROR_INVALID_USE;
 	goto error_exit;
     }
     else if(urls == GLOBUS_NULL)
     {
-        rc = GLOBUS_GASS_ERROR_NULL_POINTER;
+        rc = GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
 	goto error_exit;
     }
     else if(req->proto->refer == GLOBUS_NULL)
     {
-	rc = GLOBUS_GASS_ERROR_NOT_IMPLEMENTED;
+	rc = GLOBUS_GASS_TRANSFER_ERROR_NOT_IMPLEMENTED;
 	goto error_exit;
     }
 
@@ -632,7 +632,7 @@ globus_gass_transfer_refer(
       case GLOBUS_GASS_TRANSFER_REQUEST_SERVER_FAIL3:
       case GLOBUS_GASS_TRANSFER_REQUEST_STARTING:
       case GLOBUS_GASS_TRANSFER_REQUEST_STARTING3:
-	rc = GLOBUS_GASS_ERROR_INVALID_USE;
+	rc = GLOBUS_GASS_TRANSFER_ERROR_INVALID_USE;
 	goto error_exit;
     }
     globus_i_gass_transfer_unlock();
@@ -663,11 +663,11 @@ globus_gass_transfer_refer(
  *        if known. This value may be GLOBUS_GASS_LENGTH_UNKNOWN if the
  *        protocol supports transferring arbitrarily-sized files.
  *
- * @retval GLOBUS_GASS_ERROR_INVALID_USE
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_INVALID_USE
  *         The request handle was not valid, not created by calling
  *         globus_gass_transfer_register_accept(), or has already been
  *         denied or authorized.
- * @retval GLOBUS_GASS_ERROR_NOT_IMPLEMENTED
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_NOT_IMPLEMENTED
  *         The protocol module does not support authorizing requests.
  *
  * @see globus_gass_transfer_refer(), globus_gass_transfer_deny()
@@ -686,13 +686,13 @@ globus_gass_transfer_authorize(
 
     if(req == GLOBUS_NULL)
     {
-	rc = GLOBUS_GASS_ERROR_INVALID_USE;
+	rc = GLOBUS_GASS_TRANSFER_ERROR_INVALID_USE;
 	goto error_exit;
     }
 
     if(req->proto->authorize == GLOBUS_NULL)
     {
-	rc = GLOBUS_GASS_ERROR_NOT_IMPLEMENTED;
+	rc = GLOBUS_GASS_TRANSFER_ERROR_NOT_IMPLEMENTED;
 	goto error_exit;
     }
 
@@ -739,7 +739,7 @@ globus_gass_transfer_authorize(
       case GLOBUS_GASS_TRANSFER_REQUEST_SERVER_FAIL3:
       case GLOBUS_GASS_TRANSFER_REQUEST_STARTING:
       case GLOBUS_GASS_TRANSFER_REQUEST_STARTING3:
-	rc = GLOBUS_GASS_ERROR_INVALID_USE;
+	rc = GLOBUS_GASS_TRANSFER_ERROR_INVALID_USE;
 	goto error_exit;
     }
 
@@ -769,11 +769,11 @@ globus_gass_transfer_authorize(
  * @param message
  *        An informational message to be sent to the client.
  *
- * @retval GLOBUS_GASS_ERROR_INVALID_USE
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_INVALID_USE
  *         The request handle was not valid, not created by calling
  *         globus_gass_transfer_register_accept(), or has already been
  *         denied or authorized.
- * @retval GLOBUS_GASS_ERROR_NOT_IMPLEMENTED
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_NOT_IMPLEMENTED
  *         The protocol module does not support denying requests.
  *
  * @see globus_gass_transfer_refer(), globus_gass_transfer_authorize()
@@ -793,13 +793,13 @@ globus_gass_transfer_deny(
 
     if(req == GLOBUS_NULL)
     {
-	rc = GLOBUS_GASS_ERROR_INVALID_USE;
+	rc = GLOBUS_GASS_TRANSFER_ERROR_INVALID_USE;
 	goto error_exit;
     }
 
     if(req->proto->deny == GLOBUS_NULL)
     {
-	rc = GLOBUS_GASS_ERROR_NOT_IMPLEMENTED;
+	rc = GLOBUS_GASS_TRANSFER_ERROR_NOT_IMPLEMENTED;
 	goto error_exit;
     }
 
@@ -849,7 +849,7 @@ globus_gass_transfer_deny(
       case GLOBUS_GASS_TRANSFER_REQUEST_SERVER_FAIL3:
       case GLOBUS_GASS_TRANSFER_REQUEST_STARTING:
       case GLOBUS_GASS_TRANSFER_REQUEST_STARTING3:
-	rc = GLOBUS_GASS_ERROR_INVALID_USE;
+	rc = GLOBUS_GASS_TRANSFER_ERROR_INVALID_USE;
 	goto error_exit;
     }
 
@@ -876,7 +876,7 @@ globus_i_gass_transfer_close_listener(
     switch(l->status)
     {
       case GLOBUS_GASS_TRANSFER_LISTENER_INVALID:
-	rc = GLOBUS_GASS_ERROR_NOT_INITIALIZED;
+	rc = GLOBUS_GASS_TRANSFER_ERROR_NOT_INITIALIZED;
 	break;
 
       case GLOBUS_GASS_TRANSFER_LISTENER_STARTING:
@@ -923,7 +923,7 @@ globus_i_gass_transfer_close_listener(
       case GLOBUS_GASS_TRANSFER_LISTENER_CLOSING1:
       case GLOBUS_GASS_TRANSFER_LISTENER_CLOSING2:
       case GLOBUS_GASS_TRANSFER_LISTENER_CLOSED:
-	rc = GLOBUS_GASS_ERROR_DONE;
+	rc = GLOBUS_GASS_TRANSFER_ERROR_DONE;
 	break;
     }
 
@@ -978,7 +978,7 @@ globus_i_gass_transfer_listener_destroy(
 				   listener);
     if(l == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_INVALID_USE;
+	return GLOBUS_GASS_TRANSFER_ERROR_INVALID_USE;
     }
 
     referenced =

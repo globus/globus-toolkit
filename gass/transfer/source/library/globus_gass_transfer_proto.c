@@ -241,9 +241,9 @@ globus_gass_transfer_proto_listener_ready(
  *
  * @retval GLOBUS_SUCCESS
  *         The protocol module was successfully registered with GASS.
- * @retval GLOBUS_GASS_ERROR_NULL_POINTER
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER
  *         The @a proto_desc parameter was @a GLOBUS_NULL.
- * @retval GLOBUS_GASS_ERROR_ALREADY_REGISTERED
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_ALREADY_REGISTERED
  *         A protocol module has already been registered with GASS to
  *         handle this URL scheme.
  */
@@ -256,7 +256,7 @@ globus_gass_transfer_proto_register_protocol(
 
     if(proto_desc == GLOBUS_NULL)
     {
-        return GLOBUS_GASS_ERROR_NULL_POINTER;
+        return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
 
     rc = globus_hashtable_insert(&globus_i_gass_transfer_protocols,
@@ -264,7 +264,7 @@ globus_gass_transfer_proto_register_protocol(
 			         proto_desc);
     if(rc == -1)
     {
-        return GLOBUS_GASS_ERROR_ALREADY_REGISTERED;
+        return GLOBUS_GASS_TRANSFER_ERROR_ALREADY_REGISTERED;
     }
     else
     {
@@ -289,9 +289,9 @@ globus_gass_transfer_proto_register_protocol(
  *
  * @retval GLOBUS_SUCCESS
  *         The protocol module was successfully registered with GASS.
- * @retval GLOBUS_GASS_ERROR_NULL_POINTER
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER
  *         The @a proto_desc parameter was @a GLOBUS_NULL.
- * @retval GLOBUS_GASS_ERROR_INVALID_USE
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_INVALID_USE
  *         A protocol module has not been registered with GASS to
  *         handle this URL scheme.
  */
@@ -303,7 +303,7 @@ globus_gass_transfer_proto_unregister_protocol(
     
     if(proto_desc == GLOBUS_NULL)
     {
-        return GLOBUS_GASS_ERROR_NULL_POINTER;
+        return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     tmp = globus_hashtable_lookup(&globus_i_gass_transfer_protocols,
 				  proto_desc->url_scheme);
@@ -315,7 +315,7 @@ globus_gass_transfer_proto_unregister_protocol(
     }
     else
     {
-	return GLOBUS_GASS_ERROR_INVALID_USE;
+	return GLOBUS_GASS_TRANSFER_ERROR_INVALID_USE;
     }
 }
 

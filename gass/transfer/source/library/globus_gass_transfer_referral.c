@@ -102,7 +102,7 @@ globus_gass_transfer_referral_get_url(
  *
  * @retval GLOBUS_SUCCESS
  *         The referral was successfully destroyed.
- * @retval GLOBUS_GASS_ERROR_NULL_POINTER
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER
  *         The referral parameter was GLOBUS_NULL. It could not be
  *         destroyed.
  */
@@ -114,7 +114,7 @@ globus_gass_transfer_referral_destroy(
 
     if(referral == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
 
     for(i = 0; i < referral->count; i++)

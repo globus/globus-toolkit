@@ -80,19 +80,19 @@ globus_l_gass_transfer_drain_callbacks(
  *         The @a bytes array was successfully registered with the GASS
  *         transfer library. The @a callback function will be invoked once
  *         it has been sent.
- * @retval GLOBUS_GASS_ERROR_NULL_POINTER
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER
  *         The @a bytes or @a callback parameter was NULL.
- * @retval GLOBUS_GASS_ERROR_INVALID_USER
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_INVALID_USER
  *         The @a request was invalid, or it is not one on which bytes
  *         can be sent.
- * @retval GLOBUS_GASS_ERROR_NOT_INITIALIZED
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_NOT_INITIALIZED
  *         The callback to a non-blocking file request has not been invoked
  *         yet, a blocking file request has not returned, or the request has
  *         not yet been authorized.
- * @retval GLOBUS_GASS_ERROR_REQUEST_FAILED
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_REQUEST_FAILED
  *         The @a request has failed by either the client, server, or protocol
  *         module implementation.
- * @retval GLOBUS_GASS_ERROR_DONE
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_DONE
  *         The @a request has already been completed.
  */
 int
@@ -113,13 +113,13 @@ globus_gass_transfer_send_bytes(
     /* Sanity check on passed arguments */
     if(bytes == GLOBUS_NULL)
     {
-	rc = GLOBUS_GASS_ERROR_NULL_POINTER;
+	rc = GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
 
 	goto error_exit;
     }
     if(callback == GLOBUS_NULL)
     {
-	rc = GLOBUS_GASS_ERROR_NULL_POINTER;
+	rc = GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
 
 	goto error_exit;
     }
@@ -129,14 +129,14 @@ globus_gass_transfer_send_bytes(
 
     if(req == GLOBUS_NULL)
     {
-	rc = GLOBUS_GASS_ERROR_INVALID_USE;
+	rc = GLOBUS_GASS_TRANSFER_ERROR_INVALID_USE;
 
 	goto error_exit;
     }
     else if(req->client_side == GLOBUS_FALSE &&
 	    req->type != GLOBUS_GASS_TRANSFER_REQUEST_TYPE_GET)
     {
-	rc = GLOBUS_GASS_ERROR_INVALID_USE;
+	rc = GLOBUS_GASS_TRANSFER_ERROR_INVALID_USE;
 
 	goto error_exit;
     }
@@ -144,7 +144,7 @@ globus_gass_transfer_send_bytes(
 	    req->type != GLOBUS_GASS_TRANSFER_REQUEST_TYPE_PUT &&
 	    req->type != GLOBUS_GASS_TRANSFER_REQUEST_TYPE_APPEND)
     {
-	rc = GLOBUS_GASS_ERROR_INVALID_USE;
+	rc = GLOBUS_GASS_TRANSFER_ERROR_INVALID_USE;
 
 	goto error_exit;
     }
@@ -179,7 +179,7 @@ globus_gass_transfer_send_bytes(
 
     if(pending == GLOBUS_NULL)
     {
-        rc = GLOBUS_GASS_ERROR_MALLOC_FAILED;
+        rc = GLOBUS_GASS_TRANSFER_ERROR_MALLOC_FAILED;
 	goto error_exit;
     }
     pending->last_data		= last_data;
@@ -252,19 +252,19 @@ globus_gass_transfer_send_bytes(
  *         The @a bytes array was successfully registered with the GASS
  *         transfer library. The @a callback function will be invoked once
  *         it has been received.
- * @retval GLOBUS_GASS_ERROR_NULL_POINTER
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER
  *         The @a bytes or @a callback parameter was NULL.
- * @retval GLOBUS_GASS_ERROR_INVALID_USER
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_INVALID_USER
  *         The @a request was invalid, or it is not one on which bytes
  *         can be sent.
- * @retval GLOBUS_GASS_ERROR_NOT_INITIALIZED
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_NOT_INITIALIZED
  *         The callback to a non-blocking file request has not been invoked
  *         yet, a blocking file request has not returned, or the request has
  *         not yet been authorized.
- * @retval GLOBUS_GASS_ERROR_REQUEST_FAILED
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_REQUEST_FAILED
  *         The @a request has failed by either the client, server, or protocol
  *         module implementation.
- * @retval GLOBUS_GASS_ERROR_DONE
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_DONE
  *         The @a request has already been completed.
  */
 int
@@ -285,13 +285,13 @@ globus_gass_transfer_receive_bytes(
     /* Sanity check on passed arguments */
     if(bytes == GLOBUS_NULL)
     {
-	rc = GLOBUS_GASS_ERROR_NULL_POINTER;
+	rc = GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
 
 	goto error_exit;
     }
     if(callback == GLOBUS_NULL)
     {
-	rc = GLOBUS_GASS_ERROR_NULL_POINTER;
+	rc = GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
 
 	goto error_exit;
     }
@@ -301,7 +301,7 @@ globus_gass_transfer_receive_bytes(
 
     if(req == GLOBUS_NULL)
     {
-	rc = GLOBUS_GASS_ERROR_INVALID_USE;
+	rc = GLOBUS_GASS_TRANSFER_ERROR_INVALID_USE;
 
 	goto error_exit;
     }
@@ -319,14 +319,14 @@ globus_gass_transfer_receive_bytes(
 	    req->type != GLOBUS_GASS_TRANSFER_REQUEST_TYPE_PUT &&
 	    req->type != GLOBUS_GASS_TRANSFER_REQUEST_TYPE_APPEND)
     {
-	rc = GLOBUS_GASS_ERROR_INVALID_USE;
+	rc = GLOBUS_GASS_TRANSFER_ERROR_INVALID_USE;
 
 	goto error_exit;
     }
     else if(req->client_side != GLOBUS_FALSE &&
 	    req->type != GLOBUS_GASS_TRANSFER_REQUEST_TYPE_GET)
     {
-	rc = GLOBUS_GASS_ERROR_INVALID_USE;
+	rc = GLOBUS_GASS_TRANSFER_ERROR_INVALID_USE;
 
 	goto error_exit;
     }
@@ -339,7 +339,7 @@ globus_gass_transfer_receive_bytes(
 
     if(pending == GLOBUS_NULL)
     {
-        rc = GLOBUS_GASS_ERROR_MALLOC_FAILED;
+        rc = GLOBUS_GASS_TRANSFER_ERROR_MALLOC_FAILED;
 	goto error_exit;
     }
     pending->last_data		= GLOBUS_FALSE;
@@ -394,13 +394,13 @@ globus_gass_transfer_fail(
 
     if(req == GLOBUS_NULL)
     {
-        rc = GLOBUS_GASS_ERROR_INVALID_USE;
+        rc = GLOBUS_GASS_TRANSFER_ERROR_INVALID_USE;
 
 	goto finish;
     }
     if(callback == GLOBUS_NULL)
     {
-	rc = GLOBUS_GASS_ERROR_NULL_POINTER;
+	rc = GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
 
 	goto finish;
     }
@@ -438,7 +438,7 @@ globus_i_gass_transfer_fail(
 			 request);
 	break;
       case GLOBUS_GASS_TRANSFER_REQUEST_ACTING_TO_FAILING:
-	rc = GLOBUS_GASS_ERROR_DONE;
+	rc = GLOBUS_GASS_TRANSFER_ERROR_DONE;
 	break;
       case GLOBUS_GASS_TRANSFER_REQUEST_PENDING:
 	req->fail_callback = callback;
@@ -471,7 +471,7 @@ globus_i_gass_transfer_fail(
       case GLOBUS_GASS_TRANSFER_REQUEST_DONE:
       case GLOBUS_GASS_TRANSFER_REQUEST_FAILING:
       case GLOBUS_GASS_TRANSFER_REQUEST_FINISHING:
-	rc = GLOBUS_GASS_ERROR_DONE;
+	rc = GLOBUS_GASS_TRANSFER_ERROR_DONE;
 	break;
       case GLOBUS_GASS_TRANSFER_REQUEST_ACCEPTING:
 	req->fail_callback = callback;
@@ -518,7 +518,7 @@ globus_l_gass_transfer_state_check(
 {
     if(request->type == GLOBUS_GASS_TRANSFER_REQUEST_TYPE_INVALID)
     {
-	return GLOBUS_GASS_ERROR_NOT_INITIALIZED;
+	return GLOBUS_GASS_TRANSFER_ERROR_NOT_INITIALIZED;
     }
     switch(request->status)
     {
@@ -533,17 +533,17 @@ globus_l_gass_transfer_state_check(
       case GLOBUS_GASS_TRANSFER_REQUEST_SERVER_FAIL2:
       case GLOBUS_GASS_TRANSFER_REQUEST_USER_FAIL:
       case GLOBUS_GASS_TRANSFER_REQUEST_ACTING_TO_FAILING:
-	return GLOBUS_GASS_ERROR_REQUEST_FAILED;
+	return GLOBUS_GASS_TRANSFER_ERROR_REQUEST_FAILED;
       case GLOBUS_GASS_TRANSFER_REQUEST_FINISHING:
       case GLOBUS_GASS_TRANSFER_REQUEST_DONE:
       case GLOBUS_GASS_TRANSFER_REQUEST_REFERRED:
       case GLOBUS_GASS_TRANSFER_REQUEST_DENIED:
-	return GLOBUS_GASS_ERROR_DONE;
+	return GLOBUS_GASS_TRANSFER_ERROR_DONE;
       case GLOBUS_GASS_TRANSFER_REQUEST_STARTING:
       case GLOBUS_GASS_TRANSFER_REQUEST_STARTING2:
       case GLOBUS_GASS_TRANSFER_REQUEST_INVALID:
       default:
-	return GLOBUS_GASS_ERROR_NOT_INITIALIZED;
+	return GLOBUS_GASS_TRANSFER_ERROR_NOT_INITIALIZED;
     }
 }
 /* globus_l_gass_transfer_state_check() */
@@ -564,7 +564,7 @@ globus_l_gass_transfer_size_check(
     globus_gass_transfer_request_struct_t *	request,
     globus_size_t				send_length)
 {
-    if(request->length == GLOBUS_GASS_LENGTH_UNKNOWN)
+    if(request->length == GLOBUS_GASS_TRANSFER_LENGTH_UNKNOWN)
     {
 	/* can't go wrong here */
 	return GLOBUS_SUCCESS;
@@ -573,7 +573,7 @@ globus_l_gass_transfer_size_check(
 	    request->length)
     {
 	/* enough is specified to detect overflow */
-	return GLOBUS_GASS_ERROR_TOO_LARGE;
+	return GLOBUS_GASS_TRANSFER_ERROR_TOO_LARGE;
     }
     else
     {

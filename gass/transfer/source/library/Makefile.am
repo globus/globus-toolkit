@@ -11,7 +11,6 @@ Sources= \
 	globus_gass_transfer.h \
 	globus_gass_transfer_attribute.c \
 	globus_gass_transfer_client.c \
-	globus_gass_transfer_file.c \
 	globus_gass_transfer_ftp.c \
 	globus_gass_transfer_http.c \
 	globus_gass_transfer_keyvalue.c \

@@ -99,7 +99,7 @@ globus_gass_transfer_request_get_user_pointer(
  *
  * @retval GLOBUS_SUCCES
  *         The user pointer's value was set.
- * @retval GLOBUS_GASS_ERROR_INVALID_USE
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_INVALID_USE
  *         An invalid request handle was passed to this function
  */
 int
@@ -114,7 +114,7 @@ globus_gass_transfer_request_set_user_pointer(
 				   request);
     if(req == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_INVALID_USE;
+	return GLOBUS_GASS_TRANSFER_ERROR_INVALID_USE;
     }
     else
     {
@@ -208,7 +208,7 @@ globus_gass_transfer_request_get_status(
  * @retval GLOBUS_SUCCESS
  *         The referral was successfully extracted from the request
  *         handle.
- * @retval GLOBUS_GASS_ERROR_NULL_POINTER
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER
  *         The referral pointer was GLOBUS_NULL;
  */
 int
@@ -221,7 +221,7 @@ globus_gass_transfer_request_get_referral(
     /* Sanity check of arguments */
     if(referral == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_NULL_POINTER;
+	return GLOBUS_GASS_TRANSFER_ERROR_NULL_POINTER;
     }
     /* Check for illegal handle */
     req =
@@ -229,7 +229,7 @@ globus_gass_transfer_request_get_referral(
 				   request);
     if(req == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_INVALID_USE;
+	return GLOBUS_GASS_TRANSFER_ERROR_INVALID_USE;
     }
     else if(req->referral_count == 0)
     {
@@ -298,14 +298,14 @@ globus_gass_transfer_request_get_url(
  *
  * This function queries the request handle to determine the amount of
  * data that will be transferred to copy the URL. The length may be
- * @a GLOBUS_GASS_LENGTH_UNKNOWN if the sender can not determine the length
+ * @a GLOBUS_GASS_TRANSFER_LENGTH_UNKNOWN if the sender can not determine the length
  * before making or authorizing the request.
  *
  * @param request
  *        The request to query.
  *
  * @return The length of the file located at the request's URL, or
- *         @a GLOBUS_GASS_LENGTH_UNKNOWN if that cannot be determined.
+ *         @a GLOBUS_GASS_TRANSFER_LENGTH_UNKNOWN if that cannot be determined.
  */
 globus_size_t
 globus_gass_transfer_request_get_length(
@@ -318,7 +318,7 @@ globus_gass_transfer_request_get_length(
 				   request);
     if(req == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_LENGTH_UNKNOWN;
+	return GLOBUS_GASS_TRANSFER_LENGTH_UNKNOWN;
     }
     else
     {
@@ -342,7 +342,7 @@ globus_gass_transfer_request_get_length(
  *
  * @retval GLOBUS_SUCCESS
  *         The request handle's type has been set.
- * @retval GLOBUS_GASS_ERROR_INVALID_USE
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_INVALID_USE
  *         The request handle was invalid or it's type was already set.
  *         The request handle was not modified.
  *
@@ -361,7 +361,7 @@ globus_gass_transfer_request_set_type(
     if(req == GLOBUS_NULL||
        req->type != GLOBUS_GASS_TRANSFER_REQUEST_TYPE_INVALID)
     {
-	return GLOBUS_GASS_ERROR_INVALID_USE;
+	return GLOBUS_GASS_TRANSFER_ERROR_INVALID_USE;
     }
     else
     {
@@ -394,7 +394,7 @@ globus_gass_transfer_request_set_type(
  *
  * @retval GLOBUS_SUCCESS
  *         The URL was set for the request handle.
- * @retval GLOBUS_GASS_ERROR_INVALID_USE
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_INVALID_USE
  *         The request handle was invalid, or the URL had already been set.
  */
 int
@@ -410,7 +410,7 @@ globus_gass_transfer_request_set_url(
     if(req == GLOBUS_NULL ||
        req->url != GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_INVALID_USE;
+	return GLOBUS_GASS_TRANSFER_ERROR_INVALID_USE;
     }
     else
     {
@@ -437,7 +437,7 @@ globus_gass_transfer_request_set_url(
  *
  * @retval GLOBUS_SUCCESS
  *         The URL was set for the request handle.
- * @retval GLOBUS_GASS_ERROR_INVALID_USE
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_INVALID_USE
  *         The request handle was invalid, or the URL had already been set.
  */
 void
@@ -582,11 +582,11 @@ globus_gass_transfer_request_set_subject(
 				   request);
     if(req == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_INVALID_USE;
+	return GLOBUS_GASS_TRANSFER_ERROR_INVALID_USE;
     }
     else if(req->subject != GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_INVALID_USE;
+	return GLOBUS_GASS_TRANSFER_ERROR_INVALID_USE;
     }
     else
     {
@@ -613,7 +613,7 @@ globus_gass_transfer_request_set_subject(
  *        The request to destroy.
  * @param GLOBUS_SUCCESS
  *        The request handle reference was successfully destroyed.
- * @param GLOBUS_GASS_ERROR_INVALID_USE
+ * @param GLOBUS_GASS_TRANSFER_ERROR_INVALID_USE
  *        Either an invalid request handle or one which is actively being
  *        used was passed to this function as the @a request parameter.
  */
@@ -630,7 +630,7 @@ globus_gass_transfer_request_destroy(
 				   request);
     if(req == GLOBUS_NULL)
     {
-	rc = GLOBUS_GASS_ERROR_INVALID_USE;
+	rc = GLOBUS_GASS_TRANSFER_ERROR_INVALID_USE;
 	goto finish;
     }
     if(req->status != GLOBUS_GASS_TRANSFER_REQUEST_FAILED &&
@@ -642,7 +642,7 @@ globus_gass_transfer_request_destroy(
        req->status != GLOBUS_GASS_TRANSFER_REQUEST_ACTING_TO_FAILING &&
        req->status != GLOBUS_GASS_TRANSFER_REQUEST_DENIED)
     {
-	rc = GLOBUS_GASS_ERROR_INVALID_USE;
+	rc = GLOBUS_GASS_TRANSFER_ERROR_INVALID_USE;
 	goto finish;
     }
 
@@ -787,7 +787,7 @@ globus_i_gass_transfer_request_init(
  * @retval GLOBUS_SUCCESS
  *         The request handle's reference count was decremented. The request
  *         structure is freed if this was the final reference to the handle.
- * @retval GLOBUS_GASS_ERROR_INVALID_USE
+ * @retval GLOBUS_GASS_TRANSFER_ERROR_INVALID_USE
  *         The request handle was not valid.
  * @see globus_gass_transfer_request_destroy()
  */
@@ -803,7 +803,7 @@ globus_i_gass_transfer_request_destroy(
 				   request);
     if(req == GLOBUS_NULL)
     {
-	return GLOBUS_GASS_ERROR_INVALID_USE;
+	return GLOBUS_GASS_TRANSFER_ERROR_INVALID_USE;
     }
 
     referenced =
