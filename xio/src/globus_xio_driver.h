@@ -84,8 +84,8 @@ do                                                                          \
     }                                                                       \
     globus_mutex_lock(_mutex);                                              \
     {                                                                       \
-        _canceled = _op->canceled;                                          \
-        if(!_op->canceled)                                                  \
+        _canceled = (_op->canceled != 0);                                   \
+        if(_op->canceled == 0)                                              \
         {                                                                   \
             _op->cancel_cb = (cb);                                          \
             _op->cancel_arg = (user_arg);                                   \

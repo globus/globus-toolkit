@@ -441,7 +441,7 @@ globus_l_xio_driver_op_write_kickout(
     context = op->_op_context;
 
     /* see comment in globus_l_xio_driver_open_op_kickout */
-    if(op->canceled == (op->start_ndx + 1))
+    if(op->canceled == (op->start_ndx + 2))
     {
         op->canceled = 0;
     }
@@ -518,7 +518,7 @@ globus_l_xio_driver_op_read_kickout(
     context = op->_op_context;
 
     /* see comment in globus_l_xio_driver_open_op_kickout */
-    if(op->canceled == (op->start_ndx + 1))
+    if(op->canceled == (op->start_ndx + 2))
     {
         op->canceled = 0;
     }
@@ -692,7 +692,7 @@ globus_l_xio_driver_op_close_kickout(
     op->ndx = my_op->prev_ndx;
 
     /* see comment in globus_l_xio_driver_open_op_kickout */
-    if(op->canceled == (op->start_ndx + 1))
+    if(op->canceled == (op->start_ndx + 2))
     {
         op->canceled = 0;
     }
@@ -732,7 +732,7 @@ globus_l_xio_driver_op_accept_kickout(
     op->ndx = my_op->prev_ndx;
                                                                                 
     /* see comment in globus_l_xio_driver_open_op_kickout */
-    if(op->canceled == (op->start_ndx + 1))
+    if(op->canceled == (op->start_ndx + 2))
     {
         op->canceled = 0;
     }
@@ -786,7 +786,7 @@ globus_l_xio_driver_open_op_kickout(
        the lock because once cancel is set it is not unset and we only
        provide a best effort cancel server, meaning that is you call cancel
        it is possible that you get your operation back successfully. */
-    if(op->canceled == (op->start_ndx + 1))
+    if(op->canceled == (op->start_ndx + 2))
     {
         op->canceled = 0;
     }
@@ -1521,7 +1521,7 @@ globus_xio_driver_operation_cancel(
     globus_mutex_lock(&context->cancel_mutex);
     {
         /* XXX pass driver's index here instead */
-        res = globus_i_xio_operation_cancel(op, op->start_ndx + 1);
+        res = globus_i_xio_operation_cancel(op, op->start_ndx);
     }
     globus_mutex_unlock(&context->cancel_mutex);
 

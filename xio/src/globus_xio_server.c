@@ -426,7 +426,8 @@ globus_l_xio_accept_timeout_callback(
         {
             xio_op->cached_obj = GlobusXIOErrorObjTimedout();
             rc = GLOBUS_TRUE;
-            xio_op->canceled = GLOBUS_TRUE;
+            /* XXX this assumes that timeouts cannot happen on driver ops */
+            xio_op->canceled = 1;
             if(xio_op->cancel_cb)
             {
                 xio_op->cancel_cb(xio_op, xio_op->cancel_arg);
@@ -624,7 +625,7 @@ globus_l_xio_server_register_accept(
         xio_op->state = GLOBUS_XIO_OP_STATE_OPERATING;
         xio_op->ref = 1;
         xio_op->cancel_cb = NULL;
-        xio_op->canceled = GLOBUS_FALSE;
+        xio_op->canceled = 0;
         xio_op->_op_server_timeout_cb = xio_server->accept_timeout;
         xio_op->ndx = 0;
         xio_op->stack_size = xio_server->stack_size;
@@ -1010,7 +1011,7 @@ globus_xio_server_cancel_accept(
             /* the callback is called locked.  within it the driver is
                 allowed limited functionality.  by calling this locked
                 can more efficiently pass the operation down the stack */
-            xio_server->op->canceled = GLOBUS_TRUE;
+            xio_server->op->canceled = 1;
             if(xio_server->op->cancel_cb)
             {
                 xio_server->op->cancel_cb(xio_server->op,
@@ -1158,7 +1159,7 @@ globus_xio_server_register_close(
                 can more efficiently pass the operation down the stack */
             if(xio_server->op != NULL)
             {
-                xio_server->op->canceled = GLOBUS_TRUE;
+                xio_server->op->canceled = 1;
                 if(xio_server->op->cancel_cb)
                 {
                     xio_server->op->cancel_cb(xio_server->op,
