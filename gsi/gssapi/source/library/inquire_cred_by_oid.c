@@ -108,7 +108,9 @@ GSS_CALLCONV gss_inquire_cred_by_oid(
     do
     {
         extensions = cert->cert_info->extensions;
-
+        data_set_buffer.value = NULL;
+        data_set_buffer.length = 0;
+        
         for (i=0;i<sk_X509_EXTENSION_num(extensions);i++)
         {
             ex = (X509_EXTENSION *) sk_X509_EXTENSION_value(extensions,i);
@@ -144,21 +146,21 @@ GSS_CALLCONV gss_inquire_cred_by_oid(
                        asn1_oct_string->data,
                        asn1_oct_string->length);
 
-                major_status = gss_add_buffer_set_member(minor_status,
-                                                         &data_set_buffer,
-                                                         data_set);
-
-                if(major_status != GSS_S_COMPLETE)
-                {
-                    gss_release_buffer_set(&tmp_minor_status, data_set);
-                    goto err;
-                }
-                
                 /* assume one extension per cert ? */
                 
                 break;
             }
-        } 
+        }
+        
+        major_status = gss_add_buffer_set_member(minor_status,
+                                                 &data_set_buffer,
+                                                 data_set);
+        
+        if(major_status != GSS_S_COMPLETE)
+        {
+            gss_release_buffer_set(&tmp_minor_status, data_set);
+            goto err;
+        }
     } while(cert_count-- &&
             (cert = sk_X509_value(cred->pcd->cert_chain,cert_count)));
 
