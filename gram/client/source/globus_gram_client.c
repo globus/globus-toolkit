@@ -2110,7 +2110,8 @@ globus_l_gram_client_callback(
             job_status   = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
             failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION;
         }
-        else if(globus_gram_protocol_authorize_self(context)
+        else if(context != GSS_C_NO_CONTEXT &&
+                globus_gram_protocol_authorize_self(context)
                 == GLOBUS_FALSE)
         {
             job_status   = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
