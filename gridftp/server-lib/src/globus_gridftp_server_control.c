@@ -1276,7 +1276,8 @@ globus_l_gsc_pmod_data_transfer(
             }
             else
             {
-                i_op->user_data_cb = (globus_gridftp_server_control_data_func_t)
+                i_op->user_data_cb = 
+                    (globus_gridftp_server_control_transfer_func_t)
                     globus_hashtable_lookup(
                         &i_server->recv_table, (void *)module_name);
             }
@@ -1289,7 +1290,8 @@ globus_l_gsc_pmod_data_transfer(
             }
             else
             {
-                i_op->user_data_cb = (globus_gridftp_server_control_data_func_t)
+                i_op->user_data_cb = 
+                    (globus_gridftp_server_control_transfer_func_t)
                     globus_hashtable_lookup(
                         &i_server->send_table, (void *) module_name);
             }

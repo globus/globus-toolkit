@@ -226,7 +226,7 @@ globus_result_t
 globus_gridftp_server_control_attr_add_recv(
     globus_gridftp_server_control_attr_t            in_attr,
     const char *                                    module_name,
-    globus_gridftp_server_control_data_func_t       recv_func)
+    globus_gridftp_server_control_transfer_func_t   recv_func)
 {
     globus_i_gsc_attr_t *                           attr;
     globus_result_t                                 res;
@@ -279,7 +279,7 @@ globus_result_t
 globus_gridftp_server_control_attr_add_send(
     globus_gridftp_server_control_attr_t            in_attr,
     const char *                                    module_name,
-    globus_gridftp_server_control_data_func_t       send_func)
+    globus_gridftp_server_control_transfer_func_t   send_func)
 {
     globus_i_gsc_attr_t *                           attr;
     globus_result_t                                 res;

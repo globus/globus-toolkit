@@ -197,8 +197,8 @@ typedef struct globus_i_gsc_server_s
 
     globus_hashtable_t                              send_table;
     globus_hashtable_t                              recv_table;
-    globus_gridftp_server_control_data_func_t       default_stor;
-    globus_gridftp_server_control_data_func_t       default_retr;
+    globus_gridftp_server_control_transfer_func_t   default_stor;
+    globus_gridftp_server_control_transfer_func_t   default_retr;
 
     globus_result_t                                 cached_res;
 
@@ -267,7 +267,7 @@ typedef struct globus_i_gsc_op_s
     /* stuff for transfer */
     char *                                          mod_name;
     char *                                          mod_parms;
-    globus_gridftp_server_control_data_func_t       user_data_cb;
+    globus_gridftp_server_control_transfer_func_t   user_data_cb;
     globus_gridftp_server_control_data_callback_t   data_cb;
     globus_gridftp_server_control_event_callback_t  event_cb;
 
@@ -291,8 +291,8 @@ typedef struct globus_i_gsc_attr_s
     globus_gridftp_server_control_active_connect_t  active_func;
     globus_gridftp_server_control_data_destroy_t    data_destroy_func;
 
-    globus_gridftp_server_control_data_func_t       default_stor;
-    globus_gridftp_server_control_data_func_t       default_retr;
+    globus_gridftp_server_control_transfer_func_t   default_stor;
+    globus_gridftp_server_control_transfer_func_t   default_retr;
 } globus_i_gsc_attr_t;
 
 
