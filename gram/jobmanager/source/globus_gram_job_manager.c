@@ -507,7 +507,7 @@ globus_l_gram_request_fork(globus_gram_jobmanager_request_t * request)
 	{
 	    globus_jobmanager_log(request->jobmanager_log_fp,
 			  "JMI: poe not found!\n");
-	    request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE;
+	    request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
 	    request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_POE_NOT_FOUND;
 	    return(GLOBUS_FAILURE);
 	}
@@ -605,7 +605,7 @@ globus_l_gram_request_fork(globus_gram_jobmanager_request_t * request)
 	    {
 		globus_jobmanager_log(request->jobmanager_log_fp,
 			      "JMI: mpirun not found!\n");
-		request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE;
+		request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
 		request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_MPIRUN_NOT_FOUND;
 		return(GLOBUS_FAILURE);
 	    }
@@ -656,7 +656,7 @@ globus_l_gram_request_fork(globus_gram_jobmanager_request_t * request)
     {
 	globus_jobmanager_log(request->jobmanager_log_fp,
 		"JMI: This is a dry run!!\n");
-        request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE;
+        request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
         request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_DRYRUN;
         return(GLOBUS_FAILURE);
     }
