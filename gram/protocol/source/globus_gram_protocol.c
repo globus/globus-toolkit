@@ -201,6 +201,9 @@ globus_l_gram_protocol_parse_reply(
 #define GLOBUS_GRAM_HTTP_PACK_FAILURE_CODE_LINE \
 		        "failure-code: %d" CRLF	
 
+#define GLOBUS_GRAM_HTTP_PACK_JOB_FAILURE_CODE_LINE \
+		        "job-failure-code: %d" CRLF	
+
 #define GLOBUS_GRAM_HTTP_PACK_JOB_MANAGER_URL_LINE \
 		        "job-manager-url: %s" CRLF	
 
@@ -1951,22 +1954,26 @@ int
 globus_gram_protocol_pack_status_reply(
     int                 job_status,
     int                 failure_code,
+    int                 job_failure_code,
     globus_byte_t **    reply,
     globus_size_t *     replysize )
 {
     *reply = my_malloc( globus_byte_t,
 			strlen(GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE) +
 			strlen(GLOBUS_GRAM_HTTP_PACK_STATUS_LINE) +
-			strlen(GLOBUS_GRAM_HTTP_PACK_FAILURE_CODE_LINE)
+			strlen(GLOBUS_GRAM_HTTP_PACK_FAILURE_CODE_LINE) +
+			strlen(GLOBUS_GRAM_HTTP_PACK_JOB_FAILURE_CODE_LINE)
 			+ 4 );
 
     globus_libc_sprintf( (char *)*reply,
 			 GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE
 			 GLOBUS_GRAM_HTTP_PACK_STATUS_LINE
-			 GLOBUS_GRAM_HTTP_PACK_FAILURE_CODE_LINE,
+			 GLOBUS_GRAM_HTTP_PACK_FAILURE_CODE_LINE
+			 GLOBUS_GRAM_HTTP_PACK_JOB_FAILURE_CODE_LINE,
 			 GLOBUS_GRAM_PROTOCOL_VERSION,
 			 job_status,
-			 failure_code );
+			 failure_code,
+			 job_failure_code );
     
     *replysize = (globus_size_t)(strlen((char *)*reply) + 1);
 
@@ -1979,7 +1986,8 @@ globus_gram_protocol_unpack_status_reply(
     globus_byte_t *    reply,
     globus_size_t      replysize,
     int *              job_status,
-    int *              failure_code )
+    int *              failure_code,
+    int *              job_failure_code )
 {
     int     protocol_version;
     int     rc;
@@ -1988,12 +1996,17 @@ globus_gram_protocol_unpack_status_reply(
     rc = sscanf( (char *) reply,
 		 GLOBUS_GRAM_HTTP_PACK_PROTOCOL_VERSION_LINE
 		 GLOBUS_GRAM_HTTP_PACK_STATUS_LINE
-		 GLOBUS_GRAM_HTTP_PACK_FAILURE_CODE_LINE,
+		 GLOBUS_GRAM_HTTP_PACK_FAILURE_CODE_LINE
+		 GLOBUS_GRAM_HTTP_PACK_JOB_FAILURE_CODE_LINE,
 		 &protocol_version,
 		 job_status,
 		 failure_code );
     globus_libc_unlock();
-    if (rc != 3)
+    if (rc == 3)
+    {
+	*job_failure_code = 0;
+    }
+    if (rc != 3 && rc != 4)
     {
 	return GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
     }

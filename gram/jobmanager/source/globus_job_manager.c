@@ -310,7 +310,7 @@ static int            graml_cleanup_print_flag = 1;
 
 static globus_bool_t  graml_jm_cancel = GLOBUS_FALSE;
 static globus_bool_t  graml_jm_commit_request = GLOBUS_FALSE;
-static globus_io_handle_t * graml_jm_commit_reply_handle = GLOBUS_NULL;
+static globus_bool_t  graml_jm_commit_end = GLOBUS_FALSE;
 static char *         graml_gass_cache_tag = GLOBUS_NULL;
 static char *         graml_job_state_file = GLOBUS_NULL;
 static int            graml_commit_time_extend = 0;
@@ -330,6 +330,8 @@ static int              globus_l_gram_stderr_remote_sent=0;
 static globus_bool_t    globus_l_gram_merged_stdio = GLOBUS_FALSE;
 static int              globus_l_gram_stdout_size=0;
 static int              globus_l_gram_stderr_size=0;
+static globus_bool_t    globus_l_gram_stdout_ignored = GLOBUS_TRUE;
+static globus_bool_t    globus_l_gram_stderr_ignored = GLOBUS_TRUE;
 
 globus_list_t *  globus_l_gram_client_contacts = GLOBUS_NULL;
 
@@ -344,6 +346,7 @@ static globus_bool_t         graml_jm_stop = GLOBUS_FALSE;
 static globus_bool_t         graml_jm_can_exit = GLOBUS_TRUE;
 static globus_list_t *       graml_jm_outstanding_connections = GLOBUS_NULL;
 static globus_bool_t         graml_jm_ttl_expired = GLOBUS_FALSE;
+static globus_bool_t         graml_jm_request_failed = GLOBUS_FALSE;
 static long                  graml_jm_ttl = 0;
 static char *                graml_remote_io_url = GLOBUS_NULL;
 static char *                graml_remote_io_url_file = GLOBUS_NULL;
@@ -421,7 +424,6 @@ int main(int argc,
     int                                 cache_size;
     globus_symboltable_t *              symbol_table = NULL; 
     globus_gram_jobmanager_request_t *  request;
-    globus_bool_t                       jm_request_failed = GLOBUS_FALSE;
     globus_l_gram_client_contact_t *    client_contact_node;
     globus_l_gram_conf_values_t         conf;
     globus_result_t                     error;
@@ -1796,14 +1798,24 @@ int main(int argc,
 	    time_now = ASN1_UTCTIME_mktime(asn1_time);
 	    time_after = ASN1_UTCTIME_mktime(X509_get_notAfter(pcd->ucert));
 
-	    /* set timer */
-	    GlobusTimeReltimeSet(delay_time, (time_after - time_now) - 300, 0);
-	    globus_callback_register_oneshot(&proxy_expiration_handle,
-					     &delay_time,
-					     globus_l_gram_proxy_expiration,
-					     (void *)request,
-					     GLOBUS_NULL,
-					     GLOBUS_NULL);
+	    if ((time_after - time_now) - 300 <= 0)
+	    {
+		request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+		request->failure_code =
+		    GLOBUS_GRAM_PROTOCOL_ERROR_USER_PROXY_EXPIRED;
+		rc = GLOBUS_FAILURE;
+		globus_libc_fprintf(request->jobmanager_log_fp,
+				    "JM: user proxy lifetime is less than minimum (5 minutes)\n");
+	    } else {
+		/* set timer */
+		GlobusTimeReltimeSet(delay_time, (time_after - time_now) - 300, 0);
+		globus_callback_register_oneshot(&proxy_expiration_handle,
+						 &delay_time,
+						 globus_l_gram_proxy_expiration,
+						 (void *)request,
+						 GLOBUS_NULL,
+						 GLOBUS_NULL);
+	    }
 
 /* Freeing this struct seems to screw up other stuff that uses X509
 	    proxy_cred_desc_free(pcd);
@@ -1925,6 +1937,14 @@ int main(int argc,
 	     */
 	    close(0);
 	    close(1);
+
+	    /*
+	     * Reopen stdin and stdout to /dev/null (the jobmanager library
+	     * expects them to be open).
+	     */
+	    open("/dev/null",O_RDONLY);
+	    open("/dev/null",O_WRONLY);
+
 	    globus_libc_free(sendbuf);
 	}
 
@@ -2019,6 +2039,14 @@ int main(int argc,
 	{
 	    graml_jm_done = GLOBUS_TRUE;
 	}
+
+	/* On restart, report an unsubmitted job as a failure condition */
+	if (request->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_UNSUBMITTED &&
+	    request->jm_restart != NULL)
+	{
+	    request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
+	    request->failure_code = GLOBUS_GRAM_PROTOCOL_ERROR_JOB_UNSUBMITTED;
+	}
     }
     else
     {
@@ -2027,7 +2055,8 @@ int main(int argc,
 		       "sending message to client\n",
 		       request->failure_code,
 		       globus_gram_protocol_error_string(request->failure_code));
-	jm_request_failed = GLOBUS_TRUE;
+	graml_jm_request_failed = GLOBUS_TRUE;
+	request->status = GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED;
 
         if (globus_l_gram_stdout_fd != -1)
         {
@@ -2054,12 +2083,12 @@ int main(int argc,
     {
 	if(!debugging_without_client)
 	{
-	    if (jm_request_failed)
+	    if (graml_jm_request_failed)
 		sent_request_failure = GLOBUS_TRUE;
 
 	    rc = globus_gram_protocol_pack_job_request_reply(
-	       (jm_request_failed) ? request->failure_code : GLOBUS_SUCCESS,
-	       (jm_request_failed) ? GLOBUS_NULL           : graml_job_contact,
+	       (graml_jm_request_failed) ? request->failure_code : GLOBUS_SUCCESS,
+	       (graml_jm_request_failed) ? GLOBUS_NULL           : graml_job_contact,
 	       &reply,
 	       &replysize);
 
@@ -2125,7 +2154,7 @@ int main(int argc,
 	}
     }
 
-    if (!jm_request_failed)
+    if (!graml_jm_request_failed)
     {
         globus_reltime_t          delay_time;
         globus_reltime_t          period_time;
@@ -2380,7 +2409,6 @@ int main(int argc,
         globus_libc_fprintf( request->jobmanager_log_fp,
               "JM: sending final callback.\n");
 
-	graml_jm_commit_request = GLOBUS_FALSE;
 	graml_commit_time_extend = 0;
 
 	if (graml_jm_ttl_expired || graml_jm_stop)
@@ -2399,7 +2427,8 @@ int main(int argc,
 	    int start_time = time(GLOBUS_NULL);
 	    int save_errno;
 
-	    if (request->save_state == GLOBUS_TRUE)
+	    if (request->save_state == GLOBUS_TRUE &&
+		request->failure_code != GLOBUS_GRAM_PROTOCOL_ERROR_COMMIT_TIMED_OUT)
 	    {
 		globus_l_gram_update_state_file( request->status,
 						 request->failure_code );
@@ -2408,7 +2437,9 @@ int main(int argc,
 	    globus_libc_fprintf( request->jobmanager_log_fp,
 			   "JM: waiting for commit signal\n" );
 
-	    while(!graml_jm_commit_request && !graml_jm_stop)
+	    while(!graml_jm_commit_end && !graml_jm_ttl_expired &&
+		  !graml_jm_stop && request->failure_code !=
+		      GLOBUS_GRAM_PROTOCOL_ERROR_COMMIT_TIMED_OUT)
 	    {
 		globus_abstime_t timeout;
 		timeout.tv_sec = start_time + request->two_phase_commit +
@@ -2448,7 +2479,7 @@ int main(int argc,
     }
 
     if (!graml_jm_ttl_expired && !graml_jm_stop &&
-	!(request->two_phase_commit != 0 && !graml_jm_commit_request &&
+	!(request->two_phase_commit != 0 && !graml_jm_commit_end &&
 	  request->save_state != 0))
     {
 	/* clear any other cache entries which contain the gram job id as
@@ -2616,7 +2647,7 @@ int main(int argc,
 
     if ( save_logfile_always_flag ||
          (save_logfile_on_errors_flag &&
-          jm_request_failed &&
+          graml_jm_request_failed &&
           !request->dry_run)
        )
     {
@@ -2732,8 +2763,8 @@ globus_l_gram_client_callback(int status, int failure_code)
 	    monitor->done = GLOBUS_FALSE;
 	    
             globus_libc_fprintf( graml_log_fp,
-                "JM: sending callback of status %d to %s.\n", status,
-                client_contact_node->contact);
+                "JM: sending callback of status %d (failure code %d) to %s.\n",
+                status, failure_code, client_contact_node->contact);
 
 	    GRAM_LOCK;
             rc = globus_gram_protocol_post_and_get(
@@ -3083,6 +3114,13 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
         req->my_stdout = GLOBUS_GRAM_PROTOCOL_DEFAULT_STDOUT;
     }
 
+    if (strcmp(req->my_stdout, GLOBUS_GRAM_PROTOCOL_DEFAULT_STDOUT) == 0)
+    {
+        globus_l_gram_stdout_ignored = GLOBUS_TRUE;
+    } else {
+        globus_l_gram_stdout_ignored = GLOBUS_FALSE;
+    }
+    
     /********************************** 
      *  GET STDOUT_POSITION PARAM
      */
@@ -3150,6 +3188,13 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
     else if (initialize == GLOBUS_TRUE)
     {
         req->my_stderr = GLOBUS_GRAM_PROTOCOL_DEFAULT_STDERR;
+    }
+    
+    if (strcmp(req->my_stderr, GLOBUS_GRAM_PROTOCOL_DEFAULT_STDERR) == 0)
+    {
+        globus_l_gram_stderr_ignored = GLOBUS_TRUE;
+    } else {
+        globus_l_gram_stderr_ignored = GLOBUS_FALSE;
     }
     
     /********************************** 
@@ -3698,7 +3743,11 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
      * Do this before paradyn rewriting.
      */
 
-    if (req->jm_restart == NULL)
+    /* We need to do this on restart to get the local filenames for cached
+     * URLs. No new transfer will be done, but a new tag will be added to
+     * the existing GASS cache entry.
+     */
+    if (req->jm_restart == NULL || initialize == GLOBUS_FALSE)
     {
 	if (globus_l_gram_stage_file(req->executable,
 				     &staged_file_path,
@@ -3729,7 +3778,10 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
 	    globus_libc_fprintf( req->jobmanager_log_fp, 
 		  "JM: stdin staged filename is %s\n", staged_file_path);
 	}
+    }
 
+    if (req->jm_restart == NULL)
+    {
 	if (grami_is_paradyn_job(req))
 	{
 	    if (!grami_paradyn_rewrite_params(req))
@@ -4376,6 +4428,15 @@ globus_i_filename_callback_func(int stdout_flag)
     if(output_handle == GLOBUS_NULL)
     {
         return GLOBUS_NULL;
+    }
+
+    if (stdout_flag && globus_l_gram_stdout_ignored)
+    {
+        return GLOBUS_GRAM_PROTOCOL_DEFAULT_STDOUT;
+    }
+    else if (!stdout_flag && globus_l_gram_stderr_ignored)
+    {
+        return GLOBUS_GRAM_PROTOCOL_DEFAULT_STDERR;
     }
 
     /* Create url for cache file
@@ -5052,11 +5113,34 @@ globus_l_jm_http_query_callback( void *               arg,
 		    rc = GLOBUS_GRAM_PROTOCOL_ERROR_HTTP_UNPACK_FAILED;
 		}
 		break;
-	    case GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_COMMIT:
-		GRAM_LOCK;
-		graml_jm_commit_request = GLOBUS_TRUE;
-		globus_cond_signal(&graml_api_cond);
-		GRAM_UNLOCK;
+	    case GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_COMMIT_REQUEST:
+		if (request->two_phase_commit == 0)
+		{
+		    rc = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_COMMIT;
+		} else {
+		    GRAM_LOCK;
+		    if (graml_jm_commit_request == GLOBUS_FALSE)
+		    {
+			graml_jm_commit_request = GLOBUS_TRUE;
+			globus_cond_signal(&graml_api_cond);
+		    }
+		    GRAM_UNLOCK;
+		}
+		break;
+	    case GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_COMMIT_END:
+		if (request->two_phase_commit == 0 || 
+		    (!done && !graml_jm_request_failed))
+		{
+		    rc = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_COMMIT;
+		} else {
+		    GRAM_LOCK;
+		    if (graml_jm_commit_end == GLOBUS_FALSE)
+		    {
+			graml_jm_commit_end = GLOBUS_TRUE;
+			globus_cond_signal(&graml_api_cond);
+		    }
+		    GRAM_UNLOCK;
+		}
 		break;
 	    case GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_COMMIT_EXTEND:
 		if (after_signal && (strlen(after_signal) > 0))
@@ -5205,6 +5289,8 @@ globus_l_jm_http_query_send_reply:
 	rc = globus_gram_protocol_pack_status_reply(
 	    status,
 	    rc,
+	    request->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED &&
+	        rc == GLOBUS_SUCCESS ? request->failure_code : 0,
 	    &reply,
 	    &replysize );
     }
@@ -5857,9 +5943,6 @@ globus_l_gram_read_state_file( globus_gram_jobmanager_request_t *req,
     *rsl = strdup( buffer );
     fscanf( fp, "%[^\n]%*c", buffer );
     graml_gass_cache_tag = strdup( buffer );
-globus_libc_fprintf(graml_log_fp,"job_id='%s'\n",req->job_id);
-globus_libc_fprintf(graml_log_fp,"rsl='%s'\n",*rsl);
-globus_libc_fprintf(graml_log_fp,"cache tag='%s'\n",graml_gass_cache_tag);
 
     fscanf( fp, "%d", &graml_stdout_count );
 

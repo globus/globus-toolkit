@@ -178,6 +178,7 @@ int
 globus_gram_protocol_pack_status_reply(
     int                 job_status,
     int                 failure_code,
+    int                 job_failure_code,
     globus_byte_t **    reply,
     globus_size_t *     replysize );
 
@@ -187,7 +188,8 @@ globus_gram_protocol_unpack_status_reply(
     globus_byte_t *    reply,
     globus_size_t      replysize,
     int *              job_status,
-    int *              failure_code );
+    int *              failure_code,
+    int *              job_failure_code);
 
 
 int

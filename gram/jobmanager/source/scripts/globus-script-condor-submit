@@ -108,17 +108,20 @@ createScript () {
     echo ""
     echo "Notification   = Never"
     eval echo "Executable     = ${grami_program}"
+    requirements="OpSys == \"${grami_condor_os}\""
+    requirements="${requirements} && Arch == \"${grami_condor_arch}\""
     if [ ${grami_min_memory} -ne 0 ] ; then
-       echo "Requirements   = OpSys == \"${grami_condor_os}\""\
-                          " && Arch == \"${grami_condor_arch}\""\
-                          " && Memory >= ${grami_min_memory}"\
-                          " && FileSystemDomain != \"xxx\""
+       requirements="${requirements} && Memory >= ${grami_min_memory}"
        echo "rank = Memory"
-    else
-       echo "Requirements   = OpSys == \"${grami_condor_os}\""\
-                          " && Arch == \"${grami_condor_arch}\""\
-                          " && FileSystemDomain != \"xxx\""
     fi
+    if [ "${condor_universe}" = "vanilla" -a \
+         "${grami_stdin}" = "/dev/null" -a \
+	 "${grami_stdout}" = "/dev/null" -a \
+	 "${grami_stderr}" = "/dev/null" ] ; then
+       requirements="${requirements} && FileSystemDomain != \"xxx\""
+    fi
+    echo "Requirements  = ${requirements}"
+
     if test -n "${grami_args}"; then
        eval echo "Arguments      = ${grami_args}"
     fi
