@@ -484,6 +484,8 @@ if [ x"$package" != "x" ]; then
 		fi
 	done
 
+	echo Running gpt-postinstall, just in case.
+	$GPT_LOCATION/sbin/gpt-postinstall
 	exit
 fi
 
@@ -526,3 +528,6 @@ if [ $buildc = 1 ]; then
 	install_cdeps
 	dir_iter package-list-cdeps
 fi
+
+echo Running gpt-postinstall, just in case.
+$GPT_LOCATION/sbin/gpt-postinstall
