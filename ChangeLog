@@ -1,5 +1,13 @@
 2000-10-10  Von Welch  <vwelch@ncsa.uiuc.edu>
 
+	* myproxy_log.c: Removed my_vsnprintf() as it is now in
+	string_funcs.c
+
+	* verror.c: Removed my_vsnprintf() as it is now in
+	string_funcs.c
+	
+	* string_funcs.c, string_funcs.h: Created these files.
+
 	* myproxy_destroy.c (main): Bug fix - use created proxy file for
 	authentication and not default proxy.
 	(main): Bug fix - passphrase was not being correctly read.

@@ -7,6 +7,7 @@
 #include "myproxy_log.h"
 
 #include "verror.h"
+#include "string_funcs.h"
 
 #include <stdio.h>
 #include <assert.h>
@@ -74,65 +75,7 @@ do_log(const char *string, int level)
     return;
 }
 
-/*
- * my_vsnprintf()
- *
- * Wrapper around vsnprintf(). Returned an allocated buffer.
- */
-static char *
-my_vsnprintf(const char *format, va_list ap)
-{
-    char *buffer = NULL;
-    int buffer_len = 1024;
-    int string_len = -1;
 
-    buffer = malloc(buffer_len);
-    
-    if (buffer == NULL)
-    {
-	/* Punt */
-	return NULL;
-    }
-    
-#ifdef HAVE_VSNPRINTF
-
-    while (string_len == -1)
-    {
-	char *new_buffer;
-
-	string_len = vsnprintf(buffer, buffer_len,
-			       format, ap);
-	
-	if (string_len == -1)
-	{
-	    buffer_len *= 2;
-	}
-
-	new_buffer = realloc(buffer, buffer_len);
-	
-	if (new_buffer == NULL)
-	{
-	    /* Punt */
-	    if (buffer != NULL)
-	    {
-		free(buffer);
-	    }
-	    return NULL;
-	}
-	
-	buffer = new_buffer;
-	
-    }
-#else /* !HAVE_VSNPRINTF */
-
-    /* Just got to hope it's big enough */
-    string_len = vsprintf(buffer, format, ap);
-    
-
-#endif /* !HAVE_VSNPRINTF */
-
-    return buffer;
-}
 
 /**********************************************************************
  *
