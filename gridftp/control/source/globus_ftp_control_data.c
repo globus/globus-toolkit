@@ -6855,6 +6855,11 @@ globus_i_ftp_control_data_cc_destroy(
             {
                 free(dc_handle->interface_addr);
             }
+            if(dc_handle->dcau.mode == GLOBUS_FTP_CONTROL_DCAU_SUBJECT &&
+                dc_handle->dcau.subject.subject)
+            {
+                globus_libc_free(dc_handle->dcau.subject.subject);
+            }
         }
         else
         {

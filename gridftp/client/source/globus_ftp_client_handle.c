@@ -989,6 +989,10 @@ globus_l_ftp_client_target_delete(
     {
 	globus_libc_free(target->auth_info.account);
     }
+    if(target->auth_info.auth_gssapi_subject)
+    {
+        globus_libc_free(target->auth_info.auth_gssapi_subject);
+    }
     if(target->features)
     {
         globus_i_ftp_client_features_destroy(target->features);
