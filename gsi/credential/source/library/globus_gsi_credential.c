@@ -1117,7 +1117,8 @@ globus_result_t globus_gsi_cred_read_cert(
 {
     BIO *                               cert_bio = NULL;
     globus_result_t                     result;
-
+    int                                 i = 0;
+    STACK_OF(X509) *                    tmp_cert_chain = NULL;
     static char *                       _function_name_ =
         "globus_gsi_cred_read_cert";
 
@@ -1163,7 +1164,51 @@ globus_result_t globus_gsi_cred_read_cert(
         sk_X509_pop_free(handle->cert_chain, X509_free);
         handle->cert_chain = NULL;
     }
+    
+    if((tmp_cert_chain = sk_X509_new_null()) == NULL)
+    {
+        GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CRED_ERROR_READING_CRED,
+            ("Can't initialize cert chain\n"));
+        goto exit;
+    }
+    
+    while(!BIO_eof(cert_bio))
+    {
+        X509 *                          tmp_cert = NULL;
+        if(!PEM_read_bio_X509(cert_bio, &tmp_cert, NULL, NULL))
+        {
+            break;
+        }
 
+        if(!sk_X509_insert(tmp_cert_chain, tmp_cert, i))
+        {
+            X509_free(tmp_cert);
+            GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_CRED_ERROR_READING_CRED,
+                ("Error adding cert: %s\n to issuer cert chain\n",
+                 X509_NAME_oneline(X509_get_subject_name(tmp_cert), 0, 0)));
+            goto exit;
+        }
+        ++i;
+    }
+
+    if(sk_X509_num(tmp_cert_chain) > 0)
+    {
+        result = globus_gsi_cred_set_cert_chain(handle, tmp_cert_chain);
+        if(result != GLOBUS_SUCCESS)
+        {
+            GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
+                result,
+                GLOBUS_GSI_CRED_ERROR_WITH_CRED);
+            goto exit;
+        }
+    }
+
+    sk_X509_pop_free(tmp_cert_chain, X509_free);
+    
     result = globus_i_gsi_cred_goodtill(handle, &(handle->goodtill));
 
     if(result != GLOBUS_SUCCESS)

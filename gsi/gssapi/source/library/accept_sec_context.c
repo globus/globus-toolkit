@@ -401,6 +401,8 @@ GSS_CALLCONV gss_accept_sec_context(
                 break;
             }            
 
+            context->ret_flags |= GSS_C_DELEG_FLAG;
+            
             context->gss_state = GSS_CON_ST_DONE;
 
         default:
