@@ -1,3 +1,0 @@
-(* GLOBUS_GRAM_PROTOCOL_ERROR_RSL_JOBTYPE *)
-&(executable=/bin/true)
- (jobtype = (a list))
