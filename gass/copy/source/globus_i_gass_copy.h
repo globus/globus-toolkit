@@ -1,7 +1,10 @@
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
  * @file globus_i_gass_copy.h
  * Globus GASS Copy Library
  */
+#endif
+
 #include "globus_gass_copy.h"
 #include "globus_common.h"
 #include "globus_error_string.h"
@@ -20,8 +23,6 @@
 #endif
 
 EXTERN_C_BEGIN
-
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
 /**
  * target status
@@ -258,8 +259,6 @@ struct globus_gass_copy_state_s
     
 };
 
-
-#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 EXTERN_C_END
 
