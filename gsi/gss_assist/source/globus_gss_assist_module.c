@@ -10,6 +10,7 @@
 #endif
 
 #include "globus_i_gss_assist.h"
+#include "globus_gsi_system_config.h"
 #include "version.h"
 #include <stdlib.h>
 
@@ -74,6 +75,7 @@ globus_l_gsi_gss_assist_activate(void)
     GLOBUS_I_GSI_GSS_ASSIST_DEBUG_ENTER;
 
     globus_module_activate(GLOBUS_COMMON_MODULE);
+    globus_module_activate(GLOBUS_GSI_SYSCONFIG_MODULE);
     globus_module_activate(GLOBUS_GSI_GSSAPI_MODULE);
 
  exit:
@@ -94,6 +96,7 @@ globus_l_gsi_gss_assist_deactivate(void)
     GLOBUS_I_GSI_GSS_ASSIST_DEBUG_ENTER;
 
     globus_module_deactivate(GLOBUS_COMMON_MODULE);
+    globus_module_deactivate(GLOBUS_GSI_SYSCONFIG_MODULE);
     globus_module_deactivate(GLOBUS_GSI_GSSAPI_MODULE);
     
     GLOBUS_I_GSI_GSS_ASSIST_DEBUG_EXIT;
