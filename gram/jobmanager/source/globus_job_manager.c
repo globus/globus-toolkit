@@ -252,6 +252,7 @@ main(int argc,
      char **argv)
 {
     int                    i;
+    int                    x;
     int                    tag_index;
     int                    size;
     int                    rc;
@@ -917,6 +918,23 @@ main(int argc,
                     GLOBUS_GRAM_CLIENT_ERROR_USER_PROXY_NOT_FOUND;
                rc = GLOBUS_FAILURE;
             }
+        }
+
+        if (graml_env_x509_user_proxy)
+        {
+            for(x = 0; request->environment[x] != GLOBUS_NULL; x++)
+            {
+                ;
+            }
+            request->environment = (char **)
+                globus_libc_realloc(request->environment,
+                    (x+3) * sizeof(char *));
+
+            request->environment[x] = "X509_USER_PROXY";
+            ++x;
+            request->environment[x] = graml_env_x509_user_proxy;
+            ++x;
+            request->environment[x] = GLOBUS_NULL;
         }
     }
 
@@ -1931,19 +1949,6 @@ globus_l_gram_request_fill(globus_rsl_t * rsl_tree,
 
     }
 
-    if (graml_env_x509_user_proxy)
-    {
-	req->environment = (char **)
-            globus_libc_realloc(req->environment,
-                    (x+3) * sizeof(char *));
-
-        req->environment[x] = "X509_USER_PROXY";
-        ++x;
-        req->environment[x] = graml_env_x509_user_proxy;
-        ++x;
-        req->environment[x] = GLOBUS_NULL;
-    }
-
     {
 	char *newvar;
 	char *newval;
@@ -2559,6 +2564,7 @@ globus_l_gram_user_proxy_relocate(globus_gram_jobmanager_request_t * req)
         grami_fprintf( req->jobmanager_log_fp, 
             "JM: Cannot remove user proxy file --> %s\n",user_proxy_path);
     }
+
     return(cache_user_proxy_filename);
 
 } /* globus_l_gram_user_proxy_relocate() */
