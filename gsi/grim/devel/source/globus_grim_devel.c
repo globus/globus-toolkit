@@ -2,16 +2,12 @@
 #include "globus_common.h"
 #include "globus_error_string.h"
 #include "globus_error.h"
-#include "globus_error_gssapi.h"
-#include "globus_openssl.h"
-#include "globus_error_openssl.h"
 #include "globus_gsi_cert_utils.h"
 #include "globus_gsi_system_config.h"
 #include "globus_gsi_proxy.h"
 #include "globus_gsi_credential.h"
 #include "globus_grim_devel.h"
 #include "globus_error.h"
-#include "proxycertinfo.h"
 #include <expat.h>
 #include <grp.h>
 #include <pwd.h>
@@ -564,7 +560,7 @@ globus_grim_config_init(
             tmp_s = globus_gsi_cert_utils_create_string(
                         "%s/.globus/%s",
                         home_dir,
-                        "grim-port-types.xml");
+                        "grim-port-type.xml");
             if(tmp_s == NULL)
             {
                 return globus_error_put(
@@ -1210,24 +1206,6 @@ globus_l_grim_devel_activate()
     {
         return rc;
     }
-    
-    rc = globus_module_activate(GLOBUS_OPENSSL_MODULE);
-    if(rc != 0)
-    {
-        return rc;
-    }
-    
-    rc = globus_module_activate(GLOBUS_GSI_OPENSSL_ERROR_MODULE);
-    if(rc != 0)
-    {
-        return rc;
-    }
-
-    rc = globus_module_activate(GLOBUS_GSI_GSSAPI_MODULE);
-    if(rc != 0)
-    {
-        return rc;
-    }
 
     globus_l_grim_activated = GLOBUS_TRUE;
     globus_l_grim_NID = OBJ_create(GRIM_OID, GRIM_SN, GRIM_LN);
@@ -1241,9 +1219,6 @@ globus_l_grim_devel_deactivate()
     globus_module_deactivate(GLOBUS_COMMON_MODULE);
     globus_module_deactivate(GLOBUS_GSI_PROXY_MODULE);
     globus_module_deactivate(GLOBUS_GSI_CALLBACK_MODULE);
-    globus_module_deactivate(GLOBUS_GSI_OPENSSL_ERROR_MODULE);
-    globus_module_deactivate(GLOBUS_OPENSSL_MODULE);
-    globus_module_deactivate(GLOBUS_GSI_GSSAPI_MODULE);
 
     globus_l_grim_activated = GLOBUS_FALSE;
 
@@ -1257,8 +1232,12 @@ globus_l_grim_devel_deactivate()
 struct globus_l_grim_port_type_info_s
 {
     int                                     found;
+    int                                     remove;
     char *                                  username;
     char **                                 groups;
+    char *                                  port_type;
+    int                                     port_type_len;
+
     globus_list_t *                         list;
 };  
 
@@ -1270,50 +1249,58 @@ globus_l_grim_port_type_start(
 {   
     struct globus_l_grim_port_type_info_s * info;
     int                                     ctr;
+    int                                     ctr2;
 
     info = (struct globus_l_grim_port_type_info_s *) data;
 
+    info->remove = 0;
     info->found = 0;
+    info->port_type = NULL;
+    info->port_type_len = 0;
     if(strcmp(el, "port_type") == 0)
     {
-        /* 
-         *  if username is NULL it means that we want ever user qualified
-         *  port type
+        /*
+         *  if there are no attrs it mean accept all users
+         *  if user or group is null it means the user is looking
+         *  for a list of all port types
          */
-        if(info->username == NULL || 
-            (strcmp(attr[0], "username") == 0 &&
-             strcmp(info->username, attr[1]) == 0))
-            
+        if(attr[0] == NULL || info->groups == NULL || info->username == NULL)
         {
             info->found = 1;
+            return;
         }
-        else if(strcmp(attr[0], "group") == 0)
+
+        for(ctr = 0; attr[ctr] != NULL; ctr++)
         {
-            for(ctr = 0;
-                info->groups != NULL && info->groups[ctr] != NULL;
-                ctr++)
+            if(strcmp(attr[ctr], "access") == 0)
             {
-                if(strcmp(info->groups[ctr], attr[1]) == 0)
+                if(strcmp(attr[ctr + 1], "no") == 0)
                 {
-                    info->found = 1;
+                    info->remove = 1;
                 }
+                ctr++;
             }
-            /*
-             *  if groups are NULL then we want ever group qualified port
-             *  type.
-             */
-            if(info->groups == NULL)
+            else if(strcmp(attr[ctr], "username") == 0 &&
+                    strcmp(info->username, attr[ctr + 1]) == 0)
             {
                 info->found = 1;
+                ctr++;
+            }
+            else if(strcmp(attr[ctr], "group") == 0)
+            {
+                for(ctr2 = 0;
+                    info->groups[ctr2] != NULL;
+                    ctr2++)
+                {
+                    if(strcmp(info->groups[ctr2], attr[ctr + 1]) == 0)
+                    {
+                        info->found = 1;
+                    }
+                }
+                ctr++;
             }
         }
-        else
-        {
-            info->found = 0;
-        }
     }
-
-
 }
 
 static void
@@ -1321,6 +1308,73 @@ globus_l_grim_port_type_end(
     void *                                  data,
     const char *                            el)
 {
+    struct globus_l_grim_port_type_info_s * info;
+    globus_list_t *                         list;
+    char *                                  pt;
+    char *                                  s;
+    char *                                  tmp_s;
+    int                                     len;
+
+    
+    info = (struct globus_l_grim_port_type_info_s *) data;
+
+    if(info->found)
+    {
+        s = info->port_type;
+        len = info->port_type_len;
+        
+        while((*s == ' ' || *s == '\n' || s == '\r') && *s != '\0')
+        {
+            s++;
+            len--;
+        }
+        while((s[len-1] == ' ' || s[len-1] == '\n' || s[len-1] == '\r') 
+            && len != 0)
+        {
+            len--;
+        }
+        if(len <= 0)
+        {
+            /* if the port type is super small do nothing */
+            info->found = 0;
+            info->remove = 0;
+            free(info->port_type);
+            info->port_type = NULL;
+
+            return;
+        }
+
+        tmp_s = malloc(sizeof(char) * (len + 1));
+        strncpy(tmp_s, s, len);
+        tmp_s[len] = '\0';
+        free(info->port_type);
+        info->port_type = tmp_s;
+
+        if(info->remove)
+        {
+fprintf(stderr, "removing %s\n", info->port_type);
+            for(list = info->list; 
+                !globus_list_empty(list); 
+                list = globus_list_rest(list))
+            {
+                pt = (char *) globus_list_first(list);
+fprintf(stderr, "######## %s == %s\n", pt, info->port_type);
+                if(strcmp(pt, info->port_type) == 0)
+                {
+                    globus_list_remove(&info->list, list);
+                    free(info->port_type);
+                    free(pt);
+                }
+            }
+        }
+        else
+        {
+            globus_list_insert(&info->list, info->port_type);
+        }
+        info->found = 0;
+        info->remove = 0;
+        info->port_type = NULL;
+    }
 }
 
 static void
@@ -1330,17 +1384,22 @@ globus_l_grim_port_type_cdata(
     int                                     len)
 {   
     struct globus_l_grim_port_type_info_s * info;
-    char *                                  tmp_s;
+    globus_list_t *                         list;
+    char *                                  pt;
     
     info = (struct globus_l_grim_port_type_info_s *) data;
 
     if(info->found)
     {
-        tmp_s = malloc(sizeof(char) * (len + 1));
-        strncpy(tmp_s, s, len);
-        tmp_s[len] = '\0';
-        globus_list_insert(&info->list, tmp_s);
-        info->found = 0;
+        if(len <= 0)
+        {
+            return;
+        }
+
+        info->port_type = realloc(info->port_type, info->port_type_len+len+1);
+        strncpy(&info->port_type[info->port_type_len], s, len);
+        info->port_type_len += len;
+        info->port_type[info->port_type_len] = '\0';
     }
 }   
 
@@ -1381,6 +1440,7 @@ globus_l_grim_devel_parse_port_type_file(
     info.found = 0;
     info.username = username;
     info.groups = groups;
+
     XML_SetUserData(p, &info);
     XML_SetCharacterDataHandler(p, globus_l_grim_port_type_cdata);
 
@@ -1827,391 +1887,4 @@ globus_l_grim_parse_assertion(
     }
 
     return res;
-}
-
-globus_result_t
-globus_grim_check_authorization(
-    gss_ctx_id_t                        context,
-    char **                             port_types,
-    char *                              username)
-{
-    OM_uint32                           major_status;
-    OM_uint32                           minor_status;
-    gss_OID_desc                        pci_OID_desc =
-        {10, (void *) "\x2b\x6\x1\x4\x1\x9b\x50\x1\x81\x5e"};
-    gss_OID                             pci_OID = &pci_OID_desc;
-    gss_buffer_set_t                    extension_data = NULL;
-    gss_buffer_desc                     name_buffer_desc;
-    gss_buffer_t                        name_buffer = &name_buffer_desc;
-    gss_name_t                          local_dn = GSS_C_NO_NAME;
-    PROXYCERTINFO *                     pci = NULL;
-    PROXYPOLICY *                       policy;
-    ASN1_OBJECT *                       policy_language;
-    int                                 GRIM_nid;
-    globus_result_t                     result;
-    unsigned char *                     policy_string = NULL;
-    globus_grim_assertion_t             grim_assertion = NULL;
-    char *                              buffer = NULL;
-    int                                 policy_length;
-    char **                             dn_array;
-    char **                             grim_port_types;
-    char *                              grim_username;
-    int                                 i;
-    int                                 j;
-    int                                 initiator;
-    
-    major_status = gss_inquire_sec_context_by_oid(&minor_status,
-                                                  context,
-                                                  pci_OID,
-                                                  &extension_data);
-
-    if(GSS_ERROR(major_status))
-    {
-        result = globus_error_put(
-            globus_error_construct_gssapi_error(
-                GLOBUS_GRIM_DEVEL_MODULE,
-                GLOBUS_NULL,
-                major_status,
-                minor_status));
-        goto exit;
-    }
-    
-    if(extension_data->count != 1)
-    {
-        result = globus_error_put( 
-            globus_error_construct_error(
-                GLOBUS_GRIM_DEVEL_MODULE,
-                GLOBUS_NULL,
-                GLOBUS_GRIM_DEVEL_ERROR_POLICY,
-                "[globus_grim_devel]:: found more than one ProxyCertInfo "
-                "extension in certificate chain\n"));
-        goto exit;
-    }
-
-    pci = d2i_PROXYCERTINFO(
-        NULL,
-        (unsigned char **) &(extension_data->elements[0].value),
-        extension_data->elements[0].length);
-
-    if(pci == NULL)
-    {
-        result = globus_error_put(
-            globus_error_construct_openssl_error(
-                GLOBUS_GRIM_DEVEL_MODULE,
-                GLOBUS_NULL));
-        goto exit;
-    }
-
-    policy = PROXYCERTINFO_get_policy(pci);
-
-    if(policy == NULL)
-    {
-        result = globus_error_put( 
-            globus_error_construct_error(
-                GLOBUS_GRIM_DEVEL_MODULE,
-                GLOBUS_NULL,
-                GLOBUS_GRIM_DEVEL_ERROR_POLICY,
-                "[globus_grim_devel]:: Unable to obtain policy from "
-                "ProxyCertInfo extension\n"));
-        goto exit;
-    }
-
-    policy_language = PROXYPOLICY_get_policy_language(policy);
-
-    if(policy_language == NULL)
-    {
-        result = globus_error_put( 
-            globus_error_construct_error(
-                GLOBUS_GRIM_DEVEL_MODULE,
-                GLOBUS_NULL,
-                GLOBUS_GRIM_DEVEL_ERROR_POLICY,
-                "[globus_grim_devel]:: Unable to determine policy language "
-                "from ProxyCertInfo extension\n"));
-        goto exit;
-    }
-
-    result = globus_grim_devel_get_NID(&GRIM_nid);
-
-    if(result != GLOBUS_SUCCESS)
-    {
-        result = globus_error_put( 
-            globus_error_construct_error(
-                GLOBUS_GRIM_DEVEL_MODULE,
-                globus_error_get(result),
-                GLOBUS_GRIM_DEVEL_ERROR_POLICY,
-                "[globus_grim_devel]:: Unable to obtain NID for "
-                "the GRIM policy language\n"));
-        goto exit;
-    }
-
-    if(OBJ_obj2nid(policy_language) != GRIM_nid)
-    {
-        result = globus_error_put( 
-            globus_error_construct_error(
-                GLOBUS_GRIM_DEVEL_MODULE,
-                GLOBUS_NULL,
-                GLOBUS_GRIM_DEVEL_ERROR_POLICY,
-                "[globus_grim_devel]:: Not a GRIM policy\n"));
-        goto exit;
-    }
-
-    policy_string = PROXYPOLICY_get_policy(policy, &policy_length);
-
-    if(policy_string == NULL || policy_length == 0)
-    {
-        result = globus_error_put( 
-            globus_error_construct_error(
-                GLOBUS_GRIM_DEVEL_MODULE,
-                GLOBUS_NULL,
-                GLOBUS_GRIM_DEVEL_ERROR_POLICY,
-                "[globus_grim_devel]:: Unable to obtain policy data from "
-                "ProxyCertInfo extension\n"));
-        goto exit;
-    }
-
-    buffer = realloc(policy_string, policy_length + 1);
-
-    if(buffer == NULL)
-    {
-        result = globus_error_put( 
-            globus_error_construct_error(
-                GLOBUS_GRIM_DEVEL_MODULE,
-                GLOBUS_NULL,
-                GLOBUS_GRIM_DEVEL_ERROR_ALLOC,
-                "[globus_grim_devel]:: Unable to allocate memory for "
-                "policy data\n"));
-        goto exit;
-    }
-
-    policy_string = NULL;
-
-    buffer[policy_length] = '\0';
-
-    result = globus_grim_assertion_init_from_buffer(
-        &grim_assertion,
-        buffer);
-
-    if(result != GLOBUS_SUCCESS)
-    {
-        result = globus_error_put( 
-            globus_error_construct_error(
-                GLOBUS_GRIM_DEVEL_MODULE,
-                globus_error_get(result),
-                GLOBUS_GRIM_DEVEL_ERROR_POLICY,
-                "[globus_grim_devel]:: Unable to parse GRIM policy\n"));
-        goto exit;
-    }
-
-    result = globus_grim_assertion_get_dn_array(grim_assertion,
-                                                &dn_array);
-
-    if(result != GLOBUS_SUCCESS)
-    {
-        result = globus_error_put( 
-            globus_error_construct_error(
-                GLOBUS_GRIM_DEVEL_MODULE,
-                globus_error_get(result),
-                GLOBUS_GRIM_DEVEL_ERROR_POLICY,
-                "[globus_grim_devel]:: Unable to get DN array from "
-                "GRIM policy\n"));
-        goto exit;
-    }
-
-    major_status = gss_inquire_context(&minor_status,
-                                       context,
-                                       NULL,
-                                       NULL,
-                                       NULL,
-                                       NULL,
-                                       NULL,
-                                       &initiator,
-                                       NULL);
-
-    if(GSS_ERROR(major_status))
-    {
-        result = globus_error_put(
-            globus_error_construct_gssapi_error(
-                GLOBUS_GRIM_DEVEL_MODULE,
-                GLOBUS_NULL,
-                major_status,
-                minor_status));
-        goto exit;
-    }
-
-    major_status = gss_inquire_context(&minor_status,
-                                       context,
-                                       initiator ? local_dn : NULL,
-                                       initiator ? NULL : local_dn,
-                                       NULL,
-                                       NULL,
-                                       NULL,
-                                       NULL,
-                                       NULL);
-
-    if(GSS_ERROR(major_status))
-    {
-        result = globus_error_put(
-            globus_error_construct_gssapi_error(
-                GLOBUS_GRIM_DEVEL_MODULE,
-                GLOBUS_NULL,
-                major_status,
-                minor_status));
-        goto exit;
-    }
-
-    major_status = gss_display_name(&minor_status,
-                                    local_dn,
-                                    name_buffer,
-                                    NULL);
-    
-    if(GSS_ERROR(major_status))
-    {
-        result = globus_error_put(
-            globus_error_construct_gssapi_error(
-                GLOBUS_GRIM_DEVEL_MODULE,
-                GLOBUS_NULL,
-                major_status,
-                minor_status));
-        goto exit;
-    }
-    
-    for(i=0; dn_array[i] != NULL && strncmp(dn_array[i],
-                                            name_buffer->value,
-                                            name_buffer->length); i++);
-
-    major_status = gss_release_buffer(&minor_status,
-                                      name_buffer);
-
-    if(GSS_ERROR(major_status))
-    {
-        result = globus_error_put(
-            globus_error_construct_gssapi_error(
-                GLOBUS_GRIM_DEVEL_MODULE,
-                GLOBUS_NULL,
-                major_status,
-                minor_status));
-        goto exit;
-    }
-
-    if(dn_array[i] == NULL)
-    {
-        result = globus_error_put( 
-            globus_error_construct_error(
-                GLOBUS_GRIM_DEVEL_MODULE,
-                GLOBUS_NULL,
-                GLOBUS_GRIM_DEVEL_ERROR_AUTHORIZING_SUBJECT,
-                "[globus_grim_devel]:: Could not find local DN in GRIM "
-                "policy\n"));
-        goto exit;
-    }
-
-    result = globus_grim_assertion_get_port_types_array(grim_assertion,
-                                                        &grim_port_types);
-
-    if(result != GLOBUS_SUCCESS)
-    {
-        result = globus_error_put( 
-            globus_error_construct_error(
-                GLOBUS_GRIM_DEVEL_MODULE,
-                globus_error_get(result),
-                GLOBUS_GRIM_DEVEL_ERROR_POLICY,
-                "[globus_grim_devel]:: Unable to get port type array from "
-                "GRIM policy\n"));
-        goto exit;
-    }
-
-    for(i=0; port_types[i] != NULL; i++)
-    {
-        for(j=0; grim_port_types[j] != NULL &&
-                strcmp(port_types[i],
-                       grim_port_types[j]); j++);
-
-        if(grim_port_types[j] == NULL)
-        {
-            result = globus_error_put( 
-                globus_error_construct_error(
-                    GLOBUS_GRIM_DEVEL_MODULE,
-                    GLOBUS_NULL,
-                    GLOBUS_GRIM_DEVEL_ERROR_AUTHORIZING_PORT_TYPE,
-                    "[globus_grim_devel]:: Could not find port type in GRIM "
-                    "policy\n"));
-            goto exit;
-        }
-    }
-    
-    if(username != NULL)
-    {
-        result = globus_grim_assertion_get_username(grim_assertion,
-                                                    &grim_username);
-        
-        if(result != GLOBUS_SUCCESS)
-        {
-            result = globus_error_put( 
-                globus_error_construct_error(
-                    GLOBUS_GRIM_DEVEL_MODULE,
-                    globus_error_get(result),
-                    GLOBUS_GRIM_DEVEL_ERROR_POLICY,
-                    "[globus_grim_devel]:: Unable to get user name from "
-                    "GRIM policy\n"));
-            goto exit;
-        }
-
-        if(grim_username == NULL)
-        {
-            result = globus_error_put( 
-                globus_error_construct_error(
-                    GLOBUS_GRIM_DEVEL_MODULE,
-                    GLOBUS_NULL,
-                    GLOBUS_GRIM_DEVEL_ERROR_AUTHORIZING_USER_NAME,
-                    "[globus_grim_devel]:: Could not find user name in GRIM "
-                    "policy\n"));
-            goto exit;
-        }
-
-        if(strcmp(grim_username, username))
-        {
-            result = globus_error_put( 
-                globus_error_construct_error(
-                    GLOBUS_GRIM_DEVEL_MODULE,
-                    GLOBUS_NULL,
-                    GLOBUS_GRIM_DEVEL_ERROR_AUTHORIZING_USER_NAME,
-                    "[globus_grim_devel]:: Could not find user name in GRIM "
-                    "policy\n"));
-            goto exit;
-        }
-    }
-
- exit:
-
-    if(extension_data)
-    {
-        gss_release_buffer_set(&minor_status, &extension_data);
-    }
-
-    if(pci)
-    {
-        PROXYCERTINFO_free(pci);
-    }
-
-    if(policy_string)
-    {
-        free(policy_string);
-    }
-
-    if(buffer)
-    {
-        free(buffer);
-    }
-
-    if(grim_assertion)
-    {
-        globus_grim_assertion_destroy(grim_assertion);
-    }
-
-    if(local_dn != GSS_C_NO_NAME)
-    {
-        gss_release_name(&minor_status, local_dn);
-    }
-    
-    return result;
 }

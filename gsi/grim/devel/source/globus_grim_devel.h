@@ -70,13 +70,10 @@
  *  @code
  *      <?xml version="1.0" encoding="UTF-8"?>
  *      <authorized_port_types>
+ *          <port_type>all_type.html</port_type>
+ *          <port_type username="notme" access="no">all_type.html</port_type>
  *          <port_type username="bresnaha">port type.html</port_type>
- *          <port_type username="bresnaha">port type</port_type>
  *          <port_type group="xraycmt">xray group</port_type>
- *          <port_type group="mcsz">mcsz group</port_type>
- *          <port_type group="bad">bad group</port_type>
- *          <port_type username="bresnaha">port type again</port_type>
- *          <port_type username="bresnaha">port type.html last</port_type>
  *      </authorized_port_types>
  *  @endcode
  *
@@ -142,12 +139,6 @@ typedef enum
     GLOBUS_GRIM_DEVEL_ERROR_EXPAT_FAILURE,
     /* an error occured parsing the policy */
     GLOBUS_GRIM_DEVEL_ERROR_POLICY,
-    /* an error occured during authorization of subject */
-    GLOBUS_GRIM_DEVEL_ERROR_AUTHORIZING_SUBJECT,
-    /* an error occured during authorization of port type */
-    GLOBUS_GRIM_DEVEL_ERROR_AUTHORIZING_PORT_TYPE,
-    /* an error occured during authorization of user name */
-    GLOBUS_GRIM_DEVEL_ERROR_AUTHORIZING_USER_NAME
 } globus_grim_devel_error_type_t;
 
 
@@ -183,9 +174,9 @@ globus_grim_get_default_configuration_filename(
     char **                                 conf_filename);
 
 /**
- *  @defgroup globus_grim_assertion Grim Assertion Functions
+ *  @defgroup globus_grim_assertion Grim Asserion Functions
  *
- *  These functions are used to extract information from a serialized
+ *  These functions are used to extract information from an serialized
  *  assertion and to add information to an ADT to create serialized 
  *  assertion.
  */
@@ -863,39 +854,5 @@ globus_grim_devel_port_type_file_parse_uid(
     FILE *                                  fptr,
     char ***                                port_types);
 
-
-
-/** 
- *  @defgroup globus_grim_authorization Grim Port Authorization Functions
- *  
- *  These function provide a way to check the GRIM policy in the peer cred
- *  against local requirements.
- */
-
-/**
- *  @ingroup globus_grim_authorization
- *
- *  Check the grim policy against local requirements
- *
- * This function extracts the grim policy from the peer credential in the
- * credential, make sure that the subject name of the local credential is
- * listed in the grim policy, that the desired port types are authorized and
- * that the remote service is running as username (optional).
- *
- *  @param context
- *         A security context established with a peer using a grim credential.
- *
- *  @param port_types
- *         A NULL terminated array of desired port types.
- *
- *  @param username
- *         A optional username the remote service is running as.
- *
- */
-globus_result_t
-globus_grim_check_authorization(
-    gss_ctx_id_t                        context,
-    char **                             port_types,
-    char *                              username);
 
 #endif /* GLOBUS_GRIM_DEVEL_H */
