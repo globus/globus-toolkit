@@ -35,10 +35,10 @@ typedef struct
 /* default attr */
 static const globus_l_attr_t            globus_l_xio_file_attr_default =
 {
-    /* mode     */      GLOBUS_XIO_FILE_IRUSR | GLOBUS_XIO_FILE_IWUSR,
-    /* flags    */      GLOBUS_XIO_FILE_CREAT | GLOBUS_XIO_FILE_RDWR,
-    /* type     */      GLOBUS_XIO_FILE_TYPE_BINARY,
-    /* handle   */      GLOBUS_XIO_FILE_INVALID_HANDLE
+    GLOBUS_XIO_FILE_IRUSR | GLOBUS_XIO_FILE_IWUSR,  /* mode     */
+    GLOBUS_XIO_FILE_CREAT | GLOBUS_XIO_FILE_RDWR,   /* flags    */
+    GLOBUS_XIO_FILE_TYPE_BINARY,                    /* type     */
+    GLOBUS_XIO_FILE_INVALID_HANDLE                  /* handle   */
 };
 
 /*
@@ -53,8 +53,8 @@ typedef struct
 /* default target */
 static const globus_l_target_t          globus_l_xio_file_target_default =
 {
-    /* pathname */      GLOBUS_NULL,
-    /* handle   */      GLOBUS_XIO_FILE_INVALID_HANDLE
+    GLOBUS_NULL,                                    /* pathname */
+    GLOBUS_XIO_FILE_INVALID_HANDLE                  /* handle   */
 };
 
 /*
@@ -68,7 +68,7 @@ typedef struct
 /* default handle */
 static const globus_l_handle_t          globus_l_xio_file_handle_default =
 {
-    /* handle    */     GLOBUS_XIO_FILE_INVALID_HANDLE
+    GLOBUS_XIO_FILE_INVALID_HANDLE                  /* handle    */
 };
 
 static
