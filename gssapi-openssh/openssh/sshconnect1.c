@@ -972,7 +972,7 @@ char * get_gsi_name()
   gss_cred_id_t gss_cred = GSS_C_NO_CREDENTIAL;
 
   gss_create_empty_oid_set(&min_stat,&oidset);
-  gss_add_oid_set_member(&min_stat,&supported_mechs[GSI].oid,&oidset);
+  gss_add_oid_set_member(&min_stat,&supported_mechs[GSS_GSI].oid,&oidset);
   maj_stat = gss_acquire_cred(&min_stat,
                               GSS_C_NO_NAME,
                               GSS_C_INDEFINITE,
@@ -1019,7 +1019,7 @@ char * get_gsi_name()
 
  error:
   debug("Failed to set GSI username from credentials");
-  ssh_gssapi_error(&supported_mechs[GSI].oid, maj_stat, min_stat);
+  ssh_gssapi_error(&supported_mechs[GSS_GSI].oid, maj_stat, min_stat);
   return NULL;
 }
 #endif /* GSI */
@@ -1144,20 +1144,20 @@ int try_gssapi_authentication(char *host, Options *options)
 #ifdef GSI
   /* Send GSI before Kerberos, because if GSI fails, we can always fall
      back and try regular Kerberos authentication with our Kerberos cred. */
-  maj_stat = gss_test_oid_set_member(&min_stat, &supported_mechs[GSI].oid,
+  maj_stat = gss_test_oid_set_member(&min_stat, &supported_mechs[GSS_GSI].oid,
 				     my_mechs, &present);
   if (present) {
-      packet_put_string(supported_mechs[GSI].oid.elements,
-                        supported_mechs[GSI].oid.length);
+      packet_put_string(supported_mechs[GSS_GSI].oid.elements,
+                        supported_mechs[GSS_GSI].oid.length);
   }
 #endif
   for (my_mech_num = 0; my_mech_num < my_mechs->count; my_mech_num++) {
 #ifdef GSI
       /* Skip GSI.  We already sent it above. */
       if ((my_mechs->elements[my_mech_num].length ==
-	   supported_mechs[GSI].oid.length) &&
+	   supported_mechs[GSS_GSI].oid.length) &&
 	  memcmp(my_mechs->elements[my_mech_num].elements,
-		 supported_mechs[GSI].oid.elements,
+		 supported_mechs[GSS_GSI].oid.elements,
 		 my_mechs->elements[my_mech_num].length) == 0) {
 	  continue;
       }
