@@ -2,14 +2,65 @@
 AC_REVISION($Revision$)
 AC_INIT(Makefile.am)
 
-GLOBUS_INIT
+
+AC_ARG_WITH(flavor,
+	[ --with-flavor=<FL>     Specify the globus build flavor or without-flavor for a flavor independent  ],
+
+	[
+	case $withval in
+	no)
+		NO_FLAVOR="yes"
+		;;
+	yes)
+		echo "Please specify a globus build flavor" >&2
+		exit 1
+		;;
+	*)
+		GLOBUS_FLAVOR_NAME=$withval
+		;;
+	esac
+	],
+
+	[ 
+	echo "Please specify a globus build flavor" >&2
+	exit 1
+	]
+)
+
+AM_CONDITIONAL(WITHOUT_FLAVORS, test "$NO_FLAVOR" = "yes")
+AC_SUBST(GLOBUS_FLAVOR_NAME)
+
+# checking for the GLOBUS_LOCATION
+
+if test "x$GLOBUS_LOCATION" = "x"; then
+    echo "ERROR Please specify GLOBUS_LOCATION" >&2
+    exit 1
+fi
+if test "x$GPT_LOCATION" = "x"; then
+    GPT_LOCATION=$GLOBUS_LOCATION
+    export GPT_LOCATION
+fi
+
+prefix='$(GLOBUS_LOCATION)'
+exec_prefix='$(GLOBUS_LOCATION)'
+
+GPT_INIT
+
+define([AM_PROG_LIBTOOL],[
+	LIBTOOL='$(SHELL) $(GLOBUS_LOCATION)/sbin/libtool-$(GLOBUS_FLAVOR_NAME)'
+	AC_SUBST(LIBTOOL)
+	AC_SUBST(LN_S)
+])
+
+dnl define FILELIST_FILE variable
+FILELIST_FILE=`pwd`;
+FILELIST_FILE="$FILELIST_FILE/pkgdata/master.filelist"
+AC_SUBST(FILELIST_FILE)
 
 AM_PROG_LIBTOOL
 
 dnl Initialize the automake rules the last argument
 AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION)
-
-GLOBUS_FINALIZE
 
 AC_OUTPUT(
         Makefile
