@@ -27,7 +27,7 @@
       globus/setup-ssl-utils
     </Post_Install_Program>
 
-    <Setup Name="ssl_utils_setup" >
+    <Setup Name="trusted_ca_setup" >
       <Aging_Version Age="0" Major="0" Minor="1" />
     </Setup>
 
