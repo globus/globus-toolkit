@@ -51,10 +51,3 @@ man/cat8/ssh-keysign.8
 man/cat8/ssh-rand-helper.8
 man/cat8/sshd.8
 sbin/sshd
-setup/gsi_openssh_setup/moduli
-setup/gsi_openssh_setup/setup-openssh
-setup/gsi_openssh_setup/setup-openssh.pl
-setup/gsi_openssh_setup/ssh_config
-setup/gsi_openssh_setup/ssh_prng_cmds.in
-setup/gsi_openssh_setup/sshd_config.in
-setup/gsi_openssh_setup/SXXsshd.in
