@@ -796,19 +796,18 @@ globus_l_gfs_data_event_cb(
     {
       case GLOBUS_GFS_EVENT_TRANSFER_BEGIN:
         request->transfer_id = reply->transfer_id;
-        globus_gridftp_server_control_begin_transfer(
+
+        result = globus_gridftp_server_events_enable(
             op,
             GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_PERF |
             GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_RESTART,
             globus_l_gfs_request_transfer_event,
             request);
-
-        result = globus_gridftp_server_abort_enable(
-            op, globus_l_gfs_request_abort, request);
         if(result != GLOBUS_SUCCESS)
         {
             /* TODO: can we ignore this */
         }
+        globus_gridftp_server_control_begin_transfer(op);
 
         break;
 
@@ -845,7 +844,7 @@ globus_l_gfs_data_transfer_cb(
     op = request->control_op;
 
     /* no more aborts once this returns */
-    globus_gridftp_server_abort_disable(op);
+    globus_gridftp_server_events_disable(op);
 
     if(reply->result != GLOBUS_SUCCESS)
     {
