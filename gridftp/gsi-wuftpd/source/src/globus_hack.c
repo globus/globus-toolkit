@@ -944,6 +944,8 @@ g_send_data(
                             globus_error_get(res)));
                     goto data_err;
                 }
+		buf = GLOBUS_NULL; /* So that time outs or or other goto
+				      data errs don't free the buffer. */
                 cb_count++;
                 offset += cnt;
                 jb_count += cnt;
@@ -1064,6 +1066,7 @@ g_send_data(
 
         G_EXIT();
 
+#if defined(STRIPED_SERVER_BACKEND)
         /*
          *  send 126 message
          */
@@ -1105,6 +1108,7 @@ g_send_data(
             reply(126, "%s", buf_126);
             free(buf_126);
         }
+#       endif /* STRIPED_SERVER_BACKEND */
 
         reply(226, "Transfer complete.");
         G_ENTER();
