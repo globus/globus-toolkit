@@ -794,7 +794,7 @@ Optional Packages:
   --with-pic              try to use only PIC/non-PIC objects [default=use
                           both]
   --with-tags=TAGS        include additional configurations [CXX,GCJ]
-  --with-dso              Enable DSO module
+  --without-dso           Disable DSO module
 
 Some influential environment variables:
   CC          C compiler command
@@ -13354,6 +13354,18 @@ if test "${enable_debug+set}" = set; then
 
 fi;
 
+# Check whether --with-dso or --without-dso was given.
+
+    if test "${with_dso+set}" != "set"; then
+        with_dso="yes"
+    fi
+
+# Check whether --enable-debug or --disable-debug was given.
+
+    if test "${enable_debug+set}" != "set"; then
+        enable_debug="no"
+    fi
+
     # defaults:
 
     lac_CFLAGS="$CFLAGS"
@@ -13361,8 +13373,102 @@ fi;
     lac_HAVE_DLFCN_H=""
     lac_THREADS=""
 
-    if test ! "$enable_debug" = "yes"; then
-        LAC_COMPILER_SET_OPTIMIZATIONS
+    if test "$enable_debug" != "yes"; then
+
+    case ${host} in
+        *solaris*)
+            case ${lac_cv_CPU} in
+                *sun4m*|*sun4d*)
+                    if test "$GCC" = "yes"; then
+                        lac_CFLAGS="$lac_CFLAGS -mv8 -O3 -fomit-frame-pointer -Wall"
+                    else
+                        lac_CFLAGS="$lac_CFLAGS -xarch=v8 -xO5 -xstrconst -xdepend -Xa"
+                    fi
+                ;;
+                *sun4u*)
+                    if test "$GCC" = "yes"; then
+                        lac_CFLAGS="$lac_CFLAGS -mcpu=ultrasparc -O3 -fomit-frame-pointer -Wall"
+                    else
+                        lac_CFLAGS="$lac_CFLAGS -xtarget=ultra -xarch=v8plus -xO5 -xstrconst -xdepend -Xa"
+                    fi
+                ;;
+                *x86*)
+                    if test "$GCC" = "yes"; then
+                        lac_CFLAGS="$lac_CFLAGS -O3 -fomit-frame-pointer -mcpu=i486 -Wall"
+                    else
+                        lac_CFLAGS="$lac_CFLAGS -fast -O -Xa"
+                    fi
+                ;;
+            esac
+        ;;
+        *linux*)
+            case ${lac_cv_CPU} in
+                *sun4m*|*sun4d*)
+                    # gcc
+                    lac_CFLAGS="$lac_CFLAGS -mv8 -O3 -fomit-frame-pointer -Wall"
+                ;;
+                *sun4u*)
+                    # gcc
+                    lac_CFLAGS="$lac_CFLAGS -mcpu=ultrasparc -O3 -fomit-frame-pointer -Wall -Wa,-Av8plus"
+                ;;
+                *x86*)
+                    # gcc
+                    lac_CFLAGS="$lac_CFLAGS -O3 -fomit-frame-pointer -mcpu=i486 -Wall"
+                ;;
+                *ia64*)
+                    # gcc
+                    lac_CFLAGS="$lac_CFLAGS -O3 -fomit-frame-pointer -Wall"
+                ;;
+                *alpha*)
+                    if test "$GCC" = "yes"; then
+                        lac_CFLAGS="$lac_CFLAGS -O3"
+                    else
+                        lac_CFLAGS="$lac_CFLAGS -fast -readonly_strings"
+                    fi
+                ;;
+            esac
+        ;;
+        *irix6*)
+            case ${lac_cv_CPU} in
+                *mips3*)
+                    if test "$GCC" = "yes"; then
+                        lac_CFLAGS="$lac_CFLAGS -mmips-as -O3"
+                    else
+                        lac_CFLAGS="$lac_CFLAGS -O2 -use_readonly_const"
+                    fi
+                ;;
+                *mips4*)
+                    if test "$GCC" = "yes"; then
+                        lac_CFLAGS="$lac_CFLAGS -mips4 -mmips-as -O3"
+                    else
+                        lac_CFLAGS="$lac_CFLAGS -mips4 -O2 -use_readonly_const"
+                    fi
+                ;;
+            esac
+        ;;
+        *hpux*)
+            if test "$GCC" = "yes"; then
+                lac_CFLAGS="$lac_CFLAGS -O3"
+            else
+                lac_CFLAGS="$lac_CFLAGS +O3 +Optrs_strongly_typed +Olibcalls -Ae +ESlit"
+            fi
+        ;;
+        *-ibm-aix*)
+            if test "$GCC" = "yes"; then
+                lac_CFLAGS="$lac_CFLAGS -O3 "
+            else
+                lac_CFLAGS="$lac_CFLAGS -O -qmaxmem=16384 -qfullpath"
+            fi
+        ;;
+        *-dec-osf*)
+            if test "$GCC" = "yes"; then
+                lac_CFLAGS="$lac_CFLAGS -O3"
+            else
+                lac_CFLAGS="$lac_CFLAGS -std1 -tune host -fast -readonly_strings"
+            fi
+        ;;
+    esac
+
     fi
 
     if test "$with_dso" = "yes"; then
@@ -13454,11 +13560,11 @@ EOF
 
 # On solaris openssl needs the socket and nsl library
 
-echo "$as_me:13457: checking for -lsocket" >&5
+echo "$as_me:13563: checking for -lsocket" >&5
 echo $ECHO_N "checking for -lsocket... $ECHO_C" >&6
 
 cat >conftest.$ac_ext <<_ACEOF
-#line 13461 "configure"
+#line 13567 "configure"
 #include "confdefs.h"
 
         #include <sys/types.h>
@@ -13476,16 +13582,16 @@ main ()
 }
 _ACEOF
 rm -f conftest.$ac_objext conftest$ac_exeext
-if { (eval echo "$as_me:13479: \"$ac_link\"") >&5
+if { (eval echo "$as_me:13585: \"$ac_link\"") >&5
   (eval $ac_link) 2>&5
   ac_status=$?
-  echo "$as_me:13482: \$? = $ac_status" >&5
+  echo "$as_me:13588: \$? = $ac_status" >&5
   (exit $ac_status); } &&
          { ac_try='test -s conftest$ac_exeext'
-  { (eval echo "$as_me:13485: \"$ac_try\"") >&5
+  { (eval echo "$as_me:13591: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
-  echo "$as_me:13488: \$? = $ac_status" >&5
+  echo "$as_me:13594: \$? = $ac_status" >&5
   (exit $ac_status); }; }; then
 
 	lac_cv_lsocket="no"
@@ -13500,14 +13606,14 @@ cat conftest.$ac_ext >&5
 fi
 rm -f conftest.$ac_objext conftest$ac_exeext conftest.$ac_ext
 
-echo "$as_me:13503: result: $lac_cv_lsocket" >&5
+echo "$as_me:13609: result: $lac_cv_lsocket" >&5
 echo "${ECHO_T}$lac_cv_lsocket" >&6
 
-echo "$as_me:13506: checking for -lnsl" >&5
+echo "$as_me:13612: checking for -lnsl" >&5
 echo $ECHO_N "checking for -lnsl... $ECHO_C" >&6
 
 cat >conftest.$ac_ext <<_ACEOF
-#line 13510 "configure"
+#line 13616 "configure"
 #include "confdefs.h"
 
 	#include <netdb.h>
@@ -13524,16 +13630,16 @@ main ()
 }
 _ACEOF
 rm -f conftest.$ac_objext conftest$ac_exeext
-if { (eval echo "$as_me:13527: \"$ac_link\"") >&5
+if { (eval echo "$as_me:13633: \"$ac_link\"") >&5
   (eval $ac_link) 2>&5
   ac_status=$?
-  echo "$as_me:13530: \$? = $ac_status" >&5
+  echo "$as_me:13636: \$? = $ac_status" >&5
   (exit $ac_status); } &&
          { ac_try='test -s conftest$ac_exeext'
-  { (eval echo "$as_me:13533: \"$ac_try\"") >&5
+  { (eval echo "$as_me:13639: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
-  echo "$as_me:13536: \$? = $ac_status" >&5
+  echo "$as_me:13642: \$? = $ac_status" >&5
   (exit $ac_status); }; }; then
 
 	lac_cv_lnsl="no"
@@ -13548,19 +13654,19 @@ cat conftest.$ac_ext >&5
 fi
 rm -f conftest.$ac_objext conftest$ac_exeext conftest.$ac_ext
 
-echo "$as_me:13551: result: $lac_cv_lnsl" >&5
+echo "$as_me:13657: result: $lac_cv_lnsl" >&5
 echo "${ECHO_T}$lac_cv_lnsl" >&6
 
 # Need to determine if we need -ldl or -ldld
 # maybe should be replaced with the libtool dl library
 
-    echo "$as_me:13557: checking for dlopen" >&5
+    echo "$as_me:13663: checking for dlopen" >&5
 echo $ECHO_N "checking for dlopen... $ECHO_C" >&6
 if test "${ac_cv_func_dlopen+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
   cat >conftest.$ac_ext <<_ACEOF
-#line 13563 "configure"
+#line 13669 "configure"
 #include "confdefs.h"
 /* System header to define __stub macros and hopefully few prototypes,
     which can conflict with char dlopen (); below.  */
@@ -13591,16 +13697,16 @@ f = dlopen;
 }
 _ACEOF
 rm -f conftest.$ac_objext conftest$ac_exeext
-if { (eval echo "$as_me:13594: \"$ac_link\"") >&5
+if { (eval echo "$as_me:13700: \"$ac_link\"") >&5
   (eval $ac_link) 2>&5
   ac_status=$?
-  echo "$as_me:13597: \$? = $ac_status" >&5
+  echo "$as_me:13703: \$? = $ac_status" >&5
   (exit $ac_status); } &&
          { ac_try='test -s conftest$ac_exeext'
-  { (eval echo "$as_me:13600: \"$ac_try\"") >&5
+  { (eval echo "$as_me:13706: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
-  echo "$as_me:13603: \$? = $ac_status" >&5
+  echo "$as_me:13709: \$? = $ac_status" >&5
   (exit $ac_status); }; }; then
   ac_cv_func_dlopen=yes
 else
@@ -13610,13 +13716,13 @@ ac_cv_func_dlopen=no
 fi
 rm -f conftest.$ac_objext conftest$ac_exeext conftest.$ac_ext
 fi
-echo "$as_me:13613: result: $ac_cv_func_dlopen" >&5
+echo "$as_me:13719: result: $ac_cv_func_dlopen" >&5
 echo "${ECHO_T}$ac_cv_func_dlopen" >&6
 if test $ac_cv_func_dlopen = yes; then
   :
 else
 
-        echo "$as_me:13619: checking for dlopen in -ldl" >&5
+        echo "$as_me:13725: checking for dlopen in -ldl" >&5
 echo $ECHO_N "checking for dlopen in -ldl... $ECHO_C" >&6
 if test "${ac_cv_lib_dl_dlopen+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
@@ -13624,7 +13730,7 @@ else
   ac_check_lib_save_LIBS=$LIBS
 LIBS="-ldl  $LIBS"
 cat >conftest.$ac_ext <<_ACEOF
-#line 13627 "configure"
+#line 13733 "configure"
 #include "confdefs.h"
 
 /* Override any gcc2 internal prototype to avoid an error.  */
@@ -13643,16 +13749,16 @@ dlopen ();
 }
 _ACEOF
 rm -f conftest.$ac_objext conftest$ac_exeext
-if { (eval echo "$as_me:13646: \"$ac_link\"") >&5
+if { (eval echo "$as_me:13752: \"$ac_link\"") >&5
   (eval $ac_link) 2>&5
   ac_status=$?
-  echo "$as_me:13649: \$? = $ac_status" >&5
+  echo "$as_me:13755: \$? = $ac_status" >&5
   (exit $ac_status); } &&
          { ac_try='test -s conftest$ac_exeext'
-  { (eval echo "$as_me:13652: \"$ac_try\"") >&5
+  { (eval echo "$as_me:13758: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
-  echo "$as_me:13655: \$? = $ac_status" >&5
+  echo "$as_me:13761: \$? = $ac_status" >&5
   (exit $ac_status); }; }; then
   ac_cv_lib_dl_dlopen=yes
 else
@@ -13663,7 +13769,7 @@ fi
 rm -f conftest.$ac_objext conftest$ac_exeext conftest.$ac_ext
 LIBS=$ac_check_lib_save_LIBS
 fi
-echo "$as_me:13666: result: $ac_cv_lib_dl_dlopen" >&5
+echo "$as_me:13772: result: $ac_cv_lib_dl_dlopen" >&5
 echo "${ECHO_T}$ac_cv_lib_dl_dlopen" >&6
 if test $ac_cv_lib_dl_dlopen = yes; then
 
@@ -13671,7 +13777,7 @@ if test $ac_cv_lib_dl_dlopen = yes; then
 
 else
 
-            echo "$as_me:13674: checking for dlopen in -ldld" >&5
+            echo "$as_me:13780: checking for dlopen in -ldld" >&5
 echo $ECHO_N "checking for dlopen in -ldld... $ECHO_C" >&6
 if test "${ac_cv_lib_dld_dlopen+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
@@ -13679,7 +13785,7 @@ else
   ac_check_lib_save_LIBS=$LIBS
 LIBS="-ldld  $LIBS"
 cat >conftest.$ac_ext <<_ACEOF
-#line 13682 "configure"
+#line 13788 "configure"
 #include "confdefs.h"
 
 /* Override any gcc2 internal prototype to avoid an error.  */
@@ -13698,16 +13804,16 @@ dlopen ();
 }
 _ACEOF
 rm -f conftest.$ac_objext conftest$ac_exeext
-if { (eval echo "$as_me:13701: \"$ac_link\"") >&5
+if { (eval echo "$as_me:13807: \"$ac_link\"") >&5
   (eval $ac_link) 2>&5
   ac_status=$?
-  echo "$as_me:13704: \$? = $ac_status" >&5
+  echo "$as_me:13810: \$? = $ac_status" >&5
   (exit $ac_status); } &&
          { ac_try='test -s conftest$ac_exeext'
-  { (eval echo "$as_me:13707: \"$ac_try\"") >&5
+  { (eval echo "$as_me:13813: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
-  echo "$as_me:13710: \$? = $ac_status" >&5
+  echo "$as_me:13816: \$? = $ac_status" >&5
   (exit $ac_status); }; }; then
   ac_cv_lib_dld_dlopen=yes
 else
@@ -13718,7 +13824,7 @@ fi
 rm -f conftest.$ac_objext conftest$ac_exeext conftest.$ac_ext
 LIBS=$ac_check_lib_save_LIBS
 fi
-echo "$as_me:13721: result: $ac_cv_lib_dld_dlopen" >&5
+echo "$as_me:13827: result: $ac_cv_lib_dld_dlopen" >&5
 echo "${ECHO_T}$ac_cv_lib_dld_dlopen" >&6
 if test $ac_cv_lib_dld_dlopen = yes; then
 
@@ -13726,7 +13832,7 @@ if test $ac_cv_lib_dld_dlopen = yes; then
 
 else
 
-                { { echo "$as_me:13729: error: \"Unable to find dynamic linking library\"" >&5
+                { { echo "$as_me:13835: error: \"Unable to find dynamic linking library\"" >&5
 echo "$as_me: error: \"Unable to find dynamic linking library\"" >&2;}
    { (exit 1); exit 1; }; }
 
@@ -13828,7 +13934,7 @@ DEFS=-DHAVE_CONFIG_H
 : ${CONFIG_STATUS=./config.status}
 ac_clean_files_save=$ac_clean_files
 ac_clean_files="$ac_clean_files $CONFIG_STATUS"
-{ echo "$as_me:13831: creating $CONFIG_STATUS" >&5
+{ echo "$as_me:13937: creating $CONFIG_STATUS" >&5
 echo "$as_me: creating $CONFIG_STATUS" >&6;}
 cat >$CONFIG_STATUS <<_ACEOF
 #! $SHELL
@@ -14004,7 +14110,7 @@ cat >>$CONFIG_STATUS <<\EOF
     echo "$ac_cs_version"; exit 0 ;;
   --he | --h)
     # Conflict between --help and --header
-    { { echo "$as_me:14007: error: ambiguous option: $1
+    { { echo "$as_me:14113: error: ambiguous option: $1
 Try \`$0 --help' for more information." >&5
 echo "$as_me: error: ambiguous option: $1
 Try \`$0 --help' for more information." >&2;}
@@ -14091,12 +14197,12 @@ Try \`$0 --help' for more information." >&2;}
   'crypto/opensslconf.h' ) CONFIG_HEADERS="$CONFIG_HEADERS crypto/opensslconf.h:crypto/opensslconf.h.in" ;;
 
   # This is an error.
-  -*) { { echo "$as_me:14094: error: unrecognized option: $1
+  -*) { { echo "$as_me:14200: error: unrecognized option: $1
 Try \`$0 --help' for more information." >&5
 echo "$as_me: error: unrecognized option: $1
 Try \`$0 --help' for more information." >&2;}
    { (exit 1); exit 1; }; } ;;
-  *) { { echo "$as_me:14099: error: invalid argument: $1" >&5
+  *) { { echo "$as_me:14205: error: invalid argument: $1" >&5
 echo "$as_me: error: invalid argument: $1" >&2;}
    { (exit 1); exit 1; }; };;
   esac
@@ -14413,7 +14519,7 @@ done; }
   esac
 
   if test x"$ac_file" != x-; then
-    { echo "$as_me:14416: creating $ac_file" >&5
+    { echo "$as_me:14522: creating $ac_file" >&5
 echo "$as_me: creating $ac_file" >&6;}
     rm -f "$ac_file"
   fi
@@ -14431,7 +14537,7 @@ echo "$as_me: creating $ac_file" >&6;}
       -) echo $tmp/stdin ;;
       [\\/$]*)
          # Absolute (can't be DOS-style, as IFS=:)
-         test -f "$f" || { { echo "$as_me:14434: error: cannot find input file: $f" >&5
+         test -f "$f" || { { echo "$as_me:14540: error: cannot find input file: $f" >&5
 echo "$as_me: error: cannot find input file: $f" >&2;}
    { (exit 1); exit 1; }; }
          echo $f;;
@@ -14444,7 +14550,7 @@ echo "$as_me: error: cannot find input file: $f" >&2;}
            echo $srcdir/$f
          else
            # /dev/null tree
-           { { echo "$as_me:14447: error: cannot find input file: $f" >&5
+           { { echo "$as_me:14553: error: cannot find input file: $f" >&5
 echo "$as_me: error: cannot find input file: $f" >&2;}
    { (exit 1); exit 1; }; }
          fi;;
@@ -14505,7 +14611,7 @@ for ac_file in : $CONFIG_HEADERS; do test "x$ac_file" = x: && continue
   * )   ac_file_in=$ac_file.in ;;
   esac
 
-  test x"$ac_file" != x- && { echo "$as_me:14508: creating $ac_file" >&5
+  test x"$ac_file" != x- && { echo "$as_me:14614: creating $ac_file" >&5
 echo "$as_me: creating $ac_file" >&6;}
 
   # First look for the input files in the build tree, otherwise in the
@@ -14516,7 +14622,7 @@ echo "$as_me: creating $ac_file" >&6;}
       -) echo $tmp/stdin ;;
       [\\/$]*)
          # Absolute (can't be DOS-style, as IFS=:)
-         test -f "$f" || { { echo "$as_me:14519: error: cannot find input file: $f" >&5
+         test -f "$f" || { { echo "$as_me:14625: error: cannot find input file: $f" >&5
 echo "$as_me: error: cannot find input file: $f" >&2;}
    { (exit 1); exit 1; }; }
          echo $f;;
@@ -14529,7 +14635,7 @@ echo "$as_me: error: cannot find input file: $f" >&2;}
            echo $srcdir/$f
          else
            # /dev/null tree
-           { { echo "$as_me:14532: error: cannot find input file: $f" >&5
+           { { echo "$as_me:14638: error: cannot find input file: $f" >&5
 echo "$as_me: error: cannot find input file: $f" >&2;}
    { (exit 1); exit 1; }; }
          fi;;
@@ -14646,7 +14752,7 @@ cat >>$CONFIG_STATUS <<\EOF
   rm -f $tmp/in
   if test x"$ac_file" != x-; then
     if cmp -s $ac_file $tmp/config.h 2>/dev/null; then
-      { echo "$as_me:14649: $ac_file is unchanged" >&5
+      { echo "$as_me:14755: $ac_file is unchanged" >&5
 echo "$as_me: $ac_file is unchanged" >&6;}
     else
       ac_dir=`$as_expr X"$ac_file" : 'X\(.*[^/]\)//*[^/][^/]*/*$' \| \

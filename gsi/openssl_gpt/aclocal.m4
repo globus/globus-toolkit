@@ -6589,8 +6589,8 @@ dnl LAC_COMPILER_ARGS()
 AC_DEFUN(LAC_COMPILER_ARGS,
 [
     AC_ARG_WITH([dso],
-        [AC_HELP_STRING([--with-dso],
-        [Enable DSO module])],
+        [AC_HELP_STRING([--without-dso],
+        [Disable DSO module])],
         [],
         [])
     AC_ARG_ENABLE([debug],
@@ -6598,6 +6598,18 @@ AC_DEFUN(LAC_COMPILER_ARGS,
         [Turn of compiler optimizations])],
         [],
         [])
+
+# Check whether --with-dso or --without-dso was given.
+
+    if test "${with_dso+set}" != "set"; then
+        with_dso="yes"
+    fi
+
+# Check whether --enable-debug or --disable-debug was given.
+
+    if test "${enable_debug+set}" != "set"; then
+        enable_debug="no"
+    fi
 ])
 
 dnl LAC_COMPILER()
@@ -6616,7 +6628,7 @@ AC_DEFUN(LAC_COMPILER,
     lac_HAVE_DLFCN_H=""
     lac_THREADS=""    
 
-    if test ! "$enable_debug" = "yes"; then
+    if test "$enable_debug" != "yes"; then
         LAC_COMPILER_SET_OPTIMIZATIONS
     fi
 
@@ -6628,8 +6640,8 @@ AC_DEFUN(LAC_COMPILER,
 ])
 
 
-dnl LAC_COMPILER_SET_OPTIMIZATION
-AC_DEFUN(LAC_COMPILER_SET_OPTIMIZATION,
+dnl LAC_COMPILER_SET_OPTIMIZATIONS
+AC_DEFUN(LAC_COMPILER_SET_OPTIMIZATIONS,
 [
     case ${host} in
         *solaris*)
