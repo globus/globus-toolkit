@@ -50,12 +50,12 @@ static int globus_l_gass_lock_tmp=0;
 #define debug_printf(a)
 #endif
 
-static volatile int globus_l_gass_transfer_ftp_closing;
+static volatile int globus_l_gass_transfer_ftp_open_connections;
 #if !defined(GLOBUS_GASS_TRANSFER_FTP_PARSER_TEST)
 int
 globus_l_gass_transfer_ftp_activate(void)
 {
-    globus_l_gass_transfer_ftp_closing = 0;
+    globus_l_gass_transfer_ftp_open_connections = 0;
  
     globus_module_activate(GLOBUS_COMMON_MODULE);
     globus_module_activate(GLOBUS_FTP_CLIENT_MODULE);
@@ -72,14 +72,16 @@ globus_l_gass_transfer_ftp_activate(void)
 int
 globus_l_gass_transfer_ftp_deactivate(void)
 {
+  
     globus_l_gass_transfer_ftp_lock();
-    while(globus_l_gass_transfer_ftp_closing > 0)
+
+    while(globus_l_gass_transfer_ftp_open_connections > 0)
     {
 	globus_l_gass_transfer_ftp_wait();
     }
     globus_l_gass_transfer_ftp_unlock();
-    /*  globus_libc_fprintf(stderr, "LIB: about to call: globus_module_deactivate(GLOBUS_FTP_CLIENT_MODULE)\n"); */
-   globus_module_deactivate(GLOBUS_FTP_CLIENT_MODULE);
+  
+    globus_module_deactivate(GLOBUS_FTP_CLIENT_MODULE);
  
     globus_mutex_destroy(&globus_l_gass_transfer_ftp_mutex);
     globus_cond_destroy(&globus_l_gass_transfer_ftp_cond);
@@ -87,7 +89,7 @@ globus_l_gass_transfer_ftp_deactivate(void)
     globus_free(globus_l_gass_transfer_ftp_subject_name);
     */
     globus_module_deactivate(GLOBUS_COMMON_MODULE);
-/*    globus_libc_fprintf(stderr, "LIB:  transfer_ftp_deactivate returning\n"); */
+
     return GLOBUS_SUCCESS;
 }
 globus_module_descriptor_t globus_i_gass_transfer_ftp_module =
@@ -191,6 +193,8 @@ globus_l_gass_transfer_ftp_send(
 	globus_l_gass_transfer_ftp_unlock();
 	return;
     }
+    else /* there was an error trying to register a write, need to close up */
+      globus_l_gass_transfer_ftp_register_close(new_proto);
 
   fail_exit:
     /* Registration failed, closing up the handle and signaling failure to GASS */
@@ -248,6 +252,7 @@ globus_l_gass_transfer_ftp_receive(
     if(result != GLOBUS_SUCCESS)
     {
 	/* FIX - there was an error, do something about it */
+      globus_l_gass_transfer_ftp_register_close(new_proto);
     }
 
     globus_l_gass_transfer_ftp_unlock();
@@ -282,24 +287,17 @@ globus_l_gass_transfer_ftp_fail(
 	switch(new_proto->state)
 	{
 	  case GLOBUS_GASS_TRANSFER_FTP_STATE_PENDING:
-	    if(new_proto->oneshot_registered == GLOBUS_TRUE)
+	    new_proto->failure_occurred = GLOBUS_TRUE;
+	    while(new_proto->state ==
+		  GLOBUS_GASS_TRANSFER_FTP_STATE_PENDING)
 	    {
-		new_proto->failure_occurred = GLOBUS_TRUE;
-		signalled = GLOBUS_TRUE;
-
-		break;
+	      globus_l_gass_transfer_ftp_wait();
 	    }
-	    else if(new_proto->oneshot_active)
-	    {
-		new_proto->failure_occurred = GLOBUS_TRUE;
-		while(new_proto->state ==
-		      GLOBUS_GASS_TRANSFER_FTP_STATE_PENDING)
-		{
-		    globus_l_gass_transfer_ftp_wait();
-		}
-		break;
-	    }
+	    break;
+	    
+	    /*
           case GLOBUS_GASS_TRANSFER_FTP_STATE_CONNECTING:
+	    */
           case GLOBUS_GASS_TRANSFER_FTP_STATE_IDLE:
 	    /* We will transition to the closing state, signalling the failure,
 	     * and registering the close (which will transition us to the 
@@ -313,10 +311,13 @@ globus_l_gass_transfer_ftp_fail(
 
           case GLOBUS_GASS_TRANSFER_FTP_STATE_CLOSING:
           case GLOBUS_GASS_TRANSFER_FTP_STATE_DONE:
+	    /*  the rest of these states don't exist */
+	    /*
           case GLOBUS_GASS_TRANSFER_FTP_STATE_REQUESTING:
           case GLOBUS_GASS_TRANSFER_FTP_STATE_RESPONDING:
           case GLOBUS_GASS_TRANSFER_FTP_STATE_REFERRED:
           case GLOBUS_GASS_TRANSFER_FTP_STATE_DENIED:
+	    */
 	    signalled = GLOBUS_TRUE;
 	    new_proto->failure_occurred = GLOBUS_TRUE;
 	    break;
@@ -367,6 +368,7 @@ globus_l_gass_transfer_ftp_write_callback(
 	last_data = proto->last_data;
 	
 
+	globus_l_gass_transfer_ftp_signal();
 	globus_l_gass_transfer_ftp_unlock();
 	if(!last_data) 
 	    globus_gass_transfer_proto_send_complete(request,
@@ -412,7 +414,6 @@ globus_l_gass_transfer_ftp_read_callback(
     if(eof)
     {
 	proto->eof_read = GLOBUS_TRUE;
-	/*printf("ftp_read_callback: EOF read, signal complete in the get_done_callback\n"); */
     }
 
     if(error)
@@ -425,6 +426,9 @@ globus_l_gass_transfer_ftp_read_callback(
 
     /* Register the socket for closing if we're done reading from it */
     /*  FIX - ftp doesn't require a close, but leave this code here for the time being  */
+    /*  if there was an error, the ftp_get_done_callback will take care of calling close 
+     */
+    /*
     if(proto->recv_state == GLOBUS_GASS_TRANSFER_FTP_RECV_STATE_EOF ||
        proto->recv_state == GLOBUS_GASS_TRANSFER_FTP_RECV_STATE_ERROR)
     {
@@ -433,7 +437,7 @@ globus_l_gass_transfer_ftp_read_callback(
 		globus_l_gass_transfer_ftp_register_close(proto);
 	    }
     }
-       
+    */   
     
     {
 	globus_gass_transfer_request_t		request;
@@ -461,6 +465,7 @@ globus_l_gass_transfer_ftp_read_callback(
 	l_offset = proto->user_offset;
 	request = proto->request;
 
+	globus_l_gass_transfer_ftp_signal();
 	globus_l_gass_transfer_ftp_unlock();
 	
 	if(!last_data) 
@@ -524,15 +529,15 @@ void
 globus_l_gass_transfer_ftp_close(
     globus_gass_transfer_ftp_request_proto_t *		proto)
 {
+ 
     proto->state = GLOBUS_GASS_TRANSFER_FTP_STATE_DONE;
 
     if(proto->destroy_called)
     {
 	globus_l_gass_transfer_ftp_proto_destroy(proto);
     }
-    globus_l_gass_transfer_ftp_closing--;
-/*printf("ftp_close: closing= %d\n", globus_l_gass_transfer_ftp_closing); */
-    
+  
+    globus_l_gass_transfer_ftp_open_connections--; 
     globus_l_gass_transfer_ftp_signal();
 }
 /* globus_l_gass_transfer_ftp_close() */
@@ -556,16 +561,24 @@ globus_l_gass_transfer_ftp_register_close(
 
     proto->state = GLOBUS_GASS_TRANSFER_FTP_STATE_CLOSING;
 
-    globus_l_gass_transfer_ftp_closing++;
+    /*  globus_l_gass_transfer_ftp_closing++; */
 /*printf("ftp_register_close: closing= %d\n", globus_l_gass_transfer_ftp_closing); */
     
-/*   FIX - not sure if this is right, should only abort when fail is called by the user -  actually, just call abort in the fail function  
+/*   FIX - not sure if this is right, should only abort when fail is called by the user -  actually, just call abort in the fail function
+     actually, i changed my mind, in the case where send or receive_bytes returns something other than SUCCESS, we want to
+     abort as well.
     if(proto->failure_occurred)
-	result = globus_ftp_client_abort(&proto->handle);
-	*/	      
-    if(result == GLOBUS_SUCCESS)
+*/
+    result = globus_ftp_client_abort(&proto->handle);
+		      
+    if(result != GLOBUS_SUCCESS)
     {
+      /*
+      globus_libc_fprintf(stderr, "in _ftp_register_close(), _ftp_client_abort() returned something other than GLOBUS_SUCCESS");
+      */
+      /*  not sure if this should get called here 
 	globus_l_gass_transfer_ftp_close(proto);
+      */
     }
 }
 /* globus_l_gass_transfer_ftp_register_close() */
@@ -613,10 +626,7 @@ globus_l_gass_transfer_ftp_destroy(
     new_proto = (globus_gass_transfer_ftp_request_proto_t *) proto;
 
     globus_l_gass_transfer_ftp_lock();
-    if(new_proto->state == GLOBUS_GASS_TRANSFER_FTP_STATE_CLOSING ||
-       new_proto->state == GLOBUS_GASS_TRANSFER_FTP_STATE_REFERRED ||
-       new_proto->state == GLOBUS_GASS_TRANSFER_FTP_STATE_RESPONDING ||
-       new_proto->state == GLOBUS_GASS_TRANSFER_FTP_STATE_DENIED)
+    if(new_proto->state == GLOBUS_GASS_TRANSFER_FTP_STATE_CLOSING)
     {
 	new_proto->destroy_called=GLOBUS_TRUE;
     }
@@ -634,10 +644,7 @@ void
 globus_l_gass_transfer_ftp_proto_destroy(
     globus_gass_transfer_ftp_request_proto_t *		proto)
 {
-    if(proto->response_buffer != GLOBUS_NULL)
-    {
-	globus_free(proto->response_buffer);
-    }
+    
     if(proto->reason != GLOBUS_NULL)
     {
 	globus_free(proto->reason);
@@ -646,21 +653,7 @@ globus_l_gass_transfer_ftp_proto_destroy(
     {
 	globus_url_destroy(&proto->url);
     }
-    else
-    {
-	if(proto->method)
-	{
-	    globus_free(proto->method);
-	}
-	if(proto->uri)
-	{
-	    globus_free(proto->uri);
-	}
-    }
-/*
-    globus_i_gass_transfer_keyvalue_destroy(
-	&proto->headers);
-*/
+
     globus_ftp_client_handle_destroy(&proto->handle);
     globus_free(proto);
 }
@@ -685,6 +678,7 @@ globus_l_gass_transfer_ftp_new_request(
     int						rc=GLOBUS_SUCCESS;
     globus_gass_transfer_file_mode_t		file_mode=GLOBUS_GASS_TRANSFER_FILE_MODE_BINARY;
     globus_ftp_client_attr_t			ftp_attr;
+    globus_ftp_control_tcpbuffer_t              tcp_buffer;
     globus_result_t				result;
     globus_gass_transfer_ftp_request_proto_t *	proto;
     int						sndbuf;
@@ -723,21 +717,22 @@ globus_l_gass_transfer_ftp_new_request(
 	goto handle_error;
     }
     
-#if 0 /* skipping attributes stuff for now */
+#if 1 /* NOT skipping attributes stuff for now */
     
     if(*attr != GLOBUS_NULL)
     {
 	/* Check attributes we care about */
-	globus_gass_transfer_requestattr_get_proxy_url(attr,
-						       &proxy);
-
+      /*	globus_gass_transfer_requestattr_get_proxy_url(attr,
+		&proxy);
+      */
 	rc = globus_gass_transfer_requestattr_get_socket_sndbuf(
 	    attr,
 	    &sndbuf);
 	if(rc != GLOBUS_SUCCESS)
 	{
-	    goto tcpattr_error;
+	    goto attr_error;
 	}
+	/*
 	else
 	{
 	    if(sndbuf != 0)
@@ -746,14 +741,16 @@ globus_l_gass_transfer_ftp_new_request(
 						 sndbuf);
 	    }
 	}
-
+	*/
+	
 	rc = globus_gass_transfer_requestattr_get_socket_rcvbuf(
 	    attr,
 	    &rcvbuf);
 	if(rc != GLOBUS_SUCCESS)
 	{
-	    goto tcpattr_error;
+	    goto attr_error;
 	}
+	/*
 	else
 	{
 	    if(rcvbuf != 0)
@@ -762,7 +759,8 @@ globus_l_gass_transfer_ftp_new_request(
 						 rcvbuf);
 	    }
 	}
-
+	*/
+	/*
 	rc = globus_gass_transfer_requestattr_get_socket_nodelay(
 	    attr,
 	    &nodelay);
@@ -775,22 +773,30 @@ globus_l_gass_transfer_ftp_new_request(
 	    globus_io_attr_set_tcp_nodelay(&tcp_attr,
 					   nodelay);
 	}
-
+	*/
+	
 	/* File mode is important on Windows */
 	rc = globus_gass_transfer_requestattr_get_file_mode(attr,
 							    &file_mode);
 	if(rc != GLOBUS_SUCCESS)
 	{
-	    goto tcpattr_error;
+	    goto attr_error;
 	}
+	if(file_mode == GLOBUS_GASS_TRANSFER_FILE_MODE_TEXT)
+	{
+	  globus_ftp_client_attr_set_type(&ftp_attr,
+					  GLOBUS_FTP_CONTROL_TYPE_ASCII);
+	}    
+	/*
 	rc = globus_gass_transfer_requestattr_get_block_size(attr,
 							     &proto->block_size);
 	if(rc != GLOBUS_SUCCESS)
 	{
 	    goto tcpattr_error;
 	}
+	*/
     }
-#endif /* skipping attribute stuff for now */
+#endif /* NOT skipping attribute stuff for now */
     
     proto->url_string = globus_gass_transfer_request_get_url(request);
 
@@ -810,92 +816,43 @@ globus_l_gass_transfer_ftp_new_request(
 	goto url_error;
     }
 
-#if 0 /* skipping attribute stuff for now */
-    
-    /* If gsiftp, set security attributes of TCP handle */
-    if(strcmp(proto->url.scheme, "gsiftp")== 0)
+#if 1 /* NOT skipping attribute stuff for now */
     {
-	globus_io_secure_authorization_data_t	data;
-	globus_gass_transfer_authorization_t	mode;
-	char *					subject;
-	globus_result_t				result;
-
-	
-	globus_io_secure_authorization_data_initialize(&data);
-	result = globus_io_attr_set_secure_authentication_mode(
-	    &tcp_attr,
-	    GLOBUS_IO_SECURE_AUTHENTICATION_MODE_GSSAPI,
-	    GLOBUS_NULL);
-
-	if(result != GLOBUS_SUCCESS)
-	{
-	    goto url_error;
-	}
-	result = globus_io_attr_set_secure_channel_mode(
-	    &tcp_attr,
-	    GLOBUS_IO_SECURE_CHANNEL_MODE_SSL_WRAP);
-	if(result != GLOBUS_SUCCESS)
-	{
-	    goto url_error;
-	}
+      globus_gass_transfer_authorization_t	mode;
+      char *					subject=NULL;
+      globus_result_t				result;
+      
+    /* If gsiftp, set security subject attribute of TCP handle */
+      if(strcmp(proto->url.scheme, "gsiftp")== 0)
+      {
+	 
 	if(*attr != GLOBUS_NULL)
 	{
-	    rc = globus_gass_transfer_secure_requestattr_get_authorization(
-		attr,
-		&mode,
-		&subject);
-	    if(rc != GLOBUS_SUCCESS)
-	    {
-		goto url_error;
-	    }
-	}
-	else
-	{
-	    mode = GLOBUS_GASS_TRANSFER_AUTHORIZE_SELF;
-	}
-
-	switch(mode)
-	{
-	  case GLOBUS_GASS_TRANSFER_AUTHORIZE_SELF:
-	    globus_io_attr_set_secure_authorization_mode(
-		&tcp_attr,
-		GLOBUS_IO_SECURE_AUTHORIZATION_MODE_SELF,
-		GLOBUS_NULL);
-	    break;
-	  case GLOBUS_GASS_TRANSFER_AUTHORIZE_HOST:
-	    subject = globus_malloc(strlen(proto->url.host) +
-				     strlen("/CN=")
-				     +1);
-	    sprintf(subject,
-		    "/CN=%s",
-		    proto->url.host);
-
-	    globus_io_secure_authorization_data_set_identity(
-		&data,
-		subject);
-	    globus_io_attr_set_secure_authorization_mode(
-		&tcp_attr,
-		GLOBUS_IO_SECURE_AUTHORIZATION_MODE_IDENTITY,
-		&data);
-	    globus_io_secure_authorization_data_destroy(&data);
-	    globus_free(subject);
-	    break;
-	  case GLOBUS_GASS_TRANSFER_AUTHORIZE_SUBJECT:
-	    globus_io_secure_authorization_data_set_identity(
-		&data,
-		subject);
-	    globus_io_attr_set_secure_authorization_mode(
-		&tcp_attr,
-		GLOBUS_IO_SECURE_AUTHORIZATION_MODE_IDENTITY,
-		&data);
-	    globus_io_secure_authorization_data_destroy(&data);
-	    break;
-	  case GLOBUS_GASS_TRANSFER_AUTHORIZE_CALLBACK:
-	    globus_assert(mode != GLOBUS_GASS_TRANSFER_AUTHORIZE_CALLBACK);
+	  rc = globus_gass_transfer_secure_requestattr_get_authorization(
+									 attr,
+									 &mode,
+									 &subject);
+	  if(rc != GLOBUS_SUCCESS)
+	  {
 	    goto url_error;
+	  }
 	}
+
+      }
+
+      if( proto->url.user     ||
+	  proto->url.password ||
+	  subject )
+      {
+	globus_ftp_client_attr_set_authorization(
+						 &ftp_attr,
+						 proto->url.user,
+						 proto->url.password,
+						 NULL,
+						 subject);
+      }
     }
-#endif /* skipping attribute stuff for now */
+#endif /* NOT skipping attribute stuff for now */
     
     if(proto == GLOBUS_NULL)
     {
@@ -942,8 +899,15 @@ globus_l_gass_transfer_ftp_new_request(
     switch(proto->type)
     {	
     case GLOBUS_GASS_TRANSFER_REQUEST_TYPE_PUT:
-	
-	result = globus_ftp_client_put(
+      if(sndbuf !=0)
+      {
+	tcp_buffer.mode = GLOBUS_FTP_CONTROL_TCPBUFFER_FIXED;
+	tcp_buffer.fixed.size = sndbuf;
+	globus_ftp_client_attr_set_tcp_buffer(&ftp_attr,
+					      &tcp_buffer);
+      }
+      
+      result = globus_ftp_client_put(
 	    &proto->handle,
 	    proto->url_string,
 	    &ftp_attr,
@@ -958,7 +922,14 @@ globus_l_gass_transfer_ftp_new_request(
 	break;
 	
     case GLOBUS_GASS_TRANSFER_REQUEST_TYPE_GET:
-    
+      if(rcvbuf !=0)
+      {
+	tcp_buffer.mode = GLOBUS_FTP_CONTROL_TCPBUFFER_FIXED;
+	tcp_buffer.fixed.size = rcvbuf;
+	globus_ftp_client_attr_set_tcp_buffer(&ftp_attr,
+					      &tcp_buffer);
+      }
+      
 	result = globus_ftp_client_get(
 	    &proto->handle,
 	    proto->url_string,
@@ -978,6 +949,7 @@ globus_l_gass_transfer_ftp_new_request(
     }
     /* Success! */
     proto->state = GLOBUS_GASS_TRANSFER_FTP_STATE_IDLE;
+    globus_l_gass_transfer_ftp_open_connections++;
     globus_gass_transfer_proto_request_ready(
 	proto->request,
 	(globus_gass_transfer_request_proto_t *) proto);
@@ -1073,18 +1045,20 @@ globus_l_gass_transfer_ftp_get_done_callback(
     globus_gass_transfer_ftp_request_proto_t * proto;
     globus_bool_t                              failure = GLOBUS_FALSE;
 
-    /*   printf("get_done_callback: we should signal complete\n"); */
-    
+   
     if(error)
 	failure = GLOBUS_TRUE;
     
     proto = (globus_gass_transfer_ftp_request_proto_t *) callback_arg;
+
+    if(!failure)
+      globus_gass_transfer_proto_receive_complete(proto->request,
+						  proto->user_buffer,
+						  proto->user_offset,
+						  failure,
+						  GLOBUS_TRUE);
+    globus_l_gass_transfer_ftp_close(proto);
     
-    globus_gass_transfer_proto_receive_complete(proto->request,
-						proto->user_buffer,
-						proto->user_offset,
-						failure,
-						GLOBUS_TRUE);
 } /*globus_l_gass_transfer_ftp_get_done_callback() */
 
 void
@@ -1096,18 +1070,40 @@ globus_l_gass_transfer_ftp_put_done_callback(
     globus_gass_transfer_ftp_request_proto_t * proto;
     globus_bool_t                              failure = GLOBUS_FALSE;
 
-    /*  printf("put_done_callback: we should signal complete\n"); */
     if(error)
 	failure = GLOBUS_TRUE;
-    
+   
     proto = (globus_gass_transfer_ftp_request_proto_t *) callback_arg;
-
-    globus_gass_transfer_proto_send_complete(proto->request,
-						proto->user_buffer,
-						proto->user_offset,
-						failure,
-						GLOBUS_TRUE);
+    
+    if(!failure)
+    {
+      globus_gass_transfer_proto_send_complete(proto->request,
+					       proto->user_buffer,
+					       proto->user_offset,
+					       failure,
+					       GLOBUS_TRUE);
+    }
+  
+    globus_l_gass_transfer_ftp_close(proto);
+    
 } /* globus_l_gass_transfer_ftp_put_done_callback() */
 
+static
+globus_bool_t
+globus_l_gass_transfer_ftp_callback_denied(
+    globus_abstime_t *                          time_stop,
+    void *					arg)
+{
+    globus_gass_transfer_request_t		request;
+
+    request = (globus_gass_transfer_request_t) arg;
+    
+    globus_gass_transfer_proto_request_denied(
+	request,
+	GLOBUS_L_DEFAULT_FAILURE_CODE,
+	globus_libc_strdup(GLOBUS_L_DEFAULT_FAILURE_REASON));
+
+    return GLOBUS_TRUE;
+}
 
 #endif /* !parser only */
