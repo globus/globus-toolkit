@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 #define GLOBUS_L_FTP_CLIENT_RESTART_PLUGIN_NAME "globus_ftp_client_restart_plugin"
 
 #define GLOBUS_L_FTP_CLIENT_RESTART_PLUGIN_RETURN(plugin) \
@@ -30,19 +31,55 @@
     result = globus_ftp_client_plugin_set_##func##_func(d, globus_l_ftp_client_restart_plugin_##func); \
     if(result != GLOBUS_SUCCESS) goto result_exit;
 
+/**
+ * Plugin specific data for the restart plugin
+ */
 typedef struct
 {
+    /** Maximum num of faults to handle. If -1, then we won't be
+     * limiting ourselves.
+     */
     int						max_retries;
+
+    /**
+     * If true, then we will do an exponential backoff of th
+     * interval between retries.
+     */
     globus_bool_t				backoff;
+    /**
+     * Delay time between fault detection and next restart.
+     */
     globus_reltime_t				interval;
+    
+    /**
+     * Deadline, after which no further restart attempts will
+     * be tried. If zero, then we won't be limiting ourselves
+     */
     globus_abstime_t				deadline;
 
+    /**
+     * Source used in our operation (if applicable).
+     */
     char *					source_url;
+
+    /**
+     * Destination used in our operation (if applicable).
+     */
     char *					dest_url;
 
+    /**
+     * Source attributes
+     */
     globus_ftp_client_operationattr_t 		source_attr;
+
+    /**
+     * Destination attributes.
+     */
     globus_ftp_client_operationattr_t 		dest_attr;
 
+    /**
+     * Operation we are processing.
+     */
     globus_i_ftp_client_operation_t		operation;
 }
 globus_l_ftp_client_restart_plugin_t;
@@ -185,14 +222,14 @@ static
 int
 globus_l_ftp_client_restart_plugin_activate(void)
 {
-    return 0;
+    return globus_module_activate(GLOBUS_FTP_CLIENT_MODULE);
 }
 
 static
 int
 globus_l_ftp_client_restart_plugin_deactivate(void)
 {
-    return 0;
+    return globus_module_activate(GLOBUS_FTP_CLIENT_MODULE);
 }
 
 
@@ -575,6 +612,7 @@ globus_l_ftp_client_restart_plugin_fault(
     }
 }
 /* globus_l_ftp_client_restart_plugin_fault() */
+#endif
 
 /**
  * Initialize an instance of the GridFTP restart plugin
