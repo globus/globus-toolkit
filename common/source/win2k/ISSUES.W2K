@@ -1,6 +1,4 @@
 
-HAVE_PWD_H not working on unix
--------------
 
 Need an understanding how windows fits with signals and all of this.
 
@@ -10,9 +8,6 @@ in globus_common_include.h.win
   #define MAXPATHLEN                  128
   #define MAXHOSTNAMELEN              128
 
-  #define SIZEOF_INT 4
-  #define SIZEOF_LONG 4
-  
 ---------------------------------------------------------
 globus_thread_diagnostics_vprintf (globus_print.c)
   what is it and where did it come form
