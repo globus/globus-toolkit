@@ -35,10 +35,10 @@ forward declarations
 static 
 int
 globus_l_rsl_assist_simple_query_ldap(
-    char * attribute,
-    int    maximum,
-    char * search_format,
-    globus_list_t ** job_contact_list);
+    char *           attribute,
+    int              maximum,
+    char *           search_format,
+    globus_list_t ** value_list);
 
 /*
  * Function: globus_rsl_assist_replace_manager_name()
@@ -46,7 +46,7 @@ globus_l_rsl_assist_simple_query_ldap(
  * Uses the Globus RSL library and the UMich LDAP
  * library to modify an RSL specification, changing instances of
  *
- * resourceManagerName=x
+ * resourceManagerName="<host>[/<service>]"
  *
  * with
  *
@@ -55,7 +55,9 @@ globus_l_rsl_assist_simple_query_ldap(
  * where y is obtained by querying the MDS ldap server, searching
  * for an object which matches the following filter
  *
- *   (&(objectclass=GlobusResourceManager)(cn=x))
+ *   (&(objectclass=GlobusService)(hn=<host>*)(service=<service>))
+ *
+ * if <service> is omitted, "jobmanager" is assumed.
  *
  * and extracting the contact value for that object.
  * 
@@ -460,10 +462,10 @@ return GLOBUS_SUCCESS;
 static
 int
 globus_l_rsl_assist_simple_query_ldap(
-    char * attribute,
-    int    maximum,
-    char * search_string,
-    globus_list_t ** job_contact_list)
+    char *            attribute,
+    int               maximum,
+    char *            search_string,
+    globus_list_t **  value_list)
 {
     LDAP *			ldap_server;
     int				port;
@@ -473,10 +475,9 @@ globus_l_rsl_assist_simple_query_ldap(
     LDAPMessage *		reply;
     LDAPMessage *		entry;
     char *			attrs[3];
-    int                         decrement;
     int                         rc;
     
-    *job_contact_list = GLOBUS_NULL;
+    * value_list = GLOBUS_NULL;
     
     rc = globus_i_rsl_assist_get_ldap_param(&server, &port, &base_dn);
     if (rc != GLOBUS_SUCCESS)
@@ -504,8 +505,8 @@ globus_l_rsl_assist_simple_query_ldap(
     }
 
     
-    /* I should verify the attribute is a valid string...       */
-    /* the function allow only one  attribute to be return */
+    /* I should verify the attribute is a valid string...     */
+    /* the function allows only one attribute to be returned  */
     attrs[0] = attribute;
     attrs[1] = GLOBUS_NULL;
     
@@ -528,46 +529,35 @@ globus_l_rsl_assist_simple_query_ldap(
     }
     globus_libc_free(base_dn);
 
-    if (maximum ==-1)
+    
+    for ( entry = ldap_first_entry(ldap_server, reply);
+	  (entry) && (maximum);
+	  entry = ldap_next_entry(ldap_server, entry) )
     {
-	decrement=0;
-    }
-    else
-    {
-	decrement=1;
-    }
-    for(entry = ldap_first_entry(ldap_server, reply);
-	entry != GLOBUS_NULL && maximum;
-	entry = ldap_next_entry(ldap_server, entry), maximum-=decrement)
-    {
-	char *attr_value;
-	char *a;
-	BerElement *ber;
-	int numValues;
-	char** values;
-	int i;
-	char *desired_attribute_value=GLOBUS_NULL;
+	char *         attr_value;
+	char *         a;
+	BerElement *   ber;
+	int            numValues;
+	char **        values;
+	int            i;
+	char *         desired_attribute_value=GLOBUS_NULL;
 	
-	for (a = ldap_first_attribute(ldap_server,entry,&ber); a != NULL;
+	for (a = ldap_first_attribute(ldap_server,entry,&ber);
+	     a;
 	     a = ldap_next_attribute(ldap_server,entry,ber) )
 	{
-	    
-	    /* got our match, so copy and return it*/
-	    if(strcmp(a, attrs[0]) == 0)
+	    if (strcmp(a, attrs[0]) == 0)
 	    {
+		/* got our match, so copy and return it*/
+
 		values = ldap_get_values(ldap_server,entry,a);
 		numValues = ldap_count_values(values);
 		for (i=0; i<numValues; i++)
 		{
 		    attr_value = strdup(values[i]);
-		    globus_list_insert(job_contact_list,attr_value);
-		    /*globus_libc_printf("ONEENTRY %d %s \n",
-		      numValues,attr_value);*/
-		    maximum-=decrement;
-		    if (maximum==0)
-		    {
+		    globus_list_insert(value_list,attr_value);
+		    if (--maximum==0)
 			break;
-		    }
 		}
 		ldap_value_free(values);
 		
@@ -575,7 +565,6 @@ globus_l_rsl_assist_simple_query_ldap(
 		break;
 	    }
 	}
-
     }
     /* disconnect from the server */
     ldap_unbind(ldap_server);
@@ -587,7 +576,7 @@ globus_l_rsl_assist_simple_query_ldap(
 
 
 /*
- * Function: globus_i_rsl_assist_get_scheduledjob_list()
+ * Function: globus_i_rsl_get_user_job_list()
  *
  * Connect to the ldap server, and search for the contact string
  * associated with the resourceManagerName.
@@ -597,16 +586,20 @@ globus_l_rsl_assist_simple_query_ldap(
  * Returns: 
  */ 
 int
-globus_i_rsl_assist_get_scheduledjob_list(globus_list_t ** job_contact_list)
+globus_i_rsl_assist_get_user_job_list(
+    char *           globaluserid,
+    globus_list_t ** job_contact_list)
 {
+    int        rc;
+    char *     search_string;
+    char *     format = "(&(objectclass=GlobusQueueEntry)(globaluserid=%s))";
 
-    int rc;
-    
-    char * search_string=
-	"(&(objectclass=GlobusResourceManager))";
+    search_string = globus_libc_malloc(strlen(format) + strlen(globaluserid));
+
+    globus_libc_sprintf(search_string,format,globaluserid);
 
     return globus_l_rsl_assist_simple_query_ldap(
-	"scheduledjob",
+	"specification",
 	-1,
 	search_string,
 	job_contact_list);
@@ -633,46 +626,81 @@ globus_i_rsl_assist_get_scheduledjob_list(globus_list_t ** job_contact_list)
  *    GLOBUS_NULL in case of failure.
  */
 char*
-globus_i_rsl_assist_get_rm_contact(
-    char* resource)
+globus_i_rsl_assist_get_rm_contact(char* resource)
 {
-    int    rc;
-    char * search_string;
-    char * search_format=
-	"(&(objectclass=GlobusResourceManager)"
-	"(cn=%s))";
-    globus_list_t * rm_contact_list=GLOBUS_NULL;
-    char * result;
+    int               rc;
+    char *            c;
+    char *            host;
+    char *            service;
+    char *            search_string;
+    char *            result;
+    globus_list_t *   rm_contact_list  = GLOBUS_NULL;
 
-    if(strchr(resource, (int) ':') != GLOBUS_NULL)
+    char * format = "(&(objectclass=GlobusService)(hn=%s*)(service=%s))";
+    char * default_service = "jobmanager";
+
+    /* it's already a contact string... */
+    if (strchr(resource, (int) ':')) 
     {
-	return strdup(resource);
+	return globus_libc_strdup(resource);
     }
-    
-    search_string=globus_malloc(strlen(resource)+
-				strlen(search_format)+
-				1);
-    if (search_string==GLOBUS_NULL)
+
+    /* is the optional '/<service>' in the resource name? */
+    if (c = strchr(resource, (int) '/'))
     {
+	host = globus_malloc( 1 + (globus_size_t)(c-resource));
+	if (!host) return GLOBUS_NULL;
+	host[c-resource] = '\0';
+	service = globus_malloc(strlen(resource) - strlen(host));
+	++c;
+    }
+    else
+    {
+	host = globus_libc_strdup(resource);
+	if (!host) return GLOBUS_NULL;
+	service = globus_libc_strdup(default_service);
+	c = default_service;
+    }
+
+    if (!service)
+    {
+	globus_free(host);
 	return GLOBUS_NULL;
     }
-    globus_libc_sprintf(search_string, search_format, resource);
+    strcpy(service,c);
+
+    search_string=globus_malloc(strlen(format) + 
+				strlen(host)   +
+				strlen(service));
+    if (!search_string)
+    {
+	globus_free(service);
+	globus_free(host);
+	return GLOBUS_NULL;
+    }
+
+    globus_libc_sprintf(search_string, format, host, service);
 
     rc = globus_l_rsl_assist_simple_query_ldap(
 	"contact",
 	1,
 	search_string,
 	&rm_contact_list);
-    if (rc != GLOBUS_SUCCESS || rm_contact_list == GLOBUS_NULL)
+
+    if (rc == GLOBUS_SUCCESS && rm_contact_list)
     {
-	globus_libc_free(search_string);
-	return GLOBUS_NULL;
+	result = globus_list_remove(&rm_contact_list, rm_contact_list);
+	/* only searched for one entry: don't need to free list as it
+	   is now empty! */
     }
-    result=globus_list_remove(&rm_contact_list, rm_contact_list);
+    else
+	result = GLOBUS_NULL;
     
     globus_libc_free(search_string);
+    globus_libc_free(service);
+    globus_libc_free(host);
+
     return result;
-    
 } /* globus_i_rsl_assist_get_rm_contact() */
 
 /*

@@ -64,6 +64,7 @@
 globus_rsl_t *
 globus_rsl_assist_replace_manager_name(globus_rsl_t * rsl);
 
+
 #endif
 
 

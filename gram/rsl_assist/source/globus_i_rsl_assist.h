@@ -34,7 +34,8 @@
  *     the resourceManagerName given as argument, by querying the MDS. 
  *
  * Parameters:
- *    resourceManagerName - String containing the Name of the Resource Manager
+ *    resourceManagerName- String containing the name of the Resource Manager.
+ *                         The string is on the format <hostname>[/<service>]
  *
  * Returns:
  *    Pointer to a newly allocated string containing the Resource
@@ -44,29 +45,6 @@
  */
 char*
 globus_i_rsl_assist_get_rm_contact(char* resourceManagerName);
-
-/*
- * globus_i_rsl_assist_get_scheduledjob_list()
- *
- *     By querying the MDS, return the list of "scheduledjobs" currently
- *     registerd in the MDS.
- *     The user code must free each string of the list and the list
- *     itself when it is not usefull anymore.
- *     
- *
- * Parameters:
- *     None; Remarq: It uses the "globus environment variable" defining
- *     the MDS host and port to contact.
- *    
- *
- * Returns:
- *    A pointer to the head of a list of  
- *    string containing the rsl of the job.
- *    OR
- *    GLOBUS_NULL in case of failure.
- */
-int
-globus_i_rsl_assist_get_scheduledjob_list(globus_list_t ** job_list);
 
 /*
  * Function: globus_i_rsl_assist_extract_attribute()
