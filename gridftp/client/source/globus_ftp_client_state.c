@@ -147,6 +147,32 @@ globus_l_ftp_client_buffer_cmd_info_t globus_l_ftp_client_buffer_cmd_info[] =
     "ERET P %"GLOBUS_OFF_T_FORMAT" %"GLOBUS_OFF_T_FORMAT" %s"CRLF
 
 /* Internal/Local Functions */
+
+static void
+globus_l_ftp_data_connect_cb(
+    void *                                      callback_arg,
+    struct globus_ftp_control_handle_s *        handle,
+    unsigned int                                stripe_ndx,
+    globus_bool_t                               reused,
+    globus_object_t *				error)
+{
+    globus_i_ftp_client_handle_t *		client_handle;
+    
+    if(error)
+    {
+        client_handle = (globus_i_ftp_client_handle_t *) callback_arg;
+        
+        globus_i_ftp_client_handle_lock(client_handle);
+        
+        if(!client_handle->err)
+        {
+            client_handle->err = globus_object_copy(error);
+        }
+        
+        globus_i_ftp_client_handle_unlock(client_handle);
+    }
+}
+
 /**
  * FTP response callback.
  *
@@ -1996,8 +2022,8 @@ redo:
     
 	result =
 	    globus_ftp_control_data_connect_read(target->control_handle,
-						 GLOBUS_NULL,
-						 GLOBUS_NULL);
+						 globus_l_ftp_data_connect_cb,
+						 client_handle);
 	target->state = GLOBUS_FTP_CLIENT_TARGET_LIST;
 
 	if(result != GLOBUS_SUCCESS)
@@ -2307,8 +2333,8 @@ redo:
 
 	result =
 	    globus_ftp_control_data_connect_read(target->control_handle,
-						 GLOBUS_NULL,
-						 GLOBUS_NULL);
+						 globus_l_ftp_data_connect_cb,
+						 client_handle);
 	target->state = GLOBUS_FTP_CLIENT_TARGET_RETR;
 
 	if(result != GLOBUS_SUCCESS)
@@ -2386,8 +2412,8 @@ redo:
 
 	result =
 	    globus_ftp_control_data_connect_write(target->control_handle,
-						  GLOBUS_NULL,
-						  GLOBUS_NULL);
+						  globus_l_ftp_data_connect_cb,
+						  client_handle);
 	target->state = GLOBUS_FTP_CLIENT_TARGET_STOR;
 
 	if(result != GLOBUS_SUCCESS)
