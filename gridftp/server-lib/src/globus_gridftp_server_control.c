@@ -297,6 +297,7 @@ globus_l_gsc_op_create(
     op->ref = 1;
 
     op->uid = -1;
+    globus_range_list_init(&op->perf_range_list);
 
     return op;
 }
@@ -346,6 +347,7 @@ globus_i_gsc_op_destroy(
 
         op->server_handle->ref--;
         globus_l_gsc_server_ref_check(op->server_handle);
+        globus_range_list_destroy(op->perf_range_list);
 
         globus_free(op);
     }
