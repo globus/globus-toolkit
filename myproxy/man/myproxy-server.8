@@ -1,4 +1,4 @@
-.TH myproxy-server 8 "2002-09-04" "NCSA" "MyProxy"
+.TH myproxy-server 8 "2002-11-06" "NCSA" "MyProxy"
 .SH NAME
 myproxy-server \- store credentials in an online repository
 .SH SYNOPSIS
@@ -47,7 +47,7 @@ should listen on.  Default: 7512
 .BI -c " file, " --config " file"
 Specifies the location of the
 .B myproxy-server
-configuration file.  Default: $GLOBUS_LOCATION/etc/myproxy-server.config
+configuration file.  Defaults: /etc/myproxy-server.config or $GLOBUS_LOCATION/etc/myproxy-server.config
 .TP
 .BI -s " dir, " --storage " dir"
 Specifies the location of the credential storage directory.
@@ -56,7 +56,7 @@ The directory must be accessible only by the user running the
 process for security reasons.  Default: $GLOBUS_LOCATION/var/myproxy
 .SH FILES
 .TP
-.I $GLOBUS_LOCATION/etc/myproxy-server.config
+.I /etc/myproxy-server.config
 Default location of the server configuration file (see 
 .BR myproxy-server.config (5)).
 An alternate location can be specified by using the
