@@ -144,9 +144,10 @@ public class ThroughputTester {
         notifyAll();
     }
 
-    synchronized void notifyCompleted() {
+    synchronized void notifyCompleted(int jobIndex) {
         this.completedCount++;
         notifyAll();
+        this.jobList[jobIndex].stop();
     }
 
     public void setFactoryUrl(String factoryUrl) {

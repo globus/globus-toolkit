@@ -26,8 +26,9 @@ while (<FILE>) {
             $createServiceTimings{$thread} = $time;
         } elsif ($tag eq "start") {
             $startTimings{$thread} = $time;
-        } elsif (   $tag eq "complete"
-                   or $tag eq "Done" or $tag eq "Failed") {
+        } elsif (   ($tag eq "complete")
+                 or ($tag eq "Done")
+                 or ($tag eq "Failed")) {
             $completeTimings{$thread} = $time;
         }
     }
@@ -48,13 +49,13 @@ foreach my $key (@keys) {
     my $startTiming = $startTimings{$key};
     my $completeTiming = $completeTimings{$key};
     print "<tr> <td>" . $key . "</td> <td>"
-          .  $createServiceTiming . "</td> <td>" . $startTiming;
-    if ($completeTiming ne "") {
-        print "</td> <td>" . $completeTiming;
-    } else {
-        print "</td> <td>" . $completeTimings{"main"};
-    }
-    print "</td> </tr>\n";
+          .  $createServiceTiming . " ms</td> <td>" . $startTiming;
+    #if ($completeTiming ne "") {
+        print " ms</td> <td>" . $completeTiming;
+    #} else {
+    #    print " ms</td> <td>" . $completeTimings{"main"};
+    #}
+    print " ms</td> </tr>\n";
 }
 close FILE;
 print "</table>\n</body></html>\n";

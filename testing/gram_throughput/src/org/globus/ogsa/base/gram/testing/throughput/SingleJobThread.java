@@ -212,6 +212,13 @@ public class SingleJobThread
         }
     }
 
+    public void stop() {
+        //non-blocking job start (see run() and start0())
+        synchronized (this) {
+            this.notifyAll();
+        }
+    }
+
     protected void start0() {
         if (logger.isDebugEnabled()) {
             logger.debug("starting job");
@@ -257,6 +264,17 @@ public class SingleJobThread
 
         //start timming Active
         this.perfLog.start();
+
+        //wait for start signal
+        if (logger.isDebugEnabled()) {
+            logger.debug("waiting for signal to stop");
+        }
+        try {
+            this.wait();
+        } catch (Exception e) {
+            logger.error("unable to wait", e);
+            return;
+        }
     }
 
     public void deliverNotification(ExtensibilityType message) {
