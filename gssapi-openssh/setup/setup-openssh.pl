@@ -195,6 +195,10 @@ if ( !getPrivilegeSeparation() )
     print "    \t\$GLOBUS_LOCATION/etc/ssh/sshd_config.\n";
 }
 
+print "\n";
+print "For more information about GSI-Enabled OpenSSH, visit:\n";
+print "<http://www.ncsa.uiuc.edu/Divisions/ACES/GSI/openssh/>\n";
+
 #
 # give the user a chance to read all of this output
 #
