@@ -1,48 +1,47 @@
 AC_INIT(myproxy_server.c)
 
 AC_MSG_CHECKING(for Globus/GSI installation path)
-GLOBUS_PATH=""
+GLOBUS_INSTALL_PATH=""
 dnl --with-globus
 AC_ARG_WITH(globus,
 	[  --with-globus=PATH           Specify Globus install path],
-	GLOBUS_PATH=$withval)
+	GLOBUS_INSTALL_PATH=$withval)
 
 dnl --with-gsi
 AC_ARG_WITH(gsi,
 	[  --with-gsi=PATH              Specify GSI install path],
-	GLOBUS_PATH=$withval)
+	GLOBUS_INSTALL_PATH=$withval)
 
-dnl Check GLOBUS_PATH
-if test -z "${GLOBUS_PATH}" ; then
+dnl Check GLOBUS_INSTALL_PATH
+if test -z "${GLOBUS_INSTALL_PATH}" ; then
 	AC_MSG_ERROR(Must specify --with-gsi or --with-globus)
 fi
 
-if test ! -d "${GLOBUS_PATH}" ; then
-	AC_MSG_ERROR(Globus/GSI install path not found: ${GLOBUS_PATH})
+if test ! -d "${GLOBUS_INSTALL_PATH}" ; then
+	AC_MSG_ERROR(Globus/GSI install path not found: ${GLOBUS_INSTALL_PATH})
 fi
 
-AC_MSG_RESULT($GLOBUS_PATH)
-AC_SUBST(GLOBUS_PATH)
+AC_MSG_RESULT($GLOBUS_INSTALL_PATH)
+AC_SUBST(GLOBUS_INSTALL_PATH)
 
 AC_MSG_CHECKING(for Globus/GSI development directory)
-if test -d ${GLOBUS_PATH}/lib ; then
+if test -d ${GLOBUS_INSTALL_PATH}/lib ; then
 	# Looks like a flat directory structure from configure/make and not
 	# globus-install or gsi-install
-	GLOBUS_DEV_PATH=${GLOBUS_PATH}
+	GLOBUS_DEV_PATH=${GLOBUS_INSTALL_PATH}
 
 else
 	# Assume a true globus installation with architecture
 	# directories and run globus-development-path to find
 	# the development directory
 
-	# Set GLOBUS_INSTALL_PATH so programs will run
+	# Export GLOBUS_INSTALL_PATH so programs will run
 	# Also override any GLOBUS_INSTALL_PATH that may be set that
 	# is pointing to a different directory
 
-	GLOBUS_INSTALL_PATH=${GLOBUS_PATH}
 	export GLOBUS_INSTALL_PATH
 
-	dev_path_program=${GLOBUS_PATH}/bin/globus-development-path
+	dev_path_program=${GLOBUS_INSTALL_PATH}/bin/globus-development-path
 
 	if test ! -x ${dev_path_program} ; then
 		AC_MSG_ERROR(Cannot find Globus/GSI installation directory: program ${dev_path_program} does not exist or is not executable)

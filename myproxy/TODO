@@ -5,8 +5,6 @@ TODO list for myproxy:
 
  * Add a MYPROXY_SERVER environment variable for myproxy-init
 
- * Fix need for GLOBUS_INSTALL_PATH to be set for configure/make
-
  * myproxy-get-delegation not handling bad pass phrase
 
  * delegation lifetime fubar
