@@ -960,6 +960,8 @@ globus_i_gfs_data_init()
         exit(1);
     }
 
+    /* XXX is this is how we want to know this? */
+    globus_l_gfs_data_is_remote_node = globus_i_gfs_config_bool("data_node");
     GlobusGFSDebugExit();
 }
 
