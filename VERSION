@@ -8,6 +8,7 @@ v0.6.3 XX XX 200X (GPT package version 1.15)
     before prompting for user input, to catch server problems early.
   - added initial experimental support for Kerberos authentication via
     the SASL/GSSAPI mechanism.
+  - removed dependency on perl Expect package in myproxy-test
 
 v0.6.2 21 Jun 2004 (GPT package version 1.14)
   - added initial experimental support for PAM authentication via
