@@ -1,9 +1,9 @@
 
+#include "globus_error_openssl.h"
 #include "openssl/err.h"
 #include "openssl/asn1.h"
 #include "openssl/bio.h"
 #include "openssl/crypto.h"
-#include "globus_error_openssl.h"
 #include "version.h"
 
 #define GLOBUS_GSI_OPENSSL_ERROR_TEST_MODULE \
