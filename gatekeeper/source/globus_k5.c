@@ -275,10 +275,12 @@ grami_ggg_k5_kinit(char * globus_client)
 {
 
   int rc;
+  int i;
   char ccname[100];
   char * command;
   char * args[100];
   struct passwd *pw;
+  struct stat stx;
 
   if ((rc = grami_ggg_k5_globuskmap(globus_client, &command)))
     return(rc); /* not found, or nothing to do */
@@ -289,7 +291,12 @@ grami_ggg_k5_kinit(char * globus_client)
   if ((rc = grami_ggg_k5_tokenize( command, args, 100)))
 	return(rc);
 
-  sprintf(ccname,"FILE:/tmp/krb5cc_p%d",getpid());
+  i = 0;
+  do {
+   sprintf(ccname,"FILE:/tmp/krb5cc_p%d%d",getpid(),i++);
+  }
+  while(stat(ccname+5,&stx) == 0);
+
   setenv("KRB5CCNAME", ccname, 1);
 
   rc = grami_ggg_k5_exec(args);
