@@ -17,6 +17,7 @@
 #define GLOBUS_AUTH_AUTHORIZATION_FAILED            9
 #define GLOBUS_AUTH_MAYBE                           10
 #define GLOBUS_AUTH_UNKNOWN_ERROR                   11
+#define GLOBUS_AUTH_UNIMPLEMENTED_REDELEGATION	    12
 
 /*to avoid compiling in globus common*/
 /*#define GLOBUS_TRUE 1

@@ -328,6 +328,7 @@ globus_authorization_handle_set_gss_ctx(
     old_len = 0;
     
     /*go through the cert chain and pull out all restrictions*/
+
     for(ii = 0; ii < restrictions->count; ii++)
     {
         if(restrictions->elements[ii].length > 0)
@@ -347,15 +348,10 @@ globus_authorization_handle_set_gss_ctx(
             }
             else
             {
-                handle->gaa_cb_arg.restrictions =
-                    (char *)realloc(handle->gaa_cb_arg.restrictions,
-                                    len_so_far+1);
-                /*don't overwrite prreviously extracted restrictions*/
-                memcpy(handle->gaa_cb_arg.restrictions+old_len, 
-                       (char *)restrictions->elements[ii].value,
-                       restrictions->elements[ii].length);
-                handle->gaa_cb_arg.restrictions[len_so_far] = 0;
-
+		/* Can't handle multiple restrictions yet */
+		gss_release_buffer_set(&min_stat, &restrictions);
+		return(globus_result_set(GLOBUS_AUTH_UNIMPLEMENTED_REDELEGATION,
+					 "support for restrictions in more than one cert in the chain is not implemented"));
            }
         }/*end if restrictions->elements[i].length*/
     }/*end for ii*/
