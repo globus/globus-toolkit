@@ -149,8 +149,7 @@ Please see VERSION for information about this and other versions of
 the myproxy software.
 
 Information on GSI and Globus can be found at:
-http://www.globus.org/security/v1.1 
-http://www.globus.org.
+http://www.globus.org/security/
 
 Java versions of the myproxy clients are available as part of Java CoG
 Kit distribution which is available at:
