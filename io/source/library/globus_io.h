@@ -565,6 +565,36 @@ typedef enum
 } globus_io_secure_delegation_mode_t;
 
 
+/**
+ * Security Proxy mode
+ *
+ * The setting of this mode determines if and what kind of proxy
+ * certificates will be accepted for authentication. The mode may be
+ * changed by calling the globus_io_attr_set_secure_proxy_mode()
+ * function. 
+ *
+ * @ingroup security
+ */
+typedef enum
+{
+    /** 
+     * Accept a full or level 1 limited proxy, but not a level >=2
+     * limited proxy.
+     */
+    GLOBUS_IO_SECURE_PROXY_MODE_NONE = 0,
+    /** 
+     * Do not accept any form of limited proxy. This would be used by
+     * the gatekeeper and sshd. This behavior is unchanged from today.
+     */
+    GLOBUS_IO_SECURE_PROXY_MODE_LIMITED,
+    /**
+     * Accept any proxy, limited or otherwise, as valid authentication.
+     */
+    GLOBUS_IO_SECURE_PROXY_MODE_MANY
+} globus_io_secure_proxy_mode_t;
+
+
+
 /*
    Globus I/O Attribute Objects 
    GLOBUS_IO_OBJECT_TYPE_BASE
@@ -629,6 +659,7 @@ typedef struct
     globus_io_secure_channel_mode_t		channel_mode;
     globus_io_secure_protection_mode_t		protection_mode;
     globus_io_secure_delegation_mode_t		delegation_mode;
+    globus_io_secure_proxy_mode_t		proxy_mode;
     gss_cred_id_t				credential;
     globus_bool_t				internal_credential;
     char *					authorized_identity;
@@ -1463,6 +1494,16 @@ globus_io_attr_get_secure_delegation_mode(
     globus_io_attr_t *			attr,
     globus_io_secure_delegation_mode_t *
 					mode);
+globus_result_t
+globus_io_attr_set_secure_proxy_mode(
+    globus_io_attr_t *			attr,
+    globus_io_secure_proxy_mode_t	mode);
+
+globus_result_t
+globus_io_attr_get_secure_proxy_mode(
+    globus_io_attr_t *			attr,
+    globus_io_secure_proxy_mode_t *     mode);
+
 globus_bool_t
 globus_io_eof(
     globus_object_t *			eof);

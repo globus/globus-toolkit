@@ -3978,7 +3978,7 @@ globus_io_attr_set_secure_delegation_mode(
     globus_i_io_securesocketattr_instance_t *
 					instance;
     static char *			myname=
-	                                "globus_io_attr_set_secure_authorizationn_mode";
+	                                "globus_io_attr_set_secure_delegation_mode";
     
     if(attr == GLOBUS_NULL)
     {
@@ -4139,6 +4139,210 @@ globus_io_attr_get_secure_delegation_mode(
 }
 /* globus_io_attr_get_security_delegation_mode() */
 /* @} */
+
+
+/**
+ * @name Authentication using Proxy 
+ */
+/* @{ */
+/** 
+ * Set/Query the of the proxy-mode attribute in the specified
+ * socket attribute set.
+ * @ingroup attr
+ *
+ * This attribute is used to determine whether the process should
+ * accept limited proxy certificates for authentication.
+ *
+ * @param attr
+ *        The attribute to modify. The attr parameter must be 
+ *        initialized by globus_io_tcpattr_init().
+ * @param mode
+ *        The new value of the proxy-mode attribute. The
+ *        values for mode are described in the documentation for the
+ *        globus_io_secure_proxy_mode_t type.
+ *
+ * @return 
+ * This function returns GLOBUS_SUCCESS if successful, or a globus_result_t
+ * indicating the error that occurred. 
+ * @retval GLOBUS_IO_ERROR_TYPE_NULL_PARAMETER
+ *         The @a attr or mode parameter was GLOBUS_NULL.
+ * @retval GLOBUS_IO_ERROR_TYPE_NOT_INITIALIZED
+ *         The @a attr structure was not initialized for use.
+ * @retval GLOBUS_IO_ERROR_TYPE_INVALID_TYPE
+ *         The @a attr structure was not a Globus I/O TCP attribute structure.
+ *
+ * @see globus_io_tcpattr_init(), globus_io_secure_proxy_mode_t 
+ */
+globus_result_t
+globus_io_attr_set_secure_proxy_mode(
+    globus_io_attr_t *			attr,
+    globus_io_secure_proxy_mode_t	mode)
+{
+    globus_object_t *			securesocketattr;
+    globus_i_io_securesocketattr_instance_t *
+					instance;
+    static char *			myname=
+	                                "globus_io_attr_set_secure_proxy_mode";
+    
+    if(attr == GLOBUS_NULL)
+    {
+	return globus_error_put(
+	    globus_io_error_construct_null_parameter(
+		GLOBUS_IO_MODULE,
+		GLOBUS_NULL,
+		"attr",
+		1,
+		myname));
+    }
+    if(attr->attr == GLOBUS_NULL)
+    {
+	return globus_error_put(
+	    globus_io_error_construct_not_initialized(
+		GLOBUS_IO_MODULE,
+		GLOBUS_NULL,
+		"attr",
+		1,
+		myname));
+    }
+    
+    securesocketattr = globus_object_upcast(
+	attr->attr,
+	GLOBUS_IO_OBJECT_TYPE_SECURESOCKETATTR);
+    
+    if(securesocketattr == GLOBUS_NULL)
+    {
+	return globus_error_put(
+	    globus_io_error_construct_invalid_type(
+		GLOBUS_IO_MODULE,
+		GLOBUS_NULL,
+		"attr",
+		1,
+		myname,
+		"GLOBUS_IO_OBJECT_TYPE_SECURESOCKETATTR"));
+    }
+
+    instance = (globus_i_io_securesocketattr_instance_t *)
+	globus_object_get_local_instance_data(securesocketattr);
+
+    if(instance == GLOBUS_NULL)
+    {
+	return globus_error_put(
+	    globus_io_error_construct_bad_parameter(
+		GLOBUS_IO_MODULE,
+		GLOBUS_NULL,
+		"attr",
+		1,
+		myname));
+    }
+    
+    if(instance->authentication_mode ==
+       GLOBUS_IO_SECURE_AUTHENTICATION_MODE_NONE)
+    {
+	return globus_error_put(
+	    globus_io_error_construct_attribute_mismatch(
+		GLOBUS_IO_MODULE,
+		GLOBUS_NULL,
+		"attr",
+		1,
+		myname,
+		"authentication_mode",
+		"delegation_mode"));
+    }
+    
+    instance->proxy_mode = mode;
+    
+    return GLOBUS_SUCCESS;
+}
+/* globus_io_attr_set_secure_proxy_mode() */
+
+globus_result_t
+globus_io_attr_get_secure_proxy_mode(
+    globus_io_attr_t *			attr,
+    globus_io_secure_proxy_mode_t *     mode)
+{
+    globus_object_t *			securesocketattr;
+    globus_i_io_securesocketattr_instance_t *
+					instance;
+    static char *			myname=
+	                                "globus_io_attr_get_secure_proxy_mode";
+    
+    if(attr == GLOBUS_NULL)
+    {
+	return globus_error_put(
+	    globus_io_error_construct_null_parameter(
+		GLOBUS_IO_MODULE,
+		GLOBUS_NULL,
+		"attr",
+		1,
+		myname));
+    }
+    if(attr->attr == GLOBUS_NULL)
+    {
+	return globus_error_put(
+	    globus_io_error_construct_not_initialized(
+		GLOBUS_IO_MODULE,
+		GLOBUS_NULL,
+		"attr",
+		1,
+		myname));
+    }
+    if(mode == GLOBUS_NULL)
+    {
+	return globus_error_put(
+	    globus_io_error_construct_null_parameter(
+		GLOBUS_IO_MODULE,
+		GLOBUS_NULL,
+		"mode",
+		2,
+		myname));
+    }
+    
+    securesocketattr = globus_object_upcast(
+	attr->attr,
+	GLOBUS_IO_OBJECT_TYPE_SECURESOCKETATTR);
+    
+    if(securesocketattr == GLOBUS_NULL)
+    {
+	return globus_error_put(
+	    globus_io_error_construct_invalid_type(
+		GLOBUS_IO_MODULE,
+		GLOBUS_NULL,
+		"attr",
+		1,
+		myname,
+		"GLOBUS_IO_OBJECT_TYPE_SECURESOCKETATTR"));
+    }
+
+    instance = (globus_i_io_securesocketattr_instance_t *)
+	globus_object_get_local_instance_data(securesocketattr);
+
+    if(instance == GLOBUS_NULL)
+    {
+	return globus_error_put(
+	    globus_io_error_construct_bad_parameter(
+		GLOBUS_IO_MODULE,
+		GLOBUS_NULL,
+		"attr",
+		1,
+		myname));
+    }
+
+    if(instance->authentication_mode ==
+       GLOBUS_IO_SECURE_AUTHENTICATION_MODE_NONE)
+    {
+        *mode = GLOBUS_IO_SECURE_PROXY_MODE_NONE;
+    }
+    else
+    {
+        *mode = instance->proxy_mode;
+    }
+    
+    
+    return GLOBUS_SUCCESS;
+}
+/* globus_io_attr_get_security_proxy_mode() */
+/* @} */
+
 
 /*
  * Function:	globus_i_io_socket_copy_attr()

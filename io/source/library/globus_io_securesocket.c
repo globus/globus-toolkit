@@ -353,7 +353,19 @@ globus_i_io_securesocket_register_accept(
     {
         accept_info->ret_flags |= GSS_C_CONF_FLAG;
     }
- 
+
+    switch(handle->securesocket_attr.proxy_mode)
+    {
+      case GLOBUS_IO_SECURE_PROXY_MODE_NONE:
+        break;
+      case GLOBUS_IO_SECURE_PROXY_MODE_LIMITED:
+        accept_info->ret_flags |= GSS_C_GLOBUS_LIMITED_PROXY_FLAG;
+        break;
+      case GLOBUS_IO_SECURE_DELEGATION_MODE_FULL_PROXY:
+        accept_info->ret_flags |= GSS_C_GLOBUS_LIMITED_PROXY_MANY_FLAG;  
+	break;
+    } 
+
     accept_info->maj_stat = 0;
     accept_info->min_stat = 0;
 
@@ -450,6 +462,19 @@ globus_i_io_securesocket_register_connect_callback(
 	flags |= GSS_C_DELEG_FLAG;
 	break;
     }
+
+    switch(handle->securesocket_attr.proxy_mode)
+    {
+      case GLOBUS_IO_SECURE_PROXY_MODE_NONE:
+        break;
+      case GLOBUS_IO_SECURE_PROXY_MODE_LIMITED:
+        flags |= GSS_C_GLOBUS_LIMITED_PROXY_FLAG;
+        break;
+      case GLOBUS_IO_SECURE_DELEGATION_MODE_FULL_PROXY:
+	flags |= GSS_C_GLOBUS_LIMITED_PROXY_MANY_FLAG;
+	break;
+    } 
+    
     switch(handle->securesocket_attr.channel_mode)
     {
       case GLOBUS_IO_SECURE_CHANNEL_MODE_SSL_WRAP:
