@@ -1167,6 +1167,9 @@ do_setup_env(Session *s, const char *shell)
 #  else 
 		child_set_env(&env, &envsize, "PATH", _PATH_STDPATH);
 #  endif /* SUPERUSER_PATH */
+		if (getenv("LD_LIBRARY_PATH"))
+			child_set_env(&env, &envsize, "LD_LIBRARY_PATH",
+				      getenv("LD_LIBRARY_PATH"));
 # endif /* HAVE_CYGWIN */
 #endif /* HAVE_LOGIN_CAP */
 
