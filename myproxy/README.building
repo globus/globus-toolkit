@@ -4,9 +4,9 @@ version of the GNU autotools.  See
 
 Before anything else:
 $ ./bootstrap
+$ ./configure --with-flavor=gcc32
 
 To build in CVS workspace:
-$ ./configure --with-flavor=gcc32
 $ make
 
 To install from CVS workspace to $GLOBUS_LOCATION:
