@@ -534,7 +534,7 @@ globus_l_xio_driver_op_close_kickout(
 }
 
 /*
- *  driver callback kickout
+ *  driver callback mickout
  *
  *  when in a register the finish function kicks this out as a oneshot
  */

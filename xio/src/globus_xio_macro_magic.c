@@ -522,7 +522,7 @@ globus_xio_driver_pass_write_DEBUG(
         while(_driver->write_func == NULL);
 
         _op->entry[_prev_ndx].next_ndx = _op->ndx;
-        _op->entry[_prev_ndx].type = GLOBUS_XIO_OPERATION_TYPE_READ;
+        _op->entry[_prev_ndx].type = GLOBUS_XIO_OPERATION_TYPE_WRITE;
         _my_op = &_op->entry[_op->ndx - 1];
         _my_op->prev_ndx = _prev_ndx;
         _my_op->_op_ent_data_cb = (_in_cb);
