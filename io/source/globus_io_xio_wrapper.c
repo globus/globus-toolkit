@@ -2369,7 +2369,7 @@ globus_l_io_tcp_register_accept(
             }
         }
         else if(ihandle->authorization_mode ==
-             GLOBUS_IO_SECURE_AUTHORIZATION_MODE_IDENTITY)
+             GLOBUS_IO_SECURE_AUTHORIZATION_MODE_CALLBACK)
         {
             ihandle->authz_data->callback = 
                 ilistener_handle->authz_data->callback;
