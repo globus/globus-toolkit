@@ -210,7 +210,9 @@ globus_i_io_attr_activate(void)
  *
  * Use this to associate a callback space with a globus_io_handle_t.  When
  * a space is associated with a globus io handle, all callbacks that are 
- * delivered on that handle are only delivered to the supplied callback space;
+ * delivered on that handle are only delivered to the supplied callback space.
+ * This function takes a refernce to the passed space.  In order for that space
+ * to ever be freed, this attr must be destroyed when its use is complete.
  *
  * The default is for callbacks to go to the 'global' space, 
  * GLOBUS_CALLBACK_GLOBAL_SPACE.

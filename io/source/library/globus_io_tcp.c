@@ -396,6 +396,8 @@ globus_io_tcp_connect(
     if(attr)
     {
         globus_io_attr_get_callback_space(attr, &saved_space);
+        /* need to hold a reference to that space for new handle */
+        globus_callback_space_reference(saved_space);
         globus_io_attr_set_callback_space(attr, GLOBUS_CALLBACK_GLOBAL_SPACE);
     }
     
@@ -422,11 +424,16 @@ globus_io_tcp_connect(
     
     if(attr)
     {
-        /* by resetting the attr with this call, i end up with an extra ref,
-         * this will be 'aoplied' to the new handle
-         */
         globus_io_attr_set_callback_space(attr, saved_space);
-        globus_i_io_set_callback_space(handle, saved_space);
+        
+        if(handle)
+        {
+            globus_i_io_set_callback_space(handle, saved_space);
+        }
+        else
+        {
+            globus_callback_space_destroy(saved_space);
+        }
     }
 
     globus_mutex_destroy(&monitor.mutex);
@@ -1047,6 +1054,8 @@ globus_io_tcp_accept(
     if(attr)
     {
         globus_io_attr_get_callback_space(attr, &saved_space);
+        /* need to hold a reference to that space for new handle */
+        globus_callback_space_reference(saved_space);
         globus_io_attr_set_callback_space(attr, GLOBUS_CALLBACK_GLOBAL_SPACE);
     }
     else
@@ -1079,18 +1088,26 @@ globus_io_tcp_accept(
     
     if(attr)
     {
-        /* by resetting the attr with this call, i end up with an extra ref,
-         * this extra ref will be 'applied' towards the new handle
-         */
         globus_io_attr_set_callback_space(attr, saved_space);
-        globus_i_io_set_callback_space(handle, saved_space);
+        
+        if(handle)
+        {
+            globus_i_io_set_callback_space(handle, saved_space);
+        }
+        else
+        {
+            globus_callback_space_destroy(saved_space);
+        }
     }
     else
     {
         globus_i_io_set_callback_space(listener_handle, saved_space);
         
-        globus_callback_space_reference(saved_space);
-        globus_i_io_set_callback_space(handle, saved_space);
+        if(handle)
+        {
+            globus_callback_space_reference(saved_space);
+            globus_i_io_set_callback_space(handle, saved_space);
+        }
     }
     
     globus_mutex_destroy(&monitor.mutex);
