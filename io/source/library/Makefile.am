@@ -27,7 +27,7 @@ lib_LTLIBRARIES = libglobus_io_$(GLOBUS_FLAVOR_NAME).la
 INCLUDES = $(GPT_INCLUDES)
 
 libglobus_io___GLOBUS_FLAVOR_NAME__la_LDFLAGS = @GPT_LDFLAGS@
-libglobus_io___GLOBUS_FLAVOR_NAME__la_LIBADD = @GPT_LIBS@
+libglobus_io___GLOBUS_FLAVOR_NAME__la_LIBADD = @GPT_LIB_LINKS@
 
 libglobus_io___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 
