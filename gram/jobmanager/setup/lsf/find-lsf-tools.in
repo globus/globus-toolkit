@@ -32,6 +32,30 @@ fi
 
 AC_SUBST(LSF_PROFILE)
 
+if test ! -n "${LSF_ENVDIR}"; then
+    AC_MSG_WARN([Using default of /etc for LSF_ENVDIR])
+    LSF_ENVDIR=/etc
+fi
+
+LSF_CONF_FILE="${LSF_ENVDIR}/lsf.conf"
+
+if test ! -r "${LSF_CONF_FILE}"; then
+    AC_MSG_ERROR([LSF configuration ${LSF_CONF_FILE} not found.])
+fi
+
+LSF_CONF=`sed -ne 's/LSF_CONFDIR=//p' < "${LSF_CONF_FILE}"`
+
+if ! test -d "${LSF_CONF}/."; then
+    AC_MSG_ERROR([Invalid LSF_CONF directory ${LSF_CONF}])
+fi
+
+LSF_PROFILE="${LSF_CONF}/profile.lsf" 
+if test ! -r "${LSF_PROFILE}"; then
+    AC_MSG_ERROR([LSF profile profile.lsf is not present in LSF_CONF dir.])
+fi
+
+AC_SUBST(LSF_PROFILE)
+
 AC_PATH_PROG(MPIRUN, mpirun, no)
 if test "$MPIRUN" = "no" ; then
     AC_MSG_WARN([Cannot locate mpirun])

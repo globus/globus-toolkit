@@ -3,9 +3,7 @@ use Globus::GRAM::JobState;
 use Globus::GRAM::JobManager;
 use Globus::Core::Paths;
 
-use IO::File;
 use Config;
-use POSIX;
 
 package Globus::GRAM::JobManager::pbs;
 
@@ -24,6 +22,12 @@ BEGIN
     $remote_shell = '@REMOTE_SHELL@';
 }
 
+sub myceil ($)
+{
+    my $x = shift;
+    ( abs($x-int($x)) < 1E-12 ) ? $x : int($x < 0 ? $x : $x+1.0);
+}
+
 sub submit
 {
     my $self = shift;
@@ -32,12 +36,12 @@ sub submit
     my $status;
     my $pbs_job_script;
     my $pbs_job_script_name;
-    my $errfile = "";
+    my $errfile = '';
     my $job_id;
     my $rsh_env;
     my $script_url;
     my @arguments;
-    my $email_when = "";
+    my $email_when = '';
     my $cache_pgm = "$Globus::Core::Paths::bindir/globus-gass-cache";
     my %library_vars;
 
@@ -52,13 +56,18 @@ sub submit
 	    return Globus::GRAM::Error::JOBTYPE_NOT_SUPPORTED;
 	}
     }
-    if( $description->directory eq "")
+    if( $description->directory eq '')
     {
 	return Globus::GRAM::Error::RSL_DIRECTORY();
     }
     chdir $description->directory() or
         return Globus::GRAM::Error::BAD_DIRECTORY();
-    if( $description->executable eq "")
+
+    $self->nfssync( $description->executable() )
+	unless $description->executable() eq '';
+    $self->nfssync( $description->stdin() )
+	unless $description->stdin() eq '';
+    if( $description->executable eq '')
     {
 	return Globus::GRAM::Error::RSL_EXECUTABLE();
     }
@@ -70,7 +79,7 @@ sub submit
     {
 	return Globus::GRAM::Error::EXECUTABLE_PERMISSIONS();
     }
-    elsif( $description->stdin() eq "")
+    elsif( $description->stdin() eq '')
     {
 	return Globus::GRAM::Error::RSL_STDIN;
     }
@@ -116,17 +125,19 @@ sub submit
     $self->log('Building job script');
 
     $script_url = "$tag/pbs_job_script.$$"; 
-    system("$cache_pgm -add -t $tag -n $script_url file:/dev/null");
-    $pbs_job_script_name = `$cache_pgm -query -t $tag $script_url`;
+    $self->fork_and_exec_cmd( $cache_pgm, '-add', '-t', $tag, 
+			      '-n', $script_url, 'file:/dev/null' );
+    $pbs_job_script_name = $self->pipe_out_cmd( $cache_pgm, '-query', '-t', 
+						$tag, $script_url );
     chomp($pbs_job_script_name);
-    if($pbs_job_script_name eq "")
+    if($pbs_job_script_name eq '')
     {
 	return Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED();
     }
 
-    $pbs_job_script = new IO::File($pbs_job_script_name, '>');
-
-    $pbs_job_script->print(<<EOF);
+    local(*JOB);
+    open( JOB, '>' . $pbs_job_script_name );
+    print JOB<<"EOF";
 #! /bin/sh
 # PBS batch job script built by Globus job manager
 #
@@ -135,7 +146,7 @@ EOF
 
     if($description->email_address() ne '')
     {
-        $pbs_job_script->print("#PBS -M " . $description->email_address() . "\n");
+        print JOB '#PBS -M ', $description->email_address(), "\n";
     }
     if($description->emailonabort() eq 'yes')
     {
@@ -153,15 +164,15 @@ EOF
     {
 	$email_when = 'n';
     }
-    $pbs_job_script->print("#PBS -m $email_when\n");
+    print JOB "#PBS -m $email_when\n";
 
     if($description->queue() ne '')
     {
-        $pbs_job_script->print("#PBS -q ". $description->queue() . "\n");
+        print JOB '#PBS -q ', $description->queue(), "\n";
     }
     if($description->project() ne '')
     {
-	$pbs_job_script->print("#PBS -A " . $description->project() . "\n");
+	print JOB '#PBS -A ', $description->project(), "\n";
     }
 
     if($cpu_time != 0)
@@ -174,13 +185,13 @@ EOF
 	{
 	    $total_cpu_time = $cpu_time;
 	}
-	$pbs_job_script->print("#PBS -l pcput=${cpu_time}:00\n");
-	$pbs_job_script->print("#PBS -l cput=${total_cpu_time}:00\n");
+	print JOB "#PBS -l pcput=${cpu_time}:00\n";
+	print JOB "#PBS -l cput=${total_cpu_time}:00\n";
     }
 
     if($wall_time != 0)
     {
-	$pbs_job_script->print("#PBS -l walltime=${wall_time}:00\n");
+	print JOB "#PBS -l walltime=${wall_time}:00\n";
     }
 
     if($description->max_memory() != 0)
@@ -193,26 +204,22 @@ EOF
 	{
 	    $max_memory = $description->max_memory();
 	}
-	$pbs_job_script->print("#PBS -l mem=${max_memory}mb\n");
+	print JOB "#PBS -l mem=${max_memory}mb\n";
     }
-    $pbs_job_script->print("#PBS -o " . $description->stdout() . "\n");
-    $pbs_job_script->print("#PBS -e " . $description->stderr() . "\n");
+    print JOB '#PBS -o ', $description->stdout(), "\n";
+    print JOB '#PBS -e ', $description->stderr(), "\n";
 
     if($description->host_count() != 0)
     {
-	$pbs_job_script->print("#PBS -l nodes=" .
-	                       $description->host_count().
-			       "\n");
+	print JOB '#PBS -l nodes=', $description->host_count(), "\n";
     }
     elsif($cluster && $cpu_per_node != 0)
     {
-	$pbs_job_script->print("#PBS -l nodes=" .
-	                       POSIX::ceil($description->count /
-			                   $cpu_per_node).
-				"\n");
+	print JOB '#PBS -l nodes=',
+	    myceil($description->count / $cpu_per_node), "\n";
     }
 
-    $rsh_env = "";
+    $rsh_env = '';
 
     $library_vars{LD_LIBRARY_PATH} = 0;
     if($Config{osname} eq 'irix')
@@ -233,35 +240,35 @@ EOF
 	    $library_vars{$tuple->[0]} = 1;
 	}
 
-        push(@new_env, $tuple->[0] . "=" . '"' . $tuple->[1] . '"');
+        push(@new_env, $tuple->[0] . '="' . $tuple->[1] . '"');
 
 	$tuple->[0] =~ s/\\/\\\\/g;
 	$tuple->[0] =~ s/\$/\\\$/g;
-	$tuple->[0] =~ s/"/\\\"/g;
-	$tuple->[0] =~ s/`/\\\`/g;
+	$tuple->[0] =~ s/"/\\\"/g; #"
+	$tuple->[0] =~ s/`/\\\`/g; #`
 
 	$tuple->[1] =~ s/\\/\\\\/g;
 	$tuple->[1] =~ s/\$/\\\$/g;
-	$tuple->[1] =~ s/"/\\\"/g;
-	$tuple->[1] =~ s/`/\\\`/g;
+	$tuple->[1] =~ s/"/\\\"/g; #"
+	$tuple->[1] =~ s/`/\\\`/g; #`
 
-        $rsh_env .= $tuple->[0] . "=" . '"' . $tuple->[1] . '"' . ";\n"
-	         .  "export " . $tuple->[0] . ";\n";
+        $rsh_env .= $tuple->[0] . '="' . $tuple->[1] . "\";\n"
+	         .  'export ' . $tuple->[0] . ";\n";
     }
     foreach (keys %library_vars)
     {
 	if($library_vars{$_} == 0)
 	{
-	    push(@new_env, $_ . "=" . $library_path);
+	    push(@new_env, $_ . '=' . $library_path);
 	    $rsh_env .= "$_=$library_path;\n"
 	              . "export $_;\n";
 	}
     }
 
-    $pbs_job_script->print("#PBS -v " .  join(',', @new_env));
+    print JOB "#PBS -v " .  join(',', @new_env);
 
-    $pbs_job_script->print("\n#Change to directory requested by user\n");
-    $pbs_job_script->print('cd ' . $description->directory() . "\n");
+    print JOB "\n#Change to directory requested by user\n";
+    print JOB 'cd ' . $description->directory() . "\n";
 
     @arguments = $description->arguments();
 
@@ -279,8 +286,8 @@ EOF
 	    $self->log("Transforming argument \"$_\"\n");
 	    $_ =~ s/\\/\\\\/g;
 	    $_ =~ s/\$/\\\$/g;
-	    $_ =~ s/"/\\\"/g;
-	    $_ =~ s/`/\\\`/g;
+	    $_ =~ s/"/\\\"/g; #"
+	    $_ =~ s/`/\\\`/g; #`
 	    $self->log("Transformed to \"$_\"\n");
 
 	    $args .= '"' . $_ . '" ';
@@ -290,26 +297,24 @@ EOF
     {
 	$args = '';
     }
-    if($description->jobtype() eq "mpi")
+    if($description->jobtype() eq 'mpi')
     {
-	$pbs_job_script->print("$mpirun -np " . $description->count() . " ");
-
+	print JOB "$mpirun -np ", $description->count(), ' ';
 	if($cluster)
 	{
-	    $pbs_job_script->print(" -machinefile \$PBS_NODEFILE ");
+	    print JOB " -machinefile \$PBS_NODEFILE ";
 	}
-	$pbs_job_script->print($description->executable()
-	                       . " $args < "
-			       . $description->stdin() . "\n");
+	print JOB $description->executable(), " $args < ",
+	    $description->stdin(), "\n";
     }
     elsif($description->jobtype() eq 'multiple' && !$cluster)
     {
 	for(my $i = 0; $i < $description->count(); $i++)
 	{
-	    $pbs_job_script->print($description->executable() . " $args <" .
-	                           $description->stdin() . "&\n");
+	    print JOB $description->executable(), " $args <",
+	        $description->stdin(), "&\n";
 	}
-	$pbs_job_script->print("wait\n");
+	print JOB "wait\n";
     }
     elsif($description->jobtype() eq 'multiple')
     {
@@ -320,21 +325,33 @@ EOF
 	my $stdin = $description->stdin();
 
         $cmd_script_url = "$tag/pbs_cmd_script.$$";
-	system("$cache_pgm -add -t $tag -n $cmd_script_url file:/dev/null");
-	$cmd_script_name = `$cache_pgm -q -t $tag $cmd_script_url`;
-	chomp($cmd_script_name);
-	if($cmd_script_name eq "")
+	$self->fork_and_exec_cmd( $cache_pgm, '-add', '-t', $tag, '-n', 
+				  $cmd_script_url, 'file:/dev/null' );
+	$cmd_script_name = $self->pipe_out_cmd( $cache_pgm, '-q', '-t', $tag,
+						$cmd_script_url );
+	$cmd_script_name =~ s/[\r\n]+$//; # chomp is unsafe
+	if($cmd_script_name eq '')
 	{
             return Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED();
 	}
-	$cmd_script = new IO::File($cmd_script_name, '>');
-	$cmd_script->print("#!/bin/sh\n");
-	$cmd_script->print('cd ' . $description->directory() . "\n");
-	$cmd_script->print("$rsh_env\n");
-	$cmd_script->print($description->executable() . " $args\n");
-	$cmd_script->close();
 
-	$pbs_job_script->print(<<EOF);
+	local(*CMD);
+	if ( open( CMD, ">$cmd_script_name" ) ) 
+	{
+	    print CMD "#!/bin/sh\n";
+	    print CMD 'cd ', $description->directory(), "\n";
+	    print CMD "$rsh_env\n";
+	    print CMD $description->executable(), " $args\n";
+	    close(CMD);
+	    $self->nfssync( $cmd_script_name );
+	} 
+	else 
+	{
+	    # FIXME: what to do in error?
+            return Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED();
+	}
+
+	print JOB <<"EOF";
 	hosts=\`cat \$PBS_NODEFILE\`;
 	counter=0
 	while test \$counter -lt $count; do
@@ -352,16 +369,17 @@ EOF
     }
     else
     {
-	$pbs_job_script->print($description->executable() . " $args <" .
-	                       $description->stdin() . "\n");
+	print JOB $description->executable(), " $args <",
+	    $description->stdin(), "\n";
     }
-    $pbs_job_script->close();
+    close(JOB);
 
-    if($description->logfile() ne "")
+    if($description->logfile() ne '')
     {
         $errfile = "2>>" . $description->logfile();
     }
 
+    $self->nfssync( $pbs_job_script_name );
     chomp($job_id = `$qsub < $pbs_job_script_name $errfile`);
 
     if($? == 0)
@@ -388,7 +406,7 @@ sub poll
     $self->log("polling job $job_id");
 
     # Get first line matching job id
-    $_ = (grep(/job_state/, `$qstat -f $job_id 2>/dev/null`))[0];
+    $_ = (grep(/job_state/, $self->pipe_out_cmd($qstat, '-f', $job_id)))[0];
     # get the exit code of the qstat command.  for info search $CHILD_ERROR
     # in perlvar documentation.
     $exit_code = $? >> 8;
@@ -399,6 +417,10 @@ sub poll
     {
         $self->log("qstat rc is 153 == Unknown Job ID == DONE");
         $state = Globus::GRAM::JobState::DONE;
+	$self->nfssync( $description->stdout() )
+	    if $description->stdout() ne '';
+	$self->nfssync( $description->stderr() )
+	    if $description->stderr() ne '';
     }
     else
     {
@@ -442,7 +464,7 @@ sub cancel
 
     $self->log("cancel job $job_id");
 
-    system("$qdel $job_id >/dev/null 2>/dev/null");
+    $self->fork_and_exec_cmd( $qdel, $job_id );
 
     if($? == 0)
     {
