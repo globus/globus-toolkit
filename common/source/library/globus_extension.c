@@ -574,7 +574,6 @@ globus_extension_release(
             
             if(--entry->ref == 0)
             {
-                globus_hashtable_remove(entry->table, entry->symbol);
                 globus_free(entry->symbol);
                 globus_free(entry);
             }
