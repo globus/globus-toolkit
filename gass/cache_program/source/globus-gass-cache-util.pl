@@ -10,19 +10,24 @@ use Globus::Core::Paths;
 # Prototypes
 sub GassCacheList ( );
 sub GassCacheCleanupUrl ( $ );
+sub DumpHelp( );
 
 
 # ******************************************************
 # Command line options
 # ******************************************************
-my %Options =
-    (
-     "[-ping]"		=> "Enable ping test",
-     "[-]"		=> "Read roster from STDIN",
-     "[-reserved]"	=> "Check the reserved list",
-     "[-cluster]"	=> "Report \"Cluster\" nodes that are down",
-     "[-h]"		=> "Dump help",
-    );
+my $PerlOperations =<<END_OPERATIONS;
+    -cleanup-url   - remove all tags for an URL in the cache
+                     This operation requires that the URL be specified on
+                     the command line.
+    -list          - list the contents of the cache.
+                     If either the [-t tag] or a URL is specified on the
+                     command line, then only cache entries which match
+                     those will be listed
+END_OPERATIONS
+my $PerlOptions =<<END_OPTIONS;
+END_OPTIONS
+
 my $Program = $0;
 my $ProgramC = $Globus::Core::Paths::libexecdir . '/globus-gass-cache-util';
 my $Verbose = 0;
@@ -38,9 +43,8 @@ my @CprogFlags = (
 		  "-dirs",
 		  "-m", "-mangle",
 		  "-q", "-query",
-		  "-l", "-list",
 		  "-cleanup-tag",
-		  "-cleanup-url" );
+		  );
 my $CprogFlagsRE =
     "(" . join( ")|(", @CprogFlags ) . ")";
 
@@ -56,18 +60,41 @@ my @CprogArgs = (
 my $CprogArgsRE =
     "(" . join( ")|(", @CprogArgs ) . ")";
 
+# Arguments that the "C" _doesn't_ understand, and need to be stripped
+# off before we punt to the C program
+my @CprogNonArgs = (
+		    "-l", "-list",
+		    "-cleanup-url",
+		   );
+my $CprogNonArgsRE =
+    "(" . join( ")|(", @CprogNonArgs ) . ")";
+
 # The manglings we know about..
 my @Manglings = ( "html", "md5" );
 
 # Make stdout sane
 $|=1;
 
-# Walk through the command line
+# Store the URL to process
 my $URL = "";
+
+# Empty command line; punt it
 if ( $#ARGV < 0 )
 {
     exec ( "$ProgramC", @ARGV );
 }
+
+# Build list of C program arguments..
+my @CprogArgv = grep{!/^$CprogNonArgsRE$/} @ARGV;
+
+# Help; punt + our own processing...
+if ( grep( /^-help$/, @ARGV ) >= 1 )
+{
+    DumpHelp();
+    exit 0;
+}
+
+# Walk through the command line
 my @JobList;
 my $ArgNo;
 for($ArgNo = 0; $ArgNo < @ARGV; $ArgNo++)
@@ -93,7 +120,7 @@ for($ArgNo = 0; $ArgNo < @ARGV; $ArgNo++)
     elsif ( $Arg =~ /^($CprogFlagsRE)$/ )
     {
 	# Invoke the C program
-	exec ( "$ProgramC", @ARGV );
+	exec ( "$ProgramC", @CprogArgv );
     }
     elsif ( $Arg =~ /^($CprogArgsRE)$/ )
     {
@@ -103,7 +130,7 @@ for($ArgNo = 0; $ArgNo < @ARGV; $ArgNo++)
     elsif ( $Arg =~ /^-/ )
     {
 	# Not sure what the hell it is, punt it off to the C prog...
-	exec ( "$ProgramC", @ARGV );
+	exec ( "$ProgramC", @CprogArgv );
     }
     # Must be the URL
     else
@@ -115,7 +142,7 @@ for($ArgNo = 0; $ArgNo < @ARGV; $ArgNo++)
 # Did we do anything?  If not, punt to the C program...
 if ( $#JobList < 0 )
 {
-    exec ( "$ProgramC", @ARGV );
+    exec ( "$ProgramC", @CprogArgv );
 }
 else
 {
@@ -336,7 +363,7 @@ sub GassCacheCleanupUrl ( $ )
     if ( !defined( $Url ) || ( $Url eq "" )  )
     {
 	print STDERR "CleanupUrl requires a URL to cleanup\n";
-	system "$ProgramC -help";
+	DumpHelp( );
 	exit 1;
     }
 
@@ -561,34 +588,38 @@ sub GassCacheCleanupUrl ( $ )
 
 }   # GassCacheCleanupUrl()
 
-# ******************************************************
-# Dump out usage
-# ******************************************************
-sub Usage ( $ )
+sub DumpHelp( )
 {
-    my $Unknown = shift;
+    open( PROGC,  "$ProgramC -help 2>&1 |" )
+	or die "Can't run '$ProgramC' for help";
 
-    print "$Program: unknown option '$Unknown'\n" if ( $Unknown ne "" );
-    printf "usage: $Program %s\n", join (" ", sort keys %Options);
-    print "use '-h' for more help\n";
-    exit 1;
-
-} # usage ()
-# ******************************************************
-
-# ******************************************************
-# Dump out help
-# ******************************************************
-sub Help ( )
-{
-    my ($opt, $text);
-
-    printf "usage: $Program %s\n", join (" ", sort keys %Options);
-    foreach $opt (sort {lc($a) cmp lc($b) } keys %Options)
+    # Just print everything up 'til the "Valid optoins" line
+    $_ = <PROGC>;
+    while ( <PROGC> )
     {
-	printf ("  %15s : %-40s\n", $opt, $Options{$opt} );
+	print;
+	last if ( /^Valid oper/ );
     }
-    exit 0;
 
-} # help ()
-# ******************************************************
+    # Now, all the C program operations..
+    while ( <PROGC> )
+    {
+	chomp; s/\s+$//;
+	last if ( $_ eq "" );
+	print "$_\n";
+    }
+
+    # Print out _our_ operations
+    print "$PerlOperations\n";
+
+    # Now, all the C program options..
+    while ( <PROGC> )
+    {
+	chomp; s/\s+$//;
+	last if ( $_ eq "" );
+	print "$_\n";
+    }
+    # Print out _our- options
+    print "$PerlOptions\n";
+    close( PROGC );
+}
