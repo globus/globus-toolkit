@@ -2,7 +2,6 @@
 
 # myproxy test script
 # written by Jim Basney <jbasney@ncsa.uiuc.edu>
-# Feb 11 2003
 
 # Assumes myproxy-server running as root on the local machine if
 # MYPROXY_SERVER not set.
