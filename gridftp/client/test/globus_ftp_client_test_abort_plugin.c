@@ -132,6 +132,18 @@ globus_l_ftp_client_test_abort_plugin_verbose_list(
 
 static
 void
+globus_l_ftp_client_test_abort_plugin_machine_list(
+    globus_ftp_client_plugin_t *			plugin,
+    void *						plugin_specific,
+    globus_ftp_client_handle_t *			handle,
+    const char *					url,
+    const globus_ftp_client_operationattr_t *		attr,
+    globus_bool_t					restart)
+{
+}
+
+static
+void
 globus_l_ftp_client_test_abort_plugin_delete(
     globus_ftp_client_plugin_t *			plugin,
     void *						plugin_specific,
@@ -335,6 +347,16 @@ globus_l_ftp_client_test_abort_plugin_command(
 	    (*d->counter)++;
 	}
 	d->next = FTP_ABORT_AT_NLST_RESPONSE;
+    }
+    else if(strncmp(command_name, "MLSD", strlen("MLSD")) == 0)
+    {
+	if(d->when == FTP_ABORT_AT_MLSD)
+	{
+	    printf("[restart plugin]: About to restart during MLSD\n");
+	    globus_ftp_client_plugin_abort(handle);
+	    (*d->counter)++;
+	}
+	d->next = FTP_ABORT_AT_MLSD_RESPONSE;
     }
     else if(strncmp(command_name, "MKD", strlen("MKD")) == 0)
     {
@@ -619,6 +641,7 @@ globus_ftp_client_test_abort_plugin_init(
     GLOBUS_FTP_CLIENT_ABORT_PLUGIN_SET_FUNC(plugin, destroy);
     GLOBUS_FTP_CLIENT_ABORT_PLUGIN_SET_FUNC(plugin, list);
     GLOBUS_FTP_CLIENT_ABORT_PLUGIN_SET_FUNC(plugin, verbose_list);
+    GLOBUS_FTP_CLIENT_ABORT_PLUGIN_SET_FUNC(plugin, machine_list);
     GLOBUS_FTP_CLIENT_ABORT_PLUGIN_SET_FUNC(plugin, delete);
     GLOBUS_FTP_CLIENT_ABORT_PLUGIN_SET_FUNC(plugin, mkdir);
     GLOBUS_FTP_CLIENT_ABORT_PLUGIN_SET_FUNC(plugin, rmdir);

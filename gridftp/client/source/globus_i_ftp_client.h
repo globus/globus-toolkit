@@ -202,7 +202,6 @@ typedef enum
     GLOBUS_FTP_CLIENT_HANDLE_SOURCE_CONNECT,
     GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION,
     GLOBUS_FTP_CLIENT_HANDLE_SOURCE_LIST,
-    GLOBUS_FTP_CLIENT_HANDLE_SOURCE_NLST,
     GLOBUS_FTP_CLIENT_HANDLE_SOURCE_RETR_OR_ERET,
     GLOBUS_FTP_CLIENT_HANDLE_DEST_CONNECT,
     GLOBUS_FTP_CLIENT_HANDLE_DEST_SETUP_CONNECTION,
@@ -232,6 +231,7 @@ typedef enum
     GLOBUS_FTP_CLIENT_MOVE,
     GLOBUS_FTP_CLIENT_LIST,
     GLOBUS_FTP_CLIENT_NLST,
+    GLOBUS_FTP_CLIENT_MLSD,
     GLOBUS_FTP_CLIENT_GET,
     GLOBUS_FTP_CLIENT_PUT,
     GLOBUS_FTP_CLIENT_TRANSFER,
@@ -279,7 +279,6 @@ typedef enum
     GLOBUS_FTP_CLIENT_TARGET_REST,
     GLOBUS_FTP_CLIENT_TARGET_SETUP_OPERATION,
     GLOBUS_FTP_CLIENT_TARGET_SETUP_LIST,
-    GLOBUS_FTP_CLIENT_TARGET_SETUP_NLST,
     GLOBUS_FTP_CLIENT_TARGET_SETUP_GET,
     GLOBUS_FTP_CLIENT_TARGET_SETUP_PUT,
     GLOBUS_FTP_CLIENT_TARGET_SETUP_TRANSFER_SOURCE,
@@ -291,7 +290,6 @@ typedef enum
     GLOBUS_FTP_CLIENT_TARGET_SETUP_RNTO,
     GLOBUS_FTP_CLIENT_TARGET_SETUP_MDTM,
     GLOBUS_FTP_CLIENT_TARGET_LIST,
-    GLOBUS_FTP_CLIENT_TARGET_NLST,
     GLOBUS_FTP_CLIENT_TARGET_RETR,
     GLOBUS_FTP_CLIENT_TARGET_STOR,
     GLOBUS_FTP_CLIENT_TARGET_MDTM,
@@ -681,6 +679,7 @@ typedef struct globus_i_ftp_client_plugin_t
     globus_ftp_client_plugin_rmdir_t		rmdir_func;
     globus_ftp_client_plugin_move_t		move_func;
     globus_ftp_client_plugin_verbose_list_t     verbose_list_func;
+    globus_ftp_client_plugin_machine_list_t     machine_list_func;
     globus_ftp_client_plugin_list_t		list_func;
     globus_ftp_client_plugin_get_t		get_func;
     globus_ftp_client_plugin_put_t		put_func;
@@ -832,6 +831,12 @@ globus_i_ftp_client_plugin_notify_verbose_list(
     globus_i_ftp_client_operationattr_t *	attr);
 
 void
+globus_i_ftp_client_plugin_notify_machine_list(
+    globus_i_ftp_client_handle_t *		handle,
+    const char *				url,
+    globus_i_ftp_client_operationattr_t *	attr);
+
+void
 globus_i_ftp_client_plugin_notify_delete(
     globus_i_ftp_client_handle_t *		handle,
     const char *				url,
@@ -965,6 +970,8 @@ globus_i_ftp_client_restart_register_oneshot(
     globus_i_ftp_client_handle_t *		handle);
 
 /* globus_ftp_client_transfer.c */
+
+
 void
 globus_i_ftp_client_force_close_callback(
     void *					user_arg,

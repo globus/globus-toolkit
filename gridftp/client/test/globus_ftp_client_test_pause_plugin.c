@@ -127,6 +127,18 @@ globus_l_ftp_client_test_pause_plugin_verbose_list(
 
 static
 void
+globus_l_ftp_client_test_pause_plugin_machine_list(
+    globus_ftp_client_plugin_t *			plugin,
+    void *						plugin_specific,
+    globus_ftp_client_handle_t *			handle,
+    const char *					url,
+    const globus_ftp_client_operationattr_t *		attr,
+    globus_bool_t					restart)
+{
+}
+
+static
+void
 globus_l_ftp_client_test_pause_plugin_move(
     globus_ftp_client_plugin_t *			plugin,
     void *						plugin_specific,
@@ -252,6 +264,7 @@ globus_ftp_client_test_pause_plugin_init(
     GLOBUS_FTP_CLIENT_PAUSE_PLUGIN_SET_FUNC(plugin, destroy);
     GLOBUS_FTP_CLIENT_PAUSE_PLUGIN_SET_FUNC(plugin, list);
     GLOBUS_FTP_CLIENT_PAUSE_PLUGIN_SET_FUNC(plugin, verbose_list);
+    GLOBUS_FTP_CLIENT_PAUSE_PLUGIN_SET_FUNC(plugin, machine_list);
     GLOBUS_FTP_CLIENT_PAUSE_PLUGIN_SET_FUNC(plugin, mkdir);
     GLOBUS_FTP_CLIENT_PAUSE_PLUGIN_SET_FUNC(plugin, rmdir);
     GLOBUS_FTP_CLIENT_PAUSE_PLUGIN_SET_FUNC(plugin, delete);

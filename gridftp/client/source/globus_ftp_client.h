@@ -540,6 +540,14 @@ globus_ftp_client_verbose_list(
     void *					callback_arg);
 
 globus_result_t
+globus_ftp_client_machine_list(
+    globus_ftp_client_handle_t *		handle,
+    const char *				url,
+    globus_ftp_client_operationattr_t *		attr,
+    globus_ftp_client_complete_callback_t	complete_callback,
+    void *					callback_arg);
+
+globus_result_t
 globus_ftp_client_move(
     globus_ftp_client_handle_t *		handle,
     const char *				source_url,
@@ -848,7 +856,8 @@ globus_ftp_client_operationattr_copy(
  * for reading or writing data to an FTP server. These operations are
  * globus_ftp_client_get(), globus_ftp_client_partial_get(),
  * globus_ftp_client_put(), globus_ftp_client_partial_put(),
- * globus_ftp_client_list(), and globus_ftp_client_verbose_list().
+ * globus_ftp_client_list(), globus_ftp_client_machine_list(), 
+ * and globus_ftp_client_verbose_list().
  *
  * When doing these operations, the user must pass data buffers
  * to the FTP Client library. Data is read or written directly from

@@ -309,6 +309,7 @@ globus_i_ftp_op_to_string(
     static const char * get      = "GLOBUS_FTP_CLIENT_GET";
     static const char * list     = "GLOBUS_FTP_CLIENT_LIST";
     static const char * nlst     = "GLOBUS_FTP_CLIENT_NLST";
+    static const char * mlsd     = "GLOBUS_FTP_CLIENT_MLSD";
     static const char * delete   = "GLOBUS_FTP_CLIENT_DELETE";
     static const char * mkdir    = "GLOBUS_FTP_CLIENT_MKDIR";
     static const char * rmdir    = "GLOBUS_FTP_CLIENT_RMDIR";
@@ -330,6 +331,8 @@ globus_i_ftp_op_to_string(
 	return list;
     case GLOBUS_FTP_CLIENT_NLST:
 	return nlst;
+    case GLOBUS_FTP_CLIENT_MLSD:
+	return mlsd;
     case GLOBUS_FTP_CLIENT_DELETE:
 	return delete;
     case GLOBUS_FTP_CLIENT_GET:
@@ -399,7 +402,6 @@ globus_i_ftp_target_state_to_string(
     static const char * rest                    = "REST";
     static const char * setup_operation         = "SETUP_OPERATION";
     static const char * setup_list              = "SETUP_LIST";
-    static const char * setup_nlst              = "SETUP_NLST";
     static const char * setup_get               = "SETUP_GET";
     static const char * setup_put               = "SETUP_PUT";
     static const char * setup_transfer_source   = "SETUP_TRANSFER_SOURCE";
@@ -411,7 +413,6 @@ globus_i_ftp_target_state_to_string(
     static const char * setup_rnto              = "SETUP_RNTO";
     static const char * setup_mdtm              = "SETUP_MDTM";
     static const char * list                    = "LIST";
-    static const char * nlst                    = "NLST";
     static const char * retr                    = "RETR";
     static const char * stor                    = "STOR";
     static const char * mdtm                    = "MDTM";
@@ -536,9 +537,6 @@ globus_i_ftp_target_state_to_string(
         case GLOBUS_FTP_CLIENT_TARGET_SETUP_LIST:
             return setup_list;
             break;
-        case GLOBUS_FTP_CLIENT_TARGET_SETUP_NLST:
-            return setup_nlst;
-            break;
         case GLOBUS_FTP_CLIENT_TARGET_SETUP_GET:
             return setup_get;
             break;
@@ -571,9 +569,6 @@ globus_i_ftp_target_state_to_string(
             break;
         case GLOBUS_FTP_CLIENT_TARGET_LIST:
             return list;
-            break;
-        case GLOBUS_FTP_CLIENT_TARGET_NLST:
-            return nlst;
             break;
         case GLOBUS_FTP_CLIENT_TARGET_RETR:
             return retr;
@@ -638,7 +633,6 @@ globus_i_ftp_handle_state_to_string(
     static const char * source_connect                      = "SOURCE_CONNECT";
     static const char * source_setup_connection             = "SOURCE_SETUP_CONNECTION";
     static const char * source_list                         = "SOURCE_LIST";
-    static const char * source_nlst                         = "SOURCE_NLST";
     static const char * source_retr_or_eret                 = "SOURCE_RETR_OR_ERET";
     static const char * dest_connect                        = "DEST_CONNECT";
     static const char * dest_setup_connection               = "DEST_SETUP_CONNECTION";
@@ -664,9 +658,6 @@ globus_i_ftp_handle_state_to_string(
             break;
         case GLOBUS_FTP_CLIENT_HANDLE_SOURCE_LIST:
             return source_list;
-            break;
-        case GLOBUS_FTP_CLIENT_HANDLE_SOURCE_NLST:
-            return source_nlst;
             break;
         case GLOBUS_FTP_CLIENT_HANDLE_SOURCE_RETR_OR_ERET:
             return source_retr_or_eret;

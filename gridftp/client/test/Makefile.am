@@ -66,6 +66,7 @@ libglobus_ftp_client_test___GLOBUS_FLAVOR_NAME__la_SOURCES = \
 test_PROGRAMS= \
 	globus-ftp-client-ascii-list-test \
 	globus-ftp-client-ascii-verbose-list-test \
+	globus-ftp-client-ascii-machine-list-test \
 	globus-ftp-client-bad-buffer-test \
 	globus-ftp-client-cache-all-test \
 	globus-ftp-client-create-destroy-test \
@@ -181,6 +182,9 @@ globus_ftp_client_move_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_ftp_client_ascii_verbose_list_test_SOURCES = globus_ftp_client_ascii_verbose_list_test.c $(LibHeaders)
 globus_ftp_client_ascii_verbose_list_test_LDFLAGS = $(GPT_LDFLAGS)
+
+globus_ftp_client_ascii_machine_list_test_SOURCES = globus_ftp_client_ascii_machine_list_test.c $(LibHeaders)
+globus_ftp_client_ascii_machine_list_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_ftp_client_cache_all_test_SOURCES = globus_ftp_client_cache_all_test.c $(LibHeaders)
 globus_ftp_client_cache_all_test_LDFLAGS = $(GPT_LDFLAGS)
