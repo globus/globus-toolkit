@@ -34,7 +34,8 @@ void perf_plugin_begin_cb(
     void *                                          user_specific,
     globus_ftp_client_handle_t *                    handle,
     const char *                                    source_url,
-    const char *                                    dest_url)
+    const char *                                    dest_url,
+    globus_bool_t                                   restart)
 {
     globus_libc_fprintf(stderr, "perf_plugin_begin_cb\n");
 }
