@@ -1109,24 +1109,7 @@ while(i)
      */
 #   if defined(USE_GLOBUS_DATA_CODE)
     {
-        char *                            a;
-        globus_ftp_control_host_port_t    host_port;
-        globus_result_t                   res;
-
-        globus_module_activate(GLOBUS_FTP_CONTROL_MODULE);
-
-        a = (char *)&his_addr;
-        host_port.host[0] = (int)a[0];
-        host_port.host[1] = (int)a[1];
-        host_port.host[2] = (int)a[2];
-        host_port.host[3] = (int)a[3];
-        host_port.port = 21;
-
-        globus_ftp_control_handle_init(&g_data_handle);
-        res = globus_ftp_control_local_port(
-                  &g_data_handle,
-                  &host_port);
-        assert(res == GLOBUS_SUCCESS);
+        g_start();
     }
 #   endif
 
@@ -6571,6 +6554,11 @@ void dologout(int status)
 	gssapi_remove_delegation();
 #endif /* GSSAPI */
     /* beware of flushing buffers after a SIGPIPE */
+
+#ifdef USE_GLOBUS_DATA_CODE
+    g_end();
+#endif
+
     _exit(status);
 }
 

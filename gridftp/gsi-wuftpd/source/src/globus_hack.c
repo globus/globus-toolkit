@@ -55,6 +55,7 @@ extern int xfer_count_total;
 extern int xfer_count_in;
 extern int xfer_count_out;
 extern struct sockaddr_in ctrl_addr;
+extern struct sockaddr_in his_addr;
 /**********************************************************n
  * local function prototypes
  ************************************************************/
@@ -114,6 +115,61 @@ wu_monitor_destroy(
 {
     globus_mutex_destroy(&mon->mutex);
     globus_cond_destroy(&mon->cond);
+}
+
+void
+g_start()
+{
+    char *                            a;
+    globus_ftp_control_host_port_t    host_port;
+    globus_result_t                   res;
+
+    res = globus_module_activate(GLOBUS_FTP_CONTROL_MODULE);
+    assert(res == GLOBUS_SUCCESS);
+
+    a = (char *)&his_addr;
+    host_port.host[0] = (int)a[0];
+    host_port.host[1] = (int)a[1];
+    host_port.host[2] = (int)a[2];
+    host_port.host[3] = (int)a[3];
+    host_port.port = 21;
+
+    globus_ftp_control_handle_init(&g_data_handle);
+    res = globus_ftp_control_local_port(
+              &g_data_handle,
+              &host_port);
+    assert(res == GLOBUS_SUCCESS);
+}
+
+void
+g_end()
+{
+    globus_i_wu_montor_t                            monitor;
+    globus_result_t                                 res;
+
+    wu_monitor_init(&monitor);
+    /*
+     *  force close the data connection
+     */
+    monitor.done = GLOBUS_FALSE;
+    res = globus_ftp_control_data_force_close(
+              &g_data_handle,
+              data_close_callback,
+              (void*)&monitor);
+    /*
+     *  wait for all the callbacks and the close callback 
+     */
+    globus_mutex_lock(&monitor.mutex);
+    {   
+        while(!monitor.done)
+        {
+            globus_cond_wait(&monitor.cond, &monitor.mutex);
+        }
+    }
+    globus_mutex_unlock(&monitor.mutex);
+
+    globus_ftp_control_handle_destroy(&g_data_handle);
+    globus_module_deactivate(GLOBUS_FTP_CONTROL_MODULE);
 }
 
 void
@@ -223,6 +279,7 @@ g_send_data(
               (void *)&monitor);
     if(res != GLOBUS_SUCCESS)
     {
+        goto data_err;
     }
 
     globus_mutex_lock(&monitor.mutex);
@@ -351,6 +408,10 @@ g_send_data(
 
                 file_ndx = buffer_ndx;
                 buffer_ndx = 0;
+                if(g_timeout_occured)
+                { 
+                    goto data_err;
+                }
             }
         }
 
@@ -646,7 +707,6 @@ g_send_data(
               handle,
               data_close_callback,
               (void*)&monitor);
-
     /*
      *  wait for all the callbacks and the close callback 
      */
@@ -682,6 +742,7 @@ g_send_data(
 
   clean_exit:
 
+/*
     monitor.done = GLOBUS_FALSE;
     res = globus_ftp_control_data_force_close(
               handle,
@@ -695,7 +756,7 @@ g_send_data(
         }
     }
     globus_mutex_unlock(&monitor.mutex);
-
+*/
     wu_monitor_destroy(&monitor);
     return (1);
 }
@@ -913,21 +974,6 @@ g_receive_data(
     return (-1);
 
   clean_exit:
-
-    monitor.done = GLOBUS_FALSE;
-    res = globus_ftp_control_data_force_close(
-              handle,
-              data_close_callback,
-              (void*)&monitor);
-    globus_mutex_lock(&monitor.mutex);
-    {   
-        while(!monitor.done)
-        {
-            globus_cond_wait(&monitor.cond, &monitor.mutex);
-        }
-    }
-    globus_mutex_unlock(&monitor.mutex);
-
     wu_monitor_destroy(&monitor);
     return (0);
 }

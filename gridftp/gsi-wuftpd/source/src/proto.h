@@ -91,6 +91,12 @@ g_receive_data(
 void
 g_passive();
 
+void
+g_start();
+
+void
+g_end();
+
 #endif /* USE_GLOBUS_DATA_CODE */
 
 /*
