@@ -15,11 +15,15 @@ globus_l_gfs_acl_next(
     globus_i_gfs_acl_handle_t *         acl_handle,
     globus_result_t *                   out_res)
 {
-    int                                 rc;
+    int                                 rc = GLOBUS_GFS_ACL_COMPLETE;
     globus_gfs_acl_module_t *           module;
     globus_l_gfs_acl_request_t *        acl_request;
 
-    do
+    *out_res = GLOBUS_SUCCESS;
+
+    while(rc == GLOBUS_GFS_ACL_COMPLETE &&
+        *out_res == GLOBUS_SUCCESS &&
+        !globus_list_empty(acl_handle->current_list))
     {
         acl_request = (globus_l_gfs_acl_request_t *) globus_list_remove(
             &acl_handle->current_list, acl_handle->current_list);
@@ -50,9 +54,7 @@ globus_l_gfs_acl_next(
                 globus_assert(0 && "possible memory corruption");
                 break;
         }
-    } while(rc == GLOBUS_GFS_ACL_COMPLETE &&
-            *out_res == GLOBUS_SUCCESS &&
-            !globus_list_empty(acl_handle->current_list));
+    } 
 
     return rc;
 }
