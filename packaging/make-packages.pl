@@ -1158,7 +1158,8 @@ sub package_source_gpt()
 	    paranoia "configure failed.  See $pkglog/$package.";
 	    log_system("make dist", "$pkglog/$package");
 	    paranoia "make dist failed.  See $pkglog/$package.";
-	    log_system("cp ${package}-*.tar.gz $package_output", "$pkglog/$package");
+	    my $version = gpt_get_version("pkgdata/pkg_data_src.gpt");
+	    log_system("cp ${package}-${version}.tar.gz $package_output", "$pkglog/$package");
 	    paranoia "cp of ${package}-*.tar.gz failed: $!  See $pkglog/$package.";
 	    $ENV{'GPT_IGNORE_DEPS'}="";
 	}
