@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2001,2002 Simon Wilkinson. All rights reserved.
+ * Copyright (c) 2001-2003 Simon Wilkinson. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -39,12 +39,12 @@
 #include "ssh2.h"
 #include "ssh-gss.h"
 #include "monitor_wrap.h"
-#include "canohost.h"
+
+static void kex_gss_send_error(Gssctxt *ctxt);
 
 void
 kexgss_server(Kex *kex)
 {
-
 	OM_uint32 maj_status, min_status;
 	
 	/* Some GSSAPI implementations use the input value of ret_flags (an
@@ -62,22 +62,24 @@ kexgss_server(Kex *kex)
         BIGNUM *shared_secret = NULL;
         BIGNUM *dh_client_pub = NULL;
 	int type =0;
-	gss_OID oid;
 	u_int slen;
+	gss_OID oid;
 	
 	/* Initialise GSSAPI */
 
 	debug2("%s: Identifying %s",__func__,kex->name);
-	oid=ssh_gssapi_id_kex(ctxt,kex->name);
+	oid=ssh_gssapi_server_id_kex(kex->name);
 	if (oid==NULL) {
 	   packet_disconnect("Unknown gssapi mechanism");
 	}
 	
 	debug2("%s: Acquiring credentials",__func__);
 	
-	if (GSS_ERROR(PRIVSEP(ssh_gssapi_server_ctx(&ctxt,oid))))
-	   packet_disconnect("Unable to acquire credentials for the server");
-
+	if (GSS_ERROR(PRIVSEP(ssh_gssapi_server_ctx(&ctxt,oid)))) {
+		kex_gss_send_error(ctxt);
+        	packet_disconnect("Unable to acquire credentials for the server");
+        }
+                                                                                                                                
 	do {
 		debug("Wait SSH2_MSG_GSSAPI_INIT");
 		type = packet_read();
@@ -91,14 +93,12 @@ kexgss_server(Kex *kex)
 		        dh_client_pub = BN_new();
 		        
 		        if (dh_client_pub == NULL)
-        			fatal("dh_client_pub == NULL");
+        			packet_disconnect("dh_client_pub == NULL");
 		  	packet_get_bignum2(dh_client_pub);
 		  	
 		  	/* Send SSH_MSG_KEXGSS_HOSTKEY here, if we want */
 			break;
 		case SSH2_MSG_KEXGSS_CONTINUE:
-			if (dh_client_pub == NULL)
-				packet_disconnect("Received KEXGSS_CONTINUE without initialising");
 			recv_tok.value=packet_get_string(&slen);
 			recv_tok.length=slen; /* int vs. size_t */
 			break;
@@ -111,12 +111,19 @@ kexgss_server(Kex *kex)
 							 &send_tok, &ret_flags));
 
 		gss_release_buffer(&min_status,&recv_tok);
-
+		
 #ifdef GSS_C_GLOBUS_LIMITED_PROXY_FLAG
                 if (ret_flags & GSS_C_GLOBUS_LIMITED_PROXY_FLAG) {
                         packet_disconnect("Limited proxy is not allowed in gssapi key exchange.");
                 }
 #endif
+
+		if (maj_status!=GSS_S_COMPLETE && send_tok.length==0) {
+			fatal("Zero length token output when incomplete");
+		}
+
+		if (dh_client_pub == NULL)
+			fatal("No client public key");
 		
 		if (maj_status & GSS_S_CONTINUE_NEEDED) {
 			debug("Sending GSSAPI_CONTINUE");
@@ -129,21 +136,23 @@ kexgss_server(Kex *kex)
 	} while (maj_status & GSS_S_CONTINUE_NEEDED);
 
 	if (GSS_ERROR(maj_status)) {
-		ssh_gssapi_send_error(oid,maj_status,min_status);
+		kex_gss_send_error(ctxt);
+		if (send_tok.length>0) {
+			packet_start(SSH2_MSG_KEXGSS_CONTINUE);
+			packet_put_string(send_tok.value,send_tok.length);
+			packet_send();
+			packet_write_wait();
+		}	
 		packet_disconnect("gssapi key exchange handshake failed");
 	}
-
-	debug("gss_complete");
-	if (!(ret_flags & GSS_C_MUTUAL_FLAG)) {
-		ssh_gssapi_send_error(oid,maj_status,min_status);
-		packet_disconnect("gssapi mutual authentication failed");
-	}
-		
-	if (!(ret_flags & GSS_C_INTEG_FLAG)) {
-		ssh_gssapi_send_error(oid,maj_status,min_status);
-		packet_disconnect("gssapi channel integrity not established");
-	}		
 	
+	debug("gss_complete");
+	if (!(ret_flags & GSS_C_MUTUAL_FLAG))
+		packet_disconnect("gssapi_mutual authentication failed");
+		
+	if (!(ret_flags & GSS_C_INTEG_FLAG))
+		packet_disconnect("gssapi channel integrity not established");
+			
 	dh = dh_new_group1();
 	dh_gen_key(dh, kex->we_need * 8);
 	
@@ -159,7 +168,8 @@ kexgss_server(Kex *kex)
 	memset(kbuf, 0, klen);
 	xfree(kbuf);
 	
-        hash = kex_gssapi_hash(
+	/* The GSSAPI hash is identical to the Diffie Helman one */
+        hash = kex_dh_hash(
             kex->client_version_string,
             kex->server_version_string,
             buffer_ptr(&kex->peer), buffer_len(&kex->peer),
@@ -181,12 +191,8 @@ kexgss_server(Kex *kex)
 	gssbuf.length = 20; /* Hashlen appears to always be 20 */
 	
 	if (GSS_ERROR(PRIVSEP(ssh_gssapi_sign(ctxt,&gssbuf,&msg_tok)))) {
-		if (ctxt) { /* may be NULL under privsep */
-		    ssh_gssapi_send_error(ctxt->oid,maj_status,min_status);
-		} else {
-		    ssh_gssapi_send_error(GSS_C_NO_OID,maj_status,min_status);
-		}
-		packet_disconnect("Couldn't get MIC");
+		kex_gss_send_error(ctxt);
+		fatal("Couldn't get MIC");
 	}
 	
 	packet_start(SSH2_MSG_KEXGSS_COMPLETE);
@@ -220,4 +226,22 @@ kexgss_server(Kex *kex)
 	kex_finish(kex);
 }
 
+static void 
+kex_gss_send_error(Gssctxt *ctxt) {
+	char *errstr;
+	OM_uint32 maj,min;
+		
+	errstr=PRIVSEP(ssh_gssapi_last_error(ctxt,&maj,&min));
+	if (errstr) {
+		packet_start(SSH2_MSG_KEXGSS_ERROR);
+		packet_put_int(maj);
+		packet_put_int(min);
+		packet_put_cstring(errstr);
+		packet_put_cstring("");
+		packet_send();
+		packet_write_wait();
+		/* XXX - We should probably log the error locally here */
+		xfree(errstr);
+	}
+}
 #endif /* GSSAPI */

@@ -59,6 +59,25 @@ BIGNUM *mm_auth_rsa_generate_challenge(Key *);
 void mm_start_pam(char *);
 #endif
 
+#ifdef GSSAPI
+#include "ssh-gss.h"
+OM_uint32 mm_ssh_gssapi_server_ctx(Gssctxt **ctxt, gss_OID oid);
+OM_uint32 mm_ssh_gssapi_accept_ctx(Gssctxt *ctxt, gss_buffer_desc *recv,
+				   gss_buffer_desc *send, OM_uint32 *flags);
+OM_uint32 mm_ssh_gssapi_sign(Gssctxt *ctxt, gss_buffer_desc *buffer,
+			     gss_buffer_desc *hash);
+int mm_ssh_gssapi_userok(char *user);
+int mm_ssh_gssapi_localname(char **user);
+OM_uint32 mm_gss_indicate_mechs(OM_uint32 *minor_status,
+				gss_OID_set *mech_set);
+char *mm_ssh_gssapi_last_error(Gssctxt *ctxt, OM_uint32 *maj, OM_uint32 *min);
+
+#endif
+
+#ifdef GSI
+int mm_gsi_gridmap(char *subject_name, char **mapped_name);
+#endif
+
 void mm_terminate(void);
 int mm_pty_allocate(int *, int *, char *, int);
 void mm_session_pty_cleanup2(void *);
