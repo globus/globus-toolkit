@@ -76,8 +76,8 @@ globus_l_gsc_cmd_mdtm_cb(
     {
         tm = gmtime(&stat_info[0].mtime);
         msg =  globus_common_create_string(
-            "213 %4d%2d%2d%2d%2d%2d\r\n",
-            tm->tm_year, tm->tm_mon, tm->tm_mday, 
+            "213 %04d%02d%02d%02d%02d%02d\r\n",
+            tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday, 
             tm->tm_hour, tm->tm_min, tm->tm_sec);
     }
 
