@@ -1,13 +1,13 @@
-package org.globus.ogsa.base.gram.testing.throughput;
+package org.globus.ogsa.base.gram.testing.scalability;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.globus.ogsa.utils.PerformanceLog;
 
-public class ThroughputTester {
+public class ScalabilityTester {
 
-    static Log logger = LogFactory.getLog(ThroughputTester.class.getName());
+    static Log logger = LogFactory.getLog(ScalabilityTester.class.getName());
 
     String factoryUrl = null;
     String rslFile = null;
@@ -21,11 +21,11 @@ public class ThroughputTester {
     int stoppedCount = 0;
 
     PerformanceLog perfLog = new PerformanceLog(
-        ThroughputTester.class.getName());
+        ScalabilityTester.class.getName());
     PerformanceLog completePerfLog = new PerformanceLog(
-        ThroughputTester.class.getName() + ".complete");
+        ScalabilityTester.class.getName() + ".complete");
 
-    public ThroughputTester() { }
+    public ScalabilityTester() { }
 
     public synchronized void run() {
         createAll();
@@ -277,7 +277,7 @@ public class ThroughputTester {
         StringBuffer usageMessage = new StringBuffer(customMessage);
         usageMessage.append("\nUsage:");
         usageMessage.append("\njava ... ");
-        usageMessage.append(ThroughputTester.class.getName()).append(" \\");
+        usageMessage.append(ScalabilityTester.class.getName()).append(" \\");
         usageMessage.append("\n\t<factory URL> <RSL file> <job count>");
         System.out.println(usageMessage.toString());
     }
@@ -286,13 +286,13 @@ public class ThroughputTester {
         if (args.length == 1) {
             if (   args[0].equals("-h")
                 || args[0].equals("--help")) {
-                ThroughputTester.printUsage("-- Help --");
+                ScalabilityTester.printUsage("-- Help --");
                 System.exit(0);
             }
 
         }
         if (args.length != 3) {
-            ThroughputTester.printUsage("Error: invalid number of arguments");
+            ScalabilityTester.printUsage("Error: invalid number of arguments");
             System.exit(1);
         }
         if (logger.isDebugEnabled()) {
@@ -301,7 +301,7 @@ public class ThroughputTester {
             logger.debug("Job Count: " + args[2]);
         }
 
-        ThroughputTester harness = new ThroughputTester();
+        ScalabilityTester harness = new ScalabilityTester();
         harness.setFactoryUrl(args[0]);
         harness.setRslFile(args[1]);
         harness.setCount(Integer.parseInt(args[2]));

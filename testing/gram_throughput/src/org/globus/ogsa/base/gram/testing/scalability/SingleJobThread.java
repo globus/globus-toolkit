@@ -1,4 +1,4 @@
-package org.globus.ogsa.base.gram.testing.throughput;
+package org.globus.ogsa.base.gram.testing.scalability;
 
 import java.io.File;
 import java.io.FileReader;
@@ -67,7 +67,7 @@ public class SingleJobThread
 
     static Log logger = LogFactory.getLog(SingleJobThread.class.getName());
 
-    ThroughputTester harness = null;
+    ScalabilityTester harness = null;
     String factoryUrl = null;
     Element rsl = null;
     ManagedJobServiceGridLocator mjsLocator = null;
@@ -80,7 +80,7 @@ public class SingleJobThread
     PerformanceLog perfLog = new PerformanceLog(
         SingleJobThread.class.getName());
 
-    public SingleJobThread(ThroughputTester harness, int jobIndex) {
+    public SingleJobThread(ScalabilityTester harness, int jobIndex) {
         this.harness = harness;
         this.jobIndex = jobIndex;
         this.factoryUrl = this.harness.getFactoryUrl();
