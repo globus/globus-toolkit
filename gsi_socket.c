@@ -582,6 +582,21 @@ GSI_SOCKET_clear_error(GSI_SOCKET *self)
 
 
 int
+GSI_SOCKET_set_encryption(GSI_SOCKET *self,
+			  const int value)
+{
+    if (self == NULL)
+    {
+	return GSI_SOCKET_ERROR;
+    }
+
+    self->encryption = value;
+
+    return GSI_SOCKET_SUCCESS;
+}
+
+
+int
 GSI_SOCKET_use_creds(GSI_SOCKET *self,
 		     const char *creds)
 {
