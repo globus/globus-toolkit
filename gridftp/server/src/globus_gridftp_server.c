@@ -29,7 +29,13 @@ void
 globus_l_gfs_server_closed(
     void *                              user_arg);
 
-
+static
+void
+globus_l_gfs_close_cb(
+    globus_xio_handle_t                 handle,
+    globus_result_t                     result,
+    void *                              user_arg);
+    
 static
 void
 globus_l_gfs_server_accept_cb(
@@ -253,7 +259,7 @@ globus_l_gfs_signal_init()
 #   endif
 }
 
-
+/* called locked */
 static
 globus_result_t
 globus_l_gfs_spawn_child(
@@ -281,7 +287,7 @@ globus_l_gfs_spawn_child(
     }
 
     child_pid = fork();
-    if (child_pid == 0)
+    if(child_pid == 0)
     { 
         if(globus_l_gfs_xio_server)
         {
@@ -338,15 +344,19 @@ globus_l_gfs_spawn_child(
     }
     else
     { 
-        result = globus_xio_close(
+        /* inc the connection count 2 here since we will dec it on this close
+        and on the death of the child process */
+        globus_l_gfs_open_count += 2;
+        globus_mutex_unlock(&globus_l_gfs_mutex);
+        result = globus_xio_register_close(
             handle,
-            GLOBUS_NULL);
+            NULL,
+            globus_l_gfs_close_cb,
+            NULL);    
         if(result != GLOBUS_SUCCESS)
         {
-            globus_i_gfs_log_result(
-                "Could not close handle in daemon process", result);
-            goto error;
-        }
+            globus_l_gfs_close_cb(handle, result, NULL);
+        }        
     }    
 
     return GLOBUS_SUCCESS;
@@ -367,10 +377,11 @@ globus_i_gfs_connection_closed()
     globus_result_t                     result;
 
     globus_l_gfs_open_count--;
-    if(globus_l_gfs_terminated)
+    if(globus_l_gfs_terminated || globus_i_gfs_config_bool("inetd"))
     {
         if(globus_l_gfs_open_count == 0)
         {
+            globus_l_gfs_terminated = GLOBUS_TRUE;
             globus_cond_signal(&globus_l_gfs_cond);
         }
     }
@@ -920,7 +931,6 @@ main(
         }
         if(globus_i_gfs_config_bool("inetd"))
         {
-            globus_l_gfs_terminated = GLOBUS_TRUE;
             result = globus_l_gfs_convert_inetd_handle();
         }
         else
