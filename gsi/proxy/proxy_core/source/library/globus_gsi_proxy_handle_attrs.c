@@ -15,18 +15,18 @@
  */
 /*@{*/
 /**
- * Initialize a GSI Proxy Handle Attribute.
+ * Initialize GSI Proxy Handle Attributes.
  * @ingroup globus_gsi_proxy_handle_attrs
  *
- * Initialize a proxy handle attribute, which
+ * Initialize proxy handle attributes, which
  * can (and should) be associated with a proxy handle.
- * For most purposes, this attribute should primarily
+ * For most purposes, these attributes should primarily
  * be used by the proxy handle. 
  *
  * Currently, no attibute values are initialized.
  *
  * @param handle_attrs
- *        The handle attribute to be initialized
+ *        The handle attributes structure to be initialized
  * @return
  *        GLOBUS_SUCCESS
  *
@@ -47,11 +47,11 @@ globus_gsi_proxy_handle_attrs_init(
  */
 /* @{ */
 /**
- * Destroy the GSI Proxy handle attribute
+ * Destroy the GSI Proxy handle attributes
  * @ingroup globus_gsi_proxy_handle_attrs
  *
  * @param handle_attrs
- *        The handle to be destroyed.
+ *        The handle attributes to be destroyed.
  * @return 
  *        GLOBUS_SUCCESS
  *
@@ -70,11 +70,11 @@ globus_gsi_proxy_handle_attrs_destroy(
  */
 /*@{*/
 /**
- * Make a copy of a GSI Proxy handle attribute
+ * Make a copy of GSI Proxy handle attributes
  * @ingroup globus_gsi_proxy_handle_attrs
  *
  * @param a 
- *        The handle attribute to copy
+ *        The handle attributes to copy
  * @param b 
  *        The copy
  * @return
