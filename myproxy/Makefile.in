@@ -40,7 +40,8 @@ MYPROXY_LIB     =       libmyproxy.a
 
 LIB_OBJS	= myproxy.o gsi_socket.o gnu_getopt.o gnu_getopt_long.o \
 			verror.o ssl_utils.o string_funcs.o \
-			myproxy_delegation.o myproxy_read_pass.o
+			myproxy_delegation.o myproxy_read_pass.o \
+			gsi_proxy.o myproxy_authorization.o
 INIT_OBJS	= myproxy_init.o $(MYPROXY_LIB)
 DESTROY_OBJS	= myproxy_destroy.o $(MYPROXY_LIB)
 GET_OBJS	= myproxy_get_delegation.o $(MYPROXY_LIB)
