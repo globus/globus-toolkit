@@ -48,6 +48,8 @@ EOF
     Options:
 	-help, -usage           Displays usage
         -version                Displays version
+        -resource               Cleanup job using the specified resource
+                                manager
 	-force            (-f)  Do not ask user to confirm ${action}
 	-quiet            (-q)  Quiet ${action} (no output, implies -f)
 EOF
@@ -76,6 +78,7 @@ if [ $# -eq 0 ]; then
 fi
 
 jobid=
+resource=
 force=no
 quiet=no
 
@@ -88,6 +91,13 @@ while [ -n "$1" ]; do
 	    force=yes
 	    quiet=yes
 	    ;;
+        -resource)
+            if [ -z "$2" ]; then
+                globus_args_option_error "$1" "need a resource contact string"
+            fi
+            resource="$2"
+            shift
+            ;;
 	--)
 	    break
 	    ;;
@@ -112,8 +122,10 @@ if [ -z "${jobid}" ]; then
 fi
 
 if [ ${action} = cleanup ]; then
-    host=`echo ${jobid} | ${GLOBUS_SH_AWK} -F: '{print $2}' | \
-	    ${GLOBUS_SH_SED-sed} 's|/||g'`
+   if [ -z "${resource}" ]; then
+      resource=`echo ${jobid} | ${GLOBUS_SH_AWK} -F: '{print $2}' | \
+          ${GLOBUS_SH_SED-sed} 's|/||g'`
+   fi
 fi
 
 ${bindir}/grid-proxy-info -exists
@@ -133,7 +145,7 @@ else
 
     WARNING: Cleaning a job means:
         - Kill the job if it still running, and
-        - Remove the cached output on the remote host
+        - Remove the cached output on the remote resource
 EOF
     fi
     ${GLOBUS_SH_CAT-cat} <<EOF
@@ -170,7 +182,7 @@ case "${action}:${answer}" in
 	# Eeeech... ugly...
 	#
 	myrsl="&(executable=\$(GLOBUS_LOCATION)/bin/globus-sh-exec)(arguments=-exec \"\$bindir/globus-gass-cache -cleanup-url x-gass-cache://${jobid}stdout ; \$bindir/globus-gass-cache -cleanup-url x-gass-cache://${jobid}stderr\")"
-	${bindir}/globusrun -o -r "${host}" "${myrsl}"
+	${bindir}/globusrun -o -r "${resource}" "${myrsl}"
 
 	if [ $? -ne 0 ]; then
 	    exit 1
