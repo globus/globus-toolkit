@@ -1,5 +1,6 @@
 #include "globus_common.h"
 #include "globus_gram_job_manager.h"
+#include "globus_gram_job_manager_validation.h"
 
 #define COMMAND "globus-gram-job-manager-print-validation" 
 
@@ -59,7 +60,7 @@ main(int argc, char *argv[])
 	goto scan_args_failed;
     }
 
-    rc = globus_jobmanager_request_init(&request);
+    rc = globus_gram_job_manager_request_init(&request);
     if(rc != GLOBUS_SUCCESS)
     {
 	goto request_init_failed;
@@ -90,7 +91,7 @@ main(int argc, char *argv[])
 	rc = GLOBUS_FAILURE;
 	goto missing_required_parameter;
     }
-    rc = globus_i_gram_job_manager_validation_init(request);
+    rc = globus_gram_job_manager_validation_init(request);
     if(rc != GLOBUS_SUCCESS)
     {
 	goto validation_init_failed;
@@ -108,7 +109,7 @@ main(int argc, char *argv[])
 validation_init_failed:
 missing_required_parameter:
 unknown_option:
-    globus_jobmanager_request_destroy(request);
+    globus_gram_job_manager_request_destroy(request);
 request_init_failed:
 scan_args_failed:
     globus_module_deactivate_all();

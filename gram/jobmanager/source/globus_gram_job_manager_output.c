@@ -1,5 +1,6 @@
 #include "globus_gram_job_manager.h"
 #include "globus_gass_file.h"
+#include <string.h>
 
 #define GLOBUS_GRAM_JOB_MANAGER_OUTPUT_POLL_PERIOD 10
 
@@ -65,8 +66,19 @@ globus_l_gram_job_manager_output_destination_flush(
     					destination,
     const char *			type);
 
+static
+globus_bool_t
+globus_l_gram_job_manager_output_open(
+    globus_abstime_t *			time_stop,
+    void *				user_arg);
+static
 int
-globus_i_gram_job_manager_output_init(
+globus_l_gram_job_manager_output_close(
+    globus_abstime_t *			time_stop,
+    void *				user_arg);
+
+int
+globus_gram_job_manager_output_init(
     globus_gram_jobmanager_request_t *	request)
 {
     request->output = globus_libc_malloc(
@@ -85,7 +97,7 @@ globus_i_gram_job_manager_output_init(
 
     return GLOBUS_SUCCESS;
 }
-/* globus_i_gram_job_manager_output_init() */
+/* globus_gram_job_manager_output_init() */
 
 /**
  * Configure the request to send output to the specified URLs.
@@ -107,7 +119,7 @@ globus_i_gram_job_manager_output_init(
  *        relation.
  */
 int
-globus_i_gram_job_manager_output_set_urls(
+globus_gram_job_manager_output_set_urls(
     globus_gram_jobmanager_request_t *	request,
     const char *			type,
     globus_list_t *			url_list,
@@ -186,21 +198,51 @@ globus_i_gram_job_manager_output_set_urls(
     }
     return GLOBUS_SUCCESS;
 }
-/* globus_i_gram_job_manager_output_set_urls() */
+/* globus_gram_job_manager_output_set_urls() */
 
 /**
  * Open output destinations.
  *
  * Open the (potentially remote) output locations for the stdout and
- * stderr files for this job request.
+ * stderr files for this job request. Because globus_gass_open() will
+ * block when opening a remote file, this function just registers a oneshot
+ * to handle opening the files so we don't recurse into the state machine.
+ * Callback spaces could be useful here.
  *
  * @param request
  *        The job request we are processing.
  */
 int
-globus_i_gram_job_manager_output_open(
+globus_gram_job_manager_output_open(
     globus_gram_jobmanager_request_t *	request)
 {
+    globus_reltime_t			delay;
+    int					rc;
+
+    GlobusTimeReltimeSet(delay, 0, 0);
+
+    rc = globus_callback_register_oneshot(
+	    NULL,
+	    &delay,
+	    globus_l_gram_job_manager_output_open,
+	    request,
+	    NULL,
+	    NULL);
+    if(rc != GLOBUS_SUCCESS)
+    {
+	rc = GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES;
+    }
+    return rc;
+}
+/* globus_gram_job_manager_output_open() */
+
+static
+globus_bool_t
+globus_l_gram_job_manager_output_open(
+    globus_abstime_t *			time_stop,
+    void *				user_arg)
+{
+    globus_gram_jobmanager_request_t *	request;
     globus_l_gram_job_manager_output_destination_t *
 					destination;
     globus_list_t *			destinations;
@@ -209,11 +251,15 @@ globus_i_gram_job_manager_output_open(
     char *				out_cache_name;
     char *				err_cache_name;
 
-    out_cache_name = globus_i_gram_job_manager_output_get_cache_name(
+    request = user_arg;
+
+    globus_mutex_lock(&request->mutex);
+
+    out_cache_name = globus_gram_job_manager_output_get_cache_name(
 		    request,
 		    "stdout");
 
-    err_cache_name = globus_i_gram_job_manager_output_get_cache_name(
+    err_cache_name = globus_gram_job_manager_output_get_cache_name(
 		    request,
 		    "stderr");
 
@@ -234,9 +280,11 @@ globus_i_gram_job_manager_output_open(
 		strcmp(destination->url, out_cache_name) != 0 &&
 		strcmp(destination->url, err_cache_name) != 0)
 	    {
+		globus_mutex_unlock(&request->mutex);
 		destination->fd = globus_gass_open(
 			destination->url,
 			O_CREAT|O_WRONLY|O_APPEND, 0700);
+		globus_mutex_lock(&request->mutex);
 	    }
 	}
     }
@@ -256,9 +304,11 @@ globus_i_gram_job_manager_output_open(
 		strcmp(destination->url, out_cache_name) != 0 &&
 		strcmp(destination->url, err_cache_name) != 0)
 	    {
+		globus_mutex_unlock(&request->mutex);
 		destination->fd = globus_gass_open(
 			destination->url,
 			O_CREAT|O_WRONLY|O_APPEND, 0700);
+		globus_mutex_lock(&request->mutex);
 	    }
 	}
     }
@@ -266,8 +316,12 @@ globus_i_gram_job_manager_output_open(
     globus_libc_free(out_cache_name);
     globus_libc_free(err_cache_name);
 
-    GlobusTimeReltimeSet(delay, GLOBUS_GRAM_JOB_MANAGER_OUTPUT_POLL_PERIOD, 0);
-    GlobusTimeReltimeSet(period, GLOBUS_GRAM_JOB_MANAGER_OUTPUT_POLL_PERIOD, 0);
+    GlobusTimeReltimeSet(delay,
+	                 GLOBUS_GRAM_JOB_MANAGER_OUTPUT_POLL_PERIOD,
+			 0);
+    GlobusTimeReltimeSet(period,
+	                 GLOBUS_GRAM_JOB_MANAGER_OUTPUT_POLL_PERIOD,
+			 0);
 
     globus_callback_register_periodic(
 	    &request->output->callback_handle,
@@ -278,10 +332,14 @@ globus_i_gram_job_manager_output_open(
 	    NULL,
 	    NULL);
 
+    while(!globus_gram_job_manager_state_machine(request));
 
-    return GLOBUS_SUCCESS;
+
+    globus_mutex_unlock(&request->mutex);
+
+    return GLOBUS_TRUE;
 }
-/* globus_i_gram_job_manager_output_destinations_open() */
+/* globus_l_gram_job_manager_output_open() */
 
 /**
  * Close output destinations.
@@ -291,37 +349,84 @@ globus_i_gram_job_manager_output_open(
  *
  * @param request
  *        The job request we are processing.
- * @note Called with the request locked.
+ *
+ * @note Called with the request locked. This function may block.
  */
 int
-globus_i_gram_job_manager_output_close(
+globus_gram_job_manager_output_close(
     globus_gram_jobmanager_request_t *	request)
 {
+    globus_reltime_t			delay;
+    int					rc;
+
+    GlobusTimeReltimeSet(delay, 0, 0);
+
+    rc = globus_callback_register_oneshot(
+	    NULL,
+	    &delay,
+	    globus_l_gram_job_manager_output_close,
+	    request,
+	    NULL,
+	    NULL);
+    if(rc != GLOBUS_SUCCESS)
+    {
+	rc = GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES;
+    }
+    return rc;
+}
+/* globus_gram_job_manager_output_close() */
+
+static
+int
+globus_l_gram_job_manager_output_close(
+    globus_abstime_t *			time_stop,
+    void *				user_arg)
+{
+    globus_gram_jobmanager_request_t *	request;
     globus_l_gram_job_manager_output_destination_t *
 					destination;
-    globus_list_t *			tmp_list;
     struct stat				file_status;
 
+    request = user_arg;
+
+    globus_mutex_lock(&request->mutex);
+
     /* Disable any further polling of stdout and stderr files */
-    globus_callback_unregister(request->output->callback_handle);
+    if(request->output->callback_handle != -1)
+    {
+	globus_callback_unregister(request->output->callback_handle);
+    }
 
     if(request->output->stdout_fd != -1)
     {
 	fstat(request->output->stdout_fd, &file_status);
 	request->output->stdout_size = file_status.st_size;
 
-	tmp_list = request->output->stdout_destinations;
-	while(!globus_list_empty(tmp_list))
+	while(!globus_list_empty(request->output->stdout_destinations))
 	{
-	    destination = globus_list_first(tmp_list);
-	    tmp_list = globus_list_rest(tmp_list);
+	    destination = globus_list_remove(
+		    &request->output->stdout_destinations,
+		    request->output->stdout_destinations);
 
 	    globus_l_gram_job_manager_output_destination_flush(
 		    request,
 		    destination,
 		    "stdout");
-	    globus_gass_close(destination->fd);
-	    destination->fd = -1;
+
+	    if(destination->fd >= 0)
+	    {
+		/* globus_gass_close() will block */
+		globus_mutex_unlock(&request->mutex);
+		globus_gass_close(destination->fd);
+		globus_mutex_lock(&request->mutex);
+	    }
+
+	    globus_libc_free(destination->url);
+	    if(destination->tag)
+	    {
+		globus_libc_free(destination->tag);
+	    }
+	    globus_libc_free(destination);
 	}
     }
     if(request->output->stderr_fd != -1)
@@ -329,23 +434,37 @@ globus_i_gram_job_manager_output_close(
 	fstat(request->output->stderr_fd, &file_status);
 	request->output->stderr_size = file_status.st_size;
 
-	tmp_list = request->output->stderr_destinations;
-	while(!globus_list_empty(tmp_list))
+	while(!globus_list_empty(request->output->stderr_destinations))
 	{
-	    destination = globus_list_first(tmp_list);
-	    tmp_list = globus_list_rest(tmp_list);
+	    destination = globus_list_remove(
+		    &request->output->stderr_destinations,
+		    request->output->stderr_destinations);
 
 	    globus_l_gram_job_manager_output_destination_flush(
 		    request,
 		    destination,
 		    "stderr");
+
+	    /* globus_gass_close() will block */
+	    globus_mutex_unlock(&request->mutex);
 	    globus_gass_close(destination->fd);
-	    destination->fd = -1;
+	    globus_mutex_lock(&request->mutex);
+
+	    globus_libc_free(destination->url);
+	    if(destination->tag)
+	    {
+		globus_libc_free(destination->tag);
+	    }
+	    globus_libc_free(destination);
 	}
     }
-    return GLOBUS_SUCCESS;
+
+    while(!globus_gram_job_manager_state_machine(request));
+
+    globus_mutex_unlock(&request->mutex);
+    return GLOBUS_TRUE;
 }
-/* globus_i_gram_job_manager_output_destinations_close() */
+/* globus_gram_job_manager_output_close() */
 
 /**
  * Generate a filename to store output locally.
@@ -361,7 +480,7 @@ globus_i_gram_job_manager_output_close(
  *        GLOBUS_GRAM_PROTOCOL_STDERR_PARAM)
  */
 char *
-globus_i_gram_job_manager_output_local_name(
+globus_gram_job_manager_output_local_name(
     globus_gram_jobmanager_request_t *	request,
     const char *			type)
 {
@@ -395,7 +514,7 @@ globus_i_gram_job_manager_output_local_name(
 	    /* We have at least one valid destination, create cache
 	     * entry for stdout
 	     */
-	    out_file = globus_i_gram_job_manager_output_get_cache_name(
+	    out_file = globus_gram_job_manager_output_get_cache_name(
 		    request,
 		    type);
 	    globus_gass_cache_add(
@@ -440,7 +559,7 @@ globus_i_gram_job_manager_output_local_name(
  */
 extern
 char *
-globus_i_gram_job_manager_output_get_cache_name(
+globus_gram_job_manager_output_get_cache_name(
     globus_gram_jobmanager_request_t *	request,
     const char *			type)
 {
@@ -463,7 +582,47 @@ globus_i_gram_job_manager_output_get_cache_name(
 
     return out_file;
 }
-/* globus_i_gram_job_manager_output_get_cache_name() */ 
+/* globus_gram_job_manager_output_get_cache_name() */ 
+
+/**
+ * Verify that the size of the stdout or stderr file is exactly @a size bytes long.
+ *
+ * @param request
+ *        Request that we are checking the size of the output file of.
+ * @param type
+ *        Must be either "stdout" or "stderr".
+ * @param size
+ *        The size to compare against.
+ *
+ * @retval GLOBUS_TRUE
+ *         The size matches.
+ * @retval GLOBUS_FALSE
+ *         The size does not match.
+ */
+globus_bool_t
+globus_gram_job_manager_output_check_size(
+    globus_gram_jobmanager_request_t *	request,
+    const char *			type,
+    globus_off_t			size)
+{
+    globus_off_t			actual_size;
+    globus_l_gram_job_manager_output_info_t *
+					info;
+
+    info = request->output;
+
+    if(strcmp(type, "stdout") == 0)
+    {
+	actual_size = info->stdout_size;
+    }
+    else
+    {
+	globus_assert(strcmp(type, "stderr") == 0);
+	actual_size = info->stderr_size;
+    }
+    return (size == actual_size);
+}
+/* globus_gram_job_manager_output_check_size() */
 
 /**
  * Poll output files for new data to send to destinations.
@@ -538,10 +697,10 @@ globus_l_gram_job_manager_output_poll(
     globus_mutex_unlock(&request->mutex);
     return handled;
 }
-/* globus_i_gram_job_manager_output_poll() */
+/* globus_gram_job_manager_output_poll() */
 
 int
-globus_i_gram_job_manager_output_write_state(
+globus_gram_job_manager_output_write_state(
     globus_gram_jobmanager_request_t *	request,
     FILE *				fp)
 {
@@ -582,10 +741,10 @@ globus_i_gram_job_manager_output_write_state(
     }
     return 0;
 }
-/* globus_i_gram_job_manager_output_write_state() */
+/* globus_gram_job_manager_output_write_state() */
 
 int
-globus_i_gram_job_manager_output_read_state(
+globus_gram_job_manager_output_read_state(
     globus_gram_jobmanager_request_t *	request,
     FILE *				fp)
 {
@@ -653,7 +812,7 @@ globus_i_gram_job_manager_output_read_state(
     }
     return 0;
 }
-/* globus_i_gram_job_manager_output_read_state() */
+/* globus_gram_job_manager_output_read_state() */
 
 /**
  * Create destination structures for stdout and stderr values.
@@ -694,8 +853,8 @@ globus_l_gram_job_manager_output_insert_urls(
 					destination;
     int					rc;
 
-    globus_jobmanager_log(
-	request->jobmanager_log_fp,
+    globus_gram_job_manager_request_log(
+	request,
 	"JMI: Getting RSL output value%s\n",
 	recursive ? " recursively" : "");
 
@@ -800,8 +959,8 @@ globus_l_gram_job_manager_output_get_positions(
 					destination;
     char *				value_str;
 
-    globus_jobmanager_log(
-	    request->jobmanager_log_fp,
+    globus_gram_job_manager_request_log(
+	    request,
 	    "JMI: Processing output positions\n");
 
     if(globus_list_size(value_list) > globus_list_size(destinations))

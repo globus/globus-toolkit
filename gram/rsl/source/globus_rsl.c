@@ -1584,6 +1584,39 @@ unparse_exit:
   return char_buffer;
 }
 
+char *
+globus_rsl_value_unparse (globus_rsl_value_t * rsl_value)
+{
+  int             err;
+  globus_fifo_t   buffer;
+  int             size;
+  char          * char_buffer;
+
+  globus_fifo_init (&buffer);
+
+  err = globus_i_rsl_value_unparse_to_fifo (rsl_value, &buffer);
+
+  if (err) {
+    char_buffer = NULL;
+    goto unparse_exit;
+  }
+
+  size = globus_fifo_size (&buffer);
+  char_buffer = globus_malloc (sizeof(char) * (size + 1));
+
+  if ( char_buffer != NULL ) {
+    int i;
+
+    for (i=0; (i<size) && (!globus_fifo_empty (&buffer)); i++) {
+      char_buffer[i] = (char) (long) globus_fifo_dequeue (&buffer);
+    }
+    char_buffer[size] = '\0';
+  }
+
+unparse_exit:
+  globus_fifo_destroy (&buffer);
+  return char_buffer;
+}
 
 static int
 globus_i_rsl_unparse_string_literal_to_fifo (const char    * string,

@@ -196,7 +196,7 @@ ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
 Attribute: rslsubstitution
 Description: "Specifies a list of values which can be substituted into other
               rsl attributes' values through the $(SUBSTITUTION) mechanism."
-ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
+ValidWhen: GLOBUS_GRAM_JOB_SUBMIT GLOBUS_GRAM_JOB_MANAGER_RESTART
 
 Attribute: restart
 Description: "Start a new job manager, but instead of submitting a new job,

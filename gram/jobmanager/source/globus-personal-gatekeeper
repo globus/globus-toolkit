@@ -98,7 +98,7 @@ killem ()
 	if [ -n "${dir}" ]; then
 	    found=true
 	    if [ -r ${dir}/gatekeeper.log ]; then
-		contact="`${GLOBUS_SH_GREP-grep} GRAM ${dir}/gatekeeper.log |
+		contact="`${GLOBUS_SH_GREP-grep} 'GRAM contact' ${dir}/gatekeeper.log |
                         ${GLOBUS_SH_TAIL-tail} -1 |
 		     ${GLOBUS_SH_SED-sed} s/\^.\*$host/$host/`"
 		${debug} "found contact= [${contact}]"
@@ -142,7 +142,7 @@ findit ()
 	if [ -n "${dir}" ]; then
 	    found=true
 	    if [ -r ${dir}/gatekeeper.log ]; then
-		contact="`${GLOBUS_SH_GREP-grep} GRAM ${dir}/gatekeeper.log |
+		contact="`${GLOBUS_SH_GREP-grep} 'GRAM contact' ${dir}/gatekeeper.log |
 		     ${GLOBUS_SH_TAIL-tail} -1 |
 		     ${GLOBUS_SH_SED-sed} s/\^.\*$host/$host/`"
 
@@ -170,7 +170,7 @@ listem ()
 	if [ -n "${dir}" ]; then
 	    found=true
 	    if [ -r ${dir}/gatekeeper.log ]; then
-		contact="`${GLOBUS_SH_GREP-grep} GRAM ${dir}/gatekeeper.log |
+		contact="`${GLOBUS_SH_GREP-grep} 'GRAM contact' ${dir}/gatekeeper.log |
 		     ${GLOBUS_SH_TAIL-tail} -1 |
 		     ${GLOBUS_SH_SED-sed} s/\^.\*$host/$host/`"
 		${debug} "found contact= [${contact}]"
@@ -307,7 +307,6 @@ host_osversion=`${GLOBUS_SH_UNAME-uname} -r`
 
     ${GLOBUS_SH_CAT-cat} > ${scratch}/jobmanager.conf <<EOF
 -home ${GLOBUS_LOCATION}
--e ${libexecdir}
 -type ${jmtype}
 -rdn jobmanager 
 -globus-gatekeeper-subject "${subject}"
@@ -350,7 +349,7 @@ shallexit=
 count=0
 while [ ${count} -lt 5 -a -z "${contact}" -a -z "${shallexit}" ]; do
     ${GLOBUS_SH_SLEEP-sleep} 1
-    contact="`${GLOBUS_SH_GREP-grep} GRAM ${scratch}/gatekeeper.log`"
+    contact="`${GLOBUS_SH_GREP-grep} 'GRAM contact' ${scratch}/gatekeeper.log`"
     shallexit="`${GLOBUS_SH_GREP-grep} FAILED_PLEASE_EXIT ${scratch}/gatekeeper.log`"
     count=`${GLOBUS_SH_EXPR-expr} ${count} + 1`
 done

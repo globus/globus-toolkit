@@ -16,14 +16,25 @@ validation_DATA = globus-gram-job-manager.rvf
 # Mapping of source files to libraries and executables
 libglobus_gram_job_manager___GLOBUS_FLAVOR_NAME__la_SOURCES = \
 	globus_gram_job_manager.h \
-	globus_gram_job_manager.c \
+	globus_gram_job_manager_validation.h \
+	globus_gram_job_manager_cleanup.c \
+	globus_gram_job_manager_contact.c \
+	globus_gram_job_manager_gsi.c \
 	globus_gram_job_manager_output.c \
+	globus_gram_job_manager_query.c \
+	globus_gram_job_manager_request.c \
+	globus_gram_job_manager_rsl.c \
+	globus_gram_job_manager_script.c \
+	globus_gram_job_manager_staging.c \
+	globus_gram_job_manager_state.c \
+	globus_gram_job_manager_state_file.c \
 	globus_gram_job_manager_validate.c
 
-globus_job_manager_SOURCES = globus_job_manager.c
+globus_job_manager_SOURCES = main.c
 
 globus_gram_job_manager_print_validation_SOURCES = \
-	globus_gram_job_manager_print_validation.c
+	globus_gram_job_manager_print_validation.c \
+	globus_gram_job_manager_validation.h
 
 # Compiler flags
 INCLUDES += $(GPT_INCLUDES)

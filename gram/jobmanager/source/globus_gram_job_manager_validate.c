@@ -11,8 +11,12 @@
  * $Author$
  */
 
+#define GLOBUS_GRAM_VALIDATE_JOB_SUBMIT_STRING "GLOBUS_GRAM_JOB_SUBMIT"
+#define GLOBUS_GRAM_VALIDATE_JOB_MANAGER_RESTART_STRING "GLOBUS_GRAM_JOB_MANAGER_RESTART"
+
 #include "globus_common.h"
 #include "globus_gram_job_manager.h"
+#include "globus_gram_job_manager_validation.h"
 #include "globus_rsl.h"
 
 #include <stdio.h>
@@ -43,7 +47,7 @@ static
 int
 globus_l_gram_job_manager_check_rsl_attributes(
     globus_gram_jobmanager_request_t *	request,
-    globus_i_gram_job_manager_validation_when_t
+    globus_gram_job_manager_validation_when_t
     					when);
 
 static
@@ -56,7 +60,7 @@ static
 int
 globus_l_gram_job_manager_insert_default_rsl(
     globus_gram_jobmanager_request_t *	request,
-    globus_i_gram_job_manager_validation_when_t
+    globus_gram_job_manager_validation_when_t
     					when);
 
 static
@@ -68,7 +72,7 @@ globus_l_gram_job_manager_free_validation_record(
 static
 void
 globus_l_gram_job_manager_validate_log(
-    FILE *				fp,
+    globus_gram_jobmanager_request_t *	request,
     const char *			fmt,
     ...);
 
@@ -80,7 +84,7 @@ globus_l_gram_job_manager_validate_log(
  */
 extern
 int
-globus_i_gram_job_manager_validation_init(
+globus_gram_job_manager_validation_init(
     globus_gram_jobmanager_request_t *	request)
 {
     char *				validation_dir;
@@ -177,7 +181,7 @@ read_scheduler_validation_failed:
 	    tmp_list = globus_list_rest(tmp_list);
 
 	    globus_l_gram_job_manager_validate_log(
-		    request->jobmanager_log_fp,
+		    request,
 		    "JMI: Validation Record:\n"
 		    "attribute = '%s'\n"
 		    "description = '%s'\n"
@@ -213,7 +217,7 @@ realloc_validation_dir_failed:
 globus_location_failed:
     return rc;
 }
-/* globus_i_gram_job_manager_validation_init() */
+/* globus_gram_job_manager_validation_init() */
 
 /**
  * Validate a request's RSL.
@@ -240,7 +244,7 @@ globus_location_failed:
 int
 globus_gram_job_manager_validate_rsl(
     globus_gram_jobmanager_request_t *	request,
-    globus_i_gram_job_manager_validation_when_t
+    globus_gram_job_manager_validation_when_t
     					when)
 {
     int					rc;
@@ -464,11 +468,11 @@ globus_l_gram_job_manager_read_validation_file(
 	{
 	    tmp->required_when = 0;
 
-	    if(strstr(value, "GLOBUS_GRAM_JOB_SUBMIT"))
+	    if(strstr(value, GLOBUS_GRAM_VALIDATE_JOB_SUBMIT_STRING))
 	    {
 		tmp->required_when |= GLOBUS_GRAM_VALIDATE_JOB_SUBMIT;
 	    }
-	    if(strstr(value, "GLOBUS_GRAM_JOB_MANAGER_RESTART") == 0)
+	    if(strstr(value, GLOBUS_GRAM_VALIDATE_JOB_MANAGER_RESTART_STRING))
 	    {
 		tmp->required_when |= GLOBUS_GRAM_VALIDATE_JOB_MANAGER_RESTART;
 	    }
@@ -479,11 +483,11 @@ globus_l_gram_job_manager_read_validation_file(
 	{
 	    tmp->default_when = 0;
 
-	    if(strstr(value, "GLOBUS_GRAM_JOB_SUBMIT"))
+	    if(strstr(value, GLOBUS_GRAM_VALIDATE_JOB_SUBMIT_STRING))
 	    {
 		tmp->default_when |= GLOBUS_GRAM_VALIDATE_JOB_SUBMIT;
 	    }
-	    if(strstr(value, "GLOBUS_GRAM_JOB_MANAGER_RESTART") == 0)
+	    if(strstr(value, GLOBUS_GRAM_VALIDATE_JOB_MANAGER_RESTART_STRING))
 	    {
 		tmp->default_when |= GLOBUS_GRAM_VALIDATE_JOB_MANAGER_RESTART;
 	    }
@@ -494,11 +498,11 @@ globus_l_gram_job_manager_read_validation_file(
 	{
 	    tmp->valid_when = 0;
 
-	    if(strstr(value, "GLOBUS_GRAM_JOB_SUBMIT"))
+	    if(strstr(value, GLOBUS_GRAM_VALIDATE_JOB_SUBMIT_STRING))
 	    {
 		tmp->valid_when |= GLOBUS_GRAM_VALIDATE_JOB_SUBMIT;
 	    }
-	    if(strstr(value, "GLOBUS_GRAM_JOB_MANAGER_RESTART") == 0)
+	    if(strstr(value, GLOBUS_GRAM_VALIDATE_JOB_MANAGER_RESTART_STRING))
 	    {
 		tmp->valid_when |= GLOBUS_GRAM_VALIDATE_JOB_MANAGER_RESTART;
 	    }
@@ -516,7 +520,7 @@ globus_l_gram_job_manager_read_validation_file(
 	else
 	{
 	    globus_l_gram_job_manager_validate_log(
-		    request->jobmanager_log_fp,
+		    request,
 		    "Ignoring Unknown attribute in %s: '%s: %s'\n",
 		    validation_filename,
 		    attribute,
@@ -622,7 +626,7 @@ static
 int
 globus_l_gram_job_manager_check_rsl_attributes(
     globus_gram_jobmanager_request_t *	request,
-    globus_i_gram_job_manager_validation_when_t
+    globus_gram_job_manager_validation_when_t
     					when)
 {
     globus_list_t *			operands;
@@ -648,7 +652,7 @@ globus_l_gram_job_manager_check_rsl_attributes(
 	if(!globus_rsl_is_relation_eq(relation))
 	{
 	    globus_l_gram_job_manager_validate_log(
-		request->jobmanager_log_fp,
+		request,
 		"JMI: RSL contains something besides an \"=\" relation\n");
 
 	    return GLOBUS_FAILURE;
@@ -663,7 +667,7 @@ globus_l_gram_job_manager_check_rsl_attributes(
 	if(!node)
 	{
 	    globus_l_gram_job_manager_validate_log(
-		request->jobmanager_log_fp,
+		request,
 		"RSL attribute '%s' is not in the validation file!\n",
 		attribute);
 	    return GLOBUS_FAILURE;
@@ -675,7 +679,7 @@ globus_l_gram_job_manager_check_rsl_attributes(
 	if((record->valid_when & when) == 0)
 	{
 	    globus_l_gram_job_manager_validate_log(
-		request->jobmanager_log_fp,
+		request,
 		"RSL attribute '%s' is not valid when %d\n",
 		when);
 
@@ -698,7 +702,7 @@ globus_l_gram_job_manager_check_rsl_attributes(
 	    if(strstr(record->enumerated_values, value_str) == GLOBUS_NULL)
 	    {
 		globus_l_gram_job_manager_validate_log(
-		    request->jobmanager_log_fp,
+		    request,
 		    "RSL attribute %s's value is not in the enumerated set\n",
 		    attribute);
 
@@ -728,7 +732,7 @@ static
 int
 globus_l_gram_job_manager_insert_default_rsl(
     globus_gram_jobmanager_request_t *	request,
-    globus_i_gram_job_manager_validation_when_t
+    globus_gram_job_manager_validation_when_t
     					when)
 {
     globus_gram_job_manager_validation_record_t *
@@ -765,7 +769,7 @@ globus_l_gram_job_manager_insert_default_rsl(
 			record->default_value);
 
 		globus_l_gram_job_manager_validate_log(
-		    request->jobmanager_log_fp,
+		    request,
 		    "Nope, adding default RSL of %s\n",
 		    new_relation_str);
 
@@ -778,14 +782,14 @@ globus_l_gram_job_manager_insert_default_rsl(
 	    else
 	    {
 		globus_l_gram_job_manager_validate_log(
-		    request->jobmanager_log_fp,
+		    request,
 		    "Yes\n");
 	    }
 	}
 	if(record->required_when & when)
 	{
 	    globus_l_gram_job_manager_validate_log(
-		request->jobmanager_log_fp,
+		request,
 		"Checking whether required attribute %s is in "
 		"user RSL spec...",
 		record->attribute);
@@ -795,7 +799,7 @@ globus_l_gram_job_manager_insert_default_rsl(
 			record->attribute))
 	    {
 		globus_l_gram_job_manager_validate_log(
-			request->jobmanager_log_fp,
+			request,
 			"No, invalid RSL\n");
 
 		return GLOBUS_FAILURE;
@@ -803,7 +807,7 @@ globus_l_gram_job_manager_insert_default_rsl(
 	    else
 	    {
 		globus_l_gram_job_manager_validate_log(
-			request->jobmanager_log_fp,
+			request,
 			"Yes, valid RSL\n");
 	    }
 	}
@@ -887,7 +891,7 @@ globus_l_gram_job_manager_free_validation_record(
 static
 void
 globus_l_gram_job_manager_validate_log(
-    FILE *				fp,
+    globus_gram_jobmanager_request_t *	request,
     const char *			fmt,
     ...)
 {
@@ -897,7 +901,7 @@ globus_l_gram_job_manager_validate_log(
     va_start(ap, fmt);
     if(globus_l_gram_job_manager_verbose_debugging)
     {
-	globus_libc_vfprintf(fp, fmt, ap);
+	globus_libc_vfprintf(request->jobmanager_log_fp, fmt, ap);
     }
     va_end(ap);
 #endif

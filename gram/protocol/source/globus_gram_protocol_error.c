@@ -142,8 +142,9 @@ globus_l_gram_protocol_error_strings[GLOBUS_GRAM_PROTOCOL_ERROR_LAST] =
 /* 130 */     "the job manager was sent a stop signal (job is still running)",
 /* 131 */     "the user proxy expired (job is still running)",
 /* 132 */     "the job was not submitted by original jobmanager",
-/* 133 */     "the job manager is not waiting for that commit signal"
+/* 133 */     "the job manager is not waiting for that commit signal",
 /* 134 */     "the provided RSL 'scheduler_specific' parameter is invalid",
+/* 135 */     "the job manager could not stage in a file"
 };
 
 static char *

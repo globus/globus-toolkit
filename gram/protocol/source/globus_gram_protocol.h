@@ -228,7 +228,11 @@ globus_gram_protocol_error_string(int error_code);
 #define GLOBUS_GRAM_PROTOCOL_RESTART_PARAM                  "restart"
 #define GLOBUS_GRAM_PROTOCOL_TWO_PHASE_COMMIT_PARAM         "twophase"
 #define GLOBUS_GRAM_PROTOCOL_REMOTE_IO_URL_PARAM            "remoteiourl"
-#define GLOBUS_GRAM_PROTOCOL_SCHEDULER_SPECIFIC_PARAM       "schedulerspecific"
+#define GLOBUS_GRAM_PROTOCOL_FILE_STAGE_IN_PARAM            "filestagein"
+#define GLOBUS_GRAM_PROTOCOL_FILE_STAGE_IN_SHARED_PARAM     "filestageinshared"
+#define GLOBUS_GRAM_PROTOCOL_FILE_STAGE_OUT_PARAM           "filestageout"
+#define GLOBUS_GRAM_PROTOCOL_FILE_CLEANUP_PARAM             "filecleanup"
+#define GLOBUS_GRAM_PROTOCOL_SCRATCHDIR_PARAM               "scratchdir"
 
 #define GLOBUS_GRAM_PROTOCOL_DEFAULT_STDIN                  "/dev/null"
 #define GLOBUS_GRAM_PROTOCOL_DEFAULT_STDOUT                 "/dev/null"

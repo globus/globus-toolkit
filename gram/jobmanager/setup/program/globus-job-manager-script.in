@@ -16,6 +16,7 @@ my($manager_name, $argument_file, $command) = (undef, undef, undef);
 GetOptions('manager-name|m=s' => \$manager_name,
            'argument-file|f=s' => \$argument_file,
 	   'command|c=s' => \$command);
+STDOUT->autoflush();
 
 if((!defined($manager_name)) ||
    (!defined($argument_file)) ||
@@ -46,31 +47,13 @@ if(UNIVERSAL::isa($result, 'Globus::GRAM::Error'))
 }
 else
 {
-    my $success = 0;
-    my $var;
-
-    # Job description may be augmented by job id or gass cache files
-    # being used, for example.
-    $job_description->save();
-    foreach (keys %{$result})
-    {
-	if(m/^JOB_STATE/i)
-	{
-	    $success = $result->{$_};
-	}
-	else
-	{
-	    $var = uc $_;
-	    print "GRAM_SCRIPT_$var:" . $result->{$_} . "\n";
-	}
-    }
-    print "GRAM_SCRIPT_SUCCESS:$success\n" 
+    $manager->respond($result);
 }
 
 sub fail
 {
     my $error = shift;
 
-    print "GLOBUS_SCRIPT_ERROR:" . $error->value() . "\n";
+    print "GRAM_SCRIPT_ERROR:" . $error->value() . "\n";
     exit 1;
 }

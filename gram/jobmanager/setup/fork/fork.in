@@ -179,8 +179,8 @@ sub submit
     $merge_file->close() if defined($merge_file);
 
     $description->add('jobid', join(',', @job_id));
-    return {(job_state => Globus::GRAM::JobState::ACTIVE,
-            JOB_ID => join(',', @job_id))};
+    return { JOB_STATE => Globus::GRAM::JobState::ACTIVE,
+	     JOB_ID => join(',', @job_id) };
 }
 
 sub poll
@@ -204,15 +204,15 @@ sub poll
     $self->_merge_multi_output($state);
 
 
-    return {(job_state => $state)};
+    return { JOB_STATE => $state };
 }
 
-sub rm
+sub cancel
 {
     my $self = shift;
     my $description = $self->{JobDescription};
 
-    $self->log("rm job " . $description->jobid());
+    $self->log("cancel job " . $description->jobid());
 
     kill(SIGTERM, split(/,/, $description->jobid()));
 
@@ -220,7 +220,7 @@ sub rm
     
     kill(SIGKILL, split(/,/, $description->jobid()));
 
-    return 0;
+    return { JOB_STATE => Globus::GRAM::JobState::FAILED };
 }
 
 sub _merge_multi_output

@@ -52,8 +52,7 @@ sub setup_job_manager_conf
     $conf_file = new IO::File(">$jm_conf") || die "open failed for $jm_conf";
 
     print $conf_file <<EOF;
-	-home "$globusdir"
-	-e "$libexecdir"
+	-home \"$globusdir\"
 	-globus-gatekeeper-host $hostname
 	-globus-gatekeeper-port $gatekeeper_port
 	-globus-gatekeeper-subject \"$gatekeeper_subject\"

@@ -53,6 +53,7 @@ sub new
     if(defined($description->logfile()))
     {
 	$self->{log} = new IO::File($description->logfile(), '>>');
+	$self->{log}->autoflush();
     }
 
     bless $self, $class;
@@ -76,6 +77,19 @@ sub log
     }
 
     return;
+}
+
+sub respond
+{
+    my $self = shift;
+    my $result = shift;
+    my $var;
+
+    foreach (keys %{$result})
+    {
+	$var = uc($_);
+	print "GRAM_SCRIPT_$var:" . $result->{$_} . "\n";
+    }
 }
 
 =head2 $manager->submit()
@@ -114,6 +128,7 @@ A scheduler which implements this method should return a hash reference
 containing job_state.
 
 =cut
+
 sub poll
 {
     my $self = shift;
@@ -122,7 +137,7 @@ sub poll
     return Globus::GRAM::Error::UNIMPLEMENTED;
 }
 
-=head2 rm
+=head2 cancel
 
 Remove a job. The default implementation returns
 with the Globus::GRAM::Error::UNIMPLEMENTED error. Scheduler specific
@@ -131,11 +146,11 @@ from the scheduler.
 
 =cut
 
-sub rm
+sub cancel
 {
     my $self = shift;
 
-    $self->log("Job Manager Script does not implement 'rm'\n");
+    $self->log("Job Manager Script does not implement 'cancel'\n");
     return Globus::GRAM::Error::UNIMPLEMENTED;
 }
 
@@ -298,7 +313,7 @@ sub stage_in
 	$remote = $description->executable();
 	if(system("$cache_pgm -add -t $tag $remote >/dev/null 2>&1") != 0)
 	{
-	    return Globus::GRAM::Error::STAGE_IN_FAILED;
+	    return Globus::GRAM::Error::STAGING_EXECUTABLE;
 	}
     }
     if($description->stdin() =~ m|^[a-zA-Z]+://|)
@@ -306,7 +321,7 @@ sub stage_in
 	$remote = $description->stdin();
 	if(system("$cache_pgm -add -t $tag $remote >/dev/null 2>&1") != 0)
 	{
-	    return Globus::GRAM::Error::STAGE_IN_FAILED;
+	    return Globus::GRAM::Error::STAGING_STDIN;
 	}
     }
     foreach ($description->file_stage_in())
@@ -326,6 +341,7 @@ sub stage_in
 	{
 	    return Globus::GRAM::Error::STAGE_IN_FAILED;
 	}
+	$self->respond({'STAGED_IN' => "$remote $local"});
     }
     foreach($description->file_stage_in_shared())
     {
@@ -349,8 +365,9 @@ sub stage_in
 	{
 	    return Globus::GRAM::Error::STAGE_IN_FAILED;
 	}
+	$self->respond({'STAGED_IN_SHARED' => "$remote $local"});
     }
-    return {0};
+    return {};
 }
 
 sub stage_out
@@ -379,7 +396,8 @@ sub stage_out
 	{
 	    return Globus::GRAM::Error::STAGE_IN_FAILED;
 	}
+	$self->respond({'STAGED_OUT' => "$local $remote"});
     }
-    return {0};
+    return {};
 }
 1;
