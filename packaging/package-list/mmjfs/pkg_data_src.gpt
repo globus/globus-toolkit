@@ -30,6 +30,7 @@
 	    <Build_Step> ant generateMmjfsConfig -Dogsacore.javadir=INSTALLDIR_GPTMACRO</Build_Step>
 	    <Build_Step> ant copyEtcDir -Dogsacore.javadir=INSTALLDIR_GPTMACRO</Build_Step>
 	    <Build_Step> ant mmjfsGar -Dogsacore.javadir=INSTALLDIR_GPTMACRO</Build_Step>
+	    <Build_Step> ant mirrorConfig -Dogsacore.javadir=INSTALLDIR_GPTMACRO</Build_Step>
 	    <Build_Step> cp mmjfsLib/mmjfs.gar INSTALLDIR_GPTMACRO/gars</Build_Step>
 	    <Build_Step> cp setperms.sh INSTALLDIR_GPTMACRO</Build_Step>
 	    <Build_Step> cp src/org/globus/ogsa/impl/base/gram/setuid/launch_uhe.sh INSTALLDIR_GPTMACRO</Build_Step>
