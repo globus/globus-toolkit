@@ -40,18 +40,18 @@ sub test_gridftp_local
     my ($source_pid, $source_fd) = 
         $u->command_blocking("in.ftpd -a -1 -s -p 0");
     
+    my ($dest_pid, $dest_fd) = 
+        $u->command_blocking("in.ftpd -a -1 -s -p 0");
+
+    sleep 1;
+
     $_ = `ps -p $source_pid -o args`;
     s/ftpd: accepting connections on port (\d+)/\1/;
     $source_port = $1;
 
-    my ($dest_pid, $dest_fd) = 
-        $u->command_blocking("in.ftpd -a -1 -s -p 0");
-
     $_ = `ps -p $dest_pid -o args`;
     s/ftpd: accepting connections on port (\d+)/\1/;
     $dest_port = $1;
-
-    sleep 1;
 
     my $tmpfile = POSIX::tmpnam();
 
