@@ -582,7 +582,7 @@ globus_l_xio_http_server_write_response_callback(
     if (http_handle->write_operation.iovcnt > 0)
     {
         /* User data to be sent */
-        if (http_handle->request_info.headers.transfer_encoding
+        if (http_handle->response_info.headers.transfer_encoding
                 == GLOBUS_XIO_HTTP_TRANSFER_ENCODING_CHUNKED)
         {
             result = globus_i_xio_http_write_chunk(
