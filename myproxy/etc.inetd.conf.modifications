@@ -1,1 +1,0 @@
-myproxy-server stream tcp nowait root /usr/bin/env env GLOBUS_LOCATION=/usr/grid LD_LIBRARY_PATH=/usr/grid/lib /usr/grid/sbin/myproxy-server
