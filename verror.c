@@ -271,4 +271,8 @@ verror_clear()
     my_context.number = 0;
 }
 
-    
+void
+verror_print_error(FILE *stream)
+{
+    fprintf(stream, "%s %s\n", verror_get_string(), verror_strerror());
+}

@@ -81,4 +81,12 @@ int verror_get_value();
  */
 void verror_clear();
 
+/*
+ * verror_print_error()
+ *
+ * A helper function to print both the error string and the error
+ * number string.
+ */
+void verror_print_error(FILE *stream);
+
 #endif /* __VERROR_H */
