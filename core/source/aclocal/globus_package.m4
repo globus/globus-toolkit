@@ -204,7 +204,3 @@ AC_DEFUN(LAC_DOXYGEN,dnl
     AC_SUBST(lac_doxygen_examples)
     AC_SUBST(lac_doxygen_predefines)
 ])
-
-
-
-
