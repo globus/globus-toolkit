@@ -3853,6 +3853,8 @@ globus_io_attr_set_secure_authentication_mode(
             globus_l_io_gsi_driver, 
             GLOBUS_XIO_GSI_SET_ANON);
         break;
+      case GLOBUS_IO_SECURE_AUTHENTICATION_MODE_NONE:
+        break;
       default:
         globus_assert(0 && "Unexpected state");
         break;
