@@ -84,6 +84,12 @@ typedef struct globus_l_gram_output_s
                           Module specific prototypes
 ******************************************************************************/
 
+static int
+globus_l_gram_jm_read(int fd, globus_byte_t *buffer, size_t length);
+
+static int
+globus_l_gram_jm_write(int fd, globus_byte_t *buffer, size_t length);
+
 char *
 globus_i_filename_callback_func(int stdout_flag);
 
@@ -1438,7 +1444,7 @@ globus_l_gram_status_file_gen(int status)
 
 } /* globus_l_gram_status_file_gen() */
 
-int
+static int
 globus_l_gram_rsl_env_add(globus_rsl_t * ast_node,
                           char * var,
                           char * value)
@@ -2800,7 +2806,7 @@ static int
 globus_l_gram_check_file(int out_fd,
                          globus_l_gram_output_t * output)
 {
-    char *buf = globus_libc_malloc(1024);
+    globus_byte_t *buf = globus_libc_malloc(1024);
     int fd;
     int rc;
     int file_changed = 0;
@@ -2946,7 +2952,7 @@ globus_l_gram_delete_file_list(int output_fd, globus_list_t **handle_list)
 {
     globus_list_t *tmp_list;
     globus_l_gram_output_t *output;
-    char *buf = globus_libc_malloc(1024);
+    globus_byte_t *buf = globus_libc_malloc(1024);
     int fd;
     int rc;
 
