@@ -1165,6 +1165,13 @@ packet_get_string(u_int *length_ptr)
 	return buffer_get_string(&incoming_packet, length_ptr);
 }
 
+/* Clears incoming data buffer */
+
+void packet_get_all(void)
+{
+  buffer_clear(&incoming_packet);
+}
+
 /*
  * Sends a diagnostic message from the server to the client.  This message
  * can be sent at any time (but not while constructing another message). The
