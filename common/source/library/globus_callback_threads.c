@@ -607,8 +607,6 @@ globus_l_callback_register(
     }
     globus_mutex_unlock(&i_space->lock);
     
-    globus_thread_yield();
- 
     return GLOBUS_SUCCESS;
 }
 

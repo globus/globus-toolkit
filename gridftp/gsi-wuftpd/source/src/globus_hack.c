@@ -788,6 +788,11 @@ g_passive(globus_bool_t spas)
     }
 
     host_port.port = 0;
+    host_port.host[0] = 0;
+    host_port.host[1] = 0;
+    host_port.host[2] = 0;
+    host_port.host[3] = 0;
+
     res = globus_ftp_control_local_pasv(
               &g_data_handle,
               &host_port);

@@ -6517,7 +6517,11 @@ globus_l_ftp_control_command_flush_callback(
         }
     }
     globus_mutex_unlock(&dc_handle->mutex);
-
+    
+    if(entry->error)
+    {
+        globus_object_free(entry->error);
+    }
     globus_free(entry);
 }
 
@@ -7192,6 +7196,10 @@ globus_l_ftp_io_close_callback(
             eof_cb_ent->length,
             eof_cb_ent->offset,
             GLOBUS_TRUE);
+        if(eof_cb_ent->error)
+        {
+            globus_object_free(eof_cb_ent->error);
+        }
         globus_free(eof_cb_ent);
     }
 
@@ -8985,7 +8993,7 @@ globus_l_ftp_eb_write_callback(
             {
                 error = globus_error_construct_string(
                        GLOBUS_FTP_CONTROL_MODULE,
-                       GLOBUS_NULL,
+                       error,
                        "connection prematurly closed");
             }
             eof = GLOBUS_TRUE;
@@ -9211,6 +9219,10 @@ globus_l_ftp_eb_write_callback(
     globus_free(entry);
     globus_free(iov);
     globus_free(eb_header);
+    if(error)
+    {
+        globus_object_free(error);
+    }
 }
 
 

@@ -455,6 +455,7 @@ globus_args_scan(
 	rc = -1;   /* ensure negative return value for non-success */
 
     globus_mutex_unlock(&args_mutex);
+    globus_fifo_destroy(&fifo);
     return rc;
 }
 /* globus_args_scan() */
