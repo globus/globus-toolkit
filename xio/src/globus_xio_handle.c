@@ -1240,10 +1240,14 @@ globus_i_xio_operation_cancel(
     {
         if(op->cancel_cb != NULL)
         {
+	    globus_i_xio_op_entry_t * my_op;
+	    my_op = &op->entry[op->ndx - 1];
             GlobusXIODebugPrintf(GLOBUS_XIO_DEBUG_INFO_VERBOSE,
                 ("[%s] : op @ 0x%x calling cancel\n",
                         _xio_name, op));
+	    my_op->in_register = GLOBUS_TRUE;
             op->cancel_cb(op, op->cancel_arg);
+	    my_op->in_register = GLOBUS_FALSE;
         }
     }
     else
@@ -1365,7 +1369,11 @@ globus_l_xio_timeout_callback(
             op->canceled = 1;
             if(op->cancel_cb)
             {
+		globus_i_xio_op_entry_t * my_op;
+		my_op = &op->entry[op->ndx - 1];
+		my_op->in_register = GLOBUS_TRUE;
                 op->cancel_cb(op, op->cancel_arg);
+		my_op->in_register = GLOBUS_FALSE;
             }
         }
         globus_mutex_unlock(&handle->context->cancel_mutex);

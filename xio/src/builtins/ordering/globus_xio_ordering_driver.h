@@ -1,0 +1,41 @@
+#ifndef GLOBUS_XIO_ORDERING_DRIVER_INCLUDE
+#define GLOBUS_XIO_ORDERING_DRIVER_INCLUDE
+
+#include "globus_xio_system.h"
+#include "globus_common.h"
+
+
+typedef enum
+{
+    /*
+     * handle cntls
+     */		
+
+    GLOBUS_XIO_ORDERING_SET_OFFSET,
+
+    /*
+     * attr cntls
+     */
+    GLOBUS_XIO_ORDERING_SET_MAX_READ_COUNT,
+    GLOBUS_XIO_ORDERING_GET_MAX_READ_COUNT,
+
+    GLOBUS_XIO_ORDERING_SET_BUFFERING,
+    GLOBUS_XIO_ORDERING_GET_BUFFERING,
+
+    GLOBUS_XIO_ORDERING_SET_BUF_SIZE,
+    GLOBUS_XIO_ORDERING_GET_BUF_SIZE,
+
+    GLOBUS_XIO_ORDERING_SET_MAX_BUF_COUNT,
+    GLOBUS_XIO_ORDERING_GET_MAX_BUF_COUNT
+
+} globus_xio_ordering_cmd_t;	
+
+
+enum
+{
+    GLOBUS_XIO_ORDERING_READ_ERROR, 
+    GLOBUS_XIO_ORDERING_WRITE_ERROR,
+    GLOBUS_XIO_ORDERING_CNTL_ERROR 
+};
+
+#endif

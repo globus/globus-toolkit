@@ -185,8 +185,10 @@ typedef enum
      *      Specifies the function pointer.
      */
     GLOBUS_XIO_MODE_E_APPLY_ATTR_CNTLS,
+    GLOBUS_XIO_MODE_E_SET_OFFSET_READS,
+    GLOBUS_XIO_MODE_E_GET_OFFSET_READS,
 
-    /** GlobusVarArgEnum(attr)
+    /** ??? change this explanation ??? GlobusVarArgEnum(attr)
      * Set EOF on the stripe. If there are multiple stripes, only of them 
      * should send EOF (EOD count). 
      * @ingroup mode_e_driver_cntls
@@ -196,16 +198,19 @@ typedef enum
      * @param eod_count
      *      Specifies the number of EODs that must be received by the server.
      */
-    GLOBUS_XIO_MODE_E_SET_EOF,
+    GLOBUS_XIO_MODE_E_SET_MANUAL_EODC,
 
-    /** GlobusVarArgEnum(attr)
+    /** ??? change this explanation ??? GlobusVarArgEnum(attr)
      * Get the EOF flag on the attr.
      * @ingroup mode_e_driver_cntls
      *
      * @param eof_out
      *      The EOF flag will be stored here.
      */
-    GLOBUS_XIO_MODE_E_GET_EOF
+    GLOBUS_XIO_MODE_E_GET_MANUAL_EODC,
+    GLOBUS_XIO_MODE_E_SEND_EOD,
+    GLOBUS_XIO_MODE_E_SET_EODC,
+    GLOBUS_XIO_MODE_E_DD_GET_OFFSET
 
 } globus_xio_mode_e_cmd_t;	
 
