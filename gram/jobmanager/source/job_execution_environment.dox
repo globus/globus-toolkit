@@ -16,7 +16,8 @@ The user's home directory.
 The user's login name.
 
 @par X509_CERT_DIR
-The path to the gatekeeper's trusted certificate directory. (GSI only).
+The path to the gatekeeper's trusted certificate directory. This will not be set
+if the default certificate directory is being used. (GSI only).
 
 @par X509_USER_PROXY
 The path to the job manager's delegated credential. (GSI only).
