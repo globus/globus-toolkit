@@ -834,6 +834,7 @@ extern globus_i_xio_timer_t             globus_i_xio_timeout_timer;
 extern globus_list_t *                  globus_i_xio_outstanding_handles_list;
 extern globus_list_t *                  globus_i_xio_outstanding_servers_list;
 extern globus_list_t *                  globus_i_xio_outstanding_attrs_list;
+extern globus_list_t *                  globus_i_xio_outstanding_dds_list;
 extern globus_mutex_t                   globus_i_xio_mutex;
 extern globus_cond_t                    globus_i_xio_cond;
 

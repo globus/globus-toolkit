@@ -2,6 +2,7 @@
 #include "globus_i_xio.h"
 
 globus_list_t *                         globus_i_xio_outstanding_attrs_list;
+globus_list_t *                         globus_i_xio_outstanding_dds_list;
 
 /*******************************************************************
  *                     internal functions
@@ -356,7 +357,13 @@ globus_xio_data_descriptor_init(
         goto err;
     }
     *data_desc = op;
-
+    
+    globus_mutex_lock(&globus_i_xio_mutex);
+    {
+        globus_list_insert(&globus_i_xio_outstanding_dds_list, op);
+    }
+    globus_mutex_unlock(&globus_i_xio_mutex);
+    
     GlobusXIODebugExit();
     return GLOBUS_SUCCESS;
 
@@ -375,6 +382,7 @@ globus_xio_data_descriptor_destroy(
     globus_i_xio_op_t *                 op;
     globus_i_xio_handle_t *             handle;
     globus_bool_t                       destroy_handle = GLOBUS_FALSE;
+    globus_list_t *                     node;
     GlobusXIOName(globus_xio_data_descriptor_destroy);
 
     GlobusXIODebugEnter();
@@ -386,8 +394,26 @@ globus_xio_data_descriptor_destroy(
     }
 
     op = (globus_i_xio_op_t *) data_desc;
-    handle = op->_op_handle;
 
+    globus_mutex_lock(&globus_i_xio_mutex);
+    {
+        /* make sure we haven't destroyed it already */
+        node = globus_list_search(globus_i_xio_outstanding_dds_list, op);
+        if(node)
+        {
+            globus_list_remove(&globus_i_xio_outstanding_dds_list, node);
+        }
+    }
+    globus_mutex_unlock(&globus_i_xio_mutex);
+    
+    if(node == NULL)
+    {
+        res = GlobusXIOErrorParameter("data_desc already destroyed");
+        goto err;
+    }
+    
+    handle = op->_op_handle;
+    
     globus_mutex_lock(&handle->context->mutex);
     {
         GlobusXIOOpDec(op);
@@ -397,14 +423,10 @@ globus_xio_data_descriptor_destroy(
         }
     }
     globus_mutex_unlock(&handle->context->mutex);
-
+    
     if(destroy_handle)
     {
         globus_i_xio_handle_destroy(handle);
-    }
-    if(res != GLOBUS_SUCCESS)
-    {
-        goto err;
     }
 
     GlobusXIODebugExit();

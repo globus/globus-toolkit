@@ -91,8 +91,7 @@ char * globus_i_xio_context_state_name_table[] =
 
                                                                                 
 globus_i_xio_timer_t                    globus_i_xio_timeout_timer;
-globus_list_t *                         globus_i_xio_outstanding_handles_list
-    = NULL;
+globus_list_t *                         globus_i_xio_outstanding_handles_list;
 globus_mutex_t                          globus_i_xio_mutex;
 globus_cond_t                           globus_i_xio_cond;
 
@@ -390,6 +389,7 @@ globus_i_xio_close_handles(
     globus_list_t *                     c_handles = NULL;
     globus_xio_handle_t                 handle;
     globus_xio_server_t                 server;
+    globus_i_xio_op_t *                 dd;
     globus_xio_attr_t                   attr;
     globus_bool_t                       found;
     int                                 ctr;
@@ -405,6 +405,53 @@ globus_i_xio_close_handles(
         driver, driver->name));
         
     globus_i_xio_monitor_init(&monitor);
+    
+    /* first destroy all of the dds, as they have references on the handle */
+    globus_mutex_lock(&globus_i_xio_mutex);
+    {
+        tmp_list = globus_list_copy(globus_i_xio_outstanding_dds_list);
+        while(!globus_list_empty(tmp_list))
+        {
+            dd = (globus_i_xio_op_t *) globus_list_remove(&tmp_list, tmp_list);
+            handle = dd->_op_handle;
+            globus_mutex_lock(&handle->context->mutex);
+            {
+                found = GLOBUS_FALSE;
+                for(ctr = 0; 
+                    ctr < handle->context->stack_size && !found; 
+                    ctr++)
+                {
+                    GlobusXIODebugPrintf(
+                        GLOBUS_XIO_DEBUG_INFO_VERBOSE, 
+                        ("[globus_i_xio_close_handles]: checking dd @0x%x "
+                            "driver @0x%x, %s\n", 
+                        dd,
+                        handle->context->entry[ctr].driver,
+                        handle->context->entry[ctr].driver->name));
+        
+                    if(driver == NULL || 
+                        handle->context->entry[ctr].driver == driver)
+                    {
+                        GlobusXIODebugPrintf(
+                            GLOBUS_XIO_DEBUG_INFO, 
+                            ("[globus_i_xio_close_handles] : "
+                            "will destroy dd @0x%x\n", dd));
+
+                        found = GLOBUS_TRUE;
+                        globus_list_insert(&c_handles, dd);
+                    }
+                }
+            }
+            globus_mutex_unlock(&handle->context->mutex);
+        }
+    }
+    globus_mutex_unlock(&globus_i_xio_mutex);
+    
+    while(!globus_list_empty(c_handles))
+    {
+        dd = (globus_i_xio_op_t *) globus_list_remove(&c_handles, c_handles);
+        globus_xio_data_descriptor_destroy(dd);
+    }
 
     globus_mutex_lock(&globus_i_xio_mutex);
     {
@@ -569,10 +616,10 @@ globus_i_xio_close_handles(
     }
     globus_mutex_unlock(&globus_i_xio_mutex);
 
-    tmp_list = c_handles;
-    while(!globus_list_empty(tmp_list))
+    while(!globus_list_empty(c_handles))
     {
-        handle = (globus_xio_handle_t) globus_list_remove(&tmp_list, tmp_list);
+        handle = (globus_xio_handle_t)
+            globus_list_remove(&c_handles, c_handles);
 
         res = globus_l_xio_register_close(handle->close_op);
         if(res != GLOBUS_SUCCESS)
@@ -668,6 +715,7 @@ globus_l_xio_activate()
     globus_i_xio_outstanding_handles_list = NULL;
     globus_i_xio_outstanding_servers_list = NULL;
     globus_i_xio_outstanding_attrs_list = NULL;
+    globus_i_xio_outstanding_dds_list = NULL;
     globus_l_xio_active = GLOBUS_TRUE;
     
     globus_i_xio_load_init();
