@@ -48,7 +48,7 @@ static int parse_command(const char			*command_str,
 			 myproxy_proto_request_type_t	*command_value);
 
 //returns 0 if character not found
-static int findchr (char *p, char c)
+static int findchr (const char *p, const char c)
 {
   int i = 0;
 
@@ -57,11 +57,29 @@ static int findchr (char *p, char c)
   return (*(p+i) == '\0')?0:i; 
 }
 
-static int parse_add_creds (char *response_str, char **strs, int *num_creds)
+static int countchr (const char *p, const char c)
+{
+    int i=0;
+
+    while (*p != '\0') {
+	if (*p == c) i++;
+	p++;
+    }
+
+    return i;
+}
+
+static int parse_add_creds (char *response_str, char ***pstrs, int *num_creds)
 {
 	char *p = response_str;
 	int tmp = 0, len = 0;
 	int idx = 0;
+	int num_entries;
+	char **strs;
+
+	/* allocate memory for a string-list, returned to caller */
+	num_entries = countchr(response_str, ',')+1;
+	*pstrs = strs = (char **)malloc(num_entries*sizeof(char *));
 
 	do
 	{
@@ -89,6 +107,8 @@ static int parse_add_creds (char *response_str, char **strs, int *num_creds)
 		len += (tmp+1);
 	}
 	while (tmp != 0);
+
+	assert(num_entries == idx);
 	
 	*num_creds = idx;
 	return 0;
@@ -1085,7 +1105,7 @@ myproxy_deserialize_response(myproxy_response_t *response,
 
     if (response->response_type == MYPROXY_OK_RESPONSE)
     {
-    	char tmp[100], response_str[1000], *strs[100];
+    	char tmp[100], response_str[1000], **strs;
 
 	(response->data).creds.info_creds = (myproxy_info_t *) malloc (sizeof (myproxy_info_t));
 	/*Nameless credential*/
@@ -1241,7 +1261,7 @@ myproxy_deserialize_response(myproxy_response_t *response,
 		return 0;
 	}
 
-	len = parse_add_creds (response_str, strs, &num_creds);
+	len = parse_add_creds (response_str, &strs, &num_creds);
 
 	(response->data).creds.num_creds = num_creds+idx;
 	if (len == -1)
@@ -1413,7 +1433,12 @@ myproxy_deserialize_response(myproxy_response_t *response,
 					(response->data).creds.info_creds[i+idx].renewer_str = strdup(buffer);
 			}
 		}
-	}	
+	}
+	/* de-allocate string-list from parse_add_creds() */
+	for (i=0; i < num_creds; i++) {
+	    free(strs[i]);
+	}
+	free(strs);
     }
     else
     if (response->response_type == MYPROXY_ERROR_RESPONSE)
