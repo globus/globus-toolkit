@@ -1458,8 +1458,8 @@ static char *
     globus_gass_copy_get_status(handle, &status_code);
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
     /* status = globus_l_gass_copy_status_string[status_code];*/
-    globus_libc_fprintf(stderr, "globus_gass_copy_get_status_string, status_code = %d,
-         status_string = %s\n", status_code, globus_l_gass_copy_status_string[status_code]);
+    globus_libc_fprintf(stderr, "globus_gass_copy_get_status_string, status_code = %d, "
+         "status_string = %s\n", status_code, globus_l_gass_copy_status_string[status_code]);
 #endif
     return(globus_l_gass_copy_status_string[status_code]);
 
@@ -2266,7 +2266,8 @@ globus_l_gass_copy_read_from_queue(
                 state->cancel = GLOBUS_I_GASS_COPY_CANCEL_TRUE;
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
                 globus_libc_fprintf(stderr, "read_from_queue(): there was an ERROR trying to register a read, call cancel\n");
-#endif
+#endif          
+                globus_i_gass_copy_set_error_from_result(handle, result);
                 globus_gass_copy_cancel(handle, NULL, NULL);
             }
 
@@ -2349,8 +2350,7 @@ globus_l_gass_copy_register_read(
 		"[%s]: globus_gass_transfer_receive_bytes returned error code: %d",
 		myname,
 		rc);
-	    globus_i_gass_copy_set_error(handle, err);
-	    result = globus_error_put(handle->err);
+	    result = globus_error_put(err);
 	}
 	else result = GLOBUS_SUCCESS;
 
@@ -2998,7 +2998,7 @@ globus_l_gass_copy_generic_read_callback(
     globus_gass_copy_state_t *     state = handle->state;
     globus_i_gass_copy_buffer_t *  buffer_entry;
     globus_object_t *              err;
-    globus_bool_t                  push_the_write = GLOBUS_FALSE;
+    globus_bool_t                  push_write = GLOBUS_TRUE;
 
     static char * myname="globus_l_gass_copy_generic_read_callback";
 
@@ -3022,91 +3022,75 @@ globus_l_gass_copy_generic_read_callback(
 	return;
     }
 
-    /* if this buffer has anything in it, gonna put it in the write queue
-     * if it's the last_data, set TARGET_DONE
+    /*
+     * - if it's the last_data, set TARGET_DONE to prevent more reads
+     * - a buffer entry with last_data = GLOBUS_TRUE is only sent if we
+     *      have already received eof and there are no pending callbacks
+     * - we only allow zero byte writes if we have already received eof 
+     *      and there are no pending callbacks
      */
-
-    if(nbytes>0)
-    {
-      push_the_write = GLOBUS_TRUE;
-      if(last_data)
-      {
-	globus_mutex_lock(&(state->source.mutex));
-	{
-	  if(state->source.status == GLOBUS_I_GASS_COPY_TARGET_READY)
-	    state->source.status = GLOBUS_I_GASS_COPY_TARGET_DONE;
-	}
-	globus_mutex_unlock(&(state->source.mutex));
-      } /* if(last_data) */
-    } /* if(nbytes>0) */
-    else /* nbytes==0 */
-    {
-      /* if the buffer is empty, only push it on the write queue if it
-       * it is the first one marked as last_data
-       */
-      if(last_data)
-      {
-	globus_mutex_lock(&(state->source.mutex));
-	{
-	  if(state->source.status == GLOBUS_I_GASS_COPY_TARGET_READY)
-	  {
-	    push_the_write = GLOBUS_TRUE;
-	    state->source.status = GLOBUS_I_GASS_COPY_TARGET_DONE;
-	  }
-	}
-	globus_mutex_unlock(&(state->source.mutex));
-      } /* if(last_data) */
-    } /* else (nbytes==0) */
-
-    if(push_the_write)
-    {
-      buffer_entry = (globus_i_gass_copy_buffer_t *)
-	    globus_libc_malloc(sizeof(globus_i_gass_copy_buffer_t));
-
-	if(buffer_entry == GLOBUS_NULL)
-	{
-	    /* out of memory error */
-	    err = globus_error_construct_string(
-		GLOBUS_GASS_COPY_MODULE,
-		GLOBUS_NULL,
-		"[%s]: failed to malloc a buffer structure successfully",
-		myname);
-	    globus_i_gass_copy_set_error(handle, err);
-
-#ifdef GLOBUS_I_GASS_COPY_DEBUG
-	    globus_libc_fprintf(stderr,
-                "generic_read_callback(): malloc failed\n");
-#endif
-	    globus_mutex_lock(&(state->source.mutex));
-	    state->source.n_pending--;
-	    globus_mutex_unlock(&(state->source.mutex));
-
-            globus_gass_copy_cancel(handle, NULL, NULL);
-	    return;
-	} /* if(buffer_entry == GLOBUS_NULL) */
-
-	buffer_entry->bytes  = bytes;
-	buffer_entry->nbytes = nbytes;
-	buffer_entry->offset = offset;
-	buffer_entry->last_data = last_data;
-
-	globus_mutex_lock(&(state->dest.mutex));
-	{
-	    /* put this read buffer entry onto the write queue */
-	    globus_fifo_enqueue( &(state->dest.queue), buffer_entry);
-	}
-	globus_mutex_unlock(&(state->dest.mutex));
-
-    } /* if(push_the_write) */
-    else /* free the buffer */
-    {
-      globus_libc_free(bytes);
-    }
-
     globus_mutex_lock(&(state->source.mutex));
-    state->source.n_pending--;
+    {
+        state->source.n_pending--;
+        if(last_data && state->source.status == GLOBUS_I_GASS_COPY_TARGET_READY)
+        {
+            state->source.status = GLOBUS_I_GASS_COPY_TARGET_DONE;
+        }
+        
+        if(state->source.status == GLOBUS_I_GASS_COPY_TARGET_DONE &&
+            state->source.n_pending == 0)
+        {
+            last_data = GLOBUS_TRUE;
+        }
+        else
+        {
+            if(nbytes == 0)
+            {
+                push_write = GLOBUS_FALSE;
+            }
+            
+            last_data = GLOBUS_FALSE;
+        }
+    }
     globus_mutex_unlock(&(state->source.mutex));
-
+    
+    if(push_write)
+    {
+        /* push the write */
+        buffer_entry = (globus_i_gass_copy_buffer_t *)
+            globus_libc_malloc(sizeof(globus_i_gass_copy_buffer_t));
+        
+        if(buffer_entry == GLOBUS_NULL)
+        {
+            /* out of memory error */
+            err = globus_error_construct_string(
+        	GLOBUS_GASS_COPY_MODULE,
+        	GLOBUS_NULL,
+        	"[%s]: failed to malloc a buffer structure successfully",
+        	myname);
+            globus_i_gass_copy_set_error(handle, err);
+        
+#ifdef GLOBUS_I_GASS_COPY_DEBUG
+            globus_libc_fprintf(stderr,
+                    "generic_read_callback(): malloc failed\n");
+#endif
+            globus_gass_copy_cancel(handle, NULL, NULL);
+            return;
+        } /* if(buffer_entry == GLOBUS_NULL) */
+        
+        buffer_entry->bytes  = bytes;
+        buffer_entry->nbytes = nbytes;
+        buffer_entry->offset = offset;
+        buffer_entry->last_data = last_data;
+    
+        globus_mutex_lock(&(state->dest.mutex));
+        {
+            /* put this read buffer entry onto the write queue */
+            globus_fifo_enqueue( &(state->dest.queue), buffer_entry);
+        }
+        globus_mutex_unlock(&(state->dest.mutex));
+    }
+    
     /* start the next write if there isn't already one outstanding */
     if(handle->state)
 	globus_l_gass_copy_write_from_queue(handle);
@@ -3579,6 +3563,7 @@ globus_l_gass_copy_write_from_queue(
 #ifdef GLOBUS_I_GASS_COPY_DEBUG
 		globus_libc_fprintf(stderr, "write_from_queue(): there was an ERROR trying to register a write, call cancel\n");
 #endif
+                globus_i_gass_copy_set_error_from_result(handle, result);
                 globus_gass_copy_cancel(handle, NULL, NULL);
                 return;
 	    }
