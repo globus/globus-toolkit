@@ -25,7 +25,6 @@ CVS Information:
 #include "globus_gass_transfer_assist.h"
 #include "globus_gass_server_ez.h"
 #include "globus_gass_cache.h"
-#include "globus_nexus.h"
 
 /******************************************************************************
                              Type definitions
