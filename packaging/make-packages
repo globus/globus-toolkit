@@ -343,8 +343,8 @@ collate_packages() {
 
 install_bundle() {
 	echo Installing into $dir
-	echo from GPT_LOCATION=$GPT_LOCATION
-	$GPT_LOCATION/sbin/gpt-build --installdir=$dir gt3-all-src-1.0-src_bundle.tar.gz gcc32dbg
+	export GLOBUS_LOCATION=$dir
+	$GPT_LOCATION/sbin/gpt-build gt3-all-src-1.0-src_bundle.tar.gz gcc32dbg
 
 	if [ $release = 1 ]; then
 		echo Collecting GT3 binaries from $dir
@@ -354,7 +354,7 @@ install_bundle() {
 		# Package it with the gt2 binary bundle to make a distro
 		# Do this before installing GT2 to avoid getting all those
 		# packages also.
-		$nPT_LOCATION/sbin/gpt-bundle -bn=gt3-all-bin -bv=1 -all -bindir=binaries
+		$GPT_LOCATION/sbin/gpt-bundle -bn=gt3-all-bin -bv=1 -all -bindir=binaries
 
 		mkdir -p release-candidate/gt3-alpha3-binary-installer
 		mv gt3-all-bin* release-candidate/gt3-alpha3-binary-installer
@@ -461,7 +461,8 @@ if [ x$package != "x" ]; then
 fi
 
 setup_environment
-install_gpt3
+install_gpt
+#install_gpt3
 
 if [ $update = 1 ]; then
 	checkout_cvs $tag
