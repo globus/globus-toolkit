@@ -916,9 +916,7 @@ globus_l_gsc_auth_cb(
         else
         {
             msg = globus_common_create_string(
-                "230-User %s logged in.\r\n"
-                "%s"
-                "230 End.\r\n", 
+                op->server_handle->post_auth_banner,
                 op->server_handle->username,
                 op->server_handle->post_auth_banner);
         }

@@ -25,13 +25,10 @@ static globus_mutex_t                       gs_l_mutex;
 static globus_cond_t                        gs_l_cond;
 
 static void
-
-globus_gs_cmd_log(
-    globus_gridftp_server_control_op_t      op,
-    const char *                            full_command,
-    char **                                 cmd_a,
-    int                                     argc,
-    void *                                  user_arg)
+logging_func(
+    globus_gridftp_server_control_t     server_handle,
+    const char *                        full_command,
+    void *                              user_arg)
 {
     time_t tm = time(NULL);
     char * tm_str = ctime(&tm);
@@ -40,7 +37,6 @@ globus_gs_cmd_log(
     tm_str[len - 1] = '\0';
 
     fprintf(stdout, "%s::  %s", tm_str, full_command);
-    globus_gsc_959_finished_command(op, NULL);
 }
 
 static void
@@ -221,7 +217,6 @@ transfer(
     const char *                            local_target,
     const char *                            mod_name,
     const char *                            mod_parms,
-    globus_off_t                            offset,
     globus_range_list_t                     range_list)
 {
     int                                     ctr;
@@ -360,6 +355,18 @@ main(
         ftp_attr, 900);
     test_res(res, __LINE__);
 
+    res = globus_gridftp_server_control_attr_set_banner(
+        ftp_attr, "This is 1 line of banner\nthis is line 2\nline 3");
+    test_res(res, __LINE__);
+
+    res = globus_gridftp_server_control_attr_set_message(
+        ftp_attr, "Setting the message after login, 1 line\n");
+    test_res(res, __LINE__);
+
+    res = globus_gridftp_server_control_attr_set_log(
+        ftp_attr, logging_func, GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_ALL, NULL);
+    test_res(res, __LINE__);
+
     res = globus_gridftp_server_control_attr_data_functions(
         ftp_attr, active_connect, passive_connect, data_destroy_cb);
 
@@ -384,17 +391,6 @@ main(
         2,
         "SITE <sp> MINE!!!!",
         NULL);
-
-    globus_gsc_959_command_add(
-        ftp_server,
-        NULL,
-        globus_gs_cmd_log,
-        GLOBUS_GSC_COMMAND_POST_AUTH,
-        1,
-        1,
-        "SITE <sp> MINE!!!!",
-        NULL);
-
 
     globus_mutex_lock(&globus_l_mutex);
     {

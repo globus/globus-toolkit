@@ -331,7 +331,6 @@ typedef void
     const char *                            local_target,
     const char *                            mod_name,
     const char *                            mod_parms,
-    globus_off_t                            start_offset,
     globus_range_list_t                     range_list);
 
 typedef void
@@ -395,6 +394,7 @@ enum
     GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_SITE = 0x0040,
     GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_LIST = 0x0080,
     GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_OTHER = 0x0100,
+    GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_REPLY = 0x0400,
     GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_ALL = 0xFFFF
 };
 

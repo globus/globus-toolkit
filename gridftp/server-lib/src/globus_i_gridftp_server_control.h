@@ -486,6 +486,7 @@ globus_i_gsc_mlsx_line(
 
 char *
 globus_i_gsc_string_to_959(
+    int                                 code,
     const char *                        in_str);
 
 globus_bool_t

@@ -527,13 +527,9 @@ globus_gridftp_server_control_attr_set_banner(
     {
         return GlobusGridFTPServerErrorParameter("server_attr");
     }
-    if(banner == NULL)
-    {
-        return GlobusGridFTPServerErrorParameter("banner");
-    }
     attr = (globus_i_gsc_attr_t *) in_attr;
 
-    attr->pre_auth_banner = globus_i_gsc_string_to_959(banner);
+    attr->pre_auth_banner = globus_i_gsc_string_to_959(220, banner);
 
     return GLOBUS_SUCCESS;
 }
@@ -575,7 +571,7 @@ globus_gridftp_server_control_attr_set_message(
     }
     attr = (globus_i_gsc_attr_t *) in_attr;
 
-    attr->post_auth_banner = globus_i_gsc_string_to_959(message);
+    attr->post_auth_banner = globus_i_gsc_string_to_959(230, message);
 
     return GLOBUS_SUCCESS;
 }

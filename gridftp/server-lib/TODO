@@ -10,15 +10,8 @@ SERVER:
 -verify inetd is prepped right
 
 LIB:
--instrument logging in server-lib
 -verify feat list
--verify epsv/eprt...  currently not spec i think
--decide if gonna keep offset in transfer func... if so, i need length also
 -decide if locking in event cb is right api decision
--set_banner/set_message should just take a bare string and add proper response codes and multiliningness (banner currently just spits out the message i give it, and hangs on multiline.... login message does nutskin)
--globus_i_gsc_string_to_959 (used in banner) hurts a brutha.... i set a banner of "hi there", start server, connect once, quit, connect again, server seggys at:
-    #0  0x40068261 in globus_i_gsc_string_to_959 (in_str=0x4196aff4 "hi there") at globus_gridftp_server_control.c:2486
-    2486            out_str[size] = '\n';
 
 BOTH:
 -add proper return vals/messages for error situations
@@ -49,8 +42,6 @@ SERVER:
 -make sure server will work with tcpd
 
 LIB:
--additional command ALLO (done?)
--additional command TREV (done?)
 -additional functionality for STAT (959 says transfer stats and other shit)
 -additional command to get server version
 

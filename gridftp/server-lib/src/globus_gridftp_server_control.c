@@ -1665,6 +1665,8 @@ globus_l_gsc_final_reply(
         goto err;
     }
 
+    globus_i_gsc_log(
+        server_handle, message, GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_REPLY);
     res = globus_xio_register_write(
             server_handle->xio_handle,
             tmp_ptr,
@@ -2458,42 +2460,66 @@ globus_i_gsc_get_help(
 
 char *
 globus_i_gsc_string_to_959(
+    int                                 code,
     const char *                        in_str)
 {
+    globus_bool_t                       done = GLOBUS_FALSE;
+    char *                              msg;
     char *                              tmp_ptr;
-    char *                              out_str;
-    char *                              end;
+    char *                              start_ptr;
+    char *                              end_ptr;
     int                                 ctr = 0;
-    int                                 size;
 
-    for(tmp_ptr = (char *)in_str; 
-        tmp_ptr != NULL; 
-        tmp_ptr = strchr(tmp_ptr, '\n'))
+    if(in_str == NULL)
     {
-        ctr++;
+        msg = globus_common_create_string("%d .\r\n", code);
     }
-    size = strlen(in_str);
+    else
+    {
+        start_ptr = strdup(in_str);
+        msg = strdup("");
+        while(!done)
+        {
+            end_ptr = strchr(start_ptr, '\n');
+            if(end_ptr != NULL)
+            {
+                *end_ptr = '\0';
+                end_ptr++;
+                if(*end_ptr == '\0')
+                {
+                    end_ptr = NULL;
+                    done = GLOBUS_TRUE;
+                }
+                else
+                {
+                    end_ptr = strdup(end_ptr);
+                }
+            }
+            else
+            {
+                done = GLOBUS_TRUE;
+            }
 
-    out_str = (char *) globus_malloc((size+ctr+2) * sizeof(char));
-    memcpy(out_str, in_str, size);
-    end = out_str + size + ctr + 2;
-    for(tmp_ptr = out_str; tmp_ptr != NULL; tmp_ptr = strchr(tmp_ptr, '\n'))
-    {
-        memmove((tmp_ptr + 1), tmp_ptr, end - tmp_ptr - 1);
-        *tmp_ptr = '\r';
-        tmp_ptr += 2;
-    }
-    size = strlen(out_str);
-    if(out_str[size-1] != '\n')
-    {
-        out_str[size] = '\r';
-        size++;
-        out_str[size] = '\n';
-        size++;
-        out_str[size] = '\0';
+            tmp_ptr = msg;
+            msg = globus_common_create_string("%s %s\r\n", tmp_ptr, start_ptr);
+            globus_free(tmp_ptr);
+
+            start_ptr = end_ptr;
+            ctr++;
+        }
+        tmp_ptr = msg;
+        msg = globus_common_create_string("%d%s", code, tmp_ptr);
+        globus_free(tmp_ptr);
+        if(ctr > 1)
+        {
+            msg[3] = '-';
+            tmp_ptr = msg;
+            msg = globus_common_create_string("%s%d End.\r\n", tmp_ptr, code);
+            globus_free(tmp_ptr);
+        }
     }
 
-    return out_str;
+    return msg;
 }
 
 char *
@@ -3229,7 +3255,6 @@ globus_i_gsc_send(
             op->path,
             op->mod_name,
             op->mod_parms,
-            0,
             op->range_list);
     }
     else
@@ -3316,7 +3341,6 @@ globus_i_gsc_recv(
             op->path,
             op->mod_name,
             op->mod_parms,
-            0,
             op->range_list);
     }
     else
