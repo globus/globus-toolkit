@@ -65,7 +65,7 @@ dnl LAC_COMPILERS_ARGS()
 AC_DEFUN(LAC_COMPILERS_ARGS,
 [
 AC_ARG_WITH(threads,
-	[  --with-threads                build target with threads],
+	[  --with-threads=TYPE		build target with threads],
 	[lac_cv_threads_type="$withval"],
 	[lac_cv_threads_type=${lac_cv_threads_type='no'}])
 
@@ -326,8 +326,8 @@ case ${host}--$1 in
         if test "$lac_mpi" != "yes" ; then
 	    AC_PATH_PROGS(lac_cv_CC, $CC cc gcc)
 	    LAC_PROG_CC_GNU($lac_cv_CC, ,
-		[lac_CFLAGS="$lac_64bit_flag -Aa -D_HPUX_SOURCE $lac_CFLAGS"
-                 lac_LDFLAGS="$lac_64bit_flag -Aa $lac_LDFLAGS"])
+		[lac_CFLAGS="$lac_64bit_flag -Ae -D_HPUX_SOURCE $lac_CFLAGS"
+                 lac_LDFLAGS="$lac_64bit_flag -Ae $lac_LDFLAGS"])
 	    AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC aCC c++ g++ gcc)
 	    LAC_PROG_CC_GNU($lac_cv_CXX, ,
 		[lac_CXXFLAGS="$lac_64bit_flag -Ae -D_HPUX_SOURCE $lac_CXXFLAGS"])

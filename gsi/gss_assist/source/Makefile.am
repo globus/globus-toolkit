@@ -24,5 +24,8 @@ INCLUDES = $(GPT_INCLUDES)
 
 lib_LTLIBRARIES = libglobus_gss_assist_$(GLOBUS_FLAVOR_NAME).la
 libglobus_gss_assist___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
+
+EXTRA_DIST = globus_automake_config
+
 include $(top_srcdir)/globus_automake_rules
 include $(top_srcdir)/globus_automake_top_rules

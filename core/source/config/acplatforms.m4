@@ -46,7 +46,7 @@ case "$host" in
   *c90* )
     AC_DEFINE(TARGET_ARCH_CRAYC90)
   ;;
-  alpha-cray-unicosmk* )
+  alpha-cray-unicosmk* | alphaev5-cray-unicosmk* | alphaev6-cray-unicosmk* )
     AC_DEFINE(TARGET_ARCH_CRAYT3E)
   ;;
   *SV1* )

@@ -28,12 +28,12 @@ if test x$have_pthread_h = xyes; then
 		* ) other_libs=;;
 	esac
 
-	AC_CHECK_LIB(pthread, pthread_create, 
+	AC_CHECK_LIB(pthread, main,
 	[GLOBUS_HAVE_PTHREADS="yes"	
 	 PTHREAD_LIB_FLAGS="-lpthread $other_libs"
 	],
 	[
-	AC_CHECK_LIB(pthreads, pthread_create, 
+	AC_CHECK_LIB(pthreads, main,
 	[GLOBUS_HAVE_PTHREADS="yes"	
 	 PTHREAD_LIB_FLAGS="-lpthreads $other_libs"
 	],,$other_libs)
