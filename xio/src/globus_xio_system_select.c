@@ -2683,7 +2683,7 @@ globus_xio_system_register_write_ex(
         to = (globus_sockaddr_t *) globus_malloc(sizeof(globus_sockaddr_t));
         if(!to)
         {
-            GlobusXIOErrorMemory("to");
+            result = GlobusXIOErrorMemory("to");
             goto error_to;
         }
         GlobusLibcSockaddrCopy(*to, *u_to, sizeof(globus_sockaddr_t));
