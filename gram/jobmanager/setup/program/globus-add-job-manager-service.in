@@ -67,7 +67,7 @@ sub create_services_file
                     "${libexecdir}/globus-job-manager globus-job-manager ".
 		    "-conf ${job_manager_conf} -type ${manager_type} ".
 		    "-rdn ${servicename} -machine-type unknown ".
-		    "-publish_jobs\n";
+		    "-publish-jobs\n";
 
     $service_file->close();
 }
