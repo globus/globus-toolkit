@@ -204,7 +204,7 @@ AC_DEFUN(LAC_COMPILER_SET_DEFINES,
                 ;;
                 *x86_64*)
                     # gcc
-                    lac_CFLAGS="$lac_CFLAGS -m64 -DL_ENDIAN -DTERMIO -DMD32_REG_T=int"
+                    lac_CFLAGS="$lac_CFLAGS -DL_ENDIAN -DTERMIO -DMD32_REG_T=int"
                 ;;
                 *x86*|*ia64*|*alpha*)
                     # gcc
