@@ -3,29 +3,31 @@
  *
  * @brief Globus GASS copy API 
  *
- * <h2>Introduction</h2>
  *
  * The globus GASS copy library is motivated by the desire to provide a
  * uniform interface to transfer files specified by different protocols.
  *
  * The goals in doing this are to:
- *
- * <ul>
- * <li>Provide a robust way to describe and apply file transfer properties
+ 
+ *   - Provide a robust way to describe and apply file transfer properties
  * for a variety of protocols. These include the standard HTTP, FTP and 
  * GSIFTP options.  Some of the new file transfer capabilities in GSIFTP are
- * parallel, striping, authentication and TCP buffer sizing.</li>
+ * parallel, striping, authentication and TCP buffer sizing.
  *
- * <li>Provide a service to support nonblocking file transfer and handle
- * asynchronous file and network events.</li>
+ *   - Provide a service to support nonblocking file transfer and handle
+ * asynchronous file and network events.
  *
- * <li>Provide a simple and portable way to implement file transfers.</li>
- * </ul>
- *
+ *   - Provide a simple and portable way to implement file transfers.
+ * 
  * Any program that uses Globus GASS copy functions must include
  * "globus_gass_copy.h".
  *
  */
+
+#include "globus_gass_transfer.h"
+#include "globus_ftp_client.h"
+#include "globus_io.h"
+
 
 #ifndef GLOBUS_INCLUDE_GLOBUS_GASS_COPY_H
 #define GLOBUS_INCLUDE_GLOBUS_GASS_COPY_H
@@ -40,14 +42,8 @@
 #endif
 #endif
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
-#include "globus_common.h"
-#include "globus_gass_transfer.h"
 
-#include "globus_ftp_client.h"
 
-#include "globus_io.h"
-#endif
 
 EXTERN_C_BEGIN
 
@@ -78,9 +74,16 @@ EXTERN_C_BEGIN
  * activated.
  *
  */
-#define GLOBUS_GASS_COPY_MODULE (&globus_i_gass_copy_module)
-extern
-globus_module_descriptor_t        globus_i_gass_copy_module;
+extern int
+globus_i_gass_copy_activate(void);
+
+extern int
+globus_i_gass_copy_deactivate(void);
+
+#define GLOBUS_GASS_COPY_MODULE (&globus_gass_copy_module)
+extern globus_module_descriptor_t        globus_gass_copy_module;
+
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
 typedef struct globus_gass_copy_state_s globus_gass_copy_state_t;
 typedef struct globus_gass_copy_handle_s globus_gass_copy_handle_t;
@@ -91,13 +94,14 @@ typedef struct globus_gass_copy_handle_s globus_gass_copy_handle_t;
 typedef void (*globus_gass_copy_callback_t)(
     void * callback_arg,
     globus_gass_copy_handle_t * handle,
-    globus_object_t * result);
+    globus_object_t * error);
 
 /** 
  * valid state status (aka states)
  */
 typedef enum
 {
+    GLOBUS_GASS_COPY_STATUS_FAILURE = -1,
     GLOBUS_GASS_COPY_STATUS_NONE,
     GLOBUS_GASS_COPY_STATUS_INITIAL,
     GLOBUS_GASS_COPY_STATUS_SOURCE_READY,
@@ -133,12 +137,17 @@ struct globus_gass_copy_handle_s
    * pointer to user argument to user callback function
    */
   void *                              callback_arg;
+
   /*
-   * the result of the data transfer, error or otherwise
+   * Error object to pass to the callback function
    */
-  globus_result_t                     result;
-  
-  int                                 err;
+  globus_object_t *                   err;
+
+  /*
+   * size of the buffers to be used in the transfers
+   */
+  int                                 buffer_length;
+
  
   globus_ftp_client_handle_t	      ftp_handle;
   
@@ -183,6 +192,32 @@ globus_result_t
 globus_gass_copy_destroy(
     globus_gass_copy_handle_t * handle);
 
+/** set the size of the buffer to be used for the transfers */
+globus_result_t
+globus_gass_copy_set_buffer_length(
+    globus_gass_copy_handle_t * handle,
+    int length);
+
+/** initialize the attr structure */
+globus_result_t
+globus_gass_copy_attr_init(
+    globus_gass_copy_attr_t * attr);
+
+/** functions for setting attributes for specific protocols */
+globus_result_t
+globus_gass_copy_attr_set_ftp(
+    globus_gass_copy_attr_t * attr,
+    globus_ftp_client_attr_t * ftp_attr);
+
+globus_result_t
+globus_gass_copy_attr_set_file(
+    globus_gass_copy_attr_t * attr,
+    globus_io_attr_t * io_attr);
+
+globus_result_t
+globus_gass_copy_attr_set_http(
+    globus_gass_copy_attr_t * attr,
+    globus_gass_transfer_requestattr_t * gass_attr);
 
 /**
  * copy functions (blocking)
@@ -243,16 +278,19 @@ globus_gass_copy_register_handle_to_url(
 /**
  * get the status of the current transfer
  */
-globus_gass_copy_status_t
+globus_result_t
 globus_gass_copy_get_status(
-    globus_gass_copy_handle_t * handle);
+    globus_gass_copy_handle_t * handle,
+    globus_gass_copy_status_t *status);
 
 /**
  * cancel the current transfer
  */
 globus_result_t
 globus_gass_copy_cancel(
-     globus_gass_copy_handle_t * handle);
+     globus_gass_copy_handle_t * handle,
+     globus_gass_copy_callback_t cancel_callback,
+     void * cancel_callback_arg);
 
 
 /**
@@ -278,9 +316,10 @@ globus_gass_copy_set_user_pointer(
     globus_gass_copy_handle_t * handle,
     void * user_data);
 
-void *
+globus_result_t
 globus_gass_copy_get_user_pointer(
-    globus_gass_copy_handle_t * handle);
+    globus_gass_copy_handle_t * handle,
+    void * user_data);
 
 
 /**
@@ -321,6 +360,8 @@ globus_gass_copy_attr_set_secure_channel(
 /**
  * Get Attribute functions
  */
+
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 EXTERN_C_END
 

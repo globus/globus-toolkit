@@ -1,3 +1,24 @@
+/**
+ * @file globus_i_gass_copy.h
+ * Globus GASS Copy Library
+ */
+#include "globus_gass_copy.h"
+#include "globus_common.h"
+
+#ifndef GLOBUS_L_INCLUDE_GLOBUS_GASS_COPY_H
+#define GLOBUS_L_INCLUDE_GLOBUS_GASS_COPY_H
+
+#ifndef EXTERN_C_BEGIN
+#ifdef __cplusplus
+#define EXTERN_C_BEGIN extern "C" {
+#define EXTERN_C_END }
+#else
+#define EXTERN_C_BEGIN
+#define EXTERN_C_END
+#endif
+#endif
+
+EXTERN_C_BEGIN
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
@@ -32,6 +53,14 @@ typedef enum
     GLOBUS_I_GASS_COPY_TARGET_DONE,
 } globus_i_gass_copy_target_status_t;
 
+typedef enum
+{
+    GLOBUS_I_GASS_COPY_CANCEL_FALSE,
+    GLOBUS_I_GASS_COPY_CANCEL_TRUE,
+    GLOBUS_I_GASS_COPY_CANCEL_CALLED,
+    GLOBUS_I_GASS_COPY_CANCEL_DONE,
+} globus_i_gass_copy_cancel_status_t;
+
 
 /**
  * The buffer structure used for read/write queue entries
@@ -49,9 +78,11 @@ typedef struct
  */
 typedef struct
 {
-    globus_mutex_t                      mutex;
-    globus_cond_t                       cond;
-    volatile globus_bool_t              done;
+  globus_mutex_t                      mutex;
+  globus_cond_t                       cond;
+  volatile globus_bool_t              done;
+  globus_bool_t                       use_err;
+  globus_object_t *                   err;
 } globus_i_gass_copy_monitor_t;
 
 /**
@@ -69,9 +100,9 @@ typedef struct globus_i_gass_copy_state_target_s
      */
     globus_gass_copy_attr_t			attr;
 
-  /* If the attr was passed as an argument then FALSE
- * If the attr was created internally then TRUE
- */
+    /* If the attr was passed as an argument then FALSE
+     * If the attr was created internally then TRUE
+     */
   globus_bool_t			                free_attr;
 
   /**
@@ -160,6 +191,8 @@ typedef struct globus_i_gass_copy_state_target_s
 	    globus_bool_t			seekable;
 	} io;
     } data;
+
+    globus_i_gass_copy_cancel_status_t cancel;
 } globus_i_gass_copy_target_t;
 
 
@@ -170,13 +203,6 @@ typedef struct globus_i_gass_copy_state_target_s
 struct globus_gass_copy_state_s
 {
     /**
-     * handle.  Useful for saving ftp server connections when doing multiple
-     * globus_gass_copy_* calls to/from the same url's
-     */
-  /*
-     globus_gass_copy_handle_t *		handle;
-  */
-    /**
      * Source information for the file transfer
      */
     globus_i_gass_copy_target_t	source;
@@ -186,13 +212,6 @@ struct globus_gass_copy_state_s
      */
     globus_i_gass_copy_target_t	dest;
 
-    /**
-     * Used for keeping state of the transfer.
-     * (state.state seemed like a bad idea. ;-)
-     */
-  /*  moved to handle
-   *   globus_gass_copy_state_status_t	number;
-  */
     /**
      * Used for signalling from the various callback functions
      */
@@ -206,11 +225,7 @@ struct globus_gass_copy_state_s
      * number of buffers that have been allocated for reading/writing
      */
     int                                 n_buffers;
-    /*
-     * size of the buffers
-     */
-    int                                 buffer_length;
-
+  
     /**
      * coordinates the modifying of the state,  aside from the target structures
      */
@@ -219,5 +234,8 @@ struct globus_gass_copy_state_s
 };
 
 
-#endif
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
+EXTERN_C_END
+
+#endif /*GLOBUS_L_INCLUDE_GLOBUS_GASS_COPY_H */
