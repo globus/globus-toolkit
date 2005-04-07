@@ -1062,6 +1062,10 @@ globus_l_gsc_finished_op(
 l_abort_stopping = 1;
             globus_i_gsc_op_destroy(op);
 l_cache_ref = server_handle->ref;
+            /* This write still ends up hanging in xio
+             * Look at that later, but for now we don't even need to be
+             * writing this.
+             * 
             res = globus_l_gsc_final_reply(
                     server_handle,
                     (_FSMSL("421 Server terminated\r\n")));
@@ -1070,7 +1074,7 @@ l_cache_ref = server_handle->ref;
                 goto err;
             }
             break;
-
+            */
         case GLOBUS_L_GSC_STATE_STOPPING:
             server_handle->outstanding_op = NULL;
             globus_i_gsc_op_destroy(op);
