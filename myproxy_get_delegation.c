@@ -127,7 +127,7 @@ main(int argc, char *argv[])
 					   NULL);
 	}
 	if (rval == -1) {
-	    fprintf(stderr, "Error reading passphrase\n");
+	    verror_print_error(stderr);
 	    return 1;
 	}
     }
