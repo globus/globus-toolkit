@@ -66,6 +66,17 @@
             __LINE__,                                                        \
             _XIOSL("Peer specified lower protection level")))
 
+#define GlobusXioGSIErrorTokenTooBig()                                       \
+    globus_error_put(                                                        \
+        globus_error_construct_error(                                        \
+            GLOBUS_XIO_GSI_DRIVER_MODULE,                                    \
+            GLOBUS_NULL,                                                     \
+            GLOBUS_XIO_GSI_ERROR_TOKEN_TOO_BIG,                              \
+            __FILE__,                                                        \
+            _xio_name,                                                       \
+            __LINE__,                                                        \
+            _XIOSL("Token size exceeds limit. Usually happens when someone tries to establish a insecure connection with a secure endpoint, e.g. when someone sends plain HTTP to a HTTPS endpoint without first establishing a SSL session.")))
+
 #define GlobusXioGSIErrorEmptyTargetName()                                   \
     globus_error_put(                                                        \
         globus_error_construct_error(                                        \

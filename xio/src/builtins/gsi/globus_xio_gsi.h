@@ -144,7 +144,11 @@ typedef enum
      */
     GLOBUS_XIO_GSI_ERROR_EMPTY_HOST_NAME,
     /** Indicates that the peer is not authorized */       
-    GLOBUS_XIO_GSI_AUTHORIZATION_FAILED
+    GLOBUS_XIO_GSI_AUTHORIZATION_FAILED,
+    /** Indicates the the token being read is too big. Usually happens
+     *  when someone tries to establish a non secure session with a
+     *  endpoint that expects security*/
+    GLOBUS_XIO_GSI_ERROR_TOKEN_TOO_BIG
 } globus_xio_gsi_error_t;
 
 /** doxygen varargs filter stuff

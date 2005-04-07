@@ -1,6 +1,8 @@
 #include "globus_i_xio_gsi.h"
 #include "version.h"
 
+/* 32 MB */
+#define MAX_TOKEN_LENGTH 2<<24
 
 /* default attributes */
 
@@ -1035,6 +1037,12 @@ globus_l_xio_gsi_read_token_cb(
             header = 0;
         }
 
+        if(wait_for > MAX_TOKEN_LENGTH)
+        {
+            result = GlobusXioGSIErrorTokenTooBig();
+            goto error_pass_close;
+        }        
+
         prev_offset = offset;
         offset = offset + wait_for + header;
     
@@ -1895,6 +1903,12 @@ globus_l_xio_gsi_read_cb(
         header = 4;
     }
 
+    if(frame_length > MAX_TOKEN_LENGTH)
+    {
+        result = GlobusXioGSIErrorTokenTooBig();
+        goto error;
+    }
+    
     /* while we have full frames convert wrapped data to unwrapped data
        and push it to the user
     */
@@ -1944,6 +1958,12 @@ globus_l_xio_gsi_read_cb(
             else
             {
                 header = 4;
+            }
+
+            if(frame_length > MAX_TOKEN_LENGTH)
+            {
+                result = GlobusXioGSIErrorTokenTooBig();
+                goto error;
             }
         }
         else
@@ -2171,6 +2191,12 @@ globus_l_xio_gsi_read(
             {
                 header = 4;
             }
+
+            if(frame_length > MAX_TOKEN_LENGTH)
+            {
+                result = GlobusXioGSIErrorTokenTooBig();
+                goto error;
+            }
             
             while(frame_length + offset + header <= handle->bytes_read &&
                   (wait_for > 0 || bytes_read > 0) &&
@@ -2217,6 +2243,12 @@ globus_l_xio_gsi_read(
                     else
                     { 
                         header = 4;
+                    }
+                    
+                    if(frame_length > MAX_TOKEN_LENGTH)
+                    {
+                        result = GlobusXioGSIErrorTokenTooBig();
+                        goto error;
                     }
                 }
                 else
