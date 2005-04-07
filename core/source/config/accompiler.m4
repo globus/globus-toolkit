@@ -192,7 +192,7 @@ case ${host}--$1 in
 
         if test "$GLOBUS_CC" = "mpicc"; then
             AC_PATH_PROGS(lac_cv_CC,  $CC  mpicc)
-            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC)
+            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC mpicxx)
             AC_PATH_PROGS(lac_cv_F77, $F77 mpif77)
             AC_PATH_PROGS(lac_cv_F90, $F90 mpif90)
         else
@@ -260,7 +260,7 @@ case ${host}--$1 in
         
         if test "$GLOBUS_CC" = "mpicc"; then
             AC_PATH_PROGS(lac_cv_CC,  $CC  mpicc)
-            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC)
+            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC mpicxx)
             AC_PATH_PROGS(lac_cv_F77, $F77 mpif77)
             AC_PATH_PROGS(lac_cv_F90, $F90 mpif90)
         else
@@ -289,7 +289,7 @@ case ${host}--$1 in
 
         if test "$GLOBUS_CC" = "mpicc"; then
             AC_PATH_PROGS(lac_cv_CC,  $CC  mpicc)
-            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC)
+            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC mpicxx)
             AC_PATH_PROGS(lac_cv_F77, $F77 mpif77)
             AC_PATH_PROGS(lac_cv_F90, $F90 mpif90)
         else
@@ -313,7 +313,7 @@ case ${host}--$1 in
         
         if test "$GLOBUS_CC" = "mpicc"; then
             AC_PATH_PROGS(lac_cv_CC,  $CC  mpicc)
-            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC)
+            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC mpicxx)
             AC_PATH_PROGS(lac_cv_F77, $F77 mpif77)
             AC_PATH_PROGS(lac_cv_F90, $F90 mpif90)
         else
@@ -343,7 +343,7 @@ case ${host}--$1 in
             dnl linking
             
             AC_PATH_PROGS(lac_cv_CC,  $CC  mpicc)
-            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC)
+            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC mpicxx)
             AC_PATH_PROGS(lac_cv_F77, $F77 mpif77)
             AC_PATH_PROGS(lac_cv_F90, $F90 mpif90)
             
@@ -393,7 +393,7 @@ case ${host}--$1 in
             dnl linking
             
             AC_PATH_PROGS(lac_cv_CC,  $CC  mpicc)
-            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC)
+            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC mpicxx)
             AC_PATH_PROGS(lac_cv_F77, $F77 mpif77)
             AC_PATH_PROGS(lac_cv_F90, $F90 mpif90)
             
@@ -425,7 +425,7 @@ case ${host}--$1 in
     
         if test "$GLOBUS_CC" = "mpicc"; then
             AC_PATH_PROGS(lac_cv_CC,  $CC  mpicc)
-            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC)
+            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC mpicxx)
             AC_PATH_PROGS(lac_cv_F77, $F77 mpif77)
             AC_PATH_PROGS(lac_cv_F90, $F90 mpif90)
         else
@@ -450,7 +450,7 @@ case ${host}--$1 in
         
         if test "$GLOBUS_CC" = "mpicc"; then
             AC_PATH_PROGS(lac_cv_CC,  $CC  mpicc)
-            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC)
+            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC mpicxx)
             AC_PATH_PROGS(lac_cv_F77, $F77 mpif77)
             AC_PATH_PROGS(lac_cv_F90, $F90 mpif90)
         else
@@ -480,7 +480,7 @@ case ${host}--$1 in
         
         if test "$GLOBUS_CC" = "mpicc"; then
             AC_PATH_PROGS(lac_cv_CC,  $CC  mpicc)
-            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC)
+            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC mpicxx)
             AC_PATH_PROGS(lac_cv_F77, $F77 mpif77)
             AC_PATH_PROGS(lac_cv_F90, $F90 mpif90)
         fi
@@ -547,7 +547,7 @@ case ${host}--$1 in
 
         if test "$GLOBUS_CC" = "mpicc"; then
             AC_PATH_PROGS(lac_cv_CC,  $CC  mpcc_r mpicc)
-            AC_PATH_PROGS(lac_cv_CXX, $CXX mpCC_r mpiCC)
+            AC_PATH_PROGS(lac_cv_CXX, $CXX mpCC_r mpiCC mpicxx)
             AC_PATH_PROGS(lac_cv_F77, $F77 mpxlf_r mpif77)
             AC_PATH_PROGS(lac_cv_F90, $F90 mpxlf90_r mpif90)
             if test "$lac_cv_F90" = "mpxlf_r" ; then
@@ -637,7 +637,7 @@ case ${host}--$1 in
 
         if test "$GLOBUS_CC" = "mpicc"; then
             AC_PATH_PROGS(lac_cv_CC,  $CC  mpcc mpicc)
-            AC_PATH_PROGS(lac_cv_CXX, $CXX mpCC mpiCC)
+            AC_PATH_PROGS(lac_cv_CXX, $CXX mpCC mpiCC mpicxx)
             AC_PATH_PROGS(lac_cv_F77, $F77 mpxlf mpif77)
             AC_PATH_PROGS(lac_cv_F90, $F90 mpxlf90 mpif90)
             if test "$lac_cv_F90" = "mpxlf" ; then
@@ -738,7 +738,7 @@ case ${host}--$1 in
         
         if test "$GLOBUS_CC" = "mpicc"; then
             AC_PATH_PROGS(lac_cv_CC,  $CC  mpicc)
-            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC)
+            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC mpicxx)
             AC_PATH_PROGS(lac_cv_F77, $F77 mpif77)
             AC_PATH_PROGS(lac_cv_F90, $F90 mpif90)
         else
@@ -777,7 +777,7 @@ case ${host}--$1 in
         
         if test "$GLOBUS_CC" = "mpicc"; then
             AC_PATH_PROGS(lac_cv_CC,  $CC  mpicc)
-            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC)
+            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC mpicxx)
             AC_PATH_PROGS(lac_cv_F77, $F77 mpif77)
             AC_PATH_PROGS(lac_cv_F90, $F90 mpif90)
         else
@@ -805,7 +805,7 @@ case ${host}--$1 in
         
         if test "$GLOBUS_CC" = "mpicc"; then
             AC_PATH_PROGS(lac_cv_CC,  $CC  mpicc)
-            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC)
+            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC mpicxx)
             AC_PATH_PROGS(lac_cv_F77, $F77 mpif77)
             AC_PATH_PROGS(lac_cv_F90, $F90 mpif90)
         else
@@ -838,7 +838,7 @@ case ${host}--$1 in
 
         if test "$GLOBUS_CC" = "mpicc"; then
             AC_PATH_PROGS(lac_cv_CC,  $CC  mpicc)
-            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC)
+            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC mpicxx)
             AC_PATH_PROGS(lac_cv_F77, $F77 mpif77)
             AC_PATH_PROGS(lac_cv_F90, $F90 mpif90)
         else
@@ -872,7 +872,7 @@ case ${host}--$1 in
         
         if test "$GLOBUS_CC" = "mpicc"; then
             AC_PATH_PROGS(lac_cv_CC,  $CC  mpicc)
-            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC)
+            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC mpicxx)
             AC_PATH_PROGS(lac_cv_F77, $F77 mpif77)
             AC_PATH_PROGS(lac_cv_F90, $F90 mpif90)
         else
