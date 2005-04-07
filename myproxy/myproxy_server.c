@@ -1282,12 +1282,6 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
        authorization_ok = 1;
        break;
 
-   case MYPROXY_CONTINUE:
-       /* This command just tells the server to continue.  No checking is
-          needed. */ 
-       authorization_ok = 1;
-       break;
-
    case MYPROXY_CHANGE_CRED_PASSPHRASE:
        /* Is this client authorized to store credentials here? */
        authorization_ok =
