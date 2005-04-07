@@ -543,9 +543,9 @@ PROXYCERTINFO * d2i_PROXYCERTINFO_OLD(
 
     M_ASN1_D2I_get(ret->policy,d2i_PROXYPOLICY);
 
-    M_ASN1_D2I_get_opt(ret->path_length, 
-                       d2i_ASN1_INTEGER,
-                       V_ASN1_INTEGER);
+    M_ASN1_D2I_get_EXP_opt(ret->path_length,
+                           d2i_ASN1_INTEGER,
+                           1);
 
     M_ASN1_D2I_Finish(cert_info, 
                       PROXYCERTINFO_free, 
