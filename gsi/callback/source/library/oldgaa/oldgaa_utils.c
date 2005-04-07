@@ -9,6 +9,12 @@ Description:
 /**********************************************************************
                              Include header files
 **********************************************************************/
+#include "globus_oldgaa.h" 
+#include "globus_gsi_cert_utils.h"
+#include "oldgaa_utils.h"
+#include "oldgaa_gl_internal_err.h"
+#include "rfc1779.h"
+
 #include <stdlib.h>     /* For malloc or free */
 #include <math.h>       /* for pow()          */
 
@@ -24,12 +30,6 @@ Description:
 #include <time.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-
-#include "globus_oldgaa.h" 
-#include "globus_gsi_cert_utils.h"
-#include "oldgaa_utils.h"
-#include "oldgaa_gl_internal_err.h"
-#include "rfc1779.h"
 
 /**********************************************************************
                        Define module specific variables
