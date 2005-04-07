@@ -125,7 +125,7 @@ main(int argc, char *argv[])
 				       "Enter (current) MyProxy pass phrase:");
     }
     if (rval == -1) {
-	fprintf(stderr, "Error reading pass phrase.\n");
+	verror_print_error(stderr);
 	return 1;
     }
 
@@ -140,7 +140,7 @@ main(int argc, char *argv[])
 						"Enter new MyProxy pass phrase:");
     }
     if (rval == -1) {
-	fprintf (stderr, "%s\n", verror_get_string());
+	verror_print_error(stderr);
 	return 1;
     }
 
