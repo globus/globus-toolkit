@@ -1,11 +1,12 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_REVISION($Revision: 1.43 $)
+AC_REVISION($Revision: 1.44 $)
 AC_INIT(Makefile.am)
 
 GLOBUS_INIT
 
 AM_PROG_LIBTOOL
+AC_PROG_LN_S
 
 dnl config header goes here
 
