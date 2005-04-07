@@ -324,7 +324,8 @@ init_arguments(int                     argc,
 	    }
 
 	    if (expr_type == REGULAR_EXP) {
-		//Copy as is
+		
+                /* Copy as is */
 		request->retrievers = strdup(gnu_optarg);
 	    } else {
 		request->retrievers =
@@ -359,7 +360,7 @@ init_arguments(int                     argc,
 	    }
 
 	    if (expr_type == REGULAR_EXP) {
-		// Copy as is
+		/* Copy as is */
 		request->renewers = strdup(gnu_optarg);
 	    } else {
 		request->renewers =
@@ -372,7 +373,7 @@ init_arguments(int                     argc,
 
         case 'E' :              /* key retriever list */ 
 	    if (expr_type == REGULAR_EXP) {
-		//Copy as is
+		/* Copy as is */
 		request->keyretrieve = strdup(gnu_optarg);
 	    } else {
 		request->keyretrieve =
