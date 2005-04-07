@@ -278,3 +278,85 @@ copy_file(const char *source,
     
     return return_code;
 }
+
+/*
+ * buffer_from_file()
+ *
+ * Read the entire contents of a file into a buffer.
+ *
+ * Returns 0 on success, -1 on error, setting verror.
+ */
+int
+buffer_from_file(const char			*path,
+		 unsigned char			**pbuffer,
+		 int				*pbuffer_len)
+{
+    int				fd = -1;
+    int				open_flags;
+    int				return_status = -1;
+    struct stat			statbuf;
+    unsigned char		*buffer = NULL;
+    int				buffer_len;
+    
+    assert(path != NULL);
+    assert(pbuffer != NULL);
+    assert(pbuffer_len != NULL);
+    
+    open_flags = O_RDONLY;
+    
+    fd = open(path, open_flags);
+    
+    if (fd == -1)
+    {
+	verror_put_string("Failure opening file \"%s\"", path);
+	verror_put_errno(errno);
+	goto error;
+    }
+    
+    if (fstat(fd, &statbuf) == -1)
+    {
+	verror_put_string("Failure stating file \"%s\"", path);
+	verror_put_errno(errno);
+	goto error;
+    }
+
+    buffer_len = statbuf.st_size;
+    
+    buffer = malloc(buffer_len+1);
+    
+    if (buffer == NULL)
+    {
+	verror_put_string("malloc() failed");
+	verror_put_errno(errno);
+	goto error;
+    }
+    
+    if (read(fd, buffer, buffer_len) == -1)
+    {
+	verror_put_string("Error reading file \"%s\"", path);
+	verror_put_errno(errno);
+	goto error;
+    }
+    buffer[buffer_len++] = '\0';
+
+    /* Succcess */
+    *pbuffer = buffer;
+    *pbuffer_len = buffer_len;
+    return_status = 0;
+
+  error:
+    if (fd != -1)
+    {
+	close(fd);
+    }
+    
+    if (return_status == -1)
+    {
+	if (buffer != NULL)
+	{
+	    free(buffer);
+	}
+    }
+    
+    return return_status;
+}

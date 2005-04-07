@@ -88,5 +88,16 @@ copy_file(const char *source,
           const char *dest,
           const mode_t mode);
 
+/*
+ * buffer_from_file()
+ *
+ * Read the entire contents of a file into a buffer.
+ *
+ * Returns 0 on success, -1 on error, setting verror.
+ */
+int
+buffer_from_file(const char			*path,
+		 unsigned char			**pbuffer,
+		 int				*pbuffer_len);
 	     
 #endif /* _STRING_FUNCS_H */
