@@ -616,6 +616,13 @@ check_dir( char *path )
   int   size;
 
   endp = strrchr( path, '/' );
+
+  if( endp == NULL )
+  {
+    /* assume we only have a filename and the default directory will be used */
+    return;
+  }
+
   size = endp - path;
 
   newpath = malloc( strlen(path) );
@@ -623,8 +630,11 @@ check_dir( char *path )
   strncpy( newpath, path, size );
   newpath[size] = '\0';
 
-  cmd = malloc( strlen(newpath) + 12 );
-  sprintf( cmd, "mkdir -p %s", newpath );
+  cmd = malloc( strlen(newpath) + 16 );
+  sprintf( cmd, "mkdir -p %s 2>&1", newpath );
 
   system( cmd );
+
+  free( newpath );
+  free( cmd );
 } 
