@@ -516,6 +516,16 @@ makecertfile(const char   certfile[],
     int         retval  = -1;
     struct stat s;
     int         bytes;
+    static char BEGINCERT[] = "-----BEGIN CERTIFICATE-----";
+    static char ENDCERT[] = "-----END CERTIFICATE-----";
+    static char BEGINKEY[] = "-----BEGIN RSA PRIVATE KEY-----";
+    static char ENDKEY[] = "-----END RSA PRIVATE KEY-----";
+    char        *certstart; 
+    char        *certend;
+    int          size;
+    char        *keystart; 
+    char        *keyend;
+
 
     /* Figure out how much memory we are going to need */
     stat( certfile, &s );
@@ -538,33 +548,22 @@ makecertfile(const char   certfile[],
         goto cleanup;
     }
 
-
-    static char  BEGINCERT[] = "-----BEGIN CERTIFICATE-----";
-    static char  ENDCERT[] = "-----END CERTIFICATE-----";
-    static char BEGINKEY[] = "-----BEGIN RSA PRIVATE KEY-----";
-    static char ENDKEY[] = "-----END RSA PRIVATE KEY-----";
-    char        *certstart; 
-    char        *certend;
-    int          size;
-    char        *keystart; 
-    char        *keyend;
-
     if ((certstart = strstr(certbuf, BEGINCERT)) == NULL)
     {
-      fprintf(stderr, "CRED doesn't contain '%s'.\n",  BEGINCERT);
+      fprintf(stderr, "%s doesn't contain '%s'.\n",  certfile, BEGINCERT);
       goto cleanup;
     }
 
     if ((certend = strstr(certstart, ENDCERT)) == NULL)
     {
-      fprintf(stderr, "CRED doesn't contain '%s'.\n", ENDCERT);
+      fprintf(stderr, "%s doesn't contain '%s'.\n", certfile, ENDCERT);
       goto cleanup;
     }
     certend += strlen(ENDCERT);
     size = certend-certstart;
 
     strncat( *credbuf, certstart, size ); 
-    strcat( *credbuf, "\n\0" ); 
+    strcat( *credbuf, "\n" );
     certstart += size;
 
     /* Write the key. */
@@ -581,7 +580,7 @@ makecertfile(const char   certfile[],
     size = keyend-keystart;
 
     strncat( *credbuf, keystart, size );
-    strcat( *credbuf, "\n\0" );
+    strcat( *credbuf, "\n" );
 
     /* Write any remaining certificates. */
     while ((certstart = strstr(certstart, BEGINCERT)) != NULL) {
@@ -595,7 +594,7 @@ makecertfile(const char   certfile[],
         size = certend-certstart;
 
         strncat( *credbuf, certstart, size ); 
-        strcat( *credbuf, "\n\0" ); 
+        strcat( *credbuf, "\n" ); 
         certstart += size;
     }
 
