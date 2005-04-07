@@ -56,7 +56,6 @@
 #   3. (pending) Store a credential (CoG myproxy put).
 
 use IPC::Open3;
-use Term::ReadKey;
 
 #
 # handle cmdline options
@@ -344,7 +343,7 @@ if ($exitstatus == 0) {
 	print "SUCCEEDED\n"; $SUCCESSES++;
     } else {
 	print "FAILED\n"; $FAILURES++;
-	print STDERR "Shouldn't have allowed retrieval.";
+	print STDERR "Shouldn't have allowed retrieval.\n";
 	print STDERR $output;
     }
 } else {
@@ -392,7 +391,7 @@ if ($exitstatus == 0) {
 	print "SUCCEEDED\n"; $SUCCESSES++;
     } else {
 	print "FAILED\n"; $FAILURES++;
-	print STDERR "Shouldn't have allowed retrieval.";
+	print STDERR "Shouldn't have allowed retrieval.\n";
 	print STDERR $output;
     }
 } else {
@@ -447,22 +446,16 @@ if ($exitstatus == 0) {
 # Start of myproxy-store and myproxy-retrieve tests
 #
 
-# We want to use the real end-entity credential
-delete $ENV{'X509_USER_CERT'};
-delete $ENV{'X509_USER_KEY'};
-
-print "\n\n\n";
-print "*****************************\n";
-print "Enter credential passphrase: ";
-ReadMode 'noecho';
-$passphrase = ReadLine 0;
-chomp $passphrase;
-ReadMode 'normal';
-print "\n";
-
 # commands to test: myproxy-store, myproxy-info, myproxy-destroy,
 #                   myproxy-get-delegation, myproxy-retrieve, and 
 #                   myproxy-change-pass-phrase
+
+# For myproxy-store, we need an encrypted key to store.
+# So, let's encrypt our proxy key.
+$passphrase = sprintf "%010.d", int(rand(0x7fffffff));
+&runtest("openssl rsa -des3 -passout stdin -in \$X509_USER_KEY -out /tmp/myproxy-test.$$.key",
+	 $passphrase . "\n");
+$ENV{'X509_USER_KEY'} = "/tmp/myproxy-test.$$.key";
 
 #
 # Test 17
@@ -641,7 +634,7 @@ if ($exitstatus == 0) {
 	print "SUCCEEDED\n"; $SUCCESSES++;
     } else {
 	print "FAILED\n"; $FAILURES++;
-	print STDERR "Shouldn't have allowed retrieval.";
+	print STDERR "Shouldn't have allowed retrieval.\n";
 	print STDERR $output;
     }
 } else {
@@ -667,7 +660,7 @@ if ($exitstatus == 0) {
 	print "SUCCEEDED\n"; $SUCCESSES++;
     } else {
 	print "FAILED\n"; $FAILURES++;
-	print STDERR "Shouldn't have allowed retrieval.";
+	print STDERR "Shouldn't have allowed retrieval.\n";
 	print STDERR $output;
     }
 } else {
@@ -675,7 +668,11 @@ if ($exitstatus == 0) {
 }
 &runtest("myproxy-destroy -v -k 'mine'", undef);
 &runtest("myproxy-destroy -v -k 'nobody'", undef);
-`rm /tmp/myproxy-test.*.12.*.$$`;
+`rm -f /tmp/myproxy-test.*.12.*.$$`;
+
+
+# Use unencrypted private key for renewal tests.
+$ENV{'X509_USER_KEY'} = $ENV{'X509_USER_PROXY'};
 
 #
 # Test 30
@@ -708,14 +705,8 @@ if ($exitstatus == 0 && $output =~ /username/) {
 #
 # Test 32
 #
-
-## This test does not work.  You can not use myproxy-store and
-## myproxy-get-delegation -a.  This assumes an unencrypted private key.
-## myproxy-store does not safe the key that way.
-##
-##
 ($exitstatus, $output) =
-    &runtest("myproxy-get-delegation -k 'mine' -t 1 -o /tmp/myproxy-test.$$ -v -d -S",
+    &runtest("myproxy-get-delegation -k 'mine' -a $ENV{'X509_USER_PROXY'} -t 1 -o /tmp/myproxy-test.$$ -v -d -S",
 	     $passphrase . "\n");
 print "MyProxy Test 32 (verify renewal policies): ";
 if ($exitstatus == 0) {
@@ -724,13 +715,13 @@ if ($exitstatus == 0) {
 }
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
-	&runtest("myproxy-get-delegation -k 'nobody' -t 1 -o /tmp/myproxy-test.$$ -v -d -S",
+	&runtest("myproxy-get-delegation -k 'nobody' -a $ENV{'X509_USER_PROXY'} -t 1 -o /tmp/myproxy-test.$$ -v -d -S",
 		 $passphrase . "\n");
-    if ($exitstatus == 0) {
+    if ($exitstatus != 0) {
 	print "SUCCEEDED\n"; $SUCCESSES++;
     } else {
 	print "FAILED\n"; $FAILURES++;
-	print STDERR "Shouldn't have allowed retrieval.";
+	print STDERR "Shouldn't have allowed retrieval.\n";
 	print STDERR $output;
     }
 } else {
@@ -739,6 +730,9 @@ if ($exitstatus == 0) {
 
 &runtest("myproxy-destroy -v -k 'mine' -d", undef);
 &runtest("myproxy-destroy -v -k 'nobody' -d", undef);
+
+# Back to using encrypted private key.
+$ENV{'X509_USER_KEY'} = "/tmp/myproxy-test.$$.key";
 
 #
 # Test 33
@@ -831,7 +825,7 @@ if ($exitstatus == 0) {
 	print "SUCCEEDED\n"; $SUCCESSES++;
     } else {
 	print "FAILED\n"; $FAILURES++;
-	print STDERR "Shouldn't have allowed retrieval.";
+	print STDERR "Shouldn't have allowed retrieval.\n";
 	print STDERR $output;
     }
 } else {
@@ -840,7 +834,11 @@ if ($exitstatus == 0) {
 
 &runtest("myproxy-destroy -v -k 'mine' -d", undef);
 &runtest("myproxy-destroy -v -k 'nobody' -d", undef);
-`rm /tmp/myproxy-test.*.12.*.$$`;
+`rm -f /tmp/myproxy-test.*.12.*.$$`;
+unlink("/tmp/myproxy-test.$$.key");
+
+# Back to unencrypted private key for CoG tests
+$ENV{'X509_USER_KEY'} = $ENV{'X509_USER_PROXY'};
 
 #
 # COG tests
