@@ -79,15 +79,15 @@ buffer2file( char *buffer,
              int   fd );
 
 int
-write_cert( const char *path,
+write_cert( char       *path,
             const char *buffer );
 
 int
-write_key( const char *path,
-            const char *buffer );
+write_key( char       *path,
+           const char *buffer );
 
-void
-check_dir( char *path );
+int
+mkpath( char *path );
 
 /*
  * Use setvbuf() instead of setlinebuf() since cygwin doesn't support
@@ -113,6 +113,8 @@ main(int argc, char *argv[])
     char                    delegfile[128];
     char                    request_buffer[2048];
     int                     requestlen;
+    int                     retval     = -1;
+    int                     deletefile =  0;
 
     myproxy_log_use_stream (stderr);
 
@@ -154,7 +156,7 @@ main(int argc, char *argv[])
     /* Connect to server. */
     if (myproxy_init_client(socket_attrs) < 0) {
         fprintf(stderr, "Error: %s\n", verror_get_string());
-        return(1);
+        goto error;
     }
     
     if (!outputfile) {
@@ -177,7 +179,7 @@ main(int argc, char *argv[])
 	}
 	if (rval == -1) {
 	    verror_print_error(stderr);
-	    return 1;
+            goto error;
 	}
     }
 
@@ -188,21 +190,21 @@ main(int argc, char *argv[])
 					      &client_request->username)) {
 		    fprintf(stderr, "Cannot get subject name from %s\n",
 			    client_request->authzcreds);
-		    return 1;
+                    goto error;
 		}
 	    } else {
 		if (ssl_get_base_subject_file(NULL,
 					      &client_request->username)) {
 		    fprintf(stderr,
 			    "Cannot get subject name from your certificate\n");
-		    return 1;
+                    goto error;
 		}
 	    }
 	} else {
 	    char *username = NULL;
 	    if (!(username = getenv("LOGNAME"))) {
 		fprintf(stderr, "Please specify a username.\n");
-		return 1;
+                goto error;
 	    }
 	    client_request->username = strdup(username);
 	}
@@ -216,7 +218,7 @@ main(int argc, char *argv[])
     if (myproxy_authenticate_init(socket_attrs, NULL) < 0) {
         fprintf(stderr, "Error: %s: %s\n",
                 socket_attrs->pshost, verror_get_string());
-        return(1);
+        goto error;
     }
 
     /* Serialize client request object */
@@ -224,35 +226,36 @@ main(int argc, char *argv[])
                                            sizeof(request_buffer));
     if (requestlen < 0) {
         fprintf(stderr, "Error in myproxy_serialize_request():\n");
-        return(1);
+        goto error;
     }
 
     /* Send request to the myproxy-server */
     if (myproxy_send(socket_attrs, request_buffer, requestlen) < 0) {
         fprintf(stderr, "Error in myproxy_send_request(): %s\n",
                 verror_get_string());
-        return(1);
+        goto error;
     }
 
     /* Continue unless the response is not OK */
     if (myproxy_recv_response_ex(socket_attrs, server_response,
                                  client_request) != 0) {
         fprintf(stderr, "%s\n", verror_get_string());
-        return(1);
+        goto error;
     }
 
     /* Accept delegated credentials from server */
+    deletefile = 1;
     if (myproxy_accept_credentials(socket_attrs, delegfile, sizeof(delegfile),
                                   NULL) < 0) {
         fprintf(stderr, "Error in (myproxy_accept_credentials(): %s\n",
                 verror_get_string());
-        return(1);
+        goto error;
     }
 
     if( store_credential( delegfile, certfile, keyfile ) < 0 )
     {
        fprintf( stderr, "Problem storing to: %s and %s\n", certfile, keyfile );
-       return(1);
+       goto error;
     }
 
     /* move delegfile to outputfile if specified */
@@ -262,12 +265,22 @@ main(int argc, char *argv[])
 
     printf("Credentials for %s have been stored in %s and %s\n",
            client_request->username, certfile, keyfile);
+
+    retval = 0;
+
+error:
     free(outputfile);
     verror_clear();
 
     /* free memory allocated */
     myproxy_free(socket_attrs, client_request, server_response);
-    return 0;
+
+    if( deletefile )
+    {
+      ssl_proxy_file_destroy(delegfile);
+    }
+
+    return retval;
 }
 
 void 
@@ -423,7 +436,7 @@ file2buf(const char   filename[],
 }
 
 int
-write_cert( const char *path, 
+write_cert( char       *path, 
             const char *buffer )
 {
     int          fd;
@@ -434,7 +447,10 @@ write_cert( const char *path,
     int          retval      = -1;
     int          size;
 
-    check_dir( path );
+    if( mkpath( path ) < 0 )
+    {
+      goto error;
+    }
 
     /* Open the output file. */
     if ((fd = open(path, O_CREAT | O_EXCL | O_WRONLY,
@@ -442,7 +458,7 @@ write_cert( const char *path,
     {
       if( errno == EEXIST )
       {
-        fprintf(stderr, "open(%s) failed: This file already exists.  myproxy-retrieve will not overwrite end-entity credentials\n", path );
+        fprintf(stderr, "open(%s) failed: This file already exists.  (myproxy-retrieve will not overwrite end-entity credentials)\n", path );
         goto error;
       }
 
@@ -498,7 +514,7 @@ error:
 }
 
 int
-write_key( const char *path, 
+write_key( char       *path, 
            const char *buffer )
 {
     int          fd;
@@ -509,7 +525,10 @@ write_key( const char *path,
     int          retval     = -1;
     int          size;
 
-    check_dir( path );
+    if( mkpath( path ) < 0 )
+    {
+      goto error;
+    }
 
     /* Open the output file. */
     if ((fd = open(path, O_CREAT | O_EXCL | O_WRONLY,
@@ -517,7 +536,7 @@ write_key( const char *path,
     {
       if( errno == EEXIST )
       {
-        fprintf(stderr, "open(%s) failed: This file already exists.  myproxy-retrieve will not overwrite end-entity credentials\n", path );
+        fprintf(stderr, "open(%s) failed: This file already exists.  (myproxy-retrieve will not overwrite end-entity credentials)\n", path );
         goto error;
       }
 
@@ -587,34 +606,40 @@ buffer2file( char *buffer,
     return( 0 );
 }
 
-void
-check_dir( char *path )
+int
+mkpath(char *path)
 {
-  char *newpath;
-  char *cmd;
-  char *endp;
-  int   size;
+    struct stat sb;
+    char *p = path+1;
 
-  endp = strrchr( path, '/' );
 
-  if( endp == NULL )
-  {
-    /* assume we only have a filename and the default directory will be used */
-    return;
-  }
+    while ((p = strchr(p, '/')) != NULL) {
+        *p = '\0';
+        if (stat(path, &sb) < 0) {
+            if (errno == ENOENT) { /* doesn't exist. create it. */
+                if (mkdir(path, 0700) < 0) {
+                    fprintf(stderr, "failed to create directory %s: %s\n",
+                            path, strerror(errno));
+                    *p = '/';
+                    return -1;
+                }
+                fprintf(stderr, "created directory %s\n", path);
+            } else {
+                fprintf(stderr, "failed to stat %s: %s\n",
+                        path, strerror(errno));
+                *p = '/';
+                return -1;
+            }
+        }
+        if (!(sb.st_mode & S_IFDIR)) {
+            fprintf(stderr, "%s exists and is not a directory\n", path);
+            *p = '/';
+            return -1;
+        }
+        *p = '/';
+        p++;
+    }
 
-  size = endp - path;
 
-  newpath = malloc( strlen(path) );
-
-  strncpy( newpath, path, size );
-  newpath[size] = '\0';
-
-  cmd = malloc( strlen(newpath) + 16 );
-  sprintf( cmd, "mkdir -p %s 2>&1", newpath );
-
-  system( cmd );
-
-  free( newpath );
-  free( cmd );
-} 
+    return 0;
+}
