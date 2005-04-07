@@ -1442,12 +1442,12 @@ myproxy_recv(myproxy_socket_attrs_t *attrs,
 {
     char *buffer = NULL;
     char error_string[1024];
-    int readlen;
+    size_t readlen;
 
     assert(data != NULL);
    
-    readlen = GSI_SOCKET_read_buffer(attrs->gsi_socket, &buffer);
-    if (readlen == GSI_SOCKET_ERROR) {
+    if (GSI_SOCKET_read_token(attrs->gsi_socket, &buffer,
+			      &readlen) == GSI_SOCKET_ERROR) {
 	GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
 				    sizeof(error_string));
 	verror_put_string("Error reading: %s\n", error_string);
@@ -1467,11 +1467,11 @@ myproxy_recv(myproxy_socket_attrs_t *attrs,
 int
 myproxy_recv_ex(myproxy_socket_attrs_t *attrs, char **data)
 {
-    int readlen;
+    size_t readlen;
     char error_string[1024];
 
-    readlen = GSI_SOCKET_read_buffer(attrs->gsi_socket, data);
-    if (readlen == GSI_SOCKET_ERROR) {
+    if (GSI_SOCKET_read_token(attrs->gsi_socket, data,
+			      &readlen) == GSI_SOCKET_ERROR) {
 	GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
 				    sizeof(error_string));
 	verror_put_string("Error reading: %s\n", error_string);
@@ -1892,10 +1892,6 @@ encode_command(const myproxy_proto_request_type_t	command_value)
         string = "6";
         break;
 
-      case MYPROXY_CONTINUE:
-        string = "7";
-        break;
-	
       default:
 	/* Should never get here */
 	string = NULL;
