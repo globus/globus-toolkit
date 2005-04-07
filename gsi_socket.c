@@ -1015,66 +1015,21 @@ GSI_SOCKET_write_buffer(GSI_SOCKET *self,
 	
 	gss_release_buffer(&self->minor_status, &wrapped_buffer);
     }
+    /* myproxy_debug("\nwrote:\n%s\n", buffer); */
   error:
     return return_value;
 }
 
-int
-GSI_SOCKET_read_buffer(GSI_SOCKET *self,
-		       char **buffer)
+static
+size_t safe_strlen(const char s[], size_t bufsiz)
 {
-    int return_value = GSI_SOCKET_ERROR;
-    int len;
-    
-    if (self == NULL) {
-	return GSI_SOCKET_ERROR;
-    }
-    
-    if (buffer == NULL) {
-	self->error_number = EINVAL;
-	return GSI_SOCKET_ERROR;
-    }
-
-    len = read_token(self->sock, buffer);
-	
-    if (len == -1) {
-	self->error_number = errno;
-	self->error_string = strdup("failed to read token");
-	goto error;
-    }
-
-    if (self->gss_context != GSS_C_NO_CONTEXT) {
-	/* Need to unwrap read data */
-	gss_buffer_desc unwrapped_buffer;
-	gss_buffer_desc wrapped_buffer;
-	int conf_state;
-	gss_qop_t qop_state;
-
-	wrapped_buffer.value = *buffer;
-	wrapped_buffer.length = len;
-
-	self->major_status = gss_unwrap(&self->minor_status,
-					self->gss_context,
-					&wrapped_buffer,
-					&unwrapped_buffer,
-					&conf_state,
-					&qop_state);
-
-	free(*buffer);
-	*buffer = NULL;
-
-	if (self->major_status != GSS_S_COMPLETE) {
-	    goto error;
+    int i;
+    for (i=0; i < bufsiz; i++) {
+	if (s[i] == '\0') {
+	    return i;
 	}
-	
-	*buffer = unwrapped_buffer.value;
-	len = unwrapped_buffer.length;
     }
-    
-    return_value = len;		/* success */
-
-  error:        
-    return return_value;
+    return i;
 }
 
 int GSI_SOCKET_read_token(GSI_SOCKET *self,
@@ -1082,52 +1037,90 @@ int GSI_SOCKET_read_token(GSI_SOCKET *self,
 			  size_t *pbuffer_len)
 {
     int			bytes_read;
+    static unsigned char *saved_buffer = NULL; /* not thread safe! */
+    static int          saved_buffer_len = 0;
     unsigned char	*buffer;
     int			return_status = GSI_SOCKET_ERROR;
     
-    bytes_read = read_token(self->sock,
-			    (char **) &buffer);
+    if (saved_buffer) {
+
+	buffer = saved_buffer;
+	bytes_read = saved_buffer_len;
+	saved_buffer = NULL;
+	saved_buffer_len = 0;
+
+    } else {
+
+	bytes_read = read_token(self->sock,
+				(char **) &buffer);
     
-    if (bytes_read == -1)
-    {
-	self->error_number = errno;
-	self->error_string = strdup("failed to read token");
-	goto error;
-    }
-    
-    if (self->gss_context != GSS_C_NO_CONTEXT)
-    {
-	/* Need to unwrap read data */
-	gss_buffer_desc unwrapped_buffer;
-	gss_buffer_desc wrapped_buffer;
-	int conf_state;
-	gss_qop_t qop_state;
-
-	wrapped_buffer.value = buffer;
-	wrapped_buffer.length = bytes_read;
-
-	self->major_status = gss_unwrap(&self->minor_status,
-					self->gss_context,
-					&wrapped_buffer,
-					&unwrapped_buffer,
-					&conf_state,
-					&qop_state);
-
-	free(buffer);
-
-	if (self->major_status != GSS_S_COMPLETE)
+	if (bytes_read == -1)
 	{
+	    self->error_number = errno;
+	    self->error_string = strdup("failed to read token");
 	    goto error;
 	}
+    
+	if (self->gss_context != GSS_C_NO_CONTEXT)
+	{
+	    /* Need to unwrap read data */
+	    gss_buffer_desc unwrapped_buffer;
+	    gss_buffer_desc wrapped_buffer;
+	    int conf_state;
+	    gss_qop_t qop_state;
+
+	    wrapped_buffer.value = buffer;
+	    wrapped_buffer.length = bytes_read;
+
+	    self->major_status = gss_unwrap(&self->minor_status,
+					    self->gss_context,
+					    &wrapped_buffer,
+					    &unwrapped_buffer,
+					    &conf_state,
+					    &qop_state);
+
+	    free(buffer);
+
+	    if (self->major_status != GSS_S_COMPLETE)
+	    {
+		goto error;
+	    }
 	
-	buffer = unwrapped_buffer.value;
-	bytes_read = unwrapped_buffer.length;
+	    buffer = unwrapped_buffer.value;
+	    bytes_read = unwrapped_buffer.length;
+	}
+
+    }
+
+    /* HACK: We may have multiple tokens concatenated together here.
+       Unfortunately, our protocol doesn't do a good job of message
+       framing.  Still, we can find the start/end of some messages
+       by looking for the standard VERSION string at the start. */
+    if (strncmp(buffer, "VERSION", strlen("VERSION")) == 0) {
+	size_t token_len = safe_strlen(buffer, bytes_read)+1;
+	if (bytes_read > token_len) {
+
+	    /* Our buffer is bigger than one message.  Just return the
+	       one message here and save the rest for later. */
+
+	    char *old_buffer;
+
+	    old_buffer = buffer;
+	    saved_buffer_len = bytes_read - token_len;
+	    buffer = malloc(token_len);
+	    memcpy(buffer, old_buffer, token_len);
+	    saved_buffer = malloc(saved_buffer_len);
+	    memcpy(saved_buffer, old_buffer+token_len, saved_buffer_len);
+	    bytes_read = token_len;
+	    free(old_buffer);
+	}
     }
 
     /* Success */
     *pbuffer = buffer;
     *pbuffer_len = bytes_read;
     return_status = GSI_SOCKET_SUCCESS;
+    /* myproxy_debug("\nread:\n%s\n", buffer); */
     
   error:
     return return_status;
@@ -1459,9 +1452,9 @@ int GSI_SOCKET_credentials_accept_ext(GSI_SOCKET *self,
 
     removetmp = 1;
 
-    size = strlen( input_buffer );
+    size = strlen( (char *)input_buffer );
 
-    certstart = input_buffer;
+    certstart = (char *)input_buffer;
 
     while (size) 
     {
@@ -1528,7 +1521,6 @@ GSI_SOCKET_credentials_init_ext(GSI_SOCKET *self,
                                 const char *passphrase)
 {
     int                        return_value       = GSI_SOCKET_ERROR;
-    SSL_CREDENTIALS           *creds              = NULL;
     SSL_PROXY_RESTRICTIONS    *proxy_restrictions = NULL;
     unsigned char             *input_buffer       = NULL;
     unsigned char             *output_buffer      = NULL;
@@ -1544,25 +1536,9 @@ GSI_SOCKET_credentials_init_ext(GSI_SOCKET *self,
       goto error;
     }
 
-    /*
-     * Load proxy we are going to use to sign delegation
-     */
-    creds = ssl_credentials_new();
-
-    if (creds == NULL)
-    {
-      GSI_SOCKET_set_error_from_verror(self);
-      goto error;
-    }
-
-    if (passphrase && passphrase[0] == '\0') 
-    {
-      passphrase = NULL;
-    }
-
     if (GSI_SOCKET_write_buffer(self,
                                 source_credentials,
-                                strlen(source_credentials))
+                                strlen(source_credentials)+1)
         == GSI_SOCKET_ERROR)
     {
       goto error;
@@ -1582,11 +1558,6 @@ GSI_SOCKET_credentials_init_ext(GSI_SOCKET *self,
       ssl_free_buffer(output_buffer);
     }
 
-    if (creds != NULL)
-    {
-      ssl_credentials_destroy(creds);
-    }
-
     if (proxy_restrictions != NULL)
     {
       ssl_proxy_restrictions_destroy(proxy_restrictions);
@@ -1602,11 +1573,8 @@ GSI_SOCKET_get_creds(GSI_SOCKET *self,
                      const char *passphrase)
 {
     int                          return_value       = GSI_SOCKET_ERROR;
-    SSL_CREDENTIALS             *creds              = NULL;
-    SSL_PROXY_RESTRICTIONS      *proxy_restrictions = NULL;
     unsigned char               *input_buffer       = NULL;
     unsigned char               *output_buffer      = NULL;
-    size_t                       input_buffer_length;
     int                          output_buffer_length;
 
 
@@ -1621,34 +1589,8 @@ GSI_SOCKET_get_creds(GSI_SOCKET *self,
       goto error;
     }
 
-    /*
-     * Load proxy we are going to use to sign delegation
-     */
-    creds = ssl_credentials_new();
-
-    if (creds == NULL)
-    {
-      GSI_SOCKET_set_error_from_verror(self);
-      goto error;
-    }
-
-    if (passphrase && passphrase[0] == '\0') 
-    {
-      passphrase = NULL;
-    }
-
-    if (ssl_proxy_load_from_file(creds, source_credentials,
-                               passphrase) == SSL_ERROR)
-    {
-      GSI_SOCKET_set_error_from_verror(self);
-      goto error;
-    }
-
-    if (ssl_proxy_to_pem( creds, 
-                         &output_buffer,
-                         &output_buffer_length,
-                          passphrase) == SSL_ERROR)
-    {
+    if (buffer_from_file(source_credentials, &output_buffer,
+			 &output_buffer_length) < 0) {
       GSI_SOCKET_set_error_from_verror(self);
       goto error;
     }
@@ -1664,20 +1606,6 @@ GSI_SOCKET_get_creds(GSI_SOCKET *self,
       goto error;
     }
 
-    /*
-    ** HACK.  There was a timing problem on some systems with the socket
-    ** closing to fast.  This forces the server to wait until the client
-    ** has read the credential.  This read waits for MYPROXY_CONTINUE -
-    ** which does nothing and means nothing...
-    */ 
-    if (GSI_SOCKET_read_token(self,
-                              &input_buffer,
-                              &input_buffer_length) == GSI_SOCKET_ERROR)
-    {
-        goto error;
-    }
-    myproxy_debug( "Read MYPROXY_CONTINUE" );
-
     /* Success */
     return_value = GSI_SOCKET_SUCCESS;
 
@@ -1689,19 +1617,8 @@ GSI_SOCKET_get_creds(GSI_SOCKET *self,
 
     if (output_buffer != NULL)
     {
-      ssl_free_buffer(output_buffer);
-    }
-
-    if (creds != NULL)
-    {
-      ssl_credentials_destroy(creds);
-    }
-
-    if (proxy_restrictions != NULL)
-    {
-      ssl_proxy_restrictions_destroy(proxy_restrictions);
+      free(output_buffer);
     }
 
     return return_value;
 }
-
