@@ -59,88 +59,6 @@ static const char *_ssl_pass_phrase = NULL;
  */
 
 /*
- * buffer_from_file()
- *
- * Read the entire contents of a file into a buffer.
- *
- * Returns SSL_SUCCESS or SSL_ERROR, setting verror.
- */
-static int
-buffer_from_file(const char			*path,
-		 unsigned char			**pbuffer,
-		 int				*pbuffer_len)
-{
-    int				fd = -1;
-    int				open_flags;
-    int				return_status = SSL_ERROR;
-    struct stat			statbuf;
-    unsigned char		*buffer = NULL;
-    int				buffer_len;
-    
-    assert(path != NULL);
-    assert(pbuffer != NULL);
-    assert(pbuffer_len != NULL);
-    
-    open_flags = O_RDONLY;
-    
-    fd = open(path, open_flags);
-    
-    if (fd == -1)
-    {
-	verror_put_string("Failure opening file \"%s\"", path);
-	verror_put_errno(errno);
-	goto error;
-    }
-    
-    if (fstat(fd, &statbuf) == -1)
-    {
-	verror_put_string("Failure stating file \"%s\"", path);
-	verror_put_errno(errno);
-	goto error;
-    }
-
-    buffer_len = statbuf.st_size;
-    
-    buffer = malloc(buffer_len);
-    
-    if (buffer == NULL)
-    {
-	verror_put_string("malloc() failed");
-	verror_put_errno(errno);
-	goto error;
-    }
-    
-    if (read(fd, buffer, buffer_len) == -1)
-    {
-	verror_put_string("Error reading file \"%s\"", path);
-	verror_put_errno(errno);
-	goto error;
-    }
-
-    /* Succcess */
-    *pbuffer = buffer;
-    *pbuffer_len = buffer_len;
-    return_status = SSL_SUCCESS;
-
-  error:
-    if (fd != -1)
-    {
-	close(fd);
-    }
-    
-    if (return_status == SSL_ERROR)
-    {
-	if (buffer != NULL)
-	{
-	    free(buffer);
-	}
-    }
-    
-    return return_status;
-}
-
-
-/*
  * ssl_error_to_verror()
  *
  * Transfer an error description out of the ssl error handler to verror.
@@ -965,7 +883,7 @@ ssl_proxy_load_from_file(SSL_CREDENTIALS	*creds,
     my_init();
 
     /* Read the whole contents of the given file */
-    if (buffer_from_file(path, &buffer, &buffer_len) == SSL_ERROR)
+    if (buffer_from_file(path, &buffer, &buffer_len) == -1)
     {
 	goto error;
     }
