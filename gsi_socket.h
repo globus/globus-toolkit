@@ -140,18 +140,6 @@ int GSI_SOCKET_write_buffer(GSI_SOCKET *gsi_socket,
 			    size_t buffer_len);
 
 /*
- * GSI_SOCKET_read_buffer()
- *
- * Read a message from the peer, returning an allocated buffer
- * of appropriate size.  It is the caller's responsibility to
- * free() the buffer after use.
- *
- * Returns number of bytes put into buffer, GSI_SOCKET_ERROR on error.
- */
-int GSI_SOCKET_read_buffer(GSI_SOCKET *gsi_socket,
-			   char **buffer);
-
-/*
  * GSI_SOCKET_read_token()
  *
  * Read a token from the peer. If authentication has been done,
