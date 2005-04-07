@@ -196,7 +196,7 @@ main(int argc, char *argv[])
 	    rval = myproxy_read_verified_passphrase(client_request->passphrase, sizeof(client_request->passphrase), NULL);
 	}
 	if (rval == -1) {
-	    fprintf(stderr, "%s\n", verror_get_string());
+	    verror_print_error(stderr);
 	    goto cleanup;
 	}
     }
@@ -217,7 +217,6 @@ main(int argc, char *argv[])
     }
 
     /* Send request to the myproxy-server */
-
     if (myproxy_send(socket_attrs, request_buffer, requestlen) < 0) {
         fprintf(stderr, "%s\n", 
 		verror_get_string());
@@ -364,9 +363,8 @@ init_arguments(int argc,
 	    {
 		request->retrievers = (char *) malloc (strlen (gnu_optarg) + 5);
 		strcpy (request->retrievers, "*/CN=");
-		myproxy_debug("authorized retriever %s",
-			      request->retrievers);
 		request->retrievers = strcat (request->retrievers,gnu_optarg);
+		myproxy_debug("authorized retriever %s", request->retrievers);
 	    }
 	    break;
 	case 'R':   /* renewers list */
@@ -384,9 +382,8 @@ init_arguments(int argc,
 	    {
 		request->renewers = (char *) malloc (strlen (gnu_optarg) + 6);
 		strcpy (request->renewers, "*/CN=");
-		myproxy_debug("authorized renewer %s",
-			      request->renewers);
 		request->renewers = strcat (request->renewers,gnu_optarg);
+		myproxy_debug("authorized renewer %s", request->renewers);
 	    }
 	    use_empty_passwd = 1;
 	    break;
