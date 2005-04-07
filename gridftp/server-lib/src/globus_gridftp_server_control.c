@@ -792,10 +792,10 @@ globus_l_gsc_terminate(
        In these cases there is nothing to be done. */
     if(server_handle->terminating)
     {
-        globus_l_gsc_server_ref_check(server_handle);
         globus_assert(
             server_handle->state == GLOBUS_L_GSC_STATE_ABORTING_STOPPING ||
             server_handle->state == GLOBUS_L_GSC_STATE_STOPPING);
+        globus_l_gsc_server_ref_check(server_handle);
         return;
     }
     server_handle->terminating = GLOBUS_TRUE;
@@ -1275,7 +1275,7 @@ globus_l_gsc_final_reply_cb(
                             (void *) server_handle);
                     if(res != GLOBUS_SUCCESS)
                     {
-                        globus_l_gsc_terminate(server_handle);
+			goto err;
                     }
                     server_handle->ref++;
                     GlobusGSCHandleStateChange(
