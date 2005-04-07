@@ -86,6 +86,9 @@ int
 write_key( const char *path,
             const char *buffer );
 
+void
+check_dir( char *path );
+
 /*
  * Use setvbuf() instead of setlinebuf() since cygwin doesn't support
  * setlinebuf().
@@ -383,13 +386,11 @@ store_credential( char *delegfile,
 
     if (write_cert(certfile, input_buffer) < 0)
     {
-      fprintf(stderr, "open(%s) failed: %s\n", certfile, strerror(errno));
       goto error;
     }
 
     if (write_key(keyfile, input_buffer) < 0)
     {
-      fprintf(stderr, "open(%s) failed: %s\n", keyfile, strerror(errno));
       goto error;
     }
 
@@ -452,12 +453,19 @@ write_cert( const char *path,
     int          retval      = -1;
     int          size;
 
+    check_dir( path );
 
     /* Open the output file. */
     if ((fd = open(path, O_CREAT | O_EXCL | O_WRONLY,
                  S_IRUSR | S_IWUSR)) < 0)
     {
-      fprintf(stderr, "open(%s) failed: %s\n", path, strerror(errno));
+      if( errno == EEXIST )
+      {
+        fprintf(stderr, "open(%s) failed: This file already exists.  myproxy-retrieve will not overwrite end-entity credintails\n", path );
+        goto error;
+      }
+
+      fprintf(stderr, "Open(%s) failed: %s\n", path, strerror(errno));
       goto error;
     }
 
@@ -520,16 +528,24 @@ write_key( const char *path,
     int          retval     = -1;
     int          size;
 
+    check_dir( path );
 
     /* Open the output file. */
     if ((fd = open(path, O_CREAT | O_EXCL | O_WRONLY,
                  S_IRUSR | S_IWUSR)) < 0)
     {
+      if( errno == EEXIST )
+      {
+        fprintf(stderr, "open(%s) failed: This file already exists.  myproxy-ret
+rieve will not overwrite end-entity credintails\n", path );
+        goto error;
+      }
+
       fprintf(stderr, "open(%s) failed: %s\n", path, strerror(errno));
       goto error;
     }
 
-//     Write the key.
+    /* Write the key. */
     if ((keystart = strstr(buffer, BEGINKEY)) == NULL)
     {
       fprintf(stderr, "CREDKEY doesn't contain '%s'.\n", BEGINKEY);
@@ -590,3 +606,25 @@ buffer2file( char *buffer,
 
     return( 0 );
 }
+
+void
+check_dir( char *path )
+{
+  char *newpath;
+  char *cmd;
+  char *endp;
+  int   size;
+
+  endp = strrchr( path, '/' );
+  size = endp - path;
+
+  newpath = malloc( strlen(path) );
+
+  strncpy( newpath, path, size );
+  newpath[size] = '\0';
+
+  cmd = malloc( strlen(newpath) + 12 );
+  sprintf( cmd, "mkdir -p %s", newpath );
+
+  system( cmd );
+} 

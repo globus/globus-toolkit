@@ -1398,6 +1398,11 @@ int GSI_SOCKET_credentials_accept_ext(GSI_SOCKET *self,
     unsigned char             *fmsg;
     int                        i;
     char                       filename[L_tmpnam];
+    char                      *certstart;
+    int                        rval, 
+                               fd                 = 0;
+    int                        size;
+    int                        removetmp          = 0;
 
 
     if (self == NULL)
@@ -1415,7 +1420,7 @@ int GSI_SOCKET_credentials_accept_ext(GSI_SOCKET *self,
       passphrase = NULL;
     }
 
-    //Read the Cred sent from the client.
+    /* Read the Cred sent from the client. */
     if (GSI_SOCKET_read_token(self,
                               &input_buffer,
                               &input_buffer_length) == GSI_SOCKET_ERROR)
@@ -1444,7 +1449,6 @@ int GSI_SOCKET_credentials_accept_ext(GSI_SOCKET *self,
       goto error;
     }
 
-    int rval, fd = 0;
     /* Open the output file. */
     if ((fd = open(filename, O_CREAT | O_EXCL | O_WRONLY,
                  S_IRUSR | S_IWUSR)) < 0) 
@@ -1453,10 +1457,10 @@ int GSI_SOCKET_credentials_accept_ext(GSI_SOCKET *self,
       goto error;
     }
 
-    int   size;
+    removetmp = 1;
+
     size = strlen( input_buffer );
 
-    char *certstart;
     certstart = input_buffer;
 
     while (size) 
@@ -1481,6 +1485,7 @@ int GSI_SOCKET_credentials_accept_ext(GSI_SOCKET *self,
 
     /* Success */
     return_value = GSI_SOCKET_SUCCESS;
+    removetmp = 0;
 
   error:
     if (input_buffer != NULL)
@@ -1506,6 +1511,11 @@ int GSI_SOCKET_credentials_accept_ext(GSI_SOCKET *self,
     if( fd )
     {
       close( fd );
+    }
+
+    if( removetmp )
+    {
+      ssl_proxy_file_destroy(filename);
     }
 
     return return_value;
