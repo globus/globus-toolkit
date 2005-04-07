@@ -9,6 +9,9 @@
 
 #include "globus_i_gridftp_server_control.h"
 
+int l_event_start = 0;
+int l_event_end = 0;
+
 static void
 globus_l_gsc_send_perf_marker_cb(
     void *                              user_arg);
@@ -130,6 +133,7 @@ globus_i_gsc_event_start(
 {
     globus_i_gsc_event_data_t *         event;
 
+l_event_start++;
     event = &op->event;
 
     event->user_cb = event_cb;
@@ -156,6 +160,7 @@ globus_l_gsc_event_done_cb(
     globus_i_gsc_event_data_t *         event;
     globus_i_gsc_server_handle_t *      server_handle;
 
+l_event_end++;
     op = (globus_i_gsc_op_t *) user_arg;
     event = &op->event;
     server_handle = op->server_handle;
