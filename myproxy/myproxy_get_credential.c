@@ -176,7 +176,7 @@ main(int argc, char *argv[])
 					   NULL);
 	}
 	if (rval == -1) {
-	    fprintf(stderr, "Error reading passphrase\n");
+	    verror_print_error(stderr);
 	    return 1;
 	}
     }
@@ -245,25 +245,6 @@ main(int argc, char *argv[])
     if (myproxy_accept_credentials(socket_attrs, delegfile, sizeof(delegfile),
                                   NULL) < 0) {
         fprintf(stderr, "Error in (myproxy_accept_credentials(): %s\n",
-                verror_get_string());
-        return(1);
-    }
-
-    /* Let the server know the client is done. */
-    client_request->command_type = MYPROXY_CONTINUE;
-
-    /* Serialize client request MYPROXY_CONTINUE */
-    requestlen = myproxy_serialize_request(client_request, request_buffer,
-                                           sizeof(request_buffer));
-    if (requestlen < 0) {
-        fprintf(stderr, "Error in myproxy_serialize_request():\n");
-        return(1);
-    }
-
-    /* Send request to the myproxy-server */
-    if (myproxy_send(socket_attrs, request_buffer, requestlen) < 0) {
-        fprintf(stderr, 
-                "Error in sending: MYPROXY_CONTINUE: %s\n",
                 verror_get_string());
         return(1);
     }
@@ -461,7 +442,7 @@ write_cert( const char *path,
     {
       if( errno == EEXIST )
       {
-        fprintf(stderr, "open(%s) failed: This file already exists.  myproxy-retrieve will not overwrite end-entity credintails\n", path );
+        fprintf(stderr, "open(%s) failed: This file already exists.  myproxy-retrieve will not overwrite end-entity credentials\n", path );
         goto error;
       }
 
@@ -536,8 +517,7 @@ write_key( const char *path,
     {
       if( errno == EEXIST )
       {
-        fprintf(stderr, "open(%s) failed: This file already exists.  myproxy-ret
-rieve will not overwrite end-entity credintails\n", path );
+        fprintf(stderr, "open(%s) failed: This file already exists.  myproxy-retrieve will not overwrite end-entity credentials\n", path );
         goto error;
       }
 
