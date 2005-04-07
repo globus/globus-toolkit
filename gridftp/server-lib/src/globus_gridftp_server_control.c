@@ -256,7 +256,7 @@ globus_l_gsc_activate()
     }
 
     GlobusDebugInit(GLOBUS_GRIDFTP_SERVER_CONTROL,
-        ERROR WARNING TRACE INTERNAL_TRACE INFO STATE INFO_VERBOSE);
+        ERROR WARNING TRACE INTERNAL_TRACE COMMANDS VERBOSE STATE);
 
     /* add all the default command handlers */
     globus_gridftp_server_control_attr_init(&globus_l_gsc_default_attr);
