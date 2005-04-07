@@ -175,7 +175,7 @@ main(
     char *                              policy_filename = NULL;
     char *                              policy_language = NULL;
     int                                 policy_NID;
-    int                                 path_length = -1;
+    long                                path_length = -1;
     int                                 (*pw_cb)() = NULL;
     int                                 return_value = 0;
     
@@ -398,8 +398,13 @@ main(
         }
         else if(strcmp(argp, "-path-length") == 0)
         {
+            char * remaining;
             args_verify_next(arg_index, argp, "integer argument missing");
-            path_length = atoi(argv[arg_index + 1]);
+            path_length = strtol(argv[arg_index + 1], &remaining, 0);
+            if(*remaining != '\0')
+            {
+                args_error(arg_index, argp, "requires an integer argument");
+            }
             arg_index++;
         }
         else
