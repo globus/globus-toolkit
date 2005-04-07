@@ -6,6 +6,7 @@ AC_INIT(Makefile.am)
 GLOBUS_INIT
 
 AM_PROG_LIBTOOL
+AC_PROG_LN_S
 
 dnl config header goes here
 
