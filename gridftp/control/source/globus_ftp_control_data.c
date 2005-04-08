@@ -8281,6 +8281,18 @@ globus_l_ftp_eb_listen_callback(
                           (void *)data_conn2);
             globus_assert(res == GLOBUS_SUCCESS);
         }
+        /* this will happen if we got a force_close after the connect_read but
+         * before this callback.  just continue with an error */
+        else if(dc_handle->state == GLOBUS_FTP_DATA_STATE_CLOSING)
+        {
+            error =  globus_error_construct_string(
+                GLOBUS_FTP_CONTROL_MODULE,
+                GLOBUS_NULL,
+                _FCSL("connection closed before accept"));
+            callback = data_conn->callback;
+            user_arg = data_conn->user_arg;
+            stripe_ndx = stripe->stripe_ndx;
+        }            
         /*
          *  remove reference for listener callback
          */
