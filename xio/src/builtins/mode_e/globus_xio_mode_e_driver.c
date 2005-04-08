@@ -1409,6 +1409,12 @@ globus_l_xio_mode_e_read_header_cb(
     }
     else
     {
+        while (!globus_fifo_empty(&handle->io_q))
+        {
+            requestor = (globus_i_xio_mode_e_requestor_t*)
+                            globus_fifo_dequeue(&handle->io_q);
+            globus_fifo_enqueue(&requestor_q, requestor);
+        }
         goto error;
     }
     globus_mutex_unlock(&handle->mutex);
@@ -1459,6 +1465,15 @@ globus_l_xio_mode_e_read_header_cb(
 error:
     globus_l_xio_mode_e_save_error(handle, result);
     globus_mutex_unlock(&handle->mutex);
+    while (!globus_fifo_empty(&requestor_q))
+    {
+        requestor = (globus_i_xio_mode_e_requestor_t*)
+                                globus_fifo_dequeue(&requestor_q);
+        globus_xio_operation_disable_cancel(requestor->op);
+        op = requestor->op;
+        globus_memory_push_node(&handle->requestor_memory, (void*)requestor);
+        globus_xio_driver_finished_read(op, result, 0);
+    }
     GlobusXIOModeEDebugExitWithError();
     return;
 }
@@ -2052,6 +2067,12 @@ globus_l_xio_mode_e_read_cb(
     }
     else
     {
+        while (!globus_fifo_empty(&handle->io_q))
+        {
+            requestor = (globus_i_xio_mode_e_requestor_t*)
+                            globus_fifo_dequeue(&handle->io_q);
+            globus_fifo_enqueue(&requestor_q, requestor);
+        }
         goto error;
     }
     globus_mutex_unlock(&handle->mutex); 
@@ -2084,6 +2105,15 @@ globus_l_xio_mode_e_read_cb(
 error:
     globus_l_xio_mode_e_save_error(handle, result);
     globus_mutex_unlock(&handle->mutex); 
+    while (!globus_fifo_empty(&requestor_q))
+    {
+        requestor = (globus_i_xio_mode_e_requestor_t*)
+                                globus_fifo_dequeue(&requestor_q);
+        globus_xio_operation_disable_cancel(requestor->op);
+        op = requestor->op;
+        globus_memory_push_node(&handle->requestor_memory, (void*)requestor);
+        globus_xio_driver_finished_read(op, result, 0);
+    }
     GlobusXIOModeEDebugExitWithError();
     return;
 }
