@@ -465,8 +465,15 @@ $ENV{'X509_USER_KEY'} = "/tmp/myproxy-test.$$.key";
 print "MyProxy Test 17 (store credential with default name): ";
 if ($exitstatus == 0) {
     print "SUCCEEDED\n"; $SUCCESSES++;
+} elsif (($output =~ /Error checking authorization/) ||
+         ($output =~ /unknown command/)) {
+    print "UNSUPPORTED\n"; $FAILURES++;
+    print "Server does not support myproxy-store. Skipping futher myproxy-store tests.\n";
+    goto end_of_store_tests;
 } else {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
+    print "Skipping futher myproxy-store tests.\n";
+    goto end_of_store_tests;
 }
 
 #
@@ -483,7 +490,6 @@ if ($exitstatus == 0 && $output =~ /username/) {
 #
 # Test 19
 #
-
 ($exitstatus, $output) =
     &runtest("myproxy-get-delegation -t 1 -o /tmp/myproxy-test.$$ -v -S",
 	     $passphrase . "\n");
@@ -831,7 +837,7 @@ if ($exitstatus == 0) {
 } else {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
 }
-
+end_of_store_tests:
 &runtest("myproxy-destroy -v -k 'mine' -d", undef);
 &runtest("myproxy-destroy -v -k 'nobody' -d", undef);
 `rm -f /tmp/myproxy-test.*.12.*.$$`;
