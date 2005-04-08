@@ -295,12 +295,13 @@ buffer_from_file(const char			*path,
     int				open_flags;
     int				return_status = -1;
     struct stat			statbuf;
-    unsigned char		*buffer = NULL;
+    unsigned char		*buffer = NULL, *b = NULL;
     int				buffer_len;
+    int				remaining;
+    int				rval;
     
     assert(path != NULL);
     assert(pbuffer != NULL);
-    assert(pbuffer_len != NULL);
     
     open_flags = O_RDONLY;
     
@@ -322,8 +323,7 @@ buffer_from_file(const char			*path,
 
     buffer_len = statbuf.st_size;
     
-    buffer = malloc(buffer_len+1);
-    
+    b = buffer = malloc(buffer_len+1);
     if (buffer == NULL)
     {
 	verror_put_string("malloc() failed");
@@ -331,17 +331,23 @@ buffer_from_file(const char			*path,
 	goto error;
     }
     
-    if (read(fd, buffer, buffer_len) == -1)
-    {
-	verror_put_string("Error reading file \"%s\"", path);
-	verror_put_errno(errno);
-	goto error;
+    remaining = buffer_len;
+    while (remaining) {
+	rval = read(fd, b, remaining);
+	if (rval == -1)
+	{
+	    verror_put_string("Error reading file \"%s\"", path);
+	    verror_put_errno(errno);
+	    goto error;
+	}
+	remaining -= rval;
+	b += rval;
     }
     buffer[buffer_len++] = '\0';
 
     /* Succcess */
     *pbuffer = buffer;
-    *pbuffer_len = buffer_len;
+    if (pbuffer_len) *pbuffer_len = buffer_len;
     return_status = 0;
 
   error:
