@@ -1,4 +1,4 @@
-.TH myproxy-admin-adduser 8 "2003-10-23" "NCSA" "MyProxy"
+.TH myproxy-admin-adduser 8 "2005-4-7" "NCSA" "MyProxy"
 .SH NAME
 myproxy-admin-adduser \- add a user credential
 .SH SYNOPSIS
@@ -79,7 +79,7 @@ If specified, the command will not prompt for a passphrase,
 the credential will not be encrypted by a passphrase in the repository, and
 the credential will not be retrievable using passphrase authentication
 with
-.BR myproxy-get-delegation (1).
+.BR myproxy-logon (1).
 This option is used for storing renewable credentials
 and is implied by
 .BR -R .
@@ -153,6 +153,7 @@ Specifies credential description.
 .SH AUTHORS
 Jim Basney,
 Shiva Shankar Chetan,
+Patrick Duda,
 Jarek Gawor,
 Daniel Kouril,
 Zhenmin Li,
@@ -163,9 +164,11 @@ and Von Welch
 .SH "SEE ALSO"
 .BR myproxy-change-pass-phrase (1),
 .BR myproxy-destroy (1),
-.BR myproxy-get-delegation (1),
 .BR myproxy-info (1),
 .BR myproxy-init (1),
+.BR myproxy-logon (1),
+.BR myproxy-retrieve (1),
+.BR myproxy-store (1),
 .BR myproxy-server.config (5),
 .BR myproxy-admin-change-pass (8),
 .BR myproxy-admin-load-credential (8),
