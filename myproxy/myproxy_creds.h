@@ -11,7 +11,6 @@
 
 #define REGULAR_EXP   1
 #define MATCH_CN_ONLY 0
-#define ENDENTITY     1
 
 struct myproxy_creds {
     char  *username;
