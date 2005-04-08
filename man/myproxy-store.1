@@ -9,48 +9,25 @@ myproxy-store \- store end-entity credential for later retrieval
 .SH DESCRIPTION
 The
 .B myproxy-store
-command uploads users end-entity credential to a
+command uploads a credential to a
 .BR myproxy-server (8)
 for later retrieval.
+Unlike 
+.BR myproxy-init (1),
+this command transfers the private key over the network (over a
+private channel).
 In the default mode, 
 the command will take the credentials found in
-.B X509_USER_CERT
+.I ~/.globus/usercert.pem
 and
-.B X509_USER_KEY
-environment variables and store them in
+.I ~/.globus/userkey.pem
+and store them in the
 .BR myproxy-server (8)
 repository.  Proxy credentials with default lifetime of 12 hours can then be
 retrieved by 
 .BR myproxy-logon (1)
-using the MyProxy passphrase.
+using the credential passphrase.
 The default behavior can be overridden by options specified below.
-.PP
-The
-.B myproxy-store
-command can also upload a credential to a
-.BR myproxy-server (8)
-to support credential renewal.
-Renewal allows a trusted service (for example, a batch job scheduler)
-to obtain a new credential for a user
-before the existing credential it has for that user expires.
-The 
-.B -R
-argument to 
-.B myproxy-store
-configures the credential for renewal by the specified service.
-Renewal requires two authentications.
-The renewing service must authenticate with its own credentials, matching
-the distinquished name specified by the 
-.B -R
-argument, and must also authenticate with an existing credential that
-matches the distinguished name of the stored credential, to retrieve a
-new credential.
-.PP
-A credential may be used either for retrieval or renewal but not both.
-If both are desired, upload a different credential for each use, with
-a different name using the 
-.B -k
-option.
 .PP
 The hostname where the 
 .BR myproxy-server (8)
@@ -59,26 +36,6 @@ is running must be specified by either defining the
 environment variable or the
 .B -s
 option.
-.PP
-By default, 
-.B myproxy-store
-will use the user's end-entity credentials
-at
-.B X509_USER_CERT
-and
-.B X509_USER_KEY
-to store to the 
-.BR myproxy-server (8).
-To specify an alternate location for the source certificate and key
-to store, use the
-.B X509_USER_CERT
-and
-.B X509_USER_KEY
-environment variables. Alternately, the
-.B -c
-and
-.B -y
-options may be used. 
 .SH OPTIONS
 .TP
 .B -h, --help
@@ -211,14 +168,16 @@ Specifies credential description.
 .SH FILES
 .TP
 .I ~/.globus/usercert.pem
-Default location of the certificate from which the proxy
-credential is created.  Set the
+Default location of the certificate stored on the 
+.BR myproxy-server .
+Set the
 .B X509_USER_CERT
 environment variable to override.
 .TP
 .I ~/.globus/userkey.pem
-Default location of the private key from which the proxy credential is
-created.  Set the
+Default location of the private key stored on the
+.BR myproxy-server .
+Set the
 .B X509_USER_KEY
 environment variable to override.
 .SH ENVIRONMENT
