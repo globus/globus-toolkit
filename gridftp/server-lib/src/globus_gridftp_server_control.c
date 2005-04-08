@@ -2614,7 +2614,7 @@ globus_gridftp_server_control_start(
         globus_free(server_handle->types);
     }
     /* default options */
-    strcpy(server_handle->opts.mlsx_fact_str, "TMSPUQL");
+    strcpy(server_handle->opts.mlsx_fact_str, "TMSPUOGQL");
     server_handle->opts.send_buf = 0; 
     server_handle->opts.perf_frequency = 5;
     server_handle->opts.restart_frequency = 5;
@@ -3290,6 +3290,8 @@ globus_i_gsc_mlsx_line_single(
     char *                              dir_ptr;
     char *                              encoded_symlink_target;
     int                                 buf_len;
+    struct passwd *                     pw;
+    struct group *                      gr;
     struct tm *                         tm;
     int                                 is_readable = 0;
     int                                 is_writable = 0;
@@ -3451,6 +3453,18 @@ globus_i_gsc_mlsx_line_single(
                     (unsigned) (stat_info->mode & 07777));
                 break;
 
+            case GLOBUS_GSC_MLSX_FACT_UNIXOWNER:
+                pw = getpwuid(stat_info->uid);
+                sprintf(tmp_ptr, "UNIX.owner=%s;",
+                    pw == NULL ? "(null)" : pw->pw_name);
+                break;
+
+            case GLOBUS_GSC_MLSX_FACT_UNIXGROUP:
+                gr = getgrgid(stat_info->gid);
+                sprintf(tmp_ptr, "UNIX.group=%s;",
+                    gr == NULL ? "(null)" : gr->gr_name);
+                break;
+
             case GLOBUS_GSC_MLSX_FACT_UNIQUE:
                 sprintf(tmp_ptr, "Unique=%lx-%lx;", 
                     (unsigned long) stat_info->dev,
@@ -3554,7 +3568,7 @@ globus_i_gsc_list_single_line(
         username = pw->pw_name;
     }
     gr = getgrgid(stat_info->gid);
-    if(pw == NULL)
+    if(gr == NULL)
     {
         grpname = "(null)";
     }

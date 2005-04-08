@@ -106,6 +106,8 @@ typedef enum globus_i_gsc_mlsx_fact_e
     GLOBUS_GSC_MLSX_FACT_SIZE = 'S',
     GLOBUS_GSC_MLSX_FACT_PERM = 'P',
     GLOBUS_GSC_MLSX_FACT_UNIXMODE = 'U',
+    GLOBUS_GSC_MLSX_FACT_UNIXOWNER = 'O',
+    GLOBUS_GSC_MLSX_FACT_UNIXGROUP = 'G',
     GLOBUS_GSC_MLSX_FACT_UNIQUE = 'Q',
     GLOBUS_GSC_MLSX_FACT_UNIXSLINK = 'L'
 } globus_i_gsc_mlsx_fact_t;
@@ -202,7 +204,7 @@ typedef struct globus_i_gsc_event_data_s
 
 typedef struct globus_i_gsc_handle_opts_s
 {
-    char                                    mlsx_fact_str[8];
+    char                                    mlsx_fact_str[16];
     int                                     parallelism;
     globus_size_t                           send_buf;
     globus_size_t                           receive_buf;

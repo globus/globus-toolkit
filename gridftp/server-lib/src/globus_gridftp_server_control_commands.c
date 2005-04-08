@@ -1477,6 +1477,16 @@ globus_l_gsc_cmd_opts(
             *tmp_ptr = GLOBUS_GSC_MLSX_FACT_UNIXMODE;
             tmp_ptr++;
         }
+        if(strstr(cmd_a[2], "unix.owner"))
+        {
+            *tmp_ptr = GLOBUS_GSC_MLSX_FACT_UNIXOWNER;
+            tmp_ptr++;
+        }
+        if(strstr(cmd_a[2], "unix.group"))
+        {
+            *tmp_ptr = GLOBUS_GSC_MLSX_FACT_UNIXGROUP;
+            tmp_ptr++;
+        }
         if(strstr(cmd_a[2], "unix.slink"))
         {
             *tmp_ptr = GLOBUS_GSC_MLSX_FACT_UNIXSLINK;
@@ -3442,7 +3452,7 @@ globus_i_gsc_add_commands(
     globus_gridftp_server_control_add_feature(server_handle, "SPAS");
     globus_gridftp_server_control_add_feature(server_handle, "ESTO");
     globus_gridftp_server_control_add_feature(server_handle, "ERET");
-    globus_gridftp_server_control_add_feature(server_handle, "MLST Type*;Size*;Modify*;Perm*;Charset;UNIX.mode*;Unique*;UNIX.slink*;");    
+    globus_gridftp_server_control_add_feature(server_handle, "MLST Type*;Size*;Modify*;Perm*;Charset;UNIX.mode*;UNIX.owner*;UNIX.group*;Unique*;UNIX.slink*;");    
     globus_gridftp_server_control_add_feature(server_handle, "SIZE");    
     globus_gridftp_server_control_add_feature(server_handle, "PARALLEL");    
     globus_gridftp_server_control_add_feature(server_handle, "DCAU");    
