@@ -70,10 +70,6 @@ store_credential( char *delegfile,
                   char *keyfile );
 
 int
-file2buf(const char   filename[],
-         char       **buf);
-
-int
 buffer2file( char *buffer,
              int   size,
              int   fd );
@@ -245,8 +241,8 @@ main(int argc, char *argv[])
 
     /* Accept delegated credentials from server */
     deletefile = 1;
-    if (myproxy_accept_credentials(socket_attrs, delegfile, sizeof(delegfile),
-                                  NULL) < 0) {
+    if (myproxy_accept_credentials(socket_attrs, delegfile,
+				   sizeof(delegfile)) < 0) {
         fprintf(stderr, "Error in (myproxy_accept_credentials(): %s\n",
                 verror_get_string());
         goto error;
@@ -368,11 +364,11 @@ store_credential( char *delegfile,
                   char *certfile, 
                   char *keyfile )
 {
-    char               *input_buffer       = NULL;
+    unsigned char       *input_buffer       = NULL;
     int                 retval              = -1;
 
 
-    if (file2buf(delegfile, &input_buffer) < 0)
+    if (buffer_from_file(delegfile, &input_buffer, NULL) < 0)
     {
       fprintf(stderr, "open(%s) failed: %s\n", delegfile, strerror(errno));
       goto error;
@@ -391,48 +387,6 @@ store_credential( char *delegfile,
     retval = 0;
 error:
     return(retval);
-}
-
-int
-file2buf(const char   filename[],
-         char       **buf)
-{
-    int fd, size, rval;
-    char *b;
-
-    if ((fd = open(filename, O_RDONLY)) < 0) {
-        perror("open");
-        return -1;
-    }
-
-    if ((size = (int) lseek(fd, 0, SEEK_END)) < 0) {
-        perror("lseek");
-        return -1;
-    }
-
-    if (lseek(fd, 0, SEEK_SET) < 0) {
-        perror("lseek");
-        return -1;
-    }
-
-    *buf = b = (char *) malloc(size + 1);
-    if (b == NULL) {
-        perror("malloc");
-        return -1;
-    }
-
-    while (size) {
-        if ((rval = read(fd, b, size)) < 0) {
-            perror("read");
-            return -1;
-        }
-
-        size -= rval;
-        b += rval;
-    }
-    *b = '\0';
-
-    return 0;
 }
 
 int
@@ -639,7 +593,6 @@ mkpath(char *path)
         *p = '/';
         p++;
     }
-
 
     return 0;
 }
