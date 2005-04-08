@@ -1,4 +1,4 @@
-.TH myproxy-retrieve 1 "2004-10-28" "NCSA" "MyProxy"
+.TH myproxy-retrieve 1 "2005-4-7" "NCSA" "MyProxy"
 .SH NAME
 myproxy-retrieve \- retrieve an end-entity credential
 .SH SYNOPSIS
@@ -9,17 +9,29 @@ myproxy-retrieve \- retrieve an end-entity credential
 .SH DESCRIPTION
 The
 .B myproxy-retrieve
-command retrieves an end-entity credential from the
+command retrieves a credential directly from the
 .BR myproxy-server (8)
 that was previously stored using
+.BR myproxy-init (1)
+or
 .BR myproxy-store (1).
+Unlike 
+.BR myproxy-logon (1),
+this command transfers the private key in the repository directly over
+the network.
+To obtain a proxy credential, we recommend using
+.BR myproxy-logon (1)
+instead.
+.PP
 In the default mode, the command prompts for the 
 pass phrase associated with the credential to be retrieved and
 stores the retrieved credential in the standard location (
-.B X509_USER_CERT
+.I ~/.globus/usercert.pem
 and
-.B X509_USER_KEY
-).
+.IR ~/.globus/userkey.pem ).
+You could then run
+.B grid-proxy-init
+to create a proxy credential from the retrieved credentials.
 .SH OPTIONS
 .TP
 .B -h, --help
@@ -135,17 +147,10 @@ form "host/<fqhn>" or "myproxy/<fqhn>"
 the server).  If the server is running with some other DN, you can set
 this environment variable to tell the MyProxy clients to accept the
 alternative DN.
-.TP
-.B GT_PROXY_MODE
-Set to "old" to retrieve a "legacy globus proxy" from an end-entity
-certificate stored in the MyProxy repository.
-If the repository contains a proxy certificate, rather than an
-end-entity certificate, the retrieved proxy will be of the same type
-as the stored proxy, regardless of the setting of this environment
-variable.
 .SH AUTHORS
 Jim Basney,
 Shiva Shankar Chetan,
+Patrick Duda,
 Jarek Gawor,
 Daniel Kouril,
 Zhenmin Li,
@@ -158,6 +163,7 @@ and Von Welch
 .BR myproxy-destroy (1),
 .BR myproxy-info (1),
 .BR myproxy-init (1),
+.BR myproxy-logon (1),
 .BR myproxy-store (1),
 .BR myproxy-server.config (5),
 .BR myproxy-admin-adduser (8),
