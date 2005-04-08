@@ -81,7 +81,6 @@ static char version[] =
 "myproxy-alcf version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
 
 void init_arguments(int argc, char *argv[], myproxy_creds_t *my_creds);
-int file2buf(const char filename[], char **buf);
 int makeproxy(const char certfile[], const char keyfile[],
 	      const char proxyfile[]);
 
@@ -307,36 +306,6 @@ init_arguments(int argc,
     }
 }
 
-int file2buf(const char filename[], char **buf)
-{
-    int fd, size, rval;
-    char *b;
-
-    if ((fd = open(filename, O_RDONLY)) < 0) {
-	perror("open"); return -1;
-    }
-    if ((size = (int)lseek(fd, 0, SEEK_END)) < 0) {
-	perror("lseek"); return -1;
-    }
-    if (lseek(fd, 0, SEEK_SET) < 0) {
-	perror("lseek"); return -1;
-    }
-    *buf = b = (char *)malloc(size+1);
-    if (b == NULL) {
-	perror("malloc"); return -1;
-    }
-    while (size) {
-	if ((rval = read(fd, b, size)) < 0) {
-	    perror("read"); return -1;
-	}
-	size -= rval;
-	b += rval;
-    }
-    *b = '\0';
-    
-    return 0;
-}
-
 int makeproxy(const char certfile[], const char keyfile[],
 	      const char proxyfile[]) 
 {
@@ -344,17 +313,18 @@ int makeproxy(const char certfile[], const char keyfile[],
     static char ENDCERT[] = "-----END CERTIFICATE-----";
     static char BEGINKEY[] = "-----BEGIN RSA PRIVATE KEY-----";
     static char ENDKEY[] = "-----END RSA PRIVATE KEY-----";
-    char *certbuf=NULL, *keybuf=NULL, *certstart, *certend, *keystart, *keyend;
+    unsigned char *certbuf=NULL, *keybuf=NULL, *certstart, *certend,
+	*keystart, *keyend;
     int return_value = -1, size, rval, fd=0;
 
     /* Read the certificate(s) into a buffer. */
-    if (file2buf(certfile, &certbuf) < 0) {
+    if (buffer_from_file(certfile, &certbuf, NULL) < 0) {
 	fprintf(stderr, "Failed to read %s\n", certfile);
 	goto cleanup;
     }
 
     /* Read the key into a buffer. */
-    if (file2buf(keyfile, &keybuf) < 0) {
+    if (buffer_from_file(keyfile, &keybuf, NULL) < 0) {
 	fprintf(stderr, "Failed to read %s\n", keyfile);
 	goto cleanup;
     }
