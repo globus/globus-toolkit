@@ -8,8 +8,8 @@
 
 static char usage[] = \
 "\n"
-"Syntax: myproxy-get-delegation [-t hours] [-l username] ...\n"
-"        myproxy-get-delegation [-usage|-help] [-version]\n"
+"Syntax: myproxy-logon [-t hours] [-l username] ...\n"
+"        myproxy-logon [-usage|-help] [-version]\n"
 "\n"
 "   Options\n"
 "       -h | --help                       Displays usage\n"
@@ -56,7 +56,7 @@ struct option long_options[] =
 static char short_options[] = "hus:p:l:t:o:vVa:dk:Sn";
 
 static char version[] =
-"myproxy-get-delegation version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
+"myproxy-logon version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
 
 void 
 init_arguments(int argc, char *argv[], 
