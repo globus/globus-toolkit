@@ -1,23 +1,36 @@
-.TH myproxy-get-delegation 1 "2004-10-28" "NCSA" "MyProxy"
+.TH myproxy-logon 1 "2005-4-7" "NCSA" "MyProxy"
 .SH NAME
-myproxy-get-delegation \- retrieve a credential
+myproxy-logon \- retrieve a credential
 .SH SYNOPSIS
+.B myproxy-logon
+[
+.I options
+]
+.P
 .B myproxy-get-delegation
 [
 .I options
 ]
 .SH DESCRIPTION
 The
-.B myproxy-get-delegation
-command retrieves a credential from the
+.B myproxy-logon
+command retrieves a proxy credential from the
 .BR myproxy-server (8)
 that was previously stored using
-.BR myproxy-init (1).
+.BR myproxy-init (1)
+or
+.BR myproxy-store (1).
 In the default mode, the command prompts for the 
 MyProxy pass phrase associated with the credential to be retrieved and
 stores the retrieved credential in the standard location (
 .I /tmp/x509up_u<uid>
 ).
+.PP
+The
+.B myproxy-logon
+command is also available under the name 
+.B myproxy-get-delegation
+for backward compatibility.
 .SH OPTIONS
 .TP
 .B -h, --help
@@ -145,6 +158,7 @@ variable.
 .SH AUTHORS
 Jim Basney,
 Shiva Shankar Chetan,
+Patrick Duda,
 Jarek Gawor,
 Daniel Kouril,
 Zhenmin Li,
@@ -158,6 +172,8 @@ and Von Welch
 .BR myproxy-info (1),
 .BR myproxy-init (1),
 .BR myproxy-server.config (5),
+.BR myproxy-retrieve (1),
+.BR myproxy-store (1),
 .BR myproxy-admin-adduser (8),
 .BR myproxy-admin-change-pass (8),
 .BR myproxy-admin-load-credential (8),
