@@ -1,17 +1,32 @@
-This is MyProxy v0.6.4 4 Jan 2005.
+This is MyProxy v0.6.5 7 Apr 2005.
 This version should be compatible with all versions since v0.2.
 
 Version History
 ---------------
-XXXX
+v0.6.5 7 Apr 2005 (GPT package version 1.17)
+  - renamed myproxy-get-delegation to myproxy-logon;
+    kept myproxy-get-delegation symlink for backward compatibility
+  - added myproxy-store and myproxy-retrieve commands for storing and
+    retrieving credentials directly to/from the repository;
+    note myproxy-retrieve support must be explicitly enabled by
+    setting authorized_key_retrievers in myproxy-server.config
   - write temp proxy to /tmp/myproxy-proxy.<uid>.<pid> instead of
     /tmp/myproxy-proxy.<uid> so we can run more than one myproxy-init
     in an account at a time
   - increased myproxy-server's listen(2) backlog for improved
     scalability
-  - add myproxy-test -performance option for performance testing
+  - added myproxy-test -performance option for performance testing
   - fixed potential logging race condition when running myproxy-server
     in verbose mode
+  - fixed potential network race condition in myproxy-init
+  - for myproxy-admin-change-pass, only prompt for existing password
+    if existing credential is encrypted
+  - check for invalid options passed to myproxy commands
+  - add ability to run multiple instances of
+    myproxy-admin-load-credential and myproxy-init at the same time
+  - fixed a myproxy-admin-change-pass segmentation fault when the
+    storage directory is invalid
+  - improve error messages for too-short passphrases (6 character minimum)
 
 v0.6.4 4 Jan 2005 (GPT package version 1.16)
   - fixed file permission bug in myproxy-admin-load-credential
