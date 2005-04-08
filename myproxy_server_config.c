@@ -499,9 +499,8 @@ myproxy_server_config_read(myproxy_server_context_t *context)
     context->authorized_renewer_dns = NULL;
     context->default_retriever_dns = NULL;
     context->default_renewer_dns = NULL;
-
-context->authorized_key_retrievers_dns = NULL;
-context->default_key_retrievers_dns    = NULL;
+    context->authorized_key_retrievers_dns = NULL;
+    context->default_key_retrievers_dns    = NULL;
     
     /* Clear any outstanding error */
     verror_clear();
