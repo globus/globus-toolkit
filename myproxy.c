@@ -1440,7 +1440,7 @@ int
 myproxy_recv(myproxy_socket_attrs_t *attrs,
              char *data, const int datalen)
 {
-    char *buffer = NULL;
+    unsigned char *buffer = NULL;
     char error_string[1024];
     size_t readlen;
 
@@ -1470,7 +1470,7 @@ myproxy_recv_ex(myproxy_socket_attrs_t *attrs, char **data)
     size_t readlen;
     char error_string[1024];
 
-    if (GSI_SOCKET_read_token(attrs->gsi_socket, data,
+    if (GSI_SOCKET_read_token(attrs->gsi_socket, (unsigned char **)data,
 			      &readlen) == GSI_SOCKET_ERROR) {
 	GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
 				    sizeof(error_string));
@@ -2214,9 +2214,7 @@ end:
 
 int
 myproxy_init_credentials(myproxy_socket_attrs_t *attrs,
-                         const char             *delegfile,
-                         const int               lifetime,
-                         char                   *passphrase)
+                         const char             *delegfile)
 {
 
   char error_string[1024];
@@ -2225,9 +2223,7 @@ myproxy_init_credentials(myproxy_socket_attrs_t *attrs,
     return -1;
 
   if (GSI_SOCKET_credentials_init_ext(attrs->gsi_socket,
-                                     delegfile,
-                                     lifetime,
-                                     passphrase) == GSI_SOCKET_ERROR) {
+                                     delegfile) == GSI_SOCKET_ERROR) {
 
     GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
                                 sizeof(error_string));
@@ -2245,8 +2241,7 @@ myproxy_init_credentials(myproxy_socket_attrs_t *attrs,
 int
 myproxy_accept_credentials(myproxy_socket_attrs_t *attrs,
                            char                   *delegfile,
-                           int                     delegfile_len,
-                           char                   *passphrase)
+                           int                     delegfile_len)
 {
   char error_string[1024];
 
@@ -2255,8 +2250,7 @@ myproxy_accept_credentials(myproxy_socket_attrs_t *attrs,
 
   if (GSI_SOCKET_credentials_accept_ext(attrs->gsi_socket,
                                         delegfile,
-                                        delegfile_len,
-                                        passphrase) == GSI_SOCKET_ERROR)
+                                        delegfile_len) == GSI_SOCKET_ERROR)
   {
     GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
                                 sizeof(error_string));
@@ -2272,9 +2266,7 @@ myproxy_accept_credentials(myproxy_socket_attrs_t *attrs,
 */
 int
 myproxy_get_credentials(myproxy_socket_attrs_t *attrs,
-                         const char             *delegfile,
-                         const int               lifetime,
-                         char                   *passphrase)
+                         const char             *delegfile)
 {
   char error_string[1024];
 
@@ -2282,9 +2274,7 @@ myproxy_get_credentials(myproxy_socket_attrs_t *attrs,
     return -1;
 
   if (GSI_SOCKET_get_creds(attrs->gsi_socket,
-                                     delegfile,
-                                     lifetime,
-                                     passphrase) == GSI_SOCKET_ERROR)
+                                     delegfile) == GSI_SOCKET_ERROR)
   {
     GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
                                 sizeof(error_string));
