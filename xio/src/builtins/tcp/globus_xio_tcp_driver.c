@@ -162,7 +162,8 @@ typedef struct
 {
     globus_xio_system_handle_t          handle;
     globus_bool_t                       converted;
-    globus_object_t *                   write_error;
+    globus_object_t *                   connection_error;
+    globus_xio_operation_t              read_op;
     globus_xio_operation_t              write_op;
 } globus_l_handle_t;
 
@@ -1646,9 +1647,9 @@ globus_l_xio_tcp_handle_destroy(
     GlobusXIOName(globus_l_xio_tcp_handle_destroy);
     
     GlobusXIOTcpDebugEnter();
-    if(handle->write_error)
+    if(handle->connection_error)
     {
-        globus_object_free(handle->write_error);
+        globus_object_free(handle->connection_error);
     }
     globus_free(handle);
     GlobusXIOTcpDebugExit();
@@ -2158,17 +2159,45 @@ error_register:
 
 static
 void
+globus_l_xio_tcp_finish_read(
+    globus_l_handle_t *                 handle,
+    globus_result_t                     result,
+    globus_size_t                       nbytes)
+{
+    globus_xio_operation_t              op;
+    
+    /**
+     * all of this should have a mutex to protect it, but that would only
+     * protect against users misusing this driver
+     */
+    op = handle->read_op;
+    handle->read_op = NULL;
+    
+    if(result != GLOBUS_SUCCESS &&
+        !globus_xio_error_is_canceled(result) &&
+        !globus_xio_error_is_eof(result) &&
+        !handle->connection_error)
+    {
+        handle->connection_error =
+            globus_object_copy(globus_error_peek(result));
+    }
+
+    globus_xio_driver_finished_read(op, result, nbytes);
+}
+
+static
+void
 globus_l_xio_tcp_system_read_cb(
     globus_result_t                     result,
     globus_size_t                       nbytes,
     void *                              user_arg)
 {
-    globus_xio_operation_t              op;
+    globus_l_handle_t *                 handle;
     GlobusXIOName(globus_l_xio_tcp_system_read_cb);
     
     GlobusXIOTcpDebugEnter();
-    op = (globus_xio_operation_t) user_arg;
-    globus_xio_driver_finished_read(op, result, nbytes);
+    handle = (globus_l_handle_t *) user_arg;
+    globus_l_xio_tcp_finish_read(handle, result, nbytes);
     GlobusXIOTcpDebugExit();
 }
 
@@ -2189,6 +2218,19 @@ globus_l_xio_tcp_read(
     
     GlobusXIOTcpDebugEnter();
     handle = (globus_l_handle_t *) driver_specific_handle;
+    if(handle->read_op)
+    {
+        result = GlobusXIOErrorAlreadyRegistered();
+        goto error_already;
+    }
+    if(handle->connection_error)
+    {
+        result =
+            globus_error_put(globus_object_copy(handle->connection_error));
+        goto error_already;
+    }
+    
+    handle->read_op = op;
     
     /* if buflen and waitfor are both 0, we behave like register select */
     if(globus_xio_operation_get_wait_for(op) == 0 &&
@@ -2198,7 +2240,7 @@ globus_l_xio_tcp_read(
         
         result = globus_xio_system_try_read(
             handle->handle, iovec, iovec_count, &nbytes);
-        globus_xio_driver_finished_read(op, result, nbytes);
+        globus_l_xio_tcp_finish_read(handle, result, nbytes);
         /* dont want to return error here mainly because error could be eof, 
          * which is against our convention to return an eof error on async
          * calls.  Other than that, the choice is arbitrary
@@ -2213,7 +2255,7 @@ globus_l_xio_tcp_read(
             iovec_count,
             globus_xio_operation_get_wait_for(op),
             globus_l_xio_tcp_system_read_cb,
-            op);
+            handle);
         if(result != GLOBUS_SUCCESS)
         {
             result = GlobusXIOErrorWrapFailed(
@@ -2226,6 +2268,8 @@ globus_l_xio_tcp_read(
     return GLOBUS_SUCCESS;
 
 error_register:
+    handle->read_op = NULL;
+error_already:
     GlobusXIOTcpDebugExitWithError();
     return result;
 }
@@ -2248,9 +2292,10 @@ globus_l_xio_tcp_finish_write(
     
     if(result != GLOBUS_SUCCESS &&
         !globus_xio_error_is_canceled(result) &&
-        !handle->write_error)
+        !handle->connection_error)
     {
-        handle->write_error = globus_object_copy(globus_error_peek(result));
+        handle->connection_error =
+            globus_object_copy(globus_error_peek(result));
     }
 
     globus_xio_driver_finished_write(op, result, nbytes);
@@ -2305,9 +2350,10 @@ globus_l_xio_tcp_write(
         result = GlobusXIOErrorAlreadyRegistered();
         goto error_already;
     }
-    if(handle->write_error)
+    if(handle->connection_error)
     {
-        result = globus_error_put(globus_object_copy(handle->write_error));
+        result =
+            globus_error_put(globus_object_copy(handle->connection_error));
         goto error_already;
     }
     
