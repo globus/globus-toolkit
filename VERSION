@@ -23,8 +23,6 @@ v0.6.5 8 Apr 2005 (GPT package version 1.17)
   - for myproxy-admin-change-pass, only prompt for existing password
     if existing credential is encrypted
   - check for invalid options passed to myproxy commands
-  - add ability to run multiple instances of
-    myproxy-admin-load-credential and myproxy-init at the same time
   - fixed a myproxy-admin-change-pass segmentation fault when the
     storage directory is invalid
   - improve error messages for too-short passphrases (6 character minimum)
