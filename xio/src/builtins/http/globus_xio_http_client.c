@@ -646,6 +646,7 @@ globus_l_xio_http_client_read_response_callback(
     globus_bool_t                       registered_again = GLOBUS_FALSE;
     globus_i_xio_http_attr_t *          descriptor;
     globus_result_t                     save_result = result;
+    globus_object_t *                   response_error = NULL;
     GlobusXIOName(globus_l_xio_http_client_read_response_callback);
 
     globus_mutex_lock(&http_handle->mutex);
@@ -657,6 +658,22 @@ globus_l_xio_http_client_read_response_callback(
         }
         else
         {
+            response_error = globus_error_get(result);
+
+            http_handle->response_info.status_code = 500;
+            http_handle->response_info.reason_phrase = 
+                globus_error_print_friendly(response_error);
+
+            if (http_handle->write_operation.operation != NULL)
+            {
+                /* Error occurred reading a response. A write which
+                 * has been registered should be cancelled.
+                 */
+                result = globus_xio_driver_operation_cancel(
+                        http_handle->handle,
+                        http_handle->write_operation.operation);
+                globus_assert(result == GLOBUS_SUCCESS);
+            }
             goto error_exit;
         }
     }
@@ -793,23 +810,25 @@ error_exit:
 
         finish_read = GLOBUS_TRUE;
     }
-    if (result == GLOBUS_SUCCESS)
+    descriptor = globus_xio_operation_get_data_descriptor(op, GLOBUS_TRUE);
+    if (descriptor == NULL)
     {
-        descriptor = globus_xio_operation_get_data_descriptor(op, GLOBUS_TRUE);
-        if (descriptor == NULL)
-        {
-            result = GlobusXIOErrorMemory("descriptor");
-        }
-        else
-        {
-            globus_i_xio_http_response_destroy(&descriptor->response);
-            result = globus_i_xio_http_response_copy(
-                    &descriptor->response,
-                    &http_handle->response_info);
-        }
+        result = GlobusXIOErrorMemory("descriptor");
+    }
+    else
+    {
+        globus_i_xio_http_response_destroy(&descriptor->response);
+        result = globus_i_xio_http_response_copy(
+                &descriptor->response,
+                &http_handle->response_info);
     }
     globus_xio_driver_operation_destroy(http_handle->response_read_operation);
     http_handle->response_read_operation = NULL;
+
+    if (response_error != NULL)
+    {
+        result = globus_error_put(response_error);
+    }
 
     globus_mutex_unlock(&http_handle->mutex);
 
