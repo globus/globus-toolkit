@@ -778,8 +778,7 @@ void get_credentials(myproxy_socket_attrs_t *attrs,
       min_lifetime = MIN(min_lifetime, max_proxy_lifetime);
     }
 
-    if (myproxy_get_credentials(attrs, creds->location, min_lifetime,
-                                request->passphrase) < 0) {
+    if (myproxy_get_credentials(attrs, creds->location) < 0) {
       myproxy_log_verror();
       response->response_type =  MYPROXY_ERROR_RESPONSE;
       response->error_string = strdup("Unable to retrieve credentials.\n");
@@ -833,8 +832,7 @@ void put_credentials(myproxy_socket_attrs_t *attrs,
 
     if (myproxy_accept_credentials(attrs,
                                    delegfile,
-                                   sizeof(delegfile),
-                                   creds->passphrase) < 0)
+                                   sizeof(delegfile)) < 0)
     {
       myproxy_log_verror();
       response->response_type =  MYPROXY_ERROR_RESPONSE;
