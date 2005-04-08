@@ -1,4 +1,4 @@
-.TH myproxy-store 1 "2004-10-28" "NCSA" "MyProxy"
+.TH myproxy-store 1 "2005-4-7" "NCSA" "MyProxy"
 .SH NAME
 myproxy-store \- store end-entity credential for later retrieval
 .SH SYNOPSIS
@@ -21,7 +21,7 @@ environment variables and store them in
 .BR myproxy-server (8)
 repository.  Proxy credentials with default lifetime of 12 hours can then be
 retrieved by 
-.BR myproxy-get-delegation (1)
+.BR myproxy-logon (1)
 using the MyProxy passphrase.
 The default behavior can be overridden by options specified below.
 .PP
@@ -269,6 +269,7 @@ or a proxy (ex.
 .SH AUTHORS
 Jim Basney,
 Shiva Shankar Chetan,
+Patrick Duda,
 Jarek Gawor,
 Daniel Kouril,
 Zhenmin Li,
@@ -279,8 +280,9 @@ and Von Welch
 .SH "SEE ALSO"
 .BR myproxy-change-pass-phrase (1),
 .BR myproxy-destroy (1),
-.BR myproxy-get-delegation (1),
 .BR myproxy-info (1),
+.BR myproxy-logon (1),
+.BR myproxy-retrieve (1),
 .BR myproxy-server.config (5),
 .BR myproxy-admin-adduser (8),
 .BR myproxy-admin-change-pass (8),
