@@ -783,7 +783,7 @@ void get_credentials(myproxy_socket_attrs_t *attrs,
       response->response_type =  MYPROXY_ERROR_RESPONSE;
       response->error_string = strdup("Unable to retrieve credentials.\n");
     } else {
-      myproxy_log("Delegating credentials for %s", creds->owner_name);
+      myproxy_log("Sent credentials for %s", creds->owner_name);
       response->response_type = MYPROXY_OK_RESPONSE;
     }
 }
@@ -840,7 +840,7 @@ void put_credentials(myproxy_socket_attrs_t *attrs,
       return;
     }
 
-    myproxy_debug("  Accepted delegation: %s", delegfile);
+    myproxy_debug("  Accepted credentials: %s", delegfile);
 
     creds->location = strdup(delegfile);
 
@@ -1109,7 +1109,7 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 
    switch (client_request->command_type) {
    case MYPROXY_RETRIEVE_CERT:
-	   myproxy_debug("end-entity authorization mechanism.\n");
+	   myproxy_debug("applying authorized_key_retrievers policy");
 	   authorization_ok =
 	       myproxy_server_check_policy_list((const char **)context->authorized_key_retrievers_dns, client_name);
 	   if (authorization_ok != 1) {
