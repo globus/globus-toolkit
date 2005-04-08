@@ -920,6 +920,11 @@ GlobusDebugDeclare(GLOBUS_GRIDFTP_SERVER);
         GLOBUS_GFS_DEBUG_TRACE,                                             \
         ("[%s] Exiting\n", _gfs_name))
 
+#define GlobusGFSDebugState(_state)                                         \
+    GlobusGFSDebugPrintf(                                                   \
+        GLOBUS_GFS_DEBUG_INFO,                                             \
+        ("[%s] State: %d\n", _gfs_name, _state))
+
 #define GlobusGFSDebugExitWithError()                                       \
     GlobusGFSDebugPrintf(                                                   \
         GLOBUS_GFS_DEBUG_TRACE,                                             \

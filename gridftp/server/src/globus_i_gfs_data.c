@@ -3399,6 +3399,8 @@ globus_l_gfs_data_write_eof_cb(
 
     op = (globus_l_gfs_data_operation_t *) user_arg;
 
+    GlobusGFSDebugState(op->state);
+    GlobusGFSDebugState(op->data_handle->state);
     if(error != NULL)
     {
         /* XXX this should be thread safe since we only get this
@@ -3815,18 +3817,21 @@ globus_l_gfs_data_start_abort(
                 globus_assert(op->data_handle->state ==
                     GLOBUS_L_GFS_DATA_HANDLE_INUSE);
                 op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_CLOSING;
+
+                GlobusGFSDebugInfo("globus_ftp_control_data_force_close");
                 result = globus_ftp_control_data_force_close(
                     &op->data_handle->data_channel,
                     globus_l_gfs_data_abort_fc_cb,
                     op);
                 if(result != GLOBUS_SUCCESS)
                 {
+                    GlobusGFSDebugInfo("force_close failed");                    
+                    op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_CLOSED;
                     globus_callback_register_oneshot(
                         NULL,
                         NULL,
                         globus_l_gfs_data_abort_kickout,
                         op);
-                    op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_CLOSED;
                 }
             }
             else
@@ -4409,6 +4414,8 @@ globus_gridftp_server_begin_transfer(
                 {
                     if(op->writing)
                     {
+                        GlobusGFSDebugInfo(
+                            "globus_ftp_control_data_connect_write");
                         result = globus_ftp_control_data_connect_write(
                             &op->data_handle->data_channel,
                             globus_l_gfs_data_begin_cb,
@@ -4416,6 +4423,8 @@ globus_gridftp_server_begin_transfer(
                     }
                     else
                     {
+                        GlobusGFSDebugInfo(
+                            "globus_ftp_control_data_connect_read");
                         result = globus_ftp_control_data_connect_read(
                             &op->data_handle->data_channel,
                             globus_l_gfs_data_begin_cb,
@@ -4427,6 +4436,8 @@ globus_gridftp_server_begin_transfer(
                     /* rarre case where we are willing to check return code
                         from oneshot, however, if it ever fail many many
                         other things are likely to break frist */
+                    GlobusGFSDebugInfo(
+                        "oneshot globus_l_gfs_data_begin_kickout");
                     result = globus_callback_register_oneshot(
                         NULL,
                         NULL,
@@ -4435,6 +4446,7 @@ globus_gridftp_server_begin_transfer(
                 }
                 if(result != GLOBUS_SUCCESS)
                 {
+                    GlobusGFSDebugInfo("Register failed");
                     op->state = GLOBUS_L_GFS_DATA_ABORTING;
                     /* if the connects fail tell the dsi to abort */
                     op->cached_res = result;
@@ -4448,6 +4460,7 @@ globus_gridftp_server_begin_transfer(
                 }
                 else
                 {
+                    GlobusGFSDebugInfo("Register successful");
                     /* for the begin callback on success */
                     if(op->writing && op->data_handle->is_mine)
                     {
