@@ -1337,6 +1337,10 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 	   }
        }
        break;
+
+   default:
+       verror_put_string("unknown command");
+       goto end;
    }
 
    if (authorization_ok == -1) {
