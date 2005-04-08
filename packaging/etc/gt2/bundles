@@ -365,7 +365,7 @@ BUNDLE globus-gsi
 	gssapi_error
 BUNDLE globus-rls-server THREADED
         globus_core
-	globus_callout
+        globus_callout
         globus_common
         globus_common_setup
         globus_libtool
@@ -384,6 +384,7 @@ BUNDLE globus-rls-server THREADED
         globus_gss_assist
         globus_io
         gssapi_error
+        globus_usage
         globus_rls_client
         globus_rls_server
         globus_rls_server_setup
