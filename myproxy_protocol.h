@@ -272,15 +272,4 @@ int myproxy_handle_authorization(myproxy_socket_attrs_t *attrs,
  */
 void myproxy_resolve_hostname(char **host);
 
-/*
- * myproxy_endentity_store()
- *
- * Stores an end-entity credential on the server
- *
- * returns 0 on success, -1 on error
-int myproxy_endentity_store( myproxy_socket_attrs_t *attrs,
-                             const char *delegfile,
-                             char *passphrase);
-*/
-
 #endif /* __MYPROXY_PROTOCOL_H */
