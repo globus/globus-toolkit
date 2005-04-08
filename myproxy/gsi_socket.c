@@ -1379,8 +1379,7 @@ GSI_SOCKET_delegation_accept_ext(GSI_SOCKET *self,
 
 int GSI_SOCKET_credentials_accept_ext(GSI_SOCKET *self,
                                       char       *credentials,
-                                      int         credentials_len,
-                                      char       *passphrase)
+                                      int         credentials_len)
 {
     int                        return_value       = GSI_SOCKET_ERROR;
     SSL_CREDENTIALS           *creds              = NULL;
@@ -1407,10 +1406,6 @@ int GSI_SOCKET_credentials_accept_ext(GSI_SOCKET *self,
     {
       self->error_string = strdup("GSI_SOCKET not authenticated");
       goto error;
-    }
-
-    if (passphrase && passphrase[0] == '\0') {
-      passphrase = NULL;
     }
 
     /* Read the Cred sent from the client. */
@@ -1516,9 +1511,7 @@ int GSI_SOCKET_credentials_accept_ext(GSI_SOCKET *self,
 
 int 
 GSI_SOCKET_credentials_init_ext(GSI_SOCKET *self,
-                                const char *source_credentials,
-                                int         lifetime,
-                                const char *passphrase)
+                                const char *source_credentials)
 {
     int                        return_value       = GSI_SOCKET_ERROR;
     SSL_PROXY_RESTRICTIONS    *proxy_restrictions = NULL;
@@ -1568,9 +1561,7 @@ GSI_SOCKET_credentials_init_ext(GSI_SOCKET *self,
 
 int 
 GSI_SOCKET_get_creds(GSI_SOCKET *self,
-                     const char *source_credentials,
-                     int         lifetime,
-                     const char *passphrase)
+                     const char *source_credentials)
 {
     int                          return_value       = GSI_SOCKET_ERROR;
     unsigned char               *input_buffer       = NULL;
