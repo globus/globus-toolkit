@@ -97,10 +97,6 @@ init_arguments(    int                      argc,
                    myproxy_request_t       *request);
 
 int 
-file2buf(          const char               filename[], 
-                   char                   **buf);
-
-int 
 makecertfile(      const char               certfile[],
 	           const char               keyfile[],
                    char                   **credbuf);
@@ -228,9 +224,7 @@ main(int   argc,
 
     /* Send end-entity credentials to server. */
     if (myproxy_init_credentials(socket_attrs,
-				 credkeybuf,
-				 client_request->proxy_lifetime,
-				 NULL /* no passphrase */ ) < 0) {
+				 credkeybuf) < 0) {
         fprintf(stderr, "%s\n",
                 verror_get_string());
         goto cleanup;
@@ -464,55 +458,12 @@ init_arguments(int                     argc,
 }
 
 int 
-file2buf(const char   filename[], 
-         char       **buf)
-{
-    int fd, size, rval;
-    char *b;
-
-    if ((fd = open(filename, O_RDONLY)) < 0) {
-	perror("open");
-	return -1;
-    }
-
-    if ((size = (int) lseek(fd, 0, SEEK_END)) < 0) {
-	perror("lseek");
-	return -1;
-    }
-
-    if (lseek(fd, 0, SEEK_SET) < 0) {
-	perror("lseek");
-	return -1;
-    }
-
-    *buf = b = (char *) malloc(size + 1);
-    if (b == NULL) {
-	perror("malloc");
-	return -1;
-    }
-
-    while (size) {
-	if ((rval = read(fd, b, size)) < 0) {
-	    perror("read");
-	    return -1;
-	}
-
-	size -= rval;
-	b += rval;
-    }
-    *b = '\0';
-
-    return 0;
-}
-
-
-int 
 makecertfile(const char   certfile[],
              const char   keyfile[],
              char       **credbuf)
 {
-    char       *certbuf = NULL;
-    char       *keybuf  = NULL;
+    unsigned char *certbuf = NULL;
+    unsigned char *keybuf  = NULL;
     int         retval  = -1;
     struct stat s;
     int         bytes;
@@ -537,13 +488,13 @@ makecertfile(const char   certfile[],
     memset(*credbuf, 0, (bytes + 1));
 
     /* Read the certificate(s) into a buffer. */
-    if (file2buf(certfile, &certbuf) < 0) {
+    if (buffer_from_file(certfile, &certbuf, NULL) < 0) {
 	fprintf(stderr, "Failed to read %s\n", certfile);
 	goto cleanup;
     }
 
     /* Read the key into a buffer. */
-    if (file2buf(keyfile, &keybuf) < 0) {
+    if (buffer_from_file(keyfile, &keybuf, NULL) < 0) {
         fprintf(stderr, "Failed to read %s\n", keyfile);
         goto cleanup;
     }
