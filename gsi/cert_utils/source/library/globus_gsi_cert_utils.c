@@ -818,8 +818,12 @@ globus_l_gsi_cert_utils_normalize_dn(
     char *                              result;
     int                                 i = 0;
     int                                 j = 0;
+    size_t                              length;
+    char *                              tmp;
 
-    result = malloc(strlen(dn) + 15);
+    length = strlen(dn) + 1;
+
+    result = malloc(length);
 
     if(result == NULL)
     {
@@ -836,18 +840,42 @@ globus_l_gsi_cert_utils_normalize_dn(
         {
             if(strncasecmp(&dn[i], "UID=", 4) == 0)
             {
+                length += 3;
+                tmp = realloc(result, length);
+                if(tmp == NULL)
+                {
+                    free(result);
+                    return NULL;
+                }
+                result = tmp;
                 memcpy(&result[j], "USERID=", 7);
                 j += 7;
                 i += 4;
             }
             else if(strncasecmp(&dn[i], "E=", 2) == 0)
             {
+                length += 11;
+                tmp = realloc(result, length);
+                if(tmp == NULL)
+                {
+                    free(result);
+                    return NULL;
+                }
+                result = tmp;
                 memcpy(&result[j], "emailAddress=", 13);
                 j += 13;
                 i += 2;
             }
             else if(strncasecmp(&dn[i], "Email=", 6) == 0)
             {
+                length += 7;
+                tmp = realloc(result, length);
+                if(tmp == NULL)
+                {
+                    free(result);
+                    return NULL;
+                }
+                result = tmp;
                 memcpy(&result[j], "emailAddress=", 13);
                 j += 13;
                 i += 6;
