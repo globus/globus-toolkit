@@ -207,8 +207,7 @@ int myproxy_accept_delegation(myproxy_socket_attrs_t *attrs, char *data,
 int
 myproxy_accept_credentials(myproxy_socket_attrs_t *attrs,
                            char                   *delegfile,
-                           int                     delegfile_len,
-                           char                   *passphrase);
+                           int                     delegfile_len);
 
 /*
  * myproxy_init_credentials()
@@ -217,15 +216,11 @@ myproxy_accept_credentials(myproxy_socket_attrs_t *attrs,
  */
 int
 myproxy_init_credentials(myproxy_socket_attrs_t *attrs,
-                         const char             *delegfile,
-                         const int               lifetime,
-                         char                   *passphrase);
+                         const char             *delegfile);
 
 int
 myproxy_get_credentials(myproxy_socket_attrs_t *attrs,
-                         const char             *delegfile,
-                         const int               lifetime,
-                         char                   *passphrase);
+                         const char             *delegfile);
 
 /*
  * myproxy_free()
