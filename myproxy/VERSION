@@ -1,9 +1,10 @@
-This is MyProxy v0.6.5 7 Apr 2005.
+This is MyProxy v0.6.5 8 Apr 2005.
 This version should be compatible with all versions since v0.2.
 
 Version History
 ---------------
-v0.6.5 7 Apr 2005 (GPT package version 1.17)
+v0.6.5 8 Apr 2005 (GPT package version 1.17)
+  - added support for RFC 3820 proxy certificate format
   - renamed myproxy-get-delegation to myproxy-logon;
     kept myproxy-get-delegation symlink for backward compatibility
   - added myproxy-store and myproxy-retrieve commands for storing and
