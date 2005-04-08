@@ -1073,8 +1073,9 @@ l_cache_ref = server_handle->ref;
             {
                 goto err;
             }
-            break;
             */
+            break;
+
         case GLOBUS_L_GSC_STATE_STOPPING:
             server_handle->outstanding_op = NULL;
             globus_i_gsc_op_destroy(op);
