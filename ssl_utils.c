@@ -1358,11 +1358,14 @@ ssl_proxy_delegation_sign(SSL_CREDENTIALS		*creds,
 	verror_put_string("globus_gsi_cert_utils_get_cert_type() failed");
 	goto error;
     }
-    /* if we don't have a GSI3 proxy in the repository,
+    /* if we don't have an RFC or GSI3 proxy in the repository,
        i.e., we have a GSI2 proxy or an EEC,
-       then remove GSI3 proxy cert info from our proxy_handle so
+       then remove RFC/GSI3 proxy cert info from our proxy_handle so
        we take on the proxy type in the request */
     if (GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY(cert_type) == 0) {
+#if defined(GLOBUS_GSI_CERT_UTILS_IS_RFC_PROXY)
+    if (GLOBUS_GSI_CERT_UTILS_IS_RFC_PROXY(cert_type) == 0) {
+#endif
 	local_result =
 	    globus_gsi_proxy_handle_set_proxy_cert_info(proxy_handle,
 							NULL);
@@ -1371,6 +1374,9 @@ ssl_proxy_delegation_sign(SSL_CREDENTIALS		*creds,
 			      "failed");
 	    goto error;
 	}
+#if defined(GLOBUS_GSI_CERT_UTILS_IS_RFC_PROXY)
+    }
+#endif
     }
 #endif
 
@@ -1407,6 +1413,12 @@ ssl_proxy_delegation_sign(SSL_CREDENTIALS		*creds,
 	if (GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY(cert_type)) {
 	    globus_gsi_proxy_handle_set_type(proxy_handle,
 			      GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_LIMITED_PROXY);
+#if defined(GLOBUS_GSI_CERT_UTILS_IS_RFC_PROXY)
+	} else if (GLOBUS_GSI_CERT_UTILS_IS_RFC_PROXY(cert_type)) {
+	    globus_gsi_proxy_handle_set_type(proxy_handle,
+			      GLOBUS_GSI_CERT_UTILS_TYPE_RFC_LIMITED_PROXY);
+
+#endif
 	} else if (GLOBUS_GSI_CERT_UTILS_IS_GSI_2_PROXY(cert_type)) {
 	    globus_gsi_proxy_handle_set_type(proxy_handle,
 			      GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY);
