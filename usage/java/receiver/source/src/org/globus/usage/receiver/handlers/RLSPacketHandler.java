@@ -11,32 +11,32 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
 /*Handler which writes GramUsageMonitor packets to database.*/
-public class GRAMPacketHandler extends DefaultPacketHandler {
+public class RLSPacketHandler extends DefaultPacketHandler {
 
-    private static Log log = LogFactory.getLog(GRAMPacketHandler.class);
+    private static Log log = LogFactory.getLog(RLSPacketHandler.class);
 
-    public GRAMPacketHandler(String dburl, String table) throws SQLException {
+    public RLSPacketHandler(String dburl, String table) throws SQLException {
         super(dburl, table);
     }
 
     public boolean doCodesMatch(short componentCode, short versionCode) {
-        return (componentCode == 5 && versionCode == 1);
+        return (componentCode == 7 && versionCode == 0);
     }
 
     public UsageMonitorPacket instantiatePacket(CustomByteBuffer rawBytes) {
-        return new GramUsageMonitorPacket();
+        return new RLSMonitorPacket();
     }
    
     //uses DefaultPacketHandler's handlePacket().
 
     protected PreparedStatement makeSQLInsert(UsageMonitorPacket pack) throws SQLException{
-        if (!(pack instanceof GramUsageMonitorPacket)) {
+        if (!(pack instanceof RLSMonitorPacket)) {
             log.error("Can't happen.");
             throw new SQLException();
         }
 
-        GramUsageMonitorPacket gramPack= (GramUsageMonitorPacket)pack;
+        RLSMonitorPacket rlsPack= (RLSMonitorPacket)pack;
         
-        return gramPack.toSQL(this.con, this.table);
+        return rlsPack.toSQL(this.con, this.table);
     }
 }

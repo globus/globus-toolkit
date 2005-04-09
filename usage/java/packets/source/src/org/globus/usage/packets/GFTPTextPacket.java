@@ -32,14 +32,10 @@ public class GFTPTextPacket extends GFTPMonitorPacket {
     }
    
     public void unpackCustomFields(CustomByteBuffer buf) {
-        byte[] fixedNumberOfBytes = new byte[BYTES_FOR_VERSION];
 	byte[] ipBytes = new byte[16];
 	String ipString;
-	String contents = new String(buf.array());
-	String trimmedString, moreString;
-	int index1, index2;
-        String[] fields;
-	String[] temp;
+	String contents;
+	PacketFieldParser parser;
 
 	//dont' call super.unpack!!
        
@@ -47,13 +43,14 @@ public class GFTPTextPacket extends GFTPMonitorPacket {
 	buf.getBytes(ipBytes);
 	ipString  = new String(ipBytes);
 
-	log.info("Here's the IP I'm getting from packet: "+ipString);
+	//this is redundant with the hostname given in the text, and I trust that one more
+	/*	log.info("Here's the IP I'm getting from packet: "+ipString);
 	try {
 	    this.senderAddress = 
 		InetAddress.getByAddress(ipBytes);
 	} catch (UnknownHostException uhe) {
 	    this.senderAddress = null;
-	}
+	    }*/
 
 	//there's supposed to be 4-byte timestamp...
 	//shouldn't it be 8??
@@ -64,87 +61,41 @@ HOSTNAME=mayed.mcs.anl.gov START=20050225073026.426286 END=20050225073026.560613
 	*/
 
 	try {
-	    /*Locate the substrings that begin with HOSTNAME and BUFFER.
-	      There is binary data before HOSTNAME that we don't want to try to parse here.*/
-	    index1 = contents.indexOf("HOSTNAME");
-	    if (index1 == -1) {
-		throw new Exception("Packet doesn't contain HOSTNAME.");
-	    }
-	    index2 = contents.indexOf("BUFFER", index1+1);
-	    if (index2 == -1) {
-		throw new Exception("Packet doesn't contain BUFFER.");
-	    }
-	    trimmedString = contents.substring(index1+1, index2);
-	    moreString = contents.substring(index2);
-
-
-	    /*Find the quoted section -- make sure to start after HOSTNAME to avoid
-	     false matches on binary data that looks like a quote.*/
-	    index1 = contents.indexOf("\"", index1); 
-	    if (index1 == -1) {
-		throw new Exception("Packet doesn't contain quoted section.");
-	    }
-	    index2 = contents.indexOf("\"", index1+1);
-	    if (index2 == -1) {
-		throw new Exception("Packet doesn't contain quoted section.");
-	    }
-	    //gridftp version is the string between the quotes.
-	    gridFTPVersion = contents.substring(index1+1, index2);
-	    fields = trimmedString.split(" ");
-	    if (fields.length < 4) {
-		throw new Exception("Two few fields in the line.");
-	    }
-
-
-	    temp = fields[0].split("=");
-	    hostname = temp[1]; //hostname is after first equals sign
+	    contents = new String(buf.getRemainingBytes());
+	    parser = new PacketFieldParser(contents);
+	    
 	    try {
-		senderAddress = InetAddress.getByName(hostname);
-	    } catch (UnknownHostException e) {
-		//Doesn't matter if we can't resolve this
-		//it's redundant anyway...
-	    }
-	    temp = fields[1].split("=");
-	    startTime = dateFromLogfile(temp[1]); //start date after next equals
-
-	    temp = fields[2].split("=");
-	    endTime = dateFromLogfile(temp[1]); //end date
-
-	    fields = moreString.split(" ");
-	    if (fields.length < 7) {
-		throw new Exception("Two few fields in the line.");
-	    }
-
-	    temp = fields[0].split("=");
-	    bufferSize = Long.parseLong(temp[1]);
-	    temp = fields[1].split("=");
-	    blockSize = Long.parseLong(temp[1]);  
-	    temp = fields[2].split("=");
-	    numBytes = Long.parseLong(temp[1]);
-	    temp = fields[3].split("=");
-	    numStreams = Long.parseLong(temp[1]);
-	    temp = fields[4].split("=");
-	    numStripes = Long.parseLong(temp[1]);
-	    temp = fields[5].split("=");
-	    if (temp[1].equals("STOR") || temp[1].equals("ESTO"))
+		senderAddress = InetAddress.getByName(parser.getString("HOSTNAME"));
+	    } catch (UnknownHostException uhe) {}
+	    
+	    startTime = dateFromLogfile(parser.getString("START"));
+	    endTime = dateFromLogfile(parser.getString("END"));
+	    
+	    gridFTPVersion = parser.getString("VER");
+	    
+	    bufferSize = parser.getLong("BUFFER");
+	    blockSize = parser.getLong("BLOCK");
+	    numBytes = parser.getLong("NBYTES");
+	    numStreams = parser.getLong("STREAMS");
+	    numStripes = parser.getLong("STRIPES");
+	    
+	    String temp = parser.getString("TYPE");
+	    if (temp.equals("STOR") || temp.equals("ESTO"))
 		storOrRetr = STOR_CODE;
-	    else if (temp[1].equals("RETR") || temp[1].equals("ERET"))
+	    else if (temp.equals("RETR") || temp.equals("ERET"))
 		storOrRetr = RETR_CODE;
 	    else {
 		storOrRetr = OTHER_TYPE_CODE;
-		log.warn("Neither STOR nor RETR.");
 	    }
-
-	    temp = fields[6].split("=");
-	    ftpReturnCode = Long.parseLong(temp[1]); 
-
+	    
+	    ftpReturnCode = parser.getLong("CODE"); 
 	}
 	catch (Exception e) {
 	    //do logger error output when I get a packet I totally can't parse, and
 	    //dump out its whole string for analysis.
 	    e.printStackTrace();
 	    log.error(e.getMessage());
-	    log.error(contents);
+	    log.error(new String(buf.array()));
 	}
     }
 

@@ -2,12 +2,12 @@ package org.globus.usage.packets;
 
 import java.util.HashMap;
 
-/*General-purpose parser for GridFTP and C WS Core usage packets,
-which contain text-formatted fields of the form KEY=VALUE KEY=VALUE.
-One gotcha is that VALUE may be a quoted string that may contain
-spaces.*/
+/*General-purpose parser for GridFTP, RLS, and C WS Core usage
+packets, which contain text-formatted fields of the form KEY=VALUE
+KEY=VALUE.  One gotcha is that VALUE may be a quoted string that may
+contain spaces.*/
 
-class PacketFieldParser {
+public class PacketFieldParser {
 
     HashMap pairs;
 
@@ -30,7 +30,6 @@ class PacketFieldParser {
 	  separately.*/
 
 	substrings = input.split("\"");
-
 
 	for (i = 0; i < substrings.length; i += 2) {
 	    String quoted;
@@ -57,6 +56,10 @@ class PacketFieldParser {
 		temp = fields[j].split("=");
 		//now temp[0] is key, temp[1] is value
 
+		if (temp.length > 1) {
+		    //the value is after the equals.
+		    this.pairs.put(temp[0], temp[1]);
+		} else
 		if (j == fields.length - 1 && quoted != null) {
 		    /*If this is the last field of a nonquoted substring
 		      and there's a quoted substring after this, use the
@@ -64,7 +67,7 @@ class PacketFieldParser {
 		    this.pairs.put(temp[0], quoted);
 		}
 		else {
-		    this.pairs.put(temp[0], temp[1]);
+		    //Probably leftovers from the split; ignore.
 		}
 	    }
 	}
@@ -74,30 +77,33 @@ class PacketFieldParser {
 	return this.pairs.size();
     }
 
-    public int getInt(String key) throws NumberFormatException, Exception {
+    /*If the requested field doesn't exist, return a zero or the empty string instead
+      of panicking.  Even if we lose some info, the best thing is to keep going and try
+      to parse the rest.*/
+    public int getInt(String key) {
 	if (!this.pairs.containsKey(key)) {
-	    throw new Exception("No field named " + key);
+	    return 0;
 	}
 	return Integer.parseInt((String)this.pairs.get(key));
     }
 
-    public long getLong(String key) throws NumberFormatException, Exception {
+    public long getLong(String key) {
 	if (!this.pairs.containsKey(key)) {
-	    throw new Exception("No field named " + key);
+	    return 0L;
 	}
 	return Long.parseLong((String)this.pairs.get(key));
     }
 
-    public double getDouble(String key) throws NumberFormatException, Exception {
+    public double getDouble(String key) {
 	if (!this.pairs.containsKey(key)) {
-	    throw new Exception("No field named " + key);
+	    return (double)0.0;
 	}
 	return Double.parseDouble((String)this.pairs.get(key));
     }
 
-    public String getString(String key) throws Exception {
+    public String getString(String key)  {
 	if (!this.pairs.containsKey(key)) {
-	    throw new Exception("No field named " + key);
+	    return "";
 	}
 	return (String)this.pairs.get(key);
     }   

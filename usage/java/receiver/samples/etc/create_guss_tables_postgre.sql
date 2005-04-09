@@ -75,6 +75,10 @@ CREATE TABLE java_ws_core_packets(
 
 CREATE TABLE gram_packets( 
     id SERIAL,
+    component_code SMALLINT NOT NULL,
+    version_code SMALLINT NOT NULL,
+    send_time DATETIME,
+    ip_address VARCHAR(64) NOT NULL,
     creation_time DATETIME,
     scheduler_type VARCHAR(20),
     job_credential_endpoint_used BOOLEAN,
@@ -86,6 +90,36 @@ CREATE TABLE gram_packets(
     gt2_error_code INT,
     fault_class SMALLINT,
     PRIMARY KEY(id)
+);
+
+CREATE TABLE c_ws_core_packets(
+    id SERIAL,
+    component_code SMALLINT NOT NULL,
+    version_code SMALLINT NOT NULL,
+    send_time DATETIME,
+    ip_address VARCHAR(64) NOT NULL
+);
+
+CREATE TABLE rls_packets(
+    id SERIAL,
+    component_code SMALLINT NOT NULL,
+    version_code SMALLINT NOT NULL,
+    send_time DATETIME,
+    ip_address VARCHAR(64) NOT NULL,
+    rls_version VARCHAR(64),
+    uptime BIGINT,
+    lrc BOOLEAN,
+    rli BOOLEAN,
+    lfn INT,
+    pfn INT,
+    mappings INT,
+    rli_lfns INT,
+    rli_lrcs INT,
+    rli_senders INT,
+    rli_mappings INT,
+    threads INT,
+    connections INT,
+    PRIMARY KEY(id)	
 );
 
 CREATE TABLE graph_image_files(

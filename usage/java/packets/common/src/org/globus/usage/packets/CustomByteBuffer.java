@@ -100,6 +100,13 @@ public class CustomByteBuffer {
 	get(dataGoesHere, 0, dataGoesHere.length);
     }
 
+    public byte[] getRemainingBytes() {
+	int remaining = this.remaining();
+	byte[] remainingBytes = new byte[remaining];
+	get(remainingBytes, this.pointer, remaining);
+	return remainingBytes;
+    }
+
     public long getLong() {
         long out = 0;
         for (int i=LONG_SIZE-1; i>=0; i--) {
