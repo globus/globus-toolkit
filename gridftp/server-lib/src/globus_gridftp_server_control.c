@@ -1065,7 +1065,10 @@ l_cache_ref = server_handle->ref;
             /* This write still ends up hanging in xio
              * Look at that later, but for now we don't even need to be
              * writing this.
-             * 
+             *
+             * Seems to be fixed (bug 3083)... uncommenting this write.
+ 
+            */
             res = globus_l_gsc_final_reply(
                     server_handle,
                     (_FSMSL("421 Server terminated\r\n")));
@@ -1073,7 +1076,6 @@ l_cache_ref = server_handle->ref;
             {
                 goto err;
             }
-            */
             break;
 
         case GLOBUS_L_GSC_STATE_STOPPING:
