@@ -17,6 +17,9 @@ import org.globus.usage.receiver.Receiver;
 import org.globus.usage.receiver.handlers.GridFTPPacketHandler;
 import org.globus.usage.receiver.handlers.RFTPacketHandler;
 import org.globus.usage.receiver.handlers.JavaCorePacketHandler;
+import org.globus.usage.receiver.handlers.CCorePacketHandler;
+import org.globus.usage.receiver.handlers.GRAMPacketHandler;
+import org.globus.usage.receiver.handlers.RLSPacketHandler;
 
 /*An example of how the Receiver class can be used in a program:*/
 public class ExampleReceiver {
@@ -26,15 +29,19 @@ public class ExampleReceiver {
     public static void main(String[] args) {
         int port = 0;
         String databaseDriverClass, databaseURL, defaultTable, gftpTable;
-	String jwsCoreTable;
+	String jwsCoreTable, rlsTable, gramTable, cCoreTable;
 	String rftTable;
 	int ringBufferSize = 0;
         Properties props;
         InputStream propsIn;
         Receiver receiver;
+
         GridFTPPacketHandler gftpHandler;
 	RFTPacketHandler rftHandler;
 	JavaCorePacketHandler jwsCoreHandler;
+	CCorePacketHandler cCoreHandler;
+	GRAMPacketHandler gramHandler;
+	RLSPacketHandler rlsHandler;
 
         /*Open properties file (which gets compiled into jar) to read
           default port and database connection information:*/
@@ -54,6 +61,10 @@ public class ExampleReceiver {
             gftpTable = props.getProperty("gftp-table");
 	    rftTable = props.getProperty("rft-table");
 	    jwsCoreTable = props.getProperty("jws-core-table");
+	    cCoreTable = props.getProperty("cws-core-table");
+	    gramTable = props.getProperty("gram-table");
+	    rlsTable = props.getProperty("rls-table");
+
             ringBufferSize = Integer.parseInt(props.getProperty("ringbuffer-size"));
 
             if (args.length == 1)
@@ -89,9 +100,14 @@ public class ExampleReceiver {
 	      GFTP or RFT will end up in the unknown_packets table.*/
 	    rftHandler = new RFTPacketHandler(databaseURL, rftTable);
 	    receiver.registerHandler(rftHandler);
-
 	    jwsCoreHandler = new JavaCorePacketHandler(databaseURL, jwsCoreTable);
 	    receiver.registerHandler(jwsCoreHandler);
+	    cCoreHandler = new CCorePacketHandler(databaseURL, cCoreTable);
+	    receiver.registerHandler(cCoreHandler);
+	    gramHandler = new GRAMPacketHandler(databaseURL, gramTable);
+	    receiver.registerHandler(gramHandler);
+	    rlsHandler = new RLSPacketHandler(databaseURL, rlsTable);;
+	    receiver.registerHandler(rlsHandler);
 
 	    //start the control socket thread:
 	    new ControlSocketThread(receiver, 4811).start();
