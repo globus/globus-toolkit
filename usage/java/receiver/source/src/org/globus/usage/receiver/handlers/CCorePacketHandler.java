@@ -3,7 +3,7 @@ package org.globus.usage.receiver.handlers;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import org.globus.usage.packets.GramUsageMonitorPacket;
+import org.globus.usage.packets.CWSMonitorPacket;
 import org.globus.usage.packets.CustomByteBuffer;
 import org.globus.usage.packets.UsageMonitorPacket;
 
@@ -15,7 +15,7 @@ public class CCorePacketHandler extends DefaultPacketHandler {
 
     private static Log log = LogFactory.getLog(CCorePacketHandler.class);
 
-    public GRAMPacketHandler(String dburl, String table) throws SQLException {
+    public CCorePacketHandler(String dburl, String table) throws SQLException {
         super(dburl, table);
     }
 

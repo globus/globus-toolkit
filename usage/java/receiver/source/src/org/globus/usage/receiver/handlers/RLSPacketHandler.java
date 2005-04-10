@@ -3,7 +3,7 @@ package org.globus.usage.receiver.handlers;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import org.globus.usage.packets.GramUsageMonitorPacket;
+import org.globus.usage.packets.RLSMonitorPacket;
 import org.globus.usage.packets.CustomByteBuffer;
 import org.globus.usage.packets.UsageMonitorPacket;
 
