@@ -20,7 +20,7 @@ public class GRAMPacketHandler extends DefaultPacketHandler {
     }
 
     public boolean doCodesMatch(short componentCode, short versionCode) {
-        return (componentCode == 5 && versionCode == 1);
+        return (componentCode == 1 && versionCode == 1);
     }
 
     public UsageMonitorPacket instantiatePacket(CustomByteBuffer rawBytes) {
