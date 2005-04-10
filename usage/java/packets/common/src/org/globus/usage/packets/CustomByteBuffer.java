@@ -102,7 +102,7 @@ public class CustomByteBuffer {
 
     public byte[] getRemainingBytes() {
 	int remaining = this.remaining();
-	byte[] remainingBytes = new byte[remaining];
+	byte[] remainingBytes = new byte[remaining + 1];
 	get(remainingBytes, this.pointer, remaining);
 	return remainingBytes;
     }
