@@ -37,7 +37,7 @@ public class CWSMonitorPacket extends IPTimeMonitorPacket {
 
     public PreparedStatement toSQL(Connection con, String tablename) throws SQLException {
 	PreparedStatement ps;
-	ps = con.prepareStatement("INSERT INTO "+tablename+" (component_code, version_code, send_time, ip_address VALUES (?, ?, ?, ?);");
+	ps = con.prepareStatement("INSERT INTO "+tablename+" (component_code, version_code, send_time, ip_address) VALUES (?, ?, ?, ?);");
 	
 	ps.setShort(1, this.getComponentCode());
 	ps.setShort(2, this.getPacketVersion());
