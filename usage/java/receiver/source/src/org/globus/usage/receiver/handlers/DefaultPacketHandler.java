@@ -22,6 +22,9 @@ public class DefaultPacketHandler implements PacketHandler {
     protected String dburl;
     protected String table;
     protected Connection con;
+    /*Get a connection from the pool only when we need it, in handlePacket,
+     to avoid monopolizing the connections.*/
+
 
     /*Gets a database connection from the pool created by the HandlerThread.
      table is the name of the table in that database to write packets to.*/
@@ -29,7 +32,7 @@ public class DefaultPacketHandler implements PacketHandler {
 	//        this.dburl = dburl;
         this.table = table;
 
-	con = DriverManager.getConnection(HandlerThread.dbPoolName);
+
     }
 
     public void finalize() {
@@ -52,7 +55,7 @@ public class DefaultPacketHandler implements PacketHandler {
         PreparedStatement stmt;
 
         try {
-            
+	    con = DriverManager.getConnection(HandlerThread.dbPoolName);
             log.debug("Will write this packet to database table"
                 + table + ": ");
 
@@ -68,16 +71,23 @@ public class DefaultPacketHandler implements PacketHandler {
 	    log.error("Packet contents:");
 	    showPacketContentsBinary(pack);
         }
+	try {
+	    con.close();
+	}
+	catch (SQLException e) {}
 
     }
 
     protected void showPacketContentsBinary(UsageMonitorPacket pack) {
 	int q;
 	byte[] binary = pack.getBinaryContents();
-	
+	StringBuffer output = new StringBuffer();
+
 	for (q = 0; q < binary.length; q++) {
-	    log.error(binary[q]+",");
+	    output.append(Byte.toString(binary[q]) + ", ");
 	}
+
+	log.error(output.toString());
     }
 
     /*If you want to write a handler that writes packets into a database,

@@ -12,6 +12,8 @@ public class PacketFieldParserTester extends TestCase {
     public PacketFieldParserTester(String name) {
 	super(name);
     }
+
+    public void test
 	
     public void testParsing() {
 	String testString;
