@@ -23,6 +23,22 @@ public class ByteBufferTester extends TestCase {
 
     }
 
+    public void testGetRemaining() {
+	
+	buf.putInt(1);
+	buf.putInt(2);
+	buf.put(new String("Foo").getBytes());
+	buf.put(new String("Bar").getBytes());
+	buf.put(new String("Baz").getBytes());
+
+	buf.rewind();
+	buf.shrink();
+
+	Assert.assertEquals("should pull out a 1", buf.getInt(), 1);
+	Assert.assertEquals("should pull out a 2", buf.getInt(), 2);
+	Assert.assertEquals("Remaining part should match all the strings...", new String(buf.getRemainingBytes()), "FooBarBaz");
+    }
+
     public void testShortsInOut() {
 	short a = 42;
 	short b = 69;

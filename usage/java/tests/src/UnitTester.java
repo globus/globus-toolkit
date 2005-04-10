@@ -125,7 +125,7 @@ public class UnitTester extends TestCase {
 	//suite.addTest(new TestSuite(GFTPRecordTester.class)); 
 	//	suite.addTest(new TestSuite(ReceiverThreadTester.class));
 	//	suite.addTest(new TestSuite(RingBufferTester.class));
-	//	suite.addTest(new TestSuite(ByteBufferTester.class));
+	suite.addTest(new TestSuite(ByteBufferTester.class));
 	suite.addTest(new TestSuite(PacketFieldParserTester.class));
 	return suite;
     }
