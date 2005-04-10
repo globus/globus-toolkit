@@ -16,7 +16,15 @@ import org.apache.commons.logging.LogFactory;
 public class CWSMonitorPacket extends IPTimeMonitorPacket {
 
     public void unpackCustomFields(CustomByteBuffer buf) {
-	super.unpackCustomFields(buf);
+	byte[] ipBytes = new byte[16];
+	String ipString;
+
+	//dont' call super.unpack!!
+       
+	//component and version codes have already been read for us
+	buf.getBytes(ipBytes);
+	ipString  = new String(ipBytes);
+	setTimestamp((long)buf.getInt());
 
 	String contents = new String(buf.getRemainingBytes());
 	PacketFieldParser parser = new PacketFieldParser(contents);
