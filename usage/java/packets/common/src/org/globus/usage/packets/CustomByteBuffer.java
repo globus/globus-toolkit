@@ -90,9 +90,13 @@ public class CustomByteBuffer {
     }
     
     public void get(byte[] dataGoesHere, int offset, int numBytes) {
+	try {
         System.arraycopy(this.internalArray, this.pointer, 
                          dataGoesHere, offset, 
                          numBytes);
+	} catch (ArrayIndexOutOfBoundsException e) {
+	    System.err.println(e.getMessage());
+	}
         this.pointer += numBytes;
     }
 
