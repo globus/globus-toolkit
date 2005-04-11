@@ -108,6 +108,23 @@ public class CustomByteBuffer {
 	return remainingBytes;
     }
 
+    public void getUntilNonAlpha(byte[] dataGoesHere) {
+	/*copy into the destination array until we run out of  bytes,
+	  or the array is filled up, or until we see a non-alphabetic
+	  character.*/
+
+	for (int i = 0; i<dataGoesHere.length; i++) {
+	    char c = (char)this.internalArray[this.pointer];
+	    if (Character.isLetter(c)) {
+		dataGoesHere[i] = (byte)c;
+		this.pointer++;
+	    }
+	    else {
+		break;
+	    }
+	}
+    }
+
     public long getLong() {
         long out = 0;
         for (int i=LONG_SIZE-1; i>=0; i--) {

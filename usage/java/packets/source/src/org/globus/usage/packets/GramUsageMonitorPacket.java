@@ -270,10 +270,15 @@ public class GramUsageMonitorPacket
         //creationTime
         this.creationTime = new Date(buf.getLong());
 
-        //localResourceManager
+        /*localResourceManager PROBLEM: How do we know how many bytes
+	to read for the localResourceManager?  The binary data after
+	the end of this text could look like more letters.  So far
+	every one has been "Fork", but we have to be ready.
+*/
         byte[] localResourceManagerBytes = new byte[MAX_SCHEDULER_TYPE_SIZE];
-        buf.get(localResourceManagerBytes);
+        buf.getUntilNonAlpha(localResourceManagerBytes);
         this.localResourceManager = new String(localResourceManagerBytes);
+
 
         //jobCredentialEndpointUsed
         this.jobCredentialEndpointUsed = (buf.get()==1?true:false);
@@ -293,11 +298,14 @@ public class GramUsageMonitorPacket
         //jobType
         this.jobType = buf.get();
 
+
         //gt2ErrorCode
         this.gt2ErrorCode = buf.getInt();
 
+
         //faultClass
         this.faultClass = buf.get();
+
     }
 
     public void display()
