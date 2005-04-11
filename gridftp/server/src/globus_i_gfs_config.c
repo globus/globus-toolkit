@@ -213,7 +213,7 @@ static const globus_l_gfs_config_option_t option_list[] =
  {"load_dsi_module", "load_dsi_module", NULL, "dsi", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Data Storage Interface module to load. file and remote modules are defined by the server. "
     "If not set, the file module is loaded, unless the 'remote' option is specified, in which case the remote "
-    "module is loaded.  An additional configuration string can be passed to the DSI using the format "
+    "module is loaded.  An additional configuration string can be passed to the DSI using the format " 
     "<module name>:<configuration string> to this option.  The format of the configuration "
     "string is defined by the DSI being loaded.", NULL, NULL},
  {"allowed_modules", "allowed_modules", NULL, "allowed-modules", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
