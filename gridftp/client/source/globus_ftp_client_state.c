@@ -2179,7 +2179,9 @@ redo:
     case GLOBUS_FTP_CLIENT_TARGET_REST:
 	globus_assert(
 	    client_handle->state ==
-	    GLOBUS_FTP_CLIENT_HANDLE_DEST_SETUP_CONNECTION);
+            GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION ||
+            client_handle->state ==
+            GLOBUS_FTP_CLIENT_HANDLE_DEST_SETUP_CONNECTION);
 
 	if((!error) &&
 	   response->response_class == GLOBUS_FTP_POSITIVE_INTERMEDIATE_REPLY)
