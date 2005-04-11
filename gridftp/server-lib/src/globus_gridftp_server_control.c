@@ -15,11 +15,6 @@
 #include <ctype.h>
 #include "version.h"
 
-int l_finished_transfer = 0;
-int l_abort_stopping = 0;
-int l_cache_ref = -1;
-int l_open_stopping = 0;
-
 #define GSC_MAX_COMMAND_NAME_LEN        4
 #define GLOBUS_L_GSC_DEFAULT_220   "GridFTP Server.\n"
 
@@ -861,7 +856,6 @@ globus_l_gsc_terminate(
             break;
 
         case GLOBUS_L_GSC_STATE_OPEN:
-l_open_stopping = 1;
             server_handle->ref--;
             GlobusGSCHandleStateChange(
                 server_handle, GLOBUS_L_GSC_STATE_STOPPING);
@@ -1059,9 +1053,7 @@ globus_l_gsc_finished_op(
             server_handle->outstanding_op = NULL;
             GlobusGSCHandleStateChange(
                 server_handle, GLOBUS_L_GSC_STATE_STOPPING);
-l_abort_stopping = 1;
             globus_i_gsc_op_destroy(op);
-l_cache_ref = server_handle->ref;
             /* This write still ends up hanging in xio
              * Look at that later, but for now we don't even need to be
              * writing this.
@@ -4756,7 +4748,6 @@ globus_gridftp_server_control_finished_transfer(
         op->response_msg = strdup(msg);
     }
 
-l_finished_transfer = 1;
 
     globus_mutex_lock(&op->server_handle->mutex);
     {
