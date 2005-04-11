@@ -108,14 +108,14 @@ public class CustomByteBuffer {
 	return remainingBytes;
     }
 
-    public void getUntilNonAlpha(byte[] dataGoesHere) {
+    public void getUntilZeroOrOne(byte[] dataGoesHere) {
 	/*copy into the destination array until we run out of  bytes,
-	  or the array is filled up, or until we see a non-alphabetic
-	  character.*/
+	  or the array is filled up, or until we see a byte that is 
+	zero or one. (Needed by GramUsageMonitorPacket).*/
 
 	for (int i = 0; i<dataGoesHere.length; i++) {
 	    char c = (char)this.internalArray[this.pointer];
-	    if (Character.isLetter(c)) {
+	    if (c > 1) {
 		dataGoesHere[i] = (byte)c;
 		this.pointer++;
 	    }

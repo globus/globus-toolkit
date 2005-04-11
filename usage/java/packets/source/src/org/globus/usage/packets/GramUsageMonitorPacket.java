@@ -276,7 +276,7 @@ public class GramUsageMonitorPacket
 	every one has been "Fork", but we have to be ready.
 */
         byte[] localResourceManagerBytes = new byte[MAX_SCHEDULER_TYPE_SIZE];
-        buf.getUntilNonAlpha(localResourceManagerBytes);
+        buf.getUntilZeroOrOne(localResourceManagerBytes);
         this.localResourceManager = new String(localResourceManagerBytes);
 
 
