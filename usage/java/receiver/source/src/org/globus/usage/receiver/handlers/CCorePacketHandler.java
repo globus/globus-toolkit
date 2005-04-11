@@ -36,7 +36,8 @@ public class CCorePacketHandler extends DefaultPacketHandler {
         }
 
         CWSMonitorPacket cPack= (CWSMonitorPacket)pack;
-        
+
+        showPacketContentsBinary(pack);
         return cPack.toSQL(this.con, this.table);
     }
 }

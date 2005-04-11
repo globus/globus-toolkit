@@ -128,6 +128,16 @@ public class CustomByteBuffer {
         return out;
     }
 
+    public int getIntBigEndian() {
+	int out = 0;
+	for (int i=0; i<INT_SIZE; i++) {
+	    out = out << 8;
+	    out |= (this.internalArray[this.pointer+i] & 0xFF);
+	}
+	this.pointer += INT_SIZE;
+	return out;
+    }
+
     public short getShort() {
         short out = 0;
         for (int i=SHORT_SIZE-1; i>=0; i--) {

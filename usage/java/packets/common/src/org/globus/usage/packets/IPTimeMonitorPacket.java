@@ -72,6 +72,7 @@ public class IPTimeMonitorPacket extends UsageMonitorPacket {
     }
 
     public void unpackCustomFields(CustomByteBuffer buf) {
+
         super.unpackCustomFields(buf);
 
         this.timeSent = buf.getLong();

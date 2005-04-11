@@ -22,9 +22,90 @@ looks like this:
 Then the following, as text, ending with newline:
 HOSTNAME=mayed.mcs.anl.gov START=20050225024351.336329 END=20050225024351.395132 VER="0.17 (gcc32dbg, 1108765962-1)" BUFFER=16000 BLOCK=262144 NBYTES=5313 STREAMS=1 STRIPES=1 TYPE=RETR CODE=226 
 */
-public class GFTPTextPacket extends GFTPMonitorPacket {
+public class GFTPTextPacket extends CStylePacket {
 
     static Log log = LogFactory.getLog(GFTPTextPacket.class);
+
+    public final static byte STOR_CODE = 0;
+    public final static byte RETR_CODE = 1;
+    public final static byte OTHER_TYPE_CODE = 2;
+
+    public static short COMPONENT_CODE = 0;
+    public static short VERSION_CODE = 0;
+
+    protected byte storOrRetr;
+    protected Date startTime, endTime;
+    protected long numBytes;
+    protected long numStripes, numStreams;
+    protected long bufferSize, blockSize;
+    protected long ftpReturnCode;
+    protected String gridFTPVersion;
+    protected String hostname;
+
+    public boolean isStorOperation() {
+        return storOrRetr == STOR_CODE;
+    }
+    public boolean isRetrOperation() {
+        return storOrRetr == RETR_CODE;
+    }
+    public Date getStartTime() {
+        return startTime;
+    }
+    public Date getEndTime() {
+        return endTime;
+    }
+    public long getNumBytes() {
+        return numBytes;
+    }
+    public long getNumStripes() {
+        return numStripes;
+    }
+    public long getNumStreams() {
+        return numStreams;
+    }
+    public long getBufferSize() {
+        return bufferSize;
+    }
+    public long getBlockSize() {
+        return blockSize;
+    }
+    public long getFTPReturnCode() {
+        return ftpReturnCode;
+    }
+    public String getGridFTPVersion() {
+        return gridFTPVersion;
+    }
+
+    public void setOperationType (byte newType) {
+        storOrRetr = newType;
+    }
+    public void setStartTime(Date st) {
+         startTime = st;
+    }
+    public void setEndTime(Date et) {
+         endTime = et;
+    }
+    public void setNumBytes(long nb) {
+         numBytes = nb;
+    }
+    public void setNumStripes(long ns) {
+         numStripes = ns;
+    }
+    public void setNumStreams(long ns) {
+         numStreams = ns;
+    }
+    public void setBufferSize(long bs) {
+         bufferSize = bs;
+    }
+    public void setBlockSize(long bs) {
+         blockSize = bs;
+    }
+    public void setFTPReturnCode(long ftp) {
+         ftpReturnCode = ftp;
+    }
+    public void setGridFTPVersion(String v) {
+        gridFTPVersion = v;
+    }
 
     public void packCustomFields(CustomByteBuffer buf) {
 	//nothing yet, sthis is only used for incoming packets...
@@ -32,37 +113,15 @@ public class GFTPTextPacket extends GFTPMonitorPacket {
     }
    
     public void unpackCustomFields(CustomByteBuffer buf) {
-	byte[] ipBytes = new byte[16];
-	String ipString;
-	String contents;
-	PacketFieldParser parser;
 
-	//dont' call super.unpack!!
-       
-	//component and version codes have already been read for us
-	buf.getBytes(ipBytes);
-	ipString  = new String(ipBytes);
+	super.unpackCustomFields(buf);
 
-	//this is redundant with the hostname given in the text, and I trust that one more
-	/*	log.info("Here's the IP I'm getting from packet: "+ipString);
-	try {
-	    this.senderAddress = 
-		InetAddress.getByAddress(ipBytes);
-	} catch (UnknownHostException uhe) {
-	    this.senderAddress = null;
-	    }*/
-
-	//there's supposed to be 4-byte timestamp...
-	//shouldn't it be 8??
-	setTimestamp((long)buf.getInt());
-
-	/*Now we get to the text:
+	/*Now we get to the text.  Example:
 HOSTNAME=mayed.mcs.anl.gov START=20050225073026.426286 END=20050225073026.560613 VER="0.17 (gcc32dbg, 1108765962-1)" BUFFER=16000 BLOCK=262144 NBYTES=504 STREAMS=1 STRIPES=1 TYPE=RETR CODE=226
 	*/
 
 	try {
-	    contents = new String(buf.getRemainingBytes());
-	    parser = new PacketFieldParser(contents);
+	    PacketFieldParser parser = parseTextSection(buf);
 	    
 	    try {
 		senderAddress = InetAddress.getByName(parser.getString("HOSTNAME"));
@@ -121,6 +180,68 @@ HOSTNAME=mayed.mcs.anl.gov START=20050225073026.426286 END=20050225073026.560613
         /*Constructor can't take milliseconds, so here's how I adjust it to milliseconds:*/
         temp.set(Calendar.MILLISECOND, (int)Math.round(millis));
         return temp.getTime();
+    }
+
+    public void display() {
+        log.info(super.toString());
+        log.info("StorOrRetr = "+storOrRetr);
+        log.info("gridFTPVersion = "+gridFTPVersion);
+        log.info("StartTime = "+startTime);
+        log.info("Endtime = "+endTime);
+        log.info("numBytes = "+numBytes);
+        log.info("numStripes = "+numStripes);
+        log.info("numStreams = "+numStreams);
+        log.info("bufferSize = "+bufferSize);
+        log.info("blockSize = "+blockSize);
+        log.info("ftpReturnCode = "+ftpReturnCode);
+    }
+
+    /*returns 4 if this is IPv4, 6 if this is IPv6.*/
+    public byte getIPVersion() {
+	if (senderAddress == null) {
+	    return 4;
+	}
+	if (senderAddress instanceof Inet6Address) {
+	    return 6;
+	} else {
+	    return 4;
+	}
+    }
+
+    public PreparedStatement toSQL(Connection con, String tablename) throws SQLException{
+
+	PreparedStatement ps;
+	ps = con.prepareStatement("INSERT INTO "+tablename+" (component_code, version_code, send_time, ip_version, ip_address, gftp_version, stor_or_retr, start_time, end_time, num_bytes, num_stripes, num_streams, buffer_size, block_size, ftp_return_code) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);");
+
+	ps.setShort(1, getComponentCode());
+	ps.setShort(2, getPacketVersion());
+	ps.setTimestamp(3, new Timestamp(timeSent));
+	ps.setByte(4, getIPVersion());
+	if (senderAddress == null) {
+	    ps.setString(5, "unknown");
+	}
+	else {
+	    ps.setString(5, senderAddress.toString());
+	}
+	ps.setString(6, gridFTPVersion);
+	ps.setByte(7, storOrRetr);
+	if (startTime == null)
+	    ps.setLong(8, 0L);
+	else
+	    ps.setLong(8, startTime.getTime());
+	if (endTime == null)
+	    ps.setLong(9, 0L);
+	else
+	    ps.setLong(9, endTime.getTime());
+	ps.setLong(10, numBytes);
+	ps.setLong(11, numStripes);
+	ps.setLong(12, numStreams);
+	ps.setLong(13, bufferSize);
+	ps.setLong(14, blockSize);
+	ps.setLong(15, ftpReturnCode);
+	
+	return ps;
+
     }
 
 }

@@ -5,7 +5,10 @@ import junit.framework.Test;
 import junit.framework.Assert;
 import junit.framework.TestSuite;
 
+import java.util.Calendar;
+
 import org.globus.usage.packets.PacketFieldParser;
+import org.globus.usage.packets.CustomByteBuffer;
 
 public class PacketFieldParserTester extends TestCase {
     
@@ -13,7 +16,82 @@ public class PacketFieldParserTester extends TestCase {
 	super(name);
     }
 
-    public void test
+    public void testCDate() {
+
+	/*Real captured C WS Core packets.  Dates are in 4-byte c/unix time_t format, supposedly (that's an unsigned int of seconds since midnight Jan 1 1970.)*/
+
+	byte[] packet1bytes = {4, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 66, 90, 2, -83, 72, 79, 83, 84, 78, 65, 77, 69, 61, 110, 105, 109, 114, 111, 100, 46, 105, 115, 105, 46, 101, 100, 117};
+
+	byte[] packet2bytes = {4, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 66, 90, 2, -74, 72, 79, 83, 84, 78, 65, 77, 69, 61, 110, 105, 109, 114, 111, 100, 46, 105, 115, 105, 46, 101, 100, 117}; 
+
+	byte[] packet3bytes = {4, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 66, 90, 2, -60, 72, 79, 83, 84, 78, 65, 77, 69, 61, 110, 105, 109, 114, 111, 100, 46, 105, 115, 105, 46, 101, 100, 117};
+
+	byte[] ipBytes = new byte[16];
+	
+	CustomByteBuffer buf;
+
+	buf = CustomByteBuffer.wrap(packet1bytes);
+
+	Assert.assertEquals("First short should be 4",buf.getShort(), 4);
+	Assert.assertEquals("Second short should be 4",buf.getShort(), 4);
+	buf.get(ipBytes);
+
+
+	Calendar epoch = Calendar.getInstance();
+        int secondsSinceEpoch = buf.getIntBigEndian();
+        epoch.set(1970, 0, 0, 0, 0, 0);
+        epoch.set(Calendar.MILLISECOND, 0);
+        epoch.add(Calendar.SECOND, secondsSinceEpoch);
+        if (secondsSinceEpoch < 0 ) {
+            epoch.add(Calendar.SECOND, Integer.MAX_VALUE);
+        }
+        System.out.println("Packet 1: Seconds since epoch = "+secondsSinceEpoch);
+        System.out.println("--> "+epoch.getTime());
+
+
+	String stringyPart = new String(buf.getRemainingBytes());
+	System.out.println("TestCDate: stringyPart: "+stringyPart);
+
+
+	buf = CustomByteBuffer.wrap(packet2bytes);
+	Assert.assertEquals("First short should be 4",buf.getShort(), 4);
+	Assert.assertEquals("Second short should be 4",buf.getShort(), 4);
+	buf.get(ipBytes);
+	epoch = Calendar.getInstance();
+        secondsSinceEpoch = buf.getIntBigEndian();
+        epoch.set(1970, 0, 0, 0, 0, 0);
+        epoch.set(Calendar.MILLISECOND, 0);
+        epoch.add(Calendar.SECOND, secondsSinceEpoch);
+        if (secondsSinceEpoch < 0 ) {
+            epoch.add(Calendar.SECOND, Integer.MAX_VALUE);
+        }
+        System.out.println("Packet 2: Seconds since epoch = "+secondsSinceEpoch);
+        System.out.println("--> "+epoch.getTime());
+	stringyPart = new String(buf.getRemainingBytes());
+	System.out.println("TestCDate: stringyPart: "+stringyPart);
+
+
+	buf = CustomByteBuffer.wrap(packet3bytes);
+	Assert.assertEquals("First short should be 4",buf.getShort(), 4);
+	Assert.assertEquals("Second short should be 4",buf.getShort(), 4);
+	buf.get(ipBytes);
+	epoch = Calendar.getInstance();
+        secondsSinceEpoch = buf.getIntBigEndian();
+        epoch.set(1970, 0, 0, 0, 0, 0);
+        epoch.set(Calendar.MILLISECOND, 0);
+        epoch.add(Calendar.SECOND, secondsSinceEpoch);
+        if (secondsSinceEpoch < 0 ) {
+            epoch.add(Calendar.SECOND, Integer.MAX_VALUE);
+        }
+        System.out.println("Packet 3: Seconds since epoch = "+secondsSinceEpoch);
+        System.out.println("--> "+epoch.getTime());
+
+
+	stringyPart = new String(buf.getRemainingBytes());
+	System.out.println("TestCDate: stringyPart: "+stringyPart);
+
+	
+    }
 	
     public void testParsing() {
 	String testString;

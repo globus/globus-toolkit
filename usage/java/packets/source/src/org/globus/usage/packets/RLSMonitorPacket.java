@@ -13,7 +13,7 @@ import java.util.Calendar;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-public class RLSMonitorPacket extends IPTimeMonitorPacket {
+public class RLSMonitorPacket extends CStylePacket {
 
     private String versionString;
     private long uptime; //number of seconds
@@ -33,18 +33,8 @@ public class RLSMonitorPacket extends IPTimeMonitorPacket {
 
     public void unpackCustomFields(CustomByteBuffer buf) {
 
-	byte[] ipBytes = new byte[16];
-	String ipString;
-
-	//dont' call super.unpack!!
-       
-	//component and version codes have already been read for us
-	buf.getBytes(ipBytes);
-	ipString  = new String(ipBytes);
-	setTimestamp((long)buf.getInt());
-
-	String contents = new String(buf.getRemainingBytes());
-	PacketFieldParser parser = new PacketFieldParser(contents);
+	super.unpackCustomFields(buf);
+	PacketFieldParser parser = parseTextSection(buf);
 
 	this.versionString = parser.getString("VER");
 	this.uptime = parser.getLong("UPTIME");
