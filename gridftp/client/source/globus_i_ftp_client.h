@@ -129,6 +129,7 @@ typedef struct globus_i_ftp_client_operationattr_t
     globus_ftp_client_data_callback_t           read_all_intermediate_callback;
     void *                                      read_all_intermediate_callback_arg;
     globus_bool_t                               allow_ipv6;
+    globus_off_t                                allocated_size;
 }
 globus_i_ftp_client_operationattr_t;
 
@@ -289,6 +290,8 @@ typedef enum
     GLOBUS_FTP_CLIENT_TARGET_PASV,
     GLOBUS_FTP_CLIENT_TARGET_SETUP_PORT,
     GLOBUS_FTP_CLIENT_TARGET_PORT,
+    GLOBUS_FTP_CLIENT_TARGET_SETUP_ALLO,
+    GLOBUS_FTP_CLIENT_TARGET_ALLO,
     GLOBUS_FTP_CLIENT_TARGET_SETUP_REST_STREAM,
     GLOBUS_FTP_CLIENT_TARGET_SETUP_REST_EB,
     GLOBUS_FTP_CLIENT_TARGET_REST,
