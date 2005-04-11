@@ -626,6 +626,20 @@ globus_gass_copy_get_no_third_party_transfers(
     }
 } /* globus_gass_copy_get_no_third_party_transfers() */
 
+
+/**
+ * Set allo on or off
+ */
+globus_result_t
+globus_gass_copy_set_allocate(
+    globus_gass_copy_handle_t *         handle,
+    globus_bool_t                       send_allo)
+{
+    handle->send_allo = send_allo;
+    
+    return GLOBUS_SUCCESS;
+}
+
 /**
  * Set the offsets to be used for doing partial transfers
  *
@@ -1580,6 +1594,206 @@ static char *
 }
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
+static
+void
+globus_i_gass_copy_ftp_client_op_done_callback(
+    void *                              user_arg,
+    globus_ftp_client_handle_t *        handle,
+    globus_object_t *                   err)
+{
+    globus_i_gass_copy_monitor_t *      monitor;
+
+    monitor = (globus_i_gass_copy_monitor_t *) user_arg;
+           
+    globus_mutex_lock(&monitor->mutex);
+    if (err && !monitor->err)
+    {
+        monitor->err = globus_object_copy(err);
+    }
+    monitor->done = GLOBUS_TRUE;
+    globus_cond_signal(&monitor->cond);
+    globus_mutex_unlock(&monitor->mutex);
+    
+    return;
+}
+
+globus_result_t
+globus_l_gass_copy_size_ftp(
+    globus_gass_copy_handle_t *         handle,
+    char *                              url,
+    globus_gass_copy_attr_t *           attr,
+    globus_off_t *                      out_size)
+{
+    globus_i_gass_copy_monitor_t        monitor;
+    globus_result_t                     result;
+    
+    memset(&monitor, 0, sizeof(globus_i_gass_copy_monitor_t));
+
+    globus_cond_init(&monitor.cond, GLOBUS_NULL);
+    globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
+        
+    result = globus_ftp_client_size(
+        &handle->ftp_handle,
+        url,
+        attr->ftp_attr,
+        out_size,
+        globus_i_gass_copy_ftp_client_op_done_callback,
+        &monitor);    
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+
+    globus_mutex_lock(&monitor.mutex);
+    while(!monitor.done)
+    {
+        globus_cond_wait(&monitor.cond, &monitor.mutex);
+    }
+    globus_mutex_unlock(&monitor.mutex);
+
+    if(monitor.err)
+    {
+        result = globus_error_put(monitor.err);
+        monitor.err = GLOBUS_NULL;
+    }
+    
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+
+    globus_cond_destroy(&monitor.cond);
+    globus_mutex_destroy(&monitor.mutex);
+
+    return GLOBUS_SUCCESS;
+
+error:
+    globus_cond_destroy(&monitor.cond);
+    globus_mutex_destroy(&monitor.mutex);
+
+    return result;
+}
+
+static
+globus_result_t
+globus_l_gass_copy_size_file(
+    char *                              url,
+    globus_off_t *                      out_size)
+{
+    static char * myname="globus_l_gass_copy_size_file";
+    int                                 rc;
+    globus_url_t                        parsed_url;
+    globus_result_t                     result;
+    struct stat                         stat_buf;
+    
+    rc = globus_url_parse(url, &parsed_url);
+    if(rc != 0)
+    {
+        result = globus_error_put(
+            globus_error_construct_string(
+                GLOBUS_GASS_COPY_MODULE,
+                GLOBUS_NULL,
+                "[%s]: error parsing url: "
+                "globus_url_parse returned %d",
+                myname,
+                rc));
+        goto error_url;
+    }
+    
+    if(parsed_url.url_path == GLOBUS_NULL)
+    {
+        result = globus_error_put(
+            globus_error_construct_string(
+                GLOBUS_GASS_COPY_MODULE,
+                GLOBUS_NULL,
+                "[%s]: error parsing url: "
+                "url has no path",
+                myname));
+        goto error_null_path;
+    }
+    
+    rc = stat(parsed_url.url_path, &stat_buf);
+    if(rc != 0)
+    {
+        result = globus_error_put(
+            globus_error_construct_string(
+                GLOBUS_GASS_COPY_MODULE,
+                GLOBUS_NULL,
+                "[%s]: error finding size: "
+                "stat returned %d",
+                myname,
+                rc));
+        goto error_stat;
+    }
+   
+    *out_size = stat_buf.st_size;
+    
+    globus_url_destroy(&parsed_url); 
+    return GLOBUS_SUCCESS;
+
+error_stat:    
+error_null_path:
+    globus_url_destroy(&parsed_url);
+    
+error_url:
+
+    return result;
+    
+}
+
+
+globus_result_t
+globus_i_gass_copy_size(
+    globus_gass_copy_handle_t *         handle,
+    char *                              url,
+    globus_gass_copy_attr_t *           attr,
+    globus_off_t *                      out_size)
+{
+    static char * myname="globus_i_gass_copy_size";
+    globus_result_t                     result;
+    globus_gass_copy_url_mode_t         url_mode;
+    
+    result = globus_gass_copy_get_url_mode(url, &url_mode);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_exit;
+    }
+    
+    if(url_mode == GLOBUS_GASS_COPY_URL_MODE_FTP)
+    {
+        result = globus_l_gass_copy_size_ftp(handle, url, attr, out_size);
+
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error_exit;
+        }
+    }
+    else if(url_mode == GLOBUS_GASS_COPY_URL_MODE_IO)
+    {
+        result = globus_l_gass_copy_size_file(url, out_size);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error_exit;
+        }
+    }
+    else
+    {
+        result = globus_error_put(
+            globus_error_construct_string(
+                GLOBUS_GASS_COPY_MODULE,
+                GLOBUS_NULL,
+                "[%s]: unsupported URL scheme: %s",
+                myname,
+                url));
+        goto error_exit;
+    }
+    
+    return GLOBUS_SUCCESS;
+    
+error_exit:
+    return result;
+}
 
 /**
  * Populate the target transfer structures
@@ -4827,6 +5041,24 @@ globus_gass_copy_register_url_to_url(
     globus_libc_fprintf(stderr, "dest target populated\n");
 #endif
 
+    if(dest_url_mode == GLOBUS_GASS_COPY_URL_MODE_FTP && handle->send_allo)
+    {
+        globus_off_t                    source_size = 0;
+        
+        result = globus_i_gass_copy_size(
+            handle,
+            source_url,
+            source_attr,
+            &source_size);
+        
+        if(result == GLOBUS_SUCCESS && source_size > 0)
+        {
+            globus_ftp_client_operationattr_set_allocate(
+                state->dest.attr->ftp_attr,
+                source_size);
+        }
+    }    
+    
     if (   (source_url_mode == GLOBUS_GASS_COPY_URL_MODE_FTP) &&
 	   (dest_url_mode == GLOBUS_GASS_COPY_URL_MODE_FTP) &&
 	   !handle->no_third_party_transfers )

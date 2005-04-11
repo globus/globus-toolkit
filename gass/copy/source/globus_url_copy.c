@@ -79,6 +79,7 @@ typedef struct
     globus_off_t			partial_length;
     globus_bool_t                       list_uses_data_mode;
     globus_bool_t                       ipv6;
+    globus_bool_t                       allo;
 
     /* the need for 2 is due to the fact that gass copy is
      * not copying attributes
@@ -394,6 +395,7 @@ enum
     arg_create_dest,
     arg_fast,
     arg_ipv6,
+    arg_allo,
     arg_stripe_bs,
     arg_striped,
     arg_num = arg_striped
@@ -435,6 +437,7 @@ flagdef(arg_rfc1738, "-rp", "-relative-paths");
 flagdef(arg_create_dest, "-cd", "-create-dest");
 flagdef(arg_fast, "-fast", "-fast-data-channels");
 flagdef(arg_ipv6, "-ipv6","-IPv6");
+flagdef(arg_allo, "-allo","-allocate");
 
 oneargdef(arg_f, "-f", "-filename", GLOBUS_NULL, GLOBUS_NULL);
 oneargdef(arg_stripe_bs, "-sbs", "-striped-block-size", test_integer, GLOBUS_NULL);
@@ -485,6 +488,7 @@ static globus_args_option_descriptor_t args_options[arg_num];
     setupopt(arg_create_dest);          \
     setupopt(arg_fast);	                \
     setupopt(arg_ipv6);         	\
+    setupopt(arg_allo);         	\
     setupopt(arg_stripe_bs);         	\
     setupopt(arg_striped);
 
@@ -1345,6 +1349,7 @@ globus_l_guc_parse_arguments(
     guc_info->rfc1738 = GLOBUS_FALSE;
     guc_info->list_uses_data_mode = GLOBUS_FALSE;
     guc_info->ipv6 = GLOBUS_FALSE;
+    guc_info->allo = GLOBUS_FALSE;
     guc_info->create_dest = GLOBUS_FALSE;
  
     /* determine the program name */
@@ -1490,9 +1495,14 @@ globus_l_guc_parse_arguments(
 	    break;
 	case arg_striped:
 	    guc_info->striped = GLOBUS_TRUE;
+	    /* force allo for striped transfers */
+	    guc_info->allo = GLOBUS_TRUE;
 	    break;
 	case arg_ipv6:
 	    guc_info->ipv6 = GLOBUS_TRUE;
+	    break;
+	case arg_allo:
+	    guc_info->allo = GLOBUS_TRUE;
 	    break;
 	case arg_partial_offset:
             rc = globus_args_bytestr_to_num(instance->values[0], &tmp_off);
@@ -2061,6 +2071,8 @@ globus_l_guc_init_gass_copy_handle(
             guc_info->partial_offset + guc_info->partial_length);
     }
 
+    globus_gass_copy_set_allocate(gass_copy_handle, guc_info->allo);
+    
     if (g_verbose_flag)
     {
         result = globus_gass_copy_register_performance_cb(
@@ -2221,9 +2233,7 @@ globus_l_guc_gass_attr_init(
                 GLOBUS_FTP_CONTROL_PROTECTION_SAFE);
         }
 
-        globus_gass_copy_attr_set_ftp(gass_copy_attr,
-                                      ftp_attr);
-                                      
+        globus_gass_copy_attr_set_ftp(gass_copy_attr, ftp_attr);
         
     }
     /*
