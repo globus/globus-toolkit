@@ -834,6 +834,29 @@ globus_gridftp_server_get_block_size(
     globus_size_t *                     block_size);
 
 /*
+ * get session username
+ * 
+ * This should can be called to get the username that the process is running
+ * under, which may be different from the username supplied in the
+ * session_start call in some cases.  
+ */ 
+void
+globus_gridftp_server_get_session_username(
+    globus_gfs_operation_t              op,
+    char **                             username);
+   
+/*
+ * get config string
+ * 
+ * This can be called to get the dsi specific configuration string 
+ * that is defined in the global configuration. 
+ */ 
+void
+globus_gridftp_server_get_config_string(
+    globus_gfs_operation_t              op,
+    char **                             config_string);
+
+/*
  * get read_range
  * 
  * This should be called during send() in order to know the specific
@@ -851,11 +874,12 @@ globus_gridftp_server_get_read_range(
 /*
  * get write_range
  * 
- * This should be called during recv() in order to know the specific
- * offset and length that the data will be written to storage system.
- * globus_gridftp_server_update_bytes_written();  
+ * This could be called during recv() in order to get hints on the specific
+ * offset and length that the data will be expected to come from 
+ * globus_gridftp_server_register_read() callbacks.  Note that this is 
+ * only a hint, and not necessarily the exact data ranges that will come.
+ * You would continue calling this until it returns a length of 0.
  */ 
- /* XXX explain better */
 void
 globus_gridftp_server_get_write_range(
     globus_gfs_operation_t              op,
@@ -869,8 +893,9 @@ typedef enum
 {
     GLOBUS_GFS_LOG_ERR = 0x01,
     GLOBUS_GFS_LOG_WARN = 0x02,
-    GLOBUS_GFS_LOG_INFO = 0x04,
-    GLOBUS_GFS_LOG_DUMP = 0x08,
+    GLOBUS_GFS_LOG_STATUS = 0x04,
+    GLOBUS_GFS_LOG_INFO = 0x08,
+    GLOBUS_GFS_LOG_DUMP = 0x10,
     
     GLOBUS_GFS_LOG_ALL = 0xFF
 } globus_gfs_log_type_t;
@@ -891,7 +916,8 @@ globus_gfs_log_result(
 enum
 {
     GLOBUS_GFS_DEBUG_TRACE = 8,
-    GLOBUS_GFS_DEBUG_INFO = 16
+    GLOBUS_GFS_DEBUG_INFO = 16,
+    GLOBUS_GFS_DEBUG_STATE = 32
 };
 
 #ifdef __GNUC__

@@ -43,6 +43,10 @@ globus_l_gfs_log_matchlevel(
     {   
         out = GLOBUS_I_GFS_LOG_INFO;
     }             
+    else if(strcasecmp(tag, "STATUS") == 0)
+    {   
+        out = GLOBUS_I_GFS_LOG_STATUS;
+    }             
     else if(strcasecmp(tag, "DUMP") == 0)
     {   
         out = GLOBUS_I_GFS_LOG_DUMP;
@@ -60,6 +64,7 @@ void
 globus_i_gfs_log_open()
 {
     char *                              module;
+    char *                              module_str;
     globus_logging_module_t *           log_mod;
     void *                              log_arg;
     char *                              logfilename = NULL;
@@ -72,10 +77,14 @@ globus_i_gfs_log_open()
     int                                 ctr;
     char *                              tag;
     globus_result_t                     result;
-    globus_reltime_t                    flush;
+    globus_reltime_t                    flush_interval;
+    globus_size_t                       buffer;
     GlobusGFSName(globus_i_gfs_log_open);
     GlobusGFSDebugEnter();
-        
+
+    GlobusTimeReltimeSet(flush_interval, 5, 0);
+    buffer = 65536;
+
     /* parse user supplied log level string */
     log_level = globus_libc_strdup(globus_i_gfs_config_string("log_level"));
     if(log_level != NULL)
@@ -109,8 +118,77 @@ globus_i_gfs_log_open()
         globus_free(log_level);
     }
 
-    /* XXX should use the globus_extension stuff here */
-    module = globus_i_gfs_config_string("log_module");
+    module_str = globus_libc_strdup(globus_i_gfs_config_string("log_module"));
+    module = module_str;
+    if(module_str != NULL)
+    {
+        char *                          opts;
+        char *                          end;
+        globus_off_t                    tmp_off;
+        int                             rc;
+        
+        end = module_str + strlen(module_str);
+        ptr = strchr(module_str, ':');
+        if(ptr != NULL)
+        {
+            *ptr = '\0';
+            ptr++;
+            
+            do
+            {
+                opts = ptr;
+                ptr = strchr(opts, ':');
+                if(ptr)
+                {
+                    *ptr = '\0';
+                    ptr++;
+                    if(ptr >= end)
+                    {
+                        ptr = NULL;
+                    }
+                }
+                if(strncasecmp(opts, "buffer=", 7) == 0)
+                {
+                    rc = globus_args_bytestr_to_num(
+                        opts + 7, &tmp_off);
+                    if(rc != 0)
+                    {
+                        fprintf(stderr, "Invalid value for log buffer\n");
+                    }
+                    if(tmp_off == 0)
+                    {
+                        log_mask |= GLOBUS_LOGGING_INLINE;
+                    }
+                    if(tmp_off < 2048)
+                    {
+                         buffer = 2048;
+                    }
+                    else
+                    {           
+                        buffer = (globus_size_t) tmp_off;
+                    }                    
+                }
+                else if(strncasecmp(opts, "interval=", 9) == 0)
+                {
+                    rc = globus_args_bytestr_to_num(
+                        opts + 9, &tmp_off);
+                    if(rc != 0)
+                    {
+                        fprintf(stderr, 
+                            "Invalid value for log flush interval\n");
+                    }                  
+                    GlobusTimeReltimeSet(flush_interval, (int) tmp_off, 0);
+                }
+                else
+                {
+                    fprintf(stderr, "Invalid log module option: %s\n", opts);
+                }
+                
+                
+            } while(ptr && *ptr);
+        }
+    }
+
     if(module == NULL || strcmp(module, "stdio") == 0)
     {
         log_mod = &globus_logging_stdio_module;
@@ -118,7 +196,6 @@ globus_i_gfs_log_open()
     else if(strcmp(module, "syslog") == 0)
     {
         log_mod = &globus_logging_syslog_module;
-        /* set syslog options and pass in log_arg */
     }
     else
     {
@@ -166,13 +243,11 @@ globus_i_gfs_log_open()
             globus_free(logfilename);
         }
     }
-   
-    GlobusTimeReltimeSet(flush, 5, 0);
-    
+       
     globus_logging_init(
         &globus_l_gfs_log_handle,
-        &flush,
-        65536,
+        &flush_interval,
+        buffer,
         log_mask, 
         log_mod,
         log_arg);
@@ -197,6 +272,11 @@ globus_i_gfs_log_open()
     {
        result = globus_usage_stats_handle_init(
             &globus_l_gfs_usage_handle, 0, 0, NULL);      
+    }
+    
+    if(module_str)
+    {
+        globus_free(module_str);
     }
 
     GlobusGFSDebugExit();        

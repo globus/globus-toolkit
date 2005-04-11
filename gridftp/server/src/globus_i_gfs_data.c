@@ -2953,7 +2953,8 @@ globus_l_gfs_data_begin_cb(
 
         globus_i_gfs_log_message(
             GLOBUS_I_GFS_LOG_INFO,
-            "Data transfer started\n");
+            "Starting to transfer \"%s\".\n", 
+                ((globus_gfs_transfer_info_t *) op->info_struct)->pathname);
 
         if(!op->writing && op->data_handle->info.mode == 'E')
         {   
@@ -3067,6 +3068,11 @@ globus_l_gfs_data_end_transfer_kickout(
     }
     globus_mutex_unlock(&op->session_handle->mutex);
 
+    globus_i_gfs_log_message(
+        GLOBUS_I_GFS_LOG_INFO,
+        "Finished transferring \"%s\".\n",
+            ((globus_gfs_transfer_info_t *) op->info_struct)->pathname);
+
     if(disconnect && op->data_handle->is_mine)
     {
         memset(&event_reply, '\0', sizeof(globus_gfs_event_info_t));
@@ -3140,10 +3146,6 @@ globus_l_gfs_data_end_transfer_kickout(
             }
         }
         gettimeofday(&end_timeval, NULL);
-
-        globus_i_gfs_log_message(
-            GLOBUS_I_GFS_LOG_INFO,
-            "Data transfer done\n");
 
         if(globus_i_gfs_config_string("log_transfer"))
         {
@@ -4876,9 +4878,14 @@ globus_gridftp_server_get_block_size(
 {
     GlobusGFSName(globus_gridftp_server_get_block_size);
     GlobusGFSDebugEnter();
-
-    *block_size = op->data_handle->info.blocksize;
-
+    if(op->data_handle != NULL)
+    {
+        *block_size = op->data_handle->info.blocksize;
+    }
+    else
+    {
+        *block_size = (globus_size_t) globus_i_gfs_config_int("blocksize");
+    }
     GlobusGFSDebugExit();
 }
 
@@ -4904,6 +4911,20 @@ globus_gridftp_server_get_session_username(
     GlobusGFSDebugEnter();
 
     *username = globus_libc_strdup(op->session_handle->real_username);
+
+    GlobusGFSDebugExit();
+}
+
+void
+globus_gridftp_server_get_config_string(
+    globus_gfs_operation_t              op,
+    char **                             config_string)
+{
+    GlobusGFSName(globus_gridftp_server_get_config_string);
+    GlobusGFSDebugEnter();
+
+    *config_string = globus_libc_strdup(
+        globus_i_gfs_config_string("dsi_options"));
 
     GlobusGFSDebugExit();
 }

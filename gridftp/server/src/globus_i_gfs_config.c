@@ -117,7 +117,14 @@ static const globus_l_gfs_config_option_t option_list[] =
     "Log level. A comma seperated list of levels from: 'ERROR, WARN, INFO, DUMP, ALL'. "
     "Example: error,warn,info. You may also specify a numeric level of 1-255.", NULL, NULL},
  {"log_module", "log_module", NULL, "log-module", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
-    "globus_logging module that will be loaded. If not set, logfile options apply.", NULL, NULL},
+    "globus_logging module that will be loaded. If not set, the default 'stdio' module will "
+    "be used, and the logfile options apply.  Builtin modules are 'stdio' and 'syslog'.  Log module options "
+    "may be set by specifying module:opt1=val1:opt2=val2.  Available options for the builtin modules "
+    "are 'interval' and 'buffer', for buffer flush interval and buffer size, respectively. "
+    "The default options are a 64k buffer size and a 5 second flush interval.  A 0 second flush interval "
+    "will disable periodic flushing, and the buffer will only flush when it is full.  A value of 0 for "
+    "buffer will disable buffering and all messages will be written immediately.  "
+    "Example: -log-module stdio:buffer=4096:interval=10", NULL, NULL},
  {"log_single", "log_single", NULL, "logfile", "l", GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Path of a single file to log all activity to.  If neither this option or log_unique is set, "
     "logs will be written to stderr unless the execution mode is detached or inetd, "
@@ -206,7 +213,9 @@ static const globus_l_gfs_config_option_t option_list[] =
  {"load_dsi_module", "load_dsi_module", NULL, "dsi", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Data Storage Interface module to load. file and remote modules are defined by the server. "
     "If not set, the file module is loaded, unless the 'remote' option is specified, in which case the remote "
-    "module is loaded.", NULL, NULL},
+    "module is loaded.  An additional configuration string can be passed to the DSI using the format "
+    "<module name>:<configuration string> to this option.  The format of the configuration "
+    "string is defined by the DSI being loaded.", NULL, NULL},
  {"allowed_modules", "allowed_modules", NULL, "allowed-modules", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Comma seperated list of ERET/ESTO modules to allow, and optionally specify an alias for. "
     "Example: module1,alias2:module2,module3 (module2 will be loaded when a client asks for alias2).", NULL, NULL}, 
@@ -243,6 +252,8 @@ static const globus_l_gfs_config_option_t option_list[] =
     NULL /* used to store list of allowed modules */, NULL, NULL},
  {"exec_name", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     NULL /* full path of server used when fork/execing */, NULL, NULL},
+ {"dsi_options", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+    NULL /* options parsed from load_dsi_module config */, NULL, NULL},
  {"argv", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_VOID, 0, NULL,
     NULL /* original argv */, NULL, NULL},
  {"argc", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_INT, 0, NULL,
@@ -273,7 +284,7 @@ globus_l_gfs_config_set(
         option = (globus_l_gfs_config_option_t *)
             globus_calloc(1, sizeof(globus_l_gfs_config_option_t));
         for(i = 0; 
-            i < option_count && 
+            i < option_count && option_list[i].option_name &&
                 strcmp(option_name, option_list[i].option_name); 
             i++);
         if(i == option_count)
@@ -1140,8 +1151,6 @@ globus_l_gfs_config_misc()
         globus_l_gfs_config_set("fork", GLOBUS_FALSE, NULL);
         globus_l_gfs_config_set("bad_signal_exit", GLOBUS_FALSE, NULL);
         globus_l_gfs_config_set("chdir", GLOBUS_FALSE, NULL);
-        globus_l_gfs_config_set("allow_anonymous", GLOBUS_TRUE, NULL);
-        globus_l_gfs_config_set("secure_ipc", GLOBUS_FALSE, NULL);
     }
 
     if(globus_i_gfs_config_bool("allow_anonymous"))
@@ -1213,6 +1222,25 @@ globus_l_gfs_config_misc()
         }
     }
 
+    value = globus_i_gfs_config_string("load_dsi_module");
+    if(value != NULL)
+    {
+        char *                          ptr;
+        
+        ptr = strchr(value, ':');
+        if(ptr)
+        {
+            /* changing the value in the table directly here, but we'll set it
+             * anyways to be clear that we are */
+            *ptr = '\0';
+            ptr++;
+            globus_l_gfs_config_set(
+                "load_dsi_module", 0, value);
+            globus_l_gfs_config_set(
+                "dsi_options", 0, globus_libc_strdup(ptr));
+        }
+    }
+
     value = globus_i_gfs_config_string("remote_nodes");
     {
         globus_i_gfs_community_t *      community;
@@ -1269,7 +1297,7 @@ globus_l_gfs_config_misc()
     {
         globus_l_gfs_config_set("load_dsi_module", 0, globus_libc_strdup("file"));    
     }            
-    
+       
     value = globus_libc_strdup(globus_i_gfs_config_string("allowed_modules"));
     if(value != NULL)
     {
