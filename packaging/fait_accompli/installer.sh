@@ -1,11 +1,11 @@
 #!/bin/sh
 
-VERSION=3.9.5
+VERSION=4.0.0rc1
 INSTALLER=gt$VERSION-all-source-installer
 AUTOTOOLS=source-trees/autotools/autotools/autoconf-2.59/config
 GPT=gpt-3.2autotools2004-src.tar.gz
 # Pre-made tarfiles for gsi-openssh/myproxy
-TARFILES="gsi_openssh-3.5-src.tar.gz gsi_openssh_setup-3.5-src.tar.gz myproxy-1.16.tar.gz"
+TARFILES="gsi_openssh-3.5-src.tar.gz gsi_openssh_setup-3.5-src.tar.gz myproxy-1.17.tar.gz"
 
 echo Making configure/make installer
 ./make-packages.pl --trees=autotools,gt2,gt4 --skippackage --skipbundle $@
