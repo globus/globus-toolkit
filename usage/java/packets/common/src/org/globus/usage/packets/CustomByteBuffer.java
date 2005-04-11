@@ -108,21 +108,25 @@ public class CustomByteBuffer {
 	return remainingBytes;
     }
 
-    public void getUntilZeroOrOne(byte[] dataGoesHere) {
-	/*copy into the destination array until we run out of  bytes,
-	  or the array is filled up, or until we see a byte that is 
-	zero or one. (Needed by GramUsageMonitorPacket).*/
+    public String getUntilZeroOrOne(int maxBytes) {
+        /*copy into the destination array until we run out of  bytes,
+          or the array is filled up, or until we see a byte that is
+        zero or one. (Needed by GramUsageMonitorPacket).*/
 
-	for (int i = 0; i<dataGoesHere.length; i++) {
-	    char c = (char)this.internalArray[this.pointer];
-	    if (c > 1) {
-		dataGoesHere[i] = (byte)c;
-		this.pointer++;
-	    }
-	    else {
-		break;
-	    }
-	}
+        StringBuffer buf = new StringBuffer();
+
+        for (int i = 0; i<maxBytes; i++) {
+            char c = (char)this.internalArray[this.pointer];
+            if (c > 1) {
+                buf.append(c);
+                this.pointer++;
+            }
+            else {
+                break;
+            }
+        }
+
+        return buf.toString();
     }
 
     public long getLong() {

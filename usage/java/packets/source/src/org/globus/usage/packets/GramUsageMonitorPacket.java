@@ -275,9 +275,8 @@ public class GramUsageMonitorPacket
 	the end of this text could look like more letters.  So far
 	every one has been "Fork", but we have to be ready.
 */
-        byte[] localResourceManagerBytes = new byte[MAX_SCHEDULER_TYPE_SIZE];
-        buf.getUntilZeroOrOne(localResourceManagerBytes);
-        this.localResourceManager = new String(localResourceManagerBytes);
+
+        this.localResourceManager = buf.getUntilZeroOrOne(MAX_SCHEDULER_TYPE_SIZE);
 
 
         //jobCredentialEndpointUsed
@@ -333,7 +332,12 @@ public class GramUsageMonitorPacket
 	ps.setShort(1, this.getComponentCode());
 	ps.setShort(2, this.getPacketVersion());
 	ps.setTimestamp(3, new Timestamp(this.getTimestamp()));
-	ps.setString(4, this.getHostIP().toString());
+	if (this.getHostIP() == null) {
+	    ps.setString(4, "unknown");
+	}
+	else {
+	    ps.setString(4, this.getHostIP().toString());
+	}
 
 	ps.setTimestamp(5, new Timestamp(this.creationTime.getTime()));
 	ps.setString(6, this.localResourceManager);
