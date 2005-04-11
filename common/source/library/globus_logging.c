@@ -121,6 +121,7 @@ globus_logging_init(
     globus_result_t                     res;
     globus_l_logging_handle_t *         handle;
     globus_size_t                       buffer_length;
+    globus_reltime_t                    zero;
     GlobusLoggingName(globus_logging_init);
 
     if(out_handle == NULL)
@@ -171,8 +172,9 @@ globus_logging_init(
     {
         handle->module.open_func(handle->user_arg);
     }
-
-    if(flush_period != NULL)
+    
+    GlobusTimeReltimeSet(zero, 0, 0);
+    if(flush_period != NULL && globus_reltime_cmp(flush_period, &zero) != 0)
     {
         res = globus_callback_register_periodic(
             &handle->callback_handle,
