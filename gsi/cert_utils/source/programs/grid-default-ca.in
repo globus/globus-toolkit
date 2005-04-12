@@ -376,7 +376,9 @@ if [ -w ${DIRECTIONS_FILE} ]; then
     ${GLOBUS_SH_LN-ln} -s ${DIRECTIONS_FILE} \
 	    	          ${secconfdir}/directions
 else
-    error DIRECTIONS_FILE
+    echo "removing link ${secconfdir}/directions"
+    echo
+    ${GLOBUS_SH_RM-rm} -f ${secconfdir}/directions
 fi
 
 echo 
