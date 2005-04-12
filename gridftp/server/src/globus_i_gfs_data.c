@@ -18,6 +18,12 @@
 #define USER_NAME_MAX   64
 #define FTP_SERVICE_NAME "file"
 
+#if defined(_SC_GETPW_R_SIZE_MAX)
+#define GSC_GETPW_PWBUFSIZE         _SC_GETPW_R_SIZE_MAX
+#else
+#define GSC_GETPW_PWBUFSIZE        (USER_NAME_MAX*3)+(PATH_MAX*2)
+#endif
+
 struct passwd *                         globus_l_gfs_data_pwent = NULL;
 static globus_gfs_storage_iface_t *     globus_l_gfs_dsi = NULL;
 globus_extension_registry_t             globus_i_gfs_dsi_registry;
@@ -247,6 +253,209 @@ static
 void
 globus_l_gfs_data_operation_destroy(
     globus_l_gfs_data_operation_t *     op);
+
+static
+void
+globus_l_gfs_pw_free(
+    struct passwd *                     pw)
+{
+    if(pw->pw_name != NULL)
+    {
+        free(pw->pw_name);
+    }
+    if(pw->pw_passwd != NULL)
+    {
+        free(pw->pw_passwd);
+    }
+    if(pw->pw_gecos != NULL)
+    {
+        free(pw->pw_gecos);
+    }
+    if(pw->pw_dir != NULL)
+    {
+        free(pw->pw_dir);
+    }
+    if(pw->pw_shell != NULL)
+    {
+        free(pw->pw_shell);
+    }
+
+    free(pw);
+}
+
+static
+struct passwd *
+globus_l_gfs_pw_copy(
+    struct passwd *                     pw)
+{
+    struct passwd *                     out_pw;
+
+    if(pw == NULL)
+    {
+        return NULL;
+    }
+    out_pw = (struct passwd *) globus_malloc(sizeof(struct passwd));
+    if(out_pw == NULL)
+    {
+        return NULL;
+    }
+
+    out_pw->pw_name = pw->pw_name == NULL ? NULL : strdup(pw->pw_name);
+    out_pw->pw_passwd = pw->pw_passwd == NULL ? NULL : strdup(pw->pw_passwd);
+    out_pw->pw_uid = pw->pw_uid;
+    out_pw->pw_gid = pw->pw_gid;
+    out_pw->pw_gecos = pw->pw_gecos == NULL ? NULL : strdup(pw->pw_gecos);
+    out_pw->pw_dir = pw->pw_dir == NULL ? NULL : strdup(pw->pw_dir);
+    out_pw->pw_shell = pw->pw_shell == NULL ? NULL : strdup(pw->pw_shell);
+
+    return out_pw;
+}
+
+static
+void
+globus_l_gfs_gr_free(
+    struct group *                      gr)
+{
+    int                                 i;
+
+    if(gr->gr_name != NULL)
+    {
+        free(gr->gr_name);
+    }
+    if(gr->gr_passwd != NULL)
+    {
+        free(gr->gr_passwd);
+    }
+    if(gr->gr_mem != NULL)
+    {
+        for(i = 0; gr->gr_mem[i] != NULL; i++)
+        {
+            free(gr->gr_mem[i]);
+        }
+        globus_free(gr->gr_mem);
+    }
+
+    free(gr);
+}
+
+static
+struct group *
+globus_l_gfs_gr_copy(
+    struct group *                      gr)
+{
+    int                                 i;
+    int                                 count;
+    struct group *                      gr_copy = NULL;
+
+    gr_copy = (struct group *) globus_malloc(sizeof(struct group));
+    if(gr_copy == NULL)
+    {
+        return NULL;
+    }
+    gr_copy->gr_name = gr->gr_name == NULL ? NULL : strdup(gr->gr_name);
+    gr_copy->gr_passwd = gr->gr_passwd == NULL ? NULL : strdup(gr->gr_passwd);
+    gr_copy->gr_gid = gr->gr_gid;
+    /* I don't think we use this one so we are better off not
+        allocating memory for it */
+    if(gr->gr_mem != NULL)
+    {
+        for(i = 0; gr->gr_mem[i] != NULL; i++)
+        {
+        }
+        count = i+1;
+        gr_copy->gr_mem = (char **)globus_malloc(sizeof(char*)*count);
+        for(i = 0; i < count-1; i++)
+        {
+            gr_copy->gr_mem[i] = strdup(gr->gr_mem[i]);
+        }
+        gr_copy->gr_mem[i] = NULL;
+    }
+
+    return gr_copy;
+}
+
+static
+struct group *
+globus_l_gfs_getgrnam(
+    const char *                        name)
+{
+    struct group *                      grent;
+    struct group *                      grent_copy = NULL;
+
+    globus_libc_lock();
+    grent = getgrnam(name);
+    if(grent != NULL)
+    {
+        grent_copy = globus_l_gfs_gr_copy(grent);   
+    }
+    globus_libc_unlock();
+
+    return grent_copy;
+}
+
+static
+struct group *
+globus_l_gfs_getgrgid(
+    gid_t                               gid)
+{
+    struct group *                      grent;
+    struct group *                      grent_copy = NULL;
+
+    globus_libc_lock();
+    grent = getgrgid(gid);
+    if(grent != NULL)
+    {
+        grent_copy = globus_l_gfs_gr_copy(grent);   
+    }
+    globus_libc_unlock();
+
+    return grent_copy;
+}
+
+static
+struct passwd *
+globus_l_gfs_getpwuid(
+    uid_t                               uid)
+{
+    int                                 rc;
+    char                                pw_buffer[GSC_GETPW_PWBUFSIZE];
+    struct passwd                       pwent_mem;
+    struct passwd *                     pw_result;
+    struct passwd *                     pwent = NULL;
+
+    rc = globus_libc_getpwuid_r(getuid(), &pwent_mem, pw_buffer,
+                GSC_GETPW_PWBUFSIZE, &pw_result);
+    if(rc != 0)
+    {
+        return NULL;
+    }
+    pwent = globus_l_gfs_pw_copy(&pwent_mem);
+
+    return pwent;
+}
+
+static
+struct passwd *
+globus_l_gfs_getpwnam(
+    const char *                        name)
+{
+    int                                 rc;
+    char                                pw_buffer[GSC_GETPW_PWBUFSIZE];
+    struct passwd                       pwent_mem;
+    struct passwd *                     pw_result;
+    struct passwd *                     pwent = NULL;
+
+    rc = globus_libc_getpwnam_r(
+        (char *)name, &pwent_mem, pw_buffer,GSC_GETPW_PWBUFSIZE, &pw_result);
+    if(rc != 0)
+    {
+        return NULL;
+    }
+
+    pwent = globus_l_gfs_pw_copy(&pwent_mem);
+
+    return pwent;
+}
 
 static
 void
@@ -626,7 +835,7 @@ globus_l_gfs_data_authorize(
     char *                              grp;
     char *                              pw_hash;
     char                                authz_usr[USER_NAME_MAX];
-    struct passwd *                     pwent;
+    struct passwd *                     pwent = NULL;
     struct group *                      grent = NULL;
     GlobusGFSName(globus_l_gfs_data_authorize);
     GlobusGFSDebugEnter();
@@ -704,7 +913,7 @@ globus_l_gfs_data_authorize(
             }
             session_info->username = globus_libc_strdup(usr);
         }
-        pwent = getpwnam(session_info->username);
+        pwent = globus_l_gfs_getpwnam(session_info->username);
         if(pwent == NULL)
         {
             GlobusGFSErrorGenericStr(res,
@@ -713,7 +922,7 @@ globus_l_gfs_data_authorize(
             goto pwent_error;
         }
         gid = pwent->pw_gid;
-        grent = getgrgid(pwent->pw_gid);
+        grent = globus_l_gfs_getgrgid(gid);
         if(grent == NULL)
         {
             GlobusGFSErrorGenericStr(res,
@@ -735,7 +944,7 @@ globus_l_gfs_data_authorize(
                 res = GlobusGFSErrorGeneric("No anonymous user set.");
                 goto pwent_error;
             }
-            pwent = getpwnam(usr);
+            pwent = globus_l_gfs_getpwnam(usr);
             if(pwent == NULL)
             {
                 res = GlobusGFSErrorGeneric("Invalid anonymous user set.");
@@ -744,7 +953,7 @@ globus_l_gfs_data_authorize(
             grp = globus_i_gfs_config_string("anonymous_group");
             if(grp == NULL)
             {
-                grent = getgrgid(pwent->pw_gid);
+                grent = globus_l_gfs_getgrgid(pwent->pw_gid);
                 if(grent == NULL)
                 {
                     res = GlobusGFSErrorGeneric(
@@ -754,7 +963,7 @@ globus_l_gfs_data_authorize(
             }
             else
             {
-                grent = getgrnam(grp);
+                grent = globus_l_gfs_getgrnam(grp);
                 if(grent == NULL)
                 {
                     res = GlobusGFSErrorGeneric(
@@ -764,10 +973,10 @@ globus_l_gfs_data_authorize(
             }
             gid = grent->gr_gid;
         }
-        /* if not root, jsut run as is */
+        /* if not root, just run as is */
         else
         {
-            pwent = getpwuid(getuid());
+            pwent = globus_l_gfs_getpwuid(getuid());
             if(pwent == NULL)
             {
                 res = GlobusGFSErrorGeneric(
@@ -775,7 +984,7 @@ globus_l_gfs_data_authorize(
                 goto pwent_error;
             }
             gid = pwent->pw_gid;
-            grent = getgrgid(pwent->pw_gid);
+            grent = globus_l_gfs_getgrgid(pwent->pw_gid);
             if(grent == NULL)
             {
                 res = GlobusGFSErrorGeneric(
@@ -783,47 +992,62 @@ globus_l_gfs_data_authorize(
                 goto pwent_error;
             }
         }
+
         /* since this is anonymous change the user name */
-        pwent->pw_name = "anonymous";
-        grent->gr_name = "anonymous";
+        if(pwent->pw_name != NULL)
+        {
+            globus_free(pwent->pw_name);
+        }
+        pwent->pw_name = strdup("anonymous");
+        if(grent->gr_name != NULL)
+        {
+            globus_free(grent->gr_name);
+        }
+        grent->gr_name = strdup("anonymous");
     }
     else if(pw_file != NULL)
     {
         /* if we have not yet looked it up for this user */
         if(globus_l_gfs_data_pwent == NULL)
         {
-            FILE * pw = fopen(pw_file, "r");
-            if(pw == NULL)
+#           ifdef HAVE_FGETPWENT
             {
-                res = GlobusGFSErrorGeneric(
-                    "Invalid passwd file set.");
-                goto pwent_error;
-            }
+                FILE * pw = fopen(pw_file, "r");
+                if(pw == NULL)
+                {
+                    res = GlobusGFSErrorGeneric(
+                        "Invalid passwd file set.");
+                    goto pwent_error;
+                }
 
-            do
+                globus_libc_lock();
+                do
+                {
+                    pwent = fgetpwent(pw);
+                }
+                while(pwent != NULL &&
+                    strcmp(pwent->pw_name, session_info->username) != 0);
+                fclose(pw);
+
+                if(pwent == NULL)
+                {
+                    globus_libc_unlock();
+                    res = GlobusGFSErrorGeneric("Invalid user.");
+                    goto pwent_error;
+                }
+                globus_l_gfs_data_pwent = globus_l_gfs_pw_copy(pwent);
+                globus_libc_unlock();
+            }
+#           else
             {
-#ifdef HAVE_FGETPWENT
-                pwent = fgetpwent(pw);
-#else
-                pwent = NULL;
                 res = GlobusGFSErrorGeneric("Passwd file not supported.");
                 goto pwent_error;
+            }
 #endif
-            }
-            while(pwent != NULL &&
-                strcmp(pwent->pw_name, session_info->username) != 0);
-
-            if(pwent == NULL)
-            {
-                res = GlobusGFSErrorGeneric("Invalid user.");
-                goto pwent_error;
-            }
-            fclose(pw);
         }
         else
         {
             /* if already looked up (and setuid()) use global value */
-            pwent = globus_l_gfs_data_pwent;
             if(strcmp(pwent->pw_name, session_info->username) != 0)
             {
                 res = GlobusGFSErrorGeneric(
@@ -831,7 +1055,8 @@ globus_l_gfs_data_authorize(
                 goto pwent_error;
             }
         }
-        grent = getgrgid(pwent->pw_gid);
+        pwent = globus_l_gfs_pw_copy(globus_l_gfs_data_pwent);
+        grent = globus_l_gfs_getgrgid(pwent->pw_gid);
         if(grent == NULL)
         {
             GlobusGFSErrorGenericStr(res,
@@ -853,7 +1078,6 @@ globus_l_gfs_data_authorize(
         goto pwent_error;
     }
 
-    globus_l_gfs_data_pwent = pwent;
     /* change process ids */
     rc = setgid(gid);
     if(rc != 0)
@@ -902,12 +1126,23 @@ globus_l_gfs_data_authorize(
         globus_l_gfs_data_auth_init_cb(NULL, op, res);
     }
 
+    globus_l_gfs_pw_free(pwent);
+    globus_l_gfs_gr_free(grent);
+
     GlobusGFSDebugExit();
     return;
 
 acl_error:
 uid_error:
 pwent_error:
+    if(pwent != NULL)
+    {
+        globus_l_gfs_pw_free(pwent);
+    }
+    if(grent)
+    {
+        globus_l_gfs_gr_free(grent);
+    }
     {
         globus_gfs_finished_info_t      finished_info;
         memset(&finished_info, '\0', sizeof(globus_gfs_finished_info_t));
@@ -3098,7 +3333,8 @@ globus_l_gfs_data_end_transfer_kickout(
     if(op->node_ndx == 0 && 
         op->cached_res == GLOBUS_SUCCESS &&
         (globus_i_gfs_config_string("log_transfer") || 
-        !globus_i_gfs_config_bool("disable_usage_stats")))
+        (!globus_i_gfs_config_bool("disable_usage_stats") 
+            && op->data_handle->is_mine)))
     {
         char *                          type;
         globus_gfs_transfer_info_t *    info;
@@ -3164,7 +3400,8 @@ globus_l_gfs_data_end_transfer_kickout(
                 type,
                 op->session_handle->username);
         }
-        if(!globus_i_gfs_config_string("disable_usage_stats"))
+        if(!globus_i_gfs_config_string("disable_usage_stats")
+            && op->data_handle->is_mine)
         {
             globus_i_gfs_log_usage_stats(
                 op->node_count,

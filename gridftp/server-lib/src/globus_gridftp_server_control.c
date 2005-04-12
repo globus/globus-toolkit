@@ -15,6 +15,8 @@
 #include <ctype.h>
 #include "version.h"
 
+#define GSU_MAX_USERNAME_LENGTH         64
+#define GSU_MAX_PW_LENGTH               GSU_MAX_USERNAME_LENGTH*6
 #define GSC_MAX_COMMAND_NAME_LEN        4
 #define GLOBUS_L_GSC_DEFAULT_220   "GridFTP Server.\n"
 
@@ -3454,9 +3456,12 @@ globus_i_gsc_mlsx_line_single(
                 break;
 
             case GLOBUS_GSC_MLSX_FACT_UNIXGROUP:
+                /* XXX TODO make proper function in globus_libc */
+                globus_libc_lock();
                 gr = getgrgid(stat_info->gid);
                 sprintf(tmp_ptr, "UNIX.group=%s;",
                     gr == NULL ? "(null)" : gr->gr_name);
+                globus_libc_unlock();
                 break;
 
             case GLOBUS_GSC_MLSX_FACT_UNIQUE:
@@ -3533,11 +3538,14 @@ char *
 globus_i_gsc_list_single_line(
     globus_gridftp_server_control_stat_t *  stat_info)
 {
+    int                                 rc;
     char *                              username;
     char *                              grpname;
-    char                                user[16];
-    char                                grp[16];
-    struct passwd *                     pw;
+    char                                user[GSU_MAX_USERNAME_LENGTH];
+    char                                grp[GSU_MAX_USERNAME_LENGTH];
+    struct passwd                       pw;
+    struct passwd *                     result_pw = NULL;
+    char                                pw_buffer[GSU_MAX_PW_LENGTH];
     struct group *                      gr;
     struct tm *                         tm;
     char                                perms[11];
@@ -3552,24 +3560,29 @@ globus_i_gsc_list_single_line(
     strcpy(perms, "----------");
 
     tm = localtime(&stat_info->mtime);
-    pw = getpwuid(stat_info->uid);
-    if(pw == NULL)
+    rc = globus_libc_getpwuid_r(
+        stat_info->uid, &pw, pw_buffer, GSU_MAX_PW_LENGTH, &result_pw);
+    if(rc != 0)
     {
         username = "(null)";
     }
     else
     {
-        username = pw->pw_name;
+        username = pw.pw_name;
     }
+
+    /* XXX TODO make proper function in globus_libc */
+    globus_libc_lock();
     gr = getgrgid(stat_info->gid);
     if(gr == NULL)
     {
-        grpname = "(null)";
+        grpname = strdup("(null)");
     }
     else
     {
-        grpname = gr->gr_name;
+        grpname = strdup(gr->gr_name);
     }
+    globus_libc_unlock();
                                                                             
     if(S_ISDIR(stat_info->mode))
     {
@@ -3636,6 +3649,7 @@ globus_i_gsc_list_single_line(
     sprintf(grp, "        ");
     tmp_ptr = grp + (8 - strlen(grpname));
     sprintf(tmp_ptr, "%s", grpname);
+    free(grpname);
 
     tmp_ptr = globus_common_create_string(
         "%s %3d %s %s %12"GLOBUS_OFF_T_FORMAT" %s %2d %02d:%02d %s",
