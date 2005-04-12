@@ -6877,9 +6877,11 @@ globus_l_ftp_control_dc_dec_ref(
 
         globus_handle_table_destroy(&transfer_handle->handle_table);
         globus_free(transfer_handle->stripes);
+        
+        globus_assert(dc_handle->transfer_handle != transfer_handle && 
+                "Destroying a transfer_handle we still have a pointer to");
+        
         globus_free(transfer_handle);
-        dc_handle->transfer_handle = NULL;
-
         globus_cond_signal(&globus_l_ftp_control_data_cond);
     }
 
@@ -7299,7 +7301,6 @@ globus_l_ftp_io_close_callback(
     }
     globus_mutex_unlock(&dc_handle->mutex);
 
-
     if(eof_callback != GLOBUS_NULL)
     {
         eof_callback(
@@ -7572,6 +7573,19 @@ globus_l_ftp_stream_listen_callback(
                 }
             }
         }
+        /* this will happen if we got a force_close after the connect_read but
+         * before this callback.  just continue with an error */
+        else if(dc_handle->state == GLOBUS_FTP_DATA_STATE_CLOSING)
+        {
+            error =  globus_error_construct_string(
+                GLOBUS_FTP_CONTROL_MODULE,
+                GLOBUS_NULL,
+                _FCSL("connection closed before accept"));
+            callback = data_conn->callback;
+            user_arg = data_conn->user_arg;
+            stripe_ndx = stripe->stripe_ndx;
+            globus_free(callback_info);
+        }            
 
         /*
          *  remove reference for listener callback
@@ -8280,6 +8294,18 @@ globus_l_ftp_eb_listen_callback(
                           (void *)data_conn2);
             globus_assert(res == GLOBUS_SUCCESS);
         }
+        /* this will happen if we got a force_close after the connect_read but
+         * before this callback.  just continue with an error */
+        else if(dc_handle->state == GLOBUS_FTP_DATA_STATE_CLOSING)
+        {
+            error =  globus_error_construct_string(
+                GLOBUS_FTP_CONTROL_MODULE,
+                GLOBUS_NULL,
+                _FCSL("connection closed before accept"));
+            callback = data_conn->callback;
+            user_arg = data_conn->user_arg;
+            stripe_ndx = stripe->stripe_ndx;
+        }            
         /*
          *  remove reference for listener callback
          */
@@ -9548,6 +9574,7 @@ globus_l_ftp_eb_send_eof_callback(
     globus_i_ftp_dc_transfer_handle_t *         transfer_handle;
     const globus_object_type_t *                type;
     globus_bool_t                               poll;
+    globus_ftp_data_connection_state_t          initial_state;
 
     eof_ent = (globus_l_ftp_send_eof_entry_t *)arg;
     data_conn = eof_ent->whos_my_daddy;
@@ -9558,6 +9585,11 @@ globus_l_ftp_eb_send_eof_callback(
 
     globus_mutex_lock(&dc_handle->mutex);
     {
+        /* in case of error we ended up never calling the user cb, since 
+         * we destroy right after this -- save original error now so 
+         * we can check later if we should fire_cb */
+        initial_state = dc_handle->state;
+        
         globus_assert(eof_ent->dc_handle->transfer_handle != NULL);
         if(result != GLOBUS_SUCCESS)
         {
@@ -9605,6 +9637,12 @@ globus_l_ftp_eb_send_eof_callback(
                 globus_free(tmp_ent->count);
                 globus_free(tmp_ent);
             }
+            else if(initial_state == GLOBUS_FTP_DATA_STATE_SEND_EOF && error)
+            {
+                fire_cb = GLOBUS_TRUE;
+                globus_free(tmp_ent->count);
+                globus_free(tmp_ent);
+            }                
             else
             {
                 transfer_handle->send_eof_ent = tmp_ent;

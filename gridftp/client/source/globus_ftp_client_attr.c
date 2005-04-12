@@ -662,6 +662,7 @@ globus_ftp_client_operationattr_init(
     i_attr->allow_ipv6                  = GLOBUS_FALSE;
     i_attr->resume_third_party		= GLOBUS_FALSE;
     i_attr->force_striped		= GLOBUS_FALSE;
+    i_attr->allocated_size		= 0;
 
     tmp_name = globus_libc_strdup("anonymous");
     if(tmp_name == GLOBUS_NULL)
@@ -872,6 +873,90 @@ error_exit:
     return globus_error_put(err);
 }
 /* globus_ftp_client_operationattr_get_parallelism() */
+/* @} */
+
+/**
+ * @name allocate
+ */
+/* @{ */
+/**
+ * Set/Get the allocate attribute for an ftp client attribute set.
+ * @ingroup globus_ftp_client_operationattr
+ *
+ * This attribute lets the user set a size to be passed to the server
+ * before a put operation.
+ *
+ * This attribute is ignored for get operations.
+ *
+ * @param attr
+ *        The attribute set to query or modify.
+ * @param allocated_size
+ *        The size to direct server to allocate.
+ *        
+ */
+globus_result_t
+globus_ftp_client_operationattr_set_allocate(
+    globus_ftp_client_operationattr_t *		attr,
+    const globus_off_t  	                allocated_size)
+{
+    globus_object_t *				err;
+    globus_i_ftp_client_operationattr_t *	i_attr;
+    GlobusFuncName(globus_ftp_client_operationattr_set_allocate);
+
+    if(attr == GLOBUS_NULL)
+    {
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr");
+
+	goto error_exit;
+    }
+    if(allocated_size < 0)
+    {
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("allocated_size");
+
+	goto error_exit;
+    }
+    i_attr = *(globus_i_ftp_client_operationattr_t **) attr;
+
+    i_attr->allocated_size = allocated_size;
+    return GLOBUS_SUCCESS;
+
+error_exit:
+    return globus_error_put(err);
+}
+/* globus_ftp_client_operationattr_set_allocate() */
+
+globus_result_t
+globus_ftp_client_operationattr_get_allocate(
+    const globus_ftp_client_operationattr_t *	attr,
+    globus_off_t *		                allocated_size)
+{
+    globus_object_t *				err;
+    const globus_i_ftp_client_operationattr_t *	i_attr;
+    GlobusFuncName(globus_ftp_client_operationattr_get_allocate);
+
+    if(attr == GLOBUS_NULL)
+    {
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr");
+
+	goto error_exit;
+    }
+    if(allocated_size == GLOBUS_NULL)
+    {
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("allocated_size");
+
+	goto error_exit;
+    }
+
+    i_attr = *(const globus_i_ftp_client_operationattr_t **) attr;
+
+    *allocated_size = i_attr->allocated_size;
+
+    return GLOBUS_SUCCESS;
+
+error_exit:
+    return globus_error_put(err);
+}
+/* globus_ftp_client_operationattr_get_allocate() */
 /* @} */
 
 /* @{ */
@@ -2469,6 +2554,14 @@ globus_ftp_client_operationattr_copy(
     
     result =
 	globus_ftp_client_operationattr_set_allow_ipv6(dst, i_src->allow_ipv6);
+    if(result)
+    {
+	goto destroy_exit;
+    }
+
+    result =
+	globus_ftp_client_operationattr_set_allocate(
+	    dst, i_src->allocated_size);
     if(result)
     {
 	goto destroy_exit;

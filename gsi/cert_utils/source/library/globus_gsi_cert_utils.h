@@ -99,8 +99,18 @@ globus_module_descriptor_t              globus_i_gsi_cert_utils_module;
          cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_INDEPENDENT_PROXY || \
          cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_LIMITED_PROXY || \
          cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_RESTRICTED_PROXY || \
+         cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_RFC_IMPERSONATION_PROXY || \
+         cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_RFC_INDEPENDENT_PROXY || \
+         cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_RFC_LIMITED_PROXY || \
+         cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_RFC_RESTRICTED_PROXY || \
          cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_PROXY || \
          cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY)
+
+#define GLOBUS_GSI_CERT_UTILS_IS_RFC_PROXY(cert_type) \
+        (cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_RFC_IMPERSONATION_PROXY || \
+         cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_RFC_INDEPENDENT_PROXY || \
+         cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_RFC_LIMITED_PROXY || \
+         cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_RFC_RESTRICTED_PROXY)
 
 
 #define GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY(cert_type) \
@@ -114,33 +124,53 @@ globus_module_descriptor_t              globus_i_gsi_cert_utils_module;
          cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY)
 
 
+#define GLOBUS_GSI_CERT_UTILS_IS_INDEPENDENT_PROXY(cert_type) \
+        (cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_RFC_INDEPENDENT_PROXY || \
+         cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_INDEPENDENT_PROXY)
+
+#define GLOBUS_GSI_CERT_UTILS_IS_RESTRICTED_PROXY(cert_type) \
+        (cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_RFC_RESTRICTED_PROXY || \
+         cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_RESTRICTED_PROXY)
+
 #define GLOBUS_GSI_CERT_UTILS_IS_LIMITED_PROXY(cert_type) \
-        (cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_LIMITED_PROXY || \
+        (cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_RFC_LIMITED_PROXY || \
+         cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_LIMITED_PROXY || \
          cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY)
 
 #define GLOBUS_GSI_CERT_UTILS_IS_IMPERSONATION_PROXY(cert_type) \
-        (cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_IMPERSONATION_PROXY || \
+        (cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_RFC_IMPERSONATION_PROXY || \
+         cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_RFC_LIMITED_PROXY || \
+         cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_IMPERSONATION_PROXY || \
          cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_LIMITED_PROXY || \
          cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_PROXY || \
          cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY)
 
 
-globus_result_t globus_gsi_cert_utils_make_time(
+globus_result_t
+globus_gsi_cert_utils_make_time(
     ASN1_UTCTIME *                      ctm,
     time_t *                            newtime);
 
-globus_result_t globus_gsi_cert_utils_get_base_name(
+globus_result_t
+globus_gsi_cert_utils_get_base_name(
     X509_NAME *                         subject,
     STACK_OF(X509) *                    cert_chain);
 
-globus_result_t globus_gsi_cert_utils_get_cert_type(
+globus_result_t
+globus_gsi_cert_utils_get_cert_type(
     X509 *                              cert,
     globus_gsi_cert_utils_cert_type_t * type);
 
-globus_result_t globus_gsi_cert_utils_get_x509_name(
+globus_result_t
+globus_gsi_cert_utils_get_x509_name(
     char *                              subject_string,
     int                                 length,
     X509_NAME *                         x509_name);
+
+int
+globus_i_gsi_cert_utils_dn_cmp(
+    const char *                        dn1,
+    const char *                        dn2);
 
 
 /* For backwards compatibility */

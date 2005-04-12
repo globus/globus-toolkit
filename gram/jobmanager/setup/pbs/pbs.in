@@ -322,6 +322,8 @@ EOF
 	    print CMD "$rsh_env\n";
 	    print CMD $description->executable(), " $args\n";
 	    close(CMD);
+            chmod 0700, $cmd_script_name;
+
 	    $self->nfssync( $cmd_script_name );
 	} 
 	else 
@@ -332,7 +334,7 @@ EOF
 
         if ($description->jobtype() eq "mpi")
         {
-            print JOB "$mpirun -npp " . $description->count();
+            print JOB "$mpirun -np " . $description->count();
 
             if ($cluster)
             {

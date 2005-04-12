@@ -3101,6 +3101,52 @@ globus_l_libc_i00afunc (long address)
 
 /* IPv6 utils */
 
+#if 0
+static
+int
+globus_l_libc_copy_addrinfo(
+    globus_addrinfo_t **                out_addrinfo,
+    globus_addrinfo_t *                 in_addrinfo)
+{
+    globus_addrinfo_t *                 new_addrinfo;
+    globus_addrinfo_t *                 addrinfo;
+    char *                              canonname = NULL;
+    
+    addrinfo = in_addrinfo;
+    if(addrinfo)
+    {
+        new_addrinfo = (globus_addrinfo_t *) 
+            globus_malloc(sizeof(globus_addrinfo_t));
+        memcpy(new_addrinfo, addrinfo, sizeof(globus_addrinfo_t));
+        new_addrinfo->ai_addr = (struct sockaddr *)
+            globus_malloc(addrinfo->ai_addrlen);
+        memcpy(new_addrinfo->ai_addr, addrinfo->ai_addr, addrinfo->ai_addrlen);
+        if(addrinfo->ai_canonname)
+        {
+            canonname = globus_libc_strdup(addrinfo->ai_canonname);
+            new_addrinfo->ai_canonname = canonname;
+        }
+        *out_addrinfo = new_addrinfo;
+        for(addrinfo = addrinfo->ai_next;
+            addrinfo;
+            addrinfo = addrinfo->ai_next)
+        {
+            new_addrinfo->ai_next = (globus_addrinfo_t *) 
+                globus_malloc(sizeof(globus_addrinfo_t));
+            new_addrinfo = new_addrinfo->ai_next;
+            memcpy(new_addrinfo, addrinfo, sizeof(globus_addrinfo_t));
+            new_addrinfo->ai_addr = (struct sockaddr *)
+                globus_malloc(addrinfo->ai_addrlen);
+            memcpy(new_addrinfo->ai_addr, addrinfo->ai_addr, 
+                addrinfo->ai_addrlen);
+            new_addrinfo->ai_canonname = canonname;
+        }
+    }
+    
+    return 0;       
+}
+#endif
+
 globus_result_t
 globus_libc_getaddrinfo(
     const char *                        node,
@@ -3153,9 +3199,9 @@ globus_libc_getaddrinfo(
                     "%s",
                     gai_strerror(rc)));
         }
+        goto error;
     }
 #ifdef TARGET_ARCH_AIX5
-    else
     {
         globus_addrinfo_t *             addrinfo;
         
@@ -3171,7 +3217,7 @@ globus_libc_getaddrinfo(
                 GlobusLibcSockaddrSetFamily(
                     *addrinfo->ai_addr, addrinfo->ai_family);
                 GlobusLibcSockaddrSetLen(
-                    *addrinfo->ai_addr, addrinfo->ai_addrlen);
+                   *addrinfo->ai_addr, addrinfo->ai_addrlen);
                 if(port_str != service)
                 {
                     GlobusLibcSockaddrSetPort(*addrinfo->ai_addr, 0);
@@ -3181,6 +3227,9 @@ globus_libc_getaddrinfo(
     }
 #endif
 
+    return result;
+
+error:
     return result;
 }
 
@@ -3213,7 +3262,10 @@ globus_libc_getnameinfo(
         servbuf,
         servbuf_len,
         flags);
-#ifdef TARGET_ARCH_DARWIN
+
+    /* some getnameinfo (darwin) return success but leave the hostbuf empty.
+     * in this case we'll just fill in hostbuf with the ip address
+     */
     if(rc == 0 && !*hostbuf && !(flags & GLOBUS_NI_NUMERICHOST))
     {
         rc = getnameinfo(
@@ -3225,7 +3277,6 @@ globus_libc_getnameinfo(
             servbuf_len,
             flags | GLOBUS_NI_NUMERICHOST);
     }
-#endif
 
     if(rc != 0)
     {
@@ -3270,17 +3321,17 @@ globus_libc_addr_is_loopback(
     switch(_addr->sa_family)
     {
       case AF_INET:
-        if(ntohl(((struct sockaddr_in *) _addr)->sin_addr.s_addr) ==
-           INADDR_LOOPBACK)
+        if(*(uint8_t *) &((struct sockaddr_in *) 
+                _addr)->sin_addr.s_addr == 127)
         {
             result = GLOBUS_TRUE;
         }
         break;
       case AF_INET6:
         if(IN6_IS_ADDR_LOOPBACK(&((struct sockaddr_in6 *) _addr)->sin6_addr) ||
-          (IN6_IS_ADDR_V4MAPPED(&((struct sockaddr_in6 *) _addr)->sin6_addr) &&
-     (*(uint32_t *) &((struct sockaddr_in6 *) _addr)->sin6_addr.s6_addr[12]) ==
-                INADDR_LOOPBACK))
+            (IN6_IS_ADDR_V4MAPPED(&((struct sockaddr_in6 *) _addr)->sin6_addr) &&
+            *(uint8_t *) &((struct sockaddr_in6 *) 
+                _addr)->sin6_addr.s6_addr[12] == 127))        
         {
             result = GLOBUS_TRUE;
         }
@@ -3314,7 +3365,7 @@ globus_libc_addr_is_wildcard(
         if(IN6_IS_ADDR_UNSPECIFIED(
           &((struct sockaddr_in6 *) _addr)->sin6_addr) ||
           (IN6_IS_ADDR_V4MAPPED(&((struct sockaddr_in6 *) _addr)->sin6_addr) &&
-     (*(uint32_t *) &((struct sockaddr_in6 *) _addr)->sin6_addr.s6_addr[12]) ==
+     ntohl(*(uint32_t *) &((struct sockaddr_in6 *) _addr)->sin6_addr.s6_addr[12]) ==
                 INADDR_ANY))
         {
             result = GLOBUS_TRUE;

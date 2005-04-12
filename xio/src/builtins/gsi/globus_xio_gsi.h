@@ -12,6 +12,18 @@
 #ifndef GLOBUS_XIO_GSI_DRIVER_INCLUDE
 #define GLOBUS_XIO_GSI_DRIVER_INCLUDE
 
+#ifndef EXTERN_C_BEGIN
+#    ifdef __cplusplus
+#        define EXTERN_C_BEGIN extern "C" {
+#        define EXTERN_C_END }
+#    else
+#        define EXTERN_C_BEGIN
+#        define EXTERN_C_END
+#    endif
+#endif
+
+EXTERN_C_BEGIN
+
 #include "gssapi.h"
 #include "globus_common.h"
 
@@ -132,7 +144,11 @@ typedef enum
      */
     GLOBUS_XIO_GSI_ERROR_EMPTY_HOST_NAME,
     /** Indicates that the peer is not authorized */       
-    GLOBUS_XIO_GSI_AUTHORIZATION_FAILED
+    GLOBUS_XIO_GSI_AUTHORIZATION_FAILED,
+    /** Indicates the the token being read is too big. Usually happens
+     *  when someone tries to establish a non secure session with a
+     *  endpoint that expects security*/
+    GLOBUS_XIO_GSI_ERROR_TOKEN_TOO_BIG
 } globus_xio_gsi_error_t;
 
 /** doxygen varargs filter stuff
@@ -606,5 +622,6 @@ typedef void (* globus_xio_gsi_delegation_accept_callback_t)(
     OM_uint32                           time_rec,
     void *				user_arg);
 
+EXTERN_C_END
 
 #endif

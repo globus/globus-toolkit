@@ -285,6 +285,10 @@ GSS_CALLCONV gss_init_delegation(
             { 
                 cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY;
             }
+            else if(GLOBUS_GSI_CERT_UTILS_IS_RFC_PROXY(cert_type))
+            {
+                cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_RFC_LIMITED_PROXY;
+            }
             else
             {
                 cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_LIMITED_PROXY;
@@ -293,6 +297,14 @@ GSS_CALLCONV gss_init_delegation(
         else if(cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_EEC)
         {
             cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_IMPERSONATION_PROXY;
+        }
+        else if(GLOBUS_GSI_CERT_UTILS_IS_GSI_2_PROXY(cert_type))
+        {
+            cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_PROXY;
+        }
+        else if(GLOBUS_GSI_CERT_UTILS_IS_RFC_PROXY(cert_type))
+        {
+            cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_RFC_IMPERSONATION_PROXY;
         }
         
         local_result =

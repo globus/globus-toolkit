@@ -173,11 +173,16 @@ globus_l_uuid_init(void)
     {
         /* create random mac */
         uint32_t *                      p;
+        uint32_t                        tmp_rand;
         
         p = (uint32_t *) &globus_l_uuid_mac[0];
-        *p = rand();
+        tmp_rand = (uint32_t) rand();
+        memcpy(p, &tmp_rand, sizeof(uint32_t));
+
         p = (uint32_t *) &globus_l_uuid_mac[2];
-        *p = rand();
+        tmp_rand = (uint32_t) rand();
+        memcpy(p, &tmp_rand, sizeof(uint32_t));
+
         /** Set IEEE 802 multicast bit */
         globus_l_uuid_mac[0] |= 0x01;
     }

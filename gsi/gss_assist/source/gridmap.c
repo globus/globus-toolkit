@@ -11,6 +11,7 @@
 
 #include "globus_i_gss_assist.h"
 #include "globus_gsi_system_config.h"
+#include "globus_gsi_cert_utils.h"
 #include "globus_callout.h"
 #include <stdio.h>
 #include <string.h>
@@ -568,7 +569,8 @@ globus_i_gss_assist_gridmap_find_dn(
             continue;		/* Parse error */
         }
 
-	if ((gline_tmp != NULL) && (strcmp(dn, gline_tmp->dn) == 0))
+	if ((gline_tmp != NULL) &&
+            (globus_i_gsi_cert_utils_dn_cmp(dn, gline_tmp->dn) == 0))
 	{
             found = 1;
 	}
@@ -880,8 +882,7 @@ globus_i_gss_assist_gridmap_parse_line(
     line += strspn(line, WHITESPACE_CHARS);
 
     /* Parse list of unix user ID seperated by USERID_SEP_CHARS */
-    while ((*line != NUL) &&
-	   (strchr(WHITESPACE_CHARS, *line) == NULL))
+    while (*line != NUL)
     {
 	int					userid_len;
 
@@ -933,18 +934,8 @@ globus_i_gss_assist_gridmap_parse_line(
 	userids[num_userids] = NULL;
 
 	line += userid_len;
-
-	/* If we're on a seperator character, skip over it */
-	if (strchr(USERID_SEP_CHARS, *line) != NULL)
-        {
-	    line++;
-        }
+        line += strspn(line, USERID_TERMINATOR_CHARS);
     }
-
-    /*
-     * There might be more stuff on the line, but we're ignoring
-     * it for now.
-     */
 
     /* Ok, build our gridmap_line_t structure */
     gline_tmp = malloc(sizeof(*gline_tmp));
@@ -1384,63 +1375,83 @@ globus_gss_assist_map_and_authorize(
 {
     globus_object_t *                   error;
     globus_result_t                     result = GLOBUS_SUCCESS;
-    char *                              filename;
-    globus_callout_handle_t             authz_handle;
+    static globus_bool_t                initialized = GLOBUS_FALSE;
+    static globus_callout_handle_t      authz_handle = NULL;
 
     static char *                       _function_name_ =
         "globus_gss_assist_map_and_authorize";
     
-    result = GLOBUS_GSI_SYSCONFIG_GET_AUTHZ_CONF_FILENAME(&filename);
-    
-    if(result != GLOBUS_SUCCESS)
+    globus_mutex_lock(&globus_i_gsi_gss_assist_mutex);
     {
-        error = globus_error_get(result);
+        if(initialized == GLOBUS_FALSE)
+        {
+            char *                      filename;
+            result = GLOBUS_GSI_SYSCONFIG_GET_AUTHZ_CONF_FILENAME(&filename);
+            
+            if(result != GLOBUS_SUCCESS)
+            {
+                error = globus_error_get(result);
         
-        if(globus_error_match(
-               error,
-               GLOBUS_GSI_SYSCONFIG_MODULE,
-               GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_AUTHZ_FILENAME)
-           == GLOBUS_TRUE)
-        {
-            globus_object_free(error);
-            return globus_l_gss_assist_gridmap_lookup(
-                context,
-                service,
-                desired_identity,
-                identity_buffer,
-                identity_buffer_length);
-        }
-        else
-        {
-            result = globus_error_put(error);
-            return result;
+                if(globus_error_match(
+                       error,
+                       GLOBUS_GSI_SYSCONFIG_MODULE,
+                       GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_AUTHZ_FILENAME)
+                   == GLOBUS_TRUE)
+                {
+                    globus_object_free(error);
+                }
+                else
+                {
+                    result = globus_error_put(error);
+                    globus_mutex_unlock(&globus_i_gsi_gss_assist_mutex);
+                    return result;
+                }
+            }
+            else
+            {
+                result = globus_callout_handle_init(&authz_handle);
+            
+                if(result != GLOBUS_SUCCESS)
+                {
+                    free(filename);
+                    GLOBUS_GSI_GSS_ASSIST_ERROR_CHAIN_RESULT(
+                        result,
+                        GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_CALLOUT_CONFIG);
+                    globus_mutex_unlock(&globus_i_gsi_gss_assist_mutex);
+                    return result;
+                }
+            
+                result = globus_callout_read_config(authz_handle, filename);
+
+                free(filename);
+            
+                if(result != GLOBUS_SUCCESS)
+                {
+                    GLOBUS_GSI_GSS_ASSIST_ERROR_CHAIN_RESULT(
+                        result,
+                        GLOBUS_GSI_GSS_ASSIST_ERROR_INITIALIZING_CALLOUT_HANDLE);
+                    globus_callout_handle_destroy(authz_handle);
+                    globus_mutex_unlock(&globus_i_gsi_gss_assist_mutex);
+                    return result;
+                }
+            }
+            initialized = GLOBUS_TRUE;
         }
     }
-    else
-    {
-        result = globus_callout_handle_init(&authz_handle);
-            
-        if(result != GLOBUS_SUCCESS)
-        {
-            free(filename);
-            GLOBUS_GSI_GSS_ASSIST_ERROR_CHAIN_RESULT(
-                result,
-                GLOBUS_GSI_GSS_ASSIST_ERROR_WITH_CALLOUT_CONFIG);
-            goto error;
-        }
-            
-        result = globus_callout_read_config(authz_handle, filename);
+    globus_mutex_unlock(&globus_i_gsi_gss_assist_mutex);
 
-        free(filename);
-            
-        if(result != GLOBUS_SUCCESS)
-        {
-            GLOBUS_GSI_GSS_ASSIST_ERROR_CHAIN_RESULT(
-                result,
-                GLOBUS_GSI_GSS_ASSIST_ERROR_INITIALIZING_CALLOUT_HANDLE);
-            goto destroy_handle;
-        }
-            
+    
+    if(authz_handle == NULL)
+    {
+        return globus_l_gss_assist_gridmap_lookup(
+            context,
+            service,
+            desired_identity,
+            identity_buffer,
+            identity_buffer_length);
+    }
+    else
+    {            
         result = globus_callout_call_type(authz_handle,
                                           GLOBUS_GENERIC_MAPPING_TYPE,
                                           context,
@@ -1466,7 +1477,7 @@ globus_gss_assist_map_and_authorize(
                     desired_identity,
                     identity_buffer,
                     identity_buffer_length);
-                goto destroy_handle;
+                goto error;
             }
             else
             {
@@ -1474,7 +1485,7 @@ globus_gss_assist_map_and_authorize(
                 GLOBUS_GSI_GSS_ASSIST_ERROR_CHAIN_RESULT(
                     result,
                     GLOBUS_GSI_GSS_ASSIST_CALLOUT_ERROR);
-                goto destroy_handle;
+                goto error;
             }
         }
 
@@ -1496,7 +1507,7 @@ globus_gss_assist_map_and_authorize(
                 GLOBUS_GSI_GSS_ASSIST_ERROR_CHAIN_RESULT(
                     result,
                     GLOBUS_GSI_GSS_ASSIST_CALLOUT_ERROR);
-                goto destroy_handle;
+                goto error;
             }
             else
             {
@@ -1507,8 +1518,7 @@ globus_gss_assist_map_and_authorize(
         }
     }
     
- destroy_handle:
-    globus_callout_handle_destroy(authz_handle);    
+
  error:
     return result;
 }
@@ -1630,6 +1640,20 @@ globus_l_gss_assist_gridmap_lookup(
                 (_GASL("Could not map %s to %s\n"),
                  peer_name_buffer.value,
                  desired_identity));
+            goto error;
+        }
+
+        if(strlen(desired_identity) + 1 > identity_buffer_length)
+        {
+            GLOBUS_GSI_GSS_ASSIST_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_GSS_ASSIST_BUFFER_TOO_SMALL,
+                (_GASL("Desired identity length: %d Buffer length: %d\n"),
+                 strlen(desired_identity), identity_buffer_length));
+        }
+        else
+        {
+            strcpy(identity_buffer, desired_identity);
         }
     }
 

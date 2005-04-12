@@ -41,6 +41,7 @@ globus_xio_driver_load(
     globus_extension_handle_t           handle;
     globus_bool_t                       activated = GLOBUS_FALSE;
     globus_result_t                     result;
+    int                                 rc;
     globus_xio_driver_hook_t *          hook;
     GlobusXIOName(globus_xio_driver_load);
     
@@ -63,10 +64,11 @@ globus_xio_driver_load(
     {
         snprintf(buf, 256, GLOBUS_XIO_EXTENSION_FORMAT, driver_name);
         buf[255] = 0;
-    
-        if(globus_extension_activate(buf) != GLOBUS_SUCCESS)
+        rc = globus_extension_activate(buf);
+        if(rc != GLOBUS_SUCCESS)
         {
-            result = GlobusXIOErrorInvalidDriver(_XIOSL("extension activate failed"));
+            result = GlobusXIOErrorWrapFailed(
+                _XIOSL("driver activation"), (globus_result_t) rc);
             goto error_activate;
         }
         

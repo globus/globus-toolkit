@@ -18,6 +18,7 @@ use vars qw(@tests);
 	     globus-common-handle-table-test.pl
 	     globus-common-libcsetenv-test.pl
 	     globus-common-list-test.pl
+             globus-common-uuid-test.pl
 	     );
 
 runtests(@tests);

@@ -55,7 +55,8 @@ ${short_usage}
 
       -all                        Whole certificate
       -subject           |-s      Subject string of the cert
-      -issuer            |-i      Issuer
+      -issuer            |-i      Issuer of the cert
+      -issuerhash        |-ih     Hash of the issuer name 
       -startdate         |-sd     Validity of cert: start date
       -enddate           |-ed     Validity of cert: end date
 
@@ -99,6 +100,9 @@ while [ "X$1" != "X" ]; do
 	;;
     -subject|-s)
 	toprint="$toprint SUBJECT"
+	;;
+    -issuerhash|-ih)
+	toprint="$toprint -issuer_hash"
 	;;
     -issuer|-i)
 	toprint="$toprint -issuer"

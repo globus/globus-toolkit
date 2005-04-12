@@ -1714,8 +1714,8 @@ globus_i_gsi_cred_get_proxycertinfo(
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
     int                                 pci_NID;
+    int                                 pci_old_NID;
     X509_EXTENSION *                    pci_extension = NULL;
-    ASN1_OCTET_STRING *                 ext_data = NULL;
     int                                 extension_loc;
     static char *                       _function_name_ =
         "globus_i_gsi_cred_get_proxycertinfo";
@@ -1725,7 +1725,8 @@ globus_i_gsi_cred_get_proxycertinfo(
     *proxycertinfo = NULL;
 
     pci_NID = OBJ_sn2nid(PROXYCERTINFO_SN);
-    if(pci_NID == NID_undef)
+    pci_old_NID = OBJ_sn2nid(PROXYCERTINFO_OLD_SN);
+    if(pci_NID == NID_undef || pci_old_NID == NID_undef)
     {
         GLOBUS_GSI_CRED_ERROR_RESULT(
             result,
@@ -1746,7 +1747,10 @@ globus_i_gsi_cred_get_proxycertinfo(
 
     if((extension_loc = X509_get_ext_by_NID(
             cert, 
-            pci_NID, -1)) == -1)
+            pci_NID, -1)) == -1 &&
+       (extension_loc = X509_get_ext_by_NID(
+           cert, 
+           pci_old_NID, -1)) == -1)
     {
         /* no proxycertinfo extension found in cert */
         result = GLOBUS_SUCCESS;
@@ -1764,32 +1768,8 @@ globus_i_gsi_cred_get_proxycertinfo(
         goto exit;
     }
 
-    if((ext_data = X509_EXTENSION_get_data(pci_extension)) == NULL)
+    if((*proxycertinfo = X509V3_EXT_d2i(pci_extension)) == NULL)
     {
-        GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_CRED_ERROR_WITH_CRED,
-            (_GCRSL("Can't get DER encoded extension "
-             "data from X509 extension object")));
-        goto exit;
-    }
-
-    if((ext_data = ASN1_OCTET_STRING_dup(ext_data)) == NULL)
-    {
-        GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_CRED_ERROR_WITH_CRED,
-            (_GCRSL("Failed to copy extension data.")));
-        goto exit;                
-    }
-    
-    if((d2i_PROXYCERTINFO(
-        proxycertinfo,
-        &ext_data->data,
-        ext_data->length)) == NULL)
-    {
-        ASN1_OCTET_STRING_free(ext_data);
-        *proxycertinfo = NULL;
         GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_WITH_CRED,

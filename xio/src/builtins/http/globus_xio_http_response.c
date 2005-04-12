@@ -61,6 +61,7 @@ globus_i_xio_http_response_destroy(
         globus_libc_free(response->reason_phrase);
         response->reason_phrase = NULL;
     }
+
     response->http_version = GLOBUS_XIO_HTTP_VERSION_UNSET;
 
     globus_i_xio_http_header_info_destroy(&response->headers);
@@ -122,10 +123,6 @@ globus_i_xio_http_response_copy(
     {
         goto free_reason_phrase_exit;
     }
-
-    dest->callback = src->callback;
-    dest->callback_arg = src->callback_arg;
-    dest->read_operation = src->read_operation;
 
     return res;
 

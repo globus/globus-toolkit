@@ -53,8 +53,18 @@ if(source_is_remote())
 else
 {
     my $emptydir = POSIX::tmpnam();
+    my @test_dirs;
 
-    mkdir $emptydir, 0755;
+    if(!defined($ENV{'FTP_TEST_BACKEND'}))
+    {
+        mkdir $emptydir, 0755;
+    }
+
+    push(@test_dirs, $emptydir);
+    push(@test_dirs, '/no-such-file');
+    push(@test_dirs, '/etc');
+    push(@test_dirs, '/');
+    push(@test_dirs, '/etc/group');
 
     foreach('/etc/group', '/', '/etc', '/no-such-file', $emptydir)
     {

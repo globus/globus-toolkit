@@ -1,5 +1,27 @@
 #!/bin/sh
 
+printDirections ()
+{
+  printThis=0
+  if [ -f $DIRECTIONS_FILE ] ; then
+    while read line || test ! -z "${line}" ; do
+      if test -n "`echo $line | ${GLOBUS_SH_GREP-grep} \"END $1 TEXT\"`" ; then
+        break
+      fi
+      if [ "$printThis" = "1" ]; then
+        echo "`eval echo \"$line\"`"
+      fi
+      if test -n "`echo $line | ${GLOBUS_SH_GREP-grep} \"BEGIN $1 TEXT\"`" ; then
+        printThis=1
+      fi
+    done < $DIRECTIONS_FILE
+  fi
+
+  return $printThis
+}
+
+
+
 if test -z "${GLOBUS_LOCATION}"; then
     echo ""
     echo "ERROR: Please set GLOBUS_LOCATION to the Globus installation directory before"
@@ -15,8 +37,10 @@ if [ ! -z "${GRID_SECURITY_DIR}" ] ; then
     if [ -r "${GRID_SECURITY_DIR}/globus-user-ssl.conf" ] && 
        [ -r "${GRID_SECURITY_DIR}/globus-host-ssl.conf" ] ; then
         secconfdir="${GRID_SECURITY_DIR}"
-        if test "X`echo ${GRID_SECURITY_DIR}|sed 's/etc$//'|sed 's/\/$//'`" = \
-            "X`echo ${GLOBUS_LOCATION}|sed 's/\/$//'`" ; then
+        if test ! -z "${X509_CERT_DIR}" ; then
+            trusted_certs_dir="${X509_CERT_DIR}"
+        elif test "X`echo ${GRID_SECURITY_DIR}|sed 's/etc$//'|sed 's/\/$//'`" \
+            = "X`echo ${GLOBUS_LOCATION}|sed 's/\/$//'`" ; then
             trusted_certs_dir="${GLOBUS_LOCATION}/share/certificates"
         else
             trusted_certs_dir="${secconfdir}/certificates"
@@ -32,11 +56,19 @@ if [ ! -z "${GRID_SECURITY_DIR}" ] ; then
 elif [ -r "/etc/grid-security/globus-user-ssl.conf" ] && 
      [ -r "/etc/grid-security/globus-host-ssl.conf" ] ; then
     secconfdir="/etc/grid-security"
-    trusted_certs_dir="${secconfdir}/certificates"
+    if test ! -z "${X509_CERT_DIR}" ; then
+        trusted_certs_dir="${X509_CERT_DIR}"
+    else
+        trusted_certs_dir="${secconfdir}/certificates"
+    fi
 elif [ -r "${GLOBUS_LOCATION}/etc/globus-user-ssl.conf" ] &&
      [ -r "${GLOBUS_LOCATION}/etc/globus-host-ssl.conf" ] ; then
     secconfdir="${GLOBUS_LOCATION}/etc"
-    trusted_certs_dir="${GLOBUS_LOCATION}/share/certificates"
+    if test ! -z "${X509_CERT_DIR}" ; then
+        trusted_certs_dir="${X509_CERT_DIR}"
+    else
+        trusted_certs_dir="${GLOBUS_LOCATION}/share/certificates"
+    fi
 else
     echo "Can't find valid CA config files. Please make sure"
     echo "that you have installed and setup a CA setup package."
@@ -147,12 +179,14 @@ set_non_default_ca()
         index=1
         
         for cert in ${trusted_certs_dir}/*.0; do
-            eval "CA${index}=${cert}"
-            TEMP_SUBJECT=`openssl x509 -in ${cert} -noout -subject`
-            eval "CA_SUBJECT${index}=\"`echo ${TEMP_SUBJECT} | ${GLOBUS_SH_SED-sed} -e \"s|subject= ||\"`\""
-            eval "CA_HASH${index}=`openssl x509 -in ${cert} -noout -hash`"
-            eval "echo \"$index)  \${CA_HASH${index}} - \${CA_SUBJECT${index}}\""
-            index=`expr $index + 1`
+            if test -r "${cert}" ; then
+                eval "CA${index}=${cert}"
+                TEMP_SUBJECT=`openssl x509 -in ${cert} -noout -subject`
+                eval "CA_SUBJECT${index}=\"`echo ${TEMP_SUBJECT} | ${GLOBUS_SH_SED-sed} -e \"s|subject= ||\"`\""
+                eval "CA_HASH${index}=`openssl x509 -in ${cert} -noout -hash`"
+                eval "echo \"$index)  \${CA_HASH${index}} - \${CA_SUBJECT${index}}\""
+                index=`expr $index + 1`
+            fi
         done
     
         echo
@@ -169,6 +203,13 @@ set_non_default_ca()
 
     elif [ ! -z "${nondefaultca}" ] ; then
         CA_HASH=${nondefaultca}
+        if test ! -r "${trusted_certs_dir}/${CA_HASH}.0" ; then
+            echo
+            echo "Cannot find a CA with hash ${CA_HASH}."
+            echo "Use grid-cert-request -ca to pick a CA interactively."
+            echo 
+            exit 1
+        fi
         TEMP_SUBJECT=`openssl x509 -in ${trusted_certs_dir}/${CA_HASH}.0 -noout -subject`
         eval "CA_SUBJECT=\"`echo ${TEMP_SUBJECT} | ${GLOBUS_SH_SED-sed} -e \"s|subject= ||\"`\""
     fi
@@ -180,6 +221,7 @@ set_non_default_ca()
     SSL_CONFIG=${trusted_certs_dir}/globus-user-ssl.conf.${CA_HASH}
     SSL_USER_CONFIG=${trusted_certs_dir}/globus-user-ssl.conf.${CA_HASH}
     SSL_HOST_CONFIG=${trusted_certs_dir}/globus-host-ssl.conf.${CA_HASH}
+    DIRECTIONS_FILE=${trusted_certs_dir}/directions.${CA_HASH}
     security_conf=${trusted_certs_dir}/grid-security.conf.${CA_HASH}
 }
 
@@ -380,29 +422,29 @@ create_input_file ()
 
 create_request_header () 
 {
-
+  if printDirections "REQUEST HEADER" ; then
     ${GLOBUS_SH_CAT-cat} <<EOF
 This is a Certificate Request file:
 
 It should be mailed to ${GSI_CA_EMAIL_ADDR}
 
-   
+
 =========================================================================
 Certificate Subject:
 
     ${SUBJECT}
 
-The above string is known as your ${SERVICE} certificate subject, and it 
+The above string is known as your ${SERVICE} certificate subject, and it
 uniquely identifies this ${SERVICE}.
 
-To install this ${SERVICE} certificate, please save this e-mail message 
+To install this ${SERVICE} certificate, please save this e-mail message
 into the following file.
 
- 
+
 ${CERT_FILE}
 
 
-      You need not edit this message in any way. Simply 
+      You need not edit this message in any way. Simply
       save this e-mail message to the file.
 
 
@@ -411,7 +453,7 @@ If you have any questions about the certificate contact
 the ${GSI_CA_NAME} at ${GSI_CA_EMAIL_ADDR}
 
 EOF
-  
+  fi
 }
 
 ###########################################################
@@ -590,19 +632,19 @@ create_certs () {
     #------------------------
     # Create the Key and Request Files
 
+    if test "${SERVICE}" = "user" ; then
+        used_config="${SSL_USER_CONFIG}"
+    else
+        used_config="${SSL_HOST_CONFIG}"
+    fi
+
     if test ! -z "${INTERACTIVE}" ; then
         ${SSL_EXEC} req -new -keyout ${KEY_FILE} -out ${REQ_OUTPUT} \
-              -rand ${RAND_TEMP}:/var/adm/wtmp:/var/log/messages \
-              -config ${SSL_USER_CONFIG} ${NO_DES}
+            -rand ${RAND_TEMP}:/var/adm/wtmp:/var/log/messages \
+            -config ${used_config} ${NO_DES}
         RET=$?
         ${GLOBUS_SH_RM-rm} -f ${RAND_TEMP}
     else
-        if test "${SERVICE}" = "user" ; then
-            used_config="${SSL_USER_CONFIG}"
-        else
-            used_config="${SSL_HOST_CONFIG}"
-        fi
-
         create_input_file "${COMMON_NAME}" "${used_config}" > ${REQ_INPUT}
 
         ${SSL_EXEC} req -new -keyout ${KEY_FILE} \
@@ -656,52 +698,55 @@ create_certs () {
 emit_directions () {
 
   if test "${SERVICE}" = "user" ; then
-    echo 
-    echo "A private key and a certificate request has been generated with the subject:" 
+    if printDirections "USER INSTRUCTIONS" ; then
+      echo 
+      echo "A private key and a certificate request has been generated with the subject:" 
  
-    echo 
-    echo "${SUBJECT}"
-    echo
-    echo "If the CN=${COMMON_NAME} is not appropriate, rerun this"
-    echo "script with the -force -cn \"Common Name\" options."
-    echo
-    echo "Your private key is stored in ${KEY_FILE}"
-    echo "Your request is stored in ${REQUEST_FILE}"
-    echo
-    echo "Please e-mail the request to the ${GSI_CA_NAME} ${GSI_CA_EMAIL_ADDR}"
-    echo "You may use a command similar to the following:" 
-    echo
-    echo "  cat ${REQUEST_FILE} | mail ${GSI_CA_EMAIL_ADDR}"
-    echo
-    echo "Only use the above if this machine can send AND receive e-mail. if not, please"
-    echo "mail using some other method."
-    echo
-    echo "Your certificate will be mailed to you within two working days."
-    echo "If you receive no response, contact ${GSI_CA_NAME} at ${GSI_CA_EMAIL_ADDR}"
+      echo 
+      echo "${SUBJECT}"
+      echo
+      echo "If the CN=${COMMON_NAME} is not appropriate, rerun this"
+      echo "script with the -force -cn \"Common Name\" options."
+      echo
+      echo "Your private key is stored in ${KEY_FILE}"
+      echo "Your request is stored in ${REQUEST_FILE}"
+      echo
+      echo "Please e-mail the request to the ${GSI_CA_NAME} ${GSI_CA_EMAIL_ADDR}"
+      echo "You may use a command similar to the following:" 
+      echo
+      echo "  cat ${REQUEST_FILE} | mail ${GSI_CA_EMAIL_ADDR}"
+      echo
+      echo "Only use the above if this machine can send AND receive e-mail. if not, please"
+      echo "mail using some other method."
+      echo
+      echo "Your certificate will be mailed to you within two working days."
+      echo "If you receive no response, contact ${GSI_CA_NAME} at ${GSI_CA_EMAIL_ADDR}"
+    fi
 
   else 
-    echo 
-    echo "A private ${SERVICE} key and a certificate request has been generated"
-    echo "with the subject:" 
-    echo 
-    echo "${SUBJECT}"
-    echo
-    echo "----------------------------------------------------------"
-    echo
-    echo "The private key is stored in ${KEY_FILE}"
-    echo "The request is stored in ${REQUEST_FILE}"
-    echo
-    echo "Please e-mail the request to the ${GSI_CA_NAME} ${GSI_CA_EMAIL_ADDR}"
-    echo "You may use a command similar to the following:"
-    echo
-    echo " cat ${REQUEST_FILE} | mail ${GSI_CA_EMAIL_ADDR}"
-    echo
-    echo "Only use the above if this machine can send AND receive e-mail. if not, please"
-    echo "mail using some other method."
-    echo
-    echo "Your certificate will be mailed to you within two working days."
-    echo "If you receive no response, contact ${GSI_CA_NAME} at ${GSI_CA_EMAIL_ADDR}"
-  
+    if printDirections "NONUSER INSTRUCTIONS" ; then
+      echo 
+      echo "A private ${SERVICE} key and a certificate request has been generated"
+      echo "with the subject:" 
+      echo 
+      echo "${SUBJECT}"
+      echo
+      echo "----------------------------------------------------------"
+      echo
+      echo "The private key is stored in ${KEY_FILE}"
+      echo "The request is stored in ${REQUEST_FILE}"
+      echo
+      echo "Please e-mail the request to the ${GSI_CA_NAME} ${GSI_CA_EMAIL_ADDR}"
+      echo "You may use a command similar to the following:"
+      echo
+      echo " cat ${REQUEST_FILE} | mail ${GSI_CA_EMAIL_ADDR}"
+      echo
+      echo "Only use the above if this machine can send AND receive e-mail. if not, please"
+      echo "mail using some other method."
+      echo
+      echo "Your certificate will be mailed to you within two working days."
+      echo "If you receive no response, contact ${GSI_CA_NAME} at ${GSI_CA_EMAIL_ADDR}"
+    fi
   fi
 
 }
@@ -718,6 +763,7 @@ SSL_EXEC="${GLOBUS_LOCATION}/bin/openssl"
 SSL_CONFIG="${secconfdir}/globus-user-ssl.conf"
 SSL_USER_CONFIG="${secconfdir}/globus-user-ssl.conf"
 SSL_HOST_CONFIG="${secconfdir}/globus-host-ssl.conf"
+DIRECTIONS_FILE="${secconfdir}/directions"
 security_conf="${secconfdir}/grid-security.conf"
 
 # Info sent with the certificate

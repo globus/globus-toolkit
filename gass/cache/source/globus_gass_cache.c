@@ -160,6 +160,10 @@ typedef struct cache_names_s
     char	*global_uniq_file;
     char	*globaldir_lock_file;	/* Only used in RH62 */
 
+    /* These are the deepest directories we will want to remove */
+    char        *local_mangle_root;
+    char        *global_mangle_root;
+
     /* These *never* get freed up 'cause they're aliases to stuff in
        the cache_handle */
     const char	*global_root;
@@ -171,6 +175,7 @@ typedef struct cache_names_s
        original tag & URL */
     const char	*tag;
     const char	*url;
+
 
     /* This never get freed up 'cause it's an alias to a static string */
     int         cache_type;
@@ -1208,6 +1213,9 @@ globus_l_gass_cache_names_free( cache_names_t	*names )
     FREE_PTR( names->global_uniq_file );
     FREE_PTR( names->globaldir_lock_file );
 
+    /* Mangle roots */
+    FREE_PTR( names->local_mangle_root);
+    FREE_PTR( names->global_mangle_root);
 
     /* Finally, zero out the PATHs */
     memset( names, 0, sizeof( cache_names_t ) );
@@ -1411,6 +1419,9 @@ globus_l_gass_cache_names_init( const globus_gass_cache_t	 cache,
 				cache_names_t			*names )
 {
     int		rc = GLOBUS_SUCCESS;
+    char * mangle_prefix;
+    char * mangle_prefix_end;
+    int mangle_prefix_len;
 
     /* Zero out the PATHs first... */
     memset( names, 0, sizeof( cache_names_t ) );
@@ -1451,7 +1462,6 @@ globus_l_gass_cache_names_init( const globus_gass_cache_t	 cache,
 					&names->mangled_tag, 
 					GLOBUS_NULL );
     }
-
     /* directory separator character (for flat vs. hierarchial) */
     if ( GLOBUS_SUCCESS == rc )
     {
@@ -1476,6 +1486,64 @@ globus_l_gass_cache_names_init( const globus_gass_cache_t	 cache,
     {
 	rc = globus_l_gass_cache_build_uniqname( &names->uniq );
     }
+
+    mangle_prefix = names->mangled_tag;
+    mangle_prefix_end = strstr(names->mangled_tag, names->separator);
+    mangle_prefix_len = mangle_prefix_end - mangle_prefix;
+
+    if ( GLOBUS_SUCCESS == rc )
+    {
+        int skip = 0;
+
+        assert(mangle_prefix_end != NULL);
+
+        names->local_mangle_root = globus_libc_malloc(
+                strlen(names->local_root) +
+                strlen(names->separator) +
+                mangle_prefix_len + 1);
+
+        if (names->local_mangle_root == NULL)
+        {
+            rc = GLOBUS_GASS_CACHE_ERROR_NO_MEMORY;
+            MARK_ERROR( rc );
+        }
+        else
+        {
+            sprintf(names->local_mangle_root, "%s%s%n",
+                    names->local_root, names->separator, &skip);
+            memcpy(&names->local_mangle_root[skip],
+                   mangle_prefix,
+                   mangle_prefix_len);
+            names->local_mangle_root[skip + mangle_prefix_len] = '\0';
+        }
+    }
+    if ( GLOBUS_SUCCESS == rc )
+    {
+        int skip = 0;
+
+        assert(mangle_prefix_end != NULL);
+
+        names->global_mangle_root = globus_libc_malloc(
+                strlen(names->global_root) +
+                strlen(names->separator) +
+                mangle_prefix_len + 1);
+
+        if (names->global_mangle_root == NULL)
+        {
+            rc = GLOBUS_GASS_CACHE_ERROR_NO_MEMORY;
+            MARK_ERROR( rc );
+        }
+        else
+        {
+            sprintf(names->global_mangle_root, "%s%s%n",
+                    names->global_root, names->separator, &skip);
+            memcpy(&names->global_mangle_root[skip],
+                   mangle_prefix,
+                   mangle_prefix_len);
+            names->global_mangle_root[skip + mangle_prefix_len] = '\0';
+        }
+    }
+
 
     /* If we've had failures, free up all allocated memory */
     if ( GLOBUS_SUCCESS != rc )
@@ -2665,13 +2733,14 @@ static
 int
 globus_l_gass_cache_remove_dirtree( const cache_names_t   *names,
                                     const char            *base,
+                                    const char            *mangle_base,
 				    const char            *tree )
 {
     char	*fullpath = GLOBUS_NULL;
     char	*pos;
     struct stat	statbuf;
     int		rc;
-    unsigned	length = strlen( base );
+    unsigned	length = strlen( mangle_base );
 
     if (names->cache_type==DIRECTORY_TYPE_FLAT)
     {
@@ -4118,6 +4187,7 @@ globus_l_gass_cache_unlink_local( cache_names_t	*names )
 	/* Kill the URL under the local tag dir (if empty) */
         rc = globus_l_gass_cache_remove_dirtree( names,
                                                  names->local_root,
+                                                 names->local_mangle_root,
                                                  names->local_dir );
         
 	/* >0 is ok: remove_dirtree() is oportunistic... */
@@ -4144,6 +4214,7 @@ globus_l_gass_cache_unlink_local( cache_names_t	*names )
 	/* Finally, try to kill the rest of the tree... */
 	rc = globus_l_gass_cache_remove_dirtree( names,
                                                  names->local_root,
+                                                 names->local_mangle_root,
 						 names->local_dir );
 
 	/* >0 is ok: remove_dirtree() is oportunistic... */
@@ -4243,6 +4314,7 @@ globus_l_gass_cache_unlink_global( cache_names_t		*names,
     /* And, clean up the dirtree.. */
     rc = globus_l_gass_cache_remove_dirtree( names,
                                              names->global_root,
+                                             names->global_mangle_root,
 					     names->global_dir );
     if ( rc < 0 )
     {

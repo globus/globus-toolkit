@@ -66,17 +66,39 @@ if(source_is_remote())
 }
 else
 {
-    
-foreach('/etc/group', '/bin/sh', '/adsfadsfa')
-{
-    my $size = (stat($_))[7];
-    if(!defined($size))
+    my @file_sizes;
+    if(!defined($ENV{'FTP_TEST_BACKEND'}))
     {
-	$size = -1;
+        push(@file_sizes, '/etc/group');
+        push(@file_sizes, '/bin/sh');
     }
+    else
+    {
+        if(defined($ENV{'FTP_TEST_SOURCE_BIGFILE'}))
+        {
+            push(@file_sizes, $ENV{'FTP_TEST_SOURCE_BIGFILE'});
+        }
+        if(defined($ENV{'FTP_TEST_SOURCE_FILE'}))
+        {
+            push(@file_sizes, $ENV{'FTP_TEST_SOURCE_FILE'});
+        }
+        if(defined($ENV{'FTP_TEST_LOCAL_BIGFILE'}))
+        {
+            push(@file_sizes, $ENV{'FTP_TEST_LOCAL_BIGFILE'});
+        }
+    }
+    push(@file_sizes, '/adsfadsfa');
+    
+    foreach(@file_sizes)
+    {
+        my $size = (stat($_))[7];
+        if(!defined($size))
+        {
+    	    $size = -1;
+        }
 
-    push(@tests, "check_size('$proto$source_host$_', $size);");
-}
+        push(@tests, "check_size('$proto$source_host$_', $size);");
+    }
 
 if(defined($ENV{FTP_TEST_RANDOMIZE}))
 {

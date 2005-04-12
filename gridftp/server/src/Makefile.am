@@ -31,7 +31,7 @@ Sources = \
 	globus_i_gfs_acl.h 		\
 	globus_i_gfs_data.c 		\
 	globus_i_gfs_data.h 		\
-    globus_i_gfs_cas.c          \
+        globus_i_gfs_cas.c          \
 	globus_i_gfs_ipc.c 		\
 	globus_i_gfs_ipc.h 		\
 	globus_i_gfs_control.c 		\
@@ -102,9 +102,9 @@ globus_gridftp_server_LDFLAGS = $(GPT_LDFLAGS)
 # GPT_PGM_LINKS is a macro that contains the linker directives GPT generated 
 # from the dependent packages
 globus_gridftp_server_LDADD = \
-    ./libglobus_gridftp_server_$(GLOBUS_FLAVOR_NAME).la \
-	$(GPT_PGM_LINKS) \
-	$(MODULE_LIBS)
+        ./libglobus_gridftp_server_$(GLOBUS_FLAVOR_NAME).la \
+        $(MODULE_LIBS) \
+        $(GPT_PGM_LINKS)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

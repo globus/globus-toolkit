@@ -1873,7 +1873,6 @@ globus_l_xio_system_handle_write(
             if(err)
             {
                 result = GlobusXIOErrorSystemError("connect", err);
-                GlobusIXIOSystemCloseFd(fd);
             }
         }
         break;
@@ -2358,7 +2357,6 @@ error_register:
 error_op_info:
 error_connect:
 error_nonblocking:
-    GlobusIXIOSystemCloseFd(fd);
     GlobusXIOSystemDebugExitWithErrorFD(fd);
     return result;
 }

@@ -1581,12 +1581,9 @@ globus_gsi_cred_verify_cert_chain(
 {
     X509 *                              cert = NULL;
     char *                              cert_dir = NULL;
-    STACK_OF(X509) *                    chain = NULL;
     X509_STORE *                        cert_store = NULL;
     X509 *                              tmp_cert = NULL;
     X509_STORE_CTX *                    store_context = NULL;
-    X509_LOOKUP *                       lookup = NULL;
-    int                                 chain_index, store_index;
     int                                 callback_data_index;
     globus_result_t                     result = GLOBUS_SUCCESS;
     static char *                       _function_name_ =
@@ -1598,67 +1595,23 @@ globus_gsi_cred_verify_cert_chain(
     X509_STORE_set_verify_cb_func(cert_store, 
                                   globus_gsi_callback_create_proxy_callback);
 
+    result = globus_gsi_callback_get_cert_dir(callback_data, &cert_dir);
+    if(result != GLOBUS_SUCCESS)
+    {
+        GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
+            result,
+                GLOBUS_GSI_CRED_ERROR_WITH_CALLBACK_DATA);
+        goto exit;
+    }
 
     tmp_cert = cred_handle->cert;
     cert = tmp_cert;
-    chain = cred_handle->cert_chain;
-
-    if(chain != NULL)
+    
+    if (X509_STORE_load_locations(cert_store, NULL, cert_dir))
     {
-        for(chain_index = 0; chain_index < sk_X509_num(chain); ++chain_index)
-        {
-            tmp_cert = sk_X509_value(chain, chain_index);
-            if(!tmp_cert)
-            {
-                cert = tmp_cert;
-            }
-            else
-            {
-                store_index = X509_STORE_add_cert(cert_store, tmp_cert);
-                if(!store_index)
-                {
-                    /* if the cert is already in the store
-                     * don't want to throw an error, just
-                     * continue adding the ones that aren't
-                     * there
-                     */
-                    if ((ERR_GET_REASON(ERR_peek_error()) ==
-                         X509_R_CERT_ALREADY_IN_HASH_TABLE))
-                    {
-                        ERR_clear_error();
-                        break;
-                    }
-                    else
-                    {
-                        GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
-                            result,
-                            GLOBUS_GSI_CRED_ERROR_VERIFYING_CRED,
-                            (_GCRSL("Error adding cert to X509 store")));
-                        goto exit;
-                    }
-                }
-            }
-        }
-    }
-
-    if ((lookup = X509_STORE_add_lookup(cert_store,
-                                        X509_LOOKUP_hash_dir())))
-    {
-        result = globus_gsi_callback_get_cert_dir(callback_data, &cert_dir);
-        if(result != GLOBUS_SUCCESS)
-        {
-            GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
-                result,
-                GLOBUS_GSI_CRED_ERROR_WITH_CALLBACK_DATA);
-            goto exit;
-        }
-
-        X509_LOOKUP_add_dir(lookup, 
-                            cert_dir, 
-                            X509_FILETYPE_PEM);
-        
         store_context = X509_STORE_CTX_new();
-        X509_STORE_CTX_init(store_context, cert_store, cert, NULL);
+        X509_STORE_CTX_init(store_context, cert_store, cert,
+                            cred_handle->cert_chain);
 
         /* override the check_issued with our version */
         store_context->check_issued = globus_gsi_callback_check_issued;
@@ -1701,8 +1654,8 @@ globus_gsi_cred_verify_cert_chain(
 
             goto exit;
         }
-    } 
-
+    }
+    
  exit:
 
     if(cert_store)

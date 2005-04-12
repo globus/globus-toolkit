@@ -50,9 +50,14 @@ sub submit
 	    return Globus::GRAM::Error::JOBTYPE_NOT_SUPPORTED;
 	}
     }
+
     if( $description->directory eq '')
     {
 	return Globus::GRAM::Error::RSL_DIRECTORY;
+    }
+    if ($description->directory =~ m|^[^/]|) {
+        $description->add('directory',
+                (getpwuid($<))[7] . '/' . $description->directory);
     }
     if((! -d $description->directory) || (! -r $description->directory))
     {
@@ -65,6 +70,10 @@ sub submit
     $self->nfssync( $description->stdin() )
 	unless $description->stdin() eq '';
 
+    if ($description->executable =~ m|^[^/]|) {
+        $description->add('executable',
+                $description->directory . '/' . $description->executable);
+    }
     if( $description->executable eq '')
     {
 	return Globus::GRAM::Error::RSL_EXECUTABLE();
@@ -253,11 +262,24 @@ EOF
     }
     elsif($description->jobtype() eq 'multiple')
     {
+        print JOB "pids=''\n";
+        print JOB "exit_code=0\n";
 	for(my $i = 0; $i < $description->count(); $i++)
 	{
 	    print JOB $description->executable(), " $args &\n";
+	    print JOB "pids=\"\$pids \$!\"\n";
 	}
-	print JOB "wait\n";
+
+        print JOB <<EOF;
+        for x in \$pids; do
+            wait \$x
+            tmp_exit_code=\$?
+            if [ \$exit_code = 0 -a \$tmp_exit_code != 0 ]; then
+                exit_code=\$tmp_exit_code
+            fi
+        done
+        exit \$exit_code
+EOF
     }
     else
     {

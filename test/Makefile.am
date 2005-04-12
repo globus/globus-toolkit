@@ -13,10 +13,12 @@ SUBDIRS= \
 
 # Scripts contains all of the scripts in this directory
 Scripts= \
-	test-toolkit
+	test-toolkit testcred.pem dc31a685.0 \
+	dc31a685.signing_policy \
+        testcred-env.sh testcred-setup.sh
 
 globustestingperl_DATA = \
-	Utilities.pm
+	Utilities.pm 
 
 test_SCRIPTS = $(Scripts)
 

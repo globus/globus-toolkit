@@ -97,6 +97,7 @@ typedef enum
      * @param offset
      *      Specifies the offset to use in the next IO operation.
      */
+    /* globus_off_t			offset */
     GLOBUS_XIO_ORDERING_SET_OFFSET,
 
     /** GlobusVarArgEnum(attr)
@@ -107,6 +108,7 @@ typedef enum
      * @param max_read_count
      *      Specifies the maximum number of parallel reads (default is 1).
      */
+    /* int				max_read_count */
     GLOBUS_XIO_ORDERING_SET_MAX_READ_COUNT,
 
     /** GlobusVarArgEnum(attr)
@@ -116,6 +118,7 @@ typedef enum
      * @param max_read_count_out
      *      The maximum number of parallel reads allowed will be stored here.
      */
+    /* int *				max_read_count_out */
     GLOBUS_XIO_ORDERING_GET_MAX_READ_COUNT,
 
     /** GlobusVarArgEnum(attr)
@@ -131,6 +134,7 @@ typedef enum
      *	    GLOBUS_TRUE to enable buffering, GLOBUS_FALSE (default) to disable 
      * buffering.
      */
+    /* globus_bool_t			buffering */
     GLOBUS_XIO_ORDERING_SET_BUFFERING,
 
     /** GlobusVarArgEnum(attr)
@@ -140,6 +144,7 @@ typedef enum
      * @param buffering_out
      *      Buffering flag will be stored in here.
      */
+    /* globus_bool_t *			buffering_out */
     GLOBUS_XIO_ORDERING_GET_BUFFERING,
 
     /** GlobusVarArgEnum(attr)
@@ -150,6 +155,7 @@ typedef enum
      * @param buf_size
      *      Specifies the buffer size for internal reads (default is 100 KB).
      */
+    /* int				buf_size */
     GLOBUS_XIO_ORDERING_SET_BUF_SIZE,
 
     /** GlobusVarArgEnum(attr)
@@ -159,6 +165,7 @@ typedef enum
      * @param buf_size_out
      *      The buffer size will be stored in here.
      */ 
+    /* int *				buf_size_out */
     GLOBUS_XIO_ORDERING_GET_BUF_SIZE,
 
     /** GlobusVarArgEnum(attr)
@@ -169,6 +176,7 @@ typedef enum
      * @param max_buf_count
      *      Specifies the max buffer count for internal reads (default is 100).
      */
+    /* int				max_buf_count */
     GLOBUS_XIO_ORDERING_SET_MAX_BUF_COUNT,
 
     /** GlobusVarArgEnum(attr)
@@ -178,6 +186,7 @@ typedef enum
      * @param max_buf_count_out
      *      The maximun buffer count will be stored in here.
      */
+    /* int *				max_buf_count_out */
     GLOBUS_XIO_ORDERING_GET_MAX_BUF_COUNT
 
 } globus_xio_ordering_cmd_t;	

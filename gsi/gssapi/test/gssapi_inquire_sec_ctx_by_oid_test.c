@@ -1,4 +1,3 @@
-
 #include "gssapi_test_utils.h"
 #include <sys/types.h>
 #ifndef WIN32

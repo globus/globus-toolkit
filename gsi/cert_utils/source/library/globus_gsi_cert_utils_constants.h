@@ -13,6 +13,18 @@
 #ifndef GLOBUS_GSI_CERT_UTILS_CONSTANTS_H
 #define GLOBUS_GSI_CERT_UTILS_CONSTANTS_H
 
+#ifndef EXTERN_C_BEGIN
+#    ifdef __cplusplus
+#        define EXTERN_C_BEGIN extern "C" {
+#        define EXTERN_C_END }
+#    else
+#        define EXTERN_C_BEGIN
+#        define EXTERN_C_END
+#    endif
+#endif
+
+EXTERN_C_BEGIN
+
 /**
  * @defgroup globus_gsi_cert_utils_constants Cert Utils Constants
  */
@@ -56,18 +68,36 @@ typedef enum globus_gsi_cert_utils_cert_type_e
     GLOBUS_GSI_CERT_UTILS_TYPE_EEC,
     /** A CA certificate */
     GLOBUS_GSI_CERT_UTILS_TYPE_CA,
-    /** A X.509 Proxy Certificate Profile RFC compliant impersonation proxy */
+    /** A X.509 Proxy Certificate Profile (pre-RFC) compliant
+     *  impersonation proxy
+     */
     GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_IMPERSONATION_PROXY,
-    /** A X.509 Proxy Certificate Profile RFC compliant independent proxy */
+    /** A X.509 Proxy Certificate Profile (pre-RFC) compliant
+     *  independent proxy
+     */
     GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_INDEPENDENT_PROXY,
-    /** A X.509 Proxy Certificate Profile RFC compliant limited proxy */
+    /** A X.509 Proxy Certificate Profile (pre-RFC) compliant
+     *  limited proxy
+     */
     GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_LIMITED_PROXY,
-    /** A X.509 Proxy Certificate Profile RFC compliant restricted proxy */
+    /** A X.509 Proxy Certificate Profile (pre-RFC) compliant
+     *  restricted proxy
+     */
     GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_RESTRICTED_PROXY,
     /** A legacy Globus impersonation proxy */
     GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_PROXY,
     /** A legacy Globus limited impersonation proxy */
-    GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY
+    GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY,
+    /** A X.509 Proxy Certificate Profile RFC compliant impersonation proxy */
+    GLOBUS_GSI_CERT_UTILS_TYPE_RFC_IMPERSONATION_PROXY,
+    /** A X.509 Proxy Certificate Profile RFC compliant independent proxy */
+    GLOBUS_GSI_CERT_UTILS_TYPE_RFC_INDEPENDENT_PROXY,
+    /** A X.509 Proxy Certificate Profile RFC compliant limited proxy */
+    GLOBUS_GSI_CERT_UTILS_TYPE_RFC_LIMITED_PROXY,
+    /** A X.509 Proxy Certificate Profile RFC compliant restricted proxy */
+    GLOBUS_GSI_CERT_UTILS_TYPE_RFC_RESTRICTED_PROXY
 } globus_gsi_cert_utils_cert_type_t;
+
+EXTERN_C_END
 
 #endif

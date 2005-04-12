@@ -1,6 +1,8 @@
 #include "globus_i_xio_gsi.h"
 #include "version.h"
 
+/* 32 MB */
+#define MAX_TOKEN_LENGTH 2<<24
 
 /* default attributes */
 
@@ -687,11 +689,6 @@ globus_l_xio_gsi_handle_destroy(
         globus_object_free(handle->result_obj);
     }
 
-    if(handle->host != NULL)
-    {
-        free(handle->host);
-    }
-    
     free(handle);
 
     GlobusXIOGSIDebugInternalExit();
@@ -1039,6 +1036,12 @@ globus_l_xio_gsi_read_token_cb(
         {
             header = 0;
         }
+
+        if(wait_for > MAX_TOKEN_LENGTH)
+        {
+            result = GlobusXioGSIErrorTokenTooBig();
+            goto error_pass_close;
+        }        
 
         prev_offset = offset;
         offset = offset + wait_for + header;
@@ -1459,6 +1462,12 @@ globus_l_xio_gsi_open_cb(
         goto error_destroy_handle;
     }
     
+    result = globus_l_xio_gsi_setup_target_name(handle);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_pass_close;
+    }
+    
     if(handle->attr->init == GLOBUS_TRUE)
     {
         OM_uint32                       major_status;
@@ -1708,19 +1717,6 @@ globus_l_xio_gsi_open(
         handle->ret_flags = handle->attr->req_flags;
     }
     
-    if(contact_info->host != NULL)
-    {
-        handle->host = strdup(contact_info->host);
-    }
-
-    result = globus_l_xio_gsi_setup_target_name(handle);
-
-    if(result != GLOBUS_SUCCESS)
-    {
-        globus_l_xio_gsi_handle_destroy(handle);
-        goto error;
-    }
-    
     handle->xio_driver_handle = globus_xio_operation_get_driver_handle(op);
     result = globus_xio_driver_pass_open(
         op, contact_info, globus_l_xio_gsi_open_cb, handle);
@@ -1907,6 +1903,12 @@ globus_l_xio_gsi_read_cb(
         header = 4;
     }
 
+    if(frame_length > MAX_TOKEN_LENGTH)
+    {
+        result = GlobusXioGSIErrorTokenTooBig();
+        goto error;
+    }
+    
     /* while we have full frames convert wrapped data to unwrapped data
        and push it to the user
     */
@@ -1956,6 +1958,12 @@ globus_l_xio_gsi_read_cb(
             else
             {
                 header = 4;
+            }
+
+            if(frame_length > MAX_TOKEN_LENGTH)
+            {
+                result = GlobusXioGSIErrorTokenTooBig();
+                goto error;
             }
         }
         else
@@ -2183,6 +2191,12 @@ globus_l_xio_gsi_read(
             {
                 header = 4;
             }
+
+            if(frame_length > MAX_TOKEN_LENGTH)
+            {
+                result = GlobusXioGSIErrorTokenTooBig();
+                goto error;
+            }
             
             while(frame_length + offset + header <= handle->bytes_read &&
                   (wait_for > 0 || bytes_read > 0) &&
@@ -2229,6 +2243,12 @@ globus_l_xio_gsi_read(
                     else
                     { 
                         header = 4;
+                    }
+                    
+                    if(frame_length > MAX_TOKEN_LENGTH)
+                    {
+                        result = GlobusXioGSIErrorTokenTooBig();
+                        goto error;
                     }
                 }
                 else
@@ -3548,15 +3568,33 @@ globus_l_xio_gsi_setup_target_name(
     globus_result_t                     result = GLOBUS_SUCCESS;
     OM_uint32                           major_status;
     OM_uint32                           minor_status;
+    char *                              contact_string;
+    globus_xio_contact_t                contact_info;
     GlobusXIOName(globus_l_xio_gsi_setup_target_name);
     GlobusXIOGSIDebugInternalEnter();
 
     switch(handle->attr->authz_mode)
     {
       case GLOBUS_XIO_GSI_HOST_AUTHORIZATION:
-        if(handle->host == NULL)
+        result = globus_xio_driver_handle_cntl(
+            handle->xio_driver_handle,
+            GLOBUS_XIO_QUERY,
+            GLOBUS_XIO_GET_REMOTE_NUMERIC_CONTACT,
+            &contact_string);
+        if(result != GLOBUS_SUCCESS)
         {
-            result = GlobusXioGSIErrorEmptyHostName();
+            result = GlobusXIOErrorWrapFailed(
+                "globus_xio_driver_handle_cntl failed to query remote contact",
+                result);
+            goto error;
+        }
+        
+        result = globus_xio_contact_parse(&contact_info, contact_string);
+        globus_free(contact_string);
+        if(result != GLOBUS_SUCCESS)
+        {
+            result = GlobusXIOErrorWrapFailed(
+                "globus_xio_contact_parse", result);
             goto error;
         }
         
@@ -3568,14 +3606,15 @@ globus_l_xio_gsi_setup_target_name(
         }
         
         result = globus_gss_assist_authorization_host_name(
-            handle->host,
+            contact_info.host,
             &handle->attr->target_name);
+        globus_xio_contact_destroy(&contact_info);
         if(result != GLOBUS_SUCCESS)
         {
             result = GlobusXIOErrorWrapFailed(
                 "globus_gss_assist_authorization_host_name", result); 
             goto error;
-        }            
+        }
         break;
       case GLOBUS_XIO_GSI_IDENTITY_AUTHORIZATION:
         if(handle->attr->target_name == GSS_C_NO_NAME)

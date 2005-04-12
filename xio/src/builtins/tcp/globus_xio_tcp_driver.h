@@ -635,6 +635,7 @@ typedef enum
      *      when done with it.  It will be in the format: \<hostname\>:\<port\>
      * 
      * @see globus_xio_server_get_contact_string()
+     * @see GLOBUS_XIO_GET_LOCAL_CONTACT
      */
     /* char **                          contact_string_out */
     GLOBUS_XIO_TCP_GET_LOCAL_CONTACT,
@@ -647,6 +648,8 @@ typedef enum
      *      A pointer to a contact string for the local end of a connected
      *      socket or listener will be stored here.  The user should free() it
      *      when done with it.   It will be in the format: \<ip\>:\<port\>
+     * 
+     * @see GLOBUS_XIO_GET_LOCAL_NUMERIC_CONTACT
      */
     /* char **                          contact_string_out */
     GLOBUS_XIO_TCP_GET_LOCAL_NUMERIC_CONTACT,
@@ -659,6 +662,8 @@ typedef enum
      *      A pointer to a contact string for the remote end of a connected
      *      socket will be stored here.  The user should free() it
      *      when done with it. It will be in the format: \<hostname\>:\<port\>
+     * 
+     * @see GLOBUS_XIO_GET_REMOTE_CONTACT
      */
     /* char **                          contact_string_out */
     GLOBUS_XIO_TCP_GET_REMOTE_CONTACT,
@@ -671,6 +676,8 @@ typedef enum
      *      A pointer to a contact string for the remote end of a connected
      *      socket will be stored here.  The user should free() it
      *      when done with it.   It will be in the format: \<ip\>:\<port\>
+     * 
+     * @see GLOBUS_XIO_GET_REMOTE_NUMERIC_CONTACT
      */
     /* char **                          contact_string_out */
     GLOBUS_XIO_TCP_GET_REMOTE_NUMERIC_CONTACT,

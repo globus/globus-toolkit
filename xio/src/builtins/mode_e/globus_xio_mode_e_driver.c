@@ -1050,6 +1050,7 @@ globus_l_xio_mode_e_server_destroy(
     --handle->ref_count;
     if (handle->ref_count == 0)
     {
+        globus_mutex_unlock(&handle->mutex);    
         globus_l_xio_mode_e_handle_destroy(handle);
     }
     else
@@ -1102,6 +1103,7 @@ globus_l_xio_mode_e_link_destroy(
     --handle->ref_count;
     if (handle->ref_count == 0)
     {
+        globus_mutex_unlock(&handle->mutex);    
         globus_l_xio_mode_e_handle_destroy(handle);
     }
     else
@@ -1407,6 +1409,12 @@ globus_l_xio_mode_e_read_header_cb(
     }
     else
     {
+        while (!globus_fifo_empty(&handle->io_q))
+        {
+            requestor = (globus_i_xio_mode_e_requestor_t*)
+                            globus_fifo_dequeue(&handle->io_q);
+            globus_fifo_enqueue(&requestor_q, requestor);
+        }
         goto error;
     }
     globus_mutex_unlock(&handle->mutex);
@@ -1457,6 +1465,15 @@ globus_l_xio_mode_e_read_header_cb(
 error:
     globus_l_xio_mode_e_save_error(handle, result);
     globus_mutex_unlock(&handle->mutex);
+    while (!globus_fifo_empty(&requestor_q))
+    {
+        requestor = (globus_i_xio_mode_e_requestor_t*)
+                                globus_fifo_dequeue(&requestor_q);
+        globus_xio_operation_disable_cancel(requestor->op);
+        op = requestor->op;
+        globus_memory_push_node(&handle->requestor_memory, (void*)requestor);
+        globus_xio_driver_finished_read(op, result, 0);
+    }
     GlobusXIOModeEDebugExitWithError();
     return;
 }
@@ -1512,6 +1529,7 @@ error:
     globus_xio_attr_destroy(handle->attr->xio_attr);
     if (--handle->ref_count == 0)
     {
+        globus_mutex_unlock(&handle->mutex);    
         globus_l_xio_mode_e_handle_destroy(handle);
     }
     else
@@ -1688,6 +1706,7 @@ globus_l_xio_mode_e_server_open_cb(
 error:
     if (--handle->ref_count == 0)
     {
+        globus_mutex_unlock(&handle->mutex);    
         globus_l_xio_mode_e_handle_destroy(handle);
     }
     else
@@ -1870,13 +1889,13 @@ error_register_open:
 error_operation_canceled:
     globus_mutex_unlock(&handle->mutex);
     globus_xio_operation_disable_cancel(op);
-error_cancel_enable:
-    globus_memory_push_node(&handle->requestor_memory, (void*)requestor);
-error_hashtable_init:
     if (destroy)
     {
         globus_l_xio_mode_e_handle_destroy(handle);
     }
+error_cancel_enable:
+    globus_memory_push_node(&handle->requestor_memory, (void*)requestor);
+error_hashtable_init:
     GlobusXIOModeEDebugExitWithError();
     return result;
 }
@@ -2048,6 +2067,12 @@ globus_l_xio_mode_e_read_cb(
     }
     else
     {
+        while (!globus_fifo_empty(&handle->io_q))
+        {
+            requestor = (globus_i_xio_mode_e_requestor_t*)
+                            globus_fifo_dequeue(&handle->io_q);
+            globus_fifo_enqueue(&requestor_q, requestor);
+        }
         goto error;
     }
     globus_mutex_unlock(&handle->mutex); 
@@ -2080,6 +2105,15 @@ globus_l_xio_mode_e_read_cb(
 error:
     globus_l_xio_mode_e_save_error(handle, result);
     globus_mutex_unlock(&handle->mutex); 
+    while (!globus_fifo_empty(&requestor_q))
+    {
+        requestor = (globus_i_xio_mode_e_requestor_t*)
+                                globus_fifo_dequeue(&requestor_q);
+        globus_xio_operation_disable_cancel(requestor->op);
+        op = requestor->op;
+        globus_memory_push_node(&handle->requestor_memory, (void*)requestor);
+        globus_xio_driver_finished_read(op, result, 0);
+    }
     GlobusXIOModeEDebugExitWithError();
     return;
 }
@@ -3382,8 +3416,8 @@ globus_l_xio_mode_e_attr_cntl(
         }
         case GLOBUS_XIO_MODE_E_GET_STACK:
         {
-            globus_xio_stack_t * stack = va_arg(ap, globus_xio_stack_t *);
-            *stack = attr->stack;
+            globus_xio_stack_t * stack_out = va_arg(ap, globus_xio_stack_t *);
+            *stack_out = attr->stack;
             break;
         }
         case GLOBUS_XIO_MODE_E_SET_NUM_STREAMS:
@@ -3391,8 +3425,8 @@ globus_l_xio_mode_e_attr_cntl(
             break;
         case GLOBUS_XIO_MODE_E_GET_NUM_STREAMS:
         {
-            int * max_connection_count = va_arg(ap, int*);
-            *max_connection_count = attr->max_connection_count;
+            int * max_connection_count_out = va_arg(ap, int*);
+            *max_connection_count_out = attr->max_connection_count;
             break;
         }
         case GLOBUS_XIO_MODE_E_APPLY_ATTR_CNTLS:
@@ -3407,8 +3441,8 @@ globus_l_xio_mode_e_attr_cntl(
             break;
         case GLOBUS_XIO_MODE_E_GET_OFFSET_READS:
         {
-            globus_bool_t * offset_reads = va_arg(ap, globus_bool_t*);
-            *offset_reads = attr->offset_reads;
+            globus_bool_t * offset_reads_out = va_arg(ap, globus_bool_t*);
+            *offset_reads_out = attr->offset_reads;
             break;
         }
         case GLOBUS_XIO_MODE_E_SET_MANUAL_EODC:
@@ -3416,8 +3450,8 @@ globus_l_xio_mode_e_attr_cntl(
             break;      
         case GLOBUS_XIO_MODE_E_GET_MANUAL_EODC:
         {
-            globus_bool_t * manual_eodc = va_arg(ap, globus_bool_t*);
-            *manual_eodc = attr->manual_eodc;
+            globus_bool_t * manual_eodc_out = va_arg(ap, globus_bool_t*);
+            *manual_eodc_out = attr->manual_eodc;
             break;
         }
         case GLOBUS_XIO_MODE_E_SEND_EOD:
@@ -3428,9 +3462,8 @@ globus_l_xio_mode_e_attr_cntl(
             break;
         case GLOBUS_XIO_MODE_E_DD_GET_OFFSET:
         {
-            globus_off_t * offset;
-            offset = va_arg(ap, globus_off_t *);
-            *offset = attr->offset;
+            globus_off_t * offset_out = va_arg(ap, globus_off_t *);
+            *offset_out = attr->offset;
         }
         default:
            result = GlobusXIOErrorInvalidCommand(cmd);

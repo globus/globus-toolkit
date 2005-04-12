@@ -21,14 +21,14 @@
  *
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include "globus_common.h"
 #include "http_performance_common.h"
 #include "globus_xio_tcp_driver.h"
 #include "globus_utp.h"
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #define HTTP_1_0 "HTTP/1.0"
 #define HTTP_1_1 "HTTP/1.1"
@@ -44,16 +44,6 @@ globus_l_xio_test_server_request_callback(
     const char *                        method,
     const char *                        uri,
     globus_xio_http_version_t           http_version,
-    globus_hashtable_t                  headers);
-
-static 
-void
-globus_l_xio_test_client_response_callback(
-    void *                              user_arg,
-    globus_result_t                     result,
-    int                                 status_code,
-    const char *                        reason_phrase,
-    globus_xio_http_version_t           version,
     globus_hashtable_t                  headers);
 
 
@@ -99,7 +89,10 @@ client_test(
     globus_xio_http_header_t            headers[2];
     globus_xio_handle_t                 handle;
     int                                 i;
-
+    globus_xio_data_descriptor_t        descriptor;
+    char                                buffer[1];
+    int                                 status_code;
+    char *                              reason_phrase;
     globus_utp_start_timer(timer);
     if (info->transfer_encoding != NULL)
     {
@@ -140,9 +133,7 @@ client_test(
                 "POST",
                 info->version,
                 headers,
-                header_cnt,
-                globus_l_xio_test_client_response_callback,
-                info);
+                header_cnt);
 
         if (result != GLOBUS_SUCCESS)
         {
@@ -164,25 +155,46 @@ client_test(
             rc = 51;
             break;
         }
-
-        globus_mutex_lock(&info->mutex);
-        while (info->done == 0)
+        /* READ RESPONSE */
+        result = globus_xio_data_descriptor_init(&descriptor, handle);
+        if (result != GLOBUS_SUCCESS)
         {
-            globus_cond_wait(&info->cond, &info->mutex);
+            rc = 51;
+            goto close_exit;
+        }
+        result = globus_xio_read(
+                handle,
+                buffer,
+                0,
+                0,
+                NULL,
+                descriptor);
+        if (result != GLOBUS_SUCCESS)
+        {
+            rc = 51;
+            goto close_exit;
+        }
+        result = globus_xio_data_descriptor_cntl(
+                descriptor,
+                info->http_driver,
+                GLOBUS_XIO_HTTP_GET_RESPONSE,
+                &status_code,
+                &reason_phrase,
+                NULL,
+                NULL);
+        if (result != GLOBUS_SUCCESS || status_code < 200 || status_code > 299)
+        {
+            fprintf(stderr, "Get failed with \"%03d %s\"\n",
+                    status_code,
+                    reason_phrase);
+            rc = 51;
+            goto close_exit;
         }
 
-        if (info->done == 1)
-        {
-            result = globus_l_xio_test_read_buffer(
-                    handle,
-                    info->buffer,
-                    info->size);
-        }
-        else
-        {
-            rc = 53;
-        }
-
+        result = globus_l_xio_test_read_buffer(
+                handle,
+                info->buffer,
+                info->size);
         if (result != GLOBUS_SUCCESS)
         {
             rc = 52;
@@ -193,20 +205,12 @@ client_test(
         {
             break;
         }
-        globus_mutex_unlock(&info->mutex);
     }
 
+close_exit:
     globus_xio_close(handle, NULL);
     globus_utp_stop_timer(timer);
 error_exit:
-/*    if (rc == 0)
-    {
-        printf("Success\n");
-    }
-    else
-    {
-        printf("Error\n");
-    } */
 
     return rc;
 }
@@ -380,36 +384,6 @@ error_exit:
 
 }
 /* globus_l_xio_test_server_request_callback() */
-
-static 
-void
-globus_l_xio_test_client_response_callback(
-    void *                              user_arg,
-    globus_result_t                     result,
-    int                                 status_code,
-    const char *                        reason_phrase,
-    globus_xio_http_version_t           version,
-    globus_hashtable_t                  headers)
-{
-    http_test_info_t *			info;
-    info = (http_test_info_t *) user_arg;
-    globus_mutex_lock(&info->mutex);
-    if (status_code == 200)
-    {
-        info->done = 1;
-    }
-    else
-    {
-        fprintf(stderr, "Invalid response: %d %s\n",
-                status_code, reason_phrase);
-
-        info->done = -1;
-    }
-    globus_cond_signal(&info->cond);
-    globus_mutex_unlock(&info->mutex);
-}
-/* globus_l_xio_test_client_response_callback() */
-
 
 static
 globus_result_t
@@ -614,21 +588,6 @@ main(
     {
         goto error_exit;
     }
-    rc = globus_mutex_init(&info->mutex, NULL);
-
-    if (rc != GLOBUS_SUCCESS)
-    {
-        fprintf(stderr, "Error initiliazing mutex\n");
-        goto cleanup_exit;
-    }
-
-    rc = globus_cond_init(&info->cond, NULL);
-
-    if (rc != GLOBUS_SUCCESS)
-    {
-        fprintf(stderr, "Error initiliazing cond\n");
-        goto destroy_mutex_exit;
-    }
 
     if (server)
     {
@@ -658,10 +617,6 @@ main(
 	performance_write_timers(&perf);
     }
 
-    globus_cond_destroy(&info->cond);
-destroy_mutex_exit:
-    globus_mutex_destroy(&info->mutex);
-cleanup_exit:
     globus_xio_stack_destroy(info->stack);
     globus_xio_driver_unload(info->tcp_driver);
     globus_xio_driver_unload(info->http_driver);

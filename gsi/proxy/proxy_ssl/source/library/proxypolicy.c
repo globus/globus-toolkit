@@ -352,19 +352,21 @@ int i2d_PROXYPOLICY(
     PROXYPOLICY *                       a,
     unsigned char **                    pp)
 {
-    int                                 v1 = 0;
-    
     M_ASN1_I2D_vars(a);
 
-    M_ASN1_I2D_len(a->policy_language,
-                   i2d_ASN1_OBJECT);
-    M_ASN1_I2D_len_EXP_opt(a->policy,
-                           i2d_ASN1_OCTET_STRING,
-                           0, v1);
+    M_ASN1_I2D_len(a->policy_language, i2d_ASN1_OBJECT);
+
+    if(a->policy)
+    { 
+        M_ASN1_I2D_len(a->policy, i2d_ASN1_OCTET_STRING);
+    }
+    
     M_ASN1_I2D_seq_total();
     M_ASN1_I2D_put(a->policy_language, i2d_ASN1_OBJECT);
-    M_ASN1_I2D_put_EXP_opt(a->policy, i2d_ASN1_OCTET_STRING, 0, v1);
-
+    if(a->policy)
+    { 
+        M_ASN1_I2D_put(a->policy, i2d_ASN1_OCTET_STRING);
+    }
     M_ASN1_I2D_finish();
 }
 /* @} */
@@ -408,10 +410,12 @@ PROXYPOLICY * d2i_PROXYPOLICY(
     M_ASN1_D2I_get_opt(ret->policy,
                        d2i_ASN1_OCTET_STRING,
                        V_ASN1_OCTET_STRING);
+    
     M_ASN1_D2I_get_IMP_opt(ret->policy,
                            d2i_ASN1_OCTET_STRING,
                            0,
                            V_ASN1_OCTET_STRING);
+
     M_ASN1_D2I_Finish(a, 
                       PROXYPOLICY_free, 
                       ASN1_F_D2I_PROXYPOLICY);
@@ -425,6 +429,7 @@ X509V3_EXT_METHOD * PROXYPOLICY_x509v3_ext_meth()
     {
         -1,
         X509V3_EXT_MULTILINE,
+        NULL,
         (X509V3_EXT_NEW) PROXYPOLICY_new,
         (X509V3_EXT_FREE) PROXYPOLICY_free,
         (X509V3_EXT_D2I) d2i_PROXYPOLICY,

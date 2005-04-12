@@ -1,4 +1,3 @@
-
 #include "gssapi_test_utils.h"
 #include "openssl/x509.h"
 #include "openssl/x509v3.h"

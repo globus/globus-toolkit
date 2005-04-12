@@ -201,7 +201,7 @@ sub submit
 	    return Globus::GRAM::Error::RSL_ARGUMENTS();
 	}
     }
-    if($arguments[0])
+    if($#arguments >= 0)
     {
 	$argument_string = join(' ',
 				map
@@ -512,6 +512,10 @@ sub cancel
     my $description = $self->{JobDescription};
     my $job_id = $description->jobid();
     my $count = 0;
+
+    if ($job_id =~ m/(\d+\.\d+)\.\d+/) {
+        $job_id = $1;
+    }
 
     $self->log("cancel job " . $description->jobid());
     # we do not need to be too efficient here

@@ -92,6 +92,10 @@
 typedef enum
 {
     /**
+     * Indicates that an error occured in the attribute control
+     */
+    GLOBUS_XIO_GRIDFTP_ERROR_ATTR,
+    /**
      * Indicates that a seek has been called while there is an outstanding io
      */
     GLOBUS_XIO_GRIDFTP_ERROR_SEEK,
@@ -146,6 +150,7 @@ typedef enum
      * @param seek_offset
      *      Specifies the desired offset.
      */
+    /* globus_off_t			seek_offset */
     GLOBUS_XIO_GRIDFTP_SEEK,
 
     /*
@@ -156,20 +161,22 @@ typedef enum
      * @ingroup gridftp_driver_cntls
      * Do not create a new ftp client handle, use this handle instead.
      *
-     * @param ftp_handle_pointer
+     * @param ftp_handle
      *      Specifies the pointer to globus ftp client handle.
      *      Note: this handle will not be destroyed.
      */
+    /* globus_ftp_client_handle_t *	ftp_handle */
     GLOBUS_XIO_GRIDFTP_SET_HANDLE,
 
     /** GlobusVarArgEnum(attr)
      * Get the ftp client handle on the attr.
      * @ingroup gridftp_driver_cntls
      *
-     * @param ftp_handle_pointer_out
+     * @param ftp_handle_out
      *      The ftp client handle pointer will be stored here. If none is set,
      *      GLOBUS_NULL will be set.
      */
+    /* globus_ftp_client_handle_t **	ftp_handle_out */
     GLOBUS_XIO_GRIDFTP_GET_HANDLE,
 
     /** GlobusVarArgEnum(attr)
@@ -179,6 +186,7 @@ typedef enum
      * @param append
      *      GLOBUS_TRUE to enable, GLOBUS_FALSE to disable (default).
      */
+    /* globus_bool_t			append */
     GLOBUS_XIO_GRIDFTP_SET_APPEND,
 
     /** GlobusVarArgEnum(attr)
@@ -188,7 +196,54 @@ typedef enum
      * @param append_out
      *	    The append flag will be stored here.
      */
+    /* globus_bool_t *			append_out */
     GLOBUS_XIO_GRIDFTP_GET_APPEND,
+
+    /** GlobusVarArgEnum(attr)
+     * Set the ERET algorithm string. This string contains information needed
+     * to invoke a server-specific data reduction algorithm on the file being 
+     * retrieved.
+     * @ingroup gridftp_driver_cntls
+     *
+     * @param eret_alg_str
+     *      Specifies the ERET algorithm string.
+     */
+    /* const char *			eret_alg_str */
+    GLOBUS_XIO_GRIDFTP_SET_ERET,
+
+    /** GlobusVarArgEnum(attr)
+     * Get the ERET algorithm string. 
+     * @ingroup gridftp_driver_cntls
+     *
+     * @param eret_alg_str_out
+     *      The ERET algorithm string will be stored here. It is the 
+     * responsibility of the user to free the memory allocated for this string.
+     */
+    /* char **				eret_alg_str_out */
+    GLOBUS_XIO_GRIDFTP_GET_ERET,
+
+    /** GlobusVarArgEnum(attr)
+     * Set the ESTO algorithm string. This string contains information needed
+     * to invoke a server-specific data reduction algorithm on the file being 
+     * stored.
+     * @ingroup gridftp_driver_cntls
+     *
+     * @param esto_alg_str
+     *      Specifies the ESTO algorithm string.
+     */
+    /* const char *			esto_alg_str */
+    GLOBUS_XIO_GRIDFTP_SET_ESTO,
+
+    /** GlobusVarArgEnum(attr)
+     * Get the ESTO algorithm string. 
+     * @ingroup gridftp_driver_cntls
+     *
+     * @param eret_alg_str_out
+     *      The ESTO algorithm string will be stored here. It is the 
+     * responsibility of the user to free the memory allocated for this string.
+     */
+    /* char **				esto_alg_str_out */
+    GLOBUS_XIO_GRIDFTP_GET_ESTO,
 
     /** GlobusVarArgEnum(attr)
      * Enable or disable partial transfer (associate a transfer with each 
@@ -198,6 +253,7 @@ typedef enum
      * @param partial_xfer
      *      GLOBUS_TRUE to enable, GLOBUS_FALSE to disable (default).
      */
+    /* globus_bool_t			partial_xfer */
     GLOBUS_XIO_GRIDFTP_SET_PARTIAL_TRANSFER,
 
     /** GlobusVarArgEnum(attr)
@@ -207,6 +263,7 @@ typedef enum
      * @param partial_xfer_out
      *      The partial xfer flag will be stored here.
      */
+    /* globus_bool_t *			partial_xfer_out */
     GLOBUS_XIO_GRIDFTP_GET_PARTIAL_TRANSFER,
 
     /** GlobusVarArgEnum(attr)
@@ -217,6 +274,7 @@ typedef enum
      * @param num_streams
      *      Specifies the number of streams to use.
      */
+    /* int				num_streams */
     GLOBUS_XIO_GRIDFTP_SET_NUM_STREAMS,
 
     /** GlobusVarArgEnum(attr)
@@ -226,6 +284,7 @@ typedef enum
      * @param num_streams_out
      *      The stream count will be stored here.
      */
+    /* int *				num_streams_out */
     GLOBUS_XIO_GRIDFTP_GET_NUM_STREAMS,
 
     /** GlobusVarArgEnum(attr)
@@ -236,6 +295,7 @@ typedef enum
      *      The send/recv buffer size in bytes to use. (default is system 
      *      specific)
      */
+    /* int				buf_size */
     GLOBUS_XIO_GRIDFTP_SET_TCP_BUFFER,
 
     /** GlobusVarArgEnum(attr)
@@ -245,6 +305,7 @@ typedef enum
      * @param buf_size_out
      *      The send/recv buffer size will be stored here.
      */
+    /* int *				buf_size_out */
     GLOBUS_XIO_GRIDFTP_GET_TCP_BUFFER,
 
     /** GlobusVarArgEnum(attr)
@@ -256,6 +317,7 @@ typedef enum
      * 
      * @see globus_l_xio_gridftp_mode_t
      */
+    /* int				mode */
     GLOBUS_XIO_GRIDFTP_SET_MODE,
 
     /** GlobusVarArgEnum(attr)
@@ -267,6 +329,7 @@ typedef enum
      *
      * @see globus_l_xio_gridftp_mode_t
      */  
+    /* int *				mode_out */
     GLOBUS_XIO_GRIDFTP_GET_MODE,
 
     /** GlobusVarArgEnum(attr)
@@ -289,6 +352,10 @@ typedef enum
      *      name does not match the hostname of the server (ie, when the server
      *      is being run by a user). 
      */
+    /* const char *			user,
+     * const char *			password,
+     * const char *			account,
+     * const char *			subject */
     GLOBUS_XIO_GRIDFTP_SET_AUTH,
 
     /** GlobusVarArgEnum(attr)
@@ -304,6 +371,10 @@ typedef enum
      * @param subject_out
      *      The subject name will be stored here.
      */
+    /* const char **                    user_out,
+     * const char **                    password_out,
+     * const char **                    account_out,
+     * const char **                    subject_out */
     GLOBUS_XIO_GRIDFTP_GET_AUTH,
 
     /** GlobusVarArgEnum(attr)
@@ -315,6 +386,7 @@ typedef enum
      *
      * @see globus_l_xio_gridftp_dcau_mode_t
      */
+    /* int				dcau_mode */
     GLOBUS_XIO_GRIDFTP_SET_DCAU,
 
     /** GlobusVarArgEnum(attr)
@@ -326,6 +398,7 @@ typedef enum
      *
      * @see globus_l_xio_gridftp_dcau_mode_t
      */
+    /* int *				dcau_mode_out */
     GLOBUS_XIO_GRIDFTP_GET_DCAU,
 
     /** GlobusVarArgEnum(attr)
@@ -337,6 +410,7 @@ typedef enum
      *
      * @see globus_l_xio_gridftp_protection_t
      */
+    /* int				protection */
     GLOBUS_XIO_GRIDFTP_SET_DATA_PROTECTION,
 
     /** GlobusVarArgEnum(attr)
@@ -348,6 +422,7 @@ typedef enum
      *
      * @see globus_l_xio_gridftp_dcau_mode_t
      */
+    /* int *				protection_out */
     GLOBUS_XIO_GRIDFTP_GET_DATA_PROTECTION,
 
     /** GlobusVarArgEnum(attr)
@@ -359,6 +434,7 @@ typedef enum
      *
      * @see globus_l_xio_gridftp_protection_t
      */
+    /* int				protection */
     GLOBUS_XIO_GRIDFTP_SET_CONTROL_PROTECTION,
 
     /** GlobusVarArgEnum(attr)
@@ -370,6 +446,7 @@ typedef enum
      *
      * @see globus_l_xio_gridftp_protection_t
      */
+    /* int *				protection_out */
     GLOBUS_XIO_GRIDFTP_GET_CONTROL_PROTECTION
 
 } globus_xio_gridftp_cmd_t;     

@@ -265,24 +265,6 @@ globus_i_gsi_gss_create_and_fill_context(
         }
     }
     
-    /* set the callback data if its OK to accept proxies
-     * signed by limited proxies
-     */
-    if ( context->req_flags & 
-         GSS_C_GLOBUS_ACCEPT_PROXY_SIGNED_BY_LIMITED_PROXY_FLAG)
-    {
-        local_result = globus_gsi_callback_set_multiple_limited_proxy_ok(
-            context->callback_data, GLOBUS_TRUE);
-        if(local_result != GLOBUS_SUCCESS)
-        {
-            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-                minor_status, local_result,
-                GLOBUS_GSI_GSSAPI_ERROR_WITH_CALLBACK_DATA);
-            major_status = GSS_S_FAILURE;
-            goto free_callback_data;
-        }
-    }
-
     /* get the local credential */
     if (cred_handle == GSS_C_NO_CREDENTIAL)
     {
@@ -2056,10 +2038,6 @@ globus_i_gsi_gssapi_init_ssl_context(
     gss_cred_id_t                       credential,
     globus_i_gsi_gss_context_type_t     anon_ctx)
 {
-    globus_fifo_t                       ca_cert_file_list;
-    BIO *                               ca_cert_bio = NULL;
-    char *                              ca_filename = NULL;
-    X509 *                              ca_cert = NULL;
     X509 *                              client_cert = NULL;
     EVP_PKEY *                          client_key = NULL;
     STACK_OF(X509) *                    client_cert_chain = NULL;
@@ -2073,8 +2051,6 @@ globus_i_gsi_gssapi_init_ssl_context(
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
-    globus_fifo_init(&ca_cert_file_list);
-    
     cred_handle = (gss_cred_id_desc *) credential;
     
     if(cred_handle == NULL)
@@ -2144,54 +2120,6 @@ globus_i_gsi_gssapi_init_ssl_context(
      * to have these fields set today.
      */
     SSL_CTX_set_purpose(cred_handle->ssl_context, X509_PURPOSE_ANY);
-
-    local_result = GLOBUS_GSI_SYSCONFIG_GET_CA_CERT_FILES(ca_cert_dir, 
-                                                          &ca_cert_file_list);
-    if(local_result != GLOBUS_SUCCESS)
-    {
-        major_status = GSS_S_FAILURE;
-        GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-            minor_status, local_result,
-            GLOBUS_GSI_GSSAPI_ERROR_WITH_GSS_CREDENTIAL);
-        goto exit;
-    }
-    
-    while((ca_filename = (char *) globus_fifo_dequeue(&ca_cert_file_list))
-           != NULL)
-    {
-        
-        ca_cert_bio = BIO_new_file(ca_filename, "r");
-        if(ca_cert_bio == NULL)
-        {
-            major_status = GSS_S_FAILURE;
-            GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
-                minor_status, 
-                GLOBUS_GSI_GSSAPI_ERROR_WITH_OPENSSL,
-                (_GGSL("Couldn't open bio for reading on file: %s"), ca_filename));
-            goto exit;
-        }
-                
-        if (PEM_read_bio_X509(ca_cert_bio, &ca_cert, NULL, NULL) == NULL)
-        {
-            major_status = GSS_S_FAILURE;
-            GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
-                minor_status,
-                GLOBUS_GSI_GSSAPI_ERROR_WITH_OPENSSL,
-                (_GGSL("Couldn't read PEM formatted X509 cert from file: %s"),
-                 ca_filename));
-            goto exit;
-        }
-
-        globus_libc_free(ca_filename);
-        ca_filename = NULL;
-        BIO_free(ca_cert_bio);
-        ca_cert_bio = NULL;
-
-        SSL_CTX_add_client_CA(cred_handle->ssl_context, ca_cert);
-
-        X509_free(ca_cert);
-        ca_cert = NULL;
-    }
 
     X509_STORE_set_flags(SSL_CTX_get_cert_store(cred_handle->ssl_context),
                          X509_V_FLAG_IGNORE_CRITICAL);
@@ -2332,13 +2260,6 @@ globus_i_gsi_gssapi_init_ssl_context(
         free(ca_cert_dir);
     }
 
-    while((ca_filename = (char *) globus_fifo_dequeue(&ca_cert_file_list))
-           != NULL)
-    {
-        free(ca_filename);
-    }
-    globus_fifo_destroy(&ca_cert_file_list);
-    
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
 }

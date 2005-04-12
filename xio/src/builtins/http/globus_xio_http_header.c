@@ -249,7 +249,7 @@ globus_i_xio_http_header_parse(
         else if ((http_handle->target_info.is_client && 
                 http_handle->response_info.http_version
                     == GLOBUS_XIO_HTTP_VERSION_1_0) ||
-                headers->content_length_set)
+                GLOBUS_I_XIO_HTTP_HEADER_IS_CONTENT_LENGTH_SET(headers))
         {
             http_handle->parse_state = GLOBUS_XIO_HTTP_IDENTITY_BODY;
         }

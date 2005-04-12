@@ -57,8 +57,8 @@ Cleanup()
         ${GLOBUS_SH_RM-rm} $DELETED_ENTRIES
     fi
 
-    if [ -f $CONSISTANCY_CHECK ] ; then
-	${GLOBUS_SH_RM-rm} $CONSISTANCY_CHECK
+    if [ -f $CONSISTENCY_CHECK ] ; then
+	${GLOBUS_SH_RM-rm} $CONSISTENCY_CHECK
     fi
 
     if [ -f $GRID_MAP_FILE_COPY ] ; then
@@ -77,18 +77,56 @@ Cleanup()
 
 }
 
+removeLNs ()
+{
+  aux_line=$line
+  for name in $ln ; do
+    modif_line=$aux_line
+    aux_line="`echo $aux_line | sed -e "s/\<$name\>\ *,//"`"
+    aux_line="`echo $aux_line | sed -e "s/,\ *\<$name\>//"`"
+    if test ! "$modif_line" = "$aux_line" ; then
+      removed_map="$removed_map $name"
+      removed_map_count=`expr $removed_map_count + 1`
+    fi
+
+    has_ln=`echo $aux_line | ${GLOBUS_SH_GREP-grep} "\<$name\>"`
+    if test -n "$has_ln" ; then
+      deleted_entries=`expr $deleted_entries + 1`
+      aux_line=""
+      removed_map="$removed_map $name"
+      removed_map_count=`expr $removed_map_count + 1`
+    fi
+  done
+}
+
+getDN()
+{
+    # Check for double quote delimitor
+    delim=`echo $line | cut -c1`
+    if [ "X$delim" = "X\"" ]; then
+        # DN is double quote delimited
+        # Check for terminating double quote
+        term_check=`echo $line | cut -c2- | ${GLOBUS_SH_GREP-grep} \"`
+        if [ -z "$term_check" ]; then
+            echo "The following entry is missing a closing double quote"
+            echo "$line"
+            Cleanup
+            exit 1
+        fi
+        existing_dn=`echo $line | cut -f2 -d\"`
+    else
+        # No double quote delimitor on DN
+        existing_dn=`echo $line | ${GLOBUS_SH_SED-sed} -e 's/\([^	 ]*\)[	 ]*.*/\1/'`
+    fi
+}
+
 # Main Logic
 
 secconfdir="/etc/grid-security"
 GRID_MAP_FILE=${GRIDMAP-${secconfdir}/grid-mapfile}
-GRID_MAP_FILE_COPY=${tmpdir}/mapfile.copy.$$
-NEW_GRID_MAP_FILE=${tmpdir}/new_mapfile.$$
-CONSISTANCY_CHECK=${tmpdir}/consistancy_check.$$
-DELETED_ENTRIES=${tmpdir}/deleted_entries.$$
 ECHO_DRYRUN=:
 deleted_entries=0
-
-
+removed_map_count=0
 
 # Parse command line arguments
 
@@ -150,7 +188,21 @@ while [ -n "$1" ]; do
 
 done
 
-    # Verify mapfile existance
+secure_tmpdir="`${GLOBUS_SH_DIRNAME-dirname} \"${GRID_MAP_FILE}\"`"
+
+if test ! \( -r "${secure_tmpdir}" -a -w "${secure_tmpdir}" \) ; then
+    echo "ERROR: This script requires read/write permissions in ${secure_tmpdir}" >&2
+    exit 1
+fi 
+
+GRID_MAP_FILE_COPY=${secure_tmpdir}/.mapfile.copy.$$
+NEW_GRID_MAP_FILE=${secure_tmpdir}/.new_mapfile.$$
+CONSISTENCY_CHECK=${secure_tmpdir}/.consistency_check.$$
+DELETED_ENTRIES=${secure_tmpdir}/.deleted_entries.$$
+
+trap Cleanup 1 2 3 6 9 13 15
+
+# Verify mapfile existance
 
 if [ ! -f $GRID_MAP_FILE ] ; then
     globus_args_option_error "$opt" "\"${GRID_MAP_FILE}\" does not exist"
@@ -166,6 +218,8 @@ if [ ! -w $GRID_MAP_FILE ] ; then
     globus_args_option_error "$opt" "\"${GRID_MAP_FILE}\" is not writeable."
     exit 1
 fi
+
+echo "Modifying ${GRID_MAP_FILE} ..."
 
 # Make a copy of production map file for comparison to original later
 
@@ -191,11 +245,11 @@ if [ -n "$dn" -a -z "$ln" ] ; then
     $ECHO_DRYRUN "$requested_dn"
 elif [ -n "$ln" -a -z "$dn" ] ; then
     requested_ln=$ln
-    $ECHO_DRYRUN "Searching for entries containing the Local Name(s)"
+    $ECHO_DRYRUN "Searching for entries containing any of the Local Name(s)"
     $ECHO_DRYRUN "$requested_ln"
 elif [ -n "$ln" -a -n "$dn" ] ; then
     requested_entry="\"$dn\" $ln"
-    $ECHO_DRYRUN "Searching for entries exactly mathing both the Distinguished Name and the Local Name(s)"
+    $ECHO_DRYRUN "Searching for entries containing the Distinguished Name and any of the Local Name(s)"
     $ECHO_DRYRUN "$requested_entry"
 fi
 
@@ -207,28 +261,13 @@ while read line || test ! -z "${line}" ; do
     # Match ONLY DNs
     
     if test -n "$requested_dn" -a -z "$requested_ln" ; then
-        # Check for double quote delimitor
-        delim=`echo $line | cut -c1`
-        if [ "X$delim" = "X\"" ]; then
-            # DN is double quote delimited
-            # Check for terminating double quote
-            term_check=`echo $line | cut -c2- | grep \"`
-            if [ -z "$term_check" ]; then
-                echo "The following entry is missing a closing double quote"
-                echo "$line"
-                Cleanup
-                exit 1
-            fi
-            existing_dn=`echo $line | cut -f2 -d\"`
-        else
-            # No double quote delimitor on DN
-            existing_dn=`echo $line | ${GLOBUS_SH_SED-sed} -e 's/\([^	 ]*\)[	 ]*.*/\1/'`
-        fi
+        
+        getDN
 
         if test ! "$requested_dn" = "$existing_dn" ; then
             echo $line >> $NEW_GRID_MAP_FILE
         else
-            $ECHO_DRYRUN "Deleting entry: $line"
+            echo "Deleting entry: $line"
             deleted_entries=`expr $deleted_entries + 1`
         fi
 
@@ -247,18 +286,33 @@ while read line || test ! -z "${line}" ; do
         if  [ -z "$found_match" ] ; then
             echo $line >> $NEW_GRID_MAP_FILE
         else
-            $ECHO_DRYRUN "Deleting entry: $line"
-            deleted_entries=`expr $deleted_entries + 1`
+	  removeLNs
+	  if test -n "$aux_line" ; then
+            echo "Current entry: $aux_line"
+            echo $aux_line >> $NEW_GRID_MAP_FILE
+	  else
+            echo "No local mappings remained, deleting entry: $line"
+	  fi
         fi
         
-    # Match EXACTLY both DN and list
+    # Match DN and list
         
     elif [ -n "$requested_entry" ] ; then
-        if [ ! "$line" = "$requested_entry" ] ; then
+        
+        getDN
+
+        if test ! "$dn" = "$existing_dn" ; then
             echo $line >> $NEW_GRID_MAP_FILE
         else
-            $ECHO_DRYRUN "Deleting entry: $line"
-            deleted_entries=`expr $deleted_entries + 1`
+	  removeLNs
+	  if test -n "$aux_line" ; then
+	    if test -n "$removed_map" ; then
+              echo "Current entry: $aux_line"
+	    fi
+            echo $aux_line >> $NEW_GRID_MAP_FILE
+	  else
+            echo "No local mappings remained, deleting entry: $line"
+	  fi
         fi
     fi
     
@@ -285,12 +339,12 @@ fi
 
 		# Replace existing map file with new mapfile
 
-if [ "$deleted_entries" -ne  0 ] ; then
+if [ "$deleted_entries" -ne  0 ] || [ "$removed_map_count" -ne  0 ] ; then
     # Verify that no changes to original map file
     # during the execution of this program
 
-    ${GLOBUS_SH_DIFF-diff} $GRID_MAP_FILE_COPY $GRID_MAP_FILE > $CONSISTANCY_CHECK
-    if  [ -s $CONSISTANCY_CHECK ] ; then
+    ${GLOBUS_SH_DIFF-diff} $GRID_MAP_FILE_COPY $GRID_MAP_FILE > $CONSISTENCY_CHECK
+    if  [ -s $CONSISTENCY_CHECK ] ; then
         echo "ERROR: $GRID_MAP_FILE has changed since this program started" >&2
         echo "No changes will be made." >&2
         Cleanup
@@ -307,8 +361,6 @@ if [ "$deleted_entries" -ne  0 ] ; then
 
 	${GLOBUS_SH_CHMOD-chmod} 644 $GRID_MAP_FILE
 
-	${GLOBUS_SH_RM-rm} $GRID_MAP_FILE
-
 	${GLOBUS_SH_MV-mv} $NEW_GRID_MAP_FILE $GRID_MAP_FILE
 
         if [ $? -ne 0 ] ; then
@@ -316,6 +368,36 @@ if [ "$deleted_entries" -ne  0 ] ; then
             Cleanup
             exit 1
         fi
+
+        removed_count=0
+        ignored_count=0
+        for name in $ln ; do
+	  is_present=`echo $removed_map | ${GLOBUS_SH_GREP-grep} "$name"`
+	  if  test -n "$is_present" ; then
+            removed_count=`expr $removed_count + 1`
+	    printable_removed="$printable_removed $name"
+	  else
+	    printable_ignored="$printable_ignored $name"
+            ignored_count=`expr $ignored_count + 1`
+	  fi
+	done
+
+        if  test -n "$printable_removed" ; then
+          printable_removed="`echo $printable_removed | sed -e "s/ /, /g"`"
+          printable_removed=": ($printable_removed)"
+        fi
+        if  test -n "$printable_ignored" ; then
+          printable_ignored="`echo $printable_ignored | sed -e "s/ /, /g"`"
+          printable_ignored=": ($printable_ignored)"
+        fi
+
+        if [ "$removed_count" -ne 0 ] ; then
+  	  if [ "$removed_count" -eq 1 ] ; then
+	    echo "($removed_count) mapping removed$printable_removed, ($ignored_count) not present and ignored$printable_ignored"
+	  else
+	    echo "($removed_count) mappings removed$printable_removed, ($ignored_count) not present and ignored$printable_ignored"
+	  fi
+	fi
         
         if [ "$deleted_entries" -eq  1 ] ; then
             echo "($deleted_entries) entry deleted"
@@ -324,7 +406,7 @@ if [ "$deleted_entries" -ne  0 ] ; then
         fi
     fi
 else
-    echo "ERROR: No such entry exists"
+    echo "ERROR: No such entry/mapping exists"
     Cleanup
     exit 1
 fi

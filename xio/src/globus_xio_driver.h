@@ -301,16 +301,18 @@ globus_xio_driver_data_descriptor_cntl(
     int                                 cmd,
     ...);
 
+/**
+ *  @ingroup driver_pgm
+ *  Touch driver specific information in a handle object.
+ *
+ *  pass the driver to control a specific driver
+ *  pass NULL for driver for XIO specific cntls
+ *  pass GLOBUS_XIO_QUERY for driver to try each driver (below current)
+ *    in order
+ */
 globus_result_t
 globus_xio_driver_handle_cntl(
     globus_xio_driver_handle_t          handle,
-    globus_xio_driver_t                 driver,
-    int                                 cmd,
-    ...);
-
-globus_result_t
-globus_xio_driver_server_cntl(
-    globus_xio_driver_server_t          driver_server,
     globus_xio_driver_t                 driver,
     int                                 cmd,
     ...);
@@ -739,6 +741,14 @@ globus_xio_driver_operation_is_blocking(
 
 /**
  *  @ingroup driver_pgm
+ * 
+ *  this call *must* return an GLOBUS_XIO_ERROR_COMMAND error for unsupported
+ *  command numbers.   (use GlobusXIOErrorInvalidCommand(cmd))
+ * 
+ *  Drivers that have reason to support the commands listed at
+ *  @ref globus_xio_handle_cmd_t should accept the xio generic cmd numbers
+ *  and their driver specific command number.  Do NOT implement those handle
+ *  cntls unless you really are the definitive source.
  */
 typedef globus_result_t
 (*globus_xio_driver_handle_cntl_t)(

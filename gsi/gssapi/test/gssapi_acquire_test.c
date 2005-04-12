@@ -1,4 +1,3 @@
-
 #include "gssapi_openssl.h"
 #include "gssapi.h"
 #include "globus_gss_assist.h"

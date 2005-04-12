@@ -261,17 +261,15 @@ globus_gsi_cert_utils_get_cert_type(
     X509_NAME_ENTRY *                   ne = NULL;
     X509_NAME_ENTRY *                   new_ne = NULL;
     X509_EXTENSION *                    pci_ext = NULL;
-    ASN1_OCTET_STRING *                 ext_data = NULL;
     ASN1_STRING *                       data = NULL;
     PROXYCERTINFO *                     pci = NULL;
     PROXYPOLICY *                       policy = NULL;
     ASN1_OBJECT *                       policy_lang = NULL;
     int                                 policy_nid;
     globus_result_t                     result = GLOBUS_SUCCESS;
-    int                                 index;
+    int                                 index = -1;
     int                                 critical;
     BASIC_CONSTRAINTS *                 x509v3_bc = NULL;
-    unsigned char *                     tmp_data;
     static char *                       _function_name_ =
         "globus_gsi_cert_utils_get_cert_type";
     
@@ -316,33 +314,83 @@ globus_gsi_cert_utils_get_cert_type(
         }
         else if((index = X509_get_ext_by_NID(cert,
                                              OBJ_sn2nid(PROXYCERTINFO_SN),
-                                             -1)) != -1 &&
+                                             -1)) != -1  &&
                 (pci_ext = X509_get_ext(cert,index)) &&
                 X509_EXTENSION_get_critical(pci_ext))
         {
-            if((ext_data = X509_EXTENSION_get_data(pci_ext)) == NULL)
-            {
-                GLOBUS_GSI_CERT_UTILS_OPENSSL_ERROR_RESULT(
-                    result,
-                    GLOBUS_GSI_CERT_UTILS_ERROR_NON_COMPLIANT_PROXY,
-                    (_CUSL("Can't get DER encoded extension "
-                     "data from X509 extension object")));
-                goto exit;
-            }
-
-            tmp_data = ext_data->data;
-
-            if((d2i_PROXYCERTINFO(
-                    &pci,
-                    &tmp_data,
-                    ext_data->length)) == NULL)
+            if((pci = X509V3_EXT_d2i(pci_ext)) == NULL)
             {
                 GLOBUS_GSI_CERT_UTILS_OPENSSL_ERROR_RESULT(
                     result,
                     GLOBUS_GSI_CERT_UTILS_ERROR_NON_COMPLIANT_PROXY,
                     (_CUSL("Can't convert DER encoded PROXYCERTINFO "
                      "extension to internal form")));
-                pci = NULL;
+                goto exit;
+            }
+            
+            if((policy = PROXYCERTINFO_get_policy(pci)) == NULL)
+            {
+                GLOBUS_GSI_CERT_UTILS_OPENSSL_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CERT_UTILS_ERROR_NON_COMPLIANT_PROXY,
+                    (_CUSL("Can't get policy from PROXYCERTINFO extension")));
+                goto exit;
+            }
+
+            if((policy_lang = PROXYPOLICY_get_policy_language(policy))
+               == NULL)
+            {
+                GLOBUS_GSI_CERT_UTILS_OPENSSL_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CERT_UTILS_ERROR_NON_COMPLIANT_PROXY,
+                    (_CUSL("Can't get policy language from"
+                     " PROXYCERTINFO extension")));
+                goto exit;
+            }
+
+            policy_nid = OBJ_obj2nid(policy_lang);
+            
+            if(policy_nid == OBJ_sn2nid(IMPERSONATION_PROXY_SN))
+            {
+                *type = GLOBUS_GSI_CERT_UTILS_TYPE_RFC_IMPERSONATION_PROXY;
+            }
+            else if(policy_nid == OBJ_sn2nid(INDEPENDENT_PROXY_SN))
+            {
+                *type = GLOBUS_GSI_CERT_UTILS_TYPE_RFC_INDEPENDENT_PROXY;
+            }
+            else if(policy_nid == OBJ_sn2nid(LIMITED_PROXY_SN))
+            {
+                *type = GLOBUS_GSI_CERT_UTILS_TYPE_RFC_LIMITED_PROXY;
+            }
+            else
+            {
+                *type = GLOBUS_GSI_CERT_UTILS_TYPE_RFC_RESTRICTED_PROXY;
+            }
+            
+            if(X509_get_ext_by_NID(cert,
+                                   OBJ_sn2nid(PROXYCERTINFO_SN),
+                                   index) != -1)
+            { 
+                GLOBUS_GSI_CERT_UTILS_OPENSSL_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CERT_UTILS_ERROR_NON_COMPLIANT_PROXY,
+                    (_CUSL("Found more than one PCI extension")));
+                goto exit;
+            }
+        }
+        else if((index = X509_get_ext_by_NID(cert,
+                                             OBJ_sn2nid(PROXYCERTINFO_OLD_SN),
+                                             -1)) != -1 &&
+                (pci_ext = X509_get_ext(cert,index)) &&
+                X509_EXTENSION_get_critical(pci_ext))
+        {
+            if((pci = X509V3_EXT_d2i(pci_ext)) == NULL)
+            {
+                GLOBUS_GSI_CERT_UTILS_OPENSSL_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CERT_UTILS_ERROR_NON_COMPLIANT_PROXY,
+                    (_CUSL("Can't convert DER encoded PROXYCERTINFO "
+                     "extension to internal form")));
                 goto exit;
             }
             
@@ -385,9 +433,9 @@ globus_gsi_cert_utils_get_cert_type(
                 *type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_RESTRICTED_PROXY;
             }
             
-            if((index = X509_get_ext_by_NID(cert,
-                                            OBJ_sn2nid(PROXYCERTINFO_SN),
-                                            index)) != -1)
+            if(X509_get_ext_by_NID(cert,
+                                   OBJ_sn2nid(PROXYCERTINFO_OLD_SN),
+                                   index) != -1)
             { 
                 GLOBUS_GSI_CERT_UTILS_OPENSSL_ERROR_RESULT(
                     result,
@@ -761,3 +809,119 @@ globus_gsi_cert_utils_get_base_name(
     return GLOBUS_SUCCESS;
 }
 /* @} */
+
+
+static char *
+globus_l_gsi_cert_utils_normalize_dn(
+    const char *                        dn)
+{
+    char *                              result;
+    int                                 i = 0;
+    int                                 j = 0;
+    size_t                              length;
+    char *                              tmp;
+
+    length = strlen(dn) + 1;
+
+    result = malloc(length);
+
+    if(result == NULL)
+    {
+        return NULL;
+    }
+
+    while(i < strlen(dn))
+    {
+        result[j] = dn[i];
+        i++;
+        j++;
+
+        if(dn[i - 1] == '/')
+        {
+            if(strncasecmp(&dn[i], "UID=", 4) == 0)
+            {
+                length += 3;
+                tmp = realloc(result, length);
+                if(tmp == NULL)
+                {
+                    free(result);
+                    return NULL;
+                }
+                result = tmp;
+                memcpy(&result[j], "USERID=", 7);
+                j += 7;
+                i += 4;
+            }
+            else if(strncasecmp(&dn[i], "E=", 2) == 0)
+            {
+                length += 11;
+                tmp = realloc(result, length);
+                if(tmp == NULL)
+                {
+                    free(result);
+                    return NULL;
+                }
+                result = tmp;
+                memcpy(&result[j], "emailAddress=", 13);
+                j += 13;
+                i += 2;
+            }
+            else if(strncasecmp(&dn[i], "Email=", 6) == 0)
+            {
+                length += 7;
+                tmp = realloc(result, length);
+                if(tmp == NULL)
+                {
+                    free(result);
+                    return NULL;
+                }
+                result = tmp;
+                memcpy(&result[j], "emailAddress=", 13);
+                j += 13;
+                i += 6;
+            }
+        }
+    }
+    result[j] = '\0';
+    return result;
+}
+
+int
+globus_i_gsi_cert_utils_dn_cmp(
+    const char *                        dn1,
+    const char *                        dn2)
+{
+    if(strcasecmp(dn1, dn2) == 0)
+    {
+        return 0;
+    }
+    else
+    {
+        char * tmp_dn1;
+        char * tmp_dn2;
+        int result;
+
+        tmp_dn1 = globus_l_gsi_cert_utils_normalize_dn(dn1);
+
+        if(tmp_dn1 == NULL)
+        {
+            return -1;
+        }
+        
+        tmp_dn2 = globus_l_gsi_cert_utils_normalize_dn(dn2);
+
+        if(tmp_dn2 == NULL)
+        {
+            free(tmp_dn1);
+            return -1;
+        }
+        
+        result = strcasecmp(tmp_dn1, tmp_dn2);
+
+        free(tmp_dn1);
+        free(tmp_dn2);
+        
+        return result;
+    }
+}
+

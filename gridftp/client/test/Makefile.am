@@ -11,6 +11,8 @@ globusperl_DATA = URL.pm
 Scripts= \
 	TESTS.pl \
 	FtpTestLib.pm \
+    globus-ftp-client-dir-test.pl \
+    globus-ftp-client-run-backend-tests.pl  \
 	globus-ftp-client-bad-buffer-test.pl \
 	globus-ftp-client-create-destroy-test.pl \
 	globus-ftp-client-exist-test.pl \

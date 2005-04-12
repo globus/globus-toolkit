@@ -18,7 +18,6 @@ dnl   CFLAGS
 dnl   CXX
 dnl   CXXCPP
 dnl   CXXFLAGS
-dnl   LD
 dnl   LDFLAGS
 dnl   LIBS
 dnl   AR
@@ -49,7 +48,6 @@ dnl   lac_cv_CPPFLAGS
 dnl   lac_cv_CXX
 dnl   lac_cv_CXXCPP
 dnl   lac_cv_CXXFLAGS
-dnl   lac_cv_LD
 dnl   lac_cv_LDFLAGS
 dnl   lac_cv_LIBS
 dnl   lac_cv_AR
@@ -110,6 +108,10 @@ AC_BEFORE([$0], [AC_PROG_CC])
 AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
 
+LAC_COMPILERS_ARGS
+LAC_THREADS
+LAC_MP
+
 dnl Restore and reset the flags from AC_PROG_CC so we can do our
 dnl own compiler config. Saved flags are from ../configure.in
 CC="$SAVED_CC"
@@ -120,10 +122,6 @@ unset ac_cv_prog_cc_g
 unset ac_cv_prog_cc_stdc
 unset am_cv_CC_dependencies_compiler_type
 
-LAC_COMPILERS_ARGS
-LAC_THREADS
-LAC_MP
-
 LAC_COMPILERS_SET($lac_threads_type)
 
 LAC_SUBSTITUTE_COMPILER_VAR(CC)
@@ -133,7 +131,6 @@ LAC_SUBSTITUTE_COMPILER_VAR(CPPFLAGS)
 LAC_SUBSTITUTE_COMPILER_VAR(CXX)
 LAC_SUBSTITUTE_COMPILER_VAR(CXXCPP)
 LAC_SUBSTITUTE_COMPILER_VAR(CXXFLAGS)
-LAC_SUBSTITUTE_COMPILER_VAR(LD)
 LAC_SUBSTITUTE_COMPILER_VAR(LDFLAGS)
 LAC_SUBSTITUTE_COMPILER_VAR(LIBS)
 LAC_SUBSTITUTE_COMPILER_VAR(AR)
@@ -195,7 +192,7 @@ case ${host}--$1 in
 
         if test "$GLOBUS_CC" = "mpicc"; then
             AC_PATH_PROGS(lac_cv_CC,  $CC  mpicc)
-            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC)
+            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC mpicxx)
             AC_PATH_PROGS(lac_cv_F77, $F77 mpif77)
             AC_PATH_PROGS(lac_cv_F90, $F90 mpif90)
         else
@@ -240,13 +237,15 @@ case ${host}--$1 in
         if test "$lac_cv_build_64bit" = "yes"; then
             LAC_PROG_CC_GNU($lac_cv_CC,
                             [ lac_CFLAGS="$lac_CFLAGS -m64"
-                              lac_CXXFLAGS="$lac_CXXFLAGS -m64" ],
+                              lac_CXXFLAGS="$lac_CXXFLAGS -m64"
+                              lac_LDFLAGS="$lac_LDFLAGS -m64" ],
                             [ lac_CFLAGS="$lac_CFLAGS -xarch=v9 -KPIC"
                               lac_CXXFLAGS="$lac_CXXFLAGS -xarch=v9 -KPIC" ])
         else
             LAC_PROG_CC_GNU($lac_cv_CC,
                             [ lac_CFLAGS="$lac_CFLAGS -m32"
-                              lac_CXXFLAGS="$lac_CXXFLAGS -m32" ],
+                              lac_CXXFLAGS="$lac_CXXFLAGS -m32"
+                              lac_LDFLAGS="$lac_LDFLAGS -m32" ],
                             [ lac_CFLAGS="$lac_CFLAGS -xarch=v8"
                               lac_CXXFLAGS="$lac_CXXFLAGS -xarch=v8" ])
 
@@ -261,7 +260,7 @@ case ${host}--$1 in
         
         if test "$GLOBUS_CC" = "mpicc"; then
             AC_PATH_PROGS(lac_cv_CC,  $CC  mpicc)
-            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC)
+            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC mpicxx)
             AC_PATH_PROGS(lac_cv_F77, $F77 mpif77)
             AC_PATH_PROGS(lac_cv_F90, $F90 mpif90)
         else
@@ -290,7 +289,7 @@ case ${host}--$1 in
 
         if test "$GLOBUS_CC" = "mpicc"; then
             AC_PATH_PROGS(lac_cv_CC,  $CC  mpicc)
-            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC)
+            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC mpicxx)
             AC_PATH_PROGS(lac_cv_F77, $F77 mpif77)
             AC_PATH_PROGS(lac_cv_F90, $F90 mpif90)
         else
@@ -314,7 +313,7 @@ case ${host}--$1 in
         
         if test "$GLOBUS_CC" = "mpicc"; then
             AC_PATH_PROGS(lac_cv_CC,  $CC  mpicc)
-            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC)
+            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC mpicxx)
             AC_PATH_PROGS(lac_cv_F77, $F77 mpif77)
             AC_PATH_PROGS(lac_cv_F90, $F90 mpif90)
         else
@@ -344,7 +343,7 @@ case ${host}--$1 in
             dnl linking
             
             AC_PATH_PROGS(lac_cv_CC,  $CC  mpicc)
-            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC)
+            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC mpicxx)
             AC_PATH_PROGS(lac_cv_F77, $F77 mpif77)
             AC_PATH_PROGS(lac_cv_F90, $F90 mpif90)
             
@@ -394,7 +393,7 @@ case ${host}--$1 in
             dnl linking
             
             AC_PATH_PROGS(lac_cv_CC,  $CC  mpicc)
-            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC)
+            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC mpicxx)
             AC_PATH_PROGS(lac_cv_F77, $F77 mpif77)
             AC_PATH_PROGS(lac_cv_F90, $F90 mpif90)
             
@@ -426,7 +425,7 @@ case ${host}--$1 in
     
         if test "$GLOBUS_CC" = "mpicc"; then
             AC_PATH_PROGS(lac_cv_CC,  $CC  mpicc)
-            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC)
+            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC mpicxx)
             AC_PATH_PROGS(lac_cv_F77, $F77 mpif77)
             AC_PATH_PROGS(lac_cv_F90, $F90 mpif90)
         else
@@ -451,7 +450,7 @@ case ${host}--$1 in
         
         if test "$GLOBUS_CC" = "mpicc"; then
             AC_PATH_PROGS(lac_cv_CC,  $CC  mpicc)
-            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC)
+            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC mpicxx)
             AC_PATH_PROGS(lac_cv_F77, $F77 mpif77)
             AC_PATH_PROGS(lac_cv_F90, $F90 mpif90)
         else
@@ -481,7 +480,7 @@ case ${host}--$1 in
         
         if test "$GLOBUS_CC" = "mpicc"; then
             AC_PATH_PROGS(lac_cv_CC,  $CC  mpicc)
-            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC)
+            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC mpicxx)
             AC_PATH_PROGS(lac_cv_F77, $F77 mpif77)
             AC_PATH_PROGS(lac_cv_F90, $F90 mpif90)
         fi
@@ -548,7 +547,7 @@ case ${host}--$1 in
 
         if test "$GLOBUS_CC" = "mpicc"; then
             AC_PATH_PROGS(lac_cv_CC,  $CC  mpcc_r mpicc)
-            AC_PATH_PROGS(lac_cv_CXX, $CXX mpCC_r mpiCC)
+            AC_PATH_PROGS(lac_cv_CXX, $CXX mpCC_r mpiCC mpicxx)
             AC_PATH_PROGS(lac_cv_F77, $F77 mpxlf_r mpif77)
             AC_PATH_PROGS(lac_cv_F90, $F90 mpxlf90_r mpif90)
             if test "$lac_cv_F90" = "mpxlf_r" ; then
@@ -605,8 +604,7 @@ case ${host}--$1 in
                 AC_PATH_PROGS(lac_cv_CPP, $CPP cpp,[],/usr/lib:$PATH)
                 dnl other parts of the toolchain needs to know about 32/64 bits
                 if test "$lac_cv_build_64bit" = "yes"; then
-                    lac_cv_LD="/usr/bin/ld -b64 -brtl"
-                    lac_LDFLAGS="-b64 -brtl $lac_LDFLAGS"
+                    lac_LDFLAGS="-b64 -brtl -bnoipath $lac_LDFLAGS"
                     lac_cv_AR="/usr/bin/ar -X64"
                     lac_ARFLAGS="-X64 $lac_ARFLAGS"
                     lac_CFLAGS="-q64 -D_ALL_SOURCE $lac_CFLAGS"
@@ -614,8 +612,7 @@ case ${host}--$1 in
                     lac_NM="/usr/bin/nm -X64 -B"
                     lac_OBJECT_MODE="64"
                 else
-                    lac_cv_LD="/usr/bin/ld -b32 -brtl"
-                    lac_LDFLAGS="-b32 -brtl $lac_LDFLAGS"
+                    lac_LDFLAGS="-b32 -brtl -bnoipath $lac_LDFLAGS"
                     lac_cv_AR="/usr/bin/ar -X32"
                     lac_ARFLAGS="-X32 $lac_ARFLAGS"
                     lac_CFLAGS="-q32 -D_ALL_SOURCE $lac_CFLAGS"
@@ -640,7 +637,7 @@ case ${host}--$1 in
 
         if test "$GLOBUS_CC" = "mpicc"; then
             AC_PATH_PROGS(lac_cv_CC,  $CC  mpcc mpicc)
-            AC_PATH_PROGS(lac_cv_CXX, $CXX mpCC mpiCC)
+            AC_PATH_PROGS(lac_cv_CXX, $CXX mpCC mpiCC mpicxx)
             AC_PATH_PROGS(lac_cv_F77, $F77 mpxlf mpif77)
             AC_PATH_PROGS(lac_cv_F90, $F90 mpxlf90 mpif90)
             if test "$lac_cv_F90" = "mpxlf" ; then
@@ -704,8 +701,7 @@ case ${host}--$1 in
                 AC_PATH_PROGS(lac_cv_CPP, $CPP cpp,[],/usr/lib:$PATH)
                 dnl other parts of the toolchain needs to know about 32/64 bits
                 if test "$lac_cv_build_64bit" = "yes"; then
-                    lac_cv_LD="/usr/bin/ld -b64 -brtl"
-                    lac_LDFLAGS="-b64 -brtl $lac_LDFLAGS"
+                    lac_LDFLAGS="-b64 -brtl -bnoipath $lac_LDFLAGS"
                     lac_cv_AR="/usr/bin/ar -X64"
                     lac_ARFLAGS="-X64 $lac_ARFLAGS"
                     lac_CFLAGS="-q64 -D_ALL_SOURCE $lac_CFLAGS"
@@ -713,8 +709,7 @@ case ${host}--$1 in
                     lac_NM="/usr/bin/nm -X64 -B"
                     lac_OBJECT_MODE="64"
                 else
-                    lac_cv_LD="/usr/bin/ld -b32 -brtl"
-                    lac_LDFLAGS="-b32 -brtl $lac_LDFLAGS"
+                    lac_LDFLAGS="-b32 -brtl -bnoipath $lac_LDFLAGS"
                     lac_cv_AR="/usr/bin/ar -X32"
                     lac_ARFLAGS="-X32 $lac_ARFLAGS"
                     lac_CFLAGS="-q32 -D_ALL_SOURCE $lac_CFLAGS"
@@ -743,7 +738,7 @@ case ${host}--$1 in
         
         if test "$GLOBUS_CC" = "mpicc"; then
             AC_PATH_PROGS(lac_cv_CC,  $CC  mpicc)
-            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC)
+            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC mpicxx)
             AC_PATH_PROGS(lac_cv_F77, $F77 mpif77)
             AC_PATH_PROGS(lac_cv_F90, $F90 mpif90)
         else
@@ -782,7 +777,7 @@ case ${host}--$1 in
         
         if test "$GLOBUS_CC" = "mpicc"; then
             AC_PATH_PROGS(lac_cv_CC,  $CC  mpicc)
-            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC)
+            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC mpicxx)
             AC_PATH_PROGS(lac_cv_F77, $F77 mpif77)
             AC_PATH_PROGS(lac_cv_F90, $F90 mpif90)
         else
@@ -810,7 +805,7 @@ case ${host}--$1 in
         
         if test "$GLOBUS_CC" = "mpicc"; then
             AC_PATH_PROGS(lac_cv_CC,  $CC  mpicc)
-            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC)
+            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC mpicxx)
             AC_PATH_PROGS(lac_cv_F77, $F77 mpif77)
             AC_PATH_PROGS(lac_cv_F90, $F90 mpif90)
         else
@@ -843,7 +838,7 @@ case ${host}--$1 in
 
         if test "$GLOBUS_CC" = "mpicc"; then
             AC_PATH_PROGS(lac_cv_CC,  $CC  mpicc)
-            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC)
+            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC mpicxx)
             AC_PATH_PROGS(lac_cv_F77, $F77 mpif77)
             AC_PATH_PROGS(lac_cv_F90, $F90 mpif90)
         else
@@ -877,7 +872,7 @@ case ${host}--$1 in
         
         if test "$GLOBUS_CC" = "mpicc"; then
             AC_PATH_PROGS(lac_cv_CC,  $CC  mpicc)
-            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC)
+            AC_PATH_PROGS(lac_cv_CXX, $CXX mpiCC mpicxx)
             AC_PATH_PROGS(lac_cv_F77, $F77 mpif77)
             AC_PATH_PROGS(lac_cv_F90, $F90 mpif90)
         else
@@ -943,7 +938,6 @@ AC_CACHE_CHECK("F90 flags", lac_cv_F90FLAGS, lac_cv_F90FLAGS="$lac_F90FLAGS")
 
 
 CC="$lac_cv_CC"
-LD="$lac_cv_LD"
 CFLAGS="$lac_cv_CFLAGS"
 AC_PROG_CC
 CROSS="$cross_compiling"

@@ -31,17 +31,17 @@ push(@timeout_position, "O");
 push(@timeout_position, "D");
 push(@timeout_position, "C");
 
-my @no_to;
-push(@no_to, "");
-push(@no_to, "3");
-push(@no_to, "1");
+my @timeout_vals;
+push(@timeout_vals, "300000");
+push(@timeout_vals, "600000");
+push(@timeout_vals, "900000");
 
 sub basic_tests
 {
     my $inline_finish="-i";
     my $noto;
 
-    foreach(@no_to)
+    foreach(@timeout_vals)
     {
         $noto=$_;
         foreach(@drivers)
@@ -50,8 +50,8 @@ sub basic_tests
             foreach(@timeout_position)
             {
                 my $t=$_;
-                push(@tests, "$test_name -d 300000 -w 1 -r 0 $d $t $noto");
-                push(@tests, "$test_name -d 300000 -w 0 -r 1 $d $t $noto");
+                push(@tests, "$test_name -d $noto -w 1 -r 0 $d $t");
+                push(@tests, "$test_name -d $noto -w 0 -r 1 $d $t");
             }
         }
     }

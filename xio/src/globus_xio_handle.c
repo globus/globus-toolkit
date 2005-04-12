@@ -2120,7 +2120,6 @@ globus_xio_register_open(
 
     handle->ref++; /* for operation */
     handle->open_op = op;
-    handle->outstanding_operations = 1; /* open operation */
 
     if(attr != NULL)
     {
@@ -2617,7 +2616,7 @@ globus_xio_handle_cntl(
     int                                 cmd,
     ...)
 {
-    globus_result_t                     res;
+    globus_result_t                     res = GLOBUS_SUCCESS;
     va_list                             ap;
     globus_i_xio_context_t *            context;
     globus_xio_timeout_callback_t       timeout_cb;
@@ -2649,7 +2648,7 @@ globus_xio_handle_cntl(
 
     if(driver != NULL)
     {
-        res = globus_i_xio_driver_handle_cntl(context, driver, cmd, ap);
+        res = globus_i_xio_driver_handle_cntl(context, 0, driver, cmd, ap);
     }
     else
     {
@@ -2924,7 +2923,6 @@ globus_xio_open(
     handle->ref++; /* for operation */
     /* this is set for the cancel */
     handle->open_op = op;
-    handle->outstanding_operations = 1; /* open operation */
 
     if(attr != NULL)
     {

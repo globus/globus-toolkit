@@ -3609,7 +3609,7 @@ globus_l_gass_transfer_http_request_callback(
 
 	err = globus_error_get(result);
 	tmpstr = globus_object_printable_to_string(err);
-	debug_printf(5, (_GTSL("globus_l_gass_transfer_http_read_callback(): %s", tmpstr)));
+	debug_printf(5, (_GTSL("globus_l_gass_transfer_http_read_callback(): %s"), tmpstr));
 	globus_libc_free(tmpstr);
     }
 
@@ -3927,7 +3927,7 @@ globus_l_gass_transfer_http_callback_send_callback(
     globus_gass_transfer_http_request_proto_t *		proto;
     MYNAME(globus_l_gass_transfer_http_callback_send_callback);
 
-    debug_printf(3, (_GTSL("Entering %s()\n",myname)));
+    debug_printf(3, (_GTSL("Entering %s()\n"),myname));
     
     proto = (globus_gass_transfer_http_request_proto_t *) arg;
 

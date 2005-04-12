@@ -1898,7 +1898,14 @@ redo:
 	    }
 
 	skip_pasv:
-	    if(client_handle->restart_marker.type !=
+            if((client_handle->op == GLOBUS_FTP_CLIENT_PUT ||
+                (client_handle->op == GLOBUS_FTP_CLIENT_TRANSFER && 
+                client_handle->dest == target)) && 
+                target->attr->allocated_size > 0)
+            {
+                target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_ALLO;
+            }
+	    else if(client_handle->restart_marker.type !=
 	       GLOBUS_FTP_CLIENT_RESTART_NONE)
 	    {
 		if(target->mode == GLOBUS_FTP_CONTROL_MODE_STREAM)
@@ -1972,7 +1979,14 @@ redo:
 	    }
 
 	skip_port:
-	    if(client_handle->restart_marker.type !=
+            if((client_handle->op == GLOBUS_FTP_CLIENT_PUT ||
+                (client_handle->op == GLOBUS_FTP_CLIENT_TRANSFER && 
+                client_handle->dest == target)) && 
+                target->attr->allocated_size > 0)
+            {
+                target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_ALLO;
+            }
+	    else if(client_handle->restart_marker.type !=
 	       GLOBUS_FTP_CLIENT_RESTART_NONE)
 	    {
 		if(target->mode == GLOBUS_FTP_CONTROL_MODE_STREAM)
@@ -2003,7 +2017,6 @@ redo:
 	    goto notify_fault;
 	}
 	goto redo;
-
     case GLOBUS_FTP_CLIENT_TARGET_SETUP_REST_STREAM:
 	/*
 	 * REST must be the last thing done on the control connection
@@ -2056,6 +2069,47 @@ redo:
 	    target->type == GLOBUS_FTP_CONTROL_TYPE_ASCII
 	        ? client_handle->restart_marker.stream.ascii_offset
 	        : client_handle->restart_marker.stream.offset);
+	if(result != GLOBUS_SUCCESS)
+	{
+	    goto result_fault;
+	}
+	break;
+	
+    case GLOBUS_FTP_CLIENT_TARGET_SETUP_ALLO:
+	/*
+	 * ALLO is sent before a STOR, REST or STOR is next.
+	 */
+	globus_assert(
+	    client_handle->state ==
+	    GLOBUS_FTP_CLIENT_HANDLE_DEST_SETUP_CONNECTION);
+
+	target->state = GLOBUS_FTP_CLIENT_TARGET_ALLO;
+	target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_TRANSFER_MODIFIERS;
+
+	globus_i_ftp_client_plugin_notify_command(
+	    client_handle,
+            target->url_string,
+	    target->mask,
+	    "ALLO %" GLOBUS_OFF_T_FORMAT CRLF,
+	    target->attr->allocated_size);
+
+	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE)
+	{
+	    break;
+	}
+
+	globus_assert(
+	    client_handle->state ==
+	    GLOBUS_FTP_CLIENT_HANDLE_DEST_SETUP_CONNECTION);
+
+	result = globus_ftp_control_send_command(
+	    handle,
+	    "ALLO %" GLOBUS_OFF_T_FORMAT CRLF,
+	    globus_i_ftp_client_response_callback,
+	    user_arg,
+	    target->attr->allocated_size);
 	if(result != GLOBUS_SUCCESS)
 	{
 	    goto result_fault;
@@ -2125,9 +2179,9 @@ redo:
     case GLOBUS_FTP_CLIENT_TARGET_REST:
 	globus_assert(
 	    client_handle->state ==
-	    GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION ||
-	    client_handle->state ==
-	    GLOBUS_FTP_CLIENT_HANDLE_DEST_SETUP_CONNECTION);
+            GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION ||
+            client_handle->state ==
+            GLOBUS_FTP_CLIENT_HANDLE_DEST_SETUP_CONNECTION);
 
 	if((!error) &&
 	   response->response_class == GLOBUS_FTP_POSITIVE_INTERMEDIATE_REPLY)
@@ -2148,6 +2202,41 @@ redo:
 	}
 
 	target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_OPERATION;
+	goto redo;
+
+    case GLOBUS_FTP_CLIENT_TARGET_ALLO:
+	globus_assert(
+	    client_handle->state ==
+	    GLOBUS_FTP_CLIENT_HANDLE_DEST_SETUP_CONNECTION);
+
+	if((!error) &&
+	   response->response_class == GLOBUS_FTP_POSITIVE_COMPLETION_REPLY)
+	{
+	}
+	else
+	{
+	    /*  Don't think we really care about error response here
+	    target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_CONNECTION;
+
+	    goto notify_fault;
+	    */
+	}
+        if(client_handle->restart_marker.type !=
+            GLOBUS_FTP_CLIENT_RESTART_NONE)
+        {
+            if(target->mode == GLOBUS_FTP_CONTROL_MODE_STREAM)
+            {
+                target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_REST_STREAM;
+            }
+            else
+            {
+                target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_REST_EB;
+            }
+        }
+        else
+        {
+            target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_OPERATION;
+        }
 	goto redo;
 
     case GLOBUS_FTP_CLIENT_TARGET_SETUP_OPERATION:

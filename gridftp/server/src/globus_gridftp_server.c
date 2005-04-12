@@ -1,13 +1,25 @@
+
+/*
+ * This file or a portion of this file is licensed under the terms of the
+ * Globus Toolkit Public License, found at
+ * http://www.globus.org/toolkit/download/license.html.
+ * If you redistribute this file, with or without modifications,
+ * you must include this notice in the file.
+ */
+
 #include "globus_xio.h"
 #include "globus_xio_tcp_driver.h"
 #include "globus_i_gridftp_server.h"
 #include "version.h"
+#include "globus_i_gfs_ipc.h"
 
 #include <sys/wait.h>
+#include <signal.h>
 
 static globus_cond_t                    globus_l_gfs_cond;
 static globus_mutex_t                   globus_l_gfs_mutex;
 static globus_bool_t                    globus_l_gfs_terminated = GLOBUS_FALSE;
+static unsigned int                     globus_l_gfs_outstanding = 0;
 static unsigned int                     globus_l_gfs_open_count = 0;
 static unsigned int                     globus_l_gfs_max_open_count = 0;
 static globus_xio_driver_t              globus_l_gfs_tcp_driver = GLOBUS_NULL;
@@ -16,6 +28,9 @@ static globus_bool_t                    globus_l_gfs_xio_server_accepting;
 static globus_xio_attr_t                globus_l_gfs_xio_attr;
 static globus_bool_t                    globus_l_gfs_exit = GLOBUS_FALSE;
 static globus_bool_t                    globus_l_gfs_sigint_caught = GLOBUS_FALSE;
+
+static char **                          globus_l_gfs_child_argv = NULL;
+static int                              globus_l_gfs_child_argc = 0;
 
 static
 globus_result_t
@@ -88,6 +103,11 @@ globus_l_gfs_sigint(
             globus_i_gfs_log_message(
                 GLOBUS_I_GFS_LOG_ERR, 
                 "Forcing unclean shutdown.\n");
+        }
+        if(globus_l_gfs_xio_server)
+        {
+            globus_xio_server_close(globus_l_gfs_xio_server);
+            globus_l_gfs_xio_server = GLOBUS_NULL;
         }
 
         globus_l_gfs_sigint_caught = GLOBUS_TRUE;
@@ -281,13 +301,9 @@ globus_result_t
 globus_l_gfs_spawn_child(
     globus_xio_handle_t                 handle)
 {
-    char **                             new_argv;
-    char **                             prog_argv;
     globus_result_t                     result;
     pid_t                               child_pid;
     globus_xio_system_handle_t          socket_handle;
-    int                                 i;
-    int                                 j;
     int                                 rc;
     GlobusGFSName(globus_l_gfs_spawn_child);
 
@@ -325,44 +341,27 @@ globus_l_gfs_spawn_child(
         close(socket_handle);
 
         /* exec the process */
-        prog_argv = (char **) globus_i_gfs_config_get("argv");
-        for(i = 0; prog_argv[i] != NULL; i++)
+        if(*globus_l_gfs_child_argv[0] == '/')
         {
+            rc = execv(globus_l_gfs_child_argv[0], globus_l_gfs_child_argv);
         }
-        new_argv = (char **) globus_calloc(1, sizeof(char *) * (i + 2));
-        if(new_argv == NULL)
+        else
         {
-            goto child_close_error;
+            rc = execvp(globus_l_gfs_child_argv[0], globus_l_gfs_child_argv);
         }
-        if((new_argv[0] = globus_i_gfs_config_string("exec")) == NULL)
-        {
-            new_argv[0] = globus_i_gfs_config_string("exec_name");
-        }
-        for(i = 1, j = 1; prog_argv[i] != NULL; i++)
-        {
-            if(strcmp(prog_argv[i], "-S") != 0 &&
-                strcmp(prog_argv[i], "-s") != 0)
-            {
-                if(strcmp(prog_argv[i], "-p") == 0)
-                {
-                    i++;
-                }
-                else
-                {   
-                    new_argv[j++] = prog_argv[i];
-                }
-            }
-        }
-        new_argv[j++] = "-i";
-        new_argv[j] = NULL;
-
-        rc = execv(new_argv[0], new_argv);
         if(rc == -1)
         {
+            char *                      error_msg;
+
+            error_msg = globus_common_create_string("%s\n%s\n%s\n%s",
+                _GSSL("Could not exec child process."),
+                _GSSL("Please verify that a gridftp server is located at: "),
+                globus_l_gfs_child_argv[0],
+                _GSSL("Or try the -exec flag."));
             result = GlobusGFSErrorSystemError("execv", errno);
-            globus_i_gfs_log_result(
-                _GSSL("Could not exec child process"), result);
-            goto child_error;
+            globus_i_gfs_log_result(error_msg, result);
+
+            goto child_close_error;
         }
     } 
     else if(child_pid == -1)
@@ -402,7 +401,6 @@ static
 void
 globus_i_gfs_connection_closed()
 {
-    globus_result_t                     result;
     GlobusGFSName(globus_i_gfs_connection_closed);
     GlobusGFSDebugEnter();
 
@@ -415,43 +413,8 @@ globus_i_gfs_connection_closed()
             globus_cond_signal(&globus_l_gfs_cond);
         }
     }
-    /* if we are a server */
-    else if(globus_l_gfs_xio_server)
-    {
-        /* if not waiting on an accept, and are below the max
-            register another accept.
-            this happens when we hit the max connection count, the
-            death of this connection leaves room for the next */
-        if(!globus_l_gfs_xio_server_accepting &&
-            globus_l_gfs_open_count < globus_l_gfs_max_open_count)
-        {
-            result = globus_xio_server_register_accept(
-                globus_l_gfs_xio_server,
-                globus_l_gfs_server_accept_cb,
-                NULL);
-            if(result != GLOBUS_SUCCESS)
-            {
-                goto error_accept;
-            }
-            globus_l_gfs_xio_server_accepting = GLOBUS_TRUE;
-        }
-    }
  
     GlobusGFSDebugExit();
-    return;
-
-/* if an accept fails, set terminated to true because we can no longer 
-    take connects so once all hte current ones end we should let the
-    process die */
-error_accept:
-    globus_l_gfs_terminated = GLOBUS_TRUE;
-    if(globus_l_gfs_open_count == 0)
-    {
-        globus_cond_signal(&globus_l_gfs_cond);
-    }
-    globus_i_gfs_log_result("Unable to accept connections", result);
-
-    GlobusGFSDebugExitWithError();
 }
 
 static
@@ -494,7 +457,7 @@ void
 globus_l_gfs_ipc_open_cb(
     globus_gfs_ipc_handle_t             ipc_handle,
     globus_result_t                     result,
-    globus_gfs_ipc_reply_t *            reply,
+    globus_gfs_finished_info_t *        reply,
     void *                              user_arg)
 {
     GlobusGFSName(globus_l_gfs_ipc_open_cb);
@@ -736,6 +699,7 @@ globus_l_gfs_convert_inetd_handle(void)
         goto error_stack;
     }
     
+    globus_xio_stack_destroy(stack);
     GlobusGFSDebugExit();
     return GLOBUS_SUCCESS;
 
@@ -747,7 +711,93 @@ error:
 }
 
 
+static
+void
+globus_l_gfs_reject_close_cb(
+    globus_xio_handle_t                 handle,
+    globus_result_t                     result,
+    void *                              user_arg)
+{
+    globus_mutex_lock(&globus_l_gfs_mutex);
+    {
+        globus_l_gfs_outstanding--;
+    }
+    globus_mutex_unlock(&globus_l_gfs_mutex);
+}
 
+static
+void
+globus_l_gfs_reject_write_cb(
+    globus_xio_handle_t                 handle,
+    globus_result_t                     result,
+    globus_byte_t *                     buffer,
+    globus_size_t                       len,
+    globus_size_t                       nbytes,
+    globus_xio_data_descriptor_t        data_desc,
+    void *                              user_arg)
+{
+    globus_mutex_lock(&globus_l_gfs_mutex);
+    {
+        result = globus_xio_register_close(
+            handle,
+            NULL,
+            globus_l_gfs_reject_close_cb,
+            NULL);
+        if(result != GLOBUS_SUCCESS)
+        {
+            globus_l_gfs_outstanding--;
+        }
+    }
+    globus_mutex_unlock(&globus_l_gfs_mutex);
+}
+
+
+static
+void
+globus_l_gfs_reject_open_cb(
+    globus_xio_handle_t                 handle,
+    globus_result_t                     result,
+    void *                              user_arg)
+{
+    char * sorry_msg = "421 Service not available, closing control connection\r\n";
+
+    globus_mutex_lock(&globus_l_gfs_mutex);
+    {
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error;
+        }
+
+        result = globus_xio_register_write(
+            handle,
+            sorry_msg,
+            strlen(sorry_msg),
+            strlen(sorry_msg),
+            NULL,
+            globus_l_gfs_reject_write_cb,
+            NULL);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error;
+        }
+    }
+    globus_mutex_unlock(&globus_l_gfs_mutex);
+
+    return;
+
+error:
+
+    result = globus_xio_register_close(
+        handle,
+        NULL,
+        globus_l_gfs_reject_close_cb,
+        NULL);
+    if(result != GLOBUS_SUCCESS)
+    {
+        globus_l_gfs_outstanding--;
+    }
+    globus_mutex_unlock(&globus_l_gfs_mutex);
+}
 
 /* a new client has connected */
 static
@@ -763,31 +813,51 @@ globus_l_gfs_server_accept_cb(
 
     globus_mutex_lock(&globus_l_gfs_mutex);
     {
+        globus_l_gfs_outstanding--;
         globus_l_gfs_xio_server_accepting = GLOBUS_FALSE;
         if(result != GLOBUS_SUCCESS)
         {
             goto error_accept;
         }
 
-        /* if we fail to actually open a connection with either method we
-            do not fail, just lof that the connection failed */
-        if(globus_i_gfs_config_bool("daemon"))
+        /* if too many already open */
+        if(globus_l_gfs_max_open_count != 0 &&
+            globus_l_gfs_open_count >= globus_l_gfs_max_open_count)
         {
-            result = globus_l_gfs_spawn_child(handle);
+            result = globus_xio_register_open(
+                handle,
+                NULL,
+                NULL,
+                globus_l_gfs_reject_open_cb,
+                NULL);
             if(result != GLOBUS_SUCCESS)
             {
-                globus_i_gfs_log_result("Could not spawn a child", result);
-                result = GLOBUS_SUCCESS;
+                goto error_accept;
             }
+            globus_l_gfs_outstanding++;
         }
         else
         {
-            result = globus_l_gfs_open_new_server(handle);
-            if(result != GLOBUS_SUCCESS)
+            /* if we fail to actually open a connection with either method we
+                do not fail, just lof that the connection failed */
+            if(globus_i_gfs_config_bool("daemon"))
             {
-                globus_i_gfs_log_result(_GSSL("Could not open new handle"),
-			       	result);
-                result = GLOBUS_SUCCESS;
+                result = globus_l_gfs_spawn_child(handle);
+                if(result != GLOBUS_SUCCESS)
+                {
+                    globus_i_gfs_log_result("Could not spawn a child", result);
+                    result = GLOBUS_SUCCESS;
+                }
+            }
+            else
+            {
+                result = globus_l_gfs_open_new_server(handle);
+                if(result != GLOBUS_SUCCESS)
+                {
+                    globus_i_gfs_log_result(_GSSL("Could not open new handle"),
+			       	    result);
+                    result = GLOBUS_SUCCESS;
+                }
             }
         }
         /* be sure to close handle on server proc and close server on 
@@ -799,9 +869,8 @@ globus_l_gfs_server_accept_cb(
          * win32 will have to simulate fork/exec... should i just do that
          * for unix too?
          */
+
         if(!globus_l_gfs_terminated &&
-            (globus_l_gfs_max_open_count == 0 || 
-                globus_l_gfs_open_count < globus_l_gfs_max_open_count) &&
             !globus_i_gfs_config_bool("connections_disabled"))
         {
             result = globus_xio_server_register_accept(
@@ -812,6 +881,7 @@ globus_l_gfs_server_accept_cb(
             {
                 goto error_register_accept;
             }
+            globus_l_gfs_outstanding++;
             globus_l_gfs_xio_server_accepting = GLOBUS_TRUE;
         }
     }
@@ -933,7 +1003,7 @@ globus_l_gfs_be_daemon()
         fflush(stdout);
         globus_free(contact_string);
     }
-    
+
     result = globus_xio_server_register_accept(
         globus_l_gfs_xio_server,
         globus_l_gfs_server_accept_cb,
@@ -942,6 +1012,8 @@ globus_l_gfs_be_daemon()
     {
         goto contact_error;
     }
+    globus_l_gfs_outstanding++;
+
     globus_l_gfs_xio_server_accepting = GLOBUS_TRUE;
     globus_xio_stack_destroy(stack);
     globus_xio_attr_destroy(attr);
@@ -964,50 +1036,102 @@ error:
 
 static
 void
-globus_l_gfs_be_clean_up()
+globus_l_gfs_server_build_child_args()
 {
-    GlobusGFSName(globus_l_gfs_be_clean_up);
-    GlobusGFSDebugEnter();
+    int                                 i;
+    int                                 j;
+    char **                             prog_argv;
+    GlobusGFSName(globus_l_gfs_server_build_child_args);
 
-    if(globus_l_gfs_xio_server)
+    /* exec the process */
+    prog_argv = (char **) globus_i_gfs_config_get("argv");
+    for(i = 0; prog_argv[i] != NULL; i++)
     {
-        globus_xio_server_close(globus_l_gfs_xio_server);
+    }
+    globus_l_gfs_child_argv = (char **)
+        globus_calloc(1, sizeof(char *) * (i + 2));
+    if(globus_l_gfs_child_argv == NULL)
+    {
+        globus_result_t             result;
+        char *                      error_msg;
+
+        error_msg = globus_common_create_string("%s",
+            _GSSL("Small malloc failed.  Unrecoverable error."));
+        result = GlobusGFSErrorSystemError("malloc", errno);
+        globus_i_gfs_log_result(error_msg, result);
+
+        exit(1);
     }
 
-    globus_xio_attr_destroy(globus_l_gfs_xio_attr);
-    globus_xio_driver_unload(globus_l_gfs_tcp_driver);
-    globus_i_gfs_log_close();
-
-    globus_module_deactivate_all();
-
-    GlobusGFSDebugExit();
+    if((globus_l_gfs_child_argv[0]=globus_i_gfs_config_string("exec")) == NULL)
+    {
+        globus_l_gfs_child_argv[0] = globus_i_gfs_config_string("exec_name");
+    }
+    for(i = 1, j = 1; prog_argv[i] != NULL; i++)
+    {
+        if(strcmp(prog_argv[i], "-S") != 0 &&
+            strcmp(prog_argv[i], "-s") != 0)
+        {
+            globus_l_gfs_child_argv[j++] = prog_argv[i];
+        }
+    }
+    globus_l_gfs_child_argv[j++] = "-i";
+    globus_l_gfs_child_argv[j] = NULL;
+    globus_l_gfs_child_argc = j;
 }
 
 static
 void
 globus_l_gfs_server_detached()
 {
+    int                                 rc;
     pid_t                               pid;
     GlobusGFSName(globus_l_gfs_server_detached);
 
-    /* this is where i detach the server into the background
-     * not sure how this will work for win32.  if it involves starting a
-     * new process, need to set server handle to not close on exec
-     */
+    globus_l_gfs_server_build_child_args();
+    globus_l_gfs_child_argv[globus_l_gfs_child_argc-1] = "-s";
+
     pid = fork();
     if(pid < 0)
     {
     }
+    /* if parent just end */
     else if(pid != 0)
     {
         exit(0);
     }
+    /* if child */
     else
     {
         setsid();
         freopen("/dev/null", "w+", stdin);
         freopen("/dev/null", "w+", stdout);
         freopen("/dev/null", "w+", stderr);
+
+       /* exec the process */
+        if(*globus_l_gfs_child_argv[0] == '/')
+        {
+            rc = execv(globus_l_gfs_child_argv[0], globus_l_gfs_child_argv);
+        }
+        else
+        {
+            rc = execvp(globus_l_gfs_child_argv[0], globus_l_gfs_child_argv);
+        }
+        if(rc == -1)
+        {
+            globus_result_t             result;
+            char *                      error_msg;
+
+            error_msg = globus_common_create_string("%s\n%s\n%s\n%s",
+                _GSSL("Could not exec process."),
+                _GSSL("Please verify that a gridftp server is located at: "),
+                globus_l_gfs_child_argv[0],
+                _GSSL("Or try the -exec flag."));
+            result = GlobusGFSErrorSystemError("execv", errno);
+            globus_i_gfs_log_result(error_msg, result);
+
+            exit(1);
+        }
     }
 
 }
@@ -1017,23 +1141,16 @@ main(
     int                                 argc,
     char **                             argv)
 {
-    int                                 i;
     int                                 rc = 0;
     char *                              config;
     globus_result_t                     result;
     GlobusGFSName(main);
 
-    for(i = 0; i < argc; i++)
-    {
-        if(strcmp("-S", argv[i]) == 0)
-        {
-            globus_l_gfs_server_detached();
-        }
-    }
-
     /* activte globus stuff */    
+    globus_module_activate(GLOBUS_COMMON_MODULE);
     globus_module_activate(GLOBUS_XIO_MODULE);
     globus_module_activate(GLOBUS_GRIDFTP_SERVER_MODULE);
+    globus_module_activate(GLOBUS_USAGE_MODULE);
 
     /* init all the server modules */
     globus_i_gfs_config_init(argc, argv);
@@ -1084,6 +1201,13 @@ main(
         goto error_ver;
     }
 
+    /* detach from the terminal if we need to */
+    if(globus_i_gfs_config_bool("detach"))
+    {
+        globus_l_gfs_server_detached();
+    }
+    
+    /* XXX we're missing this */
     if(globus_i_gfs_config_bool("detach"))
     {
         if(globus_i_gfs_config_bool("chdir"))
@@ -1135,6 +1259,9 @@ main(
         {
             freopen("/dev/null", "w+", stdout);
             freopen("/dev/null", "w+", stderr);
+            globus_i_gfs_log_message(
+                GLOBUS_I_GFS_LOG_INFO,
+                "Server started in inetd mode.\n");
             if(config)
             {
                 globus_i_gfs_log_message(
@@ -1145,11 +1272,15 @@ main(
         }
         else
         {
+            globus_l_gfs_server_build_child_args();
+            globus_i_gfs_log_message(
+                GLOBUS_I_GFS_LOG_INFO,
+                "Server started in daemon mode.\n");
             if(config)
             {
                 globus_i_gfs_log_message(
                     GLOBUS_I_GFS_LOG_INFO,
-                    "Configuration read from %s\n", config);
+                    "Configuration read from %s.\n", config);
             }            
             result = globus_l_gfs_be_daemon();
         }
@@ -1160,14 +1291,21 @@ main(
         }
 
         /* run until we are done */ 
-        while((!globus_l_gfs_terminated || globus_l_gfs_open_count > 0))
+        while(!globus_l_gfs_terminated || 
+                globus_l_gfs_open_count > 0 ||
+                globus_l_gfs_outstanding > 0)
         {
             globus_cond_wait(&globus_l_gfs_cond, &globus_l_gfs_mutex);
         }
     }
     globus_mutex_unlock(&globus_l_gfs_mutex);
 
-    globus_l_gfs_be_clean_up();
+    globus_xio_attr_destroy(globus_l_gfs_xio_attr);
+    globus_xio_driver_unload(globus_l_gfs_tcp_driver);
+    globus_i_gfs_log_close();
+
+    globus_module_deactivate_all();
+
 
     GlobusGFSDebugExit();
     return 0;
@@ -1176,7 +1314,12 @@ error_lock:
     globus_i_gfs_log_result(_GSSL("Could not start server"), result);
     globus_mutex_unlock(&globus_l_gfs_mutex);
 error_ver:
-    globus_l_gfs_be_clean_up();
+    globus_xio_attr_destroy(globus_l_gfs_xio_attr);
+    globus_xio_driver_unload(globus_l_gfs_tcp_driver);
+    globus_i_gfs_log_close();
+
+    globus_module_deactivate_all();
+
 
     GlobusGFSDebugExitWithError();
     return rc;

@@ -39,9 +39,10 @@ static char *  LONG_USAGE = \
 "    -q                        Quiet mode, minimal output\n" \
 "    -verify                   Verifies certificate to make proxy for\n" \
 "    -pwstdin                  Allows passphrase from stdin\n" \
-"    -limited                  Creates a limited globus proxy\n" \
-"    -independent              Creates a independent globus proxy\n" \
+"    -limited                  Creates a limited proxy\n" \
+"    -independent              Creates a independent proxy\n" \
 "    -old                      Creates a legacy globus proxy\n" \
+"    -rfc                      Creates a RFC 3820 compliant proxy\n" \
 "    -valid <h:m>              Proxy is valid for h hours and m \n" \
 "                              minutes (default:12:00)\n" \
 "    -hours <hours>            Deprecated support of hours option\n" \
@@ -161,6 +162,11 @@ main(
     globus_gsi_cred_handle_t            proxy_cred_handle = NULL;
     globus_gsi_cert_utils_cert_type_t   cert_type =
         GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_IMPERSONATION_PROXY;
+    globus_bool_t                       rfc_proxy = GLOBUS_FALSE;
+    globus_bool_t                       old_proxy = GLOBUS_FALSE;
+    globus_bool_t                       limited_proxy = GLOBUS_FALSE;
+    globus_bool_t                       independent_proxy = GLOBUS_FALSE;
+    globus_bool_t                       restricted_proxy = GLOBUS_FALSE;
     BIO *                               pem_proxy_bio = NULL;
     time_t                              goodtill;
     time_t                              lifetime;
@@ -169,7 +175,7 @@ main(
     char *                              policy_filename = NULL;
     char *                              policy_language = NULL;
     int                                 policy_NID;
-    int                                 path_length = -1;
+    long                                path_length = -1;
     int                                 (*pw_cb)() = NULL;
     int                                 return_value = 0;
     
@@ -316,30 +322,42 @@ main(
         }
         else if(strcmp(argp, "-limited") == 0)
         {
-            if(GLOBUS_GSI_CERT_UTILS_IS_GSI_2_PROXY(cert_type))
-            { 
-                cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY;
-            }
-            else
+            if(independent_proxy == GLOBUS_TRUE ||
+               restricted_proxy == GLOBUS_TRUE)
             {
-                cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_LIMITED_PROXY;
+                args_error(arg_index, argp, 
+                           "-independent, -limited and -policy/-policy-language are mutually exclusive");
             }
+            limited_proxy = GLOBUS_TRUE;
         }
         else if(strcmp(argp, "-independent") == 0)
         {
-            cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_INDEPENDENT_PROXY;
+            if(limited_proxy == GLOBUS_TRUE ||
+               restricted_proxy == GLOBUS_TRUE)
+            {
+                args_error(arg_index, argp, 
+                           "-independent, -limited and -policy/-policy-language are mutually exclusive");
+            }
+            independent_proxy = GLOBUS_TRUE;
         }
         else if(strcmp(argp, "-old") == 0)
         {
-            if(GLOBUS_GSI_CERT_UTILS_IS_LIMITED_PROXY(cert_type))
-            { 
-                cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY;
-            }
-            else
+            if(rfc_proxy == GLOBUS_TRUE)
             {
-                cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_PROXY;
+                args_error(arg_index, argp, 
+                           "-old and -rfc are mutually exclusive");
             }
-        }        
+            old_proxy = GLOBUS_TRUE;
+        }
+        else if(strcmp(argp, "-rfc") == 0)
+        {
+            if(old_proxy == GLOBUS_TRUE)
+            {
+                args_error(arg_index, argp, 
+                           "-old and -rfc are mutually exclusive");
+            }
+            rfc_proxy = GLOBUS_TRUE;
+        }
         else if(strcmp(argp, "-verify") == 0)
         {
             verify++;
@@ -354,22 +372,39 @@ main(
         }
         else if(strcmp(argp, "-policy") == 0)
         {
+            if(limited_proxy == GLOBUS_TRUE ||
+               independent_proxy == GLOBUS_TRUE)
+            {
+                args_error(arg_index, argp, 
+                           "-independent, -limited and -policy/-policy-language are mutually exclusive");
+            }
             args_verify_next(arg_index, argp, 
                              "policy file name missing");
             policy_filename = argv[++arg_index];
-            cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_RESTRICTED_PROXY;
+            restricted_proxy = GLOBUS_TRUE;
         }
         else if(strcmp(argp, "-pl") == 0 ||
                 strcmp(argp, "-policy-language") == 0)
         {
+            if(limited_proxy == GLOBUS_TRUE ||
+               independent_proxy == GLOBUS_TRUE)
+            {
+                args_error(arg_index, argp, 
+                           "-independent, -limited and -policy/-policy-language are mutually exclusive");
+            }
             args_verify_next(arg_index, argp, "policy language missing");
             policy_language = argv[++arg_index];
-            cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_RESTRICTED_PROXY;
+            restricted_proxy = GLOBUS_TRUE;
         }
         else if(strcmp(argp, "-path-length") == 0)
         {
+            char * remaining;
             args_verify_next(arg_index, argp, "integer argument missing");
-            path_length = atoi(argv[arg_index + 1]);
+            path_length = strtol(argv[arg_index + 1], &remaining, 0);
+            if(*remaining != '\0')
+            {
+                args_error(arg_index, argp, "requires an integer argument");
+            }
             arg_index++;
         }
         else
@@ -378,6 +413,62 @@ main(
         }
     }
 
+    /* Figure out cert type */
+
+    if(old_proxy == GLOBUS_TRUE)
+    {
+        if(limited_proxy == GLOBUS_TRUE)
+        {
+            cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY;
+        }
+        else if(restricted_proxy == GLOBUS_TRUE)
+        {
+            globus_libc_fprintf(stderr, 
+                                "\n\nERROR: Globus legacy proxies are"
+                                " not able to carry policy data or path"
+                                " length contraints\n");
+            exit(1);
+        }
+        else
+        {
+            cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_PROXY;
+        }
+    }
+    else if(rfc_proxy == GLOBUS_TRUE)
+    {
+        if(limited_proxy == GLOBUS_TRUE)
+        {
+            cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_RFC_LIMITED_PROXY;
+        }
+        else if(restricted_proxy == GLOBUS_TRUE)
+        {
+            cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_RFC_RESTRICTED_PROXY;
+        }
+        else if(independent_proxy == GLOBUS_TRUE)
+        {
+            cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_RFC_INDEPENDENT_PROXY;
+        }
+        else
+        {
+            cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_RFC_IMPERSONATION_PROXY;
+        }
+    }
+    else
+    {
+        if(limited_proxy == GLOBUS_TRUE)
+        {
+            cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_LIMITED_PROXY;
+        }
+        else if(restricted_proxy == GLOBUS_TRUE)
+        {
+            cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_RESTRICTED_PROXY;
+        }
+        else if(independent_proxy == GLOBUS_TRUE)
+        {
+            cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_INDEPENDENT_PROXY;
+        }
+    }
+    
     /* A few sanity checks */
 
     if(policy_language && !policy_filename)
@@ -388,16 +479,6 @@ main(
         exit(1);
     }
 
-    if((policy_filename || path_length != -1)
-       && !GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY(cert_type))
-    {
-        globus_libc_fprintf(stderr, 
-                            "\n\nERROR: Globus legacy proxies are"
-                            " not able to carry policy data or path"
-                            " length contraints\n");
-        exit(1);
-    }
-    
     result = globus_gsi_proxy_handle_attrs_init(&proxy_handle_attrs);
     
     if(result != GLOBUS_SUCCESS)

@@ -22,6 +22,8 @@ EXTERN_C_BEGIN
 extern int                              globus_i_gsi_gss_assist_debug_level;
 extern FILE *                           globus_i_gsi_gss_assist_debug_fstream;
 
+extern globus_mutex_t                   globus_i_gsi_gss_assist_mutex;
+
 #ifdef BUILD_DEBUG
 
 #define GLOBUS_I_GSI_GSS_ASSIST_DEBUG(_LEVEL_) \

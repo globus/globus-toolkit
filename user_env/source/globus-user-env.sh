@@ -16,6 +16,7 @@ fi
 if [ -n "${GLOBUS_PATH}" ]; then
     PATH=`echo "${PATH}" | sed -e "s%:${GLOBUS_PATH}[^:]*%%g" -e "s%^${GLOBUS_PATH}[^:]*:\{0,1\}%%"`
     LD_LIBRARY_PATH=`echo "${LD_LIBRARY_PATH}" | sed -e "s%:${GLOBUS_PATH}[^:]*%%g" -e "s%^${GLOBUS_PATH}[^:]*:\{0,1\}%%"`
+    DYLD_LIBRARY_PATH=`echo "${DYLD_LIBRARY_PATH}" | sed -e "s%:${GLOBUS_PATH}[^:]*%%g" -e "s%^${GLOBUS_PATH}[^:]*:\{0,1\}%%"`
     LIBPATH=`echo "${LIBPATH}" | sed -e "s%:${GLOBUS_PATH}[^:]*%%g" -e "s%^${GLOBUS_PATH}[^:]*:\{0,1\}%%"`
     SHLIB_PATH=`echo "${SHLIB_PATH}" | sed -e "s%:${GLOBUS_PATH}[^:]*%%g" -e "s%^${GLOBUS_PATH}[^:]*:\{0,1\}%%"`
     SASL_PATH=`echo "${SASL_PATH}" | sed -e "s%:${GLOBUS_PATH}[^:]*%%g" -e "s%^${GLOBUS_PATH}[^:]*:\{0,1\}%%"`
@@ -31,7 +32,7 @@ if [ -n "${GLOBUS_PATH}" ]; then
 fi
 
 PATH=`echo "${PATH}" | sed -e "s%:${GLOBUS_LOCATION}[^:]*%%g" -e "s%^${GLOBUS_LOCATION}[^:]*:\{0,1\}%%"`
-LD_LIBRARY_PATH=`echo "${LD_LIBRARY_PATH}" | sed -e "s%:${GLOBUS_LOCATION}[^:]*%%g" -e "s%^${GLOBUS_LOCATION}[^:]*:\{0,1\}%%"`
+DYLD_LIBRARY_PATH=`echo "${DYLD_LIBRARY_PATH}" | sed -e "s%:${GLOBUS_LOCATION}[^:]*%%g" -e "s%^${GLOBUS_LOCATION}[^:]*:\{0,1\}%%"`
 LIBPATH=`echo "${LIBPATH}" | sed -e "s%:${GLOBUS_LOCATION}[^:]*%%g" -e "s%^${GLOBUS_LOCATION}[^:]*:\{0,1\}%%"`
 SHLIB_PATH=`echo "${SHLIB_PATH}" | sed -e "s%:${GLOBUS_LOCATION}[^:]*%%g" -e "s%^${GLOBUS_LOCATION}[^:]*:\{0,1\}%%"`
 SASL_PATH=`echo "${SASL_PATH}" | sed -e "s%:${GLOBUS_LOCATION}[^:]*%%g" -e "s%^${GLOBUS_LOCATION}[^:]*:\{0,1\}%%"`
@@ -59,6 +60,11 @@ if [ -n "${LD_LIBRARY_PATH}" ]; then
 fi
 LD_LIBRARY_PATH="${GLOBUS_LOCATION}/lib${DELIM}${LD_LIBRARY_PATH}"
 
+DELIM=
+if [ -n "${DYLD_LIBRARY_PATH}" ]; then
+    DELIM=:
+fi
+DYLD_LIBRARY_PATH="${GLOBUS_LOCATION}/lib${DELIM}${DYLD_LIBRARY_PATH}"
 
 if [ -z "${LIBPATH}" ]; then
     LIBPATH="/usr/lib:/lib"
@@ -77,7 +83,7 @@ if [ -n "${SASL_PATH}" ]; then
 fi
 SASL_PATH="${GLOBUS_LOCATION}/lib/sasl${DELIM}${SASL_PATH}"
 
-export GLOBUS_PATH PATH MANPATH LD_LIBRARY_PATH LIBPATH SHLIB_PATH SASL_PATH
+export GLOBUS_PATH PATH MANPATH LD_LIBRARY_PATH DYLD_LIBRARY_PATH LIBPATH SHLIB_PATH SASL_PATH
 
 if [ -n "${LD_LIBRARYN32_PATH}" ]; then
     DELIM=""

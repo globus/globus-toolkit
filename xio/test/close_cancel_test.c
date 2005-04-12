@@ -51,7 +51,6 @@ close_cancel_main(
 {
     int                                     rc;
     int                                     pos;
-    int                                     opt_offset;
     globus_xio_stack_t                      stack;
     globus_xio_handle_t                     handle;
     globus_result_t                         res;
@@ -67,8 +66,8 @@ close_cancel_main(
     res = globus_xio_stack_init(&stack, NULL);
     test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
-    opt_offset = parse_parameters(argc, argv, stack, attr);
-    pos = atoi(argv[opt_offset]);
+    parse_parameters(argc, argv, stack, attr);
+    pos = atoi(argv[argc - 1]);
 
     globus_mutex_init(&globus_l_mutex, NULL);
     globus_cond_init(&globus_l_cond, NULL);

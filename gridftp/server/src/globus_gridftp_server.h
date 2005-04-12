@@ -1,4 +1,13 @@
 
+/*
+ * This file or a portion of this file is licensed under the terms of the
+ * Globus Toolkit Public License, found at
+ * http://www.globus.org/toolkit/download/license.html.
+ * If you redistribute this file, with or without modifications,
+ * you must include this notice in the file.
+ */
+
+
 /* Header file for globus_gridftp_server modules.  
  * 
  * If you are interested in writing a module for this server and want to
@@ -32,9 +41,6 @@ extern globus_module_descriptor_t      globus_i_gfs_module;
 
 extern globus_extension_registry_t      globus_i_gfs_dsi_registry;
 #define GLOBUS_GFS_DSI_REGISTRY         &globus_i_gfs_dsi_registry
-
-#define GLOBUS_GRIDFTP_SERVER_RELEASE_TYPE " ** Development Release **"
-
 
 
 /*
@@ -88,6 +94,7 @@ typedef enum globus_gfs_command_type_e
     GLOBUS_GFS_CMD_MKD = 1,
     GLOBUS_GFS_CMD_RMD,
     GLOBUS_GFS_CMD_DELE,
+    GLOBUS_GFS_CMD_SITE_RDEL,
     GLOBUS_GFS_CMD_RNTO,
     GLOBUS_GFS_CMD_RNFR,
     GLOBUS_GFS_CMD_CKSM,
@@ -143,23 +150,23 @@ typedef enum globus_gfs_layout_type_e
  * Similar to a posix struct stat.  Defined in the server-lib.
  *
  * (this comment should not be relied upon, so check the
- *   definition in the server-lib to be sure)
+ *   definition in globus_gridftp_server_control.h to be sure)
  *  
- * typedef struct globus_gridftp_server_control_stat_s
- * {
- *     int                              mode;
- *     int                              nlink;
- *     char                             name[MAXPATHLEN];
- *     char                             symlink_target[MAXPATHLEN];
- *     uid_t                            uid;
- *     gid_t                            gid;
- *     globus_size_t                    size;
- *     globus_time_t                    atime;
- *     globus_time_t                    ctime;
- *     globus_time_t                    mtime;
- *     int                              dev;
- *     int                              ino;
- * } globus_gridftp_server_control_stat_t;
+ * typedef struct globus_gridftp_server_control_stat_s                    
+ * {                                                                      
+ *     int                                     mode;                      
+ *     int                                     nlink;                     
+ *     char *                                  name;          
+ *     char *                                  symlink_target;
+ *     uid_t                                   uid;                       
+ *     gid_t                                   gid;                       
+ *     globus_off_t                            size;                      
+ *     globus_time_t                           atime;                     
+ *     globus_time_t                           ctime;                     
+ *     globus_time_t                           mtime;                     
+ *     int                                     dev;                       
+ *     int                                     ino;                       
+ * } globus_gridftp_server_control_stat_t;                                
  */
 typedef globus_gridftp_server_control_stat_t    globus_gfs_stat_t;
 
@@ -329,8 +336,9 @@ typedef struct globus_gfs_transfer_info_s
     int                                 node_count;    
     /** node index */
     int                                 node_ndx;
-    /** number of parallel streams */
-    int                                 nstreams;   
+
+    /** client requested storage space size */
+    globus_off_t                        alloc_size;
 } globus_gfs_transfer_info_t;
 
 /*
@@ -375,11 +383,11 @@ typedef struct globus_gfs_data_info_s
     /** data channel type */
     char                                type;
     /** tcp buffersize to use */
-    int                                 tcp_bufsize;
+    globus_size_t                       tcp_bufsize;
     /** blocksize to use */
-    int                                 blocksize;
+    globus_size_t                       blocksize;
     /** blocksize to use for stripe layout */
-    int                                 stripe_blocksize;
+    globus_size_t                       stripe_blocksize;
     /** stripe layout to use */
     int                                 stripe_layout;
 
@@ -644,7 +652,7 @@ globus_gridftp_server_operation_event(
  * 
  * Speficic event notification for the start of a transfer.
  */ 
-globus_result_t
+void
 globus_gridftp_server_begin_transfer(
     globus_gfs_operation_t              op,
     int                                 event_mask,
@@ -660,6 +668,20 @@ globus_gridftp_server_finished_transfer(
     globus_gfs_operation_t              op, 
     globus_result_t                     result);
 
+/*
+ * finished session_start
+ * 
+ * Specific finished notification for session start completion.
+ * 
+ */ 
+void
+globus_gridftp_server_finished_session_start(
+    globus_gfs_operation_t              op, 
+    globus_result_t                     result,
+    void *                              session_arg,
+    char *                              username,
+    char *                              home_dir);
+    
 /*
  * finished command
  * 
@@ -686,7 +708,7 @@ globus_gridftp_server_finished_stat(
     int                                 stat_count);
 
 /*
- * finished stat
+ * finished active data
  * 
  * Speficic finished notification for completion of a active data creation.
  */ 
@@ -698,7 +720,7 @@ globus_gridftp_server_finished_active_data(
     globus_bool_t                       bi_directional);
 
 /*
- * finished stat
+ * finished passive data
  * 
  * Speficic finished notification for completion of a passive data creation.
  */ 
@@ -812,6 +834,29 @@ globus_gridftp_server_get_block_size(
     globus_size_t *                     block_size);
 
 /*
+ * get session username
+ * 
+ * This should can be called to get the username that the process is running
+ * under, which may be different from the username supplied in the
+ * session_start call in some cases.  
+ */ 
+void
+globus_gridftp_server_get_session_username(
+    globus_gfs_operation_t              op,
+    char **                             username);
+   
+/*
+ * get config string
+ * 
+ * This can be called to get the dsi specific configuration string 
+ * that is defined in the global configuration. 
+ */ 
+void
+globus_gridftp_server_get_config_string(
+    globus_gfs_operation_t              op,
+    char **                             config_string);
+
+/*
  * get read_range
  * 
  * This should be called during send() in order to know the specific
@@ -829,11 +874,12 @@ globus_gridftp_server_get_read_range(
 /*
  * get write_range
  * 
- * This should be called during recv() in order to know the specific
- * offset and length that the data will be written to storage system.
- * globus_gridftp_server_update_bytes_written();  
+ * This could be called during recv() in order to get hints on the specific
+ * offset and length that the data will be expected to come from 
+ * globus_gridftp_server_register_read() callbacks.  Note that this is 
+ * only a hint, and not necessarily the exact data ranges that will come.
+ * You would continue calling this until it returns a length of 0.
  */ 
- /* XXX explain better */
 void
 globus_gridftp_server_get_write_range(
     globus_gfs_operation_t              op,
@@ -841,22 +887,37 @@ globus_gridftp_server_get_write_range(
     globus_off_t *                      length);
 
 
-
-/* XXX Hack here until module loading framework is in */
-extern globus_gfs_storage_iface_t       globus_gfs_file_dsi_iface;
-extern globus_gfs_storage_iface_t       globus_gfs_remote_dsi_iface;
-
-
 /* END Storage Interface API */
 
+typedef enum
+{
+    GLOBUS_GFS_LOG_ERR = 0x01,
+    GLOBUS_GFS_LOG_WARN = 0x02,
+    GLOBUS_GFS_LOG_STATUS = 0x04,
+    GLOBUS_GFS_LOG_INFO = 0x08,
+    GLOBUS_GFS_LOG_DUMP = 0x10,
+    
+    GLOBUS_GFS_LOG_ALL = 0xFF
+} globus_gfs_log_type_t;
 
+void
+globus_gfs_log_message(
+    globus_gfs_log_type_t               type,
+    const char *                        format,
+    ...);
 
+void
+globus_gfs_log_result(
+    globus_gfs_log_type_t               type,
+    const char *                        lead,
+    globus_result_t                     result);
 
 /** Error and result object helper macros */   
 enum
 {
     GLOBUS_GFS_DEBUG_TRACE = 8,
-    GLOBUS_GFS_DEBUG_INFO = 16
+    GLOBUS_GFS_DEBUG_INFO = 16,
+    GLOBUS_GFS_DEBUG_STATE = 32
 };
 
 #ifdef __GNUC__
@@ -884,6 +945,11 @@ GlobusDebugDeclare(GLOBUS_GRIDFTP_SERVER);
     GlobusGFSDebugPrintf(                                                   \
         GLOBUS_GFS_DEBUG_TRACE,                                             \
         ("[%s] Exiting\n", _gfs_name))
+
+#define GlobusGFSDebugState(_state)                                         \
+    GlobusGFSDebugPrintf(                                                   \
+        GLOBUS_GFS_DEBUG_INFO,                                             \
+        ("[%s] State: %d\n", _gfs_name, _state))
 
 #define GlobusGFSDebugExitWithError()                                       \
     GlobusGFSDebugPrintf(                                                   \
@@ -984,5 +1050,442 @@ GlobusDebugDeclare(GLOBUS_GRIDFTP_SERVER);
         __LINE__,                                                           \
         "%s",                                                               \
         (reason))                             
-                                                                                                                                
+        
+/* 
+ * 
+ * IPC 
+ * 
+ */ 
+ 
+typedef struct globus_i_gfs_ipc_handle_s * globus_gfs_ipc_handle_t;
+
+/*
+ *  callbacks
+ *
+ *  all functions have the same callback, they examine the
+ *  globus_gfs_finished_info_t() structure for their specific info
+ *
+ *  error_cb
+ *  can be called at anytime.  typically means the ipc connection broke
+ *  in an irrecoverable way.  Even tho this is called all outstanding
+ *  callbacks will still be called (but with an error)
+ */
+ 
+ /*
+ *  replying
+ *
+ *  every comman requires a reply and comes with a reply id.  to reply
+ *  the requested side must fill in the globus_gfs_finished_info_t
+ *  structure and then pass it
+ *  to the function: globus_gfs_ipc_reply();  That call will result in
+ *  the ipc communication that will untilimately call the callback
+ *  on the callers side.
+ */
+typedef void
+(*globus_gfs_ipc_callback_t)(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    globus_result_t                     result,
+    globus_gfs_finished_info_t *            reply,
+    void *                              user_arg);
+
+typedef void
+(*globus_gfs_ipc_event_callback_t)(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    globus_result_t                     result,
+    globus_gfs_event_info_t *      reply,
+    void *                              user_arg);
+
+typedef void
+(*globus_gfs_ipc_close_callback_t)(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    globus_result_t                     result,
+    void *                              user_arg);
+
+typedef void
+(*globus_gfs_ipc_open_callback_t)(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    globus_result_t                     result,
+    globus_gfs_finished_info_t *            reply,
+    void *                              user_arg);
+
+typedef void
+(*globus_gfs_ipc_error_callback_t)(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    globus_result_t                     result,
+    void *                              user_arg);
+
+globus_result_t
+globus_gfs_ipc_reply_finished(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    globus_gfs_finished_info_t *            reply);
+
+globus_result_t
+globus_gfs_ipc_reply_event(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    globus_gfs_event_info_t *      reply);
+
+globus_result_t
+globus_gfs_ipc_reply_session(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    globus_gfs_finished_info_t *            reply);
+
+/*
+ *  sending
+ *
+ *  every command has a corresponding iface function.  A call to a
+ *  command function results in a call to the correspoding iface
+ *  function on the other side of the channel.
+ *
+ *  all parmeters are wrapped in a structure corresponding to
+ *  each function call type.  those structures are defined below
+ */
+
+typedef void
+(*globus_i_gfs_ipc_data_callback_t)(
+    globus_gfs_finished_info_t *            reply,
+    void *                              user_arg);
+
+typedef void
+(*globus_i_gfs_ipc_data_event_callback_t)(
+    globus_gfs_event_info_t *      reply,
+    void *                              user_arg);
+
+/*************************************************************************
+ *  interface function
+ *  ------------------
+ *
+ ************************************************************************/
+/* works with handle get */
+typedef void
+(*globus_gfs_ipc_iface_session_start_t)(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    const gss_ctx_id_t                  context,
+    globus_gfs_session_info_t *         session_info,
+    globus_i_gfs_ipc_data_callback_t    cb,
+    void *                              user_arg);
+
+globus_result_t
+globus_gfs_ipc_start_session(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    globus_gfs_session_info_t *         session_info,
+    globus_gfs_ipc_callback_t           cb,
+    void *                              user_arg);
+
+/* works with release */
+typedef void
+(*globus_gfs_ipc_iface_session_stop_t)(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    void *                              session_handle);
+
+globus_result_t
+globus_gfs_ipc_iface_session_stop(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    void *                              session_handle);
+
+typedef void
+(*globus_gfs_ipc_iface_set_cred_t)(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    void *                              session_handle,
+    gss_cred_id_t                       del_cred);
+
+globus_result_t
+globus_gfs_ipc_set_cred(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    gss_cred_id_t                       del_cred);
+
+typedef void
+(*globus_gfs_ipc_iface_buffer_send_t)(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    void *                              session_handle,
+    globus_byte_t *                     buffer,
+    int                                 buffer_type,
+    globus_size_t                       buffer_len);
+
+globus_result_t
+globus_gfs_ipc_request_buffer_send(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    globus_byte_t *                     buffer,
+    int                                 buffer_type,
+    globus_size_t                       buffer_len);
+
+/*
+ *  receive
+ *
+ *  tell the remote process to receive a file
+ */
+typedef void
+(*globus_gfs_ipc_iface_recv_t)(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    void *                              session_handle,
+    int                                 id,
+    globus_gfs_transfer_info_t *        recv_info,
+    globus_i_gfs_ipc_data_callback_t          cb,
+    globus_i_gfs_ipc_data_event_callback_t    event_cb,
+    void *                              user_arg);
+
+globus_result_t
+globus_gfs_ipc_request_recv(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    globus_gfs_transfer_info_t *        recv_info,
+    globus_gfs_ipc_callback_t           cb,
+    globus_gfs_ipc_event_callback_t     event_cb,
+    void *                              user_arg);
+
+/*
+ *  send
+ *  
+ *  tell remote process to send a file
+ */
+typedef void
+(*globus_gfs_ipc_iface_send_t)(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    void *                              session_handle,
+    int                                 id,
+    globus_gfs_transfer_info_t *        send_info,
+    globus_i_gfs_ipc_data_callback_t          cb,
+    globus_i_gfs_ipc_data_event_callback_t    event_cb,
+    void *                              user_arg);
+
+globus_result_t
+globus_gfs_ipc_request_send(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    globus_gfs_transfer_info_t *        send_info,
+    globus_gfs_ipc_callback_t           cb,
+    globus_gfs_ipc_event_callback_t     event_cb,
+    void *                              user_arg);
+
+typedef void
+(*globus_gfs_ipc_iface_list_t)(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    void *                              session_handle,
+    int                                 id,
+    globus_gfs_transfer_info_t *        list_info,
+    globus_i_gfs_ipc_data_callback_t    cb,
+    globus_i_gfs_ipc_data_event_callback_t    event_cb,
+    void *                              user_arg);
+
+globus_result_t
+globus_gfs_ipc_request_list(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    globus_gfs_transfer_info_t *        data_info,
+    globus_gfs_ipc_callback_t           cb,
+    globus_gfs_ipc_event_callback_t     event_cb,
+    void *                              user_arg);
+
+/*
+ *  command
+ *
+ *  tell remote side to execute the given command
+ */
+typedef void
+(*globus_gfs_ipc_iface_command_t)(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    void *                              session_handle,
+    int                                 id,
+    globus_gfs_command_info_t *         cmd_info,
+    globus_i_gfs_ipc_data_callback_t    cb,
+    void *                              user_arg);
+
+globus_result_t
+globus_gfs_ipc_request_command(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    globus_gfs_command_info_t *         cmd_info,
+    globus_gfs_ipc_callback_t           cb,
+    void *                              user_arg);
+
+/*
+ *  active data
+ *
+ *  tell remote side to create an active data connection
+ */
+typedef void
+(*globus_gfs_ipc_iface_active_data_t)(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    void *                              session_handle,
+    int                                 id,
+    globus_gfs_data_info_t *            data_info,
+    globus_i_gfs_ipc_data_callback_t    cb,
+    void *                              user_arg);
+
+globus_result_t
+globus_gfs_ipc_request_active_data(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    globus_gfs_data_info_t *            data_info,
+    globus_gfs_ipc_callback_t           cb,
+    void *                              user_arg);
+
+/*
+ *  passive data
+ *
+ *  tell remote side to do passive data connection
+ */
+typedef void
+(*globus_gfs_ipc_iface_passive_data_t)(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    void *                              session_handle,
+    int                                 id,
+    globus_gfs_data_info_t *            data_info,
+    globus_i_gfs_ipc_data_callback_t    cb,
+    void *                              user_arg);
+
+globus_result_t
+globus_gfs_ipc_request_passive_data(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    globus_gfs_data_info_t *            data_info,
+    globus_gfs_ipc_callback_t           cb,
+    void *                              user_arg);
+
+/*
+ *  send stat request
+ */
+typedef void
+(*globus_gfs_ipc_iface_stat_t)(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    void *                              session_handle,
+    int                                 id,
+    globus_gfs_stat_info_t *            stat_info,
+    globus_i_gfs_ipc_data_callback_t    cb,
+    void *                              user_arg);
+
+globus_result_t
+globus_gfs_ipc_request_stat(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    globus_gfs_stat_info_t *            stat_info,
+    globus_gfs_ipc_callback_t           cb,
+    void *                              user_arg);
+
+/*
+ * poke transfer event request
+ */
+typedef void
+(*globus_gfs_ipc_iface_transfer_event_t)(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    void *                              session_handle,
+    globus_gfs_event_info_t *           event_info);
+
+
+globus_result_t
+globus_gfs_ipc_request_transfer_event(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    globus_gfs_event_info_t *           event_info);
+
+
+/*
+ *  destroy a data connection associated with the given ID
+ */
+typedef void
+(*globus_gfs_ipc_iface_data_destroy_t)(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    void *                              session_handle,
+    void *                              data_arg);
+
+globus_result_t
+globus_gfs_ipc_request_data_destroy(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    void *                              data_arg);
+
+typedef struct globus_i_gfs_ipc_iface_s
+{
+    globus_gfs_ipc_iface_session_start_t    session_start_func;
+    globus_gfs_ipc_iface_session_stop_t     session_stop_func;
+    globus_gfs_ipc_iface_recv_t             recv_func;
+    globus_gfs_ipc_iface_send_t             send_func;
+    globus_gfs_ipc_iface_command_t          command_func;
+    globus_gfs_ipc_iface_active_data_t      active_func;
+    globus_gfs_ipc_iface_passive_data_t     passive_func;
+    globus_gfs_ipc_iface_data_destroy_t     data_destroy_func;
+    globus_gfs_ipc_iface_stat_t             stat_func;
+    globus_gfs_ipc_iface_list_t             list_func;
+    globus_gfs_ipc_iface_transfer_event_t   transfer_event_func;
+    globus_gfs_ipc_iface_set_cred_t         set_cred;
+    globus_gfs_ipc_iface_buffer_send_t      buffer_send;
+} globus_gfs_ipc_iface_t;
+
+/* 
+ *  getting an IPC handle
+ */
+
+/* 
+ *  create an IPC handle from a xio system handle, can be used
+ *  imediately, is not in handle table
+ */
+globus_result_t
+globus_gfs_ipc_handle_create(
+    globus_gfs_ipc_iface_t *            iface,
+    globus_xio_system_handle_t          system_handle,
+    globus_gfs_ipc_open_callback_t      cb,
+    void *                              user_arg,
+    globus_gfs_ipc_error_callback_t     error_cb,
+    void *                              error_arg);
+
+/*
+ *  actually close the handle
+ */
+globus_result_t
+globus_gfs_ipc_close(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    globus_gfs_ipc_close_callback_t     cb,
+    void *                              user_arg);
+
+globus_result_t
+globus_gfs_ipc_handle_release(
+    globus_gfs_ipc_handle_t             ipc_handle);
+
+globus_result_t
+globus_gfs_ipc_session_stop(
+    globus_gfs_ipc_handle_t             ipc_handle);
+
+globus_result_t
+globus_gfs_ipc_handle_get_max_available_count(
+    const char *                        user_id,
+    const char *                        pathname,
+    int *                               count);
+
+globus_result_t
+globus_gfs_ipc_handle_obtain_by_path(
+    int *                               p_handle_count,
+    const char *                        pathname,
+    globus_gfs_session_info_t *         session_info,
+    globus_gfs_ipc_iface_t *            iface,
+    globus_gfs_ipc_open_callback_t      cb,
+    void *                              user_arg,
+    globus_gfs_ipc_error_callback_t     error_cb,
+    void *                              error_user_arg);
+    
+globus_result_t
+globus_gfs_ipc_init(
+    globus_bool_t                       requester,
+    char **                             in_out_listener);
+
+/*
+ *
+ */
+void
+globus_gfs_ipc_add_server(
+    globus_xio_server_t                 server_handle);
+
+globus_result_t
+globus_gfs_ipc_handle_obtain(
+    int *                               handle_count,
+    globus_gfs_session_info_t *         session_info,
+    globus_gfs_ipc_iface_t *            iface,
+    globus_gfs_ipc_open_callback_t      cb,
+    void *                              user_arg,
+    globus_gfs_ipc_error_callback_t     error_cb,
+    void *                              error_user_arg);
+
+
+/* 
+ *   community functions
+ */
+globus_result_t
+globus_gfs_community_get_nodes(
+    const char *                        pathname,
+    char **                             contact_strings,
+    int *                               count);
+
+extern globus_gfs_ipc_iface_t  globus_gfs_ipc_default_iface;
+
+/* end IPC */ 
+                                                                                                                               
 #endif

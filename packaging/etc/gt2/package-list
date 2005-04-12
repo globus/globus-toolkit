@@ -61,9 +61,9 @@ globus_gram_reporter_setup_pbs		gram/reporter/setup/pbs
 globus_gram_reporter_setup_lsf		gram/reporter/setup/lsf
 globus_gram_reporter_setup_condor	gram/reporter/setup/condor
 globus_xio_gridftp_driver		gridftp/gridftp_driver/source
-globus_gridftp_server		gridftp/gsi-wuftpd/source
+globus_wuftpd_gridftp_server	gridftp/gsi-wuftpd/source
 globus_gridftp_server_control	gridftp/server-lib/src
-globus_gridftp_server2		gridftp/server/src
+globus_gridftp_server		    gridftp/server/src
 globus_gridmap_callout_error    gsi/gridmap_callout/error
 globus_gsi_callback		gsi/callback/source
 globus_gsi_cert_utils		gsi/cert_utils/source
@@ -114,3 +114,5 @@ globus_simple_ca_setup          gsi/simple_ca/setup
 globus_icu4c 			icu4c/  tar
 globus_i18n			i18n/source
 globus_libxml2                  libxml2/
+globus_utp                      utp/source
+globus_usage                    usage/c/sender/source

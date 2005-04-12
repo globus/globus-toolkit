@@ -1,0 +1,14 @@
+aclocal.m4
+missing
+install-sh
+mkinstalldirs
+Makefile.in
+Makefile
+config.log
+config.cache
+config.guess
+config.sub
+config.status
+*.lo
+*.la
+.libs

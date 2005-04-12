@@ -6,20 +6,19 @@ Required software
     * JDBC compliant database. For instance, postgres 7.1+
 
 Optional software:
-    * IODBC (for RLS.  For instance, version 3.0.5)
-    * Tomcat (for WSRF container)
-    * junit (for java unit tests)
+    * IODBC (Required for RLS.  For instance, version 3.0.5)
+    * Tomcat (optional for Java WS Core.  Required for WebMDS)
 
 Overview:
 ========
-    1.  Installing GT3.9.4 (defaults)
+    1.  Installing Globus Toolkit 4.0.0
     2.  Installing optional bundles
-    3.  Installing only a subset of GT3.9.4
+    3.  Installing only a subset of GT4.0.0
     4.  Platform-specific notes
 
 
-1. Installing GT 3.9.4 (defaults)
-=================================
+1. Installing Globus Toolkit 4.0.0
+==================================
 First, download the required software.  Be aware that apache ant
 will use the java referred to by JAVA_HOME, not necessarily the first
 java executable on your PATH.  Be sure to set JAVA_HOME to the
@@ -35,10 +34,10 @@ globus$ ./configure --prefix=/path/to/install
 globus$ make
 
 If you do not specify a prefix, it will try to install into
-/usr/local/globus-3.9.4  The build will only be successful if
+/usr/local/globus-4.0.0 The build will only be successful if
 the globus user has write access to the target directory.
 
-Then see http://www-unix.globus.org/toolkit/docs/development/3.9.4/
+Then see http://www-unix.globus.org/toolkit/docs/4.0/
 for setup details.
 
 
@@ -52,39 +51,38 @@ option to your configure line:
 --enable-wsgram-pbs           For PBS
 
 If you installed IODBC for RLS, add the following two items:
---enable-rls --with-iodbc-path=/path/to/iodbc
+--enable-rls --with-iodbc=/path/to/iodbc
 
 If you want to enable internationalization, say:
 --enable-i18n
 
-There are also Makefile targets for contributed code:
-"make myproxy" to build MyProxy.
-"make gsi_openssh gsi_openssh_setup postinstall" to build GSI-OpenSSH.
-"make gt4-webmds" to build WebMDS.
+If you want to install the Data Replication Service tech preview:
+--enable-drs
 
-
-3. Installing only a subset of GT3.9.4
+3. Installing only a subset of GT4.0.0
 ======================================
 You do not have to build every subcomponent of this release.  The
 makefile specifies subtargets for different functional subpieces.
 See the component map at
-http://www-unix.globus.org/toolkit/docs/development/4.0-drafts/GT4Facts/index.html
+http://www-unix.globus.org/toolkit/docs/4.0/GT4Facts/index.html
 for more details.
 
 Makefile targets:
 -----------------
 i18n              Internationalization libraries
 prewsgram         Pre-webservices GRAM
-prewsgridftp      GridFTP
+gridftp           GridFTP
 prewsmds          OpenLDAP-based MDS2
-wsjava            Webservices java core
-wsc               Webservices C core
-wsmds             Webservices MDS4
-wsdel             Webservices Delegation Service
-wsrft             Webservices Reliable File Transfer service
-wsgram            Webservices GRAM
-wscas             Webservices CAS
-wstests           Tests for webservices components
+prews             Pre-WS GRAM, MDS2, and GridFTP
+wsjava            Java WS Core
+wsc               C WS core
+wsmds             MDS4
+wsdel             Delegation Service
+wsrft             Reliable File Transfer service
+wsgram            GRAM4
+wscas             Community Authorization Service
+wstests           Tests for java webservices
+wsctests          Tests for C webservices
 prews-test        Tests for pre-webservices components
 rls               Replica Location Service
 
@@ -98,7 +96,7 @@ $ make gridftp postinstall
 4. Platform notes
 =================
 The latest platform notes are at:
-http://www-unix.globus.org/toolkit/docs/development/4.0-drafts/admin/platforms.html
+http://www-unix.globus.org/toolkit/docs/4.0/admin/platforms.html
 
     * Apple MacOS X
     * Debian

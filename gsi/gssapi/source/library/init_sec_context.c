@@ -38,7 +38,8 @@ GSS_CALLCONV gss_init_sec_context(
     OM_uint32 *                         ret_flags,
     OM_uint32 *                         time_rec) 
 {
-
+    globus_gsi_cert_utils_cert_type_t   proxy_type =
+        GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_IMPERSONATION_PROXY;
     gss_ctx_id_desc *                   context = NULL;
     OM_uint32                           major_status = GSS_S_COMPLETE;
     OM_uint32                           local_minor_status;
@@ -356,54 +357,41 @@ GSS_CALLCONV gss_init_sec_context(
         {
             if(GLOBUS_GSI_CERT_UTILS_IS_GSI_2_PROXY(cert_type))
             { 
-                local_result =
-                    globus_gsi_proxy_handle_set_type(
-                        context->proxy_handle,
-                        GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY);
-                if(local_result != GLOBUS_SUCCESS)
-                {
-                    GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-                        minor_status, local_result,
-                        GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_PROXY);
-                    major_status = GSS_S_FAILURE;
-                    context->gss_state = GSS_CON_ST_DONE;
-                    goto exit;
-                }
+                proxy_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY;
+            }
+            else if(GLOBUS_GSI_CERT_UTILS_IS_RFC_PROXY(cert_type))
+            {
+                proxy_type = GLOBUS_GSI_CERT_UTILS_TYPE_RFC_LIMITED_PROXY;
             }
             else
             {
-                local_result =
-                    globus_gsi_proxy_handle_set_type(
-                        context->proxy_handle,
-                        GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_LIMITED_PROXY);
-                if(local_result != GLOBUS_SUCCESS)
-                {
-                    GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-                        minor_status, local_result,
-                        GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_PROXY);
-                    major_status = GSS_S_FAILURE;
-                    context->gss_state = GSS_CON_ST_DONE;
-                    goto exit;
-                }
+                proxy_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_LIMITED_PROXY;
             }
         }
-        else if(cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_PROXY)
+        else if(GLOBUS_GSI_CERT_UTILS_IS_GSI_2_PROXY(cert_type))
         {
-            local_result =
-                globus_gsi_proxy_handle_set_type(
-                    context->proxy_handle,
-                    GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_PROXY);
-            if(local_result != GLOBUS_SUCCESS)
-            {
-                GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-                    minor_status, local_result,
-                    GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_PROXY);
-                major_status = GSS_S_FAILURE;
-                context->gss_state = GSS_CON_ST_DONE;
-                goto exit;
-            }            
+            proxy_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_PROXY;
+        }
+        else if(GLOBUS_GSI_CERT_UTILS_IS_RFC_PROXY(cert_type))
+        {
+            proxy_type = GLOBUS_GSI_CERT_UTILS_TYPE_RFC_IMPERSONATION_PROXY;
+        }
+        
+        local_result =
+            globus_gsi_proxy_handle_set_type(
+                context->proxy_handle,
+                proxy_type);
+        if(local_result != GLOBUS_SUCCESS)
+        {
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_result,
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_PROXY);
+            major_status = GSS_S_FAILURE;
+            context->gss_state = GSS_CON_ST_DONE;
+            goto exit;
         }
 
+        
         local_result = globus_gsi_proxy_sign_req(
             context->proxy_handle,
             context->cred_handle->cred_handle,

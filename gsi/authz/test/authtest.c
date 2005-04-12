@@ -1,7 +1,8 @@
+#include "globus_gsi_authz.h"
+
 #include <string.h>
 #include <strings.h>
 
-#include "globus_gsi_authz.h"
 #define USAGE "Usage: %s objectype object servicename action\n"
 
 static void

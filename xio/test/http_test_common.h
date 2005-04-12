@@ -4,6 +4,14 @@
 #include "globus_xio.h"
 #include "globus_xio_http.h"
 
+typedef void (*globus_xio_http_request_ready_callback_t)(
+    void *                              user_arg,
+    globus_result_t                     result,
+    const char *                        method,
+    const char *                        uri,
+    globus_xio_http_version_t           http_version,
+    globus_hashtable_t                  headers);
+
 typedef struct
 {
     globus_mutex_t                      mutex;
@@ -81,10 +89,7 @@ http_test_client_request(
     const char *                        method,
     globus_xio_http_version_t           http_version,
     globus_xio_http_header_t *          header_array,
-    size_t                              header_array_length,
-    globus_xio_http_response_ready_callback_t
-                                        callback,
-    void *                              callback_arg);
+    size_t                              header_array_length);
 
 int
 http_test_initialize(

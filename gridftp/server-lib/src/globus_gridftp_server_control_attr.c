@@ -1,3 +1,12 @@
+
+/*
+ * This file or a portion of this file is licensed under the terms of the
+ * Globus Toolkit Public License, found at
+ * http://www.globus.org/toolkit/download/license.html.
+ * If you redistribute this file, with or without modifications,
+ * you must include this notice in the file.
+ */
+
 #include "globus_i_gridftp_server_control.h"
 
 #define GLOBUS_GRIDFTP_SERVER_HASHTABLE_SIZE    256
@@ -604,7 +613,8 @@ globus_gridftp_server_control_attr_set_banner(
 globus_result_t
 globus_gridftp_server_control_attr_set_idle_time(
     globus_gridftp_server_control_attr_t    in_attr,
-    int                                     idle_timeout)
+    int                                     idle_timeout,
+    int                                     preauth_timeout)
 {
     globus_i_gsc_attr_t *                   attr;
     GlobusGridFTPServerName(globus_gridftp_server_control_attr_set_list);
@@ -616,6 +626,7 @@ globus_gridftp_server_control_attr_set_idle_time(
     attr = (globus_i_gsc_attr_t *) in_attr;
 
     attr->idle_timeout = idle_timeout;
+    attr->preauth_timeout = preauth_timeout;
 
     return GLOBUS_SUCCESS;
 }

@@ -128,7 +128,6 @@ space_main(
     globus_xio_handle_t                     handle;
     globus_result_t                         res;
     globus_xio_attr_t                       attr;
-    int                                     opt_offset;
     globus_condattr_t                       condattr;
 
     globus_l_closed = GLOBUS_FALSE;
@@ -143,7 +142,7 @@ space_main(
     res = globus_xio_stack_init(&stack, NULL);
     test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
-    opt_offset = parse_parameters(argc, argv, stack, attr);
+    parse_parameters(argc, argv, stack, attr);
 
     globus_callback_space_init(&globus_l_space, NULL);
     globus_condattr_init(&condattr);
@@ -162,7 +161,7 @@ space_main(
             "whatever", 
             attr,
             open_cb,
-            argv[opt_offset]);
+            argv[argc-1]);
     test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
     globus_mutex_lock(&globus_l_mutex);

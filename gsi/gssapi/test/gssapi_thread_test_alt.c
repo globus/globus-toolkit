@@ -1,5 +1,3 @@
-
-
 #include "gssapi_test_utils.h"
 #include <sys/types.h>
 #include <sys/socket.h>

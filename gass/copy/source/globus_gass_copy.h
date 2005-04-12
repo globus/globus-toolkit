@@ -249,6 +249,9 @@ struct globus_gass_copy_handle_s
   globus_off_t                        partial_offset;
   globus_off_t                        partial_end_offset;
   
+  /* says whether or not to send ALLO for ftp destinations */
+  globus_bool_t                       send_allo;
+    
 };
 
 /**
@@ -333,6 +336,11 @@ globus_gass_copy_set_partial_offsets(
     globus_off_t offset,
     globus_off_t end_offset);
 
+/* send ALLO to ftp destinations */
+globus_result_t
+globus_gass_copy_set_allocate(
+    globus_gass_copy_handle_t *         handle,
+    globus_bool_t                       send_allo);
 
 /* find out what transfer mode will be used for a given url, so that the proper attributes may be passed to one of the copy function */
 globus_result_t

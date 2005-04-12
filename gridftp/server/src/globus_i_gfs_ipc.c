@@ -1,3 +1,12 @@
+
+/*
+ * This file or a portion of this file is licensed under the terms of the
+ * Globus Toolkit Public License, found at
+ * http://www.globus.org/toolkit/download/license.html.
+ * If you redistribute this file, with or without modifications,
+ * you must include this notice in the file.
+ */
+
 /*
  *  connector will send a 'connection info'.  Tihs includes username 
  *  (of the remote process, this may be meaningless), grid dn (this 
@@ -113,14 +122,14 @@ globus_gfs_ipc_iface_t  globus_gfs_ipc_default_iface =
 typedef struct globus_gfs_ipc_request_s
 {
     globus_gfs_ipc_handle_t             ipc;
-    globus_gfs_ipc_request_type_t       type;
+    globus_gfs_operation_type_t       type;
     int                                 id;
     globus_gfs_ipc_callback_t           cb;
     globus_gfs_ipc_open_callback_t      open_cb;
     globus_gfs_ipc_event_callback_t     event_cb;
     void *                              user_arg;
-    globus_gfs_ipc_reply_t *            reply;
-    globus_gfs_ipc_event_reply_t *      event_reply;
+    globus_gfs_finished_info_t *            reply;
+    globus_gfs_event_info_t *      event_reply;
     void *                              info_struct;
 } globus_gfs_ipc_request_t;
 
@@ -165,6 +174,7 @@ typedef struct globus_i_gfs_ipc_handle_s
     char *                              user_id;
 
     globus_l_gfs_ipc_connection_t       connection_info;
+    globus_byte_t                       byte;
 } globus_i_gfs_ipc_handle_t;
 
 static
@@ -395,9 +405,9 @@ void
 globus_l_gfs_ipc_request_destroy(
     globus_gfs_ipc_request_t *          request)
 {
-    globus_gfs_ipc_data_reply_t *       data_reply;
-    globus_gfs_ipc_command_reply_t *    command_reply;
-    globus_gfs_ipc_stat_reply_t *       stat_reply;
+    globus_gfs_data_finished_info_t *   data_reply;
+    globus_gfs_cmd_finshed_info_t *     command_reply;
+    globus_gfs_stat_finished_info_t *   stat_reply;
     globus_gfs_command_info_t *         cmd_info;
     globus_gfs_transfer_info_t *        trans_info;
     globus_gfs_data_info_t *            data_info;
@@ -422,10 +432,22 @@ globus_l_gfs_ipc_request_destroy(
                 break;
 
             case GLOBUS_GFS_OP_STAT:
-                stat_reply = (globus_gfs_ipc_stat_reply_t *)
+                stat_reply = (globus_gfs_stat_finished_info_t *)
                     &request->reply->info.stat;
                 if(stat_reply->stat_array != NULL)
                 {
+                    for(ctr = 0; ctr < stat_reply->stat_count; ctr++)
+                    {
+                        if(stat_reply->stat_array[ctr].name != NULL)
+                        {
+                            globus_free(stat_reply->stat_array[ctr].name);
+                        }        
+                        if(stat_reply->stat_array[ctr].symlink_target != NULL)
+                        {
+                            globus_free(
+                                stat_reply->stat_array[ctr].symlink_target);
+                        }
+                    }
                     globus_free(stat_reply->stat_array);
                 }
                 if(stat_reply->gid_array != NULL)
@@ -434,7 +456,7 @@ globus_l_gfs_ipc_request_destroy(
                 }
                 break;
             case GLOBUS_GFS_OP_COMMAND:
-                command_reply = (globus_gfs_ipc_command_reply_t *)
+                command_reply = (globus_gfs_cmd_finshed_info_t *)
                     &request->reply->info.command;
                 if(command_reply->created_dir != NULL)
                 {
@@ -447,7 +469,7 @@ globus_l_gfs_ipc_request_destroy(
                 break;
 
             case GLOBUS_GFS_OP_PASSIVE:
-                data_reply = (globus_gfs_ipc_data_reply_t *)
+                data_reply = (globus_gfs_data_finished_info_t *)
                     &request->reply->info.data;
                 if(data_reply->contact_strings != NULL)
                 {
@@ -855,8 +877,6 @@ globus_l_gfs_ipc_error_close_cb(
 
     ipc = (globus_i_gfs_ipc_handle_t *) user_arg;
 
-    ipc->cached_res = result;
-
     globus_l_gfs_ipc_error_close_kickout(ipc);
 
     GlobusGFSDebugExit();
@@ -990,14 +1010,14 @@ globus_l_gfs_ipc_request_ss_body_cb(
     globus_byte_t *                     start_buf;
     globus_list_t *                     list;
     globus_i_gfs_ipc_handle_t *         ipc;
-    globus_gfs_ipc_reply_t              reply;
+    globus_gfs_finished_info_t              reply;
     GlobusGFSName(globus_l_gfs_ipc_request_ss_body_cb);
     GlobusGFSDebugEnter();
 
     start_buf = buffer;
     ipc = (globus_i_gfs_ipc_handle_t *) user_arg;
 
-    memset(&reply, '\0', sizeof(globus_gfs_ipc_reply_t));
+    memset(&reply, '\0', sizeof(globus_gfs_finished_info_t));
 
     globus_assert(globus_l_gfs_ipc_requester);
 
@@ -1446,6 +1466,7 @@ globus_l_gfs_ipc_read_new_body_cb(
 
     if(result != GLOBUS_SUCCESS)
     {
+        ipc->cached_res = result;
         goto error;
     }
     size = len;
@@ -1512,6 +1533,7 @@ globus_l_gfs_ipc_read_new_body_cb(
         if(new_buf == NULL)
         {
             result = GlobusGFSErrorIPC();
+            ipc->cached_res = result;
             goto error;
         }
         result = globus_xio_register_read(
@@ -1525,6 +1547,7 @@ globus_l_gfs_ipc_read_new_body_cb(
         if(result != GLOBUS_SUCCESS)
         {
             globus_free(new_buf);
+            ipc->cached_res = result;
             goto error;
         }
     }
@@ -1539,7 +1562,8 @@ decode_err:
 error:
     globus_free(in_buffer);
     globus_i_gfs_log_message(
-        GLOBUS_I_GFS_LOG_ERR, "An accepted IPC connection failed to open\n");
+        GLOBUS_I_GFS_LOG_ERR, 
+        "An accepted IPC connection failed during session body read.\n");
 
     globus_l_gfs_ipc_error_close_kickout(ipc);
 
@@ -1549,7 +1573,7 @@ error:
 globus_result_t
 globus_gfs_ipc_reply_session(
     globus_gfs_ipc_handle_t             ipc,
-    globus_gfs_ipc_reply_t *            reply)
+    globus_gfs_finished_info_t *            reply)
 {
     globus_byte_t *                     buffer;
     globus_byte_t *                     new_buf;
@@ -1696,6 +1720,7 @@ globus_l_gfs_ipc_read_new_header_cb(
     ipc = (globus_i_gfs_ipc_handle_t *) user_arg;
     if(result != GLOBUS_SUCCESS)
     {
+        ipc->cached_res = result;
         goto err;
     }
 
@@ -1714,6 +1739,7 @@ globus_l_gfs_ipc_read_new_header_cb(
     if(new_buf == NULL)
     {
         res = GlobusGFSErrorMemory("new_buf");
+        ipc->cached_res = res;
         goto err;
     }
 
@@ -1727,6 +1753,7 @@ globus_l_gfs_ipc_read_new_header_cb(
         ipc);
     if(result != GLOBUS_SUCCESS)
     {
+        ipc->cached_res = result;
         goto mem_err;
     }
     globus_free(buffer);
@@ -1738,7 +1765,8 @@ mem_err:
 decode_err:
 err:
     globus_i_gfs_log_message(
-        GLOBUS_I_GFS_LOG_ERR, "An accepted IPC connection failed to open\n");
+        GLOBUS_I_GFS_LOG_ERR,
+        "An accepted IPC connection failed during session header read\n");
     globus_l_gfs_ipc_error_close_kickout(ipc);
 
     GlobusGFSDebugExitWithError();
@@ -1759,6 +1787,7 @@ globus_l_gfs_ipc_server_open_cb(
     ipc = (globus_i_gfs_ipc_handle_t *) user_arg;
     if(result != GLOBUS_SUCCESS)
     {
+        ipc->cached_res = result;
         goto error;
     }
 
@@ -1778,6 +1807,7 @@ globus_l_gfs_ipc_server_open_cb(
         ipc);
     if(result != GLOBUS_SUCCESS)
     {
+        ipc->cached_res = result;
         goto mem_error;
     }
 
@@ -1788,8 +1818,8 @@ mem_error:
     globus_free(buffer);
 error:
     globus_i_gfs_log_message(
-        GLOBUS_I_GFS_LOG_ERR, "An accepted IPC connection failed to open\n");
-
+        GLOBUS_I_GFS_LOG_ERR, 
+        "An accepted IPC connection failed during open\n");
     globus_l_gfs_ipc_error_close_kickout(ipc);
 
     GlobusGFSDebugExitWithError();
@@ -1909,9 +1939,16 @@ globus_gfs_ipc_handle_create(
     {
         goto attr_error;
     }
-    result = globus_xio_attr_cntl(xio_attr, globus_l_gfs_gsi_driver,
-        GLOBUS_XIO_GSI_FORCE_SERVER_MODE, GLOBUS_TRUE);
-
+    if(globus_i_gfs_config_bool("secure_ipc"))
+    {
+        result = globus_xio_attr_cntl(xio_attr, globus_l_gfs_gsi_driver,
+            GLOBUS_XIO_GSI_FORCE_SERVER_MODE, GLOBUS_TRUE);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto attr_error;
+        }
+    }
+    
     ipc = (globus_i_gfs_ipc_handle_t *)
         globus_calloc(1, sizeof(globus_i_gfs_ipc_handle_t));
     if(ipc == NULL)
@@ -2051,12 +2088,20 @@ globus_l_gfs_ipc_client_open_cb(
 
     ipc = (globus_i_gfs_ipc_handle_t *) user_arg;
 
+    ipc->state = GLOBUS_GFS_IPC_STATE_IN_CB;
+    
+    if(result != GLOBUS_SUCCESS)
+    {
+        ipc->cached_res = result;
+        goto error;
+    }
+    
     globus_mutex_lock(&ipc->mutex);
     {
         buffer = globus_malloc(ipc->buffer_size);
         if(buffer == NULL)
         {
-            goto buffer_error;
+            goto error;
         }
         ptr = buffer;
 
@@ -2101,7 +2146,16 @@ globus_l_gfs_ipc_client_open_cb(
 
 xio_error:
     globus_free(buffer);
-buffer_error:
+error:
+    {
+        globus_gfs_finished_info_t          reply;
+        memset(&reply, '\0', sizeof(globus_gfs_finished_info_t));          
+        result = GlobusGFSErrorWrapFailed("IPC connection", result);
+        if(ipc->open_cb)
+        {
+            ipc->open_cb(ipc, result, &reply, ipc->user_arg);
+        }
+    }    
     globus_l_gfs_ipc_error_close(ipc);
     globus_mutex_unlock(&ipc->mutex);
 
@@ -2216,16 +2270,74 @@ globus_l_gfs_ipc_handle_connect(
     if(allowed_to_connect)
     {
         globus_xio_attr_init(&attr);
+
         if(session_info->del_cred != NULL &&
             globus_i_gfs_config_bool("secure_ipc"))
         {
+            globus_xio_gsi_authorization_mode_t      auth_mode;
+            const char *                             auth_mode_str;
             globus_xio_attr_cntl(
                 attr, globus_l_gfs_gsi_driver,
                 GLOBUS_XIO_GSI_SET_CREDENTIAL, session_info->del_cred);
+
             globus_xio_attr_cntl(
                 attr, globus_l_gfs_gsi_driver,
                 GLOBUS_XIO_GSI_SET_PROTECTION_LEVEL,
                 GLOBUS_XIO_GSI_PROTECTION_LEVEL_PRIVACY);
+
+            auth_mode_str = globus_i_gfs_config_string("ipc_auth_mode");
+            if(auth_mode_str != NULL)
+            {
+                if(strcasecmp(auth_mode_str, "none") == 0)
+                {
+                    auth_mode = GLOBUS_XIO_GSI_NO_AUTHORIZATION;
+                }
+                else if(strcasecmp(auth_mode_str, "self") == 0)
+                {
+                    auth_mode = GLOBUS_XIO_GSI_SELF_AUTHORIZATION;
+                }
+                else if(strcasecmp(auth_mode_str, "host") == 0)
+                {
+                    auth_mode = GLOBUS_XIO_GSI_HOST_AUTHORIZATION;
+                }
+                else if(strncasecmp(auth_mode_str, "subject:", 8) == 0)
+                {
+                    gss_buffer_desc     send_tok;
+                    OM_uint32           min_stat;
+                    OM_uint32           maj_stat;
+                    gss_name_t          target_name;
+                    
+                    auth_mode = GLOBUS_XIO_GSI_IDENTITY_AUTHORIZATION;                   
+                    send_tok.value = (void *) (auth_mode_str + 8);
+                    send_tok.length = strlen(auth_mode_str + 8) + 1;
+                    maj_stat = gss_import_name(
+                                    &min_stat,
+                                    &send_tok,
+                                    GSS_C_NT_USER_NAME,
+                                    &target_name);
+                    if(maj_stat != GSS_S_COMPLETE || 
+                        target_name == GSS_C_NO_NAME)
+                    {
+                        goto ipc_error;
+                    }
+
+                    globus_xio_attr_cntl(
+                        attr, globus_l_gfs_gsi_driver,
+                        GLOBUS_XIO_GSI_SET_TARGET_NAME,
+                        target_name);
+                        
+                    gss_release_name(&min_stat, &target_name);
+                }
+                else
+                {
+                    goto ipc_error;
+                }
+                  
+                globus_xio_attr_cntl(
+                    attr, globus_l_gfs_gsi_driver,
+                    GLOBUS_XIO_GSI_SET_AUTHORIZATION_MODE,
+                    auth_mode);
+            }
         }
         time = globus_i_gfs_config_int("ipc_connect_timeout");
         if(time > 0)
@@ -2633,7 +2745,7 @@ globus_gfs_ipc_close(
  *  unpack
  */
 static 
-globus_gfs_ipc_reply_t *
+globus_gfs_finished_info_t *
 globus_l_gfs_ipc_unpack_reply(
     globus_i_gfs_ipc_handle_t *         ipc,
     globus_byte_t *                     buffer,
@@ -2642,12 +2754,12 @@ globus_l_gfs_ipc_unpack_reply(
     int                                 ctr;
     char                                ch;
     char *                              str;
-    globus_gfs_ipc_reply_t *            reply;
+    globus_gfs_finished_info_t *            reply;
     GlobusGFSName(globus_l_gfs_ipc_unpack_reply);
     GlobusGFSDebugEnter();
 
-    reply = (globus_gfs_ipc_reply_t *)
-        globus_calloc(1, sizeof(globus_gfs_ipc_reply_t));
+    reply = (globus_gfs_finished_info_t *)
+        globus_calloc(1, sizeof(globus_gfs_finished_info_t));
     if(reply == NULL)
     {
         goto error;
@@ -2705,38 +2817,18 @@ globus_l_gfs_ipc_unpack_reply(
                 GFSDecodeString(buffer, len, str);
                 if(str != NULL)
                 {
-                    if(strlen(str) < MAXPATHLEN)
-                    {
-                        strcpy(
-                            reply->info.stat.stat_array[ctr].name, 
-                            str);
-                        globus_free(str);
-                    }
-                    else
-                    {
-                        goto decode_err;
-                    }
+                    reply->info.stat.stat_array[ctr].name = str;
                 }
                 GFSDecodeString(buffer, len, str);
                 if(str != NULL)
                 {
-                    if(strlen(str) < MAXPATHLEN)
-                    {
-                        strcpy(
-                            reply->info.stat.stat_array[ctr].symlink_target, 
-                            str);
-                        globus_free(str);
-                    }
-                    else
-                    {
-                        goto decode_err;
-                    }
+                    reply->info.stat.stat_array[ctr].symlink_target = str;
                 }
                 GFSDecodeUInt32(
                     buffer, len, reply->info.stat.stat_array[ctr].uid);
                 GFSDecodeUInt32(
                     buffer, len, reply->info.stat.stat_array[ctr].gid);
-                GFSDecodeUInt32(
+                GFSDecodeUInt64(
                     buffer, len, reply->info.stat.stat_array[ctr].size);
                 GFSDecodeUInt32(
                     buffer, len, reply->info.stat.stat_array[ctr].atime);
@@ -2838,7 +2930,7 @@ error:
 }
 
 static 
-globus_gfs_ipc_event_reply_t *
+globus_gfs_event_info_t *
 globus_l_gfs_ipc_unpack_event_reply(
     globus_i_gfs_ipc_handle_t *         ipc,
     globus_byte_t *                     buffer,
@@ -2846,14 +2938,14 @@ globus_l_gfs_ipc_unpack_event_reply(
 {
     int                                 ctr;
     int                                 range_size;
-    globus_gfs_ipc_event_reply_t *      reply;
+    globus_gfs_event_info_t *      reply;
     globus_off_t                        offset;
     globus_off_t                        length;
     GlobusGFSName(globus_l_gfs_ipc_unpack_event_reply);
     GlobusGFSDebugEnter();
     
-    reply = (globus_gfs_ipc_event_reply_t *)
-        globus_calloc(1, sizeof(globus_gfs_ipc_event_reply_t));
+    reply = (globus_gfs_event_info_t *)
+        globus_calloc(1, sizeof(globus_gfs_event_info_t));
     if(reply == NULL)
     {
         goto error;
@@ -2984,12 +3076,12 @@ globus_l_gfs_ipc_unpack_transfer(
     GFSDecodeString(buffer, len, trans_info->list_type);    
     GFSDecodeUInt64(buffer, len, trans_info->partial_offset);
     GFSDecodeUInt64(buffer, len, trans_info->partial_length);
+    GFSDecodeUInt64(buffer, len, trans_info->alloc_size);
     GFSDecodeUInt32P(buffer, len, trans_info->data_arg);
     GFSDecodeUInt32(buffer, len, trans_info->eof_count);
     GFSDecodeUInt32(buffer, len, trans_info->stripe_count);
     GFSDecodeUInt32(buffer, len, trans_info->node_count);
     GFSDecodeUInt32(buffer, len, trans_info->node_ndx);
-    GFSDecodeUInt32(buffer, len, trans_info->nstreams);
     GFSDecodeChar(buffer, len, ch);
     trans_info->truncate = (globus_bool_t) ch;
 
@@ -3287,8 +3379,8 @@ globus_l_gfs_ipc_request_read_body_cb(
     globus_byte_t *                     start_buf;
     globus_gfs_ipc_request_t *          request;
     globus_i_gfs_ipc_handle_t *         ipc;
-    globus_gfs_ipc_reply_t *            reply;
-    globus_gfs_ipc_event_reply_t *      event_reply;
+    globus_gfs_finished_info_t *            reply;
+    globus_gfs_event_info_t *      event_reply;
     GlobusGFSName(globus_l_gfs_ipc_request_read_body_cb);
     GlobusGFSDebugEnter();
 
@@ -4219,7 +4311,7 @@ error:
 globus_result_t
 globus_gfs_ipc_reply_finished(
     globus_gfs_ipc_handle_t             ipc_handle,
-    globus_gfs_ipc_reply_t *            reply)
+    globus_gfs_finished_info_t *            reply)
 {
     int                                 ctr;
     globus_i_gfs_ipc_handle_t *         ipc;
@@ -4335,7 +4427,7 @@ globus_gfs_ipc_reply_finished(
                         GFSEncodeUInt32(
                             buffer, ipc->buffer_size, ptr, 
                             reply->info.stat.stat_array[ctr].gid);
-                        GFSEncodeUInt32(
+                        GFSEncodeUInt64(
                             buffer, ipc->buffer_size, ptr, 
                             reply->info.stat.stat_array[ctr].size);
                         GFSEncodeUInt32(
@@ -4453,7 +4545,7 @@ error:
 globus_result_t
 globus_gfs_ipc_reply_event(
     globus_gfs_ipc_handle_t             ipc_handle,
-    globus_gfs_ipc_event_reply_t *      reply)
+    globus_gfs_event_info_t *      reply)
 {
     globus_i_gfs_ipc_handle_t *         ipc;
     globus_gfs_ipc_request_t *          request;
@@ -4637,11 +4729,17 @@ globus_l_gfs_ipc_stop_write_cb(
         {
             goto error;
         }
+        /* have a read pending on the cached connection so that we can catch
+            errant data or disconnections.
+            XXX need to change gsi driver to handle 0 byte read with a pass
+            instead of a finish.  possibly figure out a different way to 
+            checkup on cached connections since this won't necessisarily work
+            on every driver we might want to use */
         result = globus_xio_register_read(
             ipc->xio_handle,
-            buffer, /* bs parmeter */
-            0,
-            0,
+            &ipc->byte, /* bogus parmeter */
+            1,
+            1,
             NULL,
             globus_l_gfs_ipc_read_request_fault_cb,
             ipc);
@@ -4870,7 +4968,6 @@ globus_l_gfs_ipc_transfer_pack(
     globus_byte_t *                     buffer = NULL;
     globus_byte_t *                     ptr;
     globus_size_t                       msg_size;
-    int                                 id;
     globus_result_t                     res;
     int                                 range_size;
     int                                 ctr;
@@ -4878,8 +4975,6 @@ globus_l_gfs_ipc_transfer_pack(
     globus_off_t                        length;
     GlobusGFSName(globus_l_gfs_ipc_transfer_pack);
     GlobusGFSDebugEnter();
-
-    id = (int) request;
 
     /* pack the header */
     buffer = globus_malloc(ipc->buffer_size);
@@ -4894,12 +4989,12 @@ globus_l_gfs_ipc_transfer_pack(
     GFSEncodeString(buffer, ipc->buffer_size, ptr, trans_info->list_type);
     GFSEncodeUInt64(buffer, ipc->buffer_size, ptr, trans_info->partial_offset);
     GFSEncodeUInt64(buffer, ipc->buffer_size, ptr, trans_info->partial_length);
+    GFSEncodeUInt64(buffer, ipc->buffer_size, ptr, trans_info->alloc_size);
     GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, trans_info->data_arg);
     GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, trans_info->eof_count);
     GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, trans_info->stripe_count);
     GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, trans_info->node_count);
     GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, trans_info->node_ndx);
-    GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, trans_info->nstreams);
     GFSEncodeChar(buffer, ipc->buffer_size, ptr, trans_info->truncate);
 
     /* pack range list */
@@ -5034,7 +5129,6 @@ globus_gfs_ipc_request_send(
 
         request = (globus_gfs_ipc_request_t *) 
             globus_calloc(1, sizeof(globus_gfs_ipc_request_t));
-        request->id = (int) request;
         request->cb = cb;
         request->event_cb = event_cb;
         request->user_arg = user_arg;
@@ -5098,7 +5192,6 @@ globus_gfs_ipc_request_list(
 
         request = (globus_gfs_ipc_request_t *) 
             globus_calloc(1, sizeof(globus_gfs_ipc_request_t));
-        request->id = (int) request;
         request->cb = cb;
         request->ipc = ipc_handle;
         request->event_cb = event_cb;
@@ -5177,7 +5270,6 @@ globus_gfs_ipc_request_command(
             result = GlobusGFSErrorIPC();
             goto error;
         }
-        request->id = (int) request;
         request->cb = cb;
         request->user_arg = user_arg;
         request->ipc = ipc_handle;
@@ -5377,7 +5469,6 @@ globus_l_gfs_ipc_pack_data(
     globus_byte_t *                     buffer = NULL;
     globus_byte_t *                     ptr;
     globus_size_t                       msg_size;
-    int                                 id;
     globus_result_t                     res;
     int                                 ctr;
     OM_uint32                           maj_rc;
@@ -5402,7 +5493,6 @@ globus_l_gfs_ipc_pack_data(
         }
     }
 
-    id = request->id;
     /* pack the header */
     buffer = globus_malloc(ipc->buffer_size);
     ptr = buffer;
@@ -5415,9 +5505,9 @@ globus_l_gfs_ipc_pack_data(
     GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, data_info->nstreams);
     GFSEncodeChar(buffer, ipc->buffer_size, ptr, data_info->mode);
     GFSEncodeChar(buffer, ipc->buffer_size, ptr, data_info->type);
-    GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, data_info->tcp_bufsize);
-    GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, data_info->blocksize);
-    GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, data_info->stripe_blocksize);
+    GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, (int) data_info->tcp_bufsize);
+    GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, (int) data_info->blocksize);
+    GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, (int) data_info->stripe_blocksize);
     GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, data_info->stripe_layout);
 
     GFSEncodeChar(buffer, ipc->buffer_size, ptr, data_info->prot);
@@ -5592,7 +5682,6 @@ globus_gfs_ipc_request_passive_data(
             res = GlobusGFSErrorMemory("request");
             goto err;
         }
-        request->id = (int) request;
         request->cb = cb;
         request->user_arg = user_arg;
         request->ipc = ipc_handle;
@@ -5672,7 +5761,6 @@ globus_gfs_ipc_request_stat(
         {
             goto err;
         }
-        request->id = (int) request;
         request->cb = cb;
         request->user_arg = user_arg;
         request->ipc = ipc_handle;

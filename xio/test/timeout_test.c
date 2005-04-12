@@ -173,7 +173,6 @@ timeout_main(
     globus_xio_handle_t                     handle;
     globus_result_t                         res;
     globus_xio_attr_t                       attr;
-    int                                     opt_offset;
     int                                     secs;
     int                                     usecs;
     globus_reltime_t                        delay;
@@ -191,17 +190,7 @@ timeout_main(
     res = globus_xio_stack_init(&stack, NULL);
     test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
-    opt_offset = parse_parameters(argc, argv, stack, attr);
-    if(opt_offset == argc)
-    {
-        fprintf(stderr, "ERROR: please specify O | D | C.\n");
-        return 1;
-    }
-    if(opt_offset + 1 < argc)
-    {
-        globus_l_timeout = GLOBUS_FALSE;
-        div = atoi(argv[opt_offset + 1]);
-    }
+    parse_parameters(argc, argv, stack, attr);
 
     GlobusTimeReltimeGet(globus_l_test_info.delay, secs, usecs);
 
@@ -212,9 +201,9 @@ timeout_main(
         return 1;
     }
 
-    GlobusTimeReltimeSet(delay, secs / div, usecs / div);
+    GlobusTimeReltimeSet(delay, secs/div, usecs/div);
     /* set up timeouts */
-    if(strcmp(argv[opt_offset], "O") == 0)
+    if(strcmp(argv[argc-1], "O") == 0)
     {
         res = globus_xio_attr_cntl(attr, NULL, 
                     GLOBUS_XIO_ATTR_SET_TIMEOUT_OPEN,
@@ -222,7 +211,7 @@ timeout_main(
                     &delay,
                     NULL);
     }
-    else if(strcmp(argv[opt_offset], "D") == 0)
+    else if(strcmp(argv[argc-1], "D") == 0)
     {
         res = globus_xio_attr_cntl(attr, NULL,
                     GLOBUS_XIO_ATTR_SET_TIMEOUT_READ,
@@ -235,7 +224,7 @@ timeout_main(
                     &delay,
                     NULL);
     }
-    else if(strcmp(argv[opt_offset], "C") == 0)
+    else if(strcmp(argv[argc-1], "C") == 0)
     {
         res = globus_xio_attr_cntl(attr, NULL, 
                     GLOBUS_XIO_ATTR_SET_TIMEOUT_CLOSE,
@@ -261,7 +250,7 @@ timeout_main(
             "whatever",
             attr,
             open_cb,
-            argv[opt_offset]);
+            argv[argc-1]);
     test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
 
     globus_mutex_lock(&globus_l_mutex);
@@ -273,6 +262,31 @@ timeout_main(
     }
     globus_mutex_unlock(&globus_l_mutex);
 
+    /* run again with an ignored time out */
+    globus_l_closed = GLOBUS_FALSE;
+    globus_l_timeout = GLOBUS_FALSE;
+
+    res = globus_xio_handle_create(&handle, stack);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
+
+    res = globus_xio_register_open(
+            handle,
+            "whatever",
+            attr,
+            open_cb,
+            argv[argc-1]);
+    test_res(GLOBUS_XIO_TEST_FAIL_NONE, res, __LINE__, __FILE__);
+
+    globus_mutex_lock(&globus_l_mutex);
+    {
+        while(!globus_l_closed)
+        {
+            globus_cond_wait(&globus_l_cond, &globus_l_mutex);
+        }
+    }
+    globus_mutex_unlock(&globus_l_mutex);
+
+    /* shut it down */
     globus_xio_attr_destroy(attr);
     globus_xio_stack_destroy(stack);
  

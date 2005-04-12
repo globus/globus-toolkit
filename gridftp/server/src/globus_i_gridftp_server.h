@@ -1,3 +1,12 @@
+
+/*
+ * This file or a portion of this file is licensed under the terms of the
+ * Globus Toolkit Public License, found at
+ * http://www.globus.org/toolkit/download/license.html.
+ * If you redistribute this file, with or without modifications,
+ * you must include this notice in the file.
+ */
+
 #ifndef GLOBUS_I_GRIDFTP_SERVER_H
 #define GLOBUS_I_GRIDFTP_SERVER_H
 
@@ -11,6 +20,7 @@
 #include "globus_xio_gsi.h"
 #include "globus_ftp_control.h"
 #include "globus_gsi_authz.h"
+#include "globus_usage.h"
 
 typedef void
 (*globus_i_gfs_server_close_cb_t)(
@@ -47,6 +57,25 @@ globus_i_gfs_control_stop();
 
 void
 globus_i_gfs_control_init();
+
+#define GlobusGFSErrorGenericStr(_res, _fmt)                           \
+do                                                                     \
+{                                                                      \
+        char *                          _tmp_str;                      \
+        _tmp_str = globus_common_create_string _fmt;                   \
+        _res = globus_error_put(                                       \
+            globus_error_construct_error(                              \
+                GLOBUS_NULL,                                           \
+                GLOBUS_NULL,                                           \
+                GLOBUS_GFS_ERROR_GENERIC,                              \
+                __FILE__,                                              \
+                _gfs_name,                                             \
+                __LINE__,                                              \
+                "%s",                                                  \
+                _tmp_str));                                            \
+        globus_free(_tmp_str);                                         \
+                                                                       \
+} while(0)
 
 extern globus_gfs_acl_module_t          globus_gfs_acl_cas_module;
 extern globus_gfs_acl_module_t          globus_gfs_acl_test_module;

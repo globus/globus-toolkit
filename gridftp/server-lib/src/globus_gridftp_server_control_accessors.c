@@ -1,5 +1,13 @@
+
+/*
+ * This file or a portion of this file is licensed under the terms of the
+ * Globus Toolkit Public License, found at
+ * http://www.globus.org/toolkit/download/license.html.
+ * If you redistribute this file, with or without modifications,
+ * you must include this notice in the file.
+ */
+
 #include "globus_i_gridftp_server_control.h"
-#include "version.h"
 #include <sys/utsname.h>
 
 /*************************************************************************
@@ -51,7 +59,7 @@ globus_result_t
 globus_gridftp_server_control_get_layout(
     globus_gridftp_server_control_op_t      op,
     globus_gsc_layout_t *                   layout_type,
-    int *                                   block_size)
+    globus_size_t *                         block_size)
 {
     GlobusGridFTPServerName(globus_gridftp_server_control_get_layout);
 
@@ -64,6 +72,27 @@ globus_gridftp_server_control_get_layout(
     {
         *layout_type = op->server_handle->opts.layout;
         *block_size = op->server_handle->opts.block_size;
+    }
+    globus_mutex_unlock(&op->server_handle->mutex);
+
+    return GLOBUS_SUCCESS;
+}
+
+globus_result_t
+globus_gridftp_server_control_get_allocated(
+    globus_gridftp_server_control_op_t      op,
+    globus_off_t *                          out_allo)
+{
+    GlobusGridFTPServerName(globus_gridftp_server_control_get_parallelism);
+
+    if(op == NULL)
+    {
+        return GlobusGridFTPServerErrorParameter("op");
+    }
+
+    globus_mutex_lock(&op->server_handle->mutex);
+    {
+        *out_allo = op->server_handle->allocated_bytes;
     }
     globus_mutex_unlock(&op->server_handle->mutex);
 

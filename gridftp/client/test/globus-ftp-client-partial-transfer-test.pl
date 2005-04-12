@@ -45,6 +45,16 @@ sub basic_func
     my $offset = shift;
     my ($source_data, $dest_data) = ("", "");
 
+    if(defined($ENV{'FTP_TEST_DEST_FILE'}))
+    {
+        $tmpname=$ENV{'FTP_TEST_DEST_FILE'};
+        unlink($tmpname);
+    }
+    if(defined($ENV{'FTP_TEST_DEST_FILE2'}))
+    {
+        $tmpname2=$ENV{'FTP_TEST_DEST_FILE2'};
+        unlink($tmpname2);
+    }
     # Create initial contents of the source file.
     for(my $i = 0; $i < 8192; $i++)
     {

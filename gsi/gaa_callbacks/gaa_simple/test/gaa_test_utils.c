@@ -1,8 +1,8 @@
-#include <string.h>
 #include "gaa.h"
 #include "gaa_core.h"
 #include "gaa_test_utils.h"
 #include "gaa_debug.h"
+#include <string.h>
 #ifdef notdef
 #include <libxml/parser.h>
 #endif /* notdef */
@@ -266,6 +266,7 @@ process_clear(gaa_sc_ptr *sc)
     return(gaa_new_sc(sc));
 }
 
+int
 init_sc(gaa_ptr gaa, gaa_sc_ptr *sc, void *context)
 {
     gaa_cred *cred;

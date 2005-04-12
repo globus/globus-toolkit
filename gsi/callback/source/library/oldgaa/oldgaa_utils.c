@@ -9,6 +9,12 @@ Description:
 /**********************************************************************
                              Include header files
 **********************************************************************/
+#include "globus_oldgaa.h" 
+#include "globus_gsi_cert_utils.h"
+#include "oldgaa_utils.h"
+#include "oldgaa_gl_internal_err.h"
+#include "rfc1779.h"
+
 #include <stdlib.h>     /* For malloc or free */
 #include <math.h>       /* for pow()          */
 
@@ -24,16 +30,6 @@ Description:
 #include <time.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-
-#include "globus_oldgaa.h" 
-#include "oldgaa_utils.h"
-#include "oldgaa_gl_internal_err.h"
-#include "rfc1779.h"
-
-#ifdef WIN32
-#define strcasecmp stricmp
-#define strncasecmp strnicmp
-#endif
 
 /**********************************************************************
                        Define module specific variables
@@ -168,7 +164,7 @@ oldgaa_compare_principals(oldgaa_principals_ptr element,
 
  if(oldgaa_strings_match(element->type,      new->type)     &&
     oldgaa_strings_match(element->authority, new->authority) &&
-    oldgaa_strings_match(element->value,     new->value) )
+    !globus_i_gsi_cert_utils_dn_cmp(element->value, new->value) )
  return TRUE;   
  else return FALSE;
 }  
@@ -475,16 +471,30 @@ oldgaa_regex_matches_string(
   }
 
 
-  if(!strcasecmp(string,regex))
+  if(!globus_i_gsi_cert_utils_dn_cmp(string,regex))
   {
       result = 1;
   }
   else
   {
-      if((star = strrchr(regex,'*')) &&
-         !strncasecmp(regex,string,(int) (star-regex)/sizeof(char)))
-      {
-          result = 1;
+      char * tmp_str = strdup(string);
+      if(tmp_str)
+      { 
+          star = strrchr(regex,'*');
+          if(star)
+          {
+              int index = star - regex;
+              if(strlen(tmp_str) > index)
+              {
+                  tmp_str[index] = '*';
+                  tmp_str[index + 1] = '\0';
+                  if(!globus_i_gsi_cert_utils_dn_cmp(regex, tmp_str))
+                  {
+                      result = 1;
+                  }
+              }
+          }
+          free(tmp_str);
       }
   }
 

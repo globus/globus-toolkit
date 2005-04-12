@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Name="globus_common" Format_Version="0.02">
 
-    <Aging_Version Major="7" Minor="6" Age="4"/>
+    <Aging_Version Major="7" Minor="14" Age="4"/>
     <Description >Common Library</Description>
     <Functional_Group >Common</Functional_Group>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
@@ -38,14 +38,6 @@
             <Dependency Name="globus_libtool">
                 <Version>
                     <Simple_Version Major="1"/>
-                </Version>
-            </Dependency>
-        </Source_Dependencies>
-
-	<Source_Dependencies Type="lib_runtime">
-            <Dependency Name="globus_common" Package="data">
-                <Version>
-                    <Simple_Version Major="4"/>
                 </Version>
             </Dependency>
         </Source_Dependencies>

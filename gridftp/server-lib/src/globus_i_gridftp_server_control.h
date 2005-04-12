@@ -1,3 +1,12 @@
+
+/*
+ * This file or a portion of this file is licensed under the terms of the
+ * Globus Toolkit Public License, found at
+ * http://www.globus.org/toolkit/download/license.html.
+ * If you redistribute this file, with or without modifications,
+ * you must include this notice in the file.
+ */
+
 #if !defined(GLOBUS_I_GRIDFTP_SERVER_CONTROL_H)
 #define GLOBUS_I_GRIDFTP_SERVER_CONTROL_H 1
 
@@ -97,6 +106,8 @@ typedef enum globus_i_gsc_mlsx_fact_e
     GLOBUS_GSC_MLSX_FACT_SIZE = 'S',
     GLOBUS_GSC_MLSX_FACT_PERM = 'P',
     GLOBUS_GSC_MLSX_FACT_UNIXMODE = 'U',
+    GLOBUS_GSC_MLSX_FACT_UNIXOWNER = 'O',
+    GLOBUS_GSC_MLSX_FACT_UNIXGROUP = 'G',
     GLOBUS_GSC_MLSX_FACT_UNIQUE = 'Q',
     GLOBUS_GSC_MLSX_FACT_UNIXSLINK = 'L'
 } globus_i_gsc_mlsx_fact_t;
@@ -193,7 +204,7 @@ typedef struct globus_i_gsc_event_data_s
 
 typedef struct globus_i_gsc_handle_opts_s
 {
-    char                                    mlsx_fact_str[8];
+    char                                    mlsx_fact_str[16];
     int                                     parallelism;
     globus_size_t                           send_buf;
     globus_size_t                           receive_buf;
@@ -204,7 +215,7 @@ typedef struct globus_i_gsc_handle_opts_s
     int                                     perf_frequency;
     int                                     restart_frequency;
     globus_gsc_layout_t                     layout;
-    int                                     block_size;
+    globus_size_t                           block_size;
 } globus_i_gsc_handle_opts_t;
 
 typedef struct globus_i_gsc_module_func_s
@@ -310,6 +321,7 @@ typedef struct globus_i_gsc_attr_s
     globus_gridftp_server_control_security_type_t   security;
 
     int                                     idle_timeout;
+    int                                     preauth_timeout;
 
     globus_i_gsc_user_funcs_t               funcs;
 } globus_i_gsc_attr_t;
@@ -410,6 +422,11 @@ typedef struct globus_i_gsc_server_handle_s
     globus_hashtable_t                  site_cmd_table;
     globus_hashtable_t                  data_object_table;
     struct globus_i_gsc_op_s *          outstanding_op;
+
+    globus_bool_t                       terminating;
+
+    int                                 idle_timeout;
+    int                                 preauth_timeout;
 } globus_i_gsc_server_handle_t;
 
 
@@ -547,12 +564,6 @@ globus_i_gsc_mlsx_line(
     int                                 stat_count,
     const char *                        mlsx_fact_string,
     uid_t                               uid);
-
-char *
-globus_i_gsc_string_to_959(
-    int                                 code,
-    const char *                        in_str, 
-    const char *                        preline);
 
 void
 globus_i_guc_command_data_destroy(

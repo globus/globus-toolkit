@@ -285,9 +285,10 @@ globus_l_extension_deactivate_proxy(
 }
 
 static
-lt_dlhandle
+globus_result_t
 globus_l_extension_dlopen(
-    const char *                        name)
+    const char *                        name,
+    lt_dlhandle *                       handle)
 {
     char                                library[1024];
     lt_dlhandle                         dlhandle;
@@ -295,6 +296,8 @@ globus_l_extension_dlopen(
     char *                              basename;
     char *                              search_path = NULL;
     char *                              save_path;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    GlobusFuncName(globus_l_extension_dlopen);
     
     path = globus_libc_strdup(name);
     if(path && (basename = strrchr(path, '/')))
@@ -362,6 +365,21 @@ globus_l_extension_dlopen(
              search_path ? search_path : globus_l_globus_location 
                 ? globus_l_globus_location : "(default)",
              error ? error : "(null)"));
+        result = globus_error_put(
+            globus_error_construct_error(
+                GLOBUS_EXTENSION_MODULE,
+                NULL,
+                GLOBUS_EXTENSION_ERROR_OPEN_FAILED,
+                __FILE__,
+                _globus_func_name,
+                __LINE__,
+                "Couldn't dlopen %s in %s (or LD_LIBRARY_PATH): %s\n",
+                library,
+                (search_path ? search_path : 
+                               (globus_l_globus_location ? 
+                                    globus_l_globus_location : 
+                                "(default)")),
+                error ? error : "(null)"));
     }
     
     if(search_path || globus_l_globus_location)
@@ -384,15 +402,19 @@ globus_l_extension_dlopen(
         globus_free(path);
     }
     
-    return dlhandle;
+    *handle = dlhandle;
+    return result;
 }
 
 static
-globus_module_descriptor_t *
+globus_result_t
 globus_l_extension_get_module(
-    lt_dlhandle                         dlhandle)
+    lt_dlhandle                         dlhandle,
+    globus_module_descriptor_t **       module_desc)
 {
+    globus_result_t                     result = GLOBUS_SUCCESS;
     globus_module_descriptor_t *        module;
+    GlobusFuncName(globus_l_extension_get_module);
     
     module = (globus_module_descriptor_t *)
         lt_dlsym(dlhandle, "globus_extension_module");
@@ -406,9 +428,20 @@ globus_l_extension_get_module(
             GLOBUS_L_EXTENSION_DEBUG_DLL,
             (_GCSL("[%s] Couldn't find module descriptor : %s\n"),
                 _globus_func_name, error ? error : "(null)"));
+        result = globus_error_put(
+            globus_error_construct_error(
+                GLOBUS_EXTENSION_MODULE,
+                NULL,
+                GLOBUS_EXTENSION_ERROR_LOOKUP_FAILED,
+                __FILE__,
+                _globus_func_name,
+                __LINE__,
+                "Couldn't find module descriptor : %s\n",
+                error ? error : "(null)"));
     }
     
-    return module;
+    *module_desc = module;
+    return result;
 }
 
 int
@@ -419,6 +452,7 @@ globus_extension_activate(
     globus_l_extension_module_t *       last_extension;
     globus_l_extension_builtin_t *      builtin;
     int                                 rc;
+    globus_result_t                     result = GLOBUS_FAILURE;
     GlobusFuncName(globus_extension_activate);
     
     GlobusExtensionDebugEnterSymbol(extension_name);
@@ -466,16 +500,20 @@ globus_extension_activate(
             else
             {
                 extension->owner = NULL;
-                extension->dlhandle =   
-                    globus_l_extension_dlopen(extension->name);
-                if(!extension->dlhandle)
+                result =   
+                    globus_l_extension_dlopen(
+                        extension->name,
+                        &extension->dlhandle);
+                if(result != GLOBUS_SUCCESS)
                 {
                     goto error_dll;
                 }
                 
-                extension->module = (globus_module_descriptor_t *) 
-                    globus_l_extension_get_module(extension->dlhandle);
-                if(!extension->module)
+                result =
+                   globus_l_extension_get_module(
+                       extension->dlhandle,
+                       &extension->module);
+                if(result != GLOBUS_SUCCESS)
                 {
                     goto error_module;
                 }
@@ -533,7 +571,7 @@ error_alloc:
     globus_rmutex_unlock(&globus_l_extension_mutex);
 error_param:
     GlobusExtensionDebugExitWithError();
-    return GLOBUS_FAILURE;
+    return result;
 }
 
 int

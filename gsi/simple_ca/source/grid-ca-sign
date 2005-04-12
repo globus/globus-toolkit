@@ -25,9 +25,9 @@ check_expired() {
     cyear=`${GLOBUS_SH_DATE-date} +%Y`
     
     if test ${year} -lt ${cyear}; then
-        return 1
+        echo "1"
     elif test ${year} -gt ${cyear}; then
-        return 0
+        echo "0"
     fi
 
     month=`echo ${d} | ${GLOBUS_SH_SED-sed} -e "s|\([^0-9]*\).*|\1|"`
@@ -62,9 +62,9 @@ check_expired() {
     cmonnum=`date +%m`
 
     if test ${monnum} -lt ${cmonnum}; then
-        return 1
+       echo "1" 
     elif test ${monnum} -gt ${cmonnum}; then
-        return 0
+       echo "0" 
     fi
 
     day=`echo ${d} | ${GLOBUS_SH_SED-sed} -e "s|[^0-9]*\([0-9]*\).*|\1|"`
@@ -72,9 +72,9 @@ check_expired() {
     cday=`date +%d`
 
     if test ${day} -lt ${cday}; then
-        return 1
+       echo "1" 
     elif test ${day} -gt ${cday}; then
-        return 0
+       echo "0" 
     fi
  
     hour=`echo ${d} | ${GLOBUS_SH_SED-sed} -e "s|[^0-9]*[0-9]*[ ]\([0-9]*\):[0-9]*:[0-9]*.*|\1|"`
@@ -82,9 +82,9 @@ check_expired() {
     chour=`date +%H`
 
     if test ${hour} -lt ${chour}; then
-        return 1
+       echo "1" 
     elif test ${hour} -gt ${chour}; then
-        return 0
+       echo "0"  
     fi
 
     min=`echo ${d} | ${GLOBUS_SH_SED-sed} -e "s|[^0-9]*[0-9]*[ ][0-9]*:\([0-9]*\):[0-9]*.*|\1|"`
@@ -92,9 +92,9 @@ check_expired() {
     cmin=`date +%M`
 
     if test ${min} -lt ${cmin}; then
-        return 1
+        echo  "1"
     elif test ${min} -gt ${cmin}; then
-        return 0
+        echo "0"
     fi
 
     sec=`echo ${d} | ${GLOBUS_SH_SED-sed} -e "s|[^0-9]*[0-9]*[ ][0-9]*:[0-9]*:\([0-9]*\).*|\1|"`
@@ -102,12 +102,12 @@ check_expired() {
     csec=`date +%S`
 
     if test ${sec} -lt ${csec}; then
-        return 1
+        echo "1"
     elif test ${sec} -gt ${csec}; then
-        return 0
+        echo  "0"
     fi
 
-    return 0
+    echo "0"
 }
 
 
@@ -242,66 +242,33 @@ do_cleanup() {
     ${GLOBUS_SH_RM-rm} -f ${TMP_REQ_FILE} ${TMP_CERT_FILE}
 }
 
-readCommandLine "$@"
+do_password_input() {
+    if test $need_password_input; then
+        ${GLOBUS_SH_STTY-stty} -echo
+        echo ""
+        echo $@
+        recho "please enter the password for the CA key: "
+    fi
+}        
 
-if test -z "$GRID_CA_DIR"; then
-    GRID_CA_DIR=${HOME}/.globus/simpleCA/
-fi
-
-if test ! -d ${GRID_CA_DIR}; then
-    echo ""
-    echo "ERROR: No simple CA directory"
-    echo "found at ${GRID_CA_DIR}"
-    echo "Either specify a directory with -dir, or run"
-    echo "setup-simple-ca to create a CA"
-    echo ""
-    exit 1
-fi
-
-if test ! -f ${GRID_CA_DIR}/cacert.pem; then
-    echo ""
-    echo "ERROR: No simple CA setup found at ${GRID_CA_DIR}."
-    echo "The CA certificate is missing!"
-    echo "Please run setup-simple-ca before"
-    echo "signing certificates."
-    echo ""
-    exit 1
-fi
-
-grid_ca_conf=${GRID_CA_DIR}/grid-ca-ssl.conf
-openssl_cmd=${GLOBUS_LOCATION}/bin/openssl
-
-TMP_REQ_FILE=/tmp/tmp_cert_req.pem.$$
-TMP_CERT_FILE=/tmp/tmp_cert.pem.$$
-
-${GLOBUS_SH_CP-cp} ${INPUT_REQ_FILE} ${TMP_REQ_FILE}
-
-echo ${openssl_options} | grep "\-passin" > /dev/null
-res1=$?
-if test ! $res1 = 0; then
-    echo ${openssl_options} | grep "\-key" > /dev/null
-    res1=$?
-fi
-
-if test ! $res1 = 0; then
-	echo ""
-	recho "Enter password for the CA key: "
-	${GLOBUS_SH_STTY-stty} -echo
-	read password 0<&2
-	${GLOBUS_SH_STTY-stty} echo
-	echo ""
-        openssl_options="$openssl_options -key ${password}"
-fi
+end_password_input() {
+    if test $need_password_input; then
+        ${GLOBUS_SH_STTY-stty} echo
+        echo ""
+    fi
+}
 
 do_sign() {
  
+do_password_input "To sign the request"
 tmp_output=/tmp/tmp_output.$$
 ${openssl_cmd} ca $openssl_options -batch -config ${grid_ca_conf} \
                   -in ${TMP_REQ_FILE} -out ${TMP_CERT_FILE} \
                   > $tmp_output 2>&1
 
 openssl_result=$?
-
+end_password_input
+ 
 # check to see if an error occurred while signing
 if test ${openssl_result} != 0; then
 
@@ -370,18 +337,20 @@ if test ${openssl_result} != 0; then
         exp_date=`${openssl_cmd} x509 -in ${SIGNED_CERT} -noout -enddate | \
                          ${GLOBUS_SH_SED-sed} -e "s|notAfter=[ ]*||"`
         expired=`check_expired ${exp_date}`
-        if test -n "${force_sign}" || test ${expired} != 0; then
+        if test -n "${force_sign}" || test "${expired}" == "0"; then
 
             echo ""
             echo "Revoking previous certificate"
 
             tmp_revoke_output=/tmp/tmp_revoke_out.$$
 
+            do_password_input "To revoke the current certificate"
             ${openssl_cmd} ca $openssl_options -batch -config ${grid_ca_conf} \
                     -revoke ${SIGNED_CERT} \
                     2> ${tmp_revoke_output}
 	    res=$?
-	    if test $res != 0; then
+	    end_password_input
+            if test $res != 0; then
                 echo ""
 	        echo "ERROR: Failed to revoke previous certificate with subject:"
 		echo "       ${SIGNED_SUBJECT}"
@@ -396,6 +365,7 @@ if test ${openssl_result} != 0; then
             else
                 
                 ${GLOBUS_SH_RM-rm} -f ${tmp_revoke_output}
+                echo ""
                 echo "Signing new certificate"
                 do_sign;
                 return;
@@ -476,6 +446,52 @@ fi
 
 }
 
+readCommandLine "$@"
+
+if test -z "$GRID_CA_DIR"; then
+    GRID_CA_DIR=${HOME}/.globus/simpleCA/
+fi
+
+if test ! -d ${GRID_CA_DIR}; then
+    echo ""
+    echo "ERROR: No simple CA directory"
+    echo "found at ${GRID_CA_DIR}"
+    echo "Either specify a directory with -dir, or run"
+    echo "setup-simple-ca to create a CA"
+    echo ""
+    exit 1
+fi
+
+if test ! -f ${GRID_CA_DIR}/cacert.pem; then
+    echo ""
+    echo "ERROR: No simple CA setup found at ${GRID_CA_DIR}."
+    echo "The CA certificate is missing!"
+    echo "Please run setup-simple-ca before"
+    echo "signing certificates."
+    echo ""
+    exit 1
+fi
+
+grid_ca_conf=${GRID_CA_DIR}/grid-ca-ssl.conf
+openssl_cmd=${GLOBUS_LOCATION}/bin/openssl
+
+TMP_REQ_FILE=/tmp/tmp_cert_req.pem.$$
+TMP_CERT_FILE=/tmp/tmp_cert.pem.$$
+
+${GLOBUS_SH_CP-cp} ${INPUT_REQ_FILE} ${TMP_REQ_FILE}
+
+echo ${openssl_options} | grep "\-passin" > /dev/null
+res1=$?
+if test ! $res1 = 0; then
+    echo ${openssl_options} | grep "\-key" > /dev/null
+    res1=$?
+fi
+
+if test ! $res1 = 0; then
+    need_password_input=1
+    openssl_options="${openssl_options} -passin stdin"
+fi
+
 do_sign;
 
 if test ! -f ${TMP_CERT_FILE}; then
@@ -512,4 +528,3 @@ fi
 
 do_cleanup
 exit
-

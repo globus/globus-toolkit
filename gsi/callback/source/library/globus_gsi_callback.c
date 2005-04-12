@@ -477,7 +477,7 @@ int globus_gsi_callback_handshake_callback(
     globus_gsi_callback_data_t          callback_data;
     SSL *                               ssl = NULL;
     static char *                       _function_name_ = 
-        "globus_i_gsi_callback_handshake_callback";
+        "globus_gsi_callback_handshake_callback";
 
     GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
 
@@ -800,15 +800,19 @@ globus_i_gsi_callback_check_proxy(
         /* a legacy globus proxy may only be followed by another legacy globus
          * proxy or a limited legacy globus_proxy.
          * a limited legacy globus proxy may only be followed by another
-         * limited legacy globus proxy or a full legacy globus proxy
+         * limited legacy globus proxy
          * a draft compliant proxy may only be followed by another draft
          * compliant proxy
+         * a draft compliant limited proxy may only be followed by another draft
+         * compliant limited proxy or a draft compliant independent proxy
          */
         
         if((GLOBUS_GSI_CERT_UTILS_IS_GSI_2_PROXY(callback_data->cert_type) &&
             !GLOBUS_GSI_CERT_UTILS_IS_GSI_2_PROXY(cert_type)) ||
            (GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY(callback_data->cert_type) &&
-            !GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY(cert_type)))
+            !GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY(cert_type)) ||
+           (GLOBUS_GSI_CERT_UTILS_IS_RFC_PROXY(callback_data->cert_type) &&
+            !GLOBUS_GSI_CERT_UTILS_IS_RFC_PROXY(cert_type)))
         {
             GLOBUS_GSI_CALLBACK_ERROR_CHAIN_RESULT(
                 result,
@@ -816,40 +820,19 @@ globus_i_gsi_callback_check_proxy(
             goto exit;
         }
 
-        if (GLOBUS_GSI_CERT_UTILS_IS_LIMITED_PROXY(cert_type))
+        if(GLOBUS_GSI_CERT_UTILS_IS_LIMITED_PROXY(callback_data->cert_type) &&
+           !(GLOBUS_GSI_CERT_UTILS_IS_LIMITED_PROXY(cert_type) ||
+             GLOBUS_GSI_CERT_UTILS_IS_INDEPENDENT_PROXY(cert_type)))
         {
-            /*
-             * If its a limited proxy, it means its use has been limited 
-             * during delegation. It can not sign other certs i.e.  
-             * it must be the top cert in the chain. 
-             * Depending on who we are, 
-             * We may want to accept this for authentication. 
-             * 
-             *   Globus gatekeeper -- don't accept
-             *   sslk5d accept, but should check if from local site.
-             *   globus user-to-user Yes, thats the purpose 
-             *    of this cert. 
-             *
-             * Caller can reject based on the proxy type (limited proxy)
-             * or not.
-             */
-
-            if (x509_context->error_depth && 
-                !callback_data->multiple_limited_proxy_ok)
-            {
-                /* tried to sign a cert with a limited proxy
-                 * i.e. there is still another cert on the chain
-                 * indicating we are trying to sign it! */
-                GLOBUS_GSI_CALLBACK_ERROR_RESULT(
-                    result,
-                    GLOBUS_GSI_CALLBACK_ERROR_LIMITED_PROXY,
-                    (_CLS("Can't sign a cert with a limited proxy "
-                     "as the signer")));
-                x509_context->error = X509_V_ERR_CERT_SIGNATURE_FAILURE;
-                goto exit;
-            }
+            GLOBUS_GSI_CALLBACK_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_CALLBACK_ERROR_LIMITED_PROXY,
+                (_CLS("Can't sign a non-limited, non-independent proxy "
+                      "with a limited proxy")));
+            x509_context->error = X509_V_ERR_CERT_SIGNATURE_FAILURE;
+            goto exit;
         }
-
+       
         GLOBUS_I_GSI_CALLBACK_DEBUG_PRINT(2, "Passed proxy test\n");
 
         callback_data->proxy_depth++;
@@ -863,6 +846,7 @@ globus_i_gsi_callback_check_proxy(
             goto exit;
         }
     }
+
     callback_data->cert_type = cert_type;
   
  exit:
@@ -1359,19 +1343,21 @@ globus_i_gsi_callback_check_critical_extensions(
 {
     ASN1_OBJECT *                       extension_object = NULL;
     X509_EXTENSION *                    extension = NULL;
-    ASN1_OCTET_STRING *                 ext_data = NULL;
     PROXYCERTINFO *                     proxycertinfo = NULL;
     PROXYPOLICY *                       policy = NULL;
     int                                 nid;
     int                                 pci_NID;
+    int                                 pci_old_NID;
     int                                 critical_position = -1;
     long                                path_length;
-    unsigned char *                     tmp_data;
     globus_result_t                     result = GLOBUS_SUCCESS;
-   static char *                       _function_name_ =
-        "globus_i_gsi_callback_check_extensions";
+    static char *                       _function_name_ =
+        "globus_i_gsi_callback_check_critical_extensions";
 
     GLOBUS_I_GSI_CALLBACK_DEBUG_ENTER;
+
+    pci_NID = OBJ_sn2nid(PROXYCERTINFO_SN);
+    pci_old_NID = OBJ_sn2nid(PROXYCERTINFO_OLD_SN);
 
     while((critical_position = 
           X509_get_ext_by_critical(x509_context->current_cert, 
@@ -1403,31 +1389,12 @@ globus_i_gsi_callback_check_critical_extensions(
 
         nid = OBJ_obj2nid(extension_object);
 
-        pci_NID = OBJ_sn2nid(PROXYCERTINFO_SN);
-
-        if(nid == pci_NID)
+        if(nid == pci_NID || nid == pci_old_NID)
         {
             /* check for path length constraint */
-            if((ext_data = X509_EXTENSION_get_data(extension)) == NULL)
-            {
-                GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
-                    result,
-                    GLOBUS_GSI_CALLBACK_ERROR_VERIFY_CRED,
-                    (_CLS("Can't get DER encoded extension "
-                     "data from X509 extension object")));
-                x509_context->error = X509_V_ERR_CERT_REJECTED;
-                goto exit;
-            }
 
-            tmp_data = ext_data->data;
-
-            if((d2i_PROXYCERTINFO(
-                    &proxycertinfo,
-                    &tmp_data,
-                    ext_data->length)) == NULL)
+            if((proxycertinfo = X509V3_EXT_d2i(extension)) == NULL)
             {
-                ASN1_OCTET_STRING_free(ext_data);
-                proxycertinfo = NULL;
                 GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
                     result,
                     GLOBUS_GSI_CALLBACK_ERROR_VERIFY_CRED,
@@ -1461,7 +1428,8 @@ globus_i_gsi_callback_check_critical_extensions(
             nid != NID_netscape_cert_type &&
             nid != NID_subject_key_identifier &&
             nid != NID_authority_key_identifier &&
-            nid != pci_NID) || (policy && policy->policy))
+            nid != pci_NID &&
+            nid != pci_old_NID) || (policy && policy->policy))
         {
             if(callback_data->extension_cb)
             {

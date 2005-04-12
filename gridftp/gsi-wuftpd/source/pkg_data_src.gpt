@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE gpt_package_metadata SYSTEM "globus_package.dtd">
-<gpt_package_metadata Format_Version="0.01" Name="globus_gridftp_server">
+<gpt_package_metadata Format_Version="0.01" Name="globus_wuftpd_gridftp_server">
     <Aging_Version Age="0" Major="1" Minor="17"/>
 
     <Description>

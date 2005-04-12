@@ -67,6 +67,10 @@ my @bundle_build_list;
 my %package_build_hash;
 my @package_build_list;
 
+# For each package, keep track of that package's dependencies.
+# $package_dep_hash{$pkg1}{$pkg2} == 1 if pkg1 depends on pkg2
+my %package_dep_hash;
+
 # Which of the CVS trees should I operate on?
 my @cvs_build_list;
 my %cvs_build_hash;
@@ -354,8 +358,8 @@ sub generate_build_list()
 
     if ( $listpack )
     {
-       install_globus_core();
        install_gt2_autotools();
+       install_globus_core();
        print "Final package build list:\n";
 
        # First list all the bundles as targets, followed by their depordered
@@ -404,15 +408,40 @@ sub generate_build_list()
             
        foreach my $pack ( @package_build_list )
        {
-            print "$pack:\n";
-            print "\t\$\{GPT_LOCATION\}/sbin/gpt-build \$\{BUILD_OPTS\} -srcdir=source-trees/" . $package_list{$pack}[1] . " \${FLAVOR}\n";
-            print "${pack}-thr:\n";
-            print "\t\$\{GPT_LOCATION\}/sbin/gpt-build \$\{BUILD_OPTS\} -srcdir=source-trees/" . $package_list{$pack}[1] . " \${FLAVOR}\${THR}\n";
+	    my $extras="";
+
+	    if ( $pack=~/globus_gridmap_and_execute/ )
+	    {
+                 $extras = "-static ";
+	    }
+
+            print "$pack: gpt";
+            foreach my $deppack ( @package_build_list )
+            {
+                 if ( $package_dep_hash{$pack}{$deppack} eq 1 )
+                 {
+                      print " $deppack" unless ( $pack eq $deppack );
+                 }
+            }
+            print "\n";
+
+            print "\t\$\{GPT_LOCATION\}/sbin/gpt-build $extras \$\{BUILD_OPTS\} -srcdir=source-trees/" . $package_list{$pack}[1] . " \${FLAVOR}\n";
+            print "${pack}-thr: gpt";
+            foreach my $deppack ( @package_build_list )
+            {
+                 if ( $package_dep_hash{$pack}{$deppack} eq 1 )
+                 {
+                      print " ${deppack}-thr" unless ( $pack eq $deppack );
+                 }
+            }
+            print "\n";
+
+            print "\t\$\{GPT_LOCATION\}/sbin/gpt-build $extras \$\{BUILD_OPTS\} -srcdir=source-trees-thr/" . $package_list{$pack}[1] . " \${FLAVOR}\${THR}\n";
             my ($tree, $subdir, $custom) = ($package_list{$pack}[0],
                                             $package_list{$pack}[1],
                                             $package_list{$pack}[2]);
 
-            package_source_bootstrap($pack, $subdir, $tree) unless $noupdates;
+            package_source_bootstrap($pack, $subdir, $tree);
        }
     }
 }
@@ -964,23 +993,22 @@ sub install_gt2_autotools()
 sub install_globus_core()
 # --------------------------------------------------------------------
 {
+    system("mkdir -p $pkglog");
     if ( $inplace ) {
         my $dir = $cvs_archives{gt2}[2];
         my $_cwd = cwd();
         chdir $dir . "/core/source";
         if ( !$avoid_bootstrap || ! -e 'configure') {
-           system("./bootstrap");
+           log_system("./bootstrap", "$pkglog/globus_core");
+           paranoia("Bootstrap of globus_core in CVS failed.");
         }
-        system("$ENV{GPT_LOCATION}/sbin/gpt-build -force $verbose $flavor");
+        log_system("$ENV{GPT_LOCATION}/sbin/gpt-build -force $verbose $flavor", "$pkglog/globus_core");
+        paranoia("gpt-build of globus_core from CVS failed.");
         chdir $_cwd;
     } else {
         print "$ENV{PWD}";
-        system("$ENV{GPT_LOCATION}/sbin/gpt-build -nosrc $verbose $flavor");
-    }
-
-    if ( $? ne 0 )
-    {
-        die "ERROR: Error building gpt_core from $ENV{GPT_LOCATION}/sbin/gpt-build -nosrc $flavor.\n";
+        log_system("$ENV{GPT_LOCATION}/sbin/gpt-build -nosrc $verbose $flavor", "$pkglog/globus_core");
+        paranoia("gpt-build of globus_core from GPT failed.");
     }
 }
 
@@ -1242,6 +1270,7 @@ sub topol_sort
                        or ($deptype eq "lib_link") );
         for my $dep (keys %{$pkg->{'Source_Dependencies'}->{'table'}->{$deptype}})
         {
+            $package_dep_hash{$node}{$dep} = 1;
             if(exists $package_build_hash{$dep})
             {
                 $in_call_stack->{$node} = $node;
@@ -1428,6 +1457,7 @@ sub package_source_bootstrap()
     if ( $custom eq "gpt" ){
        if ( !$avoid_bootstrap || ! -e 'configure') {
            log_system("./bootstrap", "$pkglog/$package");
+           paranoia("bootstrap failed for package $package");
        }
     } elsif ( $custom eq "pnb" ){
        patch_package($package);
@@ -1468,9 +1498,9 @@ sub package_source_gpt()
         }
 
         #TODO: make function out of "NB" part of PNB, call it here.
-        if ( $package eq "globus_gridftp_server" or $package eq "gsincftp") 
+        if ( $package eq "globus_wuftpd_gridftp_server" or $package eq "gsincftp") 
         {
-            print "\tSpecial love for gridftp_server and gsincftp\n";
+            print "\tSpecial love for wuftpd_gridftp_server and gsincftp\n";
             my $version = gpt_get_version("pkg_data_src.gpt");
 
             my $tarfile = "$package-$version";
@@ -1946,35 +1976,42 @@ make-packages.pl [options] [file ...]
 
 Options:
 
-    --skippackage          Don't create source packages
-    --skipbundle           Don't create source bundles
-    --install=<dir>        Install into <dir>
-    --anonymous            Use anonymous cvs checkouts
-    --cvsuser=<user>       Use "user" as account on CVS server
-    --no-updates           Don't update CVS checkouts
-    --noautotools          Don't build autotools
-    --nogpt                Don't build gpt
-    --nocore               Don't build core
-    --force                Force
-    --faster               Don't repackage if packages exist already
-    --flavor=<flv>         Set flavor base.  Default gcc32dbg
-    --gt2-tag (-t2)        Set GT2 and autotools tags.  Default HEAD
-    --gt3-tag (-t3)        Set GT3 and cbindings tags.  Default HEAD
-    --gt4-tag (-t4)        Set GT4 tags.  Default HEAD
-    --gt2-dir (-d2)        Set GT2 CVS directory.
-    --gt3-dir (-d3)        Set GT3 and cbindings CVS directory.
-    --gt4-dir (-d4)        Set GT4 CVS directory.
-    --autotools-dir        Set autotools CVS directory.
-    --verbose              Be verbose.  Also sends logs to screen.
-    --bundles="b1,b2,..."  Create bundles b1,b2,...
-    --packages="p1,p2,..." Create packages p1,p2,...
-    --deps                   Automatically include dependencies
-    --trees="t1,t2,..."    Work on trees t1,t2,... Default "gt2,gt3,gt4,cbindings"
-    --noparanoia           Don't exit at first error.
-    --inplace[=<dir>]      Build inplace. <dir> overrides the cvs directory
-                           for all trees. (ie, a dir you did a 'cvs co all' in)
-    --help                 Print usage message
-    --man                  Print verbose usage page
+    --skippackage           Don't create source packages
+    --skipbundle            Don't create source bundles
+    --install=<dir>         Install into <dir>
+    --anonymous             Use anonymous cvs checkouts
+    --cvsuser=<user>        Use "user" as account on CVS server
+    --no-updates            Don't update CVS checkouts
+    --noautotools           Don't build autotools
+    --nogpt                 Don't build gpt
+    --nocore                Don't build core
+    --force                 Force
+    --faster                Don't repackage if packages exist already
+    --flavor=<flv>          Set flavor base.  Default gcc32dbg
+    --gt2-tag (-t2)         Set GT2 and autotools tags.  Default HEAD
+    --gt3-tag (-t3)         Set GT3 and cbindings tags.  Default HEAD
+    --gt4-tag (-t4)         Set GT4 tags.  Default HEAD
+    --gt2-dir (-d2)         Set GT2 CVS directory.
+    --gt3-dir (-d3)         Set GT3 and cbindings CVS directory.
+    --gt4-dir (-d4)         Set GT4 CVS directory.
+    --autotools-dir         Set autotools CVS directory.
+    --verbose               Be verbose.  Also sends logs to screen.
+    --bundles="b1,b2,..."   Create bundles b1,b2,...
+    --packages="p1,p2,..."  Create packages p1,p2,...
+    --deps                    Automatically include dependencies
+    --trees="t1,t2,..."     Work on trees t1,t2,... Default "gt2,gt3,gt4,cbindings"
+    --noparanoia            Don't exit at first error.
+    --inplace[=<dir>]       Build inplace. <dir> overrides the cvs directory
+                            for all trees. (ie, a dir you did a 'cvs co all' in)
+    --list-packages (-lp)   Print a list of packages suitable for a Makefile.
+                            Also bootstraps those package dirs in CVS
+    --avoid-bootstrap (-ab) Avoid bootstrapping packages
+    --deps                  Read in GPT metadata and add packages that
+                            the listed bundles/packages require
+    --deporder              Build the packages in dependency order.
+                            Implied by --inplace.
+    --help                  Print usage message
+    --man                   Print verbose usage page
 
 =head1 OPTIONS
 
@@ -2057,11 +2094,30 @@ etc/*/bundles
 Create packages p1,p2,....  Packages are defined under
 etc/*/package-list
 
+=item B<--inplace=dir>
+
+Build inside of a CVS checkout.  Will not create
+any GPT packages or bundles as output.
+
 =item B<--deps>
 
 Automatically pull in dependencies.  Useful if you
 want to build one package or bundle, and only want to
 build the packages that it requires.
+
+=item B<--deporder>
+
+Read in the GPT meatadata of packages, then perform
+a topological sort before building them.  Implied
+by --inplace builds, not necessary for builds of
+dependency complete bundles.
+
+=item B<--list-packages>
+
+Print out a list of Makefile targets, and bootstrap
+the CVS subdirectories so they are ready to build.
+Used by the fait_accompli/installer.sh script
+to create the Makefile-based installer.
 
 =item B<--noparanoia>
 

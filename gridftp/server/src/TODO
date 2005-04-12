@@ -1,61 +1,50 @@
 This is the current list of things outstanding for the 4.0 release.
-** denotes must happen before feature freeze
-XX denotes unlikely that this will be in 4.0
 
 protocol:
--- correct FEAT response?
+-- verify FEAT response
 -- reply codes - verify.
--- verify that dsi api is correct wrt to errors
--- error out usefully to server and client when cred problem in gssapi driver
+-- notify server of error when cred problem in gssapi_ftp driver
 
 striping:
--- verify eofc handling, should move out of remote into data.c
--- verify _get_read_range()
+-- verify eofc handling, see if we can move out of dsi into data.c
+-- optimize _get_read_range()
 -- consolidate some restart ranges instead of sending one from every stripe
-
-ipc:
-XX connect backwards!! 0
-XX ipc local mode doesn't work (besides no way to initiate it)
-
-XX commands belong in server-lib
+-- need some spec compliant support for partitioned layout
+    current stripeblocksize impl is basically spec compliant RR
 
 logging:
 -- instrument code
--- verify output format
--- specify log format by configuration
--- syslog module for globus_logging
+-- clean up transfer and usage logging
 
-Pre-Auth Timeout
-
-GID and MLST need to wotk correctly.
+other:
+-- error out of option parsing properly
+-- int->void*->int casting over ipc... better way?
 
 cleanup:
 -- verify test suite
--- clean majority of memory leaks
-
-**Usability issues:
-DOC DOC DOC
-be chatty while parsing config
-ipc security options - doc well, make sure it works the way we expect
-need some spec compliant support for partitioned layout
-    current stripeblocksize impl is basically spec compliant RR
+-- find leaks in error cases
+-- DOC
 
 -----------------------------------------------------------------------
-known bugs:
--- force_close after transfer_complete when an error is passed to 
-   finished_transfer().
--- error out of option parsing properly
+known issues:
 -- ipc failure while the handle is owned by the dsi destroys the handle. should
     not free until user calls release or close, and just error out of any other
-    calls that attempt to use the handle.
--- need to make sure ints in various places are change to size_t if they
-    need to be, and on passing size_t's over ipc need to do some smarts
-    to treat it as 4 or 8 bytes... possible probs if sizes differ on front
-    and back?  This is specifically a problem with tcp_bs, we treat it as an
-    int on the server side, but server-lib gives it to us as a size_t (as
-    it probably should), which is a different size on most 64 bit platforms.
-    
+    calls that attempt to use the handle. (verify fixed?)
+-- there may be an issue with group permissions -- not sure if it results
+    in any problems.
+
+** NOTE **
+-- passing size_t's over ipc as ints... will be a problem on 64 bit systems 
+    where int isn't big enough.  not likely to be a problem in practice
+    since the args we store in size_t (buffer sizes, etc) should never be
+    too large for an int...
+JB: i think this is ok.  size_ts are being sent as uint32 but they are
+    safely being converted to UInt32s first.  There is a certainly a
+    potiential for overflow, however i think the size_ts we are sending
+    should not exceed 4GB.
 
 
-
-ability to send 500 go away to control channel before server-lib has control
+future:
+-- alternate ipc connection modes
+-- ipc local mode
+-- specify log format by configuration

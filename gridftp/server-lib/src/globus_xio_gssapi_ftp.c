@@ -1,3 +1,12 @@
+
+/*
+ * This file or a portion of this file is licensed under the terms of the
+ * Globus Toolkit Public License, found at
+ * http://www.globus.org/toolkit/download/license.html.
+ * If you redistribute this file, with or without modifications,
+ * you must include this notice in the file.
+ */
+
 #include "globus_xio_driver.h"
 #include "globus_xio_telnet.h"
 #include "globus_xio_load.h"
@@ -64,7 +73,19 @@
             _xio_name,                                                      \
             __LINE__,                                                       \
             "Authentication Error"))
-                                                                                
+
+#define GlobusXIOGssapiFTPGSIFailure(maj, min, failure)                     \
+    globus_error_put(                                                       \
+        globus_error_wrap_gssapi_error(                                     \
+            GLOBUS_XIO_MODULE,                                              \
+            (maj),                                                          \
+            (min),                                                          \
+            GLOBUS_XIO_GSSAPI_FTP_ERROR_AUTH,                               \
+            __FILE__,                                                       \
+            _xio_name,                                                      \
+            __LINE__,                                                       \
+            failure))
+                                                                                            
 #define GlobusXIOGssapiFTPAuthenticationFailure(str)                         \
      globus_error_put(                                                       \
          globus_error_construct_error(                                       \
@@ -140,6 +161,7 @@ enum globus_l_xio_error_levels
 #define REPLY_334_GOOD_AUTH_TYPE "334 Using authentication type; ADAT must follow.\r\n"
 #define REPLY_530_EXPECTING_ADAT "530 Must perform GSSAPI authentication.\r\n"
 #define REPLY_530_NO_CRED "530 Server does not have credentials for GSSAPI authentication.\r\n"
+#define REPLY_530_BAD_ADAT "530 Authentication failed.\r\n"
 
 #define REPLY_235_ADAT_DATA "235 ADAT="
 #define REPLY_335_ADAT_DATA "335 ADAT="
@@ -752,7 +774,7 @@ globus_l_xio_gssapi_ftp_decode_adat(
             if(send_tok.length == 0)
             {
                 reply = globus_libc_strdup(
-                            "235 GSSAPI Authentication succeeded\r\n");
+                            "235 GSSAPI Authentication successful.\r\n");
                 if(reply == NULL)
                 {
                     gss_release_buffer(&min_stat, &send_tok);
@@ -1153,6 +1175,91 @@ globus_l_xio_gssapi_ftp_wrap(
     return res;
 }
 
+/*  preline only affects multiline strings.
+    a null preline will prepend a "code-" to the front of each line by default, 
+    otherwise the preline is prepended.
+*/
+static 
+char *
+globus_l_xio_gssapi_ftp_string_to_959(
+    int                                 code,
+    const char *                        in_str,
+    const char *                        preline)
+{
+    globus_bool_t                       done = GLOBUS_FALSE;
+    char *                              msg;
+    char *                              tmp_ptr;
+    char *                              start_ptr;
+    char *                              start_ptr_copy;
+    char *                              end_ptr;
+    char *                              prepad = NULL;
+    int                                 ctr = 0;
+
+    if(in_str == NULL)
+    {
+        msg = globus_common_create_string("%d .\r\n", code);
+    }
+    else
+    {
+        start_ptr_copy = strdup(in_str);
+        start_ptr = start_ptr_copy;
+        msg = globus_common_create_string("%d-", code);
+        if(preline == NULL)
+        {
+            prepad = globus_libc_strdup(msg);
+        }
+        else
+        {
+            prepad = (char *) preline;
+        }
+        while(!done)
+        {
+            end_ptr = strchr(start_ptr, '\n');
+            if(end_ptr != NULL)
+            {
+                *end_ptr = '\0';
+                end_ptr++;
+                if(*end_ptr == '\0')
+                {
+                    end_ptr = NULL;
+                    done = GLOBUS_TRUE;
+                }
+            }
+            else
+            {
+                done = GLOBUS_TRUE;
+            }
+
+            tmp_ptr = msg;
+            msg = globus_common_create_string(
+                "%s%s%s\r\n", 
+                tmp_ptr, 
+                (ctr > 0) ? prepad : "",
+                start_ptr);
+            globus_free(tmp_ptr);
+
+            start_ptr = end_ptr;
+            ctr++;
+        }
+        globus_free(start_ptr_copy);
+        if(preline == NULL)
+        {
+            globus_free(prepad);
+        }
+        if(ctr == 1)
+        {
+            msg[3] = ' ';
+        }
+        else
+        {
+            tmp_ptr = msg;
+            msg = globus_common_create_string("%s%d End.\r\n", tmp_ptr, code);
+            globus_free(tmp_ptr);
+        }
+    }
+
+    return msg;
+}
 /************************************************************************
  *                  server open
  *                  -----------
@@ -1258,11 +1365,17 @@ globus_l_xio_gssapi_ftp_server_read_cb(
                                     &handle->cred_handle);
                     if(maj_stat != GSS_S_COMPLETE)
                     {
-                        /* XXX decide if this should fail and return to
-                           server or just reply and keep CC open 
-                        res = GlobusXIOGssapiFTPGSIAuthFailure(
-                            maj_stat, min_stat); */
-                        msg = globus_libc_strdup(REPLY_530_NO_CRED);
+                        char *          tmp_msg;
+                        /* XXX need to propagate this error to server */
+                        res = GlobusXIOGssapiFTPGSIFailure(
+                            maj_stat, min_stat,
+                            "Server side credential failure");
+                        tmp_msg = globus_error_print_friendly(
+                            globus_error_peek(res));
+                        msg = globus_l_xio_gssapi_ftp_string_to_959(
+                            530, tmp_msg, NULL);
+                        globus_free(tmp_msg);
+                       /* msg = globus_libc_strdup(REPLY_530_NO_CRED); */
                     }
                     else
                     {
@@ -1302,14 +1415,23 @@ globus_l_xio_gssapi_ftp_server_read_cb(
                         &complete);
                     if(res != GLOBUS_SUCCESS)
                     {
-                        goto err;
+                        /* XXX send reply but restsart to READING_AUTH */
+                        char *          tmp_msg;
+                        tmp_msg = globus_error_print_friendly(
+                            globus_error_peek(res));
+                        msg = globus_l_xio_gssapi_ftp_string_to_959(
+                            530, tmp_msg, NULL);
+                        globus_free(tmp_msg);
+                        /* msg = strdup(REPLY_530_BAD_ADAT); */
                     }
-
-                    /* if compete change to the next state */
-                    if(complete)
+                    else
                     {
-                        GlobusXIOGssapiftpDebugChangeState(handle,
-                            GSSAPI_FTP_STATE_SERVER_ADAT_REPLY);
+                        /* if compete change to the next state */
+                        if(complete)
+                        {
+                            GlobusXIOGssapiftpDebugChangeState(handle,
+                                GSSAPI_FTP_STATE_SERVER_ADAT_REPLY);
+                        }
                     }
                 }
                 break;

@@ -1,3 +1,12 @@
+
+/*
+ * This file or a portion of this file is licensed under the terms of the
+ * Globus Toolkit Public License, found at
+ * http://www.globus.org/toolkit/download/license.html.
+ * If you redistribute this file, with or without modifications,
+ * you must include this notice in the file.
+ */
+
 #if !defined GLOBUS_GRIDFTP_SERVER_CONTROL_H
 #define GLOBUS_GRIDFTP_SERVER_CONTROL_H
 
@@ -141,11 +150,11 @@ typedef struct globus_gridftp_server_control_stat_s
 {
     int                                     mode;
     int                                     nlink;
-    char                                    name[MAXPATHLEN];
-    char                                    symlink_target[MAXPATHLEN];
+    char *                                  name;
+    char *                                  symlink_target;
     uid_t                                   uid;
     gid_t                                   gid;
-    globus_size_t                           size;
+    globus_off_t                            size;
     globus_time_t                           atime;
     globus_time_t                           ctime;
     globus_time_t                           mtime;
@@ -479,7 +488,8 @@ globus_gridftp_server_control_attr_set_security(
 globus_result_t
 globus_gridftp_server_control_attr_set_idle_time(
     globus_gridftp_server_control_attr_t    in_attr,
-    int                                     idle_timeout);
+    int                                     idle_timeout,
+    int                                     preauth_timeout);
 
 /*
  *  if module name is NULL then it is the default handler
@@ -570,12 +580,16 @@ globus_gridftp_server_control_stop(
 /*
  *  setters and getters
  */
+globus_result_t
+globus_gridftp_server_control_get_allocated(
+    globus_gridftp_server_control_op_t      op,
+    globus_off_t *                          out_allo);
 
 globus_result_t
 globus_gridftp_server_control_get_layout(
     globus_gridftp_server_control_op_t      op,
     globus_gsc_layout_t *                   layout_type,
-    int *                                   block_size);
+    globus_size_t *                         block_size);
 
 globus_result_t
 globus_gridftp_server_control_get_buffer_size(
@@ -724,6 +738,12 @@ typedef enum globus_gsc_959_command_desc_e
     GLOBUS_GSC_COMMAND_POST_AUTH = 0x01,
     GLOBUS_GSC_COMMAND_PRE_AUTH = 0x02
 } globus_gsc_959_command_desc_t;
+
+char *
+globus_gsc_string_to_959(
+    int                                 code,
+    const char *                        in_str,
+    const char *                        preline);
 
 typedef void
 (*globus_gsc_959_command_cb_t)(

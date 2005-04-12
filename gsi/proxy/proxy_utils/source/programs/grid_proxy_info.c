@@ -456,17 +456,29 @@ main(
     
     switch(cert_type)
     {
+      case GLOBUS_GSI_CERT_UTILS_TYPE_RFC_IMPERSONATION_PROXY:
+        cert_type_name = "RFC 3820 compliant impersonation proxy";
+        break;
+      case GLOBUS_GSI_CERT_UTILS_TYPE_RFC_INDEPENDENT_PROXY:
+        cert_type_name = "RFC 3820 compliant independent proxy";
+        break;
+      case GLOBUS_GSI_CERT_UTILS_TYPE_RFC_LIMITED_PROXY:
+        cert_type_name = "RFC 3820 compliant limited proxy";
+        break;
+      case GLOBUS_GSI_CERT_UTILS_TYPE_RFC_RESTRICTED_PROXY:
+        cert_type_name = "RFC 3820 compliant restricted proxy";
+        break;
       case GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_IMPERSONATION_PROXY:
-        cert_type_name = "Proxy draft compliant impersonation proxy";
+        cert_type_name = "Proxy draft (pre-RFC) compliant impersonation proxy";
         break;
       case GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_INDEPENDENT_PROXY:
-        cert_type_name = "Proxy draft compliant independent proxy";
+        cert_type_name = "Proxy draft (pre-RFC) compliant independent proxy";
         break;
       case GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_LIMITED_PROXY:
-        cert_type_name = "Proxy draft compliant limited proxy";
+        cert_type_name = "Proxy draft (pre-RFC) compliant limited proxy";
         break;
       case GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_RESTRICTED_PROXY:
-        cert_type_name = "Proxy draft compliant restricted proxy";
+        cert_type_name = "Proxy draft (pre-RFC) compliant restricted proxy";
         break;
       case GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_PROXY:
         cert_type_name = "full legacy globus proxy";

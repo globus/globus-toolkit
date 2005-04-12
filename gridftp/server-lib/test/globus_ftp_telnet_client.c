@@ -1,7 +1,7 @@
 #include "globus_xio.h"
 #include "globus_xio_tcp_driver.h"
 #include "globus_xio_gssapi_ftp.h"
-
+#include "globus_gridftp_server_control.h"
 #define LINE_LEN 1024
 
 void
@@ -46,6 +46,7 @@ main(
     }
 
     globus_module_activate(GLOBUS_XIO_MODULE);
+    globus_module_activate(GLOBUS_GRIDFTP_SERVER_CONTROL_MODULE);
     globus_xio_stack_init(&stack, NULL);
 
     res = globus_xio_driver_load("tcp", &tcp_driver);
@@ -57,8 +58,8 @@ main(
     res = globus_xio_stack_push_driver(stack, ftp_driver);
     test_res(res, __LINE__);
 
-    cs = argv[argc - 1];
-    subject = argv[argc - 2];
+    cs = argv[1];
+    subject = argv[2];
     res = globus_xio_handle_create(&xio_handle, stack);
     test_res(res, __LINE__);
     res = globus_xio_attr_init(&attr);
