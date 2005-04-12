@@ -855,6 +855,7 @@ globus_l_gsc_terminate(
             globus_xio_handle_cancel_operations(
                 server_handle->xio_handle,
                 GLOBUS_XIO_CANCEL_OPEN | GLOBUS_XIO_CANCEL_WRITE);
+            globus_l_gsc_server_ref_check(server_handle);
             break;
 
         case GLOBUS_L_GSC_STATE_OPEN:
@@ -865,6 +866,7 @@ globus_l_gsc_terminate(
             globus_xio_handle_cancel_operations(
                 server_handle->xio_handle,
                 GLOBUS_XIO_CANCEL_READ);
+            globus_l_gsc_server_ref_check(server_handle);
             break;
 
         case GLOBUS_L_GSC_STATE_PROCESSING:
@@ -901,12 +903,14 @@ globus_l_gsc_terminate(
             globus_xio_handle_cancel_operations(
                 server_handle->xio_handle,
                 GLOBUS_XIO_CANCEL_READ);
+            globus_l_gsc_server_ref_check(server_handle);
             break;
 
         case GLOBUS_L_GSC_STATE_ABORTING:
             server_handle->ref--;
             GlobusGSCHandleStateChange(
                 server_handle, GLOBUS_L_GSC_STATE_ABORTING_STOPPING);
+            globus_l_gsc_server_ref_check(server_handle);
             break;
 
         /* is ok to call this twice stopped twice:
@@ -915,6 +919,9 @@ globus_l_gsc_terminate(
            In these cases there is nothing to be done. */
         case GLOBUS_L_GSC_STATE_ABORTING_STOPPING:
         case GLOBUS_L_GSC_STATE_STOPPING:
+            globus_l_gsc_server_ref_check(server_handle);
+            break;
+
         case GLOBUS_L_GSC_STATE_STOPPED:
             break;
 
@@ -923,9 +930,6 @@ globus_l_gsc_terminate(
             globus_assert(0);
             break;
     }
-
-    /* remove self reference */
-    globus_l_gsc_server_ref_check(server_handle);
 
     GlobusGridFTPServerDebugInternalExit();
 }
