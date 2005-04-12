@@ -93,7 +93,7 @@ globus_gridftp_server_SOURCES = globus_gridftp_server.c
 # 
 # GPT_LDFLAGS is a macro that contains the linker directives GPT generated 
 # from the dependent packages
-globus_gridftp_server_LDFLAGS = $(GPT_LDFLAGS)
+globus_gridftp_server_LDFLAGS = $(LDFLHACK) $(GPT_LDFLAGS)
 
 # _LDADD is an automake macro which contains
 # directives to the linker added after the list of objects.  
