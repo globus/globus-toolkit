@@ -124,6 +124,12 @@ GSS_CALLCONV gss_compare_name(
      * converted internally to /CN=service/FQDN. 
      *
      * Since DNS names are case insensitive, so is this compare. 
+     *
+     * Many site use the convention of naming interfaces
+     * by having the FQDN in the form host-interface.domain
+     * and the client may only know the host-interface.domain
+     * name, yet it may receive a target of host.domain
+     * So we need host.domain to compare equal to host-interface.domain 
      */
 
     if (g_OID_equal(name1->name_oid, GSS_C_NT_HOSTBASED_SERVICE)
@@ -186,6 +192,54 @@ GSS_CALLCONV gss_compare_name(
             if (le1 == le2 && !strncasecmp(ce1,ce2,le1))
             {
                 *name_equal = GSS_NAMES_EQUAL;
+            }
+            else
+            {
+                while (le1 > 0 && le2 > 0 && 
+                       toupper(*ce1) == toupper(*ce2))
+                {
+                    if(*ce1 == '.')
+                    {
+                        found_dot = 1;
+                    }
+                    
+                    le1--;
+                    le2--;
+                    ce1++;
+                    ce2++;
+                }
+                
+                if (le1 >0 && le2 > 0 && !found_dot)
+                {
+                    if ( *ce1 == '.' && *ce2 == '-' )
+                    {
+                        while( le2 > 0  && *ce2 != '.')
+                        {
+                            le2--;
+                            ce2++;
+                        }
+                        if (le1 == le2 && !strncasecmp(ce1, ce2, le1))
+                        {
+                            *name_equal = GSS_NAMES_EQUAL;
+                        }
+                                                
+                    }
+                    else
+                    {
+                        if (*ce2 == '.' && *ce1 == '-')
+                        {
+                            while(le1 > 0 && *ce1 != '.')
+                            { 
+                                le1--;
+                                ce1++; 
+                            }
+                            if (le1 == le2 && !strncasecmp(ce1, ce2, le1))
+                            {
+                                *name_equal = GSS_NAMES_EQUAL;
+                            }
+                        }
+                    }
+                }
             }
         }
     }
