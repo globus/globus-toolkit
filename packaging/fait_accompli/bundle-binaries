@@ -6,8 +6,10 @@ if [ x$1 = "x" ]; then
 fi
 
 GLOBUS_LOCATION=$1
-export GLOBUS_LOCATION
 shift;
+PATH="$GLOBUS_LOCATION/bin:$GLOBUS_LOCATION/sbin:$PATH"
+LD_LIBRARY_PATH="$GLOBUS_LOCATION/lib:$PATH"
+export PATH LD_LIBRARY_PATH GLOBUS_LOCATION
 
 echo Generating GPT bundle definition for $GLOBUS_LOCATION
 fait_accompli/gpt-generate-bundle-definition > abc.xml
