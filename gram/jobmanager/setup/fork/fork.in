@@ -211,21 +211,22 @@ sub submit
                     } (keys %CHILD_ENV)) . ';';
         }
 
-        print STARTER_IN 'count=' . $description->count() . ';';
+        print STARTER_IN "count=$count;";
 
         print STARTER_IN 'executable=' .
-                &escape_for_starter($description->executable()) . ';';
-        if ($#arguments >= 0)
+                &escape_for_starter($cmdline[0]). ';';
+        shift @cmdline;
+        if ($#cmdline >= 0)
         {
             print STARTER_IN 'arguments=' .
-                    join(',', map {&escape_for_starter($_)} @arguments) .
+                    join(',', map {&escape_for_starter($_)} @cmdline) .
                     ';';
         }
         
         my @job_stdout;
         my @job_stderr;
 
-        for ($i = 0; $i < $description->count(); $i++) {
+        for ($i = 0; $i < $count; $i++) {
             if($multi_output)
             {
                 push(@job_stdout, $self->{STDIO_MERGER}->add_file('out'));
