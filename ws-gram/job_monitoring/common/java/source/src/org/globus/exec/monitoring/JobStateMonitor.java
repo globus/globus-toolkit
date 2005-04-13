@@ -206,7 +206,7 @@ public class JobStateMonitor
      *     Resource key associated with the job. This object will be
      *     passed to the JobStateChangeListener's jobStateChange method.
      */
-    public void registerJobID(String localId, ResourceKey resourceKey)
+    public synchronized void registerJobID(String localId, ResourceKey resourceKey)
             throws AlreadyRegisteredException
     {
         if (logger.isDebugEnabled()) {
@@ -452,7 +452,7 @@ public class JobStateMonitor
         }
     }
 
-    void addEvent(SchedulerEvent e) {
+    synchronized void addEvent(SchedulerEvent e) {
         if (logger.isDebugEnabled()) {
             logger.debug(" JSM receiving scheduler event " + e);
         }
@@ -468,7 +468,7 @@ public class JobStateMonitor
         } else {
             logger.debug("Caching event " + e.getLocalId());
 
-            cacheEvent(e);
+	    cacheEvent(e);
         }
     }
 
