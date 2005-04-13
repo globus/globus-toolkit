@@ -315,7 +315,7 @@ globus_l_gsc_send_perf(
 {
     char *                                  msg;
     struct timeval                          now;
-    GlobusGridFTPServerName(globus_gridftp_server_control_event_send_perf);
+    GlobusGridFTPServerName(globus_l_gsc_send_perf);rf);
                                                                                 
     gettimeofday(&now, NULL);
     msg = globus_common_create_string(
