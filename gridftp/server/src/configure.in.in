@@ -50,6 +50,17 @@ LAC_DOXYGEN("../")
 AM_CONFIG_HEADER(config.h)
 AC_CHECK_FUNCS(fgetpwent)
 AC_C_BIGENDIAN
+
+AC_CANONICAL_BUILD
+LDFLHACK=
+case "$build" in
+  *-*-irix*)
+    LDFLHACK="-ignore_unresolved"
+    echo "Adding -ignore_unresolved to LDFLAGS for IRIX."
+  ;;
+esac
+AC_SUBST(LDFLHACK)
+
 GLOBUS_FINALIZE
 
 AC_OUTPUT(
