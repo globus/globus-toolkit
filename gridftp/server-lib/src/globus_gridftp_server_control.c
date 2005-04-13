@@ -218,7 +218,6 @@ static globus_gridftp_server_control_attr_t globus_l_gsc_default_attr;
 static globus_xio_driver_t              globus_l_gsc_tcp_driver;
 static globus_xio_driver_t              globus_l_gsc_gssapi_ftp_driver;
 static globus_xio_driver_t              globus_l_gsc_telnet_driver;
-static globus_xio_driver_t              globus_l_gsc_queue_driver;
 
 GlobusDebugDefine(GLOBUS_GRIDFTP_SERVER_CONTROL);
 GlobusXIODeclareModule(gssapi_ftp);
@@ -253,11 +252,6 @@ globus_l_gsc_activate()
         return GLOBUS_FAILURE;
     }
     res = globus_xio_driver_load("tcp", &globus_l_gsc_tcp_driver);
-    if(res != GLOBUS_SUCCESS)
-    {
-        return GLOBUS_FAILURE;
-    }
-    res = globus_xio_driver_load("queue", &globus_l_gsc_queue_driver);
     if(res != GLOBUS_SUCCESS)
     {
         return GLOBUS_FAILURE;
@@ -2528,12 +2522,6 @@ globus_gridftp_server_control_start(
         res = globus_xio_stack_push_driver(
             xio_stack, globus_l_gsc_telnet_driver);
     }
-    if(res != GLOBUS_SUCCESS)
-    {
-        goto err;
-    }
-    res = globus_xio_stack_push_driver(
-        xio_stack, globus_l_gsc_queue_driver);
     if(res != GLOBUS_SUCCESS)
     {
         goto err;
