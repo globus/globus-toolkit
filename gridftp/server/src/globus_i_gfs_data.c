@@ -294,7 +294,7 @@ globus_l_gfs_pw_copy(
     {
         return NULL;
     }
-    out_pw = (struct passwd *) globus_malloc(sizeof(struct passwd));
+    out_pw = (struct passwd *) malloc(sizeof(struct passwd));
     if(out_pw == NULL)
     {
         return NULL;
@@ -332,7 +332,7 @@ globus_l_gfs_gr_free(
         {
             free(gr->gr_mem[i]);
         }
-        globus_free(gr->gr_mem);
+        free(gr->gr_mem);
     }
 
     free(gr);
@@ -347,7 +347,7 @@ globus_l_gfs_gr_copy(
     int                                 count;
     struct group *                      gr_copy = NULL;
 
-    gr_copy = (struct group *) globus_malloc(sizeof(struct group));
+    gr_copy = (struct group *) malloc(sizeof(struct group));
     if(gr_copy == NULL)
     {
         return NULL;
@@ -363,7 +363,7 @@ globus_l_gfs_gr_copy(
         {
         }
         count = i+1;
-        gr_copy->gr_mem = (char **)globus_malloc(sizeof(char*)*count);
+        gr_copy->gr_mem = (char **)malloc(sizeof(char*)*count);
         for(i = 0; i < count-1; i++)
         {
             gr_copy->gr_mem[i] = strdup(gr->gr_mem[i]);

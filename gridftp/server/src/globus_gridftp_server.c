@@ -58,6 +58,11 @@ globus_l_gfs_server_accept_cb(
     void *                              user_arg);
 
 static
+void 
+globus_l_gfs_sigchld(
+    void *                              user_arg);
+
+static
 void
 globus_l_gfs_bad_signal_handler(
     int                                 signum)
@@ -82,12 +87,29 @@ globus_l_gfs_bad_signal_handler(
     GlobusGFSDebugExit();
 }
 
+static
+void
+globus_l_gfs_server_close_cb(
+    globus_xio_server_t                 server,
+    void *                              user_arg)
+{
+    globus_mutex_lock(&globus_l_gfs_mutex);
+    {
+        globus_l_gfs_outstanding--;
+        globus_l_gfs_xio_server = GLOBUS_NULL;
+        globus_cond_signal(&globus_l_gfs_cond);
+    }
+    globus_mutex_unlock(&globus_l_gfs_mutex);
+}
+
+
 
 static
 void 
 globus_l_gfs_sigint(
     void *                              user_arg)
 {
+    globus_result_t                     res;
     GlobusGFSName(globus_l_gfs_sigint);
     GlobusGFSDebugEnter();
 
@@ -95,6 +117,7 @@ globus_l_gfs_sigint(
         GLOBUS_I_GFS_LOG_ERR, 
         "Server is shutting down...\n");
 
+    globus_l_gfs_sigchld(user_arg); /* XXX TODO tempary */
     globus_mutex_lock(&globus_l_gfs_mutex);
     {
         if(globus_l_gfs_sigint_caught)
@@ -106,8 +129,16 @@ globus_l_gfs_sigint(
         }
         if(globus_l_gfs_xio_server)
         {
-            globus_xio_server_close(globus_l_gfs_xio_server);
-            globus_l_gfs_xio_server = GLOBUS_NULL;
+            res = globus_xio_server_register_close(
+                globus_l_gfs_xio_server, globus_l_gfs_server_close_cb, NULL);
+            if(res == GLOBUS_SUCCESS)
+            {
+                globus_l_gfs_outstanding++;
+            }
+            else
+            {
+                globus_l_gfs_xio_server = GLOBUS_NULL;
+            }
         }
 
         globus_l_gfs_sigint_caught = GLOBUS_TRUE;
