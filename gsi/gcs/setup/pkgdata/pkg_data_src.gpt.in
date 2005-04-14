@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Format_Version="0.02" Name="globus_gcs_b38b4d8c_setup">
 
-    <Aging_Version Age="0" Major="0" Minor="2"/>
+    <Aging_Version Age="0" Major="0" Minor="3"/>
     <Description>Globus Certificate Service Setup</Description>
     <Functional_Group >Security</Functional_Group>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>

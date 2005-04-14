@@ -156,7 +156,7 @@ if ($result != 0)
 #
 # Install Globus CA certificate if not present
 #
-print "Installing Globus CA certificate into trusted CA certificate directory...\n";
+print "Installing GCS CA certificate into trusted CA certificate directory...\n";
 
 $result = system("cp $setupdir/${ca_install_hash}.0 $trusted_certs_dir");
 
@@ -175,7 +175,7 @@ if ($result != 0)
 #
 # Install Globus CA policy file if not present
 #
-print "Installing Globus CA signing policy into trusted CA certificate directory...\n";
+print "Installing GCS CA signing policy into trusted CA certificate directory...\n";
 
 $result = system("cp $setupdir/${ca_install_hash}.signing_policy $trusted_certs_dir");
 
@@ -191,6 +191,25 @@ if ($result != 0)
   die "Failed to set permissions on $trusted_certs_dir/${ca_install_hash}.signing_policy. Aborting.";
 }
 
+#
+# Install Globus CA directions file if not present
+#
+print "Installing GCS CA directions into trusted CA certificate directory...\n";
+
+$result = system("cp $setupdir/directions $trusted_certs_dir/directions.${ca_install_hash}");
+
+if ($result != 0) 
+{
+  die "Failed to install $trusted_certs_dir/directions.${ca_install_hash}. Aborting.";
+}
+
+$result = system("chmod 644 $trusted_certs_dir/directions.${ca_install_hash}");
+
+if ($result != 0) 
+{
+  die "Failed to set permissions on $trusted_certs_dir/directions.${ca_install_hash}. Aborting.";
+}
+
 if(defined($opt_default))
 {
 
@@ -200,13 +219,15 @@ if(defined($opt_default))
 	$ret_value += ($? >> 8);
 	system "rm -f $target_dir/globus-host-ssl.conf";
 	$ret_value += ($? >> 8);
+	system "rm -f $target_dir/directions";
 
 	if($ret_value > 0) { die "\nERROR: Can't delete security config files from $target_dir\n\n"; }
 
 	my $ret_value  = symlink("${trusted_certs_dir}/grid-security.conf.${ca_install_hash}",   "${target_dir}/grid-security.conf");
 	$ret_value += symlink("${trusted_certs_dir}/globus-user-ssl.conf.${ca_install_hash}", "${target_dir}/globus-user-ssl.conf");
 	$ret_value += symlink("${trusted_certs_dir}/globus-host-ssl.conf.${ca_install_hash}", "${target_dir}/globus-host-ssl.conf");
-	if($ret_value < 3) { die "\nERROR: Can't create symlinks for security config files from $trusted_certs_dir to $target_dir\n\n"; }
+	$ret_value += symlink("${trusted_certs_dir}/directions.${ca_install_hash}", "${target_dir}/directions");
+	if($ret_value < 4) { die "\nERROR: Can't create symlinks for security config files from $trusted_certs_dir to $target_dir\n\n"; }
 
 }
 
