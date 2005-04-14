@@ -147,6 +147,7 @@ static int globus_l_gsi_authz_activate(void)
             goto free_handle;
         }
         free(filename);
+        filename = NULL;
         
         /* call authz system init callout */
         /* the callout type is "GLOBUS_GSI_AUTHZ_SYSTEM_INIT" */
