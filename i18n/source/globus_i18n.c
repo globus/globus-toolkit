@@ -169,9 +169,11 @@ char * globus_get_string_by_key( char * locale,
 
     
     u_strToUTF8(NULL, 0, &len, string, -1, &uerr);
-    utf8string=(char *)malloc(sizeof(char *)*len); 
+    /*  length returned from u_strToUTF8 doesn't include \0 
+      but it will write a \0 to the end of the buffer if it is big enough*/
+    utf8string=(char *)malloc(sizeof(char)*(len+1)); 
     uerr=U_ZERO_ERROR; 
-    utf8string=u_strToUTF8(utf8string, len, NULL, string, -1, &uerr);
+    utf8string=u_strToUTF8(utf8string, len+1, NULL, string, -1, &uerr);
 
     return utf8string;
 }
