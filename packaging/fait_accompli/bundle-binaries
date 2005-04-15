@@ -54,4 +54,11 @@ for f in *; do
   cd ..
 done
 
-echo Done re-organizing.  Still need to create top-level Makefile.
+echo Generating configure/Makefile.in for binary installer
+cp fait_accompli/binary.Makefile.in tmp/Makefile.in
+source-trees/autotools/bin/autoconf fait_accompli/binary.configure.in > tmp/configure
+
+echo Adding GPT source to binary installer
+tar -C tmp -xzf fait_accompli/gpt-3.2autotools2004-src.tar.gz
+
+echo Done.
