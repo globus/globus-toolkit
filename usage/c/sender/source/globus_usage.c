@@ -311,7 +311,7 @@ globus_usage_stats_handle_init(
     memset(new_handle, 0, sizeof(globus_i_usage_stats_handle_t));
 
     new_handle->code = htons(code);
-    new_handle->version = htons(code);
+    new_handle->version = htons(version);
 
     memset(new_handle->data, 0, 1472);
 
