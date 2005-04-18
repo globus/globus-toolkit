@@ -1,3 +1,14 @@
+/*
+ * Portions of this file Copyright 1999-2005 University of Chicago
+ * Portions of this file Copyright 1999-2005 The University of Southern California.
+ *
+ * This file or a portion of this file is licensed under the
+ * terms of the Globus Toolkit Public License, found at
+ * http://www.globus.org/toolkit/download/license.html.
+ * If you redistribute this file, with or without
+ * modifications, you must include this notice in the file.
+ */
+
 #define yy_create_buffer globus_rsl_create_buffer
 #define yy_delete_buffer globus_rsl_delete_buffer
 #define yy_scan_buffer globus_rsl_scan_buffer
