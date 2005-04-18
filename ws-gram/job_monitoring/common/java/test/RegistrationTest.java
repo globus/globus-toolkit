@@ -1,12 +1,21 @@
 /*
- * Test that an object can register/unregister mappings of job IDs.
+ * Portions of this file Copyright 1999-2005 University of Chicago
+ * Portions of this file Copyright 1999-2005 The University of Southern California.
+ *
+ * This file or a portion of this file is licensed under the
+ * terms of the Globus Toolkit Public License, found at
+ * http://www.globus.org/toolkit/download/license.html.
+ * If you redistribute this file, with or without
+ * modifications, you must include this notice in the file.
  */
-
 import org.globus.exec.monitoring.JobStateListener;
 import org.globus.exec.monitoring.JobStateMonitor;
 import org.globus.exec.monitoring.AlreadyRegisteredException;
 import org.globus.exec.monitoring.NotRegisteredException;
 
+/*
+ * Test that an object can register/unregister mappings of job IDs.
+ */
 public class RegistrationTest
         extends junit.framework.TestCase
         implements JobStateListener
