@@ -1727,10 +1727,10 @@ globus_ftp_control_data_send_eof(
             globus_fifo_enqueue(&stripe->command_q,
                                 (void *)tmp_ent);
         }
+        globus_l_ftp_data_stripe_poll(dc_handle);
     }
     globus_mutex_unlock(&dc_handle->mutex);
 
-    globus_l_ftp_data_stripe_poll(dc_handle);
 
     return GLOBUS_SUCCESS;
 }
@@ -3837,10 +3837,10 @@ globus_ftp_control_data_write(
             globus_mutex_unlock(&dc_handle->mutex);
             return globus_error_put(err);
         }
+        globus_l_ftp_data_stripe_poll(dc_handle);
     }
     globus_mutex_unlock(&dc_handle->mutex);
 
-    globus_l_ftp_data_stripe_poll(dc_handle);
 
     return result;
 }
@@ -4034,10 +4034,10 @@ globus_ftp_control_data_read(
             globus_mutex_unlock(&dc_handle->mutex);
             return globus_error_put(err);
         }
+        globus_l_ftp_data_stripe_poll(dc_handle);
     }
     globus_mutex_unlock(&dc_handle->mutex);
 
-    globus_l_ftp_data_stripe_poll(dc_handle);
 
     return result;
 }
@@ -4231,10 +4231,10 @@ globus_ftp_control_data_read_all(
                 }
             }
         }
+        globus_l_ftp_data_stripe_poll(dc_handle);
     }
     globus_mutex_unlock(&dc_handle->mutex);
 
-    globus_l_ftp_data_stripe_poll(dc_handle);
 
     return res;
 }
@@ -4375,6 +4375,7 @@ globus_l_ftp_control_data_eb_write(
     globus_ftp_control_data_callback_t          callback,
     void *                                      callback_arg)
 {
+    globus_result_t                             res;
     globus_l_ftp_handle_table_entry_t *         tmp_ent;
     globus_ftp_data_stripe_t *                  stripe;
     int                                         ctr;
@@ -4446,7 +4447,7 @@ globus_l_ftp_control_data_eb_write(
         }
         else
         {
-            globus_i_ftp_control_data_write_stripe(
+            res = globus_i_ftp_control_data_write_stripe(
                 dc_handle,
                 buffer,
                 length,
@@ -4454,6 +4455,12 @@ globus_l_ftp_control_data_eb_write(
                 eof,
                 0,
                 &data_info);
+            if(res != GLOBUS_SUCCESS)
+            {
+                /* need to free what was created in:
+                    globus_i_ftp_control_create_data_info*/
+                return res;
+            }
         }
     }
 
@@ -5217,11 +5224,11 @@ globus_ftp_control_data_write_stripe(
         res = globus_i_ftp_control_release_data_info(
                   dc_handle,
                   &data_info);
+exit:
+        globus_l_ftp_data_stripe_poll(dc_handle);
     }
     globus_mutex_unlock(&dc_handle->mutex);
 
-  exit:
-    globus_l_ftp_data_stripe_poll(dc_handle);
 
     return res;
 }
@@ -5520,8 +5527,6 @@ globus_l_ftp_data_stripe_poll(
     globus_result_t                              result;
     globus_i_ftp_dc_transfer_handle_t *          transfer_handle;
 
-    globus_mutex_lock(&dc_handle->mutex);
-    {
         transfer_handle = dc_handle->transfer_handle;
         if(dc_handle->state == GLOBUS_FTP_DATA_STATE_CLOSING)
         {
@@ -5547,8 +5552,6 @@ globus_l_ftp_data_stripe_poll(
             }
            result = GLOBUS_SUCCESS;
         }
-    }
-    globus_mutex_unlock(&dc_handle->mutex);
 
     return result;
 }
@@ -6110,9 +6113,8 @@ globus_l_ftp_control_send_data_kickout(
         eof_cb_ent = globus_handle_table_lookup(
                          &transfer_handle->handle_table,
                          transfer_handle->eof_table_handle);
-        globus_assert(eof_cb_ent != GLOBUS_NULL);
 
-        if(!globus_handle_table_decrement_reference(
+        if(eof_cb_ent && !globus_handle_table_decrement_reference(
           &transfer_handle->handle_table,
            transfer_handle->eof_table_handle))
         {
@@ -6181,13 +6183,13 @@ globus_l_ftp_control_send_data_kickout(
          *  decrement the reference this callback has
          */
         poll = !globus_l_ftp_control_dc_dec_ref(transfer_handle);
+        if(poll)
+        {
+            globus_l_ftp_data_stripe_poll(dc_handle);
+        }
     }
     globus_mutex_unlock(&dc_handle->mutex);
 
-    if(poll)
-    {
-        globus_l_ftp_data_stripe_poll(dc_handle);
-    }
     globus_free(entry);
 }
 
@@ -6690,6 +6692,11 @@ globus_l_ftp_control_command_kickout(
     {
         dc_handle->state = GLOBUS_FTP_DATA_STATE_EOF;
         poll = !globus_l_ftp_control_dc_dec_ref(transfer_handle);
+        /* purge any callbacks registered before eof was sent */
+        if(poll)
+        {
+            globus_l_ftp_data_stripe_poll(dc_handle);
+        }
     }
     globus_mutex_unlock(&dc_handle->mutex);
 
@@ -6700,11 +6707,6 @@ globus_l_ftp_control_command_kickout(
 
     globus_free(entry);
     
-    /* purge any callbacks registered before eof was sent */
-    if(poll)
-    {
-        globus_l_ftp_data_stripe_poll(dc_handle);
-    }
 }
 
 static
@@ -6827,11 +6829,13 @@ globus_l_ftp_control_dc_dec_ref(
     int                                          ctr;
     globus_ftp_data_stripe_t *                   stripe;
 
+    globus_assert(transfer_handle->ref > 0);
+/*
     if(transfer_handle->ref == 0)
     {
         return GLOBUS_FALSE;
     }
-
+*/
     transfer_handle->ref--;
     dc_handle = transfer_handle->whos_my_daddy;
     globus_assert(transfer_handle->ref >= 0);
@@ -7440,15 +7444,15 @@ globus_l_ftp_stream_write_eof_callback(
     {
         globus_l_ftp_control_stripes_destroy(dc_handle, GLOBUS_NULL);
         poll = !globus_l_ftp_control_dc_dec_ref(transfer_handle);
+        if(poll)
+        {
+            globus_l_ftp_data_stripe_poll(dc_handle);
+        }
     }
     globus_mutex_unlock(&dc_handle->mutex);
 
     globus_free(data_conn);
 
-    if(poll)
-    {
-        globus_l_ftp_data_stripe_poll(dc_handle);
-    }
     if(error)
     {
         globus_object_free(error);
@@ -7596,6 +7600,10 @@ globus_l_ftp_stream_listen_callback(
         }
         
         poll = !globus_l_ftp_control_dc_dec_ref(transfer_handle);
+        if(poll)
+        {
+            globus_l_ftp_data_stripe_poll(dc_handle);
+        }
     }
     globus_mutex_unlock(&dc_handle->mutex);
 
@@ -7611,16 +7619,17 @@ globus_l_ftp_stream_listen_callback(
         globus_mutex_lock(&dc_handle->mutex);
         {
             poll = !globus_l_ftp_control_dc_dec_ref(transfer_handle);
+            if(poll)
+            {
+                globus_l_ftp_data_stripe_poll(dc_handle);
+            }
         }
         globus_mutex_unlock(&dc_handle->mutex);
     }
 
-    if(poll)
-    {
-        globus_l_ftp_data_stripe_poll(dc_handle);
-    }
     if(error)
     {
+        globus_free(data_conn);
         globus_object_free(error);
     }
 }
@@ -7752,11 +7761,6 @@ globus_l_ftp_stream_accept_connect_callback(
         {
             dc_handle->connect_error = globus_object_copy(error);
         }
-        
-        /*
-         * since conncet came back dec ref
-         */
-        poll = !globus_l_ftp_control_dc_dec_ref(transfer_handle);
     }
     globus_mutex_unlock(&dc_handle->mutex);
 
@@ -7777,17 +7781,21 @@ globus_l_ftp_stream_accept_connect_callback(
         {
             poll = !globus_l_ftp_control_dc_dec_ref(transfer_handle);
         }
+        /*
+         * since conncet came back dec ref
+         */
+        poll = !globus_l_ftp_control_dc_dec_ref(transfer_handle);
+        /*
+         *  poll the command_q on all stripes
+         */
+        if(poll)
+        {
+            globus_l_ftp_data_stripe_poll(dc_handle);
+        }
     }
     globus_mutex_unlock(&dc_handle->mutex);
 
     globus_free(callback_info);
-    /*
-     *  poll the command_q on all stripes
-     */
-    if(poll)
-    {
-        globus_l_ftp_data_stripe_poll(dc_handle);
-    }
 }
 
 
@@ -7923,19 +7931,19 @@ globus_l_ftp_stream_write_callback(
     globus_mutex_lock(&dc_handle->mutex);
     {
         poll = !globus_l_ftp_control_dc_dec_ref(transfer_handle);
+        /*
+         *  poll the command_q on all stripes
+         */
+        if(poll)
+        {
+            globus_l_ftp_data_stripe_poll(dc_handle);
+        }
     }
     globus_mutex_unlock(&dc_handle->mutex);
 
     if(error != GLOBUS_NULL)
     {
         globus_object_free(error);
-    }
-    /*
-     *  poll the command_q on all stripes
-     */
-    if(poll)
-    {
-        globus_l_ftp_data_stripe_poll(dc_handle);
     }
 }
 
@@ -8128,19 +8136,19 @@ globus_l_ftp_stream_read_callback(
     globus_mutex_lock(&dc_handle->mutex);
     {
         poll = !globus_l_ftp_control_dc_dec_ref(transfer_handle);
+        /*
+         *  poll the command_q on all stripes
+         */
+        if(poll)
+        {
+            globus_l_ftp_data_stripe_poll(dc_handle);
+        }
     }
     globus_mutex_unlock(&dc_handle->mutex);
 
     if(error != GLOBUS_NULL)
     {
         globus_object_free(error);
-    }
-    /*
-     *  poll the command_q on all stripes
-     */
-    if(poll)
-    {
-        globus_l_ftp_data_stripe_poll(dc_handle);
     }
 }
 
@@ -8214,30 +8222,6 @@ globus_l_ftp_eb_listen_callback(
             {
                 error = globus_error_get(result);
                 globus_l_ftp_control_stripes_destroy(dc_handle, error);
-                
-                if(stripe->listening)
-                {
-                    stripe->listening = GLOBUS_FALSE;
-                    CALLBACK_INFO_MALLOC(
-                        cb_info,
-                        dc_handle,
-                        transfer_handle,
-                        stripe,
-                        GLOBUS_NULL);
-                    res = globus_io_register_close(
-                              handle,
-                              globus_l_ftp_io_close_callback,
-                              (void *)cb_info);
-                    if(res != GLOBUS_SUCCESS)
-                    {
-                        res = globus_callback_register_oneshot(
-                                 GLOBUS_NULL,
-                                 GLOBUS_NULL,
-                                 globus_l_ftp_control_io_close_kickout,
-                                 cb_info);
-                        globus_assert(res == GLOBUS_SUCCESS);
-                    }
-                }
             }
             callback = data_conn->callback;
             user_arg = data_conn->user_arg;
@@ -8281,18 +8265,24 @@ globus_l_ftp_eb_listen_callback(
                 error = globus_error_get(res);
                 globus_l_ftp_control_stripes_destroy(dc_handle, error);
             }
-
-           /*
-            *  re-register the listen
-            *  see QUESTION above about conncetion callbacks
-            */
-            transfer_handle->ref++;
-            DATA_CONN_MALLOC(data_conn2, stripe, GLOBUS_NULL, GLOBUS_NULL);
-            res = globus_io_tcp_register_listen(
+            else
+            {
+               /*
+                *  re-register the listen
+                *  see QUESTION above about conncetion callbacks
+                */
+                transfer_handle->ref++;
+                DATA_CONN_MALLOC(data_conn2, stripe, GLOBUS_NULL, GLOBUS_NULL);
+                res = globus_io_tcp_register_listen(
                           &stripe->listener_handle,
                           globus_l_ftp_eb_listen_callback,
                           (void *)data_conn2);
-            globus_assert(res == GLOBUS_SUCCESS);
+                if(res != GLOBUS_SUCCESS)
+                {
+                    error = globus_error_get(res);
+                    globus_l_ftp_control_stripes_destroy(dc_handle, error);
+                }
+            }
         }
         /* this will happen if we got a force_close after the connect_read but
          * before this callback.  just continue with an error */
@@ -8314,8 +8304,11 @@ globus_l_ftp_eb_listen_callback(
         {
             dc_handle->connect_error = globus_object_copy(error);
         }
-        
         poll = !globus_l_ftp_control_dc_dec_ref(transfer_handle);
+        if(poll)
+        {
+            globus_l_ftp_data_stripe_poll(dc_handle);
+        }
     }
     globus_mutex_unlock(&dc_handle->mutex);
 
@@ -8334,17 +8327,18 @@ globus_l_ftp_eb_listen_callback(
         globus_mutex_lock(&dc_handle->mutex);
         {
             poll = !globus_l_ftp_control_dc_dec_ref(transfer_handle);
+            if(poll)
+            {
+                globus_l_ftp_data_stripe_poll(dc_handle);
+            }
         }
         globus_mutex_unlock(&dc_handle->mutex);
     }
 
     if(error !=GLOBUS_NULL)
     {
+        globus_free(data_conn);
         globus_object_free(error);
-    }
-    if(poll)
-    {
-        globus_l_ftp_data_stripe_poll(dc_handle);
     }
 }
 
@@ -8480,6 +8474,10 @@ globus_l_ftp_eb_accept_callback(
          *  since the accept came back, dec ref
          */
         poll = !globus_l_ftp_control_dc_dec_ref(transfer_handle);
+        if(poll)
+        {
+            globus_l_ftp_data_stripe_poll(dc_handle);
+        }
     }
     globus_mutex_unlock(&dc_handle->mutex);
 
@@ -8498,6 +8496,10 @@ globus_l_ftp_eb_accept_callback(
         globus_mutex_lock(&dc_handle->mutex);
         {
             poll = !globus_l_ftp_control_dc_dec_ref(transfer_handle);
+            if(poll)
+            {
+                globus_l_ftp_data_stripe_poll(dc_handle);
+            }
         }
         globus_mutex_unlock(&dc_handle->mutex);
     }
@@ -8505,10 +8507,6 @@ globus_l_ftp_eb_accept_callback(
     if(error)
     {
         globus_object_free(error);
-    }
-    if(poll)
-    {
-        globus_l_ftp_data_stripe_poll(dc_handle);
     }
 }
 
@@ -8774,12 +8772,12 @@ globus_l_ftp_eb_read_header_callback(
             }
             data_conn->reusing = GLOBUS_FALSE;
         }
+        globus_l_ftp_data_stripe_poll(dc_handle);
     }
     globus_mutex_unlock(&dc_handle->mutex);
 
     globus_free(eb_header);
 
-    globus_l_ftp_data_stripe_poll(dc_handle);
     
     if(error != GLOBUS_NULL)
     {
@@ -8984,6 +8982,13 @@ globus_l_ftp_eb_read_callback(
             dc_handle->state = GLOBUS_FTP_DATA_STATE_EOF;
         }
         poll = !globus_l_ftp_control_dc_dec_ref(transfer_handle);
+        /*
+         *  poll the command_q on all stripes
+         */
+        if(poll)
+        {
+            globus_l_ftp_data_stripe_poll(dc_handle);
+        }
     }
     globus_mutex_unlock(&dc_handle->mutex);
     
@@ -8992,13 +8997,6 @@ globus_l_ftp_eb_read_callback(
         globus_object_free(error);
     }
     
-    /*
-     *  poll the command_q on all stripes
-     */
-    if(poll)
-    {
-        globus_l_ftp_data_stripe_poll(dc_handle);
-    }
 }
 
 /*
@@ -9038,13 +9036,6 @@ globus_l_ftp_eb_connect_callback(
     globus_mutex_lock(&dc_handle->mutex);
     {
         globus_assert(dc_handle->mode == GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK);
-
-        /*
-         * since conncet came back dec ref
-         */
-        poll = !globus_l_ftp_control_dc_dec_ref(transfer_handle);
-        globus_assert(poll);
-
         callback = data_conn->callback;
         control_handle = dc_handle->whos_my_daddy;
         user_arg = data_conn->user_arg;
@@ -9166,12 +9157,12 @@ globus_l_ftp_eb_connect_callback(
     }
     globus_mutex_unlock(&dc_handle->mutex);
 
-    /* this should only happen when there is an error */
     if(callback != GLOBUS_NULL)
     {
         callback(user_arg, control_handle, stripe_ndx, GLOBUS_FALSE, error);
     }
 
+    /* this should only happen when there is an error */
     if(eof_callback != GLOBUS_NULL)
     {
         eof_callback(
@@ -9193,6 +9184,12 @@ globus_l_ftp_eb_connect_callback(
     globus_mutex_lock(&dc_handle->mutex);
     {
         /*
+         * since conncet came back dec ref
+         */
+        poll = !globus_l_ftp_control_dc_dec_ref(transfer_handle);
+        globus_assert(poll || (callback == NULL && eof_callback == NULL));
+
+        /*
          *  decrement the reference the callbacks had
          */
         if(eof_callback != GLOBUS_NULL)
@@ -9204,15 +9201,14 @@ globus_l_ftp_eb_connect_callback(
         {
             poll = !globus_l_ftp_control_dc_dec_ref(transfer_handle);
         }
+        if(poll)
+        {
+            globus_l_ftp_data_stripe_poll(dc_handle);
+        }
     }
     globus_mutex_unlock(&dc_handle->mutex);
 
     globus_free(callback_info);
-
-    if(poll)
-    {
-        globus_l_ftp_data_stripe_poll(dc_handle);
-    }
 }
 
 /*
@@ -9500,13 +9496,13 @@ globus_l_ftp_eb_write_callback(
         {
             poll = !globus_l_ftp_control_dc_dec_ref(transfer_handle);
         }
+        if(poll)
+        {
+            globus_l_ftp_data_stripe_poll(dc_handle);
+        }
     }
     globus_mutex_unlock(&dc_handle->mutex);
 
-    if(poll)
-    {
-        globus_l_ftp_data_stripe_poll(dc_handle);
-    }
     globus_free(entry);
     globus_free(iov);
     globus_free(eb_header);
@@ -9662,6 +9658,11 @@ globus_l_ftp_eb_send_eof_callback(
     globus_mutex_lock(&dc_handle->mutex);
     {
         poll = !globus_l_ftp_control_dc_dec_ref(transfer_handle);
+
+        if(poll)
+        {
+            globus_l_ftp_data_stripe_poll(dc_handle);
+        }
     }
     globus_mutex_unlock(&dc_handle->mutex);
 
@@ -9671,10 +9672,6 @@ globus_l_ftp_eb_send_eof_callback(
     if(error)
     {
         globus_object_free(error);
-    }
-    if(poll)
-    {
-        globus_l_ftp_data_stripe_poll(dc_handle);
     }
 }
 
@@ -9774,9 +9771,8 @@ globus_l_ftp_eb_eof_eod_callback(
         eof_cb_ent = globus_handle_table_lookup(
                          &transfer_handle->handle_table,
                          transfer_handle->eof_table_handle);
-        globus_assert(eof_cb_ent != GLOBUS_NULL);
 
-        if(!globus_handle_table_decrement_reference(
+        if(eof_cb_ent && !globus_handle_table_decrement_reference(
                &transfer_handle->handle_table,
                transfer_handle->eof_table_handle))
         {
@@ -9841,13 +9837,13 @@ globus_l_ftp_eb_eof_eod_callback(
          *  decrement the reference this callback has
          */
         poll = !globus_l_ftp_control_dc_dec_ref(transfer_handle);
+        if(poll)
+        {
+            globus_l_ftp_data_stripe_poll(dc_handle);
+        }
     }
     globus_mutex_unlock(&dc_handle->mutex);
 
-    if(poll)
-    {
-        globus_l_ftp_data_stripe_poll(dc_handle);
-    }
     globus_free(callback_info);
     globus_free(eb_header);
     if(error)

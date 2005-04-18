@@ -451,8 +451,9 @@ globus_i_gsc_event_end(
     globus_i_gsc_op_t *                 op);
 
 void
-globus_i_gsc_terminate(
-    globus_i_gsc_server_handle_t *      server_handle);
+globus_gsc_959_terminate(
+    globus_i_gsc_op_t *                 op,
+    char *                              reply_msg);
 
 char *
 globus_i_gsc_get_help(

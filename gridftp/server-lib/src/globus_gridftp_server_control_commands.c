@@ -1031,9 +1031,7 @@ globus_l_gsc_cmd_quit(
     globus_i_gsc_log(op->server_handle, full_command,
         GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_SECURITY);
 
-    globus_gsc_959_finished_command(op, _FSMSL("221 Goodbye.\r\n"));
-
-    globus_i_gsc_terminate(server_handle);
+    globus_gsc_959_terminate(op, _FSMSL("221 Goodbye.\r\n"));
 
     GlobusGridFTPServerDebugInternalExit();
 }

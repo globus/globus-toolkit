@@ -2193,6 +2193,7 @@ globus_l_gfs_ipc_timeout_cb(
                     rc = GLOBUS_FALSE;
                 }
             }
+            globus_mutex_unlock(&globus_l_ipc_mutex);
             /* close handle */
             break;
         default:

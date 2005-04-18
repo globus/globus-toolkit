@@ -425,16 +425,16 @@ globus_l_gfs_auth_session_cb(
                 reply->info.session.home_dir);
         }
         
+        auth_info->instance->home_dir = 
+            globus_libc_strdup(reply->info.session.home_dir);
+        auth_info->instance->username = 
+            globus_libc_strdup(reply->info.session.username);
+        
         globus_gridftp_server_control_finished_auth(
             auth_info->control_op,
             reply->info.session.username,
             GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS,
             NULL);
-        
-        auth_info->instance->home_dir = 
-            globus_libc_strdup(reply->info.session.home_dir);
-        auth_info->instance->username = 
-            globus_libc_strdup(reply->info.session.username);
     }
     globus_free(auth_info->session_info->username);
     if(auth_info->session_info->password != NULL)

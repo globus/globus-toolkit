@@ -145,6 +145,10 @@ typedef struct globus_l_gsc_reply_ent_s
  *              functions prototypes
  *
  ************************************************************************/
+void
+globus_l_gsc_959_finished_command(
+    globus_i_gsc_op_t *                 op,
+    char *                              reply_msg);
 
 static void
 globus_l_gsc_process_next_cmd(
@@ -725,8 +729,7 @@ assert(server_handle->data_object->state == GLOBUS_L_GSC_DATA_OBJ_INUSE);
     return;
 
 err_alloc_unlock:
-
-  err:
+err:
     if(command_name != NULL)
     {
         globus_free(command_name);
@@ -818,6 +821,7 @@ globus_l_gsc_terminate(
         }
     }
 
+/*
     while(!globus_fifo_empty(&server_handle->reply_q))
     {
         globus_l_gsc_reply_ent_t *      reply_ent;
@@ -836,7 +840,7 @@ globus_l_gsc_terminate(
         }
         globus_free(reply_ent);
     }
-
+*/
     switch(server_handle->state)
     {
         case GLOBUS_L_GSC_STATE_OPENING:
@@ -927,15 +931,19 @@ globus_l_gsc_terminate(
 }
 
 void
-globus_i_gsc_terminate(
-    globus_i_gsc_server_handle_t *      server_handle)
+globus_gsc_959_terminate(
+    globus_i_gsc_op_t *                 op,
+    char *                              reply_msg)
 {
-    GlobusGridFTPServerName(globus_i_gsc_terminate);
+    globus_i_gsc_server_handle_t *      server_handle;
+    GlobusGridFTPServerName(globus_gsc_959_terminate);
 
     GlobusGridFTPServerDebugInternalEnter();
 
+    server_handle = op->server_handle;
     globus_mutex_lock(&server_handle->mutex);
     {
+        globus_l_gsc_959_finished_command(op, reply_msg);
         globus_l_gsc_terminate(server_handle);
     }
     globus_mutex_unlock(&server_handle->mutex);
@@ -1382,7 +1390,7 @@ free_error:
     {
         globus_free(reply_ent->msg);
     }
-    globus_free(reply_ent->msg);
+
     globus_free(reply_ent);
 error:
     while(!globus_fifo_empty(&server_handle->reply_q))
@@ -2352,6 +2360,8 @@ globus_gridftp_server_control_destroy(
         goto err;
     }
 
+    globus_assert(server_handle->ref == 0);
+
     if(server_handle->cwd != NULL)
     {
         globus_free(server_handle->cwd);
@@ -2776,36 +2786,52 @@ globus_i_gsc_command_panic(
 }
 
 void
-globus_gsc_959_finished_command(
+globus_l_gsc_959_finished_command(
     globus_i_gsc_op_t *                 op,
     char *                              reply_msg)
 {
     globus_i_gsc_server_handle_t *      server_handle;
     globus_l_gsc_reply_ent_t *          reply_ent;
-    GlobusGridFTPServerName(globus_gsc_959_finished_command);
+    GlobusGridFTPServerName(globus_l_gsc_959_finished_command);
 
     GlobusGridFTPServerDebugInternalEnter();
 
     server_handle = op->server_handle;
 
+    if(server_handle->reply_outstanding)
+    {
+        reply_ent = (globus_l_gsc_reply_ent_t *)
+            globus_malloc(sizeof(globus_l_gsc_reply_ent_t));
+        reply_ent->msg = globus_libc_strdup(reply_msg);
+        reply_ent->op = op;
+        reply_ent->final = GLOBUS_TRUE;
+
+        globus_fifo_enqueue(&server_handle->reply_q, reply_ent);
+    }
+    else
+    {
+        globus_l_gsc_finished_op(op, reply_msg);
+    }
+    GlobusGridFTPServerDebugInternalExit();
+}
+
+void
+globus_gsc_959_finished_command(
+    globus_i_gsc_op_t *                 op,
+    char *                              reply_msg)
+{
+    globus_i_gsc_server_handle_t *      server_handle;
+    GlobusGridFTPServerName(globus_gsc_959_finished_command);
+
+    GlobusGridFTPServerDebugInternalEnter();
+
+    server_handle = op->server_handle;
     globus_mutex_lock(&server_handle->mutex);
     {
-        if(server_handle->reply_outstanding)
-        {
-            reply_ent = (globus_l_gsc_reply_ent_t *)
-                globus_malloc(sizeof(globus_l_gsc_reply_ent_t));
-            reply_ent->msg = globus_libc_strdup(reply_msg);
-            reply_ent->op = op;
-            reply_ent->final = GLOBUS_TRUE;
-
-            globus_fifo_enqueue(&server_handle->reply_q, reply_ent);
-        }
-        else
-        {
-            globus_l_gsc_finished_op(op, reply_msg);
-        }
+        globus_l_gsc_959_finished_command(op, reply_msg);
     }
     globus_mutex_unlock(&server_handle->mutex);
+
     GlobusGridFTPServerDebugInternalExit();
 }
 
