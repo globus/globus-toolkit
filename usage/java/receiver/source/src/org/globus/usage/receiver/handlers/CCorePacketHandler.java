@@ -20,7 +20,7 @@ public class CCorePacketHandler extends DefaultPacketHandler {
     }
 
     public boolean doCodesMatch(short componentCode, short versionCode) {
-        return (componentCode == 4 && versionCode == 4);
+        return (componentCode == 4 && versionCode == 1);
     }
 
     public UsageMonitorPacket instantiatePacket(CustomByteBuffer rawBytes) {

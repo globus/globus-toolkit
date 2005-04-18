@@ -1,4 +1,4 @@
-package org.globus.usage.receiver.handlers;
+\package org.globus.usage.receiver.handlers;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
