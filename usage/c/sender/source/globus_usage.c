@@ -38,6 +38,8 @@ GlobusDebugDefine(GLOBUS_USAGE);
         }                                                               \
     }
 
+#define PACKET_SIZE 1472
+
 static int
 globus_l_usage_stats_activate();
 
@@ -62,7 +64,7 @@ typedef struct globus_usage_stats_handle_s
     globus_list_t *                     xio_desc_list;
     const char *                        optout;
     int                                 header_length;
-    unsigned char                       data[1472];
+    unsigned char                       data[PACKET_SIZE];
 } globus_i_usage_stats_handle_t;
 
 static
@@ -510,15 +512,41 @@ globus_usage_stats_vsend(
         {
             const char *                key = va_arg(ap, char *);
             const char *                value = va_arg(ap, char *);
+            int                         length = strlen(key) +
+                                                 strlen(value);
 
             if(index(value, ' '))
             {
+                if((PACKET_SIZE - data_length) < (length + 5))
+                {
+                    return globus_error_put(
+                        globus_error_construct_error(
+                            GLOBUS_USAGE_MODULE,
+                            NULL,
+                            GLOBUS_USAGE_STATS_ERROR_TYPE_TOO_BIG,
+                            __FILE__,
+                            _globus_func_name,
+                            __LINE__,
+                            "Parameters don't fit into one packet"));
+                }
                 data_length += sprintf(
                     handle->data + data_length,
                     "%s=\"%s\" ", key, value);
             }
             else
             {
+                if((PACKET_SIZE - data_length) < (length + 3))
+                {
+                    return globus_error_put(
+                        globus_error_construct_error(
+                            GLOBUS_USAGE_MODULE,
+                            NULL,
+                            GLOBUS_USAGE_STATS_ERROR_TYPE_TOO_BIG,
+                            __FILE__,
+                            _globus_func_name,
+                            __LINE__,
+                            "Parameters don't fit into one packet"));
+                }
                 data_length += sprintf(
                     handle->data + data_length,
                     "%s=%s ", key, value);

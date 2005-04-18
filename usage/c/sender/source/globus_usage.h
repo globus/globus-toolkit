@@ -12,7 +12,8 @@ typedef struct globus_usage_stats_handle_s * globus_usage_stats_handle_t;
 
 enum
 {
-    GLOBUS_USAGE_STATS_ERROR_TYPE_OOM
+    GLOBUS_USAGE_STATS_ERROR_TYPE_OOM,
+    GLOBUS_USAGE_STATS_ERROR_TYPE_TOO_BIG
 };
 
 globus_result_t
