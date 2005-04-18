@@ -117,7 +117,7 @@ sub abort_test
         ok($errors, 'success');
     }
 }
-for(my $i = 1; $i <= 41; $i++)
+for(my $i = 1; $i <= 43; $i++)
 {
     push(@tests, "abort_test($i);");
 }
@@ -158,7 +158,7 @@ sub restart_test
     }
     unlink($tmpname);
 }
-for(my $i = 1; $i <= 41; $i++)
+for(my $i = 1; $i <= 43; $i++)
 {
     push(@tests, "restart_test($i);");
 }

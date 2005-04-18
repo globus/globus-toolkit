@@ -112,7 +112,7 @@ sub abort_test
     }
 }
 
-for(my $i = 1; $i <= 41; $i++)
+for(my $i = 1; $i <= 43; $i++)
 {
     for(my $j = 1; $j <= 10 ; $j++)
     {
@@ -153,7 +153,7 @@ sub restart_test
     unlink($tmpname);
 }
 
-for(my $i = 1; $i <= 41; $i++)
+for(my $i = 1; $i <= 43; $i++)
 {
     for(my $j = 1; $j <= 10; $j++)
     {

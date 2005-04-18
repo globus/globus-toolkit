@@ -104,7 +104,7 @@ sub abort_test
     
     clean_remote_file($dest_host, $dest_file);
 }
-for(my $i = 1; $i <= 41; $i++)
+for(my $i = 1; $i <= 43; $i++)
 {
     push(@tests, "abort_test($i);");
 }
@@ -140,7 +140,7 @@ sub restart_test
     
     clean_remote_file($dest_host, $dest_file);
 }
-for(my $i = 1; $i <= 41; $i++)
+for(my $i = 1; $i <= 43; $i++)
 {
     push(@tests, "restart_test($i);");
 
