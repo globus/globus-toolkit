@@ -3049,6 +3049,7 @@ redo:
                     if(client_handle->err)
                     {
 		        globus_object_free(error);
+                error = NULL;
 		    }
 		    else
 		    {
