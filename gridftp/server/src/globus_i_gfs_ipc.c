@@ -9,15 +9,6 @@
  * modifications, you must include this notice in the file.
  */
 
-
-/*
- * This file or a portion of this file is licensed under the terms of the
- * Globus Toolkit Public License, found at
- * http://www.globus.org/toolkit/download/license.html.
- * If you redistribute this file, with or without modifications,
- * you must include this notice in the file.
- */
-
 /*
  *  connector will send a 'connection info'.  Tihs includes username 
  *  (of the remote process, this may be meaningless), grid dn (this 
