@@ -87,7 +87,6 @@ gp -a \
         replica\
         side_tools\
         test\
-        testing\
         user_env\
         tarfiles\
 	bundles\
