@@ -9,15 +9,6 @@
  * modifications, you must include this notice in the file.
  */
 
-
-/*
- * This file or a portion of this file is licensed under the terms of the
- * Globus Toolkit Public License, found at
- * http://www.globus.org/toolkit/download/license.html.
- * If you redistribute this file, with or without modifications,
- * you must include this notice in the file.
- */
-
 #include "globus_xio.h"
 #include "globus_xio_tcp_driver.h"
 #include "globus_i_gridftp_server.h"
@@ -42,6 +33,12 @@ static globus_bool_t                    globus_l_gfs_sigint_caught = GLOBUS_FALS
 
 static char **                          globus_l_gfs_child_argv = NULL;
 static int                              globus_l_gfs_child_argc = 0;
+
+#ifndef BUILD_LITE
+#define GLOBUS_L_GFS_SIGCHLD_DELAY 10
+static globus_callback_handle_t         globus_l_gfs_sigchld_periodic_handle = 
+                                            GLOBUS_NULL_HANDLE;
+#endif
 
 static
 globus_result_t
@@ -128,7 +125,6 @@ globus_l_gfs_sigint(
         GLOBUS_I_GFS_LOG_ERR, 
         "Server is shutting down...\n");
 
-    globus_l_gfs_sigchld(user_arg); /* XXX TODO tempary */
     globus_mutex_lock(&globus_l_gfs_mutex);
     {
         if(globus_l_gfs_sigint_caught)
@@ -168,6 +164,10 @@ globus_l_gfs_sigint(
             else
             {
                 globus_i_gfs_control_stop();
+            }
+            if(globus_i_gfs_config_bool("daemon"))
+            {
+                globus_l_gfs_sigchld(user_arg);
             }
         }
     }
@@ -212,7 +212,8 @@ globus_l_gfs_sigchld(
     GlobusGFSName(globus_l_gfs_sigchld);
     GlobusGFSDebugEnter();
 
-    while((child_pid = waitpid(-1, &child_status, WNOHANG)) > 0)
+    while(globus_l_gfs_open_count > 0 &&
+        (child_pid = waitpid(-1, &child_status, WNOHANG)) > 0)
     {
         if(WIFEXITED(child_status))
         {
@@ -968,6 +969,27 @@ globus_l_gfs_be_daemon()
         goto error;
     }
 
+#ifndef BUILD_LITE
+/* when threaded add a periodic callback to simulate the SIGCHLD signal, since 
+ * many versions of LinuxThreads don't seem to pass that to right thread */
+    {
+        globus_reltime_t                delay;
+        
+        GlobusTimeReltimeSet(
+            delay, GLOBUS_L_GFS_SIGCHLD_DELAY, 0);
+        result = globus_callback_register_periodic(
+            &globus_l_gfs_sigchld_periodic_handle,
+            &delay,
+            &delay,
+            globus_l_gfs_sigchld,
+            NULL);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error;
+        }
+    }
+#endif
+
     result = globus_l_gfs_prepare_stack(&stack);
     if(result != GLOBUS_SUCCESS)
     {
@@ -1346,8 +1368,19 @@ main(
     globus_xio_driver_unload(globus_l_gfs_tcp_driver);
     globus_i_gfs_log_close();
 
-    globus_module_deactivate_all();
+#ifndef BUILD_LITE
+    if(globus_l_gfs_sigchld_periodic_handle != GLOBUS_NULL_HANDLE)
+    {
+        globus_callback_unregister(
+            globus_l_gfs_sigchld_periodic_handle,
+            NULL,
+            NULL,
+            NULL);
+        globus_l_gfs_sigchld_periodic_handle = GLOBUS_NULL_HANDLE;
+    }     
+#endif
 
+    globus_module_deactivate_all();
 
     GlobusGFSDebugExit();
     return 0;
