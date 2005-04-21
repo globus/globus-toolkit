@@ -1265,6 +1265,30 @@ main(
         goto error_ver;
     }
 
+#if !defined(BUILD_LITE) && defined(TARGET_ARCH_LINUX) && \
+    defined(_CS_GNU_LIBPTHREAD_VERSION)
+    {
+        char                            buf[256];
+        
+        buf[0] = '\0';
+        confstr(_CS_GNU_LIBPTHREAD_VERSION, buf, sizeof(buf));
+        
+        if((strstr(buf, "linuxthreads") || buf[0] == '\0') &&
+            (!globus_i_gfs_config_bool("ignore_bad_threads") &&
+            getuid() == 0))
+        {
+            fprintf(stderr, 
+                "For security reasons, running as root with LinuxThreads \n"
+                "is not supported.  Please use a non-threaded flavor, update \n"
+                "your libc libraries, and/or unset the LD_ASSUME_KERNEL\n"
+                "environment variable. \n"
+                "(confstr = %s)\n", buf); 
+            rc = -1;
+            goto error_ver;
+        }
+    }
+#endif
+
     /* detach from the terminal if we need to */
     if(globus_i_gfs_config_bool("detach"))
     {

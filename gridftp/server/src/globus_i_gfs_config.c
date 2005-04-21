@@ -233,6 +233,8 @@ static const globus_l_gfs_config_option_t option_list[] =
     NULL, NULL, NULL} /* "GLOBUS_LOCATION." */,
  {"tcp_port_range", "tcp_port_range", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     NULL, NULL, NULL} /*"Port range to use for PASV data connections.  Sets GLOBUS_TCP_PORT_RANGE."}*/,
+ {"ignore_bad_threads", "ignore_bad_threads", NULL, "ignore-bad-threads", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
+    NULL, NULL, NULL}, /* allow LinuxThreads */
  {"bad_signal_exit", "bad_signal_exit", NULL, "exit", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_TRUE, NULL,
     NULL, NULL, NULL}, /* exit cleanly on bad signals (no core dump) */
  {"test_acl", NULL, NULL, NULL, "testacl", GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
