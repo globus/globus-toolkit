@@ -1265,14 +1265,14 @@ main(
         goto error_ver;
     }
 
-#if !defined(BUILD_LITE) && defined(TARGET_ARCH_LINUX) && \
-    defined(_CS_GNU_LIBPTHREAD_VERSION)
+#if !defined(BUILD_LITE) && defined(TARGET_ARCH_LINUX) 
     {
         char                            buf[256];
         
         buf[0] = '\0';
+#if defined(_CS_GNU_LIBPTHREAD_VERSION)        
         confstr(_CS_GNU_LIBPTHREAD_VERSION, buf, sizeof(buf));
-        
+#endif        
         if((strstr(buf, "linuxthreads") || buf[0] == '\0') &&
             (!globus_i_gfs_config_bool("ignore_bad_threads") &&
             getuid() == 0))
