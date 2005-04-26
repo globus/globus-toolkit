@@ -3,11 +3,14 @@ Required software
     * Ant 1.5+ (do not use the ant in Fedora Core 2)
     * C compiler. If gcc, avoid version 3.2.  3.2.1 and 2.95.x are okay.
     * GNU tar
+    * GNU make
+    * GNU sed
+    * zlib 1.1.4+
     * JDBC compliant database. For instance, postgres 7.1+
 
 Optional software:
     * IODBC (Required for RLS.  For instance, version 3.0.5)
-    * Tomcat (optional for Java WS Core.  Required for WebMDS)
+    * Tomcat (Required for WebMDS)
 
 Overview:
 ========
@@ -32,6 +35,7 @@ Create a user named "globus". As the globus user, run
 
 globus$ ./configure --prefix=/path/to/install
 globus$ make
+globus$ make install
 
 If you do not specify a prefix, it will try to install into
 /usr/local/globus-4.0.0 The build will only be successful if
@@ -86,11 +90,11 @@ wsctests          Tests for C webservices
 prews-test        Tests for pre-webservices components
 rls               Replica Location Service
 
-Note that all of these targets require the "postinstall" target also.
+Note that all of these targets require the "install" target also.
 So, for instance, to build GridFTP alone, you would run:
 
 $ ./configure --prefix=/path/to/install
-$ make gridftp postinstall
+$ make gridftp install
 
 
 4. Platform notes
@@ -109,11 +113,10 @@ http://www-unix.globus.org/toolkit/docs/4.0/admin/platforms.html
 
 Apple MacOS X
 -------------
-Use gcc32dbg or gcc32 as flavor
+Use gcc32dbg or gcc32 as flavor by using --with-flavor=
 
 Debian
 ------
-
 Some kernel/libc combinations trigger a threading problem. See
 bug #2194. The workaround is to set LD_ASSUME_KERNEL=2.2.5 in your
 environment.  
@@ -126,11 +129,6 @@ setting ANT_HOME to your own ant installation.
 
 HP/UX
 -----
-GPT's MD5.xs needs to be patched at line 52 with 
-./gpt-3.2autotools2004/support/Digest-MD5-2.20/MD5.xs:
-+ #define na PL_na
-+ #define dowarn PL_dowarn
-
 Specify --with-flavor=vendorcc32 on the configure line.  GNU tar
 and GNU make are required on the PATH.
 
@@ -144,11 +142,7 @@ IBM AIX
 -------
 Supported flavors are vendorcc32dbg/vendorcc32 and
 vendorcc64dbg/vendorcc64 using the Visual Age compilers (xlc). No gcc
-flavors are supported.
-
-It seems like some GPT patch-n-build packages are not able to pick up the
-complete 64 bit environment. If that happens, try setting OBJECT_MODE=64
-in your environment. This has to be done after GPT is built.
+flavors are supported.  Specify using --with-flavor=
 
 GNU tar is required before IBM tar in the PATH.
 
@@ -181,3 +175,8 @@ The toolkit has been tested on Solaris 9 with:
 SuSE Linux
 ----------
 No issues.
+
+Windows
+-------
+Only Java-only components will build. Please choose the Java WS Core-only
+download.
