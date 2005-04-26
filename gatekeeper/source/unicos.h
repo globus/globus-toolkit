@@ -1,4 +1,15 @@
 /*
+ * Portions of this file Copyright 1999-2005 University of Chicago
+ * Portions of this file Copyright 1999-2005 The University of Southern California.
+ *
+ * This file or a portion of this file is licensed under the
+ * terms of the Globus Toolkit Public License, found at
+ * http://www.globus.org/toolkit/download/license.html.
+ * If you redistribute this file, with or without
+ * modifications, you must include this notice in the file.
+ */
+
+/*
  *  This is a modified (mostly condensed) version of the UNICOS
  *  extensions to SSH -- see original comments below for details
  *  on this source.
@@ -21,6 +32,9 @@
  *  Modification $Author$
  *  Maintenance and modification 
  *	$Log$
+ *	Revision 1.2  2005/04/18 21:33:07  smartin
+ *	added license statements before the 4.0.0 release
+ *	
  *	Revision 1.1  1998/12/07 17:05:50  bester
  *	added Cray MLS security code from NERSC
  *	

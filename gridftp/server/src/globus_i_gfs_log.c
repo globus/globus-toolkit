@@ -1,12 +1,13 @@
-
 /*
- * This file or a portion of this file is licensed under the terms of the
- * Globus Toolkit Public License, found at
+ * Portions of this file Copyright 1999-2005 University of Chicago
+ * Portions of this file Copyright 1999-2005 The University of Southern California.
+ *
+ * This file or a portion of this file is licensed under the
+ * terms of the Globus Toolkit Public License, found at
  * http://www.globus.org/toolkit/download/license.html.
- * If you redistribute this file, with or without modifications,
- * you must include this notice in the file.
+ * If you redistribute this file, with or without
+ * modifications, you must include this notice in the file.
  */
-
 
 #include "globus_i_gridftp_server.h"
 
@@ -27,7 +28,7 @@ int
 globus_l_gfs_log_matchlevel(
     char *                              tag)
 {
-    int                                 out;
+    int                                 out = 0;
     GlobusGFSName(globus_l_gfs_log_matchlevel);
     GlobusGFSDebugEnter();
 

@@ -1,4 +1,16 @@
 #! /usr/bin/env perl 
+
+#
+# Portions of this file Copyright 1999-2005 University of Chicago
+# Portions of this file Copyright 1999-2005 The University of Southern California.
+#
+# This file or a portion of this file is licensed under the
+# terms of the Globus Toolkit Public License, found at
+# http://www.globus.org/toolkit/download/license.html.
+# If you redistribute this file, with or without
+# modifications, you must include this notice in the file.
+#
+
 #
 # Test to exercise the "get" functionality of the Globus FTP client library
 # using different number of buffer registrations than the simple_get
@@ -114,7 +126,7 @@ sub abort_test
         ok($errors, 'success');
     }
 }
-for(my $i = 1; $i <= 41; $i++)
+for(my $i = 1; $i <= 43; $i++)
 {
     push(@tests, "abort_test($i);");
 }
@@ -150,7 +162,7 @@ sub restart_test
     }
     unlink($tmpname);
 }
-for(my $i = 1; $i <= 41; $i++)
+for(my $i = 1; $i <= 43; $i++)
 {
     push(@tests, "restart_test($i);");
 }

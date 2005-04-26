@@ -1,10 +1,12 @@
-
 /*
- * This file or a portion of this file is licensed under the terms of the
- * Globus Toolkit Public License, found at
+ * Portions of this file Copyright 1999-2005 University of Chicago
+ * Portions of this file Copyright 1999-2005 The University of Southern California.
+ *
+ * This file or a portion of this file is licensed under the
+ * terms of the Globus Toolkit Public License, found at
  * http://www.globus.org/toolkit/download/license.html.
- * If you redistribute this file, with or without modifications,
- * you must include this notice in the file.
+ * If you redistribute this file, with or without
+ * modifications, you must include this notice in the file.
  */
 
 #if !defined(GLOBUS_I_GRIDFTP_SERVER_CONTROL_H)
@@ -451,8 +453,9 @@ globus_i_gsc_event_end(
     globus_i_gsc_op_t *                 op);
 
 void
-globus_i_gsc_terminate(
-    globus_i_gsc_server_handle_t *      server_handle);
+globus_gsc_959_terminate(
+    globus_i_gsc_op_t *                 op,
+    char *                              reply_msg);
 
 char *
 globus_i_gsc_get_help(

@@ -1,3 +1,14 @@
+/*
+ * Portions of this file Copyright 1999-2005 University of Chicago
+ * Portions of this file Copyright 1999-2005 The University of Southern California.
+ *
+ * This file or a portion of this file is licensed under the
+ * terms of the Globus Toolkit Public License, found at
+ * http://www.globus.org/toolkit/download/license.html.
+ * If you redistribute this file, with or without
+ * modifications, you must include this notice in the file.
+ */
+
 package org.globus.usage.receiver.handlers;
 
 import org.apache.commons.logging.Log;
@@ -20,7 +31,7 @@ public class RLSPacketHandler extends DefaultPacketHandler {
     }
 
     public boolean doCodesMatch(short componentCode, short versionCode) {
-        return (componentCode == 7 && versionCode == 0);
+        return (componentCode == 7 && (versionCode == 0 || versionCode == 7));
     }
 
     public UsageMonitorPacket instantiatePacket(CustomByteBuffer rawBytes) {

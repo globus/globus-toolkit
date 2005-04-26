@@ -1,10 +1,12 @@
-
 /*
- * This file or a portion of this file is licensed under the terms of the
- * Globus Toolkit Public License, found at
+ * Portions of this file Copyright 1999-2005 University of Chicago
+ * Portions of this file Copyright 1999-2005 The University of Southern California.
+ *
+ * This file or a portion of this file is licensed under the
+ * terms of the Globus Toolkit Public License, found at
  * http://www.globus.org/toolkit/download/license.html.
- * If you redistribute this file, with or without modifications,
- * you must include this notice in the file.
+ * If you redistribute this file, with or without
+ * modifications, you must include this notice in the file.
  */
 
 #include "globus_gridftp_server_control.h"
@@ -1031,9 +1033,7 @@ globus_l_gsc_cmd_quit(
     globus_i_gsc_log(op->server_handle, full_command,
         GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_SECURITY);
 
-    globus_gsc_959_finished_command(op, _FSMSL("221 Goodbye.\r\n"));
-
-    globus_i_gsc_terminate(server_handle);
+    globus_gsc_959_terminate(op, _FSMSL("221 Goodbye.\r\n"));
 
     GlobusGridFTPServerDebugInternalExit();
 }

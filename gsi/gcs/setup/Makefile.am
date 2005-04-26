@@ -21,6 +21,7 @@ Scripts = \
 Data = \
 	grid-security.conf.$(CACERT_HASH) \
 	globus-ssl.conf \
+	directions \
 	$(CACERT_HASH).0 \
 	$(CACERT_HASH).signing_policy
 

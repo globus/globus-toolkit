@@ -1,10 +1,12 @@
-
 /*
- * This file or a portion of this file is licensed under the terms of the
- * Globus Toolkit Public License, found at
+ * Portions of this file Copyright 1999-2005 University of Chicago
+ * Portions of this file Copyright 1999-2005 The University of Southern California.
+ *
+ * This file or a portion of this file is licensed under the
+ * terms of the Globus Toolkit Public License, found at
  * http://www.globus.org/toolkit/download/license.html.
- * If you redistribute this file, with or without modifications,
- * you must include this notice in the file.
+ * If you redistribute this file, with or without
+ * modifications, you must include this notice in the file.
  */
 
 #include "globus_xio.h"
@@ -32,6 +34,12 @@ static globus_bool_t                    globus_l_gfs_sigint_caught = GLOBUS_FALS
 static char **                          globus_l_gfs_child_argv = NULL;
 static int                              globus_l_gfs_child_argc = 0;
 
+#ifndef BUILD_LITE
+#define GLOBUS_L_GFS_SIGCHLD_DELAY 10
+static globus_callback_handle_t         globus_l_gfs_sigchld_periodic_handle = 
+                                            GLOBUS_NULL_HANDLE;
+#endif
+
 static
 globus_result_t
 globus_l_gfs_open_new_server(
@@ -55,6 +63,11 @@ globus_l_gfs_server_accept_cb(
     globus_xio_server_t                 server,
     globus_xio_handle_t                 handle,
     globus_result_t                     result,
+    void *                              user_arg);
+
+static
+void 
+globus_l_gfs_sigchld(
     void *                              user_arg);
 
 static
@@ -82,12 +95,29 @@ globus_l_gfs_bad_signal_handler(
     GlobusGFSDebugExit();
 }
 
+static
+void
+globus_l_gfs_server_close_cb(
+    globus_xio_server_t                 server,
+    void *                              user_arg)
+{
+    globus_mutex_lock(&globus_l_gfs_mutex);
+    {
+        globus_l_gfs_outstanding--;
+        globus_l_gfs_xio_server = GLOBUS_NULL;
+        globus_cond_signal(&globus_l_gfs_cond);
+    }
+    globus_mutex_unlock(&globus_l_gfs_mutex);
+}
+
+
 
 static
 void 
 globus_l_gfs_sigint(
     void *                              user_arg)
 {
+    globus_result_t                     res;
     GlobusGFSName(globus_l_gfs_sigint);
     GlobusGFSDebugEnter();
 
@@ -106,8 +136,16 @@ globus_l_gfs_sigint(
         }
         if(globus_l_gfs_xio_server)
         {
-            globus_xio_server_close(globus_l_gfs_xio_server);
-            globus_l_gfs_xio_server = GLOBUS_NULL;
+            res = globus_xio_server_register_close(
+                globus_l_gfs_xio_server, globus_l_gfs_server_close_cb, NULL);
+            if(res == GLOBUS_SUCCESS)
+            {
+                globus_l_gfs_outstanding++;
+            }
+            else
+            {
+                globus_l_gfs_xio_server = GLOBUS_NULL;
+            }
         }
 
         globus_l_gfs_sigint_caught = GLOBUS_TRUE;
@@ -126,6 +164,10 @@ globus_l_gfs_sigint(
             else
             {
                 globus_i_gfs_control_stop();
+            }
+            if(globus_i_gfs_config_bool("daemon"))
+            {
+                globus_l_gfs_sigchld(user_arg);
             }
         }
     }
@@ -170,7 +212,8 @@ globus_l_gfs_sigchld(
     GlobusGFSName(globus_l_gfs_sigchld);
     GlobusGFSDebugEnter();
 
-    while((child_pid = waitpid(-1, &child_status, WNOHANG)) > 0)
+    while(globus_l_gfs_open_count > 0 &&
+        (child_pid = waitpid(-1, &child_status, WNOHANG)) > 0)
     {
         if(WIFEXITED(child_status))
         {
@@ -926,6 +969,27 @@ globus_l_gfs_be_daemon()
         goto error;
     }
 
+#ifndef BUILD_LITE
+/* when threaded add a periodic callback to simulate the SIGCHLD signal, since 
+ * many versions of LinuxThreads don't seem to pass that to right thread */
+    {
+        globus_reltime_t                delay;
+        
+        GlobusTimeReltimeSet(
+            delay, GLOBUS_L_GFS_SIGCHLD_DELAY, 0);
+        result = globus_callback_register_periodic(
+            &globus_l_gfs_sigchld_periodic_handle,
+            &delay,
+            &delay,
+            globus_l_gfs_sigchld,
+            NULL);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error;
+        }
+    }
+#endif
+
     result = globus_l_gfs_prepare_stack(&stack);
     if(result != GLOBUS_SUCCESS)
     {
@@ -1201,6 +1265,30 @@ main(
         goto error_ver;
     }
 
+#if !defined(BUILD_LITE) && defined(TARGET_ARCH_LINUX) 
+    {
+        char                            buf[256];
+        
+        buf[0] = '\0';
+#if defined(_CS_GNU_LIBPTHREAD_VERSION)        
+        confstr(_CS_GNU_LIBPTHREAD_VERSION, buf, sizeof(buf));
+#endif        
+        if((strstr(buf, "linuxthreads") || buf[0] == '\0') &&
+            (!globus_i_gfs_config_bool("ignore_bad_threads") &&
+            getuid() == 0))
+        {
+            fprintf(stderr, 
+                "For security reasons, running as root with LinuxThreads \n"
+                "is not supported.  Please use a non-threaded flavor, update \n"
+                "your libc libraries, and/or unset the LD_ASSUME_KERNEL\n"
+                "environment variable. \n"
+                "(confstr = %s)\n", buf); 
+            rc = -1;
+            goto error_ver;
+        }
+    }
+#endif
+
     /* detach from the terminal if we need to */
     if(globus_i_gfs_config_bool("detach"))
     {
@@ -1304,8 +1392,19 @@ main(
     globus_xio_driver_unload(globus_l_gfs_tcp_driver);
     globus_i_gfs_log_close();
 
-    globus_module_deactivate_all();
+#ifndef BUILD_LITE
+    if(globus_l_gfs_sigchld_periodic_handle != GLOBUS_NULL_HANDLE)
+    {
+        globus_callback_unregister(
+            globus_l_gfs_sigchld_periodic_handle,
+            NULL,
+            NULL,
+            NULL);
+        globus_l_gfs_sigchld_periodic_handle = GLOBUS_NULL_HANDLE;
+    }     
+#endif
 
+    globus_module_deactivate_all();
 
     GlobusGFSDebugExit();
     return 0;

@@ -1,12 +1,13 @@
-
 /*
- * This file or a portion of this file is licensed under the terms of the
- * Globus Toolkit Public License, found at
+ * Portions of this file Copyright 1999-2005 University of Chicago
+ * Portions of this file Copyright 1999-2005 The University of Southern California.
+ *
+ * This file or a portion of this file is licensed under the
+ * terms of the Globus Toolkit Public License, found at
  * http://www.globus.org/toolkit/download/license.html.
- * If you redistribute this file, with or without modifications,
- * you must include this notice in the file.
+ * If you redistribute this file, with or without
+ * modifications, you must include this notice in the file.
  */
-
 
 #include "globus_gridftp_server.h"
 #include "version.h"
@@ -321,11 +322,6 @@ globus_l_gfs_ipc_finished_cb(
     GlobusGFSRemoteDebugEnter();
     
     bounce_info = (globus_l_gfs_remote_ipc_bounce_t *)  user_arg;
-
-    globus_gridftp_server_operation_finished(
-        bounce_info->op,
-        reply->result,
-        reply);
     
     node_info = globus_list_remove(
         &bounce_info->node_handle->node_list, 
@@ -341,6 +337,11 @@ globus_l_gfs_ipc_finished_cb(
     result = globus_l_gfs_remote_node_release(
         bounce_info->my_handle,
         node_info);
+
+    globus_gridftp_server_operation_finished(
+        bounce_info->op,
+        reply->result,
+        reply);
     
     globus_free(bounce_info->node_handle);
     globus_free(bounce_info);
@@ -472,11 +473,6 @@ globus_l_gfs_ipc_active_cb(
 
         finished_info.info.data.data_arg = bounce_info->node_handle;        
  
-        globus_gridftp_server_operation_finished(
-            bounce_info->op,
-            finished_info.result,
-            &finished_info);           
-
         for(list = bounce_info->node_handle->node_list;
             !globus_list_empty(list);
             list = globus_list_rest(list))
@@ -502,6 +498,12 @@ globus_l_gfs_ipc_active_cb(
                 bounce_info->my_handle,
                 node_info);   
         }
+
+        globus_gridftp_server_operation_finished(
+            bounce_info->op,
+            finished_info.result,
+            &finished_info);           
+
         globus_free(bounce_info);
     }
        
@@ -517,6 +519,9 @@ globus_l_gfs_ipc_transfer_cb(
     void *                              user_arg)
 {
     globus_l_gfs_remote_ipc_bounce_t *  bounce_info;
+    globus_gfs_finished_info_t          finished_info;
+    globus_gfs_operation_t              op;
+    globus_bool_t                       finish = GLOBUS_FALSE;
     GlobusGFSName(globus_l_gfs_ipc_transfer_cb);
     GlobusGFSRemoteDebugEnter();
     
@@ -532,21 +537,16 @@ globus_l_gfs_ipc_transfer_cb(
         before the first begin_cb we quit right now */    
     if((!bounce_info->nodes_pending && !bounce_info->nodes_requesting) || 
         (reply->result != GLOBUS_SUCCESS && bounce_info->recv_pending))
-    {
-        globus_gfs_finished_info_t      finished_info;
-        
+    {        
         memset(&finished_info, '\0', sizeof(globus_gfs_finished_info_t));
         finished_info.type = reply->type;
         finished_info.id = reply->id;
         finished_info.code = reply->code;
         finished_info.msg = reply->msg;
         finished_info.result = bounce_info->cached_result;
+        finish = GLOBUS_TRUE;
+        op = bounce_info->op;
         
-        globus_gridftp_server_operation_finished(
-            bounce_info->op,
-            finished_info.result,
-            &finished_info); 
-
         if(!bounce_info->events_enabled)
         {
             globus_list_t *             list;
@@ -571,7 +571,15 @@ globus_l_gfs_ipc_transfer_cb(
                 globus_free(bounce_info->eof_count);
             }
             globus_free(bounce_info);
-        }
+        }        
+    }
+    
+    if(finish)
+    {
+        globus_gridftp_server_operation_finished(
+            op,
+            finished_info.result,
+            &finished_info); 
     }
 
     GlobusGFSRemoteDebugExit();
@@ -1439,15 +1447,15 @@ globus_l_gfs_remote_session_start_kickout(
         finished_info.info.session.session_arg = bounce_info->my_handle;                          
         finished_info.info.session.username = node_info->username;                          
         finished_info.info.session.home_dir = node_info->home_dir;                          
-                                                                  
+                                                                      
+        globus_l_gfs_remote_node_release(
+            bounce_info->my_handle, node_info);
+        
         globus_gridftp_server_operation_finished(                 
             bounce_info->op,                                                   
             result,                                               
             &finished_info);
-    
-        globus_l_gfs_remote_node_release(
-            bounce_info->my_handle, node_info);
-        
+
         globus_free(bounce_info->node_handle);        
         globus_free(bounce_info);        
     }

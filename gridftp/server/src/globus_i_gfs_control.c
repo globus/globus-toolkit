@@ -1,10 +1,12 @@
-
 /*
- * This file or a portion of this file is licensed under the terms of the
- * Globus Toolkit Public License, found at
+ * Portions of this file Copyright 1999-2005 University of Chicago
+ * Portions of this file Copyright 1999-2005 The University of Southern California.
+ *
+ * This file or a portion of this file is licensed under the
+ * terms of the Globus Toolkit Public License, found at
  * http://www.globus.org/toolkit/download/license.html.
- * If you redistribute this file, with or without modifications,
- * you must include this notice in the file.
+ * If you redistribute this file, with or without
+ * modifications, you must include this notice in the file.
  */
 
 #include "globus_i_gridftp_server.h"
@@ -425,16 +427,16 @@ globus_l_gfs_auth_session_cb(
                 reply->info.session.home_dir);
         }
         
+        auth_info->instance->home_dir = 
+            globus_libc_strdup(reply->info.session.home_dir);
+        auth_info->instance->username = 
+            globus_libc_strdup(reply->info.session.username);
+        
         globus_gridftp_server_control_finished_auth(
             auth_info->control_op,
             reply->info.session.username,
             GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS,
             NULL);
-        
-        auth_info->instance->home_dir = 
-            globus_libc_strdup(reply->info.session.home_dir);
-        auth_info->instance->username = 
-            globus_libc_strdup(reply->info.session.username);
     }
     globus_free(auth_info->session_info->username);
     if(auth_info->session_info->password != NULL)

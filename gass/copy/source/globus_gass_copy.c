@@ -1,3 +1,14 @@
+/*
+ * Portions of this file Copyright 1999-2005 University of Chicago
+ * Portions of this file Copyright 1999-2005 The University of Southern California.
+ *
+ * This file or a portion of this file is licensed under the
+ * terms of the Globus Toolkit Public License, found at
+ * http://www.globus.org/toolkit/download/license.html.
+ * If you redistribute this file, with or without
+ * modifications, you must include this notice in the file.
+ */
+
 /**
  * @file globus_gass_copy.c
  *
@@ -2306,6 +2317,30 @@ globus_l_gass_copy_transfer_start(
 	handle->status = GLOBUS_GASS_COPY_STATUS_FAILURE;
 	err = handle->err;
 	handle->err = GLOBUS_NULL;
+
+        /* clean up the source side since it was already opened..... */
+	globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
+	globus_cond_init(&monitor.cond, GLOBUS_NULL);
+	monitor.done = GLOBUS_FALSE;
+	monitor.err = GLOBUS_NULL;
+	monitor.use_err = GLOBUS_FALSE;
+        handle->user_callback = GLOBUS_NULL;
+        globus_gass_copy_cancel(
+	    handle,
+	    globus_l_gass_copy_monitor_callback,
+	    (void *) &monitor);
+	/* wait for the cancel to complete before returning to user */
+	globus_mutex_lock(&monitor.mutex);
+	{
+	    while(!monitor.done)
+	    {
+		globus_cond_wait(&monitor.cond, &monitor.mutex);
+	    }
+	}
+	globus_mutex_unlock(&monitor.mutex);
+	globus_mutex_destroy(&monitor.mutex);
+	globus_cond_destroy(&monitor.cond);
+
 	return globus_error_put(err);
     }
 
@@ -2906,9 +2941,6 @@ wakeup_state:
 	state->dest.status = GLOBUS_I_GASS_COPY_TARGET_FAILED;
     handle->status = GLOBUS_GASS_COPY_STATUS_FAILURE;
 
-/*
-    globus_gass_transfer_request_destroy(request);
-*/
     state->monitor.done = 1;
     globus_cond_signal(&state->monitor.cond);
     globus_mutex_unlock(&state->monitor.mutex);

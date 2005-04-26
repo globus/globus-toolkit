@@ -173,6 +173,12 @@ sub main
     getBuildEnvLines($header);
     getBuildShellTools($header);
     $hash = buildEnvHash($header);
+    if(!($hash->{container}->{GLOBUS_LD}))
+    {
+	$hash->{container}->{GLOBUS_LD}=$hash->{container}->{GLOBUS_CC};
+	my $ordering=$hash->{ordering};
+	push (@$ordering, "GLOBUS_LD");
+    }
     displayHash($hash);
 
     exit(0);

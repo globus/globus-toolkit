@@ -1,10 +1,12 @@
-
 /*
- * This file or a portion of this file is licensed under the terms of the
- * Globus Toolkit Public License, found at
+ * Portions of this file Copyright 1999-2005 University of Chicago
+ * Portions of this file Copyright 1999-2005 The University of Southern California.
+ *
+ * This file or a portion of this file is licensed under the
+ * terms of the Globus Toolkit Public License, found at
  * http://www.globus.org/toolkit/download/license.html.
- * If you redistribute this file, with or without modifications,
- * you must include this notice in the file.
+ * If you redistribute this file, with or without
+ * modifications, you must include this notice in the file.
  */
 
 #include "globus_i_gridftp_server_control.h"
@@ -315,7 +317,7 @@ globus_l_gsc_send_perf(
 {
     char *                                  msg;
     struct timeval                          now;
-    GlobusGridFTPServerName(globus_gridftp_server_control_event_send_perf);
+    GlobusGridFTPServerName(globus_l_gsc_send_perf);
                                                                                 
     gettimeofday(&now, NULL);
     msg = globus_common_create_string(

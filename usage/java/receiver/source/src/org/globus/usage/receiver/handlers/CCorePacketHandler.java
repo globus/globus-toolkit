@@ -1,3 +1,14 @@
+/*
+ * Portions of this file Copyright 1999-2005 University of Chicago
+ * Portions of this file Copyright 1999-2005 The University of Southern California.
+ *
+ * This file or a portion of this file is licensed under the
+ * terms of the Globus Toolkit Public License, found at
+ * http://www.globus.org/toolkit/download/license.html.
+ * If you redistribute this file, with or without
+ * modifications, you must include this notice in the file.
+ */
+
 package org.globus.usage.receiver.handlers;
 
 import org.apache.commons.logging.Log;
@@ -20,7 +31,10 @@ public class CCorePacketHandler extends DefaultPacketHandler {
     }
 
     public boolean doCodesMatch(short componentCode, short versionCode) {
-        return (componentCode == 4 && versionCode == 4);
+	/*1 is the correct version code, but there are many installations
+	out there that erroneously send packets with version code 4, and
+	we want to catch both:*/
+        return (componentCode == 4 && (versionCode == 1 || versionCode == 4));
     }
 
     public UsageMonitorPacket instantiatePacket(CustomByteBuffer rawBytes) {

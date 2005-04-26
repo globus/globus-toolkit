@@ -1,5 +1,17 @@
 #! /usr/bin/env perl
 
+#
+# Portions of this file Copyright 1999-2005 University of Chicago
+# Portions of this file Copyright 1999-2005 The University of Southern California.
+#
+# This file or a portion of this file is licensed under the
+# terms of the Globus Toolkit Public License, found at
+# http://www.globus.org/toolkit/download/license.html.
+# If you redistribute this file, with or without
+# modifications, you must include this notice in the file.
+#
+
+
 =head1 Simple Put Tests
 
 Tests to exercise the "put" functionality of the Globus FTP client library.
@@ -151,7 +163,7 @@ sub abort_test
     
     clean_remote_file($dest_host, $dest_file);
 }
-for(my $i = 1; $i <= 41; $i++)
+for(my $i = 1; $i <= 43; $i++)
 {
     push(@tests, "abort_test($i);");
 }
@@ -189,7 +201,7 @@ sub restart_test
     
     clean_remote_file($dest_host, $dest_file);
 }
-for(my $i = 1; $i <= 41; $i++)
+for(my $i = 1; $i <= 43; $i++)
 {
     push(@tests, "restart_test($i);");
 }
