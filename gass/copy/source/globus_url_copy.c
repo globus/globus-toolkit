@@ -77,6 +77,8 @@ typedef struct
     globus_bool_t                       no_dcau;
     globus_bool_t                       data_safe;
     globus_bool_t                       data_private;
+    globus_bool_t                       control_safe;
+    globus_bool_t                       control_private;
     globus_bool_t                       cancelled;
     globus_bool_t                       recurse;
     int                                 restart_retries;
@@ -399,6 +401,8 @@ enum
     arg_nodcau,
     arg_data_safe,
     arg_data_private,
+    arg_control_safe,
+    arg_control_private,
     arg_recurse,
     arg_partial_offset,
     arg_partial_length,
@@ -442,6 +446,8 @@ flagdef(arg_notpt, "-notpt", "-no-third-party-transfers");
 flagdef(arg_nodcau, "-nodcau", "-no-data-channel-authentication");
 flagdef(arg_data_safe, "-dcsafe", "-data-channel-safe");
 flagdef(arg_data_private, "-dcpriv", "-data-channel-private");
+flagdef(arg_control_safe, "-ccsafe", "-control-channel-safe");
+flagdef(arg_control_private, "-ccpriv", "-control-channel-private");
 flagdef(arg_recurse, "-r", "-recurse");
 flagdef(arg_striped, "-stripe", "-striped");
 flagdef(arg_rfc1738, "-rp", "-relative-paths");
@@ -492,6 +498,8 @@ static globus_args_option_descriptor_t args_options[arg_num];
     setupopt(arg_nodcau);               \
     setupopt(arg_data_safe);            \
     setupopt(arg_data_private);         \
+    setupopt(arg_control_safe);         \
+    setupopt(arg_control_private);      \
     setupopt(arg_recurse);		\
     setupopt(arg_partial_offset);	\
     setupopt(arg_partial_length);	\
@@ -1343,6 +1351,8 @@ globus_l_guc_parse_arguments(
     guc_info->no_dcau = GLOBUS_FALSE;
     guc_info->data_safe = GLOBUS_FALSE;
     guc_info->data_private = GLOBUS_FALSE;
+    guc_info->control_safe = GLOBUS_FALSE;
+    guc_info->control_private = GLOBUS_FALSE;
     guc_info->recurse = GLOBUS_FALSE;
     guc_info->num_streams = 0;
     guc_info->tcp_buffer_size = 0;
@@ -1469,6 +1479,12 @@ globus_l_guc_parse_arguments(
             break;
         case arg_data_private:
             guc_info->data_private = GLOBUS_TRUE;
+            break;
+        case arg_control_safe:
+            guc_info->control_safe = GLOBUS_TRUE;
+            break;
+        case arg_control_private:
+            guc_info->control_private = GLOBUS_TRUE;
             break;
         case arg_debugftp:
             g_use_debug = GLOBUS_TRUE;
@@ -2243,6 +2259,18 @@ globus_l_guc_gass_attr_init(
                 ftp_attr,
                 GLOBUS_FTP_CONTROL_PROTECTION_SAFE);
         }
+	if (guc_info->control_safe)
+	{
+	    globus_ftp_client_operationattr_set_control_protection(
+		ftp_attr,
+		GLOBUS_FTP_CONTROL_PROTECTION_SAFE);
+	}
+	else if (guc_info->control_private)
+	{
+	    globus_ftp_client_operationattr_set_control_protection(
+		ftp_attr,
+		GLOBUS_FTP_CONTROL_PROTECTION_PRIVATE);
+	}
 
         globus_gass_copy_attr_set_ftp(gass_copy_attr, ftp_attr);
         
