@@ -171,6 +171,11 @@ sub main
   if( !$ret )
   {
     finish_up( $repository );
+    print "Replication complete: ", localtime() . "\n";
+  }
+  else
+  {
+    print STDERR "Replication Failed\n";
   }
 }
 
