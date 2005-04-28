@@ -37,9 +37,7 @@ use IPC::Open3;
 #
 # handle cmdline options
 #
-$usage = "usage: myproxy-test [-help] [-verbose] [-startserver]\n" .
-         "                    [-performance iterations clients]\n" .
-         "                    [-dbperformance]\n";
+$usage = "usage: myproxy-test [-help] [-verbose]\n";
 $startserver = 0;
 $performance = 0;
 $dbperformance = 0;
@@ -153,12 +151,10 @@ my $sl3pidfile    = undef;
 #
 # start server if requested
 #
-if ($startserver) {
-    start_master();
-    start_slave1();
-    start_slave2();
-    start_slave3();
-}
+start_master();
+start_slave1();
+start_slave2();
+start_slave3();
 
 
 sub start_master
