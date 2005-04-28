@@ -130,6 +130,15 @@ still pass the
 .B authorized_key_retrievers 
 check.)
 .TP
+.BI slave_servers " server:port;"
+This value is for use with the 
+.BR myproxy-replicate (1)
+utility.  This tag provides a list of servers that will be used as secondary
+repositories for the MyProxy database.  Each server should be seperated by
+a ";".  Also, a port may be provided if the slave server is using a port
+other then the default.  The server name maybe a recognized DNS or an IP
+address.
+.TP
 .BI authorized_renewers " \*(lqDN regex\*(rq"
 Each of these lines allows the server administrator to set
 server-wide policies for authorized renewers. If the client DN
