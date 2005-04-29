@@ -9,6 +9,15 @@
  * modifications, you must include this notice in the file.
  */
 
+
+/*
+ * This file or a portion of this file is licensed under the terms of the
+ * Globus Toolkit Public License, found at
+ * http://www.globus.org/toolkit/download/license.html.
+ * If you redistribute this file, with or without modifications,
+ * you must include this notice in the file.
+ */
+
 /*
  *  connector will send a 'connection info'.  Tihs includes username 
  *  (of the remote process, this may be meaningless), grid dn (this 
@@ -2804,52 +2813,45 @@ globus_l_gfs_ipc_unpack_reply(
 
         case GLOBUS_GFS_OP_STAT:
             GFSDecodeUInt32(buffer, len, reply->info.stat.stat_count);
-            if(reply->info.stat.stat_count > 0)
+            reply->info.stat.stat_array = (globus_gfs_stat_t *)
+                globus_calloc(1, 
+                sizeof(globus_gfs_stat_t) * reply->info.stat.stat_count);
+            if(reply->info.stat.stat_array == NULL)
             {
-                reply->info.stat.stat_array = (globus_gfs_stat_t *)
-                    globus_calloc(1, 
-                    sizeof(globus_gfs_stat_t) * reply->info.stat.stat_count);
-                if(reply->info.stat.stat_array == NULL)
-                {
-                    goto decode_err;
-                }
-                for(ctr = 0; ctr < reply->info.stat.stat_count; ctr++)
-                {
-                    GFSDecodeUInt32(
-                        buffer, len, reply->info.stat.stat_array[ctr].mode);
-                    GFSDecodeUInt32(
-                        buffer, len, reply->info.stat.stat_array[ctr].nlink);
-                    GFSDecodeString(buffer, len, str);
-                    if(str != NULL)
-                    {
-                        reply->info.stat.stat_array[ctr].name = str;
-                    }
-                    GFSDecodeString(buffer, len, str);
-                    if(str != NULL)
-                    {
-                        reply->info.stat.stat_array[ctr].symlink_target = str;
-                    }
-                    GFSDecodeUInt32(
-                        buffer, len, reply->info.stat.stat_array[ctr].uid);
-                    GFSDecodeUInt32(
-                        buffer, len, reply->info.stat.stat_array[ctr].gid);
-                    GFSDecodeUInt64(
-                        buffer, len, reply->info.stat.stat_array[ctr].size);
-                    GFSDecodeUInt32(
-                        buffer, len, reply->info.stat.stat_array[ctr].atime);
-                    GFSDecodeUInt32(
-                        buffer, len, reply->info.stat.stat_array[ctr].ctime);
-                    GFSDecodeUInt32(
-                        buffer, len, reply->info.stat.stat_array[ctr].mtime);
-                    GFSDecodeUInt32(
-                        buffer, len, reply->info.stat.stat_array[ctr].dev);
-                    GFSDecodeUInt32(
-                        buffer, len, reply->info.stat.stat_array[ctr].ino);
-                }
+                goto decode_err;
             }
-            else
+            for(ctr = 0; ctr < reply->info.stat.stat_count; ctr++)
             {
-                reply->info.stat.stat_array = NULL;
+                GFSDecodeUInt32(
+                    buffer, len, reply->info.stat.stat_array[ctr].mode);
+                GFSDecodeUInt32(
+                    buffer, len, reply->info.stat.stat_array[ctr].nlink);
+                GFSDecodeString(buffer, len, str);
+                if(str != NULL)
+                {
+                    reply->info.stat.stat_array[ctr].name = str;
+                }
+                GFSDecodeString(buffer, len, str);
+                if(str != NULL)
+                {
+                    reply->info.stat.stat_array[ctr].symlink_target = str;
+                }
+                GFSDecodeUInt32(
+                    buffer, len, reply->info.stat.stat_array[ctr].uid);
+                GFSDecodeUInt32(
+                    buffer, len, reply->info.stat.stat_array[ctr].gid);
+                GFSDecodeUInt64(
+                    buffer, len, reply->info.stat.stat_array[ctr].size);
+                GFSDecodeUInt32(
+                    buffer, len, reply->info.stat.stat_array[ctr].atime);
+                GFSDecodeUInt32(
+                    buffer, len, reply->info.stat.stat_array[ctr].ctime);
+                GFSDecodeUInt32(
+                    buffer, len, reply->info.stat.stat_array[ctr].mtime);
+                GFSDecodeUInt32(
+                    buffer, len, reply->info.stat.stat_array[ctr].dev);
+                GFSDecodeUInt32(
+                    buffer, len, reply->info.stat.stat_array[ctr].ino);
             }
             GFSDecodeUInt32(buffer, len, reply->info.stat.uid);
             GFSDecodeUInt32(buffer, len, reply->info.stat.gid_count);

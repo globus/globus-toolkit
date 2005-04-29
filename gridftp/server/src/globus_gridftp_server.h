@@ -10,6 +10,15 @@
  */
 
 
+/*
+ * This file or a portion of this file is licensed under the terms of the
+ * Globus Toolkit Public License, found at
+ * http://www.globus.org/toolkit/download/license.html.
+ * If you redistribute this file, with or without modifications,
+ * you must include this notice in the file.
+ */
+
+
 /* Header file for globus_gridftp_server modules.  
  * 
  * If you are interested in writing a module for this server and want to

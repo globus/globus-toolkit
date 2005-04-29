@@ -54,22 +54,11 @@ for f in *; do
   cd ..
 done
 
-# Get out of tmp/binary-trees/
-cd ../
-rm notnamed_bundle*
-rm packagelist
-cd ../
-
 echo Generating configure/Makefile.in for binary installer
 cp fait_accompli/binary.Makefile.in tmp/Makefile.in
 source-trees/autotools/bin/autoconf fait_accompli/binary.configure.in > tmp/configure
-chmod +x tmp/configure
 
 echo Adding GPT source to binary installer
 tar -C tmp -xzf fait_accompli/gpt-3.2autotools2004-src.tar.gz
-
-echo Adding README/INSTALL
-cp fait_accompli/binary.INSTALL tmp/INSTALL
-cp fait_accompli/binary.README tmp/README
 
 echo Done.

@@ -1,14 +1,3 @@
-/*
- * Portions of this file Copyright 1999-2005 University of Chicago
- * Portions of this file Copyright 1999-2005 The University of Southern California.
- *
- * This file or a portion of this file is licensed under the
- * terms of the Globus Toolkit Public License, found at
- * http://www.globus.org/toolkit/download/license.html.
- * If you redistribute this file, with or without
- * modifications, you must include this notice in the file.
- */
-
 
 #include "globus_common.h"
 #include "globus_scheduler_event_generator.h"
@@ -676,7 +665,7 @@ globus_l_condor_parse_event(
     time_t                              event_stamp;
     char *                              jobid;
     int                                 jobid_len;
-    int                                 len;
+    size_t                              len;
     globus_result_t                     result;
 
     enum condor_attr_e
