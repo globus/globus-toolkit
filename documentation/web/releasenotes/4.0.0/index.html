@@ -1,0 +1,205 @@
+<?php 
+$title="GT 4.0 Development Release Notes";
+include_once( "/mcs/www-unix.globus.org/include/globus_header.inc" ); ?>
+
+
+
+
+<h1><?php echo $title; ?></h1>
+<p>[The GT development team is pleased to make its newest development release
+  available for download. This release, with a version number of 3.9.5, is the
+  Beta release for GT4. As such it represents an important milestone in GT4 development:
+  the public programmatic interfaces included in this release will not change
+  in 4.0. ] 
+<p>Highlights of this release include:
+<ul>
+  <li>A WSRF port of OGSA-DAI</li>
+  <li><a href="../../docs/4.0/Usage_Stats.html">A mechanism to collect usage statistics</a></li>
+  <li>Stability and performance improvements</li>
+  <li>Improved cross-platform support</li>
+  <li>Further documentation refinements</li>
+  <li>Improved installer interface</li>
+  <li>Important bug fixes</li>
+</ul>
+We invite you to experiment with our latest work, as we believe it represents a significant step toward our goal of delivering a toolkit release of the highest quality.</p>
+<p>The following topics contain high level descriptions of what's new in the
+  following technology areas:</p>
+<ul>
+  <li><a href="#whatsnew">What's New </a></li>
+  <li><a href="#compatibility">Compatibility</a></li>
+  <li><a href="#downloads">Obtaining and Installing Software</a></li>
+  <li><a href="#docs">Documentation</a></li>
+  <li><a href="#support">Support</a></li>
+  <li><a href="#testing">Testing</a></li>
+  <li><a href="#Licensing">Licensing</a> </li>
+</ul>
+<h2><a name="whatsnew"></a>What's New </h2>
+<p>Click the component below for release notes to find out what's new for that
+  component:</p>
+<table width="97%"  border="0" align="center" cellpadding="5" cellspacing="0">
+  <tr>
+    <td width="24%" class="matrix"><div align="center"><strong>Security</strong></div></td>
+    <td width="18%" class="matrix"><div align="center"><strong>Data <br>
+    Management </strong></div></td>
+    <td width="16%" class="matrix"><div align="center"><strong>Execution <br>
+    Management </strong></div></td>
+    <td width="21%" class="matrix"><div align="center"><strong>Information <br>
+    Services </strong></div></td>
+    <td width="21%" class="matrix"><div align="center"><strong>Common Runtime <br>
+    Components </strong></div></td>
+  </tr>
+  <tr>
+    <td rowspan="3" valign="top">
+      <div align="left">
+        <ul>
+          <li><a href="../../docs/4.0/security/cas/WS_AA_CAS_Release_Notes.html">CAS</a></li>
+            <li><a href="../../docs/4.0/security/delegation/WS_AA_Delegation_Service_Release_Notes.html">Delegation <br>
+Service </a></li>
+            <li>WS Authentication &amp; Authorization:
+              <ul>
+                <li> <a href="../../docs/4.0/security/authzframe/WS_AA_Authz_Release_Notes.html">Authorization<br>
+Framework</a></li>
+                <li><a href="../../docs/4.0/security/message/WS_AA_Message_Level_Release_Notes.html">Message/<br>
+Transport-level Security </a></li>
+              </ul>
+            </li>
+            <li><a href="../../docs/4.0/security/prewsaa/Pre_WS_AA_Release_Notes.html">Pre-WS
+                Authentication <br>
+Authorization</a></li>
+            <li>Credential Management:
+              <ul>
+                <li> <a href="../../docs/4.0/security/simpleca/Cred_Mgmt_SimpleCA_Release_Notes.html">SimpleCA </a></li>
+                <li><a href="../../docs/4.0/security/myproxy/Cred_Mgmt_MyProxy_Release_Notes.html">MyProxy </a></li>
+              </ul>
+            </li>
+            <li><a href="../../docs/4.0/security/openssh/Util_OpenSSH_Release_Notes.html">GSI-OpenSSH</a></li>
+        </ul>
+    </div></td>
+    <td rowspan="3" valign="top"><div align="left">
+      <ul>
+        <li><a href="../../docs/4.0/data/rft/RFT_Release_Notes.html">RFT</a></li>
+        <li><a href="../../docs/4.0/data/gridftp/GridFTP_Release_Notes.html">GridFTP</a></li>
+        <li><a href="../../docs/4.0/data/rls/RLS_Release_Notes.html">RLS</a></li>
+        <li><a href="../../docs/4.0/techpreview/ogsadai/OGSA_DAI_Release_Notes.html">OGSA-DAI</a></li>
+        <li><a href="../../docs/4.0/techpreview/datarep/DataRep_Release_Notes.html">Data Replication
+            Service <span class="panel">(tech preview)</span> </a></li>
+      </ul>
+    </div></td>
+    <td rowspan="3" valign="top"><div align="left">
+      <ul>
+        <li><a href="../../docs/4.0/execution/wsgram/WS_GRAM_Release_Notes.html">WS
+              GRAM </a></li>
+        <li><a href="../../docs/4.0/execution/prewsgram/Pre_WS_GRAM_Release_Notes.html">Pre-WS
+          GRAM </a></li>
+        <li>GTCP</li>
+        <li>WMS</li>
+      </ul>
+    </div></td>
+    <td rowspan="3" valign="top">      <div align="left">
+      <ul>
+        <li>WS
+          MDS (MDS4)
+          <ul>
+            <li><a href="../../docs/4.0/info/aggregator/WS_MDS_Aggregator_Release_Notes.html">Aggregator
+                Framework</a></li>
+            <li><a href="../../docs/4.0/info/index/WS_MDS_Index_Release_Notes.html">Index Service</a></li>
+            <li><a href="../../docs/4.0/info/trigger/WS_MDS_Trigger_Release_Notes.html">Trigger
+              Service</a></li>
+            <li><a href="../../docs/4.0/info/webmds/WS_MDS_WebMDS_Release_Notes.html">WebMDS</a></li>
+            </ul>
+        </li>
+        <li> <a href="../../docs/4.0/info/prewsmds/Pre_WS_MDS_Release_Notes.html">Pre-WS MDS
+          (MDS2)</a></li>
+      </ul>
+    </div>
+    <div align="center"></div></td>
+    <td valign="top"><div align="left">
+      <ul>
+        <li><a href="../../docs/4.0/common/javawscore/Java_WS_Core_Release_Notes.html">Java
+              WS Core</a> </li>
+        <li><a href="../../docs/4.0/common/cwscore/C_WS_Core_Release_Notes.html">C WS Core</a></li>
+        <li><a href="../../docs/4.0/contributions/pythonwscore/Python_WS_Core_Release_Notes.html">Python
+            WS Core</a></li>
+        <li><a href="../../docs/4.0/common/xio/XIO_Release_Notes.html">XIO</a></li>
+        <li><a href="../../docs/4.0/common/ccommonlib/C_Common_Libraries_Release_Notes.html">C
+          Common Libraries</a></li>
+      </ul>
+    </div></td>
+  </tr>
+  <tr>
+    <td valign="top" class="matrix"><div align="center"><strong>Cross-component Tools </strong></div></td>
+  </tr>
+  <tr>
+    <td valign="top"><ul>
+      <li><a href="../../docs/4.0/contributions/javacog/JavaCoG_Release_Notes.html">Java CoG Kit</a></li>
+      <li><a href="../../docs/4.0/contributions/pyglobus/PyGlobus_Release_Notes.html">pyGlobus</a></li>
+    </ul></td>
+  </tr>
+</table>
+<h2><a name="compatibility"></a>Compatibility</h2>
+<p>Information about backwards compatibility is included
+  in the release notes for each  component. See the <a href="#whatsnew">What's
+  New</a> section</p>
+<h2><a name="downloads"></a>Obtaining and Installing Software</h2>
+<p>To download this release, go to the <a href="../../downloads/4.0.0/">Download</a> page.</p>
+<p>For information on installing this release, go to the <a href="../../docs/4.0/admin/docbook/">Installation
+    Guide</a>.</p>
+<h2><a name="docs"></a>Documentation</h2>
+<p>We've made many updates to the documentation for this final release. We've
+  made an initial conversion of all  4.0 docs into DocBook format and will be
+  adding many new features in the near future: glossaries, indexes, etc. For
+  more information about how our new documentation is structured, please see
+  the new <a href="../../docs/4.0/doc_overview.html">Documentation Overview</a>. </p>
+<p>For documentation about GT4, click <a href="../../docs/4.0/">here</a>.</p>
+<h2><a name="support"></a>Support</h2>
+<p>Support for the GT4  release is available through the gt4-friends
+  mailing list. For more information, see <a href="http://www-unix.globus.org/toolkit/docs/4.0/GT4Facts/friends.html">GT4
+  Friends: A GT4 Community Group</a>.</p>
+<h2><a name="testing"></a>Testing</h2>
+<p>The following components have a &quot;Call for Community Testing&quot; associated with
+  them. A &quot;Call for Community Testing&quot; is a mechanism to notify our users that
+  new Globus code is available for testing in the field. Through these calls,
+  the Globus Alliance hopes to expose its code to a wide variety of usage scenarios
+  early in its development process. The ultimate goals are to catch bugs that
+  have historically been found only after final releases, and to elicit feedback
+  from the community on ways our software can be improved.</p>
+<h3>Common Runtime components </h3>
+<ul>
+  <li><a href="../../docs/4.0/common/javawscore/Java_WS_Core_Call_for_Testing.html">Java WS
+      Core</a></li>
+  <li><a href="../../docs/4.0/common/cwscore/C_WS_Core_Call_for_Testing.html">C WS Core</a></li>
+</ul>
+<h3>Security</h3>
+<ul>
+  <li>WS A&amp;A:
+    <ul>
+      <li> <a href="../../docs/4.0/security/cas/WS_AA_CAS_Call_for_Testing.html">CAS</a></li>
+      <li><a href="../../docs/4.0/security/delegation/WS_AA_Delegation_Service_Call_for_Testing.html">Delegation Service</a></li>
+    </ul>
+  </li>
+</ul>
+<h3>Data Management</h3>
+<ul>
+  <li><a href="../../docs/4.0/data/gridftp/GridFTP_Call_for_Testing.html">GridFTP</a></li>
+  <li><a href="../../docs/4.0/data/rft/RFT_Call_for_Testing.html">RFT</a></li>
+  <li><a href="../../docs/4.0/data/rls/RLS_Call_for_Testing.html">RLS</a></li>
+</ul>
+<h3>Information Services</h3>
+<ul>
+  <li>WS MDS (MDS4
+      <ul>
+        <li><a href="../../docs/4.0/info/index/WS_MDS_Index_Call_for_Testing.html">Index Service</a></li>
+        <li><a href="../../docs/4.0/info/trigger/WS_MDS_Trigger_Call_for_Testing.html">Trigger
+            Service</a></li>
+      </ul>
+  </li>
+</ul>
+<h3>Execution Management</h3>
+<ul>
+  <li><a href="../../docs/4.0/execution/wsgram/WS_GRAM_Call_for_Testing.html">WS GRAM (GRAM4) </a></li>
+</ul>
+<h2><a name="Licensing"></a>Licensing</h2>
+<p>The Globus Toolkit is distributed and licensed for use under the terms of
+  the <a href="http://www.globus.org/toolkit/license.html">Globus Toolkit
+  Public License</a>.</p>
+<?php include("/mcs/www-unix.globus.org/include/globus_footer.inc"); ?>
