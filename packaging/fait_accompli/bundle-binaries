@@ -55,7 +55,10 @@ for f in *; do
 done
 
 # Get out of tmp/binary-trees/
-cd ../..
+cd ../
+rm notnamed_bundle*
+rm packagelist
+cd ../
 
 echo Generating configure/Makefile.in for binary installer
 cp fait_accompli/binary.Makefile.in tmp/Makefile.in
