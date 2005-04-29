@@ -676,7 +676,7 @@ globus_l_condor_parse_event(
     time_t                              event_stamp;
     char *                              jobid;
     int                                 jobid_len;
-    int                                 len;
+    size_t                              len;
     globus_result_t                     result;
 
     enum condor_attr_e

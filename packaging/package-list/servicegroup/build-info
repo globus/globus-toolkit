@@ -1,4 +1,0 @@
-name=servicegroup
-subdir=information_services/servicegroup
-build="ant -Dogsa.root=\$OGSA_HOME"
-gar=build/lib/xindice-servicegroup.gar
