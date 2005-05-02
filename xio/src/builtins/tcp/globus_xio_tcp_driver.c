@@ -121,6 +121,7 @@ typedef struct
     int                                 send_flags;
     
     globus_bool_t                       global;
+    globus_bool_t                       use_blocking_io;
 } globus_l_attr_t;
 
 /* default attr (never put any string literals in here, else they may be
@@ -151,7 +152,8 @@ static globus_l_attr_t                  globus_l_xio_tcp_attr_default =
     0,                                  /* connector_max_port */
     
     0,                                  /* send_flags */
-    GLOBUS_FALSE                        /* global */
+    GLOBUS_FALSE,                       /* global */
+    GLOBUS_FALSE                        /* use_blocking_io */
 };
 
 static int                              globus_l_xio_tcp_port_range_state_file;
@@ -176,6 +178,7 @@ typedef struct
     globus_object_t *                   connection_error;
     globus_xio_operation_t              read_op;
     globus_xio_operation_t              write_op;
+    globus_bool_t                       use_blocking_io;
 } globus_l_handle_t;
 
 static
@@ -699,7 +702,18 @@ globus_l_xio_tcp_attr_cntl(
         out_int = va_arg(ap, int *);
         *out_int = attr->send_flags;
         break;
+
+      /* globus_bool_t                  use_blocking_io */
+      case GLOBUS_XIO_TCP_SET_BLOCKING_IO:
+        attr->use_blocking_io = va_arg(ap, globus_bool_t);
+        break;
         
+      /* globus_bool_t *                use_blocking_io */
+      case GLOBUS_XIO_TCP_GET_BLOCKING_IO:
+        out_bool = va_arg(ap, globus_bool_t *);
+        *out_bool = attr->use_blocking_io;
+        break;
+
       default:
         result = GlobusXIOErrorInvalidCommand(cmd);
         goto error_invalid;
@@ -2037,6 +2051,7 @@ globus_l_xio_tcp_open(
         goto error_handle;
     }
     
+    handle->use_blocking_io = attr->use_blocking_io;
     if(!driver_link && attr->handle == GLOBUS_XIO_TCP_INVALID_HANDLE)
     {
         if(!(contact_info->host && contact_info->port))
@@ -2224,6 +2239,7 @@ globus_l_xio_tcp_read(
     globus_xio_operation_t              op)
 {
     globus_l_handle_t *                 handle;
+    globus_size_t                       nbytes;
     globus_result_t                     result;
     GlobusXIOName(globus_l_xio_tcp_read);
     
@@ -2252,10 +2268,17 @@ globus_l_xio_tcp_read(
         result = globus_xio_system_try_read(
             handle->handle, iovec, iovec_count, &nbytes);
         globus_l_xio_tcp_finish_read(handle, result, nbytes);
-        /* dont want to return error here mainly because error could be eof, 
-         * which is against our convention to return an eof error on async
-         * calls.  Other than that, the choice is arbitrary
-         */
+    }
+    else if(handle->use_blocking_io &&
+        globus_xio_driver_operation_is_blocking(op))
+    {
+        result = globus_xio_system_read(
+            handle->handle,
+            iovec,
+            iovec_count,
+            globus_xio_operation_get_wait_for(op),
+            &nbytes);
+        globus_l_xio_tcp_finish_read(handle, result, nbytes);
     }
     else
     {
@@ -2341,6 +2364,7 @@ globus_l_xio_tcp_write(
 {
     globus_l_handle_t *                 handle;
     globus_l_attr_t *                   attr;
+    globus_size_t                       nbytes;
     globus_result_t                     result;
     GlobusXIOName(globus_l_xio_tcp_write);
     
@@ -2377,8 +2401,6 @@ globus_l_xio_tcp_write(
     if(globus_xio_operation_get_wait_for(op) == 0 &&
         (iovec_count > 1 || iovec[0].iov_len > 0))
     {
-        globus_size_t                   nbytes;
-        
         if(attr && attr->send_flags)
         {
             result = globus_xio_system_try_write_ex(
@@ -2393,6 +2415,31 @@ globus_l_xio_tcp_write(
         {
             result = globus_xio_system_try_write(
                 handle->handle, iovec, iovec_count, &nbytes);
+        }
+        globus_l_xio_tcp_finish_write(handle, result, nbytes);
+    }
+    else if(handle->use_blocking_io &&
+        globus_xio_driver_operation_is_blocking(op))
+    {
+        if(attr && attr->send_flags)
+        {
+            result = globus_xio_system_write_ex(
+                handle->handle,
+                iovec,
+                iovec_count,
+                globus_xio_operation_get_wait_for(op),
+                attr->send_flags,
+                GLOBUS_NULL,
+                &nbytes);
+        }
+        else
+        {
+            result = globus_xio_system_write(
+                handle->handle,
+                iovec,
+                iovec_count,
+                globus_xio_operation_get_wait_for(op),
+                &nbytes);
         }
         globus_l_xio_tcp_finish_write(handle, result, nbytes);
     }
@@ -2635,6 +2682,17 @@ globus_l_xio_tcp_cntl(
                 "globus_l_xio_tcp_contact_string", result);
             goto error_contact;
         }
+        break;
+      
+      /* globus_bool_t                  use_blocking_io */
+      case GLOBUS_XIO_TCP_SET_BLOCKING_IO:
+        handle->use_blocking_io = va_arg(ap, globus_bool_t);
+        break;
+        
+      /* globus_bool_t *                use_blocking_io */
+      case GLOBUS_XIO_TCP_GET_BLOCKING_IO:
+        out_bool = va_arg(ap, globus_bool_t *);
+        *out_bool = handle->use_blocking_io;
         break;
         
       default:

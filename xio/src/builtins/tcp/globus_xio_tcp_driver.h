@@ -708,7 +708,30 @@ typedef enum
      *      buffer sizes, etc.
      */
     /* globus_bool_t                    affect_global */
-    GLOBUS_XIO_TCP_AFFECT_ATTR_DEFAULTS
+    GLOBUS_XIO_TCP_AFFECT_ATTR_DEFAULTS,
+    
+    /** GlobusVarArgEnum(attr, handle)
+     * Enable true blocking io when making globus_xio_read/write() calls.
+     * Note: use with caution.  you can deadlock an entire app with this.
+     * @ingroup tcp_driver_cntls
+     * 
+     * @param use_blocking_io
+     *      If GLOBUS_TRUE, true blocking io will be enabled.
+     *      GLOBUS_FALSE will disable it (default);
+     */
+    /* globus_bool_t                    use_blocking_io */
+    GLOBUS_XIO_TCP_SET_BLOCKING_IO,
+    
+    /** GlobusVarArgEnum(attr, handle)
+     * Get the blocking io status in use or in attr.
+     * @ingroup tcp_driver_cntls
+     * 
+     * @param use_blocking_io_out
+     *      The flag will be set here.  GLOBUS_TRUE for enabled.
+     */
+    /* globus_bool_t *                  use_blocking_io_out */
+    GLOBUS_XIO_TCP_GET_BLOCKING_IO
+    
 } globus_xio_tcp_cmd_t;
 
 

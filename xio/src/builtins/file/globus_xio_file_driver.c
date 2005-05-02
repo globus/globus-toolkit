@@ -67,6 +67,7 @@ typedef struct
     int                                 flags;
     globus_off_t                        trunc_offset;
     globus_xio_system_handle_t          handle;
+    globus_bool_t                       use_blocking_io;
 } globus_l_attr_t;
 
 /* default attr */
@@ -80,7 +81,8 @@ static const globus_l_attr_t            globus_l_xio_file_attr_default =
         GLOBUS_XIO_FILE_RDWR    | 
         GLOBUS_XIO_FILE_BINARY,
     0,                                  /* trunc_offset */
-    GLOBUS_XIO_FILE_INVALID_HANDLE      /* handle   */             
+    GLOBUS_XIO_FILE_INVALID_HANDLE,     /* handle   */
+    GLOBUS_FALSE                        /* use_blocking_io */
 };
 
 /*
@@ -90,6 +92,7 @@ typedef struct
 {
     globus_xio_system_handle_t          handle;
     globus_bool_t                       converted;
+    globus_bool_t                       use_blocking_io;
 } globus_l_handle_t;
 
 /*
@@ -140,6 +143,7 @@ globus_l_xio_file_attr_cntl(
     int *                               out_int;
     globus_xio_system_handle_t *        out_handle;
     globus_off_t *                      out_offset;
+    globus_bool_t *                     out_bool;
     GlobusXIOName(globus_l_xio_file_attr_cntl);
     
     GlobusXIOFileDebugEnter();
@@ -169,12 +173,12 @@ globus_l_xio_file_attr_cntl(
         *out_int = attr->flags;
         break;
       
-      /* globus_off_t                     offset */
+      /* globus_off_t                   offset */
       case GLOBUS_XIO_FILE_SET_TRUNC_OFFSET:
         attr->trunc_offset = va_arg(ap, globus_off_t);
         break;
         
-      /* globus_off_t *                   offset_out */
+      /* globus_off_t *                 offset_out */
       case GLOBUS_XIO_FILE_GET_TRUNC_OFFSET:
         out_offset = va_arg(ap, globus_off_t *);
         *out_offset = attr->trunc_offset;
@@ -190,7 +194,18 @@ globus_l_xio_file_attr_cntl(
         out_handle = va_arg(ap, globus_xio_system_handle_t *);
         *out_handle = attr->handle;
         break;
-
+      
+      /* globus_bool_t                  use_blocking_io */
+      case GLOBUS_XIO_FILE_SET_BLOCKING_IO:
+        attr->use_blocking_io = va_arg(ap, globus_bool_t);
+        break;
+        
+      /* globus_bool_t *                use_blocking_io */
+      case GLOBUS_XIO_FILE_GET_BLOCKING_IO:
+        out_bool = va_arg(ap, globus_bool_t *);
+        *out_bool = attr->use_blocking_io;
+        break;
+        
       default:
         GlobusXIOFileDebugExitWithError();
         return GlobusXIOErrorInvalidCommand(cmd);
@@ -262,13 +277,13 @@ globus_l_xio_file_handle_init(
     
     GlobusXIOFileDebugEnter();
     
-    *handle = (globus_l_handle_t *) globus_malloc(sizeof(globus_l_handle_t));
+    *handle = (globus_l_handle_t *)
+        globus_calloc(1, sizeof(globus_l_handle_t));
     if(!*handle)
     {
         result = GlobusXIOErrorMemory("handle");
         goto error_handle;
     }
-    (*handle)->converted = GLOBUS_FALSE;
     
     GlobusXIOFileDebugExit();
     return GLOBUS_SUCCESS;
@@ -330,6 +345,7 @@ globus_l_xio_file_open(
         goto error_handle;
     }
     
+    handle->use_blocking_io = attr->use_blocking_io;
     converted_handle = attr->handle;
     if(converted_handle == GLOBUS_XIO_FILE_INVALID_HANDLE && 
         !contact_info->resource && contact_info->scheme)
@@ -546,6 +562,8 @@ globus_l_xio_file_read(
     globus_xio_operation_t              op)
 {
     globus_l_handle_t *                 handle;
+    globus_size_t                       nbytes;
+    globus_result_t                     result;
     GlobusXIOName(globus_l_xio_file_read);
 
     GlobusXIOFileDebugEnter();
@@ -556,21 +574,27 @@ globus_l_xio_file_read(
     if(globus_xio_operation_get_wait_for(op) == 0 &&
         (iovec_count > 1 || iovec[0].iov_len > 0))
     {
-        globus_size_t                   nbytes;
-        globus_result_t                 result;
-        
         result = globus_xio_system_try_read(
             handle->handle, iovec, iovec_count, &nbytes);
         globus_xio_driver_finished_read(op, result, nbytes);
-        /* dont want to return error here mainly because error could be eof, 
-         * which is against our convention to return an eof error on async
-         * calls.  Other than that, the choice is arbitrary
-         */
-        return GLOBUS_SUCCESS;
+        result = GLOBUS_SUCCESS;
+    }
+    else if(handle->use_blocking_io &&
+        globus_xio_driver_operation_is_blocking(op))
+    {
+        result = globus_xio_system_read(
+            handle->handle,
+            iovec,
+            iovec_count,
+            globus_xio_operation_get_wait_for(op),
+            &nbytes);
+            
+        globus_xio_driver_finished_read(op, result, nbytes);
+        result = GLOBUS_SUCCESS;
     }
     else
     {
-        return globus_xio_system_register_read(
+        result = globus_xio_system_register_read(
             op,
             handle->handle,
             iovec,
@@ -581,6 +605,7 @@ globus_l_xio_file_read(
     }
     
     GlobusXIOFileDebugExit();
+    return result;
 }
 
 static
@@ -613,6 +638,8 @@ globus_l_xio_file_write(
     globus_xio_operation_t              op)
 {
     globus_l_handle_t *                 handle;
+    globus_size_t                       nbytes;
+    globus_result_t                     result;
     GlobusXIOName(globus_l_xio_file_write);
     
     GlobusXIOFileDebugEnter();
@@ -628,21 +655,27 @@ globus_l_xio_file_write(
     if(globus_xio_operation_get_wait_for(op) == 0 &&
         (iovec_count > 1 || iovec[0].iov_len > 0))
     {
-        globus_size_t                   nbytes;
-        globus_result_t                 result;
-        
         result = globus_xio_system_try_write(
             handle->handle, iovec, iovec_count, &nbytes);
         globus_xio_driver_finished_write(op, result, nbytes);
-        /* Since I am finishing the request in the callstack,
-         * the choice to pass the result in the finish instead of below
-         * is arbitrary.
-         */
-        return GLOBUS_SUCCESS;
+        result = GLOBUS_SUCCESS;
+    }
+    else if(handle->use_blocking_io &&
+        globus_xio_driver_operation_is_blocking(op))
+    {
+        result = globus_xio_system_write(
+            handle->handle,
+            iovec,
+            iovec_count,
+            globus_xio_operation_get_wait_for(op),
+            &nbytes);
+            
+        globus_xio_driver_finished_write(op, result, nbytes);
+        result = GLOBUS_SUCCESS;
     }
     else
     {
-        return globus_xio_system_register_write(
+        result = globus_xio_system_register_write(
             op,
             handle->handle,
             iovec,
@@ -653,6 +686,7 @@ globus_l_xio_file_write(
     }
     
     GlobusXIOFileDebugExit();
+    return result;
 }
 
 static
@@ -668,6 +702,7 @@ globus_l_xio_file_cntl(
     globus_off_t *                      offset;
     globus_off_t                        in_offset;
     int                                 whence;
+    globus_bool_t *                     out_bool;
     GlobusXIOName(globus_l_xio_file_cntl);
     
     GlobusXIOFileDebugEnter();
@@ -702,7 +737,18 @@ globus_l_xio_file_cntl(
         out_handle = va_arg(ap, globus_xio_system_handle_t *);
         *out_handle = handle->handle;
         break;
-
+      
+      /* globus_bool_t                  use_blocking_io */
+      case GLOBUS_XIO_FILE_SET_BLOCKING_IO:
+        handle->use_blocking_io = va_arg(ap, globus_bool_t);
+        break;
+        
+      /* globus_bool_t *                use_blocking_io */
+      case GLOBUS_XIO_FILE_GET_BLOCKING_IO:
+        out_bool = va_arg(ap, globus_bool_t *);
+        *out_bool = handle->use_blocking_io;
+        break;
+        
       default:
         result = GlobusXIOErrorInvalidCommand(cmd);
         break;

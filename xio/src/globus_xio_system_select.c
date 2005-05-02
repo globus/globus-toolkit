@@ -1224,42 +1224,45 @@ globus_l_xio_system_try_recv(
     int                                 flags,
     globus_size_t *                     nbytes)
 {
-    globus_ssize_t                      rc;
+    globus_ssize_t                      rc = 0;
     globus_result_t                     result;
     GlobusXIOName(globus_l_xio_system_try_recv);
 
     GlobusXIOSystemDebugEnterFD(fd);
 
-    do
+    if(buflen)
     {
-        rc = recv(fd, buf, buflen, flags);
-    } while(rc < 0 && errno == EINTR);
-
-    if(rc < 0)
-    {
-        if(errno == EAGAIN || errno == EWOULDBLOCK)
+        do
         {
-            rc = 0;
-        }
-        else
+            rc = recv(fd, buf, buflen, flags);
+        } while(rc < 0 && errno == EINTR);
+    
+        if(rc < 0)
         {
-            result = GlobusXIOErrorSystemError("recv", errno);
-            goto error_errno;
+            if(errno == EAGAIN || errno == EWOULDBLOCK)
+            {
+                rc = 0;
+            }
+            else
+            {
+                result = GlobusXIOErrorSystemError("recv", errno);
+                goto error_errno;
+            }
         }
+        else if(rc == 0)
+        {
+            result = GlobusXIOErrorEOF();
+            goto error_eof;
+        }
+    
+        GlobusXIOSystemDebugPrintf(
+            GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
+            (_XIOSL("[%s] Read %d bytes\n"), _xio_name, rc));
+        
+        GlobusXIOSystemDebugRawBuffer(rc, buf);
     }
-    else if(rc == 0)
-    {
-        result = GlobusXIOErrorEOF();
-        goto error_eof;
-    }
-
+    
     *nbytes = rc;
-    
-    GlobusXIOSystemDebugPrintf(
-        GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
-        (_XIOSL("[%s] Read %d bytes\n"), _xio_name, rc));
-    
-    GlobusXIOSystemDebugRawBuffer(rc, buf);
     
     GlobusXIOSystemDebugExitFD(fd);
     return GLOBUS_SUCCESS;
@@ -1281,50 +1284,53 @@ globus_l_xio_system_try_recvfrom(
     globus_sockaddr_t *                 from,
     globus_size_t *                     nbytes)
 {
-    globus_ssize_t                      rc;
+    globus_ssize_t                      rc = 0;
     globus_result_t                     result;
     globus_socklen_t                    len;
     GlobusXIOName(globus_l_xio_system_try_recvfrom);
 
     GlobusXIOSystemDebugEnterFD(fd);
-
-    do
+    
+    if(buflen)
     {
-        len = sizeof(globus_sockaddr_t);
-        rc = recvfrom(
-            fd,
-            buf,
-            buflen,
-            flags,
-            (struct sockaddr *) from,
-            &len);
-    } while(rc < 0 && errno == EINTR);
-
-    if(rc < 0)
-    {
-        if(errno == EAGAIN || errno == EWOULDBLOCK)
+        do
         {
-            rc = 0;
-        }
-        else
+            len = sizeof(globus_sockaddr_t);
+            rc = recvfrom(
+                fd,
+                buf,
+                buflen,
+                flags,
+                (struct sockaddr *) from,
+                &len);
+        } while(rc < 0 && errno == EINTR);
+    
+        if(rc < 0)
         {
-            result = GlobusXIOErrorSystemError("recvfrom", errno);
-            goto error_errno;
+            if(errno == EAGAIN || errno == EWOULDBLOCK)
+            {
+                rc = 0;
+            }
+            else
+            {
+                result = GlobusXIOErrorSystemError("recvfrom", errno);
+                goto error_errno;
+            }
         }
+        else if(rc == 0)
+        {
+            result = GlobusXIOErrorEOF();
+            goto error_eof;
+        }
+    
+        GlobusXIOSystemDebugPrintf(
+            GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
+            (_XIOSL("[%s] Read %d bytes\n"), _xio_name, rc));
+        
+        GlobusXIOSystemDebugRawBuffer(rc, buf);
     }
-    else if(rc == 0)
-    {
-        result = GlobusXIOErrorEOF();
-        goto error_eof;
-    }
-
+    
     *nbytes = rc;
-    
-    GlobusXIOSystemDebugPrintf(
-        GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
-        (_XIOSL("[%s] Read %d bytes\n"), _xio_name, rc));
-    
-    GlobusXIOSystemDebugRawBuffer(rc, buf);
     
     GlobusXIOSystemDebugExitFD(fd);
     return GLOBUS_SUCCESS;
@@ -1425,15 +1431,15 @@ globus_l_xio_system_try_write(
                 goto error_errno;
             }
         }
+        
+        GlobusXIOSystemDebugPrintf(
+            GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
+            (_XIOSL("[%s] Wrote %d bytes\n"), _xio_name, rc));
+    
+        GlobusXIOSystemDebugRawBuffer(rc, buf);
     }
 
     *nbytes = rc;
-    
-    GlobusXIOSystemDebugPrintf(
-        GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
-        (_XIOSL("[%s] Wrote %d bytes\n"), _xio_name, rc));
-    
-    GlobusXIOSystemDebugRawBuffer(rc, buf);
     
     GlobusXIOSystemDebugExitFD(fd);
     return GLOBUS_SUCCESS;
@@ -1502,37 +1508,40 @@ globus_l_xio_system_try_send(
     int                                 flags,
     globus_size_t *                     nbytes)
 {
-    globus_ssize_t                      rc;
+    globus_ssize_t                      rc = 0;
     globus_result_t                     result;
     GlobusXIOName(globus_l_xio_system_try_send);
 
     GlobusXIOSystemDebugEnterFD(fd);
-
-    do
+    
+    if(buflen)
     {
-        rc = send(fd, buf, buflen, flags);
-    } while(rc < 0 && errno == EINTR);
-
-    if(rc < 0)
-    {
-        if(errno == EAGAIN || errno == EWOULDBLOCK)
+        do
         {
-            rc = 0;
-        }
-        else
+            rc = send(fd, buf, buflen, flags);
+        } while(rc < 0 && errno == EINTR);
+    
+        if(rc < 0)
         {
-            result = GlobusXIOErrorSystemError("send", errno);
-            goto error_errno;
+            if(errno == EAGAIN || errno == EWOULDBLOCK)
+            {
+                rc = 0;
+            }
+            else
+            {
+                result = GlobusXIOErrorSystemError("send", errno);
+                goto error_errno;
+            }
         }
+    
+        GlobusXIOSystemDebugPrintf(
+            GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
+            (_XIOSL("[%s] Wrote %d bytes\n"), _xio_name, rc));
+        
+        GlobusXIOSystemDebugRawBuffer(rc, buf);
     }
-
+    
     *nbytes = rc;
-    
-    GlobusXIOSystemDebugPrintf(
-        GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
-        (_XIOSL("[%s] Wrote %d bytes\n"), _xio_name, rc));
-    
-    GlobusXIOSystemDebugRawBuffer(rc, buf);
     
     GlobusXIOSystemDebugExitFD(fd);
     return GLOBUS_SUCCESS;
@@ -1553,43 +1562,46 @@ globus_l_xio_system_try_sendto(
     const globus_sockaddr_t *           to,
     globus_size_t *                     nbytes)
 {
-    globus_ssize_t                      rc;
+    globus_ssize_t                      rc = 0;
     globus_result_t                     result;
     GlobusXIOName(globus_l_xio_system_try_sendto);
 
     GlobusXIOSystemDebugEnterFD(fd);
-
-    do
+    
+    if(buflen)
     {
-        rc = sendto(
-            fd,
-            buf,
-            buflen,
-            flags,
-            (const struct sockaddr *) to,
-            GlobusLibcSockaddrLen(to));
-    } while(rc < 0 && errno == EINTR);
-
-    if(rc < 0)
-    {
-        if(errno == EAGAIN || errno == EWOULDBLOCK)
+        do
         {
-            rc = 0;
-        }
-        else
+            rc = sendto(
+                fd,
+                buf,
+                buflen,
+                flags,
+                (const struct sockaddr *) to,
+                GlobusLibcSockaddrLen(to));
+        } while(rc < 0 && errno == EINTR);
+    
+        if(rc < 0)
         {
-            result = GlobusXIOErrorSystemError("sendto", errno);
-            goto error_errno;
+            if(errno == EAGAIN || errno == EWOULDBLOCK)
+            {
+                rc = 0;
+            }
+            else
+            {
+                result = GlobusXIOErrorSystemError("sendto", errno);
+                goto error_errno;
+            }
         }
+    
+        GlobusXIOSystemDebugPrintf(
+            GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
+            (_XIOSL("[%s] Wrote %d bytes\n"), _xio_name, rc));
+        
+        GlobusXIOSystemDebugRawBuffer(rc, buf);
     }
-
+    
     *nbytes = rc;
-    
-    GlobusXIOSystemDebugPrintf(
-        GLOBUS_L_XIO_SYSTEM_DEBUG_DATA,
-        (_XIOSL("[%s] Wrote %d bytes\n"), _xio_name, rc));
-    
-    GlobusXIOSystemDebugRawBuffer(rc, buf);
     
     GlobusXIOSystemDebugExitFD(fd);
     return GLOBUS_SUCCESS;
@@ -2930,21 +2942,43 @@ globus_xio_system_try_read(
     int                                 iovc,
     globus_size_t *                     nbytes)
 {
+    globus_result_t                     result;
     GlobusXIOName(globus_xio_system_try_read);
 
     GlobusXIOSystemDebugEnter();
 
     if(iovc == 1)
     {
-        return globus_l_xio_system_try_read(
+        result = globus_l_xio_system_try_read(
             handle, iov->iov_base, iov->iov_len, nbytes);
     }
     else
     {
-        return globus_l_xio_system_try_readv(handle, iov, iovc, nbytes);
+        result = globus_l_xio_system_try_readv(handle, iov, iovc, nbytes);
     }
 
     GlobusXIOSystemDebugExit();
+    return result;
+}
+
+globus_result_t
+globus_xio_system_read(
+    globus_xio_system_handle_t          handle,
+    const globus_xio_iovec_t *          iov,
+    int                                 iovc,
+    globus_size_t                       waitforbytes,
+    globus_size_t *                     nbytes)
+{
+    globus_result_t                     result;
+    GlobusXIOName(globus_xio_system_read);
+
+    GlobusXIOSystemDebugEnter();
+
+    result = globus_xio_system_read_ex(
+        handle, iov, iovc, waitforbytes, 0, GLOBUS_NULL, nbytes);
+
+    GlobusXIOSystemDebugExit();
+    return result;
 }
 
 globus_result_t
@@ -2956,25 +2990,25 @@ globus_xio_system_try_read_ex(
     globus_sockaddr_t *                 from,
     globus_size_t *                     nbytes)
 {
+    globus_result_t                     result;
     GlobusXIOName(globus_xio_system_try_read_ex);
 
     GlobusXIOSystemDebugEnter();
 
     if(!flags && !from)
     {
-        return globus_xio_system_try_read(handle, iov, iovc, nbytes);
+        result = globus_xio_system_try_read(handle, iov, iovc, nbytes);
     }
-
-    if(iovc == 1)
+    else if(iovc == 1)
     {
         if(from)
         {
-            return globus_l_xio_system_try_recvfrom(
+            result = globus_l_xio_system_try_recvfrom(
                 handle, iov->iov_base, iov->iov_len, flags, from, nbytes);
         }
         else
         {
-            return globus_l_xio_system_try_recv(
+            result = globus_l_xio_system_try_recv(
                 handle, iov->iov_base, iov->iov_len, flags, nbytes);
         }
     }
@@ -2991,10 +3025,85 @@ globus_xio_system_try_read_ex(
             msghdr.msg_namelen = sizeof(globus_sockaddr_t);
         }
 
-        return globus_l_xio_system_try_recvmsg(handle, &msghdr, flags, nbytes);
+        result = globus_l_xio_system_try_recvmsg(
+            handle, &msghdr, flags, nbytes);
     }
 
     GlobusXIOSystemDebugExit();
+    return result;
+}
+
+globus_result_t
+globus_xio_system_read_ex(
+    globus_xio_system_handle_t          handle,
+    const globus_xio_iovec_t *          u_iov,
+    int                                 u_iovc,
+    globus_size_t                       waitforbytes,
+    int                                 flags,
+    globus_sockaddr_t *                 from,
+    globus_size_t *                     u_nbytes)
+{
+    globus_result_t                     result;
+    int                                 rc;
+    GlobusXIOName(globus_xio_system_read_ex);
+
+    GlobusXIOSystemDebugEnter();
+
+    result = globus_xio_system_try_read_ex(
+        handle, u_iov, u_iovc, flags, from, u_nbytes);
+    
+    if(result == GLOBUS_SUCCESS && *u_nbytes < waitforbytes)
+    {
+        struct iovec *                  iov;
+        int                             iovc;
+        globus_size_t                   nbytes = *u_nbytes;
+        globus_size_t                   total = nbytes;
+        
+        /**
+         * XXX this is not thread safe... both reads and writes are mucking
+         * with blocking status.
+         * worst case, we read 0 bytes in the loop below, return, and xio
+         * calls us again to finish up.
+         */
+        GlobusIXIOSystemRemoveNonBlocking(handle, rc);
+        GlobusIXIOSystemAllocIovec(u_iovc, iov);
+        if(!iov)
+        {
+            result = GlobusXIOErrorMemory("iov");
+            goto error_iovec;
+        }
+
+        GlobusIXIOUtilTransferIovec(iov, u_iov, u_iovc);
+        u_iov = iov;
+        iovc = u_iovc;
+        
+        do
+        {
+            if(total > 0)
+            {
+                /* only capture source first time around */
+                from = GLOBUS_NULL;
+            }
+            
+            GlobusIXIOUtilAdjustIovec(iov, iovc, nbytes);
+            result = globus_xio_system_try_read_ex(
+                handle, iov, iovc, flags, from, &nbytes);
+            total += nbytes;
+        } while(result == GLOBUS_SUCCESS && nbytes && total < waitforbytes);
+        
+        *u_nbytes = total;
+    
+        GlobusIXIOSystemFreeIovec(u_iovc, (globus_xio_iovec_t *) u_iov);
+        GlobusIXIOSystemAddNonBlocking(handle, rc);
+    }
+
+    GlobusXIOSystemDebugExit();
+    return result;
+
+error_iovec:
+    GlobusIXIOSystemAddNonBlocking(handle, rc);
+    GlobusXIOSystemDebugExitWithError();
+    return result;
 }
 
 globus_result_t
@@ -3004,21 +3113,43 @@ globus_xio_system_try_write(
     int                                 iovc,
     globus_size_t *                     nbytes)
 {
+    globus_result_t                     result;
     GlobusXIOName(globus_xio_system_try_write);
 
     GlobusXIOSystemDebugEnter();
 
     if(iovc == 1)
     {
-        return globus_l_xio_system_try_write(
+        result = globus_l_xio_system_try_write(
             handle, iov->iov_base, iov->iov_len, nbytes);
     }
     else
     {
-        return globus_l_xio_system_try_writev(handle, iov, iovc, nbytes);
+        result = globus_l_xio_system_try_writev(handle, iov, iovc, nbytes);
     }
 
     GlobusXIOSystemDebugExit();
+    return result;
+}
+
+globus_result_t
+globus_xio_system_write(
+    globus_xio_system_handle_t          handle,
+    const globus_xio_iovec_t *          iov,
+    int                                 iovc,
+    globus_size_t                       waitforbytes,
+    globus_size_t *                     nbytes)
+{
+    globus_result_t                     result;
+    GlobusXIOName(globus_xio_system_write);
+
+    GlobusXIOSystemDebugEnter();
+
+    result = globus_xio_system_write_ex(
+        handle, iov, iovc, waitforbytes, 0, GLOBUS_NULL, nbytes);
+
+    GlobusXIOSystemDebugExit();
+    return result;
 }
 
 globus_result_t
@@ -3030,25 +3161,25 @@ globus_xio_system_try_write_ex(
     const globus_sockaddr_t *           to,
     globus_size_t *                     nbytes)
 {
+    globus_result_t                     result;
     GlobusXIOName(globus_xio_system_try_write_ex);
 
     GlobusXIOSystemDebugEnter();
 
     if(!flags && !to)
     {
-        return globus_xio_system_try_write(handle, iov, iovc, nbytes);
+        result = globus_xio_system_try_write(handle, iov, iovc, nbytes);
     }
-
-    if(iovc == 1)
+    else if(iovc == 1)
     {
         if(to)
         {
-            return globus_l_xio_system_try_sendto(
+            result = globus_l_xio_system_try_sendto(
                 handle, iov->iov_base, iov->iov_len, flags, to, nbytes);
         }
         else
         {
-            return globus_l_xio_system_try_send(
+            result = globus_l_xio_system_try_send(
                 handle, iov->iov_base, iov->iov_len, flags, nbytes);
         }
     }
@@ -3065,8 +3196,75 @@ globus_xio_system_try_write_ex(
             msghdr.msg_namelen = GlobusLibcSockaddrLen(to);
         }
 
-        return globus_l_xio_system_try_sendmsg(handle, &msghdr, flags, nbytes);
+        result = globus_l_xio_system_try_sendmsg(
+            handle, &msghdr, flags, nbytes);
     }
 
     GlobusXIOSystemDebugExit();
+    return result;
+}
+
+globus_result_t
+globus_xio_system_write_ex(
+    globus_xio_system_handle_t          handle,
+    const globus_xio_iovec_t *          u_iov,
+    int                                 u_iovc,
+    globus_size_t                       waitforbytes,
+    int                                 flags,
+    const globus_sockaddr_t *           to,
+    globus_size_t *                     u_nbytes)
+{
+    globus_result_t                     result;
+    int                                 rc;
+    GlobusXIOName(globus_xio_system_write_ex);
+
+    GlobusXIOSystemDebugEnter();
+
+    result = globus_xio_system_try_write_ex(
+        handle, u_iov, u_iovc, flags, to, u_nbytes);
+    
+    if(result == GLOBUS_SUCCESS && *u_nbytes < waitforbytes)
+    {
+        struct iovec *                  iov;
+        int                             iovc;
+        globus_size_t                   nbytes = *u_nbytes;
+        globus_size_t                   total = nbytes;
+        
+        /**
+         * XXX this is not thread safe... both reads and writes are mucking
+         * with blocking status
+         */
+        GlobusIXIOSystemRemoveNonBlocking(handle, rc);
+        GlobusIXIOSystemAllocIovec(u_iovc, iov);
+        if(!iov)
+        {
+            result = GlobusXIOErrorMemory("iov");
+            goto error_iovec;
+        }
+
+        GlobusIXIOUtilTransferIovec(iov, u_iov, u_iovc);
+        u_iov = iov;
+        iovc = u_iovc;
+        
+        do
+        {
+            GlobusIXIOUtilAdjustIovec(iov, iovc, nbytes);
+            result = globus_xio_system_try_write_ex(
+                handle, iov, iovc, flags, to, &nbytes);
+            total += nbytes;
+        } while(result == GLOBUS_SUCCESS && nbytes && total < waitforbytes);
+        
+        *u_nbytes = total;
+    
+        GlobusIXIOSystemFreeIovec(u_iovc, (globus_xio_iovec_t *) u_iov);
+        GlobusIXIOSystemAddNonBlocking(handle, rc);
+    }
+
+    GlobusXIOSystemDebugExit();
+    return result;
+
+error_iovec:
+    GlobusIXIOSystemAddNonBlocking(handle, rc);
+    GlobusXIOSystemDebugExitWithError();
+    return result;
 }
