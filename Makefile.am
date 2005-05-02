@@ -80,6 +80,7 @@ bin_PROGRAMS= \
         myproxy-store \
 	myproxy-destroy \
         myproxy-retrieve \
+	myproxy-get-delegation \
 	myproxy-logon \
 	myproxy-change-pass-phrase
 
@@ -123,6 +124,12 @@ myproxy_server_SOURCES = myproxy_server.c
 myproxy_server_LDFLAGS = $(GPT_LDFLAGS)
 
 myproxy_server_LDADD = $(GPT_PGM_LINKS) ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
+
+myproxy_get_delegation_SOURCES = myproxy_get_delegation.c
+
+myproxy_get_delegation_LDFLAGS = $(GPT_LDFLAGS)
+
+myproxy_get_delegation_LDADD = $(GPT_PGM_LINKS) ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
 
 myproxy_logon_SOURCES = myproxy_get_delegation.c
 
@@ -172,11 +179,6 @@ dirt.sh:
 
 config.h:
 	touch config.h
-
-install-exec-hook:
-	cd $(DESTDIR)$(bindir) && \
-	rm -f myproxy-get-delegation$(EXEEXT) && \
-	$(LN_S) myproxy-logon$(EXEEXT) myproxy-get-delegation$(EXEEXT)
 
 KRB5CPPFLAGS = @KRB5CPPFLAGS@
 
