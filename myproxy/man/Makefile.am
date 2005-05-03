@@ -14,6 +14,7 @@ man_MANS = myproxy-admin-adduser.8 \
            myproxy-info.1 \
            myproxy-init.1 \
            myproxy-logon.1 \
+           myproxy-replicate.8 \
            myproxy-retrieve.1 \
            myproxy-server.8 \
            myproxy-server.config.5 \
