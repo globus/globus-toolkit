@@ -251,11 +251,25 @@ main(
         {
             args_verify_next(arg_index, argp, "need a file name argument");
             user_cert_filename = argv[++arg_index];
+	    result = GLOBUS_GSI_SYSCONFIG_CHECK_CERTFILE(user_cert_filename);
+	    if(result != GLOBUS_SUCCESS)
+	    {
+	        args_error(arg_index, argp, 
+			   globus_error_print_friendly(
+			       globus_error_get(result)));
+	    }
         }
         else if(strcmp(argp, "-certdir") == 0)
         {
             args_verify_next(arg_index, argp, "need a file name argument");
             ca_cert_dir = strdup(argv[++arg_index]);
+	    result = GLOBUS_GSI_SYSCONFIG_DIR_EXISTS(ca_cert_dir);
+	    if(result != GLOBUS_SUCCESS)
+	    {
+	        args_error(arg_index, argp, 
+			   globus_error_print_friendly(
+                               globus_error_get(result)));
+	    }
         }
         else if(strcmp(argp, "-out") == 0)
         {
@@ -266,6 +280,13 @@ main(
         {
             args_verify_next(arg_index, argp, "need a file name argument");
             user_key_filename = argv[++arg_index];
+	    result = GLOBUS_GSI_SYSCONFIG_CHECK_KEYFILE(user_key_filename);
+	    if(result != GLOBUS_SUCCESS)
+	    {
+	        args_error(arg_index, argp, 
+			   globus_error_print_friendly(
+			       globus_error_get(result)));
+	    }
         }
         else if(strcmp(argp, "-valid") == 0)
         {
