@@ -887,7 +887,7 @@ globus_gsi_sysconfig_dir_exists_win32(
     { 
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
-            GLOBUS_GSI_SYSCONFIG_ERROR_FILE_IS_DIR,
+            GLOBUS_GSI_SYSCONFIG_ERROR_FILE_NOT_DIR,
             (_GSSL("%s is not a directory"), filename));       
     }
 
@@ -4604,7 +4604,7 @@ globus_gsi_sysconfig_dir_exists_unix(
     { 
         GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
             result,
-            GLOBUS_GSI_SYSCONFIG_ERROR_FILE_IS_DIR,
+            GLOBUS_GSI_SYSCONFIG_ERROR_FILE_NOT_DIR,
             (_GSSL("%s is not a directory"), filename));       
     }
 

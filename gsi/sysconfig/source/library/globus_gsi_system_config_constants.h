@@ -105,8 +105,10 @@ typedef enum
     GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_AUTHZ_LIB_FILENAME = 28,
     /** Failed to locate the gaa configuration file */
     GLOBUS_GSI_SYSCONFIG_ERROR_GETTING_GAA_FILENAME = 29,
+    /** File is not a directory */
+    GLOBUS_GSI_SYSCONFIG_ERROR_FILE_NOT_DIR = 30,
     /** Last marker - never used */
-    GLOBUS_GSI_SYSCONFIG_ERROR_LAST = 30
+    GLOBUS_GSI_SYSCONFIG_ERROR_LAST = 31
 }
 globus_gsi_sysconfig_error_t;
 
