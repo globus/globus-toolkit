@@ -42,6 +42,7 @@ DIRT_BRANCH_ID="@DIRT_BRANCH_ID@"
 short_usage="$PROGRAM_NAME [-help] [-dn <DN>] [-ln <local name>] [-d] [-f file]"
 
 long_usage() {
+
     ${GLOBUS_SH_CAT-cat} >&2 <<EOF
 
 ${short_usage}
@@ -49,13 +50,13 @@ ${short_usage}
     $PROGRAM_NAME deletes one or more matching entries from the Grid mapfile.
 
     Options:
-      -help, -usage           Displays help
-      -version                Displays version
-      -dn <DN>                Distinguished Name (DN) to delete
-      -ln <local name>        Local Login Name (LN) to delete
-      -dryrun, -d             Shows what would be done but will not
-                              delete the entry
-      -mapfile file, -f file  Path of gridmap file to be used
+    -help, -usage           Displays help
+    -version                Displays version
+    -dn <DN>                Distinguished Name (DN) to delete
+    -ln <local name>        Local Login Name (LN) to delete
+    -dryrun, -d             Shows what would be done but will not
+    delete the entry
+    -mapfile file, -f file  Path of gridmap file to be used
 
 EOF
 }
@@ -91,27 +92,24 @@ Cleanup()
 
 removeLNs ()
 {
-  aux_line=$line
-  for name in $ln ; do
-    modif_line=$aux_line
-    aux_line="`echo $aux_line | sed -e "s/\<$name\>\ *,//"`"
-    aux_line="`echo $aux_line | sed -e "s/,\ *\<$name\>//"`"
-    if test ! "$modif_line" = "$aux_line" ; then
-      removed_map="$removed_map $name"
-      removed_map_count=`expr $removed_map_count + 1`
-    fi
+    parseLine
+    aux_line=$existing_ln
 
-    has_ln=`echo $aux_line | ${GLOBUS_SH_GREP-grep} "\<$name\>"`
-    if test -n "$has_ln" ; then
-      deleted_entries=`expr $deleted_entries + 1`
-      aux_line=""
-      removed_map="$removed_map $name"
-      removed_map_count=`expr $removed_map_count + 1`
+    for name in $ln ; do
+	modif_line=$aux_line
+	aux_line=`echo $aux_line | ${GLOBUS_SH_SED-sed} -e "s/,$name//" -e "s/$name,//" -e "s/^$name$//"`
+	if test ! "$modif_line" = "$aux_line" ; then
+	    removed_map="$removed_map $name"
+	    removed_map_count=`expr $removed_map_count + 1`
+	fi
+    done
+
+    if test -n "$aux_line" ; then
+	aux_line="\"$existing_dn\" $aux_line"
     fi
-  done
 }
 
-getDN()
+parseLine()
 {
     # Check for double quote delimitor
     delim=`echo $line | cut -c1`
@@ -126,10 +124,14 @@ getDN()
             exit 1
         fi
         existing_dn=`echo $line | cut -f2 -d\"`
+        existing_ln=`echo $line | cut -f3 -d\"`
     else
         # No double quote delimitor on DN
         existing_dn=`echo $line | ${GLOBUS_SH_SED-sed} -e 's/\([^	 ]*\)[	 ]*.*/\1/'`
+	existing_ln=`echo $line | ${GLOBUS_SH_SED-sed} -e 's/[^	 ]*[	 ]*\(.*\)/\1/'`
     fi
+
+    existing_ln=`echo ${existing_ln} | ${GLOBUS_SH_SED-sed} -e 's/[	 ]*//g'`
 }
 
 # Main Logic
@@ -214,7 +216,7 @@ DELETED_ENTRIES=${secure_tmpdir}/.deleted_entries.$$
 
 trap Cleanup 1 2 3 6 9 13 15
 
-# Verify mapfile existance
+# Verify mapfile existence
 
 if [ ! -f $GRID_MAP_FILE ] ; then
     globus_args_option_error "$opt" "\"${GRID_MAP_FILE}\" does not exist"
@@ -271,61 +273,60 @@ ${GLOBUS_SH_TOUCH-touch} $NEW_GRID_MAP_FILE
 
 while read line || test ! -z "${line}" ; do
     # Match ONLY DNs
-    
+		
     if test -n "$requested_dn" -a -z "$requested_ln" ; then
-        
-        getDN
-
-        if test ! "$requested_dn" = "$existing_dn" ; then
-            echo $line >> $NEW_GRID_MAP_FILE
-        else
-            echo "Deleting entry: $line"
-            deleted_entries=`expr $deleted_entries + 1`
-        fi
-
+	
+	parseLine 
+	
+	if test ! "$requested_dn" = "$existing_dn" ; then
+	    echo $line >> $NEW_GRID_MAP_FILE
+	else
+	    echo "Deleting entry: $line"
+	    deleted_entries=`expr $deleted_entries + 1`
+	fi
+	
     # Match ANY LNs
-
+	
     elif test -z "$requested_dn" -a -n "$requested_ln" ; then
-        found_match=""
-        for name in $ln ; do
-            found_match=`echo $line | ${GLOBUS_SH_GREP-grep} $name`
-            if  [ -n "$found_match" ] ; then
-#		   echo "Found match"
-                break
-            fi
-        done
-        
-        if  [ -z "$found_match" ] ; then
-            echo $line >> $NEW_GRID_MAP_FILE
-        else
-	  removeLNs
-	  if test -n "$aux_line" ; then
-            echo "Current entry: $aux_line"
-            echo $aux_line >> $NEW_GRID_MAP_FILE
-	  else
-            echo "No local mappings remained, deleting entry: $line"
-	  fi
-        fi
-        
-    # Match DN and list
-        
-    elif [ -n "$requested_entry" ] ; then
-        
-        getDN
-
-        if test ! "$dn" = "$existing_dn" ; then
-            echo $line >> $NEW_GRID_MAP_FILE
-        else
-	  removeLNs
-	  if test -n "$aux_line" ; then
-	    if test -n "$removed_map" ; then
-              echo "Current entry: $aux_line"
+	found_match=""
+	for name in $ln ; do
+	    found_match=`echo $line | ${GLOBUS_SH_GREP-grep} $name`
+	    if [ -n "$found_match" ] ; then
+		break
 	    fi
-            echo $aux_line >> $NEW_GRID_MAP_FILE
-	  else
-            echo "No local mappings remained, deleting entry: $line"
-	  fi
-        fi
+	done
+	
+	if [ -z "$found_match" ] ; then
+	    echo $line >> $NEW_GRID_MAP_FILE
+	else
+	    removeLNs
+	    if test -n "$aux_line" ; then
+		echo "Current entry: $aux_line"
+		echo $aux_line >> $NEW_GRID_MAP_FILE
+	    else
+		echo "No local mappings remained, deleting entry: $line"
+	    fi
+	fi
+	
+    # Match DN and list
+	
+    elif [ -n "$requested_entry" ] ; then
+	
+	parseLine 
+	
+	if test ! "$dn" = "$existing_dn" ; then
+	    echo $line >> $NEW_GRID_MAP_FILE
+	else
+	    removeLNs
+	    if test -n "$aux_line" ; then
+		if test -n "$removed_map" ; then
+		    echo "Current entry: $aux_line"
+		fi
+		echo $aux_line >> $NEW_GRID_MAP_FILE
+	    else
+		echo "No local mappings remained, deleting entry: $line"
+	    fi
+	fi
     fi
     
     echo $deleted_entries >  $DELETED_ENTRIES
@@ -338,18 +339,18 @@ deleted_entries=`cat $DELETED_ENTRIES`
 
 if [ "$ECHO_DRYRUN" = "echo" ] ; then
     if [ "$deleted_entries" -ne  0 ] ; then
-        if [ "$deleted_entries" -eq  1 ] ; then
-            echo "($deleted_entries) entry would have been deleted"
-        else
-            echo "($deleted_entries) entries would have been deleted"
-        fi
-        echo "Since ( dryrun, -d ) option was used no actions were carried out"
-        Cleanup
-        exit 0
+	if [ "$deleted_entries" -eq  1 ] ; then
+	    echo "($deleted_entries) entry would have been deleted"
+	else
+	    echo "($deleted_entries) entries would have been deleted"
+	fi
     fi
+    echo "Since ( dryrun, -d ) option was used no actions were carried out"
+    Cleanup
+    exit 0
 fi
 
-		# Replace existing map file with new mapfile
+# Replace existing map file with new mapfile
 
 if [ "$deleted_entries" -ne  0 ] || [ "$removed_map_count" -ne  0 ] ; then
     # Verify that no changes to original map file
@@ -357,65 +358,65 @@ if [ "$deleted_entries" -ne  0 ] || [ "$removed_map_count" -ne  0 ] ; then
 
     ${GLOBUS_SH_DIFF-diff} $GRID_MAP_FILE_COPY $GRID_MAP_FILE > $CONSISTENCY_CHECK
     if  [ -s $CONSISTENCY_CHECK ] ; then
-        echo "ERROR: $GRID_MAP_FILE has changed since this program started" >&2
-        echo "No changes will be made." >&2
-        Cleanup
-        exit 1
+	echo "ERROR: $GRID_MAP_FILE has changed since this program started" >&2
+	echo "No changes will be made." >&2
+	Cleanup
+	exit 1
     else
       	# make copy of old map file
-
+	
 	${GLOBUS_SH_CP-cp} $GRID_MAP_FILE_COPY $GRID_MAP_FILE.old
-        if [ $? -ne 0 ] ; then
-            echo "ERROR: Could not create a copy of $GRID_MAP_FILE" >&2
-        fi
-
-	# Restore old permissions on map file
-
-	${GLOBUS_SH_CHMOD-chmod} 644 $GRID_MAP_FILE
-
-	${GLOBUS_SH_MV-mv} $NEW_GRID_MAP_FILE $GRID_MAP_FILE
-
-        if [ $? -ne 0 ] ; then
-            echo "ERROR: Could not create a new $GRID_MAP_FILE" >&2
-            Cleanup
-            exit 1
-        fi
-
-        removed_count=0
-        ignored_count=0
-        for name in $ln ; do
-	  is_present=`echo $removed_map | ${GLOBUS_SH_GREP-grep} "$name"`
-	  if  test -n "$is_present" ; then
-            removed_count=`expr $removed_count + 1`
-	    printable_removed="$printable_removed $name"
-	  else
-	    printable_ignored="$printable_ignored $name"
-            ignored_count=`expr $ignored_count + 1`
-	  fi
-	done
-
-        if  test -n "$printable_removed" ; then
-          printable_removed="`echo $printable_removed | sed -e "s/ /, /g"`"
-          printable_removed=": ($printable_removed)"
-        fi
-        if  test -n "$printable_ignored" ; then
-          printable_ignored="`echo $printable_ignored | sed -e "s/ /, /g"`"
-          printable_ignored=": ($printable_ignored)"
-        fi
-
-        if [ "$removed_count" -ne 0 ] ; then
-  	  if [ "$removed_count" -eq 1 ] ; then
-	    echo "($removed_count) mapping removed$printable_removed, ($ignored_count) not present and ignored$printable_ignored"
-	  else
-	    echo "($removed_count) mappings removed$printable_removed, ($ignored_count) not present and ignored$printable_ignored"
-	  fi
+	if [ $? -ne 0 ] ; then
+	    echo "ERROR: Could not create a copy of $GRID_MAP_FILE" >&2
 	fi
-        
-        if [ "$deleted_entries" -eq  1 ] ; then
-            echo "($deleted_entries) entry deleted"
-        else
-            echo "($deleted_entries) entries deleted"
-        fi
+	
+	# Restore old permissions on map file
+	
+	${GLOBUS_SH_CHMOD-chmod} 644 $GRID_MAP_FILE
+	
+	${GLOBUS_SH_MV-mv} $NEW_GRID_MAP_FILE $GRID_MAP_FILE
+	
+	if [ $? -ne 0 ] ; then
+	    echo "ERROR: Could not create a new $GRID_MAP_FILE" >&2
+	    Cleanup
+	    exit 1
+	fi
+	
+	removed_count=0
+	ignored_count=0
+	for name in $ln ; do
+	    is_present=`echo $removed_map | ${GLOBUS_SH_GREP-grep} "$name"`
+	    if  test -n "$is_present" ; then
+		removed_count=`expr $removed_count + 1`
+		printable_removed="$printable_removed $name"
+	    else
+		printable_ignored="$printable_ignored $name"
+		ignored_count=`expr $ignored_count + 1`
+	    fi
+	done
+	
+	if  test -n "$printable_removed" ; then
+	    printable_removed="`echo $printable_removed | sed -e "s/ /, /g"`"
+	    printable_removed=": ($printable_removed)"
+	fi
+	if  test -n "$printable_ignored" ; then
+	    printable_ignored="`echo $printable_ignored | sed -e "s/ /, /g"`"
+	    printable_ignored=": ($printable_ignored)"
+	fi
+	
+	if [ "$removed_count" -ne 0 ] ; then
+	    if [ "$removed_count" -eq 1 ] ; then
+		echo "($removed_count) mapping removed$printable_removed, ($ignored_count) not present and ignored$printable_ignored"
+	    else
+		echo "($removed_count) mappings removed$printable_removed, ($ignored_count) not present and ignored$printable_ignored"
+	    fi
+	fi
+	
+	if [ "$deleted_entries" -eq  1 ] ; then
+	    echo "($deleted_entries) entry deleted"
+	else
+	    echo "($deleted_entries) entries deleted"
+	fi
     fi
 else
     echo "ERROR: No such entry/mapping exists"
@@ -424,5 +425,4 @@ else
 fi
 
 Cleanup
-
 exit 0
