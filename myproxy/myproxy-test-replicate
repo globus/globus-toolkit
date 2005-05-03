@@ -3,13 +3,7 @@
 # myproxy test script
 # written by Jim Basney <jbasney@ncsa.uiuc.edu>
 
-# Assumes myproxy-server running as root on the local machine if
-# MYPROXY_SERVER not set.
 # Requires a valid proxy credential with lifetime of atleast 3 hours.
-# Assumes myproxy-server.config has:
-#   1. accepted_credentials, authorized_retrievers, and
-#      authorized_renewers matching the proxy credential
-#   2. default_renewers "none"
 #
 # Test cases are:
 #   1. Store a credential on master (myproxy-init).
@@ -38,11 +32,6 @@ use IPC::Open3;
 # handle cmdline options
 #
 $usage = "usage: myproxy-test [-help] [-verbose]\n";
-$startserver = 0;
-$performance = 0;
-$dbperformance = 0;
-$perfiters = 0;
-$perfclients = 0;
 $verbose = 0;
 while (($arg = shift @ARGV)) {
     if ($arg eq "-h" || $arg eq "-help") {
@@ -50,14 +39,6 @@ while (($arg = shift @ARGV)) {
 	exit 1;
     } elsif ($arg eq "-v" || $arg eq "-verbose") {
 	$verbose = 1;
-    } elsif ($arg eq "-startserver") {
-	$startserver = 1;
-    } elsif ($arg eq "-performance") {
-	$performance = 1;
-	$perfiters = shift @ARGV;
-	$perfclients = shift @ARGV;
-    } elsif ($arg eq "-dbperformance") {
-	$dbperformance = 1;
     } else {
 	print STDERR $usage;
 	exit 1;
@@ -109,10 +90,6 @@ die "myproxy-change-pass-phrase not in PATH, stopped"
 #
 # setup environment variables
 #
-if (!defined($ENV{'MYPROXY_SERVER'})) {
-    chomp($hostname = `hostname 2>/dev/null`);
-    $ENV{'MYPROXY_SERVER'} = $hostname;
-}
 if (!defined($ENV{'X509_USER_PROXY'})) {
     $ENV{'X509_USER_PROXY'} = "/tmp/x509up_u$<";
 }
@@ -123,7 +100,7 @@ $ENV{'X509_USER_KEY'} = $ENV{'X509_USER_PROXY'};
 srand(time||$$);
 $passphrase = sprintf "%010.d", int(rand(0x7fffffff));
 
-my $mport   = 60000+$<;
+my $mport   = 49152 + ($< % 16380);
 my $s1port  = $mport + 1;
 my $s2port  = $mport + 2;
 my $s3port  = $mport + 3;
@@ -133,195 +110,139 @@ my $masterdir     = undef;
 my $masterconf    = undef;
 my $masterpidfile = undef;
 
+my $slconf        = undef;
+
 my $sl1pid        = undef;
 my $sl1dir        = undef;
-my $sl1conf       = undef;
 my $sl1pidfile    = undef;
 
 my $sl2pid        = undef;
 my $sl2dir        = undef;
-my $sl2conf       = undef;
 my $sl2pidfile    = undef;
 
 my $sl3pid        = undef;
 my $sl3dir        = undef;
-my $sl3conf       = undef;
 my $sl3pidfile    = undef;
 
 #
-# start server if requested
+# start servers
 #
-start_master();
-start_slave1();
-start_slave2();
-start_slave3();
+$ENV{'MYPROXY_SERVER'} = "localhost";
+$ENV{'MYPROXY_SERVER_DN'} = $cert_subject;
 
-
-sub start_master
-{
-    $ENV{'MYPROXY_SERVER'} = "localhost";
-    $ENV{'MYPROXY_SERVER_PORT'} = $mport;
-    $ENV{'MYPROXY_SERVER_DN'} = $cert_subject;
-
-    chomp($myproxy_server = `which myproxy-server 2>/dev/null`);
-    die "myproxy-server not in PATH, stopped" if (!(-x $myproxy_server));
-    $masterdir = "/tmp/myproxy-test.serverdir.$mport.master.$$";
-    mkdir($masterdir) ||
-	die "failed to create $masterdir, stopped";
-    chmod(0700, $masterdir) ||
-	die "failed to chmod $masterdir, stopped";
-    $masterconf = "/tmp/myproxy-test.serverconf.$mport.master.$$";
-    open(CONF, ">$masterconf") ||
-	 die "failed to open $masterconf, stopped";
-    print CONF "accepted_credentials  \"*\"\n";
-    print CONF "authorized_retrievers \"*\"\n";
-    print CONF "default_retrievers    \"*\"\n";
-    print CONF "authorized_renewers   \"*\"\n";
-    print CONF "default_renewers      \"none\"\n";
-    print CONF "authorized_key_retrievers \"*\"\n";
-    print CONF "default_key_retrievers    \"*\"\n";
-    print CONF "slave_servers localhost:$s1port;localhost:$s2port;localhost:$s3port";
-    close(CONF);
-    $masterpidfile = "/tmp/myproxy-test.serverpid.$mport.master.$$";
-    $servercmd = "$myproxy_server -s $masterdir -c $masterconf";
-    $servercmd .= " -p $ENV{MYPROXY_SERVER_PORT} -P $masterpidfile";
-    &debug("running '$servercmd'");
-    `$servercmd`;
-    sleep(1);			# give server a chance to startup
-    if (open SERVERPIDFILE, $masterpidfile) {
-	$masterpid = <SERVERPIDFILE>;
-	close SERVERPIDFILE;
-    }
-    if (!defined($masterpid) || $masterpid eq "") {
-	print STDERR "failed to start master:\n";
-	`$servercmd -d`;	# show output on terminal
-##	&docleanup();
-	exit 1;
-    }
+chomp($myproxy_server = `which myproxy-server 2>/dev/null`);
+die "myproxy-server not in PATH, stopped" if (!(-x $myproxy_server));
+$masterdir = "/tmp/myproxy-test.serverdir.$mport.master.$$";
+mkdir($masterdir) ||
+    die "failed to create $masterdir, stopped";
+chmod(0700, $masterdir) ||
+    die "failed to chmod $masterdir, stopped";
+$masterconf = "/tmp/myproxy-test.serverconf.$mport.master.$$";
+open(CONF, ">$masterconf") ||
+    die "failed to open $masterconf, stopped";
+print CONF "accepted_credentials  \"*\"\n";
+print CONF "authorized_retrievers \"*\"\n";
+print CONF "default_retrievers    \"*\"\n";
+print CONF "authorized_renewers   \"*\"\n";
+print CONF "default_renewers      \"none\"\n";
+print CONF "authorized_key_retrievers \"*\"\n";
+print CONF "default_key_retrievers    \"*\"\n";
+print CONF "slave_servers localhost:$s1port;localhost:$s2port;localhost:$s3port";
+close(CONF);
+$masterpidfile = "/tmp/myproxy-test.serverpid.$mport.master.$$";
+$servercmd = "$myproxy_server -s $masterdir -c $masterconf";
+$servercmd .= " -p $mport -P $masterpidfile";
+&debug("running '$servercmd'");
+`$servercmd`;
+sleep(1);			# give server a chance to startup
+if (open SERVERPIDFILE, $masterpidfile) {
+    $masterpid = <SERVERPIDFILE>;
+    close SERVERPIDFILE;
+}
+if (!defined($masterpid) || $masterpid eq "") {
+    print STDERR "failed to start master:\n";
+    `$servercmd -d`;	# show output on terminal
+    &docleanup();
+    exit 1;
 }
 
-sub start_slave1
-{
-    $ENV{'MYPROXY_SERVER'} = "localhost";
-    $ENV{'MYPROXY_SERVER_PORT'} = $s1port;
-    $ENV{'MYPROXY_SERVER_DN'} = $cert_subject;
-    chomp($myproxy_server = `which myproxy-server 2>/dev/null`);
-    die "myproxy-server not in PATH, stopped" if (!(-x $myproxy_server));
-    $sl1dir = "/tmp/myproxy-test.serverdir.$s1port.sl1.$$";
-    mkdir($sl1dir) ||
-	die "failed to create $sl1dir, stopped";
-    chmod(0700, $sl1dir) ||
-	die "failed to chmod $sl1dir, stopped";
-    $sl1conf = "/tmp/myproxy-test.serverconf.$s1port.sl1.$$";
-    open(CONF, ">$sl1conf") ||
-	 die "failed to open $sl1conf, stopped";
-    print CONF "accepted_credentials  \"*\"\n";
-    print CONF "authorized_retrievers \"*\"\n";
-    print CONF "default_retrievers    \"*\"\n";
-    print CONF "authorized_renewers   \"*\"\n";
-    print CONF "default_renewers      \"none\"\n";
-    print CONF "authorized_key_retrievers \"*\"\n";
-    print CONF "default_key_retrievers    \"*\"\n";
-    close(CONF);
-    $sl1pidfile = "/tmp/myproxy-test.serverpid.$s1port.sl1.$$";
-    $servercmd = "$myproxy_server -s $sl1dir -c $sl1conf";
-    $servercmd .= " -p $ENV{MYPROXY_SERVER_PORT} -P $sl1pidfile";
-    &debug("running '$servercmd'");
-
-    `$servercmd`;
-    sleep(1);			# give server a chance to startup
-    if (open SERVERPIDFILE, $sl1pidfile) {
-	$sl1pid = <SERVERPIDFILE>;
-	close SERVERPIDFILE;
-    }
-    if (!defined($sl1pid) || $sl1pid eq "") {
-	print STDERR "failed to start slave 1:\n";
-	`$servercmd -d`;	# show output on terminal
-	&docleanup();
-	exit 1;
-    }
+$sl1dir = "/tmp/myproxy-test.serverdir.$s1port.sl1.$$";
+mkdir($sl1dir) ||
+    die "failed to create $sl1dir, stopped";
+chmod(0700, $sl1dir) ||
+    die "failed to chmod $sl1dir, stopped";
+$slconf = "/tmp/myproxy-test.serverconf.$s1port.sl1.$$";
+open(CONF, ">$slconf") ||
+    die "failed to open $slconf, stopped";
+print CONF "accepted_credentials  \"$ENV{MYPROXY_SERVER_DN}\"\n";
+print CONF "authorized_retrievers \"*\"\n";
+print CONF "default_retrievers    \"*\"\n";
+print CONF "authorized_renewers   \"*\"\n";
+print CONF "default_renewers      \"none\"\n";
+print CONF "authorized_key_retrievers \"*\"\n";
+print CONF "default_key_retrievers    \"*\"\n";
+close(CONF);
+$sl1pidfile = "/tmp/myproxy-test.serverpid.$s1port.sl1.$$";
+$servercmd = "$myproxy_server -s $sl1dir -c $slconf";
+$servercmd .= " -p $s1port -P $sl1pidfile";
+&debug("running '$servercmd'");
+`$servercmd`;
+sleep(1);			# give server a chance to startup
+if (open SERVERPIDFILE, $sl1pidfile) {
+    $sl1pid = <SERVERPIDFILE>;
+    close SERVERPIDFILE;
+}
+if (!defined($sl1pid) || $sl1pid eq "") {
+    print STDERR "failed to start slave 1:\n";
+    `$servercmd -d`;	# show output on terminal
+    &docleanup();
+    exit 1;
 }
 
-sub start_slave2
-{
-    $ENV{'MYPROXY_SERVER'} = "localhost";
-    $ENV{'MYPROXY_SERVER_PORT'} = $s2port;
-    $ENV{'MYPROXY_SERVER_DN'} = $cert_subject;
-    chomp($myproxy_server = `which myproxy-server 2>/dev/null`);
-    die "myproxy-server not in PATH, stopped" if (!(-x $myproxy_server));
-    $sl2dir = "/tmp/myproxy-test.serverdir.$s2port.sl1.$$";
-    mkdir($sl2dir) ||
-	die "failed to create $sl2dir, stopped";
-    chmod(0700, $sl2dir) ||
-	die "failed to chmod $sl2dir, stopped";
-    $sl2conf = "/tmp/myproxy-test.serverconf.$s2port.sl1.$$";
-    open(CONF, ">$sl2conf") ||
-	 die "failed to open $sl2conf, stopped";
-    print CONF "accepted_credentials  \"*\"\n";
-    print CONF "authorized_retrievers \"*\"\n";
-    print CONF "default_retrievers    \"*\"\n";
-    print CONF "authorized_renewers   \"*\"\n";
-    print CONF "default_renewers      \"none\"\n";
-    print CONF "authorized_key_retrievers \"*\"\n";
-    print CONF "default_key_retrievers    \"*\"\n";
-    close(CONF);
-    $sl2pidfile = "/tmp/myproxy-test.serverpid.$s2port.sl1.$$";
-    $servercmd = "$myproxy_server -s $sl2dir -c $sl2conf";
-    $servercmd .= " -p $ENV{MYPROXY_SERVER_PORT} -P $sl2pidfile";
-    &debug("running '$servercmd'");
-    `$servercmd`;
-    sleep(1);			# give server a chance to startup
-    if (open SERVERPIDFILE, $sl2pidfile) {
-	$sl2pid = <SERVERPIDFILE>;
-	close SERVERPIDFILE;
-    }
-    if (!defined($sl2pid) || $sl2pid eq "") {
-	print STDERR "failed to start slave 2:\n";
-	`$servercmd -d`;	# show output on terminal
-	&docleanup();
-	exit 1;
-    }
+$sl2dir = "/tmp/myproxy-test.serverdir.$s2port.sl1.$$";
+mkdir($sl2dir) ||
+    die "failed to create $sl2dir, stopped";
+chmod(0700, $sl2dir) ||
+    die "failed to chmod $sl2dir, stopped";
+$sl2pidfile = "/tmp/myproxy-test.serverpid.$s2port.sl1.$$";
+$servercmd = "$myproxy_server -s $sl2dir -c $slconf";
+$servercmd .= " -p $s2port -P $sl2pidfile";
+&debug("running '$servercmd'");
+`$servercmd`;
+sleep(1);			# give server a chance to startup
+if (open SERVERPIDFILE, $sl2pidfile) {
+    $sl2pid = <SERVERPIDFILE>;
+    close SERVERPIDFILE;
+}
+if (!defined($sl2pid) || $sl2pid eq "") {
+    print STDERR "failed to start slave 2:\n";
+    `$servercmd -d`;	# show output on terminal
+    &docleanup();
+    exit 1;
 }
 
-sub start_slave3
-{
-    $ENV{'MYPROXY_SERVER'} = "localhost";
-    $ENV{'MYPROXY_SERVER_PORT'} = $s3port;
-    $ENV{'MYPROXY_SERVER_DN'} = $cert_subject;
-    chomp($myproxy_server = `which myproxy-server 2>/dev/null`);
-    die "myproxy-server not in PATH, stopped" if (!(-x $myproxy_server));
-    $sl3dir = "/tmp/myproxy-test.serverdir.$s3port.sl1.$$";
-    mkdir($sl3dir) ||
-	die "failed to create $sl3dir, stopped";
-    chmod(0700, $sl3dir) ||
-	die "failed to chmod $sl3dir, stopped";
-    $sl3conf = "/tmp/myproxy-test.serverconf.$s3port.sl1.$$";
-    open(CONF, ">$sl3conf") ||
-	 die "failed to open $sl3conf, stopped";
-    print CONF "accepted_credentials  \"*\"\n";
-    print CONF "authorized_retrievers \"*\"\n";
-    print CONF "default_retrievers    \"*\"\n";
-    print CONF "authorized_renewers   \"*\"\n";
-    print CONF "default_renewers      \"none\"\n";
-    print CONF "authorized_key_retrievers \"*\"\n";
-    print CONF "default_key_retrievers    \"*\"\n";
-    close(CONF);
-    $sl3pidfile = "/tmp/myproxy-test.serverpid.$s3port.sl1.$$";
-    $servercmd = "$myproxy_server -s $sl3dir -c $sl3conf";
-    $servercmd .= " -p $ENV{MYPROXY_SERVER_PORT} -P $sl3pidfile";
-    &debug("running '$servercmd'");
-    `$servercmd`;
-    sleep(1);			# give server a chance to startup
-    if (open SERVERPIDFILE, $sl3pidfile) {
-	$sl3pid = <SERVERPIDFILE>;
-	close SERVERPIDFILE;
-    }
-    if (!defined($sl3pid) || $sl3pid eq "") {
-	print STDERR "failed to start slave 3:\n";
-	`$servercmd -d`;	# show output on terminal
-	&docleanup();
-	exit 1;
-    }
+chomp($myproxy_server = `which myproxy-server 2>/dev/null`);
+die "myproxy-server not in PATH, stopped" if (!(-x $myproxy_server));
+$sl3dir = "/tmp/myproxy-test.serverdir.$s3port.sl1.$$";
+mkdir($sl3dir) ||
+    die "failed to create $sl3dir, stopped";
+chmod(0700, $sl3dir) ||
+    die "failed to chmod $sl3dir, stopped";
+$sl3pidfile = "/tmp/myproxy-test.serverpid.$s3port.sl1.$$";
+$servercmd = "$myproxy_server -s $sl3dir -c $slconf";
+$servercmd .= " -p $s3port -P $sl3pidfile";
+&debug("running '$servercmd'");
+`$servercmd`;
+sleep(1);			# give server a chance to startup
+if (open SERVERPIDFILE, $sl3pidfile) {
+    $sl3pid = <SERVERPIDFILE>;
+    close SERVERPIDFILE;
+}
+if (!defined($sl3pid) || $sl3pid eq "") {
+    print STDERR "failed to start slave 3:\n";
+    `$servercmd -d`;	# show output on terminal
+    &docleanup();
+    exit 1;
 }
 
 #
@@ -939,9 +860,7 @@ sub docleanup {
 
     # Remove configuration files...
     unlink($masterconf) if (defined($masterconf));
-    unlink($sl1conf) if (defined($sl1conf));
-    unlink($sl2conf) if (defined($sl2conf));
-    unlink($sl3conf) if (defined($sl3conf));
+    unlink($slconf) if (defined($slconf));
 
     # Get rid of left over creds and dirs...
     `rm -rf $masterdir` if (defined($masterdir));
