@@ -21,6 +21,11 @@ if [ -n "${LD_LIBRARY_PATH}" ]; then
 fi
 LD_LIBRARY_PATH="${GLOBUS_LOCATION}/lib${DELIM}${LD_LIBRARY_PATH}"
 
+DELIM=
+if [ -n "${DYLD_LIBRARY_PATH}" ]; then
+    DELIM=:
+fi
+DYLD_LIBRARY_PATH="${GLOBUS_LOCATION}/lib${DELIM}${DYLD_LIBRARY_PATH}"
 
 if [ -z "${LIBPATH}" ]; then
     LIBPATH="/usr/lib:/lib"
@@ -39,7 +44,7 @@ if [ -n "${SASL_PATH}" ]; then
 fi
 SASL_PATH="${GLOBUS_LOCATION}/lib/sasl${DELIM}${SASL_PATH}"
 
-export LD_LIBRARY_PATH LIBPATH SHLIB_PATH SASL_PATH
+export LD_LIBRARY_PATH DYLD_LIBRARY_PATH LIBPATH SHLIB_PATH SASL_PATH
 
 if [ -n "${LD_LIBRARYN32_PATH}" ]; then
     DELIM=""
