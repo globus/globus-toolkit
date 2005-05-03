@@ -48,6 +48,8 @@ LibSources= \
 
 Scripts= \
 	myproxy-test \
+	myproxy-replicate \
+	myproxy-test-replicate \
 	myproxy-admin-adduser
 
 sbin_SCRIPTS = $(Scripts)
