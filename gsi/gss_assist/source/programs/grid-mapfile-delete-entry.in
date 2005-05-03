@@ -97,7 +97,7 @@ removeLNs ()
 
     for name in $ln ; do
 	modif_line=$aux_line
-	aux_line=`echo $aux_line | ${GLOBUS_SH_SED-sed} -e "s/,$name//" -e "s/$name,//" -e "s/^$name$//"`
+	aux_line=`echo $aux_line | ${GLOBUS_SH_SED-sed} -e "s/,$name,/,/" -e "s/,$name$//" -e "s/^$name,//" -e "s/^$name$//"`
 	if test ! "$modif_line" = "$aux_line" ; then
 	    removed_map="$removed_map $name"
 	    removed_map_count=`expr $removed_map_count + 1`
