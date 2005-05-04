@@ -55,6 +55,7 @@ BUNDLE gt4-c-ws-core-test
         globus_utp
         globus_c_wsrf_core_performance_test
         globus_c_wsrf_providers_test_service_bindings
+        globus_c_wsrf_providers_notification_test_service_bindings
         globus_c_wsrf_providers_test_wsdl
         globus_c_wsrf_sample_counter_client_test
         globus_c_wsrf_provider_test
@@ -73,6 +74,7 @@ BUNDLE gt4-c-deps-cgen
         globus_c_delegation_client_bindings
         globus_c_wsrf_core_test_interop_bindings
         globus_c_wsrf_providers_test_service_bindings
+        globus_c_wsrf_providers_notification_test_service_bindings
 
 BUNDLE gt4-mds
         globus_wsrf_mds_aggregator
