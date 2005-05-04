@@ -273,7 +273,7 @@ GSS_CALLCONV gss_init_sec_context(
                         minor_status,
                         GLOBUS_GSI_GSSAPI_ERROR_AUTHZ_DENIED,
                         (_GGSL("The name of the remote host (%s), and the expected "
-                               "name for the remote host (%s) do not match. This happens when the name in the host certificate does not match the information obtained from DNS and is often a DNS configuration problem (check your /etc/host file)"),
+                               "name for the remote host (%s) do not match. This happens when the name in the host certificate does not match the information obtained from DNS and is often a DNS configuration problem."),
                          actual_name, expected_name));
                     free(actual_name);
                     free(expected_name);                    
