@@ -2391,4 +2391,56 @@ int globus_i_gsi_gss_verify_extensions_callback(
 }
 /* @} */
 
+unsigned char *
+globus_i_gsi_gssapi_get_hostname(
+    const gss_name_desc *               name)
+{
+    int                                 common_name_NID;
+    int                                 index;
+    unsigned int                        length;
+    unsigned char *                     data;
+    unsigned char *                     result = NULL;
+    X509_NAME_ENTRY *                   name_entry = NULL;
+
+    common_name_NID = OBJ_txt2nid("CN");
+    for (index = 0; index < X509_NAME_entry_count(name->x509n); index++)
+    {
+        name_entry = X509_NAME_get_entry(name->x509n, index);
+        if (OBJ_obj2nid(name_entry->object) == common_name_NID)
+        {
+            length = name_entry->value->length;
+            data = name_entry->value->data;
+            if ( length > 5 && !strncasecmp(data, (unsigned char*)"host/", 5))
+            {
+                length -= 5;
+                data += 5;
+            }
+            else if ( length > 4 && 
+                      !strncasecmp(data, (unsigned char*)"ftp/", 4))
+            {
+                length -= 4;
+                data += 4;
+            }
+            break;
+        }
+        name_entry = NULL;
+    }
+
+    if(name_entry)
+    { 
+        result = malloc(length + 1);
+        
+        if(result == NULL)
+        {
+            return result;
+        }
+        
+        memcpy(result, data, length);
+        result[length] = '\0';
+    }
+    
+    return result;
+}
+
+
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
