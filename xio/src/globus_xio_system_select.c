@@ -1176,7 +1176,7 @@ globus_l_xio_system_try_readv(
 
     do
     {
-        rc = readv(fd, iov, iovc);
+        rc = readv(fd, iov, (iovc > IOV_MAX) ? IOV_MAX : iovc);
     } while(rc < 0 && errno == EINTR);
 
     if(rc < 0)
@@ -1466,7 +1466,7 @@ globus_l_xio_system_try_writev(
 
     do
     {
-        rc = writev(fd, iov, iovc);
+        rc = writev(fd, iov, (iovc > IOV_MAX) ? IOV_MAX : iovc);
     } while(rc < 0 && errno == EINTR);
 
     if(rc < 0)
