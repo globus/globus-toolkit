@@ -61,7 +61,6 @@ GSS_CALLCONV gss_inquire_context(
     OM_uint32                           local_minor_status;
     gss_name_t *			local_name;
     gss_name_t *			peer_name;
-    globus_result_t                     local_result;
     gss_ctx_id_desc *                   context = 
         (gss_ctx_id_desc *)context_handle_P;
     static char *                       _function_name_ =

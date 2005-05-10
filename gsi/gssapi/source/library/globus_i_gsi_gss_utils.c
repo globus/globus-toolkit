@@ -370,7 +370,26 @@ globus_i_gsi_gss_create_and_fill_context(
         goto free_cert_dir;
     }
 
-    SSL_set_ssl_method(context->gss_ssl, SSLv3_method());
+    if (globus_i_gsi_gssapi_force_tls)
+    {
+	/* GLOBUS_GSSAPI_FORCE_TLS defined in environment. */
+        GLOBUS_I_GSI_GSSAPI_DEBUG_PRINT(
+            2, "Forcing TLS.\n");
+	SSL_set_ssl_method(context->gss_ssl, TLSv1_method());
+    }
+    else if (cred_usage == GSS_C_INITIATE)
+    {
+	/* For backward compatibility.  Older GSI GSSAPI accepters
+	   will fail if we try to negotiate TLSv1, so stick with SSLv3
+	   when initiating to be safe. */
+	SSL_set_ssl_method(context->gss_ssl, SSLv3_method());
+    }
+    else
+    {
+	/* Accept both SSLv3 and TLSv1. */
+	SSL_set_ssl_method(context->gss_ssl, SSLv23_method());
+    }
+    /* Never use SSLv2. */
     SSL_set_options(context->gss_ssl, 
                     SSL_OP_NO_SSLv2 |
                     SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS);
@@ -932,6 +951,9 @@ globus_i_gsi_gss_handshake(
                 char                    cipher_description[256];
                 GLOBUS_I_GSI_GSSAPI_DEBUG_PRINT(
                     2, "SSL handshake finished\n");
+                GLOBUS_I_GSI_GSSAPI_DEBUG_FNPRINTF(
+                    2, (20, "Using %s.\n",
+			SSL_get_version(context_handle->gss_ssl)));
                 GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
                     2, (globus_i_gsi_gssapi_debug_fstream,
                         "cred_usage=%d\n",

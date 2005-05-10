@@ -202,6 +202,7 @@ extern FILE *                           globus_i_gsi_gssapi_debug_fstream;
                     "%s exiting\n", \
                     _function_name_))
 
+extern int                              globus_i_gsi_gssapi_force_tls;
 
 typedef enum
 {
