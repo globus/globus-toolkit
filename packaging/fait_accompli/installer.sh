@@ -1,6 +1,6 @@
 #!/bin/sh
 
-VERSION=4.0.0rc4
+VERSION=4.0.1
 INSTALLER=gt$VERSION-all-source-installer
 AUTOTOOLS=source-trees/autotools/autotools/autoconf-2.59/config
 GPT=gpt-3.2autotools2004-src.tar.gz
