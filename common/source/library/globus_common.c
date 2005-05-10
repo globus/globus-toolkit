@@ -83,7 +83,7 @@ globus_l_common_activate(void)
 	WORD wVersionRequested;
 	WSADATA wsaData;
 
-	// initialize Winsock for the database functions in globus_libc.c
+	/* initialize Winsock for the database functions in globus_libc.c */
 	wVersionRequested = MAKEWORD( 2, 0 ); /* version 2.0 */	 
 	rc= WSAStartup( wVersionRequested, &wsaData );
 	if ( rc != 0 ) /* error- Winsock not available */
@@ -160,7 +160,7 @@ globus_l_common_deactivate(void)
     globus_module_deactivate(GLOBUS_ERROR_MODULE);
     
 #ifdef TARGET_ARCH_WIN32
-	// shutdown Winsock
+	/* shutdown Winsock */
 	WSACleanup();
 #endif
 
