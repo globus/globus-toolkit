@@ -23,6 +23,10 @@
 # ----------
 
 ModuleType          library
+SourceLocation      \i18n\source
+Win32Location       \i18n\source\win32
+
+ModuleType          library
 SourceLocation      \common\source\library
 Win32Location       \common\source\win32
 
