@@ -13,8 +13,16 @@
 #include "globus_i18n.h"
 #include "globus_error_string.h"
 #include "globus_extension.h"
+#ifdef WIN32
+#include "globus_libtool_windows.h"
+#else
 #include "ltdl.h"
+#endif
 #include "version.h"
+/* For _getcwd() */
+#ifdef WIN32
+#include <direct.h>
+#endif
 
 static globus_thread_key_t              globus_l_libtool_key;
 static globus_rmutex_t                  globus_l_libtool_mutex;
@@ -92,7 +100,11 @@ char * globus_get_string_by_key( char * locale,
     if (myResources==NULL)
     {
         
+        #ifdef WIN32
+        currdir = _getcwd(NULL, 0);
+        #else
         currdir = getcwd(NULL, 0);
+        #endif
         resource_path = globus_common_create_string(
 	            "%s/share/i18n/%s", 
 		    globus_libc_getenv("GLOBUS_LOCATION"), 
@@ -117,6 +129,23 @@ char * globus_get_string_by_key( char * locale,
                 myResources);
     }
 
+/******************************************************************************
+		  		i18n 
+******************************************************************************/
+
+extern globus_extension_registry_t i18n_registry;
+#define I18N_REGISTRY &i18n_registry
+
+char *
+globus_common_i18n_get_string_by_key(
+    const char *                        locale,
+    const char *                        resource_name,
+    const char *                        key);
+
+char *
+globus_common_i18n_get_string(
+    globus_module_descriptor_t *        module,
+    const char *                        key);
 
     /*convert non-invariant characters to "_" for key*/
     it=buf; 
