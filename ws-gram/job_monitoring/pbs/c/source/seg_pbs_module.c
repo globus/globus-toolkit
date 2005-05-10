@@ -9,11 +9,9 @@
  * modifications, you must include this notice in the file.
  */
 
-/* strptime! */
-#define _XOPEN_SOURCE 1
-
 #include "globus_common.h"
 #include "globus_scheduler_event_generator.h"
+#include "globus_strptime.h"
 #include "version.h"
 
 #include <string.h>
@@ -822,7 +820,7 @@ globus_l_pbs_parse_events(
             goto free_fields;
         }
 
-        rp = strptime(fields[0], 
+        rp = globus_strptime(fields[0], 
                 "%m/%d/%Y %H:%M:%S",
                 &tm);
         if (rp == NULL || (*rp) != '\0')
