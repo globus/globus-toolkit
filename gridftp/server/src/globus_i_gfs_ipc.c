@@ -4816,6 +4816,7 @@ globus_l_gfs_ipc_no_read_write_cb(
         {
             case GLOBUS_GFS_OP_DESTROY:
             case GLOBUS_GFS_OP_EVENT:
+            case GLOBUS_GFS_OP_BUFFER_SEND:
                 globus_free(request);
                 break;
             default:
@@ -4904,6 +4905,7 @@ globus_gfs_ipc_request_buffer_send(
     globus_byte_t *                     buffer = NULL;
     globus_byte_t *                     ptr;
     globus_size_t                       msg_size;
+    globus_gfs_ipc_request_t *          request = NULL;
     GlobusGFSName(globus_gfs_ipc_request_buffer_send);
     GlobusGFSDebugEnter();
 
@@ -4916,6 +4918,18 @@ globus_gfs_ipc_request_buffer_send(
             res = GlobusGFSErrorParameter("ipc");
             goto err;
         }
+        
+        request = (globus_gfs_ipc_request_t *) 
+            globus_calloc(1, sizeof(globus_gfs_ipc_request_t));
+        if(request == NULL)
+        {
+            res = GlobusGFSErrorIPC();
+            goto err;
+        }
+    
+        request->ipc = ipc;
+        request->type = GLOBUS_GFS_OP_BUFFER_SEND;
+        request->id = -1;
 
         if(!ipc->local)
         {
@@ -4924,20 +4938,33 @@ globus_gfs_ipc_request_buffer_send(
             GFSEncodeChar(
                 buffer, ipc->buffer_size, ptr, GLOBUS_GFS_OP_BUFFER_SEND);
             GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, -1);
+            GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, -1);
             /* body */
             GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, buffer_type);
             GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, buffer_len);
+            if((ptr - buffer + buffer_len) >= ipc->buffer_size)
+            {
+                globus_size_t           ndx;                
+                ndx = ptr - buffer;
+                ipc->buffer_size += buffer_len;
+                buffer = globus_libc_realloc(buffer, ipc->buffer_size);
+                ptr = buffer + ndx;
+            }
             memcpy(ptr, user_buffer, buffer_len);            
             
             msg_size = ptr - buffer + buffer_len;
+            /* now that we know size, add it in */
+            ptr = buffer + GFS_IPC_HEADER_SIZE_OFFSET;
+            GFSEncodeUInt32(buffer, ipc->buffer_size, ptr, msg_size);
+
             res = globus_xio_register_write(
                 ipc->xio_handle,
                 buffer,
                 msg_size,
                 msg_size,
                 NULL,
-                globus_l_gfs_ipc_write_cb,
-                ipc);
+                globus_l_gfs_ipc_no_read_write_cb,
+                request);
             if(res != GLOBUS_SUCCESS)
             {
                 goto err;
@@ -4960,6 +4987,10 @@ globus_gfs_ipc_request_buffer_send(
     if(buffer != NULL)
     {
         globus_free(buffer);
+    }
+    if(request != NULL)
+    {
+        globus_free(request);
     }
 
     GlobusGFSDebugExitWithError();

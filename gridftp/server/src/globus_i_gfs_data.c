@@ -1056,6 +1056,7 @@ globus_l_gfs_data_authorize(
         }
 
         /* since this is anonymous change the user name */
+        op->session_handle->real_username = globus_libc_strdup(pwent->pw_name);
         if(pwent->pw_name != NULL)
         {
             globus_free(pwent->pw_name);
@@ -1165,8 +1166,10 @@ globus_l_gfs_data_authorize(
     {
         op->session_handle->home_dir = strdup(pwent->pw_dir);
     }
-
-    op->session_handle->real_username = globus_libc_strdup(pwent->pw_name);
+    if (op->session_handle->real_username == NULL)
+    {
+        op->session_handle->real_username = globus_libc_strdup(pwent->pw_name);
+    }
     
     rc = globus_i_gfs_acl_init(
         &op->session_handle->acl_handle,
@@ -2866,7 +2869,8 @@ globus_i_gfs_data_request_recv(
             op, GlobusGFSErrorGeneric("bad module"));
         goto error_module;
     }
-
+    if(op->dsi->stat_func != NULL)
+    {
     stat_info = (globus_gfs_stat_info_t *)
         globus_calloc(1, sizeof(globus_gfs_stat_info_t));
 
@@ -2884,7 +2888,12 @@ globus_i_gfs_data_request_recv(
         stat_info,
         globus_l_gfs_data_auth_stat_cb,
         op);
-
+    }
+    else
+    {
+        result = GLOBUS_SUCCESS;
+        globus_l_gfs_authorize_cb(recv_info->pathname, op, result);
+    }
     GlobusGFSDebugExit();
     return;
 
