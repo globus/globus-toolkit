@@ -1635,7 +1635,7 @@ my $i;
     # Build Full Paths To Source And Win32 Directories
     $FullSourcePath = $GlobusLocation . $SourceLocation;
     $FullWin32Path = $GlobusLocation . $Win32Location;
-    
+
     # Change The Working Directory To The Source Path
     if(!chdir $FullSourcePath) {
         print "Can't Change Directory To ", $FullSourcePath, "\n";
@@ -1647,6 +1647,12 @@ my $i;
         print "Can't Open Makefile.am\n\n";
         exit();
         }
+
+    # Initialize Variables
+    @ProgramSources         = {};
+    $ProgramSourceCount     = 0;
+    @ProgramDependencies    = {};
+    $ProgramDependencyCount = 0;
         
     #
     # Parse Winmake.am 
