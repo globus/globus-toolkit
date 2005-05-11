@@ -129,23 +129,6 @@ char * globus_get_string_by_key( char * locale,
                 myResources);
     }
 
-/******************************************************************************
-		  		i18n 
-******************************************************************************/
-
-extern globus_extension_registry_t i18n_registry;
-#define I18N_REGISTRY &i18n_registry
-
-char *
-globus_common_i18n_get_string_by_key(
-    const char *                        locale,
-    const char *                        resource_name,
-    const char *                        key);
-
-char *
-globus_common_i18n_get_string(
-    globus_module_descriptor_t *        module,
-    const char *                        key);
 
     /*convert non-invariant characters to "_" for key*/
     it=buf; 
