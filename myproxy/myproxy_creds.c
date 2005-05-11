@@ -1189,7 +1189,8 @@ myproxy_creds_delete(const struct myproxy_creds *creds)
 
     if (unlink(data_path) == -1) {
         verror_put_errno(errno);
-        verror_put_string("deleting credentials data file %s", data_path);
+        verror_put_string("deleting credentials data file %s: %s", data_path,
+                          verror_strerror());
         goto error;
     }
 
@@ -1318,7 +1319,8 @@ myproxy_creds_change_passphrase(const struct myproxy_creds *creds,
     /* Remove and rewrite with modified password.  Crude but works */ 
     if (unlink(data_path) == -1) {
         verror_put_errno(errno);
-        verror_put_string("deleting credentials data file %s", data_path);
+        verror_put_string("deleting credentials data file %s: %s", data_path,
+                          verror_strerror());
         goto error;
     }
     if (ssl_proxy_file_destroy(creds_path) == SSL_ERROR) {

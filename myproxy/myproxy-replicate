@@ -1,10 +1,11 @@
 #!/usr/bin/perl
 use strict;
 use Getopt::Long;
-use File::Find;
+##use File::Find;
+use Fcntl ':flock'; # import LOCK_* constants
 use File::stat;
-use Cwd;
-use Config;
+##use Cwd;
+##use Config;
 use Data::Dumper;
 use Time::Local;
 use IPC::Open3;
@@ -14,6 +15,7 @@ my $MYPROXY_DEFAULT_PORT     = "7512";
 my $MYPROXY_DEFAULT_LOCATION = "/var/myproxy";
 my $MYPROXY_REPLICATE_FILE   = "\.myproxy_replicate";
 my $MYPROXY_DELETED_FILE     = "\.myproxy_deleted";
+my $MYPROXY_PID_FILE         = "\.myproxy_pid";
 my $SECONDS_PER_HOUR         = (60 * 60);
 
 #
@@ -85,6 +87,20 @@ if( !defined($repository) )
 }
 
 ##
+## Check to see if myproxy-store is found and executable
+##
+my $myproxy_store;
+chomp($myproxy_store = `which myproxy-store 2>/dev/null`);
+die "myproxy-store not in PATH, stopped" if (!(-x $myproxy_store));
+
+##
+## Check to see if myproxy-destroy is found and executable
+##
+my $myproxy_destroy;
+chomp($myproxy_destroy = `which myproxy-destroy 2>/dev/null`);
+die "myproxy-destroy not in PATH, stopped" if (!(-x $myproxy_destroy));
+
+##
 ## Check for a server configuration file.  If one is not given, check the
 ## default locations.
 ##
@@ -109,28 +125,13 @@ if( !defined($config) )
 
 print "Using server config file: $config\n" if( $dbglvl > 0 );
 
-
-
-# Get the time of the last replicate
 my $lst_rep_time;
 
-my $rep_file = "$repository/$MYPROXY_REPLICATE_FILE";
-
-if( -e $rep_file )
-{
-  $lst_rep_time = get_last_replicate_time( $rep_file );
-}
-else
-{
-##  $lst_rep_time = timelocal(localtime);
-  $lst_rep_time = 0;
-}
-
-my $new_rep_time = timelocal(localtime);
+my $new_rep_time = undef;
 my @file_list;
 
-main();
-exit(0);
+my $retval = main();
+exit( $retval );
 
 
 ###########################################################################
@@ -139,6 +140,31 @@ exit(0);
 
 sub main
 {
+
+  ##
+  ## Make sure no other instance of myproxy-replicate can run until
+  ## current one finishes.
+  ##
+  open PID, ">$repository/$MYPROXY_PID_FILE";
+  flock( PID, LOCK_EX );
+  print PID "$$\n";
+
+  my $rep_file = "$repository/$MYPROXY_REPLICATE_FILE";
+
+  ##
+  ## Get the timestamp of the last replication.
+  ##
+  if( -e $rep_file )
+  {
+    $lst_rep_time = get_last_replicate_time( $rep_file );
+  }
+  else
+  {
+    $lst_rep_time = 0;
+  }
+
+  $new_rep_time = timelocal(localtime);
+
   ##
   ## Retrieve all of the slave MyProxy servers from config file.
   ##
@@ -170,13 +196,21 @@ sub main
   ##
   if( !$ret )
   {
-    finish_up( $repository );
     print "Replication complete: ", localtime() . "\n";
+    finish_up( $repository );
   }
   else
   {
     print STDERR "Replication Failed\n";
   }
+
+
+##sleep( 50 );
+  flock( PID, LOCK_UN );
+  close PID;
+  unlink( "$repository/$MYPROXY_PID_FILE" );
+
+  return( $ret );
 }
 
 
@@ -308,19 +342,24 @@ sub replicate_files
     $data =~ s/creds/data/;
 
     my $options = parse_datafile( $rep, $data );
+
+    print "File not found: $rep/$data\n  File $rep/$f not replicated.\n\n" 
+        if( !defined($options) );
+    next if( !defined($options) );
+
     $options .= "-c $rep/$f -y $rep/$f ";
 
     for my $s (@{$slaves})
     {
-      print "OPTIONS:\n$options $s\n\n" if( $dbglvl > 2 );
-      my $myproxy_store;
-
-      chomp($myproxy_store = `which myproxy-store 2>/dev/null`);
-      die "myproxy-store not in PATH, stopped" if (!(-x $myproxy_store));
+      print "OPTIONS: $myproxy_store\n$options $s\n\n" if( $dbglvl > 2 );
 
       ($exitstatus, $output) = runcmd( "$myproxy_store $options $s" );
 
-      $ret = 1 if( $exitstatus != 0 );
+      if( $exitstatus != 0 )
+      {
+        $ret = 1;
+      }
+
       print STDERR "STATUS: $exitstatus\n $output\n" if( $dbglvl > 0 );
     }
     $options = undef;
@@ -342,7 +381,7 @@ sub parse_datafile
 
   my $options = undef;
 
-  open( FN, "$rep/$fname" ) or die print "Missing Data file: $fname\n";
+  open( FN, "$rep/$fname" ) or return undef;
 
   for my $value (<FN>)
   {
@@ -468,15 +507,42 @@ sub delete_files
 
     for my $s (@{$slaves})
     {
-      print "OPTIONS:\n$options $s -v\n\n" if( $dbglvl > 2 );
-      my $myproxy_destroy;
-
-      chomp($myproxy_destroy = `which myproxy-destroy 2>/dev/null`);
-      die "myproxy-destroy not in PATH, stopped" if (!(-x $myproxy_destroy));
+      print "OPTIONS: myproxy_destroy\n$options $s -v\n\n" if( $dbglvl > 2 );
 
       ($exitstatus, $output) = runcmd( "$myproxy_destroy $options $s -v" );
 
-      $ret = 1 if( $exitstatus != 0 );
+      if( ($exitstatus != 0) && !($output =~ /No such file or directory/) )
+      {
+print "Bad delete\n";
+        $ret = 1;
+        # For now do nothing about this.  myproxy-server neeeds to be modified
+        # to return more error information.  There is no way to tell why this
+        # failed.
+        #
+        # There are several problems with the current retry scheme.  If we do
+        # not update the date and directory snap shot.  The next time around
+        # we are going to have problems.  Resending myproxy-destroy commands
+        # to servers where the cred has already been destroied returns an
+        # error message.  This will just cause an infinate cycle of failures.
+        #
+        # If we log the deletes and then rerun them we can run into problems
+        # with missing creds.  If we have a case where a cred is stored but
+        # the store fails and then before the next replicate, the user 
+        # destories that cred we will have a problem with the destory.  The
+        # server will have no idea what we are trying to destroy and return
+        # an error.  Again, we end up in an infinate cycle of destories.
+        #
+        # If we log both the stores and destories we still have problems.  Is
+        # we do a store and it fails and we log it, then the user destories
+        # the cred before the next replicate.  We try and do a store on a 
+        # cred that is not there.  This causes an error.  Then the destory
+        # runs and we end up with another error.  Now we have two infinate
+        # cycles going.
+        #
+        # We need a better solution!  I still like the idea of just taring
+        # the directory and coping it over to each slave.
+        #
+      }
       print STDERR "STATUS: $exitstatus\n $output\n" if( $dbglvl > 0 );
     }
     $options = undef;
@@ -508,6 +574,30 @@ sub runcmd
   my $output = join('', @output);
 
   return ($exitstatus, $output);
+}
+
+sub write_timestamp
+{
+  my $rep = shift;
+
+  open FD, ">$rep/$MYPROXY_REPLICATE_FILE";
+  print FD $new_rep_time;
+  close FD;
+}
+
+sub write_delete_file
+{
+  my $rep = shift;
+
+  open FD, ">$rep/$MYPROXY_DELETED_FILE" or die
+      print "ERROR: $rep/$MYPROXY_DELETED_FILE could not be opened!\n";
+
+  for (@file_list)
+  {
+    print FD "$_\n";
+  }
+
+  close FD;
 }
 
 ##
