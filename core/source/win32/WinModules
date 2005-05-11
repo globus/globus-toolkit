@@ -90,41 +90,41 @@ ModuleType          library
 SourceLocation      \gsi\gridmap_callout\source
 Win32Location       \gsi\gridmap_callout\source\win32
 
-ModuleType          library
-SourceLocation      \io\source\library
-Win32Location       \io\source\win32
+    ModuleType          library
+    SourceLocation      \io\source\library
+    Win32Location       \io\source\win32
 
-ModuleType          library
-SourceLocation      \gridftp\control\source
-Win32Location       \gridftp\control\source\win32
+    ModuleType          library
+    SourceLocation      \gridftp\control\source
+    Win32Location       \gridftp\control\source\win32
 
-ModuleType          library
-SourceLocation      \gridftp\client\source
-Win32Location       \gridftp\client\source\win32
+    ModuleType          library
+    SourceLocation      \gridftp\client\source
+    Win32Location       \gridftp\client\source\win32
 
-ModuleType          library
-SourceLocation      \gass\transfer\source\library
-Win32Location       \gass\transfer\source\win32
+    ModuleType          library
+    SourceLocation      \gass\transfer\source\library
+    Win32Location       \gass\transfer\source\win32
 
-ModuleType          library
-SourceLocation      \gass\copy\source
-Win32Location       \gass\copy\source\win32
+    ModuleType          library
+    SourceLocation      \gass\copy\source
+    Win32Location       \gass\copy\source\win32
 
-ModuleType          library
-SourceLocation      \gass\server_ez\source
-Win32Location       \gass\server_ez\source\win32
+    ModuleType          library
+    SourceLocation      \gass\server_ez\source
+    Win32Location       \gass\server_ez\source\win32
 
-ModuleType          library
-SourceLocation      \gass\cache\source
-Win32Location       \gass\cache\source\win32
+    ModuleType          library
+    SourceLocation      \gass\cache\source
+    Win32Location       \gass\cache\source\win32
 
-ModuleType          library
-SourceLocation      \gram\protocol\source
-Win32Location       \gram\protocol\source\win32
+    ModuleType          library
+    SourceLocation      \gram\protocol\source
+    Win32Location       \gram\protocol\source\win32
 
-ModuleType          library
-SourceLocation      \gram\client\source
-Win32Location       \gram\client\source\win32
+    ModuleType          library
+    SourceLocation      \gram\client\source
+    Win32Location       \gram\client\source\win32
 
 
 # ------------------------------------------
@@ -152,14 +152,14 @@ ModuleType          executable
 SourceLocation      \gsi\openssl_error\test
 Win32Location       \gsi\openssl_error\test\win32
 
-# Some Of These Fail Due To Missing sleep() Function - To Be Fixed
-ModuleType          executable
-SourceLocation      \gram\client\test
-Win32Location       \gram\client\test\win32
+    # Some Of These Fail Due To Missing sleep() Function - To Be Fixed
+    ModuleType          executable
+    SourceLocation      \gram\client\test
+    Win32Location       \gram\client\test\win32
 
-ModuleType          executable
-SourceLocation      \gram\protocol\test
-Win32Location       \gram\protocol\test\win32
+    ModuleType          executable
+    SourceLocation      \gram\protocol\test
+    Win32Location       \gram\protocol\test\win32
 
     # These Tests Depend On A Local Library Using Macros That Won't Work Presently
     ModuleType          executable
@@ -193,6 +193,6 @@ Win32Location       \gsi\proxy\proxy_utils\source\programs\win32
     SourceLocation      \io\test
     Win32Location       \io\test\win32
 
-ModuleType          executable
-SourceLocation      \gass\copy\source
-Win32Location       \gass\copy\source\win32
+    ModuleType          executable
+    SourceLocation      \gass\copy\source
+    Win32Location       \gass\copy\source\win32
