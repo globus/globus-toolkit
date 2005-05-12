@@ -33,6 +33,8 @@
 #include <sys/times.h>
 #else
 #include <direct.h>
+#include <accctrl.h>
+#include <aclapi.h>
 #endif
 #include "version.h"
 
@@ -177,6 +179,8 @@ const char *default_gaa_file(void);
 #define X509_HASH_LENGTH                8
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+
+static globus_result_t globus_l_gsi_sysconfig_check_owner_win32(char * filename);
 
 #define GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR \
     globus_error_put(globus_error_wrap_errno_error( \
@@ -899,6 +903,99 @@ globus_gsi_sysconfig_dir_exists_win32(
 /* @} */
 
 
+static globus_result_t globus_l_gsi_sysconfig_check_owner_win32(char * filename)
+{
+	globus_result_t                    result = GLOBUS_SUCCESS;
+
+	HANDLE hAccessToken = NULL;
+	UCHAR InfoBuffer[1024];
+	DWORD infoBufferSize;
+	PTOKEN_USER pTokenUser = (PTOKEN_USER)InfoBuffer;
+	PSID current_user_sid, file_owner_sid; 
+	PSECURITY_DESCRIPTOR pSD;
+	DWORD err;
+
+    static char *                       _function_name_ =
+        "globus_gsi_sysconfig_check_owner_win32";
+
+	if (! OpenProcessToken(GetCurrentProcess(), TOKEN_READ,
+			   	&hAccessToken) ) {
+		/* Needs better error */
+		err = GetLastError();
+		result = globus_i_gsi_sysconfig_error_result(
+			GLOBUS_GSI_SYSCONFIG_ERROR_FILE_NOT_OWNED,
+			__FILE__,
+			_function_name_,
+			__LINE__,
+			globus_common_create_string("%s is not owned by current user", filename),
+			NULL);
+	  hAccessToken = NULL;
+	  goto done;
+	}
+
+	if (! GetTokenInformation(hAccessToken,TokenUser,InfoBuffer,
+		1024, &infoBufferSize) )
+	{
+		err = GetLastError();
+		/* Needs better error */
+		result = globus_i_gsi_sysconfig_error_result(
+			GLOBUS_GSI_SYSCONFIG_ERROR_FILE_NOT_OWNED,
+			__FILE__,
+			_function_name_,
+			__LINE__,
+			globus_common_create_string("%s is not owned by current user", filename),
+			NULL);
+	  goto done;
+	}
+
+	current_user_sid = pTokenUser->User.Sid;
+
+	// now get the file owner's SID
+
+	err = GetNamedSecurityInfo(filename,		/* object name */
+		SE_FILE_OBJECT,					/* object type */
+		OWNER_SECURITY_INFORMATION,		/* security info */
+		&file_owner_sid,				/* owner SID */
+		NULL,							/* primary group */
+		NULL,							/* DACL */
+		NULL,							/* SACL */
+		&pSD);							/* Security Descriptor */
+
+	if (err != ERROR_SUCCESS)  {
+		/* Needs better error */
+		result = globus_i_gsi_sysconfig_error_result(
+			GLOBUS_GSI_SYSCONFIG_ERROR_FILE_NOT_OWNED,
+			__FILE__,
+			_function_name_,
+			__LINE__,
+			globus_common_create_string("%s is not owned by current user", filename),
+			NULL);
+	  goto done;
+	} else {
+		LocalFree(pSD);
+	}
+
+
+	if(!EqualSid(current_user_sid, file_owner_sid))
+	{
+		result = globus_i_gsi_sysconfig_error_result(
+			GLOBUS_GSI_SYSCONFIG_ERROR_FILE_NOT_OWNED,
+			__FILE__,
+			_function_name_,
+			__LINE__,
+			globus_common_create_string("%s is not owned by current user", filename),
+			NULL);
+	}
+done:
+	
+	if(hAccessToken != NULL)
+	{
+		CloseHandle(hAccessToken);
+
+	}
+	return result;
+}
+
 /**
  * @name Win32 - Check File Status for Key
  * @ingroup globus_i_gsi_sysconfig_win32
@@ -979,6 +1076,12 @@ globus_gsi_sysconfig_check_keyfile_win32(
      * and would need to be considered and implemented in a comprehensive way.
      */
 
+	result = globus_l_gsi_sysconfig_check_owner_win32(filename);
+
+	if(result != GLOBUS_SUCCESS)
+	{
+		goto exit;	
+	}
     /* make sure size isn't zero */
     if (stx.st_size == 0)
     {
@@ -1095,6 +1198,13 @@ globus_gsi_sysconfig_check_certfile_win32(
      * using Access Control Lists can be incorporated, but this is an architectural
      * and would need to be considered and implemented in a comprehensive way.
      */
+
+	result = globus_l_gsi_sysconfig_check_owner_win32(filename);
+
+	if(result != GLOBUS_SUCCESS)
+	{
+		goto exit;	
+	}
 
     /* make sure size isn't zero */
     if (stx.st_size == 0)
