@@ -153,3 +153,4 @@ globus_wsrf_replicator_client_java          ws-replica/replicator/client/java/so
 globus_wsrf_replicator_common_java          ws-replica/replicator/common/java/source
 globus_wsrf_replicator_common_schema        ws-replica/replicator/common/schema
 globus_wsrf_replicator_service_java         ws-replica/replicator/service/java/source
+globus_wsrf_gram_reliable_create_test       ws-gram/client/reliable_create_test gpt
