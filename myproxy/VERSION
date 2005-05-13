@@ -8,6 +8,8 @@ v0.6.6 X XXX 2005 (GPT package version 1.18)
     myproxy-server repository replicas for high availability
   - fixed bug in previous version that caused myproxy-get-delegation
     not to be included in binary GPT installs
+  - use system getopt_long() if available; otherwise, use included
+    getopt_long from NetBSD instead of GNU version as previous
 
 v0.6.5 8 Apr 2005 (GPT package version 1.17)
   - added support for RFC 3820 proxy certificate format

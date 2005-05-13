@@ -287,12 +287,12 @@ init_arguments(int argc,
 	       myproxy_request_t *request,
 	       int *cred_lifetime) 
 {   
-    extern char *gnu_optarg;
+    extern char *optarg;
     int expr_type = MATCH_CN_ONLY;  /*default */
 
     int arg;
 
-    while((arg = gnu_getopt_long(argc, argv, short_options, 
+    while((arg = getopt_long(argc, argv, short_options, 
 				 long_options, NULL)) != EOF) 
     {
 	switch(arg) 
@@ -302,23 +302,23 @@ init_arguments(int argc,
 	    return -1;
 	    break;
 	case 'c': 	/* Specify cred lifetime in hours */
-	    *cred_lifetime  = SECONDS_PER_HOUR * atoi(gnu_optarg);
+	    *cred_lifetime  = SECONDS_PER_HOUR * atoi(optarg);
 	    break;    
 	case 't': 	/* Specify proxy lifetime in hours */
-	    request->proxy_lifetime = SECONDS_PER_HOUR * atoi(gnu_optarg);
+	    request->proxy_lifetime = SECONDS_PER_HOUR * atoi(optarg);
 	    break;        
 	case 's': 	/* pshost name */
-	    attrs->pshost = strdup(gnu_optarg);
+	    attrs->pshost = strdup(optarg);
 	    break;
 	case 'p': 	/* psport */
-	    attrs->psport = atoi(gnu_optarg);
+	    attrs->psport = atoi(optarg);
 	    break;
 	case 'u': 	/* print help and exit */
 	    fprintf(stderr, usage);
 	    return -1;
 	    break;
 	case 'l':	/* username */
-	    request->username = strdup(gnu_optarg);
+	    request->username = strdup(optarg);
 	    break;
 	case 'v':
 	    myproxy_debug_set_level(1);
@@ -358,12 +358,12 @@ init_arguments(int argc,
 	    }
 #endif
 	    if (expr_type == REGULAR_EXP)  /*copy as is */
-	      request->retrievers = strdup (gnu_optarg);
+	      request->retrievers = strdup (optarg);
 	    else
 	    {
-		request->retrievers = (char *) malloc (strlen (gnu_optarg) + 5);
+		request->retrievers = (char *) malloc (strlen (optarg) + 5);
 		strcpy (request->retrievers, "*/CN=");
-		request->retrievers = strcat (request->retrievers,gnu_optarg);
+		request->retrievers = strcat (request->retrievers,optarg);
 		myproxy_debug("authorized retriever %s", request->retrievers);
 	    }
 	    break;
@@ -377,12 +377,12 @@ init_arguments(int argc,
 		return -1;
 	    }
 	    if (expr_type == REGULAR_EXP)  /*copy as is */
-	      request->renewers = strdup (gnu_optarg);
+	      request->renewers = strdup (optarg);
 	    else
 	    {
-		request->renewers = (char *) malloc (strlen (gnu_optarg) + 6);
+		request->renewers = (char *) malloc (strlen (optarg) + 6);
 		strcpy (request->renewers, "*/CN=");
-		request->renewers = strcat (request->renewers,gnu_optarg);
+		request->renewers = strcat (request->renewers,optarg);
 		myproxy_debug("authorized renewer %s", request->renewers);
 	    }
 	    use_empty_passwd = 1;
@@ -425,10 +425,10 @@ init_arguments(int argc,
 	    use_empty_passwd = 1;
 	    break;
 	case 'k':  /*credential name*/
-	    request->credname = strdup (gnu_optarg);
+	    request->credname = strdup (optarg);
 	    break;
 	case 'K':  /*credential description*/
-	    request->creddesc = strdup (gnu_optarg);
+	    request->creddesc = strdup (optarg);
 	    break;
 	case 'S':
 	    read_passwd_from_stdin = 1;
@@ -441,9 +441,9 @@ init_arguments(int argc,
         }
     }
 
-    if (gnu_optind != argc) {
+    if (optind != argc) {
 	fprintf(stderr, "%s: invalid option -- %s\n", argv[0],
-		argv[gnu_optind]);
+		argv[optind]);
 	fprintf(stderr, usage);
 	exit(1);
     }

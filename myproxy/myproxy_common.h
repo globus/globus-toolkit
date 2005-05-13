@@ -35,12 +35,16 @@
 #include <time.h>
 #include <unistd.h>
 
+#if defined(HAVE_GETOPT_H)
+#include <getopt.h>
+#endif
+
 #include <globus_gss_assist.h>
 #include <gssapi.h>
 
 #include "myproxy.h" /* public headers */
 #include "gsi_socket.h"
-#include "gnu_getopt.h"
+#include "port_getopt.h"
 #include "ssl_utils.h"
 #include "string_funcs.h"
 #include "vparse.h"

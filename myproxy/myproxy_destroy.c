@@ -190,19 +190,19 @@ init_arguments(int argc,
 		       myproxy_socket_attrs_t *attrs,
 		       myproxy_request_t *request) 
 {   
-    extern char *gnu_optarg;
+    extern char *optarg;
     int arg;
 
-    while((arg = gnu_getopt_long(argc, argv, short_options, 
+    while((arg = getopt_long(argc, argv, short_options, 
                              long_options, NULL)) != EOF) 
     {
         switch(arg) 
         {  
         case 's': 	/* pshost name */
-	    attrs->pshost = strdup(gnu_optarg);
+	    attrs->pshost = strdup(optarg);
             break;
         case 'p': 	/* psport */
-            attrs->psport = atoi(gnu_optarg);
+            attrs->psport = atoi(optarg);
             break;
         case 'u': 	/* print help and exit */
             fprintf(stderr, usage);
@@ -213,7 +213,7 @@ init_arguments(int argc,
             exit(1);
             break;
         case 'l':	/* username */
-	    request->username = strdup(gnu_optarg);
+	    request->username = strdup(optarg);
             break;
 	case 'v':	/* verbose */
 	    myproxy_debug_set_level(1);
@@ -223,7 +223,7 @@ init_arguments(int argc,
             exit(1);
             break;
 	case 'k':	/*credential name*/
-	    request->credname = strdup (gnu_optarg);
+	    request->credname = strdup (optarg);
 	    break;
 	case 'd':   /* use the certificate subject (DN) as the default
 		       username instead of LOGNAME */
@@ -236,9 +236,9 @@ init_arguments(int argc,
         }
     }
 
-    if (gnu_optind != argc) {
+    if (optind != argc) {
 	fprintf(stderr, "%s: invalid option -- %s\n", argv[0],
-		argv[gnu_optind]);
+		argv[optind]);
 	fprintf(stderr, usage);
 	exit(1);
     }

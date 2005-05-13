@@ -107,10 +107,10 @@ void
 init_arguments(int argc, 
 		       char *argv[])
 {
-    extern char *gnu_optarg;
+    extern char *optarg;
     int arg;
 
-    while((arg = gnu_getopt_long(argc, argv, short_options, 
+    while((arg = getopt_long(argc, argv, short_options, 
                              long_options, NULL)) != EOF) {
         switch(arg) {  
 	case 'h': 	/* print help and exit */
@@ -119,25 +119,25 @@ init_arguments(int argc,
             exit(1);
        	    break;
         case 's': /* set the credential storage directory */
-	    myproxy_set_storage_dir(gnu_optarg);
+	    myproxy_set_storage_dir(optarg);
 	    break;
         case 'l':	/* username */
-	    cred.username = strdup(gnu_optarg);
+	    cred.username = strdup(optarg);
 	    break;
         case 'k':	/* credname */
-	    cred.credname = strdup(gnu_optarg);
+	    cred.credname = strdup(optarg);
 	    break;
 	case 'e':	/* expiring in <hours> */
-	    cred.end_time = (SECONDS_PER_HOUR * atoi(gnu_optarg)) + time(0);
+	    cred.end_time = (SECONDS_PER_HOUR * atoi(optarg)) + time(0);
 	    break;
 	case 't':	/* time left */
-	    cred.start_time = (SECONDS_PER_HOUR * atoi(gnu_optarg)) + time(0);
+	    cred.start_time = (SECONDS_PER_HOUR * atoi(optarg)) + time(0);
 	    break;
 	case 'r':	/* remove */
 	    remove_creds = 1;
 	    break;
 	case 'L':	/* lock */
-	    lock_msg = strdup(gnu_optarg);
+	    lock_msg = strdup(optarg);
 	    break;
 	case 'U':	/* unlock */
 	    unlock_creds = 1;
@@ -156,9 +156,9 @@ init_arguments(int argc,
         }
     }
 
-    if (gnu_optind != argc) {
+    if (optind != argc) {
 	fprintf(stderr, "%s: invalid option -- %s\n", argv[0],
-		argv[gnu_optind]);
+		argv[optind]);
 	fprintf(stderr, usage);
 	exit(1);
     }

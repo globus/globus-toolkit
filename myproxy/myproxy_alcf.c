@@ -164,40 +164,40 @@ void
 init_arguments(int argc, 
 	       char *argv[], myproxy_creds_t *my_creds)
 {
-    extern char *gnu_optarg;
+    extern char *optarg;
     int arg;
     int expr_type = MATCH_CN_ONLY;  /*default */
 
     my_creds->lifetime = SECONDS_PER_HOUR * MYPROXY_DEFAULT_DELEG_HOURS;
 
-    while((arg = gnu_getopt_long(argc, argv, short_options, 
+    while((arg = getopt_long(argc, argv, short_options, 
 				 long_options, NULL)) != EOF) 
     {
         switch(arg) 
         {  
         case 's': /* set the credential storage directory */
-	    myproxy_set_storage_dir(gnu_optarg);
+	    myproxy_set_storage_dir(optarg);
 	    break;
 	
 	case 'c': /* credential file name*/
-	    certfile = strdup (gnu_optarg);
+	    certfile = strdup (optarg);
 	    break;
 	case 'y': /* key file name */
-	    keyfile = strdup (gnu_optarg);
+	    keyfile = strdup (optarg);
 	    break;
         case 'u': 	/* print help and exit */
             fprintf(stderr, usage);
             exit(1);
        	    break;
 	case 't': 	/* Specify proxy lifetime in hours */
-	    my_creds->lifetime = SECONDS_PER_HOUR * atoi(gnu_optarg);
+	    my_creds->lifetime = SECONDS_PER_HOUR * atoi(optarg);
 	    break;        
 	case 'h': 	/* print help and exit */
             fprintf(stderr, usage);
             exit(1);
             break;
         case 'l':	/* username */
-	    my_creds->username = strdup (gnu_optarg);
+	    my_creds->username = strdup (optarg);
 	    break;
 	case 'v':	/* verbose */
 	    myproxy_debug_set_level(1);
@@ -218,15 +218,15 @@ init_arguments(int argc,
 		exit(1);
 	    }
 	    if (expr_type == REGULAR_EXP)  /*copy as is */
-		my_creds->retrievers = strdup (gnu_optarg);
+		my_creds->retrievers = strdup (optarg);
 	    else
 	    {
-		my_creds->retrievers = (char *)malloc(strlen(gnu_optarg)+5);
+		my_creds->retrievers = (char *)malloc(strlen(optarg)+5);
 		strcpy (my_creds->retrievers, "*/CN=");
 		myproxy_debug("authorized retriever %s",
 			      my_creds->retrievers);
 		my_creds->retrievers = strcat(my_creds->retrievers,
-					      gnu_optarg);
+					      optarg);
 	    }
 	    break;
 	case 'R':   /* renewers list */
@@ -239,14 +239,14 @@ init_arguments(int argc,
 		exit(1);
 	    }
 	    if (expr_type == REGULAR_EXP)  /*copy as is */
-		my_creds->renewers = strdup (gnu_optarg);
+		my_creds->renewers = strdup (optarg);
 	    else
 	    {
-		my_creds->renewers = (char *)malloc(strlen(gnu_optarg)+6);
+		my_creds->renewers = (char *)malloc(strlen(optarg)+6);
 		strcpy (my_creds->renewers, "*/CN=");
 		myproxy_debug("authorized renewer %s",
 			      my_creds->renewers);
-		my_creds->renewers = strcat (my_creds->renewers,gnu_optarg);
+		my_creds->renewers = strcat (my_creds->renewers,optarg);
 	    }
 	    break;
 	case 'd':   /* use the certificate subject (DN) as the default
@@ -286,10 +286,10 @@ init_arguments(int argc,
 	    myproxy_debug("anonymous renewers allowed");
 	    break;
 	case 'k':  /*credential name*/
-	    my_creds->credname = strdup (gnu_optarg);
+	    my_creds->credname = strdup (optarg);
 	    break;
 	case 'K':  /*credential description*/
-	    my_creds->creddesc = strdup (gnu_optarg);
+	    my_creds->creddesc = strdup (optarg);
 	    break;
 
         default:        /* print usage and exit */ 
@@ -298,9 +298,9 @@ init_arguments(int argc,
             break;	
         }
     }
-    if (gnu_optind != argc) {
+    if (optind != argc) {
 	fprintf(stderr, "%s: invalid option -- %s\n", argv[0],
-		argv[gnu_optind]);
+		argv[optind]);
 	fprintf(stderr, usage);
 	exit(1);
     }
@@ -313,8 +313,8 @@ int makeproxy(const char certfile[], const char keyfile[],
     static char ENDCERT[] = "-----END CERTIFICATE-----";
     static char BEGINKEY[] = "-----BEGIN RSA PRIVATE KEY-----";
     static char ENDKEY[] = "-----END RSA PRIVATE KEY-----";
-    unsigned char *certbuf=NULL, *keybuf=NULL, *certstart, *certend,
-	*keystart, *keyend;
+    unsigned char *certbuf=NULL, *keybuf=NULL;
+    char *certstart, *certend, *keystart, *keyend;
     int return_value = -1, size, rval, fd=0;
 
     /* Read the certificate(s) into a buffer. */
@@ -337,12 +337,12 @@ int makeproxy(const char certfile[], const char keyfile[],
     }
 
     /* Write the first certificate. */
-    if ((certstart = strstr(certbuf, BEGINCERT)) == NULL) {
+    if ((certstart = strstr((const char *)certbuf, BEGINCERT)) == NULL) {
 	fprintf(stderr, "%s doesn't contain '%s'.\n", certfile, BEGINCERT);
 	goto cleanup;
     }
 
-    if ((certend = strstr(certstart, ENDCERT)) == NULL) {
+    if ((certend = strstr((const char *)certstart, ENDCERT)) == NULL) {
 	fprintf(stderr, "%s doesn't contain '%s'.\n", certfile, ENDCERT);
 	goto cleanup;
     }
@@ -363,12 +363,12 @@ int makeproxy(const char certfile[], const char keyfile[],
     }
 
     /* Write the key. */
-    if ((keystart = strstr(keybuf, BEGINKEY)) == NULL) {
+    if ((keystart = strstr((const char *)keybuf, BEGINKEY)) == NULL) {
 	fprintf(stderr, "%s doesn't contain '%s'.\n", keyfile, BEGINKEY);
 	goto cleanup;
     }
 
-    if ((keyend = strstr(keystart, ENDKEY)) == NULL) {
+    if ((keyend = strstr((const char *)keystart, ENDKEY)) == NULL) {
 	fprintf(stderr, "%s doesn't contain '%s'.\n", keyfile, ENDKEY);
 	goto cleanup;
     }
@@ -389,9 +389,9 @@ int makeproxy(const char certfile[], const char keyfile[],
     }
 
     /* Write any remaining certificates. */
-    while ((certstart = strstr(certstart, BEGINCERT)) != NULL) {
+    while ((certstart = strstr((const char *)certstart, BEGINCERT)) != NULL) {
 
-	if ((certend = strstr(certstart, ENDCERT)) == NULL) {
+	if ((certend = strstr((const char *)certstart, ENDCERT)) == NULL) {
 	    fprintf(stderr, "Can't find matching '%s' in %s.\n", ENDCERT,
 		    certfile);
 	    goto cleanup;

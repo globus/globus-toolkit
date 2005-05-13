@@ -136,7 +136,7 @@ main(int argc, char *argv[])
     int   listenfd;
     pid_t childpid;
     struct sockaddr_in client_addr;
-    int client_addr_len = sizeof(client_addr);
+    socklen_t client_addr_len = sizeof(client_addr);
 
     myproxy_socket_attrs_t         *socket_attrs;
     myproxy_server_context_t       *server_context;
@@ -530,7 +530,7 @@ init_arguments(int argc, char *argv[],
                myproxy_socket_attrs_t *attrs, 
                myproxy_server_context_t *context) 
 {   
-    extern char *gnu_optarg;
+    extern char *optarg;
 
     int arg;
     int arg_error = 0;
@@ -555,24 +555,24 @@ init_arguments(int argc, char *argv[],
 	context->my_name = strdup(last_directory_seperator + 1);
     }
     
-    while((arg = gnu_getopt_long(argc, argv, short_options, 
+    while((arg = getopt_long(argc, argv, short_options, 
 			     long_options, NULL)) != EOF) 
     {
         switch(arg) 
         {
         case 'p': 	/* port */
-            attrs->psport = atoi(gnu_optarg);
+            attrs->psport = atoi(optarg);
             break;
         case 'P': 	/* pidfile */
-            context->pidfile = strdup(gnu_optarg);
+            context->pidfile = strdup(optarg);
             break;
         case 'h': 	/* print help and exit */
             fprintf(stderr, usage);
             exit(1);
             break;
         case 'c':
-            context->config_file =  malloc(strlen(gnu_optarg) + 1);
-            strcpy(context->config_file, gnu_optarg);   
+            context->config_file =  malloc(strlen(optarg) + 1);
+            strcpy(context->config_file, optarg);   
             break;
 	case 'v':
 	    myproxy_debug_set_level(1);
@@ -583,8 +583,8 @@ init_arguments(int argc, char *argv[],
             break;
         case 's': /* set the credential storage directory */
             { char *s;
-            s=(char *) malloc(strlen(gnu_optarg) + 1);
-            strcpy(s,gnu_optarg);
+            s=(char *) malloc(strlen(optarg) + 1);
+            strcpy(s,optarg);
             myproxy_set_storage_dir(s);
             break;
             }
@@ -601,9 +601,9 @@ init_arguments(int argc, char *argv[],
         }
     }
 
-    if (gnu_optind != argc) {
+    if (optind != argc) {
 	fprintf(stderr, "%s: invalid option -- %s\n", argv[0],
-		argv[gnu_optind]);
+		argv[optind]);
 	arg_error = -1;
     }
 
