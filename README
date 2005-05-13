@@ -1,12 +1,16 @@
 Please see <http://myproxy.ncsa.uiuc.edu/> for the latest information
 about MyProxy.
 
-Myproxy is Copyright 2000-2004 The Board of Trustees of the University
+MyProxy is Copyright 2000-2005 The Board of Trustees of the University
 of Illinois.  See the LICENSE file for detailed license information.
 
 This product includes software developed by Computing Services
 at Carnegie Mellon University (http://www.cmu.edu/computing/).
 See LICENSE.sasl for the cyrus-sasl copyright notice.
+
+This product includes software developed by the
+NetBSD Foundation, Inc. and its contributors.
+See LICENSE.netbsd for the copyright notice.
 
 You are encouraged to join the myproxy-users@ncsa.uiuc.edu discussion
 list and to send bug reports and enhancements to that list.  To

@@ -285,22 +285,22 @@ init_arguments(int argc,
 	       myproxy_socket_attrs_t *attrs,
 	       myproxy_request_t *request) 
 {   
-    extern char *gnu_optarg;
+    extern char *optarg;
     int arg;
 
-    while((arg = gnu_getopt_long(argc, argv, short_options, 
+    while((arg = getopt_long(argc, argv, short_options, 
 				 long_options, NULL)) != EOF) 
     {
         switch(arg) 
         {
 	case 't':       /* Specify proxy lifetime in seconds */
-	  request->proxy_lifetime = 60*60*atoi(gnu_optarg);
+	  request->proxy_lifetime = 60*60*atoi(optarg);
 	  break;
         case 's': 	/* pshost name */
-	    attrs->pshost = strdup(gnu_optarg);
+	    attrs->pshost = strdup(optarg);
             break;
         case 'p': 	/* psport */
-            attrs->psport = atoi(gnu_optarg);
+            attrs->psport = atoi(optarg);
             break;
 	case 'h': 	/* print help and exit */
             fprintf(stderr, usage);
@@ -311,10 +311,10 @@ init_arguments(int argc,
             exit(1);
             break;
         case 'l':	/* username */
-            request->username = strdup(gnu_optarg);
+            request->username = strdup(optarg);
             break;
 	case 'a':       /* special authorization */
-	    request->authzcreds = strdup(gnu_optarg);
+	    request->authzcreds = strdup(optarg);
 	    use_empty_passwd = 1;
 	    break;
 	case 'n':       /* no passphrase */
@@ -332,16 +332,16 @@ init_arguments(int argc,
 	    dn_as_username = 1;
 	    break;
 	case 'k':       /* credential name */
-	    request->credname = strdup (gnu_optarg);
+	    request->credname = strdup (optarg);
 	    break;
 	case 'S':
 	    read_passwd_from_stdin = 1;
 	    break;
         case 'c':       /* credential file name */
-            certfile = strdup(gnu_optarg);
+            certfile = strdup(optarg);
             break;
         case 'y':       /* key file name */
-            keyfile = strdup(gnu_optarg);
+            keyfile = strdup(optarg);
             break;
         default:        /* print usage and exit */ 
 	    fprintf(stderr, usage);
@@ -374,12 +374,12 @@ store_credential( char *delegfile,
       goto error;
     }
 
-    if (write_cert(certfile, input_buffer) < 0)
+    if (write_cert(certfile, (const char *)input_buffer) < 0)
     {
       goto error;
     }
 
-    if (write_key(keyfile, input_buffer) < 0)
+    if (write_key(keyfile, (const char *)input_buffer) < 0)
     {
       goto error;
     }

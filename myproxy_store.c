@@ -250,29 +250,29 @@ init_arguments(int                     argc,
 	       myproxy_socket_attrs_t *attrs, 
                myproxy_request_t      * request)
 {
-    extern char *gnu_optarg;
+    extern char *optarg;
     int expr_type = MATCH_CN_ONLY;	/*default */
     int arg;
 
-    while ((arg = gnu_getopt_long(argc,
+    while ((arg = getopt_long(argc,
 				  argv,
 				  short_options,
 				  long_options, NULL)) != EOF) {
 	switch (arg) {
 	case 's':		/* pshost name */
-	    attrs->pshost = strdup(gnu_optarg);
+	    attrs->pshost = strdup(optarg);
 	    break;
 
 	case 'p':		/* psport */
-	    attrs->psport = atoi(gnu_optarg);
+	    attrs->psport = atoi(optarg);
 	    break;
 
 	case 'c':		/* credential file name */
-	    certfile = strdup(gnu_optarg);
+	    certfile = strdup(optarg);
 	    break;
 
 	case 'y':		/* key file name */
-	    keyfile = strdup(gnu_optarg);
+	    keyfile = strdup(optarg);
 	    break;
 
 	case 'u':		/* print help and exit */
@@ -281,7 +281,7 @@ init_arguments(int                     argc,
 	    break;
 
 	case 't':		/* Specify proxy lifetime in hours */
-	    request->proxy_lifetime = SECONDS_PER_HOUR * atoi(gnu_optarg);
+	    request->proxy_lifetime = SECONDS_PER_HOUR * atoi(optarg);
 	    break;
 
 	case 'h':		/* print help and exit */
@@ -290,7 +290,7 @@ init_arguments(int                     argc,
 	    break;
 
 	case 'l':		/* username */
-	    request->username = strdup(gnu_optarg);
+	    request->username = strdup(optarg);
 	    break;
 
 	case 'v':		/* verbose */
@@ -320,15 +320,15 @@ init_arguments(int                     argc,
 	    if (expr_type == REGULAR_EXP) {
 		
                 /* Copy as is */
-		request->retrievers = strdup(gnu_optarg);
+		request->retrievers = strdup(optarg);
 	    } else {
 		request->retrievers =
-		    (char *) malloc(strlen(gnu_optarg) + 5);
+		    (char *) malloc(strlen(optarg) + 5);
 		strcpy(request->retrievers, "*/CN=");
 		myproxy_debug("authorized retriever %s",
 			      request->retrievers);
 		request->retrievers =
-		    strcat(request->retrievers, gnu_optarg);
+		    strcat(request->retrievers, optarg);
 	    }
 	    break;
 
@@ -355,28 +355,28 @@ init_arguments(int                     argc,
 
 	    if (expr_type == REGULAR_EXP) {
 		/* Copy as is */
-		request->renewers = strdup(gnu_optarg);
+		request->renewers = strdup(optarg);
 	    } else {
 		request->renewers =
-		    (char *) malloc(strlen(gnu_optarg) + 6);
+		    (char *) malloc(strlen(optarg) + 6);
 		strcpy(request->renewers, "*/CN=");
 		myproxy_debug("authorized renewer %s", request->renewers);
-		request->renewers = strcat(request->renewers, gnu_optarg);
+		request->renewers = strcat(request->renewers, optarg);
 	    }
 	    break;
 
         case 'E' :              /* key retriever list */ 
 	    if (expr_type == REGULAR_EXP) {
 		/* Copy as is */
-		request->keyretrieve = strdup(gnu_optarg);
+		request->keyretrieve = strdup(optarg);
 	    } else {
 		request->keyretrieve =
-		    (char *) malloc(strlen(gnu_optarg) + 5);
+		    (char *) malloc(strlen(optarg) + 5);
 		strcpy(request->keyretrieve, "*/CN=");
 		myproxy_debug("authorized key retriever %s",
 			      request->keyretrieve);
 		request->keyretrieve =
-		    strcat(request->keyretrieve, gnu_optarg);
+		    strcat(request->keyretrieve, optarg);
 	    }
 	    break;
 
@@ -432,11 +432,11 @@ init_arguments(int                     argc,
 	    break;
 
 	case 'k':		/*credential name */
-	    request->credname = strdup(gnu_optarg);
+	    request->credname = strdup(optarg);
 	    break;
 
 	case 'K':		/*credential description */
-	    request->creddesc = strdup(gnu_optarg);
+	    request->creddesc = strdup(optarg);
 	    break;
 
 	default:		/* print usage and exit */
@@ -499,7 +499,7 @@ makecertfile(const char   certfile[],
         goto cleanup;
     }
 
-    if ((certstart = strstr(certbuf, BEGINCERT)) == NULL)
+    if ((certstart = strstr((const char *)certbuf, BEGINCERT)) == NULL)
     {
       fprintf(stderr, "%s doesn't contain '%s'.\n",  certfile, BEGINCERT);
       goto cleanup;
@@ -518,7 +518,7 @@ makecertfile(const char   certfile[],
     certstart += size;
 
     /* Write the key. */
-    if ((keystart = strstr(keybuf, BEGINKEY)) == NULL) {
+    if ((keystart = strstr((const char *)keybuf, BEGINKEY)) == NULL) {
 	fprintf(stderr, "%s doesn't contain '%s'.\n", keyfile, BEGINKEY);
 	goto cleanup;
     }

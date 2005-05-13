@@ -110,10 +110,10 @@ main(int argc, char *argv[])
 void 
 init_arguments(int argc, char *argv[])
 {
-    extern char *gnu_optarg;
+    extern char *optarg;
     int arg;
 
-    while((arg = gnu_getopt_long(argc, argv, short_options, 
+    while((arg = getopt_long(argc, argv, short_options, 
                              long_options, NULL)) != EOF) {
         switch(arg) {  
 	case 'h': 	/* print help and exit */
@@ -122,13 +122,13 @@ init_arguments(int argc, char *argv[])
             exit(1);
        	    break;
         case 's': /* set the credential storage directory */
-	    myproxy_set_storage_dir(gnu_optarg);
+	    myproxy_set_storage_dir(optarg);
 	    break;
         case 'l':	/* username */
-	    cred.username = strdup(gnu_optarg);
+	    cred.username = strdup(optarg);
 	    break;
         case 'k':	/* credname */
-	    cred.credname = strdup(gnu_optarg);
+	    cred.credname = strdup(optarg);
 	    break;
 	case 'v':	/* verbose */
 	    myproxy_debug_set_level(1);
@@ -147,9 +147,9 @@ init_arguments(int argc, char *argv[])
         }
     }
 
-    if (gnu_optind != argc) {
+    if (optind != argc) {
 	fprintf(stderr, "%s: invalid option -- %s\n", argv[0],
-		argv[gnu_optind]);
+		argv[optind]);
 	fprintf(stderr, usage);
 	exit(1);
     }

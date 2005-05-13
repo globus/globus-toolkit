@@ -10,9 +10,8 @@ SUBDIRS= \
 	man
 
 LibSources= \
-	gnu_getopt.c \
-	gnu_getopt.h \
-	gnu_getopt_long.c \
+	port_getopt.h \
+	getopt_long.c \
 	gsi_socket.c \
 	gsi_socket.h \
 	gssapi.c \
@@ -165,12 +164,15 @@ myproxy_admin_change_pass_LDADD = $(GPT_PGM_LINKS) ./libmyproxy_$(GLOBUS_FLAVOR_
 
 sysconf_DATA = myproxy-server.config
 
-pkgdata_DATA = README INSTALL LICENSE LICENSE.sasl VERSION PROTOCOL \
+pkgdata_DATA = README INSTALL \
+               LICENSE LICENSE.sasl LICENSE.netbsd \
+               VERSION PROTOCOL \
                etc.services.modifications etc.inetd.conf.modifications \
                myproxy.cron \
                etc.init.d.myproxy etc.xinetd.myproxy myproxy-passphrase-policy
 
-EXTRA_DIST = $(Scripts) LICENSE LICENSE.sasl VERSION PROTOCOL \
+EXTRA_DIST = $(Scripts) LICENSE LICENSE.sasl LICENSE.netbsd \
+               VERSION PROTOCOL \
                myproxy-server.config \
                etc.services.modifications etc.inetd.conf.modifications \
                myproxy.cron \
