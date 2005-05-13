@@ -1096,8 +1096,8 @@ int GSI_SOCKET_read_token(GSI_SOCKET *self,
        Unfortunately, our protocol doesn't do a good job of message
        framing.  Still, we can find the start/end of some messages
        by looking for the standard VERSION string at the start. */
-    if (strncmp(buffer, "VERSION", strlen("VERSION")) == 0) {
-	size_t token_len = safe_strlen(buffer, bytes_read)+1;
+    if (strncmp((const char *)buffer, "VERSION", strlen("VERSION")) == 0) {
+	size_t token_len = safe_strlen((const char *)buffer, bytes_read)+1;
 	if (bytes_read > token_len) {
 
 	    /* Our buffer is bigger than one message.  Just return the
@@ -1105,7 +1105,7 @@ int GSI_SOCKET_read_token(GSI_SOCKET *self,
 
 	    char *old_buffer;
 
-	    old_buffer = buffer;
+	    old_buffer = (char *)buffer;
 	    saved_buffer_len = bytes_read - token_len;
 	    buffer = malloc(token_len);
 	    memcpy(buffer, old_buffer, token_len);
