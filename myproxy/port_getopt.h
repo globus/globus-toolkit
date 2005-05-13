@@ -36,17 +36,25 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+/*
+ * modified May 12, 2005 by Jim Basney <jbasney@ncsa.uiuc.edu>
+ *
+ * removed #include of non-POSIX <sys/cdefs.h> and <sys/featuretest.h>
+ * removed references to _NETBSD_SOURCE and HAVE_NBTOOL_CONFIG_H
+ * added #if !HAVE_GETOPT_LONG
+ * removed __BEGIN_DECLS and __END_DECLS
+ */
+
 #ifndef _GETOPT_H_
 #define _GETOPT_H_
 
-#include <sys/cdefs.h>
-#include <sys/featuretest.h>
+#if !HAVE_GETOPT_LONG
+
 #include <unistd.h>
 
 /*
  * Gnu like getopt_long() and BSD4.4 getsubopt()/optreset extensions
  */
-#if defined(_NETBSD_SOURCE) || defined(HAVE_NBTOOL_CONFIG_H)
 #define no_argument        0
 #define required_argument  1
 #define optional_argument  2
@@ -64,13 +72,10 @@ struct option {
 	/* if flag not NULL, value to set *flag to; else return value */
 	int val;
 };
-#endif
 
-#if defined(_NETBSD_SOURCE)
-__BEGIN_DECLS
 int getopt_long(int, char * const *, const char *,
     const struct option *, int *);
-__END_DECLS
-#endif
  
+#endif /* !HAVE_GETOPT_LONG */
+
 #endif /* !_GETOPT_H_ */
