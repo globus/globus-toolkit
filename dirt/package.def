@@ -188,3 +188,4 @@ globus_usage usage/c/sender/source dirt.sh
 globus_java_container_admin_tools wsrf/java/containerTools/source dirt.sh
 globus_xio_bidi_driver xio/drivers/bidi/source dirt.sh
 globus_wsrf_gram_reliable_create_test ws-gram/client/reliable_create_test dirt.sh
+globus_c_wsrf_providers wsrf/c/core/providers/source dirt.sh
