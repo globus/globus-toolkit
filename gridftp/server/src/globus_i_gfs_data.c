@@ -608,6 +608,26 @@ globus_l_gfs_authorize_cb(
         }
         globus_mutex_lock(&op->session_handle->mutex);
         {
+            if(op->data_handle != NULL)
+            {
+                switch(op->data_handle->state)
+                {
+                    case GLOBUS_L_GFS_DATA_HANDLE_INUSE:
+                        op->data_handle->state = 
+                            GLOBUS_L_GFS_DATA_HANDLE_VALID;
+                        break;
+        
+                    case GLOBUS_L_GFS_DATA_HANDLE_CLOSING:
+                    case GLOBUS_L_GFS_DATA_HANDLE_CLOSED:
+                    case GLOBUS_L_GFS_DATA_HANDLE_CLOSING_AND_DESTROYED:
+                        break;
+        
+                    case GLOBUS_L_GFS_DATA_HANDLE_VALID:
+                    default:
+                        globus_assert(0 && "possible memory corruption");
+                        break;
+                }
+            }
             GFSDataOpDec(op, destroy_op, destroy_session);
         }
         globus_mutex_unlock(&op->session_handle->mutex);
