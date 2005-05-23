@@ -72,11 +72,11 @@ GlobusXIODefineModule(tcp) =
             "No addrs for INET family"))
 
 
-#define GlobusIXIOTcpCloseFd(fd)                                            \
+#define GlobusIXIOTcpRcCloseFd(fd, rc)                                      \
     do                                                                      \
     {                                                                       \
         int                             _rc;                                \
-        int                             _fd;                                \
+        globus_xio_system_native_handle_t _fd;                              \
                                                                             \
         _fd = (fd);                                                         \
         do                                                                  \
@@ -84,7 +84,15 @@ GlobusXIODefineModule(tcp) =
             _rc = close(_fd);                                               \
         } while(_rc < 0 && errno == EINTR);                                 \
                                                                             \
-        (fd) = -1;                                                          \
+        (fd) = GLOBUS_XIO_SYSTEM_INVALID_HANDLE;                            \
+        (rc) = _rc;                                                         \
+    } while(0)
+
+#define GlobusIXIOTcpCloseFd(fd)                                            \
+    do                                                                      \
+    {                                                                       \
+        int                             __rc;                               \
+        GlobusIXIOTcpRcCloseFd((fd), __rc);                                 \
     } while(0)
 
 /*
@@ -100,7 +108,7 @@ typedef struct
     int                                 listener_max_port;
     
     /* handle/server attrs */
-    globus_xio_system_handle_t          handle;
+    globus_xio_system_native_handle_t   fd;
     char *                              bind_address;
     globus_bool_t                       restrict_port;
     globus_bool_t                       resuseaddr;
@@ -135,7 +143,7 @@ static globus_l_attr_t                  globus_l_xio_tcp_attr_default =
     0,                                  /* listener_min_port */
     0,                                  /* listener_max_port */
     
-    GLOBUS_XIO_TCP_INVALID_HANDLE,      /* handle   */ 
+    GLOBUS_XIO_TCP_INVALID_HANDLE,      /* fd */ 
     GLOBUS_NULL,                        /* bind_address */
     GLOBUS_TRUE,                        /* restrict_port */
     GLOBUS_FALSE,                       /* reuseaddr */
@@ -164,7 +172,8 @@ static globus_mutex_t                   globus_l_xio_tcp_port_range_state_lock;
  */
 typedef struct
 {
-    globus_xio_system_handle_t          listener_handle;
+    globus_xio_system_handle_t          listener_system;
+    globus_xio_system_native_handle_t   listener_fd;
     globus_bool_t                       converted;
 } globus_l_server_t;
 
@@ -173,12 +182,14 @@ typedef struct
  */
 typedef struct
 {
-    globus_xio_system_handle_t          handle;
+    globus_xio_system_handle_t          system;
+    globus_xio_system_native_handle_t   fd;
     globus_bool_t                       converted;
     globus_object_t *                   connection_error;
     globus_xio_operation_t              read_op;
     globus_xio_operation_t              write_op;
     globus_bool_t                       use_blocking_io;
+    globus_mutex_t                      lock;
 } globus_l_handle_t;
 
 static
@@ -417,7 +428,7 @@ globus_l_xio_tcp_attr_cntl(
     va_list                             ap)
 {
     globus_l_attr_t *                   attr;
-    globus_xio_system_handle_t *        out_handle;
+    globus_xio_system_native_handle_t * out_fd;
     char **                             out_string;
     int *                               out_int;
     globus_bool_t *                     out_bool;
@@ -518,15 +529,15 @@ globus_l_xio_tcp_attr_cntl(
       /**
        *  handle/server attrs
        */
-      /* globus_xio_system_handle_t     handle */
+      /* globus_xio_system_native_handle_t fd */
       case GLOBUS_XIO_TCP_SET_HANDLE:
-        attr->handle = va_arg(ap, globus_xio_system_handle_t);
+        attr->fd = va_arg(ap, globus_xio_system_native_handle_t);
         break;
       
-      /* globus_xio_system_handle_t *   handle_out */
+      /* globus_xio_system_native_handle_t * fd_out */
       case GLOBUS_XIO_TCP_GET_HANDLE:
-        out_handle = va_arg(ap, globus_xio_system_handle_t *);
-        *out_handle = attr->handle;
+        out_fd = va_arg(ap, globus_xio_system_native_handle_t *);
+        *out_fd = attr->fd;
         break;
        
       /* char *                         interface */
@@ -824,7 +835,7 @@ static
 globus_result_t
 globus_l_xio_tcp_apply_handle_attrs(
     const globus_l_attr_t *             attr,
-    int                                 fd,
+    globus_xio_system_native_handle_t   fd,
     globus_bool_t                       do_bind_attrs,
     globus_bool_t                       converted)
 {
@@ -929,7 +940,7 @@ error_sockopt:
 static
 globus_result_t
 globus_l_xio_tcp_contact_string(
-    globus_xio_system_handle_t          handle,
+    globus_xio_system_native_handle_t   fd,
     int                                 cmd,
     char **                             contact_string)
 {
@@ -952,7 +963,7 @@ globus_l_xio_tcp_contact_string(
         
       case GLOBUS_XIO_TCP_GET_LOCAL_CONTACT:
       case GLOBUS_XIO_GET_LOCAL_CONTACT:
-        if(getsockname(handle, (struct sockaddr *) &sock_name, &sock_len) < 0)
+        if(getsockname(fd, (struct sockaddr *) &sock_name, &sock_len) < 0)
         {
             result = GlobusXIOErrorSystemError("getsockname", errno);
             goto error_sockopt;
@@ -966,7 +977,7 @@ globus_l_xio_tcp_contact_string(
         
       case GLOBUS_XIO_TCP_GET_REMOTE_CONTACT:
       case GLOBUS_XIO_GET_REMOTE_CONTACT:
-        if(getpeername(handle, (struct sockaddr *) &sock_name, &sock_len) < 0)
+        if(getpeername(fd, (struct sockaddr *) &sock_name, &sock_len) < 0)
         {
             result = GlobusXIOErrorSystemError("getpeername", errno);
             goto error_sockopt;
@@ -999,6 +1010,12 @@ error_sockopt:
     return result;
 }
 
+typedef struct
+{
+    globus_xio_operation_t              op;
+    globus_xio_system_native_handle_t   accepted_fd;
+} globus_l_accept_info_t;
+
 static
 globus_result_t
 globus_l_xio_tcp_link_cntl(
@@ -1006,20 +1023,20 @@ globus_l_xio_tcp_link_cntl(
     int                                 cmd,
     va_list                             ap)
 {
-    globus_xio_system_handle_t *        accepted_handle;
+    globus_l_accept_info_t *            accept_info;
     globus_result_t                     result;
     char **                             out_string;
-    globus_xio_system_handle_t *        out_handle;
+    globus_xio_system_native_handle_t * out_fd;
     GlobusXIOName(globus_l_xio_tcp_link_cntl);
 
     GlobusXIOTcpDebugEnter();
-    accepted_handle = (globus_xio_system_handle_t *) driver_link;
+    accept_info = (globus_l_accept_info_t *) driver_link;
     switch(cmd)
     {
-      /* globus_xio_system_handle_t *   handle_out */
+      /* globus_xio_system_native_handle_t * fd_out */
       case GLOBUS_XIO_TCP_GET_HANDLE:
-        out_handle = va_arg(ap, globus_xio_system_handle_t *);
-        *out_handle = *accepted_handle;
+        out_fd = va_arg(ap, globus_xio_system_native_handle_t *);
+        *out_fd = accept_info->accepted_fd;
         break;
         
       /* char **                        contact_string_out */
@@ -1033,7 +1050,7 @@ globus_l_xio_tcp_link_cntl(
       case GLOBUS_XIO_GET_REMOTE_CONTACT:
         out_string = va_arg(ap, char **);
         result = globus_l_xio_tcp_contact_string(
-            *accepted_handle, cmd, out_string);
+            accept_info->accepted_fd, cmd, out_string);
         if(result != GLOBUS_SUCCESS)
         {
             result = GlobusXIOErrorWrapFailed(
@@ -1065,18 +1082,18 @@ globus_result_t
 globus_l_xio_tcp_link_destroy(
     void *                              driver_link)
 {
-    globus_xio_system_handle_t *        accepted_handle;
+    globus_l_accept_info_t *            accept_info;
     GlobusXIOName(globus_l_xio_tcp_link_destroy);
     
     GlobusXIOTcpDebugEnter();
-    accepted_handle = (globus_xio_system_handle_t *) driver_link;
+    accept_info = (globus_l_accept_info_t *) driver_link;
     
-    if(*accepted_handle != GLOBUS_XIO_TCP_INVALID_HANDLE)
+    if(accept_info->accepted_fd != GLOBUS_XIO_TCP_INVALID_HANDLE)
     {
-        GlobusIXIOTcpCloseFd(*accepted_handle);
+        GlobusIXIOTcpCloseFd(accept_info->accepted_fd);
     }
     
-    globus_free(accepted_handle);
+    globus_free(accept_info);
     
     GlobusXIOTcpDebugExit();
     return GLOBUS_SUCCESS;
@@ -1085,7 +1102,7 @@ globus_l_xio_tcp_link_destroy(
 static
 globus_result_t
 globus_l_xio_tcp_bind(
-    int                                 fd,
+    globus_xio_system_native_handle_t   fd,
     const struct sockaddr *             addr,
     int                                 addr_len,
     int                                 min_port,
@@ -1187,7 +1204,7 @@ globus_l_xio_tcp_create_listener(
     globus_addrinfo_t                   addrinfo_hints;
     char                                portbuf[10];
     char *                              port;
-    int                                 fd;
+    globus_xio_system_native_handle_t   fd;
     int                                 save_errno;
     GlobusXIOName(globus_l_xio_tcp_create_listener);
     
@@ -1247,7 +1264,7 @@ globus_l_xio_tcp_create_listener(
                     addrinfo->ai_family,
                     addrinfo->ai_socktype,
                     addrinfo->ai_protocol);
-                if(fd < 0)
+                if(fd == GLOBUS_XIO_TCP_INVALID_HANDLE)
                 {
                     save_errno = errno;
                     break;
@@ -1329,7 +1346,7 @@ globus_l_xio_tcp_create_listener(
     
     fcntl(fd, F_SETFD, FD_CLOEXEC);
     
-    server->listener_handle = fd;
+    server->listener_fd = fd;
     globus_libc_freeaddrinfo(save_addrinfo);
     
     GlobusXIOTcpDebugExit();
@@ -1372,7 +1389,7 @@ globus_l_xio_tcp_server_init(
     }
     server->converted = GLOBUS_FALSE;
     
-    if(attr->handle == GLOBUS_XIO_TCP_INVALID_HANDLE)
+    if(attr->fd == GLOBUS_XIO_TCP_INVALID_HANDLE)
     {
         result = globus_l_xio_tcp_create_listener(server, attr);
         if(result != GLOBUS_SUCCESS)
@@ -1385,10 +1402,10 @@ globus_l_xio_tcp_server_init(
     else
     {
         /* user specified handle */
-        server->listener_handle = attr->handle;
+        server->listener_fd = attr->fd;
         server->converted = GLOBUS_TRUE;
         result = globus_l_xio_tcp_apply_handle_attrs(
-            attr, server->listener_handle, GLOBUS_FALSE, GLOBUS_FALSE);
+            attr, server->listener_fd, GLOBUS_FALSE, GLOBUS_FALSE);
         if(result != GLOBUS_SUCCESS)
         {
             result = GlobusXIOErrorWrapFailed(
@@ -1397,8 +1414,18 @@ globus_l_xio_tcp_server_init(
         }
     }
     
+    result = globus_xio_system_handle_init(
+        &server->listener_system,
+        server->listener_fd, GLOBUS_XIO_SYSTEM_TCP_LISTENER);
+    if(result != GLOBUS_SUCCESS)
+    {
+        result = GlobusXIOErrorWrapFailed(
+            "globus_xio_system_handle_init", result);
+        goto error_init;
+    }
+    
     result = globus_l_xio_tcp_contact_string(
-        server->listener_handle,
+        server->listener_fd,
         GLOBUS_XIO_TCP_GET_LOCAL_CONTACT,
         &cs);
     if(result != GLOBUS_SUCCESS)
@@ -1428,13 +1455,12 @@ globus_l_xio_tcp_server_init(
     return GLOBUS_SUCCESS;
 
 error_pass:
+    globus_xio_system_handle_destroy(server->listener_system);
+    
+error_init:
     if(!server->converted)
     {
-        int                             rc;
-        do
-        {
-            rc = close(server->listener_handle);
-        } while(rc < 0 && errno == EINTR);
+        GlobusIXIOTcpCloseFd(server->listener_fd);
     }
     
 error_listener:
@@ -1444,12 +1470,6 @@ error_server:
     GlobusXIOTcpDebugExitWithError();
     return result;
 }
-
-typedef struct
-{
-    globus_xio_operation_t              op;
-    globus_xio_system_handle_t *        accepted_handle;
-} globus_l_accept_info_t;
 
 static
 void
@@ -1466,18 +1486,16 @@ globus_l_xio_tcp_system_accept_cb(
     if(result == GLOBUS_SUCCESS)
     {
         /* all handles created by me are closed on exec */
-        fcntl(*accept_info->accepted_handle, F_SETFD, FD_CLOEXEC);
+        fcntl(accept_info->accepted_fd, F_SETFD, FD_CLOEXEC);
+        globus_xio_driver_finished_accept(
+            accept_info->op, accept_info, GLOBUS_SUCCESS);
     }
     else
     {
-        globus_free(accept_info->accepted_handle);
-        accept_info->accepted_handle = GLOBUS_NULL;
+        globus_xio_driver_finished_accept(
+            accept_info->op, GLOBUS_NULL, result);
+        globus_free(accept_info);
     }
-    
-    globus_xio_driver_finished_accept(
-        accept_info->op, accept_info->accepted_handle, result);
-    
-    globus_free(accept_info);
     
     GlobusXIOTcpDebugExit();
 }
@@ -1489,7 +1507,6 @@ globus_l_xio_tcp_server_accept(
     globus_xio_operation_t              op)
 {
     globus_l_server_t *                 server;
-    globus_xio_system_handle_t *        accepted_handle;
     globus_result_t                     result;
     globus_l_accept_info_t *            accept_info;
     GlobusXIOName(globus_l_xio_tcp_server_accept);
@@ -1498,16 +1515,6 @@ globus_l_xio_tcp_server_accept(
     server = (globus_l_server_t *) driver_server;
     
      /* create the link structure */
-    accepted_handle = (globus_xio_system_handle_t *)
-        globus_malloc(sizeof(globus_xio_system_handle_t));
-    if(!accepted_handle)
-    {
-        result = GlobusXIOErrorMemory("accepted_handle");
-        goto error_handle;
-    }
-    
-    *accepted_handle = GLOBUS_XIO_TCP_INVALID_HANDLE;
-    
     accept_info = (globus_l_accept_info_t *)
         globus_malloc(sizeof(globus_l_accept_info_t));
     if(!accept_info)
@@ -1517,12 +1524,12 @@ globus_l_xio_tcp_server_accept(
     }
     
     accept_info->op = op;
-    accept_info->accepted_handle = accepted_handle;
+    accept_info->accepted_fd = GLOBUS_XIO_TCP_INVALID_HANDLE;
     
     result = globus_xio_system_register_accept(
         op,
-        server->listener_handle,
-        accepted_handle,
+        server->listener_system,
+        &accept_info->accepted_fd,
         globus_l_xio_tcp_system_accept_cb,
         accept_info);
     if(result != GLOBUS_SUCCESS)
@@ -1539,9 +1546,6 @@ error_register:
     globus_free(accept_info);
     
 error_info:
-    globus_free(accepted_handle);
-    
-error_handle:
     GlobusXIOTcpDebugExitWithError();
     return result;
 }
@@ -1556,7 +1560,7 @@ globus_l_xio_tcp_server_cntl(
     globus_l_server_t *                 server;
     globus_result_t                     result;
     char **                             out_string;
-    globus_xio_system_handle_t *        out_handle;
+    globus_xio_system_native_handle_t * out_fd;
     GlobusXIOName(globus_l_xio_tcp_server_cntl);
     
     GlobusXIOTcpDebugEnter();
@@ -1564,10 +1568,10 @@ globus_l_xio_tcp_server_cntl(
     
     switch(cmd)
     {
-      /* globus_xio_system_handle_t *   handle_out */
+      /* globus_xio_system_native_handle_t * fd_out */
       case GLOBUS_XIO_TCP_GET_HANDLE:
-        out_handle = va_arg(ap, globus_xio_system_handle_t *);
-        *out_handle = server->listener_handle;
+        out_fd = va_arg(ap, globus_xio_system_native_handle_t *);
+        *out_fd = server->listener_fd;
         break;
       
       /* char **                        contact_string_out */
@@ -1577,7 +1581,7 @@ globus_l_xio_tcp_server_cntl(
       case GLOBUS_XIO_GET_LOCAL_CONTACT:
         out_string = va_arg(ap, char **);
         result = globus_l_xio_tcp_contact_string(
-            server->listener_handle, cmd, out_string);
+            server->listener_fd, cmd, out_string);
         if(result != GLOBUS_SUCCESS)
         {
             result = GlobusXIOErrorWrapFailed(
@@ -1614,18 +1618,16 @@ globus_l_xio_tcp_server_destroy(
     GlobusXIOTcpDebugEnter();
     server = (globus_l_server_t *) driver_server;
     
+    globus_xio_system_handle_destroy(server->listener_system);
+    
     if(!server->converted)
     {
-        do                                                                  
-        {                                                                   
-            rc = close(server->listener_handle);                             
-        } while(rc < 0 && errno == EINTR);       
-        
+        GlobusIXIOTcpRcCloseFd(server->listener_fd, rc);
         if(rc < 0)
         {
             result = GlobusXIOErrorSystemError("close", errno);
             goto error_close;
-        }              
+        }
     }            
     
     globus_free(server);
@@ -1656,6 +1658,8 @@ globus_l_xio_tcp_handle_init(
         goto error_handle;
     }
     
+    globus_mutex_init(&(*handle)->lock, GLOBUS_NULL);
+    
     GlobusXIOTcpDebugExit();
     return GLOBUS_SUCCESS;
 
@@ -1672,6 +1676,7 @@ globus_l_xio_tcp_handle_destroy(
     GlobusXIOName(globus_l_xio_tcp_handle_destroy);
     
     GlobusXIOTcpDebugEnter();
+    globus_mutex_destroy(&handle->lock);
     if(handle->connection_error)
     {
         globus_object_free(handle->connection_error);
@@ -1683,7 +1688,7 @@ globus_l_xio_tcp_handle_destroy(
 static
 globus_result_t
 globus_l_xio_tcp_bind_local(
-    int                                 fd,
+    globus_xio_system_native_handle_t   fd,
     globus_l_attr_t *                   attr)
 {
     globus_result_t                     result;
@@ -1787,7 +1792,8 @@ globus_l_xio_tcp_system_connect_cb(
     
     if(result != GLOBUS_SUCCESS)
     {
-        GlobusIXIOTcpCloseFd(connect_info->handle->handle);
+        globus_xio_system_handle_destroy(connect_info->handle->system);
+        GlobusIXIOTcpCloseFd(connect_info->handle->fd);
         if(!globus_xio_operation_is_canceled(connect_info->op))
         {
             globus_result_t                 res;
@@ -1832,7 +1838,7 @@ globus_l_xio_tcp_connect_next(
     globus_l_connect_info_t *           connect_info)
 {
     globus_addrinfo_t *                 addrinfo;
-    int                                 fd;
+    globus_xio_system_native_handle_t   fd;
     globus_result_t                     result;
     int                                 save_errno;
     globus_sockaddr_t                   myaddr;
@@ -1849,11 +1855,12 @@ globus_l_xio_tcp_connect_next(
     {
         if(GlobusLibcProtocolFamilyIsIP(addrinfo->ai_family))
         {
+            result = GLOBUS_SUCCESS;
             fd = socket(
                 addrinfo->ai_family,
                 addrinfo->ai_socktype,
                 addrinfo->ai_protocol);
-            if(fd < 0)
+            if(fd == GLOBUS_XIO_TCP_INVALID_HANDLE)
             {
                 save_errno = errno;
                 continue;
@@ -1883,14 +1890,24 @@ globus_l_xio_tcp_connect_next(
                 }
             }
             
-            connect_info->handle->handle = fd;
+            connect_info->handle->fd = fd;
             connect_info->next_addrinfo = addrinfo->ai_next;
             GlobusLibcSockaddrCopy(
                 myaddr, *addrinfo->ai_addr, addrinfo->ai_addrlen);
                 
+            result = globus_xio_system_handle_init(
+                &connect_info->handle->system, fd, GLOBUS_XIO_SYSTEM_TCP);
+            if(result != GLOBUS_SUCCESS)
+            {
+                result = GlobusXIOErrorWrapFailed(
+                    "globus_xio_system_handle_init", result);
+                GlobusIXIOTcpCloseFd(fd);
+                continue;
+            }
+            
             result = globus_xio_system_register_connect(
                 connect_info->op,
-                fd, 
+                connect_info->handle->system, 
                 &myaddr,
                 globus_l_xio_tcp_system_connect_cb,
                 connect_info);
@@ -1898,6 +1915,7 @@ globus_l_xio_tcp_connect_next(
             {
                 result = GlobusXIOErrorWrapFailed(
                     "globus_xio_system_register_connect", result);
+                globus_xio_system_handle_destroy(connect_info->handle->system);
                 GlobusIXIOTcpCloseFd(fd);
                 continue;
             }
@@ -2052,7 +2070,7 @@ globus_l_xio_tcp_open(
     }
     
     handle->use_blocking_io = attr->use_blocking_io;
-    if(!driver_link && attr->handle == GLOBUS_XIO_TCP_INVALID_HANDLE)
+    if(!driver_link && attr->fd == GLOBUS_XIO_TCP_INVALID_HANDLE)
     {
         if(!(contact_info->host && contact_info->port))
         {
@@ -2074,28 +2092,37 @@ globus_l_xio_tcp_open(
     {
         if(driver_link)
         {
-            globus_xio_system_handle_t * accepted_handle;
+            globus_l_accept_info_t *    accept_info;
             
-            accepted_handle = (globus_xio_system_handle_t *) driver_link;
-            handle->handle = *accepted_handle;
+            accept_info = (globus_l_accept_info_t *) driver_link;
+            handle->fd = accept_info->accepted_fd;
             
             /* prevent link destroy from closing this */
-            *accepted_handle = GLOBUS_XIO_TCP_INVALID_HANDLE;
+            accept_info->accepted_fd = GLOBUS_XIO_TCP_INVALID_HANDLE;
             handle->converted = GLOBUS_FALSE;
         }
         else
         {
-            handle->handle = attr->handle;
+            handle->fd = attr->fd;
             handle->converted = GLOBUS_TRUE;
         }
         
         result = globus_l_xio_tcp_apply_handle_attrs(
-            attr, handle->handle, GLOBUS_FALSE, GLOBUS_TRUE);
+            attr, handle->fd, GLOBUS_FALSE, GLOBUS_TRUE);
         if(result != GLOBUS_SUCCESS)
         {
             result = GlobusXIOErrorWrapFailed(
                 "globus_l_xio_tcp_apply_handle_attrs", result);
             goto error_attrs;
+        }
+        
+        result = globus_xio_system_handle_init(
+            &handle->system, handle->fd, GLOBUS_XIO_SYSTEM_TCP);
+        if(result != GLOBUS_SUCCESS)
+        {
+            result = GlobusXIOErrorWrapFailed(
+                "globus_xio_system_handle_init", result);
+            goto error_init;
         }
         
         globus_xio_driver_finished_open(handle, op, GLOBUS_SUCCESS);
@@ -2104,6 +2131,7 @@ globus_l_xio_tcp_open(
     GlobusXIOTcpDebugExit();
     return GLOBUS_SUCCESS;
 
+error_init:
 error_attrs:   
 error_connect:
 error_contact_string:
@@ -2112,28 +2140,6 @@ error_contact_string:
 error_handle:
     GlobusXIOTcpDebugExitWithError();
     return result;
-}
-
-static
-void
-globus_l_xio_tcp_system_close_cb(
-    globus_result_t                     result,
-    void *                              user_arg)
-{
-    globus_xio_operation_t              op;
-    globus_l_handle_t *                 handle;
-    GlobusXIOName(globus_l_xio_tcp_system_close_cb);
-    
-    GlobusXIOTcpDebugEnter();
-    op = (globus_xio_operation_t) user_arg;
-    
-    handle = (globus_l_handle_t *)
-        globus_xio_operation_get_driver_specific(op);
-    
-    globus_xio_driver_finished_close(op, result);
-    globus_l_xio_tcp_handle_destroy(handle);
-    
-    GlobusXIOTcpDebugExit();
 }
 
 /*
@@ -2147,40 +2153,29 @@ globus_l_xio_tcp_close(
     globus_xio_operation_t              op)
 {
     globus_l_handle_t *                 handle;
-    globus_result_t                     result;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    int                                 rc;
     GlobusXIOName(globus_l_xio_tcp_close);
     
     GlobusXIOTcpDebugEnter();
     handle = (globus_l_handle_t *) driver_specific_handle;
-        
-    if(handle->converted)
+    
+    globus_xio_system_handle_destroy(handle->system);
+    
+    if(!handle->converted)
     {
-        globus_xio_driver_finished_close(op, GLOBUS_SUCCESS);
-        globus_l_xio_tcp_handle_destroy(handle);
-    }
-    else
-    {
-        result = globus_xio_system_register_close(
-            op,
-            handle->handle,
-            globus_l_xio_tcp_system_close_cb,
-            op);
-        if(result != GLOBUS_SUCCESS)
+        GlobusIXIOTcpRcCloseFd(handle->fd, rc);
+        if(rc < 0)
         {
-            result = GlobusXIOErrorWrapFailed(
-                "globus_xio_system_register_close", result);
-            goto error_register;
+            result = GlobusXIOErrorSystemError("close", errno);
         }
     }
     
-    GlobusXIOTcpDebugExit();
-    return GLOBUS_SUCCESS;
-    
-error_register:
+    globus_xio_driver_finished_close(op, result);
     globus_l_xio_tcp_handle_destroy(handle);
     
-    GlobusXIOTcpDebugExitWithError();
-    return result;
+    GlobusXIOTcpDebugExit();
+    return GLOBUS_SUCCESS;
 }
 
 static
@@ -2191,24 +2186,42 @@ globus_l_xio_tcp_finish_read(
     globus_size_t                       nbytes)
 {
     globus_xio_operation_t              op;
+    GlobusXIOName(globus_l_xio_tcp_finish_read);
     
-    /**
-     * all of this should have a mutex to protect it, but that would only
-     * protect against users misusing this driver
-     */
-    op = handle->read_op;
-    handle->read_op = NULL;
+    GlobusXIOTcpDebugEnter();
     
-    if(result != GLOBUS_SUCCESS &&
-        !globus_xio_error_is_canceled(result) &&
-        !globus_xio_error_is_eof(result) &&
-        !handle->connection_error)
+    globus_mutex_lock(&handle->lock);
     {
-        handle->connection_error =
-            globus_object_copy(globus_error_peek(result));
+        op = handle->read_op;
+        handle->read_op = NULL;
+        
+        if(result != GLOBUS_SUCCESS &&
+            !handle->connection_error &&
+            !globus_xio_error_is_canceled(result) &&
+            !globus_xio_error_is_eof(result))
+        {
+            handle->connection_error =
+                globus_object_copy(globus_error_peek(result));
+            if(handle->write_op)
+            {
+                globus_xio_driver_operation_cancel(
+                    globus_xio_operation_get_driver_self_handle(
+                        handle->write_op),
+                    handle->write_op);
+            }
+        }
+        else if(handle->connection_error &&
+            globus_xio_error_is_canceled(result))
+        {
+            /* it's likely I canceled this, replace error with original */
+            result =
+                globus_error_put(globus_object_copy(handle->connection_error));
+        }
     }
+    globus_mutex_unlock(&handle->lock);
 
     globus_xio_driver_finished_read(op, result, nbytes);
+    GlobusXIOTcpDebugExit();
 }
 
 static
@@ -2240,24 +2253,34 @@ globus_l_xio_tcp_read(
 {
     globus_l_handle_t *                 handle;
     globus_size_t                       nbytes;
-    globus_result_t                     result;
+    globus_result_t                     result = GLOBUS_SUCCESS;
     GlobusXIOName(globus_l_xio_tcp_read);
     
     GlobusXIOTcpDebugEnter();
     handle = (globus_l_handle_t *) driver_specific_handle;
-    if(handle->read_op)
-    {
-        result = GlobusXIOErrorAlreadyRegistered();
-        goto error_already;
-    }
-    if(handle->connection_error)
-    {
-        result =
-            globus_error_put(globus_object_copy(handle->connection_error));
-        goto error_already;
-    }
     
-    handle->read_op = op;
+    globus_mutex_lock(&handle->lock);
+    {
+        if(handle->read_op)
+        {
+            result = GlobusXIOErrorAlreadyRegistered();
+        }
+        else if(handle->connection_error)
+        {
+            result =
+                globus_error_put(globus_object_copy(handle->connection_error));
+        }
+        else
+        {
+            handle->read_op = op;
+        }
+    }
+    globus_mutex_unlock(&handle->lock);
+    
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_already;
+    }
     
     /* if buflen and waitfor are both 0, we behave like register select */
     if(globus_xio_operation_get_wait_for(op) == 0 &&
@@ -2266,14 +2289,14 @@ globus_l_xio_tcp_read(
         globus_size_t                   nbytes;
         
         result = globus_xio_system_try_read(
-            handle->handle, iovec, iovec_count, &nbytes);
+            handle->system, iovec, iovec_count, &nbytes);
         globus_l_xio_tcp_finish_read(handle, result, nbytes);
     }
     else if(handle->use_blocking_io &&
         globus_xio_driver_operation_is_blocking(op))
     {
         result = globus_xio_system_read(
-            handle->handle,
+            handle->system,
             iovec,
             iovec_count,
             globus_xio_operation_get_wait_for(op),
@@ -2284,7 +2307,7 @@ globus_l_xio_tcp_read(
     {
         result = globus_xio_system_register_read(
             op,
-            handle->handle,
+            handle->system,
             iovec,
             iovec_count,
             globus_xio_operation_get_wait_for(op),
@@ -2302,7 +2325,9 @@ globus_l_xio_tcp_read(
     return GLOBUS_SUCCESS;
 
 error_register:
+    globus_mutex_lock(&handle->lock);
     handle->read_op = NULL;
+    globus_mutex_unlock(&handle->lock);
 error_already:
     GlobusXIOTcpDebugExitWithError();
     return result;
@@ -2316,23 +2341,41 @@ globus_l_xio_tcp_finish_write(
     globus_size_t                       nbytes)
 {
     globus_xio_operation_t              op;
+    GlobusXIOName(globus_l_xio_tcp_finish_write);
     
-    /**
-     * all of this should have a mutex to protect it, but that would only
-     * protect against users misusing this driver
-     */
-    op = handle->write_op;
-    handle->write_op = NULL;
+    GlobusXIOTcpDebugEnter();
     
-    if(result != GLOBUS_SUCCESS &&
-        !globus_xio_error_is_canceled(result) &&
-        !handle->connection_error)
+    globus_mutex_lock(&handle->lock);
     {
-        handle->connection_error =
-            globus_object_copy(globus_error_peek(result));
+        op = handle->write_op;
+        handle->write_op = NULL;
+        
+        if(result != GLOBUS_SUCCESS &&
+            !handle->connection_error &&
+            !globus_xio_error_is_canceled(result))
+        {
+            handle->connection_error =
+                globus_object_copy(globus_error_peek(result));
+            if(handle->read_op)
+            {
+                globus_xio_driver_operation_cancel(
+                    globus_xio_operation_get_driver_self_handle(
+                        handle->read_op),
+                    handle->read_op);
+            }
+        }
+        else if(handle->connection_error &&
+            globus_xio_error_is_canceled(result))
+        {
+            /* it's likely I canceled this, replace error with original */
+            result =
+                globus_error_put(globus_object_copy(handle->connection_error));
+        }
     }
-
+    globus_mutex_unlock(&handle->lock);
+    
     globus_xio_driver_finished_write(op, result, nbytes);
+    GlobusXIOTcpDebugExit();
 }
 
 static
@@ -2365,7 +2408,7 @@ globus_l_xio_tcp_write(
     globus_l_handle_t *                 handle;
     globus_l_attr_t *                   attr;
     globus_size_t                       nbytes;
-    globus_result_t                     result;
+    globus_result_t                     result = GLOBUS_SUCCESS;
     GlobusXIOName(globus_l_xio_tcp_write);
     
     GlobusXIOTcpDebugEnter();
@@ -2375,25 +2418,31 @@ globus_l_xio_tcp_write(
         ("[%s] count=%d, 1st buflen=%d\n",
             _xio_name, iovec_count, (int) iovec[0].iov_len));
     
-    /**
-     * all of this should have a mutex to protect it, but that would only
-     * protect against users misusing this driver
-     */
     handle = (globus_l_handle_t *) driver_specific_handle;
-    if(handle->write_op)
+
+    globus_mutex_lock(&handle->lock);
     {
-        result = GlobusXIOErrorAlreadyRegistered();
+        if(handle->write_op)
+        {
+            result = GlobusXIOErrorAlreadyRegistered();
+        }
+        else if(handle->connection_error)
+        {
+            result =
+                globus_error_put(globus_object_copy(handle->connection_error));
+        }
+        else
+        {
+            handle->write_op = op;
+        }
+    }
+    globus_mutex_unlock(&handle->lock);
+    
+    if(result != GLOBUS_SUCCESS)
+    {
         goto error_already;
     }
-    if(handle->connection_error)
-    {
-        result =
-            globus_error_put(globus_object_copy(handle->connection_error));
-        goto error_already;
-    }
-    
-    handle->write_op = op;
-    
+
     attr = (globus_l_attr_t *)
         globus_xio_operation_get_data_descriptor(op, GLOBUS_FALSE);
     
@@ -2404,7 +2453,7 @@ globus_l_xio_tcp_write(
         if(attr && attr->send_flags)
         {
             result = globus_xio_system_try_write_ex(
-                handle->handle,
+                handle->system,
                 iovec,
                 iovec_count,
                 attr->send_flags,
@@ -2414,7 +2463,7 @@ globus_l_xio_tcp_write(
         else
         {
             result = globus_xio_system_try_write(
-                handle->handle, iovec, iovec_count, &nbytes);
+                handle->system, iovec, iovec_count, &nbytes);
         }
         globus_l_xio_tcp_finish_write(handle, result, nbytes);
     }
@@ -2424,7 +2473,7 @@ globus_l_xio_tcp_write(
         if(attr && attr->send_flags)
         {
             result = globus_xio_system_write_ex(
-                handle->handle,
+                handle->system,
                 iovec,
                 iovec_count,
                 globus_xio_operation_get_wait_for(op),
@@ -2435,7 +2484,7 @@ globus_l_xio_tcp_write(
         else
         {
             result = globus_xio_system_write(
-                handle->handle,
+                handle->system,
                 iovec,
                 iovec_count,
                 globus_xio_operation_get_wait_for(op),
@@ -2449,7 +2498,7 @@ globus_l_xio_tcp_write(
         {
             result = globus_xio_system_register_write_ex(
                 op,
-                handle->handle,
+                handle->system,
                 iovec,
                 iovec_count,
                 globus_xio_operation_get_wait_for(op),
@@ -2462,7 +2511,7 @@ globus_l_xio_tcp_write(
         {
             result = globus_xio_system_register_write(
                 op,
-                handle->handle,
+                handle->system,
                 iovec,
                 iovec_count,
                 globus_xio_operation_get_wait_for(op),
@@ -2482,7 +2531,9 @@ globus_l_xio_tcp_write(
     return GLOBUS_SUCCESS;
 
 error_register:
+    globus_mutex_lock(&handle->lock);
     handle->write_op = NULL;
+    globus_mutex_unlock(&handle->lock);
 error_already:
     GlobusXIOTcpDebugExitWithError();
     return result;
@@ -2501,21 +2552,21 @@ globus_l_xio_tcp_cntl(
     globus_bool_t                       in_bool;
     globus_bool_t *                     out_bool;
     int                                 in_int;
-    int                                 fd;
+    globus_xio_system_native_handle_t   fd;
     globus_socklen_t                    len;
     char **                             out_string;
-    globus_xio_system_handle_t *        out_handle;
+    globus_xio_system_native_handle_t * out_fd;
     GlobusXIOName(globus_l_xio_tcp_cntl);
     
     GlobusXIOTcpDebugEnter();
     handle = (globus_l_handle_t *) driver_specific_handle;
-    fd = handle->handle;
+    fd = handle->fd;
     switch(cmd)
     {
-      /* globus_xio_system_handle_t *   handle_out */
+      /* globus_xio_system_native_handle_t * fd_out */
       case GLOBUS_XIO_TCP_GET_HANDLE:
-        out_handle = va_arg(ap, globus_xio_system_handle_t *);
-        *out_handle = fd;
+        out_fd = va_arg(ap, globus_xio_system_native_handle_t *);
+        *out_fd = fd;
         break;
         
       /* globus_bool_t                  keepalive */

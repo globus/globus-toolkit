@@ -333,7 +333,7 @@ main(
     char *                                  cs;
     globus_gridftp_server_control_attr_t    ftp_attr;
     globus_gridftp_server_control_t         ftp_server;
-    globus_xio_system_handle_t              system_handle;
+    globus_xio_system_native_handle_t       system_handle;
 
     globus_module_activate(GLOBUS_XIO_MODULE);
     globus_module_activate(GLOBUS_GRIDFTP_SERVER_CONTROL_MODULE);

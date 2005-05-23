@@ -9,6 +9,10 @@
  * modifications, you must include this notice in the file.
  */
 
+/**
+ * The goal of this abstraction is to provide a common interface for the
+ * asynchronous and IO operations only.
+ */
 #ifndef GLOBUS_XIO_SYSTEM_INCLUDE
 #define GLOBUS_XIO_SYSTEM_INCLUDE
 
@@ -18,29 +22,14 @@
 EXTERN_C_BEGIN
 
 #define GLOBUS_XIO_SYSTEM_MODULE (&globus_i_xio_system_module)
-
 extern globus_module_descriptor_t       globus_i_xio_system_module;
 
 #define GLOBUS_XIO_SYSTEM_INVALID_HANDLE  -1
-typedef int globus_xio_system_handle_t;   /* for posix, same as fd */
 
-typedef enum
-{
-    /** Open file with create  */
-    GLOBUS_XIO_SYSTEM_CREAT     = O_CREAT,
-    /** Exclusive open */
-    GLOBUS_XIO_SYSTEM_EXCL      = O_EXCL,
-    /** Read-only open */
-    GLOBUS_XIO_SYSTEM_RDONLY    = O_RDONLY,
-    /** Write-only open */
-    GLOBUS_XIO_SYSTEM_WRONLY    = O_WRONLY,
-    /** Read-write open */
-    GLOBUS_XIO_SYSTEM_RDWR      = O_RDWR,
-    /** Open and truncate */
-    GLOBUS_XIO_SYSTEM_TRUNC     = O_TRUNC,
-    /** Open for append */
-    GLOBUS_XIO_SYSTEM_APPEND    = O_APPEND
-} globus_xio_system_open_flag_t;
+#ifndef WIN32
+typedef int globus_xio_system_native_handle_t;   /* for posix, same as fd */
+typedef int globus_xio_system_handle_t;
+#endif
 
 typedef enum
 {
@@ -53,6 +42,14 @@ typedef enum
 
 } globus_xio_system_error_type_t;
 
+typedef enum
+{
+    GLOBUS_XIO_SYSTEM_FILE = 1,
+    GLOBUS_XIO_SYSTEM_TCP,
+    GLOBUS_XIO_SYSTEM_TCP_LISTENER,
+    GLOBUS_XIO_SYSTEM_UDP
+} globus_xio_system_type_t;
+
 typedef void
 (*globus_xio_system_callback_t)(
     globus_result_t                     result,
@@ -64,6 +61,27 @@ typedef void
     globus_size_t                       nbytes,
     void *                              user_arg);
 
+/**
+ * This handle is only used to maintain state for the operations below.
+ * As of now, the only modification it makes to the handle is set the
+ * non-blocking attribute.
+ */
+globus_result_t
+globus_xio_system_handle_init(
+    globus_xio_system_handle_t *        handle,
+    globus_xio_system_native_handle_t   fd,
+    globus_xio_system_type_t            type);
+
+/* this does *not* close the native handle.
+ *  It should remove the non-blocking setting
+ * 
+ * do not call this with outstanding operations.  you can call it from with
+ * a callback
+ */
+void
+globus_xio_system_handle_destroy(
+    globus_xio_system_handle_t          handle);
+    
 globus_result_t
 globus_xio_system_register_connect(
     globus_xio_operation_t              op,
@@ -76,7 +94,7 @@ globus_result_t
 globus_xio_system_register_accept(
     globus_xio_operation_t              op,
     globus_xio_system_handle_t          listener_handle,
-    globus_xio_system_handle_t *        out_handle,
+    globus_xio_system_native_handle_t * out_handle,
     globus_xio_system_callback_t        callback,
     void *                              user_arg);
 
@@ -123,13 +141,6 @@ globus_xio_system_register_write_ex(
     int                                 flags,
     const globus_sockaddr_t *           to,
     globus_xio_system_data_callback_t   callback,
-    void *                              user_arg);
-
-globus_result_t
-globus_xio_system_register_close(
-    globus_xio_operation_t              op,
-    globus_xio_system_handle_t          handle,
-    globus_xio_system_callback_t        callback,
     void *                              user_arg);
 
 globus_result_t

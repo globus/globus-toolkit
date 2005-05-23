@@ -2161,6 +2161,13 @@ globus_xio_operation_get_driver_handle(
     return &op->_op_context->entry[op->ndx];
 }
 
+globus_xio_driver_handle_t
+globus_xio_operation_get_driver_self_handle(
+    globus_xio_operation_t              op)
+{
+    return &op->_op_context->entry[op->ndx - 1];
+}
+
 void *
 globus_xio_operation_get_data_descriptor(
     globus_xio_operation_t              op,

@@ -641,6 +641,48 @@ globus_l_xio_system_deactivate(void)
     return GLOBUS_SUCCESS;
 }
 
+globus_result_t
+globus_xio_system_handle_init(
+    globus_xio_system_handle_t *        handle,
+    globus_xio_system_native_handle_t   fd,
+    globus_xio_system_type_t            type)
+{
+    int                                 rc;
+    globus_result_t                     result;
+    GlobusXIOName(globus_xio_system_handle_init);
+
+    GlobusXIOSystemDebugEnterFD(fd);
+
+    GlobusIXIOSystemAddNonBlocking(fd, rc);
+    if(rc < 0)
+    {
+        result = GlobusXIOErrorSystemError("fcntl", errno);
+        goto error_fcntl;
+    }
+    
+    *handle = fd;
+    GlobusXIOSystemDebugExitFD(fd);
+    return GLOBUS_SUCCESS;
+    
+error_fcntl:
+    GlobusXIOSystemDebugExitWithErrorFD(fd);
+    return result;
+}
+
+void
+globus_xio_system_handle_destroy(
+    globus_xio_system_handle_t          fd)
+{
+    int                                 rc;
+    GlobusXIOName(globus_xio_system_handle_destroy);
+
+    GlobusXIOSystemDebugEnterFD(fd);
+
+    GlobusIXIOSystemRemoveNonBlocking(fd, rc);
+    
+    GlobusXIOSystemDebugExitFD(fd);
+}
+
 static
 void
 globus_l_xio_system_cancel_cb(
@@ -1707,23 +1749,12 @@ globus_l_xio_system_handle_read(
             }
             else
             {
-                int                     rc;
-                
-                GlobusIXIOSystemAddNonBlocking(new_fd, rc);
-                if(rc < 0)
-                {
-                    result = GlobusXIOErrorSystemError("fcntl", errno);
-                    GlobusIXIOSystemCloseFd(new_fd);
-                }
-                else
-                {
-                    *read_info->sop.non_data.out_fd = new_fd;
-                    read_info->nbytes++;
-                    GlobusXIOSystemDebugPrintf(
-                        GLOBUS_L_XIO_SYSTEM_DEBUG_INFO,
-                        (_XIOSL("[%s] Accepted new connection, fd=%d\n"),
-                             _xio_name, new_fd));
-                }
+                *read_info->sop.non_data.out_fd = new_fd;
+                read_info->nbytes++;
+                GlobusXIOSystemDebugPrintf(
+                    GLOBUS_L_XIO_SYSTEM_DEBUG_INFO,
+                    (_XIOSL("[%s] Accepted new connection, fd=%d\n"),
+                         _xio_name, new_fd));
             }
         }
         break;
@@ -2274,32 +2305,6 @@ globus_l_xio_system_poll(
     GlobusXIOSystemDebugExit();
 }
 
-typedef struct
-{
-    int                                 fd;
-    globus_xio_system_callback_t        callback;
-    void *                              user_arg;
-} globus_l_xio_system_open_close_info_t;
-
-static
-void
-globus_l_xio_system_close_kickout(
-    void *                              user_arg)
-{
-    globus_l_xio_system_open_close_info_t * info;
-    GlobusXIOName(globus_l_xio_system_close_kickout);
-
-    GlobusXIOSystemDebugEnter();
-
-    info = (globus_l_xio_system_open_close_info_t *) user_arg;
-
-    info->callback(GLOBUS_SUCCESS, info->user_arg);
-
-    globus_free(info);
-
-    GlobusXIOSystemDebugExit();
-}
-
 globus_result_t
 globus_xio_system_register_connect(
     globus_xio_operation_t              op,
@@ -2309,19 +2314,11 @@ globus_xio_system_register_connect(
     void *                              user_arg)
 {
     globus_bool_t                       done;
-    int                                 rc;
     globus_result_t                     result;
     globus_l_operation_info_t *         op_info;
     GlobusXIOName(globus_xio_system_register_connect);
 
     GlobusXIOSystemDebugEnterFD(fd);
-
-    GlobusIXIOSystemAddNonBlocking(fd, rc);
-    if(rc < 0)
-    {
-        result = GlobusXIOErrorSystemError("fcntl", errno);
-        goto error_nonblocking;
-    }
 
     done = GLOBUS_FALSE;
     while(!done && connect(
@@ -2379,7 +2376,6 @@ error_register:
 
 error_op_info:
 error_connect:
-error_nonblocking:
     GlobusXIOSystemDebugExitWithErrorFD(fd);
     return result;
 }
@@ -2388,23 +2384,15 @@ globus_result_t
 globus_xio_system_register_accept(
     globus_xio_operation_t              op,
     globus_xio_system_handle_t          listener_fd,
-    globus_xio_system_handle_t *        out_fd,
+    globus_xio_system_native_handle_t * out_fd,
     globus_xio_system_callback_t        callback,
     void *                              user_arg)
 {
     globus_result_t                     result;
-    int                                 rc;
     globus_l_operation_info_t *         op_info;
     GlobusXIOName(globus_xio_system_register_accept);
 
     GlobusXIOSystemDebugEnterFD(listener_fd);
-    
-    GlobusIXIOSystemAddNonBlocking(listener_fd, rc);
-    if(rc < 0)
-    {
-        result = GlobusXIOErrorSystemError("fcntl", errno);
-        goto error_nonblocking;
-    }
     
     GlobusIXIOSystemAllocOperation(op_info);
     if(!op_info)
@@ -2438,7 +2426,6 @@ error_register:
     GlobusIXIOSystemFreeOperation(op_info);
 
 error_op_info:
-error_nonblocking:
     GlobusXIOSystemDebugExitWithErrorFD(listener_fd);
     return result;
 }
@@ -2869,68 +2856,6 @@ error_to:
     GlobusIXIOSystemFreeOperation(op_info);
 
 error_op_info:
-    GlobusXIOSystemDebugExitWithErrorFD(fd);
-    return result;
-}
-
-globus_result_t
-globus_xio_system_register_close(
-    globus_xio_operation_t              op,
-    globus_xio_system_handle_t          fd,
-    globus_xio_system_callback_t        callback,
-    void *                              user_arg)
-{
-    globus_l_xio_system_open_close_info_t *  close_info;
-    globus_result_t                     result;
-    int                                 rc;
-    GlobusXIOName(globus_xio_system_register_close);
-
-    GlobusXIOSystemDebugEnterFD(fd);
-
-    GlobusIXIOSystemRemoveNonBlocking(fd, rc);
-
-    do
-    {
-        rc = close(fd);
-    } while(rc < 0 && errno == EINTR);
-
-    if(rc < 0)
-    {
-        result = GlobusXIOErrorSystemError("close", errno);
-        goto error_close;
-    }
-
-    close_info = (globus_l_xio_system_open_close_info_t *)
-        globus_malloc(sizeof(globus_l_xio_system_open_close_info_t));
-    if(!close_info)
-    {
-        result = GlobusXIOErrorMemory("close_info");
-        goto error_close_info;
-    }
-
-    close_info->callback = callback;
-    close_info->user_arg = user_arg;
-
-    result = globus_callback_register_oneshot(
-        GLOBUS_NULL,
-        GLOBUS_NULL,
-        globus_l_xio_system_close_kickout,
-        close_info);
-    if(result != GLOBUS_SUCCESS)
-    {
-        result = GlobusXIOErrorWrapFailed(
-            "globus_callback_register_oneshot", result);
-        goto error_register;
-    }
-
-    GlobusXIOSystemDebugExitFD(fd);
-    return GLOBUS_SUCCESS;
-
-error_register:
-    globus_free(close_info);
-
-error_close_info:
-error_close:
     GlobusXIOSystemDebugExitWithErrorFD(fd);
     return result;
 }
