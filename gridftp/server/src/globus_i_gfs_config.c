@@ -1240,10 +1240,10 @@ globus_i_gfs_config_display_usage()
             }
             printf("\n");
         }
-        printf("\nAny boolean option can be negated by prepending "
-            "'-no-' or '-n' to the option.\n\n");
-        printf("See http://www-unix.globus.org/toolkit/docs/development/"
-            "4.0-drafts/data/gridftp/ for more in-depth documentation.\n\n");
+        printf("\nAny FLAG can be negated by prepending '-no-' or '-n' to the "
+            "command line option.\n\n");
+        printf("Check the GridFTP section at http://www.globus.org/toolkit/docs/\n"
+            "for more in-depth documentation.\n\n");
     }
 
     GlobusGFSDebugExit();
