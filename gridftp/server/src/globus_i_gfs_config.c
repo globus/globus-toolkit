@@ -68,9 +68,10 @@ static const globus_l_gfs_config_option_t option_list[] =
     "Directory to chdir to after starting.  Will use / if not set.", NULL, NULL},
  {"fork", "fork", NULL, "fork", "f", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_TRUE, NULL,
     "Server will fork for each new connection.  Disabling this option is only recommended "
-    "when debugging.", NULL, NULL},
+    "when debugging. Note that non-forked servers running as 'root' will only "
+    "accept a single connection, and then exit.", NULL, NULL},
  {"single", "single", NULL, "single", "1", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL, 
-    "Exit after a single connection", NULL, NULL},
+    "Exit after a single connection.", NULL, NULL},
 {NULL, "Authentication, Authorization, and Security Options", NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL},
  {"auth_level", "auth_level", NULL, "auth-level", NULL, GLOBUS_L_GFS_CONFIG_INT, -1, NULL,
     "0 = Disables all authorization checks. 1 = Authorize identity only.  "
@@ -227,7 +228,10 @@ static const globus_l_gfs_config_option_t option_list[] =
  {"use_home_dirs", "use_home_dirs", NULL, "use-home-dirs", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_TRUE, NULL,
     "Set the startup directory to the authenticated users home dir.", NULL, NULL},
  {"debug", "debug", NULL, "debug", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
-    "Sets options that make server easier to debug. Not recommended for production servers.", NULL, NULL}, 
+    "Sets options that make server easier to debug.  Forces no-fork, no-chdir, "
+    "and allows core dumps on bad signals instead of exiting cleanly. "
+    "Not recommended for production servers.  Note that non-forked servers running "
+    "as 'root' will only accept a single connection, and then exit.", NULL, NULL}, 
 /* internal use */
  {"globus_location", "globus_location", "GLOBUS_LOCATION", "G", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     NULL, NULL, NULL} /* "GLOBUS_LOCATION." */,
@@ -1049,9 +1053,9 @@ globus_i_gfs_config_display_long_usage()
             printf("\n");
         }
         printf("\nAny FLAG can be negated by prepending '-no-' or '-n' to the "
-            "command line option or setting a value of 0 in the config file.\n\n");
-        printf("Check http://www-unix.globus.org/toolkit/docs/development/"
-            "4.0-drafts/data/gridftp/ for more in-depth documentation.\n\n");
+            "command line \noption or setting a value of 0 in the config file.\n\n");
+        printf("Check the GridFTP section at http://www.globus.org/toolkit/docs/\n"
+            "for more in-depth documentation.\n\n");
     }
 
     GlobusGFSDebugExit();

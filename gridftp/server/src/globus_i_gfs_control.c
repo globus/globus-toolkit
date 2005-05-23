@@ -79,17 +79,17 @@ globus_l_gfs_activate()
     {
         return rc;
     }
-    globus_module_activate(GLOBUS_FTP_CONTROL_MODULE);
+    rc = globus_module_activate(GLOBUS_FTP_CONTROL_MODULE);
     if(rc != 0)
     {
         return rc;
     }
-    globus_module_activate(GLOBUS_GRIDFTP_SERVER_CONTROL_MODULE);
+    rc = globus_module_activate(GLOBUS_GRIDFTP_SERVER_CONTROL_MODULE);
     if(rc != 0)
     {
         return rc;
     }
-    globus_module_activate(GLOBUS_GSI_AUTHZ_MODULE);
+    rc = globus_module_activate(GLOBUS_GSI_AUTHZ_MODULE);
     if(rc != 0)
     {
         return rc;
