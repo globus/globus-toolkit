@@ -10,7 +10,7 @@ SUBDIRS= \
 	man
 
 LibSources= \
-	port_getopt.h \
+	auth_pam.c \
 	getopt_long.c \
 	gsi_socket.c \
 	gsi_socket.h \
@@ -36,6 +36,7 @@ LibSources= \
 	myproxy_server_config.c \
 	plugin_common.c \
 	plugin_common.h \
+	port_getopt.h \
 	ssl_utils.c \
 	ssl_utils.h \
 	string_funcs.c \

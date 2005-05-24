@@ -23,6 +23,8 @@ typedef struct
   char **authorized_key_retrievers_dns; /* List of DNs that can retroeve keys */
   char **default_key_retrievers_dns;    /* List of DNs that can retroeve keys */
   int max_proxy_lifetime;	    /* Max life (in seconds) of retrieved creds */
+  char *pam_policy;                 /* How we depend on PAM for passwd auth */
+  char *pam_id;                     /* Application name we present to PAM */
 } myproxy_server_context_t;
 
 

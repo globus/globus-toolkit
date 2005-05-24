@@ -250,6 +250,16 @@ line_parse_callback(void *context_arg,
 	context->max_proxy_lifetime = 60*60*atoi(tokens[1]);
     }
 
+    if (strcmp(directive, "pam") == 0)
+    {
+	context->pam_policy = strdup(tokens[1]);
+    }
+
+    if (strcmp(directive, "pam_id") == 0)
+    {
+	context->pam_id = strdup(tokens[1]);
+    }
+
     return_code = 0;
     
   error:
