@@ -403,9 +403,10 @@ write_cert( char       *path,
     int          retval      = -1;
     int          size;
 
-    if( mkpath( path ) < 0 )
+    if( make_path( path ) < 0 )
     {
-      goto error;
+        verror_print_error(stderr);
+        goto error;
     }
 
     /* Open the output file. */
@@ -481,9 +482,10 @@ write_key( char       *path,
     int          retval     = -1;
     int          size;
 
-    if( mkpath( path ) < 0 )
+    if( make_path( path ) < 0 )
     {
-      goto error;
+        verror_print_error(stderr);
+        goto error;
     }
 
     /* Open the output file. */
@@ -562,39 +564,3 @@ buffer2file( char *buffer,
     return( 0 );
 }
 
-int
-mkpath(char *path)
-{
-    struct stat sb;
-    char *p = path+1;
-
-
-    while ((p = strchr(p, '/')) != NULL) {
-        *p = '\0';
-        if (stat(path, &sb) < 0) {
-            if (errno == ENOENT) { /* doesn't exist. create it. */
-                if (mkdir(path, 0700) < 0) {
-                    fprintf(stderr, "failed to create directory %s: %s\n",
-                            path, strerror(errno));
-                    *p = '/';
-                    return -1;
-                }
-                fprintf(stderr, "created directory %s\n", path);
-            } else {
-                fprintf(stderr, "failed to stat %s: %s\n",
-                        path, strerror(errno));
-                *p = '/';
-                return -1;
-            }
-        }
-        if (!(sb.st_mode & S_IFDIR)) {
-            fprintf(stderr, "%s exists and is not a directory\n", path);
-            *p = '/';
-            return -1;
-        }
-        *p = '/';
-        p++;
-    }
-
-    return 0;
-}

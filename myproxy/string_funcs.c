@@ -98,6 +98,22 @@ concatenate_string(char				*destination,
     return concatenate_strings(destination, destination_length, source, NULL);
 }
 
+char *
+myappend(char *string, char *append)
+{
+    char *new_string = NULL;
+    
+    new_string = realloc(string,
+                         sizeof(string) + sizeof(append) + 1 /* for NUL */);
+    if (new_string == NULL)
+    {
+        verror_put_errno(errno);
+        return NULL;
+    }
+    strcat(new_string, append);
+    return new_string;
+}
+
 
 int
 my_strncpy(char					*destination,
@@ -365,6 +381,43 @@ buffer_from_file(const char			*path,
     }
     
     return return_status;
+}
+
+int
+make_path(char *path)
+{
+    struct stat sb;
+    char *p = path+1;
+
+
+    while ((p = strchr(p, '/')) != NULL) {
+        *p = '\0';
+        if (stat(path, &sb) < 0) {
+            if (errno == ENOENT) { /* doesn't exist. create it. */
+                if (mkdir(path, 0700) < 0) {
+                    verror_put_errno(errno);
+                    verror_put_string("Failed to create directory %s",
+                            strerror(errno));
+                    *p = '/';
+                    return -1;
+                }
+            } else {
+                verror_put_errno(errno);
+                verror_put_string("failed to stat %s", path);
+                *p = '/';
+                return -1;
+            }
+        }
+        if (!(sb.st_mode & S_IFDIR)) {
+            verror_put_string("%s exists and is not a directory", path);
+            *p = '/';
+            return -1;
+        }
+        *p = '/';
+        p++;
+    }
+
+    return 0;
 }
 
 int
