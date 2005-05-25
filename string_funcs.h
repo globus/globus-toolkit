@@ -45,6 +45,18 @@ concatenate_string(char				*destination,
 		   const char			*source);
 
 /*
+ * myappend()
+ *
+ * Append one string to another, reallocating the buffer of the target string
+ * to size. Uses realloc().  Returns a pointer to the resized string, which may
+ * be different than the pointer passsed in (which is free()'ed in this case.
+ */
+char *
+myappend(char                                   *string,
+         char                                   *append);
+
+
+/*
  * my_strncpy()
  *
  * Copy string from source to destination, which is destination_length
@@ -99,7 +111,17 @@ int
 buffer_from_file(const char			*path,
 		 unsigned char			**pbuffer,
 		 int				*pbuffer_len);
-	     
+
+/*
+ * make_path()
+ *
+ * Given a path, create any missing directory conponents.
+ *
+ * Returns 0 on success, -1 on error, setting verror.
+ */
+int
+make_path(char                                  *path);
+
 /*
  * b64_encode()
  *
