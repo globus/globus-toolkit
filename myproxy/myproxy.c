@@ -1532,7 +1532,8 @@ myproxy_deserialize_response(myproxy_response_t *response,
 
 	    tmp[0] = '\0';
 	    len = concatenate_strings(tmp, sizeof(tmp),
-				      MYPROXY_FILEDATA_PREFIX, "_", tok, NULL);
+				      MYPROXY_FILEDATA_PREFIX, "_", tok, "=",
+				      NULL);
 	    if (len == -1) return -1;
 
 	    len = convert_message(data, datalen, tmp,
