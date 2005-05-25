@@ -198,6 +198,13 @@ int myproxy_creds_is_owner(const char *username, const char *credname,
  */
 void myproxy_creds_free_contents(struct myproxy_creds *creds);
 
+/*
+ * myproxy_certs_free()
+ *
+ * Free a list of myproxy_certs structures.
+ */
+void myproxy_certs_free(struct myproxy_certs *certs);
+
 /* 
  * myproxy_set_storage_dir()
  * 
@@ -221,6 +228,14 @@ int myproxy_check_storage_dir();
  * Returns 0 if OK, -1 if not.
  */
 int myproxy_print_cred_info(myproxy_creds_t *creds, FILE *out);
+
+/*
+ * myproxy_get_certs()
+ *
+ * Return linked list of trusted CA certificate and related files.
+ * Returns NULL on error.
+ */
+myproxy_certs_t *myproxy_get_certs(const char cert_dir[]);
 
 #endif
 
