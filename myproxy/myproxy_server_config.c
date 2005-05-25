@@ -250,6 +250,11 @@ line_parse_callback(void *context_arg,
 	context->max_proxy_lifetime = 60*60*atoi(tokens[1]);
     }
 
+    if (strcmp(directive, "cert_dir") == 0)
+    {
+	context->cert_dir = strdup(tokens[1]);
+    }
+
     if (strcmp(directive, "pam") == 0)
     {
 	context->pam_policy = strdup(tokens[1]);
@@ -504,14 +509,6 @@ myproxy_server_config_read(myproxy_server_context_t *context)
 	goto error;
     }
     
-    context->accepted_credential_dns = NULL;
-    context->authorized_retriever_dns = NULL;
-    context->authorized_renewer_dns = NULL;
-    context->default_retriever_dns = NULL;
-    context->default_renewer_dns = NULL;
-    context->authorized_key_retrievers_dns = NULL;
-    context->default_key_retrievers_dns    = NULL;
-    
     /* Clear any outstanding error */
     verror_clear();
     
@@ -533,6 +530,11 @@ myproxy_server_config_read(myproxy_server_context_t *context)
 	goto error;
     }
     
+    if (context->cert_dir == NULL)
+    {
+	GLOBUS_GSI_SYSCONFIG_GET_CERT_DIR(&context->cert_dir);
+    }
+
     /* Success */
     return_code = 0;
     
