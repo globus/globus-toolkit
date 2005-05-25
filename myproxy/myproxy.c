@@ -532,6 +532,16 @@ myproxy_serialize_request(const myproxy_request_t *request, char *data, const in
 
     }
 
+    /* trusted root certificates */
+    if (request->want_trusted_certs) {
+      len = concatenate_strings(data, datalen, MYPROXY_TRUSTED_CERTS_STRING,
+				"1", "\n", NULL);
+      if (len < 0)
+        return -1;
+
+      totlen += len;
+    }
+
     return totlen+1;
 }
 
@@ -785,6 +795,29 @@ myproxy_deserialize_request(const char *data, const int datalen,
       }
     }
 
+    /* trusted root certificates */
+    len = convert_message(data, datalen,
+			  MYPROXY_TRUSTED_CERTS_STRING,
+			  CONVERT_MESSAGE_DEFAULT_FLAGS,
+			  buf, sizeof(buf));
+
+    if (len == -2)  /*-2 indicates string not found*/
+       request->want_trusted_certs = 0;
+    else
+    if (len <= -1)
+    {
+	verror_prepend_string("Error parsing TRUSTED_CERTS in client request");
+	return -1;
+    }
+    else
+    {
+	if (string_to_int(buf, &request->want_trusted_certs) !=
+	    STRING_TO_INT_SUCCESS) {
+	    verror_prepend_string("Error parsing TRUSTED_CERTS in client request");
+	    return -1;
+	}
+    }
+
     /* Success */
     return 0;
 } 
@@ -995,6 +1028,8 @@ myproxy_serialize_response(const myproxy_response_t *response,
 	if (response->info_creds->next) {
 	    len = concatenate_strings(data, datalen,
 				      MYPROXY_ADDITIONAL_CREDS_STRING, NULL);
+	    if (len < 0)
+		return -1;
 	    totlen += len;
 	    for (cred = response->info_creds->next;
 		 cred != NULL;
@@ -1006,8 +1041,15 @@ myproxy_serialize_response(const myproxy_response_t *response,
 		    len = concatenate_strings(data, datalen, cred->credname,
 					      NULL);
 		}
+		if (len < 0)
+		    return -1;
 		totlen += len;
 	    }
+	    len = concatenate_strings(data, datalen,
+				      "\n", NULL);
+	    if (len < 0)
+		return -1;
+	    totlen += len;
 	}
     }
 
@@ -1033,6 +1075,55 @@ myproxy_serialize_response(const myproxy_response_t *response,
 	}
     }
 
+    /* Include trusted certificates */
+    if (response->trusted_certs) {
+	myproxy_certs_t *cert;
+
+	len = concatenate_strings(data, datalen, MYPROXY_TRUSTED_CERTS_STRING,
+				  NULL);
+	if (len < 0)
+	    return -1;
+	totlen += len;
+
+	for (cert = response->trusted_certs; cert; cert = cert->next) {
+	    if (cert->next) {
+		len = concatenate_strings(data, datalen, cert->filename,
+					  "," , NULL);
+	    } else {
+		len = concatenate_strings(data, datalen, cert->filename,
+					  NULL);
+	    }	    
+	    if (len < 0)
+		return -1;
+	    totlen += len;
+	}
+	len = concatenate_strings(data, datalen,
+				  "\n", NULL);
+	if (len < 0)
+	    return -1;
+	totlen += len;
+	
+	
+	for (cert = response->trusted_certs; cert; cert = cert->next) {
+	    char *b64data;
+	    if (b64_encode(cert->contents, &b64data) < 0) {
+		goto error;
+	    }
+	    myproxy_debug("got b64:\n%s\n", b64data);
+	    len = concatenate_strings(data, datalen, MYPROXY_FILEDATA_PREFIX,
+				      "_", cert->filename, "=",
+				      b64data,
+				      "\n", NULL);
+	    free(b64data);
+
+	    if (len < 0)
+		return -1;
+	    totlen += len;
+	}
+    }
+
+    myproxy_debug("sending %s\n", data);
+
     return totlen+1;
 
     error:
@@ -1049,8 +1140,8 @@ myproxy_deserialize_response(myproxy_response_t *response,
     char response_type_str[128];
     char authorization_data[4096];
     int value,i, num_creds ;
-    char tmp[100];
-    char buffer[1024];
+    char tmp[100000];
+    char buffer[100000];
 
     assert(data != NULL); 
 
@@ -1058,6 +1149,8 @@ myproxy_deserialize_response(myproxy_response_t *response,
 	free(response->authorization_data);
 	response->authorization_data = NULL;
     }
+
+    myproxy_debug("received %s\n", data);
 
     len = convert_message(data, datalen,
 			  MYPROXY_VERSION_STRING,
@@ -1412,6 +1505,48 @@ myproxy_deserialize_response(myproxy_response_t *response,
 	    verror_put_string("Error parsing authorization data from server response");
 	    return -1;
 	}
+    }
+
+    len = convert_message(data, datalen,
+			  MYPROXY_TRUSTED_CERTS_STRING,
+			  CONVERT_MESSAGE_DEFAULT_FLAGS,
+			  tmp, sizeof(tmp));
+    if (len > 0) {
+	char *tok, *files;
+	myproxy_certs_t *curr=NULL;
+	
+	files = strdup(tmp);
+	for (tok = strtok(files, ",");
+	     tok; tok = strtok(NULL, ",")) {
+
+	    if (curr == NULL) {
+		response->trusted_certs = curr =
+		    (myproxy_certs_t *)malloc(sizeof(myproxy_certs_t));
+	    } else {
+		curr->next = (myproxy_certs_t *)malloc(sizeof(myproxy_certs_t));
+		curr = curr->next;
+	    }
+	    memset(curr, 0, sizeof(myproxy_certs_t));
+	    curr->filename = strdup(tok);
+	    myproxy_debug("got cert file: %s\n", curr->filename);
+
+	    tmp[0] = '\0';
+	    len = concatenate_strings(tmp, sizeof(tmp),
+				      MYPROXY_FILEDATA_PREFIX, "_", tok, NULL);
+	    if (len == -1) return -1;
+
+	    len = convert_message(data, datalen, tmp,
+				  CONVERT_MESSAGE_DEFAULT_FLAGS,
+				  buffer, sizeof(buffer));
+	    if (len == -1) return -1;
+	    
+	    if (b64_decode(buffer, &curr->contents) < 0) {
+		verror_put_string("b64 decode failed!");
+		return -1;
+	    }
+	    myproxy_debug("contents:\n%s\n", curr->contents);
+	}
+	free(files);
     }
 
     /* Success */
