@@ -31,6 +31,7 @@ static char usage[] = \
 "                                         username instead of $LOGNAME\n"
 "       -k | --credname        <name>     Specify credential name\n"
 "       -S | --stdin_pass                 Read passphrase from stdin\n"
+"       -T | --trustroots                 Manage trust roots\n"
 "       -n | --no_passphrase              Don't prompt for passphrase\n"
 "\n";
 
@@ -49,7 +50,8 @@ struct option long_options[] =
     {"dn_as_username",         no_argument, NULL, 'd'},
     {"credname",	 required_argument, NULL, 'k'},
     {"stdin_pass",             no_argument, NULL, 'S'},
-    {"no_passphrase",         no_argument, NULL, 'n'},
+    {"trustroots",             no_argument, NULL, 'T'},
+    {"no_passphrase",          no_argument, NULL, 'n'},
     {0, 0, 0, 0}
 };
 
@@ -234,6 +236,9 @@ init_arguments(int argc,
 	    break;
 	case 'S':
 	    read_passwd_from_stdin = 1;
+	    break;
+	case 'T':
+	    request->want_trusted_certs = 1;
 	    break;
         default:        /* print usage and exit */ 
 	    fprintf(stderr, usage);
