@@ -366,3 +366,62 @@ buffer_from_file(const char			*path,
     
     return return_status;
 }
+
+int
+b64_encode(const char *input, char **output)
+{
+    BIO *mbio, *b64bio, *bio;
+    char *outbuf;
+    long inlen, outlen;
+
+    assert(input != NULL);
+
+    mbio = BIO_new(BIO_s_mem());
+    b64bio = BIO_new(BIO_f_base64());
+    BIO_set_flags(b64bio, BIO_FLAGS_BASE64_NO_NL);
+    bio = BIO_push(b64bio, mbio);
+
+    inlen = strlen(input);
+    if (BIO_write(bio, input, inlen) != inlen) {
+	verror_put_string("error in BIO_write when base64 encoding");
+	return -1;
+    }
+    BIO_flush(bio);
+
+    outlen = BIO_get_mem_data(bio, &outbuf);
+
+    *output = malloc(outlen+1);
+    memcpy(*output, outbuf, outlen);
+    (*output)[outlen] = '\0';
+
+    BIO_free_all(bio);
+
+    return 0;
+}
+
+int
+b64_decode(const char *input, char **output)
+{
+    BIO *mbio, *b64bio, *bio;
+    long inlen, outlen;
+
+    assert(input != NULL);
+
+    mbio = BIO_new_mem_buf((void *)input, -1);
+    b64bio = BIO_new(BIO_f_base64());
+    BIO_set_flags(b64bio, BIO_FLAGS_BASE64_NO_NL);
+    bio = BIO_push(b64bio, mbio);
+
+    inlen = strlen(input);
+    outlen = inlen*2;
+
+    *output = malloc(outlen+1);
+
+    if (BIO_read(bio, *output, inlen*2) <= 0) {
+	verror_put_string("error in BIO_read when base64 encoding");
+	return -1;
+    }
+    BIO_free_all(bio);
+
+    return 0;
+}
