@@ -282,8 +282,6 @@ handle_client(myproxy_socket_attrs_t *attrs,
     server_response = malloc(sizeof(*server_response));
     memset(server_response, 0, sizeof(*server_response));
 
-    now = time(0);
-
     /* Create a new gsi socket */
     attrs->gsi_socket = GSI_SOCKET_new(attrs->socket_fd);
     if (attrs->gsi_socket == NULL) {
@@ -390,6 +388,7 @@ handle_client(myproxy_socket_attrs_t *attrs,
 		      client_creds->lifetime);
 
 	/* Are credentials expired? */
+	now = time(0);
 	if (client_creds->start_time > now) {
 	    myproxy_debug("  warning: credentials not yet valid! "
 			  "(problem with local clock?)");
@@ -405,6 +404,16 @@ handle_client(myproxy_socket_attrs_t *attrs,
 	    strcpy(error, msg);
 	    strcat(error, client_creds->lockmsg);
 	    respond_with_error_and_die(attrs, error);
+	}
+
+	if (client_request->want_trusted_certs) {
+	    if (context->cert_dir) {
+		server_response->trusted_certs =
+		    myproxy_get_certs(context->cert_dir);
+	    } else {
+		myproxy_debug("  client requested trusted certificates but"
+			      "cert_dir not configured");
+	    }
 	}
 
 	/* Send initial OK response */
@@ -704,7 +713,7 @@ respond_with_error_and_die(myproxy_socket_attrs_t *attrs,
 void send_response(myproxy_socket_attrs_t *attrs, myproxy_response_t *response,
 		   char *client_name)
 {
-    char server_buffer[10240];
+    char server_buffer[1000000];
     int responselen;
     assert(response != NULL);
 
