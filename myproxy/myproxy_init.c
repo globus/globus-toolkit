@@ -151,8 +151,7 @@ main(int argc, char *argv[])
     
     /* Set up client socket attributes */
     if (myproxy_init_client(socket_attrs) < 0) {
-        fprintf(stderr, "%s\n", 
-		verror_get_string());
+	verror_print_error(stderr);
         goto cleanup;
     }
 
@@ -203,8 +202,7 @@ main(int argc, char *argv[])
     
     /* Authenticate client to server */
     if (myproxy_authenticate_init(socket_attrs, proxyfile) < 0) {
-        fprintf(stderr, "%s\n", 
-		verror_get_string());
+	verror_print_error(stderr);
         goto cleanup;
     }
 
@@ -212,35 +210,33 @@ main(int argc, char *argv[])
     requestlen = myproxy_serialize_request(client_request, 
                                            request_buffer, sizeof(request_buffer));
     if (requestlen < 0) {
-        fprintf(stderr, "%s\n",verror_get_string());
+	verror_print_error(stderr);
 	goto cleanup;
     }
 
     /* Send request to the myproxy-server */
     if (myproxy_send(socket_attrs, request_buffer, requestlen) < 0) {
-        fprintf(stderr, "%s\n", 
-		verror_get_string());
+	verror_print_error(stderr);
 	goto cleanup;
     }
 
     /* Continue unless the response is not OK */
     if (myproxy_recv_response_ex(socket_attrs, server_response,
 				 client_request) != 0) {
-        fprintf(stderr, "%s\n", verror_get_string());
+	verror_print_error(stderr);
         goto cleanup;
     }
     
     /* Delegate credentials to server using the default lifetime of the cert. */
     if (myproxy_init_delegation(socket_attrs, proxyfile, cred_lifetime,
 				NULL /* no passphrase */) < 0) {
-	fprintf(stderr, "%s\n", 
-		verror_get_string());
+	verror_print_error(stderr);
 	goto cleanup;
     }
 
     /* Get final response from server */
     if (myproxy_recv_response(socket_attrs, server_response) != 0) {
-        fprintf(stderr, "%s\n", verror_get_string());
+	verror_print_error(stderr);
         goto cleanup;
     }
 
@@ -501,7 +497,7 @@ int
 grid_proxy_destroy(const char *proxyfile)
 {
     if (ssl_proxy_file_destroy(proxyfile) != SSL_SUCCESS) {
-	fprintf(stderr, "%s\n", verror_get_string());
+	verror_print_error(stderr);
 	return -1;
     }
     return 0;
