@@ -410,6 +410,7 @@ handle_client(myproxy_socket_attrs_t *attrs,
 	    if (context->cert_dir) {
 		server_response->trusted_certs =
 		    myproxy_get_certs(context->cert_dir);
+		myproxy_log("Sending trust roots to %s", client_name);
 	    } else {
 		myproxy_debug("  client requested trusted certificates but"
 			      "cert_dir not configured");
