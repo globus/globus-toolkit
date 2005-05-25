@@ -53,7 +53,7 @@ typedef struct
     char			 *creddesc;
     char			 *authzcreds;
     char 		         *keyretrieve;
-    char                         want_trusted_certs; /* 1=yes, 0=no */
+    int                          want_trusted_certs; /* 1=yes, 0=no */
 } myproxy_request_t;
 
 /* A server response object */
