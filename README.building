@@ -7,7 +7,7 @@ clients and host credentials to run the myproxy-server.
 
 Second, you need special versions of the GNU autotools for working
 with GPT.  Download
-<ftp://ftp.globus.org/pub/gt4/4.0/4.0.0/autotools-for-gpt3.2autotools2004.tar.gz>
+<ftp://ftp.globus.org/pub/gt4/4.0/4.0.0/gpt/autotools-for-gpt3.2autotools2004.tar.gz>
 and run "./install-autotools $GLOBUS_LOCATION" in the
 autotools-for-gpt3.2autotools2004 directory to install autoheader,
 automake, autoconf, etc., into $GLOBUS_LOCATION/bin.  These special
