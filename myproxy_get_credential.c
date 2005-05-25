@@ -265,7 +265,9 @@ main(int argc, char *argv[])
     retval = 0;
 
 error:
-    free(outputfile);
+    if (certfile) free(certfile);
+    if (keyfile) free(keyfile);
+    if (outputfile) free(outputfile);
     verror_clear();
 
     /* free memory allocated */
