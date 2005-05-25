@@ -100,4 +100,24 @@ buffer_from_file(const char			*path,
 		 unsigned char			**pbuffer,
 		 int				*pbuffer_len);
 	     
+/*
+ * b64_encode()
+ *
+ * Base64 encode a string.  Returns an allocated string.
+ *
+ * Returns 0 on success, -1 on error, setting verror.
+ */
+int
+b64_encode(const char *input, char **output);
+
+/*
+ * b64_decode()
+ *
+ * Base64 decode a string.  Returns an allocated string.
+ *
+ * Returns 0 on success, -1 on error, setting verror.
+ */
+int
+b64_decode(const char *input, char **output);
+
 #endif /* _STRING_FUNCS_H */
