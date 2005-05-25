@@ -1515,14 +1515,16 @@ myproxy_get_certs(const char cert_dir[])
     DIR *dir = NULL;
     struct dirent *de = NULL;
     myproxy_certs_t *head=NULL, *curr=NULL;
-    struct stat s;
-    int fd;
+    char path[MAXPATHLEN];
 
     if ((dir = opendir(cert_dir)) == NULL) {
 	verror_put_string("failed to open %s", cert_dir);
 	return NULL;
     }
     while ((de = readdir(dir)) != NULL) {
+	if (!strcmp(de->d_name, ".") || !strcmp(de->d_name, "..")) {
+	    continue;
+	}
 	if (curr == NULL) {
 	    curr = head = (myproxy_certs_t *)malloc(sizeof(myproxy_certs_t));
 	} else {
@@ -1531,7 +1533,9 @@ myproxy_get_certs(const char cert_dir[])
 	}
 	memset(curr, 0, sizeof(myproxy_certs_t));
 	curr->filename = strdup(de->d_name);
-	if (buffer_from_file(curr->filename, &curr->contents, NULL) < 0) {
+	sprintf(path, "%s/%s", cert_dir, curr->filename);
+	if (buffer_from_file(path, (unsigned char **)&curr->contents,
+			     NULL) < 0) {
 	    goto failure;
 	}
     }
