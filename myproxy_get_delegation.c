@@ -55,7 +55,7 @@ struct option long_options[] =
     {0, 0, 0, 0}
 };
 
-static char short_options[] = "hus:p:l:t:o:vVa:dk:Sn";
+static char short_options[] = "hus:p:l:t:o:vVa:dk:SnT";
 
 static char version[] =
 "myproxy-logon version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
