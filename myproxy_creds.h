@@ -40,6 +40,15 @@ struct myproxy_creds {
 
 typedef struct myproxy_creds myproxy_creds_t;
 
+/* trusted certificate files */
+struct myproxy_certs {
+    char                 *filename;
+    char                 *contents;
+    struct myproxy_certs *next;
+};
+
+typedef struct myproxy_certs myproxy_certs_t;
+
 /*
  * myproxy_creds_store()
  *
