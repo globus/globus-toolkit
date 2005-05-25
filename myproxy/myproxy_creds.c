@@ -1444,6 +1444,14 @@ void myproxy_creds_free_contents(struct myproxy_creds *creds)
     memset(creds, 0, sizeof(struct myproxy_creds));
 }
 
+void myproxy_certs_free(struct myproxy_certs *certs)
+{
+    if (!certs) return;
+    if (certs->filename) free(certs->filename);
+    if (certs->contents) free(certs->contents);
+    myproxy_certs_free(certs->next);
+}
+
 int myproxy_set_storage_dir(const char *dir)
 {
     if (storage_dir) {
@@ -1499,4 +1507,39 @@ myproxy_print_cred_info(myproxy_creds_t *creds, FILE *out)
 	}
     }
     return 0;
+}
+
+myproxy_certs_t *
+myproxy_get_certs(const char cert_dir[])
+{
+    DIR *dir = NULL;
+    struct dirent *de = NULL;
+    myproxy_certs_t *head=NULL, *curr=NULL;
+    struct stat s;
+    int fd;
+
+    if ((dir = opendir(cert_dir)) == NULL) {
+	verror_put_string("failed to open %s", cert_dir);
+	return NULL;
+    }
+    while ((de = readdir(dir)) != NULL) {
+	if (curr == NULL) {
+	    curr = head = (myproxy_certs_t *)malloc(sizeof(myproxy_certs_t));
+	} else {
+	    curr->next = (myproxy_certs_t *)malloc(sizeof(myproxy_certs_t));
+	    curr = curr->next;
+	}
+	memset(curr, 0, sizeof(myproxy_certs_t));
+	curr->filename = strdup(de->d_name);
+	if (buffer_from_file(curr->filename, &curr->contents, NULL) < 0) {
+	    goto failure;
+	}
+    }
+    closedir(dir);
+
+    return head;
+
+ failure:
+    myproxy_certs_free(head);
+    return NULL;
 }
