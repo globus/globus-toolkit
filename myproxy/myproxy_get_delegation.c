@@ -163,7 +163,8 @@ main(int argc, char *argv[])
 
     if (myproxy_get_delegation(socket_attrs, client_request,
 			       server_response, outputfile)!=0) {
-	fprintf(stderr, "Failed to receive a proxy.\n");
+	fprintf(stderr, "Failed to receive credentials.\n");
+	verror_print_error();
 	return 1;
     }
     printf("A proxy has been received for user %s in %s\n",
