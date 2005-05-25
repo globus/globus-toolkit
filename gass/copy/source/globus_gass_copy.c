@@ -306,7 +306,7 @@ globus_gass_copy_handle_init(
 	handle->user_cancel_callback = GLOBUS_NULL;
 	handle->partial_offset = -1;
 	handle->partial_end_offset = -1;
-
+        handle->partial_bytes_remaining = -1;
 	return GLOBUS_SUCCESS;
     }
     else
@@ -2646,6 +2646,7 @@ globus_l_gass_copy_register_read(
     globus_result_t result;
     int rc;
     globus_object_t * err;
+    globus_size_t read_len = 0;
     static char * myname="globus_l_gass_copy_register_read";
 
     switch (state->source.mode)
@@ -2691,12 +2692,22 @@ globus_l_gass_copy_register_read(
 	break;
 
     case GLOBUS_GASS_COPY_URL_MODE_IO:
-
+	if(handle->partial_end_offset != -1)
+        {
+            read_len = 
+                (handle->buffer_length < handle->partial_bytes_remaining) ?
+                 handle->buffer_length : handle->partial_bytes_remaining;
+            handle->partial_bytes_remaining -= read_len;
+        }
+        else
+        {
+            read_len = handle->buffer_length;
+        }
 	result = globus_io_register_read(
 	    state->source.data.io.handle,
 	    buffer,
-	    handle->buffer_length,
-	    handle->buffer_length,
+	    read_len,
+	    read_len,
 	    globus_l_gass_copy_io_read_callback,
 	    (void *) handle);
 
@@ -2987,12 +2998,16 @@ globus_l_gass_copy_io_setup_get(
 
         if(result == GLOBUS_SUCCESS && handle->partial_offset != -1)
         {
+            if(handle->partial_end_offset != -1)
+            {
+                handle->partial_bytes_remaining = 
+                    handle->partial_end_offset - handle->partial_offset;
+            }
             result = globus_io_file_seek(
                 state->source.data.io.handle,
                 handle->partial_offset,
                 SEEK_SET);               
         }
-
 
 	if(result==GLOBUS_SUCCESS)
 	{
@@ -3744,6 +3759,16 @@ globus_l_gass_copy_io_read_callback(
     globus_libc_fprintf(stderr,
             "io_read_callback(): %d bytes READ\n", nbytes);
 #endif
+
+    /* fake an eof if we are done with the partial */
+    if(result == GLOBUS_SUCCESS && handle->partial_bytes_remaining == 0)
+    {
+        result = globus_error_put(
+            globus_io_error_construct_eof(
+                GLOBUS_IO_MODULE,
+                GLOBUS_NULL,
+                io_handle));
+    }
 
     if(result != GLOBUS_SUCCESS)
     {
@@ -5076,13 +5101,25 @@ globus_gass_copy_register_url_to_url(
     if(dest_url_mode == GLOBUS_GASS_COPY_URL_MODE_FTP && handle->send_allo)
     {
         globus_off_t                    source_size = 0;
+       
         
-        result = globus_i_gass_copy_size(
-            handle,
-            source_url,
-            source_attr,
-            &source_size);
-        
+        if(handle->partial_end_offset != -1)
+        {
+            source_size = handle->partial_end_offset;
+        }
+        else
+        {
+            result = globus_i_gass_copy_size(
+                handle,
+                source_url,
+                source_attr,
+                &source_size);
+        }
+        if(handle->partial_offset != -1)
+        {
+            source_size -= handle->partial_offset;
+        }
+
         if(result == GLOBUS_SUCCESS && source_size > 0)
         {
             globus_ftp_client_operationattr_set_allocate(
