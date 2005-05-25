@@ -470,10 +470,11 @@ b64_decode(const char *input, char **output)
 
     *output = malloc(outlen+1);
 
-    if (BIO_read(bio, *output, inlen*2) <= 0) {
+    if ((outlen = BIO_read(bio, *output, outlen)) <= 0) {
 	verror_put_string("error in BIO_read when base64 encoding");
 	return -1;
     }
+    (*output)[outlen] = '\0';
     BIO_free_all(bio);
 
     return 0;
