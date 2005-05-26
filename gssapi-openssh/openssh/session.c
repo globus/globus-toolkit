@@ -1665,7 +1665,8 @@ do_child(Session *s, const char *command)
 	}
 
 #ifdef USE_PAM
-	if (options.use_pam && !is_pam_session_open()) {
+	if (options.use_pam && !options.use_login && !is_pam_session_open()) {
+		debug3("PAM session not opened, exiting");
 		display_loginmsg();
 		exit(254);
 	}

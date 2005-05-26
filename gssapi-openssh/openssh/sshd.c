@@ -1692,6 +1692,8 @@ main(int ac, char **av)
 	authctxt = xmalloc(sizeof(*authctxt));
 	memset(authctxt, 0, sizeof(*authctxt));
 
+	authctxt->loginmsg = &loginmsg;
+
 	/* XXX global for cleanup, access from other modules */
 	the_authctxt = authctxt;
 
