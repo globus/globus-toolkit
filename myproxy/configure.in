@@ -125,26 +125,9 @@ AC_ARG_WITH(kerberos5,
 dnl
 dnl Check for PAM
 dnl
-AC_ARG_WITH(pam,
-	[  --with-pam            Enable PAM support ],
-	[
-		if test "x$withval" != "xno" ; then
-			AC_CHECK_HEADER(security/pam_appl.h)
-			AC_CHECK_LIB(dl, dlopen, , )
-			AC_CHECK_LIB(pam, pam_set_item, , AC_MSG_ERROR([libpam missing]))
-			AC_CHECK_FUNCS(pam_getenvlist)
-			AC_CHECK_FUNCS(pam_putenv)
-
-			PAM_MSG="yes"
-
-			if test $ac_cv_lib_dl_dlopen = yes; then
-				LDFLAGS="$LDFLAGS -lpam -ldl"
-			else
-				LDFLAGS="$LDFLAGS -lpam"
-			fi
-		fi
-	]
-)
+AC_CHECK_LIB(dl, dlopen, , )
+AC_CHECK_LIB(pam, pam_set_item, , )
+AC_CHECK_HEADERS(security/pam_appl.h pam/pam_appl.h)
 
 LAC_DOXYGEN([" ../ "])
 
