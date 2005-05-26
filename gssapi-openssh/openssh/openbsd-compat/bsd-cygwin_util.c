@@ -247,6 +247,7 @@ static struct wenv {
 	{ NL("COMMONPROGRAMFILES=") },
 	{ NL("COMPUTERNAME=") },
 	{ NL("COMSPEC=") },
+	{ NL("CYGWIN=") },
 	{ NL("NUMBER_OF_PROCESSORS=") },
 	{ NL("OS=") },
 	{ NL("PATH=") },
@@ -260,7 +261,7 @@ static struct wenv {
 	{ NL("SYSTEMROOT=") },
 	{ NL("TMP=") },
 	{ NL("TEMP=") },
-	{ NL("WINDIR=") },
+	{ NL("WINDIR=") }
 };
 
 char **
@@ -269,7 +270,7 @@ fetch_windows_environment(void)
 	char **e, **p;
 	int i, idx = 0;
 
-	p = xmalloc(WENV_SIZ * sizeof(char *));
+	p = xmalloc((WENV_SIZ + 1) * sizeof(char *));
 	for (e = environ; *e != NULL; ++e) {
 		for (i = 0; i < WENV_SIZ; ++i) {
 			if (!strncmp(*e, wenv_arr[i].name, wenv_arr[i].namelen))

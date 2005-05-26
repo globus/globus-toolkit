@@ -219,7 +219,7 @@ else
 	fi
 
 	# Create user if required
-	if lsuser ALL | cut -f1 -d: | egrep '^'$SSH_PRIVSEP_USER'\$' >/dev/null
+	if lsuser "$SSH_PRIVSEP_USER" >/dev/null
 	then
 		echo "PrivSep user $SSH_PRIVSEP_USER already exists."
 	else
