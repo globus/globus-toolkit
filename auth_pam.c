@@ -5,6 +5,7 @@
  *   - the "#if defined(HAVE_LIBPAM)" block
  *   - "#include mechanisms.h" is commented out (it appears to be
  *     unnecessary)
+ *   - #include "myproxy_common.h" instead of system headers
  */
 
 #define AUTH_PAM yes
@@ -56,13 +57,9 @@
 
 /* PUBLIC DEPENDENCIES */
 /* #include "mechanisms.h" */
-#include <stdio.h>
+#include "myproxy_common.h"
 
 #ifdef AUTH_PAM
-
-# include <string.h>
-# include <syslog.h>
-# include <security/pam_appl.h>
 
 # include "auth_pam.h"
 /* END PUBLIC DEPENDENCIES */
