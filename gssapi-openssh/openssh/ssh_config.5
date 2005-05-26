@@ -57,6 +57,12 @@ command-line options
 user's configuration file
 .Pq Pa $HOME/.ssh/config
 .It
+GSSAPI configuration file
+.Pq Pa $HOME/.ssh/config.gssapi
+.It
+Kerberos configuration file
+.Pq Pa $HOME/.ssh/config.krb
+.It
 system-wide configuration file
 .Pq Pa /etc/ssh/ssh_config
 .El
@@ -399,13 +405,19 @@ host key database instead of
 .Pa /etc/ssh/ssh_known_hosts .
 .It Cm GSSAPIAuthentication
 Specifies whether user authentication based on GSSAPI is allowed.
+The default is 
+.Dq yes .
+Note that this option applies to protocol version 2 only.
+.It Cm GSSAPIKeyExchange
+Specifies whether key exchange based on GSSAPI may be used. When using
+GSSAPI key exchange the server need not have a host key.
 The default is
-.Dq no .
+.Dq yes .
 Note that this option applies to protocol version 2 only.
 .It Cm GSSAPIDelegateCredentials
 Forward (delegate) credentials to the server.
 The default is
-.Dq no .
+.Dq yes .
 Note that this option applies to protocol version 2 only.
 .It Cm HashKnownHosts
 Indicates that
@@ -572,7 +584,7 @@ This allows a client to prefer one method (e.g.\&
 over another method (e.g.\&
 .Cm password )
 The default for this option is:
-.Dq hostbased,publickey,keyboard-interactive,password .
+.Dq hostbased,external-keyx,gssapi-with-mic,gssapi,publickey,keyboard-interactive,password .
 .It Cm Protocol
 Specifies the protocol versions
 .Nm ssh

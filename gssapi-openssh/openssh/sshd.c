@@ -86,6 +86,15 @@ RCSID("$OpenBSD: sshd.c,v 1.308 2005/02/08 22:24:57 dtucker Exp $");
 #include "monitor_wrap.h"
 #include "monitor_fdpass.h"
 
+#ifdef GSSAPI
+#include "ssh-gss.h"
+#endif
+
+#ifdef GSSAPI
+#include <openssl/md5.h>
+#include "bufaux.h"
+#endif /* GSSAPI */
+
 #ifdef LIBWRAP
 #include <tcpd.h>
 #include <syslog.h>
@@ -1110,10 +1119,13 @@ main(int ac, char **av)
 		logit("Disabling protocol version 1. Could not load host key");
 		options.protocol &= ~SSH_PROTO_1;
 	}
+#ifndef GSSAPI
+	/* The GSSAPI key exchange can run without a host key */
 	if ((options.protocol & SSH_PROTO_2) && !sensitive_data.have_ssh2_key) {
 		logit("Disabling protocol version 2. Could not load host key");
 		options.protocol &= ~SSH_PROTO_2;
 	}
+#endif
 	if (!(options.protocol & (SSH_PROTO_1|SSH_PROTO_2))) {
 		logit("sshd: no hostkeys available -- exiting.");
 		exit(1);
@@ -1666,6 +1678,13 @@ main(int ac, char **av)
 		alarm(options.login_grace_time);
 
 	sshd_exchange_identification(sock_in, sock_out);
+#if defined(AFS_KRB5)
+	/* If machine has AFS, set process authentication group. */
+	if (k_hasafs()) {
+		k_setpag();
+		k_unlog();
+	}
+#endif /* AFS || AFS_KRB5 */
 
 	packet_set_nonblocking();
 
@@ -1991,11 +2010,53 @@ do_ssh2_kex(void)
 	}
 	myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS] = list_hostkey_types();
 
+#ifdef GSSAPI
+	{ 
+	char *orig;
+	char *gss = NULL;
+	char *newstr = NULL;
+       	orig = myproposal[PROPOSAL_KEX_ALGS];
+
+	/* If we don't have a host key, then all of the algorithms
+	 * currently in myproposal are useless */
+	if (strlen(myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS])==0)
+		orig= NULL;
+		
+        if (options.gss_keyex)
+        	gss = ssh_gssapi_server_mechanisms();
+        else
+        	gss = NULL;
+        
+	if (gss && orig) {
+		int len = strlen(orig) + strlen(gss) +2;
+		newstr=xmalloc(len);
+		snprintf(newstr,len,"%s,%s",gss,orig);
+	} else if (gss) {
+		newstr=gss;
+	} else if (orig) {
+		newstr=orig;
+	}
+        /* If we've got GSSAPI mechanisms, then we've also got the 'null'
+	   host key algorithm, but we're not allowed to advertise it, unless
+	   its the only host key algorithm we're supporting */
+	if (gss && (strlen(myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS])) == 0) {
+	  	myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS]="null";
+	}
+	if (newstr)
+		myproposal[PROPOSAL_KEX_ALGS]=newstr;
+	else
+		fatal("No supported key exchange algorithms");
+        }
+#endif
+
 	/* start key exchange */
 	kex = kex_setup(myproposal);
 	kex->kex[KEX_DH_GRP1_SHA1] = kexdh_server;
 	kex->kex[KEX_DH_GRP14_SHA1] = kexdh_server;
 	kex->kex[KEX_DH_GEX_SHA1] = kexgex_server;
+#ifdef GSSAPI
+	kex->kex[KEX_GSS_GRP1_SHA1] = kexgss_server;
+#endif
 	kex->server = 1;
 	kex->client_version_string=client_version_string;
 	kex->server_version_string=server_version_string;

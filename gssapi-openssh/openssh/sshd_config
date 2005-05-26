@@ -65,8 +65,13 @@
 #KerberosTicketCleanup yes
 #KerberosGetAFSToken no
 
+# Session hooks: if allowed, specify the commands to execute
+#AllowSessionHooks yes
+#SessionHookStartupCmd /bin/true
+#SessionHookShutdownCmd /bin/true
+
 # GSSAPI options
-#GSSAPIAuthentication no
+#GSSAPIAuthentication yes
 #GSSAPICleanupCredentials yes
 
 # Set this to 'yes' to enable PAM authentication, account processing, 
