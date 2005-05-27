@@ -92,6 +92,7 @@ file_exists(const char *path)
     return return_value;
 }
 
+
 /*
  * check_storage_directory()
  *
@@ -683,6 +684,197 @@ read_data_file(struct myproxy_creds *creds,
     
     return return_code;
 }
+
+#define TRUSTED_CERT_PATH "/.globus/certificates/"
+
+/*
+** Return the path to the user's home directory.
+*/
+static char *
+get_home_path()
+{
+    char *home = NULL;
+
+    if (getenv("HOME"))
+    {
+        home = getenv("HOME");
+    }
+    if (home == NULL) 
+    {
+        struct passwd *pw;
+        
+        pw = getpwuid(getuid());
+        
+        if (pw != NULL)
+        {
+            home = pw->pw_dir;
+        }
+    }
+    if (home == NULL)
+    {
+        verror_put_string("Could not find user's home directory\n");
+        return NULL;
+    } 
+
+    home = mystrdup(home);
+    if (home == NULL)
+    {
+        verror_put_errno(errno);
+        verror_put_string("strdup() failed");
+        return NULL;
+    }
+
+    return home;
+}
+
+
+/*
+** Return the path to the trusted certificates directory.      
+**/
+static char*
+get_trusted_certs_path()
+{
+    char *path = NULL;
+
+    if (getenv("X509_CERT_DIR"))
+    {
+        path = mystrdup(getenv("X509_CERT_DIR"));
+        
+        if (path == NULL)
+        {
+            verror_put_errno(errno);
+            verror_put_string("strdup() failed.");
+            return NULL;
+        }
+        return path;
+    }
+
+    path = get_home_path();
+        
+    if (path == NULL)
+    {
+        return NULL;
+    }   
+
+    if (myappend(&path, TRUSTED_CERT_PATH) == -1)
+    {
+        free(path);
+        return NULL;
+    }
+    
+    return path;
+}
+
+/*
+** Check trusted certificates directory, create if needed.
+*/
+static int
+check_trusted_certs_dir()
+{
+    char *path = NULL;
+    struct stat statbuf;
+    
+    path = get_trusted_certs_path();
+    
+    if (path == NULL)
+    {
+        goto error;
+    }
+
+    myproxy_debug("Trusted cert dir is %s\n", path);
+    
+    if (stat(path, &statbuf) == -1)
+    {
+        switch(errno)
+        {
+          case ENOENT:
+          case ENOTDIR:
+            myproxy_debug("%s does not exist. Creating.\n", path);
+            if (make_path(path) == -1)
+            {
+                goto error;
+            }
+            break;
+            
+          default:
+            verror_put_errno(errno);
+            verror_put_string("stat(%s)", path);
+            goto error;
+        }
+    }
+    else if (!S_ISDIR(statbuf.st_mode))
+    {
+        verror_put_string("Trusted certificates directory \"%s\" is not a directory.\n",
+        path);
+        goto error;
+    }
+
+    free(path);
+    
+    /* Success */
+    return 0;
+    
+  error:
+    if (path != NULL)
+    {
+        free(path);
+    }
+    return -1;
+}
+    
+/*
+** Given a filename, return the full path of that file as it would
+** exist in the trusted certificates directory.
+*/
+static char*
+get_trusted_file_path(char *filename)
+{
+    char *sterile_filename = NULL;
+    char *file_path = NULL;
+    
+    sterile_filename = mystrdup(filename);
+    
+    if (sterile_filename == NULL)
+    {
+        goto error;
+    }
+    
+    sterilize_string(sterile_filename);
+
+    file_path = get_trusted_certs_path();
+    
+    if (file_path == NULL)
+    {
+        goto error;
+    }
+
+    if (myappend(&file_path, sterile_filename) == -1)
+    {
+        goto error;
+    }
+
+    /* Success */
+    free(sterile_filename);
+    
+    return file_path;
+    
+    /* We jump here on error */
+  error:        
+    if (sterile_filename != NULL)
+    {
+        free(sterile_filename);
+    }
+    if (file_path != NULL)
+    {
+        free(file_path);
+    }
+    return NULL;
+}
+
+
+/*
+** Install a file in trusted certificates directory.
+*/
 
 
 /**********************************************************************
@@ -1546,4 +1738,117 @@ myproxy_get_certs(const char cert_dir[])
  failure:
     myproxy_certs_free(head);
     return NULL;
+}
+
+/*
+** Install a list of files in trusted certificates directory.
+*/
+
+#define TRUSTED_INSTALL_LOG     "myproxy-install-log"
+
+int
+myproxy_install_trusted_cert_files(myproxy_certs_t *trusted_certs)
+{
+    myproxy_certs_t *trusted_cert;
+    char *file_path = NULL;
+    FILE *file = NULL;
+    char *log_file_name = NULL;
+    FILE *log_file = NULL;
+    
+    if (trusted_certs == NULL)
+    {
+        return 0;
+    }
+    
+    /* Make writable only by user */
+    umask(S_IWGRP|S_IWOTH);
+    
+    if (check_trusted_certs_dir() != 0)
+    {
+        goto error;
+    }
+
+    log_file_name = get_trusted_file_path(TRUSTED_INSTALL_LOG);
+    
+    if (log_file_name == NULL)
+    {
+        goto error;
+    }
+
+    myproxy_debug("Writing out trusted certificate files. Logging to %s\n",
+                  log_file_name);
+
+    log_file = fopen(log_file_name, "w");
+    
+    if (log_file == NULL)
+    {
+        verror_put_errno(errno);
+        verror_put_string("fopen(%s)", log_file_name);
+        goto error;
+    }
+
+    for (trusted_cert = trusted_certs;
+         trusted_cert->next != NULL;
+         trusted_cert = trusted_cert->next)
+    {
+    
+        /*
+        ** Sanity check structure
+        */
+        if ((trusted_cert == NULL) ||
+            (trusted_cert->filename == NULL) ||
+            (trusted_cert->contents == NULL))
+        {
+            myproxy_debug("Malformed trusted_cert ignored.\n");
+            continue;
+        }
+
+        file_path = get_trusted_file_path(trusted_cert->filename);
+    
+        if (file_path == NULL)
+        {
+            goto error;
+        }
+
+        myproxy_debug("Creating trusted cert file: %s\n", file_path);
+        
+        file = fopen(file_path, "w");
+        if (file == NULL)
+        {
+            myproxy_debug("Error opening \"%s\": %s\n",
+                          file_path, strerror(errno));
+            free(file_path);
+            file_path = NULL;
+            continue;
+        }
+
+        fprintf(file, trusted_cert->contents);
+        fclose(file);
+        fprintf(log_file, "%ld: %s\n", time(NULL), file_path);
+        file = NULL;
+        free(file_path);
+        file_path = NULL;
+    }        
+
+    free(log_file_name);
+    fclose(log_file);
+    
+    myproxy_debug("Trusted cert file writing complete.\n");
+    
+    return 0;
+
+  error:
+    if (log_file_name != NULL)
+    {
+        free(log_file_name);
+    }
+    if (file != NULL)
+    {
+        fclose(file);
+    }
+    if (file_path != NULL)
+    {
+        free(file_path);
+    }
+    return -1;
 }

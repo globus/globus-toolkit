@@ -48,11 +48,11 @@ concatenate_string(char				*destination,
  * myappend()
  *
  * Append one string to another, reallocating the buffer of the target string
- * to size. Uses realloc().  Returns a pointer to the resized string, which may
- * be different than the pointer passsed in (which is free()'ed in this case.
+ * to size. Uses realloc() - so target string may be relocated and pointer
+ * changed. Return -1 on error, 0 otherwise.
  */
-char *
-myappend(char                                   *string,
+int
+myappend(char                                   **target,
          char                                   *append);
 
 
