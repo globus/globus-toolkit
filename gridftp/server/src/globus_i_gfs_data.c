@@ -5370,7 +5370,7 @@ globus_gridftp_server_get_block_size(
 {
     GlobusGFSName(globus_gridftp_server_get_block_size);
     GlobusGFSDebugEnter();
-    if(op->data_handle != NULL)
+    if(op->data_handle != NULL && op->data_handle->is_mine)
     {
         *block_size = op->data_handle->info.blocksize;
     }
