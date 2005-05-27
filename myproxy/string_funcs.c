@@ -98,20 +98,26 @@ concatenate_string(char				*destination,
     return concatenate_strings(destination, destination_length, source, NULL);
 }
 
-char *
-myappend(char *string, char *append)
+int
+myappend(char **string, char *append)
 {
     char *new_string = NULL;
     
-    new_string = realloc(string,
-                         sizeof(string) + sizeof(append) + 1 /* for NUL */);
+    assert(string != NULL);
+    assert(*string != NULL);
+    assert(append != NULL);
+
+    new_string = realloc(*string,
+                         sizeof(*string) + sizeof(*append) + 1 /* for NUL */);
     if (new_string == NULL)
     {
         verror_put_errno(errno);
-        return NULL;
+        return -1;
     }
     strcat(new_string, append);
-    return new_string;
+    *string = new_string;
+
+    return 0;
 }
 
 
@@ -394,6 +400,7 @@ make_path(char *path)
         *p = '\0';
         if (stat(path, &sb) < 0) {
             if (errno == ENOENT) { /* doesn't exist. create it. */
+                myproxy_debug("Creating directory %s", path);
                 if (mkdir(path, 0700) < 0) {
                     verror_put_errno(errno);
                     verror_put_string("Failed to create directory %s",

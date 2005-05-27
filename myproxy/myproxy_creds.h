@@ -237,5 +237,13 @@ int myproxy_print_cred_info(myproxy_creds_t *creds, FILE *out);
  */
 myproxy_certs_t *myproxy_get_certs(const char cert_dir[]);
 
+/*
+ * myproxy_install_trusted_cert_files()
+ *
+ * Install a linked list of files in trusted cert dir.
+ * Returns 0 on success, -1 otherwise.
+ */
+int myproxy_install_trusted_cert_files(myproxy_certs_t *);
+
 #endif
 

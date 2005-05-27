@@ -240,6 +240,7 @@ init_arguments(int argc,
 	    break;
 	case 'T':
 	    request->want_trusted_certs = 1;
+            myproxy_debug("Requesting trusted certificates.\n");
 	    break;
         default:        /* print usage and exit */ 
 	    fprintf(stderr, usage);
