@@ -271,7 +271,7 @@ case ${host}--$1 in
                 AC_PATH_PROGS(lac_cv_F90, $F90 f90)
             else
                 AC_PATH_PROGS(lac_cv_CC, $CC icc ecc cc)
-                AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC icc ecc CC c++)
+                AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC icpc ecpc CC c++)
                 AC_PATH_PROGS(lac_cv_F77, $F77 ifort efc f77)
                 AC_PATH_PROGS(lac_cv_F90, $F90 ifort efc f90)
                 # should really check that we really are dealing 
@@ -833,7 +833,7 @@ case ${host}--$1 in
                 AC_PATH_PROGS(lac_cv_F90, $F90 f90)
             else
                 AC_PATH_PROGS(lac_cv_CC, $CC icc cc)
-                AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC icc CC c++)
+                AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC icpc CC c++)
                 AC_PATH_PROGS(lac_cv_F77, $F77 ifort ifc f77)
                 AC_PATH_PROGS(lac_cv_F90, $F90 ifort ifc f90)
                 # should really check that we really are dealing 
