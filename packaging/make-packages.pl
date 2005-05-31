@@ -252,13 +252,6 @@ if ( $install )
     print "Not installing bundle because -install= not set.\n";
 }
 
-if ( $installer )
-{
-    create_installer();
-} else {
-    print "Not creating installer because --installer= not set.\n";
-}
-
 if ( $binary )
 {
     generate_bin_packages();
@@ -358,6 +351,11 @@ sub generate_build_list()
 
     if ( $listpack )
     {
+       if ( $installer )
+       {
+           open(INS, ">$top_dir/$installer") or die "Can't open $installer: $!\n";
+       }
+
        install_gt2_autotools();
        install_globus_core();
        print "Final package build list:\n";
@@ -373,7 +371,7 @@ sub generate_build_list()
             my @sdkbundle;
 
            
-            print "$bun: ";
+            print INS "$bun: ";
             if ( $flavor =~ /thr/ )
             {
                  $suffix = "-thr ";
@@ -386,24 +384,24 @@ sub generate_build_list()
             {
                  if ( grep /^$pack$/, @packs )
                  {
-                     print "$pack$suffix";
+                     print INS "$pack$suffix";
                      push @sdkbundle, "$pack" . "-thr";
                  }
             }
-            print "\n";
+            print INS "\n";
 
             # Also list a threaded version for unthreaded bundles
             # May not always make sense to build, but good to have
             # the target available when it does.
             if ( not ( $flavor =~ /thr/ ) )
             {
-                print "$bun" . "-thr: ";
+                print INS "$bun" . "-thr: ";
                 foreach my $pack ( @sdkbundle )
                 {
-                    print "$pack ";
+                    print INS "$pack ";
                 }
            }
-           print "\n";
+           print INS "\n";
        }
             
        foreach my $pack ( @package_build_list )
@@ -415,35 +413,37 @@ sub generate_build_list()
                  $extras = "-static ";
 	    }
 
-            print "$pack: gpt";
+            print INS "$pack: gpt";
             foreach my $deppack ( @package_build_list )
             {
                  if ( $package_dep_hash{$pack}{$deppack} eq 1 )
                  {
-                      print " $deppack" unless ( $pack eq $deppack );
+                      print INS " $deppack" unless ( $pack eq $deppack );
                  }
             }
-            print "\n";
+            print INS "\n";
 
-            print "\t\$\{GPT_LOCATION\}/sbin/gpt-build $extras \$\{BUILD_OPTS\} -srcdir=source-trees/" . $package_list{$pack}[1] . " \${FLAVOR}\n";
-            print "${pack}-thr: gpt";
+            print INS "\t\$\{GPT_LOCATION\}/sbin/gpt-build $extras \$\{BUILD_OPTS\} -srcdir=source-trees/" . $package_list{$pack}[1] . " \${FLAVOR}\n";
+            print INS "${pack}-thr: gpt";
             foreach my $deppack ( @package_build_list )
             {
                  if ( $package_dep_hash{$pack}{$deppack} eq 1 )
                  {
-                      print " ${deppack}-thr" unless ( $pack eq $deppack );
+                      print INS " ${deppack}-thr" unless ( $pack eq $deppack );
                  }
             }
-            print "\n";
+            print INS "\n";
 
-            print "\t\$\{GPT_LOCATION\}/sbin/gpt-build $extras \$\{BUILD_OPTS\} -srcdir=source-trees-thr/" . $package_list{$pack}[1] . " \${FLAVOR}\${THR}\n";
+            print INS "\t\$\{GPT_LOCATION\}/sbin/gpt-build $extras \$\{BUILD_OPTS\} -srcdir=source-trees-thr/" . $package_list{$pack}[1] . " \${FLAVOR}\${THR}\n";
             my ($tree, $subdir, $custom) = ($package_list{$pack}[0],
                                             $package_list{$pack}[1],
                                             $package_list{$pack}[2]);
 
             package_source_bootstrap($pack, $subdir, $tree);
        }
-    }
+    } # end listpack()
+
+    close(INS) if $installer;
 }
 
 # --------------------------------------------------------------------
@@ -1452,6 +1452,7 @@ sub package_source_bootstrap()
     chdir cvs_subdir($tree);
     chdir $subdir;
 
+    print "Bootstrapping $package.\n";
     system("mkdir -p $pkglog");
 
     if ( $custom eq "gpt" ){
@@ -1703,207 +1704,6 @@ sub bundle_sources()
         paranoia("Bundling of $bundle failed.  See $bundlelog/$bundle.");
     }
 }
-
-#TODO: Need better way of keeping GPT version in sync with
-# the GPT version in use by mp
-# --------------------------------------------------------------------
-sub create_installer()
-# --------------------------------------------------------------------
-{
-    open(INS, ">$bundle_output/$installer") or die "Can't open $bundle_output/$installer: $!\n";
-
-    print INS << "EOF";
-#!/bin/sh
-
-short_usage="\$0 [-help] [-verbose] [-flavor <flavor>] <install-dir>";
-long_usage()
-{
-   cat 1>&2 <<END
-
-\${short_usage}
-
-    Installs GT3 to the directory <install-dir>.
-
-    By default, a non-threaded, debug-enabled flavor is
-    installed. This can be modified by the -flavor option,
-    where <flavor> is specified as <compiler><bits>[dbg]
-    where the choices are
-    <compiler>: one of gcc,mpicc,vendorcc
-    <bits>    : one of 32,64
-    'dbg'       compiles with debug information
-
-    Example: \$0 -flavor gcc64dbg /opt/gt3
-END
-}
-
-case "`uname`" in
-   HP-UX)
-        FLAVOR=vendorcc32dbg
-        ;;
-   OSF1)
-        FLAVOR=vendorcc64dbg
-        ;;
-   *)
-        case "`uname -m`" in
-            alpha|ia64|x86_64)
-                FLAVOR=gcc64dbg
-                ;;
-            *)
-                FLAVOR=gcc32dbg
-                ;;
-        esac
-        ;;
-esac
-
-THREAD=pthr
-
-if [ \$# -eq 0 ]; then
-    echo "Usage: \${short_usage}"
-    exit 1;
-fi
-
-while [ -n "\$1" ]; do
-    case "\$1" in
-        -help)
-            long_usage;
-            exit 0
-            ;;
-        -verbose)
-            verbose="-verbose"
-            ;;
-        -flavor)
-            if [ -z "\$2" ]; then
-                echo "Error: -flavor requires a flavor";
-                exit 1;
-            fi
-            FLAVOR="\$2";
-            shift
-            ;;
-        *)
-            if [ \$# -gt 1 ]; then
-                echo "Unrecognized option \$1"
-                exit 1;
-            fi
-            destdir=\$1
-            ;;
-    esac
-    shift
-done
-
-if [ -z "\${destdir}" ]; then
-    echo "" >&2
-    echo "ERROR: install-dir is missing" >&2
-    echo "\${short_usage}"
-    exit 1
-fi
-
-mkdir -p \$destdir
-
-if [ \$? -ne 0 ]; then
-        echo "Unable to make directory \$destdir.  Exiting."
-        echo \${short_usage}
-        exit 1
-fi
-
-MYDIR=`pwd`
-cd \$destdir
-
-INSDIR=`pwd`
-GPT_LOCATION="\$INSDIR"
-GLOBUS_LOCATION="\$INSDIR"
-GT3_LOCATION="\$INSDIR"
-GPT_BUILD="\$GPT_LOCATION/sbin/gpt-build \$verbose "
-GPT_INSTALL="\$GPT_LOCATION/sbin/gpt-install \$verbose "
-
-cd \$MYDIR
-
-export GPT_LOCATION GLOBUS_LOCATION GT3_LOCATION
-EOF
-
-print INS "echo Build environment:\n";
-
-if ($cvs_build_hash{'gt3'} eq 1)
-{
-    print INS << "EOF";
-type ant
-if [ \$? -ne 0 ]; then
-   echo You need a working version of ant.
-   exit
-fi
-type java
-if [ \$? -ne 0 ]; then
-   echo You need a working version of java.
-   exit
-fi
-EOF
-}
-
- if ($cvs_build_hash{'gt2'} eq 1)
-{
-print INS "type gcc\n"
-}
-
-print INS "echo\n\n";
-
-print INS << "EOF";
-
-if [ ! -f $gpt_ver/sbin/gpt-build ]; then
-    echo Building GPT ...
-    gzip -dc $gpt_ver-src.tar.gz | tar xf -
-    cd $gpt_ver
-
-    LANG="" ./build_gpt
-    if [ \$? -ne 0 ]; then
-        echo Error building GPT
-        exit 1;
-    fi
-
-    cd ..
-fi
-
-if [ -d BUILD ]; then
-        rm -fr BUILD
-fi
-
-
-EOF
-
-
-my $flavorstring;
-for my $bundle ( @bundle_build_list )
-{
-    next if $bundle eq "" or $bundle eq "user_def";
-        
-    my ($flava, $flags, @packages) = @{$bundle_list{$bundle}};
-
-    if ( $flava eq $flavor . $thread )
-    {
-        $flavorstring = "\$FLAVOR\$THREAD";
-    } else {
-        $flavorstring = "\$FLAVOR";
-    }
-
-   if ( $bundle eq "globus-rls-server" )
-   {
-      print INS "if [ x\$GLOBUS_IODBC_PATH = \"x\" ]; then\n";
-      print INS "\techo GLOBUS_IODBC_PATH not set, skipping RLS build.\n";
-      print INS "else\n";
-   }
-
-   print INS "\$GPT_BUILD $flags bundles/${bundle}-*-src_bundle.tar.gz $flavorstring\n";
-
-   print INS "if [ \$? -ne 0 ]; then\n";
-   print INS "    echo Error building $bundle\n";
-   print INS "    exit 1;\n";
-   print INS "fi\n" if ( $bundle eq "globus-rls-server" );
-   print INS "fi\n\n";
-}
-
-print INS "\$GPT_LOCATION/sbin/gpt-postinstall\n";
-
-print "Wrote installer $bundle_output/$installer.\n";
-}
-
 
 #TODO: Allow users to specify pre-existing binary bundles too.
 # --------------------------------------------------------------------
