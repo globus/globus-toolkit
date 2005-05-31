@@ -52,22 +52,30 @@ int auth_passwd_check_client(authorization_data_t *client_auth_data,
                              struct myproxy_creds *creds, char *client_name,
 			     myproxy_server_context_t* config)
 { 
+   int result = 0;
 
-   /* first, check whether the password the user gave matches the
-    * credential passphrase */
-   int cred_passphrase_pass = 0;
-   if (client_auth_data->client_data_len >= MIN_PASS_PHRASE_LEN &&
-      client_auth_data->client_data != NULL &&
-      myproxy_creds_verify_passphrase(creds,
-				       client_auth_data->client_data) == 1)
-      cred_passphrase_pass = 1;
+   /* 1. Check whether the credentials are encrypted. */
+   int encrypted = myproxy_creds_encrypted(creds);
+   int empty_passphrase = (client_auth_data->client_data_len <= 0) ? 1 : 0;
 
-   /* TODO: figure out if cred is encrypted -- if it is, and cred
-    * passphrase failed, don't bother to check PAM, because we will be
-    * unable to decrypt the credential to create a proxy anyway. */
-
+   /* 2. Check whether the password the user gave matches the
+    *    credential passphrase */
+   int cred_passphrase_match = 0;
+   if (encrypted)
+   {
+      if (client_auth_data->client_data_len >= MIN_PASS_PHRASE_LEN &&
+	  client_auth_data->client_data != NULL &&
+	  myproxy_creds_verify_passphrase(creds,
+					  client_auth_data->client_data) == 1)
+	 cred_passphrase_match = 1;
+   }
+   /* unencrypted --> passphrase matches if it is blank. */
+   else 
+      cred_passphrase_match = (client_auth_data->client_data_len <= 0) ? 1 : 0;
+   
 #if defined(HAVE_LIBPAM)
 
+   /* Tangent: figure out PAM configuration. */
    char* pam_policy = config->pam_policy;
    char* pam_id     = config->pam_id;
 
@@ -78,17 +86,27 @@ int auth_passwd_check_client(authorization_data_t *client_auth_data,
    int pam_sufficient = (strcmp(pam_policy, "sufficient") == 0 ? 1 : 0);
    int pam_disabled   = (strcmp(pam_policy, "disabled"  ) == 0 ? 1 : 0);
 
-   if (!pam_required && !pam_sufficient && !pam_disabled) 
+   /* Note: if pam_policy is not recognized, it will fall through to
+    * the disabled case below, and a debug message will be printed. */
+
+   /* 3. If the passphrase matches the credentials, and PAM config is
+    *    "sufficient", then we're done, and we don't need to check
+    *    PAM, as long as a passphrase was actually entered. */
+   if (pam_sufficient && cred_passphrase_match && !empty_passphrase)
    {
-      myproxy_debug("Unknown PAM policy: \"%s\"; not using PAM.\n", pam_policy);
-      return cred_passphrase_pass;
+      myproxy_debug("Passphrase matches credentials, and PAM config is \"%s\"; "
+		    "authentication succeeds without checking PAM.", pam_policy);
+      return 1;
    }
 
-   /* If sufficient, only check PAM if credential passphrase failed. */
-   /* If required, check PAM regardless. */
-   else if (pam_required || (!cred_passphrase_pass && pam_sufficient)) 
+   /* 4. If PAM is "required", *always* check it, regardless of
+    *    whether the credential passphrase matches, so that any
+    *    logging, pausing, etc. can occur.  Also, if PAM is sufficient
+    *    and we've gotten this far, it means that the credential
+    *    passphrase is blank and therefore we need to check PAM. */
+   else if (pam_required || pam_sufficient)
    {
-      int pam_result = 0;
+      int pam_success = 0;
       if (pam_id == NULL) pam_id = "myproxy";
       myproxy_debug
 	 ("Checking passphrase via PAM.  PAM policy: \"%s\"; PAM ID: \"%s\"\n",
@@ -97,29 +115,27 @@ int auth_passwd_check_client(authorization_data_t *client_auth_data,
       char* auth_pam_result = auth_pam(creds->username,
 				       client_auth_data->client_data, pam_id, NULL);
       if (strcmp("OK", auth_pam_result) == 0)
-	 pam_result = 1;
+	 pam_success = 1;
       else
 	 verror_put_string("PAM authentication failed: %s",
 			   auth_pam_result);
       if (auth_pam_result != NULL)
 	 free(auth_pam_result);
 
-      return pam_result;
+      return pam_success;
    }
 
-   /* Don't check password against PAM */
-   else 
+   /* 5. If PAM is disabled, check only the credential passphrase. */
+   else
    {
-      if (pam_disabled)
-	 myproxy_debug("Credential passphrase check failed; PAM disabled.");
-      else if (pam_sufficient)
-	 myproxy_debug("Credential passphrase succeeded; PAM check unnecessary.");
-      return cred_passphrase_pass;
+      if (!pam_disabled)
+	 myproxy_log("Unknown PAM policy: \"%s\"; not using PAM.\n", pam_policy);
+      return cred_passphrase_match;
    }
 
 #else /* defined(HAVE_LIBPAM) */
 
-   return cred_passphrase_pass;
+   return cred_passphrase_match;
 
 #endif /* defined(HAVE_LIBPAM) */
 }
@@ -131,8 +147,6 @@ struct authorization_func authorization_passwd = {
    AUTHORIZETYPE_PASSWD,
    "password"
 };
-
-
 
 /* 
  * Implementation of certificate-based authorization
