@@ -29,9 +29,8 @@ if [ $? -ne 0 ]; then
 fi
 
 mkdir $INSTALLER
-sed -e '1,/Final package build list/d' farfleblatt > farfle2
-cat fait_accompli/installer.Makefile.prelude farfle2 > $INSTALLER/Makefile.in
-rm farfleblatt farfle2
+cat fait_accompli/installer.Makefile.prelude farfleblatt > $INSTALLER/Makefile.in
+rm farfleblatt
 
 source-trees/autotools/bin/autoconf fait_accompli/installer.configure.in > $INSTALLER/configure
 chmod +x $INSTALLER/configure
