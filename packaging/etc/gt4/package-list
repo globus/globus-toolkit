@@ -97,10 +97,12 @@ globus_c_wsrf_providers                     wsrf/c/core/providers/source gpt
 globus_c_ws_messaging                       wsrf/c/message/source gpt
 globus_c_ws_messaging_test                  wsrf/c/message/test gpt
 globus_handler_ws_addressing                wsrf/c/handlers/addressing/source gpt
+globus_handler_ws_secure_message            wsrf/c/handlers/secure/message/source gpt
 globus_handler_debug                        wsrf/c/handlers/debug/source gpt
 globus_xio_buffer                           wsrf/c/transport/buffer/source gpt
 globus_c_wsrf_sample_counter_client_test    wsrf/c/samples/counter/test gpt
 globus_c_wsrf_sample_counter_bindings       wsrf/c/samples/counter/source/ tar
+globus_c_wsrf_sample_secure_counter_service wsrf/c/samples/counter/secure-service tar
 globus_c_wsrf_core_test_interop_bindings    wsrf/c/core/tests/interop/source/ tar
 globus_c_wsrf_core_performance_test         wsrf/c/core/tests/performance/ gpt
 globus_c_wsrf_providers_test_service_bindings wsrf/c/core/providers/test_service/ tar
@@ -114,6 +116,7 @@ globus_globusrun_ws                         ws-gram/client/c/source gpt
 globus_c_rendezvous_client_bindings         ws-rendezvous/client/c/bindings tar
 globus_c_wsrf_rendezvous_test               ws-rendezvous/client/c/test gpt
 globus_c_gram_client_bindings               ws-gram/client/c/bindings tar
+globus_c_rft_client_bindings                ws-transfer/reliable/client/c/bindings tar
 globus_c_delegation_client_bindings         ws-delegation/client/c/bindings tar
 globus_c_delegation_client_util             ws-delegation/client/c/util gpt
 
