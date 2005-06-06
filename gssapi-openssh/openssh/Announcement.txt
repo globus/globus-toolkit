@@ -1,12 +1,12 @@
-The GSI-OpenSSH development team announces the release of version 3.5 of
-the GSI-Enabled OpenSSH software distribution.  GSI-OpenSSH 3.5 is based
-on OpenSSH 3.9p1 and NCSA's latest GSI patch for that version of
+The GSI-OpenSSH development team announces the release of version 3.6 of
+the GSI-Enabled OpenSSH software distribution.  GSI-OpenSSH 3.6 is based
+on OpenSSH X.XpX and NCSA's latest GSI patch for that version of
 OpenSSH.  A summary of the major changes found in this version is given
 at the end of this document.
 
-GSI-OpenSSH 3.5 is available for download from
+GSI-OpenSSH 3.6 is available for download from
 
-  <ftp://ftp.ncsa.uiuc.edu/aces/gssapi-openssh/bundle/3.5/>
+  <ftp://ftp.ncsa.uiuc.edu/aces/gssapi-openssh/bundle/3.6/>
 
 For installation instructions, please see
 
@@ -18,17 +18,14 @@ team.  This bugzilla system is located at:
 
    <https://bugzilla.ncsa.uiuc.edu/index.cgi>
 
-GSI-OpenSSH 3.5 Major changes
+GSI-OpenSSH 3.6 Major changes
 
    New features
 
-      * Moved to OpenSSH 3.9p1.
+      * Moved to OpenSSH X.XpX.
+
+      * Enable PAM password authentication by default, unless PAM
+        library and headers are unusable.
 
    Bugs fixed
 
-      * Bug 244: Fixed server segmentation fault triggered by old clients
-        when GSSAPI authentication fails.
-        (see https://bugzilla.ncsa.uiuc.edu/show_bug.cgi?id=244)
-
-      * Modified client and server to not attempt GSSAPI user authentication
-        if there are no valid GSSAPI credentials available.
