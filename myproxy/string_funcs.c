@@ -108,7 +108,7 @@ myappend(char **string, char *append)
     assert(append != NULL);
 
     new_string = realloc(*string,
-                         sizeof(*string) + sizeof(*append) + 1 /* for NUL */);
+                         strlen(*string) + strlen(append) + 1 /* for NUL */);
     if (new_string == NULL)
     {
         verror_put_errno(errno);
