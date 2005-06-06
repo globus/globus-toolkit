@@ -1822,7 +1822,7 @@ myproxy_install_trusted_cert_files(myproxy_certs_t *trusted_certs)
             continue;
         }
 
-        fprintf(file, trusted_cert->contents);
+        fprintf(file, "%s", trusted_cert->contents);
         fclose(file);
         fprintf(log_file, "%ld: %s\n", time(NULL), file_path);
         file = NULL;
