@@ -39,7 +39,7 @@ typedef struct timeval  globus_reltime_t;
 {                                                         \
     GlobusTimeAbstimeGetCurrent(Abstime);                 \
     (Abstime).tv_nsec += (USec * 1000);                   \
-    if((Abstime).tv_nsec > 1000000000)                    \
+    if((Abstime).tv_nsec >= 1000000000)                    \
     {                                                     \
         (Abstime).tv_sec += ((Abstime).tv_nsec / 1000000000);\
         (Abstime).tv_nsec = (Abstime).tv_nsec  % 1000000000; \
@@ -178,7 +178,7 @@ typedef struct timeval  globus_reltime_t;
 #define  GlobusTimeAbstimeInc(Abstime, Reltime)           \
 {                                                         \
     (Abstime).tv_nsec += ((Reltime).tv_usec * 1000);      \
-    if((Abstime).tv_nsec > 1000000000)                    \
+    if((Abstime).tv_nsec >= 1000000000)                    \
     {                                                     \
         (Abstime).tv_sec++;                               \
         (Abstime).tv_nsec -= 1000000000;                  \
