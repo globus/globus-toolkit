@@ -81,7 +81,7 @@
 # "PermitRootLogin without-password". If you just want the PAM account and 
 # session checks to run without PAM authentication, then enable this but set 
 # ChallengeResponseAuthentication=no
-#UsePAM no
+UsePAM yes
 
 #AllowTcpForwarding yes
 #GatewayPorts no

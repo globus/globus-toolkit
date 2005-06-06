@@ -1299,6 +1299,27 @@ AC_ARG_WITH(pam,
 
 			AC_SUBST(LIBPAM)
 		fi
+	],
+	[
+		AC_CHECK_LIB(dl, dlopen, , )
+		AC_CHECK_LIB(pam, pam_set_item, , )
+		AC_CHECK_FUNCS(pam_getenvlist)
+		AC_CHECK_FUNCS(pam_putenv)
+
+		if (test "x$ac_cv_header_security_pam_appl_h" = "xyes" || \
+		   test "x$ac_cv_header_pam_pam_appl_h" = "xyes") &&
+		   test "x$ac_cv_lib_pam_pam_set_item" = "xyes" ; then
+
+			PAM_MSG="yes"
+
+			AC_DEFINE(USE_PAM)
+			if test $ac_cv_lib_dl_dlopen = yes; then
+				LIBPAM="-lpam -ldl"
+			else
+				LIBPAM="-lpam"
+			fi
+			AC_SUBST(LIBPAM)
+		fi
 	]
 )
 
