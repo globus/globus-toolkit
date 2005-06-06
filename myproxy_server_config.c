@@ -532,6 +532,7 @@ myproxy_server_config_read(myproxy_server_context_t *context)
     
     if (context->cert_dir == NULL)
     {
+	globus_module_activate(GLOBUS_GSI_SYSCONFIG_MODULE);
 	GLOBUS_GSI_SYSCONFIG_GET_CERT_DIR(&context->cert_dir);
     }
 
