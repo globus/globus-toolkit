@@ -40,6 +40,7 @@
 #endif
 
 #include <globus_gss_assist.h>
+#include <globus_gsi_system_config.h>
 #include <gssapi.h>
 
 #include "myproxy.h" /* public headers */
