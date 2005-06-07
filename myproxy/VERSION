@@ -3,13 +3,18 @@ This version should be compatible with all versions since v0.2.
 
 Version History
 ---------------
-v0.6.6 X XXX 2005 (GPT package version 1.18)
+v2.0 X XXX 2005
+  - unified versioning with GPT packaging
+  - added PAM support
   - added the myproxy-replicate utility for managing multiple
     myproxy-server repository replicas for high availability
   - fixed bug in previous version that caused myproxy-get-delegation
     not to be included in binary GPT installs
   - use system getopt_long() if available; otherwise, use included
     getopt_long from NetBSD instead of GNU version as previous
+  - fixed server side bug where the default_key_retrievers policy was
+    always applied even if the credential had a key retriever policy
+  - fixed myproxy-test GT 2.4 compatibility problem in v0.6.5
 
 v0.6.5 8 Apr 2005 (GPT package version 1.17)
   - added support for RFC 3820 proxy certificate format
