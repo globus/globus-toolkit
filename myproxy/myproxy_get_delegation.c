@@ -111,6 +111,7 @@ main(int argc, char *argv[])
     }
     
     if (!outputfile) {
+	globus_module_activate(GLOBUS_GSI_SYSCONFIG_MODULE);
 	GLOBUS_GSI_SYSCONFIG_GET_PROXY_FILENAME(&outputfile,
 						GLOBUS_PROXY_FILE_OUTPUT);
     }

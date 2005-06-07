@@ -384,6 +384,7 @@ my_init()
 
 	globus_module_activate(GLOBUS_GSI_PROXY_MODULE);
 	globus_module_activate(GLOBUS_GSI_CREDENTIAL_MODULE);
+	globus_module_activate(GLOBUS_GSI_SYSCONFIG_MODULE);
     }
 }
 
