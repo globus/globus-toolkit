@@ -113,20 +113,26 @@ public class Receiver {
 	  --Number of packets in the ring buffer/size of ring buffer
 	*/
 	StringBuffer buf = new StringBuffer();
-	int packetsDropped = theHandleThread.getPacketsDropped();
+	int unparsablePackets = theHandleThread.getUnparseablePackets();
 	int packetsLogged = theHandleThread.getPacketsLogged();
+	int packetsLost = theRecvThread.getPacketsLost();
+	String newline = System.getProperty("line.separator");
 
 	buf.append(packetsLogged);
-	buf.append(" packets logged. ");
+	buf.append(" packets received and successfully logged.");
+	buf.append(newline);
 	if (packetsDropped > 0) {
 	    buf.append(packetsDropped);
-	    buf.append(" packets could not be parsed -- see error log. ");
+	    buf.append(" packets received that could not be parsed as any known component.");
+	    buf.append(newline);
 	}
-	buf.append(" Ring buffer is at ");
-	buf.append(theRing.getNumObjects());
-	buf.append(" out of ");
-	buf.append(theRing.getCapacity());
-	buf.append(".");
+	if (packetsLost > 0) {
+	    buf.append(packetsLost);
+	    buf.append(" packets were lost due to ring buffer overflow.");
+	    buf.append(newline);
+	}
+
+	theRecvThread.resetCounts();
 	theHandleThread.resetCounts();
 	return buf.toString();
     }
@@ -147,6 +153,7 @@ class ReceiverThread extends Thread {
     protected int listeningPort;
     private RingBuffer theRing; /*a reference to the one in Receiver*/
     private boolean stillGood = true;
+    private int packetsLost;
 
     public ReceiverThread(int port, RingBuffer ring) throws IOException {
         super("UDPReceiverThread");
@@ -155,6 +162,7 @@ class ReceiverThread extends Thread {
         this.theRing = ring;
         socket = new DatagramSocket(listeningPort);
         log.info("Receiver is listening on port " + port);
+	this.packetsLost = 0;
     }
 
     public void run() {
@@ -181,7 +189,7 @@ class ReceiverThread extends Thread {
                 if (!theRing.insert(storage)) {
                     //failed == ring is full
                     log.error("Ring buffer is FULL.  We are LOSING PACKETS!");
-                   //todo:  throw an exception?
+		    this.packetsLost ++;
                 }
 
             } catch (IOException e) {
@@ -192,6 +200,15 @@ class ReceiverThread extends Thread {
         }
 
     }
+
+    public int getPacketsLost() {
+	return this.packetsLost;
+    }
+    
+    public void resetCounts() {
+	this.packetsLost = 0;
+    }
+
 
     public int getRingFullness() {
 	return theRing.getNumObjects();
