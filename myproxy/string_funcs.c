@@ -393,9 +393,11 @@ int
 make_path(char *path)
 {
     struct stat sb;
-    char *p = path+1;
+    char *p;
 
+    assert (path != NULL);
 
+    p = path+1;
     while ((p = strchr(p, '/')) != NULL) {
         *p = '\0';
         if (stat(path, &sb) < 0) {
@@ -486,3 +488,202 @@ b64_decode(const char *input, char **output)
 
     return 0;
 }
+
+#define TRUSTED_CERT_PATH "/.globus/certificates/"
+#define USER_CERT_PATH "/.globus/usercert.pem"
+#define USER_KEY_PATH "/.globus/userkey.pem"
+
+/*
+** Return the path to the user's home directory.
+*/
+char *
+get_home_path()
+{
+    char *home = NULL;
+
+    if (getenv("HOME"))
+    {
+        home = getenv("HOME");
+    }
+    if (home == NULL) 
+    {
+        struct passwd *pw;
+        
+        pw = getpwuid(getuid());
+        
+        if (pw != NULL)
+        {
+            home = pw->pw_dir;
+        }
+    }
+    if (home == NULL)
+    {
+        verror_put_string("Could not find user's home directory\n");
+        return NULL;
+    } 
+
+    home = strdup(home);
+    if (home == NULL)
+    {
+        verror_put_errno(errno);
+        verror_put_string("strdup() failed");
+        return NULL;
+    }
+
+    return home;
+}
+
+
+/*
+** Return the path to the trusted certificates directory.      
+**/
+char*
+get_trusted_certs_path()
+{
+    char *path = NULL;
+
+    if (getenv("X509_CERT_DIR"))
+    {
+        path = strdup(getenv("X509_CERT_DIR"));
+        
+        if (path == NULL)
+        {
+            verror_put_errno(errno);
+            verror_put_string("strdup() failed.");
+            return NULL;
+        }
+        return path;
+    }
+
+    path = get_home_path();
+        
+    if (path == NULL)
+    {
+        return NULL;
+    }   
+
+    if (myappend(&path, TRUSTED_CERT_PATH) == -1)
+    {
+        free(path);
+        return NULL;
+    }
+    
+    return path;
+}
+
+/*
+** Given a filename, return the full path of that file as it would
+** exist in the trusted certificates directory.
+*/
+char*
+get_trusted_file_path(char *filename)
+{
+    char *sterile_filename = NULL;
+    char *file_path = NULL;
+    
+    sterile_filename = strdup(filename);
+    
+    if (sterile_filename == NULL)
+    {
+        goto error;
+    }
+    
+    sterilize_string(sterile_filename);
+
+    file_path = get_trusted_certs_path();
+    
+    if (file_path == NULL)
+    {
+        goto error;
+    }
+
+    if (myappend(&file_path, sterile_filename) == -1)
+    {
+        goto error;
+    }
+
+    /* Success */
+    free(sterile_filename);
+    
+    return file_path;
+    
+    /* We jump here on error */
+  error:        
+    if (sterile_filename != NULL)
+    {
+        free(sterile_filename);
+    }
+    if (file_path != NULL)
+    {
+        free(file_path);
+    }
+    return NULL;
+}
+
+
+int
+get_user_credential_filenames( char **certfile, char **keyfile )
+{
+    if (certfile) {
+	*certfile = NULL;
+	if (getenv("X509_USER_CERT")) {
+	    *certfile = strdup(getenv("X509_USER_CERT"));
+	} else {
+	    *certfile = get_home_path();
+	    if (myappend(certfile, USER_CERT_PATH) == -1) {
+		free(*certfile);
+		*certfile = NULL;
+	    }
+	}
+    }
+    if (keyfile) {
+	if (getenv("X509_USER_KEY")) {
+	    *keyfile = strdup(getenv("X509_USER_KEY"));
+	} else {
+	    *keyfile = get_home_path();
+	    if (myappend(keyfile, USER_KEY_PATH) == -1) {
+		free(*keyfile);
+		*keyfile = NULL;
+	    }
+	}
+    }
+
+    return 0;
+}
+
+/*
+ * sterilize_string
+ *
+ * Walk through a string and make sure that is it acceptable for using
+ * as part of a path.
+ */
+void
+sterilize_string(char *string)
+{
+    /* Characters to be removed */
+    char *bad_chars = "/";
+    /* Character to replace any of above characters */
+    char replacement_char = '-';
+    
+    assert(string != NULL);
+    
+    /* No '.' as first character */
+    if (*string == '.')
+    {
+        *string = replacement_char;
+    }
+    
+    /* Replace any bad characters with replacement_char */
+    while (*string != '\0')
+    {
+        if (strchr(bad_chars, *string) != NULL)
+        {
+            *string = replacement_char;
+        }
+
+        string++;
+    }
+
+    return;
+}
+
