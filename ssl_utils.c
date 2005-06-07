@@ -1591,8 +1591,12 @@ ssl_get_base_subject_file(const char *proxyfile, char **subject)
    if (proxyfile == NULL) {
       char *user_cert = NULL;
       
-      GLOBUS_GSI_SYSCONFIG_GET_USER_CERT_FILENAME(&user_cert,
-						  GLOBUS_PROXY_FILE_INPUT);
+      GLOBUS_GSI_SYSCONFIG_GET_USER_CERT_FILENAME(&user_cert, NULL);
+      if (user_cert == NULL) {
+	  verror_put_string("Unable to locate certificate to determine "
+			    "subject name.");
+	  goto error;
+      }
       strncpy(path, user_cert, sizeof(path));
       free(user_cert);
    } else {
