@@ -142,4 +142,38 @@ b64_encode(const char *input, char **output);
 int
 b64_decode(const char *input, char **output);
 
+/*
+** Return the path to the user's home directory.
+*/
+char *
+get_home_path();
+
+/*
+** Return the path to the trusted certificates directory.      
+**/
+char*
+get_trusted_certs_path();
+
+/*
+** Given a filename, return the full path of that file as it would
+** exist in the trusted certificates directory.
+*/
+char*
+get_trusted_file_path(char *filename);
+
+/*
+** Return the paths to the user's certificate and key files.
+*/
+int
+get_user_credential_filenames( char **certfile, char **keyfile );
+
+/*
+ * sterilize_string
+ *
+ * Walk through a string and make sure that is it acceptable for using
+ * as part of a path.
+ */
+void
+sterilize_string(char *string);
+
 #endif /* _STRING_FUNCS_H */
