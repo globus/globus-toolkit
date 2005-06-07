@@ -155,12 +155,6 @@ main(int argc, char *argv[])
         exit(1);
     }
 
-    /* Read my configuration */
-    if (myproxy_server_config_read(server_context) == -1) {
-	fprintf(stderr, "%s %s\n", verror_get_string(), verror_strerror());
-	exit(1);
-    }
-
     /* 
      * Test to see if we're run out of inetd 
      * If so, then stdin will be connected to a socket,
@@ -200,6 +194,12 @@ main(int argc, char *argv[])
     my_signal(SIGTERM, sig_exit); 
     my_signal(SIGINT,  sig_exit); 
     
+    /* Read my configuration */
+    if (myproxy_server_config_read(server_context) == -1) {
+	fprintf(stderr, "%s %s\n", verror_get_string(), verror_strerror());
+	exit(1);
+    }
+
     /* Make sure all's well with the storage directory. */
     if (myproxy_check_storage_dir() == -1) {
 	myproxy_log_verror();
@@ -1103,11 +1103,14 @@ write_pidfile(const char path[])
  *   Client DN must match accepted_credentials.
  *   If credentials already exist for the username, the client must own them.
  * INFO:
- *   Client DN must match accepted_credentials.
  *   Ownership checking done in info_proxy().
  * CHANGE_CRED_PASSPHRASE:
  *   Client DN must match accepted_credentials.
  *   Client DN must match credential owner.
+ *   Passphrase in request must match passphrase for credentials.
+ * RETRIEVE_CERT:
+ *   Client DN must match server-wide allowed_key_retrievers policy.
+ *   Client DN must match credential-specific allowed_key_retrievers policy.
  *   Passphrase in request must match passphrase for credentials.
  */
 static int
@@ -1124,7 +1127,27 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
    myproxy_creds_t creds = { 0 };
 
    switch (client_request->command_type) {
+   case MYPROXY_GET_PROXY:
    case MYPROXY_RETRIEVE_CERT:
+       /* Gather all authorization information for the request from
+	  the client.  May include additional network exchanges. */
+       if (get_client_authdata(attrs, client_request, client_name,
+			       &auth_data) < 0) {
+	   verror_put_string("Unable to get client authorization data");
+	   goto end;
+       }
+
+       /* get information about credential */
+       creds.username = strdup(client_request->username);
+       if (client_request->credname) {
+	   creds.credname = strdup(client_request->credname);
+       }
+       if (myproxy_creds_retrieve(&creds) < 0) {
+	   verror_put_string("Unable to retrieve credential information");
+	   goto end;
+       }
+
+       if (client_request->command_type == MYPROXY_RETRIEVE_CERT) {
 	   myproxy_debug("applying authorized_key_retrievers policy");
 	   authorization_ok =
 	       myproxy_server_check_policy_list((const char **)context->authorized_key_retrievers_dns, client_name);
@@ -1147,23 +1170,6 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 		   goto end;
 	       }
 	   }
-   case MYPROXY_GET_PROXY:
-       /* Gather all authorization information for the GET request from
-	  the client.  May include additional network exchanges. */
-       if (get_client_authdata(attrs, client_request, client_name,
-			       &auth_data) < 0) {
-	   verror_put_string("Unable to get client authorization data");
-	   goto end;
-       }
-
-       /* get information about credential */
-       creds.username = strdup(client_request->username);
-       if (client_request->credname) {
-	   creds.credname = strdup(client_request->credname);
-       }
-       if (myproxy_creds_retrieve(&creds) < 0) {
-	   verror_put_string("Unable to retrieve credential information");
-	   goto end;
        }
 
        switch (auth_data.method) {
