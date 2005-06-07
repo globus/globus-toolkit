@@ -144,8 +144,9 @@ main(int   argc,
 	socket_attrs->psport = MYPROXY_SERVER_PORT;
     }
 
+    globus_module_activate(GLOBUS_GSI_SYSCONFIG_MODULE);
     GLOBUS_GSI_SYSCONFIG_GET_USER_CERT_FILENAME( &certfile,
-                                                 &keyfile );
+						 &keyfile );
 
     client_request->proxy_lifetime = SECONDS_PER_HOUR *
                                      MYPROXY_DEFAULT_DELEG_HOURS;
@@ -154,6 +155,20 @@ main(int   argc,
 
     if (init_arguments(argc, argv, socket_attrs, client_request) != 0) {
         goto cleanup;
+    }
+
+    if (!certfile && !keyfile) {
+	fprintf(stderr, "Credentials not found in default location.\n"
+		"Use --certfile and --keyfile options.\n");
+	goto cleanup;
+    } else if (!certfile) {
+	fprintf(stderr, "Certificate not found in default location.\n"
+		"Use --certfile option.\n");
+	goto cleanup;
+    } else if (!keyfile) {
+	fprintf(stderr, "Private key not found in default location.\n"
+		"Use --keyfile option.\n");
+	goto cleanup;
     }
 
     /*
