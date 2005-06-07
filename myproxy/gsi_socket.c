@@ -408,6 +408,8 @@ GSI_SOCKET_new(int sock)
     self->gss_context = GSS_C_NO_CONTEXT;
     self->sock = sock;
 
+    globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE);
+
     return self;
 }
 
@@ -443,6 +445,8 @@ GSI_SOCKET_destroy(GSI_SOCKET *self)
     }
 
     free(self);
+
+    globus_module_deactivate(GLOBUS_GSI_GSS_ASSIST_MODULE);
 }
 
 
