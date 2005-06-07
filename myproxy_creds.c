@@ -213,42 +213,6 @@ check_storage_directory()
 }
 
 
-/*
- * sterilize_string
- *
- * Walk through a string and make sure that is it acceptable for using
- * as part of a path.
- */
-void
-sterilize_string(char *string)
-{
-    /* Characters to be removed */
-    char *bad_chars = "/";
-    /* Character to replace any of above characters */
-    char replacement_char = '-';
-    
-    assert(string != NULL);
-    
-    /* No '.' as first character */
-    if (*string == '.')
-    {
-        *string = replacement_char;
-    }
-    
-    /* Replace any bad characters with replacement_char */
-    while (*string != '\0')
-    {
-        if (strchr(bad_chars, *string) != NULL)
-        {
-            *string = replacement_char;
-        }
-
-        string++;
-    }
-
-    return;
-}
-
 static char *
 strmd5(const char *s, unsigned char *digest)
 {
@@ -685,86 +649,6 @@ read_data_file(struct myproxy_creds *creds,
     return return_code;
 }
 
-#define TRUSTED_CERT_PATH "/.globus/certificates/"
-
-/*
-** Return the path to the user's home directory.
-*/
-static char *
-get_home_path()
-{
-    char *home = NULL;
-
-    if (getenv("HOME"))
-    {
-        home = getenv("HOME");
-    }
-    if (home == NULL) 
-    {
-        struct passwd *pw;
-        
-        pw = getpwuid(getuid());
-        
-        if (pw != NULL)
-        {
-            home = pw->pw_dir;
-        }
-    }
-    if (home == NULL)
-    {
-        verror_put_string("Could not find user's home directory\n");
-        return NULL;
-    } 
-
-    home = mystrdup(home);
-    if (home == NULL)
-    {
-        verror_put_errno(errno);
-        verror_put_string("strdup() failed");
-        return NULL;
-    }
-
-    return home;
-}
-
-
-/*
-** Return the path to the trusted certificates directory.      
-**/
-static char*
-get_trusted_certs_path()
-{
-    char *path = NULL;
-
-    if (getenv("X509_CERT_DIR"))
-    {
-        path = mystrdup(getenv("X509_CERT_DIR"));
-        
-        if (path == NULL)
-        {
-            verror_put_errno(errno);
-            verror_put_string("strdup() failed.");
-            return NULL;
-        }
-        return path;
-    }
-
-    path = get_home_path();
-        
-    if (path == NULL)
-    {
-        return NULL;
-    }   
-
-    if (myappend(&path, TRUSTED_CERT_PATH) == -1)
-    {
-        free(path);
-        return NULL;
-    }
-    
-    return path;
-}
-
 /*
 ** Check trusted certificates directory, create if needed.
 */
@@ -822,61 +706,6 @@ check_trusted_certs_dir()
     return -1;
 }
     
-/*
-** Given a filename, return the full path of that file as it would
-** exist in the trusted certificates directory.
-*/
-static char*
-get_trusted_file_path(char *filename)
-{
-    char *sterile_filename = NULL;
-    char *file_path = NULL;
-    
-    sterile_filename = mystrdup(filename);
-    
-    if (sterile_filename == NULL)
-    {
-        goto error;
-    }
-    
-    sterilize_string(sterile_filename);
-
-    file_path = get_trusted_certs_path();
-    
-    if (file_path == NULL)
-    {
-        goto error;
-    }
-
-    if (myappend(&file_path, sterile_filename) == -1)
-    {
-        goto error;
-    }
-
-    /* Success */
-    free(sterile_filename);
-    
-    return file_path;
-    
-    /* We jump here on error */
-  error:        
-    if (sterile_filename != NULL)
-    {
-        free(sterile_filename);
-    }
-    if (file_path != NULL)
-    {
-        free(file_path);
-    }
-    return NULL;
-}
-
-
-/*
-** Install a file in trusted certificates directory.
-*/
-
-
 /**********************************************************************
  *
  * API routines
@@ -1788,7 +1617,7 @@ myproxy_install_trusted_cert_files(myproxy_certs_t *trusted_certs)
     }
 
     for (trusted_cert = trusted_certs;
-         trusted_cert->next != NULL;
+         trusted_cert != NULL;
          trusted_cert = trusted_cert->next)
     {
     
