@@ -52,8 +52,6 @@ int auth_passwd_check_client(authorization_data_t *client_auth_data,
                              struct myproxy_creds *creds, char *client_name,
 			     myproxy_server_context_t* config)
 { 
-   int result = 0;
-
    /* 1. Check whether the credentials are encrypted. */
    int encrypted = myproxy_creds_encrypted(creds);
    int empty_passphrase = (client_auth_data->client_data_len <= 0) ? 1 : 0;
