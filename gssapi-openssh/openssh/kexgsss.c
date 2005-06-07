@@ -115,8 +115,7 @@ kexgss_server(Kex *kex)
 		if (dh_client_pub == NULL)
 			fatal("No client public key");
 		
-		if (maj_status & GSS_S_CONTINUE_NEEDED ||
-		    (maj_status == GSS_S_COMPLETE && send_tok.length > 0)) {
+		if (maj_status & GSS_S_CONTINUE_NEEDED) {
 			debug("Sending GSSAPI_CONTINUE");
 			packet_start(SSH2_MSG_KEXGSS_CONTINUE);
 			packet_put_string(send_tok.value,send_tok.length);
