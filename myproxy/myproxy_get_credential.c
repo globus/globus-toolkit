@@ -30,6 +30,7 @@ static char usage[] = \
 "       -c | --certfile        <filename> Certificate file name\n"
 "       -y | --keyfile         <filename> Key file name\n"
 "       -S | --stdin_pass                 Read passphrase from stdin\n"
+"       -T | --trustroots                 Manage trust roots\n"
 "       -n | --no_passphrase              Don't prompt for passphrase\n"
 "\n";
 
@@ -39,7 +40,6 @@ struct option long_options[] =
     {"pshost",           required_argument, NULL, 's'},
     {"psport",           required_argument, NULL, 'p'},
     {"proxy_lifetime",   required_argument, NULL, 't'},
-    {"out",              required_argument, NULL, 'o'},
     {"usage",                  no_argument, NULL, 'u'},
     {"username",         required_argument, NULL, 'l'},
     {"verbose",                no_argument, NULL, 'v'},
@@ -51,10 +51,11 @@ struct option long_options[] =
     {"no_passphrase",          no_argument, NULL, 'n'},
     {"certfile",         required_argument, NULL, 'c'},
     {"keyfile",          required_argument, NULL, 'y'},
+    {"trustroots",             no_argument, NULL, 'T'},
     {0, 0, 0, 0}
 };
 
-static char short_options[] = "hus:p:l:t:o:c:y:vVa:dk:Sn";
+static char short_options[] = "hus:p:l:t:c:y:vVa:dk:SnT";
 
 static char version[] =
 "myproxy-retrieve version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
@@ -92,7 +93,6 @@ mkpath( char *path );
 #define my_setlinebuf(stream)	setvbuf((stream), (char *) NULL, _IOLBF, 0)
 
 /* location of delegated proxy */
-static char *outputfile             = NULL;
 static char *certfile               = NULL;     /* certificate file name */
 static char *keyfile                = NULL;     /* key file name */
 static int   dn_as_username         = 0;
@@ -143,11 +143,34 @@ main(int argc, char *argv[])
         socket_attrs->psport = MYPROXY_SERVER_PORT;
     }
 
-    GLOBUS_GSI_SYSCONFIG_GET_USER_CERT_FILENAME( &certfile,
-                                                 &keyfile ); 
+    get_user_credential_filenames( &certfile, &keyfile ); 
 
     /* Initialize client arguments and create client request object */
     init_arguments(argc, argv, socket_attrs, client_request);
+
+    if (!certfile && !keyfile) {
+	fprintf(stderr, "Unable to determine credential output locations.\n"
+		"Use --certfile and --keyfile options.\n");
+	goto error;
+    } else if (!certfile) {
+	fprintf(stderr, "Unable to determine certificate output location.\n"
+		"Use --certfile option.\n");
+	goto error;
+    } else if (!keyfile) {
+	fprintf(stderr, "Unable to determine private key output location.\n"
+		"Use --keyfile option.\n");
+	goto error;
+    }
+
+    if (access(certfile, F_OK) == 0) {
+	fprintf(stderr, "%s exists.\n", certfile);
+	goto error;
+    }
+
+    if (access(keyfile, F_OK) == 0) {
+	fprintf(stderr, "%s exists.\n", keyfile);
+	goto error;
+    }
 
     /* Connect to server. */
     if (myproxy_init_client(socket_attrs) < 0) {
@@ -155,11 +178,6 @@ main(int argc, char *argv[])
         goto error;
     }
     
-    if (!outputfile) {
-	GLOBUS_GSI_SYSCONFIG_GET_PROXY_FILENAME(&outputfile,
-						GLOBUS_PROXY_FILE_OUTPUT);
-    }
-
     if (!use_empty_passwd) {
        /* Allow user to provide a passphrase */
 	int rval;
@@ -254,20 +272,31 @@ main(int argc, char *argv[])
        goto error;
     }
 
-    /* move delegfile to outputfile if specified */
-    if (outputfile != NULL) {
-        ssl_proxy_file_destroy(delegfile);
-    }
+    ssl_proxy_file_destroy(delegfile);
 
-    printf("Credentials for %s have been stored in %s and %s\n",
+    printf("Credentials for %s have been stored in\n%s and\n%s.\n",
            client_request->username, certfile, keyfile);
 
+    /* Store file in trusted directory if requested and returned */
+    if (client_request->want_trusted_certs) {
+        if (server_response->trusted_certs != NULL) {
+            if (myproxy_install_trusted_cert_files(server_response->trusted_certs) != 0) {       
+		verror_print_error(stderr);
+		goto error;
+            } else {
+		printf("Trust roots have been installed in %s.\n",
+		       get_trusted_certs_path());
+	    }
+        } else {
+            myproxy_debug("Requested trusted certs but didn't get any.\n");
+        }
+    }
+    
     retval = 0;
 
 error:
     if (certfile) free(certfile);
     if (keyfile) free(keyfile);
-    if (outputfile) free(outputfile);
     verror_clear();
 
     /* free memory allocated */
@@ -339,10 +368,16 @@ init_arguments(int argc,
 	case 'S':
 	    read_passwd_from_stdin = 1;
 	    break;
+	case 'T':
+	    request->want_trusted_certs = 1;
+            myproxy_debug("Requesting trusted certificates.\n");
+	    break;
         case 'c':       /* credential file name */
+	    if (certfile) free(certfile);
             certfile = strdup(optarg);
             break;
         case 'y':       /* key file name */
+	    if (keyfile) free(keyfile);
             keyfile = strdup(optarg);
             break;
         default:        /* print usage and exit */ 
@@ -369,6 +404,10 @@ store_credential( char *delegfile,
     unsigned char       *input_buffer       = NULL;
     int                 retval              = -1;
 
+
+    assert(delegfile != NULL);
+    assert(certfile != NULL);
+    assert(keyfile != NULL);
 
     if (buffer_from_file(delegfile, &input_buffer, NULL) < 0)
     {
@@ -403,6 +442,9 @@ write_cert( char       *path,
     int          retval      = -1;
     int          size;
 
+    assert(path != NULL);
+    assert(buffer != NULL);
+
     if( make_path( path ) < 0 )
     {
         verror_print_error(stderr);
@@ -415,7 +457,7 @@ write_cert( char       *path,
     {
       if( errno == EEXIST )
       {
-        fprintf(stderr, "open(%s) failed: This file already exists.  (myproxy-retrieve will not overwrite end-entity credentials)\n", path );
+        fprintf(stderr, "open(%s) failed: This file already exists.\nmyproxy-retrieve will not overwrite end-entity credentials.\n", path );
         goto error;
       }
 
@@ -494,7 +536,7 @@ write_key( char       *path,
     {
       if( errno == EEXIST )
       {
-        fprintf(stderr, "open(%s) failed: This file already exists.  (myproxy-retrieve will not overwrite end-entity credentials)\n", path );
+        fprintf(stderr, "open(%s) failed: This file already exists.\nmyproxy-retrieve will not overwrite end-entity credentials.\n", path );
         goto error;
       }
 
@@ -563,4 +605,3 @@ buffer2file( char *buffer,
 
     return( 0 );
 }
-
