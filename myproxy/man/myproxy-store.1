@@ -168,18 +168,18 @@ Specifies credential description.
 .SH FILES
 .TP
 .I ~/.globus/usercert.pem
-Default location of the certificate stored on the 
+Default location of the certificate to be stored on the 
 .BR myproxy-server .
-Set the
-.B X509_USER_CERT
-environment variable to override.
+Use the
+.B --certfile
+option to override.
 .TP
 .I ~/.globus/userkey.pem
-Default location of the private key stored on the
+Default location of the private key to be stored on the
 .BR myproxy-server .
-Set the
-.B X509_USER_KEY
-environment variable to override.
+Use the
+.B --keyfile
+option to override.
 .SH ENVIRONMENT
 .TP
 .B MYPROXY_SERVER
@@ -207,24 +207,6 @@ form "host/<fqhn>" or "myproxy/<fqhn>"
 the server).  If the server is running with some other DN, you can set
 this environment variable to tell the MyProxy clients to accept the
 alternative DN.
-.TP
-.B X509_USER_CERT
-Specifies a non-standard location for the certificate from which the
-proxy credential is created.
-The location may be the path to an end-entity certificate
-(ex. 
-.IR ~/.globus/usercert.pem ) 
-or a proxy (ex. 
-.IR /tmp/x509up_u<uid> ).
-.TP
-.B X509_USER_KEY
-Specifies a non-standard location for the private key from which the
-proxy credential is created.
-The location may be the path to an end-entity certificate
-(ex. 
-.IR ~/.globus/usercert.pem ) 
-or a proxy (ex. 
-.IR /tmp/x509up_u<uid> ).
 .SH AUTHORS
 Jim Basney,
 Shiva Shankar Chetan,
