@@ -148,6 +148,9 @@ $ENV{'X509_USER_KEY'} = $ENV{'X509_USER_PROXY'};
 srand(time||$$);
 $passphrase = sprintf "%010.d", int(rand(0x7fffffff));
 
+# all temporary files accessible only by running user
+umask(0077);
+
 #
 # start server if requested
 #
@@ -171,7 +174,7 @@ if ($startserver) {
     print CONF "authorized_renewers   \"*\"\n";
     print CONF "default_renewers      \"none\"\n";
     print CONF "authorized_key_retrievers \"*\"\n";
-    print CONF "default_key_retrievers    \"*\"\n";
+    print CONF "default_key_retrievers    \"none\"\n";
     close(CONF);
     $SERVERPIDFILE = "/tmp/myproxy-test.serverpid.$$";
     $servercmd = "$myproxy_server -s $serverdir -c $serverconf";
@@ -453,15 +456,16 @@ if ($exitstatus == 0) {
 # For myproxy-store, we need an encrypted key to store.
 # So, let's encrypt our proxy key.
 $passphrase = sprintf "%010.d", int(rand(0x7fffffff));
-&runtest("openssl rsa -des3 -passout stdin -in \$X509_USER_KEY -out /tmp/myproxy-test.$$.key",
+$testkey = "/tmp/myproxy-test.$$.key";
+&runtest("openssl rsa -des3 -passout stdin -in \$X509_USER_KEY -out $testkey",
 	 $passphrase . "\n");
-$ENV{'X509_USER_KEY'} = "/tmp/myproxy-test.$$.key";
+chmod(0600, $testkey);
 
 #
 # Test 17
 #
 ($exitstatus, $output) =
-    &runtest("myproxy-store -v -t 1", undef);
+    &runtest("myproxy-store -x -E '$cert_subject' -v -t 1 -y $testkey", undef);
 print "MyProxy Test 17 (store credential with default name): ";
 if ($exitstatus == 0) {
     print "SUCCEEDED\n"; $SUCCESSES++;
@@ -606,12 +610,13 @@ if (!($output =~ /default credential/)) {
 # Test 27
 #
 ($exitstatus, $output) =
-    &runtest("myproxy-store -v -r 'nobody' -k 'nobody' -t 1", undef);
+    &runtest("myproxy-store -v -r 'nobody' -k 'nobody' -t 1 -y $testkey",
+	     undef);
 print "MyProxy Test 27 (store credentials with retrieval policies): ";
 
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
-	&runtest("myproxy-store -v -x -r '$cert_subject' -k 'mine' -t 1", undef);
+	&runtest("myproxy-store -x -E '$cert_subject' -v -r '$cert_subject' -k 'mine' -t 1 -y $testkey", undef);
 }
 if ($exitstatus == 0) {
     print "SUCCEEDED\n"; $SUCCESSES++;
@@ -676,20 +681,16 @@ if ($exitstatus == 0) {
 &runtest("myproxy-destroy -v -k 'nobody'", undef);
 `rm -f /tmp/myproxy-test.*.12.*.$$`;
 
-
-# Use unencrypted private key for renewal tests.
-$ENV{'X509_USER_KEY'} = $ENV{'X509_USER_PROXY'};
-
 #
 # Test 30
 #
 ($exitstatus, $output) =
-    &runtest("myproxy-store -v -R 'nobody' -k 'nobody' -t 1 -d", undef);
+    &runtest("myproxy-store -v -R 'nobody' -k 'nobody' -t 1 -d -y \$X509_USER_PROXY -c \$X509_USER_PROXY",
+	     undef);
 print "MyProxy Test 30 (store credentials with renewal policies): ";
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
-	&runtest("myproxy-store -v -x -R '$cert_subject' -k 'mine' -t 1 -d",
-		 undef);
+	&runtest("myproxy-store -v -x -R '$cert_subject' -k 'mine' -t 1 -d -y \$X509_USER_PROXY -c \$X509_USER_PROXY", undef);
 }
 if ($exitstatus == 0) {
     print "SUCCEEDED\n"; $SUCCESSES++;
@@ -737,14 +738,11 @@ if ($exitstatus == 0) {
 &runtest("myproxy-destroy -v -k 'mine' -d", undef);
 &runtest("myproxy-destroy -v -k 'nobody' -d", undef);
 
-# Back to using encrypted private key.
-$ENV{'X509_USER_KEY'} = "/tmp/myproxy-test.$$.key";
-
 #
 # Test 33
 #
 ($exitstatus, $output) =
-    &runtest("myproxy-store -v -a -t 2", undef);
+    &runtest("myproxy-store -x -E '$cert_subject' -v -a -t 2 -y $testkey", undef);
 print "MyProxy Test 33 (verify lifetime of retrieved credentials): ";
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
@@ -788,12 +786,12 @@ if ($exitstatus == 0) {
 # Test 34
 #
 ($exitstatus, $output) =
-    &runtest("myproxy-store -v -E 'nobody' -k 'nobody' -t 1 -d", undef);
+    &runtest("myproxy-store -v -E 'nobody' -k 'nobody' -t 1 -y $testkey",
+	     undef);
 print "MyProxy Test 34 (store credentials with retrieve key policies): ";
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
-	&runtest("myproxy-store -v -x -E '$cert_subject' -k 'mine' -t 1 -d",
-		 undef);
+	&runtest("myproxy-store -v -x -E '$cert_subject' -k 'mine' -t 1 -y $testkey", undef);
 }
 if ($exitstatus == 0) {
     print "SUCCEEDED\n"; $SUCCESSES++;
@@ -804,7 +802,7 @@ if ($exitstatus == 0) {
 #
 # Test 35
 #
-($exitstatus, $output) = &runtest("myproxy-info -v -d", undef);
+($exitstatus, $output) = &runtest("myproxy-info -v", undef);
 print "MyProxy Test 35 (get info for stored retrieve key credentials): ";
 if ($exitstatus == 0 && $output =~ /username/) {
     print "SUCCEEDED\n"; $SUCCESSES++;
@@ -816,7 +814,7 @@ if ($exitstatus == 0 && $output =~ /username/) {
 # Test 36
 #
 ($exitstatus, $output) =
-    &runtest("myproxy-retrieve -d -k 'mine' -c /tmp/myproxy-test.cert.12.1.$$ -y /tmp/myproxy-test.key.12.1.$$ -v -S",
+    &runtest("myproxy-retrieve -k 'mine' -c /tmp/myproxy-test.cert.12.1.$$ -y /tmp/myproxy-test.key.12.1.$$ -v -S",
 	     $passphrase . "\n");
 print "MyProxy Test 36 (verify myproxy-retrieve key retrieval policies): ";
 if ($exitstatus == 0) {
@@ -825,9 +823,9 @@ if ($exitstatus == 0) {
 }
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
-	&runtest("myproxy-retrieve -d -k 'nobody' -c /tmp/myproxy-test.cert.12.2.$$ -y /tmp/myproxy-test.key.12.2.$$ -v -S",
+	&runtest("myproxy-retrieve -k 'nobody' -c /tmp/myproxy-test.cert.12.2.$$ -y /tmp/myproxy-test.key.12.2.$$ -v -S",
 		 $passphrase . "\n");
-    if ($exitstatus == 0) {
+    if ($exitstatus != 0) {
 	print "SUCCEEDED\n"; $SUCCESSES++;
     } else {
 	print "FAILED\n"; $FAILURES++;
@@ -838,13 +836,10 @@ if ($exitstatus == 0) {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
 }
 end_of_store_tests:
-&runtest("myproxy-destroy -v -k 'mine' -d", undef);
-&runtest("myproxy-destroy -v -k 'nobody' -d", undef);
+&runtest("myproxy-destroy -v -k 'mine'", undef);
+&runtest("myproxy-destroy -v -k 'nobody'", undef);
 `rm -f /tmp/myproxy-test.*.12.*.$$`;
 unlink("/tmp/myproxy-test.$$.key");
-
-# Back to unencrypted private key for CoG tests
-$ENV{'X509_USER_KEY'} = $ENV{'X509_USER_PROXY'};
 
 #
 # COG tests
@@ -872,6 +867,7 @@ exit $FAILURES;
 sub runtest {
     local($command, $input) = @_;
 
+    print STDERR "running: ", $command, "\n" if ($verbose);
     $pid = open3(*Writer, *Reader, 0, "exec $command") ||
 	die "failed to run $command";
     print Writer $input if (defined($input));
