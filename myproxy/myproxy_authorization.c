@@ -74,10 +74,8 @@ int auth_passwd_check_client(authorization_data_t *client_auth_data,
 #if defined(HAVE_LIBPAM)
 
    /* Tangent: figure out PAM configuration. */
-   if (config) {
-       char* pam_policy = config->pam_policy;
-       char* pam_id     = config->pam_id;
-   }
+   char* pam_policy = config ? config->pam_policy : NULL;
+   char* pam_id     = config ? config->pam_id : NULL;
 
    /* Default value is "disabled". */
    if (pam_policy == NULL) pam_policy = "disabled";
