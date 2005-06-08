@@ -1,4 +1,4 @@
-.TH myproxy-server.config 5 "2005-4-7" "NCSA" "MyProxy"
+.TH myproxy-server.config 5 "2005-6-8" "NCSA" "MyProxy"
 .SH NAME
 myproxy-server.config \- myproxy-server configuration file
 .SH DESCRIPTION
@@ -191,6 +191,39 @@ in progress (credential load, passphrase change) to fail with the error
 message provided by the program's stdout.
 Note: You must specify the full path to the external program.
 $GLOBUS_LOCATION can't be used in the myproxy-server.config file.
+.TP
+.BI pam " option"
+This line
+governs the use of PAM to check passphrases.
+MyProxy will attempt to
+authenticate via PAM, with the supplied username and passphrase.
+Note that PAM will need to be configured externally for the
+application "myproxy" (usually in /etc/pam.d/), or for the
+application named by pam_id, below.
+Accepted values:
+.RS
+.TP
+.B required
+PAM password authentication is required under all conditions.  If the
+credential is unencrypted (that is, it has no passphrase), a PAM
+password check is still required for authentication.  If the
+credential is encrypted, its passphrase must match the PAM password.
+.TP
+.B sufficient
+The user's passphrase may match either the credential passphrase or,
+if the credential is unencrypted, the PAM passphrase.  If the
+credential is encrypted, then the PAM password is not relevant.
+.TP
+.BR disabled " (default)"
+PAM is not used to check passphrases.
+.RE
+.TP
+.BI pam_id " string"
+The name that myproxy uses to identify itself to PAM.  Default is
+"myproxy".
+For example, on most Unix-like systems, if pam_id is set to "login",
+MyProxy will authenticate against the system's own usernames and
+passwords.
 .TP
 .BI max_proxy_lifetime " hours"
 This line specifies a server-wide maximum lifetime for retrieved proxy
