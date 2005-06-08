@@ -1,9 +1,9 @@
-This is MyProxy v0.6.5 8 Apr 2005.
+This is MyProxy v2.0 8 Jun 2005.
 This version should be compatible with all versions since v0.2.
 
 Version History
 ---------------
-v2.0 X XXX 2005
+v2.0 8 Jun 2005
   - unified versioning with GPT packaging
   - added PAM support
   - added support for managing trusted CA certificates using
