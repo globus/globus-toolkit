@@ -6,6 +6,8 @@ Version History
 v2.0 X XXX 2005
   - unified versioning with GPT packaging
   - added PAM support
+  - added support for managing trusted CA certificates using
+    myproxy-logon/myproxy-retrieve -T option.
   - added the myproxy-replicate utility for managing multiple
     myproxy-server repository replicas for high availability
   - added myproxy_version() and myproxy_check_version() functions
@@ -17,7 +19,7 @@ v2.0 X XXX 2005
   - fixed server side bug where the default_key_retrievers policy was
     always applied even if the credential had a key retriever policy
   - fixed myproxy-test GT 2.4 compatibility problem in v0.6.5
-  - fix myproxy_get_delegation() signature, erroneously changed in
+  - fixed myproxy_get_delegation() signature, erroneously changed in
     v0.6.2, to maintain API-level compatibility
 
 v0.6.5 8 Apr 2005 (GPT package version 1.17)

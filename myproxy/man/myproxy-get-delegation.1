@@ -1,4 +1,4 @@
-.TH myproxy-logon 1 "2005-4-7" "NCSA" "MyProxy"
+.TH myproxy-logon 1 "2005-6-8" "NCSA" "MyProxy"
 .SH NAME
 myproxy-logon \- retrieve a credential
 .SH SYNOPSIS
@@ -118,6 +118,11 @@ passphrase from the active tty.  When running the command
 non-interactively, there may be no associated tty.  Specifying this
 option tells the command to read passphrases from standard input
 without prompts or confirmation.
+.TP
+.B -T, --trustroots
+Retrieve CA certificates directory from server (if available) to store
+in
+.IR ~/.globus/certificates .
 .SH "EXIT STATUS"
 0 on success, >0 on error
 .SH ENVIRONMENT
