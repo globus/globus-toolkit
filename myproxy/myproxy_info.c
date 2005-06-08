@@ -61,6 +61,14 @@ main(int argc, char *argv[])
     myproxy_request_t      *client_request;
     myproxy_response_t     *server_response;
 
+    /* check library version */
+    if (myproxy_check_version()) {
+	fprintf(stderr, "MyProxy library version mismatch.\n"
+		"Expecting %s.  Found %s.\n",
+		MYPROXY_VERSION_DATE, myproxy_version(0,0,0));
+	exit(1);
+    }
+
     myproxy_log_use_stream (stderr);
 
     socket_attrs = malloc(sizeof(*socket_attrs));
