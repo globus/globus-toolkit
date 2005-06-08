@@ -10,11 +10,29 @@
 
 #define MYPROXY_VERSION "MYPROXYv2"	/* protocol version string */
 
+/* compilation options */
+#if defined(HAVE_LIBPAM)
+#define MYPROXY_VERSION_PAM " PAM"
+#else
+#define MYPROXY_VERSION_PAM ""
+#endif
+#if defined(HAVE_LIBSASL2)
+#define MYPROXY_VERSION_SASL " SASL"
+#else
+#define MYPROXY_VERSION_SASL ""
+#endif
+#if defined(BUILD_GSSAPI_PLUGIN)
+#define MYPROXY_VERSION_KRB5 " KRB5"
+#else
+#define MYPROXY_VERSION_KRB5 ""
+#endif
+
 /* software version constants */
 #define MYPROXY_VERSION_MAJOR 2
 #define MYPROXY_VERSION_MINOR 0
 #define MYPROXY_VERSION_MICRO 0
-#define MYPROXY_VERSION_DATE "v2.0 X XXX 2005"
+#define MYPROXY_VERSION_DATE "v2.0 X XXX 2005" \
+        MYPROXY_VERSION_PAM MYPROXY_VERSION_SASL MYPROXY_VERSION_KRB5
 
 /*
  * myproxy_version()
