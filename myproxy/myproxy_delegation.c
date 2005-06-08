@@ -28,15 +28,35 @@ int myproxy_set_delegation_defaults(
 int myproxy_get_delegation(
     myproxy_socket_attrs_t *socket_attrs,
     myproxy_request_t      *client_request,
+    char                   *certfile, /* for backward compatibility.
+					 use client_request->authzcreds
+					 instead. */
     myproxy_response_t     *server_response,
-    char *outfile)
+    char                   *outfile)
 {    
     char delegfile[128];
     char request_buffer[2048];
     int  requestlen;
+    myproxy_request_t tmp_request = { 0 };
+
+    assert(socket_attrs != NULL);
+    assert(client_request != NULL);
+    assert(server_response != NULL);
 
     myproxy_debug("want_trusted_certs = %d\n", client_request->want_trusted_certs);
     
+    /* Compatibility with older API. Caller's client_request struct
+       may not have the new authzcreds member, so we need a new struct. */
+    if (certfile != NULL) {
+	tmp_request.version        = client_request->version;
+	tmp_request.username       = client_request->username;
+	tmp_request.command_type   = client_request->command_type;
+	tmp_request.proxy_lifetime = client_request->proxy_lifetime;
+	tmp_request.credname       = client_request->credname;
+	tmp_request.authzcreds     = certfile;
+	strcpy(tmp_request.passphrase, client_request->passphrase);
+	client_request = &tmp_request;
+    }
 
     /* Set up client socket attributes */
     if (socket_attrs->gsi_socket == NULL) {
