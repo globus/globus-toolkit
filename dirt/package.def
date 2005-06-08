@@ -190,3 +190,5 @@ globus_xio_bidi_driver xio/drivers/bidi/source dirt.sh
 globus_wsrf_gram_reliable_create_test ws-gram/client/reliable_create_test dirt.sh
 globus_c_wsrf_providers wsrf/c/core/providers/source dirt.sh
 globus_xio_buffer wsrf/c/transport/buffer/source dirt.sh
+globus_c_wsrf_core_tools wsrf/c/core/tools/source dirt.sh
+
