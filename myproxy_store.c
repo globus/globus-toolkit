@@ -259,7 +259,7 @@ main(int   argc,
         goto cleanup;
     }
 
-    printf( "Credentials saved to myproxy server\n" );
+    printf( "Credentials saved to myproxy server.\n" );
 
     return 0;
 
