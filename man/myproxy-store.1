@@ -1,4 +1,4 @@
-.TH myproxy-store 1 "2005-4-7" "NCSA" "MyProxy"
+.TH myproxy-store 1 "2005-6-8" "NCSA" "MyProxy"
 .SH NAME
 myproxy-store \- store end-entity credential for later retrieval
 .SH SYNOPSIS
@@ -180,6 +180,11 @@ Default location of the private key to be stored on the
 Use the
 .B --keyfile
 option to override.
+.TP
+.B -T, --trustroots
+Retrieve CA certificates directory from server (if available) to store
+in
+.IR ~/.globus/certificates .
 .SH ENVIRONMENT
 .TP
 .B MYPROXY_SERVER
