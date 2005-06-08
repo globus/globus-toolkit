@@ -139,6 +139,22 @@ parse_auth_data(char *buffer, authorization_data_t ***auth_data);
  *
  */
 
+char *
+myproxy_version(int *major, int *minor, int *micro) {
+    if (major) *major = MYPROXY_VERSION_MAJOR;
+    if (minor) *minor = MYPROXY_VERSION_MINOR;
+    if (micro) *micro = MYPROXY_VERSION_MICRO;
+    return MYPROXY_VERSION_DATE;
+}
+
+int
+myproxy_check_version_ex(int major, int minor, int micro) {
+    if (major != MYPROXY_VERSION_MAJOR) return 1;
+    if (minor != MYPROXY_VERSION_MINOR) return 2;
+    if (micro != MYPROXY_VERSION_MICRO) return 3;
+    return 0;
+}
+
 int 
 myproxy_init_client(myproxy_socket_attrs_t *attrs) {
     struct sockaddr_in sin;
