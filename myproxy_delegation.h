@@ -11,6 +11,9 @@
 int myproxy_get_delegation(
     myproxy_socket_attrs_t *socket_attrs,
     myproxy_request_t      *client_request,
+    char                   *certfile, /* for backward compatibility.
+					 use client_request->authzcreds
+					 instead. */
     myproxy_response_t     *server_response,
     char                   *outfile);
 
