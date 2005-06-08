@@ -8,7 +8,7 @@
 
 #include <stdio.h>
 
-/* Include this for convience */
+/* Include this for convenience */
 #include <syslog.h>
 
 /*
@@ -76,8 +76,6 @@ int myproxy_debug_set_level(int value);
  * enabled.
  */
 void myproxy_debug(const char *format, ...);
-
-
  
 #endif /* __MYPROXY_LOG_H */
 
