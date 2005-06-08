@@ -1,7 +1,7 @@
 /*
  * myproxy.h
  *
- * Main header for MyProxy library
+ * Main public header for MyProxy library
  *
  */
 
@@ -11,10 +11,10 @@
 #define MYPROXY_VERSION "MYPROXYv2"	/* protocol version string */
 
 /* software version constants */
-#define MYPROXY_VERSION_MAJOR 0
-#define MYPROXY_VERSION_MINOR 6
-#define MYPROXY_VERSION_MICRO 5
-#define MYPROXY_VERSION_DATE "v0.6.5 8 Apr 2005"
+#define MYPROXY_VERSION_MAJOR 2
+#define MYPROXY_VERSION_MINOR 0
+#define MYPROXY_VERSION_MICRO 0
+#define MYPROXY_VERSION_DATE "v2.0 X XXX 2005"
 
 #include "myproxy_constants.h"
 #include "myproxy_authorization.h"
