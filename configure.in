@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_REVISION($Revision: 1.48 $)
+AC_REVISION($Revision: 1.49 $)
 AC_INIT(Makefile.am)
 
 GLOBUS_INIT
@@ -126,8 +126,8 @@ dnl
 dnl Check for PAM
 dnl
 AC_CHECK_HEADERS(security/pam_appl.h pam/pam_appl.h)
-if test "x$ac_cv_header_security_pam_appl_h" == "xyes" || \
-   test "x$ac_cv_header_pam_pam_appl_h" == "xyes" ; then
+if test "x$ac_cv_header_security_pam_appl_h" = "xyes" || \
+   test "x$ac_cv_header_pam_pam_appl_h" = "xyes" ; then
    AC_CHECK_LIB(dl, dlopen, , )
    AC_CHECK_LIB(pam, pam_set_item, , )
 fi
