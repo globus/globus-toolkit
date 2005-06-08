@@ -31,7 +31,7 @@
 #define MYPROXY_VERSION_MAJOR 2
 #define MYPROXY_VERSION_MINOR 0
 #define MYPROXY_VERSION_MICRO 0
-#define MYPROXY_VERSION_DATE "v2.0 X XXX 2005" \
+#define MYPROXY_VERSION_DATE "v2.0 8 Jun 2005" \
         MYPROXY_VERSION_PAM MYPROXY_VERSION_SASL MYPROXY_VERSION_KRB5
 
 /*
@@ -49,6 +49,9 @@ char *myproxy_version(int *major, int *minor, int *micro);
  * Returns 1 if major version number differs.
  * Returns 2 if minor version number differs.
  * Returns 3 if micro version number differs.
+ *
+ * Note: Requiring header and library version to match is recommended,
+ * as the MyProxy struct types sometimes change.
  */
 int myproxy_check_version_ex(int major, int minor, int micro);
 #define myproxy_check_version() \
