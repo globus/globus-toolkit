@@ -60,7 +60,11 @@ authorization_create_response(authorization_data_t **,
  */
 int authorization_check(authorization_data_t *client_auth_data,
                         struct myproxy_creds *creds,
-                        char *client_name,
-			myproxy_server_context_t* config);
+                        char *client_name);
+
+int authorization_check_ex(authorization_data_t *client_auth_data,
+			   struct myproxy_creds *creds,
+			   char *client_name,
+			   myproxy_server_context_t* config);
 
 #endif /* __MYPROXY_AUTHORIZATION_H */

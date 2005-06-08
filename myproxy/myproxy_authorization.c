@@ -74,8 +74,10 @@ int auth_passwd_check_client(authorization_data_t *client_auth_data,
 #if defined(HAVE_LIBPAM)
 
    /* Tangent: figure out PAM configuration. */
-   char* pam_policy = config->pam_policy;
-   char* pam_id     = config->pam_id;
+   if (config) {
+       char* pam_policy = config->pam_policy;
+       char* pam_id     = config->pam_id;
+   }
 
    /* Default value is "disabled". */
    if (pam_policy == NULL) pam_policy = "disabled";
@@ -523,8 +525,16 @@ authorization_get_method(char *name)
 int
 authorization_check(authorization_data_t *client_auth_data,
                     struct myproxy_creds *creds,
-		    char *client_name,
-		    myproxy_server_context_t* config)
+		    char *client_name)
+{
+   return authorization_check_ex(client_auth_data, creds, client_name, NULL);
+}
+
+int
+authorization_check_ex(authorization_data_t *client_auth_data,
+		       struct myproxy_creds *creds,
+		       char *client_name,
+		       myproxy_server_context_t* config)
 {
    struct authorization_func *af = _find_func(client_auth_data->method);
    if (af == NULL) {
