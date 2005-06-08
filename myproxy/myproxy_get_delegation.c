@@ -148,7 +148,7 @@ main(int argc, char *argv[])
 	    if (client_request->authzcreds) {
 		if (ssl_get_base_subject_file(client_request->authzcreds,
 					      &client_request->username)) {
-		    fprintf(stderr, "Cannot get subject name from %s\n",
+		    fprintf(stderr, "Cannot get subject name from %s.\n",
 			    client_request->authzcreds);
 		    return 1;
 		}
@@ -156,7 +156,7 @@ main(int argc, char *argv[])
 		if (ssl_get_base_subject_file(NULL,
 					      &client_request->username)) {
 		    fprintf(stderr,
-			    "Cannot get subject name from your certificate\n");
+			    "Cannot get subject name from your certificate.\n");
 		    return 1;
 		}
 	    }
@@ -176,7 +176,7 @@ main(int argc, char *argv[])
 	verror_print_error(stderr);
 	return 1;
     }
-    printf("A proxy has been received for user %s in %s\n",
+    printf("A proxy has been received for user %s in %s.\n",
            client_request->username, outputfile);
     free(outputfile);
     verror_clear();
