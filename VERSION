@@ -8,6 +8,8 @@ v2.0 X XXX 2005
   - added PAM support
   - added the myproxy-replicate utility for managing multiple
     myproxy-server repository replicas for high availability
+  - added myproxy_version() and myproxy_check_version() functions
+    to verify headers match the shared library in use
   - fixed bug in previous version that caused myproxy-get-delegation
     not to be included in binary GPT installs
   - use system getopt_long() if available; otherwise, use included
