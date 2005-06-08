@@ -1208,7 +1208,7 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 	   }
 	   /* Does passphrase match? */
 	   authorization_ok =
-	       authorization_check(&auth_data, &creds, client_name, context);
+	       authorization_check_ex(&auth_data, &creds, client_name, context);
 	   if (authorization_ok != 1) {
 	       verror_put_string("invalid pass phrase");
 	       goto end;
@@ -1240,7 +1240,7 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 	   }
 	   /* Does cert DN match cred owner? */
 	   authorization_ok =
-	       authorization_check(&auth_data, &creds, client_name, context);
+	       authorization_check_ex(&auth_data, &creds, client_name, context);
 	   if (authorization_ok != 1) {
 	       verror_put_string("invalid credential for renewal");
 	       goto end;
@@ -1360,7 +1360,7 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 	   verror_put_string("current passphrase required when changing passphrase");
 	   goto end;
        } else {
-	   authorization_ok = authorization_check(&auth_data, &creds, client_name, context);
+	   authorization_ok = authorization_check_ex(&auth_data, &creds, client_name, context);
 	   if (authorization_ok != 1) {
 	       verror_put_string("invalid pass phrase");
 	       goto end;
