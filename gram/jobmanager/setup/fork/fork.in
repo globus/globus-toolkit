@@ -21,7 +21,7 @@ package Globus::GRAM::JobManager::fork;
 
 @ISA = qw(Globus::GRAM::JobManager);
 
-my ($mpirun);
+my ($mpirun, $mpiexec);
 my %signo;
 
 BEGIN
@@ -34,6 +34,7 @@ BEGIN
     }
 
     $mpirun = '@MPIRUN@';
+    $mpiexec = '@MPIEXEC@';
 }
 
 sub new
@@ -144,6 +145,11 @@ sub submit
     {
 	$count = 1;
     }
+    elsif($description->jobtype() eq 'mpi' && $mpiexec ne 'no')
+    {
+	$count = 1;
+	@cmdline = ($mpiexec, '-n', $description->count());
+    }
     elsif($description->jobtype() eq 'mpi' && $mpirun ne 'no')
     {
 	$count = 1;
@@ -175,7 +181,14 @@ sub submit
 	return Globus::GRAM::Error::STDIN_NOT_FOUND();
     }
 
-    push(@cmdline, $description->executable());
+    if ($description->executable() =~ m:^(/|\.):) {
+        push(@cmdline, $description->executable());
+    } else {
+        push(@cmdline,
+                $description->directory()
+                . '/'
+                . $description->executable());
+    }
 
     @arguments = $description->arguments();
     foreach(@arguments)
