@@ -11,6 +11,7 @@ SUBDIRS= \
 
 LibSources= \
 	auth_pam.c \
+	auth_pam.h \
 	getopt_long.c \
 	gsi_socket.c \
 	gsi_socket.h \
