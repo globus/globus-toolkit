@@ -61,10 +61,17 @@ $ make dist
 
      $ cvs tag MYPROXY_X_X_X
 
-6. Copy VERSION and myproxy-*.tar.gz to
+6. Sign the release file with GPG.
+
+     $ gpg -b myproxy-*.tar.gz
+
+7. Copy README, LICENSE, VERSION, and myproxy-*.tar.gz to
    /afs/ncsa.uiuc.edu/ftp/ftp/aces/myproxy.
 
-7. Update MyProxy web site in
+     $ cp README LICENSE VERSION myproxy-*.tar.gz \
+       /afs/ncsa.uiuc.edu/ftp/ftp/aces/myproxy
+
+8. Update MyProxy web site in
    /afs/ncsa.uiuc.edu/web/grid.ncsa.uiuc.edu/htdocs/myproxy.
 
      download.html: add new entry at top of table for new release
@@ -78,6 +85,7 @@ $ make dist
 
    Commit web site changes to CVS.
 
-8. Send release announcement to myproxy-users@ncsa.uiuc.edu.
+9. Send release announcement to myproxy-users@ncsa.uiuc.edu.
+   Sign it with 'gpg --clearsign'.
 
-9. Add MyProxy version number to https://bugzilla.ncsa.uiuc.edu/.
+10. Add MyProxy version number to https://bugzilla.ncsa.uiuc.edu/.
