@@ -7,7 +7,7 @@ v2.0 8 Jun 2005
   - unified versioning with GPT packaging
   - added PAM support
   - added support for managing trusted CA certificates using
-    myproxy-logon/myproxy-retrieve -T option.
+    myproxy-logon/myproxy-retrieve -T option
   - added the myproxy-replicate utility for managing multiple
     myproxy-server repository replicas for high availability
   - added myproxy_version() and myproxy_check_version() functions
@@ -21,6 +21,8 @@ v2.0 8 Jun 2005
   - fixed myproxy-test GT 2.4 compatibility problem in v0.6.5
   - fixed myproxy_get_delegation() signature, erroneously changed in
     v0.6.2, to maintain API-level compatibility
+  - added dynamic buffer management for improved handling of large
+    messages
 
 v0.6.5 8 Apr 2005 (GPT package version 1.17)
   - added support for RFC 3820 proxy certificate format

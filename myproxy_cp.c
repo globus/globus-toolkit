@@ -67,7 +67,7 @@ main(int argc, char *argv[])
 {    
     char *pshost;
     int requestlen, rval;
-    char request_buffer[1024];
+    char *request_buffer = NULL;
     myproxy_socket_attrs_t *socket_attrs;
     myproxy_request_t      *client_request;
     myproxy_response_t     *server_response;
@@ -178,8 +178,7 @@ main(int argc, char *argv[])
      }
 
     /*Serialize client request object */
-    requestlen = myproxy_serialize_request (client_request, request_buffer,
-		    			sizeof (request_buffer));
+    requestlen = myproxy_serialize_request_ex(client_request, &request_buffer);
 
     if (requestlen < 0) {
 	    	fprintf (stderr, "Error: %s", verror_get_string());
@@ -191,6 +190,8 @@ main(int argc, char *argv[])
 	    fprintf (stderr, "%s\n", verror_get_string());
 	    return 1;
     }
+    free(request_buffer);
+    request_buffer = NULL;
 
     /* Receive response from server */
     if (myproxy_recv_response_ex(socket_attrs, server_response,

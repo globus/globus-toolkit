@@ -102,12 +102,23 @@ int myproxy_authenticate_accept(myproxy_socket_attrs_t *attr,
  * myproxy_serialize_request()
  * 
  * Serialize a request object into a buffer to be sent over the network.
+ * Use myproxy_serialize_request_ex() instead.
  *
- * returns the number of characters put into the buffer 
- * (not including the trailing NULL)
+ * Returns the serialized data length or -1 on error.
  */
 int myproxy_serialize_request(const myproxy_request_t *request, 
 			      char *data, const int datalen);
+
+/*
+ * myproxy_serialize_request_ex()
+ * 
+ * Serialize a request object into a newly allocated buffer of correct size.
+ * The caller should free() the buffer after use.
+ *
+ * Returns the serialized data length or -1 on error.
+ */
+int myproxy_serialize_request_ex(const myproxy_request_t *request, 
+				 char **data);
 
 
 /*
@@ -124,6 +135,7 @@ int myproxy_deserialize_request(const char *data, const int datalen,
  * myproxy_serialize_response()
  * 
  * Serialize a response object into a buffer to be sent over the network.
+ * Use myproxy_serialize_response_ex() instead.
  *
  * returns the number of characters put into the buffer 
  * (not including the trailing NULL)
@@ -133,9 +145,22 @@ myproxy_serialize_response(const myproxy_response_t *response,
                            char *data, const int datalen); 
 
 /*
+ * myproxy_serialize_response_ex()
+ * 
+ * Serialize a response object into a newly allocated buffer of correct size.
+ * The caller should free() the buffer after use.
+ *
+ * returns the number of characters put into the buffer 
+ * (not including the trailing NULL)
+ */
+int
+myproxy_serialize_response_ex(const myproxy_response_t *response, 
+			      char **data); 
+
+/*
  * myproxy_deserialize_response()
  *
- * Serialize a response object into a buffer to be sent over the network.
+ * Serialize a a buffer into a response object.
  *
  * returns the number of characters put into the buffer 
  * (not including the trailing NULL)

@@ -101,8 +101,8 @@ main(int argc, char *argv[])
     int cred_lifetime, hours;
     float days;
     char *pshost; 
-    char proxyfile[64];
-    char request_buffer[1024]; 
+    char proxyfile[MAXPATHLEN];
+    char *request_buffer = NULL;
     int requestlen;
     int cleanup_user_proxy = 0;
 
@@ -215,8 +215,8 @@ main(int argc, char *argv[])
     }
 
     /* Serialize client request object */
-    requestlen = myproxy_serialize_request(client_request, 
-                                           request_buffer, sizeof(request_buffer));
+    requestlen = myproxy_serialize_request_ex(client_request, 
+					      &request_buffer);
     if (requestlen < 0) {
 	verror_print_error(stderr);
 	goto cleanup;
@@ -227,6 +227,8 @@ main(int argc, char *argv[])
 	verror_print_error(stderr);
 	goto cleanup;
     }
+    free(request_buffer);
+    request_buffer = NULL;
 
     /* Continue unless the response is not OK */
     if (myproxy_recv_response_ex(socket_attrs, server_response,

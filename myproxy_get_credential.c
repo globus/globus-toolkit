@@ -106,8 +106,8 @@ main(int argc, char *argv[])
     myproxy_request_t      *client_request;
     myproxy_response_t     *server_response;
     char                   *pshost;
-    char                    delegfile[128];
-    char                    request_buffer[2048];
+    char                    delegfile[MAXPATHLEN];
+    char                   *request_buffer = NULL;
     int                     requestlen;
     int                     retval     = -1;
     int                     deletefile =  0;
@@ -244,10 +244,9 @@ main(int argc, char *argv[])
     }
 
     /* Serialize client request object */
-    requestlen = myproxy_serialize_request(client_request, request_buffer,
-                                           sizeof(request_buffer));
+    requestlen = myproxy_serialize_request_ex(client_request, &request_buffer);
     if (requestlen < 0) {
-        fprintf(stderr, "Error in myproxy_serialize_request():\n");
+        fprintf(stderr, "Error in myproxy_serialize_request_ex():\n");
         goto error;
     }
 
@@ -257,6 +256,8 @@ main(int argc, char *argv[])
                 verror_get_string());
         goto error;
     }
+    free(request_buffer);
+    request_buffer = NULL;
 
     /* Continue unless the response is not OK */
     if (myproxy_recv_response_ex(socket_attrs, server_response,

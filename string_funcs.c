@@ -14,48 +14,6 @@
  *
  */
 
-int
-concatenate_strings(char			*destination,
-		    size_t			destination_length,
-		    const char			*source_1,
-		    ...)
-{
-    va_list				ap;
-    const char				*source;
-    int					appended_chars = 0;
-
-    assert(destination != NULL);
-    
-    /*
-     * Subtract current length of destination (and NULL) from
-     * destination_length so that it contains the number of characters we can
-     * add.
-     */
-    destination_length -= strlen(destination) + 1 /* for NULL */;
-    
-    va_start(ap, source_1);
-
-    source = source_1;
-    
-    while (source != NULL) 
-    {
-	strncat(destination, source, destination_length - appended_chars);
-
-	appended_chars += strlen(source);
-	
-	if (appended_chars > destination_length)
-	{
-	    appended_chars = -1;
-	    break;
-	}
-
-	source = va_arg(ap, const char *);
-    }
-    va_end(ap);
-
-    return appended_chars;
-}
-
 /*
  * strip_char()
  *
@@ -83,43 +41,37 @@ void strip_char (char *buf, char ch)
 
   buf[i] = '\0';
 }
-   
      
-   
-
-
 int
-concatenate_string(char				*destination,
-		   size_t			destination_length,
-		   const char			*source)
+my_append(char **dest, const char *src, ...)
 {
-    assert(destination != NULL);
+    va_list ap;
+    size_t len = 1;
     
-    return concatenate_strings(destination, destination_length, source, NULL);
-}
+    assert(dest);
 
-int
-myappend(char **string, char *append)
-{
-    char *new_string = NULL;
-    
-    assert(string != NULL);
-    assert(*string != NULL);
-    assert(append != NULL);
-
-    new_string = realloc(*string,
-                         strlen(*string) + strlen(append) + 1 /* for NUL */);
-    if (new_string == NULL)
-    {
-        verror_put_errno(errno);
-        return -1;
+    if (*dest) {
+	len += strlen(*dest);
+    } else {
+	*dest = (char *)malloc(1);
+	**dest = '\0';
     }
-    strcat(new_string, append);
-    *string = new_string;
 
-    return 0;
+    va_start(ap, src);
+    while (src) {
+	len += strlen(src);
+	*dest = realloc(*dest, len);
+	if (*dest == NULL) {
+	    verror_put_errno(errno);
+	    return -1;
+	}
+	strcat(*dest, src);
+	src = va_arg(ap, const char *);
+    }
+    va_end(ap);
+
+    return len-1;
 }
-
 
 int
 my_strncpy(char					*destination,
@@ -127,12 +79,22 @@ my_strncpy(char					*destination,
 	   size_t				destination_length)
 
 {
+    int len;
+
     assert(destination != NULL);
+    assert(source != NULL);
 
-    destination[0] = '\0';
-    destination_length--;
+    len = strlen(source);
 
-    return concatenate_string(destination, destination_length, source);
+    if (len >= destination_length) {
+	strncpy(destination, source, destination_length-1);
+	destination[destination_length-1] = '\0';
+	len = -1;
+    } else {
+	strcpy(destination, source);
+    }
+
+    return len;
 }
 
 char *
@@ -468,6 +430,7 @@ b64_decode(const char *input, char **output)
     long inlen, outlen;
 
     assert(input != NULL);
+    assert(output != NULL);
 
     mbio = BIO_new_mem_buf((void *)input, -1);
     b64bio = BIO_new(BIO_f_base64());
@@ -562,7 +525,7 @@ get_trusted_certs_path()
         return NULL;
     }   
 
-    if (myappend(&path, TRUSTED_CERT_PATH) == -1)
+    if (my_append(&path, TRUSTED_CERT_PATH, NULL) == -1)
     {
         free(path);
         return NULL;
@@ -597,7 +560,7 @@ get_trusted_file_path(char *filename)
         goto error;
     }
 
-    if (myappend(&file_path, sterile_filename) == -1)
+    if (my_append(&file_path, sterile_filename, NULL) == -1)
     {
         goto error;
     }
@@ -630,7 +593,7 @@ get_user_credential_filenames( char **certfile, char **keyfile )
 	    *certfile = strdup(getenv("X509_USER_CERT"));
 	} else {
 	    *certfile = get_home_path();
-	    if (myappend(certfile, USER_CERT_PATH) == -1) {
+	    if (my_append(certfile, USER_CERT_PATH, NULL) == -1) {
 		free(*certfile);
 		*certfile = NULL;
 	    }
@@ -641,7 +604,7 @@ get_user_credential_filenames( char **certfile, char **keyfile )
 	    *keyfile = strdup(getenv("X509_USER_KEY"));
 	} else {
 	    *keyfile = get_home_path();
-	    if (myappend(keyfile, USER_KEY_PATH) == -1) {
+	    if (my_append(keyfile, USER_KEY_PATH, NULL) == -1) {
 		free(*keyfile);
 		*keyfile = NULL;
 	    }

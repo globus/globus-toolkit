@@ -18,42 +18,18 @@
 void strip_char (char *buf, char ch);
 
 /*
- * concatenate_strings()
+ * my_append()
  *
- * Append given source string(s) to given destination string. Final source
- * string must be NULL. Maximum length of destination (including terminating
- * NULL) is destination_length.  Return number of characters appended or -1 if
- * destination_length characters was reached and output was truncated.
+ * Append source string(s) to target, reallocating the buffer of the
+ * target string to size.  BE SURE TO SEND NULL AS LAST ARGUMENT!
+ * If *target is NULL, a new string will be allocated.
+ * Uses realloc() - so target string may be relocated and pointer
+ * changed.  Returns new string length or -1 on error.
  */
 int
-concatenate_strings(char			*destination,
-		    size_t			destination_length,
-		    const char			*source_1,
-		    ... /* More source strings with terminating NULL*/);
-
-/*
- * concatenate_string()
- *
- * Append given source string to given destination string. Maximum length of
- * destination (including terminating NULL) is destination_length.Return number
- * of characters appended or -1 if max_char characters was reached and output
- * was truncated.
- */
-int
-concatenate_string(char				*destination,
-		   size_t			destination_length,
-		   const char			*source);
-
-/*
- * myappend()
- *
- * Append one string to another, reallocating the buffer of the target string
- * to size. Uses realloc() - so target string may be relocated and pointer
- * changed. Return -1 on error, 0 otherwise.
- */
-int
-myappend(char                                   **target,
-         char                                   *append);
+my_append(char                                   **target,
+	  const char                             *source_1,
+	  ... /* More source strings with terminating NULL */);
 
 
 /*
@@ -62,7 +38,7 @@ myappend(char                                   **target,
  * Copy string from source to destination, which is destination_length
  * characters long. Maximum number of characters copies will be
  * destination_length - 1. Return number of characters copied or -1 if source
- * is was truncated. Result will always be NULL terminated.
+ * was truncated. Result will always be NULL terminated.
  */
 int
 my_strncpy(char					*destination,
