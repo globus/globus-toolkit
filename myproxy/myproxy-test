@@ -218,6 +218,8 @@ if ($exitstatus == 0) {
     print "SUCCEEDED\n"; $SUCCESSES++;
 } else {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
+    print "Skipping remaining tests.\n";
+    goto end_of_all_tests;
 }
 
 ($exitstatus, $output) = &runtest("myproxy-info -v", undef);
@@ -853,7 +855,7 @@ if (defined($ENV{"COG_INSTALL_PATH"})) {
 #
 # END TESTS
 #
-
+end_of_all_tests:
 &docleanup();
 
 print "MyProxy Tests Complete: ", $SUCCESSES, " tests passed, ";
