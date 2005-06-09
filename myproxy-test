@@ -151,6 +151,15 @@ $passphrase = sprintf "%010.d", int(rand(0x7fffffff));
 # all temporary files accessible only by running user
 umask(0077);
 
+# only test trusted certificates management if no certificates directory
+# exists for us to mess up
+if (!defined($ENV{X509_CERT_DIR}) &&
+    defined($ENV{HOME}) && !(-e "$ENV{HOME}/.globus/certificates")) {
+    $test_trustroots = 1;
+} else {
+    $test_trustroots = 0;
+}
+
 #
 # start server if requested
 #
@@ -242,6 +251,26 @@ if ($exitstatus == 0) {
     print "SUCCEEDED\n"; $SUCCESSES++;
 } else {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
+}
+
+if ($test_trustroots) {
+    ($exitstatus, $output) =
+	&runtest("myproxy-get-delegation -T -t 1 -o /tmp/myproxy-test.$$ -v -S",
+		 $passphrase . "\n");
+    print "MyProxy Test 3T (retrieve stored credential w/ trustroots): ";
+    if ($exitstatus == 0) {
+	($exitstatus, $output) =
+	    &verifyproxy("/tmp/myproxy-test.$$");
+    }
+    if ($exitstatus == 0) {
+	($exitstatus, $output) =
+	    &verifytrustroots();
+    }
+    if ($exitstatus == 0) {
+	print "SUCCEEDED\n"; $SUCCESSES++;
+    } else {
+	print "FAILED\n"; $FAILURES++; print STDERR $output;
+    }
 }
 
 ($exitstatus, $output) =
@@ -529,6 +558,28 @@ if ($exitstatus == 0) {
 }
 unlink( "/tmp/myproxy-test.cert.$$" );
 unlink( "/tmp/myproxy-test.key.$$" );
+
+if ($test_trustroots) {
+    ($exitstatus, $output) =
+	&runtest("myproxy-retrieve -T -c /tmp/myproxy-test.cert.$$ -y /tmp/myproxy-test.key.$$ -v -S",
+		 $passphrase . "\n");
+    print "MyProxy Test 20T (retrieve stored credential w/ trustroots): ";
+    if ($exitstatus == 0) {
+	($exitstatus, $output) =
+	    &verifycert("/tmp/myproxy-test.cert.$$", "/tmp/myproxy-test.key.$$");
+    }
+    if ($exitstatus == 0) {
+	($exitstatus, $output) =
+	    &verifytrustroots();
+    }
+    if ($exitstatus == 0) {
+	print "SUCCEEDED\n"; $SUCCESSES++;
+    } else {
+	print "FAILED\n"; $FAILURES++; print STDERR $output;
+    }
+    unlink( "/tmp/myproxy-test.cert.$$" );
+    unlink( "/tmp/myproxy-test.key.$$" );
+}
 
 #
 # Test 21
@@ -1025,6 +1076,36 @@ sub verifycert {
 
     return (0, "");
 }
+
+#
+# verifytrustroots
+#
+# Check to see that trustroots were properly installed in
+# ~/.globus/certificates, then remove that directory.
+#
+sub verifytrustroots {
+    return (1, "internal error: not supposed to test trustroots!")
+	if (!$test_trustroots);
+    $trustrootdir = "$ENV{HOME}/.globus/certificates";
+    if (!(-d $trustrootdir)) {
+	return (1, "trust root directory $trustrootdir doesn't exist!");
+    }
+    $diritems = 0;
+    opendir(DIRHANDLE, $trustrootdir) or
+	die "couldn't open $trustrootdir : $!";
+    while (defined($filename = readdir(DIRHANDLE))) {
+	next if $filename =~ /^\.\.?$/;     # skip . and ..
+	$diritems++;
+    }
+    closedir(DIRHANDLE);
+    if ($diritems == 0) {
+	rmdir($trustrootdir);
+	return (1, "trust root directory $trustrootdir is empty!");
+    }
+    `rm -rf $trustrootdir`;
+    return (0, "");
+}
+
 
 sub debug {
     print STDERR join('', @_), "\n" if ($verbose);
