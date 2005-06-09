@@ -18,7 +18,6 @@ static
 int
 globus_l_xio_udp_activate(void);
 
-
 static
 int
 globus_l_xio_udp_deactivate(void);
@@ -59,7 +58,7 @@ GlobusXIODefineModule(udp) =
     do                                                                      \
     {                                                                       \
         int                             _rc;                                \
-        int                             _fd;                                \
+        globus_xio_system_native_handle_t _fd;                              \
                                                                             \
         _fd = (fd);                                                         \
         do                                                                  \
@@ -67,7 +66,7 @@ GlobusXIODefineModule(udp) =
             _rc = close(_fd);                                               \
         } while(_rc < 0 && errno == EINTR);                                 \
                                                                             \
-        (fd) = -1;                                                          \
+        (fd) = GLOBUS_XIO_SYSTEM_INVALID_HANDLE;                            \
     } while(0)
 
 /*
@@ -76,7 +75,7 @@ GlobusXIODefineModule(udp) =
 typedef struct
 {
     /* handle attrs */
-    globus_xio_system_handle_t          handle;
+    globus_xio_system_native_handle_t   fd;
     char *                              listener_serv;
     int                                 listener_port;
     int                                 listener_min_port;
@@ -87,6 +86,8 @@ typedef struct
     globus_bool_t                       no_ipv6;
     int                                 sndbuf;
     int                                 rcvbuf;
+    globus_bool_t                       join_multicast;
+    globus_sockaddr_t                   multicast_addr;
     
     /* dd attrs */
     globus_bool_t                       use_addr;
@@ -96,7 +97,7 @@ typedef struct
 /* default attr */
 static globus_l_attr_t                  globus_l_xio_udp_attr_default =
 {
-    GLOBUS_XIO_UDP_INVALID_HANDLE,      /* handle   */ 
+    GLOBUS_XIO_UDP_INVALID_HANDLE,      /* fd */ 
     
     GLOBUS_NULL,                        /* listener_serv */
     0,                                  /* listener_port */
@@ -108,6 +109,8 @@ static globus_l_attr_t                  globus_l_xio_udp_attr_default =
     GLOBUS_FALSE,                       /* no_ipv6 */
     0,                                  /* sndbuf (system default) */     
     0,                                  /* rcvbuf (system default) */
+    GLOBUS_FALSE,                       /* join_multicast */
+    {0},                                /* multicast_addr */
     
     GLOBUS_FALSE,                       /* use_addr */
     {0}                                 /* addr */
@@ -118,7 +121,8 @@ static globus_l_attr_t                  globus_l_xio_udp_attr_default =
  */
 typedef struct
 {
-    globus_xio_system_handle_t          handle;
+    globus_xio_system_handle_t          system;
+    globus_xio_system_native_handle_t   fd;
     globus_bool_t                       connected;
     globus_bool_t                       converted;
     globus_bool_t                       no_ipv6;
@@ -220,7 +224,7 @@ globus_l_xio_udp_attr_cntl(
     va_list                             ap)
 {
     globus_l_attr_t *                   attr;
-    globus_xio_system_handle_t *        out_handle;
+    globus_xio_system_native_handle_t * out_fd;
     char **                             out_string;
     int *                               out_int;
     globus_bool_t *                     out_bool;
@@ -239,15 +243,15 @@ globus_l_xio_udp_attr_cntl(
       /**
        *  handle attrs
        */
-      /* globus_xio_system_handle_t     handle */
+      /* globus_xio_system_native_handle_t fd */
       case GLOBUS_XIO_UDP_SET_HANDLE:
-        attr->handle = va_arg(ap, globus_xio_system_handle_t);
+        attr->fd = va_arg(ap, globus_xio_system_native_handle_t);
         break;
       
-      /* globus_xio_system_handle_t *   handle_out */
+      /* globus_xio_system_native_handle_t * fd_out */
       case GLOBUS_XIO_UDP_GET_HANDLE:
-        out_handle = va_arg(ap, globus_xio_system_handle_t *);
-        *out_handle = attr->handle;
+        out_fd = va_arg(ap, globus_xio_system_native_handle_t *);
+        *out_fd = attr->fd;
         break;
        
       /* char *                         service_name */
@@ -439,6 +443,7 @@ globus_l_xio_udp_attr_cntl(
       
       /* char *                         contact_string */
       case GLOBUS_XIO_UDP_SET_CONTACT:
+      case GLOBUS_XIO_UDP_SET_MULTICAST:
         in_string = va_arg(ap, char *);
         
         result = globus_xio_contact_parse(&contact_info, in_string);
@@ -448,7 +453,8 @@ globus_l_xio_udp_attr_cntl(
                 "globus_xio_contact_parse", result);
             goto error_getaddrinfo;
         }
-            
+        
+        save_addrinfo = GLOBUS_NULL;
         if(contact_info.host && contact_info.port)
         {
             result = globus_l_xio_udp_get_addrinfo(
@@ -463,7 +469,10 @@ globus_l_xio_udp_attr_cntl(
                     "globus_l_xio_udp_get_addrinfo", result);
                 goto error_getaddrinfo;
             }
+        }
         
+        if(save_addrinfo)
+        {
             for(addrinfo = save_addrinfo;
                 addrinfo && !GlobusLibcProtocolFamilyIsIP(addrinfo->ai_family);
                 addrinfo = addrinfo->ai_next)
@@ -472,6 +481,19 @@ globus_l_xio_udp_attr_cntl(
         
             if(addrinfo)
             {
+                if(cmd == GLOBUS_XIO_UDP_SET_CONTACT)
+                {
+                    GlobusLibcSockaddrCopy(
+                        attr->addr, *addrinfo->ai_addr, addrinfo->ai_addrlen);
+                    attr->use_addr = GLOBUS_TRUE;
+                }
+                else
+                {
+                    GlobusLibcSockaddrCopy(attr->multicast_addr,
+                        *addrinfo->ai_addr, addrinfo->ai_addrlen);
+                    attr->join_multicast = GLOBUS_TRUE;
+                }
+            
                 GlobusLibcSockaddrCopy(
                     attr->addr, *addrinfo->ai_addr, addrinfo->ai_addrlen);
                 attr->use_addr = GLOBUS_TRUE;
@@ -487,7 +509,15 @@ globus_l_xio_udp_attr_cntl(
         else
         {
             globus_xio_contact_destroy(&contact_info);
-            attr->use_addr = GLOBUS_FALSE;
+            
+            if(cmd == GLOBUS_XIO_UDP_SET_CONTACT)
+            {
+                attr->use_addr = GLOBUS_FALSE;
+            }
+            else
+            {
+                attr->join_multicast = GLOBUS_FALSE;
+            }
         }
         
         break;
@@ -597,7 +627,7 @@ static
 globus_result_t
 globus_l_xio_udp_apply_handle_attrs(
     const globus_l_attr_t *             attr,
-    int                                 fd,
+    globus_xio_system_native_handle_t   fd,
     globus_bool_t                       converted)
 {
     globus_result_t                     result;
@@ -646,7 +676,7 @@ error_sockopt:
 static
 globus_result_t
 globus_l_xio_udp_bind(
-    int                                 fd,
+    globus_xio_system_native_handle_t   fd,
     const struct sockaddr *             addr,
     int                                 addr_len,
     int                                 min_port,
@@ -700,6 +730,130 @@ error_bind:
 
 static
 globus_result_t
+globus_l_xio_udp_join_multicast(
+    globus_l_handle_t *                 handle,
+    const globus_l_attr_t *             attr)
+{
+    globus_result_t                     result;
+    globus_xio_system_native_handle_t   fd;
+    GlobusXIOName(globus_l_xio_udp_join_multicast);
+    
+    fd = socket(
+        GlobusLibcSockaddrGetFamily(attr->multicast_addr),
+        SOCK_DGRAM,
+        0);
+    if(fd == GLOBUS_XIO_SYSTEM_INVALID_HANDLE)
+    {
+        result = GlobusXIOErrorSystemError("socket", errno);
+        goto error_socket;
+    }
+    
+    result = globus_l_xio_udp_apply_handle_attrs(
+        attr, fd, GLOBUS_FALSE);
+    if(result != GLOBUS_SUCCESS)
+    {
+        result = GlobusXIOErrorWrapFailed(
+            "globus_l_xio_udp_apply_handle_attrs", result);
+        goto error_attrs;
+    }
+    
+    result = globus_l_xio_udp_bind(
+        fd,
+        (struct sockaddr *) &attr->multicast_addr,
+        GlobusLibcSockaddrLen(&attr->multicast_addr),
+        0,
+        0);
+    if(result != GLOBUS_SUCCESS)
+    {
+        result = GlobusXIOErrorWrapFailed(
+            "globus_l_xio_udp_bind", result);
+        goto error_bind;
+    }
+    
+#ifdef IP_ADD_MEMBERSHIP
+    if(GlobusLibcSockaddrGetFamily(attr->multicast_addr) == AF_INET)
+    {
+        struct in_addr                  interface;
+        struct ip_mreq                  mreq;
+        globus_addrinfo_t *             addrinfo;
+        globus_addrinfo_t               addrinfo_hints;
+        
+        if(attr->bind_address)
+        {
+            memset(&addrinfo_hints, 0, sizeof(globus_addrinfo_t));
+            addrinfo_hints.ai_flags = GLOBUS_AI_PASSIVE;
+            addrinfo_hints.ai_family = AF_INET;
+            addrinfo_hints.ai_socktype = SOCK_DGRAM;
+            addrinfo_hints.ai_protocol = 0;
+        
+            result = globus_libc_getaddrinfo(attr->bind_address,
+                GLOBUS_NULL, &addrinfo_hints, &addrinfo);
+            if(result != GLOBUS_SUCCESS)
+            {
+                result = GlobusXIOErrorWrapFailed(
+                    "globus_libc_getaddrinfo", result);
+                goto error_join;
+            }
+            
+            interface = ((struct sockaddr_in *) addrinfo->ai_addr)->sin_addr;
+            globus_libc_freeaddrinfo(addrinfo);
+        }
+        else
+        {
+            interface.s_addr = htonl(INADDR_ANY);
+        }
+        
+        mreq.imr_multiaddr =
+            ((struct sockaddr_in *) &attr->multicast_addr)->sin_addr;
+        mreq.imr_interface = interface;
+
+        if(setsockopt(
+            fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) < 0)
+        {
+            result = GlobusXIOErrorSystemError("setsockopt", errno);
+            goto error_join;
+        }
+    }
+    else
+#endif
+#ifdef IPV6_ADD_MEMBERSHIP
+    if(GlobusLibcSockaddrGetFamily(attr->multicast_addr) == AF_INET6)
+    {
+        struct ipv6_mreq                mreq;
+        
+        /**
+         * XXX need to translate bind address into index
+         */        
+        mreq.ipv6mr_multiaddr = 
+            ((struct sockaddr_in6 *) &attr->multicast_addr)->sin6_addr;
+        mreq.ipv6mr_interface = 0;
+
+        if(setsockopt(
+            fd, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) < 0)
+        {
+            result = GlobusXIOErrorSystemError("setsockopt", errno);
+            goto error_join;
+        }
+    }
+    else
+#endif
+    {
+        result = GlobusXIOErrorSystemError("multicast join", ENOTSUP);
+        goto error_join;
+    }
+    
+    return GLOBUS_SUCCESS;
+
+error_join:
+error_bind:
+error_attrs:
+    GlobusIXIOUdpCloseFd(fd);
+error_socket:
+    return result;
+}
+
+static
+globus_result_t
 globus_l_xio_udp_create_listener(
     globus_l_handle_t *                 handle,
     const globus_l_attr_t *             attr)
@@ -710,7 +864,7 @@ globus_l_xio_udp_create_listener(
     globus_addrinfo_t                   addrinfo_hints;
     char                                portbuf[10];
     char *                              port;
-    int                                 fd;
+    globus_xio_system_native_handle_t   fd;
     int                                 save_errno;
     GlobusXIOName(globus_l_xio_udp_create_listener);
     
@@ -765,7 +919,7 @@ globus_l_xio_udp_create_listener(
                 addrinfo->ai_family,
                 addrinfo->ai_socktype,
                 addrinfo->ai_protocol);
-            if(fd < 0)
+            if(fd == GLOBUS_XIO_SYSTEM_INVALID_HANDLE)
             {
                 save_errno = errno;
                 continue;
@@ -816,7 +970,7 @@ globus_l_xio_udp_create_listener(
         goto error_no_addrinfo;
     }
     
-    handle->handle = fd;
+    handle->fd = fd;
     globus_libc_freeaddrinfo(save_addrinfo);
 
     return GLOBUS_SUCCESS;
@@ -893,7 +1047,7 @@ globus_l_xio_udp_connect(
             do
             {
                 rc = connect(
-                    handle->handle, addrinfo->ai_addr, addrinfo->ai_addrlen);
+                    handle->fd, addrinfo->ai_addr, addrinfo->ai_addrlen);
             } while(rc < 0 && errno == EINTR);
                 
             if(rc < 0)
@@ -957,23 +1111,36 @@ globus_l_xio_udp_open(
         goto error_handle;
     }
     
-    if(attr->handle == GLOBUS_XIO_UDP_INVALID_HANDLE)
+    if(attr->fd == GLOBUS_XIO_UDP_INVALID_HANDLE)
     {
-        /* setup the local side */
-        result = globus_l_xio_udp_create_listener(handle, attr);
-        if(result != GLOBUS_SUCCESS)
+        if(attr->join_multicast)
         {
-            result = GlobusXIOErrorWrapFailed(
-                "globus_l_xio_udp_create_listener", result);
-            goto error_listen;
+            result = globus_l_xio_udp_join_multicast(handle, attr);
+            if(result != GLOBUS_SUCCESS)
+            {
+                result = GlobusXIOErrorWrapFailed(
+                    "globus_l_xio_udp_join_multicast", result);
+                goto error_listen;
+            }
+        }
+        else
+        {
+            /* setup the local side */
+            result = globus_l_xio_udp_create_listener(handle, attr);
+            if(result != GLOBUS_SUCCESS)
+            {
+                result = GlobusXIOErrorWrapFailed(
+                    "globus_l_xio_udp_create_listener", result);
+                goto error_listen;
+            }
         }
     }
     else
     {
-        handle->handle = attr->handle;
+        handle->fd = attr->fd;
         handle->converted = GLOBUS_TRUE;
         result = globus_l_xio_udp_apply_handle_attrs(
-            attr, handle->handle, GLOBUS_TRUE);
+            attr, handle->fd, GLOBUS_TRUE);
         if(result != GLOBUS_SUCCESS)
         {
             result = GlobusXIOErrorWrapFailed(
@@ -997,14 +1164,24 @@ globus_l_xio_udp_open(
         }
     }
     
+    result = globus_xio_system_handle_init(
+        &handle->system, handle->fd, GLOBUS_XIO_SYSTEM_UDP);
+    if(result != GLOBUS_SUCCESS)
+    {
+        result = GlobusXIOErrorWrapFailed(
+            "globus_xio_system_handle_init", result);
+        goto error_init;
+    }
+    
     globus_xio_driver_finished_open(handle, op, GLOBUS_SUCCESS);
     
     return GLOBUS_SUCCESS;
 
+error_init:
 error_connect:
     if(!handle->converted)
     {
-        GlobusIXIOUdpCloseFd(handle->handle);
+        GlobusIXIOUdpCloseFd(handle->fd);
     }
     
 error_listen:
@@ -1013,25 +1190,6 @@ error_attrs:
 
 error_handle:
     return result;
-}
-
-static
-void
-globus_l_xio_udp_system_close_cb(
-    globus_result_t                     result,
-    void *                              user_arg)
-{
-    globus_xio_operation_t              op;
-    globus_l_handle_t *                 handle;
-    GlobusXIOName(globus_l_xio_udp_system_close_cb);
-    
-    op = (globus_xio_operation_t) user_arg;
-    
-    handle = (globus_l_handle_t *)
-        globus_xio_operation_get_driver_specific(op);
-    
-    globus_xio_driver_finished_close(op, result);
-    globus_l_xio_udp_handle_destroy(handle);
 }
 
 /*
@@ -1045,37 +1203,21 @@ globus_l_xio_udp_close(
     globus_xio_operation_t              op)
 {
     globus_l_handle_t *                 handle;
-    globus_result_t                     result;
     GlobusXIOName(globus_l_xio_udp_close);
 
     handle = (globus_l_handle_t *) driver_specific_handle;
     
-    if(handle->converted)
+    globus_xio_system_handle_destroy(handle->system);
+    
+    if(!handle->converted)
     {
-        globus_xio_driver_finished_close(op, GLOBUS_SUCCESS);
-        globus_l_xio_udp_handle_destroy(handle);
+        GlobusIXIOUdpCloseFd(handle->fd);
     }
-    else
-    {
-        result = globus_xio_system_register_close(
-            op,
-            handle->handle,
-            globus_l_xio_udp_system_close_cb,
-            op);
-        if(result != GLOBUS_SUCCESS)
-        {
-            result = GlobusXIOErrorWrapFailed(
-                "globus_xio_system_register_close", result);
-            goto error_register;
-        }
-    }
+    
+    globus_xio_driver_finished_close(op, GLOBUS_SUCCESS);
+    globus_l_xio_udp_handle_destroy(handle);
 
     return GLOBUS_SUCCESS;
-    
-error_register:
-    globus_l_xio_udp_handle_destroy(handle);
-    
-    return result;
 }
 
 static
@@ -1135,7 +1277,7 @@ globus_l_xio_udp_read(
         globus_result_t                 result;
         
         result = globus_xio_system_try_read_ex(
-            handle->handle,
+            handle->system,
             iovec,
             iovec_count,
             0,
@@ -1155,7 +1297,7 @@ globus_l_xio_udp_read(
     {
         return globus_xio_system_register_read_ex(
             op,
-            handle->handle,
+            handle->system,
             iovec,
             iovec_count,
             globus_xio_operation_get_wait_for(op),
@@ -1203,7 +1345,7 @@ globus_l_xio_udp_write(
      * times if it fits in buffer
      */
     result = globus_xio_system_try_write_ex(
-        handle->handle, iovec, iovec_count, 0, addr, &nbytes);
+        handle->system, iovec, iovec_count, 0, addr, &nbytes);
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusXIOErrorWrapFailed(
@@ -1245,24 +1387,24 @@ globus_l_xio_udp_cntl(
     int                                 in_int;
     char *                              in_string;
     globus_sockaddr_t                   sock_name;
-    int                                 fd;
+    globus_xio_system_native_handle_t   fd;
     globus_size_t                       len;
     int                                 flags;
     char **                             out_string;
-    globus_xio_system_handle_t *        out_handle;
+    globus_xio_system_native_handle_t * out_fd;
     globus_xio_contact_t                contact_info;
     GlobusXIOName(globus_l_xio_udp_cntl);
 
     handle = (globus_l_handle_t *) driver_specific_handle;
-    fd = handle->handle;
+    fd = handle->fd;
     flags = GLOBUS_LIBC_ADDR_LOCAL;
     
     switch(cmd)
     {
-      /* globus_xio_system_handle_t *   handle_out */
+      /* globus_xio_system_native_handle_t * fd_out */
       case GLOBUS_XIO_UDP_GET_HANDLE:
-        out_handle = va_arg(ap, globus_xio_system_handle_t *);
-        *out_handle = fd;
+        out_fd = va_arg(ap, globus_xio_system_native_handle_t *);
+        *out_fd = fd;
         break;
         
       /* int                            sndbuf */
@@ -1374,8 +1516,7 @@ globus_l_xio_udp_cntl(
             
             do
             {
-                rc = connect(
-                    handle->handle, (struct sockaddr *) &addr, sizeof(addr));
+                rc = connect(fd, (struct sockaddr *) &addr, sizeof(addr));
             } while(rc < 0 && errno == EINTR);
                 
             if(rc < 0)

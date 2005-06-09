@@ -15,7 +15,7 @@ if test "x$flavor" = "x"; then
    ppc-*-*-*)
       flavor=gcc32dbg
    ;;
-   power*-apple-darwin7.*)
+   power*-apple-darwin*)
       flavor=gcc32dbg
    ;;
    sparc-sun-solaris*)

@@ -2133,6 +2133,13 @@ globus_xio_operation_is_canceled(
     return op->canceled != 0;
 }
 
+globus_bool_t
+globus_xio_driver_operation_is_blocking(
+    globus_xio_operation_t              op)
+{
+    return op->blocking;
+}
+
 globus_size_t
 globus_xio_operation_get_wait_for(
     globus_xio_operation_t              op)
@@ -2152,6 +2159,13 @@ globus_xio_operation_get_driver_handle(
     globus_xio_operation_t              op)
 {
     return &op->_op_context->entry[op->ndx];
+}
+
+globus_xio_driver_handle_t
+globus_xio_operation_get_driver_self_handle(
+    globus_xio_operation_t              op)
+{
+    return &op->_op_context->entry[op->ndx - 1];
 }
 
 void *

@@ -27,13 +27,11 @@
 #include "globus_gsi_system_config.h"
 #include "globus_gsi_proxy.h"
 #include "globus_gsi_credential.h"
+#include "proxycertinfo.h"
+#include "openssl/asn1.h"
 #ifdef WIN32
 #include "globus_gssapi_config.h"
 #endif
-
-#define GLOBUS_GSI_PROXY_GENERIC_POLICY_OID "1.3.6.1.4.1.3536.1.1.1.8"
-#define GLOBUS_GSI_PROXY_GENERIC_POLICY_SN  "GENERICPOLICY"
-#define GLOBUS_GSI_PROXY_GENERIC_POLICY_LN  "Generic Policy Object"
 
 #define SHORT_USAGE_FORMAT \
 "\nSyntax: %s [-help][-pwstdin][-limited][-valid H:M] ...\n"
@@ -144,6 +142,11 @@ globus_i_gsi_proxy_utils_key_gen_callback(
     int                                 n,
     void *                              dummy);
 
+static int 
+globus_l_gsi_proxy_utils_extension_callback(
+    globus_gsi_callback_data_t          callback_data,
+    X509_EXTENSION *                    extension);
+
 int 
 main(
     int                                 argc,
@@ -251,11 +254,25 @@ main(
         {
             args_verify_next(arg_index, argp, "need a file name argument");
             user_cert_filename = argv[++arg_index];
+	    result = GLOBUS_GSI_SYSCONFIG_CHECK_CERTFILE(user_cert_filename);
+	    if(result != GLOBUS_SUCCESS)
+	    {
+	        args_error(arg_index, argp, 
+			   globus_error_print_friendly(
+			       globus_error_get(result)));
+	    }
         }
         else if(strcmp(argp, "-certdir") == 0)
         {
             args_verify_next(arg_index, argp, "need a file name argument");
             ca_cert_dir = strdup(argv[++arg_index]);
+	    result = GLOBUS_GSI_SYSCONFIG_DIR_EXISTS(ca_cert_dir);
+	    if(result != GLOBUS_SUCCESS)
+	    {
+	        args_error(arg_index, argp, 
+			   globus_error_print_friendly(
+                               globus_error_get(result)));
+	    }
         }
         else if(strcmp(argp, "-out") == 0)
         {
@@ -266,6 +283,13 @@ main(
         {
             args_verify_next(arg_index, argp, "need a file name argument");
             user_key_filename = argv[++arg_index];
+	    result = GLOBUS_GSI_SYSCONFIG_CHECK_KEYFILE(user_key_filename);
+	    if(result != GLOBUS_SUCCESS)
+	    {
+	        args_error(arg_index, argp, 
+			   globus_error_print_friendly(
+			       globus_error_get(result)));
+	    }
         }
         else if(strcmp(argp, "-valid") == 0)
         {
@@ -482,11 +506,11 @@ main(
     
     /* A few sanity checks */
 
-    if(policy_language && !policy_filename)
+    if(policy_filename && !policy_language)
     {
         globus_libc_fprintf(stderr, 
-                            "\n\nERROR: If you specify a policy language "
-                            "you also need to specify a policy file.\n");
+                            "\n\nERROR: If you specify a policy file "
+                            "you also need to specify a policy language.\n");
         exit(1);
     }
 
@@ -955,20 +979,10 @@ main(
         
         if (policy_buf_len > 0)
         {
-            if(!policy_language)
-            {
-                policy_NID = 
-                    OBJ_create(GLOBUS_GSI_PROXY_GENERIC_POLICY_OID,
-                               GLOBUS_GSI_PROXY_GENERIC_POLICY_SN,
-                               GLOBUS_GSI_PROXY_GENERIC_POLICY_LN);
-            }
-            else
-            {
-                policy_NID = 
-                    OBJ_create(policy_language,
-                               policy_language,
-                               policy_language);
-            }
+	  policy_NID = 
+	      OBJ_create(policy_language,
+			 policy_language,
+			 policy_language);
 
             result = globus_gsi_proxy_handle_set_policy(
                 proxy_handle,
@@ -1020,6 +1034,18 @@ main(
             GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
         }
 
+        result = globus_gsi_callback_set_extension_cb(
+            callback_data,
+            globus_l_gsi_proxy_utils_extension_callback);
+
+        if(result != GLOBUS_SUCCESS)
+        {
+            globus_libc_fprintf(stderr,
+                                "\n\nERROR: Couldn't set the X.509 extension callback \n"
+                                "in the  callback data\n");
+            GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
+        }
+        
         result = globus_gsi_callback_set_cert_dir(
             callback_data,
             ca_cert_dir);
@@ -1221,4 +1247,31 @@ globus_i_gsi_proxy_utils_print_error(
     globus_object_free(error_obj);
     globus_module_deactivate_all();
     exit(1);
+}
+
+static int 
+globus_l_gsi_proxy_utils_extension_callback(
+    globus_gsi_callback_data_t          callback_data,
+    X509_EXTENSION *                    extension)
+{
+    ASN1_OBJECT *                       extension_object = NULL;
+    int                                 nid;
+    int                                 pci_NID;
+    int                                 pci_old_NID;
+
+    pci_NID = OBJ_sn2nid(PROXYCERTINFO_SN);
+    pci_old_NID = OBJ_sn2nid(PROXYCERTINFO_OLD_SN);
+    extension_object = X509_EXTENSION_get_object(extension);
+    nid = OBJ_obj2nid(extension_object);
+
+    if(nid == pci_NID || nid == pci_old_NID)
+    {
+        /* Assume that we either put it there or that it will be recognized */
+        return GLOBUS_TRUE;
+    }
+    else
+    {
+        /* not a PCI extension */
+        return GLOBUS_FALSE;
+    }
 }

@@ -640,6 +640,7 @@ globus_l_xio_ordering_copy(
     globus_xio_iovec_t *                iovec;
     globus_size_t                       len;
     globus_size_t                       total_len;
+    globus_size_t                       nbytes_left;
     globus_bool_t                       finish = GLOBUS_FALSE;
     globus_bool_t                       done;
     GlobusXIOName(globus_l_xio_ordering_copy);
@@ -663,7 +664,8 @@ globus_l_xio_ordering_copy(
 		globus_error_put(buffer->error);
 	    }
 	}
-        while (buffer->nbytes > 0 && user_req->nbytes < user_req->length)
+	nbytes_left = buffer->nbytes - buffer->offset;
+        while (nbytes_left > 0 && user_req->nbytes < user_req->length)
         {
             GlobusXIOOrderingMin(
 			len,
@@ -684,13 +686,13 @@ globus_l_xio_ordering_copy(
                 user_req->offset += len;
             }
             user_req->nbytes += len;
-            buffer->nbytes -= len;
+            nbytes_left -= len;
             buffer->offset += len;
 	    total_len += len;
         }
         handle->expected_offset += total_len;
 	done = GLOBUS_TRUE;
-        if (buffer->nbytes == 0)
+        if (nbytes_left == 0)
         {
 	    globus_xio_driver_pass_read(
                                 buffer->op,
@@ -702,7 +704,7 @@ globus_l_xio_ordering_copy(
 	    ++handle->outstanding_read_count;
 	    /* 
 	     * This if block is not put outside of the above if block coz
-	     * if buffer->nbytes != 0, then user_req->nbytes will surely be 
+	     * if nbytes_left != 0, then user_req->nbytes will surely be 
 	     * >= user_req->length (otherwise while loop would not have ended)
 	     * and the condition would fail. To avoids unnecessary checking of
 	     * that condition, this is placed here.

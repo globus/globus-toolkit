@@ -164,6 +164,8 @@ globus_l_uuid_get_mac(
     }
     
     return GLOBUS_FAILURE;
+#else
+    return GLOBUS_FAILURE;
 #endif
 }
 
@@ -183,14 +185,14 @@ globus_l_uuid_init(void)
     if(globus_l_uuid_get_mac(globus_l_uuid_mac) != GLOBUS_SUCCESS)
     {
         /* create random mac */
-        uint32_t *                      p;
+        unsigned char *                 p;
         uint32_t                        tmp_rand;
         
-        p = (uint32_t *) &globus_l_uuid_mac[0];
+        p = &globus_l_uuid_mac[0];
         tmp_rand = (uint32_t) rand();
         memcpy(p, &tmp_rand, sizeof(uint32_t));
 
-        p = (uint32_t *) &globus_l_uuid_mac[2];
+        p = &globus_l_uuid_mac[2];
         tmp_rand = (uint32_t) rand();
         memcpy(p, &tmp_rand, sizeof(uint32_t));
 

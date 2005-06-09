@@ -59,15 +59,11 @@ GSS_CALLCONV gss_compare_name(
     const gss_name_t                    name2_P,
     int *                               name_equal)
 {
-    X509_NAME_ENTRY *                   ne1;
-    X509_NAME_ENTRY *                   ne2;
     unsigned int                        le1;
     unsigned int                        le2;
     unsigned char *                     ce1;
     unsigned char *                     ce2;
     int                                 found_dot = 0;
-    int                                 index;
-    int                                 common_name_NID;
     const gss_name_desc*                name1 = (gss_name_desc*) name1_P;
     const gss_name_desc*                name2 = (gss_name_desc*) name2_P;
     OM_uint32                           major_status;
@@ -150,108 +146,69 @@ GSS_CALLCONV gss_compare_name(
         GLOBUS_I_GSI_GSSAPI_DEBUG_PRINT(
             2, _GGSL("Comparing GSS_C_NT_HOSTBASED_SERVICE names\n"));
 
-        ne1 = NULL;
-        ne2 = NULL;
-        common_name_NID = OBJ_txt2nid("CN");
-        for (index = 0; index < X509_NAME_entry_count(name1->x509n); index++)
+        ce1 = globus_i_gsi_gssapi_get_hostname(name1);
+        if(ce1)
         {
-            ne1 = X509_NAME_get_entry(name1->x509n, index);
-            if (OBJ_obj2nid(ne1->object) == common_name_NID)
+            le1 = strlen(ce1);
+            ce2 = globus_i_gsi_gssapi_get_hostname(name2);
+            if(ce2)
             {
-                le1 = ne1->value->length;
-                ce1 = ne1->value->data;
-                if ( le1 > 5 && !strncasecmp(ce1,(unsigned char*)"host/",5))
+                le2 = strlen(ce2);
+                if (le1 == le2 && !strncasecmp(ce1,ce2,le1))
                 {
-                    le1 -= 5;
-                    ce1 += 5;
+                    *name_equal = GSS_NAMES_EQUAL;
                 }
-                else if ( le1 > 4 && 
-                          !strncasecmp(ce1,(unsigned char*)"ftp/",4))
+                else
                 {
-                    le1 -= 4;
-                    ce1 += 4;
-                }
-                break;
-            }
-            ne1 = NULL;
-        }
-        for (index = 0; index < X509_NAME_entry_count(name2->x509n); index++)
-        {
-            ne2 = X509_NAME_get_entry(name2->x509n, index);
-            if (OBJ_obj2nid(ne2->object) == common_name_NID)
-            {
-                le2 = ne2->value->length;
-                ce2 = ne2->value->data;
-                if ( le2 > 5 && !strncasecmp(ce2, (unsigned char*)"host/", 5))
-                {
-                    le2 -= 5;
-                    ce2 += 5;
-                } 
-                else if ( le2 > 4 
-                          && !strncasecmp(ce2, (unsigned char*)"ftp/", 4))
-                {
-                    le2 -= 4;
-                    ce2 += 4;
-                }
-                break;
-            }
-            ne2 = NULL;
-        }
-
-        if (ne1 && ne2)
-        {
-            if (le1 == le2 && !strncasecmp(ce1,ce2,le1))
-            {
-                *name_equal = GSS_NAMES_EQUAL;
-            }
-            else
-            {
-                while (le1 > 0 && le2 > 0 && 
-                       toupper(*ce1) == toupper(*ce2))
-                {
-                    if(*ce1 == '.')
+                    while (le1 > 0 && le2 > 0 && 
+                           toupper(*ce1) == toupper(*ce2))
                     {
-                        found_dot = 1;
+                        if(*ce1 == '.')
+                        {
+                            found_dot = 1;
+                        }
+                        
+                        le1--;
+                        le2--;
+                        ce1++;
+                        ce2++;
                     }
                     
-                    le1--;
-                    le2--;
-                    ce1++;
-                    ce2++;
-                }
-                
-                if (le1 >0 && le2 > 0 && !found_dot)
-                {
-                    if ( *ce1 == '.' && *ce2 == '-' )
+                    if (le1 >0 && le2 > 0 && !found_dot)
                     {
-                        while( le2 > 0  && *ce2 != '.')
+                        if ( *ce1 == '.' && *ce2 == '-' )
                         {
-                            le2--;
-                            ce2++;
-                        }
-                        if (le1 == le2 && !strncasecmp(ce1, ce2, le1))
-                        {
-                            *name_equal = GSS_NAMES_EQUAL;
-                        }
-                                                
-                    }
-                    else
-                    {
-                        if (*ce2 == '.' && *ce1 == '-')
-                        {
-                            while(le1 > 0 && *ce1 != '.')
-                            { 
-                                le1--;
-                                ce1++; 
+                            while( le2 > 0  && *ce2 != '.')
+                            {
+                                le2--;
+                                ce2++;
                             }
                             if (le1 == le2 && !strncasecmp(ce1, ce2, le1))
                             {
                                 *name_equal = GSS_NAMES_EQUAL;
                             }
+                            
+                        }
+                        else
+                        {
+                            if (*ce2 == '.' && *ce1 == '-')
+                            {
+                                while(le1 > 0 && *ce1 != '.')
+                                { 
+                                    le1--;
+                                    ce1++; 
+                                }
+                                if (le1 == le2 && !strncasecmp(ce1, ce2, le1))
+                                {
+                                    *name_equal = GSS_NAMES_EQUAL;
+                                }
+                            }
                         }
                     }
                 }
+                free(ce2);
             }
+            free(ce1);
         }
     }
     else

@@ -256,21 +256,46 @@ GSS_CALLCONV gss_init_sec_context(
             {
                 char *                  expected_name;
                 char *                  actual_name;
-                
-                expected_name = X509_NAME_oneline(
-                    ((gss_name_desc*)  target_name)->x509n, NULL, 0);
-                actual_name = X509_NAME_oneline(
-                    ((gss_name_desc*)
-                     context->peer_cred_handle->globusid)->x509n, NULL, 0);
+                    
+                if(g_OID_equal(((gss_name_desc*)  target_name)->name_oid,
+                               GSS_C_NT_HOSTBASED_SERVICE))
+                {
+                    expected_name = globus_i_gsi_gssapi_get_hostname(
+                        (gss_name_desc*)  target_name);
+                    actual_name = globus_i_gsi_gssapi_get_hostname(
+                        (gss_name_desc*)
+                        context->peer_cred_handle->globusid);
+                    if(actual_name == NULL)
+                    {
+                        actual_name = "unknown";
+                    }
+                    GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+                        minor_status,
+                        GLOBUS_GSI_GSSAPI_ERROR_AUTHZ_DENIED,
+                        (_GGSL("The name of the remote host (%s), and the expected "
+                               "name for the remote host (%s) do not match. This happens when the name in the host certificate does not match the information obtained from DNS and is often a DNS configuration problem."),
+                         actual_name, expected_name));
+                    free(actual_name);
+                    free(expected_name);                    
+                }
+                else
+                { 
+                    expected_name = X509_NAME_oneline(
+                        ((gss_name_desc*)  target_name)->x509n, NULL, 0);
+                    actual_name = X509_NAME_oneline(
+                        ((gss_name_desc*)
+                         context->peer_cred_handle->globusid)->x509n, NULL, 0);
+                    
+                    GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+                        minor_status,
+                        GLOBUS_GSI_GSSAPI_ERROR_AUTHZ_DENIED,
+                        (_GGSL("The name of the remote entity (%s), and the expected "
+                               "name for the remote entity (%s) do not match"),
+                         actual_name, expected_name));
+                    OPENSSL_free(actual_name);
+                    OPENSSL_free(expected_name);
+                }
 
-                GLOBUS_GSI_GSSAPI_ERROR_RESULT(
-                    minor_status,
-                    GLOBUS_GSI_GSSAPI_ERROR_AUTHZ_DENIED,
-                    (_GGSL("The name of the remote entity (%s), and the expected "
-                     "name for the remote entity (%s) do not match"),
-                     actual_name, expected_name));
-                OPENSSL_free(actual_name);
-                OPENSSL_free(expected_name);
                 major_status = GSS_S_UNAUTHORIZED;
                 context->gss_state = GSS_CON_ST_DONE;
                 break;

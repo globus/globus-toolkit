@@ -12,7 +12,7 @@ dnl config header goes here
 dnl Initialize the automake rules the last argument
 AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION)
 
-LAC_DOXYGEN("../")
+LAC_DOXYGEN("../", "", "$GLOBUS_LOCATION/sbin/globus-vararg-enums-doxygen-filter.pl")
 
 GLOBUS_FINALIZE
 

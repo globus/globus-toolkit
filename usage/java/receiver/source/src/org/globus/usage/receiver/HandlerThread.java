@@ -88,7 +88,7 @@ public class HandlerThread extends Thread {
 	return this.packetsLogged;
     }
     
-    public int getPacketsDropped() {
+    public int getUnparseablePackets() {
 	return this.errorCount;
     }
 

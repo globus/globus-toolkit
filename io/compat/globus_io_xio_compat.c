@@ -987,7 +987,15 @@ globus_l_io_bounce_authz_cb(
     
     if(result != GLOBUS_SUCCESS)
     { 
-        if(globus_xio_error_is_canceled(result))
+        if(globus_xio_error_is_eof(result))
+        {
+            result = globus_error_put(
+                globus_io_error_construct_eof(
+                    GLOBUS_IO_MODULE,
+                    globus_error_get(result),
+                    ihandle->io_handle));
+        }
+        else if(globus_xio_error_is_canceled(result))
         {
             result = globus_error_put(
                 globus_io_error_construct_io_cancelled(

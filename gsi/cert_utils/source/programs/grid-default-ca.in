@@ -81,7 +81,7 @@ show_default() {
         gsconf="${GLOBUS_LOCATION}/etc/grid-security.conf"
     fi
 
-    DEFAULTCACONFFILE=`${GLOBUS_SH_LS-ls} -l "$gsconf" | ${GLOBUS_SH_SED-sed} -e "s|.*-> \(.*\)|\1|"`
+    DEFAULTCACONFFILE=`${GLOBUS_SH_LS-ls} -l "$gsconf" 2>/dev/null | ${GLOBUS_SH_SED-sed} -e "s|.*-> \(.*\)|\1|"`
     DEFAULTCAHASH=`echo "$DEFAULTCACONFFILE" | ${GLOBUS_SH_SED-sed} -e "s|.*\.\(.*\)$|\1|"`
 
     for i in `my_seq 0 $trusted_dircount`; do
@@ -388,9 +388,11 @@ if [ -w ${DIRECTIONS_FILE} ]; then
     ${GLOBUS_SH_LN-ln} -s ${DIRECTIONS_FILE} \
 	    	          ${secconfdir}/directions
 else
-    echo "removing link ${secconfdir}/directions"
-    echo
-    ${GLOBUS_SH_RM-rm} -f ${secconfdir}/directions
+    if test -e ${secconfdir}/directions ; then
+        echo "removing link ${secconfdir}/directions"
+        echo
+        ${GLOBUS_SH_RM-rm} -f ${secconfdir}/directions
+    fi
 fi
 
 echo 

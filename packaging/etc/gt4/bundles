@@ -30,8 +30,10 @@ BUNDLE gt4-c-ws-core
         globus_c_wsrf_core_tools
         globus_c_wsrf_sample_counter_bindings
         globus_c_wsrf_sample_counter_client_test
-        globus_handler_ws_addressing
+        globus_c_wsrf_sample_secure_counter_service
+	globus_handler_ws_addressing
         globus_usage
+	globus_handler_ws_secure_message
         globus_c_ws_messaging
 	globus_handler_debug
         globus_c_wsrf_resource
@@ -101,6 +103,7 @@ BUNDLE gt4-rft
         globus_wsrf_mds_usefulrp_schema
         globus_wsrf_rft_service_java_setup
         globus_wsrf_rft_service_java_usage
+        globus_c_rft_client_bindings
 
 BUNDLE gt4-rft-test
         globus_wsrf_rft_test
@@ -108,6 +111,7 @@ BUNDLE gt4-rft-test
 BUNDLE gt4-gram
         globus_c_delegation_client_bindings
         globus_c_delegation_client_util
+        globus_c_rft_client_bindings
         globus_c_gram_client_bindings
         globus_c_rendezvous_client_bindings
         globus_usage
@@ -213,6 +217,7 @@ BUNDLE gt4-gram-test
         globus_scheduler_event_generator_fork_test
         globus_gridmap_and_execute_test
         globus_c_wsrf_rendezvous_test
+        globus_wsrf_gram_reliable_create_test
 
 BUNDLE gt4-gram-test-no-c
         globus_wsrf_gram_scheduler_test
@@ -267,5 +272,4 @@ BUNDLE gt4-replicator
         globus_wsrf_replicator_common_java
         globus_wsrf_replicator_common_schema
         globus_wsrf_replicator_service_java
-        globus_database_common
 

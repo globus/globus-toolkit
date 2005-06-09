@@ -1,7 +1,11 @@
-all: gpt @gridftp@ @prewsgram@ @myproxy@ @gsiopenssh@ @wsjava@ @wsmds@ @wsdel@ @wsrft@ @wsgram@ @wsgramcondor@ @wsgramlsf@ @wsgrampbs@ @wscas@ @webmds@ @wsc@ @tests@ @wstests@
+all: gpt @gridftp@ @prewsgram@ @myproxy@ @gsiopenssh@ @wsjava@ @wsmds@ @wsdel@ @wsrft@ @wsgram@ @wsgramcondor@ @wsgramlsf@ @wsgrampbs@ @wscas@ @webmds@ @wsc@ @tests@ @wstests@ done
 GLOBUS_LOCATION=@prefix@
 GPT_LOCATION=@gptlocation@
 export GPT_LOCATION GLOBUS_LOCATION
+
+# Final info target
+done:
+        echo "Your build completed successfully.  Please run ${MAKE} install."
 
 # Cleanup targets
 clean:

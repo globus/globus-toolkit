@@ -9,7 +9,6 @@ SUBDIRS = \
 
 Sources= \
 	accept.c \
-	acconfig.h \
 	acquire.c \
 	display.c \
 	hostname.c \

@@ -308,8 +308,10 @@ main(
                 bits = atoi(argv[++arg_index]);
         }
         else if ((strcmp(argp, "-subject") == 0)  ||
-                 (strcmp(argp, "-identity") == 0)  ||
+                 (strcmp(argp, "-s") == 0)        ||
+                 (strcmp(argp, "-identity") == 0) ||
                  (strcmp(argp, "-issuer") == 0)   ||
+                 (strcmp(argp, "-i") == 0)        ||
                  (strcmp(argp, "-strength") == 0) ||
                  (strcmp(argp, "-type") == 0)     ||
                  (strcmp(argp, "-timeleft") == 0) ||
