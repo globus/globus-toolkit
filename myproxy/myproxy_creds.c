@@ -1212,9 +1212,13 @@ myproxy_creds_delete(const struct myproxy_creds *creds)
     }
 
     if (unlink(data_path) == -1) {
-        verror_put_errno(errno);
-        verror_put_string("deleting credentials data file %s: %s", data_path,
-                          verror_strerror());
+	if (errno == ENOENT) {
+	    verror_put_string("Credentials do not exist.");
+	} else {
+	    verror_put_errno(errno);
+	    verror_put_string("deleting credentials data file %s: %s",
+			      data_path, verror_strerror());
+	}
         goto error;
     }
 
