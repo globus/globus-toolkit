@@ -113,15 +113,13 @@ main(int argc, char *argv[])
     
     /* Set up client socket attributes */
     if (myproxy_init_client(socket_attrs) < 0) {
-        fprintf(stderr, "error in myproxy_init_client(): %s\n",
-		verror_get_string());
+	verror_print_error(stderr);
         return 1;
     }
 
     /* Authenticate client to server */
     if (myproxy_authenticate_init(socket_attrs, NULL /* Default proxy */) < 0) {
-        fprintf(stderr, "error in myproxy_authenticate_init(): %s\n",
-		verror_get_string());
+	verror_print_error(stderr);
 	return 1;
     }
 
@@ -148,14 +146,13 @@ main(int argc, char *argv[])
 					      &request_buffer);
     
     if (requestlen < 0) {
-        fprintf(stderr, "error in myproxy_serialize_request_ex()\n");
+	verror_print_error(stderr);
         return 1;
     }
 
     /* Send request to the myproxy-server */
     if (myproxy_send(socket_attrs, request_buffer, requestlen) < 0) {
-        fprintf(stderr, "error in myproxy_send_request(): %s,\n",
-		verror_get_string());
+	verror_print_error(stderr);
         return 1;
     }
     free(request_buffer);
@@ -164,7 +161,7 @@ main(int argc, char *argv[])
     /* Receive a response from the server */
     if (myproxy_recv_response_ex(socket_attrs, server_response,
 				 client_request) < 0) {
-        fprintf(stderr, "error: : %s\n", verror_get_string());
+	verror_print_error(stderr);
         return 1;
     }
 
