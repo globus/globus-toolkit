@@ -413,6 +413,9 @@ sub generate_build_list()
                  $extras = "-static ";
 	    }
 
+            print INS "${pack}-only: gpt\n";
+            print INS "\t\$\{GPT_LOCATION\}/sbin/gpt-build $extras \$\{BUILD_OPTS\} -srcdir=source-trees/" . $package_list{$pack}[1] . " \${FLAVOR}\n";
+
             print INS "$pack: gpt";
             foreach my $deppack ( @package_build_list )
             {
@@ -424,6 +427,9 @@ sub generate_build_list()
             print INS "\n";
 
             print INS "\t\$\{GPT_LOCATION\}/sbin/gpt-build $extras \$\{BUILD_OPTS\} -srcdir=source-trees/" . $package_list{$pack}[1] . " \${FLAVOR}\n";
+
+            print INS "${pack}-only-thr: gpt\n";
+            print INS "\t\$\{GPT_LOCATION\}/sbin/gpt-build $extras \$\{BUILD_OPTS\} -srcdir=source-trees-thr/" . $package_list{$pack}[1] . " \${FLAVOR}\${THR}\n";
             print INS "${pack}-thr: gpt";
             foreach my $deppack ( @package_build_list )
             {
