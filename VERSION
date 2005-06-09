@@ -5,7 +5,7 @@ Version History
 ---------------
 v2.0 8 Jun 2005
   - unified versioning with GPT packaging
-  - added PAM support
+  - added native PAM support (not requiring SASL)
   - added support for managing trusted CA certificates using
     myproxy-logon/myproxy-retrieve -T option
   - added the myproxy-replicate utility for managing multiple
