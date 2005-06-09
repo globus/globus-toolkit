@@ -693,7 +693,7 @@ respond_with_error_and_die(myproxy_socket_attrs_t *attrs,
 {
     myproxy_response_t		response = {0}; /* initialize with 0s */
     int				responselen;
-    char			response_buffer[2048];
+    char			*response_buffer = NULL;
     
 
     memset (&response, 0, sizeof (response));
@@ -702,9 +702,8 @@ respond_with_error_and_die(myproxy_socket_attrs_t *attrs,
     response.authorization_data = NULL;
     response.error_string = strdup(error);
     
-    responselen = myproxy_serialize_response(&response,
-					     response_buffer,
-					     sizeof(response_buffer));
+    responselen = myproxy_serialize_response_ex(&response,
+						&response_buffer);
     
     if (responselen < 0) {
         my_failure("error in myproxy_serialize_response()");
@@ -722,7 +721,7 @@ respond_with_error_and_die(myproxy_socket_attrs_t *attrs,
 void send_response(myproxy_socket_attrs_t *attrs, myproxy_response_t *response,
 		   char *client_name)
 {
-    char server_buffer[1000000];
+    char *server_buffer = NULL;
     int responselen;
     assert(response != NULL);
 
@@ -730,7 +729,7 @@ void send_response(myproxy_socket_attrs_t *attrs, myproxy_response_t *response,
     response->version = malloc(strlen(MYPROXY_VERSION) + 1);
     sprintf(response->version, "%s", MYPROXY_VERSION);
 
-    responselen = myproxy_serialize_response(response, server_buffer, sizeof(server_buffer));
+    responselen = myproxy_serialize_response_ex(response, &server_buffer);
     
     if (responselen < 0) {
         my_failure("error in myproxy_serialize_response()");
@@ -750,6 +749,7 @@ void send_response(myproxy_socket_attrs_t *attrs, myproxy_response_t *response,
     } 
     free(response->version);
     response->version = NULL;
+    free(server_buffer);
 
     return;
 }

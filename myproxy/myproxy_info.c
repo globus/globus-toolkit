@@ -53,8 +53,8 @@ void init_arguments(int argc, char *argv[],
 int
 main(int argc, char *argv[])
 {
-    char *pshost;
-    char request_buffer[1024];
+    char *pshost = NULL;
+    char *request_buffer = NULL;
     int requestlen;
 
     myproxy_socket_attrs_t *socket_attrs;
@@ -137,8 +137,8 @@ main(int argc, char *argv[])
         client_request->username = strdup(username);
      }
     /* Serialize client request object */
-    requestlen = myproxy_serialize_request(client_request,
-                                           request_buffer, sizeof(request_buffer));
+    requestlen = myproxy_serialize_request_ex(client_request,
+					      &request_buffer);
 
     if (requestlen < 0) {
 	verror_print_error(stderr);
@@ -150,6 +150,8 @@ main(int argc, char *argv[])
 	verror_print_error(stderr);
         return 1;
     }
+    free(request_buffer);
+    request_buffer = 0;
 
     /* Receive a response from the server */
     if (myproxy_recv_response_ex(socket_attrs, server_response,
