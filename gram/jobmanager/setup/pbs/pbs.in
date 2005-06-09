@@ -10,10 +10,11 @@ package Globus::GRAM::JobManager::pbs;
 
 @ISA = qw(Globus::GRAM::JobManager);
 
-my ($mpirun, $qsub, $qstat, $qdel, $cluster, $cpu_per_node, $remote_shell);
+my ($mpirun, $mpiexec, $qsub, $qstat, $qdel, $cluster, $cpu_per_node, $remote_shell);
 
 BEGIN
 {
+    $mpiexec = '@MPIEXEC@';
     $mpirun = '@MPIRUN@';
     $qsub =   '@QSUB@';
     $qstat =  '@QSTAT@';
@@ -251,7 +252,6 @@ EOF
 	if($library_vars{$_} == 0)
 	{
             my $library_path = $description->library_path();
-
 	    push(@new_env, $_ . '=' . $library_path);
 	    $rsh_env .= "$_=$library_path;\n"
 	              . "export $_;\n";
@@ -334,12 +334,24 @@ EOF
 
         if ($description->jobtype() eq "mpi")
         {
-            print JOB "$mpirun -np " . $description->count();
-
-            if ($cluster)
+            if ($mpiexec ne 'no')
             {
-                print JOB ' -machinefile $PBS_NODEFILE';
+                my $machinefilearg = "";
+                if ($cluster)
+                {
+                    $machinefilearg = ' -machinefile $PBS_NODEFILE';
+                }
+                print JOB "$mpiexec $machinefilearg -n " . $description->count();
             }
+            else
+            {
+                print JOB "$mpirun -np " . $description->count();
+                if ($cluster)
+                {
+                    print JOB ' -machinefile $PBS_NODEFILE';
+                }
+            }
+
             print JOB " $cmd_script_name < " .  $description->stdin() . "\n";
         }
         else
