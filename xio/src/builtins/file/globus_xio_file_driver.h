@@ -218,7 +218,7 @@ typedef enum
      *      Use this handle (fd or HANDLE) for the file.
      *      Note:  close() will not be called on this handle.
      */
-    /* globus_xio_system_handle_t       handle */
+    /* globus_xio_system_native_handle_t handle */
     GLOBUS_XIO_FILE_SET_HANDLE,
     
     /** GlobusVarArgEnum(attr, handle)
@@ -229,8 +229,30 @@ typedef enum
      *      The file handle (fd or HANDLE) will be stored here. If none is set,
      *      GLOBUS_XIO_TCP_INVALID_HANDLE will be set.
      */
-    /* globus_xio_system_handle_t *     handle_out */
+    /* globus_xio_system_native_handle_t * handle_out */
     GLOBUS_XIO_FILE_GET_HANDLE,
+    
+    /** GlobusVarArgEnum(attr, handle)
+     * Enable true blocking io when making globus_xio_read/write() calls.
+     * Note: use with caution.  you can deadlock an entire app with this.
+     * @ingroup file_driver_cntls
+     * 
+     * @param use_blocking_io
+     *      If GLOBUS_TRUE, true blocking io will be enabled.
+     *      GLOBUS_FALSE will disable it (default);
+     */
+    /* globus_bool_t                    use_blocking_io */
+    GLOBUS_XIO_FILE_SET_BLOCKING_IO,
+    
+    /** GlobusVarArgEnum(attr, handle)
+     * Get the blocking io status in use or in attr.
+     * @ingroup file_driver_cntls
+     * 
+     * @param use_blocking_io_out
+     *      The flag will be set here.  GLOBUS_TRUE for enabled.
+     */
+    /* globus_bool_t *                  use_blocking_io_out */
+    GLOBUS_XIO_FILE_GET_BLOCKING_IO,
     
     /** GlobusVarArgEnum(handle)
      * Reposition read/write file offset.

@@ -52,6 +52,10 @@ globus_l_gfs_server_closed(
 
 static
 void
+globus_i_gfs_connection_closed();
+
+static
+void
 globus_l_gfs_close_cb(
     globus_xio_handle_t                 handle,
     globus_result_t                     result,
@@ -235,11 +239,7 @@ globus_l_gfs_sigchld(
     
         globus_mutex_lock(&globus_l_gfs_mutex);
         {
-            globus_l_gfs_open_count--;
-            if(globus_l_gfs_open_count == 0)
-            {
-                globus_cond_signal(&globus_l_gfs_cond);
-            }
+            globus_i_gfs_connection_closed();
         }
         globus_mutex_unlock(&globus_l_gfs_mutex);   
     }
@@ -346,7 +346,7 @@ globus_l_gfs_spawn_child(
 {
     globus_result_t                     result;
     pid_t                               child_pid;
-    globus_xio_system_handle_t          socket_handle;
+    globus_xio_system_native_handle_t   socket_handle;
     int                                 rc;
     GlobusGFSName(globus_l_gfs_spawn_child);
 
@@ -522,7 +522,7 @@ globus_l_gfs_new_server_cb(
     globus_result_t                     result,
     void *                              user_arg)
 {
-    globus_xio_system_handle_t          system_handle;
+    globus_xio_system_native_handle_t   system_handle;
     char *                              remote_contact;
     char *                              local_contact;
     GlobusGFSName(globus_l_gfs_new_server_cb);
@@ -913,7 +913,12 @@ globus_l_gfs_server_accept_cb(
          * for unix too?
          */
 
-        if(!globus_l_gfs_terminated &&
+        if(globus_i_gfs_config_bool("single"))
+        {
+            globus_xio_server_close(globus_l_gfs_xio_server);
+            globus_l_gfs_xio_server = GLOBUS_NULL;
+        }
+        else if(!globus_l_gfs_terminated &&
             !globus_i_gfs_config_bool("connections_disabled"))
         {
             result = globus_xio_server_register_accept(
@@ -1211,11 +1216,18 @@ main(
     GlobusGFSName(main);
 
     /* activte globus stuff */    
-    globus_module_activate(GLOBUS_COMMON_MODULE);
-    globus_module_activate(GLOBUS_XIO_MODULE);
-    globus_module_activate(GLOBUS_GRIDFTP_SERVER_MODULE);
-    globus_module_activate(GLOBUS_USAGE_MODULE);
-
+    if((rc = globus_module_activate(GLOBUS_COMMON_MODULE)) != GLOBUS_SUCCESS ||
+        (rc = globus_module_activate(GLOBUS_XIO_MODULE)) != GLOBUS_SUCCESS ||
+        (rc = globus_module_activate(
+            GLOBUS_GRIDFTP_SERVER_MODULE)) != GLOBUS_SUCCESS ||
+        (rc = globus_module_activate(GLOBUS_USAGE_MODULE)) != GLOBUS_SUCCESS)
+    {
+        fprintf(stderr,
+            "Error: Failed to initialize:\n%s",
+            globus_error_print_friendly(globus_error_peek(rc)));
+        goto error_activate;
+    }
+        
     /* init all the server modules */
     globus_i_gfs_config_init(argc, argv);
     globus_i_gfs_log_open();
@@ -1417,6 +1429,7 @@ error_ver:
     globus_xio_driver_unload(globus_l_gfs_tcp_driver);
     globus_i_gfs_log_close();
 
+error_activate:
     globus_module_deactivate_all();
 
 

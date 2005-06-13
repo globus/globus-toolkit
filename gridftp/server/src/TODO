@@ -48,3 +48,4 @@ future:
 -- alternate ipc connection modes
 -- ipc local mode
 -- specify log format by configuration
+-- write out pidfile in daemon mode

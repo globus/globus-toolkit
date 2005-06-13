@@ -99,6 +99,49 @@ AC_MSG_CHECKING(for maximum length of iovec array)
 
         if test $lac_cv_max_iov = "no" ; then
             AC_TRY_COMPILE(
+            [
+#                   if HAVE_SYS_TYPES
+#                       include <sys/types.h>
+#                   endif
+#                   if HAVE_SYS_UIO_H
+#                       include <sys/uio.h>
+#                   endif
+#                   if HAVE_LIMITS
+#                       include <limits.h>
+#                   endif
+                ],
+            [
+                    int foo = MAXIOV;
+                ],
+                lac_cv_max_iov=MAXIOV
+                AC_DEFINE_UNQUOTED(IOV_MAX,$lac_cv_max_iov)
+        ac_max_iov_result="$lac_cv_max_iov")
+        fi
+
+        if test $lac_cv_max_iov = "no" ; then
+            AC_TRY_COMPILE(
+            [
+#                   if HAVE_SYS_TYPES
+#                       include <sys/types.h>
+#                   endif
+#                   if HAVE_SYS_UIO_H
+#                       include <sys/uio.h>
+#                   endif
+#                   if HAVE_LIMITS
+#                       include <limits.h>
+#                   endif
+                ],
+            [
+                    int foo = UIO_MAXIOV;
+                ],
+                lac_cv_max_iov=UIO_MAXIOV
+                AC_DEFINE_UNQUOTED(IOV_MAX,$lac_cv_max_iov)
+        ac_max_iov_result="$lac_cv_max_iov")
+        fi
+
+
+        if test $lac_cv_max_iov = "no" ; then
+            AC_TRY_COMPILE(
 	        [
 #                   if HAVE_SYS_TYPES
 #                       include <sys/types.h>
@@ -117,27 +160,6 @@ AC_MSG_CHECKING(for maximum length of iovec array)
                     long foo = sysconf(_SC_IOV_MAX);
                 ],
                 lac_cv_max_iov="sysconf(_SC_IOV_MAX)"
-                AC_DEFINE_UNQUOTED(IOV_MAX,$lac_cv_max_iov)
-		ac_max_iov_result="$lac_cv_max_iov")
-        fi
-
-        if test $lac_cv_max_iov = "no" ; then
-            AC_TRY_COMPILE(
-	        [
-#                   if HAVE_SYS_TYPES
-#                       include <sys/types.h>
-#                   endif
-#                   if HAVE_SYS_UIO_H
-#                       include <sys/uio.h>
-#                   endif
-#                   if HAVE_LIMITS
-#                       include <limits.h>
-#                   endif
-                ],
-	        [
-                    int foo = MAXIOV;
-                ], 
-                lac_cv_max_iov=MAXIOV
                 AC_DEFINE_UNQUOTED(IOV_MAX,$lac_cv_max_iov)
 		ac_max_iov_result="$lac_cv_max_iov")
         fi

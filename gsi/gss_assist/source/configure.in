@@ -13,8 +13,6 @@ dnl config header goes here
 dnl Initialize the automake rules the last argument
 AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION)
 
-#AM_CONFIG_HEADER(config.h library/globus_common.h:library/globus_common.h.in)
-
 dnl GPT_SET_LIBS(-lglobus_gssapi_gsi_$GLOBUS_FLAVOR_NAME)
 
 GLOBUS_FINALIZE

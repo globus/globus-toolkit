@@ -44,6 +44,13 @@ int                                     globus_i_gsi_gssapi_debug_level;
 FILE *                                  globus_i_gsi_gssapi_debug_fstream;
 
 /**
+ * Optionally force use of TLSv1 if GLOBUS_GSSAPI_FORCE_TLS is defined
+ * in the environment.
+ */
+int                                     globus_i_gsi_gssapi_force_tls;
+
+
+/**
  * Module descriptor static initializer.
  */
 globus_module_descriptor_t		globus_i_gsi_gssapi_module =
@@ -109,6 +116,16 @@ globus_l_gsi_gssapi_activate(void)
                 result = (int) GLOBUS_FAILURE;
                 goto exit;
             }
+        }
+
+        tmp_string = globus_module_getenv("GLOBUS_GSSAPI_FORCE_TLS");
+        if(tmp_string != GLOBUS_NULL)
+        {
+            globus_i_gsi_gssapi_force_tls = 1;
+        }
+        else
+        {
+            globus_i_gsi_gssapi_force_tls = 0;
         }
 
         GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;

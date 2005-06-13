@@ -494,7 +494,8 @@ int globus_gsi_callback_handshake_callback(
 
     /* the first index should contain the SSL structure */
     ssl = (SSL *)
-        X509_STORE_CTX_get_ex_data(x509_context, 0);
+        X509_STORE_CTX_get_ex_data(x509_context,
+                                   SSL_get_ex_data_X509_STORE_CTX_idx());
     if(!ssl)
     {
         verify_result = 0;

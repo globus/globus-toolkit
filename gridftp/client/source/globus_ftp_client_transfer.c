@@ -1555,9 +1555,10 @@ abort:
  * @param u_handle
  *        An FTP Client handle to use for the move operation.
  * @param url
- *	  The URL of the file to modify permissions.
+ *	  The URL of the file to modify permissions. 
  * @param mode
- *	  The file mode to change to        
+ *	  The integer file mode to change to.  Be sure that the integer is 
+ *        in the proper base, i.e. 0777 (octal) vs 777 (decimal).           
  * @param attr
  *	  Attributes for this operation.
  * @param complete_callback
@@ -4024,14 +4025,11 @@ abort:
  * This function requests the checksum of a file from an FTP
  * server.
  *
- * When the size request is completed or aborted, the complete_callback
+ * When the request is completed or aborted, the complete_callback
  * will be invoked with the final status of the operation.
  * If the callback is returns without an error, the checksum will be stored in
- * the globus_off_t value pointed to by the checksum parameter to this function.
- *
- * @note In ASCII mode, the size will be the size of the file after conversion
- * to ASCII mode. The actual amount of data which is returned in the data
- * callbacks may be less than this amount.
+ * the char * buffer provided in the 'checksum' parameter to this function. 
+ * The buffer must be large enough to hold the expected checksum result. 
  *
  * @param u_handle
  *        An FTP Client handle to use for the list operation.
@@ -4040,18 +4038,18 @@ abort:
  * @param attr
  *	  Attributes for this file transfer.
  * @param cksm
- *        A pointer to a string to be filled with the checksum of the
- *        file. On error the value pointed to by it is undefined.          
+ *        A pointer to a buffer to be filled with the checksum of the file.
+ *        On error the buffer contents are undefined.  
  * @param offset
  *        File offset to start calculating checksum.    
  * @param length
  *        Length of data to read from the starting offset.  Use -1 to read the
  *        entire file.
  * @param algorithm
- *        A pointer to a string to be filled with the checksum of the
- *        file. On error the value pointed to by it is undefined.          
+ *        A pointer to a string to specifying the desired algorithm
+ *        Currently, GridFTP servers only support the MD5 algorithm.      
  * @param complete_callback
- *        Callback to be invoked once the size check is completed.
+ *        Callback to be invoked once the checksum is completed.
  * @param callback_arg
  *	  Argument to be passed to the complete_callback.
  *

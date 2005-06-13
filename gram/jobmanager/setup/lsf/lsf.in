@@ -10,12 +10,13 @@ package Globus::GRAM::JobManager::lsf;
 
 @ISA = qw(Globus::GRAM::JobManager);
 
-my ($lsf_profile, $mpirun, $bsub, $bjobs, $bkill, $bhist);
+my ($lsf_profile, $mpirun, $mpiexec, $bsub, $bjobs, $bkill, $bhist);
 
 BEGIN
 {
     $lsf_profile = '@LSF_PROFILE@';
     $mpirun = '@MPIRUN@';
+    $mpiexec = '@MPIEXEC@';
     $bhist  = ". $lsf_profile && @BHIST@";
     $bsub   = ". $lsf_profile && @BSUB@";
     $bjobs  = ". $lsf_profile && @BJOBS@";
@@ -45,7 +46,8 @@ sub submit
 	{
 	    return Globus::GRAM::Error::JOBTYPE_NOT_SUPPORTED;
 	}
-	elsif($description->jobtype() eq 'mpi' && $mpirun eq 'no')
+	elsif($description->jobtype() eq 'mpi' && $mpirun eq 'no' &&
+                $mpiexec eq 'no')
 	{
 	    return Globus::GRAM::Error::JOBTYPE_NOT_SUPPORTED;
 	}
@@ -255,7 +257,12 @@ EOF
         $description->add('executable', './' . $description->executable());
     }
 
-    if($description->jobtype() eq 'mpi')
+    if($description->jobtype() eq 'mpi' && $mpiexec ne 'no')
+    {
+	print JOB "$mpiexec -n ", $description->count(), ' ';
+	print JOB $description->executable(), " $args \n";
+    }
+    elsif($description->jobtype() eq 'mpi' && $mpirun ne 'no')
     {
 	print JOB "$mpirun -np ", $description->count(), ' ';
 	print JOB $description->executable(), " $args \n";

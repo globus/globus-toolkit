@@ -186,7 +186,7 @@ typedef enum
      *      Use this handle (fd or SOCKET).
      *      Note:  close() will not be called on this handle.
      */
-    /* globus_xio_system_handle_t       handle */
+    /* globus_xio_system_native_handle_t handle */
     GLOBUS_XIO_UDP_SET_HANDLE,
     
     /** GlobusVarArgEnum(attr)
@@ -368,7 +368,7 @@ typedef enum
      *      The udp socket will be stored here. If none is set,
      *      GLOBUS_XIO_UDP_INVALID_HANDLE will be set.
      */
-    /* globus_xio_system_handle_t *     handle_out */
+    /* globus_xio_system_native_handle_t * handle_out */
     GLOBUS_XIO_UDP_GET_HANDLE,
     
     /** GlobusVarArgEnum(attr, handle)
@@ -475,12 +475,30 @@ typedef enum
      * @param contact_string
      *      A pointer to a contact string of the format
      *      \<hostname/ip\>:\<port/service\>
-     * 
-     * @see GLOBUS_XIO_UDP_CONNECT
      */
     /* char *                           contact_string */
-    GLOBUS_XIO_UDP_CONNECT
+    GLOBUS_XIO_UDP_CONNECT,
     
+   /** GlobusVarArgEnum(attr)
+     * Join a multicast group.
+     * @ingroup udp_driver_cntls
+     * Specifiy a multicast group to join.  All packets received will be
+     * to the specified multicast address.  Do not use
+     * @ref GLOBUS_XIO_UDP_CONNECT, @ref GLOBUS_XIO_UDP_SET_PORT, or
+     * pass a contact string on the open. Consider using 
+     * @ref GLOBUS_XIO_UDP_SET_REUSEADDR to allow other apps to join this
+     * group.  Use @ref GLOBUS_XIO_UDP_SET_INTERFACE to specify the
+     * interface to use.  Will not affect handles set with
+     * @ref GLOBUS_XIO_UDP_SET_HANDLE.  @ref GLOBUS_XIO_UDP_SET_RESTRICT_PORT
+     * is ignored.
+     * 
+     * @param contact_string
+     *      A pointer to a contact string of the multicast group to join with
+     *      the format: \<hostname/ip\>:\<port/service\> 
+     */
+    /* char *                           contact_string */
+    GLOBUS_XIO_UDP_SET_MULTICAST
+
 } globus_xio_udp_cmd_t;
 
 #endif

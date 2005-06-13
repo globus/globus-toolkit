@@ -1,6 +1,6 @@
 #!/bin/sh
 
-VERSION=4.0.0rc4
+VERSION=4.0.1
 INSTALLER=gt$VERSION-all-source-installer
 AUTOTOOLS=source-trees/autotools/autotools/autoconf-2.59/config
 GPT=gpt-3.2autotools2004-src.tar.gz
@@ -20,7 +20,7 @@ echo Making configure/make installer
    #echo
 #fi
 
-./make-packages.pl --bundles=globus-resource-management-server,globus-resource-management-client,globus-resource-management-sdk,globus-data-management-server,globus-data-management-client,globus-data-management-sdk,globus-information-services-server,globus-information-services-client,globus-information-services-sdk,globus-rls-server,gt4-java-ws-core,gt4-java-admin,gt4-mds,gt4-delegation,gt4-rft,gt4-gram,gt4-gram-pbs,gt4-gram-condor,gt4-gram-lsf,gt4-cas,gt4-c-ws-core,prews-test,globus-internationalization,gt4-java-ws-core-test,gt4-c-ws-core-test,gt4-mds-test,gt4-gram-test,gt4-cas-delegation-test,gt4-rft-test,gt4-webmds,gt4-webmds-test,globus-gsi,gt4-replicator --list-packages --deps --deporder $@ | tee farfleblatt
+./make-packages.pl --bundles=globus-resource-management-server,globus-resource-management-client,globus-resource-management-sdk,globus-data-management-server,globus-data-management-client,globus-data-management-sdk,globus-information-services-server,globus-information-services-client,globus-information-services-sdk,globus-rls-server,gt4-java-ws-core,gt4-java-admin,gt4-mds,gt4-delegation,gt4-rft,gt4-gram,gt4-gram-pbs,gt4-gram-condor,gt4-gram-lsf,gt4-cas,gt4-c-ws-core,prews-test,globus-internationalization,gt4-java-ws-core-test,gt4-c-ws-core-test,gt4-mds-test,gt4-gram-test,gt4-cas-delegation-test,gt4-rft-test,gt4-webmds,gt4-webmds-test,globus-gsi,gt4-replicator --list-packages --deps --deporder $@ --installer=farfleblatt
 
 
 if [ $? -ne 0 ]; then
@@ -29,9 +29,8 @@ if [ $? -ne 0 ]; then
 fi
 
 mkdir $INSTALLER
-sed -e '1,/Final package build list/d' farfleblatt > farfle2
-cat fait_accompli/installer.Makefile.prelude farfle2 > $INSTALLER/Makefile.in
-rm farfleblatt farfle2
+cat fait_accompli/installer.Makefile.prelude farfleblatt > $INSTALLER/Makefile.in
+rm farfleblatt
 
 source-trees/autotools/bin/autoconf fait_accompli/installer.configure.in > $INSTALLER/configure
 chmod +x $INSTALLER/configure

@@ -17,7 +17,6 @@
  * Header file for XIO MODE_E Driver
  */
 
-#include "globus_xio_system.h"
 #include "globus_common.h"
 
 /**

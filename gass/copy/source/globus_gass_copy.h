@@ -259,6 +259,7 @@ struct globus_gass_copy_handle_s
   /* offsets for partial file transfers */
   globus_off_t                        partial_offset;
   globus_off_t                        partial_end_offset;
+  globus_off_t                        partial_bytes_remaining; 
   
   /* says whether or not to send ALLO for ftp destinations */
   globus_bool_t                       send_allo;

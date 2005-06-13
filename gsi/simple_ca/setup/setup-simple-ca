@@ -954,13 +954,13 @@ mycommand=
 
 ##  expand . and ~
 firstchar=`echo ${thiscommand} | cut -b 1`
-if test ${firstchar} == "."; then
+if test "${firstchar}" = "."; then
     rest=`echo ${thiscommand} | cut -b 2-`
     mycommand="${currentwd}/${rest}"
-elif test ${firstchar} == "~"; then
-    rest=`echo ${thiscommand} | cut -b 2-`
+elif test "${firstchar}" = "~"; then
+    rest=`echo "${thiscommand}" | cut -b 2-`
     mycommand="${currenthome}/${rest}"
-elif test ${firstchar} == "/"; then
+elif test "${firstchar}" = "/"; then
     mycommand="${thiscommand}"
 else
     mycommand="${currentwd}/${rest}"

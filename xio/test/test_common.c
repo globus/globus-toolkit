@@ -130,7 +130,7 @@ parse_parameters(
 
     /* parse the parameters */
     globus_l_test_info.server = GLOBUS_FALSE;
-    while((c = getopt(argc, argv, "siF:d:c:R:W:r:w:b:D:X:")) != -1)
+    while((c = (char)getopt(argc, argv, "siF:d:c:R:W:r:w:b:D:X:")) != (char)EOF)
     {
         switch(c)
         {

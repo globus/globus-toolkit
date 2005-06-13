@@ -230,6 +230,20 @@ sub getDevLines
     # grab a set of packages that match what we are asked to find
     #
 
+    my $verpkgs;
+
+      $verpkgs = $installation->query_pkgset(pkgnames => $pkgs, flavor => $flavor, pkgtype => 'dev');
+      for my $l(@{$verpkgs->{'pkgs'}})
+      {
+	      my $vername=$l->{'depnode'}->{'Name'};
+	      $vername =~ tr/a-z/A-Z/;
+	      my $vernum = $l->{'depnode'}->{'Version'}->{'major'}."."
+	      	.$l->{'depnode'}->{'Version'}->{'minor'}."." 
+		.$l->{'depnode'}->{'Version'}->{'age'};
+
+		push(@$header, $vername."_VERSION= ".$vernum."\n");
+      }
+    
     my $libpkgs = $installation->query_pkgset(pkgnames => $pkgs, flavor => $flavor);
     my $testpkgs = $libpkgs->{pkgs};
     if (!@$testpkgs)
@@ -310,9 +324,16 @@ sub getBuildEnvLines
             # if copy does NOT match an uppercase letter followed by a _ then another uppercase letter 
             # skip PERL, 'cause it's defined in sh-tools too
 
-            if ( ( $copy !~ /^([A-Z]+)_([A-Z]+)/ ) && ( $copy !~ /^PERL/ ) && ( $copy !~ /^#/ ) )
+            if ( ( $copy !~ /^PERL/ ) && ( $copy !~ /^#/ ) )
             {
-                push(@$header, "GLOBUS_" . $copy);
+		if ($copy !~ /^GLOBUS_/ )
+		{
+                    push(@$header, "GLOBUS_" . $copy);
+	        }
+		else
+		{
+		    push (@$header, $copy);
+    		}
             }
         }
     }   

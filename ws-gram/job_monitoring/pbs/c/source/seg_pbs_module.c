@@ -9,11 +9,9 @@
  * modifications, you must include this notice in the file.
  */
 
-/* strptime! */
-#define _XOPEN_SOURCE 1
-
 #include "globus_common.h"
 #include "globus_scheduler_event_generator.h"
+#include "globus_strptime.h"
 #include "version.h"
 
 #include <string.h>
@@ -138,6 +136,11 @@ globus_l_pbs_split_into_fields(
     globus_l_pbs_logfile_state_t *      state,
     char ***                            fields,
     size_t *                            nfields);
+
+static
+void
+globus_l_pbs_normalize_date(
+    struct tm *                         tm);
 
 static
 int
@@ -502,7 +505,6 @@ globus_l_pbs_find_logfile(
     struct tm                           tm_now;
     globus_bool_t                       user_timestamp = GLOBUS_TRUE;
     time_t                              now;
-    time_t                              when;
     struct stat                         s;
     int                                 rc;
 
@@ -611,16 +613,8 @@ globus_l_pbs_find_logfile(
                      * for the month.
                      */
                     tm_val.tm_mday++;
-                    /* Reset isdst to -1 so that we don't repeat days where
-                     * dst ends on an odd time (1974-10-27 is one)
-                     */
-                    tm_val.tm_isdst = -1;
-                    when = mktime(&tm_val);
-                    if (globus_libc_localtime_r(&when, &tm_val) == NULL)
-                    {
-                        rc = SEG_PBS_ERROR_OUT_OF_MEMORY;
-                        goto error;
-                    }
+
+                    globus_l_pbs_normalize_date(&tm_val);
 
                     if (tm_val.tm_year > tm_now.tm_year ||
                         (tm_val.tm_year == tm_now.tm_year &&
@@ -822,7 +816,7 @@ globus_l_pbs_parse_events(
             goto free_fields;
         }
 
-        rp = strptime(fields[0], 
+        rp = globus_strptime(fields[0], 
                 "%m/%d/%Y %H:%M:%S",
                 &tm);
         if (rp == NULL || (*rp) != '\0')
@@ -1015,3 +1009,44 @@ error:
     return rc;;
 }
 /* globus_l_pbs_split_into_fields() */
+
+/* Leap year is year divisible by 4, unless divisibly by 100 and not by 400 */
+#define IS_LEAP_YEAR(Y) \
+     (!(Y % 4)) && ((Y % 100) || !(Y % 400))
+static
+void
+globus_l_pbs_normalize_date(
+    struct tm *                         tm)
+{
+    int                                 test_year;
+    int                                 overflow_days = 0;
+    static int                          mday_max[] =
+    {
+        31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 
+    };
+    static int                          mday_leap_max[] =
+    {
+        31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 
+    };
+
+    do
+    {
+        if (overflow_days > 0)
+        {
+            tm->tm_mday = overflow_days;
+            tm->tm_mon++;
+        }
+
+        /* skipped to the next year */
+        if (tm->tm_mon == 12)
+        {
+            tm->tm_year++;
+            tm->tm_mon = 0;
+        }
+
+        test_year = tm->tm_year + 1900;
+        overflow_days = IS_LEAP_YEAR(test_year) 
+                ? tm->tm_mday - mday_leap_max[tm->tm_mon]
+                : tm->tm_mday - mday_max[tm->tm_mon];
+    } while (overflow_days > 0);
+}

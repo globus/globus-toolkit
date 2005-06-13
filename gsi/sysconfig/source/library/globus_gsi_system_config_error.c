@@ -57,7 +57,10 @@ globus_l_gsi_sysconfig_error_strings[GLOBUS_GSI_SYSCONFIG_ERROR_LAST] =
 /* 24 */  "File has zero length",
 /* 25 */  "Invalid argument",
 /* 26 */  "File has more than one link, i.e. file may be a hard link",
-/* 27 */  "File changed while trying to set permissions"
+/* 27 */  "File changed while trying to set permissions",
+/* 28 */  "Could not find a valid authorization callout library configuration file",
+/* 29 */  "Could not find a valid  GAA configuration file",
+/* 30 */  "File is not a directory"
 };
 /* @} */ 
 

@@ -202,6 +202,7 @@ extern FILE *                           globus_i_gsi_gssapi_debug_fstream;
                     "%s exiting\n", \
                     _function_name_))
 
+extern int                              globus_i_gsi_gssapi_force_tls;
 
 typedef enum
 {
@@ -344,5 +345,10 @@ globus_result_t
 globus_i_gsi_gssapi_error_join_chains_result(
     globus_result_t                     outter_error,
     globus_result_t                     inner_error);
+
+
+unsigned char *
+globus_i_gsi_gssapi_get_hostname(
+    const gss_name_desc *               name);
 
 #endif /* GLOBUS_I_GSI_GSS_UTILS_H */

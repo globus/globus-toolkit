@@ -18,6 +18,8 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 
+import org.globus.net.DatagramSocketFactory;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -161,9 +163,10 @@ public class UsageMonitorPacket {
     public void sendPacket(InetAddress destination, 
                            int destPort) 
         throws IOException {
+        DatagramSocketFactory factory = DatagramSocketFactory.getDefault();
         DatagramSocket socket = null;
         try {
-            socket = new DatagramSocket();
+            socket = factory.createDatagramSocket();
             sendPacket(socket, destination, destPort);
         } finally {
             if (socket != null) {
@@ -175,9 +178,10 @@ public class UsageMonitorPacket {
     public void sendPacketToMultiple(InetAddress[] destinations,
                                      int[] destPorts) 
         throws IOException {
+        DatagramSocketFactory factory = DatagramSocketFactory.getDefault();
         DatagramSocket socket = null;
         try {
-            socket = new DatagramSocket();
+            socket = factory.createDatagramSocket();
             sendPacketToMultiple(socket, destinations, destPorts);
         } finally {
             if (socket != null) {
@@ -189,9 +193,10 @@ public class UsageMonitorPacket {
     public void sendPacketToMultiple(InetAddress[] destinations,
                                      int destPort) 
         throws IOException {
+        DatagramSocketFactory factory = DatagramSocketFactory.getDefault();
         DatagramSocket socket = null;
         try {
-            socket = new DatagramSocket();
+            socket = factory.createDatagramSocket();
             sendPacketToMultiple(socket, destinations, destPort);
         } finally {
             if (socket != null) {

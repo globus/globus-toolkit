@@ -18,6 +18,8 @@ flavorinclude_HEADERS = \
 lib_LTLIBRARIES = libglobus_i18n_$(GLOBUS_FLAVOR_NAME).la
 bin_PROGRAMS = globus-i18n-resource-init
 
+EXTRA_DIST = globus-i18n-resource-create
+
 INCLUDES = @GPT_INCLUDES@
 
 libglobus_i18n___GLOBUS_FLAVOR_NAME__la_LIBADD = @GPT_LIB_LINKS@
