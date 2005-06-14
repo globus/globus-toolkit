@@ -3,6 +3,10 @@ This version should be compatible with all versions since v0.2.
 
 Version History
 ---------------
+v2.1
+  - perform reverse lookup on server IP address for authorization
+    consistency with other GSI clients
+
 v2.0 8 Jun 2005
   - unified versioning with GPT packaging
   - added native PAM support (not requiring SASL)

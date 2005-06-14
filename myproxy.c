@@ -217,41 +217,6 @@ myproxy_init_client(myproxy_socket_attrs_t *attrs) {
    return attrs->socket_fd;
 }
     
-/* The Globus standard is to resolve the hostname we're given on the
-   command-line with gethostbyname(), ignoring concerns about DNS
-   spoofing.
-*/
-void
-myproxy_resolve_hostname(char **host)
-{
-    struct hostent *hostinfo;
-
-    hostinfo = gethostbyname(*host);
-    if (hostinfo == NULL || hostinfo->h_name == NULL) {
-	myproxy_debug("gethostbyname(%s) failed", *host);
-	return;
-    }
-    if (hostinfo->h_addrtype == AF_INET) { /* check for localhost */
-	struct in_addr addr;
-	addr = *(struct in_addr *)(hostinfo->h_addr);
-	if (ntohl(addr.s_addr) == INADDR_LOOPBACK) {
-	    char buf[MAXHOSTNAMELEN];
-	    if (gethostname(buf, sizeof(buf)) < 0) {
-		myproxy_debug("gethostname() failed");
-		return;
-	    }
-	    hostinfo = gethostbyname(buf);
-	    if (hostinfo == NULL || hostinfo->h_name == NULL) {
-		free(*host);
-		*host = strdup(buf);
-		return;
-	    }
-	}
-    }
-    free(*host);
-    *host = strdup(hostinfo->h_name);
-}
-
 int 
 myproxy_authenticate_init(myproxy_socket_attrs_t *attrs,
 			  const char *proxyfile) 
@@ -280,14 +245,14 @@ myproxy_authenticate_init(myproxy_socket_attrs_t *attrs,
        accepted_peer_names[0] = strdup(server_dn);
    } else {
        char *fqhn, *buf;
-       fqhn = strdup(attrs->pshost);
-       myproxy_resolve_hostname(&fqhn);
+       fqhn = GSI_SOCKET_get_peer_hostname(attrs->gsi_socket);
        buf = malloc(strlen(fqhn)+strlen("myproxy@")+1);
        sprintf(buf, "myproxy@%s", fqhn);
        accepted_peer_names[0] = buf;
        buf = malloc(strlen(fqhn)+strlen("host@")+1);
        sprintf(buf, "host@%s", fqhn);
        accepted_peer_names[1] = buf;
+       free(fqhn);
    }
    
    rval = GSI_SOCKET_authentication_init(attrs->gsi_socket,

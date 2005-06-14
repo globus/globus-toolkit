@@ -290,13 +290,4 @@ int myproxy_handle_authorization(myproxy_socket_attrs_t *attrs,
 				 myproxy_response_t *server_response,
 				 myproxy_request_t *client_request);
 
-/*
- * myproxy_resolve_hostname()
- *
- * Helper function to fully-qualify the given hostname for
- * authorization of server identity.
- *
- */
-void myproxy_resolve_hostname(char **host);
-
 #endif /* __MYPROXY_PROTOCOL_H */
