@@ -12,11 +12,15 @@
 #include "gaa.h"
 #include "gaa_simple.h"
 #include "gaa_util.h"
+#ifndef WIN32
 #include <strings.h>
+#endif
 #include <string.h>
 #include <stdio.h>
+#ifndef WIN32
 #include <unistd.h>
 #include <sys/stat.h>
+#endif
 #include <errno.h>
 
 /** @defgroup gaa_simple_conditions_static "gaa simple conditions.c static routines"
