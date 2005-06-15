@@ -90,6 +90,51 @@ ModuleType          library
 SourceLocation      \gsi\gridmap_callout\source
 Win32Location       \gsi\gridmap_callout\source\win32
 
+ModuleType          library
+SourceLocation      \gsi\gaa_util\source
+Win32Location       \gsi\gaa_util\source\win32
+
+ModuleType          library
+SourceLocation      \gsi\gaa\gaa_core\source
+Win32Location       \gsi\gaa\gaa_core\source\win32
+
+ModuleType          library
+SourceLocation      \gsi\gaa\gaa_debug\source
+Win32Location       \gsi\gaa\gaa_debug\source\win32
+
+ModuleType          library
+SourceLocation      \gsi\gaa\gaa_plugin\source
+Win32Location       \gsi\gaa\gaa_plugin\source\win32
+
+    ModuleType          library
+    SourceLocation      \gsi\gaa_callbacks\gaa_simple\source
+    Win32Location       \gsi\gaa_callbacks\gaa_simple\source\win32
+
+    ModuleType          library
+    SourceLocation      \gsi\gaa_callbacks\gaa_pthread\source
+    Win32Location       \gsi\gaa_callbacks\gaa_pthread\source\win32
+
+ModuleType          library
+SourceLocation      \gsi\gaa_callbacks\gaa_gss_generic\source
+Win32Location       \gsi\gaa_callbacks\gaa_gss_generic\source\win32
+
+ModuleType          library
+SourceLocation      \gsi\authz_null_callout\source
+Win32Location       \gsi\authz_null_callout\source\win32
+
+ModuleType          library
+SourceLocation      \gsi\authz_gaa_callout\source
+Win32Location       \gsi\authz_gaa_callout\source\win32
+
+ModuleType          library
+SourceLocation      \gsi\authz\error
+Win32Location       \gsi\authz\error\win32
+
+ModuleType          library
+SourceLocation      \gsi\authz\source
+Win32Location       \gsi\authz\source\win32
+
+
     ModuleType          library
     SourceLocation      \io\source\library
     Win32Location       \io\source\win32
