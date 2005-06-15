@@ -23,6 +23,14 @@ PS="/bin/ps -e"
 #STORE=-s ${GLOBUS_LOCATION}/var/myproxy
 #VERBOSE=-verbose
 
+# By default, the myproxy-server uses /etc/grid-security/hostcert.pem
+# and /etc/grid-security/hostkey.pem.  Uncomment and modify the
+# following lines to configure the myproxy-server to find its
+# certificate and key in alternate locations.
+#X509_USER_CERT="/usr/local/etc/myproxycert.pem"
+#X509_USER_KEY="/usr/local/etc/myproxykey.pem"
+#export X509_USER_CERT X509_USER_KEY
+
 case $1 in
 'start')
     if [ -x $MYPROXY ]; then
