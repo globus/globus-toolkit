@@ -171,14 +171,16 @@ pkgdata_DATA = README INSTALL \
                VERSION PROTOCOL \
                etc.services.modifications etc.inetd.conf.modifications \
                myproxy.cron \
-               etc.init.d.myproxy etc.xinetd.myproxy myproxy-passphrase-policy
+               etc.init.d.myproxy etc.init.d.myproxy.nonroot \
+               etc.xinetd.myproxy myproxy-passphrase-policy
 
 EXTRA_DIST = $(Scripts) LICENSE LICENSE.sasl LICENSE.netbsd \
                VERSION PROTOCOL \
                myproxy-server.config \
                etc.services.modifications etc.inetd.conf.modifications \
                myproxy.cron \
-               etc.init.d.myproxy etc.xinetd.myproxy myproxy-passphrase-policy
+               etc.init.d.myproxy etc.init.d.myproxy.nonroot \
+               etc.xinetd.myproxy myproxy-passphrase-policy
 
 dirt.sh:
 	touch dirt.sh
