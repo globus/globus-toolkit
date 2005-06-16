@@ -105,7 +105,7 @@ globus_c_wsrf_sample_counter_bindings       wsrf/c/samples/counter/source/ tar
 globus_c_wsrf_core_test_interop_bindings    wsrf/c/core/tests/interop/source/ tar
 globus_c_wsrf_core_performance_test         wsrf/c/core/tests/performance/ gpt
 globus_c_wsrf_providers_test_service_bindings wsrf/c/core/providers/test_service/ tar
-globus_c_wsrf_providers_notification_test_service_bindings wsrf/c/core/providers/notification_test_service/ tar
+globus_c_wsrf_providers_notification_test_bindings wsrf/c/core/providers/notification_test_service/ gpt
 globus_c_wsrf_providers_test_wsdl           wsrf/c/core/providers/test_wsdl gpt
 globus_c_wsrf_provider_test                 wsrf/c/core/providers/test gpt
 globus_c_wsrf_resource                      wsrf/c/resource/source gpt
