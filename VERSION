@@ -4,6 +4,7 @@ This version should be compatible with all versions since v0.2.
 Version History
 ---------------
 v2.1
+  - fix error message on server-side authorized_renewers check
   - perform reverse lookup on server IP address for authorization
     consistency with other GSI clients
 
