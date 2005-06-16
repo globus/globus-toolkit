@@ -1,0 +1,9 @@
+#!/bin/sh
+#
+# SysV-style boot script for MyProxy server non-root installation
+#
+# chkconfig: 345 99 06
+# description: MyProxy online credential repository
+ACCOUNT=myproxy
+INIT=/usr/local/etc/myproxy.init
+su $ACCOUNT -c "$INIT $*"
