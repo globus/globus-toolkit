@@ -68,7 +68,9 @@ typedef globus_result_t
 (*globus_guc_plugin_start_t)(
     void **                             handle,
     globus_guc_info_t *                 guc_info,
-    globus_guc_plugin_op_t              done_op);
+    globus_guc_plugin_op_t              done_op,
+    int                                 argc,
+    char **                             argv);
 
 typedef void
 (*globus_guc_plugin_cancel_t)(

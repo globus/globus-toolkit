@@ -428,12 +428,23 @@ static globus_args_option_descriptor_t defname(id) = { id, listname(id), 0, \
 						GLOBUS_NULL, GLOBUS_NULL }
 #define funcname(x) x##_predicate_test
 #define paramsname(x) x##_predicate_params
+
 #define oneargdef(id,alias1,alias2,testfunc,testparams) \
 namedef(id,alias1,alias2); \
 static globus_args_valid_predicate_t funcname(id)[] = { testfunc }; \
 static void* paramsname(id)[] = { (void *) testparams }; \
 globus_args_option_descriptor_t defname(id) = \
     { (int) id, (char **) listname(id), 1, funcname(id), (void **) paramsname(id) }
+
+#define twoargdef(id,alias1,alias2,testfunc,testparams)                     \
+    namedef(id,alias1,alias2);                                              \
+    static globus_args_valid_predicate_t funcname(id)[] = { testfunc };     \
+    static void* paramsname(id)[] = { (void *) testparams };                \
+    globus_args_option_descriptor_t defname(id) =                           \
+    {                                                                       \
+        (int) id, (char **) listname(id), 2, funcname(id),                  \
+            (void **) paramsname(id)                                        \
+    }                                                                       \
 
 flagdef(arg_a, "-a", "-ascii");
 flagdef(arg_b, "-b", "-binary");
@@ -515,6 +526,8 @@ static globus_bool_t globus_l_globus_url_copy_ctrlc_handled = GLOBUS_FALSE;
 static globus_bool_t g_verbose_flag = GLOBUS_FALSE;
 static globus_bool_t g_quiet_flag = GLOBUS_TRUE;
 static char *  g_ext = NULL;
+static char ** g_ext_args = NULL;
+static int      g_ext_arg_count = 0;
 static globus_bool_t g_use_debug = GLOBUS_FALSE;
 static globus_bool_t g_use_restart = GLOBUS_FALSE;
 static globus_bool_t g_continue = GLOBUS_FALSE;
@@ -638,7 +651,8 @@ globus_l_guc_ext(
 
     globus_mutex_lock(&done_op.monitor.mutex);
     {
-        res = done_op.funcs->start_func(&done_op.handle, &ext_info, &done_op);
+        res = done_op.funcs->start_func(
+            &done_op.handle, &ext_info, &done_op, g_ext_arg_count, g_ext_args);
         if(res != GLOBUS_SUCCESS)
         {
             err = globus_error_get(res);
@@ -676,10 +690,7 @@ globus_l_guc_ext(
     return 0;
 error:
 
-    if(!ext_info.quiet)
-    {
-        fprintf(stderr, "%s\n", globus_error_print_friendly(err));
-    }
+    fprintf(stderr, "%s\n", globus_error_print_friendly(err));
  
     return 1;
 }
@@ -1548,6 +1559,8 @@ globus_l_guc_parse_arguments(
     globus_list_t *                                 list = NULL;
     globus_l_guc_src_dst_pair_t *                   ent;
     int                                             rc;
+    char *                                          tmp_str;
+    int                                             ext_arg_size;
     globus_off_t                                    tmp_off;
 
     guc_info->no_3pt = GLOBUS_FALSE;
@@ -1622,6 +1635,32 @@ globus_l_guc_parse_arguments(
             break;
         case arg_ext:
             g_ext = globus_libc_strdup(instance->values[0]);
+            ext_arg_size = 8;
+            g_ext_args = (char **)calloc(ext_arg_size, sizeof(char *));
+            tmp_str = strchr(g_ext, ' ');
+            g_ext_args[0] = g_ext;
+            g_ext_arg_count = 1;
+            while(tmp_str != NULL)
+            {
+                *tmp_str = '\0';
+                tmp_str++;
+                if(tmp_str == '\0')
+                {
+                    tmp_str = NULL;
+                }
+                else
+                {
+                    g_ext_args[g_ext_arg_count] = tmp_str;
+                    tmp_str = strchr(tmp_str, ' ');
+                }
+                g_ext_arg_count++;
+                if(g_ext_arg_count >= ext_arg_size)
+                {
+                    ext_arg_size *= 2;
+                    g_ext_args = (char **)
+                        realloc(g_ext_args, ext_arg_size*sizeof(char *));
+                }
+            }
             break;
         case arg_q:
             g_quiet_flag = GLOBUS_TRUE;
