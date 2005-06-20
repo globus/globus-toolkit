@@ -225,7 +225,7 @@ public class UsageMonitorPacket {
             try {
                 InetAddress addr = InetAddress.getByName(host);
                 sendPacket(addr, port);
-            } catch (IOException e) {
+            } catch (Throwable e) {
                 log.debug("Failed to send packet", e);
             }
         }
