@@ -93,6 +93,7 @@ globus_c_wsrf_core_tools                    wsrf/c/core/tools/source gpt
 globus_c_wsrf_core_bindings                 wsrf/c/core/source gpt
 globus_notification_consumer                wsrf/c/core/notification/source gpt
 globus_c_wsrf_notification_test             wsrf/c/core/notification/test gpt
+globus_notification_producer                wsrf/c/core/notification/producer/source gpt
 globus_c_wsrf_providers                     wsrf/c/core/providers/source gpt
 globus_c_ws_messaging                       wsrf/c/message/source gpt
 globus_c_ws_messaging_test                  wsrf/c/message/test gpt
@@ -105,7 +106,8 @@ globus_c_wsrf_sample_counter_bindings       wsrf/c/samples/counter/source gpt
 globus_c_wsrf_sample_secure_counter_service wsrf/c/samples/counter/secure-service gpt
 globus_c_wsrf_core_test_interop_bindings    wsrf/c/core/tests/interop/source gpt
 globus_c_wsrf_core_performance_test         wsrf/c/core/tests/performance/ gpt
-globus_c_wsrf_providers_test_service_bindings wsrf/c/core/providers/test_service gpt
+globus_c_wsrf_providers_test_service_bindings wsrf/c/core/providers/test_service/ gpt
+globus_c_wsrf_providers_notification_test_bindings wsrf/c/core/providers/notification_test_service/ gpt
 globus_c_wsrf_providers_test_wsdl           wsrf/c/core/providers/test_wsdl gpt
 globus_c_wsrf_provider_test                 wsrf/c/core/providers/test gpt
 globus_c_wsrf_resource                      wsrf/c/resource/source gpt
