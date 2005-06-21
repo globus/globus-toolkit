@@ -380,7 +380,7 @@ MyProxyStoreCertificate <-> MyProxyServer protocol
     containing the following strings:
  
     VERSION=MYPROXYv2
-    COMMAND=6
+    COMMAND=5
     USERNAME=<username>
     LIFETIME=<lifetime>
 
@@ -443,7 +443,7 @@ Section H
     the following strings:
  
     VERSION=MYPROXYv2
-    COMMAND=5
+    COMMAND=6
     USERNAME=<username>
     PASSPHRASE=<pass phrase>
     LIFETIME=<requested lifetime>
@@ -463,6 +463,4 @@ Section H
  5) Next, the server will retrieve the user credential and send it to the 
     client.
 
- 6) MyProxyRetrieve will then send MyProxyServer a MyProxyContinue command.
- 
- 7) At this point, both sides should close the connection.
+ 6) At this point, both sides should close the connection.
