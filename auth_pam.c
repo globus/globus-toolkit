@@ -6,6 +6,9 @@
  *   - "#include mechanisms.h" is commented out (it appears to be
  *     unnecessary)
  *   - #include "myproxy_common.h" instead of system headers
+ *   - changed failure return values from auth_pam to improve
+ *     usefulness of error messages -- old versions are commented out
+ *     above new versions
  */
 
 #define AUTH_PAM yes
@@ -209,7 +212,11 @@ auth_pam (
     if (rc != PAM_SUCCESS) {
 	syslog(LOG_DEBUG, "DEBUG: auth_pam: pam_start failed: %s",
 	       pam_strerror(pamh, rc));
-	RETURN("NO PAM start error");
+	/* RETURN("NO PAM start error"); */
+	char result[200];
+	snprintf(result, sizeof(result), "NO unable to initialize PAM: %s",
+		 pam_strerror(pamh, rc));
+	RETURN(result);
     }
 
     my_appdata.pamh = pamh;
@@ -219,7 +226,11 @@ auth_pam (
 	syslog(LOG_DEBUG, "DEBUG: auth_pam: pam_authenticate failed: %s",
 	       pam_strerror(pamh, rc));
 	pam_end(pamh, rc);
-	RETURN("NO PAM auth error");
+	/* RETURN("NO PAM auth error"); */
+	char result[200];
+	snprintf(result, sizeof(result), "NO PAM authentication failed: %s",
+		 pam_strerror(pamh, rc));
+	RETURN(result);
     }
 
     rc = pam_acct_mgmt(pamh, PAM_SILENT);
@@ -227,7 +238,11 @@ auth_pam (
 	syslog(LOG_DEBUG, "DEBUG: auth_pam: pam_acct_mgmt failed: %s",
 	       pam_strerror(pamh, rc));
 	pam_end(pamh, rc);
-	RETURN("NO PAM acct error");
+	/* RETURN("NO PAM acct error"); */
+	char result[200];
+	snprintf(result, sizeof(result), "NO PAM account check failed: %s",
+		 pam_strerror(pamh, rc));
+	RETURN(result);
     }
 
     pam_end(pamh, PAM_SUCCESS);

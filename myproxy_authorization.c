@@ -115,8 +115,18 @@ int auth_passwd_check_client(authorization_data_t *client_auth_data,
       if (auth_pam_result && strcmp("OK", auth_pam_result) == 0) {
 	 pam_success = 1;
       } else {
-	 verror_put_string("PAM authentication failed");
-	 if (auth_pam_result) verror_put_string(auth_pam_result);
+	 if (auth_pam_result) {
+	    /* The Cyrus SASL convention is to prepend the error
+	       message with "NO ".  We can chop that off. */
+	    if (strlen(auth_pam_result) > 3 
+		&& strncmp(auth_pam_result, "NO ", 3) == 0) 
+	    {
+	       verror_put_string(auth_pam_result + 3);
+	    }
+	    else verror_put_string(auth_pam_result);
+	 }
+	 else 
+	    verror_put_string("PAM authentication failed");
       }
       if (auth_pam_result != NULL) {
 	 free(auth_pam_result);
