@@ -1158,7 +1158,8 @@ sub cvs_checkout_package
     my $subdir = $package_list{$package}[1];
 
     if (! defined($tree)) {
-        die "ERROR: There was a dependency on package $package which I know nothing about.\n";
+        print "ERROR: There was a dependency on package $package which I know nothing about.\n";
+        die "Try a cvs update of packaging.\n";
     }
 
     print "Checking out $subdir from $tree.\n";
