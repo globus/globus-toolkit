@@ -39,7 +39,6 @@ struct option long_options[] =
     {"help",                   no_argument, NULL, 'h'},
     {"pshost",           required_argument, NULL, 's'},
     {"psport",           required_argument, NULL, 'p'},
-    {"proxy_lifetime",   required_argument, NULL, 't'},
     {"usage",                  no_argument, NULL, 'u'},
     {"username",         required_argument, NULL, 'l'},
     {"verbose",                no_argument, NULL, 'v'},
@@ -333,9 +332,6 @@ init_arguments(int argc,
     {
         switch(arg) 
         {
-	case 't':       /* Specify proxy lifetime in seconds */
-	  request->proxy_lifetime = 60*60*atoi(optarg);
-	  break;
         case 's': 	/* pshost name */
 	    attrs->pshost = strdup(optarg);
             break;
