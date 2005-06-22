@@ -10,10 +10,8 @@
  */
 
 #include "globus_common.h"
-#include "globus_xio.h"
-#include "globus_xio_file_driver.h"
 #include "globus_scheduler_event_generator.h"
-#include "globus_gram_protocol.h"
+#include "globus_scheduler_event_generator_app.h"
 #include "version.h"
 
 #include "ltdl.h"
@@ -26,41 +24,6 @@ static
 int
 globus_l_seg_deactivate(void);
 
-static
-globus_result_t
-globus_l_seg_register_write(
-    globus_byte_t *                     buf);
-
-static
-globus_result_t
-globus_l_scheduler_event_state_change(
-    time_t                              timestamp,
-    const char *                        jobid,
-    globus_gram_protocol_job_state_t    state,
-    int                                 exit_code);
-
-static
-void
-globus_l_xio_read_eof_callback(
-    globus_xio_handle_t                 handle,
-    globus_result_t                     result,
-    globus_byte_t *                     buffer,
-    globus_size_t                       len,
-    globus_size_t                       nbytes,
-    globus_xio_data_descriptor_t        data_desc,
-    void *                              user_arg);
-
-static
-void
-globus_l_seg_writev_callback(
-    globus_xio_handle_t                 handle,
-    globus_result_t                     result,
-    globus_xio_iovec_t *                iovec,
-    int                                 count,
-    globus_size_t                       nbytes,
-    globus_xio_data_descriptor_t        data_desc,
-    void *                              user_arg);
-
 globus_module_descriptor_t globus_i_scheduler_event_generator_module =
 {
     "globus_scheduler_event_generator",
@@ -72,43 +35,21 @@ globus_module_descriptor_t globus_i_scheduler_event_generator_module =
     NULL
 };
 
-static globus_mutex_t                   globus_l_seg_mutex;
-static globus_cond_t                    globus_l_seg_cond;
-static globus_xio_handle_t              globus_l_seg_output_handle;
-static globus_xio_handle_t              globus_l_seg_input_handle;
-static globus_xio_stack_t               globus_l_seg_file_stack;
-static globus_xio_driver_t              globus_l_seg_file_driver;
 static lt_dlhandle                      globus_l_seg_scheduler_handle;
 static globus_module_descriptor_t *     globus_l_seg_scheduler_module;
-static char                             globus_l_seg_input_buffer[1];
 static time_t                           globus_l_seg_timestamp;
+static globus_mutex_t                   globus_l_seg_mutex;
 static globus_scheduler_event_generator_fault_handler_t
                                         globus_l_seg_fault_handler;
 static void *                           globus_l_seg_fault_arg;
-static globus_fifo_t                    globus_l_seg_buffers;
-static globus_bool_t                    globus_l_seg_write_registered;
-static int                              globus_l_seg_shutdown;
-
+static globus_scheduler_event_generator_event_handler_t
+                                        globus_l_seg_event_handler;
+static void *                           globus_l_seg_event_arg;
 static
 int
 globus_l_seg_activate(void)
 {
-    globus_result_t                     result;
-    globus_xio_attr_t                   out_attr;
-    globus_xio_attr_t                   in_attr;
     int                                 rc;
-
-    globus_l_seg_output_handle = NULL;
-    globus_l_seg_input_handle = NULL;
-    globus_l_seg_file_stack = NULL;
-    globus_l_seg_file_driver = NULL;
-    globus_l_seg_scheduler_handle = NULL;
-    globus_l_seg_scheduler_module = NULL;
-    globus_l_seg_timestamp = 0;
-    globus_l_seg_fault_handler = NULL;
-    globus_l_seg_fault_arg = NULL;
-    globus_l_seg_write_registered = GLOBUS_FALSE;
-    globus_l_seg_shutdown = 0;
 
     rc = lt_dlinit();
     if (rc != 0)
@@ -122,170 +63,17 @@ globus_l_seg_activate(void)
         goto dlexit_error;
     }
 
-    rc = globus_fifo_init(&globus_l_seg_buffers);
-    if (rc != GLOBUS_SUCCESS)
-    {
-        goto deactivate_common_error;
-    }
+    globus_l_seg_scheduler_handle = NULL;
+    globus_l_seg_scheduler_module = NULL;
+    globus_l_seg_timestamp = 0;
+    globus_l_seg_fault_handler = NULL;
+    globus_l_seg_fault_arg = NULL;
+    globus_l_seg_event_handler = NULL;
+    globus_l_seg_event_arg = NULL;
 
-    rc = globus_module_activate(GLOBUS_XIO_MODULE);
-    if (rc != GLOBUS_SUCCESS)
-    {
-        goto destroy_fifo_error;
-    }
-
-    result = globus_xio_driver_load("file", &globus_l_seg_file_driver);
-    if (result != GLOBUS_SUCCESS)
-    {
-        goto deactivate_xio_error;
-    }
-    result = globus_xio_stack_init(&globus_l_seg_file_stack, NULL);
-    if (result != GLOBUS_SUCCESS)
-    {
-        goto unload_driver_error;
-    }
-    result = globus_xio_stack_push_driver(globus_l_seg_file_stack,
-            globus_l_seg_file_driver);
-    if (result != GLOBUS_SUCCESS)
-    {
-        goto destroy_stack_error;
-    }
-
-    result = globus_xio_attr_init(&out_attr);
-    if (result != GLOBUS_SUCCESS)
-    {
-        goto destroy_stack_error;
-    }
-
-    result = globus_xio_attr_cntl(
-            out_attr,
-            globus_l_seg_file_driver,
-            GLOBUS_XIO_FILE_SET_FLAGS,
-            GLOBUS_XIO_FILE_WRONLY);
-    if (result != GLOBUS_SUCCESS)
-    {
-        goto destroy_out_attr_error;
-    }
-
-    result = globus_xio_attr_cntl(
-            out_attr,
-            globus_l_seg_file_driver,
-            GLOBUS_XIO_FILE_SET_HANDLE,
-            fileno(stdout));
-
-    if (result != GLOBUS_SUCCESS)
-    {
-        goto destroy_out_attr_error;
-    }
-
-    result = globus_xio_attr_init(&in_attr);
-    if (result != GLOBUS_SUCCESS)
-    {
-        goto destroy_out_attr_error;
-    }
-
-    result = globus_xio_attr_cntl(
-            in_attr,
-            globus_l_seg_file_driver,
-            GLOBUS_XIO_FILE_SET_FLAGS,
-            GLOBUS_XIO_FILE_RDONLY);
-
-    if (result != GLOBUS_SUCCESS)
-    {
-        goto destroy_in_attr_error;
-    }
-    result = globus_xio_attr_cntl(
-            in_attr,
-            globus_l_seg_file_driver,
-            GLOBUS_XIO_FILE_SET_HANDLE,
-            fileno(stdin));
-
-    if (result != GLOBUS_SUCCESS)
-    {
-        goto destroy_in_attr_error;
-    }
-
-    result = globus_xio_handle_create(
-            &globus_l_seg_output_handle,
-            globus_l_seg_file_stack);
-    if (result != GLOBUS_SUCCESS)
-    {
-        goto destroy_in_attr_error;
-    }
-
-    result = globus_xio_open(globus_l_seg_output_handle, "", out_attr);
-    if (result != GLOBUS_SUCCESS)
-    {
-        goto close_out_handle_error;
-    }
-
-    result = globus_xio_handle_create(
-            &globus_l_seg_input_handle,
-            globus_l_seg_file_stack);
-    if (result != GLOBUS_SUCCESS)
-    {
-
-        goto close_out_handle_error;
-    
-    }
-
-    result = globus_xio_open(globus_l_seg_input_handle, "", in_attr);
-    if (result != GLOBUS_SUCCESS)
-    {
-        goto close_in_handle_error;
-    }
-    rc = globus_mutex_init(&globus_l_seg_mutex, NULL);
-    if (rc != GLOBUS_SUCCESS)
-    {
-        goto close_in_handle_error;
-    }
-    rc = globus_cond_init(&globus_l_seg_cond, NULL);
-    if (rc != GLOBUS_SUCCESS)
-    {
-        goto destroy_mutex_error;
-    }
-
-    result = globus_xio_register_read(
-            globus_l_seg_input_handle,
-            globus_l_seg_input_buffer,
-            sizeof(globus_l_seg_input_buffer),
-            1,
-            NULL,
-            globus_l_xio_read_eof_callback,
-            NULL);
-
-    if (result != GLOBUS_SUCCESS)
-    {
-        goto destroy_cond_error;
-    }
-
-    globus_xio_attr_destroy(in_attr);
-    globus_xio_attr_destroy(out_attr);
-
+    globus_mutex_init(&globus_l_seg_mutex, NULL);
     return 0;
 
-destroy_cond_error:
-    globus_cond_destroy(&globus_l_seg_cond);
-destroy_mutex_error:
-    globus_mutex_destroy(&globus_l_seg_mutex);
-close_in_handle_error:
-    globus_xio_close(globus_l_seg_input_handle, NULL);
-close_out_handle_error:
-    globus_xio_close(globus_l_seg_output_handle, NULL);
-destroy_in_attr_error:
-    globus_xio_attr_destroy(in_attr);
-destroy_out_attr_error:
-    globus_xio_attr_destroy(out_attr);
-destroy_stack_error:
-    globus_xio_stack_destroy(globus_l_seg_file_stack);
-unload_driver_error:
-    globus_xio_driver_unload(globus_l_seg_file_driver);
-deactivate_xio_error:
-    globus_module_deactivate(GLOBUS_XIO_MODULE);
-destroy_fifo_error:
-    globus_fifo_destroy(&globus_l_seg_buffers);
-deactivate_common_error:
-    globus_module_deactivate(GLOBUS_COMMON_MODULE);
 dlexit_error:
     lt_dlexit();
 error:
@@ -300,37 +88,14 @@ globus_l_seg_deactivate(void)
     if (globus_l_seg_scheduler_module)
     {
         globus_module_deactivate(globus_l_seg_scheduler_module);
-        globus_l_seg_scheduler_module = NULL;
     }
 
     if (globus_l_seg_scheduler_handle)
     {
         lt_dlclose(globus_l_seg_scheduler_handle);
-        globus_l_seg_scheduler_handle = NULL;
     }
-
-    globus_mutex_lock(&globus_l_seg_mutex);
-    globus_l_seg_shutdown = 1;
-    globus_l_seg_fault_handler = NULL;
-    globus_l_seg_fault_arg = NULL;
-
-    if (globus_l_seg_write_registered)
-    {
-        while (globus_l_seg_shutdown == 1)
-        {
-            globus_cond_wait(&globus_l_seg_mutex, &globus_l_seg_cond);
-        }
-    }
-    globus_fifo_destroy(&globus_l_seg_buffers);
-    globus_mutex_unlock(&globus_l_seg_mutex);
-
-    globus_xio_close(globus_l_seg_output_handle, NULL);
-    globus_xio_close(globus_l_seg_input_handle, NULL);
 
     globus_mutex_destroy(&globus_l_seg_mutex);
-    globus_cond_destroy(&globus_l_seg_cond);
-
-    globus_module_deactivate(GLOBUS_XIO_MODULE);
     globus_module_deactivate(GLOBUS_COMMON_MODULE);
 
     lt_dlexit();
@@ -363,6 +128,7 @@ globus_scheduler_event(
     char *                              buf;
     va_list                             ap;
     int                                 length;
+    globus_scheduler_event_t            event;
 
     if (format == NULL)
     {
@@ -394,9 +160,17 @@ globus_scheduler_event(
     vsprintf(buf, format, ap);
     va_end(ap);
 
-    globus_mutex_lock(&globus_l_seg_mutex);
-    result = globus_l_seg_register_write(buf);
-    globus_mutex_unlock(&globus_l_seg_mutex);
+    event.raw.event_type = GLOBUS_SCHEDULER_EVENT_RAW;
+    event.raw.raw_event = buf;
+
+    if (globus_l_seg_event_handler != NULL)
+    {
+        (*globus_l_seg_event_handler)(
+                globus_l_seg_event_arg,
+                &event);
+    }
+
+    free(buf);
 
 error:
     return result;
@@ -425,16 +199,25 @@ globus_scheduler_event_pending(
     time_t                              timestamp,
     const char *                        jobid)
 {
+    globus_scheduler_event_t            event;
+
     if (jobid == NULL)
     {
         return GLOBUS_SEG_ERROR_NULL;
     }
-    return globus_l_scheduler_event_state_change(
-            timestamp,
-            jobid,
-            GLOBUS_GRAM_PROTOCOL_JOB_STATE_PENDING,
-            0);
 
+    event.pending.event_type = GLOBUS_SCHEDULER_EVENT_PENDING;
+    event.pending.job_id = jobid;
+    event.pending.timestamp = timestamp;
+    
+    if (globus_l_seg_event_handler != NULL)
+    {
+        (*globus_l_seg_event_handler)(
+                globus_l_seg_event_arg,
+                &event);
+    }
+
+    return GLOBUS_SUCCESS;
 }
 /* globus_scheduler_event_pending() */
 
@@ -460,15 +243,24 @@ globus_scheduler_event_active(
     time_t                              timestamp,
     const char *                        jobid)
 {
+    globus_scheduler_event_t            event;
+
     if (jobid == NULL)
     {
         return GLOBUS_SEG_ERROR_NULL;
     }
-    return globus_l_scheduler_event_state_change(
-            timestamp,
-            jobid,
-            GLOBUS_GRAM_PROTOCOL_JOB_STATE_ACTIVE,
-            0);
+
+    event.active.event_type = GLOBUS_SCHEDULER_EVENT_ACTIVE;
+    event.active.job_id = jobid;
+    event.active.timestamp = timestamp;
+    
+    if (globus_l_seg_event_handler != NULL)
+    {
+        (*globus_l_seg_event_handler)(
+                globus_l_seg_event_arg,
+                &event);
+    }
+    return GLOBUS_SUCCESS;
 }
 
 /**
@@ -496,15 +288,25 @@ globus_scheduler_event_failed(
     const char *                        jobid,
     int                                 failure_code)
 {
+    globus_scheduler_event_t            event;
+
     if (jobid == NULL)
     {
         return GLOBUS_SEG_ERROR_NULL;
     }
-    return globus_l_scheduler_event_state_change(
-            timestamp,
-            jobid,
-            GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED,
-            failure_code);
+
+    event.failed.event_type = GLOBUS_SCHEDULER_EVENT_FAILED;
+    event.failed.job_id = jobid;
+    event.failed.timestamp = timestamp;
+    event.failed.failure_code = failure_code;
+    
+    if (globus_l_seg_event_handler != NULL)
+    {
+        (*globus_l_seg_event_handler)(
+                globus_l_seg_event_arg,
+                &event);
+    }
+    return GLOBUS_SUCCESS;
 }
 
 /**
@@ -532,15 +334,25 @@ globus_scheduler_event_done(
     const char *                        jobid,
     int                                 exit_code)
 {
+    globus_scheduler_event_t            event;
+
     if (jobid == NULL)
     {
         return GLOBUS_SEG_ERROR_NULL;
     }
-    return globus_l_scheduler_event_state_change(
-            timestamp,
-            jobid,
-            GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE,
-            exit_code);
+
+    event.done.event_type = GLOBUS_SCHEDULER_EVENT_DONE;
+    event.done.job_id = jobid;
+    event.done.timestamp = timestamp;
+    event.done.exit_code = exit_code;
+    
+    if (globus_l_seg_event_handler != NULL)
+    {
+        (*globus_l_seg_event_handler)(
+                globus_l_seg_event_arg,
+                &event);
+    }
+    return GLOBUS_SUCCESS;
 }
 
 /**
@@ -753,216 +565,44 @@ unlock_error:
 }
 /* globus_scheduler_event_generator_set_fault_handler() */
 
-/**
- * Format a SEG protocol message out of a job state change.
- *
- * @param timestamp
- *     Time when the job state change occurred. If this is 0, then
- *     the current time will be used.
- * @param jobid
- *     Scheduler-specific jobid value.
- * @param state
- *     New state of the job.
- * @param exit_code
- *     Exit code of the job.
- * @return See globus_scheduler_event() documentation for return values for
- *     this function.
- */
-static
 globus_result_t
-globus_l_scheduler_event_state_change(
-    time_t                              timestamp,
-    const char *                        jobid,
-    globus_gram_protocol_job_state_t    state,
-    int                                 exit_code)
-{
-    if (timestamp == 0)
-    {
-        timestamp = time(NULL);
-    }
-
-    return globus_scheduler_event(
-            "001;%lu;%s;%d;%d\n",
-            timestamp,
-            jobid,
-            state,
-            exit_code);
-}
-/* globus_l_scheduler_event_state_change() */
-
-static
-void
-globus_l_xio_read_eof_callback(
-    globus_xio_handle_t                 handle,
-    globus_result_t                     result,
-    globus_byte_t *                     buffer,
-    globus_size_t                       len,
-    globus_size_t                       nbytes,
-    globus_xio_data_descriptor_t        data_desc,
+globus_scheduler_event_generator_set_event_handler(
+    globus_scheduler_event_generator_event_handler_t
+                                        event_handler,
     void *                              user_arg)
 {
-    globus_scheduler_event_generator_fault_handler_t
-                                        handler;
-    void *                              arg;
-
-    if (result == GLOBUS_SUCCESS)
-    {
-        /* shouldn't be reading stuff here!?! */
-        result = globus_xio_register_read(
-                globus_l_seg_input_handle,
-                globus_l_seg_input_buffer,
-                sizeof(globus_l_seg_input_buffer),
-                1,
-                NULL,
-                globus_l_xio_read_eof_callback,
-                NULL);
-    }
+    globus_result_t                     result = GLOBUS_SUCCESS;
 
     globus_mutex_lock(&globus_l_seg_mutex);
-    handler = globus_l_seg_fault_handler;
-    arg = globus_l_seg_fault_arg;
+
+    if (globus_l_seg_event_handler != NULL)
+    {
+        result = GLOBUS_SEG_ERROR_ALREADY_SET;
+
+        goto unlock_error;
+    }
+
+    globus_l_seg_event_handler = event_handler;
+    globus_l_seg_event_arg = user_arg;
+
     globus_mutex_unlock(&globus_l_seg_mutex);
 
-    if (result != GLOBUS_SUCCESS && handler != NULL)
-    {
-        (*handler)(arg, result);
-    }
-}
-/* globus_l_xio_read_eof_callback() */
+    return result;
 
-static
-globus_result_t
-globus_l_seg_register_write(
-    globus_byte_t *                     buf)
-{
-    globus_result_t                     result;
-    size_t                              cnt;
-    globus_xio_iovec_t *                iov;
-    size_t                              nbytes=0;
-    globus_scheduler_event_generator_fault_handler_t
-                                        handler;
-    void *                              arg;
-    int                                 i;
+unlock_error:
+    globus_mutex_unlock(&globus_l_seg_mutex);
 
-    if (buf)
-    {
-        globus_fifo_enqueue(&globus_l_seg_buffers, buf);
-    }
-
-    cnt = globus_fifo_size(&globus_l_seg_buffers);
-    if ((!globus_l_seg_write_registered) && cnt > 0)
-    {
-
-        iov = globus_libc_calloc(cnt, sizeof(globus_xio_iovec_t));
-        if (iov == NULL)
-        {
-            result = GLOBUS_SEG_ERROR_OUT_OF_MEMORY;
-
-            goto call_fault_handler;
-        }
-
-        for (i = 0; i < cnt; i++)
-        {
-            iov[i].iov_base = globus_fifo_dequeue(&globus_l_seg_buffers);
-            iov[i].iov_len = strlen((char *)iov[i].iov_base);
-            nbytes += iov[i].iov_len;
-        }
-
-        result = globus_xio_register_writev(
-                globus_l_seg_output_handle,
-                iov,
-                cnt,
-                nbytes,
-                NULL,
-                globus_l_seg_writev_callback,
-                NULL);
-
-        if (result != GLOBUS_SUCCESS)
-        {
-            goto call_fault_handler;
-        }
-        globus_l_seg_write_registered = GLOBUS_TRUE;
-    }
-
-    return GLOBUS_SUCCESS;
-
-call_fault_handler:
-    if (globus_l_seg_fault_handler)
-    {
-        handler = globus_l_seg_fault_handler;
-        arg = globus_l_seg_fault_arg;
-
-        (*handler)(arg, result);
-    }
     return result;
 }
-/* globus_l_seg_register_write() */
+/* globus_scheduler_event_generator_set_event_handler() */
 
-/**
- * Callback for writing event to scheduler.
- *
- * @param handle
- * @param result
- * @param iovec
- * @param count
- * @param nbytes
- * @param data_desc
- * @param user_arg
- */
-static
 void
-globus_l_seg_writev_callback(
-    globus_xio_handle_t                 handle,
-    globus_result_t                     result,
-    globus_xio_iovec_t *                iovec,
-    int                                 count,
-    globus_size_t                       nbytes,
-    globus_xio_data_descriptor_t        data_desc,
-    void *                              user_arg)
+globus_scheduler_event_generator_fault(
+    globus_result_t                     result)
 {
-    int                                 i;
-    globus_scheduler_event_generator_fault_handler_t
-                                        handler = NULL;
-    void *                              arg;
-    globus_bool_t                       reregister_write = GLOBUS_FALSE;
-    int                                 do_shutdown = 0;
-
-    for (i = 0; i < count; i++)
+    if (globus_l_seg_fault_handler != NULL)
     {
-        globus_libc_free(iovec[i].iov_base);
+        (*globus_l_seg_fault_handler)(globus_l_seg_fault_arg, result);
     }
-    globus_libc_free(iovec);
-
-    globus_mutex_lock(&globus_l_seg_mutex);
-    globus_l_seg_write_registered = GLOBUS_FALSE;
-
-    if (result != GLOBUS_SUCCESS)
-    {
-        handler = globus_l_seg_fault_handler;
-        arg = globus_l_seg_fault_arg;
-    }
-    else if (!globus_fifo_empty(&globus_l_seg_buffers))
-    {
-        reregister_write = GLOBUS_TRUE;
-    }
-    else if (globus_l_seg_shutdown)
-    {
-        do_shutdown = 1;
-    }
-    if (handler)
-    {
-        (*handler)(arg, result);
-    }
-    if (reregister_write)
-    {
-        globus_l_seg_register_write(NULL);
-    }
-
-    if (do_shutdown)
-    {
-        globus_l_seg_shutdown = 2;
-        globus_cond_signal(&globus_l_seg_cond);
-    }
-    globus_mutex_unlock(&globus_l_seg_mutex);
 }
-/* globus_l_seg_writev_callback() */
+/* globus_scheduler_event_generator_fault() */
