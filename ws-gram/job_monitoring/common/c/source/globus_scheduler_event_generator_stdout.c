@@ -85,45 +85,45 @@ globus_i_scheduler_event_generator_stdout_module =
 globus_result_t
 globus_scheduler_event_generator_stdout_handler(
     void *                              user_arg,
-    globus_scheduler_event_t *          event)
+    const globus_scheduler_event_t *    event)
 {
     switch (event->event_type)
     {
     case GLOBUS_SCHEDULER_EVENT_PENDING:
         return globus_l_stdout_scheduler_event(
                 "001;%lu;%s;%d;%d\n",
-                event->pending.timestamp,
-                event->pending.job_id,
+                event->timestamp,
+                event->job_id,
                 GLOBUS_GRAM_PROTOCOL_JOB_STATE_PENDING,
                 0);
 
     case GLOBUS_SCHEDULER_EVENT_ACTIVE:
         return globus_l_stdout_scheduler_event(
                 "001;%lu;%s;%d;%d\n",
-                event->active.timestamp,
-                event->active.job_id,
+                event->timestamp,
+                event->job_id,
                 GLOBUS_GRAM_PROTOCOL_JOB_STATE_ACTIVE,
                 0);
 
     case GLOBUS_SCHEDULER_EVENT_DONE:
         return globus_l_stdout_scheduler_event(
                 "001;%lu;%s;%d;%d\n",
-                event->done.timestamp,
-                event->done.job_id,
+                event->timestamp,
+                event->job_id,
                 GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE,
-                event->done.exit_code);
+                event->exit_code);
 
     case GLOBUS_SCHEDULER_EVENT_FAILED:
         return globus_l_stdout_scheduler_event(
                 "001;%lu;%s;%d;%d\n",
-                event->failed.timestamp,
-                event->failed.job_id,
+                event->timestamp,
+                event->job_id,
                 GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE,
-                event->failed.failure_code);
+                event->failure_code);
 
     case GLOBUS_SCHEDULER_EVENT_RAW:
         return globus_l_stdout_scheduler_event(
-                event->raw.raw_event);
+                event->raw_event);
     }
     return GLOBUS_FAILURE;
 }

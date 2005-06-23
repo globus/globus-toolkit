@@ -160,8 +160,12 @@ globus_scheduler_event(
     vsprintf(buf, format, ap);
     va_end(ap);
 
-    event.raw.event_type = GLOBUS_SCHEDULER_EVENT_RAW;
-    event.raw.raw_event = buf;
+    event.event_type = GLOBUS_SCHEDULER_EVENT_RAW;
+    event.job_id = NULL;
+    event.timestamp = 0;
+    event.exit_code = 0;
+    event.failure_code = 0;
+    event.raw_event = (char *) buf;
 
     if (globus_l_seg_event_handler != NULL)
     {
@@ -206,9 +210,12 @@ globus_scheduler_event_pending(
         return GLOBUS_SEG_ERROR_NULL;
     }
 
-    event.pending.event_type = GLOBUS_SCHEDULER_EVENT_PENDING;
-    event.pending.job_id = jobid;
-    event.pending.timestamp = timestamp;
+    event.event_type = GLOBUS_SCHEDULER_EVENT_PENDING;
+    event.job_id = (char *) jobid;
+    event.timestamp = timestamp;
+    event.exit_code = 0;
+    event.failure_code = 0;
+    event.raw_event = NULL;
     
     if (globus_l_seg_event_handler != NULL)
     {
@@ -250,10 +257,13 @@ globus_scheduler_event_active(
         return GLOBUS_SEG_ERROR_NULL;
     }
 
-    event.active.event_type = GLOBUS_SCHEDULER_EVENT_ACTIVE;
-    event.active.job_id = jobid;
-    event.active.timestamp = timestamp;
-    
+    event.event_type = GLOBUS_SCHEDULER_EVENT_ACTIVE;
+    event.job_id = (char *) jobid;
+    event.timestamp = timestamp;
+    event.exit_code = 0;
+    event.failure_code = 0;
+    event.raw_event = NULL;
+
     if (globus_l_seg_event_handler != NULL)
     {
         (*globus_l_seg_event_handler)(
@@ -295,10 +305,12 @@ globus_scheduler_event_failed(
         return GLOBUS_SEG_ERROR_NULL;
     }
 
-    event.failed.event_type = GLOBUS_SCHEDULER_EVENT_FAILED;
-    event.failed.job_id = jobid;
-    event.failed.timestamp = timestamp;
-    event.failed.failure_code = failure_code;
+    event.event_type = GLOBUS_SCHEDULER_EVENT_FAILED;
+    event.job_id = (char *) jobid;
+    event.timestamp = timestamp;
+    event.exit_code = 0;
+    event.failure_code = failure_code;
+    event.raw_event = NULL;
     
     if (globus_l_seg_event_handler != NULL)
     {
@@ -341,10 +353,12 @@ globus_scheduler_event_done(
         return GLOBUS_SEG_ERROR_NULL;
     }
 
-    event.done.event_type = GLOBUS_SCHEDULER_EVENT_DONE;
-    event.done.job_id = jobid;
-    event.done.timestamp = timestamp;
-    event.done.exit_code = exit_code;
+    event.event_type = GLOBUS_SCHEDULER_EVENT_DONE;
+    event.job_id = (char *) jobid;
+    event.timestamp = timestamp;
+    event.exit_code = exit_code;
+    event.failure_code = 0;
+    event.raw_event = NULL;
     
     if (globus_l_seg_event_handler != NULL)
     {
@@ -606,3 +620,44 @@ globus_scheduler_event_generator_fault(
     }
 }
 /* globus_scheduler_event_generator_fault() */
+
+globus_result_t
+globus_scheduler_event_copy(
+    globus_scheduler_event_t **         copy,
+    const globus_scheduler_event_t *    event)
+{
+    (*copy) = malloc(sizeof(globus_scheduler_event_t));
+
+    (*copy)->event_type = event->event_type;
+    (*copy)->job_id = event->job_id
+        ? globus_libc_strdup(event->job_id)
+        : NULL;
+    (*copy)->timestamp = event->timestamp;
+    (*copy)->exit_code = event->exit_code;
+    (*copy)->failure_code = event->failure_code;
+    (*copy)->raw_event = event->raw_event
+        ? globus_libc_strdup(event->raw_event)
+        : NULL;
+
+    return GLOBUS_SUCCESS;
+}
+/* globus_scheduler_event_copy() */
+
+void
+globus_scheduler_event_destroy(
+    globus_scheduler_event_t *          event)
+{
+
+    if (event->job_id)
+    {
+        free(event->job_id);
+    }
+
+    if (event->raw_event)
+    {
+        free(event->raw_event);
+    }
+    free(event);
+}
+/* globus_scheduler_event_copy() */
+
