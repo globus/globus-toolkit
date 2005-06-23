@@ -407,7 +407,7 @@ ${startargs}
 EOF
 
 if test $seg -eq 1; then
-    echo "-seg $jmtype" >> ${scratch}/jobmanager.conf
+    echo "-seg-module $jmtype" >> ${scratch}/jobmanager.conf
 fi
 
 docleanup=false
