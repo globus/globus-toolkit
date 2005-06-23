@@ -165,6 +165,7 @@ typedef struct
     gss_cred_id_t			delegated_credential;
 }
 globus_gram_job_manager_query_t;
+
 /**
  * Job Manager Request
  */
@@ -222,6 +223,31 @@ typedef struct
      */
     unsigned int			poll_frequency;
 
+    /**
+     * SEG module to use for polling (optional)
+     */
+    char *                              seg_module;
+
+    /**
+     * set to GLOBUS_TRUE when the seg monitoring has begun
+     */
+    globus_bool_t                       seg_started;
+
+    /**
+     * timestamp of the last SEG event we've completely processed.
+     */
+    time_t                              seg_last_timestamp;
+
+    /**
+     * Queue of pending SEG events
+     */
+    globus_fifo_t                       seg_event_queue;
+
+    /**
+     * Time when the job submission was done. We will ignore any
+     * SEG events which occur before this time.
+     */
+    time_t                              submission_timestamp;
 
     /**
      * Job Manager Type
@@ -800,6 +826,20 @@ int
 globus_gram_job_manager_script_proxy_update(
     globus_gram_jobmanager_request_t *	request,
     globus_gram_job_manager_query_t *	query);
+
+globus_bool_t
+globus_i_gram_job_manager_script_valid_state_change(
+    globus_gram_jobmanager_request_t *  request,
+    globus_gram_protocol_job_state_t    new_state);
+
+/* globus_gram_job_manager_seg.c */
+globus_result_t
+globus_gram_job_manager_init_seg(
+    globus_gram_jobmanager_request_t *  request);
+
+void
+globus_gram_job_manager_seg_handle_event(
+    globus_gram_jobmanager_request_t *  request);
 
 EXTERN_C_END
 

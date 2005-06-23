@@ -113,12 +113,6 @@ globus_l_gram_job_manager_script_staged_done(
     					type,
     const char *			value);
 
-static
-globus_bool_t
-globus_l_gram_job_manager_script_valid_state_change(
-    globus_gram_jobmanager_request_t *	request,
-    globus_gram_protocol_job_state_t	new_state);
-
 /**
  * Begin execution of a job manager script
  */
@@ -1616,7 +1610,7 @@ globus_l_gram_job_manager_default_done(
 	    request->failure_code = 
 		GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_SCRIPT_STATUS;
 	}
-	else if(globus_l_gram_job_manager_script_valid_state_change(
+	else if(globus_i_gram_job_manager_script_valid_state_change(
 		    request, script_status))
 	{
         globus_gram_job_manager_request_set_status(request, script_status);
@@ -1755,7 +1749,7 @@ globus_l_gram_job_manager_query_done(
 	}
 	else if((query->type == GLOBUS_GRAM_JOB_MANAGER_CANCEL ||
 		query->signal == GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_CANCEL) &&
-		(globus_l_gram_job_manager_script_valid_state_change(
+		(globus_i_gram_job_manager_script_valid_state_change(
 		    request, script_status)))
 	{
 	    request->unsent_status_change = GLOBUS_TRUE;
@@ -1770,7 +1764,7 @@ globus_l_gram_job_manager_query_done(
 	}
 	else if((query->signal == GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_SUSPEND ||
 		query->signal == GLOBUS_GRAM_PROTOCOL_JOB_SIGNAL_RESUME) &&
-	        globus_l_gram_job_manager_script_valid_state_change(
+	        globus_i_gram_job_manager_script_valid_state_change(
 						 request,
 						 script_status))
 		
@@ -2312,9 +2306,8 @@ globus_l_gram_job_manager_script_staged_done(
 }
 /* globus_l_gram_job_manager_script_staged_done() */
 
-static
 globus_bool_t
-globus_l_gram_job_manager_script_valid_state_change(
+globus_i_gram_job_manager_script_valid_state_change(
     globus_gram_jobmanager_request_t *	request,
     globus_gram_protocol_job_state_t	new_state)
 {

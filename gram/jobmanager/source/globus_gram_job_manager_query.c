@@ -547,6 +547,15 @@ globus_l_gram_job_manager_cancel(
                               request);
                   }
               }
+              else
+              {
+                  GlobusTimeReltimeSet(delay, 0, 0);
+                  globus_callback_register_oneshot(
+                          &request->poll_timer,
+                          &delay,
+                          globus_gram_job_manager_state_machine_callback,
+                          request);
+              }
           }
           return GLOBUS_SUCCESS;
       default:
@@ -686,7 +695,6 @@ error_exit:
     {
 	*reply = GLOBUS_TRUE;
     }
-delay_query:
 
     return rc;
 }

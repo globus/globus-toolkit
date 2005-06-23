@@ -31,6 +31,7 @@ libglobus_gram_job_manager___GLOBUS_FLAVOR_NAME__la_SOURCES = \
 	globus_gram_job_manager_request.c \
 	globus_gram_job_manager_rsl.c \
 	globus_gram_job_manager_script.c \
+	globus_gram_job_manager_seg.c \
 	globus_gram_job_manager_staging.c \
 	globus_gram_job_manager_state.c \
 	globus_gram_job_manager_state_file.c \

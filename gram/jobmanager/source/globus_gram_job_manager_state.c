@@ -1518,6 +1518,8 @@ globus_gram_job_manager_state_machine(
 	    break;
 	}
 
+        request->submission_timestamp = time(NULL);
+
 	rc = globus_gram_job_manager_script_submit(request);
 
 	if(rc != GLOBUS_SUCCESS)
@@ -1576,6 +1578,13 @@ globus_gram_job_manager_state_machine(
 	 * the submit script.
 	 */
       case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1:
+        if (! globus_fifo_empty(&request->seg_event_queue))
+        {
+            /* A SEG event occurred recently. Let's update our job state
+             */
+            globus_gram_job_manager_seg_handle_event(request);
+
+        }
 	if(request->unsent_status_change && request->save_state)
 	{
 	    globus_gram_job_manager_state_file_write(request);
@@ -1630,34 +1639,93 @@ globus_gram_job_manager_state_machine(
 	    if(! first_poll)
 	    {
 		/* Register next poll of job state */
-		GlobusTimeReltimeSet(delay_time, request->poll_frequency, 0);
 
-		globus_callback_register_oneshot(
-			&request->poll_timer,
-			&delay_time,
-			globus_gram_job_manager_state_machine_callback,
-			request);
+                if (request->seg_module == NULL)
+                {
+                    GlobusTimeReltimeSet(
+                            delay_time,
+                            request->poll_frequency, 0);
 
-		event_registered = GLOBUS_TRUE;
+                    globus_callback_register_oneshot(
+                            &request->poll_timer,
+                            &delay_time,
+                            globus_gram_job_manager_state_machine_callback,
+                            request);
+                    event_registered = GLOBUS_TRUE;
+                }
+                else
+                {
+                    /* SEG has been started. If there is an event pending,
+                     * we should jump to POLL1 state and not set
+                     * event_registered, so that we can process it.
+                     *
+                     * Otherwise, we'll set event_registered and the next
+                     * query or SEG event will move the state machine.
+                     */
+                    if (! globus_fifo_empty(&request->seg_event_queue))
+                    {
+
+                        request->jobmanager_state =
+                            GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1;
+                    }
+                    else
+                    {
+                        event_registered = GLOBUS_TRUE;
+                    }
+                }
+
 	    }
+            else if (request->seg_module != NULL && !request->seg_started)
+            {
+                /* This is the first poll and we want to use the SEG, so we'll
+                 * start that up. We won't have to reregister the callback 
+                 * after each event in this case.
+                 */
+                rc = globus_gram_job_manager_init_seg(request);
+
+                if (rc != GLOBUS_SUCCESS)
+                {
+                    /* Error starting the SEG. Fallback to non-SEG mode */
+                    request->seg_module = NULL;
+                }
+                else
+                {
+                    /* SEG was now started. When an event arrives, it will
+                     * be enqueued and then state will change to POLL1
+                     */
+                    event_registered = GLOBUS_TRUE;
+                }
+            }
 	}
 	break;
 
       case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL2:
-	/* timer expired since last poll. poll again. */
-	request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1;
-	rc = globus_gram_job_manager_script_poll(request);
+	/* timer expired since last poll. start polling again. */
 
-	if(rc != GLOBUS_SUCCESS)
-	{
-	    globus_gram_job_manager_request_log(
-		request,
-		"Error polling job... resources temporarily depleted?\n");
-	}
-	else
-	{
-	    event_registered = GLOBUS_TRUE;
-	}
+        request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1;
+
+        if (request->seg_module == NULL)
+        {
+            rc = globus_gram_job_manager_script_poll(request);
+        }
+        else if (!globus_fifo_empty(&request->seg_event_queue))
+        {
+            /* We don't want to set event_registered in this case, because
+             * we want to immediately process the event in the queue.
+             */
+            break;
+        }
+
+        if(rc != GLOBUS_SUCCESS)
+        {
+            globus_gram_job_manager_request_log(
+                request,
+                "Error polling job... resources temporarily depleted?\n");
+        }
+        else
+        {
+            event_registered = GLOBUS_TRUE;
+        }
 	break;
 
       case GLOBUS_GRAM_JOB_MANAGER_STATE_POLL_QUERY1:
@@ -1857,7 +1925,8 @@ globus_gram_job_manager_state_machine(
 		query);
 
 	if(globus_fifo_empty(&request->pending_queries) &&
-	   request->unsent_status_change)
+	   (request->unsent_status_change ||
+            !globus_fifo_empty(&request->seg_event_queue)))
 	{
 	    request->jobmanager_state =
 		GLOBUS_GRAM_JOB_MANAGER_STATE_POLL1;
