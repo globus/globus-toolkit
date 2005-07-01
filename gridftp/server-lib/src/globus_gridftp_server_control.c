@@ -1794,6 +1794,7 @@ globus_i_gsc_concat_path(
     char *                              tmp_path;
     char *                              tmp_ptr;
     char *                              tmp_ptr2;
+    int                                 len;
     GlobusGridFTPServerName(globus_i_gsc_concat_path);
 
     GlobusGridFTPServerDebugInternalEnter();
@@ -1804,6 +1805,19 @@ globus_i_gsc_concat_path(
         if(in_path[0] == '/')
         {
             tmp_path = globus_libc_strdup(in_path);
+        }
+        else if(in_path[0] == '~')
+        {
+            if((tmp_ptr = strchr(in_path, '/')) != NULL)
+            {
+                tmp_path = globus_common_create_string("%s%s",
+                    i_server->default_cwd,
+                    tmp_ptr);
+            }
+            else
+            {
+                tmp_path = globus_libc_strdup(i_server->default_cwd);
+            }
         }
         else
         {
@@ -1847,6 +1861,13 @@ globus_i_gsc_concat_path(
         {
             memmove(tmp_ptr, &tmp_ptr[1], strlen(&tmp_ptr[1])+1);
             tmp_ptr = strstr(tmp_path, "./");
+        }
+
+        /* remove trailing slash */
+        len = strlen(tmp_path);
+        if(tmp_path[len - 1] == '/')
+        {
+            tmp_path[len - 1] = '\0';
         }
     }
     globus_mutex_unlock(&i_server->mutex);
@@ -2368,6 +2389,10 @@ globus_gridftp_server_control_destroy(
     {
         globus_free(server_handle->cwd);
     }
+    if(server_handle->default_cwd != NULL)
+    {
+        globus_free(server_handle->default_cwd);
+    }
     if(server_handle->modes != NULL)
     {
         globus_free(server_handle->modes);
@@ -2649,6 +2674,8 @@ globus_gridftp_server_control_start(
         globus_free(server_handle->cwd);
     }
     server_handle->cwd = globus_libc_strdup(i_attr->base_dir);
+    server_handle->default_cwd = NULL;
+    
     if(i_attr->pre_auth_banner != NULL)
     {
         globus_free(server_handle->pre_auth_banner);
@@ -4417,6 +4444,13 @@ globus_gridftp_server_control_finished_auth(
             }
             op->server_handle->username = strdup(username);
         }
+
+        if(op->server_handle->default_cwd != NULL)
+        {
+            globus_free(op->server_handle->default_cwd);
+        }
+        op->server_handle->default_cwd = 
+            globus_libc_strdup(op->server_handle->cwd);
         
         op->response_type = response_code;
         if(op->response_type == GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS)

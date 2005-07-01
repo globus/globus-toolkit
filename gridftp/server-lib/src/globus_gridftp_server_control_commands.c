@@ -2890,8 +2890,36 @@ globus_l_gsc_cmd_stor_retr(
             path = strdup(op->server_handle->cwd);
         }
         else
-        {
-            path = strdup(cmd_a[1]);
+        {   tmp_ptr = cmd_a[1];
+            /* ignore non-standard list arguments */
+            if(wrapper->type == GLOBUS_L_GSC_OP_TYPE_LIST)
+            {
+                while(*tmp_ptr == '-')
+                {
+                    tmp_ptr++;
+                    while(*tmp_ptr != ' ' && *tmp_ptr != '\0')
+                    {
+                        tmp_ptr++;
+                    }
+                    while(*tmp_ptr == ' ')
+                    {
+                        tmp_ptr++;
+                    }
+                }
+                
+                if(*tmp_ptr == '*' || *tmp_ptr == '\0')
+                {
+                    path = strdup(op->server_handle->cwd);
+                }
+                else
+                { 
+                    path = strdup(tmp_ptr);
+                }
+            }
+            else
+            {
+                path = strdup(tmp_ptr);
+            }
         }
     }
 

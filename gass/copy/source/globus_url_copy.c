@@ -407,6 +407,7 @@ enum
     arg_fast,
     arg_ipv6,
     arg_allo,
+    arg_noallo,
     arg_stripe_bs,
     arg_striped,
     arg_num = arg_striped
@@ -449,6 +450,7 @@ flagdef(arg_create_dest, "-cd", "-create-dest");
 flagdef(arg_fast, "-fast", "-fast-data-channels");
 flagdef(arg_ipv6, "-ipv6","-IPv6");
 flagdef(arg_allo, "-allo","-allocate");
+flagdef(arg_noallo, "-no-allo","-no-allocate");
 
 oneargdef(arg_f, "-f", "-filename", GLOBUS_NULL, GLOBUS_NULL);
 oneargdef(arg_stripe_bs, "-sbs", "-striped-block-size", test_integer, GLOBUS_NULL);
@@ -500,6 +502,7 @@ static globus_args_option_descriptor_t args_options[arg_num];
     setupopt(arg_fast);	                \
     setupopt(arg_ipv6);         	\
     setupopt(arg_allo);         	\
+    setupopt(arg_noallo);         	\
     setupopt(arg_stripe_bs);         	\
     setupopt(arg_striped);
 
@@ -797,9 +800,10 @@ globus_l_guc_parse_file(
     int                                             url_len;
     int                                             line_num = 0;
     int                                             rc;
-    globus_bool_t                                   stdin_used = GLOBUS_FALSE;
+    globus_bool_t                                   stdin_used;
 
-    fptr = fopen(file_name, "r");
+    stdin_used = (strcmp(file_name, "-") == 0);
+    fptr = (stdin_used) ? stdin : fopen(file_name, "r");
     if(fptr == NULL)
     {
         return -1;
@@ -899,12 +903,18 @@ globus_l_guc_parse_file(
         globus_fifo_enqueue(user_url_list, ent);
     }
 
-    fclose(fptr);
+    if(fptr != stdin)
+    {
+        fclose(fptr);
+    }
 
     return 0;
     
 error_parse:
-    fclose(fptr);
+    if(fptr != stdin)
+    {
+        fclose(fptr);
+    }
     fprintf(stderr, _GASCSL("Problem parsing url list: line %d\n"), line_num);
     return -1;
  
@@ -1360,7 +1370,7 @@ globus_l_guc_parse_arguments(
     guc_info->rfc1738 = GLOBUS_FALSE;
     guc_info->list_uses_data_mode = GLOBUS_FALSE;
     guc_info->ipv6 = GLOBUS_FALSE;
-    guc_info->allo = GLOBUS_FALSE;
+    guc_info->allo = GLOBUS_TRUE;
     guc_info->create_dest = GLOBUS_FALSE;
  
     /* determine the program name */
@@ -1506,14 +1516,15 @@ globus_l_guc_parse_arguments(
 	    break;
 	case arg_striped:
 	    guc_info->striped = GLOBUS_TRUE;
-	    /* force allo for striped transfers */
-	    guc_info->allo = GLOBUS_TRUE;
 	    break;
 	case arg_ipv6:
 	    guc_info->ipv6 = GLOBUS_TRUE;
 	    break;
 	case arg_allo:
 	    guc_info->allo = GLOBUS_TRUE;
+	    break;
+	case arg_noallo:
+	    guc_info->allo = GLOBUS_FALSE;
 	    break;
 	case arg_partial_offset:
             rc = globus_args_bytestr_to_num(instance->values[0], &tmp_off);

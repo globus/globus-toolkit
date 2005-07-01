@@ -966,6 +966,17 @@ globus_l_gfs_request_command(
         }
         type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_SITE;
     }
+    else if(strcmp(cmd_array[0], "SITE") == 0 &&
+        strcmp(cmd_array[1], "VERSION") == 0)
+    {
+        char                            version_string[1024];
+
+        type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_SITE;
+        snprintf(version_string, sizeof(version_string),
+            "200 %s\r\n", globus_i_gfs_config_string("version_string"));
+        globus_gsc_959_finished_command(op, version_string);
+        done = GLOBUS_TRUE;
+    }
     else
     {
         goto err;
@@ -2012,6 +2023,19 @@ globus_l_gfs_add_commands(
         3,
         3,
         "SITE DSI <sp> dsi name",
+        instance);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+    result = globus_gsc_959_command_add(
+        control_handle,
+        "SITE VERSION",
+        globus_l_gfs_request_command,
+        GLOBUS_GSC_COMMAND_POST_AUTH,
+        2,
+        2,
+        "SITE VERSION",
         instance);
     if(result != GLOBUS_SUCCESS)
     {

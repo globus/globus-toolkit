@@ -383,6 +383,7 @@ typedef struct globus_i_gsc_server_handle_s
      *  state information  
      */
     char *                              cwd;
+    char *                              default_cwd;    
     char                                type;
     char                                mode;
     char *                              modes;
