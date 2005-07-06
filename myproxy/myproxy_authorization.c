@@ -52,13 +52,20 @@ int auth_passwd_check_client(authorization_data_t *client_auth_data,
                              struct myproxy_creds *creds, char *client_name,
 			     myproxy_server_context_t* config)
 { 
+   int encrypted, empty_passphrase, cred_passphrase_match;
+#if defined(HAVE_LIBPAM)
+   char* pam_policy = NULL;
+   char* pam_id = NULL;
+   int pam_required, pam_sufficient, pam_disabled;
+#endif
+
    /* 1. Check whether the credentials are encrypted. */
-   int encrypted = myproxy_creds_encrypted(creds);
-   int empty_passphrase = (client_auth_data->client_data_len <= 0) ? 1 : 0;
+   encrypted = myproxy_creds_encrypted(creds);
+   empty_passphrase = (client_auth_data->client_data_len <= 0) ? 1 : 0;
 
    /* 2. Check whether the password the user gave matches the
     *    credential passphrase */
-   int cred_passphrase_match = 0;
+   cred_passphrase_match = 0;
    if (encrypted)
    {
       if (client_auth_data->client_data_len >= MIN_PASS_PHRASE_LEN &&
@@ -74,15 +81,15 @@ int auth_passwd_check_client(authorization_data_t *client_auth_data,
 #if defined(HAVE_LIBPAM)
 
    /* Tangent: figure out PAM configuration. */
-   char* pam_policy = config ? config->pam_policy : NULL;
-   char* pam_id     = config ? config->pam_id : NULL;
+   pam_policy = config ? config->pam_policy : NULL;
+   pam_id     = config ? config->pam_id : NULL;
 
    /* Default value is "disabled". */
    if (pam_policy == NULL) pam_policy = "disabled";
 
-   int pam_required   = (strcmp(pam_policy, "required"  ) == 0 ? 1 : 0);
-   int pam_sufficient = (strcmp(pam_policy, "sufficient") == 0 ? 1 : 0);
-   int pam_disabled   = (strcmp(pam_policy, "disabled"  ) == 0 ? 1 : 0);
+   pam_required   = (strcmp(pam_policy, "required"  ) == 0 ? 1 : 0);
+   pam_sufficient = (strcmp(pam_policy, "sufficient") == 0 ? 1 : 0);
+   pam_disabled   = (strcmp(pam_policy, "disabled"  ) == 0 ? 1 : 0);
 
    /* Note: if pam_policy is not recognized, it will fall through to
     * the disabled case below, and a debug message will be printed. */
@@ -104,14 +111,15 @@ int auth_passwd_check_client(authorization_data_t *client_auth_data,
     *    passphrase is blank and therefore we need to check PAM. */
    else if (pam_required || pam_sufficient)
    {
+      char* auth_pam_result = NULL;
       int pam_success = 0;
       if (pam_id == NULL) pam_id = "myproxy";
       myproxy_debug
 	 ("Checking passphrase via PAM.  PAM policy: \"%s\"; PAM ID: \"%s\"\n",
 	  pam_policy, pam_id);
 
-      char* auth_pam_result = auth_pam(creds->username,
-				       client_auth_data->client_data, pam_id, NULL);
+      auth_pam_result = auth_pam(creds->username,
+				 client_auth_data->client_data, pam_id, NULL);
       if (auth_pam_result && strcmp("OK", auth_pam_result) == 0) {
 	 pam_success = 1;
       } else {
