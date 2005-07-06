@@ -1,9 +1,9 @@
-This is MyProxy v2.0 8 Jun 2005.
+This is MyProxy v2.1 6 Jul 2005.
 This version should be compatible with all versions since v0.2.
 
 Version History
 ---------------
-v2.1
+v2.1 6 Jul 2005
   - fix compilation problem for ISO C89 compilers
   - fix myproxy-init compatibility with Java CoG grid-proxy-init in
     PATH (use grid-proxy-init -hours instead of -valid)
