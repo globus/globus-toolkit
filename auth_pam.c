@@ -199,6 +199,7 @@ auth_pam (
     struct pam_conv my_conv;		/* pam conversion data */
     pam_handle_t *pamh;			/* pointer to PAM handle */
     int rc;				/* return code holder */
+    char result[200];
     /* END VARIABLES */
 
     my_appdata.login = login;
@@ -213,7 +214,6 @@ auth_pam (
 	syslog(LOG_DEBUG, "DEBUG: auth_pam: pam_start failed: %s",
 	       pam_strerror(pamh, rc));
 	/* RETURN("NO PAM start error"); */
-	char result[200];
 	snprintf(result, sizeof(result), "NO unable to initialize PAM: %s",
 		 pam_strerror(pamh, rc));
 	RETURN(result);
@@ -227,7 +227,6 @@ auth_pam (
 	       pam_strerror(pamh, rc));
 	pam_end(pamh, rc);
 	/* RETURN("NO PAM auth error"); */
-	char result[200];
 	snprintf(result, sizeof(result), "NO PAM authentication failed: %s",
 		 pam_strerror(pamh, rc));
 	RETURN(result);
@@ -239,7 +238,6 @@ auth_pam (
 	       pam_strerror(pamh, rc));
 	pam_end(pamh, rc);
 	/* RETURN("NO PAM acct error"); */
-	char result[200];
 	snprintf(result, sizeof(result), "NO PAM account check failed: %s",
 		 pam_strerror(pamh, rc));
 	RETURN(result);
