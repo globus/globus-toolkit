@@ -44,6 +44,9 @@ BUNDLE globus-resource-management-server
 	globus_gass_cache_program
         globus_gram_job_manager_callout_error
 	globus_gram_job_manager
+        globus_scheduler_event_generator
+        globus_scheduler_event_generator_job_manager
+        globus_scheduler_event_generator_job_manager_setup
 
 BUNDLE globus-resource-management-sdk
 	globus_core
