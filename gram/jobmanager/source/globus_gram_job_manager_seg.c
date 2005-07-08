@@ -22,9 +22,10 @@ globus_gram_job_manager_init_seg(
             globus_l_gram_seg_event_callback,
             request);
     globus_scheduler_event_generator_set_timestamp(
-            request->submission_timestamp);
+            request->seg_last_timestamp);
+    globus_libc_setenv("JOB_MANAGER_SEG_SCHEDULER", request->seg_module, 1);
     globus_scheduler_event_generator_load_module(
-            request->seg_module);
+            "job_manager");
 
     request->seg_started = GLOBUS_TRUE;
 

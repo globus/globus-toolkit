@@ -1518,7 +1518,7 @@ globus_gram_job_manager_state_machine(
 	    break;
 	}
 
-        request->submission_timestamp = time(NULL);
+        request->seg_last_timestamp = time(NULL);
 
 	rc = globus_gram_job_manager_script_submit(request);
 
@@ -1636,10 +1636,30 @@ globus_gram_job_manager_state_machine(
 	    }
 	    request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_POLL2;
 
-	    if(! first_poll)
+            if (request->seg_module != NULL && !request->seg_started)
+            {
+                /* We want to use the SEG, so we'll start that up. We won't
+                 * have to reregister the callback after each event in this
+                 * case.
+                 */
+                rc = globus_gram_job_manager_init_seg(request);
+
+                if (rc != GLOBUS_SUCCESS)
+                {
+                    /* Error starting the SEG. Fallback to non-SEG mode */
+                    request->seg_module = NULL;
+                }
+                else
+                {
+                    /* SEG was now started. When an event arrives, it will
+                     * be enqueued and then state will change to POLL1
+                     */
+                    event_registered = GLOBUS_TRUE;
+                }
+            }
+            else if(! first_poll)
 	    {
 		/* Register next poll of job state */
-
                 if (request->seg_module == NULL)
                 {
                     GlobusTimeReltimeSet(
@@ -1675,27 +1695,6 @@ globus_gram_job_manager_state_machine(
                 }
 
 	    }
-            else if (request->seg_module != NULL && !request->seg_started)
-            {
-                /* This is the first poll and we want to use the SEG, so we'll
-                 * start that up. We won't have to reregister the callback 
-                 * after each event in this case.
-                 */
-                rc = globus_gram_job_manager_init_seg(request);
-
-                if (rc != GLOBUS_SUCCESS)
-                {
-                    /* Error starting the SEG. Fallback to non-SEG mode */
-                    request->seg_module = NULL;
-                }
-                else
-                {
-                    /* SEG was now started. When an event arrives, it will
-                     * be enqueued and then state will change to POLL1
-                     */
-                    event_registered = GLOBUS_TRUE;
-                }
-            }
 	}
 	break;
 

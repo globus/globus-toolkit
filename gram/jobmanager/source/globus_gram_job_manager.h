@@ -234,20 +234,14 @@ typedef struct
     globus_bool_t                       seg_started;
 
     /**
-     * timestamp of the last SEG event we've completely processed.
+     * Timestamp of the last SEG event we've completely processed. Initially
+     * set to the time of the job submission.
      */
     time_t                              seg_last_timestamp;
-
     /**
      * Queue of pending SEG events
      */
     globus_fifo_t                       seg_event_queue;
-
-    /**
-     * Time when the job submission was done. We will ignore any
-     * SEG events which occur before this time.
-     */
-    time_t                              submission_timestamp;
 
     /**
      * Job Manager Type
