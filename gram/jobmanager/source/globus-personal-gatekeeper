@@ -301,7 +301,6 @@ while [ -n "$1" ]; do
 		;;
         -seg)
                 seg=1
-                shift;
                 ;;
 	*)
 		startargs="$startargs $1"
