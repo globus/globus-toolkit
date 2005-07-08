@@ -32,6 +32,7 @@ CVS Information:
 #include <fcntl.h>
 #include <string.h>
 
+#include "globus_url_copy.h"
 #include "globus_gass_copy.h"
 #include "globus_ftp_client_debug_plugin.h"
 #include "globus_ftp_client_restart_plugin.h"
@@ -196,15 +197,18 @@ void
 globus_l_guc_hashtable_element_free(
     void *                              datum);
 
+typedef struct globus_l_guc_plugin_op_s
+{
+    void *                              handle;
+    globus_guc_plugin_funcs_t *         funcs;
+    my_monitor_t                        monitor;
+} globus_l_guc_plugin_op_t;
 
+globus_extension_registry_t      globus_guc_plugin_registry;
 
 /*****************************************************************************
                           Module specific variables
 *****************************************************************************/
-
-#define GLOBUS_URL_COPY_ARG_ASCII       1
-#define GLOBUS_URL_COPY_ARG_BINARY      2
-#define GLOBUS_URL_COPY_ARG_VERBOSE     4
 
 const char * oneline_usage =
 "globus-url-copy [-help | -usage] [-version[s]] [-vb] [-dbg] [-b | -a]\n"
@@ -380,6 +384,7 @@ enum
     arg_a = 1, 
     arg_b, 
     arg_c, 
+    arg_ext,
     arg_s, 
     arg_p, 
     arg_f, 
@@ -424,12 +429,23 @@ static globus_args_option_descriptor_t defname(id) = { id, listname(id), 0, \
 						GLOBUS_NULL, GLOBUS_NULL }
 #define funcname(x) x##_predicate_test
 #define paramsname(x) x##_predicate_params
+
 #define oneargdef(id,alias1,alias2,testfunc,testparams) \
 namedef(id,alias1,alias2); \
 static globus_args_valid_predicate_t funcname(id)[] = { testfunc }; \
 static void* paramsname(id)[] = { (void *) testparams }; \
 globus_args_option_descriptor_t defname(id) = \
     { (int) id, (char **) listname(id), 1, funcname(id), (void **) paramsname(id) }
+
+#define twoargdef(id,alias1,alias2,testfunc,testparams)                     \
+    namedef(id,alias1,alias2);                                              \
+    static globus_args_valid_predicate_t funcname(id)[] = { testfunc };     \
+    static void* paramsname(id)[] = { (void *) testparams };                \
+    globus_args_option_descriptor_t defname(id) =                           \
+    {                                                                       \
+        (int) id, (char **) listname(id), 2, funcname(id),                  \
+            (void **) paramsname(id)                                        \
+    }                                                                       \
 
 flagdef(arg_a, "-a", "-ascii");
 flagdef(arg_b, "-b", "-binary");
@@ -452,6 +468,7 @@ flagdef(arg_ipv6, "-ipv6","-IPv6");
 flagdef(arg_allo, "-allo","-allocate");
 flagdef(arg_noallo, "-no-allo","-no-allocate");
 
+oneargdef(arg_ext, "-X", "-extentions", NULL, NULL);
 oneargdef(arg_f, "-f", "-filename", GLOBUS_NULL, GLOBUS_NULL);
 oneargdef(arg_stripe_bs, "-sbs", "-striped-block-size", test_integer, GLOBUS_NULL);
 oneargdef(arg_bs, "-bs", "-block-size", test_integer, GLOBUS_NULL);
@@ -475,6 +492,7 @@ static globus_args_option_descriptor_t args_options[arg_num];
     setupopt(arg_a);                    \
     setupopt(arg_f);                    \
     setupopt(arg_c);                    \
+    setupopt(arg_ext);                 \
     setupopt(arg_b);                    \
     setupopt(arg_s);                    \
     setupopt(arg_q);                    \
@@ -510,6 +528,9 @@ static globus_bool_t globus_l_globus_url_copy_ctrlc = GLOBUS_FALSE;
 static globus_bool_t globus_l_globus_url_copy_ctrlc_handled = GLOBUS_FALSE;
 static globus_bool_t g_verbose_flag = GLOBUS_FALSE;
 static globus_bool_t g_quiet_flag = GLOBUS_TRUE;
+static char *  g_ext = NULL;
+static char ** g_ext_args = NULL;
+static int      g_ext_arg_count = 0;
 static globus_bool_t g_use_debug = GLOBUS_FALSE;
 static globus_bool_t g_use_restart = GLOBUS_FALSE;
 static globus_bool_t g_continue = GLOBUS_FALSE;
@@ -518,6 +539,165 @@ static char *        g_err_msg;
 #if defined(GLOBUS_BUILD_WITH_NETLOGGER)
     globus_netlogger_handle_t                       gnl_handle;
 #endif
+
+
+    
+static
+void
+globus_l_guc_ext_interrupt_handler(
+    void *                              user_arg)
+{
+    globus_l_guc_plugin_op_t *          done_op;
+
+    done_op = (globus_l_guc_plugin_op_t *) user_arg;
+    done_op->funcs->cancel_func(done_op->handle);
+}
+
+static
+void
+globus_l_guc_ext_interrupt_unreg_sb(
+    void *                              user_arg)
+{
+    globus_l_guc_plugin_op_t *          done_op;
+
+    done_op = (globus_l_guc_plugin_op_t *) user_arg;
+
+    globus_mutex_lock(&done_op->monitor.mutex);
+    {
+        done_op->monitor.done = GLOBUS_TRUE;
+        globus_cond_signal(&done_op->monitor.cond);
+    }
+    globus_mutex_unlock(&done_op->monitor.mutex);
+}
+
+void
+globus_guc_plugin_finished(
+    globus_guc_plugin_op_t              done_op,
+    globus_result_t                     result)
+{
+    globus_l_guc_plugin_op_t *          op;
+
+    op = (globus_l_guc_plugin_op_t *) done_op;
+
+    globus_mutex_lock(&op->monitor.mutex);
+    {
+        if(result != GLOBUS_SUCCESS)
+        {
+            op->monitor.err = globus_error_get(result);
+        }
+        op->monitor.done = GLOBUS_TRUE;
+        globus_cond_signal(&op->monitor.cond);
+    }
+    globus_mutex_unlock(&op->monitor.mutex);
+}
+
+static
+int
+globus_l_guc_ext(
+    globus_l_guc_info_t *               guc_info)
+{
+    globus_object_t *                   err;
+    globus_result_t                     res;
+    globus_guc_info_t                   ext_info;
+    int                                 rc;
+    globus_extension_handle_t           ext_handle;
+    globus_l_guc_plugin_op_t            done_op;
+
+    /* copy in ext info */
+    ext_info.user_url_list = &guc_info->user_url_list;
+    ext_info.source_subject = guc_info->source_subject;
+    ext_info.dest_subject = guc_info->dest_subject;
+    ext_info.options = guc_info->options;
+    ext_info.block_size = guc_info->block_size;
+    ext_info.tcp_buffer_size = guc_info->tcp_buffer_size;
+    ext_info.num_streams = guc_info->num_streams;
+    ext_info.no_3pt = guc_info->no_3pt;
+    ext_info.no_dcau = guc_info->no_dcau;
+    ext_info.data_safe = guc_info->data_safe;
+    ext_info.data_private = guc_info->data_private;
+    ext_info.cancelled = guc_info->cancelled;
+    ext_info.recurse = guc_info->recurse;
+    ext_info.restart_retries = guc_info->restart_retries;
+    ext_info.restart_interval = guc_info->restart_interval;
+    ext_info.restart_timeout = guc_info->restart_timeout;
+    ext_info.stripe_bs = guc_info->stripe_bs;
+    ext_info.striped = guc_info->striped;
+    ext_info.rfc1738 = guc_info->rfc1738;
+    ext_info.create_dest = guc_info->create_dest;
+    ext_info.partial_offset = guc_info->partial_offset;
+    ext_info.partial_length = guc_info->partial_length;
+    ext_info.list_uses_data_mode = guc_info->list_uses_data_mode;
+    ext_info.ipv6 = guc_info->ipv6;
+    ext_info.allo = guc_info->allo;
+    ext_info.verbose = g_verbose_flag;
+    ext_info.quiet = g_quiet_flag;
+
+    rc = globus_extension_activate(g_ext);
+    if(rc != 0)
+    {
+        fprintf(stderr, "Failed to load crft extension\n");
+        return rc;
+    }
+
+    memset(&done_op, '\0', sizeof(globus_l_guc_plugin_op_t));
+    done_op.funcs = (globus_guc_plugin_funcs_t *) globus_extension_lookup(
+        &ext_handle, &globus_guc_plugin_registry, GUC_PLUGIN_FUNCS);
+    if(done_op.funcs == NULL)
+    {
+        fprintf(stderr, "Failed to find crft extension structure.\n");
+        return 1;
+    }
+
+    globus_mutex_init(&done_op.monitor.mutex, NULL);
+    globus_cond_init(&done_op.monitor.cond, NULL);
+    done_op.monitor.done = GLOBUS_FALSE;
+
+    globus_mutex_lock(&done_op.monitor.mutex);
+    {
+        res = done_op.funcs->start_func(
+            &done_op.handle, &ext_info, &done_op, g_ext_arg_count, g_ext_args);
+        if(res != GLOBUS_SUCCESS)
+        {
+            err = globus_error_get(res);
+            goto error;
+        }
+        globus_callback_register_signal_handler(
+            GLOBUS_SIGNAL_INTERRUPT,
+            GLOBUS_FALSE,
+            globus_l_guc_ext_interrupt_handler,
+            &done_op);
+
+        while(!done_op.monitor.done)
+        {
+            globus_cond_wait(&done_op.monitor.cond, &done_op.monitor.mutex);
+        }
+        done_op.monitor.done = GLOBUS_FALSE;
+        globus_callback_unregister_signal_handler(
+            GLOBUS_SIGNAL_INTERRUPT,
+            globus_l_guc_ext_interrupt_unreg_sb,
+            &done_op);
+        while(!done_op.monitor.done)
+        {
+            globus_cond_wait(&done_op.monitor.cond, &done_op.monitor.mutex);
+        }
+        done_op.funcs->cleanup_func(done_op.handle);
+
+        if(done_op.monitor.err != NULL)
+        {
+            err = done_op.monitor.err;
+            goto error;
+        }
+    }
+    globus_mutex_unlock(&done_op.monitor.mutex);
+
+    return 0;
+error:
+
+    fprintf(stderr, "%s\n", globus_error_print_friendly(err));
+ 
+    return 1;
+}
+/* END CRFT STUFF */
 
 static
 void
@@ -620,6 +800,12 @@ main(int argc, char **argv)
         return 1;
     }
 
+    /* crft interception */
+    if(g_ext != NULL)
+    {
+        return globus_l_guc_ext(&guc_info);
+    }
+
     /* initialize gass copy handle */
     if(globus_l_guc_init_gass_copy_handle(
            &gass_copy_handle, 
@@ -716,6 +902,51 @@ globus_l_gass_copy_performance_cb(
         instantaneous_throughput / (1024 * 1024));
     fflush(stdout);
 }
+
+void
+globus_guc_copy_performance_update(
+    globus_off_t                                    total_bytes,
+    float                                           instantaneous_throughput,
+    float                                           avg_throughput)
+{
+    globus_libc_fprintf(stdout,
+        " %12" GLOBUS_OFF_T_FORMAT
+        " bytes %12.2f MB/sec avg %12.2f MB/sec inst\r",
+        total_bytes,
+        avg_throughput / (1024 * 1024),
+        instantaneous_throughput / (1024 * 1024));
+    fflush(stdout);
+}
+
+void
+globus_guc_transfer_update(
+    const char *                        src_url,
+    const char *                        dst_url,
+    const char *                        src_fname,
+    const char *                        dst_fname)
+{
+
+    if(src_url != NULL && dst_url != NULL)
+    {
+        globus_libc_fprintf(stdout, _GASCSL("Source: %s\nDest:   %s\n"),
+            src_url,
+            dst_url);
+    }
+
+    if(src_fname != NULL && dst_fname != NULL)
+    {
+        if(!strcmp(src_fname, dst_fname))
+        {
+            globus_libc_fprintf(stdout, "  %s\n", src_fname);
+        }
+        else
+        {
+            globus_libc_fprintf(stdout, "  %s  ->  %s\n",
+                src_fname, dst_fname);
+        }
+    }
+}
+
 
 static
 void
@@ -1111,23 +1342,14 @@ globus_l_guc_transfer_files(
                     dst_url_base[dst_url_base_len] = '\0';
                     new_url = GLOBUS_TRUE;
                 }
-                
+
                 if(new_url)
                 {
-                    globus_libc_fprintf(stdout, _GASCSL("Source: %s\nDest:   %s\n"), 
-                        src_url_base, 
-                        dst_url_base);
+                    globus_guc_transfer_update(
+                        src_url_base, dst_url_base, NULL, NULL);
                 }
-                
-                if(!strcmp(src_filename, dst_filename))
-                {
-                    globus_libc_fprintf(stdout, "  %s\n", src_filename);
-                }
-                else
-                {
-                    globus_libc_fprintf(stdout, "  %s  ->  %s\n",
-                        src_filename, dst_filename);
-                }
+                globus_guc_transfer_update(
+                    NULL, NULL, src_filename, dst_filename);
             }
             
             if(dst_is_dir)
@@ -1347,6 +1569,8 @@ globus_l_guc_parse_arguments(
     globus_list_t *                                 list = NULL;
     globus_l_guc_src_dst_pair_t *                   ent;
     int                                             rc;
+    char *                                          tmp_str;
+    int                                             ext_arg_size;
     globus_off_t                                    tmp_off;
 
     guc_info->no_3pt = GLOBUS_FALSE;
@@ -1418,6 +1642,35 @@ globus_l_guc_parse_arguments(
             break;
         case arg_c:
             g_continue = GLOBUS_TRUE;
+            break;
+        case arg_ext:
+            g_ext = globus_libc_strdup(instance->values[0]);
+            ext_arg_size = 8;
+            g_ext_args = (char **)calloc(ext_arg_size, sizeof(char *));
+            tmp_str = strchr(g_ext, ' ');
+            g_ext_args[0] = g_ext;
+            g_ext_arg_count = 1;
+            while(tmp_str != NULL)
+            {
+                *tmp_str = '\0';
+                tmp_str++;
+                if(tmp_str == '\0')
+                {
+                    tmp_str = NULL;
+                }
+                else
+                {
+                    g_ext_args[g_ext_arg_count] = tmp_str;
+                    tmp_str = strchr(tmp_str, ' ');
+                }
+                g_ext_arg_count++;
+                if(g_ext_arg_count >= ext_arg_size)
+                {
+                    ext_arg_size *= 2;
+                    g_ext_args = (char **)
+                        realloc(g_ext_args, ext_arg_size*sizeof(char *));
+                }
+            }
             break;
         case arg_q:
             g_quiet_flag = GLOBUS_TRUE;
