@@ -50,7 +50,7 @@ GetOptions('schedulers|s=s' => \$schedulers,
 
 my $metadata =
     new Grid::GPT::Setup(package_name =>
-            'globus_scheduler_event_generator_fork_setup');
+            'globus_scheduler_event_generator_job_manager_setup');
 
 my $globusdir	= $ENV{GLOBUS_LOCATION};
 my $libexecdir	= "$globusdir/libexec";
