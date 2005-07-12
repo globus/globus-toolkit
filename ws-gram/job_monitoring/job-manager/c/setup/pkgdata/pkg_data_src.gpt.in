@@ -32,7 +32,7 @@
     </Post_Install_Message>
 
     <Post_Install_Program >
-      setup-seg-fork.pl
+      setup-seg-job-manager.pl
     </Post_Install_Program>
 
     <Setup Name="globus_scheduler_event_generator_job_manager_setup" >
