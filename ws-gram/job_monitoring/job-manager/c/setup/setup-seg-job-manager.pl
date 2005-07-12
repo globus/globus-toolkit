@@ -64,6 +64,7 @@ foreach (@schedulers)
 
     if (! -d $log_path)
     {
+        umask 0;
         mkdir $log_path, 0755;
     }
 }
