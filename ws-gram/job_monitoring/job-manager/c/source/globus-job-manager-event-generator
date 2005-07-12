@@ -136,7 +136,7 @@ sub check_timestamp
     my $rc = 0;
     my @dates = 
         (sort { $b <=> $a }                         # descending order
-            (grep { m|/(\d{4})(\d{2})(\d{2})$| }    # ignore non-date filenames
+            (grep { m|(\d{4})(\d{2})(\d{2})$| }     # ignore non-date filenames
                 (map { s|.*/|| }                    # basename of files
                     <$schedulers{$scheduler}/*>))); # all in the sched's dir
 
