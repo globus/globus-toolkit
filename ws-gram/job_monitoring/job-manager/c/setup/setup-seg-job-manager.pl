@@ -25,11 +25,13 @@ my @schedulers;
 
 foreach (<$pkgdir/globus_scheduler_event_generator*>)
 {
+    $_ =~ s|.*/||;
+
     if(/globus_scheduler_event_generator$/)
     {
         next;
     }
-    elsif(/setup$/)
+    elsif(/setup$/ || /job_manager/)
     {
         next;
     }
