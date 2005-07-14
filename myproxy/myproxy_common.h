@@ -39,6 +39,11 @@
 #include <getopt.h>
 #endif
 
+/* globus env provides this check */
+#if !defined(HAVE_SOCKLEN_T)
+typedef int socklen_t;
+#endif
+
 #include <globus_gss_assist.h>
 #include <globus_gsi_system_config.h>
 #include <gssapi.h>
