@@ -91,4 +91,4 @@ $ make dist
 9. Send release announcement to myproxy-users@ncsa.uiuc.edu.
    Sign it with 'gpg --clearsign'.
 
-10. Add MyProxy version number to https://bugzilla.ncsa.uiuc.edu/.
+10. Add MyProxy version number to http://bugzilla.ncsa.uiuc.edu/.
