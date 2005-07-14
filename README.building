@@ -31,6 +31,9 @@ $ make dist
 
 ---------- Releasing MyProxy ----------
 
+0. Make sure all changes for the release are documented in the VERSION
+   file.  Be sure to note any API changes.
+
 1. Update the version definitions in a few different files.  Be aware
    of the difference between the MyProxy version and the GPT package
    version.
