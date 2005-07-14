@@ -39,7 +39,6 @@
 #include <getopt.h>
 #endif
 
-/* globus env provides this check */
 #if !defined(HAVE_SOCKLEN_T)
 typedef int socklen_t;
 #endif
