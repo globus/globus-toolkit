@@ -45,8 +45,8 @@
  * removed __BEGIN_DECLS and __END_DECLS
  */
 
-#ifndef _GETOPT_H_
-#define _GETOPT_H_
+#ifndef _MYPROXY_GETOPT_H_
+#define _MYPROXY_GETOPT_H_
 
 #if !HAVE_GETOPT_LONG
 
@@ -78,4 +78,4 @@ int getopt_long(int, char * const *, const char *,
  
 #endif /* !HAVE_GETOPT_LONG */
 
-#endif /* !_GETOPT_H_ */
+#endif /* !_MYPROXY_GETOPT_H_ */

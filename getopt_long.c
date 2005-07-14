@@ -48,6 +48,7 @@
  * removed optreset support
  * replace _DIAGASSERT() with assert()
  * replace non-POSIX warnx(...) with fprintf(stderr, ...)
+ * added extern declarations for optarg, optind, opterr, and optopt
  */
 
 #if defined(LIBC_SCCS) && !defined(lint)
@@ -81,6 +82,9 @@ __weak_alias(getopt_long,_getopt_long)
 #define INORDER (int)1
 
 #define	EMSG	""
+
+extern char *optarg;
+extern int optind, opterr, optopt;
 
 static int getopt_internal (int, char * const *, const char *);
 static int gcd (int, int);
