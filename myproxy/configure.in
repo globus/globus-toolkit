@@ -67,6 +67,10 @@ dnl
 AC_HAVE_HEADERS(getopt.h)
 AC_CHECK_FUNCS(getopt_long)
 dnl
+dnl Check for socklen_t
+dnl
+AC_CHECK_TYPES(socklen_t)
+dnl
 dnl Check to see if we need "netlibs" (specifically, libnsl and libsocket)
 dnl
 uname=`(uname) 2>/dev/null`
