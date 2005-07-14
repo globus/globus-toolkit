@@ -1,5 +1,6 @@
 This is MyProxy v2.1 6 Jul 2005.
-This version should be compatible with all versions since v0.2.
+This version should be protocol compatible with all versions since v0.2.
+Binary compatibility of the C API is not guaranteed.
 
 Version History
 ---------------
