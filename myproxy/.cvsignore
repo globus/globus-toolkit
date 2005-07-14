@@ -19,6 +19,7 @@ ltmain.sh
 missing
 mkinstalldirs
 myproxy-*.tar.gz
+myproxy-*.tar.gz.sig
 myproxy-admin-change-pass
 myproxy-admin-load-credential
 myproxy-admin-query
