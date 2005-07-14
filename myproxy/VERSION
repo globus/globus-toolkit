@@ -1,9 +1,14 @@
-This is MyProxy v2.1 6 Jul 2005.
+This is MyProxy v2.2 14 Jul 2005.
 This version should be protocol compatible with all versions since v0.2.
-Binary compatibility of the C API is not guaranteed.
+Binary compatibility of the C API is not guaranteed between releases.
 
 Version History
 ---------------
+v2.2 14 Jul 2005
+  - fix TRU64 compilation problem
+  - for --dn_as_username option, get DN from user proxy if available
+    rather than requiring access to user certificate
+
 v2.1 6 Jul 2005
   - fix compilation problem for ISO C89 compilers
   - fix myproxy-init compatibility with Java CoG grid-proxy-init in
