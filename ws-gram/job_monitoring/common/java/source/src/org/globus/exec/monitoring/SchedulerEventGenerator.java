@@ -240,11 +240,14 @@ class SchedulerEventGenerator extends Thread {
                 }
             }
 
+            /*
             String[] env = new String[] {
                 "GLOBUS_LOCATION=" + globusLocation.toString()
             };
 
             proc = runtime.exec(cmd, env);
+            */
+            proc = runtime.exec(cmd);
             return true;
         } else {
             return false;
