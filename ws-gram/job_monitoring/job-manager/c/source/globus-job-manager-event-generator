@@ -38,23 +38,33 @@ sub run_seg
 
     if ($pid > 0)
     {
+        local(*OUT);
+        my $last_outpath = '';
+
         while(<SEG>)
         {
             chomp;
 
             my @evt = split(';', $_);
             my $timestamp;
+            my $outpath;
 
             my ($mday,$mon,$year) = (gmtime($evt[1]))[3,4,5];
 
-            local(*OUT);
-            $timestamp = sprintf("%04d%02d%02d", $year+1900, $mon+1, $mday);
+            $outpath = sprintf("$schedulers{$scheduler}/%04d%02d%02d",
+                            $year+1900, $mon+1, $mday);
 
-            open(OUT, ">>$schedulers{$scheduler}/$timestamp");
+            if ($outpath ne $last_outpath)
+            {
+                close(OUT) if ($outpath eq '');
+                open(OUT, ">>$outpath");
+                select(OUT);
+                $|=1;
+            }
             print OUT "$_\n";
-            close(OUT);
         }
         close(SEG);
+        close(OUT);
     }
     elsif ($pid == 0)
     {
