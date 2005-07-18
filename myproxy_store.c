@@ -107,14 +107,12 @@ int
 main(int   argc, 
      char *argv[])
 {
-    char                   *pshost             = NULL;
-    char                   *request_buffer     = NULL;
     char                   *credkeybuf         = NULL;
-    int                     requestlen;
 
     myproxy_socket_attrs_t *socket_attrs;
     myproxy_request_t      *client_request;
     myproxy_response_t     *server_response;
+    myproxy_other_stuff_t  *other_stuff;
 
     /* check library version */
     if (myproxy_check_version()) {
@@ -135,21 +133,19 @@ main(int   argc,
     server_response = malloc(sizeof(*server_response));
     memset(server_response, 0, sizeof(*server_response));
 
+    other_stuff = malloc(sizeof(*other_stuff));
+    memset(other_stuff, 0, sizeof(*other_stuff));
+
     /* setup defaults */
     client_request->version = malloc(strlen(MYPROXY_VERSION) + 1);
     strcpy(client_request->version, MYPROXY_VERSION);
     client_request->command_type = MYPROXY_STORE_CERT;
 
-    pshost = getenv("MYPROXY_SERVER");
-
-    if (pshost != NULL) {
-	socket_attrs->pshost = strdup(pshost);
-    }
-
-    if (getenv("MYPROXY_SERVER_PORT")) {
-	socket_attrs->psport = atoi(getenv("MYPROXY_SERVER_PORT"));
-    } else {
-	socket_attrs->psport = MYPROXY_SERVER_PORT;
+    if( myproxy_init( socket_attrs,
+                      client_request,
+                      MYPROXY_STORE_CERT ) < 0 )
+    {
+      return( 1 );
     }
 
     globus_module_activate(GLOBUS_GSI_SYSCONFIG_MODULE);
@@ -188,78 +184,16 @@ main(int   argc,
       goto cleanup;
     }
 
-    /* Set up client socket attributes */
-    if (myproxy_init_client(socket_attrs) < 0) {
-        fprintf(stderr, "%s\n",
-                verror_get_string());
-        goto cleanup;
+    other_stuff->dn_as_username = dn_as_username;
+    other_stuff->credkeybuf     = credkeybuf;
+
+    if( myproxy_failover_stuff( socket_attrs,
+                                client_request,
+                                server_response,
+                                other_stuff ) != 0 )
+    {
+      goto cleanup;
     }
-
-    if (client_request->username == NULL) { /* set default username */
-        if (dn_as_username) {
-            if (ssl_get_base_subject_file(certfile,
-                                          &client_request->username)) {
-                fprintf(stderr,
-                        "Cannot get subject name from your certificate\n");
-                goto cleanup;
-            }
-        } else {
-            char *username = NULL;
-            if (!(username = getenv("LOGNAME"))) {
-                fprintf(stderr, "Please specify a username.\n");
-                goto cleanup;
-            }
-            client_request->username = strdup(username);
-        }
-    }
-
-
-    /* Authenticate client to server */
-    if (myproxy_authenticate_init(socket_attrs, NULL) < 0) {
-        fprintf(stderr, "%s\n",
-                verror_get_string());
-        goto cleanup;
-    }
-
-    /* Serialize client request object */
-    requestlen = myproxy_serialize_request_ex(client_request, &request_buffer);
-
-    if (requestlen < 0) {
-        fprintf(stderr, "%s\n",verror_get_string());
-        goto cleanup;
-    }
-
-    /* Send request to the myproxy-server */
-    if (myproxy_send(socket_attrs, request_buffer, requestlen) < 0) {
-        fprintf(stderr, "%s\n",
-                verror_get_string());
-        goto cleanup;
-    }
-    free(request_buffer);
-    request_buffer = NULL;
-
-    /* Continue unless the response is not OK */
-    if (myproxy_recv_response_ex(socket_attrs,
-				 server_response, client_request) != 0) {
-        fprintf(stderr, "%s\n", verror_get_string());
-        goto cleanup;
-    }
-
-    /* Send end-entity credentials to server. */
-    if (myproxy_init_credentials(socket_attrs,
-				 credkeybuf) < 0) {
-        fprintf(stderr, "%s\n",
-                verror_get_string());
-        goto cleanup;
-    }
-
-    /* Get final response from server */
-    if (myproxy_recv_response(socket_attrs, server_response) != 0) {
-        fprintf(stderr, "%s\n", verror_get_string());
-        goto cleanup;
-    }
-
-    printf( "Credentials saved to myproxy server.\n" );
 
     return 0;
 

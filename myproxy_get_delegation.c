@@ -83,6 +83,9 @@ main(int argc, char *argv[])
     myproxy_socket_attrs_t *socket_attrs;
     myproxy_request_t      *client_request;
     myproxy_response_t     *server_response;
+    myproxy_other_stuff_t  *other_stuff;
+
+    int retval = 0;
 
     /* check library version */
     if (myproxy_check_version()) {
@@ -106,84 +109,31 @@ main(int argc, char *argv[])
     server_response = malloc(sizeof(*server_response));
     memset(server_response, 0, sizeof(*server_response));
 
+    other_stuff = malloc(sizeof(*other_stuff));
+    memset(other_stuff, 0, sizeof(*other_stuff));
+
     /* Setup defaults */
     myproxy_set_delegation_defaults(socket_attrs,client_request);
 
     /* Initialize client arguments and create client request object */
     init_arguments(argc, argv, socket_attrs, client_request);
 
-    /* Connect to server. */
-    if (myproxy_init_client(socket_attrs) < 0) {
-        fprintf(stderr, "Error: %s\n", verror_get_string());
-        return(1);
-    }
-    
-    if (!outputfile) {
-	globus_module_activate(GLOBUS_GSI_SYSCONFIG_MODULE);
-	GLOBUS_GSI_SYSCONFIG_GET_PROXY_FILENAME(&outputfile,
-						GLOBUS_PROXY_FILE_OUTPUT);
-    }
+    other_stuff->use_empty_passwd       = use_empty_passwd;
+    other_stuff->read_passwd_from_stdin = read_passwd_from_stdin;
+    other_stuff->dn_as_username         = dn_as_username;
+    other_stuff->outputfile             = outputfile;
 
-    if (!use_empty_passwd) {
-       /* Allow user to provide a passphrase */
-	int rval;
-	if (read_passwd_from_stdin) {
-	    rval = myproxy_read_passphrase_stdin(
-			   client_request->passphrase,
-			   sizeof(client_request->passphrase),
-			   NULL);
-	} else {
-	    rval = myproxy_read_passphrase(client_request->passphrase,
-					   sizeof(client_request->passphrase),
-					   NULL);
-	}
-	if (rval == -1) {
-	    verror_print_error(stderr);
-	    return 1;
-	}
-    }
+    retval = myproxy_failover_stuff( socket_attrs,
+                                     client_request,
+                                     server_response,
+                                     other_stuff );
 
-    if (client_request->username == NULL) { /* set default username */
-	if (dn_as_username) {
-	    if (client_request->authzcreds) {
-		if (ssl_get_base_subject_file(client_request->authzcreds,
-					      &client_request->username)) {
-		    fprintf(stderr, "Cannot get subject name from %s.\n",
-			    client_request->authzcreds);
-		    return 1;
-		}
-	    } else {
-		if (ssl_get_base_subject_file(NULL,
-					      &client_request->username)) {
-		    fprintf(stderr,
-			    "Cannot get subject name from your certificate.\n");
-		    return 1;
-		}
-	    }
-	} else {
-	    char *username = NULL;
-	    if (!(username = getenv("LOGNAME"))) {
-		fprintf(stderr, "Please specify a username.\n");
-		return 1;
-	    }
-	    client_request->username = strdup(username);
-	}
-    }
-
-    if (myproxy_get_delegation(socket_attrs, client_request, NULL,
-			       server_response, outputfile)!=0) {
-	fprintf(stderr, "Failed to receive credentials.\n");
-	verror_print_error(stderr);
-	return 1;
-    }
-    printf("A proxy has been received for user %s in %s.\n",
-           client_request->username, outputfile);
     free(outputfile);
     verror_clear();
 
     /* free memory allocated */
     myproxy_free(socket_attrs, client_request, server_response);
-    return 0;
+    return(retval);
 }
 
 void 

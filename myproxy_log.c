@@ -192,6 +192,12 @@ myproxy_debug_set_level(int level)
     return old_level;
 }
 
+int
+myproxy_debug_get_level(int level)
+{
+  return my_context.debug_level;
+}
+
 
 void
 myproxy_debug(const char *format, ...)

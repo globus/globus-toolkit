@@ -128,15 +128,6 @@ int GSI_SOCKET_get_peer_name(GSI_SOCKET *gsi_socket,
 			     int buffer_len);
 
 /*
- * GSI_SOCKET_get_peer_hostname()
- *
- * Returns the hostname of the entity on the other side of the socket
- * or NULL on error.  Returned string should be free()'ed by the caller.
- *
- */
-char *GSI_SOCKET_get_peer_hostname(GSI_SOCKET *gsi_socket);
-
-/*
  * GSI_SOCKET_write_buffer()
  *
  * Write the given buffer to the peer. If authentication has been done,

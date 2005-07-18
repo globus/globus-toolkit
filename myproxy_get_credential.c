@@ -39,6 +39,7 @@ struct option long_options[] =
     {"help",                   no_argument, NULL, 'h'},
     {"pshost",           required_argument, NULL, 's'},
     {"psport",           required_argument, NULL, 'p'},
+    {"proxy_lifetime",   required_argument, NULL, 't'},
     {"usage",                  no_argument, NULL, 'u'},
     {"username",         required_argument, NULL, 'l'},
     {"verbose",                no_argument, NULL, 'v'},
@@ -104,12 +105,8 @@ main(int argc, char *argv[])
     myproxy_socket_attrs_t *socket_attrs;
     myproxy_request_t      *client_request;
     myproxy_response_t     *server_response;
-    char                   *pshost;
-    char                    delegfile[MAXPATHLEN];
-    char                   *request_buffer = NULL;
-    int                     requestlen;
+    myproxy_other_stuff_t  *other_stuff;
     int                     retval     = -1;
-    int                     deletefile =  0;
 
     /* check library version */
     if (myproxy_check_version()) {
@@ -133,21 +130,18 @@ main(int argc, char *argv[])
     server_response = malloc(sizeof(*server_response));
     memset(server_response, 0, sizeof(*server_response));
 
+    other_stuff = malloc(sizeof(*other_stuff));
+    memset(other_stuff, 0, sizeof(*other_stuff));
+
     /* Setup defaults */
     client_request->version = strdup(MYPROXY_VERSION);
-    client_request->command_type = MYPROXY_RETRIEVE_CERT;
-
-    pshost = getenv("MYPROXY_SERVER");
-    if (pshost != NULL) {
-        socket_attrs->pshost = strdup(pshost);
-    }
-
     client_request->proxy_lifetime = 60*60*MYPROXY_DEFAULT_DELEG_HOURS;
 
-    if (getenv("MYPROXY_SERVER_PORT")) {
-        socket_attrs->psport = atoi(getenv("MYPROXY_SERVER_PORT"));
-    } else {
-        socket_attrs->psport = MYPROXY_SERVER_PORT;
+    if( myproxy_init( socket_attrs,
+                      client_request,
+                      MYPROXY_RETRIEVE_CERT ) < 0 )
+    {
+      return( 1 );
     }
 
     get_user_credential_filenames( &certfile, &keyfile ); 
@@ -179,111 +173,36 @@ main(int argc, char *argv[])
 	goto error;
     }
 
-    /* Connect to server. */
-    if (myproxy_init_client(socket_attrs) < 0) {
-        fprintf(stderr, "Error: %s\n", verror_get_string());
-        goto error;
-    }
-    
-    if (!use_empty_passwd) {
-       /* Allow user to provide a passphrase */
-	int rval;
-	if (read_passwd_from_stdin) {
-	    rval = myproxy_read_passphrase_stdin(
-			   client_request->passphrase,
-			   sizeof(client_request->passphrase),
-			   NULL);
-	} else {
-	    rval = myproxy_read_passphrase(client_request->passphrase,
-					   sizeof(client_request->passphrase),
-					   NULL);
-	}
-	if (rval == -1) {
-	    verror_print_error(stderr);
-            goto error;
-	}
-    }
+    other_stuff->use_empty_passwd = use_empty_passwd;
+    other_stuff->read_passwd_from_stdin = read_passwd_from_stdin;
+    other_stuff->dn_as_username = dn_as_username;
 
-    if (client_request->username == NULL) { /* set default username */
-	if (dn_as_username) {
-	    if (client_request->authzcreds) {
-		if (ssl_get_base_subject_file(client_request->authzcreds,
-					      &client_request->username)) {
-		    fprintf(stderr, "Cannot get subject name from %s\n",
-			    client_request->authzcreds);
-                    goto error;
-		}
-	    } else {
-		if (ssl_get_base_subject_file(NULL,
-					      &client_request->username)) {
-		    fprintf(stderr,
-			    "Cannot get subject name from your certificate\n");
-                    goto error;
-		}
-	    }
-	} else {
-	    char *username = NULL;
-	    if (!(username = getenv("LOGNAME"))) {
-		fprintf(stderr, "Please specify a username.\n");
-                goto error;
-	    }
-	    client_request->username = strdup(username);
-	}
-    }
-
-    /* Attempt anonymous-mode credential retrieval if we don't have a
-       credential. */
-    GSI_SOCKET_allow_anonymous(socket_attrs->gsi_socket, 1);
-
-     /* Authenticate client to server */
-    if (myproxy_authenticate_init(socket_attrs, NULL) < 0) {
-        fprintf(stderr, "Error: %s: %s\n",
-                socket_attrs->pshost, verror_get_string());
-        goto error;
-    }
-
-    /* Serialize client request object */
-    requestlen = myproxy_serialize_request_ex(client_request, &request_buffer);
-    if (requestlen < 0) {
-        fprintf(stderr, "Error in myproxy_serialize_request_ex():\n");
-        goto error;
-    }
-
-    /* Send request to the myproxy-server */
-    if (myproxy_send(socket_attrs, request_buffer, requestlen) < 0) {
-        fprintf(stderr, "Error in myproxy_send_request(): %s\n",
-                verror_get_string());
-        goto error;
-    }
-    free(request_buffer);
-    request_buffer = NULL;
-
-    /* Continue unless the response is not OK */
-    if (myproxy_recv_response_ex(socket_attrs, server_response,
-                                 client_request) != 0) {
-        fprintf(stderr, "%s\n", verror_get_string());
-        goto error;
-    }
-
-    /* Accept delegated credentials from server */
-    deletefile = 1;
-    if (myproxy_accept_credentials(socket_attrs, delegfile,
-				   sizeof(delegfile)) < 0) {
-        fprintf(stderr, "Error in (myproxy_accept_credentials(): %s\n",
-                verror_get_string());
-        goto error;
-    }
-
-    if( store_credential( delegfile, certfile, keyfile ) < 0 )
+    if( myproxy_failover_stuff( socket_attrs,
+                                client_request,
+                                server_response,
+                                other_stuff ) != 0 )
     {
-       fprintf( stderr, "Problem storing to: %s and %s\n", certfile, keyfile );
-       goto error;
+      goto error;
     }
 
-    ssl_proxy_file_destroy(delegfile);
+    if( other_stuff->outputfile )
+    {
+      if( store_credential( other_stuff->outputfile, certfile, keyfile ) < 0 )
+      {
+        fprintf( stderr, "Problem storing to: %s and %s\n", certfile, keyfile );
+        goto error;
+      }
 
-    printf("Credentials for %s have been stored in\n%s and\n%s.\n",
-           client_request->username, certfile, keyfile);
+      ssl_proxy_file_destroy(other_stuff->outputfile);
+
+      printf("Credentials for %s have been stored in\n%s and\n%s.\n",
+             client_request->username, certfile, keyfile);
+    }
+    else
+    {
+      printf( "No credentials returned.\n" );
+      goto error;
+    }
 
     /* Store file in trusted directory if requested and returned */
     if (client_request->want_trusted_certs) {
@@ -310,9 +229,11 @@ error:
     /* free memory allocated */
     myproxy_free(socket_attrs, client_request, server_response);
 
-    if( deletefile )
+
+
+    if( other_stuff->outputfile )
     {
-      ssl_proxy_file_destroy(delegfile);
+      ssl_proxy_file_destroy(other_stuff->outputfile);
     }
 
     return retval;
@@ -332,6 +253,9 @@ init_arguments(int argc,
     {
         switch(arg) 
         {
+	case 't':       /* Specify proxy lifetime in seconds */
+	  request->proxy_lifetime = 60*60*atoi(optarg);
+	  break;
         case 's': 	/* pshost name */
 	    attrs->pshost = strdup(optarg);
             break;
