@@ -4,23 +4,14 @@ int myproxy_set_delegation_defaults(
     myproxy_socket_attrs_t *socket_attrs,
     myproxy_request_t      *client_request)
 { 
-    char *pshost;
-
-    client_request->version = strdup(MYPROXY_VERSION);
-    client_request->command_type = MYPROXY_GET_PROXY;
-
-    pshost = getenv("MYPROXY_SERVER");
-    if (pshost != NULL) {
-        socket_attrs->pshost = strdup(pshost);
+    if( myproxy_init( socket_attrs,
+                      client_request,
+                      MYPROXY_GET_PROXY ) < 0 )
+    {
+      return( 1 );
     }
 
     client_request->proxy_lifetime = 60*60*MYPROXY_DEFAULT_DELEG_HOURS;
-
-    if (getenv("MYPROXY_SERVER_PORT")) {
-	socket_attrs->psport = atoi(getenv("MYPROXY_SERVER_PORT"));
-    } else {
-	socket_attrs->psport = MYPROXY_SERVER_PORT;
-    }
 
     return 0;
 }
@@ -32,11 +23,13 @@ int myproxy_get_delegation(
 					 use client_request->authzcreds
 					 instead. */
     myproxy_response_t     *server_response,
+    char                   *outputfile,
+    int                     use_empty_passwd,
+    int                     read_passwd_from_stdin,
+    int                     dn_as_username,
     char                   *outfile)
 {    
     char delegfile[MAXPATHLEN];
-    char *request_buffer = NULL;
-    int  requestlen;
     myproxy_request_t tmp_request = { 0 };
 
     assert(socket_attrs != NULL);
@@ -58,61 +51,72 @@ int myproxy_get_delegation(
 	client_request = &tmp_request;
     }
 
-    /* Set up client socket attributes */
-    if (socket_attrs->gsi_socket == NULL) {
-	if (myproxy_init_client(socket_attrs) < 0) {
-	    return(1);
-	}
+    if (!outputfile) {
+        GLOBUS_GSI_SYSCONFIG_GET_PROXY_FILENAME(&outputfile,
+                                                GLOBUS_PROXY_FILE_OUTPUT);
+    }
+
+    if( myproxy_user_password( client_request,
+                               use_empty_passwd,
+                               read_passwd_from_stdin ) != 0 )
+    {
+      return( 1 );
+    }
+
+    if( myproxy_client_username( client_request,
+                                 NULL,
+                                 dn_as_username ) != 0 )
+    {
+      return( 1 );
+    }
+
+    if( myproxy_open_server_com( socket_attrs, NULL ) != 0 )
+    {
+      return( 1 );
     }
     
     /* Attempt anonymous-mode credential retrieval if we don't have a
        credential. */
     GSI_SOCKET_allow_anonymous(socket_attrs->gsi_socket, 1);
 
-     /* Authenticate client to server */
-    if (myproxy_authenticate_init(socket_attrs, NULL) < 0) {
-        return(1);
-    }
-
     /* Serialize client request object */
-    requestlen = myproxy_serialize_request_ex(client_request, &request_buffer);
-    if (requestlen < 0) {
-        return(1);
-    }
-
     /* Send request to the myproxy-server */
-    if (myproxy_send(socket_attrs, request_buffer, requestlen) < 0) {
-        return(1);
-    }
-    free(request_buffer);
-    request_buffer = 0;
-
     /* Continue unless the response is not OK */
-    if (myproxy_recv_response_ex(socket_attrs, server_response,
-				 client_request) != 0) {
-	return(1);
+    client_request->server_info = "1";
+
+    if( myproxy_serialize_send_recv( client_request,
+                                     server_response,
+                                     socket_attrs ) != 0 )
+    {
+      return( 1 );
     }
     
     /* Accept delegated credentials from server */
     if (myproxy_accept_delegation(socket_attrs, delegfile, sizeof(delegfile),
 				  NULL) < 0) {
+        fprintf(stderr, "Error in myproxy_accept_delegation(): %s\n", 
+		verror_get_string());
 	return(1);
     }      
 
 #if 0 /* response was lost in myproxy_accept_delegation() */
     if (myproxy_recv_response(socket_attrs, server_response) < 0) {
+       fprintf(stderr, "%s\n", verror_get_string());
        return(1);
     }
 #endif
 
     /* move delegfile to outputfile if specified */
-    if (outfile != NULL) {
-        if (copy_file(delegfile, outfile, 0600) < 0) {
-	    verror_put_string("Error creating file: %s\n", outfile);
+    if (outputfile != NULL) {
+        if (copy_file(delegfile, outputfile, 0600) < 0) {
+	    fprintf(stderr, "Error creating file: %s\n", outputfile);
 	    return(1);
 	}
 	ssl_proxy_file_destroy(delegfile);
     }
+
+    printf("A proxy has been received for user %s in %s\n",
+           client_request->username, outputfile);
 
     /* Store file in trusted directory if requested and returned */
     if (client_request->want_trusted_certs)

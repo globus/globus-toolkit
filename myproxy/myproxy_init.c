@@ -87,7 +87,9 @@ static int verbose = 0;
 
 /* Function declarations */
 int init_arguments(int argc, char *argv[], 
-		    myproxy_socket_attrs_t *attrs, myproxy_request_t *request, int *cred_lifetime);
+		    myproxy_socket_attrs_t *attrs, 
+                    myproxy_request_t *request, 
+                    myproxy_other_stuff_t *other_stuff);
 
 int grid_proxy_init(int hours, const char *proxyfile);
 
@@ -98,17 +100,13 @@ int grid_proxy_destroy(const char *proxyfile);
 int
 main(int argc, char *argv[]) 
 {    
-    int cred_lifetime, hours;
-    float days;
-    char *pshost; 
     char proxyfile[MAXPATHLEN];
-    char *request_buffer = NULL;
-    int requestlen;
-    int cleanup_user_proxy = 0;
 
     myproxy_socket_attrs_t *socket_attrs;
     myproxy_request_t      *client_request;
     myproxy_response_t     *server_response;
+
+    myproxy_other_stuff_t  *other_stuff;
 
     /* check library version */
     if (myproxy_check_version()) {
@@ -129,150 +127,51 @@ main(int argc, char *argv[])
     server_response = malloc(sizeof(*server_response));
     memset(server_response, 0, sizeof(*server_response));
 
+    other_stuff = malloc(sizeof(*other_stuff));
+    memset(other_stuff, 0, sizeof(*other_stuff));
+
     /* setup defaults */
     client_request->version = malloc(strlen(MYPROXY_VERSION) + 1);
     strcpy(client_request->version, MYPROXY_VERSION);
     client_request->command_type = MYPROXY_PUT_PROXY;
 
-    pshost = getenv("MYPROXY_SERVER");
-    if (pshost != NULL) {
-      socket_attrs->pshost = strdup(pshost);
+    if( myproxy_init( socket_attrs,
+                      client_request,
+                      MYPROXY_PUT_PROXY ) < 0 )
+    {
+      return( 1 );
     }
+
 
     /* client_request stores the lifetime of proxies delegated by the server */
     client_request->proxy_lifetime = SECONDS_PER_HOUR * MYPROXY_DEFAULT_DELEG_HOURS;
 
     /* the lifetime of the proxy */
-    cred_lifetime                   = SECONDS_PER_HOUR * MYPROXY_DEFAULT_HOURS;
- 
-    if (getenv("MYPROXY_SERVER_PORT")) {
-	socket_attrs->psport = atoi(getenv("MYPROXY_SERVER_PORT"));
-    } else {
-	socket_attrs->psport = MYPROXY_SERVER_PORT;
-    }
+    other_stuff->cred_lifetime     = SECONDS_PER_HOUR * MYPROXY_DEFAULT_HOURS;
 
     /* Initialize client arguments and create client request object */
     if (init_arguments(argc, argv, socket_attrs, client_request,
-		       &cred_lifetime) != 0) {
+		       other_stuff) != 0) 
+    {
       goto cleanup;
     }
-    
-    /* Set up client socket attributes */
-    if (myproxy_init_client(socket_attrs) < 0) {
-	verror_print_error(stderr);
-        goto cleanup;
-    }
 
-    /* Create a proxy by running [grid-proxy-init] */
-    sprintf(proxyfile, "%s.%u.%u", MYPROXY_DEFAULT_PROXY,
-	    (unsigned)getuid(), (unsigned)getpid());
+    other_stuff->use_empty_passwd = use_empty_passwd;
+    other_stuff->read_passwd_from_stdin = read_passwd_from_stdin;
+    other_stuff->dn_as_username = dn_as_username;
+    other_stuff->proxyfile = malloc(MAXPATHLEN);
 
-    /* Run grid-proxy-init to create a proxy */
-    if (grid_proxy_init(cred_lifetime, proxyfile) != 0) {
-        fprintf(stderr, "grid-proxy-init failed\n");
-        goto cleanup;
+    if( myproxy_failover_stuff( socket_attrs,
+                                client_request,
+                                server_response,
+                                other_stuff ) != 0 )
+    {
+      if( verror_is_error() )
+      {
+        printf( "VERROR: %s\n", verror_get_string() );
+      }
+      goto cleanup;
     }
-
-    /* Be sure to delete the user proxy on abnormal exit */
-    cleanup_user_proxy = 1;
-    
-    if (client_request->username == NULL) { /* set default username */
-	if (dn_as_username) {
-	    if (ssl_get_base_subject_file(proxyfile,
-					  &client_request->username)) {
-		fprintf(stderr,
-			"Cannot get subject name from your certificate\n");
-		goto cleanup;
-	    }
-	} else {
-	    char *username = NULL;
-	    if (!(username = getenv("LOGNAME"))) {
-		fprintf(stderr, "Please specify a username.\n");
-		goto cleanup;
-	    }
-	    client_request->username = strdup(username);
-	}
-    }
-
-    /* Allow user to provide a passphrase */
-    if (!use_empty_passwd) {
-	int rval;
-	if (read_passwd_from_stdin) {
-	    rval = myproxy_read_passphrase_stdin(client_request->passphrase, sizeof(client_request->passphrase), NULL);
-	} else {
-	    rval = myproxy_read_verified_passphrase(client_request->passphrase, sizeof(client_request->passphrase), NULL);
-	}
-	if (rval == -1) {
-	    verror_print_error(stderr);
-	    goto cleanup;
-	}
-    }
-    
-    /* Authenticate client to server */
-    if (myproxy_authenticate_init(socket_attrs, proxyfile) < 0) {
-	verror_print_error(stderr);
-        goto cleanup;
-    }
-
-    /* Serialize client request object */
-    requestlen = myproxy_serialize_request_ex(client_request, 
-					      &request_buffer);
-    if (requestlen < 0) {
-	verror_print_error(stderr);
-	goto cleanup;
-    }
-
-    /* Send request to the myproxy-server */
-    if (myproxy_send(socket_attrs, request_buffer, requestlen) < 0) {
-	verror_print_error(stderr);
-	goto cleanup;
-    }
-    free(request_buffer);
-    request_buffer = NULL;
-
-    /* Continue unless the response is not OK */
-    if (myproxy_recv_response_ex(socket_attrs, server_response,
-				 client_request) != 0) {
-	verror_print_error(stderr);
-        goto cleanup;
-    }
-    
-    /* Delegate credentials to server using the default lifetime of the cert. */
-    if (myproxy_init_delegation(socket_attrs, proxyfile, cred_lifetime,
-				NULL /* no passphrase */) < 0) {
-	verror_print_error(stderr);
-	goto cleanup;
-    }
-
-    /* Get final response from server */
-    if (myproxy_recv_response(socket_attrs, server_response) != 0) {
-	verror_print_error(stderr);
-        goto cleanup;
-    }
-
-    /* Get actual lifetime from credential. */
-    if (cred_lifetime == 0) {
-	time_t cred_expiration;
-	if (ssl_get_times(proxyfile, NULL, &cred_expiration) == 0) {
-	    cred_lifetime = cred_expiration-time(0);
-	    if (cred_lifetime <= 0) {
-		fprintf(stderr, "Error: Credential expired!\n");
-		goto cleanup;
-	    }
-	}
-    }
-
-    /* Delete proxy file */
-    if (grid_proxy_destroy(proxyfile) != 0) {
-        fprintf(stderr, "Failed to remove temporary proxy credential.\n");
-	goto cleanup;
-    }
-    cleanup_user_proxy = 0;
-    
-    hours = (int)(cred_lifetime/SECONDS_PER_HOUR);
-    days = (float)(hours/24.0);
-    printf("A proxy valid for %d hours (%.1f days) for user %s now exists on %s.\n", 
-	   hours, days, client_request->username, socket_attrs->pshost); 
     
     /* free memory allocated */
     myproxy_free(socket_attrs, client_request, server_response);
@@ -280,8 +179,8 @@ main(int argc, char *argv[])
     return 0;
 
  cleanup:
-    if (cleanup_user_proxy) {
-        grid_proxy_destroy(proxyfile);
+    if (other_stuff->destroy_proxy) {
+        grid_proxy_destroy(other_stuff->proxyfile);
     }
     return 1;
 }
@@ -291,7 +190,7 @@ init_arguments(int argc,
 	       char *argv[], 
 	       myproxy_socket_attrs_t *attrs,
 	       myproxy_request_t *request,
-	       int *cred_lifetime) 
+	       myproxy_other_stuff_t *other_stuff) 
 {   
     extern char *optarg;
     int expr_type = MATCH_CN_ONLY;  /*default */
@@ -308,7 +207,7 @@ init_arguments(int argc,
 	    return -1;
 	    break;
 	case 'c': 	/* Specify cred lifetime in hours */
-	    *cred_lifetime  = SECONDS_PER_HOUR * atoi(optarg);
+	    other_stuff->cred_lifetime  = SECONDS_PER_HOUR * atoi(optarg);
 	    break;    
 	case 't': 	/* Specify proxy lifetime in hours */
 	    request->proxy_lifetime = SECONDS_PER_HOUR * atoi(optarg);
@@ -489,7 +388,7 @@ grid_proxy_init(int seconds, const char *proxyfile) {
 	old=1;
     }
     
-    sprintf(command, "grid-proxy-init -verify -hours %d -out %s%s%s%s",
+    sprintf(command, "grid-proxy-init -verify -valid %d:0 -out %s%s%s%s",
 	    hours, proxyfile, read_passwd_from_stdin ? " -pwstdin" : "",
 	    verbose ? " -debug" : "", old ? " -old" : "");
     rc = system(command);

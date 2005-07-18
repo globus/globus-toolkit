@@ -6,9 +6,6 @@
  *   - "#include mechanisms.h" is commented out (it appears to be
  *     unnecessary)
  *   - #include "myproxy_common.h" instead of system headers
- *   - changed failure return values from auth_pam to improve
- *     usefulness of error messages -- old versions are commented out
- *     above new versions
  */
 
 #define AUTH_PAM yes

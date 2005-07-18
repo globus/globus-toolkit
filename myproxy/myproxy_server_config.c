@@ -68,10 +68,10 @@ add_entry(char **entries,
     {
 	return NULL;
     }
-    
+
     new_entries[current_length] = my_entry;
     new_entries[current_length + 1] = NULL;
-    
+
     return new_entries;
 }
 
@@ -102,7 +102,7 @@ line_parse_callback(void *context_arg,
     }
 
     directive = tokens[0];
-    
+
     /* allowed_clients is the old name for accepted_credentials */
     if ((strcmp(directive, "allowed_clients") == 0) ||
 	(strcmp(directive, "accepted_credentials") == 0))
@@ -117,6 +117,7 @@ line_parse_callback(void *context_arg,
 	    
 	    if (context->accepted_credential_dns == NULL)
 	    {
+                verror_put_string("Parameter: %s", directive);
 		goto error;
 	    }
 
@@ -138,6 +139,7 @@ line_parse_callback(void *context_arg,
 	    
 	    if (context->authorized_retriever_dns == NULL)
 	    {
+                verror_put_string("Parameter: %s", directive);
 		goto error;
 	    }
 
@@ -157,6 +159,7 @@ line_parse_callback(void *context_arg,
 	    
 	    if (context->default_retriever_dns == NULL)
 	    {
+                verror_put_string("Parameter: %s", directive);
 		goto error;
 	    }
 
@@ -176,6 +179,7 @@ line_parse_callback(void *context_arg,
 	    
 	    if (context->authorized_renewer_dns == NULL)
 	    {
+                verror_put_string("Parameter: %s", directive);
 		goto error;
 	    }
 
@@ -195,6 +199,7 @@ line_parse_callback(void *context_arg,
 	    
 	    if (context->default_renewer_dns == NULL)
 	    {
+                verror_put_string("Parameter: %s", directive);
 		goto error;
 	    }
 
@@ -214,6 +219,7 @@ line_parse_callback(void *context_arg,
 	    
 	    if (context->authorized_key_retrievers_dns == NULL)
 	    {
+                verror_put_string("Parameter: %s", directive);
 		goto error;
 	    }
 
@@ -233,6 +239,61 @@ line_parse_callback(void *context_arg,
 	    
 	    if (context->default_key_retrievers_dns == NULL)
 	    {
+                verror_put_string("Parameter: %s", directive);
+		goto error;
+	    }
+
+	    index++;
+	}
+    }
+   
+    /* List of myproxy slave servers. */ 
+    if (strcmp(directive, "slave_servers") == 0)
+    {
+        if( context->master_server != NULL)
+        {
+            verror_put_string("Can't have both slave_servers and master_server set.");
+            goto error;
+        }
+
+	int index = 1; /* Skip directive */
+	
+	while(tokens[index] != NULL)
+	{
+	    context->slave_servers =
+		add_entry(context->slave_servers,
+			  tokens[index]);
+	    
+	    if (context->slave_servers == NULL)
+	    {
+                verror_put_string("Parameter: %s", directive);
+		goto error;
+	    }
+
+	    index++;
+	}
+    }
+   
+    /* Myproxy master server used in fail over. */ 
+    if (strcmp(directive, "master_server") == 0)
+    {
+        if( context->slave_servers != NULL)
+        {
+            verror_put_string("Can't have both slave_servers and master_server set.");
+            goto error;
+        }
+
+	int index = 1; /* Skip directive */
+	
+	while(tokens[index] != NULL)
+	{
+	    context->master_server =
+		add_entry(context->master_server,
+			  tokens[index]);
+	    
+	    if (context->master_server == NULL)
+	    {
+                verror_put_string("Parameter: %s", directive);
 		goto error;
 	    }
 
@@ -508,7 +569,7 @@ myproxy_server_config_read(myproxy_server_context_t *context)
 			  context->config_file);
 	goto error;
     }
-    
+
     /* Clear any outstanding error */
     verror_clear();
     

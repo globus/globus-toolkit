@@ -67,7 +67,8 @@ int handle_client(myproxy_socket_attrs_t *server_attrs,
                   myproxy_server_context_t *server_context);
 
 void respond_with_error_and_die(myproxy_socket_attrs_t *attrs,
-				const char *error);
+				const char *error,
+                                myproxy_response_t *response);
 
 void send_response(myproxy_socket_attrs_t *server_attrs, 
 		   myproxy_response_t *response, 
@@ -84,6 +85,10 @@ void put_proxy(myproxy_socket_attrs_t *server_attrs,
 	      myproxy_response_t *response);
 
 void info_proxy(myproxy_creds_t *creds, myproxy_response_t *response);
+
+void server_info( myproxy_response_t        *response,
+                  myproxy_server_context_t  *context );
+
 
 void destroy_proxy(myproxy_creds_t *creds, myproxy_response_t *response);
 
@@ -302,7 +307,7 @@ handle_client(myproxy_socket_attrs_t *attrs,
 				    sizeof(client_name)) < 0) {
 	/* Client_name may not be set on error so don't use it. */
 	myproxy_log_verror();
-	respond_with_error_and_die(attrs, "authentication failed");
+	respond_with_error_and_die(attrs, "authentication failed", NULL);
     }
 
     /* Log client name */
@@ -310,16 +315,17 @@ handle_client(myproxy_socket_attrs_t *attrs,
     
     /* Receive client request */
     requestlen = myproxy_recv_ex(attrs, &client_buffer);
+    myproxy_log("Authenticated client %s", client_name); 
     if (requestlen <= 0) {
         myproxy_log_verror();
-	respond_with_error_and_die(attrs, "Error in myproxy_recv_ex()");
+	respond_with_error_and_die(attrs, "Error in myproxy_recv_ex()", NULL);
     }
    
     /* Deserialize client request */
     if (myproxy_deserialize_request(client_buffer, requestlen, 
                                     client_request) < 0) {
 	myproxy_log_verror();
-        respond_with_error_and_die(attrs, "error parsing request");
+        respond_with_error_and_die(attrs, "error parsing request", NULL);
     }
     free(client_buffer);
     client_buffer = NULL;
@@ -329,7 +335,13 @@ handle_client(myproxy_socket_attrs_t *attrs,
 	myproxy_log("client %s Invalid version number (%s) received",
 		    client_name, client_request->version);
         respond_with_error_and_die(attrs,
-				   "Invalid version number received.\n");
+				   "Invalid version number received.\n", NULL);
+    }
+
+    /* Failover needs the information about server configuration */
+    if (client_request->server_info)
+    {
+        server_info(server_response, context);
     }
 
     /* Check client username and pass phrase */
@@ -339,16 +351,18 @@ handle_client(myproxy_socket_attrs_t *attrs,
 	myproxy_log("client %s Invalid username (%s) received",
 		    client_name,
 		    (client_request->username == NULL ? "<NULL>" :
-		     client_request->username));
+		      client_request->username));
+
 	respond_with_error_and_die(attrs,
-				   "Invalid username received.\n");
+				   "Invalid username received.\n", 
+                                   server_response);
     }
 
     /* All authorization policies are enforced in this function. */
     if (myproxy_authorize_accept(context, attrs, 
 	                         client_request, client_name) < 0) {
        myproxy_log("authorization failed");
-       respond_with_error_and_die(attrs, verror_get_string());
+       respond_with_error_and_die(attrs, verror_get_string(), server_response);
     }
     
     /* Fill in client_creds with info from the request that describes
@@ -384,7 +398,7 @@ handle_client(myproxy_socket_attrs_t *attrs,
 
 	/* Retrieve the credentials from the repository */
 	if (myproxy_creds_retrieve(client_creds) < 0) {
-	    respond_with_error_and_die(attrs, verror_get_string());
+	    respond_with_error_and_die(attrs, verror_get_string(), server_response);
 	}
 
 	myproxy_debug("  Owner: %s", client_creds->username);
@@ -402,7 +416,8 @@ handle_client(myproxy_socket_attrs_t *attrs,
 			  "(problem with local clock?)");
 	} else if (client_creds->end_time < now) {
 	    respond_with_error_and_die(attrs,
-				       "requested credentials have expired");
+				       "requested credentials have expired", 
+                                       server_response);
 	}
 
 	/* Are credentials locked? */
@@ -411,7 +426,7 @@ handle_client(myproxy_socket_attrs_t *attrs,
 	    error = malloc(strlen(msg)+strlen(client_creds->lockmsg)+1);
 	    strcpy(error, msg);
 	    strcat(error, client_creds->lockmsg);
-	    respond_with_error_and_die(attrs, error);
+	    respond_with_error_and_die(attrs, error, server_response);
 	}
 
 	if (client_request->want_trusted_certs) {
@@ -459,7 +474,7 @@ handle_client(myproxy_socket_attrs_t *attrs,
 					    client_request->retrievers,
 					    client_request->renewers,
 					    client_name) < 0) {
-	    respond_with_error_and_die(attrs, verror_get_string());
+	    respond_with_error_and_die(attrs, verror_get_string(), server_response);
 	}
 
 	/* Send initial OK response */
@@ -481,6 +496,12 @@ handle_client(myproxy_socket_attrs_t *attrs,
         destroy_proxy(client_creds, server_response);
         break;
 
+    case MYPROXY_SERVER_INFO:
+        myproxy_log("Received client %s command: SERVER INFO", client_name);
+	myproxy_debug("  Username is \"%s\"", client_request->username);
+        server_info(server_response, context);
+        break;
+
     case MYPROXY_CHANGE_CRED_PASSPHRASE:
 	/* change credential passphrase*/
 	myproxy_log("Received client %s command: CHANGE_PASS", client_name);
@@ -493,7 +514,9 @@ handle_client(myproxy_socket_attrs_t *attrs,
 					    client_request->retrievers,
 					    client_request->renewers,
 					    client_name) < 0) {
-	    respond_with_error_and_die(attrs, verror_get_string());
+	    respond_with_error_and_die(attrs, 
+                                       verror_get_string(), 
+                                       server_response);
 	}
 
 	change_passwd(client_creds, client_request->new_passphrase,
@@ -511,7 +534,8 @@ handle_client(myproxy_socket_attrs_t *attrs,
           if (client_creds->renewers != NULL)
               myproxy_debug("  Renewer policy: %s", client_creds->renewers);
           if (client_creds->keyretrieve != NULL)
-              myproxy_debug("  Key Retriever policy: %s", client_creds->keyretrieve);
+              myproxy_debug("  Key Retriever policy: %s", 
+                            client_creds->keyretrieve);
  
           /* Send initial OK response */
           send_response(attrs, server_response, client_name);
@@ -689,18 +713,23 @@ myproxy_init_server(myproxy_socket_attrs_t *attrs)
 
 void
 respond_with_error_and_die(myproxy_socket_attrs_t *attrs,
-			   const char *error)
+			   const char *error,
+                           myproxy_response_t *resp)
 {
     myproxy_response_t		response = {0}; /* initialize with 0s */
     int				responselen;
     char			*response_buffer = NULL;
     
-
     memset (&response, 0, sizeof (response));
     response.version = strdup(MYPROXY_VERSION);
     response.response_type = MYPROXY_ERROR_RESPONSE;
     response.authorization_data = NULL;
     response.error_string = strdup(error);
+
+if( (resp != NULL) && (resp->server_info != NULL) )
+{
+  response.server_info = resp->server_info;
+}
     
     responselen = myproxy_serialize_response_ex(&response,
 						&response_buffer);
@@ -897,6 +926,36 @@ void info_proxy(myproxy_creds_t *creds, myproxy_response_t *response) {
        response->response_type = MYPROXY_OK_RESPONSE;
        response->info_creds = creds;
     }
+}
+
+void server_info( myproxy_response_t        *response,
+                  myproxy_server_context_t  *context ) 
+{
+  myproxy_server_t *info;
+
+  myproxy_debug("Getting server info: ");
+
+  if( context->slave_servers == NULL && context->master_server == NULL )
+  {
+    myproxy_debug("No server info: ");
+    return;
+  }
+
+  info = malloc( sizeof(*info) );
+  memset( info, 0, sizeof(*info) );
+
+  if( context->slave_servers )
+  {
+    info->slave_servers = strdup( context->slave_servers[0] );
+    info->ismaster      = 1;  /* Do I need this?????  */
+  }
+
+  if( context->master_server )
+  {
+    info->master_server = strdup( context->master_server[0] );
+  }
+
+  response->server_info = info;
 }
 
 void destroy_proxy(myproxy_creds_t *creds, myproxy_response_t *response) {
@@ -1099,20 +1158,15 @@ write_pidfile(const char path[])
 
 /* Check authorization for all incoming requests.  The authorization
  * rules are as follows.
- * RETRIEVE:
- *   Client DN must match server-wide authorized_key_retrievers policy.
- *   Client DN must match credential-specific authorized_key_retrievers policy.
- *   Also, see below.
- * RETRIEVE and GET with passphrase (credential retrieval):
- *   Client DN must match server-wide authorized_retrievers policy.
- *   Client DN must match credential-specific authorized_retrievers policy.
+ * GET with passphrase (credential retrieval):
+ *   Client DN must match server-wide allowed_retrievers policy.
+ *   Client DN must match credential-specific allowed_retrievers policy.
  *   Passphrase in request must match passphrase for credentials.
- * RETRIEVE and GET with certificate (credential renewal):
- *   Client DN must match server-wide authorized_renewers policy.
- *   Client DN must match credential-specific authorized_renewers policy.
+ * GET with certificate (credential renewal):
+ *   Client DN must match server-wide allowed_renewers policy.
+ *   Client DN must match credential-specific allowed_renewers policy.
  *   DN in second X.509 authentication must match owner of credentials.
- *   Private key can not be encrypted in this case.
- * PUT, STORE, and DESTROY:
+ * PUT and DESTROY:
  *   Client DN must match accepted_credentials.
  *   If credentials already exist for the username, the client must own them.
  * INFO:
@@ -1120,6 +1174,10 @@ write_pidfile(const char path[])
  * CHANGE_CRED_PASSPHRASE:
  *   Client DN must match accepted_credentials.
  *   Client DN must match credential owner.
+ *   Passphrase in request must match passphrase for credentials.
+ * RETRIEVE_CERT:
+ *   Client DN must match server-wide allowed_key_retrievers policy.
+ *   Client DN must match credential-specific allowed_key_retrievers policy.
  *   Passphrase in request must match passphrase for credentials.
  */
 static int
@@ -1161,7 +1219,7 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 	   authorization_ok =
 	       myproxy_server_check_policy_list((const char **)context->authorized_key_retrievers_dns, client_name);
 	   if (authorization_ok != 1) {
-	       verror_put_string("\"%s\" not authorized by server's authorized_key_retrievers policy", client_name);
+	       verror_put_string("\"%s\" not authorized by server's authorized key retrievers policy", client_name);
 	       goto end;
 	   }
 	   if (creds.keyretrieve) {
@@ -1175,7 +1233,7 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 	       authorization_ok =
 		   myproxy_server_check_policy_list((const char **)context->default_key_retrievers_dns, client_name);
 	       if (authorization_ok != 1) {
-		   verror_put_string("\"%s\" not authorized by server's default_key_retrievers policy", client_name);
+		   verror_put_string("\"%s\" not authorized by server's default key retriever policy", client_name);
 		   goto end;
 	       }
 	   }
@@ -1185,12 +1243,15 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
        case AUTHORIZETYPE_PASSWD: /* retrieval */
 	   /* check server-wide policy */
 	   myproxy_debug("passwd authorization mechanism.\n");
+
 	   authorization_ok =
 	       myproxy_server_check_policy_list((const char **)context->authorized_retriever_dns, client_name);
+
 	   if (authorization_ok != 1) {
-	       verror_put_string("\"%s\" not authorized by server's authorized_retrievers policy", client_name);
+	       verror_put_string("\"%s\" not authorized by server's authorized_retriever policy", client_name);
 	       goto end;
 	   }
+
 	   /* check per-credential policy */
 	   if (creds.retrievers) {
 	       authorization_ok =
@@ -1200,16 +1261,19 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 		   goto end;
 	       }
 	   } else if (context->default_retriever_dns) {
+
 	       authorization_ok =
 		   myproxy_server_check_policy_list((const char **)context->default_retriever_dns, client_name);
 	       if (authorization_ok != 1) {
-		   verror_put_string("\"%s\" not authorized by server's default_retrievers policy", client_name);
+		   verror_put_string("\"%s\" not authorized by server's default retriever policy", client_name);
 		   goto end;
 	       }
 	   }
+
 	   /* Does passphrase match? */
 	   authorization_ok =
 	       authorization_check_ex(&auth_data, &creds, client_name, context);
+
 	   if (authorization_ok != 1) {
 	       verror_put_string("invalid pass phrase");
 	       goto end;
@@ -1222,10 +1286,7 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 	   authorization_ok =
 	       myproxy_server_check_policy_list((const char **)context->authorized_renewer_dns, client_name);
 
-	   if (authorization_ok != 1) {
-	       verror_put_string("\"%s\" not authorized by server's authorized_renewers policy", client_name);
-	       goto end;
-	   }
+	   if (authorization_ok != 1) goto end;
 	   /* check per-credential policy */
 	   if (creds.renewers) {
 	       authorization_ok =
@@ -1238,7 +1299,7 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 	       authorization_ok =
 		   myproxy_server_check_policy_list((const char **)context->default_renewer_dns, client_name);
 	       if (authorization_ok != 1) {
-		   verror_put_string("\"%s\" not authorized by server's default_renewers policy");
+		   verror_put_string("\"%s\" not authorized by server's default renewer policy");
 		   goto end;
 	       }
 	   }
@@ -1255,7 +1316,7 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 	       char *tmp;
 	       tmp = (char *)des_crypt("", &creds.owner_name[strlen(creds.owner_name)-3]);
 	       if (strcmp(tmp, creds.passphrase)) {
-		   verror_put_string("credential is encrypted and can't be used for renewal");
+		   verror_put_string("credential configured for retrieval, not renewal");
 		   goto end;
 	       }
 	   }
@@ -1275,7 +1336,7 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
        authorization_ok =
 	   myproxy_server_check_policy_list((const char **)context->accepted_credential_dns, client_name);
        if (authorization_ok != 1) {
-	   verror_put_string("\"%s\" not authorized to store credentials on this server (accepted_credentials policy)", client_name);
+	   verror_put_string("\"%s\" not authorized to store credentials on this server", client_name);
 	   goto end;
        }
 
@@ -1296,8 +1357,10 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 	   if (!client_owns_credentials) {
 	       if ((client_request->command_type == MYPROXY_PUT_PROXY) ||
                    (client_request->command_type == MYPROXY_STORE_CERT)) {
+		   myproxy_log("Username and credential name in use by another client.");
 		   verror_put_string("Username and credential name in use by someone else.");
 	       } else {
+		   myproxy_log("Failed credential owner check.");
 		   verror_put_string("Credentials owned by someone else.");
 	       }
 	       goto end;
@@ -1317,7 +1380,7 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
        authorization_ok =
 	   myproxy_server_check_policy_list((const char **)context->accepted_credential_dns, client_name);
        if (authorization_ok != 1) {
-	   verror_put_string("\"%s\" not authorized to store credentials on this server (accepted_credentials policy)", client_name);
+	   verror_put_string("\"%s\" not authorized to store credentials on this server", client_name);
 	   goto end;
        }
 

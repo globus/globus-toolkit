@@ -65,12 +65,10 @@ static int read_passwd_from_stdin = 0;
 int
 main(int argc, char *argv[]) 
 {    
-    char *pshost;
-    int requestlen, rval;
-    char *request_buffer = NULL;
     myproxy_socket_attrs_t *socket_attrs;
     myproxy_request_t      *client_request;
     myproxy_response_t     *server_response;
+    myproxy_other_stuff_t  *other_stuff;
 
     /* check library version */
     if (myproxy_check_version()) {
@@ -94,128 +92,30 @@ main(int argc, char *argv[])
     server_response = malloc(sizeof(*server_response));
     memset(server_response, 0, sizeof(*server_response));
 
+    other_stuff = malloc(sizeof(*other_stuff));
+    memset(other_stuff, 0, sizeof(*other_stuff));
+
     client_request->version = malloc(strlen(MYPROXY_VERSION) +1);
     strcpy (client_request->version, MYPROXY_VERSION);
-    client_request->command_type = MYPROXY_CHANGE_CRED_PASSPHRASE;
 
-    pshost = getenv ("MYPROXY_SERVER");
-
-    if (pshost != NULL) {
-	socket_attrs->pshost = strdup(pshost);
-    }
-
-    client_request->proxy_lifetime = 0;
-
-    if (getenv("MYPROXY_SERVER_PORT")) {
-	socket_attrs->psport = atoi(getenv("MYPROXY_SERVER_PORT"));
-    } else {
-	socket_attrs->psport = MYPROXY_SERVER_PORT;
+    if( myproxy_init( socket_attrs,
+                      client_request,
+                      MYPROXY_CHANGE_CRED_PASSPHRASE ) < 0 )
+    {
+      return( 1 );
     }
 
     /* Initialize client arguments and create client request object */
     init_arguments(argc, argv, socket_attrs, client_request);
 
-    /* Set up client socket attributes */
-    if (myproxy_init_client(socket_attrs) < 0) {
-        fprintf(stderr, "error in myproxy_init_client(): %s\n",
-                verror_get_string());
-        return 1;
-    }
+    other_stuff->dn_as_username = dn_as_username;
+    other_stuff->read_passwd_from_stdin = read_passwd_from_stdin;
 
-    /*Accept credential passphrase*/
-    if (read_passwd_from_stdin) {
-	rval = myproxy_read_passphrase_stdin(client_request->passphrase,
-					     sizeof(client_request->passphrase),
-					     "Enter (current) MyProxy pass phrase:");
-    } else {
-	rval = myproxy_read_passphrase(client_request->passphrase,
-				       sizeof(client_request->passphrase),
-				       "Enter (current) MyProxy pass phrase:");
-    }
-    if (rval == -1) {
-	verror_print_error(stderr);
-	return 1;
-    }
+    myproxy_failover_stuff( socket_attrs,
+                            client_request,
+                            server_response,
+                            other_stuff );
 
-    /* Accept new passphrase */
-    if (read_passwd_from_stdin) {
-	rval = myproxy_read_passphrase_stdin(client_request->new_passphrase,
-					     sizeof(client_request->new_passphrase),
-					     "Enter new MyProxy pass phrase:");
-    } else {
-	rval = myproxy_read_verified_passphrase(client_request->new_passphrase,
-						sizeof(client_request->new_passphrase),
-						"Enter new MyProxy pass phrase:");
-    }
-    if (rval == -1) {
-	verror_print_error(stderr);
-	return 1;
-    }
-
-    /* Authenticate client to server */
-    if (myproxy_authenticate_init(socket_attrs, NULL /* Default proxy */) < 0) {
-        fprintf(stderr, "error in myproxy_authenticate_init(): %s\n",
-                verror_get_string());
-        return 1;
-    }
-
-    if (client_request->username == NULL) { /* set default username */
-        char *username = NULL;
-        if (dn_as_username) {
-            if (ssl_get_base_subject_file(NULL,
-                                          &username)) {
-                fprintf(stderr,
-                        "Cannot get subject name from your certificate\n");
-                return 1;
-            }
-        } else {
-            if (!(username = getenv("LOGNAME"))) {
-                fprintf(stderr, "Please specify a username.\n");
-                return 1;
-            }
-        }
-        client_request->username = strdup(username);
-     }
-
-    /*Serialize client request object */
-    requestlen = myproxy_serialize_request_ex(client_request, &request_buffer);
-
-    if (requestlen < 0) {
-	    	fprintf (stderr, "Error: %s", verror_get_string());
-		exit(1);
-    }
-
-    /* Send request to myproxy-server*/
-    if (myproxy_send(socket_attrs, request_buffer, requestlen) < 0) {
-	    fprintf (stderr, "%s\n", verror_get_string());
-	    return 1;
-    }
-    free(request_buffer);
-    request_buffer = NULL;
-
-    /* Receive response from server */
-    if (myproxy_recv_response_ex(socket_attrs, server_response,
-				 client_request) != 0) {
-	    fprintf (stderr, "%s\n", verror_get_string());
-	    exit (1);
-    }
-
-    /*Check response */
-    switch (server_response->response_type) {
-	    case MYPROXY_ERROR_RESPONSE:
-		    fprintf (stderr, "Error: %s\nPass phrase unchanged.\n", 
-			     server_response->error_string);
-		    
-		    return 1;
-
-	    case MYPROXY_OK_RESPONSE:
-    		    printf("Pass phrase changed.\n");
-		    break;
-	
-	    default:
-		    fprintf (stderr, "Invalid response type received.\n");
-		    return 1;
-	}
     verror_clear();
 
     /* free memory allocated */
