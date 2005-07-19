@@ -283,6 +283,7 @@ typedef struct globus_i_gsc_op_s
     int                                     gid_count;
     int *                                   gid_array;
     char *                                  path;
+    char *                                  glob_match_str;
     globus_gridftp_server_control_resource_mask_t mask;
 
     /* stuff for port/pasv */
@@ -549,7 +550,8 @@ globus_i_gsc_list_single_line(
 char *
 globus_i_gsc_list_line(
     globus_gridftp_server_control_stat_t *  stat_info,
-    int                                 stat_count);
+    int                                 stat_count,
+    const char *                        glob_match_str);
 
 char *
 globus_i_gsc_nlst_line(

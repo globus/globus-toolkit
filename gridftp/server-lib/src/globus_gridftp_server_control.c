@@ -16,6 +16,9 @@
 #include <unistd.h>
 #include <ctype.h>
 #include "version.h"
+#ifndef TARGET_ARCH_WIN32
+#include <fnmatch.h>
+#endif
 
 #define GSU_MAX_USERNAME_LENGTH         64
 #define GSU_MAX_PW_LENGTH               GSU_MAX_USERNAME_LENGTH*6
@@ -440,6 +443,10 @@ globus_i_gsc_op_destroy(
         if(op->path != NULL)
         {
             globus_free(op->path);
+        }
+        if(op->glob_match_str != NULL)
+        {
+            globus_free(op->glob_match_str);
         }
         if(op->mod_name != NULL)
         {
@@ -3850,7 +3857,8 @@ globus_i_gsc_list_single_line(
 char *
 globus_i_gsc_list_line(
     globus_gridftp_server_control_stat_t *  stat_info,
-    int                                 stat_count)
+    int                                 stat_count,
+    const char *                        glob_match_str)
 {
     char *                              line;
     int                                 ctr;
@@ -3859,6 +3867,7 @@ globus_i_gsc_list_line(
     char *                              tmp_ptr;
     globus_size_t                       buf_len;
     globus_size_t                       buf_left;
+    int                                 no_match = 0;
     GlobusGridFTPServerName(globus_i_gsc_list_line);
 
     GlobusGridFTPServerDebugInternalEnter();
@@ -3870,6 +3879,17 @@ globus_i_gsc_list_line(
     tmp_ptr = buf;
     for(ctr = 0; ctr < stat_count; ctr++)
     {
+
+#ifndef TARGET_ARCH_WIN32
+        if(glob_match_str != NULL)
+        {
+            no_match = fnmatch(glob_match_str, stat_info[ctr].name, 0);
+        }
+#endif        
+        if(no_match)
+        {
+            continue;
+        }        
         line = globus_i_gsc_list_single_line(&stat_info[ctr]);
         if(line != NULL)
         {
@@ -4245,7 +4265,15 @@ globus_i_gsc_list(
     switch(type)
     {
         case GLOBUS_L_GSC_OP_TYPE_LIST:
-            fact_str = "LIST:";
+            if(op->glob_match_str != NULL)
+            {
+                fact_str = globus_common_create_string(
+                    "LIST:%s", op->glob_match_str);
+            }
+            else
+            {
+                fact_str = "LIST:";
+            }
             break;
         case GLOBUS_L_GSC_OP_TYPE_NLST:
             fact_str = "NLST:";
@@ -4268,9 +4296,18 @@ globus_i_gsc_list(
     }
     else
     {
+        if(op->glob_match_str != NULL)
+        {
+            globus_free(fact_str);
+        }
         return GlobusGridFTPServerControlErrorSyntax();
     }
 
+    if(op->glob_match_str != NULL)
+    {
+        globus_free(fact_str);
+    }
+    
     GlobusGridFTPServerDebugInternalExit();
     return GLOBUS_SUCCESS;
 }
@@ -5045,11 +5082,21 @@ globus_gridftp_server_control_list_buffer_alloc(
         return GlobusGridFTPServerErrorParameter("out_size");
     }
 
-    if(strcmp("LIST:", fact_str) == 0) 
+    if(strncmp("LIST:", fact_str, 5) == 0) 
     {
-        *out_buf = globus_i_gsc_list_line(stat_info_array, stat_count);
+        const char *                    glob_match_str;
+        if(fact_str[5] == '\0')
+        {
+            glob_match_str = NULL;
+        }
+        else
+        {
+            glob_match_str = fact_str + 5;
+        }
+        *out_buf = globus_i_gsc_list_line(
+            stat_info_array, stat_count, glob_match_str);
     }
-    else if(strcmp("NLST:", fact_str) == 0)
+    else if(strncmp("NLST:", fact_str, 5) == 0)
     {
         *out_buf = globus_i_gsc_nlst_line(stat_info_array, stat_count);
     }

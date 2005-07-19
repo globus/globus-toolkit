@@ -2907,13 +2907,36 @@ globus_l_gsc_cmd_stor_retr(
                     }
                 }
                 
-                if(*tmp_ptr == '*' || *tmp_ptr == '\0')
+                if((*tmp_ptr == '*' && *(tmp_ptr + 1) == '\0') || 
+                    *tmp_ptr == '\0')
                 {
-                    path = strdup(op->server_handle->cwd);
+                    path = globus_libc_strdup(op->server_handle->cwd);
                 }
                 else
-                { 
-                    path = strdup(tmp_ptr);
+                {
+                    int                 len;
+                    char *              fn_ptr;
+                    
+                    len = strlen(tmp_ptr);
+                    if(strcspn(tmp_ptr, "[]*?") == len)
+                    {
+                        path = globus_libc_strdup(tmp_ptr);
+                    }
+                    else
+                    {   
+                        if((fn_ptr = strrchr(tmp_ptr, '/')) != NULL)
+                        {
+                            fn_ptr++;
+                            path = globus_libc_strdup(tmp_ptr);
+                            *(path + (fn_ptr - tmp_ptr)) = '\0';
+                            op->glob_match_str = globus_libc_strdup(fn_ptr);
+                        }
+                        else
+                        {
+                            op->glob_match_str = globus_libc_strdup(tmp_ptr);
+                            path = globus_libc_strdup(op->server_handle->cwd);
+                        }
+                    }
                 }
             }
             else
