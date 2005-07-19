@@ -3,6 +3,10 @@
 
 #include "globus_common.h"
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+EXTERN_C_BEGIN
+#endif
+
 /** @ingroup seg_api
  * Error types used by the SEG.
  */
@@ -166,22 +170,8 @@ globus_result_t
 globus_scheduler_event_generator_get_timestamp(
     time_t *                            timestamp);
 
-/* API used by executable which drives the SEG */
-globus_result_t
-globus_scheduler_event_generator_set_timestamp(
-    time_t                              timestamp);
-
-globus_result_t
-globus_scheduler_event_generator_load_module(
-    const char *                        module_name);
-typedef void (*globus_scheduler_event_generator_fault_handler_t)(
-    void *                              user_arg,
-    globus_result_t                     result);
-
-globus_result_t
-globus_scheduler_event_generator_set_fault_handler(
-    globus_scheduler_event_generator_fault_handler_t
-                                        fault_handler,
-    void *                              user_arg);
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+EXTERN_C_END
+#endif
 
 #endif /* GLOBUS_SCHEDULER_EVENT_GENERATOR_H */
