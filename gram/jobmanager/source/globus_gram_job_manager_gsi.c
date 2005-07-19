@@ -310,14 +310,11 @@ globus_gram_job_manager_gsi_relocate_proxy(
     const char *			new_proxy)
 {
     struct stat				statbuf;
-    unsigned long			timestamp;
     int					rc = 0;
-    char *				cred_url = NULL;
     char *				cred_file = NULL;
     FILE *				infp = NULL;
     FILE *				outfp = NULL;
     char *				cred_data = NULL;
-    globus_bool_t			delete_cred = GLOBUS_FALSE;
 
     rc = stat(new_proxy, &statbuf);
 

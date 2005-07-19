@@ -51,13 +51,15 @@ Syntax: globus-personal-gatekeeper [options]
     -debug
     Displays extra output
 
-    -start [-jmtype <type>] [-port <port>] [-log=always|never|on_error]
+    -start [-jmtype <type>] [-port <port>] [-log=always|never|on_error] [-seg]
     Starts a new gatekeeper, mapping default service to a
     jobmanager. By default, the jobmanager is configured with
     jmtype=fork. The option -port can be used to restrict the
     gatekeeper to use a particular port. The default is to let the
     system choose a port. The -log switch causes the job manager
     to choose when log files will be created in the user's home directory.
+    If -seg is used, then the Scheduler Event Generator will be used to 
+    poll job state.
 
     -list
     Scans for active personal gatekeepers. If found, an
@@ -252,6 +254,7 @@ host=`${bindir}/globus-hostname`
 file_location="$HOME/.globus"
 file_prefix="personal-gatekeeper.$host"
 log=never
+seg=0
 startargs=''
 
 while [ -n "$1" ]; do
@@ -296,6 +299,9 @@ while [ -n "$1" ]; do
 		port="$2"
 		shift
 		;;
+        -seg)
+                seg=1
+                ;;
 	*)
 		startargs="$startargs $1"
 		;;
@@ -398,6 +404,10 @@ host_osversion=`${GLOBUS_SH_UNAME-uname} -r`
 -state-file-dir ${statefiledir}
 ${startargs}
 EOF
+
+if test $seg -eq 1; then
+    echo "-seg-module $jmtype" >> ${scratch}/jobmanager.conf
+fi
 
 docleanup=false
  
