@@ -71,6 +71,9 @@ my @package_build_list;
 # $package_dep_hash{$pkg1}{$pkg2} == 1 if pkg1 depends on pkg2
 my %package_dep_hash;
 
+# Track package versions.  $package_version_hash{$pkg} = version(pkg1)
+my %package_version_hash;
+
 # Which of the CVS trees should I operate on?
 my @cvs_build_list;
 my %cvs_build_hash;
@@ -353,101 +356,133 @@ sub generate_build_list()
     {
        if ( $installer )
        {
-           open(INS, ">$top_dir/$installer") or die "Can't open $installer: $!\n";
-       }
-
-       install_gt2_autotools();
-       install_globus_core();
-       print "Final package build list:\n";
-
-       # First list all the bundles as targets, followed by their depordered
-       # package lists.  Then list all the packages as targets in both
-       # threaded and unthreaded versions.  Bootstrap the CVS directories
-       # as we go so they can be built.
-       foreach my $bun ( @user_bundles )
+           create_makefile_installer("$top_dir/$installer");
+       } else
        {
-            my ($flavor, $flag, @packs) = @{$bundle_list{$bun}};
-            my $suffix = " ";
-            my @sdkbundle;
-
-           
-            print INS "$bun: ";
-            if ( $flavor =~ /thr/ )
-            {
-                 $suffix = "-thr ";
-            }
-
-            # We have the dependency sorted list of packages in our build list.
-            # We will go through it in order, printing out those packages which
-            # appear in the current bundle.  This gives us a dep-sorted bundle
-            foreach my $pack ( @package_build_list )
-            {
-                 if ( grep /^$pack$/, @packs )
-                 {
-                     print INS "$pack$suffix";
-                     push @sdkbundle, "$pack" . "-thr";
-                 }
-            }
-            print INS "\n";
-
-            # Also list a threaded version for unthreaded bundles
-            # May not always make sense to build, but good to have
-            # the target available when it does.
-            if ( not ( $flavor =~ /thr/ ) )
-            {
-                print INS "$bun" . "-thr: ";
-                foreach my $pack ( @sdkbundle )
-                {
-                    print INS "$pack ";
-                }
+           print "Final package build list:\n";
+           foreach my $dpk ( @package_build_list )
+           {
+                print "$dpk\n";
            }
-           print INS "\n";
        }
-            
-       foreach my $pack ( @package_build_list )
-       {
-	    my $extras="";
+    }
+}
 
-	    if ( $pack=~/globus_gridmap_and_execute/ )
-	    {
-                 $extras = "-static ";
-	    }
+sub create_makefile_installer
+{
+    my ($file) = $@;
 
-            print INS "${pack}-only: gpt\n";
-            print INS "\t\$\{GPT_LOCATION\}/sbin/gpt-build $extras \$\{BUILD_OPTS\} -srcdir=source-trees/" . $package_list{$pack}[1] . " \${FLAVOR}\n";
+    system("mkdir $top_dir/pacman_cache");
+    open(INS, ">$top_dir/$installer") or die "Can't open $installer: $!\n";
+    install_gt2_autotools();
+    install_globus_core();
 
-            print INS "$pack: gpt";
-            foreach my $deppack ( @package_build_list )
-            {
-                 if ( $package_dep_hash{$pack}{$deppack} eq 1 )
-                 {
-                      print INS " $deppack" unless ( $pack eq $deppack );
-                 }
-            }
-            print INS "\n";
+    # First list all the bundles as targets, followed by their depordered
+    # package lists.  Then list all the packages as targets in both
+    # threaded and unthreaded versions.  Bootstrap the CVS directories
+    # as we go so they can be built.
+    foreach my $bun ( @user_bundles )
+    {
+         open(PAC, ">$top_dir/pacman_cache/$bun.pacman");
 
-            print INS "\t\$\{GPT_LOCATION\}/sbin/gpt-build $extras \$\{BUILD_OPTS\} -srcdir=source-trees/" . $package_list{$pack}[1] . " \${FLAVOR}\n";
+         my ($flavor, $flag, @packs) = @{$bundle_list{$bun}};
+         my $suffix = " ";
+         my @sdkbundle;
 
-            print INS "${pack}-only-thr: gpt\n";
-            print INS "\t\$\{GPT_LOCATION\}/sbin/gpt-build $extras \$\{BUILD_OPTS\} -srcdir=source-trees-thr/" . $package_list{$pack}[1] . " \${FLAVOR}\${THR}\n";
-            print INS "${pack}-thr: gpt";
-            foreach my $deppack ( @package_build_list )
-            {
-                 if ( $package_dep_hash{$pack}{$deppack} eq 1 )
-                 {
-                      print INS " ${deppack}-thr" unless ( $pack eq $deppack );
-                 }
-            }
-            print INS "\n";
+         print INS "$bun: ";
+         print PAC "packageName('$bun')\n";
+         print PAC "url('Globus', 'http://www.globus.org/toolkit')\n";
 
-            print INS "\t\$\{GPT_LOCATION\}/sbin/gpt-build $extras \$\{BUILD_OPTS\} -srcdir=source-trees-thr/" . $package_list{$pack}[1] . " \${FLAVOR}\${THR}\n";
-            my ($tree, $subdir, $custom) = ($package_list{$pack}[0],
-                                            $package_list{$pack}[1],
-                                            $package_list{$pack}[2]);
+         if ( $flavor =~ /thr/ )
+         {
+              $suffix = "-thr ";
+         }
 
-            package_source_bootstrap($pack, $subdir, $tree);
-       }
-    } # end listpack()
+         # We have the dependency sorted list of packages in our build list.
+         # We will go through it in order, printing out those packages which
+         # appear in the current bundle.  This gives us a dep-sorted bundle
+         foreach my $pack ( @package_build_list )
+         {
+              if ( grep /^$pack$/, @packs )
+              {
+                  print INS "$pack$suffix";
+                  print PAC "package('$pack$suffix')\n";
+                  push @sdkbundle, "$pack" . "-thr";
+              }
+         }
+         print INS "\n";
+         close PAC;
+
+         # Also list a threaded version for unthreaded bundles
+         # May not always make sense to build, but good to have
+         # the target available when it does.
+         if ( not ( $flavor =~ /thr/ ) )
+         {
+             open(PAC, ">$top_dir/pacman_cache/${bun}-thr.pacman");
+             print INS "$bun" . "-thr: ";
+             print PAC "packageName('${bun}-thr')\n";
+             foreach my $pack ( @sdkbundle )
+             {
+                 print INS "$pack ";
+                 print PAC "package('$pack')\n";
+             }
+        }
+        print INS "\n";
+        close PAC;
+    }
+         
+    foreach my $pack ( @package_build_list )
+    {
+         open(PAC, ">$top_dir/pacman_cache/$pack.pacman");
+         print PAC "packageName($pack)\n";
+         print PAC "version($package_version_hash{$pack});\n";
+
+         my $extras="";
+
+         if ( $pack=~/globus_gridmap_and_execute/ )
+         {
+              $extras = "-static ";
+         }
+
+         print INS "${pack}-only: gpt\n";
+         print INS "\t\$\{GPT_LOCATION\}/sbin/gpt-build $extras \$\{BUILD_OPTS\} -srcdir=source-trees/" . $package_list{$pack}[1] . " \${FLAVOR}\n";
+
+         print INS "$pack: gpt";
+         foreach my $deppack ( @package_build_list )
+         {
+              if ( $package_dep_hash{$pack}{$deppack} eq 1 )
+              {
+                   print INS " $deppack" unless ( $pack eq $deppack );
+                   print PAC "package('$deppack')\n" unless ( $pack eq $deppack );
+              }
+         }
+         print INS "\n";
+         print PAC "cd ('\$GLOBUS_LOCATION')\n";
+         print PAC "downloadUntarzip('GLOBUS/${pack}-$package_version_hash{$pack}.tar.gz')\n";
+         print PAC "cd ()\n";
+         close PAC;
+
+         print INS "\t\$\{GPT_LOCATION\}/sbin/gpt-build $extras \$\{BUILD_OPTS\} -srcdir=source-trees/" . $package_list{$pack}[1] . " \${FLAVOR}\n";
+
+         print INS "${pack}-only-thr: gpt\n";
+         print INS "\t\$\{GPT_LOCATION\}/sbin/gpt-build $extras \$\{BUILD_OPTS\} -srcdir=source-trees-thr/" . $package_list{$pack}[1] . " \${FLAVOR}\${THR}\n";
+         print INS "${pack}-thr: gpt";
+         foreach my $deppack ( @package_build_list )
+         {
+              if ( $package_dep_hash{$pack}{$deppack} eq 1 )
+              {
+                   print INS " ${deppack}-thr" unless ( $pack eq $deppack );
+              }
+         }
+         print INS "\n";
+
+         print INS "\t\$\{GPT_LOCATION\}/sbin/gpt-build $extras \$\{BUILD_OPTS\} -srcdir=source-trees-thr/" . $package_list{$pack}[1] . " \${FLAVOR}\${THR}\n";
+         my ($tree, $subdir, $custom) = ($package_list{$pack}[0],
+                                         $package_list{$pack}[1],
+                                         $package_list{$pack}[2]);
+
+         package_source_bootstrap($pack, $subdir, $tree);
+    }
 
     close(INS) if $installer;
 }
@@ -491,6 +526,8 @@ sub import_package_dependencies
         
         print "Reading in metadata for $pack.\n";
         $pkg->read_metadata_file("$metadatafile");
+        $package_version_hash{$pack} = $pkg->{'Version'}->label();
+
         for my $dep (keys %{$pkg->{'Source_Dependencies'}->{'pkgname-list'}})
         {
              print GRAPH "$pack -> $dep;\n" if $graph;
@@ -1158,7 +1195,8 @@ sub cvs_checkout_package
     my $subdir = $package_list{$package}[1];
 
     if (! defined($tree)) {
-        die "ERROR: There was a dependency on package $package which I know nothing about.\n";
+        print "ERROR: There was a dependency on package $package which I know nothing about.\n";
+        die "Try a cvs update of packaging.\n";
     }
 
     print "Checking out $subdir from $tree.\n";

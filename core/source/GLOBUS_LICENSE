@@ -1,13 +1,7 @@
-              Globus(R) Toolkit Public License
-                    Version 3, March 2005
-        http://www.globus.org/toolkit/license.html
 
-
-  (This license is identical to the Apache License, Version 2.0, January
-   2004, http://www.apache.org/licenses/LICENSE-2.0, except for the
-   addition of an explicit U.S. Government disclaimer and limitation of
-   liability in paragraphs 7 and 8.)
-
+                                 Apache License
+                           Version 2.0, January 2004
+                        http://www.apache.org/licenses/
 
    TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
 
@@ -148,30 +142,26 @@
       origin of the Work and reproducing the content of the NOTICE file.
 
    7. Disclaimer of Warranty. Unless required by applicable law or
-      agreed to in writing, Licensor and the U.S. Government provide
-      the Work (and each Contributor provides its Contributions) on an
-      "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
-      either express or implied, including, without limitation, any
-      warranties or conditions of TITLE, NON-INFRINGEMENT,
-      MERCHANTABILITY, or FITNESS FOR A PARTICULAR PURPOSE. You and
-      third parties are solely responsible for determining the
-      appropriateness of using or redistributing the Work and assume
-      any risks associated with Your exercise of permissions under
-      this License.
+      agreed to in writing, Licensor provides the Work (and each
+      Contributor provides its Contributions) on an "AS IS" BASIS,
+      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+      implied, including, without limitation, any warranties or conditions
+      of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A
+      PARTICULAR PURPOSE. You are solely responsible for determining the
+      appropriateness of using or redistributing the Work and assume any
+      risks associated with Your exercise of permissions under this License.
 
    8. Limitation of Liability. In no event and under no legal theory,
       whether in tort (including negligence), contract, or otherwise,
-      unless required by applicable law (such as deliberate and
-      grossly negligent acts) or agreed to in writing, shall any
-      Contributor or the U.S. Government be liable to You for damages,
-      including any direct, indirect, special, incidental, or
-      consequential damages of any character arising as a result of
-      this License or out of the use or inability to use the Work
-      (including but not limited to damages for loss of goodwill, work
-      stoppage, computer failure or malfunction, or any and all other
-      commercial damages or losses), even if such Contributor or the
-      U.S. Government has been advised of the possibility of such
-      damages.
+      unless required by applicable law (such as deliberate and grossly
+      negligent acts) or agreed to in writing, shall any Contributor be
+      liable to You for damages, including any direct, indirect, special,
+      incidental, or consequential damages of any character arising as a
+      result of this License or out of the use or inability to use the
+      Work (including but not limited to damages for loss of goodwill,
+      work stoppage, computer failure or malfunction, or any and all
+      other commercial damages or losses), even if such Contributor
+      has been advised of the possibility of such damages.
 
    9. Accepting Warranty or Additional Liability. While redistributing
       the Work or Derivative Works thereof, You may choose to offer,
@@ -185,29 +175,3 @@
       of your accepting any such warranty or additional liability.
 
    END OF TERMS AND CONDITIONS
-
-   APPENDIX: How to apply the Globus Toolkit Public License to your work.
-
-      To apply the Globus Toolkit Public License to your work, attach
-      the following boilerplate notice, with the fields enclosed by
-      brackets "[]" replaced with your own identifying
-      information. (Don't include the brackets!)  The text should be
-      enclosed in the appropriate comment syntax for the file
-      format. We also recommend that a file or class name and
-      description of purpose be included on the same "printed page" as
-      the copyright notice for easier identification within
-      third-party archives.
-
-   Copyright [yyyy] [name of copyright owner]
-
-   Licensed under the Globus Toolkit Public License, Version 3 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.globus.org/toolkit/license.html
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.

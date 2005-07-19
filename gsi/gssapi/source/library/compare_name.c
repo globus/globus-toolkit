@@ -63,6 +63,8 @@ GSS_CALLCONV gss_compare_name(
     unsigned int                        le2;
     unsigned char *                     ce1;
     unsigned char *                     ce2;
+    unsigned char *                     save_ce1;
+    unsigned char *                     save_ce2;
     int                                 found_dot = 0;
     const gss_name_desc*                name1 = (gss_name_desc*) name1_P;
     const gss_name_desc*                name2 = (gss_name_desc*) name2_P;
@@ -147,10 +149,12 @@ GSS_CALLCONV gss_compare_name(
             2, _GGSL("Comparing GSS_C_NT_HOSTBASED_SERVICE names\n"));
 
         ce1 = globus_i_gsi_gssapi_get_hostname(name1);
+        save_ce1 = ce1;
         if(ce1)
         {
             le1 = strlen(ce1);
             ce2 = globus_i_gsi_gssapi_get_hostname(name2);
+            save_ce2 = ce2;
             if(ce2)
             {
                 le2 = strlen(ce2);
@@ -206,9 +210,9 @@ GSS_CALLCONV gss_compare_name(
                         }
                     }
                 }
-                free(ce2);
+                free(save_ce2);
             }
-            free(ce1);
+            free(save_ce1);
         }
     }
     else
