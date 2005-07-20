@@ -488,17 +488,32 @@ oldgaa_regex_matches_string(
   }
   else
   {
-      char * tmp_str = strdup(string);
+      char * tmp_str;
+      tmp_str = malloc(strlen(string) + strlen(regex));
       if(tmp_str)
       { 
           star = strrchr(regex,'*');
           if(star)
           {
-              int index = star - regex;
-              if(strlen(tmp_str) > index)
+              int index;
+              int after_star;
+              
+              index = star - regex;
+              /* Number of characters after * in regex */
+              after_star = strlen(regex) - index - 1;
+
+              strcpy(tmp_str, string);
+              if(strlen(tmp_str) > (index + after_star))
               {
+                  /*
+                   * Build new string formed of string made of up
+                   * string up to where the star is and then end of
+                   * string with length of number of characters after star
+                   * in regex.
+                   */
                   tmp_str[index] = '*';
-                  tmp_str[index + 1] = '\0';
+                  strcpy(tmp_str + index + 1,
+                         string + strlen(string) - after_star);
                   if(!globus_i_gsi_cert_utils_dn_cmp(regex, tmp_str))
                   {
                       result = 1;
