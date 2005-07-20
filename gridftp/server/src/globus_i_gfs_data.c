@@ -689,6 +689,40 @@ globus_l_gfs_data_auth_stat_cb(
     GlobusGFSDebugExit();
 }
 
+static
+void
+globus_l_gfs_data_send_stat_cb(
+    globus_gfs_data_reply_t *           reply,
+    void *                              user_arg)
+{
+    void *                              stat_wrapper;
+    globus_result_t                     res;
+    int                                 rc;
+    globus_l_gfs_data_operation_t *     op;
+    globus_gfs_transfer_info_t *        send_info;
+    GlobusGFSName(globus_l_gfs_data_recv_stat_cb);
+    GlobusGFSDebugEnter();
+
+    op = (globus_l_gfs_data_operation_t *) user_arg;
+    send_info = (globus_gfs_transfer_info_t *) op->info_struct;
+    send_info->alloc_size = reply->info.stat.stat_array[0].size;
+    stat_wrapper = op->stat_wrapper;
+    rc = globus_gfs_acl_authorize(
+        &op->session_handle->acl_handle,
+        "read",
+        send_info->pathname,
+        &res,
+        globus_l_gfs_authorize_cb,
+        op);
+    if(rc == GLOBUS_GFS_ACL_COMPLETE)
+    {
+        globus_l_gfs_authorize_cb(send_info->pathname, op, res);
+    }
+    globus_free(stat_wrapper);
+
+    GlobusGFSDebugExit();
+}
+
 void
 globus_i_gfs_monitor_init(
     globus_i_gfs_monitor_t *            monitor)
@@ -3024,19 +3058,43 @@ globus_i_gfs_data_request_send(
             op, GlobusGFSErrorGeneric("bad module"));
         goto error_module;
     }
-
-    rc = globus_gfs_acl_authorize(
-        &session_handle->acl_handle,
-        "read",
-        send_info->pathname,
-        &res,
-        globus_l_gfs_authorize_cb,
-        op);
-    if(rc == GLOBUS_GFS_ACL_COMPLETE)
+    if(op->dsi->stat_func != NULL && 
+        op->data_handle->info.stripe_layout == GLOBUS_GFS_LAYOUT_PARTITIONED)
     {
-        globus_l_gfs_authorize_cb(send_info->pathname, op, res);
+        globus_gfs_stat_info_t *        stat_info;
+        
+        stat_info = (globus_gfs_stat_info_t *)
+            globus_calloc(1, sizeof(globus_gfs_stat_info_t));
+    
+        stat_info->pathname = send_info->pathname;
+        stat_info->file_only = GLOBUS_TRUE;
+        stat_info->internal = GLOBUS_TRUE;
+    
+        op->info_struct = send_info;
+        op->stat_wrapper = stat_info;
+    
+        globus_i_gfs_data_request_stat(
+            ipc_handle,
+            session_handle,
+            id,
+            stat_info,
+            globus_l_gfs_data_send_stat_cb,
+            op);
     }
-
+    else
+    {
+        rc = globus_gfs_acl_authorize(
+            &session_handle->acl_handle,
+            "read",
+            send_info->pathname,
+            &res,
+            globus_l_gfs_authorize_cb,
+            op);
+        if(rc == GLOBUS_GFS_ACL_COMPLETE)
+        {
+            globus_l_gfs_authorize_cb(send_info->pathname, op, res);
+        }
+    }
     GlobusGFSDebugExit();
     return;
 
@@ -3607,11 +3665,11 @@ globus_l_gfs_data_end_transfer_kickout(
         {
             if(info->list_type)
             {
-                if(strcmp(info->list_type, "LIST:") == 0)
+                if(strncmp(info->list_type, "LIST:", 5) == 0)
                 {
                     type = "LIST";
                 }
-                else if(strcmp(info->list_type, "NLST:") == 0)
+                else if(strncmp(info->list_type, "NLST:", 5) == 0)
                 {
                     type = "NLST";
                 }
@@ -5529,6 +5587,8 @@ globus_gridftp_server_get_read_range(
     globus_off_t                        stripe_block_size;
     int                                 size;
     int                                 i;
+    globus_gfs_transfer_info_t *        info;
+    globus_off_t                        part_size;
     GlobusGFSName(globus_gridftp_server_get_read_range);
     GlobusGFSDebugEnter();
 
@@ -5538,7 +5598,35 @@ globus_gridftp_server_get_read_range(
     {
         if(op->node_count > 1)
         {
-            stripe_block_size = op->data_handle->info.stripe_blocksize;
+            switch(op->data_handle->info.stripe_layout)
+            {
+                case GLOBUS_GFS_LAYOUT_PARTITIONED:
+                    info = (globus_gfs_transfer_info_t *) op->info_struct;
+                    if(op->partial_length > 0)
+                    {
+                        part_size = op->partial_length;
+                    }
+                    else
+                    {
+                        part_size = info->alloc_size;
+                    }
+                    stripe_block_size = part_size / op->node_count;
+                    if(part_size <= 0)
+                    {
+                        stripe_block_size =
+                            op->data_handle->info.stripe_blocksize;                        
+                    }
+                    else if(part_size % op->node_count)
+                    {
+                        stripe_block_size++;
+                    }
+                    break;
+                    
+                case GLOBUS_GFS_LAYOUT_BLOCKED:
+                default:
+                    stripe_block_size = op->data_handle->info.stripe_blocksize;
+                    break;
+            }
             start_offset = op->stripe_chunk * stripe_block_size;
             end_offset = start_offset + stripe_block_size;
 
