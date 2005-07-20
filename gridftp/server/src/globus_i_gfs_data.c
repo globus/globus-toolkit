@@ -705,7 +705,11 @@ globus_l_gfs_data_send_stat_cb(
 
     op = (globus_l_gfs_data_operation_t *) user_arg;
     send_info = (globus_gfs_transfer_info_t *) op->info_struct;
-    send_info->alloc_size = reply->info.stat.stat_array[0].size;
+    if(reply->info.stat.stat_count == 1)
+    {
+        send_info->alloc_size = reply->info.stat.stat_array[0].size;
+    }
+
     stat_wrapper = op->stat_wrapper;
     rc = globus_gfs_acl_authorize(
         &op->session_handle->acl_handle,
