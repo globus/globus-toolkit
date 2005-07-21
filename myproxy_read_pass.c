@@ -64,9 +64,7 @@ read_passphrase(char				*buffer,
 			      prompt,
 			      verify);
 
-    switch(return_code)
-    {
-      case 0:
+    if (return_code == 0) {
 	/* Success */
 	return_code = strlen(buffer);
 	if (return_code < MIN_PASS_PHRASE_LEN && return_code != 0) {
@@ -74,26 +72,9 @@ read_passphrase(char				*buffer,
 			      MIN_PASS_PHRASE_LEN);
 	    return_code = -1;
 	}
-	break;
-	
-      case 1:
-	/* Interactive use error */
+    } else {
 	return_code = -1;
-	verror_put_string("Error entering passphrase");
-	break;
-	
-      case -1:
-	/* System error */
-	return_code = -1;
-	verror_put_string("System error reading password");
-	break;
-	
-      default:
-	/* Unknown value */
-	verror_put_string("Unrecognized return value(%d) from des_read_pw()",
-			 return_code);
-	return_code = -1;
-	break;
+	verror_put_string("Error entering passphrase.");
     }
 
     if (verify_buffer != NULL)
