@@ -134,18 +134,21 @@ ModuleType          library
 SourceLocation      \gsi\authz\source
 Win32Location       \gsi\authz\source\win32
 
+ModuleType          library
+SourceLocation      \io\source\library
+Win32Location       \io\source\win32
 
-    ModuleType          library
-    SourceLocation      \io\source\library
-    Win32Location       \io\source\win32
+ModuleType          library
+SourceLocation      \gridftp\control\source
+Win32Location       \gridftp\control\source\win32
 
-    ModuleType          library
-    SourceLocation      \gridftp\control\source
-    Win32Location       \gridftp\control\source\win32
+ModuleType          library
+SourceLocation      \gridftp\client\source
+Win32Location       \gridftp\client\source\win32
 
-    ModuleType          library
-    SourceLocation      \gridftp\client\source
-    Win32Location       \gridftp\client\source\win32
+ModuleType          library
+SourceLocation      \gridftp\gridftp_driver\source
+Win32Location       \gridftp\gridftp_driver\source\win32
 
     ModuleType          library
     SourceLocation      \gass\transfer\source\library
@@ -170,6 +173,51 @@ Win32Location       \gsi\authz\source\win32
     ModuleType          library
     SourceLocation      \gram\client\source
     Win32Location       \gram\client\source\win32
+
+ModuleType          library
+SourceLocation      \xio\src
+Win32Location       \xio\src\win32
+
+ModuleType          library
+SourceLocation      \xio\src\builtins\file
+Win32Location       \xio\src\builtins\file\win32
+
+ModuleType          library
+SourceLocation      \xio\src\builtins\gsi
+Win32Location       \xio\src\builtins\gsi\win32
+
+ModuleType          library
+SourceLocation      \xio\src\builtins\http
+Win32Location       \xio\src\builtins\http\win32
+
+ModuleType          library
+SourceLocation      \xio\src\builtins\mode_e
+Win32Location       \xio\src\builtins\mode_e\win32
+
+ModuleType          library
+SourceLocation      \xio\src\builtins\ordering
+Win32Location       \xio\src\builtins\ordering\win32
+
+ModuleType          library
+SourceLocation      \xio\src\builtins\queue
+Win32Location       \xio\src\builtins\queue\win32
+
+ModuleType          library
+SourceLocation      \xio\src\builtins\tcp
+Win32Location       \xio\src\builtins\tcp\win32
+
+ModuleType          library
+SourceLocation      \xio\src\builtins\telnet
+Win32Location       \xio\src\builtins\telnet\win32
+
+ModuleType          library
+SourceLocation      \xio\src\builtins\udp
+Win32Location       \xio\src\builtins\udp\win32
+
+ModuleType          library
+SourceLocation      \xio\src\builtins\udt
+Win32Location       \xio\src\builtins\udt\win32
+
 
 
 # ------------------------------------------
