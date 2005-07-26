@@ -824,7 +824,7 @@ globus_extension_lookup(
                         
                     GlobusExtensionDebugPrintf(
                         GLOBUS_L_EXTENSION_DEBUG_VERBOSE,
-                        (_GCSL("[%] Accessing entry %s within %s\n"),
+                        (_GCSL("[%s] Accessing entry %s within %s\n"),
                             _globus_func_name,
                             registry->user_hashing ? "" : symbol,
                             entry->owner->name));
