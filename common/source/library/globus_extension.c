@@ -556,6 +556,7 @@ globus_extension_activate(
                 }
 #               else
                 {
+                    globus_assert(BUILD_STATIC_ONLY == 0);
                     result = globus_error_put(
                         globus_error_construct_error(
                             GLOBUS_EXTENSION_MODULE,
