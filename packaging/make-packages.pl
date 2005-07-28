@@ -573,7 +573,7 @@ sub setup_environment()
 
     if ( $doxygen )
     {
-        $doxygen = "CONFIGOPT_GPTMACRO=--enable-doxygen";
+        $doxygen = "CONFIGOPTS_GPTMACRO=--enable-doxygen";
     } else {
         $doxygen = "";
     }
