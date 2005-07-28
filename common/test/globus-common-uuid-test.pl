@@ -12,5 +12,5 @@
 #
 
 
-system("globus_common_uuid_test");
+system("./globus_common_uuid_test");
 
