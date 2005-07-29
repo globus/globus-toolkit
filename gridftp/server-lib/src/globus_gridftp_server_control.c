@@ -3366,6 +3366,7 @@ globus_libc_cached_getgrgid(
 {
     struct group *                      gr;
     struct group *                      grent;
+    char                                name[GSU_MAX_USERNAME_LENGTH];
 
     /* XXX TODO make proper function in globus_libc */
     grent = (struct group *) globus_hashtable_lookup(
@@ -3381,10 +3382,12 @@ globus_libc_cached_getgrgid(
         {
             goto error_group;
         }
-        grent->gr_name = globus_libc_strdup(gr->gr_name);
+        strncpy(name, gr->gr_name, GSU_MAX_USERNAME_LENGTH);
         grent->gr_gid = gr->gr_gid;
         /* we don't use other members */
         globus_libc_unlock();
+        
+        grent->gr_name = globus_libc_strdup(name);
         
         globus_hashtable_insert(
             &globus_l_gsc_grent_cache,
