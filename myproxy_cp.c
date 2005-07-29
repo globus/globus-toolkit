@@ -111,10 +111,10 @@ main(int argc, char *argv[])
     other_stuff->dn_as_username = dn_as_username;
     other_stuff->read_passwd_from_stdin = read_passwd_from_stdin;
 
-    myproxy_failover_stuff( socket_attrs,
-                            client_request,
-                            server_response,
-                            other_stuff );
+    myproxy_failover( socket_attrs,
+                      client_request,
+                      server_response,
+                      other_stuff );
 
     verror_clear();
 

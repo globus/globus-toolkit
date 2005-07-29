@@ -383,10 +383,25 @@ myproxy_serialize_send_recv( myproxy_request_t      *client_request,
                              myproxy_response_t     *server_response,
                              myproxy_socket_attrs_t *socket_attrs );
 
+/*
+ * myproxy_failover()
+ * 
+ * Code to handle failover.  Each client operation calls this function.
+ * The function will look for master/slave configuration information
+ * and handle failover if configured. 
+ *
+ * returns !0 if unable to authenticate, 0 if authentication successful
+ */ 
 int
-myproxy_failover_stuff( myproxy_socket_attrs_t *socket_attrs,
-                        myproxy_request_t      *client_request,
-                        myproxy_response_t     *server_response,
-                        myproxy_other_stuff_t  *other_stuff );
+myproxy_failover( myproxy_socket_attrs_t *socket_attrs,
+                  myproxy_request_t      *client_request,
+                  myproxy_response_t     *server_response,
+                  myproxy_other_stuff_t  *other_stuff );
+
+int
+myproxy_init_client_env( myproxy_socket_attrs_t *socket_attrs,
+                         myproxy_request_t      *client_request,
+                         myproxy_response_t     *server_response,
+                         myproxy_other_stuff_t  *other_stuff );
 
 #endif /* __MYPROXY_PROTOCOL_H */
