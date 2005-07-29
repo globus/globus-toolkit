@@ -161,10 +161,10 @@ main(int argc, char *argv[])
     other_stuff->dn_as_username = dn_as_username;
     other_stuff->proxyfile = malloc(MAXPATHLEN);
 
-    if( myproxy_failover_stuff( socket_attrs,
-                                client_request,
-                                server_response,
-                                other_stuff ) != 0 )
+    if( myproxy_failover( socket_attrs,
+                          client_request,
+                          server_response,
+                          other_stuff ) != 0 )
     {
       if( verror_is_error() )
       {

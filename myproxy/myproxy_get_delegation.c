@@ -123,10 +123,10 @@ main(int argc, char *argv[])
     other_stuff->dn_as_username         = dn_as_username;
     other_stuff->outputfile             = outputfile;
 
-    retval = myproxy_failover_stuff( socket_attrs,
-                                     client_request,
-                                     server_response,
-                                     other_stuff );
+    retval = myproxy_failover( socket_attrs,
+                               client_request,
+                               server_response,
+                               other_stuff );
 
     free(outputfile);
     verror_clear();

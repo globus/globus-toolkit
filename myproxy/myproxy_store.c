@@ -187,10 +187,10 @@ main(int   argc,
     other_stuff->dn_as_username = dn_as_username;
     other_stuff->credkeybuf     = credkeybuf;
 
-    if( myproxy_failover_stuff( socket_attrs,
-                                client_request,
-                                server_response,
-                                other_stuff ) != 0 )
+    if( myproxy_failover( socket_attrs,
+                          client_request,
+                          server_response,
+                          other_stuff ) != 0 )
     {
       goto cleanup;
     }

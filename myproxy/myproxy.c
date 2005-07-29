@@ -133,6 +133,12 @@ int grid_proxy_init(int hours, const char *proxyfile, int read_passwd_from_stdin
 
 int grid_proxy_destroy(const char *proxyfile);
 
+int
+is_a_retry_command( int command );
+
+int
+parse_slave( char *tmp, char *server, char *port );
+
 
 /* Values for string_to_int() */
 #define STRING_TO_INT_SUCCESS		1
@@ -2162,10 +2168,10 @@ myproxy_serialize_send_recv( myproxy_request_t      *client_request,
 */
 
 int
-init_stuff( myproxy_socket_attrs_t *socket_attrs,
-            myproxy_request_t      *client_request,
-            myproxy_response_t     *server_response,
-            myproxy_other_stuff_t  *other_stuff )
+myproxy_init_client_env( myproxy_socket_attrs_t *socket_attrs,
+                         myproxy_request_t      *client_request,
+                         myproxy_response_t     *server_response,
+                         myproxy_other_stuff_t  *other_stuff )
 {
     int retval = 0;
     int rval   = 0;
@@ -2388,10 +2394,10 @@ is_a_retry_command( int command )
 }
   
 int
-myproxy_failover_stuff( myproxy_socket_attrs_t *socket_attrs,
-                        myproxy_request_t      *client_request,
-                        myproxy_response_t     *server_response,
-                        myproxy_other_stuff_t  *other_stuff )
+myproxy_failover( myproxy_socket_attrs_t *socket_attrs,
+                  myproxy_request_t      *client_request,
+                  myproxy_response_t     *server_response,
+                  myproxy_other_stuff_t  *other_stuff )
 {
     struct    slave_server
     {
@@ -2427,12 +2433,12 @@ myproxy_failover_stuff( myproxy_socket_attrs_t *socket_attrs,
                      socket_attrs->psport );
 
       /* Open communications.  Send the command type.  Get response */
-      if( init_stuff( socket_attrs, 
-                      client_request, 
-                      server_response, 
-                      other_stuff ) != 0 )
+      if( myproxy_init_client_env( socket_attrs, 
+                                   client_request, 
+                                   server_response, 
+                                   other_stuff ) != 0 )
       {
-        myproxy_debug( "init_stuff FAILED\n" );
+        myproxy_debug( "myproxy_init_client_env FAILED\n" );
       }
 
       /* If this is our first time through, get master and list of slaves */

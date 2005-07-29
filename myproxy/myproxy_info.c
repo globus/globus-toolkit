@@ -96,10 +96,10 @@ myproxy_init_socket_attrs( socket_attrs );
     /* Initialize client arguments and create client request object */
     init_arguments(argc, argv, socket_attrs, client_request, other_stuff);
 
-    retval = myproxy_failover_stuff( socket_attrs,
-                                     client_request,
-                                     server_response,
-                                     other_stuff );
+    retval = myproxy_failover( socket_attrs,
+                               client_request,
+                               server_response,
+                               other_stuff );
 
     printf ("\n");
 
