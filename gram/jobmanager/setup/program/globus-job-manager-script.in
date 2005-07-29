@@ -17,6 +17,14 @@ if($Config{osname} eq 'irix')
     &append_path(\%ENV, 'LD_LIBRARY64_PATH', $path);
     &append_path(\%ENV, 'LD_LIBRARYN32PATH', $path);
 }
+elsif($Config{osname} eq 'aix')
+{
+    &append_path(\%env, 'LIBPATH', $path);
+}
+elsif($Config{osname} eq 'darwin')
+{
+    &append_path(\%env, 'DYLD_LIBRARY_PATH', $path);
+}
 &append_path(\%ENV, 'LD_LIBRARY_PATH', $path);
 
 use Getopt::Long;

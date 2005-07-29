@@ -11,6 +11,8 @@
 
 #include "globus_common.h"
 #include "globus_scheduler_event_generator.h"
+#include "globus_scheduler_event_generator_app.h"
+#include "globus_scheduler_event_generator_stdout.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -97,6 +99,8 @@ main(int argc, char *argv[])
         goto deactivate_error;
     }
 
+    rc = globus_module_activate(GLOBUS_SCHEDULER_EVENT_GENERATOR_STDOUT_MODULE);
+
     while ((rc = getopt(argc, argv, "s:t:")) != EOF)
     {
         switch (rc)
@@ -127,6 +131,14 @@ main(int argc, char *argv[])
             globus_l_fault_handler,
             NULL);
 
+    if (result != GLOBUS_SUCCESS)
+    {
+        goto deactivate_error;
+    }
+
+    result = globus_scheduler_event_generator_set_event_handler(
+            globus_scheduler_event_generator_stdout_handler,
+            NULL);
     if (result != GLOBUS_SUCCESS)
     {
         goto deactivate_error;

@@ -69,7 +69,19 @@ globus_i_xio_http_target_init(
     }
     else
     {
-        target->uri = globus_libc_strdup(contact_info->resource);
+        if (contact_info->resource[0] != '/')
+        {
+            size_t                      urilen = strlen(contact_info->resource);
+
+            target->uri = malloc(urilen + 2);
+            target->uri[0] = '/';
+            memcpy(target->uri+1, contact_info->resource, urilen);
+            target->uri[urilen + 1] = '\0';
+        }
+        else
+        {
+            target->uri = globus_libc_strdup(contact_info->resource);
+        }
     }
 
     if (target->uri == NULL)

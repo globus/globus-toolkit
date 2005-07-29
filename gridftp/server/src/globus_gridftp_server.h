@@ -836,6 +836,17 @@ globus_gridftp_server_get_block_size(
     globus_size_t *                     block_size);
 
 /*
+ * get stripe blocksize
+ * 
+ * This can be called during a recv() and send() in modules that wish to 
+ * deal with striping.
+ */
+void
+globus_gridftp_server_get_stripe_block_size(
+    globus_gfs_operation_t              op,
+    globus_size_t *                     stripe_block_size);
+    
+/*
  * get session username
  * 
  * This should can be called to get the username that the process is running
@@ -1453,6 +1464,16 @@ globus_gfs_ipc_handle_obtain_by_path(
     void *                              user_arg,
     globus_gfs_ipc_error_callback_t     error_cb,
     void *                              error_user_arg);
+
+globus_result_t
+globus_gfs_ipc_handle_get_contact_string(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    char **                             contact_string);
+
+globus_result_t
+globus_gfs_ipc_handle_get_index(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    int *                               index);
     
 globus_result_t
 globus_gfs_ipc_init(

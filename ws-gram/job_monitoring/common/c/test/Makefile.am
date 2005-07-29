@@ -47,7 +47,7 @@ seg_timestamp_test_SOURCES = seg_timestamp_test.c
 seg_timestamp_test_LDFLAGS = $(GPT_LDFLAGS)
 seg_timestamp_test_LDADD = $(GPT_PGM_LINKS)
 
-seg_api_test_SOURCES = seg_api_test.c
+seg_api_test_SOURCES = seg_api_test.c globus_scheduler_event_generator_stdout.c globus_scheduler_event_generator_stdout.h
 seg_api_test_LDFLAGS = $(GPT_LDFLAGS)
 seg_api_test_LDADD = $(GPT_PGM_LINKS)
 

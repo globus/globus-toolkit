@@ -82,6 +82,17 @@ do                                                                     \
 extern globus_gfs_acl_module_t          globus_gfs_acl_cas_module;
 extern globus_gfs_acl_module_t          globus_gfs_acl_test_module;
 
+typedef enum globus_l_gfs_auth_level_e
+{
+    GLOBUS_L_GFS_AUTH_NONE = 0x00,
+    GLOBUS_L_GFS_AUTH_IDENTIFY = 0x01,
+    GLOBUS_L_GFS_AUTH_ACTION = 0x02,
+    GLOBUS_L_GFS_AUTH_NOSETUID = 0x04,
+
+    GLOBUS_L_GFS_AUTH_ALL = 0xFF
+} globus_l_gfs_auth_level_t;
+
+
 #include "globus_i_gfs_log.h"
 #include "globus_i_gfs_control.h"
 #include "globus_i_gfs_ipc.h"

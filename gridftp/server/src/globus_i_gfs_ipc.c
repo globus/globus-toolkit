@@ -144,6 +144,7 @@ typedef struct globus_l_gfs_ipc_connection_s
     char *                              subject;
     char *                              host_id;
     globus_bool_t                       map_user;
+    int                                 community_ndx;
 } globus_l_gfs_ipc_connection_t;
 
 typedef struct globus_i_gfs_ipc_handle_s
@@ -2220,6 +2221,7 @@ globus_l_gfs_ipc_handle_connect(
     globus_gfs_session_info_t *         session_info,
     globus_gfs_ipc_iface_t *            iface,
     globus_i_gfs_community_t *          community,
+    int                                 community_ndx,
     globus_gfs_ipc_open_callback_t      cb,
     void *                              user_arg,
     globus_gfs_ipc_error_callback_t     error_cb,
@@ -2269,6 +2271,7 @@ globus_l_gfs_ipc_handle_connect(
         session_info->username ? strdup(session_info->username) : NULL;
     ipc->connection_info.host_id = strdup(session_info->host_id);
     ipc->connection_info.map_user = session_info->map_user;
+    ipc->connection_info.community_ndx = community_ndx;
 
     if(allowed_to_connect)
     {
@@ -2459,6 +2462,8 @@ globus_gfs_ipc_handle_obtain_by_path(
     int                                 handle_count;
     globus_result_t                     res;
     globus_list_t *                     reserved_list = NULL;
+    globus_list_t *                     reserved_ndx = NULL;
+    int                                 tmp_ndx;
     globus_gfs_session_info_t           tmp_si;
     globus_i_gfs_community_t *          community;
     GlobusGFSName(globus_gfs_ipc_handle_obtain_by_path);
@@ -2517,6 +2522,7 @@ globus_gfs_ipc_handle_obtain_by_path(
             else
             {
                 globus_list_insert(&reserved_list, community->cs[i]);
+                globus_list_insert(&reserved_ndx, (void *) i);
             }
         }
 
@@ -2525,11 +2531,12 @@ globus_gfs_ipc_handle_obtain_by_path(
         {
             tmp_si.host_id = (char *) 
                 globus_list_remove(&reserved_list, reserved_list);
-
+            tmp_ndx = (int) globus_list_remove(&reserved_ndx, reserved_ndx);
             res = globus_l_gfs_ipc_handle_connect(
                 &tmp_si,
                 iface,
                 community,
+                tmp_ndx,
                 cb,
                 user_arg,
                 error_cb,
@@ -2554,6 +2561,7 @@ globus_gfs_ipc_handle_obtain_by_path(
                     &tmp_si,
                     iface,
                     community,
+                    i,
                     cb,
                     user_arg,
                     error_cb,
@@ -2585,6 +2593,7 @@ globus_gfs_ipc_handle_obtain_by_path(
             }
         }
         globus_list_free(reserved_list);
+        globus_list_free(reserved_ndx);
     }
     globus_mutex_unlock(&globus_l_ipc_mutex);
 
@@ -2673,6 +2682,39 @@ err:
     GlobusGFSDebugExitWithError();
     return result;
 }
+
+globus_result_t
+globus_gfs_ipc_handle_get_contact_string(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    char **                             contact_string)
+{
+    globus_i_gfs_ipc_handle_t *         ipc;
+    GlobusGFSName(globus_gfs_ipc_handle_get_contact_string);
+    GlobusGFSDebugEnter();
+
+    ipc = (globus_i_gfs_ipc_handle_t *) ipc_handle;
+    *contact_string = globus_libc_strdup(ipc->connection_info.host_id);
+    
+    GlobusGFSDebugExit();
+    return GLOBUS_SUCCESS;
+}
+
+globus_result_t
+globus_gfs_ipc_handle_get_index(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    int *                               index)
+{
+    globus_i_gfs_ipc_handle_t *         ipc;
+    GlobusGFSName(globus_gfs_ipc_handle_get_index);
+    GlobusGFSDebugEnter();
+
+    ipc = (globus_i_gfs_ipc_handle_t *) ipc_handle;
+    *index = ipc->connection_info.community_ndx;
+    
+    GlobusGFSDebugExit();
+    return GLOBUS_SUCCESS;
+}
+
 
 /*
  *  close a handle, stopping it from being further cached

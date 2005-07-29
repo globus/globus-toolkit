@@ -369,8 +369,16 @@ globus_l_gfs_spawn_child(
     { 
         if(globus_l_gfs_xio_server)
         {
-            globus_xio_server_close(globus_l_gfs_xio_server);
-            globus_l_gfs_xio_server = GLOBUS_NULL;
+            result = globus_xio_server_register_close(
+                globus_l_gfs_xio_server, globus_l_gfs_server_close_cb, NULL);
+            if(result == GLOBUS_SUCCESS)
+            {
+                globus_l_gfs_outstanding++;
+            }
+            else
+            {
+                globus_l_gfs_xio_server = GLOBUS_NULL;
+            }
         }
 
         rc = dup2(socket_handle, STDIN_FILENO);
@@ -915,8 +923,16 @@ globus_l_gfs_server_accept_cb(
 
         if(globus_i_gfs_config_bool("single"))
         {
-            globus_xio_server_close(globus_l_gfs_xio_server);
-            globus_l_gfs_xio_server = GLOBUS_NULL;
+            result = globus_xio_server_register_close(
+                globus_l_gfs_xio_server, globus_l_gfs_server_close_cb, NULL);
+            if(result == GLOBUS_SUCCESS)
+            {
+                globus_l_gfs_outstanding++;
+            }
+            else
+            {
+                globus_l_gfs_xio_server = GLOBUS_NULL;
+            }
         }
         else if(!globus_l_gfs_terminated &&
             !globus_i_gfs_config_bool("connections_disabled"))

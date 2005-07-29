@@ -8,7 +8,6 @@ BUNDLE gt4-java-ws-core
         globus_java_ws_core_counter_sample
         globus_java_ws_core_authz_sample
         globus_java_ws_core_registry
-        globus_wsrf_xindice
 
 BUNDLE gt4-java-admin
         globus_core
@@ -40,6 +39,7 @@ BUNDLE gt4-c-ws-core
         globus_js
         globus_xio
         globus_xio_buffer
+        globus_notification_producer
         globus_c_wsrf_providers
         globus_notification_consumer
         globus_c_ws_security
@@ -56,6 +56,7 @@ BUNDLE gt4-c-ws-core-test
         globus_utp
         globus_c_wsrf_core_performance_test
         globus_c_wsrf_providers_test_service_bindings
+        globus_c_wsrf_providers_notification_test_bindings
         globus_c_wsrf_providers_test_wsdl
         globus_c_wsrf_sample_counter_client_test
         globus_c_wsrf_provider_test
@@ -73,6 +74,7 @@ BUNDLE gt4-c-deps-cgen
         globus_c_delegation_client_bindings
         globus_c_wsrf_core_test_interop_bindings
         globus_c_wsrf_providers_test_service_bindings
+        globus_c_wsrf_providers_notification_test_bindings
 
 BUNDLE gt4-mds
         globus_wsrf_mds_aggregator

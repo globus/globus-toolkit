@@ -93,6 +93,11 @@ globus_gram_job_manager_request_init(
     globus_cond_init(&r->cond, GLOBUS_NULL);
     r->extra_envvars = GLOBUS_NULL;
     r->response_context = GSS_C_NO_CONTEXT;
+
+    r->seg_module = NULL;
+    r->seg_started = GLOBUS_FALSE;
+    r->seg_last_timestamp = 0;
+    globus_fifo_init(&r->seg_event_queue);
     
     return(GLOBUS_SUCCESS);
 

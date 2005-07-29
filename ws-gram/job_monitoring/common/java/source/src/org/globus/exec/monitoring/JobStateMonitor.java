@@ -117,8 +117,8 @@ public class JobStateMonitor
      * any number of job ID mappings before calling start() to start
      * the SEG.
      *
-     * @param segPath
-     *     Path to the SEG executable.
+     * @param globusLocation
+     *     Path to the Globus Toolkit installation.
      * @param userName
      *     User name that the SEG should run as (via sudo(8)).
      *     (Currently ignored).
@@ -134,13 +134,13 @@ public class JobStateMonitor
      *     checkpoint timestamp.
      */
     public JobStateMonitor(
-        java.io.File                        segPath,
+        java.io.File                        globusLocation,
         String                              userName,
         String                              schedulerName,
         JobStateChangeListener              listener,
         JobStateRecoveryListener            recoveryListener)
     {
-        this(segPath,
+        this(globusLocation,
              userName,
              schedulerName,
              listener,
@@ -156,8 +156,8 @@ public class JobStateMonitor
      * any number of job ID mappings before calling start() to start
      * the SEG.
      *
-     * @param segPath
-     *     Path to the SEG executable.
+     * @param globusLocation
+     *     Path to the Globus Toolkit installation.
      * @param userName
      *     User name that the SEG should run as (via sudo(8)).
      *     (Currently ignored).
@@ -175,7 +175,7 @@ public class JobStateMonitor
      *     Indicates whether to make the SEG a daemon thread or not
      */
     public JobStateMonitor(
-        java.io.File                        segPath,
+        java.io.File                        globusLocation,
         String                              userName,
         String                              schedulerName,
         JobStateChangeListener              listener,
@@ -193,7 +193,7 @@ public class JobStateMonitor
         this.recoveryTask = null;
 
         this.seg = new SchedulerEventGenerator(
-            segPath,
+            globusLocation,
             userName,
             schedulerName,
             this);

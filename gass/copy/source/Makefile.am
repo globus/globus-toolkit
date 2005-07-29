@@ -20,6 +20,7 @@ Sources= \
 	globus_gass_copy.c   \
 	globus_gass_copy_glob.c \
 	globus_i_gass_copy.h \
+	globus_url_copy.h \
 	globus_gass_copy.h 
 
 # INCLUDES is an automake macro which contains 
@@ -32,7 +33,8 @@ INCLUDES = $(GPT_INCLUDES)
 # include_HEADERS is an automake macro which contains 
 # a list of header files that are to be installed in $prefix/include
 flavorinclude_HEADERS= \
-	globus_gass_copy.h
+	globus_gass_copy.h \
+	globus_url_copy.h
 
 # lib_LTLIBRARIES is an automake macro which contains
 # a list of libtool libraries that are to be installed in $prefix/lib
@@ -81,7 +83,7 @@ globus_url_copy_SOURCES = globus_url_copy.c
 # 
 # GPT_LDFLAGS is a macro that contains the linker directives GPT generated 
 # from the dependent packages
-globus_url_copy_LDFLAGS = $(GPT_LDFLAGS)
+globus_url_copy_LDFLAGS = $(GPT_LDFLAGS)  -export-dynamic
 
 # _LDADD is an automake macro which contains
 # directives to the linker added after the list of objects.  

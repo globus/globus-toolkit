@@ -104,7 +104,11 @@ AC_DEFUN([LAC_ASM_SET],
                         lac_MD5_OBJ="asm/md5-sparcv8plus.lo"
                     ;;
                     *x86_64*)
-                        lac_BN_OBJ="asm/x86_64-gcc.lo"
+                        case ${GLOBUS_FLAVOR_NAME} in
+                            *64* )
+                                lac_BN_OBJ="asm/x86_64-gcc.lo"
+                            ;;
+                        esac
                     ;;
                     *x86*)
                         lac_BN_OBJ="asm/bn86-elf.lo asm/co86-elf.lo"

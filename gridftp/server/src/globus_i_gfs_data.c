@@ -131,6 +131,7 @@ typedef struct
     globus_bool_t                       is_mine;
     globus_gfs_operation_t              outstanding_op;
     globus_bool_t                       destroy_requested;
+    globus_bool_t                       use_interface;
 } globus_l_gfs_data_handle_t;
 
 typedef struct globus_l_gfs_data_operation_s
@@ -688,6 +689,44 @@ globus_l_gfs_data_auth_stat_cb(
     GlobusGFSDebugExit();
 }
 
+static
+void
+globus_l_gfs_data_send_stat_cb(
+    globus_gfs_data_reply_t *           reply,
+    void *                              user_arg)
+{
+    void *                              stat_wrapper;
+    globus_result_t                     res;
+    int                                 rc;
+    globus_l_gfs_data_operation_t *     op;
+    globus_gfs_transfer_info_t *        send_info;
+    GlobusGFSName(globus_l_gfs_data_recv_stat_cb);
+    GlobusGFSDebugEnter();
+
+    op = (globus_l_gfs_data_operation_t *) user_arg;
+    send_info = (globus_gfs_transfer_info_t *) op->info_struct;
+    if(reply->info.stat.stat_count == 1)
+    {
+        send_info->alloc_size = reply->info.stat.stat_array[0].size;
+    }
+
+    stat_wrapper = op->stat_wrapper;
+    rc = globus_gfs_acl_authorize(
+        &op->session_handle->acl_handle,
+        "read",
+        send_info->pathname,
+        &res,
+        globus_l_gfs_authorize_cb,
+        op);
+    if(rc == GLOBUS_GFS_ACL_COMPLETE)
+    {
+        globus_l_gfs_authorize_cb(send_info->pathname, op, res);
+    }
+    globus_free(stat_wrapper);
+
+    GlobusGFSDebugExit();
+}
+
 void
 globus_i_gfs_monitor_init(
     globus_i_gfs_monitor_t *            monitor)
@@ -995,13 +1034,27 @@ globus_l_gfs_data_authorize(
             }
             session_info->username = globus_libc_strdup(usr);
         }
-        pwent = globus_l_gfs_getpwnam(session_info->username);
-        if(pwent == NULL)
+        
+        if(globus_i_gfs_config_int("auth_level") & GLOBUS_L_GFS_AUTH_NOSETUID)
         {
-            GlobusGFSErrorGenericStr(res,
-                ("Mapped user '%s' is invalid.",
-                session_info->username));
-            goto pwent_error;
+            pwent = globus_l_gfs_getpwuid(getuid());
+            if(pwent == NULL)
+            {
+                res = GlobusGFSErrorGeneric(
+                    "Invalid passwd entry for current user.");
+                goto pwent_error;
+            }
+        }
+        else
+        {
+            pwent = globus_l_gfs_getpwnam(session_info->username);
+            if(pwent == NULL)
+            {
+                GlobusGFSErrorGenericStr(res,
+                    ("Mapped user '%s' is invalid.",
+                    session_info->username));
+                goto pwent_error;
+            }
         }
         gid = pwent->pw_gid;
         grent = globus_l_gfs_getgrgid(gid);
@@ -1162,19 +1215,22 @@ globus_l_gfs_data_authorize(
     }
 
     /* change process ids */
-    rc = setgid(gid);
-    if(rc != 0)
+    if(!(globus_i_gfs_config_int("auth_level") & GLOBUS_L_GFS_AUTH_NOSETUID))
     {
-        res = GlobusGFSErrorGeneric(
-            "Unable to set the gid of the server process.");
-        goto uid_error;
-    }
-    rc = setuid(pwent->pw_uid);
-    if(rc != 0)
-    {
-        res = GlobusGFSErrorGeneric(
-            "Unable to set the uid of the server process.");
-        goto uid_error;
+        rc = setgid(gid);
+        if(rc != 0)
+        {
+            res = GlobusGFSErrorGeneric(
+                "Unable to set the gid of the server process.");
+            goto uid_error;
+        }
+        rc = setuid(pwent->pw_uid);
+        if(rc != 0)
+        {
+            res = GlobusGFSErrorGeneric(
+                "Unable to set the uid of the server process.");
+            goto uid_error;
+        }
     }
     op->session_handle->uid = pwent->pw_uid;
     op->session_handle->gid_count = getgroups(0, NULL);
@@ -1186,7 +1242,7 @@ globus_l_gfs_data_authorize(
     {
         op->session_handle->home_dir = strdup(pwent->pw_dir);
     }
-    if (op->session_handle->real_username == NULL)
+    if(op->session_handle->real_username == NULL)
     {
         op->session_handle->real_username = globus_libc_strdup(pwent->pw_name);
     }
@@ -1724,6 +1780,7 @@ globus_l_gfs_data_handle_init(
     globus_result_t                     result;
     globus_ftp_control_dcau_t           dcau;
     char *                              interface;
+    globus_bool_t                       use_interface = GLOBUS_FALSE;
     GlobusGFSName(globus_l_gfs_data_handle_init);
     GlobusGFSDebugEnter();
 
@@ -1735,6 +1792,15 @@ globus_l_gfs_data_handle_init(
         goto error_alloc;
     }
 
+    if((interface = globus_i_gfs_config_string("data_interface")) != NULL)
+    {
+        if(data_info->interface != NULL)
+        {
+            globus_free(data_info->interface);
+        }
+        data_info->interface = globus_libc_strdup(interface);
+        use_interface = GLOBUS_TRUE;
+    }
     memcpy(&handle->info, data_info, sizeof(globus_gfs_data_info_t));
 
     result = globus_ftp_control_handle_init(&handle->data_channel);
@@ -1745,17 +1811,9 @@ globus_l_gfs_data_handle_init(
         goto error_data;
     }
 
-    if((interface = globus_i_gfs_config_string("data_interface")) != NULL)
-    {
-        if(handle->info.interface != NULL)
-        {
-            globus_free(handle->info.interface);
-        }
-        handle->info.interface = globus_libc_strdup(interface);
-    }
-
     handle->state = GLOBUS_L_GFS_DATA_HANDLE_VALID;
     handle->outstanding_op = NULL;
+    handle->use_interface = use_interface;
 
     if(0 && !globus_l_gfs_data_is_remote_node)
     {
@@ -2470,12 +2528,12 @@ globus_i_gfs_data_request_passive(
         /* its ok to use AF_INET here since we are requesting the LOCAL
          * address.  we just use AF_INET to store the port
          */
-        if(!globus_l_gfs_data_is_remote_node)
+        if(!globus_l_gfs_data_is_remote_node || handle->use_interface)
         {
             ipv6_addr = (strchr(handle->info.interface, ':') != NULL);
         }
 
-        if(globus_l_gfs_data_is_remote_node ||
+        if((globus_l_gfs_data_is_remote_node && !handle->use_interface) ||
             (ipv6_addr && !handle->info.ipv6))
         {
             GlobusLibcSockaddrSetFamily(addr, AF_INET);
@@ -3004,19 +3062,43 @@ globus_i_gfs_data_request_send(
             op, GlobusGFSErrorGeneric("bad module"));
         goto error_module;
     }
-
-    rc = globus_gfs_acl_authorize(
-        &session_handle->acl_handle,
-        "read",
-        send_info->pathname,
-        &res,
-        globus_l_gfs_authorize_cb,
-        op);
-    if(rc == GLOBUS_GFS_ACL_COMPLETE)
+    if(op->dsi->stat_func != NULL && 
+        op->data_handle->info.stripe_layout == GLOBUS_GFS_LAYOUT_PARTITIONED)
     {
-        globus_l_gfs_authorize_cb(send_info->pathname, op, res);
+        globus_gfs_stat_info_t *        stat_info;
+        
+        stat_info = (globus_gfs_stat_info_t *)
+            globus_calloc(1, sizeof(globus_gfs_stat_info_t));
+    
+        stat_info->pathname = send_info->pathname;
+        stat_info->file_only = GLOBUS_TRUE;
+        stat_info->internal = GLOBUS_TRUE;
+    
+        op->info_struct = send_info;
+        op->stat_wrapper = stat_info;
+    
+        globus_i_gfs_data_request_stat(
+            ipc_handle,
+            session_handle,
+            id,
+            stat_info,
+            globus_l_gfs_data_send_stat_cb,
+            op);
     }
-
+    else
+    {
+        rc = globus_gfs_acl_authorize(
+            &session_handle->acl_handle,
+            "read",
+            send_info->pathname,
+            &res,
+            globus_l_gfs_authorize_cb,
+            op);
+        if(rc == GLOBUS_GFS_ACL_COMPLETE)
+        {
+            globus_l_gfs_authorize_cb(send_info->pathname, op, res);
+        }
+    }
     GlobusGFSDebugExit();
     return;
 
@@ -3587,11 +3669,11 @@ globus_l_gfs_data_end_transfer_kickout(
         {
             if(info->list_type)
             {
-                if(strcmp(info->list_type, "LIST:") == 0)
+                if(strncmp(info->list_type, "LIST:", 5) == 0)
                 {
                     type = "LIST";
                 }
-                else if(strcmp(info->list_type, "NLST:") == 0)
+                else if(strncmp(info->list_type, "NLST:", 5) == 0)
                 {
                     type = "NLST";
                 }
@@ -4574,7 +4656,7 @@ globus_i_gfs_data_session_start(
     op->user_arg = user_arg;
     op->info_struct = session_info;
 
-    if(globus_i_gfs_config_int("auth_level") > 0)
+    if(globus_i_gfs_config_int("auth_level") & GLOBUS_L_GFS_AUTH_IDENTIFY)
     {
         globus_l_gfs_data_authorize(op, context, session_info);
     }
@@ -5382,6 +5464,25 @@ globus_gridftp_server_get_block_size(
 }
 
 void
+globus_gridftp_server_get_stripe_block_size(
+    globus_gfs_operation_t              op,
+    globus_size_t *                     stripe_block_size)
+{
+    GlobusGFSName(globus_gridftp_server_get_stripe_block_size);
+    GlobusGFSDebugEnter();
+    if(op->data_handle != NULL && op->data_handle->is_mine)
+    {
+        *stripe_block_size = op->data_handle->info.stripe_blocksize;
+    }
+    else
+    {
+        *stripe_block_size = 
+            (globus_size_t) globus_i_gfs_config_int("stripe_blocksize");
+    }
+    GlobusGFSDebugExit();
+}
+
+void
 globus_gridftp_server_get_session_uid(
     globus_gfs_operation_t              op,
     uid_t *                             uid)
@@ -5490,6 +5591,8 @@ globus_gridftp_server_get_read_range(
     globus_off_t                        stripe_block_size;
     int                                 size;
     int                                 i;
+    globus_gfs_transfer_info_t *        info;
+    globus_off_t                        part_size;
     GlobusGFSName(globus_gridftp_server_get_read_range);
     GlobusGFSDebugEnter();
 
@@ -5499,7 +5602,35 @@ globus_gridftp_server_get_read_range(
     {
         if(op->node_count > 1)
         {
-            stripe_block_size = op->data_handle->info.stripe_blocksize;
+            switch(op->data_handle->info.stripe_layout)
+            {
+                case GLOBUS_GFS_LAYOUT_PARTITIONED:
+                    info = (globus_gfs_transfer_info_t *) op->info_struct;
+                    if(op->partial_length > 0)
+                    {
+                        part_size = op->partial_length;
+                    }
+                    else
+                    {
+                        part_size = info->alloc_size;
+                    }
+                    stripe_block_size = part_size / op->node_count;
+                    if(part_size <= 0)
+                    {
+                        stripe_block_size =
+                            op->data_handle->info.stripe_blocksize;                        
+                    }
+                    else if(part_size % op->node_count)
+                    {
+                        stripe_block_size++;
+                    }
+                    break;
+                    
+                case GLOBUS_GFS_LAYOUT_BLOCKED:
+                default:
+                    stripe_block_size = op->data_handle->info.stripe_blocksize;
+                    break;
+            }
             start_offset = op->stripe_chunk * stripe_block_size;
             end_offset = start_offset + stripe_block_size;
 

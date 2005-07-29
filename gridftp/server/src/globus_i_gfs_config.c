@@ -74,9 +74,9 @@ static const globus_l_gfs_config_option_t option_list[] =
     "Exit after a single connection.", NULL, NULL},
 {NULL, "Authentication, Authorization, and Security Options", NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL},
  {"auth_level", "auth_level", NULL, "auth-level", NULL, GLOBUS_L_GFS_CONFIG_INT, -1, NULL,
-    "0 = Disables all authorization checks. 1 = Authorize identity only.  "
-    "2 = Authorize all file/resource accesses.  "
-    "If not set uses level 2 for front ends and level 1 for data nodes.", NULL, NULL},
+    "Add levels together to use more than one.  0 = Disables all authorization checks. 1 = Authorize identity. "
+    "2 = Authorize all file/resource accesses. 4 = Disable changing process uid to authenticated user (no setuid) -- DO NOT use this when process is started as root.  "
+    "If not set uses level 2 for front ends and level 1 for data nodes.  Note that levels 2 and 4 imply level 1 as well.", NULL, NULL},
  {"allow_from", "allow_from", NULL, "allow-from", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Only allow connections from these source ip addresses.  Specify a comma "
     "seperated list of ip address fragments.  A match is any ip address that "
@@ -273,6 +273,8 @@ static int option_count = sizeof(option_list) / sizeof(globus_l_gfs_config_optio
 
 static globus_hashtable_t               option_table;
 
+
+/* for string options, setting with an int_val of 1 will free the old one */ 
 static
 int
 globus_l_gfs_config_set(
@@ -309,6 +311,10 @@ globus_l_gfs_config_set(
         option->int_value = int_value;
         break;
       case GLOBUS_L_GFS_CONFIG_STRING:
+        if(int_value && option->value != NULL)
+        {
+            globus_free(option->value);
+        }
       case GLOBUS_L_GFS_CONFIG_LIST:
       case GLOBUS_L_GFS_CONFIG_VOID:
         option->value = value;
@@ -1249,6 +1255,47 @@ globus_i_gfs_config_display_usage()
     GlobusGFSDebugExit();
 }
 
+globus_result_t
+globus_l_gfs_config_hostname_to_address_string(
+    char *                              hostname,
+    char *                              out_buf,
+    int                                 out_buf_len)                              
+{
+    globus_addrinfo_t                   hints;
+    globus_addrinfo_t *                 addrinfo;
+    globus_result_t                     result;
+    
+    memset(&hints, 0, sizeof(globus_addrinfo_t));
+    hints.ai_family = PF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_protocol = 0;
+
+    result = globus_libc_getaddrinfo(hostname, NULL, &hints, &addrinfo);
+    if(result != GLOBUS_SUCCESS || addrinfo == NULL || 
+        addrinfo->ai_addr == NULL)
+    {
+        goto error_exit;
+    }
+    result = globus_libc_getnameinfo(
+        (const globus_sockaddr_t *) addrinfo->ai_addr,
+        out_buf,
+        out_buf_len,
+        NULL,
+        0,
+        GLOBUS_NI_NUMERICHOST);
+    if(result != GLOBUS_SUCCESS)
+    {
+        globus_libc_freeaddrinfo(addrinfo);
+        goto error_exit;
+    }       
+    globus_libc_freeaddrinfo(addrinfo);    
+    
+    return GLOBUS_SUCCESS;
+    
+error_exit:
+    return result;
+}
+
 static
 globus_result_t
 globus_l_gfs_config_misc()
@@ -1257,6 +1304,8 @@ globus_l_gfs_config_misc()
     globus_bool_t                       bool_value;
     char *                              value;
     char *                              data;
+    globus_result_t                     result;
+    char                                ipaddr[256];
     GlobusGFSName(globus_l_gfs_config_misc);
     GlobusGFSDebugEnter();
     
@@ -1295,6 +1344,67 @@ globus_l_gfs_config_misc()
     {
         globus_l_gfs_config_set("help", GLOBUS_TRUE, NULL);
     }
+
+    if((value = 
+        globus_i_gfs_config_string("control_interface")) != GLOBUS_NULL)
+    {        
+        memset(ipaddr, 0, sizeof(ipaddr));
+        result = globus_l_gfs_config_hostname_to_address_string(
+            value, ipaddr, sizeof(ipaddr));  
+        if(result != GLOBUS_SUCCESS)
+        {   
+            goto error_exit;
+        }
+        globus_l_gfs_config_set(
+            "control_interface", 1, globus_libc_strdup(ipaddr));
+    }
+
+    if((value = 
+        globus_i_gfs_config_string("data_interface")) != GLOBUS_NULL)
+    {        
+        memset(ipaddr, 0, sizeof(ipaddr));
+        result = globus_l_gfs_config_hostname_to_address_string(
+            value, ipaddr, sizeof(ipaddr));  
+        if(result != GLOBUS_SUCCESS)
+        {   
+            goto error_exit;
+        }
+        globus_l_gfs_config_set(
+            "data_interface", 1, globus_libc_strdup(ipaddr));
+    }
+
+    if((value = globus_i_gfs_config_string("hostname")) != GLOBUS_NULL)
+    {
+        globus_l_gfs_config_set("fqdn", 0, globus_libc_strdup(value));
+        
+        memset(ipaddr, 0, sizeof(ipaddr));
+        result = globus_l_gfs_config_hostname_to_address_string(
+            value, ipaddr, sizeof(ipaddr));  
+        if(result != GLOBUS_SUCCESS)
+        {   
+            goto error_exit;
+        }
+                      
+        if(globus_i_gfs_config_string("control_interface") == NULL)
+        {
+            globus_l_gfs_config_set(
+                "control_interface", 0, globus_libc_strdup(ipaddr));
+        }
+        if(globus_i_gfs_config_string("data_interface") == NULL)
+        {
+            globus_l_gfs_config_set(
+                "data_interface", 0, globus_libc_strdup(ipaddr));
+        }
+    }
+    else
+    {
+        char *                          hostname;
+        hostname = globus_malloc(1024);
+        globus_libc_gethostname(hostname, 1024);
+        globus_l_gfs_config_set("fqdn", 0, globus_libc_strdup(hostname));
+        globus_free(hostname);
+    }            
+
         
     if((bool_value = globus_i_gfs_config_bool("banner_terse")) == GLOBUS_TRUE)
     {
@@ -1307,21 +1417,15 @@ globus_l_gfs_config_misc()
     }
     else
     {
-        char *                          hostname;
-
-        hostname = globus_malloc(1024);
-        globus_libc_gethostname(hostname, 1024);
-        data = globus_common_create_string(
-            "GridFTP Server %s %d.%d (%s, %d-%d) ready.",
-            hostname,
-            local_version.major,
-            local_version.minor,
-            build_flavor,
-            local_version.timestamp,
-            local_version.branch_id);
-        globus_l_gfs_config_set("banner", 0, data);
-        globus_l_gfs_config_set("fqdn", 0, globus_libc_strdup(hostname));
-        globus_free(hostname);
+            data = globus_common_create_string(
+                "%s GridFTP Server %d.%d (%s, %d-%d) ready.",
+                globus_i_gfs_config_string("fqdn"),
+                local_version.major,
+                local_version.minor,
+                build_flavor,
+                local_version.timestamp,
+                local_version.branch_id);
+            globus_l_gfs_config_set("banner", 0, data);
     }
 
     data = globus_common_create_string(
@@ -1333,15 +1437,6 @@ globus_l_gfs_config_misc()
             local_version.branch_id);
     globus_l_gfs_config_set("version_string", 0, data);
             
-
-    if((value = globus_i_gfs_config_string("hostname")) != GLOBUS_NULL)
-    {
-        globus_libc_setenv("GLOBUS_HOSTNAME", value, 1);
-        globus_l_gfs_config_set("fqdn", 0, globus_libc_strdup(value));
-        globus_l_gfs_config_set("control_interface", 0, globus_libc_strdup(value));
-        globus_l_gfs_config_set("data_interface", 0, globus_libc_strdup(value));
-    }
-
     if((value = globus_i_gfs_config_string("login_msg_file")) != GLOBUS_NULL)
     {
         rc = globus_l_config_loadfile(value, &data);
@@ -1456,16 +1551,29 @@ globus_l_gfs_config_misc()
     }
     
     /* if auth_level is -1 it means it has not yet been touched */
-    if(globus_i_gfs_config_int("auth_level") == -1)
+    switch(globus_i_gfs_config_int("auth_level"))
     {
-        if(globus_i_gfs_config_bool("data_node"))
-        {
-            globus_l_gfs_config_set("auth_level", 1, NULL);
-        }
-        else
-        {
-            globus_l_gfs_config_set("auth_level", 2, NULL);
-        }
+        case -1:
+            if(globus_i_gfs_config_bool("data_node"))
+            {
+                globus_l_gfs_config_set("auth_level", 1, NULL);
+            }
+            else
+            {
+                globus_l_gfs_config_set("auth_level", 3, NULL);
+            }
+            break;
+        case 2:
+            globus_l_gfs_config_set("auth_level", 3, NULL);
+            break;
+        case 4:
+            globus_l_gfs_config_set("auth_level", 5, NULL);
+            break;
+        case 6:
+            globus_l_gfs_config_set("auth_level", 7, NULL);
+            break;
+        default:
+            break;
     }
 
     /* make sure root running process that does not fork can only run
@@ -1478,6 +1586,10 @@ globus_l_gfs_config_misc()
     
     GlobusGFSDebugExit();
     return GLOBUS_SUCCESS;
+    
+error_exit:
+    GlobusGFSDebugExitWithError();
+    return result;
 }
     
 
@@ -1500,6 +1612,7 @@ globus_i_gfs_config_init(
     int                                 arg_num;
     char *                              argp;
     int                                 rc;
+    globus_result_t                     result;
     GlobusGFSName(globus_i_gfs_config_init);
     GlobusGFSDebugEnter();
     
@@ -1565,7 +1678,14 @@ globus_i_gfs_config_init(
     {
         goto error;
     }
-    globus_l_gfs_config_misc();
+    
+    result = globus_l_gfs_config_misc();
+    if(result != GLOBUS_SUCCESS)
+    {
+        fprintf(stderr, "Error in post config setup:\n %s", 
+            globus_error_print_friendly(globus_error_peek(result)));
+        goto error;
+    }
     
     globus_l_gfs_config_set("exec_name", 0, exec_name);
     globus_l_gfs_config_set("argv", 0, argv);

@@ -10,7 +10,10 @@
  */
 
 #include "globus_scheduler_event_generator.h"
+#include "globus_scheduler_event_generator_app.h"
+#include "globus_scheduler_event_generator_stdout.h"
 #include "globus_gram_protocol_constants.h"
+
 /** @page seg_api_test API Test
  * 
  * Test event portions of the SEG API. Passed as an argument,
@@ -40,6 +43,11 @@ int main(int argc, char *argv[])
     {
         goto error;
     }
+    rc = globus_module_activate(GLOBUS_SCHEDULER_EVENT_GENERATOR_STDOUT_MODULE);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        goto deactivate_error;
+    }
 
     testfile = fopen(argv[1], "r");
     if (testfile == NULL)
@@ -47,6 +55,15 @@ int main(int argc, char *argv[])
         fprintf(stderr, "error openeing %s\n", argv[1]);
         goto deactivate_error;
     }
+
+    result = globus_scheduler_event_generator_set_event_handler(
+        globus_scheduler_event_generator_stdout_handler,
+        NULL);
+    if (result != GLOBUS_SUCCESS)
+    {
+        goto deactivate_error;
+    }
+
 
     while ((p = fgets(line, sizeof(line)-1, testfile)) != NULL)
     {

@@ -1,0 +1,18 @@
+<securityConfig xmlns="http://www.globus.org">
+ <method name="start"> 
+   <run-as>
+     <caller-identity/>
+   </run-as>
+
+   <auth-method>
+    <gsi/>
+   </auth-method>
+ </method>
+
+ <!-- defaults -->
+ <auth-method>
+  <gsi/>
+  <pkey/>
+ </auth-method>
+
+</securityConfig>

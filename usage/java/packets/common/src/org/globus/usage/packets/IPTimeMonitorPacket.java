@@ -30,6 +30,8 @@ public class IPTimeMonitorPacket extends UsageMonitorPacket {
     private static Log log = 
         LogFactory.getLog(IPTimeMonitorPacket.class.getName());
 
+    private static final byte[] UNKNOWN_SENDER = {0, 0, 0, 0};
+
     protected long timeSent;
     protected InetAddress senderAddress;
 
@@ -62,7 +64,8 @@ public class IPTimeMonitorPacket extends UsageMonitorPacket {
 
         buf.putLong(this.timeSent);
         
-        byte[] addressByteArray = this.senderAddress.getAddress();
+        byte[] addressByteArray = (this.senderAddress == null) ? 
+            UNKNOWN_SENDER : this.senderAddress.getAddress();
         if (addressByteArray.length == 4) {
             log.debug("This outgoing packet is IPv4.");
             buf.put((byte)4);

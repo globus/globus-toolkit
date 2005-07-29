@@ -105,6 +105,7 @@ typedef struct
     globus_bool_t                       restarted;
     const globus_abstime_t *            time_stop;
     globus_bool_t                       signaled;
+    globus_l_callback_space_t *         active_space;
     globus_l_callback_info_t *          callback_info;
 } globus_l_callback_restart_info_t;
 
@@ -1381,7 +1382,12 @@ globus_callback_space_poll(
     globus_l_callback_global_space.depth++;
     if(i_space)
     {
+        restart_info.active_space = i_space;
         i_space->depth++;
+    }
+    else
+    {
+        restart_info.active_space = &globus_l_callback_global_space;
     }
     
     do
@@ -1654,7 +1660,7 @@ globus_callback_get_timeout(
         return GLOBUS_FALSE;
     }
     
-    i_space = globus_l_callback_restart_info->callback_info->my_space;
+    i_space = globus_l_callback_restart_info->active_space;
     GlobusICallbackReadyPeak(&i_space->ready_queue, peek);
     if(!peek && i_space->handle != GLOBUS_CALLBACK_GLOBAL_SPACE)
     {
