@@ -767,6 +767,14 @@ globus_ftp_client_operationattr_destroy(
 	i_attr->dcau.subject.subject = GLOBUS_NULL;
 	i_attr->dcau.mode = GLOBUS_FTP_CONTROL_DCAU_NONE;
     }
+    if(i_attr->module_name != NULL)
+    {
+        free(i_attr->module_name);
+    }
+    if(i_attr->module_args != NULL)
+    {
+        free(i_attr->module_args);
+    }
     globus_libc_free(i_attr);
 
     *attr = GLOBUS_NULL;
@@ -778,9 +786,104 @@ error_exit:
 /* globus_ftp_client_operationattr_destroy() */
 
 /**
+ * @name Storage Module
+ */
+/* @{ */
+
+/**
+ * Set/Get the gridftp storage module (DSI).
+ * @ingroup globus_ftp_client_operationattr
+ *
+ * This attribute allows the user to control what backend module they
+ * use with the gridftp server.  The module MUST be implemented by the
+ * server or the transfer/get/put will result in an error.
+ *
+ * This attribute is ignored in stream mode.
+ *
+ * @param attr
+ *        The attribute set to query or modify.
+ * @param module_name
+ *        The backend storage module name
+ * @param module_args
+ *        The backend storage module parameters
+ *        
+ * @see #globus_gsiftp_control_parallelism_t,
+ *      globus_ftp_client_operationattr_set_layout(), 
+ *      globus_ftp_client_operationattr_set_mode()
+ *
+ * @note This is a Grid-FTP extension, and may not be supported on all FTP
+ * servers.
+ */
+globus_result_t
+globus_ftp_client_operationattr_set_storage_module(
+    globus_ftp_client_operationattr_t *		attr,
+    const char *                            module_name,
+    const char *                            module_args)
+{
+    globus_object_t *				err;
+    globus_i_ftp_client_operationattr_t *	i_attr;
+    GlobusFuncName(globus_ftp_client_operationattr_set_parallelism);
+
+    if(attr == GLOBUS_NULL)
+    {
+        err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr");
+        goto error_exit;
+    }
+    i_attr = *(globus_i_ftp_client_operationattr_t **) attr;
+
+    if(module_name != NULL)
+    {
+        i_attr->module_name = strdup(module_name);
+    }
+    if(module_args != NULL)
+    {
+        i_attr->module_args = strdup(module_args);
+    }
+    return GLOBUS_SUCCESS;
+
+error_exit:
+    return globus_error_put(err);
+}
+/* globus_ftp_client_operationattr_set_storage_module() */
+
+globus_result_t
+globus_ftp_client_operationattr_get_storage_module(
+    const globus_ftp_client_operationattr_t *	attr,
+    char **                                     module_name,
+    char **                                     module_args)
+{
+    globus_object_t *				err;
+    const globus_i_ftp_client_operationattr_t *	i_attr;
+    GlobusFuncName(globus_ftp_client_operationattr_get_parallelism);
+
+    if(attr == GLOBUS_NULL)
+    {
+        err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr");
+        goto error_exit;
+    }
+    i_attr = *(const globus_i_ftp_client_operationattr_t **) attr;
+    if(module_name != NULL)
+    {
+        *module_name = strdup(i_attr->module_name);
+    }
+    if(module_args != NULL)
+    {
+        *module_args = strdup(i_attr->module_args);
+    }
+
+    return GLOBUS_SUCCESS;
+
+error_exit:
+    return globus_error_put(err);
+}
+/* globus_ftp_client_operationattr_get_storage_module() */
+/* @} */
+
+/**
  * @name Parallelism
  */
 /* @{ */
+
 /**
  * Set/Get the parallelism attribute for an ftp client attribute set.
  * @ingroup globus_ftp_client_operationattr
