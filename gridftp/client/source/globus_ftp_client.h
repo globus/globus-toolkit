@@ -785,6 +785,18 @@ globus_ftp_client_operationattr_get_parallelism(
     globus_ftp_control_parallelism_t *		parallelism);
 
 globus_result_t
+globus_ftp_client_operationattr_set_storage_module(
+    globus_ftp_client_operationattr_t *     attr,
+    const char *                            module_name,
+    const char *                            module_args);
+
+globus_result_t
+globus_ftp_client_operationattr_get_storage_module(
+    const globus_ftp_client_operationattr_t *   attr,
+    char **                                 module_name,
+    char **                                 module_args);
+
+globus_result_t
 globus_ftp_client_operationattr_set_striped(
     globus_ftp_client_operationattr_t *		attr,
     globus_bool_t 				striped);

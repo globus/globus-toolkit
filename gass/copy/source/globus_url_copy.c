@@ -67,7 +67,12 @@ typedef struct
     globus_fifo_t                       matched_url_list;
 
     globus_hashtable_t                  recurse_hash;
-    
+
+    char *                              dst_module_name;
+    char *                              src_module_name;
+    char *                              dst_module_args;
+    char *                              src_module_args;
+
     char *                              source_subject;
     char *                              dest_subject;
     unsigned long                       options;
@@ -385,6 +390,12 @@ enum
     arg_b, 
     arg_c, 
     arg_ext,
+    arg_modname,
+    arg_modargs,
+    arg_src_modname,
+    arg_src_modargs,
+    arg_dst_modname,
+    arg_dst_modargs,
     arg_s, 
     arg_p, 
     arg_f, 
@@ -469,6 +480,12 @@ flagdef(arg_allo, "-allo","-allocate");
 flagdef(arg_noallo, "-no-allo","-no-allocate");
 
 oneargdef(arg_ext, "-X", "-extentions", NULL, NULL);
+oneargdef(arg_modname, "-mn", "-module-name", NULL, NULL);
+oneargdef(arg_modargs, "-mp", "-module-parameters", NULL, NULL);
+oneargdef(arg_src_modname, "-smn", "-src-module-name", NULL, NULL);
+oneargdef(arg_src_modargs, "-smp", "-src-module-parameters", NULL, NULL);
+oneargdef(arg_dst_modname, "-dmn", "-dst-module-name", NULL, NULL);
+oneargdef(arg_dst_modargs, "-dmp", "-dst-module-parameters", NULL, NULL);
 oneargdef(arg_f, "-f", "-filename", GLOBUS_NULL, GLOBUS_NULL);
 oneargdef(arg_stripe_bs, "-sbs", "-striped-block-size", test_integer, GLOBUS_NULL);
 oneargdef(arg_bs, "-bs", "-block-size", test_integer, GLOBUS_NULL);
@@ -492,7 +509,13 @@ static globus_args_option_descriptor_t args_options[arg_num];
     setupopt(arg_a);                    \
     setupopt(arg_f);                    \
     setupopt(arg_c);                    \
-    setupopt(arg_ext);                 \
+    setupopt(arg_ext);                  \
+    setupopt(arg_modname);              \
+    setupopt(arg_modargs);              \
+    setupopt(arg_src_modname);          \
+    setupopt(arg_src_modargs);          \
+    setupopt(arg_dst_modname);          \
+    setupopt(arg_dst_modargs);          \
     setupopt(arg_b);                    \
     setupopt(arg_s);                    \
     setupopt(arg_q);                    \
@@ -1196,7 +1219,21 @@ globus_l_guc_transfer_files(
     
         /* something strange in gass copy forces the need for this */
         globus_ftp_client_operationattr_init(&guc_info->source_ftp_attr);
+        if(guc_info->src_module_name != NULL)
+        {
+            globus_ftp_client_operationattr_set_storage_module(
+                &guc_info->source_ftp_attr,
+                guc_info->src_module_name,
+                guc_info->src_module_args);
+        }
         globus_ftp_client_operationattr_init(&guc_info->dest_ftp_attr);
+        if(guc_info->dst_module_name != NULL)
+        {
+            globus_ftp_client_operationattr_set_storage_module(
+                &guc_info->dest_ftp_attr,
+                guc_info->dst_module_name,
+                guc_info->dst_module_args);
+        }
 
         url_pair = (globus_l_guc_src_dst_pair_t *)
                     globus_fifo_dequeue(&guc_info->expanded_url_list);
@@ -1672,6 +1709,26 @@ globus_l_guc_parse_arguments(
                 }
             }
             break;
+        case arg_modname:
+            guc_info->src_module_name = globus_libc_strdup(instance->values[0]);
+            guc_info->dst_module_name = globus_libc_strdup(instance->values[0]);
+            break;
+        case arg_modargs:
+            guc_info->src_module_args = globus_libc_strdup(instance->values[0]);
+            guc_info->dst_module_args = globus_libc_strdup(instance->values[0]);
+            break;
+        case arg_src_modname:
+            guc_info->src_module_name = globus_libc_strdup(instance->values[0]);
+            break;
+        case arg_src_modargs:
+            guc_info->src_module_args = globus_libc_strdup(instance->values[0]);
+            break;
+        case arg_dst_modname:
+            guc_info->dst_module_name = globus_libc_strdup(instance->values[0]);
+            break;
+        case arg_dst_modargs:
+            guc_info->dst_module_args = globus_libc_strdup(instance->values[0]);
+            break;
         case arg_q:
             g_quiet_flag = GLOBUS_TRUE;
             break;
@@ -1960,6 +2017,14 @@ globus_l_guc_expand_urls(
             }
                     
             globus_ftp_client_operationattr_init(&guc_info->dest_ftp_attr);
+            if(guc_info->dst_module_name != NULL)
+            {
+                globus_ftp_client_operationattr_set_storage_module(
+                    &guc_info->dest_ftp_attr,
+                    guc_info->dst_module_name,
+                    guc_info->dst_module_args);
+            }
+
             globus_l_guc_gass_attr_init(
                 dest_gass_copy_attr,
                 &guc_info->dest_gass_attr,
@@ -1984,6 +2049,13 @@ globus_l_guc_expand_urls(
             globus_hashtable_string_keyeq);
                            
         globus_ftp_client_operationattr_init(&guc_info->source_ftp_attr);
+        if(guc_info->src_module_name != NULL)
+        {
+            globus_ftp_client_operationattr_set_storage_module(
+                &guc_info->source_ftp_attr,
+                guc_info->src_module_name,
+                guc_info->src_module_args);
+        }
 
         globus_l_guc_gass_attr_init(
             gass_copy_attr,
