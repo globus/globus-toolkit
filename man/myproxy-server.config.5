@@ -139,6 +139,11 @@ a ";".  Also, a port may be provided if the slave server is using a port
 other then the default.  The server name maybe a recognized DNS or an IP
 address.
 .TP
+.BI master_server " server:port;"
+This value is used by the MyProxy failover logic.  This tag provides either the
+DNS or IP address of the server acting as the MASTER.  Also, a port may be 
+provided if the slave server is using a port other then the default.
+.TP
 .BI authorized_renewers " \*(lqDN regex\*(rq"
 Each of these lines allows the server administrator to set
 server-wide policies for authorized renewers. If the client DN
