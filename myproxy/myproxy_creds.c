@@ -55,7 +55,7 @@ mystrdup(const char *string)
  *
  * Returns 1 if exists, 0 if not, -1 on error.
  */
-static int
+int
 file_exists(const char *path)
 {
     struct stat			statbuf = {0}; /* initialize with 0s */

@@ -419,20 +419,20 @@ makecertfile(const char   certfile[],
              const char   keyfile[],
              char       **credbuf)
 {
-    unsigned char *certbuf = NULL;
-    unsigned char *keybuf  = NULL;
-    int         retval  = -1;
-    struct stat s;
-    int         bytes;
-    static char BEGINCERT[] = "-----BEGIN CERTIFICATE-----";
-    static char ENDCERT[] = "-----END CERTIFICATE-----";
-    static char BEGINKEY[] = "-----BEGIN RSA PRIVATE KEY-----";
-    static char ENDKEY[] = "-----END RSA PRIVATE KEY-----";
-    char        *certstart; 
-    char        *certend;
-    int          size;
-    char        *keystart; 
-    char        *keyend;
+    unsigned char        *certbuf = NULL;
+    unsigned char        *keybuf  = NULL;
+    int                   retval  = -1;
+    int                   size;
+    int                   bytes;
+    struct stat           s;
+    static char           BEGINCERT[] = "-----BEGIN CERTIFICATE-----";
+    static char           ENDCERT[]   = "-----END CERTIFICATE-----";
+    static char           BEGINKEY[]  = "-----BEGIN RSA PRIVATE KEY-----";
+    static char           ENDKEY[]    = "-----END RSA PRIVATE KEY-----";
+    char                 *certstart; 
+    char                 *certend;
+    char                 *keystart; 
+    char                 *keyend;
 
 
     /* Figure out how much memory we are going to need */

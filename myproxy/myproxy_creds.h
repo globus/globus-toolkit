@@ -245,5 +245,15 @@ myproxy_certs_t *myproxy_get_certs(const char cert_dir[]);
  */
 int myproxy_install_trusted_cert_files(myproxy_certs_t *);
 
+/*
+ * file_exists()
+ *
+ * Check for existance of a file.
+ *
+ * Returns 1 if exists, 0 if not, -1 on error.
+ */
+int
+file_exists(const char *path);
+
 #endif
 
