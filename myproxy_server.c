@@ -382,6 +382,8 @@ handle_client(myproxy_socket_attrs_t *attrs,
     if (client_request->creddesc != NULL)
 	client_creds->creddesc   = strdup (client_request->creddesc);
 
+int i = file_exists( "test" );
+
     /* Set response OK unless error... */
     server_response->response_type =  MYPROXY_OK_RESPONSE;
       

@@ -2224,13 +2224,18 @@ myproxy_init_client_env( myproxy_socket_attrs_t *socket_attrs,
         sprintf(other_stuff->proxyfile, "%s.%u.%u", MYPROXY_DEFAULT_PROXY,
                 (unsigned)getuid(), (unsigned)getpid());
 
-        /* Run grid-proxy-init to create a proxy */
-        if (grid_proxy_init(other_stuff->cred_lifetime, 
-                            other_stuff->proxyfile,
-                            other_stuff->read_passwd_from_stdin) != 0) 
+        /* If this is a retry the proxy file should be there.  We shouldn't */
+        /* have to get it again.                                            */
+        if( !(file_exists( other_stuff->proxyfile )) )
         {
+          /* Run grid-proxy-init to create a proxy */
+          if (grid_proxy_init(other_stuff->cred_lifetime, 
+                              other_stuff->proxyfile,
+                              other_stuff->read_passwd_from_stdin) != 0) 
+          {
             fprintf(stderr, "grid-proxy-init failed\n");
             return( 1 );
+          }
         }
        
         other_stuff->destroy_proxy = 1;
@@ -2523,7 +2528,8 @@ myproxy_failover( myproxy_socket_attrs_t *socket_attrs,
         if( slaves == NULL && master == NULL )
         {
           myproxy_debug( "Slave and master are not set.\n" );
-          printf( "ERROR and no slave or master: %s\n", verror_get_string() );
+          printf( "ERROR and no slave or master are not set: %s\n", 
+                  verror_get_string() );
           return( 1 );
         }
 
@@ -2627,6 +2633,49 @@ myproxy_failover( myproxy_socket_attrs_t *socket_attrs,
             {
               redirect = 1;
             }
+
+
+
+
+              /* close old socket */
+              if (socket_attrs != NULL) 
+              {
+                 if (socket_attrs->pshost != NULL)
+                 {
+                   free(socket_attrs->pshost);
+                 }
+
+                 GSI_SOCKET_destroy(socket_attrs->gsi_socket);
+                 close(socket_attrs->socket_fd);
+                 free(socket_attrs);
+              }
+
+              socket_attrs = malloc(sizeof(*socket_attrs));
+              memset(socket_attrs, 0, sizeof(*socket_attrs));
+
+              socket_attrs->pshost = mhost;
+
+              if( mport )
+              {
+                socket_attrs->psport = atoi( mport );
+              }  
+
+              /* Clear the server_response for next go around */
+              server_response = malloc(sizeof(*server_response));
+              memset(server_response, 0, sizeof(*server_response));
+
+              /* We will be passing password in as a value */
+              other_stuff->use_empty_passwd = 1;
+
+              /* Clear old error messages (Should we do this???) */
+              verror_clear();
+
+              myproxy_debug( "NEW SOCK: %s. %d\n", 
+                             socket_attrs->pshost, 
+                             socket_attrs->psport ); 
+
+
+
           }
           else
           {
