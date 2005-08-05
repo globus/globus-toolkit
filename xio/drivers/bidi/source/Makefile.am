@@ -2,8 +2,7 @@ include $(top_srcdir)/globus_automake_pre
 include $(top_srcdir)/globus_automake_pre_top
 
 SUBDIRS = \
-	pkgdata \
-	doxygen
+	pkgdata 
 
 flavorinclude_HEADERS = \
     globus_xio_bidi_driver.h
