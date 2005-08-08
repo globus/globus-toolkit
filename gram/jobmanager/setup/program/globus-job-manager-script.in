@@ -19,11 +19,11 @@ if($Config{osname} eq 'irix')
 }
 elsif($Config{osname} eq 'aix')
 {
-    &append_path(\%env, 'LIBPATH', $path);
+    &append_path(\%ENV, 'LIBPATH', $path);
 }
 elsif($Config{osname} eq 'darwin')
 {
-    &append_path(\%env, 'DYLD_LIBRARY_PATH', $path);
+    &append_path(\%ENV, 'DYLD_LIBRARY_PATH', $path);
 }
 &append_path(\%ENV, 'LD_LIBRARY_PATH', $path);
 

@@ -2160,6 +2160,23 @@ globus_l_ftp_client_extended_get(
     {
         handle->eret_alg_str = globus_libc_strdup(eret_alg_str);
     }
+    else if(attr != NULL && *attr != NULL && (*attr)->module_name != NULL)
+    {
+        if((*attr)->module_args != NULL)
+        {
+            handle->eret_alg_str = globus_malloc(
+                strlen((*attr)->module_name)+strlen((*attr)->module_args) + 8);
+            sprintf(handle->eret_alg_str, "%s=\"%s\"",
+                (*attr)->module_name, (*attr)->module_args);
+        }
+        else
+        {
+            handle->eret_alg_str = globus_malloc(
+                strlen((*attr)->module_name) + 8);
+            sprintf(handle->eret_alg_str, "%s=\"\"", (*attr)->module_name);
+
+        }
+    }
 
     /* In stream mode, we need to keep track of the base offset to
      * adjust the offsets returned from the control library.
@@ -2649,6 +2666,24 @@ globus_l_ftp_client_extended_put(
     {
         handle->esto_alg_str = globus_libc_strdup(esto_alg_str);
     }
+    else if(attr != NULL && *attr != NULL && (*attr)->module_name != NULL)
+    {
+        if((*attr)->module_args != NULL)
+        {
+            handle->esto_alg_str = globus_malloc(
+                strlen((*attr)->module_name)+strlen((*attr)->module_args) + 8);
+            sprintf(handle->esto_alg_str, "%s=\"%s\"",
+                (*attr)->module_name, (*attr)->module_args);
+        }
+        else
+        {
+            handle->esto_alg_str = globus_malloc(
+                strlen((*attr)->module_name) + 8);
+            sprintf(handle->esto_alg_str, "%s=\"\"", (*attr)->module_name);
+
+        }
+    }
+
 
     /* In stream mode, we need to keep track of the base offset to
      * adjust the offsets returned from the control library.
@@ -3262,10 +3297,49 @@ globus_l_ftp_client_extended_third_party_transfer(
     {
         handle->esto_alg_str = globus_libc_strdup(esto_alg_str);
     }
+    else if(dest_attr != NULL && *dest_attr != NULL
+        && (*dest_attr)->module_name != NULL)
+    {
+        if((*dest_attr)->module_args != NULL)
+        {
+            handle->esto_alg_str = globus_malloc(
+                strlen((*dest_attr)->module_name)
+                    +strlen((*dest_attr)->module_args) + 8);
+            sprintf(handle->esto_alg_str, "%s=\"%s\"",
+                (*dest_attr)->module_name, (*dest_attr)->module_args);
+        }
+        else
+        {
+            handle->esto_alg_str = globus_malloc(
+                strlen((*dest_attr)->module_name) + 8);
+            sprintf(handle->esto_alg_str, "%s=\"\"", (*dest_attr)->module_name);
+
+        }
+    }
+
     if(eret_alg_str != GLOBUS_NULL)
     {
         handle->eret_alg_str = globus_libc_strdup(eret_alg_str);
     }
+    else if(source_attr != NULL && *source_attr != NULL &&
+        (*source_attr)->module_name != NULL)
+    {
+        if((*source_attr)->module_args != NULL)
+        {
+            handle->eret_alg_str = globus_malloc(
+                strlen((*source_attr)->module_name)+
+                    strlen((*source_attr)->module_args) + 8);
+            sprintf(handle->eret_alg_str, "%s=\"%s\"",
+                (*source_attr)->module_name, (*source_attr)->module_args);
+        }
+        else
+        {
+            handle->eret_alg_str = globus_malloc(
+                strlen((*source_attr)->module_name) + 8);
+            sprintf(handle->eret_alg_str,"%s=\"\"",(*source_attr)->module_name);
+        }
+    }
+
 
     if(restart)
     {

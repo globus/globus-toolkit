@@ -141,6 +141,9 @@ typedef struct globus_i_ftp_client_operationattr_t
     void *                                      read_all_intermediate_callback_arg;
     globus_bool_t                               allow_ipv6;
     globus_off_t                                allocated_size;
+
+    char *                                      module_name;
+    char *                                      module_args;
 }
 globus_i_ftp_client_operationattr_t;
 
