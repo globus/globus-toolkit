@@ -791,7 +791,7 @@ main(int argc, char **argv)
         return 1;
     }
 
-
+    memset(&guc_info, '\0', sizeof(globus_l_guc_info_t));
 
     globus_fifo_init(&guc_info.user_url_list);
     globus_fifo_init(&guc_info.expanded_url_list);
@@ -1633,6 +1633,11 @@ globus_l_guc_parse_arguments(
     guc_info->ipv6 = GLOBUS_FALSE;
     guc_info->allo = GLOBUS_TRUE;
     guc_info->create_dest = GLOBUS_FALSE;
+    guc_info->dst_module_name = GLOBUS_NULL;
+    guc_info->src_module_name = GLOBUS_NULL;
+    guc_info->dst_module_args = GLOBUS_NULL;
+    guc_info->src_module_args = GLOBUS_NULL;
+
  
     /* determine the program name */
     
