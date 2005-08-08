@@ -1,11 +1,11 @@
 #!/bin/sh
 
-VERSION=4.0.1
+VERSION=TRUNK
 INSTALLER=gt$VERSION-all-source-installer
 AUTOTOOLS=source-trees/autotools/autotools/autoconf-2.59/config
 GPT=gpt-3.2autotools2004-src.tar.gz
 # Pre-made tarfiles for gsi-openssh/myproxy
-TARFILES="gsi_openssh-3.5-src.tar.gz gsi_openssh_setup-3.5-src.tar.gz myproxy-1.17.tar.gz"
+TARFILES="gsi_openssh-3.5-src.tar.gz gsi_openssh_setup-3.5-src.tar.gz myproxy-2.3.tar.gz"
 
 echo Making configure/make installer
 ./make-packages.pl --trees=autotools --skippackage --skipbundle $@
@@ -20,13 +20,15 @@ echo Making configure/make installer
    #echo
 #fi
 
-./make-packages.pl --bundles=globus-resource-management-server,globus-resource-management-client,globus-resource-management-sdk,globus-data-management-server,globus-data-management-client,globus-data-management-sdk,globus-information-services-server,globus-information-services-client,globus-information-services-sdk,globus-rls-server,gt4-java-ws-core,gt4-java-admin,gt4-mds,gt4-delegation,gt4-rft,gt4-gram,gt4-gram-pbs,gt4-gram-condor,gt4-gram-lsf,gt4-cas,gt4-c-ws-core,prews-test,globus-internationalization,gt4-java-ws-core-test,gt4-c-ws-core-test,gt4-mds-test,gt4-gram-test,gt4-cas-delegation-test,gt4-rft-test,gt4-webmds,gt4-webmds-test,globus-gsi,gt4-replicator --list-packages --deps --deporder $@ --installer=farfleblatt
-
+./make-packages.pl --bundles=globus-resource-management-server,globus-resource-management-client,globus-resource-management-sdk,globus-data-management-server,globus-data-management-client,globus-data-management-sdk,globus-information-services-server,globus-information-services-client,globus-information-services-sdk,globus-rls-server,gt4-java-ws-core,gt4-java-admin,gt4-mds,gt4-delegation,gt4-rft,gt4-gram,gt4-gram-pbs,gt4-gram-condor,gt4-gram-lsf,gt4-cas,gt4-c-ws-core,prews-test,globus-internationalization,gt4-java-ws-core-test,gt4-c-ws-core-test,gt4-mds-test,gt4-gram-test,gt4-cas-delegation-test,gt4-rft-test,gt4-webmds,gt4-webmds-test,globus-gsi,gt4-replicator --packages=globus_rendezvous --list-packages --deps --deporder $@ --installer=farfleblatt
 
 if [ $? -ne 0 ]; then
 	echo There was trouble making the installer.
 	exit 1
 fi
+
+echo Bootstrapping done, about to copy source trees into installer.
+echo This may take a few minutes.
 
 mkdir $INSTALLER
 cat fait_accompli/installer.Makefile.prelude farfleblatt > $INSTALLER/Makefile.in
@@ -53,6 +55,7 @@ else
    CPOPTS=Rp
 fi
 
+
 cp -${CPOPTS} source-trees/wsrf-cvs/* $INSTALLER/source-trees
 cp -${CPOPTS} source-trees/gt2-cvs/* $INSTALLER/source-trees
 
@@ -78,3 +81,5 @@ fi
 for f in $TARFILES; do
    tar -C $INSTALLER/source-trees -xzf fait_accompli/$f
 done
+
+echo Done creating installer.
