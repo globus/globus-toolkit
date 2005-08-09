@@ -123,7 +123,7 @@ myproxy_destroy_LDFLAGS = $(GPT_LDFLAGS)
 
 myproxy_destroy_LDADD = $(GPT_PGM_LINKS) ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
 
-myproxy_server_SOURCES = myproxy_server.c
+myproxy_server_SOURCES = myproxy_server.c certauth_extensions.c
 myproxy_server_LDFLAGS = $(GPT_LDFLAGS)
 
 myproxy_server_LDADD = $(GPT_PGM_LINKS) ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la

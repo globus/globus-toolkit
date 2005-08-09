@@ -10,6 +10,12 @@
 #define MIN(x,y) ((x) < (y) ? (x) : (y))
 #endif
 
+#define CA_EXTENSIONS 1
+
+#ifdef CA_EXTENSIONS
+#include "certauth_extensions.h"
+#endif
+
 static char usage[] = \
 "\n"\
 "Syntax: myproxy-server [-p|-port #] [-c config-file] [-s storage-dir] ...\n"\
@@ -344,12 +350,34 @@ handle_client(myproxy_socket_attrs_t *attrs,
 				   "Invalid username received.\n");
     }
 
+    myproxy_debug("user: %s", client_request->username);
+
     /* All authorization policies are enforced in this function. */
+#ifdef CA_EXTENSIONS
+    int use_ca_callout = myproxy_authorize_accept(context, attrs, 
+							  client_request, 
+							  client_name);
+    if (use_ca_callout < 0) {
+      myproxy_log("authorization failed");
+      respond_with_error_and_die(attrs, verror_get_string());
+    } else if ( use_ca_callout == 0 ) {
+      myproxy_debug("stored creds - auth ok");
+    } else if ( use_ca_callout == 1 ) {
+      myproxy_debug("no stored creds - auth ok");
+    } else {
+      myproxy_log("unknown auth return code");
+      myproxy_log("authorization failed");
+      respond_with_error_and_die(attrs, verror_get_string());
+    }
+
+#else
     if (myproxy_authorize_accept(context, attrs, 
 	                         client_request, client_name) < 0) {
        myproxy_log("authorization failed");
        respond_with_error_and_die(attrs, verror_get_string());
     }
+#endif
+
     
     /* Fill in client_creds with info from the request that describes
        the credentials the request applies to. */
@@ -382,6 +410,41 @@ handle_client(myproxy_socket_attrs_t *attrs,
                             : "RETRIEVE", 
                          client_name);
 
+#ifdef CA_EXTENSIONS
+	if (!use_ca_callout) {
+	  /* Retrieve the credentials from the repository */
+	  if (myproxy_creds_retrieve(client_creds) < 0) {
+	    respond_with_error_and_die(attrs, verror_get_string());
+	  }
+
+	  myproxy_debug("  Owner: %s", client_creds->username);
+	  myproxy_debug("  Username: %s", client_creds->username);
+	  myproxy_debug("  Location: %s", client_creds->location);
+	  myproxy_debug("  Requested lifetime: %d seconds",
+			client_request->proxy_lifetime);
+	  myproxy_debug("  Max. delegation lifetime: %d seconds",
+			client_creds->lifetime);
+
+	  /* Are credentials expired? */
+	  now = time(0);
+	  if (client_creds->start_time > now) {
+	    myproxy_debug("  warning: credentials not yet valid! "
+			  "(problem with local clock?)");
+	  } else if (client_creds->end_time < now) {
+	    respond_with_error_and_die(attrs,
+				       "requested credentials have expired");
+	  }
+
+	  /* Are credentials locked? */
+	  if (client_creds->lockmsg) {
+	    char *error, *msg="credential locked\n";
+	    error = malloc(strlen(msg)+strlen(client_creds->lockmsg)+1);
+	    strcpy(error, msg);
+	    strcat(error, client_creds->lockmsg);
+	    respond_with_error_and_die(attrs, error);
+	  }
+	}
+#else
 	/* Retrieve the credentials from the repository */
 	if (myproxy_creds_retrieve(client_creds) < 0) {
 	    respond_with_error_and_die(attrs, verror_get_string());
@@ -413,7 +476,7 @@ handle_client(myproxy_socket_attrs_t *attrs,
 	    strcat(error, client_creds->lockmsg);
 	    respond_with_error_and_die(attrs, error);
 	}
-
+#endif
 	if (client_request->want_trusted_certs) {
 	    if (context->cert_dir) {
 		server_response->trusted_certs =
@@ -430,8 +493,21 @@ handle_client(myproxy_socket_attrs_t *attrs,
         if( client_request->command_type == MYPROXY_GET_PROXY )
         {	
 	  /* Delegate the credential and set final server_response */
+
+#ifdef CA_EXTENSIONS
+	  if (use_ca_callout) {
+	    myproxy_debug("using CA callout");
+	    get_certificate_authority(attrs, client_creds, client_request,
+				      server_response, context);
+	  } else {
+	    myproxy_debug("retrieving proxy");
+	    get_proxy(attrs, client_creds, client_request, server_response,
+		      context->max_proxy_lifetime);
+	  }
+#else
           get_proxy(attrs, client_creds, client_request, server_response,
 	  	    context->max_proxy_lifetime);
+#endif
         }
         else if( client_request->command_type == MYPROXY_RETRIEVE_CERT )
         {
@@ -1134,6 +1210,10 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
    authorization_data_t auth_data = { 0 };
    myproxy_creds_t creds = { 0 };
 
+#ifdef CA_EXTENSIONS
+   int no_creds = 0;
+#endif
+
    switch (client_request->command_type) {
    case MYPROXY_GET_PROXY:
    case MYPROXY_RETRIEVE_CERT:
@@ -1146,15 +1226,27 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
        }
 
        /* get information about credential */
+
        creds.username = strdup(client_request->username);
        if (client_request->credname) {
 	   creds.credname = strdup(client_request->credname);
        }
+       myproxy_debug("user 2: %s", creds.username);
+#ifdef CA_EXTENSIONS
+       if (myproxy_creds_retrieve(&creds) < 0) {
+	 myproxy_debug("No stored creds - checking pam authorization");
+	 creds.username = strdup(client_request->username);
+	 no_creds = 1;
+       } else {
+	 myproxy_debug("Found stored credentials - checking pam auth");
+       }
+#else
        if (myproxy_creds_retrieve(&creds) < 0) {
 	   verror_put_string("Unable to retrieve credential information");
 	   goto end;
        }
-
+#endif
+       myproxy_debug("user 3: %s", creds.username);
        if (client_request->command_type == MYPROXY_RETRIEVE_CERT) {
 	   myproxy_debug("applying authorized_key_retrievers policy");
 	   authorization_ok =
@@ -1207,8 +1299,10 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 	       }
 	   }
 	   /* Does passphrase match? */
+	   myproxy_debug("checking passphrase for %s", creds.username);
 	   authorization_ok =
 	       authorization_check_ex(&auth_data, &creds, client_name, context);
+	   myproxy_debug("checked passphrase: %d", authorization_ok);
 	   if (authorization_ok != 1) {
 	       verror_put_string("invalid pass phrase");
 	       goto end;
@@ -1382,6 +1476,17 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
       verror_put_string("Authorization failed");
       goto end;
    }
+
+#ifdef CA_EXTENSIONS
+   if (no_creds) {
+     myproxy_debug("pam auth ok - no creds");
+     return_status = 1;
+     goto end;
+   } else {
+     myproxy_debug("pam auth ok - have stored creds");
+   }
+
+#endif
 
 #if defined(HAVE_LIBSASL2)
    if (do_account_authorization(attrs, client_request, client_name) < 0) {
