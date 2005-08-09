@@ -3491,6 +3491,7 @@ globus_l_gfs_data_begin_cb(
                         "Requested size = %d, actualy size = %d\n",
                         op->data_handle->info.tcp_bufsize, rcvbuf);
                 }
+                op->data_handle->info.tcp_bufsize = rcvbuf;
             }
             else
             {
@@ -3503,6 +3504,7 @@ globus_l_gfs_data_begin_cb(
                         "Requested size = %d, actualy size = %d\n",
                         op->data_handle->info.tcp_bufsize, sndbuf);
                 }
+                op->data_handle->info.tcp_bufsize = sndbuf;
             }
 
             globus_i_gfs_log_message(
@@ -4961,7 +4963,6 @@ globus_gridftp_server_begin_transfer(
     int                                 event_mask,
     void *                              event_arg)
 {
-    globus_result_t                     res;
     globus_bool_t                       pass_abort = GLOBUS_FALSE;
     globus_bool_t                       destroy_session = GLOBUS_FALSE;
     globus_bool_t                       destroy_op = GLOBUS_FALSE;
