@@ -308,6 +308,33 @@ case ${host}--$1 in
         fi
         CC="$lac_cv_CC"
         ;;
+    sparc64-*-linux* )
+        if test "$GLOBUS_CC" = "mpicc"; then
+            AC_PATH_PROGS(lac_cv_CC,  $CC  mpicc)
+            AC_PATH_PROGS(lac_cv_CXX, $CXX mpicxx mpic++ mpiCC)
+            AC_PATH_PROGS(lac_cv_F77, $F77 mpif77)
+            AC_PATH_PROGS(lac_cv_F90, $F90 mpif90)
+        else
+            if test "$GLOBUS_CC" != "gcc"; then
+                AC_MSG_ERROR(vendorcc not supported on this platform)
+            fi
+
+            if test "$lac_cv_build_64bit" = "yes"; then
+                lac_CFLAGS="$lac_CFLAGS -m64"
+                lac_CXXFLAGS="$lac_CXXFLAGS -m64"
+                lac_LDFLAGS="$lac_LDFLAGS -m64"
+            else
+                lac_CFLAGS="$lac_CFLAGS -m32"
+                lac_CXXFLAGS="$lac_CXXFLAGS -m32"
+                lac_LDFLAGS="$lac_LDFLAGS -m32"
+            fi
+            AC_PATH_PROGS(lac_cv_CC, $CC gcc)
+            AC_PATH_PROGS(lac_cv_CXX, $CXX c++ g++)
+            AC_PATH_PROGS(lac_cv_F77, $F77 f77 g77)
+            AC_PATH_PROGS(lac_cv_F90, $F90 f90)
+        fi
+        CC="$lac_cv_CC"
+        ;;
     alpha*linux* )
         if test "$lac_cv_build_64bit" = "no"; then
             AC_MSG_ERROR(32 bits not supported on this platform)
