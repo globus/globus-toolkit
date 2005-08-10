@@ -3381,6 +3381,9 @@ globus_l_gfs_data_begin_cb(
     globus_bool_t                       reused,
     globus_object_t *                   error)
 {
+    globus_result_t                     res;
+    int                                 rcvbuf;
+    int                                 sndbuf;
     globus_bool_t                       destroy_session = GLOBUS_FALSE;
     globus_bool_t                       destroy_op = GLOBUS_FALSE;
     globus_bool_t                       dec_op = GLOBUS_FALSE;
@@ -3466,6 +3469,44 @@ globus_l_gfs_data_begin_cb(
         }
         if(connect_event && op->data_handle->is_mine)
         {
+            res = globus_ftp_control_data_get_socket_buf(
+                &op->data_handle->data_channel,
+                &rcvbuf,
+                &sndbuf);
+            if(res != GLOBUS_SUCCESS)
+            {
+                globus_i_gfs_log_message(
+                    GLOBUS_I_GFS_LOG_WARN,
+                    "Buffer size may not be properly set: %s\n",
+                    globus_error_print_friendly(globus_error_get(res)));
+            }
+            if(op->writing)
+            {
+                if(rcvbuf != op->data_handle->info.tcp_bufsize
+                    && res == GLOBUS_SUCCESS)
+                {
+                    globus_i_gfs_log_message(
+                        GLOBUS_I_GFS_LOG_WARN,
+                        "RECV buffer size may not be properly set.  "
+                        "Requested size = %d, actualy size = %d\n",
+                        op->data_handle->info.tcp_bufsize, rcvbuf);
+                }
+                op->data_handle->info.tcp_bufsize = rcvbuf;
+            }
+            else
+            {
+                if(sndbuf != op->data_handle->info.tcp_bufsize
+                    && res == GLOBUS_SUCCESS)
+                {
+                    globus_i_gfs_log_message(
+                        GLOBUS_I_GFS_LOG_WARN,
+                        "SEND buffer size may not be properly set.  "
+                        "Requested size = %d, actualy size = %d\n",
+                        op->data_handle->info.tcp_bufsize, sndbuf);
+                }
+                op->data_handle->info.tcp_bufsize = sndbuf;
+            }
+
             globus_i_gfs_log_message(
                 GLOBUS_I_GFS_LOG_INFO,
                 "Starting to transfer \"%s\".\n", 
@@ -4926,7 +4967,7 @@ globus_gridftp_server_begin_transfer(
     globus_bool_t                       destroy_session = GLOBUS_FALSE;
     globus_bool_t                       destroy_op = GLOBUS_FALSE;
     globus_result_t                     result;
-    globus_gfs_event_info_t        event_reply;
+    globus_gfs_event_info_t             event_reply;
     globus_gfs_event_info_t             event_info;
     GlobusGFSName(globus_gridftp_server_begin_transfer);
     GlobusGFSDebugEnter();

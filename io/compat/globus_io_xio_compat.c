@@ -1732,6 +1732,48 @@ globus_io_attr_get_socket_rcvbuf(
         rcvbuf);
 }
 
+globus_result_t
+globus_io_handle_get_socket_buf(
+    globus_io_handle_t *                handle,
+    int *                               rcvbuf,
+    int *                               sndbuf)
+{
+    globus_result_t                     res = GLOBUS_SUCCESS;
+    GlobusIOName(globus_io_handle_get_socket_buf);
+    
+    GlobusLIOCheckHandle(handle, GLOBUS_I_IO_TCP_HANDLE);
+
+    if(rcvbuf != NULL)
+    {
+        res = globus_xio_handle_cntl(
+            (*handle)->xio_handle,
+            globus_l_io_tcp_driver,
+            GLOBUS_XIO_TCP_GET_RCVBUF,
+            rcvbuf);
+        if(res != GLOBUS_SUCCESS)
+        {
+            goto error;
+        }
+    }
+    if(sndbuf != NULL)
+    {
+        res = globus_xio_handle_cntl(
+            (*handle)->xio_handle,
+            globus_l_io_tcp_driver,
+            GLOBUS_XIO_TCP_GET_SNDBUF,
+            sndbuf);
+        if(res != GLOBUS_SUCCESS)
+        {
+            goto error;
+        }
+    }
+    return GLOBUS_SUCCESS;
+
+error:
+    return res;
+}
+
+
 /* file operations */
 static
 globus_result_t
