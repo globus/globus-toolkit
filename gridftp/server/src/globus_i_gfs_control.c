@@ -414,9 +414,17 @@ globus_l_gfs_auth_session_cb(
     }
     else
     {
+        if(auth_info->session_info->subject != NULL)
+        {
+            globus_i_gfs_log_message(
+                GLOBUS_I_GFS_LOG_INFO,
+                "DN %s successfully authorized.\n",
+                auth_info->session_info->subject);
+        }
+
         globus_i_gfs_log_message(
             GLOBUS_I_GFS_LOG_INFO,
-            "User %s successfully authorized\n",
+            "User %s successfully authorized.\n",
             reply->info.session.username);
 
         if(reply->info.session.home_dir != NULL && 

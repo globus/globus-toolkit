@@ -1224,6 +1224,26 @@ globus_l_gfs_data_authorize(
                 "Unable to set the gid of the server process.");
             goto uid_error;
         }
+        if(getuid() == 0)
+        {
+            char *                          name;
+            if(op->session_handle->real_username == NULL)
+            {
+                name = pwent->pw_name;
+            }
+            else
+            {
+                name = op->session_handle->real_username;
+            }
+            rc = initgroups(name, gid);
+            if(rc != 0)
+            {
+                res = GlobusGFSErrorGeneric(
+                    "Unable to set the supplemental groups of the server "
+                    "process.");
+                goto uid_error;
+            }
+        }
         rc = setuid(pwent->pw_uid);
         if(rc != 0)
         {
