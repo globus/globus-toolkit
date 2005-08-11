@@ -19,45 +19,84 @@ directory structure in another location.
 
 =cut
 
+my $gpt_path;
+my $globus_path;
+
+BEGIN {
+    $gpt_path = $ENV{GPT_LOCATION};
+    if (!defined($gpt_path))
+    {
+      $gpt_path = $ENV{GLOBUS_LOCATION};
+
+    }
+
+    $globus_path = $ENV{GLOBUS_LOCATION};
+
+    if (!defined($gpt_path) || !defined($globus_path))
+    {
+       die "GPT_LOCATION and GLOBUS_LOCATION need to be set before running this script"
+    }
+    push(@INC, "$gpt_path/lib/perl");
+}
+
 use strict;
-use Getopt::Long;
 use IO::File;
 
-my $gpath = $ENV{GPT_LOCATION};
+use Grid::GPT::PackageFactory;
 
-if (!defined($gpath))
-{
-  $gpath = $ENV{GLOBUS_LOCATION};
 
-}
+my %pkgs = ();
+my %functional_groups = ();
+my %descs = ();
 
-if (!defined($gpath))
-{
-   die "GPT_LOCATION or GLOBUS_LOCATION needs to be set before running this script"
-}
-
-my @pkgs = ();
-
-my $docpath="$gpath/share/doc";
+my $docpath="$globus_path/share/doc";
 if(defined($ARGV[0]))
 {
     $docpath = $ARGV[0];
 }
+my $output_docpath;
+if(defined($ARGV[1]))
+{
+    $output_docpath = $ARGV[1];
+}
 
-print "Updating documentation tree $docpath\n";
+print "Searching documentation tree $docpath\n";
 
 foreach (glob("$docpath/*"))
 {
     my $nonempty = `wc -l $_/html/*.tag 2> /dev/null`;
     chomp($nonempty);
-
     if($nonempty > 3)
     {
-	push(@pkgs, $_);
+        my $pkgname = $_;
+        $pkgname =~ s|.*/||g;
+
+        $pkgs{$pkgname} = $pkgname;
     }
 }
 
-my $file = new IO::File(">$docpath/index.html");
+print "Sorting into functional groups\n";
+foreach (keys %pkgs) {
+    my $package_factory = new Grid::GPT::PackageFactory();
+    my @package_files = glob("$globus_path/etc/globus_packages/$_/pkg_data*.gpt");
+    my $package_file = $package_files[0];
+
+    if ($package_file eq '') {
+        print "No package data for $_\n";
+        next;
+    }
+    my $package = $package_factory->type_of_package($package_file);
+    $package->read_metadata_file($package_file);
+
+    push(@{$functional_groups{$package->{Functional_Group}}}, $_);
+    $descs{$_} = $package->{Description};
+}
+
+if ($output_docpath ne '') {
+    $docpath = $output_docpath;
+}
+my $file = new IO::File(">$docpath/index.html")
+    || die "unable to write to $docpath/index.html";
 print $file <<EOF;
 
 <html>
@@ -70,18 +109,24 @@ print $file <<EOF;
 
 EOF
 
-foreach (@pkgs)
+foreach (keys %functional_groups)
 {
-    my $pkg = $_;
-    $pkg =~ s|.*/||;
-    print "    $pkg\n";
-    print $file <<EOF;
-    <ul>
-	<li> <a href='$pkg/html/index.html' target='_top'>$pkg</a>
-	    [<a href='$pkg/html/main.html' target='_top'>no frames</a>]
-	</li>
-    </ul>
+    my $group = $_;
+    $group =~ s|.*/||;
+
+    print $file "<h2>$_</h2>\n";
+
+    print $file "<ul>\n";
+
+    foreach my $pkg (@{$functional_groups{$_}})
+    {
+        print $file <<EOF;
+            <li> <a href='$pkgs{$pkg}/html/index.html' target='_top'>$descs{$pkg}</a>
+                [<a href='$pkgs{$pkg}/html/main.html' target='_top'>no frames</a>]
+            </li>
 EOF
+    }
+    print $file "</ul>\n";
 }
 print "Done\n";
 
