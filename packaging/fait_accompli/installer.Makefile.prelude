@@ -1,4 +1,4 @@
-all: gpt @prewsmds@ @gridftp@ @prewsgram@ @rls@ @myproxy@ @gsiopenssh@ @wsjava@ @wsmds@ @wsdel@ @wsrft@ @wsgram@ @wsgramcondor@ @wsgramlsf@ @wsgrampbs@ @wscas@ @webmds@ @wsc@ @i18n@ @tests@ @wstests@ @drs@ done
+all: gpt @prewsmds@ @gridftp@ @prewsgram@ @rls@ @myproxy@ @gsiopenssh@ @wsjava@ @wsmds@ @wsdel@ @wsrft@ @wsgram@ @wsgramcondor@ @wsgramlsf@ @wsgrampbs@ @wscas@ @webmds@ @wsc@ @i18n@ @tests@ @wstests@ @drs@ @rndvz@ done
 GLOBUS_LOCATION=@prefix@
 GPT_LOCATION=@gptlocation@
 GLOBUS_IODBC_PATH=@globus_iodbc@
@@ -49,8 +49,10 @@ postinstall:
 
 # NCSA targets
 gsi-myproxy: gpt globus-gsi myproxy
+myproxy-only: gpt 
+	${GPT_LOCATION}/sbin/gpt-build ${BUILD_OPTS} -srcdir=source-trees/myproxy-2.3 ${FLAVOR}
 myproxy: gpt globus_gss_assist globus_gssapi_gsi
-	${GPT_LOCATION}/sbin/gpt-build ${BUILD_OPTS} -srcdir=source-trees/myproxy-1.17 ${FLAVOR}
+	${GPT_LOCATION}/sbin/gpt-build ${BUILD_OPTS} -srcdir=source-trees/myproxy-2.3 ${FLAVOR}
 gsi-openssh: gpt globus-gsi gsi_openssh gsi_openssh_setup
 gsi_openssh: gpt globus_openssl globus_gss_assist
 	${GPT_LOCATION}/sbin/gpt-build ${BUILD_OPTS} -srcdir=source-trees/gsi_openssh-3.5-src ${FLAVOR} @gsiopensshargs@

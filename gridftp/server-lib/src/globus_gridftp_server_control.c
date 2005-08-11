@@ -1871,6 +1871,11 @@ globus_i_gsc_concat_path(
                 in_path);
         }
 
+        if(tmp_path == NULL)
+        {
+            goto error;
+        }
+        
         /* remove all double slashes */
         tmp_ptr = strstr(tmp_path, "//");
         while(tmp_ptr != NULL)
@@ -1882,19 +1887,14 @@ globus_i_gsc_concat_path(
         tmp_ptr = strstr(tmp_path, "/..");
         while(tmp_ptr != NULL)
         {
-            /* if they try to trick past top return NULL */
-            if(tmp_ptr == tmp_path)
-            {
-                goto error;
-            }
-            tmp_ptr2 = tmp_ptr - 1;
-            while(tmp_ptr2 != tmp_path && *tmp_ptr2 != '/')
+            tmp_ptr2 = tmp_ptr;
+            if(tmp_ptr > tmp_path)
             {
                 tmp_ptr2--;
-            }
-            if(tmp_ptr2 == tmp_path)
-            {
-                goto error;
+                while(tmp_ptr2 != tmp_path && *tmp_ptr2 != '/')
+                {
+                    tmp_ptr2--;
+                }
             }
             memmove(tmp_ptr2, &tmp_ptr[3], strlen(&tmp_ptr[3])+1);
             tmp_ptr = strstr(tmp_path, "/..");
@@ -1904,15 +1904,20 @@ globus_i_gsc_concat_path(
         tmp_ptr = strstr(tmp_path, "./");
         while(tmp_ptr != NULL)
         {
-            memmove(tmp_ptr, &tmp_ptr[1], strlen(&tmp_ptr[1])+1);
+            memmove(tmp_ptr, &tmp_ptr[2], strlen(&tmp_ptr[2])+1);
             tmp_ptr = strstr(tmp_path, "./");
         }
 
         /* remove trailing slash */
         len = strlen(tmp_path);
-        if(tmp_path[len - 1] == '/')
+        if(len > 1 && tmp_path[len - 1] == '/')
         {
             tmp_path[len - 1] = '\0';
+        }
+        else if(len == 0)
+        {
+            tmp_path[0] = '/';
+            tmp_path[1] = '\0';
         }
     }
     globus_mutex_unlock(&i_server->mutex);

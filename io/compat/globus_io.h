@@ -807,6 +807,13 @@ globus_netlogger_set_desc(
     globus_netlogger_handle_t *       nl_handle,
     char *                            desc);
 
+globus_result_t
+globus_io_handle_get_socket_buf(
+    globus_io_handle_t *                handle,
+    int *                               rcvbuf,
+    int *                               sndbuf);
+
+
 EXTERN_C_END
 
 #include "globus_io_error_hierarchy.h"

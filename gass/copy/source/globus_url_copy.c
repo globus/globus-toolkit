@@ -60,6 +60,7 @@ typedef struct
     char *                              dst_url;
 } globus_l_guc_src_dst_pair_t;
 
+
 typedef struct 
 {
     globus_fifo_t                       user_url_list;
@@ -67,6 +68,8 @@ typedef struct
     globus_fifo_t                       matched_url_list;
 
     globus_hashtable_t                  recurse_hash;
+
+    int                                 timeout_secs;
 
     char *                              dst_module_name;
     char *                              src_module_name;
@@ -268,7 +271,9 @@ const char * long_usage =
 "       Recommended when using GridFTP servers. Use MODE E for all data\n"
 "       transfers, including reusing data channels between list and transfer\n"
 "       operations.\n"
-   
+"  -t <transfer time in seconds>\n"
+"       Run the transfer for this number of seconds and then end.\n"
+"       Useful for performance testing.\n"   
 "  -q | -quiet \n"
 "       Suppress all output for successful operation\n"
 "  -v | -verbose \n"
@@ -336,6 +341,24 @@ const char * long_usage =
 "       If set to >0, Blocked mode will be used, with this as the blocksize.\n"
 "  -ipv6\n"
 "       use ipv6 when available (EXPERIMENTAL)\n"
+"   -mn  | -module-name <gridftp storage module name>\n"
+"       Set the backend storage module to use for both the source and\n"
+"       destination in a GridFTP transfer\n"
+"   -mp  | -module-parameters <gridftp storage module parameters>\n"
+"       Set the backend storage module arguments to use for both the source\n"
+"       and destination in a GridFTP transfer\n"
+"   -smn | -src-module-parameters <gridftp storage module name>\n"
+"       Set the backend storage module to use for the source in a GridFTP\n"
+"       transfer\n"
+"   -smp | -src-module-parameters <gridftp storage module parameters>\n"
+"       Set the backend storage module arguments to use for the source\n"
+"       in a GridFTP transfer\n"
+"   -dmn | -dst-module-parameters <gridftp storage module name>\n"
+"       Set the backend storage module to use for the destination in a GridFTP\n"
+"       transfer\n"
+"   -dmp | -dst-module-parameters <gridftp storage module parameters>\n"
+"       Set the backend storage module arguments to use for the destination\n"
+"       in a GridFTP transfer\n"
 "\n";
 
 /***********
@@ -397,6 +420,7 @@ enum
     arg_dst_modname,
     arg_dst_modargs,
     arg_s, 
+    arg_t, 
     arg_p, 
     arg_f, 
     arg_vb,
@@ -491,6 +515,7 @@ oneargdef(arg_stripe_bs, "-sbs", "-striped-block-size", test_integer, GLOBUS_NUL
 oneargdef(arg_bs, "-bs", "-block-size", test_integer, GLOBUS_NULL);
 oneargdef(arg_tcp_bs, "-tcp-bs", "-tcp-buffer-size", test_integer, GLOBUS_NULL);
 oneargdef(arg_p, "-p", "-parallel", test_integer, GLOBUS_NULL);
+oneargdef(arg_t, "-t", "-transfer-time", GLOBUS_NULL, GLOBUS_NULL);
 oneargdef(arg_s, "-s", "-subject", GLOBUS_NULL, GLOBUS_NULL);
 oneargdef(arg_ss, "-ss", "-source-subject", GLOBUS_NULL, GLOBUS_NULL);
 oneargdef(arg_ds, "-ds", "-dest-subject", GLOBUS_NULL, GLOBUS_NULL);
@@ -518,6 +543,7 @@ static globus_args_option_descriptor_t args_options[arg_num];
     setupopt(arg_dst_modargs);          \
     setupopt(arg_b);                    \
     setupopt(arg_s);                    \
+    setupopt(arg_t);                    \
     setupopt(arg_q);                    \
     setupopt(arg_v);                    \
     setupopt(arg_vb);                   \
@@ -554,10 +580,13 @@ static globus_bool_t g_quiet_flag = GLOBUS_TRUE;
 static char *  g_ext = NULL;
 static char ** g_ext_args = NULL;
 static int      g_ext_arg_count = 0;
+static int      g_transfer_timeout = 0;
 static globus_bool_t g_use_debug = GLOBUS_FALSE;
 static globus_bool_t g_use_restart = GLOBUS_FALSE;
 static globus_bool_t g_continue = GLOBUS_FALSE;
 static char *        g_err_msg;
+static my_monitor_t                     g_monitor;
+
 
 #if defined(GLOBUS_BUILD_WITH_NETLOGGER)
     globus_netlogger_handle_t                       gnl_handle;
@@ -722,13 +751,21 @@ error:
 }
 /* END CRFT STUFF */
 
+/*
+ *  also use this to end transfers for the timeout callback
+ */
 static
 void
 globus_l_guc_interrupt_handler(
     void *                              user_arg)
 {
     my_monitor_t *                      monitor;
-    
+
+    if(globus_l_globus_url_copy_ctrlc)
+    {
+        return;
+    }
+
     monitor = (my_monitor_t *) user_arg;
     
     globus_mutex_lock(&monitor->mutex);
@@ -799,7 +836,6 @@ main(int argc, char **argv)
     globus_gass_copy_attr_init(&source_gass_copy_attr);
     globus_gass_copy_attr_init(&dest_gass_copy_attr);
 
-
 #   if defined(GLOBUS_BUILD_WITH_NETLOGGER)
     {
         globus_io_fileattr_init(&io_attr);
@@ -838,6 +874,20 @@ main(int argc, char **argv)
         return 1;
     }
 
+    globus_mutex_init(&g_monitor.mutex, NULL);
+    globus_cond_init(&g_monitor.cond, NULL);
+
+    if(g_transfer_timeout > 0)
+    {
+        globus_reltime_t                delay;
+
+        GlobusTimeReltimeSet(delay, g_transfer_timeout, 0);
+        globus_callback_register_oneshot(
+            NULL,
+            &delay,
+            globus_l_guc_interrupt_handler,
+            &g_monitor);
+    }
     /* expand globbed urls */
     result = globus_l_guc_expand_urls(
                  &guc_info,
@@ -852,11 +902,21 @@ main(int argc, char **argv)
         globus_free(g_err_msg);        
         ret_val = 1;
     }
-    
+    /* make sure the timer doesn't go off after a cancel.  setting this
+        to true makes the handler ignore everything if it hasn't fired yet */
+    globus_mutex_lock(&g_monitor.mutex);
+    {
+        globus_l_globus_url_copy_ctrlc = GLOBUS_TRUE;
+    }
+    globus_mutex_unlock(&g_monitor.mutex);
+
     globus_l_guc_destroy_url_list(&guc_info.user_url_list);
     globus_l_guc_destroy_url_list(&guc_info.expanded_url_list);
 
     globus_gass_copy_handle_destroy(&gass_copy_handle);
+
+    globus_mutex_destroy(&g_monitor.mutex);
+    globus_cond_destroy(&g_monitor.cond);
 
     globus_l_guc_info_destroy(&guc_info);
 
@@ -1185,7 +1245,6 @@ globus_l_guc_transfer_files(
 {
     globus_io_handle_t *                         source_io_handle = GLOBUS_NULL;
     globus_io_handle_t *                         dest_io_handle = GLOBUS_NULL;
-    my_monitor_t                                 monitor;
     char *                                       src_url;
     char *                                       dst_url;
     char *                                       src_filename;
@@ -1200,15 +1259,12 @@ globus_l_guc_transfer_files(
     globus_bool_t                                dst_is_dir;
     globus_bool_t                                was_error = GLOBUS_FALSE;
 
-    
-    globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
-    globus_cond_init(&monitor.cond, GLOBUS_NULL);
 
     globus_callback_register_signal_handler(
         GLOBUS_SIGNAL_INTERRUPT,
         GLOBUS_FALSE,
         globus_l_guc_interrupt_handler,
-        &monitor);
+        &g_monitor);
 
     guc_info->cancelled = GLOBUS_FALSE;
 
@@ -1250,8 +1306,8 @@ globus_l_guc_transfer_files(
         }   
             
         /* reset the monitor */
-        monitor.done = GLOBUS_FALSE;
-        monitor.use_err = GLOBUS_FALSE;
+        g_monitor.done = GLOBUS_FALSE;
+        g_monitor.use_err = GLOBUS_FALSE;
 
         /* when creating the list the urls are check for validity */
         source_io_handle = globus_l_guc_get_io_handle(src_url, fileno(stdin));
@@ -1290,7 +1346,7 @@ globus_l_guc_transfer_files(
                          dst_url,
                          dest_gass_copy_attr,
                          globus_l_url_copy_monitor_callback,
-                         (void *) &monitor);
+                         (void *) &g_monitor);
         }
         else if (dest_io_handle)
         {
@@ -1300,7 +1356,7 @@ globus_l_guc_transfer_files(
                          source_gass_copy_attr,
                          dest_io_handle,
                          globus_l_url_copy_monitor_callback,
-                         (void *) &monitor);
+                         (void *) &g_monitor);
         }
         else
         {
@@ -1405,7 +1461,7 @@ globus_l_guc_transfer_files(
                     }
                     else
                     {
-                        monitor.done = GLOBUS_TRUE;
+                        g_monitor.done = GLOBUS_TRUE;
                         g_err_msg = globus_error_print_friendly(
                             globus_error_peek(result));
                         fprintf(stderr, _GASCSL("\nerror listing %s:\n%s"),
@@ -1424,7 +1480,7 @@ globus_l_guc_transfer_files(
                     result = GLOBUS_SUCCESS;
                 }
      
-                monitor.done = GLOBUS_TRUE;
+                g_monitor.done = GLOBUS_TRUE;
             }
             else
             {
@@ -1435,7 +1491,7 @@ globus_l_guc_transfer_files(
                      dst_url,
                      dest_gass_copy_attr,
                      globus_l_url_copy_monitor_callback,
-                     (void *) &monitor);
+                     (void *) &g_monitor);
             }
         }        
 
@@ -1448,7 +1504,7 @@ globus_l_guc_transfer_files(
             }
             else
             {
-                monitor.done = GLOBUS_TRUE;
+                g_monitor.done = GLOBUS_TRUE;
                 g_err_msg = globus_error_print_friendly(
                     globus_error_peek(result));
                 fprintf(stderr, _GASCSL("\nerror transferring %s:\n%s"),
@@ -1457,11 +1513,11 @@ globus_l_guc_transfer_files(
             }
         }
 
-        globus_mutex_lock(&monitor.mutex);
+        globus_mutex_lock(&g_monitor.mutex);
 
-        while(!monitor.done)
+        while(!g_monitor.done)
         {
-            globus_cond_wait(&monitor.cond, &monitor.mutex);
+            globus_cond_wait(&g_monitor.cond, &g_monitor.mutex);
 
             if(globus_l_globus_url_copy_ctrlc &&
                !globus_l_globus_url_copy_ctrlc_handled)
@@ -1474,16 +1530,16 @@ globus_l_guc_transfer_files(
                 globus_l_globus_url_copy_ctrlc_handled = GLOBUS_TRUE;
             }
         }
-        globus_mutex_unlock(&monitor.mutex);
+        globus_mutex_unlock(&g_monitor.mutex);
     	
 	if(g_verbose_flag)
 	{
 	    printf("\n");
 	}
 	
-        if (monitor.use_err)
+        if (g_monitor.use_err)
         {
-            result = globus_error_put(monitor.err);
+            result = globus_error_put(g_monitor.err);
             was_error = GLOBUS_TRUE;
             if(!g_continue || globus_l_globus_url_copy_ctrlc_handled)
             {
@@ -1491,7 +1547,7 @@ globus_l_guc_transfer_files(
             }
             else
             {
-                monitor.done = GLOBUS_TRUE;
+                g_monitor.done = GLOBUS_TRUE;
                 g_err_msg = globus_error_print_friendly(
                     globus_error_peek(result));
                 fprintf(stderr, _GASCSL("\nerror transferring %s:\n%s"),
@@ -1535,9 +1591,6 @@ globus_l_guc_transfer_files(
         globus_callback_unregister_signal_handler(
             GLOBUS_SIGNAL_INTERRUPT, GLOBUS_NULL, GLOBUS_NULL);
     }
-    
-    globus_cond_destroy(&monitor.cond);
-    globus_mutex_destroy(&monitor.mutex);
 
     if(was_error)
     {
@@ -1583,11 +1636,7 @@ error_dirlist:
             GLOBUS_SIGNAL_INTERRUPT, GLOBUS_NULL, GLOBUS_NULL);
     }
     
-    globus_cond_destroy(&monitor.cond);
-    globus_mutex_destroy(&monitor.mutex);
-
     return result;
-
 }
 
 
@@ -1769,6 +1818,15 @@ globus_l_guc_parse_arguments(
             break;
         case arg_s:
             subject = globus_libc_strdup(instance->values[0]);
+            break;
+        case arg_t:
+            rc = sscanf(instance->values[0], "%d", &g_transfer_timeout);
+            if(rc != 1)
+            {
+                globus_url_copy_l_args_error(
+                    "Invalid value to -t.  Must be an integer");
+                return -1;
+            }                  
             break;
         case arg_ss:
             guc_info->source_subject = globus_libc_strdup(instance->values[0]);

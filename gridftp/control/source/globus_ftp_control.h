@@ -1662,6 +1662,12 @@ globus_ftp_control_client_get_connection_info_ex(
     globus_ftp_control_host_port_t *      local_info,
     globus_ftp_control_host_port_t *      remote_info);
 
+globus_result_t
+globus_ftp_control_data_get_socket_buf(
+    globus_ftp_control_handle_t *       handle,
+    int *                               rcvbuf,
+    int *                               sndbuf);
+
 EXTERN_C_END
 
 

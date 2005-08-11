@@ -3170,6 +3170,106 @@ globus_ftp_control_local_tcp_buffer(
     return GLOBUS_SUCCESS;
 }
 
+globus_result_t
+globus_ftp_control_data_get_socket_buf(
+    globus_ftp_control_handle_t *       handle,
+    int *                               rcvbuf,
+    int *                               sndbuf)
+{
+    globus_result_t                     res;
+    globus_object_t *                   err;
+    globus_ftp_data_connection_t *      data_conn;
+    globus_ftp_data_stripe_t *          stripes;
+    globus_i_ftp_dc_handle_t *          dc_handle;
+    static char *                       my_name =
+	    "globus_ftp_control_data_get_socket_buf";
+
+    if(handle == NULL)
+    {
+        err = globus_io_error_construct_null_parameter(
+                  GLOBUS_FTP_CONTROL_MODULE,
+                  GLOBUS_NULL,
+                  "handle",
+                  1,
+                  my_name);
+        return globus_error_put(err);
+    }
+
+    dc_handle = &handle->dc_handle;
+
+    GlobusFTPControlDataTestMagic(dc_handle);
+    if(!dc_handle->initialized)
+    {
+        err = globus_io_error_construct_not_initialized(
+                  GLOBUS_FTP_CONTROL_MODULE,
+                  GLOBUS_NULL,
+                  "handle",
+                  1,
+                  my_name);
+        return globus_error_put(err);
+    }
+    if(dc_handle->transfer_handle == NULL)
+    {
+        err = globus_error_construct_string(
+                           GLOBUS_FTP_CONTROL_MODULE,
+                           GLOBUS_NULL,
+                           _FCSL("[%s]:%s():transfer handle does not exist"),
+                           GLOBUS_FTP_CONTROL_MODULE->module_name,
+                           my_name);
+        return globus_error_put(err);
+    }
+    stripes = dc_handle->transfer_handle->stripes;
+    if(stripes == NULL)
+    {
+        err = globus_error_construct_string(
+                           GLOBUS_FTP_CONTROL_MODULE,
+                           GLOBUS_NULL,
+                           _FCSL("[%s]:%s():transfer handle has no stripes."),
+                           GLOBUS_FTP_CONTROL_MODULE->module_name,
+                           my_name);
+        return globus_error_put(err);
+    }
+
+    globus_mutex_lock(&dc_handle->mutex);
+    {
+        if(globus_list_empty(stripes[0].all_conn_list))
+        {
+            globus_mutex_unlock(&dc_handle->mutex);
+            err = globus_error_construct_string(
+                           GLOBUS_FTP_CONTROL_MODULE,
+                           GLOBUS_NULL,
+                           _FCSL("[%s]:%s():no data connection."),
+                           GLOBUS_FTP_CONTROL_MODULE->module_name,
+                           my_name);
+            return globus_error_put(err);
+        }
+        data_conn = (globus_ftp_data_connection_t *) globus_list_first(
+            stripes[0].all_conn_list);
+        if(data_conn == NULL)
+        {
+            globus_mutex_unlock(&dc_handle->mutex);
+            err = globus_error_construct_string(
+                           GLOBUS_FTP_CONTROL_MODULE,
+                           GLOBUS_NULL,
+                           _FCSL("[%s]:%s():no data connection."),
+                           GLOBUS_FTP_CONTROL_MODULE->module_name,
+                           my_name);
+            return globus_error_put(err);
+        }
+        res = globus_io_handle_get_socket_buf(  
+            &data_conn->io_handle,
+            rcvbuf,
+            sndbuf);
+        if(res != GLOBUS_SUCCESS)
+        {
+            globus_mutex_unlock(&dc_handle->mutex);
+            return res;
+        }
+    }
+    globus_mutex_unlock(&dc_handle->mutex);
+
+    return GLOBUS_SUCCESS;
+}
 
 /**
  * Update the FTP control handle with the given data channel
@@ -8190,7 +8290,6 @@ globus_l_ftp_eb_listen_callback(
     globus_ftp_data_connection_t *              data_conn;
     globus_ftp_data_connection_t *              data_conn2;
     globus_object_t *                           error = GLOBUS_NULL;
-    globus_l_ftp_data_callback_info_t *         cb_info;
     globus_i_ftp_dc_handle_t *                  dc_handle;
     globus_result_t                             res;
     globus_ftp_control_data_connect_callback_t  callback = GLOBUS_NULL;

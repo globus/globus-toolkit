@@ -439,6 +439,7 @@ static
 globus_result_t
 globus_l_extension_get_module(
     lt_dlhandle                         dlhandle,
+    const char *                        module_name,
     globus_module_descriptor_t **       module_desc)
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
@@ -447,7 +448,37 @@ globus_l_extension_get_module(
     
     module = (globus_module_descriptor_t *)
         lt_dlsym(dlhandle, "globus_extension_module");
+
     if(!module)
+    {
+        char * module_descriptor_name = malloc(strlen(module_name) + 8);
+        const char * p = module_name;
+        const char * last_slash = module_name;
+
+        if (module_descriptor_name == NULL)
+        {
+            result = GLOBUS_FAILURE;
+        }
+
+        while (*p != '\0')
+        {
+            if (*p == '/')
+            {
+                last_slash = p+1;
+            }
+            p++;
+        }
+
+
+        sprintf(module_descriptor_name, "%s_module", last_slash);
+
+        module = (globus_module_descriptor_t *)
+            lt_dlsym(dlhandle, module_descriptor_name);
+
+        free(module_descriptor_name);
+    }
+
+    if (!module)
     {
         const char *                    error;
         
@@ -551,6 +582,7 @@ globus_extension_activate(
                     result =
                        globus_l_extension_get_module(
                            extension->dlhandle,
+                           extension_name,
                            &extension->module);
 
                 }
