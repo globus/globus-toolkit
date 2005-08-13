@@ -5,6 +5,8 @@ Sources= \
 	globus_args.h \
 	globus_callback_$(GLOBUS_CALLBACK_BUILD).c \
 	globus_callback.h \
+    globus_options.c \
+    globus_options.h \
 	globus_i_callback.h \
 	globus_common_paths.c \
 	globus_common.c \
@@ -104,6 +106,7 @@ flavorinclude_HEADERS = \
 	globus_thread_pool.h \
 	globus_handle_table.h \
 	globus_callback.h \
+	globus_options.h \
 	globus_memory.h \
 	globus_print.h \
 	globus_priority_q.h \
