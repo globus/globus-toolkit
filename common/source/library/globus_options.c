@@ -1,4 +1,4 @@
-#include "globus_options.h"
+#include "globus_common.h"
 
 typedef struct globus_l_options_handle_s
 {
@@ -209,9 +209,7 @@ globus_options_command_line_process(
 
 globus_result_t
 globus_options_env_process(
-    globus_options_handle_t              handle,
-    int                                 argc,
-    char **                             argv)
+    globus_options_handle_t             handle)
 {
     globus_result_t                     res;
     int                                 i;

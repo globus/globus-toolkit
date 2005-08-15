@@ -1,7 +1,8 @@
 #ifndef GLOBUS_OPTIONS_H
 #define GLOBUS_OPTIONS_H 1
 
-#include "globus_common.h"
+#include "globus_common_include.h"
+
 
 enum 
 {
@@ -57,9 +58,7 @@ globus_options_command_line_process(
 
 globus_result_t
 globus_options_env_process(
-    globus_options_handle_t             handle,
-    int                                 argc,
-    char **                             argv);
+    globus_options_handle_t             handle);
 
 globus_result_t
 globus_options_file_process(
