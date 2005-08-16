@@ -520,9 +520,8 @@ sub cancel
     my $job_id = $description->jobid();
     my $count = 0;
 
-    if ($job_id =~ m/(\d+\.\d+)\.\d+/) {
-        $job_id = $1;
-    }
+    $job_id =~ s/,/ /g;
+    $job_id =~ s/(\d+\.\d+)\.\d+/$1/g;
 
     $self->log("cancel job " . $description->jobid());
     # we do not need to be too efficient here
