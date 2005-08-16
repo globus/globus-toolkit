@@ -18,6 +18,9 @@ AC_DEFUN([LAC_CPU_SET],
         *hpux*)
             lac_cv_CPU="parisc"
         ;;
+        sparc64-*-linux*)
+            lac_cv_CPU="sun4u"
+        ;;
         *-ibm-aix*|*-dec-osf*|*alpha*linux*|*solaris*)
             lac_cv_CPU=`uname -m`
         ;;

@@ -97,7 +97,15 @@ AC_DEFUN([LAC_COMPILER_SET_OPTIMIZATIONS],
                 ;;
                 *sun4u*)
                     # gcc
-                    lac_CFLAGS="$lac_CFLAGS -mcpu=ultrasparc -O3 -fomit-frame-pointer -Wall -Wa,-Av8plus"
+                    case ${GLOBUS_FLAVOR_NAME} in
+                        *64* )
+                            lac_CFLAGS="$lac_CFLAGS -mcpu=ultrasparc -O3 -fomit-frame-pointer -Wall"
+                        ;;
+                        *32* )
+                            #lac_CFLAGS="$lac_CFLAGS -mcpu=ultrasparc -O3 -fomit-frame-pointer -Wall -Wa,-Av8plus -DBN_DIV2W"
+                            lac_CFLAGS="$lac_CFLAGS -mcpu=ultrasparc -O3 -fomit-frame-pointer -Wall"
+                        ;;
+                    esac
                 ;;
                 *x86_64*)
                     # gcc
@@ -207,7 +215,14 @@ AC_DEFUN([LAC_COMPILER_SET_DEFINES],
                 ;;
                 *sun4u*)
                     # gcc
-                    lac_CFLAGS="$lac_CFLAGS -DB_ENDIAN -DTERMIO -DULTRASPARC"
+                    case ${GLOBUS_FLAVOR_NAME} in
+                        *64* )
+                            lac_CFLAGS="$lac_CFLAGS -DB_ENDIAN -DTERMIO -DOPENSSL_SYSNAME_ULTRASPARC"
+                        ;;
+                        *32* )
+                            lac_CFLAGS="$lac_CFLAGS -DB_ENDIAN -DTERMIO -DOPENSSL_SYSNAME_ULTRASPARC -DBN_DIV2W"
+                        ;;
+                    esac
                 ;;
                 *x86_64*)
                     # gcc

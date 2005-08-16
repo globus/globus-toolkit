@@ -100,8 +100,14 @@ AC_DEFUN([LAC_ASM_SET],
                         lac_BN_OBJ="asm/sparcv8.lo"
                     ;;
                     *sun4u*)
-                        lac_BN_OBJ="asm/sparcv8plus.lo"
-                        lac_MD5_OBJ="asm/md5-sparcv8plus.lo"
+                        case ${GLOBUS_FLAVOR_NAME} in
+                            *64* )
+                                lac_MD5_OBJ="asm/md5-sparcv8plus.lo"
+                            ;;
+                            *32* )
+                                lac_BN_OBJ="asm/sparcv8plus.lo"
+                            ;;
+                        esac
                     ;;
                     *x86_64*)
                         case ${GLOBUS_FLAVOR_NAME} in
