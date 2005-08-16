@@ -1300,6 +1300,10 @@ static
 globus_result_t
 globus_l_gfs_config_misc()
 {
+    globus_list_t *                     module_list = NULL;
+    char *                              module;
+    char *                              ptr;
+    char *                              default_dsi;
     int                                 rc;
     globus_bool_t                       bool_value;
     char *                              value;
@@ -1525,30 +1529,28 @@ globus_l_gfs_config_misc()
     if(globus_i_gfs_config_string("load_dsi_module") == NULL)
     {
         globus_l_gfs_config_set("load_dsi_module", 0, globus_libc_strdup("file"));    
-    }            
-       
+    } 
+
     value = globus_libc_strdup(globus_i_gfs_config_string("allowed_modules"));
     if(value != NULL)
     {
-        globus_list_t *                 module_list = NULL;
-        char *                          module;
-        char *                          ptr;
-        
-            module = value;
-            while((ptr = strchr(module, ',')) != NULL)
-            {
-                *ptr = '\0';
-                globus_list_insert(&module_list, globus_libc_strdup(module)); 
-                module = ptr + 1;
-            }
-            if(ptr == NULL)
-            {
-                globus_list_insert(&module_list, globus_libc_strdup(module)); 
-            }               
-        
-        globus_l_gfs_config_set("module_list", 0, module_list);   
+        module = value;
+        while((ptr = strchr(module, ',')) != NULL)
+        {
+            *ptr = '\0';
+            globus_list_insert(&module_list, globus_libc_strdup(module)); 
+            module = ptr + 1;
+        }
+        if(ptr == NULL)
+        {
+            globus_list_insert(&module_list, globus_libc_strdup(module)); 
+        }               
         globus_free(value);             
     }
+    default_dsi = globus_i_gfs_config_string("load_dsi_module");
+    globus_assert(default_dsi  != NULL);
+    globus_list_insert(&module_list, strdup(default_dsi));
+    globus_l_gfs_config_set("module_list", 0, module_list);   
     
     /* if auth_level is -1 it means it has not yet been touched */
     switch(globus_i_gfs_config_int("auth_level"))
