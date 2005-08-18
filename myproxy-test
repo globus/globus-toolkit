@@ -240,7 +240,7 @@ if ($exitstatus == 0 && $output =~ /username/) {
 }
 
 ($exitstatus, $output) =
-    &runtest("myproxy-get-delegation -v -t 1 -o /tmp/myproxy-test.$$ -v -S",
+    &runtest("myproxy-get-delegation -t 1 -o /tmp/myproxy-test.$$ -v -S",
 	     $passphrase . "\n");
 print "MyProxy Test 3 (retrieve stored credential): ";
 if ($exitstatus == 0) {
@@ -313,10 +313,6 @@ if ($exitstatus == 0) {
     &runtest("myproxy-get-delegation -t 1 -o /tmp/myproxy-test.$$ -v -S",
 	     $old_passphrase . "\n");
 print "MyProxy Test 7 (verify old passphrase fails): ";
-##print "\nOLD: $old_passphrase\n";
-##print "NEW: $passphrase\n";
-##print "myproxy-get-delegation -t 1 -o /tmp/myproxy-test.$$ -v -S";
-
 if ($exitstatus != 0 && $output =~ /invalid pass phrase/) {
     print "SUCCEEDED\n"; $SUCCESSES++;
 } else {
@@ -759,7 +755,7 @@ if ($exitstatus == 0) {
 # Test 31
 #
 ($exitstatus, $output) = &runtest("myproxy-info -v -d", undef);
-print "MyProxy Test 31 (get info for stored renewal credentials): $exitstatus ";
+print "MyProxy Test 31 (get info for stored renewal credentials): ";
 if ($exitstatus == 0 && $output =~ /username/) {
     print "SUCCEEDED\n"; $SUCCESSES++;
 } else {

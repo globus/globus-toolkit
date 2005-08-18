@@ -50,6 +50,7 @@ static char usage[] =
     "                                         instead of the LOGNAME env. var.\n"
     "       -k | --credname       <name>      Specifies credential name\n"
     "       -K | --creddesc       <desc>      Specifies credential description\n"
+    "       -O | --owner          <desc>      Specifies owner of credential\n"
     "\n";
 
 struct option long_options[] = {
@@ -74,11 +75,12 @@ struct option long_options[] = {
     {"match_cn_only",                    no_argument, NULL, 'X'},
     {"credname",                   required_argument, NULL, 'k'},
     {"creddesc",                   required_argument, NULL, 'K'},
+    {"owner",                      required_argument, NULL, 'O'},
     {0, 0, 0, 0}
 };
 
 /*colon following an option indicates option takes an argument */
-static char short_options[] = "uhl:vVdr:R:xXaAk:K:t:c:y:s:p:E:";
+static char short_options[] = "uhl:vVdr:R:xXaAk:K:O:t:c:y:s:p:E:"; 
 
 static char version[] =
     "myproxy-init version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "
@@ -395,6 +397,10 @@ init_arguments(int                     argc,
 	case 'K':		/*credential description */
 	    request->creddesc = strdup(optarg);
 	    break;
+
+        case 'O':               /* Specify owner of credential */
+            request->owner = strdup(optarg);
+            break;
 
 	default:		/* print usage and exit */
 	    fprintf(stderr, usage);

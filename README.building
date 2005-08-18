@@ -71,7 +71,7 @@ $ make dist
 7. Copy README, LICENSE, VERSION, and myproxy-*.tar.gz to
    /afs/ncsa.uiuc.edu/ftp/ftp/aces/myproxy.
 
-     $ cp README LICENSE VERSION myproxy-*.tar.gz* \
+     $ cp README LICENSE VERSION myproxy-*.tar.gz \
        /afs/ncsa.uiuc.edu/ftp/ftp/aces/myproxy
 
 8. Update MyProxy web site in
@@ -91,4 +91,4 @@ $ make dist
 9. Send release announcement to myproxy-users@ncsa.uiuc.edu.
    Sign it with 'gpg --clearsign'.
 
-10. Add MyProxy version number to http://bugzilla.ncsa.uiuc.edu/.
+10. Add MyProxy version number to https://bugzilla.ncsa.uiuc.edu/.

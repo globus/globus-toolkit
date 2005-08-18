@@ -16,7 +16,7 @@ typedef enum
     MYPROXY_CHANGE_CRED_PASSPHRASE,
     MYPROXY_STORE_CERT,
     MYPROXY_RETRIEVE_CERT,
-    MYPROXY_SERVER_INFO
+    MYPROXY_REPLICA_INFO
 } myproxy_proto_request_type_t;
 
 /* server response codes */
@@ -25,7 +25,7 @@ typedef enum
     MYPROXY_OK_RESPONSE,
     MYPROXY_ERROR_RESPONSE,
     MYPROXY_AUTHORIZATION_RESPONSE,
-    MYPROXY_SERVER_INFO_RESPONSE
+    MYPROXY_REPLICA_INFO_RESPONSE
 } myproxy_proto_response_type_t;
 
 /* client/server socket attributes */
@@ -55,15 +55,16 @@ typedef struct
     char			 *creddesc;
     char			 *authzcreds;
     char 		         *keyretrieve;
-    char                         *server_info;
+    char                         *replicate_info;
+    char                         *owner;
     int                          want_trusted_certs; /* 1=yes, 0=no */
 } myproxy_request_t;
 
 struct myproxy_server
 {
-  char                          *slave_servers;
-  char                          *master_server;
-  int                            ismaster;
+  char                          *secondary_servers;
+  char                          *primary_server;
+  int                            isprimary;
 }; 
 typedef struct myproxy_server myproxy_server_t;
 
@@ -115,7 +116,7 @@ typedef struct
   /*
   ** Extensions for replication and fail-over.
   */
-  myproxy_server_t              *server_info;
+  myproxy_server_t              *replicate_info;
   char                          *redirect;
   myproxy_certs_t               *trusted_certs;
 } myproxy_response_t;
@@ -387,7 +388,7 @@ myproxy_serialize_send_recv( myproxy_request_t      *client_request,
  * myproxy_failover()
  * 
  * Code to handle failover.  Each client operation calls this function.
- * The function will look for master/slave configuration information
+ * The function will look for primary/secondary configuration information
  * and handle failover if configured. 
  *
  * returns !0 if unable to authenticate, 0 if authentication successful

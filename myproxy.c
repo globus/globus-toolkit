@@ -137,7 +137,7 @@ int
 is_a_retry_command( int command );
 
 int
-parse_slave( char *tmp, char *server, char *port );
+parse_secondary( char *tmp, char *server, char *port );
 
 
 /* Values for string_to_int() */
@@ -294,14 +294,14 @@ myproxy_authenticate_init(myproxy_socket_attrs_t *attrs,
        accepted_peer_names[0] = strdup(server_dn);
    } else {
        char *fqhn, *buf;
-       fqhn = strdup(attrs->pshost);
-       myproxy_resolve_hostname(&fqhn);
+       fqhn = GSI_SOCKET_get_peer_hostname(attrs->gsi_socket);
        buf = malloc(strlen(fqhn)+strlen("myproxy@")+1);
        sprintf(buf, "myproxy@%s", fqhn);
        accepted_peer_names[0] = buf;
        buf = malloc(strlen(fqhn)+strlen("host@")+1);
        sprintf(buf, "host@%s", fqhn);
        accepted_peer_names[1] = buf;
+       free(fqhn);
    }
    
    rval = GSI_SOCKET_authentication_init(attrs->gsi_socket,
@@ -555,16 +555,29 @@ myproxy_serialize_request_ex(const myproxy_request_t *request, char **data)
         return -1;
     }
 
+    /* owner */
+    if (request->owner != NULL)
+    {
+        char *buf = strdup (request->owner);
+        strip_char ( buf, '\n');
+        len = my_append(data, MYPROXY_CRED_PREFIX, "_",
+                        MYPROXY_CRED_OWNER_STRING,
+                        buf, "\n", NULL);
+        free(buf);
+        if (len < 0)
+            return -1;
+    }
+
     /* server info */
-    if (request->server_info != NULL)
+    if (request->replicate_info != NULL)
     { 
 /*
       len = concatenate_strings(data, datalen, MYPROXY_SERVER_INFO_STRING,
-			        request->server_info, "\n", NULL); 
+			        request->replicate_info, "\n", NULL); 
 */
 
-      len =  my_append(data, MYPROXY_SERVER_INFO_STRING,
-                       request->server_info, "\n", NULL);
+      len =  my_append(data, MYPROXY_REPLICA_INFO_STRING,
+                       request->replicate_info, "\n", NULL);
 
       if (len < 0)
         return -1;
@@ -848,12 +861,12 @@ myproxy_deserialize_request(const char *data, const int datalen,
 			  buf, sizeof(buf));
 */
     len = convert_message(data,
-			  MYPROXY_SERVER_INFO_STRING,
+			  MYPROXY_REPLICA_INFO_STRING,
 			  CONVERT_MESSAGE_DEFAULT_FLAGS,
 			  &buf);
 
     if (len == -2)  /*-2 indicates string not found*/
-       request->server_info = NULL;
+       request->replicate_info = NULL;
     else
     if (len <= -1)
     {
@@ -862,14 +875,43 @@ myproxy_deserialize_request(const char *data, const int datalen,
     }
     else
     {
-      request->server_info = strdup(buf);
+      request->replicate_info = strdup(buf);
 
-      if (request->server_info == NULL)
+      if (request->replicate_info == NULL)
       {
 	verror_put_errno(errno);
 	return -1;
       }
     }
+
+    /* credential owner */
+    if (tmp) tmp[0] = '\0';
+    len = my_append(&tmp, MYPROXY_CRED_PREFIX, "_",
+                    MYPROXY_CRED_OWNER_STRING, NULL);
+
+    len = convert_message(data,
+                          tmp, CONVERT_MESSAGE_DEFAULT_FLAGS,
+                          &buf);
+
+    if (len == -2)  /*-2 indicates string not found*/
+        request->owner = NULL;
+    else
+       if (len <= -1)
+       {
+        verror_prepend_string("Error parsing credential owner from client request");
+        goto error;
+       }
+       else
+       {
+         request->owner = strdup(buf);
+
+         if (request->owner == NULL)
+         {
+          verror_put_errno(errno);
+          goto error;
+         }
+       }
+
 
     /* trusted root certificates */
     len = convert_message(data,
@@ -974,36 +1016,36 @@ myproxy_serialize_response_ex(const myproxy_response_t *response,
        }
     }
 
-    if( response->server_info != NULL )
+    if( response->replicate_info != NULL )
     {
-      if( response->server_info->slave_servers != NULL )
+      if( response->replicate_info->secondary_servers != NULL )
       { 
 /*
 	len = concatenate_strings(data, datalen, MYPROXY_SLAVE_INFO_STRING,
-		     response->server_info->slave_servers, "\n", NULL);
+		     response->replicate_info->secondary_servers, "\n", NULL);
 */
-	len = my_append(data, MYPROXY_SLAVE_INFO_STRING,
-		     response->server_info->slave_servers, "\n", NULL);
+	len = my_append(data, MYPROXY_SECONDARY_INFO_STRING,
+		     response->replicate_info->secondary_servers, "\n", NULL);
 	if (len < 0)
 	     return -1;
       }
 
-      if( response->server_info->master_server != NULL )
+      if( response->replicate_info->primary_server != NULL )
       { 
 /*
 	len = concatenate_strings(data, datalen, MYPROXY_MASTER_INFO_STRING,
-		     response->server_info->master_server, "\n", NULL);
+		     response->replicate_info->primary_server, "\n", NULL);
 */
-	len = my_append(data, MYPROXY_MASTER_INFO_STRING,
-		     response->server_info->master_server, "\n", NULL);
+	len = my_append(data, MYPROXY_PRIMARY_INFO_STRING,
+		     response->replicate_info->primary_server, "\n", NULL);
 	if (len < 0)
 	     return -1;
       }
 /*
-      if( response->server_info->master_server != NULL )
+      if( response->replicate_info->primary_server != NULL )
       { 
 	len = concatenate_strings(data, datalen, MYPROXY_MASTER_INFO_STRING,
-		     response->server_info->master_server, "\n", NULL);
+		     response->replicate_info->primary_server, "\n", NULL);
 	if (len < 0)
 	     return -1;
 	totlen += len;
@@ -1315,19 +1357,19 @@ len = convert_message(data, datalen, MYPROXY_SLAVE_INFO_STRING,
 		      buffer, sizeof(buffer));
 */
 len = convert_message(data, 
-                      MYPROXY_SLAVE_INFO_STRING,
+                      MYPROXY_SECONDARY_INFO_STRING,
 		      CONVERT_MESSAGE_DEFAULT_FLAGS,
 		      &buf);
 if (len == -1) return -1;
 if (len > 0)
 {        
-  if( response->server_info == NULL )
+  if( response->replicate_info == NULL )
   {
-    response->server_info = malloc(sizeof(struct myproxy_server));
-    memset(response->server_info, 0, sizeof(struct myproxy_server));
+    response->replicate_info = malloc(sizeof(struct myproxy_server));
+    memset(response->replicate_info, 0, sizeof(struct myproxy_server));
   }
 
-  response->server_info->slave_servers = strdup(buf);
+  response->replicate_info->secondary_servers = strdup(buf);
 }
 
 /*
@@ -1336,19 +1378,19 @@ len = convert_message(data, datalen, MYPROXY_MASTER_INFO_STRING,
 		      buffer, sizeof(buffer));
 */
 len = convert_message(data, 
-                      MYPROXY_MASTER_INFO_STRING,
+                      MYPROXY_PRIMARY_INFO_STRING,
 		      CONVERT_MESSAGE_DEFAULT_FLAGS,
 		      &buf);
 if (len == -1) return -1;
 if (len > 0)
 {        
-  if( response->server_info == NULL )
+  if( response->replicate_info == NULL )
   {
-    response->server_info = malloc(sizeof(struct myproxy_server));
-    memset(response->server_info, 0, sizeof(struct myproxy_server));
+    response->replicate_info = malloc(sizeof(struct myproxy_server));
+    memset(response->replicate_info, 0, sizeof(struct myproxy_server));
   }
 
-  response->server_info->master_server = strdup(buf);
+  response->replicate_info->primary_server = strdup(buf);
 }
 
 
@@ -2320,7 +2362,7 @@ myproxy_init_client_env( myproxy_socket_attrs_t *socket_attrs,
 
         break;
 
-    case MYPROXY_SERVER_INFO:
+    case MYPROXY_REPLICA_INFO:
         break;
 
     default:
@@ -2336,7 +2378,7 @@ myproxy_init_client_env( myproxy_socket_attrs_t *socket_attrs,
     }
 
     /* Request information on server configuration. */
-    client_request->server_info = "1";
+    client_request->replicate_info = "1";
 
     if( myproxy_serialize_send_recv( client_request,
                                      server_response,
@@ -2350,16 +2392,16 @@ myproxy_init_client_env( myproxy_socket_attrs_t *socket_attrs,
 }
 
 int
-parse_slave( char *tmp, char *server, char *port )
+parse_secondary( char *tmp, char *server, char *port )
 {
-  char *slave;
+  char *secondary;
 
-  slave = strchr( tmp, ':' );
-  if( slave )
+  secondary = strchr( tmp, ':' );
+  if( secondary )
   {
-    strncpy( server, tmp, slave - tmp );
-    server[slave - tmp] = '\0';
-    strcpy( port, slave + 1 );
+    strncpy( server, tmp, secondary - tmp );
+    server[secondary - tmp] = '\0';
+    strcpy( port, secondary + 1 );
   }
   else
   {
@@ -2380,13 +2422,13 @@ is_a_retry_command( int command )
     case MYPROXY_DESTROY_PROXY:
     case MYPROXY_CHANGE_CRED_PASSPHRASE:
     case MYPROXY_STORE_CERT:
-    case MYPROXY_SERVER_INFO: 
-    case MYPROXY_INFO_PROXY:
+    case MYPROXY_REPLICA_INFO: 
         retval = 0; 
         break;
 
     case MYPROXY_GET_PROXY:
     case MYPROXY_RETRIEVE_CERT: 
+    case MYPROXY_INFO_PROXY:
         retval = 1; 
         break;
 
@@ -2404,26 +2446,26 @@ myproxy_failover( myproxy_socket_attrs_t *socket_attrs,
                   myproxy_response_t     *server_response,
                   myproxy_other_stuff_t  *other_stuff )
 {
-    struct    slave_server
+    struct    secondary_server
     {
       char   server[256];
       char   port[256];
       int    tried;
-      struct slave_server *next;
+      struct secondary_server *next;
     };
 
-    struct    slave_server *slaves        = NULL;
-    struct    slave_server *another       = NULL;
-    struct    slave_server *newone        = NULL;
-    struct    slave_server *current_slave = NULL;
+    struct    secondary_server *secnds        = NULL;
+    struct    secondary_server *another       = NULL;
+    struct    secondary_server *newone        = NULL;
+    struct    secondary_server *current_secnd = NULL;
 
-    int       ismaster                    = 0; 
+    int       isprimary                    = 0; 
     int       retval                      = 0;
     int       done                        = 0;
     int       redirect                    = 0;
-    int       doing_slaves                = 0;
+    int       doing_secnds                = 0;
 
-    char     *master                      = NULL;
+    char     *primary                      = NULL;
     char      delegfile[128];
     char     *pos;
     char     *start;
@@ -2446,34 +2488,34 @@ myproxy_failover( myproxy_socket_attrs_t *socket_attrs,
         myproxy_debug( "myproxy_init_client_env FAILED\n" );
       }
 
-      /* If this is our first time through, get master and list of slaves */
-      if( slaves == NULL && master == NULL )
+      /* If this is our first time through, get primary and list of secondary */
+      if( secnds == NULL && primary == NULL )
       {
       /* Did we get any info back.  Is failover set up?                    */
-      /* If failover is configured, we should get back a list of slaves    */
-      /* or a master.  We we are dealing with a master, we will have a     */
-      /* list of slaves to retry some commands on (delegate and retrieve). */
-      /* If we are dealing with a slave, the command was probably sent to  */
+      /* If failover is configured, we should get back a list of secondary    */
+      /* or a primary.  We we are dealing with a primary, we will have a     */
+      /* list of secondary to retry some commands on (delegate and retrieve). */
+      /* If we are dealing with a secondary, the command was probably sent to  */
       /* the wrong place.  Try to redirect it, unless it is a delegat or   */
-      /* retrieve, then we can just deal with it on the slave.             */
-        if( server_response->server_info != NULL )
+      /* retrieve, then we can just deal with it on the secondary.             */
+        if( server_response->replicate_info != NULL )
         {
           myproxy_debug( "SLAVE: %s",  
-                         server_response->server_info->slave_servers );
+                         server_response->replicate_info->secondary_servers );
           myproxy_debug( "MASTER: %s",  
-                         server_response->server_info->master_server );
+                         server_response->replicate_info->primary_server );
           myproxy_debug( "IS: %d",   
-                         server_response->server_info->ismaster );
+                         server_response->replicate_info->isprimary );
 
-          if( server_response->server_info->master_server )
+          if( server_response->replicate_info->primary_server )
           {
-            master = strdup( server_response->server_info->master_server );
+            primary = strdup( server_response->replicate_info->primary_server );
           }
 
-          if( server_response->server_info->slave_servers )
+          if( server_response->replicate_info->secondary_servers )
           {
-            ismaster = 1;
-            start = server_response->server_info->slave_servers;
+            isprimary = 1;
+            start = server_response->replicate_info->secondary_servers;
 
             while( (pos = strchr( start, ';' )) )
             {
@@ -2481,16 +2523,16 @@ myproxy_failover( myproxy_socket_attrs_t *socket_attrs,
               tmp[pos - start] = '\0';
               start = pos + 1;
 
-              newone = malloc( sizeof( struct slave_server ) );
-              memset(newone, 0, sizeof(struct slave_server));
+              newone = malloc( sizeof( struct secondary_server ) );
+              memset(newone, 0, sizeof(struct secondary_server));
 
-              if( slaves == NULL )
+              if( secnds == NULL )
               {
-                slaves = newone;
+                secnds = newone;
                 another = newone;
               } 
 
-              parse_slave( tmp, newone->server, newone->port );
+              parse_secondary( tmp, newone->server, newone->port );
 
               newone->tried = 0;
               newone->next = NULL;
@@ -2499,16 +2541,16 @@ myproxy_failover( myproxy_socket_attrs_t *socket_attrs,
               another = newone;
             }     
  
-            newone = malloc( sizeof( struct slave_server ) );
-            memset(newone, 0, sizeof(struct slave_server));
+            newone = malloc( sizeof( struct secondary_server ) );
+            memset(newone, 0, sizeof(struct secondary_server));
 
-            parse_slave( start, newone->server, newone->port );
+            parse_secondary( start, newone->server, newone->port );
             newone->tried = 0;
             newone->next = NULL;
 
-            if( slaves == NULL )
+            if( secnds == NULL )
             {
-              slaves = newone;
+              secnds = newone;
             }
             else
             {
@@ -2519,44 +2561,44 @@ myproxy_failover( myproxy_socket_attrs_t *socket_attrs,
       }
 
       if( (server_response->response_type == MYPROXY_ERROR_RESPONSE) ||
-          ( (verror_is_error()) && (doing_slaves) ) )
+          ( (verror_is_error()) && (doing_secnds) ) )
       {
         /* figure out if it is an error we retry on */
 
         /* The failover stuff is not configured so do things like we use to, */
         /* fail out and give the user an error message.                      */
-        if( slaves == NULL && master == NULL )
+        if( secnds == NULL && primary == NULL )
         {
-          myproxy_debug( "Slave and master are not set.\n" );
-          printf( "ERROR and no slave or master are not set: %s\n", 
+          myproxy_debug( "Slave and primary are not set.\n" );
+          printf( "ERROR and no secondary or primary are not set: %s\n", 
                   verror_get_string() );
           return( 1 );
         }
 
-        /* Figure out if this is a master or slave */
-        if( ismaster )
+        /* Figure out if this is a primary or secondary */
+        if( isprimary )
         {
           /* Failover is configured and the command was originally sent to */
-          /* the master.  If the command can be done on the slaves, start  */
-          /* looping through the slaves until we either have success or we */
+          /* the primary.  If the command can be done on the secondary, start  */
+          /* looping through the secondary until we either have success or we */
           /* have tried all of them.                                       */
           if( is_a_retry_command( client_request->command_type ) )
           {
-            myproxy_debug( "Find next slave server in list\n" );
+            myproxy_debug( "Find next secondary server in list\n" );
 
-            /* Point to first slave in the list. */
-            if( current_slave == NULL )
+            /* Point to first secondary in the list. */
+            if( current_secnd == NULL )
             {
-              current_slave = slaves;
+              current_secnd = secnds;
             } 
             else
             {
-              /* Try the next slave in the list. */
-              current_slave = current_slave->next;
+              /* Try the next secondary in the list. */
+              current_secnd = current_secnd->next;
             } 
 
-            /* There is a slave to try command on. */
-            if( current_slave != NULL )
+            /* There is a secondary to try command on. */
+            if( current_secnd != NULL )
             {
               /* close old socket */
               if (socket_attrs != NULL) 
@@ -2574,11 +2616,11 @@ myproxy_failover( myproxy_socket_attrs_t *socket_attrs,
               socket_attrs = malloc(sizeof(*socket_attrs));
               memset(socket_attrs, 0, sizeof(*socket_attrs));
 
-              socket_attrs->pshost = current_slave->server;
+              socket_attrs->pshost = current_secnd->server;
 
-              if( current_slave->port )
+              if( current_secnd->port )
               {
-                socket_attrs->psport = atoi( current_slave->port );
+                socket_attrs->psport = atoi( current_secnd->port );
               }  
 
               /* Clear the server_response for next go around */
@@ -2592,7 +2634,7 @@ myproxy_failover( myproxy_socket_attrs_t *socket_attrs,
               verror_clear();
 
               /* Hack for handling error conditions and stuff... */
-              doing_slaves = 1;
+              doing_secnds = 1;
 
               myproxy_debug( "NEW SOCK: %s. %d\n", 
                              socket_attrs->pshost, 
@@ -2601,28 +2643,28 @@ myproxy_failover( myproxy_socket_attrs_t *socket_attrs,
             else
             {
               printf( "Tried all servers, none worked.\n" );
-              printf( "Tried all of the slaves, still had error: %s\n", 
+              printf( "Tried all of the secondary, still had error: %s\n", 
                       verror_get_string() );
               return( 1 );
             }
           }
           else
           {
-            printf( "Can't perform this operation on a slave server.\n" );
-            printf( "Bad slave operation: %s\n", verror_get_string() );
+            printf( "Can't perform this operation on a secondary server.\n" );
+            printf( "Bad secondary operation: %s\n", verror_get_string() );
             return( 1 );
           }
         }
         else
         {
-          /* This is a slave */
-          /* A command was sent to a slave that should be tried on the */
-          /* master.  Check to see if we have a master and redirect.   */
-          if( master )
+          /* This is a secondary */
+          /* A command was sent to a secondary that should be tried on the */
+          /* primary.  Check to see if we have a primary and redirect.   */
+          if( primary )
           {
-            /* redirect to master */
-            myproxy_debug( "Redirect to master: %s\n", master );
-            parse_slave( master, mhost, mport );
+            /* redirect to primary */
+            myproxy_debug( "Redirect to primary: %s\n", primary );
+            parse_secondary( primary, mhost, mport );
 
             if( redirect == 1 )
             {
@@ -2896,7 +2938,7 @@ myproxy_failover( myproxy_socket_attrs_t *socket_attrs,
         }
         break;
 
-    case MYPROXY_SERVER_INFO:
+    case MYPROXY_REPLICA_INFO:
         break;
 
     default:
@@ -2939,7 +2981,7 @@ myproxy_get_info( myproxy_request_t      *client_request,
     }
 
     /* Request information on server configuration. */
-    client_request->server_info = "1";
+    client_request->replicate_info = "1";
 
     if( myproxy_serialize_send_recv( client_request,
                                      server_response,
