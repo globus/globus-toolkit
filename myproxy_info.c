@@ -43,13 +43,13 @@ static char short_options[] = "hus:p:l:vVd";
 static char version[] =
 "myproxy-info version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
 
-static int dn_as_username = 0;
+//static int dn_as_username = 0;
 
 /* Function declarations */
 void init_arguments(int argc, char *argv[],
                     myproxy_socket_attrs_t *attrs, 
                     myproxy_request_t *request,
-                    myproxy_other_stuff_t *other_stuff);
+                    myproxy_data_parameters_t *data_parameters);
 
 
 int
@@ -58,7 +58,7 @@ main(int argc, char *argv[])
     myproxy_socket_attrs_t *socket_attrs;
     myproxy_request_t      *client_request;
     myproxy_response_t     *server_response;
-    myproxy_other_stuff_t  *other_stuff;
+    myproxy_data_parameters_t  *data_parameters;
 
     int retval = 0;
 
@@ -81,8 +81,8 @@ main(int argc, char *argv[])
     server_response = malloc(sizeof(*server_response));
     memset(server_response, 0, sizeof(*server_response));
 
-    other_stuff = malloc(sizeof(*other_stuff));
-    memset(other_stuff, 0, sizeof(*other_stuff));
+    data_parameters = malloc(sizeof(*data_parameters));
+    memset(data_parameters, 0, sizeof(*data_parameters));
 
     if( myproxy_init( socket_attrs,
                       client_request,
@@ -94,12 +94,12 @@ main(int argc, char *argv[])
 myproxy_init_socket_attrs( socket_attrs );
 
     /* Initialize client arguments and create client request object */
-    init_arguments(argc, argv, socket_attrs, client_request, other_stuff);
+    init_arguments(argc, argv, socket_attrs, client_request, data_parameters);
 
     retval = myproxy_failover( socket_attrs,
                                client_request,
                                server_response,
-                               other_stuff );
+                               data_parameters );
 
     printf ("\n");
 
@@ -115,7 +115,7 @@ init_arguments(int argc,
 	       char *argv[], 
 	       myproxy_socket_attrs_t *attrs,
 	       myproxy_request_t *request,
-               myproxy_other_stuff_t *other_stuff) 
+               myproxy_data_parameters_t *data_parameters) 
 {   
     extern char *optarg;
     int arg;
@@ -151,7 +151,7 @@ init_arguments(int argc,
             break;
 	case 'd':   /* use the certificate subject (DN) as the default
 		       username instead of LOGNAME */
-	    other_stuff->dn_as_username = 1;
+	    data_parameters->dn_as_username = 1;
 	    break;
         default:        /* print usage and exit */ 
             fprintf(stderr, usage);

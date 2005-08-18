@@ -75,7 +75,7 @@ typedef struct myproxy_server myproxy_server_t;
 ** values have meaning to only a single operation, it seemed silly to have
 ** every operation have to worry about them when calling failover.
 */
-typedef struct myproxy_other_stuff
+typedef struct myproxy_data_parameters
 {
   /*
   ** Used by myproxy-store.  These values are the location of the 
@@ -102,7 +102,7 @@ typedef struct myproxy_other_stuff
 
   /* Indicates if a proxy was created and needs to be destroyed */
   int                            destroy_proxy;
-} myproxy_other_stuff_t;
+} myproxy_data_parameters_t;
 
 /* A server response object */
 typedef struct
@@ -397,12 +397,12 @@ int
 myproxy_failover( myproxy_socket_attrs_t *socket_attrs,
                   myproxy_request_t      *client_request,
                   myproxy_response_t     *server_response,
-                  myproxy_other_stuff_t  *other_stuff );
+                  myproxy_data_parameters_t  *data_parameters );
 
 int
 myproxy_init_client_env( myproxy_socket_attrs_t *socket_attrs,
                          myproxy_request_t      *client_request,
                          myproxy_response_t     *server_response,
-                         myproxy_other_stuff_t  *other_stuff );
+                         myproxy_data_parameters_t  *data_parameters );
 
 #endif /* __MYPROXY_PROTOCOL_H */

@@ -89,7 +89,7 @@ static int verbose = 0;
 int init_arguments(int argc, char *argv[], 
 		    myproxy_socket_attrs_t *attrs, 
                     myproxy_request_t *request, 
-                    myproxy_other_stuff_t *other_stuff);
+                    myproxy_data_parameters_t *data_parameters);
 
 int grid_proxy_init(int hours, const char *proxyfile);
 
@@ -100,13 +100,13 @@ int grid_proxy_destroy(const char *proxyfile);
 int
 main(int argc, char *argv[]) 
 {    
-    char proxyfile[MAXPATHLEN];
+//    char proxyfile[MAXPATHLEN];
 
     myproxy_socket_attrs_t *socket_attrs;
     myproxy_request_t      *client_request;
     myproxy_response_t     *server_response;
 
-    myproxy_other_stuff_t  *other_stuff;
+    myproxy_data_parameters_t  *data_parameters;
 
     /* check library version */
     if (myproxy_check_version()) {
@@ -127,8 +127,8 @@ main(int argc, char *argv[])
     server_response = malloc(sizeof(*server_response));
     memset(server_response, 0, sizeof(*server_response));
 
-    other_stuff = malloc(sizeof(*other_stuff));
-    memset(other_stuff, 0, sizeof(*other_stuff));
+    data_parameters = malloc(sizeof(*data_parameters));
+    memset(data_parameters, 0, sizeof(*data_parameters));
 
     /* setup defaults */
     client_request->version = malloc(strlen(MYPROXY_VERSION) + 1);
@@ -147,24 +147,24 @@ main(int argc, char *argv[])
     client_request->proxy_lifetime = SECONDS_PER_HOUR * MYPROXY_DEFAULT_DELEG_HOURS;
 
     /* the lifetime of the proxy */
-    other_stuff->cred_lifetime     = SECONDS_PER_HOUR * MYPROXY_DEFAULT_HOURS;
+    data_parameters->cred_lifetime     = SECONDS_PER_HOUR * MYPROXY_DEFAULT_HOURS;
 
     /* Initialize client arguments and create client request object */
     if (init_arguments(argc, argv, socket_attrs, client_request,
-		       other_stuff) != 0) 
+		       data_parameters) != 0) 
     {
       goto cleanup;
     }
 
-    other_stuff->use_empty_passwd = use_empty_passwd;
-    other_stuff->read_passwd_from_stdin = read_passwd_from_stdin;
-    other_stuff->dn_as_username = dn_as_username;
-    other_stuff->proxyfile = malloc(MAXPATHLEN);
+    data_parameters->use_empty_passwd = use_empty_passwd;
+    data_parameters->read_passwd_from_stdin = read_passwd_from_stdin;
+    data_parameters->dn_as_username = dn_as_username;
+    data_parameters->proxyfile = malloc(MAXPATHLEN);
 
     if( myproxy_failover( socket_attrs,
                           client_request,
                           server_response,
-                          other_stuff ) != 0 )
+                          data_parameters ) != 0 )
     {
       if( verror_is_error() )
       {
@@ -179,8 +179,8 @@ main(int argc, char *argv[])
     return 0;
 
  cleanup:
-    if (other_stuff->destroy_proxy) {
-        grid_proxy_destroy(other_stuff->proxyfile);
+    if (data_parameters->destroy_proxy) {
+        grid_proxy_destroy(data_parameters->proxyfile);
     }
     return 1;
 }
@@ -190,7 +190,7 @@ init_arguments(int argc,
 	       char *argv[], 
 	       myproxy_socket_attrs_t *attrs,
 	       myproxy_request_t *request,
-	       myproxy_other_stuff_t *other_stuff) 
+	       myproxy_data_parameters_t *data_parameters) 
 {   
     extern char *optarg;
     int expr_type = MATCH_CN_ONLY;  /*default */
@@ -207,7 +207,7 @@ init_arguments(int argc,
 	    return -1;
 	    break;
 	case 'c': 	/* Specify cred lifetime in hours */
-	    other_stuff->cred_lifetime  = SECONDS_PER_HOUR * atoi(optarg);
+	    data_parameters->cred_lifetime  = SECONDS_PER_HOUR * atoi(optarg);
 	    break;    
 	case 't': 	/* Specify proxy lifetime in hours */
 	    request->proxy_lifetime = SECONDS_PER_HOUR * atoi(optarg);

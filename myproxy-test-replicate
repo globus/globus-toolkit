@@ -695,7 +695,6 @@ if ($exitstatus == 0 && $output =~ /was successfully removed/) {
 ($exitstatus, $output) =
     &runtest("myproxy-replicate -v -c /tmp/myproxy-test.serverconf.$mport.master.$$ -r /tmp/myproxy-test.serverdir.$mport.master.$$",
 	     undef);
-print "EXIT code: $exitstatus\n";
 print "\t(Replicate master server to all secondary): ";
 if ($exitstatus != 0 && $output =~ /Unable to connect to/) {
     print "SUCCEEDED\n"; $SUCCESSES++;
@@ -1087,9 +1086,9 @@ if (!($output =~ /default credential/)) {
 ##
 start_sl1();
 
-($exitstatus, $output) = &runtest("myproxy-info -s localhost -p $s1port -v", undef);
-print "MyProxy Test 43 (get info for stored credential from secondary): ";
-if (!($output =~ /default credential/)) {
+($exitstatus, $output) = &runtest("myproxy-info -s localhost -p $mport -v", undef);
+print "MyProxy Test 43 (get info for stored credential): ";
+if ($exitstatus != 0) {
     print "SUCCEEDED\n"; $SUCCESSES++;
 } else {
     print "FAILED\n"; $FAILURES++; print STDERR $output;

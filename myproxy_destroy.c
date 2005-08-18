@@ -57,7 +57,7 @@ main(int argc, char *argv[])
     myproxy_socket_attrs_t *socket_attrs;
     myproxy_request_t      *client_request;
     myproxy_response_t     *server_response;
-    myproxy_other_stuff_t  *other_stuff;
+    myproxy_data_parameters_t  *data_parameters;
 
     int retval = 0;
     
@@ -80,8 +80,8 @@ main(int argc, char *argv[])
     server_response = malloc(sizeof(*server_response));
     memset(server_response, 0, sizeof(*server_response));
 
-    other_stuff = malloc(sizeof(*other_stuff));
-    memset(other_stuff, 0, sizeof(*other_stuff));
+    data_parameters = malloc(sizeof(*data_parameters));
+    memset(data_parameters, 0, sizeof(*data_parameters));
 
     /* setup defaults */
     client_request->version = malloc(strlen(MYPROXY_VERSION) + 1);
@@ -98,12 +98,12 @@ main(int argc, char *argv[])
     /* Initialize client arguments and create client request object */
     init_arguments(argc, argv, socket_attrs, client_request);
 
-    other_stuff->dn_as_username = dn_as_username;
+    data_parameters->dn_as_username = dn_as_username;
 
     if( myproxy_failover( socket_attrs,
                           client_request,
                           server_response,
-                          other_stuff ) != 0 )
+                          data_parameters ) != 0 )
     {
       retval = 1;
     }
