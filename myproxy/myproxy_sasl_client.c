@@ -210,9 +210,8 @@ auth_sasl_negotiate_client(myproxy_socket_attrs_t *attrs,
         *ipremote = NULL;
     char *fqdn = NULL;
 
-    fqdn = strdup(attrs->pshost);
-    myproxy_resolve_hostname(&fqdn);
-   
+    fqdn = GSI_SOCKET_get_peer_hostname(attrs->gsi_socket);
+ 
     memset(server_buffer, 0, sizeof(*server_buffer));
 
     if (prompt) free(prompt);

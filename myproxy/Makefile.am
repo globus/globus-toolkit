@@ -97,72 +97,72 @@ myproxy_init_SOURCES = 	myproxy_init.c
 
 myproxy_init_LDFLAGS = $(GPT_LDFLAGS)
 
-myproxy_init_LDADD = ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la $(GPT_PGM_LINKS)
+myproxy_init_LDADD = $(GPT_PGM_LINKS) ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
 
 myproxy_info_SOURCES = 	myproxy_info.c
 
 myproxy_info_LDFLAGS = $(GPT_LDFLAGS)
 
-myproxy_info_LDADD = ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la $(GPT_PGM_LINKS)
+myproxy_info_LDADD = $(GPT_PGM_LINKS) ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
 
 myproxy_store_SOURCES = myproxy_store.c
 
 myproxy_store_LDFLAGS = $(GPT_LDFLAGS)
 
-myproxy_store_LDADD = ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la $(GPT_PGM_LINKS)
+myproxy_store_LDADD = $(GPT_PGM_LINKS) ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
 
 myproxy_retrieve_SOURCES = myproxy_get_credential.c
 
 myproxy_retrieve_LDFLAGS = $(GPT_LDFLAGS)
 
-myproxy_retrieve_LDADD = ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la $(GPT_PGM_LINKS)
+myproxy_retrieve_LDADD = $(GPT_PGM_LINKS) ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
 
 myproxy_destroy_SOURCES = myproxy_destroy.c
 
 myproxy_destroy_LDFLAGS = $(GPT_LDFLAGS)
 
-myproxy_destroy_LDADD = ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la $(GPT_PGM_LINKS)
+myproxy_destroy_LDADD = $(GPT_PGM_LINKS) ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
 
 myproxy_server_SOURCES = myproxy_server.c
 myproxy_server_LDFLAGS = $(GPT_LDFLAGS)
 
-myproxy_server_LDADD = ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la $(GPT_PGM_LINKS)
+myproxy_server_LDADD = $(GPT_PGM_LINKS) ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
 
 myproxy_get_delegation_SOURCES = myproxy_get_delegation.c
 
 myproxy_get_delegation_LDFLAGS = $(GPT_LDFLAGS)
 
-myproxy_get_delegation_LDADD = ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la $(GPT_PGM_LINKS)
+myproxy_get_delegation_LDADD = $(GPT_PGM_LINKS) ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
 
 myproxy_logon_SOURCES = myproxy_get_delegation.c
 
 myproxy_logon_LDFLAGS = $(GPT_LDFLAGS)
 
-myproxy_logon_LDADD = ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la $(GPT_PGM_LINKS)
+myproxy_logon_LDADD = $(GPT_PGM_LINKS) ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
 
 myproxy_change_pass_phrase_SOURCES = myproxy_cp.c
 
 myproxy_change_pass_phrase_LDFLAGS = $(GPT_LDFLAGS)
 
-myproxy_change_pass_phrase_LDADD = ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la $(GPT_PGM_LINKS)
+myproxy_change_pass_phrase_LDADD = $(GPT_PGM_LINKS) ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
 
 myproxy_admin_query_SOURCES = myproxy_arq.c
 
 myproxy_admin_query_LDFLAGS = $(GPT_LDFLAGS)
 
-myproxy_admin_query_LDADD = ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la $(GPT_PGM_LINKS)
+myproxy_admin_query_LDADD = $(GPT_PGM_LINKS) ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
 
 myproxy_admin_load_credential_SOURCES = myproxy_alcf.c
 
 myproxy_admin_load_credential_LDFLAGS = $(GPT_LDFLAGS)
 
-myproxy_admin_load_credential_LDADD = ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la $(GPT_PGM_LINKS)
+myproxy_admin_load_credential_LDADD = $(GPT_PGM_LINKS) ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
 
 myproxy_admin_change_pass_SOURCES = myproxy_acp.c
 
 myproxy_admin_change_pass_LDFLAGS = $(GPT_LDFLAGS)
 
-myproxy_admin_change_pass_LDADD = ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la $(GPT_PGM_LINKS)
+myproxy_admin_change_pass_LDADD = $(GPT_PGM_LINKS) ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la
 
 sysconf_DATA = myproxy-server.config
 

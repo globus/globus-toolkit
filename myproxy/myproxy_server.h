@@ -22,8 +22,8 @@ typedef struct
   char **default_renewer_dns; 	    /* List of DNs that can renew creds */
   char **authorized_key_retrievers_dns; /* List of DNs that can retroeve keys */
   char **default_key_retrievers_dns;    /* List of DNs that can retroeve keys */
-  char **slave_servers;    /* List of slave myproxy servers */
-  char **master_server;    /* Master myproxy server for failover */
+  char **secondary_servers;         /* List of secondary myproxy servers */
+  char **primary_server;    /* Master myproxy server for failover */
   int max_proxy_lifetime;	    /* Max life (in seconds) of retrieved creds */
   char *cert_dir;		    /* Trusted certificate directory to send */
   char *pam_policy;                 /* How we depend on PAM for passwd auth */

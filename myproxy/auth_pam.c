@@ -9,6 +9,9 @@
  *   - changed failure return values from auth_pam to improve
  *     usefulness of error messages -- old versions are commented out
  *     above new versions
+ *   - remove const from struct pam_message argument to
+ *     saslauthd_pam_conv to match PAM types on AIX
+ *   - remove instances of __attribute__((unused))
  */
 
 #define AUTH_PAM yes
@@ -90,7 +93,7 @@ static int				/* R: PAM return code */
 saslauthd_pam_conv (
   /* PARAMETERS */
   int num_msg,				/* I: number of messages */
-  const struct pam_message **msg,	/* I: pointer to array of messages */
+  struct pam_message **msg,		/* I: pointer to array of messages */
   struct pam_response **resp,		/* O: pointer to pointer of response */
   void *appdata_ptr			/* I: pointer to app specific data */
   /* END PARAMETERS */
@@ -190,7 +193,7 @@ auth_pam (
   const char *login,			/* I: plaintext authenticator */
   const char *password,			/* I: plaintext password */
   const char *service,			/* I: service name */
-  const char *realm __attribute__((unused))
+  const char *realm
   /* END PARAMETERS */
   )
 {
@@ -253,10 +256,10 @@ auth_pam (
 
 char *
 auth_pam(
-  const char *login __attribute__((unused)),
-  const char *password __attribute__((unused)),
-  const char *service __attribute__((unused)),
-  const char *realm __attribute__((unused))
+  const char *login,
+  const char *password,
+  const char *service,
+  const char *realm
   )
 {
     return NULL;

@@ -82,7 +82,7 @@ int myproxy_get_delegation(
     /* Serialize client request object */
     /* Send request to the myproxy-server */
     /* Continue unless the response is not OK */
-    client_request->server_info = "1";
+    client_request->replicate_info = "1";
 
     if( myproxy_serialize_send_recv( client_request,
                                      server_response,

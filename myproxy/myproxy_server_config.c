@@ -247,12 +247,12 @@ line_parse_callback(void *context_arg,
 	}
     }
    
-    /* List of myproxy slave servers. */ 
-    if (strcmp(directive, "slave_servers") == 0)
+    /* List of myproxy secondary_servers. */ 
+    if (strcmp(directive, "secondary_servers") == 0)
     {
-        if( context->master_server != NULL)
+        if( context->primary_server != NULL)
         {
-            verror_put_string("Can't have both slave_servers and master_server set.");
+            verror_put_string("Can't have both secondary_servers and primary_server set.");
             goto error;
         }
 
@@ -260,11 +260,11 @@ line_parse_callback(void *context_arg,
 	
 	while(tokens[index] != NULL)
 	{
-	    context->slave_servers =
-		add_entry(context->slave_servers,
+	    context->secondary_servers =
+		add_entry(context->secondary_servers,
 			  tokens[index]);
 	    
-	    if (context->slave_servers == NULL)
+	    if (context->secondary_servers == NULL)
 	    {
                 verror_put_string("Parameter: %s", directive);
 		goto error;
@@ -274,12 +274,12 @@ line_parse_callback(void *context_arg,
 	}
     }
    
-    /* Myproxy master server used in fail over. */ 
-    if (strcmp(directive, "master_server") == 0)
+    /* Myproxy primary_server server used in fail over. */ 
+    if (strcmp(directive, "primary_server") == 0)
     {
-        if( context->slave_servers != NULL)
+        if( context->secondary_servers != NULL)
         {
-            verror_put_string("Can't have both slave_servers and master_server set.");
+            verror_put_string("Can't have both secondary_servers and primary_server set.");
             goto error;
         }
 
@@ -287,11 +287,11 @@ line_parse_callback(void *context_arg,
 	
 	while(tokens[index] != NULL)
 	{
-	    context->master_server =
-		add_entry(context->master_server,
+	    context->primary_server =
+		add_entry(context->primary_server,
 			  tokens[index]);
 	    
-	    if (context->master_server == NULL)
+	    if (context->primary_server == NULL)
 	    {
                 verror_put_string("Parameter: %s", directive);
 		goto error;

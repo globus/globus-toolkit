@@ -663,7 +663,7 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self, char *accepted_peer_names[])
     gss_OID			target_name_type = GSS_C_NO_OID;
     int				i, rc=0, sock;
     FILE			*fp = NULL;
-    
+
     if (self == NULL)
     {
 	return GSI_SOCKET_ERROR;
@@ -946,6 +946,49 @@ GSI_SOCKET_get_peer_name(GSI_SOCKET *self,
     
   error:
     return return_value;
+}
+
+char *
+GSI_SOCKET_get_peer_hostname(GSI_SOCKET *self)
+{
+    struct sockaddr_in          addr;
+    int                         addr_len = sizeof(addr);
+    struct hostent              *info;
+
+    if (getpeername(self->sock, (struct sockaddr *) &addr,
+                    &addr_len) < 0) {
+        self->error_number = errno;
+        self->error_string = strdup("Could not get peer address");
+        return NULL;
+    }
+
+    info = gethostbyaddr((char *)&addr.sin_addr,
+                         sizeof(addr.sin_addr),
+                         addr.sin_family);
+    if ((info == NULL) || (info->h_name == NULL)) {
+        self->error_number = errno;
+        self->error_string = strdup("Could not get peer hostname");
+        return NULL;
+    }
+
+    if (info->h_addrtype == AF_INET) { /* check for localhost */
+        struct in_addr inaddr;
+        inaddr = *(struct in_addr *)(info->h_addr);
+        if (ntohl(inaddr.s_addr) == INADDR_LOOPBACK) {
+            char buf[MAXHOSTNAMELEN];
+            if (gethostname(buf, sizeof(buf)) < 0) {
+                self->error_number = errno;
+                self->error_string = strdup("gethostname() failed");
+                return NULL;
+            }
+            info = gethostbyname(buf);
+            if (info == NULL || info->h_name == NULL) {
+                return strdup(buf);
+            }
+        }
+    }
+
+    return strdup(info->h_name);
 }
 
 

@@ -1,10 +1,11 @@
-This is MyProxy v2.3 XX XXX 2005.
+This is MyProxy v2.3 28 Jul 2005.
 This version should be protocol compatible with all versions since v0.2.
 Binary compatibility of the C API is not guaranteed between releases.
 
 Version History
 ---------------
-v2.3 XX XXX 2005
+v2.3 28 Jul 2005
+  - fix AIX compliation problems in PAM module
   - fix for static builds using 'gpt-build -static'
 
 v2.2 14 Jul 2005
