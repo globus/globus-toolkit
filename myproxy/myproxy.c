@@ -2213,14 +2213,14 @@ int
 myproxy_init_client_env( myproxy_socket_attrs_t *socket_attrs,
                          myproxy_request_t      *client_request,
                          myproxy_response_t     *server_response,
-                         myproxy_other_stuff_t  *other_stuff )
+                         myproxy_data_parameters_t  *data_parameters )
 {
     int retval = 0;
     int rval   = 0;
 
     if( myproxy_client_username( client_request,
                                  NULL,
-                                 other_stuff->dn_as_username ) != 0 )
+                                 data_parameters->dn_as_username ) != 0 )
     {
       retval = ( 1 );
     }
@@ -2239,16 +2239,16 @@ myproxy_init_client_env( myproxy_socket_attrs_t *socket_attrs,
         break;
 
     case MYPROXY_GET_PROXY:
-        if (!other_stuff->outputfile) 
+        if (!data_parameters->outputfile) 
         {
-            GLOBUS_GSI_SYSCONFIG_GET_PROXY_FILENAME(&(other_stuff->outputfile),
+            GLOBUS_GSI_SYSCONFIG_GET_PROXY_FILENAME(&(data_parameters->outputfile),
                                                     GLOBUS_PROXY_FILE_OUTPUT);
         }
 
     case MYPROXY_RETRIEVE_CERT:
         if( myproxy_user_password( client_request,
-                                   other_stuff->use_empty_passwd,
-                                   other_stuff->read_passwd_from_stdin ) != 0 )
+                                   data_parameters->use_empty_passwd,
+                                   data_parameters->read_passwd_from_stdin ) != 0 )
         {
           return( 1 );
         }
@@ -2263,35 +2263,35 @@ myproxy_init_client_env( myproxy_socket_attrs_t *socket_attrs,
 
     case MYPROXY_PUT_PROXY:
         /* Create a proxy by running [grid-proxy-init] */
-        sprintf(other_stuff->proxyfile, "%s.%u.%u", MYPROXY_DEFAULT_PROXY,
+        sprintf(data_parameters->proxyfile, "%s.%u.%u", MYPROXY_DEFAULT_PROXY,
                 (unsigned)getuid(), (unsigned)getpid());
 
         /* If this is a retry the proxy file should be there.  We shouldn't */
         /* have to get it again.                                            */
-        if( !(file_exists( other_stuff->proxyfile )) )
+        if( !(file_exists( data_parameters->proxyfile )) )
         {
           /* Run grid-proxy-init to create a proxy */
-          if (grid_proxy_init(other_stuff->cred_lifetime, 
-                              other_stuff->proxyfile,
-                              other_stuff->read_passwd_from_stdin) != 0) 
+          if (grid_proxy_init(data_parameters->cred_lifetime, 
+                              data_parameters->proxyfile,
+                              data_parameters->read_passwd_from_stdin) != 0) 
           {
             fprintf(stderr, "grid-proxy-init failed\n");
             return( 1 );
           }
         }
        
-        other_stuff->destroy_proxy = 1;
+        data_parameters->destroy_proxy = 1;
 
         if( myproxy_user_password( client_request,
-                                   other_stuff->use_empty_passwd,
-                                   other_stuff->read_passwd_from_stdin ) != 0 )
+                                   data_parameters->use_empty_passwd,
+                                   data_parameters->read_passwd_from_stdin ) != 0 )
         {
           return( 1 );
         }
 
         if( myproxy_client_username( client_request,
-                                     other_stuff->proxyfile,
-                                     other_stuff->dn_as_username ) != 0 )
+                                     data_parameters->proxyfile,
+                                     data_parameters->dn_as_username ) != 0 )
         {
           return( 1 );
         }
@@ -2300,8 +2300,8 @@ myproxy_init_client_env( myproxy_socket_attrs_t *socket_attrs,
 
     case MYPROXY_STORE_CERT:
         if( myproxy_client_username( client_request,
-                                     other_stuff->proxyfile,
-                                     other_stuff->dn_as_username ) != 0 )
+                                     data_parameters->proxyfile,
+                                     data_parameters->dn_as_username ) != 0 )
         {
           return( 1 );
         }
@@ -2318,8 +2318,8 @@ myproxy_init_client_env( myproxy_socket_attrs_t *socket_attrs,
                 sizeof(client_request->passphrase));
 
         if( myproxy_client_username( client_request,
-                                     other_stuff->proxyfile,
-                                     other_stuff->dn_as_username ) != 0 )
+                                     data_parameters->proxyfile,
+                                     data_parameters->dn_as_username ) != 0 )
         {
           return( 1 );
         }
@@ -2327,13 +2327,13 @@ myproxy_init_client_env( myproxy_socket_attrs_t *socket_attrs,
 
     case MYPROXY_CHANGE_CRED_PASSPHRASE:
         if( myproxy_user_password( client_request,
-                                   other_stuff->use_empty_passwd,
-                                   other_stuff->read_passwd_from_stdin ) != 0 )
+                                   data_parameters->use_empty_passwd,
+                                   data_parameters->read_passwd_from_stdin ) != 0 )
         {
           return( 1 );
         }
 
-        if (other_stuff->read_passwd_from_stdin) 
+        if (data_parameters->read_passwd_from_stdin) 
         {
           rval = myproxy_read_passphrase_stdin(client_request->new_passphrase,
                                         sizeof(client_request->new_passphrase),
@@ -2354,8 +2354,8 @@ myproxy_init_client_env( myproxy_socket_attrs_t *socket_attrs,
         }
 
         if( myproxy_client_username( client_request,
-                                     other_stuff->proxyfile,
-                                     other_stuff->dn_as_username ) != 0 )
+                                     data_parameters->proxyfile,
+                                     data_parameters->dn_as_username ) != 0 )
         {
           return( 1 );
         }
@@ -2371,7 +2371,7 @@ myproxy_init_client_env( myproxy_socket_attrs_t *socket_attrs,
         break;
     }
 
-    if( myproxy_open_server_com( socket_attrs, other_stuff->proxyfile ) != 0 )
+    if( myproxy_open_server_com( socket_attrs, data_parameters->proxyfile ) != 0 )
     {
       myproxy_debug( "myproxy_open_server_com FAILED\n" );
       return( 1 );
@@ -2423,12 +2423,12 @@ is_a_retry_command( int command )
     case MYPROXY_CHANGE_CRED_PASSPHRASE:
     case MYPROXY_STORE_CERT:
     case MYPROXY_REPLICA_INFO: 
+    case MYPROXY_INFO_PROXY:
         retval = 0; 
         break;
 
     case MYPROXY_GET_PROXY:
     case MYPROXY_RETRIEVE_CERT: 
-    case MYPROXY_INFO_PROXY:
         retval = 1; 
         break;
 
@@ -2444,7 +2444,7 @@ int
 myproxy_failover( myproxy_socket_attrs_t *socket_attrs,
                   myproxy_request_t      *client_request,
                   myproxy_response_t     *server_response,
-                  myproxy_other_stuff_t  *other_stuff )
+                  myproxy_data_parameters_t  *data_parameters )
 {
     struct    secondary_server
     {
@@ -2483,7 +2483,7 @@ myproxy_failover( myproxy_socket_attrs_t *socket_attrs,
       if( myproxy_init_client_env( socket_attrs, 
                                    client_request, 
                                    server_response, 
-                                   other_stuff ) != 0 )
+                                   data_parameters ) != 0 )
       {
         myproxy_debug( "myproxy_init_client_env FAILED\n" );
       }
@@ -2628,7 +2628,7 @@ myproxy_failover( myproxy_socket_attrs_t *socket_attrs,
               memset(server_response, 0, sizeof(*server_response));
 
               /* We will be passing password in as a value */
-              other_stuff->use_empty_passwd = 1;
+              data_parameters->use_empty_passwd = 1;
 
               /* Clear old error messages (Should we do this???) */
               verror_clear();
@@ -2707,7 +2707,7 @@ myproxy_failover( myproxy_socket_attrs_t *socket_attrs,
               memset(server_response, 0, sizeof(*server_response));
 
               /* We will be passing password in as a value */
-              other_stuff->use_empty_passwd = 1;
+              data_parameters->use_empty_passwd = 1;
 
               /* Clear old error messages (Should we do this???) */
               verror_clear();
@@ -2782,19 +2782,19 @@ myproxy_failover( myproxy_socket_attrs_t *socket_attrs,
 #endif
 
         /* move delegfile to outputfile if specified */
-        if (other_stuff->outputfile != NULL) 
+        if (data_parameters->outputfile != NULL) 
         {
-            if (copy_file(delegfile, other_stuff->outputfile, 0600) < 0) 
+            if (copy_file(delegfile, data_parameters->outputfile, 0600) < 0) 
             {
                 fprintf(stderr, "Error creating file: %s\n", 
-                        other_stuff->outputfile);
+                        data_parameters->outputfile);
                 return(1);
             }
             ssl_proxy_file_destroy(delegfile);
         }
 
         printf("A proxy has been received for user %s in %s\n",
-               client_request->username, other_stuff->outputfile);
+               client_request->username, data_parameters->outputfile);
 
         printf("username: %s\n", client_request->username);
         myproxy_print_cred_info(server_response->info_creds, stdout);
@@ -2813,7 +2813,7 @@ myproxy_failover( myproxy_socket_attrs_t *socket_attrs,
 
         /* I need to get this file out so that I don't have to pass key */
         /* and cert in.                                                 */
-        other_stuff->outputfile = strdup( delegfile );
+        data_parameters->outputfile = strdup( delegfile );
         myproxy_print_cred_info(server_response->info_creds, stdout);
         break;
 
@@ -2822,8 +2822,8 @@ myproxy_failover( myproxy_socket_attrs_t *socket_attrs,
         /* the cert.                                                    */
 
         if (myproxy_init_delegation(socket_attrs, 
-                                    other_stuff->proxyfile, 
-                                    other_stuff->cred_lifetime,
+                                    data_parameters->proxyfile, 
+                                    data_parameters->cred_lifetime,
                                     NULL /* no passphrase */
                                    ) < 0) 
         {
@@ -2839,16 +2839,16 @@ myproxy_failover( myproxy_socket_attrs_t *socket_attrs,
         }
 
         /* Get actual lifetime from credential. */
-        if (other_stuff->cred_lifetime == 0) 
+        if (data_parameters->cred_lifetime == 0) 
         {
           time_t cred_expiration;
 
-          if( ssl_get_times(other_stuff->proxyfile, NULL, &cred_expiration) 
+          if( ssl_get_times(data_parameters->proxyfile, NULL, &cred_expiration) 
                   == 0 )
           {
-            other_stuff->cred_lifetime = cred_expiration-time(0);
+            data_parameters->cred_lifetime = cred_expiration-time(0);
 
-            if (other_stuff->cred_lifetime <= 0) 
+            if (data_parameters->cred_lifetime <= 0) 
             {
               fprintf(stderr, "Error: Credential expired!\n");
               return( 1 );
@@ -2857,16 +2857,16 @@ myproxy_failover( myproxy_socket_attrs_t *socket_attrs,
         }
 
         /* Delete proxy file */
-        if (grid_proxy_destroy(other_stuff->proxyfile) != 0) 
+        if (grid_proxy_destroy(data_parameters->proxyfile) != 0) 
         {
           fprintf(stderr, "Failed to remove temporary proxy credential.\n");
           return( 1 );
         }
-        other_stuff->destroy_proxy = 0;
+        data_parameters->destroy_proxy = 0;
 
         printf( "A proxy valid for %d hours (%.1f days) for user %s now exists on %s.\n",
-                (int)(other_stuff->cred_lifetime/SECONDS_PER_HOUR), 
-                (float)((other_stuff->cred_lifetime/SECONDS_PER_HOUR)/24.0), 
+                (int)(data_parameters->cred_lifetime/SECONDS_PER_HOUR), 
+                (float)((data_parameters->cred_lifetime/SECONDS_PER_HOUR)/24.0), 
                 client_request->username, 
                 socket_attrs->pshost );
         break;
@@ -2874,7 +2874,7 @@ myproxy_failover( myproxy_socket_attrs_t *socket_attrs,
     case MYPROXY_STORE_CERT:
         /* Send end-entity credentials to server. */
         if (myproxy_init_credentials(socket_attrs,
-                                     other_stuff->credkeybuf) < 0) 
+                                     data_parameters->credkeybuf) < 0) 
         {
             fprintf(stderr, "%s\n", verror_get_string());
             return( 1 );

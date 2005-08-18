@@ -391,7 +391,7 @@ sub parse_datafile
     # but not flaged.  If this is true, how do we get it to replicate?
     if( $value =~ /OWNER=(.*)/ )
     {
-      $options .= "-O \"$1\" ";
+##      $options .= "-O \"$1\" ";
     }
     # LIFETIME -c
     elsif( $value =~ /LIFETIME=(.*)/ )
