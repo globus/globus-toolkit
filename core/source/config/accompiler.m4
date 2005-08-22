@@ -399,7 +399,7 @@ case ${host}--$1 in
             [lac_CFLAGS="+DAportable -Ae -D_HPUX_SOURCE $lac_CFLAGS"
              lac_LDFLAGS="+DAportable -Ae $lac_LDFLAGS"])
         LAC_PROG_CC_GNU($lac_cv_CXX,[],
-            [lac_CXXFLAGS="+DAportable -Ae -D_HPUX_SOURCE $lac_CXXFLAGS"])
+            [lac_CXXFLAGS="+DAportable -D_HPUX_SOURCE $lac_CXXFLAGS"])
         ;;
     *-hp-hpux11* )
 
@@ -463,7 +463,7 @@ case ${host}--$1 in
             [lac_CFLAGS="$lac_64bit_flag -Ae -D_HPUX_SOURCE $lac_CFLAGS"
              lac_LDFLAGS="$lac_64bit_flag -Ae $lac_LDFLAGS"])
         LAC_PROG_CC_GNU($lac_cv_CXX,[],
-            [lac_CXXFLAGS="$lac_64bit_flag -Ae -D_HPUX_SOURCE $lac_CXXFLAGS"])
+            [lac_CXXFLAGS="$lac_64bit_flag -D_HPUX_SOURCE $lac_CXXFLAGS"])
         ;;
     *-hp-hpux10*--no )
     
@@ -488,7 +488,7 @@ case ${host}--$1 in
         LAC_PROG_CC_GNU($lac_cv_CC, ,
             [lac_CFLAGS="-Ae -D_HPUX_SOURCE $lac_CFLAGS"])
         LAC_PROG_CC_GNU($lac_cv_CXX, ,
-            [lac_CXXFLAGS="-Ae -D_HPUX_SOURCE $lac_CXXFLAGS"])
+            [lac_CXXFLAGS="-D_HPUX_SOURCE $lac_CXXFLAGS"])
         ;;
     *-hp-hpux10* )
         
@@ -513,7 +513,7 @@ case ${host}--$1 in
         LAC_PROG_CC_GNU($lac_cv_CC, ,
                 [lac_CFLAGS="-Ae -D_HPUX_SOURCE $lac_CFLAGS"])
         LAC_PROG_CC_GNU($lac_cv_CXX, ,
-                [lac_CXXFLAGS="-Ae -D_HPUX_SOURCE $lac_CXXFLAGS"])
+                [lac_CXXFLAGS="-D_HPUX_SOURCE $lac_CXXFLAGS"])
         if test "$1" = "pthreads" ; then
             lac_CFLAGS="$lac_CFLAGS -I/usr/include/reentrant"
             lac_CXXFLAGS="$lac_CXXFLAGS -I/usr/include/reentrant"
