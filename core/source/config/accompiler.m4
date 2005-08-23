@@ -877,9 +877,6 @@ case ${host}--$1 in
                 exit 1
         fi
 
-        lac_CPPFLAGS="$lac_CPPFLAGS -I/sw/include"
-        lac_LDFLAGS="$lac_LDFLAGS -L/sw/lib"
-
         if test "$GLOBUS_CC" = "mpicc"; then
             AC_PATH_PROGS(lac_cv_CC,  $CC  mpicc)
             AC_PATH_PROGS(lac_cv_CXX, $CXX mpicxx mpic++ mpiCC)
@@ -902,9 +899,7 @@ case ${host}--$1 in
 
         # for now assume fink is installed in /sw
 
-        lac_CFLAGS="$lac_CFLAGS -I/sw/include -DBIND_8_COMPAT"
-        lac_CXXFLAGS="$lac_CXXFLAGS -I/sw/include"
-        lac_CPPFLAGS="$lac_CPPFLAGS -I/sw/include"
+        lac_CPPFLAGS="$lac_CPPFLAGS -I/sw/include -DBIND_8_COMPAT"
         lac_LDFLAGS="$lac_LDFLAGS -L/sw/lib"
       ;;
     * )
