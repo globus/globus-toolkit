@@ -1,4 +1,5 @@
 dnl CHECK_NEED_LDL
+if test "X$GPT_LINKTYPE" != "Xstatic"; then
 AC_DEFUN([CHECK_NEED_LDL],
 [
     AC_CHECK_FUNC([dlopen],
@@ -14,8 +15,9 @@ AC_DEFUN([CHECK_NEED_LDL],
                 EXTERNAL_LIBS="$EXTERNAL_LIBS -ldld"
             ],
             [
-                AC_MSG_ERROR("Unable to find dynamic linking library")
+                AC_MSG_WARN("Unable to find dynamic linking library")
             ])
         ])
     ])
 ])
+fi

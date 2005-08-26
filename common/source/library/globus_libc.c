@@ -50,6 +50,56 @@ CVS Information:
 extern int h_errno;
 #endif
 
+#ifndef HAVE_INET_ADDR
+static
+uint32_t
+inet_addr(const char * cp)
+{
+    uint32_t output;
+    int rc;
+    unsigned int octets[4];
+
+    rc = sscanf(
+        cp,
+        "%d.%d.%d.%d",
+        &octets[0], &octets[1], &octets[2], &octets[3]);
+
+    if (rc < 4)
+    {
+        return -1;
+    }
+    else
+    {
+        output = 0;
+        output |= octets[0];
+        output |= octets[1] << 8;
+        output |= octets[2] << 16;
+        output |= octets[3] << 24;
+
+        return output;
+    }
+}
+#endif
+
+#ifndef HAVE_INET_PTON
+static
+int
+inet_pton(int af, const char * src, void *dst)
+{
+    uint32_t addr = inet_addr(src);
+
+    if (addr != 0xffffffff)
+    {
+        memcpy(dst, &addr, 4);
+
+        return 0;
+    }
+    else
+    {
+        return -1;
+    }
+}
+#endif
 extern globus_bool_t globus_i_module_initialized;
 /******************************************************************************
 		       Define module specific variables
@@ -887,6 +937,7 @@ Returns:
 int
 globus_libc_gethostname(char *name, int len)
 {
+#if HAVE_GETHOSTNAME
     static char                         hostname[MAXHOSTNAMELEN];
     static size_t                       hostname_length = 0;
     static globus_mutex_t               gethostname_mutex;
@@ -1011,6 +1062,10 @@ globus_libc_gethostname(char *name, int len)
 
     globus_mutex_unlock(&gethostname_mutex);
     return(0);
+#else
+    errno=EINVAL;
+    return -1;
+#endif
 } /* globus_libc_gethostname() */
 
 int
@@ -1018,6 +1073,7 @@ globus_libc_gethostaddr_by_family(
     globus_sockaddr_t *                 addr,
     int                                 family)
 {
+#if HAVE_GETADDRINFO
     int                                 rc;
     char                                hostname[MAXHOSTNAMELEN];
     globus_addrinfo_t                   hints;
@@ -1057,13 +1113,22 @@ globus_libc_gethostaddr_by_family(
     globus_libc_freeaddrinfo(save_addrinfo);
     
     return 0;
+#else
+    errno = EINVAL;
+    return -1;
+#endif
 }
 
 int
 globus_libc_gethostaddr(
     globus_sockaddr_t *                 addr)
 {
+#ifdef AF_UNSPEC
     return globus_libc_gethostaddr_by_family(addr, AF_UNSPEC);
+#else
+    errno = EINVAL;
+    return -1;
+#endif
 }
 
 /*
@@ -2324,6 +2389,7 @@ globus_libc_lseek(int fd,
 extern DIR *
 globus_libc_opendir(char *filename)
 {
+#if HAVE_DIR
     DIR *dirp;
     int save_errno;
 
@@ -2336,6 +2402,11 @@ globus_libc_opendir(char *filename)
 
     errno=save_errno;
     return dirp;
+#else
+    globus_assert_string(0, "opendir not present on this platform");
+    errno = EINVAL;
+    return NULL;
+#endif
 }
 
 #if defined(HAVE_TELLDIR)
@@ -2393,6 +2464,7 @@ globus_libc_seekdir(DIR *dirp,
 extern void
 globus_libc_rewinddir(DIR *dirp)
 {
+#if HAVE_DIR
     int save_errno;
 
     if(dirp != GLOBUS_NULL)
@@ -2407,26 +2479,34 @@ globus_libc_rewinddir(DIR *dirp)
 	errno = save_errno;
 	return;
     }
+#else
+    globus_assert_string(0, "rewinddir not implemented on this system\n");
+    errno = EINVAL;
+#endif
 }
 
 #undef globus_libc_closedir
 extern void
 globus_libc_closedir(DIR *dirp)
 {
-        int save_errno;
+#if HAVE_DIR
+    int save_errno;
 
     if(dirp != GLOBUS_NULL)
     {
-	globus_libc_lock();
+        globus_libc_lock();
 
-	closedir(dirp);
+        closedir(dirp);
+        save_errno = errno;
 
-	save_errno = errno;
-
-	globus_libc_unlock();
-	errno = save_errno;
-	return;
+        globus_libc_unlock();
+        errno = save_errno;
+        return;
     }
+#else
+    globus_assert_string(0, "closedir not implemented on this system\n");
+    errno = EINVAL;
+#endif
 }
 
 #undef globus_libc_readdir_r
@@ -2434,6 +2514,7 @@ extern int
 globus_libc_readdir_r(DIR *dirp,
 		      struct dirent **result)
 {
+#if HAVE_DIR
 #if !defined(HAVE_READDIR_R)
     {
 	struct dirent *tmpdir, *entry;
@@ -2551,6 +2632,11 @@ globus_libc_readdir_r(DIR *dirp,
 #       endif
     }
 #   endif
+#else
+    globus_assert_string(0, "readdir not implemented on this system\n");
+    errno = EINVAL;
+    return -1;
+#endif
 }
 
 #endif /* TARGET_ARCH_WIN32 */
@@ -3165,6 +3251,7 @@ globus_libc_getaddrinfo(
     const globus_addrinfo_t *           hints,
     globus_addrinfo_t **                res)
 {
+#ifdef HAVE_GETADDRINFO
     int                                 rc;
     globus_result_t                     result;
     const char *                        port_str = service;
@@ -3242,13 +3329,32 @@ globus_libc_getaddrinfo(
 
 error:
     return result;
+#else 
+    int rc = 0;
+    globus_result_t result;
+    globus_assert_string(0,"getaddrinfo not available on this system");
+
+    result = globus_error_put(
+        globus_error_wrap_errno_error(
+            GLOBUS_COMMON_MODULE,
+            errno,
+            rc + GLOBUS_EAI_ERROR_OFFSET,
+            __FILE__,
+            "globus_libc_getaddrinfo",
+            __LINE__,
+            "%s",
+            "getaddrinfo not available on this system"));
+    return result;
+#endif
 }
 
 void
 globus_libc_freeaddrinfo(
     globus_addrinfo_t *                 res)
 {
+#ifdef HAVE_GETADDRINFO
     freeaddrinfo(res);
+#endif
 }
 
 globus_result_t
@@ -3260,6 +3366,7 @@ globus_libc_getnameinfo(
     globus_size_t                       servbuf_len,
     int                                 flags)
 {
+#ifdef HAVE_GETNAMEINFO
     int                                 rc;
     globus_result_t                     result;
 
@@ -3320,6 +3427,21 @@ globus_libc_getnameinfo(
     }
 
     return result;
+#else
+    globus_assert_string(0, "getnameinfo not implemented on this system");
+
+    return globus_error_put(
+        globus_error_construct_error(
+            GLOBUS_COMMON_MODULE,
+            GLOBUS_NULL,
+            0 + GLOBUS_EAI_ERROR_OFFSET,
+            __FILE__,
+            "globus_libc_getnameinfo",
+            __LINE__,
+            "%s",
+            "getnameinfo not implemented on this system"));
+
+#endif
 }
 
 globus_bool_t
@@ -3338,6 +3460,7 @@ globus_libc_addr_is_loopback(
             result = GLOBUS_TRUE;
         }
         break;
+#ifdef AF_INET6
       case AF_INET6:
         if(IN6_IS_ADDR_LOOPBACK(&((struct sockaddr_in6 *) _addr)->sin6_addr) ||
             (IN6_IS_ADDR_V4MAPPED(&((struct sockaddr_in6 *) _addr)->sin6_addr) &&
@@ -3347,6 +3470,7 @@ globus_libc_addr_is_loopback(
             result = GLOBUS_TRUE;
         }
         break;
+#endif
       default:
         globus_assert(0 &&
                       "Unknown family in globus_libc_addr_is_loopback");
@@ -3372,6 +3496,7 @@ globus_libc_addr_is_wildcard(
             result = GLOBUS_TRUE;
         }
         break;
+#ifdef AF_INET6
       case AF_INET6:
         if(IN6_IS_ADDR_UNSPECIFIED(
           &((struct sockaddr_in6 *) _addr)->sin6_addr) ||
@@ -3382,6 +3507,7 @@ globus_libc_addr_is_wildcard(
             result = GLOBUS_TRUE;
         }
         break;
+#endif
       default:
         globus_assert(0 &&
                       "Unknown family in globus_libc_addr_is_wildcard");
@@ -3424,9 +3550,14 @@ globus_libc_addr_to_contact_string(
     {
         int                             family;
         
+#if AF_INET6
         family = (opts_mask & GLOBUS_LIBC_ADDR_IPV6)
             ? AF_INET6 : ((opts_mask & GLOBUS_LIBC_ADDR_IPV4)
             ? AF_INET : AF_UNSPEC);
+#else
+        family = (opts_mask & GLOBUS_LIBC_ADDR_IPV4)
+            ? AF_INET : AF_UNSPEC;
+#endif
             
         if(globus_libc_gethostaddr_by_family(&myaddr, family) != 0)
         {
@@ -3447,12 +3578,16 @@ globus_libc_addr_to_contact_string(
         addr = &myaddr;
     }
     
+#ifdef NI_NUMERICSERV
     ni_flags = GLOBUS_NI_NUMERICSERV;
+#endif
 
+#ifdef NI_NUMERICHOST
     if(opts_mask & GLOBUS_LIBC_ADDR_NUMERIC)
     {
         ni_flags |= GLOBUS_NI_NUMERICHOST;
     }
+#endif
 
     result = globus_libc_getnameinfo(
         addr, host, sizeof(host), port, sizeof(port), ni_flags);
@@ -3513,7 +3648,9 @@ globus_libc_contact_string_to_ints(
     int                                 i;
     char                                buf[256];
     struct in_addr                      addr4;
+#ifdef AF_INET6
     struct in6_addr                     addr6;
+#endif
     unsigned char *                     paddr;
     
     memset(host, 0, sizeof(int) * 16);
@@ -3561,11 +3698,15 @@ globus_libc_contact_string_to_ints(
             s = NULL;
         }
         
+#if defined(AF_INET6)
         if(inet_pton(AF_INET6, pbuf, &addr6) <= 0)
+#endif
         {
             goto error_parse;
         }
+#if defined(AF_INET6)
         paddr = (unsigned char *) &addr6;
+#endif
     }
     
     if(port)
@@ -3701,7 +3842,7 @@ globus_libc_ints_to_contact_string(
         layout[l++] = bufs[b++];
     }
     
-    return globus_libc_join((char **)layout, l);
+    return globus_libc_join((const char **)layout, l);
 }
 
 /**

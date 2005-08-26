@@ -356,12 +356,18 @@ globus_common_v_create_nstring(
 typedef struct sockaddr_storage         globus_sockaddr_t;
 typedef struct addrinfo                 globus_addrinfo_t;
 
+#ifdef AF_INET6
 #define GlobusLibcProtocolFamilyIsIP(family)                                \
     ((family == AF_INET ? 1 : (family == AF_INET6 ? 1 : 0)))
+#else
+#define GlobusLibcProtocolFamilyIsIP(family)                                \
+    (family == AF_INET ? 1 : 0)
+#endif
 
 #define GlobusLibcSockaddrSetFamily(_addr, fam)  ((struct sockaddr *) &(_addr))->sa_family = fam
 #define GlobusLibcSockaddrGetFamily(_addr)  ((struct sockaddr *) &(_addr))->sa_family
 
+#ifdef AF_INET6
 #define GlobusLibcSockaddrGetPort(addr, port)                               \
     do                                                                      \
     {                                                                       \
@@ -384,7 +390,28 @@ typedef struct addrinfo                 globus_addrinfo_t;
             break;                                                          \
         }                                                                   \
     } while(0)
+#else
+#define GlobusLibcSockaddrGetPort(addr, port)                               \
+    do                                                                      \
+    {                                                                       \
+        const struct sockaddr *         _addr = (struct sockaddr *) &(addr);\
+                                                                            \
+        switch(_addr->sa_family)                                            \
+        {                                                                   \
+          case AF_INET:                                                     \
+            (port) = ntohs(((struct sockaddr_in *) _addr)->sin_port);       \
+            break;                                                          \
+                                                                            \
+          default:                                                          \
+            globus_assert(0 &&                                              \
+                "Unknown family in GlobusLibcSockaddrGetPort");             \
+            (port) = -1;                                                    \
+            break;                                                          \
+        }                                                                   \
+    } while(0)
+#endif
 
+#ifdef AF_INET6
 #define GlobusLibcSockaddrSetPort(addr, port)                               \
     do                                                                      \
     {                                                                       \
@@ -406,6 +433,25 @@ typedef struct addrinfo                 globus_addrinfo_t;
             break;                                                          \
         }                                                                   \
     } while(0)
+#else
+#define GlobusLibcSockaddrSetPort(addr, port)                               \
+    do                                                                      \
+    {                                                                       \
+        struct sockaddr *               _addr = (struct sockaddr *) &(addr);\
+                                                                            \
+        switch(_addr->sa_family)                                            \
+        {                                                                   \
+          case AF_INET:                                                     \
+            ((struct sockaddr_in *) _addr)->sin_port = htons((port));       \
+            break;                                                          \
+                                                                            \
+          default:                                                          \
+            globus_assert(0 &&                                              \
+                "Unknown family in GlobusLibcSockaddrSetPort");             \
+            break;                                                          \
+        }                                                                   \
+    } while(0)
+#endif
 
 /* only use this on systems with the sin_len field (AIX) */
 #define GlobusLibcSockaddrSetLen(addr, len)                                 \
@@ -458,11 +504,18 @@ typedef struct addrinfo                 globus_addrinfo_t;
     } while(0)
 #endif
 
+#ifdef HAVE_SOCKAPI_H
+/* Net+OS only has sockaddr_in */
+#define GlobusLibcSockaddrLen(addr)                                         \
+    (((struct sockaddr *) (addr))->sin_family == AF_INET                    \
+        ? sizeof(struct sockaddr_in) : 1)
+#else
 #define GlobusLibcSockaddrLen(addr)                                         \
     (((struct sockaddr *) (addr))->sa_family == AF_INET                     \
         ? sizeof(struct sockaddr_in) :                                      \
             (((struct sockaddr *) (addr))->sa_family == AF_INET6            \
         ? sizeof(struct sockaddr_in6) : -1))
+#endif
 
 #define GLOBUS_AI_PASSIVE               AI_PASSIVE
 #define GLOBUS_AI_NUMERICHOST           AI_NUMERICHOST
