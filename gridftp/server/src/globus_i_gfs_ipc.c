@@ -92,6 +92,9 @@ static globus_xio_server_t              globus_l_gfs_ipc_server_handle;
 static globus_bool_t                    globus_l_gfs_ipc_requester;
 static globus_list_t *                  globus_l_ipc_handle_list = NULL;
 
+/* used for data nodes that connect back.  track the number of connections
+   made.  will likely never be more than 1 */
+static int                              globus_l_gfs_ipc_community_ndx = 0;
 /*
  *  header:
  *  type:    single charater representing type of message
@@ -1836,12 +1839,64 @@ globus_l_gfs_ipc_add_server_accept_cb(
     globus_result_t                     result,
     void *                              user_arg)
 {
+    char *                              remote_dn;
+    OM_uint32                           min_stat;
+    OM_uint32                           maj_stat;
+    gss_buffer_desc                     subject_buf = GSS_C_EMPTY_BUFFER;
+    gss_OID                             mech_type;
+    gss_name_t                          dn_name;
+    char *                              remote_contact;
     globus_result_t                     res;
     globus_i_gfs_ipc_handle_t *         ipc;
     GlobusGFSName(globus_l_gfs_ipc_add_server_accept_cb);
     GlobusGFSDebugEnter();
 
     if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+    result = globus_xio_handle_cntl(
+        handle,
+        globus_l_gfs_tcp_driver,
+        GLOBUS_XIO_TCP_GET_REMOTE_NUMERIC_CONTACT,
+        &remote_contact);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+
+    result = globus_xio_handle_cntl(
+        handle,
+        globus_l_gfs_gsi_driver,
+        GLOBUS_XIO_GSI_GET_PEER_NAME,
+        &dn_name);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+    maj_stat = gss_display_name(
+        &min_stat,
+        dn_name,
+        &subject_buf,
+        &mech_type);
+    if(maj_stat != GSS_S_COMPLETE)
+    {
+    }
+    remote_dn = subject_buf.value;
+    /* TODO: check remote_dn against acceptable list */
+
+    result = globus_xio_handle_cntl(
+        handle,
+        globus_l_gfs_tcp_driver,
+        GLOBUS_XIO_TCP_GET_REMOTE_NUMERIC_CONTACT,
+        &remote_contact);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+
+    /* check IP allow */
+    if(globus_i_gfs_config_allow_addr(remote_contact, GLOBUS_TRUE))
     {
         goto error;
     }
@@ -1893,6 +1948,11 @@ error:
     /* perhaps want to log that a session could not be opened */
     globus_i_gfs_log_message(
         GLOBUS_I_GFS_LOG_ERR, "An accepted IPC connection failed to open\n");
+    result = globus_xio_register_close(
+        handle,
+        NULL,
+        NULL,
+        NULL);
 
     GlobusGFSDebugExitWithError();
 }
@@ -2220,7 +2280,7 @@ globus_result_t
 globus_l_gfs_ipc_handle_connect(
     globus_gfs_session_info_t *         session_info,
     globus_gfs_ipc_iface_t *            iface,
-    globus_i_gfs_community_t *          community,
+    const char *                        community_name,
     int                                 community_ndx,
     globus_gfs_ipc_open_callback_t      cb,
     void *                              user_arg,
@@ -2263,7 +2323,7 @@ globus_l_gfs_ipc_handle_connect(
         globus_hashtable_int_keyeq);
 
     ipc->connection_info.version = strdup(globus_l_gfs_local_version);
-    ipc->connection_info.community = strdup(community->name);
+    ipc->connection_info.community = strdup(community_name);
     ipc->connection_info.cookie = NULL;
     ipc->connection_info.subject = 
         session_info->subject ? strdup(session_info->subject) : NULL;
@@ -2413,6 +2473,43 @@ ipc_error:
     return result;
 }
 
+globus_result_t
+globus_gfs_ipc_handle_connect(
+    globus_gfs_session_info_t *         session_info,
+    const char *                        community_name,
+    globus_gfs_ipc_open_callback_t      cb,
+    void *                              user_arg,
+    globus_gfs_ipc_error_callback_t     error_cb,
+    void *                              error_user_arg)
+{
+    globus_result_t                     res;
+
+    globus_mutex_lock(&globus_l_ipc_mutex);
+    {
+        res = globus_l_gfs_ipc_handle_connect(
+            session_info,
+            &globus_gfs_ipc_default_iface,
+            community_name,
+            globus_l_gfs_ipc_community_ndx,
+            cb,
+            user_arg,
+            error_cb,
+            error_user_arg);
+        if(res != GLOBUS_SUCCESS)
+        {
+            goto error;
+        }
+        globus_l_gfs_ipc_community_ndx++;
+    }
+    globus_mutex_unlock(&globus_l_ipc_mutex);
+
+    return GLOBUS_SUCCESS;
+error:
+    globus_mutex_unlock(&globus_l_ipc_mutex);
+
+    return res;
+}
+
 
 static
 globus_i_gfs_ipc_handle_t *
@@ -2535,7 +2632,7 @@ globus_gfs_ipc_handle_obtain_by_path(
             res = globus_l_gfs_ipc_handle_connect(
                 &tmp_si,
                 iface,
-                community,
+                community->name,
                 tmp_ndx,
                 cb,
                 user_arg,
@@ -2560,7 +2657,7 @@ globus_gfs_ipc_handle_obtain_by_path(
                 res = globus_l_gfs_ipc_handle_connect(
                     &tmp_si,
                     iface,
-                    community,
+                    community->name,
                     i,
                     cb,
                     user_arg,
@@ -4048,23 +4145,13 @@ error:
  */
 globus_result_t
 globus_gfs_ipc_init(
-    globus_bool_t                       requester,
-    char **                             in_out_listener)
+    globus_bool_t                       requester)
 {
     globus_list_t *                     community_list;
     globus_list_t *                     list;
     globus_result_t                     res;
-    int                                 sc;
-    int                                 port;
-    globus_xio_attr_t                   attr;
-    char *                              listener = NULL;
     GlobusGFSName(globus_gfs_ipc_init);
     GlobusGFSDebugEnter();
-
-    if(in_out_listener != NULL)
-    {
-        listener = *in_out_listener;
-    }
 
     res = globus_xio_driver_load("tcp", &globus_l_gfs_tcp_driver);
     if(res != GLOBUS_SUCCESS)
@@ -4146,13 +4233,33 @@ globus_gfs_ipc_init(
 
     globus_l_gfs_ipc_requester = requester;
 
-    if(listener != NULL)
-    {
-        sc = sscanf(listener, "%d", &port);
-        if(sc != 1)
-        {
-            goto port_scan_error;
-        }
+    GlobusGFSDebugExit();
+    return GLOBUS_SUCCESS;
+
+stack_push_error:
+    globus_xio_stack_destroy(globus_l_gfs_ipc_xio_stack);
+stack_init_error:
+gsi_load_error:
+    globus_xio_driver_unload(globus_l_gfs_queue_driver);
+queue_load_error:
+    globus_xio_driver_unload(globus_l_gfs_tcp_driver);
+tcp_load_error:
+
+    GlobusGFSDebugExitWithError();
+    return res;
+}
+
+globus_result_t
+globus_gfs_ipc_listen(
+    int                                 port,
+    char **                             out_cs)
+{
+    char *                              contact_string;
+    globus_result_t                     res;
+    globus_xio_attr_t                   attr;
+    GlobusGFSName(in_out_listener);
+
+    GlobusGFSDebugEnter();
 
         res = globus_xio_attr_init(&attr);
         if(res != GLOBUS_SUCCESS)
@@ -4176,11 +4283,9 @@ globus_gfs_ipc_init(
             goto attr_error;
         }
 
-        res = globus_xio_server_cntl(
+        res = globus_xio_server_get_contact_string(
             globus_l_gfs_ipc_server_handle,
-            globus_l_gfs_tcp_driver,
-            GLOBUS_XIO_TCP_GET_LOCAL_NUMERIC_CONTACT,
-            in_out_listener);
+            &contact_string);
         if(res != GLOBUS_SUCCESS)
         {
             goto server_error;
@@ -4193,7 +4298,6 @@ globus_gfs_ipc_init(
         {
             goto accept_error;
         }
-    }
 
     GlobusGFSDebugExit();
     return GLOBUS_SUCCESS;
@@ -4204,15 +4308,6 @@ server_error:
 attr_error:
     globus_xio_attr_destroy(attr);
 attr_init_error:
-port_scan_error:
-stack_push_error:
-    globus_xio_stack_destroy(globus_l_gfs_ipc_xio_stack);
-stack_init_error:
-gsi_load_error:
-    globus_xio_driver_unload(globus_l_gfs_queue_driver);
-queue_load_error:
-    globus_xio_driver_unload(globus_l_gfs_tcp_driver);
-tcp_load_error:
 
     GlobusGFSDebugExitWithError();
     return res;

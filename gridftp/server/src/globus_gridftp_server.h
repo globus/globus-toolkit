@@ -1466,6 +1466,15 @@ globus_gfs_ipc_handle_obtain_by_path(
     void *                              error_user_arg);
 
 globus_result_t
+globus_gfs_ipc_handle_connect(
+    globus_gfs_session_info_t *         session_info,
+    const char *                        community_name,
+    globus_gfs_ipc_open_callback_t      cb,
+    void *                              user_arg,
+    globus_gfs_ipc_error_callback_t     error_cb,
+    void *                              error_user_arg);
+
+globus_result_t
 globus_gfs_ipc_handle_get_contact_string(
     globus_gfs_ipc_handle_t             ipc_handle,
     char **                             contact_string);
@@ -1477,8 +1486,12 @@ globus_gfs_ipc_handle_get_index(
     
 globus_result_t
 globus_gfs_ipc_init(
-    globus_bool_t                       requester,
-    char **                             in_out_listener);
+    globus_bool_t                       requester);
+
+globus_result_t
+globus_gfs_ipc_listen(
+    int                                 port,
+    char **                             out_cs);
 
 /*
  *

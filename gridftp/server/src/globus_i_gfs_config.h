@@ -39,6 +39,7 @@ globus_i_gfs_config_get_module_name(
 
 globus_bool_t
 globus_i_gfs_config_allow_addr(
-    const char *                        remote_addr);
+    const char *                        remote_addr,
+    globus_bool_t                       ipc);
     
 #endif
