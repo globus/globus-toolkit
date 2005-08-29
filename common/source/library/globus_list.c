@@ -445,7 +445,6 @@ globus_list_remove(
 {
     globus_list_t *                         i;
     globus_list_t *                         j;
-    int                                     size = 0;
     void *                                  datum;
 
     assert (headp);

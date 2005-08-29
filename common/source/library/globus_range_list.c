@@ -56,8 +56,8 @@ globus_range_list_merge_destructive(
     globus_l_range_list_t *             tmp_dst;
     globus_l_range_ent_t *              ent1 = NULL;
     globus_l_range_ent_t *              ent2 = NULL;
-    int                                 size_inc;
-    int                                 ent2_size;
+    int                                 size_inc = 0;
+    int                                 ent2_size = 0;
     int                                 rc;
 
     if(src1 == NULL || src2 == NULL)
@@ -223,7 +223,7 @@ globus_range_list_copy(
 {
     int                                 rc;
     globus_l_range_list_t *             tmp_dst;
-    globus_l_range_ent_t *              prev;
+    globus_l_range_ent_t *              prev = NULL;
     globus_l_range_ent_t *              dst_ent;
     globus_l_range_ent_t *              src_ent;
 

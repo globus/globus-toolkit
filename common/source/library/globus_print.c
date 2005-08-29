@@ -89,7 +89,7 @@ va_dcl
     
 } /* globus_fatal() */
 
-#ifndef TARGET_ARCH_WIN32
+#if defined(TARGET_ARCH_LINUX)
 
 /* this isnt guaranteed to work since globus_l_callback_main_thread can be set 
  * from a thread... hopefully not
@@ -117,7 +117,7 @@ void globus_dump_stack()
     system(s);
 }
 
-#endif /* TARGET_ARCH_WIN32 */
+#endif /* TARGET_ARCH_LINUX */
 
 /*
  * globus_l_descriptor_string()

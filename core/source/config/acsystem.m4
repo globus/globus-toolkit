@@ -153,6 +153,9 @@ AC_CHECK_FUNCS(strerror)
 AC_CHECK_FUNCS(gethostname)
 AC_CHECK_FUNCS(inet_ntoa)
 AC_CHECK_FUNCS(inet_pton)
+AC_CHECK_FUNCS(fork)
+AC_CHECK_FUNCS(sigaction)
+
 dnl used in RSL
 AC_FUNC_ALLOCA
 

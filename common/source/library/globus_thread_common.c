@@ -450,6 +450,7 @@ void thread_print(char * s, ...)
 int
 globus_i_thread_ignore_sigpipe(void)
 {
+#ifdef HAVE_SIGACTION
     struct sigaction act;
     struct sigaction oldact;
     int rc;
@@ -480,6 +481,9 @@ globus_i_thread_ignore_sigpipe(void)
 
         return sigaction(SIGPIPE, &act, GLOBUS_NULL);
     }
+#else
+    return GLOBUS_SUCCESS;
+#endif
 }
 /* globus_i_thread_ignore_sigpipe() */
 

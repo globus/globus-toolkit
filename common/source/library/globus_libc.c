@@ -1255,6 +1255,7 @@ Returns:
 int
 globus_libc_fork(void)
 {
+#if HAVE_FORK
     int child;
 
     globus_thread_prefork();
@@ -1272,6 +1273,10 @@ globus_libc_fork(void)
     globus_thread_postfork();
 
     return child;
+#else
+    errno = ENOMEM;
+    return -1;
+#endif
 } /* globus_libc_fork() */
 
 /******************************************************************************
@@ -3528,7 +3533,7 @@ globus_libc_addr_to_contact_string(
     char                                host[MAXHOSTNAMELEN];
     char                                port[10];
     int                                 port_no;
-    int                                 ni_flags;
+    int                                 ni_flags = 0;
     char *                              cs;
     
     if(!GlobusLibcProtocolFamilyIsIP(GlobusLibcSockaddrGetFamily(*addr)))
