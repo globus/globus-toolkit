@@ -121,6 +121,12 @@ extern const char * _globus_func_name;
 #define sockaddr sockaddr_in
 #define sa_family sin_family
 #define sockaddr_storage sockaddr_in
+
+/* Also, the headers define some macros we don't want to use generally */
+#undef boolean
+#undef critical
+#undef skip
+
 #endif
 
 #include <errno.h>
