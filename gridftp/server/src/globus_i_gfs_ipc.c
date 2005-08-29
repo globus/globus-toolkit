@@ -2706,6 +2706,110 @@ community_error:
     return res;
 }
 
+globus_result_t
+globus_gfs_ipc_handle_obtain(
+    globus_gfs_session_info_t *         session_info,
+    const char *                        pathname,
+    globus_gfs_ipc_iface_t *            iface,
+    globus_gfs_ipc_open_callback_t      cb,
+    void *                              user_arg,
+    globus_gfs_ipc_error_callback_t     error_cb,
+    void *                              error_user_arg)
+{
+    int                                 i;
+    globus_i_gfs_ipc_handle_t *         ipc;
+    globus_result_t                     res;
+    globus_bool_t                       found = GLOBUS_FALSE;
+    globus_i_gfs_community_t *          community;
+    globus_l_gfs_ipc_connection_t       tmp_ci;
+    GlobusGFSName(globus_gfs_ipc_handle_obtain);
+    GlobusGFSDebugEnter();
+
+    memset(&tmp_ci, '\0', sizeof(globus_l_gfs_ipc_connection_t));
+    tmp_ci.version = (char *) globus_l_gfs_local_version;
+    tmp_ci.community = community->name;
+    tmp_ci.cookie = session_info->cookie;
+    tmp_ci.username = session_info->username;
+    tmp_ci.subject = session_info->subject;
+    tmp_ci.map_user = session_info->map_user;
+    tmp_ci.host_id = session_info->host_id;
+
+    /* find the community */
+    globus_mutex_lock(&globus_l_ipc_mutex);
+    {
+        community = globus_l_gfs_ipc_find_community(pathname);
+        if(community == NULL)
+        {
+            res = GlobusGFSErrorIPC();
+            goto error_community;
+        }
+
+        /* first get anything that is cached */
+        for(i = 0; i < community->cs_count && !found; i++)
+        {
+            if(strcmp(session_info->host_id, community->cs[i]) == 0)
+            {
+                found = GLOBUS_TRUE;
+                ipc = globus_l_gfs_ipc_handle_lookup(&tmp_ci);
+                if(ipc != NULL)
+                {
+                    /* i got it safely from the big lock, i have not given
+                        a ref to a user yet so i can safely mess with ipc */
+                    ipc->state = GLOBUS_GFS_IPC_STATE_GETTING;
+                    ipc->open_cb = cb;
+                    ipc->user_arg = user_arg;
+                    ipc->error_cb = error_cb;
+                    ipc->error_arg = error_user_arg;
+                    globus_l_gfs_session_info_free(ipc->session_info);
+                    ipc->session_info =
+                        globus_l_gfs_ipc_session_info_copy(session_info);
+                    if(ipc->session_info == NULL)
+                    {
+                        res = GlobusGFSErrorIPC();
+                        goto error_open;
+                    }
+                    globus_xio_handle_cancel_operations(
+                        ipc->xio_handle, GLOBUS_XIO_CANCEL_READ);
+                }
+                /* if unused add to list for connection */
+                else
+                {
+                    res = globus_l_gfs_ipc_handle_connect(
+                        session_info,
+                        iface,
+                        community,
+                        i,
+                        cb,
+                        user_arg,
+                        error_cb,
+                        error_user_arg);
+                    if(res != GLOBUS_SUCCESS)
+                    {
+                        goto error_open;
+                    }
+                }
+            }
+        }
+
+        if(!found)
+        {
+            res = GlobusGFSErrorIPC();
+            goto error_found;
+        }
+    }
+    globus_mutex_unlock(&globus_l_ipc_mutex);
+
+    GlobusGFSDebugExit();
+    return GLOBUS_SUCCESS;
+
+error_found:
+error_open:
+error_community:
+    globus_mutex_unlock(&globus_l_ipc_mutex);
+
+    return res;
+}
+
 /*
  *  put ipc handle back into cache
  */

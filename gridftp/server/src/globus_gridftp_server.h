@@ -1502,8 +1502,8 @@ globus_gfs_ipc_add_server(
 
 globus_result_t
 globus_gfs_ipc_handle_obtain(
-    int *                               handle_count,
     globus_gfs_session_info_t *         session_info,
+    const char *                        pathname,
     globus_gfs_ipc_iface_t *            iface,
     globus_gfs_ipc_open_callback_t      cb,
     void *                              user_arg,
