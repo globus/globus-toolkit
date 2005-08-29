@@ -194,6 +194,12 @@ extern "C" {
 # define OPENSSL_SYS_VXWORKS
 #endif
 
+/* ------------------------------- NET+OS --------------------------------- */
+#ifdef NET_OS
+# define OPENSSL_SYS_NETOS
+# undef OPENSSL_SYS_UNIX
+#endif
+
 /**
  * That's it for OS-specific stuff
  *****************************************************************************/

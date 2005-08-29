@@ -23,6 +23,7 @@ AC_DEFUN([LAC_DEFINE_VAR],
 dnl CHECK_NEED_LDL
 AC_DEFUN([CHECK_NEED_LDL],
 [
+if test "x$GPT_LINKTYPE" != "xstatic"; then
     AC_CHECK_FUNC([dlopen],
     [],
     [
@@ -40,6 +41,9 @@ AC_DEFUN([CHECK_NEED_LDL],
             ])
         ])
     ])
+else
+    AM_CONDITIONAL(STATIC_ONLY, test "x$GPT_LINKTYPE" = "xstatic")
+fi
 ])
 
 # Figure out how to run the assembler.
