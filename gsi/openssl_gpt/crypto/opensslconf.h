@@ -14,7 +14,7 @@
 
 #ifdef HEADER_CRYPTLIB_H
 #   ifndef OPENSSLDIR
-#       define OPENSSLDIR "/home/bresnaha/Dev/Globus-buzz_guc_crft2/GL"
+#       define OPENSSLDIR "/home/bester/development/arm-elf-branch/INSTALL"
 #   endif
 #endif
 
@@ -33,7 +33,7 @@
 #       define THIRTY_TWO_BIT 1
 #   endif
 #   ifndef BN_LLONG
-#       define BN_LLONG 1
+/* #       undef BN_LLONG */
 #   endif
 #   ifndef BN_DIV2W
 /* #       undef BN_DIV2W */
@@ -45,16 +45,16 @@
 
 #ifdef HEADER_DES_LOCL_H
 #   ifndef DES_PTR
-#       define DES_PTR 1
+/* #       undef DES_PTR */
 #   endif
 #   ifndef DES_RISC1
-#       define DES_RISC1 1
+/* #       undef DES_RISC1 */
 #   endif
 #   ifndef DES_RISC2
 /* #       undef DES_RISC2 */
 #   endif
 #   ifndef DES_UNROLL
-#       define DES_UNROLL 1
+/* #       undef DES_UNROLL */
 #   endif
 #endif
 
@@ -84,7 +84,7 @@
 
 #ifdef HEADER_RC4_LOCL_H
 #   ifndef RC4_INDEX
-#       define RC4_INDEX 1
+/* #       undef RC4_INDEX */
 #   endif
 #endif
 

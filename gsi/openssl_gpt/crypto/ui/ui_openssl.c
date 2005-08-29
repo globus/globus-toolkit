@@ -199,6 +199,12 @@
 #undef SGTTY
 #endif
 
+#if defined (OPENSSL_SYS_NETOS)
+#undef TERMIOS
+#undef TERMIO
+#undef SGTTY
+#endif
+
 #ifdef TERMIOS
 # include <termios.h>
 # define TTY_STRUCT		struct termios
@@ -223,7 +229,7 @@
 # define TTY_set(tty,data)	ioctl(tty,TIOCSETP,data)
 #endif
 
-#if !defined(_LIBC) && !defined(OPENSSL_SYS_MSDOS) && !defined(OPENSSL_SYS_VMS) && !defined(OPENSSL_SYS_MACINTOSH_CLASSIC) && !defined(OPENSSL_SYS_SUNOS)
+#if !defined(_LIBC) && !defined(OPENSSL_SYS_MSDOS) && !defined(OPENSSL_SYS_VMS) && !defined(OPENSSL_SYS_MACINTOSH_CLASSIC) && !defined(OPENSSL_SYS_SUNOS) && !defined(OPENSSL_SYS_NETOS)
 # include <sys/ioctl.h>
 #endif
 
@@ -275,7 +281,7 @@ static long tty_orig[3], tty_new[3]; /* XXX   Is there any guarantee that this w
 static long status;
 static unsigned short channel = 0;
 #else
-#if !defined(OPENSSL_SYS_MSDOS) || defined(__DJGPP__)
+#if !(defined(OPENSSL_SYS_MSDOS) || defined(OPENSSL_SYS_NETOS)) || defined(__DJGPP__)
 static TTY_STRUCT tty_orig,tty_new;
 #endif
 #endif
