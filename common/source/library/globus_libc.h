@@ -352,6 +352,25 @@ globus_common_v_create_nstring(
 #   define   globus_libc_seteuid(a)  seteuid(a)
 #endif
 
+#ifndef HAVE_GETADDRINFO
+
+# define AI_PASSIVE     0x0001
+# define AI_CANONNAME   0x0002
+# define AI_NUMERICHOST 0x0004
+
+struct addrinfo
+{
+    int                                 ai_flags;
+    int                                 ai_family;
+    int                                 ai_socktype;
+    int                                 ai_protocol;
+    size_t                              ai_addrlen;
+    struct sockaddr *                   ai_addr;
+    char *                              ai_canonname;
+    struct addrinfo *                   ai_next;
+};
+#endif
+
 /* IPv6 compatible utils */
 typedef struct sockaddr_storage         globus_sockaddr_t;
 typedef struct addrinfo                 globus_addrinfo_t;
@@ -362,6 +381,14 @@ typedef struct addrinfo                 globus_addrinfo_t;
 #else
 #define GlobusLibcProtocolFamilyIsIP(family)                                \
     (family == AF_INET ? 1 : 0)
+#endif
+
+#ifndef PF_INET
+#define PF_INET AF_INET
+#endif
+
+#ifndef PF_UNSPEC
+#define PF_UNSPEC AF_UNSPEC
 #endif
 
 #define GlobusLibcSockaddrSetFamily(_addr, fam)  ((struct sockaddr *) &(_addr))->sa_family = fam
