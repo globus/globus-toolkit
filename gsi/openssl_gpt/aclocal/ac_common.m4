@@ -41,9 +41,8 @@ if test "x$GPT_LINKTYPE" != "xstatic"; then
             ])
         ])
     ])
-else
-    AM_CONDITIONAL(STATIC_ONLY, test "x$GPT_LINKTYPE" = "xstatic")
 fi
+    AM_CONDITIONAL(STATIC_ONLY, test "x$GPT_LINKTYPE" = "xstatic")
 ])
 
 # Figure out how to run the assembler.
