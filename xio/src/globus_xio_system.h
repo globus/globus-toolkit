@@ -26,7 +26,11 @@ extern globus_module_descriptor_t       globus_i_xio_system_module;
 
 #define GLOBUS_XIO_SYSTEM_INVALID_HANDLE  -1
 
-#ifndef WIN32
+#ifdef HAVE_SOCKAPI_H
+/* This should be a union! */
+typedef int globus_xio_system_native_handle_t;
+typedef struct globus_xio_system_handle_s * globus_xio_system_handle_t;
+#else
 typedef int globus_xio_system_native_handle_t;   /* for posix, same as fd */
 typedef int globus_xio_system_handle_t;
 #endif

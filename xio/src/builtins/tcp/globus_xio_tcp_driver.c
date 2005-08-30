@@ -12,7 +12,16 @@
 #include "globus_xio_driver.h"
 #include "globus_xio_tcp_driver.h"
 #include "version.h"
+
+#ifdef HAVE_NETINET_TCP_H
 #include <netinet/tcp.h>
+#endif
+
+#ifdef HAVE_SOCKAPI_H
+#include <sockapi.h>
+#define SOMAXCONN 5
+#endif
+
 #include <fcntl.h>
 
 GlobusDebugDefine(GLOBUS_XIO_TCP);
@@ -72,6 +81,23 @@ GlobusXIODefineModule(tcp) =
             "No addrs for INET family"))
 
 
+#ifdef HAVE_SOCKAPI_H
+#define GlobusIXIOTcpRcCloseFd(fd, rc)                                      \
+    do                                                                      \
+    {                                                                       \
+        int                             _rc;                                \
+        globus_xio_system_native_handle_t _fd;                              \
+                                                                            \
+        _fd = (fd);                                                         \
+        do                                                                  \
+        {                                                                   \
+            _rc = socketclose(_fd);                                         \
+        } while(_rc < 0 && errno == EINTR);                                 \
+                                                                            \
+        (fd) = GLOBUS_XIO_SYSTEM_INVALID_HANDLE;                            \
+        (rc) = _rc;                                                         \
+    } while(0)
+#else
 #define GlobusIXIOTcpRcCloseFd(fd, rc)                                      \
     do                                                                      \
     {                                                                       \
@@ -87,6 +113,7 @@ GlobusXIODefineModule(tcp) =
         (fd) = GLOBUS_XIO_SYSTEM_INVALID_HANDLE;                            \
         (rc) = _rc;                                                         \
     } while(0)
+#endif
 
 #define GlobusIXIOTcpCloseFd(fd)                                            \
     do                                                                      \
@@ -216,7 +243,7 @@ static
 void
 globus_l_xio_tcp_file_close(void)
 {
-    int                                 rc;
+    int                                 rc = 0;
     
     if(globus_l_xio_tcp_port_range_state_file < 0)
     {
@@ -855,7 +882,7 @@ globus_l_xio_tcp_apply_handle_attrs(
     {
         if(attr->resuseaddr &&
             setsockopt(
-                fd, SOL_SOCKET, SO_REUSEADDR, &int_one, sizeof(int_one)) < 0)
+                fd, SOL_SOCKET, SO_REUSEADDR, (void *) &int_one, sizeof(int_one)) < 0)
         {
             result = GlobusXIOErrorSystemError("setsockopt", errno);
             goto error_sockopt;
@@ -863,7 +890,7 @@ globus_l_xio_tcp_apply_handle_attrs(
     }
     
     if(attr->keepalive &&
-       setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &int_one, sizeof(int_one)) < 0)
+       setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, (void *) &int_one, sizeof(int_one)) < 0)
     {
         result = GlobusXIOErrorSystemError("setsockopt", errno);
         goto error_sockopt;
@@ -876,7 +903,7 @@ globus_l_xio_tcp_apply_handle_attrs(
         linger.l_onoff = 1;
         linger.l_linger = attr->linger_time;
         
-        if(setsockopt(fd, SOL_SOCKET, SO_LINGER, &linger, sizeof(linger)) < 0)
+        if(setsockopt(fd, SOL_SOCKET, SO_LINGER, (void *) &linger, sizeof(linger)) < 0)
         {
             result = GlobusXIOErrorSystemError("setsockopt", errno);
             goto error_sockopt;
@@ -884,7 +911,7 @@ globus_l_xio_tcp_apply_handle_attrs(
     }
     
     if(attr->oobinline &&
-       setsockopt(fd, SOL_SOCKET, SO_OOBINLINE, &int_one, sizeof(int_one)) < 0)
+       setsockopt(fd, SOL_SOCKET, SO_OOBINLINE, (void *) &int_one, sizeof(int_one)) < 0)
     {
         result = GlobusXIOErrorSystemError("setsockopt", errno);
         goto error_sockopt;
@@ -898,7 +925,7 @@ globus_l_xio_tcp_apply_handle_attrs(
          * per-socket, so let's try just in case. 
          */
         if(setsockopt(
-            fd, IPPROTO_TCP, TCP_RFC1323, &int_one, sizeof(int_one)) < 0)
+            fd, IPPROTO_TCP, TCP_RFC1323, (void *) &int_one, sizeof(int_one)) < 0)
         {
             result = GlobusXIOErrorSystemError("setsockopt", errno);
             goto error_sockopt;
@@ -908,7 +935,7 @@ globus_l_xio_tcp_apply_handle_attrs(
 
     if(attr->sndbuf &&
         setsockopt(
-           fd, SOL_SOCKET, SO_SNDBUF, &attr->sndbuf, sizeof(attr->sndbuf)) < 0)
+           fd, SOL_SOCKET, SO_SNDBUF, (void *) &attr->sndbuf, sizeof(attr->sndbuf)) < 0)
     {
         result = GlobusXIOErrorSystemError("setsockopt", errno);
         goto error_sockopt;
@@ -916,14 +943,14 @@ globus_l_xio_tcp_apply_handle_attrs(
     
     if(attr->rcvbuf &&
         setsockopt(
-           fd, SOL_SOCKET, SO_RCVBUF, &attr->rcvbuf, sizeof(attr->rcvbuf)) < 0)
+           fd, SOL_SOCKET, SO_RCVBUF, (void *) &attr->rcvbuf, sizeof(attr->rcvbuf)) < 0)
     {
         result = GlobusXIOErrorSystemError("setsockopt", errno);
         goto error_sockopt;
     }
     
     if(attr->nodelay &&
-       setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &int_one, sizeof(int_one)) < 0)
+       setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (void *) &int_one, sizeof(int_one)) < 0)
     {
         result = GlobusXIOErrorSystemError("setsockopt", errno);
         goto error_sockopt;
@@ -1343,10 +1370,11 @@ globus_l_xio_tcp_create_listener(
         
         goto error_no_addrinfo;
     }
-    
+
     fcntl(fd, F_SETFD, FD_CLOEXEC);
     
     server->listener_fd = fd;
+
     globus_libc_freeaddrinfo(save_addrinfo);
     
     GlobusXIOTcpDebugExit();
@@ -1749,7 +1777,7 @@ globus_l_xio_tcp_bind_local(
         
         goto error_no_addrinfo;
     }
-    
+
     globus_libc_freeaddrinfo(save_addrinfo);
     
     GlobusXIOTcpDebugExit();
@@ -2573,7 +2601,7 @@ globus_l_xio_tcp_cntl(
       case GLOBUS_XIO_TCP_SET_KEEPALIVE:
         in_bool = va_arg(ap, globus_bool_t);
         if(setsockopt(
-            fd, SOL_SOCKET, SO_KEEPALIVE, &in_bool, sizeof(in_bool)) < 0)
+            fd, SOL_SOCKET, SO_KEEPALIVE, (void *) &in_bool, sizeof(in_bool)) < 0)
         {
             result = GlobusXIOErrorSystemError("setsockopt", errno);
             goto error_sockopt;
@@ -2584,7 +2612,7 @@ globus_l_xio_tcp_cntl(
       case GLOBUS_XIO_TCP_GET_KEEPALIVE:
         out_bool = va_arg(ap, globus_bool_t *);
         len = sizeof(globus_bool_t);
-        if(getsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, out_bool, &len) < 0)
+        if(getsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, (void *) out_bool, &len) < 0)
         {
             result = GlobusXIOErrorSystemError("getsockopt", errno);
             goto error_sockopt;
@@ -2601,7 +2629,7 @@ globus_l_xio_tcp_cntl(
             linger.l_linger = va_arg(ap, int);
             
             if(setsockopt(
-                fd, SOL_SOCKET, SO_LINGER, &linger, sizeof(linger)) < 0)
+                fd, SOL_SOCKET, SO_LINGER, (void *) &linger, sizeof(linger)) < 0)
             {
                 result = GlobusXIOErrorSystemError("setsockopt", errno);
                 goto error_sockopt;
@@ -2616,7 +2644,7 @@ globus_l_xio_tcp_cntl(
             struct linger           linger;
             
             len = sizeof(linger);
-            if(getsockopt(fd, SOL_SOCKET, SO_LINGER, &linger, &len) < 0)
+            if(getsockopt(fd, SOL_SOCKET, SO_LINGER, (void*) &linger, &len) < 0)
             {
                 result = GlobusXIOErrorSystemError("getsockopt", errno);
                 goto error_sockopt;
@@ -2633,7 +2661,7 @@ globus_l_xio_tcp_cntl(
       case GLOBUS_XIO_TCP_SET_OOBINLINE:
         in_bool = va_arg(ap, globus_bool_t);
         if(setsockopt(
-            fd, SOL_SOCKET, SO_OOBINLINE, &in_bool, sizeof(in_bool)) < 0)
+            fd, SOL_SOCKET, SO_OOBINLINE, (void *) &in_bool, sizeof(in_bool)) < 0)
         {
             result = GlobusXIOErrorSystemError("setsockopt", errno);
             goto error_sockopt;
@@ -2645,7 +2673,7 @@ globus_l_xio_tcp_cntl(
         out_bool = va_arg(ap, globus_bool_t *);
         len = sizeof(globus_bool_t);
         if(getsockopt(
-            fd, SOL_SOCKET, SO_OOBINLINE, out_bool, &len) < 0)
+            fd, SOL_SOCKET, SO_OOBINLINE, (void *) out_bool, &len) < 0)
         {
             result = GlobusXIOErrorSystemError("getsockopt", errno);
             goto error_sockopt;
@@ -2655,7 +2683,7 @@ globus_l_xio_tcp_cntl(
       /* int                            sndbuf */
       case GLOBUS_XIO_TCP_SET_SNDBUF:
         in_int = va_arg(ap, int);
-        if(setsockopt(fd, SOL_SOCKET, SO_SNDBUF, &in_int, sizeof(in_int)) < 0)
+        if(setsockopt(fd, SOL_SOCKET, SO_SNDBUF, (void *) &in_int, sizeof(in_int)) < 0)
         {
             result = GlobusXIOErrorSystemError("setsockopt", errno);
             goto error_sockopt;
@@ -2666,7 +2694,7 @@ globus_l_xio_tcp_cntl(
       case GLOBUS_XIO_TCP_GET_SNDBUF:
         out_int = va_arg(ap, int *);
         len = sizeof(int);
-        if(getsockopt(fd, SOL_SOCKET, SO_SNDBUF, out_int, &len) < 0)
+        if(getsockopt(fd, SOL_SOCKET, SO_SNDBUF, (void *) out_int, &len) < 0)
         {
             result = GlobusXIOErrorSystemError("getsockopt", errno);
             goto error_sockopt;
@@ -2676,7 +2704,7 @@ globus_l_xio_tcp_cntl(
       /* int                            rcvbuf */
       case GLOBUS_XIO_TCP_SET_RCVBUF:
         in_int = va_arg(ap, int);
-        if(setsockopt(fd, SOL_SOCKET, SO_RCVBUF, &in_int, sizeof(in_int)) < 0)
+        if(setsockopt(fd, SOL_SOCKET, SO_RCVBUF, (void *) &in_int, sizeof(in_int)) < 0)
         {
             result = GlobusXIOErrorSystemError("setsockopt", errno);
             goto error_sockopt;
@@ -2687,7 +2715,7 @@ globus_l_xio_tcp_cntl(
       case GLOBUS_XIO_TCP_GET_RCVBUF:
         out_int = va_arg(ap, int *);
         len = sizeof(int);
-        if(getsockopt(fd, SOL_SOCKET, SO_RCVBUF, out_int, &len) < 0)
+        if(getsockopt(fd, SOL_SOCKET, SO_RCVBUF, (void *) out_int, &len) < 0)
         {
             result = GlobusXIOErrorSystemError("getsockopt", errno);
             goto error_sockopt;
@@ -2698,7 +2726,7 @@ globus_l_xio_tcp_cntl(
       case GLOBUS_XIO_TCP_SET_NODELAY:
         in_bool = va_arg(ap, globus_bool_t);
         if(setsockopt(
-            fd, IPPROTO_TCP, TCP_NODELAY, &in_bool, sizeof(in_bool)) < 0)
+            fd, IPPROTO_TCP, TCP_NODELAY, (void *) &in_bool, sizeof(in_bool)) < 0)
         {
             result = GlobusXIOErrorSystemError("setsockopt", errno);
             goto error_sockopt;
@@ -2709,7 +2737,7 @@ globus_l_xio_tcp_cntl(
       case GLOBUS_XIO_TCP_GET_NODELAY:
         out_bool = va_arg(ap, globus_bool_t *);
         len = sizeof(globus_bool_t);
-        if(getsockopt(fd, IPPROTO_TCP, TCP_NODELAY, out_bool, &len) < 0)
+        if(getsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (void *) out_bool, &len) < 0)
         {
             result = GlobusXIOErrorSystemError("getsockopt", errno);
             goto error_sockopt;

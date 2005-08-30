@@ -265,6 +265,18 @@ globus_xio_contact_info_to_encoded_string(
             _XIOSL("Unexpected state, %d"),                                 \
             (state)))                                  
                                                                             
+#define GlobusXIOErrorInvalidType(type)                                     \
+    globus_error_put(                                                       \
+        globus_error_construct_error(                                       \
+            GLOBUS_XIO_MODULE,                                              \
+            GLOBUS_NULL,                                                    \
+            GLOBUS_XIO_ERROR_TYPE,                                          \
+            __FILE__,                                                       \
+            _xio_name,                                                      \
+            __LINE__,                                                       \
+            _XIOSL("Unexpected type, %d"),                                  \
+            (type)))                                  
+
 #define GlobusXIOErrorWrapFailed(failed_func, result)                       \
     globus_error_put(                                                       \
         globus_error_construct_error(                                       \
