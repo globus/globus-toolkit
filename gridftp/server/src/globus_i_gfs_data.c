@@ -520,8 +520,16 @@ globus_l_gfs_blocking_dispatch_kickout(
     {
         case GLOBUS_L_GFS_DATA_INFO_TYPE_COMMAND:
             cmd_info = (globus_gfs_command_info_t *) op->info_struct;
-            op->session_handle->dsi->command_func(
-                op, cmd_info, op->session_handle->session_arg);
+            if (cmd_info->command == GLOBUS_GFS_CMD_SITE_AUTHZ_ASSERT)
+            {
+                globus_gridftp_server_finished_command(
+                                                op, GLOBUS_SUCCESS, NULL);
+            }
+            else
+            {
+                op->session_handle->dsi->command_func(
+                    op, cmd_info, op->session_handle->session_arg);
+            }
             break;
 
         case GLOBUS_L_GFS_DATA_INFO_TYPE_STAT:
@@ -1761,6 +1769,26 @@ globus_i_gfs_data_request_command(
 
         case GLOBUS_GFS_CMD_SITE_CHMOD:
             action = "write";
+            break;
+
+        case GLOBUS_GFS_CMD_SITE_AUTHZ_ASSERT:
+            /*
+             * A new action to provide authorization assertions received
+             * over the control channel to the authorization callout
+             */
+            action = "authz_assert";
+            rc = globus_gfs_acl_authorize(
+                &session_handle->acl_handle,
+                action,
+                cmd_info->authz_assert,
+                &res,
+                globus_l_gfs_authorize_cb,
+                op);
+            if(rc == GLOBUS_GFS_ACL_COMPLETE)
+            {
+                globus_l_gfs_authorize_cb("authz_assert", op, res);
+            }
+            call = GLOBUS_FALSE;
             break;
 
         default:

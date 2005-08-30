@@ -96,6 +96,7 @@ typedef enum globus_gfs_command_type_e
     GLOBUS_GFS_CMD_MKD = 1,
     GLOBUS_GFS_CMD_RMD,
     GLOBUS_GFS_CMD_DELE,
+    GLOBUS_GFS_CMD_SITE_AUTHZ_ASSERT,
     GLOBUS_GFS_CMD_SITE_RDEL,
     GLOBUS_GFS_CMD_RNTO,
     GLOBUS_GFS_CMD_RNFR,
@@ -367,6 +368,9 @@ typedef struct globus_gfs_command_info_s
     
     /** pathname to rename from (to the above pathname)  */
     char *                              rnfr_pathname;    
+
+    /** Authorization assertion */
+    char *                              authz_assert; 
 } globus_gfs_command_info_t;
 
 /*
