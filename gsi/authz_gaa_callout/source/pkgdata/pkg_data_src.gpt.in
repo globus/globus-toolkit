@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE gpt_package_metadata SYSTEM "globus_package.dtd">
 <gpt_package_metadata Format_Version="0.02" Name="globus_authz_gaa_callout" >
-    <Aging_Version Age="0" Major="0" Minor="2" />
+    <Aging_Version Age="0" Major="0" Minor="3" />
     <Description >Globus authz callouts that invoke GAA</Description>
     <Functional_Group >Security</Functional_Group>
     <Version_Stability Release="Experimental"
