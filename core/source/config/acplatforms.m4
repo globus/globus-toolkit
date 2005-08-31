@@ -102,7 +102,7 @@ case "$host" in
     AC_DEFINE(TARGET_ARCH_LINUX)
   ;;
   arm* )
-    AC_DEFINE(TARGET_ARCH_EMBEDDED)
+    AC_DEFINE(TARGET_ARCH_NETOS)
     AC_DEFINE(TARGET_ARCH_ARM)
   ;;
   * )
