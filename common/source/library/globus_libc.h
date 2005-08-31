@@ -353,7 +353,6 @@ globus_common_v_create_nstring(
 #endif
 
 #ifndef HAVE_GETADDRINFO
-
 # define AI_PASSIVE     0x0001
 # define AI_CANONNAME   0x0002
 # define AI_NUMERICHOST 0x0004
@@ -369,7 +368,33 @@ struct addrinfo
     char *                              ai_canonname;
     struct addrinfo *                   ai_next;
 };
+
+int
+getaddrinfo(
+    const char *                        node,
+    const char *                        service,
+    const struct addrinfo *             hints,
+    struct addrinfo **                  res);
 #endif
+
+#ifndef HAVE_GETNAMEINFO
+int
+getnameinfo(
+    const struct sockaddr *             sa,
+    globus_socklen_t                    sa_len,
+    char *                              host,
+    size_t                              hostlen,
+    char *                              serv,
+    size_t                              servlen,
+    int                                 flags);
+
+#define NI_NUMERICHOST 1
+#define NI_NUMERICSERV 2
+#define NI_NOFQDN      4
+#define NI_NAMEREQD    8
+#define NI_DGRAM       16
+#endif
+
 
 /* IPv6 compatible utils */
 typedef struct sockaddr_storage         globus_sockaddr_t;

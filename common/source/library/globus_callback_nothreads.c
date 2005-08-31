@@ -32,6 +32,8 @@
 
 #ifdef TARGET_ARCH_WIN32
 #define pause() Sleep(1000);
+#elif defined(TARGET_ARCH_NETOS)
+#define pause() tx_thread_sleep(0xFFFFFFFF)
 #endif
 
 static

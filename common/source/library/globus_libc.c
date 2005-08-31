@@ -50,6 +50,10 @@ CVS Information:
 extern int h_errno;
 #endif
 
+#ifdef TARGET_ARCH_NETOS
+#include "appconf_api.h"
+#endif
+
 #ifndef HAVE_INET_ADDR
 static
 uint32_t
@@ -86,23 +90,32 @@ static
 int
 inet_pton(int af, const char * src, void *dst)
 {
-    uint32_t addr = inet_addr(src);
+    uint32_t                            addr;
+    
+    if (af != AF_INET || src == NULL || dst == NULL)
+    {
+        errno = EAFNOSUPPORT;
+        return -1;
+    }
+    
+    addr = inet_addr(src);
 
     if (addr != 0xffffffff)
     {
-        memcpy(dst, &addr, 4);
+        struct in_addr * dstaddr = dst;
 
-        return 0;
+        dstaddr->s_addr = addr;
+
+        return 1;
     }
     else
     {
-        return -1;
+        return 0;
     }
 }
 #endif
 
 #ifndef HAVE_GETADDRINFO
-static
 int
 getaddrinfo(
     const char *                        node,
@@ -111,25 +124,27 @@ getaddrinfo(
     struct addrinfo **                  res)
 {
     /* Version of getaddrinfo for hosts without IPV6 */
-    struct hostent *                hostent = NULL;
-    struct hostent                  hostent_res;
-    char                            buffer[256];
-    struct servent *                servent;
-    int                             h_errno;
-    struct addrinfo *               addrinfo;
-    struct protoent *               proto;
-    char *                          proto_name = NULL;
-    int                             service_port = 0;
-    static char *                   aliases = NULL;
-    static char *                   addr_any = NULL;
-    static struct hostent           localhostent = {
+    struct hostent *                    hostent = NULL;
+    struct hostent                      hostent_res;
+    char                                buffer[256];
+#ifdef HAVE_GETSERVBYNAME
+    struct servent *                    servent;
+    struct protoent *                   proto;
+#endif
+    char *                              proto_name = NULL;
+    int                                 h_errno;
+    struct addrinfo *                   addrinfo;
+    int                                 service_port = 0;
+    static char *                       aliases = NULL;
+    static char *                       addr_any = NULL;
+    static struct hostent               localhostent = {
         "localhost",
         &aliases,
         AF_INET,
         sizeof(struct sockaddr_in),
         &addr_any
     };
-    globus_result_t                 result = GLOBUS_SUCCESS;
+    globus_result_t                     result = GLOBUS_SUCCESS;
 
     if (hints != NULL)
     {
@@ -146,7 +161,7 @@ getaddrinfo(
                     __LINE__,
                     "%s",
                     "Unsupported family\n"));
-            goto error;
+            goto error_out;
         }
     }
 
@@ -196,12 +211,13 @@ getaddrinfo(
                     "%s",
                     "gethostbyname_r failed\n"));
 
-            goto error;
+            goto error_out;
         }
     }
 
     if (hints != NULL && hints->ai_protocol != 0)
     {
+#ifdef HAVE_GETPROTOBYNUMBER
         proto = getprotobynumber(hints->ai_protocol);
 
         if (proto != NULL)
@@ -240,10 +256,20 @@ getaddrinfo(
                     __LINE__,
                     "%s",
                     "getprotobynumber failed\n"));
-            goto error;
+            goto error_out;
         }
+#else
+        if (hints->ai_protocol == IP_TCP)
+        {
+            proto_name = "tcp";
+        }
+        else if (hints->ai_protocol == IP_UDP)
+        {
+            proto_name = "udp";
+        }
+#endif
     }
-    if (hints != NULL && hints->ai_socktype != 0)
+    else if (hints != NULL && hints->ai_socktype != 0)
     {
         if (hints->ai_socktype == SOCK_STREAM)
         {
@@ -266,21 +292,48 @@ getaddrinfo(
                     __LINE__,
                     "%s",
                     "unknown socket type\n"));
-            goto error;
+            goto error_out;
         }
     }
 
     if (service != NULL)
     {
+#ifdef HAVE_GETSERVBYNAME
         servent = getservbyname(service, proto_name);
 
         if (servent != NULL)
         {
             service_port = servent->s_port;
         }
+#else
+        int tens = 1;
+
+        while (isdigit(*service))
+        {
+            service_port += (*service - '0') * tens;
+            service++;
+
+            tens *= 10;
+        }
+#endif
     }
 
     addrinfo = calloc(1, sizeof(struct addrinfo));
+
+    if (addrinfo == NULL)
+    {
+
+        result = globus_error_put(
+            globus_error_construct_error(
+                GLOBUS_COMMON_MODULE,
+                GLOBUS_NULL,
+                0,
+                __FILE__,
+                "globus_libc_addr_to_contact_string",
+                __LINE__,
+                "malloc failed"));
+        goto error_out;
+    }
 
     addrinfo->ai_family = AF_INET;
 
@@ -305,8 +358,26 @@ getaddrinfo(
         if (hints != NULL && (hints->ai_flags & AI_PASSIVE))
         {
             /* Unspecified if node is null and AI_PASSIVE is set */
-            addrinfo->ai_addrlen = 0;
-            addrinfo->ai_addr = 0;
+            struct sockaddr_in *        a;
+
+            addrinfo->ai_addrlen = sizeof(struct sockaddr_in);
+            addrinfo->ai_addr = a = calloc(1, addrinfo->ai_addrlen);
+            if (a == NULL)
+            {
+                result = globus_error_put(
+                    globus_error_construct_error(
+                        GLOBUS_COMMON_MODULE,
+                        GLOBUS_NULL,
+                        0,
+                        __FILE__,
+                        "getaddrinfo",
+                        __LINE__,
+                        "malloc failed"));
+
+                goto free_addrinfo_out;
+            }
+            a->sin_addr.s_addr = INADDR_ANY;
+            a->sin_family = AF_INET;
         }
         else
         {
@@ -315,6 +386,21 @@ getaddrinfo(
 
             addrinfo->ai_addrlen = sizeof(struct sockaddr_in);
             a = malloc(addrinfo->ai_addrlen);
+
+            if (a == NULL)
+            {
+                result = globus_error_put(
+                    globus_error_construct_error(
+                        GLOBUS_COMMON_MODULE,
+                        GLOBUS_NULL,
+                        0,
+                        __FILE__,
+                        "getaddrinfo",
+                        __LINE__,
+                        "malloc failed"));
+
+                goto free_addrinfo_out;
+            }
 
             a->sin_family = AF_INET;
 #ifdef INADDR_LOOPBACK
@@ -334,32 +420,194 @@ getaddrinfo(
 
         for (i = 0; hostent->h_addr_list[i] != NULL; i++)
         {
+            struct sockaddr_in *        a;
             if (i != 0)
             {
-                tmp = malloc(sizeof(struct addrinfo));
+                tmp->ai_next = malloc(sizeof(struct addrinfo));
 
-                memcpy(tmp, addrinfo, sizeof(struct addrinfo));
-                addrinfo->ai_next = tmp;
+                if (tmp->ai_next == NULL)
+                {
+                    result = globus_error_put(
+                        globus_error_construct_error(
+                            GLOBUS_COMMON_MODULE,
+                            GLOBUS_NULL,
+                            0,
+                            __FILE__,
+                            "getaddrinfo",
+                            __LINE__,
+                            "malloc failed"));
+                    goto free_addrinfo_out;
+                }
+
+                memcpy(tmp->ai_next, addrinfo, sizeof(struct addrinfo));
+
+                tmp = tmp->ai_next;
+                tmp->ai_next = NULL;
             }
-            tmp->ai_addrlen = hostent->h_length;
-            tmp->ai_addr = malloc(tmp->ai_addrlen);
-            memcpy(tmp->ai_addr,
+
+            if (hostent->h_addrtype != AF_INET)
+            {
+                result = globus_error_put(
+                    globus_error_wrap_errno_error(
+                        GLOBUS_COMMON_MODULE,
+                        errno,
+                        GLOBUS_EAI_ERROR_OFFSET,
+                        __FILE__,
+                        "getaddrinfo",
+                        __LINE__,
+                        "%s",
+                        "unknown address type\n"));
+                goto free_addrinfo_out;
+            }
+            tmp->ai_addrlen = sizeof(struct sockaddr_in);
+            tmp->ai_addr = a = malloc(tmp->ai_addrlen);
+            if (a == NULL)
+            {
+                result = globus_error_put(
+                    globus_error_construct_error(
+                        GLOBUS_COMMON_MODULE,
+                        GLOBUS_NULL,
+                        0,
+                        __FILE__,
+                        "getaddrinfo",
+                        __LINE__,
+                        "malloc failed"));
+                goto free_addrinfo_out;
+            }
+            a->sin_family = AF_INET;
+            memcpy(&a->sin_addr,
                    hostent->h_addr_list[i],
                    tmp->ai_addrlen);
-            ((struct sockaddr_in *) tmp->ai_addr)->sin_port = service_port;
+            a->sin_port = service_port;
+        }
+    }
+    *res = addrinfo;
+
+    return result;
+
+free_addrinfo_out:
+    globus_libc_freeaddrinfo(addrinfo);
+error_out:
+    return result;
+}
+#endif
+
+#ifndef HAVE_GETNAMEINFO
+int
+getnameinfo(
+    const struct sockaddr *             sa,
+    globus_socklen_t                    sa_len,
+    char *                              host,
+    size_t                              hostlen,
+    char *                              serv,
+    size_t                              servlen,
+    int                                 flags)
+{
+    struct hostent *                    hostent = NULL;
+    char                                ip_addr[16];
+    char                                service_string[10];
+    struct hostent                      hostent_res;
+    char                                buffer[256];
+
+    if (host != NULL)
+    {
+        if (!(flags & NI_NUMERICHOST))
+        {
+            hostent = globus_libc_gethostbyaddr_r(
+                (void *) &sa,
+                sa_len,
+                AF_INET,
+                &hostent_res,
+                buffer,
+                sizeof(buffer),
+                &h_errno);
+        }
+
+        if (hostent == NULL && (flags & NI_NAMEREQD))
+        {
+            return -1;
+        }
+        else if (hostent == NULL)
+        {
+            if (sa->sa_family == AF_INET)
+            {
+                uint32_t address = ((struct sockaddr_in *) sa)->sin_addr.s_addr;
+
+                sprintf(ip_addr,
+                        "%u.%u.%u.%u",
+                        (unsigned int) (address & 0xff000000) >> 24,
+                        (unsigned int) (address & 0x00ff0000) >> 16,
+                        (unsigned int) (address & 0x0000ff00) >> 8,
+                        (unsigned int) (address & 0x000000ff));
+
+                strncpy(host, ip_addr, hostlen);
+            }
+            else
+            {
+                return -1;
+            }
+        }
+        else
+        {
+            strncpy(host, hostent->h_name, hostlen);
+
+            if (flags & NI_NOFQDN)
+            {
+                char * tmp = strchr(host, '.');
+
+                if (tmp)
+                {
+                    *tmp = '\0';
+                }
+            }
         }
     }
 
-error:
-    return result;
-}
+    if (serv != NULL)
+    {
+        uint16_t                        port;
+        struct servent *                servent = NULL;
 
+        port = (uint16_t) ((struct sockaddr_in *) sa)->sin_port;
+
+#ifdef HAVE_GETSERVBYNAME
+        if (!(flags & NI_NUMERICSERV))
+        {
+            servent = getservbyport(
+                    port,
+                    flags & (NI_DGRAM) ? "udp" : (char *) NULL);
+        }
+#endif
+        if (servent == NULL)
+        {
+            sprintf(service_string, "%hu", port);
+
+            strncpy(serv, service_string, servlen);
+        }
+        else
+        {
+#ifdef HAVE_GETSERVBYNAME
+            strncpy(serv, servent->s_name);
+#endif
+        }
+    }
+    return 0;
+}
+/* getnameinfo() */
+#endif
+
+#ifndef HAVE_GETADDRINFO
 static
 char * gai_strerror(
     int                                 rc)
 {
     return "name resolution error";
 }
+#endif
+
+
+#ifndef HAVE_GETEUID
+#define geteuid() 0
 #endif
 
 extern globus_bool_t globus_i_module_initialized;
@@ -1324,6 +1572,17 @@ globus_libc_gethostname(char *name, int len)
 
     globus_mutex_unlock(&gethostname_mutex);
     return(0);
+#elif defined(TARGET_ARCH_NETOS)
+    char * tmp = NAGetAppIpAddress();
+
+    if (tmp != NULL)
+    {
+        strcpy(name, tmp);
+
+        return 0;
+    }
+    errno=EINVAL;
+    return -1;
 #else
     errno=EINVAL;
     return -1;
@@ -2010,6 +2269,7 @@ globus_libc_getpwnam_r(char *name,
 
 #   if !defined(HAVE_GETPWNAM_R)
     {
+#ifdef HAVE_GETPWNAM
 	struct passwd *tmp_pwd;
 
 	globus_libc_lock();
@@ -2028,6 +2288,9 @@ globus_libc_getpwnam_r(char *name,
 	    rc = -1;
 	}
 	globus_libc_unlock();
+#else
+        rc = -1;
+#endif
     }
 #   elif defined(GLOBUS_HAVE_GETPWNAM_R_4)
     {
@@ -2092,6 +2355,7 @@ globus_libc_getpwuid_r(uid_t uid,
 
 #   if !defined(HAVE_GETPWUID_R)
     {
+#ifdef HAVE_GETPWUID
 	struct passwd *tmp_pwd;
 
 	globus_libc_lock();
@@ -2111,7 +2375,11 @@ globus_libc_getpwuid_r(uid_t uid,
 	    rc = -1;
 	}
 
+
 	globus_libc_unlock();
+#else
+        rc = -1;
+#endif
     }
 #   elif defined(GLOBUS_HAVE_GETPWUID_R_4)
     {
@@ -3620,9 +3888,13 @@ globus_libc_freeaddrinfo(
         free(tmp2);
 
     }
+    if (res->ai_addr != NULL)
+    {
+        free(res->ai_addr);
+    }
     if (res->ai_canonname)
     {
-        free(tmp->ai_canonname);
+        free(res->ai_canonname);
     }
     free(res);
 #endif
@@ -3637,7 +3909,6 @@ globus_libc_getnameinfo(
     globus_size_t                       servbuf_len,
     int                                 flags)
 {
-#ifdef HAVE_GETNAMEINFO
     int                                 rc;
     globus_result_t                     result;
 
@@ -3669,6 +3940,7 @@ globus_libc_getnameinfo(
 
     if(rc != 0)
     {
+#       ifdef EAI_SYSTEM
         if(rc == EAI_SYSTEM)
         {
             result = globus_error_put(
@@ -3683,6 +3955,7 @@ globus_libc_getnameinfo(
                     gai_strerror(rc)));
         }
         else
+#       endif /* EAI_SYSTEM */
         {
             result = globus_error_put(
                 globus_error_construct_error(
@@ -3698,21 +3971,6 @@ globus_libc_getnameinfo(
     }
 
     return result;
-#else
-    globus_assert_string(0, "getnameinfo not implemented on this system");
-
-    return globus_error_put(
-        globus_error_construct_error(
-            GLOBUS_COMMON_MODULE,
-            GLOBUS_NULL,
-            0 + GLOBUS_EAI_ERROR_OFFSET,
-            __FILE__,
-            "globus_libc_getnameinfo",
-            __LINE__,
-            "%s",
-            "getnameinfo not implemented on this system"));
-
-#endif
 }
 
 globus_bool_t
@@ -3849,16 +4107,12 @@ globus_libc_addr_to_contact_string(
         addr = &myaddr;
     }
     
-#ifdef NI_NUMERICSERV
     ni_flags = GLOBUS_NI_NUMERICSERV;
-#endif
 
-#ifdef NI_NUMERICHOST
     if(opts_mask & GLOBUS_LIBC_ADDR_NUMERIC)
     {
         ni_flags |= GLOBUS_NI_NUMERICHOST;
     }
-#endif
 
     result = globus_libc_getnameinfo(
         addr, host, sizeof(host), port, sizeof(port), ni_flags);
