@@ -22,7 +22,9 @@
 #define SOMAXCONN 5
 #endif
 
+#ifndef TARGET_ARCH_NETOS
 #include <fcntl.h>
+#endif
 
 GlobusDebugDefine(GLOBUS_XIO_TCP);
 
@@ -872,11 +874,13 @@ globus_l_xio_tcp_apply_handle_attrs(
     
     GlobusXIOTcpDebugEnter();
     
+#ifndef TARGET_ARCH_NETOS
     if(!converted)
     {
         /* all handles created by me are closed on exec */
         fcntl(fd, F_SETFD, FD_CLOEXEC);
     }
+#endif
         
     if(do_bind_attrs)
     {
@@ -1371,7 +1375,9 @@ globus_l_xio_tcp_create_listener(
         goto error_no_addrinfo;
     }
 
+#ifndef TARGET_ARCH_NETOS
     fcntl(fd, F_SETFD, FD_CLOEXEC);
+#endif
     
     server->listener_fd = fd;
 
@@ -1514,7 +1520,9 @@ globus_l_xio_tcp_system_accept_cb(
     if(result == GLOBUS_SUCCESS)
     {
         /* all handles created by me are closed on exec */
+#ifndef TARGET_ARCH_NETOS
         fcntl(accept_info->accepted_fd, F_SETFD, FD_CLOEXEC);
+#endif
         globus_xio_driver_finished_accept(
             accept_info->op, accept_info, GLOBUS_SUCCESS);
     }
