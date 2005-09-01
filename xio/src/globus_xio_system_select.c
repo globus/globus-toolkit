@@ -1998,7 +1998,7 @@ globus_l_xio_system_handle_write(
         break;
 
       case GLOBUS_L_OPERATION_SENDMSG:
-        result = globus_l_xio_system_try_recvmsg(
+        result = globus_l_xio_system_try_sendmsg(
             fd,
             write_info->_sop_msg.msghdr,
             write_info->_sop_msg.flags,
