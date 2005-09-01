@@ -35,7 +35,7 @@ AC_DEFUN([CHECK_FOR_INTTYPE],
     inttype_name=$1
     inttype_bits=`echo "$inttype_name" | sed -e 's/u\?int\([[0-9]]\+\)_t/\1/'`
     inttype_size=`expr $inttype_bits / 8`
-    if echo $inttype_name | grep '^u' ; then
+    if echo $inttype_name | grep '^u' > /dev/null 2>/dev/null ; then
         inttype_sign="unsigned"
     else
         inttype_sign="signed"
@@ -45,7 +45,9 @@ AC_DEFUN([CHECK_FOR_INTTYPE],
 
     AC_MSG_CHECKING(for $inttype_name)
     AC_TRY_COMPILE([
-#ifdef HAVE_INTTYPES_H
+#ifdef HAVE_STDINT_H
+#    include <stdint.h>
+#elif defined(HAVE_INTTYPES_H)
 #    include <inttypes.h>
 #elif defined(HAVE_SYS_INTTYPES_H)
 #    include <sys/inttypes.h>
@@ -53,7 +55,7 @@ AC_DEFUN([CHECK_FOR_INTTYPE],
     ],
     [$inttype_name x;],
     [
-        AC_DEFINE($have_inttype_name, 1, [$inttype_name found])
+        AC_DEFINE_UNQUOTED($have_inttype_name, 1)
         AC_MSG_RESULT([yes])
     ],
     [
@@ -124,8 +126,8 @@ fi
 AC_MSG_RESULT(%$GLOBUS_OFF_T_FORMAT)
 AC_DEFINE_UNQUOTED(GLOBUS_OFF_T_FORMAT, "$GLOBUS_OFF_T_FORMAT")
 
-CHECK_FOR_INTTYPE(uint8_t)
-CHECK_FOR_INTTYPE(uint16_t)
-CHECK_FOR_INTTYPE(uint32_t)
-CHECK_FOR_INTTYPE(uint64_t)
+CHECK_FOR_INTTYPE(uint8_t, HAVE_UINT8_T)
+CHECK_FOR_INTTYPE(uint16_t, HAVE_UINT8_T)
+CHECK_FOR_INTTYPE(uint32_t, HAVE_UINT8_T)
+CHECK_FOR_INTTYPE(uint64_t, HAVE_UINT8_T)
 ])
