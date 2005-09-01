@@ -17,6 +17,10 @@ AC_DEFUN([LAC_COMPILER_ARGS],
         [],
         [])
 
+    if test "x$GPT_LINKTYPE" = "xstatic"; then
+        with_dso=no
+    fi
+
 # Check whether --with-dso or --without-dso was given.
 
     if test "${with_dso+set}" != "set"; then
@@ -36,7 +40,7 @@ AC_DEFUN([LAC_COMPILER],
 
     # defaults:
 
-    lac_CFLAGS="$CFLAGS"
+    lac_CFLAGS="$CFLAGS -DOPENSSL_OTHER_DEFINES=1"
     lac_DSO_DLFCN=""
     lac_HAVE_DLFCN_H=""
     lac_OPENSSL_THREADS=""    

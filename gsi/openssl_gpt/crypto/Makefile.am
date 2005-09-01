@@ -6,16 +6,12 @@ AUTOHEADER = /bin/true
 SUBDIRS = \
 	md2 md4 md5 sha mdc2 hmac ripemd  \
 	des rc2 rc4 rc5 idea bf cast      \
-	bn rsa dsa dh buffer bio      \
+	bn rsa dsa dh dso buffer bio      \
 	stack lhash rand err objects      \
 	evp asn1 pem x509 x509v3 conf     \
 	txt_db pkcs7 pkcs12 comp          \
 	perlasm aes ec engine krb5 ocsp   \
 	ui
-
-if !STATIC_ONLY
-SUBDIRS += dso
-endif
 
 Sources = \
 	cryptlib.c \
@@ -71,6 +67,7 @@ libcrypto___GLOBUS_FLAVOR_NAME__la_LIBADD = \
 	rsa/librsa_$(GLOBUS_FLAVOR_NAME).la \
 	dsa/libdsa_$(GLOBUS_FLAVOR_NAME).la \
 	dh/libdh_$(GLOBUS_FLAVOR_NAME).la \
+        dso/libdso_$(GLOBUS_FLAVOR_NAME).la \
 	buffer/libbuffer_$(GLOBUS_FLAVOR_NAME).la \
 	bio/libbio_$(GLOBUS_FLAVOR_NAME).la \
 	stack/libstack_$(GLOBUS_FLAVOR_NAME).la \
@@ -94,10 +91,6 @@ libcrypto___GLOBUS_FLAVOR_NAME__la_LIBADD = \
 	krb5/libkrb5_$(GLOBUS_FLAVOR_NAME).la \
 	ocsp/libocsp_$(GLOBUS_FLAVOR_NAME).la \
 	ui/libui_$(GLOBUS_FLAVOR_NAME).la
-
-if !STATIC_ONLY
-libcrypto___GLOBUS_FLAVOR_NAME__la_LIBADD += dso/libdso_$(GLOBUS_FLAVOR_NAME).la
-endif
 
 libcrypto___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
 

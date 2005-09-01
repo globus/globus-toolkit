@@ -115,9 +115,9 @@
 
 #ifdef OPENSSL_OTHER_DEFINES
 #   ifndef DSO_DLFCN
-#       define DSO_DLFCN 1
+/* #       undef DSO_DLFCN */
 #   endif
 #   ifndef HAVE_DLFCN_H
-#       define HAVE_DLFCN_H 1
+/* #       undef HAVE_DLFCN_H */
 #   endif
 #endif
