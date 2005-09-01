@@ -146,6 +146,7 @@
 #undef HAVE_GETPWUID
 #undef HAVE_INET_NTOA
 #undef HAVE_INET_PTON
+#undef HAVE_INET_ADDR
 #undef HAVE_FORK
 #undef HAVE_DIR
 #undef HAVE_SIGACTION
