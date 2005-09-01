@@ -160,10 +160,31 @@
 #undef SIZEOF_INT
 #undef SIZEOF_LONG
 
+#undef HAVE_INT8_T
+#undef HAVE_INT16_T
+#undef HAVE_INT32_T
+#undef HAVE_INT64_T
+
 #undef HAVE_UINT8_T
 #undef HAVE_UINT16_T
 #undef HAVE_UINT32_T
 #undef HAVE_UINT64_T
+
+#ifndef HAVE_INT8_T
+#undef int8_t
+#endif
+
+#ifndef HAVE_INT16_T
+#undef int16_t
+#endif
+
+#ifndef HAVE_INT32_T
+#undef int32_t
+#endif
+
+#ifndef HAVE_INT64_T
+#undef int64_t
+#endif
 
 #ifndef HAVE_UINT8_T
 #undef uint8_t
