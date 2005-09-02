@@ -396,8 +396,7 @@ case ${host}--$1 in
         CC="$lac_cv_CC"
 
         LAC_PROG_CC_GNU($lac_cv_CC,[],
-            [lac_CFLAGS="+DAportable -Ae -D_HPUX_SOURCE $lac_CFLAGS"
-             lac_LDFLAGS="+DAportable -Ae $lac_LDFLAGS"])
+            [lac_CFLAGS="+DAportable -Ae -D_HPUX_SOURCE $lac_CFLAGS"])
         LAC_PROG_CC_GNU($lac_cv_CXX,[],
             [lac_CXXFLAGS="+DAportable -D_HPUX_SOURCE $lac_CXXFLAGS"])
         ;;
@@ -461,7 +460,7 @@ case ${host}--$1 in
 
         LAC_PROG_CC_GNU($lac_cv_CC,[],
             [lac_CFLAGS="$lac_64bit_flag -Ae -D_HPUX_SOURCE $lac_CFLAGS"
-             lac_LDFLAGS="$lac_64bit_flag -Ae $lac_LDFLAGS"])
+             lac_LDFLAGS="$lac_64bit_flag $lac_LDFLAGS"])
         LAC_PROG_CC_GNU($lac_cv_CXX,[],
             [lac_CXXFLAGS="$lac_64bit_flag -D_HPUX_SOURCE $lac_CXXFLAGS"])
         ;;
