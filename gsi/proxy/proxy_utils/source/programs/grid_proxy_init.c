@@ -84,7 +84,7 @@ static char *  LONG_USAGE = \
     { \
         fprintf(stderr, \
                 SHORT_USAGE_FORMAT \
-                "\nOption -help will display usage.\n", \
+                "\nUse -help to display full usage.\n", \
                 program); \
         globus_module_deactivate_all(); \
     }
@@ -101,23 +101,23 @@ static char *  LONG_USAGE = \
 
 #   define args_error_message(errmsg) \
     { \
-        fprintf(stderr, "ERROR: %s\n", errmsg); \
+        fprintf(stderr, "\nERROR: %s\n", errmsg); \
         args_show_short_help(); \
         globus_module_deactivate_all(); \
         exit(1); \
     }
 
-#   define args_error(argnum, argval, errmsg) \
+#   define args_error(argval, errmsg) \
     { \
         char buf[1024]; \
-        sprintf(buf, "argument #%d (%s) : %s", argnum, argval, errmsg); \
+        sprintf(buf, "option %s : %s", argval, errmsg); \
         args_error_message(buf); \
     }
 
 #   define args_verify_next(argnum, argval, errmsg) \
     { \
         if ((argnum+1 >= argc) || (argv[argnum+1][0] == '-')) \
-            args_error(argnum,argval,errmsg); \
+            args_error(argval,errmsg); \
     }
 
 void
@@ -197,7 +197,7 @@ main(
     {
         globus_libc_fprintf(
             stderr,
-            "\n\nERROR: Couldn't load module: GLOBUS_GSI_PROXY_MODULE.\n"
+            "\nERROR: Couldn't load module: GLOBUS_GSI_PROXY_MODULE.\n"
             "Make sure Globus is installed correctly.\n\n");
         exit(1);
     }
@@ -206,7 +206,7 @@ main(
     {
         globus_libc_fprintf(
             stderr,
-            "\n\nERROR: Couldn't load module: GLOBUS_GSI_CALLBACK_MODULE.\n"
+            "\nERROR: Couldn't load module: GLOBUS_GSI_CALLBACK_MODULE.\n"
             "Make sure Globus is installed correctly.\n\n");
         globus_module_deactivate_all();
         exit(1);
@@ -231,8 +231,7 @@ main(
         {
             if (argp[2] != '\0')
             {
-                args_error(arg_index, argp, 
-                           "double-dashed options are not allowed");
+                args_error(argp, "double-dashed options are not allowed");
             }
             else
             {
@@ -254,25 +253,23 @@ main(
         {
             args_verify_next(arg_index, argp, "need a file name argument");
             user_cert_filename = argv[++arg_index];
-	    result = GLOBUS_GSI_SYSCONFIG_CHECK_CERTFILE(user_cert_filename);
-	    if(result != GLOBUS_SUCCESS)
-	    {
-	        args_error(arg_index, argp, 
-			   globus_error_print_friendly(
-			       globus_error_get(result)));
-	    }
+            result = GLOBUS_GSI_SYSCONFIG_CHECK_CERTFILE(user_cert_filename);
+            if(result != GLOBUS_SUCCESS)
+            {
+                args_error(argp, globus_error_print_friendly(
+                           globus_error_get(result)));
+            }
         }
         else if(strcmp(argp, "-certdir") == 0)
         {
             args_verify_next(arg_index, argp, "need a file name argument");
             ca_cert_dir = strdup(argv[++arg_index]);
-	    result = GLOBUS_GSI_SYSCONFIG_DIR_EXISTS(ca_cert_dir);
-	    if(result != GLOBUS_SUCCESS)
-	    {
-	        args_error(arg_index, argp, 
-			   globus_error_print_friendly(
-                               globus_error_get(result)));
-	    }
+            result = GLOBUS_GSI_SYSCONFIG_DIR_EXISTS(ca_cert_dir);
+            if(result != GLOBUS_SUCCESS)
+            {
+                args_error(argp, globus_error_print_friendly(
+                             globus_error_get(result)));
+            }
         }
         else if(strcmp(argp, "-out") == 0)
         {
@@ -283,13 +280,12 @@ main(
         {
             args_verify_next(arg_index, argp, "need a file name argument");
             user_key_filename = argv[++arg_index];
-	    result = GLOBUS_GSI_SYSCONFIG_CHECK_KEYFILE(user_key_filename);
-	    if(result != GLOBUS_SUCCESS)
-	    {
-	        args_error(arg_index, argp, 
-			   globus_error_print_friendly(
-			       globus_error_get(result)));
-	    }
+            result = GLOBUS_GSI_SYSCONFIG_CHECK_KEYFILE(user_key_filename);
+            if(result != GLOBUS_SUCCESS)
+            {
+                args_error(argp, globus_error_print_friendly(
+                             globus_error_get(result)));
+            }
         }
         else if(strcmp(argp, "-valid") == 0)
         {
@@ -299,21 +295,15 @@ main(
                              "valid time argument H:M missing");
             if(sscanf(argv[++arg_index], "%d:%d", &hours, &minutes) < 2)
             {
-                args_error(
-                    arg_index, argp, 
-                    "value must be in the format: H:M");
+                args_error(argp, "value must be in the format: H:M");
             }
             if(hours < 0)
             {
-                args_error(
-                    arg_index, argp,
-                    "specified hours must be a nonnegative integer");
+                args_error(argp, "specified hours must be a non-negative integer");
             }
             if(minutes < 0 || minutes > 60)
             {
-                args_error(
-                    arg_index, argp,
-                    "specified minutes must "
+                args_error(argp, "specified minutes must "
                     "be in the range 0-60");
             }
             /* error on overflow */
@@ -346,8 +336,7 @@ main(
             if((key_bits != 512) && (key_bits != 1024) && 
                (key_bits != 2048) && (key_bits != 4096))
             {
-                args_error(arg_index, argp, 
-                           "value must be one of 512,1024,2048,4096");
+                args_error(argp, "value must be one of 512,1024,2048,4096");
             }
             arg_index++;
         }
@@ -360,7 +349,7 @@ main(
             if(independent_proxy == GLOBUS_TRUE ||
                restricted_proxy == GLOBUS_TRUE)
             {
-                args_error(arg_index, argp, 
+                args_error(argp, 
                            "-independent, -limited and -policy/-policy-language are mutually exclusive");
             }
             limited_proxy = GLOBUS_TRUE;
@@ -370,7 +359,7 @@ main(
             if(limited_proxy == GLOBUS_TRUE ||
                restricted_proxy == GLOBUS_TRUE)
             {
-                args_error(arg_index, argp, 
+                args_error(argp, 
                            "-independent, -limited and -policy/-policy-language are mutually exclusive");
             }
             independent_proxy = GLOBUS_TRUE;
@@ -379,7 +368,7 @@ main(
         {
             if(rfc_proxy == GLOBUS_TRUE)
             {
-                args_error(arg_index, argp, 
+                args_error(argp, 
                            "-old and -rfc are mutually exclusive");
             }
             old_proxy = GLOBUS_TRUE;
@@ -388,8 +377,7 @@ main(
         {
             if(old_proxy == GLOBUS_TRUE)
             {
-                args_error(arg_index, argp, 
-                           "-old and -rfc are mutually exclusive");
+                args_error(argp, "-old and -rfc are mutually exclusive");
             }
             rfc_proxy = GLOBUS_TRUE;
         }
@@ -410,7 +398,7 @@ main(
             if(limited_proxy == GLOBUS_TRUE ||
                independent_proxy == GLOBUS_TRUE)
             {
-                args_error(arg_index, argp, 
+                args_error(argp,
                            "-independent, -limited and -policy/-policy-language are mutually exclusive");
             }
             args_verify_next(arg_index, argp, 
@@ -424,7 +412,7 @@ main(
             if(limited_proxy == GLOBUS_TRUE ||
                independent_proxy == GLOBUS_TRUE)
             {
-                args_error(arg_index, argp, 
+                args_error(argp, 
                            "-independent, -limited and -policy/-policy-language are mutually exclusive");
             }
             args_verify_next(arg_index, argp, "policy language missing");
@@ -438,13 +426,13 @@ main(
             path_length = strtol(argv[arg_index + 1], &remaining, 0);
             if(*remaining != '\0')
             {
-                args_error(arg_index, argp, "requires an integer argument");
+                args_error(argp, "requires an integer argument");
             }
             arg_index++;
         }
         else
         {
-            args_error(arg_index, argp, "unrecognized option");
+            args_error(argp, "unrecognized option");
         }
     }
 
@@ -459,9 +447,9 @@ main(
         else if(restricted_proxy == GLOBUS_TRUE)
         {
             globus_libc_fprintf(stderr, 
-                                "\n\nERROR: Globus legacy proxies are"
+                                "\nERROR: Globus legacy proxies are"
                                 " not able to carry policy data or path"
-                                " length contraints\n");
+                                " length constraints\n");
             exit(1);
         }
         else
@@ -509,7 +497,7 @@ main(
     if(policy_filename && !policy_language)
     {
         globus_libc_fprintf(stderr, 
-                            "\n\nERROR: If you specify a policy file "
+                            "\nERROR: If you specify a policy file "
                             "you also need to specify a policy language.\n");
         exit(1);
     }
@@ -519,7 +507,7 @@ main(
     if(result != GLOBUS_SUCCESS)
     {
         globus_libc_fprintf(stderr, 
-                            "\n\nERROR: Couldn't initialize "
+                            "\nERROR: Couldn't initialize "
                             "the proxy handle attributes.\n");
         GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
     }
@@ -532,7 +520,7 @@ main(
     if(result != GLOBUS_SUCCESS)
     {
         globus_libc_fprintf(stderr,
-                            "\n\nERROR: Couldn't set the key bits for "
+                            "\nERROR: Couldn't set the key bits for "
                             "the private key of the proxy certificate\n");
         GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
     }
@@ -544,7 +532,7 @@ main(
     {
         globus_libc_fprintf(
             stderr,
-            "\n\nERROR: Couldn't set the key generation callback function\n");
+            "\nERROR: Couldn't set the key generation callback function\n");
         GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
     }
 
@@ -553,7 +541,7 @@ main(
     {
         globus_libc_fprintf(
             stderr,
-            "\n\nERROR: Couldn't initialize the proxy handle\n");
+            "\nERROR: Couldn't initialize the proxy handle\n");
         GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
     }
 
@@ -561,7 +549,7 @@ main(
     if(result != GLOBUS_SUCCESS)
     {
         globus_libc_fprintf(stderr,
-                            "\n\nERROR: Couldn't destroy proxy "
+                            "\nERROR: Couldn't destroy proxy "
                             "handle attributes.\n");
         GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
     }
@@ -574,7 +562,7 @@ main(
     if(result != GLOBUS_SUCCESS)
     {
         globus_libc_fprintf(stderr,
-                            "\n\nERROR: Couldn't set the validity time "
+                            "\nERROR: Couldn't set the validity time "
                             "of the proxy cert to %d minutes.\n", valid);
         GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
     }
@@ -586,7 +574,7 @@ main(
     if(result != GLOBUS_SUCCESS)
     {
         globus_libc_fprintf(stderr,
-                            "\n\nERROR: Couldn't set the type"
+                            "\nERROR: Couldn't set the type"
                             "of the proxy cert\n");
         GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
     }
@@ -599,7 +587,7 @@ main(
         if(result != GLOBUS_SUCCESS)
         {
             globus_libc_fprintf(stderr,
-                                "\n\nERROR: Couldn't find valid credentials "
+                                "\nERROR: Couldn't find valid credentials "
                                 "to generate a proxy.\n");
             GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
         }
@@ -647,7 +635,7 @@ main(
         {
             globus_libc_fprintf(
                 stderr,
-                "\n\nERROR: Couldn't find a valid trusted certificate "
+                "\nERROR: Couldn't find a valid trusted certificate "
                 "directory\n");
             GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
         }
@@ -669,7 +657,7 @@ main(
         {
             globus_libc_fprintf(
                 stderr,
-                "\n\nERROR: Couldn't find a valid location "
+                "\nERROR: Couldn't find a valid location "
                 "to write the proxy file\n");
             GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
         }
@@ -691,7 +679,7 @@ main(
         {
             globus_libc_fprintf(
                 stderr,
-                "\n\nERROR: Can't create the absolute path "
+                "\nERROR: Can't create the absolute path "
                 "of the proxy filename: %s",
                 proxy_out_filename);
             GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
@@ -713,7 +701,7 @@ main(
         {
             globus_libc_fprintf(
                 stderr,
-                "\n\nERROR: Can't split the full path into "
+                "\nERROR: Can't split the full path into "
                 "directory and filename. The full path is: %s", 
                 proxy_absolute_path);
             if(proxy_absolute_path)
@@ -729,7 +717,7 @@ main(
         {
             globus_libc_fprintf(
                 stderr, 
-                "\n\nERROR: %s is not a valid directory for writing the "
+                "\nERROR: %s is not a valid directory for writing the "
                 "proxy certificate\n\n",
                 temp_dir);
 
@@ -778,7 +766,7 @@ main(
     if(result != GLOBUS_SUCCESS)
     {
         globus_libc_fprintf(stderr,
-                            "\n\nERROR: Couldn't initialize credential "
+                            "\nERROR: Couldn't initialize credential "
                             "handle attributes\n");
         GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
     }
@@ -787,7 +775,7 @@ main(
     if(result != GLOBUS_SUCCESS)
     {
         globus_libc_fprintf(stderr,
-                            "\n\nERROR: Couldn't initialize credential "
+                            "\nERROR: Couldn't initialize credential "
                             "handle\n");
         GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
     }
@@ -796,7 +784,7 @@ main(
     if(result != GLOBUS_SUCCESS)
     {
         globus_libc_fprintf(stderr,
-                            "\n\nERROR: Couldn't destroy credential "
+                            "\nERROR: Couldn't destroy credential "
                             "handle attributes.\n");
         GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
     }
@@ -811,7 +799,7 @@ main(
         {
             globus_libc_fprintf(
                 stderr,
-                "\n\nERROR: Couldn't read in PKCS12 credential "
+                "\nERROR: Couldn't read in PKCS12 credential "
                 "from file: %s\n", user_cert_filename);
             GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
         }
@@ -824,7 +812,7 @@ main(
             {
                 globus_libc_fprintf(
                     stderr,
-                    "\n\nERROR: The subject name of the "
+                    "\nERROR: The subject name of the "
                     "user certificate could "
                     "not be retrieved\n");
                 GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
@@ -847,7 +835,7 @@ main(
         {
             globus_libc_fprintf(
                 stderr,
-                "\n\nERROR: Couldn't read user certificate\n"
+                "\nERROR: Couldn't read user certificate\n"
                 "cert file location: %s\n\n", 
                 user_cert_filename);
             GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
@@ -861,7 +849,7 @@ main(
             {
                 globus_libc_fprintf(
                     stderr,
-                    "\n\nERROR: The subject name of the "
+                    "\nERROR: The subject name of the "
                     "user certificate could "
                     "not be retrieved\n");
                 GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
@@ -897,7 +885,7 @@ main(
             { 
                 globus_libc_fprintf(
                     stderr,
-                    "\n\nERROR: Couldn't read user key: Bad passphrase\n"
+                    "\nERROR: Couldn't read user key: Bad passphrase\n"
                     "key file location: %s\n\n",
                     user_key_filename);
             }
@@ -905,7 +893,7 @@ main(
             {
                 globus_libc_fprintf(
                     stderr,
-                    "\n\nERROR: Couldn't read user key.\n"
+                    "\nERROR: Couldn't read user key.\n"
                     "key file location: %s\n\n",
                     user_key_filename);
             }
@@ -925,13 +913,13 @@ main(
         if(result != GLOBUS_SUCCESS)
         {
             globus_libc_fprintf(stderr,
-                                "\n\nERROR: Can't set the path "
+                                "\nERROR: Can't set the path "
                                 "length in the proxy handle\n");
             GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
         }
     }
     
-    /* add policys now */
+    /* add policies now */
 
     if(policy_filename)
     {
@@ -942,7 +930,7 @@ main(
         if(!policy_fp)
         {
             fprintf(stderr, 
-                    "\n\nERROR: Unable to open policys "
+                    "\nERROR: Unable to open policies "
                     " file: %s\n\n", policy_filename);
             exit(1);
         }
@@ -992,7 +980,7 @@ main(
             if(result != GLOBUS_SUCCESS)
             {
                 globus_libc_fprintf(stderr,
-                                    "\n\nERROR: Can't set the policy "
+                                    "\nERROR: Can't set the policy "
                                     "in the proxy handle\n");
                 GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
             }
@@ -1014,7 +1002,7 @@ main(
     if(result != GLOBUS_SUCCESS)
     {
         globus_libc_fprintf(stderr,
-                           "\n\nERROR: Couldn't create proxy certificate\n");
+                           "\nERROR: Couldn't create proxy certificate\n");
         GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
     }
 
@@ -1029,7 +1017,7 @@ main(
         if(result != GLOBUS_SUCCESS)
         {
             globus_libc_fprintf(stderr,
-                                "\n\nERROR: Couldn't initialize callback data "
+                                "\nERROR: Couldn't initialize callback data "
                                 "for credential verification\n");
             GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
         }
@@ -1041,7 +1029,7 @@ main(
         if(result != GLOBUS_SUCCESS)
         {
             globus_libc_fprintf(stderr,
-                                "\n\nERROR: Couldn't set the X.509 extension callback \n"
+                                "\nERROR: Couldn't set the X.509 extension callback \n"
                                 "in the  callback data\n");
             GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
         }
@@ -1052,7 +1040,7 @@ main(
         if(result != GLOBUS_SUCCESS)
         {
             globus_libc_fprintf(stderr,
-                                "\n\nERROR: Couldn't set the trusted "
+                                "\nERROR: Couldn't set the trusted "
                                 "certificate directory in the callback "
                                 "data\n");
             GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
@@ -1065,7 +1053,7 @@ main(
         {
             globus_libc_fprintf(
                 stderr,
-                "\n\nERROR: Couldn't verify the authenticity of the user's "
+                "\nERROR: Couldn't verify the authenticity of the user's "
                 "credential to generate a proxy from.\n");
             GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
         }
@@ -1081,8 +1069,9 @@ main(
         if(result != GLOBUS_SUCCESS)
         {
             globus_libc_fprintf(
-                stderr,
-                "\n\nERROR: Could not verify the signature of the generated proxy certificate\n       This is likely due to a non-matching user key and cert\n\n");
+                stderr, "\nERROR: Could not verify "
+                "the signature of the generated proxy certificate\n"
+                "This is likely due to a non-matching user key and cert\n\n");
             GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
         }
     }
@@ -1099,7 +1088,7 @@ main(
     {
         globus_libc_fprintf(
             stderr,
-            "\n\nERROR: The proxy credential could not be "
+            "\nERROR: The proxy credential could not be "
             "written to the output file.\n");
         GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
     }
@@ -1116,7 +1105,7 @@ main(
     if(result != GLOBUS_SUCCESS)
     {
         globus_libc_fprintf(stderr,
-                            "\n\nERROR: Can't get the lifetime of the proxy "
+                            "\nERROR: Can't get the lifetime of the proxy "
                             "credential.\n");
         GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
     }
@@ -1127,7 +1116,7 @@ main(
     if(result != GLOBUS_SUCCESS)
     {
         globus_libc_fprintf(stderr,
-                            "\n\nERROR: Can't get the expiration date of the "
+                            "\nERROR: Can't get the expiration date of the "
                             "proxy credential.\n");
         GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
     }
@@ -1136,7 +1125,7 @@ main(
     {
         globus_libc_fprintf(
             stderr,
-            "\n\nERROR: Your certificate has expired: %s\n\n", 
+            "\nERROR: Your certificate has expired: %s\n\n", 
             asctime(localtime(&goodtill)));
         globus_module_deactivate_all();
         exit(2);
@@ -1224,25 +1213,22 @@ globus_i_gsi_proxy_utils_print_error(
     int                                 line)
 {
     globus_object_t *                   error_obj;
+    char *                              error_string = NULL;
 
     error_obj = globus_error_get(result);
+    error_string = globus_error_print_chain(error_obj);
+
     if(debug)
     {
-        char *                          error_string = NULL;
-        globus_libc_fprintf(stderr,
-                            "\n%s:%d:",
-                            filename, line);
-        error_string = globus_error_print_chain(error_obj);
-        globus_libc_fprintf(stderr, "%s\n", error_string);
-        if(error_string)
-        {
-            globus_libc_free(error_string);
-        }
+        globus_libc_fprintf(stderr, "       %s:%d: %s", filename, line, error_string);
     }
     else 
     {
-        globus_libc_fprintf(stderr,
-                            "Use -debug for further information.\n\n");
+        globus_libc_fprintf(stderr, "       %s\nUse -debug for further information.\n", error_string);
+    }
+    if(error_string)
+    {
+       globus_libc_free(error_string);
     }
     globus_object_free(error_obj);
     globus_module_deactivate_all();

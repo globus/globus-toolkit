@@ -82,7 +82,7 @@ static char *  LONG_USAGE = \
     { \
         fprintf(stderr, \
                 SHORT_USAGE_FORMAT \
-                "\nOption -help will display usage.\n", \
+                "\nUse -help to display full usage.\n", \
                 program); \
         globus_module_deactivate_all(); \
     }
@@ -99,16 +99,16 @@ static char *  LONG_USAGE = \
 
 #   define args_error_message(errmsg) \
     { \
-        fprintf(stderr, "ERROR: %s\n", errmsg); \
+        fprintf(stderr, "\nERROR: %s\n", errmsg); \
         args_show_short_help(); \
         globus_module_deactivate_all(); \
         exit(1); \
     }
 
-#   define args_error(argnum, argval, errmsg) \
+#   define args_error(argp, errmsg) \
     { \
         char buf[1024]; \
-        sprintf(buf, "argument #%d (%s) : %s", argnum, argval, errmsg); \
+        sprintf(buf, "option %s : %s", argp, errmsg); \
         args_error_message(buf); \
     }
 
@@ -197,7 +197,7 @@ main(
         {
             if (argp[2] != '\0')
             {
-                args_error(arg_index, argp, "double-dashed options "
+                args_error(argp, "double-dashed options "
                            "are not allowed");
             }
             else
@@ -220,7 +220,7 @@ main(
         {
             if ((arg_index + 1 >= argc) || (argv[arg_index + 1][0] == '-'))
             {
-                args_error(arg_index, argp, "need a file name argument");
+                args_error(argp, "needs a file name argument");
             }
             else
             {
@@ -232,7 +232,7 @@ main(
         {
             if (exists_flag)
             {
-                args_error(arg_index, argp, "can only be given once");
+                args_error(argp, "can only be given once");
             }
             exists_flag++;
         }
@@ -241,12 +241,12 @@ main(
         {
             if (!exists_flag || hours_flag)
             {
-                args_error(arg_index, argp, "suboption to -exists");
+                args_error(argp, "suboption to -exists");
             }
             hours_flag++;
             if (( arg_index + 1 >= argc) || (argv[arg_index + 1][0] == '-'))
             {
-                args_error(arg_index,argp,"need a non-negative integer argument");
+                args_error(argp, "need a non-negative integer argument");
             }
             else
                 time_valid = atoi(argv[++arg_index]) * 60;
@@ -258,35 +258,26 @@ main(
             int                         minutes = 0;
             if (!exists_flag || time_valid_flag)
             {
-                args_error(arg_index, argp, "suboption to -exists");
+                args_error(argp, "suboption to -exists");
             }
             time_valid_flag++;
             if ((arg_index + 1 >= argc) || (argv[arg_index + 1][0] == '-'))
             {
-                args_error(arg_index, argp, 
-                           "need a non-negative "
-                           "integer argument");
+                args_error(argp, "need a non-negative integer argument");
             }
             else if(sscanf(argv[++arg_index], "%d:%d", &hours, &minutes) < 2)
             {
-                args_error(
-                    arg_index, argp,
-                    "value must be in the format: H:M");
+                args_error(argp, "value must be in the format: H:M");
             }
 
             if(hours < 0)
             {
-                args_error(
-                    arg_index, argp,
-                    "specified hours must be a nonnegative integer");
+                args_error(argp, "specified hours must be a nonnegative integer");
             }
 
             if(minutes < 0 || minutes > 60)
             {
-                args_error(
-                    arg_index, argp,
-                    "specified minutes must "
-                    "be in the range 0-60");
+                args_error(argp, "specified minutes must be in the range 0-60");
             }
             time_valid = (hours * 60) + minutes;
         }
@@ -295,14 +286,12 @@ main(
         {
             if (!exists_flag || bits_flag)
             {
-                args_error(arg_index, argp, "suboption to -exists");
+                args_error(argp, "suboption to -exists");
             }
             bits_flag++;
             if ((arg_index + 1 >= argc) || (argv[arg_index + 1][0] == '-'))
             {
-                args_error(arg_index, argp, 
-                           "need a non-negative "
-                           "integer argument");
+                args_error(argp, "need a non-negative integer argument");
             }
             else
                 bits = atoi(argv[++arg_index]);
@@ -326,33 +315,26 @@ main(
             debug = 1;
         }
         else
-            args_error(arg_index, argp, "unrecognized option");
+            args_error(argp, "unrecognized option");
     }
 
     if(proxy_filename)
     {
         result = GLOBUS_GSI_SYSCONFIG_CHECK_KEYFILE(proxy_filename);
-
-        if(result != GLOBUS_SUCCESS)
-        {
-            globus_libc_fprintf(
-                stderr,
-                "\n\nERROR: Couldn't find a valid proxy.\n");
-            GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
-        }
     }
     else
     { 
         result = GLOBUS_GSI_SYSCONFIG_GET_PROXY_FILENAME(
             &proxy_filename,
             GLOBUS_PROXY_FILE_INPUT);
-        if(result != GLOBUS_SUCCESS)
-        {
-            globus_libc_fprintf(
-                stderr,
-                "\n\nERROR: Couldn't find a valid proxy.\n");
-            GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
-        }
+    }
+    
+    if(result != GLOBUS_SUCCESS)
+    {
+       globus_libc_fprintf(
+           stderr,
+           "\nERROR: Couldn't find a valid proxy.\n");
+       GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
     }
 
     result = globus_gsi_cred_handle_init(&proxy_cred, NULL);
@@ -360,7 +342,7 @@ main(
     {
         globus_libc_fprintf(
             stderr,
-            "\n\nERROR: Couldn't initialize proxy credential handle\n");
+            "\nERROR: Couldn't initialize proxy credential handle\n");
         GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
     }
     
@@ -369,7 +351,7 @@ main(
     {
         globus_libc_fprintf(
             stderr,
-            "\n\nERROR: Couldn't read proxy from: %s\n", proxy_filename);
+            "\nERROR: Couldn't read proxy from: %s\n", proxy_filename);
         GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
     }
 
@@ -378,7 +360,7 @@ main(
     {
         globus_libc_fprintf(
             stderr,
-            "\n\nERROR: Couldn't get the proxy certificate from "
+            "\nERROR: Couldn't get the proxy certificate from "
             "the proxy credential.\n");
         GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
     }
@@ -387,7 +369,7 @@ main(
     {
         globus_libc_fprintf(
             stderr,
-            "\n\nERROR: unable to load public key from proxy\n");
+            "\nERROR: unable to load public key from proxy\n");
         globus_module_deactivate_all();
         exit(1);
     }
@@ -401,7 +383,7 @@ main(
     {
         globus_libc_fprintf(
             stderr,
-            "\n\nERROR: Couldn't get a valid subject "
+            "\nERROR: Couldn't get a valid subject "
             "name from the proxy credential.\n");
         GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
     }
@@ -413,7 +395,7 @@ main(
     {
         globus_libc_fprintf(
             stderr,
-            "\n\nERROR: Couldn't get a valid issuer "
+            "\nERROR: Couldn't get a valid issuer "
             "name from the proxy credential.\n");
         GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
     }
@@ -424,7 +406,7 @@ main(
     {
         globus_libc_fprintf(
             stderr,
-            "\n\nERROR: Couldn't get a valid identity "
+            "\nERROR: Couldn't get a valid identity "
             "name from the proxy credential.\n");
         GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
     }
@@ -436,7 +418,7 @@ main(
     {
         globus_libc_fprintf(
             stderr,
-            "\n\nERROR: Couldn't get a valid lifetime "
+            "\nERROR: Couldn't get a valid lifetime "
             "for the proxy credential.\n");
         GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
     }
@@ -462,7 +444,7 @@ main(
     {
         globus_libc_fprintf(
             stderr,
-            "\n\nERROR: Couldn't get the proxy type "
+            "\nERROR: Couldn't get the proxy type "
             "from the proxy credential\n");
         GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
     }
@@ -505,7 +487,7 @@ main(
       default:
         globus_libc_fprintf(
             stderr,
-            "\n\nERROR: Not a proxy\n\n");
+            "\nERROR: Not a proxy\n\n");
         globus_module_deactivate_all();
         exit(1);
     }
@@ -647,25 +629,22 @@ globus_i_gsi_proxy_utils_print_error(
     int                                 line)
 {
     globus_object_t *                   error_obj;
+    char *                              error_string = NULL;
 
     error_obj = globus_error_get(result);
+    error_string = globus_error_print_chain(error_obj);
+
     if(debug)
     {
-        char *                          error_string = NULL;
-        globus_libc_fprintf(stderr,
-                            "\n%s:%d:",
-                            filename, line);
-        error_string = globus_error_print_chain(error_obj);
-        globus_libc_fprintf(stderr, "%s\n", error_string);
-        if(error_string)
-        {
-            globus_libc_free(error_string);
-        }
+        globus_libc_fprintf(stderr, "       %s:%d: %s", filename, line, error_string);
     }
     else 
     {
-        globus_libc_fprintf(stderr,
-                            "Use -debug for further information.\n\n");
+        globus_libc_fprintf(stderr, "       %s\nUse -debug for further information.\n", error_string);
+    }
+    if(error_string)
+    {
+       globus_libc_free(error_string);
     }
     globus_object_free(error_obj);
     globus_module_deactivate_all();

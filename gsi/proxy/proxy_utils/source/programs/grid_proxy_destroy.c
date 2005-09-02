@@ -68,7 +68,7 @@ static char *  LONG_USAGE = \
     { \
         fprintf(stderr, \
                 SHORT_USAGE_FORMAT \
-                "\nOption -help will display usage.\n", \
+                "\nUse -help to display full usage.\n", \
                 program); \
         globus_module_deactivate_all(); \
     }
@@ -85,16 +85,16 @@ static char *  LONG_USAGE = \
 
 #   define args_error_message(errmsg) \
     { \
-        fprintf(stderr, "ERROR: %s\n", errmsg ? errmsg : "(null)"); \
+        fprintf(stderr, "\nERROR: %s\n", errmsg ? errmsg : "(null)"); \
         args_show_short_help(); \
         globus_module_deactivate_all(); \
         exit(1); \
     }
 
-#   define args_error(argnum, argval, errmsg) \
+#   define args_error(argval, errmsg) \
     { \
         char buf[1024]; \
-        sprintf(buf, "argument #%d (%s) : %s", argnum, argval, errmsg); \
+        sprintf(buf, "option %s : %s", argval, errmsg); \
         args_error_message(buf); \
     }
 
@@ -133,7 +133,7 @@ int main(
     {
         globus_libc_fprintf(
             stderr,
-            "\n\nERROR: Couldn't load module: GLOBUS_GSI_PROXY_MODULE.\n"
+            "\nERROR: Couldn't load module: GLOBUS_GSI_PROXY_MODULE.\n"
             "Make sure Globus is installed correctly.\n\n");
         exit(1);
     }
@@ -177,7 +177,7 @@ int main(
         }
         else if (strncmp(argp, "--", 2) == 0)
         {
-            args_error(i, argp, "double-dashed options not allowed");
+            args_error(argp, "double-dashed options not allowed");
         }
         else if((strcmp(argp, "-help") == 0) ||
                 (strcmp(argp, "-usage") == 0) )
@@ -194,7 +194,7 @@ int main(
         }            
         else 
         {
-            args_error(i, argp, "unknown option");
+            args_error(argp, "unknown option");
         }
     }
 
@@ -332,26 +332,22 @@ globus_i_gsi_proxy_utils_print_error(
     int                                 line)
 {
     globus_object_t *                   error_obj;
+    char *                              error_string = NULL;
 
     error_obj = globus_error_get(result);
+    error_string = globus_error_print_chain(error_obj);
+
     if(debug)
     {
-        char *                          error_string = NULL;
-        globus_libc_fprintf(stderr,
-                            "\n%s:%d:",
-                            filename ? filename : "(null)", 
-                            line);
-        error_string = globus_error_print_chain(error_obj);
-        globus_libc_fprintf(stderr, "%s\n", error_string);
-        if(error_string)
-        {
-            globus_libc_free(error_string);
-        }
+        globus_libc_fprintf(stderr, "       %s:%d: %s", filename, line, error_string);
     }
     else 
     {
-        globus_libc_fprintf(stderr,
-                            "Use -debug for further information.\n\n");
+        globus_libc_fprintf(stderr, "       %s\nUse -debug for further information.\n", error_string);
+    }
+    if(error_string)
+    {
+       globus_libc_free(error_string);
     }
     globus_object_free(error_obj);
     globus_module_deactivate_all();
