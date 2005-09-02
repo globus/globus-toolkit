@@ -563,7 +563,7 @@ globus_result_t
 globus_gridftp_server_control_start(
     globus_gridftp_server_control_t         server,
     globus_gridftp_server_control_attr_t    attr,
-    globus_xio_system_native_handle_t       system_handle,
+    globus_xio_system_socket_t              system_handle,
     globus_gridftp_server_control_cb_t      done_cb,
     void *                                  user_arg);
 

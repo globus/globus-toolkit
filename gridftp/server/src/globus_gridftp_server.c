@@ -346,7 +346,7 @@ globus_l_gfs_spawn_child(
 {
     globus_result_t                     result;
     pid_t                               child_pid;
-    globus_xio_system_native_handle_t   socket_handle;
+    globus_xio_system_socket_t          socket_handle;
     int                                 rc;
     GlobusGFSName(globus_l_gfs_spawn_child);
 
@@ -530,7 +530,7 @@ globus_l_gfs_new_server_cb(
     globus_result_t                     result,
     void *                              user_arg)
 {
-    globus_xio_system_native_handle_t   system_handle;
+    globus_xio_system_socket_t          system_handle;
     char *                              remote_contact;
     char *                              local_contact;
     GlobusGFSName(globus_l_gfs_new_server_cb);
