@@ -87,7 +87,7 @@ GlobusXIODeclareModule(udt);
 typedef struct
 {
     /* handle/server attrs */
-    globus_xio_system_native_handle_t   handle;
+    globus_xio_system_socket_t          handle;
     
     /* server attrs */
     char *                              listener_serv;

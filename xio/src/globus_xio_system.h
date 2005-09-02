@@ -24,11 +24,27 @@ EXTERN_C_BEGIN
 #define GLOBUS_XIO_SYSTEM_MODULE (&globus_i_xio_system_module)
 extern globus_module_descriptor_t       globus_i_xio_system_module;
 
-#define GLOBUS_XIO_SYSTEM_INVALID_HANDLE  -1
-
 #ifndef WIN32
-typedef int globus_xio_system_native_handle_t;   /* for posix, same as fd */
+
+#define GLOBUS_XIO_SYSTEM_INVALID_FILE  -1
+#define GLOBUS_XIO_SYSTEM_INVALID_SOCKET  -1
+
 typedef int globus_xio_system_handle_t;
+typedef int globus_xio_system_socket_t;
+typedef int globus_xio_system_file_t;
+/* deprecated, do not use! */
+typedef int globus_xio_system_native_handle_t;
+
+#else
+
+#include <Winsock2.h>
+#define GLOBUS_XIO_SYSTEM_INVALID_FILE INVALID_HANDLE_VALUE
+#define GLOBUS_XIO_SYSTEM_INVALID_SOCKET INVALID_SOCKET
+
+typedef struct globus_l_xio_win32_system_t * globus_xio_system_handle_t;
+typedef SOCKET globus_xio_system_socket_t;
+typedef HANDLE globus_xio_system_file_t;
+
 #endif
 
 typedef enum
@@ -37,9 +53,7 @@ typedef enum
     GLOBUS_XIO_SYSTEM_ERROR_TOO_MANY_FDS,
     GLOBUS_XIO_SYSTEM_ERROR_ALREADY_REGISTERED,
     GLOBUS_XIO_SYSTEM_ERROR_OPERATION_CANCELED,
-    GLOBUS_XIO_SYSTEM_ERROR_NOT_REGISTERED,
-    GLOBUS_XIO_SYSTEM_ERROR_MEMORY_ALLOC
-
+    GLOBUS_XIO_SYSTEM_ERROR_NOT_REGISTERED
 } globus_xio_system_error_type_t;
 
 typedef enum
@@ -67,11 +81,16 @@ typedef void
  * non-blocking attribute.
  */
 globus_result_t
-globus_xio_system_handle_init(
+globus_xio_system_handle_init_file(
     globus_xio_system_handle_t *        handle,
-    globus_xio_system_native_handle_t   fd,
-    globus_xio_system_type_t            type);
+    globus_xio_system_file_t            fd);
 
+globus_result_t
+globus_xio_system_handle_init_socket(
+    globus_xio_system_handle_t *        handle,
+    globus_xio_system_socket_t          fd,
+    globus_xio_system_type_t            type);
+    
 /* this does *not* close the native handle.
  *  It should remove the non-blocking setting
  * 
@@ -86,7 +105,7 @@ globus_result_t
 globus_xio_system_register_connect(
     globus_xio_operation_t              op,
     globus_xio_system_handle_t          handle,
-    const globus_sockaddr_t *           addr,
+    globus_sockaddr_t *                 addr,
     globus_xio_system_callback_t        callback,
     void *                              user_arg);
 
@@ -94,7 +113,7 @@ globus_result_t
 globus_xio_system_register_accept(
     globus_xio_operation_t              op,
     globus_xio_system_handle_t          listener_handle,
-    globus_xio_system_native_handle_t * out_handle,
+    globus_xio_system_socket_t *        out_handle,
     globus_xio_system_callback_t        callback,
     void *                              user_arg);
 
@@ -139,32 +158,17 @@ globus_xio_system_register_write_ex(
     int                                 iovc,
     globus_size_t                       waitforbytes,
     int                                 flags,
-    const globus_sockaddr_t *           to,
+    globus_sockaddr_t *                 to,
     globus_xio_system_data_callback_t   callback,
     void *                              user_arg);
 
-globus_result_t
-globus_xio_system_try_read(
-    globus_xio_system_handle_t          handle,
-    const globus_xio_iovec_t *          iov,
-    int                                 iovc,
-    globus_size_t *                     nbytes);
-
+/* pass 0 for waitforbytes to not block */
 globus_result_t
 globus_xio_system_read(
     globus_xio_system_handle_t          handle,
     const globus_xio_iovec_t *          iov,
     int                                 iovc,
     globus_size_t                       waitforbytes,
-    globus_size_t *                     nbytes);
-
-globus_result_t
-globus_xio_system_try_read_ex(
-    globus_xio_system_handle_t          handle,
-    const globus_xio_iovec_t *          iov,
-    int                                 iovc,
-    int                                 flags,
-    globus_sockaddr_t *                 from,
     globus_size_t *                     nbytes);
 
 globus_result_t
@@ -178,27 +182,11 @@ globus_xio_system_read_ex(
     globus_size_t *                     nbytes);
 
 globus_result_t
-globus_xio_system_try_write(
-    globus_xio_system_handle_t          handle,
-    const globus_xio_iovec_t *          iov,
-    int                                 iovc,
-    globus_size_t *                     nbytes);
-
-globus_result_t
 globus_xio_system_write(
     globus_xio_system_handle_t          handle,
     const globus_xio_iovec_t *          iov,
     int                                 iovc,
     globus_size_t                       waitforbytes,
-    globus_size_t *                     nbytes);
-
-globus_result_t
-globus_xio_system_try_write_ex(
-    globus_xio_system_handle_t          handle,
-    const globus_xio_iovec_t *          iov,
-    int                                 iovc,
-    int                                 flags,
-    const globus_sockaddr_t *           to,
     globus_size_t *                     nbytes);
 
 globus_result_t
@@ -208,7 +196,7 @@ globus_xio_system_write_ex(
     int                                 iovc,
     globus_size_t                       waitforbytes,
     int                                 flags,
-    const globus_sockaddr_t *           to,
+    globus_sockaddr_t *                 to,
     globus_size_t *                     nbytes);
 
 EXTERN_C_END

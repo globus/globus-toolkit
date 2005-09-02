@@ -143,7 +143,7 @@
  * @hideinitializer
  * @see GLOBUS_XIO_UDP_SET_HANDLE
  */
-#define GLOBUS_XIO_UDP_INVALID_HANDLE GLOBUS_XIO_SYSTEM_INVALID_HANDLE
+#define GLOBUS_XIO_UDP_INVALID_HANDLE GLOBUS_XIO_SYSTEM_INVALID_SOCKET
 
 /**
  * UDP driver specific error types
@@ -186,7 +186,7 @@ typedef enum
      *      Use this handle (fd or SOCKET).
      *      Note:  close() will not be called on this handle.
      */
-    /* globus_xio_system_native_handle_t handle */
+    /* globus_xio_system_socket_t       handle */
     GLOBUS_XIO_UDP_SET_HANDLE,
     
     /** GlobusVarArgEnum(attr)
@@ -368,7 +368,7 @@ typedef enum
      *      The udp socket will be stored here. If none is set,
      *      GLOBUS_XIO_UDP_INVALID_HANDLE will be set.
      */
-    /* globus_xio_system_native_handle_t * handle_out */
+    /* globus_xio_system_socket_t *     handle_out */
     GLOBUS_XIO_UDP_GET_HANDLE,
     
     /** GlobusVarArgEnum(attr, handle)

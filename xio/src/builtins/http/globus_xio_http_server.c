@@ -616,7 +616,7 @@ globus_l_xio_http_server_parse_request(
 
         if (result != GLOBUS_SUCCESS)
         {
-            goto error_exit;
+            goto error_exit_init;
         }
 
         /* Parse the request line:
@@ -710,6 +710,7 @@ error_exit:
     http_handle->read_buffer_valid -= parsed;
     http_handle->read_buffer_offset += parsed;
 
+error_exit_init:
     return result;
 }
 /* globus_l_xio_http_server_parse_request() */

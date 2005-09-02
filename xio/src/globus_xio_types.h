@@ -31,9 +31,16 @@ typedef struct globus_i_xio_server_s *          globus_xio_server_t;
 typedef struct globus_i_xio_server_s *          globus_xio_driver_server_t;
 typedef struct globus_i_xio_op_s *              globus_xio_data_descriptor_t;
 
-
+#ifdef WIN32
+/* The ordering of the fields must match those in WSABUF */
+typedef struct
+{
+    unsigned long                       iov_len;
+    char *                              iov_base;
+} globus_xio_iovec_t;
+#else
 typedef struct iovec                            globus_xio_iovec_t;
-
+#endif
 
 /**
  *  @ingroup GLOBUS_XIO_API
