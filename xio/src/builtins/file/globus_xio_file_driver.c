@@ -394,7 +394,10 @@ globus_l_xio_file_open(
             flags = flags & ~GLOBUS_XIO_FILE_TRUNC;
             trunc_offset = attr->trunc_offset;
         }
-        
+
+#ifdef O_LARGEFILE
+        flags |= O_LARGEFILE;
+#endif
         do
         {
             handle->fd = open(
