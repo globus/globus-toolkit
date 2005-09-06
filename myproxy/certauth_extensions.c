@@ -3,11 +3,18 @@
  *
  */
 
+#include <sys/file.h>
+
 #include "certauth_extensions.h"
 
 #define BUF_SIZE 16384
 
-#define USE_EXTERNAL_CALLOUT 1
+#ifndef MIN
+#define MIN(x,y) ((x) < (y) ? (x) : (y))
+#endif
+
+#define SECONDS_PER_HOUR (60 * 60)
+
 
 struct _gsi_socket 
 {
@@ -31,10 +38,7 @@ struct _ssl_credentials
   globus_gsi_proxy_handle_t proxy_req;
 };
 
-static char path_to_program[256];
-static char name_of_program[256];
-
-static char external_certificate[256];
+static char * external_certificate;
 
 /* this function is temporary until we get a codified scheme for this info */
 
@@ -44,41 +48,20 @@ int check_paths(void) {
 
   int return_value = 1;
 
-  memset(path_to_program, '\0', 256);
-  memset(name_of_program, '\0', 256);
-
-  memset(external_certificate, '\0', 256);
-
-  /* check if the paths to the external program was set */
-
-  if ( getenv("CALLOUT_PATH") ) {
-    sprintf( path_to_program, "%s", getenv("CALLOUT_PATH"));
-  } else {
-    verror_put_string("check_paths(): CALLOUT_PATH not set");
-    goto error;
-  }
-
-  if ( getenv("CALLOUT_PROG") ) {
-    sprintf( name_of_program, "%s", getenv("CALLOUT_PROG"));
-  } else {
-    verror_put_string("check_paths(): CALLOUT_PROG not set");
-    goto error;
-  }
-
   /* fish for the cert that the server is using..... */
 
   if ( stat("/etc/grid-security/hostcert.pem", &st) == 0 ) {
-    sprintf(external_certificate, "%s", "/etc/grid-security/hostcert.pem");
+    external_certificate = strdup("/etc/grid-security/hostcert.pem");
     goto ok;
   }
 
   if ( getenv("X509_USER_CERT") ) {
-    sprintf(external_certificate, "%s", getenv("X509_USER_CERT"));
+    external_certificate = strdup( getenv("X509_USER_CERT") );
     goto ok;
   }
 
   if ( getenv("X509_USER_PROXY") ) {
-    sprintf(external_certificate, "%s", getenv("X509_USER_PROXY"));
+    external_certificate = strdup( getenv("X509_USER_PROXY") );
     goto ok;
   }
 
@@ -185,9 +168,9 @@ void add_key_value( char * key, char * value, char buffer[] ) {
 
 
 int external_callout( X509_REQ                 *request, 
-		       X509                     **cert,
-		       myproxy_request_t        *client_request,
-		       myproxy_server_context_t *server_context) {
+		      X509                     **cert,
+		      myproxy_request_t        *client_request,
+		      myproxy_server_context_t *server_context) {
 
   int return_value = 1;
 
@@ -203,6 +186,9 @@ int external_callout( X509_REQ                 *request,
 
   memset(buffer, '\0', BUF_SIZE);
   memset(intbuf, '\0', 128);
+
+  myproxy_debug("callout using: %s", 
+		server_context->certificate_issuer_program);
 
   /* create pipe */
 
@@ -227,10 +213,11 @@ int external_callout( X509_REQ                 *request,
     dup2(p0[0], 0); /*in*/
     dup2(p1[1], 1); /*out*/
     dup2(p2[1], 2); /*error*/
-    execl(path_to_program, name_of_program, NULL);
+    execl(server_context->certificate_issuer_program, 
+	  server_context->certificate_issuer_program, NULL);
     perror("exec");
     fprintf(stderr, "failed to run %s: %s\n",
-	    path_to_program, strerror(errno));
+	    server_context->certificate_issuer_program, strerror(errno));
     exit(1);
   }
 
@@ -254,7 +241,7 @@ int external_callout( X509_REQ                 *request,
 
   sprintf( intbuf, "%d", client_request->proxy_lifetime );
   add_key_value( "proxy_lifetime", (char*)intbuf, buffer );
-  intbuf[0] = '\0';
+  memset(intbuf, '\0', 128);
 
   add_key_value( "retrievers", client_request->retrievers, buffer );
   add_key_value( "renewers", client_request->renewers, buffer );
@@ -263,9 +250,9 @@ int external_callout( X509_REQ                 *request,
   add_key_value( "authzcreds", client_request->authzcreds, buffer );
   add_key_value( "keyretrieve", client_request->keyretrieve, buffer );
 
-  sprintf( intbuf, "%d", server_context->max_proxy_lifetime );
-  add_key_value( "max_proxy_lifetime", (char*)intbuf, buffer );
-  intbuf[0] = '\0';
+  sprintf( intbuf, "%d", server_context->max_cert_lifetime );
+  add_key_value( "max_cert_lifetime", (char*)intbuf, buffer );
+  memset(intbuf, '\0', 128);
 
   fprintf( pipestream, "%s\n", buffer );
 
@@ -280,7 +267,7 @@ int external_callout( X509_REQ                 *request,
   /* wait for program to exit */
 
   if( waitpid(pid, &status, 0) == -1 ) {
-    verror_put_string("wait() failed for external callout child");
+    verror_put_string("waitpid() failed for external callout child");
     verror_put_errno(errno);
     goto error;
   }
@@ -338,85 +325,247 @@ int external_callout( X509_REQ                 *request,
 
 }
 
+void tokenize_to_x509_name( char * dn, X509_NAME * name ) {
+
+  char * tmp;
+
+  char * tok;
+  char * subtok;
+  char * toksplit;
+
+  myproxy_debug( "tokenizing: %s", dn );
+
+  tmp = strdup(dn);
+
+  tok = strtok( tmp, "/" );
+
+  while ( tok != NULL ) {
+
+    subtok = strchr( tok, '=' );
+    toksplit = subtok;
+
+    subtok++;
+    *toksplit = '\0';
+
+    myproxy_debug( "adding: %s = %s", tok, subtok );
+
+    X509_NAME_add_entry_by_txt( name, tok, MBSTRING_ASC, 
+				subtok, -1, -1, 0 );
+
+    subtok = NULL;
+    toksplit = NULL;
+
+    tok = strtok( NULL, "/" );
+  }
+
+  free(tmp);
+
+}
+
+/*
+ * serial number handling liberally borrowed from KCA with the addition
+ * of file locking
+ */
+
+int assign_serial_number( X509 *cert, 
+			  myproxy_server_context_t *server_context ) {
+
+  int increment  = 1;
+  int retval = 1;
+
+  BIGNUM       * serial = NULL;
+  ASN1_INTEGER * current = NULL, * next = NULL;
+  char buf[1024];
+
+  /* all the io variables */
+
+  BIO   * serialbio = NULL;
+  int     fd;
+  FILE  * serialstream = NULL;
+
+  myproxy_debug("Assigning serial number");
+
+  serial  = BN_new();
+  current = ASN1_INTEGER_new();
+
+  if ( (serial ==NULL) || (current==NULL) ) {
+    verror_put_string("Bignum/asn1 INT init failure\n");
+    goto error;
+  }
+
+  /* open(), lock, open stream and create BIO */
+
+  fd = open( server_context->certificate_serialfile, O_RDWR );
+
+  if ( fd == -1 ) {
+    verror_put_string("Call to open() failed on %s\n", 
+		      server_context->certificate_serialfile);
+    goto error;
+  }
+
+  if ( flock(fd, LOCK_EX) == -1 ) {
+    verror_put_string("Failed to get lock on file descriptor\n");
+    goto error;
+  }
+
+  serialstream = fdopen( fd, "w+" );
+
+  if ( serialstream == NULL ) {
+    verror_put_string("Unable to open file stream\n");
+    goto error;
+  }
+
+  serialbio = BIO_new_fp( serialstream, BIO_CLOSE );
+
+  if ( serialbio == NULL ) {
+    verror_put_string("BIO_new_fp failure.\n");
+    goto error;
+  }
+
+  if (!a2i_ASN1_INTEGER(serialbio, current, buf, sizeof(buf))) {
+    verror_put_string("Asn1 int read/conversion error\n");
+    goto error;
+  } else {
+    myproxy_debug("Loaded serial number %s from %s", buf, 
+		  server_context->certificate_serialfile);
+  }
+
+  serial = BN_bin2bn( current->data, current->length, serial );
+
+  if ( serial == NULL ) {
+    verror_put_string("Error converting to bignum\n");
+    goto error;
+  }
+
+  if (!BN_add_word(serial, increment)) {
+    verror_put_string("Error incrementing serial number\n");
+    goto error;
+  }
+
+  if (!(next = BN_to_ASN1_INTEGER(serial, NULL))) {
+    verror_put_string("Error converting new serial to ASN1\n");
+    goto error;
+  }
+
+  BIO_reset(serialbio);
+  i2a_ASN1_INTEGER(serialbio, next);
+  BIO_puts(serialbio, "\n");
+
+
+  if (flock(fd, LOCK_UN) == -1) {
+    verror_put_string("Failed to release lock\n");
+    goto error;
+  }
+
+  /* the call to BIO_free with the CLOSE flags will take care of
+   * the underlying file stream and close()ing the file descriptor.
+   */
+  
+  BIO_free(serialbio);
+  serialbio    = NULL;
+  serialstream = NULL;
+
+  if (!X509_set_serialNumber(cert, current)) {
+    verror_put_string("Error assigning serialnumber\n");
+    goto error;
+  }
+
+  myproxy_debug("serial number assigned");
+
+  retval = 0;
+
+ error:
+  if (serial)
+    BN_free(serial);
+  if (current)
+    ASN1_INTEGER_free(current);
+  if(next)
+    ASN1_INTEGER_free(next);
+  if(serialbio)
+    BIO_free(serialbio);
+  if(serialstream)
+    serialstream = NULL;
+
+
+  return(retval);
+
+
+}
+
 int generate_certificate( X509_REQ                 *request, 
 			  X509                     **certificate,
 			  EVP_PKEY                 *pkey,
 			  myproxy_request_t        *client_request,
 			  myproxy_server_context_t *server_context) { 
 
-  /* This code is currently being retained to serve as and example
-   * of how a certificate would be generated internally using the 
-   * C openssl api.  But currently, we expect the callout interface 
-   * to be used.  It will not currently work due to the path
-   * to the cakey and it's passphrase being hardcoded.
-   *
-   * This may be turned into something functional in the near future.
-   */
+  int             return_value = 1;  
+  int             not_after;
+  char          * userdn;
 
-  int           return_value = 1;  
-  int           serial;
-  unsigned char serial_string[256];
+  X509           * cert = NULL;
+  X509_NAME      * issuer = NULL;
+  X509_NAME      * subject = NULL;
+  X509_EXTENSION * ex = NULL;
+  EVP_PKEY       * cakey = NULL;
 
-  X509          * cert = NULL;
+  FILE * inkey = NULL;
 
-  myproxy_debug("Generating sample certificate internally.");
+  myproxy_debug("Generating certificate internally.");
 
   cert = X509_new();
 
   if (cert == NULL) {
     verror_put_string("Problem creating new X509.");
     goto error;
-  } 
+  }
 
   /* issuer info */
 
-  X509_NAME * issuer = X509_get_issuer_name(cert);
+  issuer = X509_get_issuer_name(cert);
 
-  X509_NAME_add_entry_by_txt( issuer, "O", MBSTRING_ASC, 
-			      "Scrotely Whizzbangs", -1, -1, 0);
-  X509_NAME_add_entry_by_txt( issuer, "O", MBSTRING_ASC, 
-			      "Vouch 4 U Inc.", -1, -1, 0);
+  tokenize_to_x509_name( server_context->certificate_issuer, issuer );
 
   /* subject info */
 
-  X509_NAME * subject = X509_get_subject_name(cert);
+  /* this has already been called successfully, but... */
+  
+  if ( globus_gss_assist_map_local_user( client_request->username,
+					 &userdn ) ) {
+    verror_put_string("Could not resolve user to grid mapfile");
+    goto error;
+  }
 
-  X509_NAME_add_entry_by_txt( subject, "O", MBSTRING_ASC, 
-			      "Scrotely Whizzbangs", -1, -1, 0);
-  X509_NAME_add_entry_by_txt( subject, "O", MBSTRING_ASC, 
-			      "Vouch 4 U Inc.", -1, -1, 0);
-  X509_NAME_add_entry_by_txt( subject, "OU", MBSTRING_ASC, 
-			      "People", -1, -1, 0);
-  X509_NAME_add_entry_by_txt( subject, "CN", MBSTRING_ASC, 
-			      "Jon Q. Public", -1, -1, 0);
+  myproxy_debug("DN for user %s: %s", client_request->username, userdn);
 
-  srand(time(NULL));
+  subject = X509_get_subject_name(cert);
 
-  serial = rand();
-
-  memset( &serial_string, '\0', 256 );
-
-  sprintf( serial_string, "%d", serial );
-
-  X509_NAME_add_entry_by_txt( subject, "CN", MBSTRING_ASC, 
-			      serial_string, -1, -1, 0);
-
-  serial_string[0] = '\0';
+  tokenize_to_x509_name( userdn, subject );
 
   /* version, ttl, etc */
 
   X509_set_version(cert, 0x2); /* this is actually version 3 */
 
-  ASN1_INTEGER_set(X509_get_serialNumber(cert), serial);
+  if (assign_serial_number(cert, server_context)) {
+    verror_put_string("Error assigning serial number to cert");
+    goto error;
+  }
+
+  if (!server_context->max_cert_lifetime) {
+    not_after = MIN(client_request->proxy_lifetime,
+		    SECONDS_PER_HOUR * MYPROXY_DEFAULT_DELEG_HOURS);
+  } else {
+    not_after = MIN(client_request->proxy_lifetime,
+		    server_context->max_cert_lifetime);
+  }
+
+  myproxy_debug("cert lifetime: %d", not_after );
 
   X509_gmtime_adj(X509_get_notBefore(cert), 0);
-  X509_gmtime_adj(X509_get_notAfter(cert), (long)60*60*24*1);
+  X509_gmtime_adj(X509_get_notAfter(cert), (long)not_after);
   
   X509_set_pubkey(cert, pkey);
 
   /* extensions */
-
-  X509_EXTENSION *ex = NULL;
 
   ex = X509V3_EXT_conf_nid(NULL, NULL, NID_key_usage,
 			   "critical,Digital Signature, Key Encipherment, Data Encipherment");
@@ -424,28 +573,28 @@ int generate_certificate( X509_REQ                 *request,
   X509_add_ext(cert,ex,-1);
   X509_EXTENSION_free(ex);
 
-  /* This is where you would load up your signing key */
-
   /* load ca key */
 
-  const char keyfile[] = "/path/to/cakey.pem";
-
-  FILE * inkey = fopen( keyfile, "r");
-  EVP_PKEY * cakey = NULL;
+  inkey = fopen( server_context->certificate_issuer_key, "r");
 
   if (!inkey) {
-    myproxy_debug("Could not open cakey file handle");
+    myproxy_debug("Could not open cakey file handle: %s",
+		  server_context->certificate_issuer_key);
     goto error;
 
   }
 
-  cakey = PEM_read_PrivateKey( inkey, NULL, NULL, "cakeypassphrase" );
+  /* cakey must be unencrypted */
+
+  cakey = PEM_read_PrivateKey( inkey, NULL, NULL, NULL );
 
   fclose(inkey);
 
   if ( cakey == NULL ) {
     verror_put_string("Could not load cakey for certificate signing.");
     goto error;
+  } else {
+    myproxy_debug("CAkey: %s", server_context->certificate_issuer_key );
   }
 
   /* sign it */
@@ -457,8 +606,6 @@ int generate_certificate( X509_REQ                 *request,
     goto error;
   } 
 
-  EVP_PKEY_free( cakey );
-
   return_value = 0;
 
   *certificate = cert;
@@ -469,9 +616,14 @@ int generate_certificate( X509_REQ                 *request,
       X509_free(cert);
     }
   }
-  return return_value;
+  if (cakey)
+    EVP_PKEY_free( cakey );
+  if (userdn) {
+    free(userdn);
+    userdn = NULL;
+  }
 
-  
+  return return_value;
 
 }
 
@@ -533,32 +685,52 @@ int handle_certificate(unsigned char            *input_buffer,
     goto error;
   } 
 
-#if USE_EXTERNAL_CALLOUT
-
-  myproxy_debug("Using external callout interface.");
-
-  if( external_callout( req, &cert, client_request, server_context ) ) {
-    verror_put_string("External callout failed.");
-    goto error;
-  }
-
-#else
-
-  /* This calls an example of using the openssl libs internally and is
-   * provided for eductational purposes only
+  /* check to see if the configuration is sound, and call the appropriate
+   * cert generation method based on what has been defined
    */
 
-  myproxy_debug("Using example internal openssl code");
+  if ( ( server_context->certificate_issuer_program != NULL ) && 
+       ( server_context->certificate_issuer != NULL ) ) {
+    verror_put_string("CA config error: both issuer and program defined");
+    goto error;
+  } 
 
-  if ( generate_certificate( req, &cert, pkey, 
-			     client_request, server_context ) ) {
-    verror_put_string("Internal cert generation failed");
+  if ( ( server_context->certificate_issuer_program == NULL ) && 
+       ( server_context->certificate_issuer == NULL ) ) {
+    verror_put_string("CA config error: neither issuer or program defined");
     goto error;
   }
 
-#endif
+  if ( ( server_context->certificate_issuer != NULL ) && 
+       ( server_context->certificate_issuer_key == NULL ) ) {
+    verror_put_string("CA config error: issuer defined but no key defined");
+    goto error;
+  }
 
-  /* a bit of sanity */
+  if ( ( server_context->certificate_issuer != NULL ) && 
+       ( server_context->certificate_issuer_key != NULL ) ) {
+    myproxy_debug("Using internal openssl/generate_certificate() code");
+
+    /* internal ca - make sure the serial file location is set */
+
+    if ( server_context->certificate_serialfile == NULL ) {
+      verror_put_string("CA config error: seralfile not defined for internal CA");
+      goto error;
+    }
+
+    if ( generate_certificate( req, &cert, pkey, 
+			       client_request, server_context ) ) {
+      verror_put_string("Internal cert generation failed");
+      goto error;
+    }
+  } else {
+    myproxy_debug("Using external callout interface.");
+
+    if( external_callout( req, &cert, client_request, server_context ) ) {
+      verror_put_string("External callout failed.");
+      goto error;
+    }
+  }
 
   if (cert == NULL) {
     verror_put_string("Cert pointer NULL - unknown generation failure!");
@@ -703,6 +875,9 @@ void get_certificate_authority(myproxy_socket_attrs_t   *server_attrs,
   }
   if ( output_buffer != NULL ) {
     ssl_free_buffer( output_buffer );
+  }
+  if ( external_certificate ) {
+    free( external_certificate );
   }
 
 }
