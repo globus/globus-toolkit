@@ -265,6 +265,7 @@ main(int argc, char *argv[])
 	     }
 	     close(listenfd);
 	  }
+	  my_signal(SIGCHLD, SIG_DFL);
 	  if (handle_client(socket_attrs, server_context) < 0) {
 	     my_failure("error in handle_client()");
 	  } 
@@ -789,6 +790,7 @@ respond_with_error_and_die(myproxy_socket_attrs_t *attrs,
         my_failure("error in myproxy_send()\n");
     } 
 
+    myproxy_log_verror();
     myproxy_log("Exiting: %s", error);
     
     exit(1);
@@ -1019,8 +1021,6 @@ void change_passwd(myproxy_creds_t *creds, char *new_passphrase,
 Sigfunc *my_signal(int signo, Sigfunc *func)
 {
     struct sigaction new_action, old_action;
-
-    assert(func != NULL);
 
     new_action.sa_handler = func;
     sigemptyset( &new_action.sa_mask );
