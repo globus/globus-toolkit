@@ -575,6 +575,29 @@ again:
 			fatal("Can't open user config file %.100s: "
 			    "%.100s", config, strerror(errno));
 	} else  {
+	    /*
+	     * Since the config file parsing code aborts if it sees
+	     * options it doesn't recognize, allow users to put
+	     * options specific to compile-time add-ons in alternate
+	     * config files so their primary config file will
+	     * interoperate SSH versions that don't support those
+	     * options.
+	     */
+#ifdef GSSAPI
+		snprintf(buf, sizeof buf, "%.100s/%.100s.gssapi", pw->pw_dir,
+		    _PATH_SSH_USER_CONFFILE);
+		(void)read_config_file(buf, host, &options, 1);
+#ifdef GSI
+		snprintf(buf, sizeof buf, "%.100s/%.100s.gsi", pw->pw_dir,
+		    _PATH_SSH_USER_CONFFILE);
+		(void)read_config_file(buf, host, &options, 1);
+#endif
+#if defined(KRB5)
+		snprintf(buf, sizeof buf, "%.100s/%.100s.krb", pw->pw_dir,
+		    _PATH_SSH_USER_CONFFILE);
+		(void)read_config_file(buf, host, &options, 1);
+#endif
+#endif
 		snprintf(buf, sizeof buf, "%.100s/%.100s", pw->pw_dir,
 		    _PATH_SSH_USER_CONFFILE);
 		(void)read_config_file(buf, host, &options, 1);
@@ -594,8 +617,11 @@ again:
 
 	seed_rng();
 
-	if (options.user == NULL)
+	if (options.user == NULL) {
 		options.user = xstrdup(pw->pw_name);
+		options.implicit = 1;
+	}
+        else options.implicit = 0;
 
 	if (options.hostname != NULL)
 		host = options.hostname;

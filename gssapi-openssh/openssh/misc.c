@@ -120,11 +120,14 @@ set_nodelay(int fd)
 /* Characters considered whitespace in strsep calls. */
 #define WHITESPACE " \t\r\n"
 
+/* Characters considered as quotations. */
+#define QUOTES "'\""
+
 /* return next token in configuration line */
 char *
 strdelim(char **s)
 {
-	char *old;
+	char *old, *p, *q;
 	int wspace = 0;
 
 	if (*s == NULL)
@@ -132,7 +135,22 @@ strdelim(char **s)
 
 	old = *s;
 
-	*s = strpbrk(*s, WHITESPACE "=");
+        if ((q=strchr(QUOTES, (int) *old)) && *q)
+        {
+            /* find next quote character, point old to start of quoted
+             * string */
+            for (p = ++old;*p && *p!=*q; p++)
+                 ;
+            
+            /* find start of next token */
+            *s = (*p) ? p + strspn(p + 1, WHITESPACE) + 1 : NULL;
+            
+            /* terminate 'old' token */
+            *p = '\0';
+            return (old);
+        }
+
+        *s = strpbrk(*s, WHITESPACE "=");
 	if (*s == NULL)
 		return (old);
 
