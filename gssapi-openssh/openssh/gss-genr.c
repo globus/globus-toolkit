@@ -67,11 +67,11 @@ ssh_gssapi_client_mechanisms(char *host) {
 	gss_OID_set 	supported;
 	OM_uint32	min_status;
 	Buffer		buf;
-	int 		i = 0;
+	size_t 		i = 0;
 	char 		*mechs;
 	char		*encoded;
 	int		enclen;
-	char		digest[EVP_MAX_MD_SIZE];
+	unsigned char	digest[EVP_MAX_MD_SIZE];
 	char		deroid[2];
 	const EVP_MD	*evp_md = EVP_md5();
 	EVP_MD_CTX	md;
