@@ -265,6 +265,45 @@ line_parse_callback(void *context_arg,
 	context->pam_id = strdup(tokens[1]);
     }
 
+    /* these were added to support the online CA functionality */
+
+    if (strcmp(directive, "certificate_issuer_program") == 0)
+    {
+	context->certificate_issuer_program = strdup(tokens[1]);
+    }
+    if (strcmp(directive, "certificate_issuer_key") == 0)
+    {
+	context->certificate_issuer_key = strdup(tokens[1]);
+    }
+    if (strcmp(directive, "certificate_mapfile") == 0)
+    {
+	context->certificate_mapfile = strdup(tokens[1]);
+    }
+    if (strcmp(directive, "certificate_issuer") == 0)
+    {
+	context->certificate_issuer = strdup(tokens[1]);
+    }
+    if (strcmp(directive, "max_cert_lifetime") == 0)
+    {
+	context->max_cert_lifetime = 60*60*atoi(tokens[1]);
+    }
+    if (strcmp(directive, "certificate_serialfile") == 0)
+    {
+	context->certificate_serialfile = strdup(tokens[1]);
+    }
+
+    
+
+    /*
+      these are reg'lar single strings:
+      certificate_issuer_program
+      certificate_issuer_key
+      certificate_mapfile
+      check this one RE: parsing and double quoting:
+      certificate_issuer
+
+    */
+
     return_code = 0;
     
   error:
