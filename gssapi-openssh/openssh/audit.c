@@ -120,7 +120,7 @@ void
 audit_connection_from(const char *host, int port)
 {
 	debug("audit connection from %s port %d euid %d", host, port,
-	   (int)geteuid());
+	    (int)geteuid());
 }
 
 /*
@@ -147,7 +147,7 @@ audit_session_open(const char *ttyn)
 	const char *t = ttyn ? ttyn : "(no tty)";
 
 	debug("audit session open euid %d user %s tty name %s", geteuid(),
-	     audit_username(), t);
+	    audit_username(), t);
 }
 
 /*
@@ -163,7 +163,7 @@ audit_session_close(const char *ttyn)
 	const char *t = ttyn ? ttyn : "(no tty)";
 
 	debug("audit session close euid %d user %s tty name %s", geteuid(),
-	     audit_username(), t);
+	    audit_username(), t);
 }
 
 /*
