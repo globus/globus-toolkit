@@ -101,7 +101,7 @@ auth_shadow_pwexpired(Authctxt *ctxt)
 #if defined(__hpux) && !defined(HAVE_SECUREWARE)
 	if (iscomsec()) {
 		struct pr_passwd *pr;
-		       
+
 		pr = getprpwnam((char *)user);
 
 		/* Test for Trusted Mode expiry disabled */
