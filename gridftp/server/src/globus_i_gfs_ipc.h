@@ -221,6 +221,7 @@ typedef struct globus_i_gfs_community_s
     char *                              name;
     int                                 cs_count;
     char **                             cs;
+    int                                 next_ndx;
 } globus_i_gfs_community_t;
 
 #endif
