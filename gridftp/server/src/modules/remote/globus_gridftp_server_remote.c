@@ -1113,6 +1113,7 @@ globus_l_gfs_remote_active(
     bounce_info->node_handle->nodes = (globus_l_gfs_remote_node_info_t **)
         globus_calloc(bounce_info->nodes_requesting,
             sizeof(globus_l_gfs_remote_node_info_t *));
+    bounce_info->node_handle->count = bounce_info->nodes_requesting;
 
     GlobusGFSRemoteDebugExit();
 }
@@ -1189,6 +1190,7 @@ globus_l_gfs_remote_passive(
     bounce_info->node_handle->nodes = (globus_l_gfs_remote_node_info_t **)
         globus_calloc(bounce_info->nodes_requesting,
             sizeof(globus_l_gfs_remote_node_info_t));
+    bounce_info->node_handle->count = bounce_info->nodes_requesting;
 
     GlobusGFSRemoteDebugExit();
     return;
