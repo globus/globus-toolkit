@@ -52,12 +52,12 @@ kexgss_client(Kex *kex)
 	BIGNUM *shared_secret = 0;	
 	unsigned char *kbuf;
 	unsigned char *hash;
-	unsigned char *serverhostkey;
+	unsigned char *serverhostkey = 0;
 	char *msg;
 	char *lang;
 	int type = 0;
 	int first = 1;
-	int slen = 0;
+	u_int slen = 0;
 	u_int strlen;
 	
 	/* Initialise our GSSAPI world */
