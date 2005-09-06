@@ -424,7 +424,11 @@ resolve_localhost(char **host)
 	    }
 	    hostinfo = gethostbyname(buf);
 	    xfree(*host);
-	    *host = xstrdup(hostinfo->h_name);
+	    if (hostinfo == NULL || hostinfo->h_name == NULL) {
+		*host = xstrdup(buf);
+	    } else {
+		*host = xstrdup(hostinfo->h_name);
+	    }
 	}
     }
 }
