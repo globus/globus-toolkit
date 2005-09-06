@@ -279,7 +279,7 @@ int external_callout( X509_REQ                 *request,
 
   /* wait for program to exit */
 
-  if( wait4(pid, &status, 0, NULL) < 0 ) {
+  if( waitpid(pid, &status, 0) == -1 ) {
     verror_put_string("wait() failed for external callout child");
     verror_put_errno(errno);
     goto error;
