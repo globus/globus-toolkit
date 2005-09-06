@@ -2021,7 +2021,7 @@ int
 mm_answer_gss_indicate_mechs(int socket, Buffer *m) {
         OM_uint32 major,minor;
 	gss_OID_set mech_set;
-	int i;
+	size_t i;
 
 	major=gss_indicate_mechs(&minor, &mech_set);
 
