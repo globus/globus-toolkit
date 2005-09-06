@@ -212,3 +212,21 @@ mysignal(int sig, mysig_t act)
 	return (signal(sig, act));
 #endif
 }
+
+#ifndef HAVE_STRDUP
+char *
+strdup(const char *str)
+{
+	size_t len;
+	char *cp;
+
+	len = strlen(str) + 1;
+	cp = malloc(len);
+	if (cp != NULL)
+		if (strlcpy(cp, str, len) != len) {
+			free(cp);
+			return NULL;
+		}
+	return cp;
+}
+#endif

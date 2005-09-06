@@ -114,8 +114,8 @@ seed_rng(void)
 	close(p[0]);
 
 	if (waitpid(pid, &ret, 0) == -1)
-	       fatal("Couldn't wait for ssh-rand-helper completion: %s",
-		   strerror(errno));
+		fatal("Couldn't wait for ssh-rand-helper completion: %s",
+		    strerror(errno));
 	signal(SIGCHLD, old_sigchld);
 
 	/* We don't mind if the child exits upon a SIGPIPE */
