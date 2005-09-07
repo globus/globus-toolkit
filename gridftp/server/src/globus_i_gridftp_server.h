@@ -60,6 +60,9 @@ globus_i_gfs_control_stop();
 void
 globus_i_gfs_control_init();
 
+globus_result_t
+globus_i_gfs_brain_init();
+
 #define GlobusGFSErrorGenericStr(_res, _fmt)                           \
 do                                                                     \
 {                                                                      \

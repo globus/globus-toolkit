@@ -1486,6 +1486,7 @@ globus_gfs_brain_select_nodes(
     char ***                            out_contact_strings,
     int *                               out_array_length,
     const char *                        repo_name,
+    globus_off_t                        filesize,
     int                                 min_count,
     int                                 max_count);
 

@@ -10,7 +10,6 @@
  */
 
 #include "globus_gridftp_server.h"
-#include "globus_i_gridftp_server.h"
 #include "version.h"
 
 
@@ -40,6 +39,7 @@ struct globus_l_gfs_remote_node_info_s;
 
 typedef struct globus_l_gfs_remote_handle_s
 {
+    globus_mutex_t                      mutex;
     globus_gfs_operation_t              op;
     struct globus_l_gfs_remote_node_info_s *   control_node;
     void *                              state;
@@ -240,6 +240,7 @@ globus_l_gfs_remote_node_request(
         &cs,
         &cs_len,
         repo_name,
+        -1,
         1,
         nodes_requested);
     if(result != GLOBUS_SUCCESS)
@@ -476,6 +477,7 @@ globus_l_gfs_ipc_transfer_cb(
     globus_gfs_finished_info_t *            reply,
     void *                              user_arg)
 {
+    globus_l_gfs_remote_handle_t *      my_handle;
     globus_l_gfs_remote_node_info_t *   node_info;
     int                                 i;
     globus_l_gfs_remote_ipc_bounce_t *  bounce_info;
@@ -487,49 +489,55 @@ globus_l_gfs_ipc_transfer_cb(
 
     node_info = (globus_l_gfs_remote_node_info_t *) user_arg;
     bounce_info = node_info->bounce;
+    my_handle = bounce_info->my_handle;
     
-    bounce_info->nodes_pending--;
-    if(reply->result != 0)
+    globus_mutex_lock(&my_handle->mutex);
     {
-        bounce_info->cached_result = reply->result;
-    }
-    
-    /* wait for all the nodes to return, or if recving and we get an error
-        before the first begin_cb we quit right now */    
-    if((!bounce_info->nodes_pending && !bounce_info->nodes_requesting) || 
-        (reply->result != GLOBUS_SUCCESS && bounce_info->recv_pending))
-    {        
-        memset(&finished_info, '\0', sizeof(globus_gfs_finished_info_t));
-        finished_info.type = reply->type;
-        finished_info.id = reply->id;
-        finished_info.code = reply->code;
-        finished_info.msg = reply->msg;
-        finished_info.result = bounce_info->cached_result;
-        finish = GLOBUS_TRUE;
-        op = bounce_info->op;
-        
-        if(!bounce_info->events_enabled)
+        bounce_info->nodes_pending--;
+        if(reply->result != 0)
         {
-            globus_l_gfs_remote_node_info_t * node_info;
+            bounce_info->cached_result = reply->result;
+        }
+    
+        /* wait for all the nodes to return, or if recving and we get an error
+            before the first begin_cb we quit right now */    
+        if((!bounce_info->nodes_pending && !bounce_info->nodes_requesting) || 
+            (bounce_info->cached_result != GLOBUS_SUCCESS &&
+                bounce_info->recv_pending))
+        {        
+            memset(&finished_info, '\0', sizeof(globus_gfs_finished_info_t));
+            finished_info.type = reply->type;
+            finished_info.id = reply->id;
+            finished_info.code = reply->code;
+            finished_info.msg = reply->msg;
+            finished_info.result = bounce_info->cached_result;
+            finish = GLOBUS_TRUE;
+            op = bounce_info->op;
+        
+            if(!bounce_info->events_enabled)
+            {
+                globus_l_gfs_remote_node_info_t * node_info;
             
-            for(i = 0; i < bounce_info->node_handle->count; i++)
-            {
-                node_info = bounce_info->node_handle->nodes[i];
- 
-                if(node_info->info && node_info->info_needs_free)
+                for(i = 0; i < bounce_info->node_handle->count; i++)
                 {
-                    globus_free(node_info->info);
-                    node_info->info = NULL;
-                    node_info->info_needs_free = GLOBUS_FALSE;
+                    node_info = bounce_info->node_handle->nodes[i];
+ 
+                    if(node_info->info && node_info->info_needs_free)
+                    {
+                        globus_free(node_info->info);
+                        node_info->info = NULL;
+                        node_info->info_needs_free = GLOBUS_FALSE;
+                    }
                 }
-            }
-            if(bounce_info->eof_count != NULL)
-            {
-                globus_free(bounce_info->eof_count);
-            }
-            globus_free(bounce_info);
-        }        
+                if(bounce_info->eof_count != NULL)
+                {
+                    globus_free(bounce_info->eof_count);
+                }
+                globus_free(bounce_info);
+            }        
+        }
     }
+    globus_mutex_unlock(&my_handle->mutex);
     
     if(finish)
     {
@@ -547,9 +555,10 @@ void
 globus_l_gfs_ipc_event_cb(
     globus_gfs_ipc_handle_t             ipc_handle,
     globus_result_t                     ipc_result,
-    globus_gfs_event_info_t *      reply,
+    globus_gfs_event_info_t *           reply,
     void *                              user_arg)
 {
+    globus_l_gfs_remote_handle_t *      my_handle;
     int                                 i;
     globus_l_gfs_remote_ipc_bounce_t *  bounce_info;
     globus_list_t *                     list;
@@ -566,92 +575,98 @@ globus_l_gfs_ipc_event_cb(
     
     node_info = (globus_l_gfs_remote_node_info_t *) user_arg;    
     bounce_info = node_info->bounce;
-    
-    switch(reply->type)
+    my_handle = bounce_info->my_handle;
+
+    globus_mutex_lock(&my_handle->mutex);
     {
-        case GLOBUS_GFS_EVENT_TRANSFER_BEGIN:
-            node_info->event_arg = reply->event_arg;
-            node_info->event_mask = reply->event_mask;
+        switch(reply->type)
+        {
+            case GLOBUS_GFS_EVENT_TRANSFER_BEGIN:
+                node_info->event_arg = reply->event_arg;
+                node_info->event_mask = reply->event_mask;
 
-            bounce_info->begin_event_pending--;
-            if(!bounce_info->begin_event_pending)
-            {
-                if(bounce_info->recv_pending)
+                bounce_info->begin_event_pending--;
+                if(!bounce_info->begin_event_pending)
                 {
-                    globus_l_gfs_remote_recv_next(bounce_info);
-                }
-                else if(!bounce_info->nodes_requesting)
-                {
-                    bounce_info->events_enabled = GLOBUS_TRUE;
-                    reply->event_arg = bounce_info;
-                    reply->event_mask = 
-                        GLOBUS_GFS_EVENT_TRANSFER_ABORT | 
-                        GLOBUS_GFS_EVENT_TRANSFER_COMPLETE |
-                        GLOBUS_GFS_EVENT_BYTES_RECVD |
-                        GLOBUS_GFS_EVENT_RANGES_RECVD;
+                    if(bounce_info->recv_pending)
+                    {
+                        globus_l_gfs_remote_recv_next(bounce_info);
+                    }
+                    else if(!bounce_info->nodes_requesting)
+                    {
+                        bounce_info->events_enabled = GLOBUS_TRUE;
+                        reply->event_arg = bounce_info;
+                        reply->event_mask = 
+                            GLOBUS_GFS_EVENT_TRANSFER_ABORT | 
+                            GLOBUS_GFS_EVENT_TRANSFER_COMPLETE |
+                            GLOBUS_GFS_EVENT_BYTES_RECVD |
+                            GLOBUS_GFS_EVENT_RANGES_RECVD;
             
-                    globus_gridftp_server_operation_event(
-                        bounce_info->op,
-                        GLOBUS_SUCCESS,
-                        reply);
-                 }
-            }
-            break;
-        case GLOBUS_GFS_EVENT_TRANSFER_CONNECTED:
-            bounce_info->event_pending--;
-            if(!bounce_info->event_pending && 
-                !bounce_info->recv_pending &&
-                !bounce_info->nodes_requesting)
-            {
-                finish = GLOBUS_TRUE;
-            }
-            break;
-        case GLOBUS_GFS_EVENT_PARTIAL_EOF_COUNT:
+                        globus_gridftp_server_operation_event(
+                            bounce_info->op,
+                            GLOBUS_SUCCESS,
+                            reply);
+                    }
+                }
+                break;
+            case GLOBUS_GFS_EVENT_TRANSFER_CONNECTED:
+                bounce_info->event_pending--;
+                if(!bounce_info->event_pending && 
+                    !bounce_info->recv_pending &&
+                    !bounce_info->nodes_requesting)
+                {
+                    finish = GLOBUS_TRUE;
+                }
+                break;
+            case GLOBUS_GFS_EVENT_PARTIAL_EOF_COUNT:
 
-            for(i = 0; i < bounce_info->node_handle->count; i++)
-            {
-                node_info = (globus_l_gfs_remote_node_info_t *) 
-                    globus_list_first(list);
-                info = (globus_gfs_transfer_info_t *) node_info->info;
+                for(i = 0; i < bounce_info->node_handle->count; i++)
+                {
+                    node_info = (globus_l_gfs_remote_node_info_t *) 
+                        globus_list_first(list);
+                    info = (globus_gfs_transfer_info_t *) node_info->info;
                 
-                if(node_info->ipc_handle == ipc_handle)
-                {
-                    globus_assert(
-                        info->node_ndx != 0 && current_node == NULL);
-                    current_node = node_info;
+                    if(node_info->ipc_handle == ipc_handle)
+                    {
+                        globus_assert(
+                            info->node_ndx != 0 && current_node == NULL);
+                        current_node = node_info;
+                    }
+                    if(info->node_ndx == 0)
+                    {
+                        globus_assert(master_node == NULL);
+                        master_node = node_info;
+                    }
                 }
-                if(info->node_ndx == 0)
-                {
-                    globus_assert(master_node == NULL);
-                    master_node = node_info;
+                for(ctr = 0; ctr < reply->node_count; ctr++)
+                { 
+                    bounce_info->eof_count[ctr] += reply->eof_count[ctr];
                 }
-            }
-            for(ctr = 0; ctr < reply->node_count; ctr++)
-            { 
-                bounce_info->eof_count[ctr] += reply->eof_count[ctr];
-            }
-            bounce_info->partial_eof_counts++;
-            if(bounce_info->partial_eof_counts + 1 == 
-                bounce_info->node_count && !bounce_info->finished)
-            {
-                memset(&event_info, '\0', sizeof(globus_gfs_event_info_t));
-                event_info.type = GLOBUS_GFS_EVENT_FINAL_EOF_COUNT;
-                event_info.event_arg = master_node->event_arg;
-                event_info.eof_count = bounce_info->eof_count;
-                event_info.node_count = bounce_info->partial_eof_counts + 1;
-                result = globus_gfs_ipc_request_transfer_event(
-                    master_node->ipc_handle,
-                    &event_info);
-                bounce_info->final_eof++;
-            }   
-            break;
-        default:
-            if(!bounce_info->event_pending)
-            {
-                finish = GLOBUS_TRUE;
-            }
-            break;
-    }       
+                bounce_info->partial_eof_counts++;
+                if(bounce_info->partial_eof_counts + 1 == 
+                    bounce_info->node_count && !bounce_info->finished)
+                {
+                    memset(&event_info, '\0', sizeof(globus_gfs_event_info_t));
+                    event_info.type = GLOBUS_GFS_EVENT_FINAL_EOF_COUNT;
+                    event_info.event_arg = master_node->event_arg;
+                    event_info.eof_count = bounce_info->eof_count;
+                    event_info.node_count = bounce_info->partial_eof_counts + 1;
+                    result = globus_gfs_ipc_request_transfer_event(
+                        master_node->ipc_handle,
+                        &event_info);
+                    bounce_info->final_eof++;
+                }   
+                break;
+            default:
+                if(!bounce_info->event_pending)
+                {
+                    finish = GLOBUS_TRUE;
+                }
+                break;
+        }
+    }
+    globus_mutex_unlock(&my_handle->mutex);
+
     if(finish)
     {        
         reply->event_arg = bounce_info;
@@ -777,7 +792,8 @@ globus_l_gfs_remote_list(
     GlobusGFSRemoteDebugEnter();
     
     my_handle = (globus_l_gfs_remote_handle_t *) user_arg;
-    
+
+    /* XXX it appears no lock is needed here */ 
     result = globus_l_gfs_remote_init_bounce_info(
         &bounce_info, op, transfer_info, my_handle);
     globus_free(bounce_info->node_handle);   
@@ -852,11 +868,8 @@ globus_l_gfs_remote_recv_next(
         node_info->info_needs_free = GLOBUS_TRUE;
         node_info->bounce = bounce_info;
 
-        bounce_info->nodes_pending++;
-        bounce_info->event_pending++;
-        bounce_info->begin_event_pending++;
         bounce_info->nodes_requesting--;
-        
+
         result = globus_gfs_ipc_request_recv(
             node_info->ipc_handle,
             new_transfer_info,
@@ -865,13 +878,27 @@ globus_l_gfs_remote_recv_next(
             node_info); 
         if(result != GLOBUS_SUCCESS)
         {
-            GlobusGFSErrorOpFinished(bounce_info->op, result);
+            if(bounce_info->nodes_pending > 0)
+            {
+                bounce_info->cached_result = result;
+            }
+            else
+            {
+                GlobusGFSErrorOpFinished(bounce_info->op, result);
+            }
+            goto error;
         }
+        bounce_info->nodes_pending++;
+        bounce_info->event_pending++;
+        bounce_info->begin_event_pending++;
     }
     
     bounce_info->recv_pending = GLOBUS_FALSE;
-    
+
     GlobusGFSRemoteDebugExit();
+    return;
+error:
+    return;
 }
 
 static
@@ -892,58 +919,69 @@ globus_l_gfs_remote_recv(
     
     my_handle = (globus_l_gfs_remote_handle_t *) user_arg;
 
-    result = globus_l_gfs_remote_init_bounce_info(
-        &bounce_info, op, transfer_info, my_handle);
+    globus_mutex_lock(&my_handle->mutex);
+    {
+        result = globus_l_gfs_remote_init_bounce_info(
+            &bounce_info, op, transfer_info, my_handle);
     
-    bounce_info->node_handle = (globus_l_gfs_remote_node_handle_t *) 
-        transfer_info->data_arg;
+        bounce_info->node_handle = (globus_l_gfs_remote_node_handle_t *) 
+            transfer_info->data_arg;
 
-    /* only going to do the first recv request here, the others
-       will be sent after this one responds with the begin event 
+        /* only going to do the first recv request here, the others
+           will be sent after this one responds with the begin event 
     
-       we need to do this primarily to make sure the file is opened 
-       in TRUNC mode only the first time */
+           we need to do this primarily to make sure the file is opened 
+           in TRUNC mode only the first time */
        
-    node_count = bounce_info->node_handle->count;
-    if(node_count > 1)
-    {
-        bounce_info->recv_pending = GLOBUS_TRUE;
-    }
-    bounce_info->nodes_requesting = node_count;
-    bounce_info->node_count = node_count;
+        node_count = bounce_info->node_handle->count;
+        if(node_count > 1)
+        {
+            bounce_info->recv_pending = GLOBUS_TRUE;
+        }
+        bounce_info->nodes_requesting = node_count;
+        bounce_info->node_count = node_count;
             
-    node_info = bounce_info->node_handle->nodes[0];
+        node_info = bounce_info->node_handle->nodes[0];
     
-    new_transfer_info = (globus_gfs_transfer_info_t *)
-        globus_calloc(1, sizeof(globus_gfs_transfer_info_t));
-    memcpy(new_transfer_info, transfer_info, sizeof(globus_gfs_transfer_info_t));
+        new_transfer_info = (globus_gfs_transfer_info_t *)
+            globus_calloc(1, sizeof(globus_gfs_transfer_info_t));
+        memcpy(new_transfer_info,transfer_info,
+            sizeof(globus_gfs_transfer_info_t));
 
-    new_transfer_info->data_arg = node_info->data_arg;
-    new_transfer_info->node_count = node_count;
-    new_transfer_info->stripe_count = node_info->stripe_count;
-    new_transfer_info->node_ndx = 0;
-    node_info->info = new_transfer_info;
-    node_info->info_needs_free = GLOBUS_TRUE;
-    node_info->bounce = bounce_info;
+        new_transfer_info->data_arg = node_info->data_arg;
+        new_transfer_info->node_count = node_count;
+        new_transfer_info->stripe_count = node_info->stripe_count;
+        new_transfer_info->node_ndx = 0;
+        node_info->info = new_transfer_info;
+        node_info->info_needs_free = GLOBUS_TRUE;
+        node_info->bounce = bounce_info;
 
-    bounce_info->nodes_pending++;
-    bounce_info->event_pending++;
-    bounce_info->begin_event_pending++;
-    bounce_info->nodes_requesting--;
-    
-    result = globus_gfs_ipc_request_recv(
-        node_info->ipc_handle,
-        new_transfer_info,
-        globus_l_gfs_ipc_transfer_cb,
-        globus_l_gfs_ipc_event_cb,
-        node_info); 
-
-    if(result != GLOBUS_SUCCESS)
-    {
-        GlobusGFSErrorOpFinished(bounce_info->op, result);
+        result = globus_gfs_ipc_request_recv(
+            node_info->ipc_handle,
+            new_transfer_info,
+            globus_l_gfs_ipc_transfer_cb,
+            globus_l_gfs_ipc_event_cb,
+            node_info); 
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error;
+        }
+        /* could maybe get away with no lock if we moved the next few lines
+            above the request.  we would have to then assume that the 
+            values were meaningless under error.  This way is more 
+            consistant and the lock is not very costly */
+        bounce_info->nodes_pending++;
+        bounce_info->event_pending++;
+        bounce_info->begin_event_pending++;
+        bounce_info->nodes_requesting--;
     }
+    globus_mutex_unlock(&my_handle->mutex);
 
     GlobusGFSRemoteDebugExit();
+    return;
+error:
+    globus_mutex_unlock(&my_handle->mutex);
+    GlobusGFSErrorOpFinished(bounce_info->op, result);
 }
 
 
@@ -967,55 +1005,73 @@ globus_l_gfs_remote_send(
     
     my_handle = (globus_l_gfs_remote_handle_t *) user_arg;
 
-    result = globus_l_gfs_remote_init_bounce_info(
-        &bounce_info, op, transfer_info, my_handle);
+    globus_mutex_lock(&my_handle->mutex);
+    {
+        result = globus_l_gfs_remote_init_bounce_info(
+            &bounce_info, op, transfer_info, my_handle);
     
-    bounce_info->node_handle = (globus_l_gfs_remote_node_handle_t *)
-        transfer_info->data_arg;
+        bounce_info->node_handle = (globus_l_gfs_remote_node_handle_t *)
+            transfer_info->data_arg;
 
-    node_count = bounce_info->node_handle->count;
+        node_count = bounce_info->node_handle->count;
 
-    bounce_info->eof_count = (int *) 
-        globus_calloc(1, node_count * sizeof(int) + 1);
+        bounce_info->eof_count = (int *) 
+            globus_calloc(1, node_count * sizeof(int) + 1);
 
-    bounce_info->nodes_requesting = node_count;
-    bounce_info->node_count = node_count;
-    bounce_info->sending = GLOBUS_TRUE;
-    for(i = 0; i < bounce_info->node_handle->count; i++)
-    {
-        node_info = bounce_info->node_handle->nodes[i];
+        bounce_info->nodes_requesting = node_count;
+        bounce_info->node_count = node_count;
+        bounce_info->sending = GLOBUS_TRUE;
+        for(i = 0; i < bounce_info->node_handle->count; i++)
+        {
+            node_info = bounce_info->node_handle->nodes[i];
         
-        new_transfer_info = (globus_gfs_transfer_info_t *)
-            globus_calloc(1, sizeof(globus_gfs_transfer_info_t));
-        memcpy(new_transfer_info, transfer_info, sizeof(globus_gfs_transfer_info_t));
+            new_transfer_info = (globus_gfs_transfer_info_t *)
+                globus_calloc(1, sizeof(globus_gfs_transfer_info_t));
+            memcpy(new_transfer_info,
+                transfer_info, sizeof(globus_gfs_transfer_info_t));
             
-        new_transfer_info->data_arg = node_info->data_arg;
-        new_transfer_info->node_count = node_count;
-        new_transfer_info->stripe_count = node_info->stripe_count;
-        new_transfer_info->node_ndx = ndx++;
-        node_info->info = new_transfer_info;
-        node_info->info_needs_free = GLOBUS_TRUE;
-        node_info->bounce = bounce_info;
+            new_transfer_info->data_arg = node_info->data_arg;
+            new_transfer_info->node_count = node_count;
+            new_transfer_info->stripe_count = node_info->stripe_count;
+            new_transfer_info->node_ndx = ndx++;
+            node_info->info = new_transfer_info;
+            node_info->info_needs_free = GLOBUS_TRUE;
+            node_info->bounce = bounce_info;
                                     
-        bounce_info->nodes_pending++;
-        bounce_info->event_pending++;
-        bounce_info->begin_event_pending++;
+            bounce_info->nodes_pending++;
+            bounce_info->event_pending++;
+            bounce_info->begin_event_pending++;
         
-        result = globus_gfs_ipc_request_send(
-            node_info->ipc_handle,
-            new_transfer_info,
-            globus_l_gfs_ipc_transfer_cb,
-            globus_l_gfs_ipc_event_cb,
-            node_info); 
+            result = globus_gfs_ipc_request_send(
+                node_info->ipc_handle,
+                new_transfer_info,
+                globus_l_gfs_ipc_transfer_cb,
+                globus_l_gfs_ipc_event_cb,
+                node_info); 
+            if(result != GLOBUS_SUCCESS)
+            {
+                /* if some callbacks are pending we need to wait for the
+                    callbacks */
+                if(i > 0)
+                {
+                    bounce_info->cached_result = result;
+                }
+                else
+                {
+                    GlobusGFSErrorOpFinished(bounce_info->op, result);
+                }
+                goto error;
+            }
 
-        bounce_info->nodes_requesting--;
+            bounce_info->nodes_requesting--;
+        }
     }
-    if(result != GLOBUS_SUCCESS)
-    {
-        GlobusGFSErrorOpFinished(bounce_info->op, result);
-    }
+    globus_mutex_unlock(&my_handle->mutex);
 
     GlobusGFSRemoteDebugExit();
+    return;
+error:
+    globus_mutex_unlock(&my_handle->mutex);
 }
 
 static
@@ -1369,6 +1425,7 @@ globus_l_gfs_remote_session_start(
     
     my_handle = (globus_l_gfs_remote_handle_t *) 
         globus_calloc(1, sizeof(globus_l_gfs_remote_handle_t));
+    globus_mutex_init(&my_handle->mutex, NULL);
 
     if(session_info->username != NULL)
     {
@@ -1450,6 +1507,7 @@ globus_l_gfs_remote_session_end(
     {
         globus_free(my_handle->session_info.subject);
     }
+    globus_mutex_destroy(&my_handle->mutex);
     globus_free(my_handle);
     
     GlobusGFSRemoteDebugExit();

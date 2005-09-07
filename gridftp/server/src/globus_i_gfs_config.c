@@ -189,6 +189,8 @@ static const globus_l_gfs_config_option_t option_list[] =
     "the range specified in the restart marker has actually been committed to disk. "
     "This option will probably impact performance, and may result in different behavior "
     "on different storage systems. See the manpage for sync() for more information.", NULL, NULL},
+ {"repo_count", "repo_count", NULL, "repo-count", NULL, GLOBUS_L_GFS_CONFIG_INT, 0, NULL,
+    "Maximum number of connections per transfer.", NULL, NULL},
 {NULL, "Network Options", NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL},
  {"port", "port", NULL, "port", "p", GLOBUS_L_GFS_CONFIG_INT, 0, NULL,
     "Port on which a frontend will listend for client control channel connections, "
