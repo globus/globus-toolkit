@@ -834,7 +834,7 @@ globus_l_gfs_remote_recv_next(
     
     node_count = bounce_info->node_handle->count;
     
-    for(i = 0; i < bounce_info->node_handle->count; i++)
+    for(i = 1; i < bounce_info->node_handle->count; i++)
     {
         node_info = bounce_info->node_handle->nodes[i];
         
@@ -894,7 +894,6 @@ globus_l_gfs_remote_recv(
 
     result = globus_l_gfs_remote_init_bounce_info(
         &bounce_info, op, transfer_info, my_handle);
-    globus_free(bounce_info->node_handle);        
     
     bounce_info->node_handle = (globus_l_gfs_remote_node_handle_t *) 
         transfer_info->data_arg;
@@ -970,7 +969,6 @@ globus_l_gfs_remote_send(
 
     result = globus_l_gfs_remote_init_bounce_info(
         &bounce_info, op, transfer_info, my_handle);
-    globus_free(bounce_info->node_handle);        
     
     bounce_info->node_handle = (globus_l_gfs_remote_node_handle_t *)
         transfer_info->data_arg;
