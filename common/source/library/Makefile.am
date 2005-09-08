@@ -83,8 +83,8 @@ Sources= \
 	globus_uuid.c \
 	globus_uuid.h
 
-
 flavorinclude_HEADERS = \
+        $(OS_HEADERS) \
 	globus_release.h \
 	globus_module.h \
 	globus_url.h \
@@ -127,10 +127,15 @@ lib_LTLIBRARIES = libglobus_common_$(GLOBUS_FLAVOR_NAME).la
 
 INCLUDES = @GPT_INCLUDES@
 
-libglobus_common___GLOBUS_FLAVOR_NAME__la_LIBADD = @GPT_LIB_LINKS@
-
+libglobus_common___GLOBUS_FLAVOR_NAME__la_LIBADD = @OS_OBJS@ @GPT_LIB_LINKS@
 libglobus_common___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
-libglobus_common___GLOBUS_FLAVOR_NAME__la_LDFLAGS = @GPT_LDFLAGS@
+EXTRA_libglobus_common___GLOBUS_FLAVOR_NAME__la_SOURCES = \
+        closedir.c \
+        opendir.c \
+        readdir.c \
+        globus_netos_dir.h
+libglobus_common___GLOBUS_FLAVOR_NAME__la_LDFLAS = @GPT_LDFLAGS@
+libglobus_common___GLOBUS_FLAVOR_NAME__la_DEPENDENCIES = @OS_OBJS@
 
 EXTRA_DIST = \
 	globus_callback_nothreads.c \
@@ -143,5 +148,8 @@ EXTRA_DIST = \
 	globus_thread_solaristhreads.h \
 	globus_thread_sproc.c \
 	globus_thread_sproc.h
+
+EXTRA_HEADERS = \
+        globus_netos_dir.h
 
 include $(top_srcdir)/globus_automake_post

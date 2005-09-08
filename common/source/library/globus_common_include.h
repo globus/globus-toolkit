@@ -18,11 +18,16 @@
 
 #include "globus_config.h"
 
+#if defined(TARGET_ARCH_NETOS) && !defined(BUILD_DEBUG)
+#define GlobusFuncName(func) \
+    extern const char * _globus_func_name;
+#else
 #ifdef __GNUC__
 #define GlobusFuncName(func) static const char * _globus_func_name \
     __attribute__((__unused__)) = #func
 #else
 #define GlobusFuncName(func) static const char * _globus_func_name = #func
+#endif
 #endif
 
 extern const char * _globus_func_name;
@@ -126,6 +131,7 @@ extern const char * _globus_func_name;
 #undef boolean
 #undef critical
 #undef skip
+#undef local
 
 #endif
 
@@ -138,10 +144,10 @@ extern const char * _globus_func_name;
 #endif
 
 #if HAVE_DIR
-#if defined(HAVE_DIRENT_H)
+#  if defined(HAVE_DIRENT_H)
 #   include <dirent.h>
 #   define NAMLEN(dirent) strlen((dirent)->d_name)
-#else
+#  else
 #   define dirent direct
 #   define NAMLEN(dirent) (dirent)->d_namlen
 #   define HAVE_DIRENT_NAMELEN 1
@@ -154,15 +160,29 @@ extern const char * _globus_func_name;
 #   if defined(HAVE_NDIR_H)
 #       include <ndir.h>
 #   endif
-#endif
+#  endif
+#elif defined TARGET_ARCH_NETOS
+#include "globus_netos_libc.h"
 #else
-#define DIR void
-struct dirent { int dummy; };
+typedef void * DIR;
 #endif
 
 #if defined(HAVE_SYS_UIO_H)
 #   include <sys/uio.h>
 #endif
+
+#ifndef HAVE_INET_PTON
+#define HAVE_INET_PTON 1
+#define GLOBUS_IMPLEMENT_INET_PTON 1
+int inet_pton(int af, const char *src, void *dst);
+#endif /* !HAVE_INET_PTON */
+
+#ifndef HAVE_INET_ADDR
+#define HAVE_INET_ADDR 1
+#define GLOBUS_IMPLEMENT_INET_ADDR 1
+extern uint32_t inet_addr(const char * cp);
+#endif /* !HAVE_INET_ADDR */
+
 
 #include <limits.h>
 #include <assert.h>

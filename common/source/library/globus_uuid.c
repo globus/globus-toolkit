@@ -38,6 +38,9 @@
 #define l_getpid() ((int) GetCurrentProcessId())
 #define l_getuid() ((int) globus_hashtable_string_hash(                     \
     getenv("USERNAME") ? getenv("USERNAME") : "noonespecial", INT_MAX))
+#elif defined(TARGET_ARCH_NETOS)
+#define l_getpid() 1
+#define l_getuid() 0
 #else
 #define l_getpid() ((int) getpid())
 #define l_getuid() ((int) getuid())

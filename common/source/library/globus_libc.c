@@ -54,558 +54,6 @@ extern int h_errno;
 #include "appconf_api.h"
 #endif
 
-#ifndef HAVE_INET_ADDR
-static
-uint32_t
-inet_addr(const char * cp)
-{
-    uint32_t output;
-    int rc;
-    unsigned int octets[4];
-
-    rc = sscanf(
-        cp,
-        "%d.%d.%d.%d",
-        &octets[0], &octets[1], &octets[2], &octets[3]);
-
-    if (rc < 4)
-    {
-        return -1;
-    }
-    else
-    {
-        output = 0;
-        output |= octets[0];
-        output |= octets[1] << 8;
-        output |= octets[2] << 16;
-        output |= octets[3] << 24;
-
-        return output;
-    }
-}
-#endif
-
-#ifndef HAVE_INET_PTON
-static
-int
-inet_pton(int af, const char * src, void *dst)
-{
-    uint32_t                            addr;
-    
-    if (af != AF_INET || src == NULL || dst == NULL)
-    {
-        errno = EAFNOSUPPORT;
-        return -1;
-    }
-    
-    addr = inet_addr(src);
-
-    if (addr != 0xffffffff)
-    {
-        struct in_addr * dstaddr = dst;
-
-        dstaddr->s_addr = addr;
-
-        return 1;
-    }
-    else
-    {
-        return 0;
-    }
-}
-#endif
-
-#ifndef HAVE_GETADDRINFO
-int
-getaddrinfo(
-    const char *                        node,
-    const char *                        service,
-    const struct addrinfo *             hints,
-    struct addrinfo **                  res)
-{
-    /* Version of getaddrinfo for hosts without IPV6 */
-    struct hostent *                    hostent = NULL;
-    struct hostent                      hostent_res;
-    char                                buffer[256];
-#ifdef HAVE_GETSERVBYNAME
-    struct servent *                    servent;
-    struct protoent *                   proto;
-#endif
-    char *                              proto_name = NULL;
-    int                                 h_errno;
-    struct addrinfo *                   addrinfo;
-    int                                 service_port = 0;
-    static char *                       aliases = NULL;
-    static char *                       addr_any = NULL;
-    static struct hostent               localhostent = {
-        "localhost",
-        &aliases,
-        AF_INET,
-        sizeof(struct sockaddr_in),
-        &addr_any
-    };
-    globus_result_t                     result = GLOBUS_SUCCESS;
-
-    if (hints != NULL)
-    {
-        if (hints->ai_family != AF_UNSPEC && hints->ai_family != AF_INET)
-        {
-            /* Unsupported by this implementation */
-            result = globus_error_put(
-                globus_error_wrap_errno_error(
-                    GLOBUS_COMMON_MODULE,
-                    0,
-                    0 + GLOBUS_EAI_ERROR_OFFSET,
-                    __FILE__,
-                    "globus_libc_getaddrinfo",
-                    __LINE__,
-                    "%s",
-                    "Unsupported family\n"));
-            goto error_out;
-        }
-    }
-
-    if (node != NULL)
-    {
-        if (hints != NULL && (hints->ai_flags & AI_NUMERICHOST))
-        {
-            struct sockaddr_in          addr;
-
-            addr.sin_addr.s_addr = inet_addr(node);
-
-            if ((int) addr.sin_addr.s_addr != -1)
-            {
-                    hostent = globus_libc_gethostbyaddr_r(
-                        (void *) &addr,
-                        sizeof(addr),
-                        AF_INET,
-                        &hostent_res,
-                        buffer,
-                        sizeof(buffer),
-                        &h_errno);
-            }
-            else
-            {
-                hostent = &localhostent;
-            }
-        }
-        else
-        {
-            hostent = globus_libc_gethostbyname_r(
-                    (char *) node,
-                    &hostent_res,
-                    buffer,
-                    sizeof(buffer),
-                    &h_errno);
-        }
-        if (hostent == NULL)
-        {
-            result = globus_error_put(
-                globus_error_wrap_errno_error(
-                    GLOBUS_COMMON_MODULE,
-                    h_errno,
-                    0 + GLOBUS_EAI_ERROR_OFFSET,
-                    __FILE__,
-                    "globus_libc_getaddrinfo",
-                    __LINE__,
-                    "%s",
-                    "gethostbyname_r failed\n"));
-
-            goto error_out;
-        }
-    }
-
-    if (hints != NULL && hints->ai_protocol != 0)
-    {
-#ifdef HAVE_GETPROTOBYNUMBER
-        proto = getprotobynumber(hints->ai_protocol);
-
-        if (proto != NULL)
-        {
-            proto_name = proto->p_name;
-
-            if (hints->ai_socktype != 0)
-            {
-                if ((proto->p_proto == IP_TCP &&
-                    hints->ai_socktype != SOCK_STREAM) ||
-                    (proto->p_proto == IP_UDP &&
-                    hints->ai_socktype != SOCK_DGRAM))
-                {
-                    result = globus_error_put(
-                        globus_error_wrap_errno_error(
-                            GLOBUS_COMMON_MODULE,
-                            0,
-                            0 + GLOBUS_EAI_ERROR_OFFSET,
-                            __FILE__,
-                            "globus_libc_getaddrinfo",
-                            __LINE__,
-                            "%s",
-                            "mismatch of proto and sock type\n"));
-                }
-            }
-        }
-        else
-        {
-            result = globus_error_put(
-                globus_error_wrap_errno_error(
-                    GLOBUS_COMMON_MODULE,
-                    errno,
-                    GLOBUS_EAI_ERROR_OFFSET,
-                    __FILE__,
-                    "globus_libc_getaddrinfo",
-                    __LINE__,
-                    "%s",
-                    "getprotobynumber failed\n"));
-            goto error_out;
-        }
-#else
-        if (hints->ai_protocol == IP_TCP)
-        {
-            proto_name = "tcp";
-        }
-        else if (hints->ai_protocol == IP_UDP)
-        {
-            proto_name = "udp";
-        }
-#endif
-    }
-    else if (hints != NULL && hints->ai_socktype != 0)
-    {
-        if (hints->ai_socktype == SOCK_STREAM)
-        {
-            proto_name = "tcp";
-        }
-        else if (hints->ai_socktype == SOCK_DGRAM)
-        {
-            proto_name = "udp";
-        }
-
-        if (proto_name == NULL)
-        {
-            result = globus_error_put(
-                globus_error_wrap_errno_error(
-                    GLOBUS_COMMON_MODULE,
-                    errno,
-                    GLOBUS_EAI_ERROR_OFFSET,
-                    __FILE__,
-                    "globus_libc_getaddrinfo",
-                    __LINE__,
-                    "%s",
-                    "unknown socket type\n"));
-            goto error_out;
-        }
-    }
-
-    if (service != NULL)
-    {
-#ifdef HAVE_GETSERVBYNAME
-        servent = getservbyname(service, proto_name);
-
-        if (servent != NULL)
-        {
-            service_port = servent->s_port;
-        }
-#else
-        int tens = 1;
-
-        while (isdigit(*service))
-        {
-            service_port += (*service - '0') * tens;
-            service++;
-
-            tens *= 10;
-        }
-#endif
-    }
-
-    addrinfo = calloc(1, sizeof(struct addrinfo));
-
-    if (addrinfo == NULL)
-    {
-
-        result = globus_error_put(
-            globus_error_construct_error(
-                GLOBUS_COMMON_MODULE,
-                GLOBUS_NULL,
-                0,
-                __FILE__,
-                "globus_libc_addr_to_contact_string",
-                __LINE__,
-                "malloc failed"));
-        goto error_out;
-    }
-
-    addrinfo->ai_family = AF_INET;
-
-    if (strcmp(proto_name, "tcp") == 0)
-    {
-        addrinfo->ai_socktype = SOCK_STREAM;
-        addrinfo->ai_protocol = IP_TCP;
-    }
-    else if (strcmp(proto_name, "udp") == 0)
-    {
-        addrinfo->ai_socktype = SOCK_DGRAM;
-        addrinfo->ai_protocol = IP_UDP;
-    }
-
-    if (node != NULL && hints != NULL && (hints->ai_flags & AI_CANONNAME))
-    {
-        addrinfo->ai_canonname = globus_libc_strdup(hostent->h_name);
-    }
-
-    if (node == NULL)
-    {
-        if (hints != NULL && (hints->ai_flags & AI_PASSIVE))
-        {
-            /* Unspecified if node is null and AI_PASSIVE is set */
-            struct sockaddr_in *        a;
-
-            addrinfo->ai_addrlen = sizeof(struct sockaddr_in);
-            addrinfo->ai_addr = a = calloc(1, addrinfo->ai_addrlen);
-            if (a == NULL)
-            {
-                result = globus_error_put(
-                    globus_error_construct_error(
-                        GLOBUS_COMMON_MODULE,
-                        GLOBUS_NULL,
-                        0,
-                        __FILE__,
-                        "getaddrinfo",
-                        __LINE__,
-                        "malloc failed"));
-
-                goto free_addrinfo_out;
-            }
-            a->sin_addr.s_addr = INADDR_ANY;
-            a->sin_family = AF_INET;
-        }
-        else
-        {
-            /* Set to loopback if node is null and AI_PASSIVE is not set */
-            struct sockaddr_in *        a;
-
-            addrinfo->ai_addrlen = sizeof(struct sockaddr_in);
-            a = malloc(addrinfo->ai_addrlen);
-
-            if (a == NULL)
-            {
-                result = globus_error_put(
-                    globus_error_construct_error(
-                        GLOBUS_COMMON_MODULE,
-                        GLOBUS_NULL,
-                        0,
-                        __FILE__,
-                        "getaddrinfo",
-                        __LINE__,
-                        "malloc failed"));
-
-                goto free_addrinfo_out;
-            }
-
-            a->sin_family = AF_INET;
-#ifdef INADDR_LOOPBACK
-            a->sin_addr.s_addr = INADDR_LOOPBACK;
-#else
-            a->sin_addr.s_addr = INADDR_ANY;
-#endif
-            a->sin_port = service_port;
-
-            addrinfo->ai_addr = (struct sockaddr *) a;
-        }
-    }
-    else
-    {
-        int                             i;
-        struct addrinfo *               tmp = addrinfo;
-
-        for (i = 0; hostent->h_addr_list[i] != NULL; i++)
-        {
-            struct sockaddr_in *        a;
-            if (i != 0)
-            {
-                tmp->ai_next = malloc(sizeof(struct addrinfo));
-
-                if (tmp->ai_next == NULL)
-                {
-                    result = globus_error_put(
-                        globus_error_construct_error(
-                            GLOBUS_COMMON_MODULE,
-                            GLOBUS_NULL,
-                            0,
-                            __FILE__,
-                            "getaddrinfo",
-                            __LINE__,
-                            "malloc failed"));
-                    goto free_addrinfo_out;
-                }
-
-                memcpy(tmp->ai_next, addrinfo, sizeof(struct addrinfo));
-
-                tmp = tmp->ai_next;
-                tmp->ai_next = NULL;
-            }
-
-            if (hostent->h_addrtype != AF_INET)
-            {
-                result = globus_error_put(
-                    globus_error_wrap_errno_error(
-                        GLOBUS_COMMON_MODULE,
-                        errno,
-                        GLOBUS_EAI_ERROR_OFFSET,
-                        __FILE__,
-                        "getaddrinfo",
-                        __LINE__,
-                        "%s",
-                        "unknown address type\n"));
-                goto free_addrinfo_out;
-            }
-            tmp->ai_addrlen = sizeof(struct sockaddr_in);
-            tmp->ai_addr = a = malloc(tmp->ai_addrlen);
-            if (a == NULL)
-            {
-                result = globus_error_put(
-                    globus_error_construct_error(
-                        GLOBUS_COMMON_MODULE,
-                        GLOBUS_NULL,
-                        0,
-                        __FILE__,
-                        "getaddrinfo",
-                        __LINE__,
-                        "malloc failed"));
-                goto free_addrinfo_out;
-            }
-            a->sin_family = AF_INET;
-            memcpy(&a->sin_addr,
-                   hostent->h_addr_list[i],
-                   tmp->ai_addrlen);
-            a->sin_port = service_port;
-        }
-    }
-    *res = addrinfo;
-
-    return result;
-
-free_addrinfo_out:
-    globus_libc_freeaddrinfo(addrinfo);
-error_out:
-    return result;
-}
-#endif
-
-#ifndef HAVE_GETNAMEINFO
-int
-getnameinfo(
-    const struct sockaddr *             sa,
-    globus_socklen_t                    sa_len,
-    char *                              host,
-    size_t                              hostlen,
-    char *                              serv,
-    size_t                              servlen,
-    int                                 flags)
-{
-    struct hostent *                    hostent = NULL;
-    char                                ip_addr[16];
-    char                                service_string[10];
-    struct hostent                      hostent_res;
-    char                                buffer[256];
-
-    if (host != NULL)
-    {
-        if (!(flags & NI_NUMERICHOST))
-        {
-            hostent = globus_libc_gethostbyaddr_r(
-                (void *) &sa,
-                sa_len,
-                AF_INET,
-                &hostent_res,
-                buffer,
-                sizeof(buffer),
-                &h_errno);
-        }
-
-        if (hostent == NULL && (flags & NI_NAMEREQD))
-        {
-            return -1;
-        }
-        else if (hostent == NULL)
-        {
-            if (sa->sa_family == AF_INET)
-            {
-                uint32_t address = ((struct sockaddr_in *) sa)->sin_addr.s_addr;
-
-                sprintf(ip_addr,
-                        "%u.%u.%u.%u",
-                        (unsigned int) (address & 0xff000000) >> 24,
-                        (unsigned int) (address & 0x00ff0000) >> 16,
-                        (unsigned int) (address & 0x0000ff00) >> 8,
-                        (unsigned int) (address & 0x000000ff));
-
-                strncpy(host, ip_addr, hostlen);
-            }
-            else
-            {
-                return -1;
-            }
-        }
-        else
-        {
-            strncpy(host, hostent->h_name, hostlen);
-
-            if (flags & NI_NOFQDN)
-            {
-                char * tmp = strchr(host, '.');
-
-                if (tmp)
-                {
-                    *tmp = '\0';
-                }
-            }
-        }
-    }
-
-    if (serv != NULL)
-    {
-        uint16_t                        port;
-        struct servent *                servent = NULL;
-
-        port = (uint16_t) ((struct sockaddr_in *) sa)->sin_port;
-
-#ifdef HAVE_GETSERVBYNAME
-        if (!(flags & NI_NUMERICSERV))
-        {
-            servent = getservbyport(
-                    port,
-                    flags & (NI_DGRAM) ? "udp" : (char *) NULL);
-        }
-#endif
-        if (servent == NULL)
-        {
-            sprintf(service_string, "%hu", port);
-
-            strncpy(serv, service_string, servlen);
-        }
-        else
-        {
-#ifdef HAVE_GETSERVBYNAME
-            strncpy(serv, servent->s_name);
-#endif
-        }
-    }
-    return 0;
-}
-/* getnameinfo() */
-#endif
-
-#ifndef HAVE_GETADDRINFO
-static
-char * gai_strerror(
-    int                                 rc)
-{
-    return "name resolution error";
-}
-#endif
-
-
 #ifndef HAVE_GETEUID
 #define geteuid() 0
 #endif
@@ -1467,7 +915,7 @@ globus_libc_gethostname(char *name, int len)
 
     /* ToDo: This change should perhaps be applied to unix side as well?
      */
-    #ifdef WIN32
+#ifdef WIN32
         /*
      * If the environment variable is set, always return that.
      * Otherwise, we can drop through to the caching code.
@@ -1498,7 +946,7 @@ globus_libc_gethostname(char *name, int len)
         strncpy(hostname, env, MAXHOSTNAMELEN);
         hostname_length = strlen(hostname);
     }
-    #endif
+#endif
     if (hostname_length == 0U)
     {
         globus_addrinfo_t               hints;
@@ -1573,16 +1021,45 @@ globus_libc_gethostname(char *name, int len)
     globus_mutex_unlock(&gethostname_mutex);
     return(0);
 #elif defined(TARGET_ARCH_NETOS)
-    char * tmp = NAGetAppIpAddress();
-
-    if (tmp != NULL)
+    char * env;
+    if ((env = globus_libc_getenv("GLOBUS_HOSTNAME")) != GLOBUS_NULL)
     {
-        strcpy(name, tmp);
-
-        return 0;
+        size_t hlen = strlen(env);
+    	if (hlen < (size_t) len)
+    	{
+    	    size_t i;
+    	    strcpy(name, env);
+    	    for (i=0; i < hlen; i++)
+    		name[i] = tolower(name[i]);
+    	    return 0;
+    	}
+    	else
+    	{
+    	    errno=EFAULT;
+    	    return(-1);
+    	}
     }
-    errno=EINVAL;
-    return -1;
+    else if (NAGetAppUseStaticIP())
+    {
+        char * tmp = NAGetAppIpAddress();
+
+        if (tmp != NULL)
+        {
+            strcpy(name, tmp);
+
+            return 0;
+        }
+    }
+    else if (len < 5)
+    {
+        errno = EFAULT;
+        return -1;
+    }
+    else
+    {
+        strncpy(name, "netos", 5);
+    }
+    return 0;
 #else
     errno=EINVAL;
     return -1;
@@ -2914,6 +2391,25 @@ globus_libc_lseek(int fd,
 } /* globus_libc_lseek() */
 
 
+#if !defined(HAVE_DIR) && defined(TARGET_ARCH_NETOS)
+
+static
+void
+globus_l_opendir_callback(
+    void *                              io_request_callback)
+{
+    NAFS_IO_REQUEST_CB                  fs_request;
+    DIR *                               dirp;
+
+    fs_request = io_request_callback;
+    dirp = (DIR *) fs_request->user_data;
+
+    dirp->error_code = fs_request->error_code;
+
+    tx_semaphore_put(&dirp->sem);
+}
+#endif
+
 
 #undef globus_libc_opendir
 extern DIR *
@@ -2932,10 +2428,94 @@ globus_libc_opendir(char *filename)
 
     errno=save_errno;
     return dirp;
-#else
-    globus_assert_string(0, "opendir not present on this platform");
-    errno = EINVAL;
-    return NULL;
+#elif defined(TARGET_ARCH_NETOS)
+    int rc;
+    DIR * dirp;
+    unsigned int mask;
+    NAFS_IO_REQUEST_CB fs_request;
+    int save_errno = 0;
+
+    dirp = calloc(1, sizeof(DIR));
+    if (dirp == NULL)
+    {
+        save_errno = ENOMEM;
+
+        goto out;
+    }
+
+    rc = tx_semaphore_create(&dirp->sem, "opendir", 0);
+    if (rc != TX_SUCCESS)
+    {
+        save_errno = ENOMEM;
+
+        goto free_dir_out;
+    }
+    rc = NAFS_init_io_request_cb(
+            &fs_request,
+            globus_l_opendir_callback,
+            (unsigned int) &dirp->sem);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        save_errno = ENOMEM;
+
+        goto free_sem_out;
+    }
+
+    mask = NASYSACC_FS_GROUP1_READ|NASYSACC_FS_GROUP2_READ|
+           NASYSACC_FS_GROUP3_READ|NASYSACC_FS_GROUP4_READ|
+           NASYSACC_FS_GROUP5_READ|NASYSACC_FS_GROUP6_READ|
+           NASYSACC_FS_GROUP7_READ|NASYSACC_FS_GROUP8_READ|
+           NASYSACC_FS_GROUP1_WRITE|NASYSACC_FS_GROUP2_WRITE|
+           NASYSACC_FS_GROUP3_WRITE|NASYSACC_FS_GROUP4_WRITE|
+           NASYSACC_FS_GROUP5_WRITE|NASYSACC_FS_GROUP6_WRITE|
+           NASYSACC_FS_GROUP7_WRITE|NASYSACC_FS_GROUP8_WRITE;
+
+    rc = NAFSdir_entry_count(
+            filename,
+            mask,
+            &dirp->dir_entry_count,
+            fs_request);
+
+    if (rc != NAFS_SUCCESS)
+    {
+        save_errno = ENOMEM;
+
+        goto free_sem_out;
+    }
+
+    rc = tx_sem_get(&sem, TX_WAIT_FOREVER);
+
+    if (rc != TX_SUCCESS)
+    {
+        save_errno = ENOMEM;
+    }
+    else if (dirp->error_code != 0)
+    {
+        switch (dirp->error_code)
+        {
+            case NAFS_DIR_ENTRY_NOT_FOUND:
+                save_errno = ENODIR;
+                break;
+            case NAFS_NO_READ_PERMISSIONS:
+                save_errno = EPERM;
+                break;
+            default:
+                save_errno = EINVAL;
+                break;
+        }
+    }
+
+free_sem_out;
+    if (save_errno != 0)
+    {
+        tx_semaphore_delete(&dirp->sem);
+free_dir_out:
+        free(dirp);
+        dirp = NULL;
+        errno = save_errno;
+    }
+out:
+    return dirp;
 #endif
 }
 
@@ -3174,6 +2754,9 @@ globus_libc_readdir_r(DIR *dirp,
 int
 globus_libc_vprintf_length(const char * fmt, va_list ap)
 {
+#ifdef TARGET_ARCH_NETOS
+    return vsprintf(NULL, fmt, ap);
+#else
     static FILE *			devnull = GLOBUS_NULL;
     int save_errno;
 
@@ -3205,6 +2788,7 @@ globus_libc_vprintf_length(const char * fmt, va_list ap)
     globus_libc_unlock();
 
     return globus_libc_vfprintf(devnull, fmt, ap);
+#endif
 }
 
 int

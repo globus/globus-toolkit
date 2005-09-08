@@ -210,6 +210,10 @@ typedef struct timeval  globus_reltime_t;
         (Abstime).tv_sec = timebuffer.time;               \
         (Abstime).tv_nsec = (timebuffer.millitm * 1000);  \
     }
+/*
+ * On Net+OS on ARM, this is needed if the device is not running NTP or
+ * does not have a RTC. In this case, times will overflow after about a 
+ * year and a half.
 #elif defined(TARGET_ARCH_NETOS)
 #   define  GlobusTimeAbstimeGetCurrent(Abstime)          \
     {                                                     \
@@ -217,6 +221,7 @@ typedef struct timeval  globus_reltime_t;
         (Abstime).tv_sec = ticks / NABspTicksPerSecond;  \
         (Abstime).tv_nsec = (ticks % NABspTicksPerSecond) * 1000000000;  \
     }
+*/
 #else
 #   define  GlobusTimeAbstimeGetCurrent(Abstime)          \
     {                                                     \

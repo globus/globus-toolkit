@@ -29,7 +29,7 @@
 #include <string.h>
 #include "globus_common.h"
 
-const char *                            _globus_func_name = NULL;
+const char *                            _globus_func_name = "";
 
 typedef struct
 {

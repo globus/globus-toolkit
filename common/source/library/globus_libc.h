@@ -369,6 +369,8 @@ struct addrinfo
     struct addrinfo *                   ai_next;
 };
 
+#define GLOBUS_IMPLEMENT_GETADDRINFO 1
+#define HAVE_GETADDRINFO
 int
 getaddrinfo(
     const char *                        node,
@@ -378,6 +380,8 @@ getaddrinfo(
 #endif
 
 #ifndef HAVE_GETNAMEINFO
+#define GLOBUS_IMPLEMENT_GETNAMEINFO 1
+#define HAVE_GETNAMEINFO
 int
 getnameinfo(
     const struct sockaddr *             sa,
