@@ -67,7 +67,7 @@ static const char * globus_l_gfs_local_version = "IPC Version 0.1";
 static globus_mutex_t                   globus_l_ipc_mutex;
 static globus_hashtable_t               globus_l_ipc_handle_table;
 static globus_hashtable_t               globus_l_ipc_request_table;
-static globus_i_gfs_community_t *       globus_l_gfs_ipc_community_default;
+globus_i_gfs_community_t *              globus_l_gfs_ipc_community_default;
 static globus_list_t *                  globus_l_gfs_ipc_community_list = NULL;
 static globus_xio_stack_t               globus_l_gfs_ipc_xio_stack;
 
@@ -144,7 +144,6 @@ typedef struct globus_l_gfs_ipc_connection_s
     char *                              subject;
     char *                              host_id;
     globus_bool_t                       map_user;
-    int                                 community_ndx;
 } globus_l_gfs_ipc_connection_t;
 
 typedef struct globus_i_gfs_ipc_handle_s
@@ -1836,12 +1835,64 @@ globus_l_gfs_ipc_add_server_accept_cb(
     globus_result_t                     result,
     void *                              user_arg)
 {
+    char *                              remote_dn;
+    OM_uint32                           min_stat;
+    OM_uint32                           maj_stat;
+    gss_buffer_desc                     subject_buf = GSS_C_EMPTY_BUFFER;
+    gss_OID                             mech_type;
+    gss_name_t                          dn_name;
+    char *                              remote_contact;
     globus_result_t                     res;
     globus_i_gfs_ipc_handle_t *         ipc;
     GlobusGFSName(globus_l_gfs_ipc_add_server_accept_cb);
     GlobusGFSDebugEnter();
 
     if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+    result = globus_xio_handle_cntl(
+        handle,
+        globus_l_gfs_tcp_driver,
+        GLOBUS_XIO_TCP_GET_REMOTE_NUMERIC_CONTACT,
+        &remote_contact);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+
+    result = globus_xio_handle_cntl(
+        handle,
+        globus_l_gfs_gsi_driver,
+        GLOBUS_XIO_GSI_GET_PEER_NAME,
+        &dn_name);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+    maj_stat = gss_display_name(
+        &min_stat,
+        dn_name,
+        &subject_buf,
+        &mech_type);
+    if(maj_stat != GSS_S_COMPLETE)
+    {
+    }
+    remote_dn = subject_buf.value;
+    /* TODO: check remote_dn against acceptable list */
+
+    result = globus_xio_handle_cntl(
+        handle,
+        globus_l_gfs_tcp_driver,
+        GLOBUS_XIO_TCP_GET_REMOTE_NUMERIC_CONTACT,
+        &remote_contact);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+
+    /* check IP allow */
+    if(globus_i_gfs_config_allow_addr(remote_contact, GLOBUS_TRUE))
     {
         goto error;
     }
@@ -1893,6 +1944,11 @@ error:
     /* perhaps want to log that a session could not be opened */
     globus_i_gfs_log_message(
         GLOBUS_I_GFS_LOG_ERR, "An accepted IPC connection failed to open\n");
+    result = globus_xio_register_close(
+        handle,
+        NULL,
+        NULL,
+        NULL);
 
     GlobusGFSDebugExitWithError();
 }
@@ -2220,8 +2276,7 @@ globus_result_t
 globus_l_gfs_ipc_handle_connect(
     globus_gfs_session_info_t *         session_info,
     globus_gfs_ipc_iface_t *            iface,
-    globus_i_gfs_community_t *          community,
-    int                                 community_ndx,
+    const char *                        community_name,
     globus_gfs_ipc_open_callback_t      cb,
     void *                              user_arg,
     globus_gfs_ipc_error_callback_t     error_cb,
@@ -2263,7 +2318,7 @@ globus_l_gfs_ipc_handle_connect(
         globus_hashtable_int_keyeq);
 
     ipc->connection_info.version = strdup(globus_l_gfs_local_version);
-    ipc->connection_info.community = strdup(community->name);
+    ipc->connection_info.community = strdup(community_name);
     ipc->connection_info.cookie = NULL;
     ipc->connection_info.subject = 
         session_info->subject ? strdup(session_info->subject) : NULL;
@@ -2271,7 +2326,6 @@ globus_l_gfs_ipc_handle_connect(
         session_info->username ? strdup(session_info->username) : NULL;
     ipc->connection_info.host_id = strdup(session_info->host_id);
     ipc->connection_info.map_user = session_info->map_user;
-    ipc->connection_info.community_ndx = community_ndx;
 
     if(allowed_to_connect)
     {
@@ -2413,6 +2467,41 @@ ipc_error:
     return result;
 }
 
+globus_result_t
+globus_gfs_ipc_handle_connect(
+    globus_gfs_session_info_t *         session_info,
+    const char *                        community_name,
+    globus_gfs_ipc_open_callback_t      cb,
+    void *                              user_arg,
+    globus_gfs_ipc_error_callback_t     error_cb,
+    void *                              error_user_arg)
+{
+    globus_result_t                     res;
+
+    globus_mutex_lock(&globus_l_ipc_mutex);
+    {
+        res = globus_l_gfs_ipc_handle_connect(
+            session_info,
+            &globus_gfs_ipc_default_iface,
+            community_name,
+            cb,
+            user_arg,
+            error_cb,
+            error_user_arg);
+        if(res != GLOBUS_SUCCESS)
+        {
+            goto error;
+        }
+    }
+    globus_mutex_unlock(&globus_l_ipc_mutex);
+
+    return GLOBUS_SUCCESS;
+error:
+    globus_mutex_unlock(&globus_l_ipc_mutex);
+
+    return res;
+}
+
 
 static
 globus_i_gfs_ipc_handle_t *
@@ -2446,40 +2535,33 @@ globus_l_gfs_ipc_handle_lookup(
 }
 
 globus_result_t
-globus_gfs_ipc_handle_obtain_by_path(
-    int *                               p_handle_count,
-    const char *                        pathname,
+globus_gfs_ipc_handle_obtain(
     globus_gfs_session_info_t *         session_info,
+    const char *                        repo_name,
     globus_gfs_ipc_iface_t *            iface,
     globus_gfs_ipc_open_callback_t      cb,
     void *                              user_arg,
     globus_gfs_ipc_error_callback_t     error_cb,
     void *                              error_user_arg)
 {
-    globus_l_gfs_ipc_connection_t       tmp_ci;
     int                                 i;
     globus_i_gfs_ipc_handle_t *         ipc;
-    int                                 handle_count;
     globus_result_t                     res;
-    globus_list_t *                     reserved_list = NULL;
-    globus_list_t *                     reserved_ndx = NULL;
-    int                                 tmp_ndx;
-    globus_gfs_session_info_t           tmp_si;
+    globus_bool_t                       found = GLOBUS_FALSE;
     globus_i_gfs_community_t *          community;
-    GlobusGFSName(globus_gfs_ipc_handle_obtain_by_path);
+    globus_l_gfs_ipc_connection_t       tmp_ci;
+    GlobusGFSName(globus_gfs_ipc_handle_obtain);
     GlobusGFSDebugEnter();
 
-    handle_count = *p_handle_count;
     /* find the community */
     globus_mutex_lock(&globus_l_ipc_mutex);
     {
-        community = globus_l_gfs_ipc_find_community(pathname);
+        community = globus_l_gfs_ipc_find_community(repo_name);
         if(community == NULL)
         {
             res = GlobusGFSErrorIPC();
-            goto community_error;
+            goto error_community;
         }
-
         memset(&tmp_ci, '\0', sizeof(globus_l_gfs_ipc_connection_t));
         tmp_ci.version = (char *) globus_l_gfs_local_version;
         tmp_ci.community = community->name;
@@ -2487,125 +2569,70 @@ globus_gfs_ipc_handle_obtain_by_path(
         tmp_ci.username = session_info->username;
         tmp_ci.subject = session_info->subject;
         tmp_ci.map_user = session_info->map_user;
-
-        memcpy(&tmp_si, session_info, sizeof(globus_gfs_session_info_t));
+        tmp_ci.host_id = session_info->host_id;
 
         /* first get anything that is cached */
-        for(i = 0; i < community->cs_count && handle_count > 0; i++)
+        for(i = 0; i < community->cs_count && !found; i++)
         {
-            tmp_si.host_id = community->cs[i];
-            tmp_ci.host_id = community->cs[i];
-            ipc = globus_l_gfs_ipc_handle_lookup(&tmp_ci);
-            if(ipc != NULL)
+            if(strcmp(session_info->host_id, community->cs[i]) == 0)
             {
-                /* i got it safely from the big lock, i have not given
-                    a ref to a user yet so i can safely mess with ipc */
-                ipc->state = GLOBUS_GFS_IPC_STATE_GETTING;
-                ipc->open_cb = cb;
-                ipc->user_arg = user_arg;
-                ipc->error_cb = error_cb;
-                ipc->error_arg = error_user_arg;
-                globus_l_gfs_session_info_free(ipc->session_info);
-                ipc->session_info =
-                    globus_l_gfs_ipc_session_info_copy(&tmp_si);
-                if(ipc->session_info == NULL)
+                found = GLOBUS_TRUE;
+                ipc = globus_l_gfs_ipc_handle_lookup(&tmp_ci);
+                if(ipc != NULL)
                 {
-                    res = GlobusGFSErrorIPC();
-                    goto open_error;
+                    /* i got it safely from the big lock, i have not given
+                        a ref to a user yet so i can safely mess with ipc */
+                    ipc->state = GLOBUS_GFS_IPC_STATE_GETTING;
+                    ipc->open_cb = cb;
+                    ipc->user_arg = user_arg;
+                    ipc->error_cb = error_cb;
+                    ipc->error_arg = error_user_arg;
+                    globus_l_gfs_session_info_free(ipc->session_info);
+                    ipc->session_info =
+                        globus_l_gfs_ipc_session_info_copy(session_info);
+                    if(ipc->session_info == NULL)
+                    {
+                        res = GlobusGFSErrorIPC();
+                        goto error_open;
+                    }
+                    globus_xio_handle_cancel_operations(
+                        ipc->xio_handle, GLOBUS_XIO_CANCEL_READ);
                 }
-                handle_count--;
-
-                globus_xio_handle_cancel_operations(
-                    ipc->xio_handle, GLOBUS_XIO_CANCEL_READ);
-            }
-            /* if unused add to list for connection */
-            else
-            {
-                globus_list_insert(&reserved_list, community->cs[i]);
-                globus_list_insert(&reserved_ndx, (void *) i);
-            }
-        }
-
-        /* get all of the unused hosts that may not have been cached */
-        while(handle_count > 0 && !globus_list_empty(reserved_list))
-        {
-            tmp_si.host_id = (char *) 
-                globus_list_remove(&reserved_list, reserved_list);
-            tmp_ndx = (int) globus_list_remove(&reserved_ndx, reserved_ndx);
-            res = globus_l_gfs_ipc_handle_connect(
-                &tmp_si,
-                iface,
-                community,
-                tmp_ndx,
-                cb,
-                user_arg,
-                error_cb,
-                error_user_arg);
-            if(res != GLOBUS_SUCCESS)
-            {
-                goto open_error;
-            }
-            handle_count--;
-        }
-
-        /* if handle count is still not statisfied repeat walking the list
-           picking then up in order */
-        i = 0;
-        while(handle_count > 0)
-        {
-            tmp_si.host_id = community->cs[i];
-            ipc = globus_l_gfs_ipc_handle_lookup(&tmp_ci);
-            if(ipc == NULL)
-            {
-                res = globus_l_gfs_ipc_handle_connect(
-                    &tmp_si,
-                    iface,
-                    community,
-                    i,
-                    cb,
-                    user_arg,
-                    error_cb,
-                    error_user_arg);
-                if(res != GLOBUS_SUCCESS)
+                /* if unused add to list for connection */
+                else
                 {
-                    goto open_error;
+                    res = globus_l_gfs_ipc_handle_connect(
+                        session_info,
+                        iface,
+                        community->name,
+                        cb,
+                        user_arg,
+                        error_cb,
+                        error_user_arg);
+                    if(res != GLOBUS_SUCCESS)
+                    {
+                        goto error_open;
+                    }
                 }
             }
-            else
-            {
-                ipc->state = GLOBUS_GFS_IPC_STATE_GETTING;
-                ipc->open_cb = cb;
-                ipc->user_arg = user_arg;
-                ipc->error_cb = error_cb;
-                ipc->error_arg = error_user_arg;
-                globus_l_gfs_session_info_free(ipc->session_info);
-                ipc->session_info =
-                    globus_l_gfs_ipc_session_info_copy(&tmp_si);
-                globus_xio_handle_cancel_operations(
-                    ipc->xio_handle, GLOBUS_XIO_CANCEL_READ);
-            }
-            handle_count--;
-
-            i++;
-            if(i == community->cs_count)
-            {
-                i = 0;
-            }
         }
-        globus_list_free(reserved_list);
-        globus_list_free(reserved_ndx);
+
+        if(!found)
+        {
+            res = GlobusGFSErrorIPC();
+            goto error_found;
+        }
     }
     globus_mutex_unlock(&globus_l_ipc_mutex);
 
     GlobusGFSDebugExit();
     return GLOBUS_SUCCESS;
 
-open_error:
-    *p_handle_count = *p_handle_count - handle_count;
-community_error:
+error_found:
+error_open:
+error_community:
     globus_mutex_unlock(&globus_l_ipc_mutex);
 
-    GlobusGFSDebugExitWithError();
     return res;
 }
 
@@ -2698,23 +2725,6 @@ globus_gfs_ipc_handle_get_contact_string(
     GlobusGFSDebugExit();
     return GLOBUS_SUCCESS;
 }
-
-globus_result_t
-globus_gfs_ipc_handle_get_index(
-    globus_gfs_ipc_handle_t             ipc_handle,
-    int *                               index)
-{
-    globus_i_gfs_ipc_handle_t *         ipc;
-    GlobusGFSName(globus_gfs_ipc_handle_get_index);
-    GlobusGFSDebugEnter();
-
-    ipc = (globus_i_gfs_ipc_handle_t *) ipc_handle;
-    *index = ipc->connection_info.community_ndx;
-    
-    GlobusGFSDebugExit();
-    return GLOBUS_SUCCESS;
-}
-
 
 /*
  *  close a handle, stopping it from being further cached
@@ -4048,23 +4058,13 @@ error:
  */
 globus_result_t
 globus_gfs_ipc_init(
-    globus_bool_t                       requester,
-    char **                             in_out_listener)
+    globus_bool_t                       requester)
 {
     globus_list_t *                     community_list;
     globus_list_t *                     list;
     globus_result_t                     res;
-    int                                 sc;
-    int                                 port;
-    globus_xio_attr_t                   attr;
-    char *                              listener = NULL;
     GlobusGFSName(globus_gfs_ipc_init);
     GlobusGFSDebugEnter();
-
-    if(in_out_listener != NULL)
-    {
-        listener = *in_out_listener;
-    }
 
     res = globus_xio_driver_load("tcp", &globus_l_gfs_tcp_driver);
     if(res != GLOBUS_SUCCESS)
@@ -4146,13 +4146,33 @@ globus_gfs_ipc_init(
 
     globus_l_gfs_ipc_requester = requester;
 
-    if(listener != NULL)
-    {
-        sc = sscanf(listener, "%d", &port);
-        if(sc != 1)
-        {
-            goto port_scan_error;
-        }
+    GlobusGFSDebugExit();
+    return GLOBUS_SUCCESS;
+
+stack_push_error:
+    globus_xio_stack_destroy(globus_l_gfs_ipc_xio_stack);
+stack_init_error:
+gsi_load_error:
+    globus_xio_driver_unload(globus_l_gfs_queue_driver);
+queue_load_error:
+    globus_xio_driver_unload(globus_l_gfs_tcp_driver);
+tcp_load_error:
+
+    GlobusGFSDebugExitWithError();
+    return res;
+}
+
+globus_result_t
+globus_gfs_ipc_listen(
+    int                                 port,
+    char **                             out_cs)
+{
+    char *                              contact_string;
+    globus_result_t                     res;
+    globus_xio_attr_t                   attr;
+    GlobusGFSName(in_out_listener);
+
+    GlobusGFSDebugEnter();
 
         res = globus_xio_attr_init(&attr);
         if(res != GLOBUS_SUCCESS)
@@ -4176,11 +4196,9 @@ globus_gfs_ipc_init(
             goto attr_error;
         }
 
-        res = globus_xio_server_cntl(
+        res = globus_xio_server_get_contact_string(
             globus_l_gfs_ipc_server_handle,
-            globus_l_gfs_tcp_driver,
-            GLOBUS_XIO_TCP_GET_LOCAL_NUMERIC_CONTACT,
-            in_out_listener);
+            &contact_string);
         if(res != GLOBUS_SUCCESS)
         {
             goto server_error;
@@ -4193,7 +4211,6 @@ globus_gfs_ipc_init(
         {
             goto accept_error;
         }
-    }
 
     GlobusGFSDebugExit();
     return GLOBUS_SUCCESS;
@@ -4204,15 +4221,6 @@ server_error:
 attr_error:
     globus_xio_attr_destroy(attr);
 attr_init_error:
-port_scan_error:
-stack_push_error:
-    globus_xio_stack_destroy(globus_l_gfs_ipc_xio_stack);
-stack_init_error:
-gsi_load_error:
-    globus_xio_driver_unload(globus_l_gfs_queue_driver);
-queue_load_error:
-    globus_xio_driver_unload(globus_l_gfs_tcp_driver);
-tcp_load_error:
 
     GlobusGFSDebugExitWithError();
     return res;
@@ -4237,45 +4245,34 @@ globus_gfs_ipc_destroy()
 static
 globus_i_gfs_community_t *
 globus_l_gfs_ipc_find_community(
-    const char *                        path)
+    const char *                        name)
 {
-    int                                 root_len;
-    int                                 last_len = 0;
     globus_list_t *                     list;
     globus_i_gfs_community_t *          community;
-    globus_i_gfs_community_t *          found;
     GlobusGFSName(globus_l_gfs_ipc_find_community);
     GlobusGFSDebugEnter();
 
-    found = globus_l_gfs_ipc_community_default;
-    if(path != NULL)
+    if(name != NULL)
     {
         for(list = globus_l_gfs_ipc_community_list;
             !globus_list_empty(list);
             list = globus_list_rest(list))
         {
-            community = (globus_i_gfs_community_t *) globus_list_first(list);
-            root_len = strlen(community->root);
-            /* make sure the path is shorter */
-            if(root_len > last_len && strlen(path) <= root_len)
+            if(strcmp(community->name, name) == 0)
             {
-                if(strncmp(path, community->root, root_len) == 0)
-                {
-                    found = community;
-                    last_len = root_len;
-                }
+                return community;
             }
         }
     }
 
     GlobusGFSDebugExit();
-    return found;
+    return globus_l_gfs_ipc_community_default;
 }
 
 globus_result_t
 globus_gfs_ipc_handle_get_max_available_count(
     const char *                        user_id,
-    const char *                        pathname,
+    const char *                        repo_name,
     int *                               count)
 {
     GlobusGFSName(globus_gfs_ipc_handle_get_max_available_count);

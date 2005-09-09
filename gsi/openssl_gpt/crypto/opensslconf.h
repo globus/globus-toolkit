@@ -14,7 +14,7 @@
 
 #ifdef HEADER_CRYPTLIB_H
 #   ifndef OPENSSLDIR
-#       define OPENSSLDIR "/home/bresnaha/Dev/Globus-buzz_guc_crft2/GL"
+#       define OPENSSLDIR "/home/bresnaha/Dev/Globus/GL"
 #   endif
 #endif
 

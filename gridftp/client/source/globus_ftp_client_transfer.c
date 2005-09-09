@@ -2143,41 +2143,6 @@ globus_l_ftp_client_extended_get(
     handle->partial_offset = partial_offset;
     handle->partial_end_offset = partial_end_offset;
 
-    /* clean up old strings */
-    if(handle->eret_alg_str != GLOBUS_NULL)
-    {
-        globus_free(handle->eret_alg_str);
-        handle->eret_alg_str = GLOBUS_NULL;
-    }
-    if(handle->esto_alg_str != GLOBUS_NULL)
-    {
-        globus_free(handle->esto_alg_str);
-        handle->esto_alg_str = GLOBUS_NULL;
-    }
-
-    /* set new string in handle */
-    if(eret_alg_str != GLOBUS_NULL)
-    {
-        handle->eret_alg_str = globus_libc_strdup(eret_alg_str);
-    }
-    else if(attr != NULL && *attr != NULL && (*attr)->module_name != NULL)
-    {
-        if((*attr)->module_args != NULL)
-        {
-            handle->eret_alg_str = globus_malloc(
-                strlen((*attr)->module_name)+strlen((*attr)->module_args) + 8);
-            sprintf(handle->eret_alg_str, "%s=\"%s\"",
-                (*attr)->module_name, (*attr)->module_args);
-        }
-        else
-        {
-            handle->eret_alg_str = globus_malloc(
-                strlen((*attr)->module_name) + 8);
-            sprintf(handle->eret_alg_str, "%s=\"\"", (*attr)->module_name);
-
-        }
-    }
-
     /* In stream mode, we need to keep track of the base offset to
      * adjust the offsets returned from the control library.
      * (In extended block mode, the data blocks have headers which have
@@ -2232,6 +2197,15 @@ globus_l_ftp_client_extended_get(
     if(err != GLOBUS_SUCCESS)
     {
 	goto free_url_exit;
+    }
+    /* set new string in handle */
+    if(eret_alg_str != NULL)
+    {
+        if(handle->source->attr->module_alg_str != NULL)
+        {
+            free(handle->source->attr->module_alg_str);
+        }
+        handle->source->attr->module_alg_str = strdup(eret_alg_str);
     }
 
     /* Notify plugins that the GET is happening */
@@ -2359,18 +2333,6 @@ abort:
     globus_i_ftp_client_handle_unlock(handle);
     globus_i_ftp_client_handle_is_not_active(u_handle);
 
-    /* clean up old strings */
-    if(handle->eret_alg_str != GLOBUS_NULL)
-    {
-        globus_free(handle->eret_alg_str);
-        handle->eret_alg_str = GLOBUS_NULL;
-    }
-    if(handle->esto_alg_str != GLOBUS_NULL)
-    {
-        globus_free(handle->esto_alg_str);
-        handle->esto_alg_str = GLOBUS_NULL;
-    }
-    
     globus_i_ftp_client_debug_printf(1, 
         (stderr, "globus_l_ftp_client_extended_get() exiting after abort\n"));
 
@@ -2649,42 +2611,6 @@ globus_l_ftp_client_extended_put(
     handle->partial_offset = partial_offset;
     handle->partial_end_offset = partial_end_offset;
 
-    /* clean up old strings */
-    if(handle->eret_alg_str != GLOBUS_NULL)
-    {
-        globus_free(handle->eret_alg_str);
-        handle->eret_alg_str = GLOBUS_NULL;
-    }
-    if(handle->esto_alg_str != GLOBUS_NULL)
-    {
-        globus_free(handle->esto_alg_str);
-        handle->esto_alg_str = GLOBUS_NULL;
-    }
-
-    /* set new string in handle */
-    if(esto_alg_str != GLOBUS_NULL)
-    {
-        handle->esto_alg_str = globus_libc_strdup(esto_alg_str);
-    }
-    else if(attr != NULL && *attr != NULL && (*attr)->module_name != NULL)
-    {
-        if((*attr)->module_args != NULL)
-        {
-            handle->esto_alg_str = globus_malloc(
-                strlen((*attr)->module_name)+strlen((*attr)->module_args) + 8);
-            sprintf(handle->esto_alg_str, "%s=\"%s\"",
-                (*attr)->module_name, (*attr)->module_args);
-        }
-        else
-        {
-            handle->esto_alg_str = globus_malloc(
-                strlen((*attr)->module_name) + 8);
-            sprintf(handle->esto_alg_str, "%s=\"\"", (*attr)->module_name);
-
-        }
-    }
-
-
     /* In stream mode, we need to keep track of the base offset to
      * adjust the offsets returned from the control library.
      * (In extended block mode, the data blocks have headers which have
@@ -2736,6 +2662,15 @@ globus_l_ftp_client_extended_put(
     if(err != GLOBUS_SUCCESS)
     {
 	goto free_url_exit;
+    }
+
+    if(esto_alg_str != NULL)
+    {
+        if(handle->dest->attr->module_alg_str != NULL)
+        {
+            free(handle->dest->attr->module_alg_str);
+        }
+        handle->dest->attr->module_alg_str = strdup(esto_alg_str);
     }
 
     /* Notify plugins that the PUT is happening */
@@ -2813,18 +2748,6 @@ reset_handle_exit:
     handle->partial_offset = -1;
     handle->partial_end_offset = -1;
     globus_ftp_client_restart_marker_destroy(&handle->restart_marker);
-
-    /* clean up old strings */
-    if(handle->eret_alg_str != GLOBUS_NULL)
-    {
-        globus_free(handle->eret_alg_str);
-        handle->eret_alg_str = GLOBUS_NULL;
-    }
-    if(handle->esto_alg_str != GLOBUS_NULL)
-    {
-        globus_free(handle->esto_alg_str);
-        handle->esto_alg_str = GLOBUS_NULL;
-    }
 
 unlock_exit:
     /* Release the lock */
@@ -3280,67 +3203,6 @@ globus_l_ftp_client_extended_third_party_transfer(
     handle->partial_offset = partial_offset;
     handle->partial_end_offset = partial_end_offset;
 
-    /* clean up old strings */
-    if(handle->eret_alg_str != GLOBUS_NULL)
-    {
-        globus_free(handle->eret_alg_str);
-        handle->eret_alg_str = GLOBUS_NULL;
-    }
-    if(handle->esto_alg_str != GLOBUS_NULL)
-    {
-        globus_free(handle->esto_alg_str);
-        handle->esto_alg_str = GLOBUS_NULL;
-    }
-
-    /* set new string in handle */
-    if(esto_alg_str != GLOBUS_NULL)
-    {
-        handle->esto_alg_str = globus_libc_strdup(esto_alg_str);
-    }
-    else if(dest_attr != NULL && *dest_attr != NULL
-        && (*dest_attr)->module_name != NULL)
-    {
-        if((*dest_attr)->module_args != NULL)
-        {
-            handle->esto_alg_str = globus_malloc(
-                strlen((*dest_attr)->module_name)
-                    +strlen((*dest_attr)->module_args) + 8);
-            sprintf(handle->esto_alg_str, "%s=\"%s\"",
-                (*dest_attr)->module_name, (*dest_attr)->module_args);
-        }
-        else
-        {
-            handle->esto_alg_str = globus_malloc(
-                strlen((*dest_attr)->module_name) + 8);
-            sprintf(handle->esto_alg_str, "%s=\"\"", (*dest_attr)->module_name);
-
-        }
-    }
-
-    if(eret_alg_str != GLOBUS_NULL)
-    {
-        handle->eret_alg_str = globus_libc_strdup(eret_alg_str);
-    }
-    else if(source_attr != NULL && *source_attr != NULL &&
-        (*source_attr)->module_name != NULL)
-    {
-        if((*source_attr)->module_args != NULL)
-        {
-            handle->eret_alg_str = globus_malloc(
-                strlen((*source_attr)->module_name)+
-                    strlen((*source_attr)->module_args) + 8);
-            sprintf(handle->eret_alg_str, "%s=\"%s\"",
-                (*source_attr)->module_name, (*source_attr)->module_args);
-        }
-        else
-        {
-            handle->eret_alg_str = globus_malloc(
-                strlen((*source_attr)->module_name) + 8);
-            sprintf(handle->eret_alg_str,"%s=\"\"",(*source_attr)->module_name);
-        }
-    }
-
-
     if(restart)
     {
 	globus_ftp_client_restart_marker_copy(&handle->restart_marker,
@@ -3409,6 +3271,24 @@ globus_l_ftp_client_extended_third_party_transfer(
     {
 	goto src_problem_exit;
     }
+    if(esto_alg_str != NULL)
+    {
+        if(handle->dest->attr->module_alg_str != NULL)
+        {
+            free(handle->dest->attr->module_alg_str);
+        }
+        handle->dest->attr->module_alg_str = strdup(esto_alg_str);
+    }
+    if(eret_alg_str != NULL)
+    {
+        if(handle->source->attr->module_alg_str != NULL)
+        {
+            free(handle->source->attr->module_alg_str);
+        }
+        handle->source->attr->module_alg_str = strdup(eret_alg_str);
+    }
+
+
 
     /* Notify plugins that the TRANSFER is happening */
     globus_i_ftp_client_plugin_notify_transfer(
@@ -3515,18 +3395,6 @@ reset_handle_exit:
     handle->partial_offset = -1;
     handle->partial_end_offset = -1;
     globus_ftp_client_restart_marker_destroy(&handle->restart_marker);
-
-    /* clean up old strings */
-    if(handle->eret_alg_str != GLOBUS_NULL)
-    {
-        globus_free(handle->eret_alg_str);
-        handle->eret_alg_str = GLOBUS_NULL;
-    }
-    if(handle->esto_alg_str != GLOBUS_NULL)
-    {
-        globus_free(handle->esto_alg_str);
-        handle->esto_alg_str = GLOBUS_NULL;
-    }
 
 unlock_exit:
     /* release the lock */
@@ -5036,18 +4904,6 @@ globus_i_ftp_client_transfer_complete(
     client_handle->partial_offset = -1;
     client_handle->partial_end_offset = -1;
 
-    /* clean up old strings */
-    if(client_handle->eret_alg_str != GLOBUS_NULL)
-    {
-        globus_free(client_handle->eret_alg_str);
-        client_handle->eret_alg_str = GLOBUS_NULL;
-    }
-    if(client_handle->esto_alg_str != GLOBUS_NULL)
-    {
-        globus_free(client_handle->esto_alg_str);
-        client_handle->esto_alg_str = GLOBUS_NULL;
-    }
-    
     if(client_handle->pasv_address != GLOBUS_NULL)
     {
 	globus_libc_free(client_handle->pasv_address);

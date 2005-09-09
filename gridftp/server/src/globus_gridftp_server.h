@@ -447,6 +447,11 @@ typedef struct globus_gfs_session_info_s
     char *                              host_id;
 } globus_gfs_session_info_t;
 
+typedef enum globus_gfs_brain_reason_e
+{
+    GLOBUS_GFS_BRAIN_REASON_ERROR = 1,
+    GLOBUS_GFS_BRAIN_REASON_COMPLETE
+} globus_gfs_brain_reason_t;
 
 /**************************************************************************
  *  Storage Module API
@@ -1459,15 +1464,41 @@ globus_gfs_ipc_handle_get_max_available_count(
     int *                               count);
 
 globus_result_t
-globus_gfs_ipc_handle_obtain_by_path(
-    int *                               p_handle_count,
-    const char *                        pathname,
+globus_gfs_ipc_handle_connect(
     globus_gfs_session_info_t *         session_info,
+    const char *                        community_name,
+    globus_gfs_ipc_open_callback_t      cb,
+    void *                              user_arg,
+    globus_gfs_ipc_error_callback_t     error_cb,
+    void *                              error_user_arg);
+
+globus_result_t
+globus_gfs_ipc_handle_obtain(
+    globus_gfs_session_info_t *         session_info,
+    const char *                        pathname,
     globus_gfs_ipc_iface_t *            iface,
     globus_gfs_ipc_open_callback_t      cb,
     void *                              user_arg,
     globus_gfs_ipc_error_callback_t     error_cb,
     void *                              error_user_arg);
+
+/*
+ *  the brain bit
+ */
+globus_result_t
+globus_gfs_brain_select_nodes(
+    char ***                            out_contact_strings,
+    int *                               out_array_length,
+    const char *                        repo_name,
+    globus_off_t                        filesize,
+    int                                 min_count,
+    int                                 max_count);
+
+globus_result_t
+globus_gfs_brain_release_node(
+    char *                              contact_string,
+    const char *                        repo_name,
+    globus_gfs_brain_reason_t           reason);
 
 globus_result_t
 globus_gfs_ipc_handle_get_contact_string(
@@ -1475,14 +1506,13 @@ globus_gfs_ipc_handle_get_contact_string(
     char **                             contact_string);
 
 globus_result_t
-globus_gfs_ipc_handle_get_index(
-    globus_gfs_ipc_handle_t             ipc_handle,
-    int *                               index);
-    
-globus_result_t
 globus_gfs_ipc_init(
-    globus_bool_t                       requester,
-    char **                             in_out_listener);
+    globus_bool_t                       requester);
+
+globus_result_t
+globus_gfs_ipc_listen(
+    int                                 port,
+    char **                             out_cs);
 
 /*
  *
@@ -1493,23 +1523,13 @@ globus_gfs_ipc_add_server(
 
 globus_result_t
 globus_gfs_ipc_handle_obtain(
-    int *                               handle_count,
     globus_gfs_session_info_t *         session_info,
+    const char *                        pathname,
     globus_gfs_ipc_iface_t *            iface,
     globus_gfs_ipc_open_callback_t      cb,
     void *                              user_arg,
     globus_gfs_ipc_error_callback_t     error_cb,
     void *                              error_user_arg);
-
-
-/* 
- *   community functions
- */
-globus_result_t
-globus_gfs_community_get_nodes(
-    const char *                        pathname,
-    char **                             contact_strings,
-    int *                               count);
 
 extern globus_gfs_ipc_iface_t  globus_gfs_ipc_default_iface;
 

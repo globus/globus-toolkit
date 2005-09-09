@@ -77,6 +77,17 @@ static const globus_l_gfs_config_option_t option_list[] =
     "Add levels together to use more than one.  0 = Disables all authorization checks. 1 = Authorize identity. "
     "2 = Authorize all file/resource accesses. 4 = Disable changing process uid to authenticated user (no setuid) -- DO NOT use this when process is started as root.  "
     "If not set uses level 2 for front ends and level 1 for data nodes.  Note that levels 2 and 4 imply level 1 as well.", NULL, NULL},
+ {"ipc_allow_from", "ipc_allow_from", NULL, "ipc-allow-from", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+    "Only allow connections from these source ip addresses.  Specify a comma "
+    "seperated list of ip address fragments.  A match is any ip address that "
+    "starts with the specified fragment.  Example: '192.168.1.' will match and "
+    "allow a connection from 192.168.1.45.  Note that if this option is used "
+    "any address not specifically allowed will be denied.", NULL, NULL},
+ {"ipc_deny_from", "ipc_deny_from", NULL, "ipc-deny-from", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+    "Deny connections from these source ip addresses. Specify a comma "
+    "seperated list of ip address fragments.  A match is any ip address that "
+    "starts with the specified fragment.  Example: '192.168.2.' will match and "
+    "deny a connection from 192.168.2.45.", NULL, NULL},
  {"allow_from", "allow_from", NULL, "allow-from", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Only allow connections from these source ip addresses.  Specify a comma "
     "seperated list of ip address fragments.  A match is any ip address that "
@@ -90,10 +101,18 @@ static const globus_l_gfs_config_option_t option_list[] =
     "deny a connection from 192.168.2.45.", NULL, NULL},
  {"cas", "cas", NULL, "cas", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_TRUE, NULL,
     "Enable CAS authorization.", NULL, NULL},
+ {"ipc_listener", "ipc_listener", NULL, "ipc-listener", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
+    "Only available on front end.  Allow data nodes to connect..", NULL, NULL},
  {"secure_ipc", "secure_ipc", NULL, "secure-ipc", "si", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_TRUE, NULL,
     "Use GSI security on ipc channel.", NULL, NULL},
  {"ipc_auth_mode", "ipc_auth_mode", NULL, "ipc-auth-mode", "ia", GLOBUS_L_GFS_CONFIG_STRING, 0, "host",
-    "Set GSI authorization mode for the ipc connection.  Options are: none, host, self or subject:[subject]", NULL, NULL},
+    "[not implemented]", NULL, NULL},
+ {"ipc_user_name", "ipc_user_name", NULL, "ipc_user_name", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+    "User name for IPC conncet back [not implemented]", NULL, NULL},
+ {"ipc_subject", "ipc_subject", NULL, "ipc_subject", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+    "Expected DN for IPC conncet back.", NULL, NULL},
+ {"ipc_cookie", "ipc_cookie", NULL, "ipc_cookie", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+    "[not implemented]", NULL, NULL},
  {"allow_anonymous", "allow_anonymous", NULL, "allow-anonymous", "aa", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
     "Allow cleartext anonymous access. If server is running as root anonymous_user "
     "must also be set.  Disables ipc security.", NULL, NULL},
@@ -170,6 +189,8 @@ static const globus_l_gfs_config_option_t option_list[] =
     "the range specified in the restart marker has actually been committed to disk. "
     "This option will probably impact performance, and may result in different behavior "
     "on different storage systems. See the manpage for sync() for more information.", NULL, NULL},
+ {"repo_count", "repo_count", NULL, "repo-count", NULL, GLOBUS_L_GFS_CONFIG_INT, 0, NULL,
+    "Maximum number of connections per transfer.", NULL, NULL},
 {NULL, "Network Options", NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL},
  {"port", "port", NULL, "port", "p", GLOBUS_L_GFS_CONFIG_INT, 0, NULL,
     "Port on which a frontend will listend for client control channel connections, "
@@ -1300,6 +1321,10 @@ static
 globus_result_t
 globus_l_gfs_config_misc()
 {
+    globus_list_t *                     module_list = NULL;
+    char *                              module;
+    char *                              ptr;
+    char *                              default_dsi;
     int                                 rc;
     globus_bool_t                       bool_value;
     char *                              value;
@@ -1525,30 +1550,28 @@ globus_l_gfs_config_misc()
     if(globus_i_gfs_config_string("load_dsi_module") == NULL)
     {
         globus_l_gfs_config_set("load_dsi_module", 0, globus_libc_strdup("file"));    
-    }            
-       
+    } 
+
     value = globus_libc_strdup(globus_i_gfs_config_string("allowed_modules"));
     if(value != NULL)
     {
-        globus_list_t *                 module_list = NULL;
-        char *                          module;
-        char *                          ptr;
-        
-            module = value;
-            while((ptr = strchr(module, ',')) != NULL)
-            {
-                *ptr = '\0';
-                globus_list_insert(&module_list, globus_libc_strdup(module)); 
-                module = ptr + 1;
-            }
-            if(ptr == NULL)
-            {
-                globus_list_insert(&module_list, globus_libc_strdup(module)); 
-            }               
-        
-        globus_l_gfs_config_set("module_list", 0, module_list);   
+        module = value;
+        while((ptr = strchr(module, ',')) != NULL)
+        {
+            *ptr = '\0';
+            globus_list_insert(&module_list, globus_libc_strdup(module)); 
+            module = ptr + 1;
+        }
+        if(ptr == NULL)
+        {
+            globus_list_insert(&module_list, globus_libc_strdup(module)); 
+        }               
         globus_free(value);             
     }
+    default_dsi = globus_i_gfs_config_string("load_dsi_module");
+    globus_assert(default_dsi  != NULL);
+    globus_list_insert(&module_list, strdup(default_dsi));
+    globus_l_gfs_config_set("module_list", 0, module_list);   
     
     /* if auth_level is -1 it means it has not yet been touched */
     switch(globus_i_gfs_config_int("auth_level"))
@@ -1582,6 +1605,71 @@ globus_l_gfs_config_misc()
     {
         globus_l_gfs_config_set("connections_max", 1, NULL);
         globus_l_gfs_config_set("single", 1, NULL);
+    }
+
+    if(globus_i_gfs_config_string("remote_nodes") != NULL &&
+        globus_i_gfs_config_bool("data_node"))
+    {
+        char *                          str;
+
+        /* XXX: not sure about this.  perhaps it can connect back after
+            forking, tho that how that would work is awkward, ie
+            when would it fork */
+        if(globus_i_gfs_config_bool("fork"))
+        {
+            /* should log an error */
+            globus_l_gfs_config_set("fork", GLOBUS_FALSE, NULL);   
+        }
+
+        /* set the convience conf opt */
+        globus_l_gfs_config_set("data_node_client", GLOBUS_TRUE, NULL);
+
+        /* if allow from not set for ipc specific, pull it from regular */
+        str = globus_i_gfs_config_string("ipc_allow_from");
+        if(str == NULL)
+        {
+            str = globus_i_gfs_config_string("allow_from");
+            globus_l_gfs_config_set("ipc_allow_from", 0, str);
+        }
+        str = globus_i_gfs_config_string("ipc_deny_from");
+        if(str == NULL)
+        {
+            str = globus_i_gfs_config_string("deny_from");
+            globus_l_gfs_config_set("ipc_deny_from", 0, str);
+        }
+    }
+
+    /* if an ipc listener we cant be a backend, and can't fork or setuid */
+    if(globus_i_gfs_config_bool("ipc_listener"))
+    {
+    }
+
+    /* if it is a listening data node */
+    if(globus_i_gfs_config_string("remote_nodes") == NULL &&
+        globus_i_gfs_config_bool("data_node"))
+    {
+        int                             port;
+
+        port = globus_i_gfs_config_int("port");
+        if(port == 0)
+        {
+            port = globus_i_gfs_config_int("ipc_port");
+            globus_l_gfs_config_set("port", port, NULL);   
+        }
+    } 
+    if(globus_i_gfs_config_string("ipc_user_name") == NULL)
+    {
+        struct passwd *                 pwent;
+
+        pwent = getpwuid(getuid());
+        if(pwent == NULL)
+        {
+        }
+        if(pwent->pw_name == NULL)
+        {
+        }
+        globus_l_gfs_config_set("ipc_user_name", 0, 
+            globus_libc_strdup(pwent->pw_name));
     }
     
     GlobusGFSDebugExit();
@@ -1777,7 +1865,8 @@ globus_i_gfs_config_is_anonymous(
 
 globus_bool_t
 globus_i_gfs_config_allow_addr(
-    const char *                        remote_addr)
+    const char *                        remote_addr,
+    globus_bool_t                       ipc)
 {
     char *                              allow_list;
     char *                              deny_list;
@@ -1786,9 +1875,21 @@ globus_i_gfs_config_allow_addr(
     char *                              ptr;
     GlobusGFSName(globus_i_gfs_config_allow_addr);
     GlobusGFSDebugEnter();
-    
-    allow_list = globus_libc_strdup(globus_i_gfs_config_string("allow_from"));
-    deny_list = globus_libc_strdup(globus_i_gfs_config_string("deny_from"));
+
+    if(ipc)
+    {
+        allow_list = globus_libc_strdup(
+            globus_i_gfs_config_string("ipc_allow_from"));
+        deny_list = globus_libc_strdup(
+            globus_i_gfs_config_string("ipc_deny_from"));
+    }
+    else
+    { 
+        allow_list = globus_libc_strdup(
+            globus_i_gfs_config_string("allow_from"));
+        deny_list = globus_libc_strdup(
+            globus_i_gfs_config_string("deny_from"));
+    }
 
     if(allow_list == NULL)
     {

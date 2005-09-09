@@ -196,8 +196,6 @@ globus_ftp_client_handle_init(
     i_handle->partial_offset = -1;
     i_handle->partial_end_offset = -1;
     globus_ftp_client_restart_marker_init(&i_handle->restart_marker);
-    i_handle->eret_alg_str = GLOBUS_NULL;
-    i_handle->esto_alg_str = GLOBUS_NULL;
     i_handle->modification_time_pointer = GLOBUS_NULL;
     i_handle->mlst_buffer_pointer = GLOBUS_NULL;
     i_handle->mlst_buffer_length_pointer = GLOBUS_NULL;
@@ -271,14 +269,6 @@ globus_ftp_client_handle_destroy(
 
     globus_list_free(i_handle->attr.url_cache);
 
-    if(i_handle->eret_alg_str != GLOBUS_NULL)
-    {
-        globus_free(i_handle->eret_alg_str);
-    }
-    if(i_handle->esto_alg_str != GLOBUS_NULL)
-    {
-        globus_free(i_handle->esto_alg_str);
-    }
     if(i_handle->err != GLOBUS_NULL)
     {
         globus_object_free(i_handle->err);

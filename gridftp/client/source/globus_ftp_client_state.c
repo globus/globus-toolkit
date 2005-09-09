@@ -2797,14 +2797,14 @@ redo:
 
 	target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_FILE_ACTIONS;
 
-        if(client_handle->eret_alg_str != GLOBUS_NULL)
+        if(target->attr->module_alg_str != GLOBUS_NULL)
 	{
 	    globus_i_ftp_client_plugin_notify_command(
 		client_handle,
 		target->url_string,
 		target->mask,
 		"ERET %s %s" CRLF,
-		client_handle->eret_alg_str,
+                target->attr->module_alg_str,
 		pathname);
 	}
 	else
@@ -2827,7 +2827,7 @@ redo:
 		      GLOBUS_FTP_CLIENT_HANDLE_SOURCE_RETR_OR_ERET);
 
 
-        if(client_handle->eret_alg_str != GLOBUS_NULL)
+        if(target->attr->module_alg_str != GLOBUS_NULL)
 	{
 	    result =
 		globus_ftp_control_send_command(
@@ -2835,7 +2835,7 @@ redo:
 		    "ERET %s %s" CRLF,
 		    globus_i_ftp_client_response_callback,
 		    user_arg,
-		    client_handle->eret_alg_str,
+		    target->attr->module_alg_str,
 		    pathname);
 	}
 	else
@@ -2876,14 +2876,14 @@ redo:
 
 	target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_FILE_ACTIONS;
 
-	if(client_handle->esto_alg_str != GLOBUS_NULL)
+	if(target->attr->module_alg_str != GLOBUS_NULL)
 	{
 	    globus_i_ftp_client_plugin_notify_command(
 		client_handle,
 		target->url_string,
 		target->mask,
 		"ESTO %s %s" CRLF,
-		client_handle->esto_alg_str,
+                target->attr->module_alg_str,
 		pathname);
 	}
 	else
@@ -2906,7 +2906,7 @@ redo:
 	globus_assert(client_handle->state ==
 		      GLOBUS_FTP_CLIENT_HANDLE_DEST_STOR_OR_ESTO);
 
-	if(client_handle->esto_alg_str != GLOBUS_NULL)
+	if(target->attr->module_alg_str != GLOBUS_NULL)
 	{
 	    result =
 		globus_ftp_control_send_command(
@@ -2914,7 +2914,7 @@ redo:
 			"ESTO %s %s" CRLF,
 			globus_i_ftp_client_response_callback,
 			user_arg,
-			client_handle->esto_alg_str,
+			target->attr->module_alg_str,
 			pathname);
 	}
 	else if(target->attr->append)
@@ -2955,14 +2955,14 @@ redo:
 	 */
 	target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_FILE_ACTIONS;
 
-	if(client_handle->esto_alg_str != GLOBUS_NULL)
+	if(target->attr->module_alg_str != GLOBUS_NULL)
 	{
 	    globus_i_ftp_client_plugin_notify_command(
 		client_handle,
 		target->url_string,
 		target->mask,
 		"ESTO %s %s" CRLF,
-		client_handle->esto_alg_str,
+		target->attr->module_alg_str,
 		pathname);
 	}
 	else
@@ -2987,14 +2987,14 @@ redo:
 
 	target->state = GLOBUS_FTP_CLIENT_TARGET_STOR;
 
-	if(client_handle->esto_alg_str != GLOBUS_NULL)
+	if(target->attr->module_alg_str != GLOBUS_NULL)
 	{
 	    result = globus_ftp_control_send_command(
 		handle,
 		"ESTO %s %s" CRLF,
 		globus_i_ftp_client_response_callback,
 		user_arg,
-		client_handle->esto_alg_str,
+		target->attr->module_alg_str,
 		pathname);
 	}
 	else
@@ -3042,14 +3042,14 @@ redo:
 
 	target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_FILE_ACTIONS;
 
-	if(client_handle->eret_alg_str)
+	if(target->attr->module_alg_str)
 	{
 	    globus_i_ftp_client_plugin_notify_command(
 		client_handle,
 		target->url_string,
 		target->mask,
 		"ERET %s %s" CRLF,
-		client_handle->eret_alg_str,
+		target->attr->module_alg_str,
 		pathname);
 	}
 	else
@@ -3073,14 +3073,14 @@ redo:
 
 	target->state = GLOBUS_FTP_CLIENT_TARGET_RETR;
 
-	if(client_handle->eret_alg_str)
+	if(target->attr->module_alg_str)
 	{
 	    result = globus_ftp_control_send_command(
 		handle,
 		"ERET %s %s\r\n",
 		globus_i_ftp_client_response_callback,
 		user_arg,
-		client_handle->eret_alg_str,
+		target->attr->module_alg_str,
 		pathname);
 	}
 	else

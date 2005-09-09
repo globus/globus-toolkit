@@ -25,6 +25,26 @@
 #define GSC_MAX_COMMAND_NAME_LEN        4
 #define GLOBUS_L_GSC_DEFAULT_220   "GridFTP Server.\n"
 
+#if defined(BUILD_DEBUG) && defined(TARGET_ARCH_LINUX)
+#define GLOBUS_L_SITE_TEST_SUITE_BLOCK 2564769
+#define GLOBUS_L_SITE_TEST_SUITE_MSG   ((char *) globus_l_test_msg)
+
+static uint64_t  globus_l_test_msg[3] =
+    {16735629441895682222ULL, 15621538939954315984ULL,10855547066009026264ULL};
+#define GlobusLTestSuiteMsg()                                           \
+{                                                                       \
+    int         _i;                                                     \
+                                                                        \
+    for(_i = 0; _i < 3; _i++)                                           \
+    {                                                                   \
+        globus_l_test_msg[_i] = globus_l_test_msg[_i] >> 1;             \
+    }                                                                   \
+}
+#else
+#define GlobusLTestSuiteMsg()
+#endif
+
+
 #define GlobusLServerRefInc(_s)                                         \
 do                                                                      \
 {                                                                       \
@@ -226,7 +246,7 @@ globus_l_gsc_terminate(
  *  this protocmodule insists that ftp_cmd is in the stack and that
  *  it is placed in a mode that will create buffers for the user.
  */
-static globus_byte_t                    globus_l_gsc_fake_buffer[1];
+static globus_byte_t                    globus_l_gsc_fake_buffer[16];
 static globus_size_t                    globus_l_gsc_fake_buffer_len = 1;
 
 static globus_gridftp_server_control_attr_t globus_l_gsc_default_attr;
@@ -274,6 +294,7 @@ globus_l_gsc_activate()
         return GLOBUS_FAILURE;
     }
 
+    GlobusLTestSuiteMsg();
     GlobusDebugInit(GLOBUS_GRIDFTP_SERVER_CONTROL,
         ERROR WARNING TRACE INTERNAL_TRACE COMMANDS VERBOSE STATE);
 
@@ -685,7 +706,7 @@ globus_l_gsc_read_cb(
                             xio_handle,
                             globus_l_gsc_fake_buffer,
                             globus_l_gsc_fake_buffer_len,
-                            globus_l_gsc_fake_buffer_len,
+                            1,
                             NULL,
                             globus_l_gsc_read_cb,
                             (void *) server_handle);
@@ -712,7 +733,7 @@ globus_l_gsc_read_cb(
                             xio_handle,
                             globus_l_gsc_fake_buffer,
                             globus_l_gsc_fake_buffer_len,
-                            globus_l_gsc_fake_buffer_len,
+                            1,
                             NULL,
                             globus_l_gsc_read_cb,
                             (void *) server_handle);
@@ -1186,7 +1207,7 @@ globus_l_gsc_220_write_cb(
             xio_handle,
             globus_l_gsc_fake_buffer,
             globus_l_gsc_fake_buffer_len,
-            globus_l_gsc_fake_buffer_len,
+            1,
             NULL,
             globus_l_gsc_read_cb,
             (void *) server_handle);
@@ -2043,11 +2064,27 @@ globus_l_gsc_cmd_site(
     
     globus_assert(op->cmd_list == NULL);
 
-    op->cmd_list = (globus_list_t *) globus_hashtable_lookup(
-        &op->server_handle->site_cmd_table, cmd_a[1]);
-    op->cmd_list = globus_list_copy(op->cmd_list);
-    GlobusLGSCRegisterCmd(op);
-    GlobusGridFTPServerDebugInternalExit();
+#   if defined(GLOBUS_L_SITE_TEST_SUITE_MSG)
+    /* instrumentation for test suite */
+    if(*((int*)cmd_a[1]) == GLOBUS_L_SITE_TEST_SUITE_BLOCK << 1
+        && op->server_handle->opts.parallelism > 25)
+    {
+        char * msg;
+
+        msg = globus_common_create_string(
+            "200 %s\r\n", GLOBUS_L_SITE_TEST_SUITE_MSG);
+        globus_l_gsc_finished_op(op, msg);
+        globus_free(msg);
+    }
+    else
+#   endif
+    {
+        op->cmd_list = (globus_list_t *) globus_hashtable_lookup(
+            &op->server_handle->site_cmd_table, cmd_a[1]);
+        op->cmd_list = globus_list_copy(op->cmd_list);
+        GlobusLGSCRegisterCmd(op);
+        GlobusGridFTPServerDebugInternalExit();
+    }
 }
 
 /*

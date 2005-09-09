@@ -23,6 +23,7 @@ Sources = \
 	globus_gridftp_server.h		\
 	globus_i_gridftp_server.h	\
 	globus_i_gfs_log.c 		\
+	globus_i_gfs_brain.c        \
 	globus_i_gfs_log.h 		\
 	globus_i_gfs_config.c 		\
 	globus_i_gfs_config.h 		\

@@ -142,11 +142,10 @@ typedef struct globus_i_ftp_client_operationattr_t
     globus_bool_t                               allow_ipv6;
     globus_off_t                                allocated_size;
 
-    char *                                      module_name;
-    char *                                      module_args;
-
     char *                                      authz_assert;
     globus_bool_t                               cache_authz_assert;
+
+    char *                                      module_alg_str;
 }
 globus_i_ftp_client_operationattr_t;
 
@@ -539,16 +538,6 @@ typedef struct globus_i_ftp_client_handle_t
     /** Partial file transfer ending offset. */
     globus_off_t                                partial_end_offset;
 
-    /**
-     * User-supplied algorithm choosing string for an ERET.
-     */
-    char *                                      eret_alg_str;
-    /**
-     * User-supplied algorithm choosing string for an ESTO.
-     */
-    char *                                      esto_alg_str;
-    /*** end add by bresnaha ***/
- 
     /**
      * Base offset for a transfer, to be added to all offsets in
      * stream mode
