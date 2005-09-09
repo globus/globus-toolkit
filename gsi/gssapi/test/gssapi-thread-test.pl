@@ -13,32 +13,31 @@ my @todo;
 
 sub basic_func
 {
-   my ($errors,$rc) = ("",0);
+    my ($errors,$rc) = ("",0);
    
-   $ENV{X509_CERT_DIR} = cwd();
-   $ENV{X509_USER_PROXY} = "testcred.pem";
+    $ENV{X509_CERT_DIR} = cwd();
+    $ENV{X509_USER_PROXY} = "testcred.pem";
 
-   $rc = system("./$test_prog >/dev/null 2>&1") / 256;
+    $rc = system("./$test_prog >/dev/null 2>&1") / 256;
 
-   if($rc != 0)
-   {
-      $errors .= "Test exited with $rc. ";
-   }
+    if($rc != 0)
+    {
+        $errors .= "Test exited with $rc. ";
+    }
 
-   if(-r 'core')
-   {
-      $errors .= "\n# Core file generated.";
-   }
-   
-   if($errors eq "")
-   {
-      ok('success', 'success');
-      
-   }
-   else
-   {
-      ok($errors, 'success');
-   }
+    if(-r 'core')
+    {
+        $errors .= "\n# Core file generated.";
+    }
+    
+    if($errors eq "")
+    {
+        ok('success', 'success');
+    }
+    else
+    {
+        ok($errors, 'success');
+    }
 
 }
 
@@ -50,5 +49,5 @@ plan tests => scalar(@tests), todo => \@todo;
 # And run them all.
 foreach (@tests)
 {
-   eval "&$_";
+    eval "&$_";
 }

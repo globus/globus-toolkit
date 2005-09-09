@@ -1,17 +1,17 @@
 
-gssapi_group_test.c:87:
+gssapi_group_test.c:\d+:
 	cert1 , cert2 don't have any groups
 	Security context establishment should succeed
-gssapi_group_test.c:413:
+gssapi_group_test.c:\d+:
 	Successfully established security context
 
-gssapi_group_test.c:93:
+gssapi_group_test.c:\d+:
 	cert1 has trusted group, cert2 doesn't have any groups
 	Security context establishment should succeed
-gssapi_group_test.c:413:
+gssapi_group_test.c:\d+:
 	Successfully established security context
 
-gssapi_group_test.c:106:
+gssapi_group_test.c:\d+:
 	cert1 has untrusted group, cert2 doesn't have any groups
 	Security context establishment should fail
 
@@ -25,19 +25,19 @@ LINE 406 ERROR: GSS failure:
 
 
 
-gssapi_group_test.c:118:
+gssapi_group_test.c:\d+:
 	cert1 has trusted group, cert2 has same trusted group
 	Security context establishment should succeed
-gssapi_group_test.c:413:
+gssapi_group_test.c:\d+:
 	Successfully established security context
 
-gssapi_group_test.c:125:
+gssapi_group_test.c:\d+:
 	cert1 has untrusted group, cert2 has same untrusted group
 	Security context establishment should succeed
-gssapi_group_test.c:413:
+gssapi_group_test.c:\d+:
 	Successfully established security context
 
-gssapi_group_test.c:132:
+gssapi_group_test.c:\d+:
 	cert1 has trusted group, cert2 has same untrusted group
 	Security context establishment should fail
 
@@ -51,13 +51,13 @@ LINE 406 ERROR: GSS failure:
 
 
 
-gssapi_group_test.c:141:
+gssapi_group_test.c:\d+:
 	cert1 has trusted group, cert2 has same trusted group + trusted subgroup
 	Security context establishment should succeed
-gssapi_group_test.c:413:
+gssapi_group_test.c:\d+:
 	Successfully established security context
 
-gssapi_group_test.c:153:
+gssapi_group_test.c:\d+:
 	cert1 has trusted group, cert2 has same trusted group + untrusted subgroup
 	Security context establishment should fail
 
@@ -71,14 +71,14 @@ LINE 406 ERROR: GSS failure:
 
 
 
-gssapi_group_test.c:184:
+gssapi_group_test.c:\d+:
 	Testing gss_get_group
 
-gssapi_group_test.c:208:
+gssapi_group_test.c:\d+:
 	Certificate contains untrusted group subgroup2
 
-gssapi_group_test.c:219:
+gssapi_group_test.c:\d+:
 	Testing gss_set_group
 
-gssapi_group_test.c:261:
+gssapi_group_test.c:\d+:
 	Certificate contains untrusted group subgroup3
