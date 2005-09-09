@@ -8,9 +8,7 @@
  * If you redistribute this file, with or without
  * modifications, you must include this notice in the file.
  */
-package org.globus.exec.monitoring;
-
-import java.io.File;
+package org.globus.exec.monitoring.seg;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -35,7 +33,7 @@ class SchedulerEventGenerator extends Thread {
     private static Runtime runtime = Runtime.getRuntime();
 
     /** Path to the SEG executable */
-    private java.io.File globusLocation;
+    private java.io.File path;
     /**
      * Username of the account to run the SEG as.
      *
@@ -79,24 +77,20 @@ class SchedulerEventGenerator extends Thread {
      * something might be wrong and delay again.
      */
     private final long THROTTLE_RESTART_THRESHOLD = 2 * 1000;
-
-    private static final String SEG_EXECUTABLE_NAME =
-        "globus-scheduler-event-generator";
-    
     /**
      * SEG constructor.
      *
-     * @param globusLocation
-     *     Path to the Globus Toolkit installation.
+     * @param path
+     *     Path to the Scheduler Event Generator executable.
      * @param userName
      *     Username to sudo(8) to start the SEG.
      * @param schedulerName
      *     Name of the scheduler SEG module to use (fork, lsf, etc).
      */
-    public SchedulerEventGenerator(java.io.File globusLocation, String userName,
+    public SchedulerEventGenerator(java.io.File path, String userName,
             String schedulerName, JobStateMonitor monitor) 
     {
-        this.globusLocation = globusLocation;
+        this.path = path;
         this.userName = userName;
         this.schedulerName = schedulerName;
         this.proc = null;
@@ -215,9 +209,6 @@ class SchedulerEventGenerator extends Thread {
         if (!shutdownCalled) {
             logger.debug("Starting seg process");
             String [] cmd;
-            File path = new File(this.globusLocation +
-                File.separator + "libexec" +
-                File.separator + SEG_EXECUTABLE_NAME);
 
             // TODO: sudo integration here
             if (timeStamp != null) {
@@ -239,14 +230,6 @@ class SchedulerEventGenerator extends Thread {
                     }
                 }
             }
-
-            /*
-            String[] env = new String[] {
-                "GLOBUS_LOCATION=" + globusLocation.toString()
-            };
-
-            proc = runtime.exec(cmd, env);
-            */
             proc = runtime.exec(cmd);
             return true;
         } else {

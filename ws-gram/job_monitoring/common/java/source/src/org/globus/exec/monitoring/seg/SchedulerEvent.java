@@ -8,7 +8,7 @@
  * If you redistribute this file, with or without
  * modifications, you must include this notice in the file.
  */
-package org.globus.exec.monitoring;
+package org.globus.exec.monitoring.seg;
 
 import org.globus.exec.generated.StateEnumeration;
 
