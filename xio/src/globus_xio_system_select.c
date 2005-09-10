@@ -369,8 +369,6 @@ globus_l_xio_system_deactivate(void)
     globus_mutex_destroy(&globus_l_xio_system_fdset_mutex);
     globus_cond_destroy(&globus_l_xio_system_cond);
 
-    globus_module_deactivate(GLOBUS_XIO_MODULE);
-
     GlobusXIOSystemDebugExit();
     
     globus_i_xio_system_common_deactivate();
