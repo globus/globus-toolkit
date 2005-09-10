@@ -626,6 +626,92 @@ redo:
 	}
 
     skip_type:
+        target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_AUTHZ_ASSERT;
+        goto redo;
+
+    case GLOBUS_FTP_CLIENT_TARGET_SETUP_AUTHZ_ASSERT:
+        target->state = GLOBUS_FTP_CLIENT_TARGET_AUTHZ_ASSERT;
+
+        if (!target->attr->authz_assert)
+        {
+            goto skip_authz_assert;
+        }
+        if(target->authz_assert &&
+           !strcmp(target->attr->authz_assert, target->authz_assert) &&
+           target->attr->cache_authz_assert)
+        {
+            goto skip_authz_assert;
+        }
+
+        target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_MISC;
+
+        globus_i_ftp_client_plugin_notify_command(
+            client_handle,
+            target->url_string,
+            target->mask,
+            "SITE AUTHZ_ASSERT %s",
+            target->attr->authz_assert);
+        
+        if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT || 
+            client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
+            client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE)
+        {   
+            break;
+        }
+        globus_assert(
+            client_handle->state ==
+            GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION
+            ||
+            client_handle->state ==
+            GLOBUS_FTP_CLIENT_HANDLE_DEST_SETUP_CONNECTION);
+        
+        result = globus_ftp_control_send_command(
+            target->control_handle,
+            "SITE AUTHZ_ASSERT %s" CRLF,
+            globus_i_ftp_client_response_callback,
+            target,
+            target->attr->authz_assert);
+        
+        if(result != GLOBUS_SUCCESS)
+        {   
+            goto result_fault;
+        }
+
+        break;
+
+    case GLOBUS_FTP_CLIENT_TARGET_AUTHZ_ASSERT:
+        globus_assert(
+            client_handle->state ==
+            GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION ||
+            client_handle->state ==
+            GLOBUS_FTP_CLIENT_HANDLE_DEST_SETUP_CONNECTION);
+
+        if((!error) &&
+           response->response_class == GLOBUS_FTP_POSITIVE_COMPLETION_REPLY)
+        {
+            if (target->authz_assert)
+            {
+                if (strcmp(target->authz_assert, target->attr->authz_assert))
+                {
+                    globus_free(target->authz_assert);
+                    target->authz_assert = globus_libc_strdup(
+                                            target->attr->authz_assert);
+                }
+            }
+            else
+            {
+                target->authz_assert = 
+                    globus_libc_strdup(target->attr->authz_assert);
+            }
+        }
+        else
+        {
+            target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_CONNECTION;
+
+            goto notify_fault;
+        }
+
+    skip_authz_assert:
 	target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_MODE;
 	goto redo;
 
@@ -2711,14 +2797,14 @@ redo:
 
 	target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_FILE_ACTIONS;
 
-        if(client_handle->eret_alg_str != GLOBUS_NULL)
+        if(target->attr->module_alg_str != GLOBUS_NULL)
 	{
 	    globus_i_ftp_client_plugin_notify_command(
 		client_handle,
 		target->url_string,
 		target->mask,
 		"ERET %s %s" CRLF,
-		client_handle->eret_alg_str,
+                target->attr->module_alg_str,
 		pathname);
 	}
 	else
@@ -2741,7 +2827,7 @@ redo:
 		      GLOBUS_FTP_CLIENT_HANDLE_SOURCE_RETR_OR_ERET);
 
 
-        if(client_handle->eret_alg_str != GLOBUS_NULL)
+        if(target->attr->module_alg_str != GLOBUS_NULL)
 	{
 	    result =
 		globus_ftp_control_send_command(
@@ -2749,7 +2835,7 @@ redo:
 		    "ERET %s %s" CRLF,
 		    globus_i_ftp_client_response_callback,
 		    user_arg,
-		    client_handle->eret_alg_str,
+		    target->attr->module_alg_str,
 		    pathname);
 	}
 	else
@@ -2790,14 +2876,14 @@ redo:
 
 	target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_FILE_ACTIONS;
 
-	if(client_handle->esto_alg_str != GLOBUS_NULL)
+	if(target->attr->module_alg_str != GLOBUS_NULL)
 	{
 	    globus_i_ftp_client_plugin_notify_command(
 		client_handle,
 		target->url_string,
 		target->mask,
 		"ESTO %s %s" CRLF,
-		client_handle->esto_alg_str,
+                target->attr->module_alg_str,
 		pathname);
 	}
 	else
@@ -2820,7 +2906,7 @@ redo:
 	globus_assert(client_handle->state ==
 		      GLOBUS_FTP_CLIENT_HANDLE_DEST_STOR_OR_ESTO);
 
-	if(client_handle->esto_alg_str != GLOBUS_NULL)
+	if(target->attr->module_alg_str != GLOBUS_NULL)
 	{
 	    result =
 		globus_ftp_control_send_command(
@@ -2828,7 +2914,7 @@ redo:
 			"ESTO %s %s" CRLF,
 			globus_i_ftp_client_response_callback,
 			user_arg,
-			client_handle->esto_alg_str,
+			target->attr->module_alg_str,
 			pathname);
 	}
 	else if(target->attr->append)
@@ -2869,14 +2955,14 @@ redo:
 	 */
 	target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_FILE_ACTIONS;
 
-	if(client_handle->esto_alg_str != GLOBUS_NULL)
+	if(target->attr->module_alg_str != GLOBUS_NULL)
 	{
 	    globus_i_ftp_client_plugin_notify_command(
 		client_handle,
 		target->url_string,
 		target->mask,
 		"ESTO %s %s" CRLF,
-		client_handle->esto_alg_str,
+		target->attr->module_alg_str,
 		pathname);
 	}
 	else
@@ -2901,14 +2987,14 @@ redo:
 
 	target->state = GLOBUS_FTP_CLIENT_TARGET_STOR;
 
-	if(client_handle->esto_alg_str != GLOBUS_NULL)
+	if(target->attr->module_alg_str != GLOBUS_NULL)
 	{
 	    result = globus_ftp_control_send_command(
 		handle,
 		"ESTO %s %s" CRLF,
 		globus_i_ftp_client_response_callback,
 		user_arg,
-		client_handle->esto_alg_str,
+		target->attr->module_alg_str,
 		pathname);
 	}
 	else
@@ -2956,14 +3042,14 @@ redo:
 
 	target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_FILE_ACTIONS;
 
-	if(client_handle->eret_alg_str)
+	if(target->attr->module_alg_str)
 	{
 	    globus_i_ftp_client_plugin_notify_command(
 		client_handle,
 		target->url_string,
 		target->mask,
 		"ERET %s %s" CRLF,
-		client_handle->eret_alg_str,
+		target->attr->module_alg_str,
 		pathname);
 	}
 	else
@@ -2987,14 +3073,14 @@ redo:
 
 	target->state = GLOBUS_FTP_CLIENT_TARGET_RETR;
 
-	if(client_handle->eret_alg_str)
+	if(target->attr->module_alg_str)
 	{
 	    result = globus_ftp_control_send_command(
 		handle,
 		"ERET %s %s\r\n",
 		globus_i_ftp_client_response_callback,
 		user_arg,
-		client_handle->eret_alg_str,
+		target->attr->module_alg_str,
 		pathname);
 	}
 	else
@@ -3566,6 +3652,14 @@ globus_l_ftp_client_parse_site_help(
         globus_i_ftp_client_feature_set(
             target->features,
             GLOBUS_FTP_CLIENT_FEATURE_CHMOD,
+            GLOBUS_FTP_CLIENT_TRUE);
+    }
+    if(((p = strstr((char *) response->response_buffer, "AUTHZ_ASSERT")) != 0) 
+        && !isupper(*(p-1)))
+    {
+        globus_i_ftp_client_feature_set(
+            target->features,
+            GLOBUS_FTP_CLIENT_FEATURE_AUTHZ_ASSERT,
             GLOBUS_FTP_CLIENT_TRUE);
     }
     

@@ -755,9 +755,9 @@ globus_l_error_multiple_print(
     globus_bool_t                       friendly)
 {
     globus_l_error_multiple_t *         data;
-    int                                 count;
+    int                                 count = 0;
     char **                             layout = NULL;
-    char **                             free_ptrs;
+    char **                             free_ptrs = NULL;
     char *                              error_string;
     int                                 i = 0;
     

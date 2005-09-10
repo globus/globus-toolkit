@@ -100,13 +100,17 @@ fi
 while [ "X$1" != "X" ]; do
     case $1 in
     -file| -f)
-	if [ -n "$2" -a -f "$2" -a -r "$2" ]; then
-	    certfile=$2
-	else
-	    globus_args_option_error "$1" "\"$2\" is not a valid filename"
-	fi
-	shift
-	;;
+        if [ -n "$2" -a -f "$2" -a -r "$2" ]; then
+            certfile=$2
+        else
+            if [ -n "$2" ]; then 
+                globus_args_option_error "$1" "\"$2\" is not a valid filename"
+            else
+                globus_args_option_error "$1" "needs a file name argument"
+            fi
+        fi
+        shift
+        ;;
     -all)
 	toprint="$toprint -text"
 	;;

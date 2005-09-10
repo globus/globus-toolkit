@@ -105,7 +105,7 @@ globus_l_xio_udt_attr_cntl(
     va_list                             ap)
 {       
     globus_l_attr_t *                   attr;
-    globus_xio_system_native_handle_t * out_handle;
+    globus_xio_system_socket_t *        out_handle;
     char **                             out_string;
     int *                               out_int;
     globus_bool_t *                     out_bool;
@@ -199,15 +199,15 @@ globus_l_xio_udt_attr_cntl(
       /**
        *  handle/server attrs
        */
-      /* globus_xio_system_native_handle_t *   handle_out */
+      /* globus_xio_system_socket_t *   handle_out */
       case GLOBUS_XIO_UDT_GET_HANDLE:
-        out_handle = va_arg(ap, globus_xio_system_native_handle_t *);
+        out_handle = va_arg(ap, globus_xio_system_socket_t *);
         *out_handle = attr->handle;
         break;
                 
-      /* globus_xio_system_native_handle_t     handle */
+      /* globus_xio_system_socket_t     handle */
       case GLOBUS_XIO_UDT_SET_HANDLE:
-        attr->handle = va_arg(ap, globus_xio_system_native_handle_t);
+        attr->handle = va_arg(ap, globus_xio_system_socket_t);
         break;
 
       /**   

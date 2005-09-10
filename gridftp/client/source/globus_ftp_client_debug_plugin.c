@@ -1173,7 +1173,6 @@ globus_ftp_client_debug_plugin_init(
     const char *				text)
 {
     globus_l_ftp_client_debug_plugin_t *	d;
-    globus_object_t *				err;
     globus_result_t				result;
     GlobusFuncName(globus_ftp_client_debug_plugin_init);
 

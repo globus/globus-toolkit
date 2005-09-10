@@ -453,6 +453,8 @@ globus_gsi_authz_gaa_authorize_async_callout(
     char				answer_debug_string[2048];
     globus_l_gsi_authz_gaa_cb_arg_t *   callback_wrapper_arg;
     globus_reltime_t                    reltime;    
+    void *                              getpolicy_param;
+    void *                              get_authorization_identity_param;
 
     globus_result_t                 	result = GLOBUS_SUCCESS;
     static char *                   	_function_name_ =
@@ -519,6 +521,47 @@ globus_gsi_authz_gaa_authorize_async_callout(
 	    _function_name_,
 	    action,
 	    object);
+
+        /*
+         * If action is "authz_assert", overwrite the assertion in 
+         * handle->gaa->getpolicy->param and 
+         * handle->gaa->authorization_identity_callback->param with the
+         * assertion pointed to by object
+         */
+        if (!strcmp(action, "authz_assert"))
+        {
+            if ((status = gaa_x_get_getpolicy_param(
+                                handle->gaa, &getpolicy_param))
+                != GAA_S_SUCCESS)
+            {
+                GLOBUS_GSI_AUTHZ_CALLOUT_ERROR(
+                    result,
+                    GLOBUS_GSI_AUTHZ_CALLOUT_CONFIGURATION_ERROR,
+                    ("No GAA getpolicy parameter configured"));
+                goto end;
+            }
+
+            if (getpolicy_param)
+            {
+                *((char **)getpolicy_param) = globus_libc_strdup(object);
+            }
+            if ((status = gaa_x_get_get_authorization_identity_param(
+             handle->gaa, &get_authorization_identity_param)) != GAA_S_SUCCESS)
+            {
+                GLOBUS_GSI_AUTHZ_CALLOUT_ERROR(
+                    result,
+                    GLOBUS_GSI_AUTHZ_CALLOUT_CONFIGURATION_ERROR,
+                    ("No GAA get_authorization_identity parameter configured"));
+                goto end;
+            }
+
+            if (get_authorization_identity_param)
+            {
+                *((char **)get_authorization_identity_param) =
+                        globus_libc_strdup(object);
+            }
+            goto end;
+        }
 
 	if ((status =
 	     gaa_get_object_policy_info(object,

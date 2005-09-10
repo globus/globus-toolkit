@@ -21,49 +21,57 @@ my @todo;
 
 sub basic_func
 {
-   my ($errors,$rc) = ("",0);
+    my ($errors,$rc) = ("",0);
    
-   $rc = system("./$test_prog 1>$test_prog.log.stdout 2>$test_prog.log.stderr") / 256;
+    $rc = system("./$test_prog 1>$test_prog.log.stdout 2>$test_prog.log.stderr") / 256;
 
-   if($rc != 0)
-   {
-      $errors .= "Test exited with $rc. ";
-   }
+    if($rc != 0)
+    {
+        $errors .= "Test exited with $rc. ";
+    }
 
-   if(-r 'core')
-   {
-      $errors .= "\n# Core file generated.";
-   }
-   
-   $rc = system("$diff $test_prog.log.stdout $test_prog.stdout") / 256;
-   
-   if($rc != 0)
-   {
-      $errors .= "Test produced unexpected output, see $test_prog.log.stdout";
-   }
+    if(-r 'core')
+    {
+        $errors .= "\n# Core file generated.";
+    }
+    open(EXPECTED, "<$test_prog.stdout") || die "Couldn't open $test_prog.stdout: $!\n";
+    open(LOGGED, "<$test_prog.log.stdout") || die "Couldn't open $test_prog.log.stdout: $!\n";
+    $rc = 0;
+    while ( my $line = <EXPECTED> )
+    {
+        my $logged = <LOGGED>;
+        $rc++ unless ( $logged =~ /$line/ );
+    }
+					   
+    # $rc = system("$diff $test_prog.log.stdout $test_prog.stdout") / 256;
+    
+    if($rc != 0)
+    {
+        $errors .= "Test produced unexpected output, see $test_prog.log.stdout";
+    }
 
-   if($errors eq "")
-   {
-      ok('success', 'success');
-      
-      if( -e "$test_prog.log.stdout" )
-      {
-	 unlink("$test_prog.log.stdout");
-      }
-  }
-   else
-   {
-      ok($errors, 'success');
-   }
+    if($errors eq "")
+    {
+        ok('success', 'success');
+        
+        if( -e "$test_prog.log.stdout" )
+        {
+	    unlink("$test_prog.log.stdout");
+        }
+    }
+    else
+    {
+        ok($errors, 'success');
+    }
 
 }
 
 sub sig_handler
 {
-   if( -e "$test_prog.log.stdout" )
-   {
-      unlink("$test_prog.log.stdout");
-   }
+    if( -e "$test_prog.log.stdout" )
+    {
+        unlink("$test_prog.log.stdout");
+    }
 }
 
 $SIG{'INT'}  = 'sig_handler';
@@ -79,5 +87,5 @@ plan tests => scalar(@tests), todo => \@todo;
 # And run them all.
 foreach (@tests)
 {
-   eval "&$_";
+    eval "&$_";
 }

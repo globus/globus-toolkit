@@ -1209,6 +1209,7 @@ globus_l_xio_gridftp_read_cb(
             finish = GLOBUS_FALSE;
             if (eof && requestor_result == GLOBUS_SUCCESS)
             {
+                globus_xio_driver_set_eof_received(requestor_op);
                 requestor_result = GlobusXIOErrorEOF();
             }
             /* handle->partial_requestor points to this requestor */
@@ -1231,6 +1232,7 @@ globus_l_xio_gridftp_read_cb(
                         requestor_op, NULL, GLOBUS_XIO_DD_SET_OFFSET, offset);
             if (eof && requestor_result == GLOBUS_SUCCESS)
             {
+                globus_xio_driver_set_eof_received(requestor_op);
                 requestor_result = GlobusXIOErrorEOF();
             }
         }
@@ -1429,55 +1431,60 @@ globus_l_xio_gridftp_read(
     if (globus_xio_driver_eof_received(op))
     {
         result = GlobusXIOErrorEOF();
-        goto error_eof_received;
+	globus_mutex_unlock(&handle->mutex);
+	globus_xio_operation_disable_cancel(op);
+	globus_memory_push_node(&handle->requestor_memory, (void*)requestor);
+	globus_xio_driver_finished_read(op, result, 0);  
     }
-    switch (handle->state)
+    else
     {
-        case GLOBUS_XIO_GRIDFTP_OPEN:           
-            result = globus_i_xio_gridftp_register_get(requestor);
-            if (result != GLOBUS_SUCCESS)
-            {   
-                goto error_get;
-            }   
-            /* fall through */  
-        case GLOBUS_XIO_GRIDFTP_IO_DONE:
-            /* fall through */
-        case GLOBUS_XIO_GRIDFTP_IO_PENDING:
-            result = globus_i_xio_gridftp_register_read(requestor);
-            if (result != GLOBUS_SUCCESS)
-            {
-                goto error_register_read;
-            }
-            ++handle->outstanding_io_count;                     
-            handle->state = GLOBUS_XIO_GRIDFTP_IO_PENDING;
-            break;
-        case GLOBUS_XIO_GRIDFTP_ABORT_PENDING:
-            handle->pending_ops_direction = GLOBUS_TRUE;        
-            handle->state = GLOBUS_XIO_GRIDFTP_ABORT_PENDING_IO_PENDING;
-            /* fall through */  
-        case GLOBUS_XIO_GRIDFTP_ABORT_PENDING_IO_PENDING:
-        {
-            /* simultaneous read and write not allowed */       
-            if (handle->pending_ops_direction == GLOBUS_FALSE)
-            {
-                result = GlobusXIOGridftpErrorPendingWrite();
-                goto error_pending_write;
-            }           
-            globus_fifo_enqueue(&handle->pending_ops_q, requestor);
-            break;
-        }
-        default:
-            /* if it gets here, something is wrong */
-            globus_assert(0 && "Unexpected state in read");
+	switch (handle->state)
+	{
+	    case GLOBUS_XIO_GRIDFTP_OPEN:           
+		result = globus_i_xio_gridftp_register_get(requestor);
+		if (result != GLOBUS_SUCCESS)
+		{   
+		    goto error_get;
+		}   
+		/* fall through */  
+	    case GLOBUS_XIO_GRIDFTP_IO_DONE:
+		/* fall through */
+	    case GLOBUS_XIO_GRIDFTP_IO_PENDING:
+		result = globus_i_xio_gridftp_register_read(requestor);
+		if (result != GLOBUS_SUCCESS)
+		{
+		    goto error_register_read;
+		}
+		++handle->outstanding_io_count;                     
+		handle->state = GLOBUS_XIO_GRIDFTP_IO_PENDING;
+		break;
+	    case GLOBUS_XIO_GRIDFTP_ABORT_PENDING:
+		handle->pending_ops_direction = GLOBUS_TRUE;        
+		handle->state = GLOBUS_XIO_GRIDFTP_ABORT_PENDING_IO_PENDING;
+		/* fall through */  
+	    case GLOBUS_XIO_GRIDFTP_ABORT_PENDING_IO_PENDING:
+	    {
+		/* simultaneous read and write not allowed */       
+		if (handle->pending_ops_direction == GLOBUS_FALSE)
+		{
+		    result = GlobusXIOGridftpErrorPendingWrite();
+		    goto error_pending_write;
+		}           
+		globus_fifo_enqueue(&handle->pending_ops_q, requestor);
+		break;
+	    }
+	    default:
+		/* if it gets here, something is wrong */
+		globus_assert(0 && "Unexpected state in read");
+	}
+	globus_mutex_unlock(&handle->mutex);
     }
-    globus_mutex_unlock(&handle->mutex);
     GlobusXIOGridftpDebugExit();
     return GLOBUS_SUCCESS;
 
 error_pending_write:
 error_register_read:
 error_get:
-error_eof_received:
 error_outstanding_partial_xfer:
 error_operation_canceled:
     globus_mutex_unlock(&handle->mutex);

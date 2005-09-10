@@ -674,6 +674,9 @@ globus_ftp_client_operationattr_init(
     i_attr->resume_third_party		= GLOBUS_FALSE;
     i_attr->force_striped		= GLOBUS_FALSE;
     i_attr->allocated_size		= 0;
+    i_attr->authz_assert                = GLOBUS_NULL;
+
+    i_attr->module_alg_str = NULL;
 
     tmp_name = globus_libc_strdup("anonymous");
     if(tmp_name == GLOBUS_NULL)
@@ -767,13 +770,14 @@ globus_ftp_client_operationattr_destroy(
 	i_attr->dcau.subject.subject = GLOBUS_NULL;
 	i_attr->dcau.mode = GLOBUS_FTP_CONTROL_DCAU_NONE;
     }
-    if(i_attr->module_name != NULL)
+    if(i_attr->module_alg_str != NULL)
     {
-        free(i_attr->module_name);
+        free(i_attr->module_alg_str);
     }
-    if(i_attr->module_args != NULL)
+    if(i_attr->authz_assert)
     {
-        free(i_attr->module_args);
+        globus_libc_free(i_attr->authz_assert);
+        i_attr->authz_assert = GLOBUS_NULL;
     }
     globus_libc_free(i_attr);
 
@@ -820,6 +824,7 @@ globus_ftp_client_operationattr_set_storage_module(
     const char *                            module_name,
     const char *                            module_args)
 {
+    char *                                  m_args="";
     globus_object_t *				err;
     globus_i_ftp_client_operationattr_t *	i_attr;
     GlobusFuncName(globus_ftp_client_operationattr_set_parallelism);
@@ -831,13 +836,18 @@ globus_ftp_client_operationattr_set_storage_module(
     }
     i_attr = *(globus_i_ftp_client_operationattr_t **) attr;
 
-    if(module_name != NULL)
-    {
-        i_attr->module_name = strdup(module_name);
-    }
     if(module_args != NULL)
     {
-        i_attr->module_args = strdup(module_args);
+        m_args = (char *)module_args;
+    }
+    if(module_name != NULL)
+    {
+        i_attr->module_alg_str = globus_common_create_string("%s=\"%s\"",
+            module_name, m_args);
+    }
+    else
+    {
+        i_attr->module_alg_str = NULL;
     }
     return GLOBUS_SUCCESS;
 
@@ -852,6 +862,9 @@ globus_ftp_client_operationattr_get_storage_module(
     char **                                     module_name,
     char **                                     module_args)
 {
+    int                                     sc;
+    char *                                  m_args = NULL;
+    char *                                  m_name = NULL;
     globus_object_t *				err;
     const globus_i_ftp_client_operationattr_t *	i_attr;
     GlobusFuncName(globus_ftp_client_operationattr_get_parallelism);
@@ -862,17 +875,49 @@ globus_ftp_client_operationattr_get_storage_module(
         goto error_exit;
     }
     i_attr = *(const globus_i_ftp_client_operationattr_t **) attr;
+
+    if(i_attr->module_alg_str == NULL)
+    {
+        m_name = NULL;
+        m_args = NULL;
+    }
+    else
+    {
+        size_t                          len;
+
+        len = strlen(i_attr->module_alg_str);
+        m_name = malloc(len);
+        m_args = malloc(len);
+        sc = sscanf(i_attr->module_alg_str, "%s=\"%[^\"]\"",
+            m_name, m_args);
+        if(sc != 2)
+        {
+            err = GLOBUS_I_FTP_CLIENT_ERROR_INVALID_PARAMETER("module_alg_str");
+            goto error_free;
+        }
+    }
     if(module_name != NULL)
     {
-        *module_name = strdup(i_attr->module_name);
+        *module_name = m_name;
+    }
+    else if(m_name != NULL)
+    {
+        free(m_name);
     }
     if(module_args != NULL)
     {
-        *module_args = strdup(i_attr->module_args);
+        *module_args = m_args;
+    }
+    else if(m_args != NULL)
+    {
+        free(m_args);
     }
 
     return GLOBUS_SUCCESS;
 
+error_free:
+    free(m_name);
+    free(m_args);
 error_exit:
     return globus_error_put(err);
 }
@@ -1072,6 +1117,103 @@ error_exit:
 }
 /* globus_ftp_client_operationattr_get_allocate() */
 /* @} */
+
+/**
+ * @name authz_assert
+ */
+/* @{ */
+/**
+ * Set/Get the authz_assert attribute for an ftp client attribute set.
+ * @ingroup globus_ftp_client_operationattr
+ *
+ * This attribute lets the user set an AUTHORIZATION assertion to be passed to 
+ * the server
+ *
+ * @param attr
+ *        The attribute set to query or modify.
+ * @param authz_assert
+ *        The AUTHORIZATION assertion.
+ * @param cache_authz_assert
+ *        Boolean that specifies whether to cache this assertion for 
+ *        subsequent operations
+ *
+ */
+globus_result_t
+globus_ftp_client_operationattr_set_authz_assert(
+    globus_ftp_client_operationattr_t *         attr,
+    const char *                                authz_assert,
+    globus_bool_t                               cache_authz_assert)
+{
+    globus_object_t *                           err;
+    globus_i_ftp_client_operationattr_t *       i_attr;
+    GlobusFuncName(globus_ftp_client_operationattr_set_authz_assert);
+
+    if(attr == GLOBUS_NULL)
+    {
+        err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr");
+
+        goto error_exit;
+    }
+    if(authz_assert == GLOBUS_NULL)
+    {
+        err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("authz_assert");
+
+        goto error_exit;
+    }
+    i_attr = *(globus_i_ftp_client_operationattr_t **) attr;
+
+    i_attr->authz_assert = globus_libc_strdup(authz_assert);
+    i_attr->cache_authz_assert = cache_authz_assert;
+    return GLOBUS_SUCCESS;
+
+error_exit:
+    return globus_error_put(err);
+}
+/* globus_ftp_client_operationattr_set_authz_assert() */
+
+globus_result_t
+globus_ftp_client_operationattr_get_authz_assert(
+    const globus_ftp_client_operationattr_t *   attr,
+    char **                                     authz_assert,
+    globus_bool_t *                             cache_authz_assert)
+{
+    globus_object_t *                           err;
+    const globus_i_ftp_client_operationattr_t * i_attr;
+    GlobusFuncName(globus_ftp_client_operationattr_get_authz_assert);
+
+    if(attr == GLOBUS_NULL)
+    {
+        err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr");
+
+        goto error_exit;
+    }
+    if(authz_assert == GLOBUS_NULL)
+    {
+        err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("authz_assert");
+
+        goto error_exit;
+    }
+    if(cache_authz_assert == GLOBUS_NULL)
+    {
+        err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("cache_authz_assert");
+
+        goto error_exit;
+    }
+
+    i_attr = *(const globus_i_ftp_client_operationattr_t **) attr;
+
+    *authz_assert = globus_libc_strdup(i_attr->authz_assert);
+    *cache_authz_assert = i_attr->cache_authz_assert;
+
+    return GLOBUS_SUCCESS;
+
+error_exit:
+    return globus_error_put(err);
+}
+
+/* globus_ftp_client_operationattr_get_authz_assert() */
+
+
 
 /* @{ */
 /**
@@ -2576,9 +2718,11 @@ globus_ftp_client_operationattr_copy(
 {
     globus_result_t				result;
     const globus_i_ftp_client_operationattr_t *	i_src;
+    globus_i_ftp_client_operationattr_t *	i_dst;
 
     result = globus_ftp_client_operationattr_init(dst);
 
+    i_dst = *(globus_i_ftp_client_operationattr_t **) dst;
     i_src = *(const globus_i_ftp_client_operationattr_t **) src;
 
     if(result)
@@ -2681,6 +2825,17 @@ globus_ftp_client_operationattr_copy(
 	goto destroy_exit;
     }
 
+    if (i_src->authz_assert)
+    {
+        result =
+            globus_ftp_client_operationattr_set_authz_assert(
+                        dst, i_src->authz_assert, GLOBUS_FALSE);
+        if(result)
+        {
+            goto destroy_exit;
+        }
+    }
+
     result =
 	globus_ftp_client_operationattr_set_resume_third_party_transfer(
 	    dst,
@@ -2711,7 +2866,20 @@ globus_ftp_client_operationattr_copy(
     {
 	goto destroy_exit;
     }
-    
+
+    i_dst->module_alg_str = NULL;
+    if(i_src->module_alg_str)
+    {
+        i_dst->module_alg_str = strdup(i_src->module_alg_str);
+
+        if(i_dst->module_alg_str == NULL)
+        {
+            result = globus_error_put(GLOBUS_I_FTP_CLIENT_ERROR_OUT_OF_MEMORY());
+            goto destroy_exit;
+        }
+    }
+
+
     if(!i_src->using_default_auth)
     {
 	result = 

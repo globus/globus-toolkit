@@ -142,8 +142,10 @@ typedef struct globus_i_ftp_client_operationattr_t
     globus_bool_t                               allow_ipv6;
     globus_off_t                                allocated_size;
 
-    char *                                      module_name;
-    char *                                      module_args;
+    char *                                      authz_assert;
+    globus_bool_t                               cache_authz_assert;
+
+    char *                                      module_alg_str;
 }
 globus_i_ftp_client_operationattr_t;
 
@@ -304,6 +306,8 @@ typedef enum
     GLOBUS_FTP_CLIENT_TARGET_PASV,
     GLOBUS_FTP_CLIENT_TARGET_SETUP_PORT,
     GLOBUS_FTP_CLIENT_TARGET_PORT,
+    GLOBUS_FTP_CLIENT_TARGET_SETUP_AUTHZ_ASSERT,
+    GLOBUS_FTP_CLIENT_TARGET_AUTHZ_ASSERT,
     GLOBUS_FTP_CLIENT_TARGET_SETUP_ALLO,
     GLOBUS_FTP_CLIENT_TARGET_ALLO,
     GLOBUS_FTP_CLIENT_TARGET_SETUP_REST_STREAM,
@@ -535,16 +539,6 @@ typedef struct globus_i_ftp_client_handle_t
     globus_off_t                                partial_end_offset;
 
     /**
-     * User-supplied algorithm choosing string for an ERET.
-     */
-    char *                                      eret_alg_str;
-    /**
-     * User-supplied algorithm choosing string for an ESTO.
-     */
-    char *                                      esto_alg_str;
-    /*** end add by bresnaha ***/
- 
-    /**
      * Base offset for a transfer, to be added to all offsets in
      * stream mode
      */
@@ -623,6 +617,7 @@ typedef struct globus_i_ftp_client_target_s
     globus_ftp_control_structure_t		structure;
     globus_ftp_control_layout_t			layout;
     globus_ftp_control_parallelism_t		parallelism;
+    char *                                      authz_assert;
 
     /** Requested settings */
     globus_i_ftp_client_operationattr_t *	attr;

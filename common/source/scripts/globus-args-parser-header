@@ -27,12 +27,11 @@ EOF
 	{
 	    ${GLOBUS_SH_CAT-cat} 1>&2 <<EOF
 
-Error, argument $1 : $2
+ERROR: option $1 : $2
 EOF
 	    globus_args_short_usage
 	    exit 1
 	}
-
 	
 	globus_args_unrecognized_option()
 	{

@@ -4,7 +4,7 @@ globus_wsrf_rft_common_schema               ws-transfer/reliable/common/schema
 globus_wsrf_rft_client_java                 ws-transfer/reliable/client/java/source
 globus_wsrf_rft_test                        ws-transfer/reliable/service/test/unit
 globus_wsrf_rft_service_java_usage          ws-transfer/reliable/service/java/usage
-globus_wsrf_rft_service_java_setup          ws-transfer/reliable/service/java/setup gpt
+globus_wsrf_rft_service_java_setup          ws-transfer/reliable/service/java/setup
 globus_wsrf_rendezvous_common_schema        ws-rendezvous/common/schema
 globus_wsrf_rendezvous_common_java          ws-rendezvous/common/java/source
 globus_wsrf_rendezvous_service_java         ws-rendezvous/service/java/source
@@ -24,6 +24,8 @@ globus_wsrf_gram_common_java                ws-gram/common/java/source
 globus_wsrf_gram_common_schema              ws-gram/common/schema                           
 
 globus_wsrf_gram_client_java                ws-gram/client/java/source    
+globus_wsrf_gram_client_tools               ws-gram/client/c/tools/source
+globus_wsrf_gram_client_tools_test          ws-gram/client/c/tools/test
 globus_wsrf_gram_scheduler_test             ws-gram/client/test gpt
 globus_scheduler_event_generator_fork       ws-gram/job_monitoring/fork/c/source gpt
 globus_scheduler_event_generator_fork_setup ws-gram/job_monitoring/fork/c/setup gpt

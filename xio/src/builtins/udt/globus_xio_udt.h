@@ -40,7 +40,7 @@
 #define GLOBUS_L_XIO_UDT_MAX_EXP_COUNT 		25
 #define GLOBUS_L_XIO_UDT_IP_LEN 		16
 
-#define GLOBUS_XIO_UDT_INVALID_HANDLE GLOBUS_XIO_SYSTEM_INVALID_HANDLE
+#define GLOBUS_XIO_UDT_INVALID_HANDLE GLOBUS_XIO_SYSTEM_INVALID_SOCKET
 
 typedef enum
 {
@@ -79,13 +79,13 @@ typedef enum
     /**
      *  handle/server attrs, handle cntl
      */
-    /* globus_xio_system_native_handle_t * handle_out */
+    /* globus_xio_system_socket_t *     handle_out */
     GLOBUS_XIO_UDT_GET_HANDLE = GLOBUS_XIO_TCP_GET_HANDLE,
 
     /**
      *  handle/server attrs
      */
-    /* globus_xio_system_native_handle_t  handle */
+    /* globus_xio_system_socket_t       handle */
     GLOBUS_XIO_UDT_SET_HANDLE = GLOBUS_XIO_TCP_SET_HANDLE,
     /* const char *                     interface */
     GLOBUS_XIO_UDT_SET_INTERFACE = GLOBUS_XIO_TCP_SET_INTERFACE,       

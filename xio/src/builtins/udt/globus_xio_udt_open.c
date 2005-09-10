@@ -1683,7 +1683,7 @@ globus_l_xio_udt_server_cntl(
     globus_l_server_t *                 server;
     globus_result_t                     result = GLOBUS_SUCCESS;
     char **                             out_string;
-    globus_xio_system_native_handle_t * out_handle;
+    globus_xio_system_socket_t *        out_handle;
     GlobusXIOName(globus_l_xio_udt_server_cntl);
     
     GlobusXIOUdtDebugEnter();
@@ -1691,9 +1691,9 @@ globus_l_xio_udt_server_cntl(
     
     switch(cmd)
     {
-      /* globus_xio_system_native_handle_t *   handle_out */
+      /* globus_xio_system_socket_t *   handle_out */
       case GLOBUS_XIO_UDT_GET_HANDLE:   
-        out_handle = va_arg(ap, globus_xio_system_native_handle_t *);
+        out_handle = va_arg(ap, globus_xio_system_socket_t *);
         result = globus_xio_data_descriptor_cntl(
             server->data_desc,
             globus_l_xio_udt_server_udp_driver,
@@ -1800,7 +1800,7 @@ globus_l_xio_udt_cntl(
     globus_bool_t *                     out_bool;
     int                                 in_int;
     char **                             out_string;
-    globus_xio_system_native_handle_t * out_handle;
+    globus_xio_system_socket_t *        out_handle;
 
     GlobusXIOName(globus_l_xio_udt_cntl);
 
@@ -1810,9 +1810,9 @@ globus_l_xio_udt_cntl(
 
     switch(cmd)
     {
-      /* globus_xio_system_native_handle_t *   handle_out */
+      /* globus_xio_system_socket_t *   handle_out */
       case GLOBUS_XIO_UDT_GET_HANDLE:
-        out_handle = va_arg(ap, globus_xio_system_native_handle_t *);
+        out_handle = va_arg(ap, globus_xio_system_socket_t *);
         *out_handle = handle->attr->handle;
         break;
       
@@ -1987,7 +1987,7 @@ globus_l_xio_udt_link_cntl(
     globus_l_handle_t *                 handle;
     globus_result_t                     result = GLOBUS_SUCCESS;
     char **                             out_string;
-    globus_xio_system_native_handle_t * out_handle;
+    globus_xio_system_socket_t *        out_handle;
     GlobusXIOName(globus_l_xio_udt_link_cntl);
 
     GlobusXIOUdtDebugEnter();
@@ -1998,9 +1998,9 @@ globus_l_xio_udt_link_cntl(
      */
     switch(cmd)
     {
-      /* globus_xio_system_native_handle_t *   handle_out */
+      /* globus_xio_system_socket_t *   handle_out */
       case GLOBUS_XIO_UDT_GET_HANDLE:
-        out_handle = va_arg(ap, globus_xio_system_native_handle_t *);
+        out_handle = va_arg(ap, globus_xio_system_socket_t *);
         result = globus_xio_driver_handle_cntl(
             handle->driver_handle,
             globus_l_xio_udt_udp_driver,

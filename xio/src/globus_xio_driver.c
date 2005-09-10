@@ -2060,6 +2060,9 @@ globus_xio_operation_unblock_timeout(
     op->block_timeout = GLOBUS_FALSE;
 }
 
+/* note, this is called from win32 threads, therefor, it can never use
+ * globus mutex calls
+ */
 void
 globus_xio_operation_refresh_timeout(
     globus_xio_operation_t              op)

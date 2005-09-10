@@ -964,6 +964,17 @@ globus_l_gfs_request_command(
         type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_SITE;
     }
     else if(strcmp(cmd_array[0], "SITE") == 0 &&
+        strcmp(cmd_array[1], "AUTHZ_ASSERT") == 0)
+    {
+        command_info->command = GLOBUS_GFS_CMD_SITE_AUTHZ_ASSERT;
+        command_info->authz_assert = strdup(cmd_array[2]);
+        if(command_info->authz_assert == NULL)
+        {
+            goto err;
+        }
+        type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_SITE;
+    }
+    else if(strcmp(cmd_array[0], "SITE") == 0 &&
         strcmp(cmd_array[1], "RDEL") == 0)
     {
         command_info->command = GLOBUS_GFS_CMD_SITE_RDEL;
@@ -1960,6 +1971,26 @@ globus_l_gfs_add_commands(
     }
     result = globus_gsc_959_command_add(
         control_handle,
+        "SITE AUTHZ_ASSERT",
+        globus_l_gfs_request_command,
+        GLOBUS_GSC_COMMAND_POST_AUTH,
+        3,
+        3,
+        "SITE AUTHZ_ASSERT <sp> pathname",
+        instance);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+    result = globus_gridftp_server_control_add_feature(
+                                        control_handle, "AUTHZ_ASSERT");
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+
+    result = globus_gsc_959_command_add(
+        control_handle,
         "SITE RDEL",
         globus_l_gfs_request_command,
         GLOBUS_GSC_COMMAND_POST_AUTH,
@@ -2061,7 +2092,7 @@ error:
 globus_result_t
 globus_i_gfs_control_start(
     globus_xio_handle_t                 handle,
-    globus_xio_system_native_handle_t   system_handle,
+    globus_xio_system_socket_t          system_handle,
     const char *                        remote_contact,
     const char *                        local_contact,
     globus_i_gfs_server_close_cb_t      close_func,

@@ -100,6 +100,10 @@ typedef struct
     globus_bool_t                       list_uses_data_mode;
     globus_bool_t                       ipv6;
     globus_bool_t                       allo;
+    char *                              src_authz_assert;
+    char *                              dst_authz_assert;
+    globus_bool_t                       cache_src_authz_assert;
+    globus_bool_t                       cache_dst_authz_assert;
 
     /* the need for 2 is due to the fact that gass copy is
      * not copying attributes
@@ -136,7 +140,19 @@ globus_l_guc_entry_cb(
     const char *                         url,
     const globus_gass_copy_glob_stat_t * info_stat,
     void *                               user_arg);
-    
+   
+static
+void
+globus_l_guc_ftp_opattr_init(
+    globus_l_guc_info_t *                guc_info,
+    globus_bool_t                        src);
+
+static
+globus_result_t
+globus_l_guc_file_to_string(
+    char *                               filename,
+    char **                              str);
+ 
 static
 int
 globus_l_guc_parse_arguments(
@@ -347,18 +363,33 @@ const char * long_usage =
 "   -mp  | -module-parameters <gridftp storage module parameters>\n"
 "       Set the backend storage module arguments to use for both the source\n"
 "       and destination in a GridFTP transfer\n"
-"   -smn | -src-module-parameters <gridftp storage module name>\n"
+"   -smn | -src-module-name <gridftp storage module name>\n"
 "       Set the backend storage module to use for the source in a GridFTP\n"
 "       transfer\n"
 "   -smp | -src-module-parameters <gridftp storage module parameters>\n"
 "       Set the backend storage module arguments to use for the source\n"
 "       in a GridFTP transfer\n"
-"   -dmn | -dst-module-parameters <gridftp storage module name>\n"
+"   -dmn | -dst-module-name <gridftp storage module name>\n"
 "       Set the backend storage module to use for the destination in a GridFTP\n"
 "       transfer\n"
 "   -dmp | -dst-module-parameters <gridftp storage module parameters>\n"
 "       Set the backend storage module arguments to use for the destination\n"
 "       in a GridFTP transfer\n"
+"   -aa | -authz-assert <authorization assertion file>\n"
+"       Use the assertions in this file to authorize the access with both\n"
+"       source and dest servers\n" 
+"   -saa | -src-authz-assert <authorization assertion file>\n"
+"       Use the assertions in this file to authorize the access with source\n"
+"       server\n" 
+"   -daa | -dst-authz-assert <authorization assertion file>\n"
+"       Use the assertions in this file to authorize the access with dest\n"
+"       server\n" 
+"   -cache-aa | -cache-authz-assert\n"
+"       Cache the authz assertion for subsequent transfers\n"
+"   -cache-saa | -cache-src-authz-assert\n"
+"       Cache the src authz assertion for subsequent transfers\n"
+"   -cache-daa | -cache-dst-authz-assert\n"
+"       Cache the dst authz assertion for subsequent transfers\n"
 "\n";
 
 /***********
@@ -446,6 +477,12 @@ enum
     arg_create_dest,
     arg_fast,
     arg_ipv6,
+    arg_authz_assert,
+    arg_src_authz_assert,
+    arg_dst_authz_assert,
+    arg_cache_authz_assert,
+    arg_cache_src_authz_assert,
+    arg_cache_dst_authz_assert,
     arg_allo,
     arg_noallo,
     arg_stripe_bs,
@@ -502,6 +539,9 @@ flagdef(arg_fast, "-fast", "-fast-data-channels");
 flagdef(arg_ipv6, "-ipv6","-IPv6");
 flagdef(arg_allo, "-allo","-allocate");
 flagdef(arg_noallo, "-no-allo","-no-allocate");
+flagdef(arg_cache_authz_assert, "-cache-aa","-cache-authz-assert");
+flagdef(arg_cache_src_authz_assert, "-cache-saa","-cache-src-authz-assert");
+flagdef(arg_cache_dst_authz_assert, "-cache-daa","-cache-dst-authz-assert");
 
 oneargdef(arg_ext, "-X", "-extentions", NULL, NULL);
 oneargdef(arg_modname, "-mn", "-module-name", NULL, NULL);
@@ -524,6 +564,9 @@ oneargdef(arg_rst_interval, "-rst-interval", "-restart-interval", test_integer, 
 oneargdef(arg_rst_timeout, "-rst-timeout", "-restart-timeout", test_integer, GLOBUS_NULL);
 oneargdef(arg_partial_offset, "-off", "-partial-offset", test_integer, GLOBUS_NULL);
 oneargdef(arg_partial_length, "-len", "-partial-length", test_integer, GLOBUS_NULL);
+oneargdef(arg_authz_assert, "-aa", "-authz-assert", GLOBUS_NULL, GLOBUS_NULL);
+oneargdef(arg_src_authz_assert, "-saa", "-src-authz-assert", GLOBUS_NULL, GLOBUS_NULL);
+oneargdef(arg_dst_authz_assert, "-daa", "-dst-authz-assert", GLOBUS_NULL, GLOBUS_NULL);
 
 
 static globus_args_option_descriptor_t args_options[arg_num];
@@ -568,6 +611,12 @@ static globus_args_option_descriptor_t args_options[arg_num];
     setupopt(arg_create_dest);          \
     setupopt(arg_fast);	                \
     setupopt(arg_ipv6);         	\
+    setupopt(arg_authz_assert);         \
+    setupopt(arg_src_authz_assert);     \
+    setupopt(arg_dst_authz_assert);     \
+    setupopt(arg_cache_authz_assert);         \
+    setupopt(arg_cache_src_authz_assert);     \
+    setupopt(arg_cache_dst_authz_assert);     \
     setupopt(arg_allo);         	\
     setupopt(arg_noallo);         	\
     setupopt(arg_stripe_bs);         	\
@@ -680,6 +729,10 @@ globus_l_guc_ext(
     ext_info.partial_length = guc_info->partial_length;
     ext_info.list_uses_data_mode = guc_info->list_uses_data_mode;
     ext_info.ipv6 = guc_info->ipv6;
+    ext_info.src_authz_assert = guc_info->src_authz_assert;
+    ext_info.dst_authz_assert = guc_info->dst_authz_assert;
+    ext_info.cache_src_authz_assert = guc_info->cache_src_authz_assert;
+    ext_info.cache_dst_authz_assert = guc_info->cache_dst_authz_assert;
     ext_info.allo = guc_info->allo;
     ext_info.verbose = g_verbose_flag;
     ext_info.quiet = g_quiet_flag;
@@ -1236,6 +1289,51 @@ error_parse:
 
 
 static
+void
+globus_l_guc_ftp_opattr_init(
+    globus_l_guc_info_t *                guc_info,
+    globus_bool_t                        src)
+{
+    if(src)
+    {      
+	globus_ftp_client_operationattr_init(&guc_info->source_ftp_attr);
+	if(guc_info->src_module_name != NULL)
+	{
+	    globus_ftp_client_operationattr_set_storage_module(
+		&guc_info->source_ftp_attr,
+		guc_info->src_module_name,
+		guc_info->src_module_args);
+        }
+        if(guc_info->src_authz_assert != NULL)
+        {
+            globus_ftp_client_operationattr_set_authz_assert(
+                &guc_info->source_ftp_attr,
+                guc_info->src_authz_assert,
+                guc_info->cache_src_authz_assert);
+	}
+    }
+    else
+    {
+	globus_ftp_client_operationattr_init(&guc_info->dest_ftp_attr);
+	if(guc_info->dst_module_name != NULL)
+	{
+	    globus_ftp_client_operationattr_set_storage_module(
+		&guc_info->dest_ftp_attr,
+		guc_info->dst_module_name,
+		guc_info->dst_module_args);
+        }
+        if(guc_info->dst_authz_assert != NULL)
+        {
+            globus_ftp_client_operationattr_set_authz_assert(
+                &guc_info->dest_ftp_attr,
+                guc_info->dst_authz_assert,
+                guc_info->cache_dst_authz_assert);
+	}
+    }
+}
+
+
+static
 globus_result_t
 globus_l_guc_transfer_files(
     globus_l_guc_info_t *                        guc_info,
@@ -1274,22 +1372,8 @@ globus_l_guc_transfer_files(
     {        
     
         /* something strange in gass copy forces the need for this */
-        globus_ftp_client_operationattr_init(&guc_info->source_ftp_attr);
-        if(guc_info->src_module_name != NULL)
-        {
-            globus_ftp_client_operationattr_set_storage_module(
-                &guc_info->source_ftp_attr,
-                guc_info->src_module_name,
-                guc_info->src_module_args);
-        }
-        globus_ftp_client_operationattr_init(&guc_info->dest_ftp_attr);
-        if(guc_info->dst_module_name != NULL)
-        {
-            globus_ftp_client_operationattr_set_storage_module(
-                &guc_info->dest_ftp_attr,
-                guc_info->dst_module_name,
-                guc_info->dst_module_args);
-        }
+        globus_l_guc_ftp_opattr_init(guc_info, GLOBUS_TRUE);
+        globus_l_guc_ftp_opattr_init(guc_info, GLOBUS_FALSE);
 
         url_pair = (globus_l_guc_src_dst_pair_t *)
                     globus_fifo_dequeue(&guc_info->expanded_url_list);
@@ -1639,6 +1723,52 @@ error_dirlist:
     return result;
 }
 
+static
+globus_result_t
+globus_l_guc_file_to_string(
+    char *                                          filename,
+    char **                                         str)
+{
+    FILE *                                          fp;
+    int                                             numbytes;
+    globus_result_t                                 result = GLOBUS_SUCCESS;
+
+    fp = fopen(filename, "r");
+    if (fp == NULL)
+    {
+        goto error_open;
+    }
+    fseek(fp, 0L, SEEK_END);
+    numbytes = ftell(fp);
+    fseek(fp, 0L, SEEK_SET);
+    *str = (char*)calloc(numbytes+1, sizeof(char));
+    if (*str == NULL)
+    {
+        goto error_memory;
+    }
+    fread(*str, sizeof(char), numbytes, fp);
+    fclose(fp);
+    return result;
+
+error_memory:
+    result = globus_error_put(
+	globus_error_construct_string(
+	    GLOBUS_NULL,
+	    GLOBUS_NULL,
+	    _GASCSL("Could not open file: %s\n"),
+            filename));      
+    fclose(fp);
+error_open:
+    if (result == GLOBUS_SUCCESS)
+    { 
+	result = globus_error_put(
+	    globus_error_construct_string(
+		GLOBUS_NULL,
+		GLOBUS_NULL,
+		_GASCSL("Could not allocate memory.\n")));      
+    }
+    return result;
+} 
 
 static
 int
@@ -1658,6 +1788,8 @@ globus_l_guc_parse_arguments(
     char *                                          tmp_str;
     int                                             ext_arg_size;
     globus_off_t                                    tmp_off;
+    char *                                          authz_assert = NULL;
+    globus_result_t                                 result;
 
     guc_info->no_3pt = GLOBUS_FALSE;
     guc_info->no_dcau = GLOBUS_FALSE;
@@ -1686,7 +1818,10 @@ globus_l_guc_parse_arguments(
     guc_info->src_module_name = GLOBUS_NULL;
     guc_info->dst_module_args = GLOBUS_NULL;
     guc_info->src_module_args = GLOBUS_NULL;
-
+    guc_info->src_authz_assert = GLOBUS_NULL;
+    guc_info->dst_authz_assert = GLOBUS_NULL;
+    guc_info->cache_src_authz_assert = GLOBUS_FALSE;
+    guc_info->cache_dst_authz_assert = GLOBUS_FALSE;
  
     /* determine the program name */
     
@@ -1893,6 +2028,49 @@ globus_l_guc_parse_arguments(
 	case arg_ipv6:
 	    guc_info->ipv6 = GLOBUS_TRUE;
 	    break;
+        case arg_authz_assert:
+            result = globus_l_guc_file_to_string(
+                               instance->values[0], &authz_assert);
+            if (result != GLOBUS_SUCCESS)
+            {
+		fprintf(stderr, 
+                    _GASCSL("Error: Unable to read authz assertion %s\n"),
+		    globus_error_print_friendly(globus_error_peek(result)));
+                return -1;
+            }
+            break;
+        case arg_src_authz_assert:
+            result = globus_l_guc_file_to_string(
+		       instance->values[0], &guc_info->src_authz_assert);
+            if (result != GLOBUS_SUCCESS)
+            {
+		fprintf(stderr, 
+                    _GASCSL("Error: Unable to read src authz assertion %s\n"),
+		    globus_error_print_friendly(globus_error_peek(result)));
+                return -1;
+            }
+            break;
+        case arg_dst_authz_assert:
+            result = globus_l_guc_file_to_string(
+		       instance->values[0], &guc_info->dst_authz_assert);
+            if (result != GLOBUS_SUCCESS)
+            {
+		fprintf(stderr, 
+                    _GASCSL("Error: Unable to read dst authz assertion %s\n"),
+		    globus_error_print_friendly(globus_error_peek(result)));
+                return -1;
+            }
+            break;
+        case arg_cache_authz_assert:
+            guc_info->cache_src_authz_assert = GLOBUS_TRUE;
+            guc_info->cache_dst_authz_assert = GLOBUS_TRUE;
+            break;
+        case arg_cache_src_authz_assert:
+            guc_info->cache_src_authz_assert = GLOBUS_TRUE;
+            break;
+        case arg_cache_dst_authz_assert:
+            guc_info->cache_dst_authz_assert = GLOBUS_TRUE;
+            break;
 	case arg_allo:
 	    guc_info->allo = GLOBUS_TRUE;
 	    break;
@@ -2009,6 +2187,17 @@ globus_l_guc_parse_arguments(
 
     if(subject) globus_free(subject);
 
+    if (authz_assert && !guc_info->src_authz_assert)
+    {
+        guc_info->src_authz_assert = globus_libc_strdup(authz_assert);
+    }
+    if (authz_assert && !guc_info->dst_authz_assert)
+    {
+        guc_info->dst_authz_assert = globus_libc_strdup(authz_assert);
+    }
+
+    if(authz_assert) globus_free(authz_assert);
+
     /* check arguemnt validity */
     if((guc_info->options & GLOBUS_URL_COPY_ARG_ASCII) &&
        (guc_info->options & GLOBUS_URL_COPY_ARG_BINARY) )
@@ -2078,15 +2267,8 @@ globus_l_guc_expand_urls(
             {
                 *dst_filename = '\0';
             }
-                    
-            globus_ftp_client_operationattr_init(&guc_info->dest_ftp_attr);
-            if(guc_info->dst_module_name != NULL)
-            {
-                globus_ftp_client_operationattr_set_storage_module(
-                    &guc_info->dest_ftp_attr,
-                    guc_info->dst_module_name,
-                    guc_info->dst_module_args);
-            }
+
+            globus_l_guc_ftp_opattr_init(guc_info, GLOBUS_FALSE); 
 
             globus_l_guc_gass_attr_init(
                 dest_gass_copy_attr,
@@ -2110,15 +2292,8 @@ globus_l_guc_expand_urls(
             256,
             globus_hashtable_string_hash,
             globus_hashtable_string_keyeq);
-                           
-        globus_ftp_client_operationattr_init(&guc_info->source_ftp_attr);
-        if(guc_info->src_module_name != NULL)
-        {
-            globus_ftp_client_operationattr_set_storage_module(
-                &guc_info->source_ftp_attr,
-                guc_info->src_module_name,
-                guc_info->src_module_args);
-        }
+
+        globus_l_guc_ftp_opattr_init(guc_info, GLOBUS_TRUE); 
 
         globus_l_guc_gass_attr_init(
             gass_copy_attr,

@@ -39,6 +39,10 @@ typedef struct globus_guc_info_s
     globus_bool_t                       list_uses_data_mode;
     globus_bool_t                       ipv6;
     globus_bool_t                       allo;
+    char *                              src_authz_assert;
+    char *                              dst_authz_assert;
+    globus_bool_t                       cache_src_authz_assert;
+    globus_bool_t                       cache_dst_authz_assert;
 
     globus_bool_t                       verbose;
     globus_bool_t                       quiet;
