@@ -54,21 +54,6 @@ GlobusXIODefineModule(udp) =
             __LINE__,                                                       \
             "Unable to write full request"))
 
-#define GlobusIXIOUdpCloseFd(fd)                                            \
-    do                                                                      \
-    {                                                                       \
-        int                             _rc;                                \
-        globus_xio_system_socket_t      _fd;                                \
-                                                                            \
-        _fd = (fd);                                                         \
-        do                                                                  \
-        {                                                                   \
-            _rc = close(_fd);                                               \
-        } while(_rc < 0 && errno == EINTR);                                 \
-                                                                            \
-        (fd) = GLOBUS_XIO_SYSTEM_INVALID_SOCKET;                            \
-    } while(0)
-
 /*
  *  attribute structure
  */
@@ -121,7 +106,7 @@ static globus_l_attr_t                  globus_l_xio_udp_attr_default =
  */
 typedef struct
 {
-    globus_xio_system_handle_t          system;
+    globus_xio_system_socket_handle_t   system;
     globus_xio_system_socket_t          fd;
     globus_bool_t                       connected;
     globus_bool_t                       converted;
@@ -847,7 +832,7 @@ globus_l_xio_udp_join_multicast(
 error_join:
 error_bind:
 error_attrs:
-    GlobusIXIOUdpCloseFd(fd);
+    globus_xio_system_socket_close(fd);
 error_socket:
     return result;
 }
@@ -931,7 +916,7 @@ globus_l_xio_udp_create_listener(
             {
                 result = GlobusXIOErrorWrapFailed(
                     "globus_l_xio_udp_apply_handle_attrs", result);
-                GlobusIXIOUdpCloseFd(fd);
+                globus_xio_system_socket_close(fd);
                 continue;
             }
             
@@ -945,7 +930,7 @@ globus_l_xio_udp_create_listener(
             {
                 result = GlobusXIOErrorWrapFailed(
                     "globus_l_xio_udp_bind", result);
-                GlobusIXIOUdpCloseFd(fd);
+                globus_xio_system_socket_close(fd);
                 continue;
             }
             
@@ -1164,12 +1149,12 @@ globus_l_xio_udp_open(
         }
     }
     
-    result = globus_xio_system_handle_init_socket(
+    result = globus_xio_system_socket_init(
         &handle->system, handle->fd, GLOBUS_XIO_SYSTEM_UDP);
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusXIOErrorWrapFailed(
-            "globus_xio_system_handle_init_socket", result);
+            "globus_xio_system_socket_init", result);
         goto error_init;
     }
     
@@ -1181,7 +1166,7 @@ error_init:
 error_connect:
     if(!handle->converted)
     {
-        GlobusIXIOUdpCloseFd(handle->fd);
+        globus_xio_system_socket_close(handle->fd);
     }
     
 error_listen:
@@ -1207,11 +1192,11 @@ globus_l_xio_udp_close(
 
     handle = (globus_l_handle_t *) driver_specific_handle;
     
-    globus_xio_system_handle_destroy(handle->system);
+    globus_xio_system_socket_destroy(handle->system);
     
     if(!handle->converted)
     {
-        GlobusIXIOUdpCloseFd(handle->fd);
+        globus_xio_system_socket_close(handle->fd);
     }
     
     globus_xio_driver_finished_close(op, GLOBUS_SUCCESS);
@@ -1276,7 +1261,7 @@ globus_l_xio_udp_read(
         globus_size_t                   nbytes;
         globus_result_t                 result;
         
-        result = globus_xio_system_read_ex(
+        result = globus_xio_system_socket_read(
             handle->system,
             iovec,
             iovec_count,
@@ -1296,7 +1281,7 @@ globus_l_xio_udp_read(
     }
     else
     {
-        return globus_xio_system_register_read_ex(
+        return globus_xio_system_socket_register_read(
             op,
             handle->system,
             iovec,
@@ -1345,12 +1330,12 @@ globus_l_xio_udp_write(
     /* for UDP sockets, this is supposed to write the entire thing at all
      * times if it fits in buffer
      */
-    result = globus_xio_system_write_ex(
+    result = globus_xio_system_socket_write(
         handle->system, iovec, iovec_count, 0, 0, addr, &nbytes);
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusXIOErrorWrapFailed(
-            "globus_xio_system_write_ex", result);
+            "globus_xio_system_socket_write", result);
         goto error_write;
     }
     

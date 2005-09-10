@@ -706,7 +706,59 @@ error_errno:
 }
 
 globus_result_t
-globus_i_xio_system_try_read_ex(
+globus_i_xio_system_file_try_read(
+    globus_xio_system_file_t            handle,
+    const globus_xio_iovec_t *          iov,
+    int                                 iovc,
+    globus_size_t *                     nbytes)
+{
+    globus_result_t                     result;
+    GlobusXIOName(globus_i_xio_system_file_try_read);
+
+    GlobusXIOSystemDebugEnter();
+
+    if(iovc == 1)
+    {
+        result = globus_i_xio_system_try_read(
+            handle, iov->iov_base, iov->iov_len, nbytes);
+    }
+    else
+    {
+        result = globus_i_xio_system_try_readv(handle, iov, iovc, nbytes);
+    }
+
+    GlobusXIOSystemDebugExit();
+    return result;
+}
+
+globus_result_t
+globus_i_xio_system_file_try_write(
+    globus_xio_system_file_t            handle,
+    const globus_xio_iovec_t *          iov,
+    int                                 iovc,
+    globus_size_t *                     nbytes)
+{
+    globus_result_t                     result;
+    GlobusXIOName(globus_i_xio_system_file_try_write);
+
+    GlobusXIOSystemDebugEnter();
+
+    if(iovc == 1)
+    {
+        result = globus_i_xio_system_try_write(
+            handle, iov->iov_base, iov->iov_len, nbytes);
+    }
+    else
+    {
+        result = globus_i_xio_system_try_writev(handle, iov, iovc, nbytes);
+    }
+
+    GlobusXIOSystemDebugExit();
+    return result;
+}
+
+globus_result_t
+globus_i_xio_system_socket_try_read(
     globus_xio_system_socket_t          handle,
     const globus_xio_iovec_t *          iov,
     int                                 iovc,
@@ -715,22 +767,15 @@ globus_i_xio_system_try_read_ex(
     globus_size_t *                     nbytes)
 {
     globus_result_t                     result;
-    GlobusXIOName(globus_i_xio_system_try_read_ex);
+    GlobusXIOName(globus_i_xio_system_socket_try_read);
 
     GlobusXIOSystemDebugEnter();
 
 #ifndef WIN32
-    if(!flags && !from)
+    /* unix can use readv for sockets */
+    if(!flags && !from && iovc > 1)
     {
-        if(iovc == 1)
-        {
-            result = globus_i_xio_system_try_read(
-                handle, iov->iov_base, iov->iov_len, nbytes);
-        }
-        else
-        {
-            result = globus_i_xio_system_try_readv(handle, iov, iovc, nbytes);
-        }
+        result = globus_i_xio_system_try_readv(handle, iov, iovc, nbytes);
     }
     else
 #endif
@@ -769,7 +814,7 @@ globus_i_xio_system_try_read_ex(
 }
 
 globus_result_t
-globus_i_xio_system_try_write_ex(
+globus_i_xio_system_socket_try_write(
     globus_xio_system_socket_t          handle,
     const globus_xio_iovec_t *          iov,
     int                                 iovc,
@@ -778,22 +823,15 @@ globus_i_xio_system_try_write_ex(
     globus_size_t *                     nbytes)
 {
     globus_result_t                     result;
-    GlobusXIOName(globus_i_xio_system_try_write_ex);
+    GlobusXIOName(globus_i_xio_system_socket_try_write);
 
     GlobusXIOSystemDebugEnter();
 
 #ifndef WIN32
-    if(!flags && !to)
+    /* unix can use writev for sockets */
+    if(!flags && !to && iovc > 1)
     {
-        if(iovc == 1)
-        {
-            result = globus_i_xio_system_try_write(
-                handle, iov->iov_base, iov->iov_len, nbytes);
-        }
-        else
-        {
-            result = globus_i_xio_system_try_writev(handle, iov, iovc, nbytes);
-        }
+        result = globus_i_xio_system_try_writev(handle, iov, iovc, nbytes);
     }
     else
 #endif

@@ -192,9 +192,10 @@ typedef struct
     globus_i_xio_system_op_type_t       type;
     globus_i_xio_system_op_state_t      state;
     globus_xio_operation_t              op;
-    globus_xio_system_socket_t          fd; // socket same as file for unix
-#ifdef WIN32
-    globus_l_xio_win32_socket_t *       handle;
+#ifndef WIN32
+    struct globus_l_xio_system_s *      handle;
+#else
+    struct globus_l_xio_win32_socket_t *handle;
 #endif
     globus_object_t *                   error;
     void *                              user_arg;
@@ -303,16 +304,30 @@ globus_i_xio_system_try_sendmsg(
     globus_size_t *                     nbytes);
 
 globus_result_t
-globus_i_xio_system_try_read_ex(
+globus_i_xio_system_file_try_read(
+    globus_xio_system_file_t            handle,
+    const globus_xio_iovec_t *          iov,
+    int                                 iovc,
+    globus_size_t *                     nbytes);
+    
+globus_result_t
+globus_i_xio_system_file_try_write(
+    globus_xio_system_file_t            handle,
+    const globus_xio_iovec_t *          iov,
+    int                                 iovc,
+    globus_size_t *                     nbytes);
+    
+globus_result_t
+globus_i_xio_system_socket_try_read(
     globus_xio_system_socket_t          handle,
     const globus_xio_iovec_t *          iov,
     int                                 iovc,
     int                                 flags,
     globus_sockaddr_t *                 from,
     globus_size_t *                     nbytes);
-
+    
 globus_result_t
-globus_i_xio_system_try_write_ex(
+globus_i_xio_system_socket_try_write(
     globus_xio_system_socket_t          handle,
     const globus_xio_iovec_t *          iov,
     int                                 iovc,
