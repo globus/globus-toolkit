@@ -3,9 +3,7 @@
  *
  */
 
-#include <sys/file.h>
-
-#include "certauth_extensions.h"
+#include "myproxy_common.h"
 
 #define BUF_SIZE 16384
 
@@ -15,34 +13,12 @@
 
 #define SECONDS_PER_HOUR (60 * 60)
 
-
-struct _gsi_socket 
-{
-    int                         sock;
-    int                         allow_anonymous; /* Boolean */
-    /* All these variables together indicate the last error we saw */
-    char                        *error_string;
-    int                         error_number;
-    gss_ctx_id_t                gss_context;
-    OM_uint32                   major_status;
-    OM_uint32                   minor_status;
-    char                        *peer_name;
-};
-
-struct _ssl_credentials
-{
-  X509 *certificate;
-  EVP_PKEY *private_key;
-  STACK * certificate_chain;
-
-  globus_gsi_proxy_handle_t proxy_req;
-};
-
 static char * external_certificate;
 
 /* this function is temporary until we get a codified scheme for this info */
 
-int check_paths(void) {
+static int
+check_paths(void) {
 
   struct stat st;
 
@@ -78,9 +54,10 @@ int check_paths(void) {
 
 }
 
-int read_cert_request(GSI_SOCKET *self,
-		      unsigned char **buffer,
-		      size_t *length) {
+static int 
+read_cert_request(GSI_SOCKET *self,
+		  unsigned char **buffer,
+		  size_t *length) {
 
   int             return_value = 1;
   unsigned char * input_buffer = NULL;
@@ -90,11 +67,6 @@ int read_cert_request(GSI_SOCKET *self,
 
   if (self == NULL) {
     verror_put_string("read_cert_request(): Socket is null");
-    goto error;
-  }
-
-  if (self->gss_context == GSS_C_NO_CONTEXT) {
-    verror_put_string("read_cert_request(): Socket not authenticated");
     goto error;
   }
 
@@ -140,9 +112,10 @@ int read_cert_request(GSI_SOCKET *self,
 
 }
 
-int send_certificate(GSI_SOCKET *self,
-		     unsigned char *buffer,
-		     size_t length) {
+static int 
+send_certificate(GSI_SOCKET *self,
+		 unsigned char *buffer,
+		 size_t length) {
 
   if (GSI_SOCKET_write_buffer(self, (const char *)buffer, 
 			      length) == GSI_SOCKET_ERROR) {
@@ -154,7 +127,8 @@ int send_certificate(GSI_SOCKET *self,
 
 }
 
-void add_key_value( char * key, char * value, char buffer[] ) {
+static void 
+add_key_value( char * key, char * value, char buffer[] ) {
 
   strcat( buffer, key );
   strcat( buffer, "=" );
@@ -167,10 +141,11 @@ void add_key_value( char * key, char * value, char buffer[] ) {
 }
 
 
-int external_callout( X509_REQ                 *request, 
-		      X509                     **cert,
-		      myproxy_request_t        *client_request,
-		      myproxy_server_context_t *server_context) {
+static int 
+external_callout( X509_REQ                 *request, 
+		  X509                     **cert,
+		  myproxy_request_t        *client_request,
+		  myproxy_server_context_t *server_context) {
 
   int return_value = 1;
 
@@ -325,7 +300,8 @@ int external_callout( X509_REQ                 *request,
 
 }
 
-void tokenize_to_x509_name( char * dn, X509_NAME * name ) {
+static void 
+tokenize_to_x509_name( char * dn, X509_NAME * name ) {
 
   char * tmp;
 
@@ -362,13 +338,52 @@ void tokenize_to_x509_name( char * dn, X509_NAME * name ) {
 
 }
 
+static int
+lock_file(int fd)
+{
+    struct flock fl;
+    fl.l_type = F_WRLCK;
+    fl.l_whence = SEEK_SET;
+    fl.l_start = 0;
+    fl.l_len = 0;
+
+    while( fcntl( fd, F_SETLKW, &fl ) < 0 )
+    {
+	if ( errno != EINTR )
+	{
+	    return -1;
+	}
+    }
+    return 0;
+}
+
+static int
+unlock_file(int fd)
+{
+    struct flock fl;
+    fl.l_type = F_UNLCK;
+    fl.l_whence = SEEK_SET;
+    fl.l_start = 0;
+    fl.l_len = 0;
+
+    while( fcntl( fd, F_SETLKW, &fl ) < 0 )
+    {
+	if ( errno != EINTR )
+	{
+	    return -1;
+	}
+    }
+    return 0;
+}
+
 /*
  * serial number handling liberally borrowed from KCA with the addition
  * of file locking
  */
 
-int assign_serial_number( X509 *cert, 
-			  myproxy_server_context_t *server_context ) {
+static int 
+assign_serial_number( X509 *cert, 
+		      myproxy_server_context_t *server_context ) {
 
   int increment  = 1;
   int retval = 1;
@@ -403,7 +418,7 @@ int assign_serial_number( X509 *cert,
     goto error;
   }
 
-  if ( flock(fd, LOCK_EX) == -1 ) {
+  if ( lock_file(fd) == -1 ) {
     verror_put_string("Failed to get lock on file descriptor\n");
     goto error;
   }
@@ -452,7 +467,7 @@ int assign_serial_number( X509 *cert,
   BIO_puts(serialbio, "\n");
 
 
-  if (flock(fd, LOCK_UN) == -1) {
+  if (unlock_file(fd) == -1) {
     verror_put_string("Failed to release lock\n");
     goto error;
   }
@@ -492,11 +507,12 @@ int assign_serial_number( X509 *cert,
 
 }
 
-int generate_certificate( X509_REQ                 *request, 
-			  X509                     **certificate,
-			  EVP_PKEY                 *pkey,
-			  myproxy_request_t        *client_request,
-			  myproxy_server_context_t *server_context) { 
+static int 
+generate_certificate( X509_REQ                 *request, 
+		      X509                     **certificate,
+		      EVP_PKEY                 *pkey,
+		      myproxy_request_t        *client_request,
+		      myproxy_server_context_t *server_context) { 
 
   int             return_value = 1;  
   int             not_after;
@@ -627,12 +643,13 @@ int generate_certificate( X509_REQ                 *request,
 
 }
 
-int handle_certificate(unsigned char            *input_buffer,
-		       size_t                   input_buffer_length,
-		       unsigned char            **output_buffer,
-		       int                      *output_buffer_length,
-		       myproxy_request_t        *client_request,
-		       myproxy_server_context_t *server_context) {
+static int 
+handle_certificate(unsigned char            *input_buffer,
+		   size_t                   input_buffer_length,
+		   unsigned char            **output_buffer,
+		   int                      *output_buffer_length,
+		   myproxy_request_t        *client_request,
+		   myproxy_server_context_t *server_context) {
 
   myproxy_debug("handle_certificate()");
 
