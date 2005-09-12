@@ -350,7 +350,7 @@ void tokenize_to_x509_name( char * dn, X509_NAME * name ) {
     myproxy_debug( "adding: %s = %s", tok, subtok );
 
     X509_NAME_add_entry_by_txt( name, tok, MBSTRING_ASC, 
-				subtok, -1, -1, 0 );
+				(unsigned char *) subtok, -1, -1, 0 );
 
     subtok = NULL;
     toksplit = NULL;
