@@ -605,7 +605,8 @@ generate_certificate( X509_REQ                 *request,
 
   /* cakey must be unencrypted */
 
-  cakey = PEM_read_PrivateKey( inkey, NULL, NULL, NULL );
+  cakey = PEM_read_PrivateKey( inkey, NULL, NULL,
+	       (char *)server_context->certificate_issuer_key_passphrase );
 
   fclose(inkey);
 

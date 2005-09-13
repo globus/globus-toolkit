@@ -28,6 +28,7 @@ typedef struct
   char *pam_id;                     /* Application name we present to PAM */
   char *certificate_issuer_program; /* CA callout external program */
   char *certificate_issuer_key;     /* CA signing key */
+  char *certificate_issuer_key_passphrase; /* CA signing key passphrase */
   char *certificate_mapfile;        /* CA gridmap file if not the default */
   char *certificate_issuer;         /* CA issuer DN */
   int   max_cert_lifetime;          /* like proxy_lifetime for the CA */
