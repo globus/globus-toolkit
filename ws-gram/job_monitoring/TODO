@@ -1,0 +1,20 @@
+Since future GRAM adapters may not need the SEG, this should be divorced from
+the JSM.  I've already made the JobStateMonitor class an interface with the old
+code moved to SchedulerEventGeneratorMonitor (i.e. a SEG-specific job state
+monitor).  In addition to this, the directory structure should change to the
+following:
+
+job_monitoring
+    - common
+        - java
+            - source (JobStateMonitor, etc...)
+    -seg
+        - java
+            - source (SchdedulerEventGeneratorMonitor, etc...)
+        - c
+            - source (scheduler-event-generator)
+            - condor (condor seg module)
+            - fork (fork seg module)
+            - job-manager (GT2 equivalent of the SEG Monitor)
+            - lsf (lsf seg module)
+            - pbs (pbs seg module)
