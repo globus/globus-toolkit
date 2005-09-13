@@ -270,6 +270,10 @@ line_parse_callback(void *context_arg,
     {
 	context->certificate_issuer_program = strdup(tokens[1]);
     }
+    if (strcmp(directive, "certificate_issuer_cert") == 0)
+    {
+	context->certificate_issuer_cert = strdup(tokens[1]);
+    }
     if (strcmp(directive, "certificate_issuer_key") == 0)
     {
 	context->certificate_issuer_key = strdup(tokens[1]);

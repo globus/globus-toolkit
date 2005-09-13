@@ -225,6 +225,13 @@ main(int argc, char *argv[])
       setenv( "GRIDMAP", "/etc/grid-security/grid-mapfile", 0 );
     }
 
+    /* setup certificate_issuer from certificate_issuer_cert if desired */
+    if ( ( server_context->certificate_issuer_cert != NULL) &&
+	 ( server_context->certificate_issuer == NULL) ) {
+	ssl_get_base_subject_file(server_context->certificate_issuer_cert,
+				  &server_context->certificate_issuer);
+    }
+
     /* Make sure all's well with the storage directory. */
     if (myproxy_check_storage_dir() == -1) {
 	myproxy_log_verror();
