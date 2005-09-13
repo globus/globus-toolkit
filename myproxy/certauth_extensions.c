@@ -338,30 +338,12 @@ tokenize_to_x509_name( char * dn, X509_NAME * name ) {
 
 }
 
+/* Use fcntl() for POSIX file locking. Lock is released when file is closed. */
 static int
 lock_file(int fd)
 {
     struct flock fl;
     fl.l_type = F_WRLCK;
-    fl.l_whence = SEEK_SET;
-    fl.l_start = 0;
-    fl.l_len = 0;
-
-    while( fcntl( fd, F_SETLKW, &fl ) < 0 )
-    {
-	if ( errno != EINTR )
-	{
-	    return -1;
-	}
-    }
-    return 0;
-}
-
-static int
-unlock_file(int fd)
-{
-    struct flock fl;
-    fl.l_type = F_UNLCK;
     fl.l_whence = SEEK_SET;
     fl.l_start = 0;
     fl.l_len = 0;
@@ -387,10 +369,12 @@ assign_serial_number( X509 *cert,
 
   int increment  = 1;
   int retval = 1;
+  long serialset;
 
   BIGNUM       * serial = NULL;
   ASN1_INTEGER * current = NULL, * next = NULL;
   char buf[1024];
+  char *serialfile = NULL;
 
   /* all the io variables */
 
@@ -408,18 +392,30 @@ assign_serial_number( X509 *cert,
     goto error;
   }
 
+  if (server_context->certificate_serialfile) {
+      serialfile = server_context->certificate_serialfile;
+  } else {
+      const char *sdir;
+      sdir = myproxy_get_storage_dir();
+      if (sdir == NULL) {
+	  goto error;
+      }
+      serialfile = malloc(strlen(sdir)+strlen("/serial")+1);
+      sprintf(serialfile, "%s/serial", sdir);
+  }
+
   /* open(), lock, open stream and create BIO */
 
-  fd = open( server_context->certificate_serialfile, O_RDWR );
+  fd = open( serialfile, O_RDWR|O_CREAT, 0600 );
 
   if ( fd == -1 ) {
-    verror_put_string("Call to open() failed on %s\n", 
-		      server_context->certificate_serialfile);
+    verror_put_string("Call to open() failed on %s\n", serialfile);
     goto error;
   }
 
   if ( lock_file(fd) == -1 ) {
     verror_put_string("Failed to get lock on file descriptor\n");
+    verror_put_errno(errno);
     goto error;
   }
 
@@ -430,6 +426,15 @@ assign_serial_number( X509 *cert,
     goto error;
   }
 
+  /* check if file is empty, and if so, initialize with 1 */
+  if (fseek(serialstream, 0L, SEEK_END) < 0) {
+    verror_put_string("Unable to seek file stream\n");
+    goto error;
+  }
+
+  serialset = ftell(serialstream);
+  if (serialset) rewind(serialstream);
+
   serialbio = BIO_new_fp( serialstream, BIO_CLOSE );
 
   if ( serialbio == NULL ) {
@@ -437,16 +442,18 @@ assign_serial_number( X509 *cert,
     goto error;
   }
 
-  if (!a2i_ASN1_INTEGER(serialbio, current, buf, sizeof(buf))) {
-    verror_put_string("Asn1 int read/conversion error\n");
-    goto error;
+  if (serialset) {
+      if (!a2i_ASN1_INTEGER(serialbio, current, buf, sizeof(buf))) {
+	  verror_put_string("Asn1 int read/conversion error\n");
+	  goto error;
+      } else {
+	  myproxy_debug("Loaded serial number %s from %s", buf, serialfile);
+      }
   } else {
-    myproxy_debug("Loaded serial number %s from %s", buf, 
-		  server_context->certificate_serialfile);
+      ASN1_INTEGER_set(current, 1);
   }
 
   serial = BN_bin2bn( current->data, current->length, serial );
-
   if ( serial == NULL ) {
     verror_put_string("Error converting to bignum\n");
     goto error;
@@ -467,13 +474,9 @@ assign_serial_number( X509 *cert,
   BIO_puts(serialbio, "\n");
 
 
-  if (unlock_file(fd) == -1) {
-    verror_put_string("Failed to release lock\n");
-    goto error;
-  }
-
   /* the call to BIO_free with the CLOSE flags will take care of
-   * the underlying file stream and close()ing the file descriptor.
+   * the underlying file stream and close()ing the file descriptor,
+   * which will release the lock.
    */
   
   BIO_free(serialbio);
@@ -727,13 +730,6 @@ handle_certificate(unsigned char            *input_buffer,
   if ( ( server_context->certificate_issuer != NULL ) && 
        ( server_context->certificate_issuer_key != NULL ) ) {
     myproxy_debug("Using internal openssl/generate_certificate() code");
-
-    /* internal ca - make sure the serial file location is set */
-
-    if ( server_context->certificate_serialfile == NULL ) {
-      verror_put_string("CA config error: seralfile not defined for internal CA");
-      goto error;
-    }
 
     if ( generate_certificate( req, &cert, pkey, 
 			       client_request, server_context ) ) {
