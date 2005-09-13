@@ -10,8 +10,18 @@
  */
 package org.globus.exec.monitoring.seg;
 
-import org.globus.wsrf.ResourceKey;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import org.globus.exec.generated.StateEnumeration;
+import org.globus.exec.monitoring.AlreadyRegisteredException;
+import org.globus.exec.monitoring.JobStateChangeListener;
+import org.globus.exec.monitoring.JobStateMonitor;
+import org.globus.exec.monitoring.JobStateRecoveryListener;
+import org.globus.exec.monitoring.NotRegisteredException;
+import org.globus.exec.monitoring.SchedulerEvent;
+
+import org.globus.wsrf.ResourceKey;
 
 /**
  * The SchedulerEventGeneratorMonitor (JSM) is a scheduler-indpendent object which provides
@@ -43,9 +53,6 @@ import org.globus.exec.generated.StateEnumeration;
  * prepared to handle that.
  * </p>
  */
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 
 public class SchedulerEventGeneratorMonitor implements JobStateMonitor
 {
@@ -462,7 +469,7 @@ public class SchedulerEventGeneratorMonitor implements JobStateMonitor
         }
     }
 
-    synchronized void addEvent(SchedulerEvent e) {
+    public synchronized void addEvent(SchedulerEvent e) {
         if (logger.isDebugEnabled()) {
             logger.debug(" JSM receiving scheduler event " + e);
         }

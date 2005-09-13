@@ -8,7 +8,7 @@
  * If you redistribute this file, with or without
  * modifications, you must include this notice in the file.
  */
-package org.globus.exec.monitoring.seg;
+package org.globus.exec.monitoring;
 
 import org.globus.exec.generated.StateEnumeration;
 
@@ -16,7 +16,7 @@ import org.globus.exec.generated.StateEnumeration;
  * Class used internally by the JobStateMonitor to store events emmited
  * by the Scheduler Event Generator.
  */
-class SchedulerEvent
+public class SchedulerEvent
 {
     private java.util.Date timestamp;
     private String localId;

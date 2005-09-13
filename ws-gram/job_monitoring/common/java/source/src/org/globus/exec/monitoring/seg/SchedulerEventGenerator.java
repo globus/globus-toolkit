@@ -15,6 +15,10 @@ import org.apache.commons.logging.LogFactory;
 
 import org.globus.wsrf.ResourceKey;
 import org.globus.exec.generated.StateEnumeration;
+import org.globus.exec.monitoring.AlreadyRegisteredException;
+import org.globus.exec.monitoring.JobStateMonitor;
+import org.globus.exec.monitoring.NotRegisteredException;
+import org.globus.exec.monitoring.SchedulerEvent;
 
 /**
  * Scheduler Event Generator monitor thread.

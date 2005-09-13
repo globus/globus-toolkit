@@ -94,7 +94,7 @@ public interface JobStateMonitor
      *     Resource key associated with the job. This object will be
      *     passed to the JobStateChangeListener's jobStateChange method.
      */
-    public synchronized void registerJobID(
+    public void registerJobID(
         String                              localId,
         ResourceKey                         resourceKey)
         throws                              AlreadyRegisteredException;
@@ -112,4 +112,6 @@ public interface JobStateMonitor
     public void unregisterJobID(
         String                              localId)
         throws                              NotRegisteredException;
+
+    public void addEvent(SchedulerEvent e);
 }
