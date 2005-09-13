@@ -266,7 +266,6 @@ line_parse_callback(void *context_arg,
     }
 
     /* these were added to support the online CA functionality */
-
     if (strcmp(directive, "certificate_issuer_program") == 0)
     {
 	context->certificate_issuer_program = strdup(tokens[1]);
@@ -291,18 +290,6 @@ line_parse_callback(void *context_arg,
     {
 	context->certificate_serialfile = strdup(tokens[1]);
     }
-
-    
-
-    /*
-      these are reg'lar single strings:
-      certificate_issuer_program
-      certificate_issuer_key
-      certificate_mapfile
-      check this one RE: parsing and double quoting:
-      certificate_issuer
-
-    */
 
     return_code = 0;
     
