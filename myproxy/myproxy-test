@@ -184,6 +184,7 @@ if ($startserver) {
     print CONF "default_renewers      \"none\"\n";
     print CONF "authorized_key_retrievers \"*\"\n";
     print CONF "default_key_retrievers    \"none\"\n";
+    print CONF "passphrase_policy_program /bin/true\n" if (-e "/bin/true");
     close(CONF);
     $SERVERPIDFILE = "/tmp/myproxy-test.serverpid.$$";
     $servercmd = "$myproxy_server -s $serverdir -c $serverconf";
