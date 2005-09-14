@@ -10,12 +10,6 @@
 #define MIN(x,y) ((x) < (y) ? (x) : (y))
 #endif
 
-#define CA_EXTENSIONS 1
-
-#ifdef CA_EXTENSIONS
-#include "certauth_extensions.h"
-#endif
-
 static char usage[] = \
 "\n"\
 "Syntax: myproxy-server [-p|-port #] [-c config-file] [-s storage-dir] ...\n"\
