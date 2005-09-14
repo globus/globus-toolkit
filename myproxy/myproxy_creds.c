@@ -1509,6 +1509,14 @@ int myproxy_check_storage_dir()
     return check_storage_directory();
 }
 
+const char *myproxy_get_storage_dir()
+{
+    if (check_storage_directory < 0) {
+	return NULL;
+    }
+    return storage_dir;
+}
+
 int
 myproxy_print_cred_info(myproxy_creds_t *creds, FILE *out)
 {

@@ -224,7 +224,7 @@ myproxy_check_passphrase_policy(const char *passphrase,
     close(p0[1]); 
 
     /* wait for child */
-    if (wait4(childpid, &exit_status, 0, NULL) < 0) {
+    if (waitpid(childpid, &exit_status, 0) == -1) {
 	verror_put_string("wait() failed for passphrase policy child");
 	verror_put_errno(errno);
 	return -1;

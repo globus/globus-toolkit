@@ -26,6 +26,14 @@ typedef struct
   char *cert_dir;		    /* Trusted certificate directory to send */
   char *pam_policy;                 /* How we depend on PAM for passwd auth */
   char *pam_id;                     /* Application name we present to PAM */
+  char *certificate_issuer_program; /* CA callout external program */
+  char *certificate_issuer_cert;    /* CA certificate */
+  char *certificate_issuer_key;     /* CA signing key */
+  char *certificate_issuer_key_passphrase; /* CA signing key passphrase */
+  char *certificate_mapfile;        /* CA gridmap file if not the default */
+  char *certificate_issuer;         /* CA issuer DN */
+  int   max_cert_lifetime;          /* like proxy_lifetime for the CA */
+  char *certificate_serialfile;     /* path to serialnumber file for CA */
 } myproxy_server_context_t;
 
 

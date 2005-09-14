@@ -222,6 +222,15 @@ int myproxy_set_storage_dir(const char *dir);
 int myproxy_check_storage_dir();
 
 /*
+ * myproxy_get_storage_dir()
+ *
+ * Returns path to storage directory.
+ * Returns NULL on error.
+ */
+const char *myproxy_get_storage_dir();
+
+
+/*
  * myproxy_print_cred_info()
  *
  * Print info about creds to out.

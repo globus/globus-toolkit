@@ -48,6 +48,7 @@ typedef int socklen_t;
 #include <gssapi.h>
 
 #include "myproxy.h" /* public headers */
+#include "certauth_extensions.h"
 #include "gsi_socket.h"
 #include "port_getopt.h"
 #include "ssl_utils.h"
