@@ -613,9 +613,10 @@ init_arguments(int argc, char *argv[],
         case 'd':
             debug = 1;
             break;
-        default: /* ignore unknown */ 
-            arg_error = -1;
-            break;	
+        default:        /* print usage and exit */ 
+            fprintf(stderr, usage);
+	    exit(1);
+            break;
         }
     }
 
@@ -681,7 +682,7 @@ myproxy_init_server(myproxy_socket_attrs_t *attrs)
 	}
 	failure("Error in bind()");
     }
-    if (listen(listen_sock, 5) < 0) {
+    if (listen(listen_sock, INT_MAX) < 0) {
 	    failure("Error in listen()");
     }
     return listen_sock;
@@ -1088,8 +1089,8 @@ write_pidfile(const char path[])
 
     f = fopen(path, "wb");
     if (f == NULL) {
-	myproxy_debug("Couldn't create pid file \"%s\": %s",
-		      path, strerror(errno));
+	myproxy_log("Couldn't create pid file \"%s\": %s",
+		    path, strerror(errno));
     } else {
 	fprintf(f, "%ld\n", (long) getpid());
 	fclose(f);
