@@ -1,9 +1,14 @@
-This is MyProxy v2.3 28 Jul 2005.
+This is MyProxy v2.4 XX Xxx 2005.
 This version should be protocol compatible with all versions since v0.2.
 Binary compatibility of the C API is not guaranteed between releases.
 
 Version History
 ---------------
+v2.4 XX Xxx 2005
+  - fix for static builds using 'gpt-build -static'
+  - increased myproxy-server's listen(2) backlog for improved
+    scalability
+
 v2.3 28 Jul 2005
   - fix AIX compliation problems in PAM module
 
@@ -53,8 +58,6 @@ v0.6.5 8 Apr 2005 (GPT package version 1.17)
   - write temp proxy to /tmp/myproxy-proxy.<uid>.<pid> instead of
     /tmp/myproxy-proxy.<uid> so we can run more than one myproxy-init
     in an account at a time
-  - increased myproxy-server's listen(2) backlog for improved
-    scalability
   - added myproxy-test -performance option for performance testing
   - fixed potential logging race condition when running myproxy-server
     in verbose mode
