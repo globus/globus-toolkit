@@ -64,7 +64,7 @@ send_response_sasl_data(myproxy_socket_attrs_t *attrs,
        verror_put_errno(errno);
        return -1;
     }
-    myproxy_debug("S: %s\n", buf);
+    myproxy_debug("S: %s", buf);
 
     memset(&response, 0, sizeof (response));
     response.version = strdup(MYPROXY_VERSION);
@@ -120,7 +120,7 @@ recv_response_sasl_data(myproxy_socket_attrs_t *attrs, char *data)
    client_data_len = len - sizeof(int);
 
 
-   myproxy_debug("C: %s\n", buf + sizeof(int));
+   myproxy_debug("C: %s", buf + sizeof(int));
    result = sasl_decode64(buf + sizeof(int), client_data_len, data, SASL_BUFFER_SIZE, &len);
    if (result != SASL_OK) {
         myproxy_log("Decoding data from base64 failed in recv_response_sasl_data.");
@@ -148,6 +148,12 @@ auth_sasl_negotiate_server(myproxy_socket_attrs_t *attrs,
        *localdomain = NULL, *userdomain = NULL;
 
    myproxy_debug("Server: begin SASL negotiation...");
+
+    if (getenv("SASL_PATH")) {
+	myproxy_debug("$SASL_PATH is %s", getenv("SASL_PATH"));
+    } else {
+	myproxy_debug("$SASL_PATH isn't set. Using /usr/lib/sasl2.");
+    }	
 
    result = sasl_server_init(callbacks, "myproxy");
    if (result != SASL_OK) {
@@ -206,8 +212,10 @@ auth_sasl_negotiate_server(myproxy_socket_attrs_t *attrs,
        }
    }
 
-   myproxy_debug("Sending list of %d mechanism(s): %s\n", count, data);
-   send_response_sasl_data(attrs, data, len);
+   myproxy_debug("Sending list of %d mechanism(s): %s", count, data);
+   if (send_response_sasl_data(attrs, data, len) < 0) {
+       return -1;
+   }
    
    myproxy_debug("Waiting for client mechanism...");
    len = recv_response_sasl_data(attrs, client_buffer);
@@ -240,9 +248,12 @@ auth_sasl_negotiate_server(myproxy_socket_attrs_t *attrs,
    while (result == SASL_CONTINUE) {
       if (data) {
 	  myproxy_debug("Sending response...");
-          send_response_sasl_data(attrs, data, len);
+          if (send_response_sasl_data(attrs, data, len) < 0) {
+	      return -1;
+	  }
       } else {
           myproxy_log("No SASL data to send--something's wrong");
+	  return -1;
       }
 
       myproxy_debug("Waiting for client reply...");
