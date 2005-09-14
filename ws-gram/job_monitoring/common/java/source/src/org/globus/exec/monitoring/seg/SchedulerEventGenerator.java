@@ -10,6 +10,10 @@
  */
 package org.globus.exec.monitoring.seg;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.Date;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -37,7 +41,7 @@ class SchedulerEventGenerator extends Thread {
     private static Runtime runtime = Runtime.getRuntime();
 
     /** Path to the SEG executable */
-    private java.io.File path;
+    private File path;
     /**
      * Username of the account to run the SEG as.
      *
@@ -91,8 +95,11 @@ class SchedulerEventGenerator extends Thread {
      * @param schedulerName
      *     Name of the scheduler SEG module to use (fork, lsf, etc).
      */
-    public SchedulerEventGenerator(java.io.File path, String userName,
-            String schedulerName, JobStateMonitor monitor) 
+    public SchedulerEventGenerator(
+        File                                path,
+        String                              userName,
+        String                              schedulerName,
+        JobStateMonitor                     monitor) 
     {
         this.path = path;
         this.userName = userName;
@@ -184,6 +191,7 @@ class SchedulerEventGenerator extends Thread {
                 }
             }
         } catch (java.io.IOException ioe) {
+            throw new RuntimeException(ioe);
         }
     }
 
@@ -201,8 +209,9 @@ class SchedulerEventGenerator extends Thread {
      * @retval true New process started.
      * @reval false Did not create a new seg process.
      */
-    private synchronized boolean startSegProcess(java.util.Date timeStamp)
-            throws java.io.IOException
+    private synchronized boolean startSegProcess(
+        Date                                timeStamp)
+        throws                              IOException
     {
         cleanProcess();
 
@@ -210,20 +219,20 @@ class SchedulerEventGenerator extends Thread {
 
         throttleRestart();
 
-        if (!shutdownCalled) {
+        if (!this.shutdownCalled) {
             logger.debug("Starting seg process");
             String [] cmd;
 
             // TODO: sudo integration here
             if (timeStamp != null) {
                 cmd = new String[] {
-                    path.toString(),
-                    "-s", schedulerName,
+                    this.path.toString(),
+                    "-s", this.schedulerName,
                     "-t", Long.toString(
                             timeStamp.getTime() / 1000)};
             } else {
                 cmd = new String[] {
-                    path.toString(), "-s", schedulerName
+                    this.path.toString(), "-s", this.schedulerName
                 };
             }
             if (logger.isDebugEnabled()) {
@@ -235,6 +244,7 @@ class SchedulerEventGenerator extends Thread {
                 }
             }
             proc = runtime.exec(cmd);
+            logger.debug("seg exec returned");
             return true;
         } else {
             return false;
@@ -255,7 +265,7 @@ class SchedulerEventGenerator extends Thread {
         long thisTime = new java.util.Date().getTime();
         long endOfWait = thisTime + THROTTLE_RESTART_TIME;
 
-        while ((!shutdownCalled) &&
+        while ((!this.shutdownCalled) &&
                     ((thisTime - lastRestart) < THROTTLE_RESTART_THRESHOLD)) {
             logger.debug("Throttling the restart as we just restarted the SEG");
             try {
@@ -284,13 +294,13 @@ class SchedulerEventGenerator extends Thread {
     public synchronized void shutdown()
             throws java.io.IOException
     {
-        if (shutdownCalled) {
+        if (this.shutdownCalled) {
             return;
         } else {
             logger.debug("cleaning process");
             cleanProcess();
             logger.debug("setting shutdownCalled");
-            shutdownCalled = true;
+            this.shutdownCalled = true;
             /* Wake up throttler if we were waiting in it */
             logger.debug("notifying");
             notify();
