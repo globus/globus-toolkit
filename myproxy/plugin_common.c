@@ -43,7 +43,6 @@
  * OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include <config.h>
 #ifndef macintosh
 #ifdef WIN32
 # include <winsock2.h>
@@ -66,6 +65,7 @@
 #include <errno.h>
 #include <ctype.h>
 #include <stdio.h>
+#include <string.h>
 
 #ifdef HAVE_INTTYPES_H
 #include <inttypes.h>
