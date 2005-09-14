@@ -384,7 +384,7 @@ handle_client(myproxy_socket_attrs_t *attrs,
     }
 
     /* if it appears that we need to use the ca callouts ie: no stored
-     * creds but pam authorization passed - we should check if the ca
+     * creds but authorization passed - we should check if the ca
      * is configured and if the user exists in the mapfile if not
      * using the external program callout.
      */
@@ -1226,11 +1226,11 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
        }
 
        if (myproxy_creds_retrieve(&creds) < 0) {
-	 myproxy_debug("No stored creds - checking pam authorization");
+	 myproxy_debug("No stored creds");
 	 creds.username = strdup(client_request->username);
 	 no_creds = 1;
        } else {
-	 myproxy_debug("Found stored credentials - checking pam auth");
+	 myproxy_debug("Found stored credentials");
        }
 
        if (client_request->command_type == MYPROXY_RETRIEVE_CERT) {
@@ -1464,11 +1464,11 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
    }
 
    if (no_creds) {
-     myproxy_debug("pam auth ok - no creds");
+     myproxy_debug("auth ok (no stored creds)");
      return_status = 1;
      goto end;
    } else {
-     myproxy_debug("pam auth ok - have stored creds");
+     myproxy_debug("auth ok (stored creds)");
    }
 
 #if defined(HAVE_LIBSASL2)
