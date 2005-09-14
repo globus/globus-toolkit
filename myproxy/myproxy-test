@@ -130,6 +130,7 @@ die "myproxy-get-delegation not in PATH, stopped" if (!(-x $myproxy_get));
 chomp($myproxy_passwd = `which myproxy-change-pass-phrase 2>/dev/null`);
 die "myproxy-change-pass-phrase not in PATH, stopped"
     if (!(-x $myproxy_passwd));
+chomp($bintrue = `which true 2>/dev/null`);
 
 #
 # setup environment variables
@@ -184,7 +185,7 @@ if ($startserver) {
     print CONF "default_renewers      \"none\"\n";
     print CONF "authorized_key_retrievers \"*\"\n";
     print CONF "default_key_retrievers    \"none\"\n";
-    print CONF "passphrase_policy_program /bin/true\n" if (-e "/bin/true");
+    print CONF "passphrase_policy_program $bintrue\n" if (-x $bintrue);
     close(CONF);
     $SERVERPIDFILE = "/tmp/myproxy-test.serverpid.$$";
     $servercmd = "$myproxy_server -s $serverdir -c $serverconf";
