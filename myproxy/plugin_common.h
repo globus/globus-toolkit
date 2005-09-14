@@ -46,8 +46,6 @@
 #ifndef _PLUGIN_COMMON_H_
 #define _PLUGIN_COMMON_H_
 
-#include <config.h>
-
 #ifndef macintosh
 #ifdef WIN32
 # include <winsock2.h>
