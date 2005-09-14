@@ -15,7 +15,7 @@ send_response_sasl_data(myproxy_socket_attrs_t *attrs,
 
     authorization_data_t*  auth_data;
 	
-    sasl_encode64(data, data_len, buf, SASL_BUFFER_SIZE, &len);
+    result = sasl_encode64(data, data_len, buf, SASL_BUFFER_SIZE, &len);
     buf[len] = '\0';
     if (result != SASL_OK) {
        verror_put_string(
@@ -210,6 +210,14 @@ auth_sasl_negotiate_client(myproxy_socket_attrs_t *attrs,
         *ipremote = NULL;
     char *fqdn = NULL;
 
+    myproxy_debug("client: begin SASL negotiation...");
+
+    if (getenv("SASL_PATH")) {
+	myproxy_debug("$SASL_PATH is %s", getenv("SASL_PATH"));
+    } else {
+	myproxy_debug("$SASL_PATH isn't set. Using /usr/lib/sasl2.");
+    }	
+
     fqdn = GSI_SOCKET_get_peer_hostname(attrs->gsi_socket);
    
     memset(server_buffer, 0, sizeof(*server_buffer));
@@ -255,7 +263,7 @@ auth_sasl_negotiate_client(myproxy_socket_attrs_t *attrs,
        goto error;
     }
 
-    myproxy_debug("Server sent SASL mechs %s.\n", server_buffer);
+    myproxy_debug("Server sent SASL mechs %s.", server_buffer);
 
     result = sasl_client_start(conn,
                                server_buffer,
@@ -270,7 +278,7 @@ auth_sasl_negotiate_client(myproxy_socket_attrs_t *attrs,
 	goto error;
     }
 
-    myproxy_debug("Using SASL mechanism %s\n", chosenmech);
+    myproxy_debug("Using SASL mechanism %s", chosenmech);
     strcpy(server_buffer, chosenmech);
     if (data) {
         if (SASL_BUFFER_SIZE - strlen(server_buffer) - 1 < len) {
@@ -285,7 +293,11 @@ auth_sasl_negotiate_client(myproxy_socket_attrs_t *attrs,
         len = strlen(server_buffer);
     }
 
-    send_response_sasl_data(attrs, &server_response, server_buffer, len);
+    if (send_response_sasl_data(attrs, &server_response, server_buffer,
+				len) < 0) {
+	result = SASL_FAIL;
+	goto error;
+    }
 
     authorization_data_free(server_response.authorization_data);
     server_response.authorization_data = NULL;
@@ -294,8 +306,10 @@ auth_sasl_negotiate_client(myproxy_socket_attrs_t *attrs,
 
 	server_len = recv_response_sasl_data(attrs, &server_response,
 					     server_buffer);
-        if (server_len < 0) 
+        if (server_len < 0) {
+	    result = SASL_FAIL;
 	    goto error;
+	}
 
         result = sasl_client_step(conn, server_buffer, server_len, NULL,
                               &data, &len);
@@ -305,9 +319,16 @@ auth_sasl_negotiate_client(myproxy_socket_attrs_t *attrs,
 	    goto error;
         }
         if (data && len) {
-	    send_response_sasl_data(attrs, &server_response, data, len);
+	    if (send_response_sasl_data(attrs, &server_response, data,
+					len) < 0) {
+		result = SASL_FAIL;
+		goto error;
+	    }
         } else if (result != SASL_OK) {
-	    send_response_sasl_data(attrs, &server_response, "", 0);
+	    if (send_response_sasl_data(attrs, &server_response, "", 0) < 0) {
+		result = SASL_FAIL;
+		goto error;
+	    }
         }
 
 	authorization_data_free(server_response.authorization_data);
