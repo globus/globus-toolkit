@@ -293,7 +293,7 @@ handle_client(myproxy_socket_attrs_t *attrs,
 {
     char  client_name[1024];
     char  *client_buffer = NULL;
-    char  *userdn;
+    char  *userdn = NULL;
     int   requestlen;
     int   use_ca_callout;
     time_t now;
