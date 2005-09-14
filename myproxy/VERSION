@@ -8,6 +8,7 @@ v2.4 XX Xxx 2005
   - add ability for myproxy-server to act as a CA by setting
     certificate_issuer options in myproxy-server.config
   - fix for static builds using 'gpt-build -static'
+  - fixes for SASL support
   - increased myproxy-server's listen(2) backlog for improved
     scalability
 
