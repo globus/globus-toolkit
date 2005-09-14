@@ -12,6 +12,8 @@ SUBDIRS= \
 LibSources= \
 	auth_pam.c \
 	auth_pam.h \
+	certauth_extensions.c \
+	certauth_extensions.h \
 	getopt_long.c \
 	gsi_socket.c \
 	gsi_socket.h \
@@ -123,7 +125,7 @@ myproxy_destroy_LDFLAGS = $(GPT_LDFLAGS)
 
 myproxy_destroy_LDADD = ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la $(GPT_PGM_LINKS)
 
-myproxy_server_SOURCES = myproxy_server.c certauth_extensions.c
+myproxy_server_SOURCES = myproxy_server.c
 myproxy_server_LDFLAGS = $(GPT_LDFLAGS)
 
 myproxy_server_LDADD = ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la $(GPT_PGM_LINKS)
