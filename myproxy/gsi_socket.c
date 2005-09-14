@@ -953,7 +953,7 @@ char *
 GSI_SOCKET_get_peer_hostname(GSI_SOCKET *self)
 {
     struct sockaddr_in		addr;
-    int				addr_len = sizeof(addr);
+    socklen_t			addr_len = sizeof(addr);
     struct hostent		*info;
 
     if (getpeername(self->sock, (struct sockaddr *) &addr,
