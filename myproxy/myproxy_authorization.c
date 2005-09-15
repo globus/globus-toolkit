@@ -356,8 +356,6 @@ char * auth_sasl_create_server_data(void)
 }
 
  
-/* the extra data parameter must contain a filename with a certificate to 
-   authorization */
 char * auth_sasl_create_client_data (authorization_data_t *data, 
       void *extra_data, size_t extra_data_len, size_t *client_data_len )
 {
