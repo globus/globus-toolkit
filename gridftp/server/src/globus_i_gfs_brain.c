@@ -92,7 +92,7 @@ globus_l_brain_read_cb(
                     cs = strdup(start_str);
                 }
             }
-            else if(!isprint(buffer[i]))
+            else if(!isalnum(buffer[i]) && buffer[i] != '.' && buffer[i] != ':')
             {
                 /* log an error */
                 goto error;

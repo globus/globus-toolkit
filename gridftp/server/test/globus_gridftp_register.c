@@ -32,7 +32,7 @@ test_res(
 void
 help()
 {
-    fprintf(stdout, "globus-gridftp-register <repo name> <contact string> <registry contact>\n");
+    fprintf(stdout, "globus-gridftp-register <registry contact> <contact string> [<repo name>]\n");
 }
 
 int
@@ -72,9 +72,17 @@ main(
     res = globus_xio_stack_push_driver(stack, gsi_driver);
     test_res(res);
 
-    repo = argv[1];
+    registry_cs = argv[1];
     cs = argv[2];
-    registry_cs = argv[3];
+
+    if(argc < 4)
+    {
+        repo = "";
+    }
+    else
+    {
+        repo = argv[3];
+    }
     res = globus_xio_handle_create(&xio_handle, stack);
     test_res(res);
 
