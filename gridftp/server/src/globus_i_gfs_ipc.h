@@ -224,4 +224,8 @@ typedef struct globus_i_gfs_community_s
     int                                 next_ndx;
 } globus_i_gfs_community_t;
 
+extern globus_xio_stack_t               globus_i_gfs_ipc_xio_stack;
+extern globus_i_gfs_community_t *       globus_i_gfs_ipc_community_default;
+extern globus_xio_driver_t              globus_i_gfs_tcp_driver;
+
 #endif
