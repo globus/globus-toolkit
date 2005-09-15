@@ -16,7 +16,7 @@ import org.globus.exec.generated.StateEnumeration;
  * Class used internally by the JobStateMonitor to store events emmited
  * by the Scheduler Event Generator.
  */
-class SchedulerEvent
+public class SchedulerEvent
 {
     private java.util.Date timestamp;
     private String localId;

@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Format_Version="0.01" Name="globus_wsrf_gram_job_monitoring_common_java">
 
-  <Aging_Version Age="0" Major="0" Minor="4" />
+  <Aging_Version Age="0" Major="0" Minor="6" />
   <Description> GT4 GRAM Job Monitoring Common Classes (Java)</Description>
   <Functional_Group>Execution</Functional_Group>
   <Version_Stability Release="alpha"/>
