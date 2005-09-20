@@ -91,7 +91,7 @@ sub new
     #parse the XML blob that is the extensions element in the job description
     if ($description->xml_extensions())
     {
-        new Globus::GRAM::ExtensionsHandler($description);
+        new Globus::GRAM::ExtensionsHandler($class, $description);
     }
 
     $description->add("logfile", "/home/lane/logfile");

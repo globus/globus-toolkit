@@ -5,19 +5,23 @@ use XML::Parser;
 use Switch;
 
 ############ define element scope constants here ############
-my ($SCOPE_UNKNOWN, $SCOPE_EXTENSIONS,  $SCOPE_EXTRA_ARGUMENTS)
- = (0,              1,                  2);
+my ($UNKNOWN_SCOPE,   $EXTENSIONS,    $EXTRA_ARGUMENTS)
+ = ("unknown_scope",  "extensions",   "extraArguments");
 
 sub new
 {
     my $proto = shift;
     my $class = ref($proto) || $proto;
+    my $jmClass = shift;
     my $description = shift;
     my $self  = {};
 
-    $self->{SCOPE} = [];
-
+    $jmClass =~ s/Globus::GRAM::JobManager:://;
+    $self->{RM_NAME} = $jmClass;
     $self->{JOB_DESCRIPTION} = $description;
+
+    $self->{SCOPE} = [];
+    $self->{SUB_ELEMENT_COUNT} = 0;
 
     bless $self, $class;
 
@@ -59,14 +63,18 @@ sub StartTag
     my $expat = shift;
     my $tagName = shift;
 
+#print "Tag: $tagName\n";
+
     my $description = $self->{JOB_DESCRIPTION};
 
-    switch ($tagName)
+    my $scope = $self->{SCOPE};
+    my @scope = @$scope;
+    if ($#scope gt 0)
     {
-        case /extensions/ { $self->pushScope($SCOPE_EXTENSIONS) }
-        case /extraArguments/ { $self->pushScope($SCOPE_EXTRA_ARGUMENTS) }
-        else { $self->pushScope($SCOPE_UNKNOWN) }
+        #just entered sub-extension-element element
+        $self->{SUB_ELEMENT_COUNT}++;
     }
+    $self->pushScope($tagName);
 }
 
 sub EndTag
@@ -75,12 +83,53 @@ sub EndTag
     my $expat = shift;
     my $tagName = shift;
 
-    switch ($tagName)
+    my $scope = $self->{SCOPE};
+    my @scope = @$scope;
+    my $currentScope = $scope[$#scope];
+    my $parentScope = $scope[$#scope-1];
+
+    if ($#scope eq 1)
     {
-        case /extensions/ { $self->popScope() }
-        case /extraArguments/ { $self->popScope() }
-        else { $self->popScope() }
+        #just left extension element
+        if ($self->{SUB_ELEMENT_COUNT} eq 0)
+        {
+            #leaving element with no sub-elements
+            if (length($self->{CDATA}) and ($self->{CDATA} =~ /\S/))
+            {
+                #saved non-whitespace CDATA, so trim and set as attr
+                $self->{CDATA} =~ s/^\s+//;
+                $self->{CDATA} =~ s/\s+$//;
+
+                my $oldValue = $self->{JOB_DESCRIPTION}->get($tagName);
+                my $newValue;
+                if (defined($oldValue))
+                {
+                    if (ref($oldValue) eq 'ARRAY')
+                    {
+                        $newValue = $oldValue;
+                        push(@$newValue, $self->{CDATA});
+                    }
+                    else
+                    {
+                        $newValue = [ $oldValue ];
+                        push(@$newValue, $self->{CDATA});
+                    }
+                }
+                else
+                {
+                    $newValue = [ $self->{CDATA} ];
+                }
+                $self->{JOB_DESCRIPTION}->add($tagName, $newValue);
+            }
+#$self->{JOB_DESCRIPTION}->save();
+        }
+
+        $self->{SUB_ELEMENT_COUNT} = 0;
+        $self->{LAST_EXTENSION} = $parentScope;
     }
+
+    $self->{CDATA} = "";
+    $self->{LAST_EXTENSION} = $self->popScope();
 }
 
 sub Char
@@ -92,10 +141,15 @@ sub Char
     my $scope = $self->{SCOPE};
     my @scope = @$scope;
     my $currentScope = $scope[$#scope];
+    my $parentScope = $scope[$#scope-1];
 
-    if ($currentScope == $SCOPE_EXTRA_ARGUMENTS)
+    if ($currentScope eq $EXTRA_ARGUMENTS)
     {
         $self->extraArguments($char);
+    }
+    elsif ($parentScope eq $EXTENSIONS)
+    {
+        $self->{CDATA} .= $char;
     }
 }
 
@@ -107,14 +161,12 @@ sub extraArguments
 
     my $scope = $self->{SCOPE};
     my @scope = @$scope;
-    if ($scope[$#scope-1] eq $SCOPE_EXTENSIONS)
+    if ($scope[$#scope-1] == $EXTENSIONS)
     {
         my @arguments = $self->{JOB_DESCRIPTION}->arguments();
         my @parsed_arguments = split(' ', $text);
         push(@arguments, @parsed_arguments);
         $self->{JOB_DESCRIPTION}->add("arguments", \@arguments);
-
-        @arguments = $self->{JOB_DESCRIPTION}->arguments();
     }
 }
 
