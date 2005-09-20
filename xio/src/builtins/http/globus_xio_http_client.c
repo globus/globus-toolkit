@@ -187,7 +187,7 @@ globus_i_xio_http_client_write_request(
     globus_xio_iovec_t *                iov;
     globus_xio_http_header_t *          current_header;
     int                                 i;
-    char                                size_buffer[sizeof(globus_size_t)+3];
+    char *                              size_buffer = NULL;
     GlobusXIOName(globus_i_xio_http_client_write_request);
 
     globus_assert(http_handle->send_state == GLOBUS_XIO_HTTP_REQUEST_LINE);
@@ -339,18 +339,29 @@ globus_i_xio_http_client_write_request(
                     16,
                     free_iovecs_exit);
 
-            rc = sprintf(size_buffer,
-                    "%u\r\n",
-                    http_handle->request_info.headers.content_length);
+            size_buffer = globus_common_create_string(
+                    "%lu\r\n",
+                    (unsigned long) 
+                            http_handle->request_info.headers.content_length);
+            
+            if (size_buffer == NULL)
+            {
+                result = GlobusXIOErrorMemory("iovec.iov_base");
 
-            globus_assert (rc > 0);
+                goto free_iovecs_exit;
+            }
+
 
             GLOBUS_XIO_HTTP_COPY_BLOB(&iovecs,
                     size_buffer,
-                    rc,
+                    strlen(size_buffer),
                     free_iovecs_exit);
             http_handle->request_info.headers.transfer_encoding =
                     GLOBUS_XIO_HTTP_TRANSFER_ENCODING_IDENTITY;
+
+            free(size_buffer);
+
+            size_buffer = NULL;
         }
         else
         {
@@ -438,6 +449,11 @@ free_iovecs_exit:
         free(iov);
     }
     globus_fifo_destroy(&iovecs);
+
+    if (size_buffer != NULL)
+    {
+        free(size_buffer);
+    }
 
 error_exit:
     return result;

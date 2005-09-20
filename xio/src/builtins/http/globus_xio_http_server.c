@@ -208,7 +208,7 @@ globus_i_xio_http_server_write_response(
     int                                 rc;
     int                                 i;
     int                                 send_size;
-    char                                size_buffer[sizeof(globus_size_t)+3];
+    char *                              size_buffer = NULL;
     globus_bool_t                       free_op = GLOBUS_FALSE;
     globus_xio_http_header_t *          current_header;
     GlobusXIOName(globus_i_xio_server_write_response);
@@ -336,12 +336,26 @@ globus_i_xio_http_server_write_response(
                         "Content-Length: ",
                         16,
                         free_iovecs_error);
-                rc = sprintf(size_buffer, "%u\r\n",
-                        http_handle->response_info.headers.content_length);
+
+                size_buffer = globus_common_create_string(
+                        "%lu\r\n",
+                        (unsigned long)
+                            http_handle->response_info.headers.content_length);
+
+                if (size_buffer == NULL)
+                {
+                    result = GlobusXIOErrorMemory("iovec.iov_base");
+
+                    goto free_iovecs_error;
+                }
                 GLOBUS_XIO_HTTP_COPY_BLOB(&iovecs,
                         size_buffer,
-                        rc,
+                        strlen(size_buffer),
                         free_iovecs_error);
+
+                free(size_buffer);
+
+                size_buffer = NULL;
             }
         }
         else
@@ -459,6 +473,10 @@ free_iovecs_error:
         globus_libc_free(iov);
     }
     globus_fifo_destroy(&iovecs);
+    if (size_buffer != NULL)
+    {
+        free(size_buffer);
+    }
 
 error_exit:
     return result;
