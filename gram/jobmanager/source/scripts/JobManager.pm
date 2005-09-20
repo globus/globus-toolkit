@@ -10,6 +10,7 @@
 use Globus::GRAM::Error;
 use Globus::GRAM::JobState;
 use Globus::GRAM::JobSignal;
+use Globus::GRAM::ExtensionsHandler;
 use Globus::Core::Paths;
 
 use POSIX;
@@ -86,6 +87,14 @@ sub new
     my $description = shift;
 
     $self->{JobDescription} = $description;
+
+    #parse the XML blob that is the extensions element in the job description
+    if ($description->xml_extensions())
+    {
+        new Globus::GRAM::ExtensionsHandler($description);
+    }
+
+    $description->add("logfile", "/home/lane/logfile");
 
     if(defined($description->logfile()))
     {
