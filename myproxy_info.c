@@ -43,8 +43,6 @@ static char short_options[] = "hus:p:l:vVd";
 static char version[] =
 "myproxy-info version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
 
-//static int dn_as_username = 0;
-
 /* Function declarations */
 void init_arguments(int argc, char *argv[],
                     myproxy_socket_attrs_t *attrs, 
@@ -100,8 +98,6 @@ myproxy_init_socket_attrs( socket_attrs );
                                client_request,
                                server_response,
                                data_parameters );
-
-    printf ("\n");
 
     /* free memory allocated */
     myproxy_free(socket_attrs, client_request, server_response);
