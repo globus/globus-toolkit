@@ -5,8 +5,8 @@ use XML::Parser;
 use Switch;
 
 ############ define element scope constants here ############
-my ($UNKNOWN_SCOPE,   $EXTENSIONS,    $EXTRA_ARGUMENTS)
- = ("unknown_scope",  "extensions",   "extraArguments");
+my ($UNKNOWN_SCOPE,   $EXTENSIONS)
+ = ("unknown_scope",  "extensions");
 
 sub new
 {
@@ -63,7 +63,7 @@ sub StartTag
     my $expat = shift;
     my $tagName = shift;
 
-#print "Tag: $tagName\n";
+    $self->log("Start Tag: $tagName");
 
     my $description = $self->{JOB_DESCRIPTION};
 
@@ -83,16 +83,22 @@ sub EndTag
     my $expat = shift;
     my $tagName = shift;
 
+    $self->log("End Tag: $tagName");
+
     my $scope = $self->{SCOPE};
     my @scope = @$scope;
     my $currentScope = $scope[$#scope];
     my $parentScope = $scope[$#scope-1];
 
-    if ($#scope eq 1)
+    if ($#scope == 1)
     {
         #just left extension element
+        $self->log("Processing extension element $tagName");
+
         if ($self->{SUB_ELEMENT_COUNT} eq 0)
         {
+            $self->log("$tagName has no sub-elements");
+
             #leaving element with no sub-elements
             if (length($self->{CDATA}) and ($self->{CDATA} =~ /\S/))
             {
@@ -119,13 +125,182 @@ sub EndTag
                 {
                     $newValue = [ $self->{CDATA} ];
                 }
+
+                my $logIsOpen = 0;
+                if(defined($self->{JOB_DESCRIPTION}->logfile()))
+                {
+                    $logIsOpen = 1;
+                }
+
                 $self->{JOB_DESCRIPTION}->add($tagName, $newValue);
-            }
+
+                if(    (not $logIsOpen)
+                   and defined($self->{JOB_DESCRIPTION}->logfile()))
+                {
+                    local(*FH);
+                    open(FH, '>>'. $self->{JOB_DESCRIPTION}->logfile());
+                    select((select(FH),$|=1)[$[]);
+                    $self->{log} = *FH;
+                }
 #$self->{JOB_DESCRIPTION}->save();
+            }
+        }
+        else
+        {
+            #leaving element with one or more sub-elements
+            $self->log("$tagName has $self->{SUB_ELEMENT_COUNT} sub-elements");
+
+            #TODO support other resource managers
+            if (    ($currentScope eq 'resourceAllocationGroup')
+                   and ($self->{RM_NAME} eq 'pbs'))
+            {
+                #just left a resourceAllocationGroup element
+                $self->log("converting $tagName to #PBS -l nodes=...");
+
+                my $hostType = $self->{HOST_TYPE};
+                my $hostCount = $self->{HOST_COUNT};
+                my $hostNames = $self->{HOST_NAMES};
+                my $processCount = $self->{PROCESS_COUNT};
+                my $processesPerHost = $self->{PROCESSES_PER_NODE};
+
+                #TODO handle multiple resourceAllocationGroup elements
+
+                my $nodes = "";
+
+                if (defined $processCount)
+                {
+                    $self->log("Processing processCount\n");
+
+                    if (defined $hostType)
+                    {
+                        $self->log("Processing hostType\n");
+
+                        if (defined $hostCount)
+                        {
+                            $self->log("Processing hostCount\n");
+
+                            my $ppn = $processCount / $hostCount;
+
+                            $nodes = "$processCount:$hostType:$ppn";
+                        }
+                        else
+                        {
+                            $nodes = "$processCount:$hostType";
+                        }
+                    }
+                    elsif (defined $hostNames)
+                    {
+                        my @names = @$hostNames;
+                        $self->log("Processing hostName list\n");
+
+                        my $hostCount = $#names + 1;
+                        my $ppn = $processCount / $hostCount;
+
+                        foreach my $name (@names)
+                        {
+                            $nodes .= "$name:ppn=$ppn+";
+                        }
+                        $nodes =~ s/\+$//;
+                    }
+                    else
+                    {
+                        $nodes = "$processCount";
+                    }
+                }
+                elsif (defined $processesPerHost)
+                {
+                    $self->log("Processing processesPerHost\n");
+
+                    if (defined $hostType)
+                    {
+                        $self->log("Processing hostType\n");
+
+                        if (defined $hostCount)
+                        {
+                            $self->log("Processing hostCount\n");
+
+                            $nodes = "$hostCount"
+                                   . ":$hostType"
+                                   . ":ppn=$processesPerHost";
+                        }
+                        else
+                        {
+                            $nodes = "$hostType:ppn=$processesPerHost";
+                        }
+                    }
+                    elsif (defined $hostNames)
+                    {
+                        $self->log("Processing hostNames list\n");
+
+                        my @names = @$hostNames;
+
+                        foreach my $name (@names)
+                        {
+                            $nodes .= "$name:ppn=$processesPerHost+";
+                        }
+                        $nodes =~ s/\+$//;
+                    }
+                    else
+                    {
+                        $nodes = "ppn=$processesPerHost";
+                    }
+                }
+
+                $nodes =~ s/\s+//g;
+
+                $self->log("Adding #PBS -l nodes=$nodes\n");
+
+                $self->{JOB_DESCRIPTION}->add("nodes", $nodes);
+#$self->{JOB_DESCRIPTION}->save();
+            }
         }
 
         $self->{SUB_ELEMENT_COUNT} = 0;
         $self->{LAST_EXTENSION} = $parentScope;
+    }
+    elsif ($#scope == 2)
+    {
+        if ($parentScope eq 'resourceAllocationGroup')
+        {
+            if ($currentScope eq 'hostType')
+            {
+                $self->log("Parsing hostType\n");
+                $self->{HOST_TYPE} .= $self->{CDATA};
+            }
+            elsif ($currentScope eq 'hostCount')
+            {
+                $self->log("Parsing hostCount\n");
+                $self->{HOST_COUNT} .= $self->{CDATA};
+            }
+            elsif ($currentScope eq 'hostName')
+            {
+                if ($self->{CDATA} =~ /\S/)
+                {
+                    $self->log("Parsing hostName\n");
+
+                    my $hostNames = $self->{HOST_NAMES};
+                    if (not defined $hostNames)
+                    {
+                        $self->{HOST_NAMES} = [ ];
+                        $hostNames = $self->{HOST_NAMES}
+                    }
+
+                    push(@$hostNames, $self->{CDATA});
+
+                    $self->log("New host names list: @$hostNames\n");
+                }
+            }
+            elsif ($currentScope eq 'processCount')
+            {
+                $self->log("Parsing processCount\n");
+                $self->{PROCESS_COUNT} = $self->{CDATA};
+            }
+            elsif ($currentScope eq 'processesPerHost')
+            {
+                $self->log("Parsing processesPerHost\n");
+                $self->{PROCESSES_PER_NODE} = $self->{CDATA};
+            }
+        }
     }
 
     $self->{CDATA} = "";
@@ -143,31 +318,20 @@ sub Char
     my $currentScope = $scope[$#scope];
     my $parentScope = $scope[$#scope-1];
 
-    if ($currentScope eq $EXTRA_ARGUMENTS)
-    {
-        $self->extraArguments($char);
-    }
-    elsif ($parentScope eq $EXTENSIONS)
-    {
-        $self->{CDATA} .= $char;
-    }
+    $self->{CDATA} .= $char;
 }
 
-############ define element handling subs here ############
-sub extraArguments
+sub log
 {
     my $self = shift;
-    my $text = shift;
 
-    my $scope = $self->{SCOPE};
-    my @scope = @$scope;
-    if ($scope[$#scope-1] == $EXTENSIONS)
+    if(exists($self->{log}))
     {
-        my @arguments = $self->{JOB_DESCRIPTION}->arguments();
-        my @parsed_arguments = split(' ', $text);
-        push(@arguments, @parsed_arguments);
-        $self->{JOB_DESCRIPTION}->add("arguments", \@arguments);
+        my $fh = $self->{log};
+        print $fh scalar(localtime(time)), " EXTENSIONS_HANDLER: ", @_, "\n";
     }
+
+    return;
 }
 
 1;

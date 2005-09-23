@@ -94,8 +94,6 @@ sub new
         new Globus::GRAM::ExtensionsHandler($class, $description);
     }
 
-    $description->add("logfile", "/home/lane/logfile");
-
     if(defined($description->logfile()))
     {
         local(*FH);
