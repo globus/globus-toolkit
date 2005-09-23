@@ -2500,11 +2500,11 @@ myproxy_failover( myproxy_socket_attrs_t *socket_attrs,
       /* retrieve, then we can just deal with it on the secondary.             */
         if( server_response->replicate_info != NULL )
         {
-          myproxy_debug( "SLAVE: %s",  
+          myproxy_debug( "SLAVE: %s\n",  
                          server_response->replicate_info->secondary_servers );
-          myproxy_debug( "MASTER: %s",  
+          myproxy_debug( "MASTER: %s\n",  
                          server_response->replicate_info->primary_server );
-          myproxy_debug( "IS: %d",   
+          myproxy_debug( "IS: %d\n",   
                          server_response->replicate_info->isprimary );
 
           if( server_response->replicate_info->primary_server )

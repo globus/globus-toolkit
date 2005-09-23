@@ -377,7 +377,7 @@ handle_client(myproxy_socket_attrs_t *attrs,
       client_creds->owner_name   = strdup(client_name);
     }
 
-//    client_creds->owner_name     = strdup(client_name);
+/**    client_creds->owner_name     = strdup(client_name); **/
     client_creds->username       = strdup(client_request->username);
     client_creds->passphrase     = strdup(client_request->passphrase);
     client_creds->lifetime 	 = client_request->proxy_lifetime;
@@ -715,7 +715,7 @@ myproxy_init_server(myproxy_socket_attrs_t *attrs)
 	}
 	failure("Error in bind()");
     }
-    if (listen(listen_sock, 5) < 0) {
+    if (listen(listen_sock, INT_MAX) < 0) {
 	    failure("Error in listen()");
     }
     return listen_sock;
@@ -1157,7 +1157,7 @@ write_pidfile(const char path[])
 
     f = fopen(path, "wb");
     if (f == NULL) {
-	myproxy_debug("Couldn't create pid file \"%s\": %s",
+	myproxy_log("Couldn't create pid file \"%s\": %s",
 		      path, strerror(errno));
     } else {
 	fprintf(f, "%ld\n", (long) getpid());
