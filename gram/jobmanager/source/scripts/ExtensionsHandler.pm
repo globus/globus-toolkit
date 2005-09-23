@@ -163,9 +163,17 @@ sub EndTag
                 my $processCount = $self->{PROCESS_COUNT};
                 my $processesPerHost = $self->{PROCESSES_PER_NODE};
 
-                #TODO handle multiple resourceAllocationGroup elements
-
-                my $nodes = "";
+                my $nodes = $self->{JOB_DESCRIPTION}->nodes();
+                if (defined $nodes)
+                {
+                    # already parsed a resourceAllocationGroup, so append
+                    $nodes .= "+";
+                }
+                else
+                {
+                    # first resourceAllocationGroup
+                    $nodes = "";
+                }
 
                 if (defined $processCount)
                 {
@@ -252,6 +260,13 @@ sub EndTag
 
                 $self->{JOB_DESCRIPTION}->add("nodes", $nodes);
 #$self->{JOB_DESCRIPTION}->save();
+
+                # reset values in case we get another resourceAllocationGroup
+                $self->{HOST_TYPE} = undef;
+                $self->{HOST_COUNT} = undef;
+                $self->{HOST_NAMES} = undef;
+                $self->{PROCESS_COUNT} = undef;
+                $self->{PROCESSES_PER_NODE} = undef;
             }
         }
 
