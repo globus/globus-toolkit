@@ -128,6 +128,7 @@ BUNDLE gt4-gram
         globus_c_wsrf_resource
         globus_fork_starter
         globus_globusrun_ws
+        globus_wsrf_gram_client_tools
         globus_gram_job_manager_setup_fork
         globus_gram_local_proxy_tool
         globus_gridmap_and_execute
