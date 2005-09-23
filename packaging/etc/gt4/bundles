@@ -222,6 +222,7 @@ BUNDLE gt4-gram-test
         globus_scheduler_event_generator_test
         globus_scheduler_event_generator_fork_test
         globus_gridmap_and_execute_test
+        globus_wsrf_gram_client_tools_test
         globus_c_wsrf_rendezvous_test
         globus_wsrf_gram_reliable_create_test
 
