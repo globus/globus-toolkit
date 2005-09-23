@@ -168,3 +168,4 @@ globus_scheduler_event_generator_job_manager       ws-gram/job_monitoring/job-ma
 globus_scheduler_event_generator_job_manager_setup ws-gram/job_monitoring/job-manager/c/setup gpt
 globus_c_static_container_gen               wsrf/c/parser/static_container gpt
 globus_crft_util                    ws-transfer/reliable/client/c/crft_util/source gpt
+globus_c_wsrf_service_group    wsrf/c/parser/cgen/source/template_package
