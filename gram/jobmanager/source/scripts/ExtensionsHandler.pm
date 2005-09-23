@@ -65,6 +65,29 @@ sub StartTag
 
     $self->log("Start Tag: $tagName");
 
+    # collect attributes for this element
+    my %attributes = { };
+    my $attrName = shift;
+    while (defined $attrName)
+    {
+        my $attrValue = shift;
+        $attributes{$attrName} = $attrValue;
+
+        $attrName = shift;
+    }
+    $self->{ATTRIBUTES} = \%attributes;
+
+    my @keys = keys(%attributes);
+    if ($#keys >= 0)
+    {
+        my $msg = "Collected the following attributes for element $tagName:\n";
+        foreach my $key (@keys)
+        {
+            $msg .= "\t$key => $attributes{$key}\n";
+        }
+        $self->log($msg);
+    }
+
     my $description = $self->{JOB_DESCRIPTION};
 
     my $scope = $self->{SCOPE};
@@ -113,17 +136,35 @@ sub EndTag
                     if (ref($oldValue) eq 'ARRAY')
                     {
                         $newValue = $oldValue;
-                        push(@$newValue, $self->{CDATA});
                     }
                     else
                     {
                         $newValue = [ $oldValue ];
+                    }
+
+                    my $attributes = $self->{ATTRIBUTES};
+                    my $name = %$attributes->{name};
+                    if (defined $name)
+                    {
+                        push(@$newValue, [$name, $self->{CDATA}]);
+                    }
+                    else
+                    {
                         push(@$newValue, $self->{CDATA});
                     }
                 }
                 else
                 {
-                    $newValue = [ $self->{CDATA} ];
+                    my $attributes = $self->{ATTRIBUTES};
+                    my $name = %$attributes->{name};
+                    if (defined $name)
+                    {
+                        $newValue = [ [ $name, $self->{CDATA} ] ];
+                    }
+                    else
+                    {
+                        $newValue = [ $self->{CDATA} ];
+                    }
                 }
 
                 my $logIsOpen = 0;
