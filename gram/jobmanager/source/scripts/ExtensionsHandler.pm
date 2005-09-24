@@ -233,12 +233,12 @@ sub EndTag
                             # divide total processes among the nodes
                             my $ppn = $processCount / $hostCount;
 
-                            $nodes .= "$processCount:$hostType:$ppn";
+                            $nodes .= "$processCount:$hostType:ppn=$ppn";
                         }
                         else
                         {
                             # only one node, so it gets all the processes
-                            $nodes .= "$hostType:$processCount";
+                            $nodes .= "$hostType:ppn=$processCount";
                         }
                     }
                     elsif (defined $hostNames)
