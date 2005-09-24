@@ -208,11 +208,13 @@ sub EndTag
                 if (defined $nodes)
                 {
                     # already parsed a resourceAllocationGroup, so append
+                    $self->log("nodes exists...appending with \'+\'\n");
                     $nodes .= "+";
                 }
                 else
                 {
                     # first resourceAllocationGroup
+                    $self->log("no nodes exists...\n");
                     $nodes = "";
                 }
 
@@ -228,13 +230,15 @@ sub EndTag
                         {
                             $self->log("Processing hostCount\n");
 
+                            # divide total processes among the nodes
                             my $ppn = $processCount / $hostCount;
 
-                            $nodes = "$processCount:$hostType:$ppn";
+                            $nodes .= "$processCount:$hostType:$ppn";
                         }
                         else
                         {
-                            $nodes = "$processCount:$hostType";
+                            # only one node, so it gets all the processes
+                            $nodes .= "$hostType:$processCount";
                         }
                     }
                     elsif (defined $hostNames)
@@ -242,6 +246,7 @@ sub EndTag
                         my @names = @$hostNames;
                         $self->log("Processing hostName list\n");
 
+                        # divide total processes among the nodes
                         my $hostCount = $#names + 1;
                         my $ppn = $processCount / $hostCount;
 
@@ -253,7 +258,7 @@ sub EndTag
                     }
                     else
                     {
-                        $nodes = "$processCount";
+                        $nodes .= "1:ppn=$processCount";
                     }
                 }
                 elsif (defined $processesPerHost)
@@ -268,13 +273,13 @@ sub EndTag
                         {
                             $self->log("Processing hostCount\n");
 
-                            $nodes = "$hostCount"
+                            $nodes .= "$hostCount"
                                    . ":$hostType"
                                    . ":ppn=$processesPerHost";
                         }
                         else
                         {
-                            $nodes = "$hostType:ppn=$processesPerHost";
+                            $nodes .= "$hostType:ppn=$processesPerHost";
                         }
                     }
                     elsif (defined $hostNames)
@@ -291,7 +296,7 @@ sub EndTag
                     }
                     else
                     {
-                        $nodes = "ppn=$processesPerHost";
+                        $nodes .= "ppn=$processesPerHost";
                     }
                 }
 
