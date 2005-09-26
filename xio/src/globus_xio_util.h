@@ -74,7 +74,10 @@ globus_xio_contact_info_to_encoded_string(
 /* all macros in this file require each function to 'declare' their name with
  * this
  */
-#ifdef __GNUC__
+#if defined(TARGET_ARCH_ARM) && !defined(BUILD_DEBUG)
+#define GlobusXIOName(func)
+#define _xio_name ""
+#elif defined(__GNUC__)
 #define GlobusXIOName(func) static const char * _xio_name __attribute__((__unused__)) = #func
 #else
 #define GlobusXIOName(func) static const char * _xio_name = #func

@@ -410,6 +410,7 @@ globus_l_xio_file_open(
         
         /* all handles created by me are closed on exec */
         fcntl(handle->fd, F_SETFD, FD_CLOEXEC);
+#ifdef HAVE_FTRUNCATE
         if(trunc_offset > 0)
         {
             int                         rc;
@@ -421,12 +422,14 @@ globus_l_xio_file_open(
                 goto error_truncate;
             }
         }
+#endif
     }
     else
     {
         handle->fd = converted_fd;
         handle->converted = GLOBUS_TRUE;
         
+#ifdef HAVE_FTRUNCATE
         if(!converted_std && attr->flags & GLOBUS_XIO_FILE_TRUNC)
         {
             int                         rc;
@@ -438,6 +441,7 @@ globus_l_xio_file_open(
                 goto error_truncate;
             }
         }
+#endif
     }
     
     result = globus_xio_system_handle_init(

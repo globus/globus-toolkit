@@ -194,7 +194,9 @@ enum globus_l_xio_error_levels
             case GLOBUS_XIO_SYSTEM_TCP_LISTENER:                            \
             case GLOBUS_XIO_SYSTEM_UDP:                                     \
             case GLOBUS_XIO_SYSTEM_TCP:                                     \
+                setErrno(0);                                                \
                 _rc = closesocket(_fd);                                     \
+                errno = getErrno();                                         \
                 break;                                                      \
             case GLOBUS_XIO_SYSTEM_FILE:                                    \
                 _rc = close(_fd);                                           \
@@ -1330,7 +1332,9 @@ globus_l_xio_system_try_read(
             case GLOBUS_XIO_SYSTEM_TCP_LISTENER:
             case GLOBUS_XIO_SYSTEM_UDP:
             case GLOBUS_XIO_SYSTEM_TCP:
+                setErrno(0);
                 rc = recv(fd, buf, buflen, 0);
+                errno = getErrno();
                 break;
             case GLOBUS_XIO_SYSTEM_FILE:
                 rc = read(fd, buf, buflen);
@@ -1400,7 +1404,9 @@ globus_l_xio_system_try_readv(
         case GLOBUS_XIO_SYSTEM_TCP_LISTENER:
         case GLOBUS_XIO_SYSTEM_UDP:
         case GLOBUS_XIO_SYSTEM_TCP:
+            setErrno(0);
             rc = recv(fd, iov[0].iov_base, iov[0].iov_len, 0);
+            errno = getErrno();
             break;
         case GLOBUS_XIO_SYSTEM_FILE:
             rc = read(fd, iov[0].iov_base, iov[0].iov_len);
@@ -1468,7 +1474,13 @@ globus_l_xio_system_try_recv(
     {
         do
         {
+#ifdef TARGET_ARCH_NETOS
+            setErrno(0);
             rc = recv(fd, buf, buflen, flags);
+            errno = getErrno();
+#else
+            rc = recv(fd, buf, buflen, flags);
+#endif
         } while(rc < 0 && errno == EINTR);
     
         if(rc < 0)
@@ -1530,6 +1542,9 @@ globus_l_xio_system_try_recvfrom(
     {
         do
         {
+#ifdef TARGET_ARCH_NETOS
+            setErrno(0);
+#endif
             len = sizeof(globus_sockaddr_t);
             rc = recvfrom(
                 fd,
@@ -1538,6 +1553,9 @@ globus_l_xio_system_try_recvfrom(
                 flags,
                 (struct sockaddr *) from,
                 &len);
+#ifdef TARGET_ARCH_NETOS
+            errno = getErrno();
+#endif
         } while(rc < 0 && errno == EINTR);
     
         if(rc < 0)
@@ -1597,6 +1615,9 @@ globus_l_xio_system_try_recvmsg(
 #ifdef HAVE_RECVMSG
         rc = recvmsg(fd, msghdr, flags);
 #else
+#ifdef TARGET_ARCH_NETOS
+        setErrno(0);
+#endif
         if (msghdr->msg_name)
         {
             rc = recvfrom(
@@ -1615,6 +1636,9 @@ globus_l_xio_system_try_recvmsg(
                     msghdr->msg_iov[0].iov_len,
                     flags);
         }
+#ifdef TARGET_ARCH_NETOS
+        errno = getErrno();
+#endif
 #endif
     } while(rc < 0 && errno == EINTR);
 
@@ -1680,7 +1704,11 @@ globus_l_xio_system_try_write(
             case GLOBUS_XIO_SYSTEM_TCP_LISTENER:
             case GLOBUS_XIO_SYSTEM_UDP:
             case GLOBUS_XIO_SYSTEM_TCP:
+#ifdef TARGET_ARCH_NETOS
+                setErrno(0);
                 rc = send(fd, buf, buflen, 0);
+                errno = getErrno();
+#endif
                 break;
             case GLOBUS_XIO_SYSTEM_FILE:
                 rc = write(fd, buf, buflen);
@@ -1744,7 +1772,9 @@ globus_l_xio_system_try_writev(
         case GLOBUS_XIO_SYSTEM_TCP_LISTENER:
         case GLOBUS_XIO_SYSTEM_UDP:
         case GLOBUS_XIO_SYSTEM_TCP:
+            setErrno(0);
             rc = send(fd, iov[0].iov_base, iov[0].iov_len, 0);
+            errno = getErrno();
             break;
         case GLOBUS_XIO_SYSTEM_FILE:
             rc = write(fd, iov[0].iov_base, iov[0].iov_len);
@@ -1807,7 +1837,13 @@ globus_l_xio_system_try_send(
     {
         do
         {
+#ifdef TARGET_ARCH_NETOS
+            setErrno(0);
             rc = send(fd, buf, buflen, flags);
+            errno = getErrno();
+#else
+            rc = send(fd, buf, buflen, flags);
+#endif
         } while(rc < 0 && errno == EINTR);
     
         if(rc < 0)
@@ -1862,6 +1898,9 @@ globus_l_xio_system_try_sendto(
     {
         do
         {
+#ifdef TARGET_ARCH_NETOS
+            setErrno(0);
+#endif
             rc = sendto(
                 fd,
                 buf,
@@ -1869,6 +1908,9 @@ globus_l_xio_system_try_sendto(
                 flags,
                 (struct sockaddr *) to,
                 GlobusLibcSockaddrLen(to));
+#ifdef TARGET_ARCH_NETOS
+            errno = getErrno();
+#endif
         } while(rc < 0 && errno == EINTR);
     
         if(rc < 0)
@@ -1922,6 +1964,9 @@ globus_l_xio_system_try_sendmsg(
 #ifdef HAVE_SENDMSG
         rc = sendmsg(fd, msghdr, flags);
 #else
+#ifdef TARGET_ARCH_NETOS
+        setErrno(0);
+#endif
         if (msghdr->msg_name)
         {
             rc = sendto(
@@ -1940,6 +1985,9 @@ globus_l_xio_system_try_sendmsg(
                     msghdr->msg_iov[0].iov_len,
                     flags);
         }
+#ifdef TARGET_ARCH_NETOS
+        errno = getErrno();
+#endif
 #endif
     } while(rc < 0 && errno == EINTR);
 
@@ -2006,10 +2054,16 @@ globus_l_xio_system_handle_read(
 
             do
             {
+#ifdef TARGET_ARCH_NETOS
+                setErrno(0);
+#endif
                 new_fd = accept(
                         GlobusIXIONativeHandle(read_info->fd),
                         GLOBUS_NULL,
                         GLOBUS_NULL);
+#ifdef TARGET_ARCH_NETOS
+                errno = getErrno();
+#endif
             } while(new_fd < 0 && errno == EINTR);
 
             if(new_fd < 0)
@@ -2192,10 +2246,24 @@ globus_l_xio_system_handle_write(
             globus_socklen_t            errlen;
 
             errlen = sizeof(err);
+
+#ifdef TARGET_ARCH_NETOS
+            setErrno(0);
+            if(getsockopt(fd, SOL_SOCKET, SO_ERROR, (void *) &err, &errlen) < 0)
+            {
+                err = getErrno();
+            }
+
+            if (err == EINPROGRESS)
+            {
+                err = 0;
+            }
+#else
             if(getsockopt(fd, SOL_SOCKET, SO_ERROR, (void *) &err, &errlen) < 0)
             {
                 err = errno;
             }
+#endif
 
             if(err)
             {
@@ -2458,12 +2526,19 @@ globus_l_xio_system_poll(
             GLOBUS_L_XIO_SYSTEM_DEBUG_INFO,
             (_XIOSL("[%s] Before select\n"), _xio_name));
                     
+#ifdef TARGET_ARCH_NETOS
+        setErrno(0);
+#endif
         nready = select(
             num,
             globus_l_xio_system_ready_reads,
             globus_l_xio_system_ready_writes,
             GLOBUS_NULL,
             (time_left_is_infinity ? GLOBUS_NULL : &time_left));
+
+#ifdef TARGET_ARCH_NETOS
+        errno = getErrno();
+#endif
         save_errno = errno;
         
         GlobusXIOSystemDebugPrintf(
@@ -2596,10 +2671,16 @@ globus_xio_system_register_connect(
     GlobusXIOSystemDebugEnterFD(fd);
 
     done = GLOBUS_FALSE;
+#ifdef TARGET_ARCH_NETOS
+        setErrno(0);
+#endif
     while(!done && connect(
         GlobusIXIONativeHandle(fd),
         (struct sockaddr *) addr, GlobusLibcSockaddrLen(addr)) < 0)
     {
+#ifdef TARGET_ARCH_NETOS
+        errno = getErrno();
+#endif
         switch(errno)
         {
           case EINPROGRESS:
@@ -2618,6 +2699,9 @@ globus_xio_system_register_connect(
             result = GlobusXIOErrorSystemError("connect", errno);
             goto error_connect;
         }
+#ifdef TARGET_ARCH_NETOS
+        setErrno(0);
+#endif
     }
 
     GlobusIXIOSystemAllocOperation(op_info);
