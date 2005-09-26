@@ -23,11 +23,11 @@
 #include "globus_common.h"
 #include "globus_callout_constants.h"
 #include "globus_i_callout.h"
-#ifndef WIN32
-#include "ltdl.h"
-#else
+
+#ifdef WIN32
 #include "globus_libtool_windows.h"
 #endif
+
 #include "version.h"
 
 /* ToDo: HACK! This is undefined on the Windows side so do this for now */
@@ -113,11 +113,13 @@ globus_l_callout_activate(void)
         goto exit;
     }
 
+#ifndef BUILD_STATIC_ONLY
     if((result = lt_dlinit()) != 0)
     {
         goto exit;
     }
-    
+#endif
+
     GLOBUS_I_CALLOUT_DEBUG_EXIT;
 
  exit:
@@ -148,7 +150,9 @@ globus_l_callout_deactivate(void)
         fclose(globus_i_callout_debug_fstream);
     }
 
+#ifndef BUILD_STATIC_ONLY
     result = lt_dlexit();
+#endif
 
     return result;
 }
@@ -630,11 +634,15 @@ globus_callout_call_type(
     ...)
 {
     globus_i_callout_data_t *           current_datum;
+#ifdef BUILD_STATIC_ONLY
+    void *                              function;
+#else
     lt_ptr                              function;
+    lt_dlhandle *                       dlhandle;
+#endif
     globus_result_t                     result = GLOBUS_SUCCESS;
     va_list                             ap;
     int                                 rc;
-    lt_dlhandle *                       dlhandle;
     char *                              dlerror;
     static char *                       _function_name_ =
         "globus_callout_handle_call_type";
@@ -653,6 +661,15 @@ globus_callout_call_type(
 
     do
     {
+#ifdef BUILD_STATIC_ONLY
+        GLOBUS_CALLOUT_ERROR_RESULT(
+            result,
+            GLOBUS_CALLOUT_ERROR_WITH_DL,
+            ("couldn't dlopen %s: %s\n",
+             current_datum->file,
+             "(null)"));
+        goto exit;
+#else
         dlhandle = globus_hashtable_lookup(&handle->library_htable,
                                            current_datum->file);
 
@@ -728,6 +745,7 @@ globus_callout_call_type(
             goto exit;
         }
         current_datum = current_datum->next;
+#endif
     }
     while(current_datum);
     
@@ -776,12 +794,15 @@ static void
 globus_l_callout_library_table_element_free(
     void *                              element)
 {
+#ifndef BUILD_STATIC_ONLY
     lt_dlhandle *                       dlhandle;
+#endif
     globus_result_t                     result;
     static char *                       _function_name_ =
         "globus_l_callout_library_table_element_free";
     GLOBUS_I_CALLOUT_DEBUG_ENTER;
 
+#ifndef BUILD_STATIC_ONLY
     dlhandle = (lt_dlhandle *) element;
 
     if(dlhandle != NULL)
@@ -799,6 +820,7 @@ globus_l_callout_library_table_element_free(
 
         free(dlhandle);
     }
+#endif
     
     GLOBUS_I_CALLOUT_DEBUG_EXIT;
     return;
