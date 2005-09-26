@@ -319,6 +319,26 @@ sub submit
         }
     }
 
+    my $transfer_output_file = $description->transferoutputfile();
+    if (defined($transfer_output_file))
+    {
+        if (ref($transfer_output_file) eq 'ARRAY')
+        {
+            my @transfer_output_files = @$transfer_output_file;
+            my $file_list_string = "";
+            foreach my $file (@transfer_output_files)
+            {
+                $file_list_string .= "$file, ";
+            }
+            $file_list_string =~ s/, $//;
+            print SCRIPT_FILE "transfer_output_file = $file_list_string\n";
+        }
+        else
+        {
+            print SCRIPT_FILE "transfer_output_file = $transfer_output_file\n";
+        }
+    }
+
     for (my $i = 0; $i < $description->count(); $i++) {
         if ($multi_output) {
             print SCRIPT_FILE "Output = " .
