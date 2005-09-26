@@ -287,6 +287,38 @@ sub submit
     print SCRIPT_FILE "#Extra attributes specified by client\n";
     print SCRIPT_FILE "$submit_attrs_string\n";
 
+    my $shouldtransferfiles = $description->shouldtransferfiles();
+    if defined($shouldtransferfiles))
+    {
+        print SCRIPT_FILE "should_transfer_files = $shouldtransferfiles\n";
+    }
+
+    my $WhenToTransferOutput = $description->whentotransferoutput();
+    if (defined($WhenToTransferOutput))
+    {
+        print SCRIPT_FILE "WhenToTransferFiles = $WhenToTransferOutput\n";
+    }
+
+    my $transfer_input_file = $description->transferinputfile();
+    if (defined($transfer_input_file))
+    {
+        if (ref($transfer_input_file) eq 'ARRAY')
+        {
+            my @transfer_input_files = @$transfer_input_file;
+            my $file_list_string = "";
+            foreach my $file (@transfer_input_files)
+            {
+                $file_list_string .= "$file, ";
+            }
+            $file_list_string =~ s/, $//;
+            print SCRIPT_FILE "transfer_input_file = $file_list_string\n";
+        }
+        else
+        {
+            print SCRIPT_FILE "transfer_input_file = $transfer_input_file\n";
+        }
+    }
+
     for (my $i = 0; $i < $description->count(); $i++) {
         if ($multi_output) {
             print SCRIPT_FILE "Output = " .
