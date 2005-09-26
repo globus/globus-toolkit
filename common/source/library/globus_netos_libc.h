@@ -57,7 +57,7 @@ typedef struct
 #ifndef HAVE_OPENDIR
 #define HAVE_OPENDIR 1
 #define GLOBUS_IMPLEMENT_OPENDIR 1
-extern DIR * opendir(char *filename);
+extern DIR * opendir(const char *filename);
 #endif /* !HAVE_OPENDIR */
 
 #ifndef HAVE_READDIR

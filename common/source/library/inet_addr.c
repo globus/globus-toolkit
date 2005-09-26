@@ -31,10 +31,10 @@ inet_addr(const char * cp)
     else
     {
         output = 0;
-        output |= octets[0];
-        output |= octets[1] << 8;
-        output |= octets[2] << 16;
-        output |= octets[3] << 24;
+        output |= octets[3];
+        output |= octets[2] << 8;
+        output |= octets[1] << 16;
+        output |= octets[0] << 24;
 
         return output;
     }

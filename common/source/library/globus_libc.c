@@ -1347,6 +1347,7 @@ globus_libc_gethostbyname_r(
     int *                               h_errnop)
 {
     struct hostent *                    hp = GLOBUS_NULL;
+    int                                 test[4];
 #   if defined(GLOBUS_HAVE_GETHOSTBYNAME_R_3)
     struct hostent_data                 hp_data;
     int                                 rc;
@@ -1359,6 +1360,7 @@ globus_libc_gethostbyname_r(
 
 #   if !defined(HAVE_GETHOSTBYNAME_R)
     {
+
         hp = gethostbyname(hostname);
 	if(hp != GLOBUS_NULL)
 	{
@@ -3452,9 +3454,6 @@ void
 globus_libc_freeaddrinfo(
     globus_addrinfo_t *                 res)
 {
-#ifdef HAVE_GETADDRINFO
-    freeaddrinfo(res);
-#else
     globus_addrinfo_t *                 tmp;
     globus_addrinfo_t *                 tmp2;
 
@@ -3481,7 +3480,6 @@ globus_libc_freeaddrinfo(
         free(res->ai_canonname);
     }
     free(res);
-#endif
 }
 
 globus_result_t

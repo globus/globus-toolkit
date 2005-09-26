@@ -37,7 +37,7 @@ globus_l_opendir_callback(
 extern
 DIR *
 opendir(
-    char *                              filename)
+    const char *                        filename)
 {
 #ifdef TARGET_ARCH_NETOS
     int                                 rc;
@@ -154,6 +154,31 @@ opendir(
 
         goto free_dir_entries_out;
     }
+    rc = tx_semaphore_get(&dirp->sem, TX_WAIT_FOREVER);
+
+    if (rc != TX_SUCCESS)
+    {
+        save_errno = ENOMEM;
+
+        goto free_sem_out;
+    }
+    else if (dirp->error_code != 0)
+    {
+        switch (dirp->error_code)
+        {
+            case NAFS_DIR_ENTRY_NOT_FOUND:
+                save_errno = ENOENT;
+                break;
+            case NAFS_NO_READ_PERMISSION:
+                save_errno = EPERM;
+                break;
+            default:
+                save_errno = EINVAL;
+                break;
+        }
+        goto free_sem_out;
+    }
+    rc = tx_semaphore_put(&dirp->sem);
 
     if (save_errno != 0)
     {

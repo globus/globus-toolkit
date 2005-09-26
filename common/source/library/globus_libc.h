@@ -379,6 +379,19 @@ getaddrinfo(
     struct addrinfo **                  res);
 #endif
 
+#ifndef HAVE_FREEADDRINFO
+#define HAVE_FREEADDRINFO 1
+#define GLOBUS_IMPLEMENT_FREEADDRINFO 1
+void
+freeaddrinfo(struct addrinfo * res);
+#endif
+
+#ifndef HAVE_GAI_STRERROR
+#define GLOBUS_IMPLEMENT_GAI_STRERROR 1
+#define HAVE_GAI_STRERROR
+const char * gai_strerror(int errorcode);
+#endif
+
 #ifndef HAVE_GETNAMEINFO
 #define GLOBUS_IMPLEMENT_GETNAMEINFO 1
 #define HAVE_GETNAMEINFO

@@ -9,13 +9,10 @@
  * modifications, you must include this notice in the file.
  */
 
-#define GLOBUS_COMMON_INTERNALS 1
-
 #include "globus_common.h"
 
-#ifndef HAVE_GETADDRINFO
-static
-char * gai_strerror(
+#ifdef GLOBUS_IMPLEMENT_GAI_STRERROR
+const char *gai_strerror(
     int                                 rc)
 {
     return "name resolution error";
