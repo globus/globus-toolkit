@@ -409,6 +409,7 @@ GSI_SOCKET_new(int sock)
     self->sock = sock;
 
     globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE);
+    globus_module_activate(GLOBUS_GSI_SYSCONFIG_MODULE);
 
     return self;
 }
@@ -663,6 +664,7 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self, char *accepted_peer_names[])
     gss_OID			target_name_type = GSS_C_NO_OID;
     int				i, rc=0, sock;
     FILE			*fp = NULL;
+    char                        *cert_dir = NULL;
     
     if (self == NULL)
     {
@@ -678,6 +680,13 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self, char *accepted_peer_names[])
     {
 	self->error_string = strdup("GSI_SOCKET already authenticated");
 	goto error;
+    }
+
+    GLOBUS_GSI_SYSCONFIG_GET_CERT_DIR(&cert_dir);
+    if (cert_dir) {
+	myproxy_debug("using trusted certificates directory %s", cert_dir);
+    } else {
+	myproxy_debug("error getting trusted certificates directory");
     }
 
     self->major_status = globus_gss_assist_acquire_cred(&self->minor_status,
@@ -818,6 +827,7 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self, char *accepted_peer_names[])
 	gss_release_buffer(&minor_status, &gss_buffer);
 	gss_release_name(&minor_status, &server_gss_name);
     }
+    if (cert_dir) free(cert_dir);
     if (fp) fclose(fp);
     
     return return_value;
@@ -833,6 +843,7 @@ GSI_SOCKET_authentication_accept(GSI_SOCKET *self)
     OM_uint32			gss_flags = 0;
     int				sock;
     FILE			*fp = NULL;
+    char                        *cert_dir = NULL;
 
     if (self == NULL) {	
 	return GSI_SOCKET_ERROR;
@@ -841,6 +852,13 @@ GSI_SOCKET_authentication_accept(GSI_SOCKET *self)
     if (self->gss_context != GSS_C_NO_CONTEXT) {
 	self->error_string = strdup("GSI_SOCKET already authenticated");
 	goto error;
+    }
+
+    GLOBUS_GSI_SYSCONFIG_GET_CERT_DIR(&cert_dir);
+    if (cert_dir) {
+	myproxy_debug("using trusted certificates directory %s", cert_dir);
+    } else {
+	myproxy_debug("error getting trusted certificates directory");
     }
 
     self->major_status = globus_gss_assist_acquire_cred(&self->minor_status,
@@ -904,6 +922,7 @@ GSI_SOCKET_authentication_accept(GSI_SOCKET *self)
 
 	gss_release_cred(&minor_status, &creds);
     }
+    if (cert_dir) free(cert_dir);
     if (fp) fclose(fp);
     
     return return_value;
