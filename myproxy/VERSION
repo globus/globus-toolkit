@@ -11,6 +11,8 @@ v3.0 XX Xxx 2005
   - fixes for SASL support
   - increased myproxy-server's listen(2) backlog for improved
     scalability
+  - modify myproxy-test to use "$LOGNAME.myproxy-test" for a username
+    to avoid overwriting any existing credentials
 
 v2.3 28 Jul 2005
   - fix AIX compliation problems in PAM module
