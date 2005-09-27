@@ -5,13 +5,16 @@
 #endif
 
 struct authorization_func {
+   author_status_t (*get_status) (struct myproxy_creds *creds,
+				  char *client_name,
+				  myproxy_server_context_t* config);
    char * (*create_server_data) (void);
    char * (*create_client_data) (authorization_data_t *data, 
 	                         void *extra_data, 
 				 size_t extra_data_len,
 				 size_t *client_data_len);
    int (*check_client) (authorization_data_t *client_auth_data,
-			struct myproxy_creds *creds, /* o co zada */
+			struct myproxy_creds *creds,
 			char *client_name, myproxy_server_context_t* config);
    author_method_t method;
    char *name; /* arbitrary ASCII string without a colon (':') */
@@ -26,10 +29,36 @@ _find_data(author_method_t method, authorization_data_t **data);
 /*
  * Implementation of password-based authorization
  */
+author_status_t
+auth_passwd_get_status(struct myproxy_creds *creds, char *client_name,
+		       myproxy_server_context_t* config)
+{
+    assert(creds);
+    assert(config);
+    
+    if (myproxy_creds_exist(creds->username, creds->credname) == 1 &&
+	myproxy_creds_encrypted(creds) == 1) {
+	return AUTHORIZEMETHOD_REQUIRED;
+    }
+
+#if defined(HAVE_LIBPAM)
+    if (config->pam_policy) {
+	if (strcmp(config->pam_policy, "required") == 0) {
+	    return AUTHORIZEMETHOD_REQUIRED;
+	}
+	if (strcmp(config->pam_policy, "sufficient") == 0) {
+	    return AUTHORIZEMETHOD_SUFFICIENT;
+	}
+    }
+#endif
+
+    return AUTHORIZEMETHOD_DISABLED;
+}
+
 char * 
 auth_passwd_create_server_data(void)
 {
-   return strdup("Put your password for the Myproxy server");
+   return strdup("Enter MyProxy pass phrase:");
 }
 
 char * 
@@ -48,36 +77,45 @@ auth_passwd_create_client_data(authorization_data_t *data,
    return tmp;
 }
 
-int auth_passwd_check_client(authorization_data_t *client_auth_data,
+int auth_passwd_check_client (authorization_data_t *client_auth_data,
                              struct myproxy_creds *creds, char *client_name,
 			     myproxy_server_context_t* config)
 { 
-   int encrypted, empty_passphrase, cred_passphrase_match;
+   int exist=0, encrypted=0, cred_passphrase_match=0;
 #if defined(HAVE_LIBPAM)
    char* pam_policy = NULL;
    char* pam_id = NULL;
    int pam_required, pam_sufficient, pam_disabled;
 #endif
 
-   /* 1. Check whether the credentials are encrypted. */
-   encrypted = myproxy_creds_encrypted(creds);
-   empty_passphrase = (client_auth_data->client_data_len <= 0) ? 1 : 0;
+   /* 1. Gather some initial information. */
+   exist = myproxy_creds_exist(creds->username, creds->credname);
+   if (exist < 0) {
+       return 0;
+   }
+   if (exist) {
+       encrypted = myproxy_creds_encrypted(creds);
+       if (encrypted < 0) {
+	   return 0;
+       }
+   }
 
    /* 2. Check whether the password the user gave matches the
     *    credential passphrase */
-   cred_passphrase_match = 0;
-   if (encrypted)
+   if (exist && (encrypted || creds->passphrase))
    {
       if (client_auth_data->client_data_len >= MIN_PASS_PHRASE_LEN &&
 	  client_auth_data->client_data != NULL &&
 	  myproxy_creds_verify_passphrase(creds,
-					  client_auth_data->client_data) == 1)
+					  client_auth_data->client_data) == 1){
 	 cred_passphrase_match = 1;
+      } else {
+	  /* We always have to match the credential passphrase if it exists. */
+	  verror_put_string("invalid credential passphrase");
+	  return 0;
+      }
    }
-   /* unencrypted --> passphrase matches if it is blank. */
-   else 
-      cred_passphrase_match = (client_auth_data->client_data_len <= 0) ? 1 : 0;
-   
+
 #if defined(HAVE_LIBPAM)
 
    /* Tangent: figure out PAM configuration. */
@@ -97,11 +135,11 @@ int auth_passwd_check_client(authorization_data_t *client_auth_data,
    /* 3. If the passphrase matches the credentials, and PAM config is
     *    "sufficient", then we're done, and we don't need to check
     *    PAM, as long as a passphrase was actually entered. */
-   if (pam_sufficient && cred_passphrase_match && !empty_passphrase)
+   if (pam_sufficient && cred_passphrase_match)
    {
       myproxy_debug("Passphrase matches credentials, and PAM config is \"%s\"; "
 		    "authentication succeeds without checking PAM.", pam_policy);
-      return 1;
+      return cred_passphrase_match;
    }
 
    /* 4. If PAM is "required", *always* check it, regardless of
@@ -115,7 +153,7 @@ int auth_passwd_check_client(authorization_data_t *client_auth_data,
       int pam_success = 0;
       if (pam_id == NULL) pam_id = "myproxy";
       myproxy_debug
-	 ("Checking passphrase via PAM.  PAM policy: \"%s\"; PAM ID: \"%s\"\n",
+	 ("Checking passphrase via PAM.  PAM policy: \"%s\"; PAM ID: \"%s\"",
 	  pam_policy, pam_id);
 
       auth_pam_result = auth_pam(creds->username,
@@ -160,6 +198,7 @@ int auth_passwd_check_client(authorization_data_t *client_auth_data,
 }
 
 struct authorization_func authorization_passwd = {
+   auth_passwd_get_status,
    auth_passwd_create_server_data,
    auth_passwd_create_client_data,
    auth_passwd_check_client,
@@ -170,6 +209,18 @@ struct authorization_func authorization_passwd = {
 /* 
  * Implementation of certificate-based authorization
  */
+
+author_status_t
+auth_cert_get_status(struct myproxy_creds *creds, char *client_name,
+		     myproxy_server_context_t* config)
+{
+    if (myproxy_creds_exist(creds->username, creds->credname) == 1 &&
+	config->authorized_renewer_dns) {
+	return AUTHORIZEMETHOD_SUFFICIENT;
+    }
+
+    return AUTHORIZEMETHOD_DISABLED;
+}
 
 #define CHALLENGE_SIZE  16
 
@@ -335,6 +386,7 @@ end:
    
 
 struct authorization_func authorization_cert = {
+   auth_cert_get_status,
    auth_cert_create_server_data,
    auth_cert_create_client_data,
    auth_cert_check_client,
@@ -347,6 +399,13 @@ struct authorization_func authorization_cert = {
 /* 
  * Implementation of SASL-based authorization
  */
+
+author_status_t
+auth_sasl_get_status(struct myproxy_creds *creds, char *client_name,
+		     myproxy_server_context_t* config)
+{
+    return AUTHORIZEMETHOD_SUFFICIENT; /* should be configurable... */
+}
 
 char * auth_sasl_create_server_data(void)
 {
@@ -375,14 +434,14 @@ int auth_sasl_check_client (authorization_data_t *auth_data,
 			    char *client_name,
 			    myproxy_server_context_t* config)
 { 
-   int return_status = 1;
-
-   return return_status;
+   /* checks happen in auth_sasl_negotiate_server() */
+   return 1;
 }
    
 
 
 struct authorization_func authorization_sasl = {
+   auth_sasl_get_status,
    auth_sasl_create_server_data,
    auth_sasl_create_client_data,
    auth_sasl_check_client,
@@ -524,7 +583,7 @@ authorization_get_name(author_method_t method)
    struct authorization_func *af = _find_func(method);
 
    if (af == NULL)
-      return NULL;
+      return "unknown";
    
    return(af->name);
 }
@@ -537,6 +596,21 @@ authorization_get_method(char *name)
       if (strcmp(authorization_funcs[i]->name, name) == 0)
 	 return authorization_funcs[i]->method;
    return AUTHORIZETYPE_NULL;
+}
+
+author_status_t
+authorization_get_status(author_method_t method,
+			 struct myproxy_creds *creds,
+			 char *client_name,
+			 myproxy_server_context_t* config)
+{
+   struct authorization_func *af = _find_func(method);
+
+   if (af == NULL) {
+      return AUTHORIZEMETHOD_DISABLED;
+   }
+   
+   return (af->get_status(creds, client_name, config));
 }
 
 int
