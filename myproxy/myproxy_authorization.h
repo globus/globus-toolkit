@@ -33,6 +33,7 @@ typedef struct
 int authorization_init_server (authorization_data_t ***data,
 			       author_method_t methods[]);
 void authorization_data_free (authorization_data_t **data);
+void authorization_data_free_contents (authorization_data_t *data);
 
 char * authorization_get_name(author_method_t method);
 author_method_t authorization_get_method(char *name);
