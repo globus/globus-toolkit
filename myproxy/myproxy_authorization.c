@@ -404,7 +404,15 @@ author_status_t
 auth_sasl_get_status(struct myproxy_creds *creds, char *client_name,
 		     myproxy_server_context_t* config)
 {
-    return AUTHORIZEMETHOD_SUFFICIENT; /* should be configurable... */
+    if (config->sasl_policy) {
+	if (strcmp(config->sasl_policy, "required") == 0) {
+	    return AUTHORIZEMETHOD_REQUIRED;
+	}
+	if (strcmp(config->sasl_policy, "sufficient") == 0) {
+	    return AUTHORIZEMETHOD_SUFFICIENT;
+	}
+    }
+    return AUTHORIZEMETHOD_DISABLED;
 }
 
 char * auth_sasl_create_server_data(void)
@@ -646,13 +654,14 @@ authorization_create_response(authorization_data_t **data,
    struct authorization_func *af = _find_func(method);
 
    if (af == NULL) {
-      verror_put_string("Not supported authorization method");
+      verror_put_string("Unsupported authorization method");
       return NULL;
    }
 
    d = _find_data(method, data);
    if (d == NULL) {
-      verror_put_string("No appropriate authorization data available");
+      verror_put_string("Unable to perform %s negotiation with server.",
+			af->name);
       return NULL;
    }
 
