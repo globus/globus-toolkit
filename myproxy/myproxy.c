@@ -507,7 +507,7 @@ myproxy_serialize_request_ex(const myproxy_request_t *request, char **data)
     }
 
     /* trusted root certificates */
-    myproxy_debug("want_trusted_certs = %d\n", request->want_trusted_certs);
+    myproxy_debug("want_trusted_certs = %d", request->want_trusted_certs);
     if (request->want_trusted_certs) {
       len = my_append(data, MYPROXY_TRUSTED_CERTS_STRING,
 				"1", "\n", NULL);
