@@ -1657,7 +1657,7 @@ static int gssapi_client_mech_step(void *conn_context,
     return SASL_FAIL; /* should never get here */
 }
 
-static const long gssapi_required_prompts[] = {
+static const unsigned long gssapi_required_prompts[] = {
     SASL_CB_LIST_END
 };  
 
