@@ -95,9 +95,10 @@ line_parse_callback(void *context_arg,
     assert(context != NULL);
     
     if ((tokens == NULL) ||
-	(*tokens == NULL))
+	(*tokens == NULL) ||
+	(**tokens == '#'))
     {
-	/* Blank line */
+	/* Blank line or comment */
 	return 0;
     }
 
@@ -125,8 +126,8 @@ line_parse_callback(void *context_arg,
     }
 
     /* allowed_services is the old name for authorized_retrievers */
-    if ((strcmp(directive, "allowed_services") == 0) ||
-	(strcmp(directive, "authorized_retrievers") == 0))
+    else if ((strcmp(directive, "allowed_services") == 0) ||
+	     (strcmp(directive, "authorized_retrievers") == 0))
     {
 	int index = 1; /* Skip directive */
 	
@@ -145,7 +146,7 @@ line_parse_callback(void *context_arg,
 	}
     }
     
-    if((strcmp(directive, "default_retrievers") == 0))
+    else if((strcmp(directive, "default_retrievers") == 0))
     {
 	int index = 1; /* Skip directive */
 	
@@ -164,7 +165,7 @@ line_parse_callback(void *context_arg,
 	}
     }
     
-    if (strcmp(directive, "authorized_renewers") == 0)
+    else if (strcmp(directive, "authorized_renewers") == 0)
     {
 	int index = 1; /* Skip directive */
 	
@@ -183,7 +184,7 @@ line_parse_callback(void *context_arg,
 	}
     }
     
-    if (strcmp(directive, "default_renewers") == 0)
+    else if (strcmp(directive, "default_renewers") == 0)
     {
 	int index = 1; /* Skip directive */
 	
@@ -202,7 +203,7 @@ line_parse_callback(void *context_arg,
 	}
     }
     
-    if (strcmp(directive, "authorized_key_retrievers") == 0)
+    else if (strcmp(directive, "authorized_key_retrievers") == 0)
     {
 	int index = 1; /* Skip directive */
 	
@@ -221,7 +222,7 @@ line_parse_callback(void *context_arg,
 	}
     }
     
-    if (strcmp(directive, "default_key_retrievers") == 0)
+    else if (strcmp(directive, "default_key_retrievers") == 0)
     {
 	int index = 1; /* Skip directive */
 	
@@ -240,63 +241,66 @@ line_parse_callback(void *context_arg,
 	}
     }
 
-    if (strcmp(directive, "passphrase_policy_program") == 0)
+    else if (strcmp(directive, "passphrase_policy_program") == 0)
     {
 	context->passphrase_policy_pgm = strdup(tokens[1]);
     }
 
-    if (strcmp(directive, "max_proxy_lifetime") == 0)
+    else if (strcmp(directive, "max_proxy_lifetime") == 0)
     {
 	context->max_proxy_lifetime = 60*60*atoi(tokens[1]);
     }
 
-    if (strcmp(directive, "cert_dir") == 0)
+    else if (strcmp(directive, "cert_dir") == 0)
     {
 	context->cert_dir = strdup(tokens[1]);
     }
 
-    if (strcmp(directive, "pam") == 0)
+    else if (strcmp(directive, "pam") == 0)
     {
 	context->pam_policy = strdup(tokens[1]);
     }
 
-    if (strcmp(directive, "pam_id") == 0)
+    else if (strcmp(directive, "pam_id") == 0)
     {
 	context->pam_id = strdup(tokens[1]);
     }
 
     /* these were added to support the online CA functionality */
-    if (strcmp(directive, "certificate_issuer_program") == 0)
+    else if (strcmp(directive, "certificate_issuer_program") == 0)
     {
 	context->certificate_issuer_program = strdup(tokens[1]);
     }
-    if (strcmp(directive, "certificate_issuer_cert") == 0)
+    else if (strcmp(directive, "certificate_issuer_cert") == 0)
     {
 	context->certificate_issuer_cert = strdup(tokens[1]);
     }
-    if (strcmp(directive, "certificate_issuer_key") == 0)
+    else if (strcmp(directive, "certificate_issuer_key") == 0)
     {
 	context->certificate_issuer_key = strdup(tokens[1]);
     }
-    if (strcmp(directive, "certificate_issuer_key_passphrase") == 0)
+    else if (strcmp(directive, "certificate_issuer_key_passphrase") == 0)
     {
 	context->certificate_issuer_key_passphrase = strdup(tokens[1]);
     }
-    if (strcmp(directive, "certificate_mapfile") == 0)
+    else if (strcmp(directive, "certificate_mapfile") == 0)
     {
 	context->certificate_mapfile = strdup(tokens[1]);
     }
-    if (strcmp(directive, "certificate_issuer") == 0)
+    else if (strcmp(directive, "certificate_issuer") == 0)
     {
 	context->certificate_issuer = strdup(tokens[1]);
     }
-    if (strcmp(directive, "max_cert_lifetime") == 0)
+    else if (strcmp(directive, "max_cert_lifetime") == 0)
     {
 	context->max_cert_lifetime = 60*60*atoi(tokens[1]);
     }
-    if (strcmp(directive, "certificate_serialfile") == 0)
+    else if (strcmp(directive, "certificate_serialfile") == 0)
     {
 	context->certificate_serialfile = strdup(tokens[1]);
+    }
+    else {
+	myproxy_log("warning: unknown directive (%s) in myproxy-server.config", directive);
     }
 
     return_code = 0;
