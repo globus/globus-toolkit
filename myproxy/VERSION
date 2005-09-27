@@ -13,6 +13,8 @@ v3.0 XX Xxx 2005
     scalability
   - modify myproxy-test to use "$LOGNAME.myproxy-test" for a username
     to avoid overwriting any existing credentials
+  - include configured trusted certificate directory in debug/verbose
+    output
 
 v2.3 28 Jul 2005
   - fix AIX compliation problems in PAM module
