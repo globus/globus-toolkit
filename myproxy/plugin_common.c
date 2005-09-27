@@ -291,7 +291,7 @@ void _plug_free_secret(const sasl_utils_t *utils, sasl_secret_t **secret)
 {
     if(!utils || !secret || !(*secret)) return;
 
-    utils->erasebuffer((*secret)->data, (*secret)->len);
+    utils->erasebuffer((char *)(*secret)->data, (*secret)->len);
     utils->free(*secret);
     *secret = NULL;
 }
