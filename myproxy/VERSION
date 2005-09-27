@@ -15,6 +15,9 @@ v3.0 XX Xxx 2005
     to avoid overwriting any existing credentials
   - include configured trusted certificate directory in debug/verbose
     output
+  - install example myproxy-server.config to
+    $GLOBUS_LOCATION/share/myproxy instead of potentially overwriting
+    existing version in $GLOBUS_LOCATION/etc
 
 v2.3 28 Jul 2005
   - fix AIX compliation problems in PAM module
