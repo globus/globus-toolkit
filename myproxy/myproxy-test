@@ -145,6 +145,7 @@ if (!defined($ENV{'X509_USER_PROXY'})) {
 # make proxy from existing proxy, so we don't need to deal with long-term cred
 $ENV{'X509_USER_CERT'} = $ENV{'X509_USER_PROXY'};
 $ENV{'X509_USER_KEY'} = $ENV{'X509_USER_PROXY'};
+$ENV{'LOGNAME'} = $ENV{'LOGNAME'} . ".myproxy-test";
 
 srand(time||$$);
 $passphrase = sprintf "%010.d", int(rand(0x7fffffff));
@@ -947,6 +948,8 @@ sub docogtests {
     if (defined($ENV{"MYPROXY_SERVER_PORT"})) {
 	$cogmyproxy .= " -p $ENV{MYPROXY_SERVER_PORT}";
     }
+
+    $cogmyproxy .= " -l $ENV{'LOGNAME'}";
 
     $ENV{"COG_OPTS"} = " -DX509_USER_PROXY=$ENV{X509_USER_PROXY}"
                      . " -DX509_USER_CERT=$ENV{X509_USER_CERT}"
