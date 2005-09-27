@@ -1443,7 +1443,9 @@ do_authz_handshake(myproxy_socket_attrs_t *attrs,
    if (client_auth_data == NULL) 
       goto end;
 
+   if (auth_data->server_data) free(auth_data->server_data);
    auth_data->server_data = strdup(client_auth_data->server_data);
+   if (auth_data->client_data) free(auth_data->client_data);
    auth_data->client_data = malloc(client_auth_data->client_data_len);
    if (auth_data->client_data == NULL) {
       verror_put_string("malloc() failed");
