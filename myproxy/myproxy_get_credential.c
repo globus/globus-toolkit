@@ -181,7 +181,7 @@ main(int argc, char *argv[])
 
     /* Connect to server. */
     if (myproxy_init_client(socket_attrs) < 0) {
-        fprintf(stderr, "Error: %s\n", verror_get_string());
+        verror_print_error(stderr);
         goto error;
     }
     
@@ -237,22 +237,20 @@ main(int argc, char *argv[])
 
      /* Authenticate client to server */
     if (myproxy_authenticate_init(socket_attrs, NULL) < 0) {
-        fprintf(stderr, "Error: %s: %s\n",
-                socket_attrs->pshost, verror_get_string());
+	verror_print_error(stderr);
         goto error;
     }
 
     /* Serialize client request object */
     requestlen = myproxy_serialize_request_ex(client_request, &request_buffer);
     if (requestlen < 0) {
-        fprintf(stderr, "Error in myproxy_serialize_request_ex():\n");
+	verror_print_error(stderr);
         goto error;
     }
 
     /* Send request to the myproxy-server */
     if (myproxy_send(socket_attrs, request_buffer, requestlen) < 0) {
-        fprintf(stderr, "Error in myproxy_send_request(): %s\n",
-                verror_get_string());
+	verror_print_error(stderr);
         goto error;
     }
     free(request_buffer);
@@ -261,7 +259,7 @@ main(int argc, char *argv[])
     /* Continue unless the response is not OK */
     if (myproxy_recv_response_ex(socket_attrs, server_response,
                                  client_request) != 0) {
-        fprintf(stderr, "%s\n", verror_get_string());
+        verror_print_error(stderr);
         goto error;
     }
 
@@ -269,8 +267,7 @@ main(int argc, char *argv[])
     deletefile = 1;
     if (myproxy_accept_credentials(socket_attrs, delegfile,
 				   sizeof(delegfile)) < 0) {
-        fprintf(stderr, "Error in (myproxy_accept_credentials(): %s\n",
-                verror_get_string());
+	verror_print_error(stderr);
         goto error;
     }
 

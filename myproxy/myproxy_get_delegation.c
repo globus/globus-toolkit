@@ -114,7 +114,7 @@ main(int argc, char *argv[])
 
     /* Connect to server. */
     if (myproxy_init_client(socket_attrs) < 0) {
-        fprintf(stderr, "Error: %s\n", verror_get_string());
+        verror_print_error(stderr);
         return(1);
     }
     

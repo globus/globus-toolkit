@@ -190,8 +190,7 @@ main(int   argc,
 
     /* Set up client socket attributes */
     if (myproxy_init_client(socket_attrs) < 0) {
-        fprintf(stderr, "%s\n",
-                verror_get_string());
+	verror_print_error(stderr);
         goto cleanup;
     }
 
@@ -216,8 +215,7 @@ main(int   argc,
 
     /* Authenticate client to server */
     if (myproxy_authenticate_init(socket_attrs, NULL) < 0) {
-        fprintf(stderr, "%s\n",
-                verror_get_string());
+	verror_print_error(stderr);
         goto cleanup;
     }
 
@@ -225,14 +223,13 @@ main(int   argc,
     requestlen = myproxy_serialize_request_ex(client_request, &request_buffer);
 
     if (requestlen < 0) {
-        fprintf(stderr, "%s\n",verror_get_string());
+        verror_print_error(stderr);
         goto cleanup;
     }
 
     /* Send request to the myproxy-server */
     if (myproxy_send(socket_attrs, request_buffer, requestlen) < 0) {
-        fprintf(stderr, "%s\n",
-                verror_get_string());
+        verror_print_error(stderr);
         goto cleanup;
     }
     free(request_buffer);
@@ -241,21 +238,20 @@ main(int   argc,
     /* Continue unless the response is not OK */
     if (myproxy_recv_response_ex(socket_attrs,
 				 server_response, client_request) != 0) {
-        fprintf(stderr, "%s\n", verror_get_string());
+        verror_print_error(stderr);
         goto cleanup;
     }
 
     /* Send end-entity credentials to server. */
     if (myproxy_init_credentials(socket_attrs,
 				 credkeybuf) < 0) {
-        fprintf(stderr, "%s\n",
-                verror_get_string());
+        verror_print_error(stderr);
         goto cleanup;
     }
 
     /* Get final response from server */
     if (myproxy_recv_response(socket_attrs, server_response) != 0) {
-        fprintf(stderr, "%s\n", verror_get_string());
+        verror_print_error(stderr);
         goto cleanup;
     }
 
