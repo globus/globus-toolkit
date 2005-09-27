@@ -385,6 +385,7 @@ my_init()
 	globus_module_activate(GLOBUS_GSI_PROXY_MODULE);
 	globus_module_activate(GLOBUS_GSI_CREDENTIAL_MODULE);
 	globus_module_activate(GLOBUS_GSI_SYSCONFIG_MODULE);
+	globus_module_activate(GLOBUS_GSI_CERT_UTILS_MODULE);
     }
 }
 
@@ -532,7 +533,7 @@ ssl_certificate_load_from_file(SSL_CREDENTIALS	*creds,
 	goto error;
     }
     
-    if (PEM_read_X509(cert_file, &cert, PEM_NO_CALLBACK) == NULL)
+    if ((cert = PEM_read_X509(cert_file, NULL, PEM_NO_CALLBACK)) == NULL)
     {
 	verror_put_string("Error reading certificate %s", path);
 	ssl_error_to_verror();
@@ -555,7 +556,7 @@ ssl_certificate_load_from_file(SSL_CREDENTIALS	*creds,
     {
 	cert = NULL;
 	
-	if (PEM_read_X509(cert_file, &cert, PEM_NO_CALLBACK) == NULL)
+	if ((cert = PEM_read_X509(cert_file, NULL, PEM_NO_CALLBACK)) == NULL)
 	{
 	    /*
 	     * If we just can't find a start line then we've reached EOF.
@@ -1836,6 +1837,8 @@ ssl_get_times(const char *path, time_t *not_before, time_t *not_after)
 
    assert(path != NULL);
 
+   my_init();
+    
    cert_file = fopen(path, "r");
    if (cert_file == NULL) {
       verror_put_string("Failure opening file \"%s\"", cert_file);
@@ -1848,7 +1851,7 @@ ssl_get_times(const char *path, time_t *not_before, time_t *not_after)
    if (not_after)
        *not_after = 0;
 
-   while (PEM_read_X509(cert_file, &cert, PEM_NO_CALLBACK) != NULL) {
+   while ((cert = PEM_read_X509(cert_file, NULL, PEM_NO_CALLBACK)) != NULL) {
        if (not_before) {
 	   time_t new_not_before;
 	   globus_gsi_cert_utils_make_time(X509_get_notBefore(cert),
@@ -1865,12 +1868,12 @@ ssl_get_times(const char *path, time_t *not_before, time_t *not_after)
 	       *not_after = new_not_after;
 	   }
        }
-       
        X509_free(cert);
        cert = NULL;
    }
 
    fclose(cert_file);
+   ERR_clear_error();		/* clear EOF error */
 
    return 0;
 }
