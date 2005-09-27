@@ -18,6 +18,7 @@ v3.0 XX Xxx 2005
   - install example myproxy-server.config to
     $GLOBUS_LOCATION/share/myproxy instead of potentially overwriting
     existing version in $GLOBUS_LOCATION/etc
+  - warn on unknown directives in myproxy-server.config
 
 v2.3 28 Jul 2005
   - fix AIX compliation problems in PAM module
