@@ -1697,6 +1697,8 @@ int myproxy_handle_authorization(myproxy_socket_attrs_t *attrs,
 	           server_response->authorization_data,
 		   AUTHORIZETYPE_CERT, client_request->authzcreds,
 		   strlen(client_request->authzcreds) + 1);
+       } else {
+	   verror_put_string("No credentials for renewal authorization.");
        }
 #if defined(HAVE_LIBSASL2)
        if (d == NULL) { /* No luck with AUTHORIZETYPE_CERT. Try SASL. */
@@ -1713,7 +1715,7 @@ int myproxy_handle_authorization(myproxy_socket_attrs_t *attrs,
 		   strlen(client_request->passphrase) + 1);
        }
        if (d == NULL) { /* No acceptable methods found. */
-	   verror_put_string("Cannot create authorization response.");
+	   verror_put_string("Unable to respond to server's authentication challenge.");
 	   goto end;
        }
 
