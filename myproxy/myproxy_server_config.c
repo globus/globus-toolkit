@@ -266,6 +266,11 @@ line_parse_callback(void *context_arg,
 	context->pam_id = strdup(tokens[1]);
     }
 
+    else if (strcmp(directive, "sasl") == 0)
+    {
+	context->sasl_policy = strdup(tokens[1]);
+    }
+
     /* these were added to support the online CA functionality */
     else if (strcmp(directive, "certificate_issuer_program") == 0)
     {

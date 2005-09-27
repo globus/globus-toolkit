@@ -26,6 +26,7 @@ typedef struct
   char *cert_dir;		    /* Trusted certificate directory to send */
   char *pam_policy;                 /* How we depend on PAM for passwd auth */
   char *pam_id;                     /* Application name we present to PAM */
+  char *sasl_policy;                /* SASL required, sufficient, disabled */
   char *certificate_issuer_program; /* CA callout external program */
   char *certificate_issuer_cert;    /* CA certificate */
   char *certificate_issuer_key;     /* CA signing key */
