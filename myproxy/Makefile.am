@@ -166,9 +166,7 @@ myproxy_admin_change_pass_LDFLAGS = $(GPT_LDFLAGS)
 
 myproxy_admin_change_pass_LDADD = ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la $(GPT_PGM_LINKS)
 
-sysconf_DATA = myproxy-server.config
-
-pkgdata_DATA = README INSTALL \
+pkgdata_DATA = README INSTALL myproxy-server.config \
                LICENSE LICENSE.sasl LICENSE.netbsd \
                VERSION PROTOCOL \
                etc.services.modifications etc.inetd.conf.modifications \
