@@ -594,8 +594,6 @@ handle_certificate(unsigned char            *input_buffer,
 		   myproxy_request_t        *client_request,
 		   myproxy_server_context_t *server_context) {
 
-  myproxy_debug("handle_certificate()");
-
   int           return_value = 1;
   int           verify;
   unsigned char number_of_certs;
@@ -607,6 +605,8 @@ handle_certificate(unsigned char            *input_buffer,
   EVP_PKEY * pkey         = NULL;
   X509     * cert         = NULL;
   BIO      * return_bio   = NULL;
+
+  myproxy_debug("handle_certificate()");
 
   /* load proxy request into bio */
   request_bio = BIO_new(BIO_s_mem());
