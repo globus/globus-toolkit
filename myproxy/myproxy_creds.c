@@ -1511,7 +1511,7 @@ int myproxy_check_storage_dir()
 
 const char *myproxy_get_storage_dir()
 {
-    if (check_storage_directory < 0) {
+    if (check_storage_directory() < 0) {
 	return NULL;
     }
     return storage_dir;
