@@ -176,7 +176,7 @@ main(int argc, char *argv[])
 	verror_print_error(stderr);
 	return 1;
     }
-    printf("A proxy has been received for user %s in %s.\n",
+    printf("A credential has been received for user %s in %s.\n",
            client_request->username, outputfile);
     free(outputfile);
     verror_clear();
