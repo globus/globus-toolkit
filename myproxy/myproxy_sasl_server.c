@@ -210,6 +210,10 @@ auth_sasl_negotiate_server(myproxy_socket_attrs_t *attrs,
            myproxy_log("Generating SASL mechanism list failed.");
            return -1;
        }
+       if (count == 0) {
+	   myproxy_log("No SASL mechanisms available.");
+	   return -1;
+       }
    }
 
    myproxy_debug("Sending list of %d mechanism(s): %s", count, data);
