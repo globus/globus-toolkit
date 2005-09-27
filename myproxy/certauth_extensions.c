@@ -13,47 +13,6 @@
 
 #define SECONDS_PER_HOUR (60 * 60)
 
-static char * external_certificate;
-
-/* this function is temporary until we get a codified scheme for this info */
-
-static int
-check_paths(void) {
-
-  struct stat st;
-
-  int return_value = 1;
-
-  /* fish for the cert that the server is using..... */
-
-  if ( stat("/etc/grid-security/hostcert.pem", &st) == 0 ) {
-    external_certificate = strdup("/etc/grid-security/hostcert.pem");
-    goto ok;
-  }
-
-  if ( getenv("X509_USER_CERT") ) {
-    external_certificate = strdup( getenv("X509_USER_CERT") );
-    goto ok;
-  }
-
-  if ( getenv("X509_USER_PROXY") ) {
-    external_certificate = strdup( getenv("X509_USER_PROXY") );
-    goto ok;
-  }
-
-  /* if we got here, then we have not found a certificate to load */
-
-  verror_put_string("check_paths(): Can't find the cert the server is using");
-  goto error;
-
- ok:
-  return_value = 0;
-
- error:
-  return(return_value);
-
-}
-
 static int 
 read_cert_request(GSI_SOCKET *self,
 		  unsigned char **buffer,
@@ -63,25 +22,8 @@ read_cert_request(GSI_SOCKET *self,
   unsigned char * input_buffer = NULL;
   size_t          input_buffer_length;
 
-  SSL_CREDENTIALS * creds = NULL;
-
   if (self == NULL) {
     verror_put_string("read_cert_request(): Socket is null");
-    goto error;
-  }
-
-  /* a proxy or certificate need to be loaded into this SSL_CREDS struct
-   * to hold up our end of the SSL_read() from the client.  We are just
-   * using the certificate that the server is running.
-   */
-
-  creds = ssl_credentials_new();
-
-  myproxy_debug("Loading %s for socket read", external_certificate);
-
-  if (ssl_certificate_load_from_file( creds, external_certificate ) 
-      == SSL_ERROR ) {
-    verror_put_string("read_cert_request(): certificate load failed");
     goto error;
   }
 
@@ -103,9 +45,6 @@ read_cert_request(GSI_SOCKET *self,
       free(input_buffer);
       input_buffer = NULL;
     }
-  }
-  if ( creds != NULL ) {
-    ssl_credentials_destroy(creds);
   }
 
   return return_value;
@@ -849,13 +788,6 @@ void get_certificate_authority(myproxy_socket_attrs_t   *server_attrs,
 
   verror_clear();
 
-  if ( check_paths() ) {
-    verror_put_string("File path check failed");
-    myproxy_log_verror();
-    response->error_string = strdup("Unable to set up CA paths.\n");
-    goto error;
-  }
-
   if ( read_cert_request( server_attrs->gsi_socket, 
 			  &input_buffer, &input_buffer_length) ) {
     verror_put_string("Unable to read request from client");
@@ -889,9 +821,6 @@ void get_certificate_authority(myproxy_socket_attrs_t   *server_attrs,
   }
   if ( output_buffer != NULL ) {
     ssl_free_buffer( output_buffer );
-  }
-  if ( external_certificate ) {
-    free( external_certificate );
   }
 
 }
