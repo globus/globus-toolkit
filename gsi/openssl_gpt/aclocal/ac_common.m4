@@ -44,6 +44,30 @@ if test "x$GPT_LINKTYPE" != "xstatic"; then
 fi
 ])
 
+dnl CHECK_MINIMAL_SSL
+AC_DEFUN([CHECK_MINIMAL_SSL],
+    [AC_ARG_WITH(minimal-ssl,
+            [ --with-minimal-ssl    Specify the build of minimal set of ciphers],
+            [
+            if test "x$withval" != "xno"; then
+                minimal_ssl=yes
+                AC_DEFINE(OPENSSL_NO_IDEA)
+                AC_DEFINE(OPENSSL_NO_AES)
+                AC_DEFINE(OPENSSL_NO_RC2)
+                AC_DEFINE(OPENSSL_NO_RC4)
+                AC_DEFINE(OPENSSL_NO_RC5)
+                AC_DEFINE(OPENSSL_NO_MD2)
+                AC_DEFINE(OPENSSL_NO_MD4)
+                AC_DEFINE(OPENSSL_NO_RIPEMD)
+                AC_DEFINE(OPENSSL_NO_DSA)
+                AC_DEFINE(OPENSSL_NO_DH)
+                AC_DEFINE(OPENSSL_NO_KRB5)
+                AC_DEFINE(OPENSSL_NO_HW)
+            fi])
+        AM_CONDITIONAL([MINIMAL_SSL], [test "x$minimal_ssl" = "xyes"])
+    ])
+
+
 # Figure out how to run the assembler.
 
 # LAC_PROG_AS

@@ -534,6 +534,7 @@ extern char *sys_errlist[]; extern int sys_nerr;
 
 #if defined(OPENSSL_SYS_NETOS)
 #define NO_SYSLOG
+#define NO_CHMOD
 #endif
 
 /* vxworks */

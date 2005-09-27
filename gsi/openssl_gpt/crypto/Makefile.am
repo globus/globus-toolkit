@@ -4,13 +4,13 @@ include $(top_srcdir)/globus_openssl_pre
 AUTOHEADER = /bin/true
 
 SUBDIRS = \
-	md2 md4 md5 sha mdc2 hmac ripemd  \
-	des rc2 rc4 rc5 idea bf cast      \
-	bn rsa dsa dh dso buffer bio      \
+	md5 sha mdc2 hmac \
+	des bf cast      \
+	bn rsa dso buffer bio      \
 	stack lhash rand err objects      \
 	evp asn1 pem x509 x509v3 conf     \
 	txt_db pkcs7 pkcs12 comp          \
-	perlasm aes ec engine krb5 ocsp   \
+	perlasm ec engine ocsp   \
 	ui
 
 Sources = \
@@ -49,24 +49,15 @@ libcrypto___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 
 libcrypto___GLOBUS_FLAVOR_NAME__la_LIBADD = \
 	$(GPT_LIB_LINKS) \
-	md2/libmd2_$(GLOBUS_FLAVOR_NAME).la \
-	md4/libmd4_$(GLOBUS_FLAVOR_NAME).la \
 	md5/libmd5_$(GLOBUS_FLAVOR_NAME).la \
 	sha/libsha_$(GLOBUS_FLAVOR_NAME).la \
 	mdc2/libmdc2_$(GLOBUS_FLAVOR_NAME).la \
 	hmac/libhmac_$(GLOBUS_FLAVOR_NAME).la \
-	ripemd/libripemd_$(GLOBUS_FLAVOR_NAME).la \
 	des/libdes_$(GLOBUS_FLAVOR_NAME).la \
-	rc2/librc2_$(GLOBUS_FLAVOR_NAME).la \
-	rc4/librc4_$(GLOBUS_FLAVOR_NAME).la \
-	rc5/librc5_$(GLOBUS_FLAVOR_NAME).la \
-	idea/libidea_$(GLOBUS_FLAVOR_NAME).la \
 	bf/libbf_$(GLOBUS_FLAVOR_NAME).la \
 	cast/libcast_$(GLOBUS_FLAVOR_NAME).la \
 	bn/libbn_$(GLOBUS_FLAVOR_NAME).la \
 	rsa/librsa_$(GLOBUS_FLAVOR_NAME).la \
-	dsa/libdsa_$(GLOBUS_FLAVOR_NAME).la \
-	dh/libdh_$(GLOBUS_FLAVOR_NAME).la \
         dso/libdso_$(GLOBUS_FLAVOR_NAME).la \
 	buffer/libbuffer_$(GLOBUS_FLAVOR_NAME).la \
 	bio/libbio_$(GLOBUS_FLAVOR_NAME).la \
@@ -85,29 +76,31 @@ libcrypto___GLOBUS_FLAVOR_NAME__la_LIBADD = \
 	pkcs7/libpkcs7_$(GLOBUS_FLAVOR_NAME).la \
 	pkcs12/libpkcs12_$(GLOBUS_FLAVOR_NAME).la \
 	comp/libcomp_$(GLOBUS_FLAVOR_NAME).la \
-	aes/libaes_$(GLOBUS_FLAVOR_NAME).la \
 	ec/libec_$(GLOBUS_FLAVOR_NAME).la \
 	engine/libengine_$(GLOBUS_FLAVOR_NAME).la \
-	krb5/libkrb5_$(GLOBUS_FLAVOR_NAME).la \
 	ocsp/libocsp_$(GLOBUS_FLAVOR_NAME).la \
 	ui/libui_$(GLOBUS_FLAVOR_NAME).la
 
 libcrypto___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
+
+if !MINIMAL_SSL
+SUBDIRS += idea aes rc2 rc4 rc5 md2 md4 ripemd dsa krb5 dh
+libcrypto___GLOBUS_FLAVOR_NAME__la_LIBADD += \
+	idea/libidea_$(GLOBUS_FLAVOR_NAME).la \
+	aes/libaes_$(GLOBUS_FLAVOR_NAME).la \
+	rc2/librc2_$(GLOBUS_FLAVOR_NAME).la \
+	rc4/librc4_$(GLOBUS_FLAVOR_NAME).la \
+	rc5/librc5_$(GLOBUS_FLAVOR_NAME).la \
+	md2/libmd2_$(GLOBUS_FLAVOR_NAME).la \
+	dh/libdh_$(GLOBUS_FLAVOR_NAME).la \
+	md4/libmd4_$(GLOBUS_FLAVOR_NAME).la \
+	ripemd/libripemd_$(GLOBUS_FLAVOR_NAME).la \
+	dsa/libdsa_$(GLOBUS_FLAVOR_NAME).la \
+	krb5/libkrb5_$(GLOBUS_FLAVOR_NAME).la
+endif
 
 
 EXTRA_DIST = buildinf.h.in opensslconf.h.in
 
 include $(top_srcdir)/globus_openssl_post
 include $(top_srcdir)/globus_automake_post
-
-
-
-
-
-
-
-
-
-
-
-

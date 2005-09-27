@@ -111,7 +111,7 @@
 # include <sys/types.h>
 #endif
 
-#if !defined(OPENSSL_SYS_WIN32) && !defined(OPENSSL_SYS_VMS) && !defined(NeXT) && !defined(MAC_OS_pre_X)
+#if !defined(OPENSSL_SYS_WIN32) && !defined(OPENSSL_SYS_VMS) && !defined(NeXT) && !defined(MAC_OS_pre_X) && !defined(OPENSSL_SYS_NETOS)
 #include <dirent.h>
 #endif
 
