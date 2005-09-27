@@ -541,6 +541,7 @@ authorization_store_response(char *buffer,
 
    d = _find_data(method, data);
    if (d) {
+      if (d->client_data) free(d->client_data);
       d->client_data = malloc (bufferlen);
       if (d->client_data == NULL)
 	 return NULL;
@@ -655,6 +656,7 @@ authorization_create_response(authorization_data_t **data,
       return NULL;
    }
 
+   if (d->client_data) free(d->client_data);
    if ((d->client_data = af->create_client_data(d, extra_data, extra_data_len,
 	                 &d->client_data_len)) == NULL)
       return NULL;
