@@ -105,16 +105,21 @@ static int myproxy_authorize_accept(myproxy_server_context_t *context,
 				    myproxy_request_t *client_request,
 				    char *client_name);
 
-static int get_client_authdata(myproxy_socket_attrs_t *attrs,
-                               myproxy_request_t *client_request,
-			       char *client_name,
-			       authorization_data_t *auth_data);
+/* returns 1 if passphrase matches, 0 otherwise */
+static int
+verify_passphrase(struct myproxy_creds *creds,
+		  myproxy_request_t *client_request,
+		  char *client_name,
+		  myproxy_server_context_t* config);
 
-#if defined(HAVE_LIBSASL2)
-static int do_account_authorization(myproxy_socket_attrs_t *attrs,
-				    myproxy_request_t *client_request,
-				    char *client_name);
-#endif
+/* returns 0 if authentication failed,
+           1 if authentication succeeded,
+	   2 if certificate-based (renewal) authentication succeeded */
+static int authenticate_client(myproxy_socket_attrs_t *attrs,
+			       struct myproxy_creds *creds,
+			       myproxy_request_t *client_request,
+			       char *client_name,
+			       myproxy_server_context_t* config);
 
 /* Delegate requested credentials to the client */
 void get_credentials(myproxy_socket_attrs_t *attrs,
@@ -295,7 +300,7 @@ handle_client(myproxy_socket_attrs_t *attrs,
     char  *client_buffer = NULL;
     char  *userdn = NULL;
     int   requestlen;
-    int   use_ca_callout;
+    int   use_ca_callout = 0;
     time_t now;
 
     myproxy_creds_t *client_creds;
@@ -366,49 +371,10 @@ handle_client(myproxy_socket_attrs_t *attrs,
     }
 
     /* All authorization policies are enforced in this function. */
-    use_ca_callout = myproxy_authorize_accept(context, attrs, 
-					      client_request, 
-					      client_name);
-
-    if (use_ca_callout < 0) {
-      myproxy_log("authorization failed");
-      respond_with_error_and_die(attrs, verror_get_string());
-    } else if ( use_ca_callout == 0 ) {
-      myproxy_debug("stored creds - auth ok");
-    } else if ( use_ca_callout == 1 ) {
-      myproxy_debug("no stored creds - auth ok");
-    } else {
-      myproxy_log("unknown auth return code");
-      myproxy_log("authorization failed");
-      respond_with_error_and_die(attrs, verror_get_string());
-    }
-
-    /* if it appears that we need to use the ca callouts ie: no stored
-     * creds but authorization passed - we should check if the ca
-     * is configured and if the user exists in the mapfile if not
-     * using the external program callout.
-     */
-
-    if (use_ca_callout) {
-
-      if ( (context->certificate_issuer_program == NULL) && 
-	   (context->certificate_issuer == NULL) ) {
-	verror_put_string("No stored credentials and CA not enabled");
-	respond_with_error_and_die(attrs, verror_get_string());
-      }
-
-      if (context->certificate_issuer != NULL) {
-	if ( globus_gss_assist_map_local_user( client_request->username,
-					       &userdn ) ) {
-	  verror_put_string("Internal CA enabled, user:%s unknown", 
-			    client_request->username);
-	  respond_with_error_and_die(attrs, verror_get_string());
-	}
-	if (userdn) {
-	  free(userdn);
-	  userdn = NULL;
-	}
-      }
+    if (myproxy_authorize_accept(context, attrs, 
+	                         client_request, client_name) < 0) {
+       myproxy_log("authorization failed");
+       respond_with_error_and_die(attrs, verror_get_string());
     }
 
     /* Fill in client_creds with info from the request that describes
@@ -433,8 +399,40 @@ handle_client(myproxy_socket_attrs_t *attrs,
       
     /* Handle client request */
     switch (client_request->command_type) {
-    case MYPROXY_RETRIEVE_CERT:
     case MYPROXY_GET_PROXY: 
+
+	/* if it appears that we need to use the ca callouts because
+	 * of no stored creds, we should check if the ca is configured
+	 * and if the user exists in the mapfile if not using the
+	 * external program callout.
+	 */
+	if (!myproxy_creds_exist(client_request->username,
+				 client_request->credname)) {
+	    use_ca_callout = 1;
+	}
+	if (use_ca_callout) {
+	    if ( (context->certificate_issuer_program == NULL) && 
+		 (context->certificate_issuer == NULL) ) {
+		verror_put_string("No stored credentials and CA not enabled");
+		respond_with_error_and_die(attrs, verror_get_string());
+	    }
+
+	    if (context->certificate_issuer != NULL) {
+		if ( globus_gss_assist_map_local_user( client_request->username,
+						       &userdn ) ) {
+		    verror_put_string("Internal CA enabled, user:%s unknown", 
+				      client_request->username);
+		    respond_with_error_and_die(attrs, verror_get_string());
+		}
+		if (userdn) {
+		    free(userdn);
+		    userdn = NULL;
+		}
+	    }
+	}
+	/* fall through to MYPROXY_RETRIEVE_CERT */
+
+    case MYPROXY_RETRIEVE_CERT:
 
         myproxy_log("Received %s request from %s", 
                         (client_request->command_type == MYPROXY_GET_PROXY)
@@ -1170,6 +1168,7 @@ write_pidfile(const char path[])
 /* Check authorization for all incoming requests.  The authorization
  * rules are as follows.
  * RETRIEVE:
+ *   Credentials must exist.
  *   Client DN must match server-wide authorized_key_retrievers policy.
  *   Client DN must match credential-specific authorized_key_retrievers policy.
  *   Also, see below.
@@ -1186,7 +1185,7 @@ write_pidfile(const char path[])
  *   Client DN must match accepted_credentials.
  *   If credentials already exist for the username, the client must own them.
  * INFO:
- *   Ownership checking done in info_proxy().
+ *   Always allow here.  Ownership checking done in info_proxy().
  * CHANGE_CRED_PASSPHRASE:
  *   Client DN must match accepted_credentials.
  *   Client DN must match credential owner.
@@ -1200,68 +1199,83 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 {
    int   credentials_exist = 0;
    int   client_owns_credentials = 0;
-   int   authorization_ok = -1;
+   int   authorization_ok = -1; /* 1 = success, 0 = failure, -1 = error */
+   int   credential_renewal = 0;
    int   return_status = -1;
-   int   no_creds = 0;
-   authorization_data_t auth_data = { 0 };
    myproxy_creds_t creds = { 0 };
 
-   switch (client_request->command_type) {
-   case MYPROXY_GET_PROXY:
+   credentials_exist = myproxy_creds_exist(client_request->username,
+					   client_request->credname);
+   if (credentials_exist == -1) {
+       myproxy_log_verror();
+       verror_put_string("Error checking credential existence");
+       goto end;
+   }
 
-   case MYPROXY_RETRIEVE_CERT:
-       /* Gather all authorization information for the request from
-	  the client.  May include additional network exchanges. */
-       if (get_client_authdata(attrs, client_request, client_name,
-			       &auth_data) < 0) {
-	   verror_put_string("Unable to get client authorization data");
+   creds.username = strdup(client_request->username);
+   if (client_request->credname) {
+       creds.credname = strdup(client_request->credname);
+   }
+
+   if (credentials_exist) {
+       if (myproxy_creds_retrieve(&creds) < 0) {
+	   verror_put_string("Unable to retrieve credential information");
 	   goto end;
        }
 
-       /* get information about credential */
-
-       creds.username = strdup(client_request->username);
-       if (client_request->credname) {
-	   creds.credname = strdup(client_request->credname);
+       if (strcmp(creds.owner_name, client_name) == 0) {
+	   client_owns_credentials = 1;
        }
+   }
 
-       if (myproxy_creds_retrieve(&creds) < 0) {
-	 myproxy_debug("No stored creds");
-	 creds.username = strdup(client_request->username);
-	 no_creds = 1;
-       } else {
-	 myproxy_debug("Found stored credentials");
+   switch (client_request->command_type) {
+   case MYPROXY_RETRIEVE_CERT:
+       myproxy_debug("applying authorized_key_retrievers policy");
+       authorization_ok =
+	   myproxy_server_check_policy_list((const char **)context->authorized_key_retrievers_dns, client_name);
+       if (authorization_ok != 1) {
+	   verror_put_string("\"%s\" not authorized by server's authorized_key_retrievers policy", client_name);
+	   goto end;
        }
-
-       if (client_request->command_type == MYPROXY_RETRIEVE_CERT) {
-	   myproxy_debug("applying authorized_key_retrievers policy");
+       if (!credentials_exist) {
+	   if (client_request->credname) {
+	       verror_put_string("No credentials exist for username \"%s\".",
+				 client_request->username);
+	   } else {
+	       verror_put_string("No credentials exist with username \"%s\" and credential name \"%s\".", client_request->username, client_request->credname);
+	   }
+	   goto end;
+       }
+       if (creds.keyretrieve) {
 	   authorization_ok =
-	       myproxy_server_check_policy_list((const char **)context->authorized_key_retrievers_dns, client_name);
+	       myproxy_server_check_policy(creds.keyretrieve, client_name);
 	   if (authorization_ok != 1) {
-	       verror_put_string("\"%s\" not authorized by server's authorized_key_retrievers policy", client_name);
+	       verror_put_string("\"%s\" not authorized by credential's key retriever policy", client_name);
 	       goto end;
 	   }
-	   if (creds.keyretrieve) {
-	       authorization_ok =
-		   myproxy_server_check_policy(creds.keyretrieve, client_name);
-	       if (authorization_ok != 1) {
-		   verror_put_string("\"%s\" not authorized by credential's key retriever policy", client_name);
-		   goto end;
-	       }
-	   } else if (context->default_key_retrievers_dns) {
-	       authorization_ok =
-		   myproxy_server_check_policy_list((const char **)context->default_key_retrievers_dns, client_name);
-	       if (authorization_ok != 1) {
-		   verror_put_string("\"%s\" not authorized by server's default_key_retrievers policy", client_name);
-		   goto end;
-	       }
+       } else if (context->default_key_retrievers_dns) {
+	   authorization_ok =
+	       myproxy_server_check_policy_list((const char **)context->default_key_retrievers_dns, client_name);
+	   if (authorization_ok != 1) {
+	       verror_put_string("\"%s\" not authorized by server's default_key_retrievers policy", client_name);
+	       goto end;
 	   }
        }
+       /* fall through to MYPROXY_GET_PROXY */
 
-       switch (auth_data.method) {
-       case AUTHORIZETYPE_PASSWD: /* retrieval */
+   case MYPROXY_GET_PROXY:
+       authorization_ok =
+	   authenticate_client(attrs, &creds, client_request, client_name,
+			       context);
+       if (authorization_ok < 0) {
+	   goto end;		/* authentication failed */
+       } else if (authorization_ok == 1) {
+	   credential_renewal = 1;
+       }
+
+       if (!credential_renewal) {
+	   myproxy_debug("retrieval authorization");
 	   /* check server-wide policy */
-	   myproxy_debug("passwd authorization mechanism.\n");
 	   authorization_ok =
 	       myproxy_server_check_policy_list((const char **)context->authorized_retriever_dns, client_name);
 	   if (authorization_ok != 1) {
@@ -1284,22 +1298,12 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 		   goto end;
 	       }
 	   }
-	   /* Does passphrase match? */
-	   myproxy_debug("checking passphrase for %s", creds.username);
-	   authorization_ok =
-	       authorization_check_ex(&auth_data, &creds, client_name, context);
-	   if (authorization_ok != 1) {
-	       verror_put_string("invalid pass phrase");
-	       goto end;
-	   }
 	   break;
-
-       case AUTHORIZETYPE_CERT:	/* renewal */
+       } else {
+	   myproxy_debug("renewal authorization");
 	   /* check server-wide policy */
-	   myproxy_debug("cert authorization mechanism.\n");
 	   authorization_ok =
 	       myproxy_server_check_policy_list((const char **)context->authorized_renewer_dns, client_name);
-
 	   if (authorization_ok != 1) {
 	       verror_put_string("\"%s\" not authorized by server's authorized_renewers policy", client_name);
 	       goto end;
@@ -1320,28 +1324,6 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 		   goto end;
 	       }
 	   }
-	   /* Does cert DN match cred owner? */
-	   authorization_ok =
-	       authorization_check_ex(&auth_data, &creds, client_name, context);
-	   if (authorization_ok != 1) {
-	       verror_put_string("invalid credential for renewal");
-	       goto end;
-	   }
-	   /* Sanity check: Renewal credentials should not have a passphrase.
-	      We store a crypt'ed empty passphrase instead.  (yuk!) */
-	   if (creds.passphrase && creds.passphrase[0]) {
-	       char *tmp;
-	       tmp = (char *)des_crypt("", &creds.owner_name[strlen(creds.owner_name)-3]);
-	       if (strcmp(tmp, creds.passphrase)) {
-		   verror_put_string("credential is encrypted and can't be used for renewal");
-		   goto end;
-	       }
-	   }
-	   break;
-
-       default:
-	   verror_put_string("unknown authorization method");
-	   goto end;
 	   break;
        }
        break;
@@ -1357,20 +1339,7 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 	   goto end;
        }
 
-       credentials_exist = myproxy_creds_exist(client_request->username, client_request->credname);
-       if (credentials_exist == -1) {
-	   myproxy_log_verror();
-	   verror_put_string("Error checking credential existence");
-	   goto end;
-       }
-
        if (credentials_exist == 1) {
-	   client_owns_credentials = myproxy_creds_is_owner(client_request->username, client_request->credname, client_name);
-	   if (client_owns_credentials == -1) {
-	       verror_put_string("Error checking credential ownership");
-	       goto end;
-	   }
-
 	   if (!client_owns_credentials) {
 	       if ((client_request->command_type == MYPROXY_PUT_PROXY) ||
                    (client_request->command_type == MYPROXY_STORE_CERT)) {
@@ -1391,60 +1360,17 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
        break;
 
    case MYPROXY_CHANGE_CRED_PASSPHRASE:
-       /* Is this client authorized to store credentials here? */
-       authorization_ok =
-	   myproxy_server_check_policy_list((const char **)context->accepted_credential_dns, client_name);
-       if (authorization_ok != 1) {
-	   verror_put_string("\"%s\" not authorized to store credentials on this server (accepted_credentials policy)", client_name);
-	   goto end;
-       }
-
-       credentials_exist = myproxy_creds_exist(client_request->username, client_request->credname);
-       if (credentials_exist == 0) {
-	   verror_put_string("credential does not exist");
-	   goto end;
-       } else if (credentials_exist == -1) {
-	   verror_put_string("error checking credential existence");
-	   goto end;
-       }
-
-       client_owns_credentials = myproxy_creds_is_owner(client_request->username, client_request->credname, client_name);
-       if (client_owns_credentials == 0) {
+       if (!client_owns_credentials) {
 	   verror_put_string("'%s' does not own the credentials",
 			     client_name);
 	   goto end;
-       } else if (client_owns_credentials == -1) {
-	   verror_put_string("Error checking credential ownership");
-	   goto end;
        }
 
-       /* Initialize authorization data with current passphrase. */
-       if (get_client_authdata(attrs, client_request, client_name,
-                               &auth_data) < 0) {
-           verror_put_string("Unable to get client authorization data");
-           goto end;
-       }
-
-       /* get information about credential */
-       creds.username = strdup(client_request->username);
-       if (client_request->credname) {
-	   creds.credname = strdup(client_request->credname);
-       }
-       if (myproxy_creds_retrieve(&creds) < 0) {
-	   verror_put_string("Unable to retrieve credential information");
+       authorization_ok = verify_passphrase(&creds, client_request,
+					    client_name, context);
+       if (!authorization_ok) {
+	   verror_put_string("invalid pass phrase");
 	   goto end;
-       }
-
-       /* Does passphrase match? */
-       if (auth_data.method != AUTHORIZETYPE_PASSWD) {
-	   verror_put_string("current passphrase required when changing passphrase");
-	   goto end;
-       } else {
-	   authorization_ok = authorization_check_ex(&auth_data, &creds, client_name, context);
-	   if (authorization_ok != 1) {
-	       verror_put_string("invalid pass phrase");
-	       goto end;
-	   }
        }
        break;
 
@@ -1463,37 +1389,22 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
       goto end;
    }
 
-   if (no_creds) {
-     myproxy_debug("auth ok (no stored creds)");
-     return_status = 1;
-     goto end;
-   } else {
-     myproxy_debug("auth ok (stored creds)");
-   }
-
-#if defined(HAVE_LIBSASL2)
-   if (do_account_authorization(attrs, client_request, client_name) < 0) {
-       goto end;
-   }
-#endif   
-
    return_status = 0;
 
 end:
    if (creds.passphrase)
       memset(creds.passphrase, 0, strlen(creds.passphrase));
    myproxy_creds_free_contents(&creds);
-   if (auth_data.server_data)
-      free(auth_data.server_data);
-   if (auth_data.client_data)
-      free(auth_data.client_data);
 
    return return_status;
 }
 
 static int
 do_authz_handshake(myproxy_socket_attrs_t *attrs,
+		   struct myproxy_creds *creds,
+		   myproxy_request_t *client_request,
 		   char *client_name,
+		   myproxy_server_context_t* config,
 		   author_method_t methods[],
 		   authorization_data_t *auth_data)
 {
@@ -1508,18 +1419,21 @@ do_authz_handshake(myproxy_socket_attrs_t *attrs,
    
    memset(&server_response, 0, sizeof(server_response));
 
+   myproxy_debug("sending MYPROXY_AUTHORIZATION_RESPONSE");
    authorization_init_server(&server_response.authorization_data, methods);
    server_response.response_type = MYPROXY_AUTHORIZATION_RESPONSE;
    send_response(attrs, &server_response, client_name);
 
    /* Wait for client's response. Its first four bytes are supposed to
-      contain a specification of the method that the client chose to
+      contain a specification of the method that the client chose for
       authorization. */
    client_length = myproxy_recv_ex(attrs, &client_buffer);
    if (client_length <= 0)
       goto end;
 
    client_auth_method = (author_method_t)(*client_buffer);
+   myproxy_debug("client chose %s",
+		 authorization_get_name(client_auth_method));
    /* fill in the client's response and return pointer to filled data */
    client_auth_data = authorization_store_response(
 	                  client_buffer + sizeof(client_auth_method),
@@ -1541,7 +1455,19 @@ do_authz_handshake(myproxy_socket_attrs_t *attrs,
    auth_data->client_data_len = client_auth_data->client_data_len;
    auth_data->method = client_auth_data->method;
 
-   return_status = 0;
+#if defined(HAVE_LIBSASL2)
+   if (auth_data->method == AUTHORIZETYPE_SASL) {
+       if (auth_sasl_negotiate_server(attrs, client_request) < 0) {
+	   verror_put_string("SASL authentication failed");
+	   goto end;
+       }
+   }
+#endif
+   
+   if (authorization_check_ex(auth_data, creds,
+			      client_name, config) == 1) {
+       return_status = 0;
+   }
 
 end:
    authorization_data_free(server_response.authorization_data);
@@ -1551,65 +1477,111 @@ end:
 }
 
 static int
-get_client_authdata(myproxy_socket_attrs_t *attrs,
+verify_passphrase(struct myproxy_creds *creds,
+		  myproxy_request_t *client_request,
+		  char *client_name,
+		  myproxy_server_context_t* config)
+{
+    authorization_data_t auth_data = { 0 };
+    int return_status;
+    auth_data.server_data = NULL;
+    auth_data.client_data = strdup(client_request->passphrase);
+    auth_data.client_data_len =
+	strlen(client_request->passphrase) + 1;
+    auth_data.method = AUTHORIZETYPE_PASSWD;
+    return_status = authorization_check_ex(&auth_data, creds,
+					   client_name, config);
+    free(auth_data.client_data);
+    return return_status;
+}
+
+/* returns -1 if authentication failed,
+            0 if authentication succeeded,
+	    1 if certificate-based (renewal) authentication succeeded */
+static int
+authenticate_client(myproxy_socket_attrs_t *attrs,
+		    struct myproxy_creds *creds,
                     myproxy_request_t *client_request,
 		    char *client_name,
-		    authorization_data_t *auth_data)
+		    myproxy_server_context_t* config)
 {
-   int   return_status = -1;
-   author_method_t methods[] = { AUTHORIZETYPE_CERT, AUTHORIZETYPE_NULL };
-
-   assert(auth_data != NULL);
-   
-   if (client_request->passphrase && strlen(client_request->passphrase) > 0) {
-      auth_data->server_data = NULL;
-      auth_data->client_data = strdup(client_request->passphrase);
-      auth_data->client_data_len = strlen(client_request->passphrase) + 1;
-      auth_data->method = AUTHORIZETYPE_PASSWD;
-      return 0;
-   }
-
-   if (do_authz_handshake(attrs, client_name, methods, auth_data) < 0) {
-       goto end;
-   }
-
-   assert(auth_data->method == AUTHORIZETYPE_CERT);
-
-   return_status = 0;
-
-end:
-   return return_status;
-}
-
-#if defined(HAVE_LIBSASL2)
-static int
-do_account_authorization(myproxy_socket_attrs_t *attrs,
-			 myproxy_request_t *client_request,
-			 char *client_name)
-{
-   int   return_status = -1;
-   author_method_t methods[] = { AUTHORIZETYPE_SASL, AUTHORIZETYPE_NULL };
+   int return_status = -1, authcnt = 0, certauth = 0;
+   int i, j;
+   author_method_t methods[AUTHORIZETYPE_NUMMETHODS] = { 0 };
+   author_status_t status[AUTHORIZETYPE_NUMMETHODS] = { 0 };
    authorization_data_t auth_data = { 0 };
 
-   if (do_authz_handshake(attrs, client_name, methods, &auth_data) < 0) {
-       goto end;
+   for (i=0; i < AUTHORIZETYPE_NUMMETHODS; i++) {
+       status[i] = authorization_get_status(i, creds, client_name, config);
    }
 
-   assert(auth_data.method == AUTHORIZETYPE_SASL);
-
-   if (auth_sasl_negotiate_server(attrs, client_request) < 0) {
-       verror_put_string("Account authorization failed");
-       goto end;
+   /* First, check any required methods. */
+   for (i=0; i < AUTHORIZETYPE_NUMMETHODS; i++) {
+       if (status[i] == AUTHORIZEMETHOD_REQUIRED) {
+	   /* password is a special case for now.
+	      don't send password challenges. */
+	   if (i == AUTHORIZETYPE_PASSWD) {
+	       if (verify_passphrase(creds, client_request,
+				     client_name, config) != 1) {
+		   verror_put_string("invalid pass phrase");
+		   goto end;
+	       }
+	       authcnt++;
+	   } else {
+	       methods[0] = i;
+	       if (do_authz_handshake(attrs, creds, client_request,
+				      client_name, config,
+				      methods, &auth_data) < 0) {
+		   verror_put_string("authentication failed");
+		   goto end;
+	       }
+	       if (i == AUTHORIZETYPE_CERT) {
+		   certauth = 1;
+	       }
+	       authcnt++;
+	   }
+       }
    }
-   
-   return_status = 0;
+
+   /* if none required, try sufficient */
+   if (authcnt == 0) {
+       /* if we already have a password, try it now */
+       if (status[AUTHORIZETYPE_PASSWD] == AUTHORIZEMETHOD_SUFFICIENT &&
+	   client_request->passphrase &&
+	   client_request->passphrase[0] != '\0') {
+	   if (verify_passphrase(creds, client_request,
+				 client_name, config) == 1) {
+	       authcnt++;
+	   }
+       }
+   }
+   if (authcnt == 0) {
+       for (i=0, j=0; i < AUTHORIZETYPE_NUMMETHODS; i++) {
+	   if (status[i] == AUTHORIZEMETHOD_SUFFICIENT &&
+	       i != AUTHORIZETYPE_PASSWD) {
+	       methods[j++] = i;
+	   }
+       }
+       if (j > 0) {
+	   if (do_authz_handshake(attrs, creds, client_request, client_name,
+				  config, methods, &auth_data) < 0) {
+	       verror_put_string("authentication failed");
+	       goto end;
+	   }
+	   if (auth_data.method == AUTHORIZETYPE_CERT) {
+	       certauth = 1;
+	   }
+	   authcnt++;
+       }
+   }
+
+   if (certauth) {
+       return_status = 1;
+   } else if (authcnt) {
+       return_status = 0;
+   }
 
 end:
-   if (auth_data.server_data)
-      free(auth_data.server_data);
-   if (auth_data.client_data)
-      free(auth_data.client_data);
-
+   authorization_data_free_contents(&auth_data);
    return return_status;
 }
-#endif
