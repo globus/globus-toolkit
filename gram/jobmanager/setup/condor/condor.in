@@ -288,54 +288,62 @@ sub submit
     print SCRIPT_FILE "$submit_attrs_string\n";
 
     my $shouldtransferfiles = $description->shouldtransferfiles();
-    if defined($shouldtransferfiles))
+    if (defined($shouldtransferfiles))
     {
+        $self->log("Adding \"should_transfer_files = $shouldtransferfiles\"\n");
         print SCRIPT_FILE "should_transfer_files = $shouldtransferfiles\n";
     }
 
     my $WhenToTransferOutput = $description->whentotransferoutput();
     if (defined($WhenToTransferOutput))
     {
-        print SCRIPT_FILE "WhenToTransferFiles = $WhenToTransferOutput\n";
+        $self->log("Adding \"WhenToTransferOutput = $WhenToTransferOutput\"\n");
+        print SCRIPT_FILE "WhenToTransferOutput = $WhenToTransferOutput\n";
     }
 
     my $transfer_input_file = $description->transferinputfile();
     if (defined($transfer_input_file))
     {
-        if (ref($transfer_input_file) eq 'ARRAY')
-        {
-            my @transfer_input_files = @$transfer_input_file;
+        $self->log("Adding explicitly \"transfer_input_file = "
+                  ."$transfer_input_file\"\n");
+        print SCRIPT_FILE "transfer_input_file = $transfer_input_file\n";
+    }
+    else
+    {
+        my @transfer_input_files = $description->transferinputfile();
+        if (defined($transfer_input_files[0]))
+            {
             my $file_list_string = "";
             foreach my $file (@transfer_input_files)
             {
                 $file_list_string .= "$file, ";
             }
             $file_list_string =~ s/, $//;
+            $self->log("Adding \"transfer_input_file = $file_list_string\"\n");
             print SCRIPT_FILE "transfer_input_file = $file_list_string\n";
-        }
-        else
-        {
-            print SCRIPT_FILE "transfer_input_file = $transfer_input_file\n";
         }
     }
 
     my $transfer_output_file = $description->transferoutputfile();
     if (defined($transfer_output_file))
     {
-        if (ref($transfer_output_file) eq 'ARRAY')
-        {
-            my @transfer_output_files = @$transfer_output_file;
+        $self->log("Adding explicitly \"transfer_output_file = "
+                  ."$transfer_output_file\"\n");
+        print SCRIPT_FILE "transfer_output_file = $transfer_output_file\n";
+    }
+    else
+    {
+        my @transfer_output_files = $description->transferoutputfile();
+        if (defined($transfer_output_files[0]))
+            {
             my $file_list_string = "";
             foreach my $file (@transfer_output_files)
             {
                 $file_list_string .= "$file, ";
             }
             $file_list_string =~ s/, $//;
+            $self->log("Adding \"transfer_output_file = $file_list_string\"\n");
             print SCRIPT_FILE "transfer_output_file = $file_list_string\n";
-        }
-        else
-        {
-            print SCRIPT_FILE "transfer_output_file = $transfer_output_file\n";
         }
     }
 
