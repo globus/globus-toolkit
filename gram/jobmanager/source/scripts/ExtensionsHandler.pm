@@ -27,10 +27,12 @@ sub new
 
     if (defined($description->extensions()))
     {
-        my $extParser = new XML::Parser(Handlers => {
-            Start       => sub { $self->StartTag(@_); },
-            End         => sub { $self->EndTag(@_); },
-            Char        => sub { $self->Char(@_); } });
+        my $extParser = new XML::Parser(
+            Namespaces => 0,
+            Handlers => {
+                Start       => sub { $self->StartTag(@_); },
+                End         => sub { $self->EndTag(@_); },
+                Char        => sub { $self->Char(@_); } });
         my $extDoc = "<extensions>"
                    . $description->extensions()
                    . "</extensions>";
