@@ -275,91 +275,6 @@ assist_write_token(void *sock,
 }
 
 /*
- * Wrapper around setenv() function
- */
-static int
-mysetenv(const char *var,
-	 const char *value,
-	 int override)
-{
-#ifdef HAVE_SETENV
-
-    return setenv(var, value, override);
-
-#else /* !HAVE_SETENV */
-
-    char *envstr = NULL;
-    int status;
-
-
-    assert(var != NULL);
-    assert(value != NULL);
-    
-    /* If we're not overriding and it's already set, then return */
-    if (!override && getenv(var))
-	return 0;
-
-    envstr = malloc(strlen(var) + strlen(value) + 2 /* '=' and NUL */);
-
-    if (envstr == NULL)
-    {
-	return -1;
-    }
-    
-    sprintf(envstr, "%s=%s", var, value);
-
-    status = putenv(envstr);
-
-    /* Don't free envstr as it may still be in use */
-  
-    return status;
-#endif /* !HAVE_SETENV */
-}
-
-static void
-myunsetenv(const char *var)
-{
-#ifdef HAVE_UNSETENV
-    unsetenv(var);
-
-    return;
-    
-#else /* !HAVE_UNSETENV */
-    extern char **environ;
-    char **p1 = environ;	/* New array list */
-    char **p2 = environ;	/* Current array list */
-    int len = strlen(var);
-
-    assert(var != NULL);
-    
-    /*
-     * Walk through current environ array (p2) copying each pointer
-     * to new environ array (p1) unless the pointer is to the item
-     * we want to delete. Copy happens in place.
-     */
-    while (*p2) {
-	if ((strncmp(*p2, var, len) == 0) &&
-	    ((*p2)[len] == '=')) {
-	    /*
-	     * *p2 points at item to be deleted, just skip over it
-	     */
-	    p2++;
-	} else {
-	    /*
-	     * *p2 points at item we want to save, so copy it
-	     */
-	    *p1 = *p2;
-	    p1++;
-	    p2++;
-	}
-    }
-
-    /* And make sure new array is NULL terminated */
-    *p1 = NULL;
-#endif /* HAVE_UNSETENV */
-}
-
-/*
  * GSI_SOCKET_set_error_from_verror()
  *
  * Set the given GSI_SOCKET's error state from verror.
@@ -612,9 +527,9 @@ GSI_SOCKET_use_creds(GSI_SOCKET *self,
     }
     else
     {
-	myunsetenv("X509_USER_CERT");
-	myunsetenv("X509_USER_KEY");
-        return_code = (mysetenv("X509_USER_PROXY", creds, 1) == -1) ? GSI_SOCKET_ERROR : GSI_SOCKET_SUCCESS;
+	unsetenv("X509_USER_CERT");
+	unsetenv("X509_USER_KEY");
+        return_code = (setenv("X509_USER_PROXY", creds, 1) == -1) ? GSI_SOCKET_ERROR : GSI_SOCKET_SUCCESS;
     }
 
     return return_code;
