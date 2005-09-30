@@ -436,7 +436,7 @@ int
 write_cert( char       *path, 
             const char *buffer )
 {
-    int          fd;
+    int          fd = 0;
     static char  BEGINCERT[] = "-----BEGIN CERTIFICATE-----";
     static char  ENDCERT[]   = "-----END CERTIFICATE-----";
     char        *certstart,
@@ -518,7 +518,7 @@ int
 write_key( char       *path, 
            const char *buffer )
 {
-    int          fd;
+    int          fd = 0;
     static char  BEGINKEY[] = "-----BEGIN RSA PRIVATE KEY-----";
     static char  ENDKEY[]   = "-----END RSA PRIVATE KEY-----";
     char        *keystart,
