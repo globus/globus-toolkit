@@ -24,7 +24,7 @@
 #define _GLOBUS_I_CALLOUT_H_
 
 #include "globus_callout.h"
-#ifndef WIN32
+#if !defined(WIN32) && !defined(TARGET_ARCH_NETOS)
 #include <ltdl.h>
 #endif
 
