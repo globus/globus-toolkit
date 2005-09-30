@@ -152,4 +152,21 @@ get_user_credential_filenames( char **certfile, char **keyfile );
 void
 sterilize_string(char *string);
 
+#ifndef HAVE_SETENV
+/*
+ * setenv (for platforms that don't have it)
+ */
+int
+setenv(const char *var, const char *value, int override);
+#endif
+
+#ifndef HAVE_UNSETENV
+/*
+ * unsetenv (for platforms that don't have it)
+ */
+void
+unsetenv(const char *var);
+#endif
+
+
 #endif /* _STRING_FUNCS_H */
