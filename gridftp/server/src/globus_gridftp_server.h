@@ -1534,5 +1534,41 @@ globus_gfs_ipc_handle_obtain(
 extern globus_gfs_ipc_iface_t  globus_gfs_ipc_default_iface;
 
 /* end IPC */ 
-                                                                                                                               
+
+/* config locking functions */
+globus_bool_t
+globus_gfs_config_get_bool(
+    const char *                        option_name);
+
+char *
+globus_gfs_config_get_string(
+    const char *                        option_name);
+
+globus_list_t *
+globus_gfs_config_get_list(
+    const char *                        option_name);
+
+void *
+globus_gfs_config_get(
+    const char *                        option_name);
+
+int
+globus_gfs_config_get_int(
+    const char *                        option_name);
+
+int
+globus_gfs_config_set_int(
+    char *                              option_name,
+    int                                 int_value);
+
+int
+globus_gfs_config_set_bool(
+    char *                              option_name,
+    int                                 int_value);
+
+int
+globus_gfs_config_set_ptr(
+    char *                              option_name,
+    void *                              ptr);
+
 #endif

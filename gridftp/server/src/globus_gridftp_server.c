@@ -23,7 +23,6 @@ static globus_mutex_t                   globus_l_gfs_mutex;
 static globus_bool_t                    globus_l_gfs_terminated = GLOBUS_FALSE;
 static unsigned int                     globus_l_gfs_outstanding = 0;
 static unsigned int                     globus_l_gfs_open_count = 0;
-static unsigned int                     globus_l_gfs_max_open_count = 0;
 static globus_xio_driver_t              globus_l_gfs_tcp_driver = GLOBUS_NULL;
 static globus_xio_server_t              globus_l_gfs_xio_server = GLOBUS_NULL;
 static globus_bool_t                    globus_l_gfs_xio_server_accepting;
@@ -872,8 +871,8 @@ globus_l_gfs_server_accept_cb(
         }
 
         /* if too many already open */
-        if(globus_l_gfs_max_open_count != 0 &&
-            globus_l_gfs_open_count >= globus_l_gfs_max_open_count)
+        if(globus_i_gfs_config_int("connections_max") != 0 &&
+            globus_l_gfs_open_count >= globus_i_gfs_config_int("connections_max"))
         {
             result = globus_xio_register_open(
                 handle,
@@ -1338,6 +1337,7 @@ main(
     int                                 argc,
     char **                             argv)
 {
+    char *                              tmp_s;
     int                                 rc = 0;
     char *                              config;
     globus_result_t                     result;
@@ -1370,7 +1370,6 @@ main(
     globus_cond_init(&globus_l_gfs_cond, GLOBUS_NULL);
     
     globus_l_gfs_open_count = 0;
-    globus_l_gfs_max_open_count = globus_i_gfs_config_int("connections_max");
     globus_l_gfs_exit = globus_i_gfs_config_int("bad_signal_exit");
     globus_l_gfs_xio_server = NULL;
 
@@ -1461,6 +1460,19 @@ main(
     {
         globus_gfs_acl_add_module(&globus_gfs_acl_test_module);
     }
+
+    tmp_s = globus_i_gfs_config_string("wsrf_service");
+    if(tmp_s != NULL)
+    {
+        printf("loading extensxion %s\n", tmp_s);
+        rc = globus_extension_activate(tmp_s);
+        if(rc != 0)
+        {
+            printf("error loading extensxion\n");
+
+        }
+    }
+
     globus_mutex_lock(&globus_l_gfs_mutex);
     {
         result = globus_xio_driver_load("tcp", &globus_l_gfs_tcp_driver);
