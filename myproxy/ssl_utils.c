@@ -1745,7 +1745,7 @@ ssl_verify_gsi_chain(SSL_CREDENTIALS *chain)
    X509_LOOKUP           *lookup = NULL;
    X509_STORE            *cert_store = NULL;
    X509_STORE_CTX        csc;
-   SSL                   *ssl;
+   SSL                   *ssl = NULL;
    SSL_CTX               *sslContext = NULL;
 
    memset(&csc, 0, sizeof(csc));
