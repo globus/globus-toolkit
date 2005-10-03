@@ -183,8 +183,7 @@ globus_xio_contact_info_to_encoded_string(
     globus_error_put(                                                       \
         GlobusXIOErrorObjMemory(mem_name_obj))
                                                                             
-#define GlobusXIOErrorSystemError(system_func, _errno)                      \
-    globus_error_put(                                                       \
+#define GlobusXIOErrorObjSystemError(system_func, _errno)                   \
         globus_error_wrap_errno_error(                                      \
             GLOBUS_XIO_MODULE,                                              \
             (_errno),                                                       \
@@ -193,8 +192,12 @@ globus_xio_contact_info_to_encoded_string(
             _xio_name,                                                      \
             __LINE__,                                                       \
             _XIOSL("System error in %s"),                                   \
-            (system_func)))                            
-                                                                            
+            (system_func))                           
+
+#define GlobusXIOErrorSystemError(system_func, _errno)                      \
+    globus_error_put(                                                       \
+        GlobusXIOErrorObjSystemError(system_func, _errno))
+
 #define GlobusXIOErrorSystemResource(reason)                                \
     globus_error_put(                                                       \
         globus_error_construct_error(                                       \

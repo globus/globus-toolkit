@@ -619,37 +619,34 @@ globus_l_xio_udp_apply_handle_attrs(
     int                                 int_one = 1;
     GlobusXIOName(globus_l_xio_udp_apply_handle_attrs);
     
-    if(!converted)
+    if(attr->resuseaddr)
     {
-        /* all handles created by me are closed on exec */
-        if(fcntl(fd, F_SETFD, FD_CLOEXEC) < 0)
+        result = globus_xio_system_socket_setsockopt(
+            fd, SOL_SOCKET, SO_REUSEADDR, &int_one, sizeof(int_one));
+        if(result != GLOBUS_SUCCESS)
         {
-            result = GlobusXIOErrorSystemError("fcntl", errno);
             goto error_sockopt;
         }
     }
-        
-    if(attr->resuseaddr &&
-       setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &int_one, sizeof(int_one)) < 0)
+    
+    if(attr->sndbuf)
     {
-        result = GlobusXIOErrorSystemError("setsockopt", errno);
-        goto error_sockopt;
+        result = globus_xio_system_socket_setsockopt(
+            fd, SOL_SOCKET, SO_SNDBUF, &attr->sndbuf, sizeof(attr->sndbuf));
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error_sockopt;
+        }
     }
     
-    if(attr->sndbuf &&
-        setsockopt(
-           fd, SOL_SOCKET, SO_SNDBUF, &attr->sndbuf, sizeof(attr->sndbuf)) < 0)
+    if(attr->rcvbuf)
     {
-        result = GlobusXIOErrorSystemError("setsockopt", errno);
-        goto error_sockopt;
-    }
-    
-    if(attr->rcvbuf &&
-        setsockopt(
-           fd, SOL_SOCKET, SO_RCVBUF, &attr->rcvbuf, sizeof(attr->rcvbuf)) < 0)
-    {
-        result = GlobusXIOErrorSystemError("setsockopt", errno);
-        goto error_sockopt;
+        result = globus_xio_system_socket_setsockopt(
+            fd, SOL_SOCKET, SO_RCVBUF, &attr->rcvbuf, sizeof(attr->rcvbuf));
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error_sockopt;
+        }
     }
     
     return GLOBUS_SUCCESS;
@@ -690,14 +687,14 @@ globus_l_xio_udp_bind(
         GlobusLibcSockaddrCopy(myaddr, *addr, addr_len);
         GlobusLibcSockaddrSetPort(myaddr, port);
         
-        if(bind(
+        result = globus_xio_system_socket_bind(
             fd,
             (struct sockaddr *) &myaddr,
-            GlobusLibcSockaddrLen(&myaddr)) < 0)
+            GlobusLibcSockaddrLen(&myaddr));
+        if(result != GLOBUS_SUCCESS)
         {
             if(++port > max_port)
             {
-                result = GlobusXIOErrorSystemError("bind", errno);
                 goto error_bind;
             }
         }
@@ -723,13 +720,13 @@ globus_l_xio_udp_join_multicast(
     globus_xio_system_socket_t          fd;
     GlobusXIOName(globus_l_xio_udp_join_multicast);
     
-    fd = socket(
+    result = globus_xio_system_socket_create(
+        &fd,
         GlobusLibcSockaddrGetFamily(attr->multicast_addr),
         SOCK_DGRAM,
         0);
-    if(fd == GLOBUS_XIO_SYSTEM_INVALID_SOCKET)
+    if(result != GLOBUS_SUCCESS)
     {
-        result = GlobusXIOErrorSystemError("socket", errno);
         goto error_socket;
     }
     
@@ -791,11 +788,11 @@ globus_l_xio_udp_join_multicast(
         mreq.imr_multiaddr =
             ((struct sockaddr_in *) &attr->multicast_addr)->sin_addr;
         mreq.imr_interface = interface;
-
-        if(setsockopt(
-            fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) < 0)
+        
+        result = globus_xio_system_socket_setsockopt(
+            fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq));
+        if(result != GLOBUS_SUCCESS)
         {
-            result = GlobusXIOErrorSystemError("setsockopt", errno);
             goto error_join;
         }
     }
@@ -812,11 +809,11 @@ globus_l_xio_udp_join_multicast(
         mreq.ipv6mr_multiaddr = 
             ((struct sockaddr_in6 *) &attr->multicast_addr)->sin6_addr;
         mreq.ipv6mr_interface = 0;
-
-        if(setsockopt(
-            fd, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) < 0)
+        
+        result = globus_xio_system_socket_setsockopt(
+            fd, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, &mreq, sizeof(mreq));
+        if(result != GLOBUS_SUCCESS)
         {
-            result = GlobusXIOErrorSystemError("setsockopt", errno);
             goto error_join;
         }
     }
@@ -850,10 +847,7 @@ globus_l_xio_udp_create_listener(
     char                                portbuf[10];
     char *                              port;
     globus_xio_system_socket_t          fd;
-    int                                 save_errno;
     GlobusXIOName(globus_l_xio_udp_create_listener);
-    
-    save_errno = 0;
     
     if(attr->listener_serv)
     {
@@ -900,13 +894,15 @@ globus_l_xio_udp_create_listener(
     {
         if(GlobusLibcProtocolFamilyIsIP(addrinfo->ai_family))
         {
-            fd = socket(
+            result = globus_xio_system_socket_create(
+                &fd,
                 addrinfo->ai_family,
                 addrinfo->ai_socktype,
                 addrinfo->ai_protocol);
-            if(fd == GLOBUS_XIO_SYSTEM_INVALID_SOCKET)
+            if(result != GLOBUS_SUCCESS)
             {
-                save_errno = errno;
+                result = GlobusXIOErrorWrapFailed(
+                    "globus_xio_system_socket_create", result);
                 continue;
             }
             
@@ -942,14 +938,7 @@ globus_l_xio_udp_create_listener(
     {
         if(result == GLOBUS_SUCCESS)
         {
-            if(save_errno == 0)
-            {
-                result = GlobusXIOUdpErrorNoAddrs();
-            }
-            else
-            {
-                result = GlobusXIOErrorSystemError("socket", save_errno);
-            }
+            result = GlobusXIOUdpErrorNoAddrs();
         }
         
         goto error_no_addrinfo;
@@ -1013,7 +1002,6 @@ globus_l_xio_udp_connect(
     globus_result_t                     result;
     globus_addrinfo_t *                 addrinfo;
     globus_addrinfo_t *                 save_addrinfo;
-    int                                 rc;
     GlobusXIOName(globus_l_xio_udp_connect);
     
     result = globus_l_xio_udp_get_addrinfo(
@@ -1029,19 +1017,12 @@ globus_l_xio_udp_connect(
     {
         if(GlobusLibcProtocolFamilyIsIP(addrinfo->ai_family))
         {
-            do
+            result = globus_xio_system_socket_connect(
+                handle->fd, addrinfo->ai_addr, addrinfo->ai_addrlen);
+            if(result == GLOBUS_SUCCESS)
             {
-                rc = connect(
-                    handle->fd, addrinfo->ai_addr, addrinfo->ai_addrlen);
-            } while(rc < 0 && errno == EINTR);
-                
-            if(rc < 0)
-            {
-                result = GlobusXIOErrorSystemError("connect", errno);
-                continue;
+                break;
             }
-            
-            break;
         }
     }
     
@@ -1396,9 +1377,10 @@ globus_l_xio_udp_cntl(
       /* int                            sndbuf */
       case GLOBUS_XIO_UDP_SET_SNDBUF:
         in_int = va_arg(ap, int);
-        if(setsockopt(fd, SOL_SOCKET, SO_SNDBUF, &in_int, sizeof(in_int)) < 0)
+        result = globus_xio_system_socket_setsockopt(
+            fd, SOL_SOCKET, SO_SNDBUF, &in_int, sizeof(in_int));
+        if(result != GLOBUS_SUCCESS)
         {
-            result = GlobusXIOErrorSystemError("setsockopt", errno);
             goto error_sockopt;
         }
         break;
@@ -1407,9 +1389,10 @@ globus_l_xio_udp_cntl(
       case GLOBUS_XIO_UDP_GET_SNDBUF:
         out_int = va_arg(ap, int *);
         len = sizeof(int);
-        if(getsockopt(fd, SOL_SOCKET, SO_SNDBUF, out_int, &len) < 0)
+        result = globus_xio_system_socket_getsockopt(
+            fd, SOL_SOCKET, SO_SNDBUF, out_int, &len);
+        if(result != GLOBUS_SUCCESS)
         {
-            result = GlobusXIOErrorSystemError("getsockopt", errno);
             goto error_sockopt;
         }
         break;
@@ -1417,9 +1400,10 @@ globus_l_xio_udp_cntl(
       /* int                            rcvbuf */
       case GLOBUS_XIO_UDP_SET_RCVBUF:
         in_int = va_arg(ap, int);
-        if(setsockopt(fd, SOL_SOCKET, SO_RCVBUF, &in_int, sizeof(in_int)) < 0)
+        result = globus_xio_system_socket_setsockopt(
+            fd, SOL_SOCKET, SO_RCVBUF, &in_int, sizeof(in_int));
+        if(result != GLOBUS_SUCCESS)
         {
-            result = GlobusXIOErrorSystemError("setsockopt", errno);
             goto error_sockopt;
         }
         break;
@@ -1428,9 +1412,10 @@ globus_l_xio_udp_cntl(
       case GLOBUS_XIO_UDP_GET_RCVBUF:
         out_int = va_arg(ap, int *);
         len = sizeof(int);
-        if(getsockopt(fd, SOL_SOCKET, SO_RCVBUF, out_int, &len) < 0)
+        result = globus_xio_system_socket_getsockopt(
+            fd, SOL_SOCKET, SO_RCVBUF, out_int, &len);
+        if(result != GLOBUS_SUCCESS)
         {
-            result = GlobusXIOErrorSystemError("getsockopt", errno);
             goto error_sockopt;
         }
         break;
@@ -1445,9 +1430,10 @@ globus_l_xio_udp_cntl(
       case GLOBUS_XIO_UDP_GET_CONTACT:
       case GLOBUS_XIO_GET_LOCAL_CONTACT:
         len = sizeof(globus_sockaddr_t);
-        if(getsockname(fd, (struct sockaddr *) &sock_name, &len) < 0)
+        result = globus_xio_system_socket_getsockname(
+            fd, (struct sockaddr *) &sock_name, &len);
+        if(result != GLOBUS_SUCCESS)
         {
-            result = GlobusXIOErrorSystemError("getsockname", errno);
             goto error_sockopt;
         }
         
@@ -1494,20 +1480,15 @@ globus_l_xio_udp_cntl(
         {
             /* attempt to 'disconnect' socket */
             struct sockaddr_in          addr;
-            int                         rc;
             
             globus_xio_contact_destroy(&contact_info);
             memset(&addr, 0, sizeof(addr));
             addr.sin_family = PF_UNSPEC;
             
-            do
+            result = globus_xio_system_socket_connect(
+                fd, (struct sockaddr *) &addr, sizeof(addr));
+            if(result != GLOBUS_SUCCESS)
             {
-                rc = connect(fd, (struct sockaddr *) &addr, sizeof(addr));
-            } while(rc < 0 && errno == EINTR);
-                
-            if(rc < 0)
-            {
-                result = GlobusXIOErrorSystemError("connect", errno);
                 goto error_connect;
             }
             

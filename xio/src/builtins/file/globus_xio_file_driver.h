@@ -71,6 +71,12 @@
  * In any case, when an error or EOF occurs before the waitforbytes request
  * has been met, the outgoing nbytes is set to the amount of data actually
  * read/written before the error or EOF occurred.
+ * 
+ * You may either use GLOBUS_XIO_FILE_SEEK or GLOBUS_XIO_SEEK to position the
+ * file pointer before each read or write or you can specify the
+ * desired offset on a data descriptor with the xio cmd,
+ * GLOBUS_XIO_DD_SET_OFFSET.  simultaneous reading and writing is only
+ * predictable if the data descriptor method is used.
  */
  
 /**
@@ -313,6 +319,9 @@ typedef enum
  * @hideinitializer
  * OR these modes together to get the mode you want.
  * @see GLOBUS_XIO_FILE_SET_MODE
+ * 
+ * NOTE: for Win32, you only have a choice between read-only and read-write.
+ * If the chosen mode does not specify writability, the file will be read only
  */
 typedef enum
 {

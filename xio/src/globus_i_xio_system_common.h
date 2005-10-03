@@ -32,17 +32,17 @@ GlobusDebugDeclare(GLOBUS_XIO_SYSTEM);
 #define GlobusXIOSystemDebugEnterFD(fd)                                     \
     GlobusXIOSystemDebugPrintf(                                             \
         GLOBUS_I_XIO_SYSTEM_DEBUG_TRACE,                                    \
-        ("[%s] fd=%ld, Entering\n", _xio_name, (long)(fd)))
+        ("[%s] fd=%lu, Entering\n", _xio_name, (unsigned long)(fd)))
 
 #define GlobusXIOSystemDebugExitFD(fd)                                      \
     GlobusXIOSystemDebugPrintf(                                             \
         GLOBUS_I_XIO_SYSTEM_DEBUG_TRACE,                                    \
-        ("[%s] fd=%ld, Exiting\n", _xio_name, (long)(fd)))
+        ("[%s] fd=%lu, Exiting\n", _xio_name, (unsigned long)(fd)))
 
 #define GlobusXIOSystemDebugExitWithErrorFD(fd)                             \
     GlobusXIOSystemDebugPrintf(                                             \
         GLOBUS_I_XIO_SYSTEM_DEBUG_TRACE,                                    \
-        ("[%s] fd=%ld, Exiting with error\n", _xio_name, (long)(fd)))
+        ("[%s] fd=%lu, Exiting with error\n", _xio_name, (unsigned long)(fd)))
 
 #define GlobusXIOSystemDebugRawBuffer(nbytes, buffer)                       \
     do                                                                      \
@@ -195,14 +195,15 @@ typedef struct
 #ifndef WIN32
     struct globus_l_xio_system_s *      handle;
 #else
-    struct globus_l_xio_win32_socket_t *handle;
+    struct globus_l_xio_win32_socket_s *handle;
 #endif
     globus_object_t *                   error;
     void *                              user_arg;
     /* used for reads/writes, 0 for others. here to simplify some things */
     globus_size_t                       nbytes;
     globus_size_t                       waitforbytes;
-
+    globus_off_t                        offset;
+    
     union
     {
         /* non data ops -- connect, accept */

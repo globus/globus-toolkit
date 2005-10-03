@@ -94,7 +94,49 @@ typedef struct
     globus_xio_system_file_t            fd;
     globus_bool_t                       converted;
     globus_bool_t                       use_blocking_io;
+    globus_mutex_t                      lock; /* only used to protect below */
+    globus_off_t                        file_position;
 } globus_l_handle_t;
+
+#define GlobusXIOFileGetFilePosition(handle)                                \
+    globus_l_xio_file_update_position(handle, 0, SEEK_CUR)
+
+static
+globus_off_t
+globus_l_xio_file_update_position(
+    globus_l_handle_t *                 handle,
+    globus_off_t                        offset,
+    int                                 whence)
+{
+    globus_mutex_lock(&handle->lock);
+    {
+        if(whence == SEEK_SET)
+        {
+            handle->file_position = offset;
+        }
+        else if(whence == SEEK_CUR)
+        {
+            handle->file_position += offset;
+        }
+        else if(whence == SEEK_END)
+        {
+            globus_off_t                size;
+            
+            size = globus_xio_system_file_get_size(handle->fd);
+            if(size != -1)
+            {
+                handle->file_position = size;
+            }
+            
+            handle->file_position += offset;
+        }
+        
+        offset = handle->file_position;
+    }
+    globus_mutex_unlock(&handle->lock);
+    
+    return offset;
+}
 
 /*
  *  initialize a driver attribute
@@ -286,6 +328,8 @@ globus_l_xio_file_handle_init(
         goto error_handle;
     }
     
+    globus_mutex_init(&(*handle)->lock, NULL);
+    
     GlobusXIOFileDebugExit();
     return GLOBUS_SUCCESS;
 
@@ -303,6 +347,7 @@ globus_l_xio_file_handle_destroy(
     
     GlobusXIOFileDebugEnter();
     
+    globus_mutex_destroy(&handle->lock);
     globus_free(handle);
     
     GlobusXIOFileDebugExit();
@@ -344,20 +389,9 @@ globus_l_xio_file_open(
     if(converted_fd == GLOBUS_XIO_FILE_INVALID_HANDLE && 
         !contact_info->resource && contact_info->scheme)
     {
-        /* if scheme is one of the following, we'll convert the handle */
-        if(strcmp(contact_info->scheme, "stdin") == 0)
+        converted_fd = globus_xio_system_convert_stdio(contact_info->scheme);
+        if(converted_fd != GLOBUS_XIO_FILE_INVALID_HANDLE)
         {
-            converted_fd = fileno(stdin);
-            converted_std = GLOBUS_TRUE;
-        }
-        else if(strcmp(contact_info->scheme, "stdout") == 0)
-        {
-            converted_fd = fileno(stdout);
-            converted_std = GLOBUS_TRUE;
-        }
-        else if(strcmp(contact_info->scheme, "stderr") == 0)
-        {
-            converted_fd = fileno(stderr);
             converted_std = GLOBUS_TRUE;
         }
     }
@@ -383,29 +417,20 @@ globus_l_xio_file_open(
 #ifdef O_LARGEFILE
         flags |= O_LARGEFILE;
 #endif
-        do
-        {
-            handle->fd = open(
-                contact_info->resource, flags | O_NONBLOCK, attr->mode);
-        } while(handle->fd == GLOBUS_XIO_FILE_INVALID_HANDLE &&
-            errno == EINTR);
 
-        if(handle->fd == GLOBUS_XIO_FILE_INVALID_HANDLE)
+        result = globus_xio_system_file_open(
+            &handle->fd, contact_info->resource, flags, attr->mode);
+        if(result != GLOBUS_SUCCESS)
         {
-            result = GlobusXIOErrorSystemError("open", errno);
             goto error_open;
         }
-        
-        /* all handles created by me are closed on exec */
-        fcntl(handle->fd, F_SETFD, FD_CLOEXEC);
+
         if(trunc_offset > 0)
         {
-            int                         rc;
-            
-            rc = ftruncate(handle->fd, trunc_offset);
-            if(rc < 0)
+            result = globus_xio_system_file_truncate(
+                handle->fd, trunc_offset);
+            if(result != GLOBUS_SUCCESS)
             {
-                result = GlobusXIOErrorSystemError("ftruncate", errno);
                 goto error_truncate;
             }
         }
@@ -417,15 +442,16 @@ globus_l_xio_file_open(
         
         if(!converted_std && attr->flags & GLOBUS_XIO_FILE_TRUNC)
         {
-            int                         rc;
-            
-            rc = ftruncate(handle->fd, attr->trunc_offset);
-            if(rc < 0)
+            result = globus_xio_system_file_truncate(
+                handle->fd, attr->trunc_offset);
+            if(result != GLOBUS_SUCCESS)
             {
-                result = GlobusXIOErrorSystemError("ftruncate", errno);
                 goto error_truncate;
             }
         }
+        
+        handle->file_position =
+            globus_xio_system_file_get_position(handle->fd);
     }
     
     result = globus_xio_system_file_init(&handle->system, handle->fd);
@@ -510,6 +536,12 @@ globus_l_xio_file_system_read_cb(
     GlobusXIOFileDebugEnter();
     
     op = (globus_xio_operation_t) user_arg;
+    
+    globus_l_xio_file_update_position(
+        (globus_l_handle_t *) globus_xio_operation_get_driver_specific(op),
+        nbytes,
+        SEEK_CUR);
+        
     globus_xio_driver_finished_read(op, result, nbytes);
     
     GlobusXIOFileDebugExit();
@@ -529,12 +561,29 @@ globus_l_xio_file_read(
     globus_l_handle_t *                 handle;
     globus_size_t                       nbytes;
     globus_result_t                     result;
+    globus_off_t                        offset;
     GlobusXIOName(globus_l_xio_file_read);
 
     GlobusXIOFileDebugEnter();
     
     handle = (globus_l_handle_t *) driver_specific_handle;
     
+    result = globus_xio_driver_data_descriptor_cntl(
+        op, NULL, GLOBUS_XIO_DD_GET_OFFSET, &offset);
+    if(result != GLOBUS_SUCCESS || offset == -1)
+    {
+        offset = GlobusXIOFileGetFilePosition(handle);
+    }
+    else
+    {
+        globus_l_xio_file_update_position(handle, offset, SEEK_SET);
+    }
+    
+    GlobusXIOFileDebugPrintf(
+        GLOBUS_L_XIO_FILE_DEBUG_INFO,
+        ("[%s] count=%d, 1st buflen=%d offset=%" GLOBUS_OFF_T_FORMAT "\n",
+            _xio_name, iovec_count, (int) iovec[0].iov_len, offset));
+            
     /* if buflen and waitfor are both 0, we behave like register select */
     if((globus_xio_operation_get_wait_for(op) == 0 &&
         (iovec_count > 1 || iovec[0].iov_len > 0)) ||
@@ -543,11 +592,13 @@ globus_l_xio_file_read(
     {
         result = globus_xio_system_file_read(
             handle->system,
+            offset,
             iovec,
             iovec_count,
             globus_xio_operation_get_wait_for(op),
             &nbytes);
-            
+        
+        globus_l_xio_file_update_position(handle, nbytes, SEEK_CUR);
         globus_xio_driver_finished_read(op, result, nbytes);
         result = GLOBUS_SUCCESS;
     }
@@ -556,6 +607,7 @@ globus_l_xio_file_read(
         result = globus_xio_system_file_register_read(
             op,
             handle->system,
+            offset,
             iovec,
             iovec_count,
             globus_xio_operation_get_wait_for(op),
@@ -580,6 +632,12 @@ globus_l_xio_file_system_write_cb(
     GlobusXIOFileDebugEnter();
     
     op = (globus_xio_operation_t) user_arg;
+    
+    globus_l_xio_file_update_position(
+        (globus_l_handle_t *) globus_xio_operation_get_driver_specific(op),
+        nbytes,
+        SEEK_CUR);
+        
     globus_xio_driver_finished_write(op, result, nbytes);
     
     GlobusXIOFileDebugExit();
@@ -599,17 +657,29 @@ globus_l_xio_file_write(
     globus_l_handle_t *                 handle;
     globus_size_t                       nbytes;
     globus_result_t                     result;
+    globus_off_t                        offset;
     GlobusXIOName(globus_l_xio_file_write);
     
     GlobusXIOFileDebugEnter();
     
-    GlobusXIOFileDebugPrintf(
-        GLOBUS_L_XIO_FILE_DEBUG_INFO,
-        (_XIOSL("[%s] count=%d, 1st buflen=%d\n"),
-            _xio_name, iovec_count, (int) iovec[0].iov_len));
-            
     handle = (globus_l_handle_t *) driver_specific_handle;
     
+    result = globus_xio_driver_data_descriptor_cntl(
+        op, NULL, GLOBUS_XIO_DD_GET_OFFSET, &offset);
+    if(result != GLOBUS_SUCCESS || offset == -1)
+    {
+        offset = GlobusXIOFileGetFilePosition(handle);
+    }
+    else
+    {
+        globus_l_xio_file_update_position(handle, offset, SEEK_SET);
+    }
+    
+    GlobusXIOFileDebugPrintf(
+        GLOBUS_L_XIO_FILE_DEBUG_INFO,
+        ("[%s] count=%d, 1st buflen=%d offset=%" GLOBUS_OFF_T_FORMAT "\n",
+            _xio_name, iovec_count, (int) iovec[0].iov_len, offset));
+            
     /* if buflen and waitfor are both 0, we behave like register select */
     if((globus_xio_operation_get_wait_for(op) == 0 &&
         (iovec_count > 1 || iovec[0].iov_len > 0)) ||
@@ -618,11 +688,13 @@ globus_l_xio_file_write(
     {
         result = globus_xio_system_file_write(
             handle->system,
+            offset,
             iovec,
             iovec_count,
             globus_xio_operation_get_wait_for(op),
             &nbytes);
-            
+        
+        globus_l_xio_file_update_position(handle, nbytes, SEEK_CUR);
         globus_xio_driver_finished_write(op, result, nbytes);
         result = GLOBUS_SUCCESS;
     }
@@ -631,6 +703,7 @@ globus_l_xio_file_write(
         result = globus_xio_system_file_register_write(
             op,
             handle->system,
+            offset,
             iovec,
             iovec_count,
             globus_xio_operation_get_wait_for(op),
@@ -668,21 +741,13 @@ globus_l_xio_file_cntl(
       case GLOBUS_XIO_FILE_SEEK:
         offset = va_arg(ap, globus_off_t *);
         whence = va_arg(ap, int);
-        *offset = lseek(handle->fd, *offset, whence);
-        if(*offset < 0)
-        {
-            result = GlobusXIOErrorSystemError("lseek", errno);
-        }
+        *offset = globus_l_xio_file_update_position(handle, *offset, whence);
         break;
       
       /* globus_off_t                   offset */
       case GLOBUS_XIO_SEEK:
         in_offset = va_arg(ap, globus_off_t);
-        in_offset = lseek(handle->fd, in_offset, SEEK_SET);
-        if(in_offset < 0)
-        {
-            result = GlobusXIOErrorSystemError("lseek", errno);
-        }
+        globus_l_xio_file_update_position(handle, in_offset, SEEK_SET);
         break;
         
       /* globus_xio_system_file_t *     handle */

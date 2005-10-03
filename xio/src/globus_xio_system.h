@@ -42,6 +42,7 @@ typedef int globus_xio_system_native_handle_t;
 
 #else
 
+#include <Windows.h>
 #include <Winsock2.h>
 #define GLOBUS_XIO_SYSTEM_INVALID_FILE INVALID_HANDLE_VALUE
 #define GLOBUS_XIO_SYSTEM_INVALID_SOCKET INVALID_SOCKET
@@ -86,6 +87,9 @@ typedef void
  * This handle is only used to maintain state for the operations below.
  * As of now, the only modification it makes to the handle is set the
  * non-blocking attribute.
+ * 
+ * Note that initial file pointer is taken here and cached throughout.
+ * do not seek yourself
  */
 globus_result_t
 globus_xio_system_file_init(
@@ -106,6 +110,7 @@ globus_result_t
 globus_xio_system_file_register_read(
     globus_xio_operation_t              op,
     globus_xio_system_file_handle_t     handle,
+    globus_off_t                        offset,
     const globus_xio_iovec_t *          iov,
     int                                 iovc,
     globus_size_t                       waitforbytes,
@@ -116,6 +121,7 @@ globus_result_t
 globus_xio_system_file_register_write(
     globus_xio_operation_t              op,
     globus_xio_system_file_handle_t     handle,
+    globus_off_t                        offset,
     const globus_xio_iovec_t *          iov,
     int                                 iovc,
     globus_size_t                       waitforbytes,
@@ -126,6 +132,7 @@ globus_xio_system_file_register_write(
 globus_result_t
 globus_xio_system_file_read(
     globus_xio_system_file_handle_t     handle,
+    globus_off_t                        offset,
     const globus_xio_iovec_t *          iov,
     int                                 iovc,
     globus_size_t                       waitforbytes,
@@ -134,10 +141,36 @@ globus_xio_system_file_read(
 globus_result_t
 globus_xio_system_file_write(
     globus_xio_system_file_handle_t     handle,
+    globus_off_t                        offset,
     const globus_xio_iovec_t *          iov,
     int                                 iovc,
     globus_size_t                       waitforbytes,
     globus_size_t *                     nbytes);
+
+/* syscall abstractions */
+globus_off_t
+globus_xio_system_file_get_position(
+    globus_xio_system_file_t            fd);
+    
+globus_off_t
+globus_xio_system_file_get_size(
+    globus_xio_system_file_t            fd);
+
+globus_xio_system_file_t
+globus_xio_system_convert_stdio(
+    const char *                        stdio);
+
+globus_result_t
+globus_xio_system_file_truncate(
+    globus_xio_system_file_t            fd,
+    globus_off_t                        size);
+
+globus_result_t
+globus_xio_system_file_open(
+    globus_xio_system_file_t *          fd,
+    const char *                        filename,
+    int                                 flags,
+    unsigned long                       mode);
 
 globus_result_t
 globus_xio_system_file_close(
@@ -225,9 +258,96 @@ globus_xio_system_socket_write(
     globus_sockaddr_t *                 to,
     globus_size_t *                     nbytes);
 
+/* syscall abstractions */
+globus_result_t
+globus_xio_system_socket_create(
+    globus_xio_system_socket_t *        socket,
+    int                                 domain,
+    int                                 type,
+    int                                 protocol);
+
+globus_result_t
+globus_xio_system_socket_setsockopt(
+    globus_xio_system_socket_t          socket,
+    int                                 level,
+    int                                 optname,
+    const void *                        optval,
+    socklen_t                           optlen);
+
+globus_result_t
+globus_xio_system_socket_getsockopt(
+    globus_xio_system_socket_t          socket,
+    int                                 level,
+    int                                 optname,
+    void *                              optval,
+    socklen_t *                         optlen);
+    
+globus_result_t
+globus_xio_system_socket_getsockname(
+    globus_xio_system_socket_t          socket,
+    struct sockaddr *                   name,
+    socklen_t *                         namelen);
+
+globus_result_t
+globus_xio_system_socket_getpeername(
+    globus_xio_system_socket_t          socket,
+    struct sockaddr *                   name,
+    socklen_t *                         namelen);
+
+globus_result_t
+globus_xio_system_socket_bind(
+    globus_xio_system_socket_t          socket,
+    struct sockaddr *                   addr,
+    socklen_t                           addrlen);
+
+globus_result_t
+globus_xio_system_socket_listen(
+    globus_xio_system_socket_t          socket,
+    int                                 backlog);
+    
+globus_result_t
+globus_xio_system_socket_connect(
+    globus_xio_system_socket_t          socket,
+    const struct sockaddr *             addr,
+    socklen_t                           addrlen);
+    
 globus_result_t
 globus_xio_system_socket_close(
     globus_xio_system_socket_t          socket);
+
+/* only read-only vs read-write file perms available */
+#ifdef WIN32
+
+#define GLOBUS_XIO_SYSTEM_FILE_READABLE 0
+#define GLOBUS_XIO_SYSTEM_FILE_WRITABLE 1
+
+/* use 1 for writable */
+#undef S_IRWXU
+#define S_IRWXU GLOBUS_XIO_SYSTEM_FILE_WRITABLE
+#undef S_IRUSR
+#define S_IRUSR GLOBUS_XIO_SYSTEM_FILE_READABLE
+#undef S_IWUSR
+#define S_IWUSR GLOBUS_XIO_SYSTEM_FILE_WRITABLE
+#undef S_IXUSR
+#define S_IXUSR GLOBUS_XIO_SYSTEM_FILE_READABLE
+#undef S_IRWXO
+#define S_IRWXO GLOBUS_XIO_SYSTEM_FILE_WRITABLE
+#undef S_IROTH
+#define S_IROTH GLOBUS_XIO_SYSTEM_FILE_READABLE
+#undef S_IWOTH
+#define S_IWOTH GLOBUS_XIO_SYSTEM_FILE_WRITABLE
+#undef S_IXOTH
+#define S_IXOTH GLOBUS_XIO_SYSTEM_FILE_READABLE
+#undef S_IRWXG
+#define S_IRWXG GLOBUS_XIO_SYSTEM_FILE_WRITABLE
+#undef S_IRGRP
+#define S_IRGRP GLOBUS_XIO_SYSTEM_FILE_READABLE
+#undef S_IWGRP
+#define S_IWGRP GLOBUS_XIO_SYSTEM_FILE_WRITABLE
+#undef S_IXGRP
+#define S_IXGRP GLOBUS_XIO_SYSTEM_FILE_READABLE
+
+#endif
 
 EXTERN_C_END
 
