@@ -67,11 +67,9 @@ static const char * globus_l_gfs_local_version = "IPC Version 0.1";
 static globus_mutex_t                   globus_l_ipc_mutex;
 static globus_hashtable_t               globus_l_ipc_handle_table;
 static globus_hashtable_t               globus_l_ipc_request_table;
+globus_i_gfs_community_t *              globus_l_gfs_ipc_community_default;
 static globus_list_t *                  globus_l_gfs_ipc_community_list = NULL;
-
-globus_xio_stack_t                      globus_i_gfs_ipc_xio_stack;
-globus_i_gfs_community_t *              globus_i_gfs_ipc_community_default;
-globus_xio_driver_t                     globus_i_gfs_tcp_driver = GLOBUS_NULL;
+static globus_xio_stack_t               globus_l_gfs_ipc_xio_stack;
 
 typedef enum globus_l_gfs_ipc_state_s
 {
@@ -87,6 +85,7 @@ typedef enum globus_l_gfs_ipc_state_s
     GLOBUS_GFS_IPC_STATE_CLOSED
 } globus_l_gfs_ipc_state_t;
 
+static globus_xio_driver_t              globus_l_gfs_tcp_driver = GLOBUS_NULL;
 static globus_xio_driver_t              globus_l_gfs_queue_driver = GLOBUS_NULL;
 static globus_xio_driver_t              globus_l_gfs_gsi_driver = GLOBUS_NULL;
 static globus_xio_server_t              globus_l_gfs_ipc_server_handle;
@@ -1854,7 +1853,7 @@ globus_l_gfs_ipc_add_server_accept_cb(
     }
     result = globus_xio_handle_cntl(
         handle,
-        globus_i_gfs_tcp_driver,
+        globus_l_gfs_tcp_driver,
         GLOBUS_XIO_TCP_GET_REMOTE_NUMERIC_CONTACT,
         &remote_contact);
     if(result != GLOBUS_SUCCESS)
@@ -1884,7 +1883,7 @@ globus_l_gfs_ipc_add_server_accept_cb(
 
     result = globus_xio_handle_cntl(
         handle,
-        globus_i_gfs_tcp_driver,
+        globus_l_gfs_tcp_driver,
         GLOBUS_XIO_TCP_GET_REMOTE_NUMERIC_CONTACT,
         &remote_contact);
     if(result != GLOBUS_SUCCESS)
@@ -1987,13 +1986,13 @@ globus_gfs_ipc_handle_create(
     {
         goto error;
     }
-    result = globus_xio_attr_cntl(xio_attr, globus_i_gfs_tcp_driver,
+    result = globus_xio_attr_cntl(xio_attr, globus_l_gfs_tcp_driver,
         GLOBUS_XIO_TCP_SET_HANDLE, system_handle);
     if(result != GLOBUS_SUCCESS)
     {
         goto attr_error;
     }
-    result = globus_xio_attr_cntl(xio_attr, globus_i_gfs_tcp_driver,
+    result = globus_xio_attr_cntl(xio_attr, globus_l_gfs_tcp_driver,
         GLOBUS_XIO_TCP_SET_NODELAY, GLOBUS_TRUE);
     if(result != GLOBUS_SUCCESS)
     {
@@ -2034,7 +2033,7 @@ globus_gfs_ipc_handle_create(
         globus_hashtable_int_keyeq);
 
     result = globus_xio_handle_create(
-        &ipc->xio_handle, globus_i_gfs_ipc_xio_stack);
+        &ipc->xio_handle, globus_l_gfs_ipc_xio_stack);
     if(result != GLOBUS_SUCCESS)
     {
         goto attr_error;
@@ -2425,7 +2424,7 @@ globus_l_gfs_ipc_handle_connect(
                 ipc);
         }
         result = globus_xio_handle_create(
-            &ipc->xio_handle, globus_i_gfs_ipc_xio_stack);
+            &ipc->xio_handle, globus_l_gfs_ipc_xio_stack);
         if(result != GLOBUS_SUCCESS)
         {
             goto handle_error;
@@ -4067,7 +4066,7 @@ globus_gfs_ipc_init(
     GlobusGFSName(globus_gfs_ipc_init);
     GlobusGFSDebugEnter();
 
-    res = globus_xio_driver_load("tcp", &globus_i_gfs_tcp_driver);
+    res = globus_xio_driver_load("tcp", &globus_l_gfs_tcp_driver);
     if(res != GLOBUS_SUCCESS)
     {
         goto tcp_load_error;
@@ -4078,13 +4077,13 @@ globus_gfs_ipc_init(
         goto queue_load_error;
     }
     
-    res = globus_xio_stack_init(&globus_i_gfs_ipc_xio_stack, GLOBUS_NULL);
+    res = globus_xio_stack_init(&globus_l_gfs_ipc_xio_stack, GLOBUS_NULL);
     if(res != GLOBUS_SUCCESS)
     {
         goto stack_init_error;
     }
     res = globus_xio_stack_push_driver(
-        globus_i_gfs_ipc_xio_stack, globus_i_gfs_tcp_driver);
+        globus_l_gfs_ipc_xio_stack, globus_l_gfs_tcp_driver);
     if(res != GLOBUS_SUCCESS)
     {
         goto stack_push_error;
@@ -4098,7 +4097,7 @@ globus_gfs_ipc_init(
         }
 
         res = globus_xio_stack_push_driver(
-            globus_i_gfs_ipc_xio_stack, globus_l_gfs_gsi_driver);
+            globus_l_gfs_ipc_xio_stack, globus_l_gfs_gsi_driver);
         if(res != GLOBUS_SUCCESS)
         {
             globus_xio_driver_unload(globus_l_gfs_gsi_driver);
@@ -4106,7 +4105,7 @@ globus_gfs_ipc_init(
         }
     }
     res = globus_xio_stack_push_driver(
-        globus_i_gfs_ipc_xio_stack, globus_l_gfs_queue_driver);
+        globus_l_gfs_ipc_xio_stack, globus_l_gfs_queue_driver);
     if(res != GLOBUS_SUCCESS)
     {
         goto stack_push_error;
@@ -4117,7 +4116,7 @@ globus_gfs_ipc_init(
     globus_assert(!globus_list_empty(community_list) && 
         "i said it wouldnt be empty");
 
-    globus_i_gfs_ipc_community_default = 
+    globus_l_gfs_ipc_community_default = 
         (globus_i_gfs_community_t *) globus_list_first(community_list);
 
     list = globus_list_rest(community_list);
@@ -4151,12 +4150,12 @@ globus_gfs_ipc_init(
     return GLOBUS_SUCCESS;
 
 stack_push_error:
-    globus_xio_stack_destroy(globus_i_gfs_ipc_xio_stack);
+    globus_xio_stack_destroy(globus_l_gfs_ipc_xio_stack);
 stack_init_error:
 gsi_load_error:
     globus_xio_driver_unload(globus_l_gfs_queue_driver);
 queue_load_error:
-    globus_xio_driver_unload(globus_i_gfs_tcp_driver);
+    globus_xio_driver_unload(globus_l_gfs_tcp_driver);
 tcp_load_error:
 
     GlobusGFSDebugExitWithError();
@@ -4183,7 +4182,7 @@ globus_gfs_ipc_listen(
 
         res = globus_xio_attr_cntl(
             attr,
-            globus_i_gfs_tcp_driver,
+            globus_l_gfs_tcp_driver,
             GLOBUS_XIO_TCP_SET_PORT,
             port);
         if(res != GLOBUS_SUCCESS)
@@ -4191,7 +4190,7 @@ globus_gfs_ipc_listen(
             goto attr_error;
         }
         res = globus_xio_server_create(
-            &globus_l_gfs_ipc_server_handle, attr, globus_i_gfs_ipc_xio_stack);
+            &globus_l_gfs_ipc_server_handle, attr, globus_l_gfs_ipc_xio_stack);
         if(res != GLOBUS_SUCCESS)
         {
             goto attr_error;
@@ -4267,7 +4266,7 @@ globus_l_gfs_ipc_find_community(
     }
 
     GlobusGFSDebugExit();
-    return globus_i_gfs_ipc_community_default;
+    return globus_l_gfs_ipc_community_default;
 }
 
 globus_result_t
@@ -4280,7 +4279,7 @@ globus_gfs_ipc_handle_get_max_available_count(
     GlobusGFSDebugEnter();
 
     /* ignores other communities for now */    
-    *count = globus_i_gfs_ipc_community_default->cs_count;
+    *count = globus_l_gfs_ipc_community_default->cs_count;
 
     GlobusGFSDebugExit();
     return GLOBUS_SUCCESS;
