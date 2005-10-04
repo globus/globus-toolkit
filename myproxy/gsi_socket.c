@@ -719,6 +719,15 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self, char *accepted_peer_names[])
 	    self->error_string = strdup(error_string);
 	    goto error;
 	}
+
+	/* added by Massimo Cafaro
+         * CACT, University of Lecce, Italy
+         * October 3, 2005
+         * the storage associated to the name target_name must be freed
+         * to avoid a  memory leak
+         */
+        gss_release_name(&self->minor_status, &target_name);
+
 	if (rc) {
 	    myproxy_debug("server name accepted");
 	    break;
