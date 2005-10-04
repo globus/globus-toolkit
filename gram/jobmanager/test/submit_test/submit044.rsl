@@ -1,5 +1,0 @@
-&(executable=/bin/echo)
- (arguments=hello)
- (stdout = ( $(GLOBUSRUN_GASS_URL)/dev/stdout )
-           ( $(GLOBUSRUN_GASS_URL)/dev/stdout )
- )
