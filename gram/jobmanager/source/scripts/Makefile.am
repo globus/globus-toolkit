@@ -8,7 +8,11 @@ perldocdir=$(GLOBUS_LOCATION)/share/doc/perl/Globus/GRAM
 MAN_DIR=$(GLOBUS_LOCATION)/man/man3
 
 # Where targets are installed
-globusperl_DATA = JobDescription.pm JobManager.pm StdioMerger.pm
+globusperl_DATA = \
+    JobDescription.pm \
+    JobManager.pm \
+    StdioMerger.pm \
+    ExtensionsHandler.pm
 perldoc_DATA = JobManager.html JobDescription.html
 noinst_DATA = JobManager.3 JobDescription.3
 

@@ -44,169 +44,47 @@ import org.globus.exec.generated.StateEnumeration;
  * </p>
  */
 
+import java.io.IOException;
+import java.util.Date;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-public class JobStateMonitor
+public interface JobStateMonitor
 {
-    private static Log logger = LogFactory.getLog(JobStateMonitor.class);
-
-    /** Reference to the SEG-monitoring thread. */
-    private SchedulerEventGenerator seg;
     /**
-     * JobStateChangeListener which will be notified of job state
-     * changes for registered job IDs.
-     */
-    private JobStateChangeListener listener;
-    /**
-     * JobStateRecoveryListener which will be notified when the JSM decides
-     * that its recovery information should be updated.
-     */
-    private JobStateRecoveryListener recoveryListener;
-    /** Mapping of Job IDs to Object keys */
-    private java.util.HashMap mapping;
-    /** Time-sorted soft-state cache of events */
-    private java.util.SortedSet cachedEvents;
-    /**
-     * Maximum age of the oldest event in the soft-state cache.
-     */
-    private static final int MAX_CACHE_AGE = 5 * 60 * 1000;
-    /**
-     * Period of time between running the cache flush task.
-     */
-    private static final long CACHE_FLUSH_PERIOD = 1 * 60 * 1000;
-    /**
-     * Period of time between running the recovery update task.
-     */
-    private static final long RECOVERY_PERIOD = 15 * 60 * 1000;
-    /**
-     * Timer to handle all cache flushing and recovery timestamp update tasks.
-     */
-    private static java.util.Timer timer = new java.util.Timer(true);
-    /**
-     * Cache flushing task.
+     * Start processing state change events.
      *
-     * Every CACHE_FLUSH_PERIOD milliseconds, cache entries older than
-     * MAX_CACHE_AGE will be discarded.
-     */
-    private java.util.TimerTask cacheFlushTask;
-    /**
-     * Recovery data update task.
+     * Starts the monitor, filtering out all events that occured before the
+     * specified timestamp.
      *
-     * Every RECOVERY_PERIOD milliseconds, recoveryListener's
-     * updateJobMonitorRecoveryTimeStamp() will be called to have it update
-     * the persistent state of the JobStateMonitor.
+     * @param timestamp
+     *     Date from which to start processing events. If <b>null</b>, then
+     *     the monitoring will begin with events generated from the time the
+     *     function was called.
+     * @throws IllegalThreadStateException
+     *     This method has already been called.
      */
-    private java.util.TimerTask recoveryTask;
+    public void start(
+        Date                                timestamp)
+        throws                              IllegalThreadStateException;
 
     /**
-     * Timestamp of the last dispatched event.
+     * Stop processing state change events.
      *
-     * This timestamp is used as the safe-recovery timestamp when the
-     * soft-state event cache is empty, but some events have been dispatched
-     * to their JobStateChangeListener or discarded from the soft-state cache
-     * by the cacheFlushTask.
+     * Blocks the current thread until communication with the state change
+     * event source has been severed. No furthur events will be issued after
+     * this method returns until the start() method is called again.
      */
-    private java.util.Date lastEventTimestamp;
-
-    /**
-     * Construct a new JobStateMonitor with a non-daemon SEG.
-     *
-     * The new JobStateMonitor will not begin the Scheduler Event Generator
-     * automatically.  Services which create a JobStateMonitor may register
-     * any number of job ID mappings before calling start() to start
-     * the SEG.
-     *
-     * @param globusLocation
-     *     Path to the Globus Toolkit installation.
-     * @param userName
-     *     User name that the SEG should run as (via sudo(8)).
-     *     (Currently ignored).
-     * @param schedulerName
-     *     Name of the scheduler SEG module to use.
-     * @param listener
-     *     Reference to the JobStateChangeListener which will be notified
-     *     when notifications relating to Job ID which has a mapping
-     *     registered to it.
-     * @param recoveryListener
-     *     Reference to a JobStateRecoveryListener which will be notified
-     *     periodically when the JobStateMonitor wants to update its recovery
-     *     checkpoint timestamp.
-     */
-    public JobStateMonitor(
-        java.io.File                        globusLocation,
-        String                              userName,
-        String                              schedulerName,
-        JobStateChangeListener              listener,
-        JobStateRecoveryListener            recoveryListener)
-    {
-        this(globusLocation,
-             userName,
-             schedulerName,
-             listener,
-             recoveryListener,
-             false);
-    }
-
-    /**
-     * Construct a new JobStateMonitor.
-     *
-     * The new JobStateMonitor will not begin the Scheduler Event Generator
-     * automatically.  Services which create a JobStateMonitor may register
-     * any number of job ID mappings before calling start() to start
-     * the SEG.
-     *
-     * @param globusLocation
-     *     Path to the Globus Toolkit installation.
-     * @param userName
-     *     User name that the SEG should run as (via sudo(8)).
-     *     (Currently ignored).
-     * @param schedulerName
-     *     Name of the scheduler SEG module to use.
-     * @param listener
-     *     Reference to the JobStateChangeListener which will be notified
-     *     when notifications relating to Job ID which has a mapping
-     *     registered to it.
-     * @param recoveryListener
-     *     Reference to a JobStateRecoveryListener which will be notified
-     *     periodically when the JobStateMonitor wants to update its recovery
-     *     checkpoint timestamp.
-     * @param segDaemon
-     *     Indicates whether to make the SEG a daemon thread or not
-     */
-    public JobStateMonitor(
-        java.io.File                        globusLocation,
-        String                              userName,
-        String                              schedulerName,
-        JobStateChangeListener              listener,
-        JobStateRecoveryListener            recoveryListener,
-        boolean                             segDaemon)
-    {
-        logger.debug("Constructing JobStateMonitor");
-
-        this.listener = listener;
-        this.recoveryListener = recoveryListener;
-        this.mapping = new java.util.HashMap();
-        this.cachedEvents
-            = new java.util.TreeSet(SchedulerEvent.getComparator());
-        this.cacheFlushTask = null;
-        this.recoveryTask = null;
-
-        this.seg = new SchedulerEventGenerator(
-            globusLocation,
-            userName,
-            schedulerName,
-            this);
-        logger.debug("Setting SEG daemon status to " + segDaemon);
-        this.seg.setDaemon(segDaemon);
-    }
+    public void stop()
+        throws                              java.io.IOException;
 
     /**
      * Register a mapping from local scheduler job ID to a resource key.
      *
      * Once this method has been called for a particular local job
      * identifier, the JobStateChangeListener associated with the
-     * JobStatemonitor may receive notifications until the unregisterJobIDMap
+     * JobStatemonitor may receive notifications until the unregisterJobID
      * method has been called.
      *
      * @param localId
@@ -216,327 +94,24 @@ public class JobStateMonitor
      *     Resource key associated with the job. This object will be
      *     passed to the JobStateChangeListener's jobStateChange method.
      */
-    public synchronized void registerJobID(String localId, ResourceKey resourceKey)
-            throws AlreadyRegisteredException
-    {
-        if (logger.isDebugEnabled()) {
-            logger.debug("Entering registerJobID: " + localId);
-        }
-        synchronized (mapping) {
-            if (mapping.containsKey(localId)) {
-                throw new AlreadyRegisteredException(localId);
-            }
-            mapping.put(localId, resourceKey);
-
-            java.util.List events = getCachedEvents(localId);
-
-            if (events != null) {
-                DispatcherThread t = new DispatcherThread(resourceKey,
-                        events);
-                t.start();
-            }
-        }
-        logger.debug("Exiting registerJobID");
-    }
-
-    /**
-     * Start processing SEG events.
-     *
-     * Starts the SEG thread processing events from the scheduler, as
-     * well as some background tasks to flush cache of old job
-     * events and to update the persistent timestamp used for restarting
-     * the JobStateMonitor.
-     *
-     *
-     * @param timestamp
-     *     Date from which to start processing events. If <b>null</b>, then
-     *     the SEG will process events generated from the time the function
-     *     is called.
-     * @throws IllegalThreadStateException
-     *     This method has already been called.
-     */
-    public void start(java.util.Date timestamp)
-            throws IllegalThreadStateException
-    {
-        logger.debug("Entering start()");
-
-        if (timestamp == null) {
-            timestamp = new java.util.Date();
-        }
-
-        if (logger.isDebugEnabled()) {
-            logger.debug("starting seg with timestamp " + timestamp.toString());
-        }
-
-        this.seg.start(timestamp);
-        this.lastEventTimestamp = timestamp;
-
-        if (cacheFlushTask == null) {
-            logger.debug("creating flush task");
-            cacheFlushTask = new java.util.TimerTask() {
-                public void run() {
-                    flushCache();
-                }
-            };
-
-            timer.schedule(cacheFlushTask, CACHE_FLUSH_PERIOD,
-                    CACHE_FLUSH_PERIOD);
-        }
-
-        if (recoveryTask == null && recoveryListener != null) {
-            logger.debug("creating recovery update task");
-            recoveryTask = new java.util.TimerTask() {
-                public void run() {
-                    updateRecoveryInfo();
-                }
-            };
-
-            timer.schedule(recoveryTask, RECOVERY_PERIOD, RECOVERY_PERIOD);
-        }
-        logger.debug("Exiting start()");
-    }
-
-    /**
-     * Stop processing SEG events.
-     *
-     * Blocks the current thread until the SEG has terminated. No furthur
-     * SEG events will be issued after method returns until the start() method
-     * is called again.
-     */
-    public void stop()
-            throws java.io.IOException
-    {
-        logger.debug("Entering stop()");
-
-        boolean done = false;
-
-        seg.shutdown();
-
-        while (!done) {
-            try {
-                logger.debug("joining SEG thread");
-                seg.join();
-                logger.debug("done");
-                done = true;
-            } catch (InterruptedException ie) {
-            }
-        }
-        logger.debug("Exiting stop()");
-    }
-
-    private void flushCache()
-    {
-        logger.debug("Entering flushCache()");
-
-        java.util.Calendar flushCalendar = java.util.Calendar.getInstance();
-
-        flushCalendar.add(java.util.Calendar.MILLISECOND, -MAX_CACHE_AGE);
-
-        java.util.Date flushDate = flushCalendar.getTime();
-
-        synchronized (cachedEvents) {
-            java.util.Iterator i = cachedEvents.iterator();
-            java.util.Date d = null;
-
-            while (i.hasNext()) {
-                d = ((SchedulerEvent) i.next()).getTimeStamp();
-
-                if (d.compareTo(flushDate) <= 0) {
-                    /* Remove older than MAX_CACHE_AGE */
-                    i.remove();
-                } else {
-                    /* Sorted, so we don't need to continue once we find
-                     * a non-old timestamp
-                     */
-                    break;
-                }
-            }
-
-            if (d != null)
-            {
-                if (d.compareTo(lastEventTimestamp) > 0) {
-                    /* Newer than the oldest safe recovery point, so we'll
-                     * update that date
-                     */
-                    if (recoveryTask != null) {
-                        synchronized (recoveryTask) {
-                            lastEventTimestamp = d;
-                        }
-                    }
-                }
-            }
-        }
-        logger.debug("Exiting flushCache()");
-    }
-
-    private void updateRecoveryInfo()
-    {
-        logger.debug("Entering updateRecoveryInfo()");
-
-        java.util.Date d;
-
-        synchronized (recoveryTask) {
-            d = lastEventTimestamp;
-        }
-
-        recoveryListener.updateJobMonitorRecoveryTimeStamp(this, d);
-        logger.debug("Exiting updateRecoveryInfo()");
-    }
-
-    /**
-     * Get all cached events associated with a Job ID.
-     *
-     * @param localId
-     *     Job identifier to look up.
-     *
-     * @return Returns a list of SchedulerEvents associated with the Job ID.
-     */
-    private java.util.List getCachedEvents(String localId)
-    {
-        logger.debug("Entering getCachedEvents()");
-        java.util.List result = new java.util.ArrayList(4);
-
-        synchronized (cachedEvents) {
-            java.util.Iterator i = cachedEvents.iterator();
-
-            while (i.hasNext()) {
-                SchedulerEvent e = (SchedulerEvent) i.next();
-
-                if (e.getLocalId().equals(localId)) {
-                    logger.debug("adding " + e.toString()
-                            + "to list to replay");
-                    result.add(e);
-                }
-            }
-        }
-        logger.debug("Exiting getCachedEvents()");
-        return result;
-    }
+    public void registerJobID(
+        String                              localId,
+        ResourceKey                         resourceKey)
+        throws                              AlreadyRegisteredException;
 
     /**
      * Unregister a local scheduler job ID for event propagation.
+     *
      * Once this method has been called for a particular local job
      * identifier, the JobStateChangeListener associated with the
-     * JobStatemonitor will no longer receive notifications about this job.
+     * JobStateMonitor will no longer receive notifications about this job.
      *
      * @param localId
      *     Local job identifier.
      */
-    public void unregisterJobID(String localId)
-        throws NotRegisteredException
-    {
-        if (logger.isDebugEnabled()) {
-            logger.debug("Entering unregisterJobID: " + localId);
-        }
+    public void unregisterJobID(
+        String                              localId)
+        throws                              NotRegisteredException;
 
-        synchronized (mapping) {
-            Object result = mapping.remove(localId);
-
-            if (result == null) {
-                throw new NotRegisteredException(localId);
-            }
-        }
-        logger.debug("Exiting unregisterJobID()");
-    }
-
-    /**
-     * Store an event in the JobStateMonitor's cache
-     */
-    private void cacheEvent(SchedulerEvent e)
-    {
-        logger.debug("Entering cacheEvent()");
-        synchronized (cachedEvents) {
-            logger.debug("caching " + e.toString());
-            cachedEvents.add(e);
-        }
-        logger.debug("Exiting cacheEvent()");
-    }
-
-    /**
-     * Look up the localId to ResourceKey mapping for a specified id.
-     */
-    private ResourceKey getMapping(String localId)
-    {
-        synchronized (mapping) {
-            return (ResourceKey) mapping.get(localId);
-        }
-    }
-
-    synchronized void addEvent(SchedulerEvent e) {
-        if (logger.isDebugEnabled()) {
-            logger.debug(" JSM receiving scheduler event " + e);
-        }
-        String localId = e.getLocalId();
-
-        ResourceKey mapping = getMapping(localId);
-
-        if (mapping != null) {
-            logger.debug("Dispatching event " + e.getLocalId()
-                        + " to job " + mapping.getValue());
-
-            dispatchEvent(mapping, e);
-        } else {
-            logger.debug("Caching event " + e.getLocalId());
-
-	    cacheEvent(e);
-        }
-    }
-
-    /**
-     * Call the jobStateChange callback for a SEG event.
-     *
-     * @param resourceKey
-     *     Resource key associated with the job ID in the event.
-     * @param e
-     *     Event containing the job state change information.
-     */
-    void dispatchEvent(ResourceKey resourceKey, SchedulerEvent e)
-    {
-        logger.debug("Entering dispatchEvent()");
-
-        synchronized (mapping) {
-            logger.debug("dispatching " + e.toString());
-            listener.jobStateChanged(resourceKey, e.getLocalId(),
-                    e.getTimeStamp(), e.getState(), e.getExitCode());
-
-            synchronized (cachedEvents) {
-                /* If called from a DispatcherThread, the event may
-                 * be in the cache. If so, when we remove it the cached
-                 * may be empty
-                 */
-                if (cachedEvents.remove(e) && cachedEvents.isEmpty()) {
-                    if (recoveryTask != null) {
-                        synchronized (recoveryTask) {
-                            lastEventTimestamp = e.getTimeStamp();
-                        }
-                    }
-                }
-            }
-        }
-        logger.debug("Exiting dispatchEvent()");
-    }
-
-    private class DispatcherThread extends Thread {
-        private ResourceKey resourceKey;
-        private java.util.List events;
-
-        public DispatcherThread(ResourceKey resourceKey,
-                java.util.List events)
-        {
-            super();
-
-            this.resourceKey = resourceKey;
-            this.events = events;
-        }
-
-        public void run() {
-            java.util.Iterator i = events.iterator();
-
-            while (i.hasNext()) {
-                SchedulerEvent e = (SchedulerEvent) i.next();
-
-                dispatchEvent(resourceKey, e);
-            }
-        }
-    }
+    public void addEvent(SchedulerEvent e);
 }

@@ -40,8 +40,6 @@ typedef struct
     char *                              expected_val;
 } globus_l_gfs_config_option_t;
 
-static globus_mutex_t                   globus_i_gfs_config_mutex;
-
 static const globus_l_gfs_config_option_t option_list[] = 
 { 
 {NULL, "Informational Options", NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL},
@@ -175,12 +173,6 @@ static const globus_l_gfs_config_option_t option_list[] =
     "This server is a backend data node.", NULL, NULL},
  {"stripe_blocksize", "stripe_blocksize", NULL, "stripe-blocksize", "sbs", GLOBUS_L_GFS_CONFIG_INT, (1024 * 1024), NULL,
     "Size in bytes of sequential data that each stripe will transfer.", NULL, NULL},
- {"wsrf_service", "wsrf_service", NULL, "wsrf_service", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
-    "wsrf extension library for monitoring [unsuported]", NULL},
- {"epr_outfile", "epr_outfile", NULL, "epr_outfile", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
-    "place to write epr [unsuported]", NULL},
- {"service_port", "service_port", NULL, "service_port", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
-    "port string for container [unsuported]", NULL},
  {"stripe_layout", "stripe_layout", NULL, "stripe-layout", "sl", GLOBUS_L_GFS_CONFIG_INT, GLOBUS_GFS_LAYOUT_BLOCKED, NULL,
     "Stripe layout. 1 = Partitioned, 2 = Blocked.", NULL, NULL},
  {"stripe_blocksize_locked", "stripe_blocksize_locked", NULL, "stripe-blocksize-locked", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
@@ -217,8 +209,6 @@ static const globus_l_gfs_config_option_t option_list[] =
     "Effectively sets the above control_interface, data_interface and ipc_interface options.", NULL, NULL},
  {"ipc_port", "ipc_port", NULL, "ipc-port", NULL, GLOBUS_L_GFS_CONFIG_INT, 0, NULL,
     "Port on which the frontend will listen for data node connections.", NULL, NULL},
- {"brain_listen", "brain_listen", NULL, "brain-listen", NULL, GLOBUS_L_GFS_CONFIG_INT, 0, NULL,
-    "State if the brain will allow for connection back.  Should be used with --ipc-port.  This is an experimental feature.", NULL, NULL},
 {NULL, "Timeouts", NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL},
  {"control_preauth_timeout", "control_preauth_timeout", NULL, "control-preauth-timeout", NULL, GLOBUS_L_GFS_CONFIG_INT, 30, NULL,
     "Time in seconds to allow a client to remain connected to the control "
@@ -1791,8 +1781,6 @@ globus_i_gfs_config_init(
 
     globus_free(local_config_file);     
 
-    globus_mutex_init(&globus_i_gfs_config_mutex, NULL);
-
     GlobusGFSDebugExit();
     return;
 
@@ -2000,110 +1988,4 @@ globus_i_gfs_config_get_module_name(
     GlobusGFSDebugExit();
     return out_module;
 }
-
-
-/*
- *  public (ish) functions
- */
-globus_bool_t
-globus_gfs_config_get_bool(
-    const char *                        option_name)
-{
-    globus_bool_t                       rc;
-
-    globus_mutex_lock(&globus_i_gfs_config_mutex);
-    rc = globus_i_gfs_config_bool(option_name);    
-    globus_mutex_unlock(&globus_i_gfs_config_mutex);
-    return rc;
-}
-
-char *
-globus_gfs_config_get_string(
-    const char *                        option_name)
-{
-    char *                              rc;
-
-    globus_mutex_lock(&globus_i_gfs_config_mutex);
-    rc = globus_i_gfs_config_string(option_name);    
-    globus_mutex_unlock(&globus_i_gfs_config_mutex);
-    return rc;
-}
-
-globus_list_t *
-globus_gfs_config_get_list(
-    const char *                        option_name)
-{
-    globus_list_t *                     rc;
-
-    globus_mutex_lock(&globus_i_gfs_config_mutex);
-    rc = globus_i_gfs_config_list(option_name);    
-    globus_mutex_unlock(&globus_i_gfs_config_mutex);
-    return rc;
-}
-
-void *
-globus_gfs_config_get(
-    const char *                        option_name)
-{
-    void *                              rc;
-
-    globus_mutex_lock(&globus_i_gfs_config_mutex);
-    rc = globus_i_gfs_config_get(option_name);    
-    globus_mutex_unlock(&globus_i_gfs_config_mutex);
-    return rc;
-}
-
-int
-globus_gfs_config_get_int(
-    const char *                        option_name)
-{
-    int                                 rc;
-
-    globus_mutex_lock(&globus_i_gfs_config_mutex);
-    rc = globus_i_gfs_config_int(option_name);    
-    globus_mutex_unlock(&globus_i_gfs_config_mutex);
-    return rc;
-}
-
-int
-globus_gfs_config_set_int(
-    char *                              option_name,
-    int                                 int_val)
-{
-    int                                 rc;
-
-    globus_mutex_lock(&globus_i_gfs_config_mutex);
-    rc = globus_l_gfs_config_set(option_name, int_val, NULL);
-    globus_mutex_unlock(&globus_i_gfs_config_mutex);
-    return rc;
-}
-
-int
-globus_gfs_config_set_bool(
-    char *                              option_name,
-    int                                 int_val)
-{
-    int                                 rc;
-
-    globus_mutex_lock(&globus_i_gfs_config_mutex);
-    rc = globus_l_gfs_config_set(option_name, int_val, NULL);
-    globus_mutex_unlock(&globus_i_gfs_config_mutex);
-    return rc;
-}
-
-int
-globus_gfs_config_set_ptr(
-    char *                              option_name,
-    void *                              ptr)
-{
-    int                                 rc;
-
-    globus_mutex_lock(&globus_i_gfs_config_mutex);
-    rc = globus_l_gfs_config_set(option_name, 0, ptr);
-    globus_mutex_unlock(&globus_i_gfs_config_mutex);
-    return rc;
-}
-
-
-
 

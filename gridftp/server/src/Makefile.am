@@ -22,19 +22,19 @@ EXTRA_DIST = \
 Sources = \
 	globus_gridftp_server.h		\
 	globus_i_gridftp_server.h	\
-	globus_i_gfs_log.c 		    \
+	globus_i_gfs_log.c 		\
 	globus_i_gfs_brain.c        \
-	globus_i_gfs_log.h 		    \
+	globus_i_gfs_log.h 		\
 	globus_i_gfs_config.c 		\
 	globus_i_gfs_config.h 		\
 	globus_i_gfs_acl_test.c     \
-	globus_i_gfs_acl.c 		    \
-	globus_i_gfs_acl.h 		    \
+	globus_i_gfs_acl.c 		\
+	globus_i_gfs_acl.h 		\
 	globus_i_gfs_data.c 		\
 	globus_i_gfs_data.h 		\
-        globus_i_gfs_cas.c      \
-	globus_i_gfs_ipc.c 		    \
-	globus_i_gfs_ipc.h 		    \
+        globus_i_gfs_cas.c          \
+	globus_i_gfs_ipc.c 		\
+	globus_i_gfs_ipc.h 		\
 	globus_i_gfs_control.c 		\
 	globus_i_gfs_control.h
 

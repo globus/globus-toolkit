@@ -7,6 +7,8 @@ globus_wsrf_rft_service_java_usage          ws-transfer/reliable/service/java/us
 globus_wsrf_rft_service_java_setup          ws-transfer/reliable/service/java/setup
 globus_wsrf_rendezvous_common_schema        ws-rendezvous/common/schema
 globus_wsrf_rendezvous_common_java          ws-rendezvous/common/java/source
+globus_wsrf_gram_adapter_common_java        ws-gram/adapter/common/java/source
+globus_wsrf_gram_adapter_perl_java          ws-gram/adapter/perl/java/source
 globus_wsrf_rendezvous_service_java         ws-rendezvous/service/java/source
 globus_wsrf_gram_service_java               ws-gram/service/java/source 
 globus_wsrf_gram_service_java_usage         ws-gram/service/java/usage
@@ -24,8 +26,8 @@ globus_wsrf_gram_common_java                ws-gram/common/java/source
 globus_wsrf_gram_common_schema              ws-gram/common/schema                           
 
 globus_wsrf_gram_client_java                ws-gram/client/java/source    
-globus_wsrf_gram_client_tools               ws-gram/client/c/tools/source
-globus_wsrf_gram_client_tools_test          ws-gram/client/c/tools/test
+globus_wsrf_gram_client_tools               ws-gram/client/c/tools/source gpt
+globus_wsrf_gram_client_tools_test          ws-gram/client/c/tools/test gpt
 globus_wsrf_gram_scheduler_test             ws-gram/client/test gpt
 globus_scheduler_event_generator_fork       ws-gram/job_monitoring/fork/c/source gpt
 globus_scheduler_event_generator_fork_setup ws-gram/job_monitoring/fork/c/setup gpt
@@ -111,7 +113,6 @@ globus_c_wsrf_core_test_interop_bindings    wsrf/c/core/tests/interop/source gpt
 globus_c_wsrf_core_performance_test         wsrf/c/core/tests/performance/ gpt
 globus_c_wsrf_providers_test_service_bindings wsrf/c/core/providers/test_service/ gpt
 globus_c_wsrf_providers_notification_test_bindings wsrf/c/core/providers/notification_test_service/ gpt
-globus_c_wsrf_providers_servicegroup_test_bindings wsrf/c/core/providers/servicegroup_test_service/ gpt
 globus_c_wsrf_providers_test_wsdl           wsrf/c/core/providers/test_wsdl gpt
 globus_c_wsrf_provider_test                 wsrf/c/core/providers/test gpt
 globus_c_wsrf_resource                      wsrf/c/resource/source gpt
@@ -167,4 +168,4 @@ globus_scheduler_event_generator_job_manager       ws-gram/job_monitoring/job-ma
 globus_scheduler_event_generator_job_manager_setup ws-gram/job_monitoring/job-manager/c/setup gpt
 globus_c_static_container_gen               wsrf/c/parser/static_container gpt
 globus_crft_util                    ws-transfer/reliable/client/c/crft_util/source gpt
-globus_c_wsrf_service_group                 wsrf/c/core/servicegroup/source gpt
+globus_c_wsrf_service_group    wsrf/c/core/servicegroup/source
