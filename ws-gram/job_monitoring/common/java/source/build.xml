@@ -35,7 +35,8 @@
             <include name="**/*.java"/>
             <classpath>
                 <fileset dir="${deploy.dir}/lib">
-                    <include name="*.jar"/>
+                     <include name="common/*.jar"/>
+                     <include name="*.jar"/>
                      <exclude name="${jar.name}"/>
                 </fileset>
             </classpath>
