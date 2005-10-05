@@ -45,6 +45,8 @@ CHECK_NEED_LNSL
 # maybe should be replaced with the libtool dl library
 CHECK_NEED_LDL
 
+# Disable ciphers/hashes/devices/engines we do not use
+CHECK_MINIMAL_SSL
 
 GPT_SET_LIBS([[$EXTERNAL_LIBS]])	
 

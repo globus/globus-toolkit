@@ -111,7 +111,7 @@
 # include <sys/types.h>
 #endif
 
-#if !defined(OPENSSL_SYS_WIN32) && !defined(OPENSSL_SYS_VMS) && !defined(NeXT) && !defined(MAC_OS_pre_X)
+#if !defined(OPENSSL_SYS_WIN32) && !defined(OPENSSL_SYS_VMS) && !defined(NeXT) && !defined(MAC_OS_pre_X) && !defined(OPENSSL_SYS_NETOS)
 #include <dirent.h>
 #endif
 
@@ -733,6 +733,7 @@ err:
 #ifndef OPENSSL_SYS_WIN32
 #ifndef OPENSSL_SYS_VMS		/* XXXX This may be fixed in the future */
 #ifndef OPENSSL_SYS_MACINTOSH_CLASSIC /* XXXXX: Better scheme needed! */
+#ifndef OPENSSL_SYS_NETOS
 
 int SSL_add_dir_cert_subjects_to_stack(STACK_OF(X509_NAME) *stack,
 				       const char *dir)
@@ -778,6 +779,7 @@ err:
 	return ret;
 	}
 
+#endif
 #endif
 #endif
 

@@ -35,6 +35,10 @@
  * 
  * @return GLOBUS_SUCCESS on successful completion, a error object otherwise
  */
+#ifndef NI_MAXHOST 
+#define NI_MAXHOST 255
+#endif
+
 globus_result_t
 globus_gss_assist_authorization_host_name(
     char *                              hostname,

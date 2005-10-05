@@ -24,7 +24,32 @@ EXTERN_C_BEGIN
 #define GLOBUS_XIO_SYSTEM_MODULE (&globus_i_xio_system_module)
 extern globus_module_descriptor_t       globus_i_xio_system_module;
 
-#ifndef WIN32
+#ifdef WIN32
+
+#include <Windows.h>
+#include <Winsock2.h>
+#define GLOBUS_XIO_SYSTEM_INVALID_FILE INVALID_HANDLE_VALUE
+#define GLOBUS_XIO_SYSTEM_INVALID_SOCKET INVALID_SOCKET
+
+typedef struct globus_l_xio_win32_file_s * globus_xio_system_file_handle_t;
+typedef struct globus_l_xio_win32_socket_s * globus_xio_system_socket_handle_t;
+
+typedef SOCKET globus_xio_system_socket_t;
+typedef HANDLE globus_xio_system_file_t;
+
+#elif defined(TARGET_ARCH_NETOS)
+#define GLOBUS_XIO_SYSTEM_INVALID_FILE  -1
+#define GLOBUS_XIO_SYSTEM_INVALID_SOCKET  -1
+
+/* these are handles to this interface */
+typedef struct globus_l_xio_system_s * globus_xio_system_file_handle_t;
+typedef struct globus_l_xio_system_s * globus_xio_system_socket_handle_t;
+
+/* these are the native descriptor types */
+typedef SOCKET globus_xio_system_socket_t;
+typedef int globus_xio_system_file_t;
+
+#else
 
 #define GLOBUS_XIO_SYSTEM_INVALID_FILE  -1
 #define GLOBUS_XIO_SYSTEM_INVALID_SOCKET  -1
@@ -39,20 +64,6 @@ typedef int globus_xio_system_file_t;
 
 /* deprecated, do not use! */
 typedef int globus_xio_system_native_handle_t;
-
-#else
-
-#include <Windows.h>
-#include <Winsock2.h>
-#define GLOBUS_XIO_SYSTEM_INVALID_FILE INVALID_HANDLE_VALUE
-#define GLOBUS_XIO_SYSTEM_INVALID_SOCKET INVALID_SOCKET
-
-typedef struct globus_l_xio_win32_file_s * globus_xio_system_file_handle_t;
-typedef struct globus_l_xio_win32_socket_s * globus_xio_system_socket_handle_t;
-
-typedef SOCKET globus_xio_system_socket_t;
-typedef HANDLE globus_xio_system_file_t;
-
 #endif
 
 typedef enum

@@ -159,7 +159,7 @@ int BIO_get_host_ip(const char *str, unsigned char *ip)
 int BIO_get_port(const char *str, unsigned short *port_ptr)
 	{
 	int i;
-	struct servent *s;
+	struct servent *s = NULL;
 
 	if (str == NULL)
 		{
@@ -175,11 +175,13 @@ int BIO_get_port(const char *str, unsigned short *port_ptr)
 		/* Note: under VMS with SOCKETSHR, it seems like the first
 		 * parameter is 'char *', instead of 'const char *'
 		 */
+#ifndef OPENSSL_SYS_NETOS
  		s=getservbyname(
 #ifndef CONST_STRICT
 		    (char *)
 #endif
 		    str,"tcp");
+#endif
 		if(s != NULL)
 			*port_ptr=ntohs((unsigned short)s->s_port);
 		CRYPTO_w_unlock(CRYPTO_LOCK_GETSERVBYNAME);

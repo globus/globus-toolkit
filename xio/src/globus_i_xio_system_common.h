@@ -44,6 +44,15 @@ GlobusDebugDeclare(GLOBUS_XIO_SYSTEM);
         GLOBUS_I_XIO_SYSTEM_DEBUG_TRACE,                                    \
         ("[%s] fd=%lu, Exiting with error\n", _xio_name, (unsigned long)(fd)))
 
+#ifdef WIN32
+#include <Winsock2.h>
+#define GlobusXIOSystemUpdateErrno() (errno = WSAGetLastError())
+#elif defined(TARGET_ARCH_NETOS)
+#define GlobusXIOSystemUpdateErrno() (errno = getErrno())
+#else
+#define GlobusXIOSystemUpdateErrno()
+#endif
+
 #define GlobusXIOSystemDebugRawBuffer(nbytes, buffer)                       \
     do                                                                      \
     {                                                                       \

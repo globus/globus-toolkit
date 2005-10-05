@@ -32,6 +32,8 @@
 
 #ifdef TARGET_ARCH_WIN32
 #define pause() Sleep(1000);
+#elif defined(TARGET_ARCH_NETOS)
+#define pause() tx_thread_sleep(0xFFFFFFFF)
 #endif
 
 static
@@ -116,7 +118,7 @@ typedef struct
     void *                              user_arg;
     globus_callback_space_t             space;
     
-#ifndef TARGET_ARCH_WIN32
+#ifdef HAVE_SIGACTION
     struct sigaction                    old_action;
 #endif
     globus_bool_t                       persist;
@@ -386,7 +388,7 @@ globus_l_callback_deactivate()
     {
         if(globus_l_callback_signal_handlers[i])
         {
-#ifndef TARGET_ARCH_WIN32
+#ifdef HAVE_SIGACTION
             sigaction(
                 i,
                 &globus_l_callback_signal_handlers[i]->old_action,
@@ -1299,7 +1301,7 @@ globus_l_callback_handle_signals(void)
                 if(!handler->persist)
                 {
                     globus_l_callback_signal_handlers[i] = GLOBUS_NULL;
-#ifndef TARGET_ARCH_WIN32
+#ifdef HAVE_SIGACTION
                     sigaction(i, &handler->old_action, GLOBUS_NULL);
 #endif
                 }
@@ -1810,12 +1812,13 @@ globus_l_callback_uncatchable_signal(
     }
 }
 
+#ifdef HAVE_SIGACTION
 static
 void
 globus_l_callback_signal_handler(
     int                                 signum)
 {
-    globus_l_callback_signal_handler_t *handler;
+    globus_l_callback_signal_handler_t *handler = NULL;
     
     if(globus_l_callback_signal_handlers &&
         signum >= 0 && signum < globus_l_callback_signal_handlers_size)
@@ -1852,6 +1855,7 @@ globus_l_callback_signal_handler(
         }
     }
 }
+#endif /* HAVE_SIGACTION */
 
 globus_result_t
 globus_callback_space_register_signal_handler(
@@ -1901,7 +1905,7 @@ globus_callback_space_register_signal_handler(
     handler->space = space;
     handler->persist = persist;
     
-#ifndef TARGET_ARCH_WIN32
+#ifdef HAVE_SIGACTION
     {
         struct sigaction                action;
         
@@ -1966,10 +1970,10 @@ globus_callback_space_register_signal_handler(
     return GLOBUS_SUCCESS;
 
 error_resize:
-#ifndef TARGET_ARCH_WIN32
+#ifdef HAVE_SIGACTION
     sigaction(signum, &handler->old_action, GLOBUS_NULL);
-#endif
 error_action:
+#endif
     globus_free(handler);
 error_handler:
     globus_callback_space_destroy(space);
@@ -1998,7 +2002,7 @@ globus_callback_unregister_signal_handler(
     handler = globus_l_callback_signal_handlers[signum];
     globus_l_callback_signal_handlers[signum] = GLOBUS_NULL;
     
-#ifndef TARGET_ARCH_WIN32
+#ifdef HAVE_SIGACTION
     sigaction(signum, &handler->old_action, GLOBUS_NULL);
 #endif
     

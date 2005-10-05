@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/bin/perl
 
 
 # Perl c_rehash script, scan all files in a directory
