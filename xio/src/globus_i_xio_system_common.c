@@ -370,7 +370,7 @@ globus_i_xio_system_try_recvmsg(
                 rc = recvfrom(
                         fd,
                         msghdr->msg_iov[0].iov_base,
-                        msghdr->msg_iov.iov_len,
+                        msghdr->msg_iov[0].iov_len,
                         flags,
                         (struct sockaddr *) msghdr->msg_name,
                         &msghdr->msg_namelen);
@@ -384,10 +384,8 @@ globus_i_xio_system_try_recvmsg(
                         flags);
             }
 
-            GlobusLXIOSystemUpdateErrno();
+            GlobusXIOSystemUpdateErrno();
         } while(rc < 0 && errno == EINTR);
-
-        msghdr->msg_iovlen = orig_iovc;
     }
 #endif
 

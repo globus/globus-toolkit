@@ -441,12 +441,12 @@ globus_l_xio_system_handle_destroy(
 {
     GlobusXIOName(globus_l_xio_system_handle_destroy);
 
-    GlobusXIOSystemDebugEnterFD(fd);
+    GlobusXIOSystemDebugEnterFD(handle->fd);
 
     globus_l_xio_system_remove_nonblocking(handle);
     globus_free(handle);
     
-    GlobusXIOSystemDebugExitFD(fd);
+    GlobusXIOSystemDebugExitFD(handle->fd);
 }
 
 void
@@ -839,7 +839,7 @@ globus_l_xio_system_add_nonblocking(
         else
         {
             flags |= O_NONBLOCK;
-            rc = fcntl(_fd, F_SETFL, flags);
+            rc = fcntl(handle->fd, F_SETFL, flags);
         }
     }
     GlobusXIOSystemUpdateErrno();
@@ -1025,13 +1025,13 @@ globus_l_xio_system_handle_read(
             else
             {
                 int                     rc;
-                globus_l_xio_system_t   handle;
+                globus_l_xio_system_t   tmp_handle;
 
                 *read_info->sop.non_data.out_fd = new_fd;
                 tmp_handle.fd = new_fd;
                 tmp_handle.type = GLOBUS_XIO_SYSTEM_TCP;
 
-                rc = globus_l_xio_system_remove_nonblocking(tmp_handle);
+                rc = globus_l_xio_system_remove_nonblocking(&tmp_handle);
                 
                 read_info->nbytes++;
                 GlobusXIOSystemDebugPrintf(
