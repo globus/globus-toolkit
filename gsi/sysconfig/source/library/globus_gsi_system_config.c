@@ -4661,7 +4661,6 @@ globus_gsi_sysconfig_dir_exists_unix(
     }
     return result;
 #else
-    return result;
     struct stat                         stx;
     globus_result_t                     result = GLOBUS_SUCCESS;
 
