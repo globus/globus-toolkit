@@ -414,7 +414,11 @@ getnameinfo(
 
 
 /* IPv6 compatible utils */
+#if defined(TARGET_ARCH_CYGWIN)
+typedef struct sockaddr                 globus_sockaddr_t;
+#else
 typedef struct sockaddr_storage         globus_sockaddr_t;
+#endif
 typedef struct addrinfo                 globus_addrinfo_t;
 
 #ifdef AF_INET6

@@ -296,7 +296,7 @@ extern uint32_t inet_addr(const char * cp);
 	#define EINPROGRESS 150 /* according to POSIX */
 #endif
 
-#ifdef HAVE_INTTYPES_H
+#if defined(HAVE_INTTYPES_H) && !defined(TARGET_ARCH_CYGWIN)
 #    include <inttypes.h>
 #elif defined(HAVE_SYS_INTTYPES_H)
 #    include <sys/inttypes.h>
