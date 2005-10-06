@@ -871,8 +871,8 @@ globus_l_gfs_server_accept_cb(
         }
 
         /* if too many already open */
-        if(globus_i_gfs_config_int("connections_max") != 0 &&
-            globus_l_gfs_open_count >= globus_i_gfs_config_int("connections_max"))
+        if(globus_gfs_config_get_int("connections_max") != 0 &&
+            globus_l_gfs_open_count >= globus_gfs_config_get_int("connections_max"))
         {
             result = globus_xio_register_open(
                 handle,

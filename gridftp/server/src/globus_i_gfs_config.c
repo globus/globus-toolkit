@@ -294,6 +294,8 @@ static const globus_l_gfs_config_option_t option_list[] =
     NULL /* full path of server used when fork/execing */, NULL, NULL},
  {"dsi_options", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     NULL /* options parsed from load_dsi_module config */, NULL, NULL},
+ {"service_engine", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_VOID, 0, NULL,
+    NULL, NULL, NULL},
  {"argv", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_VOID, 0, NULL,
     NULL /* original argv */, NULL, NULL},
  {"argc", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_INT, 0, NULL,
