@@ -317,7 +317,8 @@ int auth_cert_check_client (authorization_data_t *auth_data,
        goto end;
    }
 
-   if (strcmp(authorization_subject, creds->owner_name) != 0) {
+   /* if (strcmp(authorization_subject, creds->owner_name) != 0) { */
+   if (strcmp(authorization_subject, creds->username) != 0) {
        verror_prepend_string("certificate subject does not match credential to be renewed");
        goto end;
    }
