@@ -142,8 +142,8 @@ if (!defined($ENV{'X509_USER_PROXY'})) {
     $ENV{'X509_USER_PROXY'} = "/tmp/x509up_u$<";
 }
 # make proxy from existing proxy, so we don't need to deal with long-term cred
-$ENV{'X509_USER_CERT'} = $ENV{'X509_USER_PROXY'};
-$ENV{'X509_USER_KEY'} = $ENV{'X509_USER_PROXY'};
+##$ENV{'X509_USER_CERT'} = $ENV{'X509_USER_PROXY'};
+##$ENV{'X509_USER_KEY'} = $ENV{'X509_USER_PROXY'};
 
 srand(time||$$);
 $passphrase = sprintf "%010.d", int(rand(0x7fffffff));
@@ -198,27 +198,47 @@ print CONF "default_key_retrievers    \"*\"\n";
 print CONF "secondary_servers localhost:$s1port;localhost:$s2port;localhost:$s3port";
 close(CONF);
 
+##
+## Generate new proxy server certificates for each of the servers.  This will
+## create proxies with independent identities for each server to run under.
+##
+
+$master_cert_file = "/tmp/myproxy-test.indy.$mport.master.$$";
+chomp($output = `$grid_proxy_init -debug -key $ENV{'X509_USER_PROXY'} -cert $ENV{'X509_USER_PROXY'} -independent -out $master_cert_file 2>&1`);
+
+chomp(my $master_subject_info = `$grid_proxy_info -file $master_cert_file -subject`);
+
+$sl1_cert_file = "/tmp/myproxy-test.indy.$s1port.sl.$$";
+
+local($output) = `$grid_proxy_init -debug -key $ENV{'X509_USER_PROXY'} -cert $ENV{'X509_USER_PROXY'} -independent -out $sl1_cert_file 2>&1`;
+chomp(my $sl1_subject_info = `$grid_proxy_info -file $sl1_cert_file -subject`);
+
+
 sub start_master()
 {
-$masterpidfile = "/tmp/myproxy-test.serverpid.$mport.master.$$";
-$servercmd = "$myproxy_server -s $masterdir -c $masterconf";
-$servercmd .= " -p $mport -P $masterpidfile";
-&debug("running '$servercmd'");
-`$servercmd`;
-sleep(1);			# give server a chance to startup
-if (open SERVERPIDFILE, $masterpidfile) {
-    $masterpid = <SERVERPIDFILE>;
-    close SERVERPIDFILE;
-}
-if (!defined($masterpid) || $masterpid eq "") {
-    print STDERR "failed to start master:\n";
-    `$servercmd -d`;	# show output on terminal
-    &docleanup();
-    exit 1;
-}
+    $masterpidfile = "/tmp/myproxy-test.serverpid.$mport.master.$$";
+    $servercmd = "X509_USER_CERT=$master_cert_file X509_USER_KEY=$master_cert_file ";
+    $servercmd .= "$myproxy_server -s $masterdir -c $masterconf";
+    $servercmd .= " -p $mport -P $masterpidfile";
+    &debug("running '$servercmd'");
+    `$servercmd`;
+    sleep(1);			# give server a chance to startup
+    if (open SERVERPIDFILE, $masterpidfile) {
+        $masterpid = <SERVERPIDFILE>;
+        close SERVERPIDFILE;
+    }
+    if (!defined($masterpid) || $masterpid eq "") {
+        print STDERR "failed to start master:\n";
+        `$servercmd -d`;	# show output on terminal
+        &docleanup();
+        exit 1;
+    }
 }
 start_master();
 
+##
+## Configure server 1
+##
 $sl1dir = "/tmp/myproxy-test.serverdir.$s1port.sl1.$$";
 mkdir($sl1dir) ||
     die "failed to create $sl1dir, stopped";
@@ -227,7 +247,7 @@ chmod(0700, $sl1dir) ||
 $slconf = "/tmp/myproxy-test.serverconf.$s1port.sl1.$$";
 open(CONF, ">$slconf") ||
     die "failed to open $slconf, stopped";
-print CONF "accepted_credentials  \"$ENV{MYPROXY_SERVER_DN}\"\n";
+print CONF "accepted_credentials  \"$master_subject_info\"\n";
 print CONF "authorized_retrievers \"*\"\n";
 print CONF "default_retrievers    \"*\"\n";
 print CONF "authorized_renewers   \"*\"\n";
@@ -238,32 +258,39 @@ close(CONF);
 
 sub start_sl1()
 {
-$sl1pidfile = "/tmp/myproxy-test.serverpid.$s1port.sl1.$$";
-$servercmd = "$myproxy_server -s $sl1dir -c $slconf";
-$servercmd .= " -p $s1port -P $sl1pidfile";
-&debug("running '$servercmd'");
-`$servercmd`;
-sleep(1);			# give server a chance to startup
-if (open SERVERPIDFILE, $sl1pidfile) {
-    $sl1pid = <SERVERPIDFILE>;
-    close SERVERPIDFILE;
+    $sl1pidfile = "/tmp/myproxy-test.serverpid.$s1port.sl1.$$";
+    $servercmd = "X509_USER_CERT=$sl1_cert_file X509_USER_KEY=$sl1_cert_file ";
+    $servercmd .= "$myproxy_server -s $sl1dir -c $slconf";
+    $servercmd .= " -p $s1port -P $sl1pidfile";
+    &debug("running '$servercmd'");
+    `$servercmd`;
+    sleep(1);			# give server a chance to startup
+    if (open SERVERPIDFILE, $sl1pidfile) {
+        $sl1pid = <SERVERPIDFILE>;
+        close SERVERPIDFILE;
+    }
+    if (!defined($sl1pid) || $sl1pid eq "") {
+        print STDERR "failed to start secondary 1:\n";
+        `$servercmd -d`;	# show output on terminal
+        &docleanup();
+        exit 1;
+    }
 }
-if (!defined($sl1pid) || $sl1pid eq "") {
-    print STDERR "failed to start secondary 1:\n";
-    `$servercmd -d`;	# show output on terminal
-    &docleanup();
-    exit 1;
-}
-}
+
+## Start server 1
 start_sl1();
 
-$sl2dir = "/tmp/myproxy-test.serverdir.$s2port.sl1.$$";
+##
+## Configure and start server 2
+##
+$sl2dir = "/tmp/myproxy-test.serverdir.$s2port.sl2.$$";
 mkdir($sl2dir) ||
     die "failed to create $sl2dir, stopped";
 chmod(0700, $sl2dir) ||
     die "failed to chmod $sl2dir, stopped";
-$sl2pidfile = "/tmp/myproxy-test.serverpid.$s2port.sl1.$$";
-$servercmd = "$myproxy_server -s $sl2dir -c $slconf";
+$sl2pidfile = "/tmp/myproxy-test.serverpid.$s2port.sl2.$$";
+$servercmd = "X509_USER_CERT=$sl1_cert_file X509_USER_KEY=$sl1_cert_file ";
+$servercmd .= "$myproxy_server -s $sl2dir -c $slconf";
 $servercmd .= " -p $s2port -P $sl2pidfile";
 &debug("running '$servercmd'");
 `$servercmd`;
@@ -279,14 +306,16 @@ if (!defined($sl2pid) || $sl2pid eq "") {
     exit 1;
 }
 
-
+##
+## Configure server 3
+##
 sub start_sl3
 {
   chomp($myproxy_server = `which myproxy-server 2>/dev/null`);
 
   die "myproxy-server not in PATH, stopped" if (!(-x $myproxy_server));
 
-  $sl3dir = "/tmp/myproxy-test.serverdir.$s3port.sl1.$$";
+  $sl3dir = "/tmp/myproxy-test.serverdir.$s3port.sl3.$$";
 
   if( !(-d $sl3dir) )
   {
@@ -297,8 +326,9 @@ sub start_sl3
   chmod(0700, $sl3dir) ||
       die "failed to chmod $sl3dir, stopped";
 
-  $sl3pidfile = "/tmp/myproxy-test.serverpid.$s3port.sl1.$$";
-  $servercmd  = "$myproxy_server -s $sl3dir -c $slconf";
+  $sl3pidfile = "/tmp/myproxy-test.serverpid.$s3port.sl3.$$";
+  $servercmd  = "X509_USER_CERT=$sl1_cert_file X509_USER_KEY=$sl1_cert_file ";
+  $servercmd .= "$myproxy_server -s $sl3dir -c $slconf";
   $servercmd .= " -p $s3port -P $sl3pidfile";
 
   &debug("running '$servercmd'");
@@ -323,6 +353,8 @@ sub start_sl3
       exit 1;
   }
 }
+
+## Start server 3
 start_sl3();
 
 #
@@ -336,6 +368,11 @@ $SUCCESSES = $FAILURES = 0;
 ##
 ## Test 1
 ##
+$ENV{'MYPROXY_SERVER_DN'} = $master_subject_info;
+$ENV{'X509_USER_CERT'} = $ENV{'X509_USER_PROXY'};
+$ENV{'X509_USER_KEY'} = $ENV{'X509_USER_PROXY'};
+
+
 ($exitstatus, $output) =
     &runtest("myproxy-init -s localhost -p $mport -v -a -c 1 -t 1 -S",
 	     $passphrase . "\n");
@@ -377,8 +414,15 @@ if ($exitstatus == 0) {
 ##
 ## Test 4
 ##
+
+
+
+$ENV{'MYPROXY_SERVER_DN'} = $sl1_subject_info;
+$ENV{'X509_USER_CERT'} = $master_cert_file;
+$ENV{'X509_USER_KEY'} = $master_cert_file;
+
 ($exitstatus, $output) =
-    &runtest("myproxy-replicate -c /tmp/myproxy-test.serverconf.$mport.master.$$ -r /tmp/myproxy-test.serverdir.$mport.master.$$",
+    &runtest("myproxy-replicate -v -c /tmp/myproxy-test.serverconf.$mport.master.$$ -r /tmp/myproxy-test.serverdir.$mport.master.$$",
 	     undef);
 print "MyProxy Test 4 (Replicate master server to all secondary): ";
 if ($exitstatus == 0) {
@@ -386,6 +430,7 @@ if ($exitstatus == 0) {
 } else {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
 }
+
 
 ##
 ## Test 5
@@ -407,6 +452,10 @@ if ($exitstatus == 0) {
 ##
 ## Test 6
 ##
+$ENV{'MYPROXY_SERVER_DN'} = $master_subject_info;
+$ENV{'X509_USER_CERT'} = $ENV{'X509_USER_PROXY'};
+$ENV{'X509_USER_KEY'} = $ENV{'X509_USER_PROXY'};
+
 $old_passphrase = $passphrase;
 $passphrase = sprintf "%010.d", int(rand(0x7fffffff));
 ($exitstatus, $output) =
@@ -439,6 +488,9 @@ if ($exitstatus == 0) {
 ##
 ## Test 8
 ##
+$ENV{'MYPROXY_SERVER_DN'} = $sl1_subject_info;
+$ENV{'X509_USER_CERT'} = $master_cert_file;
+$ENV{'X509_USER_KEY'} = $master_cert_file;
 ($exitstatus, $output) =
     &runtest("myproxy-replicate -c /tmp/myproxy-test.serverconf.$mport.master.$$ -r /tmp/myproxy-test.serverdir.$mport.master.$$",
 	     undef);
@@ -481,6 +533,9 @@ if ($exitstatus != 0) {
 ##
 ## Test 11
 ##
+$ENV{'MYPROXY_SERVER_DN'} = $master_subject_info;
+$ENV{'X509_USER_CERT'} = $ENV{'X509_USER_PROXY'};
+$ENV{'X509_USER_KEY'} = $ENV{'X509_USER_PROXY'};
 ($exitstatus, $output) =
     &runtest("myproxy-destroy -s localhost -p $mport -v", undef);
 print "MyProxy Test 11 (remove credential from master repository): ";
@@ -505,6 +560,9 @@ if (!($output =~ /default credential/)) {
 ##
 ## Test 13
 ##
+$ENV{'MYPROXY_SERVER_DN'} = $sl1_subject_info;
+$ENV{'X509_USER_CERT'} = $master_cert_file;
+$ENV{'X509_USER_KEY'} = $master_cert_file;
 ($exitstatus, $output) =
     &runtest("myproxy-replicate -c /tmp/myproxy-test.serverconf.$mport.master.$$ -r /tmp/myproxy-test.serverdir.$mport.master.$$",
 	     undef);
@@ -535,6 +593,9 @@ if ($exitstatus == 0) {
 ##
 ## Test 15
 ##
+$ENV{'MYPROXY_SERVER_DN'} = $master_subject_info;
+$ENV{'X509_USER_CERT'} = $ENV{'X509_USER_PROXY'};
+$ENV{'X509_USER_KEY'} = $ENV{'X509_USER_PROXY'};
 ($exitstatus, $output) =
     &runtest("myproxy-init -s localhost -p $mport -v -R 'nobody' -k 'nobody' -c 1 -t 1 -d -S",
 	     $passphrase . "\n");
@@ -590,6 +651,9 @@ if ($exitstatus == 0) {
 ##
 ## Test 18
 ##
+$ENV{'MYPROXY_SERVER_DN'} = $sl1_subject_info;
+$ENV{'X509_USER_CERT'} = $master_cert_file;
+$ENV{'X509_USER_KEY'} = $master_cert_file;
 ($exitstatus, $output) =
     &runtest("myproxy-replicate -c /tmp/myproxy-test.serverconf.$mport.master.$$ -r /tmp/myproxy-test.serverdir.$mport.master.$$",
              undef);
@@ -603,9 +667,13 @@ if ($exitstatus == 0) {
 ##
 ## Test 19
 ##
+$ENV{'X509_USER_CERT'} = $ENV{'X509_USER_PROXY'};
+$ENV{'X509_USER_KEY'} = $ENV{'X509_USER_PROXY'};
+
 ($exitstatus, $output) =
     &runtest("myproxy-get-delegation -s localhost -p $s1port -k 'mine' -a $ENV{'X509_USER_PROXY'} -t 1 -o /tmp/myproxy-test.$$ -v -d",
 	     undef);
+
 print "MyProxy Test 19 (verify renewal policies on secondary): ";
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
@@ -613,7 +681,7 @@ if ($exitstatus == 0) {
 }
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
-	&runtest("myproxy-get-delegation -s localhost -p $s1port -k 'nobody' -a $ENV{'X509_USER_PROXY'} -t 1 -o /tmp/myproxy-test.$$ -v -d",
+	&runtest("myproxy-get-delegation -s localhost -p $s1port -k 'nobody' -a $master_cert_file -t 1 -o /tmp/myproxy-test.$$ -v -d",
 		 undef);
     if ($exitstatus != 0) {
 	print "SUCCEEDED\n"; $SUCCESSES++;
@@ -637,6 +705,9 @@ if ($exitstatus == 0) {
 ##
 ## Test 20
 ##
+$ENV{'MYPROXY_SERVER_DN'} = $master_subject_info;
+$ENV{'X509_USER_CERT'} = $ENV{'X509_USER_PROXY'};
+$ENV{'X509_USER_KEY'} = $ENV{'X509_USER_PROXY'};
 ($exitstatus, $output) =
     &runtest("myproxy-init -s localhost -p $mport -v -a -c 1 -t 1 -S",
 	     $passphrase . "\n");
@@ -651,6 +722,9 @@ if ($exitstatus == 0) {
 ## Test 21
 ##
 kill('TERM', $sl3pid) if (defined($sl3pid));
+$ENV{'MYPROXY_SERVER_DN'} = $sl1_subject_info;
+$ENV{'X509_USER_CERT'} = $master_cert_file;
+$ENV{'X509_USER_KEY'} = $master_cert_file;
 
 ($exitstatus, $output) =
     &runtest("myproxy-replicate -v -c /tmp/myproxy-test.serverconf.$mport.master.$$ -r /tmp/myproxy-test.serverdir.$mport.master.$$",
@@ -677,6 +751,9 @@ if ($exitstatus == 0) {
 } else {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
 }
+$ENV{'MYPROXY_SERVER_DN'} = $master_subject_info;
+$ENV{'X509_USER_CERT'} = $ENV{'X509_USER_PROXY'};
+$ENV{'X509_USER_KEY'} = $ENV{'X509_USER_PROXY'};
 
 ##
 ## Test 23
@@ -692,6 +769,9 @@ if ($exitstatus == 0 && $output =~ /was successfully removed/) {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
 }
 
+$ENV{'MYPROXY_SERVER_DN'} = $sl1_subject_info;
+$ENV{'X509_USER_CERT'} = $master_cert_file;
+$ENV{'X509_USER_KEY'} = $master_cert_file;
 ($exitstatus, $output) =
     &runtest("myproxy-replicate -v -c /tmp/myproxy-test.serverconf.$mport.master.$$ -r /tmp/myproxy-test.serverdir.$mport.master.$$",
 	     undef);
@@ -716,6 +796,9 @@ if ($exitstatus == 0) {
 } else {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
 }
+$ENV{'MYPROXY_SERVER_DN'} = $master_subject_info;
+$ENV{'X509_USER_CERT'} = $ENV{'X509_USER_PROXY'};
+$ENV{'X509_USER_KEY'} = $ENV{'X509_USER_PROXY'};
 
 ##
 ## Test 25
@@ -732,6 +815,9 @@ if ($exitstatus == 0) {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
 }
 
+$ENV{'MYPROXY_SERVER_DN'} = $sl1_subject_info;
+$ENV{'X509_USER_CERT'} = $master_cert_file;
+$ENV{'X509_USER_KEY'} = $master_cert_file;
 ($exitstatus, $output) =
     &runtest("myproxy-replicate -v -c /tmp/myproxy-test.serverconf.$mport.master.$$ -r /tmp/myproxy-test.serverdir.$mport.master.$$",
 	     undef);
@@ -741,6 +827,9 @@ if ($exitstatus != 0 && $output =~ /Unable to connect to/) {
 } else {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
 }
+$ENV{'MYPROXY_SERVER_DN'} = $master_subject_info;
+$ENV{'X509_USER_CERT'} = $ENV{'X509_USER_PROXY'};
+$ENV{'X509_USER_KEY'} = $ENV{'X509_USER_PROXY'};
 
 ($exitstatus, $output) =
     &runtest("myproxy-destroy -s localhost -p $mport -v", undef);
@@ -753,6 +842,9 @@ if ($exitstatus == 0 && $output =~ /was successfully removed/) {
 
 start_sl3();
 
+$ENV{'MYPROXY_SERVER_DN'} = $sl1_subject_info;
+$ENV{'X509_USER_CERT'} = $master_cert_file;
+$ENV{'X509_USER_KEY'} = $master_cert_file;
 ($exitstatus, $output) =
     &runtest("myproxy-replicate -v -c /tmp/myproxy-test.serverconf.$mport.master.$$ -r /tmp/myproxy-test.serverdir.$mport.master.$$",
 	     undef);
@@ -762,6 +854,9 @@ if ($exitstatus == 0) {
 } else {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
 }
+$ENV{'MYPROXY_SERVER_DN'} = $master_subject_info;
+$ENV{'X509_USER_CERT'} = $ENV{'X509_USER_PROXY'};
+$ENV{'X509_USER_KEY'} = $ENV{'X509_USER_PROXY'};
 
 #
 # Start of myproxy-store and myproxy-retrieve tests
@@ -854,6 +949,9 @@ unlink( "/tmp/myproxy-test.key.$$" );
 ##
 ## Test 30
 ##
+$ENV{'MYPROXY_SERVER_DN'} = $sl1_subject_info;
+$ENV{'X509_USER_CERT'} = $master_cert_file;
+$ENV{'X509_USER_KEY'} = $master_cert_file;
 ($exitstatus, $output) =
     &runtest("myproxy-replicate -c /tmp/myproxy-test.serverconf.$mport.master.$$ -r /tmp/myproxy-test.serverdir.$mport.master.$$",
              undef);
@@ -891,6 +989,10 @@ if ($exitstatus == 0) {
 unlink( "/tmp/myproxy-test.cert.$$" );
 unlink( "/tmp/myproxy-test.key.$$" );
 
+$ENV{'MYPROXY_SERVER_DN'} = $master_subject_info;
+$ENV{'X509_USER_CERT'} = $ENV{'X509_USER_PROXY'};
+$ENV{'X509_USER_KEY'} = $ENV{'X509_USER_PROXY'};
+
 #
 # Test 33
 #
@@ -918,6 +1020,9 @@ if (!($output =~ /default credential/)) {
 ##
 ## Test 35
 ##
+$ENV{'MYPROXY_SERVER_DN'} = $sl1_subject_info;
+$ENV{'X509_USER_CERT'} = $master_cert_file;
+$ENV{'X509_USER_KEY'} = $master_cert_file;
 ($exitstatus, $output) =
     &runtest("myproxy-replicate -c /tmp/myproxy-test.serverconf.$mport.master.$$ -r /tmp/myproxy-test.serverdir.$mport.master.$$",
              undef);
@@ -927,6 +1032,7 @@ if ($exitstatus == 0) {
 } else {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
 }
+
 
 ##
 ## Test 36
@@ -957,6 +1063,10 @@ $ENV{'X509_USER_KEY'} = $ENV{'X509_USER_PROXY'};
 #
 # Start Failover tests
 #
+
+$ENV{'MYPROXY_SERVER_DN'} = $master_subject_info;
+$ENV{'X509_USER_CERT'} = $ENV{'X509_USER_PROXY'};
+$ENV{'X509_USER_KEY'} = $ENV{'X509_USER_PROXY'};
 
 ##
 ## Test 37
@@ -1002,6 +1112,9 @@ if ($exitstatus == 0) {
 ##
 ## Test 40
 ##
+$ENV{'MYPROXY_SERVER_DN'} = $sl1_subject_info;
+$ENV{'X509_USER_CERT'} = $master_cert_file;
+$ENV{'X509_USER_KEY'} = $master_cert_file;
 ($exitstatus, $output) =
     &runtest("myproxy-replicate -c /tmp/myproxy-test.serverconf.$mport.master.$$ -r /tmp/myproxy-test.serverdir.$mport.master.$$",
              undef);
@@ -1028,6 +1141,10 @@ if ($exitstatus == 0) {
 } else {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
 }
+
+$ENV{'MYPROXY_SERVER_DN'} = $master_subject_info;
+$ENV{'X509_USER_CERT'} = $ENV{'X509_USER_PROXY'};
+$ENV{'X509_USER_KEY'} = $ENV{'X509_USER_PROXY'};
 
 ##
 ## Test 42
@@ -1107,6 +1224,9 @@ if ($exitstatus == 0) {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
 }
 
+$ENV{'MYPROXY_SERVER_DN'} = $sl1_subject_info;
+$ENV{'X509_USER_CERT'} = $master_cert_file;
+$ENV{'X509_USER_KEY'} = $master_cert_file;
 ($exitstatus, $output) = &runtest("myproxy-info -s localhost -p $s1port -v", undef);
 print "\t(get info for stored credential): ";
 if ($exitstatus == 0 && $output =~ /username/) {
@@ -1244,6 +1364,12 @@ sub docleanup {
     # Remove configuration files...
     unlink($masterconf) if (defined($masterconf));
     unlink($slconf) if (defined($slconf));
+
+    # Remove temp proxy server certs
+    unlink($master_cert_file) if( defined($master_cert_file) );
+    unlink($sl1_cert_file) if( defined($sl1_cert_file) );
+    unlink($sl2_cert_file) if( defined($sl2_cert_file) );
+    unlink($sl3_cert_file) if( defined($sl3_cert_file) );
 
     # Get rid of left over creds and dirs...
     `rm -rf $masterdir` if (defined($masterdir));

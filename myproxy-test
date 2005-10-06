@@ -1084,11 +1084,11 @@ sub verifycert {
 # ~/.globus/certificates, then remove that directory.
 #
 sub verifytrustroots {
-    return (1, "internal error: not supposed to test trustroots!")
+    return (1, "internal error: not supposed to test trustroots!\n")
 	if (!$test_trustroots);
     $trustrootdir = "$ENV{HOME}/.globus/certificates";
     if (!(-d $trustrootdir)) {
-	return (1, "trust root directory $trustrootdir doesn't exist!");
+	return (1, "trust root directory $trustrootdir doesn't exist!\n");
     }
     $diritems = 0;
     opendir(DIRHANDLE, $trustrootdir) or
@@ -1100,7 +1100,7 @@ sub verifytrustroots {
     closedir(DIRHANDLE);
     if ($diritems == 0) {
 	rmdir($trustrootdir);
-	return (1, "trust root directory $trustrootdir is empty!");
+	return (1, "trust root directory $trustrootdir is empty!\n");
     }
     `rm -rf $trustrootdir`;
     return (0, "");

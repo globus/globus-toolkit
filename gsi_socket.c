@@ -874,7 +874,7 @@ GSI_SOCKET_authentication_accept(GSI_SOCKET *self)
 	self->error_number = errno;
 	goto error;
     }
-    
+ 
     self->major_status =
 	globus_gss_assist_accept_sec_context(&self->minor_status,
 					     &self->gss_context,
@@ -932,7 +932,7 @@ GSI_SOCKET_get_peer_name(GSI_SOCKET *self,
 	self->error_string = strdup("Client not authenticated");
 	goto error;
     }
-    
+
     return_value = my_strncpy(buffer, self->peer_name, buffer_len);
 
     if (return_value == -1)

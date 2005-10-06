@@ -312,7 +312,7 @@ handle_client(myproxy_socket_attrs_t *attrs,
 
     /* Log client name */
     myproxy_log("Authenticated client %s", client_name); 
-    
+
     /* Receive client request */
     requestlen = myproxy_recv_ex(attrs, &client_buffer);
     myproxy_log("Authenticated client %s", client_name); 
@@ -320,7 +320,7 @@ handle_client(myproxy_socket_attrs_t *attrs,
         myproxy_log_verror();
 	respond_with_error_and_die(attrs, "Error in myproxy_recv_ex()", NULL);
     }
-   
+
     /* Deserialize client request */
     if (myproxy_deserialize_request(client_buffer, requestlen, 
                                     client_request) < 0) {
@@ -364,9 +364,10 @@ handle_client(myproxy_socket_attrs_t *attrs,
        myproxy_log("authorization failed");
        respond_with_error_and_die(attrs, verror_get_string(), server_response);
     }
-    
+
     /* Fill in client_creds with info from the request that describes
        the credentials the request applies to. */
+
 
     if( client_request->owner != NULL )
     {
@@ -1317,6 +1318,7 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 		   goto end;
 	       }
 	   }
+
 	   /* Does cert DN match cred owner? */
 	   authorization_ok =
 	       authorization_check_ex(&auth_data, &creds, client_name, context);

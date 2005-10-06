@@ -57,7 +57,7 @@ read_passphrase(char				*buffer,
 	    return -1;
 	}
     }
-    
+   
     return_code = des_read_pw(buffer,
 			      verify_buffer,
 			      buffer_len,
