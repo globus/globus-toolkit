@@ -254,6 +254,7 @@ print CONF "authorized_renewers   \"*\"\n";
 print CONF "default_renewers      \"none\"\n";
 print CONF "authorized_key_retrievers \"*\"\n";
 print CONF "default_key_retrievers    \"*\"\n";
+print CONF "master_server localhost:$mport";
 close(CONF);
 
 sub start_sl1()
@@ -1203,7 +1204,8 @@ if (!($output =~ /default credential/)) {
 ##
 start_sl1();
 
-($exitstatus, $output) = &runtest("myproxy-info -s localhost -p $mport -v", undef);
+#($exitstatus, $output) = &runtest("myproxy-info -s localhost -p $mport -v", undef);
+($exitstatus, $output) = &runtest("myproxy-info -s localhost -p $s1port -v -d", undef);
 print "MyProxy Test 43 (get info for stored credential): ";
 if ($exitstatus != 0) {
     print "SUCCEEDED\n"; $SUCCESSES++;

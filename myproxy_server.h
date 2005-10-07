@@ -23,7 +23,7 @@ typedef struct
   char **authorized_key_retrievers_dns; /* List of DNs that can retroeve keys */
   char **default_key_retrievers_dns;    /* List of DNs that can retroeve keys */
   char **secondary_servers;         /* List of secondary myproxy servers */
-  char **primary_server;    /* Master myproxy server for failover */
+  char **primary_server;    /* Primary myproxy server for failover */
   int max_proxy_lifetime;	    /* Max life (in seconds) of retrieved creds */
   char *cert_dir;		    /* Trusted certificate directory to send */
   char *pam_policy;                 /* How we depend on PAM for passwd auth */
