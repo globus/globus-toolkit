@@ -137,7 +137,7 @@ int
 is_a_retry_command( int command );
 
 int
-parse_secondary( char *tmp, char *server, char *port );
+parse_failover_list( char *tmp, char *server, char *port );
 
 int
 retry_authentication_init(myproxy_socket_attrs_t *attrs,
@@ -2387,7 +2387,7 @@ myproxy_init_client_env( myproxy_socket_attrs_t *socket_attrs,
 }
 
 int
-parse_secondary( char *tmp, char *server, char *port )
+parse_failover_list( char *tmp, char *server, char *port )
 {
   char *secondary;
 
@@ -2510,7 +2510,7 @@ myproxy_failover( myproxy_socket_attrs_t *socket_attrs,
         {
           env_list = getenv("MYPROXY_SECONDARY_SERVERS");  
 
-          myproxy_debug( "MYPROXY_SECONDARY_SERVERS: %s", env_list );
+          myproxy_debug( "MYPROXY_SECONDARY_SERVERS: %s\n", env_list );
           
           if( env_list != NULL )
           {
@@ -2525,11 +2525,11 @@ myproxy_failover( myproxy_socket_attrs_t *socket_attrs,
 
         if( server_response->replicate_info != NULL )
         {
-          myproxy_debug( "SLAVE: %s\n",  
+          myproxy_debug( "Secondary: %s",  
                          server_response->replicate_info->secondary_servers );
-          myproxy_debug( "MASTER: %s\n",  
+          myproxy_debug( "Primary: %s",  
                          server_response->replicate_info->primary_server );
-          myproxy_debug( "IS: %d\n",   
+          myproxy_debug( "IsPrimary: %d",   
                          server_response->replicate_info->isprimary );
 
           if( server_response->replicate_info->primary_server )
@@ -2557,7 +2557,7 @@ myproxy_failover( myproxy_socket_attrs_t *socket_attrs,
                 another = newone;
               } 
 
-              parse_secondary( tmp, newone->server, newone->port );
+              parse_failover_list( tmp, newone->server, newone->port );
 
               newone->tried = 0;
               newone->next = NULL;
@@ -2569,7 +2569,7 @@ myproxy_failover( myproxy_socket_attrs_t *socket_attrs,
             newone = malloc( sizeof( struct secondary_server ) );
             memset(newone, 0, sizeof(struct secondary_server));
 
-            parse_secondary( start, newone->server, newone->port );
+            parse_failover_list( start, newone->server, newone->port );
             newone->tried = 0;
             newone->next = NULL;
 
@@ -2589,14 +2589,14 @@ myproxy_failover( myproxy_socket_attrs_t *socket_attrs,
           ((verror_is_error()) && (doing_secnds)) ||
           ((server_response->replicate_info != NULL) && verror_is_error()) )
       {
-        /* figure out if it is an error we retry on */
+        myproxy_debug( "Error from server, attempt failover.\n" );
 
         /* The failover stuff is not configured so do things like we use to, */
         /* fail out and give the user an error message.                      */
         if( secnds == NULL && primary == NULL )
         {
-          myproxy_debug( "Slave and primary are not set.\n" );
-          printf( "ERROR and no secondary or primary are not set: %s\n", 
+          myproxy_debug( "Failover not configured, no Secondary or Primary.\n" );
+          printf( "MyProxy server message: %s\n", 
                   verror_get_string() );
           return( 1 );
         }
@@ -2604,10 +2604,14 @@ myproxy_failover( myproxy_socket_attrs_t *socket_attrs,
         /* Figure out if this is a primary or secondary */
         if( isprimary )
         {
-          /* Failover is configured and the command was originally sent to */
-          /* the primary.  If the command can be done on the secondary, start  */
-          /* looping through the secondary until we either have success or we */
-          /* have tried all of them.                                       */
+          /*
+          ** Failover is configured and the command was originally sent to
+          ** the primary.  If the command can be done on the secondary, start
+          ** looping through the secondary until we either have success or we
+          ** have tried all of them.
+          */
+          myproxy_debug( "Original server a primary now try secondaries\n" );
+
           if( is_a_retry_command( client_request->command_type ) )
           {
             myproxy_debug( "Find next secondary server in list\n" );
@@ -2626,9 +2630,12 @@ myproxy_failover( myproxy_socket_attrs_t *socket_attrs,
             /* There is a secondary to try command on. */
             if( current_secnd != NULL )
             {
+              myproxy_debug( "There is a secondary to try command on.\n" );
+
               /* close old socket */
               if (socket_attrs != NULL) 
               {
+                 myproxy_debug( "Close old socket.\n" );
                  if (socket_attrs->pshost != NULL)
                  {
                    free(socket_attrs->pshost);
@@ -2662,13 +2669,12 @@ myproxy_failover( myproxy_socket_attrs_t *socket_attrs,
               /* Hack for handling error conditions and stuff... */
               doing_secnds = 1;
 
-              myproxy_debug( "NEW SOCK: %s. %d\n", 
+              myproxy_debug( "New secondary: %s. %d\n", 
                              socket_attrs->pshost, 
                              socket_attrs->psport ); 
             }
             else
             {
-              printf( "Tried all servers, none worked.\n" );
               printf( "Tried all of the secondary, still had error: %s\n", 
                       verror_get_string() );
               return( 1 );
@@ -2676,8 +2682,9 @@ myproxy_failover( myproxy_socket_attrs_t *socket_attrs,
           }
           else
           {
-            printf( "Can't perform this operation on a secondary server.\n" );
-            printf( "Bad secondary operation: %s\n", verror_get_string() );
+            printf( "Error occured on primary and this command is not " );
+            printf( "allowed on a secondary.\n" );
+            printf( "%s\n", verror_get_string() );
             return( 1 );
           }
         }
@@ -2686,15 +2693,17 @@ myproxy_failover( myproxy_socket_attrs_t *socket_attrs,
           /* This is a secondary */
           /* A command was sent to a secondary that should be tried on the */
           /* primary.  Check to see if we have a primary and redirect.   */
+          myproxy_debug( "A command was sent to a secondary that should be tried on the primary.\n" );
           if( primary )
           {
             /* redirect to primary */
             myproxy_debug( "Redirect to primary: %s\n", primary );
-            parse_secondary( primary, mhost, mport );
+
+            parse_failover_list( primary, mhost, mport );
 
             if( redirect == 1 )
             {
-              printf( "Already redirected once\n" );
+              printf( "Already attemped redirected.\n" );
               done = 1;
             }
             else
@@ -2702,47 +2711,42 @@ myproxy_failover( myproxy_socket_attrs_t *socket_attrs,
               redirect = 1;
             }
 
-
-
-
-              /* close old socket */
-              if (socket_attrs != NULL) 
+            /* close old socket */
+            if (socket_attrs != NULL) 
+            {
+              if (socket_attrs->pshost != NULL)
               {
-                 if (socket_attrs->pshost != NULL)
-                 {
-                   free(socket_attrs->pshost);
-                 }
-
-                 GSI_SOCKET_destroy(socket_attrs->gsi_socket);
-                 close(socket_attrs->socket_fd);
-                 free(socket_attrs);
+                free(socket_attrs->pshost);
               }
 
-              socket_attrs = malloc(sizeof(*socket_attrs));
-              memset(socket_attrs, 0, sizeof(*socket_attrs));
+              GSI_SOCKET_destroy(socket_attrs->gsi_socket);
+              close(socket_attrs->socket_fd);
+              free(socket_attrs);
+            }
 
-              socket_attrs->pshost = mhost;
+            socket_attrs = malloc(sizeof(*socket_attrs));
+            memset(socket_attrs, 0, sizeof(*socket_attrs));
 
-              if( mport )
-              {
-                socket_attrs->psport = atoi( mport );
-              }  
+            socket_attrs->pshost = mhost;
 
-              /* Clear the server_response for next go around */
-              server_response = malloc(sizeof(*server_response));
-              memset(server_response, 0, sizeof(*server_response));
+            if( mport )
+            {
+              socket_attrs->psport = atoi( mport );
+            }  
 
-              /* We will be passing password in as a value */
-              data_parameters->use_empty_passwd = 1;
+            /* Clear the server_response for next go around */
+            server_response = malloc(sizeof(*server_response));
+            memset(server_response, 0, sizeof(*server_response));
 
-              /* Clear old error messages (Should we do this???) */
-              verror_clear();
+            /* We will be passing password in as a value */
+            data_parameters->use_empty_passwd = 1;
 
-              myproxy_debug( "NEW SOCK: %s. %d\n", 
-                             socket_attrs->pshost, 
-                             socket_attrs->psport ); 
+            /* Clear old error messages (Should we do this???) */
+            verror_clear();
 
-
+            myproxy_debug( "Primary redirect socket: %s. %d\n", 
+                           socket_attrs->pshost, 
+                           socket_attrs->psport ); 
 
           }
           else
