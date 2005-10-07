@@ -170,7 +170,7 @@ sub main
   ##
   my $secondary_servers = get_secondaries( $config );
 
-  print "Slave Servers:\n" . Dumper $secondary_servers if( $dbglvl > 1 );
+  print "Secondary Servers:\n" . Dumper $secondary_servers if( $dbglvl > 1 );
 
   ##
   ## Read the repository and find the files that have changed since the
@@ -445,7 +445,7 @@ sub parse_datafile
 ##
 ## missing_files( repository, files )
 ##
-## Look at the last snapshot of the repository on the master.  Compare it
+## Look at the last snapshot of the repository on the primary.  Compare it
 ## to the current list of files in the repository.  If any are missing
 ## from the repository, they must have been deleted, so we need to delete
 ## them. 
@@ -633,7 +633,7 @@ __END__
 
 =head1 NAME
 
-B<myproxy-replicate> - Stores data from the MyProxy master repository to all
+B<myproxy-replicate> - Stores data from the MyProxy primary repository to all
 the secondary servers.
 
 =head1 SYNOPSIS
@@ -657,7 +657,7 @@ changed data to a secondary MyProxy server.  The secondary servers are
 specified in the B<myproxy-server.config(5)> file.  
 
 This utility will need to run at some specified interval in order to keep
-the secondary repositories semi current with the Master repository.  This can
+the secondary repositories semi current with the primary repository.  This can
 best be accomplished using cron, or some similar mechanism.
 
 =head1 OPTIONS
