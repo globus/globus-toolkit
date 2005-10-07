@@ -2529,8 +2529,6 @@ myproxy_failover( myproxy_socket_attrs_t *socket_attrs,
                          server_response->replicate_info->secondary_servers );
           myproxy_debug( "Primary: %s",  
                          server_response->replicate_info->primary_server );
-          myproxy_debug( "IsPrimary: %d",   
-                         server_response->replicate_info->isprimary );
 
           if( server_response->replicate_info->primary_server )
           {
@@ -2690,64 +2688,65 @@ myproxy_failover( myproxy_socket_attrs_t *socket_attrs,
         }
         else
         {
+          myproxy_debug( "A command was sent to a secondary that should be tried on the primary.\n" );
+
           /* This is a secondary */
           /* A command was sent to a secondary that should be tried on the */
           /* primary.  Check to see if we have a primary and redirect.   */
-          myproxy_debug( "A command was sent to a secondary that should be tried on the primary.\n" );
           if( primary )
           {
             /* redirect to primary */
-            myproxy_debug( "Redirect to primary: %s\n", primary );
-
-            parse_failover_list( primary, mhost, mport );
-
             if( redirect == 1 )
             {
-              printf( "Already attemped redirected.\n" );
+              printf( "Redirect failed: already tried.\n" );
               done = 1;
             }
             else
             {
               redirect = 1;
-            }
 
-            /* close old socket */
-            if (socket_attrs != NULL) 
-            {
-              if (socket_attrs->pshost != NULL)
+              myproxy_debug( "Redirect to primary: %s\n", primary );
+              printf( "Command sent to secondary when should have been sent to primary: %s.\nAttempting to redirect.\n", primary );
+
+              parse_failover_list( primary, mhost, mport );
+
+              /* close old socket */
+              if (socket_attrs != NULL) 
               {
-                free(socket_attrs->pshost);
+                if (socket_attrs->pshost != NULL)
+                {
+                  free(socket_attrs->pshost);
+                }
+
+                GSI_SOCKET_destroy(socket_attrs->gsi_socket);
+                close(socket_attrs->socket_fd);
+                free(socket_attrs);
               }
 
-              GSI_SOCKET_destroy(socket_attrs->gsi_socket);
-              close(socket_attrs->socket_fd);
-              free(socket_attrs);
+              socket_attrs = malloc(sizeof(*socket_attrs));
+              memset(socket_attrs, 0, sizeof(*socket_attrs));
+
+              socket_attrs->pshost = mhost;
+
+              if( mport )
+              {
+                socket_attrs->psport = atoi( mport );
+              }  
+
+              /* Clear the server_response for next go around */
+              server_response = malloc(sizeof(*server_response));
+              memset(server_response, 0, sizeof(*server_response));
+
+              /* We will be passing password in as a value */
+              data_parameters->use_empty_passwd = 1;
+
+              /* Clear old error messages (Should we do this???) */
+              verror_clear();
+
+              myproxy_debug( "Primary redirect socket: %s. %d\n", 
+                             socket_attrs->pshost, 
+                             socket_attrs->psport ); 
             }
-
-            socket_attrs = malloc(sizeof(*socket_attrs));
-            memset(socket_attrs, 0, sizeof(*socket_attrs));
-
-            socket_attrs->pshost = mhost;
-
-            if( mport )
-            {
-              socket_attrs->psport = atoi( mport );
-            }  
-
-            /* Clear the server_response for next go around */
-            server_response = malloc(sizeof(*server_response));
-            memset(server_response, 0, sizeof(*server_response));
-
-            /* We will be passing password in as a value */
-            data_parameters->use_empty_passwd = 1;
-
-            /* Clear old error messages (Should we do this???) */
-            verror_clear();
-
-            myproxy_debug( "Primary redirect socket: %s. %d\n", 
-                           socket_attrs->pshost, 
-                           socket_attrs->psport ); 
-
           }
           else
           {
