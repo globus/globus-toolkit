@@ -783,7 +783,7 @@ globus_i_xio_win32_event_unregister(
             {
                 /* remove posted event */
                 globus_list_remove(
-                    &thread->pending_posts
+                    &thread->pending_posts,
                     globus_list_search(
                         thread->pending_posts, entry_handle));
                 
