@@ -95,6 +95,7 @@ typedef struct globus_l_xio_win32_file_s
 
 static HANDLE                           globus_l_xio_win32_file_thread_handle;
 static globus_bool_t                    globus_l_xio_win32_activated;
+static LARGE_INTEGER                    globus_l_xio_win32_file_zero_offset;
 
 static
 unsigned
@@ -693,7 +694,6 @@ globus_xio_system_file_register_read(
     globus_result_t                     result;
     HANDLE                              fd = handle->fd;
     globus_xio_iovec_t *                iov;
-    int                                 iovc;
     GlobusXIOName(globus_xio_system_file_register_read);
 
     GlobusXIOSystemDebugEnterFD(fd);
@@ -805,7 +805,6 @@ globus_xio_system_file_register_write(
     globus_result_t                     result;
     HANDLE                              fd = handle->fd;
     globus_xio_iovec_t *                iov;
-    int                                 iovc;
     GlobusXIOName(globus_xio_system_file_register_write);
 
     GlobusXIOSystemDebugEnterFD(fd);
@@ -1040,9 +1039,10 @@ globus_xio_system_file_get_position(
     GlobusXIOSystemDebugEnterFD(fd);
 
     /* ignore errors, may be a pipe or other unseekable */
-    if(!SetFilePointerEx(fd, 0, &offset, FILE_CURRENT))
+    if(!SetFilePointerEx(
+        fd, globus_l_xio_win32_file_zero_offset, &offset, FILE_CURRENT))
     {
-        offset = 0;
+        offset = globus_l_xio_win32_file_zero_offset;
     }
 
     GlobusXIOSystemDebugExitFD(fd);
@@ -1108,7 +1108,8 @@ globus_xio_system_file_truncate(
     GlobusXIOSystemDebugEnterFD(fd);
 
     /* save file position and move to new size */
-    if(!SetFilePointerEx(fd, 0, &offset, FILE_CURRENT) ||
+    if(!SetFilePointerEx(
+        fd, globus_l_xio_win32_file_zero_offset, &offset, FILE_CURRENT) ||
         !SetFilePointerEx(fd, size, 0, FILE_BEGIN))
     {
         result = GlobusXIOErrorSystemError("SetFilePointerEx", GetLastError());
