@@ -438,8 +438,8 @@ globus_l_xio_win32_file_start_read_apc(
         GlobusXIOSystemDebugPrintf(
             GLOBUS_I_XIO_SYSTEM_DEBUG_INFO,
             ("[%s] fd=%lu, Retried read %d times\n",
-                _xio_name, (unsigned long)fd),
-                LOCKED_PAGES_RETRY_COUNT - (retry > 0 ? retry : 0));
+                _xio_name, (unsigned long)fd,
+                LOCKED_PAGES_RETRY_COUNT - (retry > 0 ? retry : 0)));
     }
 
     if(error != ERROR_SUCCESS)
@@ -493,8 +493,8 @@ globus_l_xio_win32_file_start_write_apc(
         GlobusXIOSystemDebugPrintf(
             GLOBUS_I_XIO_SYSTEM_DEBUG_INFO,
             ("[%s] fd=%lu, Retried write %d times\n",
-                _xio_name, (unsigned long)fd),
-                LOCKED_PAGES_RETRY_COUNT - (retry > 0 ? retry : 0));
+                _xio_name, (unsigned long)fd,
+                LOCKED_PAGES_RETRY_COUNT - (retry > 0 ? retry : 0)));
     }
 
     if(error != ERROR_SUCCESS)
