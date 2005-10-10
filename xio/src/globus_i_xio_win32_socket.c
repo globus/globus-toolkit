@@ -24,11 +24,13 @@ globus_l_xio_win32_socket_kickout(
     void *                              user_arg)
 {
     globus_i_xio_system_op_info_t *     op_info;
+    SOCKET                              fd;
     GlobusXIOName(globus_l_xio_win32_socket_kickout);
 
     op_info = (globus_i_xio_system_op_info_t *) user_arg;
-
-    GlobusXIOSystemDebugEnterFD(op_info->fd);
+    fd = op_info->handle->socket;
+    
+    GlobusXIOSystemDebugEnterFD(fd);
 
     if(op_info->op)
     {
@@ -56,8 +58,8 @@ globus_l_xio_win32_socket_kickout(
         break;
     }
     
-    GlobusXIOSystemDebugExitFD(op_info->fd);
     GlobusIXIOSystemFreeOperation(op_info);
+    GlobusXIOSystemDebugExitFD(fd);
 }
 
 /* must be safe to call from win32 thread */
@@ -348,7 +350,7 @@ globus_l_xio_win32_socket_cancel_cb(
                 GlobusXIOSystemDebugPrintf(
                     GLOBUS_L_XIO_SYSTEM_DEBUG_INFO,
                     ("[%s] fd=%lu, Canceling NEW\n",
-                        _xio_name, (unsigned long)op_info->fd));
+                        _xio_name, (unsigned long)op_info->handle->socket));
             }
             else
             {
@@ -359,7 +361,7 @@ globus_l_xio_win32_socket_cancel_cb(
                 GlobusXIOSystemDebugPrintf(
                     GLOBUS_L_XIO_SYSTEM_DEBUG_INFO,
                     ("[%s] fd=%lu, Canceling Pending\n",
-                        _xio_name, (unsigned long)op_info->fd));
+                        _xio_name, (unsigned long)op_info->handle->socket));
                 
                 if(op_info->handle->read_info == op_info)
                 {
@@ -403,7 +405,7 @@ globus_l_xio_win32_socket_event_cb(
 {
     globus_l_xio_win32_socket_t *       handle;
     WSANETWORKEVENTS                    wsaevents;
-    int                                 events;
+    long                                 events;
     GlobusXIOName(globus_l_xio_win32_socket_event_cb);
     
     handle = (globus_l_xio_win32_socket_t *) user_arg;
@@ -511,7 +513,7 @@ error_canceled:
     {
         globus_xio_operation_disable_cancel(read_info->op);
     }
-    
+error_cancel_enable:
     GlobusXIOSystemDebugExitWithErrorFD(handle->socket);
     return result;
 }
@@ -550,7 +552,7 @@ globus_l_xio_win32_socket_register_write(
         }
         
         handle->write_info = write_info;
-        read_info->state = GLOBUS_I_XIO_SYSTEM_OP_PENDING;
+        write_info->state = GLOBUS_I_XIO_SYSTEM_OP_PENDING;
         
         if(handle->ready_events & (FD_CONNECT|FD_WRITE|FD_CLOSE))
         {
@@ -571,7 +573,7 @@ error_canceled:
     {
         globus_xio_operation_disable_cancel(write_info->op);
     }
-    
+error_cancel_enable:
     GlobusXIOSystemDebugExitWithErrorFD(handle->socket);
     return result;
 }
@@ -679,7 +681,7 @@ globus_xio_system_socket_destroy(
     globus_i_xio_win32_event_unlock(handle->event_entry);
     
     WSAEventSelect(handle->socket, 0, 0);
-    ioctlsocket(handle->socket, FIONBIO, &flag)
+    ioctlsocket(handle->socket, FIONBIO, &flag);
     CloseHandle(handle->event);
     win32_mutex_destroy(&handle->lock);
     
@@ -721,7 +723,6 @@ globus_xio_system_socket_register_connect(
     op_info->type = GLOBUS_I_XIO_SYSTEM_OP_CONNECT;
     op_info->state = GLOBUS_I_XIO_SYSTEM_OP_NEW;
     op_info->op = op;
-    op_info->fd = handle->socket;
     op_info->handle = handle;
     op_info->user_arg = user_arg;
     op_info->sop.non_data.callback = callback;
@@ -769,7 +770,6 @@ globus_xio_system_socket_register_accept(
     op_info->type = GLOBUS_I_XIO_SYSTEM_OP_ACCEPT;
     op_info->state = GLOBUS_I_XIO_SYSTEM_OP_NEW;
     op_info->op = op;
-    op_info->fd = listener_handle->socket;
     op_info->handle = listener_handle;
     op_info->user_arg = user_arg;
     op_info->sop.non_data.callback = callback;
@@ -850,7 +850,6 @@ globus_l_xio_system_socket_register_read(
     
     op_info->state = GLOBUS_I_XIO_SYSTEM_OP_NEW;
     op_info->op = op;
-    op_info->fd = handle->socket;
     op_info->handle = handle;
     op_info->user_arg = user_arg;
     op_info->sop.data.callback = callback;
@@ -958,7 +957,6 @@ globus_l_xio_system_socket_register_write(
     
     op_info->state = GLOBUS_I_XIO_SYSTEM_OP_NEW;
     op_info->op = op;
-    op_info->fd = handle->socket;
     op_info->handle = handle;
     op_info->user_arg = user_arg;
     op_info->sop.data.callback = callback;
