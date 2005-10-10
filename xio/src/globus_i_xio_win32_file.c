@@ -115,8 +115,8 @@ globus_i_xio_win32_file_activate(void)
 
     GlobusXIOSystemDebugEnter();
 
-    globus_l_xio_win32_file_thread_handle = _beginthreadex(
-        NULL, 0, globus_l_xio_win32_file_thread, NULL, 0, 0);
+    globus_l_xio_win32_file_thread_handle = (HANDLE) _beginthreadex(
+        0, 0, globus_l_xio_win32_file_thread, 0, 0, 0);
     if(globus_l_xio_win32_file_thread_handle == 0)
     {
         goto error_thread;
@@ -143,7 +143,7 @@ globus_i_xio_win32_file_deactivate(void)
     QueueUserAPC(
         globus_l_xio_win32_file_deactivate_apc,
         globus_l_xio_win32_file_thread_handle,
-        NULL);
+        0);
 
     while(WaitForSingleObject(
         globus_l_xio_win32_file_thread_handle, INFINITE) != WAIT_OBJECT_0)
@@ -248,7 +248,7 @@ globus_l_xio_win32_file_read_apc(
 
     GlobusXIOSystemDebugEnterFD(fd);
     
-    if(op->op != NULL)
+    if(op->op != 0)
     {
         globus_xio_operation_refresh_timeout(op->op);
     }
@@ -289,7 +289,7 @@ globus_l_xio_win32_file_read_apc(
         op->error = GlobusXIOErrorObjSystemError("ReadFileEx", error);
     }
 
-    if(op->op != NULL)
+    if(op->op != 0)
     {
         result = globus_i_xio_win32_complete(
             globus_l_xio_win32_file_kickout, op);
@@ -327,7 +327,7 @@ globus_l_xio_win32_file_write_apc(
 
     GlobusXIOSystemDebugEnterFD(fd);
     
-    if(op->op != NULL)
+    if(op->op != 0)
     {
         globus_xio_operation_refresh_timeout(op->op);
     }
@@ -364,7 +364,7 @@ globus_l_xio_win32_file_write_apc(
         op->error = GlobusXIOErrorObjSystemError("WriteFileEx", error);
     }
 
-    if(op->op != NULL)
+    if(op->op != 0)
     {
         result = globus_i_xio_win32_complete(
             globus_l_xio_win32_file_kickout, op);
@@ -513,7 +513,7 @@ globus_xio_system_file_init(
         goto error_alloc;
     }
 
-    win32_mutex_init(&handle->lock, NULL);
+    win32_mutex_init(&handle->lock, 0);
 
     handle->fd = fd;
     handle->read_op.handle = handle;
@@ -723,10 +723,10 @@ globus_xio_system_file_register_read(
     handle->read_op.waitforbytes = waitforbytes;
     handle->read_op.callback = callback;
     handle->read_op.user_arg = user_arg;
-    handle->read_op.error = NULL;
+    handle->read_op.error = 0;
     handle->read_op.nbytes = 0;
 
-    if(op != NULL)
+    if(op != 0)
     {
         if(!handle->is_overlapped || waitforbytes == 0)
         {
@@ -737,8 +737,8 @@ globus_xio_system_file_register_read(
             /* else complete immediately, simulated select() */
             
             result = globus_callback_register_oneshot(
-                NULL,
-                NULL,
+                0,
+                0,
                 globus_l_xio_win32_file_kickout,
                 &handle->read_op);
             /* may have read data above, cant do anything else */
@@ -835,10 +835,10 @@ globus_xio_system_file_register_write(
     handle->write_op.waitforbytes = waitforbytes;
     handle->write_op.callback = callback;
     handle->write_op.user_arg = user_arg;
-    handle->write_op.error = NULL;
+    handle->write_op.error = 0;
     handle->write_op.nbytes = 0;
 
-    if(op != NULL)
+    if(op != 0)
     {
         if(!handle->is_overlapped || waitforbytes == 0)
         {
@@ -849,8 +849,8 @@ globus_xio_system_file_register_write(
             /* else complete immediately, simulated select() */
             
             result = globus_callback_register_oneshot(
-                NULL,
-                NULL,
+                0,
+                0,
                 globus_l_xio_win32_file_kickout,
                 &handle->write_op);
             /* may have read data above, cant do anything else */
@@ -910,7 +910,7 @@ globus_xio_system_file_read(
 
     /* set up read_op */
     result = globus_xio_system_file_register_read(
-        NULL, handle, offset, iov, iovc, waitforbytes, NULL, NULL);
+        0, handle, offset, iov, iovc, waitforbytes, 0, 0);
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusXIOErrorWrapFailed(
@@ -974,7 +974,7 @@ globus_xio_system_file_write(
 
     /* set up write_op */
     result = globus_xio_system_file_register_write(
-        NULL, handle, offset, iov, iovc, waitforbytes, NULL, NULL);
+        0, handle, offset, iov, iovc, waitforbytes, 0, 0);
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusXIOErrorWrapFailed(
@@ -1064,7 +1064,7 @@ globus_xio_system_file_t
 globus_xio_system_convert_stdio(
     const char *                        stdio)
 {
-    HANDLE                              fd = NULL;
+    HANDLE                              fd = 0;
 
     if(strcmp(stdio, "stdin") == 0)
     {
@@ -1079,7 +1079,7 @@ globus_xio_system_convert_stdio(
         fd = GetStdHandle(STD_ERROR_HANDLE);
     }
 
-    if(fd == NULL) /* GetStdHandle() can also return NULL */
+    if(fd == 0) /* GetStdHandle() can also return 0 */
     {
         fd = GLOBUS_XIO_SYSTEM_INVALID_FILE;
     }
@@ -1100,7 +1100,7 @@ globus_xio_system_file_truncate(
 
     /* save file position and move to new size */
     if(!SetFilePointerEx(fd, 0, &offset, FILE_CURRENT) ||
-        !SetFilePointerEx(fd, size, NULL, FILE_BEGIN))
+        !SetFilePointerEx(fd, size, 0, FILE_BEGIN))
     {
         result = GlobusXIOErrorSystemError("SetFilePointerEx", GetLastError());
         goto error_seek;
@@ -1113,13 +1113,13 @@ globus_xio_system_file_truncate(
     }
 
     /* restore file pointer */
-    SetFilePointerEx(fd, offset, NULL, FILE_BEGIN);
+    SetFilePointerEx(fd, offset, 0, FILE_BEGIN);
 
     GlobusXIOSystemDebugExitFD(fd);
     return GLOBUS_SUCCESS;
 
 error_truncate:
-    SetFilePointerEx(fd, offset, NULL, FILE_BEGIN);
+    SetFilePointerEx(fd, offset, 0, FILE_BEGIN);
 error_seek:
     GlobusXIOSystemDebugExitWithErrorFD(fd);
     return result;
@@ -1200,7 +1200,7 @@ globus_xio_system_file_open(
     
     /* handles created by me are not inherited on exec */
     sec_attr.nLength = sizeof(sec_attr);
-    sec_attr.lpSecurityDescriptor = NULL;
+    sec_attr.lpSecurityDescriptor = 0;
     sec_attr.bInheritHandle = FALSE;
     
     *fd = CreateFile(
@@ -1210,7 +1210,7 @@ globus_xio_system_file_open(
         &sec_attr,
         create_mode,
         file_attr,
-        NULL);
+        0);
     if(*fd == INVALID_HANDLE_VALUE)
     {
         result = GlobusXIOErrorSystemError("CreateFile", GetLastError());
