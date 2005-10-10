@@ -1099,14 +1099,16 @@ globus_xio_system_convert_stdio(
 globus_result_t
 globus_xio_system_file_truncate(
     globus_xio_system_file_t            fd,
-    globus_off_t                        size)
+    globus_off_t                        osize)
 {
     globus_result_t                     result;
     LARGE_INTEGER                       offset;
+    LARGE_INTEGER                       size;
     GlobusXIOName(globus_xio_system_file_truncate);
 
     GlobusXIOSystemDebugEnterFD(fd);
-
+    
+    size.QuadPart = osize;
     /* save file position and move to new size */
     if(!SetFilePointerEx(
         fd, globus_l_xio_win32_file_zero_offset, &offset, FILE_CURRENT) ||
