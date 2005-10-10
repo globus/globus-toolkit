@@ -88,7 +88,7 @@ globus_l_xio_win32_socket_handle_read(
         {
             SOCKET                      new_fd;
 
-            new_fd = accept(handle->socket, NULL, NULL);
+            new_fd = accept(handle->socket, 0, 0);
             
             if(new_fd == INVALID_SOCKET)
             {
@@ -160,7 +160,7 @@ globus_l_xio_win32_socket_handle_read(
         result != GLOBUS_SUCCESS)
     {
         read_info->state = GLOBUS_I_XIO_SYSTEM_OP_COMPLETE;
-        handle->read_info = NULL;
+        handle->read_info = 0;
         
         if(!read_info->op)
         {
@@ -175,7 +175,7 @@ globus_l_xio_win32_socket_handle_read(
         else
         {
             result = globus_callback_register_oneshot(
-                NULL, NULL, globus_l_xio_win32_socket_kickout, read_info);
+                0, 0, globus_l_xio_win32_socket_kickout, read_info);
         }
         /* really cant do anything else */
         if(result != GLOBUS_SUCCESS)
@@ -282,7 +282,7 @@ globus_l_xio_win32_socket_handle_write(
         handle->ready_events |= FD_WRITE;
         
         write_info->state = GLOBUS_I_XIO_SYSTEM_OP_COMPLETE;
-        handle->write_info = NULL;
+        handle->write_info = 0;
         
         if(!write_info->op)
         {
@@ -297,7 +297,7 @@ globus_l_xio_win32_socket_handle_write(
         else
         {
             result = globus_callback_register_oneshot(
-                NULL, NULL, globus_l_xio_win32_socket_kickout, write_info);
+                0, 0, globus_l_xio_win32_socket_kickout, write_info);
         }
         /* really cant do anything else */
         if(result != GLOBUS_SUCCESS)
@@ -363,18 +363,18 @@ globus_l_xio_win32_socket_cancel_cb(
                 
                 if(op_info->handle->read_info == op_info)
                 {
-                    op_info->handle->read_info = NULL;
+                    op_info->handle->read_info = 0;
                 }
                 else
                 {
                     globus_assert(op_info->handle->write_info == op_info);
-                    op_info->handle->write_info = NULL;
+                    op_info->handle->write_info = 0;
                 }
                 
                 /* unregister and kickout now */
                 result = globus_callback_register_oneshot(
-                    NULL,
-                    NULL,
+                    0,
+                    0,
                     globus_l_xio_win32_socket_kickout,
                     op_info);
                 /* really cant do anything else */
@@ -596,7 +596,7 @@ globus_xio_system_socket_init(
     }
     
     handle->socket = socket;
-    win32_mutex_init(&handle->lock, NULL);
+    win32_mutex_init(&handle->lock, 0);
     
     handle->event = WSACreateEvent();
     if(handle->event == 0)
@@ -1034,7 +1034,7 @@ globus_l_xio_win32_blocking_init(
         goto error_info;
     }
     
-    blocking_info->event = CreateEvent(NULL, FALSE, FALSE, NULL);
+    blocking_info->event = CreateEvent(0, FALSE, FALSE, 0);
     if(blocking_info->event == 0)
     {
         result = GlobusXIOErrorSystemError(
@@ -1050,7 +1050,7 @@ globus_l_xio_win32_blocking_init(
 error_create:
     globus_free(*blocking_info);
 error_info:
-    *u_blocking_info = NULL;
+    *u_blocking_info = 0;
     GlobusXIOSystemDebugExitWithError();
     return result;
 }
@@ -1138,7 +1138,7 @@ globus_xio_system_socket_read(
         }
         
         result = globus_l_xio_system_socket_register_read(
-            NULL,
+            0,
             handle,
             u_iov,
             u_iovc,
@@ -1227,7 +1227,7 @@ globus_xio_system_socket_write(
         }
         
         result = globus_l_xio_system_socket_register_write(
-            NULL,
+            0,
             handle,
             iov,
             iovc,

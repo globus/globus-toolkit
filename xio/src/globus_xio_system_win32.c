@@ -101,9 +101,9 @@ globus_l_xio_win32_event_activate(void)
         goto error_mode;
     }
     
-    win32_mutex_init(&globus_l_xio_win32_event_thread_lock, NULL);
+    win32_mutex_init(&globus_l_xio_win32_event_thread_lock, 0);
     globus_l_xio_win32_event_thread_count = 0;
-    globus_l_xio_win32_event_threads = NULL;
+    globus_l_xio_win32_event_threads = 0;
     globus_l_xio_win32_event_activated = GLOBUS_TRUE;
 
     GlobusXIOSystemDebugExit();
@@ -215,6 +215,12 @@ globus_l_xio_win32_event_wait(
     GlobusXIOSystemDebugExit();
     return rc;
 }
+
+static
+void
+globus_l_xio_win32_event_remove(
+    globus_l_xio_win32_event_thread_t * thread,
+    globus_l_xio_win32_event_entry_t *  entry);
 
 /**
  * this returns -1 or the prior index of the entry replacing this one
@@ -383,6 +389,15 @@ globus_l_xio_win32_event_wakeup_cb(
 
 static
 globus_result_t
+globus_l_xio_win32_event_add(
+    globus_l_xio_win32_event_entry_t ** uentry,
+    globus_l_xio_win32_event_thread_t * thread,
+    HANDLE                              event_handle,
+    globus_i_xio_win32_event_cb_t       callback,
+    void *                              user_arg);
+
+static
+globus_result_t
 globus_l_xio_win32_event_thread_init(
     globus_l_xio_win32_event_thread_t ** uthread)
 {
@@ -401,7 +416,7 @@ globus_l_xio_win32_event_thread_init(
         goto error_alloc;
     }
     
-    thread->wakeup_handle = CreateEvent(NULL, FALSE, FALSE, NULL);
+    thread->wakeup_handle = CreateEvent(0, FALSE, FALSE, 0);
     if(thread->wakeup_handle == 0)
     {
         result = GlobusXIOErrorSystemError(
@@ -417,9 +432,9 @@ globus_l_xio_win32_event_thread_init(
         goto error_add;
     }
     
-    win32_mutex_init(&thread->lock, NULL);
-    win32_mutex_init(&thread->post_lock, NULL);
-    win32_mutex_init(&thread->wait_lock, NULL);
+    win32_mutex_init(&thread->lock, 0);
+    win32_mutex_init(&thread->post_lock, 0);
+    win32_mutex_init(&thread->wait_lock, 0);
     
     *uthread = thread;
     
@@ -476,7 +491,7 @@ globus_l_xio_win32_event_get_thread(
     globus_l_xio_win32_event_thread_t ** uthread)
 {
     int                                 i;
-    globus_l_xio_win32_event_thread_t * thread = NULL;
+    globus_l_xio_win32_event_thread_t * thread = 0;
     globus_result_t                     result;
     GlobusXIOName(globus_l_xio_win32_event_get_thread);
     
@@ -520,7 +535,7 @@ globus_l_xio_win32_event_get_thread(
             globus_l_xio_win32_event_thread_count] = thread;
         
         thread->thread_handle = _beginthreadex(
-            NULL, 0, globus_l_xio_win32_event_thread, thread, 0, 0);
+            0, 0, globus_l_xio_win32_event_thread, thread, 0, 0);
         if(thread->thread_handle == 0)
         {
             /* technically, i should be checking errno, but a look at the
