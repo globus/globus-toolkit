@@ -30,7 +30,7 @@ globus_module_descriptor_t              globus_i_xio_system_module =
 typedef struct globus_l_xio_win32_event_entry_s
 {
     /* these two are constant */
-    globus_l_xio_win32_event_thread_t * owner;
+    struct globus_l_xio_win32_event_thread_s * owner;
     int                                 index;
     
     globus_callback_func_t              callback;
@@ -38,7 +38,7 @@ typedef struct globus_l_xio_win32_event_entry_s
     globus_bool_t                       post_pending;
 } globus_l_xio_win32_event_entry_t;
 
-typedef struct
+typedef struct globus_l_xio_win32_event_thread_s
 {
     win32_mutex_t                       lock;
     win32_mutex_t                       post_lock;
