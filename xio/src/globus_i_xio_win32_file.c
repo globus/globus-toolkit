@@ -284,7 +284,7 @@ globus_l_xio_win32_file_read_apc(
              * not a problem, though.
              */
             globus_l_xio_win32_file_start_read_apc((ULONG_PTR)op);
-            goto reading_more:
+            goto reading_more;
         }
         else
         {
@@ -363,7 +363,7 @@ globus_l_xio_win32_file_write_apc(
              * not a problem, though.
              */
             globus_l_xio_win32_file_start_write_apc((ULONG_PTR)op);
-            goto writing_more:
+            goto writing_more;
         }
         else
         {
@@ -437,7 +437,7 @@ globus_l_xio_win32_file_start_read_apc(
     {
         GlobusXIOSystemDebugPrintf(
             GLOBUS_I_XIO_SYSTEM_DEBUG_INFO,
-            ("[%s] fd=%lu, Retried read %d times\n"),
+            ("[%s] fd=%lu, Retried read %d times\n",
                 _xio_name, (unsigned long)fd),
                 LOCKED_PAGES_RETRY_COUNT - (retry > 0 ? retry : 0));
     }
@@ -492,7 +492,7 @@ globus_l_xio_win32_file_start_write_apc(
     {
         GlobusXIOSystemDebugPrintf(
             GLOBUS_I_XIO_SYSTEM_DEBUG_INFO,
-            ("[%s] fd=%lu, Retried write %d times\n"),
+            ("[%s] fd=%lu, Retried write %d times\n",
                 _xio_name, (unsigned long)fd),
                 LOCKED_PAGES_RETRY_COUNT - (retry > 0 ? retry : 0));
     }
@@ -535,8 +535,8 @@ globus_xio_system_file_init(
     {
         GlobusXIOSystemDebugPrintf(
             GLOBUS_I_XIO_SYSTEM_DEBUG_INFO,
-            ("[%s] fd=%lu, Handle is NOT overlapped\n"),
-                _xio_name, (unsigned long)fd);
+            ("[%s] fd=%lu, Handle is NOT overlapped\n",
+                _xio_name, (unsigned long)fd));
     }
     
     *uhandle = handle;
