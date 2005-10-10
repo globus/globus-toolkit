@@ -4,6 +4,7 @@ echo .
 echo . Set Environment
 echo .
 call Setenv.bat
+if ERRORLEVEL 1 goto ErrorExit
 
 echo .
 echo . Create The Build Tree If Necessary
@@ -12,7 +13,6 @@ md %GLobusLocation%\lib
 md %GLobusLocation%\include
 md %GLobusLocation%\include\threaded
 md %GLobusLocation%\include\nonthreaded
-md %GLobusLocation%\include\openssl
 md %GLobusLocation%\bin
 
 echo .
@@ -27,19 +27,6 @@ copy %GlobusLocation%\core\source\win32\threaded\globus_config.h %GlobusLocation
 copy %GlobusLocation%\core\source\win32\nonthreaded\globus_config.h %GlobusLocation%\include\nonthreaded\*.*
 
 echo .
-echo . Copy OpenSSL Include Files (This Is Not Handled By The Script)
-echo .
-copy %SSLLocation%\inc32\openssl\*.* %GlobusLocation%\include\openssl\*.*
-
-echo .
-echo . Copy OpenSSL Binaries (This Is Not Handled By The Script)
-echo .
-copy %SSLLocation%\out32dll\libeay32.dll  %GlobusLocation%\bin\*.*
-copy %SSLLocation%\out32dll\ssleay32.dll  %GlobusLocation%\bin\*.*
-copy %SSLLocation%\out32dll\libeay32.lib  %GlobusLocation%\lib\*.*
-copy %SSLLocation%\out32dll\ssleay32.lib  %GlobusLocation%\lib\*.*
-
-echo .
 echo . Clear BuildResults.log And Put An Opening Stamp Into It
 echo .
 echo Starting Build On %DATE% At %TIME% > BuildResults.log
@@ -47,7 +34,7 @@ echo Starting Build On %DATE% At %TIME% > BuildResults.log
 echo .
 echo . Create And Execute Build For Static Release Threaded Libraries (win32relmtthr)
 echo .
-WinCVSBuild.pl %GlobusLocation% win32relmtthr 14.2
+WinCVSBuild.pl %GlobusLocation% win32relmtthr %WinGlobusVersion%
 call WinCVSBuildLibs
 call WinCVSBuildExes
 
@@ -56,6 +43,15 @@ echo . Put A Closing Time Stamp In BuildResults.log
 echo .
 echo Completed Build On %DATE% At %TIME% >> BuildResults.log
 
+rem Normal Exit
 echo .
 echo . Done
 echo .
+exit /b 0
+
+rem Error Exit
+:ErrorExit
+echo .
+echo . The build was not run due to an Error
+echo .
+exit /b 1

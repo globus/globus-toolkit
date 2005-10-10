@@ -23,6 +23,10 @@
 # ----------
 
 ModuleType          library
+SourceLocation      \i18n\source
+Win32Location       \i18n\source\win32
+
+ModuleType          library
 SourceLocation      \common\source\library
 Win32Location       \common\source\win32
 
@@ -87,6 +91,50 @@ SourceLocation      \gsi\gridmap_callout\source
 Win32Location       \gsi\gridmap_callout\source\win32
 
 ModuleType          library
+SourceLocation      \gsi\gaa_util\source
+Win32Location       \gsi\gaa_util\source\win32
+
+ModuleType          library
+SourceLocation      \gsi\gaa\gaa_core\source
+Win32Location       \gsi\gaa\gaa_core\source\win32
+
+ModuleType          library
+SourceLocation      \gsi\gaa\gaa_debug\source
+Win32Location       \gsi\gaa\gaa_debug\source\win32
+
+ModuleType          library
+SourceLocation      \gsi\gaa\gaa_plugin\source
+Win32Location       \gsi\gaa\gaa_plugin\source\win32
+
+    ModuleType          library
+    SourceLocation      \gsi\gaa_callbacks\gaa_simple\source
+    Win32Location       \gsi\gaa_callbacks\gaa_simple\source\win32
+
+    ModuleType          library
+    SourceLocation      \gsi\gaa_callbacks\gaa_pthread\source
+    Win32Location       \gsi\gaa_callbacks\gaa_pthread\source\win32
+
+ModuleType          library
+SourceLocation      \gsi\gaa_callbacks\gaa_gss_generic\source
+Win32Location       \gsi\gaa_callbacks\gaa_gss_generic\source\win32
+
+ModuleType          library
+SourceLocation      \gsi\authz_null_callout\source
+Win32Location       \gsi\authz_null_callout\source\win32
+
+ModuleType          library
+SourceLocation      \gsi\authz_gaa_callout\source
+Win32Location       \gsi\authz_gaa_callout\source\win32
+
+ModuleType          library
+SourceLocation      \gsi\authz\error
+Win32Location       \gsi\authz\error\win32
+
+ModuleType          library
+SourceLocation      \gsi\authz\source
+Win32Location       \gsi\authz\source\win32
+
+ModuleType          library
 SourceLocation      \io\source\library
 Win32Location       \io\source\win32
 
@@ -99,28 +147,77 @@ SourceLocation      \gridftp\client\source
 Win32Location       \gridftp\client\source\win32
 
 ModuleType          library
-SourceLocation      \gass\transfer\source\library
-Win32Location       \gass\transfer\source\win32
+SourceLocation      \gridftp\gridftp_driver\source
+Win32Location       \gridftp\gridftp_driver\source\win32
+
+    ModuleType          library
+    SourceLocation      \gass\transfer\source\library
+    Win32Location       \gass\transfer\source\win32
+
+    ModuleType          library
+    SourceLocation      \gass\copy\source
+    Win32Location       \gass\copy\source\win32
+
+    ModuleType          library
+    SourceLocation      \gass\server_ez\source
+    Win32Location       \gass\server_ez\source\win32
+
+    ModuleType          library
+    SourceLocation      \gass\cache\source
+    Win32Location       \gass\cache\source\win32
+
+    ModuleType          library
+    SourceLocation      \gram\protocol\source
+    Win32Location       \gram\protocol\source\win32
+
+    ModuleType          library
+    SourceLocation      \gram\client\source
+    Win32Location       \gram\client\source\win32
 
 ModuleType          library
-SourceLocation      \gass\copy\source
-Win32Location       \gass\copy\source\win32
+SourceLocation      \xio\src
+Win32Location       \xio\src\win32
 
 ModuleType          library
-SourceLocation      \gass\server_ez\source
-Win32Location       \gass\server_ez\source\win32
+SourceLocation      \xio\src\builtins\file
+Win32Location       \xio\src\builtins\file\win32
 
 ModuleType          library
-SourceLocation      \gass\cache\source
-Win32Location       \gass\cache\source\win32
+SourceLocation      \xio\src\builtins\gsi
+Win32Location       \xio\src\builtins\gsi\win32
 
 ModuleType          library
-SourceLocation      \gram\protocol\source
-Win32Location       \gram\protocol\source\win32
+SourceLocation      \xio\src\builtins\http
+Win32Location       \xio\src\builtins\http\win32
 
 ModuleType          library
-SourceLocation      \gram\client\source
-Win32Location       \gram\client\source\win32
+SourceLocation      \xio\src\builtins\mode_e
+Win32Location       \xio\src\builtins\mode_e\win32
+
+ModuleType          library
+SourceLocation      \xio\src\builtins\ordering
+Win32Location       \xio\src\builtins\ordering\win32
+
+ModuleType          library
+SourceLocation      \xio\src\builtins\queue
+Win32Location       \xio\src\builtins\queue\win32
+
+ModuleType          library
+SourceLocation      \xio\src\builtins\tcp
+Win32Location       \xio\src\builtins\tcp\win32
+
+ModuleType          library
+SourceLocation      \xio\src\builtins\telnet
+Win32Location       \xio\src\builtins\telnet\win32
+
+ModuleType          library
+SourceLocation      \xio\src\builtins\udp
+Win32Location       \xio\src\builtins\udp\win32
+
+ModuleType          library
+SourceLocation      \xio\src\builtins\udt
+Win32Location       \xio\src\builtins\udt\win32
+
 
 
 # ------------------------------------------
@@ -148,14 +245,14 @@ ModuleType          executable
 SourceLocation      \gsi\openssl_error\test
 Win32Location       \gsi\openssl_error\test\win32
 
-# Some Of These Fail Due To Missing sleep() Function - To Be Fixed
-ModuleType          executable
-SourceLocation      \gram\client\test
-Win32Location       \gram\client\test\win32
+    # Some Of These Fail Due To Missing sleep() Function - To Be Fixed
+    ModuleType          executable
+    SourceLocation      \gram\client\test
+    Win32Location       \gram\client\test\win32
 
-ModuleType          executable
-SourceLocation      \gram\protocol\test
-Win32Location       \gram\protocol\test\win32
+    ModuleType          executable
+    SourceLocation      \gram\protocol\test
+    Win32Location       \gram\protocol\test\win32
 
     # These Tests Depend On A Local Library Using Macros That Won't Work Presently
     ModuleType          executable
@@ -189,6 +286,6 @@ Win32Location       \gsi\proxy\proxy_utils\source\programs\win32
     SourceLocation      \io\test
     Win32Location       \io\test\win32
 
-ModuleType          executable
-SourceLocation      \gass\copy\source
-Win32Location       \gass\copy\source\win32
+    ModuleType          executable
+    SourceLocation      \gass\copy\source
+    Win32Location       \gass\copy\source\win32
