@@ -199,7 +199,7 @@ globus_l_xio_win32_socket_handle_write(
     globus_l_xio_win32_socket_t *       handle,
     globus_bool_t                       win32_thread)
 {
-    globus_l_operation_info_t *         write_info;
+    globus_i_xio_system_op_info_t *     write_info;
     globus_size_t                       nbytes;
     globus_result_t                     result;
     GlobusXIOName(globus_l_xio_win32_socket_handle_write);
@@ -321,7 +321,7 @@ globus_l_xio_win32_socket_cancel_cb(
     void *                              user_arg,
     globus_xio_error_type_t             reason)
 {
-    globus_l_operation_info_t *         op_info;
+    globus_i_xio_system_op_info_t *     op_info;
     GlobusXIOName(globus_l_xio_win32_socket_cancel_cb);
 
     GlobusXIOSystemDebugEnter();
