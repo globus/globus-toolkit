@@ -553,7 +553,6 @@ void
 globus_xio_system_file_destroy(
     globus_xio_system_file_handle_t     handle)
 {
-    globus_result_t                     result;
     GlobusXIOName(globus_xio_system_file_destroy);
 
     GlobusXIOSystemDebugEnterFD(handle->fd);
@@ -634,7 +633,6 @@ globus_l_xio_win32_file_blocking_write(
 {
     DWORD                               nbytes;
     HANDLE                              fd = op->handle->fd;
-    int                                 error;
     int                                 rc;
     GlobusXIOName(globus_l_xio_win32_file_blocking_write);
 
