@@ -1047,7 +1047,7 @@ globus_xio_system_file_get_position(
 
     GlobusXIOSystemDebugExitFD(fd);
 
-    return offset;
+    return offset.QuadPart;
 }
 
 globus_off_t
@@ -1061,12 +1061,12 @@ globus_xio_system_file_get_size(
 
     if(!GetFileSizeEx(fd, &size))
     {
-        size = -1;
+        size.QuadPart = -1;
     }
 
     GlobusXIOSystemDebugExitFD(fd);
 
-    return size;
+    return size.QuadPart;
 }
 
 globus_xio_system_file_t
