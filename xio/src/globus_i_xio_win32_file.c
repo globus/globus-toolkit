@@ -116,7 +116,7 @@ globus_i_xio_win32_file_activate(void)
     GlobusXIOSystemDebugEnter();
 
     globus_l_xio_win32_file_thread_handle = _beginthreadex(
-        NULL, 0, globus_l_xio_win32_file_thread_handle, NULL, 0, 0);
+        NULL, 0, globus_l_xio_win32_file_thread, NULL, 0, 0);
     if(globus_l_xio_win32_file_thread_handle == 0)
     {
         goto error_thread;
