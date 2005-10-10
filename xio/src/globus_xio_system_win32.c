@@ -124,6 +124,11 @@ error_common:
 }
 
 static
+void
+globus_l_xio_win32_event_thread_destroy(
+    globus_l_xio_win32_event_thread_t * thread);
+
+static
 int
 globus_l_xio_win32_event_deactivate(void)
 {
