@@ -187,7 +187,7 @@ globus_l_xio_win32_event_wait(
     int                                 offset,
     globus_bool_t                       infinite)
 {
-    int                                 rc = -1;
+    DWORD                               rc = -1;
     GlobusXIOName(globus_l_xio_win32_event_wait);
     
     GlobusXIOSystemDebugEnter();
