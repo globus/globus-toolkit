@@ -359,7 +359,7 @@ globus_xio_contact_info_to_encoded_string(
 #define GlobusIXIOUtilAdjustIovec(iov, iovc, nbytes)                        \
     do                                                                      \
     {                                                                       \
-        long                            _n;                                 \
+        globus_size_t                   _n;                                 \
         struct iovec *                  _iov;                               \
         int                             _iovc;                              \
         int                             _i;                                 \
@@ -386,7 +386,7 @@ globus_xio_contact_info_to_encoded_string(
     new_iov, new_iovc, iov, iovc, nbytes)                                   \
     do                                                                      \
     {                                                                       \
-        long                            _n;                                 \
+        globus_size_t                   _n;                                 \
         const struct iovec *            _iov;                               \
         int                             _iovc;                              \
         struct iovec *                  _new_iov;                           \
@@ -424,7 +424,7 @@ globus_xio_contact_info_to_encoded_string(
         int                             _i;                                 \
         const struct iovec *            _iov;                               \
         int                             _iovc;                              \
-        long                            _out_len;                           \
+        globus_size_t                   _out_len;                           \
         _iov = (iov);							    \
         _iovc = (iovc);							    \
         _out_len = 0;                                                       \
