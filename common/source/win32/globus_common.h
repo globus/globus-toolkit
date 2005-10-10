@@ -54,10 +54,6 @@ typedef unsigned char uint8_t;
 /******************************************************************************
 		      Include globus_common header files
 ******************************************************************************/
-/* Windows Specific */
-#include <winsock2.h>
-#include <ws2tcpip.h>
-
 /* Common */
 #include "globus_common_include.h"
 #include "globus_module.h"
