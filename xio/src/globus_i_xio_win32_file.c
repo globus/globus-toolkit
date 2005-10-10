@@ -169,7 +169,7 @@ globus_l_xio_win32_file_thread(
 
     while(globus_l_xio_win32_activated)
     {
-        SleepEx(INFINITE, true);  /* the APCs below execute here */
+        SleepEx(INFINITE, GLOBUS_TRUE);  /* the APCs below execute here */
     }
 
     GlobusXIOSystemDebugExit();
@@ -188,7 +188,6 @@ globus_l_xio_win32_file_kickout(
     globus_object_t *                   error;
     globus_size_t                       nbytes;
     globus_xio_system_data_callback_t   callback;
-    void *                              user_arg;
     GlobusXIOName(globus_l_xio_win32_file_kickout);
 
     op = (globus_l_xio_win32_file_op_t *) user_arg;
@@ -924,7 +923,7 @@ globus_xio_system_file_read(
         
         while(handle->read_op.apc_pending)
         {
-            SleepEx(INFINITE, true); /* drive APCs */
+            SleepEx(INFINITE, GLOBUS_TRUE); /* drive APCs */
         }
     }
     else
@@ -988,7 +987,7 @@ globus_xio_system_file_write(
         
         while(handle->write_op.apc_pending)
         {
-            SleepEx(INFINITE, true); /* drive APCs */
+            SleepEx(INFINITE, GLOBUS_TRUE); /* drive APCs */
         }
     }
     else

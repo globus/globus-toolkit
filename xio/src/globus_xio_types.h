@@ -33,7 +33,7 @@ typedef struct globus_i_xio_op_s *              globus_xio_data_descriptor_t;
 
 #ifdef WIN32
 /* The ordering of the fields must match those in WSABUF */
-typedef struct
+typedef struct iovec
 {
     unsigned long                       iov_len;
     char *                              iov_base;
