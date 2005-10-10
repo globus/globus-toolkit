@@ -402,7 +402,8 @@ globus_l_xio_win32_socket_event_cb(
     void *                              user_arg)
 {
     globus_l_xio_win32_socket_t *       handle;
-    WSANETWORKEVENTS                    events;
+    WSANETWORKEVENTS                    wsaevents;
+    int                                 events;
     GlobusXIOName(globus_l_xio_win32_socket_event_cb);
     
     handle = (globus_l_xio_win32_socket_t *) user_arg;
@@ -410,11 +411,12 @@ globus_l_xio_win32_socket_event_cb(
     GlobusXIOSystemDebugEnterFD(handle->socket);
     
     if(WSAEnumNetworkEvents(
-        handle->socket, handle->event, &events) == SOCKET_ERROR)
+        handle->socket, handle->event, &wsaevents) == SOCKET_ERROR)
     {
         goto error_enum;
     }
-
+    
+    events = wsaevents.lNetworkEvents;
     win32_mutex_lock(&handle->lock);
     {
         /* save the close event if it exists */
