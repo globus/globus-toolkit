@@ -766,7 +766,7 @@ globus_xio_system_file_register_read(
             if(!QueueUserAPC(
                 globus_l_xio_win32_file_start_read_apc,
                 globus_l_xio_win32_file_thread_handle,
-                &handle->read_op))
+                (ULONG_PTR)&handle->read_op))
             {
                 result = GlobusXIOErrorSystemError(
                     "QueueUserAPC", ERROR_NOT_ENOUGH_MEMORY);
@@ -878,7 +878,7 @@ globus_xio_system_file_register_write(
             if(!QueueUserAPC(
                 globus_l_xio_win32_file_start_write_apc,
                 globus_l_xio_win32_file_thread_handle,
-                &handle->write_op))
+                (ULONG_PTR)&handle->write_op))
             {
                 result = GlobusXIOErrorSystemError(
                     "QueueUserAPC", ERROR_NOT_ENOUGH_MEMORY);
