@@ -93,7 +93,7 @@ typedef struct globus_l_xio_win32_file_s
     globus_l_xio_win32_file_op_t        write_op;
 } globus_l_xio_win32_file_t;
 
-static HANDLE                           globus_l_xio_win32_file_thread;
+static HANDLE                           globus_l_xio_win32_file_thread_handle;
 static globus_bool_t                    globus_l_xio_win32_activated;
 
 static
@@ -115,9 +115,9 @@ globus_i_xio_win32_file_activate(void)
 
     GlobusXIOSystemDebugEnter();
 
-    globus_l_xio_win32_file_thread = _beginthreadex(
-        NULL, 0, globus_l_xio_win32_file_thread, NULL, 0, 0);
-    if(globus_l_xio_win32_file_thread == 0)
+    globus_l_xio_win32_file_thread_handle = _beginthreadex(
+        NULL, 0, globus_l_xio_win32_file_thread_handle, NULL, 0, 0);
+    if(globus_l_xio_win32_file_thread_handle == 0)
     {
         goto error_thread;
     }
@@ -142,16 +142,16 @@ globus_i_xio_win32_file_deactivate(void)
     globus_l_xio_win32_activated = GLOBUS_FALSE;
     QueueUserAPC(
         globus_l_xio_win32_file_deactivate_apc,
-        globus_l_xio_win32_file_thread,
+        globus_l_xio_win32_file_thread_handle,
         NULL);
 
     while(WaitForSingleObject(
-        globus_l_xio_win32_file_thread, INFINITE) != WAIT_OBJECT_0)
+        globus_l_xio_win32_file_thread_handle, INFINITE) != WAIT_OBJECT_0)
     {
         /* XXX error */
     }
 
-    CloseHandle(globus_l_xio_win32_file_thread);
+    CloseHandle(globus_l_xio_win32_file_thread_handle);
 
     GlobusXIOSystemDebugExit();
     return GLOBUS_SUCCESS;
@@ -756,7 +756,7 @@ globus_xio_system_file_register_read(
         {
             if(!QueueUserAPC(
                 globus_l_xio_win32_file_start_read_apc,
-                globus_l_xio_win32_file_thread,
+                globus_l_xio_win32_file_thread_handle,
                 &handle->read_op))
             {
                 result = GlobusXIOErrorSystemError(
@@ -868,7 +868,7 @@ globus_xio_system_file_register_write(
         {
             if(!QueueUserAPC(
                 globus_l_xio_win32_file_start_write_apc,
-                globus_l_xio_win32_file_thread,
+                globus_l_xio_win32_file_thread_handle,
                 &handle->write_op))
             {
                 result = GlobusXIOErrorSystemError(
