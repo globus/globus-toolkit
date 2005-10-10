@@ -1104,6 +1104,7 @@ globus_xio_system_socket_read(
     globus_size_t *                     u_nbytes)
 {
     globus_result_t                     result;
+    globus_l_xio_win32_blocking_info_t * blocking_info;
     GlobusXIOName(globus_xio_system_socket_read);
     
     GlobusXIOSystemDebugEnterFD(handle->socket);
@@ -1127,8 +1128,6 @@ globus_xio_system_socket_read(
     
     if(result == GLOBUS_SUCCESS && *u_nbytes < waitforbytes)
     {
-        globus_l_xio_win32_blocking_info_t * blocking_info;
-        
         result = globus_l_xio_win32_blocking_init(&blocking_info);
         if(result != GLOBUS_SUCCESS)
         {
@@ -1188,6 +1187,7 @@ globus_xio_system_socket_write(
     globus_size_t *                     u_nbytes)
 {
     globus_result_t                     result;
+    globus_l_xio_win32_blocking_info_t * blocking_info;
     GlobusXIOName(globus_xio_system_socket_write);
     
     GlobusXIOSystemDebugEnterFD(handle->socket);
@@ -1216,8 +1216,6 @@ globus_xio_system_socket_write(
     
     if(result == GLOBUS_SUCCESS && *u_nbytes < waitforbytes)
     {
-        globus_l_xio_win32_blocking_info_t * blocking_info;
-                
         result = globus_l_xio_win32_blocking_init(&blocking_info);
         if(result != GLOBUS_SUCCESS)
         {
