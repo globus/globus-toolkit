@@ -773,7 +773,7 @@ globus_xio_system_socket_register_accept(
     op_info->handle = listener_handle;
     op_info->user_arg = user_arg;
     op_info->sop.non_data.callback = callback;
-    op_info->sop.non_data.out_fd.socket = out_handle;
+    op_info->sop.non_data.out_fd = out_handle;
     op_info->waitforbytes = 1;
 
     result = globus_l_xio_win32_socket_register_read(listener_handle, op_info);
@@ -1048,7 +1048,7 @@ globus_l_xio_win32_blocking_init(
     return GLOBUS_SUCCESS;
 
 error_create:
-    globus_free(*blocking_info);
+    globus_free(blocking_info);
 error_info:
     *u_blocking_info = 0;
     GlobusXIOSystemDebugExitWithError();
@@ -1116,7 +1116,7 @@ globus_xio_system_socket_read(
         handle->ready_events &= ~FD_READ;
         
         result = globus_i_xio_system_socket_try_read(
-            fd,
+            handle->socket,
             u_iov,
             u_iovc,
             flags,
@@ -1143,7 +1143,7 @@ globus_xio_system_socket_read(
             u_iov,
             u_iovc,
             waitforbytes,
-            *u_nbytes
+            *u_nbytes,
             flags,
             from,
             globus_l_xio_win32_blocking_cb,
