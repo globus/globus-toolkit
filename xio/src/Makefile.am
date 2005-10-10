@@ -42,6 +42,12 @@ libglobus_xio___GLOBUS_FLAVOR_NAME__la_LIBADD = \
 	$(XIO_BUILTIN_LIBS)
 
 EXTRA_DIST = \
+	globus_xio_system_win32.c \
+	globus_i_xio_win32.h \
+	globus_i_xio_win32_complete.c \
+	globus_i_xio_win32_file.c \
+	globus_i_xio_win32_mode.c \
+	globus_i_xio_win32_socket.c \
 	version.h.in \
 	extensions.h.in \
 	configure.in.in
