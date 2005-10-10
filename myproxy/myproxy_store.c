@@ -7,7 +7,6 @@
 #include "myproxy_common.h"	/* all needed headers included here */
 
 /* Location of default proxy */
-#define MYPROXY_DEFAULT_PROXY	  "/tmp/myproxy-proxy"
 #define MYPROXY_DEFAULT_USERCERT  "usercert.pem"
 #define MYPROXY_DEFAULT_USERKEY   "userkey.pem"
 #define MYPROXY_DEFAULT_DIRECTORY ".globus"
