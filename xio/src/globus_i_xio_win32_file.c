@@ -780,7 +780,7 @@ globus_xio_system_file_register_read(
     return GLOBUS_SUCCESS;
 
 error_register:
-    GlobusIXIOSystemFreeIovec(iov, u_iovc);
+    GlobusIXIOSystemFreeIovec(u_iovc, iov);
 error_iovec:
     win32_mutex_lock(&handle->lock);
     handle->read_op.pending = GLOBUS_FALSE;
@@ -892,7 +892,7 @@ globus_xio_system_file_register_write(
     return GLOBUS_SUCCESS;
 
 error_register:
-    GlobusIXIOSystemFreeIovec(iov, u_iovc);
+    GlobusIXIOSystemFreeIovec(u_iovc, iov);
 error_iovec:
     win32_mutex_lock(&handle->lock);
     handle->write_op.pending = GLOBUS_FALSE;
