@@ -740,9 +740,8 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self, char *accepted_peer_names[])
     {
 	OM_uint32 minor_status;
 	gss_release_cred(&minor_status, &creds);
-	gss_release_name(&minor_status, &server_gss_name);
 	gss_release_buffer(&minor_status, &gss_buffer);
-	gss_release_buffer(&minor_status, &tmp_gss_buffer);
+	gss_release_name(&minor_status, &server_gss_name);
         gss_release_name(&minor_status, &target_name);
     }
     if (cert_dir) free(cert_dir);
@@ -942,6 +941,14 @@ GSI_SOCKET_write_buffer(GSI_SOCKET *self,
 	return GSI_SOCKET_ERROR;
     }
     
+#if 0
+    if (buffer[buffer_len-1] == '\0') {
+	myproxy_debug("writing a null-terminated message");
+    } else {
+	myproxy_debug("writing a non-null-terminated message");
+    }
+#endif
+
     if ((buffer == NULL) || (buffer_len == 0))
     {
 	return 0;
@@ -1106,6 +1113,14 @@ int GSI_SOCKET_read_token(GSI_SOCKET *self,
     *pbuffer_len = bytes_read;
     return_status = GSI_SOCKET_SUCCESS;
     /* myproxy_debug("\nread:\n%s\n", buffer); */
+
+#if 0
+    if (buffer[bytes_read-1] == '\0') {
+	myproxy_debug("read a null-terminated message");
+    } else {
+	myproxy_debug("read a non-null-terminated message");
+    }
+#endif
     
   error:
     return return_status;
