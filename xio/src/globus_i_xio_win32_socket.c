@@ -1266,7 +1266,7 @@ error_init:
 
 globus_result_t
 globus_xio_system_socket_create(
-    globus_xio_system_socket_t *        socket,
+    globus_xio_system_socket_t *        sock,
     int                                 domain,
     int                                 type,
     int                                 protocol)
@@ -1274,24 +1274,24 @@ globus_xio_system_socket_create(
     globus_result_t                     result;
     GlobusXIOName(globus_xio_system_socket_create);
     
-    *socket = INVALID_SOCKET;
-    GlobusXIOSystemDebugEnterFD(*socket);
+    *sock = INVALID_SOCKET;
+    GlobusXIOSystemDebugEnterFD(*sock);
     
-    *socket = socket(domain, type, protocol);
-    if(*socket == INVALID_SOCKET)
+    *sock = socket(domain, type, protocol);
+    if(*sock == INVALID_SOCKET)
     {
         result = GlobusXIOErrorSystemError("socket", WSAGetLastError());
         goto error_socket;
     }
 
     /* all handles created by me are closed on exec */
-    SetHandleInformation(*socket, HANDLE_FLAG_INHERIT, 0);
+    SetHandleInformation((HANDLE)*sock, HANDLE_FLAG_INHERIT, 0);
 
-    GlobusXIOSystemDebugExitFD(*socket);
+    GlobusXIOSystemDebugExitFD(*sock);
     return GLOBUS_SUCCESS;
 
 error_socket:
-    GlobusXIOSystemDebugExitWithErrorFD(*socket);
+    GlobusXIOSystemDebugExitWithErrorFD(*sock);
     return result;
 }
 
