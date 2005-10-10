@@ -283,7 +283,7 @@ globus_l_xio_win32_file_read_apc(
              * this could result in this function being reentered on error
              * not a problem, though.
              */
-            globus_l_xio_win32_file_start_read_apc(op);
+            globus_l_xio_win32_file_start_read_apc((ULONG_PTR)op);
             goto reading_more:
         }
         else
@@ -362,7 +362,7 @@ globus_l_xio_win32_file_write_apc(
              * this could result in this function being reentered on error
              * not a problem, though.
              */
-            globus_l_xio_win32_file_start_write_apc(op);
+            globus_l_xio_win32_file_start_write_apc((ULONG_PTR)op);
             goto writing_more:
         }
         else
@@ -931,7 +931,7 @@ globus_xio_system_file_read(
 
     if(handle->is_overlapped)
     {
-        globus_l_xio_win32_file_start_read_apc(&handle->read_op);
+        globus_l_xio_win32_file_start_read_apc((ULONG_PTR)&handle->read_op);
         
         while(handle->read_op.apc_pending)
         {
@@ -995,7 +995,7 @@ globus_xio_system_file_write(
     
     if(handle->is_overlapped)
     {
-        globus_l_xio_win32_file_start_write_apc(&handle->write_op);
+        globus_l_xio_win32_file_start_write_apc((ULONG_PTR)&handle->write_op);
         
         while(handle->write_op.apc_pending)
         {
