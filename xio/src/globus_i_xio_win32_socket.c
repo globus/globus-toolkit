@@ -223,7 +223,7 @@ globus_l_xio_win32_socket_handle_write(
 
             errlen = sizeof(err);
             if(getsockopt(
-                handle->socket, SOL_SOCKET, SO_ERROR, &err, &errlen)
+                handle->socket, SOL_SOCKET, SO_ERROR, (char *)&err, &errlen)
                     == SOCKET_ERROR)
             {
                 err = WSAGetLastError();
