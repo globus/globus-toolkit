@@ -232,6 +232,18 @@ globus_l_xio_win32_file_deactivate_apc(
 static
 void
 CALLBACK
+globus_l_xio_win32_file_start_read_apc(
+    ULONG_PTR                           arg);
+
+static
+void
+CALLBACK
+globus_l_xio_win32_file_start_write_apc(
+    ULONG_PTR                           arg);
+
+static
+void
+CALLBACK
 globus_l_xio_win32_file_read_apc(
     DWORD                               error,
     DWORD                               nbytes,
