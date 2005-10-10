@@ -247,7 +247,7 @@ get_ca_info() {
 
 CA_ORG_NAME=`generate_unique_name`
 res=$?
-if test res -ne 0; then
+if test $res -ne 0; then
     exit 1
 fi
 GSI_CA_BASE_DN="ou=${CA_ORG_NAME}, ou=GlobusTest, o=Grid"
