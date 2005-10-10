@@ -33,7 +33,7 @@ typedef struct globus_l_xio_win32_event_entry_s
     struct globus_l_xio_win32_event_thread_s * owner;
     int                                 index;
     
-    globus_callback_func_t              callback;
+    globus_i_xio_win32_event_cb_t       callback;
     void *                              user_arg;
     globus_bool_t                       post_pending;
 } globus_l_xio_win32_event_entry_t;
@@ -555,7 +555,7 @@ globus_l_xio_win32_event_add(
     globus_l_xio_win32_event_entry_t ** uentry,
     globus_l_xio_win32_event_thread_t * thread,
     HANDLE                              event_handle,
-    globus_callback_func_t              callback,
+    globus_i_xio_win32_event_cb_t       callback,
     void *                              user_arg)
 {
     globus_result_t                     result;
@@ -635,7 +635,7 @@ globus_result_t
 globus_i_xio_win32_event_register(
     globus_i_xio_win32_event_entry_t *  entry_handle,
     HANDLE                              event_handle,
-    globus_callback_func_t              callback,
+    globus_i_xio_win32_event_cb_t       callback,
     void *                              user_arg)
 {
     globus_l_xio_win32_event_thread_t * thread;
