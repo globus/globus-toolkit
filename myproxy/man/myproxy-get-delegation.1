@@ -1,4 +1,4 @@
-.TH myproxy-logon 1 "2005-6-8" "NCSA" "MyProxy"
+.TH myproxy-logon 1 "2005-10-10" "NCSA" "MyProxy"
 .SH NAME
 myproxy-logon \- retrieve a credential
 .SH SYNOPSIS
@@ -118,6 +118,14 @@ passphrase from the active tty.  When running the command
 non-interactively, there may be no associated tty.  Specifying this
 option tells the command to read passphrases from standard input
 without prompts or confirmation.
+.TP
+.B -n, --no_passphrase
+Don't prompt for a credential passphrase.
+Use other methods for authentication, such as Kerberos ticket
+or X.509 certificate.
+This option is implied by
+.B -a
+since passphrase authentication is not used for credential renewal.
 .TP
 .B -T, --trustroots
 Retrieve CA certificates directory from server (if available) to store

@@ -1,4 +1,4 @@
-.TH myproxy-init 1 "2005-6-8" "NCSA" "MyProxy"
+.TH myproxy-init 1 "2005-10-10" "NCSA" "MyProxy"
 .SH NAME
 myproxy-init \- store a credential for later retrieval
 .SH SYNOPSIS
@@ -210,6 +210,21 @@ passphrase from the active tty.  When running the command
 non-interactively, there may be no associated tty.  Specifying this
 option tells the command to read passphrases from standard input
 without prompts or confirmation.
+.TP
+.B -n, --no_passphrase
+Don't prompt for a credential passphrase.
+Store credentials without a credential passphrase, 
+to be protected by other methods, such as PAM, SASL, or
+certificate-based authentication.
+This option is implied by
+.B -R
+since passphrase authentication is not used for credential renewal.
+Note that the 
+.BR myproxy-server (8)
+always requires some type of authentication for retrieving
+credentials, so if you store a credential with no passphrase and other
+authentication methods are not configured, the credential will not be
+accessible.
 .SH "EXIT STATUS"
 0 on success, >0 on error
 .SH FILES
