@@ -1096,12 +1096,12 @@ globus_l_xio_win32_blocking_cb(
 globus_result_t
 globus_xio_system_socket_read(
     globus_xio_system_socket_handle_t   handle,
-    const globus_xio_iovec_t *          u_iov,
-    int                                 u_iovc,
+    const globus_xio_iovec_t *          iov,
+    int                                 iovc,
     globus_size_t                       waitforbytes,
     int                                 flags,
     globus_sockaddr_t *                 from,
-    globus_size_t *                     u_nbytes)
+    globus_size_t *                     nbytes)
 {
     globus_result_t                     result;
     globus_l_xio_win32_blocking_info_t * blocking_info;
@@ -1118,15 +1118,15 @@ globus_xio_system_socket_read(
         
         result = globus_i_xio_system_socket_try_read(
             handle->socket,
-            u_iov,
-            u_iovc,
+            iov,
+            iovc,
             flags,
             from,
-            u_nbytes);
+            nbytes);
     }
     win32_mutex_unlock(&handle->lock);
     
-    if(result == GLOBUS_SUCCESS && *u_nbytes < waitforbytes)
+    if(result == GLOBUS_SUCCESS && *nbytes < waitforbytes)
     {
         result = globus_l_xio_win32_blocking_init(&blocking_info);
         if(result != GLOBUS_SUCCESS)
@@ -1139,10 +1139,10 @@ globus_xio_system_socket_read(
         result = globus_l_xio_system_socket_register_read(
             0,
             handle,
-            u_iov,
-            u_iovc,
+            iov,
+            iovc,
             waitforbytes,
-            *u_nbytes,
+            *nbytes,
             flags,
             from,
             globus_l_xio_win32_blocking_cb,
@@ -1161,7 +1161,7 @@ globus_xio_system_socket_read(
         {
             result = globus_error_put(blocking_info->error);
         }
-        *u_nbytes = blocking_info->nbytes;
+        *nbytes = blocking_info->nbytes;
         
         globus_l_xio_win32_blocking_destroy(blocking_info);
     }
@@ -1179,12 +1179,12 @@ error_init:
 globus_result_t
 globus_xio_system_socket_write(
     globus_xio_system_socket_handle_t   handle,
-    const globus_xio_iovec_t *          u_iov,
-    int                                 u_iovc,
+    const globus_xio_iovec_t *          iov,
+    int                                 iovc,
     globus_size_t                       waitforbytes,
     int                                 flags,
     globus_sockaddr_t *                 to,
-    globus_size_t *                     u_nbytes)
+    globus_size_t *                     nbytes)
 {
     globus_result_t                     result;
     globus_l_xio_win32_blocking_info_t * blocking_info;
@@ -1199,14 +1199,14 @@ globus_xio_system_socket_write(
     {
         result = globus_i_xio_system_socket_try_write(
             handle->socket,
-            u_iov,
-            u_iovc,
+            iov,
+            iovc,
             flags,
             to,
-            u_nbytes);
+            nbytes);
         
-        if(result == GLOBUS_SUCCESS && *u_nbytes == 0 && 
-            (u_iovc > 1 || u_iov->iov_len > 0))
+        if(result == GLOBUS_SUCCESS && *nbytes == 0 && 
+            (iovc > 1 || iov->iov_len > 0))
         {
             /* couldnt write any data, clear write event */
             handle->ready_events &= ~FD_WRITE;
@@ -1214,7 +1214,7 @@ globus_xio_system_socket_write(
     }
     win32_mutex_unlock(&handle->lock);
     
-    if(result == GLOBUS_SUCCESS && *u_nbytes < waitforbytes)
+    if(result == GLOBUS_SUCCESS && *nbytes < waitforbytes)
     {
         result = globus_l_xio_win32_blocking_init(&blocking_info);
         if(result != GLOBUS_SUCCESS)
@@ -1230,7 +1230,7 @@ globus_xio_system_socket_write(
             iov,
             iovc,
             waitforbytes,
-            *u_nbytes,
+            *nbytes,
             flags,
             to,
             globus_l_xio_win32_blocking_cb,
@@ -1249,7 +1249,7 @@ globus_xio_system_socket_write(
         {
             result = globus_error_put(blocking_info->error);
         }
-        *u_nbytes = blocking_info->nbytes;
+        *nbytes = blocking_info->nbytes;
         
         globus_l_xio_win32_blocking_destroy(blocking_info);
     }
