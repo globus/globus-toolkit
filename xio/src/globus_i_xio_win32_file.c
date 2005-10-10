@@ -507,7 +507,7 @@ globus_l_xio_win32_file_start_write_apc(
 
 globus_result_t
 globus_xio_system_file_init(
-    globus_xio_system_file_handle_t *   handle,
+    globus_xio_system_file_handle_t *   uhandle,
     globus_xio_system_file_t            fd)
 {
     globus_result_t                     result;
