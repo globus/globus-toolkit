@@ -243,7 +243,7 @@ extern const char * _globus_func_name;
 /* The ordering of the fields must match those in WSABUF */
     struct  iovec  
     {
-        unsighed long      iov_len;  /* Length in bytes.  */
+        unsigned long      iov_len;  /* Length in bytes.  */
         char *             iov_base;  /* Starting address.  */
     };
 #endif 
