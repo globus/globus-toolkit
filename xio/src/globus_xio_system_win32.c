@@ -534,7 +534,7 @@ globus_l_xio_win32_event_get_thread(
         globus_l_xio_win32_event_threads[
             globus_l_xio_win32_event_thread_count] = thread;
         
-        thread->thread_handle = _beginthreadex(
+        thread->thread_handle = (HANDLE) _beginthreadex(
             0, 0, globus_l_xio_win32_event_thread, thread, 0, 0);
         if(thread->thread_handle == 0)
         {
@@ -715,7 +715,7 @@ error_add:
     win32_mutex_unlock(&thread->lock);
     
 error_nothread:
-error_deactivated::
+error_deactivated:
     win32_mutex_unlock(&globus_l_xio_win32_event_thread_lock);
     
     GlobusXIOSystemDebugExitWithError();

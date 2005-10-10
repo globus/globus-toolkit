@@ -11,13 +11,13 @@
 
 #define GlobusLWin32PollQueueInit()                                         \
 {                                                                           \
-    globus_l_xio_win32_poll_queue = NULL;                                   \
+    globus_l_xio_win32_poll_queue = 0;                                      \
     globus_l_xio_win32_poll_queue_tail = &globus_l_xio_win32_poll_queue;    \
 }
 
 #define GlobusLWin32PollQueueEnqueue(entry)                                 \
 {                                                                           \
-    (entry)->next = NULL;                                                   \
+    (entry)->next = 0;                                                      \
     *globus_l_xio_win32_poll_queue_tail = (entry);                          \
     globus_l_xio_win32_poll_queue_tail = &(entry)->next;                    \
 }
@@ -31,7 +31,7 @@
 }
 
 #define GlobusLWin32PollQueueEmpty()                                        \
-    (globus_l_xio_win32_poll_queue == NULL)
+    (globus_l_xio_win32_poll_queue == 0)
 
 typedef struct globus_l_xio_win32_poll_entry_s
 {
@@ -135,12 +135,12 @@ globus_i_xio_win32_complete_activate(void)
     GlobusXIOSystemDebugEnter();
     
     GlobusLWin32PollQueueInit();
-    win32_mutex_init(&globus_l_xio_win32_poll_lock, NULL);
+    win32_mutex_init(&globus_l_xio_win32_poll_lock, 0);
     globus_l_xio_win32_poll_event_sleeping = GLOBUS_FALSE;
     globus_l_xio_win32_poll_event_pending = GLOBUS_FALSE;
-    globus_l_xio_win32_poll_free = NULL;
+    globus_l_xio_win32_poll_free = 0;
     
-    globus_l_xio_win32_poll_event = CreateEvent(NULL, FALSE, FALSE, NULL);
+    globus_l_xio_win32_poll_event = CreateEvent(0, FALSE, FALSE, 0);
     if(globus_l_xio_win32_poll_event == 0)
     {
         goto error_event;
@@ -149,17 +149,17 @@ globus_i_xio_win32_complete_activate(void)
     GlobusTimeReltimeSet(period, 0, 0);
     result = globus_callback_register_periodic(
         &globus_l_xio_win32_poll_handle,
-        NULL,
+        0,
         &period,
         globus_l_xio_win32_poll,
-        NULL);
+        0);
     if(result != GLOBUS_SUCCESS)
     {
         goto error_periodic;
     }
     
     globus_callback_add_wakeup_handler(
-        globus_l_xio_win32_wakeup_handler, NULL);
+        globus_l_xio_win32_wakeup_handler, 0);
     
     GlobusXIOSystemDebugExit();
     
@@ -202,13 +202,13 @@ globus_i_xio_win32_complete_deactivate(void)
     
     GlobusXIOSystemDebugEnter();
     
-    unregistered = CreateEvent(NULL, FALSE, FALSE, NULL);
+    unregistered = CreateEvent(0, FALSE, FALSE, 0);
     
     result = globus_callback_unregister(
         globus_l_xio_win32_poll_handle,
         globus_l_xio_win32_unregister_poll_cb,
         unregistered,
-        NULL);
+        0);
     
     if(unregistered != 0)
     {
@@ -315,8 +315,8 @@ globus_i_xio_win32_complete(
     void *                              user_arg)
 {
     return globus_callback_register_oneshot(
-        NULL,
-        NULL,
+        0,
+        0,
         callback,
         user_arg);
 }
