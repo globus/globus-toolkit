@@ -22,7 +22,6 @@ static globus_cond_t                    globus_l_gfs_cond;
 static globus_mutex_t                   globus_l_gfs_mutex;
 static globus_bool_t                    globus_l_gfs_terminated = GLOBUS_FALSE;
 static unsigned int                     globus_l_gfs_outstanding = 0;
-static unsigned int                     globus_l_gfs_open_count = 0;
 static globus_xio_driver_t              globus_l_gfs_tcp_driver = GLOBUS_NULL;
 static globus_xio_server_t              globus_l_gfs_xio_server = GLOBUS_NULL;
 static globus_bool_t                    globus_l_gfs_xio_server_accepting;
@@ -132,7 +131,7 @@ globus_l_gfs_sigint(
     {
         if(globus_l_gfs_sigint_caught)
         {
-            globus_l_gfs_open_count = 0;
+            globus_gfs_config_set_int("open_connections_count", 0);
             globus_i_gfs_log_message(
                 GLOBUS_I_GFS_LOG_ERR, 
                 "Forcing unclean shutdown.\n");
@@ -154,7 +153,7 @@ globus_l_gfs_sigint(
         globus_l_gfs_sigint_caught = GLOBUS_TRUE;
         globus_l_gfs_terminated = GLOBUS_TRUE;
 
-        if(globus_l_gfs_open_count == 0)
+        if(globus_gfs_config_get_int("open_connections_count") == 0)
         {
             globus_cond_signal(&globus_l_gfs_cond);
         }
@@ -215,7 +214,7 @@ globus_l_gfs_sigchld(
     GlobusGFSName(globus_l_gfs_sigchld);
     GlobusGFSDebugEnter();
 
-    while(globus_l_gfs_open_count > 0 &&
+    while(globus_gfs_config_get_int("open_connections_count") > 0 &&
         (child_pid = waitpid(-1, &child_status, WNOHANG)) > 0)
     {
         if(WIFEXITED(child_status))
@@ -421,7 +420,7 @@ globus_l_gfs_spawn_child(
     { 
         /* inc the connection count 2 here since we will dec it on this close
         and on the death of the child process */
-        globus_l_gfs_open_count += 2;
+        globus_gfs_config_inc_int("open_connections_count", 2);
         globus_mutex_unlock(&globus_l_gfs_mutex);
         result = globus_xio_register_close(
             handle,
@@ -454,10 +453,10 @@ globus_i_gfs_connection_closed()
     GlobusGFSName(globus_i_gfs_connection_closed);
     GlobusGFSDebugEnter();
 
-    globus_l_gfs_open_count--;
+    globus_gfs_config_inc_int("open_connections_count", -1);
     if(globus_l_gfs_terminated || globus_i_gfs_config_bool("single"))
     {
-        if(globus_l_gfs_open_count == 0)
+        if(globus_gfs_config_get_int("open_connections_count") == 0)
         {
             globus_l_gfs_terminated = GLOBUS_TRUE;
             globus_cond_signal(&globus_l_gfs_cond);
@@ -669,7 +668,7 @@ globus_l_gfs_open_new_server(
     {
         goto error_open;
     }
-    globus_l_gfs_open_count++;
+    globus_gfs_config_inc_int("open_connections_count", 1);
     
     GlobusGFSDebugExit();
     return GLOBUS_SUCCESS;
@@ -872,7 +871,8 @@ globus_l_gfs_server_accept_cb(
 
         /* if too many already open */
         if(globus_gfs_config_get_int("connections_max") != 0 &&
-            globus_l_gfs_open_count >= globus_gfs_config_get_int("connections_max"))
+            globus_gfs_config_get_int("open_connections_count")
+                 >= globus_gfs_config_get_int("connections_max"))
         {
             result = globus_xio_register_open(
                 handle,
@@ -957,7 +957,7 @@ error_register_accept:
     
 error_accept:
     globus_l_gfs_terminated = GLOBUS_TRUE;
-    if(globus_l_gfs_open_count == 0)
+    if(globus_gfs_config_get_int("open_connections_count") == 0)
     {
         globus_cond_signal(&globus_l_gfs_cond);
     }
@@ -1239,7 +1239,7 @@ globus_l_gfs_dnc_ipc_open_callback(
         }
         else
         {
-            globus_l_gfs_open_count++;
+            globus_gfs_config_inc_int("open_connections_count", 1);
         }
     }
     globus_mutex_unlock(&globus_l_gfs_mutex);
@@ -1254,7 +1254,7 @@ globus_l_gfs_dnc_ipc_error_callback(
 {
     globus_mutex_lock(&globus_l_gfs_mutex);
     {
-        globus_l_gfs_open_count--;
+        globus_gfs_config_inc_int("open_connections_count", -1);
         globus_i_gfs_log_result(
             _GSSL("Connecting data node error"), result);
         globus_cond_signal(&globus_l_gfs_cond);
@@ -1368,8 +1368,8 @@ main(
     /* initialize global variables */
     globus_mutex_init(&globus_l_gfs_mutex, GLOBUS_NULL);
     globus_cond_init(&globus_l_gfs_cond, GLOBUS_NULL);
-    
-    globus_l_gfs_open_count = 0;
+
+    globus_gfs_config_set_int("open_connections_count", 0);
     globus_l_gfs_exit = globus_i_gfs_config_int("bad_signal_exit");
     globus_l_gfs_xio_server = NULL;
 
@@ -1573,7 +1573,7 @@ main(
 
         /* run until we are done */ 
         while(!globus_l_gfs_terminated || 
-                globus_l_gfs_open_count > 0 ||
+            globus_gfs_config_get_int("open_connections_count") > 0 ||
                 globus_l_gfs_outstanding > 0)
         {
             globus_cond_wait(&globus_l_gfs_cond, &globus_l_gfs_mutex);

@@ -1485,6 +1485,40 @@ globus_gfs_ipc_handle_obtain(
 /*
  *  the brain bit
  */
+#define BRAIN_SYMBOL_NAME (void*)"gridftp_brain"
+extern globus_extension_registry_t      brain_i_registry;
+
+typedef globus_result_t
+(*globus_i_gfs_brain_select_nodes_func_t)(
+    char ***                            out_contact_strings,
+    int *                               out_array_length,
+    const char *                        repo_name,
+    globus_off_t                        filesize,
+    int                                 min_count,
+    int                                 max_count);
+
+typedef globus_result_t
+(*globus_i_gfs_brain_release_node_func_t)(
+    char *                              contact_string,
+    const char *                        repo_name,
+    globus_gfs_brain_reason_t           reason);
+
+typedef globus_result_t
+(*globus_i_gfs_brain_init_func_t)();
+
+typedef void
+(*globus_i_gfs_brain_stop_func_t)();
+
+typedef struct globus_i_gfs_brain_module_s
+{
+    globus_i_gfs_brain_init_func_t         init_func;
+    globus_i_gfs_brain_stop_func_t         stop_func;
+    globus_i_gfs_brain_select_nodes_func_t select_func;
+    globus_i_gfs_brain_release_node_func_t release_func;
+} globus_i_gfs_brain_module_t;
+
+extern globus_i_gfs_brain_module_t globus_i_gfs_default_brain;
+
 globus_result_t
 globus_gfs_brain_select_nodes(
     char ***                            out_contact_strings,
@@ -1570,5 +1604,10 @@ int
 globus_gfs_config_set_ptr(
     char *                              option_name,
     void *                              ptr);
+
+int
+globus_gfs_config_inc_int(
+    char *                              option_name,
+    int                                 inc_val);
 
 #endif
