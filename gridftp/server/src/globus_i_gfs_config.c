@@ -178,6 +178,8 @@ static const globus_l_gfs_config_option_t option_list[] =
     "This server is a backend data node.", NULL, NULL,GLOBUS_FALSE},
  {"stripe_blocksize", "stripe_blocksize", NULL, "stripe-blocksize", "sbs", GLOBUS_L_GFS_CONFIG_INT, (1024 * 1024), NULL,
     "Size in bytes of sequential data that each stripe will transfer.", NULL, NULL,GLOBUS_FALSE},
+ {"brain", "brain", NULL, "brain", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+    "switch out the default remote brain [unsuported]", NULL,GLOBUS_FALSE},
  {"wsrf_service", "wsrf_service", NULL, "wsrf_service", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "wsrf extension library for monitoring [unsuported]", NULL,GLOBUS_FALSE},
  {"epr_outfile", "epr_outfile", NULL, "epr_outfile", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
