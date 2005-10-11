@@ -196,5 +196,8 @@ gssapi.lo: gssapi.c plugin_common.h config.h
 plugin_common.lo: plugin_common.c plugin_common.h config.h
 	$(LIBTOOL) --mode=compile $(CC) $(DEFS) $(KRB5CPPFLAGS) $(CFLAGS) -c plugin_common.c
 
+splint:
+	splint $(DEFS) $(CPPFLAGS) *.c
+
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
