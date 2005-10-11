@@ -180,7 +180,7 @@ read_token(const int sock,
 	unsigned char header[5];
 	char *bufferp;
 	int data_len, buffer_len;
-	fd_set rfds;
+	struct fd_set rfds;
 	struct timeval tv = { 0 };
 
 	if (read_all(sock, (char *)header, sizeof(header)) < 0) {
