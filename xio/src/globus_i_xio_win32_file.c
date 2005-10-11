@@ -1218,7 +1218,7 @@ globus_xio_system_file_open(
     *fd = CreateFile(
         filename,
         access,
-        FILE_SHARE_READ|FILE_SHARE_WRITE,
+        FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
         &sec_attr,
         create_mode,
         file_attr,
