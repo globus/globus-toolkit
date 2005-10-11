@@ -197,7 +197,10 @@ plugin_common.lo: plugin_common.c plugin_common.h config.h
 	$(LIBTOOL) --mode=compile $(CC) $(DEFS) $(KRB5CPPFLAGS) $(CFLAGS) -c plugin_common.c
 
 splint:
-	splint $(DEFS) $(CPPFLAGS) *.c
+	splint +posixlib \
+	-Dsocklen_t=int -Din_addr_t=int \
+	-Du_int="unsigned int" -Du_char="unsigned char" \
+	$(DEFS) $(GPT_INCLUDES) *.c
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
