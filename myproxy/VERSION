@@ -1,9 +1,12 @@
-This is MyProxy v3.1 11 Oct 2005.
+This is MyProxy v3.2 11 Oct 2005.
 This version should be protocol compatible with all versions since v0.2.
 Binary compatibility of the C API is not guaranteed between releases.
 
 Version History
 ---------------
+v3.2 11 Oct 2005
+  - fix fd_set compiler error introduced in v3.1
+
 v3.1 11 Oct 2005
   - fix client-side memory leak in GSI_SOCKET_authentication_init()
   - fix compilation problem on platforms without setenv()
