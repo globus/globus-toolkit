@@ -301,16 +301,16 @@ sub submit
         print SCRIPT_FILE "WhenToTransferOutput = $WhenToTransferOutput\n";
     }
 
-    my $transfer_input_file = $description->transferinputfile();
-    if (defined($transfer_input_file))
+    my $transfer_input_files = $description->transferinputfiles();
+    if (defined($transfer_input_files))
     {
-        $self->log("Adding explicitly \"transfer_input_file = "
-                  ."$transfer_input_file\"\n");
-        print SCRIPT_FILE "transfer_input_file = $transfer_input_file\n";
+        $self->log("Adding explicitly \"transfer_input_files = "
+                  ."$transfer_input_files\"\n");
+        print SCRIPT_FILE "transfer_input_files = $transfer_input_files\n";
     }
     else
     {
-        my @transfer_input_files = $description->transferinputfile();
+        my @transfer_input_files = $description->transferinputfiles();
         if (defined($transfer_input_files[0]))
             {
             my $file_list_string = "";
@@ -319,21 +319,21 @@ sub submit
                 $file_list_string .= "$file, ";
             }
             $file_list_string =~ s/, $//;
-            $self->log("Adding \"transfer_input_file = $file_list_string\"\n");
-            print SCRIPT_FILE "transfer_input_file = $file_list_string\n";
+            $self->log("Adding \"transfer_input_files = $file_list_string\"\n");
+            print SCRIPT_FILE "transfer_input_files = $file_list_string\n";
         }
     }
 
-    my $transfer_output_file = $description->transferoutputfile();
-    if (defined($transfer_output_file))
+    my $transfer_output_files = $description->transferoutputfiles();
+    if (defined($transfer_output_files))
     {
-        $self->log("Adding explicitly \"transfer_output_file = "
-                  ."$transfer_output_file\"\n");
-        print SCRIPT_FILE "transfer_output_file = $transfer_output_file\n";
+        $self->log("Adding explicitly \"transfer_output_files = "
+                  ."$transfer_output_files\"\n");
+        print SCRIPT_FILE "transfer_output_files = $transfer_output_files\n";
     }
     else
     {
-        my @transfer_output_files = $description->transferoutputfile();
+        my @transfer_output_files = $description->transferoutputfiles();
         if (defined($transfer_output_files[0]))
             {
             my $file_list_string = "";
@@ -342,8 +342,9 @@ sub submit
                 $file_list_string .= "$file, ";
             }
             $file_list_string =~ s/, $//;
-            $self->log("Adding \"transfer_output_file = $file_list_string\"\n");
-            print SCRIPT_FILE "transfer_output_file = $file_list_string\n";
+            $self->log("Adding \"transfer_output_files = "
+                      ."$file_list_string\"\n");
+            print SCRIPT_FILE "transfer_output_files = $file_list_string\n";
         }
     }
 
