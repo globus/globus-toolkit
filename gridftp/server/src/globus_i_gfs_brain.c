@@ -14,8 +14,6 @@
 
 #define GFS_BRAIN_FIXED_SIZE 256
 
-extern globus_i_gfs_community_t *       globus_i_gfs_ipc_community_default;
-
 
 static globus_i_gfs_brain_module_t *    brain_l_module = NULL;
 static globus_extension_handle_t        brain_l_ext_handle = NULL;
@@ -69,6 +67,22 @@ error:
     return result;
 }
 
+globus_result_t
+globus_gfs_brain_get_available(
+    const char *                        user_id,
+    const char *                        repo_name,
+    int *                               count)
+{
+    globus_result_t                     result = GLOBUS_SUCCESS;
+
+    GlobusGFSName(globus_i_gfs_brain_stop);
+    if(brain_l_module != NULL && brain_l_module->available_func != NULL)
+    {
+        result = brain_l_module->available_func(user_id, repo_name, count);
+    }
+    return result;
+}
+
 void
 globus_i_gfs_brain_stop()
 {
@@ -82,7 +96,7 @@ globus_i_gfs_brain_stop()
 
 globus_result_t
 globus_gfs_brain_select_nodes(
-    char ***                            out_contact_strings,
+    globus_i_gfs_brain_node_t ***       out_nodes,
     int *                               out_array_length,
     const char *                        repo_name,
     globus_off_t                        filesize,
@@ -95,7 +109,7 @@ globus_gfs_brain_select_nodes(
     if(brain_l_module != NULL && brain_l_module->select_func != NULL)
     {
         result = brain_l_module->select_func(
-            out_contact_strings,
+            out_nodes,
             out_array_length,
             repo_name,
             filesize,
@@ -115,8 +129,7 @@ error:
 
 globus_result_t
 globus_gfs_brain_release_node(
-    char *                              contact_string,
-    const char *                        repo_name,
+    globus_i_gfs_brain_node_t *         nodes,
     globus_gfs_brain_reason_t           reason)
 {
     globus_result_t                     result;
@@ -125,8 +138,7 @@ globus_gfs_brain_release_node(
     if(brain_l_module != NULL && brain_l_module->select_func != NULL)
     {
         result = brain_l_module->release_func(
-            contact_string,
-            repo_name,
+            nodes,
             reason);
         if(result != GLOBUS_SUCCESS)
         {

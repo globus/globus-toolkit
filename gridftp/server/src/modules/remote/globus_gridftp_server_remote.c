@@ -87,7 +87,6 @@ typedef struct globus_l_gfs_remote_node_info_s
     globus_gfs_ipc_handle_t             ipc_handle;
     globus_l_gfs_remote_node_handle_t * node_handle;  
     struct globus_l_gfs_remote_ipc_bounce_s * bounce;
-    char *                              host_cs;
     char *                              cs;
     void *                              data_arg;
     void *                              event_arg;
@@ -100,6 +99,7 @@ typedef struct globus_l_gfs_remote_node_info_s
     void *                              info;
     globus_l_gfs_remote_node_cb         callback;
     void *                              user_arg;
+    globus_i_gfs_brain_node_t *         brain_node;
 } globus_l_gfs_remote_node_info_t;
 
 typedef struct globus_l_gfs_remote_request_s
@@ -143,6 +143,24 @@ globus_l_gfs_remote_recv_next(
 
 
 static
+globus_result_t
+globus_l_gfs_remote_node_release(
+    globus_l_gfs_remote_node_info_t *   node_info)
+{
+    GlobusGFSName(globus_l_gfs_remote_node_release);
+    GlobusGFSRemoteDebugEnter();
+
+    globus_gfs_brain_release_node(
+        node_info->brain_node,
+        GLOBUS_GFS_BRAIN_REASON_COMPLETE);
+    globus_gfs_ipc_close(node_info->ipc_handle, NULL, NULL);
+    globus_free(node_info);
+
+    GlobusGFSRemoteDebugExit();
+    return GLOBUS_SUCCESS;
+}  
+
+static
 void
 globus_l_gfs_remote_ipc_error_cb(
     globus_gfs_ipc_handle_t             ipc_handle,
@@ -151,27 +169,14 @@ globus_l_gfs_remote_ipc_error_cb(
 {
     GlobusGFSName(globus_l_gfs_remote_ipc_error_cb);
     GlobusGFSRemoteDebugEnter();
-    
+
     globus_gfs_log_result(
         GLOBUS_GFS_LOG_ERR, "IPC ERROR", result);
-            
+
+    globus_gfs_ipc_close(ipc_handle, NULL, NULL);
+
     GlobusGFSRemoteDebugExit();
 }
-
-static
-globus_result_t
-globus_l_gfs_remote_node_release(
-    globus_l_gfs_remote_node_info_t *   node_info)
-{
-    GlobusGFSName(globus_l_gfs_remote_node_release);
-    GlobusGFSRemoteDebugEnter();
-
-    globus_gfs_ipc_handle_release(node_info->ipc_handle);
-    globus_free(node_info);
-
-    GlobusGFSRemoteDebugExit();
-    return GLOBUS_SUCCESS;
-}  
 
 static
 void
@@ -218,7 +223,7 @@ globus_l_gfs_remote_node_request(
     void *                              user_arg)
 {
     int                                 i;
-    char **                             cs;
+    globus_i_gfs_brain_node_t **        brain_node_array;
     int                                 cs_len;
     int                                 nodes_created;
     globus_result_t                     result = GLOBUS_SUCCESS;
@@ -237,7 +242,7 @@ globus_l_gfs_remote_node_request(
 
     /* select a new set of nodes */
     result = globus_gfs_brain_select_nodes(
-        &cs,
+        &brain_node_array,
         &cs_len,
         repo_name,
         -1,
@@ -254,15 +259,14 @@ globus_l_gfs_remote_node_request(
     {
         node_info = (globus_l_gfs_remote_node_info_t *)
             globus_calloc(1, sizeof(globus_l_gfs_remote_node_info_t));
-        node_info->host_cs = globus_libc_strdup(cs[i]);
+        node_info->brain_node = brain_node_array[i];
         node_info->node_ndx = i;
         node_info->callback = callback;
         node_info->user_arg = user_arg;
 
-        my_handle->session_info.host_id = node_info->host_cs;
+        my_handle->session_info.host_id = node_info->brain_node->host_id;
         tmp_res = globus_gfs_ipc_handle_obtain(
             &my_handle->session_info,
-            repo_name,
             &globus_gfs_ipc_default_iface,
             globus_l_gfs_remote_node_request_kickout,
             node_info,
@@ -274,8 +278,7 @@ globus_l_gfs_remote_node_request(
             /* TODO: log a warning that on eof the guys didn't work,
                 and tell the brain about it */
             globus_gfs_brain_release_node(
-                node_info->host_cs,
-                repo_name,
+                node_info->brain_node,
                 GLOBUS_GFS_BRAIN_REASON_ERROR);
         }
         else
@@ -1444,7 +1447,7 @@ globus_l_gfs_remote_session_start(
     my_handle->striped_mode = 1;
     my_handle->op = op;
 
-    globus_gfs_ipc_handle_get_max_available_count(
+    globus_gfs_brain_get_available(
         NULL, NULL, &my_handle->max_nodes);
     
     result = globus_l_gfs_remote_node_request(

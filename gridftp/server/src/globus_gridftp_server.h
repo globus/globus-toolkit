@@ -453,6 +453,13 @@ typedef enum globus_gfs_brain_reason_e
     GLOBUS_GFS_BRAIN_REASON_COMPLETE
 } globus_gfs_brain_reason_t;
 
+typedef struct globus_i_gfs_brain_node_s
+{
+    char *                              host_id;
+    char *                              repo_name;
+    void *                              brain_arg;
+} globus_i_gfs_brain_node_t;
+
 /**************************************************************************
  *  Storage Module API
  * 
@@ -1450,23 +1457,12 @@ globus_gfs_ipc_close(
     void *                              user_arg);
 
 globus_result_t
-globus_gfs_ipc_handle_release(
-    globus_gfs_ipc_handle_t             ipc_handle);
-
-globus_result_t
 globus_gfs_ipc_session_stop(
     globus_gfs_ipc_handle_t             ipc_handle);
 
 globus_result_t
-globus_gfs_ipc_handle_get_max_available_count(
-    const char *                        user_id,
-    const char *                        pathname,
-    int *                               count);
-
-globus_result_t
 globus_gfs_ipc_handle_connect(
     globus_gfs_session_info_t *         session_info,
-    const char *                        community_name,
     globus_gfs_ipc_open_callback_t      cb,
     void *                              user_arg,
     globus_gfs_ipc_error_callback_t     error_cb,
@@ -1475,7 +1471,6 @@ globus_gfs_ipc_handle_connect(
 globus_result_t
 globus_gfs_ipc_handle_obtain(
     globus_gfs_session_info_t *         session_info,
-    const char *                        pathname,
     globus_gfs_ipc_iface_t *            iface,
     globus_gfs_ipc_open_callback_t      cb,
     void *                              user_arg,
@@ -1490,7 +1485,7 @@ extern globus_extension_registry_t      brain_i_registry;
 
 typedef globus_result_t
 (*globus_i_gfs_brain_select_nodes_func_t)(
-    char ***                            out_contact_strings,
+    globus_i_gfs_brain_node_t ***       out_node_array,
     int *                               out_array_length,
     const char *                        repo_name,
     globus_off_t                        filesize,
@@ -1499,8 +1494,7 @@ typedef globus_result_t
 
 typedef globus_result_t
 (*globus_i_gfs_brain_release_node_func_t)(
-    char *                              contact_string,
-    const char *                        repo_name,
+    globus_i_gfs_brain_node_t *         contact_node,
     globus_gfs_brain_reason_t           reason);
 
 typedef globus_result_t
@@ -1509,19 +1503,27 @@ typedef globus_result_t
 typedef void
 (*globus_i_gfs_brain_stop_func_t)();
 
+typedef globus_result_t
+(*globus_i_gfs_brain_get_available_func_t)(
+    const char *                        user_id,
+    const char *                        repo_name,
+    int *                               count);
+
+
 typedef struct globus_i_gfs_brain_module_s
 {
-    globus_i_gfs_brain_init_func_t         init_func;
-    globus_i_gfs_brain_stop_func_t         stop_func;
-    globus_i_gfs_brain_select_nodes_func_t select_func;
-    globus_i_gfs_brain_release_node_func_t release_func;
+    globus_i_gfs_brain_init_func_t          init_func;
+    globus_i_gfs_brain_stop_func_t          stop_func;
+    globus_i_gfs_brain_select_nodes_func_t  select_func;
+    globus_i_gfs_brain_release_node_func_t  release_func;
+    globus_i_gfs_brain_get_available_func_t available_func;
 } globus_i_gfs_brain_module_t;
 
 extern globus_i_gfs_brain_module_t globus_i_gfs_default_brain;
 
 globus_result_t
 globus_gfs_brain_select_nodes(
-    char ***                            out_contact_strings,
+    globus_i_gfs_brain_node_t ***       out_node_array,
     int *                               out_array_length,
     const char *                        repo_name,
     globus_off_t                        filesize,
@@ -1530,9 +1532,14 @@ globus_gfs_brain_select_nodes(
 
 globus_result_t
 globus_gfs_brain_release_node(
-    char *                              contact_string,
-    const char *                        repo_name,
+    globus_i_gfs_brain_node_t *         contact_node,
     globus_gfs_brain_reason_t           reason);
+
+globus_result_t
+globus_gfs_brain_get_available(
+    const char *                        user_id,
+    const char *                        repo_name,
+    int *                               count);
 
 globus_result_t
 globus_gfs_ipc_handle_get_contact_string(
@@ -1543,27 +1550,12 @@ globus_result_t
 globus_gfs_ipc_init(
     globus_bool_t                       requester);
 
-globus_result_t
-globus_gfs_ipc_listen(
-    int                                 port,
-    char **                             out_cs);
-
 /*
  *
  */
 void
 globus_gfs_ipc_add_server(
     globus_xio_server_t                 server_handle);
-
-globus_result_t
-globus_gfs_ipc_handle_obtain(
-    globus_gfs_session_info_t *         session_info,
-    const char *                        pathname,
-    globus_gfs_ipc_iface_t *            iface,
-    globus_gfs_ipc_open_callback_t      cb,
-    void *                              user_arg,
-    globus_gfs_ipc_error_callback_t     error_cb,
-    void *                              error_user_arg);
 
 extern globus_gfs_ipc_iface_t  globus_gfs_ipc_default_iface;
 

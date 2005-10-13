@@ -14,7 +14,8 @@
 
 #define GFS_BRAIN_FIXED_SIZE 256
 
-extern globus_i_gfs_community_t *       globus_i_gfs_ipc_community_default;
+static globus_list_t *                  globus_l_gfs_ipc_community_list = NULL;
+globus_i_gfs_community_t *       globus_i_gfs_ipc_community_default;
 
 static globus_list_t *                  globus_l_brain_repo_list;
 static globus_mutex_t                   globus_l_brain_mutex;
@@ -278,6 +279,8 @@ static
 globus_result_t
 globus_l_gfs_default_brain_init()
 {
+    globus_list_t *                     community_list;
+    globus_list_t *                     list;
     globus_result_t                     res;
 
     globus_mutex_init(&globus_l_brain_mutex, NULL);
@@ -286,6 +289,25 @@ globus_l_gfs_default_brain_init()
 
     globus_mutex_lock(&globus_l_brain_mutex);
     {
+        community_list = globus_i_gfs_config_list("community");
+
+        globus_assert(!globus_list_empty(community_list) &&
+            "i said it wouldnt be empty");
+
+        globus_i_gfs_ipc_community_default =
+            (globus_i_gfs_community_t *) globus_list_first(community_list);
+
+        list = globus_list_rest(community_list);
+        if(list != NULL)
+        {
+            globus_l_gfs_ipc_community_list =
+                globus_list_copy(list);
+        }
+        else
+        {
+            globus_l_gfs_ipc_community_list = NULL;
+        }
+
         if(globus_i_gfs_config_int("brain_listen"))
         {
             res = globus_l_brain_listen();
@@ -314,8 +336,20 @@ globus_l_gfs_default_brain_stop()
 
 static
 globus_result_t
+globus_l_gfs_default_brain_available(
+    const char *                        user_id,
+    const char *                        repo_name,
+    int *                               count)
+{
+    *count = globus_i_gfs_ipc_community_default->cs_count;
+
+    return GLOBUS_SUCCESS;
+}
+
+static
+globus_result_t
 globus_l_gfs_default_brain_select_nodes(
-    char ***                            out_contact_strings,
+    globus_i_gfs_brain_node_t ***       out_node_array,
     int *                               out_array_length,
     const char *                        repo_name,
     globus_off_t                        filesize,
@@ -324,7 +358,8 @@ globus_l_gfs_default_brain_select_nodes(
 {
     int                                 best_count;
     int                                 count;
-    char **                             cs;
+    globus_i_gfs_brain_node_t **        node_array;
+    globus_i_gfs_brain_node_t *         node;
     globus_result_t                     result;
     globus_i_gfs_community_t *          repo = NULL;
     GlobusGFSName(globus_gfs_brain_select_nodes);
@@ -345,16 +380,24 @@ globus_l_gfs_default_brain_select_nodes(
         }
 
         /* this is the tester brain dead approach */
-        cs = globus_calloc(max_count, sizeof(char *));
-        if(cs == NULL)
+        node_array = (globus_i_gfs_brain_node_t **)
+            globus_calloc(max_count, sizeof(globus_i_gfs_brain_node_t *));
+        if(node_array == NULL)
         {
-            result = globus_error_put(GlobusGFSErrorObjMemory("cs"));
+            result = globus_error_put(GlobusGFSErrorObjMemory("nodes"));
             goto error;
         }
         count = 0;
         while(count < best_count)
         {
-            cs[count] = strdup(repo->cs[repo->next_ndx]);
+            node = (globus_i_gfs_brain_node_t *) globus_calloc(
+                1, sizeof(globus_i_gfs_brain_node_t));
+            node->host_id = strdup(repo->cs[repo->next_ndx]);
+            if(repo_name != NULL)
+            {
+                node->repo_name = strdup(repo_name);
+            }
+            node_array[count] = node;
             count++;
             repo->next_ndx++;
             if(repo->next_ndx >= repo->cs_count)
@@ -363,7 +406,7 @@ globus_l_gfs_default_brain_select_nodes(
             }
         }
 
-        *out_contact_strings = cs;
+        *out_node_array = node_array;
         *out_array_length = count;
     }
     globus_mutex_unlock(&globus_l_brain_mutex);
@@ -378,11 +421,13 @@ error:
 static
 globus_result_t
 globus_l_gfs_default_brain_release_node(
-    char *                              contact_string,
-    const char *                        repo_name,
+    globus_i_gfs_brain_node_t *         node,
     globus_gfs_brain_reason_t           reason)
 {
     /* depending on reason we may remove from list or whatever */
+    globus_free(node->host_id);
+    globus_free(node->repo_name);
+    globus_free(node);
 
     return GLOBUS_SUCCESS;
 }
@@ -392,5 +437,6 @@ globus_i_gfs_brain_module_t globus_i_gfs_default_brain =
     globus_l_gfs_default_brain_init,
     globus_l_gfs_default_brain_stop,
     globus_l_gfs_default_brain_select_nodes,
-    globus_l_gfs_default_brain_release_node
+    globus_l_gfs_default_brain_release_node,
+    globus_l_gfs_default_brain_available
 };

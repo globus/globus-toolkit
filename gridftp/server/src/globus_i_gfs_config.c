@@ -104,8 +104,6 @@ static const globus_l_gfs_config_option_t option_list[] =
     "deny a connection from 192.168.2.45.", NULL, NULL,GLOBUS_TRUE},
  {"cas", "cas", NULL, "cas", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_TRUE, NULL,
     "Enable CAS authorization.", NULL, NULL,GLOBUS_FALSE},
- {"ipc_listener", "ipc_listener", NULL, "ipc-listener", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
-    "Only available on front end.  Allow data nodes to connect..", NULL, NULL,GLOBUS_FALSE},
  {"secure_ipc", "secure_ipc", NULL, "secure-ipc", "si", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_TRUE, NULL,
     "Use GSI security on ipc channel.", NULL, NULL,GLOBUS_FALSE},
  {"ipc_auth_mode", "ipc_auth_mode", NULL, "ipc-auth-mode", "ia", GLOBUS_L_GFS_CONFIG_STRING, 0, "host",
@@ -1712,7 +1710,7 @@ globus_l_gfs_config_misc()
         char *                          p;
         int                             i;
         community = (globus_i_gfs_community_t *)
-            globus_malloc(sizeof(globus_i_gfs_community_t)); 
+            globus_calloc(1, sizeof(globus_i_gfs_community_t)); 
         if(!value)
         {
             value = "";
@@ -1847,11 +1845,6 @@ globus_l_gfs_config_misc()
             str = globus_i_gfs_config_string("deny_from");
             globus_l_gfs_config_set("ipc_deny_from", 0, str);
         }
-    }
-
-    /* if an ipc listener we cant be a backend, and can't fork or setuid */
-    if(globus_i_gfs_config_bool("ipc_listener"))
-    {
     }
 
     /* if it is a listening data node */

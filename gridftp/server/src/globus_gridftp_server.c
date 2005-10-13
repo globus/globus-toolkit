@@ -487,16 +487,33 @@ globus_l_gfs_close_cb(
 
 static
 void
+globus_l_gfs_ipc_close_cb(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    globus_result_t                     result,
+    void *                              user_arg)
+{
+    globus_l_gfs_server_closed(user_arg);
+}
+
+static
+void
 globus_l_gfs_ipc_error_cb(
     globus_gfs_ipc_handle_t             ipc_handle,
     globus_result_t                     result,
     void *                              user_arg)
 {
+    globus_result_t                     res;
     GlobusGFSName(globus_l_gfs_ipc_error_cb);
     GlobusGFSDebugEnter();
 
-    globus_i_gfs_log_result("IPC ERROR", result);
-    globus_l_gfs_server_closed(user_arg);
+    globus_i_gfs_log_result("IPC ERROR", res);
+    res = globus_gfs_ipc_close(
+        ipc_handle, globus_l_gfs_ipc_close_cb, user_arg);
+    if(res != GLOBUS_SUCCESS)
+    {
+        globus_i_gfs_log_result("IPC ERROR on close", res);
+        globus_l_gfs_server_closed(user_arg);
+    }
 
     GlobusGFSDebugExit();
 }
@@ -1220,118 +1237,6 @@ globus_l_gfs_server_detached()
 
 }
 
-static
-void
-globus_l_gfs_dnc_ipc_open_callback(
-    globus_gfs_ipc_handle_t             ipc_handle,
-    globus_result_t                     result,
-    globus_gfs_finished_info_t *            reply,
-    void *                              user_arg)
-{
-    globus_mutex_lock(&globus_l_gfs_mutex);
-    {
-        globus_l_gfs_outstanding--;
-        if(result != GLOBUS_SUCCESS)
-        {
-            globus_i_gfs_log_result(
-                _GSSL("Connecting data node error"), result);
-            globus_cond_signal(&globus_l_gfs_cond);
-        }
-        else
-        {
-            globus_gfs_config_inc_int("open_connections_count", 1);
-        }
-    }
-    globus_mutex_unlock(&globus_l_gfs_mutex);
-}
-
-static
-void
-globus_l_gfs_dnc_ipc_error_callback(
-    globus_gfs_ipc_handle_t             ipc_handle,
-    globus_result_t                     result,
-    void *                              user_arg)
-{
-    globus_mutex_lock(&globus_l_gfs_mutex);
-    {
-        globus_gfs_config_inc_int("open_connections_count", -1);
-        globus_i_gfs_log_result(
-            _GSSL("Connecting data node error"), result);
-        globus_cond_signal(&globus_l_gfs_cond);
-    }
-    globus_mutex_lock(&globus_l_gfs_mutex);
-}
-
-
-static
-globus_result_t
-globus_l_gfs_data_node_connect_back()
-{
-    globus_result_t                     result;
-    OM_uint32                           maj_stat;
-    OM_uint32                           min_stat;
-    globus_gfs_session_info_t           session_info;
-    globus_list_t *                     community_list;
-    globus_i_gfs_community_t *          community;
-    int                                 i;
-    GlobusGFSName(globus_l_gfs_data_node_connect_back);
-
-    community_list = globus_i_gfs_config_list("community");
-    if(globus_list_size(community_list) != 1)
-    {
-        result = GlobusGFSErrorParameter("community/remote");
-        goto error;
-    }
-    community = (globus_i_gfs_community_t *)
-        globus_list_first(community_list);
-    if(community == NULL)
-    {
-        result = GlobusGFSErrorParameter("community/remote");
-        goto error;
-    }
-
-    memset(&session_info, '\0', sizeof(globus_gfs_session_info_t));
-
-    maj_stat = globus_gss_assist_acquire_cred(
-        &min_stat,
-        GSS_C_INITIATE,
-        &session_info.del_cred);
-
-    session_info.username =
-        globus_i_gfs_config_string("ipc_user_name");
-    if(session_info.username == NULL)
-    {
-        result = GlobusGFSErrorParameter("ipc_user_name");
-        goto error;
-    }
-    session_info.password = NULL; /* only gonna allow gsi auth */
-    session_info.subject = globus_i_gfs_config_string("ipc_subject");
-    session_info.cookie = globus_i_gfs_config_string("ipc_cookie");
-    for(i = 0; i < community->cs_count; i++)
-    {
-        session_info.cookie = community->cs[i];
-
-        result = globus_gfs_ipc_handle_connect(
-            &session_info,
-            community->name,
-            globus_l_gfs_dnc_ipc_open_callback,
-            NULL,
-            globus_l_gfs_dnc_ipc_error_callback,
-            NULL);
-        if(result != GLOBUS_SUCCESS)
-        {
-            goto error;
-        }
-        globus_l_gfs_outstanding++;
-    }
-
-    return GLOBUS_SUCCESS;
-error:
-
-    return result;
-}
-
-
 int
 main(
     int                                 argc,
@@ -1516,15 +1421,6 @@ main(
                 goto error_lock;
             }
         }
-        else if(globus_i_gfs_config_bool("data_node_client"))
-        {
-            result = globus_l_gfs_data_node_connect_back();
-            if(result != GLOBUS_SUCCESS)
-            {
-                rc = 1;
-                goto error_lock;
-            }
-        }
         else
         {
             globus_l_gfs_server_build_child_args();
@@ -1542,32 +1438,6 @@ main(
             {
                 rc = 1;
                 goto error_lock;
-            }
-
-            /* we only allow you to be a ipc_listener *IF* we are a 
-                nonforking daemon */
-            if(globus_i_gfs_config_bool("ipc_listener"))
-            {
-                char *                  ipc_cs;
-                int                     ipc_listener_port;
-                
-                ipc_listener_port =
-                    globus_i_gfs_config_int("ipc_port");
-
-                result = globus_gfs_ipc_listen(ipc_listener_port, &ipc_cs);
-                if(result != GLOBUS_SUCCESS)
-                {
-                    rc = 1;
-                    goto error_lock;
-                }
-                if(ipc_listener_port == 0)
-                {
-                    globus_libc_printf(_GSSL(
-                        "Server listening for IPC connectis at %s\n"),
-                        ipc_cs);
-                    fflush(stdout);
-                }
-                globus_free(ipc_cs);
             }
         }
 
