@@ -23,6 +23,8 @@ sub new
     $self->{SCOPE} = [];
     $self->{SUB_ELEMENT_COUNT} = 0;
 
+    $self->{TOTAL_PROCESSES} = 0;
+
     bless $self, $class;
 
     if (defined($description->extensions()))
@@ -115,7 +117,14 @@ sub EndTag
     my $currentScope = $scope[$#scope];
     my $parentScope = $scope[$#scope-1];
 
-    if ($#scope == 1)
+    if ($#scope == 0)
+    {
+        $self->log("Adding totalprocesses=" . $self->{TOTAL_PROCESSES});
+
+        $self->{JOB_DESCRIPTION}->add(
+            "totalprocesses", $self->{TOTAL_PROCESSES});
+    }
+    elsif ($#scope == 1)
     {
         #just left extension element
         $self->log("Processing extension element $tagName");
@@ -204,7 +213,7 @@ sub EndTag
                 my $hostCount = $self->{HOST_COUNT};
                 my $hostNames = $self->{HOST_NAMES};
                 my $processCount = $self->{PROCESS_COUNT};
-                my $processesPerHost = $self->{PROCESSES_PER_NODE};
+                my $processesPerHost = $self->{PROCESSES_PER_HOST};
 
                 my $nodes = $self->{JOB_DESCRIPTION}->nodes();
                 if (defined $nodes)
@@ -224,6 +233,8 @@ sub EndTag
                 {
                     $self->log("Processing processCount\n");
 
+                    $self->{TOTAL_PROCESSES} += $processCount;
+
                     if (defined $hostType)
                     {
                         $self->log("Processing hostType\n");
@@ -235,7 +246,7 @@ sub EndTag
                             # divide total processes among the nodes
                             my $ppn = $processCount / $hostCount;
 
-                            $nodes .= "$processCount:$hostType:ppn=$ppn";
+                            $nodes .= "$hostCount:$hostType:ppn=$ppn";
                         }
                         else
                         {
@@ -258,9 +269,19 @@ sub EndTag
                         }
                         $nodes =~ s/\+$//;
                     }
+                    elsif(defined $hostCount)
+                    {
+                        $self->log("Processing hostCount without hostType\n");
+
+                        my $ppn = $processCount / $hostCount;
+                        $nodes .= "$hostCount:ppn=$ppn";
+                    }
                     else
                     {
-                        $nodes .= "1:ppn=$processCount";
+                        $self->log("Processing without hostName, hostType, "
+                                  ."or hostCount\n");
+
+                        $nodes .= "ppn=$processCount";
                     }
                 }
                 elsif (defined $processesPerHost)
@@ -275,12 +296,17 @@ sub EndTag
                         {
                             $self->log("Processing hostCount\n");
 
+                            $self->{TOTAL_PROCESSES}
+                                += ($processesPerHost * $hostCount);
+
                             $nodes .= "$hostCount"
                                    . ":$hostType"
                                    . ":ppn=$processesPerHost";
                         }
                         else
                         {
+                            $self->{TOTAL_PROCESSES} += $processesPerHost;
+
                             $nodes .= "$hostType:ppn=$processesPerHost";
                         }
                     }
@@ -292,12 +318,28 @@ sub EndTag
 
                         foreach my $name (@names)
                         {
+                            $self->{TOTAL_PROCESSES} += $processesPerHost;
+
                             $nodes .= "$name:ppn=$processesPerHost+";
                         }
                         $nodes =~ s/\+$//;
                     }
+                    elsif(defined $hostCount)
+                    {
+                        $self->log("Processing hostCount without hostType\n");
+
+                        $self->{TOTAL_PROCESSES}
+                            += ($processesPerHost * $hostCount);
+
+                        $nodes .= "$hostCount:ppn=$processesPerHost";
+                    }
                     else
                     {
+                        $self->log("Processing without hostName, hostType, "
+                                  ."or hostCount\n");
+
+                        $self->{TOTAL_PROCESSES} += $processesPerHost;
+
                         $nodes .= "ppn=$processesPerHost";
                     }
                 }
@@ -314,7 +356,7 @@ sub EndTag
                 $self->{HOST_COUNT} = undef;
                 $self->{HOST_NAMES} = undef;
                 $self->{PROCESS_COUNT} = undef;
-                $self->{PROCESSES_PER_NODE} = undef;
+                $self->{PROCESSES_PER_HOST} = undef;
             }
         }
 
@@ -361,7 +403,7 @@ sub EndTag
             elsif ($currentScope eq 'processesPerHost')
             {
                 $self->log("Parsing processesPerHost\n");
-                $self->{PROCESSES_PER_NODE} = $self->{CDATA};
+                $self->{PROCESSES_PER_HOST} = $self->{CDATA};
             }
         }
     }
