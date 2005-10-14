@@ -175,7 +175,7 @@ EOF
     {
         if($description->jobtype() eq 'multiple')
         {
-            if (defined($description->totalprocesses()))
+            if ($description->totalprocesses() > 0)
             {
                 $total_cpu_time = $cpu_time * $description->totalprocesses();
             }
@@ -201,7 +201,16 @@ EOF
     {
         if($description->jobtype() eq 'multiple')
         {
-            $max_memory = $description->max_memory() * $description->count;
+            if ($description->totalprocesses() > 0)
+            {
+                $max_memory = $description->max_memory()
+                            * $description->totalprocesses();
+            }
+            else
+            {
+                $max_memory = $description->max_memory()
+                            * $description->count();
+            }
         }
         else
         {
@@ -224,7 +233,7 @@ EOF
     elsif($cluster && $cpu_per_node != 0)
     {
         print JOB '#PBS -l nodes=',
-        myceil($description->count / $cpu_per_node), "\n";
+        myceil($description->count() / $cpu_per_node), "\n";
     }
 
     $rsh_env = '';
@@ -314,7 +323,7 @@ EOF
     if($description->jobtype() eq 'multiple' && !$cluster)
     {
         my $process_count;
-        if (defined($description->totalprocesses()))
+        if ($description->totalprocesses() > 0)
         {
             $process_count = $description->totalprocesses();
         }
@@ -333,7 +342,15 @@ EOF
     elsif($description->jobtype() eq 'mpi' ||
             $description->jobtype() eq 'multiple')
     {
-        my $count = $description->count;
+        my $count;
+        if ($description->totalprocesses() > 0)
+        {
+            $count = $description->totalprocesses();
+        }
+        else
+        {
+            $count = $description->count();
+        }
         my $cmd_script_name ;
         my $cmd_script ;
         my $stdin = $description->stdin();
@@ -367,7 +384,7 @@ EOF
                 {
                     $machinefilearg = ' -machinefile $PBS_NODEFILE';
                 }
-                if (defined($description->totalprocesses()))
+                if ($description->totalprocesses() > 0)
                 {
                     print JOB "$mpiexec $machinefilearg -n "
                             . $description->totalprocesses();
@@ -380,7 +397,7 @@ EOF
             }
             else
             {
-                if (defined($description->totalprocesses()))
+                if ($description->totalprocesses() > 0)
                 {
                     print JOB "$mpirun -np " . $description->totalprocesses();
                 }
