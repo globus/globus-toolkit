@@ -1179,6 +1179,10 @@ typedef void
     globus_gfs_event_info_t *      reply,
     void *                              user_arg);
 
+typedef void
+(*globus_i_gfs_ipc_done_callback_t)(
+    void *                              user_arg);
+
 /*************************************************************************
  *  interface function
  *  ------------------
@@ -1443,6 +1447,7 @@ globus_gfs_ipc_handle_create(
     globus_gfs_ipc_iface_t *            iface,
     globus_xio_system_socket_t          system_handle,
     globus_gfs_ipc_open_callback_t      cb,
+    globus_i_gfs_ipc_done_callback_t    done_cb,
     void *                              user_arg,
     globus_gfs_ipc_error_callback_t     error_cb,
     void *                              error_arg);

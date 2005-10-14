@@ -487,12 +487,37 @@ globus_l_gfs_close_cb(
 
 static
 void
+globus_l_gfs_ipc_closed(
+    void *                              user_arg)
+{
+    globus_result_t                     result;
+    globus_xio_handle_t                 handle;
+
+    handle = (globus_xio_handle_t) user_arg;
+    globus_mutex_unlock(&globus_l_gfs_mutex);
+    {
+        result = globus_xio_register_close(
+            handle,
+            NULL,
+            globus_l_gfs_close_cb,
+            NULL);
+    }
+    globus_mutex_unlock(&globus_l_gfs_mutex);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        globus_l_gfs_close_cb(handle, result, NULL);
+    }
+}
+
+static
+void
 globus_l_gfs_ipc_close_cb(
     globus_gfs_ipc_handle_t             ipc_handle,
     globus_result_t                     result,
     void *                              user_arg)
 {
-    globus_l_gfs_server_closed(user_arg);
+    globus_l_gfs_ipc_closed(user_arg);
 }
 
 static
@@ -512,7 +537,7 @@ globus_l_gfs_ipc_error_cb(
     if(res != GLOBUS_SUCCESS)
     {
         globus_i_gfs_log_result("IPC ERROR on close", res);
-        globus_l_gfs_server_closed(user_arg);
+        globus_l_gfs_ipc_closed(user_arg);
     }
 
     GlobusGFSDebugExit();
@@ -532,6 +557,7 @@ globus_l_gfs_ipc_open_cb(
     if(result != GLOBUS_SUCCESS)
     {
         globus_i_gfs_log_result("IPC ERROR", result);
+        globus_l_gfs_ipc_closed(user_arg);
     }
 
     GlobusGFSDebugExit();
@@ -616,9 +642,10 @@ globus_l_gfs_new_server_cb(
                 &globus_gfs_ipc_default_iface,
                 system_handle,
                 globus_l_gfs_ipc_open_cb,
-                NULL,
+                globus_l_gfs_ipc_closed,
+                handle,
                 globus_l_gfs_ipc_error_cb,
-                NULL);
+                handle);
         }
         else
         {        
@@ -747,7 +774,7 @@ globus_l_gfs_convert_inetd_handle(void)
         globus_l_gfs_xio_attr,
         globus_l_gfs_tcp_driver,
         GLOBUS_XIO_TCP_SET_HANDLE,
-        STDIN_FILENO);
+        (globus_xio_system_socket_t)STDIN_FILENO);
     if(result != GLOBUS_SUCCESS)
     {
         goto error_stack;
@@ -954,9 +981,9 @@ globus_l_gfs_server_accept_cb(
             !globus_i_gfs_config_bool("connections_disabled"))
         {
             result = globus_xio_server_register_accept(
-                server,
+                globus_l_gfs_xio_server,
                 globus_l_gfs_server_accept_cb,
-                GLOBUS_NULL);
+                NULL);
             if(result != GLOBUS_SUCCESS)
             {
                 goto error_register_accept;
@@ -1108,7 +1135,7 @@ globus_l_gfs_be_daemon()
     result = globus_xio_server_register_accept(
         globus_l_gfs_xio_server,
         globus_l_gfs_server_accept_cb,
-        GLOBUS_NULL);
+        NULL);
     if(result != GLOBUS_SUCCESS)
     {
         goto contact_error;

@@ -158,6 +158,7 @@ typedef struct globus_i_gfs_ipc_handle_s
     globus_gfs_ipc_open_callback_t      open_cb;
     globus_gfs_ipc_close_callback_t     close_cb;
     void *                              user_arg;
+    void *                              reply_arg;
     globus_result_t                     cached_res;
     globus_gfs_ipc_error_callback_t     error_cb;
     globus_gfs_ipc_error_callback_t     reply_error_cb;
@@ -170,6 +171,7 @@ typedef struct globus_i_gfs_ipc_handle_s
 
     globus_l_gfs_ipc_connection_t       connection_info;
     globus_byte_t                       byte;
+    globus_i_gfs_ipc_done_callback_t    done_cb;
 } globus_i_gfs_ipc_handle_t;
 
 static
@@ -1453,7 +1455,7 @@ globus_gfs_ipc_reply_session(
                     goto mem_error;
                 }
 
-                ipc->user_arg = reply->info.session.session_arg;
+                ipc->reply_arg = reply->info.session.session_arg;
                 ipc->state = GLOBUS_GFS_IPC_STATE_IN_USE;
                 break;
 
@@ -1630,6 +1632,7 @@ globus_gfs_ipc_handle_create(
     globus_gfs_ipc_iface_t *            iface,
     globus_xio_system_socket_t          system_handle,
     globus_gfs_ipc_open_callback_t      cb,
+    globus_i_gfs_ipc_done_callback_t    done_cb,
     void *                              user_arg,
     globus_gfs_ipc_error_callback_t     error_cb,
     void *                              error_arg)
@@ -1684,6 +1687,7 @@ globus_gfs_ipc_handle_create(
     ipc->cached_res = GLOBUS_SUCCESS;
     ipc->open_cb = cb;
     ipc->error_cb = error_cb;
+    ipc->done_cb = done_cb;
     ipc->reply_error_cb = error_cb;
     ipc->error_arg = error_arg;
     ipc->user_arg = user_arg;
@@ -2307,6 +2311,7 @@ error:
 
     return res;
 }
+
 globus_result_t
 globus_gfs_ipc_close(
     globus_gfs_ipc_handle_t             ipc_handle,
@@ -3235,7 +3240,7 @@ globus_l_gfs_ipc_reply_read_body_cb(
                 goto err;
             }
             ipc->iface->buffer_send(
-                ipc, ipc->user_arg,
+                ipc, ipc->reply_arg,
                 user_buffer, user_buffer_type, user_buffer_length);
             globus_l_gfs_ipc_request_destroy(request);
             break;
@@ -3256,7 +3261,7 @@ globus_l_gfs_ipc_reply_read_body_cb(
             }
             globus_mutex_unlock(&ipc->mutex);
             ipc->iface->stat_func(
-                ipc, ipc->user_arg, request->id, stat_info, NULL, NULL);
+                ipc, ipc->reply_arg, request->id, stat_info, NULL, NULL);
             break;
 
         case GLOBUS_GFS_OP_RECV:
@@ -3275,7 +3280,7 @@ globus_l_gfs_ipc_reply_read_body_cb(
             globus_mutex_unlock(&ipc->mutex);
             ipc->iface->recv_func(
                 ipc, 
-                ipc->user_arg,
+                ipc->reply_arg,
                 request->id, trans_info, NULL, NULL, NULL);
             break;
 
@@ -3295,7 +3300,7 @@ globus_l_gfs_ipc_reply_read_body_cb(
             globus_mutex_unlock(&ipc->mutex);
             ipc->iface->send_func(
                 ipc, 
-                ipc->user_arg,
+                ipc->reply_arg,
                 request->id, trans_info, NULL, NULL, NULL);
             break;
 
@@ -3315,7 +3320,7 @@ globus_l_gfs_ipc_reply_read_body_cb(
             globus_mutex_unlock(&ipc->mutex);
             ipc->iface->list_func(
                 ipc,
-                ipc->user_arg,
+                ipc->reply_arg,
                 request->id, trans_info, NULL, NULL, NULL);
             break;
 
@@ -3334,7 +3339,7 @@ globus_l_gfs_ipc_reply_read_body_cb(
             }
             globus_mutex_unlock(&ipc->mutex);
             ipc->iface->command_func(
-                ipc, ipc->user_arg, request->id, cmd_info, NULL, NULL);
+                ipc, ipc->reply_arg, request->id, cmd_info, NULL, NULL);
             break;
 
         case GLOBUS_GFS_OP_PASSIVE:
@@ -3352,7 +3357,7 @@ globus_l_gfs_ipc_reply_read_body_cb(
             }
             globus_mutex_unlock(&ipc->mutex);
             ipc->iface->passive_func(
-                ipc, ipc->user_arg, request->id, data_info, NULL, NULL);
+                ipc, ipc->reply_arg, request->id, data_info, NULL, NULL);
             break;
 
         case GLOBUS_GFS_OP_ACTIVE:
@@ -3370,7 +3375,7 @@ globus_l_gfs_ipc_reply_read_body_cb(
             }
             globus_mutex_unlock(&ipc->mutex);
             ipc->iface->active_func(
-                ipc, ipc->user_arg, request->id, data_info, NULL, NULL);
+                ipc, ipc->reply_arg, request->id, data_info, NULL, NULL);
             break;
 
         case GLOBUS_GFS_OP_DESTROY:
@@ -3382,7 +3387,7 @@ globus_l_gfs_ipc_reply_read_body_cb(
                 goto err;
             }
             ipc->iface->data_destroy_func(
-                ipc, ipc->user_arg, data_arg);
+                ipc, ipc->reply_arg, data_arg);
             globus_l_gfs_ipc_request_destroy(request);
             break;
             
@@ -3395,7 +3400,7 @@ globus_l_gfs_ipc_reply_read_body_cb(
                 goto err;
             }
             ipc->iface->transfer_event_func(
-                ipc, ipc->user_arg, event_info);
+                ipc, ipc->reply_arg, event_info);
             globus_l_gfs_ipc_request_destroy(request);
 
             if(event_info->eof_count)
@@ -3439,6 +3444,15 @@ err:
     globus_l_gfs_ipc_request_destroy(request);
 
     GlobusGFSDebugExitWithError();
+}
+
+static
+void
+globus_l_gfs_ipc_stopping_close_cb(
+    globus_gfs_ipc_handle_t             ipc_handle,
+    globus_result_t                     result,
+    void *                              user_arg)
+{
 }
 
 static
@@ -3540,10 +3554,18 @@ globus_l_gfs_ipc_reply_read_header_cb(
 
     if(stopping)
     {
-        ipc->iface->session_stop_func(ipc, ipc->user_arg);
-        globus_l_gfs_session_info_free(ipc->session_info);
-        ipc->session_info = NULL;
-        globus_gfs_ipc_close(ipc, NULL, NULL);
+        if(ipc->done_cb)
+        {
+            ipc->done_cb(ipc->user_arg);
+        }
+        ipc->iface->session_stop_func(ipc, ipc->reply_arg);
+
+        result = globus_gfs_ipc_close(
+            ipc, globus_l_gfs_ipc_stopping_close_cb, NULL);
+        if(result != GLOBUS_SUCCESS)
+        {
+            /* nothing to really do here */
+        }
     }
 
     globus_free(buffer);
@@ -4356,7 +4378,7 @@ globus_gfs_ipc_request_buffer_send(
     if(ipc->local)
     {
         ipc_handle->iface->buffer_send(
-            ipc, ipc->user_arg, buffer, buffer_type, buffer_len);
+            ipc, ipc->reply_arg, buffer, buffer_type, buffer_len);
     }
     
     GlobusGFSDebugExit();
@@ -4506,7 +4528,7 @@ globus_gfs_ipc_request_recv(
     {
         ipc_handle->iface->recv_func(
             ipc_handle,
-            request->user_arg, request->id, recv_info, NULL, NULL, NULL);
+            ipc_handle->reply_arg, request->id, recv_info, NULL, NULL, NULL);
     }
 
     GlobusGFSDebugExit();
@@ -4574,7 +4596,7 @@ globus_gfs_ipc_request_send(
     {
         ipc->iface->send_func(
             ipc_handle, 
-            ipc->user_arg, request->id, send_info, NULL, NULL, NULL);
+            ipc->reply_arg, request->id, send_info, NULL, NULL, NULL);
     }
 
     GlobusGFSDebugExit();
@@ -4637,7 +4659,7 @@ globus_gfs_ipc_request_list(
     {
         ipc->iface->list_func(
             ipc_handle,
-            ipc_handle->user_arg,
+            ipc_handle->reply_arg,
             request->id, data_info, NULL, NULL, NULL);
     }
 
@@ -4750,7 +4772,7 @@ globus_gfs_ipc_request_command(
     if(ipc->local)
     {
         ipc->iface->command_func(
-            ipc, ipc->user_arg, request->id, cmd_info, NULL, NULL);
+            ipc, ipc->reply_arg, request->id, cmd_info, NULL, NULL);
     }
     
     GlobusGFSDebugExit();
@@ -4862,7 +4884,7 @@ globus_gfs_ipc_request_transfer_event(
     if(ipc->local)
     {
         ipc->iface->transfer_event_func(
-            ipc, ipc->user_arg, event_info);
+            ipc, ipc->reply_arg, event_info);
     }
     
     GlobusGFSDebugExit();
@@ -5049,7 +5071,7 @@ globus_gfs_ipc_request_active_data(
     {
         ipc_handle->iface->active_func(
             ipc_handle,
-            ipc_handle->user_arg,
+            ipc_handle->reply_arg,
             request->id,
             data_info, 
             NULL, 
@@ -5129,7 +5151,7 @@ globus_gfs_ipc_request_passive_data(
     {
         ipc_handle->iface->passive_func(
             ipc_handle,
-            ipc_handle->user_arg,
+            ipc_handle->reply_arg,
             request->id,
             data_info,
             NULL,
@@ -5232,7 +5254,7 @@ globus_gfs_ipc_request_stat(
     {
         ipc_handle->iface->stat_func(
             ipc_handle,
-            ipc_handle->user_arg,
+            ipc_handle->reply_arg,
             request->id,
             stat_info, 
             NULL, 
@@ -5339,7 +5361,7 @@ globus_gfs_ipc_request_data_destroy(
     if(ipc->local)
     {
         ipc_handle->iface->data_destroy_func(
-            ipc, ipc->user_arg, data_arg);
+            ipc, ipc->reply_arg, data_arg);
     }
 
     GlobusGFSDebugExit();
