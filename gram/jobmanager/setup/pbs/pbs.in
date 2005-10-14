@@ -52,14 +52,14 @@ sub submit
     # check jobtype
     if(defined($description->jobtype()))
     {
-	if($description->jobtype !~ /^(mpi|single|multiple)$/)
-	{
-	    return Globus::GRAM::Error::JOBTYPE_NOT_SUPPORTED;
-	}
+        if($description->jobtype !~ /^(mpi|single|multiple)$/)
+        {
+            return Globus::GRAM::Error::JOBTYPE_NOT_SUPPORTED;
+        }
     }
     if( $description->directory eq '')
     {
-	return Globus::GRAM::Error::RSL_DIRECTORY();
+        return Globus::GRAM::Error::RSL_DIRECTORY();
     }
     if ($description->directory() =~ m|^[^/]|) {
         $description->add("directory",
@@ -69,24 +69,24 @@ sub submit
         return Globus::GRAM::Error::BAD_DIRECTORY();
 
     $self->nfssync( $description->executable() )
-	unless $description->executable() eq '';
+        unless $description->executable() eq '';
     $self->nfssync( $description->stdin() )
-	unless $description->stdin() eq '';
+        unless $description->stdin() eq '';
     if( $description->executable eq '')
     {
-	return Globus::GRAM::Error::RSL_EXECUTABLE();
+        return Globus::GRAM::Error::RSL_EXECUTABLE();
     }
     elsif(! -f $description->executable())
     {
-	return Globus::GRAM::Error::EXECUTABLE_NOT_FOUND();
+        return Globus::GRAM::Error::EXECUTABLE_NOT_FOUND();
     }
     elsif(! -x $description->executable())
     {
-	return Globus::GRAM::Error::EXECUTABLE_PERMISSIONS();
+        return Globus::GRAM::Error::EXECUTABLE_PERMISSIONS();
     }
     elsif( $description->stdin() eq '')
     {
-	return Globus::GRAM::Error::RSL_STDIN;
+        return Globus::GRAM::Error::RSL_STDIN;
     }
     elsif(! -r $description->stdin())
     {
@@ -96,8 +96,8 @@ sub submit
     $self->log("Determining job max time cpu from job description");
     if(defined($description->max_cpu_time())) 
     {
-	$cpu_time = $description->max_cpu_time();
-	$self->log("   using maxcputime of $cpu_time");
+        $cpu_time = $description->max_cpu_time();
+        $self->log("   using maxcputime of $cpu_time");
     }
     elsif(! $cluster && defined($description->max_time()))
     {
@@ -106,15 +106,15 @@ sub submit
     }
     else
     {
-	$cpu_time = 0;
-	$self->log('   using queue default');
+        $cpu_time = 0;
+        $self->log('   using queue default');
     }
 
     $self->log("Determining job max wall time limit from job description");
     if(defined($description->max_wall_time()))
     {
-	$wall_time = $description->max_wall_time();
-	$self->log("   using maxwalltime of $wall_time");
+        $wall_time = $description->max_wall_time();
+        $self->log("   using maxwalltime of $wall_time");
     }
     elsif($cluster && defined($description->max_time()))
     {
@@ -123,8 +123,8 @@ sub submit
     }
     else
     {
-	$wall_time = 0;
-	$self->log('   using queue default');
+        $wall_time = 0;
+        $self->log('   using queue default');
     }
 
     $self->log('Building job script');
@@ -158,7 +158,7 @@ EOF
     }
     if($email_when eq '')
     {
-	$email_when = 'n';
+        $email_when = 'n';
     }
     print JOB "#PBS -m $email_when\n";
 
@@ -168,39 +168,46 @@ EOF
     }
     if($description->project() ne '')
     {
-	print JOB '#PBS -A ', $description->project(), "\n";
+        print JOB '#PBS -A ', $description->project(), "\n";
     }
 
     if($cpu_time != 0)
     {
-	if($description->jobtype() eq 'multiple')
-	{
-	    $total_cpu_time = $cpu_time * $description->count();
-	}
-	else
-	{
-	    $total_cpu_time = $cpu_time;
-	}
-	print JOB "#PBS -l pcput=${cpu_time}:00\n";
-	print JOB "#PBS -l cput=${total_cpu_time}:00\n";
+        if($description->jobtype() eq 'multiple')
+        {
+            if (defined($description->totalprocesses()))
+            {
+                $total_cpu_time = $cpu_time * $description->totalprocesses();
+            }
+            else
+            {
+                $total_cpu_time = $cpu_time * $description->count();
+            }
+        }
+        else
+        {
+            $total_cpu_time = $cpu_time;
+        }
+        print JOB "#PBS -l pcput=${cpu_time}:00\n";
+        print JOB "#PBS -l cput=${total_cpu_time}:00\n";
     }
 
     if($wall_time != 0)
     {
-	print JOB "#PBS -l walltime=${wall_time}:00\n";
+        print JOB "#PBS -l walltime=${wall_time}:00\n";
     }
 
     if($description->max_memory() != 0)
     {
-	if($description->jobtype() eq 'multiple')
-	{
-	    $max_memory = $description->max_memory() * $description->count;
-	}
-	else
-	{
-	    $max_memory = $description->max_memory();
-	}
-	print JOB "#PBS -l mem=${max_memory}mb\n";
+        if($description->jobtype() eq 'multiple')
+        {
+            $max_memory = $description->max_memory() * $description->count;
+        }
+        else
+        {
+            $max_memory = $description->max_memory();
+        }
+        print JOB "#PBS -l mem=${max_memory}mb\n";
     }
     print JOB '#PBS -o ', $description->stdout(), "\n";
     print JOB '#PBS -e ', $description->stderr(), "\n";
@@ -225,46 +232,46 @@ EOF
     $library_vars{LD_LIBRARY_PATH} = 0;
     if($Config{osname} eq 'irix')
     {
-	$library_vars{LD_LIBRARYN32_PATH} = 0;
-	$library_vars{LD_LIBRARY64_PATH} = 0;
+        $library_vars{LD_LIBRARYN32_PATH} = 0;
+        $library_vars{LD_LIBRARY64_PATH} = 0;
     }
 
     foreach my $tuple ($description->environment())
     {
-	if(!ref($tuple) || scalar(@$tuple) != 2)
-	{
-	    return Globus::GRAM::Error::RSL_ENVIRONMENT();
-	}
-	if(exists($library_vars{$tuple->[0]}))
-	{
-	    $tuple->[1] .= ":$library_string";
-	    $library_vars{$tuple->[0]} = 1;
-	}
+        if(!ref($tuple) || scalar(@$tuple) != 2)
+        {
+            return Globus::GRAM::Error::RSL_ENVIRONMENT();
+        }
+        if(exists($library_vars{$tuple->[0]}))
+        {
+            $tuple->[1] .= ":$library_string";
+            $library_vars{$tuple->[0]} = 1;
+        }
 
         push(@new_env, $tuple->[0] . '="' . $tuple->[1] . '"');
 
-	$tuple->[0] =~ s/\\/\\\\/g;
-	$tuple->[0] =~ s/\$/\\\$/g;
-	$tuple->[0] =~ s/"/\\\"/g; #"
-	$tuple->[0] =~ s/`/\\\`/g; #`
+        $tuple->[0] =~ s/\\/\\\\/g;
+        $tuple->[0] =~ s/\$/\\\$/g;
+        $tuple->[0] =~ s/"/\\\"/g; #"
+        $tuple->[0] =~ s/`/\\\`/g; #`
 
-	$tuple->[1] =~ s/\\/\\\\/g;
-	$tuple->[1] =~ s/\$/\\\$/g;
-	$tuple->[1] =~ s/"/\\\"/g; #"
-	$tuple->[1] =~ s/`/\\\`/g; #`
+        $tuple->[1] =~ s/\\/\\\\/g;
+        $tuple->[1] =~ s/\$/\\\$/g;
+        $tuple->[1] =~ s/"/\\\"/g; #"
+        $tuple->[1] =~ s/`/\\\`/g; #`
 
         $rsh_env .= $tuple->[0] . '="' . $tuple->[1] . "\";\n"
-	         .  'export ' . $tuple->[0] . ";\n";
+                 .  'export ' . $tuple->[0] . ";\n";
     }
     foreach (keys %library_vars)
     {
-	if($library_vars{$_} == 0)
-	{
+        if($library_vars{$_} == 0)
+        {
             my $library_path = $description->library_path();
-	    push(@new_env, $_ . '=' . $library_path);
-	    $rsh_env .= "$_=$library_path;\n"
-	              . "export $_;\n";
-	}
+            push(@new_env, $_ . '=' . $library_path);
+            $rsh_env .= "$_=$library_path;\n"
+                      . "export $_;\n";
+        }
     }
 
     print JOB "$rsh_env";
@@ -277,27 +284,27 @@ EOF
     foreach(@arguments)
     {
         if(ref($_))
-	{
-	    return Globus::GRAM::Error::RSL_ARGUMENTS;
-	}
+        {
+            return Globus::GRAM::Error::RSL_ARGUMENTS;
+        }
     }
     if($#arguments >= 0)
     {
         foreach(@arguments)
-	{
-	    $self->log("Transforming argument \"$_\"\n");
-	    $_ =~ s/\\/\\\\/g;
-	    $_ =~ s/\$/\\\$/g;
-	    $_ =~ s/"/\\\"/g; #"
-	    $_ =~ s/`/\\\`/g; #`
-	    $self->log("Transformed to \"$_\"\n");
+        {
+            $self->log("Transforming argument \"$_\"\n");
+            $_ =~ s/\\/\\\\/g;
+            $_ =~ s/\$/\\\$/g;
+            $_ =~ s/"/\\\"/g; #"
+            $_ =~ s/`/\\\`/g; #`
+            $self->log("Transformed to \"$_\"\n");
 
-	    $args .= '"' . $_ . '" ';
-	}
+            $args .= '"' . $_ . '" ';
+        }
     }
     else
     {
-	$args = '';
+        $args = '';
     }
 
     if ($description->executable() =~ m|^[^/]|)
@@ -306,40 +313,50 @@ EOF
     }
     if($description->jobtype() eq 'multiple' && !$cluster)
     {
-	for(my $i = 0; $i < $description->count(); $i++)
-	{
-	    print JOB $description->executable(), " $args <",
-	        $description->stdin(), "&\n";
-	}
-	print JOB "wait\n";
+        my $process_count;
+        if (defined($description->totalprocesses()))
+        {
+            $process_count = $description->totalprocesses();
+        }
+        else
+        {
+            $process_count = $description->count();
+        }
+
+        for(my $i = 0; $i < $process_count; $i++)
+        {
+            print JOB $description->executable(), " $args <",
+                $description->stdin(), "&\n";
+        }
+        print JOB "wait\n";
     }
     elsif($description->jobtype() eq 'mpi' ||
             $description->jobtype() eq 'multiple')
     {
-	my $count = $description->count;
-	my $cmd_script_name ;
-	my $cmd_script ;
-	my $stdin = $description->stdin();
+        my $count = $description->count;
+        my $cmd_script_name ;
+        my $cmd_script ;
+        my $stdin = $description->stdin();
 
         $cmd_script_name = $self->job_dir() . '/scheduler_pbs_cmd_script';
 
-	local(*CMD);
-	if ( open( CMD, ">$cmd_script_name" ) ) 
-	{
-	    print CMD "#!/bin/sh\n";
-	    print CMD 'cd ', $description->directory(), "\n";
-	    print CMD "$rsh_env\n";
-	    print CMD $description->executable(), " $args\n";
-	    close(CMD);
+        local(*CMD);
+        if ( open( CMD, ">$cmd_script_name" ) ) 
+        {
+            print CMD "#!/bin/sh\n";
+            print CMD 'cd ', $description->directory(), "\n";
+            print CMD "$rsh_env\n";
+            print CMD $description->executable(), " $args\n";
+            close(CMD);
             chmod 0700, $cmd_script_name;
 
-	    $self->nfssync( $cmd_script_name );
-	} 
-	else 
-	{
-	    # FIXME: what to do in error?
+            $self->nfssync( $cmd_script_name );
+        } 
+        else 
+        {
+            # FIXME: what to do in error?
             return Globus::GRAM::Error::TEMP_SCRIPT_FILE_FAILED();
-	}
+        }
 
         if ($description->jobtype() eq "mpi")
         {
@@ -402,8 +419,8 @@ EOF
     }
     else
     {
-	print JOB $description->executable(), " $args <",
-	    $description->stdin(), "\n";
+        print JOB $description->executable(), " $args <",
+            $description->stdin(), "\n";
     }
     close(JOB);
 
@@ -418,8 +435,8 @@ EOF
     if($? == 0)
     {
         $self->log("job submission successful, setting state to PENDING");
-	return {JOB_ID => $job_id,
-	        JOB_STATE => Globus::GRAM::JobState::PENDING };
+        return {JOB_ID => $job_id,
+                JOB_STATE => Globus::GRAM::JobState::PENDING };
     }
     else
     {
@@ -469,10 +486,10 @@ sub poll
     {
         $self->log("qstat rc is 153 == Unknown Job ID == DONE");
         $state = Globus::GRAM::JobState::DONE;
-	$self->nfssync( $description->stdout() )
-	    if $description->stdout() ne '';
-	$self->nfssync( $description->stderr() )
-	    if $description->stderr() ne '';
+        $self->nfssync( $description->stdout() )
+            if $description->stdout() ne '';
+        $self->nfssync( $description->stderr() )
+            if $description->stderr() ne '';
     }
     else
     {
@@ -520,7 +537,7 @@ sub cancel
 
     if($? == 0)
     {
-	return { JOB_STATE => Globus::GRAM::JobState::FAILED }
+        return { JOB_STATE => Globus::GRAM::JobState::FAILED }
     }
 
     return Globus::GRAM::Error::JOB_CANCEL_FAILED();
