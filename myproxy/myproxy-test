@@ -172,10 +172,8 @@ if ($startserver) {
     chomp($myproxy_server = `which myproxy-server 2>/dev/null`);
     die "myproxy-server not in PATH, stopped" if (!(-x $myproxy_server));
     $serverdir = "/tmp/myproxy-test.serverdir.$$";
-    mkdir($serverdir) ||
+    mkdir($serverdir, 0700) ||
 	die "failed to create $serverdir, stopped";
-    chmod(0700, $serverdir) ||
-	die "failed to chmod $serverdir, stopped";
     $serverconf = "/tmp/myproxy-test.serverconf.$$";
     open(CONF, ">$serverconf") ||
 	 die "failed to open $serverconf, stopped";
