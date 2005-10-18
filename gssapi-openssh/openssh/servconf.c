@@ -72,6 +72,7 @@ initialize_server_options(ServerOptions *options)
 	options->kerberos_ticket_cleanup = -1;
 	options->kerberos_get_afs_token = -1;
 	options->gss_authentication=-1;
+	options->gss_keyex = -1;
 	options->gss_cleanup_creds = -1;
 	options->password_authentication = -1;
 	options->kbd_interactive_authentication = -1;
@@ -186,6 +187,8 @@ fill_default_server_options(ServerOptions *options)
 		options->kerberos_get_afs_token = 0;
 	if (options->gss_authentication == -1)
 		options->gss_authentication = 0;
+	if (options->gss_keyex == -1)
+		options->gss_keyex = 0;
 	if (options->gss_cleanup_creds == -1)
 		options->gss_cleanup_creds = 1;
 	if (options->password_authentication == -1)
@@ -270,7 +273,7 @@ typedef enum {
 	sBanner, sUseDNS, sHostbasedAuthentication,
 	sHostbasedUsesNameFromPacketOnly, sClientAliveInterval,
 	sClientAliveCountMax, sAuthorizedKeysFile, sAuthorizedKeysFile2,
-	sGssAuthentication, sGssCleanupCreds, sAcceptEnv,
+	sGssAuthentication, sGssKeyEx, sGssCleanupCreds, sAcceptEnv,
 	sUsePrivilegeSeparation,
 	sDeprecated, sUnsupported
 } ServerOpCodes;
@@ -324,9 +327,11 @@ static struct {
 	{ "afstokenpassing", sUnsupported },
 #ifdef GSSAPI
 	{ "gssapiauthentication", sGssAuthentication },
+	{ "gssapikeyexchange", sGssKeyEx },
 	{ "gssapicleanupcredentials", sGssCleanupCreds },
 #else
 	{ "gssapiauthentication", sUnsupported },
+	{ "gssapikeyexchange", sUnsupported },
 	{ "gssapicleanupcredentials", sUnsupported },
 #endif
 	{ "passwordauthentication", sPasswordAuthentication },
@@ -667,6 +672,10 @@ parse_flag:
 
 	case sGssAuthentication:
 		intptr = &options->gss_authentication;
+		goto parse_flag;
+
+	case sGssKeyEx:
+		intptr = &options->gss_keyex;
 		goto parse_flag;
 
 	case sGssCleanupCreds:

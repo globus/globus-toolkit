@@ -105,6 +105,7 @@ typedef enum {
 	oClearAllForwardings, oNoHostAuthenticationForLocalhost,
 	oEnableSSHKeysign, oRekeyLimit, oVerifyHostKeyDNS, oConnectTimeout,
 	oAddressFamily, oGssAuthentication, oGssDelegateCreds,
+	oGssTrustDns,
 	oServerAliveInterval, oServerAliveCountMax, oIdentitiesOnly,
 	oSendEnv, oControlPath, oControlMaster, oHashKnownHosts,
 	oDeprecated, oUnsupported
@@ -140,9 +141,11 @@ static struct {
 #if defined(GSSAPI)
 	{ "gssapiauthentication", oGssAuthentication },
 	{ "gssapidelegatecredentials", oGssDelegateCreds },
+	{ "gssapitrustdns", oGssTrustDns },
 #else
 	{ "gssapiauthentication", oUnsupported },
 	{ "gssapidelegatecredentials", oUnsupported },
+	{ "gssapitrustdns", oUnsupported },
 #endif
 	{ "fallbacktorsh", oDeprecated },
 	{ "usersh", oDeprecated },
@@ -408,6 +411,10 @@ parse_flag:
 
 	case oGssDelegateCreds:
 		intptr = &options->gss_deleg_creds;
+		goto parse_flag;
+
+	case oGssTrustDns:
+		intptr = &options->gss_trust_dns;
 		goto parse_flag;
 
 	case oBatchMode:
@@ -917,6 +924,7 @@ initialize_options(Options * options)
 	options->challenge_response_authentication = -1;
 	options->gss_authentication = -1;
 	options->gss_deleg_creds = -1;
+	options->gss_trust_dns = -1;
 	options->password_authentication = -1;
 	options->kbd_interactive_authentication = -1;
 	options->kbd_interactive_devices = NULL;
@@ -1000,6 +1008,8 @@ fill_default_options(Options * options)
 		options->gss_authentication = 0;
 	if (options->gss_deleg_creds == -1)
 		options->gss_deleg_creds = 0;
+	if (options->gss_trust_dns == -1)
+		options->gss_trust_dns = 0;
 	if (options->password_authentication == -1)
 		options->password_authentication = 1;
 	if (options->kbd_interactive_authentication == -1)
