@@ -1567,6 +1567,39 @@ extern globus_gfs_ipc_iface_t  globus_gfs_ipc_default_iface;
 /* end IPC */ 
 
 /* config locking functions */
+typedef 
+void
+(*globus_i_gfs_config_set_string_cb_t)(
+    const char *                        option_name,
+    const char *                        val,
+    void *                              user_arg);
+
+typedef 
+void
+(*globus_i_gfs_config_set_int_cb_t)(
+    const char *                        option_name,
+    int                                 val,
+    void *                              user_arg);
+
+typedef struct
+{
+    void *                              user_arg;
+    globus_bool_t                       enabled;
+    void *                              cb;
+} globus_i_gfs_config_option_cb_ent_t;
+
+void
+globus_gfs_config_enable_cb(
+    globus_i_gfs_config_option_cb_ent_t * cb_handle,
+    globus_bool_t                       enabled);
+
+int
+globus_gfs_config_add_cb(
+    globus_i_gfs_config_option_cb_ent_t ** cb_handle,
+    char *                              option_name,
+    void *                              cb,
+    void *                              user_arg);
+
 globus_bool_t
 globus_gfs_config_get_bool(
     const char *                        option_name);

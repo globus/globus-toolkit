@@ -39,107 +39,108 @@ typedef struct
     char *                              short_usage;
     char *                              expected_val;
     globus_bool_t                       public;
+    globus_list_t *                     set_list;
 } globus_l_gfs_config_option_t;
 
 static globus_mutex_t                   globus_i_gfs_config_mutex;
 
 static const globus_l_gfs_config_option_t option_list[] = 
 { 
-{NULL, "Informational Options", NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL, GLOBUS_FALSE},
+{NULL, "Informational Options", NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL, GLOBUS_FALSE, NULL},
  {"help", "help", NULL, "help", "h", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
-    "Show usage information and exit.", NULL, NULL,GLOBUS_FALSE},
+    "Show usage information and exit.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"longhelp", "longhelp", NULL, "longhelp", "hh", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
-    "Show more usage information and exit.", NULL, NULL,GLOBUS_FALSE},
+    "Show more usage information and exit.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"version", "version", NULL, "version", "v", GLOBUS_L_GFS_CONFIG_BOOL, 0, NULL,
-    "Show version information for the server and exit.", NULL, NULL,GLOBUS_FALSE},
+    "Show version information for the server and exit.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"versions", "versions", NULL, "versions", "V", GLOBUS_L_GFS_CONFIG_BOOL, 0, NULL,
-    "Show version information for all loaded globus libraries and exit.", NULL, NULL,GLOBUS_FALSE},
-{NULL, "Modes of Operation", NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL,GLOBUS_FALSE},
+    "Show version information for all loaded globus libraries and exit.", NULL, NULL,GLOBUS_FALSE, NULL},
+{NULL, "Modes of Operation", NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL,GLOBUS_FALSE, NULL},
  {"inetd", "inetd", NULL, "inetd", "i", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
-    "Run under an inetd service.", NULL, NULL,GLOBUS_FALSE},
+    "Run under an inetd service.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"daemon", "daemon", NULL, "daemon", "s", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_TRUE, NULL,
-    "Run as a daemon.  All connections will fork off a new process and setuid if allowed.", NULL, NULL,GLOBUS_FALSE},
+    "Run as a daemon.  All connections will fork off a new process and setuid if allowed.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"detach", "detach", NULL, "detach", "S", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
-    "Run as a background daemon detached from any controlling terminals.", NULL, NULL,GLOBUS_FALSE},
+    "Run as a background daemon detached from any controlling terminals.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"exec", "exec", NULL, "exec", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "For staticly compiled or non-GLOBUS_LOCATION standard binary locations, specify the full "
-    "path of the server binary here.  Only needed when run in daemon mode.", NULL, NULL,GLOBUS_FALSE},
+    "path of the server binary here.  Only needed when run in daemon mode.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"chdir", "chdir", NULL, "chdir", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_TRUE, NULL,
     "Change directory when the server starts. This will change directory to the dir specified "
-    "by the chdir_to option.", NULL, NULL,GLOBUS_FALSE},
+    "by the chdir_to option.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"chdir_to", "chdir_to", NULL, "chdir-to", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
-    "Directory to chdir to after starting.  Will use / if not set.", NULL, NULL,GLOBUS_FALSE},
+    "Directory to chdir to after starting.  Will use / if not set.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"fork", "fork", NULL, "fork", "f", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_TRUE, NULL,
     "Server will fork for each new connection.  Disabling this option is only recommended "
     "when debugging. Note that non-forked servers running as 'root' will only "
-    "accept a single connection, and then exit.", NULL, NULL,GLOBUS_FALSE},
+    "accept a single connection, and then exit.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"single", "single", NULL, "single", "1", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL, 
-    "Exit after a single connection.", NULL, NULL,GLOBUS_FALSE},
-{NULL, "Authentication, Authorization, and Security Options", NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL,GLOBUS_FALSE},
+    "Exit after a single connection.", NULL, NULL,GLOBUS_FALSE, NULL},
+{NULL, "Authentication, Authorization, and Security Options", NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL,GLOBUS_FALSE, NULL},
  {"auth_level", "auth_level", NULL, "auth-level", NULL, GLOBUS_L_GFS_CONFIG_INT, -1, NULL,
     "Add levels together to use more than one.  0 = Disables all authorization checks. 1 = Authorize identity. "
     "2 = Authorize all file/resource accesses. 4 = Disable changing process uid to authenticated user (no setuid) -- DO NOT use this when process is started as root.  "
-    "If not set uses level 2 for front ends and level 1 for data nodes.  Note that levels 2 and 4 imply level 1 as well.", NULL, NULL,GLOBUS_FALSE},
+    "If not set uses level 2 for front ends and level 1 for data nodes.  Note that levels 2 and 4 imply level 1 as well.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"ipc_allow_from", "ipc_allow_from", NULL, "ipc-allow-from", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Only allow connections from these source ip addresses.  Specify a comma "
     "seperated list of ip address fragments.  A match is any ip address that "
     "starts with the specified fragment.  Example: '192.168.1.' will match and "
     "allow a connection from 192.168.1.45.  Note that if this option is used "
-    "any address not specifically allowed will be denied.", NULL, NULL,GLOBUS_FALSE},
+    "any address not specifically allowed will be denied.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"ipc_deny_from", "ipc_deny_from", NULL, "ipc-deny-from", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Deny connections from these source ip addresses. Specify a comma "
     "seperated list of ip address fragments.  A match is any ip address that "
     "starts with the specified fragment.  Example: '192.168.2.' will match and "
-    "deny a connection from 192.168.2.45.", NULL, NULL,GLOBUS_TRUE},
+    "deny a connection from 192.168.2.45.", NULL, NULL,GLOBUS_TRUE, NULL},
  {"allow_from", "allow_from", NULL, "allow-from", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Only allow connections from these source ip addresses.  Specify a comma "
     "seperated list of ip address fragments.  A match is any ip address that "
     "starts with the specified fragment.  Example: '192.168.1.' will match and "
     "allow a connection from 192.168.1.45.  Note that if this option is used "
-    "any address not specifically allowed will be denied.", NULL, NULL, GLOBUS_TRUE},
+    "any address not specifically allowed will be denied.", NULL, NULL, GLOBUS_TRUE, NULL},
  {"deny_from", "deny_from", NULL, "deny-from", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Deny connections from these source ip addresses. Specify a comma "
     "seperated list of ip address fragments.  A match is any ip address that "
     "starts with the specified fragment.  Example: '192.168.2.' will match and "
-    "deny a connection from 192.168.2.45.", NULL, NULL,GLOBUS_TRUE},
+    "deny a connection from 192.168.2.45.", NULL, NULL,GLOBUS_TRUE, NULL},
  {"cas", "cas", NULL, "cas", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_TRUE, NULL,
-    "Enable CAS authorization.", NULL, NULL,GLOBUS_FALSE},
+    "Enable CAS authorization.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"secure_ipc", "secure_ipc", NULL, "secure-ipc", "si", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_TRUE, NULL,
-    "Use GSI security on ipc channel.", NULL, NULL,GLOBUS_FALSE},
+    "Use GSI security on ipc channel.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"ipc_auth_mode", "ipc_auth_mode", NULL, "ipc-auth-mode", "ia", GLOBUS_L_GFS_CONFIG_STRING, 0, "host",
-    "[not implemented]", NULL, NULL,GLOBUS_FALSE},
+    "[not implemented]", NULL, NULL,GLOBUS_FALSE, NULL},
  {"ipc_user_name", "ipc_user_name", NULL, "ipc_user_name", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
-    "User name for IPC conncet back [not implemented]", NULL, NULL,GLOBUS_FALSE},
+    "User name for IPC conncet back [not implemented]", NULL, NULL,GLOBUS_FALSE, NULL},
  {"ipc_subject", "ipc_subject", NULL, "ipc_subject", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
-    "Expected DN for IPC conncet back.", NULL, NULL,GLOBUS_FALSE},
+    "Expected DN for IPC conncet back.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"ipc_cookie", "ipc_cookie", NULL, "ipc_cookie", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
-    "[not implemented]", NULL, NULL,GLOBUS_FALSE},
+    "[not implemented]", NULL, NULL,GLOBUS_FALSE, NULL},
  {"allow_anonymous", "allow_anonymous", NULL, "allow-anonymous", "aa", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
     "Allow cleartext anonymous access. If server is running as root anonymous_user "
-    "must also be set.  Disables ipc security.", NULL, NULL,GLOBUS_TRUE},
+    "must also be set.  Disables ipc security.", NULL, NULL,GLOBUS_TRUE, NULL},
  {"anonymous_names_allowed", "anonymous_names_allowed", NULL, "anonymous-names-allowed", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Comma seperated list of names to treat as anonymous users when "
     "allowing anonymous access.  If not set, the default names of 'anonymous' "
-    "and 'ftp' will be allowed.  Use '*' to allow any username.", NULL, NULL,GLOBUS_FALSE},
+    "and 'ftp' will be allowed.  Use '*' to allow any username.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"anonymous_user", "anonymous_user", NULL, "anonymous-user", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
-    "User to setuid to for an anonymous connection. Only applies when running as root.", NULL, NULL,GLOBUS_TRUE},
+    "User to setuid to for an anonymous connection. Only applies when running as root.", NULL, NULL,GLOBUS_TRUE, NULL},
  {"anonymous_group", "anonymous_group", NULL, "anonymous-group", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Group to setgid to for an anonymous connection. If unset, the default group "
-    "of anonymous_user will be used.", NULL, NULL,GLOBUS_TRUE},
+    "of anonymous_user will be used.", NULL, NULL,GLOBUS_TRUE, NULL},
  {"pw_file", "pw_file", NULL, "password-file", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
-    "Enable cleartext access and authenticate users against this /etc/passwd formatted file.", NULL, NULL,GLOBUS_FALSE},
+    "Enable cleartext access and authenticate users against this /etc/passwd formatted file.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"open_connections_count", "open_connections_count", NULL, "open_connections_count", NULL, GLOBUS_L_GFS_CONFIG_INT, 0, NULL,
-    "Current connections.  Applicable only to daemon mode.", NULL, NULL,GLOBUS_TRUE},
+    "Current connections.  Applicable only to daemon mode.", NULL, NULL,GLOBUS_TRUE, NULL},
  {"connections_max", "connections_max", NULL, "connections-max", NULL, GLOBUS_L_GFS_CONFIG_INT, 0, NULL,
     "Maximum concurrent connections allowed.  Only applies when running in daemon "
-    "mode.  Unlimited if not set.", NULL, NULL,GLOBUS_TRUE},
+    "mode.  Unlimited if not set.", NULL, NULL,GLOBUS_TRUE, NULL},
  {"connections_disabled", "connections_disabled", NULL, "connections-disabled", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
     "Disable all new connections.  Does not affect ongoing connections.  This would have be set "
-    "in the configuration file and then the server issued a SIGHUP in order to reload that config.", NULL, NULL,GLOBUS_FALSE},
-{NULL, "Logging Options", NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL,GLOBUS_FALSE},
+    "in the configuration file and then the server issued a SIGHUP in order to reload that config.", NULL, NULL,GLOBUS_FALSE, NULL},
+{NULL, "Logging Options", NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL,GLOBUS_FALSE, NULL},
  {"log_level", "log_level", NULL, "log-level", "d", GLOBUS_L_GFS_CONFIG_STRING, 0, "ERROR",
     "Log level. A comma seperated list of levels from: 'ERROR, WARN, INFO, DUMP, ALL'. "
-    "Example: error,warn,info. You may also specify a numeric level of 1-255.", NULL, NULL,GLOBUS_FALSE},
+    "Example: error,warn,info. You may also specify a numeric level of 1-255.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"log_module", "log_module", NULL, "log-module", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "globus_logging module that will be loaded. If not set, the default 'stdio' module will "
     "be used, and the logfile options apply.  Builtin modules are 'stdio' and 'syslog'.  Log module options "
@@ -148,163 +149,163 @@ static const globus_l_gfs_config_option_t option_list[] =
     "The default options are a 64k buffer size and a 5 second flush interval.  A 0 second flush interval "
     "will disable periodic flushing, and the buffer will only flush when it is full.  A value of 0 for "
     "buffer will disable buffering and all messages will be written immediately.  "
-    "Example: -log-module stdio:buffer=4096:interval=10", NULL, NULL,GLOBUS_FALSE},
+    "Example: -log-module stdio:buffer=4096:interval=10", NULL, NULL,GLOBUS_FALSE, NULL},
  {"log_single", "log_single", NULL, "logfile", "l", GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Path of a single file to log all activity to.  If neither this option or log_unique is set, "
     "logs will be written to stderr unless the execution mode is detached or inetd, "
-    "in which case logging will be disabled.", NULL, NULL,GLOBUS_FALSE},
+    "in which case logging will be disabled.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"log_unique", "log_unique", NULL, "logdir", "L", GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Partial path to which 'gridftp.(pid).log' will be appended to construct the log filename. "
     "Example: -L /var/log/gridftp/ will create a seperate log ( /var/log/gridftp/gridftp.xxxx.log ) "
     "for each process (which is normally each new client session).  If neither this option or "
     "log_single is set, logs will be written to stderr unless the execution mode is detached or inetd, "
-    "in which case logging will be disabled.", NULL, NULL,GLOBUS_FALSE},
+    "in which case logging will be disabled.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"log_transfer", "log_transfer", NULL, "log-transfer", "Z", GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
-    "Log netlogger style info for each transfer into this file.", NULL, NULL,GLOBUS_FALSE},
+    "Log netlogger style info for each transfer into this file.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"log_filemode", "log_filemode", NULL, "log-filemode", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "File access permissions of log files. Should be an octal number such as "
-    "0644 (the leading 0 is required).", NULL, NULL,GLOBUS_FALSE},
+    "0644 (the leading 0 is required).", NULL, NULL,GLOBUS_FALSE, NULL},
  {"disable_usage_stats", "disable_usage_stats", "GLOBUS_USAGE_OPTOUT", "disable-usage-stats", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
     "Disable transmission of per-transfer usage statistics.  See the Usage Statistics "
-    "section in the online documentation for more information.", NULL, NULL,GLOBUS_FALSE},
+    "section in the online documentation for more information.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"usage_stats_target", "usage_stats_target", NULL, "usage-stats-target", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
-    "Comma seperated list of contact strings for usage statistics listeners.", NULL, NULL,GLOBUS_FALSE},
-{NULL, "Single and Striped Remote Data Node Options", NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL,GLOBUS_FALSE},
+    "Comma seperated list of contact strings for usage statistics listeners.", NULL, NULL,GLOBUS_FALSE, NULL},
+{NULL, "Single and Striped Remote Data Node Options", NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL,GLOBUS_FALSE, NULL},
  {"remote_nodes", "remote_nodes", NULL, "remote-nodes", "r", GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
-    "Comma seperated list of remote node contact strings.", NULL, NULL,GLOBUS_FALSE},
+    "Comma seperated list of remote node contact strings.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"data_node", "data_node", NULL, "data-node", "dn", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
-    "This server is a backend data node.", NULL, NULL,GLOBUS_FALSE},
+    "This server is a backend data node.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"stripe_blocksize", "stripe_blocksize", NULL, "stripe-blocksize", "sbs", GLOBUS_L_GFS_CONFIG_INT, (1024 * 1024), NULL,
-    "Size in bytes of sequential data that each stripe will transfer.", NULL, NULL,GLOBUS_FALSE},
+    "Size in bytes of sequential data that each stripe will transfer.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"brain", "brain", NULL, "brain", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
-    "switch out the default remote brain [unsuported]", NULL,GLOBUS_FALSE},
+    "switch out the default remote brain [unsuported]", NULL, NULL, GLOBUS_FALSE, NULL},
  {"wsrf_service", "wsrf_service", NULL, "wsrf_service", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
-    "wsrf extension library for monitoring [unsuported]", NULL,GLOBUS_FALSE},
+    "wsrf extension library for monitoring [unsuported]", NULL, NULL, GLOBUS_FALSE, NULL},
  {"epr_outfile", "epr_outfile", NULL, "epr_outfile", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
-    "place to write epr [unsuported]", NULL,GLOBUS_FALSE},
+    "place to write epr [unsuported]", NULL, NULL, GLOBUS_FALSE, NULL},
  {"service_port", "service_port", NULL, "service_port", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
-    "port string for container [unsuported]", NULL,GLOBUS_FALSE},
+    "port string for container [unsuported]", NULL, NULL, GLOBUS_FALSE, NULL},
  {"stripe_layout", "stripe_layout", NULL, "stripe-layout", "sl", GLOBUS_L_GFS_CONFIG_INT, GLOBUS_GFS_LAYOUT_BLOCKED, NULL,
-    "Stripe layout. 1 = Partitioned, 2 = Blocked.", NULL, NULL,GLOBUS_FALSE},
+    "Stripe layout. 1 = Partitioned, 2 = Blocked.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"stripe_blocksize_locked", "stripe_blocksize_locked", NULL, "stripe-blocksize-locked", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
-    "Do not allow client to override stripe blocksize with the OPTS RETR command", NULL, NULL,GLOBUS_FALSE},
+    "Do not allow client to override stripe blocksize with the OPTS RETR command", NULL, NULL,GLOBUS_FALSE, NULL},
  {"stripe_layout_locked", "stripe_layout_locked", NULL, "stripe-layout-locked", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
-    "Do not allow client to override stripe layout with the OPTS RETR command", NULL, NULL,GLOBUS_FALSE},
+    "Do not allow client to override stripe layout with the OPTS RETR command", NULL, NULL,GLOBUS_FALSE, NULL},
  {"stripe_mode", "stripe_mode", NULL, "stripe-mode", NULL, GLOBUS_L_GFS_CONFIG_INT, 1, NULL,
-    NULL /* "Mode 1 is a 1-1 stripe configuration. Mode 2 is ALL-ALL."  */, NULL, NULL,GLOBUS_FALSE},
-{NULL, "Disk Options", NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL,GLOBUS_FALSE},
+    NULL /* "Mode 1 is a 1-1 stripe configuration. Mode 2 is ALL-ALL."  */, NULL, NULL,GLOBUS_FALSE, NULL},
+{NULL, "Disk Options", NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL,GLOBUS_FALSE, NULL},
  {"blocksize", "blocksize", NULL, "blocksize", "bs", GLOBUS_L_GFS_CONFIG_INT, (256 * 1024), NULL,
-    "Size in bytes of data blocks to read from disk before posting to the network.", NULL, NULL,GLOBUS_TRUE},
+    "Size in bytes of data blocks to read from disk before posting to the network.", NULL, NULL,GLOBUS_TRUE, NULL},
  {"sync_writes", "sync_writes", NULL, "sync-writes", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
     "Flush disk writes before sending a restart marker.  This attempts to ensure that "
     "the range specified in the restart marker has actually been committed to disk. "
     "This option will probably impact performance, and may result in different behavior "
-    "on different storage systems. See the manpage for sync() for more information.", NULL, NULL,GLOBUS_TRUE},
+    "on different storage systems. See the manpage for sync() for more information.", NULL, NULL,GLOBUS_TRUE, NULL},
  {"repo_count", "repo_count", NULL, "repo-count", NULL, GLOBUS_L_GFS_CONFIG_INT, 0, NULL,
-    "Maximum number of connections per transfer.", NULL, NULL,GLOBUS_FALSE},
-{NULL, "Network Options", NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL,GLOBUS_FALSE},
+    "Maximum number of connections per transfer.", NULL, NULL,GLOBUS_FALSE, NULL},
+{NULL, "Network Options", NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL,GLOBUS_FALSE, NULL},
  {"port", "port", NULL, "port", "p", GLOBUS_L_GFS_CONFIG_INT, 0, NULL,
     "Port on which a frontend will listend for client control channel connections, "
     "or on which a data node will listen for connections from a frontend.  If not set "
-    "a random port will be chosen and printed via the logging mechanism.", NULL, NULL,GLOBUS_FALSE},
+    "a random port will be chosen and printed via the logging mechanism.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"control_interface", "control_interface", NULL, "control-interface", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Hostname or IP address of the interface to listen for control connections "
-    "on. If not set will listen on all interfaces.", NULL, NULL,GLOBUS_FALSE},
+    "on. If not set will listen on all interfaces.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"data_interface", "data_interface", NULL, "data-interface", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Hostname or IP address of the interface to use for data connections. If not "
-    "set will use the current control interface.", NULL, NULL,GLOBUS_FALSE},
+    "set will use the current control interface.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"ipc_interface", "ipc_interface", NULL, "ipc-interface", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Hostname or IP address of the interface to use for ipc connections. If not "
-    "set will listen on all interfaces.", NULL, NULL,GLOBUS_FALSE},
+    "set will listen on all interfaces.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"hostname", "hostname", NULL, "hostname", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
-    "Effectively sets the above control_interface, data_interface and ipc_interface options.", NULL, NULL,GLOBUS_FALSE},
+    "Effectively sets the above control_interface, data_interface and ipc_interface options.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"ipc_port", "ipc_port", NULL, "ipc-port", NULL, GLOBUS_L_GFS_CONFIG_INT, 0, NULL,
-    "Port on which the frontend will listen for data node connections.", NULL, NULL,GLOBUS_FALSE},
+    "Port on which the frontend will listen for data node connections.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"brain_listen", "brain_listen", NULL, "brain-listen", NULL, GLOBUS_L_GFS_CONFIG_INT, 0, NULL,
-    "State if the brain will allow for connection back.  Should be used with --ipc-port.  This is an experimental feature.", NULL, NULL,GLOBUS_FALSE},
-{NULL, "Timeouts", NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL,GLOBUS_FALSE},
+    "State if the brain will allow for connection back.  Should be used with --ipc-port.  This is an experimental feature.", NULL, NULL,GLOBUS_FALSE, NULL},
+{NULL, "Timeouts", NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL,GLOBUS_FALSE, NULL},
  {"control_preauth_timeout", "control_preauth_timeout", NULL, "control-preauth-timeout", NULL, GLOBUS_L_GFS_CONFIG_INT, 30, NULL,
     "Time in seconds to allow a client to remain connected to the control "
-    "channel without activity before authenticating.", NULL, NULL,GLOBUS_FALSE},
+    "channel without activity before authenticating.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"control_idle_timeout", "control_idle_timeout", NULL, "control-idle-timeout", NULL, GLOBUS_L_GFS_CONFIG_INT, 600, NULL,
     "Time in seconds to allow a client to remain connected to the control "
-    "channel without activity.", NULL, NULL,GLOBUS_FALSE},
+    "channel without activity.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"ipc_idle_timeout", "ipc_idle_timeout", NULL, "ipc-idle-timeout", NULL, GLOBUS_L_GFS_CONFIG_INT, 600, NULL,
-    "Idle time in seconds before an unused ipc connection will close.", NULL, NULL,GLOBUS_FALSE},
+    "Idle time in seconds before an unused ipc connection will close.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"ipc_connect_timeout", "ipc_connect_timeout", NULL, "ipc-connect-timeout", NULL, GLOBUS_L_GFS_CONFIG_INT, 60, NULL,
-    "Time in seconds before cancelling an attempted ipc connection.", NULL, NULL,GLOBUS_FALSE},
-{NULL, "User Messages", NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL,GLOBUS_FALSE},
+    "Time in seconds before cancelling an attempted ipc connection.", NULL, NULL,GLOBUS_FALSE, NULL},
+{NULL, "User Messages", NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL,GLOBUS_FALSE, NULL},
  {"banner", "banner", NULL, "banner", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
-    "Message to display to the client before authentication.", NULL, NULL,GLOBUS_TRUE},
+    "Message to display to the client before authentication.", NULL, NULL,GLOBUS_TRUE, NULL},
  {"banner_file", "banner_file", NULL, "banner-file", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
-    "File to read banner message from.", NULL, NULL,GLOBUS_FALSE},
+    "File to read banner message from.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"banner_terse", "banner_terse", NULL, "banner-terse", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
     "When this is set, the minimum allowed banner message will be displayed "
-    "to unauthenticated clients.", NULL, NULL,GLOBUS_FALSE},
+    "to unauthenticated clients.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"login_msg", "login_msg", NULL, "login-msg", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
-    "Message to display to the client after authentication.", NULL, NULL,GLOBUS_FALSE},
+    "Message to display to the client after authentication.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"login_msg_file", "login_msg_file", NULL, "login-msg-file", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
-    "File to read login message from.", NULL, NULL,GLOBUS_TRUE},
-{NULL, "Module Options", NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL,GLOBUS_FALSE},
+    "File to read login message from.", NULL, NULL,GLOBUS_TRUE, NULL},
+{NULL, "Module Options", NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL,GLOBUS_FALSE, NULL},
  {"load_dsi_module", "load_dsi_module", NULL, "dsi", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Data Storage Interface module to load. file and remote modules are defined by the server. "
     "If not set, the file module is loaded, unless the 'remote' option is specified, in which case the remote "
     "module is loaded.  An additional configuration string can be passed to the DSI using the format " 
     "[module name]:[configuration string] to this option.  The format of the configuration "
-    "string is defined by the DSI being loaded.", NULL, NULL,GLOBUS_FALSE},
+    "string is defined by the DSI being loaded.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"allowed_modules", "allowed_modules", NULL, "allowed-modules", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Comma seperated list of ERET/ESTO modules to allow, and optionally specify an alias for. "
-    "Example: module1,alias2:module2,module3 (module2 will be loaded when a client asks for alias2).", NULL, NULL,GLOBUS_FALSE}, 
-{NULL, "Other", NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL,GLOBUS_FALSE},
+    "Example: module1,alias2:module2,module3 (module2 will be loaded when a client asks for alias2).", NULL, NULL,GLOBUS_FALSE, NULL}, 
+{NULL, "Other", NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL,GLOBUS_FALSE, NULL},
  {"configfile", "configfile", NULL, "c", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
      "Path to configuration file that should be loaded.  Otherwise will attempt "
-     "to load $GLOBUS_LOCATION/etc/gridftp.conf and /etc/grid-security/gridftp.conf.", NULL, NULL,GLOBUS_FALSE},
+     "to load $GLOBUS_LOCATION/etc/gridftp.conf and /etc/grid-security/gridftp.conf.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"use_home_dirs", "use_home_dirs", NULL, "use-home-dirs", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_TRUE, NULL,
-    "Set the startup directory to the authenticated users home dir.", NULL, NULL,GLOBUS_FALSE},
+    "Set the startup directory to the authenticated users home dir.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"debug", "debug", NULL, "debug", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
     "Sets options that make server easier to debug.  Forces no-fork, no-chdir, "
     "and allows core dumps on bad signals instead of exiting cleanly. "
     "Not recommended for production servers.  Note that non-forked servers running "
-    "as 'root' will only accept a single connection, and then exit.", NULL, NULL,GLOBUS_FALSE}, 
+    "as 'root' will only accept a single connection, and then exit.", NULL, NULL,GLOBUS_FALSE, NULL}, 
 /* internal use */
  {"globus_location", "globus_location", "GLOBUS_LOCATION", "G", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     NULL, NULL, NULL} /* "GLOBUS_LOCATION." */,
  {"tcp_port_range", "tcp_port_range", NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     NULL, NULL, NULL} /*"Port range to use for PASV data connections.  Sets GLOBUS_TCP_PORT_RANGE."}*/,
  {"ignore_bad_threads", "ignore_bad_threads", NULL, "ignore-bad-threads", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
-    NULL, NULL, NULL,GLOBUS_FALSE}, /* allow LinuxThreads */
+    NULL, NULL, NULL,GLOBUS_FALSE, NULL}, /* allow LinuxThreads */
  {"bad_signal_exit", "bad_signal_exit", NULL, "exit", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_TRUE, NULL,
-    NULL, NULL, NULL,GLOBUS_FALSE}, /* exit cleanly on bad signals (no core dump) */
+    NULL, NULL, NULL,GLOBUS_FALSE, NULL}, /* exit cleanly on bad signals (no core dump) */
  {"test_acl", NULL, NULL, NULL, "testacl", GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     NULL /* load and pass arguments to the test acl module. the string
         may include BLOCK, which will cause a failure in the callback,
-        and any or all of ALL, init, or read, write, etc action to fail on */, NULL, NULL,GLOBUS_FALSE},
+        and any or all of ALL, init, or read, write, etc action to fail on */, NULL, NULL,GLOBUS_FALSE, NULL},
  {"wsdl", NULL, NULL, "wsdl", NULL, GLOBUS_L_GFS_CONFIG_STRING, GLOBUS_FALSE, NULL,
-    NULL /* generate wsdl */, NULL, NULL,GLOBUS_FALSE},
+    NULL /* generate wsdl */, NULL, NULL,GLOBUS_FALSE, NULL},
  {"html", NULL, NULL, "html", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
-    NULL /* generate usage suitable for web docs */, NULL, NULL,GLOBUS_FALSE},
+    NULL /* generate usage suitable for web docs */, NULL, NULL,GLOBUS_FALSE, NULL},
  {"docbook", NULL, NULL, "docbook", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
-    NULL /* generate usage suitable for web docs */, NULL, NULL,GLOBUS_FALSE},
+    NULL /* generate usage suitable for web docs */, NULL, NULL,GLOBUS_FALSE, NULL},
  {"fqdn", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
-    NULL /* hostname found by gethostname() */, NULL, NULL,GLOBUS_FALSE},
+    NULL /* hostname found by gethostname() */, NULL, NULL,GLOBUS_FALSE, NULL},
  {"loaded_config", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
-     NULL /* placeholder so configfile check doesn't fail */, NULL, NULL,GLOBUS_FALSE},
+     NULL /* placeholder so configfile check doesn't fail */, NULL, NULL,GLOBUS_FALSE, NULL},
  {"version_string", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
-     NULL /* version string */, NULL, NULL,GLOBUS_FALSE},
+     NULL /* version string */, NULL, NULL,GLOBUS_FALSE, NULL},
  {"community", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_LIST, 0, NULL,
-    NULL /* used to store list of known backends and associated info */, NULL, NULL,GLOBUS_FALSE},
+    NULL /* used to store list of known backends and associated info */, NULL, NULL,GLOBUS_FALSE, NULL},
  {"module_list", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_LIST, 0, NULL,
-    NULL /* used to store list of allowed modules */, NULL, NULL,GLOBUS_FALSE},
+    NULL /* used to store list of allowed modules */, NULL, NULL,GLOBUS_FALSE, NULL},
  {"exec_name", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
-    NULL /* full path of server used when fork/execing */, NULL, NULL,GLOBUS_FALSE},
+    NULL /* full path of server used when fork/execing */, NULL, NULL,GLOBUS_FALSE, NULL},
  {"dsi_options", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
-    NULL /* options parsed from load_dsi_module config */, NULL, NULL,GLOBUS_FALSE},
+    NULL /* options parsed from load_dsi_module config */, NULL, NULL,GLOBUS_FALSE, NULL},
  {"service_engine", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_VOID, 0, NULL,
-    NULL, NULL, NULL,GLOBUS_FALSE},
+    NULL, NULL, NULL,GLOBUS_FALSE, NULL},
  {"argv", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_VOID, 0, NULL,
-    NULL /* original argv */, NULL, NULL,GLOBUS_FALSE},
+    NULL /* original argv */, NULL, NULL,GLOBUS_FALSE, NULL},
  {"argc", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_INT, 0, NULL,
-    NULL /* original argc */, NULL, NULL, GLOBUS_FALSE}
+    NULL /* original argc */, NULL, NULL, GLOBUS_FALSE, NULL}
 };
 
 static int option_count = sizeof(option_list) / sizeof(globus_l_gfs_config_option_t);
@@ -362,9 +363,8 @@ globus_l_gfs_config_set(
         break;
     }
     rc = globus_hashtable_insert(&option_table,
-        option_name,
+        option->option_name,
         option);
-    
     if(rc)
     {
         goto error;
@@ -1058,10 +1058,11 @@ globus_l_gfs_config_display_c_service()
     fprintf(out, "\n");
 
     fprintf(out, "globus_result_t\n");
-    fprintf(out, "griftpR_l_setup_resource(\n");
+    fprintf(out, "gridftpR_l_setup_resource(\n");
     fprintf(out, "    globus_resource_t                   resource)\n");
     fprintf(out, "{\n");
     fprintf(out, "    globus_result_t                     result;\n");
+    fprintf(out, "    globus_i_gfs_config_option_cb_ent_t * cb_handle;\n");
     for(i = 0; i < option_count; i++)
     {        
         o = (globus_l_gfs_config_option_t *) &option_list[i];
@@ -1072,13 +1073,19 @@ globus_l_gfs_config_display_c_service()
                 case GLOBUS_L_GFS_CONFIG_INT:
                 case GLOBUS_L_GFS_CONFIG_BOOL:
                     fprintf(out, "    "
+                        "globus_gfs_config_add_cb(&cb_handle, \"%s\",",
+                        o->option_name);
+                    fprintf(out, "        gridftpA_l_intchange_cb,");
+                    fprintf(out, "        \"%s\");", o->option_name);
+                    fprintf(out, "\n");
+                    fprintf(out, "    "
                         "result = globus_resource_create_property_callback(\n");
                     fprintf(out, "        resource,\n");
                     fprintf(out, "        &%s_qname,\n", o->option_name);
                     fprintf(out, "        &%s_info,\n", o->option_name);
-                    fprintf(out, "        griftpR_l_int_get_cb,\n");
-                    fprintf(out, "        griftpR_l_int_set_cb,\n");
-                    fprintf(out, "        \"%s\");\n", o->option_name);
+                    fprintf(out, "        griidftpR_l_int_get_cb,\n");
+                    fprintf(out, "        gridftpR_l_int_set_cb,\n");
+                    fprintf(out, "        cb_handle);\n", o->option_name);
                     fprintf(out, "    if (result != GLOBUS_SUCCESS)\n");
                     fprintf(out, "    {\n");
                     fprintf(out, "        goto error;\n");
@@ -1092,8 +1099,8 @@ globus_l_gfs_config_display_c_service()
                     fprintf(out, "        resource,\n");
                     fprintf(out, "        &%s_qname,\n", o->option_name);
                     fprintf(out, "        &%s_info,\n", o->option_name);
-                    fprintf(out, "        griftpR_l_string_get_cb,\n");
-                    fprintf(out, "        griftpR_l_string_set_cb,\n");
+                    fprintf(out, "        gridftpR_l_string_get_cb,\n");
+                    fprintf(out, "        gridftpR_l_string_set_cb,\n");
                     fprintf(out, "        \"%s\");\n", o->option_name);
                     fprintf(out, "    if (result != GLOBUS_SUCCESS)\n");
                     fprintf(out, "    {\n");
@@ -1112,6 +1119,7 @@ globus_l_gfs_config_display_c_service()
     fprintf(out, "error:\n");
     fprintf(out, "    return result;\n");
     fprintf(out, "}\n");
+    fprintf(out, "\n");
 
     GlobusGFSDebugExit();
 }
@@ -1777,7 +1785,7 @@ globus_l_gfs_config_misc()
         globus_free(value);             
     }
     default_dsi = globus_i_gfs_config_string("load_dsi_module");
-    globus_assert(default_dsi  != NULL);
+    globus_assert(default_dsi != NULL);
     globus_list_insert(&module_list, strdup(default_dsi));
     globus_l_gfs_config_set("module_list", 0, module_list);   
     
@@ -2258,15 +2266,61 @@ globus_gfs_config_get_int(
     return rc;
 }
 
+static
+void
+globus_l_gfs_config_publish_int(
+    globus_list_t *                     list,
+    char *                              option_name,
+    int                                 int_val)
+{
+    globus_i_gfs_config_set_int_cb_t    cb;
+    globus_i_gfs_config_option_cb_ent_t * cb_ent;
+
+    while(!globus_list_empty(list))
+    {
+        cb_ent = (globus_i_gfs_config_option_cb_ent_t *)
+            globus_list_first(list);
+
+        list = globus_list_rest(list);
+        if(cb_ent->enabled)
+        {
+            cb = (globus_i_gfs_config_set_int_cb_t)cb_ent->cb;
+            cb_ent->enabled = GLOBUS_FALSE;
+            cb(option_name, int_val, cb_ent->user_arg);
+            cb_ent->enabled = GLOBUS_TRUE;
+        }
+    }
+}
+
 int
 globus_gfs_config_set_int(
     char *                              option_name,
     int                                 int_val)
 {
     int                                 rc;
+    globus_list_t *                     list;
+    globus_l_gfs_config_option_t *      option;
 
     globus_mutex_lock(&globus_i_gfs_config_mutex);
-    rc = globus_l_gfs_config_set(option_name, int_val, NULL);
+    {
+        rc = globus_l_gfs_config_set(option_name, int_val, NULL);
+        if(rc != 0)
+        {
+            goto error;
+        }
+        option = (globus_l_gfs_config_option_t *)
+            globus_hashtable_lookup(&option_table, (void *) option_name);
+        if(option == NULL)
+        {
+            goto error;
+        }
+        list = option->set_list;
+        globus_l_gfs_config_publish_int(list, option_name, int_val);
+    }
+    globus_mutex_unlock(&globus_i_gfs_config_mutex);
+
+    return 0;
+error:
     globus_mutex_unlock(&globus_i_gfs_config_mutex);
     return rc;
 }
@@ -2277,11 +2331,32 @@ globus_gfs_config_inc_int(
     int                                 inc_val)
 {
     int                                 rc;
+    int                                 tmp_i;
+    globus_list_t *                     list;
+    globus_l_gfs_config_option_t *      option;
 
     globus_mutex_lock(&globus_i_gfs_config_mutex);
-    rc = globus_i_gfs_config_int(option_name);
-    rc += inc_val;
-    rc = globus_l_gfs_config_set(option_name, rc, NULL);
+    {
+        tmp_i = globus_i_gfs_config_int(option_name);
+        tmp_i += inc_val;
+        rc = globus_l_gfs_config_set(option_name, tmp_i, NULL);
+        if(rc != 0)
+        {
+            goto error;
+        }
+        option = (globus_l_gfs_config_option_t *)
+            globus_hashtable_lookup(&option_table, (void *) option_name);
+        if(option == NULL)
+        {
+            goto error;
+        }
+        list = option->set_list;
+        globus_l_gfs_config_publish_int(list, option_name, tmp_i);
+    }
+    globus_mutex_unlock(&globus_i_gfs_config_mutex);
+
+    return 0;
+error:
     globus_mutex_unlock(&globus_i_gfs_config_mutex);
     return rc;
 }
@@ -2291,10 +2366,30 @@ globus_gfs_config_set_bool(
     char *                              option_name,
     int                                 int_val)
 {
+    globus_list_t *                     list;
     int                                 rc;
+    globus_l_gfs_config_option_t *      option;
 
     globus_mutex_lock(&globus_i_gfs_config_mutex);
-    rc = globus_l_gfs_config_set(option_name, int_val, NULL);
+    {
+        rc = globus_l_gfs_config_set(option_name, int_val, NULL);
+        if(rc != 0)
+        {
+            goto error;
+        }
+        option = (globus_l_gfs_config_option_t *)
+            globus_hashtable_lookup(&option_table, (void *) option_name);
+        if(option == NULL)
+        {
+            goto error;
+        }
+        list = option->set_list;
+        globus_l_gfs_config_publish_int(list, option_name, int_val);
+    }
+    globus_mutex_unlock(&globus_i_gfs_config_mutex);
+
+    return 0;
+error:
     globus_mutex_unlock(&globus_i_gfs_config_mutex);
     return rc;
 }
@@ -2304,14 +2399,100 @@ globus_gfs_config_set_ptr(
     char *                              option_name,
     void *                              ptr)
 {
+    globus_i_gfs_config_set_string_cb_t cb;
+    globus_i_gfs_config_option_cb_ent_t * cb_ent;
+    globus_list_t *                     list;
     int                                 rc;
+    globus_l_gfs_config_option_t *      option;
+    GlobusGFSName(globus_gfs_config_set_ptr);
+    GlobusGFSDebugEnter();
 
     globus_mutex_lock(&globus_i_gfs_config_mutex);
-    rc = globus_l_gfs_config_set(option_name, 0, ptr);
+    {
+        rc = globus_l_gfs_config_set(option_name, 0, ptr);
+        if(rc != 0)
+        {
+            goto error;
+        }
+
+        option = (globus_l_gfs_config_option_t *)
+            globus_hashtable_lookup(&option_table, (void *) option_name);
+        if(option == NULL)
+        {
+            goto error;
+        }
+        list = option->set_list;
+
+        while(!globus_list_empty(list))
+        {
+            cb_ent = (globus_i_gfs_config_option_cb_ent_t *)
+                globus_list_first(list);
+            list = globus_list_rest(list);
+
+            if(cb_ent->enabled)
+            {
+                cb = (globus_i_gfs_config_set_string_cb_t) cb_ent->cb;
+                cb_ent->enabled = GLOBUS_FALSE;
+                cb(option_name, ptr, cb_ent->user_arg);
+                cb_ent->enabled = GLOBUS_TRUE;
+            }
+        }
+    }
+    globus_mutex_unlock(&globus_i_gfs_config_mutex);
+
+    return 0;
+error:
     globus_mutex_unlock(&globus_i_gfs_config_mutex);
     return rc;
 }
 
+void
+globus_gfs_config_enable_cb(
+    globus_i_gfs_config_option_cb_ent_t * cb_ent,
+    globus_bool_t                       enabled)
+{
 
+    globus_mutex_lock(&globus_i_gfs_config_mutex);
+    {
+        cb_ent->enabled = enabled;
+    }
+    globus_mutex_unlock(&globus_i_gfs_config_mutex);
+}
 
+int
+globus_gfs_config_add_cb(
+    globus_i_gfs_config_option_cb_ent_t ** cb_handle,
+    char *                              option_name,
+    void *                              cb,
+    void *                              user_arg)
+{
+    globus_i_gfs_config_option_cb_ent_t * cb_ent;
+    globus_l_gfs_config_option_t *      option;
+    int                                 rc;
+    GlobusGFSName(globus_gfs_config_add_cb);
+    GlobusGFSDebugEnter();
+
+    globus_mutex_lock(&globus_i_gfs_config_mutex);
+    {
+        option = (globus_l_gfs_config_option_t *)
+            globus_hashtable_lookup(&option_table, (void *) option_name);
+        if(option == NULL)
+        {
+            goto error;
+        }
+        cb_ent = (globus_i_gfs_config_option_cb_ent_t *)
+            globus_calloc(1, sizeof(globus_i_gfs_config_option_cb_ent_t));
+        cb_ent->cb = cb;
+        cb_ent->enabled = GLOBUS_TRUE;
+        cb_ent->user_arg = user_arg;
+        *cb_handle = cb_ent;
+        globus_list_insert(&option->set_list, cb_ent);
+    }
+    globus_mutex_unlock(&globus_i_gfs_config_mutex);
+
+    return 0;
+error:
+    globus_mutex_unlock(&globus_i_gfs_config_mutex);
+    return rc;
+}
 

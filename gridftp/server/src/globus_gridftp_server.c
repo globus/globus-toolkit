@@ -131,7 +131,8 @@ globus_l_gfs_sigint(
     {
         if(globus_l_gfs_sigint_caught)
         {
-            globus_gfs_config_set_int("open_connections_count", 0);
+            globus_gfs_config_set_int(
+                "open_connections_count", 0);
             globus_i_gfs_log_message(
                 GLOBUS_I_GFS_LOG_ERR, 
                 "Forcing unclean shutdown.\n");
