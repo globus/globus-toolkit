@@ -70,6 +70,8 @@ int test1()
 	rc = 1;
     }
     globus_libc_free(query);
+    globus_libc_free(rsl[1]);
+    globus_libc_free(callback_url[1]);
 error_exit:
     globus_module_deactivate(GLOBUS_GRAM_PROTOCOL_MODULE);
     return rc;
@@ -131,6 +133,7 @@ int test2()
 	fprintf(stderr, "Unpacking job request returned junk!\n");
 	rc = 1;
     }
+    globus_libc_free(rsl[1]);
     globus_libc_free(query);
 error_exit:
     globus_module_deactivate(GLOBUS_GRAM_PROTOCOL_MODULE);
@@ -190,6 +193,7 @@ int test3()
 	rc = 1;
     }
     globus_libc_free(msg);
+    globus_libc_free(job_contact[1]);
 error_exit:
     globus_module_deactivate(GLOBUS_GRAM_PROTOCOL_MODULE);
     return rc;
@@ -244,6 +248,7 @@ test4()
 	rc = 1;
     }
     globus_libc_free(msg);
+    globus_libc_free(status[1]);
 error_exit:
     globus_module_deactivate(GLOBUS_GRAM_PROTOCOL_MODULE);
     return rc;
@@ -372,6 +377,7 @@ test6()
 	rc = 1;
     }
     globus_libc_free(msg);
+    globus_libc_free(job_contact[1]);
 error_exit:
     globus_module_deactivate(GLOBUS_GRAM_PROTOCOL_MODULE);
     return rc;

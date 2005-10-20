@@ -238,10 +238,13 @@ test2()
 
 destroy_callback_contact2:
     globus_gram_client_callback_disallow(callback_contact[2]);
+    globus_free(callback_contact[2]);
 destroy_callback_contact1:
     globus_gram_client_callback_disallow(callback_contact[1]);
+    globus_free(callback_contact[1]);
 destroy_callback_contact0:
     globus_gram_client_callback_disallow(callback_contact[0]);
+    globus_free(callback_contact[0]);
     globus_libc_free(job_contact);
     globus_mutex_unlock(&monitor.mutex);
 error_exit:
@@ -341,6 +344,7 @@ test3()
 
 destroy_bad_callback_contact:
     globus_gram_client_callback_disallow(bad_callback_contact);
+    globus_libc_free(bad_callback_contact);
 destroy_callback_contact:
     globus_gram_client_callback_disallow(callback_contact);
     globus_libc_free(callback_contact);

@@ -438,7 +438,8 @@ GSS_CALLCONV gss_init_delegation(
                 
         /* push the cert used to sign the proxy */
         i2d_X509_bio(bio, cert);
-
+        X509_free(cert);
+        
         /* push the number of certs in the cert chain */
         local_result = globus_gsi_cred_get_cert_chain(cred->cred_handle,
                                                       &cert_chain);
@@ -468,6 +469,7 @@ GSS_CALLCONV gss_init_delegation(
             
             i2d_X509_bio(bio, cert);
         }
+        sk_X509_pop_free(cert_chain, X509_free);
 
         /* reset state machine */
         context->delegation_state = GSS_DELEGATION_START; 

@@ -153,6 +153,11 @@ test4()
     {
 	return rc;
     }
+    rc = globus_gram_client_callback_disallow(callback_contact);
+    if(rc != GLOBUS_SUCCESS)
+    {
+        return rc;
+    }
     globus_libc_free(callback_contact);
     return globus_module_deactivate(GLOBUS_GRAM_CLIENT_MODULE);
 }

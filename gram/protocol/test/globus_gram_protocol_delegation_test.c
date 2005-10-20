@@ -124,7 +124,7 @@ int main()
 
 	globus_mutex_unlock(&monitor.mutex);
 	globus_mutex_destroy(&monitor.mutex);
-	globus_cond_destroy(&monitor.mutex);
+	globus_cond_destroy(&monitor.cond);
 
 	if(monitor.credential == GSS_C_NO_CREDENTIAL)
 	{
@@ -147,7 +147,7 @@ disallow_error:
 unlock_error:
     globus_mutex_unlock(&monitor.mutex);
     globus_mutex_destroy(&monitor.mutex);
-    globus_cond_destroy(&monitor.mutex);
+    globus_cond_destroy(&monitor.cond);
     globus_module_deactivate(GLOBUS_GRAM_PROTOCOL_MODULE);
     return rc;
 }
