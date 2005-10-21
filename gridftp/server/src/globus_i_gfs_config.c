@@ -1085,7 +1085,7 @@ globus_l_gfs_config_display_c_service()
                     fprintf(out, "        &%s_info,\n", o->option_name);
                     fprintf(out, "        griidftpR_l_int_get_cb,\n");
                     fprintf(out, "        gridftpR_l_int_set_cb,\n");
-                    fprintf(out, "        cb_handle);\n", o->option_name);
+                    fprintf(out, "        cb_handle);\n");
                     fprintf(out, "    if (result != GLOBUS_SUCCESS)\n");
                     fprintf(out, "    {\n");
                     fprintf(out, "        goto error;\n");

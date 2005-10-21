@@ -26,7 +26,8 @@
 
 typedef void
 (*globus_i_gfs_server_close_cb_t)(
-    void *                              user_arg);
+    void *                              user_arg,
+    globus_object_t *                   error);
 
 typedef struct globus_i_gfs_monitor_s
 {

@@ -46,7 +46,8 @@ globus_l_gfs_open_new_server(
 static
 void
 globus_l_gfs_server_closed(
-    void *                              user_arg);
+    void *                              user_arg,
+    globus_object_t *                   error);
 
 static
 void
@@ -160,14 +161,11 @@ globus_l_gfs_sigint(
         }
         else
         {
-            if(globus_i_gfs_config_bool("data_node"))
-            {
-                globus_i_gfs_ipc_stop();
-            }
-            else
+            if(!globus_i_gfs_config_bool("data_node"))
             {
                 globus_i_gfs_control_stop();
             }
+            globus_i_gfs_ipc_stop();
             if(globus_i_gfs_config_bool("daemon"))
             {
                 globus_l_gfs_sigchld(user_arg);
@@ -489,10 +487,15 @@ globus_l_gfs_close_cb(
 static
 void
 globus_l_gfs_ipc_closed(
-    void *                              user_arg)
+    void *                              user_arg,
+    globus_result_t                     result)
 {
-    globus_result_t                     result;
     globus_xio_handle_t                 handle;
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        /* XXX TODO log and error */
+    }
 
     handle = (globus_xio_handle_t) user_arg;
     globus_mutex_unlock(&globus_l_gfs_mutex);
@@ -510,60 +513,6 @@ globus_l_gfs_ipc_closed(
         globus_l_gfs_close_cb(handle, result, NULL);
     }
 }
-
-static
-void
-globus_l_gfs_ipc_close_cb(
-    globus_gfs_ipc_handle_t             ipc_handle,
-    globus_result_t                     result,
-    void *                              user_arg)
-{
-    globus_l_gfs_ipc_closed(user_arg);
-}
-
-static
-void
-globus_l_gfs_ipc_error_cb(
-    globus_gfs_ipc_handle_t             ipc_handle,
-    globus_result_t                     result,
-    void *                              user_arg)
-{
-    globus_result_t                     res;
-    GlobusGFSName(globus_l_gfs_ipc_error_cb);
-    GlobusGFSDebugEnter();
-
-    globus_i_gfs_log_result("IPC ERROR", res);
-    res = globus_gfs_ipc_close(
-        ipc_handle, globus_l_gfs_ipc_close_cb, user_arg);
-    if(res != GLOBUS_SUCCESS)
-    {
-        globus_i_gfs_log_result("IPC ERROR on close", res);
-        globus_l_gfs_ipc_closed(user_arg);
-    }
-
-    GlobusGFSDebugExit();
-}
-
-static
-void
-globus_l_gfs_ipc_open_cb(
-    globus_gfs_ipc_handle_t             ipc_handle,
-    globus_result_t                     result,
-    globus_gfs_finished_info_t *        reply,
-    void *                              user_arg)
-{
-    GlobusGFSName(globus_l_gfs_ipc_open_cb);
-    GlobusGFSDebugEnter();
-
-    if(result != GLOBUS_SUCCESS)
-    {
-        globus_i_gfs_log_result("IPC ERROR", result);
-        globus_l_gfs_ipc_closed(user_arg);
-    }
-
-    GlobusGFSDebugExit();
-}
-
 
 static
 void
@@ -642,10 +591,7 @@ globus_l_gfs_new_server_cb(
             result = globus_gfs_ipc_handle_create(
                 &globus_gfs_ipc_default_iface,
                 system_handle,
-                globus_l_gfs_ipc_open_cb,
                 globus_l_gfs_ipc_closed,
-                handle,
-                globus_l_gfs_ipc_error_cb,
                 handle);
         }
         else
@@ -1519,7 +1465,8 @@ error_activate:
 static
 void
 globus_l_gfs_server_closed(
-    void *                              user_arg)
+    void *                              user_arg,
+    globus_object_t *                   error)
 {
     GlobusGFSName(globus_l_gfs_server_closed);
     GlobusGFSDebugEnter();
@@ -1529,6 +1476,20 @@ globus_l_gfs_server_closed(
         globus_i_gfs_connection_closed();
     }
     globus_mutex_unlock(&globus_l_gfs_mutex);
+
+    if(error != NULL)
+    {
+        char *                          tmp_str;
+
+        tmp_str = globus_error_print_friendly(error);
+        /* XXX find out why we get (false) error here  */
+        globus_i_gfs_log_message(
+            GLOBUS_I_GFS_LOG_WARN,
+            "Control connection closed with error: %s\n",
+             tmp_str);
+        globus_free(tmp_str);
+        globus_object_free(error);
+    }
 
     GlobusGFSDebugExit();
 }

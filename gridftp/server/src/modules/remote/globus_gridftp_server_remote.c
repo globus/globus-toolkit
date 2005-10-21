@@ -12,6 +12,8 @@
 #include "globus_gridftp_server.h"
 #include "version.h"
 
+static int BS_end_CTR = 0;
+static int BS_start_CTR = 0;
 
 GlobusDebugDeclare(GLOBUS_GRIDFTP_SERVER_REMOTE);
 
@@ -1426,6 +1428,9 @@ globus_l_gfs_remote_session_start(
     GlobusGFSName(globus_l_gfs_remote_session_start);
     GlobusGFSRemoteDebugEnter();
     
+    BS_start_CTR++;
+    printf("SESSION START %d\n", BS_start_CTR);
+
     my_handle = (globus_l_gfs_remote_handle_t *) 
         globus_calloc(1, sizeof(globus_l_gfs_remote_handle_t));
     globus_mutex_init(&my_handle->mutex, NULL);
@@ -1473,6 +1478,9 @@ globus_l_gfs_remote_session_end(
     globus_result_t                     result;
     GlobusGFSName(globus_l_gfs_remote_session_end);
     GlobusGFSRemoteDebugEnter();
+
+    BS_end_CTR++;
+    printf("SESSION STOP %d\n", BS_end_CTR);
 
     my_handle = (globus_l_gfs_remote_handle_t *) user_arg;
     

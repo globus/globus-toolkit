@@ -898,6 +898,8 @@ globus_l_gsc_terminate(
                 globus_fifo_dequeue(&server_handle->reply_q);
 
         if(reply_ent->final)
+bus_l_gsc_terminate
+i
         {
             globus_i_gsc_op_destroy(reply_ent->op);
         }

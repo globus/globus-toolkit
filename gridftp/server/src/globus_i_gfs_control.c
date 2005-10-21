@@ -12,6 +12,9 @@
 #include "globus_i_gridftp_server.h"
 #include "version.h"
 
+static int BS_done_ctr = 0;
+static int BS_start_ctr = 0;
+
 GlobusDebugDefine(GLOBUS_GRIDFTP_SERVER);
 
 typedef struct
@@ -29,6 +32,7 @@ typedef struct
     char *                              home_dir;
     char *                              username;
     globus_gridftp_server_control_t     server_handle;
+    globus_object_t *                   close_error;
 } globus_l_gfs_server_instance_t;
 
 typedef struct
@@ -314,10 +318,13 @@ globus_l_gfs_channel_close_cb(
         _FSSL("Closed connection from %s\n",NULL),
         instance->remote_contact);
 
-    globus_i_gfs_data_session_stop(NULL, instance->session_arg);
+    if(instance->session_arg != NULL)
+    {
+        globus_i_gfs_data_session_stop(NULL, instance->session_arg);
+    }
     if(instance->close_func)
     {
-        instance->close_func(instance->close_arg);
+        instance->close_func(instance->close_arg, instance->close_error);
     }
     
     if(instance->home_dir)
@@ -346,6 +353,8 @@ globus_l_gfs_done_cb(
     GlobusGFSName(globus_l_gfs_done_cb);
     GlobusGFSDebugEnter();
 
+BS_done_ctr++;
+printf("server lib done cb %d\n", BS_done_ctr);
     instance = (globus_l_gfs_server_instance_t *) user_arg;
 
     globus_gridftp_server_control_destroy(instance->server_handle);
@@ -357,19 +366,8 @@ globus_l_gfs_done_cb(
     }
     globus_mutex_unlock(&globus_l_gfs_control_mutex);
 
-    if(result != GLOBUS_SUCCESS)
-    {
-        char *                          tmp_str;
-
-        tmp_str = globus_error_print_friendly(globus_error_peek(result));
-        /* XXX find out why we get (false) error here  */
-        globus_i_gfs_log_message(
-            GLOBUS_I_GFS_LOG_WARN,
-            "Control connection closed with error: %s\n",
-             tmp_str); 
-        globus_free(tmp_str);
-    }
-    
+    instance->close_error = 
+        (result == GLOBUS_SUCCESS ? NULL :globus_error_get(result));
     result = globus_xio_register_close(
         instance->xio_handle,
         GLOBUS_NULL,
@@ -2112,6 +2110,8 @@ globus_i_gfs_control_start(
     GlobusGFSName(globus_i_gfs_control_start);
     GlobusGFSDebugEnter();
 
+BS_start_ctr++;
+printf("server lib globus_i_gfs_control_start  cb %d\n", BS_start_ctr);
     instance = (globus_l_gfs_server_instance_t *)
         globus_calloc(1, sizeof(globus_l_gfs_server_instance_t));
     if(!instance)

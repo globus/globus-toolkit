@@ -41,6 +41,8 @@ do                                                                      \
     }                                                                   \
 } while(0)
 
+static int BS_data_end = 0;
+static int BS_data_start = 0;
 
 struct passwd *                         globus_l_gfs_data_pwent = NULL;
 static globus_gfs_storage_iface_t *     globus_l_gfs_dsi = NULL;
@@ -4718,6 +4720,8 @@ globus_i_gfs_data_session_start(
     GlobusGFSName(globus_i_gfs_data_session_start);
     GlobusGFSDebugEnter();
 
+BS_data_start++;
+printf("DATA START %d\n", BS_data_start);
     session_handle = (globus_l_gfs_data_session_t *)
         globus_calloc(1, sizeof(globus_l_gfs_data_session_t));
     if(session_handle == NULL)
@@ -4780,6 +4784,8 @@ globus_i_gfs_data_session_stop(
     GlobusGFSName(globus_i_gfs_data_session_stop);
     GlobusGFSDebugEnter();
 
+BS_data_end++;
+printf("DATA END %d\n", BS_data_end);
     session_handle = (globus_l_gfs_data_session_t *) session_arg;
     if(session_handle != NULL)
     {

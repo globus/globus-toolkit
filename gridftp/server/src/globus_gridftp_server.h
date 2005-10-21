@@ -1181,7 +1181,8 @@ typedef void
 
 typedef void
 (*globus_i_gfs_ipc_done_callback_t)(
-    void *                              user_arg);
+    void *                              user_arg,
+    globus_result_t                     result);
 
 /*************************************************************************
  *  interface function
@@ -1446,11 +1447,8 @@ globus_result_t
 globus_gfs_ipc_handle_create(
     globus_gfs_ipc_iface_t *            iface,
     globus_xio_system_socket_t          system_handle,
-    globus_gfs_ipc_open_callback_t      cb,
     globus_i_gfs_ipc_done_callback_t    done_cb,
-    void *                              user_arg,
-    globus_gfs_ipc_error_callback_t     error_cb,
-    void *                              error_arg);
+    void *                              user_arg);
 
 /*
  *  actually close the handle
@@ -1460,6 +1458,10 @@ globus_gfs_ipc_close(
     globus_gfs_ipc_handle_t             ipc_handle,
     globus_gfs_ipc_close_callback_t     cb,
     void *                              user_arg);
+
+globus_result_t
+globus_gfs_ipc_reply_close(
+    globus_gfs_ipc_handle_t             ipc_handle);
 
 globus_result_t
 globus_gfs_ipc_session_stop(
