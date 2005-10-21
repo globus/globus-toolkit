@@ -29,8 +29,6 @@
 #define GLOBUS_L_SITE_TEST_SUITE_BLOCK 2564769
 #define GLOBUS_L_SITE_TEST_SUITE_MSG   ((char *) globus_l_test_msg)
 
-static int BS_ref_count = 0;
-
 static uint64_t  globus_l_test_msg[3] =
     {16735629441895682222ULL, 15621538939954315984ULL,10855547066009026264ULL};
 #define GlobusLTestSuiteMsg()                                           \
@@ -1678,8 +1676,6 @@ globus_l_gsc_server_ref_check(
     globus_assert(server_handle->ref >= 0);
     if(server_handle->ref == 0)
     {
-BS_ref_count++;
-printf("SERVER LIB ref == 0 : %d\n", BS_ref_count);
         GlobusGSCHandleStateChange(
             server_handle, GLOBUS_L_GSC_STATE_STOPPED);
         globus_xio_attr_init(&close_attr);
