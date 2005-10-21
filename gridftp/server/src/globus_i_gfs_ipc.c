@@ -5528,7 +5528,7 @@ globus_gfs_ipc_request_transfer_event(
 
     globus_mutex_lock(&ipc->mutex);
     {
-        if(ipc_handle->state != GLOBUS_GFS_IPC_STATE_OPEN)
+        if(ipc_handle->state != GLOBUS_GFS_IPC_STATE_REPLY_WAIT)
         {
             result = GlobusGFSErrorParameter("ipc");
             goto error;

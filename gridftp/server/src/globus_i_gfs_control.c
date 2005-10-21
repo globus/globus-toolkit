@@ -12,9 +12,6 @@
 #include "globus_i_gridftp_server.h"
 #include "version.h"
 
-static int BS_done_ctr = 0;
-static int BS_start_ctr = 0;
-
 GlobusDebugDefine(GLOBUS_GRIDFTP_SERVER);
 
 typedef struct
@@ -353,8 +350,6 @@ globus_l_gfs_done_cb(
     GlobusGFSName(globus_l_gfs_done_cb);
     GlobusGFSDebugEnter();
 
-BS_done_ctr++;
-printf("server lib done cb %d\n", BS_done_ctr);
     instance = (globus_l_gfs_server_instance_t *) user_arg;
 
     globus_gridftp_server_control_destroy(instance->server_handle);
@@ -2110,8 +2105,6 @@ globus_i_gfs_control_start(
     GlobusGFSName(globus_i_gfs_control_start);
     GlobusGFSDebugEnter();
 
-BS_start_ctr++;
-printf("server lib globus_i_gfs_control_start  cb %d\n", BS_start_ctr);
     instance = (globus_l_gfs_server_instance_t *)
         globus_calloc(1, sizeof(globus_l_gfs_server_instance_t));
     if(!instance)
