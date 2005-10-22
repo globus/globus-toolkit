@@ -2271,7 +2271,7 @@ globus_l_gfs_data_handle_free(
     globus_l_gfs_data_handle_t *    data_handle)
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
-    GlobusGFSName(globus_i_gfs_data_request_handle_destroy);
+    GlobusGFSName(globus_l_gfs_data_handle_free);
     GlobusGFSDebugEnter();
 
     globus_assert(data_handle->state == GLOBUS_L_GFS_DATA_HANDLE_CLOSED ||

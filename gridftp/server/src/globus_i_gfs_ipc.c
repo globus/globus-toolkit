@@ -736,7 +736,6 @@ globus_l_gfs_ipc_stop_close_cb(
 {
 }
 
-
 void
 globus_i_gfs_ipc_stop()
 {
@@ -802,6 +801,7 @@ globus_i_gfs_ipc_stop()
                                 ipc, globus_l_gfs_ipc_stop_close_cb, NULL);
                             if(result != GLOBUS_SUCCESS)
                             {
+                                /* XXX this isn't really list safe */
                                 globus_list_remove(&globus_l_ipc_handle_list, 
                                     globus_list_search(
                                         globus_l_ipc_handle_list, ipc));
@@ -1086,6 +1086,8 @@ error:
         ipc);
     if(result != GLOBUS_SUCCESS)
     {
+        globus_i_gfs_log_result_warn(
+            "a close failed, can lead to a barrier race", result);
         globus_l_gfs_ipc_reply_close_kickout(ipc);
     }
 
@@ -1258,6 +1260,8 @@ error:
         ipc);
     if(result != GLOBUS_SUCCESS)
     {
+        globus_i_gfs_log_result_warn(
+            "a close failed, can lead to a barrier race", result);
         globus_l_gfs_ipc_reply_close_kickout(ipc);
     }
     globus_mutex_unlock(&ipc->mutex);
@@ -1501,6 +1505,8 @@ error:
         ipc);
     if(result != GLOBUS_SUCCESS)
     {
+        globus_i_gfs_log_result_warn(
+            "a close failed, can lead to a barrier race", result);
         globus_l_gfs_ipc_reply_close_kickout(ipc);
     }
 
@@ -1650,6 +1656,8 @@ error:
             ipc);
         if(res != GLOBUS_SUCCESS)
         {
+            globus_i_gfs_log_result_warn(
+                "a close failed, can lead to a barrier race", res);
             globus_l_gfs_ipc_reply_close_kickout(ipc);
         }
     }
@@ -1734,6 +1742,8 @@ err:
         ipc);
     if(result != GLOBUS_SUCCESS)
     {
+        globus_i_gfs_log_result_warn(
+            "a close failed, can lead to a barrier race", result);
         globus_l_gfs_ipc_reply_close_kickout(ipc);
     }
 
@@ -1792,6 +1802,8 @@ error:
         ipc);
     if(result != GLOBUS_SUCCESS)
     {
+        globus_i_gfs_log_result_warn(
+            "a close failed, can lead to a barrier race", result);
         globus_l_gfs_ipc_reply_close_kickout(ipc);
     }
 
@@ -2594,6 +2606,8 @@ globus_l_gfs_ipc_requestor_start_close(
             ipc_handle);
         if(res != GLOBUS_SUCCESS)
         {
+            globus_i_gfs_log_result_warn(
+                "a close failed, can lead to a barrier race", res);
             goto error_xio;
         }
     }
@@ -2755,6 +2769,8 @@ globus_gfs_ipc_reply_close(
                     ipc_handle);
                 if(result != GLOBUS_SUCCESS)
                 {
+                    globus_i_gfs_log_result_warn(
+                        "a close failed, can lead to a barrier race", result);
                     globus_callback_register_oneshot(
                         NULL,
                         NULL,
@@ -4017,7 +4033,7 @@ globus_l_gfs_ipc_reply_read_body_cb(
 
             /* events come in this state */
             case GLOBUS_GFS_IPC_STATE_REPLY_WAIT:
-                error_state = GLOBUS_GFS_IPC_STATE_REPLY_WAIT;
+                error_state = GLOBUS_GFS_IPC_STATE_ERROR_WAIT;
                 break;
             /* events come in this state */
             case GLOBUS_GFS_IPC_STATE_SESSION_REPLY:
@@ -4068,6 +4084,12 @@ err:
             ipc);
         if(result != GLOBUS_SUCCESS)
         {
+            globus_i_gfs_log_result_warn(
+                "a close failed, can lead to a barrier race", result);
+            /* XXX this is a problem because it doesn't respect
+                the cloes barrier.  log an error */
+            globus_i_gfs_log_result_warn(
+                "a close failed, can lead to a barrier race", result);
             globus_l_gfs_ipc_reply_close_kickout(ipc);
         }
     }
@@ -4248,6 +4270,8 @@ error:
             ipc);
         if(result != GLOBUS_SUCCESS)
         {
+            globus_i_gfs_log_result_warn(
+                "a close failed, can lead to a barrier race", result);
             globus_l_gfs_ipc_reply_close_kickout(ipc);
         }
     }
@@ -4448,6 +4472,8 @@ error:
             ipc);
         if(result != GLOBUS_SUCCESS)
         {
+            globus_i_gfs_log_result_warn(
+                "a close failed, can lead to a barrier race", result);
             globus_l_gfs_ipc_reply_close_kickout(ipc);
         }
     }
@@ -4715,6 +4741,8 @@ error:
             ipc);
         if(res != GLOBUS_SUCCESS)
         {
+            globus_i_gfs_log_result_warn(
+                "a close failed, can lead to a barrier race", res);
             globus_l_gfs_ipc_reply_close_kickout(ipc);
         }
     }
@@ -4925,6 +4953,8 @@ globus_l_gfs_ipc_stop_write_cb(
             ipc);
         if(res != GLOBUS_SUCCESS)
         {
+            globus_i_gfs_log_result_warn(
+                "a close failed, can lead to a barrier race", res);
             globus_callback_register_oneshot(
                 NULL,
                 NULL,

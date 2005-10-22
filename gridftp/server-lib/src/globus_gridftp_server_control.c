@@ -4805,29 +4805,48 @@ globus_gridftp_server_control_finished_active_connect(
         return GlobusGridFTPServerErrorParameter("op");
     }
 
-    data_obj = (globus_i_gsc_data_t *) globus_calloc(
-        sizeof(globus_i_gsc_data_t), 1);
-    if(data_obj == NULL)
+    if(user_data_handle != NULL)
     {
-        return GlobusGridFTPServerControlErrorSytem();
-    }
-    data_obj->first_use = GLOBUS_TRUE;
-    data_obj->dir = data_dir;
-    data_obj->user_handle = user_data_handle;
-    data_obj->server_handle = op->server_handle;
-    data_obj->state = GLOBUS_L_GSC_DATA_OBJ_READY;
+        data_obj = (globus_i_gsc_data_t *) globus_calloc(
+            sizeof(globus_i_gsc_data_t), 1);
+        if(data_obj == NULL)
+        {
+            return GlobusGridFTPServerControlErrorSytem();
+        }
+        data_obj->first_use = GLOBUS_TRUE;
+        data_obj->dir = data_dir;
+        data_obj->user_handle = user_data_handle;
+        data_obj->server_handle = op->server_handle;
+        data_obj->state = GLOBUS_L_GSC_DATA_OBJ_READY;
 
-    globus_mutex_lock(&op->server_handle->mutex);
+        op->response_type = response_code;
+        op->response_msg = NULL;
+        if(msg != NULL)
+        {
+            op->response_msg = strdup(msg);
+        }
+        globus_mutex_lock(&op->server_handle->mutex);
+        {
+             globus_hashtable_insert(
+                &op->server_handle->data_object_table,
+                user_data_handle,
+                data_obj);
+
+            op->server_handle->data_object = data_obj;
+            op->server_handle->stripe_count = op->max_cs;
+        }
+        globus_mutex_unlock(&op->server_handle->mutex);
+    }
+    else
     {
-         globus_hashtable_insert(
-            &op->server_handle->data_object_table,
-            user_data_handle,
-            data_obj);
-
-        op->server_handle->data_object = data_obj;
-        op->server_handle->stripe_count = op->max_cs;
+        op->max_cs = 0;
+        op->response_type = response_code;
+        op->response_msg = NULL;
+        if(msg != NULL)
+        {
+            op->response_msg = strdup(msg);
+        }
     }
-    globus_mutex_unlock(&op->server_handle->mutex);
 
     GlobusLGSCRegisterInternalCB(op);
     GlobusGridFTPServerDebugExit();
@@ -4860,45 +4879,58 @@ globus_gridftp_server_control_finished_passive_connect(
         return GlobusGridFTPServerErrorParameter("op");
     }
 
-    data_obj = (globus_i_gsc_data_t *) globus_calloc(
-        sizeof(globus_i_gsc_data_t), 1);
-    if(data_obj == NULL)
+    if(user_data_handle != NULL)
     {
-        return GlobusGridFTPServerControlErrorSytem();
-    }
-    data_obj->first_use = GLOBUS_TRUE;
-    data_obj->dir = data_dir;
-    data_obj->user_handle = user_data_handle;
-    data_obj->server_handle = op->server_handle;
-    data_obj->state = GLOBUS_L_GSC_DATA_OBJ_READY;
+        data_obj = (globus_i_gsc_data_t *) globus_calloc(
+            sizeof(globus_i_gsc_data_t), 1);
+        if(data_obj == NULL)
+        {
+            return GlobusGridFTPServerControlErrorSytem();
+        }
+        data_obj->first_use = GLOBUS_TRUE;
+        data_obj->dir = data_dir;
+        data_obj->user_handle = user_data_handle;
+        data_obj->server_handle = op->server_handle;
+        data_obj->state = GLOBUS_L_GSC_DATA_OBJ_READY;
 
-    op->cs = (char **) globus_malloc(sizeof(char *) * (cs_count + 1));
-    for(ctr = 0; ctr < cs_count; ctr++)
+        op->cs = (char **) globus_malloc(sizeof(char *) * (cs_count + 1));
+        for(ctr = 0; ctr < cs_count; ctr++)
+        {
+            op->cs[ctr] = globus_libc_strdup(cs[ctr]);
+        }
+        op->cs[ctr] = NULL;
+        op->max_cs = cs_count;
+
+        op->response_type = response_code;
+        op->response_msg = NULL;
+        if(msg != NULL)
+        {
+            op->response_msg = strdup(msg);
+        }
+
+        globus_mutex_lock(&op->server_handle->mutex);
+        {
+             globus_hashtable_insert(
+                &op->server_handle->data_object_table,
+                user_data_handle,
+                data_obj);
+
+            op->server_handle->data_object = data_obj;
+            op->server_handle->stripe_count = cs_count;
+        }
+        globus_mutex_unlock(&op->server_handle->mutex);
+    }
+    else
     {
-        op->cs[ctr] = globus_libc_strdup(cs[ctr]);
+        op->cs = NULL;
+        op->max_cs = 0;
+        op->response_type = response_code;
+        op->response_msg = NULL;
+        if(msg != NULL)
+        {
+            op->response_msg = strdup(msg);
+        }
     }
-    op->cs[ctr] = NULL;
-    op->max_cs = cs_count;
-
-    op->response_type = response_code;
-    op->response_msg = NULL;
-    if(msg != NULL)
-    {
-        op->response_msg = strdup(msg);
-    }
-
-    globus_mutex_lock(&op->server_handle->mutex);
-    {
-         globus_hashtable_insert(
-            &op->server_handle->data_object_table,
-            user_data_handle,
-            data_obj);
-
-        op->server_handle->data_object = data_obj;
-        op->server_handle->stripe_count = cs_count;
-    }
-    globus_mutex_unlock(&op->server_handle->mutex);
-
     GlobusLGSCRegisterInternalCB(op);
     GlobusGridFTPServerDebugExit();
 
