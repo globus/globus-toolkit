@@ -6123,3 +6123,251 @@ diff -u -r -P cyrus-sasl-1.5.27/utils/sasldblistusers.c cyrus-sasl-1.5.27-patche
  	char *tmp    = realm + strlen(realm)+1;
  	char mech[1024];
  	int len = dkey.dsize - (tmp - ((char *)dkey.dptr));
+diff -u -r -P cyrus-sasl-1.5.27/aclocal.m4 cyrus-sasl-1.5.27-patched/aclocal.m4
+--- cyrus-sasl-1.5.27/aclocal.m4	2005-08-29 06:28:03.000000000 -0400
++++ cyrus-sasl-1.5.27-patched/aclocal.m4	2005-08-29 08:11:09.000000000 -0400
+@@ -313,6 +313,21 @@
+ # Some flags need to be propagated to the compiler or linker for good
+ # libtool support.
+ case "$lt_target" in
++ia64-*-hpux*)
++  # Find out which ABI we are using.
++  echo 'int i;' > conftest.$ac_ext
++  if AC_TRY_EVAL(ac_compile); then
++    case "`/usr/bin/file conftest.$ac_objext`" in
++    *ELF-32*)
++      HPUX_IA64_MODE="32"
++      ;;
++    *ELF-64*)
++      HPUX_IA64_MODE="64"
++      ;;
++    esac
++  fi
++  rm -rf conftest*
++  ;;
+ *-*-irix6*)
+   # Find out which ABI we are using.
+   echo '[#]line __oline__ "configure"' > conftest.$ac_ext
+diff -u -r -P cyrus-sasl-1.5.27/config/ltconfig cyrus-sasl-1.5.27-patched/config/ltconfig
+--- cyrus-sasl-1.5.27/config/ltconfig	2005-08-29 06:28:04.000000000 -0400
++++ cyrus-sasl-1.5.27-patched/config/ltconfig	2005-08-29 08:25:21.000000000 -0400
+@@ -704,6 +704,12 @@
+        pic_flag=-Kconform_pic
+     fi
+     ;;
++  hpux*)
++    # PIC is the default for IA64 HP-UX, but not for PA HP-UX.
++    if test "$host_cpu" != ia64; then
++       pic_flag='-fPIC'
++    fi
++    ;;
+   *)
+     pic_flag='-fPIC'
+     ;;
+@@ -720,7 +726,10 @@
+     # Is there a better link_static_flag that works with the bundled CC?
+     wl='-Wl,'
+     link_static_flag="${wl}-a ${wl}archive"
+-    pic_flag='+Z'
++    # +Z is the default for 64-bit IA64 HP-UX
++    if test "$host_cpu" != ia64; then
++      pic_flag='+Z'
++    fi
+     ;;
+ 
+   irix5* | irix6*)
+@@ -1420,15 +1429,45 @@
+     ;;
+ 
+   hpux9* | hpux10* | hpux11*)
+-    case "$host_os" in
+-    hpux9*) archive_cmds='$rm $objdir/$soname~$LD -b +b $install_libdir -o $objdir/$soname $libobjs $deplibs $linkopts~test $objdir/$soname = $lib || mv $objdir/$soname $lib' ;;
+-    *) archive_cmds='$LD -b +h $soname +b $install_libdir -o $lib $libobjs $deplibs $linkopts' ;;
+-    esac
+-    hardcode_libdir_flag_spec='${wl}+b ${wl}$libdir'
+-    hardcode_libdir_separator=:
+-    hardcode_direct=yes
+-    hardcode_minus_L=yes # Not in the search PATH, but as the default
+-			 # location of the library.
++    if test "$GCC" = yes; then
++      case $host_os in
++	hpux9*)
++	  archive_cmds='$rm $output_objdir/$soname~$CC -shared -fPIC ${wl}+b ${wl}$install_libdir -o $output_objdir/$soname $libobjs $deplibs $compiler_flags~test $output_objdir/$soname = $lib || mv $output_objdir/$soname $lib'
++	  ;;
++	*)
++	  if test "$host_cpu" = ia64; then
++	    archive_cmds='$CC -shared ${wl}+h ${wl}$soname -o $lib $libobjs $deplibs $compiler_flags'
++	  else
++	    archive_cmds='$CC -shared -fPIC ${wl}+h ${wl}$soname ${wl}+b ${wl}$install_libdir -o $lib $libobjs $deplibs $compiler_flags'
++	  fi
++	  ;;
++      esac
++    else
++      case $host_os in
++	hpux9*)
++	  archive_cmds='$rm $output_objdir/$soname~$LD -b +b $install_libdir -o $output_objdir/$soname $libobjs $deplibs $linker_flags~test $output_objdir/$soname = $lib || mv $output_objdir/$soname $lib'
++	  ;;
++	*)
++	  if test "$host_cpu" = ia64; then
++	    archive_cmds='$LD -b +h $soname -o $lib $libobjs $deplibs $linker_flags'
++	  else
++	    archive_cmds='$LD -b +h $soname +b $install_libdir -o $lib $libobjs $deplibs $linker_flags'
++	  fi
++	  ;;
++      esac
++    fi
++    if test "$host_cpu" = ia64; then
++      hardcode_libdir_flag_spec='-L$libdir'
++      hardcode_direct=no
++      hardcode_shlibpath_var=no
++    else
++      hardcode_libdir_flag_spec='${wl}+b ${wl}$libdir'
++      hardcode_libdir_separator=:
++      hardcode_direct=yes
++    fi
++    # hardcode_minus_L: Not really in the search PATH,
++    # but as the default location of the library.
++    hardcode_minus_L=yes
+     export_dynamic_flag_spec='${wl}-E'
+     ;;
+ 
+@@ -1661,7 +1700,10 @@
+   symcode='[ABCDGISTW]'
+   ;;
+ hpux*) # Its linker distinguishes data from code symbols
+-  global_symbol_to_cdecl="sed -n -e 's/^T .* \(.*\)$/extern char \1();/p' -e 's/^. .* \(.*\)$/extern char \1;/p'"
++  if test "$host_cpu" = ia64; then
++    symcode='[ABCDEGRST]'
++  fi
++  global_symbol_to_cdecl="sed -n -e 's/^T .* \(.*\)$/extern int \1();/p' -e 's/^$symcode* .* \(.*\)$/extern char \1;/p'"
+   ;;
+ irix*)
+   symcode='[BCDEGRST]'
+@@ -2014,22 +2056,41 @@
+ hpux9* | hpux10* | hpux11*)
+   # Give a soname corresponding to the major version so that dld.sl refuses to
+   # link against other versions.
+-  dynamic_linker="$host_os dld.sl"
+   version_type=sunos
+   need_lib_prefix=no
+   need_version=no
+-  shlibpath_var=SHLIB_PATH
+-  shlibpath_overrides_runpath=no # +s is required to enable SHLIB_PATH
+-  library_names_spec='${libname}${release}.sl$versuffix ${libname}${release}.sl$major $libname.sl'
+-  soname_spec='${libname}${release}.sl$major'
++  if test "$host_cpu" = ia64; then
++    hardcode_into_libs=yes
++    dynamic_linker="$host_os dld.so"
++    shlibpath_var=LD_LIBRARY_PATH
++    shlibpath_overrides_runpath=yes # Unless +noenvvar is specified.
++    library_names_spec='${libname}${release}.so$versuffix ${libname}${release}.so$major $libname.so'
++    soname_spec='${libname}${release}.so$major'
++    if test "X$HPUX_IA64_MODE" = X32; then
++      sys_lib_search_path_spec="/usr/lib/hpux32 /usr/local/lib/hpux32 /usr/local/lib"
++    else
++      sys_lib_search_path_spec="/usr/lib/hpux64 /usr/local/lib/hpux64"
++    fi
++    sys_lib_dlsearch_path_spec=$sys_lib_search_path_spec
++  else
++    dynamic_linker="$host_os dld.sl"
++    shlibpath_var=SHLIB_PATH
++    shlibpath_overrides_runpath=no # +s is required to enable SHLIB_PATH
++    library_names_spec='${libname}${release}.sl$versuffix ${libname}${release}.sl$major $libname.sl'
++    soname_spec='${libname}${release}.sl$major'
++  fi
+   # HP-UX runs *really* slowly unless shared libraries are mode 555.
+   postinstall_cmds='chmod 555 $lib'
+   case "$host_os" in
+-  hpux10.20* | hpux11*) 
+-    # TODO:  Does this work for hpux-11 too?
+-    deplibs_check_method='file_magic (s[0-9][0-9][0-9]|PA-RISC[0-9].[0-9]) shared library'
+-    file_magic_cmd=/usr/bin/file
+-    file_magic_test_file=/usr/lib/libc.sl
++    hpux10.20* | hpux11*)
++      file_magic_cmd=/usr/bin/file
++      if test "$host_cpu" = ia64; then
++        deplibs_check_method='file_magic (s[0-9][0-9][0-9]|ELF-[0-9][0-9]) shared object file - IA64'
++        file_magic_test_file=/usr/lib/hpux32/libc.so
++      else
++        deplibs_check_method='file_magic (s[0-9][0-9][0-9]|PA-RISC[0-9].[0-9]) shared library'
++        file_magic_test_file=/usr/lib/libc.sl
++      fi
+     ;;
+   esac
+   ;;
+diff -u -r -P cyrus-sasl-1.5.27/config/ltmain.sh cyrus-sasl-1.5.27-patched/config/ltmain.sh
+--- cyrus-sasl-1.5.27/config/ltmain.sh	2005-08-29 06:28:04.000000000 -0400
++++ cyrus-sasl-1.5.27-patched/config/ltmain.sh	2005-08-29 08:25:19.000000000 -0400
+@@ -533,6 +533,10 @@
+ 	# Now arrange that obj and lo_libobj become the same file
+ 	$show "(cd $xdir && $LN_S $baseobj $libobj)"
+ 	if $run eval '(cd $xdir && $LN_S $baseobj $libobj)'; then
++          # Unlock the critical section if it was locked
++          if test "$need_locks" != no; then
++            $run $rm "$lockfile"
++          fi
+ 	  exit 0
+ 	else
+ 	  error=$?
+diff -u -r -P cyrus-sasl-1.5.27/configure cyrus-sasl-1.5.27-patched/configure
+--- cyrus-sasl-1.5.27/configure	2005-08-29 06:28:04.000000000 -0400
++++ cyrus-sasl-1.5.27-patched/configure	2005-08-29 08:11:12.000000000 -0400
+@@ -1681,6 +1681,21 @@
+ # Some flags need to be propagated to the compiler or linker for good
+ # libtool support.
+ case "$lt_target" in
++ia64-*-hpux*)
++  # Find out which ABI we are using.
++  echo 'int i;' > conftest.$ac_ext
++  if { (eval echo configure:0000: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
++    case "`/usr/bin/file conftest.$ac_objext`" in
++    *ELF-32*)
++      HPUX_IA64_MODE="32"
++      ;;
++    *ELF-64*)
++      HPUX_IA64_MODE="64"
++      ;;
++    esac
++  fi
++  rm -rf conftest*
++  ;;
+ *-*-irix6*)
+   # Find out which ABI we are using.
+   echo '#line 1687 "configure"' > conftest.$ac_ext
+diff -u -r -P cyrus-sasl-1.5.27/lib/03.diff cyrus-sasl-1.5.27-patched/lib/03.diff
+--- cyrus-sasl-1.5.27/lib/03.diff	1969-12-31 19:00:00.000000000 -0500
++++ cyrus-sasl-1.5.27-patched/lib/03.diff	2005-08-29 08:09:32.000000000 -0400
+@@ -0,0 +1,17 @@
++*** orig/gt4.0.1-all-source-installer/source-trees/gsi/sasl/patch-n-build/cyrus-sasl-1.5.27/lib/dlopen.c	Fri Aug  5 09:25:01 2005
++--- patched/gt4.0.1-all-source-installer/source-trees/gsi/sasl/patch-n-build/cyrus-sasl-1.5.27/lib/dlopen.c	Thu Aug 11 15:48:17 2005
++***************
++*** 142,148 ****
++--- 142,153 ----
++      return "Generic shared library error";
++  }
++  
+++ #ifdef __ia64			/* HP-UX on IA-64 uses '.so' */
+++ #define SO_SUFFIX	".so"
+++ #else				/* HP-UX on PA-RISC uses '.sl' */
++  #define SO_SUFFIX	".sl"
+++ #endif
+++ 
++  #else /* __hpux */
++  #define SO_SUFFIX	".so"
++  #endif /* __hpux */
+diff -u -r -P cyrus-sasl-1.5.27/lib/dlopen.c cyrus-sasl-1.5.27-patched/lib/dlopen.c
+--- cyrus-sasl-1.5.27/lib/dlopen.c	2005-08-29 06:28:04.000000000 -0400
++++ cyrus-sasl-1.5.27-patched/lib/dlopen.c	2005-08-29 08:09:51.000000000 -0400
+@@ -142,7 +142,12 @@
+     return "Generic shared library error";
+ }
+ 
++#ifdef __ia64			/* HP-UX on IA-64 uses '.so' */
++#define SO_SUFFIX	".so"
++#else				/* HP-UX on PA-RISC uses '.sl' */
+ #define SO_SUFFIX	".sl"
++#endif
++
+ #else /* __hpux */
+ #define SO_SUFFIX	".so"
+ #endif /* __hpux */
