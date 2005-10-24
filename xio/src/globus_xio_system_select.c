@@ -439,14 +439,16 @@ void
 globus_l_xio_system_handle_destroy(
     globus_l_xio_system_t *             handle)
 {
+    int                                 fd = handle->fd;
+
     GlobusXIOName(globus_l_xio_system_handle_destroy);
 
-    GlobusXIOSystemDebugEnterFD(handle->fd);
+    GlobusXIOSystemDebugEnterFD(fd);
 
     globus_l_xio_system_remove_nonblocking(handle);
     globus_free(handle);
     
-    GlobusXIOSystemDebugExitFD(handle->fd);
+    GlobusXIOSystemDebugExitFD(fd);
 }
 
 void
