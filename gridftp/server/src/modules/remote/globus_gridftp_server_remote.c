@@ -38,6 +38,7 @@ struct globus_l_gfs_remote_node_info_s;
 
 typedef struct globus_l_gfs_remote_handle_s
 {
+    globus_gfs_brain_reason_t           ipc_release_reason;
     globus_mutex_t                      mutex;
     globus_gfs_operation_t              op;
     struct globus_l_gfs_remote_node_info_s *   control_node;
@@ -145,14 +146,15 @@ globus_l_gfs_remote_recv_next(
 static
 globus_result_t
 globus_l_gfs_remote_node_release(
-    globus_l_gfs_remote_node_info_t *   node_info)
+    globus_l_gfs_remote_node_info_t *   node_info,
+    globus_gfs_brain_reason_t           release_reason)
 {
     GlobusGFSName(globus_l_gfs_remote_node_release);
     GlobusGFSRemoteDebugEnter();
 
     globus_gfs_brain_release_node(
         node_info->brain_node,
-        GLOBUS_GFS_BRAIN_REASON_COMPLETE);
+        release_reason);
     globus_gfs_ipc_close(node_info->ipc_handle, NULL, NULL);
     globus_free(node_info);
 
@@ -167,9 +169,12 @@ globus_l_gfs_remote_ipc_error_cb(
     globus_result_t                     result,
     void *                              user_arg)
 {
+    globus_l_gfs_remote_handle_t *      my_handle;
     GlobusGFSName(globus_l_gfs_remote_ipc_error_cb);
     GlobusGFSRemoteDebugEnter();
 
+    my_handle = (globus_l_gfs_remote_handle_t *) user_arg;
+    my_handle->ipc_release_reason = GLOBUS_GFS_BRAIN_REASON_ERROR;
     globus_gfs_log_result(
         GLOBUS_GFS_LOG_ERR, "IPC ERROR", result);
 
@@ -1366,7 +1371,8 @@ globus_l_gfs_remote_data_destroy(
         }
         node_info->data_arg = NULL;
         node_info->stripe_count = 0;
-        result = globus_l_gfs_remote_node_release(node_info);
+        result = globus_l_gfs_remote_node_release(
+            node_info, my_handle->ipc_release_reason);
         if(result != GLOBUS_SUCCESS)
         {
             globus_gfs_log_result(
@@ -1504,6 +1510,7 @@ globus_l_gfs_remote_session_start(
     my_handle = (globus_l_gfs_remote_handle_t *) 
         globus_calloc(1, sizeof(globus_l_gfs_remote_handle_t));
     globus_mutex_init(&my_handle->mutex, NULL);
+    my_handle->ipc_release_reason = GLOBUS_GFS_BRAIN_REASON_COMPLETE;
 
     if(session_info->username != NULL)
     {
@@ -1565,7 +1572,7 @@ globus_l_gfs_remote_session_end(
         globus_free(my_handle->control_node->home_dir);
     }
     result = globus_l_gfs_remote_node_release(
-        my_handle->control_node);
+        my_handle->control_node, my_handle->ipc_release_reason);
     if(result != GLOBUS_SUCCESS)
     {
         globus_gfs_log_result(

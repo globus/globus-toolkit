@@ -142,9 +142,9 @@ globus_l_brain_read_cb(
         }
 
         /* verify message */
-        start_str = buffer;
         con_max = (int) buffer[0];
-        for(i = 1; i < len; i++)
+        start_str = &buffer[1];
+        for(i = 1; i < len && cs == NULL; i++)
         {
             if(buffer[i] == '\0')
             {
@@ -166,7 +166,13 @@ globus_l_brain_read_cb(
         }
         if(*cs == '\0')
         {
+            globus_free(cs);
             goto error_cs;
+        }
+
+        if(*repo_name == '\0')
+        {
+            repo_name = GFS_DB_REPO_NAME;
         }
 
         repo = (gfs_l_db_repo_t *) globus_hashtable_lookup(
@@ -182,12 +188,13 @@ globus_l_brain_read_cb(
         }
         node = (gfs_l_db_node_t *) globus_calloc(1, sizeof(gfs_l_db_node_t));
         node->host_id = cs;
+        node->repo_name = repo->name;
         node->max_connection = con_max;
         node->current_connection = 0;
         node->repo = repo;
+        node->type = GFS_DB_NODE_TYPE_DYNAMIC;
         globus_priority_q_enqueue(&repo->node_q, node, node);
 error_cs:
-        globus_free(cs);
 error:
         globus_xio_register_close(
             handle,
