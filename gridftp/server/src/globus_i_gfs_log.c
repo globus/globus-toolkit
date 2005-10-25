@@ -272,7 +272,10 @@ globus_i_gfs_log_open()
     if(!globus_i_gfs_config_bool("disable_usage_stats"))
     {
        result = globus_usage_stats_handle_init(
-            &globus_l_gfs_usage_handle, 0, 0, NULL);      
+            &globus_l_gfs_usage_handle, 
+            0, 
+            0, 
+            globus_i_gfs_config_string("usage_stats_target"));      
     }
     
     if(module_str)
@@ -564,6 +567,7 @@ globus_i_gfs_log_usage_stats(
     char                                stripes_b[256];
     char                                code_b[256];
     globus_result_t                     result;
+    char *                              id;
     GlobusGFSName(globus_i_gfs_log_usage_stats);
     GlobusGFSDebugEnter();
 
@@ -638,21 +642,39 @@ globus_i_gfs_log_usage_stats(
     sprintf(stripes_b, "%d", stripe_count);
     sprintf(code_b, "%d", code);
 
-    result = globus_usage_stats_send(
-        globus_l_gfs_usage_handle,
-        10,
-        /* include an end time, incase we don't actually send this til well
-        after transfer finished? */
-        "START", start_b,
-        "END", end_b,
-        "VER", ver_b,
-        "BUFFER", buffer_b,
-        "BLOCK", block_b,
-        "NBYTES", nbytes_b,
-        "STREAMS", streams_b,
-        "STRIPES", stripes_b,
-        "TYPE", type,
-        "CODE", code_b);
+    if((id = globus_i_gfs_config_string("usage_stats_id")) != NULL)
+    {
+        result = globus_usage_stats_send(
+            globus_l_gfs_usage_handle,
+            11,
+            "START", start_b,
+            "END", end_b,
+            "VER", ver_b,
+            "BUFFER", buffer_b,
+            "BLOCK", block_b,
+            "NBYTES", nbytes_b,
+            "STREAMS", streams_b,
+            "STRIPES", stripes_b,
+            "TYPE", type,
+            "CODE", code_b,
+            "ID", id);
+    }
+    else
+    {
+        result = globus_usage_stats_send(
+            globus_l_gfs_usage_handle,
+            10,
+            "START", start_b,
+            "END", end_b,
+            "VER", ver_b,
+            "BUFFER", buffer_b,
+            "BLOCK", block_b,
+            "NBYTES", nbytes_b,
+            "STREAMS", streams_b,
+            "STRIPES", stripes_b,
+            "TYPE", type,
+            "CODE", code_b);
+    }        
     
     if(result != GLOBUS_SUCCESS)
     {
