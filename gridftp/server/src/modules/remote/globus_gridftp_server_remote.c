@@ -173,8 +173,6 @@ globus_l_gfs_remote_ipc_error_cb(
     globus_gfs_log_result(
         GLOBUS_GFS_LOG_ERR, "IPC ERROR", result);
 
-    globus_gfs_ipc_close(ipc_handle, NULL, NULL);
-
     GlobusGFSRemoteDebugExit();
 }
 
@@ -326,12 +324,11 @@ globus_l_gfs_ipc_finished_cb(
     GlobusGFSRemoteDebugEnter();
     
     bounce_info = (globus_l_gfs_remote_ipc_bounce_t *)  user_arg;
-    
+
     globus_gridftp_server_operation_finished(
         bounce_info->op,
         reply->result,
         reply);
-    
     globus_free(bounce_info->node_handle);
     globus_free(bounce_info);
 
@@ -1223,7 +1220,7 @@ globus_l_gfs_remote_active(
     result = globus_l_gfs_remote_node_request(
         my_handle,
         &num_nodes,
-        data_info->pathname,
+        NULL,
         globus_l_gfs_remote_active_kickout,
         bounce_info);                    
     if(result != GLOBUS_SUCCESS)
@@ -1312,7 +1309,7 @@ globus_l_gfs_remote_passive(
     result = globus_l_gfs_remote_node_request(
         my_handle,
         &bounce_info->nodes_requesting,
-        data_info->pathname,
+        NULL,
         globus_l_gfs_remote_passive_kickout,
         bounce_info);                    
     if(result != GLOBUS_SUCCESS)

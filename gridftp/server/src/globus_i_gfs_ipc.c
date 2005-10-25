@@ -3397,7 +3397,7 @@ globus_l_gfs_ipc_finished_reply_kickout(
     {
         request->cb(
             request->ipc,
-            GLOBUS_SUCCESS,
+            request->ipc->cached_res,
             request->reply,
             request->user_arg);
     }
@@ -3455,7 +3455,7 @@ globus_l_gfs_ipc_request_read_body_cb(
     globus_byte_t *                     start_buf;
     globus_gfs_ipc_request_t *          request;
     globus_i_gfs_ipc_handle_t *         ipc;
-    globus_gfs_finished_info_t *        reply;
+    globus_gfs_finished_info_t *        reply = NULL;
     globus_gfs_event_info_t *           event_reply;
     GlobusGFSName(globus_l_gfs_ipc_request_read_body_cb);
     GlobusGFSDebugEnter();
@@ -3519,7 +3519,7 @@ globus_l_gfs_ipc_request_read_body_cb(
                             GFS_IPC_HEADER_SIZE,
                             NULL,
                             globus_l_gfs_ipc_request_read_header_cb,
-                            ipc);
+                            request);
                         if(result != GLOBUS_SUCCESS)
                         {
                             goto mem_error;
@@ -3536,6 +3536,7 @@ globus_l_gfs_ipc_request_read_body_cb(
                 globus_assert(0 && "not in a valid state");
         }
     }
+    /* call use callback */
     globus_mutex_unlock(&ipc->mutex);
 
     if(reply_kickout)
@@ -3551,15 +3552,23 @@ mem_error:
     globus_free(new_buf);
 error:
     ipc->state = GLOBUS_GFS_IPC_STATE_ERROR;
-    /* kickout error */
-    globus_callback_register_oneshot(
-        NULL,
-        NULL,
-        globus_l_gfs_ipc_error_kickout,
-        ipc);
     ipc->cached_res = result;
     globus_mutex_unlock(&ipc->mutex);
 
+    if(reply == NULL)
+    {
+        reply = (globus_gfs_finished_info_t *) globus_calloc(
+            1, sizeof(globus_gfs_finished_info_t));
+        reply->type = request->type;
+        reply->id = request->id;
+        reply->code = 500;
+        reply->msg = "IPC failed while attempting to perform request";
+        reply->result = GlobusGFSErrorData("IPC failed while attempting to perform request");
+    }
+    request->reply = reply;
+
+    globus_l_gfs_ipc_finished_reply_kickout(request);
+    globus_l_gfs_ipc_error_kickout(ipc);
     globus_l_gfs_ipc_request_destroy(request);
 
     GlobusGFSDebugExitWithError();
@@ -3576,8 +3585,10 @@ globus_l_gfs_ipc_request_read_header_cb(
     globus_xio_data_descriptor_t        data_desc,
     void *                              user_arg)
 {
+    globus_gfs_finished_info_t *        reply;
     globus_bool_t                       rc;
     globus_gfs_ipc_request_t *          request;
+    globus_gfs_ipc_request_t *          lu_request;
     char                                type;
     int                                 id;
     globus_byte_t *                     ptr;
@@ -3588,7 +3599,8 @@ globus_l_gfs_ipc_request_read_header_cb(
     GlobusGFSName(globus_l_gfs_ipc_request_read_header_cb);
     GlobusGFSDebugEnter();
 
-    ipc = (globus_i_gfs_ipc_handle_t *) user_arg;
+    request = (globus_gfs_ipc_request_t *) user_arg;
+    ipc = request->ipc;
 
     globus_mutex_lock(&ipc->mutex);
     {
@@ -3613,9 +3625,13 @@ globus_l_gfs_ipc_request_read_header_cb(
                 switch(type)
                 {
                     case GLOBUS_GFS_OP_FINAL_REPLY:
-                        request = (globus_gfs_ipc_request_t *)
+                        /* even tho there is only 1 outstanding request
+                            we look it up in the table.  this is in
+                            case we ever allow many outstanding requests 
+                            at once. */
+                        lu_request = (globus_gfs_ipc_request_t *)
                             globus_handle_table_lookup(&ipc->call_table, id);
-                        if(request == NULL)
+                        if(lu_request == NULL || request != lu_request)
                         {
                             result = GlobusGFSErrorIPC();
                             goto error;
@@ -3627,9 +3643,9 @@ globus_l_gfs_ipc_request_read_header_cb(
                         break;
                 
                     case GLOBUS_GFS_OP_EVENT_REPLY:
-                        request = (globus_gfs_ipc_request_t *)
+                        lu_request = (globus_gfs_ipc_request_t *)
                             globus_handle_table_lookup(&ipc->call_table, id);
-                        if(request == NULL)
+                        if(request == NULL || request != lu_request)
                         {
                             result = GlobusGFSErrorIPC();
                             goto error;
@@ -3678,16 +3694,21 @@ mem_err:
     globus_free(new_buf);
 decode_err:
 error:
+
     ipc->state = GLOBUS_GFS_IPC_STATE_ERROR;
     /* kickout error */
-    globus_callback_register_oneshot(
-        NULL,
-        NULL,
-        globus_l_gfs_ipc_error_kickout,
-        ipc);
     globus_free(buffer);
     ipc->cached_res = result;
     globus_mutex_unlock(&ipc->mutex);
+    reply = (globus_gfs_finished_info_t *) globus_calloc(
+        1, sizeof(globus_gfs_finished_info_t));
+    reply->type = request->type;
+    reply->id = request->id;
+    reply->code = 500;
+    reply->result = GlobusGFSErrorData("IPC failed while attempting to perform request");
+    request->reply = reply;
+    globus_l_gfs_ipc_finished_reply_kickout(request);
+    globus_l_gfs_ipc_error_kickout(ipc);
 
     GlobusGFSDebugExitWithError();
 }
@@ -5025,6 +5046,7 @@ globus_l_gfs_ipc_write_cb(
     globus_xio_data_descriptor_t        data_desc,
     void *                              user_arg)
 {
+    globus_gfs_finished_info_t *        reply;
     globus_byte_t *                     new_buf;
     globus_gfs_ipc_request_t *          request;
     globus_i_gfs_ipc_handle_t *         ipc;
@@ -5063,7 +5085,7 @@ globus_l_gfs_ipc_write_cb(
                     GFS_IPC_HEADER_SIZE,
                     NULL,
                     globus_l_gfs_ipc_request_read_header_cb,
-                    ipc);
+                    request);
                 if(result != GLOBUS_SUCCESS)
                 {
                     goto read_error;
@@ -5083,13 +5105,20 @@ read_error:
     globus_free(new_buf);
 error:
     ipc->state = GLOBUS_GFS_IPC_STATE_ERROR;
-    /* kickout error */
-    globus_callback_register_oneshot(
-        NULL,
-        NULL,
-        globus_l_gfs_ipc_error_kickout,
-        ipc);
     globus_mutex_unlock(&ipc->mutex);
+    /* call use callback */
+    reply = (globus_gfs_finished_info_t *) globus_calloc(
+        1, sizeof(globus_gfs_finished_info_t));
+    reply->type = request->type;
+    reply->id = request->id;
+    reply->code = 500;
+    reply->msg = "IPC failed while attempting to perform request";
+    reply->result = GlobusGFSErrorData("IPC failed while attempting to perform request");
+    request->reply = reply;
+
+    globus_l_gfs_ipc_finished_reply_kickout(request);
+    globus_l_gfs_ipc_error_kickout(ipc);
+    globus_l_gfs_ipc_request_destroy(request);
 
     GlobusGFSDebugExitWithError();
 }

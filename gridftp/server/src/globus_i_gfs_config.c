@@ -179,8 +179,8 @@ static const globus_l_gfs_config_option_t option_list[] =
     "Size in bytes of sequential data that each stripe will transfer.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"brain", "brain", NULL, "brain", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "switch out the default remote brain [unsuported]", NULL, NULL, GLOBUS_FALSE, NULL},
- {"wsrf_service", "wsrf_service", NULL, "wsrf_service", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
-    "wsrf extension library for monitoring [unsuported]", NULL, NULL, GLOBUS_FALSE, NULL},
+ {"extension", "extension", NULL, "extension", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+    "load and extension library [unsuported]", NULL, NULL, GLOBUS_FALSE, NULL},
  {"epr_outfile", "epr_outfile", NULL, "epr_outfile", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "place to write epr [unsuported]", NULL, NULL, GLOBUS_FALSE, NULL},
  {"service_port", "service_port", NULL, "service_port", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
@@ -292,8 +292,6 @@ static const globus_l_gfs_config_option_t option_list[] =
      NULL /* placeholder so configfile check doesn't fail */, NULL, NULL,GLOBUS_FALSE, NULL},
  {"version_string", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
      NULL /* version string */, NULL, NULL,GLOBUS_FALSE, NULL},
- {"community", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_LIST, 0, NULL,
-    NULL /* used to store list of known backends and associated info */, NULL, NULL,GLOBUS_FALSE, NULL},
  {"module_list", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_LIST, 0, NULL,
     NULL /* used to store list of allowed modules */, NULL, NULL,GLOBUS_FALSE, NULL},
  {"exec_name", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
@@ -1713,55 +1711,13 @@ globus_l_gfs_config_misc()
 
     value = globus_i_gfs_config_string("remote_nodes");
     {
-        globus_i_gfs_community_t *      community;
-        globus_list_t *                 community_list = NULL;
-        char *                          p;
-        int                             i;
-        community = (globus_i_gfs_community_t *)
-            globus_calloc(1, sizeof(globus_i_gfs_community_t)); 
-        if(!value)
-        {
-            value = "";
-        }
-        else
+        if(value)
         {
             if(globus_i_gfs_config_string("load_dsi_module") == NULL)
             {
                 globus_l_gfs_config_set("load_dsi_module", 0, globus_libc_strdup("remote"));    
             }            
         }            
-        community->cs_count = 1;
-        
-        p = strchr(value, ',');
-        while(p != NULL)
-        {   
-            p++;
-            community->cs_count++;
-            p = strchr(p, ',');
-        }
-        
-        community->name = globus_libc_strdup("default");
-        community->root = globus_libc_strdup("/");
-        community->cs = (char **) globus_malloc(
-            sizeof(char *) * community->cs_count);
-        
-        for(i = 0; i < community->cs_count; i++)
-        {
-            p = strchr(value, ',');
-            if(p != NULL)
-            {
-                *p = '\0';
-                community->cs[i] = (char *) globus_libc_strdup(value);
-                value = p + 1;
-            }
-            else
-            {
-                community->cs[i] = (char *) globus_libc_strdup(value);
-            }
-        }
-        globus_list_insert(&community_list, community);  
-        
-        globus_l_gfs_config_set("community", 0, community_list);                
     }
     if(globus_i_gfs_config_string("load_dsi_module") == NULL)
     {

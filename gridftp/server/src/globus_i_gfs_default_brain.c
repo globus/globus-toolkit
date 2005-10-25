@@ -9,47 +9,109 @@
  * modifications, you must include this notice in the file.
  */
 
-#include "globus_i_gridftp_server.h"
+#include "globus_gridftp_server.h"
 #include "globus_i_gfs_ipc.h"
 
-#define GFS_BRAIN_FIXED_SIZE 256
+#define GFS_BRAIN_FIXED_SIZE    256
+#define GFS_DB_REPO_SIZE        16
+#define GFS_DB_REPO_NAME        "default"
+#define STATIC_TIMEOUT          30
 
-static globus_list_t *                  globus_l_gfs_ipc_community_list = NULL;
-globus_i_gfs_community_t *       globus_i_gfs_ipc_community_default;
+typedef enum gfs_l_db_node_type_e
+{
+    GFS_DB_NODE_TYPE_STATIC = 1,
+    GFS_DB_NODE_TYPE_DYNAMIC
+} gfs_l_db_node_type_t;
 
-static globus_list_t *                  globus_l_brain_repo_list;
+typedef struct gfs_l_db_node_s
+{
+    /* over load globus_i_gfs_brain_node_t */
+    char *                              host_id;
+    char *                              repo_name;
+    void *                              brain_arg;
+    /* end over load */
+    int                                 max_connection;
+    int                                 current_connection;
+    gfs_l_db_node_type_t                type;
+    globus_bool_t                       error;
+    struct gfs_l_db_repo_s *            repo;
+} gfs_l_db_node_t;
+
+typedef struct gfs_l_db_repo_s
+{
+    char *                              name;
+    globus_priority_q_t                 node_q;
+} gfs_l_db_repo_t;
+
 static globus_mutex_t                   globus_l_brain_mutex;
 static globus_xio_server_t              globus_l_brain_server_handle;
+static globus_hashtable_t               gfs_l_db_repo_table;
+static gfs_l_db_repo_t *                gfs_l_db_default_repo = NULL;
 
 static
-globus_i_gfs_community_t *
-globus_l_brain_find_community(
-    const char *                        repo_name)
+int
+gfs_l_db_node_cmp(
+    void *                              priority_1,
+    void *                              priority_2)
 {
-    globus_list_t *                     list;
-    globus_i_gfs_community_t *          repo = NULL;
-    globus_i_gfs_community_t *          tmp_repo = NULL;
+    gfs_l_db_node_t *                   n1;
+    gfs_l_db_node_t *                   n2;
 
-    if(repo_name == NULL ||
-        strcmp(repo_name, globus_i_gfs_ipc_community_default->name) == 0)
+    n1 = (gfs_l_db_node_t *) priority_1;
+    n2 = (gfs_l_db_node_t *) priority_2;
+
+    /* if the node is saturated always put it at the back of the queue */
+    if(n1->current_connection >= n1->max_connection && n1->max_connection != 0)
     {
-        repo = globus_i_gfs_ipc_community_default;
+        return 1;
+    }
+    if(n2->current_connection >= n2->max_connection && n2->max_connection != 0)
+    {
+        return -1;
+    }
+    if(n1->current_connection < n2->current_connection)
+    {
+        return -1;
+    }
+    else if(n1->current_connection == n2->current_connection)
+    {
+        return 0;
     }
     else
     {
-        list = globus_l_brain_repo_list;
-        while(!globus_list_empty(list) && repo == NULL)
-        {
-            tmp_repo = globus_list_first(list);
-            if(strcmp(tmp_repo->name, repo_name) == 0)
-            {
-                repo = tmp_repo;
-            }
-            list = globus_list_rest(list);
-        }
+        return 1;
     }
+}
 
-    return repo;
+static
+globus_list_t *
+gfs_l_db_parse_string_list(
+    const char *                        str_list)
+{
+    char *                              last_str;
+    char *                              tmp_str;
+    globus_list_t *                     list = NULL;
+    char *                              p;
+
+    if(str_list == NULL || *str_list == '\0')
+    {
+        return NULL;
+    }
+    tmp_str = strdup(str_list);
+    last_str = tmp_str;
+    p = strchr(tmp_str, ',');
+    while(p != NULL)
+    {
+        *tmp_str = '\0';
+        globus_list_insert(&list, strdup(last_str));
+        p++;
+        last_str = p;
+        p = strchr(p, ',');
+    }
+    globus_list_insert(&list, strdup(last_str));
+    globus_free(tmp_str);
+
+    return list;
 }
 
 static
@@ -63,8 +125,10 @@ globus_l_brain_read_cb(
     globus_xio_data_descriptor_t        data_desc,
     void *                              user_arg)
 {
-    globus_i_gfs_community_t *          repo = NULL;
+    gfs_l_db_node_t *                   node = NULL;
+    gfs_l_db_repo_t *                   repo = NULL;
     int                                 i;
+    int                                 con_max;
     char *                              start_str;
     char *                              repo_name = NULL;
     char *                              cs = NULL;
@@ -79,7 +143,8 @@ globus_l_brain_read_cb(
 
         /* verify message */
         start_str = buffer;
-        for(i = 0; i < len; i++)
+        con_max = (int) buffer[0];
+        for(i = 1; i < len; i++)
         {
             if(buffer[i] == '\0')
             {
@@ -99,27 +164,36 @@ globus_l_brain_read_cb(
                 goto error;
             }
         }
-        if(strcmp("", repo_name) == 0)
+        if(*cs == '\0')
         {
-            repo_name = NULL;
+            goto error_cs;
         }
 
-        repo = globus_l_brain_find_community(repo_name);
+        repo = (gfs_l_db_repo_t *) globus_hashtable_lookup(
+            &gfs_l_db_repo_table, repo_name);
         if(repo == NULL)
         {
-            goto error;
-        }
-        repo->cs_count++;
-        repo->cs = (char **)
-            globus_libc_realloc(repo->cs, repo->cs_count * sizeof(char *));
-        repo->cs[repo->cs_count-1]= cs;
+            /* create a new repo */
+            repo = (gfs_l_db_repo_t *) calloc(1, sizeof(gfs_l_db_repo_t));
+            globus_priority_q_init(&repo->node_q, gfs_l_db_node_cmp);
 
+            repo->name = strdup(repo_name);
+            globus_hashtable_insert(&gfs_l_db_repo_table, repo->name, repo);
+        }
+        node = (gfs_l_db_node_t *) globus_calloc(1, sizeof(gfs_l_db_node_t));
+        node->host_id = cs;
+        node->max_connection = con_max;
+        node->current_connection = 0;
+        node->repo = repo;
+        globus_priority_q_enqueue(&repo->node_q, node, node);
+error_cs:
+        globus_free(cs);
 error:
-    globus_xio_register_close(
-        handle,
-        NULL,
-        NULL,
-        NULL);
+        globus_xio_register_close(
+            handle,
+            NULL,
+            NULL,
+            NULL);
     }
     globus_mutex_unlock(&globus_l_brain_mutex);
 
@@ -147,6 +221,7 @@ globus_l_brain_open_server_cb(
     buffer = globus_calloc(1, GFS_BRAIN_FIXED_SIZE);
     if(!accept)
     {
+        goto error_read;
     }
     result = globus_xio_register_read(
         handle,
@@ -279,35 +354,46 @@ static
 globus_result_t
 globus_l_gfs_default_brain_init()
 {
-    globus_list_t *                     community_list;
+    gfs_l_db_repo_t *                   default_repo;
+    char *                              remote_list;
     globus_list_t *                     list;
     globus_result_t                     res;
+    gfs_l_db_node_t *                   node;
 
     globus_mutex_init(&globus_l_brain_mutex, NULL);
-    globus_l_brain_repo_list = globus_list_copy(
-        globus_i_gfs_config_list("community"));
 
     globus_mutex_lock(&globus_l_brain_mutex);
     {
-        community_list = globus_i_gfs_config_list("community");
+        globus_hashtable_init(
+            &gfs_l_db_repo_table,
+            GFS_DB_REPO_SIZE,
+            globus_hashtable_string_hash,
+            globus_hashtable_string_keyeq);
+            
+        remote_list = globus_i_gfs_config_string("remote_nodes");
+        list = gfs_l_db_parse_string_list(remote_list);
 
-        globus_assert(!globus_list_empty(community_list) &&
-            "i said it wouldnt be empty");
-
-        globus_i_gfs_ipc_community_default =
-            (globus_i_gfs_community_t *) globus_list_first(community_list);
-
-        list = globus_list_rest(community_list);
-        if(list != NULL)
+        default_repo = (gfs_l_db_repo_t *) globus_calloc(
+            1, sizeof(gfs_l_db_repo_t));
+        default_repo->name = GFS_DB_REPO_NAME;
+        gfs_l_db_default_repo = default_repo;
+        globus_priority_q_init(&default_repo->node_q, gfs_l_db_node_cmp);
+        while(!globus_list_empty(list))
         {
-            globus_l_gfs_ipc_community_list =
-                globus_list_copy(list);
-        }
-        else
-        {
-            globus_l_gfs_ipc_community_list = NULL;
-        }
+            node =(gfs_l_db_node_t *)globus_calloc(1, sizeof(gfs_l_db_node_t));
 
+            node->host_id = (char *) globus_list_first(list);
+            node->repo_name = default_repo->name;
+            node->max_connection = 0;
+            node->current_connection = 0;
+            node->error = GLOBUS_FALSE;
+            node->type = GFS_DB_NODE_TYPE_STATIC;
+            node->repo = default_repo;
+
+            globus_priority_q_enqueue(&default_repo->node_q, node, node);
+            list = globus_list_rest(list);
+        }
+        globus_list_free(list);
         if(globus_i_gfs_config_int("brain_listen"))
         {
             res = globus_l_brain_listen();
@@ -316,6 +402,8 @@ globus_l_gfs_default_brain_init()
                 goto error;
             }
         }
+        globus_hashtable_insert(
+            &gfs_l_db_repo_table, default_repo->name, default_repo);
     }
     globus_mutex_unlock(&globus_l_brain_mutex);
 
@@ -341,7 +429,7 @@ globus_l_gfs_default_brain_available(
     const char *                        repo_name,
     int *                               count)
 {
-    *count = globus_i_gfs_ipc_community_default->cs_count;
+    *count = globus_priority_q_size(&gfs_l_db_default_repo->node_q);
 
     return GLOBUS_SUCCESS;
 }
@@ -351,22 +439,31 @@ globus_result_t
 globus_l_gfs_default_brain_select_nodes(
     globus_i_gfs_brain_node_t ***       out_node_array,
     int *                               out_array_length,
-    const char *                        repo_name,
+    const char *                        r_name,
     globus_off_t                        filesize,
     int                                 min_count,
     int                                 max_count)
 {
+    globus_bool_t                       done = GLOBUS_FALSE;
     int                                 best_count;
     int                                 count;
+    int                                 i;
     globus_i_gfs_brain_node_t **        node_array;
-    globus_i_gfs_brain_node_t *         node;
+    gfs_l_db_node_t *                   node;
     globus_result_t                     result;
-    globus_i_gfs_community_t *          repo = NULL;
+    gfs_l_db_repo_t *                   repo = NULL;
+    char *                              repo_name;
     GlobusGFSName(globus_gfs_brain_select_nodes);
 
+    repo_name = (char *) r_name;
+    if(repo_name == NULL || *repo_name =='\0')
+    {
+        repo_name = GFS_DB_REPO_NAME;
+    }
     globus_mutex_lock(&globus_l_brain_mutex);
     {
-        repo = globus_l_brain_find_community(repo_name);
+        repo = (gfs_l_db_repo_t *) globus_hashtable_lookup(
+            &gfs_l_db_repo_table, repo_name);
         if(repo == NULL)
         {
             result = globus_error_put(GlobusGFSErrorObjParameter("repo_name"));
@@ -379,7 +476,6 @@ globus_l_gfs_default_brain_select_nodes(
             best_count = max_count;
         }
 
-        /* this is the tester brain dead approach */
         node_array = (globus_i_gfs_brain_node_t **)
             globus_calloc(max_count, sizeof(globus_i_gfs_brain_node_t *));
         if(node_array == NULL)
@@ -388,22 +484,35 @@ globus_l_gfs_default_brain_select_nodes(
             goto error;
         }
         count = 0;
-        while(count < best_count)
+        while(!done && count < best_count)
         {
-            node = (globus_i_gfs_brain_node_t *) globus_calloc(
-                1, sizeof(globus_i_gfs_brain_node_t));
-            node->host_id = strdup(repo->cs[repo->next_ndx]);
-            if(repo_name != NULL)
+            node = (gfs_l_db_node_t *)globus_priority_q_dequeue(&repo->node_q);
+            if(node == NULL)
             {
-                node->repo_name = strdup(repo_name);
+                done = GLOBUS_TRUE;
             }
-            node_array[count] = node;
-            count++;
-            repo->next_ndx++;
-            if(repo->next_ndx >= repo->cs_count)
+            else if(node->current_connection >= node->max_connection &&
+                node->max_connection != 0)
             {
-                repo->next_ndx = 0;
+                done = GLOBUS_TRUE;
             }
+            else
+            {
+                node->current_connection++;
+                node_array[count] = (globus_i_gfs_brain_node_t *)node;
+                count++;
+            }
+        }
+        if(count < min_count)
+        {
+            goto error_short;
+        }
+        /* if we are here we were successful and must re-enque nodes with
+            new order */
+        for(i = 0; i < count; i++)
+        {
+            globus_priority_q_enqueue(
+                &repo->node_q, node_array[i], node_array[i]);
         }
 
         *out_node_array = node_array;
@@ -413,23 +522,106 @@ globus_l_gfs_default_brain_select_nodes(
 
     return GLOBUS_SUCCESS;
 
+error_short:
+    /* remove the connectiopn reference */
+    for(i = 0; i < count; i++)
+    {
+        node = (gfs_l_db_node_t *) node_array[i];
+        node->current_connection--;
+        globus_priority_q_enqueue(&repo->node_q, node, node);
+    }
+    globus_free(node_array);
 error:
     globus_mutex_unlock(&globus_l_brain_mutex);
     return result;
 }
 
 static
+void
+gfs_l_db_static_error_timeout(
+    void *                              arg)
+{
+    gfs_l_db_repo_t *                   repo;
+    gfs_l_db_node_t *                   node;
+
+    node = (gfs_l_db_node_t *) arg;
+    repo = node->repo;
+    globus_mutex_lock(&globus_l_brain_mutex);
+    {
+        /* clear the error and let it try again */
+        node->error = GLOBUS_FALSE;
+        globus_priority_q_enqueue(&repo->node_q, node, node);
+    }
+    globus_mutex_unlock(&globus_l_brain_mutex);
+}
+
+static
 globus_result_t
 globus_l_gfs_default_brain_release_node(
-    globus_i_gfs_brain_node_t *         node,
+    globus_i_gfs_brain_node_t *         b_node,
     globus_gfs_brain_reason_t           reason)
 {
+    void *                              tmp_ptr;
+    gfs_l_db_repo_t *                   repo;
+    globus_bool_t                       first_error;
+    globus_result_t                     result;
+    gfs_l_db_node_t *                   node;
+    GlobusGFSName(globus_l_gfs_default_brain_release_node);
+
+    node = (gfs_l_db_node_t *) b_node;
+
+    globus_mutex_lock(&globus_l_brain_mutex);
+    {
+        repo = node->repo;
+        node->current_connection--;
+        tmp_ptr  = globus_priority_q_remove(&repo->node_q, node);
+        if(tmp_ptr == NULL)
+        {
+            result = GlobusGFSErrorGeneric("not a valid node");
+            goto error;
+        }
+        switch(reason)
+        {
+            case GLOBUS_GFS_BRAIN_REASON_ERROR:
+                first_error = !node->error;
+                node->error = GLOBUS_TRUE;
+                break;
+
+            case GLOBUS_GFS_BRAIN_REASON_COMPLETE:
+                first_error = GLOBUS_FALSE;
+                break;
+        }
+        if(node->error)
+        {
+            if(node->type == GFS_DB_NODE_TYPE_DYNAMIC)
+            {
+                if(node->current_connection == 0)
+                {
+                    globus_free(node);
+                }
+            }
+            else if(first_error)
+            {
+                globus_reltime_t        delay;
+                GlobusTimeReltimeSet(delay, STATIC_TIMEOUT, 0);
+                globus_callback_register_oneshot(
+                    NULL,
+                    &delay,
+                    gfs_l_db_static_error_timeout,
+                    node);
+            }
+        }
+        else
+        {
+            globus_priority_q_enqueue(&repo->node_q, node, node);
+        }
+    }
+    globus_mutex_unlock(&globus_l_brain_mutex);
     /* depending on reason we may remove from list or whatever */
-    globus_free(node->host_id);
-    globus_free(node->repo_name);
-    globus_free(node);
 
     return GLOBUS_SUCCESS;
+error:
+    return result;
 }
 
 globus_i_gfs_brain_module_t globus_i_gfs_default_brain =
