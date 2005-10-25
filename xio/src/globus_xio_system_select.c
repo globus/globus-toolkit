@@ -16,7 +16,6 @@
 #include "globus_i_xio_system_common.h"
 #include "globus_xio_driver.h"
 #include <stdio.h>
-#include <netinet/tcp.h>
 #include <fcntl.h>
 
 #ifdef HAVE_SYSCONF

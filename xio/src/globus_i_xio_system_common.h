@@ -183,15 +183,16 @@ typedef enum
 } globus_i_xio_system_op_state_t;
 
 
-#ifdef WIN32
+#if !defined(HAVE_RECVMSG) || defined(WIN32)
 struct msghdr
 {
-    sockaddr *                          msg_name;
+    void *                              msg_name;
     int                                 msg_namelen;
-    iovec *                             msg_iov;
+    struct iovec *                      msg_iov;
     int                                 msg_iovlen;
-    caddr_t                             msg_accrights;
-    int                                 msg_accrightslen;
+    void *                              msg_control;
+    int                                 msg_controllen;
+    int                                 msg_flags;
 };
 #endif
 

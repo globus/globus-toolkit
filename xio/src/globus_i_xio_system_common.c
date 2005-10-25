@@ -498,7 +498,7 @@ globus_i_xio_system_try_writev(
 #ifdef HAVE_WRITEV
         rc = writev(fd, iov, (iovc > IOV_MAX) ? IOV_MAX : iovc);
 #else
-        rc = writev(fd, iov[0].iov_base, iov[0].iov_len);
+        rc = write(fd, iov[0].iov_base, iov[0].iov_len);
 #endif
         GlobusXIOSystemUpdateErrno();
     } while(rc < 0 && errno == EINTR);
@@ -612,7 +612,7 @@ globus_i_xio_system_try_sendto(
                 buf,
                 buflen,
                 flags,
-                (const struct sockaddr *) to,
+                (struct sockaddr *) to,
                 GlobusLibcSockaddrLen(to));
             GlobusXIOSystemUpdateErrno();
         } while(rc < 0 && errno == EINTR);
@@ -722,7 +722,7 @@ globus_i_xio_system_try_sendmsg(
                         msghdr->msg_iov[0].iov_len,
                         flags);
             }
-            GlobusLXIOSystemUpdateErrno();
+            GlobusXIOSystemUpdateErrno();
         } while (rc < 0 && errno == EINTR);
     }
 #endif
