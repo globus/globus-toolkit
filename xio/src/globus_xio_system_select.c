@@ -2349,7 +2349,7 @@ globus_xio_system_socket_setsockopt(
     int                                 level,
     int                                 optname,
     const void *                        optval,
-    socklen_t                           optlen)
+    globus_socklen_t                    optlen)
 {
     globus_result_t                     result;
     GlobusXIOName(globus_xio_system_socket_setsockopt);
@@ -2377,7 +2377,7 @@ globus_xio_system_socket_getsockopt(
     int                                 level,
     int                                 optname,
     void *                              optval,
-    socklen_t *                         optlen)
+    globus_socklen_t *                  optlen)
 {
     globus_result_t                     result;
     GlobusXIOName(globus_xio_system_socket_getsockopt);
@@ -2403,7 +2403,7 @@ globus_result_t
 globus_xio_system_socket_getsockname(
     globus_xio_system_socket_t          socket,
     struct sockaddr *                   name,
-    socklen_t *                         namelen)
+    globus_socklen_t *                  namelen)
 {
     globus_result_t                     result;
     GlobusXIOName(globus_xio_system_socket_getsockname);
@@ -2429,7 +2429,7 @@ globus_result_t
 globus_xio_system_socket_getpeername(
     globus_xio_system_socket_t          socket,
     struct sockaddr *                   name,
-    socklen_t *                         namelen)
+    globus_socklen_t *                  namelen)
 {
     globus_result_t                     result;
     GlobusXIOName(globus_xio_system_socket_getpeername);
@@ -2455,7 +2455,7 @@ globus_result_t
 globus_xio_system_socket_bind(
     globus_xio_system_socket_t          socket,
     struct sockaddr *                   addr,
-    socklen_t                           addrlen)
+    globus_socklen_t                    addrlen)
 {
     globus_result_t                     result;
     GlobusXIOName(globus_xio_system_socket_bind);
@@ -2506,7 +2506,7 @@ globus_result_t
 globus_xio_system_socket_connect(
     globus_xio_system_socket_t          socket,
     const struct sockaddr *             addr,
-    socklen_t                           addrlen)
+    globus_socklen_t                    addrlen)
 {
     globus_result_t                     result;
     int                                 rc;
