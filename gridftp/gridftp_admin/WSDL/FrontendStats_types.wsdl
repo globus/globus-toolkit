@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions
+    targetNamespace="http://www.globus.org/namespaces/2005/09/GridFTPAdmin"
+    xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+    xmlns="http://schemas.xmlsoap.org/wsdl/">
+    <wsdl:types>
+        <xsd:schema
+            targetNamespace="http://www.globus.org/namespaces/2005/09/GridFTPAdmin"
+            xmlns:tns="http://www.globus.org/namespaces/2004/10/rft"
+            xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+            elementFormDefault="qualified">
+
+            <xsd:include schemaLocation="FrontendStats_types.xsd"/>
+        </xsd:schema>
+    </wsdl:types>
+</definitions>

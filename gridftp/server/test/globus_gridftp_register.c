@@ -32,7 +32,7 @@ test_res(
 void
 help()
 {
-    fprintf(stdout, "globus-gridftp-register <registry contact> <contact string> [<repo name>]\n");
+    fprintf(stdout, "globus-gridftp-register <registry contact> <contact string> <max conneciton count> [<repo name>]\n");
 }
 
 int
@@ -40,6 +40,7 @@ main(
     int                                     argc,
     char **                                 argv)
 {
+    int                                     c_count;
     globus_xio_driver_t                     tcp_driver;
     globus_xio_driver_t                     gsi_driver;
     globus_xio_stack_t                      stack;
@@ -63,26 +64,33 @@ main(
 
     res = globus_xio_driver_load("tcp", &tcp_driver);
     test_res(res);
-
-    res = globus_xio_driver_load("gsi", &gsi_driver);
-    test_res(res);
-    
     res = globus_xio_stack_push_driver(stack, tcp_driver);
     test_res(res);
+/*
+    res = globus_xio_driver_load("gsi", &gsi_driver);
+    test_res(res);
+  */  
+/*
     res = globus_xio_stack_push_driver(stack, gsi_driver);
     test_res(res);
-
+*/
     registry_cs = argv[1];
     cs = argv[2];
 
-    if(argc < 4)
+    if(argc < 5)
     {
         repo = "";
     }
+    else if(argc < 4)
+    {
+        help();
+        exit(1);
+    }
     else
     {
-        repo = argv[3];
+        repo = argv[4];
     }
+    c_count = atoi(argv[3]);
     res = globus_xio_handle_create(&xio_handle, stack);
     test_res(res);
 
@@ -91,9 +99,10 @@ main(
 
     memset(msg, '\0', 256);
     len = strlen(repo);
-    memcpy(msg, repo, len);
-    msg[len] = '\0';
-    memcpy(&msg[len+1], cs, strlen(cs));
+    *msg = (char)c_count;
+    memcpy(&msg[1], repo, len);
+    msg[len+1] = '\0';
+    memcpy(&msg[len+2], cs, strlen(cs));
     res = globus_xio_write(xio_handle, msg, 256, 256, &nbytes, NULL);
     test_res(res);
 
