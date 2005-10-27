@@ -35,9 +35,8 @@ make install
 
 cd $start_dir
 cd client_source
-rm -f makefile_header
-$GLOBUS_LOCATION/bin/globus-makefile-header -flavor=gcc32dbg gridftp_admin_client_bindings > makefile_header
-make clean
+./bootstrap
+./configure --with-flavor=gcc32dbg 
 make
-
+make install
 
