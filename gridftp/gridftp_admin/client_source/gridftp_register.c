@@ -52,8 +52,9 @@ main(
     char                                    msg[256];
     globus_size_t                           nbytes;
     int                                     len;
+    int                                     arg_i;
 
-    if(argc < 3)
+    if(argc < 4)
     {
         help();
         return 1;
@@ -66,31 +67,31 @@ main(
     test_res(res);
     res = globus_xio_stack_push_driver(stack, tcp_driver);
     test_res(res);
-/*
-    res = globus_xio_driver_load("gsi", &gsi_driver);
-    test_res(res);
-  */  
-/*
-    res = globus_xio_stack_push_driver(stack, gsi_driver);
-    test_res(res);
-*/
-    registry_cs = argv[1];
-    cs = argv[2];
 
-    if(argc < 5)
+    arg_i = 1;
+    if(strcmp(argv[arg_i], "-s") == 0)
+    {
+        arg_i++;
+        res = globus_xio_driver_load("gsi", &gsi_driver);
+        test_res(res);
+        res = globus_xio_stack_push_driver(stack, gsi_driver);
+        test_res(res);
+    }
+    registry_cs = argv[arg_i];
+    arg_i++;
+    cs = argv[arg_i];
+    arg_i++;
+    c_count = atoi(argv[arg_i]);
+    arg_i++;
+
+    if(arg_i == argc)
     {
         repo = "";
     }
-    else if(argc < 4)
-    {
-        help();
-        exit(1);
-    }
     else
     {
-        repo = argv[4];
+        repo = argv[arg_i];
     }
-    c_count = atoi(argv[3]);
     res = globus_xio_handle_create(&xio_handle, stack);
     test_res(res);
 

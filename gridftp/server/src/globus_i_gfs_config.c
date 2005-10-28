@@ -183,7 +183,7 @@ static const globus_l_gfs_config_option_t option_list[] =
     "switch out the default remote brain [unsuported]", NULL, NULL, GLOBUS_FALSE, NULL},
  {"extension", "extension", NULL, "extension", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "load and extension library [unsuported]", NULL, NULL, GLOBUS_FALSE, NULL},
- {"epr_outfile", "epr_outfile", NULL, "epr_outfile", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+ {"epr_outfile", "epr_outfile", NULL, "epr-outfile", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "place to write epr [unsuported]", NULL, NULL, GLOBUS_FALSE, NULL},
  {"service_port", "service_port", NULL, "service_port", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "port string for container [unsuported]", NULL, NULL, GLOBUS_FALSE, NULL},

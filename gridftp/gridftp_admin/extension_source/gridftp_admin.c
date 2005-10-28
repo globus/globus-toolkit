@@ -224,8 +224,8 @@ gridftp_admin_l_create_resource(
     xsd_any *                           reference_properties;
     char *                              name = RESOURCE_NAME;
     globus_resource_t                   resource = NULL;
+    char *                              epr_filename = NULL;
     GlobusGFSName(gridftp_admin_l_create_resource);
-
 
     result = globus_resource_create(
         name,
@@ -275,7 +275,12 @@ gridftp_admin_l_create_resource(
 
     globus_resource_finish(resource);
     GridFTPAdminServiceInitResource(&epr);
-    gridftp_admin_l_write_epr(&epr, "/tmp/epr");
+    epr_filename = globus_gfs_config_get_string("epr_outfile");
+    if(epr_filename == NULL)
+    {
+        epr_filename = "/tmp/gridftp_admin_epr";
+    }
+    gridftp_admin_l_write_epr(&epr, epr_filename);
 
     return GLOBUS_SUCCESS;
 
