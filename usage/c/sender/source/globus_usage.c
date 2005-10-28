@@ -11,10 +11,12 @@
 
 
 #include "globus_xio.h"
-#include "globus_xio_udp_driver.h"
-#include "version.h"
 #include "globus_usage.h"
-#include "stdarg.h"
+#include "version.h"
+
+#ifndef TARGET_ARCH_ARM
+#include "globus_xio_udp_driver.h"
+#include <stdarg.h>
 
 static globus_xio_stack_t               globus_l_usage_stats_stack;
 static globus_xio_driver_t              globus_l_usage_stats_udp_driver;
@@ -48,6 +50,7 @@ GlobusDebugDefine(GLOBUS_USAGE);
                 LEVEL, ("%c", cv));                                     \
         }                                                               \
     }
+#endif
 
 #define PACKET_SIZE 1472
 
@@ -78,6 +81,7 @@ typedef struct globus_usage_stats_handle_s
     unsigned char                       data[PACKET_SIZE];
 } globus_i_usage_stats_handle_t;
 
+#ifndef TARGET_ARCH_ARM
 static
 char *
 globus_l_usage_stats_my_strtok(
@@ -209,6 +213,7 @@ globus_l_usage_stats_split_targets(
     globus_free(newstr);
     return 0;
 }
+#endif
 
 static int
 globus_l_usage_stats_activate()
@@ -216,6 +221,7 @@ globus_l_usage_stats_activate()
     globus_result_t                     result = GLOBUS_SUCCESS;
     int                                 rc = 0;
 
+#ifndef TARGET_ARCH_ARM
     globus_l_usage_stats_stack = NULL;
     globus_l_usage_stats_udp_driver = NULL;
 
@@ -265,13 +271,16 @@ globus_l_usage_stats_activate()
     }
 
     return 0;
+#else
+    return 1;
+#endif
 }
 
 static
 int
 globus_l_usage_stats_deactivate()
 {
-  
+#ifndef TARGET_ARCH_ARM  
     if(globus_l_usage_stats_xio_handle)
     {
         globus_xio_close(globus_l_usage_stats_xio_handle, NULL);
@@ -285,6 +294,9 @@ globus_l_usage_stats_deactivate()
     globus_mutex_destroy(&globus_l_usage_stats_mutex);
 
     return globus_module_deactivate(GLOBUS_XIO_MODULE);
+#else
+    return 1;
+#endif
 }
 
 globus_result_t
@@ -295,6 +307,7 @@ globus_usage_stats_handle_init(
     const char *                        targets)
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
+#ifndef TARGET_ARCH_ARM
     globus_i_usage_stats_handle_t *     new_handle;
     char *                              targets_env;
     globus_list_t *                     targets_list;
@@ -418,6 +431,7 @@ globus_usage_stats_handle_init(
     return GLOBUS_SUCCESS;
 
 exit:
+#endif
     return result;
 }
 
@@ -425,6 +439,7 @@ void
 globus_usage_stats_handle_destroy(
     globus_usage_stats_handle_t         vhandle)
 {
+#ifndef TARGET_ARCH_ARM
     globus_i_usage_stats_handle_t *     handle =
     (globus_i_usage_stats_handle_t *) vhandle;
 
@@ -452,6 +467,7 @@ globus_usage_stats_handle_destroy(
         
         globus_free(vhandle);
     }
+#endif
 }
 
 globus_result_t
@@ -461,6 +477,7 @@ globus_usage_stats_send(
     ...)
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
+#ifndef TARGET_ARCH_ARM
     va_list                             ap;
 
     va_start(ap, param_count);
@@ -469,6 +486,7 @@ globus_usage_stats_send(
         handle, param_count, ap);
     
     va_end(ap);
+#endif
 
     return result;
 }   
@@ -479,8 +497,9 @@ globus_usage_stats_vsend(
     int                                 param_count,
     va_list                             ap)
 {
-    globus_list_t *                     targets_list;
     globus_result_t                     result = GLOBUS_SUCCESS;
+#ifndef TARGET_ARCH_ARM
+    globus_list_t *                     targets_list;
     size_t                              data_length = 0;
     globus_abstime_t                    stamp;
     uint32_t                            nstamp;
@@ -598,5 +617,6 @@ globus_usage_stats_vsend(
 
 exit:
     globus_mutex_unlock(&globus_l_usage_stats_mutex);
+#endif
     return result;
 }

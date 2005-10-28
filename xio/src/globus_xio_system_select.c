@@ -1355,9 +1355,9 @@ globus_l_xio_system_poll(
         {
             globus_l_xio_system_select_active = GLOBUS_FALSE;
             
-#ifndef TARGET_ARCH_NETOS
             if(nready > 0)
             {
+#ifndef TARGET_ARCH_NETOS
                 fd = globus_l_xio_system_wakeup_pipe[0];
                 if(FD_ISSET(fd, globus_l_xio_system_ready_reads))
                 {
@@ -1366,9 +1366,9 @@ globus_l_xio_system_poll(
                     FD_CLR(fd, globus_l_xio_system_ready_reads);
                     nready--;
                 }
+#endif
             }
             else
-#endif
                 if(nready == 0)
             {
                 time_left_is_zero = GLOBUS_TRUE;
@@ -2245,6 +2245,11 @@ globus_xio_system_file_truncate(
     
     GlobusXIOSystemDebugEnterFD(fd);
     
+#ifdef TARGET_ARCH_ARM
+    setErrno(EINVAL);
+
+    result = GlobusXIOErrorSystemError("ftruncate", errno);
+#else
     rc = ftruncate(fd, size);
     if(rc < 0)
     {
@@ -2257,6 +2262,7 @@ globus_xio_system_file_truncate(
     return GLOBUS_SUCCESS;
 
 error_truncate:
+#endif
     GlobusXIOSystemDebugExitWithErrorFD(fd);
     return result;
 }
