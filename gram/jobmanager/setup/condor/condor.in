@@ -206,10 +206,7 @@ sub submit
 	$argument_string = join(' ',
 				map
 				{
-				    $_ =~ s/\\/\\\\/g;
-				    $_ =~ s/\$/\\\$/g;
 				    $_ =~ s/"/\\\"/g; #"
-				    $_ =~ s/`/\\\`/g; #`
 				    $_;
 				}
 				@arguments);
@@ -495,7 +492,7 @@ sub poll
                         }
                     } 
                     $record = {};
-                } elsif (/<a n="([^"]+)">/) {
+                } elsif (/<a n="([^"]+)">/) { #"/) {
                     my $attr = $1;
 
                     if (/<s>([^<]+)<\/s>/) {
