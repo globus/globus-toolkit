@@ -6,6 +6,7 @@ import java.awt.*;
 import javax.swing.*;
 import java.net.*;
 import java.lang.*;
+import java.io.*;
 import javax.swing.border.*;
 
 public
@@ -15,7 +16,7 @@ GridFTPUsageViewer
         WindowListener
 {
     private long                        totalBytes = 0;
-    private int                         transferCount = 0;
+    private int                         transferCount = -1;
     protected JFrame                    mainFrame;
     private Thread                      netThread;
     private boolean                     done = false;
@@ -23,11 +24,14 @@ GridFTPUsageViewer
     protected JLabel                    countLabel;
     protected JLabel                    timeLabel;
     protected JLabel                    bytesLabel;
+    protected JLabel                    imageLabel;
+    private Hashtable                   imageTable = null;
 
     public
     static void main(
         String                          argv[])
     {
+        String                          imageFile = null;
         int                             port = 0;
         GridFTPUsageViewer              viewer;
 
@@ -36,29 +40,35 @@ GridFTPUsageViewer
             try
             {
                 port = new Integer(argv[0]).intValue();
+                if(argv.length > 1)
+                {
+                    imageFile = argv[1];
+                }
             }
             catch(Exception e)
             {
                 port = 0;
             }
-            viewer = new GridFTPUsageViewer(port);
+            viewer = new GridFTPUsageViewer(port, imageFile);
         }
         catch(Exception e)
         {
+            e.printStackTrace();
             System.err.println(e);
         }
-
     }
 
     public
     GridFTPUsageViewer(
-        int                             port)
+        int                             port,
+        String                          imageMapFile)
             throws Exception
     {
         InetAddress                     addr;
         JPanel                          mainP;
         JPanel                          tmpP;
         JLabel                          tmpL;
+        JPanel                          imageP;
 
         socket = new DatagramSocket(port);
         addr = socket.getLocalAddress();
@@ -70,27 +80,48 @@ GridFTPUsageViewer
         mainP.setLayout(new BorderLayout(10, 10));
         countLabel = new JLabel("Total Files Transfer: 0");
         tmpP = new JPanel();
-        tmpP.setLayout(new GridLayout(5, 1));
-        tmpP.setBorder(new EtchedBorder(EtchedBorder.RAISED));
-        mainP.add("Center", tmpP);
+        tmpP.setLayout(new GridLayout(6, 1));
+        tmpP.setBorder(
+            new CompoundBorder(
+                new EtchedBorder(EtchedBorder.RAISED),
+                new EmptyBorder(1, 5, 1, 5)));
+        mainP.add("West", tmpP);
         tmpP.add(countLabel);
-        timeLabel = new JLabel("Last Time: 0");
-        tmpP.add(timeLabel);
         bytesLabel = new JLabel();
         bytesLabel.setText("Total Bytes Transfer: " +
              new Long(totalBytes).toString());
         tmpP.add(bytesLabel);
+        timeLabel = new JLabel("Last Time: 0");
+        tmpP.add(timeLabel);
+
+        imageP = new JPanel();
+        imageP.setBorder(
+            new CompoundBorder(
+                new EtchedBorder(EtchedBorder.RAISED),
+                new EmptyBorder(1, 5, 1, 5)));
+        this.imageLabel = new JLabel();
+        imageP.add(this.imageLabel);
+        mainP.add("Center", imageP);
 
         String listenStr = new String("listening at: " + addr.toString() +
             ":"+ new Integer(socket.getLocalPort()).toString());
         System.err.println(listenStr);
+
         tmpP = new JPanel();
         tmpL = new JLabel(listenStr);
+        tmpP.setBorder(
+            new CompoundBorder(
+                new EtchedBorder(EtchedBorder.RAISED),
+                new EmptyBorder(1, 1, 1, 1)));
         tmpP.add(tmpL);
         mainP.add("South", tmpP);
+
+        this.loadImageArray(imageMapFile);
+        this.updateValues("00:00:00", 0);
+
         netThread = new Thread(this);
         netThread.start();
-        mainFrame.setSize(400, 200);
+        mainFrame.setSize(470, 295);
         mainFrame.addWindowListener(this);
         mainFrame.setVisible(true);
     }
@@ -109,30 +140,7 @@ GridFTPUsageViewer
             out += tmpI;
             out = out << 8;
         }
-/*
-        for(i = 3; i >= 0; i--)
-        {
-            out = (out << 8);
-            out |= (buf[offset+i] & 0xFF);
-        }
-*/
 
-        return out;
-    }
-
-    private short
-    convertShort(
-        byte                            buf[],
-        int                             offset)
-    {
-        int                             i;
-        short                           out = 0;
-
-        for(i = 1; i >= 0; i--)
-        {
-            out = (short)(out << 8);
-            out |= (buf[offset+i] & 0xFF);
-        }
         return out;
     }
 
@@ -150,6 +158,8 @@ GridFTPUsageViewer
         DatagramPacket                  packet;
         String                          key;
         String                          val;
+        String                          timeS = "";
+        long                            nbytes = 0;
 
         packet = new DatagramPacket(buf, buf.length);
         while(!this.done)
@@ -161,7 +171,6 @@ GridFTPUsageViewer
                 recv_len = packet.getLength();
 
                 time = (long)this.convertInt(recv_buf, 19);
-System.out.println("time-> " + time);
                 ndx = 24; // skip ip crap
                 done = false;
 
@@ -189,22 +198,99 @@ System.out.println("time-> " + time);
                     {
                         ndx++; // move past the next space
                     }
+                    if(key.equals("END"))
+                    {
+System.out.println(val);
+                        String hourS = val.substring(8, 9);
+                        String minS = val.substring(10, 11);
+                        String secS = val.substring(12, 13);
+                        timeS = new String(hourS +":"+minS+":"+secS);
+System.out.println(timeS);
+                    }
                     if(key.equals("NBYTES"))
                     {
-                        totalBytes += new Long(val).intValue();
-                        bytesLabel.setText("Total Bytes Transfer: " + 
-                            new Long(totalBytes).toString());
+                        nbytes = new Long(val).longValue();
                         done = true;
                     }
                 }
-                transferCount++;
-                countLabel.setText("Total Files Transfer: " + new Integer(
-                    transferCount).toString());
+                this.updateValues(timeS, nbytes);
             }
             catch(Exception e)
             {
+                e.printStackTrace();
                 System.err.println(e);
             }
+        }
+    }
+
+    protected
+    void
+    loadImageArray(
+        String                          mapfile)
+    {
+        int                             ndx;
+        Hashtable                       table = null;
+        String                          line;
+        ImageIcon                       imageI;
+        String                          key;
+        String                          filename;
+
+        if(mapfile == null)
+        {
+            return;
+        }
+        try
+        {
+            BufferedReader br = new BufferedReader(new FileReader(mapfile));
+            table = new Hashtable();
+            line = br.readLine();
+            while(line != null)
+            {
+                ndx = line.indexOf(':');
+                key = line.substring(0, ndx);
+                filename = line.substring(ndx + 1);
+                System.out.println("loading " + filename + " for " + key);
+                imageI = new ImageIcon(filename);
+                if(imageI == null)
+                {
+                    return;
+                }
+                table.put(new Integer(key), imageI);
+                line = br.readLine();
+            }
+        }
+        catch(Exception e)
+        {
+            System.err.println(e);
+        }
+        this.imageTable = table;
+    }
+
+    protected 
+    void
+    updateValues(
+        String                          timeS,
+        long                            nbytes)
+    {
+        ImageIcon                       imageI;
+
+        totalBytes += nbytes;
+        timeLabel.setText("Last Transfer Time: "+ timeS);
+
+        bytesLabel.setText("Total Bytes Transfer: " + 
+            new Long(totalBytes).toString());
+        transferCount++;
+        countLabel.setText("Total Files Transfer: " + new Integer(
+            transferCount).toString());
+
+        if(this.imageTable == null)
+        {
+            return;
+        }
+        imageI = (ImageIcon) this.imageTable.get(new Integer(transferCount));
+        if(imageI != null)
+        {
+            this.imageLabel.setIcon(imageI);
         }
     }
 

@@ -15,6 +15,7 @@
     <property file="${user.home}/build.properties"/>
     <property name="env.GLOBUS_LOCATION" location="../../../../install"/>
     <property name="deploy.dir" location="${env.GLOBUS_LOCATION}"/>
+    <property name="package.name" value="gridftp_usage_viewer"/>
     <property name="jar.name" value="${package.name}.jar"/>
     <property name="build.dir"  location="build"/>
     <property name="build.dest" location="build/classes"/>
