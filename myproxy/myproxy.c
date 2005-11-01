@@ -171,21 +171,36 @@ myproxy_init_client(myproxy_socket_attrs_t *attrs) {
 
     if ((port_range = getenv("MYPROXY_TCP_PORT_RANGE")) ||
 	(port_range = getenv("GLOBUS_TCP_PORT_RANGE"))) {
-	unsigned short port, max_port;
-	if (sscanf(port_range, "%hu,%hu", &port, &max_port)) {
+	unsigned short port=0, min_port=0, max_port=0;
+	char *c;
+        c = strchr(port_range, ',');
+	if (c) {
+	    *c = ' ';
+	}
+	if (sscanf(port_range, "%hu %hu", &min_port, &max_port) == 2) {
+	    port = min_port;
 	    memset(&sin, 0, sizeof(sin));
 	    sin.sin_family = AF_INET;
 	    sin.sin_addr.s_addr = INADDR_ANY;
 	    sin.sin_port = htons(port);
 	    while (bind(attrs->socket_fd, (struct sockaddr *)&sin,
 			sizeof(sin)) < 0) {
-		if (errno != EADDRINUSE || port >= max_port) {
+		if (errno != EADDRINUSE) {
+		    verror_put_errno(errno);
 		    verror_put_string("Error in bind()");
+		    return -1;
+		} else if (port >= max_port) {
+		    verror_put_string("No available ports in range %hu-%hu.",
+				      min_port, max_port);
 		    return -1;
 		}
 		sin.sin_port = htons(++port);
 	    }
 	    myproxy_debug("Socket bound to port %hu.\n", port);
+	} else {
+	    verror_put_errno(errno);
+	    verror_put_string("Error parsing port range (%s)", port_range);
+	    return -1;
 	}
     }
 
