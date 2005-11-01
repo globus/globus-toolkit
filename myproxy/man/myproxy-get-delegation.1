@@ -1,4 +1,4 @@
-.TH myproxy-logon 1 "2005-10-10" "NCSA" "MyProxy"
+.TH myproxy-logon 1 "2005-11-1" "NCSA" "MyProxy"
 .SH NAME
 myproxy-logon \- retrieve a credential
 .SH SYNOPSIS
@@ -168,6 +168,17 @@ If the repository contains a proxy certificate, rather than an
 end-entity certificate, the retrieved proxy will be of the same type
 as the stored proxy, regardless of the setting of this environment
 variable.
+.TP
+.B MYPROXY_TCP_PORT_RANGE
+Specifies a range of valid port numbers 
+in the form "min,max"
+for the client side of the network connection to the server.
+By default, the client will bind to any available port.
+Use this environment variable to restrict the ports used to
+a range allowed by your firewall.
+If unset, MyProxy will follow the setting of the
+.B GLOBUS_TCP_PORT_RANGE
+environment variable.
 .SH AUTHORS
 Bill Baker,
 Jim Basney,

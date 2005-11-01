@@ -1,4 +1,4 @@
-.TH myproxy-init 1 "2005-10-10" "NCSA" "MyProxy"
+.TH myproxy-init 1 "2005-11-1" "NCSA" "MyProxy"
 .SH NAME
 myproxy-init \- store a credential for later retrieval
 .SH SYNOPSIS
@@ -294,6 +294,17 @@ or a proxy (ex.
 .B GT_PROXY_MODE
 Set to "old" to store a "legacy globus proxy" in the MyProxy
 repository.
+.TP
+.B MYPROXY_TCP_PORT_RANGE
+Specifies a range of valid port numbers 
+in the form "min,max"
+for the client side of the network connection to the server.
+By default, the client will bind to any available port.
+Use this environment variable to restrict the ports used to
+a range allowed by your firewall.
+If unset, MyProxy will follow the setting of the
+.B GLOBUS_TCP_PORT_RANGE
+environment variable.
 .SH AUTHORS
 Bill Baker,
 Jim Basney,
