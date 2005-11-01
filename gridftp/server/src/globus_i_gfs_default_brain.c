@@ -40,6 +40,7 @@ typedef struct gfs_l_db_node_s
 typedef struct gfs_l_db_repo_s
 {
     char *                              name;
+    globus_hashtable_t                  node_table;
     globus_priority_q_t                 node_q;
 } gfs_l_db_repo_t;
 
@@ -125,6 +126,7 @@ globus_l_brain_read_cb(
     globus_xio_data_descriptor_t        data_desc,
     void *                              user_arg)
 {
+    int                                 con_diff;
     gfs_l_db_node_t *                   node = NULL;
     gfs_l_db_repo_t *                   repo = NULL;
     int                                 i;
@@ -182,18 +184,58 @@ globus_l_brain_read_cb(
             /* create a new repo */
             repo = (gfs_l_db_repo_t *) calloc(1, sizeof(gfs_l_db_repo_t));
             globus_priority_q_init(&repo->node_q, gfs_l_db_node_cmp);
+            globus_hashtable_init(
+                &repo->node_table, 
+                32,
+                globus_hashtable_string_hash,
+                globus_hashtable_string_keyeq);
 
             repo->name = strdup(repo_name);
             globus_hashtable_insert(&gfs_l_db_repo_table, repo->name, repo);
         }
-        node = (gfs_l_db_node_t *) globus_calloc(1, sizeof(gfs_l_db_node_t));
-        node->host_id = cs;
-        node->repo_name = repo->name;
-        node->max_connection = con_max;
-        node->current_connection = 0;
-        node->repo = repo;
-        node->type = GFS_DB_NODE_TYPE_DYNAMIC;
-        globus_priority_q_enqueue(&repo->node_q, node, node);
+        else
+        {
+            node = (gfs_l_db_node_t *)
+                globus_hashtable_lookup(&repo->node_table, cs);
+        }
+
+        if(node == NULL)
+        { 
+            node = (gfs_l_db_node_t*)globus_calloc(1, sizeof(gfs_l_db_node_t));
+            node->host_id = cs;
+            node->repo_name = repo->name;
+            node->repo = repo;
+            globus_priority_q_enqueue(&repo->node_q, node, node);
+            globus_hashtable_insert(&repo->node_table, node->host_id, node);
+            /* the next line is here so that if it was static it will
+                remain static */
+            node->type = GFS_DB_NODE_TYPE_DYNAMIC;
+
+            /* update con max */
+            if(con_max != 0)
+            {
+                globus_gfs_config_set_int("data_connection_max", con_diff);
+            }
+            else
+            {
+                globus_gfs_config_inc_int("data_connection_max", con_max);
+            }
+            node->current_connection = 0;
+        }
+        else
+        {
+            node->max_connection = con_max;
+            if(con_max == 0)
+            {
+                globus_gfs_config_set_int("data_connection_max", -1);
+            }
+            /* if not set to unlimited already */
+            else if(globus_gfs_config_get_int("data_connection_max") >= 0)
+            {
+                con_diff = con_max - node->max_connection;
+                globus_gfs_config_inc_int("data_connection_max", con_diff);
+            }
+        }
 error_cs:
 error:
         globus_xio_register_close(
@@ -385,6 +427,12 @@ globus_l_gfs_default_brain_init()
         default_repo->name = GFS_DB_REPO_NAME;
         gfs_l_db_default_repo = default_repo;
         globus_priority_q_init(&default_repo->node_q, gfs_l_db_node_cmp);
+
+        globus_hashtable_init(
+            &gfs_l_db_default_repo->node_table, 
+            32,
+            globus_hashtable_string_hash,
+            globus_hashtable_string_keyeq);
         while(!globus_list_empty(list))
         {
             node =(gfs_l_db_node_t *)globus_calloc(1, sizeof(gfs_l_db_node_t));
@@ -397,6 +445,8 @@ globus_l_gfs_default_brain_init()
             node->type = GFS_DB_NODE_TYPE_STATIC;
             node->repo = default_repo;
 
+            globus_hashtable_insert(
+                &gfs_l_db_default_repo->node_table, node->host_id, node);
             globus_priority_q_enqueue(&default_repo->node_q, node, node);
             list = globus_list_rest(list);
         }
@@ -411,6 +461,8 @@ globus_l_gfs_default_brain_init()
         }
         globus_hashtable_insert(
             &gfs_l_db_repo_table, default_repo->name, default_repo);
+
+        globus_gfs_config_set_int("data_connection_max", -1);
     }
     globus_mutex_unlock(&globus_l_brain_mutex);
 
