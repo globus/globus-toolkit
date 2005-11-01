@@ -76,11 +76,6 @@ typedef struct
     /** Amount of valid data in the buffer */
     size_t                              buffer_valid;
     /**
-     * Flag indicating a Log close event indicating that the current
-     * log was found in the log
-     */
-    globus_bool_t                       end_of_log;
-    /**
      * Flag inidicating that this logfile isn't the one corresponding to
      * today, so and EOF on it should require us to close and open a newer
      * one
@@ -343,6 +338,8 @@ globus_l_pbs_read_callback(
     globus_bool_t                       eof_hit = GLOBUS_FALSE;
     globus_reltime_t                    delay;
     globus_result_t                     result;
+    time_t                              now;
+    struct tm *                         now_tm;
 
     SEG_PBS_DEBUG(SEG_PBS_DEBUG_INFO, ("globus_l_pbs_read_callback()\n"));
 
@@ -355,6 +352,15 @@ globus_l_pbs_read_callback(
         goto error;
     }
     globus_mutex_unlock(&globus_l_pbs_mutex);
+
+    now = time(NULL);
+
+    now_tm = gmtime(&now);
+
+    if (now_tm->tm_mday > state->start_timestamp.tm_mday)
+    {
+        state->old_log = GLOBUS_TRUE;
+    }
 
     if (state->fp != NULL)
     {
@@ -398,7 +404,7 @@ globus_l_pbs_read_callback(
     /* If end of log, close this logfile and look for a new one. Also, if
      * the current day's log doesn't exist yet, check for it
      */
-    if (state->end_of_log || (eof_hit && state->old_log) || state->fp == NULL)
+    if ((eof_hit && state->old_log) || state->fp == NULL)
     {
         SEG_PBS_DEBUG(SEG_PBS_DEBUG_TRACE, ("got Log closed msg\n"));
 
@@ -406,6 +412,7 @@ globus_l_pbs_read_callback(
         {
             fclose(state->fp);
             state->fp = NULL;
+
             state->start_timestamp.tm_mday++;
             state->start_timestamp.tm_hour = 0;
             state->start_timestamp.tm_min = 0;
@@ -422,7 +429,6 @@ globus_l_pbs_read_callback(
             {
                 goto error;
             }
-            state->end_of_log = GLOBUS_FALSE;
             eof_hit = GLOBUS_FALSE;
 
             GlobusTimeReltimeSet(delay, 0, 0);
@@ -855,7 +861,6 @@ globus_l_pbs_parse_events(
             }
             if (strstr(fields[5], "Log closed") == fields[5])
             {
-                state->end_of_log = GLOBUS_TRUE;
             }
             break;
 
