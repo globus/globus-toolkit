@@ -4,7 +4,6 @@
 #include "GridFTPAdminService_skeleton.h"
 #include "wssg_MembershipContentRuleType.h"
 #include "wssg_MembershipContentRule.h"
-#include "ContentType.h"
 #include "wssg_EntryType_array.h"
 #include "wssg_EntryType.h"
 
