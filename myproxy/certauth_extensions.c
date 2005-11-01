@@ -560,7 +560,7 @@ generate_certificate( X509_REQ                 *request,
 
   myproxy_debug("Signing internally generated certificate.");
 
-  if (!X509_sign(cert, cakey, EVP_md5() ) ) {
+  if (!X509_sign(cert, cakey, EVP_sha1() ) ) {
     myproxy_debug("Certificate/cakey sign failed.");
     goto error;
   } 
