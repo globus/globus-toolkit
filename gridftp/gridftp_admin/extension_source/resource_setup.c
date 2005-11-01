@@ -109,6 +109,20 @@ gridftpA_l_setup_resource(
         goto error;
     }
 
+    globus_gfs_config_add_cb(&cb_handle, "data_connection_max",        gridftpA_l_intchange_cb,        "data_connection_max");
+    result = globus_resource_create_property_callback(
+        resource,
+        &data_connection_max_qname,
+        &data_connection_max_info,
+        griidftpR_l_int_get_cb,
+        gridftpR_l_int_set_cb,
+        cb_handle);
+    if (result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+
+
     globus_gfs_config_add_cb(
         &cb_handle, "open_connections_count",
         gridftpA_l_int_change_cb, "open_connections_count");

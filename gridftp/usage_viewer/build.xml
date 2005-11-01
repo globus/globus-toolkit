@@ -76,7 +76,7 @@
                     <include name="*.jar"/>
                 </fileset>
             </classpath>
-          <arg line="8787 mapfile"/>
+          <arg line="8787 imagemap"/>
        </java>
   </target>
 

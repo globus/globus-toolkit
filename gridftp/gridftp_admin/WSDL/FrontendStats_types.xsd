@@ -13,6 +13,7 @@
     <xsd:element name="allow_anonymous" type="xsd:int"/>
     <xsd:element name="anonymous_user" type="xsd:string"/>
     <xsd:element name="anonymous_group" type="xsd:string"/>
+    <xsd:element name="data_connection_max" type="xsd:int"/>
     <xsd:element name="open_connections_count" type="xsd:int"/>
     <xsd:element name="connections_max" type="xsd:int"/>
     <xsd:element name="blocksize" type="xsd:int"/>
@@ -27,6 +28,7 @@
         <xsd:element ref="tns:allow_anonymous"/>
         <xsd:element ref="tns:anonymous_user"/>
         <xsd:element ref="tns:anonymous_group"/>
+        <xsd:element ref="tns:data_connection_max"/>
         <xsd:element ref="tns:open_connections_count"/>
         <xsd:element ref="tns:connections_max"/>
         <xsd:element ref="tns:blocksize"/>

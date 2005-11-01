@@ -200,12 +200,10 @@ GridFTPUsageViewer
                     }
                     if(key.equals("END"))
                     {
-System.out.println(val);
                         String hourS = val.substring(8, 9);
                         String minS = val.substring(10, 11);
                         String secS = val.substring(12, 13);
                         timeS = new String(hourS +":"+minS+":"+secS);
-System.out.println(timeS);
                     }
                     if(key.equals("NBYTES"))
                     {
@@ -258,12 +256,13 @@ System.out.println(timeS);
                 table.put(new Integer(key), imageI);
                 line = br.readLine();
             }
+            this.imageTable = table;
         }
         catch(Exception e)
         {
+            this.imageTable = null;
             System.err.println(e);
         }
-        this.imageTable = table;
     }
 
     protected 
