@@ -1,4 +1,5 @@
 #include "myproxy_common.h"	/* all needed headers included here */
+#include "pubcookie.h"
 
 #if defined(HAVE_LIBPAM)
 #include "auth_pam.h"
@@ -48,73 +49,14 @@ auth_passwd_create_client_data(authorization_data_t *data,
    return tmp;
 }
 
-/* -------------------------------------------------------------------------------------- */
-
-#define PUBCOOKIE
-#ifdef PUBCOOKIE
-
-#include <openssl/pem.h>
-#include <openssl/des.h>
-#include <openssl/bio.h>
-#include <openssl/rand.h>
-
-// Here's some stuff we cut-and-paste from pubcookie/src/pubcookie.h in order to get an idea
-//    of what the cookie looks like (this pubcookie version: 3.2.1a - Sept 29, 2005). Our other
-//    alternate is to force the pubcookie-aware MyProxy server to install all of pubcookie -- 
-//    because this is essentially all we need, we're going to go with the cut-and-paste option.
-
-/* psuedo-arbitrary limit on the length of GET args supported */
-#define PBC_MAX_GET_ARGS 1900
-
-#define PBC_USER_LEN 42
-#define PBC_VER_LEN 4
-#define PBC_APPSRV_ID_LEN 40
-#define PBC_APP_ID_LEN 128
-#define PBC_TOT_COOKIE_DATA 228
-#define PBC_DES_KEY_BUF 2048
-
-#define PBC_1K 1024
-#define PBC_2K 2048
-#define PBC_4K 4096
-#define PBC_20K 20480
-#define PBC_SHORT_STRING 128
-#define PBC_RAND_MALLOC_BYTES 8
-
-#define PBC_X_STRING "XXXXXXXXXXXXX"
-#define PBC_XS_IN_X_STRING 13
-#define PBC_X_CHAR 'X'
-#define PBC_NO_FORCE_REAUTH "NFR"
-#define PBC_POST_NAME "relay.pubcookie3"
-
-struct cookie_data
-{
-  unsigned char user[PBC_USER_LEN];
-  unsigned char version[PBC_VER_LEN];
-  unsigned char appsrvid[PBC_APPSRV_ID_LEN];
-  unsigned char appid[PBC_APP_ID_LEN];
-  unsigned char type;
-  unsigned char creds;
-  int pre_sess_token;
-  time_t create_ts;
-  time_t last_ts;
-};
-// cookie_data_struct;
-
-
 /*************************************************************************/
 /**                                                                     **/
-/**     code to decrypt and verify pubcookie                            **/
+/**  code to decrypt and verify pubcookie (http://www.pubcookie.org/)   **/
 /**                                                                     **/ 
 /**        Steve Losen, UVA ITC                                         **/
 /**                                                                     **/
 /**                                                                     **/
 /*************************************************************************/
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <dirent.h>
-#include <netdb.h>
 
 /*
  * decrypt_cookie() accepts a base64 encoded input string that
@@ -235,7 +177,6 @@ int auth_pubcookie_check_client (authorization_data_t *auth_data,
 { 
   int return_status;
   FILE *fp;
-  char filename[1024];
   struct cookie_data cookie;
   unsigned char keybuf[2048];
   X509 *cert;
@@ -326,11 +267,7 @@ int auth_pubcookie_check_client (authorization_data_t *auth_data,
   //may want to verify other info at some point
   return return_status;
 }
-
-#endif // PUBCOOKIE
-
-/* -------------------------------------------------------------------------------------- */
-
+/* end of Pubcookie-specific code */
 
 int auth_passwd_check_client(authorization_data_t *client_auth_data,
                              struct myproxy_creds *creds, char *client_name,
