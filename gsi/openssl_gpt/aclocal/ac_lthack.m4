@@ -123,7 +123,21 @@ AC_SUBST(GPT_MINOR_VERSION)
 AC_SUBST(DIRT_TIMESTAMP)
 AC_SUBST(DIRT_BRANCH_ID)
 
-
+AC_ARG_ENABLE([programs],
+[   --disable-programs    Don't compile/link programs],
+    [case "${enableval}" in
+        yes)
+            ENABLE_PROGRAMS=true
+        ;;
+        no)
+            ENABLE_PROGRAMS=false
+        ;;
+        *)
+            AC_MSG_ERROR([bad value ${enableval} for --enable-programs])
+        ;;
+    esac],
+    [ENABLE_PROGRAMS=true])
+AM_CONDITIONAL(ENABLE_PROGRAMS, test "x$ENABLE_PROGRAMS" = "xtrue")
 
 dnl END OF GLOBUS_INIT
 ])

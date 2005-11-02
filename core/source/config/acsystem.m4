@@ -30,7 +30,9 @@ AC_CHECK_HEADERS(sys/time.h)
 AC_CHECK_HEADERS(sys/signal.h)
 AC_CHECK_HEADERS(sys/select.h)
 AC_CHECK_HEADERS(sys/cnx_pattr.h)
+AC_CHECK_HEADERS(stdint.h)
 AC_CHECK_HEADERS(sys/inttypes.h)
+AC_CHECK_HEADERS(inttypes.h)
 AC_CHECK_HEADERS(dce/cma.h)
 AC_CHECK_HEADERS(dce/cma_ux.h)
 AC_CHECK_HEADERS(sys/param.h)
@@ -47,6 +49,11 @@ AC_CHECK_HEADERS(ifaddrs.h)
 AC_CHECK_HEADERS(sys/ioctl.h)
 AC_CHECK_HEADERS(net/if.h)
 AC_CHECK_HEADERS(signal.h)
+AC_CHECK_HEADERS(syslog.h)
+
+dnl these are Net+OS headers
+AC_CHECK_HEADERS(sockapi.h)
+AC_CHECK_HEADERS(tx_api.h)
 
 dnl Broken IRIX 6.5.3 headers
 case $target in
@@ -67,6 +74,38 @@ AC_CHECK_TYPE(ssize_t, int)
 AC_CHECK_TYPE(size_t, unsigned int)
 AC_TYPE_SIGNAL
 AC_HEADER_DIRENT
+
+AC_MSG_CHECKING(for DIR)
+AC_TRY_COMPILE([
+#if HAVE_DIRENT_H
+# include <dirent.h>
+# define NAMLEN(dirent) strlen((dirent)->d_name)
+#else
+# define dirent direct
+# define NAMLEN(dirent) (dirent)->d_namlen
+# if HAVE_SYS_NDIR_H
+#  include <sys/ndir.h>
+# endif
+# if HAVE_SYS_DIR_H
+#  include <sys/dir.h>
+# endif
+# if HAVE_NDIR_H
+#  include <ndir.h>
+# endif
+#endif
+],
+[
+DIR * x;
+],
+ac_have_DIR=yes,
+ac_have_DIR=no)
+
+if test "$ac_have_DIR" = "yes"; then
+    AC_DEFINE(HAVE_DIR, 1, [DIR found])
+else
+    AC_MSG_RESULT([DIR not found])
+fi
+
 
 AC_MSG_CHECKING(for socklen_t)
 AC_TRY_COMPILE([
@@ -104,12 +143,29 @@ AC_CHECK_FUNCS(memmove)
 AC_CHECK_FUNCS(usleep)
 AC_CHECK_FUNCS(strptime)
 AC_CHECK_FUNCS(gethostbyaddr)
+AC_CHECK_FUNCS(getservbyname)
+AC_CHECK_FUNCS(getprotobynumber)
+AC_CHECK_FUNCS(getaddrinfo)
+AC_CHECK_FUNCS(getnameinfo)
 AC_CHECK_FUNCS(telldir)
 AC_CHECK_FUNCS(seekdir)
 AC_CHECK_FUNCS(nrand48)
 AC_CHECK_FUNCS(mktime)
 AC_CHECK_FUNCS(writev)
+AC_CHECK_FUNCS(readv)
 AC_CHECK_FUNCS(strerror)
+AC_CHECK_FUNCS(gethostname)
+AC_CHECK_FUNCS(inet_ntoa)
+AC_CHECK_FUNCS(inet_pton)
+AC_CHECK_FUNCS(inet_addr)
+AC_CHECK_FUNCS(fork)
+AC_CHECK_FUNCS(sigaction)
+AC_CHECK_FUNCS(sendmsg)
+AC_CHECK_FUNCS(recvmsg)
+AC_CHECK_FUNCS(geteuid)
+AC_CHECK_FUNCS(getpwnam)
+AC_CHECK_FUNCS(getpwuid)
+
 dnl used in RSL
 AC_FUNC_ALLOCA
 

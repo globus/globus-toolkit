@@ -201,16 +201,7 @@ typedef struct timeval  globus_reltime_t;
 /**
  *  Get the current time
  */
-#if !defined(TARGET_ARCH_WIN32)
-#   define  GlobusTimeAbstimeGetCurrent(Abstime)          \
-    {                                                     \
-        struct timeval __time;                            \
-                                                          \
-        gettimeofday(&__time, GLOBUS_NULL);               \
-        (Abstime).tv_sec = __time.tv_sec;                 \
-        (Abstime).tv_nsec = (__time.tv_usec * 1000);      \
-    }
-#else  /* the windows way */
+#if defined(TARGET_ARCH_WIN32)
 #   define GlobusTimeAbstimeGetCurrent(Abstime)           \
     {                                                     \
         struct _timeb timebuffer;                      \
@@ -218,6 +209,27 @@ typedef struct timeval  globus_reltime_t;
         _ftime(&timebuffer);                            \
         (Abstime).tv_sec = timebuffer.time;               \
         (Abstime).tv_nsec = (timebuffer.millitm * 1000);  \
+    }
+/*
+ * On Net+OS on ARM, this is needed if the device is not running NTP or
+ * does not have a RTC. In this case, times will overflow after about a 
+ * year and a half.
+#elif defined(TARGET_ARCH_NETOS)
+#   define  GlobusTimeAbstimeGetCurrent(Abstime)          \
+    {                                                     \
+        ULONG ticks = tx_time_get();                      \
+        (Abstime).tv_sec = ticks / NABspTicksPerSecond;  \
+        (Abstime).tv_nsec = (ticks % NABspTicksPerSecond) * 1000000000;  \
+    }
+*/
+#else
+#   define  GlobusTimeAbstimeGetCurrent(Abstime)          \
+    {                                                     \
+        struct timeval __time;                            \
+                                                          \
+        gettimeofday(&__time, GLOBUS_NULL);               \
+        (Abstime).tv_sec = __time.tv_sec;                 \
+        (Abstime).tv_nsec = (__time.tv_usec * 1000);      \
     }
 #endif
 

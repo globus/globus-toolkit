@@ -11,6 +11,18 @@
 
 #include "globus_common.h"
 
+#ifdef HAVE_ARPA_INET_H
+#include <arpa/inet.h>
+#endif
+
+#ifndef IP_TCP
+#define IP_TCP IPPROTO_TCP
+#endif
+
+#ifndef IP_UDP
+#define IP_UDP IPPROTO_UDP
+#endif
+
 #ifdef GLOBUS_IMPLEMENT_GETADDRINFO
 int
 getaddrinfo(

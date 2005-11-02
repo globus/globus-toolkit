@@ -383,7 +383,7 @@ typedef struct cert_st
 	RSA *rsa_tmp;
 	RSA *(*rsa_tmp_cb)(SSL *ssl,int is_export,int keysize);
 #endif
-#ifndef NO_DH
+#ifndef OPENSSL_NO_DH
 	DH *dh_tmp;
 	DH *(*dh_tmp_cb)(SSL *ssl,int is_export,int keysize);
 #endif
@@ -409,7 +409,7 @@ typedef struct sess_cert_st
 #ifndef NO_RSA
 	RSA *peer_rsa_tmp; /* not used for SSL 2 */
 #endif
-#ifndef NO_DH
+#ifndef OPENSSL_NO_DH
 	DH *peer_dh_tmp; /* not used for SSL 2 */
 #endif
 

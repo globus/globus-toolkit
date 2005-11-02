@@ -9,9 +9,12 @@
  * modifications, you must include this notice in the file.
  */
 
-#include <globus_logging.h>
-#include <globus_common.h>
+#include "globus_logging.h"
+#include "globus_common.h"
+
+#ifdef HAVE_SYSLOG_H
 #include <syslog.h>
+#endif
 
 #define GLOBUS_L_LOGGING_MAX_MESSAGE  2048
 
@@ -375,6 +378,7 @@ globus_logging_stdio_header_func(
     (*len) = snprintf(buf, *len, "[%d] %s :: ", globus_l_logging_pid, str);
 }
 
+#ifdef HAVE_SYSLOG_H
 void
 globus_logging_syslog_open_func(
     void *                              user_arg)
@@ -397,6 +401,7 @@ globus_logging_syslog_write_func(
 {
     syslog(LOG_NOTICE, "%s", (char *) buf);
 }
+#endif
 
 globus_logging_module_t                 globus_logging_stdio_module =
 {
@@ -408,8 +413,15 @@ globus_logging_module_t                 globus_logging_stdio_module =
 
 globus_logging_module_t                 globus_logging_syslog_module =
 {
+#ifdef HAVE_SYSLOG_H
     globus_logging_syslog_open_func,
     globus_logging_syslog_write_func,
     globus_logging_syslog_close_func,
     NULL
+#else
+    NULL,
+    NULL,
+    NULL,
+    NULL
+#endif
 };

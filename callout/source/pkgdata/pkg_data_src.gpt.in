@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Name="globus_callout" Format_Version="0.01">
 
-    <Aging_Version Major="0" Minor="6" Age="0"/>
+    <Aging_Version Major="0" Minor="7" Age="0"/>
     <Description> Globus Callout Library</Description>
     <Functional_Group>Common</Functional_Group>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>

@@ -50,6 +50,9 @@ extern const char * _globus_func_name;
 #ifdef HAVE_SYS_SIGNAL_H
 #   include <sys/signal.h>
 #endif
+#ifdef HAVE_SIGNAL_H
+#include <signal.h>
+#endif
 #ifdef HAVE_UNISTD_H
 #   include <unistd.h>
 #endif
@@ -74,10 +77,6 @@ extern const char * _globus_func_name;
 #if HAVE_CTYPE_H
 #   include <ctype.h>
 #endif
-#if HAVE_SYS_TIME_H
-#   include <sys/time.h>
-#endif
-
 
 #ifdef HAVE_SYS_SOCKET_H
 #   include <sys/socket.h>
@@ -97,15 +96,38 @@ extern const char * _globus_func_name;
  */
 #include <stdarg.h>
 
-#if defined(TIME_WITH_SYS_TIME)
-#   include <sys/time.h>
-#   include <time.h>
+#if defined(TIME_WITH_SYS_TIME) && !defined(HAVE_SOCKAPI_H)
+#    include <sys/time.h>
+#    include <time.h>
 #else
-#   if HAVE_SYS_TIME_H
-#       include <sys/time.h>
-#   else
-#       include <time.h>
-#   endif
+#    if HAVE_SYS_TIME_H
+#        include <sys/time.h>
+#    else
+#        include <time.h>
+#    endif
+#endif
+
+#if HAVE_SOCKAPI_H
+/* Net+OS 6.x's sockapi.h has a redefinition of timezone and timeval unless
+ * B42 is defined
+ */
+#define B42 1
+#include <sockapi.h>
+#include <tcpip/socket.h>
+
+/*
+ * Net+OS does not implement any address families besides TCP/IP
+ */
+#define sockaddr sockaddr_in
+#define sa_family sin_family
+#define sockaddr_storage sockaddr_in
+
+/* Also, the headers define some macros we don't want to use generally */
+#undef boolean
+#undef critical
+#undef skip
+#undef local
+
 #endif
 
 #include <errno.h>
@@ -116,10 +138,11 @@ extern const char * _globus_func_name;
 #   include <fcntl.h>
 #endif
 
-#if defined(HAVE_DIRENT_H)
+#if HAVE_DIR
+#  if defined(HAVE_DIRENT_H)
 #   include <dirent.h>
 #   define NAMLEN(dirent) strlen((dirent)->d_name)
-#else
+#  else
 #   define dirent direct
 #   define NAMLEN(dirent) (dirent)->d_namlen
 #   define HAVE_DIRENT_NAMELEN 1
@@ -132,14 +155,37 @@ extern const char * _globus_func_name;
 #   if defined(HAVE_NDIR_H)
 #       include <ndir.h>
 #   endif
+#  endif
+#elif defined TARGET_ARCH_NETOS
+#include "globus_netos_libc.h"
+#else
+typedef void * DIR;
 #endif
 
 #if defined(HAVE_SYS_UIO_H)
 #   include <sys/uio.h>
 #endif
 
+#ifndef HAVE_INET_PTON
+#define HAVE_INET_PTON 1
+#define GLOBUS_IMPLEMENT_INET_PTON 1
+int inet_pton(int af, const char *src, void *dst);
+#endif /* !HAVE_INET_PTON */
+
+#ifndef HAVE_INET_ADDR
+#define HAVE_INET_ADDR 1
+#define GLOBUS_IMPLEMENT_INET_ADDR 1
+extern uint32_t inet_addr(const char * cp);
+#endif /* !HAVE_INET_ADDR */
+
+
 #include <limits.h>
 #include <assert.h>
+
+/* Net+OS 6.x */
+#ifdef HAVE_TX_API_H
+#include <tx_api.h>
+#endif
 
 /******************************************************************************
 				 Define macros
@@ -250,12 +296,20 @@ extern const char * _globus_func_name;
 	#define EINPROGRESS 150 /* according to POSIX */
 #endif
 
-#ifndef TARGET_ARCH_WIN32
-	#include <inttypes.h>
-#else /* assume 32 bit Windows*/
-	/* #define uint32_t unsigned __int32 -- this might work? */
-	#define uint32_t ULONG32
-#define vsnprintf _vsnprintf
+#if defined(HAVE_INTTYPES_H) && !defined(TARGET_ARCH_CYGWIN)
+#    include <inttypes.h>
+#elif defined(HAVE_SYS_INTTYPES_H)
+#    include <sys/inttypes.h>
+#endif
+
+#if defined(TARGET_ARCH_WIN32)
+#    define HAVE_UINT32_T 1
+#    define uint32_t ULONG32
+#    define vsnprintf _vsnprintf
+#endif
+
+#ifndef MAXHOSTNAMELEN
+#define MAXHOSTNAMELEN 64
 #endif
 
 typedef unsigned char	                                globus_byte_t;

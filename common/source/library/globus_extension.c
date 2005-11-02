@@ -324,7 +324,7 @@ globus_l_extension_dlopen(
     char *                              path;
     char *                              basename;
     char *                              search_path = NULL;
-    char *                              save_path;
+    char *                              save_path = NULL;
     globus_result_t                     result = GLOBUS_SUCCESS;
     GlobusFuncName(globus_l_extension_dlopen);
     

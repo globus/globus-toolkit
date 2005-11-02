@@ -31,10 +31,12 @@
 #include <errno.h>
 #ifndef WIN32
 #include <sys/times.h>
-#else
+#elif defined(HAVE_DIRECT_H)
 #include <direct.h>
 #endif
 #include "version.h"
+
+#define _function_name_ _globus_func_name 
 
 #ifdef WIN32
 /* Note: On the Windows side the default paths must be determined at
@@ -60,28 +62,27 @@ const char *default_gaa_file(void);
 #define WIN32_SECURE_PATH               win32_secure_path()
 #endif
 
+#ifdef TARGET_ARCH_NETOS
+#define FLASH_ROOT                      "FLASH0"
+#define RAM_ROOT                        "RAM0"
+#endif
+
 #ifndef DEFAULT_SECURE_TMP_DIR
-#ifndef WIN32
-#define DEFAULT_SECURE_TMP_DIR          "/tmp"
-#else
+#ifdef WIN32
 #define DEFAULT_SECURE_TMP_DIR          WIN32_SECURE_PATH
+#elif defined(TARGET_ARCH_NETOS)
+#define DEFAULT_SECURE_TMP_DIR          RAM_ROOT
+#else
+#define DEFAULT_SECURE_TMP_DIR          "/tmp"
 #endif
 #endif
 
 #ifndef DEFAULT_EGD_PATH
-#ifndef WIN32
-#define DEFAULT_EGD_PATH                "/tmp"
-#else
-#define DEFAULT_EGD_PATH                WIN32_SECURE_PATH
-#endif
+#define DEFAULT_EGD_PATH                DEFAULT_SECURE_TMP_DIR
 #endif
 
 #ifndef DEFAULT_RANDOM_FILE
-#ifndef WIN32
-#define DEFAULT_RANDOM_FILE             "/tmp"
-#else
-#define DEFAULT_RANDOM_FILE             WIN32_SECURE_PATH
-#endif
+#define DEFAULT_RANDOM_FILE             DEFAULT_SECURE_TMP_DIR
 #endif
 
 #ifdef WIN32
@@ -91,7 +92,9 @@ const char *default_gaa_file(void);
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#ifdef HAVE_DIRENT_H
 #include <dirent.h>
+#endif
 #endif
 
 /* ToDo: HACK! This is undefined on the Windows side so do this for now */
@@ -141,8 +144,33 @@ const char *default_gaa_file(void);
 #define INSTALLED_GAA_FILE              "etc\\gsi-gaa.conf"  /* Relative to CWD*/
 #define LOCAL_GAA_FILE                  ".gsi-gaa.conf"      /* Relative to CWD */
 
-/* Unix Definitions */
-#else
+
+#elif defined(TARGET_ARCH_NETOS) /* Net+OS Definitions */
+#define FILE_SEPERATOR                  "/"
+#define X509_DEFAULT_USER_CERT          "usercert.pem"
+#define X509_DEFAULT_USER_KEY           "userkey.pem"
+#define X509_DEFAULT_PKCS12_FILE        "usercred.p12"
+#define X509_DEFAULT_TRUSTED_CERT_DIR   FLASH_ROOT "/certificates"
+#define X509_INSTALLED_TRUSTED_CERT_DIR "certificates"
+#define X509_LOCAL_TRUSTED_CERT_DIR     "certificates"
+#define X509_DEFAULT_CERT_DIR           FLASH_ROOT "/grid-security"
+#define X509_INSTALLED_CERT_DIR         "grid-security"
+#define X509_LOCAL_CERT_DIR             "grid-security"
+#define DEFAULT_GRIDMAP                 FLASH_ROOT "/grid-mapfile"
+#define INSTALLED_GRIDMAP               DEFAULT_GRIDMAP
+#define LOCAL_GRIDMAP                   "grid-mapfile"
+#define DEFAULT_AUTHZ_FILE              FLASH_ROOT "gsi-authz.conf"
+#define INSTALLED_AUTHZ_FILE            "gsi-authz.conf"
+#define LOCAL_AUTHZ_FILE                INSTALLED_AUTHZ_FILE
+#define DEFAULT_AUTHZ_LIB_FILE_BASE     "gsi-authz_lib"
+#define DEFAULT_AUTHZ_LIB_FILE_DIR      "/etc/grid-security/"
+#define DEFAULT_AUTHZ_LIB_FILE_EXTENSION ".conf"
+#define INSTALLED_AUTHZ_LIB_DIR         FLASH_ROOT "/etc/"
+#define HOME_AUTHZ_LIB_FILE_BASE        ".gsi-authz_lib"
+#define DEFAULT_GAA_FILE                FLASH_ROOT "/gsi-gaa.conf"
+#define INSTALLED_GAA_FILE              "gsi-gaa.conf"
+#define LOCAL_GAA_FILE                  INSTALLED_GAA_FILE
+#else /* UNIX definitions */
 #define FILE_SEPERATOR                  "/"
 #define X509_DEFAULT_USER_CERT          ".globus/usercert.pem"
 #define X509_DEFAULT_USER_KEY           ".globus/userkey.pem"
@@ -293,12 +321,12 @@ globus_l_gsi_sysconfig_activate(void)
 		/* ToDo: look at return code? */
 
         /* probably overestimating the entropy in the below */
-       	#ifndef WIN32	/* ToDo: Do this for Win32? */
+#ifndef WIN32	/* ToDo: Do this for Win32? */
         uptime = times(&proc_times);
         
         RAND_add((void *) &uptime, sizeof(clock_t), 2);
         RAND_add((void *) &proc_times, sizeof(struct tms), 8);
-		#endif
+#endif
     }
 
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_FPRINTF(
@@ -3763,6 +3791,9 @@ globus_result_t
 globus_gsi_sysconfig_set_key_permissions_unix(
     char *                              filename)
 {
+#ifdef TARGET_ARCH_NETOS
+    return GLOBUS_SUCCESS;
+#else
     globus_result_t                     result = GLOBUS_SUCCESS;
     int					                fd = -1;
     struct stat                         stx, stx2;
@@ -3860,6 +3891,7 @@ globus_gsi_sysconfig_set_key_permissions_unix(
 
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
     return result;
+#endif
 }
 /* @} */
 
@@ -3882,6 +3914,18 @@ globus_result_t
 globus_gsi_sysconfig_get_user_id_string_unix(
     char **                             user_id_string)
 {
+#ifndef HAVE_GETEUID
+    *user_id_string = globus_libc_strdup("0");
+
+    if (*user_id_string == NULL)
+    {
+        return GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
+    }
+    else
+    {
+        return GLOBUS_SUCCESS;
+    }
+#else
     uid_t                               uid;
     int                                 len;
     globus_result_t                     result;
@@ -3911,6 +3955,7 @@ globus_gsi_sysconfig_get_user_id_string_unix(
 
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
     return result;
+#endif
 }
 /* @} */
 
@@ -3933,6 +3978,18 @@ globus_result_t
 globus_gsi_sysconfig_get_username_unix(
     char **                             username)
 {
+#ifdef TARGET_ARCH_NETOS
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    GlobusFuncName(globus_gsi_sysconfig_get_username_unix);
+
+    *username = globus_libc_strdup("netosuser");
+    if(!*username)
+    {
+        result = GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
+    }
+
+    return result;
+#else
     globus_result_t                     result = GLOBUS_SUCCESS;
     struct passwd                       pwd;
     struct passwd *                     pwd_result;
@@ -4000,6 +4057,7 @@ globus_gsi_sysconfig_get_username_unix(
     
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
     return result;
+#endif
 }
 /* @} */
 
@@ -4250,6 +4308,17 @@ globus_result_t
 globus_gsi_sysconfig_get_current_working_dir_unix(
     char **                             working_dir)
 {
+#ifdef TARGET_ARCH_NETOS
+    GlobusFuncName(globus_gsi_sysconfig_get_working_dir_unix);
+
+    *working_dir = globus_libc_strdup(FLASH_ROOT);
+
+    if (!*working_dir)
+    {
+        return GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
+    }
+    return GLOBUS_SUCCESS;
+#else
     globus_result_t                     result = GLOBUS_SUCCESS;
     char *                              buffer = NULL;
     char *                              result_buffer = NULL;
@@ -4304,6 +4373,7 @@ globus_gsi_sysconfig_get_current_working_dir_unix(
 
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
     return result;
+#endif
 }
 /* @} */
 
@@ -4326,6 +4396,17 @@ globus_result_t
 globus_gsi_sysconfig_get_home_dir_unix(
     char **                             home_dir)
 {
+#ifdef TARGET_ARCH_NETOS
+    GlobusFuncName(globus_gsi_sysconfig_get_home_dir_unix);
+
+    *home_dir = globus_libc_strdup(FLASH_ROOT);
+
+    if (!*home_dir)
+    {
+        return GLOBUS_GSI_SYSTEM_CONFIG_MALLOC_ERROR;
+    }
+    return GLOBUS_SUCCESS;
+#else
     char *                              temp_home_dir;
     struct passwd                       pwd;
     struct passwd *                     pwd_result;
@@ -4416,6 +4497,7 @@ globus_gsi_sysconfig_get_home_dir_unix(
     
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
     return result;
+#endif
 }
 /* @} */
 
@@ -4438,6 +4520,26 @@ globus_result_t
 globus_gsi_sysconfig_file_exists_unix(
     const char *                        filename)
 {
+#ifdef TARGET_ARCH_NETOS
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    int fd ;
+    GlobusFuncName(globus_gsi_sysconfig_file_exists_unix);
+
+    fd = open(filename, O_RDONLY);
+    if (fd < 0)
+    {
+        GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_SYSCONFIG_ERROR_FILE_DOES_NOT_EXIST,
+            (_GSSL("%s is not a valid file"), filename));            
+    }
+    else
+    {
+        close(fd);
+    }
+
+    return result;
+#else
     struct stat                         stx;
     globus_result_t                     result = GLOBUS_SUCCESS;
 
@@ -4518,6 +4620,7 @@ globus_gsi_sysconfig_file_exists_unix(
 
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
     return result;
+#endif
 }    
 /* @} */
 
@@ -4540,6 +4643,24 @@ globus_result_t
 globus_gsi_sysconfig_dir_exists_unix(
     const char *                        filename)
 {
+#ifdef TARGET_ARCH_NETOS
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    DIR * f = opendir(filename);
+    GlobusFuncName(globus_gsi_sysconfig_dir_exists_unix);
+
+    if (f == NULL)
+    {
+        GLOBUS_GSI_SYSCONFIG_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_SYSCONFIG_ERROR_FILE_DOES_NOT_EXIST,
+            (_GSSL("%s is not a valid directory"), filename));            
+    }
+    else
+    {
+        closedir(f);
+    }
+    return result;
+#else
     struct stat                         stx;
     globus_result_t                     result = GLOBUS_SUCCESS;
 
@@ -4612,6 +4733,7 @@ globus_gsi_sysconfig_dir_exists_unix(
 
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
     return result;
+#endif
 }    
 /* @} */
 
@@ -4640,6 +4762,9 @@ globus_result_t
 globus_gsi_sysconfig_check_keyfile_unix(
     const char *                        filename)
 {
+#ifdef TARGET_ARCH_NETOS
+    return globus_gsi_sysconfig_file_exists_unix(filename);
+#else
     struct stat                         stx;
     globus_result_t                     result = GLOBUS_SUCCESS;
     static char *                       _function_name_ =
@@ -4743,6 +4868,7 @@ globus_gsi_sysconfig_check_keyfile_unix(
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
 
     return result;
+#endif
 }
 /* @} */
 
@@ -4770,6 +4896,9 @@ globus_result_t
 globus_gsi_sysconfig_check_certfile_unix(
     const char *                        filename)
 {
+#ifdef TARGET_ARCH_NETOS
+    return globus_gsi_sysconfig_file_exists_unix(filename);
+#else
     struct stat                         stx;
     globus_result_t                     result = GLOBUS_SUCCESS;
     static char *                       _function_name_ =
@@ -4871,6 +5000,7 @@ globus_gsi_sysconfig_check_certfile_unix(
     
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
     return result;
+#endif
 }
 /* @} */
 
@@ -6362,7 +6492,9 @@ globus_gsi_sysconfig_remove_all_owned_files_unix(
 
             RAND_add((void *) &stx, sizeof(stx), 2);
                     
+#ifdef HAVE_GETEUID
             if(stx.st_uid == geteuid())
+#endif
             {
                 static char             msg[65]
                     = "DESTROYED BY GLOBUS\r\n";
@@ -6428,6 +6560,7 @@ globus_result_t
 globus_gsi_sysconfig_is_superuser_unix(
     int *                               is_superuser)
 {
+#ifdef HAVE_GETEUID
     static char *                       _function_name_ =
         "globus_gsi_sysconfig_is_superuser_unix";
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_ENTER;
@@ -6443,6 +6576,10 @@ globus_gsi_sysconfig_is_superuser_unix(
 
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
     return GLOBUS_SUCCESS;
+#else
+    *is_superuser = 1;
+    return GLOBUS_SUCCESS;
+#endif
 }
 /* @} */
 
@@ -6487,6 +6624,7 @@ globus_gsi_sysconfig_get_gridmap_filename_unix(
         }
     }
 
+#ifdef HAVE_GETEUID
     if(!gridmap_filename)
     {
         if(geteuid() == 0)
@@ -6528,6 +6666,7 @@ globus_gsi_sysconfig_get_gridmap_filename_unix(
             }
         }
     }
+#endif
 
     if(!gridmap_filename)
     {

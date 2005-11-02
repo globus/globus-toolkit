@@ -106,7 +106,7 @@ getnameinfo(
         else
         {
 #ifdef HAVE_GETSERVBYNAME
-            strncpy(serv, servent->s_name);
+            strncpy(serv, servent->s_name, servlen);
 #endif
         }
     }
