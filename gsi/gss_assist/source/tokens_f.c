@@ -206,7 +206,7 @@ globus_gss_assist_token_get_fd(
                   | ( ((unsigned int) int_buf[2]) << 8)
                   |   ((unsigned int) int_buf[3]) );
         
-        if (size > 1<<24)  /* size may be garbage */
+        if (size > 1<<24 || size < 0)  /* size may be garbage */
         {
             return_value = GLOBUS_GSS_ASSIST_TOKEN_ERR_BAD_SIZE; 
             goto exit;
