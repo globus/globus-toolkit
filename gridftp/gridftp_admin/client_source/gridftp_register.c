@@ -108,7 +108,6 @@ main(
         &local_contact);
     test_res(res);
 
-
     tmp_ptr = strchr(local_contact, ':');
     assert(tmp_ptr != NULL);
     *tmp_ptr = '\0';

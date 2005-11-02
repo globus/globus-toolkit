@@ -14,7 +14,7 @@
 
 
 
-SOURCES = $(get_RP_SOURCES) $(gridftp_register_SOURCES) $(set_RP_SOURCES)
+SOURCES = $(get_RP_SOURCES) $(globus_get_ip_SOURCES) $(gridftp_register_SOURCES) $(set_RP_SOURCES)
 
 srcdir = .
 top_srcdir = .
@@ -44,7 +44,7 @@ DIST_COMMON = $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(top_srcdir)/globus_automake_pre_top compile config.guess \
 	config.sub install-sh ltmain.sh missing
 bin_PROGRAMS = get-RP$(EXEEXT) set-RP$(EXEEXT) \
-	gridftp-register$(EXEEXT)
+	gridftp-register$(EXEEXT) globus-get-ip$(EXEEXT)
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.in
@@ -63,13 +63,18 @@ get_RP_OBJECTS = $(am_get_RP_OBJECTS)
 get_RP_LDADD = $(LDADD)
 am__DEPENDENCIES_1 =
 get_RP_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am__objects_2 = gridftp_register-gridftp_register.$(OBJEXT)
-am_gridftp_register_OBJECTS = $(am__objects_2)
+am__objects_2 = globus_get_ip-globus_get_ip.$(OBJEXT)
+am_globus_get_ip_OBJECTS = $(am__objects_2)
+globus_get_ip_OBJECTS = $(am_globus_get_ip_OBJECTS)
+globus_get_ip_LDADD = $(LDADD)
+globus_get_ip_DEPENDENCIES = $(am__DEPENDENCIES_1)
+am__objects_3 = gridftp_register-gridftp_register.$(OBJEXT)
+am_gridftp_register_OBJECTS = $(am__objects_3)
 gridftp_register_OBJECTS = $(am_gridftp_register_OBJECTS)
 gridftp_register_LDADD = $(LDADD)
 gridftp_register_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am__objects_3 = set_RP-set_RP.$(OBJEXT)
-am_set_RP_OBJECTS = $(am__objects_3)
+am__objects_4 = set_RP-set_RP.$(OBJEXT)
+am_set_RP_OBJECTS = $(am__objects_4)
 set_RP_OBJECTS = $(am_set_RP_OBJECTS)
 set_RP_LDADD = $(LDADD)
 set_RP_DEPENDENCIES = $(am__DEPENDENCIES_1)
@@ -84,10 +89,10 @@ LTCOMPILE = $(LIBTOOL) --mode=compile $(CC) $(DEFS) \
 CCLD = $(CC)
 LINK = $(LIBTOOL) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
-SOURCES = $(get_RP_SOURCES) $(gridftp_register_SOURCES) \
-	$(set_RP_SOURCES)
-DIST_SOURCES = $(get_RP_SOURCES) $(gridftp_register_SOURCES) \
-	$(set_RP_SOURCES)
+SOURCES = $(get_RP_SOURCES) $(globus_get_ip_SOURCES) \
+	$(gridftp_register_SOURCES) $(set_RP_SOURCES)
+DIST_SOURCES = $(get_RP_SOURCES) $(globus_get_ip_SOURCES) \
+	$(gridftp_register_SOURCES) $(set_RP_SOURCES)
 RECURSIVE_TARGETS = all-recursive check-recursive dvi-recursive \
 	html-recursive info-recursive install-data-recursive \
 	install-exec-recursive install-info-recursive \
@@ -127,7 +132,7 @@ CXXFLAGS = -g
 CYGPATH_W = echo
 DEFS = -DPACKAGE_NAME=\"\" -DPACKAGE_TARNAME=\"\" -DPACKAGE_VERSION=\"\" -DPACKAGE_STRING=\"\" -DPACKAGE_BUGREPORT=\"\" -DPACKAGE=\"gridftp_admin_clients\" -DVERSION=\"0.1\" 
 DIRT_BRANCH_ID = 99999
-DIRT_TIMESTAMP = 1130954446
+DIRT_TIMESTAMP = 1130973145
 DOXYGEN = 
 ECHO_C = 
 ECHO_N = -n
@@ -233,6 +238,7 @@ SUBDIRS = \
 get_RP_Sources = get_RP.c
 set_RP_Sources = set_RP.c
 gridftp_register_Sources = gridftp_register.c
+globus_get_ip_Sources = globus_get_ip.c
 EXTRA_DIST = bootstrap globus_automake_pre globus_automake_post \
 	globus_automake_pre_top globus_automake_post_top dirt.sh
 INCLUDES = $(GPT_INCLUDES)
@@ -246,6 +252,9 @@ set_RP_LDFLAGS = $(GPT_LDFLAGS)
 gridftp_register_CFLAGS = $(GPT_CFLAGS)
 gridftp_register_SOURCES = $(gridftp_register_Sources)
 gridftp_register_LDFLAGS = $(GPT_LDFLAGS)
+globus_get_ip_CFLAGS = $(GPT_CFLAGS)
+globus_get_ip_SOURCES = $(globus_get_ip_Sources)
+globus_get_ip_LDFLAGS = $(GPT_LDFLAGS)
 all: all-recursive
 
 .SUFFIXES:
@@ -314,6 +323,9 @@ clean-binPROGRAMS:
 get-RP$(EXEEXT): $(get_RP_OBJECTS) $(get_RP_DEPENDENCIES) 
 	@rm -f get-RP$(EXEEXT)
 	$(LINK) $(get_RP_LDFLAGS) $(get_RP_OBJECTS) $(get_RP_LDADD) $(LIBS)
+globus-get-ip$(EXEEXT): $(globus_get_ip_OBJECTS) $(globus_get_ip_DEPENDENCIES) 
+	@rm -f globus-get-ip$(EXEEXT)
+	$(LINK) $(globus_get_ip_LDFLAGS) $(globus_get_ip_OBJECTS) $(globus_get_ip_LDADD) $(LIBS)
 gridftp-register$(EXEEXT): $(gridftp_register_OBJECTS) $(gridftp_register_DEPENDENCIES) 
 	@rm -f gridftp-register$(EXEEXT)
 	$(LINK) $(gridftp_register_LDFLAGS) $(gridftp_register_OBJECTS) $(gridftp_register_LDADD) $(LIBS)
@@ -341,6 +353,12 @@ get_RP-get_RP.o: get_RP.c
 
 get_RP-get_RP.obj: get_RP.c
 	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(get_RP_CFLAGS) $(CFLAGS) -c -o get_RP-get_RP.obj `if test -f 'get_RP.c'; then $(CYGPATH_W) 'get_RP.c'; else $(CYGPATH_W) '$(srcdir)/get_RP.c'; fi`
+
+globus_get_ip-globus_get_ip.o: globus_get_ip.c
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(globus_get_ip_CFLAGS) $(CFLAGS) -c -o globus_get_ip-globus_get_ip.o `test -f 'globus_get_ip.c' || echo '$(srcdir)/'`globus_get_ip.c
+
+globus_get_ip-globus_get_ip.obj: globus_get_ip.c
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(globus_get_ip_CFLAGS) $(CFLAGS) -c -o globus_get_ip-globus_get_ip.obj `if test -f 'globus_get_ip.c'; then $(CYGPATH_W) 'globus_get_ip.c'; else $(CYGPATH_W) '$(srcdir)/globus_get_ip.c'; fi`
 
 gridftp_register-gridftp_register.o: gridftp_register.c
 	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(gridftp_register_CFLAGS) $(CFLAGS) -c -o gridftp_register-gridftp_register.o `test -f 'gridftp_register.c' || echo '$(srcdir)/'`gridftp_register.c
