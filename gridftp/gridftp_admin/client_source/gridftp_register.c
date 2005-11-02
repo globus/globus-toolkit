@@ -32,7 +32,7 @@ test_res(
 void
 help()
 {
-    fprintf(stdout, "globus-gridftp-register <registry contact> <contact string> <max conneciton count> [<repo name>]\n");
+    fprintf(stdout, "globus-gridftp-register <registry contact> <contact port> <max conneciton count> [<repo name>]\n");
 }
 
 int
@@ -40,19 +40,22 @@ main(
     int                                     argc,
     char **                                 argv)
 {
+    int                                     arg_i = 0;
     int                                     c_count;
     globus_xio_driver_t                     tcp_driver;
     globus_xio_driver_t                     gsi_driver;
     globus_xio_stack_t                      stack;
     globus_xio_handle_t                     xio_handle;
     char *                                  cs;
+    char *                                  c_port;
     char *                                  repo;
     char *                                  registry_cs;
     globus_result_t                         res;
     char                                    msg[256];
     globus_size_t                           nbytes;
     int                                     len;
-    int                                     arg_i;
+    char *                                  local_contact;
+    char *                                  tmp_ptr;
 
     if(argc < 4)
     {
@@ -98,12 +101,27 @@ main(
     res = globus_xio_open(xio_handle, registry_cs, NULL);
     test_res(res);
 
+    res = globus_xio_handle_cntl(
+        xio_handle,
+        tcp_driver,
+        GLOBUS_XIO_TCP_GET_LOCAL_CONTACT,
+        &local_contact);
+    test_res(res);
+
+
+    tmp_ptr = strchr(local_contact, ':');
+    assert(tmp_ptr != NULL);
+    *tmp_ptr = '\0';
+    printf("%s\n", local_contact); /* write out the actual IP we will use */
+
     memset(msg, '\0', 256);
     len = strlen(repo);
     *msg = (char)c_count;
     memcpy(&msg[1], repo, len);
     msg[len+1] = '\0';
-    memcpy(&msg[len+2], cs, strlen(cs));
+    sprintf(&msg[len+2], "%s:%s", local_contact, c_port);
+    printf("registering\n  repo=[%s]\n  server contact=[%s]\n  max=[%d]\n",
+        repo, &msg[len+2], c_count);
     res = globus_xio_write(xio_handle, msg, 256, 256, &nbytes, NULL);
     test_res(res);
 
