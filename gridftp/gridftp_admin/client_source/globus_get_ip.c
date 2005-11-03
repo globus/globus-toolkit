@@ -18,20 +18,32 @@ test_res(
     globus_assert(0);
 }
 
+static
+globus_bool_t
+timeout_cb(
+    globus_xio_handle_t                 handle,
+    globus_xio_operation_type_t         type,
+    void *                              user_arg)
+{
+    return GLOBUS_TRUE;
+}
+
 int
 main(
-    int                                     argc,
-    char **                                 argv)
+    int                                 argc,
+    char **                             argv)
 {
-    int                                     arg_i = 0;
-    int                                     done = GLOBUS_FALSE;
-    globus_xio_driver_t                     tcp_driver;
-    globus_xio_stack_t                      stack;
-    globus_xio_handle_t                     xio_handle;
-    globus_result_t                         res;
-    char *                                  local_contact;
-    char *                                  tmp_ptr;
-    char *                                  cs;
+    int                                 arg_i = 0;
+    int                                 done = GLOBUS_FALSE;
+    globus_xio_driver_t                 tcp_driver;
+    globus_xio_stack_t                  stack;
+    globus_xio_handle_t                 xio_handle;
+    globus_result_t                     res;
+    char *                              local_contact;
+    char *                              tmp_ptr;
+    char *                              cs;
+    globus_reltime_t                    timeout;
+    globus_xio_attr_t                   attr;
 
     if(argc < 2)
     {
@@ -47,6 +59,16 @@ main(
     res = globus_xio_stack_push_driver(stack, tcp_driver);
     test_res(res);
 
+    GlobusTimeReltimeSet(timeout, 45, 0);
+    globus_xio_attr_init(&attr);
+    globus_xio_attr_cntl(
+        attr,
+        NULL,
+        GLOBUS_XIO_ATTR_SET_TIMEOUT_OPEN,
+        timeout_cb,
+        &timeout,
+        NULL);
+
     arg_i = 1;
     while(!done)
     {
@@ -54,7 +76,7 @@ main(
         fprintf(stderr, "looking up %s\n", cs);
         res = globus_xio_handle_create(&xio_handle, stack);
         test_res(res);
-        res = globus_xio_open(xio_handle, cs, NULL);
+        res = globus_xio_open(xio_handle, cs, attr);
         if(res == GLOBUS_SUCCESS)
         {
             done = GLOBUS_TRUE;
