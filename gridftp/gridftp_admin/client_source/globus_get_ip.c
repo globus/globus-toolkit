@@ -51,6 +51,7 @@ main(
     while(!done)
     {
         cs = argv[arg_i];
+        fprintf(stderr, "looking up %s\n", cs);
         res = globus_xio_handle_create(&xio_handle, stack);
         test_res(res);
         res = globus_xio_open(xio_handle, cs, NULL);
@@ -58,10 +59,14 @@ main(
         {
             done = GLOBUS_TRUE;
         }
-        arg_i++;
-        if(arg_i >= argc)
+        else
         {
-            exit(1);
+            arg_i++;
+            if(arg_i >= argc)
+            {
+                fprintf(stderr, "failed to connect to any host in list\n");
+                exit(1);
+            }
         }
     }
     res = globus_xio_handle_cntl(
