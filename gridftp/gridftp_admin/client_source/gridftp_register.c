@@ -47,7 +47,6 @@ main(
     globus_xio_stack_t                      stack;
     globus_xio_handle_t                     xio_handle;
     char *                                  cs;
-    char *                                  c_port;
     char *                                  repo;
     char *                                  registry_cs;
     globus_result_t                         res;
@@ -118,7 +117,7 @@ main(
     *msg = (char)c_count;
     memcpy(&msg[1], repo, len);
     msg[len+1] = '\0';
-    sprintf(&msg[len+2], "%s:%s", local_contact, c_port);
+    sprintf(&msg[len+2], "%s:%s", local_contact, cs);
     printf("registering\n  repo=[%s]\n  server contact=[%s]\n  max=[%d]\n",
         repo, &msg[len+2], c_count);
     res = globus_xio_write(xio_handle, msg, 256, 256, &nbytes, NULL);
