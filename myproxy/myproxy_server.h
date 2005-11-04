@@ -26,6 +26,8 @@ typedef struct
   char *cert_dir;		    /* Trusted certificate directory to send */
   char *pam_policy;                 /* How we depend on PAM for passwd auth */
   char *pam_id;                     /* Application name we present to PAM */
+  char *pubcookie_cert;             /* Pubcookie login server certificate */
+  char *pubcookie_key;              /* Pubcookie application server key */
 } myproxy_server_context_t;
 
 
