@@ -265,7 +265,7 @@ line_parse_callback(void *context_arg,
 	context->pam_id = strdup(tokens[1]);
     }
 
-    if (strcmp(directive, "pubcookie_login_server_cert") == 0)
+    if (strcmp(directive, "pubcookie_granting_cert") == 0)
     {
 	context->pubcookie_cert = strdup(tokens[1]);
     }
