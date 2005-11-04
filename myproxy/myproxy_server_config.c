@@ -551,6 +551,7 @@ myproxy_server_config_read(myproxy_server_context_t *context)
 			  context->config_file);
 	goto error;
     }
+    myproxy_debug("reading configuration file %s", context->config_file);
     
     /* Clear any outstanding error */
     verror_clear();
