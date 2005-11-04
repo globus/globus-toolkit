@@ -139,7 +139,9 @@ globus_l_brain_read_cb(
     {
         if(result != GLOBUS_SUCCESS)
         {
-            /* log an error */
+            globus_i_gfs_log_result_warn(
+                "A connection request to brain failed",
+                result);
             goto error;
         }
 
@@ -221,6 +223,10 @@ globus_l_brain_read_cb(
                 globus_gfs_config_inc_int("data_connection_max", con_max);
             }
             node->current_connection = 0;
+            globus_i_gfs_log_message(
+                GLOBUS_I_GFS_LOG_INFO,
+                "A new backend registered, contact string: %s\n",
+                node->host_id);
         }
         else
         {
@@ -235,6 +241,10 @@ globus_l_brain_read_cb(
                 con_diff = con_max - node->max_connection;
                 globus_gfs_config_inc_int("data_connection_max", con_diff);
             }
+            globus_i_gfs_log_message(
+                GLOBUS_I_GFS_LOG_INFO,
+                "Backend %s has refreshed its contact information.\n",
+                node->host_id);
         }
 error_cs:
 error:
@@ -261,7 +271,9 @@ globus_l_brain_open_server_cb(
 
     if(result != GLOBUS_SUCCESS)
     {
-        /* XXX log error */
+        globus_i_gfs_log_result_warn(
+            "A connection request to brain failed",
+            result);
         goto error_accept;
     }
     /* XXX todo verify we are ok with the sender */
@@ -303,9 +315,14 @@ globus_l_brain_add_server_accept_cb(
 {
     if(result != GLOBUS_SUCCESS)
     {
-        /* XXX log error */
+        globus_i_gfs_log_result_warn(
+            "A connection request to brain failed",
+            result);
         goto error;
     }
+    globus_i_gfs_log_message(
+        GLOBUS_I_GFS_LOG_INFO,
+        "The brain received a connection\n");
 
    result = globus_xio_register_open(
         handle,
@@ -315,7 +332,9 @@ globus_l_brain_add_server_accept_cb(
         NULL);
     if(result != GLOBUS_SUCCESS)
     {
-        /* XXX log error */
+        globus_i_gfs_log_result_warn(
+            "A connection request to brain failed",
+            result);
     }
 
 error:
@@ -325,7 +344,9 @@ error:
         NULL);
     if(result != GLOBUS_SUCCESS)
     {
-        /* XXX log error */
+        globus_i_gfs_log_result_warn(
+            "A connection request to brain failed",
+            result);
     }
 }
 
