@@ -265,6 +265,16 @@ line_parse_callback(void *context_arg,
 	context->pam_id = strdup(tokens[1]);
     }
 
+    if (strcmp(directive, "pubcookie_login_server_cert") == 0)
+    {
+	context->pubcookie_cert = strdup(tokens[1]);
+    }
+
+    if (strcmp(directive, "pubcookie_app_server_key") == 0)
+    {
+	context->pubcookie_key = strdup(tokens[1]);
+    }
+
     return_code = 0;
     
   error:
