@@ -167,13 +167,10 @@ decrypt_cookie(const unsigned char *inbuf, int inlen,
     return 0;
 }
 
-#define PUBCOOKIE_MYPROXY_SYMMETRIC_KEY "/usr/local/globus/etc/myproxy-pubcookie_verifier_keys/128.143.63.205" 
-
-#define PUBCOOKIE_MYPROXY_LOGIN_SERVER_CERT "/usr/local/globus/etc/myproxy-pubcookie_verifier_certs/128.143.63.205" 
-
 int auth_pubcookie_check_client (authorization_data_t *auth_data,
 				 struct myproxy_creds *creds, 
-				 char *client_name)
+				 char *client_name,
+				 myproxy_server_context_t* config)
 { 
   int return_status;
   FILE *fp;
@@ -184,24 +181,28 @@ int auth_pubcookie_check_client (authorization_data_t *auth_data,
   return_status = 1;
 
   /* read symmetric key file for decrypting cookie */
-
-    if ((fp = fopen(PUBCOOKIE_MYPROXY_SYMMETRIC_KEY, "r")) == 0 ||
+  if (config->pubcookie_key) {
+    if ((fp = fopen(config->pubcookie_key, "r")) == 0 ||
         fread(keybuf, 1, sizeof(keybuf), fp) != sizeof(keybuf)) {
-      myproxy_log("ERROR opening filename for symmetric key file"); 
-      verror_prepend_string("Error: Contact MyProxy sysadmin.");
+      verror_put_string("ERROR opening %s", config->pubcookie_key);
+      verror_put_errno(errno);
       return_status=0;
       if (fp)
 	fclose(fp);
     }
+  }
   
   /* read cert file for verifying cookie signature */
-  
+  if (!config->pubcookie_cert) {
+      return 0; /* Pubcookie support not enabled. */
+  }
+
   if(return_status==1) {
-    if ((fp = fopen(PUBCOOKIE_MYPROXY_LOGIN_SERVER_CERT, "r")) == 0 ||
+    if ((fp = fopen(config->pubcookie_cert, "r")) == 0 ||
         (cert = PEM_read_X509(fp, 0, 0, 0)) == 0)
       {
-	myproxy_log("ERROR opening host cert filename"); 
-        verror_prepend_string("Error: Contact MyProxy sysadmin.");
+	verror_put_string("ERROR opening %s", config->pubcookie_cert);
+	verror_put_errno(errno);
         return_status=0;
 	if (fp)
 	  fclose(fp);
@@ -253,12 +254,8 @@ int auth_pubcookie_check_client (authorization_data_t *auth_data,
 
   //test #2: verify username
   if(return_status==1) {
-    if(strcmp(cookie.user, creds->username)) {
-      myproxy_log("ERROR cookie username and request username do not match", "ignore"); 
-      myproxy_log(cookie.user, "ignore"); 
-      myproxy_log(creds->username, "ignore"); 
-      
-      verror_prepend_string("Cookie username and request username do not match"); 
+    if(strcmp((char *)cookie.user, creds->username)) {
+      verror_put_string("Pubcookie username (%s) and request username (%s) do not match", (char *)cookie.user, creds->username); 
       return_status=0;
     }
     
@@ -268,6 +265,7 @@ int auth_pubcookie_check_client (authorization_data_t *auth_data,
   return return_status;
 }
 /* end of Pubcookie-specific code */
+
 
 int auth_passwd_check_client(authorization_data_t *client_auth_data,
                              struct myproxy_creds *creds, char *client_name,
@@ -299,10 +297,8 @@ int auth_passwd_check_client(authorization_data_t *client_auth_data,
    else 
       cred_passphrase_match = (client_auth_data->client_data_len <= 0) ? 1 : 0;
    
-#ifdef PUBCOOKIE
    if (! cred_passphrase_match)
-     cred_passphrase_match = (auth_pubcookie_check_client (client_auth_data, creds, client_name) == 1) ? 1 : 0;
-#endif 
+     cred_passphrase_match = (auth_pubcookie_check_client (client_auth_data, creds, client_name, config) == 1) ? 1 : 0;
 
 
 #if defined(HAVE_LIBPAM)
