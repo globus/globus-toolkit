@@ -15,10 +15,16 @@ GridFTPUsageViewer
     implements Runnable,
         WindowListener
 {
+    private double                      maxY;
+    private int                         intervalBytes = 0;
+
+    private Vector                      linePts;
+    private LineChart                   lineChart;
     private long                        totalBytes = 0;
     private int                         transferCount = -1;
     protected JFrame                    mainFrame;
     private Thread                      netThread;
+    private Thread                      graphThread;
     private boolean                     done = false;
     protected DatagramSocket            socket;
     protected JLabel                    countLabel;
@@ -70,6 +76,7 @@ GridFTPUsageViewer
         JLabel                          tmpL;
         JPanel                          imageP;
 
+        linePts = new Vector();
         socket = new DatagramSocket(port);
         addr = socket.getLocalAddress();
 
@@ -94,14 +101,28 @@ GridFTPUsageViewer
         timeLabel = new JLabel("Last Time: 0");
         tmpP.add(timeLabel);
 
+/*
         imageP = new JPanel();
         imageP.setBorder(
             new CompoundBorder(
                 new EtchedBorder(EtchedBorder.RAISED),
                 new EmptyBorder(1, 5, 1, 5)));
         this.imageLabel = new JLabel();
+
         imageP.add(this.imageLabel);
         mainP.add("Center", imageP);
+*/
+        this.maxY = 1.0; // staret wiuth 1Mb/s
+        lineChart = new LineChart(0.0, 10.0, 0.0, this.maxY);
+        lineChart.setAxisColor(Color.green);
+        lineChart.setTicColor(Color.green);
+        lineChart.setBackground(Color.black);
+        lineChart.autoRepaintEnable(true);
+        lineChart.enableGridLines(false, true);
+        lineChart.setTicIncrement(1.0, this.maxY/10.0);
+        lineChart.enableDrawPoints(false);
+        lineChart.addLine(linePts, Color.green);
+        mainP.add("Center", this.lineChart);
 
         String listenStr = new String("listening at: " + addr.toString() +
             ":"+ new Integer(socket.getLocalPort()).toString());
@@ -116,11 +137,12 @@ GridFTPUsageViewer
         tmpP.add(tmpL);
         mainP.add("South", tmpP);
 
-        this.loadImageArray(imageMapFile);
         this.updateValues("00:00:00", 0);
 
         netThread = new Thread(this);
         netThread.start();
+        graphThread = new Thread(this);
+        graphThread.start();
         mainFrame.setSize(470, 295);
         mainFrame.addWindowListener(this);
         mainFrame.setVisible(true);
@@ -150,6 +172,7 @@ GridFTPUsageViewer
         boolean                         done;
         int                             start_ndx;
         int                             ndx;
+        int                             i;
         long                            time;
         byte                            recv_buf[];
         byte                            end_del;
@@ -160,63 +183,125 @@ GridFTPUsageViewer
         String                          val;
         String                          timeS = "";
         long                            nbytes = 0;
+        int                             hourBump;
 
-        packet = new DatagramPacket(buf, buf.length);
-        while(!this.done)
+        if(Thread.currentThread() == netThread)
         {
-            try
+            TimeZone tz = TimeZone.getDefault();
+            hourBump = tz.getRawOffset() / 1000 / 60 / 60;
+
+            packet = new DatagramPacket(buf, buf.length);
+            while(!this.done)
             {
-                socket.receive(packet);
-                recv_buf = packet.getData();
-                recv_len = packet.getLength();
-
-                time = (long)this.convertInt(recv_buf, 19);
-                ndx = 24; // skip ip crap
-                done = false;
-
-                while(!done)
+                try
                 {
-                    end_del = (byte)' ';
-                    for(start_ndx = ndx; recv_buf[ndx] != (byte)'='; ndx++)
+                    socket.receive(packet);
+                    recv_buf = packet.getData();
+                    recv_len = packet.getLength();
+
+                    String logMsg = new String(
+                        recv_buf, 20, recv_len-20, "US-ASCII");
+                    System.out.println(logMsg);
+
+                    time = (long)this.convertInt(recv_buf, 19);
+                    ndx = 24; // skip ip crap
+                    done = false;
+
+                    while(!done)
                     {
+                        end_del = (byte)' ';
+                        for(start_ndx = ndx; recv_buf[ndx] != (byte)'='; ndx++)
+                        {
+                        }
+                        key = new String(recv_buf, start_ndx, ndx-start_ndx);
+                        ndx++; // move past the =
+                        if(recv_buf[ndx] == (byte)'"')
+                        {
+                            end_del = (byte)'"';
+                            ndx++; // move past the "
+                        }
+                        /* this will not work for \", but so what for a 
+                            crappy lil demo */
+                        for(start_ndx = ndx; recv_buf[ndx] != end_del; ndx++)
+                        {
+                        }
+                        val = new String(recv_buf, start_ndx, ndx-start_ndx);
+                        ndx++; // move past the ' ' or '"'
+                        if(end_del == (byte)'"')
+                        {
+                            ndx++; // move past the next space
+                        }
+                        if(key.equals("END"))
+                        {
+                            int     hourI;
+                            hourI = 
+                                new Integer(val.substring(8, 10)).intValue();
+
+                            hourI += hourBump;
+                            if(hourI >= 24) hourI -= 24;
+                            else if(hourI < 0) hourI += 24;
+
+                            String minS = val.substring(10, 12);
+                            String secS = val.substring(12, 14);
+                            timeS = new String(hourI +":"+minS+":"+secS);
+                        }
+                        if(key.equals("NBYTES"))
+                        {
+                            synchronized(this)
+                            {
+                                intervalBytes += nbytes;
+                            }
+                            nbytes = new Long(val).longValue();
+                            done = true;
+                        }
                     }
-                    key = new String(recv_buf, start_ndx, ndx-start_ndx);
-                    ndx++; // move past the =
-                    if(recv_buf[ndx] == (byte)'"')
-                    {
-                        end_del = (byte)'"';
-                        ndx++; // move past the "
-                    }
-                    /* this will not work for \", but so what for a 
-                        crappy lil demo */
-                    for(start_ndx = ndx; recv_buf[ndx] != end_del; ndx++)
-                    {
-                    }
-                    val = new String(recv_buf, start_ndx, ndx-start_ndx);
-                    ndx++; // move past the ' ' or '"'
-                    if(end_del == (byte)'"')
-                    {
-                        ndx++; // move past the next space
-                    }
-                    if(key.equals("END"))
-                    {
-                        String hourS = val.substring(8, 9);
-                        String minS = val.substring(10, 11);
-                        String secS = val.substring(12, 13);
-                        timeS = new String(hourS +":"+minS+":"+secS);
-                    }
-                    if(key.equals("NBYTES"))
-                    {
-                        nbytes = new Long(val).longValue();
-                        done = true;
-                    }
+                    this.updateValues(timeS, nbytes);
                 }
-                this.updateValues(timeS, nbytes);
+                catch(Exception e)
+                {
+                    e.printStackTrace();
+                    System.err.println(e);
+                }
             }
-            catch(Exception e)
+        }
+        else
+        {
+            ColorPoint                  cp;
+            double                      bps;
+            while(!this.done)
             {
-                e.printStackTrace();
-                System.err.println(e);
+                synchronized(this)
+                {
+                    try
+                    {
+                        this.wait(5000);
+                    }
+                    catch (Exception w)
+                    {
+                    }
+
+                    bps = (double)intervalBytes / 1024.0 / 5.0;
+                    if(bps > this.maxY)
+                    {
+                        this.maxY = bps + (bps * .1);
+                        lineChart.setTicIncrement(1.0, this.maxY/10.0);
+                        lineChart.rescale(0.0, 10.0, 0.0, this.maxY);
+                    }
+                    intervalBytes = 0;
+                }
+                /* update graph */
+                if(linePts.size() > 10)
+                {
+                    linePts.removeElementAt(0);
+                }
+                linePts.addElement(new ColorPoint(9.0, bps, Color.green));
+
+                for(i = 0; i < linePts.size(); i++)
+                {
+                    cp = (ColorPoint)linePts.elementAt(i);
+                    cp.x = i;
+                }
+                lineChart.repaint();
             }
         }
     }
@@ -277,7 +362,7 @@ GridFTPUsageViewer
         timeLabel.setText("Last Transfer Time: "+ timeS);
 
         bytesLabel.setText("Total Bytes Transfer: " + 
-            new Long(totalBytes).toString());
+            new Long(totalBytes/1024).toString() + "K");
         transferCount++;
         countLabel.setText("Total Files Transfer: " + new Integer(
             transferCount).toString());
