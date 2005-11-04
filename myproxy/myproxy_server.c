@@ -198,7 +198,8 @@ main(int argc, char *argv[])
      * Logging initialized: For here on use myproxy_log functions
      * instead of fprintf() and ilk.
      */
-    myproxy_log("starting at %s", timestamp());
+    myproxy_log("myproxy-server %s starting at %s",
+		myproxy_version(0,0,0), timestamp());
 
     /* Set up signal handling to deal with zombie processes left over  */
     my_signal(SIGCHLD, sig_chld);
