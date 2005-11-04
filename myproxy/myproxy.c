@@ -159,6 +159,8 @@ myproxy_init_client(myproxy_socket_attrs_t *attrs) {
     struct hostent *host_info;
     char *port_range;
     
+    myproxy_debug("MyProxy %s", myproxy_version(0,0,0));
+
     attrs->socket_fd = socket(AF_INET, SOCK_STREAM, 0);
 
     if (attrs->socket_fd == -1) {
