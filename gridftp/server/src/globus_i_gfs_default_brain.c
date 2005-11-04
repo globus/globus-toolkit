@@ -212,33 +212,28 @@ globus_l_brain_read_cb(
             /* the next line is here so that if it was static it will
                 remain static */
             node->type = GFS_DB_NODE_TYPE_DYNAMIC;
-
-            /* update con max */
-            if(con_max != 0)
-            {
-                globus_gfs_config_set_int("data_connection_max", con_diff);
-            }
-            else
-            {
-                globus_gfs_config_inc_int("data_connection_max", con_max);
-            }
+            con_diff = con_max;
             node->current_connection = 0;
             globus_i_gfs_log_message(
-                GLOBUS_I_GFS_LOG_INFO,
+                GLOBUS_I_GFS_LOG_WARN,
                 "A new backend registered, contact string: %s\n",
                 node->host_id);
         }
         else
         {
+            con_diff = con_max - node->max_connection;
             node->max_connection = con_max;
+        }
+        /* it already set to unlimited dont change it */
+        if(globus_gfs_config_get_int("data_connection_max") >= 0)
+        {
+            /* if the new one is unlimited set the cout to reflect that */
             if(con_max == 0)
             {
                 globus_gfs_config_set_int("data_connection_max", -1);
             }
-            /* if not set to unlimited already */
-            else if(globus_gfs_config_get_int("data_connection_max") >= 0)
+            else
             {
-                con_diff = con_max - node->max_connection;
                 globus_gfs_config_inc_int("data_connection_max", con_diff);
             }
             globus_i_gfs_log_message(
@@ -641,11 +636,15 @@ globus_l_gfs_default_brain_release_node(
     globus_i_gfs_brain_node_t *         b_node,
     globus_gfs_brain_reason_t           reason)
 {
+    int                                 dn_count = 0;
+    globus_list_t *                     list;
     void *                              tmp_ptr;
     gfs_l_db_repo_t *                   repo;
     globus_bool_t                       first_error;
+    globus_bool_t                       done;
     globus_result_t                     result;
     gfs_l_db_node_t *                   node;
+    gfs_l_db_node_t *                   tmp_node;
     GlobusGFSName(globus_l_gfs_default_brain_release_node);
 
     node = (gfs_l_db_node_t *) b_node;
@@ -690,6 +689,24 @@ globus_l_gfs_default_brain_release_node(
                     gfs_l_db_static_error_timeout,
                     node);
             }
+            /* re-count everything and set it again in config,
+                we need to recount because a single unlimited sets the
+                value to unlimited.  if we are removing an unlimited it
+                may no longer be unlimited, but it may still be */
+            globus_hashtable_to_list(&repo->node_table, &list);
+            done = GLOBUS_FALSE;
+            while(!globus_list_empty(list) && !done)
+            {
+                tmp_node = (gfs_l_db_node_t *) globus_list_first(list);
+                dn_count += tmp_node->max_connection;
+                if(tmp_node->max_connection < 0)
+                {
+                    done = GLOBUS_TRUE;
+                    dn_count = -1;
+                }
+                list = globus_list_rest(list);
+            }
+            globus_gfs_config_set_int("data_connection_max", dn_count);
         }
         else
         {
