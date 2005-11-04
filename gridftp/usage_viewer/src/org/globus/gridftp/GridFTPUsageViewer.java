@@ -31,6 +31,7 @@ GridFTPUsageViewer
     protected JLabel                    timeLabel;
     protected JLabel                    bytesLabel;
     protected JLabel                    imageLabel;
+    protected JLabel                    bottomL;
     private Hashtable                   imageTable = null;
 
     public
@@ -122,19 +123,21 @@ GridFTPUsageViewer
         lineChart.setTicIncrement(1.0, this.maxY/10.0);
         lineChart.enableDrawPoints(false);
         lineChart.addLine(linePts, Color.green);
+        lineChart.enableTicLabels(false);
+        lineChart.setTitle(new Double(this.maxY).toString());
         mainP.add("Center", this.lineChart);
 
-        String listenStr = new String("listening at: " + addr.toString() +
-            ":"+ new Integer(socket.getLocalPort()).toString());
+        String listenStr = new String("listening on UDP port: " +
+            new Integer(socket.getLocalPort()).toString());
         System.err.println(listenStr);
 
         tmpP = new JPanel();
-        tmpL = new JLabel(listenStr);
+        bottomL = new JLabel(listenStr);
         tmpP.setBorder(
             new CompoundBorder(
                 new EtchedBorder(EtchedBorder.RAISED),
                 new EmptyBorder(1, 1, 1, 1)));
-        tmpP.add(tmpL);
+        tmpP.add(bottomL);
         mainP.add("South", tmpP);
 
         this.updateValues("00:00:00", 0);
@@ -266,6 +269,8 @@ GridFTPUsageViewer
         }
         else
         {
+            String                      suffS;
+            String                      maxYStr;
             ColorPoint                  cp;
             double                      bps;
             while(!this.done)
@@ -280,7 +285,7 @@ GridFTPUsageViewer
                     {
                     }
 
-                    bps = (double)intervalBytes / 1024.0 / 5.0;
+                    bps = (double)intervalBytes / 1024.0;
                     if(bps > this.maxY)
                     {
                         this.maxY = bps + (bps * .1);
@@ -296,11 +301,42 @@ GridFTPUsageViewer
                 }
                 linePts.addElement(new ColorPoint(9.0, bps, Color.green));
 
+                double ym = 0.0;
                 for(i = 0; i < linePts.size(); i++)
                 {
                     cp = (ColorPoint)linePts.elementAt(i);
                     cp.x = i;
+                    if(cp.y > ym) ym = cp.y;
                 }
+
+                if(ym < this.maxY*0.02)
+                {
+                    this.maxY = ym + (ym *.1);
+                    lineChart.setTicIncrement(1.0, this.maxY/10.0);
+                    lineChart.rescale(0.0, 10.0, 0.0, this.maxY);
+                }
+
+                if(this.maxY > 1024.0*1024.0)
+                {
+                    maxYStr = new Double(this.maxY/1024.0/1024.0).toString();
+                    suffS = " GB per Interval";
+                }
+                else if(this.maxY > 1024.0)
+                {
+                    maxYStr = new Double(this.maxY/1024.0).toString();
+                    suffS = " MB per Interval";
+                }
+                else
+                {
+                    maxYStr = new Double(this.maxY).toString();
+                    suffS = " KB per Interval";
+                }
+                ndx = maxYStr.indexOf('.');
+                if(ndx > 0)
+                {
+                    maxYStr = maxYStr.substring(0, ndx);
+                }
+                bottomL.setText("Graph range 0 - " + maxYStr + suffS);
                 lineChart.repaint();
             }
         }
@@ -356,13 +392,44 @@ GridFTPUsageViewer
         String                          timeS,
         long                            nbytes)
     {
+        int                             ndx;
+        String                          suf;
+        String                          bS;
+        double                          tb;
         ImageIcon                       imageI;
 
         totalBytes += nbytes;
         timeLabel.setText("Last Transfer Time: "+ timeS);
 
-        bytesLabel.setText("Total Bytes Transfer: " + 
-            new Long(totalBytes/1024).toString() + "K");
+        if(totalBytes > 1024.0*1024.0*1204.0)
+        {
+            tb = totalBytes /1024.0/1024.0/1024.0;
+            suf = "GB";
+        }
+        else if(totalBytes > 1024.0*1024.0)
+        {
+            tb = totalBytes /1024.0/1024.0;
+            suf = "MB";
+        }
+        else if(totalBytes > 1024.0)
+        {
+            tb = totalBytes / 1024.0;
+            suf = "KB";
+        }
+        else
+        {
+            tb = totalBytes;
+            suf = "B";
+        }
+
+        bS = new Double(tb).toString();
+        ndx = bS.indexOf('.');
+        if(ndx > 0 && bS.length() > ndx+3)
+        {
+            bS = bS.substring(0, ndx+3);
+        }
+
+        bytesLabel.setText("Total Bytes Transfer: " + bS + suf);
         transferCount++;
         countLabel.setText("Total Files Transfer: " + new Integer(
             transferCount).toString());
@@ -382,6 +449,8 @@ GridFTPUsageViewer
     void
     windowActivated(WindowEvent e)
     {
+        mainFrame.repaint();
+        lineChart.repaint();
     }
 
     public
@@ -407,6 +476,8 @@ GridFTPUsageViewer
     void
     windowDeiconified(WindowEvent e)
     {
+        mainFrame.repaint();
+        lineChart.repaint();
     }
 
     public
