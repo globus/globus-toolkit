@@ -4972,7 +4972,6 @@ globus_gridftp_server_control_disconnected(
                 globus_i_guc_data_object_destroy(server, data_obj);
                 if(data_obj == server->data_object)
                 {
-printf("werid DO thing\n");
                     server->data_object = NULL;
                 }
                 break;
