@@ -1135,8 +1135,6 @@ globus_l_gsc_finished_op(
              * writing this.
              *
              * Seems to be fixed (bug 3083)... uncommenting this write.
- 
-            */
             res = globus_l_gsc_final_reply(
                     server_handle,
                     (_FSMSL("421 Server terminated\r\n")));
@@ -1144,6 +1142,7 @@ globus_l_gsc_finished_op(
             {
                 goto err;
             }
+            */
             break;
 
         case GLOBUS_L_GSC_STATE_STOPPING:
@@ -4973,6 +4972,7 @@ globus_gridftp_server_control_disconnected(
                 globus_i_guc_data_object_destroy(server, data_obj);
                 if(data_obj == server->data_object)
                 {
+printf("werid DO thing\n");
                     server->data_object = NULL;
                 }
                 break;
