@@ -449,8 +449,6 @@ gridftp_admin_l_activate()
 */
 
     gridftp_admin_l_init();
-
-    printf("loaded gridftp admin extension\n");
     return 0;
 }
 

@@ -41,3 +41,9 @@ cd client_source
 make
 make install
 
+cd $start_dir
+cd extension_source
+./bootstrap
+./configure --with-flavor=$flavor
+make
+make install

@@ -1343,12 +1343,15 @@ main(
     tmp_s = globus_i_gfs_config_string("extension");
     if(tmp_s != NULL)
     {
-        printf("loading extensxion %s\n", tmp_s);
+        globus_i_gfs_log_message(
+            GLOBUS_I_GFS_LOG_INFO,
+            "loading extension %s\n", tmp_s);
         rc = globus_extension_activate(tmp_s);
         if(rc != 0)
         {
-            printf("error loading extensxion\n");
-
+            globus_i_gfs_log_message(
+                GLOBUS_I_GFS_LOG_ERR,
+                "failed to load loading extension %s\n", tmp_s);
         }
     }
 
