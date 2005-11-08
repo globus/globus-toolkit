@@ -1340,7 +1340,7 @@ main(
         globus_gfs_acl_add_module(&globus_gfs_acl_test_module);
     }
 
-    tmp_s = globus_i_gfs_config_string("wsrf_service");
+    tmp_s = globus_i_gfs_config_string("extension");
     if(tmp_s != NULL)
     {
         printf("loading extensxion %s\n", tmp_s);

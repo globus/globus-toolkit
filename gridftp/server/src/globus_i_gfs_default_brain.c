@@ -214,9 +214,11 @@ globus_l_brain_read_cb(
             node->type = GFS_DB_NODE_TYPE_DYNAMIC;
             con_diff = con_max;
             node->current_connection = 0;
+            node->max_connection = con_max;
             globus_i_gfs_log_message(
                 GLOBUS_I_GFS_LOG_WARN,
-                "A new backend registered, contact string: %s\n",
+                "A new backend registered, contact string: [%s] %s\n",
+                node->repo_name,
                 node->host_id);
         }
         else
@@ -237,8 +239,9 @@ globus_l_brain_read_cb(
                 globus_gfs_config_inc_int("data_connection_max", con_diff);
             }
             globus_i_gfs_log_message(
-                GLOBUS_I_GFS_LOG_INFO,
-                "Backend %s has refreshed its contact information.\n",
+                GLOBUS_I_GFS_LOG_WARN,
+                "Backend [%s] %s has refreshed its contact information.\n",
+                node->repo_name,
                 node->host_id);
         }
 error_cs:
@@ -316,7 +319,7 @@ globus_l_brain_add_server_accept_cb(
         goto error;
     }
     globus_i_gfs_log_message(
-        GLOBUS_I_GFS_LOG_INFO,
+        GLOBUS_I_GFS_LOG_WARN,
         "The brain received a connection\n");
 
    result = globus_xio_register_open(
@@ -522,6 +525,7 @@ globus_l_gfs_default_brain_select_nodes(
     globus_bool_t                       done = GLOBUS_FALSE;
     int                                 best_count;
     int                                 count;
+    int                                 e_count;
     int                                 i;
     globus_i_gfs_brain_node_t **        node_array;
     gfs_l_db_node_t *                   node;
@@ -559,6 +563,7 @@ globus_l_gfs_default_brain_select_nodes(
             goto error;
         }
         count = 0;
+        e_count = count;
         while(!done && count < best_count)
         {
             node = (gfs_l_db_node_t *)globus_priority_q_dequeue(&repo->node_q);
@@ -569,6 +574,10 @@ globus_l_gfs_default_brain_select_nodes(
             else if(node->current_connection >= node->max_connection &&
                 node->max_connection != 0)
             {
+                /* need to up everything for sake of nice clean up*/
+                node->current_connection++;
+                node_array[count] = (globus_i_gfs_brain_node_t *)node;
+                e_count = count + 1;
                 done = GLOBUS_TRUE;
             }
             else
@@ -576,10 +585,12 @@ globus_l_gfs_default_brain_select_nodes(
                 node->current_connection++;
                 node_array[count] = (globus_i_gfs_brain_node_t *)node;
                 count++;
+                e_count = count;
             }
         }
         if(count < min_count)
         {
+            result = globus_error_put(GlobusGFSErrorObjParameter("not enough nodes"));
             goto error_short;
         }
         /* if we are here we were successful and must re-enque nodes with
@@ -599,11 +610,19 @@ globus_l_gfs_default_brain_select_nodes(
 
 error_short:
     /* remove the connectiopn reference */
-    for(i = 0; i < count; i++)
+    for(i = 0; i < e_count; i++)
     {
         node = (gfs_l_db_node_t *) node_array[i];
         node->current_connection--;
         globus_priority_q_enqueue(&repo->node_q, node, node);
+
+        globus_i_gfs_log_message(
+            GLOBUS_I_GFS_LOG_WARN,
+            "Not enough nodes available: [%s] %s: %d, %d\n",
+            node->repo_name,
+            node->host_id,
+            node->current_connection,
+            node->max_connection);
     }
     globus_free(node_array);
 error:
@@ -626,6 +645,7 @@ gfs_l_db_static_error_timeout(
         /* clear the error and let it try again */
         node->error = GLOBUS_FALSE;
         globus_priority_q_enqueue(&repo->node_q, node, node);
+        globus_hashtable_insert(&repo->node_table, node->host_id, node);
     }
     globus_mutex_unlock(&globus_l_brain_mutex);
 }
@@ -640,7 +660,7 @@ globus_l_gfs_default_brain_release_node(
     globus_list_t *                     list;
     void *                              tmp_ptr;
     gfs_l_db_repo_t *                   repo;
-    globus_bool_t                       first_error;
+    globus_bool_t                       first_error = GLOBUS_FALSE;
     globus_bool_t                       done;
     globus_result_t                     result;
     gfs_l_db_node_t *                   node;
@@ -662,6 +682,11 @@ globus_l_gfs_default_brain_release_node(
         switch(reason)
         {
             case GLOBUS_GFS_BRAIN_REASON_ERROR:
+                globus_i_gfs_log_message(
+                    GLOBUS_I_GFS_LOG_WARN,
+                    "Node released with error: [%s] %s\n",
+                    node->repo_name,
+                    node->host_id);
                 first_error = !node->error;
                 node->error = GLOBUS_TRUE;
                 break;
@@ -669,9 +694,17 @@ globus_l_gfs_default_brain_release_node(
             case GLOBUS_GFS_BRAIN_REASON_COMPLETE:
                 first_error = GLOBUS_FALSE;
                 break;
+
+            default:
+                globus_assert(0);
+                break;
         }
         if(node->error)
         {
+            void * tmp_nptr;
+            tmp_nptr = globus_hashtable_remove(
+                &repo->node_table, &node->host_id);
+            assert(tmp_nptr == node || tmp_nptr == NULL);
             if(node->type == GFS_DB_NODE_TYPE_DYNAMIC)
             {
                 if(node->current_connection == 0)
