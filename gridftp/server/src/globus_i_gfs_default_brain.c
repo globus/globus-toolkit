@@ -165,6 +165,13 @@ globus_l_brain_read_cb(
             else if(!isalnum(buffer[i]) && buffer[i] != '.' && buffer[i] != ':')
             {
                 /* log an error */
+                globus_i_gfs_log_result_warn(
+                    "bad ip registered",
+                    result);
+                globus_i_gfs_log_message(
+                    GLOBUS_I_GFS_LOG_WARN,
+                    "bad ip registered %s",
+                    &buffer[1]);
                 goto error;
             }
         }
@@ -205,7 +212,7 @@ globus_l_brain_read_cb(
         { 
             node = (gfs_l_db_node_t*)globus_calloc(1, sizeof(gfs_l_db_node_t));
             node->host_id = cs;
-            node->repo_name = repo->name;
+            node->repo_name = strdup(repo->name);
             node->repo = repo;
             globus_priority_q_enqueue(&repo->node_q, node, node);
             globus_hashtable_insert(&repo->node_table, node->host_id, node);
@@ -674,7 +681,7 @@ globus_l_gfs_default_brain_release_node(
         repo = node->repo;
         node->current_connection--;
         tmp_ptr  = globus_priority_q_remove(&repo->node_q, node);
-        if(tmp_ptr == NULL)
+        if(tmp_ptr == NULL && !node->error)
         {
             result = GlobusGFSErrorGeneric("not a valid node");
             goto error;
@@ -703,7 +710,7 @@ globus_l_gfs_default_brain_release_node(
         {
             void * tmp_nptr;
             tmp_nptr = globus_hashtable_remove(
-                &repo->node_table, &node->host_id);
+                &repo->node_table, node->host_id);
             assert(tmp_nptr == node || tmp_nptr == NULL);
             if(node->type == GFS_DB_NODE_TYPE_DYNAMIC)
             {

@@ -1,5 +1,6 @@
 #! /bin/sh
 
+flavor=$1
 start_dir=`pwd`
 rm -rf service_bindings client_bindings
 
@@ -22,21 +23,21 @@ cp -f $start_dir/service_configure.in service_bindings/configure.in
 
 cd client_bindings
 ./bootstrap
-./configure --with-flavor=gcc32dbg 
+./configure --with-flavor=$flavor
 make
 make install
 
 cd $start_dir
 cd service_bindings
 ./bootstrap
-./configure --with-flavor=gcc32dbg 
+./configure --with-flavor=$flavor
 make
 make install
 
 cd $start_dir
 cd client_source
 ./bootstrap
-./configure --with-flavor=gcc32dbg 
+./configure --with-flavor=$flavor
 make
 make install
 

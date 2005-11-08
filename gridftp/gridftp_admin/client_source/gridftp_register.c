@@ -103,7 +103,7 @@ main(
     res = globus_xio_handle_cntl(
         xio_handle,
         tcp_driver,
-        GLOBUS_XIO_TCP_GET_LOCAL_CONTACT,
+        GLOBUS_XIO_TCP_GET_LOCAL_NUMERIC_CONTACT,
         &local_contact);
     test_res(res);
 
