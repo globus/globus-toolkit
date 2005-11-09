@@ -446,6 +446,8 @@ EOF
 
     $self->nfssync( $pbs_job_script_name );
     $self->nfssync( $pbs_qsub_err_name );
+    $self->nfssync( $description->stdout, 1 );
+    $self->nfssync( $description->stderr, 1 );
     $self->log("submitting job -- $qsub < $pbs_job_script_name $errfile");
     chomp($job_id = `$qsub < $pbs_job_script_name $errfile`);
 
