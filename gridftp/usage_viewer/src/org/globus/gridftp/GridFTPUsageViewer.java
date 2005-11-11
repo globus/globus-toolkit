@@ -147,7 +147,7 @@ GridFTPUsageViewer
         graphThread = new Thread(this);
         graphThread.start();
         mainFrame.setSize(470, 295);
-        mainFrame.addWindowListener(this);
+//        mainFrame.addWindowListener(this);
         mainFrame.setVisible(true);
     }
 
@@ -193,6 +193,13 @@ GridFTPUsageViewer
             TimeZone tz = TimeZone.getDefault();
             hourBump = tz.getRawOffset() / 1000 / 60 / 60;
 
+            try
+            {
+                socket.setSoTimeout(5000);
+            }
+            catch(Exception se)
+            {
+            }
             packet = new DatagramPacket(buf, buf.length);
             while(!this.done)
             {
@@ -260,11 +267,15 @@ GridFTPUsageViewer
                     }
                     this.updateValues(timeS, nbytes);
                 }
+                catch(SocketTimeoutException ste)
+                {
+                }
                 catch(Exception e)
                 {
                     e.printStackTrace();
                     System.err.println(e);
                 }
+                mainFrame.repaint();
             }
         }
         else
@@ -337,7 +348,6 @@ GridFTPUsageViewer
                     maxYStr = maxYStr.substring(0, ndx);
                 }
                 bottomL.setText("Graph range 0 - " + maxYStr + suffS);
-                lineChart.repaint();
             }
         }
     }
@@ -449,7 +459,6 @@ GridFTPUsageViewer
     void
     windowActivated(WindowEvent e)
     {
-        mainFrame.repaint();
         lineChart.repaint();
     }
 
@@ -476,7 +485,6 @@ GridFTPUsageViewer
     void
     windowDeiconified(WindowEvent e)
     {
-        mainFrame.repaint();
         lineChart.repaint();
     }
 

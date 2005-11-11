@@ -35,16 +35,16 @@ AC_SUBST(PACKAGENAME)
 INCLUDEPATH=""
 AC_SUBST(INCLUDEPATH)
 
-OUTPUTHEADERS="sync_writes.h allow_from.h anonymous_group.h GridFTPAdminPortTypeGTWSDLResourceProperties.h GridFTPAdminPortTypeGTWSDLResourcePropertiesType.h GridFTPAdminPortTypeGTWSDLResourcePropertiesType_array.h login_msg_file.h deny_from.h connections_max.h blocksize.h banner.h ipc_deny_from.h allow_anonymous.h open_connections_count.h FrontendStats.h FrontendStatsType.h FrontendStatsType_array.h anonymous_user.h GridFTPAdminService.h GridFTPAdminService_skeleton.h GridFTPAdminService_internal_skeleton.h "
+OUTPUTHEADERS="sync_writes.h allow_from.h anonymous_group.h GridFTPAdminPortTypeGTWSDLResourceProperties.h GridFTPAdminPortTypeGTWSDLResourcePropertiesType.h GridFTPAdminPortTypeGTWSDLResourcePropertiesType_array.h login_msg_file.h deny_from.h connections_max.h backends_registered.h blocksize.h banner.h ipc_deny_from.h allow_anonymous.h open_connections_count.h FrontendStats.h FrontendStatsType.h FrontendStatsType_array.h anonymous_user.h GridFTPAdminService.h GridFTPAdminService_skeleton.h GridFTPAdminService_internal_skeleton.h "
 AC_SUBST(OUTPUTHEADERS)
 
-OUTPUTTYPES="sync_writes.c allow_from.c anonymous_group.c GridFTPAdminPortTypeGTWSDLResourceProperties.c GridFTPAdminPortTypeGTWSDLResourcePropertiesType.c login_msg_file.c deny_from.c connections_max.c blocksize.c banner.c ipc_deny_from.c allow_anonymous.c open_connections_count.c FrontendStats.c FrontendStatsType.c anonymous_user.c GridFTPAdminService_type_registry.c "
+OUTPUTTYPES="sync_writes.c allow_from.c anonymous_group.c GridFTPAdminPortTypeGTWSDLResourceProperties.c GridFTPAdminPortTypeGTWSDLResourcePropertiesType.c login_msg_file.c deny_from.c connections_max.c backends_registered.c blocksize.c banner.c ipc_deny_from.c allow_anonymous.c open_connections_count.c FrontendStats.c FrontendStatsType.c anonymous_user.c GridFTPAdminService_type_registry.c "
 AC_SUBST(OUTPUTTYPES)
 
 OUTPUTCLIENT=""
 AC_SUBST(OUTPUTCLIENT)
 
-OUTPUTTYPESOBJECTS="sync_writes.lo allow_from.lo anonymous_group.lo GridFTPAdminPortTypeGTWSDLResourceProperties.lo GridFTPAdminPortTypeGTWSDLResourcePropertiesType.lo login_msg_file.lo deny_from.lo connections_max.lo blocksize.lo banner.lo ipc_deny_from.lo allow_anonymous.lo open_connections_count.lo FrontendStats.lo FrontendStatsType.lo anonymous_user.lo GridFTPAdminService_type_registry.lo "
+OUTPUTTYPESOBJECTS="sync_writes.lo allow_from.lo anonymous_group.lo GridFTPAdminPortTypeGTWSDLResourceProperties.lo GridFTPAdminPortTypeGTWSDLResourcePropertiesType.lo login_msg_file.lo deny_from.lo connections_max.lo backends_registered.lo blocksize.lo banner.lo ipc_deny_from.lo allow_anonymous.lo open_connections_count.lo FrontendStats.lo FrontendStatsType.lo anonymous_user.lo GridFTPAdminService_type_registry.lo "
 AC_SUBST(OUTPUTTYPESOBJECTS)
 
 OUTPUTCLIENTOBJECTS=""

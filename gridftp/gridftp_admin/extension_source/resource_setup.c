@@ -11,6 +11,7 @@
 #include <sync_writes.h>
 #include <banner.h>
 #include <login_msg_file.h>
+#include <backends_registered.h>
 #include "gridftp_admin.h"
 
 globus_result_t
@@ -123,6 +124,18 @@ gridftpA_l_setup_resource(
         goto error;
     }
 
+    globus_gfs_config_add_cb(&cb_handle, "backends_registered",        gridftpA_l_int_change_cb,        "backends_registered");
+    result = globus_resource_create_property_callback(
+        resource,
+        &backends_registered_qname,
+        &backends_registered_info,
+        gridftpA_l_int_get_cb,
+        gridftpA_l_int_set_cb,
+        cb_handle);
+    if (result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
 
     globus_gfs_config_add_cb(
         &cb_handle, "open_connections_count",
