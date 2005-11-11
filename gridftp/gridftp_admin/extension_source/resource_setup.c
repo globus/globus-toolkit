@@ -10,6 +10,7 @@
 #include <blocksize.h>
 #include <sync_writes.h>
 #include <banner.h>
+#include <fqdn.h>
 #include <login_msg_file.h>
 #include <backends_registered.h>
 #include "gridftp_admin.h"
