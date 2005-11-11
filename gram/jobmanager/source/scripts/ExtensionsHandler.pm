@@ -119,6 +119,10 @@ sub EndTag
 
     if ($#scope == 0)
     {
+        if ($self->{TOTAL_PROCESSES} eq 0)
+        {
+            $self->{TOTAL_PROCESSES} = 1;
+        }
         $self->log("Adding totalprocesses=" . $self->{TOTAL_PROCESSES});
 
         $self->{JOB_DESCRIPTION}->add(
@@ -212,6 +216,8 @@ sub EndTag
                 my $hostType = $self->{HOST_TYPE};
                 my $hostCount = $self->{HOST_COUNT};
                 my $hostNames = $self->{HOST_NAMES};
+                my $cpuCount = $self->{CPU_COUNT};
+                my $cpusPerHost = $self->{CPUS_PER_HOST};
                 my $processCount = $self->{PROCESS_COUNT};
                 my $processesPerHost = $self->{PROCESSES_PER_HOST};
 
@@ -229,11 +235,14 @@ sub EndTag
                     $nodes = "";
                 }
 
-                if (defined $processCount)
+                if ((not defined $cpuCount) and (not defined $cpusPerHost))
                 {
-                    $self->log("Processing processCount\n");
+                    $cpuCount = 1;
+                }
 
-                    $self->{TOTAL_PROCESSES} += $processCount;
+                if (defined $cpuCount)
+                {
+                    $self->log("Processing cpuCount\n");
 
                     if (defined $hostType)
                     {
@@ -243,15 +252,15 @@ sub EndTag
                         {
                             $self->log("Processing hostCount\n");
 
-                            # divide total processes among the nodes
-                            my $ppn = $processCount / $hostCount;
+                            # divide total cpus among the nodes
+                            my $ppn = $cpuCount / $hostCount;
 
                             $nodes .= "$hostCount:$hostType:ppn=$ppn";
                         }
                         else
                         {
-                            # only one node, so it gets all the processes
-                            $nodes .= "$hostType:ppn=$processCount";
+                            # only one node, so it gets all the cpus
+                            $nodes .= "$hostType:ppn=$cpuCount";
                         }
                     }
                     elsif (defined $hostNames)
@@ -259,9 +268,9 @@ sub EndTag
                         my @names = @$hostNames;
                         $self->log("Processing hostName list\n");
 
-                        # divide total processes among the nodes
+                        # divide total cpus among the nodes
                         my $hostCount = $#names + 1;
-                        my $ppn = $processCount / $hostCount;
+                        my $ppn = $cpuCount / $hostCount;
 
                         foreach my $name (@names)
                         {
@@ -273,7 +282,7 @@ sub EndTag
                     {
                         $self->log("Processing hostCount without hostType\n");
 
-                        my $ppn = $processCount / $hostCount;
+                        my $ppn = $cpuCount / $hostCount;
                         $nodes .= "$hostCount:ppn=$ppn";
                     }
                     else
@@ -281,8 +290,73 @@ sub EndTag
                         $self->log("Processing without hostName, hostType, "
                                   ."or hostCount\n");
 
-                        $nodes .= "ppn=$processCount";
+                        $nodes .= "ppn=$cpuCount";
                     }
+                }
+                elsif (defined $cpusPerHost)
+                {
+                    $self->log("Processing cpusPerHost\n");
+
+                    if (defined $hostType)
+                    {
+                        $self->log("Processing hostType\n");
+
+                        if (defined $hostCount)
+                        {
+                            $self->log("Processing hostCount\n");
+
+                            $nodes .= "$hostCount"
+                                   . ":$hostType"
+                                   . ":ppn=$cpusPerHost";
+                        }
+                        else
+                        {
+                            $nodes .= "$hostType:ppn=$cpusPerHost";
+                        }
+                    }
+                    elsif (defined $hostNames)
+                    {
+                        $self->log("Processing hostNames list\n");
+
+                        my @names = @$hostNames;
+
+                        foreach my $name (@names)
+                        {
+                            $nodes .= "$name:ppn=$cpusPerHost+";
+                        }
+                        $nodes =~ s/\+$//;
+                    }
+                    elsif(defined $hostCount)
+                    {
+                        $self->log("Processing hostCount without hostType\n");
+
+                        $nodes .= "$hostCount:ppn=$cpusPerHost";
+                    }
+                    else
+                    {
+                        $self->log("Processing without hostName, hostType, "
+                                  ."or hostCount\n");
+
+                        $nodes .= "ppn=$cpusPerHost";
+                    }
+                }
+
+                $nodes =~ s/\s+//g;
+
+                if ($nodes =~ /\w/)
+                {
+                    $self->log("Adding #PBS -l nodes=$nodes\n");
+
+                    $self->{JOB_DESCRIPTION}->add("nodes", $nodes);
+#$self->{JOB_DESCRIPTION}->save();
+                }
+
+                # handle processCount/processesPerHost
+                if (defined $processCount)
+                {
+                    $self->log("Processing processCount\n");
+
+                    $self->{TOTAL_PROCESSES} += $processCount;
                 }
                 elsif (defined $processesPerHost)
                 {
@@ -298,16 +372,10 @@ sub EndTag
 
                             $self->{TOTAL_PROCESSES}
                                 += ($processesPerHost * $hostCount);
-
-                            $nodes .= "$hostCount"
-                                   . ":$hostType"
-                                   . ":ppn=$processesPerHost";
                         }
                         else
                         {
                             $self->{TOTAL_PROCESSES} += $processesPerHost;
-
-                            $nodes .= "$hostType:ppn=$processesPerHost";
                         }
                     }
                     elsif (defined $hostNames)
@@ -319,10 +387,7 @@ sub EndTag
                         foreach my $name (@names)
                         {
                             $self->{TOTAL_PROCESSES} += $processesPerHost;
-
-                            $nodes .= "$name:ppn=$processesPerHost+";
                         }
-                        $nodes =~ s/\+$//;
                     }
                     elsif(defined $hostCount)
                     {
@@ -330,8 +395,6 @@ sub EndTag
 
                         $self->{TOTAL_PROCESSES}
                             += ($processesPerHost * $hostCount);
-
-                        $nodes .= "$hostCount:ppn=$processesPerHost";
                     }
                     else
                     {
@@ -339,24 +402,15 @@ sub EndTag
                                   ."or hostCount\n");
 
                         $self->{TOTAL_PROCESSES} += $processesPerHost;
-
-                        $nodes .= "ppn=$processesPerHost";
                     }
                 }
-
-                $nodes =~ s/\s+//g;
-
-                $self->log("Adding #PBS -l nodes=$nodes\n");
-
-                $self->{JOB_DESCRIPTION}->add("nodes", $nodes);
-#$self->{JOB_DESCRIPTION}->save();
 
                 # reset values in case we get another resourceAllocationGroup
                 $self->{HOST_TYPE} = undef;
                 $self->{HOST_COUNT} = undef;
                 $self->{HOST_NAMES} = undef;
-                $self->{PROCESS_COUNT} = undef;
-                $self->{PROCESSES_PER_HOST} = undef;
+                $self->{CPU_COUNT} = undef;
+                $self->{CPUS_PER_HOST} = undef;
             }
         }
 
@@ -394,6 +448,16 @@ sub EndTag
 
                     $self->log("New host names list: @$hostNames\n");
                 }
+            }
+            elsif ($currentScope eq 'cpuCount')
+            {
+                $self->log("Parsing cpuCount\n");
+                $self->{CPU_COUNT} = $self->{CDATA};
+            }
+            elsif ($currentScope eq 'cpusPerHost')
+            {
+                $self->log("Parsing cpusPerHost\n");
+                $self->{CPUS_PER_HOST} = $self->{CDATA};
             }
             elsif ($currentScope eq 'processCount')
             {
