@@ -748,9 +748,12 @@ globus_l_gfs_default_brain_release_node(
             assert(tmp_nptr == node || tmp_nptr == NULL);
             if(node->type == GFS_DB_NODE_TYPE_DYNAMIC)
             {
-                if(node->current_connection == 0)
+                if(first_error)
                 {
                     globus_gfs_config_inc_int("backends_registered", -1);
+                }
+                if(node->current_connection == 0)
+                {
                     globus_free(node);
                 }
             }
