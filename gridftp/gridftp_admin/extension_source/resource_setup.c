@@ -227,6 +227,17 @@ gridftpA_l_setup_resource(
         goto error;
     }
 
+    result = globus_resource_create_property_callback(
+        resource,
+        &fqdn_qname,
+        &fqdn_info,
+        gridftpA_l_string_get_cb,
+        gridftpA_l_string_set_cb,
+        "fqdn");
+    if (result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
 
     return GLOBUS_SUCCESS;
 error:
