@@ -115,6 +115,32 @@ gfs_l_db_parse_string_list(
     return list;
 }
 
+
+static
+void
+globus_l_brain_log_socket(
+    globus_xio_handle_t                 handle,
+    char *                              msg)
+{
+    globus_result_t                     res;
+    char *                              peer_contact;
+
+    res = globus_xio_handle_cntl(
+        handle,
+        globus_i_gfs_tcp_driver,
+        GLOBUS_XIO_TCP_GET_REMOTE_NUMERIC_CONTACT,
+        &peer_contact);
+    if(res != GLOBUS_SUCCESS)
+    {
+        peer_contact = strdup("could get peer addr");
+    }
+    
+    globus_i_gfs_log_message(
+        GLOBUS_I_GFS_LOG_WARN,
+        "[%s] failed to register :: %s", peer_contact, msg);
+    globus_free(peer_contact);
+}
+
 static
 void
 globus_l_brain_read_cb(
@@ -134,13 +160,15 @@ globus_l_brain_read_cb(
     char *                              start_str;
     char *                              repo_name = NULL;
     char *                              cs = NULL;
+    GlobusGFSName(globus_l_brain_read_cb);
 
     globus_mutex_lock(&globus_l_brain_mutex);
     {
         if(result != GLOBUS_SUCCESS)
         {
+            globus_l_brain_log_socket(handle, "read_cb");
             globus_i_gfs_log_result_warn(
-                "A connection request to brain failed",
+                "read_cb: A connection request to brain failed",
                 result);
             goto error;
         }
@@ -165,9 +193,7 @@ globus_l_brain_read_cb(
             else if(!isalnum(buffer[i]) && buffer[i] != '.' && buffer[i] != ':')
             {
                 /* log an error */
-                globus_i_gfs_log_result_warn(
-                    "bad ip registered",
-                    result);
+                globus_l_brain_log_socket(handle, "bad_ip");
                 globus_i_gfs_log_message(
                     GLOBUS_I_GFS_LOG_WARN,
                     "bad ip registered %s",
@@ -227,6 +253,7 @@ globus_l_brain_read_cb(
                 "A new backend registered, contact string: [%s] %s\n",
                 node->repo_name,
                 node->host_id);
+            globus_gfs_config_inc_int("backends_registered", 1);
         }
         else
         {
@@ -276,9 +303,6 @@ globus_l_brain_open_server_cb(
 
     if(result != GLOBUS_SUCCESS)
     {
-        globus_i_gfs_log_result_warn(
-            "A connection request to brain failed",
-            result);
         goto error_accept;
     }
     /* XXX todo verify we are ok with the sender */
@@ -301,12 +325,21 @@ globus_l_brain_open_server_cb(
     {
         goto error_read;
     }
+    globus_l_brain_log_socket(handle, "posting a read off the open socket\n");
 
     return;
 
 error_read:
     globus_free(buffer);
 error_accept:
+    globus_i_gfs_log_result_warn(
+        "open_server_cb: A connection request to brain failed",
+        result);
+    globus_xio_register_close(
+        handle,
+        NULL,
+        NULL,
+        NULL);
     return;
 }
 
@@ -321,7 +354,7 @@ globus_l_brain_add_server_accept_cb(
     if(result != GLOBUS_SUCCESS)
     {
         globus_i_gfs_log_result_warn(
-            "A connection request to brain failed",
+            "accept_cb failed: A connection request to brain failed",
             result);
         goto error;
     }
@@ -338,7 +371,7 @@ globus_l_brain_add_server_accept_cb(
     if(result != GLOBUS_SUCCESS)
     {
         globus_i_gfs_log_result_warn(
-            "A connection request to brain failed",
+            "register_open failed: A connection request to brain failed",
             result);
     }
 
@@ -350,7 +383,8 @@ error:
     if(result != GLOBUS_SUCCESS)
     {
         globus_i_gfs_log_result_warn(
-            "A connection request to brain failed",
+            "registering the next accept failed.  "
+            "this will prevent future registration",
             result);
     }
 }
@@ -716,6 +750,7 @@ globus_l_gfs_default_brain_release_node(
             {
                 if(node->current_connection == 0)
                 {
+                    globus_gfs_config_inc_int("backends_registered", -1);
                     globus_free(node);
                 }
             }

@@ -129,6 +129,8 @@ static const globus_l_gfs_config_option_t option_list[] =
     "of anonymous_user will be used.", NULL, NULL,GLOBUS_TRUE, NULL},
  {"pw_file", "pw_file", NULL, "password-file", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Enable cleartext access and authenticate users against this /etc/passwd formatted file.", NULL, NULL,GLOBUS_FALSE, NULL},
+ {"backends_registered", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_INT, 0, NULL,
+    "Number of backends registered.", NULL, NULL,GLOBUS_TRUE, NULL},
  {"data_connection_max", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_INT, 0, NULL,
     "Data node connection count.", NULL, NULL,GLOBUS_TRUE, NULL},
  {"open_connections_count", "open_connections_count", NULL, "open_connections_count", NULL, GLOBUS_L_GFS_CONFIG_INT, 0, NULL,
