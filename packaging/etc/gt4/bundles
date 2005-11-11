@@ -8,6 +8,7 @@ BUNDLE gt4-java-ws-core
         globus_java_ws_core_counter_sample
         globus_java_ws_core_authz_sample
         globus_java_ws_core_registry
+        globus_java_ws_core_deployment
 
 BUNDLE gt4-java-admin
         globus_core

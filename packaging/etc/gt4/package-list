@@ -87,6 +87,7 @@ globus_java_ws_core_management_sample       wsrf/java/core/samples/management
 globus_java_ws_core_counter_sample          wsrf/java/core/samples/counter
 globus_java_ws_core_authz_sample            wsrf/java/core/samples/authzService 
 globus_java_ws_core_registry                wsrf/java/registry/source
+globus_java_ws_core_deployment              wsrf/java/deployment/source
 globus_java_ws_core_pdp                     wsrf/java/pdp/source
 globus_java_ws_core_usage                   wsrf/java/usage/source
 
