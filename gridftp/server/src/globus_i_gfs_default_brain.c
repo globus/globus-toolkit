@@ -137,7 +137,7 @@ globus_l_brain_log_socket(
     
     globus_i_gfs_log_message(
         GLOBUS_I_GFS_LOG_WARN,
-        "[%s] failed to register :: %s", peer_contact, msg);
+        "[%s]  %s", peer_contact, msg);
     globus_free(peer_contact);
 }
 
