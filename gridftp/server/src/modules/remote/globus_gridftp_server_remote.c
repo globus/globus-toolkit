@@ -14,6 +14,8 @@
 
 GlobusDebugDeclare(GLOBUS_GRIDFTP_SERVER_REMOTE);
 
+#define BRAIN_RETRY 4
+
 #define GlobusGFSRemoteDebugPrintf(level, message)                          \
     GlobusDebugPrintf(GLOBUS_GRIDFTP_SERVER_REMOTE, level, message)          
                                                                              
@@ -101,6 +103,8 @@ typedef struct globus_l_gfs_remote_node_info_s
     globus_l_gfs_remote_node_cb         callback;
     void *                              user_arg;
     globus_i_gfs_brain_node_t *         brain_node;
+    int                                 error_count;
+    globus_l_gfs_remote_handle_t *      my_handle;
 } globus_l_gfs_remote_node_info_t;
 
 typedef struct globus_l_gfs_remote_request_s
@@ -189,6 +193,7 @@ globus_l_gfs_remote_node_request_kickout(
     globus_gfs_finished_info_t *        reply,
     void *                              user_arg)
 {
+    globus_bool_t                       callback = GLOBUS_FALSE;
     globus_l_gfs_remote_node_info_t *   node_info;
     GlobusGFSName(globus_l_gfs_remote_node_request_kickout);
     GlobusGFSRemoteDebugEnter();
@@ -206,21 +211,74 @@ globus_l_gfs_remote_node_request_kickout(
         {
             node_info->home_dir = strdup(reply->info.session.home_dir);
         }
+        callback = GLOBUS_TRUE;
     }
     else
     {
         globus_gfs_brain_release_node(
             node_info->brain_node,
             GLOBUS_GFS_BRAIN_REASON_ERROR);
+        node_info->error_count++;
+        if(node_info->error_count >= BRAIN_RETRY)
+        {
+            globus_gfs_log_result(
+                GLOBUS_GFS_LOG_ERR,
+                "no luck after all ipc trys",
+                result);
+            callback = GLOBUS_TRUE;
+        }
+        else
+        {
+            int                             cs_len = 1;
+            globus_i_gfs_brain_node_t **    brain_node_array;
+            globus_gfs_log_result(
+                GLOBUS_GFS_LOG_WARN, 
+                "could not get intially requested node, trying another",
+                result);
+            /* select a new set of nodes */
+            result = globus_gfs_brain_select_nodes(
+                &brain_node_array,
+                &cs_len,
+                NULL, /* XXX if we ever REALLY start using repos we
+                        need to thread the proper name through to here.
+                        an easy fix, just not worth it right now */
+                -1,
+                1,
+                1);
+            if(result != GLOBUS_SUCCESS)
+            {
+                callback = GLOBUS_TRUE;
+            }
+            else
+            {
+                node_info->brain_node = brain_node_array[0];
+                node_info->my_handle->session_info.host_id =
+                    node_info->brain_node->host_id;
+                result = globus_gfs_ipc_handle_obtain(
+                    &node_info->my_handle->session_info,
+                    &globus_gfs_ipc_default_iface,
+                    globus_l_gfs_remote_node_request_kickout,
+                    node_info,
+                    globus_l_gfs_remote_ipc_error_cb,
+                    node_info->my_handle);
+                if(result != GLOBUS_SUCCESS)
+                {
+                    callback = GLOBUS_TRUE;
+                }
+            }
+        }
     }
-    
-    node_info->callback(
-        node_info,
-        result,
-        node_info->user_arg);
-    if(result != GLOBUS_SUCCESS)
-    {
-        globus_free(node_info);
+
+    if(callback)
+    { 
+        node_info->callback(
+            node_info,
+            result,
+            node_info->user_arg);
+        if(result != GLOBUS_SUCCESS)
+        {
+            globus_free(node_info);
+        }
     }
 
     GlobusGFSRemoteDebugExit();
@@ -276,6 +334,7 @@ globus_l_gfs_remote_node_request(
         node_info->node_ndx = i;
         node_info->callback = callback;
         node_info->user_arg = user_arg;
+        node_info->my_handle = my_handle;
 
         my_handle->session_info.host_id = node_info->brain_node->host_id;
         tmp_res = globus_gfs_ipc_handle_obtain(
@@ -451,7 +510,6 @@ globus_l_gfs_ipc_active_cb(
     globus_gfs_finished_info_t *        reply,
     void *                              user_arg)
 {
-    int                                 ndx;
     int                                 i;
     globus_l_gfs_remote_ipc_bounce_t *  bounce_info;
     globus_l_gfs_remote_node_info_t *   node_info;
@@ -493,7 +551,6 @@ globus_l_gfs_ipc_active_cb(
 
         finished_info.info.data.data_arg = bounce_info->node_handle;        
  
-        ndx = 0;
         for(i = 0; i < bounce_info->node_handle->count; i++)
         {
             globus_gfs_data_info_t *    info;
@@ -1156,7 +1213,6 @@ globus_l_gfs_remote_active_kickout(
     }
 
     node_info->bounce = bounce_info;
-    bounce_info->node_handle->nodes[node_info->node_ndx] = node_info;
 
     new_data_info = (globus_gfs_data_info_t *)
         globus_calloc(1, sizeof(globus_gfs_data_info_t));
@@ -1186,6 +1242,7 @@ globus_l_gfs_remote_active_kickout(
     {
         goto error;
     }
+    bounce_info->node_handle->nodes[node_info->node_ndx] = node_info;
     bounce_info->node_ndx++;
     bounce_info->nodes_pending++;
 
@@ -1262,7 +1319,6 @@ globus_l_gfs_remote_passive_kickout(
         goto error;
     }
     node_info->bounce = bounce_info;
-    bounce_info->node_handle->nodes[node_info->node_ndx] = node_info;
 
     result = globus_gfs_ipc_request_passive_data(
         node_info->ipc_handle,
@@ -1274,6 +1330,7 @@ globus_l_gfs_remote_passive_kickout(
         goto error;
     }
     bounce_info->nodes_pending++;
+    bounce_info->node_handle->nodes[node_info->node_ndx] = node_info;
 
     GlobusGFSRemoteDebugExit();
     return;
