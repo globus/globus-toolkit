@@ -14,7 +14,7 @@
 
 GlobusDebugDeclare(GLOBUS_GRIDFTP_SERVER_REMOTE);
 
-#define BRAIN_RETRY 4
+#define BRAIN_RETRY 8
 
 #define GlobusGFSRemoteDebugPrintf(level, message)                          \
     GlobusDebugPrintf(GLOBUS_GRIDFTP_SERVER_REMOTE, level, message)          
