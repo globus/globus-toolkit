@@ -54,11 +54,12 @@ gridftpA_l_string_get_cb(
 
     opt = (char *) arg;
 
-    val = strdup(globus_gfs_config_get_string(qname->local));
+    val = globus_gfs_config_get_string(qname->local);
     if(val == NULL)
     {
-        val = strdup(" ");
+        val = " ";
     }
+    val = strdup(val);
     xsd_string_init_cstr((xsd_string **) property, val);
 }
 

@@ -293,7 +293,7 @@ static const globus_l_gfs_config_option_t option_list[] =
  {"docbook", NULL, NULL, "docbook", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
     NULL /* generate usage suitable for web docs */, NULL, NULL,GLOBUS_FALSE, NULL},
  {"byte_transfer_count", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING,
-    0, NULL, NULL, NULL, NULL,GLOBUS_TRUE, NULL},
+    0, "0", NULL, NULL, NULL,GLOBUS_TRUE, NULL},
  {"file_transfer_count", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_INT,
     0, "0", NULL, NULL, NULL,GLOBUS_TRUE, NULL},
  {"fqdn", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
