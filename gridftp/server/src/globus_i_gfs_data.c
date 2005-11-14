@@ -3730,6 +3730,29 @@ globus_l_gfs_data_end_transfer_kickout(
         "Finished transferring \"%s\".\n",
             ((globus_gfs_transfer_info_t *) op->info_struct)->pathname);
 
+    /* XXX send final byte total to frontends if wasn't already sent */
+    if(op->data_handle->is_mine && 
+        (op->data_handle->info.mode != 'E' || op->writing))
+    {
+        globus_gfs_event_info_t        event_reply;
+        memset(&event_reply, '\0', sizeof(globus_gfs_event_info_t));
+        event_reply.id = op->id;
+        event_reply.recvd_bytes = op->bytes_transferred;
+        event_reply.node_ndx = op->node_ndx;
+
+        event_reply.type = GLOBUS_GFS_EVENT_BYTES_RECVD;
+        if(op->event_callback != NULL)
+        {
+            /* do nothing */
+        }
+        else
+        {
+            globus_gfs_ipc_reply_event(
+                op->ipc_handle,
+                &event_reply);
+        }
+    }
+
     if(disconnect && op->data_handle->is_mine)
     {
         memset(&event_reply, '\0', sizeof(globus_gfs_event_info_t));
@@ -5465,6 +5488,8 @@ globus_gridftp_server_operation_finished(
             data_handle->session_handle = op->session_handle;
             data_handle->remote_data_arg = finished_info->info.data.data_arg;
             data_handle->is_mine = GLOBUS_FALSE;
+            data_handle->info.mode  = 
+                ((globus_gfs_data_info_t *)op->info_struct)->mode;
             data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_VALID;
             finished_info->info.data.data_arg =
                 (void *) globus_handle_table_insert(
@@ -5518,6 +5543,15 @@ globus_gridftp_server_operation_event(
             globus_gridftp_server_begin_transfer(
                 op, event_info->event_mask, event_info->event_arg);
             break;
+        case GLOBUS_GFS_EVENT_BYTES_RECVD:
+            if(!op->data_handle->is_mine)
+            {
+                op->bytes_transferred = event_info->recvd_bytes;
+            }
+            if(op->writing || op->data_handle->info.mode != 'E')
+            {
+                break;
+            }
         default:
             if(op->event_callback != NULL)
             {
