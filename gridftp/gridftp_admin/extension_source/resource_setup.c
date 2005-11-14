@@ -13,6 +13,9 @@
 #include <fqdn.h>
 #include <login_msg_file.h>
 #include <backends_registered.h>
+#include <usage_stats_id.h>
+#include <file_transfer_count.h>
+#include <byte_transfer_count.h>
 #include "gridftp_admin.h"
 
 globus_result_t
@@ -169,6 +172,36 @@ gridftpA_l_setup_resource(
     }
 
     globus_gfs_config_add_cb(
+        &cb_handle, "file_transfer_count",
+        gridftpA_l_int_change_cb, "file_transfer_count");
+    result = globus_resource_create_property_callback(
+        resource,
+        &file_transfer_count_qname,
+        &file_transfer_count_info,
+        gridftpA_l_int_get_cb,
+        gridftpA_l_int_set_cb,
+        cb_handle);
+    if (result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+
+    globus_gfs_config_add_cb(
+        &cb_handle, "byte_transfer_count",
+        gridftpA_l_string_change_cb, "byte_transfer_count");
+    result = globus_resource_create_property_callback(
+        resource,
+        &byte_transfer_count_qname,
+        &byte_transfer_count_info,
+        gridftpA_l_string_get_cb,
+        gridftpA_l_string_set_cb,
+        cb_handle);
+    if (result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+
+    globus_gfs_config_add_cb(
         &cb_handle, "blocksize",
         gridftpA_l_int_change_cb, "blocksize");
     result = globus_resource_create_property_callback(
@@ -235,6 +268,18 @@ gridftpA_l_setup_resource(
         gridftpA_l_string_get_cb,
         gridftpA_l_string_set_cb,
         "fqdn");
+    if (result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+
+    result = globus_resource_create_property_callback(
+        resource,
+        &usage_stats_id_qname,
+        &usage_stats_id_info,
+        gridftpA_l_string_get_cb,
+        gridftpA_l_string_set_cb,
+        "usage_stats_id");
     if (result != GLOBUS_SUCCESS)
     {
         goto error;

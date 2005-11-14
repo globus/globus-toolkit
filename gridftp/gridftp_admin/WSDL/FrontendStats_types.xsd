@@ -22,6 +22,9 @@
     <xsd:element name="login_msg_file" type="xsd:string"/>
     <xsd:element name="backends_registered" type="xsd:int"/>
     <xsd:element name="fqdn" type="xsd:string"/>
+    <xsd:element name="byte_transfer_count" type="xsd:string"/>
+    <xsd:element name="file_transfer_count" type="xsd:int"/>
+    <xsd:element name="usage_stats_id" type="xsd:string"/>
 <xsd:element name="FrontendStats">
     <xsd:complexType><xsd:sequence>
         <xsd:element ref="tns:ipc_deny_from"/>
@@ -38,7 +41,9 @@
         <xsd:element ref="tns:banner"/>
         <xsd:element ref="tns:login_msg_file"/>
         <xsd:element ref="tns:backends_registered"/>
-        <xsd:element ref="tns:fqdn"/>
+        <xsd:element ref="tns:byte_transfer_count"/>
+        <xsd:element ref="tns:file_transfer_count"/>
+        <xsd:element ref="tns:usage_stats_id"/>
     </xsd:sequence></xsd:complexType>
 </xsd:element>
 

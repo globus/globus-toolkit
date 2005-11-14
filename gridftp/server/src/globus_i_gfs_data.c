@@ -5289,6 +5289,7 @@ globus_gridftp_server_finished_transfer(
                 globus_assert(0 && "Invalid state");
                 break;
         }
+        globus_gfs_config_inc_int("file_transfer_count", 1);
     }
     globus_mutex_unlock(&op->session_handle->mutex);
 
