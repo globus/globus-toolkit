@@ -161,6 +161,10 @@ globus_l_gfs_remote_node_release(
         node_info->brain_node,
         release_reason);
     globus_gfs_ipc_close(node_info->ipc_handle, NULL, NULL);
+    if(node_info->cs != NULL)
+    {
+        globus_free(node_info->cs);
+    }
     globus_free(node_info);
 
     GlobusGFSRemoteDebugExit();
@@ -266,6 +270,7 @@ globus_l_gfs_remote_node_request_kickout(
                 {
                     callback = GLOBUS_TRUE;
                 }
+		globus_free(brain_node_array);
             }
         }
     }
@@ -359,6 +364,7 @@ globus_l_gfs_remote_node_request(
             nodes_created++;
         }
     }
+    globus_free(brain_node_array);
     /* if any succeed use them */
     if(result != GLOBUS_SUCCESS && nodes_created == 0)
     {
