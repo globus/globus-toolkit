@@ -3848,6 +3848,7 @@ globus_l_gfs_data_end_transfer_kickout(
             {"bytes", "kilobytes", "megabytes", "gigabytes", "terabytes"}; 
         char *                          str_transferred;
         globus_off_t                    tmp_bytes;
+        double                          remainder = 0.0;
         int                             i = 0;
         
         globus_mutex_lock(&globus_l_gfs_global_counter_lock);
@@ -3857,8 +3858,9 @@ globus_l_gfs_data_end_transfer_kickout(
         }
         globus_mutex_unlock(&globus_l_gfs_global_counter_lock);
     
-        while((i < 5) && (tmp_bytes / 1024))
+        while((i < 5) && (tmp_bytes > 1024))
         {
+            remainder = ((tmp_bytes % 1024) / 1024.0) + (remainder / 1024.0);
             tmp_bytes /= 1024;
             i++;
         }
@@ -3868,9 +3870,10 @@ globus_l_gfs_data_end_transfer_kickout(
             sprintf(
                 str_transferred, 
                 "%.2f %s", 
-                (double) ((double) tmp_bytes / (double) 1024) + (double) tmp_bytes,
+                (double) tmp_bytes + remainder,
                 names[i]);
         }
+        globus_gfs_config_set_ptr("byte_transfer_count", str_transferred);
     }
 
     reply.type = GLOBUS_GFS_OP_TRANSFER;
