@@ -285,6 +285,7 @@ error:
             NULL,
             NULL,
             NULL);
+	globus_free(buffer);
     }
     globus_mutex_unlock(&globus_l_brain_mutex);
 
