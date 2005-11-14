@@ -3868,7 +3868,7 @@ globus_l_gfs_data_end_transfer_kickout(
             sprintf(
                 str_transferred, 
                 "%.2f %s", 
-                (double) ((double) (tmp_bytes % 1024) / 1024) + (double) tmp_bytes,
+                (double) ((double) tmp_bytes / 1024) + (double) tmp_bytes,
                 names[i]);
         }
     }
