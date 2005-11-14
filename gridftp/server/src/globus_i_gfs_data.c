@@ -46,6 +46,8 @@ static globus_gfs_storage_iface_t *     globus_l_gfs_dsi = NULL;
 globus_extension_registry_t             globus_i_gfs_dsi_registry;
 globus_extension_handle_t               globus_i_gfs_active_dsi_handle;
 static globus_bool_t                    globus_l_gfs_data_is_remote_node = GLOBUS_FALSE;
+globus_off_t                            globus_l_gfs_bytes_transferred;
+globus_mutex_t                          globus_l_gfs_global_counter_lock;
 
 typedef enum
 {
@@ -1378,6 +1380,15 @@ globus_i_gfs_data_init()
 
     /* XXX is this is how we want to know this? */
     globus_l_gfs_data_is_remote_node = globus_i_gfs_config_bool("data_node");
+    
+    {
+        char *                          str_transferred;
+
+        str_transferred = (char *) globus_calloc(1, 256);
+        sprintf(str_transferred, "0 bytes");
+        globus_mutex_init(&globus_l_gfs_global_counter_lock, NULL);
+        globus_gfs_config_set_ptr("byte_transfer_count", str_transferred);
+    }
     GlobusGFSDebugExit();
 }
 
@@ -3831,6 +3842,37 @@ globus_l_gfs_data_end_transfer_kickout(
         }            
     }
 
+    /* XXX sc process bytes transferred count */
+    {
+        char *                          names[5] = 
+            {"bytes", "kilobytes", "megabytes", "gigabytes", "terabytes"}; 
+        char *                          str_transferred;
+        globus_off_t                    tmp_bytes;
+        int                             i = 0;
+        
+        globus_mutex_lock(&globus_l_gfs_global_counter_lock);
+        {
+            globus_l_gfs_bytes_transferred += op->bytes_transferred;
+            tmp_bytes = globus_l_gfs_bytes_transferred;
+        }
+        globus_mutex_unlock(&globus_l_gfs_global_counter_lock);
+    
+        while((i < 5) && (tmp_bytes / 1024))
+        {
+            tmp_bytes /= 1024;
+            i++;
+        }
+        str_transferred = globus_gfs_config_get_string("byte_transfer_count");
+        if(str_transferred)
+        {
+            sprintf(
+                str_transferred, 
+                "%.2f %s", 
+                (double) ((tmp_bytes % 1024) / 1024) + tmp_bytes,
+                names[i]);
+        }
+    }
+
     reply.type = GLOBUS_GFS_OP_TRANSFER;
     reply.id = op->id;
     reply.result = op->cached_res;
@@ -5467,6 +5509,11 @@ globus_gridftp_server_operation_event(
             globus_gridftp_server_begin_transfer(
                 op, event_info->event_mask, event_info->event_arg);
             break;
+        case GLOBUS_GFS_EVENT_BYTES_RECVD:
+        if(!op->data_handle->is_mine)
+        {
+            op->bytes_transferred = event_info->recvd_bytes;
+        }
         default:
             if(op->event_callback != NULL)
             {
