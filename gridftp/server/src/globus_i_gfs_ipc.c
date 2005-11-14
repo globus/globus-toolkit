@@ -2861,6 +2861,11 @@ globus_l_gfs_ipc_unpack_reply(
         case GLOBUS_GFS_OP_SEND:
             break;
 
+        case GLOBUS_GFS_OP_TRANSFER:
+            GFSDecodeUInt64(
+                buffer, len, reply->info.transfer.bytes_transferred);
+            break;
+            
         case GLOBUS_GFS_OP_LIST:
             break;
 
@@ -4618,6 +4623,12 @@ globus_gfs_ipc_reply_finished(
                     break;
 
                 case GLOBUS_GFS_OP_LIST:
+                    break;
+
+                case GLOBUS_GFS_OP_TRANSFER:
+                    GFSEncodeUInt64(
+                        buffer, ipc->buffer_size, ptr, 
+                        reply->info.transfer.bytes_transferred);                    
                     break;
 
                 case GLOBUS_GFS_OP_STAT:

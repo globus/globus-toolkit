@@ -244,6 +244,18 @@ typedef struct globus_gfs_session_finished_info_s
 } globus_gfs_session_finished_info_t;
 
 /*
+ *  globus_gfs_session_finished_info_t
+ * 
+ * Contains specific result info for a stat.
+ */
+typedef struct globus_gfs_transfer_finished_info_s
+{
+    /* total bytes transferred for this operation */
+    globus_off_t                        bytes_transferred;
+    
+} globus_gfs_transfer_finished_info_t;
+
+/*
  *  globus_gfs_finished_info_t
  * 
  * Final result info for an operation.
@@ -267,6 +279,7 @@ typedef struct globus_gfs_finished_info_s
         globus_gfs_data_finished_info_t data;
         globus_gfs_cmd_finshed_info_t   command;
         globus_gfs_stat_finished_info_t stat;
+        globus_gfs_transfer_finished_info_t transfer;
     } info;
 } globus_gfs_finished_info_t;
 

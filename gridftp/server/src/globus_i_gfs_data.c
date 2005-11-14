@@ -3879,6 +3879,7 @@ globus_l_gfs_data_end_transfer_kickout(
     reply.type = GLOBUS_GFS_OP_TRANSFER;
     reply.id = op->id;
     reply.result = op->cached_res;
+    reply.info.transfer.bytes_transferred = op->bytes_transferred;
 
     globus_assert(!op->writing ||
         (op->sent_partial_eof == 1 || op->stripe_count == 1 ||
@@ -5426,6 +5427,11 @@ globus_gridftp_server_operation_finished(
     switch(finished_info->type)
     {
         case GLOBUS_GFS_OP_TRANSFER:
+            if(!op->data_handle->is_mine)
+            {
+                op->bytes_transferred += 
+                    finished_info->info.transfer.bytes_transferred;
+            }
             globus_gridftp_server_finished_transfer(
                 op, finished_info->result);
             kickout = GLOBUS_FALSE;
@@ -5512,11 +5518,6 @@ globus_gridftp_server_operation_event(
             globus_gridftp_server_begin_transfer(
                 op, event_info->event_mask, event_info->event_arg);
             break;
-        case GLOBUS_GFS_EVENT_BYTES_RECVD:
-        if(!op->data_handle->is_mine)
-        {
-            op->bytes_transferred = event_info->recvd_bytes;
-        }
         default:
             if(op->event_callback != NULL)
             {

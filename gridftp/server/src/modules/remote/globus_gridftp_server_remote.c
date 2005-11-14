@@ -77,6 +77,7 @@ typedef struct globus_l_gfs_remote_ipc_bounce_s
     int                                 cached_result;
     int                                 sending;
     int                                 events_enabled;
+    globus_off_t                        bytes_transferred;
 } globus_l_gfs_remote_ipc_bounce_t;
 
 typedef void
@@ -610,6 +611,10 @@ globus_l_gfs_ipc_transfer_cb(
     globus_mutex_lock(&my_handle->mutex);
     {
         bounce_info->nodes_pending--;
+
+        bounce_info->bytes_transferred += 
+            reply->info.transfer.bytes_transferred;
+
         if(reply->result != 0)
         {
             bounce_info->cached_result = reply->result;
@@ -627,6 +632,8 @@ globus_l_gfs_ipc_transfer_cb(
             finished_info.code = reply->code;
             finished_info.msg = reply->msg;
             finished_info.result = bounce_info->cached_result;
+            finished_info.info.transfer.bytes_transferred = 
+                bounce_info->bytes_transferred;
             finish = GLOBUS_TRUE;
             op = bounce_info->op;
         
