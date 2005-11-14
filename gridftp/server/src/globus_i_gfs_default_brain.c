@@ -182,7 +182,7 @@ globus_l_brain_read_cb(
             {
                 if(repo_name == NULL)
                 {
-                    repo_name = start_str;
+                    repo_name = strdup(start_str);
                     start_str = &buffer[i+1];
                 }
                 else if(cs == NULL)
