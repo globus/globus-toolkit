@@ -16,6 +16,7 @@ BUNDLE gt4-java-admin
         globus_common_setup
         globus_libtool
         globus_java_container_admin_tools
+        globus_java_container_admin_tools_setup
 
 BUNDLE gt4-java-ws-core-test
         globus_java_ws_core_tools_test
