@@ -570,7 +570,11 @@ globus_l_gfs_ipc_passive_cb(
             bounce_info->op,
             finished_info.result,
             &finished_info);
-        
+
+        for(ndx = 0; ndx < finished_info.info.data.cs_count; ndx++)
+        {
+            globus_free((void *) finished_info.info.data.contact_strings[ndx]);
+        }        
         globus_free(finished_info.info.data.contact_strings);
             
         globus_free(bounce_info);
