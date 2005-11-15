@@ -21,7 +21,7 @@ rem Append ICU and OpenSSL bin, lib and include paths
 set GLOBUS_LOCATION=%GlobusLocation%
 set PATH=%PATH%;%GlobusLocation%\bin;%ICULocation%\bin;%SSLLocation%\out32dll
 set LIB=%LIB%;%ICULocation%\lib;%SSLLocation%\out32dll
-set INCLUDE=%INCLUDE%;%ICULocation%\include;%SSLLocation%\inc32
+set INCLUDE=%INCLUDE%;%GlobusLocation%\include;%ICULocation%\include;%SSLLocation%\inc32
 goto NormalExit
 
 rem Error Exit
