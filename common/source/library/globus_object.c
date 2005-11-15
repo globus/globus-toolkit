@@ -33,12 +33,22 @@ static local_mutex_t                   s_object_ref_mutex;
 
 static int s_object_init (void)
 {
+    #ifdef WIN32
+    local_mutex_init(&s_object_ref_mutex, GLOBUS_NULL);
+    return 0;
+    #else
     return local_mutex_init(&s_object_ref_mutex, GLOBUS_NULL);
+    #endif
 }
 
 static int s_object_destroy (void)
 {
+    #ifdef WIN32
+    local_mutex_destroy(&s_object_ref_mutex);
+    return 0;
+    #else
     return local_mutex_destroy(&s_object_ref_mutex);
+    #endif
 }
 
 #include "version.h"

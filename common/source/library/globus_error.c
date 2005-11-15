@@ -364,14 +364,17 @@ globus_object_t *
 globus_error_get (globus_result_t result)
 {
   globus_object_t * error;
-  int err;
 
   if (! s_error_cache_initialized ) return NULL;
 
   if ( result == GLOBUS_SUCCESS ) return NULL;
 
-  err = local_mutex_lock (&s_result_to_object_mutex);
+  #ifdef WIN32
+  local_mutex_lock (&s_result_to_object_mutex);
+  #else
+  int err = local_mutex_lock (&s_result_to_object_mutex);
   if (err) return NULL;
+  #endif
 
   error = globus_object_cache_remove (&s_result_to_object_mapper,
 				      (void *)result);
@@ -389,14 +392,17 @@ globus_error_peek(
     globus_result_t                     result)
 {
   globus_object_t * error;
-  int err;
 
   if (! s_error_cache_initialized ) return NULL;
 
   if ( result == GLOBUS_SUCCESS ) return NULL;
 
-  err = local_mutex_lock (&s_result_to_object_mutex);
+  #ifdef WIN32
+  local_mutex_lock (&s_result_to_object_mutex);
+  #else
+  int err = local_mutex_lock (&s_result_to_object_mutex);
   if (err) return NULL;
+  #endif
 
   error = globus_object_cache_lookup (&s_result_to_object_mapper,
 				      (void *) result);
@@ -427,12 +433,15 @@ globus_result_t
 globus_error_put (globus_object_t * error)
 {
   globus_result_t new_result;
-  int err;
 
   if (! s_error_cache_initialized || !error) return GLOBUS_SUCCESS;
   
-  err = local_mutex_lock (&s_result_to_object_mutex);
+  #ifdef WIN32
+  local_mutex_lock (&s_result_to_object_mutex);
+  #else
+  int err = local_mutex_lock (&s_result_to_object_mutex);
   if (err) return GLOBUS_SUCCESS;
+  #endif
   globus_i_error_output_error(error);
 
   if ( globus_object_type_match (globus_object_get_type(error),
