@@ -379,6 +379,36 @@ globus_l_gfs_gr_free(
 }
 
 static
+void
+globus_l_gfs_free_session_handle(
+    globus_l_gfs_data_session_t *       session_handle)
+{
+    if(session_handle->dsi != globus_l_gfs_dsi)
+    {
+        globus_extension_release(session_handle->dsi_handle);
+    }
+    if(session_handle->username)
+    {
+        globus_free(session_handle->username);
+    }
+    if(session_handle->real_username)
+    {
+        globus_free(session_handle->real_username);
+    }
+    if(session_handle->home_dir)
+    {
+        globus_free(session_handle->home_dir);
+    }
+    if(session_handle->gid_array)
+    {
+        globus_free(session_handle->gid_array);
+    }
+    globus_handle_table_destroy(&session_handle->handle_table);
+    globus_i_gfs_acl_destroy(&session_handle->acl_handle);
+    globus_free(session_handle);
+}
+
+static
 struct group *
 globus_l_gfs_gr_copy(
     struct group *                      gr)
@@ -2252,25 +2282,8 @@ globus_l_gfs_data_destroy_cb(
         {
             globus_extension_release(session_handle->dsi_handle);
         }
-        if(session_handle->username)
-        {
-            globus_free(session_handle->username);
-        }
-        if(session_handle->gid_array != NULL)
-        {
-            globus_free(session_handle->gid_array);
-        }
-        if(session_handle->home_dir)
-        {
-            globus_free(session_handle->home_dir);
-        }
-        if(session_handle->real_username)
-        {
-            globus_free(session_handle->real_username);
-        }
-        globus_handle_table_destroy(&session_handle->handle_table);
-        globus_i_gfs_acl_destroy(&session_handle->acl_handle);
-        globus_free(session_handle);
+
+        globus_l_gfs_free_session_handle(session_handle);
     }
 
     GlobusGFSDebugExit();
@@ -4873,25 +4886,7 @@ globus_i_gfs_data_session_stop(
             {
                 globus_extension_release(session_handle->dsi_handle);
             }
-            if(session_handle->username)
-            {
-                globus_free(session_handle->username);
-            }
-            if(session_handle->real_username)
-            {
-                globus_free(session_handle->real_username);
-            }
-            if(session_handle->home_dir)
-            {
-                globus_free(session_handle->home_dir);
-            }
-            if(session_handle->gid_array)
-            {
-                globus_free(session_handle->gid_array);
-            }
-            globus_handle_table_destroy(&session_handle->handle_table);
-            globus_i_gfs_acl_destroy(&session_handle->acl_handle);
-            globus_free(session_handle);
+            globus_l_gfs_free_session_handle(session_handle);
         }
     }
 
@@ -6091,7 +6086,11 @@ globus_gridftp_server_finished_session_start(
         op,                                                   
         result,                                               
         &finished_info);
-    
+   
+    if(result != GLOBUS_SUCCESS)
+    { 
+        globus_l_gfs_free_session_handle(op->session_handle);
+    } 
     GlobusGFSDebugExit();
 }    
 
