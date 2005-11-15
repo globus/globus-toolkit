@@ -5412,7 +5412,10 @@ globus_l_gfs_operation_finished_kickout(
     globus_mutex_unlock(&op->session_handle->mutex);
 //    globus_assert(destroy_op);
     globus_l_gfs_data_operation_destroy(op, destroy_session);
-
+    if(destroy_session)
+    {
+        globus_l_gfs_free_session_handle(op->session_handle);
+    }
     globus_free(bounce);
 
     GlobusGFSDebugExit();
@@ -5469,7 +5472,9 @@ globus_gridftp_server_operation_finished(
                 finished_info->info.session.home_dir = 
                     op->session_handle->home_dir;
             }
-
+            if(result != GLOBUS_SUCCESS)
+            {
+            }
             break;
 
         case GLOBUS_GFS_OP_PASSIVE:
