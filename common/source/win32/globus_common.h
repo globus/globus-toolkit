@@ -88,6 +88,7 @@ typedef unsigned char uint8_t;
 #include "globus_error_generic.h"
 #include "globus_extension.h"
 #include "globus_uuid.h"
+#include "globus_options.h"
 
 # if !defined(alloca)
 /* AIX requires this to be the first thing in the file.  */
