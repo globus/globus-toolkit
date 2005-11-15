@@ -172,6 +172,14 @@ globus_l_gfs_remote_node_release(
         {
             globus_free(node_info->cs);
         }
+        if(node_info->username)
+        {
+            globus_free(node_info->username);
+        }
+        if(node_info->home_dir)
+        {
+            globus_free(node_info->home_dir);
+        }
         globus_free(node_info);
     }
 
@@ -1339,7 +1347,8 @@ globus_l_gfs_remote_active_kickout(
     {
         goto error;
     }
-    bounce_info->node_handle->nodes[node_info->node_ndx] = node_info;
+    node_info->node_ndx = bounce_info->node_ndx;
+    bounce_info->node_handle->nodes[bounce_info->node_ndx] = node_info;
     bounce_info->node_ndx++;
     bounce_info->nodes_pending++;
 
@@ -1727,14 +1736,6 @@ globus_l_gfs_remote_session_end(
         goto error;
     }
 
-    if(my_handle->control_node->username)
-    {
-        globus_free(my_handle->control_node->username);
-    }
-    if(my_handle->control_node->home_dir)
-    {
-        globus_free(my_handle->control_node->home_dir);
-    }
     result = globus_l_gfs_remote_node_release(
         my_handle->control_node, my_handle->ipc_release_reason);
     if(result != GLOBUS_SUCCESS)
