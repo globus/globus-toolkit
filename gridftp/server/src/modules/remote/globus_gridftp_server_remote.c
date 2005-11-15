@@ -124,13 +124,13 @@ typedef enum
 } globus_l_gfs_remote_striped_mode_t;
     
               
-#define GlobusGFSErrorOpFinished(_op, _result)                              \
+#define GlobusGFSErrorOpFinished(_op, _type, _result)                       \
 do                                                                          \
 {                                                                           \
     globus_gfs_finished_info_t          _finished_info;                     \
                                                                             \
      memset(&_finished_info, '\0', sizeof(globus_gfs_finished_info_t));     \
-    _finished_info.type = GLOBUS_GFS_OP_FINAL_REPLY;                        \
+    _finished_info.type = _type;                                            \
     _finished_info.code = 0;                                                \
     _finished_info.msg =                                                    \
         globus_error_print_friendly(globus_error_peek(_result));            \
@@ -579,7 +579,8 @@ globus_l_gfs_ipc_passive_cb(
     GlobusGFSRemoteDebugExit();
     return;
 error:
-    GlobusGFSErrorOpFinished(bounce_info->op, ipc_result);
+    GlobusGFSErrorOpFinished(
+        bounce_info->op, GLOBUS_GFS_OP_PASSIVE, ipc_result);
 }
 
 static
@@ -662,7 +663,8 @@ globus_l_gfs_ipc_active_cb(
     GlobusGFSRemoteDebugExit();
     return;
 error:
-    GlobusGFSErrorOpFinished(bounce_info->op, ipc_result);
+    GlobusGFSErrorOpFinished(
+        bounce_info->op, GLOBUS_GFS_OP_ACTIVE, ipc_result);
 }
 
 static
@@ -935,7 +937,8 @@ globus_l_gfs_remote_stat(
 
     if(result != GLOBUS_SUCCESS)
     {
-        GlobusGFSErrorOpFinished(bounce_info->op, result);
+        GlobusGFSErrorOpFinished(
+            bounce_info->op, GLOBUS_GFS_OP_STAT, result);
     }
 
     GlobusGFSRemoteDebugExit();
@@ -967,7 +970,8 @@ globus_l_gfs_remote_command(
 
     if(result != GLOBUS_SUCCESS)
     {
-        GlobusGFSErrorOpFinished(bounce_info->op, result);
+        GlobusGFSErrorOpFinished(
+            bounce_info->op, GLOBUS_GFS_OP_COMMAND, result);
     }
 
     GlobusGFSRemoteDebugExit();
@@ -1019,7 +1023,8 @@ globus_l_gfs_remote_list(
         node_info); 
     if(result != GLOBUS_SUCCESS)
     {
-        GlobusGFSErrorOpFinished(bounce_info->op, result);
+        GlobusGFSErrorOpFinished(
+            bounce_info->op, GLOBUS_GFS_OP_TRANSFER, result);
     }
 
     GlobusGFSRemoteDebugExit();
@@ -1080,7 +1085,8 @@ globus_l_gfs_remote_recv_next(
             }
             else
             {
-                GlobusGFSErrorOpFinished(bounce_info->op, result);
+                GlobusGFSErrorOpFinished(
+                    bounce_info->op, GLOBUS_GFS_OP_TRANSFER, result);
             }
             goto error;
         }
@@ -1177,7 +1183,8 @@ globus_l_gfs_remote_recv(
     return;
 error:
     globus_mutex_unlock(&my_handle->mutex);
-    GlobusGFSErrorOpFinished(bounce_info->op, result);
+    GlobusGFSErrorOpFinished(
+        bounce_info->op, GLOBUS_GFS_OP_TRANSFER, result);
 }
 
 
@@ -1254,7 +1261,8 @@ globus_l_gfs_remote_send(
                 }
                 else
                 {
-                    GlobusGFSErrorOpFinished(bounce_info->op, result);
+                    GlobusGFSErrorOpFinished(
+                        bounce_info->op, GLOBUS_GFS_OP_TRANSFER, result);
                 }
                 goto error;
             }
@@ -1333,7 +1341,8 @@ error:
         bounce_info->nodes_pending == 0 &&
         bounce_info->nodes_obtained == 0)
     {
-        GlobusGFSErrorOpFinished(bounce_info->op, result);
+        GlobusGFSErrorOpFinished(
+            bounce_info->op, GLOBUS_GFS_OP_ACTIVE, result);
     }
     return;
 }
@@ -1372,7 +1381,7 @@ globus_l_gfs_remote_active(
             bounce_info);                    
         if(result != GLOBUS_SUCCESS)
         {
-            GlobusGFSErrorOpFinished(op, result);
+            GlobusGFSErrorOpFinished(op, GLOBUS_GFS_OP_ACTIVE, result);
         }
     }
     while(num_nodes -= tmp_nodes);
@@ -1428,7 +1437,8 @@ error:
         bounce_info->nodes_pending == 0 &&
         bounce_info->nodes_obtained == 0)
     {
-        GlobusGFSErrorOpFinished(bounce_info->op, result);
+        GlobusGFSErrorOpFinished(
+            bounce_info->op, GLOBUS_GFS_OP_PASSIVE, result);
     }
     return;
 }
@@ -1477,7 +1487,7 @@ globus_l_gfs_remote_passive(
     GlobusGFSRemoteDebugExit();
     return;
 error:
-    GlobusGFSErrorOpFinished(op, result);
+    GlobusGFSErrorOpFinished(op, GLOBUS_GFS_OP_PASSIVE, result);
 }
 
 static
@@ -1685,7 +1695,7 @@ globus_l_gfs_remote_session_start(
         my_handle);
     if(result != GLOBUS_SUCCESS || nodes_requesting != 1)
     {
-        GlobusGFSErrorOpFinished(op, result);
+        GlobusGFSErrorOpFinished(op, GLOBUS_GFS_OP_SESSION_START, result);
     }
     
     GlobusGFSRemoteDebugExit();
