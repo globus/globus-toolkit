@@ -53,7 +53,7 @@ main(
     char                                    msg[256];
     globus_size_t                           nbytes;
     int                                     len;
-    char *                                  local_contact;
+    char *                                  local_contact = NULL;
     char *                                  tmp_ptr;
 
     if(argc < 4)
@@ -79,6 +79,12 @@ main(
         res = globus_xio_stack_push_driver(stack, gsi_driver);
         test_res(res);
     }
+    if(strcmp(argv[arg_i], "-rn") == 0)
+    {
+        arg_i++;
+        local_contact = strdup(argv[arg_i]);
+        arg_i++;
+    }
     registry_cs = argv[arg_i];
     arg_i++;
     cs = argv[arg_i];
@@ -100,12 +106,15 @@ main(
     res = globus_xio_open(xio_handle, registry_cs, NULL);
     test_res(res);
 
-    res = globus_xio_handle_cntl(
-        xio_handle,
-        tcp_driver,
-        GLOBUS_XIO_TCP_GET_LOCAL_NUMERIC_CONTACT,
-        &local_contact);
-    test_res(res);
+    if(local_contact == NULL)
+    {
+        res = globus_xio_handle_cntl(
+            xio_handle,
+            tcp_driver,
+            GLOBUS_XIO_TCP_GET_LOCAL_NUMERIC_CONTACT,
+            &local_contact);
+        test_res(res);
+    }
 
     tmp_ptr = strchr(local_contact, ':');
     assert(tmp_ptr != NULL);
