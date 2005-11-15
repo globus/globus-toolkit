@@ -181,12 +181,12 @@ globus_l_brain_read_cb(
             {
                 if(repo_name == NULL)
                 {
-                    repo_name = strdup(start_str);
+                    repo_name = start_str;
                     start_str = &buffer[i+1];
                 }
                 else if(cs == NULL)
                 {
-                    cs = strdup(start_str);
+                    cs = start_str;
                 }
             }
             else if(!isalnum(buffer[i]) && buffer[i] != '.' && buffer[i] != ':')
@@ -236,8 +236,8 @@ globus_l_brain_read_cb(
         if(node == NULL)
         { 
             node = (gfs_l_db_node_t*)globus_calloc(1, sizeof(gfs_l_db_node_t));
-            node->host_id = cs;
-            node->repo_name = strdup(repo->name);
+            node->host_id = strdup(cs);
+            node->repo_name = strdup(repo_name);
             node->repo = repo;
             globus_priority_q_enqueue(&repo->node_q, node, node);
             globus_hashtable_insert(&repo->node_table, node->host_id, node);
@@ -284,7 +284,7 @@ error:
             NULL,
             NULL,
             NULL);
-	globus_free(buffer);
+	    globus_free(buffer);
     }
     globus_mutex_unlock(&globus_l_brain_mutex);
 
@@ -484,7 +484,7 @@ globus_l_gfs_default_brain_init()
 
         default_repo = (gfs_l_db_repo_t *) globus_calloc(
             1, sizeof(gfs_l_db_repo_t));
-        default_repo->name = GFS_DB_REPO_NAME;
+        default_repo->name = strdup(GFS_DB_REPO_NAME);
         gfs_l_db_default_repo = default_repo;
         globus_priority_q_init(&default_repo->node_q, gfs_l_db_node_cmp);
 
@@ -498,7 +498,7 @@ globus_l_gfs_default_brain_init()
             node =(gfs_l_db_node_t *)globus_calloc(1, sizeof(gfs_l_db_node_t));
 
             node->host_id = (char *) globus_list_first(list);
-            node->repo_name = default_repo->name;
+            node->repo_name = strdup(default_repo->name);
             node->max_connection = 0;
             node->current_connection = 0;
             node->error = GLOBUS_FALSE;
@@ -754,6 +754,8 @@ globus_l_gfs_default_brain_release_node(
                 }
                 if(node->current_connection == 0)
                 {
+                    globus_free(node->repo_name);
+                    globus_free(node->host_id);
                     globus_free(node);
                 }
             }
