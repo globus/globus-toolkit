@@ -98,18 +98,17 @@ gfs_l_db_parse_string_list(
     {
         return NULL;
     }
-    tmp_str = strdup(str_list);
+    
+    tmp_str = globus_libc_strdup(str_list);
     last_str = tmp_str;
-    p = strchr(tmp_str, ',');
-    while(p != NULL)
+    while((p = strchr(last_str, ',')) != NULL)
     {
-        *tmp_str = '\0';
+        *p = '\0';
         globus_list_insert(&list, strdup(last_str));
-        p++;
-        last_str = p;
-        p = strchr(p, ',');
+        last_str = p + 1;
     }
     globus_list_insert(&list, strdup(last_str));
+    
     globus_free(tmp_str);
 
     return list;

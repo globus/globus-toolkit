@@ -2259,7 +2259,6 @@ globus_l_gfs_ipc_handle_connect(
     globus_bool_t                       allowed_to_connect = GLOBUS_TRUE;
     globus_result_t                     result;
     globus_i_gfs_ipc_handle_t *         ipc;
-    globus_gfs_ipc_request_t *          request;
     globus_xio_attr_t                   attr;
     int                                 time;
     globus_reltime_t                    timeout;
@@ -2425,7 +2424,6 @@ globus_l_gfs_ipc_handle_connect(
 open_error:
 handle_error:
 ipc_error:
-    globus_free(request);
 
     GlobusGFSDebugExitWithError();
     return result;
