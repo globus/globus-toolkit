@@ -403,6 +403,10 @@ globus_l_gfs_free_session_handle(
     {
         globus_free(session_handle->gid_array);
     }
+    if(session_handle->real_username)
+    {
+        globus_free(session_handle->real_username);
+    }
     globus_handle_table_destroy(&session_handle->handle_table);
     globus_i_gfs_acl_destroy(&session_handle->acl_handle);
     globus_free(session_handle);
@@ -1543,22 +1547,7 @@ globus_l_gfs_data_operation_destroy(
         {
             globus_extension_release(op->session_handle->dsi_handle);
         }
-        if(op->session_handle->username)
-        {
-            globus_free(op->session_handle->username);
-        }
-        if(op->session_handle->gid_array != NULL)
-        {
-            globus_free(op->session_handle->gid_array);
-        }
-        if(op->session_handle->home_dir)
-        {
-            globus_free(op->session_handle->home_dir);
-        }
-        if(op->session_handle->real_username)
-        {
-            globus_free(op->session_handle->real_username);
-        }
+        globus_l_gfs_free_session_handle(op->session_handle);
         globus_handle_table_destroy(&op->session_handle->handle_table);
         globus_i_gfs_acl_destroy(&op->session_handle->acl_handle);
         globus_free(op->session_handle);
@@ -5412,10 +5401,6 @@ globus_l_gfs_operation_finished_kickout(
     globus_mutex_unlock(&op->session_handle->mutex);
 //    globus_assert(destroy_op);
     globus_l_gfs_data_operation_destroy(op, destroy_session);
-    if(destroy_session)
-    {
-        globus_l_gfs_free_session_handle(op->session_handle);
-    }
     globus_free(bounce);
 
     GlobusGFSDebugExit();
@@ -5474,6 +5459,7 @@ globus_gridftp_server_operation_finished(
             }
             if(result != GLOBUS_SUCCESS)
             {
+                op->session_handle->ref--;
             }
             break;
 
