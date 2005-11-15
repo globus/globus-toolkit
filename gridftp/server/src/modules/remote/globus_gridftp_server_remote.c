@@ -339,7 +339,8 @@ globus_l_gfs_remote_node_request(
     int                                 i;
     globus_i_gfs_brain_node_t **        brain_node_array;
     int                                 cs_len;
-    int                                 nodes_created;
+    int                                 nodes_created = 0;
+    int                                 ndx_offset = 0;
     globus_result_t                     result = GLOBUS_SUCCESS;
     globus_result_t                     tmp_res;
     globus_l_gfs_remote_node_info_t *   node_info;
@@ -350,6 +351,12 @@ globus_l_gfs_remote_node_request(
     if(!callback)
     {
         goto error;
+    }
+
+    nodes_requested = *num_nodes;
+    if(nodes_requested == 0)
+    {
+        nodes_requested = my_handle->max_nodes;
     }
 
     if(my_handle->control_node && !my_handle->control_used_for_data)
@@ -363,7 +370,8 @@ globus_l_gfs_remote_node_request(
         bounce->user_arg = user_arg;
 
         my_handle->control_used_for_data = GLOBUS_TRUE;
-        *num_nodes = 1; 
+        nodes_created = 1;
+        ndx_offset = 1;
         
         result = globus_callback_register_oneshot(
             NULL,
@@ -374,69 +382,65 @@ globus_l_gfs_remote_node_request(
         {
             goto error;
         }
-
-        return GLOBUS_SUCCESS;
+    }
+    nodes_requested -= nodes_created;
+    
+    if(nodes_requested > 0)
+    {    
+        /* select a new set of nodes */
+        result = globus_gfs_brain_select_nodes(
+            &brain_node_array,
+            &cs_len,
+            repo_name,
+            -1,
+            1,
+            nodes_requested);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error;
+        }
+    
+        result = GLOBUS_SUCCESS;
+        for(i = 0; i < cs_len; i++)
+        {
+            node_info = (globus_l_gfs_remote_node_info_t *)
+                globus_calloc(1, sizeof(globus_l_gfs_remote_node_info_t));
+            node_info->brain_node = brain_node_array[i];
+            node_info->node_ndx = i + ndx_offset;
+            node_info->callback = callback;
+            node_info->user_arg = user_arg;
+            node_info->my_handle = my_handle;
+    
+            my_handle->session_info.host_id = node_info->brain_node->host_id;
+            tmp_res = globus_gfs_ipc_handle_obtain(
+                &my_handle->session_info,
+                &globus_gfs_ipc_default_iface,
+                globus_l_gfs_remote_node_request_kickout,
+                node_info,
+                globus_l_gfs_remote_ipc_error_cb,
+                my_handle);
+            if(tmp_res != GLOBUS_SUCCESS)
+            {
+                result = tmp_res;
+                /* TODO: log a warning that on eof the guys didn't work,
+                    and tell the brain about it */
+                globus_gfs_brain_release_node(
+                    node_info->brain_node,
+                    GLOBUS_GFS_BRAIN_REASON_ERROR);
+            }
+            else
+            {
+                nodes_created++;
+            }
+        }
+        globus_free(brain_node_array);
+        /* if any succeed use them */
+        if(result != GLOBUS_SUCCESS && nodes_created == 0)
+        {
+            goto error_connect;
+        }
     }
     
-    nodes_requested = *num_nodes;
-    if(nodes_requested == 0)
-    {
-        nodes_requested = my_handle->max_nodes;
-    }
-
-    /* select a new set of nodes */
-    result = globus_gfs_brain_select_nodes(
-        &brain_node_array,
-        &cs_len,
-        repo_name,
-        -1,
-        1,
-        nodes_requested);
-    if(result != GLOBUS_SUCCESS)
-    {
-        goto error;
-    }
-
-    nodes_created = 0;
-    result = GLOBUS_SUCCESS;
-    for(i = 0; i < cs_len; i++)
-    {
-        node_info = (globus_l_gfs_remote_node_info_t *)
-            globus_calloc(1, sizeof(globus_l_gfs_remote_node_info_t));
-        node_info->brain_node = brain_node_array[i];
-        node_info->node_ndx = i;
-        node_info->callback = callback;
-        node_info->user_arg = user_arg;
-        node_info->my_handle = my_handle;
-
-        my_handle->session_info.host_id = node_info->brain_node->host_id;
-        tmp_res = globus_gfs_ipc_handle_obtain(
-            &my_handle->session_info,
-            &globus_gfs_ipc_default_iface,
-            globus_l_gfs_remote_node_request_kickout,
-            node_info,
-            globus_l_gfs_remote_ipc_error_cb,
-            my_handle);
-        if(tmp_res != GLOBUS_SUCCESS)
-        {
-            result = tmp_res;
-            /* TODO: log a warning that on eof the guys didn't work,
-                and tell the brain about it */
-            globus_gfs_brain_release_node(
-                node_info->brain_node,
-                GLOBUS_GFS_BRAIN_REASON_ERROR);
-        }
-        else
-        {
-            nodes_created++;
-        }
-    }
-    globus_free(brain_node_array);
-    /* if any succeed use them */
-    if(result != GLOBUS_SUCCESS && nodes_created == 0)
-    {
-        goto error_connect;
-    }
     *num_nodes = nodes_created;
 
     GlobusGFSRemoteDebugExit();
@@ -561,11 +565,12 @@ globus_l_gfs_ipc_passive_cb(
                 }
                 ndx++;
             }
-            globus_assert(ndx == finished_info.info.data.cs_count);
-            globus_free(bounce_info->node_handle->nodes);
-            bounce_info->node_handle->nodes = node_array;
-            bounce_info->node_handle->count = ndx;
         }
+        globus_assert(ndx == finished_info.info.data.cs_count);
+        globus_free(bounce_info->node_handle->nodes);
+        bounce_info->node_handle->nodes = node_array;
+        bounce_info->node_handle->count = ndx;
+
         globus_gridftp_server_operation_finished(
             bounce_info->op,
             finished_info.result,

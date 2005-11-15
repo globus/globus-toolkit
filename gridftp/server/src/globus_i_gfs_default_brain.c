@@ -548,8 +548,19 @@ globus_l_gfs_default_brain_available(
     const char *                        repo_name,
     int *                               count)
 {
-    *count = globus_priority_q_size(&gfs_l_db_default_repo->node_q);
-
+    int                                 size;
+    int                                 max;
+    
+    max = globus_i_gfs_config_int("repo_count");
+    size = globus_priority_q_size(&gfs_l_db_default_repo->node_q);
+    if(max > 0)
+    {
+        *count = (max > size) ? size : max;
+    }
+    else
+    {
+        *count = size;
+    }
     return GLOBUS_SUCCESS;
 }
 
