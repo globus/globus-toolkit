@@ -33,8 +33,7 @@ main(
     xsd_QName                           element_name;
     wsa_EndpointReferenceType *         epr;
     char *                              filename;
-    wsrp_GetResourcePropertyResponseType *
-                                        response;
+    wsrp_GetResourcePropertyResponseType * response;
     globus_soap_message_attr_t          attr = NULL;
 
     if(argc < 3)
@@ -49,18 +48,17 @@ main(
     globus_module_activate(GLOBUS_SOAP_MESSAGE_MODULE);
     globus_module_activate(GRIDFTPADMINSERVICE_MODULE);
 
-    element_name.Namespace = "GridFTPAdmin";
-    element_name.local = "GridFTPAdmin";
+    element_name.Namespace = "http://docs.oasis-open.org/wsrf/2004/06/wsrf-WS-ServiceGroup-1.2-draft-01.xsd";
+    element_name.local = "MemberServiceEPR";
 
-   globus_soap_message_attr_init(&attr);
+    globus_soap_message_attr_init(&attr);
 
-        globus_soap_message_attr_set(
-                attr,
-                GLOBUS_SOAP_MESSAGE_AUTHZ_METHOD_KEY,
-                NULL,
-                NULL,
-                (void *) GLOBUS_SOAP_MESSAGE_AUTHZ_NONE);
-
+    globus_soap_message_attr_set(
+            attr,
+            GLOBUS_SOAP_MESSAGE_AUTHZ_METHOD_KEY,
+            NULL,
+            NULL,
+            (void *) GLOBUS_SOAP_MESSAGE_AUTHZ_NONE);
     result = GridFTPAdminService_client_init(&client_handle, attr, NULL);
     gmon_test_result(result);
 
@@ -73,13 +71,13 @@ main(
     gmon_test_result(result);
 
     result = wsa_EndpointReferenceType_deserialize(
-        &element_name,
+        /*&element_name, */
+        NULL,
         epr,
         soap_handle,
         0);
     gmon_test_result(result);
     globus_soap_message_handle_destroy(soap_handle);
-
     result = GridFTPAdminPortType_GetResourceProperty_epr(
         client_handle,
         epr,

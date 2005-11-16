@@ -39,6 +39,7 @@ main(
     wsrp_SetResourcePropertiesType_choice *
                                         SetResourcePropertiesType_choice;
     xsd_any *                           any;
+    globus_soap_message_attr_t          attr = NULL;
 
     if(argc < 4)
     {
@@ -55,7 +56,15 @@ main(
     element_name.Namespace = "GridFTPAdmin";
     element_name.local = "GridFTPAdmin";
 
-    result = GridFTPAdminService_client_init(&client_handle, NULL, NULL);
+    globus_soap_message_attr_init(&attr);
+    globus_soap_message_attr_set(
+            attr,
+            GLOBUS_SOAP_MESSAGE_AUTHZ_METHOD_KEY,
+            NULL,
+            NULL,
+            (void *) GLOBUS_SOAP_MESSAGE_AUTHZ_NONE);
+
+    result = GridFTPAdminService_client_init(&client_handle, attr, NULL);
     gmon_test_result(result);
 
     result = globus_soap_message_handle_init_from_file(
@@ -67,7 +76,7 @@ main(
     gmon_test_result(result);
 
     result = wsa_EndpointReferenceType_deserialize(
-        &element_name,
+        NULL,
         epr,
         soap_handle,
         0);
