@@ -5,7 +5,7 @@ tree=GlobusHEAD
 if [ $# -lt 5 ]; then
    echo Usage: $0 dest admin start build status [log]
    echo where
-   echo "    dest   = tinderbox destination email address"
+   echo "    dest   = tinderbox destination URL"
    echo "    admin  = The admin contact for this build"
    echo "    start  = startime in perl -e "print time" format"
    echo "    build  = buildname to be used in tinderbox display"
@@ -17,6 +17,7 @@ if [ $# -lt 5 ]; then
 fi
 
 cat > tindermail.$$ << EOF
+
 tinderbox: administrator: $2
 tinderbox: tree: $tree
 tinderbox: starttime: $3
@@ -31,4 +32,5 @@ if [ x"$6" != "x" ]; then
    cat $6 >> tindermail.$$
 fi
 
-mail -s tinderbox $1 < tindermail.$$
+./tinderhttp.pl $1 tindermail.$$
+# mail -s tinderbox $1 < tindermail.$$
