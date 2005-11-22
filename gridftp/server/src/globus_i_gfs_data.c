@@ -3531,7 +3531,7 @@ globus_l_gfs_data_begin_cb(
                 globus_i_gfs_log_message(
                     GLOBUS_I_GFS_LOG_WARN,
                     "Buffer size may not be properly set: %s\n",
-                    globus_error_print_friendly(globus_error_get(res)));
+                    globus_error_print_friendly(globus_error_peek(res)));
             }
             if(op->writing)
             {
@@ -3548,16 +3548,24 @@ globus_l_gfs_data_begin_cb(
             }
             else
             {
-                if(sndbuf != op->data_handle->info.tcp_bufsize
-                    && res == GLOBUS_SUCCESS)
+                if(res != GLOBUS_SUCCESS)
                 {
                     globus_i_gfs_log_message(
                         GLOBUS_I_GFS_LOG_WARN,
-                        "SEND buffer size may not be properly set.  "
-                        "Requested size = %d, actualy size = %d\n",
-                        op->data_handle->info.tcp_bufsize, sndbuf);
+                        "Request to get socket buffer size failed\n");
                 }
-                op->data_handle->info.tcp_bufsize = sndbuf;
+                else
+                {
+                    if(sndbuf != op->data_handle->info.tcp_bufsize)
+                    {
+                        globus_i_gfs_log_message(
+                            GLOBUS_I_GFS_LOG_WARN,
+                            "SEND buffer size may not be properly set.  "
+                            "Requested size = %d, actualy size = %d\n",
+                            op->data_handle->info.tcp_bufsize, sndbuf);
+                    }
+                    op->data_handle->info.tcp_bufsize = sndbuf;
+                }
             }
 
             globus_i_gfs_log_message(
