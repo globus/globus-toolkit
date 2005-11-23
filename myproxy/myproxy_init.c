@@ -28,6 +28,8 @@ static char usage[] = \
 "       -s | --pshost          <hostname> Hostname of the myproxy-server\n"
 "                                         Can also set MYPROXY_SERVER env. var.\n"
 "       -p | --psport          <port #>   Port of the myproxy-server\n"
+"       -C | --certfile        <filename> Certificate file name\n"
+"       -y | --keyfile         <filename> Key file name\n"
 "       -a | --allow_anonymous_retrievers Allow credentials to be retrieved\n"
 "                                         with just username/passphrase\n"
 "       -A | --allow_anonymous_renewers   Allow credentials to be renewed by\n"
@@ -55,6 +57,8 @@ struct option long_options[] =
   {"help",                  no_argument, NULL, 'h'},
   {"pshost",   	      required_argument, NULL, 's'},
   {"psport",          required_argument, NULL, 'p'},
+  {"certfile",        required_argument, NULL, 'C'},
+  {"keyfile",         required_argument, NULL, 'y'},
   {"cred_lifetime",   required_argument, NULL, 'c'},
   {"proxy_lifetime",  required_argument, NULL, 't'},
   {"usage",                 no_argument, NULL, 'u'},
@@ -77,11 +81,13 @@ struct option long_options[] =
 };
 
 /*colon following an option indicates option takes an argument */
-static char short_options[] = "uhs:p:t:c:l:vVndr:R:xXaAk:K:SL";
+static char short_options[] = "uhs:p:t:c:y:C:l:vVndr:R:xXaAk:K:SL";
 
 static char version[] =
 "myproxy-init version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
 
+static char *certfile               = NULL;	/* certificate file name */
+static char *keyfile                = NULL;	/* key file name */
 static int use_empty_passwd = 0;
 static int dn_as_username = 0;
 static int read_passwd_from_stdin = 0;
@@ -175,7 +181,7 @@ main(int argc, char *argv[])
 	    (unsigned)getuid(), (unsigned)getpid());
 
     /* Run grid-proxy-init to create a proxy */
-    if (grid_proxy_init(cred_lifetime, 0, 0, proxyfile) != 0) {
+    if (grid_proxy_init(cred_lifetime, certfile, keyfile, proxyfile) != 0) {
         fprintf(stderr, "grid-proxy-init failed\n");
         goto cleanup;
     }
@@ -334,6 +340,12 @@ init_arguments(int argc,
 	    break;
 	case 'p': 	/* psport */
 	    attrs->psport = atoi(optarg);
+	    break;
+	case 'C':		/* credential file name */
+	    certfile = strdup(optarg);
+	    break;
+	case 'y':		/* key file name */
+	    keyfile = strdup(optarg);
 	    break;
 	case 'u': 	/* print help and exit */
 	    fprintf(stderr, usage);
@@ -495,7 +507,8 @@ grid_proxy_init(int seconds,
 		const char *cert, const char *key, const char *outfile) {
 
     int rc;
-    char command[128];
+    char *command;
+    int cmdlen;
     int hours;
     char *proxy_mode;
     int old=0;
@@ -507,6 +520,12 @@ grid_proxy_init(int seconds,
 	old=1;
     }
     
+    cmdlen = 200;
+    if (cert) cmdlen += strlen(cert);
+    if (key) cmdlen += strlen(key);
+    if (outfile) cmdlen += strlen(outfile);
+    command = (char *)malloc(cmdlen);
+
     sprintf(command, "grid-proxy-init -verify -hours %d%s%s%s%s%s%s%s%s%s",
 	    hours,
 	    cert ? " -cert " : "",
@@ -518,6 +537,7 @@ grid_proxy_init(int seconds,
 	    read_passwd_from_stdin ? " -pwstdin" : "",
 	    verbose ? " -debug" : "", old ? " -old" : "");
     rc = system(command);
+    free(command);
 
     return rc;
 }
