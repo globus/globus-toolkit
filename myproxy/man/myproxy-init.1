@@ -211,6 +211,16 @@ non-interactively, there may be no associated tty.  Specifying this
 option tells the command to read passphrases from standard input
 without prompts or confirmation.
 .TP
+.B -L, --local_proxy
+In addition to storing a proxy credential on the
+.BR myproxy-server (8)
+with lifetime set by
+.B --cred_lifetime
+(default 1 week),
+create a local proxy credential with lifetime set by
+.B --proxy_lifetime
+(default 12 hours).
+.TP
 .B -n, --no_passphrase
 Don't prompt for a credential passphrase.
 Store credentials without a credential passphrase, 

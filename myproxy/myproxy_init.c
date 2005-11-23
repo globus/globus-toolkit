@@ -47,6 +47,7 @@ static char usage[] = \
 "                                         instead of the LOGNAME env. var.\n"
 "       -k | --credname        <name>     Specifies credential name\n"
 "       -K | --creddesc        <desc>     Specifies credential description\n"
+"       -L | --local_proxy                Create a local proxy credential\n"
 "\n";
 
 struct option long_options[] =
@@ -71,11 +72,12 @@ struct option long_options[] =
   {"credname",	      required_argument, NULL, 'k'},
   {"creddesc",	      required_argument, NULL, 'K'},
   {"stdin_pass",            no_argument, NULL, 'S'},
+  {"local_proxy",           no_argument, NULL, 'L'},
   {0, 0, 0, 0}
 };
 
 /*colon following an option indicates option takes an argument */
-static char short_options[] = "uhs:p:t:c:l:vVndr:R:xXaAk:K:S";
+static char short_options[] = "uhs:p:t:c:l:vVndr:R:xXaAk:K:SL";
 
 static char version[] =
 "myproxy-init version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
@@ -83,13 +85,15 @@ static char version[] =
 static int use_empty_passwd = 0;
 static int dn_as_username = 0;
 static int read_passwd_from_stdin = 0;
+static int create_local_proxy = 0;
 static int verbose = 0;
 
 /* Function declarations */
 int init_arguments(int argc, char *argv[], 
 		    myproxy_socket_attrs_t *attrs, myproxy_request_t *request, int *cred_lifetime);
 
-int grid_proxy_init(int hours, const char *proxyfile);
+int grid_proxy_init(int seconds,
+		    const char *cert, const char *key, const char *outfile);
 
 int grid_proxy_destroy(const char *proxyfile);
 
@@ -100,11 +104,12 @@ main(int argc, char *argv[])
 {    
     int cred_lifetime, hours;
     float days;
-    char *pshost; 
+    char *pshost = NULL;
     char proxyfile[MAXPATHLEN];
     char *request_buffer = NULL;
     int requestlen;
     int cleanup_user_proxy = 0;
+    char *x509_user_proxy = NULL;
 
     myproxy_socket_attrs_t *socket_attrs;
     myproxy_request_t      *client_request;
@@ -151,6 +156,8 @@ main(int argc, char *argv[])
 	socket_attrs->psport = MYPROXY_SERVER_PORT;
     }
 
+    x509_user_proxy = getenv("X509_USER_PROXY"); /* for create_local_proxy */
+
     /* Initialize client arguments and create client request object */
     if (init_arguments(argc, argv, socket_attrs, client_request,
 		       &cred_lifetime) != 0) {
@@ -168,7 +175,7 @@ main(int argc, char *argv[])
 	    (unsigned)getuid(), (unsigned)getpid());
 
     /* Run grid-proxy-init to create a proxy */
-    if (grid_proxy_init(cred_lifetime, proxyfile) != 0) {
+    if (grid_proxy_init(cred_lifetime, 0, 0, proxyfile) != 0) {
         fprintf(stderr, "grid-proxy-init failed\n");
         goto cleanup;
     }
@@ -259,6 +266,15 @@ main(int argc, char *argv[])
 		fprintf(stderr, "Error: Credential expired!\n");
 		goto cleanup;
 	    }
+	}
+    }
+
+    if (create_local_proxy) {
+	unsetenv("X509_USER_PROXY"); /* GSI_SOCKET_use_creds() sets it */
+	if (grid_proxy_init(client_request->proxy_lifetime,
+			    proxyfile, proxyfile, x509_user_proxy) != 0) {
+	    fprintf(stderr, "grid-proxy-init failed\n");
+	    goto cleanup;
 	}
     }
 
@@ -439,6 +455,9 @@ init_arguments(int argc,
 	case 'S':
 	    read_passwd_from_stdin = 1;
 	    break;
+	case 'L':
+	    create_local_proxy = 1;
+	    break;
 
         default:  
 	    fprintf(stderr, usage);
@@ -472,7 +491,8 @@ init_arguments(int argc,
  * returns grid-proxy-init status 0 if OK, -1 on error
  */
 int
-grid_proxy_init(int seconds, const char *proxyfile) {
+grid_proxy_init(int seconds,
+		const char *cert, const char *key, const char *outfile) {
 
     int rc;
     char command[128];
@@ -480,8 +500,6 @@ grid_proxy_init(int seconds, const char *proxyfile) {
     char *proxy_mode;
     int old=0;
       
-    assert(proxyfile != NULL);
-
     hours = seconds / SECONDS_PER_HOUR;
 
     proxy_mode = getenv("GT_PROXY_MODE");
@@ -489,8 +507,15 @@ grid_proxy_init(int seconds, const char *proxyfile) {
 	old=1;
     }
     
-    sprintf(command, "grid-proxy-init -verify -hours %d -out %s%s%s%s",
-	    hours, proxyfile, read_passwd_from_stdin ? " -pwstdin" : "",
+    sprintf(command, "grid-proxy-init -verify -hours %d%s%s%s%s%s%s%s%s%s",
+	    hours,
+	    cert ? " -cert " : "",
+	    cert ? cert : "",
+	    key ? " -key " : "",
+	    key ? key : "",
+	    outfile ? " -out " : "",
+	    outfile ? outfile : "",
+	    read_passwd_from_stdin ? " -pwstdin" : "",
 	    verbose ? " -debug" : "", old ? " -old" : "");
     rc = system(command);
 
