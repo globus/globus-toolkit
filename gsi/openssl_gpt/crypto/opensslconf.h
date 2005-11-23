@@ -14,7 +14,7 @@
 
 #ifdef HEADER_CRYPTLIB_H
 #   ifndef OPENSSLDIR
-#       define OPENSSLDIR "/home/bester/development/globus_trunk/packaging/./source-output/tmp_core"
+#       define OPENSSLDIR "/sandbox/bresnaha/TRUNK_MERGE/GL"
 #   endif
 #endif
 
