@@ -71,6 +71,7 @@
 #endif /* WIN32 */
 #include <fcntl.h>
 #include <stdio.h>
+#include <sys/uio.h>
 #include <sasl.h>
 #include <saslutil.h>
 #include <saslplug.h>
