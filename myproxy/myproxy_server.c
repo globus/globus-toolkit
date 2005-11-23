@@ -1409,7 +1409,7 @@ do_authz_handshake(myproxy_socket_attrs_t *attrs,
 		   author_method_t methods[],
 		   authorization_data_t *auth_data)
 {
-   myproxy_response_t server_response;
+   myproxy_response_t server_response = {0};
    char  *client_buffer = NULL;
    int   client_length;
    int   return_status = -1;
