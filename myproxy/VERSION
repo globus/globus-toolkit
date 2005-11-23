@@ -7,6 +7,7 @@ Version History
 v3.3 xx Xxx 2005
   - add myproxy-init --local_proxy option to create a local proxy
     credential after storing a credential on the myproxy-server
+  - add myproxy-init --keyfile/--certfile options
   - fix segmentation fault on reverse lookup in client
   - fix SASL build problems on Darwin
   - fix client-side memory leak in GSI_SOCKET_authentication_init()

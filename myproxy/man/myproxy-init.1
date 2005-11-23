@@ -136,6 +136,12 @@ Specifies the maximum lifetime of credentials retrieved from the
 .BR myproxy-server (8)
 using the stored credential.  Default: 12 hours
 .TP
+.BI -C " filename, " --certfile " filename"
+Specifies  the  filename  of  the source certificate.
+.TP
+.BI -y " filename, " --keyfile " filename"
+Specifies the filename of the source private key.
+.TP
 .B -d, --dn_as_username
 Use the certificate subject (DN) as the default username, instead
 of the 
