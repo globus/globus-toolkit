@@ -193,7 +193,7 @@ globus_l_usage_stats_split_targets(
     newstr = globus_libc_strdup(targets_string);
     tmpstr = newstr;
     token = globus_l_usage_stats_my_strtok(
-        tmpstr, strlen(tmpstr), &start_token, &end_token, "\n\t ");
+        tmpstr, strlen(tmpstr), &start_token, &end_token, "\n\t, ");
     tmpstr += end_token;
         
     while(token && (end_token != -1))
@@ -201,7 +201,7 @@ globus_l_usage_stats_split_targets(
         globus_list_insert(targets, token);
 
         token = globus_l_usage_stats_my_strtok(
-            tmpstr, strlen(tmpstr), &start_token, &end_token, "\n\t ");
+            tmpstr, strlen(tmpstr), &start_token, &end_token, "\n\t, ");
         tmpstr += end_token;
     }
 
