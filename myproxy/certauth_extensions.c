@@ -449,6 +449,17 @@ assign_serial_number( X509 *cert,
 
 }
 
+static void
+add_ext(X509 *cert, int nid, char *value) {
+    X509_EXTENSION * ex;
+    X509V3_CTX ctx;
+    X509V3_set_ctx_nodb(&ctx);
+    X509V3_set_ctx(&ctx, cert, cert, NULL, NULL, 0);
+    ex = X509V3_EXT_conf_nid(NULL, &ctx, nid, value);
+    X509_add_ext(cert,ex,-1);
+    X509_EXTENSION_free(ex);
+}
+
 static int 
 generate_certificate( X509_REQ                 *request, 
 		      X509                     **certificate,
@@ -463,7 +474,6 @@ generate_certificate( X509_REQ                 *request,
   X509           * cert = NULL;
   X509_NAME      * issuer = NULL;
   X509_NAME      * subject = NULL;
-  X509_EXTENSION * ex = NULL;
   EVP_PKEY       * cakey = NULL;
 
   FILE * inkey = NULL;
@@ -525,11 +535,19 @@ generate_certificate( X509_REQ                 *request,
 
   /* extensions */
 
-  ex = X509V3_EXT_conf_nid(NULL, NULL, NID_key_usage,
-			   "critical,Digital Signature, Key Encipherment, Data Encipherment");
-
-  X509_add_ext(cert,ex,-1);
-  X509_EXTENSION_free(ex);
+  add_ext(cert, NID_key_usage,
+	  "critical,Digital Signature, Key Encipherment, Data Encipherment");
+  add_ext(cert, NID_basic_constraints, "critical,CA:FALSE");
+  add_ext(cert, NID_subject_key_identifier, "hash");
+  if (server_context->certificate_issuer_email_domain) {
+      char *email;
+      email = malloc(strlen(client_request->username)+strlen("email:@")+1+
+		     strlen(server_context->certificate_issuer_email_domain));
+      sprintf(email, "email:%s@%s", client_request->username,
+	      server_context->certificate_issuer_email_domain);
+      add_ext(cert, NID_subject_alt_name, email);
+      free(email);
+  }
 
   /* load ca key */
 
