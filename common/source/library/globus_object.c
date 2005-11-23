@@ -12,33 +12,16 @@
 #include "globus_object.h"
 #include "globus_libc.h"
 
-/* error objects are used in win32 threads even with BUILD_LITE.  need
- * real locks here.
- */
-#ifdef WIN32
-typedef CRITICAL_SECTION local_mutex_t;
-#define local_mutex_init(x, y) InitializeCriticalSection(x)
-#define local_mutex_destroy(x) DeleteCriticalSection(x)
-#define local_mutex_lock(x) EnterCriticalSection(x)
-#define local_mutex_unlock(x) LeaveCriticalSection(x)
-#else
-typedef globus_mutex_t local_mutex_t;
-#define local_mutex_init(x, y) globus_mutex_init(x, y)
-#define local_mutex_destroy(x) globus_mutex_destroy(x)
-#define local_mutex_lock(x) globus_mutex_lock(x)
-#define local_mutex_unlock(x) globus_mutex_unlock(x)
-#endif
-
-static local_mutex_t                   s_object_ref_mutex;
+static globus_mutex_t                   s_object_ref_mutex;
 
 static int s_object_init (void)
 {
-    return local_mutex_init(&s_object_ref_mutex, GLOBUS_NULL);
+    return globus_mutex_init(&s_object_ref_mutex, GLOBUS_NULL);
 }
 
 static int s_object_destroy (void)
 {
-    return local_mutex_destroy(&s_object_ref_mutex);
+    return globus_mutex_destroy(&s_object_ref_mutex);
 }
 
 #include "version.h"
@@ -221,11 +204,11 @@ globus_object_copy (const globus_object_t * object)
 void
 globus_object_reference(globus_object_t * object)
 {
-    local_mutex_lock(&s_object_ref_mutex);
+    globus_mutex_lock(&s_object_ref_mutex);
     {
         ++object->ref_count;
     }
-    local_mutex_unlock(&s_object_ref_mutex);
+    globus_mutex_unlock(&s_object_ref_mutex);
 }
 
 void
@@ -239,11 +222,11 @@ globus_object_free (globus_object_t * object)
 
   if ( globus_object_is_static (object) == GLOBUS_TRUE ) return;
     
-  local_mutex_lock(&s_object_ref_mutex);
+  globus_mutex_lock(&s_object_ref_mutex);
   {
     ref_count = --object->ref_count;
   }
-  local_mutex_unlock(&s_object_ref_mutex);
+  globus_mutex_unlock(&s_object_ref_mutex);
     
   if(ref_count == 0)
   {

@@ -20,22 +20,6 @@
 #include "version.h"
 #include <string.h>
 
-/* error objects are used in win32 threads even with BUILD_LITE.  need
- * real locks here.
- */
-#ifdef WIN32
-typedef CRITICAL_SECTION local_mutex_t;
-#define local_mutex_init(x, y) InitializeCriticalSection(x)
-#define local_mutex_destroy(x) DeleteCriticalSection(x)
-#define local_mutex_lock(x) EnterCriticalSection(x)
-#define local_mutex_unlock(x) LeaveCriticalSection(x)
-#else
-typedef globus_mutex_t local_mutex_t;
-#define local_mutex_init(x, y) globus_mutex_init(x, y)
-#define local_mutex_destroy(x) globus_mutex_destroy(x)
-#define local_mutex_lock(x) globus_mutex_lock(x)
-#define local_mutex_unlock(x) globus_mutex_unlock(x)
-#endif
 
 /**********************************************************************
  * Error Types
@@ -289,7 +273,7 @@ globus_error_construct_base (globus_module_descriptor_t * source_module,
 
 static globus_object_cache_t s_result_to_object_mapper;
 static globus_uint_t         s_next_available_result_count;
-static local_mutex_t         s_result_to_object_mutex;
+static globus_mutex_t        s_result_to_object_mutex;
 static globus_thread_key_t   s_peek_key;
 
 static int  s_error_cache_initialized = 0;
@@ -316,7 +300,7 @@ static int s_error_cache_init (void)
   globus_thread_key_create(&s_peek_key, s_key_destructor_func);
 				   
   globus_object_cache_init (&s_result_to_object_mapper);
-  local_mutex_init (&s_result_to_object_mutex, NULL);
+  globus_mutex_init (&s_result_to_object_mutex, NULL);
   s_next_available_result_count = 1;
   s_error_cache_initialized = 1;
   
@@ -351,7 +335,7 @@ static int s_error_cache_destroy (void)
   globus_thread_key_delete(globus_i_error_verbose_key);
   
   globus_object_cache_destroy (&s_result_to_object_mapper);
-  local_mutex_destroy (&s_result_to_object_mutex);
+  globus_mutex_destroy (&s_result_to_object_mutex);
   s_error_cache_initialized = 0;
   
   globus_module_deactivate(GLOBUS_OBJECT_MODULE);
@@ -370,13 +354,13 @@ globus_error_get (globus_result_t result)
 
   if ( result == GLOBUS_SUCCESS ) return NULL;
 
-  err = local_mutex_lock (&s_result_to_object_mutex);
+  err = globus_mutex_lock (&s_result_to_object_mutex);
   if (err) return NULL;
 
   error = globus_object_cache_remove (&s_result_to_object_mapper,
 				      (void *)result);
 
-  local_mutex_unlock (&s_result_to_object_mutex);
+  globus_mutex_unlock (&s_result_to_object_mutex);
 
   if (error!=NULL) 
     return error;
@@ -395,7 +379,7 @@ globus_error_peek(
 
   if ( result == GLOBUS_SUCCESS ) return NULL;
 
-  err = local_mutex_lock (&s_result_to_object_mutex);
+  err = globus_mutex_lock (&s_result_to_object_mutex);
   if (err) return NULL;
 
   error = globus_object_cache_lookup (&s_result_to_object_mapper,
@@ -415,7 +399,7 @@ globus_error_peek(
     globus_thread_setspecific(s_peek_key, error);
   }
   
-  local_mutex_unlock (&s_result_to_object_mutex);
+  globus_mutex_unlock (&s_result_to_object_mutex);
   
   if (error!=NULL) 
     return error;
@@ -431,7 +415,7 @@ globus_error_put (globus_object_t * error)
 
   if (! s_error_cache_initialized || !error) return GLOBUS_SUCCESS;
   
-  err = local_mutex_lock (&s_result_to_object_mutex);
+  err = globus_mutex_lock (&s_result_to_object_mutex);
   if (err) return GLOBUS_SUCCESS;
   globus_i_error_output_error(error);
 
@@ -450,7 +434,7 @@ globus_error_put (globus_object_t * error)
   globus_object_cache_insert (&s_result_to_object_mapper,
 			      (void *)new_result, error);
 
-  local_mutex_unlock (&s_result_to_object_mutex);
+  globus_mutex_unlock (&s_result_to_object_mutex);
 
   return new_result;
 }

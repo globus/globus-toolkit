@@ -223,7 +223,6 @@ globus_debug_init(
 #define GlobusDebugMyFwrite(module_name, buffer, size, count)   do {} while(0)
 #define GlobusDebugMyFile(module_name)                          (stderr)
 #define GlobusDebugTrue(module_name, level)                     0
-#define GlobusDebugTimeTrue(module_name, level)                 0
 
 #endif
 
