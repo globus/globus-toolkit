@@ -4,6 +4,7 @@ desperate attempt to maintain some consistency.
 -A | --allow_anonymous_renewers   Allow credentials to be renewed by any client (not recommended)
 -A | --allow_anonymous_renewers   Allow credentials to be renewed by any client (not recommended)
 -A | --allow_anonymous_renewers   Allow credentials to be renewed by any client (not recommended)
+-C | --certfile        <filename> Certificate file name
 -E | --retrieve_key <dn>          Allow specified entity to retrieve credential key
 -K | --creddesc        <desc>     Specifies credential description
 -K | --creddesc       <desc>      Specifies credential description
