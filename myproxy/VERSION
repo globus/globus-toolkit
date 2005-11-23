@@ -11,7 +11,10 @@ v3.3 xx Xxx 2005
   - fix segmentation fault on reverse lookup in client
   - fix SASL build problems on Darwin
   - fix client-side memory leak in GSI_SOCKET_authentication_init()
-  - in CA, use SHA1 instead of MD5 digest algorithm
+  - in CA, use SHA1 instead of MD5 digest algorithm, set CA:FALSE in
+    X509v3 Basic Constraints, include X509v3 Subject Key Identifier,
+    and optionally set email X509v3 Subject Alternative Name using
+    certificate_issuer_email_domain in myproxy-server.config
   - support alternate syntax "min max" for GLOBUS_TCP_PORT_RANGE and
     improve error handling and documentation for this environment
     variable
