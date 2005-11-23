@@ -288,6 +288,10 @@ line_parse_callback(void *context_arg,
     {
 	context->certificate_issuer_key_passphrase = strdup(tokens[1]);
     }
+    else if (strcmp(directive, "certificate_issuer_email_domain") == 0)
+    {
+	context->certificate_issuer_email_domain = strdup(tokens[1]);
+    }
     else if (strcmp(directive, "certificate_mapfile") == 0)
     {
 	context->certificate_mapfile = strdup(tokens[1]);

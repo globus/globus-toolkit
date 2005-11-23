@@ -286,6 +286,10 @@ If the
 .B certificate_issuer_key 
 is encrypted, give the passphrase here.
 .TP
+.BI certificate_issuer_email_domain " \*(lqdomain\*(rq"
+If set, specifies the domain part of the X509v3 Subject Alternative
+Name email address included in issued certificates.
+.TP
 .BI certificate_issuer_program " full-path-to-script"
 This line specifies the path to a program to issue certificates for
 authenticated clients that don't have credentials stored.  
