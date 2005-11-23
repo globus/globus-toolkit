@@ -659,6 +659,7 @@ globus_l_guc_glob_list_cb(
     globus_url_t                        url_info;
     char                                end_ch = '\0';
 
+    memset(&url_info, '\0', sizeof(globus_url_t));
     globus_url_parse(url, &url_info);
     guc_info = (globus_l_guc_info_t *) user_arg;
     if(info_stat->type == GLOBUS_GASS_COPY_GLOB_ENTRY_DIR &&
