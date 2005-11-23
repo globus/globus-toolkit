@@ -6,6 +6,7 @@ Version History
 ---------------
 v3.3 xx Xxx 2005
   - fix segmentation fault on reverse lookup in client
+  - fix SASL build problems on Darwin
   - fix client-side memory leak in GSI_SOCKET_authentication_init()
   - in CA, use SHA1 instead of MD5 digest algorithm
   - support alternate syntax "min max" for GLOBUS_TCP_PORT_RANGE and
