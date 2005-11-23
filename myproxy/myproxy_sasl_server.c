@@ -55,7 +55,8 @@ send_response_sasl_data(myproxy_socket_attrs_t *attrs,
     myproxy_response_t response = {0};
     authorization_data_t*	auth_data;
     char	buf[SASL_BUFFER_SIZE];
-    int		len=0, result;
+    int		result;
+    unsigned    len=0;
     
     result = sasl_encode64(data, data_len, buf, SASL_BUFFER_SIZE, &len);
     buf[len] = '\0';
@@ -100,7 +101,8 @@ static int
 recv_response_sasl_data(myproxy_socket_attrs_t *attrs, char *data)
 {
    char  buf[SASL_BUFFER_SIZE];
-   int   len, result;
+   int   result;
+   unsigned len;
    author_method_t client_auth_method;
 
    int   client_data_len = 0;
@@ -138,7 +140,8 @@ auth_sasl_negotiate_server(myproxy_socket_attrs_t *attrs,
    char  client_buffer[SASL_BUFFER_SIZE];
    int   client_data_len = 0;
 
-   unsigned len, count;
+   unsigned len;
+   int count;
    const char *data;
    sasl_security_properties_t secprops;
    int result;

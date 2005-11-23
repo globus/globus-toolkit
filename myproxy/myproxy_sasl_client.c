@@ -11,7 +11,8 @@ send_response_sasl_data(myproxy_socket_attrs_t *attrs,
                         const char *data, int data_len)
 {
     char client_buffer[SASL_BUFFER_SIZE], buf[SASL_BUFFER_SIZE];
-    int  bufferlen, len, result;
+    int  bufferlen, result;
+    unsigned len;
 
     authorization_data_t*  auth_data;
 	
@@ -59,7 +60,7 @@ recv_response_sasl_data(myproxy_socket_attrs_t *attrs,
 {
     char *response_data;
     int result;
-    int len;
+    unsigned len;
     authorization_data_t*  auth_data;
     
     if (myproxy_recv_response(attrs, server_response) < 0) 
@@ -189,7 +190,8 @@ auth_sasl_negotiate_client(myproxy_socket_attrs_t *attrs,
 {
     char server_buffer[SASL_BUFFER_SIZE];
     const char *data;
-    int  len, server_len;
+    int  server_len;
+    unsigned len;
 
     myproxy_response_t server_response = {0};
 
