@@ -263,6 +263,14 @@ myproxy_authenticate_init(myproxy_socket_attrs_t *attrs,
    } else {
        char *fqhn, *buf;
        fqhn = GSI_SOCKET_get_peer_hostname(attrs->gsi_socket);
+       if (!fqhn) {
+	   GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
+				       sizeof(error_string));
+	   verror_put_string("Error getting name of remote party: %s\n",
+			     error_string);
+	   return_value = 1;
+	   goto error;
+       }
        buf = malloc(strlen(fqhn)+strlen("myproxy@")+1);
        sprintf(buf, "myproxy@%s", fqhn);
        accepted_peer_names[0] = buf;
