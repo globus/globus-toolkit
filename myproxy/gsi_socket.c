@@ -711,6 +711,7 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self, char *accepted_peer_names[])
 	self->major_status = gss_compare_name(&self->minor_status,
 					      server_gss_name,
 					      target_name, &rc);
+        gss_release_name(&self->minor_status, &target_name);
 	if (self->major_status != GSS_S_COMPLETE) {
 	    char error_string[1050];
 	    sprintf(error_string,
@@ -742,7 +743,6 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self, char *accepted_peer_names[])
 	gss_release_cred(&minor_status, &creds);
 	gss_release_buffer(&minor_status, &gss_buffer);
 	gss_release_name(&minor_status, &server_gss_name);
-        gss_release_name(&minor_status, &target_name);
     }
     if (cert_dir) free(cert_dir);
     if (fp) fclose(fp);
