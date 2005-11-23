@@ -52,7 +52,7 @@ static int
 send_response_sasl_data(myproxy_socket_attrs_t *attrs, 
 			const char *data, int data_len)
 {
-    myproxy_response_t response;
+    myproxy_response_t response = {0};
     authorization_data_t*	auth_data;
     char	buf[SASL_BUFFER_SIZE];
     int		len=0, result;
