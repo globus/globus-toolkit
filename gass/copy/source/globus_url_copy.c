@@ -667,17 +667,25 @@ globus_l_guc_glob_list_cb(
         globus_fifo_enqueue(&guc_info->expanded_url_list, strdup(url));
     }
 
-    end_ndx = strlen(url_info.url_path) - 1;
-    if(url_info.url_path[end_ndx] == '/')
+    if(url_info.url_path == NULL)
     {
-        url_info.url_path[end_ndx] = '\0';
-        end_ch = '/';
+        printf("    %s\n", url);
+        return;
     }
+    else
+    {
+        end_ndx = strlen(url_info.url_path) - 1;
+        if(url_info.url_path[end_ndx] == '/')
+        {
+            url_info.url_path[end_ndx] = '\0';
+            end_ch = '/';
+        }
 
-    tmp_str = strrchr(url_info.url_path, '/');
-    *tmp_str = '\0';
-    tmp_str++;
-    printf("    %s%c\n", tmp_str, end_ch);
+        tmp_str = strrchr(url_info.url_path, '/');
+        *tmp_str = '\0';
+        tmp_str++;
+        printf("    %s%c\n", tmp_str, end_ch);
+    }
     globus_url_destroy(&url_info);
 }
     
