@@ -29,6 +29,7 @@ typedef struct
     char *                              home_dir;
     char *                              username;
     globus_gridftp_server_control_t     server_handle;
+    globus_object_t *                   close_error;
 } globus_l_gfs_server_instance_t;
 
 typedef struct
@@ -121,15 +122,60 @@ globus_module_descriptor_t              globus_i_gfs_module =
     &local_version
 };
 
+static
+void
+globus_l_gfs_conn_max_change_cb(
+    const char *                        opt_name,
+    int                                 val,
+    void *                              user_arg)
+{
+    int                                 i;
+    int                                 kill_count;
+    globus_list_t *                     list;
+    globus_l_gfs_server_instance_t *    instance;
+    GlobusGFSName(globus_l_gfs_conn_max_change_cb);
+    GlobusGFSDebugEnter();
+
+    /* if set to mac value there is nothing to do */
+    if(val <= 0)
+    {
+        return;
+    }
+    globus_mutex_lock(&globus_l_gfs_control_mutex);
+    {
+        kill_count = globus_list_size(globus_l_gfs_server_handle_list) - val;
+
+        for(i = 0, list = globus_l_gfs_server_handle_list;
+            i < kill_count && !globus_list_empty(list);
+            i++, list = globus_list_rest(list))
+        {
+            instance = (globus_l_gfs_server_instance_t *)
+                globus_list_first(list);
+            globus_gridftp_server_control_stop(instance->server_handle);
+        }
+    }
+    globus_mutex_unlock(&globus_l_gfs_control_mutex);
+
+    GlobusGFSDebugExit();
+}
+
+
 void
 globus_i_gfs_control_init()
 {
+    globus_i_gfs_config_option_cb_ent_t * cb_handle;
     GlobusGFSName(globus_i_gfs_control_init);
     GlobusGFSDebugEnter();
 
     globus_l_gfs_server_handle_list = NULL;
     globus_mutex_init(&globus_l_gfs_control_mutex, NULL);
     globus_l_gfs_control_active = GLOBUS_TRUE;
+
+    globus_gfs_config_add_cb(
+        &cb_handle,
+        "connections_max",
+        globus_l_gfs_conn_max_change_cb,
+        NULL);
     
     GlobusGFSDebugExit();
 }
@@ -314,10 +360,13 @@ globus_l_gfs_channel_close_cb(
         _FSSL("Closed connection from %s\n",NULL),
         instance->remote_contact);
 
-    globus_i_gfs_data_session_stop(NULL, instance->session_arg);
+    if(instance->session_arg != NULL)
+    {
+        globus_i_gfs_data_session_stop(NULL, instance->session_arg);
+    }
     if(instance->close_func)
     {
-        instance->close_func(instance->close_arg);
+        instance->close_func(instance->close_arg, instance->close_error);
     }
     
     if(instance->home_dir)
@@ -357,19 +406,8 @@ globus_l_gfs_done_cb(
     }
     globus_mutex_unlock(&globus_l_gfs_control_mutex);
 
-    if(result != GLOBUS_SUCCESS)
-    {
-        char *                          tmp_str;
-
-        tmp_str = globus_error_print_friendly(globus_error_peek(result));
-        /* XXX find out why we get (false) error here  */
-        globus_i_gfs_log_message(
-            GLOBUS_I_GFS_LOG_WARN,
-            "Control connection closed with error: %s\n",
-             tmp_str); 
-        globus_free(tmp_str);
-    }
-    
+    instance->close_error = 
+        (result == GLOBUS_SUCCESS ? NULL :globus_error_get(result));
     result = globus_xio_register_close(
         instance->xio_handle,
         GLOBUS_NULL,

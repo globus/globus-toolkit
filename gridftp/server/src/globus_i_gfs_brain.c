@@ -12,115 +12,142 @@
 #include "globus_i_gridftp_server.h"
 #include "globus_i_gfs_ipc.h"
 
-extern globus_i_gfs_community_t *       globus_l_gfs_ipc_community_default;
+#define GFS_BRAIN_FIXED_SIZE 256
 
-static globus_list_t *                  globus_l_brain_repo_list;
-static globus_mutex_t                   globus_l_brain_mutex;
+
+static globus_i_gfs_brain_module_t *    brain_l_module = NULL;
+static globus_extension_handle_t        brain_l_ext_handle = NULL;
+
+globus_extension_registry_t             brain_i_registry;
+
 
 globus_result_t
 globus_i_gfs_brain_init()
 {
-    globus_mutex_init(&globus_l_brain_mutex, NULL);
-    globus_l_brain_repo_list = globus_i_gfs_config_list("community");
+    globus_result_t                     result;
+    int                                 rc;
+    char *                              brain_name;
+    GlobusGFSName(globus_i_gfs_brain_init);
+
+    brain_name = globus_gfs_config_get_string("brain");
+    if(brain_name == NULL)
+    {
+        brain_l_module = &globus_i_gfs_default_brain;
+    }
+    else
+    {
+        rc = globus_extension_activate(brain_name);
+        if(rc != GLOBUS_SUCCESS)
+        {
+            result = GlobusGFSErrorGeneric("Unable to load brain");
+            goto error;
+        }
+        brain_l_module = (globus_i_gfs_brain_module_t *)
+            globus_extension_lookup(
+                &brain_l_ext_handle, &brain_i_registry, BRAIN_SYMBOL_NAME);
+        if(brain_l_module == NULL)
+        {
+            result = GlobusGFSErrorGeneric("Couldn't find brain symbol");
+            goto error;
+        }
+    }
+
+    if(brain_l_module->init_func != NULL)
+    {
+        result = brain_l_module->init_func();
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error;
+        }
+    }
 
     return GLOBUS_SUCCESS;
+
+error:
+    return result;
+}
+
+globus_result_t
+globus_gfs_brain_get_available(
+    const char *                        user_id,
+    const char *                        repo_name,
+    int *                               count)
+{
+    globus_result_t                     result = GLOBUS_SUCCESS;
+
+    GlobusGFSName(globus_i_gfs_brain_stop);
+    if(brain_l_module != NULL && brain_l_module->available_func != NULL)
+    {
+        result = brain_l_module->available_func(user_id, repo_name, count);
+    }
+    return result;
 }
 
 void
 globus_i_gfs_brain_stop()
 {
-    globus_mutex_destroy(&globus_l_brain_mutex);
+    GlobusGFSName(globus_i_gfs_brain_stop);
+    if(brain_l_module != NULL && brain_l_module->stop_func != NULL)
+    {
+        brain_l_module->stop_func();
+        globus_extension_release(brain_l_ext_handle);
+    }
 }
 
 globus_result_t
 globus_gfs_brain_select_nodes(
-    char ***                            out_contact_strings,
+    globus_i_gfs_brain_node_t ***       out_nodes,
     int *                               out_array_length,
     const char *                        repo_name,
     globus_off_t                        filesize,
     int                                 min_count,
     int                                 max_count)
 {
-    int                                 best_count;
-    int                                 count;
-    char **                             cs;
     globus_result_t                     result;
-    globus_list_t *                     list;
-    globus_i_gfs_community_t *          repo = NULL;
-    globus_i_gfs_community_t *          tmp_repo = NULL;
     GlobusGFSName(globus_gfs_brain_select_nodes);
 
-    globus_mutex_lock(&globus_l_brain_mutex);
+    if(brain_l_module != NULL && brain_l_module->select_func != NULL)
     {
-        if(repo_name == NULL || 
-            strcmp(repo_name, globus_l_gfs_ipc_community_default->name) == 0)
+        result = brain_l_module->select_func(
+            out_nodes,
+            out_array_length,
+            repo_name,
+            filesize,
+            min_count,
+            max_count);
+        if(result != GLOBUS_SUCCESS)
         {
-            repo = globus_l_gfs_ipc_community_default;
-        }
-        else
-        {
-            list = globus_l_brain_repo_list;
-            while(!globus_list_empty(list) && repo == NULL)
-            {
-                tmp_repo = globus_list_first(list);
-                if(strcmp(tmp_repo->name, repo_name) == 0)
-                {
-                    repo = tmp_repo;
-                }
-                list = globus_list_rest(list);
-            }
-        }
-
-        if(repo == NULL)
-        {
-            result = globus_error_put(GlobusGFSErrorObjParameter("repo_name"));
             goto error;
         }
-
-        best_count = globus_i_gfs_config_int("repo_count");
-        if(best_count > max_count || best_count <= 0)
-        {
-            best_count = max_count;
-        }
-
-        /* this is the tester brain dead approach */
-        cs = globus_calloc(max_count, sizeof(char *));
-        if(cs == NULL)
-        {
-            result = globus_error_put(GlobusGFSErrorObjMemory("cs"));
-            goto error;
-        }
-        count = 0;
-        while(count < best_count)
-        {
-            cs[count] = strdup(repo->cs[repo->next_ndx]);
-            count++;
-            repo->next_ndx++;
-            if(repo->next_ndx >= repo->cs_count)
-            {
-                repo->next_ndx = 0;
-            }
-        }
-
-        *out_contact_strings = cs;
-        *out_array_length = count;
     }
-    globus_mutex_unlock(&globus_l_brain_mutex);
 
     return GLOBUS_SUCCESS;
 
 error:
-    globus_mutex_unlock(&globus_l_brain_mutex);
     return result;
 }
 
 globus_result_t
 globus_gfs_brain_release_node(
-    char *                              contact_string,
-    const char *                        repo_name,
+    globus_i_gfs_brain_node_t *         nodes,
     globus_gfs_brain_reason_t           reason)
 {
-    /* depending on reason we may remove from list or whatever */
+    globus_result_t                     result;
+    GlobusGFSName(globus_gfs_brain_release_node);
+
+    if(brain_l_module != NULL && brain_l_module->select_func != NULL)
+    {
+        result = brain_l_module->release_func(
+            nodes,
+            reason);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error;
+        }
+    }
 
     return GLOBUS_SUCCESS;
+
+error:
+    return result;
 }
