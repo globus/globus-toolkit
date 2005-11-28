@@ -5,6 +5,8 @@ Binary compatibility of the C API is not guaranteed between releases.
 Version History
 ---------------
 v3.3 xx Xxx 2005
+  - add support for CA username to DN resolution via LDAP using
+    myproxy-server.config ca_ldap options
   - add myproxy-server authentication support for Pubcookie
     (http://www.pubcookie.org/) granting cookie via
     pubcookie_granting_cert and pubcookie_app_server_key
