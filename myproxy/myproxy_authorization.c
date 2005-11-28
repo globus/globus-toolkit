@@ -336,10 +336,13 @@ int auth_passwd_check_client(authorization_data_t *client_auth_data,
       }
    }
    
-   if (!cred_passphrase_match) {
-       cred_passphrase_match =
-	   (auth_pubcookie_check_client(client_auth_data, creds, client_name,
-					config) == 1) ? 1 : 0;
+   if (config->pubcookie_cert) { /* if pubcookie support enabled */
+       if (!cred_passphrase_match) {
+	   cred_passphrase_match =
+	       (auth_pubcookie_check_client(client_auth_data, creds,
+					    client_name, config) == 1) ? 1 : 0;
+       }
+   }
 
 #if defined(HAVE_LIBPAM)
 
