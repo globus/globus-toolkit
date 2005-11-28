@@ -210,23 +210,21 @@ int auth_pubcookie_check_client (authorization_data_t *auth_data,
 
   return_status = 1;
 
+  if (!config->pubcookie_cert || !config->pubcookie_key) {
+      return 0; /* Pubcookie support not enabled. */
+  }
+
   /* read symmetric key file for decrypting cookie */
-  if (config->pubcookie_key) {
-    if ((fp = fopen(config->pubcookie_key, "r")) == 0 ||
-        fread(keybuf, 1, sizeof(keybuf), fp) != sizeof(keybuf)) {
+  if ((fp = fopen(config->pubcookie_key, "r")) == 0 ||
+      fread(keybuf, 1, sizeof(keybuf), fp) != sizeof(keybuf)) {
       verror_put_string("ERROR opening %s", config->pubcookie_key);
       verror_put_errno(errno);
       return_status=0;
       if (fp)
 	fclose(fp);
-    }
   }
   
   /* read cert file for verifying cookie signature */
-  if (!config->pubcookie_cert) {
-      return 0; /* Pubcookie support not enabled. */
-  }
-
   if(return_status==1) {
     if ((fp = fopen(config->pubcookie_cert, "r")) == 0 ||
         (cert = PEM_read_X509(fp, 0, 0, 0)) == 0)
