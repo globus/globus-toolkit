@@ -14,6 +14,8 @@ LibSources= \
 	auth_pam.h \
 	certauth_extensions.c \
 	certauth_extensions.h \
+	certauth_resolveuser.c \
+	certauth_resolveuser.h \
 	getopt_long.c \
 	gsi_socket.c \
 	gsi_socket.h \

@@ -6,6 +6,7 @@
 
 #include "myproxy_common.h"
 
+#include "certauth_resolveuser.h"
 
 void get_certificate_authority(myproxy_socket_attrs_t   *server_attrs,
 			       myproxy_creds_t          *creds,

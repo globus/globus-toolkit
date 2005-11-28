@@ -239,14 +239,19 @@ external_callout( X509_REQ                 *request,
 
 }
 
-static void 
+static int 
 tokenize_to_x509_name( char * dn, X509_NAME * name ) {
+
+  int return_value = 0;
 
   char * tmp;
 
   char * tok;
+  char * tmpTok = NULL;
   char * subtok;
   char * toksplit;
+
+  int i;
 
   myproxy_debug( "tokenizing: %s", dn );
 
@@ -262,18 +267,44 @@ tokenize_to_x509_name( char * dn, X509_NAME * name ) {
     subtok++;
     *toksplit = '\0';
 
-    myproxy_debug( "adding: %s = %s", tok, subtok );
+    /* if short prefixes are being used, they need to be capped before
+       feeding to the add entry function. tok must be strdup()ed because
+       messing with the strtok() buffer is bad. */
 
-    X509_NAME_add_entry_by_txt( name, tok, MBSTRING_ASC, 
-				(unsigned char *) subtok, -1, -1, 0 );
+    tmpTok = strdup( tok );
+
+    if ( strlen( tmpTok ) < 3 ) {
+      i = 0;
+      while( i < strlen( tmpTok ) ) {
+	tmpTok[i] = toupper( tmpTok[i] );
+	i = i + 1;
+      }
+    }
+
+    myproxy_debug( "adding: %s = %s", tmpTok, subtok );
+
+    if (!X509_NAME_add_entry_by_txt( name, tmpTok, MBSTRING_ASC, 
+				     (unsigned char *) subtok, -1, -1, 0 )) {
+      verror_put_string("Error adding %s = %s to x509 name", tmpTok, subtok );
+      verror_put_string("Invalid field name");
+      return_value = 1;
+      goto end;
+    }
 
     subtok = NULL;
     toksplit = NULL;
 
+    free( tmpTok );
+    tmpTok = NULL;
+
     tok = strtok( NULL, "/" );
   }
 
+ end:
+
   free(tmp);
+
+  return return_value;
 
 }
 
@@ -481,15 +512,18 @@ generate_certificate( X509_REQ                 *request,
 
   issuer = X509_get_issuer_name(cert);
 
-  tokenize_to_x509_name( server_context->certificate_issuer, issuer );
+  if ( tokenize_to_x509_name( server_context->certificate_issuer, issuer ) ) {
+    verror_put_string("tokenize_to_x509_name() failed");
+    goto error;
+  }
 
   /* subject info */
 
   /* this has already been called successfully, but... */
-  
-  if ( globus_gss_assist_map_local_user( client_request->username,
-					 &userdn ) ) {
-    verror_put_string("Could not resolve user to grid mapfile");
+
+  if ( user_dn_lookup( client_request->username, &userdn,
+		       server_context ) ) {
+    verror_put_string("User/DN lookup failure: user_dn_lookup()");
     goto error;
   }
 
@@ -497,7 +531,10 @@ generate_certificate( X509_REQ                 *request,
 
   subject = X509_get_subject_name(cert);
 
-  tokenize_to_x509_name( userdn, subject );
+  if( tokenize_to_x509_name( userdn, subject ) ) {
+    verror_put_string("tokenize_to_x509_name() failed");
+    goto error;
+  }
 
   /* version, ttl, etc */
 

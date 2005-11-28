@@ -35,6 +35,12 @@ typedef struct
   char *certificate_issuer;         /* CA issuer DN */
   int   max_cert_lifetime;          /* like proxy_lifetime for the CA */
   char *certificate_serialfile;     /* path to serialnumber file for CA */
+  char *ca_ldap_server;             /* URL to CA ldap user DN server */
+  char *ca_ldap_uid_attribute;      /* Username attribute name */
+  char *ca_ldap_searchbase;         /* Search base DN for ldap query */
+  char *ca_ldap_connect_dn;         /* Optional connect-as ldap DN */
+  char *ca_ldap_connect_passphrase; /* Optional connect-as ldap passphrase */
+  char *ca_ldap_dn_attribute;       /* Opt - pull dn from record attr */
 } myproxy_server_context_t;
 
 
