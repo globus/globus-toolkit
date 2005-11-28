@@ -419,16 +419,17 @@ handle_client(myproxy_socket_attrs_t *attrs,
 	    }
 
 	    if (context->certificate_issuer != NULL) {
-		if ( globus_gss_assist_map_local_user( client_request->username,
-						       &userdn ) ) {
-		    verror_put_string("Internal CA enabled, user:%s unknown", 
-				      client_request->username);
-		    respond_with_error_and_die(attrs, verror_get_string());
-		}
-		if (userdn) {
-		    free(userdn);
-		    userdn = NULL;
-		}
+
+	      if ( user_dn_lookup( client_request->username,
+				   &userdn, context ) ) {
+		verror_put_string("Internal CA enabled, user:%s unknown", 
+				  client_request->username);
+		respond_with_error_and_die(attrs, verror_get_string());
+	      }
+	      if (userdn) {
+		free(userdn);
+		userdn = NULL;
+	      }
 	    }
 	}
 	/* fall through to MYPROXY_RETRIEVE_CERT */

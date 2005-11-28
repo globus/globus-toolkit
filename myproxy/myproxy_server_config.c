@@ -309,6 +309,32 @@ line_parse_callback(void *context_arg,
 	context->certificate_serialfile = strdup(tokens[1]);
     }
 
+    /* added for username-to-dn ldap support for internal CA */
+    else if (strcmp(directive, "ca_ldap_server") == 0)
+    {
+	context->ca_ldap_server = strdup(tokens[1]);
+    }
+    else if (strcmp(directive, "ca_ldap_searchbase") == 0)
+    {
+	context->ca_ldap_searchbase = strdup(tokens[1]);
+    }
+    else if (strcmp(directive, "ca_ldap_connect_dn") == 0)
+    {
+	context->ca_ldap_connect_dn = strdup(tokens[1]);
+    }
+    else if (strcmp(directive, "ca_ldap_connect_passphrase") == 0)
+    {
+	context->ca_ldap_connect_passphrase = strdup(tokens[1]);
+    }
+    else if (strcmp(directive, "ca_ldap_uid_attribute") == 0)
+    {
+	context->ca_ldap_uid_attribute = strdup(tokens[1]);
+    }
+    else if (strcmp(directive, "ca_ldap_dn_attribute") == 0)
+    {
+	context->ca_ldap_dn_attribute = strdup(tokens[1]);
+    }
+
     /* pubcookie stuff */
     else if (strcmp(directive, "pubcookie_granting_cert") == 0)
     {
