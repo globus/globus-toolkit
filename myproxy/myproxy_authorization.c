@@ -391,7 +391,8 @@ int auth_passwd_check_client(authorization_data_t *client_auth_data,
 				 client_auth_data->client_data, pam_id, NULL);
       if (auth_pam_result && strcmp("OK", auth_pam_result) == 0) {
 	 pam_success = 1;
-	 myproxy_log("PAM authentication succeeded");
+	 myproxy_log("PAM authentication succeeded for %s",
+		     creds->username);
       } else {
 	 if (auth_pam_result) {
 	    /* The Cyrus SASL convention is to prepend the error
@@ -675,8 +676,11 @@ int auth_sasl_check_client (authorization_data_t *auth_data,
 			    char *client_name,
 			    myproxy_server_context_t* config)
 { 
-   /* checks happen in auth_sasl_negotiate_server() */
-   return 1;
+    if (myproxy_sasl_authenticated) {
+	myproxy_log("SASL authentication succeeded for %s",
+		    creds->username);
+    }
+    return myproxy_sasl_authenticated;
 }
    
 
