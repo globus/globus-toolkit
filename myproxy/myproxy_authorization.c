@@ -261,7 +261,7 @@ int auth_pubcookie_check_client (authorization_data_t *auth_data,
       if(return_status==1) {
 	now = time (0);
 
-	myproxy_log ("Pubcookie presented: now is %d, cookie create_ts: %d, cookie last_ts: %d",
+	myproxy_debug("Pubcookie presented: now is %d, cookie create_ts: %d, cookie last_ts: %d",
 		     (int) time(0), (int) cookie.create_ts, (int) cookie.last_ts);
 
 #ifdef NOT_CORRECT
@@ -276,7 +276,6 @@ int auth_pubcookie_check_client (authorization_data_t *auth_data,
       }
     }
     else {
-      myproxy_log("ERROR: password not decryptable and verified", "ignore"); 
       verror_prepend_string("Could not decrypt and verify pubcookie");
       return_status=0;
     }
@@ -288,10 +287,13 @@ int auth_pubcookie_check_client (authorization_data_t *auth_data,
       verror_put_string("Pubcookie username (%s) and request username (%s) do not match", (char *)cookie.user, creds->username); 
       return_status=0;
     }
-    myproxy_debug("Pubcookie username: %s", (char *)cookie.user);
   }
 
   //may want to verify other info at some point
+
+  if (return_status==1) {
+      myproxy_log("Pubcookie verified username: %s", (char *)cookie.user);
+  }
   return return_status;
 }
 /* end of Pubcookie-specific code */
@@ -329,6 +331,7 @@ int auth_passwd_check_client(authorization_data_t *client_auth_data,
 	  myproxy_creds_verify_passphrase(creds,
 					  client_auth_data->client_data) == 1){
 	 cred_passphrase_match = 1;
+	 myproxy_log("credential passphrase matched");
       } else {
 	  /* We always have to match the credential passphrase if it exists. */
 	  verror_put_string("invalid credential passphrase");
@@ -388,6 +391,7 @@ int auth_passwd_check_client(authorization_data_t *client_auth_data,
 				 client_auth_data->client_data, pam_id, NULL);
       if (auth_pam_result && strcmp("OK", auth_pam_result) == 0) {
 	 pam_success = 1;
+	 myproxy_log("PAM authentication succeeded");
       } else {
 	 if (auth_pam_result) {
 	    /* The Cyrus SASL convention is to prepend the error
@@ -601,6 +605,7 @@ int auth_cert_check_client (authorization_data_t *auth_data,
        goto end;
    }
 
+   myproxy_log("renewal authentication succeeded");
    return_status = 1;
    
 end:
