@@ -158,6 +158,7 @@ decrypt_cookie(const unsigned char *inbuf, int inlen,
     if (EVP_VerifyFinal(&ctx, signature, siglen, pubkey) != 1) {
         return -1;
     }
+    myproxy_debug("valid pubcookie signature");
 
     /* convert to host byte order */
 
@@ -231,7 +232,7 @@ int auth_pubcookie_check_client (authorization_data_t *auth_data,
       if(return_status==1) {
 	now = time (0);
 
-	myproxy_log ("Pubcookie presented: now is %d, cookie create_ts: %d, cookie last_ts: %d\n",
+	myproxy_log ("Pubcookie presented: now is %d, cookie create_ts: %d, cookie last_ts: %d",
 		     (int) time(0), (int) cookie.create_ts, (int) cookie.last_ts);
 
 #ifdef NOT_CORRECT
@@ -258,7 +259,7 @@ int auth_pubcookie_check_client (authorization_data_t *auth_data,
       verror_put_string("Pubcookie username (%s) and request username (%s) do not match", (char *)cookie.user, creds->username); 
       return_status=0;
     }
-    
+    myproxy_debug("Pubcookie username: %s", (char *)cookie.user);
   }
 
   //may want to verify other info at some point
