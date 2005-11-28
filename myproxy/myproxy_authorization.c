@@ -1,4 +1,5 @@
 #include "myproxy_common.h"	/* all needed headers included here */
+#include "pubcookie.h"
 
 #if defined(HAVE_LIBPAM)
 #include "auth_pam.h"
@@ -77,7 +78,226 @@ auth_passwd_create_client_data(authorization_data_t *data,
    return tmp;
 }
 
-int auth_passwd_check_client (authorization_data_t *client_auth_data,
+/*************************************************************************/
+/**                                                                     **/
+/**  code to decrypt and verify pubcookie (http://www.pubcookie.org/)   **/
+/**                                                                     **/ 
+/**        Steve Losen, UVA ITC                                         **/
+/**                                                                     **/
+/**                                                                     **/
+/*************************************************************************/
+
+/*
+ * decrypt_cookie() accepts a base64 encoded input string that
+ * consists of a DES encrypted and signed cookie.  We decrypt
+ * the input and verify the cookie data with the signature.
+ *
+ * inbuf  points to the base64 encoded input
+ *
+ * inlen  is the length of the input in bytes
+ *
+ * cookie points to a struct to receive the cookie data
+ *
+ * keybuf is a 2048 byte symmetric encryption key from which we
+ *        obtain the DES key and initial vector
+ *
+ * cert   is the X509 cert for verifying the signature
+ *
+ * We base64 decode the input.  The last two decoded bytes are random
+ * offsets into keybuf.  The first offset is the start of the DES key.
+ * The second offset is the start of the initial vector.  Using the DES
+ * key and initial vector, we decrypt the signature and the cookie data.
+ * We verify the cookie data with the signature and the cert.  If correct,
+ * then we return 0.  We return -1 on any failure.
+ */
+
+int
+decrypt_cookie(const unsigned char *inbuf, int inlen,
+    struct cookie_data *cookie, const unsigned char *keybuf,
+    X509 *cert)
+{
+    unsigned char tmpbuf[2048];
+    unsigned char signature[1024];
+    int siglen;
+    BIO *bio, *b64;
+    DES_cblock deskey, ivec;
+    DES_key_schedule ks;
+    EVP_PKEY *pubkey;
+    EVP_MD_CTX ctx;
+    int offset, i;
+
+
+    /* base64 decode the input */
+
+    if (4 * sizeof(tmpbuf) < 3 * inlen) {
+        return -1;
+    }
+    b64 = BIO_new(BIO_f_base64());
+    BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
+    bio = BIO_new_mem_buf((void *)inbuf, inlen);
+    bio = BIO_push(b64, bio);
+
+    inlen = BIO_read(bio, tmpbuf, sizeof(tmpbuf));
+    BIO_free_all(bio);
+    inbuf = tmpbuf;
+
+    /* get public key from cert and length of signature */
+
+    if ((pubkey = X509_extract_key(cert)) == 0) {
+        return -1;
+    }
+
+    siglen = EVP_PKEY_size(pubkey);
+
+    if (siglen > sizeof(signature) ||
+        inlen != siglen + sizeof(*cookie) + 2)
+    {
+      return -1;
+    }
+
+    /* get the DES key from keybuf */
+
+    offset = inbuf[inlen - 2];
+    memcpy (deskey, keybuf + offset, sizeof(deskey));
+    des_set_odd_parity(&deskey);
+    if (DES_set_key_checked(&deskey, &ks) != 0) {
+        return -1;
+    }
+
+    /* get the DES initial vector from keybuf */
+
+    offset = inbuf[inlen - 1];
+    for (i = 0; i < sizeof(ivec); i++) {
+        ivec[i] = keybuf[offset + i] ^ 0x4c;
+    }
+
+    /* decrypt signature and cookie data */
+
+    i = 0;
+    DES_cfb64_encrypt(inbuf, signature, siglen, &ks, &ivec, &i,
+        DES_DECRYPT);
+
+    DES_cfb64_encrypt (inbuf + siglen, (unsigned char *)cookie,
+        sizeof(*cookie), &ks, &ivec, &i, DES_DECRYPT);
+
+    /* verify signature */
+
+    EVP_VerifyInit(&ctx, EVP_md5());
+    EVP_VerifyUpdate(&ctx, (unsigned char *)cookie, sizeof(*cookie));
+    if (EVP_VerifyFinal(&ctx, signature, siglen, pubkey) != 1) {
+        return -1;
+    }
+    myproxy_debug("valid pubcookie signature");
+
+    /* convert to host byte order */
+
+    cookie->pre_sess_token = ntohl(cookie->pre_sess_token);
+    cookie->create_ts      = ntohl(cookie->create_ts);
+    cookie->last_ts        = ntohl(cookie->last_ts);
+    return 0;
+}
+
+int auth_pubcookie_check_client (authorization_data_t *auth_data,
+				 struct myproxy_creds *creds, 
+				 char *client_name,
+				 myproxy_server_context_t* config)
+{ 
+  int return_status;
+  FILE *fp;
+  struct cookie_data cookie;
+  unsigned char keybuf[2048];
+  X509 *cert;
+
+  return_status = 1;
+
+  /* read symmetric key file for decrypting cookie */
+  if (config->pubcookie_key) {
+    if ((fp = fopen(config->pubcookie_key, "r")) == 0 ||
+        fread(keybuf, 1, sizeof(keybuf), fp) != sizeof(keybuf)) {
+      verror_put_string("ERROR opening %s", config->pubcookie_key);
+      verror_put_errno(errno);
+      return_status=0;
+      if (fp)
+	fclose(fp);
+    }
+  }
+  
+  /* read cert file for verifying cookie signature */
+  if (!config->pubcookie_cert) {
+      return 0; /* Pubcookie support not enabled. */
+  }
+
+  if(return_status==1) {
+    if ((fp = fopen(config->pubcookie_cert, "r")) == 0 ||
+        (cert = PEM_read_X509(fp, 0, 0, 0)) == 0)
+      {
+	verror_put_string("ERROR opening %s", config->pubcookie_cert);
+	verror_put_errno(errno);
+        return_status=0;
+	if (fp)
+	  fclose(fp);
+      }
+  }
+
+  /* decrypt cookie and verify  -- TO DO: make this time-dependent on the cookie, but we can't 
+     do it right now (it's NOT the create_ts -- which looks like it could be up to a week?) */
+
+  if(return_status==1) {
+    int decrypt_result;
+    int cookie_type;
+    time_t cookie_deadline, now;
+    
+    decrypt_result =   decrypt_cookie((unsigned char *)auth_data->client_data, auth_data->client_data_len, &cookie,
+                                      keybuf, cert);
+    
+    if (decrypt_result == 0) {
+      cookie_type = cookie.type;
+      cookie_deadline = cookie.create_ts + 24 * 3600;
+      
+      if (cookie_type != '1') { // yes, fix this hard-code.. I realize...
+        verror_prepend_string("Wrong cookie type");
+        return_status=0;
+      }
+      if(return_status==1) {
+	now = time (0);
+
+	myproxy_log ("Pubcookie presented: now is %d, cookie create_ts: %d, cookie last_ts: %d",
+		     (int) time(0), (int) cookie.create_ts, (int) cookie.last_ts);
+
+#ifdef NOT_CORRECT
+        if (cookie_deadline < now) {
+          verror_prepend_string("Cookie is older than 1 day (cookie creation timestamp: %d (%s), one day from cookie timestamp (deadline): %d (%s), now: %d (%s))", 
+				cookie.create_ts, ctime(&(cookie.create_ts)),
+				cookie_deadline, ctime(&cookie_deadline), 
+				now, ctime(&now));
+          return_status=0;
+        }
+#endif 
+      }
+    }
+    else {
+      myproxy_log("ERROR: password not decryptable and verified", "ignore"); 
+      verror_prepend_string("Could not decrypt and verify pubcookie");
+      return_status=0;
+    }
+  }
+
+  //test #2: verify username
+  if(return_status==1) {
+    if(strcmp((char *)cookie.user, creds->username)) {
+      verror_put_string("Pubcookie username (%s) and request username (%s) do not match", (char *)cookie.user, creds->username); 
+      return_status=0;
+    }
+    myproxy_debug("Pubcookie username: %s", (char *)cookie.user);
+  }
+
+  //may want to verify other info at some point
+  return return_status;
+}
+/* end of Pubcookie-specific code */
+
+
+int auth_passwd_check_client(authorization_data_t *client_auth_data,
                              struct myproxy_creds *creds, char *client_name,
 			     myproxy_server_context_t* config)
 { 
@@ -115,6 +335,11 @@ int auth_passwd_check_client (authorization_data_t *client_auth_data,
 	  return 0;
       }
    }
+   
+   if (!cred_passphrase_match) {
+       cred_passphrase_match =
+	   (auth_pubcookie_check_client(client_auth_data, creds, client_name,
+					config) == 1) ? 1 : 0;
 
 #if defined(HAVE_LIBPAM)
 

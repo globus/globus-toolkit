@@ -308,8 +308,20 @@ line_parse_callback(void *context_arg,
     {
 	context->certificate_serialfile = strdup(tokens[1]);
     }
+
+    /* pubcookie stuff */
+    else if (strcmp(directive, "pubcookie_granting_cert") == 0)
+    {
+	context->pubcookie_cert = strdup(tokens[1]);
+    }
+    else if (strcmp(directive, "pubcookie_app_server_key") == 0)
+    {
+	context->pubcookie_key = strdup(tokens[1]);
+    }
+
     else {
-	myproxy_log("warning: unknown directive (%s) in myproxy-server.config", directive);
+	myproxy_log("warning: unknown directive (%s) in myproxy-server.config",
+		    directive);
     }
 
     return_code = 0;

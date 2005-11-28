@@ -36,6 +36,8 @@ typedef struct
   char *certificate_issuer;         /* CA issuer DN */
   int   max_cert_lifetime;          /* like proxy_lifetime for the CA */
   char *certificate_serialfile;     /* path to serialnumber file for CA */
+  char *pubcookie_cert;             /* Pubcookie login server certificate */
+  char *pubcookie_key;              /* Pubcookie application server key */
 } myproxy_server_context_t;
 
 
