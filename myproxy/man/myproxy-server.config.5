@@ -330,6 +330,17 @@ repositories for the MyProxy database.  Each server should be seperated by
 a ";".  Also, a port may be provided if the slave server is using a port
 other then the default.  The server name maybe a recognized DNS or an IP
 address.
+.PP
+The following parameters control Pubcookie (http://www.pubcookie.org)
+authentication.
+.TP
+.BI pubcookie_granting_cert " full-path-to-pem-file"
+Sets the full path to the PEM-encoded Pubcookie granting
+certificate for verifying signatures on Pubcookie granting cookies.
+.TP
+.BI pubcookie_app_server_key " full-path-to-key-file"
+Sets the full path to the
+2048 byte application server key.
 .SH EXAMPLES
 The following policy enables all credential repository features.
 .PP
