@@ -286,6 +286,7 @@ auth_sasl_negotiate_server(myproxy_socket_attrs_t *attrs,
        myproxy_log("Authentication failure: SASL username (%s) and "
 		   "request username (%s) differ.\n", (char *)data,
 		   client_request->username);
+       return -1;
    }
 
    if (sasl_getprop(conn, SASL_AUTHUSER, (const void **)&data) != SASL_OK) {
@@ -297,6 +298,7 @@ auth_sasl_negotiate_server(myproxy_socket_attrs_t *attrs,
        myproxy_log("Authentication failure: SASL authuser (%s) and "
 		   "request username (%s) differ.\n", (char *)data,
 		   client_request->username);
+       return -1;
    }
 
    return 0;
