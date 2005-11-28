@@ -2,7 +2,9 @@
 
 #include "myproxy_common.h"	/* all needed headers included here */
 
-sasl_conn_t *conn = NULL;
+int myproxy_sasl_authenticated = 0;
+
+static sasl_conn_t *conn = NULL;
 
 static void
 sasl_free_conn(void)
@@ -151,6 +153,7 @@ auth_sasl_negotiate_server(myproxy_socket_attrs_t *attrs,
        *localdomain = NULL, *userdomain = NULL;
 
    myproxy_debug("Server: begin SASL negotiation...");
+   myproxy_sasl_authenticated = 0;
 
     if (getenv("SASL_PATH")) {
 	myproxy_debug("$SASL_PATH is %s", getenv("SASL_PATH"));
@@ -301,6 +304,7 @@ auth_sasl_negotiate_server(myproxy_socket_attrs_t *attrs,
        return -1;
    }
 
+   myproxy_sasl_authenticated = 1; /* for later sanity checks */
    return 0;
 }
 
