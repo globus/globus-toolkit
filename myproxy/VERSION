@@ -5,6 +5,11 @@ Binary compatibility of the C API is not guaranteed between releases.
 Version History
 ---------------
 v3.3 xx Xxx 2005
+  - API changes: new trusted_retrievers member for
+    struct myproxy_creds and struct myproxy_request_t
+  - add support for certificate-only authentication to the
+    myproxy-server via myproxy-init -Z and myproxy-server.config
+    trusted_retrievers options
   - add support for CA username to DN resolution via LDAP using
     myproxy-server.config ca_ldap options
   - add myproxy-server authentication support for Pubcookie
