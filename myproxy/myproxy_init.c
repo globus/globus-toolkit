@@ -42,6 +42,8 @@ static char usage[] = \
 "                                         credential\n"
 "       -R | --renewable_by    <dn>       Allow specified entity to renew\n"
 "                                         credential\n"
+"       -Z | --retrievable_by_cert <dn>   Allow specified entity to retrieve\n"
+"                                         credential w/o passphrase\n"
 "       -S | --stdin_pass                 Read passphrase from stdin\n"
 "       -n | --no_passphrase              Don't prompt for passphrase\n"
 "       -d | --dn_as_username             Use the proxy certificate subject\n"
@@ -70,6 +72,7 @@ struct option long_options[] =
   {"allow_anonymous_retrievers", no_argument, NULL, 'a'},
   {"allow_anonymous_renewers", no_argument, NULL, 'A'},
   {"retrievable_by",  required_argument, NULL, 'r'},
+  {"retrievable_by_cert",  required_argument, NULL, 'Z'},
   {"renewable_by",    required_argument, NULL, 'R'},
   {"regex_dn_match",        no_argument, NULL, 'x'},
   {"match_cn_only", 	    no_argument, NULL, 'X'},
@@ -81,7 +84,7 @@ struct option long_options[] =
 };
 
 /*colon following an option indicates option takes an argument */
-static char short_options[] = "uhs:p:t:c:y:C:l:vVndr:R:xXaAk:K:SL";
+static char short_options[] = "uhs:p:t:c:y:C:l:vVndr:R:Z:xXaAk:K:SL";
 
 static char version[] =
 "myproxy-init version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
@@ -362,14 +365,7 @@ init_arguments(int argc,
 	    fprintf(stderr, version);
 	    return -1;
 	    break;
-	case 'n':   /* use an empty passwd == require certificate based
-		       authorization while getting the creds */
-#if !defined(HAVE_LIBSASL2)
-	    if (request->retrievers) {
-		fprintf(stderr, "-n is incompatible with -r and -a.\nA passphrase is required for credential retrieval.\n");
-		return -1;
-	    }
-#endif
+	case 'n':
 	    use_empty_passwd = 1;
 	    break;
 	case 'd':   /* use the certificate subject (DN) as the default
@@ -377,20 +373,10 @@ init_arguments(int argc,
 	    dn_as_username = 1;
 	    break;
 	case 'r':   /* retrievers list */
-	    if (request->renewers) {
-		fprintf(stderr, "-r is incompatible with -A and -R.  A credential may not be used for both\nretrieval and renewal.  If both are desired, upload multiple credentials with\ndifferent names, using the -k option.\n");
-		return -1;
-	    }
 	    if (request->retrievers) {
 		fprintf(stderr, "Only one -a or -r option may be specified.\n");
 		return -1;
 	    }
-#if !defined(HAVE_LIBSASL2)
-	    if (use_empty_passwd) {
-		fprintf(stderr, "-r is incompatible with -n.  A passphrase is required for credential retrieval.\n");
-		return -1;
-	    }
-#endif
 	    if (expr_type == REGULAR_EXP)  /*copy as is */
 	      request->retrievers = strdup (optarg);
 	    else
@@ -401,11 +387,25 @@ init_arguments(int argc,
 		myproxy_debug("authorized retriever %s", request->retrievers);
 	    }
 	    break;
-	case 'R':   /* renewers list */
-	    if (request->retrievers) {
-		fprintf(stderr, "-R is incompatible with -a and -r.  A credential may not be used for both\nretrieval and renewal.  If both are desired, upload multiple credentials with\ndifferent names, using the -k option.\n");
+	case 'Z':   /* trusted_retrievers list */
+	    if (request->trusted_retrievers) {
+		fprintf(stderr, "Only one -Z option may be specified.\n");
 		return -1;
 	    }
+	    if (expr_type == REGULAR_EXP)  /*copy as is */
+	      request->trusted_retrievers = strdup (optarg);
+	    else
+	    {
+		request->trusted_retrievers =
+		    (char *) malloc (strlen (optarg) + 5);
+		strcpy (request->trusted_retrievers, "*/CN=");
+		request->trusted_retrievers =
+		    strcat (request->trusted_retrievers,optarg);
+		myproxy_debug("trusted retriever %s",
+			      request->trusted_retrievers);
+	    }
+	    break;
+	case 'R':   /* renewers list */
 	    if (request->renewers) {
 		fprintf(stderr, "Only one -A or -R option may be specified.\n");
 		return -1;
@@ -430,26 +430,14 @@ init_arguments(int argc,
 	    myproxy_debug("expr-type = CN");
 	    break;
 	case 'a':  /*allow anonymous retrievers*/
-	    if (request->renewers) {
-		fprintf(stderr, "-a is incompatible with -A and -R.  A credential may not be used for both\nretrieval and renewal.  If both are desired, upload multiple credentials with\ndifferent names, using the -k option.\n");
-		return -1;
-	    }
 	    if (request->retrievers) {
 		fprintf(stderr, "Only one -a or -r option may be specified.\n");
-		return -1;
-	    }
-	    if (use_empty_passwd) {
-		fprintf(stderr, "-a is incompatible with -n.  A passphrase is required for credential retrieval.\n");
 		return -1;
 	    }
 	    request->retrievers = strdup ("*");
 	    myproxy_debug("anonymous retrievers allowed");
 	    break;
 	case 'A':  /*allow anonymous renewers*/
-	    if (request->retrievers) {
-		fprintf(stderr, "-A is incompatible with -a and -r.  A credential may not be used for both\nretrieval and renewal.  If both are desired, upload multiple credentials with\ndifferent names, using the -k option.\n");
-		return -1;
-	    }
 	    if (request->renewers) {
 		fprintf(stderr, "Only one -A or -R option may be specified.\n");
 		return -1;
