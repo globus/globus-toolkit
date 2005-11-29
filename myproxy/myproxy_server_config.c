@@ -241,6 +241,44 @@ line_parse_callback(void *context_arg,
 	}
     }
 
+    else if (strcmp(directive, "trusted_retrievers") == 0)
+    {
+	int index = 1; /* Skip directive */
+	
+	while(tokens[index] != NULL)
+	{
+	    context->trusted_retriever_dns =
+		add_entry(context->trusted_retriever_dns,
+			  tokens[index]);
+	    
+	    if (context->trusted_retriever_dns == NULL)
+	    {
+		goto error;
+	    }
+
+	    index++;
+	}
+    }
+    
+    else if (strcmp(directive, "default_trusted_retrievers") == 0)
+    {
+	int index = 1; /* Skip directive */
+	
+	while(tokens[index] != NULL)
+	{
+	    context->default_trusted_retriever_dns =
+		add_entry(context->default_trusted_retriever_dns,
+			  tokens[index]);
+	    
+	    if (context->default_trusted_retriever_dns == NULL)
+	    {
+		goto error;
+	    }
+
+	    index++;
+	}
+    }
+
     else if (strcmp(directive, "passphrase_policy_program") == 0)
     {
 	context->passphrase_policy_pgm = strdup(tokens[1]);

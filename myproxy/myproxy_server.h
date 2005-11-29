@@ -18,6 +18,8 @@ typedef struct
   char **accepted_credential_dns;   /* List of creds that can be stored */
   char **authorized_retriever_dns;  /* List of DNs we'll delegate to */
   char **default_retriever_dns;     /* List of DNs we'll delegate to */
+  char **trusted_retriever_dns;     /* DNs we'll delegate to w/o passwd */
+  char **default_trusted_retriever_dns; /* DNs we'll delegate to w/o pass */
   char **authorized_renewer_dns;    /* List of DNs that can renew creds */
   char **default_renewer_dns; 	    /* List of DNs that can renew creds */
   char **authorized_key_retrievers_dns; /* List of DNs that can retroeve keys */

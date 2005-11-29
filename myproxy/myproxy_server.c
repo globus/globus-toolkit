@@ -119,7 +119,8 @@ static int authenticate_client(myproxy_socket_attrs_t *attrs,
 			       struct myproxy_creds *creds,
 			       myproxy_request_t *client_request,
 			       char *client_name,
-			       myproxy_server_context_t* config);
+			       myproxy_server_context_t* config,
+			       int already_authenticated);
 
 /* Delegate requested credentials to the client */
 void get_credentials(myproxy_socket_attrs_t *attrs,
@@ -388,6 +389,9 @@ handle_client(myproxy_socket_attrs_t *attrs,
 	client_creds->retrievers = strdup(client_request->retrievers);
     if (client_request->keyretrieve != NULL)
 	client_creds->keyretrieve = strdup(client_request->keyretrieve);
+    if (client_request->trusted_retrievers != NULL)
+	client_creds->trusted_retrievers =
+	    strdup(client_request->trusted_retrievers);
     if (client_request->renewers != NULL)
 	client_creds->renewers   = strdup(client_request->renewers);
     if (client_request->credname != NULL)
@@ -1203,6 +1207,7 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
    int   client_owns_credentials = 0;
    int   authorization_ok = -1; /* 1 = success, 0 = failure, -1 = error */
    int   credential_renewal = 0;
+   int   trusted_retriever = 0;
    int   return_status = -1;
    myproxy_creds_t creds = { 0 };
 
@@ -1266,9 +1271,39 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
        /* fall through to MYPROXY_GET_PROXY */
 
    case MYPROXY_GET_PROXY:
+       /* check trusted_retrievers */
+       authorization_ok =
+	   myproxy_server_check_policy_list((const char **)context->trusted_retriever_dns, client_name);
+       if (authorization_ok == 1) {
+	   myproxy_debug("passed trusted_retrievers policy");
+	   /* check per-credential policy */
+	   if (creds.trusted_retrievers) {
+	       authorization_ok =
+		   myproxy_server_check_policy(creds.trusted_retrievers,
+					       client_name);
+	       if (authorization_ok == 1) {
+		   myproxy_debug("passed per-credential trusted_retrievers policy");
+		   trusted_retriever = 1;
+	       } else {
+		   myproxy_debug("failed per-credential trusted_retrievers policy");
+	       }
+	   } else if (context->default_trusted_retriever_dns) {
+	       authorization_ok =
+		   myproxy_server_check_policy_list((const char **)context->default_trusted_retriever_dns, client_name);
+	       if (authorization_ok == 1) {
+		   myproxy_debug("passed default_trusted_retrievers policy");
+		   trusted_retriever = 1;
+	       } else {
+		   myproxy_debug("failed default_trusted_retrievers policy");
+	       }
+	   }
+       } else {
+	   myproxy_debug("failed trusted_retrievers policy");
+       }
+
        authorization_ok =
 	   authenticate_client(attrs, &creds, client_request, client_name,
-			       context);
+			       context, trusted_retriever);
        if (authorization_ok < 0) {
 	   goto end;		/* authentication failed */
        } else if (authorization_ok == 1) {
@@ -1507,14 +1542,17 @@ authenticate_client(myproxy_socket_attrs_t *attrs,
 		    struct myproxy_creds *creds,
                     myproxy_request_t *client_request,
 		    char *client_name,
-		    myproxy_server_context_t* config)
+		    myproxy_server_context_t* config,
+		    int already_authenticated)
 {
-   int return_status = -1, authcnt = 0, certauth = 0;
+   int return_status = -1, authcnt, certauth = 0;
    int i, j;
    author_method_t methods[AUTHORIZETYPE_NUMMETHODS] = { 0 };
    author_status_t status[AUTHORIZETYPE_NUMMETHODS] = { 0 };
    authorization_data_t auth_data = { 0 };
 
+   authcnt = already_authenticated; /* if already authenticated, just
+				       do required methods */
    for (i=0; i < AUTHORIZETYPE_NUMMETHODS; i++) {
        status[i] = authorization_get_status(i, creds, client_name, config);
    }
