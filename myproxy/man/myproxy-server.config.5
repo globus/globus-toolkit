@@ -162,6 +162,32 @@ to pass the per-credential policy check.  (The client must
 still pass the 
 .B authorized_key_retrievers 
 check.)
+.TP
+.BI trusted_retrievers " \*(lqDN regex\*(rq"
+This policy controls who can retrieve credentials without further
+authentication.
+By default, clients that match 
+.B authorized_retrievers 
+must perform additional authentication (such as passphrase, PAM, or
+SASL) to retrieve credentials.  However, authenticated clients that
+match 
+.B trusted_retrievers 
+do not need to perform additional authentication.
+.TP
+.BI default_trusted_retrievers " \*(lqDN regex\*(rq"
+If a user doesn't set a trusted retrieval policy with the credential
+on upload (via 
+.B 'myproxy-init 
+.BR -Z' ), 
+the 
+.BR myproxy-server (8)
+will apply the following policy in addition to the 
+.B trusted_retrievers 
+policy.  If no 
+.B default_trusted_retrievers 
+policy is set, then only the 
+.B trusted_retrievers 
+policy is applied.
 .PP
 The following lines in the configuration file set other server policy
 options.
@@ -317,6 +343,40 @@ to certificate subject distinguished names for the issued
 certificates using this mapfile, which has the same format as used
 by other Globus Toolkit services.
 By default, /etc/grid-security/grid-mapfile is used.
+.PP
+If OpenLDAP support is built-in to the
+.BR myproxy-server (8),
+the following parameters can be used to configure the CA module to map
+account names to certificate subject distinguished names via LDAP.
+.TP
+.BI ca_ldap_server " \*(lqldap://localhost:389/\*(rq"
+This parameter specifies the URI to the LDAP server to use for
+username to DN resolution in the CA module.  Both ldap:// and ldaps://
+protocols are supported.  A port number may optionally be specified as
+well.  Defining this directive is the "trigger" that causes the name
+resolution module to use LDAP querying.  If it is not defined, then
+mapfile lookup will be executed instead (see 
+.B certificate_mapfile
+above).
+.TP
+.BI ca_ldap_uid_attribute " \*(lquid\*(rq"
+The name of the record attribute that maps to the MyProxy username.
+Required for LDAP username to DN resolution.
+.TP
+.BI ca_ldap_searchbase " \*(lqou=people,dc=bullwinkle,dc=lbl,dc=gov\*(rq"
+The DN of the region of the ldap database to be searched.
+Required for LDAP username to DN resolution.
+.TP
+.BI ca_ldap_dn_attribute " \*(lqsubjectDN\*(rq"
+If this directive is set, the LDAP resolver will pull the DN from
+the specified attribute in the returned record.  If it is not set,
+the default is to use the DN of the record itself.
+.TP
+.BI ca_ldap_connect_dn " \*(lqcn=MyProxy,ou=ldapusers,dc=lbl,dc=gov\*(rq"
+DN for LDAP basic authentication (optional).
+.TP
+.BI ca_ldap_connect_passphrase " \*(lqpassphrase\*(rq"
+Passphrase for LDAP basic authentication (optional).
 .PP
 The following parameters control server replication with the
 .BR myproxy-replicate (1)
