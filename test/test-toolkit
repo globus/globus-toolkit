@@ -21,10 +21,11 @@ my $VERSION = "test-toolkit version:  ".`ident $0 | grep Revision | awk {'print 
 # ------------------------------------------------------------------------
 # Get options
 # ------------------------------------------------------------------------
-my ($help, $version, $debug, $color, $remote, $directory);
+my ($help, $no_credentials_setup, $version, $debug, $color, $remote, $directory);
 
 GetOptions (
     'help'              => \$help,
+    'no-credentials-setup' => \$no_credentials_setup,
     'color'             => \$color,
     'debug'             => \$debug,
     'version'           => \$version,
@@ -61,6 +62,8 @@ if (! defined $directory)   {
 }
 $u->debug("directory -> $directory");
 
+if (! defined $no_credentials_setup)  { setup_credentials(); }
+
 # ========================================================================
 # Main
 # ========================================================================
@@ -85,6 +88,7 @@ sub help {
     Options:
 
     [--help]                 Print this message
+    [--no-credentials-setup] Don't setup credentials for tests
     [--version]              Print out version of test-toolkit
     [--debug]                Turn on debugging
     [--color]                Turn on color
@@ -114,6 +118,41 @@ sub start {
 
     my @date = split /\s+/, localtime;
     $u->announce("test-toolkit: started $date[1].$date[2].$date[4]  $date[3]");
+}
+
+# ------------------------------------------------------------------
+# setup credentials info
+# ------------------------------------------------------------------
+sub setup_credentials {
+    $u->debug("Setting up credentials...");
+
+    $ENV{X509_CERT_DIR}   = "$ENV{GLOBUS_LOCATION}/test/globus_test";
+    $ENV{X509_USER_CERT}  = "$ENV{X509_CERT_DIR}/testcred.pem";
+    $ENV{X509_USER_KEY}   = "$ENV{X509_CERT_DIR}/testcred.pem";
+    $ENV{X509_USER_PROXY} = "$ENV{X509_CERT_DIR}/testcred.pem";
+    $ENV{GRIDMAP}         = "$ENV{X509_CERT_DIR}/grid-mapfile";
+
+    $u->debug("Environment variables set up");
+
+    chmod 0600, $ENV{X509_USER_PROXY};
+
+    my $subject = system("grid-proxy-info", "-identity");
+
+    if ($? != 0) {
+        print "Unable to determine identity from proxy file $ENV{X509_USER_PROXY}";
+	exit 1;
+    }
+
+    system("rm -f $ENV{GRIDMAP} >/dev/null 2>&1");
+
+    system("grid-mapfile-add-entry -dn \"$subject\" -ln `whoami` -f $ENV{GRIDMAP} >/dev/null 2>&1");
+
+    if ($? != 0) {
+        print "Unable to add identity \"$subject\" to gridmap $ENV{GRIDMAP}";
+	exit 2
+    }
+    $u->debug("Credentials setup done.");
+
 }
 
 # ------------------------------------------------------------------
