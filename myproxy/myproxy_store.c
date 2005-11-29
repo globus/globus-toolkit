@@ -42,6 +42,8 @@ static char usage[] =
     "                                         credential\n"
     "       -R | --renewable_by   <dn>        Allow specified entity to renew\n"
     "                                         credential\n"
+    "       -Z | --retrievable_by_cert <dn>   Allow specified entity to retrieve\n"
+    "                                         credential w/o passphrase\n"
     "       -E | --retrieve_key <dn>          Allow specified entity to retrieve\n"
     "                                         credential key\n"
     "       -d | --dn_as_username             Use the proxy certificate subject\n"
@@ -67,6 +69,7 @@ struct option long_options[] = {
     {"allow_anonymous_retrievers",       no_argument, NULL, 'a'},
     {"allow_anonymous_renewers",         no_argument, NULL, 'A'},
     {"retrievable_by",             required_argument, NULL, 'r'},
+    {"retrievable_by_cert",        required_argument, NULL, 'Z'},
     {"renewable_by",               required_argument, NULL, 'R'},
     {"retrieve_key",               required_argument, NULL, 'E'},
     {"regex_dn_match",                   no_argument, NULL, 'x'},
@@ -77,7 +80,7 @@ struct option long_options[] = {
 };
 
 /*colon following an option indicates option takes an argument */
-static char short_options[] = "uhl:vVdr:R:xXaAk:K:t:c:y:s:p:E:";
+static char short_options[] = "uhl:vVdr:R:Z:xXaAk:K:t:c:y:s:p:E:";
 
 static char version[] =
     "myproxy-init version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "
@@ -323,12 +326,6 @@ init_arguments(int                     argc,
 
 
 	case 'r':		/* retrievers list */
-	    if (request->renewers) {
-		fprintf(stderr,
-			"-r is incompatible with -A and -R.  A credential may not be used for both\nretrieval and renewal.  If both are desired, upload multiple credentials with\ndifferent names, using the -k option.\n");
-		exit(1);
-	    }
-
 	    if (request->retrievers) {
 		fprintf(stderr,
 			"Only one -a or -r option may be specified.\n");
@@ -359,12 +356,6 @@ init_arguments(int                     argc,
             ** So, do we want to add code to unencrypt the private key if
             ** this option is used?
             */
-	    if (request->retrievers) {
-		fprintf(stderr,
-			"-R is incompatible with -a and -r.  A credential may not be used for both\nretrieval and renewal.  If both are desired, upload multiple credentials with\ndifferent names, using the -k option.\n");
-		exit(1);
-	    }
-
 	    if (request->renewers) {
 		fprintf(stderr,
 			"Only one -A or -R option may be specified.\n");
@@ -380,6 +371,28 @@ init_arguments(int                     argc,
 		strcpy(request->renewers, "*/CN=");
 		myproxy_debug("authorized renewer %s", request->renewers);
 		request->renewers = strcat(request->renewers, optarg);
+	    }
+	    break;
+
+	case 'Z':		/* retrievers list */
+	    if (request->trusted_retrievers) {
+		fprintf(stderr,
+			"Only one -a or -r option may be specified.\n");
+		exit(1);
+	    }
+
+	    if (expr_type == REGULAR_EXP) {
+		
+                /* Copy as is */
+		request->trusted_retrievers = strdup(optarg);
+	    } else {
+		request->trusted_retrievers =
+		    (char *) malloc(strlen(optarg) + 5);
+		strcpy(request->trusted_retrievers, "*/CN=");
+		myproxy_debug("trusted retriever %s",
+			      request->trusted_retrievers);
+		request->trusted_retrievers =
+		    strcat(request->trusted_retrievers, optarg);
 	    }
 	    break;
 
@@ -416,12 +429,6 @@ init_arguments(int                     argc,
 	    break;
 
 	case 'a':		/*allow anonymous retrievers */
-	    if (request->renewers) {
-		fprintf(stderr,
-			"-a is incompatible with -A and -R.  A credential may not be used for both\nretrieval and renewal.  If both are desired, upload multiple credentials with\ndifferent names, using the -k option.\n");
-		exit(1);
-	    }
-
 	    if (request->retrievers) {
 		fprintf(stderr,
 			"Only one -a or -r option may be specified.\n");
@@ -433,12 +440,6 @@ init_arguments(int                     argc,
 	    break;
 
 	case 'A':		/*allow anonymous renewers */
-	    if (request->retrievers) {
-		fprintf(stderr,
-			"-A is incompatible with -a and -r.  A credential may not be used for both\nretrieval and renewal.  If both are desired, upload multiple credentials with\ndifferent names, using the -k option.\n");
-		exit(1);
-	    }
-
 	    if (request->renewers) {
 		fprintf(stderr,
 			"Only one -A or -R option may be specified.\n");
