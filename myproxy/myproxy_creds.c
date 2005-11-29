@@ -418,6 +418,10 @@ write_data_file(const struct myproxy_creds *creds,
     if (creds->keyretrieve != NULL)
 	fprintf (data_stream, "KEYRETRIEVERS=%s\n", creds->keyretrieve);
 
+    if (creds->trusted_retrievers != NULL)
+	fprintf (data_stream, "TRUSTED_RETRIEVERS=%s\n",
+		 creds->trusted_retrievers);
+
     if (creds->renewers != NULL)
 	fprintf (data_stream, "RENEWERS=%s\n", creds->renewers);
 
@@ -582,6 +586,17 @@ read_data_file(struct myproxy_creds *creds,
             creds->keyretrieve = mystrdup(value);
             
             if (creds->keyretrieve == NULL)
+            {
+                goto error;
+            }
+            continue;
+        }
+        
+        if (strcmp(variable, "TRUSTED_RETRIEVERS") == 0)
+        {
+            creds->trusted_retrievers = mystrdup(value);
+            
+            if (creds->trusted_retrievers == NULL)
             {
                 goto error;
             }
@@ -1475,6 +1490,7 @@ void myproxy_creds_free_contents(struct myproxy_creds *creds)
     if (creds->location != NULL)	free(creds->location);
     if (creds->retrievers != NULL)	free(creds->retrievers);
     if (creds->keyretrieve != NULL)	free(creds->keyretrieve);
+    if (creds->trusted_retrievers != NULL) free(creds->trusted_retrievers);
     if (creds->renewers != NULL)	free(creds->renewers);
     if (creds->credname != NULL)	free(creds->credname);
     if (creds->creddesc != NULL)	free(creds->creddesc);
@@ -1535,6 +1551,9 @@ myproxy_print_cred_info(myproxy_creds_t *creds, FILE *out)
 				       creds->renewers);
 	if (creds->keyretrieve) fprintf(out, "  key retrieval policy: %s\n",
 				       creds->keyretrieve);
+	if (creds->trusted_retrievers)
+	    fprintf(out, "  trusted retrieval policy: %s\n",
+				       creds->trusted_retrievers);
 	if (creds->lockmsg)    fprintf(out, "  locked: %s\n", creds->lockmsg);
 	now = time(0);
 	if (creds->end_time > now) {

@@ -531,6 +531,15 @@ myproxy_serialize_request_ex(const myproxy_request_t *request, char **data)
         return -1;
     }
 
+    /* trusted retrievers */
+    if (request->trusted_retrievers != NULL)
+    { 
+      len = my_append(data, MYPROXY_TRUSTED_RETRIEVER_STRING,
+		      request->trusted_retrievers, "\n", NULL); 
+      if (len < 0)
+        return -1;
+    }
+
     /* trusted root certificates */
     myproxy_debug("want_trusted_certs = %d", request->want_trusted_certs);
     if (request->want_trusted_certs) {
@@ -801,6 +810,31 @@ myproxy_deserialize_request(const char *data, const int datalen,
       }
     }
 
+    /* trusted retriever */
+    len = convert_message(data,
+			  MYPROXY_TRUSTED_RETRIEVER_STRING,
+			  CONVERT_MESSAGE_DEFAULT_FLAGS,
+			  &buf);
+
+    if (len == -2)  /*-2 indicates string not found*/
+       request->trusted_retrievers = NULL;
+    else
+    if (len <= -1)
+    {
+	verror_prepend_string("Error parsing trusted retrievers from client request");
+	goto error;
+    }
+    else
+    {
+      request->trusted_retrievers = strdup(buf);
+
+      if (request->trusted_retrievers == NULL)
+      {
+	verror_put_errno(errno);
+	goto error;
+      }
+    }
+
     /* trusted root certificates */
     len = convert_message(data,
 			  MYPROXY_TRUSTED_CERTS_STRING,
@@ -1002,6 +1036,22 @@ myproxy_serialize_response_ex(const myproxy_response_t *response,
 				    "_", cred->credname,
 				    "_", MYPROXY_KEY_RETRIEVER_STRING,
 				    cred->keyretrieve, "\n", NULL);
+		}
+		if (len == -1)
+		    goto error;
+	    }	
+	    if (cred->trusted_retrievers) {
+		if (first_cred) {
+		    len = my_append(data,
+				    MYPROXY_CRED_PREFIX,
+				    "_", MYPROXY_TRUSTED_RETRIEVER_STRING,
+				    cred->trusted_retrievers, "\n", NULL);
+		} else {
+		    len = my_append(data,
+				    MYPROXY_CRED_PREFIX,
+				    "_", cred->credname,
+				    "_", MYPROXY_TRUSTED_RETRIEVER_STRING,
+				    cred->trusted_retrievers, "\n", NULL);
 		}
 		if (len == -1)
 		    goto error;
@@ -1319,6 +1369,18 @@ myproxy_deserialize_response(myproxy_response_t *response,
 
 	if (tmp) tmp[0] = '\0';
     	len = my_append(&tmp, MYPROXY_CRED_PREFIX,
+			"_", MYPROXY_TRUSTED_RETRIEVER_STRING, NULL);
+    	if (len < 0) goto error;
+		
+	len = convert_message(data, tmp,
+			      CONVERT_MESSAGE_DEFAULT_FLAGS,
+			      &buf);
+    	if (len == -1) goto error;
+	if (len >= 0)
+	    response->info_creds->trusted_retrievers = strdup(buf); 
+
+	if (tmp) tmp[0] = '\0';
+    	len = my_append(&tmp, MYPROXY_CRED_PREFIX,
 			"_", MYPROXY_RENEWER_STRING, NULL);
     	if (len < 0) goto error;
 		
@@ -1468,6 +1530,21 @@ myproxy_deserialize_response(myproxy_response_t *response,
 		
 		if (len >= 0)
 		    cred->keyretrieve = strdup(buf);
+
+		if (tmp) tmp[0] = '\0';
+		len = my_append(&tmp,
+				MYPROXY_CRED_PREFIX, "_", strs[i],
+				"_", MYPROXY_TRUSTED_RETRIEVER_STRING,
+				NULL);
+		if (len == -1) goto error;
+
+		len = convert_message(data, tmp,
+				      CONVERT_MESSAGE_DEFAULT_FLAGS,
+				      &buf);
+		if (len == -1) goto error;
+		
+		if (len >= 0)
+		    cred->trusted_retrievers = strdup(buf);
 
 		if (tmp) tmp[0] = '\0';
 		len = my_append(&tmp,
@@ -1799,6 +1876,8 @@ myproxy_free(myproxy_socket_attrs_t *attrs,
 	  free(request->renewers);
        if (request->keyretrieve != NULL)
 	  free(request->keyretrieve);
+       if (request->trusted_retrievers != NULL)
+	  free(request->trusted_retrievers);
        free(request);
     }
     

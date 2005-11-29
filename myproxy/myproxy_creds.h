@@ -25,6 +25,7 @@ struct myproxy_creds {
     char                 *retrievers;
     char                 *renewers;
     char                 *keyretrieve;
+    char                 *trusted_retrievers;
 
     /* start_time and end_time are set from the certificates in the cred */
     time_t                start_time;
