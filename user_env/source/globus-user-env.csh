@@ -29,7 +29,7 @@ if ( ! $?SHLIB_PATH ) then
     setenv SHLIB_PATH ''
 endif
 
-if ( ! $?SASL_PATH ) then
+if ( -d ${GLOBUS_LOCATION}/lib/sasl && ! $?SASL_PATH ) then
     setenv SASL_PATH ''
 endif
 
@@ -39,7 +39,9 @@ if ( $?GLOBUS_PATH ) then
     setenv DYLD_LIBRARY_PATH `echo "${DYLD_LIBRARY_PATH}" | sed -e "s%:${GLOBUS_PATH}[^:]*%%g" -e "s%^${GLOBUS_PATH}[^:]*:\{0,1\}%%"`
     setenv LIBPATH `echo "${LIBPATH}" | sed -e "s%:${GLOBUS_PATH}[^:]*%%g" -e "s%^${GLOBUS_PATH}[^:]*:\{0,1\}%%"`
     setenv SHLIB_PATH `echo "${SHLIB_PATH}" | sed -e "s%:${GLOBUS_PATH}[^:]*%%g" -e "s%^${GLOBUS_PATH}[^:]*:\{0,1\}%%"`
-    setenv SASL_PATH `echo "${SASL_PATH}" | sed -e "s%:${GLOBUS_PATH}[^:]*%%g" -e "s%^${GLOBUS_PATH}[^:]*:\{0,1\}%%"`
+    if ( $?SASL_PATH ) then
+        setenv SASL_PATH `echo "${SASL_PATH}" | sed -e "s%:${GLOBUS_PATH}[^:]*%%g" -e "s%^${GLOBUS_PATH}[^:]*:\{0,1\}%%"`
+    endif
     if ( $?MANPATH ) then
         setenv MANPATH `echo "${MANPATH}" | sed -e "s%:${GLOBUS_PATH}[^:]*%%g" -e "s%^${GLOBUS_PATH}[^:]*:\{0,1\}%%"`
     endif
@@ -56,7 +58,9 @@ setenv LD_LIBRARY_PATH `echo "${LD_LIBRARY_PATH}" | sed -e "s%:${GLOBUS_LOCATION
 setenv DYLD_LIBRARY_PATH `echo "${DYLD_LIBRARY_PATH}" | sed -e "s%:${GLOBUS_LOCATION}[^:]*%%g" -e "s%^${GLOBUS_LOCATION}[^:]*:\{0,1\}%%"`
 setenv LIBPATH `echo "${LIBPATH}" | sed -e "s%:${GLOBUS_LOCATION}[^:]*%%g" -e "s%^${GLOBUS_LOCATION}[^:]*:\{0,1\}%%"`
 setenv SHLIB_PATH `echo "${SHLIB_PATH}" | sed -e "s%:${GLOBUS_LOCATION}[^:]*%%g" -e "s%^${GLOBUS_LOCATION}[^:]*:\{0,1\}%%"`
-setenv SASL_PATH `echo "${SASL_PATH}" | sed -e "s%:${GLOBUS_LOCATION}[^:]*%%g" -e "s%^${GLOBUS_LOCATION}[^:]*:\{0,1\}%%"`
+if ( $?SASL_PATH ) then
+    setenv SASL_PATH `echo "${SASL_PATH}" | sed -e "s%:${GLOBUS_LOCATION}[^:]*%%g" -e "s%^${GLOBUS_LOCATION}[^:]*:\{0,1\}%%"`
+endif
 if ( $?MANPATH ) then
     setenv MANPATH `echo "${MANPATH}" | sed -e "s%:${GLOBUS_LOCATION}[^:]*%%g" -e "s%^${GLOBUS_LOCATION}[^:]*:\{0,1\}%%"`
 endif
@@ -102,11 +106,13 @@ if ( "X${SHLIB_PATH}" != "X" ) then
 endif
 setenv SHLIB_PATH "${GLOBUS_LOCATION}/lib${DELIM}${SHLIB_PATH}"
 
-set DELIM=
-if ( "X${SASL_PATH}" != "X" ) then
-    set DELIM=:
+if ( -d ${GLOBUS_LOCATION}/lib/sasl ) then
+    set DELIM=
+    if ( "X${SASL_PATH}" != "X" ) then
+	set DELIM=:
+    endif
+    setenv SASL_PATH "${GLOBUS_LOCATION}/lib/sasl${DELIM}${SASL_PATH}"
 endif
-setenv SASL_PATH "${GLOBUS_LOCATION}/lib/sasl${DELIM}${SASL_PATH}"
 
 if ( $?LD_LIBRARYN32_PATH ) then
     set DELIM
