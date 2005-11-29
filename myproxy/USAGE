@@ -20,6 +20,7 @@ desperate attempt to maintain some consistency.
 -S | --stdin_pass                 Read passphrase from stdin
 -S | --stdin_pass                 Read passphrase from stdin
 -S | --stdin_pass                 Read passphrase from stdin
+-T | --trustroots                 Manage trust roots
 -U | --unlock                   Unlock previously locked credential(s).
 -V | --version                    Displays version
 -V | --version                    Displays version
@@ -35,6 +36,7 @@ desperate attempt to maintain some consistency.
 -X | --match_cn_only              Set CN matching mode (default) for following policy options
 -X | --match_cn_only              Set CN matching mode (default) for following policy options
 -X | --match_cn_only              Set CN matching mode (default) for following policy options
+-Z | --retrievable_by_cert <dn>   Allow specified entity to retrieve credential w/o passphrase
 -a | --allow_anonymous_retrievers Allow credentials to be retrieved with just username/passphrase
 -a | --allow_anonymous_retrievers Allow credentials to be retrieved with just username/passphrase
 -a | --allow_anonymous_retrievers Allow credentials to be retrieved with just username/passphrase
