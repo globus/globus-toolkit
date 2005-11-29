@@ -163,6 +163,8 @@ external_callout( X509_REQ                 *request,
   add_key_value( "creddesc", client_request->creddesc, buffer );
   add_key_value( "authzcreds", client_request->authzcreds, buffer );
   add_key_value( "keyretrieve", client_request->keyretrieve, buffer );
+  add_key_value( "trusted_retrievers", client_request->trusted_retrievers,
+		 buffer );
 
   sprintf( intbuf, "%d", server_context->max_cert_lifetime );
   add_key_value( "max_cert_lifetime", (char*)intbuf, buffer );
