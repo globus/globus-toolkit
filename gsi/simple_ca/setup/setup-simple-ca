@@ -196,7 +196,7 @@ fi
 ############################################################
 generate_unique_name() {
 
-tmp_hostname=`export GLOBUS_LOCATION=${GLOBUS_LOCATION};${GLOBUS_LOCATION}/bin/globus-hostname`
+tmp_hostname=`${GLOBUS_LOCATION}/bin/globus-hostname`
 
 if test -z "${tmp_hostname}"; then
     echo "" 
