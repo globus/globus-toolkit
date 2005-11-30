@@ -42,6 +42,7 @@ LibSources= \
 	plugin_common.c \
 	plugin_common.h \
 	port_getopt.h \
+	pubcookie.h \
 	ssl_utils.c \
 	ssl_utils.h \
 	string_funcs.c \
