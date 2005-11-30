@@ -252,7 +252,7 @@ int auth_pubcookie_check_client (authorization_data_t *auth_data,
       cookie_type = cookie.type;
       cookie_deadline = cookie.create_ts + 24 * 3600;
       
-      if (cookie_type != '1') { // yes, fix this hard-code.. I realize...
+      if (cookie_type != '1') { /* yes, fix this hard-code.. I realize... */
         verror_prepend_string("Wrong cookie type");
         return_status=0;
       }
@@ -279,7 +279,7 @@ int auth_pubcookie_check_client (authorization_data_t *auth_data,
     }
   }
 
-  //test #2: verify username
+  /* test #2: verify username */
   if(return_status==1) {
     if(strcmp((char *)cookie.user, creds->username)) {
       verror_put_string("Pubcookie username (%s) and request username (%s) do not match", (char *)cookie.user, creds->username); 
@@ -287,7 +287,7 @@ int auth_pubcookie_check_client (authorization_data_t *auth_data,
     }
   }
 
-  //may want to verify other info at some point
+  /* may want to verify other info at some point */
 
   if (return_status==1) {
       myproxy_log("Pubcookie verified username: %s", (char *)cookie.user);
