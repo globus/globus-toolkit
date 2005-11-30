@@ -484,11 +484,12 @@ assign_serial_number( X509 *cert,
 
 static void
 add_ext(X509 *cert, int nid, char *value) {
-    X509_EXTENSION * ex;
-    X509V3_CTX ctx;
-    X509V3_set_ctx_nodb(&ctx);
-    X509V3_set_ctx(&ctx, cert, cert, NULL, NULL, 0);
-    ex = X509V3_EXT_conf_nid(NULL, &ctx, nid, value);
+    X509_EXTENSION *ex;
+    X509V3_CTX ctx, *ctxp;
+    ctxp = &ctx;		/* needed for X509V3 macros */
+    X509V3_set_ctx_nodb(ctxp);
+    X509V3_set_ctx(ctxp, cert, cert, NULL, NULL, 0);
+    ex = X509V3_EXT_conf_nid(NULL, ctxp, nid, value);
     X509_add_ext(cert,ex,-1);
     X509_EXTENSION_free(ex);
 }
