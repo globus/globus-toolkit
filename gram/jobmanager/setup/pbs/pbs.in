@@ -22,6 +22,7 @@ BEGIN
     $cluster = @CLUSTER@;
     $cpu_per_node = @CPU_PER_NODE@;
     $remote_shell = '@REMOTE_SHELL@';
+    $soft_msc = '@SOFT_MSC@';
 }
 
 sub myceil ($)
@@ -234,6 +235,24 @@ EOF
     {
         print JOB '#PBS -l nodes=',
         myceil($description->count() / $cpu_per_node), "\n";
+    }
+
+    # SoftEnv extensions
+    if (defined $description->softenv())
+    {
+        my $softenv_script_name = $self->job_dir() . '/pbs_softenv_script';
+        local(*SOFTENV);
+        open(SOFTENV, '>' . $softenv_script_name);
+
+        foreach my $softenv ($description->softenv())
+        {
+            print(SOFTENV, $softenv);
+        }
+
+        close(SOFTENV);
+
+        print(JOB, "$soft_msc $softenv_script_name");
+        print(JOB, ". $softenv_script_name.cache.sh);
     }
 
     $rsh_env = '';
