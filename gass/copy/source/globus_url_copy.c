@@ -105,7 +105,6 @@ typedef struct
     globus_bool_t                       cache_src_authz_assert;
     globus_bool_t                       cache_dst_authz_assert;
 
-    globus_bool_t                       list;
     char *                              list_url;
     /* the need for 2 is due to the fact that gass copy is
      * not copying attributes
@@ -350,6 +349,7 @@ const char * long_usage =
 "  -len | -partial-length\n"
 "       length for partial ftp file transfers, used only for the source url,\n"
 "       defaults the full file.\n"
+"  -list <url to list>\n"
 "  -stripe\n"
 "       enable striped transfers on supported servers\n"
 "  -striped-block-size | -sbs\n"
@@ -539,7 +539,6 @@ flagdef(arg_striped, "-stripe", "-striped");
 flagdef(arg_rfc1738, "-rp", "-relative-paths");
 flagdef(arg_create_dest, "-cd", "-create-dest");
 flagdef(arg_fast, "-fast", "-fast-data-channels");
-flagdef(arg_list, "-list", "-list-url");
 flagdef(arg_ipv6, "-ipv6","-IPv6");
 flagdef(arg_allo, "-allo","-allocate");
 flagdef(arg_noallo, "-no-allo","-no-allocate");
@@ -547,6 +546,7 @@ flagdef(arg_cache_authz_assert, "-cache-aa","-cache-authz-assert");
 flagdef(arg_cache_src_authz_assert, "-cache-saa","-cache-src-authz-assert");
 flagdef(arg_cache_dst_authz_assert, "-cache-daa","-cache-dst-authz-assert");
 
+oneargdef(arg_list, "-list", "-list-url", NULL, NULL);
 oneargdef(arg_ext, "-X", "-extentions", NULL, NULL);
 oneargdef(arg_modname, "-mn", "-module-name", NULL, NULL);
 oneargdef(arg_modargs, "-mp", "-module-parameters", NULL, NULL);
@@ -977,7 +977,7 @@ main(int argc, char **argv)
     globus_mutex_init(&g_monitor.mutex, NULL);
     globus_cond_init(&g_monitor.cond, NULL);
 
-    if(guc_info.list)
+    if(guc_info.list_url != NULL)
     {
         globus_fifo_enqueue(&guc_info.expanded_url_list,
             strdup(guc_info.list_url));
@@ -1872,7 +1872,7 @@ globus_l_guc_parse_arguments(
     char *                                          authz_assert = NULL;
     globus_result_t                                 result;
 
-    guc_info->list = GLOBUS_FALSE;
+    guc_info->list_url = NULL;
     guc_info->no_3pt = GLOBUS_FALSE;
     guc_info->no_dcau = GLOBUS_FALSE;
     guc_info->data_safe = GLOBUS_FALSE;
@@ -2193,7 +2193,7 @@ globus_l_guc_parse_arguments(
 	    break;
 
 	    case arg_list:
-            guc_info->list = GLOBUS_TRUE;
+            guc_info->list_url = globus_libc_strdup(instance->values[0]);
             break;
 
         default:
@@ -2226,16 +2226,7 @@ globus_l_guc_parse_arguments(
 
         globus_free(file_name);
     }
-    else if(guc_info->list)
-    {
-        if (argc < 2)
-        {
-            globus_url_copy_l_args_error("need to provide a url to list");
-            return -1;
-        }
-        guc_info->list_url = globus_libc_strdup(argv[1]);
-    }
-    else
+    else if(guc_info->list_url == NULL) /* only if we are not listing */
     {
         /* there must be 2 additional unflagged arguments:
          *     the source and destination URL's 
