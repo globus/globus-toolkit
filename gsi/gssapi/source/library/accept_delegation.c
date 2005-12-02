@@ -211,13 +211,16 @@ GSS_CALLCONV gss_accept_delegation(
 
         if (dbuf[0] == 'D')
         {
-            if(context->proxy_handle)
-            {
-                globus_gsi_proxy_handle_destroy(context->proxy_handle);
-            }
-
-            local_result = 
-                globus_gsi_proxy_handle_init(&context->proxy_handle, NULL);
+            globus_gsi_proxy_handle_attrs_t     proxy_handle_attrs;
+            int                                 key_bits;
+           
+            /* 
+             * The delegated credential always generated 512 bit keys 
+             * irrespective of the key strength of the peer credential (bug
+             * 3794). Fix for that is added below.
+             */
+            local_result = globus_gsi_cred_get_key_bits(
+                            context->peer_cred_handle->cred_handle, &key_bits);
             if(local_result != GLOBUS_SUCCESS)
             {
                 GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
@@ -226,7 +229,52 @@ GSS_CALLCONV gss_accept_delegation(
                 major_status = GSS_S_FAILURE;
                 goto mutex_unlock;
             }
-
+            local_result = globus_gsi_proxy_handle_attrs_init(
+                                                        &proxy_handle_attrs);
+            if(local_result != GLOBUS_SUCCESS)
+            {
+                GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                    minor_status, local_result,
+                    GLOBUS_GSI_GSSAPI_ERROR_WITH_DELEGATION);
+                major_status = GSS_S_FAILURE;
+                goto mutex_unlock;
+            }
+            local_result = globus_gsi_proxy_handle_attrs_set_keybits(
+                                               proxy_handle_attrs, key_bits);
+            if(local_result != GLOBUS_SUCCESS)
+            {
+                globus_gsi_proxy_handle_attrs_destroy(proxy_handle_attrs);
+                GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                    minor_status, local_result,
+                    GLOBUS_GSI_GSSAPI_ERROR_WITH_DELEGATION);
+                major_status = GSS_S_FAILURE;
+                goto mutex_unlock;
+            }
+            if(context->proxy_handle)
+            {
+                globus_gsi_proxy_handle_destroy(context->proxy_handle);
+            }
+            local_result = globus_gsi_proxy_handle_init(
+                                &context->proxy_handle, proxy_handle_attrs);
+            if(local_result != GLOBUS_SUCCESS)
+            {
+                globus_gsi_proxy_handle_attrs_destroy(proxy_handle_attrs);
+                GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                    minor_status, local_result,
+                    GLOBUS_GSI_GSSAPI_ERROR_WITH_DELEGATION);
+                major_status = GSS_S_FAILURE;
+                goto mutex_unlock;
+            }
+            local_result = globus_gsi_proxy_handle_attrs_destroy(
+                                                proxy_handle_attrs);
+            if(local_result != GLOBUS_SUCCESS)
+            {
+                GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                    minor_status, local_result,
+                    GLOBUS_GSI_GSSAPI_ERROR_WITH_DELEGATION);
+                major_status = GSS_S_FAILURE;
+                goto mutex_unlock;
+            }
             local_result = 
                 globus_gsi_proxy_create_req(context->proxy_handle, bio);
             if(local_result != GLOBUS_SUCCESS)

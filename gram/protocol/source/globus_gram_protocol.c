@@ -161,30 +161,57 @@ globus_gram_protocol_setup_attr(globus_io_attr_t *  attr)
     globus_io_secure_authorization_data_t  auth_data;
 
     /* acquire mutex */
-    if ( (res = globus_io_tcpattr_init(attr))
-         || (res = globus_io_attr_set_socket_keepalive(attr, GLOBUS_TRUE))
-	 || (res = globus_io_secure_authorization_data_initialize(
-	                &auth_data))
-	 || (res = globus_io_attr_set_secure_authentication_mode(
-	                attr,
-			GLOBUS_IO_SECURE_AUTHENTICATION_MODE_MUTUAL,
-			globus_i_gram_protocol_credential))
-	 || (res = globus_io_attr_set_secure_authorization_mode(
-	                attr,
-			GLOBUS_IO_SECURE_AUTHORIZATION_MODE_SELF,
-			&auth_data))
-	 || (res = globus_io_attr_set_secure_channel_mode(
-	                attr,
-			GLOBUS_IO_SECURE_CHANNEL_MODE_SSL_WRAP)) )
+    res = globus_io_secure_authorization_data_initialize(&auth_data);
+    if (res != GLOBUS_SUCCESS)
     {
-	globus_object_t *  err = globus_error_get(res);
-	globus_object_free(err);
-	/* release mutex */
-	return GLOBUS_GRAM_PROTOCOL_ERROR_CONNECTION_FAILED;
+        goto error_exit;
+    }
+    res = globus_io_tcpattr_init(attr);
+    if (res != GLOBUS_SUCCESS)
+    {
+        goto destroy_1;
+    }
+    res = globus_io_attr_set_socket_keepalive(attr, GLOBUS_TRUE);
+    if (res != GLOBUS_SUCCESS)
+    {
+        goto destroy_2;
+    }
+    res = globus_io_attr_set_secure_authentication_mode(
+        attr,
+        GLOBUS_IO_SECURE_AUTHENTICATION_MODE_MUTUAL,
+        globus_i_gram_protocol_credential);
+    if (res != GLOBUS_SUCCESS)
+    {
+        goto destroy_2;
+    }
+    res = globus_io_attr_set_secure_authorization_mode(
+        attr,
+        GLOBUS_IO_SECURE_AUTHORIZATION_MODE_SELF,
+        &auth_data);
+    if (res != GLOBUS_SUCCESS)
+    {
+        goto destroy_2;
+    }
+    res = globus_io_attr_set_secure_channel_mode(
+        attr,
+        GLOBUS_IO_SECURE_CHANNEL_MODE_SSL_WRAP);
+    if (res != GLOBUS_SUCCESS)
+    {
+        goto destroy_2;
     }
 
-    /* release mutex */
+    globus_io_secure_authorization_data_destroy(&auth_data);
     return GLOBUS_SUCCESS;
+
+destroy_2:
+    globus_io_tcpattr_destroy(attr);
+destroy_1:
+    globus_io_secure_authorization_data_destroy(&auth_data);
+error_exit:
+    globus_object_free(globus_error_get(res));
+
+    /* release mutex */
+    return GLOBUS_GRAM_PROTOCOL_ERROR_CONNECTION_FAILED;
 }
 
 globus_bool_t

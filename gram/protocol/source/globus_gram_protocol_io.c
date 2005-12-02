@@ -1127,6 +1127,7 @@ globus_l_gram_protocol_connect_callback(
 	    errstring = globus_object_printable_to_string(err);
 	    rc = GLOBUS_GRAM_PROTOCOL_ERROR_AUTHORIZATION;
 	    globus_gram_protocol_error_7_hack_replace_message(errstring);
+	    globus_free(errstring);
 	}
 	else
 	{

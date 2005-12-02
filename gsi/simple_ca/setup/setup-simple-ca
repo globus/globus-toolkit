@@ -196,7 +196,7 @@ fi
 ############################################################
 generate_unique_name() {
 
-tmp_hostname=`export GLOBUS_LOCATION=${GLOBUS_LOCATION};${GLOBUS_LOCATION}/bin/globus-hostname`
+tmp_hostname=`${GLOBUS_LOCATION}/bin/globus-hostname`
 
 if test -z "${tmp_hostname}"; then
     echo "" 
@@ -247,7 +247,7 @@ get_ca_info() {
 
 CA_ORG_NAME=`generate_unique_name`
 res=$?
-if test res -ne 0; then
+if test $res -ne 0; then
     exit 1
 fi
 GSI_CA_BASE_DN="ou=${CA_ORG_NAME}, ou=GlobusTest, o=Grid"
@@ -787,7 +787,6 @@ generate_setup_file "Makefile.am"
 generate_setup_file "Makefile.in"
 generate_setup_file "setup-ssl-utils.pl"
 generate_setup_file "/pkgdata/pkg_data_src.gpt.in"
-generate_setup_file "/pkgdata/pkg_data_src.gpt"
 generate_setup_file "setup-ssl-utils"
 generate_setup_file "setup-ssl-utils.__CACERT_HASH__"
 ${GLOBUS_SH_CP-cp} "${tmp_ca_setup_dir}/globus-ssl.conf.tmpl" "${tmp_ca_setup_dir}/globus-ssl.conf"
@@ -810,7 +809,7 @@ fi
 #${GLOBUS_SH_CHMOD-chmod} 0700 bootstrap
 ${GLOBUS_SH_CHMOD-chmod} 0700 configure
 
-CA_UTILS_PACKAGE_DIR=globus_simple_ca_${CA_CERT_HASH}_setup-0.18
+CA_UTILS_PACKAGE_DIR=globus_simple_ca_${CA_CERT_HASH}_setup-0.19
 CA_UTILS_PACKAGE=$CA_UTILS_PACKAGE_DIR.tar.gz
 
 #./bootstrap

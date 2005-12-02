@@ -217,7 +217,7 @@ destroy_monitor_exit:
         globus_libc_free(monitor.callback_contact);
     }
     globus_mutex_destroy(&monitor.mutex);
-    globus_cond_destroy(&monitor.mutex);
+    globus_cond_destroy(&monitor.cond);
 free_rsl_exit:
     globus_libc_free(rsl);
 deactivate_exit:

@@ -10,11 +10,12 @@ SUBDIRS = \
 	aclocal \
 	crypto \
 	ssl \
-	apps \
-	test \
 	certs \
 	pkgdata 
 
+if ENABLE_PROGRAMS
+SUBDIRS += apps test
+endif
 
 opensslinclude_HEADERS = \
 	e_os2.h

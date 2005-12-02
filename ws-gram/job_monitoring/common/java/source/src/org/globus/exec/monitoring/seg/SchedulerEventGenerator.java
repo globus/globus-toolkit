@@ -8,15 +8,21 @@
  * If you redistribute this file, with or without
  * modifications, you must include this notice in the file.
  */
-package org.globus.exec.monitoring;
+package org.globus.exec.monitoring.seg;
 
 import java.io.File;
+import java.io.IOException;
+import java.util.Date;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.globus.wsrf.ResourceKey;
 import org.globus.exec.generated.StateEnumeration;
+import org.globus.exec.monitoring.AlreadyRegisteredException;
+import org.globus.exec.monitoring.JobStateMonitor;
+import org.globus.exec.monitoring.NotRegisteredException;
+import org.globus.exec.monitoring.SchedulerEvent;
 
 /**
  * Scheduler Event Generator monitor thread.
@@ -35,7 +41,7 @@ class SchedulerEventGenerator extends Thread {
     private static Runtime runtime = Runtime.getRuntime();
 
     /** Path to the SEG executable */
-    private java.io.File globusLocation;
+    private File path;
     /**
      * Username of the account to run the SEG as.
      *
@@ -79,24 +85,23 @@ class SchedulerEventGenerator extends Thread {
      * something might be wrong and delay again.
      */
     private final long THROTTLE_RESTART_THRESHOLD = 2 * 1000;
-
-    private static final String SEG_EXECUTABLE_NAME =
-        "globus-scheduler-event-generator";
-    
     /**
      * SEG constructor.
      *
-     * @param globusLocation
-     *     Path to the Globus Toolkit installation.
+     * @param path
+     *     Path to the Scheduler Event Generator executable.
      * @param userName
      *     Username to sudo(8) to start the SEG.
      * @param schedulerName
      *     Name of the scheduler SEG module to use (fork, lsf, etc).
      */
-    public SchedulerEventGenerator(java.io.File globusLocation, String userName,
-            String schedulerName, JobStateMonitor monitor) 
+    public SchedulerEventGenerator(
+        File                                path,
+        String                              userName,
+        String                              schedulerName,
+        JobStateMonitor                     monitor) 
     {
-        this.globusLocation = globusLocation;
+        this.path = path;
         this.userName = userName;
         this.schedulerName = schedulerName;
         this.proc = null;
@@ -186,6 +191,7 @@ class SchedulerEventGenerator extends Thread {
                 }
             }
         } catch (java.io.IOException ioe) {
+            throw new RuntimeException(ioe);
         }
     }
 
@@ -203,8 +209,9 @@ class SchedulerEventGenerator extends Thread {
      * @retval true New process started.
      * @reval false Did not create a new seg process.
      */
-    private synchronized boolean startSegProcess(java.util.Date timeStamp)
-            throws java.io.IOException
+    private synchronized boolean startSegProcess(
+        Date                                timeStamp)
+        throws                              IOException
     {
         cleanProcess();
 
@@ -212,23 +219,20 @@ class SchedulerEventGenerator extends Thread {
 
         throttleRestart();
 
-        if (!shutdownCalled) {
+        if (!this.shutdownCalled) {
             logger.debug("Starting seg process");
             String [] cmd;
-            File path = new File(this.globusLocation +
-                File.separator + "libexec" +
-                File.separator + SEG_EXECUTABLE_NAME);
 
             // TODO: sudo integration here
             if (timeStamp != null) {
                 cmd = new String[] {
-                    path.toString(),
-                    "-s", schedulerName,
+                    this.path.toString(),
+                    "-s", this.schedulerName,
                     "-t", Long.toString(
                             timeStamp.getTime() / 1000)};
             } else {
                 cmd = new String[] {
-                    path.toString(), "-s", schedulerName
+                    this.path.toString(), "-s", this.schedulerName
                 };
             }
             if (logger.isDebugEnabled()) {
@@ -239,15 +243,8 @@ class SchedulerEventGenerator extends Thread {
                     }
                 }
             }
-
-            /*
-            String[] env = new String[] {
-                "GLOBUS_LOCATION=" + globusLocation.toString()
-            };
-
-            proc = runtime.exec(cmd, env);
-            */
             proc = runtime.exec(cmd);
+            logger.debug("seg exec returned");
             return true;
         } else {
             return false;
@@ -268,7 +265,7 @@ class SchedulerEventGenerator extends Thread {
         long thisTime = new java.util.Date().getTime();
         long endOfWait = thisTime + THROTTLE_RESTART_TIME;
 
-        while ((!shutdownCalled) &&
+        while ((!this.shutdownCalled) &&
                     ((thisTime - lastRestart) < THROTTLE_RESTART_THRESHOLD)) {
             logger.debug("Throttling the restart as we just restarted the SEG");
             try {
@@ -297,13 +294,13 @@ class SchedulerEventGenerator extends Thread {
     public synchronized void shutdown()
             throws java.io.IOException
     {
-        if (shutdownCalled) {
+        if (this.shutdownCalled) {
             return;
         } else {
             logger.debug("cleaning process");
             cleanProcess();
             logger.debug("setting shutdownCalled");
-            shutdownCalled = true;
+            this.shutdownCalled = true;
             /* Wake up throttler if we were waiting in it */
             logger.debug("notifying");
             notify();

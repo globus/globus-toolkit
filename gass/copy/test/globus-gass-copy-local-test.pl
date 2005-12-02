@@ -41,7 +41,9 @@ sub test_gridftp_local
     my $subject = `grid-proxy-info -identity`;
     chomp($subject);
     
-    $ENV{GRIDMAP}="gridmap";
+    my $gridmap=`pwd`;
+    chomp $gridmap;
+    $ENV{GRIDMAP}="$gridmap/gridmap";
 
     if(! -f $ENV{GRIDMAP})
     {
@@ -53,19 +55,19 @@ sub test_gridftp_local
     }
     
     my ($source_pid, $source_fd) = 
-        $u->command_blocking("in.ftpd -a -1 -s -p 0");
+        $u->command_blocking("globus-gridftp-server -1 -s -p 0");
     
     my ($dest_pid, $dest_fd) = 
-        $u->command_blocking("in.ftpd -a -1 -s -p 0");
+        $u->command_blocking("globus-gridftp-server -1 -s -p 0");
 
     select((select($source_fd), $| = 1)[0]);
     $source_port = <$source_fd>;
-    $source_port =~ s/Accepting connections on port (\d+)/\1/;
+    $source_port =~ s/Server listening at \S+:(\d+)/\1/;
     chomp($source_port);
 
     select((select($dest_fd), $| = 1)[0]);
     $dest_port = <$dest_fd>;
-    $dest_port =~ s/Accepting connections on port (\d+)/\1/;
+    $dest_port =~ s/Server listening at \S+:+(\d+)/\1/;
     chomp($dest_port);
 
     sleep 1;

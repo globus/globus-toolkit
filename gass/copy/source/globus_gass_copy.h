@@ -562,25 +562,21 @@ typedef struct
 
     /** This points to the full path of the target of a symlink.  
      *  It is NULL for non-symlinks or when not available.
-     *  *NOTE* This is currently not implemented and will be NULL.
      */
     char *                              symlink_target;
     
     /** An integer specifying the mode of the file.  
      *  It is set to -1 when not available.
-     *  *NOTE* This is currently not implemented and will be -1.
      */
     int                                 mode;
      
     /** An integer specifying the modification time of the file.
      *  It is set to -1 when not available.
-     *  *NOTE* This is currently not implemented and will be -1.
      */
     int                                 mdtm;
      
     /** A globus_off_t specifying the size of the file.  
      *  It is set to -1 when not available.
-     *  *NOTE* This is currently not implemented and will be -1.
      */
     globus_off_t                        size;
 } globus_gass_copy_glob_stat_t;

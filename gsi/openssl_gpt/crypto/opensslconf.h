@@ -14,7 +14,7 @@
 
 #ifdef HEADER_CRYPTLIB_H
 #   ifndef OPENSSLDIR
-#       define OPENSSLDIR "/home/bresnaha/Dev/Globus/GL"
+#       define OPENSSLDIR "/sandbox/bresnaha/Dev/Globus/GL"
 #   endif
 #endif
 
@@ -120,4 +120,41 @@
 #   ifndef HAVE_DLFCN_H
 #       define HAVE_DLFCN_H 1
 #   endif
+#endif
+
+#ifndef OPENSSL_NO_IDEA
+/* #   undef OPENSSL_NO_IDEA */
+#endif
+#ifndef OPENSSL_NO_AES
+/* #   undef OPENSSL_NO_AES */
+#endif
+#ifndef OPENSSL_NO_RC2
+/* #   undef OPENSSL_NO_RC2 */
+#endif
+#ifndef OPENSSL_NO_RC4
+/* #   undef OPENSSL_NO_RC4 */
+#endif
+#ifndef OPENSSL_NO_RC5
+/* #   undef OPENSSL_NO_RC5 */
+#endif
+#ifndef OPENSSL_NO_MD2
+/* #   undef OPENSSL_NO_MD2 */
+#endif
+#ifndef OPENSSL_NO_MD4
+/* #   undef OPENSSL_NO_MD4 */
+#endif
+#ifndef OPENSSL_NO_RIPEMD
+/* #   undef OPENSSL_NO_RIPEMD */
+#endif
+#ifndef OPENSSL_NO_DSA
+/* #   undef OPENSSL_NO_DSA */
+#endif
+#ifndef OPENSSL_NO_DH
+/* #   undef OPENSSL_NO_DH */
+#endif
+#ifndef OPENSSL_NO_KRB5
+/* #   undef OPENSSL_NO_KRB5 */
+#endif
+#ifndef OPENSSL_NO_HW
+/* #   undef OPENSSL_NO_HW */
 #endif

@@ -309,6 +309,10 @@ globus_result_t globus_gsi_cred_get_cert_type(
     globus_gsi_cred_handle_t            handle,
     globus_gsi_cert_utils_cert_type_t * type);
 
+globus_result_t globus_gsi_cred_get_key_bits(
+    globus_gsi_cred_handle_t            handle,
+    int *                               key_bits);
+
 globus_result_t globus_gsi_cred_handle_attrs_set_ca_cert_dir(
     globus_gsi_cred_handle_attrs_t      handle_attrs,
     char *                              ca_cert_dir);

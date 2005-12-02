@@ -2,13 +2,6 @@
 
 GlobusDebugDefine(GLOBUS_XIO_SYSTEM);
 
-#ifdef WIN32
-#include <Winsock2.h>
-#define GlobusLXIOSystemUpdateErrno() (errno = WSAGetLastError())
-#else
-#define GlobusLXIOSystemUpdateErrno()
-#endif
-
 globus_memory_t                         globus_i_xio_system_op_info_memory;
 globus_memory_t                         globus_i_xio_system_iov_memory;
 static globus_bool_t                    globus_l_xio_system_memory_initialized;
@@ -86,7 +79,7 @@ globus_i_xio_system_try_read(
         do
         {
             rc = read(fd, buf, buflen);
-            GlobusLXIOSystemUpdateErrno();
+            GlobusXIOSystemUpdateErrno();
         } while(rc < 0 && errno == EINTR);
 
         if(rc < 0)
@@ -141,8 +134,12 @@ globus_i_xio_system_try_readv(
 
     do
     {
+#ifdef HAVE_READV
         rc = readv(fd, iov, (iovc > IOV_MAX) ? IOV_MAX : iovc);
-        GlobusLXIOSystemUpdateErrno();
+#else
+        rc = read(fd, iov[0].iov_base,iov[0].iov_len);
+#endif
+        GlobusXIOSystemUpdateErrno();
     } while(rc < 0 && errno == EINTR);
 
     if(rc < 0)
@@ -202,7 +199,7 @@ globus_i_xio_system_try_recv(
         do
         {
             rc = recv(fd, buf, buflen, flags);
-            GlobusLXIOSystemUpdateErrno();
+            GlobusXIOSystemUpdateErrno();
         } while(rc < 0 && errno == EINTR);
 
         if(rc < 0)
@@ -270,7 +267,7 @@ globus_i_xio_system_try_recvfrom(
                 flags,
                 (struct sockaddr *) from,
                 &len);
-            GlobusLXIOSystemUpdateErrno();
+            GlobusXIOSystemUpdateErrno();
         } while(rc < 0 && errno == EINTR);
 
         if(rc < 0)
@@ -341,7 +338,7 @@ globus_i_xio_system_try_recvmsg(
             0);
         if(rc != 0)
         {
-            GlobusLXIOSystemUpdateErrno();
+            GlobusXIOSystemUpdateErrno();
             rc = -1;
         }
         else
@@ -349,7 +346,7 @@ globus_i_xio_system_try_recvmsg(
             rc = received;
         }
     }
-#else
+#elif defined(HAVE_RECVSMSG)
     {
         globus_size_t                   orig_iovc;
 
@@ -359,10 +356,36 @@ globus_i_xio_system_try_recvmsg(
         do
         {
             rc = recvmsg(fd, msghdr, flags);
-            GlobusLXIOSystemUpdateErrno();
+            GlobusXIOSystemUpdateErrno();
         } while(rc < 0 && errno == EINTR);
 
         msghdr->msg_iovlen = orig_iovc;
+    }
+#else
+    {
+        do
+        {
+            if (msghdr->msg_name)
+            {
+                rc = recvfrom(
+                        fd,
+                        msghdr->msg_iov[0].iov_base,
+                        msghdr->msg_iov[0].iov_len,
+                        flags,
+                        (struct sockaddr *) msghdr->msg_name,
+                        &msghdr->msg_namelen);
+            }
+            else
+            {
+                rc = recv(
+                        fd,
+                        msghdr->msg_iov[0].iov_base,
+                        msghdr->msg_iov[1].iov_len,
+                        flags);
+            }
+
+            GlobusXIOSystemUpdateErrno();
+        } while(rc < 0 && errno == EINTR);
     }
 #endif
 
@@ -423,7 +446,7 @@ globus_i_xio_system_try_write(
         do
         {
             rc = write(fd, buf, buflen);
-            GlobusLXIOSystemUpdateErrno();
+            GlobusXIOSystemUpdateErrno();
         } while(rc < 0 && errno == EINTR);
 
         if(rc < 0)
@@ -472,8 +495,12 @@ globus_i_xio_system_try_writev(
 
     do
     {
+#ifdef HAVE_WRITEV
         rc = writev(fd, iov, (iovc > IOV_MAX) ? IOV_MAX : iovc);
-        GlobusLXIOSystemUpdateErrno();
+#else
+        rc = write(fd, iov[0].iov_base, iov[0].iov_len);
+#endif
+        GlobusXIOSystemUpdateErrno();
     } while(rc < 0 && errno == EINTR);
 
     if(rc < 0)
@@ -527,7 +554,7 @@ globus_i_xio_system_try_send(
         do
         {
             rc = send(fd, buf, buflen, flags);
-            GlobusLXIOSystemUpdateErrno();
+            GlobusXIOSystemUpdateErrno();
         } while(rc < 0 && errno == EINTR);
 
         if(rc < 0)
@@ -585,9 +612,9 @@ globus_i_xio_system_try_sendto(
                 buf,
                 buflen,
                 flags,
-                (const struct sockaddr *) to,
+                (struct sockaddr *) to,
                 GlobusLibcSockaddrLen(to));
-            GlobusLXIOSystemUpdateErrno();
+            GlobusXIOSystemUpdateErrno();
         } while(rc < 0 && errno == EINTR);
 
         if(rc < 0)
@@ -650,7 +677,7 @@ globus_i_xio_system_try_sendmsg(
             0);
         if(rc != 0)
         {
-            GlobusLXIOSystemUpdateErrno();
+            GlobusXIOSystemUpdateErrno();
             rc = -1;
         }
         else
@@ -658,7 +685,7 @@ globus_i_xio_system_try_sendmsg(
             rc = sent;
         }
     }
-#else
+#elif defined(HAVE_SENDMSG)
     {
         globus_size_t                   orig_iovc;
 
@@ -668,10 +695,35 @@ globus_i_xio_system_try_sendmsg(
         do
         {
             rc = sendmsg(fd, msghdr, flags);
-            GlobusLXIOSystemUpdateErrno();
+            GlobusXIOSystemUpdateErrno();
         } while(rc < 0 && errno == EINTR);
 
         msghdr->msg_iovlen = orig_iovc;
+    }
+#else
+    {
+        do
+        {
+            if (msghdr->msg_name)
+            {
+                rc = sendto(
+                        fd,
+                        msghdr->msg_iov[0].iov_base,
+                        msghdr->msg_iov[0].iov_len,
+                        flags,
+                        (struct sockaddr *) msghdr->msg_name,
+                        msghdr->msg_namelen);
+            }
+            else
+            {
+                rc = send(
+                        fd,
+                        msghdr->msg_iov[0].iov_base,
+                        msghdr->msg_iov[0].iov_len,
+                        flags);
+            }
+            GlobusXIOSystemUpdateErrno();
+        } while (rc < 0 && errno == EINTR);
     }
 #endif
 
@@ -771,7 +823,7 @@ globus_i_xio_system_socket_try_read(
 
     GlobusXIOSystemDebugEnter();
 
-#ifndef WIN32
+#if !defined(WIN32) && !defined(TARGET_ARCH_NETOS)
     /* unix can use readv for sockets */
     if(!flags && !from && iovc > 1)
     {
@@ -827,7 +879,7 @@ globus_i_xio_system_socket_try_write(
 
     GlobusXIOSystemDebugEnter();
 
-#ifndef WIN32
+#if !defined(WIN32) && !defined(TARGET_ARCH_NETOS)
     /* unix can use writev for sockets */
     if(!flags && !to && iovc > 1)
     {

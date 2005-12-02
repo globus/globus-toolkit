@@ -525,46 +525,84 @@ globus_l_gram_client_setup_gatekeeper_attr(
     globus_result_t                        res;
     globus_io_secure_authorization_data_t  auth_data;
 
-    if ( (res = globus_io_tcpattr_init(attrp))
-         || (res = globus_io_attr_set_socket_keepalive(attrp, GLOBUS_TRUE))
-
-	 || (res = globus_io_secure_authorization_data_initialize(
-	     &auth_data))
-	 || (res = globus_io_attr_set_secure_authentication_mode(
-	     attrp,
-	     GLOBUS_IO_SECURE_AUTHENTICATION_MODE_MUTUAL,
-             (credential != GSS_C_NO_CREDENTIAL)
-                 ? credential
-                 : globus_i_gram_protocol_credential))
-	 ||  (gatekeeper_dn ? (res = globus_io_secure_authorization_data_set_identity(
-	     &auth_data,
-	     gatekeeper_dn)) : 0)
-	 || (res = globus_io_attr_set_secure_authorization_mode(
-	     attrp,
-	     gatekeeper_dn ? GLOBUS_IO_SECURE_AUTHORIZATION_MODE_IDENTITY : GLOBUS_IO_SECURE_AUTHORIZATION_MODE_HOST,
-	     &auth_data))
-	 || (res = globus_io_attr_set_secure_delegation_mode(
-	     attrp,
-	     delegation_mode))
-	 || (res = globus_io_attr_set_secure_channel_mode(
-	     attrp,
-	     GLOBUS_IO_SECURE_CHANNEL_MODE_GSI_WRAP)) )
+    res = globus_io_secure_authorization_data_initialize(&auth_data);
+    if (res != GLOBUS_SUCCESS)
     {
-	globus_object_t *  err = globus_error_get(res);
-	
-	if(globus_l_print_fp)
-	{
-	    globus_libc_fprintf(globus_l_print_fp, 
-				"setting up IO attributes failed\n");
-	}
-	
-	/* TODO: interrogate 'err' to choose the correct error code */
-	
-	globus_object_free(err);
-	return GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED;
+        goto error_exit;
+    }
+    res = globus_io_tcpattr_init(attrp);
+    if (res != GLOBUS_SUCCESS)
+    {
+        goto destroy_1;
+    }
+    res = globus_io_attr_set_socket_keepalive(attrp, GLOBUS_TRUE);
+    if (res != GLOBUS_SUCCESS)
+    {
+        goto destroy_2;
+    }
+    
+    res = globus_io_attr_set_secure_authentication_mode(
+        attrp,
+        GLOBUS_IO_SECURE_AUTHENTICATION_MODE_MUTUAL,
+        (credential != GSS_C_NO_CREDENTIAL)
+            ? credential 
+            : globus_i_gram_protocol_credential);
+    if (res != GLOBUS_SUCCESS)
+    {
+        goto destroy_2;
+    }
+    if(gatekeeper_dn)
+    {
+        res = globus_io_secure_authorization_data_set_identity(
+            &auth_data,
+            gatekeeper_dn);
+        if (res != GLOBUS_SUCCESS)
+        {
+            goto destroy_2;
+        }
+    }
+    res = globus_io_attr_set_secure_authorization_mode(
+        attrp,
+        gatekeeper_dn 
+            ? GLOBUS_IO_SECURE_AUTHORIZATION_MODE_IDENTITY 
+            : GLOBUS_IO_SECURE_AUTHORIZATION_MODE_HOST,
+        &auth_data);
+    if (res != GLOBUS_SUCCESS)
+    {
+        goto destroy_2;
+    }
+    res = globus_io_attr_set_secure_delegation_mode(
+        attrp,
+        delegation_mode);
+    if (res != GLOBUS_SUCCESS)
+    {
+        goto destroy_2;
+    }
+    res = globus_io_attr_set_secure_channel_mode(
+        attrp,
+        GLOBUS_IO_SECURE_CHANNEL_MODE_GSI_WRAP);
+    if (res != GLOBUS_SUCCESS)
+    {
+        goto destroy_2;
     }
 
+    globus_io_secure_authorization_data_destroy(&auth_data);
+
     return GLOBUS_SUCCESS;
+    
+destroy_2:
+    globus_io_tcpattr_destroy(attrp);
+destroy_1:
+    globus_io_secure_authorization_data_destroy(&auth_data);
+error_exit:
+    if(globus_l_print_fp)
+    {
+        globus_libc_fprintf(globus_l_print_fp, 
+            "setting up IO attributes failed\n");
+    }
+    globus_object_free(globus_error_get(res));
+    
+    return GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED;
 } /* globus_l_gram_client_setup_gatekeeper_attr() */
 
 static int
@@ -575,29 +613,59 @@ globus_l_gram_client_setup_jobmanager_attr(
     globus_result_t                        res;
     globus_io_secure_authorization_data_t  auth_data;
 
-    if ( (res = globus_io_tcpattr_init(attr))
-            || (res = globus_io_attr_set_socket_keepalive(attr, GLOBUS_TRUE))
-            || (res = globus_io_secure_authorization_data_initialize(
-                    &auth_data))
-            || (res = globus_io_attr_set_secure_authentication_mode(
-                    attr,
-                    GLOBUS_IO_SECURE_AUTHENTICATION_MODE_MUTUAL,
-                     (credential != GSS_C_NO_CREDENTIAL)
-                         ? credential
-                         : globus_i_gram_protocol_credential))
-            || (res = globus_io_attr_set_secure_authorization_mode(
-                    attr,
-                    GLOBUS_IO_SECURE_AUTHORIZATION_MODE_SELF,
-                    &auth_data))
-            || (res = globus_io_attr_set_secure_channel_mode(
-                    attr,
-                    GLOBUS_IO_SECURE_CHANNEL_MODE_SSL_WRAP)) )
+    res = globus_io_secure_authorization_data_initialize(&auth_data);
+    if (res != GLOBUS_SUCCESS)
     {
-        globus_object_t *  err = globus_error_get(res);
-        globus_object_free(err);
-        return GLOBUS_GRAM_PROTOCOL_ERROR_CONNECTION_FAILED;
+        goto error_exit;
     }
+    res = globus_io_tcpattr_init(attr);
+    if (res != GLOBUS_SUCCESS)
+    {
+        goto destroy_1;
+    }
+    res = globus_io_attr_set_socket_keepalive(attr, GLOBUS_TRUE);
+    if (res != GLOBUS_SUCCESS)
+    {
+        goto destroy_2;
+    }
+    res = globus_io_attr_set_secure_authentication_mode(
+        attr,
+        GLOBUS_IO_SECURE_AUTHENTICATION_MODE_MUTUAL,
+        (credential != GSS_C_NO_CREDENTIAL)
+            ? credential
+            : globus_i_gram_protocol_credential);
+    if (res != GLOBUS_SUCCESS)
+    {
+        goto destroy_2;
+    }
+    res = globus_io_attr_set_secure_authorization_mode(
+        attr,
+        GLOBUS_IO_SECURE_AUTHORIZATION_MODE_SELF,
+        &auth_data);
+    if (res != GLOBUS_SUCCESS)
+    {
+        goto destroy_2;
+    }
+    res = globus_io_attr_set_secure_channel_mode(
+        attr,
+        GLOBUS_IO_SECURE_CHANNEL_MODE_SSL_WRAP);
+    if (res != GLOBUS_SUCCESS)
+    {
+        goto destroy_2;
+    }
+
+    globus_io_secure_authorization_data_destroy(&auth_data);
+
     return GLOBUS_SUCCESS;
+    
+destroy_2:
+    globus_io_tcpattr_destroy(attr);
+destroy_1:
+    globus_io_secure_authorization_data_destroy(&auth_data);
+error_exit:
+    globus_object_free(globus_error_get(res));
+    
+    return GLOBUS_GRAM_PROTOCOL_ERROR_PROTOCOL_FAILED;
 } /* globus_l_gram_client_setup_jobmanager_attr() */
 
 /**

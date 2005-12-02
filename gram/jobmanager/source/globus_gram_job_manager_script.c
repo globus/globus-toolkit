@@ -2295,7 +2295,9 @@ globus_l_gram_job_manager_script_staged_done(
 	    from,
 	    to);
 
-    if(request->save_state)
+    if(request->save_state &&
+            request->jobmanager_state !=
+                    GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_CLOSE_OUTPUT)
     {
 	globus_gram_job_manager_state_file_write(
 		request);

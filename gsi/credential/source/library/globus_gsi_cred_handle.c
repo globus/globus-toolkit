@@ -456,6 +456,92 @@ globus_gsi_cred_get_lifetime(
 /* }@ */
 
 /**
+ * @name Getting the Credential Strength
+ * @ingroup globus_gsi_cred_handle
+ */
+/* @{ */
+/**
+ * This function retreives the key strength of the credential contained
+ * in a handle
+ *
+ * @param cred_handle
+ *        The credential handle to retrieve the strength from
+ * @param key_bits
+ *        Contains the number of bits in the key on return
+ *
+ * @return
+ *        GLOBUS_SUCCESS or an error captured in a globus_result_t
+ */
+globus_result_t 
+globus_gsi_cred_get_key_bits(
+    globus_gsi_cred_handle_t            cred_handle,
+    int *                               key_bits)
+{
+    EVP_PKEY *                          pkey;
+    globus_result_t                     result;
+    static char *                       _function_name_ =
+        "globus_gsi_cred_get_key_bits";
+
+    GLOBUS_I_GSI_CRED_DEBUG_ENTER;
+
+    if(cred_handle == NULL)
+    {
+        GLOBUS_GSI_CRED_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CRED_ERROR_WITH_CRED,
+            (_GCRSL("NULL cred handle parameter passed to function: %s"), 
+             _function_name_));
+        goto error_exit;
+    }
+    
+    if(key_bits == NULL)
+    {
+        GLOBUS_GSI_CRED_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CRED_ERROR_WITH_CRED,
+            (_GCRSL("NULL key_bits parameter passed to function: %s"), 
+             _function_name_));
+        goto error_exit;
+    }
+    
+    if(cred_handle->cert == NULL)
+    {
+        GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CRED_ERROR_WITH_CRED_CERT,
+            (_GCRSL("The credential's cert is NULL")));
+        goto error_exit;
+    }
+    
+    pkey = X509_get_pubkey(cred_handle->cert);
+    if(pkey == NULL)
+    {
+        GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CRED_ERROR_WITH_CRED,
+            (_GCRSL("The credential's public key is NULL")));
+        goto error_exit;
+    }
+    *key_bits = EVP_PKEY_bits(pkey);
+    if (*key_bits <= 0)
+    {
+        GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CRED_ERROR_WITH_CRED,
+            (_GCRSL("Couldn't get length of credential's public key")));
+        goto error_exit;
+    }
+
+    result = GLOBUS_SUCCESS;
+
+ error_exit:
+
+    GLOBUS_I_GSI_CRED_DEBUG_EXIT;
+    return result;
+}
+
+
+/**
  * @name Setting and Getting the Certificate
  * @ingroup globus_gsi_cred_handle
  */

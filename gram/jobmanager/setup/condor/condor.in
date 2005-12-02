@@ -206,10 +206,7 @@ sub submit
 	$argument_string = join(' ',
 				map
 				{
-				    $_ =~ s/\\/\\\\/g;
-				    $_ =~ s/\$/\\\$/g;
 				    $_ =~ s/"/\\\"/g; #"
-				    $_ =~ s/`/\\\`/g; #`
 				    $_;
 				}
 				@arguments);
@@ -286,6 +283,67 @@ sub submit
     print SCRIPT_FILE "log_xml = True\n";
     print SCRIPT_FILE "#Extra attributes specified by client\n";
     print SCRIPT_FILE "$submit_attrs_string\n";
+
+    my $shouldtransferfiles = $description->shouldtransferfiles();
+    if (defined($shouldtransferfiles))
+    {
+        $self->log("Adding \"should_transfer_files = $shouldtransferfiles\"\n");
+        print SCRIPT_FILE "should_transfer_files = $shouldtransferfiles\n";
+    }
+
+    my $WhenToTransferOutput = $description->whentotransferoutput();
+    if (defined($WhenToTransferOutput))
+    {
+        $self->log("Adding \"WhenToTransferOutput = $WhenToTransferOutput\"\n");
+        print SCRIPT_FILE "WhenToTransferOutput = $WhenToTransferOutput\n";
+    }
+
+    my $transfer_input_files = $description->transferinputfiles();
+    if (defined($transfer_input_files))
+    {
+        $self->log("Adding explicitly \"transfer_input_files = "
+                  ."$transfer_input_files\"\n");
+        print SCRIPT_FILE "transfer_input_files = $transfer_input_files\n";
+    }
+    else
+    {
+        my @transfer_input_files = $description->transferinputfiles();
+        if (defined($transfer_input_files[0]))
+            {
+            my $file_list_string = "";
+            foreach my $file (@transfer_input_files)
+            {
+                $file_list_string .= "$file, ";
+            }
+            $file_list_string =~ s/, $//;
+            $self->log("Adding \"transfer_input_files = $file_list_string\"\n");
+            print SCRIPT_FILE "transfer_input_files = $file_list_string\n";
+        }
+    }
+
+    my $transfer_output_files = $description->transferoutputfiles();
+    if (defined($transfer_output_files))
+    {
+        $self->log("Adding explicitly \"transfer_output_files = "
+                  ."$transfer_output_files\"\n");
+        print SCRIPT_FILE "transfer_output_files = $transfer_output_files\n";
+    }
+    else
+    {
+        my @transfer_output_files = $description->transferoutputfiles();
+        if (defined($transfer_output_files[0]))
+            {
+            my $file_list_string = "";
+            foreach my $file (@transfer_output_files)
+            {
+                $file_list_string .= "$file, ";
+            }
+            $file_list_string =~ s/, $//;
+            $self->log("Adding \"transfer_output_files = "
+                      ."$file_list_string\"\n");
+            print SCRIPT_FILE "transfer_output_files = $file_list_string\n";
+        }
+    }
 
     for (my $i = 0; $i < $description->count(); $i++) {
         if ($multi_output) {
@@ -434,7 +492,7 @@ sub poll
                         }
                     } 
                     $record = {};
-                } elsif (/<a n="([^"]+)">/) {
+                } elsif (/<a n="([^"]+)">/) { #"/) {
                     my $attr = $1;
 
                     if (/<s>([^<]+)<\/s>/) {

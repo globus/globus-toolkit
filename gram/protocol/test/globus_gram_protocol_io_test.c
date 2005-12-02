@@ -93,6 +93,7 @@ int main(
 
     if (argc > 1 && !strcmp(argv[1], "invalid_host"))
     {
+        globus_free(server_callback_contact);
         server_callback_contact = globus_libc_strdup(
                 "https://bogushost.globus.org:7777/7777");
     }
@@ -114,6 +115,7 @@ int main(
 	globus_cond_wait(&monitor.cond, &monitor.mutex);
     }
 
+    globus_libc_free(msg);
     globus_mutex_unlock(&monitor.mutex);
     globus_mutex_destroy(&monitor.mutex);
     globus_cond_destroy(&monitor.cond);
@@ -127,6 +129,7 @@ int main(
 
 	monitor.error++;
     }
+    globus_libc_free(monitor.status_request[1]);
     globus_gram_protocol_callback_disallow(server_callback_contact);
     globus_module_deactivate(GLOBUS_GRAM_PROTOCOL_MODULE);
 

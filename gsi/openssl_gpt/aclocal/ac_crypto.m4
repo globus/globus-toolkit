@@ -175,13 +175,24 @@ AC_DEFUN([LAC_CRYPTO_SET],
                 ;;
                 *x86_64*)
                     # gcc
-                    lac_SIXTY_FOUR_BIT_LONG="1"
-                    lac_THIRTY_TWO_BIT=""
-                    lac_RC4_INT="unsigned char"
-                    lac_RC4_CHUNK="unsigned long"
-                    lac_BF_PTR2="1"
-                    lac_DES_UNROLL="1"
-                    lac_DES_LONG="unsigned int"
+                    case ${GLOBUS_FLAVOR_NAME} in
+                        *64* )
+                            lac_SIXTY_FOUR_BIT_LONG="1"
+                            lac_THIRTY_TWO_BIT=""
+                            lac_RC4_INT="unsigned char"
+                            lac_RC4_CHUNK="unsigned long"
+                            lac_BF_PTR2="1"
+                            lac_DES_UNROLL="1"
+                            lac_DES_LONG="unsigned int"
+                        ;;
+                        *32* )
+                            lac_BN_LLONG="1"
+                            lac_DES_PTR="1"
+                            lac_DES_RISC1="1"
+                            lac_DES_UNROLL="1"
+                            lac_RC4_INDEX="1"
+                        ;;
+                    esac
                 ;;
                 *x86*)
                     # gcc

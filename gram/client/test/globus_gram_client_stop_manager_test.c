@@ -204,7 +204,7 @@ int main(int argc, char *argv[])
         rc = -1;
     }
 
-
+    globus_libc_free(job_contact);
 
 disallow_exit:
     globus_gram_client_callback_disallow(contact);

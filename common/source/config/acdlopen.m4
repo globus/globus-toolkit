@@ -1,6 +1,7 @@
 dnl CHECK_NEED_LDL
 AC_DEFUN([CHECK_NEED_LDL],
 [
+    if test "X$GPT_LINKTYPE" != "Xstatic"; then
     AC_CHECK_FUNC([dlopen],
     [],
     [
@@ -18,4 +19,5 @@ AC_DEFUN([CHECK_NEED_LDL],
             ])
         ])
     ])
+    fi
 ])

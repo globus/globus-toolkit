@@ -40,6 +40,7 @@ int main(int argc, char ** argv)
     my_monitor_t			Monitor;
     gss_cred_id_t                       credential;
     globus_gram_client_attr_t           attr;
+    OM_uint32                           major_status, minor_status;
 
     /* Retrieve relevant parameters from the command line */ 
     if (argc < 2 || argc > 3)
@@ -61,7 +62,6 @@ int main(int argc, char ** argv)
 
     if(argc == 3)
     {
-        OM_uint32 major_status, minor_status;
         gss_buffer_desc buffer;
         buffer.value = globus_libc_malloc(
                 strlen("X509_USER_PROXY=") +
@@ -89,6 +89,7 @@ int main(int argc, char ** argv)
             fprintf(stderr, "ERROR: setting credential on attr\n");
             return 1;
         }
+        globus_free(buffer.value);
     }
 
     rm_contact = globus_libc_strdup(argv[1]);
@@ -120,6 +121,11 @@ int main(int argc, char ** argv)
     globus_mutex_destroy(&Monitor.mutex);
     globus_cond_destroy(&Monitor.cond);
 
+    if(argc == 3)
+    {
+        gss_release_cred(&minor_status, &credential);
+    }
+    globus_gram_client_attr_destroy(&attr);
 
     /* Deactivate GRAM */
     globus_module_deactivate(GLOBUS_GRAM_CLIENT_MODULE);

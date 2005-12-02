@@ -43,29 +43,29 @@ check_expired() {
     fi
 
     month=`echo ${d} | ${GLOBUS_SH_SED-sed} -e "s|\([^0-9]*\).*|\1|"`
-    if test "${month}" == "Jan"; then
+    if test "${month}" = "Jan"; then
         monnum=01
-    elif test "${month}" == "Feb"; then
+    elif test "${month}" = "Feb"; then
         monnum=02
-    elif test "${month}" == "Mar"; then
+    elif test "${month}" = "Mar"; then
         monnum=03
-    elif test "${month}" == "Apr"; then
+    elif test "${month}" = "Apr"; then
         monnum=04
-    elif test "${month}" == "May"; then
+    elif test "${month}" = "May"; then
         monnum=05
-    elif test "${month}" == "Jun"; then
+    elif test "${month}" = "Jun"; then
         monnum=06
-    elif test "${month}" == "Jul"; then
+    elif test "${month}" = "Jul"; then
         monnum=07
-    elif test "${month}" == "Aug"; then
+    elif test "${month}" = "Aug"; then
         monnum=08
-    elif test "${month}" == "Sep"; then
+    elif test "${month}" = "Sep"; then
         monnum=09
-    elif test "${month}" == "Oct"; then
+    elif test "${month}" = "Oct"; then
         monnum=10
-    elif test "${month}" == "Nov"; then
+    elif test "${month}" = "Nov"; then
         monnum=11
-    elif test "${month}" == "Dec"; then
+    elif test "${month}" = "Dec"; then
         monnum=12
     else
         monnum=00

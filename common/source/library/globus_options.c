@@ -1,5 +1,7 @@
 #include "globus_common.h"
 
+#define HELP_LINE_LENGTH 70
+
 typedef struct globus_l_options_handle_s
 {
     globus_options_unknown_callback_t    unknown_func;
@@ -49,12 +51,13 @@ globus_options_destroy(
 static
 void
 globus_options_help(
-    globus_options_handle_t                handle)
+    globus_options_handle_t             handle)
 {
+    char *                              ptr;
     int                                 i;
     int                                 length;
     int                                 ndx;
-    char                                buf[80];
+    char                                buf[HELP_LINE_LENGTH+8];
 
     for(i = 0; i < handle->table_size; i++)
     {
@@ -71,13 +74,27 @@ globus_options_help(
             do 
             {
                 length = strlen(&handle->table[i].description[ndx]);
-                if(length > 70)
+                if(length > HELP_LINE_LENGTH)
                 {
-                    length = 70;
+                    ptr = &handle->table[i].description[ndx] + HELP_LINE_LENGTH;
+                    while(ptr > &handle->table[i].description[ndx] &&
+                        *ptr != ' ')
+                    {
+                        ptr--;
+                    }
+                    if(ptr != &handle->table[i].description[ndx])
+                    {
+                        length = ptr - &handle->table[i].description[ndx];
+                    }
+                    else
+                    {
+                        length = HELP_LINE_LENGTH;
+                    }
                 }
-                snprintf(buf,70,"%s",&handle->table[i].description[ndx]);
-                buf[length] = '\0';
-                fprintf(stdout, "\t%s\n", buf);
+                snprintf(buf,
+                    length+1,"%s",&handle->table[i].description[ndx]);
+                buf[length+1] = '\0';
+                fprintf(stderr, "    %s\n", buf);
                 ndx += length;
             } while(length > 0);
         }

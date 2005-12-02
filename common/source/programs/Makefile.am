@@ -1,5 +1,6 @@
 include $(top_srcdir)/globus_automake_pre
 
+if ENABLE_PROGRAMS
 bin_SCRIPTS = globus-sh-exec globus-version
 sbin_SCRIPTS = globus-update-doxygen-index \
         globus-vararg-enums-doxygen-filter.pl
@@ -20,6 +21,7 @@ globus_is_local_user_SOURCES = globus_is_local_user.c
 globus_is_local_user_LDFLAGS = @GPT_LDFLAGS@
 
 globus_is_local_user_LDADD = ../library/libglobus_common_$(GLOBUS_FLAVOR_NAME).la @GPT_PGM_LINKS@
+endif
 
 include $(top_srcdir)/globus_automake_post
 

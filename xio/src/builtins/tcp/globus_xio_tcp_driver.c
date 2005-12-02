@@ -12,8 +12,18 @@
 #include "globus_xio_driver.h"
 #include "globus_xio_tcp_driver.h"
 #include "version.h"
+#ifdef HAVE_NETINET_TCP_H
 #include <netinet/tcp.h>
+#endif
+
+#ifdef HAVE_SOCKAPI_H
+#include <sockapi.h>
+#define SOMAXCONN 5
+#endif
+
+#ifndef TARGET_ARCH_NETOS
 #include <fcntl.h>
+#endif
 
 GlobusDebugDefine(GLOBUS_XIO_TCP);
 
@@ -188,7 +198,7 @@ globus_l_xio_tcp_get_env_pair(
     return GLOBUS_FALSE;
 }
 
-#ifndef WIN32
+#if !defined(WIN32) && !defined(TARGET_ARCH_NETOS)
 
 static
 void

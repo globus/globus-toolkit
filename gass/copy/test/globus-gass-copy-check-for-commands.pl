@@ -37,7 +37,6 @@ sub check_for_commands
     my @commands = 
         qw(
            grid-cert-info
-           grid-cert-renew
            grid-cert-request
            grid-change-pass-phrase
            grid-proxy-init
@@ -49,7 +48,7 @@ sub check_for_commands
            grid-mapfile-add-entry          
            grid-mapfile-delete-entry
            grid-mapfile-check-consistency
-           in.ftpd
+           globus-gridftp-server
            );
     
     foreach my $command (@commands) 

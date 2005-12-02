@@ -142,7 +142,12 @@ int main(int argc, char ** argv)
     globus_cond_destroy(&Monitor.cond);
 
     globus_gram_client_job_contact_free(Monitor.job_contact);
-
+    globus_gram_client_attr_destroy(&attr);
+    globus_gram_client_callback_disallow(callback_contact);
+    globus_free(callback_contact);
+    globus_free(rm_contact);
+    globus_free(specification);
+    
     /* Deactivate GRAM */
     globus_module_deactivate(GLOBUS_GRAM_CLIENT_MODULE);
 

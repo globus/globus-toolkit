@@ -2081,7 +2081,7 @@ globus_l_xio_gsi_read(
     globus_size_t                       bytes_read = 1;
     globus_size_t                       frame_length = 0;
     globus_size_t                       offset;
-    globus_size_t                       header;
+    globus_size_t                       header = 0;
     globus_bool_t                       ssl_record;
     globus_bool_t                       no_header = GLOBUS_TRUE;
 

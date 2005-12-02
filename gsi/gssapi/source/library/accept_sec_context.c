@@ -287,12 +287,97 @@ GSS_CALLCONV gss_accept_sec_context(
         case(GSS_CON_ST_FLAGS):
         
             BIO_read(context->gss_sslbio, dbuf, 1);
-
+            
+            /* 
+             * proxy_handle gets initialized in
+             * globus_i_gsi_gss_create_and_fill_context (called in the beginning
+             * of this routine. As the key_bits value of peer_credentials is 
+             * not available before the globus_i_gsi_gss_create_and_fill_context
+             * call is made, it is destroyed and initialized here again with
+             * appropriate attribute (with the key_bits set to peer's value).
+             * This fixes bug 3794 (delegated credential generates 512 bit keys 
+             * irrespective of the key strength of the peer credential), 
+             * Couldn't remove the proxy_handle initialization in
+             * globus_i_gsi_gss_create_and_fill_context because the removal 
+             * caused an error 'NULL proxy handle passed to function: 
+             * globus_gsi_proxy_inquire_req' in the delegation tests in 
+             * gssapi/test. Also, the key_bits attr on the proxy_handle can not 
+             * be set by globus_gsi_proxy_handle_attrs_set_keybits(context->
+             * proxy_handle->attrs, key_bits) as context->proxy_handle->attrs is
+             * private and can not be accessed directly. context->proxy_handle 
+             * is used here and in 'case(GSS_CON_ST_CERT):'. The control will go
+             * to 'case(GSS_CON_ST_CERT):' only if the proxy is created
+             * successfully here. So it makes sense to initialize the proxy 
+             * here. 
+             */
+             
             if (*dbuf == 'D')
             {
-                local_result = 
-                    globus_gsi_proxy_create_req(context->proxy_handle,
-                                                context->gss_sslbio);
+                globus_gsi_proxy_handle_attrs_t     proxy_handle_attrs;
+                int                                 key_bits;
+                
+                local_result = globus_gsi_cred_get_key_bits(
+                        context->peer_cred_handle->cred_handle, &key_bits);
+                if(local_result != GLOBUS_SUCCESS)
+                {
+                    GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                        minor_status, local_result,
+                        GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_CREDENTIAL);
+                    context->gss_state = GSS_CON_ST_DONE;
+                    major_status = GSS_S_FAILURE;
+                    break;
+                }
+                local_result = globus_gsi_proxy_handle_attrs_init(
+                                                        &proxy_handle_attrs);
+                if(local_result != GLOBUS_SUCCESS)
+                {
+                    GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                        minor_status, local_result,
+                        GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_PROXY);
+                    context->gss_state = GSS_CON_ST_DONE;
+                    major_status = GSS_S_FAILURE;
+                    break;
+                }            
+                local_result = globus_gsi_proxy_handle_attrs_set_keybits(
+                                                proxy_handle_attrs, key_bits);
+                if(local_result != GLOBUS_SUCCESS)
+                {
+                    globus_gsi_proxy_handle_attrs_destroy(proxy_handle_attrs);
+                    GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                        minor_status, local_result,
+                        GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_PROXY);
+                    context->gss_state = GSS_CON_ST_DONE;
+                    major_status = GSS_S_FAILURE;
+                    break;
+                }
+                if(context->proxy_handle)
+                {
+                    globus_gsi_proxy_handle_destroy(context->proxy_handle);
+                }
+                local_result = globus_gsi_proxy_handle_init(
+                                    &context->proxy_handle, proxy_handle_attrs);
+                if(local_result != GLOBUS_SUCCESS)
+                {
+                    globus_gsi_proxy_handle_attrs_destroy(proxy_handle_attrs);
+                    GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                        minor_status, local_result,
+                        GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_PROXY);
+                    major_status = GSS_S_FAILURE;
+                    break;
+                }
+                local_result = globus_gsi_proxy_handle_attrs_destroy(
+                                                        proxy_handle_attrs);
+                if(local_result != GLOBUS_SUCCESS)
+                {
+                    GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                        minor_status, local_result,
+                        GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_PROXY);
+                    context->gss_state = GSS_CON_ST_DONE;
+                    major_status = GSS_S_FAILURE;
+                    break;
+                } 
+                local_result = globus_gsi_proxy_create_req(
+                                context->proxy_handle, context->gss_sslbio);
                 if(local_result != GLOBUS_SUCCESS)
                 {
                     GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(

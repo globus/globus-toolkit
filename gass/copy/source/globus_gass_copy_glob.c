@@ -10,11 +10,9 @@
  */
 
 #include "globus_gass_copy.h"
+
 #ifndef TARGET_ARCH_WIN32
-
-#include <glob.h>
 #include <fnmatch.h>
-
 #endif
 
 
@@ -106,9 +104,14 @@ globus_l_gass_copy_mkdir_ftp(
     char * url,
     globus_gass_copy_attr_t * attr);
 
+static
+void
+globus_l_gass_copy_urlencode(
+    const char *                        in_string,
+    char **                             out_string);
+
 
 #define GLOBUS_GASS_COPY_FTP_LIST_BUFFER_SIZE 256*1024
-
 
 
 globus_result_t 
@@ -255,79 +258,156 @@ globus_l_gass_copy_glob_expand_file_url(
     globus_l_gass_copy_glob_info_t *    info)
 {
     static char *   myname = "globus_l_gass_copy_glob_expand_file_url";
-
-#ifndef TARGET_ARCH_WIN32
-    glob_t                              file_list;
-#endif
-
     globus_result_t                     result;
     int                                 retval;
-    int                                 file_len;
     globus_url_t                        parsed_url;
     int                                 i;
-    char *                              base_url;
-    char *                              p;
-    int                                 base_url_len;
     struct stat                         stat_buf;
-    char                                unique_id[32];
+    char                                unique_id[256];
     globus_gass_copy_glob_entry_t       type;
     globus_gass_copy_glob_stat_t        info_stat;  
-    char                                matched_url[4096];
-    
-    retval = globus_url_parse_loose(info->url, &parsed_url);
-    
+    char                                matched_url[MAXPATHLEN*2];
+    char *                              encoded_path;
+    struct dirent *                     dir_entry;
+    char                                symlink_target[MAXPATHLEN*2];
+    DIR *                               dir;
+
+    info->base_url = globus_libc_strdup(info->url);
+
+    info->glob_pattern = strrchr(info->base_url, '/');
+    if(info->glob_pattern == GLOBUS_NULL || *info->glob_pattern == '\0')
+    {
+        result = globus_error_put(
+            globus_error_construct_string(
+                GLOBUS_GASS_COPY_MODULE,
+                GLOBUS_NULL,
+                "[%s]: Bad URL",
+                myname));
+        goto error_url;
+    }
+
+    *(info->glob_pattern++) = '\0';    
+    info->base_url_len = strlen(info->base_url);
+
+    retval = globus_url_parse_loose(info->base_url, &parsed_url);
     if(retval != 0 || parsed_url.url_path == GLOBUS_NULL)
     {
         result = globus_error_put(
             globus_error_construct_string(
                 GLOBUS_GASS_COPY_MODULE,
                 GLOBUS_NULL,
-                "[%s]: error parsing url path.",
-                myname));
+                "[%s]: error parsing url path: %s",
+                myname,
+                info->base_url));
         goto error_url;
     }    
-                
-    p = strstr(info->url, parsed_url.url_path);
-    base_url_len = p - info->url;
-    
-    base_url = globus_libc_strdup(info->url);
-    base_url[base_url_len] = '\0';
-    
-#ifndef TARGET_ARCH_WIN32
-    retval = glob(
-        parsed_url.url_path,
-        GLOB_MARK,
-        NULL,
-        &file_list);
 
-#ifdef GLOB_NOMATCH
-    if(retval != 0 && retval != GLOB_NOMATCH)
-#else /* GLOB_NOMATCH */
-    if(retval != 0 && file_list.gl_pathc != 0)
-#endif /* GLOB_NOMATCH */
+    if(stat(parsed_url.url_path, &stat_buf) != 0)
     {
         result = globus_error_put(
             globus_error_construct_string(
                 GLOBUS_GASS_COPY_MODULE,
                 GLOBUS_NULL,
-                "[%s]: glob() returned %d",
+                "[%s]: unable to access url path: %s",
                 myname,
-                retval));
-        goto error_glob;
+                parsed_url.url_path));
+        goto error_stat;
+    }
+    
+    if(!S_ISDIR(stat_buf.st_mode))
+    {
+        result = globus_error_put(
+            globus_error_construct_string(
+                GLOBUS_GASS_COPY_MODULE,
+                GLOBUS_NULL,
+                "[%s]: path is not a dir: %s",
+                myname,
+                parsed_url.url_path));
+        goto error_url;
     }
 
-
-    for(i = 0; i < file_list.gl_pathc; i++)
+    dir = globus_libc_opendir(parsed_url.url_path);
+    if(!dir)
     {
-        file_len = strlen(file_list.gl_pathv[i]);
-        *unique_id = '\0';
-
-        retval = stat(file_list.gl_pathv[i], &stat_buf);
-        if(retval != 0)
-        {
-            goto error_stat;
-        }
+        result = globus_error_put(
+            globus_error_construct_string(
+                GLOBUS_GASS_COPY_MODULE,
+                GLOBUS_NULL,
+                "[%s]: unable to open url path, %s",
+                myname,
+                parsed_url.url_path));
+        goto error_open;
+    }
+            
+    for(i = 0;
+        globus_libc_readdir_r(dir, &dir_entry) == 0 && dir_entry;
+        i++)
+    {
+        char                        path[MAXPATHLEN];
         
+        if(dir_entry->d_name[0] == '.' && (dir_entry->d_name[1] == '\0' || 
+            (dir_entry->d_name[1] == '.' && dir_entry->d_name[2] == '\0')))
+        {
+            globus_free(dir_entry);
+            continue;
+        } 
+
+#ifndef TARGET_ARCH_WIN32
+        if(fnmatch(
+            info->glob_pattern,
+            dir_entry->d_name,
+            0) != 0)
+        {
+            globus_free(dir_entry);
+            continue;
+        }
+#endif
+
+        snprintf(path, sizeof(path), 
+            "%s/%s", parsed_url.url_path, dir_entry->d_name);
+        path[MAXPATHLEN - 1] = '\0';
+        if(lstat(path, &stat_buf) != 0)
+        {
+            result = globus_error_put(
+                globus_error_construct_string(
+                    GLOBUS_GASS_COPY_MODULE,
+                    GLOBUS_NULL,
+                    "[%s]: invalid entry in dir: %s",
+                    myname,
+                    path));
+            globus_free(dir_entry);
+            continue;
+        }
+
+        *symlink_target = '\0';
+        if(S_ISLNK(stat_buf.st_mode))
+        {
+            if(stat(path, &stat_buf) != 0)
+            {
+                result = globus_error_put(
+                    globus_error_construct_string(
+                        GLOBUS_GASS_COPY_MODULE,
+                        GLOBUS_NULL,
+                        "[%s]: invalid symlink entry in dir: %s",
+                        myname,
+                        path)); 
+                globus_free(dir_entry);
+                continue;
+            }
+            if(realpath(path, symlink_target) == NULL)
+            {
+                result = globus_error_put(
+                    globus_error_construct_string(
+                        GLOBUS_GASS_COPY_MODULE,
+                        GLOBUS_NULL,
+                        "[%s]: unable to find path of symlink in dir: %s",
+                        myname,
+                        path)); 
+                globus_free(dir_entry);
+                continue;
+            }
+        }    
+ 
         if(S_ISDIR(stat_buf.st_mode))
         {
             type = GLOBUS_GASS_COPY_GLOB_ENTRY_DIR;
@@ -336,50 +416,56 @@ globus_l_gass_copy_glob_expand_file_url(
         {                 
             type = GLOBUS_GASS_COPY_GLOB_ENTRY_FILE;
         } 
-        
+
+        *unique_id = '\0';        
         sprintf(
             unique_id,
             "%lx-%lx;",
             (unsigned long) stat_buf.st_dev, 
             (unsigned long) stat_buf.st_ino);
-                              
+
+        globus_l_gass_copy_urlencode(dir_entry->d_name, &encoded_path);
+
         sprintf(
             matched_url, 
-            "%s%s", 
-            base_url, 
-            file_list.gl_pathv[i]);
+            "%s/%s%s", 
+            info->base_url, 
+            encoded_path,
+            type == GLOBUS_GASS_COPY_GLOB_ENTRY_DIR ? "/" : "");
 
-            info_stat.type = type;
-            info_stat.unique_id = unique_id;
-            info_stat.symlink_target = GLOBUS_NULL;
-            info_stat.mode = -1;
-            info_stat.mdtm = -1;
-            info_stat.size = -1;
-            
-            info->entry_cb(
-                matched_url,
-                &info_stat,
-                info->entry_user_arg);
+        if(encoded_path)
+        {
+            globus_free(encoded_path);
+            encoded_path = NULL;
+        }
+
+        info_stat.type = type;
+        info_stat.unique_id = unique_id;
+        info_stat.symlink_target = *symlink_target ? symlink_target : NULL;
+        info_stat.mode = stat_buf.st_mode & 07777;
+        info_stat.mdtm = (int) stat_buf.st_mtime;
+        info_stat.size = stat_buf.st_size;
+        
+        info->entry_cb(
+            matched_url,
+            &info_stat,
+            info->entry_user_arg);
+
+        globus_free(dir_entry);
     }
         
-    globfree(&file_list);
-#endif 
+    closedir(dir);
     globus_url_destroy(&parsed_url);
-
-    globus_free(base_url);
+    globus_free(info->base_url);
     
     return GLOBUS_SUCCESS;    
    
 error_stat:
-#ifndef TARGET_ARCH_WIN32
-    globfree(&file_list);
-#endif 
-   
-error_glob:
+error_open:
     globus_url_destroy(&parsed_url);
-    globus_free(base_url);
 
 error_url:
+    globus_free(info->base_url);
 
     return result;
 }    
@@ -664,7 +750,112 @@ globus_l_gass_copy_ftp_client_op_done_callback(
     return;
 }
 
+static
+int
+globus_l_gass_copy_mdtm_to_timet(
+    char *                              mdtm_str,
+    int *                               time_out)
+{
+    char *			        p;
+    struct tm                           tm;
+    struct tm                           gmt_now_tm;
+    struct tm *                         gmt_now_tm_p;
+    time_t                              offset;
+    time_t                              gmt_now;
+    time_t                              now;
+    time_t                              file_time;
+    int 				rc;
 
+    p = mdtm_str;
+    
+    memset(&tm, '\0', sizeof(struct tm));
+
+    /* 4 digit year */
+    rc = sscanf(p, "%04d", &tm.tm_year);
+    if(rc != 1)
+    {
+	goto error_exit;
+    }
+    tm.tm_year -= 1900;
+    p += 4;
+
+    /* 2 digit month [01-12] */
+    rc = sscanf(p, "%02d", &tm.tm_mon);
+    if(rc != 1)
+    {
+	goto error_exit;
+    }
+    tm.tm_mon--;
+    p += 2;
+
+    /* 2 digit day/month [01-31] */
+    rc = sscanf(p, "%02d", &tm.tm_mday);
+    if(rc != 1)
+    {
+	goto error_exit;
+    }
+    p += 2;
+
+    /* 2 digit hour [00-23] */
+    rc = sscanf(p, "%02d", &tm.tm_hour);
+    if(rc != 1)
+    {
+	goto error_exit;
+    }
+    p += 2;
+
+    /* 2 digit minute [00-59] */
+    rc = sscanf(p, "%02d", &tm.tm_min);
+    if(rc != 1)
+    {
+	goto error_exit;
+    }
+    p += 2;
+
+    /* 2 digit second [00-60] */
+    rc = sscanf(p, "%02d", &tm.tm_sec);
+    if(rc != 1)
+    {
+	goto error_exit;
+    }
+    p += 2;
+    
+    file_time = mktime(&tm);
+    if(file_time == (time_t) -1)
+    {
+	goto error_exit;
+    }
+    
+    now = time(&now);
+    if(now == (time_t) -1)
+    {
+	goto error_exit;
+    }
+    
+    memset(&gmt_now_tm, '\0', sizeof(struct tm));
+    gmt_now_tm_p = globus_libc_gmtime_r(&now, &gmt_now_tm);
+    if(gmt_now_tm_p == NULL)
+    {
+	goto error_exit;
+    }
+    
+    gmt_now = mktime(&gmt_now_tm);
+    if(gmt_now == (time_t) -1)
+    {
+	goto error_exit;
+    }
+    
+    offset = now - gmt_now;
+
+    *time_out = file_time + offset;
+
+    return GLOBUS_SUCCESS;
+
+error_exit:
+
+    return GLOBUS_FAILURE;
+}
+    
 
 static
 globus_result_t
@@ -684,7 +875,12 @@ globus_l_gass_copy_glob_parse_ftp_list(
     char *                              factval;
     
     char                                matched_url[4096];
+    char *                              encoded_path = NULL;
     char *                              unique_id;
+    char *                              mode_s;
+    char *                              symlink_target;
+    char *                              modify_s;
+    char *                              size_s;
     globus_gass_copy_glob_entry_t       type;
     globus_gass_copy_glob_stat_t        info_stat;  
        
@@ -694,6 +890,10 @@ globus_l_gass_copy_glob_parse_ftp_list(
     {
         type = GLOBUS_GASS_COPY_GLOB_ENTRY_UNKNOWN;
         unique_id = GLOBUS_NULL;
+        mode_s = GLOBUS_NULL;
+        symlink_target = GLOBUS_NULL;
+        size_s = GLOBUS_NULL;
+        modify_s = GLOBUS_NULL;
         
         while(*startline == '\r' || 
               *startline == '\n')
@@ -759,11 +959,6 @@ globus_l_gass_copy_glob_parse_ftp_list(
                     endfact = space - 1;   
                 }
                 
-                for(i = 0; startfact[i] != '\0'; i++)
-                {
-                    startfact[i] = tolower(startfact[i]);
-                }
-
                 factval = strchr(startfact, '=');
                 if(!factval)
                 {             
@@ -777,14 +972,19 @@ globus_l_gass_copy_glob_parse_ftp_list(
                     goto error_invalid_mlsd;
                 }
                 *(factval++) = '\0';
+
+                for(i = 0; startfact[i] != '\0'; i++)
+                {
+                    startfact[i] = tolower(startfact[i]);
+                }
             
                 if(strcmp(startfact, "type") == 0)
                 {
-                    if(strcmp(factval, "dir") == 0)
+                    if(strcasecmp(factval, "dir") == 0)
                     {
                         type = GLOBUS_GASS_COPY_GLOB_ENTRY_DIR;
                     }
-                    else if(strcmp(factval, "file") == 0)
+                    else if(strcasecmp(factval, "file") == 0)
                     {
                         type = GLOBUS_GASS_COPY_GLOB_ENTRY_FILE;
                     }
@@ -797,6 +997,23 @@ globus_l_gass_copy_glob_parse_ftp_list(
                 {
                     unique_id = factval;                        
                 }                 
+                if(strcmp(startfact, "unix.mode") == 0)
+                {
+                    mode_s = factval;                        
+                }
+                if(strcmp(startfact, "modify") == 0)
+                {
+                    modify_s = factval;                        
+                }                 
+                if(strcmp(startfact, "size") == 0)
+                {
+                    size_s = factval;                        
+                }                 
+                if(strcmp(startfact, "unix.slink") == 0)
+                {
+                    symlink_target = factval;                        
+                }                 
+                
                 startfact = endfact + 1;                                 
             } 
         }
@@ -808,44 +1025,71 @@ globus_l_gass_copy_glob_parse_ftp_list(
         }
         
         *matched_url = '\0'; 
+        
+        globus_l_gass_copy_urlencode(filename, &encoded_path);
+        
 #ifndef TARGET_ARCH_WIN32
-        switch(type)
+        if(fnmatch(
+               info->glob_pattern,
+               filename,
+               0) == 0)
+#endif 
         {
-          case GLOBUS_GASS_COPY_GLOB_ENTRY_FILE:
-          case GLOBUS_GASS_COPY_GLOB_ENTRY_UNKNOWN:
-            if(fnmatch(
-                   info->glob_pattern,
-                   filename,
-                   FNM_PERIOD) == 0)
-            {
-                sprintf(matched_url, "%s/%s", info->base_url, filename);
-            }
-            break;
-          
-          case GLOBUS_GASS_COPY_GLOB_ENTRY_DIR:
-            if(fnmatch(
-                   info->glob_pattern,
-                   filename,
-                   FNM_PERIOD) == 0)
-            {
-                sprintf(matched_url, "%s/%s/", info->base_url, filename);
-            }
-            break;
-          
-          case GLOBUS_GASS_COPY_GLOB_ENTRY_OTHER:
-          default:
-            break;
+            sprintf(
+                matched_url, 
+                "%s/%s%s",
+                info->base_url, 
+                encoded_path,
+                type == GLOBUS_GASS_COPY_GLOB_ENTRY_DIR ? "/" : "");
         }
-#endif        
-        if(*matched_url)
+   
+        if(encoded_path)
+        {
+            globus_free(encoded_path);
+            encoded_path = NULL;
+        }
+    
+        if(*matched_url &&
+            (type == GLOBUS_GASS_COPY_GLOB_ENTRY_DIR || 
+            type == GLOBUS_GASS_COPY_GLOB_ENTRY_FILE) &&
+            !(filename[0] == '.' && (filename[1] == '\0' || 
+            (filename[1] == '.' && filename[2] == '\0'))) )
         {
             info_stat.type = type;
             info_stat.unique_id = unique_id;
-            info_stat.symlink_target = GLOBUS_NULL;
+            info_stat.symlink_target = symlink_target;
             info_stat.mode = -1;
-            info_stat.mdtm = -1;
             info_stat.size = -1;
+            info_stat.mdtm = -1;
+                
+            if(mode_s)
+            {
+                info_stat.mode = strtoul(mode_s, NULL, 0);
+            }
             
+            if(size_s)
+            {
+                globus_off_t            size;
+                int                     rc;
+                
+                rc = sscanf(size_s, "%"GLOBUS_OFF_T_FORMAT, &size);
+                if(rc == 1)
+                {
+                    info_stat.size = size;
+                }
+            }
+            
+            if(modify_s)
+            {
+                int                     mdtm;
+                
+                if(globus_l_gass_copy_mdtm_to_timet(modify_s, &mdtm) == 
+                    GLOBUS_SUCCESS)
+                {
+                    info_stat.mdtm = mdtm;
+                }
+            }
+                        
             info->entry_cb(
                 matched_url,
                 &info_stat,
@@ -970,6 +1214,49 @@ error_before_callback:
 
     return;
 }
+
+
+static const char *hex_chars = "0123456789ABCDEF";
+#define ALLOWED_CHARS "$-_.+!'\"(),/:?*@=&"
+
+#define NEEDS_ENCODING(c) \
+    (!isalnum(c) && strchr(ALLOWED_CHARS, (c)) == NULL)
+
+/** Encode string using URL encoding from rfc1738 (sec 2.2).
+    used to encode paths in resolved urls */
+static
+void
+globus_l_gass_copy_urlencode(
+    const char *                        in_string,
+    char **                             out_string)
+{
+    int                                 len;
+    char *                              in_ptr;
+    char *                              out_ptr;
+    char                                out_buf[MAXPATHLEN * 3];
+
+    in_ptr = (char *) in_string;
+    out_ptr = out_buf;
+    len = strlen(in_string);
+
+    while(in_ptr < in_string + len)
+    {
+        if(NEEDS_ENCODING(*in_ptr))
+        {
+            *out_ptr++ = '%';
+            *out_ptr++ = hex_chars[(*in_ptr >> 4) & 0xF];
+            *out_ptr++ = hex_chars[*in_ptr & 0xF];
+        } 
+        else
+        {
+            *out_ptr++ = *in_ptr;
+        }
+        in_ptr++;
+    }
+    *out_ptr = '\0';
+    *out_string = globus_libc_strdup(out_buf);
+}
+
 
 
 globus_result_t
@@ -1132,11 +1419,14 @@ globus_l_gass_copy_mkdir_file(
         result = globus_error_put(
             globus_error_construct_string(
                 GLOBUS_GASS_COPY_MODULE,
-                GLOBUS_NULL,
-                "[%s]: error creating directory: "
-                "mkdir returned %d",
-                myname,
-                rc));
+                globus_error_peek(
+                  globus_error_put(
+                    globus_error_construct_errno_error(
+                        GLOBUS_GASS_COPY_MODULE,
+                        NULL,
+                        errno))),
+                "[%s]: error creating directory",
+                myname));
         goto error_mkdir;
     }
    

@@ -17,7 +17,7 @@
 #include "globus_object.h"
 #include "globus_module.h"
 
-#if defined(HAVE_INTTYPES_H)
+#if defined(HAVE_INTTYPES_H) && !defined(TARGET_ARCH_CYGWIN)
 #include <inttypes.h>  
 #endif
 

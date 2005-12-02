@@ -44,6 +44,15 @@ GlobusDebugDeclare(GLOBUS_XIO_SYSTEM);
         GLOBUS_I_XIO_SYSTEM_DEBUG_TRACE,                                    \
         ("[%s] fd=%lu, Exiting with error\n", _xio_name, (unsigned long)(fd)))
 
+#ifdef WIN32
+#include <Winsock2.h>
+#define GlobusXIOSystemUpdateErrno() (errno = WSAGetLastError())
+#elif defined(TARGET_ARCH_NETOS)
+#define GlobusXIOSystemUpdateErrno() (errno = getErrno())
+#else
+#define GlobusXIOSystemUpdateErrno()
+#endif
+
 #define GlobusXIOSystemDebugRawBuffer(nbytes, buffer)                       \
     do                                                                      \
     {                                                                       \
@@ -174,15 +183,16 @@ typedef enum
 } globus_i_xio_system_op_state_t;
 
 
-#ifdef WIN32
+#if !defined(HAVE_RECVMSG) || defined(WIN32)
 struct msghdr
 {
-    sockaddr *                          msg_name;
+    void *                              msg_name;
     int                                 msg_namelen;
-    iovec *                             msg_iov;
+    struct iovec *                      msg_iov;
     int                                 msg_iovlen;
-    caddr_t                             msg_accrights;
-    int                                 msg_accrightslen;
+    void *                              msg_control;
+    int                                 msg_controllen;
+    int                                 msg_flags;
 };
 #endif
 

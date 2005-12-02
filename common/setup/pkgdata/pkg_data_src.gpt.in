@@ -5,7 +5,7 @@
     This version number pertains to this package in general.  So, when this
     package changes in any way the version should change.
     e.g. for a bug fix increment the minor version number.
-    <Aging_Version Age="0" Major="2" Minor="5"/>
+    <Aging_Version Age="0" Major="2" Minor="6"/>
     <Description >Common Setup</Description>
     <Functional_Group >Common</Functional_Group>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>

@@ -132,7 +132,7 @@ Add a parameter to a job description. The parameter will be normalized
 internally so that the access methods described below will work with
 this new parameter. As an example,
 
-    @description->add('new_attribute', $new_value)
+    $description->add('new_attribute', $new_value)
 
 will create a new attribute in the JobDescription, which can be accessed
 by calling the I<$description->new_attribute>() method.
@@ -153,6 +153,27 @@ sub add
     } else {
         $self->{$attr} = [ $value ];
     }
+}
+
+=item I<$value> $description->I<get>('name');
+
+Get a parameter from a job description. As an example,
+
+    $description->get('attribute')
+
+will return the appropriate attribute in the JobDescription by name.
+
+=cut
+
+sub get
+{
+    my $self = shift;
+    my $attr = shift;
+
+    $attr =~ s/_//g;
+    $attr = lc($attr);
+
+    return $self->{$attr};
 }
 
 =item $description->I<save>([$filename])

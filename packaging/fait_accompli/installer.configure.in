@@ -160,7 +160,7 @@ AC_ARG_ENABLE(drs, AC_HELP_STRING([--enable-drs],\
    [])
 AC_SUBST(drs, $drs)
 rndvz="globus_rendezvous"
-AC_ARG_ENABLE(rndvz, AC_HELP_STRING([--disable-rendezvous],\
+AC_ARG_ENABLE(rendezvous, AC_HELP_STRING([--disable-rendezvous],\
    [Disable Rendezvous service.  Default is enabled.]),
    [if test $enableval = "no"; then rndvz=" "; fi],
    [])

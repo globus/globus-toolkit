@@ -79,6 +79,9 @@ int test2()
 		"Error disallowing callbacks because %s.\n",
 		globus_gram_protocol_error_string(rc));
     }
+    
+    globus_free(callback_contact);
+    
 error_exit:
     rc = globus_module_deactivate(GLOBUS_GRAM_PROTOCOL_MODULE);
     return rc;
@@ -125,6 +128,11 @@ int test3()
 	}
     }
     rc = globus_module_deactivate(GLOBUS_GRAM_PROTOCOL_MODULE);
+
+    for(i = 0; i < 5; i++)
+    {
+	globus_free(callback_contact[i]);
+    }
     return rc;
 
 disallow_exit:
@@ -163,6 +171,10 @@ int test4()
 		    globus_gram_protocol_error_string(rc));
 	    goto error_exit;
 	}
+    }
+    for(i = 0; i < 5; i++)
+    {
+	globus_free(callback_contact[i]);
     }
     rc = globus_module_deactivate(GLOBUS_GRAM_PROTOCOL_MODULE);
     return rc;

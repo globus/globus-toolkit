@@ -181,6 +181,13 @@ extern "C" {
 #define closesocket(s)		    close(s)
 #define readsocket(s,b,n)	    read((s),(b),(n))
 #define writesocket(s,b,n)	    write((s),(char *)(b),(n))
+#elif defined(OPENSSL_SYS_NETOS)
+#define get_last_socket_error() getErrno()
+#define clear_socket_error()    setErrno(0)
+#define ioctlsocket(a,b,c)      -1
+#define closesocket(s)          closesocket(s)
+#define readsocket(s,b,n)       recv((s),(b),(n),0)
+#define writesocket(s,b,n)      send((s), (char *) (b),(n),0)
 #else
 #define get_last_socket_error()	errno
 #define clear_socket_error()	errno=0
@@ -409,6 +416,14 @@ extern HINSTANCE _hInstance;
 #      include <socket.h>
 #      include <in.h>
 #      include <inet.h>
+#    elif defined(OPENSSL_SYS_NETOS)
+#      define B42 1
+#      include <sockapi.h>
+#      include <fs_api.h>
+#      undef boolean
+#      undef critical
+#      undef skip
+#      define sockaddr sockaddr_in
 #    else
 #      include <sys/socket.h>
 #      ifdef FILIO_H
@@ -434,9 +449,9 @@ extern HINSTANCE _hInstance;
 #    if defined(sun)
 #      include <sys/filio.h>
 #    else
-#      ifndef VMS
+#      if !defined(VMS) && !defined(OPENSSL_SYS_NETOS)
 #        include <sys/ioctl.h>
-#      else
+#      elif defined(VMS)
 	 /* ioctl is only in VMS > 7.0 and when socketshr is not used */
 #        if !defined(TCPIP_TYPE_SOCKETSHR) && defined(__VMS_VER) && (__VMS_VER > 70000000)
 #          include <sys/ioctl.h>
@@ -515,6 +530,11 @@ extern char *sys_errlist[]; extern int sys_nerr;
 # include <fcntl.h>
 # define NO_SYSLOG
 # define strcasecmp stricmp
+#endif
+
+#if defined(OPENSSL_SYS_NETOS)
+#define NO_SYSLOG
+#define NO_CHMOD
 #endif
 
 /* vxworks */

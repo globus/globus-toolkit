@@ -38,11 +38,13 @@ if [ -n "${SHLIB_PATH}" ]; then
 fi
 SHLIB_PATH="${GLOBUS_LOCATION}/lib${DELIM}${SHLIB_PATH}"
 
-DELIM=
-if [ -n "${SASL_PATH}" ]; then
-    DELIM=:
+if [ -d $GLOBUS_LOCATION/lib/sasl ]; then
+    DELIM=
+    if [ -n "${SASL_PATH}" ]; then
+        DELIM=:
+    fi
+    SASL_PATH="${GLOBUS_LOCATION}/lib/sasl${DELIM}${SASL_PATH}"
 fi
-SASL_PATH="${GLOBUS_LOCATION}/lib/sasl${DELIM}${SASL_PATH}"
 
 export LD_LIBRARY_PATH DYLD_LIBRARY_PATH LIBPATH SHLIB_PATH SASL_PATH
 

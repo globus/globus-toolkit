@@ -8,6 +8,7 @@ BUNDLE gt4-java-ws-core
         globus_java_ws_core_counter_sample
         globus_java_ws_core_authz_sample
         globus_java_ws_core_registry
+        globus_java_ws_core_deployment
 
 BUNDLE gt4-java-admin
         globus_core
@@ -15,6 +16,7 @@ BUNDLE gt4-java-admin
         globus_common_setup
         globus_libtool
         globus_java_container_admin_tools
+        globus_java_container_admin_tools_setup
 
 BUNDLE gt4-java-ws-core-test
         globus_java_ws_core_tools_test
@@ -43,8 +45,6 @@ BUNDLE gt4-c-ws-core
         globus_c_wsrf_providers
         globus_notification_consumer
         globus_c_ws_security
-        globus_java_ws_core_common 
-        globus_java_ws_core_tools
         globus_ws_core_schema 
         globus_libxml2
 
@@ -128,6 +128,7 @@ BUNDLE gt4-gram
         globus_c_wsrf_resource
         globus_fork_starter
         globus_globusrun_ws
+        globus_wsrf_gram_client_tools
         globus_gram_job_manager_setup_fork
         globus_gram_local_proxy_tool
         globus_gridmap_and_execute
@@ -147,13 +148,15 @@ BUNDLE gt4-gram
         globus_wsrf_gram_client_java
         globus_wsrf_gram_common_java
         globus_wsrf_gram_common_schema
+        globus_wsrf_gram_utils_java
+        globus_wsrf_gram_adapter_common_java
+        globus_wsrf_gram_adapter_perl_java
         globus_wsrf_gram_job_monitoring_common_java
         globus_wsrf_gram_service_java_usage
         globus_wsrf_gram_service_java
         globus_wsrf_gram_service_java_setup_common
         globus_wsrf_gram_service_java_setup_fork
         globus_wsrf_gram_service_java_setup_multi
-        globus_wsrf_gram_utils_java
         globus_wsrf_mds_usefulrp
         globus_wsrf_mds_usefulrp_schema
         globus_wsrf_rendezvous_common_java
@@ -219,6 +222,7 @@ BUNDLE gt4-gram-test
         globus_scheduler_event_generator_test
         globus_scheduler_event_generator_fork_test
         globus_gridmap_and_execute_test
+        globus_wsrf_gram_client_tools_test
         globus_c_wsrf_rendezvous_test
         globus_wsrf_gram_reliable_create_test
 

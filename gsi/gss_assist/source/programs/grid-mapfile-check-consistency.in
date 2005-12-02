@@ -1,8 +1,9 @@
-#!/bin/sh
-
+#! @PERL@
+                            
 #
 # Portions of this file Copyright 1999-2005 University of Chicago
-# Portions of this file Copyright 1999-2005 The University of Southern California.
+# Portions of this file Copyright 1999-2005 The University of Southern
+# California.
 #
 # This file or a portion of this file is licensed under the
 # terms of the Globus Toolkit Public License, found at
@@ -11,256 +12,397 @@
 # modifications, you must include this notice in the file.
 #
 
-#
 # grid-mapfile-check-consistency
-#
 
-if test -z "${GLOBUS_LOCATION}"; then
-    echo ""
-    echo "ERROR: Please set GLOBUS_LOCATION to the Globus installation directory before"
-    echo "running this script"
-    echo ""
-    exit 1
-fi
+use strict;
+use warnings;
 
-. ${GLOBUS_LOCATION}/libexec/globus-script-initializer
-globus_source ${GLOBUS_LOCATION}/libexec/globus-sh-tools.sh
+use English;
+use FileHandle;
+use File::Spec;
+use Getopt::Long;
 
-PROGRAM_NAME=`echo $0 |${GLOBUS_SH_SED-sed} 's|.*/||g'`
+# Prototypes
+sub main ( @ );
+sub check_gridmap_location ();
+sub parse_options ();
+sub display_help ();
+sub display_version ();
+sub verify_mapfile_existence ();
+sub load_gridmap_file ( $ );
+sub check_valid_login_names ( $ );
 
-PROGRAM_VERSION=`echo '$Revision$'| ${GLOBUS_SH_SED-sed} -e 's|\\$||g' -e 's|Revision: \(.*\)|\1|'`
+# Gridmap file name, handle, and hash
+my $GRID_MAP_FILE = "";
+my $gridmap_handle;
+my %LINES;
 
-VERSION="@VERSION@"
+# Gridmap file check status codes
+my $existence_check = 0;
+my $load_check = 0;
+my $valid_login_names_check = 0;
 
-PACKAGE="@PACKAGE@"
+# DiRT support
+# DIRT_TIMESTAMP="@DIRT_TIMESTAMP@"
+# DIRT_BRANCH_ID="@DIRT_BRANCH_ID@"
 
-DIRT_TIMESTAMP="@DIRT_TIMESTAMP@"
-DIRT_BRANCH_ID="@DIRT_BRANCH_ID@"
+# Invoke "main"
+main ( @ARGV );
 
-short_usage="$PROGRAM_NAME [-help] [-mapfile FILE]"
+#######################################################################
+# Function: main
+# Description:
+#       Main function of the program
+# Parameters:
+#       command line options
+# Returns:
+#       0 if checks passed
+#       1 if gridmap file is not readable
+#       2 if gridmap file is empty
+#       3 if loading gridmap file failed (e.g. hardware errors)
+#       4 if there are invalid login names in gridmap file
+#######################################################################
+sub main ( @ ) 
+{
+	check_gridmap_location();
 
-long_usage() {
-    ${GLOBUS_SH_CAT-cat} >&2 <<EOF
+	parse_options();
 
-${short_usage}
+	print "Checking " . $GRID_MAP_FILE . " grid mapfile\n";
 
-    $PROGRAM_NAME checks the consistency of the Grid mapfile.
+	print "Verifying grid mapfile existence...";
+	$existence_check = verify_mapfile_existence();
+	if ($existence_check == 1) 
+	{
+		print "ERROR: " . $GRID_MAP_FILE . " file is not readable\n";
+		exit 1;
+	} 
+	elsif ($existence_check == 2)
+	{
+	    print "\nGrid mapfile " . $GRID_MAP_FILE . " is empty\n";
+	    exit 2;	
+	}
+	
+	print "OK\n";
 
-    Options:
-      -help, -usage           Displays help
-      -version                Displays version
-      -mapfile FILE, -f FILE  Path of gridmap to be used
+	print "Checking for duplicate entries...";
+	$load_check = load_gridmap_file(\%LINES);
+	if ($load_check == 1) 
+	{	
+		print "ERROR: Cannot load " . $GRID_MAP_FILE . "\n";
+		exit 3;
+	} 
+	elsif ($load_check == 0) 
+	{
+		print "OK\n";
+	}
 
-EOF
-}
-
-globus_source $libexecdir/globus-args-parser-header $@
-
-##############################################
-
-secconfdir="/etc/grid-security"
-GRID_MAP_FILE=${GRIDMAP-${secconfdir}/grid-mapfile}
-ECHO_DRYRUN=:
-
-# Parse command line arguments
-
-while [ -n "$1" ]; do
-    case "$1" in
-        -f | -mapfile )
-	    opt=$1
-	    shift
-            if test $# -lt 1 ; then
-                globus_args_option_error "$opt" "${opt} requires a argument"
-            fi
-	    GRID_MAP_FILE=$1
-	    shift
-	    ;;
-			
-        * )
-	    globus_args_unrecognized_option "$1"
-	    ;;
-    esac
-
-done
-
-# check_perms
-# $1 is a filename
-# $2 is a binary representation of the permissions to be checked
-#    ie ----rwxrwx ==> 0000111111
-# returns true if none of the bits in $2 are set in $1's access mode
-check_perms() {
-
-    _file=$1
-    _mask=$2
-
-    _result=`(echo $_mask ; ${GLOBUS_SH_LS-ls} -l $_file ) | ${GLOBUS_SH_AWK-awk} '
-    BEGIN {
-        first=1;
-        mask=0;
-    }
-    {
-        if(first == 1) {
-            mask=$1;
-            first=0;
-            next;
-        }
-        mode=substr($1, 1, 10);
-        for(i = 1; i <= 10; i++) {
-           if(substr(mode, i, 1) == "-") {
-              newmode[i] = newmode[i] 0;
-           } else
-           {
-              newmode[i] = newmode[i] 1;
-           }
-        }
-        for(i = 1; i <= 10; i++) {
-            maskbit=int(substr(mask, i, 1));
-            if((maskbit == 1) && (newmode[i] == 1)) {
-                print 0;
-                exit;
-            }
-        }
-        print 1;
-    }'`
-
-    return $_result;
+	print "Checking for valid user names...";
+	$valid_login_names_check = check_valid_login_names(\%LINES);
+	if ($valid_login_names_check == 0) 
+	{
+		print "OK\n";
+	} 
+	elsif ($valid_login_names_check == 1) 
+	{
+		exit 4;
+	}
+	exit 0;
 }
 
 
-#DONE - 1. Legal login names
-#2. comma seprated login name list
-#3. at least one login name
-#DONE - 4. duplicate entries
-#5. Each line contains some DN/Ln pair
+#######################################################################
+# Helper functions
+#######################################################################
+# Function: check_gridmap_location
+# Description:
+#       Checks location of gridmap file conforming to rules 
+#       defined by GSI
+# Parameters:
+#       None
+# Returns:
+#       None
+#######################################################################
+sub check_gridmap_location ()
+{
+	if (defined $ENV{"GRIDMAP"}) 
+	{
+		$GRID_MAP_FILE = $ENV{"GRIDMAP"};
+	}
+	else
+	{
+		if ($REAL_USER_ID == 0) 
+		{
+			$GRID_MAP_FILE = "/etc/grid-security/grid-mapfile";
+		} 
+		else 
+		{
+			my $local_gridmap_file = $ENV{"HOME"} . "/.gridmap";	
+			if (-e $local_gridmap_file && -r $local_gridmap_file) 
+			{				
+				$GRID_MAP_FILE = $local_gridmap_file;
+			}
+			else 
+			{
+				$GRID_MAP_FILE = "/etc/grid-security/grid-mapfile";
+			}
+		}
+	}	
+}
+
+#######################################################################
+# Function: parse_options
+# Description:
+#       Parses script options. If gridmap file was specified, 
+#       new value overrides previous one.
+# Parameters:
+#       None
+# Returns:
+#       0 help of version options selected
+#######################################################################
+sub parse_options ()
+{
+	my $parser;
+	
+	my $help = 0;
+	my $version = 0;
+	my $mapfile = "";
+	
+	$parser = new Getopt::Long::Parser;
+                      
+	$parser->getoptions("usage|help|h" => \$help, 
+					    "version|v" => \$version,
+					    "mapfile|file|f=s" => \$mapfile);
+
+	if ($help == 1) 
+	{	
+		display_help();
+		exit 0;
+	} 
+	elsif ($version == 1) 
+	{
+		display_version();
+		exit 0;
+	} 
+	elsif ($mapfile ne "") 
+	{
+	    $GRID_MAP_FILE = File::Spec->rel2abs($mapfile);	
+	}	
+}
+
+#######################################################################
+# Function: display_help
+# Description:
+#       Displays help information
+# Parameters:
+#       None
+# Returns:
+#       None
+#######################################################################
+sub display_help ()
+{
+    my ($volume, $directory, $file) = File::Spec->splitpath($0);	
+	
+	print $file . " checks the consistency of the Grid mapfile\n";
+	print "Options:\n";
+	print "--help, -help, --usage, -usage, --h, -h             Displays help\n";
+	print "--version, -version, --v, -v                        Displays version\n";
+	print "--mapfile FILE, -mapfile FILE, --file FILE,
+-file FILE, --f FILE, -f FILE                       Path of gridmap to be used\n";
+}
+
+#######################################################################
+# Function: display_version
+# Description:
+#       Displays version information
+# Parameters:
+#       None
+# Returns:
+#       None
+#######################################################################
+sub display_version () 
+{    
+    my ($volume, $directory, $file) = File::Spec->splitpath($0);
+   
+    my $program_version = '$Revision$';    
+    $program_version =~ /Revision: ([\d\.]+)/;
+    print $file . ": " . $1 . "\n";
+}
+
+######################################################################
+# Function: verify_mapfile_existence
+# Description:
+#       If a gridmap file is a symlink, follows it.
+#       Checks if the gridmap file is readable.
+#       Checks if the gridmap file is writable.
+#       Checks if the gridmap file is empty.
+#       If the file is either non-writable or empty,
+#       appropriate warning is printed.
+# Parameters:
+#       None
+# Returns:
+#       0 gridmap file is readable, writable and non-empty
+#       1 gridmap file is non-readable (failed)
+#       2 gridmap file is non-writable
+#######################################################################
+sub verify_mapfile_existence ()
+{	
+	if (-l $GRID_MAP_FILE) 
+	{
+		my $link = readlink($GRID_MAP_FILE);
+		$GRID_MAP_FILE = $link;
+	}
+	
+	if (! -r $GRID_MAP_FILE) 
+	{
+		return 1;
+	}
+	
+	if (! -w $GRID_MAP_FILE) 
+	{		
+		print "\nWARNING: Grid mapfile " . $GRID_MAP_FILE . " is not writable\n";
+	}
+	
+	if (-z $GRID_MAP_FILE) 
+	{		
+		return 2;
+	}
+	
+	return 0;
+}
 
 
-# Verify mapfile existance
+#####################################################
+# Function: load_gridmap_file
+# Description:
+#       Loads entire gridmap into a single hash.
+#       Single DN may be mapped to multiple users 
+#       therefore hash contains lists not scalars.
+#       It speeds up later non-sequential access.
+#       It detects some errors:
+#         - missing double quotes
+#         - missing usernames
+#         - duplicate entries (logical names)
+# Parameters:
+#       Hash which is to hold entire gridmap as lines
+# Returns:
+#       0 gridmap file loaded successfully
+#       1 gridmap file loading failed
+#       2 if there are duplicate entries
+#####################################################
+sub load_gridmap_file ( $ )
+{	
+	$gridmap_handle = new FileHandle ("< $GRID_MAP_FILE");
+	
+	if (!defined ($gridmap_handle)) 
+	{
+		return 1;
+	}	
 
-if [ ! -f $GRID_MAP_FILE ] ; then 
-    globus_args_option_error "$opt" "\"${GRID_MAP_FILE}\" does not exist"
-    exit 1
-fi
-  
-if [ ! -r $GRID_MAP_FILE ] ; then
-    globus_args_option_error "$opt" "\"${GRID_MAP_FILE}\" is not readable."
-    exit 1
-fi
+	my ($key, $value);
+	my $href = shift;
+	
+	my $duplicate_counter = 0;
+		
+	my $buffer;
+	while (! $gridmap_handle->eof() ) 
+	{		
+		$buffer = $gridmap_handle->getline();
+		chomp ($buffer);
+		
+		if ($buffer !~ /^\s*$/ && $buffer !~ /^\s*\#/) 
+		{
+		  $buffer =~ s/^\s*//;
+		  $buffer =~ /^"(.*)"\s*(\S*)\s*$/;
 
-if [ -O ${GRID_MAP_FILE} -a ! -w $GRID_MAP_FILE ] ; then
-    globus_args_option_error "$opt" "\"${GRID_MAP_FILE}\" is not writeable."
-    exit 1
-fi
+          if (! defined ($1)) 
+          {
+              print "\nERROR: Missing double quotes in the following entry: " . $buffer . "\n";                       
+          }
+          elsif (! defined ($2)) 
+          {
+              print "\nERROR: Missing user name(s) in the following entry: " . $buffer . "\n";
+          }
+          else 
+          {
+              ($key, $value) = ($1,$2);
+          
+		      if (exists ($$href{$key}) ) 
+		      {
+		  	     $duplicate_counter++;
+		  	     print "\nERROR: Found duplicate entry: " . $buffer . "\n";
+		      } 
+		      else 
+		      {
+			    $$href{$key} = $value;
+		      }
+          }
+		}
+	}
+	if ($duplicate_counter > 0) 
+	{
+		print "ERROR: Found " . $duplicate_counter . " duplicate(s)\n";		
+		return 2;
+	}	
+	return 0;
+}
 
-if check_perms ${GRID_MAP_FILE} "0000010010" ; then
-    globus_args_option_error "$opt" "\"${GRID_MAP_FILE}\" is world writeable."
-    exit 1
-fi
+#####################################################
+# Function: check_valid_login_names
+# Description:
+#       Checks all gridmap entries if user names are
+#       valid login names.
+#       If invalid user names are found, then each
+#       invalid entry is printed.
+#       Prints number of invalid entries if this
+#       number is non-zero.
+# Parameters:
+#       Reference to a hash holding gridmap entries
+# Returns:
+#       0 all entries are valid
+#       1 if there are invalid login names
+#####################################################
+sub check_valid_login_names ( $ ) 
+{
+	my ($href, $entry, $user, $user_id);
+	my @user_names;
+	
+	my %invalid_login_names = ();
+		
+	$href = shift;
 
-RC=0
-
-# Check for duplicate entries
-
-duplicates=`${GLOBUS_SH_CAT-cat} $GRID_MAP_FILE | ${GLOBUS_SH_SORT-sort} | ${GLOBUS_SH_UNIQ-uniq} -d`
-if [ -n "$duplicates" ] ; then
-    echo "The following entry(s) is/are duplicated"
-    echo "$duplicates"
-    RC=1
-fi
-
-
-# Read Grid Map File for further processing
-
-while read line || test ! -z "${line}" ; do
-    
-    line=`echo ${line} | ${GLOBUS_SH_SED-sed} -e 's/[	 ]*//'`
-
-    # skip empty lines
-
-    if test -z "${line}" ; then
-        continue
-    fi
-
-    # Extract DN and LN fields
-
-    # Check for double quote delimitor
-    delim=`echo $line | cut -c1`
-    if [ "X$delim" = "X\"" ]; then
-        # DN is double quote delimited
-        
-        # Check for terminating double quote
-        term_check=`echo $line | cut -c2- | grep \"`
-        if [ -z "$term_check" ]; then
-            echo "The following entry is missing a closing double quote"
-            echo "$line"
-            RC=1
-        fi
-
-        dn=`echo $line | cut -f2 -d\"`
-        remaining_line=`echo $line | cut -f3- -d\"`
-
-    else
-        # No double quote delimitor on DN
-        dn=`echo $line | ${GLOBUS_SH_SED-sed} -e 's/\([^	 ]*\)[	 ]*.*/\1/'`
-        remaining_line=`echo $line | ${GLOBUS_SH_SED-sed} -e 's/[^	 ]*[	 ]*//'`
-    fi
-
-    if test -z "${dn}" ; then
-        echo "The following entry is missing a DN"
-        echo "$line"
-        RC=1
-    fi
-
-    dn_entries=`${GLOBUS_SH_CAT-cat} <<EOF 
-${dn_entries}
-${dn}
-EOF
-`
-    
-    if test -z "${remaining_line}" ; then
-        echo "The following entry is missing a local user name"
-        echo "$line"
-        RC=1
-    fi
-
-    ln_list=""
-
-    while test ! -z "${remaining_line}" ; do
-        ln_string=`echo $remaining_line | ${GLOBUS_SH_SED-sed} -e 's/\([^	 ,]*\).*/\1/'`
-
-        if test -z "${ln_string}" ; then
-            echo "The following entry has extra text at the end and may be malformed"
-            echo "$line"
-            RC=1
-            break
-        fi
-
-        remaining_line=`echo $remaining_line | ${GLOBUS_SH_SED-sed} -e 's/[^	 ,]*[,	 ]*//'`
-        ln_list="${ln_list} ${ln_string}"
-    done    
-
-    # Check for valid login names
-
-    for name in $ln_list ; do
-        ${libexecdir}/globus-is-local-user $name
-        if [ "$?" -eq 1 ] ; then
-            echo "The following entry contains an invalid login name"
-            echo "$line"
-            echo "The login name not found is: $name"
-            RC=1
-        fi                
-    done
-
-done < $GRID_MAP_FILE
-
-# Check for duplicate DNs
-
-duplicates=`echo "${dn_entries}" | ${GLOBUS_SH_SORT-sort} | ${GLOBUS_SH_UNIQ-uniq} -d`
-if [ -n "$duplicates" ] ; then
-    echo "The following DN(s) is/are duplicated"
-    echo "$duplicates"
-    RC=1
-fi
-
-
-exit $RC
-
+	foreach $entry (values(%$href)) 
+	{
+	    if ($entry =~ /,/) 
+	    {
+	      @user_names = split (/,/, $entry);
+	    } 
+	    else 
+	    {
+	      $user_names[0] = $entry;
+	    }	    
+	    
+	    foreach $user (@user_names) 
+	    {
+		    $user_id = getpwnam("$user");
+		    if (! defined ($user_id) || $user_id < 0)  
+		    {
+			    print "\nERROR: " . $user . " is not a valid local username\n";
+			    if (! exists ($invalid_login_names{"$user"}) )
+			    {
+			        $invalid_login_names{"$user"} = 1;
+			    }  
+		    }
+	    }
+	}
+	my $counter = keys (%invalid_login_names);
+	if ($counter > 0) 
+	{
+		print "ERROR: Found " . $counter . " invalid username(s)\n";
+		return 1;
+	} 
+	else
+	{
+		return 0;
+	}
+}
