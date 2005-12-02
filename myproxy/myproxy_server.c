@@ -1272,33 +1272,35 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 
    case MYPROXY_GET_PROXY:
        /* check trusted_retrievers */
-       authorization_ok =
-	   myproxy_server_check_policy_list((const char **)context->trusted_retriever_dns, client_name);
-       if (authorization_ok == 1) {
-	   myproxy_debug("passed trusted_retrievers policy");
-	   /* check per-credential policy */
-	   if (creds.trusted_retrievers) {
-	       authorization_ok =
-		   myproxy_server_check_policy(creds.trusted_retrievers,
-					       client_name);
-	       if (authorization_ok == 1) {
-		   myproxy_debug("passed per-credential trusted_retrievers policy");
-		   trusted_retriever = 1;
-	       } else {
-		   myproxy_debug("failed per-credential trusted_retrievers policy");
+       if (context->trusted_retriever_dns) {
+	   authorization_ok =
+	       myproxy_server_check_policy_list((const char **)context->trusted_retriever_dns, client_name);
+	   if (authorization_ok == 1) {
+	       myproxy_debug("passed trusted_retrievers policy");
+	       /* check per-credential policy */
+	       if (creds.trusted_retrievers) {
+		   authorization_ok =
+		       myproxy_server_check_policy(creds.trusted_retrievers,
+						   client_name);
+		   if (authorization_ok == 1) {
+		       myproxy_debug("passed per-credential trusted retrieval policy");
+		       trusted_retriever = 1;
+		   } else {
+		       verror_put_string("failed per-credential trusted retrieval policy");
+		   }
+	       } else if (context->default_trusted_retriever_dns) {
+		   authorization_ok =
+		       myproxy_server_check_policy_list((const char **)context->default_trusted_retriever_dns, client_name);
+		   if (authorization_ok == 1) {
+		       myproxy_debug("passed default_trusted_retrievers policy");
+		       trusted_retriever = 1;
+		   } else {
+		       verror_put_string("failed default_trusted_retrievers policy");
+		   }
 	       }
-	   } else if (context->default_trusted_retriever_dns) {
-	       authorization_ok =
-		   myproxy_server_check_policy_list((const char **)context->default_trusted_retriever_dns, client_name);
-	       if (authorization_ok == 1) {
-		   myproxy_debug("passed default_trusted_retrievers policy");
-		   trusted_retriever = 1;
-	       } else {
-		   myproxy_debug("failed default_trusted_retrievers policy");
-	       }
+	   } else {
+	       verror_put_string("failed trusted_retrievers policy");
 	   }
-       } else {
-	   myproxy_debug("failed trusted_retrievers policy");
        }
 
        authorization_ok =
