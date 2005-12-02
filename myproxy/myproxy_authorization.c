@@ -53,6 +53,10 @@ auth_passwd_get_status(struct myproxy_creds *creds, char *client_name,
     }
 #endif
 
+   if (config->pubcookie_cert && config->pubcookie_key) {
+       return AUTHORIZEMETHOD_SUFFICIENT;
+   }
+
     return AUTHORIZEMETHOD_DISABLED;
 }
 
@@ -344,7 +348,8 @@ int auth_passwd_check_client(authorization_data_t *client_auth_data,
       }
    }
    
-   if (config->pubcookie_cert) { /* if pubcookie support enabled */
+   if (config->pubcookie_cert && config->pubcookie_key) {
+       myproxy_debug("attempting pubcookie verification");
        if (!cred_passphrase_match) {
 	   cred_passphrase_match =
 	       (auth_pubcookie_check_client(client_auth_data, creds,
