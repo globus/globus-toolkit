@@ -5,9 +5,9 @@ Binary compatibility of the C API is not guaranteed between releases.
 Version History
 ---------------
 v3.3 xx Xxx 2005
-  - generate 1024 bit keys instead of 512 bit keys
   - API changes: new trusted_retrievers member for
     struct myproxy_creds and struct myproxy_request_t
+  - generate 1024 bit keys instead of 512 bit keys
   - add support for certificate-only authentication to the
     myproxy-server via myproxy-init -Z and myproxy-server.config
     trusted_retrievers options
