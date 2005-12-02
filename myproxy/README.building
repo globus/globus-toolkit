@@ -55,6 +55,16 @@ $ make dist
 
      $ gpt-build -verbose myproxy-*.tar.gz gcc32dbg
 
+   To submit test builds to the UW NMI system
+   (http://grandcentral.cs.wisc.edu:2500/nmi/show/HomePage):
+
+     $ ssh grandcentral.cs.wisc.edu
+     $ nwo/glue/myproxy/build
+     $ cvs update
+     $ vi cmdfile		# edit component_version
+     $ vi myproxy-src.ftp	# edit ftp_target
+     $ nmi_submit cmdfile
+
 4. Test the installation.
 
      $ grid-proxy-init
