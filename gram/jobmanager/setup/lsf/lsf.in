@@ -261,6 +261,7 @@ EOF
     ### SoftEnv extension ###
     setup_softenv(
         $self->job_dir() . '/lsf_softenv_script',
+        $soft_msc,
         *JOB);
     #########################
 

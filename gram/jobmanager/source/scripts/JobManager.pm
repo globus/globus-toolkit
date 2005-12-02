@@ -1040,8 +1040,12 @@ file handle to consume it.
 
 sub setup_softenv
 {
+    my $self = shift;
     my $softenv_script_name = shift;
+    my $soft_msc = shift;
     my $job_script_fh = shift;
+
+    my $description = $self->{JobDescription};
 
     local(*SOFTENV);
     open(SOFTENV, '>' . $softenv_script_name);
@@ -1055,7 +1059,6 @@ sub setup_softenv
 
     close(SOFTENV);
 
-    return $useSoftEnv;
     if ($useSoftEnv)
     {
         print $job_script_fh "$soft_msc $softenv_script_name\n";

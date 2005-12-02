@@ -238,8 +238,9 @@ EOF
     }
 
     ### SoftEnv extension ###
-    setup_softenv(
+    $self->setup_softenv(
         $self->job_dir() . '/pbs_softenv_job_script',
+        $soft_msc,
         *JOB);
     #########################
 
@@ -370,8 +371,9 @@ EOF
             print CMD "#!/bin/sh\n";
 
             ### SoftEnv extension ###
-            setup_softenv(
+            $self->setup_softenv(
                 $self->job_dir() . '/pbs_softenv_cmd_script',
+                $soft_msc,
                 *CMD);
             #########################
 
