@@ -404,6 +404,7 @@ init_arguments(int argc,
 		myproxy_debug("trusted retriever %s",
 			      request->trusted_retrievers);
 	    }
+	    use_empty_passwd = 1;
 	    break;
 	case 'R':   /* renewers list */
 	    if (request->renewers) {
