@@ -16,6 +16,5 @@ libglobus_usage___GLOBUS_FLAVOR_NAME__la_LIBADD = @GPT_LIB_LINKS@
 
 libglobus_usage___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 libglobus_usage___GLOBUS_FLAVOR_NAME__la_LDFLAGS = @GPT_LDFLAGS@
-libglobus_usage___GLOBUS_FLAVOR_NAME__la_CFLAGS = @GPT_CFLAGS@
 
 include $(top_srcdir)/globus_automake_post
