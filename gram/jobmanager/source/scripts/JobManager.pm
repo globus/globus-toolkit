@@ -52,6 +52,7 @@ Globus::GRAM::JobManager - Base class for all Job Manager scripts
  ($stderr, $rc) = $manager->pipe_err_cmd(@arglist);
  $status  = $manager->fork_and_exec_cmd(@arglist);
  $manager->append_path($hash, $variable, $path);
+ $hashref = $manager->setup_softenv();
 
 =head1 DESCRIPTION
 
@@ -1028,6 +1029,38 @@ sub job_dir {
 
     return $job_dir;
 
+}
+
+=item $manager->job_dir()
+
+Create a SoftEnv script and print commands to the specified job script
+file handle to consume it.
+
+=cut
+
+sub setup_softenv
+{
+    my $softenv_script_name = shift;
+    my $job_script_fh = shift;
+
+    local(*SOFTENV);
+    open(SOFTENV, '>' . $softenv_script_name);
+
+    my $useSoftEnv = 0;
+    foreach my $softenv ($description->softenv())
+    {
+        $useSoftEnv = 1;
+        print SOFTENV $softenv . "\n";
+    }
+
+    close(SOFTENV);
+
+    return $useSoftEnv;
+    if ($useSoftEnv)
+    {
+        print $job_script_fh "$soft_msc $softenv_script_name\n";
+        print $job_script_fh ". $softenv_script_name.cache.sh\n";
+    }
 }
 
 1;

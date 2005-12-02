@@ -237,25 +237,10 @@ EOF
         myceil($description->count() / $cpu_per_node), "\n";
     }
 
-    ### SoftEnv extensions ###
-    my $softenv_script_name = $self->job_dir() . '/pbs_softenv_job_script';
-    local(*SOFTENV);
-    open(SOFTENV, '>' . $softenv_script_name);
-
-    my $useSoftEnv = 0;
-    foreach my $softenv ($description->softenv())
-    {
-        $useSoftEnv = 1;
-        print SOFTENV $softenv . "\n";
-    }
-
-    close(SOFTENV);
-
-    if ($useSoftEnv)
-    {
-        print JOB "$soft_msc $softenv_script_name\n";
-        print JOB ". $softenv_script_name.cache.sh\n";
-    }
+    ### SoftEnv extension ###
+    setup_softenv(
+        $self->job_dir() . '/pbs_softenv_job_script',
+        *JOB);
     #########################
 
     $rsh_env = '';
@@ -384,26 +369,10 @@ EOF
         {
             print CMD "#!/bin/sh\n";
 
-            ### SoftEnv extensions ###
-            my $softenv_script_name = $self->job_dir()
-                                    . '/pbs_softenv_cmd_script';
-            local(*SOFTENV);
-            open(SOFTENV, '>' . $softenv_script_name);
-
-            my $useSoftEnv = 0;
-            foreach my $softenv ($description->softenv())
-            {
-                $useSoftEnv = 1;
-                print SOFTENV $softenv . "\n";
-            }
-
-            close(SOFTENV);
-
-            if ($useSoftEnv)
-            {
-                print CMD "$soft_msc $softenv_script_name\n";
-                print CMD ". $softenv_script_name.cache.sh\n";
-            }
+            ### SoftEnv extension ###
+            setup_softenv(
+                $self->job_dir() . '/pbs_softenv_cmd_script',
+                *CMD);
             #########################
 
             print CMD 'cd ', $description->directory(), "\n";
