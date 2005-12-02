@@ -237,23 +237,26 @@ EOF
         myceil($description->count() / $cpu_per_node), "\n";
     }
 
-    # SoftEnv extensions
-    if (defined $description->softenv())
+    ### SoftEnv extensions ###
+    my $softenv_script_name = $self->job_dir() . '/pbs_softenv_job_script';
+    local(*SOFTENV);
+    open(SOFTENV, '>' . $softenv_script_name);
+
+    my $useSoftEnv = 0;
+    foreach my $softenv ($description->softenv())
     {
-        my $softenv_script_name = $self->job_dir() . '/pbs_softenv_script';
-        local(*SOFTENV);
-        open(SOFTENV, '>' . $softenv_script_name);
-
-        foreach my $softenv ($description->softenv())
-        {
-            print(SOFTENV, $softenv);
-        }
-
-        close(SOFTENV);
-
-        print(JOB, "$soft_msc $softenv_script_name");
-        print(JOB, ". $softenv_script_name.cache.sh);
+        $useSoftEnv = 1;
+        print SOFTENV $softenv . "\n";
     }
+
+    close(SOFTENV);
+
+    if ($useSoftEnv)
+    {
+        print JOB "$soft_msc $softenv_script_name\n";
+        print JOB ". $softenv_script_name.cache.sh\n";
+    }
+    #########################
 
     $rsh_env = '';
 
@@ -380,6 +383,29 @@ EOF
         if ( open( CMD, ">$cmd_script_name" ) ) 
         {
             print CMD "#!/bin/sh\n";
+
+            ### SoftEnv extensions ###
+            my $softenv_script_name = $self->job_dir()
+                                    . '/pbs_softenv_cmd_script';
+            local(*SOFTENV);
+            open(SOFTENV, '>' . $softenv_script_name);
+
+            my $useSoftEnv = 0;
+            foreach my $softenv ($description->softenv())
+            {
+                $useSoftEnv = 1;
+                print SOFTENV $softenv . "\n";
+            }
+
+            close(SOFTENV);
+
+            if ($useSoftEnv)
+            {
+                print CMD "$soft_msc $softenv_script_name\n";
+                print CMD ". $softenv_script_name.cache.sh\n";
+            }
+            #########################
+
             print CMD 'cd ', $description->directory(), "\n";
             print CMD "$rsh_env\n";
             print CMD $description->executable(), " $args\n";
