@@ -515,8 +515,9 @@ grid_proxy_init(int seconds,
     if (outfile) cmdlen += strlen(outfile);
     command = (char *)malloc(cmdlen);
 
-    sprintf(command, "grid-proxy-init -verify -hours %d%s%s%s%s%s%s%s%s%s",
-	    hours,
+    sprintf(command, "grid-proxy-init -verify -hours %d "
+	    "-bits %d%s%s%s%s%s%s%s%s%s",
+	    hours, MYPROXY_DEFAULT_KEYBITS,
 	    cert ? " -cert " : "",
 	    cert ? cert : "",
 	    key ? " -key " : "",

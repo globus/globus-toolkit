@@ -1130,6 +1130,7 @@ ssl_proxy_delegation_init(SSL_CREDENTIALS	**new_creds,
 {
     int				return_status = SSL_ERROR;
     globus_result_t		local_result;
+    globus_gsi_proxy_handle_attrs_t proxy_handle_attrs;
     BIO	      			*bio = NULL;
 #if defined(GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY)
     char                        *GT_PROXY_MODE = NULL;
@@ -1143,8 +1144,12 @@ ssl_proxy_delegation_init(SSL_CREDENTIALS	**new_creds,
 
     *new_creds = ssl_credentials_new();
 
+    globus_gsi_proxy_handle_attrs_init(&proxy_handle_attrs);
+    globus_gsi_proxy_handle_attrs_set_keybits(proxy_handle_attrs,
+					      MYPROXY_DEFAULT_KEYBITS);
+
     local_result = globus_gsi_proxy_handle_init(&(*new_creds)->proxy_req,
-						NULL);
+						proxy_handle_attrs);
     if (local_result != GLOBUS_SUCCESS) {
 	verror_put_string("globus_gsi_proxy_handle_init() failed");
 	goto error;

@@ -16,6 +16,8 @@
 #define MYPROXY_DEFAULT_HOURS          168     /* 1 week */
 #define MYPROXY_DEFAULT_DELEG_HOURS    12
 
+#define MYPROXY_DEFAULT_KEYBITS        1024
+
 /* myproxy client protocol information */
 /* beware no string below may be a suffix of another */
 #define MYPROXY_VERSION_STRING      "VERSION="
