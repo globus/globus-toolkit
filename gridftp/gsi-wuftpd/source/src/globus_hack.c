@@ -2555,6 +2555,7 @@ g_write_to_log_file(
             opt_dir = SO_RCVBUF;
             sock = STDIN_FILENO;
         }
+	win_size = 0;
         opt_len = sizeof(win_size);
         getsockopt(sock, SOL_SOCKET, opt_dir, &win_size, &opt_len);
     }
