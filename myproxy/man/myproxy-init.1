@@ -190,6 +190,17 @@ This option implies
 .B -n
 since passphrase authentication is not used for credential renewal.
 .TP
+.BI -Z " dn, " --retrievable_by_cert " dn"
+Allow the specified entity to retrieve credentials without a passphrase.
+By default, the
+argument will be matched against the common name (CN) of the client
+(for example: "Jim Basney").  Specify
+.B -x 
+before this option to match against the full distinguished name (DN)
+(for example: "/C=US/O=National Computational Science Alliance/CN=Jim Basney") instead.
+This option implies 
+.BR -n .
+.TP
 .B -x, --regex_dn_match
 Specifies that the DN used by options 
 .B -r
