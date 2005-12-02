@@ -1285,6 +1285,7 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 		   if (authorization_ok == 1) {
 		       myproxy_debug("passed per-credential trusted retrieval policy");
 		       trusted_retriever = 1;
+		       myproxy_log("trusted retrievers policy matched");
 		   } else {
 		       verror_put_string("failed per-credential trusted retrieval policy");
 		   }
@@ -1294,6 +1295,7 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 		   if (authorization_ok == 1) {
 		       myproxy_debug("passed default_trusted_retrievers policy");
 		       trusted_retriever = 1;
+		       myproxy_log("trusted retrievers policy matched");
 		   } else {
 		       verror_put_string("failed default_trusted_retrievers policy");
 		   }
