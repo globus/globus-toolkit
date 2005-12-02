@@ -1047,23 +1047,26 @@ sub setup_softenv
 
     my $description = $self->{JobDescription};
 
+    my @softenv = $description->softenv();
+    if (not @softenv)
+    {
+        return 0;
+    }
+
     local(*SOFTENV);
     open(SOFTENV, '>' . $softenv_script_name);
 
-    my $useSoftEnv = 0;
     foreach my $softenv ($description->softenv())
     {
-        $useSoftEnv = 1;
         print SOFTENV $softenv . "\n";
     }
 
     close(SOFTENV);
 
-    if ($useSoftEnv)
-    {
-        print $job_script_fh "$soft_msc $softenv_script_name\n";
-        print $job_script_fh ". $softenv_script_name.cache.sh\n";
-    }
+    print $job_script_fh "$soft_msc $softenv_script_name\n";
+    print $job_script_fh ". $softenv_script_name.cache.sh\n";
+
+    return 1;
 }
 
 1;
