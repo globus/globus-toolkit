@@ -21,6 +21,7 @@ BEGIN
     $bsub   = ". $lsf_profile && @BSUB@";
     $bjobs  = ". $lsf_profile && @BJOBS@";
     $bkill  = ". $lsf_profile && @BKILL@";
+    $soft_msc = '@SOFT_MSC@';
 }
 
 sub submit
@@ -256,6 +257,27 @@ EOF
     {
         $description->add('executable', './' . $description->executable());
     }
+
+    ### SoftEnv extensions ###
+    my $softenv_script_name = $self->job_dir() . '/lsf_softenv_script';
+    local(*SOFTENV);
+    open(SOFTENV, '>' . $softenv_script_name);
+
+    my $useSoftEnv = 0;
+    foreach my $softenv ($description->softenv())
+    {
+        $useSoftEnv = 1;
+        print SOFTENV $softenv . "\n";
+    }
+
+    close(SOFTENV);
+
+    if ($useSoftEnv)
+    {
+        print JOB "$soft_msc $softenv_script_name\n";
+        print JOB ". $softenv_script_name.cache.sh\n";
+    }
+    #########################
 
     if($description->jobtype() eq 'mpi' && $mpiexec ne 'no')
     {

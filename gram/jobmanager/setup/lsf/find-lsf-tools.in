@@ -91,6 +91,12 @@ if test "$BHIST" = "no"; then
     AC_MSG_ERROR([Cannot locate bhist])
 fi
 
+# SoftEnv extension
+AC_PATH_PROG(SOFT_MSC, soft-msc, no)
+if test "$SOFT_MSC" = "no" ; then
+    AC_MSG_ERROR("Cannot locate soft-msc")
+fi
+
 prefix='$(GLOBUS_LOCATION)'
 exec_prefix='$(GLOBUS_LOCATION)'
 libexecdir=${prefix}/libexec
