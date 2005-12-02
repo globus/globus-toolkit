@@ -35,6 +35,7 @@ BEGIN
 
     $mpirun = '@MPIRUN@';
     $mpiexec = '@MPIEXEC@';
+    $soft_msc = '@SOFT_MSC@';
 }
 
 sub new
@@ -203,7 +204,8 @@ sub submit
 	push(@cmdline, @arguments);
     }
 
-    if ($description->use_fork_starter() && -x $fork_starter) {
+    if ($description->use_fork_starter() && -x $fork_starter)
+    {
         local(*STARTER_OUT, *STARTER_IN);
 
         $pid = IPC::Open2::open2(\*STARTER_OUT, \*STARTER_IN,
@@ -226,14 +228,42 @@ sub submit
 
         print STARTER_IN "count=$count;";
 
-        print STARTER_IN 'executable=' .
-                &escape_for_starter($cmdline[0]). ';';
-        shift @cmdline;
-        if ($#cmdline >= 0)
+        my @softenv = $description->softenv();
+        if (@softenv)
         {
-            print STARTER_IN 'arguments=' .
-                    join(',', map {&escape_for_starter($_)} @cmdline) .
-                    ';';
+            ### SoftEnv extension ###
+            $cmd_script_name = $self->job_dir() . '/scheduler_fork_cmd_script';
+            local(*CMD);
+            open( CMD, '>' . $cmd_script_name );
+
+            print CMD "#!/bin/sh\n";
+
+            $self->setup_softenv(
+                $self->job_dir() . '/fork_softenv_cmd_script',
+                $soft_msc,
+                *CMD);
+
+            print CMD 'cd ', $description->directory(), "\n";
+            print CMD "@cmdline\n";
+            close(CMD);
+            chmod 0700, $cmd_script_name;
+
+            print STARTER_IN 'executable=' .
+                &escape_for_starter($cmd_script_name). ';';
+            print STARTER_IN 'arguments=;';
+            #########################
+        }
+        else
+        {
+            print STARTER_IN 'executable=' .
+                    &escape_for_starter($cmdline[0]). ';';
+            shift @cmdline;
+            if ($#cmdline >= 0)
+            {
+                print STARTER_IN 'arguments=' .
+                        join(',', map {&escape_for_starter($_)} @cmdline) .
+                        ';';
+            }
         }
         
         my @job_stdout;
