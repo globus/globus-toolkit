@@ -4,7 +4,7 @@ dnl are concealed unless the MT compiler is used, or POSIX preprocessor symbols
 dnl are defined. We'll just use the standard interfaces in a LITE environment,
 dnl and copy things into the user buffers as neccessary.
 
-AC_DEFUN(CHECK_REENTRANT_FUNCS,[
+AC_DEFUN([CHECK_REENTRANT_FUNCS],[
 
 case "$host_os" in
     osf5.*)

@@ -36,16 +36,16 @@ AC_SUBST(GLOBUS_CALLBACK_BUILD)
 OS_SOURCES=""
 OS_HEADERS=""
 
-AC_CHECK_FUNCS(getaddrinfo,,[OS_SOURCES="$OS_SOURCES getaddrinfo.c"])
-AC_CHECK_FUNCS(freeaddrinfo,,[OS_SOURCES="$OS_SOURCES freeaddrinfo.c"])
-AC_CHECK_FUNCS(getnameinfo,,[OS_SOURCES="$OS_SOURCES getnameinfo.c"])
-AC_CHECK_FUNCS(inet_addr,,[OS_SOURCES="$OS_SOURCES inet_addr.c"])
-AC_CHECK_FUNCS(inet_pton,,[OS_SOURCES="$OS_SOURCES inet_pton.c"])
-AC_CHECK_FUNCS(opendir,,[OS_SOURCES="$OS_SOURCES opendir.c"])
-AC_CHECK_FUNCS(closedir,,[OS_SOURCES="$OS_SOURCES closedir.c"])
-AC_CHECK_FUNCS(readdir,,[OS_SOURCES="$OS_SOURCES readdir.c"])
-AC_CHECK_FUNCS(rewinddir,,[OS_SOURCES="$OS_SOURCES rewinddir.c"])
-AC_CHECK_FUNCS(gai_strerror,,[OS_SOURCES="$OS_SOURCES gai_strerror.c"])
+AC_CHECK_FUNC(getaddrinfo,,[OS_SOURCES="$OS_SOURCES getaddrinfo.c"])
+AC_CHECK_FUNC(freeaddrinfo,,[OS_SOURCES="$OS_SOURCES freeaddrinfo.c"])
+AC_CHECK_FUNC(getnameinfo,,[OS_SOURCES="$OS_SOURCES getnameinfo.c"])
+AC_CHECK_FUNC(inet_addr,,[OS_SOURCES="$OS_SOURCES inet_addr.c"])
+AC_CHECK_FUNC(inet_pton,,[OS_SOURCES="$OS_SOURCES inet_pton.c"])
+AC_CHECK_FUNC(opendir,,[OS_SOURCES="$OS_SOURCES opendir.c"])
+AC_CHECK_FUNC(closedir,,[OS_SOURCES="$OS_SOURCES closedir.c"])
+AC_CHECK_FUNC(readdir,,[OS_SOURCES="$OS_SOURCES readdir.c"])
+AC_CHECK_FUNC(rewinddir,,[OS_SOURCES="$OS_SOURCES rewinddir.c"])
+AC_CHECK_FUNC(gai_strerror,,[OS_SOURCES="$OS_SOURCES gai_strerror.c"])
 
 case "$host" in
     arm* )
