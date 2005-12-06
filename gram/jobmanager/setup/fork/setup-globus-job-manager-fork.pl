@@ -15,6 +15,9 @@ my $metadata =
 
 my $globusdir	= $ENV{GLOBUS_LOCATION};
 my $libexecdir	= "$globusdir/libexec";
+my $setupdir    = "$globusdir/setup/globus";
+
+chdir $setupdir;
 
 mkdir $ENV{GLOBUS_LOCATION} . "/lib/perl/Globus/GRAM/JobManager", 0777;
 

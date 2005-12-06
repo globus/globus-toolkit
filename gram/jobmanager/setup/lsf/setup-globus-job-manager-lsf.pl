@@ -31,6 +31,9 @@ my $metadata =
 
 my $globusdir	= $ENV{GLOBUS_LOCATION};
 my $libexecdir	= "$globusdir/libexec";
+my $setupdir    = "$globusdir/setup/globus";
+
+chdir $setupdir;
 
 if($validate_queues ne 'no')
 {
@@ -43,6 +46,10 @@ else
 
 # Do script relocation
 mkdir $ENV{GLOBUS_LOCATION} . "/lib/perl/Globus/GRAM/JobManager";
+
+$setupdir = $ENV{GLOBUS_LOCATION} . '/setup/globus';
+
+chdir $setupdir;
 
 print `./find-lsf-tools --cache-file=/dev/null`;
 if($? != 0)
