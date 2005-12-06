@@ -7,8 +7,7 @@ use Getopt::Long;
 my $opt_debug_pgms = 0;
 
 my @packages;
-my %pgm_flavors;
-my %pgm_static_flavors;
+my %pgms;
 
 my $package;
 
@@ -24,40 +23,58 @@ GetOptions(
 
 sub pick_best_flavor
 {
-    my $flavor1 = shift;
-    my $flavor2 = shift;
+    my $ref1 = shift;
+    my $ref2 = shift;
 
-    # empty flavors always loose
-    if (!defined($flavor1) or $flavor1 eq "") { return $flavor2; }
-    if (!defined($flavor2) or $flavor2 eq "") { return $flavor1; }
+    # empty packages always loose
+    if ( ! defined(%$ref1) ) { return $ref2; }
+    if ( ! defined(%$ref2) ) { return $ref1; }
+    
+    my %pgm1 = %$ref1;
+    my %pgm2 = %$ref2;
+
+    my $flavor1 = $pgm1{'flavor'};
+    my $flavor2 = $pgm2{'flavor'};
+
+    my $type1 = $pgm1{'type'};
+    my $type2 = $pgm2{'type'};
+
+    # static always win - as the flavor takes extra work to make
+    # we do not worry about bitness and dbg/non-dbg
+    if ($type1 =~ m/static/ and !($type2 =~ m/static/) ) { 
+        return $ref1;
+    }
+    if ($type2 =~ m/static/ and !($type1 =~ m/static/) ) { 
+        return $ref2;
+    }
 
     if ($opt_debug_pgms)
     {
         # dbg wins over non-dbg
-        if ( $flavor1 =~ m/dbg/ and !($flavor2 =~ m/dbg/) ) { return $flavor1; }
-        if ( $flavor2 =~ m/dbg/ and !($flavor1 =~ m/dbg/) ) { return $flavor2; }
+        if ( $flavor1 =~ m/dbg/ and !($flavor2 =~ m/dbg/) ) { return $ref1; }
+        if ( $flavor2 =~ m/dbg/ and !($flavor1 =~ m/dbg/) ) { return $ref2; }
     }
     else
     {
         # non-dbg wins over dbg
-        if ( !($flavor1 =~ m/dbg/) and $flavor2 =~ m/dbg/) { return $flavor1; }
-        if ( !($flavor2 =~ m/dbg/) and $flavor1 =~ m/dbg/) { return $flavor2; }
+        if ( !($flavor1 =~ m/dbg/) and $flavor2 =~ m/dbg/) { return $ref1; }
+        if ( !($flavor2 =~ m/dbg/) and $flavor1 =~ m/dbg/) { return $ref2; }
     }
 
     # 64 bit wins over 32 bit
-    if ($flavor1 =~ m/64/ and $flavor2 =~ m/32/) { return $flavor1; }
-    if ($flavor2 =~ m/64/ and $flavor1 =~ m/32/) { return $flavor2; }
+    if ($flavor1 =~ m/64/ and $flavor2 =~ m/32/) { return $ref1; }
+    if ($flavor2 =~ m/64/ and $flavor1 =~ m/32/) { return $ref2; }
 
     # non-pthr wins over pthr
-    if ( !($flavor1 =~ m/pthr/) and $flavor2 =~ m/pthr/ ) { return $flavor1; }
-    if ( !($flavor2 =~ m/ptrh/) and $flavor1 =~ m/pthr/ ) { return $flavor2; }
+    if ( !($flavor1 =~ m/pthr/) and $flavor2 =~ m/pthr/ ) { return $ref1; }
+    if ( !($flavor2 =~ m/ptrh/) and $flavor1 =~ m/pthr/ ) { return $ref2; }
 
     # vendorcc wins over gcc
-    if ($flavor1 =~ m/vendorcc/ and $flavor2 =~ m/gcc/) { return $flavor1; }
-    if ($flavor2 =~ m/vendorcc/ and $flavor1 =~ m/gcc/) { return $flavor2; }
+    if ($flavor1 =~ m/vendorcc/ and $flavor2 =~ m/gcc/) { return $ref1; }
+    if ($flavor2 =~ m/vendorcc/ and $flavor1 =~ m/gcc/) { return $ref2; }
 
     # at this point it does not matter which flavor we choose
-    return $flavor1;
+    return $ref1;
 }
 
 
@@ -90,15 +107,10 @@ while (<QUERY>)
         {
             # should we always skip these packages?
         }
-        elsif ($type eq "pgm")
+        elsif ($type eq "pgm" or $type eq "pgm_static")
         {
-            $pgm_flavors{$name} = pick_best_flavor($flavor, 
-                                                   $pgm_flavors{$name});
-        }
-        elsif ($type eq "pgm_static")
-        {
-            $pgm_static_flavors{$name} = pick_best_flavor($flavor, 
-                                             $pgm_static_flavors{$name});
+            my %pgm = ( flavor => $flavor, type => $type );
+            $pgms{$name} = pick_best_flavor(\%pgm, \%{$pgms{$name}});
         }
         else
         {
@@ -108,15 +120,14 @@ while (<QUERY>)
 }
 close(QUERY);
 
-foreach $name (sort keys %pgm_flavors)
+foreach $name (sort keys %pgms)
 {
-     add_package($name, $pgm_flavors{$name}, "pgm");
+    my $flavor = $pgms{$name}{'flavor'};
+    my $type = $pgms{$name}{'type'};
+
+    add_package($name, $flavor, $type);
 }
 
-foreach $name (sort keys %pgm_static_flavors)
-{
-     add_package($name, $pgm_static_flavors{$name}, "pgm_static");
-}
 
 print <<EOT
 <?xml version="1.0" encoding="UTF-8"?>
