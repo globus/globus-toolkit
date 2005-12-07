@@ -7,4 +7,9 @@ doxygen_DATA = Doxyfile-internal.include \
 	globus_head.html \
 	globus_head.tex
 
-EXTRA_DIST = $(doxygen_DATA)
+sbin_SCRIPTS = \
+    globus-build-doxygen-dependencies \
+    globus-update-doxygen-index \
+    globus-vararg-enums-doxygen-filter.pl
+
+EXTRA_DIST = $(doxygen_DATA) $(sbin_SCRIPTS)
