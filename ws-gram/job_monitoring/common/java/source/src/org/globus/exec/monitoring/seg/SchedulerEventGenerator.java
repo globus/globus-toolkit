@@ -133,6 +133,15 @@ class SchedulerEventGenerator extends Thread {
                     logger.debug("Seg input buffer is "
                     + (stdout.ready()?"read":"not ready"));
                 }
+                try
+                {
+                    int rc = proc.exitValue();
+                    logger.error("SEG terminated with return code " + rc);
+                }
+                catch (IllegalThreadStateException itse)
+                {
+                    logger.debug("SEG still running...");
+                }
                 while ((input = stdout.readLine()) != null) {
                     logger.debug("seg input line: " + input);
                     java.util.StringTokenizer tok =
