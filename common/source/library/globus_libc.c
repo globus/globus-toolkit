@@ -3515,13 +3515,6 @@ globus_libc_contact_string_to_ints(
     struct in_addr                      addr4;
     struct in6_addr                     addr6;
     unsigned char *                     paddr;
-    #ifdef WIN32        
-    int                                 rc;
-    struct addrinfo                     hints;
-    struct addrinfo                     res;
-    struct addrinfo *                   pres;
-    struct sockaddr_in6                 sockaddr6;
-    #endif
     
     memset(host, 0, sizeof(int) * 16);
     strncpy(buf, contact_string, sizeof(buf));
@@ -3536,18 +3529,11 @@ globus_libc_contact_string_to_ints(
         {
             *(s++) = 0;
         }
-        /* (no inet_pton in windows) */
-        #ifdef WIN32
-        if((addr4.S_un.S_addr = inet_addr(buf)) == INADDR_NONE)
-        {
-            goto error_parse;
-        }
-        #else
+        
         if(inet_pton(AF_INET, buf, &addr4) <= 0)
         {
             goto error_parse;
         }
-        #endif
         paddr = (unsigned char *) &addr4;
     }
     else
@@ -3574,34 +3560,11 @@ globus_libc_contact_string_to_ints(
             /* cant have a port without [] notation */
             s = NULL;
         }
-
-        /* (no inet_pton in windows) */
-        /* ToDo: This code has not been tested */
-        #ifdef WIN32
-        memset(&hints,0,sizeof(hints));
-        memset(&res,0,sizeof(res));
-        memset(&sockaddr6,0,sizeof(sockaddr6));
-        hints.ai_family   = AF_INET6;
-        hints.ai_socktype = SOCK_STREAM;
-        hints.ai_protocol = IPPROTO_TCP;
-        res.ai_addr       = (struct sockaddr *) &sockaddr6;
-        pres              = &res;
-        sockaddr6.sin6_family = AF_INET6;
-        rc = getaddrinfo(pbuf,      /* Node name             */
-                         NULL,      /* Service Name          */
-                         &hints,    /* Hints                 */
-                         &pres);    /* Ptr to Ptr To Results */
-        if(rc != 0)
-        {
-            goto error_parse;
-        }
-        paddr = (unsigned char *) &sockaddr6.sin6_addr;
-        #else
+        
         if(inet_pton(AF_INET6, pbuf, &addr6) <= 0)
         {
             goto error_parse;
         }
-        #endif
         paddr = (unsigned char *) &addr6;
     }
     

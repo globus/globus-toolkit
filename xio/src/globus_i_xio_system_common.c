@@ -1,10 +1,3 @@
-/*
- * This file or a portion of this file is licensed under the
- * terms of the Globus Toolkit Public License, found at
- * http://www.globus.org/toolkit/download/license.html.
- * If you redistribute this file, with or without
- * modifications, you must include this notice in the file.
- */
 #include "globus_i_xio_system_common.h"
 
 GlobusDebugDefine(GLOBUS_XIO_SYSTEM);
@@ -779,7 +772,7 @@ globus_i_xio_system_socket_try_read(
     GlobusXIOSystemDebugEnter();
 
 #ifndef WIN32
-    /* posix can use readv for sockets */
+    /* unix can use readv for sockets */
     if(!flags && !from && iovc > 1)
     {
         result = globus_i_xio_system_try_readv(handle, iov, iovc, nbytes);
@@ -835,7 +828,7 @@ globus_i_xio_system_socket_try_write(
     GlobusXIOSystemDebugEnter();
 
 #ifndef WIN32
-    /* posix can use writev for sockets */
+    /* unix can use writev for sockets */
     if(!flags && !to && iovc > 1)
     {
         result = globus_i_xio_system_try_writev(handle, iov, iovc, nbytes);

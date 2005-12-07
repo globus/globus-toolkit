@@ -11,10 +11,7 @@
 
 #include <globus_logging.h>
 #include <globus_common.h>
-/* ToDo: System Logging is disabled for Windows! Need to do something else */
-#ifndef WIN32
 #include <syslog.h>
-#endif
 
 #define GLOBUS_L_LOGGING_MAX_MESSAGE  2048
 
@@ -382,18 +379,14 @@ void
 globus_logging_syslog_open_func(
     void *                              user_arg)
 {
-    #ifndef WIN32
     openlog(NULL, LOG_PID, LOG_USER);
-    #endif
 }
 
 void
 globus_logging_syslog_close_func(
     void *                              user_arg)
 {
-    #ifndef WIN32
     closelog();
-    #endif
 }
     
 void
@@ -402,9 +395,7 @@ globus_logging_syslog_write_func(
     globus_size_t                       length,
     void *                              user_arg)
 {
-    #ifndef WIN32
     syslog(LOG_NOTICE, "%s", (char *) buf);
-    #endif
 }
 
 globus_logging_module_t                 globus_logging_stdio_module =

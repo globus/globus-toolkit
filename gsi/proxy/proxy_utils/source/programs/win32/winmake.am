@@ -2,7 +2,6 @@
 # External Library Dependencies
 LibDependencies = \
     Ws2_32.lib \
-    AdvAPI32.Lib \
     libeay32.lib \
     ssleay32.lib \
     libglobus_common_$(GLOBUS_FLAVOR_NAME).lib \

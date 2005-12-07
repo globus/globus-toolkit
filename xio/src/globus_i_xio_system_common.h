@@ -1,10 +1,3 @@
-/*
- * This file or a portion of this file is licensed under the
- * terms of the Globus Toolkit Public License, found at
- * http://www.globus.org/toolkit/download/license.html.
- * If you redistribute this file, with or without
- * modifications, you must include this notice in the file.
- */
 #ifndef GLOBUS_I_XIO_SYSTEM_COMMON_INCLUDE
 #define GLOBUS_I_XIO_SYSTEM_COMMON_INCLUDE
 
@@ -138,8 +131,7 @@ GlobusDebugDeclare(GLOBUS_XIO_SYSTEM);
 #define GlobusIXIOSystemFreeIovec(count, iovec)                             \
     do                                                                      \
     {                                                                       \
-        int                             _count = (count);                   \
-        if(_count < 10)                                                     \
+        if((count) < 10)                                                    \
         {                                                                   \
             globus_memory_push_node(                                        \
                 &globus_i_xio_system_iov_memory, (iovec));                  \
@@ -185,13 +177,12 @@ typedef enum
 #ifdef WIN32
 struct msghdr
 {
-    void *                              msg_name;
+    sockaddr *                          msg_name;
     int                                 msg_namelen;
-    struct iovec *                      msg_iov;
+    iovec *                             msg_iov;
     int                                 msg_iovlen;
-    void *                              msg_control;
-    int                                 msg_controllen;
-    int                                 msg_flags;
+    caddr_t                             msg_accrights;
+    int                                 msg_accrightslen;
 };
 #endif
 

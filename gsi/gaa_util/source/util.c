@@ -10,9 +10,7 @@
  */
 
 #include "gaa_util.h"
-#ifndef WIN32
 #include <strings.h>
-#endif
 #include <string.h>
 #include <stdio.h>
 

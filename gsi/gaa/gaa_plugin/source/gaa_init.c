@@ -11,11 +11,7 @@
 
 #include <stdio.h>
 #include <string.h>
-#ifdef WIN32
-#include <globus_libtool_windows.h>
-#else
 #include <ltdl.h>
-#endif
 #include "gaa.h"
 #include "gaa_util.h"
 #include "gaa_plugin.h"

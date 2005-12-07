@@ -13,16 +13,8 @@
 #include "globus_i18n.h"
 #include "globus_error_string.h"
 #include "globus_extension.h"
-#ifdef WIN32
-#include "globus_libtool_windows.h"
-#else
 #include "ltdl.h"
-#endif
 #include "version.h"
-/* For _getcwd() */
-#ifdef WIN32
-#include <direct.h>
-#endif
 
 static globus_thread_key_t              globus_l_libtool_key;
 static globus_rmutex_t                  globus_l_libtool_mutex;
@@ -100,11 +92,7 @@ char * globus_get_string_by_key( char * locale,
     if (myResources==NULL)
     {
         
-        #ifdef WIN32
-        currdir = _getcwd(NULL, 0);
-        #else
         currdir = getcwd(NULL, 0);
-        #endif
         resource_path = globus_common_create_string(
 	            "%s/share/i18n/%s", 
 		    globus_libc_getenv("GLOBUS_LOCATION"), 

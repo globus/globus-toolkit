@@ -99,24 +99,20 @@ globus_l_error_errno_printable(
     globus_module_descriptor_t *        base_source;
     char *                              sys_failed =
         _GCSL("A system call failed:");
-    char *                              sys_error = NULL;
+    char *                              sys_error;
     int                                 length = 4 + strlen(sys_failed);
     char *                              printable;
 
-#ifndef WIN32
+
     sys_error = globus_libc_system_error_string(
         *((int *) globus_object_get_local_instance_data(error)));
+
+    if(sys_error == NULL)
+    {
+        sys_error = "(null)";
+    }
+    
     length += strlen(sys_error);
-#else
-    length += FormatMessage( 
-        FORMAT_MESSAGE_ALLOCATE_BUFFER|FORMAT_MESSAGE_FROM_SYSTEM, 
-        NULL,
-        *((int *) globus_object_get_local_instance_data(error)), 
-        0, 
-        &sys_error,
-        0,
-        NULL);
-#endif
     
     base_source = globus_error_get_source(error);
 
@@ -127,7 +123,7 @@ globus_l_error_errno_printable(
         globus_libc_snprintf(printable,length,"%s: %s %s",
                              base_source->module_name,
                              sys_failed,
-                             sys_error ? sys_error : "(null)");
+                             sys_error);
         
     }
     else
@@ -135,16 +131,9 @@ globus_l_error_errno_printable(
         printable = globus_libc_malloc(length);
         globus_libc_snprintf(printable,length,"%s %s",
                              sys_failed,
-                             sys_error ? sys_error : "(null)");
+                             sys_error);
     }
-
-#ifdef WIN32
-    if(sys_error)
-    {
-        LocalFree(sys_error);
-    }
-#endif
-
+    
     return printable;
     
 }/* globus_l_error_errno_printable */

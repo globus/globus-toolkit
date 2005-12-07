@@ -24,13 +24,13 @@ globus_gsi_authz_callout_error_strings[GLOBUS_GSI_AUTHZ_CALLOUT_ERROR_LAST] =
 };
 
 static int
-globus_l_gsi_authz_callout_error_activate(void)
+globus_l_gsi_authz_callout_error_activate()
 {
     return((int)GLOBUS_SUCCESS);
 }
 
 static int
-globus_l_gsi_authz_callout_error_deactivate(void)
+globus_l_gsi_authz_callout_error_deactivate()
 {
     return((int)GLOBUS_SUCCESS);
 }

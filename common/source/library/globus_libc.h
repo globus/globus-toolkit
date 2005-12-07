@@ -23,12 +23,10 @@ Description:
 #include GLOBUS_THREAD_INCLUDE
 #ifdef WIN32
 /* For addrinfo struct */
-#include <winsock2.h>
 #include <ws2tcpip.h>
 #define EAI_SYSTEM 11
 #define snprintf _snprintf
 #endif
-
 
 EXTERN_C_BEGIN
 
@@ -357,6 +355,7 @@ globus_common_v_create_nstring(
 /* IPv6 compatible utils */
 typedef struct sockaddr_storage         globus_sockaddr_t;
 typedef struct addrinfo                 globus_addrinfo_t;
+
 #define GlobusLibcProtocolFamilyIsIP(family)                                \
     ((family == AF_INET ? 1 : (family == AF_INET6 ? 1 : 0)))
 

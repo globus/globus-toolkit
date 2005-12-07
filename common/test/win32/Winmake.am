@@ -1,6 +1,11 @@
 
 LibDependencies = \
     Ws2_32.lib \
-    Iphlpapi.lib \
-    libglobus_common_$(GLOBUS_FLAVOR_NAME).lib \
-    libglobus_i18n_$(GLOBUS_FLAVOR_NAME).lib
+	libglobus_common_$(GLOBUS_FLAVOR_NAME).lib \
+    icudata.lib \
+    icuucd.lib \
+    icuind.lib \
+    icutud.lib \
+    iculed.lib \
+    icuiod.lib \
+    iculxd.lib

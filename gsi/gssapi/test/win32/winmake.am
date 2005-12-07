@@ -2,7 +2,6 @@
 # External Library Dependencies
 LibDependencies = \
     Ws2_32.lib \
-    Advapi32.lib \
     libeay32.lib \
     ssleay32.lib \
     libglobus_common_$(GLOBUS_FLAVOR_NAME).lib \
@@ -16,5 +15,4 @@ LibDependencies = \
     libglobus_gsi_credential_$(GLOBUS_FLAVOR_NAME).lib \
     libglobus_gsi_proxy_core_$(GLOBUS_FLAVOR_NAME).lib \
     libglobus_gssapi_gsi_$(GLOBUS_FLAVOR_NAME).lib \
-    libglobus_gss_assist_$(GLOBUS_FLAVOR_NAME).lib \
-    libglobus_callout_$(GLOBUS_FLAVOR_NAME).lib
+    libglobus_gss_assist_$(GLOBUS_FLAVOR_NAME).lib

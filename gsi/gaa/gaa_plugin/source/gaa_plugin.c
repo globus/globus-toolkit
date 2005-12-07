@@ -11,22 +11,11 @@
 
 #include <stdio.h>
 #include <string.h>
-#ifndef WIN32
 #include <ltdl.h>
-#else
-#include <globus_libtool_windows.h>
-#endif
 #include "gaa.h"
 #include "gaa_util.h"
 #include "gaa_plugin.h"
 #include "gaa_plugin_private.h"
-
-/* GAA Flavor Name == Globus Flavor Name */
-#ifdef WIN32
-/* ToDo: A Hack To Get It To Build! Fix This */
-#define GAA_FLAVOR_NAME "win32dbgmtdthr"
-#endif
-
 
 /** @defgroup gaa_plugin "gaa plugin implementation"
  */

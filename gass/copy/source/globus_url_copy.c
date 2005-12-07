@@ -2874,14 +2874,27 @@ globus_l_guc_get_io_handle(
     {
         return NULL;
     }
-    
-    io_handle =(globus_io_handle_t *)
-        globus_libc_malloc(sizeof(globus_io_handle_t));
+#   ifndef TARGET_ARCH_WIN32
+    {
+        io_handle =(globus_io_handle_t *)
+            globus_libc_malloc(sizeof(globus_io_handle_t));
 
-    /* convert stdin to be a globus_io_handle */
-    globus_io_file_posix_convert(std_fileno, GLOBUS_NULL, io_handle);
+        /* convert stdin to be a globus_io_handle */
+        globus_io_file_posix_convert(std_fileno,
+                                         GLOBUS_NULL,
+                                         io_handle);
 
-    return io_handle;
+        return io_handle;
+    }
+#   else
+    {
+        fprintf(stderr, 
+            _GASCSL("Error: On Windows, the source URL cannot be stdin\n" ));
+        globus_module_deactivate_all();
+
+        return NULL;
+    }
+#   endif
 }
 
 static

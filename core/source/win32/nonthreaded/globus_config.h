@@ -43,7 +43,6 @@
  * configure macros
  */
 #define TARGET_ARCH_WIN32           1
-#define _WIN32_WINNT                0x0500
 
 #define HAVE_MEMMOVE                1
 #define HAVE_STDARG_H               1
@@ -53,7 +52,6 @@
 
 #define MAXPATHLEN                  128
 #define MAXHOSTNAMELEN              128
-
 /* windows does not have iovec */
 #undef HAVE_STRUCT_IOVEC
 #define IOV_MAX 1
@@ -67,8 +65,7 @@
 #define GLOBUS_HAVE_DIRENT_TYPE 1
 #define GLOBUS_HAVE_DIRENT_RECLEN 1
 #define HAVE_ATEXIT 1
-#define HAVE_NETINET_TCP_H 1
-#define HAVE_WINSOCK_H     1
+#define HAVE_NETINET_TCP_H 1#define HAVE_WINSOCK_H     1
 
 //#define GLOBUS_OFF_T DWORDLONG
 #define GLOBUS_OFF_T LONGLONG
