@@ -1664,7 +1664,7 @@ globus_l_gfs_config_misc()
         rc = globus_l_config_loadfile(value, &data);
         globus_l_gfs_config_set("banner", 0, data);                
     }
-    else
+    else if(globus_i_gfs_config_string("banner") == GLOBUS_NULL)
     {
             data = globus_common_create_string(
                 "%s GridFTP Server %d.%d (%s, %d-%d) ready.",
