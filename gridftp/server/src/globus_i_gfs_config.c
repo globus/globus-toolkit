@@ -629,7 +629,7 @@ globus_l_gfs_config_load_commandline(
     int                                 i;
     int                                 rc;
     int                                 len;
-    int                                 dash = 0;
+    int                                 dash;
     globus_l_gfs_config_option_t *      option;
     globus_bool_t                       found;
     globus_bool_t                       negate;
@@ -641,7 +641,8 @@ globus_l_gfs_config_load_commandline(
     {
         found = GLOBUS_FALSE;
         negate = GLOBUS_FALSE;
-        
+        dash = 0;
+
         argp = argv[arg_num];
         len = strlen(argp);
         
