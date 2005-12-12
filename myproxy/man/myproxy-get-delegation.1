@@ -1,4 +1,4 @@
-.TH myproxy-logon 1 "2005-12-2" "NCSA" "MyProxy"
+.TH myproxy-logon 1 "2005-12-12" "NCSA" "MyProxy"
 .SH NAME
 myproxy-logon \- retrieve a credential
 .SH SYNOPSIS
@@ -20,6 +20,10 @@ that was previously stored using
 .BR myproxy-init (1)
 or
 .BR myproxy-store (1).
+It can also be used to retrieve short-lived end entity credentials
+from a 
+.BR myproxy-server (8)
+configured to act as a Certificate Authority.
 In the default mode, the command prompts for the 
 MyProxy pass phrase associated with the credential to be retrieved and
 stores the retrieved credential in the standard location (
