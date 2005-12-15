@@ -459,6 +459,10 @@ handle_client(myproxy_socket_attrs_t *attrs,
 			client_request->proxy_lifetime);
 	  myproxy_debug("  Max. delegation lifetime: %d seconds",
 			client_creds->lifetime);
+	  if (context->max_proxy_lifetime) {
+	      myproxy_debug("  Server max_proxy_lifetime: %d seconds",
+			    context->max_proxy_lifetime);
+	  }
 
 	  /* Are credentials expired? */
 	  now = time(0);
@@ -841,22 +845,34 @@ void get_proxy(myproxy_socket_attrs_t *attrs,
 	       myproxy_response_t *response,
                int max_proxy_lifetime)
 {
-    int min_lifetime;
-  
-    min_lifetime = MIN(creds->lifetime, request->proxy_lifetime);
+    int lifetime = 0;
 
-    if (max_proxy_lifetime) {
-	min_lifetime = MIN(min_lifetime, max_proxy_lifetime);
+    if (request->proxy_lifetime > 0) {
+	lifetime = request->proxy_lifetime;
+    }
+    if (creds->lifetime > 0) {
+	if (lifetime > 0) {
+	    lifetime = MIN(lifetime, creds->lifetime);
+	} else {
+	    lifetime = creds->lifetime;
+	}
+    }
+    if (max_proxy_lifetime > 0) {
+	if (lifetime > 0) {
+	    lifetime = MIN(lifetime, max_proxy_lifetime);
+	} else {
+	    lifetime = max_proxy_lifetime;
+	}
     }
 
-    if (myproxy_init_delegation(attrs, creds->location, min_lifetime,
+    if (myproxy_init_delegation(attrs, creds->location, lifetime,
 				request->passphrase) < 0) {
         myproxy_log_verror();
 	response->response_type =  MYPROXY_ERROR_RESPONSE; 
 	response->error_string = strdup("Unable to delegate credentials.\n");
     } else {
         myproxy_log("Delegating credentials for %s lifetime=%d",
-		    creds->owner_name, min_lifetime);
+		    creds->owner_name, lifetime);
 	response->response_type = MYPROXY_OK_RESPONSE;
     } 
 }
@@ -868,14 +884,6 @@ void get_credentials(myproxy_socket_attrs_t *attrs,
                      myproxy_response_t     *response,
                      int                     max_proxy_lifetime)
 {
-    int min_lifetime;
-
-    min_lifetime = MIN(creds->lifetime, request->proxy_lifetime);
-
-    if (max_proxy_lifetime) {
-      min_lifetime = MIN(min_lifetime, max_proxy_lifetime);
-    }
-
     if (myproxy_get_credentials(attrs, creds->location) < 0) {
       myproxy_log_verror();
       response->response_type =  MYPROXY_ERROR_RESPONSE;
