@@ -115,22 +115,5 @@ int myproxy_get_delegation(
 	ssl_proxy_file_destroy(delegfile);
     }
 
-    /* Store file in trusted directory if requested and returned */
-    if (client_request->want_trusted_certs)
-    {
-        if (server_response->trusted_certs != NULL)
-        {
-
-            if (myproxy_install_trusted_cert_files(server_response->trusted_certs) != 0)
-            {       
-                return (1);
-            }
-        }
-        else
-        {
-            myproxy_debug("Requested trusted certs but didn't get any.\n");
-        }
-    }
-    
     return(0);
 }
