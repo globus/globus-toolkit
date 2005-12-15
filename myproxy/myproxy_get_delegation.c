@@ -83,6 +83,7 @@ main(int argc, char *argv[])
     myproxy_socket_attrs_t *socket_attrs;
     myproxy_request_t      *client_request;
     myproxy_response_t     *server_response;
+    int return_value = 1;
 
     /* check library version */
     if (myproxy_check_version()) {
@@ -115,7 +116,7 @@ main(int argc, char *argv[])
     /* Connect to server. */
     if (myproxy_init_client(socket_attrs) < 0) {
         verror_print_error(stderr);
-        return(1);
+        goto cleanup;
     }
     
     if (!outputfile) {
@@ -139,7 +140,7 @@ main(int argc, char *argv[])
 	}
 	if (rval == -1) {
 	    verror_print_error(stderr);
-	    return 1;
+	    goto cleanup;
 	}
     }
 
@@ -150,21 +151,21 @@ main(int argc, char *argv[])
 					      &client_request->username)) {
 		    fprintf(stderr, "Cannot get subject name from %s.\n",
 			    client_request->authzcreds);
-		    return 1;
+		    goto cleanup;
 		}
 	    } else {
 		if (ssl_get_base_subject_file(NULL,
 					      &client_request->username)) {
 		    fprintf(stderr,
 			    "Cannot get subject name from your certificate.\n");
-		    return 1;
+		    goto cleanup;
 		}
 	    }
 	} else {
 	    char *username = NULL;
 	    if (!(username = getenv("LOGNAME"))) {
 		fprintf(stderr, "Please specify a username.\n");
-		return 1;
+		goto cleanup;
 	    }
 	    client_request->username = strdup(username);
 	}
@@ -174,16 +175,37 @@ main(int argc, char *argv[])
 			       server_response, outputfile)!=0) {
 	fprintf(stderr, "Failed to receive credentials.\n");
 	verror_print_error(stderr);
-	return 1;
+	goto cleanup;
     }
+
     printf("A credential has been received for user %s in %s.\n",
            client_request->username, outputfile);
     free(outputfile);
     verror_clear();
 
+    /* Store file in trusted directory if requested and returned */
+    if (client_request->want_trusted_certs) {
+        if (server_response->trusted_certs != NULL) {
+            if (myproxy_install_trusted_cert_files(server_response->trusted_certs) != 0) {       
+		verror_print_error(stderr);
+		goto cleanup;
+            } else {
+		char *path;
+		path = get_trusted_certs_path();
+		printf("Trust roots have been installed in %s.\n", path);
+		free(path);
+	    }
+        } else {
+            myproxy_debug("Requested trusted certs but didn't get any.\n");
+        }
+    }
+    
+    return_value = 0;
+
+ cleanup:
     /* free memory allocated */
     myproxy_free(socket_attrs, client_request, server_response);
-    return 0;
+    return return_value;
 }
 
 void 
