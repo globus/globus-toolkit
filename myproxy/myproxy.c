@@ -1256,7 +1256,8 @@ myproxy_deserialize_response(myproxy_response_t *response,
 			      MYPROXY_ERROR_STRING, 
 			      CONVERT_MESSAGE_ALLOW_MULTIPLE,
 			      &response->error_string);
-	return 0;
+	return_code = 0;
+	goto error;
     }
 
     /* Parse any cred info in response */
@@ -1773,6 +1774,8 @@ int myproxy_recv_response_ex(myproxy_socket_attrs_t *socket_attrs,
 					     client_request) != 0) {
 		return -1;
 	    }
+	    authorization_data_free(server_response->authorization_data);
+	    server_response->authorization_data = NULL;
 	}
     } while (server_response->response_type == MYPROXY_AUTHORIZATION_RESPONSE);
 
@@ -1874,6 +1877,12 @@ myproxy_free(myproxy_socket_attrs_t *attrs,
 	  free(request->retrievers);
        if (request->renewers != NULL)
 	  free(request->renewers);
+       if (request->credname != NULL)
+	  free(request->credname);
+       if (request->creddesc != NULL)
+	  free(request->creddesc);
+       if (request->authzcreds != NULL)
+	  free(request->authzcreds);
        if (request->keyretrieve != NULL)
 	  free(request->keyretrieve);
        if (request->trusted_retrievers != NULL)
@@ -1886,6 +1895,14 @@ myproxy_free(myproxy_socket_attrs_t *attrs,
     	  free(response->version);
        if (response->authorization_data != NULL)
     	  authorization_data_free(response->authorization_data);
+       if (response->error_string != NULL)
+	   free(response->error_string);
+       if (response->info_creds != NULL) {
+	   myproxy_creds_free(response->info_creds);
+       }
+       if (response->trusted_certs != NULL) {
+	   myproxy_certs_free(response->trusted_certs);
+       }
        free(response);
     }
 }
