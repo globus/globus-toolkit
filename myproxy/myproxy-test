@@ -62,7 +62,7 @@ use IPC::Open3;
 #
 $usage = "usage: myproxy-test [-help] [-verbose] [-startserver]\n" .
          "                    [-performance iterations clients]\n" .
-         "                    [-dbperformance]\n";
+         "                    [-dbperformance] [-valgrind]\n";
 $startserver = 0;
 $performance = 0;
 $dbperformance = 0;
@@ -83,6 +83,14 @@ while (($arg = shift @ARGV)) {
 	$perfclients = shift @ARGV;
     } elsif ($arg eq "-dbperformance") {
 	$dbperformance = 1;
+    } elsif ($arg eq "-valgrind") {
+	chomp($valgrind = `which valgrind 2>/dev/null`);
+	die "valgrind not in PATH, stopped" if (!(-x $valgrind));
+	$valgrind .= " --tool=addrcheck -q";
+	$valgrind .= " --leak-check=full";
+	$valgrind .= " --suppressions=$ENV{HOME}/.valgrind.supp";
+	$valgrind .= " --log-file=/tmp/valgrind.log.$$";
+	$valgrind .= " --num-callers=50 ";
     } else {
 	print STDERR $usage;
 	exit 1;
@@ -158,8 +166,11 @@ umask(0077);
 if (!defined($ENV{X509_CERT_DIR}) &&
     defined($ENV{HOME}) && !(-e "$ENV{HOME}/.globus/certificates")) {
     $test_trustroots = 1;
+    print STDERR "Testing with $ENV{HOME}/.globus/certificates.\n"
+	if ($verbose);
 } else {
     $test_trustroots = 0;
+    print STDERR "Not testing CA certificate management because $ENV{HOME}/.globus/certificates exists.\n" if ($verbose);
 }
 
 #
@@ -189,9 +200,11 @@ if ($startserver) {
     $SERVERPIDFILE = "/tmp/myproxy-test.serverpid.$$";
     $servercmd = "$myproxy_server -s $serverdir -c $serverconf";
     $servercmd .= " -p $ENV{MYPROXY_SERVER_PORT} -P $SERVERPIDFILE";
+    $servercmd = $valgrind . $servercmd if (defined($valgrind));
     &debug("running '$servercmd'");
     `$servercmd`;
     sleep(1);			# give server a chance to startup
+    sleep(4) if (defined($valgrind)); # valgrind slows things down
     if (open SERVERPIDFILE) {
 	$serverpid = <SERVERPIDFILE>;
 	close SERVERPIDFILE;
@@ -912,6 +925,19 @@ end_of_all_tests:
 
 print "MyProxy Tests Complete: ", $SUCCESSES, " tests passed, ";
 print $FAILURES, " tests failed\n";
+
+if (defined($valgrind)) {
+    `cat /tmp/valgrind.log.$$* > valgrind.log.$$`;
+    `rm -f /tmp/valgrind.log.$$*`;
+    if (-s "valgrind.log.$$") {
+	print "Valgrind errors in valgrind.log.$$.\n";
+	$FAILURES++;
+    } else {
+	print "Valgrind found no errors.\n";
+	unlink("valgrind.log.$$");
+    }
+}
+
 exit $FAILURES;
 
 #
@@ -921,6 +947,7 @@ exit $FAILURES;
 sub runtest {
     local($command, $input) = @_;
 
+    $command = $valgrind . $command if (defined($valgrind));
     print STDERR "running: ", $command, "\n" if ($verbose);
     $pid = open3(*Writer, *Reader, 0, "exec $command") ||
 	die "failed to run $command";
