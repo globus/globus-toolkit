@@ -56,6 +56,7 @@ main(int argc, char *argv[])
     char *pshost = NULL;
     char *request_buffer = NULL;
     int requestlen;
+    int return_value = 1;
 
     myproxy_socket_attrs_t *socket_attrs;
     myproxy_request_t      *client_request;
@@ -111,13 +112,13 @@ main(int argc, char *argv[])
     /* Set up client socket attributes */
     if (myproxy_init_client(socket_attrs) < 0) {
 	verror_print_error(stderr);
-        return 1;
+        goto cleanup;
     }
 
     /* Authenticate client to server */
     if (myproxy_authenticate_init(socket_attrs, NULL /* Default proxy */) < 0) {
 	verror_print_error(stderr);
-        return 1;
+        goto cleanup;
     }
     if (client_request->username == NULL) { /* set default username */
         if (dn_as_username) {
@@ -125,13 +126,13 @@ main(int argc, char *argv[])
                                           &client_request->username)) {
                 fprintf(stderr,
                         "Cannot get subject name from your certificate\n");
-                return 1;
+                goto cleanup;
             }
         } else {
 	    char *username = NULL;
             if (!(username = getenv("LOGNAME"))) {
                 fprintf(stderr, "Please specify a username.\n");
-                return 1;
+                goto cleanup;
             }
 	    client_request->username = strdup(username);
         }
@@ -142,13 +143,13 @@ main(int argc, char *argv[])
 
     if (requestlen < 0) {
 	verror_print_error(stderr);
-        exit(1);
+        goto cleanup;
     }
 
     /* Send request to the myproxy-server */
     if (myproxy_send(socket_attrs, request_buffer, requestlen) < 0) {
 	verror_print_error(stderr);
-        return 1;
+        goto cleanup;
     }
     free(request_buffer);
     request_buffer = 0;
@@ -157,7 +158,7 @@ main(int argc, char *argv[])
     if (myproxy_recv_response_ex(socket_attrs, server_response,
 				 client_request) < 0) {
 	verror_print_error(stderr);
-        exit(1);
+        goto cleanup;
     }
 
     /* Check response */
@@ -165,7 +166,7 @@ main(int argc, char *argv[])
     case MYPROXY_ERROR_RESPONSE:
         fprintf(stderr, "Received ERROR_RESPONSE: %s\n",
 		server_response->error_string);
-	exit(1);
+	goto cleanup;
         break;
     case MYPROXY_OK_RESPONSE:
 	printf("username: %s\n", client_request->username);
@@ -173,15 +174,18 @@ main(int argc, char *argv[])
 	break;
     default:
         fprintf(stderr, "Invalid response type received.\n");
-	exit(1);
+	goto cleanup;
         break;
     }
 
     printf ("\n");
+    return_value = 0;
+
+ cleanup:
     /* free memory allocated */
     myproxy_free(socket_attrs, client_request, server_response);
 
-    return 0;
+    return return_value;
 }
 
 
