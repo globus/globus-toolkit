@@ -848,7 +848,10 @@ myproxy_creds_retrieve(struct myproxy_creds *creds)
     }
 
     /* reset username from stashed value */
+    assert(creds->username == NULL);
     creds->username = username;
+    username = NULL;
+    assert(creds->location == NULL);
     creds->location = mystrdup(creds_path);
     ssl_get_times(creds_path, &creds->start_time, &creds->end_time);
 
@@ -859,6 +862,7 @@ error:
     if (creds_path) free(creds_path);
     if (data_path) free(data_path);
     if (lock_path) free(lock_path);
+    if (username) free(username);
 
     return return_code;
 }
@@ -927,6 +931,7 @@ int myproxy_creds_retrieve_all(struct myproxy_creds *creds)
 	    if (new_cred->credname) free(new_cred->credname);
 	    new_cred->username = strdup(username);
 	    new_cred->credname = strdup(credname);
+	    free(credname);
 	    if (myproxy_creds_retrieve(new_cred) == 0) {
 		if (strcmp(owner_name, new_cred->owner_name) == 0) {
 		    if (cur_cred) cur_cred->next = new_cred;
@@ -1480,10 +1485,17 @@ myproxy_creds_verify_passphrase(const struct myproxy_creds *creds,
     return return_code;
 }
 
+void myproxy_creds_free(struct myproxy_creds *creds)
+{
+    if (!creds) return;
+    if (creds->next) myproxy_creds_free(creds->next);
+    myproxy_creds_free_contents(creds);
+    free(creds);
+}
+
 void myproxy_creds_free_contents(struct myproxy_creds *creds)
 {
     if (creds == NULL) return;
-    if (creds->next) myproxy_creds_free_contents(creds->next);
     if (creds->username != NULL)	free(creds->username);
     if (creds->passphrase != NULL)	free(creds->passphrase);
     if (creds->owner_name != NULL)	free(creds->owner_name);
@@ -1503,6 +1515,7 @@ void myproxy_certs_free(struct myproxy_certs *certs)
     if (certs->filename) free(certs->filename);
     if (certs->contents) free(certs->contents);
     myproxy_certs_free(certs->next);
+    free(certs);
 }
 
 int myproxy_set_storage_dir(const char *dir)
