@@ -119,6 +119,7 @@ main(int argc, char *argv[])
     int requestlen;
     int cleanup_user_proxy = 0;
     char *x509_user_proxy = NULL;
+    int return_value = 1;
 
     myproxy_socket_attrs_t *socket_attrs;
     myproxy_request_t      *client_request;
@@ -299,16 +300,16 @@ main(int argc, char *argv[])
     printf("A proxy valid for %d hours (%.1f days) for user %s now exists on %s.\n", 
 	   hours, days, client_request->username, socket_attrs->pshost); 
     
-    /* free memory allocated */
-    myproxy_free(socket_attrs, client_request, server_response);
-
-    return 0;
+    return_value = 0;
 
  cleanup:
+    /* free memory allocated */
+    myproxy_free(socket_attrs, client_request, server_response);
     if (cleanup_user_proxy) {
         grid_proxy_destroy(proxyfile);
     }
-    return 1;
+
+    return return_value;
 }
 
 int
@@ -381,7 +382,7 @@ init_arguments(int argc,
 	      request->retrievers = strdup (optarg);
 	    else
 	    {
-		request->retrievers = (char *) malloc (strlen (optarg) + 5);
+		request->retrievers = (char *) malloc (strlen (optarg) + 6);
 		strcpy (request->retrievers, "*/CN=");
 		request->retrievers = strcat (request->retrievers,optarg);
 		myproxy_debug("authorized retriever %s", request->retrievers);
@@ -397,7 +398,7 @@ init_arguments(int argc,
 	    else
 	    {
 		request->trusted_retrievers =
-		    (char *) malloc (strlen (optarg) + 5);
+		    (char *) malloc (strlen (optarg) + 6);
 		strcpy (request->trusted_retrievers, "*/CN=");
 		request->trusted_retrievers =
 		    strcat (request->trusted_retrievers,optarg);

@@ -113,6 +113,7 @@ main(int   argc,
     char                   *request_buffer     = NULL;
     char                   *credkeybuf         = NULL;
     int                     requestlen;
+    int                     return_value = 1;
 
     myproxy_socket_attrs_t *socket_attrs;
     myproxy_request_t      *client_request;
@@ -259,10 +260,16 @@ main(int   argc,
 
     printf( "Credentials saved to myproxy server.\n" );
 
-    return 0;
+    return_value = 0;
 
  cleanup:
-    return 1;
+    /* free memory allocated */
+    myproxy_free(socket_attrs, client_request, server_response);
+    if (credkeybuf) free(credkeybuf);
+    if (certfile) free(certfile);
+    if (keyfile) free(keyfile);
+
+    return return_value;
 }
 
 int
@@ -289,10 +296,12 @@ init_arguments(int                     argc,
 	    break;
 
 	case 'c':		/* credential file name */
+	    if (certfile) free(certfile);
 	    certfile = strdup(optarg);
 	    break;
 
 	case 'y':		/* key file name */
+	    if (keyfile) free(keyfile);
 	    keyfile = strdup(optarg);
 	    break;
 
@@ -338,7 +347,7 @@ init_arguments(int                     argc,
 		request->retrievers = strdup(optarg);
 	    } else {
 		request->retrievers =
-		    (char *) malloc(strlen(optarg) + 5);
+		    (char *) malloc(strlen(optarg) + 6);
 		strcpy(request->retrievers, "*/CN=");
 		myproxy_debug("authorized retriever %s",
 			      request->retrievers);
@@ -387,7 +396,7 @@ init_arguments(int                     argc,
 		request->trusted_retrievers = strdup(optarg);
 	    } else {
 		request->trusted_retrievers =
-		    (char *) malloc(strlen(optarg) + 5);
+		    (char *) malloc(strlen(optarg) + 6);
 		strcpy(request->trusted_retrievers, "*/CN=");
 		myproxy_debug("trusted retriever %s",
 			      request->trusted_retrievers);
@@ -402,7 +411,7 @@ init_arguments(int                     argc,
 		request->keyretrieve = strdup(optarg);
 	    } else {
 		request->keyretrieve =
-		    (char *) malloc(strlen(optarg) + 5);
+		    (char *) malloc(strlen(optarg) + 6);
 		strcpy(request->keyretrieve, "*/CN=");
 		myproxy_debug("authorized key retriever %s",
 			      request->keyretrieve);
