@@ -548,6 +548,9 @@ handle_client(myproxy_socket_attrs_t *attrs,
         myproxy_log("Received client %s command: INFO", client_name);
 	myproxy_debug("  Username is \"%s\"", client_request->username);
         info_proxy(client_creds, server_response);
+	if (server_response->info_creds == client_creds) {
+	    client_creds = NULL; /* avoid potential double-free */
+	}
         break;
     case MYPROXY_DESTROY_PROXY:
         myproxy_log("Received client %s command: DESTROY", client_name);
@@ -608,8 +611,7 @@ handle_client(myproxy_socket_attrs_t *attrs,
    
     /* free stuff up */
     if (client_creds != NULL) {
-	myproxy_creds_free_contents(client_creds);
-	free(client_creds);
+	myproxy_creds_free(client_creds);
     }
 
     myproxy_free(attrs, client_request, server_response);
@@ -674,12 +676,8 @@ init_arguments(int argc, char *argv[],
             exit(1);
             break;
         case 's': /* set the credential storage directory */
-            { char *s;
-            s=(char *) malloc(strlen(optarg) + 1);
-            strcpy(s,optarg);
-            myproxy_set_storage_dir(s);
+            myproxy_set_storage_dir(optarg);
             break;
-            }
 	case 'u': /* print version and exit */
             fprintf(stderr, usage);
             exit(1);
@@ -971,7 +969,7 @@ void info_proxy(myproxy_creds_t *creds, myproxy_response_t *response) {
        response->error_string = strdup(verror_get_string());
     } else { 
        response->response_type = MYPROXY_OK_RESPONSE;
-       response->info_creds = creds;
+       response->info_creds = creds; /* beware shallow copy here */
     }
 }
 

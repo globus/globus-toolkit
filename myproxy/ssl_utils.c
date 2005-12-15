@@ -1130,7 +1130,7 @@ ssl_proxy_delegation_init(SSL_CREDENTIALS	**new_creds,
 {
     int				return_status = SSL_ERROR;
     globus_result_t		local_result;
-    globus_gsi_proxy_handle_attrs_t proxy_handle_attrs;
+    globus_gsi_proxy_handle_attrs_t proxy_handle_attrs = NULL;
     BIO	      			*bio = NULL;
 #if defined(GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY)
     char                        *GT_PROXY_MODE = NULL;
@@ -1150,6 +1150,8 @@ ssl_proxy_delegation_init(SSL_CREDENTIALS	**new_creds,
 
     local_result = globus_gsi_proxy_handle_init(&(*new_creds)->proxy_req,
 						proxy_handle_attrs);
+    /* done with proxy_handle_attrs now */
+    globus_gsi_proxy_handle_attrs_destroy(proxy_handle_attrs);
     if (local_result != GLOBUS_SUCCESS) {
 	verror_put_string("globus_gsi_proxy_handle_init() failed");
 	goto error;
@@ -1295,9 +1297,9 @@ ssl_proxy_delegation_sign(SSL_CREDENTIALS		*creds,
     BIO				*bio = NULL;
     unsigned char		number_of_certs;
     int				index;
-    globus_gsi_proxy_handle_t	proxy_handle;
-    globus_gsi_proxy_handle_attrs_t proxy_handle_attrs;
-    globus_gsi_cred_handle_t	cred_handle;
+    globus_gsi_proxy_handle_t	proxy_handle = NULL;
+    globus_gsi_proxy_handle_attrs_t proxy_handle_attrs = NULL;
+    globus_gsi_cred_handle_t	cred_handle = NULL;
     globus_result_t		local_result;
 #if defined(GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY) /* handle API changes */
     globus_gsi_cert_utils_cert_type_t   cert_type;
@@ -1349,13 +1351,14 @@ ssl_proxy_delegation_sign(SSL_CREDENTIALS		*creds,
     /* proxy handle is the proxy we're going to sign */
     local_result = globus_gsi_proxy_handle_init(&proxy_handle,
 						proxy_handle_attrs);
+
+    /* done with proxy_handle_attrs now */
+    globus_gsi_proxy_handle_attrs_destroy(proxy_handle_attrs);
+
     if (local_result != GLOBUS_SUCCESS) {
 	verror_put_string("globus_gsi_proxy_handle_init() failed");
 	goto error;
     }
-
-    /* done with proxy_handle_attrs now */
-    globus_gsi_proxy_handle_attrs_destroy(proxy_handle_attrs);
 
 #if defined(GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY)
     /* what type of certificate do we have in the repository? */
@@ -1514,6 +1517,16 @@ ssl_proxy_delegation_sign(SSL_CREDENTIALS		*creds,
     if (proxy_certificate != NULL)
     {
 	X509_free(proxy_certificate);
+    }
+
+    if (proxy_handle)
+    {
+	globus_gsi_proxy_handle_destroy(proxy_handle);
+    }
+
+    if (cred_handle)
+    {
+	globus_gsi_cred_handle_destroy(cred_handle);
     }
     
     return return_status;
@@ -1714,9 +1727,11 @@ ssl_sign(unsigned char *data, int length,
       verror_put_string("Creating signature (EVP_SignFinal())");
       ssl_error_to_verror();
       free(*signature);
+      EVP_MD_CTX_cleanup(&ctx);
       return SSL_ERROR;
    }
 
+   EVP_MD_CTX_cleanup(&ctx);
    return SSL_SUCCESS;
 }
 
@@ -1726,16 +1741,21 @@ ssl_verify(unsigned char *data, int length,
 	   unsigned char *signature, int signature_len)
 {
    EVP_MD_CTX ctx;
+   EVP_PKEY *pubkey = NULL;
 
    EVP_VerifyInit(&ctx, EVP_sha1());
    EVP_VerifyUpdate(&ctx, (void*) data, length);
-   if (EVP_VerifyFinal(&ctx, signature, signature_len,
-	              X509_get_pubkey(creds->certificate)) != 1 ) {
+   pubkey = X509_get_pubkey(creds->certificate);
+   if (EVP_VerifyFinal(&ctx, signature, signature_len, pubkey) != 1 ) {
       verror_put_string("Verifying signature (EVP_VerifyFinal())");
       ssl_error_to_verror();
+      EVP_MD_CTX_cleanup(&ctx);
+      EVP_PKEY_free(pubkey);
       return SSL_ERROR;
    }
 
+   EVP_MD_CTX_cleanup(&ctx);
+   EVP_PKEY_free(pubkey);
    return SSL_SUCCESS;
 }
 
