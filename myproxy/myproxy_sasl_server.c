@@ -93,6 +93,7 @@ send_response_sasl_data(myproxy_socket_attrs_t *attrs,
 	return -1;
     } 
 
+    free(response.version);
     authorization_data_free(response.authorization_data);
 
     return 0;
