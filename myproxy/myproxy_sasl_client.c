@@ -341,6 +341,17 @@ auth_sasl_negotiate_client(myproxy_socket_attrs_t *attrs,
 
  error:
     if (fqdn) free(fqdn);
+    if (server_response.authorization_data) {
+	authorization_data_free(server_response.authorization_data);
+    }
+    if (server_response.version) {
+	free(server_response.version);
+    }
+    if (conn) {
+	sasl_dispose(&conn);
+	conn = NULL;
+    }
+    sasl_done();
     
     return result;
 }
