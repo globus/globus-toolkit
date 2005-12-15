@@ -40,6 +40,8 @@ void strip_char (char *buf, char ch)
   	buf[i] = tmp[i];
 
   buf[i] = '\0';
+
+  free(tmp);
 }
      
 int
