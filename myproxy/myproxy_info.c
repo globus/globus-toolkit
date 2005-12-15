@@ -120,21 +120,21 @@ main(int argc, char *argv[])
         return 1;
     }
     if (client_request->username == NULL) { /* set default username */
-        char *username = NULL;
         if (dn_as_username) {
             if (ssl_get_base_subject_file(NULL,
-                                          &username)) {
+                                          &client_request->username)) {
                 fprintf(stderr,
                         "Cannot get subject name from your certificate\n");
                 return 1;
             }
         } else {
+	    char *username = NULL;
             if (!(username = getenv("LOGNAME"))) {
                 fprintf(stderr, "Please specify a username.\n");
                 return 1;
             }
+	    client_request->username = strdup(username);
         }
-        client_request->username = strdup(username);
      }
     /* Serialize client request object */
     requestlen = myproxy_serialize_request_ex(client_request,
