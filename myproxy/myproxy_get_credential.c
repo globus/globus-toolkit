@@ -289,8 +289,10 @@ main(int argc, char *argv[])
 		verror_print_error(stderr);
 		goto error;
             } else {
-		printf("Trust roots have been installed in %s.\n",
-		       get_trusted_certs_path());
+		char *path;
+		path = get_trusted_certs_path();
+		printf("Trust roots have been installed in %s.\n", path);
+		free(path);
 	    }
         } else {
             myproxy_debug("Requested trusted certs but didn't get any.\n");
@@ -429,6 +431,7 @@ store_credential( char *delegfile,
 
     retval = 0;
 error:
+    free(input_buffer);
     return(retval);
 }
 
