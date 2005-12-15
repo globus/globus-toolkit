@@ -65,10 +65,10 @@ $ make dist
      $ vi myproxy-src.ftp	# edit ftp_target
      $ nmi_submit cmdfile
 
-4. Test the installation.
+4. Test the installation.  (-valgrind will work only on x86.)
 
      $ grid-proxy-init
-     $ myproxy-test -startserver
+     $ myproxy-test -startserver -valgrind
 
 5. Tag CVS with the version number (ex. MYPROXY_3_3).
 
