@@ -1,9 +1,13 @@
-This is MyProxy v3.3 2 Dec 2005.
+This is MyProxy v3.4 XX Dec 2005.
 This version should be protocol compatible with all versions since v0.2.
 Binary compatibility of the C API is not guaranteed between releases.
 
 Version History
 ---------------
+v3.4 X Dec 2005
+  - added myproxy-test -valgrind option for detecting memory errors
+  - fixed memory errors found with myproxy-test -valgrind
+
 v3.3 2 Dec 2005
   - API changes: new trusted_retrievers member for
     struct myproxy_creds and struct myproxy_request_t
