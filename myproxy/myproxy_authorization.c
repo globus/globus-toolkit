@@ -133,10 +133,10 @@ decrypt_cookie(const unsigned char *inbuf, int inlen,
     BIO *bio, *b64;
     des_cblock deskey, ivec;	/* see note about des_ vs. DES_ above */
     des_key_schedule ks;
-    EVP_PKEY *pubkey;
+    EVP_PKEY *pubkey = NULL;
     EVP_MD_CTX ctx;
     int offset, i;
-
+    int return_value = -1;
 
     /* base64 decode the input */
 
@@ -155,7 +155,7 @@ decrypt_cookie(const unsigned char *inbuf, int inlen,
     /* get public key from cert and length of signature */
 
     if ((pubkey = X509_extract_key(cert)) == 0) {
-        return -1;
+	goto cleanup;
     }
 
     siglen = EVP_PKEY_size(pubkey);
@@ -163,7 +163,7 @@ decrypt_cookie(const unsigned char *inbuf, int inlen,
     if (siglen > sizeof(signature) ||
         inlen != siglen + sizeof(*cookie) + 2)
     {
-      return -1;
+	goto cleanup;
     }
 
     /* get the DES key from keybuf */
@@ -172,7 +172,7 @@ decrypt_cookie(const unsigned char *inbuf, int inlen,
     memcpy (deskey, keybuf + offset, sizeof(deskey));
     des_set_odd_parity(&deskey);
     if (des_set_key_checked(&deskey, ks) != 0) {
-        return -1;
+	goto cleanup;
     }
 
     /* get the DES initial vector from keybuf */
@@ -196,7 +196,7 @@ decrypt_cookie(const unsigned char *inbuf, int inlen,
     EVP_VerifyInit(&ctx, EVP_md5());
     EVP_VerifyUpdate(&ctx, (unsigned char *)cookie, sizeof(*cookie));
     if (EVP_VerifyFinal(&ctx, signature, siglen, pubkey) != 1) {
-        return -1;
+	goto cleanup;
     }
     myproxy_debug("valid pubcookie signature");
 
@@ -205,7 +205,14 @@ decrypt_cookie(const unsigned char *inbuf, int inlen,
     cookie->pre_sess_token = ntohl(cookie->pre_sess_token);
     cookie->create_ts      = ntohl(cookie->create_ts);
     cookie->last_ts        = ntohl(cookie->last_ts);
-    return 0;
+
+    return_value = 0;
+
+ cleanup:
+    EVP_MD_CTX_cleanup(&ctx);
+    if (pubkey) EVP_PKEY_free(pubkey);
+
+    return return_value;
 }
 
 int auth_pubcookie_check_client (authorization_data_t *auth_data,
@@ -217,7 +224,7 @@ int auth_pubcookie_check_client (authorization_data_t *auth_data,
   FILE *fp;
   struct cookie_data cookie;
   unsigned char keybuf[2048];
-  X509 *cert;
+  X509 *cert = NULL;
 
   return_status = 1;
 
@@ -303,6 +310,7 @@ int auth_pubcookie_check_client (authorization_data_t *auth_data,
   if (return_status==1) {
       myproxy_log("Pubcookie verified username: %s", (char *)cookie.user);
   }
+  if (cert) X509_free(cert);
   return return_status;
 }
 /* end of Pubcookie-specific code */
