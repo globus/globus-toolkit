@@ -192,6 +192,13 @@ int myproxy_creds_is_owner(const char *username, const char *credname,
 			   const char *client_name);
 
 /*
+ * myproxy_creds_free()
+ *
+ * Free a list of myproxy_creds structures.
+ */
+void myproxy_creds_free(struct myproxy_creds *certs);
+
+/*
  * myproxy_creds_free_contents()
  *
  * Free all the contents of the myproxy_creds structure, but not the
