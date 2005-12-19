@@ -64,6 +64,7 @@ enum kex_exchange {
 	KEX_DH_GRP14_SHA1,
 	KEX_DH_GEX_SHA1,
 	KEX_GSS_GRP1_SHA1,
+	KEX_GSS_GEX_SHA1,
 	KEX_MAX
 };
 
@@ -120,6 +121,11 @@ struct Kex {
 	Buffer	peer;
 	int	done;
 	int	flags;
+#ifdef GSSAPI
+	int 	gss_deleg_creds;
+	int	gss_trust_dns;
+	char    *gss_host;
+#endif
 	char	*client_version_string;
 	char	*server_version_string;
 	struct  KexOptions options;
@@ -142,9 +148,10 @@ void	 kexdh_client(Kex *);
 void	 kexdh_server(Kex *);
 void	 kexgex_client(Kex *);
 void	 kexgex_server(Kex *);
+
 #ifdef GSSAPI
-void     kexgss_client(Kex *);
-void     kexgss_server(Kex *);
+void	kexgss_client(Kex *);
+void	kexgss_server(Kex *);
 #endif
 
 u_char *

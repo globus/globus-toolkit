@@ -360,6 +360,12 @@
 /* getaddrinfo is broken (if present) */
 #undef BROKEN_GETADDRINFO
 
+/* platform uses an in-memory credentials cache */
+#undef USE_CCAPI
+
+/* platform has a Security Authorization Session API */
+#undef USE_SECURITY_SESSION_API
+
 /* updwtmpx is broken (if present) */
 #undef BROKEN_UPDWTMPX
 

@@ -706,14 +706,6 @@ do_exec(Session *s, const char *command)
 	}
 #endif
 
-#ifdef GSSAPI
-	if (options.gss_authentication) {
-		temporarily_use_uid(s->pw);
-		ssh_gssapi_storecreds();
-		restore_uid();
-	}
-#endif
-
 #ifdef SSH_AUDIT_EVENTS
 	if (command != NULL)
 		PRIVSEP(audit_run_command(command));

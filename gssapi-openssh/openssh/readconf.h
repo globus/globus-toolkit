@@ -47,6 +47,7 @@ typedef struct {
 	int     gss_authentication;	/* Try GSS authentication */
 	int	gss_keyex;
 	int     gss_deleg_creds;	/* Delegate GSS credentials */
+	int	gss_trust_dns;		/* Trust DNS for GSS canonicalization */
 	int     password_authentication;	/* Try password
 						 * authentication. */
 	int     kbd_interactive_authentication; /* Try keyboard-interactive auth. */

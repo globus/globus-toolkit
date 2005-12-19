@@ -77,7 +77,7 @@ initialize_server_options(ServerOptions *options)
 #endif
 	options->kerberos_get_afs_token = -1;
 	options->gss_authentication=-1;
-	options->gss_keyex=-1;
+	options->gss_keyex = -1;
 	options->gss_cleanup_creds = -1;
 	options->password_authentication = -1;
 	options->kbd_interactive_authentication = -1;
@@ -281,8 +281,7 @@ typedef enum {
 	sBanner, sUseDNS, sHostbasedAuthentication,
 	sHostbasedUsesNameFromPacketOnly, sClientAliveInterval,
 	sClientAliveCountMax, sAuthorizedKeysFile, sAuthorizedKeysFile2,
-	sGssAuthentication, sGssCleanupCreds, sAcceptEnv,
-	sGssKeyEx, 
+	sGssAuthentication, sGssKeyEx, sGssCleanupCreds, sAcceptEnv,
 	sUsePrivilegeSeparation,
 	sDeprecated, sUnsupported
 } ServerOpCodes;
