@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Format_Version="0.02" Name="gsi_openssh" >
 
-  <Aging_Version Major="3" Minor="5" Age="0" />
+  <Aging_Version Major="3" Minor="6" Age="0" />
   <Description>GSI-Enabled OpenSSH package</Description>
   <Functional_Group >gsi_openssh</Functional_Group>
   <Version_Stability Release="stable" />
