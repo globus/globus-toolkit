@@ -47,7 +47,7 @@ void *xmmap(size_t size)
 # endif
 
 #define MM_SWAP_TEMPLATE "/var/run/sshd.mm.XXXXXXXX"
-	if (address == MAP_FAILED) {
+	if (address == (void *)MAP_FAILED) {
 		char tmpname[sizeof(MM_SWAP_TEMPLATE)] = MM_SWAP_TEMPLATE;
 		int tmpfd;
 		mode_t old_umask;

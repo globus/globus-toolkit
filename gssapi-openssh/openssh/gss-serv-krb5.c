@@ -40,10 +40,10 @@ extern ServerOptions options;
 
 #ifdef HEIMDAL
 # include <krb5.h>
-#else
-# ifdef HAVE_GSSAPI_KRB5
+#elsif !defined(MECHGLUE)
+# ifdef HAVE_GSSAPI_KRB5_H
 #  include <gssapi_krb5.h>
-# elif HAVE_GSSAPI_GSSAPI_KRB5
+# elif HAVE_GSSAPI_GSSAPI_KRB5_H
 #  include <gssapi/gssapi_krb5.h>
 # endif
 #endif
@@ -64,16 +64,6 @@ ssh_gssapi_mech gssapi_kerberos_mech = {
 	&ssh_gssapi_krb5_storecreds
 };
 
-ssh_gssapi_mech gssapi_kerberos_mech_old = {
-	"Se3H81ismmOC3OE+FwYCiQ==",
-	"Kerberos",
-	{9, "\x2A\x86\x48\x86\xF7\x12\x01\x02\x02"},
-	&ssh_gssapi_krb5_init,
-	&ssh_gssapi_krb5_userok,
-	&ssh_gssapi_krb5_localname,
-	&ssh_gssapi_krb5_storecreds
-};
-
 /* Initialise the krb5 library, for the stuff that GSSAPI won't do */
 
 static int
@@ -89,9 +79,6 @@ ssh_gssapi_krb5_init(void)
 		logit("Cannot initialize krb5 context");
 		return 0;
 	}
-#ifdef KRB5_INIT_ETS
-	krb5_init_ets(krb_context);
-#endif
 
 	return 1;
 }
@@ -185,34 +172,10 @@ ssh_gssapi_krb5_storecreds(ssh_gssapi_client *client)
 		return;
 	}
 #else
-	{
-		int tmpfd;
-		char ccname[40];
-		mode_t old_umask;
-
-		snprintf(ccname, sizeof(ccname),
-		    "FILE:/tmp/krb5cc_%d_XXXXXX", geteuid());
-
-		old_umask = umask(0177);
-		tmpfd = mkstemp(ccname + strlen("FILE:"));
-		umask(old_umask);
-		if (tmpfd == -1) {
-			logit("mkstemp(): %.100s", strerror(errno));
-			problem = errno;
-			return;
-		}
-		if (fchmod(tmpfd, S_IRUSR | S_IWUSR) == -1) {
-			logit("fchmod(): %.100s", strerror(errno));
-			close(tmpfd);
-			problem = errno;
-			return;
-		}
-		close(tmpfd);
-		if ((problem = krb5_cc_resolve(krb_context, ccname, &ccache))) {
-			logit("krb5_cc_resolve(): %.100s",
-			    krb5_get_err_text(krb_context, problem));
-			return;
-		}
+	if ((problem = ssh_krb5_cc_gen(krb_context, &ccache))) {
+		logit("ssh_krb5_cc_gen(): %.100s",
+		    krb5_get_err_text(krb_context, problem));
+		return;
 	}
 #endif	/* #ifdef HEIMDAL */
 

@@ -1,4 +1,4 @@
-/*	$OpenBSD: channels.h,v 1.74 2004/08/11 21:43:04 avsm Exp $	*/
+/*	$OpenBSD: channels.h,v 1.79 2005/07/17 06:49:04 djm Exp $	*/
 
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
@@ -79,6 +79,7 @@ struct Channel {
 	int     ctl_fd;		/* control fd (client sharing) */
 	int     isatty;		/* rfd is a tty */
 	int     wfd_isatty;	/* wfd is a tty */
+	int	client_tty;	/* (client) TTY has been requested */
 	int     force_drain;	/* force close on iEOF */
 	int     delayed;		/* fdset hack */
 	Buffer  input;		/* data read from socket, to be sent over
@@ -98,6 +99,7 @@ struct Channel {
 	u_int	local_window_max;
 	u_int	local_consumed;
 	u_int	local_maxpacket;
+	int	dynamic_window;
 	int     extended_usage;
 	int	single_connection;
 
@@ -118,11 +120,11 @@ struct Channel {
 
 /* default window/packet sizes for tcp/x11-fwd-channel */
 #define CHAN_SES_PACKET_DEFAULT	(32*1024)
-#define CHAN_SES_WINDOW_DEFAULT	(4*CHAN_SES_PACKET_DEFAULT)
+#define CHAN_SES_WINDOW_DEFAULT	(0xa00000/2)
 #define CHAN_TCP_PACKET_DEFAULT	(32*1024)
-#define CHAN_TCP_WINDOW_DEFAULT	(4*CHAN_TCP_PACKET_DEFAULT)
+#define CHAN_TCP_WINDOW_DEFAULT	(0xa00000/2)
 #define CHAN_X11_PACKET_DEFAULT	(16*1024)
-#define CHAN_X11_WINDOW_DEFAULT	(4*CHAN_X11_PACKET_DEFAULT)
+#define CHAN_X11_WINDOW_DEFAULT	(0xa00000/2)
 
 /* possible input states */
 #define CHAN_INPUT_OPEN			0
@@ -148,7 +150,7 @@ struct Channel {
 	buffer_len(&c->extended) > 0))
 #define CHANNEL_EFD_OUTPUT_ACTIVE(c) \
 	(compat20 && c->extended_usage == CHAN_EXTENDED_WRITE && \
-	((c->efd != -1 && !(c->flags & (CHAN_EOF_RCVD|CHAN_CLOSE_RCVD))) || \
+	c->efd != -1 && (!(c->flags & (CHAN_EOF_RCVD|CHAN_CLOSE_RCVD)) || \
 	buffer_len(&c->extended) > 0))
 
 /* channel management */
@@ -202,18 +204,21 @@ void	 channel_clear_permitted_opens(void);
 void     channel_input_port_forward_request(int, int);
 int	 channel_connect_to(const char *, u_short);
 int	 channel_connect_by_listen_address(u_short);
-void	 channel_request_remote_forwarding(u_short, const char *, u_short);
-void	 channel_request_rforward_cancel(u_short port);
-int	 channel_setup_local_fwd_listener(u_short, const char *, u_short, int);
+void	 channel_request_remote_forwarding(const char *, u_short,
+	     const char *, u_short);
+int	 channel_setup_local_fwd_listener(const char *, u_short,
+	     const char *, u_short, int);
+void	 channel_request_rforward_cancel(const char *host, u_short port);
 int	 channel_setup_remote_fwd_listener(const char *, u_short, int);
 int	 channel_cancel_rport_listener(const char *, u_short);
 
 /* x11 forwarding */
 
 int	 x11_connect_display(void);
-int	 x11_create_display_inet(int, int, int, u_int *);
+int	 x11_create_display_inet(int, int, int, u_int *, int **);
 void     x11_input_open(int, u_int32_t, void *);
-void	 x11_request_forwarding_with_spoofing(int, const char *, const char *);
+void	 x11_request_forwarding_with_spoofing(int, const char *, const char *,
+	    const char *);
 void	 deny_input_open(int, u_int32_t, void *);
 
 /* agent forwarding */

@@ -1,4 +1,4 @@
-/*	$OpenBSD: gss-serv.c,v 1.5 2003/11/17 11:06:07 markus Exp $	*/
+/*	$OpenBSD: gss-serv.c,v 1.8 2005/08/30 22:08:05 djm Exp $	*/
 
 /*
  * Copyright (c) 2001-2003 Simon Wilkinson. All rights reserved.
@@ -45,8 +45,6 @@
 #include "ssh-gss.h"
 
 extern ServerOptions options;
-extern u_char *session_id2;
-extern int session_id2_len;
 
 static ssh_gssapi_client gssapi_client =
     { GSS_C_EMPTY_BUFFER, GSS_C_EMPTY_BUFFER,
@@ -57,21 +55,17 @@ ssh_gssapi_mech gssapi_null_mech =
 
 #ifdef KRB5
 extern ssh_gssapi_mech gssapi_kerberos_mech;
-extern ssh_gssapi_mech gssapi_kerberos_mech_old;
 #endif
 #ifdef GSI
 extern ssh_gssapi_mech gssapi_gsi_mech;
-extern ssh_gssapi_mech gssapi_gsi_mech_old;
 #endif
 
 ssh_gssapi_mech* supported_mechs[]= {
 #ifdef KRB5
 	&gssapi_kerberos_mech,
-	&gssapi_kerberos_mech_old, /* Support for legacy clients */
 #endif
 #ifdef GSI
 	&gssapi_gsi_mech,
-	&gssapi_gsi_mech_old,	/* Support for legacy clients */
 #endif
 	&gssapi_null_mech,
 };
@@ -79,6 +73,28 @@ ssh_gssapi_mech* supported_mechs[]= {
 #ifdef GSS_C_GLOBUS_LIMITED_PROXY_FLAG
 static int limited = 0;
 #endif
+
+/* Unpriviledged */
+char *
+ssh_gssapi_server_mechanisms() {
+	gss_OID_set	supported;
+
+	ssh_gssapi_supported_oids(&supported);
+	return (ssh_gssapi_kex_mechs(supported, &ssh_gssapi_server_check_mech,
+	    NULL));
+}
+
+/* Unpriviledged */
+int
+ssh_gssapi_server_check_mech(gss_OID oid, void *data) {
+        Gssctxt * ctx = NULL;
+	int res;
+
+	res = !GSS_ERROR(PRIVSEP(ssh_gssapi_server_ctx(&ctx, oid)));
+	ssh_gssapi_delete_ctx(&ctx);
+
+	return (res);
+}
 
 /* Unpriviledged */
 void
@@ -158,7 +174,7 @@ ssh_gssapi_accept_ctx(Gssctxt *ctx, gss_buffer_desc *recv_tok,
 static OM_uint32
 ssh_gssapi_parse_ename(Gssctxt *ctx, gss_buffer_t ename, gss_buffer_t name)
 {
-	char *tok;
+	u_char *tok;
 	OM_uint32 offset;
 	OM_uint32 oidl;
 
@@ -199,7 +215,7 @@ ssh_gssapi_parse_ename(Gssctxt *ctx, gss_buffer_t ename, gss_buffer_t name)
 	 */
 	if (tok[4] != 0x06 || tok[5] != oidl ||
 	    ename->length < oidl+6 ||
-	   !ssh_gssapi_check_oid(ctx,tok+6,oidl))
+	    !ssh_gssapi_check_oid(ctx,tok+6,oidl))
 		return GSS_S_FAILURE;
 
 	offset = oidl+6;
@@ -302,7 +318,7 @@ ssh_gssapi_do_child(char ***envp, u_int *envsizep)
 		debug("Setting %s to %s", gssapi_client.store.envvar,
 		gssapi_client.store.envval);
 		child_set_env(envp, envsizep, gssapi_client.store.envvar,
-		     gssapi_client.store.envval);
+		    gssapi_client.store.envval);
 	}
 }
 
@@ -310,6 +326,8 @@ ssh_gssapi_do_child(char ***envp, u_int *envsizep)
 int
 ssh_gssapi_userok(char *user)
 {
+	OM_uint32 lmin;
+
 	if (gssapi_client.exportedname.length == 0 ||
 	    gssapi_client.exportedname.value == NULL) {
 		debug("No suitable client data");
@@ -322,118 +340,19 @@ ssh_gssapi_userok(char *user)
 	}
 #endif
 	if (gssapi_client.mech && gssapi_client.mech->userok)
-		return ((*gssapi_client.mech->userok)(&gssapi_client, user));
+		if ((*gssapi_client.mech->userok)(&gssapi_client, user))
+			return 1;
+		else {
+			/* Destroy delegated credentials if userok fails */
+			gss_release_buffer(&lmin, &gssapi_client.displayname);
+			gss_release_buffer(&lmin, &gssapi_client.exportedname);
+			gss_release_cred(&lmin, &gssapi_client.creds);
+			memset(&gssapi_client, 0, sizeof(ssh_gssapi_client));
+			return 0;
+		}
 	else
 		debug("ssh_gssapi_userok: Unknown GSSAPI mechanism");
 	return (0);
-}
-
-/* Return a list of the gss-group1-sha1-x mechanisms supported by this
- * program.
- *
- * We only support the mechanisms that we've indicated in the list above,
- * but we check that they're supported by the GSSAPI mechanism on the 
- * machine. We also check, before including them in the list, that
- * we have the necesary information in order to carry out the key exchange
- * (that is, that the user has credentials, the server's creds are accessible,
- * etc)
- *
- * The way that this is done is fairly nasty, as we do a lot of work that
- * is then thrown away. This should possibly be implemented with a cache
- * that stores the results (in an expanded Gssctxt structure), which are
- * then used by the first calls if that key exchange mechanism is chosen.
- */
-
-/* Unpriviledged */ 
-char * 
-ssh_gssapi_server_mechanisms() {
-	gss_OID_set 	supported;
-	Gssctxt		*ctx = NULL;
-	OM_uint32	maj_status, min_status;
-	Buffer		buf;
-	int 		i = 0;
-	int		first = 0;
-	int		present;
-	char *		mechs;
-
-	if (datafellows & SSH_OLD_GSSAPI) return NULL;
-	
-	ssh_gssapi_supported_oids(&supported);
-	
-	buffer_init(&buf);
-
-	while(supported_mechs[i]->name != NULL) {
-		if ((maj_status=gss_test_oid_set_member(&min_status,
-						   	&supported_mechs[i]->oid,
-						   	supported,
-						   	&present))) {
-			present=0;
-		}
-
-		if (present) {
-		    if (!GSS_ERROR(PRIVSEP(ssh_gssapi_server_ctx(&ctx,
-					   &supported_mechs[i]->oid)))) {
-			/* Append gss_group1_sha1_x to our list */
-			if (first++!=0)
-				buffer_put_char(&buf,',');
-			buffer_append(&buf, KEX_GSS_SHA1,
-				      sizeof(KEX_GSS_SHA1)-1);
-	        	buffer_append(&buf, 
-	        		      supported_mechs[i]->enc_name,
-        	      		      strlen(supported_mechs[i]->enc_name));
-			debug("GSSAPI mechanism %s (%s%s) supported",
-			      supported_mechs[i]->name, KEX_GSS_SHA1,
-			      supported_mechs[i]->enc_name);
-		    } else {
-			debug("no credentials for GSSAPI mechanism %s",
-			      supported_mechs[i]->name);
-		    }
-        	} else {
-		    debug("GSSAPI mechanism %s not supported",
-			  supported_mechs[i]->name);
-		}
-        	ssh_gssapi_delete_ctx(&ctx);
-        	i++;
-	}
-	
-	buffer_put_char(&buf,'\0');
-	
-	mechs=xmalloc(buffer_len(&buf));
-	buffer_get(&buf,mechs,buffer_len(&buf));
-	buffer_free(&buf);
-	if (strlen(mechs)==0) {
-	    options.gss_authentication = 0; /* no mechs. skip gss auth. */
-	    return(NULL);
-	} else {
-	    return(mechs);
-	}
-}
-
-/* Return the OID that corresponds to the given context name */
- 
-/* Unpriviledged */
-gss_OID 
-ssh_gssapi_server_id_kex(char *name) {
-  int i=0;
-  
-  if (strncmp(name, KEX_GSS_SHA1, sizeof(KEX_GSS_SHA1)-1) !=0) {
-     return(NULL);
-  }
-  
-  name+=sizeof(KEX_GSS_SHA1)-1; /* Move to the start of the MIME string */
-  
-  while (supported_mechs[i]->name!=NULL &&
-  	 strcmp(name,supported_mechs[i]->enc_name)!=0) {
-  	i++;
-  }
-
-  if (supported_mechs[i]->name==NULL)
-     return (NULL);
-
-  debug("using GSSAPI mechanism %s (%s%s)", supported_mechs[i]->name,
-	KEX_GSS_SHA1, supported_mechs[i]->enc_name);
-
-  return &supported_mechs[i]->oid;
 }
 
 /* Priviledged */
@@ -452,16 +371,6 @@ ssh_gssapi_localname(char **user)
 		debug("Unknown client authentication type");
 	}
 	return(0);
-}
-
-/* Priviledged */
-OM_uint32
-ssh_gssapi_checkmic(Gssctxt *ctx, gss_buffer_t gssbuf, gss_buffer_t gssmic)
-{
-	ctx->major = gss_verify_mic(&ctx->minor, ctx->context,
-	    gssbuf, gssmic, NULL);
-
-	return (ctx->major);
 }
 
 #endif

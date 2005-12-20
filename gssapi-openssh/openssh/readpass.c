@@ -23,7 +23,7 @@
  */
 
 #include "includes.h"
-RCSID("$OpenBSD: readpass.c,v 1.30 2004/06/17 15:10:14 djm Exp $");
+RCSID("$OpenBSD: readpass.c,v 1.33 2005/05/02 21:13:22 markus Exp $");
 
 #include "xmalloc.h"
 #include "misc.h"
@@ -106,15 +106,20 @@ read_passphrase(const char *prompt, int flags)
 	if (flags & RP_USE_ASKPASS)
 		use_askpass = 1;
 	else if (flags & RP_ALLOW_STDIN) {
-		if (!isatty(STDIN_FILENO))
+		if (!isatty(STDIN_FILENO)) {
+			debug("read_passphrase: stdin is not a tty");
 			use_askpass = 1;
+		}
 	} else {
 		rppflags |= RPP_REQUIRE_TTY;
 		ttyfd = open(_PATH_TTY, O_RDWR);
 		if (ttyfd >= 0)
 			close(ttyfd);
-		else
+		else {
+			debug("read_passphrase: can't open %s: %s", _PATH_TTY,
+			    strerror(errno));
 			use_askpass = 1;
+		}
 	}
 
 	if ((flags & RP_USE_ASKPASS) && getenv("DISPLAY") == NULL)
@@ -140,4 +145,30 @@ read_passphrase(const char *prompt, int flags)
 	ret = xstrdup(buf);
 	memset(buf, 'x', sizeof buf);
 	return ret;
+}
+
+int
+ask_permission(const char *fmt, ...)
+{
+	va_list args;
+	char *p, prompt[1024];
+	int allowed = 0;
+
+	va_start(args, fmt);
+	vsnprintf(prompt, sizeof(prompt), fmt, args);
+	va_end(args);
+
+	p = read_passphrase(prompt, RP_USE_ASKPASS|RP_ALLOW_EOF);
+	if (p != NULL) {
+		/*
+		 * Accept empty responses and responses consisting
+		 * of the word "yes" as affirmative.
+		 */
+		if (*p == '\0' || *p == '\n' ||
+		    strcasecmp(p, "yes") == 0)
+			allowed = 1;
+		xfree(p);
+	}
+
+	return (allowed);
 }

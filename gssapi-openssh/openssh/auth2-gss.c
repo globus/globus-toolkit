@@ -1,4 +1,4 @@
-/*	$OpenBSD: auth2-gss.c,v 1.8 2004/06/21 17:36:31 avsm Exp $	*/
+/*	$OpenBSD: auth2-gss.c,v 1.10 2005/07/17 07:17:54 djm Exp $	*/
 
 /*
  * Copyright (c) 2001-2003 Simon Wilkinson. All rights reserved.
@@ -62,6 +62,52 @@ userauth_external(Authctxt *authctxt)
 	return 0;
 }
 
+/* 
+ * The 'gssapi_keyex' userauth mechanism.
+ */
+static int
+userauth_gsskeyex(Authctxt *authctxt)
+{
+	int authenticated = 0;
+	Buffer b, b2;
+	gss_buffer_desc mic, gssbuf, gssbuf2;
+	u_int len;
+
+	mic.value = packet_get_string(&len);
+	mic.length = len;
+
+	packet_check_eom();
+
+	ssh_gssapi_buildmic(&b, authctxt->user, authctxt->service,
+	    "gssapi-keyex");
+
+	gssbuf.value = buffer_ptr(&b);
+	gssbuf.length = buffer_len(&b);
+
+	/* client may have used empty username to determine target
+	   name from GSSAPI context */
+	ssh_gssapi_buildmic(&b2, "", authctxt->service, "gssapi-keyex");
+
+	gssbuf2.value = buffer_ptr(&b2);
+	gssbuf2.length = buffer_len(&b2);
+
+	/* gss_kex_context is NULL with privsep, so we can't check it here */
+	if (!GSS_ERROR(PRIVSEP(ssh_gssapi_checkmic(gss_kex_context, 
+						   &gssbuf, &mic))) ||
+	    !GSS_ERROR(PRIVSEP(ssh_gssapi_checkmic(gss_kex_context, 
+						   &gssbuf2, &mic)))) {
+	    if (authctxt->valid && authctxt->user && authctxt->user[0]) {
+		authenticated = PRIVSEP(ssh_gssapi_userok(authctxt->user));
+	    }
+	}
+	
+	buffer_free(&b);
+	buffer_free(&b2);
+	xfree(mic.value);
+
+	return (authenticated);
+}
+
 /*
  * We only support those mechanisms that we know about (ie ones that we know
  * how to check local user kuserok and the like
@@ -76,7 +122,7 @@ userauth_gssapi(Authctxt *authctxt)
 	int present;
 	OM_uint32 ms;
 	u_int len;
-	char *doid = NULL;
+	u_char *doid = NULL;
 
 	/* authctxt->valid may be 0 if we haven't yet determined
 	   username from gssapi context. */
@@ -100,26 +146,28 @@ userauth_gssapi(Authctxt *authctxt)
 		present = 0;
 		doid = packet_get_string(&len);
 
-		if (doid[0] != SSH_GSS_OIDTYPE || doid[1] != len-2) {
-			logit("Mechanism OID received using the old encoding form");
-			goid.elements = doid;
-			goid.length = len;
-		} else {
+		if (len > 2 && doid[0] == SSH_GSS_OIDTYPE &&
+		    doid[1] == len - 2) {
 			goid.elements = doid + 2;
 			goid.length   = len - 2;
+			gss_test_oid_set_member(&ms, &goid, supported,
+			    &present);
+		} else {
+			logit("Badly formed OID received");
 		}
-		gss_test_oid_set_member(&ms, &goid, supported, &present);
 	} while (mechs > 0 && !present);
 
 	gss_release_oid_set(&ms, &supported);
 
 	if (!present) {
 		xfree(doid);
+		authctxt->server_caused_failure = 1;
 		return (0);
 	}
 
 	if (GSS_ERROR(PRIVSEP(ssh_gssapi_server_ctx(&ctxt, &goid)))) {
 		xfree(doid);
+		authctxt->server_caused_failure = 1;
 		return (0);
 	}
 
@@ -383,6 +431,12 @@ Authmethod method_external = {
 	&options.gss_authentication
 };
 	
+Authmethod method_gsskeyex = {
+	"gssapi-keyex",
+	userauth_gsskeyex,
+	&options.gss_authentication
+};
+
 Authmethod method_gssapi = {
 	"gssapi-with-mic",
 	userauth_gssapi_with_mic,

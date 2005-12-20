@@ -33,7 +33,7 @@ typedef struct {
 #define EVP_CTRL_SET_ACSS_SUBKEY        0xff07
 
 static int
-acss_init_key(EVP_CIPHER_CTX *ctx, const unsigned char *key, 
+acss_init_key(EVP_CIPHER_CTX *ctx, const unsigned char *key,
     const unsigned char *iv, int enc)
 {
 	acss_setkey(&data(ctx)->ks,key,enc,ACSS_DATA);
@@ -41,7 +41,7 @@ acss_init_key(EVP_CIPHER_CTX *ctx, const unsigned char *key,
 }
 
 static int
-acss_ciph(EVP_CIPHER_CTX *ctx, unsigned char *out, const unsigned char *in, 
+acss_ciph(EVP_CIPHER_CTX *ctx, unsigned char *out, const unsigned char *in,
     unsigned int inl)
 {
 	acss(&data(ctx)->ks,inl,in,out);

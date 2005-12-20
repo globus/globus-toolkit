@@ -40,7 +40,7 @@
  */
 
 #include "includes.h"
-RCSID("$OpenBSD: ssh.c,v 1.224 2004/07/28 09:40:29 markus Exp $");
+RCSID("$OpenBSD: ssh.c,v 1.249 2005/07/30 01:26:16 djm Exp $");
 
 #include <openssl/evp.h>
 #include <openssl/err.h>
@@ -144,6 +144,9 @@ pid_t proxy_command_pid = 0;
 /* fd to control socket */
 int control_fd = -1;
 
+/* Multiplexing control command */
+static u_int mux_command = 0;
+
 /* Only used in control client mode */
 volatile sig_atomic_t control_client_terminate = 0;
 u_int control_server_pid = 0;
@@ -154,10 +157,12 @@ static void
 usage(void)
 {
 	fprintf(stderr,
-"usage: ssh [-1246AaCfghkMNnqsTtVvXxY] [-b bind_address] [-c cipher_spec]\n"
-"           [-D port] [-e escape_char] [-F configfile] [-i identity_file]\n"
-"           [-L port:host:hostport] [-l login_name] [-m mac_spec] [-o option]\n"
-"           [-p port] [-R port:host:hostport] [-S ctl] [user@]hostname [command]\n"
+"usage: ssh [-1246AaCfgkMNnqsTtVvXxY] [-b bind_address] [-c cipher_spec]\n"
+"           [-D port] [-e escape_char] [-F configfile] [-w receive buffer size]\n"
+"           [-i identity_file] [-L [bind_address:]port:host:hostport]\n"
+"           [-l login_name] [-m mac_spec] [-O ctl_cmd] [-o option] [-p port]\n"
+"           [-R [bind_address:]port:host:hostport] [-S ctl_path]\n"
+"           [user@]hostname [command]\n"
 	);
 	exit(1);
 }
@@ -174,14 +179,14 @@ int
 main(int ac, char **av)
 {
 	int i, opt, exit_status;
-	u_short fwd_port, fwd_host_port;
-	char sfwd_port[6], sfwd_host_port[6];
 	char *p, *cp, *line, buf[256];
 	struct stat st;
 	struct passwd *pw;
 	int dummy;
 	extern int optind, optreset;
 	extern char *optarg;
+	struct servent *sp;
+	Forward fwd;
 
 	__progname = ssh_get_progname(av[0]);
 	init_pathnames();
@@ -235,9 +240,12 @@ main(int ac, char **av)
 	/* Parse command-line arguments. */
 	host = NULL;
 
+	/* need to set options.tcp_rcv_buf to 0 */
+	options.tcp_rcv_buf = 0;
+
 again:
 	while ((opt = getopt(ac, av,
-	    "1246ab:c:e:fgi:kl:m:no:p:qstvxACD:F:I:L:MNPR:S:TVXY")) != -1) {
+	    "1246ab:c:e:fgi:kl:m:no:p:qstvw:xzACD:F:I:L:MNO:PR:S:TVXY")) != -1) {
 		switch (opt) {
 		case '1':
 			options.protocol = SSH_PROTO_1;
@@ -271,6 +279,14 @@ again:
 		case 'g':
 			options.gateway_ports = 1;
 			break;
+		case 'O':
+			if (strcmp(optarg, "check") == 0)
+				mux_command = SSHMUX_COMMAND_ALIVE_CHECK;
+			else if (strcmp(optarg, "exit") == 0)
+				mux_command = SSHMUX_COMMAND_TERMINATE;
+			else
+				fatal("Invalid multiplex command.");
+			break;
 		case 'P':	/* deprecated */
 			options.use_privileged_port = 0;
 			break;
@@ -286,7 +302,8 @@ again:
 		case 'i':
 			if (stat(optarg, &st) < 0) {
 				fprintf(stderr, "Warning: Identity file %s "
-				    "does not exist.\n", optarg);
+				    "not accessible: %s.\n", optarg,
+				    strerror(errno));
 				break;
 			}
 			if (options.num_identity_files >=
@@ -317,10 +334,10 @@ again:
 					options.log_level++;
 				break;
 			}
-			/* fallthrough */
+			/* FALLTHROUGH */
 		case 'V':
 			fprintf(stderr, "%s, %s\n",
-			    SSH_VERSION, SSLeay_version(SSLEAY_VERSION));
+			    SSH_RELEASE, SSLeay_version(SSLEAY_VERSION));
 			if (opt == 'V')
 				exit(0);
 			break;
@@ -374,8 +391,10 @@ again:
 			}
 			break;
 		case 'M':
-			options.control_master =
-			    (options.control_master >= 1) ? 2 : 1;
+			if (options.control_master == SSHCTL_MASTER_YES)
+				options.control_master = SSHCTL_MASTER_ASK;
+			else
+				options.control_master = SSHCTL_MASTER_YES;
 			break;
 		case 'p':
 			options.port = a2port(optarg);
@@ -389,39 +408,51 @@ again:
 			break;
 
 		case 'L':
-		case 'R':
-			if (sscanf(optarg, "%5[0123456789]:%255[^:]:%5[0123456789]",
-			    sfwd_port, buf, sfwd_host_port) != 3 &&
-			    sscanf(optarg, "%5[0123456789]/%255[^/]/%5[0123456789]",
-			    sfwd_port, buf, sfwd_host_port) != 3) {
+			if (parse_forward(&fwd, optarg))
+				add_local_forward(&options, &fwd);
+			else {
 				fprintf(stderr,
-				    "Bad forwarding specification '%s'\n",
+				    "Bad local forwarding specification '%s'\n",
 				    optarg);
-				usage();
-				/* NOTREACHED */
-			}
-			if ((fwd_port = a2port(sfwd_port)) == 0 ||
-			    (fwd_host_port = a2port(sfwd_host_port)) == 0) {
-				fprintf(stderr,
-				    "Bad forwarding port(s) '%s'\n", optarg);
 				exit(1);
 			}
-			if (opt == 'L')
-				add_local_forward(&options, fwd_port, buf,
-				    fwd_host_port);
-			else if (opt == 'R')
-				add_remote_forward(&options, fwd_port, buf,
-				    fwd_host_port);
+			break;
+
+		case 'R':
+			if (parse_forward(&fwd, optarg)) {
+				add_remote_forward(&options, &fwd);
+			} else {
+				fprintf(stderr,
+				    "Bad remote forwarding specification "
+				    "'%s'\n", optarg);
+				exit(1);
+			}
 			break;
 
 		case 'D':
-			fwd_port = a2port(optarg);
-			if (fwd_port == 0) {
+			cp = p = xstrdup(optarg);
+			memset(&fwd, '\0', sizeof(fwd));
+			fwd.connect_host = "socks";
+			if ((fwd.listen_host = hpdelim(&cp)) == NULL) {
+				fprintf(stderr, "Bad dynamic forwarding "
+				    "specification '%.100s'\n", optarg);
+				exit(1);
+			}
+			if (cp != NULL) {
+				fwd.listen_port = a2port(cp);
+				fwd.listen_host = cleanhostname(fwd.listen_host);
+			} else {
+				fwd.listen_port = a2port(fwd.listen_host);
+				fwd.listen_host = NULL;
+			}
+
+			if (fwd.listen_port == 0) {
 				fprintf(stderr, "Bad dynamic port '%s'\n",
 				    optarg);
 				exit(1);
 			}
-			add_local_forward(&options, fwd_port, "socks", 0);
+			add_local_forward(&options, &fwd);
+			xfree(p);
 			break;
 
 		case 'C':
@@ -433,6 +464,7 @@ again:
 			break;
 		case 'T':
 			no_tty_flag = 1;
+			options.none_switch = 0;
 			break;
 		case 'o':
 			dummy = 1;
@@ -456,6 +488,17 @@ again:
 		case 'F':
 			config = optarg;
 			break;
+		case 'w':
+		        options.tcp_rcv_buf = atoi(optarg);
+		        break;
+		case 'z':
+			/* make sure we can't turn on the none_switch */
+			/* if they try to force a no tty flag on a tty session */
+			if (!no_tty_flag) {
+				options.none_switch = 1;
+			}
+			break;
+
 		default:
 			usage();
 		}
@@ -526,7 +569,7 @@ again:
 	if (no_tty_flag)
 		tty_flag = 0;
 	/* Do not allocate a tty if stdin is not a tty. */
-	if (!isatty(fileno(stdin)) && !force_tty_flag) {
+	if ((!isatty(fileno(stdin)) || stdin_null_flag) && !force_tty_flag) {
 		if (tty_flag)
 			logit("Pseudo-terminal will not be allocated because stdin is not a terminal.");
 		tty_flag = 0;
@@ -606,16 +649,31 @@ again:
 				*p = tolower(*p);
 	}
 
+	/* Get default port if port has not been set. */
+	if (options.port == 0) {
+		sp = getservbyname(SSH_SERVICE_NAME, "tcp");
+		options.port = sp ? ntohs(sp->s_port) : SSH_DEFAULT_PORT;
+	}
+
 	if (options.proxy_command != NULL &&
 	    strcmp(options.proxy_command, "none") == 0)
 		options.proxy_command = NULL;
+	if (options.control_path != NULL &&
+	    strcmp(options.control_path, "none") == 0)
+		options.control_path = NULL;
 
 	if (options.control_path != NULL) {
-		options.control_path = tilde_expand_filename(
-		   options.control_path, original_real_uid);
+		snprintf(buf, sizeof(buf), "%d", options.port);
+		cp = tilde_expand_filename(options.control_path,
+		    original_real_uid);
+		options.control_path = percent_expand(cp, "p", buf, "h", host,
+		    "r", options.user, (char *)NULL);
+		xfree(cp);
 	}
-	if (options.control_path != NULL && options.control_master == 0)
-		control_client(options.control_path); /* This doesn't return */
+	if (mux_command != 0 && options.control_path == NULL)
+		fatal("No ControlPath specified for \"-O\" command");
+	if (options.control_path != NULL)
+		control_client(options.control_path);
 
 	/* Open a connection to the remote host. */
 	if (ssh_connect(host, &hostaddr, options.port,
@@ -744,110 +802,6 @@ again:
 	return exit_status;
 }
 
-#define SSH_X11_PROTO "MIT-MAGIC-COOKIE-1"
-
-static void
-x11_get_proto(char **_proto, char **_data)
-{
-	char cmd[1024];
-	char line[512];
-	char xdisplay[512];
-	static char proto[512], data[512];
-	FILE *f;
-	int got_data = 0, generated = 0, do_unlink = 0, i;
-	char *display, *xauthdir, *xauthfile;
-	struct stat st;
-
-	xauthdir = xauthfile = NULL;
-	*_proto = proto;
-	*_data = data;
-	proto[0] = data[0] = '\0';
-
-	if (!options.xauth_location ||
-	    (stat(options.xauth_location, &st) == -1)) {
-		debug("No xauth program.");
-	} else {
-		if ((display = getenv("DISPLAY")) == NULL) {
-			debug("x11_get_proto: DISPLAY not set");
-			return;
-		}
-		/*
-		 * Handle FamilyLocal case where $DISPLAY does
-		 * not match an authorization entry.  For this we
-		 * just try "xauth list unix:displaynum.screennum".
-		 * XXX: "localhost" match to determine FamilyLocal
-		 *      is not perfect.
-		 */
-		if (strncmp(display, "localhost:", 10) == 0) {
-			snprintf(xdisplay, sizeof(xdisplay), "unix:%s",
-			    display + 10);
-			display = xdisplay;
-		}
-		if (options.forward_x11_trusted == 0) {
-			xauthdir = xmalloc(MAXPATHLEN);
-			xauthfile = xmalloc(MAXPATHLEN);
-			strlcpy(xauthdir, "/tmp/ssh-XXXXXXXXXX", MAXPATHLEN);
-			if (mkdtemp(xauthdir) != NULL) {
-				do_unlink = 1;
-				snprintf(xauthfile, MAXPATHLEN, "%s/xauthfile",
-				    xauthdir);
-				snprintf(cmd, sizeof(cmd),
-				    "%s -f %s generate %s " SSH_X11_PROTO
-				    " untrusted timeout 1200 2>" _PATH_DEVNULL,
-				    options.xauth_location, xauthfile, display);
-				debug2("x11_get_proto: %s", cmd);
-				if (system(cmd) == 0)
-					generated = 1;
-			}
-		}
-		snprintf(cmd, sizeof(cmd),
-		    "%s %s%s list %s . 2>" _PATH_DEVNULL,
-		    options.xauth_location,
-		    generated ? "-f " : "" ,
-		    generated ? xauthfile : "",
-		    display);
-		debug2("x11_get_proto: %s", cmd);
-		f = popen(cmd, "r");
-		if (f && fgets(line, sizeof(line), f) &&
-		    sscanf(line, "%*s %511s %511s", proto, data) == 2)
-			got_data = 1;
-		if (f)
-			pclose(f);
-	}
-
-	if (do_unlink) {
-		unlink(xauthfile);
-		rmdir(xauthdir);
-	}
-	if (xauthdir)
-		xfree(xauthdir);
-	if (xauthfile)
-		xfree(xauthfile);
-
-	/*
-	 * If we didn't get authentication data, just make up some
-	 * data.  The forwarding code will check the validity of the
-	 * response anyway, and substitute this data.  The X11
-	 * server, however, will ignore this fake data and use
-	 * whatever authentication mechanisms it was using otherwise
-	 * for the local connection.
-	 */
-	if (!got_data) {
-		u_int32_t rnd = 0;
-
-		logit("Warning: No xauth data; "
-		    "using fake authentication data for X11 forwarding.");
-		strlcpy(proto, SSH_X11_PROTO, sizeof proto);
-		for (i = 0; i < 16; i++) {
-			if (i % 4 == 0)
-				rnd = arc4random();
-			snprintf(data + 2 * i, sizeof data - 2 * i, "%02x",
-			    rnd & 0xff);
-			rnd >>= 8;
-		}
-	}
-}
-
 static void
 ssh_init_forwarding(void)
 {
@@ -856,14 +810,19 @@ ssh_init_forwarding(void)
 
 	/* Initiate local TCP/IP port forwardings. */
 	for (i = 0; i < options.num_local_forwards; i++) {
-		debug("Connections to local port %d forwarded to remote address %.200s:%d",
-		    options.local_forwards[i].port,
-		    options.local_forwards[i].host,
-		    options.local_forwards[i].host_port);
+		debug("Local connections to %.200s:%d forwarded to remote "
+		    "address %.200s:%d",
+		    (options.local_forwards[i].listen_host == NULL) ?
+		    (options.gateway_ports ? "*" : "LOCALHOST") :
+		    options.local_forwards[i].listen_host,
+		    options.local_forwards[i].listen_port,
+		    options.local_forwards[i].connect_host,
+		    options.local_forwards[i].connect_port);
 		success += channel_setup_local_fwd_listener(
-		    options.local_forwards[i].port,
-		    options.local_forwards[i].host,
-		    options.local_forwards[i].host_port,
+		    options.local_forwards[i].listen_host,
+		    options.local_forwards[i].listen_port,
+		    options.local_forwards[i].connect_host,
+		    options.local_forwards[i].connect_port,
 		    options.gateway_ports);
 	}
 	if (i > 0 && success == 0)
@@ -871,14 +830,19 @@ ssh_init_forwarding(void)
 
 	/* Initiate remote TCP/IP port forwardings. */
 	for (i = 0; i < options.num_remote_forwards; i++) {
-		debug("Connections to remote port %d forwarded to local address %.200s:%d",
-		    options.remote_forwards[i].port,
-		    options.remote_forwards[i].host,
-		    options.remote_forwards[i].host_port);
+		debug("Remote connections from %.200s:%d forwarded to "
+		    "local address %.200s:%d",
+		    (options.remote_forwards[i].listen_host == NULL) ?
+		    (options.gateway_ports ? "*" : "LOCALHOST") :
+		    options.remote_forwards[i].listen_host,
+		    options.remote_forwards[i].listen_port,
+		    options.remote_forwards[i].connect_host,
+		    options.remote_forwards[i].connect_port);
 		channel_request_remote_forwarding(
-		    options.remote_forwards[i].port,
-		    options.remote_forwards[i].host,
-		    options.remote_forwards[i].host_port);
+		    options.remote_forwards[i].listen_host,
+		    options.remote_forwards[i].listen_port,
+		    options.remote_forwards[i].connect_host,
+		    options.remote_forwards[i].connect_port);
 	}
 }
 
@@ -900,6 +864,7 @@ ssh_session(void)
 	int have_tty = 0;
 	struct winsize ws;
 	char *cp;
+	const char *display;
 
 	/* Enable compression if requested. */
 	if (options.compression) {
@@ -961,13 +926,15 @@ ssh_session(void)
 			packet_disconnect("Protocol error waiting for pty request response.");
 	}
 	/* Request X11 forwarding if enabled and DISPLAY is set. */
-	if (options.forward_x11 && getenv("DISPLAY") != NULL) {
+	display = getenv("DISPLAY");
+	if (options.forward_x11 && display != NULL) {
 		char *proto, *data;
 		/* Get reasonable local authentication information. */
-		x11_get_proto(&proto, &data);
+		client_x11_get_proto(display, options.xauth_location,
+		    options.forward_x11_trusted, &proto, &data);
 		/* Request forwarding with authentication spoofing. */
 		debug("Requesting X11 forwarding with authentication spoofing.");
-		x11_request_forwarding_with_spoofing(0, proto, data);
+		x11_request_forwarding_with_spoofing(0, display, proto, data);
 
 		/* Read response from the server. */
 		type = packet_read();
@@ -1054,12 +1021,12 @@ client_global_request_reply_fwd(int type, u_int32_t seq, void *ctxt)
 		return;
 	debug("remote forward %s for: listen %d, connect %s:%d",
 	    type == SSH2_MSG_REQUEST_SUCCESS ? "success" : "failure",
-	    options.remote_forwards[i].port,
-	    options.remote_forwards[i].host,
-	    options.remote_forwards[i].host_port);
+	    options.remote_forwards[i].listen_port,
+	    options.remote_forwards[i].connect_host,
+	    options.remote_forwards[i].connect_port);
 	if (type == SSH2_MSG_REQUEST_FAILURE)
-		logit("Warning: remote port forwarding failed for listen port %d",
-		    options.remote_forwards[i].port);
+		logit("Warning: remote port forwarding failed for listen "
+		    "port %d", options.remote_forwards[i].listen_port);
 }
 
 static void
@@ -1069,8 +1036,11 @@ ssh_control_listener(void)
 	mode_t old_umask;
 	int addr_len;
 
-	if (options.control_path == NULL || options.control_master <= 0)
+	if (options.control_path == NULL ||
+	    options.control_master == SSHCTL_MASTER_NO)
 		return;
+
+	debug("setting up multiplex master socket");
 
 	memset(&addr, '\0', sizeof(addr));
 	addr.sun_family = AF_UNIX;
@@ -1087,7 +1057,7 @@ ssh_control_listener(void)
 	old_umask = umask(0177);
 	if (bind(control_fd, (struct sockaddr*)&addr, addr_len) == -1) {
 		control_fd = -1;
-		if (errno == EINVAL)
+		if (errno == EINVAL || errno == EADDRINUSE)
 			fatal("ControlSocket %s already exists",
 			    options.control_path);
 		else
@@ -1106,15 +1076,18 @@ static void
 ssh_session2_setup(int id, void *arg)
 {
 	extern char **environ;
-
+	const char *display;
 	int interactive = tty_flag;
-	if (options.forward_x11 && getenv("DISPLAY") != NULL) {
+
+	display = getenv("DISPLAY");
+	if (options.forward_x11 && display != NULL) {
 		char *proto, *data;
 		/* Get reasonable local authentication information. */
-		x11_get_proto(&proto, &data);
+		client_x11_get_proto(display, options.xauth_location,
+		    options.forward_x11_trusted, &proto, &data);
 		/* Request forwarding with authentication spoofing. */
 		debug("Requesting X11 forwarding with authentication spoofing.");
-		x11_request_forwarding_with_spoofing(id, proto, data);
+		x11_request_forwarding_with_spoofing(id, display, proto, data);
 		interactive = 1;
 		/* XXX wait for reply */
 	}
@@ -1161,6 +1134,7 @@ ssh_session2_open(void)
 	window = CHAN_SES_WINDOW_DEFAULT;
 	packetmax = CHAN_SES_PACKET_DEFAULT;
 	if (tty_flag) {
+		window = 4*CHAN_SES_PACKET_DEFAULT;
 		window >>= 1;
 		packetmax >>= 1;
 	}
@@ -1168,7 +1142,9 @@ ssh_session2_open(void)
 	    "session", SSH_CHANNEL_OPENING, in, out, err,
 	    window, packetmax, CHAN_EXTENDED_WRITE,
 	    "client-session", /*nonblock*/0);
-
+	if (!tty_flag && (!(datafellows & SSH_BUG_LARGEWINDOW))) {
+		c->dynamic_window = 1;
+	}
 	debug3("ssh_session2_open: channel_new: %d", c->self);
 
 	channel_send_open(c->self);
@@ -1276,10 +1252,25 @@ static void
 control_client(const char *path)
 {
 	struct sockaddr_un addr;
-	int i, r, sock, exitval, num_env, addr_len;
+	int i, r, fd, sock, exitval, num_env, addr_len;
 	Buffer m;
-	char *cp;
+	char *term;
 	extern char **environ;
+	u_int  flags;
+
+	if (mux_command == 0)
+		mux_command = SSHMUX_COMMAND_OPEN;
+
+	switch (options.control_master) {
+	case SSHCTL_MASTER_AUTO:
+	case SSHCTL_MASTER_AUTO_ASK:
+		debug("auto-mux: Trying existing master");
+		/* FALLTHROUGH */
+	case SSHCTL_MASTER_NO:
+		break;
+	default:
+		return;
+	}
 
 	memset(&addr, '\0', sizeof(addr));
 	addr.sun_family = AF_UNIX;
@@ -1293,29 +1284,79 @@ control_client(const char *path)
 	if ((sock = socket(PF_UNIX, SOCK_STREAM, 0)) < 0)
 		fatal("%s socket(): %s", __func__, strerror(errno));
 
-	if (connect(sock, (struct sockaddr*)&addr, addr_len) == -1)
-		fatal("Couldn't connect to %s: %s", path, strerror(errno));
+	if (connect(sock, (struct sockaddr*)&addr, addr_len) == -1) {
+		if (mux_command != SSHMUX_COMMAND_OPEN) {
+			fatal("Control socket connect(%.100s): %s", path,
+			    strerror(errno));
+		}
+		if (errno == ENOENT)
+	 		debug("Control socket \"%.100s\" does not exist", path);
+		else {
+	 		error("Control socket connect(%.100s): %s", path,
+			    strerror(errno));
+		}
+ 		close(sock);
+ 		return;
+ 	}
 
-	if ((cp = getenv("TERM")) == NULL)
-		cp = "";
+ 	if (stdin_null_flag) {
+ 		if ((fd = open(_PATH_DEVNULL, O_RDONLY)) == -1)
+ 			fatal("open(/dev/null): %s", strerror(errno));
+ 		if (dup2(fd, STDIN_FILENO) == -1)
+ 			fatal("dup2: %s", strerror(errno));
+ 		if (fd > STDERR_FILENO)
+ 			close(fd);
+ 	}
+
+	term = getenv("TERM");
+
+	flags = 0;
+	if (tty_flag)
+		flags |= SSHMUX_FLAG_TTY;
+	if (subsystem_flag)
+		flags |= SSHMUX_FLAG_SUBSYS;
+	if (options.forward_x11)
+		flags |= SSHMUX_FLAG_X11_FWD;
+	if (options.forward_agent)
+		flags |= SSHMUX_FLAG_AGENT_FWD;
 
 	buffer_init(&m);
 
-	/* Get PID of controlee */
+	/* Send our command to server */
+	buffer_put_int(&m, mux_command);
+	buffer_put_int(&m, flags);
+	if (ssh_msg_send(sock, SSHMUX_VER, &m) == -1)
+		fatal("%s: msg_send", __func__);
+	buffer_clear(&m);
+
+	/* Get authorisation status and PID of controlee */
 	if (ssh_msg_recv(sock, &m) == -1)
 		fatal("%s: msg_recv", __func__);
-	if (buffer_get_char(&m) != 0)
+	if (buffer_get_char(&m) != SSHMUX_VER)
 		fatal("%s: wrong version", __func__);
-	/* Connection allowed? */
 	if (buffer_get_int(&m) != 1)
 		fatal("Connection to master denied");
 	control_server_pid = buffer_get_int(&m);
 
 	buffer_clear(&m);
-	buffer_put_int(&m, tty_flag);
-	buffer_put_int(&m, subsystem_flag);
-	buffer_put_cstring(&m, cp);
 
+	switch (mux_command) {
+	case SSHMUX_COMMAND_ALIVE_CHECK:
+		fprintf(stderr, "Master running (pid=%d)\r\n",
+		    control_server_pid);
+		exit(0);
+	case SSHMUX_COMMAND_TERMINATE:
+		fprintf(stderr, "Exit request sent.\r\n");
+		exit(0);
+	case SSHMUX_COMMAND_OPEN:
+		/* continue below */
+		break;
+	default:
+		fatal("silly mux_command %d", mux_command);
+	}
+
+	/* SSHMUX_COMMAND_OPEN */
+	buffer_put_cstring(&m, term ? term : "");
 	buffer_append(&command, "\0", 1);
 	buffer_put_cstring(&m, buffer_ptr(&command));
 
@@ -1337,7 +1378,7 @@ control_client(const char *path)
 			}
 	}
 
-	if (ssh_msg_send(sock, /* version */0, &m) == -1)
+	if (ssh_msg_send(sock, SSHMUX_VER, &m) == -1)
 		fatal("%s: msg_send", __func__);
 
 	mm_send_fd(sock, STDIN_FILENO);
@@ -1348,10 +1389,11 @@ control_client(const char *path)
 	buffer_clear(&m);
 	if (ssh_msg_recv(sock, &m) == -1)
 		fatal("%s: msg_recv", __func__);
-	if (buffer_get_char(&m) != 0)
-		fatal("%s: master returned error", __func__);
+	if (buffer_get_char(&m) != SSHMUX_VER)
+		fatal("%s: wrong version", __func__);
 	buffer_free(&m);
 
+	signal(SIGHUP, control_client_sighandler);
 	signal(SIGINT, control_client_sighandler);
 	signal(SIGTERM, control_client_sighandler);
 	signal(SIGWINCH, control_client_sigrelay);

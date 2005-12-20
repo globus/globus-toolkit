@@ -51,6 +51,23 @@ module that contains the GSI-OpenSSH code.  Consider it a living document.
 
   [ History ]
 
+    2005/12/20
+    ----------
+      Action: Merge
+        - occurred on: GPT branch
+        - orig base: OPENSSH_3_9P1_GSSAPI_20040818
+        - new base: OPENSSH_4_2P1_GSSAPI_20051220
+      Conflicts: 4
+        - Makefile.in
+	  kexgssc.o moved in Simon's patch
+	  new install-sysconf target from OpenSSH release
+	- configure.ac
+	  new --with-pid-dir section from OpenSSH release
+	- ssh-keyscan.c
+	  #include "hostfile.h" added from OpenSSH release
+	- version.h
+          Update to new package version information.	  
+
     2004/08/19
     ----------
       Action: Merge

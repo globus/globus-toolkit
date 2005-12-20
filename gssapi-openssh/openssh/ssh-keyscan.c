@@ -7,7 +7,7 @@
  */
 
 #include "includes.h"
-RCSID("$OpenBSD: ssh-keyscan.c,v 1.50 2004/08/11 21:44:32 avsm Exp $");
+RCSID("$OpenBSD: ssh-keyscan.c,v 1.55 2005/06/17 02:44:33 djm Exp $");
 
 #include "openbsd-compat/sys-queue.h"
 
@@ -29,6 +29,7 @@ RCSID("$OpenBSD: ssh-keyscan.c,v 1.50 2004/08/11 21:44:32 avsm Exp $");
 #include "atomicio.h"
 #include "misc.h"
 #include "pathnames.h"
+#include "hostfile.h"
 
 /* Flag indicating whether IPv4 or IPv6.  This can be set on the command line.
    Default value is AF_UNSPEC means both IPv4 and IPv6. */
@@ -41,6 +42,8 @@ int ssh_port = SSH_DEFAULT_PORT;
 #define KT_RSA	4
 
 int get_keytypes = KT_RSA1;	/* Get only RSA1 keys by default */
+
+int hash_hosts = 0;		/* Hash hostname on output */
 
 #define MAXMAXFD 256
 
@@ -164,7 +167,7 @@ Linebuf_lineno(Linebuf * lb)
 static char *
 Linebuf_getline(Linebuf * lb)
 {
-	int n = 0;
+	size_t n = 0;
 	void *p;
 
 	lb->lineno++;
@@ -367,10 +370,14 @@ keygrab_ssh2(con *c)
 static void
 keyprint(con *c, Key *key)
 {
+	char *host = c->c_output_name ? c->c_output_name : c->c_name;
+
 	if (!key)
 		return;
+	if (hash_hosts && (host = host_hash(host, NULL, 0)) == NULL)
+		fatal("host_hash failed");
 
-	fprintf(stdout, "%s ", c->c_output_name ? c->c_output_name : c->c_name);
+	fprintf(stdout, "%s ", host);
 	key_write(key, stdout);
 	fputs("\n", stdout);
 }
@@ -487,7 +494,7 @@ conrecycle(int s)
 static void
 congreet(int s)
 {
-	int remote_major = 0, remote_minor = 0, n = 0;
+	int n = 0, remote_major = 0, remote_minor = 0;
 	char buf[256], *cp;
 	char remote_version[sizeof buf];
 	size_t bufsiz;
@@ -500,14 +507,17 @@ congreet(int s)
 			*cp = '\n';
 		cp++;
 	}
-	if (n < 0) {
-		if (errno != ECONNREFUSED)
-			error("read (%s): %s", c->c_name, strerror(errno));
-		conrecycle(s);
-		return;
-	}
 	if (n == 0) {
-		error("%s: Connection closed by remote host", c->c_name);
+		switch (errno) {
+		case EPIPE:
+			error("%s: Connection closed by remote host", c->c_name);
+			break;
+		case ECONNREFUSED:
+			break;
+		default:
+			error("read (%s): %s", c->c_name, strerror(errno));
+			break;
+		}
 		conrecycle(s);
 		return;
 	}
@@ -537,7 +547,12 @@ congreet(int s)
 	n = snprintf(buf, sizeof buf, "SSH-%d.%d-OpenSSH-keyscan\r\n",
 	    c->c_keytype == KT_RSA1? PROTOCOL_MAJOR_1 : PROTOCOL_MAJOR_2,
 	    c->c_keytype == KT_RSA1? PROTOCOL_MINOR_1 : PROTOCOL_MINOR_2);
-	if (atomicio(vwrite, s, buf, n) != n) {
+	if (n < 0 || (size_t)n >= sizeof(buf)) {
+		error("snprintf: buffer too small");
+		confree(s);
+		return;
+	}
+	if (atomicio(vwrite, s, buf, n) != (size_t)n) {
 		error("write (%s): %s", c->c_name, strerror(errno));
 		confree(s);
 		return;
@@ -555,14 +570,14 @@ static void
 conread(int s)
 {
 	con *c = &fdcon[s];
-	int n;
+	size_t n;
 
 	if (c->c_status == CS_CON) {
 		congreet(s);
 		return;
 	}
 	n = atomicio(read, s, c->c_data + c->c_off, c->c_len - c->c_off);
-	if (n < 0) {
+	if (n == 0) {
 		error("read (%s): %s", c->c_name, strerror(errno));
 		confree(s);
 		return;
@@ -677,7 +692,7 @@ fatal(const char *fmt,...)
 static void
 usage(void)
 {
-	fprintf(stderr, "usage: %s [-v46] [-p port] [-T timeout] [-t type] [-f file]\n"
+	fprintf(stderr, "usage: %s [-46Hv] [-f file] [-p port] [-T timeout] [-t type]\n"
 	    "\t\t   [host | addrlist namelist] [...]\n",
 	    __progname);
 	exit(1);
@@ -702,8 +717,11 @@ main(int argc, char **argv)
 	if (argc <= 1)
 		usage();
 
-	while ((opt = getopt(argc, argv, "v46p:T:t:f:")) != -1) {
+	while ((opt = getopt(argc, argv, "Hv46p:T:t:f:")) != -1) {
 		switch (opt) {
+		case 'H':
+			hash_hosts = 1;
+			break;
 		case 'p':
 			ssh_port = a2port(optarg);
 			if (ssh_port == 0) {

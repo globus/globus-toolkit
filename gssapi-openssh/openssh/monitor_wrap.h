@@ -63,8 +63,7 @@ OM_uint32 mm_ssh_gssapi_accept_ctx(Gssctxt *,
    gss_buffer_desc *, gss_buffer_desc *, OM_uint32 *);
 int mm_ssh_gssapi_userok(char *user);
 OM_uint32 mm_ssh_gssapi_checkmic(Gssctxt *, gss_buffer_t, gss_buffer_t);
-OM_uint32 mm_ssh_gssapi_sign(Gssctxt *ctxt, gss_buffer_desc *buffer,
-			     gss_buffer_desc *hash);
+OM_uint32 mm_ssh_gssapi_sign(Gssctxt *, gss_buffer_t, gss_buffer_t);
 int mm_ssh_gssapi_localname(char **user);
 OM_uint32 mm_gss_indicate_mechs(OM_uint32 *minor_status,
 				gss_OID_set *mech_set);
@@ -78,6 +77,12 @@ void *mm_sshpam_init_ctx(struct Authctxt *);
 int mm_sshpam_query(void *, char **, char **, u_int *, char ***, u_int **);
 int mm_sshpam_respond(void *, u_int, char **);
 void mm_sshpam_free_ctx(void *);
+#endif
+
+#ifdef SSH_AUDIT_EVENTS
+#include "audit.h"
+void mm_audit_event(ssh_audit_event_t);
+void mm_audit_run_command(const char *);
 #endif
 
 struct Session;

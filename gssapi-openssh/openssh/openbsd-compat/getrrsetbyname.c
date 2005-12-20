@@ -144,6 +144,8 @@ _getshort(msgp)
 	GETSHORT(u, msgp);
 	return (u);
 }
+#elif defined(HAVE_DECL__GETSHORT) && (HAVE_DECL__GETSHORT == 0)
+u_int16_t _getshort(register const u_char *);
 #endif
 
 #ifndef HAVE__GETLONG
@@ -156,6 +158,8 @@ _getlong(msgp)
 	GETLONG(u, msgp);
 	return (u);
 }
+#elif defined(HAVE_DECL__GETLONG) && (HAVE_DECL__GETLONG == 0)
+u_int32_t _getlong(register const u_char *);
 #endif
 
 int
@@ -277,7 +281,7 @@ getrrsetbyname(const char *hostname, unsigned int rdclass,
 
 	/* allocate memory for signatures */
 	rrset->rri_sigs = calloc(rrset->rri_nsigs, sizeof(struct rdatainfo));
-	if (rrset->rri_sigs == NULL) {
+	if (rrset->rri_nsigs > 0 && rrset->rri_sigs == NULL) {
 		result = ERRSET_NOMEMORY;
 		goto fail;
 	}

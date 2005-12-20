@@ -17,12 +17,12 @@
 #old cvs stuff.  please update before use.  may be deprecated.
 %define use_stable	1
 %if %{use_stable}
-  %define version 	3.9p1
+  %define version 	4.2p1
   %define cvs		%{nil}
   %define release 	1
 %else
-  %define version 	3.9p1
-  %define cvs		cvs20011009
+  %define version 	4.1p1
+  %define cvs		cvs20050315
   %define release 	0r1
 %endif
 %define xsa		x11-ssh-askpass		
@@ -297,19 +297,13 @@ fi
 
 %PreUn server
 [ "$1" = 0 ] || exit 0
-
 ! %{SVIdir}/sshd status || %{SVIdir}/sshd stop
-: # to protect the rpm database
-
-
-%PostUn server
 if [ -x %{LSBinit}-remove ]; then
   %{LSBinit}-remove sshd
 else
   lisa --SysV-init remove sshd $1
 fi
 : # to protect the rpm database
-
 
 %Files 
 %defattr(-,root,root)

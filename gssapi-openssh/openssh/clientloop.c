@@ -59,7 +59,7 @@
  */
 
 #include "includes.h"
-RCSID("$OpenBSD: clientloop.c,v 1.130 2004/08/11 21:43:04 avsm Exp $");
+RCSID("$OpenBSD: clientloop.c,v 1.141 2005/07/16 01:35:24 djm Exp $");
 
 #include "ssh.h"
 #include "ssh1.h"
@@ -140,6 +140,8 @@ int	session_ident = -1;
 struct confirm_ctx {
 	int want_tty;
 	int want_subsys;
+	int want_x_fwd;
+	int want_agent_fwd;
 	Buffer cmd;
 	char *term;
 	struct termios tio;
@@ -206,6 +208,109 @@ get_current_time(void)
 	struct timeval tv;
 	gettimeofday(&tv, NULL);
 	return (double) tv.tv_sec + (double) tv.tv_usec / 1000000.0;
+}
+
+#define SSH_X11_PROTO "MIT-MAGIC-COOKIE-1"
+void
+client_x11_get_proto(const char *display, const char *xauth_path,
+    u_int trusted, char **_proto, char **_data)
+{
+	char cmd[1024];
+	char line[512];
+	char xdisplay[512];
+	static char proto[512], data[512];
+	FILE *f;
+	int got_data = 0, generated = 0, do_unlink = 0, i;
+	char *xauthdir, *xauthfile;
+	struct stat st;
+
+	xauthdir = xauthfile = NULL;
+	*_proto = proto;
+	*_data = data;
+	proto[0] = data[0] = '\0';
+
+	if (xauth_path == NULL ||(stat(xauth_path, &st) == -1)) {
+		debug("No xauth program.");
+	} else {
+		if (display == NULL) {
+			debug("x11_get_proto: DISPLAY not set");
+			return;
+		}
+		/*
+		 * Handle FamilyLocal case where $DISPLAY does
+		 * not match an authorization entry.  For this we
+		 * just try "xauth list unix:displaynum.screennum".
+		 * XXX: "localhost" match to determine FamilyLocal
+		 *      is not perfect.
+		 */
+		if (strncmp(display, "localhost:", 10) == 0) {
+			snprintf(xdisplay, sizeof(xdisplay), "unix:%s",
+			    display + 10);
+			display = xdisplay;
+		}
+		if (trusted == 0) {
+			xauthdir = xmalloc(MAXPATHLEN);
+			xauthfile = xmalloc(MAXPATHLEN);
+			strlcpy(xauthdir, "/tmp/ssh-XXXXXXXXXX", MAXPATHLEN);
+			if (mkdtemp(xauthdir) != NULL) {
+				do_unlink = 1;
+				snprintf(xauthfile, MAXPATHLEN, "%s/xauthfile",
+				    xauthdir);
+				snprintf(cmd, sizeof(cmd),
+				    "%s -f %s generate %s " SSH_X11_PROTO
+				    " untrusted timeout 1200 2>" _PATH_DEVNULL,
+				    xauth_path, xauthfile, display);
+				debug2("x11_get_proto: %s", cmd);
+				if (system(cmd) == 0)
+					generated = 1;
+			}
+		}
+		snprintf(cmd, sizeof(cmd),
+		    "%s %s%s list %s . 2>" _PATH_DEVNULL,
+		    xauth_path,
+		    generated ? "-f " : "" ,
+		    generated ? xauthfile : "",
+		    display);
+		debug2("x11_get_proto: %s", cmd);
+		f = popen(cmd, "r");
+		if (f && fgets(line, sizeof(line), f) &&
+		    sscanf(line, "%*s %511s %511s", proto, data) == 2)
+			got_data = 1;
+		if (f)
+			pclose(f);
+	}
+
+	if (do_unlink) {
+		unlink(xauthfile);
+		rmdir(xauthdir);
+	}
+	if (xauthdir)
+		xfree(xauthdir);
+	if (xauthfile)
+		xfree(xauthfile);
+
+	/*
+	 * If we didn't get authentication data, just make up some
+	 * data.  The forwarding code will check the validity of the
+	 * response anyway, and substitute this data.  The X11
+	 * server, however, will ignore this fake data and use
+	 * whatever authentication mechanisms it was using otherwise
+	 * for the local connection.
+	 */
+	if (!got_data) {
+		u_int32_t rnd = 0;
+
+		logit("Warning: No xauth data; "
+		    "using fake authentication data for X11 forwarding.");
+		strlcpy(proto, SSH_X11_PROTO, sizeof proto);
+		for (i = 0; i < 16; i++) {
+			if (i % 4 == 0)
+				rnd = arc4random();
+			snprintf(data + 2 * i, sizeof data - 2 * i, "%02x",
+			    rnd & 0xff);
+			rnd >>= 8;
+		}
+	}
 }
 
 /*
@@ -432,8 +537,6 @@ client_wait_until_can_do_something(fd_set **readsetp, fd_set **writesetp,
 static void
 client_suspend_self(Buffer *bin, Buffer *bout, Buffer *berr)
 {
-	struct winsize oldws, newws;
-
 	/* Flush stdout and stderr buffers. */
 	if (buffer_len(bout) > 0)
 		atomicio(vwrite, fileno(stdout), buffer_ptr(bout), buffer_len(bout));
@@ -450,19 +553,11 @@ client_suspend_self(Buffer *bin, Buffer *bout, Buffer *berr)
 	buffer_free(bout);
 	buffer_free(berr);
 
-	/* Save old window size. */
-	ioctl(fileno(stdin), TIOCGWINSZ, &oldws);
-
 	/* Send the suspend signal to the program itself. */
 	kill(getpid(), SIGTSTP);
 
-	/* Check if the window size has changed. */
-	if (ioctl(fileno(stdin), TIOCGWINSZ, &newws) >= 0 &&
-	    (oldws.ws_row != newws.ws_row ||
-	    oldws.ws_col != newws.ws_col ||
-	    oldws.ws_xpixel != newws.ws_xpixel ||
-	    oldws.ws_ypixel != newws.ws_ypixel))
-		received_window_change_signal = 1;
+	/* Reset window sizes in case they have changed */
+	received_window_change_signal = 1;
 
 	/* OK, we have been continued by the user. Reinitialize buffers. */
 	buffer_init(bin);
@@ -538,6 +633,7 @@ static void
 client_extra_session2_setup(int id, void *arg)
 {
 	struct confirm_ctx *cctx = arg;
+	const char *display;
 	Channel *c;
 	int i;
 
@@ -545,6 +641,24 @@ client_extra_session2_setup(int id, void *arg)
 		fatal("%s: cctx == NULL", __func__);
 	if ((c = channel_lookup(id)) == NULL)
 		fatal("%s: no channel for id %d", __func__, id);
+
+	display = getenv("DISPLAY");
+	if (cctx->want_x_fwd && options.forward_x11 && display != NULL) {
+		char *proto, *data;
+		/* Get reasonable local authentication information. */
+		client_x11_get_proto(display, options.xauth_location,
+		    options.forward_x11_trusted, &proto, &data);
+		/* Request forwarding with authentication spoofing. */
+		debug("Requesting X11 forwarding with authentication spoofing.");
+		x11_request_forwarding_with_spoofing(id, display, proto, data);
+		/* XXX wait for reply */
+	}
+
+	if (cctx->want_agent_fwd && options.forward_agent) {
+		debug("Requesting authentication agent forwarding.");
+		channel_request_start(id, "auth-agent-req@openssh.com", 0);
+		packet_send();
+	}
 
 	client_session2_setup(id, cctx->want_tty, cctx->want_subsys,
 	    cctx->term, &cctx->tio, c->rfd, &cctx->cmd, cctx->env,
@@ -566,12 +680,12 @@ client_process_control(fd_set * readset)
 {
 	Buffer m;
 	Channel *c;
-	int client_fd, new_fd[3], ver, i, allowed;
+	int client_fd, new_fd[3], ver, allowed;
 	socklen_t addrlen;
 	struct sockaddr_storage addr;
 	struct confirm_ctx *cctx;
 	char *cmd;
-	u_int len, env_len;
+	u_int i, len, env_len, command, flags;
 	uid_t euid;
 	gid_t egid;
 
@@ -601,39 +715,76 @@ client_process_control(fd_set * readset)
 		return;
 	}
 
-	allowed = 1;
-	if (options.control_master == 2) {
-		char *p, prompt[1024];
-
-		allowed = 0;
-		snprintf(prompt, sizeof(prompt),
-		    "Allow shared connection to %s? ", host);
-		p = read_passphrase(prompt, RP_USE_ASKPASS|RP_ALLOW_EOF);
-		if (p != NULL) {
-			/*
-			 * Accept empty responses and responses consisting
-			 * of the word "yes" as affirmative.
-			 */
-			if (*p == '\0' || *p == '\n' ||
-			    strcasecmp(p, "yes") == 0)
-				allowed = 1;
-			xfree(p);
-		}
-	}
-
 	unset_nonblock(client_fd);
 
+	/* Read command */
 	buffer_init(&m);
+	if (ssh_msg_recv(client_fd, &m) == -1) {
+		error("%s: client msg_recv failed", __func__);
+		close(client_fd);
+		buffer_free(&m);
+		return;
+	}
+	if ((ver = buffer_get_char(&m)) != SSHMUX_VER) {
+		error("%s: wrong client version %d", __func__, ver);
+		buffer_free(&m);
+		close(client_fd);
+		return;
+	}
 
+	allowed = 1;
+	command = buffer_get_int(&m);
+	flags = buffer_get_int(&m);
+
+	buffer_clear(&m);
+
+	switch (command) {
+	case SSHMUX_COMMAND_OPEN:
+		if (options.control_master == SSHCTL_MASTER_ASK ||
+		    options.control_master == SSHCTL_MASTER_AUTO_ASK)
+			allowed = ask_permission("Allow shared connection "
+			    "to %s? ", host);
+		/* continue below */
+		break;
+	case SSHMUX_COMMAND_TERMINATE:
+		if (options.control_master == SSHCTL_MASTER_ASK ||
+		    options.control_master == SSHCTL_MASTER_AUTO_ASK)
+			allowed = ask_permission("Terminate shared connection "
+			    "to %s? ", host);
+		if (allowed)
+			quit_pending = 1;
+		/* FALLTHROUGH */
+	case SSHMUX_COMMAND_ALIVE_CHECK:
+		/* Reply for SSHMUX_COMMAND_TERMINATE and ALIVE_CHECK */
+		buffer_clear(&m);
+		buffer_put_int(&m, allowed);
+		buffer_put_int(&m, getpid());
+		if (ssh_msg_send(client_fd, SSHMUX_VER, &m) == -1) {
+			error("%s: client msg_send failed", __func__);
+			close(client_fd);
+			buffer_free(&m);
+			return;
+		}
+		buffer_free(&m);
+		close(client_fd);
+		return;
+	default:
+		error("Unsupported command %d", command);
+		buffer_free(&m);
+		close(client_fd);
+		return;
+	}
+
+	/* Reply for SSHMUX_COMMAND_OPEN */
+	buffer_clear(&m);
 	buffer_put_int(&m, allowed);
 	buffer_put_int(&m, getpid());
-	if (ssh_msg_send(client_fd, /* version */0, &m) == -1) {
+	if (ssh_msg_send(client_fd, SSHMUX_VER, &m) == -1) {
 		error("%s: client msg_send failed", __func__);
 		close(client_fd);
 		buffer_free(&m);
 		return;
 	}
-	buffer_clear(&m);
 
 	if (!allowed) {
 		error("Refused control connection");
@@ -642,14 +793,14 @@ client_process_control(fd_set * readset)
 		return;
 	}
 
+	buffer_clear(&m);
 	if (ssh_msg_recv(client_fd, &m) == -1) {
 		error("%s: client msg_recv failed", __func__);
 		close(client_fd);
 		buffer_free(&m);
 		return;
 	}
-
-	if ((ver = buffer_get_char(&m)) != 0) {
+	if ((ver = buffer_get_char(&m)) != SSHMUX_VER) {
 		error("%s: wrong client version %d", __func__, ver);
 		buffer_free(&m);
 		close(client_fd);
@@ -658,9 +809,10 @@ client_process_control(fd_set * readset)
 
 	cctx = xmalloc(sizeof(*cctx));
 	memset(cctx, 0, sizeof(*cctx));
-
-	cctx->want_tty = buffer_get_int(&m);
-	cctx->want_subsys = buffer_get_int(&m);
+	cctx->want_tty = (flags & SSHMUX_FLAG_TTY) != 0;
+	cctx->want_subsys = (flags & SSHMUX_FLAG_SUBSYS) != 0;
+	cctx->want_x_fwd = (flags & SSHMUX_FLAG_X11_FWD) != 0;
+	cctx->want_agent_fwd = (flags & SSHMUX_FLAG_AGENT_FWD) != 0;
 	cctx->term = buffer_get_string(&m, &len);
 
 	cmd = buffer_get_string(&m, &len);
@@ -692,14 +844,21 @@ client_process_control(fd_set * readset)
 	if (cctx->want_tty && tcgetattr(new_fd[0], &cctx->tio) == -1)
 		error("%s: tcgetattr: %s", __func__, strerror(errno));
 
+	/* This roundtrip is just for synchronisation of ttymodes */
 	buffer_clear(&m);
-	if (ssh_msg_send(client_fd, /* version */0, &m) == -1) {
+	if (ssh_msg_send(client_fd, SSHMUX_VER, &m) == -1) {
 		error("%s: client msg_send failed", __func__);
 		close(client_fd);
 		close(new_fd[0]);
 		close(new_fd[1]);
 		close(new_fd[2]);
 		buffer_free(&m);
+		xfree(cctx->term);
+		if (env_len != 0) {
+			for (i = 0; i < env_len; i++)
+				xfree(cctx->env[i]);
+			xfree(cctx->env);
+		}
 		return;
 	}
 	buffer_free(&m);
@@ -732,11 +891,11 @@ static void
 process_cmdline(void)
 {
 	void (*handler)(int);
-	char *s, *cmd;
-	u_short fwd_port, fwd_host_port;
-	char buf[1024], sfwd_port[6], sfwd_host_port[6];
+	char *s, *cmd, *cancel_host;
 	int delete = 0;
 	int local = 0;
+	u_short cancel_port;
+	Forward fwd;
 
 	leave_raw_mode();
 	handler = signal(SIGINT, SIG_IGN);
@@ -782,37 +941,38 @@ process_cmdline(void)
 		s++;
 
 	if (delete) {
-		if (sscanf(s, "%5[0-9]", sfwd_host_port) != 1) {
-			logit("Bad forwarding specification.");
+		cancel_port = 0;
+		cancel_host = hpdelim(&s);	/* may be NULL */
+		if (s != NULL) {
+			cancel_port = a2port(s);
+			cancel_host = cleanhostname(cancel_host);
+		} else {
+			cancel_port = a2port(cancel_host);
+			cancel_host = NULL;
+		}
+		if (cancel_port == 0) {
+			logit("Bad forwarding close port");
 			goto out;
 		}
-		if ((fwd_host_port = a2port(sfwd_host_port)) == 0) {
-			logit("Bad forwarding port(s).");
-			goto out;
-		}
-		channel_request_rforward_cancel(fwd_host_port);
+		channel_request_rforward_cancel(cancel_host, cancel_port);
 	} else {
-		if (sscanf(s, "%5[0-9]:%255[^:]:%5[0-9]",
-		    sfwd_port, buf, sfwd_host_port) != 3 &&
-		    sscanf(s, "%5[0-9]/%255[^/]/%5[0-9]",
-		    sfwd_port, buf, sfwd_host_port) != 3) {
+		if (!parse_forward(&fwd, s)) {
 			logit("Bad forwarding specification.");
-			goto out;
-		}
-		if ((fwd_port = a2port(sfwd_port)) == 0 ||
-		    (fwd_host_port = a2port(sfwd_host_port)) == 0) {
-			logit("Bad forwarding port(s).");
 			goto out;
 		}
 		if (local) {
-			if (channel_setup_local_fwd_listener(fwd_port, buf,
-			    fwd_host_port, options.gateway_ports) < 0) {
+			if (channel_setup_local_fwd_listener(fwd.listen_host,
+			    fwd.listen_port, fwd.connect_host,
+			    fwd.connect_port, options.gateway_ports) < 0) {
 				logit("Port forwarding failed.");
 				goto out;
 			}
-		} else
-			channel_request_remote_forwarding(fwd_port, buf,
-			    fwd_host_port);
+		} else {
+			channel_request_remote_forwarding(fwd.listen_host,
+			    fwd.listen_port, fwd.connect_host,
+			    fwd.connect_port);
+		}
+
 		logit("Forwarding port.");
 	}
 
@@ -834,7 +994,10 @@ process_escapes(Buffer *bin, Buffer *bout, Buffer *berr, char *buf, int len)
 	u_char ch;
 	char *s;
 
-	for (i = 0; i < len; i++) {
+	if (len <= 0)
+		return (0);
+
+	for (i = 0; i < (u_int)len; i++) {
 		/* Get one character at a time. */
 		ch = buf[i];
 
@@ -1196,14 +1359,15 @@ client_loop(int have_pty, int escape_char_arg, int ssh2_chan_id)
 	 * Set signal handlers, (e.g. to restore non-blocking mode)
 	 * but don't overwrite SIG_IGN, matches behaviour from rsh(1)
 	 */
+	if (signal(SIGHUP, SIG_IGN) != SIG_IGN)
+		signal(SIGHUP, signal_handler);
 	if (signal(SIGINT, SIG_IGN) != SIG_IGN)
 		signal(SIGINT, signal_handler);
 	if (signal(SIGQUIT, SIG_IGN) != SIG_IGN)
 		signal(SIGQUIT, signal_handler);
 	if (signal(SIGTERM, SIG_IGN) != SIG_IGN)
 		signal(SIGTERM, signal_handler);
-	if (have_pty)
-		signal(SIGWINCH, window_change_handler);
+	signal(SIGWINCH, window_change_handler);
 
 	if (have_pty)
 		enter_raw_mode();
@@ -1311,8 +1475,7 @@ client_loop(int have_pty, int escape_char_arg, int ssh2_chan_id)
 	/* Terminate the session. */
 
 	/* Stop watching for window change. */
-	if (have_pty)
-		signal(SIGWINCH, SIG_DFL);
+	signal(SIGWINCH, SIG_DFL);
 
 	channel_free_all();
 
@@ -1679,8 +1842,12 @@ client_session2_setup(int id, int want_tty, int want_subsystem,
     dispatch_fn *subsys_repl)
 {
 	int len;
+	Channel *c = NULL;
 
 	debug2("%s: id %d", __func__, id);
+
+	if ((c = channel_lookup(id)) == NULL)
+		fatal("client_session2_setup: channel %d: unknown channel", id);
 
 	if (want_tty) {
 		struct winsize ws;
@@ -1700,6 +1867,7 @@ client_session2_setup(int id, int want_tty, int want_subsystem,
 		tty_make_modes(-1, tiop != NULL ? tiop : &tio);
 		packet_send();
 		/* XXX wait for reply */
+		c->client_tty = 1;
 	}
 
 	/* Transfer any environment variables from client to server */

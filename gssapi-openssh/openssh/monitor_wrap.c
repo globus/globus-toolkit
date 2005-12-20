@@ -25,7 +25,7 @@
  */
 
 #include "includes.h"
-RCSID("$OpenBSD: monitor_wrap.c,v 1.39 2004/07/17 05:31:41 dtucker Exp $");
+RCSID("$OpenBSD: monitor_wrap.c,v 1.40 2005/05/24 17:32:43 avsm Exp $");
 
 #include <openssl/bn.h>
 #include <openssl/dh.h>
@@ -72,6 +72,7 @@ extern struct monitor *pmonitor;
 extern Buffer input, output;
 extern Buffer loginmsg;
 extern ServerOptions options;
+extern Buffer loginmsg;
 
 int
 mm_is_monitor(void)
@@ -94,9 +95,9 @@ mm_request_send(int sock, enum monitor_reqtype type, Buffer *m)
 	PUT_32BIT(buf, mlen + 1);
 	buf[4] = (u_char) type;		/* 1st byte of payload is mesg-type */
 	if (atomicio(vwrite, sock, buf, sizeof(buf)) != sizeof(buf))
-		fatal("%s: write", __func__);
+		fatal("%s: write: %s", __func__, strerror(errno));
 	if (atomicio(vwrite, sock, buffer_ptr(m), mlen) != mlen)
-		fatal("%s: write", __func__);
+		fatal("%s: write: %s", __func__, strerror(errno));
 }
 
 void
@@ -104,24 +105,21 @@ mm_request_receive(int sock, Buffer *m)
 {
 	u_char buf[4];
 	u_int msg_len;
-	ssize_t res;
 
 	debug3("%s entering", __func__);
 
-	res = atomicio(read, sock, buf, sizeof(buf));
-	if (res != sizeof(buf)) {
-		if (res == 0)
+	if (atomicio(read, sock, buf, sizeof(buf)) != sizeof(buf)) {
+		if (errno == EPIPE)
 			cleanup_exit(255);
-		fatal("%s: read: %ld", __func__, (long)res);
+		fatal("%s: read: %s", __func__, strerror(errno));
 	}
 	msg_len = GET_32BIT(buf);
 	if (msg_len > 256 * 1024)
 		fatal("%s: read: bad msg_len %d", __func__, msg_len);
 	buffer_clear(m);
 	buffer_append_space(m, msg_len);
-	res = atomicio(read, sock, buffer_ptr(m), msg_len);
-	if (res != msg_len)
-		fatal("%s: read: %ld != msg_len", __func__, (long)res);
+	if (atomicio(read, sock, buffer_ptr(m), msg_len) != msg_len)
+		fatal("%s: read: %s", __func__, strerror(errno));
 }
 
 void
@@ -716,6 +714,7 @@ mm_do_pam_account(void)
 {
 	Buffer m;
 	u_int ret;
+	char *msg;
 
 	debug3("%s entering", __func__);
 	if (!options.use_pam)
@@ -727,6 +726,9 @@ mm_do_pam_account(void)
 	mm_request_receive_expect(pmonitor->m_recvfd,
 	    MONITOR_ANS_PAM_ACCOUNT, &m);
 	ret = buffer_get_int(&m);
+	msg = buffer_get_string(&m, NULL);
+	buffer_append(&loginmsg, msg, strlen(msg));
+	xfree(msg);
 
 	buffer_free(&m);
 
@@ -762,7 +764,8 @@ mm_sshpam_query(void *ctx, char **name, char **info,
     u_int *num, char ***prompts, u_int **echo_on)
 {
 	Buffer m;
-	int i, ret;
+	u_int i;
+	int ret;
 
 	debug3("%s", __func__);
 	buffer_init(&m);
@@ -788,7 +791,8 @@ int
 mm_sshpam_respond(void *ctx, u_int num, char **resp)
 {
 	Buffer m;
-	int i, ret;
+	u_int i;
+	int ret;
 
 	debug3("%s", __func__);
 	buffer_init(&m);
@@ -1098,6 +1102,36 @@ mm_auth_rsa_verify_response(Key *key, BIGNUM *p, u_char response[16])
 	return (success);
 }
 
+#ifdef SSH_AUDIT_EVENTS
+void
+mm_audit_event(ssh_audit_event_t event)
+{
+	Buffer m;
+
+	debug3("%s entering", __func__);
+
+	buffer_init(&m);
+	buffer_put_int(&m, event);
+
+	mm_request_send(pmonitor->m_recvfd, MONITOR_REQ_AUDIT_EVENT, &m);
+	buffer_free(&m);
+}
+
+void
+mm_audit_run_command(const char *command)
+{
+	Buffer m;
+
+	debug3("%s entering command %s", __func__, command);
+
+	buffer_init(&m);
+	buffer_put_cstring(&m, command);
+
+	mm_request_send(pmonitor->m_recvfd, MONITOR_REQ_AUDIT_COMMAND, &m);
+	buffer_free(&m);
+}
+#endif /* SSH_AUDIT_EVENTS */
+
 #ifdef GSSAPI
 OM_uint32
 mm_ssh_gssapi_server_ctx(Gssctxt **ctx, gss_OID goid)
@@ -1184,24 +1218,25 @@ mm_ssh_gssapi_userok(char *user)
 }
 
 OM_uint32
-mm_ssh_gssapi_sign(Gssctxt *ctx, gss_buffer_desc *data, gss_buffer_desc *hash) {
-        Buffer m;
-        OM_uint32 major;
+mm_ssh_gssapi_sign(Gssctxt *ctx, gss_buffer_desc *data, gss_buffer_desc *hash)
+{
+	Buffer m;
+	OM_uint32 major;
 	u_int len;
 
-        buffer_init(&m);
-        buffer_put_string(&m, data->value, data->length);
+	buffer_init(&m);
+	buffer_put_string(&m, data->value, data->length);
 
-        mm_request_send(pmonitor->m_recvfd, MONITOR_REQ_GSSSIGN, &m);
-        mm_request_receive_expect(pmonitor->m_recvfd, MONITOR_ANS_GSSSIGN, &m);
+	mm_request_send(pmonitor->m_recvfd, MONITOR_REQ_GSSSIGN, &m);
+	mm_request_receive_expect(pmonitor->m_recvfd, MONITOR_ANS_GSSSIGN, &m);
 
-        major=buffer_get_int(&m);
-        hash->value = buffer_get_string(&m, &len);
+	major = buffer_get_int(&m);
+	hash->value = buffer_get_string(&m, &len);
 	hash->length = len;
 
 	buffer_free(&m);
-	
-        return(major);
+
+	return(major);
 }
 
 char *
@@ -1280,4 +1315,5 @@ mm_ssh_gssapi_localname(char **lname)
 	
         return(0);
 }	
+
 #endif /* GSSAPI */

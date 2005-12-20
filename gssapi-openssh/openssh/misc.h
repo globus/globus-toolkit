@@ -1,4 +1,4 @@
-/*	$OpenBSD: misc.h,v 1.17 2004/08/11 21:43:05 avsm Exp $	*/
+/*	$OpenBSD: misc.h,v 1.25 2005/07/14 04:00:43 dtucker Exp $	*/
 
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
@@ -20,9 +20,13 @@ int	 set_nonblock(int);
 int	 unset_nonblock(int);
 void	 set_nodelay(int);
 int	 a2port(const char *);
+char	*hpdelim(char **);
 char	*cleanhostname(char *);
 char	*colon(char *);
 long	 convtime(const char *);
+char	*tilde_expand_filename(const char *, uid_t);
+char	*percent_expand(const char *, ...) __attribute__((__sentinel__));
+char	*tohex(const u_char *, u_int);
 
 struct passwd *pwcopy(struct passwd *);
 
@@ -34,10 +38,6 @@ struct arglist {
 };
 void	 addargs(arglist *, char *, ...) __attribute__((format(printf, 2, 3)));
 
-/* tildexpand.c */
-
-char	*tilde_expand_filename(const char *, uid_t);
-
 /* readpass.c */
 
 #define RP_ECHO			0x0001
@@ -46,3 +46,5 @@ char	*tilde_expand_filename(const char *, uid_t);
 #define RP_USE_ASKPASS		0x0008
 
 char	*read_passphrase(const char *, int);
+int	 ask_permission(const char *, ...) __attribute__((format(printf, 1, 2)));
+int	 read_keyfile_line(FILE *, const char *, char *, size_t, u_long *);

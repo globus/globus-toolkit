@@ -1,4 +1,4 @@
-/*	$OpenBSD: readconf.h,v 1.64 2004/07/11 17:48:47 deraadt Exp $	*/
+/*	$OpenBSD: readconf.h,v 1.67 2005/06/08 11:25:09 djm Exp $	*/
 
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
@@ -21,9 +21,10 @@
 /* Data structure for representing a forwarding request. */
 
 typedef struct {
-	u_short	  port;		/* Port to forward. */
-	char	 *host;		/* Host to connect. */
-	u_short	  host_port;	/* Port to connect on host. */
+	char	 *listen_host;		/* Host (address) to listen on. */
+	u_short	  listen_port;		/* Port to forward. */
+	char	 *connect_host;		/* Host to connect. */
+	u_short	  connect_port;		/* Port to connect on connect_host. */
 }       Forward;
 /* Data structure for representing option data. */
 
@@ -46,6 +47,7 @@ typedef struct {
 	int     gss_authentication;	/* Try GSS authentication */
 	int	gss_keyex;
 	int     gss_deleg_creds;	/* Delegate GSS credentials */
+	int	gss_trust_dns;		/* Trust DNS for GSS canonicalization */
 	int     password_authentication;	/* Try password
 						 * authentication. */
 	int     kbd_interactive_authentication; /* Try keyboard-interactive auth. */
@@ -57,6 +59,7 @@ typedef struct {
 	int     compression_level;	/* Compression level 1 (fast) to 9
 					 * (best). */
 	int     tcp_keep_alive;	/* Set SO_KEEPALIVE. */
+        int     tcp_rcv_buf; /* user switch to set tcp recv buffer */
 	LogLevel log_level;	/* Level for logging. */
 
 	int     port;		/* Port to connect. */
@@ -104,6 +107,7 @@ typedef struct {
 
 	int	enable_ssh_keysign;
 	int	rekey_limit;
+	int	none_switch;
 	int	no_host_authentication_for_localhost;
 	int	identities_only;
 	int	server_alive_interval;
@@ -114,17 +118,25 @@ typedef struct {
 
 	char	*control_path;
 	int	control_master;
+
+	int	hash_known_hosts;
 }       Options;
 
+#define SSHCTL_MASTER_NO	0
+#define SSHCTL_MASTER_YES	1
+#define SSHCTL_MASTER_AUTO	2
+#define SSHCTL_MASTER_ASK	3
+#define SSHCTL_MASTER_AUTO_ASK	4
 
 void     initialize_options(Options *);
 void     fill_default_options(Options *);
 int	 read_config_file(const char *, const char *, Options *, int);
+int	 parse_forward(Forward *, const char *);
 
 int
 process_config_line(Options *, const char *, char *, const char *, int, int *);
 
-void	 add_local_forward(Options *, u_short, const char *, u_short);
-void	 add_remote_forward(Options *, u_short, const char *, u_short);
+void	 add_local_forward(Options *, const Forward *);
+void	 add_remote_forward(Options *, const Forward *);
 
 #endif				/* READCONF_H */

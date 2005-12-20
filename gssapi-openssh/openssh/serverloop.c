@@ -35,7 +35,7 @@
  */
 
 #include "includes.h"
-RCSID("$OpenBSD: serverloop.c,v 1.117 2004/08/11 21:43:05 avsm Exp $");
+RCSID("$OpenBSD: serverloop.c,v 1.118 2005/07/17 07:17:55 djm Exp $");
 
 #include "xmalloc.h"
 #include "packet.h"
@@ -865,7 +865,7 @@ server_request_direct_tcpip(void)
 	packet_check_eom();
 
 	debug("server_request_direct_tcpip: originator %s port %d, target %s port %d",
-	   originator, originator_port, target, target_port);
+	    originator, originator_port, target, target_port);
 
 	/* XXX check permission */
 	sock = channel_connect_to(target, target_port);
@@ -895,6 +895,8 @@ server_request_session(void)
 	c = channel_new("session", SSH_CHANNEL_LARVAL,
 	    -1, -1, -1, /*window size*/0, CHAN_SES_PACKET_DEFAULT,
 	    0, "server-session", 1);
+	if (!(datafellows & SSH_BUG_LARGEWINDOW))
+		c->dynamic_window = 1;
 	if (session_open(the_authctxt, c->self) != 1) {
 		debug("session open failed, free channel %d", c->self);
 		channel_free(c);
@@ -983,7 +985,7 @@ server_input_global_request(int type, u_int32_t seq, void *ctxt)
 #ifndef NO_IPPORT_RESERVED_CONCEPT
 		    || (listen_port < IPPORT_RESERVED && pw->pw_uid != 0)
 #endif
-		   ) {
+		    ) {
 			success = 0;
 			packet_send_debug("Server has disabled port forwarding.");
 		} else {

@@ -33,7 +33,7 @@
  */
 
 #include "includes.h"
-RCSID("$OpenBSD: session.c,v 1.180 2004/07/28 09:40:29 markus Exp $");
+RCSID("$OpenBSD: session.c,v 1.186 2005/07/25 11:59:40 markus Exp $");
 
 #include "ssh.h"
 #include "ssh1.h"
@@ -56,6 +56,7 @@ RCSID("$OpenBSD: session.c,v 1.180 2004/07/28 09:40:29 markus Exp $");
 #include "serverloop.h"
 #include "canohost.h"
 #include "session.h"
+#include "kex.h"
 #include "monitor_wrap.h"
 
 #if defined(KRB5) && defined(USE_AFS)
@@ -201,11 +202,11 @@ auth_input_request_forwarding(struct passwd * pw)
 static void
 display_loginmsg(void)
 {
-        if (buffer_len(&loginmsg) > 0) {
-                buffer_append(&loginmsg, "\0", 1);
-                printf("%s", (char *)buffer_ptr(&loginmsg));
-                buffer_clear(&loginmsg);
-        }
+	if (buffer_len(&loginmsg) > 0) {
+		buffer_append(&loginmsg, "\0", 1);
+		printf("%s", (char *)buffer_ptr(&loginmsg));
+		buffer_clear(&loginmsg);
+	}
 }
 
 void
@@ -265,6 +266,10 @@ do_authenticated1(Authctxt *authctxt)
 	u_int proto_len, data_len, dlen, compression_level = 0;
 
 	s = session_new();
+	if (s == NULL) {
+		error("no more sessions");
+		return;
+	}
 	s->authctxt = authctxt;
 	s->pw = authctxt->pw;
 
@@ -288,7 +293,7 @@ do_authenticated1(Authctxt *authctxt)
 				    compression_level);
 				break;
 			}
-			if (!options.compression) {
+			if (options.compression == COMP_NONE) {
 				debug2("compression disabled");
 				break;
 			}
@@ -701,11 +706,15 @@ do_exec(Session *s, const char *command)
 	}
 #endif
 
-#ifdef GSSAPI
-	if (options.gss_authentication) {
-		temporarily_use_uid(s->pw);
-		ssh_gssapi_storecreds();
-		restore_uid();
+#ifdef SSH_AUDIT_EVENTS
+	if (command != NULL)
+		PRIVSEP(audit_run_command(command));
+	else if (s->ttyfd == -1) {
+		char *shell = s->pw->pw_shell;
+
+		if (shell[0] == '\0')	/* empty shell means /bin/sh */
+			shell =_PATH_BSHELL;
+		PRIVSEP(audit_run_command(shell));
 	}
 #endif
 
@@ -1089,7 +1098,8 @@ read_etc_default_login(char ***env, u_int *envsize, uid_t uid)
 }
 #endif /* HAVE_ETC_DEFAULT_LOGIN */
 
-void copy_environment(char **source, char ***env, u_int *envsize)
+void
+copy_environment(char **source, char ***env, u_int *envsize)
 {
 	char *var_name, *var_val;
 	int i;
@@ -1130,7 +1140,13 @@ do_setup_env(Session *s, const char *shell)
 	 * The Windows environment contains some setting which are
 	 * important for a running system. They must not be dropped.
 	 */
-	copy_environment(environ, &env, &envsize);
+	{
+		char **p;
+
+		p = fetch_windows_environment();
+		copy_environment(p, &env, &envsize);
+		free_windows_environment(p);
+	}
 #endif
 
 #ifdef GSSAPI
@@ -1251,14 +1267,24 @@ do_setup_env(Session *s, const char *shell)
 		child_set_env(&env, &envsize, "TMPDIR", cray_tmpdir);
 #endif /* _UNICOS */
 
+	/*
+	 * Since we clear KRB5CCNAME at startup, if it's set now then it
+	 * must have been set by a native authentication method (eg AIX or
+	 * SIA), so copy it to the child.
+	 */
+	{
+		char *cp;
+
+		if ((cp = getenv("KRB5CCNAME")) != NULL)
+			child_set_env(&env, &envsize, "KRB5CCNAME", cp);
+	}
+
 #ifdef _AIX
 	{
 		char *cp;
 
 		if ((cp = getenv("AUTHSTATE")) != NULL)
 			child_set_env(&env, &envsize, "AUTHSTATE", cp);
-		if ((cp = getenv("KRB5CCNAME")) != NULL)
-			child_set_env(&env, &envsize, "KRB5CCNAME", cp);
 		read_environment_file(&env, &envsize, "/etc/environment");
 	}
 #endif
@@ -1419,6 +1445,13 @@ do_setusercontext(struct passwd *pw)
 # ifdef __bsdi__
 		setpgid(0, 0);
 # endif
+#ifdef GSSAPI
+		if (options.gss_authentication) {
+			temporarily_use_uid(pw);
+			ssh_gssapi_storecreds();
+			restore_uid();
+		}
+#endif
 # ifdef USE_PAM
 		if (options.use_pam) {
 			do_pam_session();
@@ -1449,6 +1482,13 @@ do_setusercontext(struct passwd *pw)
 			exit(1);
 		}
 		endgrent();
+#ifdef GSSAPI
+		if (options.gss_authentication) {
+			temporarily_use_uid(pw);
+			ssh_gssapi_storecreds();
+			restore_uid();
+		}
+#endif
 # ifdef USE_PAM
 		/*
 		 * PAM credentials may take the form of supplementary groups.
@@ -1466,6 +1506,11 @@ do_setusercontext(struct passwd *pw)
 # ifdef _AIX
 		aix_usrinfo(pw);
 # endif /* _AIX */
+#if defined(HAVE_LIBIAF)  &&  !defined(BROKEN_LIBIAF)
+		if (set_id(pw->pw_name) != 0) {
+			exit(1);
+		}
+#endif /* HAVE_LIBIAF  && !BROKEN_LIBIAF */
 		/* Permanently switch to the desired uid. */
 		permanently_set_uid(pw);
 #endif
@@ -1486,7 +1531,12 @@ do_pwchange(Session *s)
 	if (s->ttyfd != -1) {
 		fprintf(stderr,
 		    "You must change your password now and login again!\n");
+#ifdef PASSWD_NEEDS_USERNAME
+		execl(_PATH_PASSWD_PROG, "passwd", s->pw->pw_name,
+		    (char *)NULL);
+#else
 		execl(_PATH_PASSWD_PROG, "passwd", (char *)NULL);
+#endif
 		perror("passwd");
 	} else {
 		fprintf(stderr,
@@ -1612,10 +1662,18 @@ do_child(Session *s, const char *command)
 		 * generated messages, so if this in an interactive
 		 * login then display them too.
 		 */
-		if (command == NULL)
+		if (!check_quietlogin(s, command))
 			display_loginmsg();
 #endif /* HAVE_OSF_SIA */
 	}
+
+#ifdef USE_PAM
+	if (options.use_pam && !options.use_login && !is_pam_session_open()) {
+		debug3("PAM session not opened, exiting");
+		display_loginmsg();
+		exit(254);
+	}
+#endif
 
 	/*
 	 * Get the shell from the password data.  An empty shell field is
@@ -1662,7 +1720,7 @@ do_child(Session *s, const char *command)
 	 */
 
 	if (options.kerberos_get_afs_token && k_hasafs() &&
-	     (s->authctxt->krb5_ctx != NULL)) {
+	    (s->authctxt->krb5_ctx != NULL)) {
 		char cell[64];
 
 		debug("Getting AFS token");
@@ -1801,6 +1859,7 @@ session_new(void)
 			s->ttyfd = -1;
 			s->used = 1;
 			s->self = i;
+			s->x11_chanids = NULL;
 			debug("session_new: session %d", i);
 			return s;
 		}
@@ -1869,6 +1928,29 @@ session_by_channel(int id)
 		}
 	}
 	debug("session_by_channel: unknown channel %d", id);
+	session_dump();
+	return NULL;
+}
+
+static Session *
+session_by_x11_channel(int id)
+{
+	int i, j;
+
+	for (i = 0; i < MAX_SESSIONS; i++) {
+		Session *s = &sessions[i];
+
+		if (s->x11_chanids == NULL || !s->used)
+			continue;
+		for (j = 0; s->x11_chanids[j] != -1; j++) {
+			if (s->x11_chanids[j] == id) {
+				debug("session_by_x11_channel: session %d "
+				    "channel %d", s->self, id);
+				return s;
+			}
+		}
+	}
+	debug("session_by_x11_channel: unknown channel %d", id);
 	session_dump();
 	return NULL;
 }
@@ -1968,7 +2050,7 @@ session_subsystem_req(Session *s)
 	u_int len;
 	int success = 0;
 	char *cmd, *subsys = packet_get_string(&len);
-	int i;
+	u_int i;
 
 	packet_check_eom();
 	logit("subsystem request for %.100s", subsys);
@@ -2002,6 +2084,11 @@ session_x11_req(Session *s)
 {
 	int success;
 
+	if (s->auth_proto != NULL || s->auth_data != NULL) {
+		error("session_x11_req: session %d: "
+		    "x11 fowarding already active", s->self);
+		return 0;
+	}
 	s->single_connection = packet_get_char();
 	s->auth_proto = packet_get_string(NULL);
 	s->auth_data = packet_get_string(NULL);
@@ -2227,9 +2314,66 @@ sig2name(int sig)
 }
 
 static void
+session_close_x11(int id)
+{
+	Channel *c;
+
+	if ((c = channel_lookup(id)) == NULL) {
+		debug("session_close_x11: x11 channel %d missing", id);
+	} else {
+		/* Detach X11 listener */
+		debug("session_close_x11: detach x11 channel %d", id);
+		channel_cancel_cleanup(id);
+		if (c->ostate != CHAN_OUTPUT_CLOSED)
+			chan_mark_dead(c);
+	}
+}
+
+static void
+session_close_single_x11(int id, void *arg)
+{
+	Session *s;
+	u_int i;
+
+	debug3("session_close_single_x11: channel %d", id);
+	channel_cancel_cleanup(id);
+	if ((s  = session_by_x11_channel(id)) == NULL)
+		fatal("session_close_single_x11: no x11 channel %d", id);
+	for (i = 0; s->x11_chanids[i] != -1; i++) {
+		debug("session_close_single_x11: session %d: "
+		    "closing channel %d", s->self, s->x11_chanids[i]);
+		/*
+		 * The channel "id" is already closing, but make sure we
+		 * close all of its siblings.
+		 */
+		if (s->x11_chanids[i] != id)
+			session_close_x11(s->x11_chanids[i]);
+	}
+	xfree(s->x11_chanids);
+	s->x11_chanids = NULL;
+	if (s->display) {
+		xfree(s->display);
+		s->display = NULL;
+	}
+	if (s->auth_proto) {
+		xfree(s->auth_proto);
+		s->auth_proto = NULL;
+	}
+	if (s->auth_data) {
+		xfree(s->auth_data);
+		s->auth_data = NULL;
+	}
+	if (s->auth_display) {
+		xfree(s->auth_display);
+		s->auth_display = NULL;
+	}
+}
+
+static void
 session_exit_message(Session *s, int status)
 {
 	Channel *c;
+	u_int i;
 
 	if ((c = channel_lookup(s->chanid)) == NULL)
 		fatal("session_exit_message: session %d: no channel %d",
@@ -2269,12 +2413,20 @@ session_exit_message(Session *s, int status)
 	if (c->ostate != CHAN_OUTPUT_CLOSED)
 		chan_write_failed(c);
 	s->chanid = -1;
+
+	/* Close any X11 listeners associated with this session */
+	if (s->x11_chanids != NULL) {
+		for (i = 0; s->x11_chanids[i] != -1; i++) {
+			session_close_x11(s->x11_chanids[i]);
+			s->x11_chanids[i] = -1;
+		}
+	}
 }
 
 void
 session_close(Session *s)
 {
-	int i;
+	u_int i;
 
 	debug("session_close: session %d pid %ld", s->self, (long)s->pid);
 	if (s->ttyfd != -1)
@@ -2283,6 +2435,8 @@ session_close(Session *s)
 		xfree(s->term);
 	if (s->display)
 		xfree(s->display);
+	if (s->x11_chanids)
+		xfree(s->x11_chanids);
 	if (s->auth_display)
 		xfree(s->auth_display);
 	if (s->auth_data)
@@ -2321,6 +2475,7 @@ void
 session_close_by_channel(int id, void *arg)
 {
 	Session *s = session_by_channel(id);
+
 	if (s == NULL) {
 		debug("session_close_by_channel: no session for id %d", id);
 		return;
@@ -2401,6 +2556,7 @@ session_setup_x11fwd(Session *s)
 	struct stat st;
 	char display[512], auth_display[512];
 	char hostname[MAXHOSTNAMELEN];
+	u_int i;
 
 	if (no_x11_forwarding_flag) {
 		packet_send_debug("X11 forwarding disabled in user configuration file.");
@@ -2426,9 +2582,13 @@ session_setup_x11fwd(Session *s)
 	}
 	if (x11_create_display_inet(options.x11_display_offset,
 	    options.x11_use_localhost, s->single_connection,
-	    &s->display_number) == -1) {
+	    &s->display_number, &s->x11_chanids) == -1) {
 		debug("x11_create_display_inet failed.");
 		return 0;
+	}
+	for (i = 0; s->x11_chanids[i] != -1; i++) {
+		channel_register_cleanup(s->x11_chanids[i],
+		    session_close_single_x11);
 	}
 
 	/* Set up a suitable value for the DISPLAY variable. */

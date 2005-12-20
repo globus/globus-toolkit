@@ -32,6 +32,9 @@ RCSID("$Id$");
 #include "buffer.h"
 #include "log.h"
 
+#ifdef DAY
+# undef DAY
+#endif
 #define DAY	(24L * 60 * 60) /* 1 day in seconds */
 
 extern Buffer loginmsg;
@@ -98,7 +101,7 @@ auth_shadow_pwexpired(Authctxt *ctxt)
 #if defined(__hpux) && !defined(HAVE_SECUREWARE)
 	if (iscomsec()) {
 		struct pr_passwd *pr;
-		       
+
 		pr = getprpwnam((char *)user);
 
 		/* Test for Trusted Mode expiry disabled */

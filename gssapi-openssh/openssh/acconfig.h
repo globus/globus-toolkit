@@ -52,9 +52,6 @@
 #undef SPT_TYPE
 #undef SPT_PADCHAR
 
-/* setgroups() NOOP allowed */
-#undef SETGROUPS_NOOP
-
 /* SCO workaround */
 #undef BROKEN_SYS_TERMIO_H
 
@@ -121,9 +118,6 @@
 
 /* Define if you are on NeXT */
 #undef HAVE_NEXT
-
-/* Define if you are on NEWS-OS */
-#undef HAVE_NEWS4
 
 /* Define if you want to enable PAM support */
 #undef USE_PAM
@@ -207,9 +201,6 @@
 
 /* Define if you don't want to use lastlog in session.c */
 #undef NO_SSH_LASTLOG
-
-/* Define if have krb5_init_ets */
-#undef KRB5_INIT_ETS
 
 /* Define if you don't want to use utmp */
 #undef DISABLE_UTMP
@@ -368,6 +359,12 @@
 
 /* getaddrinfo is broken (if present) */
 #undef BROKEN_GETADDRINFO
+
+/* platform uses an in-memory credentials cache */
+#undef USE_CCAPI
+
+/* platform has a Security Authorization Session API */
+#undef USE_SECURITY_SESSION_API
 
 /* updwtmpx is broken (if present) */
 #undef BROKEN_UPDWTMPX

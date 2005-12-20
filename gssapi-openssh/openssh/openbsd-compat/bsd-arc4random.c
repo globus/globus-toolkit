@@ -34,7 +34,8 @@ RCSID("$Id$");
 static int rc4_ready = 0;
 static RC4_KEY rc4;
 
-unsigned int arc4random(void)
+unsigned int
+arc4random(void)
 {
 	unsigned int r = 0;
 	static int first_time = 1;
@@ -53,7 +54,8 @@ unsigned int arc4random(void)
 	return(r);
 }
 
-void arc4random_stir(void)
+void
+arc4random_stir(void)
 {
 	unsigned char rand_buf[SEED_SIZE];
 	int i;

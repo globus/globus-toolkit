@@ -45,5 +45,6 @@ void free_pam_environment(char **);
 void sshpam_thread_cleanup(void);
 void sshpam_cleanup(void);
 int sshpam_auth_passwd(Authctxt *, const char *);
+int is_pam_session_open(void);
 
 #endif /* USE_PAM */

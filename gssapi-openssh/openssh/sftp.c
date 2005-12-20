@@ -16,7 +16,13 @@
 
 #include "includes.h"
 
-RCSID("$OpenBSD: sftp.c,v 1.56 2004/07/11 17:48:47 deraadt Exp $");
+RCSID("$OpenBSD: sftp.c,v 1.66 2005/08/08 13:22:48 jaredy Exp $");
+
+#ifdef USE_LIBEDIT
+#include <histedit.h>
+#else
+typedef void EditLine;
+#endif
 
 #include "buffer.h"
 #include "xmalloc.h"
@@ -144,8 +150,10 @@ int interactive_loop(int fd_in, int fd_out, char *file1, char *file2);
 static void
 killchild(int signo)
 {
-	if (sshpid > 1)
+	if (sshpid > 1) {
 		kill(sshpid, SIGTERM);
+		waitpid(sshpid, NULL, 0);
+	}
 
 	_exit(1);
 }
@@ -154,9 +162,11 @@ static void
 cmd_interrupt(int signo)
 {
 	const char msg[] = "\rInterrupt  \n";
+	int olderrno = errno;
 
 	write(STDERR_FILENO, msg, sizeof(msg) - 1);
 	interrupted = 1;
+	errno = olderrno;
 }
 
 static void
@@ -256,7 +266,7 @@ path_strip(char *path, char *strip)
 		return (xstrdup(path));
 
 	len = strlen(strip);
-	if (strip != NULL && strncmp(path, strip, len) == 0) {
+	if (strncmp(path, strip, len) == 0) {
 		if (strip[len - 1] != '/' && path[len] == '/')
 			len++;
 		return (xstrdup(path + len));
@@ -347,7 +357,7 @@ parse_ls_flags(const char **cpp, int *lflag)
 
 	/* Check for flags */
 	if (cp++[0] == '-') {
-		for(; strchr(WHITESPACE, *cp) == NULL; cp++) {
+		for (; strchr(WHITESPACE, *cp) == NULL; cp++) {
 			switch (*cp) {
 			case 'l':
 				*lflag &= ~VIEW_FLAGS;
@@ -394,7 +404,7 @@ get_pathname(const char **cpp, char **path)
 {
 	const char *cp = *cpp, *end;
 	char quot;
-	int i, j;
+	u_int i, j;
 
 	cp += strspn(cp, WHITESPACE);
 	if (!*cp) {
@@ -654,14 +664,15 @@ sdirent_comp(const void *aa, const void *bb)
 static int
 do_ls_dir(struct sftp_conn *conn, char *path, char *strip_path, int lflag)
 {
-	int n, c = 1, colspace = 0, columns = 1;
+	int n;
+	u_int c = 1, colspace = 0, columns = 1;
 	SFTP_DIRENT **d;
 
 	if ((n = do_readdir(conn, path, &d)) != 0)
 		return (n);
 
 	if (!(lflag & LS_SHORT_VIEW)) {
-		int m = 0, width = 80;
+		u_int m = 0, width = 80;
 		struct winsize ws;
 		char *tmp;
 
@@ -737,13 +748,15 @@ do_globbed_ls(struct sftp_conn *conn, char *path, char *strip_path,
     int lflag)
 {
 	glob_t g;
-	int i, c = 1, colspace = 0, columns = 1;
-	Attrib *a;
+	u_int i, c = 1, colspace = 0, columns = 1;
+	Attrib *a = NULL;
 
 	memset(&g, 0, sizeof(g));
 
 	if (remote_glob(conn, path, GLOB_MARK|GLOB_NOCHECK|GLOB_BRACE,
-	    NULL, &g)) {
+	    NULL, &g) || (g.gl_pathc && !g.gl_matchc)) {
+		if (g.gl_pathc)
+			globfree(&g);
 		error("Can't ls: \"%s\" not found", path);
 		return (-1);
 	}
@@ -752,24 +765,26 @@ do_globbed_ls(struct sftp_conn *conn, char *path, char *strip_path,
 		goto out;
 
 	/*
-	 * If the glob returns a single match, which is the same as the
-	 * input glob, and it is a directory, then just list its contents
+	 * If the glob returns a single match and it is a directory,
+	 * then just list its contents.
 	 */
-	if (g.gl_pathc == 1 &&
-	    strncmp(path, g.gl_pathv[0], strlen(g.gl_pathv[0]) - 1) == 0) {
-		if ((a = do_lstat(conn, path, 1)) == NULL) {
+	if (g.gl_matchc == 1) {
+		if ((a = do_lstat(conn, g.gl_pathv[0], 1)) == NULL) {
 			globfree(&g);
 			return (-1);
 		}
 		if ((a->flags & SSH2_FILEXFER_ATTR_PERMISSIONS) &&
 		    S_ISDIR(a->perm)) {
+			int err;
+
+			err = do_ls_dir(conn, g.gl_pathv[0], strip_path, lflag);
 			globfree(&g);
-			return (do_ls_dir(conn, path, strip_path, lflag));
+			return (err);
 		}
 	}
 
 	if (!(lflag & LS_SHORT_VIEW)) {
-		int m = 0, width = 80;
+		u_int m = 0, width = 80;
 		struct winsize ws;
 
 		/* Count entries for sort and find longest filename */
@@ -784,7 +799,7 @@ do_globbed_ls(struct sftp_conn *conn, char *path, char *strip_path,
 		colspace = width / columns;
 	}
 
-	for (i = 0; g.gl_pathv[i] && !interrupted; i++) {
+	for (i = 0; g.gl_pathv[i] && !interrupted; i++, a = NULL) {
 		char *fname;
 
 		fname = path_strip(g.gl_pathv[i], strip_path);
@@ -801,7 +816,8 @@ do_globbed_ls(struct sftp_conn *conn, char *path, char *strip_path,
 			 * that the server returns as well as the filenames.
 			 */
 			memset(&sb, 0, sizeof(sb));
-			a = do_lstat(conn, g.gl_pathv[i], 1);
+			if (a == NULL)
+				a = do_lstat(conn, g.gl_pathv[i], 1);
 			if (a != NULL)
 				attrib_to_stat(a, &sb);
 			lname = ls_file(fname, &sb, 1);
@@ -1206,6 +1222,14 @@ parse_dispatch_command(struct sftp_conn *conn, const char *cmd, char **pwd,
 	return (0);
 }
 
+#ifdef USE_LIBEDIT
+static char *
+prompt(EditLine *el)
+{
+	return ("sftp> ");
+}
+#endif
+
 int
 interactive_loop(int fd_in, int fd_out, char *file1, char *file2)
 {
@@ -1213,7 +1237,28 @@ interactive_loop(int fd_in, int fd_out, char *file1, char *file2)
 	char *dir = NULL;
 	char cmd[2048];
 	struct sftp_conn *conn;
-	int err;
+	int err, interactive;
+	EditLine *el = NULL;
+#ifdef USE_LIBEDIT
+	History *hl = NULL;
+	HistEvent hev;
+	extern char *__progname;
+
+	if (!batchmode && isatty(STDIN_FILENO)) {
+		if ((el = el_init(__progname, stdin, stdout, stderr)) == NULL)
+			fatal("Couldn't initialise editline");
+		if ((hl = history_init()) == NULL)
+			fatal("Couldn't initialise editline history");
+		history(hl, &hev, H_SETSIZE, 100);
+		el_set(el, EL_HIST, history, hl);
+
+		el_set(el, EL_PROMPT, prompt);
+		el_set(el, EL_EDITOR, "emacs");
+		el_set(el, EL_TERMINAL, NULL);
+		el_set(el, EL_SIGNAL, 1);
+		el_source(el, NULL);
+	}
+#endif /* USE_LIBEDIT */
 
 	conn = do_init(fd_in, fd_out, copy_buffer_len, num_requests);
 	if (conn == NULL)
@@ -1230,8 +1275,11 @@ interactive_loop(int fd_in, int fd_out, char *file1, char *file2)
 		if (remote_is_dir(conn, dir) && file2 == NULL) {
 			printf("Changing to: %s\n", dir);
 			snprintf(cmd, sizeof cmd, "cd \"%s\"", dir);
-			if (parse_dispatch_command(conn, cmd, &pwd, 1) != 0)
+			if (parse_dispatch_command(conn, cmd, &pwd, 1) != 0) {
+				xfree(dir);
+				xfree(pwd);
 				return (-1);
+			}
 		} else {
 			if (file2 == NULL)
 				snprintf(cmd, sizeof cmd, "get %s", dir);
@@ -1247,30 +1295,51 @@ interactive_loop(int fd_in, int fd_out, char *file1, char *file2)
 		xfree(dir);
 	}
 
-#if HAVE_SETVBUF
+#if defined(HAVE_SETVBUF) && !defined(BROKEN_SETVBUF)
 	setvbuf(stdout, NULL, _IOLBF, 0);
 	setvbuf(infile, NULL, _IOLBF, 0);
 #else
-       setlinebuf(stdout);
-       setlinebuf(infile);
+	setlinebuf(stdout);
+	setlinebuf(infile);
 #endif
 
+	interactive = !batchmode && isatty(STDIN_FILENO);
 	err = 0;
 	for (;;) {
 		char *cp;
 
 		signal(SIGINT, SIG_IGN);
 
-		printf("sftp> ");
+		if (el == NULL) {
+			if (interactive)
+				printf("sftp> ");
+			if (fgets(cmd, sizeof(cmd), infile) == NULL) {
+				if (interactive)
+					printf("\n");
+				break;
+			}
+			if (!interactive) { /* Echo command */
+				printf("sftp> %s", cmd);
+				if (strlen(cmd) > 0 &&
+				    cmd[strlen(cmd) - 1] != '\n')
+					printf("\n");
+			}
+		} else {
+#ifdef USE_LIBEDIT
+			const char *line;
+			int count = 0;
 
-		/* XXX: use libedit */
-		if (fgets(cmd, sizeof(cmd), infile) == NULL) {
-			printf("\n");
-			break;
+			if ((line = el_gets(el, &count)) == NULL || count <= 0) {
+				printf("\n");
+ 				break;
+			}
+			history(hl, &hev, H_ENTER, line);
+			if (strlcpy(cmd, line, sizeof(cmd)) >= sizeof(cmd)) {
+				fprintf(stderr, "Error: input line too long\n");
+				continue;
+			}
+#endif /* USE_LIBEDIT */
 		}
-
-		if (batchmode) /* Echo command */
-			printf("%s", cmd);
 
 		cp = strrchr(cmd, '\n');
 		if (cp)
@@ -1285,6 +1354,11 @@ interactive_loop(int fd_in, int fd_out, char *file1, char *file2)
 			break;
 	}
 	xfree(pwd);
+
+#ifdef USE_LIBEDIT
+	if (el != NULL)
+		el_end(el);
+#endif /* USE_LIBEDIT */
 
 	/* err == 1 signifies normal "quit" exit */
 	return (err >= 0 ? 0 : -1);
@@ -1418,10 +1492,11 @@ main(int argc, char **argv)
 
 			/* Allow "-" as stdin */
 			if (strcmp(optarg, "-") != 0 &&
-			   (infile = fopen(optarg, "r")) == NULL)
+			    (infile = fopen(optarg, "r")) == NULL)
 				fatal("%s (%s).", strerror(errno), optarg);
 			showprogress = 0;
 			batchmode = 1;
+			addargs(&args, "-obatchmode yes");
 			break;
 		case 'P':
 			sftp_direct = optarg;
@@ -1503,8 +1578,8 @@ main(int argc, char **argv)
 	err = interactive_loop(in, out, file1, file2);
 
 #if !defined(USE_PIPES)
-       shutdown(in, SHUT_RDWR);
-       shutdown(out, SHUT_RDWR);
+	shutdown(in, SHUT_RDWR);
+	shutdown(out, SHUT_RDWR);
 #endif
 
 	close(in);

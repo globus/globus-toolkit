@@ -36,7 +36,7 @@
  */
 
 #include "includes.h"
-RCSID("$OpenBSD: authfile.c,v 1.57 2004/06/21 17:36:31 avsm Exp $");
+RCSID("$OpenBSD: authfile.c,v 1.61 2005/06/17 02:44:32 djm Exp $");
 
 #include <openssl/err.h>
 #include <openssl/evp.h>
@@ -51,6 +51,8 @@ RCSID("$OpenBSD: authfile.c,v 1.57 2004/06/21 17:36:31 avsm Exp $");
 #include "log.h"
 #include "authfile.h"
 #include "rsa.h"
+#include "misc.h"
+#include "atomicio.h"
 
 /* Version identification string for SSH v1 identity files. */
 static const char authfile_id_string[] =
@@ -146,8 +148,8 @@ key_save_private_rsa1(Key *key, const char *filename, const char *passphrase,
 		buffer_free(&encrypted);
 		return 0;
 	}
-	if (write(fd, buffer_ptr(&encrypted), buffer_len(&encrypted)) !=
-	    buffer_len(&encrypted)) {
+	if (atomicio(vwrite, fd, buffer_ptr(&encrypted),
+	    buffer_len(&encrypted)) != buffer_len(&encrypted)) {
 		error("write to key file %s failed: %s", filename,
 		    strerror(errno));
 		buffer_free(&encrypted);
@@ -235,7 +237,7 @@ key_load_public_rsa1(int fd, const char *filename, char **commentp)
 	Key *pub;
 	struct stat st;
 	char *cp;
-	int i;
+	u_int i;
 	size_t len;
 
 	if (fstat(fd, &st) < 0) {
@@ -243,14 +245,16 @@ key_load_public_rsa1(int fd, const char *filename, char **commentp)
 		    filename, strerror(errno));
 		return NULL;
 	}
-	if (st.st_size > 1*1024*1024)
-		close(fd);
+	if (st.st_size > 1*1024*1024) {
+		error("key file %.200s too large", filename);
+		return NULL;
+	}
 	len = (size_t)st.st_size;		/* truncated */
 
 	buffer_init(&buffer);
 	cp = buffer_append_space(&buffer, len);
 
-	if (read(fd, cp, (size_t) len) != (size_t) len) {
+	if (atomicio(read, fd, cp, len) != len) {
 		debug("Read from key file %.200s failed: %.100s", filename,
 		    strerror(errno));
 		buffer_free(&buffer);
@@ -319,7 +323,8 @@ static Key *
 key_load_private_rsa1(int fd, const char *filename, const char *passphrase,
     char **commentp)
 {
-	int i, check1, check2, cipher_type;
+	u_int i;
+	int check1, check2, cipher_type;
 	size_t len;
 	Buffer buffer, decrypted;
 	u_char *cp;
@@ -335,6 +340,7 @@ key_load_private_rsa1(int fd, const char *filename, const char *passphrase,
 		return NULL;
 	}
 	if (st.st_size > 1*1024*1024) {
+		error("key file %.200s too large", filename);
 		close(fd);
 		return (NULL);
 	}
@@ -343,7 +349,7 @@ key_load_private_rsa1(int fd, const char *filename, const char *passphrase,
 	buffer_init(&buffer);
 	cp = buffer_append_space(&buffer, len);
 
-	if (read(fd, cp, (size_t) len) != (size_t) len) {
+	if (atomicio(read, fd, cp, len) != len) {
 		debug("Read from key file %.200s failed: %.100s", filename,
 		    strerror(errno));
 		buffer_free(&buffer);
@@ -598,13 +604,14 @@ static int
 key_try_load_public(Key *k, const char *filename, char **commentp)
 {
 	FILE *f;
-	char line[4096];
+	char line[SSH_MAX_PUBKEY_BYTES];
 	char *cp;
+	u_long linenum = 0;
 
 	f = fopen(filename, "r");
 	if (f != NULL) {
-		while (fgets(line, sizeof(line), f)) {
-			line[sizeof(line)-1] = '\0';
+		while (read_keyfile_line(f, filename, line, sizeof(line),
+			    &linenum) != -1) {
 			cp = line;
 			switch (*cp) {
 			case '#':

@@ -71,7 +71,7 @@
  */
 
 #include "includes.h"
-RCSID("$OpenBSD: scp.c,v 1.117 2004/08/11 21:44:32 avsm Exp $");
+RCSID("$OpenBSD: scp.c,v 1.125 2005/07/27 10:39:03 dtucker Exp $");
 
 #include "xmalloc.h"
 #include "atomicio.h"
@@ -108,10 +108,14 @@ pid_t do_cmd_pid = -1;
 static void
 killchild(int signo)
 {
-	if (do_cmd_pid > 1)
-		kill(do_cmd_pid, signo);
+	if (do_cmd_pid > 1) {
+		kill(do_cmd_pid, signo ? signo : SIGTERM);
+		waitpid(do_cmd_pid, NULL, 0);
+	}
 
-	_exit(1);
+	if (signo)
+		_exit(1);
+	exit(1);
 }
 
 /*
@@ -182,7 +186,7 @@ do_cmd(char *host, char *remuser, char *cmd, int *fdin, int *fdout, int argc)
 }
 
 typedef struct {
-	int cnt;
+	size_t cnt;
 	char *buf;
 } BUF;
 
@@ -229,7 +233,7 @@ main(int argc, char **argv)
 	addargs(&args, "-oClearAllForwardings yes");
 
 	fflag = tflag = 0;
-	while ((ch = getopt(argc, argv, "dfl:prtvBCc:i:P:q1246S:o:F:")) != -1)
+	while ((ch = getopt(argc, argv, "dfl:prtvBCc:i:P:q1246zS:o:F:w:")) != -1)
 		switch (ch) {
 		/* User-visible flags. */
 		case '1':
@@ -237,6 +241,7 @@ main(int argc, char **argv)
 		case '4':
 		case '6':
 		case 'C':
+		case 'z':	
 			addargs(&args, "-%c", ch);
 			break;
 		case 'o':
@@ -290,6 +295,9 @@ main(int argc, char **argv)
 			setmode(0, O_BINARY);
 #endif
 			break;
+		case 'w':
+		  addargs(&args, "-w%s", optarg);
+		  break;
 		default:
 			usage();
 		}
@@ -361,20 +369,21 @@ void
 toremote(char *targ, int argc, char **argv)
 {
 	int i, len;
-	char *bp, *host, *src, *suser, *thost, *tuser;
+	char *bp, *host, *src, *suser, *thost, *tuser, *arg;
 
 	*targ++ = 0;
 	if (*targ == 0)
 		targ = ".";
 
-	if ((thost = strrchr(argv[argc - 1], '@'))) {
+	arg = xstrdup(argv[argc - 1]);
+	if ((thost = strrchr(arg, '@'))) {
 		/* user@host */
 		*thost++ = 0;
-		tuser = argv[argc - 1];
+		tuser = arg;
 		if (*tuser == '\0')
 			tuser = NULL;
 	} else {
-		thost = argv[argc - 1];
+		thost = arg;
 		tuser = NULL;
 	}
 
@@ -501,9 +510,10 @@ source(int argc, char **argv)
 	struct stat stb;
 	static BUF buffer;
 	BUF *bp;
-	off_t i, amt, result, statbytes;
-	int fd, haderr, indx;
-	char *last, *name, buf[2048];
+	off_t i, amt, statbytes;
+	size_t result;
+	int fd = -1, haderr, indx;
+	char *last, *name, buf[16384];
 	int len;
 
 	for (indx = 0; indx < argc; ++indx) {
@@ -563,7 +573,11 @@ syserr:			run_err("%s: %s", name, strerror(errno));
 		(void) atomicio(vwrite, remout, buf, strlen(buf));
 		if (response() < 0)
 			goto next;
-		if ((bp = allocbuf(&buffer, fd, 2048)) == NULL) {
+		/* this change decreases the number of read/write syscalls*/
+		/* when scp acts as data source. this is the critical change*/
+		/* buf can actually remain at 2k but increasing both to 16k*/
+		/* seemed to make sense*/
+		if ((bp = allocbuf(&buffer, fd, sizeof(buf))) == NULL) {
 next:			(void) close(fd);
 			continue;
 		}
@@ -577,14 +591,14 @@ next:			(void) close(fd);
 			if (!haderr) {
 				result = atomicio(read, fd, bp->buf, amt);
 				if (result != amt)
-					haderr = result >= 0 ? EIO : errno;
+					haderr = errno;
 			}
 			if (haderr)
 				(void) atomicio(vwrite, remout, bp->buf, amt);
 			else {
 				result = atomicio(vwrite, remout, bp->buf, amt);
 				if (result != amt)
-					haderr = result >= 0 ? EIO : errno;
+					haderr = errno;
 				statbytes += result;
 			}
 			if (limit_rate)
@@ -719,16 +733,17 @@ sink(int argc, char **argv)
 		YES, NO, DISPLAYED
 	} wrerr;
 	BUF *bp;
-	off_t i, j;
-	int amt, count, exists, first, mask, mode, ofd, omode;
+	off_t i;
+	size_t j, count;
+	int amt, exists, first, mask, mode, ofd, omode;
 	off_t size, statbytes;
 	int setimes, targisdir, wrerrno = 0;
-	char ch, *cp, *np, *targ, *why, *vect[1], buf[2048];
+	char ch, *cp, *np, *targ, *why, *vect[1], buf[16384];
 	struct timeval tv[2];
 
 #define	atime	tv[0]
 #define	mtime	tv[1]
-#define	SCREWUP(str)	do { why = str; goto screwup; } while (0)
+#define	SCREWUP(str)	{ why = str; goto screwup; }
 
 	setimes = targisdir = 0;
 	mask = umask(0);
@@ -747,7 +762,7 @@ sink(int argc, char **argv)
 		targisdir = 1;
 	for (first = 1;; first = 0) {
 		cp = buf;
-		if (atomicio(read, remin, cp, 1) <= 0)
+		if (atomicio(read, remin, cp, 1) != 1)
 			return;
 		if (*cp++ == '\n')
 			SCREWUP("unexpected <newline>");
@@ -828,7 +843,7 @@ sink(int argc, char **argv)
 		}
 		if (targisdir) {
 			static char *namebuf;
-			static int cursize;
+			static size_t cursize;
 			size_t need;
 
 			need = strlen(targ) + strlen(cp) + 250;
@@ -884,7 +899,7 @@ bad:			run_err("%s: %s", np, strerror(errno));
 			continue;
 		}
 		(void) atomicio(vwrite, remout, "", 1);
-		if ((bp = allocbuf(&buffer, ofd, 4096)) == NULL) {
+		if ((bp = allocbuf(&buffer, ofd, sizeof(buf))) == NULL) {
 			(void) close(ofd);
 			continue;
 		}
@@ -894,14 +909,14 @@ bad:			run_err("%s: %s", np, strerror(errno));
 		statbytes = 0;
 		if (showprogress)
 			start_progress_meter(curfile, size, &statbytes);
-		for (count = i = 0; i < size; i += 4096) {
-			amt = 4096;
+		for (count = i = 0; i < size; i += sizeof(buf)) {
+			amt = sizeof(buf);
 			if (i + amt > size)
 				amt = size - i;
 			count += amt;
 			do {
 				j = atomicio(read, remin, cp, amt);
-				if (j <= 0) {
+				if (j == 0) {
 					run_err("%s", j ? strerror(errno) :
 					    "dropped connection");
 					exit(1);
@@ -912,15 +927,15 @@ bad:			run_err("%s: %s", np, strerror(errno));
 			} while (amt > 0);
 
 			if (limit_rate)
-				bwlimit(4096);
+				bwlimit(sizeof(buf));
 
 			if (count == bp->cnt) {
 				/* Keep reading so we stay sync'd up. */
 				if (wrerr == NO) {
-					j = atomicio(vwrite, ofd, bp->buf, count);
-					if (j != count) {
+					if (atomicio(vwrite, ofd, bp->buf,
+					    count) != count) {
 						wrerr = YES;
-						wrerrno = j >= 0 ? EIO : errno;
+						wrerrno = errno;
 					}
 				}
 				count = 0;
@@ -930,9 +945,9 @@ bad:			run_err("%s: %s", np, strerror(errno));
 		if (showprogress)
 			stop_progress_meter();
 		if (count != 0 && wrerr == NO &&
-		    (j = atomicio(vwrite, ofd, bp->buf, count)) != count) {
+		    atomicio(vwrite, ofd, bp->buf, count) != count) {
 			wrerr = YES;
-			wrerrno = j >= 0 ? EIO : errno;
+			wrerrno = errno;
 		}
 		if (wrerr == NO && ftruncate(ofd, size) != 0) {
 			run_err("%s: truncate: %s", np, strerror(errno));
@@ -1028,7 +1043,7 @@ usage(void)
 {
 	(void) fprintf(stderr,
 	    "usage: scp [-1246BCpqrv] [-c cipher] [-F ssh_config] [-i identity_file]\n"
-	    "           [-l limit] [-o ssh_option] [-P port] [-S program]\n"
+	    "           [-l limit] [-o ssh_option] [-P port] [-w buffer size] [-S program]\n"
 	    "           [[user@]host1:]file1 [...] [[user@]host2:]file2\n");
 	exit(1);
 }
@@ -1069,7 +1084,7 @@ verifydir(char *cp)
 		errno = ENOTDIR;
 	}
 	run_err("%s: %s", cp, strerror(errno));
-	exit(1);
+	killchild(0);
 }
 
 int
