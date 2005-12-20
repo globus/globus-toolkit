@@ -3,14 +3,14 @@
 
 <gpt_package_metadata Format_Version="0.02" Name="gsi_openssh_compat" >
 
-  <Aging_Version Major="3" Minor="5" Age="0" />
+  <Aging_Version Major="3" Minor="6" Age="0" />
   <Description>GSI-Enabled OpenSSH compat package</Description>
   <Functional_Group >gsi_openssh</Functional_Group>
   <Version_Stability Release="stable" />
 
   <src_pkg >
 
-    <Version_Label>GSI-OpenSSH 3.5 / OpenSSH 3.9p1</Version_Label>
+    <Version_Label>GSI-OpenSSH 3.6 / OpenSSH 4.2p1</Version_Label>
 
     <With_Flavors build="no" />
 
