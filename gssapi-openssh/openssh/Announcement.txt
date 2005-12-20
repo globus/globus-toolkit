@@ -1,10 +1,4 @@
-The GSI-OpenSSH development team announces the release of version 3.6 of
-the GSI-Enabled OpenSSH software distribution.  GSI-OpenSSH 3.6 is based
-on OpenSSH X.XpX and NCSA's latest GSI patch for that version of
-OpenSSH.  A summary of the major changes found in this version is given
-at the end of this document.
-
-GSI-OpenSSH 3.6 is available for download from
+GSI-OpenSSH 3.6, based on OpenSSH 4.2p1, is now available from
 
   <ftp://ftp.ncsa.uiuc.edu/aces/gssapi-openssh/bundle/3.6/>
 
@@ -13,19 +7,30 @@ For installation instructions, please see
   <http://grid.ncsa.uiuc.edu/ssh/install.html>
 
 We appreciate your feedback and help in testing this version.  Please
-use our bugzilla system to report GSI-OpenSSH bugs to the GSI-OpenSSH
-team.  This bugzilla system is located at:
+use our bugzilla system to report GSI-OpenSSH bugs:
 
-   <https://bugzilla.ncsa.uiuc.edu/index.cgi>
+  <http://bugzilla.ncsa.uiuc.edu/enter_bug.cgi?product=GSI-enabled%20OpenSSH>
 
 GSI-OpenSSH 3.6 Major changes
 
    New features
 
-      * Moved to OpenSSH X.XpX.
+      * Moved to OpenSSH 4.2p1.
 
-      * Enable PAM password authentication by default, unless PAM
+      * Incorporated openssh-4.2p1-gsskex-20050926-2.patch from Simon
+        Wilkinson adding support for gssapi-keyex authentication
+        method (http://www.sxw.org.uk/computing/patches/openssh.html).
+
+      * Incorporated High Performance Networking (HPN) patch
+        (openssh-4.2p1-hpn11-none.diff) from Pittsburgh Supercomputing
+        Center (http://www.psc.edu/networking/projects/hpn-ssh/) for
+        improved network throughput over long and high bandwidth
+        links.
+
+      * Enabled PAM password authentication by default, unless PAM
         library and headers are unusable.
 
    Bugs fixed
 
+      * Only delegate credentials if GSI authentication is used.
+        http://bugzilla.ncsa.uiuc.edu/show_bug.cgi?id=300
