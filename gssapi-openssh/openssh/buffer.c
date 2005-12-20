@@ -107,7 +107,7 @@ restart:
 	/* Increase the size of the buffer and retry. */
 
 	newlen = buffer->alloc + len + 32768;
-	if (newlen > BUFFER_MAX_LEN)
+	if (newlen > BUFFER_MAX_HPN_LEN)
 		fatal("buffer_append_space: alloc %u not supported",
 		    newlen);
 	buffer->buf = xrealloc(buffer->buf, newlen);

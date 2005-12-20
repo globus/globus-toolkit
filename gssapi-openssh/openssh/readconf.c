@@ -977,6 +977,7 @@ initialize_options(Options * options)
 	options->verify_host_key_dns = -1;
 	options->server_alive_interval = -1;
 	options->server_alive_count_max = -1;
+	options->none_switch = -1;
 	options->num_send_env = 0;
 	options->control_path = NULL;
 	options->control_master = -1;
@@ -1105,6 +1106,8 @@ fill_default_options(Options * options)
 		options->server_alive_interval = 0;
 	if (options->server_alive_count_max == -1)
 		options->server_alive_count_max = 3;
+	if (options->none_switch == -1)
+	        options->none_switch = 0;
 	if (options->control_master == -1)
 		options->control_master = 0;
 	if (options->hash_known_hosts == -1)

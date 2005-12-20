@@ -53,7 +53,7 @@ static void kex_kexinit_finish(Kex *);
 static void kex_choose_conf(Kex *);
 
 /* put algorithm proposal into buffer */
-static void
+void
 kex_prop2buf(Buffer *b, char *proposal[PROPOSAL_MAX])
 {
 	u_int i;

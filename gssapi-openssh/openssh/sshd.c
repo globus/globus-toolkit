@@ -381,7 +381,7 @@ sshd_exchange_identification(int sock_in, int sock_out)
 		major = PROTOCOL_MAJOR_1;
 		minor = PROTOCOL_MINOR_1;
 	}
-	snprintf(buf, sizeof buf, "SSH-%d.%d-%.100s\n", major, minor, SSH_VERSION);
+	snprintf(buf, sizeof buf, "SSH-%d.%d-%.100s\n", major, minor, SSH_RELEASE);
 	server_version_string = xstrdup(buf);
 
 	/* Send our protocol version identification. */
@@ -1699,8 +1699,7 @@ main(int ac, char **av)
 			error("SessionGetInfo() failed with error %.8X",
 			    (unsigned) err);
 		else
-			debug("Current Session ID is %.8X / Session Attributes a
-re %.8X",
+			debug("Current Session ID is %.8X / Session Attributes are %.8X",
 			    (unsigned) sid, (unsigned) sattrs);
 
 		if (inetd_flag && !(sattrs & sessionIsRoot))
@@ -1719,8 +1718,7 @@ re %.8X",
 				error("SessionGetInfo() failed with error %.8X",
 				    (unsigned) err);
 			else
-				debug("New Session ID is %.8X / Session Attribut
-es are %.8X",
+				debug("New Session ID is %.8X / Session Attributes are %.8X",
 				    (unsigned) sid, (unsigned) sattrs);
 		}
 	}

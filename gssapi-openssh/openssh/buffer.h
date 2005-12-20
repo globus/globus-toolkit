@@ -25,6 +25,7 @@ typedef struct {
 
 #define	BUFFER_MAX_CHUNK	0x100000
 #define	BUFFER_MAX_LEN		0xa00000
+#define BUFFER_MAX_HPN_LEN	(2<<29)-1
 
 void	 buffer_init(Buffer *);
 void	 buffer_clear(Buffer *);

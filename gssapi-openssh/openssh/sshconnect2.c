@@ -58,6 +58,12 @@ RCSID("$OpenBSD: sshconnect2.c,v 1.142 2005/08/30 22:08:05 djm Exp $");
 extern char *client_version_string;
 extern char *server_version_string;
 extern Options options;
+extern Kex *xxx_kex;
+
+/* tty_flag is set in ssh.c. use this in ssh_userauth2 */
+/* if it is set then prevent the switch to the null cipher */
+
+extern int tty_flag;
 
 /*
  * SSH2 key exchange
@@ -377,7 +383,15 @@ ssh_userauth2(const char *local_user, const char *server_user, char *host,
 
 	pubkey_cleanup(&authctxt);
 	dispatch_range(SSH2_MSG_USERAUTH_MIN, SSH2_MSG_USERAUTH_MAX, NULL);
-
+	if ((options.none_switch == 1) && !tty_flag) /* no null on tty sessions */
+	{
+		debug("Requesting none rekeying...");
+		myproposal[PROPOSAL_ENC_ALGS_STOC] = "none";
+		myproposal[PROPOSAL_ENC_ALGS_CTOS] = "none";
+		kex_prop2buf(&xxx_kex->my,myproposal);
+		packet_request_rekeying();
+		fprintf(stderr, "WARNING: ENABLED NULL CIPHER\n");
+	}
 	debug("Authentication succeeded (%s).", authctxt.method->name);
 }
 
