@@ -22,7 +22,8 @@ mkdir -p temp/
 tar xvzf $NAME -C temp/
 cd temp/
 rm globus_core-99.tar.gz
-cat packaging_list | grep -v 'globus_core' > packaging_list
+cat packaging_list | grep -v 'globus_core' > packaging_list.new
+mv packaging_list.new packaging_list
 
 #
 # create the bundle (redux)
