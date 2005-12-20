@@ -167,13 +167,58 @@ ssh_create_socket(int privileged, struct addrinfo *ai)
 			    strerror(errno));
 		else
 			debug("Allocated local port %d.", p);
+
+		
+		/* tuning needs to happen after the socket is */
+		/* created but before the connection happens */
+		/* so winscale is negotiated properly -cjr */
+		
+		/* Set tcp receive buffer if requested */
+		if (options.tcp_rcv_buf) 
+		  {
+		    if (setsockopt(sock, SOL_SOCKET, SO_RCVBUF, 
+				   (void *)&options.tcp_rcv_buf, 
+				   sizeof(options.tcp_rcv_buf)) >= 0)
+		      {             
+			debug("setsockopt SO_RCVBUF: %.100s", strerror(errno));
+		      } 
+		    else 
+		      {
+			/* coudln't set the socket size to use spec. */
+			/* should default to system param and continue */
+			/* warn the user though - cjr */
+			error("Couldn't set socket receive buffer as requested. Continuing anyway.");
+		      }
+		  }
 		return sock;
 	}
 	sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
 	if (sock < 0)
 		error("socket: %.100s", strerror(errno));
-
-	/* Bind the socket to an alternative local IP address */
+	
+	/* tuning needs to happen after the socket is */
+	/* created but before the connection happens */
+	/* so winscale is negotiated properly -cjr */
+	
+	/* Set tcp receive buffer if requested */
+	if (options.tcp_rcv_buf) 
+	  {
+	    if (setsockopt(sock, SOL_SOCKET, SO_RCVBUF, 
+			   (void *)&options.tcp_rcv_buf, 
+			   sizeof(options.tcp_rcv_buf)) >= 0)
+	      {             
+		debug("setsockopt SO_RCVBUF: %.100s", strerror(errno));
+	      }
+	    else 
+	      {
+		/* coudln't set the socket size to use spec. */
+		/* should default to system param and continue */
+		/* warn the user though - cjr */
+		error("Couldn't set socket receive buffer as requested. Continuing anyway.");
+	      }
+	  }
+	
+       	/* Bind the socket to an alternative local IP address */
 	if (options.bind_address == NULL)
 		return sock;
 
@@ -480,7 +525,7 @@ ssh_exchange_identification(void)
 	snprintf(buf, sizeof buf, "SSH-%d.%d-%.100s\n",
 	    compat20 ? PROTOCOL_MAJOR_2 : PROTOCOL_MAJOR_1,
 	    compat20 ? PROTOCOL_MINOR_2 : minor1,
-	    SSH_VERSION);
+	    SSH_RELEASE);
 	if (atomicio(vwrite, connection_out, buf, strlen(buf)) != strlen(buf))
 		fatal("write: %.100s", strerror(errno));
 	client_version_string = xstrdup(buf);

@@ -42,6 +42,10 @@ RCSID("$OpenBSD: kex.c,v 1.64 2005/07/25 11:59:39 markus Exp $");
 #include "dispatch.h"
 #include "monitor.h"
 
+#ifdef GSSAPI
+#include "ssh-gss.h"
+#endif
+
 #define KEX_COOKIE_LEN	16
 
 /* prototype */
@@ -49,7 +53,7 @@ static void kex_kexinit_finish(Kex *);
 static void kex_choose_conf(Kex *);
 
 /* put algorithm proposal into buffer */
-static void
+void
 kex_prop2buf(Buffer *b, char *proposal[PROPOSAL_MAX])
 {
 	u_int i;
@@ -298,6 +302,14 @@ choose_kex(Kex *k, char *client, char *server)
 		k->kex_type = KEX_DH_GRP14_SHA1;
 	} else if (strcmp(k->name, KEX_DHGEX) == 0) {
 		k->kex_type = KEX_DH_GEX_SHA1;
+#ifdef GSSAPI
+	} else if (strncmp(k->name, KEX_GSS_GEX_SHA1_ID,
+	    sizeof(KEX_GSS_GEX_SHA1_ID)-1) == 0) {
+		k->kex_type = KEX_GSS_GEX_SHA1;
+	} else if (strncmp(k->name, KEX_GSS_GRP1_SHA1_ID, 
+	    sizeof(KEX_GSS_GRP1_SHA1_ID)-1) == 0) {
+		k->kex_type = KEX_GSS_GRP1_SHA1;
+#endif
 	} else
 		fatal("bad kex alg %s", k->name);
 }
