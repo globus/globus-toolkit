@@ -62,6 +62,12 @@ if test $CONDOR_OS = 'no'; then
        *:SunOS:5.8)
 	 CONDOR_OS=SOLARIS28
 	 ;;
+       *:SunOS:5.9)
+         CONDOR_OS=SOLARIS29
+         ;;
+       *:SunOS:5.10)
+         CONDOR_OS=SOLARIS5.10
+         ;;
        *:Darwin:*)
          CONDOR_OS=OSX
          ;;
