@@ -62,6 +62,7 @@ globus_wsrf_mds_index_test                  ws-mds/index/test
 globus_wsrf_mds_aggregator                  ws-mds/aggregator/source
 globus_wsrf_mds_aggregator_schema           ws-mds/aggregator/schema
 globus_wsrf_mds_aggregator_test             ws-mds/aggregator/test
+globus_c_aggregator_client_bindings         ws-mds/aggregator/c/bindings gpt
 globus_wsrf_mds_trigger                     ws-mds/trigger/source
 globus_wsrf_mds_trigger_test                ws-mds/trigger/test
 globus_wsrf_mds_archive                     ws-mds/archive/source
@@ -115,7 +116,6 @@ globus_c_wsrf_core_test_interop_bindings    wsrf/c/core/tests/interop/source gpt
 globus_c_wsrf_core_performance_test         wsrf/c/core/tests/performance/ gpt
 globus_c_wsrf_providers_test_service_bindings wsrf/c/core/providers/test_service/ gpt
 globus_c_wsrf_providers_notification_test_bindings wsrf/c/core/providers/notification_test_service/ gpt
-globus_c_wsrf_providers_servicegroup_test_bindings wsrf/c/core/providers/servicegroup_test_service/ gpt
 globus_c_wsrf_providers_test_wsdl           wsrf/c/core/providers/test_wsdl gpt
 globus_c_wsrf_provider_test                 wsrf/c/core/providers/test gpt
 globus_c_wsrf_resource                      wsrf/c/resource/source gpt
@@ -172,3 +172,5 @@ globus_scheduler_event_generator_job_manager_setup ws-gram/job_monitoring/job-ma
 globus_c_static_container_gen               wsrf/c/parser/static_container gpt
 globus_crft_util                    ws-transfer/reliable/client/c/crft_util/source gpt
 globus_c_wsrf_service_group                 wsrf/c/core/servicegroup/source gpt
+globus_c_wsrf_service_group_test            wsrf/c/core/servicegroup/test gpt
+globus_c_service_group_test_schema          wsrf/c/core/servicegroup/test_wsdl gpt
