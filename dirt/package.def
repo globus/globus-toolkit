@@ -199,3 +199,6 @@ globus_c_gram_client_bindings ws-gram/client/c/bindings dirt.sh
 globus_c_rendezvous_client_bindings ws-rendezvous/client/c/bindings dirt.sh
 globus_c_rft_client_bindings ws-transfer/reliable/client/c/bindings dirt.sh
 globus_c_wsrf_sample_counter_bindings wsrf/c/samples/counter/source dirt.sh
+globus_c_wsrf_service_group wsrf/c/core/servicegroup/source dirt.sh
+globus_c_service_group_test_schema wsrf/c/core/servicegroup/test_wsdl dirt.sh
+globus_c_wsrf_service_group_test wsrf/c/core/servicegroup/test dirt.sh
