@@ -629,6 +629,7 @@ globus_l_gfs_config_load_commandline(
     int                                 i;
     int                                 rc;
     int                                 len;
+    int                                 dash;
     globus_l_gfs_config_option_t *      option;
     globus_bool_t                       found;
     globus_bool_t                       negate;
@@ -640,7 +641,8 @@ globus_l_gfs_config_load_commandline(
     {
         found = GLOBUS_FALSE;
         negate = GLOBUS_FALSE;
-        
+        dash = 0;
+
         argp = argv[arg_num];
         len = strlen(argp);
         
@@ -648,11 +650,13 @@ globus_l_gfs_config_load_commandline(
         {
             argp++;
             len--;
+            dash++;
         }
         if(len && *argp == '-')
         {
             argp++;
             len--;
+            dash++;
         }
         if((len - 2) && strncasecmp(argp, "no-", 3) == 0)
         {
@@ -662,12 +666,12 @@ globus_l_gfs_config_load_commandline(
         }
         else if(len && tolower(*argp) == 'n')
         {
-            argp ++;
-            len --;
+            argp++;
+            len--;
             negate = GLOBUS_TRUE;
         }
         
-        for(i = 0; i < option_count && !found && len; i++)
+        for(i = 0; i < option_count && !found && len && dash; i++)
         {
             if(option_list[i].option_name == NULL)
             {
@@ -742,8 +746,8 @@ globus_l_gfs_config_load_commandline(
         
         if(!found)
         {
-            fprintf(stderr, "Unknown option on command line: %s%s\n",
-                negate ? "no-" : "", argp);
+            fprintf(stderr, 
+                "Unknown option on command line: %s\n", argv[arg_num]);
             return -1;
         }
     }
@@ -1583,6 +1587,11 @@ globus_l_gfs_config_misc()
         globus_l_gfs_config_set("fork", GLOBUS_FALSE, NULL);
         globus_l_gfs_config_set("bad_signal_exit", GLOBUS_FALSE, NULL);
         globus_l_gfs_config_set("chdir", GLOBUS_FALSE, NULL);
+        if(globus_i_gfs_config_string("log_module") == NULL)
+        {
+            globus_l_gfs_config_set(
+                "log_module", 0, globus_libc_strdup("stdio:buffer=0"));
+        }
     }
 
     if(globus_i_gfs_config_bool("allow_anonymous"))
@@ -1664,7 +1673,7 @@ globus_l_gfs_config_misc()
         rc = globus_l_config_loadfile(value, &data);
         globus_l_gfs_config_set("banner", 0, data);                
     }
-    else
+    else if(globus_i_gfs_config_string("banner") == GLOBUS_NULL)
     {
             data = globus_common_create_string(
                 "%s GridFTP Server %d.%d (%s, %d-%d) ready.",
@@ -1874,6 +1883,7 @@ globus_i_gfs_config_init(
     char *                              exec_name;
     char *                              local_config_file;
     char *                              global_config_file;
+    globus_bool_t                       cmdline_config = GLOBUS_FALSE;
     int                                 arg_num;
     char *                              argp;
     int                                 rc;
@@ -1919,6 +1929,7 @@ globus_i_gfs_config_init(
         {
             local_config_file = globus_libc_strdup(argv[arg_num + 1]);
             arg_num = argc;
+            cmdline_config = GLOBUS_TRUE;
         }
     }
     if(local_config_file == NULL)
@@ -1929,7 +1940,7 @@ globus_i_gfs_config_init(
 
     globus_l_gfs_config_load_defaults();
     rc = globus_l_gfs_config_load_config_file(local_config_file);
-    if(rc == -2)
+    if(rc == -2 && !cmdline_config)
     {
         rc = globus_l_gfs_config_load_config_file(global_config_file);
     }

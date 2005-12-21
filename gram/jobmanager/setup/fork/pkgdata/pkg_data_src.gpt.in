@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Format_Version="0.02" Name="globus_gram_job_manager_setup_fork" >
 
-  <Aging_Version Age="0" Major="2" Minor="6" />
+  <Aging_Version Age="0" Major="2" Minor="7" />
   <Description >Fork Job Manager Setup</Description>
   <Functional_Group >GRAM</Functional_Group>
   <Version_Stability Release="Alpha" />

@@ -26,6 +26,7 @@ CVS Information:
 /******************************************************************************
 			     Include header files
 ******************************************************************************/
+#include "config.h"
 #include "globus_common.h"
 
 #ifdef HAVE_STRING_H

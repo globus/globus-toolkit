@@ -16,7 +16,6 @@
 #if !defined(GLOBUS_COMMON_INCLUDE_H)
 #define GLOBUS_COMMON_INCLUDE_H 1
 
-/*#include "config.h"*/
 #include "globus_config.h"
 
 #ifdef __GNUC__

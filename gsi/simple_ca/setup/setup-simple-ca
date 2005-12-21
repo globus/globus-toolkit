@@ -1107,7 +1107,7 @@ readCommandLine () {
          shift ; shift
          ;;
      -days)
-         request_expire="${2}"
+         request_days="${2}"
          shift ; shift
          ;;
      -pass)

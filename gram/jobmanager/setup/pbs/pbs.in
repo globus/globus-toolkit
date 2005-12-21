@@ -384,27 +384,13 @@ EOF
                 {
                     $machinefilearg = ' -machinefile $PBS_NODEFILE';
                 }
-                if ($description->totalprocesses() > 0)
-                {
-                    print JOB "$mpiexec $machinefilearg -n "
-                            . $description->totalprocesses();
-                }
-                else
-                {
-                    print JOB "$mpiexec $machinefilearg -n "
-                            . $description->count();
-                }
+
+                print JOB "$mpiexec $machinefilearg -n " . $count;
             }
             else
             {
-                if ($description->totalprocesses() > 0)
-                {
-                    print JOB "$mpirun -np " . $description->totalprocesses();
-                }
-                else
-                {
-                    print JOB "$mpirun -np " . $description->count();
-                }
+                print JOB "$mpirun -np " . $count;
+
                 if ($cluster)
                 {
                     print JOB ' -machinefile $PBS_NODEFILE';

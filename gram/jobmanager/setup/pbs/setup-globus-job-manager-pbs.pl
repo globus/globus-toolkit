@@ -60,6 +60,9 @@ else
 # Do script relocation
 mkdir $ENV{GLOBUS_LOCATION} . "/lib/perl/Globus/GRAM/JobManager", 0777;
 
+my $setupdir = $ENV{GLOBUS_LOCATION} . '/setup/globus';
+chdir $setupdir;
+
 print `./find-pbs-tools $non_cluster --with-cpu-per-node=$cpu_per_node --with-remote-shell=$remote_shell --cache-file=/dev/null`;
 if($? != 0)
 {
