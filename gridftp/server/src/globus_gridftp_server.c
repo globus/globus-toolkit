@@ -194,7 +194,7 @@ globus_l_gfs_sighup(
     argv = (char **) globus_i_gfs_config_get("argv");
     argc = globus_i_gfs_config_int("argc");
 
-    globus_i_gfs_config_init(argc, argv);
+    globus_i_gfs_config_init(argc, argv, GLOBUS_FALSE);
     globus_i_gfs_log_message(
         GLOBUS_I_GFS_LOG_INFO, 
         "Done reloading config.\n");           
@@ -1236,7 +1236,7 @@ main(
     }
         
     /* init all the server modules */
-    globus_i_gfs_config_init(argc, argv);
+    globus_i_gfs_config_init(argc, argv, GLOBUS_FALSE);
     globus_i_gfs_log_open();
     globus_l_gfs_signal_init();
     globus_i_gfs_data_init();
