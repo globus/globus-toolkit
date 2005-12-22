@@ -34,3 +34,14 @@ GSI-OpenSSH 3.6 Major changes
 
       * Only delegate credentials if GSI authentication is used.
         http://bugzilla.ncsa.uiuc.edu/show_bug.cgi?id=300
+
+Please note that the configure script included in OpenSSH 4.2p1 checks
+ZLIB_VERSION in zlib.h for zlib versions with known vulnerabilities.
+See <http://www.zlib.net/> for details on zlib vulnerabilities.  The
+current acceptable versions of zlib are 1.1.4 and 1.2.3.  In cases
+where your vendor has not provided a secure version of zlib, please
+install the latest version of zlib in an alternate path and set the
+--with-zlib GSI_OPENSSH_GPTMACRO option.  For example:
+
+  gpt-build -verbose gsi_openssh_bundle-3.6-src.tar.gz gcc32dbg \
+    GSI_OPENSSH_GPTMACRO="--with-zlib=/usr/local/zlib-1.2.3"
