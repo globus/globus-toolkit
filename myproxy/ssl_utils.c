@@ -1591,6 +1591,11 @@ ssl_proxy_restrictions_set_lifetime(SSL_PROXY_RESTRICTIONS	*restrictions,
 	verror_put_errno(EINVAL);
 	goto error;
     }
+
+    /* keep minimum lifetime at 5min for clock skew issues */
+    if (lifetime > 0 && lifetime < 300) {
+	lifetime = 300;
+    }
     
     /* OK */
     restrictions->lifetime = lifetime;
