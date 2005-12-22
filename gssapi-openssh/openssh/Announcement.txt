@@ -1,8 +1,8 @@
-GSI-OpenSSH 3.6, based on OpenSSH 4.2p1, is now available from
+GSI-OpenSSH 3.6, based on OpenSSH 4.2p1, is now available from:
 
-  <ftp://ftp.ncsa.uiuc.edu/aces/gssapi-openssh/bundle/3.6/>
+  <http://grid.ncsa.uiuc.edu/ssh/download.html>
 
-For installation instructions, please see
+For installation instructions, please see:
 
   <http://grid.ncsa.uiuc.edu/ssh/install.html>
 
@@ -45,3 +45,15 @@ install the latest version of zlib in an alternate path and set the
 
   gpt-build -verbose gsi_openssh_bundle-3.6-src.tar.gz gcc32dbg \
     GSI_OPENSSH_GPTMACRO="--with-zlib=/usr/local/zlib-1.2.3"
+
+MD5 checksums:
+d1e093c92617184600b3b48eac00249f  gsi_openssh-3.6-src.tar.gz
+a6c3f94ff9a63662481a06471a69fc0e  gsi_openssh_bundle-3.6-src.tar.gz
+f6851d4ed2257cd86103ae984d508047  gsi_openssh_compat-3.6-src.tar.gz
+2d4ad548c30819a9634b3b6a5b542b49  gsi_openssh_setup-3.6-src.tar.gz
+
+SHA1 checksums:
+0381b1a6ca64d0e45aa5824eef622c6d372cc0eb  gsi_openssh-3.6-src.tar.gz
+14c4ee377070fd41655fd34b431239b437efeb8e  gsi_openssh_bundle-3.6-src.tar.gz
+a142c408e9aa57e338e978aa4f61d16ec9b482da  gsi_openssh_compat-3.6-src.tar.gz
+dda5fe5fdb98145e640907c83915c952c6ea4c7b  gsi_openssh_setup-3.6-src.tar.gz
