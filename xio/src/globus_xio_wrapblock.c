@@ -150,6 +150,7 @@ globus_l_xio_wrapblock_open(
     void *                              driver_attr,
     globus_xio_operation_t              op)
 {
+    globus_result_t                     result;
     xio_l_wrapblock_wrapper_t *         wrapper;
     xio_l_wrapblock_handle_t *          wrapblock_handle;
     globus_xio_driver_t                 driver;
@@ -160,20 +161,34 @@ globus_l_xio_wrapblock_open(
 
     wrapblock_handle = globus_calloc(1, sizeof(xio_l_wrapblock_handle_t));
     wrapblock_handle->wrapblock_driver = driver->wrap_data;
-    wrapper = (xio_l_wrapblock_wrapper_t *)
-        globus_calloc(1, sizeof(xio_l_wrapblock_wrapper_t));
-    wrapper->wrapblock_handle = wrapblock_handle;
-    wrapper->link = driver_link;
-    wrapper->attr = driver_attr;
-    wrapper->op = op;
-    /* gotta copy contact info the hard way */
-    globus_xio_contact_info_copy(&wrapper->ci, contact_info);
 
-    globus_callback_register_oneshot(
-        NULL,
-        NULL,
-        globus_l_xio_wrapblock_open_kickout,
-        wrapper);
+    if(globus_xio_driver_operation_is_blocking(op))
+    {
+        result = wrapblock_handle->wrapblock_driver->open_func(
+            contact_info,
+            driver_link,
+            driver_attr,
+            &wrapblock_handle->driver_handle);
+
+        globus_xio_driver_finished_open(wrapblock_handle, op, result);
+    }
+    else
+    {
+        wrapper = (xio_l_wrapblock_wrapper_t *)
+            globus_calloc(1, sizeof(xio_l_wrapblock_wrapper_t));
+        wrapper->wrapblock_handle = wrapblock_handle;
+        wrapper->link = driver_link;
+        wrapper->attr = driver_attr;
+        wrapper->op = op;
+        /* gotta copy contact info the hard way */
+        globus_xio_contact_info_copy(&wrapper->ci, contact_info);
+
+        globus_callback_register_oneshot(
+            NULL,
+            NULL,
+            globus_l_xio_wrapblock_open_kickout,
+            wrapper);
+    }
 
     return GLOBUS_SUCCESS;
 }
@@ -209,29 +224,44 @@ globus_l_xio_wrapblock_write(
     int                                 iovec_count,
     globus_xio_operation_t              op)
 {
+    globus_size_t                       nbytes;
+    globus_result_t                     result;
     int                                 i;
     xio_l_wrapblock_wrapper_t *         wrapper;
+    xio_l_wrapblock_handle_t *          wrapblock_handle;
 
-    wrapper = (xio_l_wrapblock_wrapper_t *)
-        globus_calloc(1, sizeof(xio_l_wrapblock_wrapper_t));
-    wrapper->iovec = (globus_xio_iovec_t *)
-        globus_calloc(iovec_count, sizeof(globus_xio_iovec_t));
-    wrapper->iovec_count = iovec_count;
-    wrapper->op = op;
-    wrapper->wrapblock_handle = driver_specific_handle;
-
-    for(i = 0; i < iovec_count; i++)
+    wrapblock_handle = (xio_l_wrapblock_handle_t *) driver_specific_handle;
+    if(globus_xio_driver_operation_is_blocking(op))
     {
-        wrapper->iovec[i].iov_base = iovec[i].iov_base;
-        wrapper->iovec[i].iov_len = iovec[i].iov_len;
+        result = wrapblock_handle->wrapblock_driver->write_func(
+            wrapblock_handle->driver_handle,
+            iovec,
+            iovec_count,
+            &nbytes);
+        globus_xio_driver_finished_write(op, result, nbytes);
     }
+    else
+    {
+        wrapper = (xio_l_wrapblock_wrapper_t *)
+            globus_calloc(1, sizeof(xio_l_wrapblock_wrapper_t));
+        wrapper->iovec = (globus_xio_iovec_t *)
+            globus_calloc(iovec_count, sizeof(globus_xio_iovec_t));
+        wrapper->iovec_count = iovec_count;
+        wrapper->op = op;
+        wrapper->wrapblock_handle = driver_specific_handle;
 
-    globus_callback_register_oneshot(
-        NULL,
-        NULL,
-        globus_l_xio_wrapblock_write_kickout,
-        wrapper);
+        for(i = 0; i < iovec_count; i++)
+        {
+            wrapper->iovec[i].iov_base = iovec[i].iov_base;
+            wrapper->iovec[i].iov_len = iovec[i].iov_len;
+        }
 
+        globus_callback_register_oneshot(
+            NULL,
+            NULL,
+            globus_l_xio_wrapblock_write_kickout,
+            wrapper);
+    }
     return GLOBUS_SUCCESS;
 }
 
@@ -267,29 +297,44 @@ globus_l_xio_wrapblock_read(
     int                                 iovec_count,
     globus_xio_operation_t              op)
 {
+    globus_size_t                       nbytes;
+    globus_result_t                     result;
     int                                 i;
     xio_l_wrapblock_wrapper_t *         wrapper;
+    xio_l_wrapblock_handle_t *          wrapblock_handle;
 
-    wrapper = (xio_l_wrapblock_wrapper_t *)
-        globus_calloc(1, sizeof(xio_l_wrapblock_wrapper_t));
-    wrapper->iovec = (globus_xio_iovec_t *)
-        globus_calloc(iovec_count, sizeof(globus_xio_iovec_t));
-    wrapper->iovec_count = iovec_count;
-    wrapper->op = op;
-    wrapper->wrapblock_handle = driver_specific_handle;
-
-    for(i = 0; i < iovec_count; i++)
+    wrapblock_handle = (xio_l_wrapblock_handle_t *) driver_specific_handle;
+    if(globus_xio_driver_operation_is_blocking(op))
     {
-        wrapper->iovec[i].iov_base = iovec[i].iov_base;
-        wrapper->iovec[i].iov_len = iovec[i].iov_len;
+        result = wrapblock_handle->wrapblock_driver->read_func(
+            wrapblock_handle->driver_handle,
+            iovec,
+            iovec_count,
+            &nbytes);
+        globus_xio_driver_finished_read(op, result, nbytes);
     }
+    else
+    {
+        wrapper = (xio_l_wrapblock_wrapper_t *)
+            globus_calloc(1, sizeof(xio_l_wrapblock_wrapper_t));
+        wrapper->iovec = (globus_xio_iovec_t *)
+            globus_calloc(iovec_count, sizeof(globus_xio_iovec_t));
+        wrapper->iovec_count = iovec_count;
+        wrapper->op = op;
+        wrapper->wrapblock_handle = driver_specific_handle;
 
-    globus_callback_register_oneshot(
-        NULL,
-        NULL,
-        globus_l_xio_wrapblock_read_kickout,
-        wrapper);
+        for(i = 0; i < iovec_count; i++)
+        {
+            wrapper->iovec[i].iov_base = iovec[i].iov_base;
+            wrapper->iovec[i].iov_len = iovec[i].iov_len;
+        }
 
+        globus_callback_register_oneshot(
+            NULL,
+            NULL,
+            globus_l_xio_wrapblock_read_kickout,
+            wrapper);
+    }
     return GLOBUS_SUCCESS;
 }
 
@@ -323,20 +368,33 @@ globus_l_xio_wrapblock_close(
     void *                              attr,
     globus_xio_operation_t              op)
 {
-    xio_l_wrapblock_wrapper_t *               wrapper;
+    globus_result_t                     result;
+    xio_l_wrapblock_wrapper_t *         wrapper;
+    xio_l_wrapblock_handle_t *          wrapblock_handle;
 
-    wrapper = (xio_l_wrapblock_wrapper_t *)
-        globus_calloc(1, sizeof(xio_l_wrapblock_wrapper_t));
-    wrapper->attr = attr;
-    wrapper->op = op;
-    wrapper->wrapblock_handle = driver_specific_handle;
+    wrapblock_handle = (xio_l_wrapblock_handle_t *) driver_specific_handle;
+    if(globus_xio_driver_operation_is_blocking(op))
+    {
+        result = wrapblock_handle->wrapblock_driver->close_func(
+            wrapblock_handle->driver_handle,
+            attr);
+        globus_xio_driver_finished_close(op, result);
+        globus_free(wrapblock_handle);
+    }
+    else
+    {
+        wrapper = (xio_l_wrapblock_wrapper_t *)
+            globus_calloc(1, sizeof(xio_l_wrapblock_wrapper_t));
+        wrapper->attr = attr;
+        wrapper->op = op;
+        wrapper->wrapblock_handle = driver_specific_handle;
 
-    globus_callback_register_oneshot(
-        NULL,
-        NULL,
-        globus_l_xio_wrapblock_close_kickout,
-        wrapper);
-
+        globus_callback_register_oneshot(
+            NULL,
+            NULL,
+            globus_l_xio_wrapblock_close_kickout,
+            wrapper);
+    }
     return GLOBUS_SUCCESS;
 }
 
