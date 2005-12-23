@@ -293,14 +293,28 @@ pDllModule pTemp;
     return LT_ERROR_DEPLIB_NOT_FOUND;
 }
 
-/* This Is Called From common_extension.c */
-extern	int	lt_dlmutex_register	LT_PARAMS((lt_dlmutex_lock *lock,
-					    lt_dlmutex_unlock *unlock,
-					    lt_dlmutex_seterror *seterror,
-					    lt_dlmutex_geterror *geterror))
+/* ToDo: This Is Called From common_extension.c */
+extern int lt_dlmutex_register LT_PARAMS((lt_dlmutex_lock *lock,
+                                          lt_dlmutex_unlock *unlock,
+                                          lt_dlmutex_seterror *seterror,
+                                          lt_dlmutex_geterror *geterror))
 {
     return 0;
 }                        
+
+/* ToDo: Get The Search Path */
+extern const char *lt_dlgetsearchpath  LT_PARAMS((void))
+{
+   // ToDo: Figure out what this does on Linux and do it on windows
+   return 0;
+}
+
+/* ToDo: Set The Search Path */
+extern int lt_dlsetsearchpath LT_PARAMS((const char *search_path))
+{
+   // ToDo: Figure out what this does on Linux and do it on windows
+   return 0;
+}
 
 /*
 **  Local Functions

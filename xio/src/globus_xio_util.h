@@ -340,7 +340,7 @@ globus_xio_contact_info_to_encoded_string(
 #define GlobusIXIOUtilTransferIovec(iov, siov, iovc)                        \
     do                                                                      \
     {                                                                       \
-        globus_size_t                   _i;                                 \
+        int                             _i;                                 \
         const struct iovec *            _siov;                              \
         struct iovec *                  _iov;                               \
         int                             _iovc;                              \

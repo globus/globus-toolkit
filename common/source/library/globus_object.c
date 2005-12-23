@@ -17,10 +17,10 @@
  */
 #ifdef WIN32
 typedef CRITICAL_SECTION local_mutex_t;
-#define local_mutex_init(x, y) InitializeCriticalSection(x)
-#define local_mutex_destroy(x) DeleteCriticalSection(x)
-#define local_mutex_lock(x) EnterCriticalSection(x)
-#define local_mutex_unlock(x) LeaveCriticalSection(x)
+#define local_mutex_init(x, y) (InitializeCriticalSection(x), 0)
+#define local_mutex_destroy(x) (DeleteCriticalSection(x), 0)
+#define local_mutex_lock(x) (EnterCriticalSection(x), 0)
+#define local_mutex_unlock(x) (LeaveCriticalSection(x), 0)
 #else
 typedef globus_mutex_t local_mutex_t;
 #define local_mutex_init(x, y) globus_mutex_init(x, y)

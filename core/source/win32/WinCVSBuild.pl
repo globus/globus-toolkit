@@ -1635,7 +1635,7 @@ my $i;
     # Build Full Paths To Source And Win32 Directories
     $FullSourcePath = $GlobusLocation . $SourceLocation;
     $FullWin32Path = $GlobusLocation . $Win32Location;
-    
+
     # Change The Working Directory To The Source Path
     if(!chdir $FullSourcePath) {
         print "Can't Change Directory To ", $FullSourcePath, "\n";
@@ -1647,6 +1647,12 @@ my $i;
         print "Can't Open Makefile.am\n\n";
         exit();
         }
+
+    # Initialize Variables
+    @ProgramSources         = {};
+    $ProgramSourceCount     = 0;
+    @ProgramDependencies    = {};
+    $ProgramDependencyCount = 0;
         
     #
     # Parse Winmake.am 
@@ -2022,8 +2028,8 @@ my $i;
     print EXEBATCHEXEC "nmake /F $BaseSourcesName\-$FlavorName.mak ALL   \>\> $GlobusLocation\\core\\source\\win32\\$FlavorName$ExeSuffix.log\n";
     
     # Report Build Results (from nmake ALL Only)
-    print EXEBATCHEXEC "if NOT ERRORLEVEL 1 echo SUCCEEDED - $FlavorName Executable: $BaseSourcesName\-$FlavorName  \>\> $GlobusLocation\\core\\source\\win32\\BuildResults.log\n";
-    print EXEBATCHEXEC "if ERRORLEVEL 1 echo FAILED    - $FlavorName Executable: $BaseSourcesName\-$FlavorName - nmake Return: %ERRORLEVEL%  \>\> $GlobusLocation\\core\\source\\win32\\BuildResults.log\n";
+    print EXEBATCHEXEC "if NOT ERRORLEVEL 1 echo SUCCEEDED - $FlavorName Executable: .\\$FlavorName\\$BaseSourcesName.exe \>\> $GlobusLocation\\core\\source\\win32\\BuildResults.log\n";
+    print EXEBATCHEXEC "if ERRORLEVEL 1 echo FAILED    - $FlavorName Executable: .\\$FlavorName\\$BaseSourcesName.exe - nmake Return: %ERRORLEVEL%  \>\> $GlobusLocation\\core\\source\\win32\\BuildResults.log\n";
     
     # Embed Leader For This Makefile
     print EXEBATCHEXEC "echo ================================================================ \>\> $GlobusLocation\\core\\source\\win32\\$FlavorName$ExeSuffix.log\n";
