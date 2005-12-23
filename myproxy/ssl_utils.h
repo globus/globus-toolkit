@@ -23,6 +23,11 @@
 #include <globus_gsi_system_config.h>
 #include <globus_gsi_system_config_constants.h>
 
+/* EVP_MD_CTX_cleanup() not in OpenSSL 0.9.6. */
+#if !defined(EVP_MD_CTX_FLAG_CLEANED)
+#define EVP_MD_CTX_cleanup(ctx)
+#endif
+
 struct _ssl_credentials;
 typedef struct _ssl_credentials SSL_CREDENTIALS;
 
