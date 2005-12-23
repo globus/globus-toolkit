@@ -68,7 +68,7 @@ globus_l_gfs_reject_write_cb(
             xio_handle,
             NULL,
             globus_l_gfs_reject_close_cb,
-            NULL);
+            handle);
         if(result != GLOBUS_SUCCESS)
         {
             handle->outstanding--;
@@ -104,7 +104,7 @@ globus_l_gfs_reject_open_cb(
             strlen(sorry_msg),
             NULL,
             globus_l_gfs_reject_write_cb,
-            NULL);
+            handle);
         if(result != GLOBUS_SUCCESS)
         {
             goto error;
@@ -120,7 +120,7 @@ error:
         xio_handle,
         NULL,
         globus_l_gfs_reject_close_cb,
-        NULL);
+        handle);
     if(result != GLOBUS_SUCCESS)
     {
         handle->outstanding--;
@@ -173,12 +173,12 @@ globus_i_gfs_connection_closed(
 
 static
 void
-globus_l_gfs_server_closed(
+globus_l_gfs_server_closed_cb(
     void *                              user_arg,
     globus_object_t *                   error)
 {
     globus_gfs_embed_handle_t           handle;
-    GlobusGFSName(globus_l_gfs_server_closed);
+    GlobusGFSName(globus_l_gfs_server_closed_cb);
     GlobusGFSDebugEnter();
     
     handle = (globus_gfs_embed_handle_t) user_arg;
@@ -255,7 +255,7 @@ globus_l_gfs_ipc_closed(
 
     if(result != GLOBUS_SUCCESS)
     {
-        globus_l_gfs_close_cb(xio_handle, result, NULL);
+        globus_l_gfs_close_cb(xio_handle, result, handle);
     }
 }
 
@@ -350,7 +350,7 @@ globus_l_gfs_new_server_cb(
                 system_handle, 
                 remote_contact,
                 local_contact, 
-                globus_l_gfs_server_closed,
+                globus_l_gfs_server_closed_cb,
                 handle);
         }
         if(result != GLOBUS_SUCCESS)
@@ -375,12 +375,12 @@ error:
         xio_handle,
         NULL,
         globus_l_gfs_close_cb,
-        NULL);
+        handle);
     globus_mutex_unlock(&handle->mutex);
 
     if(result != GLOBUS_SUCCESS)
     {
-        globus_l_gfs_close_cb(xio_handle, result, NULL);
+        globus_l_gfs_close_cb(xio_handle, result, handle);
     }
 
     GlobusGFSDebugExitWithError();
@@ -391,10 +391,10 @@ error:
 static
 globus_result_t
 globus_l_gfs_open_new_server(
+    globus_gfs_embed_handle_t           handle,
     globus_xio_handle_t                 xio_handle)
 {
     globus_result_t                     result;
-    globus_gfs_embed_handle_t           handle;
     GlobusGFSName(globus_l_gfs_open_new_server);
     GlobusGFSDebugEnter();
     
@@ -456,7 +456,7 @@ globus_l_gfs_server_accept_cb(
                 NULL,
                 NULL,
                 globus_l_gfs_reject_open_cb,
-                NULL);
+                handle);
             if(result != GLOBUS_SUCCESS)
             {
                 goto error_accept;
@@ -465,7 +465,7 @@ globus_l_gfs_server_accept_cb(
         }
         else
         {
-            result = globus_l_gfs_open_new_server(xio_handle);
+            result = globus_l_gfs_open_new_server(handle, xio_handle);
             if(result != GLOBUS_SUCCESS)
             {
                 globus_i_gfs_log_result(
@@ -477,7 +477,7 @@ globus_l_gfs_server_accept_cb(
         if(globus_i_gfs_config_bool("single"))
         {
             result = globus_xio_server_register_close(
-                handle->xio_server, globus_l_gfs_server_close_cb, NULL);
+                handle->xio_server, globus_l_gfs_server_close_cb, handle);
             if(result == GLOBUS_SUCCESS)
             {
                 handle->outstanding++;
@@ -493,7 +493,7 @@ globus_l_gfs_server_accept_cb(
             result = globus_xio_server_register_accept(
                 handle->xio_server,
                 globus_l_gfs_server_accept_cb,
-                NULL);
+                handle);
             if(result != GLOBUS_SUCCESS)
             {
                 goto error_register_accept;
@@ -615,7 +615,7 @@ globus_l_gfs_be_daemon(
     result = globus_xio_server_register_accept(
         handle->xio_server,
         globus_l_gfs_server_accept_cb,
-        NULL);
+        handle);
     if(result != GLOBUS_SUCCESS)
     {
         goto contact_error;
@@ -740,7 +740,7 @@ globus_gridftp_server_embed_stop(
         if(handle->xio_server)
         {
             result = globus_xio_server_register_close(
-                handle->xio_server, globus_l_gfs_server_close_cb, NULL);
+                handle->xio_server, globus_l_gfs_server_close_cb, handle);
             if(result == GLOBUS_SUCCESS)
             {
                 handle->outstanding++;
