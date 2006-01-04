@@ -14,6 +14,25 @@
 #include "globus_common.h"
 
 globus_bool_t
+globus_xio_get_env_pair(
+    const char *                        env_name,
+    int *                               min,
+    int *                               max)
+{
+    char *                              min_max;
+    GlobusXIOName(globus_l_xio_tcp_get_env_pair);
+
+    min_max = globus_module_getenv(env_name);
+
+    if(min_max && sscanf(min_max, " %d , %d", min, max) == 2)
+    {
+        return GLOBUS_TRUE;
+    }
+
+    return GLOBUS_FALSE;
+}
+
+globus_bool_t
 globus_xio_error_is_eof(
     globus_result_t                     res)
 {
