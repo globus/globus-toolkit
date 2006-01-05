@@ -14,23 +14,4 @@ if [ ! -f ${GLOBUS_LOCATION}/libexec/globus-bootstrap.sh ]; then
     exit
 fi
 
-echo -n "Checking for builtin drivers... "
-builtins=`ls builtins | grep -v CVS |grep -v Makefile`
-builtin_makefiles=
-delim=
-if test "X$builtins" != "X" ; then
-  echo
-  for builtin in $builtins ; do
-    if test -f builtins/$builtin/Makefile.am ; then
-      builtin_makefiles="$builtin_makefiles builtins/$builtin/Makefile"
-      echo "Including driver: $builtin"
-    fi
-  done
-else
-  echo "none found"
-fi
-
-cp -f configure.in.in configure.in
-echo "$builtin_makefiles)" >> configure.in
-
 . ${GLOBUS_LOCATION}/libexec/globus-bootstrap.sh

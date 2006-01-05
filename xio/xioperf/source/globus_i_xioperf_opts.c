@@ -1,56 +1,41 @@
 #include "globus_i_xioperf.h"
+#include "globus_common.h"
 #include "globus_options.h"
-#include "version.h"
-
-#define GlobusXIOPerfError(error_msg, _type)                                \
-    globus_error_put(                                                       \
-        globus_error_construct_error(                                       \
-            NULL,                                                           \
-            NULL,                                                           \
-            _type,                                                          \
-            __FILE__,                                                       \
-            _xioperf_func_name,                                             \
-            __LINE__,                                                       \
-            "%s",                                                           \
-            (error_msg)))
-
-#ifdef __GNUC__
-#define GlobusXIOPerfFuncName(func) static const char * _xioperf_func_name __attribute__((__unused__)) = #func
-#else
-#define GlobusXIOPerfFuncName(func) static const char * _xioperf_func_name = #func
-#endif
 
 static
 globus_result_t
 xioperf_l_kmint(
     char *                              arg,
-    int *                               out_i)
+    globus_off_t *                      out_i)
 {
     int                                 i;
     int                                 sc;
     GlobusXIOPerfFuncName(xioperf_l_kmint);
 
-    sc = sscanf(arg, "%d", &i)
+    sc = sscanf(arg, "%d", &i);
     if(sc != 1)
     {
         return GlobusXIOPerfError(
                 "parameter must be an integer",
                 GLOBUS_XIO_PERF_ERROR_PARM);
     }
-    if(strchr(arg, "K") != NULL)
-    {
-        *out_i = i;
-    }
-    else if(strchr(arg, "M") != NULL)
+    if(strchr(arg, 'K') != NULL)
     {
         *out_i = i * 1024;
     }
+    else if(strchr(arg, 'M') != NULL)
+    {
+        *out_i = i * 1024 * 1024;
+    }
+    else if(strchr(arg, 'G') != NULL)
+    {
+        *out_i = i * 1024 * 1024 * 1024;
+    }
     else
     {
-        return GlobusXIOPerfError(
-                "must specify K or M",
-                GLOBUS_XIO_PERF_ERROR_PARM);
+        *out_i = i;
     }
+
     return GLOBUS_SUCCESS;
 }
 
@@ -69,11 +54,14 @@ xioperf_l_opts_format(
 
     switch(*opt)
     {
+        case 'G':
+        case 'g':
         case 'K':
         case 'k':
         case 'M':
         case 'm':
-            info->format = *opt;
+            info->format = toupper(*opt);
+            *out_parms_used = 1;
             break;
 
         default:
@@ -100,13 +88,14 @@ xio_perf_l_opts_interval(
 
     info = (globus_i_xioperf_info_t *) arg;
 
-    sc = sscanf(opt, "%d", &i)
+    sc = sscanf(opt, "%d", &i);
     if(sc != 1)
     {
         return GlobusXIOPerfError(
                 "interval must be an integer",
                 GLOBUS_XIO_PERF_ERROR_PARM);
     }
+    *out_parms_used = 1;
 
     info->interval = i;
 
@@ -124,6 +113,7 @@ xioperf_l_opts_len(
     globus_i_xioperf_info_t *           info;
 
     info = (globus_i_xioperf_info_t *) arg;
+    *out_parms_used = 1;
     return xioperf_l_kmint(opt, &info->len);
 }
 
@@ -142,7 +132,7 @@ xioperf_l_opts_port(
 
     info = (globus_i_xioperf_info_t *) arg;
 
-    sc = sscanf(opt, "%d", &i)
+    sc = sscanf(opt, "%d", &i);
     if(sc != 1)
     {
         return GlobusXIOPerfError(
@@ -150,6 +140,7 @@ xioperf_l_opts_port(
                 GLOBUS_XIO_PERF_ERROR_PARM);
     }
     info->port = i;
+    *out_parms_used = 1;
     return GLOBUS_SUCCESS;
 }
 
@@ -164,6 +155,7 @@ xioperf_l_opts_window(
     globus_i_xioperf_info_t *           info;
 
     info = (globus_i_xioperf_info_t *) arg;
+    *out_parms_used = 1;
     return xioperf_l_kmint(opt, &info->window);
 }
 
@@ -179,6 +171,7 @@ xioperf_l_opts_bind(
 
     info = (globus_i_xioperf_info_t *) arg;
     info->bind_addr = strdup(opt);
+    *out_parms_used = 1;
     return GLOBUS_SUCCESS;
 }
 
@@ -194,6 +187,7 @@ xioperf_l_opts_nodelay(
 
     info = (globus_i_xioperf_info_t *) arg;
     info->nodelay = GLOBUS_TRUE;
+    *out_parms_used = 0;
     return GLOBUS_SUCCESS;
 }
 
@@ -217,6 +211,7 @@ xioperf_l_opts_server(
                 GLOBUS_XIO_PERF_ERROR_PARM);
     }
     info->server = GLOBUS_TRUE;
+    *out_parms_used = 0;
     return GLOBUS_SUCCESS;
 }
 
@@ -233,6 +228,7 @@ xioperf_l_opts_bandwidth(
 
     info = (globus_i_xioperf_info_t *) arg;
 
+    *out_parms_used = 0;
     return GlobusXIOPerfError(
             "Feature not implemented",
             GLOBUS_XIO_PERF_ERROR_PARM);
@@ -251,13 +247,9 @@ xioperf_l_opts_client(
 
     info = (globus_i_xioperf_info_t *) arg;
 
-    if(info->server)
-    {
-        return GlobusXIOPerfError(
-                "Cant be a client and a server",
-                GLOBUS_XIO_PERF_ERROR_PARM);
-    }
+    info->server = GLOBUS_FALSE;
     info->client = strdup(opt);
+    *out_parms_used = 1;
     return GLOBUS_SUCCESS;
 }
 
@@ -272,7 +264,8 @@ xioperf_l_opts_num(
     globus_i_xioperf_info_t *           info;
 
     info = (globus_i_xioperf_info_t *) arg;
-    return xioperf_l_kmint(opt, &info->kbytes_to_transfer);
+    *out_parms_used = 1;
+    return xioperf_l_kmint(opt, &info->bytes_to_transfer);
 }
 
 static
@@ -287,6 +280,7 @@ xioperf_l_opts_file(
 
     info = (globus_i_xioperf_info_t *) arg;
     info->file = strdup(opt);
+    *out_parms_used = 1;
     return GLOBUS_SUCCESS;
 }
 
@@ -300,12 +294,12 @@ xioperf_l_opts_parallel(
 {
     int                                 i;
     int                                 sc;
-    GlobusXIOPerfFuncName(xioperf_l_opts_parallel);
     globus_i_xioperf_info_t *           info;
+    GlobusXIOPerfFuncName(xioperf_l_opts_parallel);
 
     info = (globus_i_xioperf_info_t *) arg;
 
-    sc = sscanf(opt, "%d", &i)
+    sc = sscanf(opt, "%d", &i);
     if(sc != 1)
     {
         return GlobusXIOPerfError(
@@ -313,6 +307,85 @@ xioperf_l_opts_parallel(
                 GLOBUS_XIO_PERF_ERROR_PARM);
     }
     info->stream_count = i;
+    *out_parms_used = 1;
+    return GLOBUS_SUCCESS;
+}
+
+static
+globus_result_t
+xioperf_l_opts_time(
+    char *                              cmd,
+    char *                              opt,
+    void *                              arg,
+    int *                               out_parms_used)
+{
+    int                                 i;
+    int                                 sc;
+    globus_i_xioperf_info_t *           info;
+    GlobusXIOPerfFuncName(xioperf_l_opts_time);
+
+    info = (globus_i_xioperf_info_t *) arg;
+    sc = sscanf(opt, "%d", &i);
+    if(sc != 1)
+    {
+        return GlobusXIOPerfError(
+                "port must be an integer",
+                GLOBUS_XIO_PERF_ERROR_PARM);
+    }
+    *out_parms_used = 1;
+    GlobusTimeReltimeSet(info->time, i, 0);
+
+    return GLOBUS_SUCCESS;
+}
+
+static
+globus_result_t
+xioperf_l_opts_recv(
+    char *                              cmd,
+    char *                              opt,
+    void *                              arg,
+    int *                               out_parms_used)
+{
+    globus_i_xioperf_info_t *           info;
+
+    info = (globus_i_xioperf_info_t *) arg;
+    info->reader = GLOBUS_TRUE;
+    *out_parms_used = 0;
+
+    return GLOBUS_SUCCESS;
+}
+
+static
+globus_result_t
+xioperf_l_opts_send(
+    char *                              cmd,
+    char *                              opt,
+    void *                              arg,
+    int *                               out_parms_used)
+{
+    globus_i_xioperf_info_t *           info;
+
+    info = (globus_i_xioperf_info_t *) arg;
+    info->writer = GLOBUS_TRUE;
+    *out_parms_used = 0;
+
+    return GLOBUS_SUCCESS;
+}
+
+static
+globus_result_t
+xioperf_l_opts_daemon(
+    char *                              cmd,
+    char *                              opt,
+    void *                              arg,
+    int *                               out_parms_used)
+{
+    globus_i_xioperf_info_t *           info;
+
+    info = (globus_i_xioperf_info_t *) arg;
+    info->daemon = GLOBUS_TRUE;
+    *out_parms_used = 0;
+
     return GLOBUS_SUCCESS;
 }
 
@@ -331,15 +404,15 @@ xioperf_l_opts_driver(
     info = (globus_i_xioperf_info_t *) arg;
 
     result = globus_xio_driver_load(opt, &driver);
-    if(result != GLOBUS_SUCESS)
+    if(result != GLOBUS_SUCCESS)
     {
         return result;
     }
     result = globus_xio_stack_push_driver(info->stack, driver);
+    *out_parms_used = 1;
 
     return result;
 }
-
 
 static
 globus_result_t
@@ -356,13 +429,14 @@ xioperf_l_opts_version(
         stderr,
         GLOBUS_TRUE);
     globus_module_print_activated_versions(stderr, GLOBUS_TRUE);
+    *out_parms_used = 0;
     exit(0);
 }
 
 globus_options_entry_t                   globus_i_xioperf_opts_table[] =
 {
-    {"format", "f", NULL, "[kmKM]",
-        "format to report: Kbits, Mbits, KBytes, MBytes",
+    {"format", "f", NULL, "[kmgKMG]",
+        "format to report: Kbits, Mbits, Gbits, KBytes, MBytes, GBytes",
         1, xioperf_l_opts_format},
     {"interval", "i", NULL, "#",
         "seconds between periodic bandwidth reports", 
@@ -373,18 +447,18 @@ globus_options_entry_t                   globus_i_xioperf_opts_table[] =
     {"port", "p", NULL, "#",
         "server port to listen on/connect to", 
         1, xioperf_l_opts_port},
-    {"window", "w", NULL, "#[KM]",
+    {"window", "w", NULL, "#[GKM]",
         "TCP window size (socket buffer size)", 
         1, xioperf_l_opts_window},
     {"bind", "B", NULL, "<host>", "bind to <host>",
         1, xioperf_l_opts_bind},
     {"nodelay", "N", NULL, NULL,
         "set TCP no delay, disabling Nagle's Algorithm", 
-        1, xioperf_l_opts_nodelay},
+        0, xioperf_l_opts_nodelay},
     {"server", "s", NULL, NULL, 
         "run in server mode", 
-        1, xioperf_l_opts_server},
-    {"bandwidth", "b", NULL, "#[KM]",
+        0, xioperf_l_opts_server},
+    {"bandwidth", "b", NULL, "#[GKM]",
         "bandwidth to send at in bits/sec.  (default 1 Mbit/sec)", 
         1, xioperf_l_opts_bandwidth},
     {"client", "c", NULL, "<host>", 
@@ -396,9 +470,21 @@ globus_options_entry_t                   globus_i_xioperf_opts_table[] =
     {"file", "F", NULL, "<path>",
         "filename for input if sender, output file if receiver",
         1, xioperf_l_opts_file},
+    {"sender", "S", NULL, NULL,
+        "send data",
+        0, xioperf_l_opts_send},
+    {"receiver", "R", NULL, NULL,
+        "recveive data",
+        0, xioperf_l_opts_recv},
     {"parallel", "P", NULL, "#",
         "number of parallel streams to use",
         1, xioperf_l_opts_parallel},
+    {"time", "t", NULL, "#",
+        "time in seconds for which to transmit (default 10 secs)",
+        1, xioperf_l_opts_time},
+    {"daemon", "d", NULL, NULL,
+        "put a server in daemon mode.",
+        0, xioperf_l_opts_daemon},
     {"driver", "D", NULL, "<driver name>",
         "the name of the driver to put next on the stack",
         1, xioperf_l_opts_driver},
@@ -407,6 +493,3 @@ globus_options_entry_t                   globus_i_xioperf_opts_table[] =
         0, xioperf_l_opts_version},
     {NULL, NULL, NULL, NULL, NULL, 0, NULL}
 };
-
-
-

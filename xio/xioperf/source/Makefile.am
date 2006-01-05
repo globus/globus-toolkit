@@ -2,11 +2,7 @@ include $(top_srcdir)/globus_automake_pre
 include $(top_srcdir)/globus_automake_pre_top
 
 SUBDIRS = \
-	pkgdata \
-	doxygen
-
-flavorinclude_HEADERS = \
-    globus_i_xioperf.h
+	pkgdata 
 
 Sources= \
     globus_xioperf.c  \
@@ -14,6 +10,7 @@ Sources= \
 
 
 INCLUDES = $(GPT_INCLUDES)
+LDADD = $(GPT_PGM_LINKS)
 
 bin_PROGRAMS= \
     globus-xioperf

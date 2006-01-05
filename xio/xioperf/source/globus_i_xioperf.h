@@ -1,3 +1,8 @@
+#include "globus_common.h"
+#include "globus_xio.h"
+#include "version.h"
+
+
 #if !defined(GLOBUS_I_XIOPERF_H)
 #define GLOBUS_I_XIOPERF_H 1
 
@@ -19,22 +24,45 @@
 #define GlobusXIOPerfFuncName(func) static const char * _xioperf_func_name = #func
 #endif
 
+enum
+{
+    GLOBUS_XIO_PERF_ERROR_PARM = 1
+};
+
 typedef struct globus_i_xioperf_info_s
 {
     char                                format;
     int                                 interval;
-    int                                 len;
+    globus_off_t                        len;
     int                                 port;
-    int                                 window;
+    globus_off_t                        window;
     char *                              bind_addr;
     globus_bool_t                       nodelay;
     globus_bool_t                       server;
+    globus_bool_t                       reader;
+    globus_bool_t                       writer;
     char *                              client;
     char *                              file;
-    int                                 kbytes_to_transfer;
+    globus_off_t                        bytes_to_transfer;
+    globus_off_t                        bytes_sent;
+    globus_off_t                        bytes_recv;
+    globus_off_t                        daemon;
+    globus_size_t                       block_size;
     int                                 stream_count;
     globus_xio_stack_t                  stack;
-    globus_abstime_t                    time; 
+    globus_reltime_t                    time;
+    globus_mutex_t                      mutex;
+    globus_cond_t                       cond;
+    globus_bool_t                       done;
+    globus_bool_t                       eof;
+    globus_object_t *                   err;
+    int                                 ref;
+    FILE *                              fptr;
+    globus_xio_handle_t                 xio_handle;
+    globus_byte_t *                     next_write_buffer;
+    globus_xio_server_t                 server_handle;
+    globus_abstime_t                    start_time;
+    globus_abstime_t                    end_time;
 } globus_i_xioperf_info_t;
 
 
