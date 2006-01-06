@@ -193,7 +193,7 @@ xioperf_l_parse_opts(
         goto error_result;
     }
 
-    info->next_write_buffer = globus_malloc(info->block_size);
+    info->next_write_buffer = (globus_byte_t *)globus_malloc(info->block_size);
     if(!info->reader && !info->writer)
     {
         if(info->server)
@@ -458,7 +458,7 @@ xioperf_next_write(
     }
     info->ref++;
 
-    info->next_write_buffer = globus_malloc(info->block_size);
+    info->next_write_buffer = (globus_byte_t*)globus_malloc(info->block_size);
     if(info->eof)
     {
         info->write_done = GLOBUS_TRUE;
@@ -530,7 +530,7 @@ main(
     globus_xio_attr_init(&info->attr);
     /* tcp specific */
     driver = (globus_xio_driver_t) globus_hashtable_lookup(
-        &info->driver_table, "tcp");
+        &info->driver_table, (void *)"tcp");
     if(driver != NULL)
     {
         if(info->window > 0)
@@ -632,7 +632,7 @@ xioperf_post_io(
     {
         if(info->reader && !info->read_done)
         {
-            buffer = malloc(info->block_size);
+            buffer = (globus_byte_t*)globus_malloc(info->block_size);
             res = globus_xio_register_read(
                 info->xio_handle,
                 buffer,
