@@ -146,6 +146,25 @@ xioperf_l_opts_port(
 
 static
 globus_result_t
+xioperf_l_opts_blocksize(
+    char *                              cmd,
+    char *                              opt,
+    void *                              arg,
+    int *                               out_parms_used)
+{
+    globus_result_t                     result;
+    globus_i_xioperf_info_t *           info;
+    globus_off_t                        bs;
+
+    info = (globus_i_xioperf_info_t *) arg;
+    *out_parms_used = 1;
+    result = xioperf_l_kmint(opt, &bs);
+    info->block_size = (globus_size_t) bs;
+    return result;
+}
+
+static
+globus_result_t
 xioperf_l_opts_window(
     char *                              cmd,
     char *                              opt,
@@ -409,8 +428,15 @@ xioperf_l_opts_driver(
         return result;
     }
     result = globus_xio_stack_push_driver(info->stack, driver);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+    globus_hashtable_insert(&info->driver_table, strdup(opt), driver);
     *out_parms_used = 1;
 
+    return GLOBUS_SUCCESS;
+error:
     return result;
 }
 
@@ -447,6 +473,9 @@ globus_options_entry_t                   globus_i_xioperf_opts_table[] =
     {"port", "p", NULL, "#",
         "server port to listen on/connect to", 
         1, xioperf_l_opts_port},
+    {"clock-size", "bs", NULL, "#[GKM]",
+        "block size to post at once (also disk block size)", 
+        1, xioperf_l_opts_blocksize},
     {"window", "w", NULL, "#[GKM]",
         "TCP window size (socket buffer size)", 
         1, xioperf_l_opts_window},

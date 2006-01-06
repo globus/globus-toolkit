@@ -1,5 +1,6 @@
 #include "globus_common.h"
 #include "globus_xio.h"
+#include "globus_xio_tcp_driver.h"
 #include "version.h"
 
 
@@ -41,6 +42,7 @@ typedef struct globus_i_xioperf_info_s
     globus_bool_t                       server;
     globus_bool_t                       reader;
     globus_bool_t                       writer;
+    globus_bool_t                       dual;
     char *                              client;
     char *                              file;
     globus_off_t                        bytes_to_transfer;
@@ -53,8 +55,11 @@ typedef struct globus_i_xioperf_info_s
     globus_reltime_t                    time;
     globus_mutex_t                      mutex;
     globus_cond_t                       cond;
-    globus_bool_t                       done;
+    globus_bool_t                       write_done;
+    globus_bool_t                       read_done;
+    globus_bool_t                       die;
     globus_bool_t                       eof;
+    globus_hashtable_t                  driver_table;
     globus_object_t *                   err;
     int                                 ref;
     FILE *                              fptr;

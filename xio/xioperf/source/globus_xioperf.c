@@ -91,7 +91,7 @@ xioperf_outformat_bytes(
 
 static
 void
-xioperf_l_print_sumary(
+xioperf_l_print_summary(
     globus_i_xioperf_info_t *           info)
 {
     double                              secs;
@@ -105,7 +105,7 @@ xioperf_l_print_sumary(
 
     secs = usecs / 1000000.0;
     mins = (int)secs/60;
-    printf("\tTime:         %02d:%02.4f\n", mins, secs-mins);
+    printf("\tTime:         %02d:%02.4f\n", mins, secs-(mins*60));
 
     if(info->writer)
     {
@@ -163,10 +163,12 @@ xioperf_l_parse_opts(
     globus_cond_init(&info->cond, NULL);
     info->server = GLOBUS_TRUE;
     info->stream_count = 1;
-    info->port = 9999;
     info->len = 8*1024;
     info->block_size = 64*1024;
     info->format = 'm';
+    globus_hashtable_init(&info->driver_table, 8, 
+        globus_hashtable_string_hash,
+        globus_hashtable_string_keyeq);
     GlobusTimeReltimeSet(info->time, 10, 0);
     globus_xio_stack_init(&info->stack, NULL);
 
@@ -176,6 +178,20 @@ xioperf_l_parse_opts(
     if(res != GLOBUS_SUCCESS)
     {
         goto error_result;
+    }
+
+    if(!info->reader)
+    {
+        info->read_done = GLOBUS_TRUE;
+    }
+    if(!info->writer)
+    {
+        info->write_done = GLOBUS_TRUE;
+        if(info->bytes_to_transfer > 0)
+        {
+            fprintf(stderr, "ignoring --num, only relvent when sending\n");
+        }
+        info->bytes_to_transfer = 0;
     }
 
     if(info->interval > 0 &&
@@ -188,7 +204,7 @@ xioperf_l_parse_opts(
         res = GlobusXIOPerfError(
                 "only a server can be in daemon mode",
                 GLOBUS_XIO_PERF_ERROR_PARM);
-        goto error;
+        goto error_result;
     }
 
     info->next_write_buffer = globus_malloc(info->block_size);
@@ -208,7 +224,7 @@ xioperf_l_parse_opts(
         res = GlobusXIOPerfError(
                 "cannot read and write if using a file",
                 GLOBUS_XIO_PERF_ERROR_PARM);
-        goto error;
+        goto error_result;
     }
     if(info->file)
     {
@@ -220,7 +236,7 @@ xioperf_l_parse_opts(
                 res = GlobusXIOPerfError(
                     "could not open the specified file for writing",
                     GLOBUS_XIO_PERF_ERROR_PARM);
-                goto error;
+                goto error_result;
             }
         }
         else if(info->writer)
@@ -231,12 +247,13 @@ xioperf_l_parse_opts(
                 res = GlobusXIOPerfError(
                     "could not open the specified file for writing",
                     GLOBUS_XIO_PERF_ERROR_PARM);
-                goto error;
+                goto error_result;
             }
             nbytes = 
-               fread(info->next_write_buffer, info->block_size, 1, info->fptr);
+               fread(info->next_write_buffer, 1, info->block_size, info->fptr);
             if(nbytes < info->block_size)
             {
+                info->block_size = nbytes;
                 info->eof = GLOBUS_TRUE;
             }
         }
@@ -261,7 +278,7 @@ xioperf_interval(
 
     globus_mutex_lock(&info->mutex);
     {
-        xioperf_l_print_sumary(info);
+        xioperf_l_print_summary(info);
         fprintf(stdout, 
         "---------------------------------------------------------------\n");
         GlobusTimeAbstimeGetCurrent(info->start_time);
@@ -283,7 +300,8 @@ xioperf_timeout(
     globus_mutex_lock(&info->mutex);
     {
         printf("Time exceeded.  Terminating.\n");
-        info->done = GLOBUS_TRUE;
+        info->read_done = GLOBUS_TRUE;
+        info->write_done = GLOBUS_TRUE;
         globus_xio_handle_cancel_operations(
             info->xio_handle, GLOBUS_XIO_CANCEL_WRITE);
     }
@@ -309,10 +327,10 @@ xioperf_read_cb(
     {
         info->bytes_recv += nbytes;
 
-        if(info->fptr != NULL)
+        if(info->fptr != NULL && nbytes > 0)
         {
             /* seek when needed */
-            fwrite(buffer, nbytes, 1, info->fptr);
+            fwrite(buffer, 1, nbytes, info->fptr);
         }
         info->ref--;
         if(result != GLOBUS_SUCCESS)
@@ -320,27 +338,44 @@ xioperf_read_cb(
             info->err = globus_error_get(result);
             goto error;
         }
-
-        result = globus_xio_register_read(
-            info->xio_handle,
-            buffer,
-            info->block_size,
-            info->block_size,
-            NULL,
-            xioperf_read_cb,
-            info);
-        if(result != GLOBUS_SUCCESS)
+        if(info->read_done)
         {
+            /* happens with ctl+c */
             goto error;
         }
-        info->ref++;
+
+        /* if we are going by a count only register a new read if
+            we have not gotten all we want.  need this for bi-directional */
+        if(info->bytes_to_transfer == 0 ||
+            info->bytes_recv < info->bytes_to_transfer ||
+            !info->writer)
+        {
+            result = globus_xio_register_read(
+                info->xio_handle,
+                buffer,
+                info->block_size,
+                1,
+                NULL,
+                xioperf_read_cb,
+                info);
+            if(result != GLOBUS_SUCCESS)
+            {
+                goto error;
+            }
+            info->ref++;
+        }
+        else
+        {
+            info->read_done = GLOBUS_TRUE;
+            globus_cond_signal(&info->cond);
+        }
     }
     globus_mutex_unlock(&info->mutex);
 
     return;
 error:
     globus_free(buffer);
-    info->done = GLOBUS_TRUE;
+    info->read_done = GLOBUS_TRUE;
     globus_cond_signal(&info->cond);
     globus_mutex_unlock(&info->mutex);
 }
@@ -372,9 +407,9 @@ xioperf_write_cb(
         if(info->bytes_to_transfer > 0 &&
             info->bytes_sent >= info->bytes_to_transfer)
         {
-            info->done = GLOBUS_TRUE;
+            info->write_done = GLOBUS_TRUE;
         }
-        if(!info->done)
+        if(!info->write_done)
         {
             result = xioperf_next_write(info);
             if(result != GLOBUS_SUCCESS)
@@ -382,6 +417,7 @@ xioperf_write_cb(
                 goto error;
             }
         }
+        globus_cond_signal(&info->cond);
     }
     globus_mutex_unlock(&info->mutex);
 
@@ -393,7 +429,7 @@ error:
         xioperf_l_log("write_cb error: ", result);
     }
     info->err = globus_error_get(result);
-    info->done = GLOBUS_TRUE;
+    info->write_done = GLOBUS_TRUE;
     globus_cond_signal(&info->cond);
     globus_mutex_unlock(&info->mutex);
 }
@@ -407,7 +443,7 @@ xioperf_next_write(
     size_t                              nbytes;
     globus_result_t                     res;
 
-    globus_assert(!info->done);
+    globus_assert(!info->write_done);
     res = globus_xio_register_write(
         info->xio_handle,
         info->next_write_buffer,
@@ -425,7 +461,7 @@ xioperf_next_write(
     info->next_write_buffer = globus_malloc(info->block_size);
     if(info->eof)
     {
-        info->done = GLOBUS_TRUE;
+        info->write_done = GLOBUS_TRUE;
     }
     else if(info->fptr != NULL)
     {
@@ -441,6 +477,33 @@ error:
     return res;
 }
 
+static
+void
+xioperf_l_interrupt_cb(
+    void *                              user_arg)
+{
+    globus_i_xioperf_info_t *           info;
+
+    info = (globus_i_xioperf_info_t *) user_arg;
+
+    globus_mutex_lock(&info->mutex);
+    {
+        printf("Dieing...\n");
+        if(info->die)
+        {
+            /* if they hit it twice */
+            exit(1);
+        }
+        info->die = GLOBUS_TRUE;
+        info->read_done = GLOBUS_TRUE;
+        info->write_done = GLOBUS_TRUE;
+        globus_xio_handle_cancel_operations(
+            info->xio_handle, GLOBUS_XIO_CANCEL_WRITE | GLOBUS_XIO_CANCEL_READ);
+        globus_cond_signal(&info->cond);
+    }
+    globus_mutex_unlock(&info->mutex);
+}
+
 int
 main(
     int                                 argc,
@@ -448,6 +511,7 @@ main(
 {
     char *                              cs;
     globus_i_xioperf_info_t *           info;
+    globus_i_xioperf_info_t             info_copy;
     globus_result_t                     res;
  
     globus_module_activate(GLOBUS_XIO_MODULE);
@@ -457,6 +521,11 @@ main(
     {
         goto error;
     }
+    globus_callback_register_signal_handler(
+        GLOBUS_SIGNAL_INTERRUPT,
+        GLOBUS_TRUE,
+        xioperf_l_interrupt_cb,
+        info);
 
     fprintf(stdout, 
     "---------------------------------------------------------------\n");
@@ -477,13 +546,23 @@ main(
 
         do
         {
-            res = globus_xio_server_accept(&info->xio_handle, info->server_handle);
+            res = globus_xio_server_accept(
+                &info->xio_handle, info->server_handle);
             if(res != GLOBUS_SUCCESS)
             {
                 xioperf_l_log("accept error:", res);
             }
-            res = xioperf_start(info);
-        } while(info->daemon);
+            else
+            {
+                /* copy initial values */
+                memcpy(&info_copy, info, sizeof(globus_i_xioperf_info_t));
+                res = xioperf_start(&info_copy);
+                if(res != GLOBUS_SUCCESS)
+                {
+                    xioperf_l_log("connection error:",res);
+                }
+            }
+        } while(info->daemon && !info->die);
     }
     else
     {
@@ -503,8 +582,58 @@ main(
     return 0;
 
 error:
+    fprintf(stdout, "failed.\n");
     globus_module_deactivate(GLOBUS_XIO_MODULE);
     return 1;
+}
+
+static
+globus_result_t
+xioperf_post_io(
+    globus_i_xioperf_info_t *           info)
+{
+    int                                 i;
+    globus_result_t                     res;
+    globus_byte_t *                     buffer;
+
+    for(i = 0; i < info->stream_count; i++)
+    {
+        if(info->reader && !info->read_done)
+        {
+            buffer = malloc(info->block_size);
+            res = globus_xio_register_read(
+                info->xio_handle,
+                buffer,
+                info->block_size,
+                1,
+                NULL,
+                xioperf_read_cb,
+                info);
+            if(res != GLOBUS_SUCCESS)
+            {
+                info->read_done = GLOBUS_TRUE;
+                xioperf_l_log("initial read error:", res);
+                goto error;
+            }
+            else
+            {
+                info->ref++;
+            }
+        }
+        if(info->writer && !info->write_done)
+        {
+            res = xioperf_next_write(info);
+            if(res != GLOBUS_SUCCESS)
+            {
+                info->write_done = GLOBUS_TRUE;
+                xioperf_l_log("initial write error:", res);
+                goto error;
+            }
+        }
+    }
+    return GLOBUS_SUCCESS;
+error:
+    return res;
 }
 
 
@@ -513,10 +642,41 @@ globus_result_t
 xioperf_start(
     globus_i_xioperf_info_t *           info)
 {
-    int                                 i;
-    globus_byte_t *                     buffer;
     globus_result_t                     res;
-    globus_reltime_t                    period;
+    globus_reltime_t                    period; 
+    globus_xio_attr_t                   attr;
+    globus_xio_attr_t                   close_attr;
+    globus_xio_driver_t                 driver;
+
+    /* do driver specific stuff */
+    globus_xio_attr_init(&attr);
+    globus_xio_attr_init(&close_attr);
+    globus_xio_attr_cntl(
+        close_attr, NULL, GLOBUS_XIO_ATTR_CLOSE_NO_CANCEL, GLOBUS_TRUE);
+    /* tcp specific */
+    driver = (globus_xio_driver_t) globus_hashtable_lookup(
+        &info->driver_table, "tcp");
+    if(driver != NULL)
+    {
+        if(info->window > 0)
+        {
+            int                         w = (int)info->window;
+            globus_xio_attr_cntl(attr, driver, GLOBUS_XIO_TCP_SET_SNDBUF, w);
+            globus_xio_attr_cntl(attr, driver, GLOBUS_XIO_TCP_SET_RCVBUF, w);
+        }
+        globus_xio_attr_cntl(
+            attr, driver, GLOBUS_XIO_TCP_SET_NODELAY, info->nodelay);
+        if(info->bind_addr != NULL)
+        {
+            globus_xio_attr_cntl(
+                attr, driver, GLOBUS_XIO_TCP_SET_INTERFACE, info->bind_addr);
+        }
+        if(info->port != 0)
+        {
+            globus_xio_attr_cntl(
+                attr, driver, GLOBUS_XIO_TCP_SET_PORT, info->port);
+        }
+    }
 
     globus_mutex_lock(&info->mutex);
     {
@@ -550,50 +710,38 @@ xioperf_start(
         printf("Connection esstablished\n");
         fprintf(stdout, 
         "---------------------------------------------------------------\n");
-        for(i = 0; i < info->stream_count && !info->done; i++)
-        {
-            if(info->reader)
-            {
-                buffer = malloc(info->block_size);
-                res = globus_xio_register_read(
-                    info->xio_handle,
-                    buffer,
-                    info->block_size,
-                    info->block_size,
-                    NULL,
-                    xioperf_read_cb,
-                    info);
-                if(res != GLOBUS_SUCCESS)
-                {
-                    info->done = GLOBUS_TRUE;
-                    xioperf_l_log("initial read error:", res);
-                }
-                else
-                {
-                    info->ref++;
-                }
-            }
-            if(info->writer && !info->done)
-            {
-                res = xioperf_next_write(info);
-                if(res != GLOBUS_SUCCESS)
-                {
-                    info->done = GLOBUS_TRUE;
-                    xioperf_l_log("initial write error:", res);
-                }
-            }
-        }
+        res = xioperf_post_io(info);
 
-        while(!info->done && info->ref > 0)
+        while(!info->read_done || info->ref > 0 || !info->write_done)
         {
             globus_cond_wait(&info->cond, &info->mutex);
         }
-        res = globus_xio_close(info->xio_handle, NULL);
+        if(!info->die && info->dual)
+        {
+            if(info->server)
+            {
+                info->write_done = GLOBUS_FALSE;
+                info->writer = GLOBUS_TRUE;
+                info->reader = GLOBUS_FALSE;
+            }
+            else
+            {
+                info->read_done = GLOBUS_FALSE;
+                info->reader = GLOBUS_TRUE;
+                info->writer = GLOBUS_FALSE;
+            }
+            res = xioperf_post_io(info);
+            while(!info->read_done || info->ref > 0 || !info->write_done)
+            {
+                globus_cond_wait(&info->cond, &info->mutex);
+            }
+        }
+        res = globus_xio_close(info->xio_handle, close_attr);
         if(res != GLOBUS_SUCCESS)
         {
             xioperf_l_log("close error", res);
         }
-        xioperf_l_print_sumary(info);
+        xioperf_l_print_summary(info);
     }
     globus_mutex_unlock(&info->mutex);
 
@@ -608,6 +756,5 @@ xioperf_start(
 
     return GLOBUS_SUCCESS;
 error:
-
     return res;
 }
