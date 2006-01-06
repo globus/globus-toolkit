@@ -180,20 +180,6 @@ xioperf_l_parse_opts(
         goto error_result;
     }
 
-    if(!info->reader)
-    {
-        info->read_done = GLOBUS_TRUE;
-    }
-    if(!info->writer)
-    {
-        info->write_done = GLOBUS_TRUE;
-        if(info->bytes_to_transfer > 0)
-        {
-            fprintf(stderr, "ignoring --num, only relvent when sending\n");
-        }
-        info->bytes_to_transfer = 0;
-    }
-
     if(info->interval > 0 &&
         (info->file || info->bytes_to_transfer)) 
     {
@@ -219,6 +205,20 @@ xioperf_l_parse_opts(
             info->writer = GLOBUS_TRUE;
         }
     }
+    if(!info->reader)
+    {
+        info->read_done = GLOBUS_TRUE;
+    }
+    if(!info->writer)
+    {
+        info->write_done = GLOBUS_TRUE;
+        if(info->bytes_to_transfer > 0)
+        {
+            fprintf(stderr, "ignoring --num, only relvent when sending\n");
+        }
+        info->bytes_to_transfer = 0;
+    }
+
     if(info->reader && info->writer && info->file)
     {
         res = GlobusXIOPerfError(
