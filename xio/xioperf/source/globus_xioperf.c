@@ -513,6 +513,7 @@ main(
     globus_i_xioperf_info_t *           info;
     globus_i_xioperf_info_t             info_copy;
     globus_result_t                     res;
+    globus_xio_driver_t                 driver;
  
     globus_module_activate(GLOBUS_XIO_MODULE);
 
@@ -526,13 +527,44 @@ main(
         GLOBUS_TRUE,
         xioperf_l_interrupt_cb,
         info);
+    globus_xio_attr_init(&info->attr);
+    /* tcp specific */
+    driver = (globus_xio_driver_t) globus_hashtable_lookup(
+        &info->driver_table, "tcp");
+    if(driver != NULL)
+    {
+        if(info->window > 0)
+        {
+            int                         w = (int)info->window;
+            res = globus_xio_attr_cntl(
+                info->attr, driver, GLOBUS_XIO_TCP_SET_SNDBUF, w);
+            res = globus_xio_attr_cntl(
+                info->attr, driver, GLOBUS_XIO_TCP_SET_RCVBUF, w);
+        }
+        globus_xio_attr_cntl(
+            info->attr, driver, GLOBUS_XIO_TCP_SET_NODELAY, info->nodelay);
+        if(info->bind_addr != NULL)
+        {
+            globus_xio_attr_cntl(
+                info->attr,
+                driver, GLOBUS_XIO_TCP_SET_INTERFACE, info->bind_addr);
+        }
+        if(info->port != 0)
+        {
+            globus_xio_attr_cntl(
+                info->attr, driver, GLOBUS_XIO_TCP_SET_PORT, info->port);
+        }
+    }
+
+
 
     fprintf(stdout, 
     "---------------------------------------------------------------\n");
     /* driver specif stuff will be tricky */
     if(info->server)
     {
-        res = globus_xio_server_create(&info->server_handle, NULL, info->stack);
+        res = globus_xio_server_create(
+            &info->server_handle, info->attr, info->stack);
         if(res != GLOBUS_SUCCESS)
         {
             xioperf_l_log("setup error:",res);
@@ -644,39 +676,13 @@ xioperf_start(
 {
     globus_result_t                     res;
     globus_reltime_t                    period; 
-    globus_xio_attr_t                   attr;
     globus_xio_attr_t                   close_attr;
-    globus_xio_driver_t                 driver;
 
     /* do driver specific stuff */
-    globus_xio_attr_init(&attr);
     globus_xio_attr_init(&close_attr);
     globus_xio_attr_cntl(
         close_attr, NULL, GLOBUS_XIO_ATTR_CLOSE_NO_CANCEL, GLOBUS_TRUE);
     /* tcp specific */
-    driver = (globus_xio_driver_t) globus_hashtable_lookup(
-        &info->driver_table, "tcp");
-    if(driver != NULL)
-    {
-        if(info->window > 0)
-        {
-            int                         w = (int)info->window;
-            globus_xio_attr_cntl(attr, driver, GLOBUS_XIO_TCP_SET_SNDBUF, w);
-            globus_xio_attr_cntl(attr, driver, GLOBUS_XIO_TCP_SET_RCVBUF, w);
-        }
-        globus_xio_attr_cntl(
-            attr, driver, GLOBUS_XIO_TCP_SET_NODELAY, info->nodelay);
-        if(info->bind_addr != NULL)
-        {
-            globus_xio_attr_cntl(
-                attr, driver, GLOBUS_XIO_TCP_SET_INTERFACE, info->bind_addr);
-        }
-        if(info->port != 0)
-        {
-            globus_xio_attr_cntl(
-                attr, driver, GLOBUS_XIO_TCP_SET_PORT, info->port);
-        }
-    }
 
     globus_mutex_lock(&info->mutex);
     {
@@ -702,7 +708,7 @@ xioperf_start(
         }
 
         GlobusTimeAbstimeGetCurrent(info->start_time);
-        res = globus_xio_open(info->xio_handle, info->client, NULL);
+        res = globus_xio_open(info->xio_handle, info->client, info->attr);
         if(res != GLOBUS_SUCCESS)
         {
             goto error;

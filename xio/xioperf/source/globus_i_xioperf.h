@@ -68,6 +68,7 @@ typedef struct globus_i_xioperf_info_s
     globus_xio_server_t                 server_handle;
     globus_abstime_t                    start_time;
     globus_abstime_t                    end_time;
+    globus_xio_attr_t                   attr;
 } globus_i_xioperf_info_t;
 
 
