@@ -65,12 +65,10 @@ sub basic_func
 {
     my ($use_proxy) = (shift);
     my ($errors,$rc) = ("",0);
-    my ($old_proxy);
 
-    $old_proxy=$ENV{'X509_USER_PROXY'}; 
     if($use_proxy == 0)
     {
-        $ENV{'X509_USER_PROXY'} = "/dev/null";
+        FtpTestLib::push_proxy('/dev/null');
     }
     
     my $command = "$test_exec -s $proto$source_host$source_file -d $proto$dest_host$dest_file >/dev/null 2>&1";
@@ -91,13 +89,9 @@ sub basic_func
         $errors = "\n# Test failed\n# $command\n# " . $errors;
         ok($errors, 'success');
     }
-    if((!$use_proxy) && defined($old_proxy))
+    if($use_proxy == 0)
     {
-	$ENV{'X509_USER_PROXY'} = $old_proxy;
-    }
-    elsif((!$use_proxy))
-    {
-        delete $ENV{'X509_USER_PROXY'};
+        FtpTestLib::pop_proxy();
     }
     
     clean_remote_file($dest_host, $dest_file);

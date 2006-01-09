@@ -57,7 +57,6 @@ sub basic_func
     my ($use_proxy) = (shift);
     my $tmpname = POSIX::tmpnam();
     my ($errors,$rc) = ("",0);
-    my ($old_proxy);
 
     unlink($tmpname);
 

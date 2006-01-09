@@ -51,10 +51,9 @@ sub basic_func
 
     unlink($tmpname);
 
-    $old_proxy=$ENV{'X509_USER_PROXY'}; 
     if($use_proxy == 0)
     {
-        $ENV{'X509_USER_PROXY'} = "/dev/null";
+        FtpTestLib::push_proxy("/dev/null");
     }
     my $command = "$test_exec -s '$proto$source_host$source_file' >$tmpname 2>/dev/null";
     $errors = run_command($command, $use_proxy ? 0 : -1);
@@ -73,13 +72,9 @@ sub basic_func
         ok($errors, 'success');
     }
     unlink($tmpname);
-    if((!$use_proxy) && defined($old_proxy))
+    if($use_proxy == 0)
     {
-	$ENV{'X509_USER_PROXY'} = $old_proxy;
-    }
-    elsif((!$use_proxy))
-    {
-        delete $ENV{'X509_USER_PROXY'};
+        FtpTestLib::pop_proxy();
     }
 }
 push(@tests, "basic_func" . "(0);") unless $proto ne "gsiftp://"; #Use invalid proxy

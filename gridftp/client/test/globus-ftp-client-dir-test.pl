@@ -49,7 +49,6 @@ push(@tests, "run_check('./globus-ftp-client-delete-test', '-s', '');");
 sub run_check
 {
     my ($errors,$rc) = ("",0);
-    my ($old_proxy);
     my $test_exec = shift;
     my $s_or_d = shift;
     my $input = shift;

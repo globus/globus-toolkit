@@ -52,7 +52,6 @@ sub basic_func
     my $tmpname = POSIX::tmpnam();
     my $tmpname2 = POSIX::tmpnam();
     my ($errors,$rc) = ("",0);
-    my ($old_proxy);
     my $newfile = new FileHandle;
     my $offset = shift;
     my ($source_data, $dest_data) = ("", "");

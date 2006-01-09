@@ -41,7 +41,6 @@ my ($source_host, $source_file, $local_copy) = setup_remote_source();
 sub check_existence
 {
     my ($errors,$rc) = ("",0);
-    my ($old_proxy);
     my $src_url = shift;
     my $existence_rc = shift;
 

@@ -50,7 +50,6 @@ my ($dest_host, $dest_file) = setup_remote_dest();
 sub basic_func
 {
     my ($errors,$rc) = ("",0);
-    my ($old_proxy);
     my $newfile = new FileHandle;
     my $offset = shift;
     my $data = "";

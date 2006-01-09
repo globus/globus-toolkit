@@ -49,7 +49,6 @@ my ($source_host, $source_file, $local_copy) = setup_remote_source();
 sub lingering_get
 {
     my ($errors,$rc) = ("",0);
-    my ($old_proxy);
 
     my $command = "$test_exec -s $proto$source_host$source_file >/dev/null 2>&1";
     $errors = run_command($command, 1);
