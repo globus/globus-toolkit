@@ -518,6 +518,7 @@ globus_usage_stats_vsend(
     }
 
     targets_list = handle->xio_desc_list;
+    server_list = handle->targets;
     while(targets_list)
     {
         GlobusUsageStatsDebugPrintf(
