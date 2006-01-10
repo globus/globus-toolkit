@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<containerSecurityConfig xmlns="http://www.globus.org/security/descriptor/container" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:param="http://www.globus.org/security/descriptor" xsi:schemaLocation="http://www.globus.org/security/descriptor name_value_type.xsd">
+  <defaultAuthzParam>
+    <interceptor name="gridmap">
+      <parameter>
+        <param:nameValueParam>
+          <param:parameter name="gridmap-file" value="@GRIDMAP@"/>
+        </param:nameValueParam>
+      </parameter>
+    </interceptor>
+  </defaultAuthzParam>
+</containerSecurityConfig>

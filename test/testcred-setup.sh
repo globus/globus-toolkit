@@ -18,3 +18,9 @@ if [ $? -ne 0 ]; then
    echo Unable to add identity \"${SUBJECT}\" to gridmap ${GRIDMAP}
    exit 2
 fi
+
+rm -f $SECURITY_DESCRIPTOR 2> /dev/null 2>&1;
+
+sed -e "s|@GRIDMAP@|$GRIDMAP|" \
+            < ${SECURITY_DESCRIPTOR}.in \
+            > $SECURITY_DESCRIPTOR

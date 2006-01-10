@@ -517,5 +517,25 @@ sub setup_env
     }
 }
 
+sub testcred_env
+{
+    $ENV{X509_CERT_DIR} = "$ENV{GLOBUS_LOCATION}/test/globus_test";
+    $ENV{X509_USER_CERT} = "$ENV{X509_CERT_DIR}/testcred.pem";
+    $ENV{X509_USER_KEY} = "$ENV{X509_CERT_DIR}/testcred.pem";
+    $ENV{X509_USER_PROXY}="$ENV{X509_CERT_DIR}/testcred.pem";
+    $ENV{GRIDMAP} = "$ENV{X509_CERT_DIR}/grid-mapfile";
+    $ENV{SECURITY_DESCRIPTOR} = "$ENV{X509_CERT_DIR}/global_security_descriptor.xml";
+
+    return 0;
+}
+
+sub testcred_setup
+{
+    testcred_env();
+
+    system(". $ENV{GLOBUS_LOCATION}/test/globus_test/testcred-setup.sh");
+
+    return $? == 0;
+}
 
 1;
