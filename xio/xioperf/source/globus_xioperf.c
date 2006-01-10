@@ -1,5 +1,6 @@
 #include "globus_i_xioperf.h"
 #include "globus_options.h"
+#include "globus_xio_gsi.h"
 
 extern globus_options_entry_t            globus_i_xioperf_opts_table[];
 
@@ -553,6 +554,39 @@ main(
         {
             globus_xio_attr_cntl(
                 info->attr, driver, GLOBUS_XIO_TCP_SET_PORT, info->port);
+        }
+    }
+    driver = (globus_xio_driver_t) globus_hashtable_lookup(
+        &info->driver_table, (void *)"gsi");
+    if(driver != NULL)
+    {
+        if(info->subject != NULL)
+        {
+            gss_buffer_desc             send_tok;
+            OM_uint32                   min_stat;
+            OM_uint32                   maj_stat;
+            gss_name_t                  target_name;
+
+            send_tok.value = (void *) info->subject;
+            send_tok.length = strlen(info->subject) + 1;
+            maj_stat = gss_import_name(
+                &min_stat,
+                &send_tok,
+                GSS_C_NT_USER_NAME,
+                &target_name);
+            if(maj_stat == GSS_S_COMPLETE &&
+                target_name != GSS_C_NO_NAME)
+            {
+                globus_xio_attr_cntl(
+                    info->attr, driver,
+                    GLOBUS_XIO_GSI_SET_TARGET_NAME,
+                    target_name);
+                gss_release_name(&min_stat, &target_name);
+                globus_xio_attr_cntl(
+                    info->attr, driver,
+                    GLOBUS_XIO_GSI_SET_AUTHORIZATION_MODE,
+                    GLOBUS_XIO_GSI_IDENTITY_AUTHORIZATION);
+            }
         }
     }
 
