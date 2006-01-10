@@ -339,7 +339,7 @@ xioperf_read_cb(
             info->err = globus_error_get(result);
             goto error;
         }
-        if(info->read_done)
+        if(info->read_done || info->die)
         {
             /* happens with ctl+c */
             goto error;
@@ -498,6 +498,10 @@ xioperf_l_interrupt_cb(
         info->die = GLOBUS_TRUE;
         info->read_done = GLOBUS_TRUE;
         info->write_done = GLOBUS_TRUE;
+        if(info->server_handle != NULL)
+        {
+            globus_xio_server_cancel_accept(info->server_handle);
+        }
         globus_xio_handle_cancel_operations(
             info->xio_handle, GLOBUS_XIO_CANCEL_WRITE | GLOBUS_XIO_CANCEL_READ);
         globus_cond_signal(&info->cond);
@@ -590,8 +594,6 @@ main(
         }
     }
 
-
-
     fprintf(stdout, 
     "---------------------------------------------------------------\n");
     /* driver specif stuff will be tricky */
@@ -629,6 +631,11 @@ main(
                 }
             }
         } while(info->daemon && !info->die);
+        res = globus_xio_server_close(info->server_handle);
+        if(res != GLOBUS_SUCCESS)
+        {
+            xioperf_l_log("server close error:", res);
+        }
     }
     else
     {
