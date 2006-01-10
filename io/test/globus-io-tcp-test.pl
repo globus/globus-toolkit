@@ -20,7 +20,6 @@ use strict;
 use POSIX;
 use POSIX "sys_wait_h";
 use Test;
-use Cwd;
 
 my @tests;
 my @todo;
@@ -28,7 +27,9 @@ my @todo;
 my $server_prog = './globus_io_tcp_test_server';
 my $client_prog = './globus_io_tcp_test_client';
 
-$ENV{X509_CERT_DIR} = cwd();
+$ENV{X509_CERT_DIR} = getcwd();
+$ENV{X509_USER_CERT} = "testcred.pem";
+$ENV{X509_USER_KEY} = "testcred.pem";
 $ENV{X509_USER_PROXY} = "testcred.pem";
 
 my $identity = `grid-proxy-info -identity`;
@@ -51,17 +52,21 @@ sub basic_func
 
    if($sec_env == 0)
    {
-       $ENV{X509_CERT_DIR} = cwd();
-       $ENV{X509_USER_PROXY} = "testcred.pem";
+       $ENV{X509_CERT_DIR} = getcwd();
+       $ENV{X509_USER_CERT} = "testcred.pem";
+       $ENV{X509_USER_KEY} = "testcred.pem";
    }
    elsif($sec_env == 1)
    {
        $ENV{X509_CERT_DIR} = "";
-       $ENV{X509_USER_PROXY} = "testcred.pem";       
+       $ENV{X509_USER_KEY} = "testcred.pem";       
+       $ENV{X509_USER_CERT} = "testcred.pem";       
    }
    elsif($sec_env == 2)
    {
-       $ENV{X509_CERT_DIR} = cwd();
+       $ENV{X509_CERT_DIR} = getcwd();
+       $ENV{X509_USER_CERT} = "";       
+       $ENV{X509_USER_KEY} = "";       
        $ENV{X509_USER_PROXY} = "";       
    }
    
