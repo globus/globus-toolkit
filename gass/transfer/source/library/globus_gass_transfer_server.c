@@ -129,15 +129,9 @@ globus_gass_transfer_create_listener(
     return GLOBUS_SUCCESS;
 
   destroy_handle:
+    /* These calls end up freeing l and its members */
     globus_i_gass_transfer_listener_destroy(*listener);
     globus_i_gass_transfer_listener_destroy(*listener);
-
-  listener_exit:
-    if(l->base_url != GLOBUS_NULL)
-    {
-	globus_free(l->base_url);
-    }
-    globus_free(l);
 
   error_exit:
     globus_i_gass_transfer_unlock();
