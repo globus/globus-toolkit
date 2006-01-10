@@ -410,6 +410,23 @@ xioperf_l_opts_daemon(
 
 static
 globus_result_t
+xioperf_l_opts_subject_dn(
+    char *                              cmd,
+    char *                              opt,
+    void *                              arg,
+    int *                               out_parms_used)
+{
+    globus_i_xioperf_info_t *           info;
+
+    info = (globus_i_xioperf_info_t *) arg;
+
+    info->subject = strdup(opt);
+
+    return GLOBUS_SUCCESS;
+}
+
+static
+globus_result_t
 xioperf_l_opts_driver(
     char *                              cmd,
     char *                              opt,
@@ -514,6 +531,9 @@ globus_options_entry_t                   globus_i_xioperf_opts_table[] =
     {"daemon", "d", NULL, NULL,
         "put a server in daemon mode.",
         0, xioperf_l_opts_daemon},
+    {"subject", "DN", NULL, "<certificate subject>",
+        "the certificate subject if using the gsi driver",
+        1, xioperf_l_opts_subject_dn},
     {"driver", "D", NULL, "<driver name>",
         "the name of the driver to put next on the stack",
         1, xioperf_l_opts_driver},

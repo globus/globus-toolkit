@@ -45,6 +45,7 @@ typedef struct globus_i_xioperf_info_s
     globus_bool_t                       dual;
     char *                              client;
     char *                              file;
+    char *                              subject;
     globus_off_t                        bytes_to_transfer;
     globus_off_t                        bytes_sent;
     globus_off_t                        bytes_recv;
