@@ -1,71 +1,27 @@
-org.globus.usage.*;
-A simple extensible system for remotely logging gt4 usage statistics with
-UDP packets.
+org.globus.usage
+A simple extensible system for remotely logging gt4 usage statistics with UDP packets.
 by Jonathan DiCarlo
 Jan 28, 2005
-GPT package creation by Peter Lane
-February 3, 2005
-
-Bug reports, questions, suggestions, etc. to jdicarlo@mcs.anl.gov.
 
 *******************************************
 Compiling and running:
 *******************************************
 
-This should be compatible with Java 1.3 and up.  If you find any
-incompatibility with Java 1.3, it is a bug -- please tell me about it!
+The main() functions in ExampleGFTPSender.java and in ReceiverExample.java
+show how a program would use the other classes.
 
-ExampleGFTPSender.java and ReceiverExample.java show how a program would
-use the other classes.
+First you will have to set up a database (see SQL SCHEMA), and edit the file
+udpUsage.properties with the right driver class, url, and table names for your
+database.  You should also set the hostname and port number for the machine
+running the receiver.
 
-To run the receiver example, you will have to first set up a database (see SQL
-SCHEMA), and edit the file udpUsage.properties with the right driver class,
-url, and table names for your database.
+Then simply do:
 
-On the sender side, edit udpUsage.properties to set the hostname and port
-number for the machine running the receiver.  If you want to send to multiple
-receivers, put a comma-separated list of hostnames (or IP addresses) on one
-line.  For example:
-
-receiver-ip = localhost, 192.168.0.101, foovax.ubar.edu
-
-Once you're done editing the properties, you can compile and start the
-receiver simply by executing:
-
-ant run-reciever 
-
-(this will block, so open another terminal or run it in background).  You can
-test the receiver by running the example sender:
+ant run-reciever (this will block, so open another terminal or run it in background)
 
 ant run-sender
 
 The example sender just sends a few GFTPMonitorPackets and then exits.
-
-*******************************************
-Packages and Dependencies
-*******************************************
-
-org.globus.usage.packets contains the UsageMonitorPacket class, its
-subclasses, and the utility classes that it depends on.  Both senders and
-receivers need this package.
-
-org.globus.usage.receiver contains the Receiver class, and
-org.globus.usage.receiver.handlers contains all of the Handler
-classes that plug into the Receiver.  These depend on classes in
-org.globus.usage.packets.
-
-There are example classes ExampleGFTPSender and ExampleReceiver which are not
-part of either package.  They demonstrate how to use the packets and receiver
-packages. They are in org.globus.usage.packets.samples and
-org.globus.usage.receiver.samples respectively.
-
-Therefore, programs that want to send usage-monitor packets need to
-include only org.globus.usage.packets.*;  programs that want to receive
-packets need to include org.globus.usage.packets.*, org.globus.usage.receiver.*,
-and org.globus.usage.receiver.handlers.*.
-
-The receiver additionally needs a database driver, such as the
-msyql-connector-java.jar included in lib/.
 
 *******************************************
 How to Add your own Packet Formats:
@@ -82,22 +38,15 @@ How to Add your own Packet Formats:
    setter methods; see GFTPMonitorPacket for an example.
 
    It's important to override these functions:
-         void packCustomFields(CustomByteBuffer buf);	
-         void unpackCustomFields(CustomByteBuffer buf);
+         void packCustomFields(ByteBuffer buf);	
+         void unpackCustomFields(ByteBuffer buf);
 
-   packCustomFields should write all the custom fields of your packet
-   into the CustomByteBuffer; unpackCustomFields should read them out
-   again in the same order.  This can be accomplished with the
-   CustomByteBuffer.get() and CustomByteBuffer.put() methods and their
-   variants; see CustomByteBuffer.java.
-
-   Note that packCustomFields() and unpackCustomFields() are always
-   called for you by the functions that send and receive packets; you
-   do not have to invoke them yourself.  If you are subclassing
-   another packet, you must preserve the superclass's data by starting
-   your packCustomFields with a call to super.packCustomFields(buf),
-   and starting your unpackCustomFields with a call to
-   super.unpackCustomFields(buf).
+   packCustomFields should write all the custom fields of your packet into the
+   ByteBuffer; unpackCustomFields should read them out again in the same
+   order.  These are always called for you by the functions that send and
+   receive packets.  If you are subclassing another packet, you should start
+   your packCustomFields with a call to super.packCustomFields(buf); and the
+   same for unpackCustomFields.
 
 
 2. Write a class that implements PacketHandler
@@ -105,8 +54,8 @@ How to Add your own Packet Formats:
    There are three methods you must implement:
     public boolean doCodesMatch(short componentCode, short versionCode);
 
-    this should return true if componentCode and versionCode match the
-    code numbers that you want to handle.
+    this should return true if componentCode and versionCode match the code numbers
+    that you want to handle.
 
     public UsageMonitorPacket instantiatePacket(ByteBuffer rawBytes);
 
@@ -133,8 +82,7 @@ How to Add your own Packet Formats:
 3. Register the handler:
    When you create a Receiver object in your monitor program, you can pass an
    instance of your PacketHandler class to receiver.registerHandler().  The
-   methods of your PacketHandler will be called when an appropriate packet
-   comes in.
+   methods of your PacketHandler will be called when an appropriate packet comes in.
 
 4. Write a sender which creates and sends your packets:
 
@@ -149,13 +97,19 @@ How to Add your own Packet Formats:
 Known Issues / To-do list:
 *******************************************
 
-1.  InetAddress.getLocalHost() will return an internal IP address if
-    called on a computer behind a NAT box.  This internal IP address
-    is fairly meaningless to external logging software elsewhere.  We
-    should think about how we want to handle this.  The change would
-    be in the Sender class.
+1.  InetAddress.getLocalHost() will return an internal IP address if called on a
+    computer behind a NAT box.  This internal IP address is fairly meaningless to
+    external logging software elsewhere.  We should think about how we want to
+    handle this.  The change would be in the Sender class.
 
-2.  SQL assumptions -- this has been tested with MySQL but nothing else;
+2.  Sending to multiple recievers -- I think it works, but this has not yet
+    been tested.
+
+3.  The use of ByteBuffer internally is probably not the most efficient in
+    either time or space.  Fortunately, I can fix this without having to
+    change any of the interfaces.
+
+4.  SQL assumptions -- this has been tested with MySQL but nothing else;
     probably needs some modification to be portable to other databases.  Also,
     the program expects that an SQL database is already up and running and has
     a table of the appropriate schema.  (See SQL SCHEMA).
@@ -163,6 +117,8 @@ Known Issues / To-do list:
     probably naiive.  For instance, I had to hard-code parts of the SQL
     strings, which I know is not portable.
 
+5.  All parts of the program should be modified to use logger4j instead of
+    sending all this stuff to System.err.println().
 
 *******************************************
 SQL SCHEMA:

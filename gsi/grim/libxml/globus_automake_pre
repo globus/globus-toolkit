@@ -1,0 +1,31 @@
+## Special globus installation directories
+
+setupdir = $(GLOBUS_LOCATION)/setup/globus
+## setup = [ DATA,PROGRAMS,SCRIPTS ]
+
+testdir = $(GLOBUS_LOCATION)/test/$(PACKAGE)
+## test = [ DATA,PROGRAMS,SCRIPTS ]
+
+scriptsysconfdir = $(GLOBUS_LOCATION)/etc
+## scriptsysconf = [ PROGRAMS,SCRIPTS ]
+
+flavorincludedir = $(GLOBUS_LOCATION)/include/$(GLOBUS_FLAVOR_NAME)
+## flavorinclude = [ HEADERS ]
+
+pkgdir = $(GLOBUS_LOCATION)/etc/globus_packages/$(PACKAGE)
+## pkg = [ DATA ]
+
+aclocaldir = $(GLOBUS_LOCATION)/share/globus_aclocal
+## aclocal = [ DATA ]
+
+amdirdir = $(GLOBUS_LOCATION)/share/globus_amdir
+## amdir = [ DATA ]
+
+doxygendir = $(GLOBUS_LOCATION)/share/doxygen
+## doxygen = [ DATA ]
+
+docdir = $(GLOBUS_LOCATION)/share/doc
+## doc = [ DATA ]
+
+LINK_BAK = orig
+AUTOMAKE_OPTIONS=no-dependencies

@@ -1,74 +1,75 @@
-<?xml version="1.0"?>
+<project name="UDPUsage" default="compile-client" basedir=".">
 
-<project default="all" basedir=".">
+  <path id="mysql.classpath">
+    <fileset file="./lib/mysql-connector-java-3.1.6-bin.jar"/>
+  </path>
 
-    <property environment="env"/>
-    <property name="env.GLOBUS_LOCATION" value="../../wsrf/install"/>
-    <property name="deploy.dir" location="${env.GLOBUS_LOCATION}"/>
+  <target name="clean">
+    <delete>
+      <fileset dir="./dist">
+	<include name="**/*.class"/>
+      </fileset>
+      <fileset dir=".">
+	<include name="UDPUsage.jar"/>
+      </fileset>
+    </delete>
 
-    <target name="all" depends="deploy"/>
+  </target>
 
-    <target name="deploy">
-        <ant dir="packets/common" target="deploy"/>
-        <ant dir="packets/source" target="deploy"/>
-        <ant dir="packets/samples" target="deploy"/>
-        <ant dir="receiver/source" target="deploy"/>
-        <ant dir="receiver/samples" target="deploy"/>
-    </target>
-
-    <target name="clean">
-        <ant dir="packets/common" target="clean"/>
-        <ant dir="packets/source" target="clean"/>
-        <ant dir="packets/samples" target="clean"/>
-        <ant dir="receiver/source" target="clean"/>
-        <ant dir="receiver/samples" target="clean"/>
-    </target>
-        
-    <target name="receiver"> 
-            <echo message="${deploy.dir}/lib"/>
-         <java classname="org.globus.usage.receiver.samples.ExampleReceiver" 
-              dir="${deploy.dir}"
-              fork="true" 
-              failonerror="true">
-
-            <classpath>
-               <pathelement location="${deploy.dir}"/>
-               <fileset dir="${deploy.dir}/lib">
-                 <include name="*.jar"/>
-               </fileset>
-               <fileset dir="../../lib">
-                 <include name="*.jar"/>
-               </fileset>
-            </classpath>
-            <arg value="4810"/>
-        </java>
-    </target>
-
-
- <target name="do-junit">
-    <mkdir dir="./tests/dist"/>
-    <javac srcdir="./tests/src" destdir="./tests/dist">
+  <target name="compile" depends="clean">
+    <mkdir dir="./dist"/>
+    <javac srcdir="./src/" destdir="./dist/">
       <classpath>
-         <fileset dir="${deploy.dir}/lib">
-           <include name="*.jar"/>
-         </fileset>
-         <fileset dir="../../lib">
-           <include name="*.jar"/>
-         </fileset>
+	<path refid="mysql.classpath"/>
       </classpath>
     </javac>
-    <java classname="org.globus.usage.UnitTester">
+    <jar destfile = "UDPUsage.jar">
+      <fileset dir="./dist/">
+	<include name="**/*.class"/>
+      </fileset>
+      <fileset file="./udpUsage.properties"/>
+    </jar>
+  </target>
+
+  <target name="run-receiver" depends="compile">
+    <java classname="org.globus.usage.ReceiverExample" fork="true">
       <classpath>
-         <pathelement location="./tests/dist"/>
-         <fileset dir="${deploy.dir}/lib">
-           <include name="*.jar"/>
-         </fileset>
-         <fileset dir="../../lib">
-           <include name="*.jar"/>
-         </fileset>
+	<pathelement location="./UDPUsage.jar"/>
+	<path refid="mysql.classpath"/>
       </classpath>
     </java>
   </target>
 
+  <target name="run-sender" depends="compile">
+    <java classname="org.globus.usage.ExampleGFTPSender">
+      <classpath>
+	<pathelement location="./UDPUsage.jar"/>
+      </classpath>
+    </java>
+  </target>
+
+<!--
+  <target name="do-junit-tests">
+    <path id="junit.classpath">
+      <fileset dir="/home/jdicarlo/java-software/junit3.8.1/">
+	<include name="**/*.jar"/>
+      </fileset>
+    </path>
+
+    <mkdir dir="./dist"/>
+    <javac srcdir="." destdir="./dist/" includes = "src/**, tests/**">
+      <classpath>
+	<path refid="junit.classpath"/>
+      </classpath>
+    </javac>
+
+    <java classname="junit.textui.TestRunner">
+      <classpath>
+	<pathelement path="./dist"/>
+	<path refid="junit.classpath"/>
+      </classpath>
+      <arg value="UnitTester"/>
+    </java>
+  </target> -->
 
 </project>
