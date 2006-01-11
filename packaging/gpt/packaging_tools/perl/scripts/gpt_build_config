@@ -80,17 +80,25 @@ use Cwd;
 
 $static = 1 if defined $link and $link eq 'static';
 
-my $installation = new Grid::GPT::Installation();
-
 my $factory = new Grid::GPT::PackageFactory;
 
 my $pkg = $factory->type_of_package($srcfile);
 
-$pkg->{'disable_version_checking'} = 
-  $installation->{'disable_version_checking'};
-
 $pkg->read_metadata_file($srcfile);
 
+my @pkgdirs;
+
+for my $e ( keys %{$pkg->{'Source_Dependencies'}->{'pkgname-list'}} ) {
+   next if ($e =~ /setup/);
+   push @pkgdirs, $e;
+}
+
+my $installation = new Grid::GPT::Installation( root_package => $pkg,
+                                                dep_packages => \@pkgdirs,
+                                                deps => 1);
+
+$pkg->{'disable_version_checking'} = 
+  $installation->{'disable_version_checking'};
 
 open (OUT, ">$outfile") or die "ERROR: $outfile could not be opened";
 #open (DEBUG, ">/tmp/debuggingoutput") or die "ERROR: debuggingoutput could not be opened";

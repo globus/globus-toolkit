@@ -30,7 +30,19 @@ $me->{'locations'}->{'installdir'} = $args{'pkgdir'} if defined $args{'pkgdir'};
     $me->{'disable_version_checking'} = $args{'disable_version_checking'};
     $me->{'enable_version_checking'} = $args{'enable_version_checking'};
     $me->Grid::GPT::PkgSet::_init(%args);
+    $me->{'deps'} = $args{'deps'};
+    $me->{'root_package'} = $args{'root_package'};
+    $me->{'dep_packages'} = $args{'dep_packages'};
     $me->load_installation() if !defined $args{'noload'};
+    $me->load_core() if defined $args{'core_only'};
+}
+
+sub load_core
+{ 
+  my ($me, %args) = @_;
+  
+  my $dirtype = defined $args{'dir'} ? $args{'dir'} : 'pkgdir';
+  $me->import_package_dir("globus_core", $dirtype);
 }
 
 sub load_installation
@@ -39,20 +51,47 @@ sub load_installation
 
   my $dirtype = defined $args{'dir'} ? $args{'dir'} : 'pkgdir';
 
-  opendir(PKGDIR, $me->{'locations'}->{$dirtype});
-  my @pkgdirs = grep {$_ ne 'setup'} grep { ! m!^\.! }readdir PKGDIR;
-  closedir PKGDIR;
+  my @pkgdirs;
+  my $root_package = $me->{'root_package'}->Name() if defined $me->{'root_package'};
+  
+  if ( defined $root_package ) {
+      my %hash;
+      # Required to check for rebuilds.
+      $me->import_package_dir($root_package, $dirtype);
+      $hash{"$root_package"} = 1;
 
-  # Check to see if version checking is disabled for this location.
-  my $gptdir = $me->{'locations'}->{'pkgdir'};
-  $gptdir =~ s!globus_packages!gpt!;
-##  $gptdir =~ s!gpt/packages!gpt!;
+      foreach my $key ( @$me{'dep_packages'} ) {
+         foreach my $bar ( @$key ) {
+            push @pkgdirs, $bar;
+         }
+      }
 
-  $me->{'disable_version_checking'} = 1 
-    if -e "$gptdir/disable_version_checking" 
-      and ! defined $me->{'enable_version_checking'};
+      $me->import_deps($dirtype, \%hash, @pkgdirs) if $me->{'deps'};
+  } else {
+      opendir(PKGDIR, $me->{'locations'}->{$dirtype});
+      my @pkgdirs = grep {$_ ne 'setup'} grep { ! m!^\.! }readdir PKGDIR;
+      closedir PKGDIR;
 
-  for my $pd (@pkgdirs) {
+      # Check to see if version checking is disabled for this location.
+      my $gptdir = $me->{'locations'}->{'pkgdir'};
+      $gptdir =~ s!globus_packages!gpt!;
+##      $gptdir =~ s!gpt/packages!gpt!;
+
+      $me->{'disable_version_checking'} = 1 
+        if -e "$gptdir/disable_version_checking" 
+          and ! defined $me->{'enable_version_checking'};
+
+      for my $pd (@pkgdirs) {
+        $me->import_package_dir($pd, $dirtype);
+      }
+  }
+}
+
+sub import_package_dir {
+    my ($me, $pd, $dirtype) = @_;
+
+    my %deparray = ();
+
     my $dir = "$me->{'locations'}->{$dirtype}/$pd";
     opendir(PKGDIR, $dir);
     my @pkgfiles = grep { m!\.gpt$! } readdir PKGDIR;
@@ -76,6 +115,17 @@ sub load_installation
                                   convert => 0,
                                  );
 
+# Add dependent packages to the list of packages to load.
+       my @deptypes = ( 'Compile', 'Build_Link', 'Runtime_Link' );
+       for my $dt ( @deptypes ) {
+          my @deps = @{$node->{'depindexes'}->query( deptype=>$dt )};
+          foreach my $foo (@deps) {
+             #print "\t" . $foo->{'pkgname'} . "\n";
+             #push @deparray, $foo->{'pkgname'};
+             $deparray{$foo->{'pkgname'}} = 1;
+          }
+      }
+
       next if $dirtype eq 'setupdir';
 
       my $format = 
@@ -92,8 +142,32 @@ sub load_installation
 #      $me->printtable();
     }
 
+   return %deparray;
+}
+
+sub import_deps {
+  my ($me, $dirtype, $bighash, @pkgdirs) = @_;
+  my %new_deps;
+  my %new_call;
+
+  for my $pack ( @pkgdirs ) {
+      $bighash->{$pack} = 1;
+      %new_deps = $me->import_package_dir($pack, $dirtype);
+      for my $bar ( keys %new_deps ) {
+         if ( $bighash->{$bar} ne 1)
+         {
+            $bighash->{$bar} = 1;
+            $new_call{$bar} = 1;
+         }
+      }
+
+  }
+
+  if ( %new_call ) {
+     $me->import_deps($dirtype, $bighash, (keys %new_call))
   }
 }
+
 
 sub add_files {
   my ($me, $node) = @_;

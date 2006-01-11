@@ -69,6 +69,10 @@ for my $typ (@pkgtypes) {
   my $type_flavor = $flavor;
   $type_flavor = "noflavor" 
     if defined ($Grid::GPT::V1::Definitions::noflavor_pkg_types{$typ});
+ 
+  # Don't put down pkgdata if there isn't a filelist
+  next unless ( -f "${type_flavor}_${typ}.filelist" );
+
   my $out = $srcfile;
   $out =~ s/_src/_$ {type_flavor}_$typ/;
   my $bin_pkg = $pkg->convert_metadata($typ, $flavor);

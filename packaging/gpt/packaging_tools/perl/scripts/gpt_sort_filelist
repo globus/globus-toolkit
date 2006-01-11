@@ -76,6 +76,7 @@ GetOptions( "flavor=s" => \$flavor,
 Pod::Usage::pod2usage(0) if $help;
 
 my $masterlist = shift;
+my $static = shift;
 
 if (!defined($masterlist)) {
   print STDERR "ERROR: Need master filelist filename \n";
@@ -110,6 +111,14 @@ my $locations = new Grid::GPT::Locations();
 
 my $prefix = $locations->{'installdir'};
 
+# The filelist won't include the installation directory,
+# but the pkgdir value will.  Strip it out so we can inspect
+# the filelists later.
+my $pkgdatasubdir = "$locations->{'pkgdir'}";
+$pkgdatasubdir =~ s!$prefix/!!;
+my $altpkgdatasubdir = "$locations->{'altpkgdir'}";
+$altpkgdatasubdir =~ s!$prefix/!!;
+
 my @list;
 for my $line (<MASTER>) {
   $line =~ s!^.*$prefix!!;
@@ -142,6 +151,13 @@ for my $typ (sort keys %funcs) {
     my $type_flavor = $flavor;
     $type_flavor = "noflavor" 
       if defined ($Grid::GPT::V1::Definitions::noflavor_pkg_types{$typ});
+
+    # If this filelist only has package metadata, don't write it!
+    my @notpkgdata;
+    @notpkgdata = grep { ! m!$pkgdatasubdir!}
+      grep { ! m!$altpkgdatasubdir!} @$outlines;
+    next if (! @notpkgdata );
+
     my $out = "$prefix/$ {type_flavor}_$ {typ}.filelist";
     open (OUT, ">$out") or die "ERROR: could not open $out\n";
     for (@$outlines) {

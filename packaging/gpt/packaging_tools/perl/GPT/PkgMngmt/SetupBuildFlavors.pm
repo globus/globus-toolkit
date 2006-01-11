@@ -77,6 +77,8 @@ sub set_installation {
     new Grid::GPT::Installation(
                                 locations => $me->{'locations'},
                                 log => $me->{'log'},
+                                noload => 1,
+                                core_only => 1,
                                );
 
   $me->{'installed_core_pkgs'} = 

@@ -537,6 +537,8 @@ sub install_pkgdata {
   my $name = $pkg->Name();
 
   return if ! defined $filelist;
+  # Don't write out empty filelists/pkgdata
+  return unless (@$filelist);
 
   my $pkgdatadir = "$me->{'locations'}->{'pkgdir'}/$name";
   my $installdir = $me->{'locations'}->{'installdir'};

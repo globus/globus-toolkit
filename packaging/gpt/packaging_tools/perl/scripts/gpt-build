@@ -309,12 +309,24 @@ for my $o (@buildobjswithoutcore) {
   #Build dependency check
   $log->announce("CHECKING BUILD DEPENDENCIES FOR $name");
 
+  # Extract the list of dependent packages so we
+  # can load Installation with only packages we require.
+  my @pkgdirs;
+
+  for my $e ( keys %{$pkg->{'Source_Dependencies'}->{'pkgname-list'}} ) {
+     next if ($e =~ /setup/);
+     push @pkgdirs, $e;
+  }
+
   my $installation = 
     new Grid::GPT::Installation(
                                 locations => $locations,
                                 disable_version_checking => 
                                 $disable_version_checking,
-                                log => $log
+                                log => $log,
+                                root_package => $pkg,
+                                dep_packages => \@pkgdirs,
+                                deps => 1,
                                );
 
   my $node = $installation->add_package(pkg => $pkg);

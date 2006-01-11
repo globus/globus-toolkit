@@ -39,11 +39,13 @@ sort_filelist: all_filelists
 	@if test "$(GPT_IS_2)" = "yes"; then \
 		$(GPT_LOCATION)/sbin/gpt_sort_filelist  \
 		--flavor=$(GLOBUS_FLAVOR_NAME) \
-		-pkg=./pkg_data_src.gpt.in ./master.filelist; \
+		-pkg=./pkg_data_src.gpt.in ./master.filelist \
+                $(GPT_LINKTYPE); \
 	else \
 		$(GPT_LOCATION)/sbin/gpt_sort_filelist  \
 		--flavor=$(GLOBUS_FLAVOR_NAME) \
-		./master.filelist; \
+		./master.filelist \
+                $(GPT_LINKTYPE); \
 	fi
 
 $(METADATA_FILES): pkg_data_src.gpt
