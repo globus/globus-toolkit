@@ -1,0 +1,14 @@
+GPT_DESCRIPTION_GPT: 
+              This is the brand new package foo.
+              
+              Its really cool!
+       
+GPT_FLAVOR_GPT: noflavor
+GPT_GROUP_GPT: I/Am/Somebody/Because/I/Belong
+GPT_NAME_GPT: foo
+GPT_PACKAGE_GPT: foo_noflavor_data
+GPT_PKGTYPE_GPT: data
+GPT_PROVIDES_GPT: foo_data-2, foo_data-3, foo_data-3.5, foo_data
+GPT_REQUIRES_GPT: Requires:  data_fee_data-2,  data_fow_data-2,  data_fum_data-2
+GPT_SUMMARY_GPT: foo_noflavor_data experimental version
+GPT_VERSION_GPT: 3.5

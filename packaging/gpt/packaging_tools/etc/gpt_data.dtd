@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!ELEMENT GPTPackageMetadata (FeatureSetIdentity*, PackageInfo, PackageReleaseInfo, (SourcePackage | DataPackage | DevelopmentPackage | DocPackage | HeaderPackage | PGMPackage | PGMStaticPackage | RTLPackage | SetupPackage))>
+<!ATTLIST GPTPackageMetadata
+	Name CDATA #REQUIRED
+	FormatVersion CDATA #REQUIRED
+>
+<!-- ********************************************************************************************-->
+<!ELEMENT FeatureSetIdentity (CompatibilityIdentifier)>
+<!ATTLIST FeatureSetIdentity
+	FeatureSubName CDATA #REQUIRED
+>
+<!ELEMENT CompatibilityIdentifier EMPTY>
+<!ATTLIST CompatibilityIdentifier
+	Major CDATA #REQUIRED
+	Minor CDATA #REQUIRED
+	Age CDATA #REQUIRED
+>
+<!-- ********************************************************************************************-->
+<!ELEMENT PackageInfo (Description, ContactInfo*, PackageDocs*)>
+<!ELEMENT Description (#PCDATA)>
+<!ELEMENT ContactInfo EMPTY>
+<!ATTLIST ContactInfo
+	ContactName CDATA #REQUIRED
+	ContactEmail CDATA #REQUIRED
+>
+<!ELEMENT PackageDocs EMPTY>
+<!ATTLIST PackageDocs
+	PackageDocsDesc CDATA #REQUIRED
+	PackageDocsURL CDATA #REQUIRED
+>
+<!-- ********************************************************************************************-->
+<!ELEMENT PackageReleaseInfo (PackageStability, CompatibilityIdentifier, PackageIdentifier?, PackagingTool, UserRunTimeEnv)>
+<!ELEMENT PackageStability EMPTY>
+<!ATTLIST PackageStability
+	Release (Experimental | Alpha | Alpha1 | Alpha2 | Beta | Beta1 | Beta2 | Production) #REQUIRED
+>
+<!ELEMENT PackageIdentifier (#PCDATA)>
+<!ELEMENT PackagingTool EMPTY>
+<!ATTLIST PackagingTool
+	ToolName CDATA #REQUIRED
+	ToolVersion CDATA #REQUIRED
+>
+<!-- ********************************************************************************************-->
+<!ELEMENT SetupPackage (SourceDependencies*, BuildInstructions?, BuildEnvironment?, PostInstallMessage, PostInstallProgram)>
+<!ELEMENT SourcePackage (WithFlavors, SourceDependencies*, BuildInstructions?, BuildEnvironment?)>
+<!ELEMENT PGMPackage (Flavor, BinaryDependencies*, PostInstallMessage, PostInstallProgram)>
+<!ELEMENT PGMStaticPackage (Flavor, BinaryDependencies*, PostInstallMessage, PostInstallProgram)>
+<!ELEMENT DevelopmentPackage (Flavor, BinaryDependencies*, BuildEnvironment?)>
+<!ELEMENT HeaderPackage (BinaryDependencies*)>
+<!ELEMENT RTLPackage (Flavor, BinaryDependencies*)>
+<!ELEMENT DataPackage (BinaryDependencies*)>
+<!ELEMENT DocPackage (BinaryDependencies*)>
+<!-- ********************************************************************************************-->
+<!ELEMENT WithFlavors EMPTY>
+<!ATTLIST WithFlavors
+	Build (yes | no) #REQUIRED
+>
+<!-- ********************************************************************************************-->
+<!ELEMENT Flavor (#PCDATA)>
+<!-- ********************************************************************************************-->
+<!ELEMENT SourceDependencies (RuntimeType* | SetupType* | BuildType*)>
+<!ELEMENT RuntimeType (Dependency+, FlavorChoice?)>
+<!ATTLIST RuntimeType
+	Type (data_runtime | doc_runtime | pgm_runtime | lib_runtime) #REQUIRED
+>
+<!ELEMENT SetupType (Dependency+)>
+<!ATTLIST SetupType
+	Type (data_setup | doc_setup | pgm_setup | lib_setup) #REQUIRED
+>
+<!ELEMENT BuildType (BuildDependency+)>
+<!ATTLIST BuildType
+	Type (compile | pgm_link | lib_link) #REQUIRED
+>
+<!-- ********************************************************************************************-->
+<!ELEMENT BinaryDependencies (BinaryBuild | BinaryRuntime)>
+<!ELEMENT BinaryBuild (BuildDependency+)>
+<!ATTLIST BinaryBuild
+	Type (Compile | Build_Link) #REQUIRED
+>
+<!ELEMENT BinaryRuntime (Dependency+, FlavorChoice?)>
+<!ATTLIST BinaryRuntime
+	Type (Regeneration | Runtime_Link | Runtime | Setup) #REQUIRED
+>
+<!-- ********************************************************************************************-->
+<!ELEMENT Dependency (CompatibilityRequirement)>
+<!ATTLIST Dependency
+	Name CDATA #REQUIRED
+	PackageType (data | dev | doc | hdr | pgm | rtl) #REQUIRED
+	AllowSubstitution (No | Yes) #REQUIRED
+>
+<!ELEMENT BuildDependency (CompatibilityRequirement)>
+<!ATTLIST BuildDependency
+	Name CDATA #REQUIRED
+	AllowSubstitution (No | Yes) #REQUIRED
+>
+<!-- ********************************************************************************************-->
+<!ELEMENT CompatibilityRequirement (Simple* | Range*)>
+<!ELEMENT Simple EMPTY>
+<!ATTLIST Simple
+	Major CDATA #REQUIRED
+>
+<!ELEMENT Range EMPTY>
+<!ATTLIST Range
+	LowerMajor CDATA #REQUIRED
+	LowerMinor CDATA #REQUIRED
+	UpperMajor CDATA #REQUIRED
+	UpperMinor CDATA #REQUIRED
+>
+<!-- ********************************************************************************************-->
+<!ELEMENT BuildInstructions (BuildStep*, FlavorChoice*)>
+<!ELEMENT BuildStep EMPTY>
+<!ATTLIST BuildStep
+	MacroArgs CDATA #IMPLIED
+	Step CDATA #REQUIRED
+>
+<!ELEMENT FlavorChoice (FlavorOption+, InvalidFlavors*)>
+<!ELEMENT FlavorOption EMPTY>
+<!ATTLIST FlavorOption
+	FlavorSwitch CDATA #REQUIRED
+	FlavorLabel NMTOKEN #REQUIRED
+>
+<!ELEMENT InvalidFlavors EMPTY>
+<!ATTLIST InvalidFlavors
+	FlavorLabel NMTOKEN #REQUIRED
+>
+<!-- ********************************************************************************************-->
+<!ELEMENT BuildEnvironment (Cflags?, PackageLibs?, SystemLibs?, SystemIncludes?)>
+<!ELEMENT Cflags (#PCDATA)>
+<!ELEMENT SystemIncludes (#PCDATA)>
+<!ELEMENT PackageLibs (#PCDATA)>
+<!ELEMENT SystemLibs (#PCDATA)>
+<!-- ********************************************************************************************-->
+<!ELEMENT PostInstallMessage (#PCDATA)>
+<!-- ********************************************************************************************-->
+<!ELEMENT PostInstallProgram (#PCDATA)>
+<!-- ********************************************************************************************-->
+<!ELEMENT VersionLabel (#PCDATA)>
+<!ELEMENT LinkagePath (#PCDATA)>
+<!-- ********************************************************************************************-->
+<!ELEMENT UserRunTimeEnv (EnvFile* | EnvPrg)>
+<!ELEMENT EnvFile (EnvInfo)>
+<!ELEMENT EnvInfo EMPTY>
+<!ATTLIST EnvInfo
+	Name CDATA #REQUIRED
+	Location CDATA #REQUIRED
+>
+<!ELEMENT EnvPrg (EnvInfo)>
+

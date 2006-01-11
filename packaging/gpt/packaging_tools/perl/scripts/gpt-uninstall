@@ -1,0 +1,238 @@
+#! perl
+
+use Data::Dumper;
+
+use strict;
+use Carp;
+use Cwd;
+use Getopt::Long;
+use Config;
+
+#
+# Do a perl check for version >= 5.005.  See 'gpt-translate-interpreter' should
+# you need to alter the invocation path to a valid perl interpreter in the GPT 
+# front-end programs.
+#
+
+if ( ! ( defined eval "require 5.005" ) )
+{
+    die "GPT requires at least Perl version 5.005";
+}
+
+#
+# dig the globus and gpt paths out of the user's environment variables
+#
+
+my $gpath     = defined $ENV{GPT_LOCATION} ? $ENV{GPT_LOCATION} 
+                                           : $ENV{GLOBUS_LOCATION};
+if ( !defined($gpath))
+{
+    die("GPT_LOCATION needs to be set before running this script");
+}
+
+@INC = ("$gpath/lib/perl", "$gpath/lib/perl/$Config{'archname'}", @INC);
+
+system("$gpath/sbin/gpt_version") == 0
+         or die "GPT died due to Version mismatch.  Check PATH and GPT_LOCATION\n" ;
+
+
+if ( ! ( defined eval "require Grid::GPT::GPTObject" ) )
+{
+    die("$gpath does not appear to hold a valid GPT installation\n");
+}
+
+require Pod::Usage;
+
+my ($noaction, $force, $help, $man, $native, $version, $debug, $verbose,
+    $bundle, $location);
+
+
+GetOptions(
+           'help|?'           => \$help,
+           'man'              => \$man,
+           'force|?'          => \$force,
+           'version'          => \$version,
+           'debug'          => \$debug,
+           'verbose'          => \$verbose,
+           'bundles'          => \$bundle,
+           'location=s'       => \$location,
+           'installdir=s'     => \$location,
+           'noaction|n'       => \$noaction,
+          )
+  or Pod::Usage::pod2usage(0);
+
+Pod::Usage::pod2usage(1) if $help;
+Pod::Usage::pod2usage(-verbose => 2) if $man;
+
+
+require Grid::GPT::GPTIdentity;
+Grid::GPT::GPTIdentity::print_gpt_version() if defined $version;
+
+my @inputs = @ARGV;
+
+require Grid::GPT::Algorithms;
+require Grid::GPT::PkgMngmt;
+require Grid::GPT::Locations;
+require Grid::GPT::PkgMngmt::Inform;
+
+my $log = new Grid::GPT::PkgMngmt::Inform(
+                                          verbose => $verbose, 
+                                          debug => $debug
+                                         );
+
+
+my $locations = new Grid::GPT::Locations(
+                                         installdir => $location,
+                                        );
+
+my $checks = 
+  new Grid::GPT::Algorithms(
+                            log => $log,
+                            force => $force,
+                            locations => $locations,
+                            with_filelists => 1,
+                           );
+
+my $pkgmngr = new Grid::GPT::PkgMngmt(
+                                      log => $log,
+                                      locations => $locations,
+                                     );
+
+my ($results);
+
+if (defined $bundle) {
+  $results = $checks->remove(inputs => \@inputs, bundles => 1);
+} else {
+  $results = $checks->remove(inputs => \@inputs);
+}
+
+if (! defined $results) {
+  $locations->cleantmp();
+  die $checks->{'error_msg'} if ! defined $results;
+}
+
+
+if (defined $noaction) {
+
+  print "The following bundles would be removed\n" if @{$results->{'bndls'}};
+
+  for my $b (@{$results->{'bndls'}}) {
+    print "\t$b->{'Name'} ver: ", $b->version_label(), "\n";
+  }
+
+  print "The following packages would be removed\n" if @{$results->{'pkgs'}};
+
+  for my $p (@{$results->{'pkgs'}}) {
+    print "\t",$p->label()," ver: ", $p->version_label(), "\n";
+  }
+
+  $locations->cleantmp();
+  exit 0;
+}
+
+if (defined $bundle and ! @{$results->{'bndls'}}) {
+
+  die "ERROR: No bundles were removed\n";
+
+} elsif (! @{$results->{'pkgs'}}) {
+
+  die "ERROR: No packages were removed\n";
+}
+
+
+$pkgmngr->remove(%$results);
+
+$locations->cleantmp();
+exit 0;
+
+=head1 NAME
+
+B<gpt-uninstall> - Uninstall any GPT package.
+
+=head1 SYNOPSIS
+
+gpt-uninstall [--force --help -name ] pkgname-flavor-pkgtype
+
+=head1 DESCRIPTION
+
+B<gpt-uninstall> will uninstall a package from the system.  
+
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<-force> 
+
+This will force actions to take place.
+
+=item B<-native>
+
+Use native package manager (Only works with rpm).
+
+=item B<pkgname-flavor-pkgtype> 
+
+Expression describing the packages that should be removed.
+
+=item B<-help>
+
+Print a brief help message and exits.
+
+=item B<-man>
+
+Prints the manual page and exits.
+
+=item B<-version>
+
+Prints the version of GPT and exits.
+
+=back
+
+=head1 EXAMPLES
+
+  gpt-uninstall -name=foo
+
+removes all flavors and package types with the name "foo".
+
+ gpt-uninstall foo
+
+Also removes all flavors and package types with the name "foo".
+
+  gpt-uninstall 'foo-*-*'
+
+A third way of typing the same uninstall.  Note the single quotes.
+
+  gpt-uninstall '*-noflavor-*'
+
+Remove all of the packages with a 'noflavor' build flavor.
+
+  gpt-uninstall '*-*-*'
+
+Remove all packages.  Note that files generated by gpt-postinstall
+will not be removed
+
+=head1 BUGS
+
+Currently the flavor check that gpt-uninstall uses only works if the flavor is installed by gpt-build.  And so for example:
+
+ gpt-uninstall foo-gcc32-*
+
+will B<not> work.  The work around is to uninstall the packages individually using something like:
+
+ gpt-uninstall -name=foo -flavor=gcc32 -pkgtype=pgm
+
+Or use a wild card for the flavor to uninstall all flavors of the package.
+
+ gpt-uninstall foo-*-*
+
+
+=head1 SEE ALSO
+
+gpt-install(1) gpt-query(1) gpt-verify(1) gpt-postinstall(1)
+
+=head1 AUTHOR
+
+Michael Bletzinger E<lt>mbletzin.ncsa.uiuc.eduE<gt> and Eric Blau
+E<lt>eblau.ncsa.uiuc.eduE<gt>
+
+=cut

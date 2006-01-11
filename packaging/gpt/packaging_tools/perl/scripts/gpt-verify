@@ -1,0 +1,261 @@
+#! perl
+
+use Data::Dumper;
+
+use strict;
+use Carp;
+use Getopt::Long;
+use Config;
+
+#
+# Do a perl check for version >= 5.005.  See 'gpt-translate-interpreter' should you
+# need to alter the invocation path to a valid perl interpreter in the GPT front-end
+# programs.
+#
+
+if ( ! ( defined eval "require 5.005" ) )
+{
+    die "GPT requires at least Perl version 5.005";
+}
+
+#
+# dig the globus and gpt paths out of the user's environment variables
+#
+
+my $gpath;
+my $gpt_path = $ENV{GPT_LOCATION};
+my $globus_path = $ENV{GLOBUS_LOCATION};
+my $verbose;
+
+if ( !defined($gpt_path) && !defined($globus_path) )
+{
+    die("GPT_LOCATION or GLOBUS_LOCATION needs to be set before running this script");
+}
+
+if ( defined($gpt_path) )
+{
+    $gpath = $gpt_path;
+}
+
+if ( defined($globus_path) && !defined($gpath) )
+{
+    $gpath = $globus_path;
+}
+
+if ( ! -d "$globus_path/etc/globus_packages" )
+{
+    die("Can't find a globus_packages directory to work on in your GLOBUS_LOCATION!\n");
+}
+
+@INC = ("$gpath/lib/perl", "$gpath/lib/perl/$Config{'archname'}", @INC);
+
+system("$gpath/sbin/gpt_version") == 0
+         or die "GPT died due to Version mismatch.  Check PATH and GPT_LOCATION\n" ;
+
+
+if ( ! ( defined eval "require Grid::GPT::GPTObject" ) )
+{
+    die("$gpath does not appear to hold a valid GPT installation\n");
+}
+
+require Pod::Usage;
+
+#
+# argument specification
+#
+
+my ($sdk, $help, $man, $version, $bundle, $globusdir, $bundle_style);
+
+GetOptions(
+           'sdk'          => \$sdk,
+           'help|?'       => \$help,
+           'man'          => \$man,
+           'version'      => \$version,
+           'bundles|b'       => \$bundle,
+           'location=s'   => \$globusdir
+          )
+  or Pod::Usage::pod2usage(0);
+
+Pod::Usage::pod2usage(1) if $help;
+Pod::Usage::pod2usage(-verbose => 2) if $man;
+
+require Grid::GPT::GPTIdentity;
+Grid::GPT::GPTIdentity::print_gpt_version() if defined $version;
+
+require Grid::GPT::Installation;
+require Grid::GPT::BundleInstallation;
+require Grid::GPT::SetupInstallation;
+require Grid::GPT::PkgSet;
+
+my $locations = new Grid::GPT::Locations(
+                                         installdir => $globusdir,
+                                        );
+
+
+
+main($sdk);
+
+### main( )
+#
+# check the user's GLOBUS_LOCATION for a cohoerent grid system
+#
+
+sub main
+{
+    my ($sdk) = @_;
+
+
+    my $installation = new Grid::GPT::Installation(
+                                                   locations => $locations,
+                                                  );
+
+    check_bundles( inst => $installation );
+
+    my ($depnode, $failed, $rc, $msg);
+
+    $failed = 0;
+    $installation->cleardepenv();
+
+    if ($sdk)
+    {
+        printf("Verifying development dependencies...\n");
+        $installation->set_depenv('Build');
+        $rc = $installation->check_missing(die => 0, log => \$msg);
+        $installation->cleardepenv();
+        $failed += $rc;
+        print $msg if $rc;
+    }
+    else
+    {
+        printf("Verifying run-time dependencies...\n");
+        $installation->set_depenv('Runtime');
+        $rc = $installation->check_missing(die => 0, log => \$msg);
+        $installation->cleardepenv();
+        $failed += $rc;
+        print $msg if $rc;
+
+        printf("\nVerifying setup dependencies...\n");
+        $installation->set_depenv('Setup');
+        $rc = $installation->check_missing(die => 0, log => \$msg);
+        $installation->cleardepenv();
+        $failed += $rc;
+        print $msg if $rc;
+
+        printf("\nVerifying setup packages...\n");
+        $rc = check_missing_setup($installation);
+        $failed += $rc;
+    }
+
+    #
+    # check_missing() will return true if any packages are missing
+    #
+
+    printf("\n");
+    if ($failed > 0)
+    {
+        printf("ERROR: The collection of packages in $globus_path is not coherent!\n");
+    }
+    else
+    {
+        printf("The collection of packages in $globus_path appear to be coherent.\n");
+    }
+
+    return;
+}
+
+sub check_missing_setup
+{
+    my $installation = shift;
+
+    my $setupinstallation = 
+      new Grid::GPT::SetupInstallation(
+                                       locations => $locations,
+                                      );
+    my $list = $installation->setup_pkgs();
+
+    $list = $setupinstallation->check_for_setup_needs(pkgs => $list);
+    @$list = grep {$_->pkgtype() =~ m!pgm! } @$list;
+
+    if (scalar(@$list) > 0)
+    {
+        printf("The following setup packages still need to be configured via gpt-postinstall:\n");
+        for my $l (@$list)
+        {
+            printf("\t%s\n", $l->label());
+        }
+
+        return 1;
+    }
+    else
+    {
+        return 0;
+    }
+}
+
+sub check_bundles
+{
+  my %args         = @_;
+
+  my $installation = $args{'inst'};
+
+  my $bndlinst     = 
+    new Grid::GPT::BundleInstallation(
+                                          locations => $locations,
+                                         );
+
+  print "Verifying Bundles...\n";
+  $bndlinst->check_all_bundles_integrity( installation => $installation );
+
+  exit if( defined( $bundle ) );
+}
+
+=head1 NAME
+
+B<gpt-verify> - Verify dependencies needed for Globus are avaliable. 
+
+=head1 SYNOPSIS
+
+gpt-verify [ -sdk -bundle -help -version -man ]
+
+=head1 DESCRIPTION
+
+B<gpt-verify> is used to verify both runtime and setup dependencies along
+with setup packages for the current Globus installation.  B<gpt-verify> will
+serach through the list of dependencies and make sure that each is met.  If
+a problem is found, B<gpt-verify> will exit with an error and list missing
+files. 
+
+=head1 OPTIONS
+
+=over 4
+
+=item B<-sdk>: Verify build dependencies.
+
+=item B<-bundle>
+
+Verify installed bundles only.
+
+=item B<-help>
+
+Print a brief help message and exits.
+
+=item B<-man>
+
+Prints the manual page and exits.
+
+=item B<-version>
+
+Prints the version of GPT and exits.
+
+=back
+
+=head1 SEE ALSO
+
+gpt-install(1) gpt-uninstall(1) gpt-query(1) gpt-postinstall(1)
+
+=head1 AUTHOR
+
+Michael Bletzinger E<lt>mbletzin.ncsa.uiuc.eduE<gt> and Eric Blau
+E<lt>eblau.ncsa.uiuc.eduE<gt>
+
+=cut

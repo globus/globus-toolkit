@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE 0.01 SYSTEM "no.dtd">
+<Test_Dependencies >
+<Binary_Dependencies Type="Runtime" >
+<Dependency Name="dr_foo1" Package="data" >
+<Version >
+<Simple_Version Major="1" />
+<Version_Range Lower_Major="3" Lower_Minor="2" Upper_Major="3" Upper_Minor="4" />
+</Version>
+</Dependency>
+<Dependency Name="dr_foo2" Package="data" >
+<Version >
+<Simple_Version Major="1" />
+<Version_Range Lower_Major="3" Lower_Minor="2" Upper_Major="3" Upper_Minor="4" />
+</Version>
+</Dependency>
+<Dependency Name="dr_foo3" Package="data" >
+<Version >
+<Simple_Version Major="1" />
+<Version_Range Lower_Major="3" Lower_Minor="2" Upper_Major="3" Upper_Minor="4" />
+</Version>
+</Dependency>
+<Dependency Name="dr_foo4" Package="data" >
+<Version >
+<Simple_Version Major="1" />
+<Version_Range Lower_Major="3" Lower_Minor="2" Upper_Major="3" Upper_Minor="4" />
+</Version>
+</Dependency>
+<Dependency Name="dr_foo5" Package="data" >
+<Version >
+<Simple_Version Major="1" />
+<Version_Range Lower_Major="3" Lower_Minor="2" Upper_Major="3" Upper_Minor="4" />
+</Version>
+</Dependency>
+</Binary_Dependencies>
+</Test_Dependencies>

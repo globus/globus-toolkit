@@ -1,0 +1,8 @@
+gcc32dbgpthr --with-flavor=gcc32dbgpthr --enable-debug --with-threads=pthreads CC=gcc;  
+gcc32dbg --with-flavor=gcc32dbg --enable-debug CC=gcc;  
+gcc32pthr --with-flavor=gcc32pthr --with-threads=pthreads CC=gcc;  
+gcc32 --with-flavor=gcc32 CC=gcc;  
+vendorcc32dbgpthr --with-flavor=vendorcc32dbgpthr --enable-debug --with-threads=pthreads CC=cc;  
+vendorcc32dbg --with-flavor=vendorcc32dbg --enable-debug CC=cc;  
+vendorcc32pthr --with-flavor=vendorcc32pthr --with-threads=pthreads CC=cc;  
+vendorcc32 --with-flavor=vendorcc32 CC=cc;  

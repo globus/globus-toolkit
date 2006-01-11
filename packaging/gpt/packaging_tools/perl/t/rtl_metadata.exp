@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE gpt_package_metadata SYSTEM "globus_package.dtd">
+<gpt_package_metadata Format_Version="0.01" Name="foo" >
+<Aging_Version Age="1" Major="3" Minor="5" />
+<Description >
+        This is the brand new package foo.
+        
+        Its really cool!
+ </Description>
+<Functional_Group >I/Am/Somebody/Because/I/Belong</Functional_Group>
+<Version_Stability Release="experimental" />
+<rtl_pkg >
+<Flavor >spicy</Flavor>
+<Binary_Dependencies Type="Runtime" >
+<Dependency Name="rtl_fee" Package="data" >
+<Version >
+<Simple_Version Major="2" />
+</Version>
+</Dependency>
+<Dependency Name="rtl_fow" Package="data" >
+<Version >
+<Simple_Version Major="2" />
+</Version>
+</Dependency>
+<Dependency Name="rtl_fum" Package="data" >
+<Version >
+<Simple_Version Major="2" />
+</Version>
+</Dependency>
+</Binary_Dependencies>
+<Binary_Dependencies Type="Runtime_Link" >
+<Dependency Name="lee" Package="rtl" >
+<Version >
+<Simple_Version Major="2" />
+</Version>
+</Dependency>
+<Dependency Name="low" Package="rtl" >
+<Version >
+<Simple_Version Major="2" />
+</Version>
+</Dependency>
+<Dependency Name="lum" Package="rtl" >
+<Version >
+<Simple_Version Major="2" />
+</Version>
+</Dependency>
+</Binary_Dependencies>
+
+<Setup_Dependency Name="foo_rtl_setup" >
+<Version >
+<Simple_Version Major="2" />
+</Version>
+</Setup_Dependency>
+
+<Post_Install_Message >
+      You need to run run_me
+ </Post_Install_Message>
+<Post_Install_Program >
+      run_me
+ </Post_Install_Program>
+<Setup Name="setmeup" >
+<Aging_Version Age="2" Major="5" Minor="5" />
+</Setup>
+</rtl_pkg>
+</gpt_package_metadata>

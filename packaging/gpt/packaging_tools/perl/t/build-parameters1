@@ -1,0 +1,28 @@
+CC=/usr/bin/cc
+CPP='/usr/bin/cc -E'
+CPPFLAGS=''
+CFLAGS='-g   '
+ISGCC=yes
+
+LD=/usr/bin/cc
+LDFLAGS='  '
+LIBS='  -lpthread'
+
+CXX=/usr/bin/c++
+CXXCPP='/usr/bin/c++ -E'
+CXXFLAGS='-g   '
+
+INSURE=
+
+F77=/usr/bin/f77
+F77FLAGS= 
+
+F90=
+F90FLAGS= 
+
+AR=/usr/bin/ar
+ARFLAGS=ruv
+RANLIB=/usr/bin/ranlib
+
+CONFIG_PARAMETERS=" --with-flavor=dingbat --with-threads=solaristhreads --enable-debug --with-mp=mpl"
+

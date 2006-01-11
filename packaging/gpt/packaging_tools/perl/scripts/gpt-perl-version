@@ -1,0 +1,22 @@
+# - perl -
+#
+# test that the interpreter under which we're running is capable of handling
+# a set of syntax based on a version number
+#
+
+$version = $ARGV[0];
+$version =~ s|\s+||g;
+
+if ( !defined($version) || (length($version) == 0) )
+{
+    $version = "5.005";
+}
+
+if ( defined eval "require $version" )
+{
+    exit 0;
+}
+else
+{
+    exit 1;
+}

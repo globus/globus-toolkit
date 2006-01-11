@@ -1,0 +1,121 @@
+2000-04-27  Stephen Zander  <srz@localhost>
+
+	* MANIFEST: Added the ChangeLog.
+
+	* test.pl: Extended the test suite to test the handling of
+	non-file entries in the archive.
+
+	* Tar.pm: Fixed another bug in the handling of size values for
+	non-file entries.
+
+2000-04-26  Stephen Zander  <gibreel@pobox.com>
+
+	* Tar.pm: Fixed a bug in archive extraction that would result in
+	absolutely pathed files being created under the user's home
+	directory.  
+
+	Changed the behaviour of ->extract to extract the entire archive
+	if no files are given.
+
+	Added a ->set_error method to allow sub-classes to provide a
+	custom error message.
+	
+	Thanks to David Boyce <dsb@world.std.com> for all of these.
+	
+	* ptar: Changed the directory search order to top-down rather than
+	bottom up.
+
+	* Tar.pm: Fixed a bug in the archive scanning which caused
+	non-file entries to skip ahead blocks.  Thanks to David Boyce
+	<dsb@world.std.com> for the test case.
+
+	* ptar: Fixed missing variable declarations.
+	
+
+2000-04-12  Stephen Zander  <gibreel@pobox.com>
+
+	* Tar.pm: Work around fix for the problem with Compress::Zlib
+	closing file descriptors early.
+
+1999-03-03  Stephen Zander  <gibreel@pobox.com>
+
+	* Tar.pm: make_special_file_* now works (it was completely
+ 	broken).  Thanks to Gurusamy Sarathy <gsar@activestate.com> for
+ 	the patch.
+	* Tar.pm: refixed MacOS support for writing file on the fly.
+  	Thanks to Paul J. Schinder <schinder@leprss.gsfc.nasa.gov> for the
+ 	patch
+
+1999-02-02  Stephen Zander  <gibreel@pobox.com>
+
+	* Tar.pm: Fixed bug in gzseek which caused seeks to a multiple of
+ 	4096 to erroneously return failure.
+
+1999-01-11  Stephen Zander  <gibreel@pobox.com>
+
+	* Tar.pm: Fixed failure in ->write when Compress:Zlib not
+ 	installed.  _io::gzclose was returning the wrong value.
+
+1999-01-09  Stephen Zander  <gibreel@pobox.com>
+
+	* README: Updated README to reflect changes in versio 0.20.
+
+	* Tar.pm: Improved documentation and presentation.  Documented the
+ 	new class methods.
+
+	* ptar: Upgraded to use new class methods.
+	
+	* Tar.pm: Recovered from corrupted file that was checked into CVS
+ 	(I hope).
+
+	* Makefile.PL: Added ptar to EXE_FILES.
+
+	* test.pl: Extended tests to include sub-classing.
+
+	* Tar.pm: Extended functionality to include class methods:
+ 	create_archive, list_archive & extract_archive.  Archive::Tar no
+ 	longer keeps the tar file in memory unless passed a non-seekable
+ 	file descriptor.
+
+	* Makefile.PL: Added optional MakeMaker attributes introduced in
+ 	perl5.005
+
+	* MANIFEST: Fixed line termination of last line in file
+
+1998-09-10  Stephen Zander  <gibreel@pobox.com>
+
+	* Tar.pm: Modified list_files to allow selected list of file
+ 	attributes to be returned.
+
+1998-08-26  Stephen Zander  <gibreel@pobox.com>
+
+	* Tar.pm: Lowered memory consumption.
+
+	* test.pl: Altered to suport testing on pre-5.00404 version of perl.
+
+1998-08-13  Stephen Zander  <srz@localhost>
+
+	* Tar.pm: Improved automatic handling of compressed archives.
+  	Fixed a problem with passing GLOBS to the read & write methods.
+
+1998-08-05  Stephen Zander  <gibreel@pobox.com>
+
+	* Tar.pm: Added support for reading from GLOBS to read_tar.  Added
+ 	automagical detection of compressed archives to read_tar
+
+1998-07-29  Stephen Zander  <gibreel@pobox.com>
+
+	* test.pl: Added basic archive read/write tests to package.
+
+	* Tar.pm: Removed unnecessary BEGIN/END handling of feature detection.
+
+	* README: Updated to reflect version 0.08.
+
+	* MANIFEST: Added test.pl
+
+	* COPYRIGHT: Added additional copyright statement to cover extensions.
+
+1998-07-28  Stephen Zander  <gibreel@pobox.com>
+
+	* README: test
+

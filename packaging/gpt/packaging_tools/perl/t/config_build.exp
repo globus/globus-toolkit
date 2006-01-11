@@ -1,0 +1,4 @@
+GPT_CONFIG_CFLAGS="-Dfoo"
+GPT_CONFIG_INCLUDES="-Imath.h -Issl.h"
+GPT_CONFIG_LIBS="-lm -lssl"
+GPT_CONFIG_PKG_LIBS="-lfoo"

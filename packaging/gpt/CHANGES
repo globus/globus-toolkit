@@ -1,0 +1,379 @@
+3.1 -> 3.2
+Fixed some gpt-build Macro problems.
+
+New version of core that is compatible with Globus Toolkit 3.2 but
+incompatible with Globus Toolkit version 2.x.
+
+Fixes for bugs 157, 168, 177, 223, and 233 see bugzilla link at
+http://www.gridpackagingtools.org/.
+
+3.1 -> 3.2
+Fixed some gpt-build Macro problems.
+
+New version of core that is compatible with Globus Toolkit 3.2 but
+incompatible with Globus Toolkit version 2.x.
+
+Fixes for bugs 157, 168, 177, 223, and 233 see bugzilla link at
+http://www.gridpackagingtools.org/.
+
+3.0.1 -> 3.1
+
+build_gpt contains the Missing Seperator fix for Redhat 9.0.
+
+build_gpt contains various fixes to compensate for broken perl installations..
+
+gpt-build has an -ignore-errors flag.
+
+GPT now generates filelist entries for man pages.
+
+GPT no longer requires setup packages to be named "*_setup".
+
+GPT now ignores older packages when installing a bundle into a
+location with updated packages.
+
+GPT now has a new script called gpt-config which is used to manage the
+local settings of a GPT installations
+
+GPT now supports RPM on RedHat 9.x and Suse 8.1
+
+GPT now supports managing root files using SYSTEM_ROOT keyword in the
+source filelist file.
+
+GPT no longer overrides pkg type attributes for any dependency types.
+
+Non-flavored header files are now sorted correctly for p-n-b packages.
+
+GPT will no longer skip pgm packages when a pgm_static has been built.
+
+GPT now tests for a version mismatch between its scripts and its modules.
+
+GPT now cleans up after itself on package install errors.
+
+gpt-bundle now excepts wildcards with the -exclude flag.
+
+Bundles now contain component description fields.
+
+gpt-pkg now no longer packages globus-core binary packages with -all.
+
+gpt-bundle now no longer bundles globus-core binary packages with -all.
+
+
+
+2.2.10 -> 3.0
+
+Archive::Tar now mentions the file it is barfing on.
+
+MAC OS X shared libs now supported.
+
+-keep flag works with gpt-bundle
+
+Lots more error messages added.
+
+gpt-build now does -update by default.
+
+build_gpt no longer stomps on PERL5LIB.
+
+MANIFEST files are now managed.
+
+Setup.pm now fiddles @INC to get the correct GPT modules.
+
+gpt-postinstall now sets GPT_LOCATION when running setup scripts.
+
+DTD's were reformatted.
+
+Added more explicit input file error msgs
+
+gpt-verify now sends all output to stdout.
+
+PkgSet::add_package now returns the existing package node when it
+finds a duplicate package.
+
+./build_gpt -test now run's successfully. PodParser's test has problems.
+
+Added script to update web documentation.
+
+Fix for gpt-build not checking compile dependencies.
+
+Fixes for make_gpt_dist working on solaris.
+
+Added a SrcDir attribute to Build_instructions.
+
+gpt-build no longer stomps on package data from previous builds.
+
+gpt-virtual-pkg works and GPT now hands pkgs installed as a 'link' format.
+
+Added new bundling code.  gpt-bundle, gpt-install, gpt-uninstall are
+completely rewritten.  gpt-query and gpt-verify have new bundle
+switches.
+
+Changed setup_tarfiles to setup_gpt_dist
+
+Added MD5 checking for files
+
+Added gpt-md5, gpt-filelist-convert, gpt-filelist-copy,
+gpt-file-remove scripts to manage MD5 checksums.
+
+Added Location module which evaluates the install, build, and tmp
+locations based on $GLOBUS_LOCATION (depreciating),
+$GPT_INSTALL_LOCATION and switches.  All scripts now have a -location
+switch to indicate the install location.
+
+Added PkgDef node and set to compare sets of package versions inside
+bundles and installations.  
+
+Added a debugging feature to Inform.pm. Many scripts now have working
+-verbose and -debug flags.
+
+Added gpt-convert-bundle-old2new script to convert bundle definitions.
+
+2.2.9 -> 2.2.10
+
+Added shared library names to the Provides line of created rpm packages.
+
+2.2.8 -> 2.2.9
+
+globus_core updated to 2.9 which contains intel compiler fixes.
+
+build_gpt no longer stomps on PERL5LIB
+
+
+2.2.7 -> 2.2.8
+
+globus_core updated to version 2.8 which fixes mpi build.
+
+gpt-build no longer removes packaging data from previous builds.
+
+AIX hack for keeping empty rtl packages now uses a regex.
+
+gpt-build now checks compile dependencies.
+
+build_gpt now suppresses extraneous messages.
+
+2.2.6 -> 2.2.7
+
+No Changes.
+
+2.2.5 -> 2.2.6
+
+Fixed rpm version identification
+
+2.2.5 -> 2.2.4
+
+gpt-bundle now includes only the first flavor of a pgm package.
+
+gpt-install now can recognize doc rpm names.
+
+gpt-update now calls gpt-install (instead of crashing) and displays a
+depreciation warning.
+
+Archive.pm now filters out the 'blocksize' line printed by True64's
+tar program.
+
+2.2.4 -> 2.2.3
+
+gpt-install now will install multiple bundles correctly.
+
+2.2.3 -> 2.2.2
+
+Added extra tar regex for Cray's untarring output.
+
+make_gpt_dist now does -pristine by default and removes the old
+packages.
+
+Added MANIFEST file for GPT and modified the Compress::Zlib MAMIFEST
+to suppress spurious error messages during make_gpt_dist.
+
+Added an anchor to the soname for the filelist library search.  This
+prevents extra flavors from being added to rtl packages.
+
+globus_core is now filtered out of rpm dependencies.
+
+gpt-install now complains properly about a missing input file.
+
+gpt-install will now changes ownerships and groups to root if the user
+is root.  This change was left out of the previous 2.2.x releases.
+
+gpt_build_config now is aware of the GPT_IGNORE_DEPS environmental
+variable.
+
+
+2.2.2 -> 2.2.1
+
+New globus_core package with proper version of libtool.
+
+2.2.1 -> 2.2
+
+GPT now correctly builds Compress::Zlib on platforms with older
+versions of Perl.
+
+GPT now includes a preferred flavor when matching packages to
+dependencies.  This means that when a pkg of the same flavor exists,
+it is chosen.  Other wise a pkg of another flavor is chosen.  This
+behaviour mainly affects gpt-bundle.
+
+The regex looking for the pkgdata directory is now properly anchored.
+
+gpt-virtual-pkg works again :).
+
+2.2 -> 2.1.x
+
+GPT 2.2 is now completely backwards compatible with GPT 1.x.  Bundles
+created by GPT 2.2 can be built and installed by GPT 1.x and vice
+versa.
+
+GPT now includes the globus_core source package in its distribution.
+This package is installed by gpt-build everytime a new build flavor is
+requested.
+
+gpt-deps is a new experimental script that generates an html page
+which describes the various package dependencies within an
+installation.  The script is considered experimental because changes
+to the interface and output format are anticipated.
+
+GPT now handles the *.sl shared lib extensions for HPUX.
+
+gpt-build now has the -nosrc flag which tells it to just install a
+build flavor.
+
+Various fixes to the building of Compress::Zlib.
+
+gpt-install detects and reports errors when source bundle and source
+package installs are detected.
+
+gpt-postinstall and gpt-verify now filter out non-pgm packages when
+collecting packages that need to be set up.
+
+All of the script now have -man and -? flags which will print out man
+pages and usage messages.
+
+gpt-install now has the functionality that used to be in gpt-update.
+gpt-update is being depreciated.
+
+gpt-bundle now has an alternative way to specify bundle names.  The
+-bn flag can be used to input a name.  The -bv flag can be used to
+input a version.  With this method gpt-bundle will add the bundle type
+to the name as well as the architecture for binary bundles.
+
+gpt-bundle now has the -nosetups flag which excludes any dependent
+setup packages from the bundle.  Note that setup packages listed on
+the command line will still be bundled.
+
+gpt-bundle now has the -exclude flag which can be used to exclude
+dependent packages from a bundle
+
+gpt-build now creates a log directory with a seperate log for each
+package that is built. The -log flag has been replaced with the
+-logdir flag which is used to enable logging and optionally specify
+the path to the logging directory.
+
+Various improvements in gpt-build log messages.
+
+GPT now uses POD::Usage for script help.  The module is included in
+the distribution.
+
+New script gpt-translate-interpreter-pl can be used after a binary
+package of GPT is installed to fix the shebang lines of the scripts to
+use the correct perl executable.
+
+New ColocateLibraries attribute can be used to disable header and
+library filename mangling.  To disable add the following to the
+With_Flavor element:
+
+<With_Flavor build="yes" ColocateLibraries="no">
+
+The GPT source distribution was restructured.  The package_management
+directory no longer exists and all GPM modules are now under
+GPT::PkgMngmt.  FilelistFunctions is now under GPT.
+
+Missing rtl packages now are reported correctly.
+
+2.1 -> 2.1.1
+
+A new script ./tools/make_rpm will create a binary RPM of GPT.  No
+postinstall scripts yet.
+
+gpt-update now properly updates rpm bundles.
+
+gpt-update now updates static packages. Note that a static package
+will be replaced if the new version is >= the old version.
+
+gpt_bootstrap.sh now honors the aclocal_includes variable which is set 
+externally by the globus_openssl package.
+
+gpt-build now has a -update flag which will overwrite source packages
+if what's installed is an older version.
+
+gpt-build now has a -disable-version-checking flag which can be used
+to build packages with versioning problems in their dependencies.
+These kinds of packages were released with GPT 1.X which did not
+perform this check. NOTE that this flag will be set permanently for
+the $GLOBUS_LOCATION being installed into.
+
+gpt-update now will only replace packages which have the same
+name-flavor-type but different version numbers.
+
+gpt-update now has a -loose flag which allows pgm/pgm_static packages
+to replace packages with the same name but different flavors.
+
+gpt-update and gpt-install now relocate rpm's by default if an RPM >=
+4.0.4 is found.
+
+gpt-install now changes file ownership to root if root is installing.
+
+gpt-bundle can now differentiate between a pgm rpm and a pgm_static
+rpm.
+
+GPT now embedds a tag in the packaging data which indicates what
+version of GPT generated the file.
+
+2.0 -> 2.1
+
+A new gpt-update script was added which automatically replaces
+packages that are already installed.
+
+gpt-uninstall now supports rpm's.
+
+gpt-install now can install a set of packages.
+
+gpt-uninstall and gpt-install now accept multiple packages and/or
+bundles as arguments.
+
+gpt-uninstall and gpt-query now support pkgname-flavor-pkgtype tuples
+with wild cards.  Unfortunately the flavor field is buggy.
+
+gpt-uninstall now removes the setup indicator when a setup package is
+uninstalled.
+
+gpt-query now does file lookups and prints out package dependencies.
+
+gpt-bundle now grabs packages which are runtime dependencies to setup
+packages.
+
+
+1.0 -> 2.0
+
+dependency checking throughout GPT now checks the package
+versions. The dependency module API was also redone.
+
+globus-build was split into gpt-build and gpt-pkg.  gpt-build builds
+packages.  gpt-pkg archives packages.
+
+gpt-build now does dependency checking during builds.
+
+gpt-build's -log flag was fixed.
+
+gpt-build now removes empty packages after building.
+
+gpt-build copies the files of pgm/pgm_static packages into flavored
+subdirectories.
+
+gpt-postinstall now runs all setup scripts.
+
+gpt-query and gpt-install have a new command line interface which uses
+the pkgname-flavor-pkgtype tuple. It's buggy though.
+
+gpt-pkg now builds rpm's in addition to gpt packages.
+
+gpt-bundle now bundles rpm's.
+
+gpt-install now installs rpm's and rpm bundles.

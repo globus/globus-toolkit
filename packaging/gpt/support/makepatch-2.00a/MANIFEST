@@ -1,0 +1,7 @@
+README
+INSTALL
+MANIFEST
+Makefile.PL
+makepatch.PL
+applypatch.PL
+CHANGES

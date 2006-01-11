@@ -1,0 +1,7 @@
+bak$
+^blib
+Makefile
+^pm_to_blib$
+import_.*
+.*\.sw[a-z]$
+\.tar\.gz$

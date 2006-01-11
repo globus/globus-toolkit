@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!ELEMENT PackageFilelist (PackagingTool, CompatibilityIdentifier, PackageType, Flavor, Files?)>
+<!ATTLIST PackageFilelist Name CDATA #REQUIRED>
+<!ATTLIST PackageFilelist FormatVersion CDATA #REQUIRED>
+
+<!ELEMENT PackagingTool EMPTY>
+<!ATTLIST PackagingTool
+        ToolName CDATA #REQUIRED
+        ToolVersion CDATA #REQUIRED
+>
+
+<!ELEMENT Aging_Version EMPTY>
+<!ATTLIST Aging_Version
+        Major CDATA #REQUIRED
+        Minor CDATA #REQUIRED
+        Age CDATA #REQUIRED
+>
+<!ELEMENT PackageType (#PCDATA)>
+<!ELEMENT Flavor (#PCDATA)>
+
+<!ELEMENT Files (File+)>
+
+<!ELEMENT File (Path, Checksums?)>
+<!ELEMENT Path (#PCDATA)>
+<!ELEMENT Checksums (Stamp*)>
+<!ELEMENT Stamp (#PCDATA)>
+<!ATTLIST Stamp
+         Type (build | archive | installation | source) #REQUIRED
+>

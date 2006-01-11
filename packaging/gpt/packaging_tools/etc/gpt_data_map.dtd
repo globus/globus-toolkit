@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!ELEMENT GPTFileMap (GPTDataMapping+)>
+<!--******************************************************************************************************-->
+<!ELEMENT GPTDataMapping (Version, Type?, Flavor?, Location, Dependencies?, Platform?, Description)>
+<!ATTLIST GPTDataMapping
+	Name CDATA #REQUIRED
+	Whatisit (Package | Bundle) #REQUIRED
+>
+<!--******************************************************************************************************-->
+<!ELEMENT Description (#PCDATA)>
+<!ELEMENT Platform (#PCDATA)>
+<!--******************************************************************************************************-->
+<!ELEMENT Location (Machine, Path, FileName)>
+<!--******************************************************************************************************-->
+<!ELEMENT FileName EMPTY>
+<!ATTLIST FileName
+	Name CDATA #REQUIRED
+>
+<!--******************************************************************************************************-->
+<!ELEMENT Machine EMPTY>
+<!ATTLIST Machine
+	Name CDATA #REQUIRED
+>
+<!--******************************************************************************************************-->
+<!ELEMENT Path EMPTY>
+<!ATTLIST Path
+	LocationPath CDATA #REQUIRED
+>
+<!--******************************************************************************************************-->
+<!ELEMENT Version EMPTY>
+<!ATTLIST Version
+	Major CDATA #REQUIRED
+	Minor CDATA #REQUIRED
+	Age CDATA #REQUIRED
+>
+<!--******************************************************************************************************-->
+<!ELEMENT Type EMPTY>
+<!ATTLIST Type
+	PackageType CDATA #REQUIRED
+>
+<!--******************************************************************************************************-->
+<!ELEMENT Flavor EMPTY>
+<!ATTLIST Flavor
+	PackageFlavor CDATA #REQUIRED
+>
+<!--******************************************************************************************************-->
+<!ELEMENT Dependencies (Dependency*, Environment_Dependencies*)>
+<!--******************************************************************************************************-->
+<!ELEMENT Dependency (Version)>
+<!ATTLIST Dependency
+	Name CDATA #REQUIRED
+	Package (auto | data | dev | doc | hdr | pgm | rtl) "auto"
+>
+<!--******************************************************************************************************-->
+<!ELEMENT Environment_Dependencies (CFlags?, Pkg_Libs?, External_Libs?, External_Includes?, ENV*)>
+<!ELEMENT CFlags (#PCDATA)>
+<!ELEMENT External_Includes (#PCDATA)>
+<!ELEMENT Pkg_Libs (#PCDATA)>
+<!ELEMENT External_Libs (#PCDATA)>
+<!ELEMENT ENV (#PCDATA)>
+

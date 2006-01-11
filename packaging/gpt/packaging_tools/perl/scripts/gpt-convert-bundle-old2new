@@ -1,0 +1,174 @@
+#! perl 
+use Cwd;
+use Config;
+
+use Data::Dumper;
+
+#
+# Do a perl check for version >= 5.005.  See 'gpt-translate-interpreter' should you
+# need to alter the invocation path to a valid perl interpreter in the GPT front-end
+# programs.
+#
+
+if ( ! ( defined eval "require 5.005" ) )
+{
+  die "GPT requires at least Perl version 5.005";
+}
+
+my $gpath = $ENV{GPT_LOCATION};
+my $globus_path = $ENV{GLOBUS_LOCATION};
+ 
+if (!defined($gpath))
+{
+  $gpath = $ENV{GLOBUS_LOCATION};
+}
+   
+if (!defined($gpath))
+{
+  die "GPT_LOCATION or GLOBUS_LOCATION needs to be set before running this script";
+}
+
+@INC = ("$gpath/lib/perl", "$gpath/lib/perl/$Config{'archname'}", @INC);
+
+if ( !( defined eval "require Grid::GPT::GPTObject" ) )
+{
+  die("$gpath does not appear to hold a valid GPT installation\n");
+}
+
+require Pod::Usage;
+
+my ($srcdir, $bindir,$inputfile,$nodeps,$outputfile,$savefile,$all,$xmlBundle,
+    $sdk, $native, $help, $version, @exclude, $bundlename, $bundleversion, 
+    $arch, $nosetups, $man, $workingdir, $bndlFile);
+
+GetOptions( 'help|?' => \$help )
+  or Pod::Usage::pod2usage(0);
+
+Pod::Usage::pod2usage(0) if $help;
+Pod::Usage::pod2usage(-verbose => 2) if $man;
+
+require Grid::GPT::GPTIdentity;
+Grid::GPT::GPTIdentity::print_gpt_version() if defined $version;
+
+require Grid::GPT::FilelistFunctions;
+use Getopt::Long; 
+require Archive::Tar;
+
+my $bundlelist;
+my $pkgdir;
+
+my @arguments              = [];
+my $bundleName             = undef;
+my $bundleVersion          = undef;
+my $bundleDescription      = undef;
+my @contactName            = [];
+my @contactAddr            = [];
+my $releaseStab            = undef;
+my $bundleLabel            = undef;
+my @bundleDoc              = "EMPTY";
+my @bundleURL              = "EMPTY";
+my $tmpdir                 = "./gpttmp";
+
+require Grid::GPT::V1::Bundle;
+my $bndl                   = new Grid::GPT::V1::Bundle( tmpdir => $tmpdir );
+
+@arguments                 = @ARGV;
+
+for my $file (@arguments)
+{
+  chomp( $file );
+
+  $bndl->read_bundle_from_tar( file => $file );
+
+##  my @bName                = split /\./, $file;
+
+my @filePath = split /\//, $file;
+my $cnt = @filePath;
+if( $cnt > 1 )
+{
+$file = $filePath[$cnt-1];
+}
+
+  my @t = split( /\.tar/, $file );
+
+##  my ($bname) = $file =~  m!/([^/\.-]+)(?:-\d|\.)!;
+   
+  my $bname = $t[0];
+  $bndl->{'Name'}          = $bname;
+  $bndl->{'BundleFile'}    = $bname;
+  $bndl->{'BundleVersion'} = "0.01";
+  $bndl->{'Description'}   = "Converted PackageList";
+  $bndl->{'bundleStab'}    = "alpha";
+  $bndl->{'versionLabel'}  = "Converted";
+
+  $bndl->addContact( name => "EMPTY", email => "EMPTY" );
+  $bndl->addBundleDoc( desc => "EMPTY", url => "EMPTY" );
+
+  my $f                    = "CONVERT_" . $bname . ".gpt-bundle.xml";
+
+  $bndl->output_metadata_file( $f );
+
+  cleandir( $tmpdir );  
+}
+
+sub cleandir() {
+  my ($top) = @_;
+  opendir(DIR, $top);
+  my @contents = readdir DIR;
+  closedir DIR;
+  my @dirs = grep { -d "$top/$_" and ! m!^\.! } @contents;
+  my @files = grep { ! -d $_ } map { "$top/$_" } @contents;
+  for my $f (@files) {
+    unlink($f) or warn "couldn't unlink $f: $!";
+  }
+  for my $d (@dirs) {
+    cleandir("$top/$d");
+  }
+
+}
+
+
+
+__END__
+
+=head1 NAME
+
+B<gpt-convert-bundle-old2new> - Creates an XML Bundle def for bundle.
+
+=head1 SYNOPSIS
+
+B<gpt-convert-bundle-old2new> [options] bundles 
+
+  Options:
+
+     -help                             Print usage
+     [bundles]                         List of bundles to be converted
+
+=head1 DESCRIPTION
+
+B<gpt-convert-bundle-old2new> Creates an XML bundle definition for a bundle.  
+The bundles current packagelist file is used to create this XML file.  After
+this script is run, the XML file which is created should be edited to add
+in correct tag information.  There are a number of tags which are used to
+give information about the bundle.  After editing, the script gpt-bundle
+should be run to create the new bundle.  The flag -xml should be used
+when runing gpt-bundle and should be pointed at the new XML def. 
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<-help>
+
+Print a brief help message and exits.
+=back
+
+=head1 SEE ALSO
+
+globus-build(1) globus-install(1) 
+
+=head1 AUTHOR
+
+Eric Blau E<lt>blau.mcs.anl.govE<gt> and Michael Bletzinger E<lt>mbletzin.ncsa.uiuc.eduE<gt>
+
+=cut

@@ -1,0 +1,10 @@
+<Version>
+<Simple_Version Major="1"/>
+<Simple_Version Major="2"/>
+<Version_Range Upper_Major="2" Lower_Major="1" />
+<Version_Range Upper_Major="3" Lower_Major="1" />
+<Version_Range Upper_Major="3" Lower_Major="3" Upper_Minor="2" Lower_Minor="1"/>
+<Version_Range Upper_Major="3" Lower_Major="3" Upper_Minor="4" Lower_Minor="2"/>
+<Version_Range Upper_Major="3" Lower_Major="2" Upper_Minor="2" Lower_Minor="1"/>
+
+</Version>

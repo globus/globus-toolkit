@@ -1,0 +1,311 @@
+#! /usr/bin/env perl
+
+use strict;
+use Getopt::Long;
+
+sub commands;
+
+my ($gpt_location, $rpm_info) = ($ENV{'GPT_LOCATION'}, "");
+my ($perl_location, $verbose, $autotools, $boot, $help, $man, $version, $test);
+
+GetOptions( 'with-perl=s'=> \$perl_location,
+            'prefix=s'=> \$gpt_location,
+            "test!" => \$test,
+            "boot!" => \$boot,
+            "help!" => \$help,
+            "man!" => \$man,
+            "verbose!" => \$verbose,
+            "version!" => \$version,
+            "autotools!" => \$autotools,
+          ) or pod2usage(1);
+
+pod2usage(0) if $help;
+
+
+die "Please set \$GPT_LOCATION or use --prefix\n" if ! defined $gpt_location;
+
+use Cwd;
+
+my $topdir = cwd();
+
+@INC = ("./tools", @INC);
+
+require DistGPT;
+
+$perl_location = DistGPT::find_perl(perl_location => $perl_location, 
+                                    perl_version => '5.005',
+                                   topdir => $topdir);
+
+
+
+die "ERROR: Can't find perl >= 5.005. Use -with-perl=<location> flag\n" 
+  if ! defined $perl_location;
+
+
+my $zlibdownflag = "-downgrade";
+my $result = DistGPT::find_perl(perl_location => $perl_location, 
+                                    perl_version => '5.6.1',
+                                   topdir => $topdir);
+
+$zlibdownflag = "" if ! defined $result;
+
+
+
+
+if (defined $man) {
+  my $podcommand = $perl_location;
+  $podcommand =~ s!perl$!pod2text!;
+  my $result = system("$podcommand ./build_gpt");
+  exit 0;
+}
+
+print_version() if $version;
+
+my @testdirs  = (
+                 'perlzlib',
+                 'perlzlibio',
+                 'perltar',
+                 'filespec',
+                 'md5',
+                );
+
+my %builddirections = (
+                       'perltest' => 'perl',
+                       'perlpatch' => 'perl',
+                       'perltar' => 'perl',
+                       'autoconf' => 'autotools',
+                       'automake' => 'autotools',
+                       'libtool' => 'autotools',
+                       'oldautoconf' => 'oldautotools',
+                       'oldautomake' => 'oldautotools',
+                       'oldlibtool' => 'oldautotools',
+                       'perlzlib' => 'compress',
+                       'perlzlibio' => 'perl',
+                       'filespec' => 'perl',
+                       'podparser' => 'perl',
+                       'md5' => 'perl',
+                       'gpt' => 'gpt',
+                      );
+
+# Assume -boot if packaging_tools/configure does not exist.
+
+$boot=1 if ! -f "packaging_tools/configure";
+
+my $shutup =" > /dev/null 2>&1";
+$shutup = "" if defined $verbose;
+
+my %commands = (
+                autotools => ["PATH=$gpt_location/newautotools/bin:$ENV{'PATH'}; export PATH; \\
+GPT_LOCATION=$gpt_location; export GPT_LOCATION; \\
+PERL=$perl_location export PERL; \\
+./configure --prefix=$gpt_location/newautotools", 
+                              "PATH=$gpt_location/newautotools/bin:$ENV{'PATH'}; export PATH;make", 
+                              "PATH=$gpt_location/newautotools/bin:$ENV{'PATH'}; export PATH; \\
+make install $shutup"
+                             ],
+                oldautotools => ["PATH=$gpt_location/oldautotools/bin:$ENV{'PATH'}; export PATH; GPT_LOCATION=$gpt_location; export GPT_LOCATION; ./configure --prefix=$gpt_location/oldautotools", 
+                              "make", 
+                              "make install"
+                             ],
+                gpt => ["GPT_LOCATION=$gpt_location; export GPT_LOCATION; \\
+./configure --with-perl=$perl_location", 
+                        "make", 
+                        "make install",
+                        "make install-man",
+                       ],
+                 perl => ["unset LANG; \\\
+PERL5LIB=$gpt_location/lib/perl:$ENV{'PERL5LIB'}; export PERL5LIB; \\\
+$perl_location Makefile.PL \\\
+INSTALLDIRS=perl LIB=$gpt_location/lib/perl \\\
+INSTALLSCRIPT=$gpt_location/sbin INSTALLMAN1DIR=$gpt_location/man/man1 \\\
+INSTALLMAN3DIR=$gpt_location/man/man3",
+                      'make', 
+                      'make install',
+                     ],             ,
+                compress => ["if test -f Zlib.c; then \
+echo 'removing Zlib.c'; \
+rm Zlib.c; \
+fi",
+			  "unset LANG; \\\
+$perl_location Makefile.PL $zlibdownflag \\\
+INSTALLDIRS=perl LIB=$gpt_location/lib/perl \\\
+INSTALLSCRIPT=$gpt_location/sbin \\\
+INSTALLMAN1DIR=$gpt_location/man/man1 \\\
+INSTALLMAN3DIR=$gpt_location/man/man3 $shutup",
+			  "unset LANG; \\\
+$perl_location Makefile.PL \\\
+INSTALLDIRS=perl LIB=$gpt_location/lib/perl \\\
+INSTALLSCRIPT=$gpt_location/sbin \\\
+INSTALLMAN1DIR=$gpt_location/man/man1 \\\
+INSTALLMAN3DIR=$gpt_location/man/man3 $shutup",
+                         "make $shutup", 
+                         "make install $shutup"
+                        ]
+               );
+my %boot = (
+             gpt => "PATH=$gpt_location/newautotools/bin:$ENV{'PATH'}; export PATH; ./bootstrap",
+           );
+
+if (! -d "./support") {
+  my $result = system("./setup_gpt_dist");
+}
+
+
+
+require PkgMngmt::Inform;
+
+my $log = new Grid::GPT::PkgMngmt::Inform(
+                                          verbose => $verbose,
+                                          name => "build_gpt",
+                                         );
+
+
+$log->announce("installing GPT into $gpt_location");
+
+
+require DistGPT;
+
+my $dist = new DistGPT(
+                       topdir => cwd(),
+                       building => 1,
+                      );
+
+$dist->match_srcdirs($autotools || $boot);
+
+for my $s  (@{ $dist->get_keys() }) {
+
+  my $dir = $dist->{'srcdirs'}->{$s};
+
+  #
+  # we only want to build File::Spec if a version >= 0.8 doesn't already exist on the
+  # system.
+  #
+  
+  if ($s eq 'filespec')
+    {
+      eval { require File::Spec };
+      if(($File::Spec::VERSION || 0) >= 0.8)
+        {
+          next;
+        }
+    }
+
+  my $instructions = $builddirections{$s};
+  
+  next if $instructions eq 'autotools' and 
+    ! defined $autotools and ! defined $boot;
+
+  next if $instructions eq 'oldautotools' and ! defined $autotools;
+  next if $s eq 'perltest' and ! defined $test;
+
+  $log->announce("building $dir");
+  
+  action($boot{$instructions},$dir) 
+    if defined $boot{$instructions} and defined $boot;
+
+  for my $i (@{$commands{$instructions}}) {
+    {
+      action($i, $dir);
+    }
+  }
+
+  next if ! defined $test;
+  next if ! grep { $_ eq $s } @testdirs;
+
+  $log->announce("testing $dir");
+  action("PERL5LIB=$gpt_location/lib/perl:$ENV{'PERL5LIB'}; export PERL5LIB; make test", $dir, 1);
+
+}
+
+sub action {
+  my ($command, $dir, $override) = @_;
+
+  my $startdir = cwd();
+
+  my $verbose = $log->{'verbose'};
+  $log->{'verbose'} = defined $verbose ? $verbose : $override;
+
+  chdir $dir;
+  $log->action($command);
+  chdir $startdir;
+  $log->{'verbose'} = $verbose;
+
+}
+
+sub print_version {
+  open (CFG, 'packaging_tools/configure.ac');
+ 
+  my $version;
+  for (<CFG>) {
+    if (m!AC_INIT\(\w+,([^,\)]+)!) {
+      $version = $1;
+      $version =~ s!\s+!!g;
+      last;
+    }
+  }
+  close CFG;
+  print "Globus Packaging Tools Version $version\n";
+  exit 0;
+}
+
+sub pod2usage {
+  my $ex = shift;
+  print "build_gpt [ -with-perl=<path> \\
+             -rpminfo=<flags> \\
+             -prefix=<path> \\
+             -boot \\
+             -help \\
+             -man \\
+             -autotools ]\n";
+  exit $ex;
+}
+
+=head1 NAME
+
+B<build_gpt> - Build GPT Distribution. 
+
+=head1 SYNOPSIS
+GetOptions( 'with-perl=s'=> \$perl_location,
+            'prefix=s'=> \$gpt_location,
+            "test!" => \$test,
+            "boot!" => \$boot,
+            "help!" => \$help,
+            "man!" => \$man,
+            "verbose!" => \$verbose,
+            "version!" => \$version,
+            "autotools!" => \$autotools,
+
+build_gpt [ -with-perl=<path> -prefix=<path> -boot -test -autotools -help -man -autotools -version -verbose ]
+
+=head1 DESCRIPTION
+
+B<build_gpt> Super script for building the GPT distribution..
+
+
+=head1 FLAGS
+
+=over 4
+
+=item I<-with-perl=PATH>: Location of the perl (version >= 5.005) executable.
+
+=item I<-prefix>: Installation location.  Default is the value of
+$GPT_LOCATION.
+
+=item I<-verbose>: Print copious build messages for diagnostic purposes.
+
+=item I<-boot>: Run autools via the packaging_tools/bootstrap script.
+The flag also install the needed autotools.
+
+=item I<-test>: Run some Perl module tests after the installation of
+each module.  This will also install GPT.
+
+=item I<-autotools>: Install various versions of automake, autoconf,
+and libtool.
+
+=item I<-help>: Print usage and exit..
+
+=item I<-man>: Print this page and exit..
+
+=back
+
+=cut

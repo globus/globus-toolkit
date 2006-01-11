@@ -1,0 +1,124 @@
+#!/usr/bin/perl
+
+#
+# standard includes
+#
+
+use strict;
+use Config;
+use Cwd;
+
+#
+# prepare for test run
+#
+
+my $curr_path = cwd() . "/t/D_PackageFilelist/test.01";
+action("rm -f $curr_path/result/*");
+action("mkdir -p $curr_path/result");
+if ( -e "$curr_path/data.tar.gz" )
+{
+    action("tar xvzf $curr_path/data.tar.gz -C $curr_path");
+}
+
+#
+# Do a perl check for version >= 5.005.  See 'gpt-translate-interpreter' should you
+# need to alter the invocation path to a valid perl interpreter in the GPT front-end
+# programs.
+#
+
+if ( ! ( defined eval "require 5.005" ) )
+{
+    die "GPT requires at least Perl version 5.005";
+}
+
+#
+# dig the globus and gpt paths out of the user's environment variables
+#
+
+my $gpt_path = $ENV{GPT_LOCATION};
+my $globus_path = $curr_path . "/data/globus";
+my $gpath;
+
+if ( !defined($gpt_path) && !defined($globus_path) )
+{
+    die("GPT_LOCATION or GLOBUS_LOCATION needs to be set before running this script");
+}
+
+if ( defined($gpt_path) )
+{
+    $gpath = $gpt_path;
+}
+
+if ( defined($globus_path) && !defined($gpath) )
+{
+    $gpath = $globus_path;
+}
+
+if ( ! -d "$globus_path/etc/globus_packages" )
+{
+    die("Can't find a globus_packages directory to work on in your GLOBUS_LOCATION!\n");
+}
+
+@INC = ("$gpath/lib/perl", "$gpath/lib/perl/$Config{'archname'}", @INC);
+
+require Grid::GPT::PackageFilelist;
+require Grid::GPT::Installation;
+
+#
+# begin main execution
+#
+
+my $installation = new Grid::GPT::Installation(
+                              pkgdir => "$globus_path/etc/globus_packages",
+                              with_filelists => 1,
+                              );
+
+my $querypkgs = $installation->query(
+                    pkgname => "globus_common",
+                    flavor => "gcc32",
+                    pkgtype => "pgm",
+                    );
+my $pkg = $querypkgs->[0];
+my $srcfl = $pkg->get_filelist();
+
+#
+# filelists init'd
+#
+
+my $destfl = new Grid::GPT::PackageFilelist(
+                     context => "srcdir",
+                     contextData => { dir => "$curr_path/result", },
+                     convert => 1,
+                     pkgnode => $pkg,
+                     noAbsentError => 1,
+                     );
+
+$destfl->open();
+$destfl->copyFilelist($srcfl);
+$destfl->save();
+
+my $retval = action("diff -Naur $curr_path/data/expected $curr_path/result >/dev/null 2>&1");
+
+#
+# done with test - exit.
+#
+
+exit $retval;
+
+#
+# subroutines
+#
+
+### action( $command )
+#
+# run $command within a proper system() command.
+#
+
+sub action
+{
+    my($command) = @_;
+
+    my $result = system("$command >/dev/null 2>&1");
+
+    return $result;
+}

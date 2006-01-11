@@ -1,0 +1,9 @@
+AC_INIT(Makefile.am)
+AM_PROG_LIBTOOL
+AM_INIT_AUTOMAKE(filelist_test, 0.1)
+
+AC_OUTPUT(Makefile 
+	simple/Makefile
+	conditionals/Makefile
+	automake_includes/Makefile
+)

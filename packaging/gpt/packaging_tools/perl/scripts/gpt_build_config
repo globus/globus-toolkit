@@ -1,0 +1,210 @@
+#!perl
+
+use strict;
+use Getopt::Long;
+use Config;
+
+#
+# Do a perl check for version >= 5.005.  See 'gpt-translate-interpreter' should you
+# need to alter the invocation path to a valid perl interpreter in the GPT front-end
+# programs.
+#
+
+if ( ! ( defined eval "require 5.005" ) )
+{
+    die "GPT requires at least Perl version 5.005";
+}
+
+my $gpath = $ENV{GPT_LOCATION};
+
+if (!defined($gpath))
+{
+  $gpath = $ENV{GLOBUS_LOCATION};
+
+}
+
+if (!defined($gpath))
+{
+   die "GPT_LOCATION or GLOBUS_LOCATION needs to be set before running this script"
+}
+
+@INC = ("$gpath/lib/perl", "$gpath/lib/perl/$Config{'archname'}", @INC);
+
+if ( ! ( defined eval "require Grid::GPT::GPTObject" ) )
+{
+    die("$gpath does not appear to hold a valid GPT installation\n");
+}
+
+require Pod::Usage;
+
+my $prefix = $gpath;
+
+my $VERSION = 0.01;
+my $srcdir = cwd();
+my $srcfile;
+my $flavor;
+my $static;
+my $link;
+my $outfile = 'gpt_build_temp.sh';
+my $verbose = 0;
+my ($help, $man);
+my $cflagslist;
+my $includeslist;
+my $libslist;
+my $pkglibslist;
+my $pgm_linkslist;
+my $lib_linkslist;
+
+GetOptions( 'src=s'=> \$srcfile, 
+            'flavor=s'=> \$flavor, 
+            'o=s' => \$outfile, 
+            'verbose=i' => \$verbose, 
+            'static'=> \$static,
+            'link=s'=> \$link, # depreciate because all other scripts use -static
+	    'help' => \$help) 
+  or Pod::Usage::pod2usage(1);
+
+Pod::Usage::pod2usage(0) if $help;
+
+die "ERROR: need a build flavor\n",Pod::Usage::pod2usage(1) if !defined $flavor;
+die "ERROR: need a source packaging data file\n",Pod::Usage::pod2usage(1) if !defined $srcfile;
+
+require Grid::GPT::Installation;
+require Grid::GPT::PackageFactory;
+require Grid::GPT::BuildLine;
+use Cwd;
+
+# sub pod2usage {
+#   print "gpt-build-config [-verbose -help -static -o=output ] -flavor=build_flavor -src=src_metadata_file\n";
+# }
+
+$static = 1 if defined $link and $link eq 'static';
+
+my $installation = new Grid::GPT::Installation();
+
+my $factory = new Grid::GPT::PackageFactory;
+
+my $pkg = $factory->type_of_package($srcfile);
+
+$pkg->{'disable_version_checking'} = 
+  $installation->{'disable_version_checking'};
+
+$pkg->read_metadata_file($srcfile);
+
+
+open (OUT, ">$outfile") or die "ERROR: $outfile could not be opened";
+#open (DEBUG, ">/tmp/debuggingoutput") or die "ERROR: debuggingoutput could not be opened";
+
+my $depenv = defined $static ? 'BuildStatic' : 'Build';
+
+my $node = $installation->add_package(pkg => $pkg,flavor => $flavor);
+$installation->set_depenv($depenv);
+$installation->sort_pkgs();
+
+my $libpkgs =  $installation->extract_deptree(
+                                              srcpkg => $node,
+                                              srcdep => 'lib_link',
+                                             );
+
+
+$libpkgs->check_missing();
+
+my $libenvs = $libpkgs->get_sorted_buildenvs();
+
+my $liblines = Grid::GPT::BuildLine::create_buildlines($libenvs);
+
+my $pgmpkgs =  $installation->extract_deptree(
+                                              srcpkg => $node,
+                                              srcdep => 'pgm_link',
+                                             );
+
+
+$pgmpkgs->check_missing();
+
+my $pgmenvs = $pgmpkgs->get_sorted_buildenvs();
+my $pgmlines = Grid::GPT::BuildLine::create_buildlines($pgmenvs);
+
+
+my $staticline;
+
+
+$cflagslist  = $pgmlines->{'cflags'}; 
+$includeslist  = $pgmlines->{'includes'}; 
+$libslist  = $pgmlines->{'extlibs'}; 
+$pkglibslist  = $pgmlines->{'pkglibs'}; 
+$pgm_linkslist  = $pgmlines->{'pkglibs'};
+$lib_linkslist  = $liblines->{'pkglibs'}; 
+$staticline  = defined $static ? "-static " : ""; 
+
+if (defined $static) {
+  $pkglibslist=Grid::GPT::BuildLine::convert_static_libs($pkglibslist, $flavor);
+  $libslist=Grid::GPT::BuildLine::convert_static_libs($libslist, $flavor);
+#  $lib_linkslist=Grid::GPT::BuildLine::convert_static_libs($lib_linkslist, $flavor);
+  $pgm_linkslist=Grid::GPT::BuildLine::convert_static_libs($pgm_linkslist, $flavor);
+}
+
+print_var("GPT_CONFIG_CFLAGS",$cflagslist);
+print_var("GPT_CONFIG_INCLUDES",$includeslist);
+print_var("GPT_CONFIG_LIBS",$libslist);
+print_var("GPT_CONFIG_PKG_LIBS",$pkglibslist);
+#print OUT "GPT_CONFIG_PGM_LINKS=\"$pgm_linkslist\"\n";
+#print OUT "GPT_CONFIG_LIB_LINKS=\"$lib_linkslist\"\n"; 
+#pgm_links and lib_links are broken at the moment, so we'll put in a hack:
+print_var("GPT_CONFIG_PGM_LINKS",$pgm_linkslist);
+print_var("GPT_CONFIG_LIB_LINKS",$lib_linkslist);
+print_var("GPT_CONFIG_STATIC_LINKLINE",$staticline);
+
+close OUT;
+chmod 0755, $outfile;
+exit;
+
+sub print_var {
+  my ($name, $value) = @_;
+  $value = "" if not defined $value;
+  $value  =~ s/\s+/ /g;
+  print OUT "$name=\"$value\"\n";
+}
+
+
+__END__
+
+=head1 NAME
+
+B<globus_build_config> - Returns a minimized list of ldflags from a list of globus packages and external libraries.
+
+=head1 SYNOPSIS
+
+globus_build_config -src <source metadata file>  CB-f <globus_flavor_name> -link [static|shared] 
+
+=head1 DESCRIPTION
+
+B<globus_build_config.pl> creates a file in it's current directory named
+gpt_build_temp.sh that contains a list of necessary flags assembled from 
+the build environment metadata of the packages on which the source metadata 
+depends.  
+This scanning is done recursively to cover the entire dependency tree.
+This script was initially inspired by the shell script gnome_config.
+
+=head1 LINK ORDER
+
+The flag list returned by B<globus_build_config.pl> is assembled in
+dependent order.  A dependency between two libraries occurs when one
+library needs the symbols of another library in order to link
+correctly.  For most linkers the library providing the symbols has to
+be linked after the library that needs the symbols.  For
+example, from the line:
+
+   -L/opt/Xpm/lib -lXpm -L/usr/lib/X11 -lXm -lX
+
+B<gpt_build_config> assumes that the library Xpm is dependent on Xm which in turn is dependent on X.  In addition, B<globus_build_config.pl> assumes that Xpm is located in /opt/Xpm/lib and Xm and X are both located in /usr/lib/X11.
+
+=head1 BUGS
+
+Circular dependencies between libraries are not supported.
+
+=head1 AUTHOR
+
+Michael Bletzinger E<lt>mbletzin.ncsa.uiuc.eduE<gt> and Eric Blau
+E<lt>eblau.ncsa.uiuc.eduE<gt>
+
+=cut

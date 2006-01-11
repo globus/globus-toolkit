@@ -1,0 +1,709 @@
+$VAR1 = {
+          'lib_runtime' => {
+                             'rtl_fow' => {
+                                            'ANY' => {
+                                                       'data' => bless( {
+                                                                          'versions' => [
+                                                                                          bless( {
+                                                                                                   'minor' => undef,
+                                                                                                   'lower_major' => undef,
+                                                                                                   'major' => '2',
+                                                                                                   'upper_minor' => undef,
+                                                                                                   'lower_minor' => undef,
+                                                                                                   'type' => 'simple',
+                                                                                                   'age' => undef,
+                                                                                                   'upper_major' => undef
+                                                                                                 }, 'Grid::GPT::V1::Version' )
+                                                                                        ],
+                                                                          'deptype' => 'lib_runtime',
+                                                                          'flavor' => undef,
+                                                                          'depnode' => bless( {
+                                                                                                'versions' => $VAR1->{'lib_runtime'}{'rtl_fow'}{'ANY'}{'data'}{'versions'},
+                                                                                                'index' => [
+                                                                                                             'name',
+                                                                                                             'type',
+                                                                                                             'pkg_type'
+                                                                                                           ],
+                                                                                                'pkg_type' => 'data',
+                                                                                                'type' => 'lib_runtime',
+                                                                                                'name' => 'rtl_fow'
+                                                                                              }, 'Grid::GPT::V1::SourceDependency' ),
+                                                                          'pkgtype' => 'data',
+                                                                          'pkgname' => 'rtl_fow'
+                                                                        }, 'Grid::GPT::DepNode' )
+                                                     }
+                                          },
+                             'rtl_fum' => {
+                                            'ANY' => {
+                                                       'data' => bless( {
+                                                                          'versions' => [
+                                                                                          bless( {
+                                                                                                   'minor' => undef,
+                                                                                                   'lower_major' => undef,
+                                                                                                   'major' => '2',
+                                                                                                   'upper_minor' => undef,
+                                                                                                   'lower_minor' => undef,
+                                                                                                   'type' => 'simple',
+                                                                                                   'age' => undef,
+                                                                                                   'upper_major' => undef
+                                                                                                 }, 'Grid::GPT::V1::Version' )
+                                                                                        ],
+                                                                          'deptype' => 'lib_runtime',
+                                                                          'flavor' => undef,
+                                                                          'depnode' => bless( {
+                                                                                                'versions' => $VAR1->{'lib_runtime'}{'rtl_fum'}{'ANY'}{'data'}{'versions'},
+                                                                                                'index' => [
+                                                                                                             'name',
+                                                                                                             'type',
+                                                                                                             'pkg_type'
+                                                                                                           ],
+                                                                                                'pkg_type' => 'data',
+                                                                                                'type' => 'lib_runtime',
+                                                                                                'name' => 'rtl_fum'
+                                                                                              }, 'Grid::GPT::V1::SourceDependency' ),
+                                                                          'pkgtype' => 'data',
+                                                                          'pkgname' => 'rtl_fum'
+                                                                        }, 'Grid::GPT::DepNode' )
+                                                     }
+                                          },
+                             'rtl_fee' => {
+                                            'ANY' => {
+                                                       'data' => bless( {
+                                                                          'versions' => [
+                                                                                          bless( {
+                                                                                                   'minor' => undef,
+                                                                                                   'lower_major' => undef,
+                                                                                                   'major' => '2',
+                                                                                                   'upper_minor' => undef,
+                                                                                                   'lower_minor' => undef,
+                                                                                                   'type' => 'simple',
+                                                                                                   'age' => undef,
+                                                                                                   'upper_major' => undef
+                                                                                                 }, 'Grid::GPT::V1::Version' )
+                                                                                        ],
+                                                                          'deptype' => 'lib_runtime',
+                                                                          'flavor' => undef,
+                                                                          'depnode' => bless( {
+                                                                                                'versions' => $VAR1->{'lib_runtime'}{'rtl_fee'}{'ANY'}{'data'}{'versions'},
+                                                                                                'index' => [
+                                                                                                             'name',
+                                                                                                             'type',
+                                                                                                             'pkg_type'
+                                                                                                           ],
+                                                                                                'pkg_type' => 'data',
+                                                                                                'type' => 'lib_runtime',
+                                                                                                'name' => 'rtl_fee'
+                                                                                              }, 'Grid::GPT::V1::SourceDependency' ),
+                                                                          'pkgtype' => 'data',
+                                                                          'pkgname' => 'rtl_fee'
+                                                                        }, 'Grid::GPT::DepNode' )
+                                                     }
+                                          }
+                           },
+          'lib_link' => {
+                          'low' => {
+                                     'ANY' => {
+                                                'ANY' => bless( {
+                                                                  'versions' => [
+                                                                                  bless( {
+                                                                                           'minor' => undef,
+                                                                                           'lower_major' => undef,
+                                                                                           'major' => '2',
+                                                                                           'upper_minor' => undef,
+                                                                                           'lower_minor' => undef,
+                                                                                           'type' => 'simple',
+                                                                                           'age' => undef,
+                                                                                           'upper_major' => undef
+                                                                                         }, 'Grid::GPT::V1::Version' )
+                                                                                ],
+                                                                  'deptype' => 'lib_link',
+                                                                  'flavor' => undef,
+                                                                  'depnode' => bless( {
+                                                                                        'versions' => $VAR1->{'lib_link'}{'low'}{'ANY'}{'ANY'}{'versions'},
+                                                                                        'index' => [
+                                                                                                     'name',
+                                                                                                     'type',
+                                                                                                     'pkg_type'
+                                                                                                   ],
+                                                                                        'pkg_type' => undef,
+                                                                                        'type' => 'lib_link',
+                                                                                        'name' => 'low'
+                                                                                      }, 'Grid::GPT::V1::SourceDependency' ),
+                                                                  'pkgtype' => undef,
+                                                                  'pkgname' => 'low'
+                                                                }, 'Grid::GPT::DepNode' )
+                                              }
+                                   },
+                          'lee' => {
+                                     'ANY' => {
+                                                'ANY' => bless( {
+                                                                  'versions' => [
+                                                                                  bless( {
+                                                                                           'minor' => undef,
+                                                                                           'lower_major' => undef,
+                                                                                           'major' => '2',
+                                                                                           'upper_minor' => undef,
+                                                                                           'lower_minor' => undef,
+                                                                                           'type' => 'simple',
+                                                                                           'age' => undef,
+                                                                                           'upper_major' => undef
+                                                                                         }, 'Grid::GPT::V1::Version' )
+                                                                                ],
+                                                                  'deptype' => 'lib_link',
+                                                                  'flavor' => undef,
+                                                                  'depnode' => bless( {
+                                                                                        'versions' => $VAR1->{'lib_link'}{'lee'}{'ANY'}{'ANY'}{'versions'},
+                                                                                        'index' => [
+                                                                                                     'name',
+                                                                                                     'type',
+                                                                                                     'pkg_type'
+                                                                                                   ],
+                                                                                        'pkg_type' => undef,
+                                                                                        'type' => 'lib_link',
+                                                                                        'name' => 'lee'
+                                                                                      }, 'Grid::GPT::V1::SourceDependency' ),
+                                                                  'pkgtype' => undef,
+                                                                  'pkgname' => 'lee'
+                                                                }, 'Grid::GPT::DepNode' )
+                                              }
+                                   },
+                          'lum' => {
+                                     'ANY' => {
+                                                'ANY' => bless( {
+                                                                  'versions' => [
+                                                                                  bless( {
+                                                                                           'minor' => undef,
+                                                                                           'lower_major' => undef,
+                                                                                           'major' => '2',
+                                                                                           'upper_minor' => undef,
+                                                                                           'lower_minor' => undef,
+                                                                                           'type' => 'simple',
+                                                                                           'age' => undef,
+                                                                                           'upper_major' => undef
+                                                                                         }, 'Grid::GPT::V1::Version' )
+                                                                                ],
+                                                                  'deptype' => 'lib_link',
+                                                                  'flavor' => undef,
+                                                                  'depnode' => bless( {
+                                                                                        'versions' => $VAR1->{'lib_link'}{'lum'}{'ANY'}{'ANY'}{'versions'},
+                                                                                        'index' => [
+                                                                                                     'name',
+                                                                                                     'type',
+                                                                                                     'pkg_type'
+                                                                                                   ],
+                                                                                        'pkg_type' => undef,
+                                                                                        'type' => 'lib_link',
+                                                                                        'name' => 'lum'
+                                                                                      }, 'Grid::GPT::V1::SourceDependency' ),
+                                                                  'pkgtype' => undef,
+                                                                  'pkgname' => 'lum'
+                                                                }, 'Grid::GPT::DepNode' )
+                                              }
+                                   }
+                        },
+          'pgm_runtime' => {
+                             'pgm_fow' => {
+                                            'ANY' => {
+                                                       'pgm' => bless( {
+                                                                         'versions' => [
+                                                                                         bless( {
+                                                                                                  'minor' => undef,
+                                                                                                  'lower_major' => undef,
+                                                                                                  'major' => '2',
+                                                                                                  'upper_minor' => undef,
+                                                                                                  'lower_minor' => undef,
+                                                                                                  'type' => 'simple',
+                                                                                                  'age' => undef,
+                                                                                                  'upper_major' => undef
+                                                                                                }, 'Grid::GPT::V1::Version' )
+                                                                                       ],
+                                                                         'deptype' => 'pgm_runtime',
+                                                                         'flavor' => undef,
+                                                                         'depnode' => bless( {
+                                                                                               'versions' => $VAR1->{'pgm_runtime'}{'pgm_fow'}{'ANY'}{'pgm'}{'versions'},
+                                                                                               'index' => [
+                                                                                                            'name',
+                                                                                                            'type',
+                                                                                                            'pkg_type'
+                                                                                                          ],
+                                                                                               'pkg_type' => 'pgm',
+                                                                                               'type' => 'pgm_runtime',
+                                                                                               'name' => 'pgm_fow'
+                                                                                             }, 'Grid::GPT::V1::SourceDependency' ),
+                                                                         'pkgtype' => 'pgm',
+                                                                         'pkgname' => 'pgm_fow'
+                                                                       }, 'Grid::GPT::DepNode' )
+                                                     }
+                                          },
+                             'pgm_fee' => {
+                                            'ANY' => {
+                                                       'pgm' => bless( {
+                                                                         'versions' => [
+                                                                                         bless( {
+                                                                                                  'minor' => undef,
+                                                                                                  'lower_major' => undef,
+                                                                                                  'major' => '2',
+                                                                                                  'upper_minor' => undef,
+                                                                                                  'lower_minor' => undef,
+                                                                                                  'type' => 'simple',
+                                                                                                  'age' => undef,
+                                                                                                  'upper_major' => undef
+                                                                                                }, 'Grid::GPT::V1::Version' )
+                                                                                       ],
+                                                                         'deptype' => 'pgm_runtime',
+                                                                         'flavor' => undef,
+                                                                         'depnode' => bless( {
+                                                                                               'versions' => $VAR1->{'pgm_runtime'}{'pgm_fee'}{'ANY'}{'pgm'}{'versions'},
+                                                                                               'index' => [
+                                                                                                            'name',
+                                                                                                            'type',
+                                                                                                            'pkg_type'
+                                                                                                          ],
+                                                                                               'pkg_type' => 'pgm',
+                                                                                               'type' => 'pgm_runtime',
+                                                                                               'name' => 'pgm_fee'
+                                                                                             }, 'Grid::GPT::V1::SourceDependency' ),
+                                                                         'pkgtype' => 'pgm',
+                                                                         'pkgname' => 'pgm_fee'
+                                                                       }, 'Grid::GPT::DepNode' )
+                                                     }
+                                          },
+                             'pgm_fum' => {
+                                            'ANY' => {
+                                                       'pgm' => bless( {
+                                                                         'versions' => [
+                                                                                         bless( {
+                                                                                                  'minor' => undef,
+                                                                                                  'lower_major' => undef,
+                                                                                                  'major' => '2',
+                                                                                                  'upper_minor' => undef,
+                                                                                                  'lower_minor' => undef,
+                                                                                                  'type' => 'simple',
+                                                                                                  'age' => undef,
+                                                                                                  'upper_major' => undef
+                                                                                                }, 'Grid::GPT::V1::Version' )
+                                                                                       ],
+                                                                         'deptype' => 'pgm_runtime',
+                                                                         'flavor' => undef,
+                                                                         'depnode' => bless( {
+                                                                                               'versions' => $VAR1->{'pgm_runtime'}{'pgm_fum'}{'ANY'}{'pgm'}{'versions'},
+                                                                                               'index' => [
+                                                                                                            'name',
+                                                                                                            'type',
+                                                                                                            'pkg_type'
+                                                                                                          ],
+                                                                                               'pkg_type' => 'pgm',
+                                                                                               'type' => 'pgm_runtime',
+                                                                                               'name' => 'pgm_fum'
+                                                                                             }, 'Grid::GPT::V1::SourceDependency' ),
+                                                                         'pkgtype' => 'pgm',
+                                                                         'pkgname' => 'pgm_fum'
+                                                                       }, 'Grid::GPT::DepNode' )
+                                                     }
+                                          }
+                           },
+          'doc_runtime' => {
+                             'doc_fum' => {
+                                            'ANY' => {
+                                                       'doc' => bless( {
+                                                                         'versions' => [
+                                                                                         bless( {
+                                                                                                  'minor' => undef,
+                                                                                                  'lower_major' => undef,
+                                                                                                  'major' => '2',
+                                                                                                  'upper_minor' => undef,
+                                                                                                  'lower_minor' => undef,
+                                                                                                  'type' => 'simple',
+                                                                                                  'age' => undef,
+                                                                                                  'upper_major' => undef
+                                                                                                }, 'Grid::GPT::V1::Version' )
+                                                                                       ],
+                                                                         'deptype' => 'doc_runtime',
+                                                                         'flavor' => undef,
+                                                                         'depnode' => bless( {
+                                                                                               'versions' => $VAR1->{'doc_runtime'}{'doc_fum'}{'ANY'}{'doc'}{'versions'},
+                                                                                               'index' => [
+                                                                                                            'name',
+                                                                                                            'type',
+                                                                                                            'pkg_type'
+                                                                                                          ],
+                                                                                               'pkg_type' => 'doc',
+                                                                                               'type' => 'doc_runtime',
+                                                                                               'name' => 'doc_fum'
+                                                                                             }, 'Grid::GPT::V1::SourceDependency' ),
+                                                                         'pkgtype' => 'doc',
+                                                                         'pkgname' => 'doc_fum'
+                                                                       }, 'Grid::GPT::DepNode' )
+                                                     }
+                                          },
+                             'doc_fee' => {
+                                            'ANY' => {
+                                                       'doc' => bless( {
+                                                                         'versions' => [
+                                                                                         bless( {
+                                                                                                  'minor' => undef,
+                                                                                                  'lower_major' => undef,
+                                                                                                  'major' => '2',
+                                                                                                  'upper_minor' => undef,
+                                                                                                  'lower_minor' => undef,
+                                                                                                  'type' => 'simple',
+                                                                                                  'age' => undef,
+                                                                                                  'upper_major' => undef
+                                                                                                }, 'Grid::GPT::V1::Version' )
+                                                                                       ],
+                                                                         'deptype' => 'doc_runtime',
+                                                                         'flavor' => undef,
+                                                                         'depnode' => bless( {
+                                                                                               'versions' => $VAR1->{'doc_runtime'}{'doc_fee'}{'ANY'}{'doc'}{'versions'},
+                                                                                               'index' => [
+                                                                                                            'name',
+                                                                                                            'type',
+                                                                                                            'pkg_type'
+                                                                                                          ],
+                                                                                               'pkg_type' => 'doc',
+                                                                                               'type' => 'doc_runtime',
+                                                                                               'name' => 'doc_fee'
+                                                                                             }, 'Grid::GPT::V1::SourceDependency' ),
+                                                                         'pkgtype' => 'doc',
+                                                                         'pkgname' => 'doc_fee'
+                                                                       }, 'Grid::GPT::DepNode' )
+                                                     }
+                                          },
+                             'doc_fow' => {
+                                            'ANY' => {
+                                                       'doc' => bless( {
+                                                                         'versions' => [
+                                                                                         bless( {
+                                                                                                  'minor' => undef,
+                                                                                                  'lower_major' => undef,
+                                                                                                  'major' => '2',
+                                                                                                  'upper_minor' => undef,
+                                                                                                  'lower_minor' => undef,
+                                                                                                  'type' => 'simple',
+                                                                                                  'age' => undef,
+                                                                                                  'upper_major' => undef
+                                                                                                }, 'Grid::GPT::V1::Version' )
+                                                                                       ],
+                                                                         'deptype' => 'doc_runtime',
+                                                                         'flavor' => undef,
+                                                                         'depnode' => bless( {
+                                                                                               'versions' => $VAR1->{'doc_runtime'}{'doc_fow'}{'ANY'}{'doc'}{'versions'},
+                                                                                               'index' => [
+                                                                                                            'name',
+                                                                                                            'type',
+                                                                                                            'pkg_type'
+                                                                                                          ],
+                                                                                               'pkg_type' => 'doc',
+                                                                                               'type' => 'doc_runtime',
+                                                                                               'name' => 'doc_fow'
+                                                                                             }, 'Grid::GPT::V1::SourceDependency' ),
+                                                                         'pkgtype' => 'doc',
+                                                                         'pkgname' => 'doc_fow'
+                                                                       }, 'Grid::GPT::DepNode' )
+                                                     }
+                                          }
+                           },
+          'pgm_link' => {
+                          'plum' => {
+                                      'ANY' => {
+                                                 'ANY' => bless( {
+                                                                   'versions' => [
+                                                                                   bless( {
+                                                                                            'minor' => undef,
+                                                                                            'lower_major' => undef,
+                                                                                            'major' => '2',
+                                                                                            'upper_minor' => undef,
+                                                                                            'lower_minor' => undef,
+                                                                                            'type' => 'simple',
+                                                                                            'age' => undef,
+                                                                                            'upper_major' => undef
+                                                                                          }, 'Grid::GPT::V1::Version' )
+                                                                                 ],
+                                                                   'deptype' => 'pgm_link',
+                                                                   'flavor' => undef,
+                                                                   'depnode' => bless( {
+                                                                                         'versions' => $VAR1->{'pgm_link'}{'plum'}{'ANY'}{'ANY'}{'versions'},
+                                                                                         'index' => [
+                                                                                                      'name',
+                                                                                                      'type',
+                                                                                                      'pkg_type'
+                                                                                                    ],
+                                                                                         'pkg_type' => undef,
+                                                                                         'type' => 'pgm_link',
+                                                                                         'name' => 'plum'
+                                                                                       }, 'Grid::GPT::V1::SourceDependency' ),
+                                                                   'pkgtype' => undef,
+                                                                   'pkgname' => 'plum'
+                                                                 }, 'Grid::GPT::DepNode' )
+                                               }
+                                    },
+                          'plee' => {
+                                      'ANY' => {
+                                                 'ANY' => bless( {
+                                                                   'versions' => [
+                                                                                   bless( {
+                                                                                            'minor' => undef,
+                                                                                            'lower_major' => undef,
+                                                                                            'major' => '2',
+                                                                                            'upper_minor' => undef,
+                                                                                            'lower_minor' => undef,
+                                                                                            'type' => 'simple',
+                                                                                            'age' => undef,
+                                                                                            'upper_major' => undef
+                                                                                          }, 'Grid::GPT::V1::Version' )
+                                                                                 ],
+                                                                   'deptype' => 'pgm_link',
+                                                                   'flavor' => undef,
+                                                                   'depnode' => bless( {
+                                                                                         'versions' => $VAR1->{'pgm_link'}{'plee'}{'ANY'}{'ANY'}{'versions'},
+                                                                                         'index' => [
+                                                                                                      'name',
+                                                                                                      'type',
+                                                                                                      'pkg_type'
+                                                                                                    ],
+                                                                                         'pkg_type' => undef,
+                                                                                         'type' => 'pgm_link',
+                                                                                         'name' => 'plee'
+                                                                                       }, 'Grid::GPT::V1::SourceDependency' ),
+                                                                   'pkgtype' => undef,
+                                                                   'pkgname' => 'plee'
+                                                                 }, 'Grid::GPT::DepNode' )
+                                               }
+                                    },
+                          'plow' => {
+                                      'ANY' => {
+                                                 'ANY' => bless( {
+                                                                   'versions' => [
+                                                                                   bless( {
+                                                                                            'minor' => undef,
+                                                                                            'lower_major' => undef,
+                                                                                            'major' => '2',
+                                                                                            'upper_minor' => undef,
+                                                                                            'lower_minor' => undef,
+                                                                                            'type' => 'simple',
+                                                                                            'age' => undef,
+                                                                                            'upper_major' => undef
+                                                                                          }, 'Grid::GPT::V1::Version' )
+                                                                                 ],
+                                                                   'deptype' => 'pgm_link',
+                                                                   'flavor' => undef,
+                                                                   'depnode' => bless( {
+                                                                                         'versions' => $VAR1->{'pgm_link'}{'plow'}{'ANY'}{'ANY'}{'versions'},
+                                                                                         'index' => [
+                                                                                                      'name',
+                                                                                                      'type',
+                                                                                                      'pkg_type'
+                                                                                                    ],
+                                                                                         'pkg_type' => undef,
+                                                                                         'type' => 'pgm_link',
+                                                                                         'name' => 'plow'
+                                                                                       }, 'Grid::GPT::V1::SourceDependency' ),
+                                                                   'pkgtype' => undef,
+                                                                   'pkgname' => 'plow'
+                                                                 }, 'Grid::GPT::DepNode' )
+                                               }
+                                    }
+                        },
+          'data_runtime' => {
+                              'data_fow' => {
+                                              'ANY' => {
+                                                         'data' => bless( {
+                                                                            'versions' => [
+                                                                                            bless( {
+                                                                                                     'minor' => undef,
+                                                                                                     'lower_major' => undef,
+                                                                                                     'major' => '2',
+                                                                                                     'upper_minor' => undef,
+                                                                                                     'lower_minor' => undef,
+                                                                                                     'type' => 'simple',
+                                                                                                     'age' => undef,
+                                                                                                     'upper_major' => undef
+                                                                                                   }, 'Grid::GPT::V1::Version' )
+                                                                                          ],
+                                                                            'deptype' => 'data_runtime',
+                                                                            'flavor' => undef,
+                                                                            'depnode' => bless( {
+                                                                                                  'versions' => $VAR1->{'data_runtime'}{'data_fow'}{'ANY'}{'data'}{'versions'},
+                                                                                                  'index' => [
+                                                                                                               'name',
+                                                                                                               'type',
+                                                                                                               'pkg_type'
+                                                                                                             ],
+                                                                                                  'pkg_type' => 'data',
+                                                                                                  'type' => 'data_runtime',
+                                                                                                  'name' => 'data_fow'
+                                                                                                }, 'Grid::GPT::V1::SourceDependency' ),
+                                                                            'pkgtype' => 'data',
+                                                                            'pkgname' => 'data_fow'
+                                                                          }, 'Grid::GPT::DepNode' )
+                                                       }
+                                            },
+                              'data_fee' => {
+                                              'ANY' => {
+                                                         'data' => bless( {
+                                                                            'versions' => [
+                                                                                            bless( {
+                                                                                                     'minor' => undef,
+                                                                                                     'lower_major' => undef,
+                                                                                                     'major' => '2',
+                                                                                                     'upper_minor' => undef,
+                                                                                                     'lower_minor' => undef,
+                                                                                                     'type' => 'simple',
+                                                                                                     'age' => undef,
+                                                                                                     'upper_major' => undef
+                                                                                                   }, 'Grid::GPT::V1::Version' )
+                                                                                          ],
+                                                                            'deptype' => 'data_runtime',
+                                                                            'flavor' => undef,
+                                                                            'depnode' => bless( {
+                                                                                                  'versions' => $VAR1->{'data_runtime'}{'data_fee'}{'ANY'}{'data'}{'versions'},
+                                                                                                  'index' => [
+                                                                                                               'name',
+                                                                                                               'type',
+                                                                                                               'pkg_type'
+                                                                                                             ],
+                                                                                                  'pkg_type' => 'data',
+                                                                                                  'type' => 'data_runtime',
+                                                                                                  'name' => 'data_fee'
+                                                                                                }, 'Grid::GPT::V1::SourceDependency' ),
+                                                                            'pkgtype' => 'data',
+                                                                            'pkgname' => 'data_fee'
+                                                                          }, 'Grid::GPT::DepNode' )
+                                                       }
+                                            },
+                              'data_fum' => {
+                                              'ANY' => {
+                                                         'data' => bless( {
+                                                                            'versions' => [
+                                                                                            bless( {
+                                                                                                     'minor' => undef,
+                                                                                                     'lower_major' => undef,
+                                                                                                     'major' => '2',
+                                                                                                     'upper_minor' => undef,
+                                                                                                     'lower_minor' => undef,
+                                                                                                     'type' => 'simple',
+                                                                                                     'age' => undef,
+                                                                                                     'upper_major' => undef
+                                                                                                   }, 'Grid::GPT::V1::Version' )
+                                                                                          ],
+                                                                            'deptype' => 'data_runtime',
+                                                                            'flavor' => undef,
+                                                                            'depnode' => bless( {
+                                                                                                  'versions' => $VAR1->{'data_runtime'}{'data_fum'}{'ANY'}{'data'}{'versions'},
+                                                                                                  'index' => [
+                                                                                                               'name',
+                                                                                                               'type',
+                                                                                                               'pkg_type'
+                                                                                                             ],
+                                                                                                  'pkg_type' => 'data',
+                                                                                                  'type' => 'data_runtime',
+                                                                                                  'name' => 'data_fum'
+                                                                                                }, 'Grid::GPT::V1::SourceDependency' ),
+                                                                            'pkgtype' => 'data',
+                                                                            'pkgname' => 'data_fum'
+                                                                          }, 'Grid::GPT::DepNode' )
+                                                       }
+                                            }
+                            },
+          'compile' => {
+                         'fow' => {
+                                    'ANY' => {
+                                               'ANY' => bless( {
+                                                                 'versions' => [
+                                                                                 bless( {
+                                                                                          'minor' => undef,
+                                                                                          'lower_major' => undef,
+                                                                                          'major' => '2',
+                                                                                          'upper_minor' => undef,
+                                                                                          'lower_minor' => undef,
+                                                                                          'type' => 'simple',
+                                                                                          'age' => undef,
+                                                                                          'upper_major' => undef
+                                                                                        }, 'Grid::GPT::V1::Version' )
+                                                                               ],
+                                                                 'deptype' => 'compile',
+                                                                 'flavor' => undef,
+                                                                 'depnode' => bless( {
+                                                                                       'versions' => $VAR1->{'compile'}{'fow'}{'ANY'}{'ANY'}{'versions'},
+                                                                                       'index' => [
+                                                                                                    'name',
+                                                                                                    'type',
+                                                                                                    'pkg_type'
+                                                                                                  ],
+                                                                                       'pkg_type' => undef,
+                                                                                       'type' => 'compile',
+                                                                                       'name' => 'fow'
+                                                                                     }, 'Grid::GPT::V1::SourceDependency' ),
+                                                                 'pkgtype' => undef,
+                                                                 'pkgname' => 'fow'
+                                                               }, 'Grid::GPT::DepNode' )
+                                             }
+                                  },
+                         'fee' => {
+                                    'ANY' => {
+                                               'ANY' => bless( {
+                                                                 'versions' => [
+                                                                                 bless( {
+                                                                                          'minor' => undef,
+                                                                                          'lower_major' => undef,
+                                                                                          'major' => '2',
+                                                                                          'upper_minor' => undef,
+                                                                                          'lower_minor' => undef,
+                                                                                          'type' => 'simple',
+                                                                                          'age' => undef,
+                                                                                          'upper_major' => undef
+                                                                                        }, 'Grid::GPT::V1::Version' )
+                                                                               ],
+                                                                 'deptype' => 'compile',
+                                                                 'flavor' => undef,
+                                                                 'depnode' => bless( {
+                                                                                       'versions' => $VAR1->{'compile'}{'fee'}{'ANY'}{'ANY'}{'versions'},
+                                                                                       'index' => [
+                                                                                                    'name',
+                                                                                                    'type',
+                                                                                                    'pkg_type'
+                                                                                                  ],
+                                                                                       'pkg_type' => undef,
+                                                                                       'type' => 'compile',
+                                                                                       'name' => 'fee'
+                                                                                     }, 'Grid::GPT::V1::SourceDependency' ),
+                                                                 'pkgtype' => undef,
+                                                                 'pkgname' => 'fee'
+                                                               }, 'Grid::GPT::DepNode' )
+                                             }
+                                  },
+                         'fum' => {
+                                    'ANY' => {
+                                               'ANY' => bless( {
+                                                                 'versions' => [
+                                                                                 bless( {
+                                                                                          'minor' => undef,
+                                                                                          'lower_major' => undef,
+                                                                                          'major' => '2',
+                                                                                          'upper_minor' => undef,
+                                                                                          'lower_minor' => undef,
+                                                                                          'type' => 'simple',
+                                                                                          'age' => undef,
+                                                                                          'upper_major' => undef
+                                                                                        }, 'Grid::GPT::V1::Version' )
+                                                                               ],
+                                                                 'deptype' => 'compile',
+                                                                 'flavor' => undef,
+                                                                 'depnode' => bless( {
+                                                                                       'versions' => $VAR1->{'compile'}{'fum'}{'ANY'}{'ANY'}{'versions'},
+                                                                                       'index' => [
+                                                                                                    'name',
+                                                                                                    'type',
+                                                                                                    'pkg_type'
+                                                                                                  ],
+                                                                                       'pkg_type' => undef,
+                                                                                       'type' => 'compile',
+                                                                                       'name' => 'fum'
+                                                                                     }, 'Grid::GPT::V1::SourceDependency' ),
+                                                                 'pkgtype' => undef,
+                                                                 'pkgname' => 'fum'
+                                                               }, 'Grid::GPT::DepNode' )
+                                             }
+                                  }
+                       }
+        };

@@ -1,0 +1,337 @@
+#! /usr/bin/perl
+
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@ author @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+#                       					 @
+# created by: Kyle Stork                                         @
+# created on: June 26, 2001					 @
+# created at: NCSA on the campus of the University of Illinois   @
+#								 @
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+
+use strict;
+use Getopt::Long;
+
+#
+# Do a perl check for version >= 5.005.  See 'gpt-translate-interpreter' should you
+# need to alter the invocation path to a valid perl interpreter in the GPT front-end
+# programs.
+#
+
+if ( ! ( defined eval "require 5.005" ) )
+{
+    die "GPT requires at least Perl version 5.005";
+}
+
+#******************** subroutine section *************************
+
+sub commands;
+
+#sub commands executes the ./bootstrap ./configure make and 
+#make distclean for packages that do not need a globus flavor
+#it is possible to do distclean on all of these, as package_management
+#and packaging_tools are the only packages that do not need a flavor
+
+sub commandswithflavor;
+
+#sub commandswithflavor executes the ./bootstrap ./configure make
+#and make clean for packages that require a globus flavor
+#make clean should put these packages in tarballs
+
+sub pod2usage;
+
+#sub pod2usage informs the user if the -flavor and/or -location 
+#command are not present
+
+#******************************************************************
+
+
+my $flavor;
+my $globus;
+my $tar;
+
+GetOptions( '-flavor=s' => \$flavor, '-location=s' => \$globus, '-tar_location=s' => \$tar) 
+or pod2usage(1);
+
+#$flavor is set to the globus flavor and will be passed
+#into COMMANDSWITHFLAVOR.
+#This allows for the flavor to be entered once, instead of 
+#the user being prompted for the flavor every time the 
+#subroutine COMMANDSWITHFLAVOR is called.
+
+#$globus is set so that the path of the globus utilities can be 
+#entered once, and used to find where each package is stored
+#this saves the user from having to enter the path of the 
+#globus software more than once
+
+
+foreach $ARGV (@ARGV)
+{ #open foreach
+  
+  SWITCH:  
+  {  #open switch
+
+    if($ARGV eq "package_management") 
+      {  #open if
+        
+	chdir
+	"$globus/packaging/package_management/"
+        or die "Cant cd to package_management:$!\n";
+        
+	#if the directory package_management cannot be accessed, the
+	#script will die, and print an error message to STDOUT so
+	#that the user will know what package he or she still has
+ 	#to install
+  
+        commands;
+        system("tar -cvf gpm.tar *");
+        system("gzip gpm.tar");
+	system("mv gpm.tar.gz $tar");
+	 
+        last SWITCH;
+
+      }  #close if
+    
+    if($ARGV eq "packaging_tools")
+      {  #open if
+       
+	chdir
+        "$globus/packaging/packaging_tools/" 
+	or die "Cant cd to packaging_tools:$!\n";
+        
+	#if the directory packaging_tools cannot be accessed, the 
+	#script will die, and print an error message to STDOUT so 
+	#that the user will know what package he or she still has
+	#to install
+
+	commands;
+	system("tar -cvf gpt.tar *");
+	system("gzip gpt.tar");
+	system("mv gpt.tar.gz $tar");
+	
+        last SWITCH;  
+
+      }  #close if
+   
+    if($ARGV eq "common")
+      {  #open if
+ 
+        chdir
+	"$globus/common/source/" 
+	or die "Cant cd to common:$!\n";
+	
+	#if the directory common cannot be accessed, the
+	#script will die, and print an error message to STDOUT so
+	#that the user will know what package he or she still has
+	#to install
+
+	commandswithflavor;
+	system("tar -cvf common.tar *");
+	system("gzip common.tar");
+	system("mv common.tar.gz $tar");
+
+	last SWITCH;
+
+      }  #close if
+
+    if($ARGV eq "core")
+      {  #open if
+
+        chdir
+	"$globus/core/source/"
+        or die "Cant cd to core:$!\n";
+
+	#if the directory core cannot be accessed, the 
+	#script will die, and print an error message to STDOUT so
+	#that the user will know what package he or she still has
+	#to install
+	
+	commandswithflavor;
+	system("tar -cvf core.tar *");
+	system("gzip core.tar");
+	system("mv core.tar.gz $tar");
+
+	last SWITCH;
+ 
+      }  #close if
+
+    if($ARGV eq "client")
+      {  #open if
+
+      	chdir
+        "$globus/gridftp/client/source/" 
+	or die "Cant cd to client:$!\n";
+	
+	#if the directory client cannot be accessed, the 
+	#script will die, and print an error message to STDOUT so
+	#that the user will know what package he or she still has
+	#to install
+	
+	commandswithflavor;
+	system("tar -cvf client.tar *");
+	system("gzip client.tar");
+	system("mv client.tar.gz $tar");
+	 
+	last SWITCH;
+
+      }  #close if
+
+    if($ARGV eq "control")
+      {  #open if
+
+	chdir
+	"$globus/gridftp/control/source/" 
+	or die "Cant cd to control:$!\n";
+
+	#if the directory control cannot be accessed, the
+	#script will die, and print an error message to STDOUT so
+	#that the user will know what package he or she still has 
+	#to install
+	
+	commandswithflavor; 
+	system("tar -cvf control.tar *");
+	system("gzip control.tar");
+	system("mv control.tar.gz $tar");
+
+	last SWITCH;
+
+      }  #close if
+
+    if($ARGV eq "ssl_utils")
+      {  #open if
+	
+	chdir
+	"$globus/gsi/ssl_utils/source/" 
+	or die "Cant cd to ssl_utils:$!\n";
+
+	#if the directory ssl_utils cannot be accessed, the
+	#script will die, and print an error message to STDOUT so
+	#that the user will know what package he or she still has
+	#to install
+
+	commandswithflavor; 
+	system("tar -cvf ssl_utils.tar *");
+	system("gzip ssl_utils.tar");
+	system("mv ssl_utils.tar.gz $tar");
+
+	last SWITCH;
+
+      }  #close if
+
+    if($ARGV eq "gssapi")
+      {  #open if
+	
+	chdir
+	"$globus/gsi/gssapi/source/" 
+	or die "Cant cd to gssapi:$!\n";
+
+	#if the directory gssapi cannot be accessed, the 
+	#script will die, and print an error message to STDOUT so
+	#that the user will know what package he or she still has
+	#to install
+
+	commandswithflavor;
+	system("tar -cvf gssapi.tar *");
+	system("gzip gssapi.tar");
+	system("mv gssapi.tar.gz $tar");
+
+	last SWITCH;
+
+      }  #close if
+
+    if($ARGV eq "gss_assist")
+      {  #open if
+	
+	chdir
+	"$globus/gsi/gss_assist/source/" 
+	or die "Cant cd to gss_assist:$!\n";
+
+	#if the directory gss_assist cannot be accessed, the
+	#script will die, and print an error message to STDOUT so
+	#that the user will know what package he or she still has
+	#to install
+
+	commandswithflavor;
+	system("tar -cvf gss_assist.tar *");
+	system("gzip gss_assist.tar");
+	system("mv gss_assist.tar.gz $tar");
+
+	last SWITCH;
+      }  #close if
+    
+    if($ARGV eq "io")
+      {  #open if
+
+	chdir
+	"$globus/io/source/" 
+	or die "Cant cd to io:$!\n";
+
+	#if the directory io cannot be accessed, the 
+	#script will die, and print an error message to STDOUT so
+	#that the user will know what package he or she still has
+	#to install
+	
+	commandswithflavor;
+	system("tar -cvf io.tar *");
+	system("gzip io.tar");
+	system("mv io.tar.gz $tar");
+	
+	last SWITCH;
+
+      } #close if
+
+
+  }  #close switch
+
+}  #close foreach
+
+
+#************************ subroutine definitions *************************
+
+
+sub commands
+{ #open commands
+
+  system("./bootstrap")==0 or die "bootstrap failed: $?";
+  print "Through bootstrap\n";
+  system("./configure")==0 or die "configure failed: $?";
+  print "Through configure\n";
+  system("make")==0 or die "make failed: $?";
+  print "Through make\n";
+  system("make distclean")==0 or die "make install failed: $?";
+  print "Through make install\n";
+  
+  #NOTE: in the event that the installation fails,
+  #the print messages are here to help the user 
+  #determine where the installation failed
+
+} #close commands
+
+sub commandswithflavor 
+{ #open commandswithflavor
+
+  system("./bootstrap")==0 or die "bootstrap failed: $?";
+  print "Through bootstrap\n";
+  system("./configure --with-flavor='$flavor'")==0 or die "configure
+failed: $?";
+  print "Through configure\n";
+  system("make")==0 or die "make failed: $?";
+  print "Through make\n";
+  system("make clean")==0 or die "make install failed: $?";
+  print "Through make install\n";
+
+  #NOTE: in the event that the installation fails,
+  #the print messages are here to help the user
+  #determine where the installation failed
+
+} #close commandswithflavor  
+
+sub pod2usage
+{ #open pod2usage
+
+  my $ex=shift;
+  print "ERROR: Please specify a build flavor: -flavor\n";
+  print "       or specify a globus location:  -location\n";
+  exit $ex;
+
+} #close pod2usage  

@@ -1,0 +1,9 @@
+%product GPT
+%copyright 2001-2002 by National Center for Supercomputing Applications, All Rights Reserved.
+%vendor National Center for Supercomputing Applications
+%license COPYING
+%readme README
+%description A set of tools for packaging grid software.
+%version 2.1
+
+# type mode owner group destination source
