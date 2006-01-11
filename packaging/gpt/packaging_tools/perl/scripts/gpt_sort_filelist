@@ -145,6 +145,9 @@ my %funcs = ("data", sub{ $sort->data_files()},
 	     "rtl", sub {$sort->rtl_files()});
 
 for my $typ (sort keys %funcs) {
+  next if ( ( $typ eq "pgm" ) && ( $static eq "static" ) );
+  next if ( ( $typ eq "pgm_static" ) && ( $static eq "shared" ) );
+
   my $outlines = &{$funcs{$typ}}();
 
   if (@$outlines) {
