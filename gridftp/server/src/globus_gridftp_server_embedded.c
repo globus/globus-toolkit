@@ -27,18 +27,11 @@ globus_l_gfs_sigint(
     GlobusGFSName(globus_l_gfs_sigint);
     GlobusGFSDebugEnter();
 
-    globus_gfs_log_message(
-        GLOBUS_GFS_LOG_ERR, 
-        "Server is shutting down...\n");
-
     globus_mutex_lock(&globus_l_gfs_mutex);
     {
         if(globus_l_gfs_sigint_caught)
         {
             globus_l_gfs_server_active = 0;
-            globus_gfs_log_message(
-                GLOBUS_GFS_LOG_ERR, 
-                "Forcing unclean shutdown.\n");
         }
 
         globus_l_gfs_sigint_caught = GLOBUS_TRUE;
@@ -50,6 +43,7 @@ globus_l_gfs_sigint(
         }
         else
         {
+            globus_libc_printf("Embedded server stopping.\n");
             globus_gridftp_server_embed_stop(globus_l_gfs_server_handle);
         }
     }
@@ -87,11 +81,26 @@ globus_l_gfs_event_cb(
 {
     globus_mutex_lock(&globus_l_gfs_mutex);
     {
-        if(event == GLOBUS_GFS_EMBED_EVENT_STOPPED)
+        switch(event)
         {
-            globus_l_gfs_server_active = GLOBUS_FALSE;
-            globus_cond_signal(&globus_l_gfs_cond);
-
+            case GLOBUS_GFS_EMBED_EVENT_STOPPED:
+                globus_libc_printf("Embedded server stopped.\n");
+                globus_l_gfs_server_active = GLOBUS_FALSE;
+                globus_cond_signal(&globus_l_gfs_cond);
+            
+                globus_gridftp_server_embed_destroy(handle);
+                break;
+                
+            case GLOBUS_GFS_EMBED_EVENT_CONNECTION_CLOSED:
+                globus_libc_printf("Connection closed.\n");
+                break;
+                
+            case GLOBUS_GFS_EMBED_EVENT_CONNECTION_OPENED:
+                globus_libc_printf("Connection established.\n");
+                break;
+                
+            default:
+                break;
         }
     }
     globus_mutex_unlock(&globus_l_gfs_mutex);
@@ -106,6 +115,10 @@ main(
 {
     int                                 rc = 0;
     globus_result_t                     result;
+    char *                              cs;
+    globus_xio_contact_t                parsed_contact;
+    char *                              new_banner;
+    char *                              old_banner;
     GlobusGFSName(main);
 
     /* activte globus stuff */    
@@ -124,11 +137,36 @@ main(
     globus_cond_init(&globus_l_gfs_cond, GLOBUS_NULL);
     globus_l_gfs_signal_init();
 
+    globus_libc_printf("Embedded server starting.\n");
+
     globus_mutex_lock(&globus_l_gfs_mutex);
     {
-        result = globus_gridftp_server_embed_start(
+        result = globus_gridftp_server_embed_init(
             &globus_l_gfs_server_handle,
-            argv,
+            argv);
+        if(result != GLOBUS_SUCCESS)
+        {
+            rc = 1;
+            goto error_lock;
+        }
+        
+        globus_gridftp_server_embed_config_set_int(
+            globus_l_gfs_server_handle, 
+            "connections_max", 
+            10);
+
+        old_banner = globus_gridftp_server_embed_config_get_string(
+            globus_l_gfs_server_handle, "banner");
+        new_banner = globus_common_create_string(
+            "%s\nEMBEDDED", old_banner);
+        globus_gridftp_server_embed_config_set_ptr(
+            globus_l_gfs_server_handle, 
+            "banner", 
+            new_banner);
+        globus_free(old_banner);
+        
+        result = globus_gridftp_server_embed_start(
+            globus_l_gfs_server_handle,
             globus_l_gfs_event_cb,
             NULL);
         if(result != GLOBUS_SUCCESS)
@@ -138,6 +176,14 @@ main(
         }
         globus_l_gfs_server_active = GLOBUS_TRUE;
         
+        cs = globus_gridftp_server_embed_config_get_string(
+            globus_l_gfs_server_handle, "contact_string");
+            
+        globus_xio_contact_parse(&parsed_contact, cs);
+        
+        globus_libc_printf(
+            "Server listening on port %s.\n", parsed_contact.port);
+        globus_xio_contact_destroy(&parsed_contact);
         
         /* run until we are done */ 
         while(!globus_l_gfs_terminated || globus_l_gfs_server_active)

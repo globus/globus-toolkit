@@ -24,6 +24,8 @@ typedef struct globus_l_gfs_embed_handle_s
     globus_xio_server_t                 xio_server;
     globus_bool_t                       xio_server_accepting;
     globus_bool_t                       stopped;
+    globus_gfs_embed_event_cb_t         event_cb;
+    void *                              event_arg;
 } globus_l_gfs_embed_handle_t;
 
 
@@ -143,9 +145,17 @@ globus_l_gfs_server_close_cb(
     {
         handle->outstanding--;
         handle->xio_server = GLOBUS_NULL;
-//        globus_cond_signal(&handle->cond);
     }
     globus_mutex_unlock(&handle->mutex);
+
+    if(handle->event_cb)
+    {
+        handle->event_cb(
+            handle, 
+            GLOBUS_SUCCESS, 
+            GLOBUS_GFS_EMBED_EVENT_STOPPED,
+            handle->event_arg);
+    }
 }
 
 
@@ -158,13 +168,28 @@ globus_i_gfs_connection_closed(
     GlobusGFSName(globus_i_gfs_connection_closed);
     GlobusGFSDebugEnter();
     
+    if(handle->event_cb)
+    {
+        handle->event_cb(
+            handle, 
+            GLOBUS_SUCCESS, 
+            GLOBUS_GFS_EMBED_EVENT_CONNECTION_CLOSED,
+            handle->event_arg);
+    }
     globus_gfs_config_inc_int("open_connections_count", -1);
     if(handle->terminated || globus_i_gfs_config_bool("single"))
     {
         if(globus_gfs_config_get_int("open_connections_count") == 0)
         {
             handle->terminated = GLOBUS_TRUE;
-//            globus_cond_signal(&handle->cond);
+            if(handle->event_cb)
+            {
+                handle->event_cb(
+                    handle, 
+                    GLOBUS_SUCCESS, 
+                    GLOBUS_GFS_EMBED_EVENT_STOPPED,
+                    handle->event_arg);
+            }
         }
     }
  
@@ -314,6 +339,15 @@ globus_l_gfs_new_server_cb(
         globus_i_gfs_log_message(
             GLOBUS_I_GFS_LOG_INFO,
             "New connection from: %s\n", remote_contact);
+
+        if(handle->event_cb)
+        {
+            handle->event_cb(
+                handle, 
+                GLOBUS_SUCCESS, 
+                GLOBUS_GFS_EMBED_EVENT_CONNECTION_OPENED,
+                handle->event_arg);
+        }
 
         result = globus_xio_handle_cntl(
             xio_handle,
@@ -513,7 +547,14 @@ error_accept:
     handle->terminated = GLOBUS_TRUE;
     if(globus_gfs_config_get_int("open_connections_count") == 0)
     {
-//        globus_cond_signal(&handle->cond);
+        if(handle->event_cb)
+        {
+            handle->event_cb(
+                handle, 
+                result, 
+                GLOBUS_GFS_EMBED_EVENT_STOPPED,
+                handle->event_arg);
+        }
     }
     globus_mutex_unlock(&handle->mutex);
 
@@ -597,20 +638,14 @@ globus_l_gfs_be_daemon(
         goto attr_error;
     }
 
-    if(globus_i_gfs_config_int("port") == 0 ||
-        globus_i_gfs_config_bool("contact_string"))
+    result = globus_xio_server_get_contact_string(
+        handle->xio_server,
+        &contact_string);
+    if(result != GLOBUS_SUCCESS)
     {
-        result = globus_xio_server_get_contact_string(
-            handle->xio_server,
-            &contact_string);
-        if(result != GLOBUS_SUCCESS)
-        {
-            goto server_error;
-        }
-        globus_libc_printf(_GSSL("Server listening at %s\n"), contact_string);
-        fflush(stdout);
-        globus_free(contact_string);
+        goto server_error;
     }
+    globus_gfs_config_set_ptr("contact_string", contact_string);
 
     result = globus_xio_server_register_accept(
         handle->xio_server,
@@ -644,17 +679,15 @@ error:
 
 
 globus_result_t
-globus_gridftp_server_embed_start(
+globus_gridftp_server_embed_init(
     globus_gfs_embed_handle_t *         out_handle,
-    char *                              args[],
-    globus_gfs_embed_event_cb_t         event_cb,
-    void *                              user_arg)
+    char *                              args[])
 {
     globus_l_gfs_embed_handle_t *       handle;
     globus_result_t                     result;
     int                                 arg_count;
     int                                 rc = 0;
-    GlobusGFSName(globus_gridftp_server_embed_start);
+    GlobusGFSName(globus_gridftp_server_embed_init);
     GlobusGFSDebugEnter();    
 
     /* activte globus stuff */    
@@ -702,8 +735,6 @@ globus_gridftp_server_embed_start(
         globus_gfs_acl_add_module(&globus_gfs_acl_test_module);
     }
     
-    result = globus_l_gfs_be_daemon(handle);
-
     *out_handle = handle;
 
     GlobusGFSDebugExit();
@@ -712,14 +743,52 @@ globus_gridftp_server_embed_start(
 error_activate:
     GlobusGFSDebugExitWithError();
     return result;
+}    
+
+
+void
+globus_gridftp_server_embed_destroy(
+    globus_gfs_embed_handle_t           handle)
+{
+    GlobusGFSName(globus_gridftp_server_embed_destroy);
+    GlobusGFSDebugEnter(); 
+    
+    if(handle != NULL)
+    {
+        globus_free(handle);
+    }
+    
+    GlobusGFSDebugExit();
+    return;    
+}   
+
+
+globus_result_t
+globus_gridftp_server_embed_start(
+    globus_gfs_embed_handle_t           handle,
+    globus_gfs_embed_event_cb_t         event_cb,
+    void *                              user_arg)
+{
+    globus_result_t                     result;
+    GlobusGFSName(globus_gridftp_server_embed_start);
+    GlobusGFSDebugEnter();    
+    
+    handle->event_cb = event_cb;
+    handle->event_arg = user_arg;
+    
+    result = globus_l_gfs_be_daemon(handle);
+
+    GlobusGFSDebugExit();
+    return result;
 }
 
- 
+
 void
 globus_gridftp_server_embed_stop(
     globus_gfs_embed_handle_t           handle)
 {
     globus_result_t                     result;
+    globus_bool_t                       callback;
     GlobusGFSName(globus_gridftp_server_embed_stop);
     GlobusGFSDebugEnter();    
 
@@ -756,7 +825,7 @@ globus_gridftp_server_embed_stop(
 
         if(globus_gfs_config_get_int("open_connections_count") == 0)
         {
-//            globus_cond_signal(&handle->cond);
+            callback = GLOBUS_TRUE;
         }
         else
         {
@@ -772,10 +841,56 @@ globus_gridftp_server_embed_stop(
     }
     globus_mutex_unlock(&handle->mutex);
     
+    if(callback && handle->event_cb)
+    {
+        handle->event_cb(
+            handle, 
+            GLOBUS_SUCCESS, 
+            GLOBUS_GFS_EMBED_EVENT_STOPPED,
+            handle->event_arg);
+    }
+    
     GlobusGFSDebugExit();
     return;
 }
 
 
+int
+globus_gridftp_server_embed_config_get_int(
+    globus_gfs_embed_handle_t           handle,
+    const char *                        option_name)
+{
+    return globus_gfs_config_get_int(option_name);
+}
+
+void *
+globus_gridftp_server_embed_config_get_ptr(
+    globus_gfs_embed_handle_t           handle,
+    const char *                        option_name)
+{
+    return globus_gfs_config_get(option_name);
+}
+    
+void
+globus_gridftp_server_embed_config_set_int(
+    globus_gfs_embed_handle_t           handle,
+    char *                              option_name,
+    int                                 int_value)
+{
+    globus_gfs_config_set_int(option_name, int_value);
+    
+    return;
+}
+
+void
+globus_gridftp_server_embed_config_set_ptr(
+    globus_gfs_embed_handle_t           handle,
+    char *                              option_name,
+    void *                              ptr_value)
+{
+    globus_gfs_config_set_ptr(option_name, ptr_value);
+    
+    return;
+}
 
 
