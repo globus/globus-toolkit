@@ -3,6 +3,8 @@
 
 #include "globus_xio.h"
 
+EXTERN_C_BEGIN
+
 typedef globus_result_t
 (*globus_xio_wrapblock_open_func_t)(
     const globus_xio_contact_t *        contact_info,
@@ -43,5 +45,7 @@ globus_xio_wrapblock_init(
     globus_xio_wrapblock_read_func_t    read,
     globus_xio_wrapblock_write_func_t   write,
     globus_xio_wrapblock_accept_func_t  accept);
+
+EXTERN_C_END
 
 #endif

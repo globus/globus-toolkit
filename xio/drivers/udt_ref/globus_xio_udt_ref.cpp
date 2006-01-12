@@ -191,7 +191,7 @@ globus_l_xio_udt_ref_bind(
     int                                 min_port,
     int                                 max_port)
 {
-    int                                 port;
+    int                                 port = 0;
     int                                 rc;
     globus_bool_t                       done;
     globus_sockaddr_t                   myaddr;
@@ -217,12 +217,13 @@ globus_l_xio_udt_ref_bind(
         rc = UDT::bind(
             fd,
             (struct sockaddr *) &myaddr,
-            GlobusLibcSockaddrLen(&myaddr));
+            (unsigned int)GlobusLibcSockaddrLen(&myaddr));
         if(rc < 0)
         {
             if(++port > max_port)
             {
-                result = GlobusXIOUdtError("UDT::bind failed");
+                result = GlobusXIOUdtError(
+                    UDT::getlasterror().getErrorMessage());
                 goto error_bind;
             }
         }
@@ -246,8 +247,8 @@ globus_l_xio_udt_ref_server_init(
     const globus_xio_contact_t *        contact_info,
     globus_xio_operation_t              op)
 {
-    int                                 min;
-    int                                 max;
+    int                                 min = 0;
+    int                                 max = 0;
     char *                              tmp_cs;
     int                                 len;
     globus_xio_contact_t                my_contact_info;
@@ -287,7 +288,6 @@ globus_l_xio_udt_ref_server_init(
         (struct sockaddr *)&my_addr, sizeof(my_addr), min, max);
     if(result != GLOBUS_SUCCESS)
     {
-        result = GlobusXIOUdtError("UDT::bind failed");
         goto error_bind;
     }
 
@@ -297,7 +297,7 @@ globus_l_xio_udt_ref_server_init(
         goto error_listen;
     }
     len = sizeof(server_handle->addr);
-    UDT::getsockname(server_handle->listener, (void*)&my_addr, &len);
+    UDT::getsockname(server_handle->listener, (sockaddr *)&my_addr, &len);
     memcpy(&server_handle->addr, &my_addr, sizeof(my_addr));
     globus_libc_addr_to_contact_string(&server_handle->addr, 0, &tmp_cs);
     globus_xio_contact_parse(&my_contact_info, tmp_cs);
@@ -374,7 +374,7 @@ globus_l_xio_udt_ref_accept(
         globus_calloc(1, sizeof(xio_l_udt_ref_handle_t));
 
     handle->sock = UDT::accept(
-        server->listener, (void*)&handle->addr, &addr_len);
+        server->listener, (sockaddr *)&handle->addr, &addr_len);
     if(handle->sock < 0)
     {
         result = GlobusXIOUdtError("UDT::accept failed");
@@ -455,7 +455,7 @@ globus_l_xio_udt_ref_open(
             goto error_connect;
         }
         if(UDT::connect(
-            handle->sock, (void *)addrinfo->ai_addr, addrinfo->ai_addrlen))
+            handle->sock, addrinfo->ai_addr, addrinfo->ai_addrlen))
         {
             result = GlobusXIOUdtError("UDT::connect failed");
             goto error_connect;
@@ -492,7 +492,7 @@ globus_l_xio_udt_ref_read(
     handle = (xio_l_udt_ref_handle_t *) driver_specific_handle;
 
     *nbytes = (globus_size_t) UDT::recv(
-        handle->sock, iovec[0].iov_base, iovec[0].iov_len, 0);
+        handle->sock, (char *)iovec[0].iov_base, iovec[0].iov_len, 0);
 
     /* need to figure out eof */
     if(*nbytes < 0)
@@ -526,7 +526,7 @@ globus_l_xio_udt_ref_write(
     handle = (xio_l_udt_ref_handle_t *) driver_specific_handle;
 
     *nbytes = (globus_size_t) UDT::send(
-        handle->sock, iovec[0].iov_base, iovec[0].iov_len, 0);
+        handle->sock, (char*)iovec[0].iov_base, iovec[0].iov_len, 0);
     if(*nbytes < 0)
     {
         result = GlobusXIOUdtError("UDT::send failed");
