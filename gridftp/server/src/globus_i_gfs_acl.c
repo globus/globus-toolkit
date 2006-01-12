@@ -46,9 +46,7 @@ globus_l_gfs_acl_next(
             case GLOBUS_L_GFS_ACL_TYPE_INIT:
                 rc = acl_request->module->init_func(
                     &acl_request->user_handle,
-                    (const struct passwd *) &acl_handle->pwent,
-                    (const char *)acl_handle->given_pw,
-                    (const char *)acl_handle->auth_action,
+                    &acl_handle->acl_info,
                     acl_handle,
                     out_res);
                 break;
@@ -58,6 +56,7 @@ globus_l_gfs_acl_next(
                     acl_request->user_handle,
                     acl_handle->auth_action, 
                     acl_handle->auth_object,
+                    &acl_handle->acl_info,
                     acl_handle, 
                     out_res);
                 break;
@@ -132,19 +131,23 @@ globus_i_gfs_acl_init(
     acl_handle->user_arg = user_arg;
     acl_handle->context = context;
     acl_handle->hostname = globus_i_gfs_config_string("fqdn");
-
-    acl_handle->auth_action = strdup(resource_id);
+    acl_handle->auth_action = globus_libc_strdup(resource_id);
     if(acl_handle->auth_action == NULL)
     {
         goto err;
     }
+
+    acl_handle->acl_info.context = context;
+    acl_handle->acl_info.hostname = acl_handle->hostname;
+    acl_handle->acl_info.resource_id = acl_handle->auth_action;
+    
     memset(&acl_handle->pwent, '\0', sizeof(struct passwd));
     memset(&acl_handle->grpent, '\0', sizeof(struct group));
 
     /* copy the pwent info */
     if(pwent->pw_name)
     {
-        acl_handle->pwent.pw_name = strdup(pwent->pw_name);
+        acl_handle->pwent.pw_name = globus_libc_strdup(pwent->pw_name);
         if(acl_handle->pwent.pw_name == NULL)
         {
             goto alloc_error;
@@ -152,7 +155,7 @@ globus_i_gfs_acl_init(
     }
     if(pwent->pw_passwd)
     {
-        acl_handle->pwent.pw_passwd = strdup(pwent->pw_passwd);
+        acl_handle->pwent.pw_passwd = globus_libc_strdup(pwent->pw_passwd);
         if(acl_handle->pwent.pw_passwd == NULL)
         {
             goto alloc_error;
@@ -160,7 +163,7 @@ globus_i_gfs_acl_init(
     }
     if(pwent->pw_dir)
     {
-        acl_handle->pwent.pw_dir = strdup(pwent->pw_dir);
+        acl_handle->pwent.pw_dir = globus_libc_strdup(pwent->pw_dir);
         if(acl_handle->pwent.pw_dir == NULL)
         {
             goto alloc_error;
@@ -168,7 +171,7 @@ globus_i_gfs_acl_init(
     }
     if(pwent->pw_shell)
     {
-        acl_handle->pwent.pw_shell = strdup(pwent->pw_shell);
+        acl_handle->pwent.pw_shell = globus_libc_strdup(pwent->pw_shell);
         if(acl_handle->pwent.pw_shell == NULL)
         {
             goto alloc_error;
@@ -180,7 +183,7 @@ globus_i_gfs_acl_init(
     /* copy the group info */
     if(grpent->gr_name)
     {
-        acl_handle->grpent.gr_name = strdup(grpent->gr_name);
+        acl_handle->grpent.gr_name = globus_libc_strdup(grpent->gr_name);
         if(acl_handle->grpent.gr_name == NULL)
         {
             goto alloc_error;
@@ -188,7 +191,7 @@ globus_i_gfs_acl_init(
     }
     if(grpent->gr_passwd)
     {
-        acl_handle->grpent.gr_passwd = strdup(grpent->gr_passwd);
+        acl_handle->grpent.gr_passwd = globus_libc_strdup(grpent->gr_passwd);
         if(acl_handle->grpent.gr_passwd == NULL)
         {
             goto alloc_error;
@@ -205,7 +208,7 @@ globus_i_gfs_acl_init(
     }
     for(ctr = 0; grpent->gr_mem[ctr] != NULL; ctr++)
     {
-        acl_handle->grpent.gr_mem[ctr] = strdup(grpent->gr_mem[ctr]);
+        acl_handle->grpent.gr_mem[ctr] = globus_libc_strdup(grpent->gr_mem[ctr]);
         if(acl_handle->grpent.gr_mem[ctr] == NULL)
         {
             goto alloc_error;
@@ -213,7 +216,7 @@ globus_i_gfs_acl_init(
     }
     if(ipaddr != NULL)
     {
-        acl_handle->ipaddr = strdup(ipaddr);
+        acl_handle->ipaddr = globus_libc_strdup(ipaddr);
         if(acl_handle->ipaddr == NULL)
         {
             goto alloc_error;
@@ -221,7 +224,7 @@ globus_i_gfs_acl_init(
     }
     if(given_pw != NULL)
     {
-        acl_handle->given_pw = strdup(given_pw);
+        acl_handle->given_pw = globus_libc_strdup(given_pw);
         if(acl_handle->given_pw == NULL)
         {
             goto alloc_error;

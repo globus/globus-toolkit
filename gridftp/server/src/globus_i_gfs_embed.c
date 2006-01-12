@@ -725,15 +725,6 @@ globus_gridftp_server_embed_init(
         globus_calloc(1, sizeof(globus_l_gfs_embed_handle_t));
 
     globus_mutex_init(&handle->mutex, GLOBUS_NULL);
-
-    if(globus_i_gfs_config_bool("cas"))
-    {
-        globus_gfs_acl_add_module(&globus_gfs_acl_cas_module);
-    }
-    if(globus_i_gfs_config_string("test_acl"))
-    {
-        globus_gfs_acl_add_module(&globus_gfs_acl_test_module);
-    }
     
     *out_handle = handle;
 

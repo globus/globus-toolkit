@@ -19,6 +19,77 @@ static globus_bool_t                    globus_l_gfs_terminated = GLOBUS_FALSE;
 static globus_gfs_embed_handle_t        globus_l_gfs_server_handle = NULL;
 
 
+
+/* ACL module */
+
+static
+int
+globus_gfs_acl_test_init(
+    void **                             out_handle,
+    globus_gfs_acl_info_t *             acl_info,
+    globus_gfs_acl_handle_t             acl_handle,
+    globus_result_t *                   out_res)
+{
+    GlobusGFSName(globus_gfs_acl_test_init);
+    GlobusGFSDebugEnter();
+
+    *out_res = GLOBUS_SUCCESS;
+    globus_gfs_acl_authorized_finished(acl_handle, *out_res);
+
+    GlobusGFSDebugExit();
+    return GLOBUS_GFS_ACL_WOULD_BLOCK;
+}
+
+static
+int
+globus_gfs_acl_test_authorize(
+    void *                              out_handle,
+    const char *                        action,
+    const char *                        object,
+    globus_gfs_acl_info_t *             acl_info,
+    globus_gfs_acl_handle_t             acl_handle,
+    globus_result_t *                   out_res)
+{
+    GlobusGFSName(globus_gfs_acl_test_authorize);
+    GlobusGFSDebugEnter();
+
+    if(strncmp(object, "/etc/", 5) == 0)
+    {
+        *out_res = GLOBUS_SUCCESS;
+    }
+    else
+    {
+        *out_res = GlobusGFSErrorGeneric("No soup for you.");
+    }
+    
+    globus_gfs_acl_authorized_finished(acl_handle, *out_res);
+
+    GlobusGFSDebugExit();
+    return GLOBUS_GFS_ACL_WOULD_BLOCK;
+}
+
+
+static void
+globus_gfs_acl_test_destroy(
+    void *                              out_handle)
+{
+    GlobusGFSName(globus_gfs_acl_test_destroy);
+    GlobusGFSDebugEnter();
+}
+
+static globus_gfs_acl_module_t          globus_gfs_acl_test_module = 
+{
+    globus_gfs_acl_test_init,
+    globus_gfs_acl_test_authorize,
+    globus_gfs_acl_test_destroy
+};
+
+/* end ACL */
+
+
+
+
+
 static
 void 
 globus_l_gfs_sigint(
@@ -154,6 +225,8 @@ main(
             globus_l_gfs_server_handle, 
             "connections_max", 
             10);
+        
+        globus_gfs_acl_add_module(&globus_gfs_acl_test_module);
 
         old_banner = globus_gridftp_server_embed_config_get_string(
             globus_l_gfs_server_handle, "banner");
