@@ -72,12 +72,15 @@ the ftp test library. The following subroutines are available:
 
 Save the current value of the X509_USER_PROXY environment variable in
 a stack and set it to the passed argument. If the argument is not defined,
-then delete the proxy variable.
+then delete the proxy variable.  The current value of X509_USER_CERT and 
+X509_USER_KEY will be saved and the environment variable cleared.
 
 =cut
 sub push_proxy($)
 {
     push(@{$self->{proxy}}, $ENV{X509_USER_PROXY});
+    push(@{$self->{cert}}, $ENV{X509_USER_CERT});
+    push(@{$self->{key}}, $ENV{X509_USER_KEY});
     if(scalar(@_) > 0)
     {
         $ENV{X509_USER_PROXY} = $_[0];
@@ -86,20 +89,25 @@ sub push_proxy($)
     {
         delete($ENV{X509_USER_PROXY});
     }
+    delete($ENV{X509_USER_CERT});
+    delete($ENV{X509_USER_KEY});
 }
 
 =pod
 
 =item pop_proxy()
 
-Restore the value of the X509_USER_PROXY environment variable from a
-previous call to push_proxy. If the proxy was undefined when
-push_proxy was called, then it will be removed from the environment.
+Restore the value of the X509_USER_PROXY, X509_USER_CERT, and X509_USER_KEY
+environment variables from a previous call to push_proxy. If the proxy was 
+undefined when push_proxy was called, then it will be removed from the 
+environment.
 
 =cut
 sub pop_proxy()
 {
     my $proxy = pop(@{$self->{proxy}});
+    my $cert = pop(@{$self->{cert}});
+    my $key = pop(@{$self->{key}});
 
     if(defined($proxy))
     {
@@ -108,6 +116,15 @@ sub pop_proxy()
     else
     {
         delete($ENV{X509_USER_PROXY});
+    }
+    
+    if(defined($cert))
+    {
+        $ENV{X509_USER_CERT} = $cert;
+    }
+    if(defined($key))
+    {
+        $ENV{X509_USER_KEY} = $key;
     }
 }
 
