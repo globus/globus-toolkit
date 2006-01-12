@@ -107,6 +107,9 @@ m4trace:configure.in:6: -1- AC_SUBST([GPT_MAJOR_VERSION])
 m4trace:configure.in:6: -1- AC_SUBST([GPT_MINOR_VERSION])
 m4trace:configure.in:6: -1- AC_SUBST([DIRT_TIMESTAMP])
 m4trace:configure.in:6: -1- AC_SUBST([DIRT_BRANCH_ID])
+m4trace:configure.in:6: -1- AM_CONDITIONAL([ENABLE_PROGRAMS], [test "x$ENABLE_PROGRAMS" = "xtrue"])
+m4trace:configure.in:6: -1- AC_SUBST([ENABLE_PROGRAMS_TRUE])
+m4trace:configure.in:6: -1- AC_SUBST([ENABLE_PROGRAMS_FALSE])
 m4trace:configure.in:8: -1- AC_SUBST([LIBTOOL])
 m4trace:configure.in:8: -1- AC_SUBST([LN_S])
 m4trace:configure.in:13: -1- AM_INIT_AUTOMAKE([$GPT_NAME], [$GPT_VERSION])
@@ -165,11 +168,12 @@ m4trace:configure.in:17: -1- AC_SUBST([lac_doxygen_predefines])
 m4trace:configure.in:19: -1- AC_SUBST([CC])
 m4trace:configure.in:19: -1- AC_SUBST([LD])
 m4trace:configure.in:19: -1- AC_SUBST([CXX])
-m4trace:configure.in:25: -1- AC_CONFIG_FILES([pkgdata/Makefile
+m4trace:configure.in:26: -1- AC_CONFIG_FILES([pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
         Makefile
+	version.h
 ])
-m4trace:configure.in:25: -1- _m4_warn([obsolete], [AC_OUTPUT should be used without arguments.
+m4trace:configure.in:26: -1- _m4_warn([obsolete], [AC_OUTPUT should be used without arguments.
 You should run autoupdate.], [])
-m4trace:configure.in:25: -1- AC_SUBST([LIB@&t@OBJS], [$ac_libobjs])
-m4trace:configure.in:25: -1- AC_SUBST([LTLIBOBJS], [$ac_ltlibobjs])
+m4trace:configure.in:26: -1- AC_SUBST([LIB@&t@OBJS], [$ac_libobjs])
+m4trace:configure.in:26: -1- AC_SUBST([LTLIBOBJS], [$ac_ltlibobjs])

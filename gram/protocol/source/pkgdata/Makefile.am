@@ -36,7 +36,17 @@ all_filelists: filelist_file
 $(FILELIST_FILES): sort_filelist
 
 sort_filelist: all_filelists
-	$(GPT_LOCATION)/sbin/gpt_sort_filelist  --flavor=$(GLOBUS_FLAVOR_NAME) ./master.filelist
+	$(GPT_LOCATION)/sbin/gpt_sort_filelist  --flavor=$(GLOBUS_FLAVOR_NAME) ./master.filelist $(GPT_LINKTYPE)
+
+install-pkgDATA: $(pkg_DATA)
+	@$(NORMAL_INSTALL)
+	test -z "$(pkgdir)" || $(mkdir_p) "$(DESTDIR)$(pkgdir)";
+	@list='$(pkg_DATA)'; for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  f=$(am__strip_dir) \
+	  echo " $(pkgDATA_INSTALL) '$$d$$p' '$(DESTDIR)$(pkgdir)/$$f'"; \
+	  $(pkgDATA_INSTALL) "$$d$$p" "$(DESTDIR)$(pkgdir)/$$f"; \
+	done || true
 
 
 $(METADATA_FILES): pkg_data_src.gpt
