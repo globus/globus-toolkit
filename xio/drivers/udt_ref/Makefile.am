@@ -17,7 +17,7 @@ lib_LTLIBRARIES = libglobus_xio_udt_ref_driver_$(GLOBUS_FLAVOR_NAME).la
 libglobus_xio_udt_ref_driver___GLOBUS_FLAVOR_NAME__la_LIBADD = \
 	@GPT_LIB_LINKS@ $(UDT_PATH)/src/libudt.a 
 libglobus_xio_udt_ref_driver___GLOBUS_FLAVOR_NAME__la_SOURCES = \
-	globus_xio_udt_ref.c
+	globus_xio_udt_ref.cpp
 libglobus_xio_udt_ref_driver___GLOBUS_FLAVOR_NAME__la_LDFLAGS = \
 	@GPT_LDFLAGS@ -module -rpath $(GLOBUS_LOCATION)/lib
 

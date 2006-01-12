@@ -12,9 +12,9 @@
 #include "globus_xio_driver.h"
 #include "globus_xio_wrapblock.h"
 #include "version.h"
- #include <arpa/inet.h>
+#include <arpa/inet.h>
 
-#include "udt_c.h"
+#include "udt.h"
 
 #define GlobusXIOUdtError(_r) globus_error_put(GlobusXIOUdtErrorObj(_r))
 
@@ -214,7 +214,7 @@ globus_l_xio_udt_ref_bind(
         GlobusLibcSockaddrCopy(myaddr, *addr, addr_len);
         GlobusLibcSockaddrSetPort(myaddr, port);
 
-        rc = udt_c_bind(
+        rc = UDT::bind(
             fd,
             (struct sockaddr *) &myaddr,
             GlobusLibcSockaddrLen(&myaddr));
@@ -222,7 +222,7 @@ globus_l_xio_udt_ref_bind(
         {
             if(++port > max_port)
             {
-                result = GlobusXIOUdtError("udt_c_bind failed");
+                result = GlobusXIOUdtError("UDT::bind failed");
                 goto error_bind;
             }
         }
@@ -259,10 +259,10 @@ globus_l_xio_udt_ref_server_init(
     server_handle = (xio_l_udt_ref_server_handle_t *)
         globus_calloc(1, sizeof(xio_l_udt_ref_server_handle_t));
 
-    server_handle->listener = udt_c_socket(AF_INET, SOCK_STREAM, 0);
+    server_handle->listener = UDT::socket(AF_INET, SOCK_STREAM, 0);
     if(server_handle->listener < 0)
     {
-        result = GlobusXIOUdtError("udt_c_socket failed");
+        result = GlobusXIOUdtError("UDT::socket failed");
         goto error_socket;
     }
     my_addr.sin_family = AF_INET;
@@ -287,17 +287,17 @@ globus_l_xio_udt_ref_server_init(
         (struct sockaddr *)&my_addr, sizeof(my_addr), min, max);
     if(result != GLOBUS_SUCCESS)
     {
-        result = GlobusXIOUdtError("udt_c_bind failed");
+        result = GlobusXIOUdtError("UDT::bind failed");
         goto error_bind;
     }
 
-    if(udt_c_listen(server_handle->listener, 10) < 0)
+    if(UDT::listen(server_handle->listener, 10) < 0)
     {
-        result = GlobusXIOUdtError("udt_c_listen failed");
+        result = GlobusXIOUdtError("UDT::listen failed");
         goto error_listen;
     }
     len = sizeof(server_handle->addr);
-    udt_c_getsockname(server_handle->listener, (void*)&my_addr, &len);
+    UDT::getsockname(server_handle->listener, (void*)&my_addr, &len);
     memcpy(&server_handle->addr, &my_addr, sizeof(my_addr));
     globus_libc_addr_to_contact_string(&server_handle->addr, 0, &tmp_cs);
     globus_xio_contact_parse(&my_contact_info, tmp_cs);
@@ -309,7 +309,7 @@ globus_l_xio_udt_ref_server_init(
     return GLOBUS_SUCCESS;
 error_listen:
 error_bind:
-    udt_c_close(server_handle->listener);
+    UDT::close(server_handle->listener);
 error_socket:
     globus_free(server_handle);
     return result;
@@ -323,7 +323,7 @@ globus_l_xio_udt_ref_server_destroy(
     xio_l_udt_ref_server_handle_t *     server_handle;
 
     server_handle = (xio_l_udt_ref_server_handle_t *) driver_server;
-    udt_c_close(server_handle->listener);
+    UDT::close(server_handle->listener);
 
     return GLOBUS_SUCCESS;
 }
@@ -373,11 +373,11 @@ globus_l_xio_udt_ref_accept(
     handle = (xio_l_udt_ref_handle_t *)
         globus_calloc(1, sizeof(xio_l_udt_ref_handle_t));
 
-    handle->sock = udt_c_accept(
+    handle->sock = UDT::accept(
         server->listener, (void*)&handle->addr, &addr_len);
     if(handle->sock < 0)
     {
-        result = GlobusXIOUdtError("udt_c_socket failed");
+        result = GlobusXIOUdtError("UDT::accept failed");
         goto error_accept;
     }
     *out_link = handle;
@@ -430,10 +430,10 @@ globus_l_xio_udt_ref_open(
             goto error_getaddr;
         }
 
-        handle->sock = udt_c_socket(AF_INET, SOCK_STREAM, 0);
+        handle->sock = UDT::socket(AF_INET, SOCK_STREAM, 0);
         if(handle->sock <= 0)
         {
-            result = GlobusXIOUdtError("udt_c_socket failed");
+            result = GlobusXIOUdtError("UDT::socket failed");
             goto error_socket;
         }
         my_addr.sin_family = AF_INET;
@@ -454,10 +454,10 @@ globus_l_xio_udt_ref_open(
         {
             goto error_connect;
         }
-        if(udt_c_connect(
+        if(UDT::connect(
             handle->sock, (void *)addrinfo->ai_addr, addrinfo->ai_addrlen))
         {
-            result = GlobusXIOUdtError("udt_c_connect failed");
+            result = GlobusXIOUdtError("UDT::connect failed");
             goto error_connect;
         }
         *driver_handle = handle;
@@ -469,7 +469,7 @@ globus_l_xio_udt_ref_open(
 
     return GLOBUS_SUCCESS;
 error_connect:
-    udt_c_close(handle->sock);
+    UDT::close(handle->sock);
 error_socket:
 error_getaddr:
     globus_free(handle);
@@ -491,18 +491,18 @@ globus_l_xio_udt_ref_read(
 
     handle = (xio_l_udt_ref_handle_t *) driver_specific_handle;
 
-    *nbytes = (globus_size_t) udt_c_recv(
+    *nbytes = (globus_size_t) UDT::recv(
         handle->sock, iovec[0].iov_base, iovec[0].iov_len, 0);
 
     /* need to figure out eof */
     if(*nbytes < 0)
     {
-        result = GlobusXIOUdtError("udt_c_recv failed");
+        result = GlobusXIOUdtError("UDT::recv failed");
         goto error;
     }
     if(*nbytes == 0)
     {
-        result = GlobusXIOUdtError("udt_c_recv EOF?");
+        result = GlobusXIOUdtError("UDT::recv EOF?");
         goto error;
     }
 
@@ -525,11 +525,11 @@ globus_l_xio_udt_ref_write(
 
     handle = (xio_l_udt_ref_handle_t *) driver_specific_handle;
 
-    *nbytes = (globus_size_t) udt_c_send(
+    *nbytes = (globus_size_t) UDT::send(
         handle->sock, iovec[0].iov_base, iovec[0].iov_len, 0);
     if(*nbytes < 0)
     {
-        result = GlobusXIOUdtError("udt_c_write failed");
+        result = GlobusXIOUdtError("UDT::send failed");
         goto error;
     }
 
@@ -549,7 +549,7 @@ globus_l_xio_udt_ref_close(
 
     handle = (xio_l_udt_ref_handle_t *) driver_specific_handle;
 
-    udt_c_close(handle->sock);
+    UDT::close(handle->sock);
     globus_free(handle);
 
     return GLOBUS_SUCCESS;
