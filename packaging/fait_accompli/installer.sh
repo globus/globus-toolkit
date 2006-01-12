@@ -3,7 +3,7 @@
 VERSION=TRUNK
 INSTALLER=gt$VERSION-all-source-installer
 AUTOTOOLS=source-trees/autotools/autotools/autoconf-2.59/config
-GPT=gpt-3.2autotools2004-src.tar.gz
+GPT=gpt*.tar.gz
 # Pre-made tarfiles for gsi-openssh/myproxy
 TARFILES="gsi_openssh-3.5-src.tar.gz gsi_openssh_setup-3.5-src.tar.gz myproxy-2.3.tar.gz"
 
@@ -43,7 +43,7 @@ cp fait_accompli/installer.INSTALL $INSTALLER/INSTALL
 cp fait_accompli/installer.README $INSTALLER/README
 
 # untar GPT into the installer dir
-tar -C $INSTALLER -xzf fait_accompli/$GPT 
+tar -C $INSTALLER -xzf $GPT 
 
 # Symlink over the bootstrapped CVS dirs.
 # Must use -h in tar command to dereference them

@@ -41,7 +41,7 @@ wstests: gpt wsjava gt4-java-ws-core-test gt4-c-ws-core-test gt4-mds-test gt4-gr
 # GPT targets
 gpt: gpt-stamp
 gpt-stamp:
-	cd gpt-3.2autotools2004 && OBJECT_MODE=32 ./build_gpt
+	cd gpt && OBJECT_MODE=32 ./build_gpt
 	touch gpt-stamp
 install: postinstall
 postinstall:

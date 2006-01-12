@@ -78,9 +78,6 @@ my %package_version_hash;
 my @cvs_build_list;
 my %cvs_build_hash;
 
-# Which GPT should I use for the builds and the installer
-my $gpt_ver = "gpt-3.2autotools2004";
-
 # What flavor shall things be built as?
 my $flavor = "gcc32dbg";
 my $thread = "pthr";
@@ -927,8 +924,24 @@ sub log_system
 sub install_gpt()
 # --------------------------------------------------------------------
 {
-    my $gpt_dir = $top_dir . "/$gpt_ver";
+    my $gpt_dir;
+    my $gpt_ver;
     my $target;
+
+    # we maintain a patched copy of gpt - find out what we call it
+    $gpt_ver = `cat $top_dir/gpt/gpt_version`;
+    chomp($gpt_ver);
+    $gpt_ver = "gpt-$gpt_ver";
+    $gpt_dir = $top_dir . "/$gpt_ver";
+
+    # create a copy of 'gpt' with the version number and a tar.gz
+    # to be used by other projects
+    chdir($top_dir);
+    system("rm -rf $gpt_ver gpt_ver.tar.gz");
+    system("cp -Rp gpt $gpt_ver");
+    paranoia("Trouble making a copy of gpt to $gpt_ver");
+    system("tar czf $gpt_ver.tar.gz gpt");
+    paranoia("Trouble taring up $gpt_ver");
 
     if ( $install )
     {
@@ -947,9 +960,6 @@ sub install_gpt()
     } else {
         print "Installing $gpt_ver to $target\n";
         print "Logging to ${log_dir}/$gpt_ver.log\n";
-        chdir $top_dir;
-        system("tar xzf fait_accompli/${gpt_ver}-src.tar.gz");
-        paranoia("Trouble untarring fait_accompli/${gpt_ver}-src.tar.gz");
 
         chdir $gpt_dir;
 
