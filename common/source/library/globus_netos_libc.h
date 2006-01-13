@@ -53,32 +53,6 @@ typedef struct
 } DIR;
 #endif /* !HAVE_DIR */
 
-
-#ifndef HAVE_OPENDIR
-#define HAVE_OPENDIR 1
-#define GLOBUS_IMPLEMENT_OPENDIR 1
-extern DIR * opendir(const char *filename);
-#endif /* !HAVE_OPENDIR */
-
-#ifndef HAVE_READDIR
-#define HAVE_READDIR 1
-#define GLOBUS_IMPLEMENT_READDIR 1
-extern struct dirent * readdir(DIR *dir); 
-#endif /* !HAVE_READDIR */
-
-#ifndef HAVE_CLOSEDIR
-#define HAVE_CLOSEDIR 1
-#define GLOBUS_IMPLEMENT_CLOSEDIR 1
-extern int closedir(DIR *dir);
-#endif /* !HAVE_CLOSEDIR */
-
-#ifndef HAVE_REWINDDIR
-#define HAVE_REWINDDIR 1
-#define GLOBUS_IMPLEMENT_REWINDDIR 1
-extern void rewinddir(DIR *dir);
-#endif /* !HAVE_REWINDDIR */
-
-
 #endif /* TARGET_ARCH_NETOS */
 
 #endif /* GLOBUS_NETOS_DIR_H */

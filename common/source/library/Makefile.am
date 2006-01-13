@@ -83,7 +83,18 @@ Sources= \
 	globus_extension.h \
 	globus_common_include.h \
 	globus_uuid.c \
-	globus_uuid.h
+	globus_uuid.h \
+    closedir.c \
+    freeaddrinfo.c \
+    gai_strerror.c \
+    getaddrinfo.c \
+    getnameinfo.c \
+    inet_addr.c \
+    inet_pton.c \
+    opendir.c \
+    readdir.c \
+    rewinddir.c \
+    globus_netos_libc.h
 
 flavorinclude_HEADERS = \
         $(OS_HEADERS) \
@@ -130,23 +141,9 @@ lib_LTLIBRARIES = libglobus_common_$(GLOBUS_FLAVOR_NAME).la
 
 INCLUDES = @GPT_INCLUDES@
 
-libglobus_common___GLOBUS_FLAVOR_NAME__la_LIBADD = @OS_OBJS@ @GPT_LIB_LINKS@
+libglobus_common___GLOBUS_FLAVOR_NAME__la_LIBADD = @GPT_LIB_LINKS@
 libglobus_common___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
-EXTRA_libglobus_common___GLOBUS_FLAVOR_NAME__la_SOURCES = \
-        closedir.c \
-        freeaddrinfo.c \
-        gai_strerror.c \
-        getaddrinfo.c \
-        getnameinfo.c \
-        inet_addr.c \
-        inet_pton.c \
-        opendir.c \
-        readdir.c \
-        rewinddir.c \
-        globus_netos_libc.h
-
 libglobus_common___GLOBUS_FLAVOR_NAME__la_LDFLAS = @GPT_LDFLAGS@
-libglobus_common___GLOBUS_FLAVOR_NAME__la_DEPENDENCIES = @OS_OBJS@
 
 EXTRA_DIST = \
 	globus_callback_nothreads.c \

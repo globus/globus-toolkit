@@ -126,10 +126,90 @@ AC_MSG_RESULT($ac_have_socklen_t)
 
 ])
 
+AC_DEFUN([CHECK_NET_FUNCS], [
+dnl
+dnl Network functions
+dnl
+check_net_funcs_libs="nsl socket"
+AC_CHECK_FUNCS(gethostbyaddr, ,
+[
+    AC_SEARCH_LIBS(gethostbyaddr, [$check_net_funcs_libs], 
+    [
+        AC_DEFINE([HAVE_GETHOSTBYADDR], [1], [gethostbyaddr is available]) 
+    ])
+])
+AC_CHECK_FUNCS(getservbyname, ,
+[
+    AC_SEARCH_LIBS(getservbyname, [$check_net_funcs_libs], 
+    [
+        AC_DEFINE([HAVE_GETSERVBYNAME], [1], [getservbyname is available]) 
+    ])
+])
+AC_CHECK_FUNCS(getprotobynumber, ,
+[
+    AC_SEARCH_LIBS(getprotobynumber, [$check_net_funcs_libs], 
+    [
+        AC_DEFINE([HAVE_GETPROTOBYNUMBER], [1], [getprotobynumber is available]) 
+    ])
+])
+AC_CHECK_FUNCS(getaddrinfo, ,
+[
+    AC_SEARCH_LIBS(getaddrinfo, [$check_net_funcs_libs], 
+    [
+        AC_DEFINE([HAVE_GETADDRINFO], [1], [getaddrinfo is available]) 
+    ])
+])
+AC_CHECK_FUNCS(freeaddrinfo, ,
+[
+    AC_SEARCH_LIBS(freeaddrinfo, [$check_net_funcs_libs], 
+    [
+        AC_DEFINE([HAVE_FREEADDRINFO], [1], [freeaddrinfo is available]) 
+    ])
+])
+AC_CHECK_FUNCS(getnameinfo, ,
+[
+    AC_SEARCH_LIBS(getnameinfo, [$check_net_funcs_libs], 
+    [
+        AC_DEFINE([HAVE_GETNAMEINFO], [1], [getnameinfo is available]) 
+    ])
+])
+AC_CHECK_FUNCS(gai_strerror, ,
+[
+    AC_SEARCH_LIBS(gai_strerror, [$check_net_funcs_libs], 
+    [
+        AC_DEFINE([HAVE_GAI_STRERROR], [1], [gai_strerror is available]) 
+    ])
+])
+AC_CHECK_FUNCS(inet_ntoa, ,
+[
+    AC_SEARCH_LIBS(inet_ntoa, [$check_net_funcs_libs], 
+    [
+        AC_DEFINE([HAVE_INET_NTOA], [1], [inet_ntoa is available]) 
+    ])
+])
+AC_CHECK_FUNCS(inet_pton, ,
+[
+    AC_SEARCH_LIBS(inet_pton, [$check_net_funcs_libs], 
+    [
+        AC_DEFINE([HAVE_INET_PTON], [1], [inet_pton is available]) 
+    ])
+])
+AC_CHECK_FUNCS(inet_addr, ,
+[
+    AC_SEARCH_LIBS(inet_addr, [$check_net_funcs_libs], 
+    [
+        AC_DEFINE([HAVE_INET_ADDR], [1], [inet_addr is available]) 
+    ])
+])
+
+])
+
+
 AC_DEFUN([CHECK_FUNCS], [
 dnl
 dnl System function
 dnl
+
 AC_CHECK_FUNCS(waitpid)
 AC_CHECK_FUNCS(strtoul)
 AC_CHECK_FUNCS(wait3)
@@ -142,12 +222,6 @@ AC_CHECK_FUNCS(getcwd)
 AC_CHECK_FUNCS(memmove)
 AC_CHECK_FUNCS(usleep)
 AC_CHECK_FUNCS(strptime)
-AC_CHECK_FUNCS(gethostbyaddr)
-AC_CHECK_FUNCS(getservbyname)
-AC_CHECK_FUNCS(getprotobynumber)
-AC_CHECK_FUNCS(getaddrinfo)
-AC_CHECK_FUNCS(freeaddrinfo)
-AC_CHECK_FUNCS(getnameinfo)
 AC_CHECK_FUNCS(opendir)
 AC_CHECK_FUNCS(closedir)
 AC_CHECK_FUNCS(telldir)
@@ -159,11 +233,7 @@ AC_CHECK_FUNCS(mktime)
 AC_CHECK_FUNCS(writev)
 AC_CHECK_FUNCS(readv)
 AC_CHECK_FUNCS(strerror)
-AC_CHECK_FUNCS(gai_strerror)
 AC_CHECK_FUNCS(gethostname)
-AC_CHECK_FUNCS(inet_ntoa)
-AC_CHECK_FUNCS(inet_pton)
-AC_CHECK_FUNCS(inet_addr)
 AC_CHECK_FUNCS(fork)
 AC_CHECK_FUNCS(sigaction)
 AC_CHECK_FUNCS(sendmsg)
@@ -176,5 +246,7 @@ dnl used in RSL
 AC_FUNC_ALLOCA
 
 AC_CHECK_FUNCS(poll)
+
+CHECK_NET_FUNCS
 
 ])
