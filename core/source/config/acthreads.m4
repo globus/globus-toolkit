@@ -345,6 +345,7 @@ AC_MSG_CHECKING(for pthreads)
                 LAC_THREADS_ADD_DEFINE(HAVE_PTHREAD_PREEMPTIVE)
                 LAC_THREADS_ADD_DEFINE(HAVE_THREAD_SAFE_STDIO)
                 LAC_THREADS_ADD_DEFINE(HAVE_THREAD_SAFE_SELECT) 
+                LAC_THREADS_ADD_DEFINE(_POSIX_PTHREAD_SEMANTICS) 
                 lac_cv_threads_LIBS="-lpthread -lposix4"
                 lac_cv_threads_CFLAGS="$lac_cv_threads_CFLAGS -D_REENTRANT"
               ;;
@@ -432,6 +433,7 @@ do
         LAC_THREADS_DEFINE_ONE(_CMA_REENTRANT_CLIB_)
         LAC_THREADS_DEFINE_ONE(__USE_FIXED_PROTOTYPES__)
         LAC_THREADS_DEFINE_ONE(BUILD_LITE)
+        LAC_THREADS_DEFINE_ONE(_POSIX_PTHREAD_SEMANTICS) 
         * )
             AC_MSG_ERROR([Internal error: acthreads.m4:LAC THREADS_DEFINE is missing a definition for "$lac_def"])
         ;;

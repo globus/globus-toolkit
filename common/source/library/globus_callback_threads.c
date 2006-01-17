@@ -40,7 +40,7 @@
  */
 #define GLOBUS_L_CALLBACK_POST_STOP_ONESHOTS 10
 
-#ifndef TARGET_ARCH_WIN32
+#if defined(TARGET_ARCH_LINUX)
 extern pid_t                            globus_l_callback_main_thread;
 #endif
 
@@ -384,7 +384,7 @@ globus_l_callback_activate()
     int                                 i;
     char *                              tmp_string;
 
-#ifndef TARGET_ARCH_WIN32
+#if defined(TARGET_ARCH_LINUX)
     if(!globus_l_callback_main_thread)
     {
         /* this is used by globus_dump_stack because linux threads have

@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Name="globus_common" Format_Version="0.02">
 
-    <Aging_Version Major="8" Minor="3" Age="5"/>
+    <Aging_Version Major="8" Minor="4" Age="5"/>
     <Description >Common Library</Description>
     <Functional_Group >Common</Functional_Group>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
