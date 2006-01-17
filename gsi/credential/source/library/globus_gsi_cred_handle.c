@@ -523,6 +523,7 @@ globus_gsi_cred_get_key_bits(
         goto error_exit;
     }
     *key_bits = EVP_PKEY_bits(pkey);
+    EVP_PKEY_free(pkey);
     if (*key_bits <= 0)
     {
         GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
