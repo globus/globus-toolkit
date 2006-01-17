@@ -132,15 +132,15 @@ class SchedulerEventGenerator extends Thread {
                 if (logger.isDebugEnabled()) {
                     logger.debug("Seg input buffer is "
                     + (stdout.ready()?"read":"not ready"));
-                }
-                try
-                {
-                    int rc = proc.exitValue();
-                    logger.error("SEG terminated with return code " + rc);
-                }
-                catch (IllegalThreadStateException itse)
-                {
-                    logger.debug("SEG still running...");
+                    try
+                    {
+                        int rc = proc.exitValue();
+                        logger.error("SEG terminated with return code " + rc);
+                    }
+                    catch (IllegalThreadStateException itse)
+                    {
+                        logger.debug("SEG still running...");
+                    }
                 }
                 while ((input = stdout.readLine()) != null) {
                     logger.debug("seg input line: " + input);
@@ -198,6 +198,16 @@ class SchedulerEventGenerator extends Thread {
                         // Unknown message type
                     }
                 }
+                // if / when we get here, SEG has terminated, check stderr
+                java.io.BufferedReader stderr;
+                stderr = new java.io.BufferedReader(
+                        new java.io.InputStreamReader(
+                                proc.getErrorStream()));
+                while ((input = stderr.readLine()) != null) {
+                    logger.error("SEG Terminated with " + input);
+                }
+                stderr.close();
+
             }
         } catch (java.io.IOException ioe) {
             throw new RuntimeException(ioe);
