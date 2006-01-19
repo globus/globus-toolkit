@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Format_Version="0.02" Name="globus_scheduler_event_generator_condor" >
 
-  <Aging_Version Age="0" Major="0" Minor="2" />
+  <Aging_Version Age="0" Major="0" Minor="3" />
   <Description >Scheduler Event Generator Condor Module</Description>
   <Functional_Group >ResourceManagement</Functional_Group>
   <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@" />
