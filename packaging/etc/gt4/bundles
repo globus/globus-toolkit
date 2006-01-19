@@ -46,6 +46,7 @@ BUNDLE gt4-c-ws-core
         globus_notification_consumer
         globus_c_ws_security
         globus_ws_core_schema 
+        globus_c_wsrf_service_group
         globus_libxml2
 
 BUNDLE gt4-c-ws-core-test
@@ -64,6 +65,8 @@ BUNDLE gt4-c-ws-core-test
         globus_c_wsrf_notification_test
         globus_c_ws_messaging_test
         globus_java_ws_core_counter_sample
+        globus_c_service_group_test_schema
+        globus_c_wsrf_service_group_test
         globus_xio_buffer_test
 
 BUNDLE gt4-c-deps-cgen
