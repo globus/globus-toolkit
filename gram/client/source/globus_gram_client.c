@@ -208,6 +208,7 @@ static int				globus_l_is_initialized = 0;
 static globus_hashtable_t		globus_l_gram_client_contacts;
 
 static globus_mutex_t		        globus_l_mutex;
+static globus_mutex_t                   globus_l_rsl_mutex;
 
 #define GLOBUS_L_CHECK_IF_INITIALIZED assert(globus_l_is_initialized==1)
 
@@ -254,6 +255,10 @@ globus_i_gram_client_activate(void)
 	int err;
 	err = globus_mutex_init (&globus_l_mutex, NULL);
 	assert (!err);
+
+        err = globus_mutex_init (&globus_l_rsl_mutex, NULL);
+	assert (!err);
+
 	globus_l_is_initialized = 1;
 
     }
@@ -2303,7 +2308,12 @@ globus_l_gram_client_job_request(
     globus_rsl_t *                      rsl;
     char *                              username = NULL;
 
+    /* The lexer used by the RSL Parser is not reentrant. The lex source
+     * is somewhat lost from the rest of CVS, so we can't fix that directly.
+     */
+    globus_mutex_lock(&globus_l_rsl_mutex);
     rsl = globus_rsl_parse((char *) description);
+    globus_mutex_unlock(&globus_l_rsl_mutex);
 
     if (rsl != NULL)
     {
