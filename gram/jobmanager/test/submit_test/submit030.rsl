@@ -1,3 +1,0 @@
-&(executable = /bin/ls)
- (arguments = -1 $(SCRATCH_DIRECTORY) )
- (scratch_dir = . )
