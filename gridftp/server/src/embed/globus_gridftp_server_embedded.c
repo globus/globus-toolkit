@@ -33,7 +33,16 @@ globus_gfs_acl_test_init(
     GlobusGFSName(globus_gfs_acl_test_init);
     GlobusGFSDebugEnter();
 
-    *out_res = GLOBUS_SUCCESS;
+    if(1 || (acl_info->subject && 
+        strcmp(acl_info->subject, "subject you allow") == 0))
+    {
+        *out_res = GLOBUS_SUCCESS;
+    }
+    else
+    {
+        *out_res = GlobusGFSErrorGeneric("No soup for you.");
+    }        
+
     globus_gfs_acl_authorized_finished(acl_handle, *out_res);
 
     GlobusGFSDebugExit();
@@ -53,7 +62,7 @@ globus_gfs_acl_test_authorize(
     GlobusGFSName(globus_gfs_acl_test_authorize);
     GlobusGFSDebugEnter();
 
-    if(strncmp(object, "/etc/", 5) == 0)
+    if(1 || strncmp(object, "/path/you/allow", 5) == 0)
     {
         *out_res = GLOBUS_SUCCESS;
     }
@@ -220,14 +229,11 @@ main(
             rc = 1;
             goto error_lock;
         }
-        
-        globus_gridftp_server_embed_config_set_int(
-            globus_l_gfs_server_handle, 
-            "connections_max", 
-            10);
-        
+                
+        /* add our acl module */
         globus_gfs_acl_add_module(&globus_gfs_acl_test_module);
 
+        /* customize some config */
         old_banner = globus_gridftp_server_embed_config_get_string(
             globus_l_gfs_server_handle, "banner");
         new_banner = globus_common_create_string(
@@ -237,7 +243,20 @@ main(
             "banner", 
             new_banner);
         globus_free(old_banner);
-        
+
+        globus_gridftp_server_embed_config_set_int(
+            globus_l_gfs_server_handle, 
+            "connections_max", 
+            10);
+
+        globus_gridftp_server_embed_config_set_int(
+            globus_l_gfs_server_handle, 
+            "auth_level", 
+            1 | /* identity check */
+            2 | /* file access checks */
+            4 | /* disable setuid (not really needed with gridmap disabled)*/
+            8); /* disable gridmap lookup */
+                
         result = globus_gridftp_server_embed_start(
             globus_l_gfs_server_handle,
             globus_l_gfs_event_cb,

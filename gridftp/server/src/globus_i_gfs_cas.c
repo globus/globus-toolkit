@@ -14,6 +14,8 @@
  */
 #include "globus_i_gridftp_server.h"
 
+#define FTP_SERVICE_NAME "file"
+
 static void
 globus_gfs_acl_cas_cb(
     void *                              callback_arg,
@@ -42,13 +44,13 @@ globus_gfs_acl_cas_init(
     GlobusGFSName(globus_gfs_acl_cas_init);
     GlobusGFSDebugEnter();
 
-    if(acl_handle->context == NULL)
+    if(acl_info->context == NULL)
     {
         goto err;
     }
     *out_res = globus_gsi_authz_handle_init(
         &cas_handle,
-        acl_info->resource_id,
+        FTP_SERVICE_NAME,
         acl_info->context,
         globus_gfs_acl_cas_cb,
         acl_handle);

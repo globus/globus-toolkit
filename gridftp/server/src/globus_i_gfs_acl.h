@@ -47,11 +47,10 @@ int
 globus_i_gfs_acl_init(
     struct globus_i_gfs_acl_handle_s *  acl_handle,
     const gss_ctx_id_t                  context,
-    const struct passwd *               pwent,
-    const struct group *                grent,
-    const char *                        given_pw,
+    const char *                        subject,
+    const char *                        username,
+    const char *                        password,
     const char *                        ipaddr,
-    const char *                        resource_id,
     globus_result_t *                   out_res,
     globus_gfs_acl_cb_t                 cb,
     void *                              user_arg);
@@ -63,12 +62,11 @@ globus_i_gfs_acl_destroy(
 
 typedef struct globus_i_gfs_acl_handle_s
 {
-    struct passwd                       pwent;
-    struct group                        grpent;
-    char *                              given_pw;
+    char *                              password;
     char *                              ipaddr;
     globus_i_gfs_acl_type_t             type;
-    char *                              user_id;
+    char *                              subject;
+    char *                              username;
     char *                              hostname;
     char *                              auth_action;
     char *                              auth_object;

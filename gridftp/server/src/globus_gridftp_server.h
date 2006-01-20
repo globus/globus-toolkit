@@ -1591,14 +1591,12 @@ typedef struct globus_i_gfs_acl_handle_s * globus_gfs_acl_handle_t;
 
 typedef struct globus_gfs_acl_info_s
 {
-    char *                              given_pw;
-    char *                              ipaddr;
-    char *                              user_id;
     char *                              hostname;
-    char *                              action;
-    char *                              object;
+    char *                              subject;
+    char *                              username;
+    char *                              password;
+    char *                              ipaddr;
     gss_ctx_id_t                        context;
-    char *                              resource_id;
 } globus_gfs_acl_info_t;
 
 typedef enum globus_gfs_acl_status_e
