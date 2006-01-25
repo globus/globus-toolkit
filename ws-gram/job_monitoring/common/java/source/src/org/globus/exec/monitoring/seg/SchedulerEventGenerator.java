@@ -1,12 +1,17 @@
 /*
- * Portions of this file Copyright 1999-2005 University of Chicago
- * Portions of this file Copyright 1999-2005 The University of Southern California.
- *
- * This file or a portion of this file is licensed under the
- * terms of the Globus Toolkit Public License, found at
- * http://www.globus.org/toolkit/download/license.html.
- * If you redistribute this file, with or without
- * modifications, you must include this notice in the file.
+ * Copyright 1999-2006 University of Chicago
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package org.globus.exec.monitoring.seg;
 
@@ -132,15 +137,15 @@ class SchedulerEventGenerator extends Thread {
                 if (logger.isDebugEnabled()) {
                     logger.debug("Seg input buffer is "
                     + (stdout.ready()?"read":"not ready"));
-                }
-                try
-                {
-                    int rc = proc.exitValue();
-                    logger.error("SEG terminated with return code " + rc);
-                }
-                catch (IllegalThreadStateException itse)
-                {
-                    logger.debug("SEG still running...");
+                    try
+                    {
+                        int rc = proc.exitValue();
+                        logger.error("SEG terminated with return code " + rc);
+                    }
+                    catch (IllegalThreadStateException itse)
+                    {
+                        logger.debug("SEG still running...");
+                    }
                 }
                 while ((input = stdout.readLine()) != null) {
                     logger.debug("seg input line: " + input);
@@ -198,6 +203,16 @@ class SchedulerEventGenerator extends Thread {
                         // Unknown message type
                     }
                 }
+                // if / when we get here, SEG has terminated, check stderr
+                java.io.BufferedReader stderr;
+                stderr = new java.io.BufferedReader(
+                        new java.io.InputStreamReader(
+                                proc.getErrorStream()));
+                while ((input = stderr.readLine()) != null) {
+                    logger.error("SEG Terminated with " + input);
+                }
+                stderr.close();
+
             }
         } catch (java.io.IOException ioe) {
             throw new RuntimeException(ioe);
