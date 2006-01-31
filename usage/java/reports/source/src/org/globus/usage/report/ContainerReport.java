@@ -105,40 +105,6 @@ public class ContainerReport {
         }
     }
 
-    private static String getTicks(String dateStr, 
-                                   int n) throws Exception {
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-
-        Date date = dateFormat.parse(dateStr);
-
-        Calendar calendar = dateFormat.getCalendar();
-
-        if (n < 0) {
-            calendar.add(Calendar.DATE, n);
-            n = -n;
-        }
-        
-        StringBuffer buf = new StringBuffer();
-        buf.append("set xtics (");
-
-        for (int i=0;i<n;i++) {
-            Date startDate = calendar.getTime();
-
-            String startDateStr = dateFormat.format(startDate);
-            buf.append("\"").append(startDateStr).append("\" ");
-            buf.append(String.valueOf((i+1)));
-            if (i+1 < n) {
-                buf.append(", ");
-            }
-
-            calendar.add(Calendar.DATE, 1);
-        }
-
-        buf.append(")");
-        
-        return buf.toString();
-    }
-
     public static void main(String[] args) throws Exception {
     
         String driverClass = "org.postgresql.Driver";
@@ -159,8 +125,6 @@ public class ContainerReport {
 
         try {
             Class.forName(driverClass);
-
-            System.out.println(getTicks(inputDate, n));
 
             con = DriverManager.getConnection(url);
 
