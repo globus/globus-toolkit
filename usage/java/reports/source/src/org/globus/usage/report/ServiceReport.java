@@ -23,8 +23,6 @@ public class ServiceReport {
     private Map ipLookupTable = new HashMap();
 
     private void discoverDomains() {
-        System.out.println("Computing domains...");
-
         Iterator iter = services.entrySet().iterator();
         while(iter.hasNext()) {
             Map.Entry entry = (Map.Entry)iter.next();
@@ -45,24 +43,6 @@ public class ServiceReport {
                 serviceEntry.addDomain(ipEntry.getDomain());
             }
         }
-    }
-    
-    private void displayTotals() {
-        Iterator iter = services.entrySet().iterator();
-        while(iter.hasNext()) {
-            Map.Entry entry = (Map.Entry)iter.next();
-
-            ServiceEntry serviceEntry = (ServiceEntry)entry.getValue();
-
-            System.out.println(entry.getKey() + ", " + 
-                               serviceEntry.getStandaloneCount() + ", " +
-                               serviceEntry.getServletCount() + ", " +
-                               serviceEntry.getUniqueIPCount() + ", " +
-                               serviceEntry.getSortedDomains());
-        }
-        
-        System.out.println();
-        System.out.println("Total unqiue services: " + services.size());
     }
     
     private void compute(String listOfServices,
@@ -125,7 +105,7 @@ public class ServiceReport {
 
         String inputDate = args[0];
         int n = Integer.parseInt(args[1]);
-        String containerType = null;
+        String containerType = "all";
         if (args.length > 2) {
             containerType = args[2];
             baseQuery += " container_type = " + containerType + " and ";
@@ -155,12 +135,12 @@ public class ServiceReport {
             String timeFilter = "send_time >= '" + startDateStr + 
                 "' and send_time < '" + endDateStr + "'";
                 
-            System.out.println("Generating per-service report between " + 
-                               startDateStr +
-                               " and " + endDateStr);
-            if (containerType != null) {
-                System.out.println("Container type: " + containerType);
-            }
+
+            System.out.println("<service-report container_type=\"" + 
+                               containerType + "\">");
+            System.out.println("  <start-date>" + startDateStr + "</start-date>");
+            System.out.println("  <end-date>" + endDateStr + "</end-date>");
+
 
             String query = baseQuery + timeFilter;
 
@@ -178,7 +158,38 @@ public class ServiceReport {
             stmt.close();
 
             r.discoverDomains();
-            r.displayTotals();
+
+            System.out.println("  <unique-services>" + r.services.size() + "</unique-services>");
+            
+            Iterator iter = r.services.entrySet().iterator();
+            while(iter.hasNext()) {
+                Map.Entry entry = (Map.Entry)iter.next();
+                
+                ServiceEntry serviceEntry = (ServiceEntry)entry.getValue();
+                
+                System.out.println("  <entry>");
+
+                System.out.println("\t<service-name>" + entry.getKey() + "</service-name>");
+                System.out.println("\t<standalone-count>" + serviceEntry.getStandaloneCount() + "</standalone-count>");
+                System.out.println("\t<servlet-count>" + serviceEntry.getServletCount() + "</servlet-count>");
+                System.out.println("\t<other-count>" + serviceEntry.getOtherCount() + "</other-count>");
+                System.out.println("\t<unique-ip>" + serviceEntry.getUniqueIPCount() + "</unique-ip>");
+                System.out.println("\t<domains>");
+                Iterator domIter = serviceEntry.getSortedDomains().iterator();
+                while(domIter.hasNext()) {
+                    ServiceEntry.DomainEntry domEntry = 
+                        (ServiceEntry.DomainEntry)domIter.next();
+                    System.out.println("\t\t<domain-entry name=\"" + 
+                                       domEntry.getDomain() + "\" count=\"" +
+                                       domEntry.getCount() + "\"/>");
+                }
+                System.out.println("\t</domains>");
+                
+                System.out.println("  </entry>");
+            }
+
+            System.out.println("</service-report>");
+
 
         } finally {
             if (con != null) {
