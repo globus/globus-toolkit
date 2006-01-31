@@ -67,6 +67,12 @@ gs -a \
         ogsa_messaging\
         program_execution
 
+jwscore -a \
+	wsrf/java\
+	wsrf/schema\
+        wsrf/build.xml\
+        wsrf/compact
+
 ws -a \
 	ws-gram\
 	ws-rendezvous\
