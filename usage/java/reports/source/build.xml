@@ -82,18 +82,26 @@
 
 
  <target name="gnuplot-container">
-   <xslt basedir="." 
-         destdir="." 
-         style="etc/gnuplot-instructions.xsl" 
-         extension=".gnuplot"
-         includes="container.xml">
-   </xslt>
-   <xslt basedir="." 
-         destdir="." 
-         style="etc/gnuplot-data.xsl" 
-         extension=".data.gnuplot"
-         includes="container.xml">
-   </xslt>
+   <xslt style="etc/container/gnuplot-uniqueservices-inst.xsl" 
+         in="container.xml"
+         out="uniqueservices.gnuplot"/>
+   <xslt style="etc/container/gnuplot-uniqueservices-data.xsl" 
+         in="container.xml"
+         out="uniqueservices.data"/>
+
+   <xslt style="etc/container/gnuplot-containers-inst.xsl" 
+         in="container.xml"
+         out="containers.gnuplot"/>
+   <xslt style="etc/container/gnuplot-containers-data.xsl" 
+         in="container.xml"
+         out="containers.data"/>
+
+   <xslt style="etc/container/gnuplot-services-inst.xsl" 
+         in="container.xml"
+         out="services.gnuplot"/>
+   <xslt style="etc/container/gnuplot-services-data.xsl" 
+         in="container.xml"
+         out="services.data"/>
  </target>
 
  <target name="gnuplot-service">

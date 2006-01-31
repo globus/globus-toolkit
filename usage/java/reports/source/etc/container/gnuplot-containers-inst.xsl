@@ -8,8 +8,8 @@
 
 <xsl:template match="/"> 
 <xsl:text>set terminal png size 1024,768
-set output "container.png"
-set title "Unique services per container type"
+set output "containers.png"
+set title "Number of containers started per type"
 
 my_width=0.2
 
@@ -18,7 +18,7 @@ set style fill solid border -1
 set xtics 2
 set boxwidth my_width
 set xtic nomirror rotate
-
+set logscale y
 </xsl:text>
 
  <xsl:text>set xtics (</xsl:text>
@@ -31,7 +31,7 @@ set xtic nomirror rotate
  <xsl:text>)</xsl:text>
 
 <xsl:text>
-plot 'container.data.gnuplot' using 1:2 title "all containers" with boxes fs pattern 1,'container.data.gnuplot' using ($1+my_width):3 title "standalone container" with boxes fs pattern 2,'container.data.gnuplot' using ($1+2*my_width):4 title "servlet container" with boxes fs pattern 3
+plot 'containers.data' using 1:2 title "all" with boxes fs pattern 1,'containers.data' using ($1+my_width):3 title "standalone" with boxes fs pattern 2,'containers.data' using ($1+2*my_width):4 title "servlet" with boxes fs pattern 3
 </xsl:text>
 
 </xsl:template>
