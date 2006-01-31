@@ -7,7 +7,7 @@
 <xsl:output method="text" indent="no" encoding="US-ASCII"/>
 
 <xsl:template match="/"> 
-<xsl:text>set terminal png size 1024,768
+<xsl:text>set terminal png size 2048,1536
 set output "service.png"
 set title "Service Report"
 
