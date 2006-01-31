@@ -9,7 +9,7 @@
     <property environment="env"/>
     <property file="build.properties"/>
     <property file="${user.home}/build.properties"/>
-    <property name="env.GLOBUS_LOCATION" location="../../../../install"/>
+    <property name="env.GLOBUS_LOCATION" location="../../../../wsrf/install"/>
     <property name="deploy.dir" location="${env.GLOBUS_LOCATION}"/>
     <property name="package.name" value="globus_usage_reports"/>
     <property name="gar.name" value="${package.name}.gar"/>
