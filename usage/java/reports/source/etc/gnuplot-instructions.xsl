@@ -7,8 +7,8 @@
 <xsl:output method="text" indent="no" encoding="US-ASCII"/>
 
 <xsl:template match="/"> 
-<xsl:text>set terminal gif size 1024,768
-set output "plot.gif"
+<xsl:text>set terminal png size 1024,768
+set output "container.png"
 set title "Unique services per container type"
 
 my_width=0.2
