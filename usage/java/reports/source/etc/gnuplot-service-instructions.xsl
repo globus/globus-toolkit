@@ -7,9 +7,9 @@
 <xsl:output method="text" indent="no" encoding="US-ASCII"/>
 
 <xsl:template match="/"> 
-<xsl:text>set terminal png size 2048,1536
+<xsl:text>set terminal png size 13*</xsl:text><xsl:value-of select="service-report/unique-services"/><xsl:text>,1600
 set output "service.png"
-set title "Service Report"
+set title "Service Report (</xsl:text><xsl:value-of select="service-report/start-date"/><xsl:text> to </xsl:text><xsl:value-of select="service-report/end-date"/><xsl:text>)"
 
 my_width=0.2
 
@@ -18,7 +18,7 @@ set style fill solid border -1
 set xtics 2
 set boxwidth my_width
 set xtic nomirror rotate
-
+set logscale y
 </xsl:text>
 
  <xsl:text>set xtics (</xsl:text>
