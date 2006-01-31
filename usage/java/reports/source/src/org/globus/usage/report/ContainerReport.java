@@ -16,37 +16,47 @@ import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.net.InetAddress;
 import java.text.SimpleDateFormat;
+import java.io.PrintStream;
 
 public class ContainerReport {
 
     // unique services for all containers
-    private Map totalServices = new HashMap();
+    private ServiceData allData = new ServiceData();
 
     // unqiue services per specific container
-    private Map servletServices = new HashMap();
-    private Map standaloneServices = new HashMap();
-    private Map otherServices = new HashMap();
-
-    private ServiceEntry containerEntry = new ServiceEntry();
+    private ServiceData servletData = new ServiceData();
+    private ServiceData standaloneData = new ServiceData();
+    private ServiceData otherData = new ServiceData();
 
     private static Map ipLookupTable = new HashMap();
     
-    public void discoverDomains() {
-        Iterator ipIter = 
-            containerEntry.getUniqueIPList().keySet().iterator();
-        while(ipIter.hasNext()) {
-            String ip = (String)ipIter.next();
-            
-            IPEntry ipEntry = (IPEntry)ipLookupTable.get(ip);
-            if (ipEntry == null) {
-                ipEntry = IPEntry.getIPEntry(ip);
-                ipLookupTable.put(ip, ipEntry);
+    private static class ServiceData extends IPTable {
+
+        private int containers;
+        private int services;
+        private Map uniqueServices = new HashMap();
+        
+        public void addService(String serviceName) {
+            if (this.uniqueServices.get(serviceName) == null) {
+                this.uniqueServices.put(serviceName, "");
             }
-            
-            containerEntry.addDomain(ipEntry.getDomain());
+            this.services++;
+        }
+
+        public void addContainer() {
+            this.containers++;
+        }
+
+        public void output(PrintStream out, String tab) {
+            out.println(tab + "<containers>" + this.containers + "</containers>");
+            out.println(tab + "<services>" + this.services + "</services>");
+            out.println(tab + "<unique-services>" + this.uniqueServices.size() + "</unique-services>");
+            out.println(tab + "<domains>");
+            super.output(out, tab + "\t");
+            out.println(tab + "</domains>");
         }
     }
-    
+
     public void compute(String listOfServices,
                         int containerType,
                         String ip) {
@@ -67,41 +77,47 @@ public class ContainerReport {
         StringTokenizer tokens = new StringTokenizer(listOfServices, ",");
         while(tokens.hasMoreTokens()) {
             String serviceName = tokens.nextToken();
-            
-            if (totalServices.get(serviceName) == null) {
-                totalServices.put(serviceName, "");
-            }
+
+            this.allData.addService(serviceName);
 
             switch (containerType) {
             case 1: 
-                if (standaloneServices.get(serviceName) == null) {
-                    standaloneServices.put(serviceName, "");
-                }
+                this.standaloneData.addService(serviceName);
                 break;
             case 2: 
-                if (servletServices.get(serviceName) == null) {
-                    servletServices.put(serviceName, "");
-                }
+                this.servletData.addService(serviceName);
                 break;
             default: 
-                if (otherServices.get(serviceName) == null) {
-                    otherServices.put(serviceName, "");
-                }
+                this.otherData.addService(serviceName);
                 break;
             }
         }
 
-        switch (containerType) {
-        case 1: 
-            containerEntry.standalone(); break;
-        case 2: 
-            containerEntry.servlet(); break;
-        default: 
-            containerEntry.other(); break;
+        // over all data
+        this.allData.addContainer();
+        if (!isPrivateAddress) {
+            this.allData.addAddress(ip);
         }
         
+
+        // per container data
+        ServiceData containerData = null;
+
+        switch (containerType) {
+        case 1: 
+            containerData = this.standaloneData;
+            break;
+        case 2: 
+            containerData = this.servletData;
+            break;
+        default: 
+            containerData = this.otherData;
+            break;
+        }
+        
+        containerData.addContainer();
         if (!isPrivateAddress) {
-            containerEntry.addAddress(ip);
+            containerData.addAddress(ip);
         }
     }
 
@@ -165,35 +181,31 @@ public class ContainerReport {
                 rs.close();
                 stmt.close();
 
-                r.discoverDomains();
-
                 System.out.println("  <entry>");
                 System.out.println("\t<start-date>" + startDateStr + "</start-date>");
                 System.out.println("\t<end-date>" + endDateStr + "</end-date>");
-                System.out.println("\t<services-all>" + r.totalServices.size() + "</services-all>");
-                System.out.println("\t<services-standalone>" + r.standaloneServices.size() + "</services-standalone>");
-                System.out.println("\t<services-servlet>" + r.servletServices.size() + "</services-servlet>");
-                System.out.println("\t<services-other>" + r.otherServices.size() + "</services-other>");
-                System.out.println("\t<unique-ip>" + r.containerEntry.getUniqueIPCount() + "</unique-ip>");
-                System.out.println("\t<domains>");
-                Iterator iter = r.containerEntry.getSortedDomains().iterator();
-                while(iter.hasNext()) {
-                    ServiceEntry.DomainEntry entry = 
-                        (ServiceEntry.DomainEntry)iter.next();
-                    System.out.println("\t\t<domain-entry name=\"" + 
-                                       entry.getDomain() + "\" count=\"" +
-                                       entry.getCount() + "\"/>");
-                }
-                System.out.println("\t</domains>");
+
+                r.allData.discoverDomains(ipLookupTable);
+                System.out.println("\t<all>");
+                r.allData.output(System.out, "\t\t");
+                System.out.println("\t</all>");
+
+                r.standaloneData.discoverDomains(ipLookupTable);
+                System.out.println("\t<standalone>");
+                r.standaloneData.output(System.out, "\t\t");
+                System.out.println("\t</standalone>");
+
+                r.servletData.discoverDomains(ipLookupTable);
+                System.out.println("\t<servlet>");
+                r.servletData.output(System.out, "\t\t");
+                System.out.println("\t</servlet>");
+
+                r.otherData.discoverDomains(ipLookupTable);
+                System.out.println("\t<other>");
+                r.otherData.output(System.out, "\t\t");
+                System.out.println("\t</other>");
+
                 System.out.println("  </entry>");
-
-                
-                /**
-                           containerEntry.getStandaloneCount() + ", " +
-                           containerEntry.getServletCount() + ", " +
-
-                **/
-
             }
             
             System.out.println("</container-report>");

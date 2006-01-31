@@ -28,23 +28,10 @@ public class ServiceReport {
             Map.Entry entry = (Map.Entry)iter.next();
 
             ServiceEntry serviceEntry = (ServiceEntry)entry.getValue();
-
-            Iterator ipIter = 
-                serviceEntry.getUniqueIPList().keySet().iterator();
-            while(ipIter.hasNext()) {
-                String ip = (String)ipIter.next();
-                
-                IPEntry ipEntry = (IPEntry)ipLookupTable.get(ip);
-                if (ipEntry == null) {
-                    ipEntry = IPEntry.getIPEntry(ip);
-                    ipLookupTable.put(ip, ipEntry);
-                }
-
-                serviceEntry.addDomain(ipEntry.getDomain());
-            }
+            serviceEntry.discoverDomains(ipLookupTable);
         }
     }
-    
+
     private void compute(String listOfServices,
                          int containerType,
                          String ip) {
@@ -175,14 +162,7 @@ public class ServiceReport {
                 System.out.println("\t<other-count>" + serviceEntry.getOtherCount() + "</other-count>");
                 System.out.println("\t<unique-ip>" + serviceEntry.getUniqueIPCount() + "</unique-ip>");
                 System.out.println("\t<domains>");
-                Iterator domIter = serviceEntry.getSortedDomains().iterator();
-                while(domIter.hasNext()) {
-                    ServiceEntry.DomainEntry domEntry = 
-                        (ServiceEntry.DomainEntry)domIter.next();
-                    System.out.println("\t\t<domain-entry name=\"" + 
-                                       domEntry.getDomain() + "\" count=\"" +
-                                       domEntry.getCount() + "\"/>");
-                }
+                serviceEntry.output(System.out, "\t\t");
                 System.out.println("\t</domains>");
                 
                 System.out.println("  </entry>");
