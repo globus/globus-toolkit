@@ -40,7 +40,7 @@
             <include name="**/*.java"/>
             <classpath>
                 <fileset dir="${deploy.dir}/lib">
-                    <include name="*.jar"/>
+                    <include name="**/*.jar"/>
                      <exclude name="${jar.name}"/>
                 </fileset>
             </classpath>
@@ -78,5 +78,21 @@
     </target>
 
     <target name="all" depends="deploy"/>
+
+
+ <target name="gnuplot">
+   <xslt basedir="." 
+         destdir="." 
+         style="etc/gnuplot-instructions.xsl" 
+         extension=".gnuplot"
+         includes="data.xml">
+   </xslt>
+   <xslt basedir="." 
+         destdir="." 
+         style="etc/gnuplot-data.xsl" 
+         extension=".data.gnuplot"
+         includes="data.xml">
+   </xslt>
+ </target>
 
 </project>
