@@ -1032,6 +1032,16 @@ redo:
 	{
 	    goto skip_bufsize;
 	}
+    if(!(client_handle->op == GLOBUS_FTP_CLIENT_GET ||
+        client_handle->op == GLOBUS_FTP_CLIENT_PUT ||
+        client_handle->op == GLOBUS_FTP_CLIENT_LIST ||
+        client_handle->op == GLOBUS_FTP_CLIENT_NLST ||
+        client_handle->op == GLOBUS_FTP_CLIENT_MLSD ||
+        client_handle->op == GLOBUS_FTP_CLIENT_TRANSFER))
+    {
+        goto skip_bufsize;
+    }
+    
 	buffer_cmd = globus_l_ftp_client_guess_buffer_command(client_handle,
 							      target);
 	if(buffer_cmd == GLOBUS_NULL)
