@@ -81,7 +81,7 @@
     <target name="all" depends="deploy"/>
 
 
- <target name="gnuplot">
+ <target name="gnuplot-container">
    <xslt basedir="." 
          destdir="." 
          style="etc/gnuplot-instructions.xsl" 
@@ -93,6 +93,21 @@
          style="etc/gnuplot-data.xsl" 
          extension=".data.gnuplot"
          includes="container.xml">
+   </xslt>
+ </target>
+
+ <target name="gnuplot-service">
+   <xslt basedir="." 
+         destdir="." 
+         style="etc/gnuplot-service-instructions.xsl" 
+         extension=".gnuplot"
+         includes="service.xml">
+   </xslt>
+   <xslt basedir="." 
+         destdir="." 
+         style="etc/gnuplot-service-data.xsl" 
+         extension=".data.gnuplot"
+         includes="service.xml">
    </xslt>
  </target>
 
