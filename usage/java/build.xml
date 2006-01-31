@@ -34,7 +34,7 @@
             <classpath>
                <pathelement location="${deploy.dir}"/>
                <fileset dir="${deploy.dir}/lib">
-                 <include name="*.jar"/>
+                 <include name="**/*.jar"/>
                </fileset>
                <fileset dir="../../lib">
                  <include name="*.jar"/>
@@ -43,7 +43,6 @@
             <arg value="4810"/>
         </java>
     </target>
-
 
  <target name="do-junit">
     <mkdir dir="./tests/dist"/>
