@@ -29,6 +29,7 @@ import java.util.Calendar;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+
 /*Another, text-based format for GFTP monitor packets.  The format
 looks like this:
 2 byte component code
@@ -121,6 +122,18 @@ public class GFTPTextPacket extends CStylePacket {
     }
     public void setGridFTPVersion(String v) {
         gridFTPVersion = v;
+    }
+
+    public boolean isInDomain(String[] domainList) {
+	/*TODO: Move to base class -- should be able to do on any packet type*/
+	String ipAsString = senderAddress.toString();
+	
+	for (int i= 0; i<domainList.length; i++) {
+	    if (ipAsString.indexOf(domainList[i]) != -1) {
+		return true;
+	    }
+	}
+	return false;
     }
 
     public void packCustomFields(CustomByteBuffer buf) {
@@ -227,12 +240,17 @@ HOSTNAME=mayed.mcs.anl.gov START=20050225073026.426286 END=20050225073026.560613
     public PreparedStatement toSQL(Connection con, String tablename) throws SQLException{
 
 	PreparedStatement ps;
-	ps = con.prepareStatement("INSERT INTO "+tablename+" (component_code, version_code, send_time, ip_version, ip_address, gftp_version, stor_or_retr, start_time, end_time, num_bytes, num_stripes, num_streams, buffer_size, block_size, ftp_return_code) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);");
+	StringBuffer sqlContents = new StringBuffer();
+	sqlContents.append("INSERT INTO ");
+	sqlContents.append(tablename);
+	sqlContents.append(" (component_code, version_code, send_time, ip_version, hostname, gftp_version, stor_or_retr, start_time, end_time, num_bytes, num_stripes, num_streams, buffer_size, block_size, ftp_return_code) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);");
+	ps = con.prepareStatement(sqlContents.toString());
 
 	ps.setShort(1, getComponentCode());
 	ps.setShort(2, getPacketVersion());
 	ps.setTimestamp(3, new Timestamp(timeSent));
 	ps.setByte(4, getIPVersion());
+	//ps.setBytes(5, senderAddress.getAddress());
 	if (senderAddress == null) {
 	    ps.setString(5, "unknown");
 	}
@@ -244,11 +262,11 @@ HOSTNAME=mayed.mcs.anl.gov START=20050225073026.426286 END=20050225073026.560613
 	if (startTime == null)
 	    ps.setLong(8, 0L);
 	else
-	    ps.setLong(8, startTime.getTime());
+	    ps.setTimestamp(8, new Timestamp(startTime.getTime()));
 	if (endTime == null)
 	    ps.setLong(9, 0L);
 	else
-	    ps.setLong(9, endTime.getTime());
+	    ps.setTimestamp(9, new Timestamp(endTime.getTime()));
 	ps.setLong(10, numBytes);
 	ps.setLong(11, numStripes);
 	ps.setLong(12, numStreams);
@@ -259,5 +277,4 @@ HOSTNAME=mayed.mcs.anl.gov START=20050225073026.426286 END=20050225073026.560613
 	return ps;
 
     }
-
 }
