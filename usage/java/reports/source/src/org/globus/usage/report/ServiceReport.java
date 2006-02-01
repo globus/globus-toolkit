@@ -100,6 +100,8 @@ public class ServiceReport {
         
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
+        ServiceReport r = new ServiceReport();
+
         try {
             Class.forName(driverClass);
 
@@ -135,8 +137,6 @@ public class ServiceReport {
 
             ResultSet rs = stmt.executeQuery(query);
 
-            ServiceReport r = new ServiceReport();
-
             while (rs.next()) {
                 r.compute(rs.getString(1), rs.getInt(2), rs.getString(3));
             }
@@ -144,41 +144,37 @@ public class ServiceReport {
             rs.close();
             stmt.close();
 
-            r.discoverDomains();
-
-            System.out.println("  <unique-services>" + r.services.size() + "</unique-services>");
-            
-            Iterator iter = r.services.entrySet().iterator();
-            while(iter.hasNext()) {
-                Map.Entry entry = (Map.Entry)iter.next();
-                
-                ServiceEntry serviceEntry = (ServiceEntry)entry.getValue();
-                
-                System.out.println("  <entry>");
-
-                System.out.println("\t<service-name>" + entry.getKey() + "</service-name>");
-                System.out.println("\t<standalone-count>" + serviceEntry.getStandaloneCount() + "</standalone-count>");
-                System.out.println("\t<servlet-count>" + serviceEntry.getServletCount() + "</servlet-count>");
-                System.out.println("\t<other-count>" + serviceEntry.getOtherCount() + "</other-count>");
-                System.out.println("\t<unique-ip>" + serviceEntry.getUniqueIPCount() + "</unique-ip>");
-                System.out.println("\t<domains>");
-                serviceEntry.output(System.out, "\t\t");
-                System.out.println("\t</domains>");
-                
-                System.out.println("  </entry>");
-            }
-
-            System.out.println("</service-report>");
-
-
         } finally {
             if (con != null) {
                 con.close();
             }
         }
+
+        // generate xml report
+
+        r.discoverDomains();
+
+        System.out.println("  <unique-services>" + r.services.size() + "</unique-services>");
         
+        Iterator iter = r.services.entrySet().iterator();
+        while(iter.hasNext()) {
+            Map.Entry entry = (Map.Entry)iter.next();
+            
+            ServiceEntry serviceEntry = (ServiceEntry)entry.getValue();
+            
+            System.out.println("  <entry>");
+            
+            System.out.println("\t<service-name>" + entry.getKey() + "</service-name>");
+            System.out.println("\t<standalone-count>" + serviceEntry.getStandaloneCount() + "</standalone-count>");
+            System.out.println("\t<servlet-count>" + serviceEntry.getServletCount() + "</servlet-count>");
+            System.out.println("\t<other-count>" + serviceEntry.getOtherCount() + "</other-count>");
+
+            serviceEntry.output(System.out, "\t");
+            
+            System.out.println("  </entry>");
+        }
+        
+        System.out.println("</service-report>");
     }
     
-    
 }
-

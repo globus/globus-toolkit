@@ -61,13 +61,16 @@ public class IPTable {
     }
 
     public void output(PrintStream out, String tab) {
+        out.println(tab + "<unique-ip>" + getUniqueIPCount() + "</unique-ip>");
+        out.println(tab + "<domains>");
         Iterator iter = getSortedDomains().iterator();
         while(iter.hasNext()) {
             DomainEntry entry = (DomainEntry)iter.next();
-            out.println(tab + "<domain-entry name=\"" + 
+            out.println(tab + "\t<domain-entry name=\"" + 
                         entry.getDomain() + "\" count=\"" +
                         entry.getCount() + "\"/>");
         }
+        out.println(tab + "</domains>");
     }
 
     // FIXME: does not handle ipv6 address

@@ -51,9 +51,7 @@ public class ContainerReport {
             out.println(tab + "<containers>" + this.containers + "</containers>");
             out.println(tab + "<services>" + this.services + "</services>");
             out.println(tab + "<unique-services>" + this.uniqueServices.size() + "</unique-services>");
-            out.println(tab + "<domains>");
-            super.output(out, tab + "\t");
-            out.println(tab + "</domains>");
+            super.output(out, tab);
         }
     }
 
