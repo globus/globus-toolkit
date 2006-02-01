@@ -188,8 +188,7 @@ public class HandlerThread extends Thread {
 
     public void shutDown() {
         stillGood = false; //lets the loop in run() finish
-	/*TODO: loop through handlerList and shut down the connections
-	  on every handler!*/
+
 	try {
 	    PoolingDriver driver = (PoolingDriver)DriverManager.getDriver("jdbc:apache:commons:dbcp:");
 	    driver.closePool("usagestats");
