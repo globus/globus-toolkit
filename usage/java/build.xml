@@ -14,6 +14,7 @@
         <ant dir="packets/samples" target="deploy"/>
         <ant dir="receiver/source" target="deploy"/>
         <ant dir="receiver/samples" target="deploy"/>
+        <ant dir="reports/source" target="deploy"/>
     </target>
 
     <target name="clean">
@@ -22,6 +23,7 @@
         <ant dir="packets/samples" target="clean"/>
         <ant dir="receiver/source" target="clean"/>
         <ant dir="receiver/samples" target="clean"/>
+        <ant dir="reports/source" target="clean"/>
     </target>
         
     <target name="receiver"> 
