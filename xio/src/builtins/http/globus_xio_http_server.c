@@ -850,7 +850,7 @@ globus_i_xio_http_server_read_request_callback(
 
         return;
     }
-    else if (http_handle->read_operation.wait_for <= 0 && registered_again)
+    else if (registered_again)
     {
         globus_mutex_unlock(&http_handle->mutex);
         return;

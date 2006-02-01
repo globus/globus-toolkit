@@ -50,7 +50,6 @@ typedef struct iovec                            globus_xio_iovec_t;
 /**
  *  @ingroup GLOBUS_XIO_API
  *  Operation types
- *  ---------------
  *
  *  An enumeration of operation types.  Used in the timeout callback
  *  to indicate what operation typed timedout.

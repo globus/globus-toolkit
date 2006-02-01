@@ -24,8 +24,9 @@
 #endif
 
 globus_mutex_t                          globus_i_xio_http_cached_handle_mutex;
+globus_mutex_t                          globus_i_xio_http_cancel_mutex;
 globus_list_t *                         globus_i_xio_http_cached_handles = NULL;
-
+globus_list_t *                         globus_i_xio_http_cancellable_handles = NULL;
 static
 globus_i_xio_http_handle_t *
 globus_l_xio_http_find_cached_handle(
@@ -78,6 +79,18 @@ globus_l_xio_http_copy_residue(
 static
 void
 globus_l_xio_http_client_cache_kickout(
+    void *                              user_arg);
+
+static
+void
+globus_l_xio_http_read_cancel_callback(
+    globus_xio_operation_t              op,
+    void *                              user_arg,
+    globus_xio_error_type_t             reason);
+
+static
+void
+globus_l_xio_http_read_timeout_callback(
     void *                              user_arg);
 
 /**
@@ -431,6 +444,51 @@ globus_i_xio_http_read(
         /* Still reading header information---read will be handled after
          * headers are parsed
          */
+
+        globus_bool_t                   cancelled;
+
+        globus_assert(http_handle->cancellation == NULL);
+
+        http_handle->cancellation =
+            malloc(sizeof(globus_i_xio_http_cancellation_t));
+        if (http_handle->cancellation == NULL)
+        {
+            globus_mutex_unlock(&http_handle->mutex);
+
+            return GlobusXIOErrorMemory("cancellation");
+        }
+
+        http_handle->cancellation->user_read_op = op;
+        http_handle->cancellation->internal_op = 
+                http_handle->response_read_operation;
+        http_handle->cancellation->http_handle = http_handle;
+        http_handle->cancellation->driver_handle =
+            globus_xio_operation_get_driver_handle(op);
+
+        globus_mutex_lock(&globus_i_xio_http_cancel_mutex);
+        globus_list_insert(
+                &globus_i_xio_http_cancellable_handles,
+                http_handle->cancellation);
+        globus_mutex_unlock(&globus_i_xio_http_cancel_mutex);
+
+        cancelled = globus_xio_operation_enable_cancel(
+                    op,
+                    globus_l_xio_http_read_cancel_callback,
+                    http_handle->cancellation);
+
+        if (cancelled)
+        {
+            free(http_handle->read_operation.iov);
+            http_handle->read_operation.iov = NULL;
+            http_handle->read_operation.iovcnt = 0;
+            http_handle->read_operation.operation = NULL;
+            http_handle->read_operation.nbytes = 0;
+            http_handle->read_operation.wait_for = 0;
+            free(http_handle->cancellation);
+            http_handle->cancellation = NULL;
+            result = GlobusXIOErrorCanceled();
+        }
+
         globus_mutex_unlock(&http_handle->mutex);
         return result;
     }
@@ -1798,3 +1856,53 @@ globus_l_xio_http_client_cache_kickout(
     return;
 }
 /* globus_l_xio_http_client_cache_kickout() */
+
+static
+void
+globus_l_xio_http_read_cancel_callback(
+    globus_xio_operation_t              op,
+    void *                              user_arg,
+    globus_xio_error_type_t             reason)
+{
+    globus_callback_register_oneshot(
+            NULL,
+            &globus_i_reltime_zero,
+            globus_l_xio_http_read_timeout_callback,
+            user_arg);
+}
+/* globus_l_xio_http_read_cancel_callback() */
+
+static
+void
+globus_l_xio_http_read_timeout_callback(
+    void *                              user_arg)
+{
+    globus_list_t *                     l;
+    globus_i_xio_http_cancellation_t *  cancellation = user_arg;
+    globus_xio_driver_handle_t          driver_handle;
+
+    globus_mutex_lock(&globus_i_xio_http_cancel_mutex);
+    l = globus_list_search(globus_i_xio_http_cancellable_handles, user_arg);
+
+    if (l == NULL)
+    {
+        /* if the cancellation info isn't in the list any more, it was removed
+         * by the operation completing before this oneshot fired. We'll free
+         * up memory and quit.
+         */
+        free(user_arg);
+    }
+    else
+    {
+        /* Operation hasn't completed yet. Cancel our internal read op, and
+         * remove this op from the list
+         */
+        globus_list_remove(&globus_i_xio_http_cancellable_handles, l);
+
+        globus_xio_driver_operation_cancel(
+                cancellation->driver_handle,
+                cancellation->internal_op);
+    }
+    globus_mutex_unlock(&globus_i_xio_http_cancel_mutex);
+}
+/* globus_l_xio_http_read_timeout_callback() */

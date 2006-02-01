@@ -49,6 +49,15 @@ typedef enum
 }
 globus_i_xio_http_parse_state_t;
 
+typedef struct
+{
+    struct globus_i_xio_http_handle_s * http_handle;
+    globus_xio_operation_t              user_read_op;
+    globus_xio_operation_t              internal_op;
+    globus_xio_driver_handle_t          driver_handle;
+}
+globus_i_xio_http_cancellation_t;
+
 #define GLOBUS_XIO_HTTP_COPY_BLOB(fifo, blob, len, label) \
     do { \
         result = globus_i_xio_http_copy_blob(fifo, blob, len); \
@@ -267,7 +276,7 @@ typedef struct
 }
 globus_i_xio_http_response_t;
 
-typedef struct
+typedef struct globus_i_xio_http_handle_s
 {
     /**
      * Information about the target this handle is associated with.
@@ -373,6 +382,11 @@ typedef struct
      * Lock for thread-safety
      */
     globus_mutex_t                      mutex;
+
+    /**
+     * Cancellation info
+     */
+    globus_i_xio_http_cancellation_t *  cancellation;
 }
 globus_i_xio_http_handle_t;
 
@@ -644,6 +658,8 @@ globus_i_xio_http_target_copy(
 /* globus_xio_http_transform.c */
 extern globus_list_t *                  globus_i_xio_http_cached_handles;
 extern globus_mutex_t                   globus_i_xio_http_cached_handle_mutex;
+extern globus_list_t *                  globus_i_xio_http_cancellable_handles;
+extern globus_mutex_t                   globus_i_xio_http_cancel_mutex;
 
 extern
 globus_result_t

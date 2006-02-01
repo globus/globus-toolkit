@@ -390,7 +390,9 @@ globus_l_xio_http_activate(void)
     rc = globus_module_activate(GLOBUS_XIO_MODULE);
 
     globus_mutex_init(&globus_i_xio_http_cached_handle_mutex, NULL);
+    globus_mutex_init(&globus_i_xio_http_cancel_mutex, NULL);
     globus_i_xio_http_cached_handles = NULL;
+    globus_i_xio_http_cancellable_handles = NULL;
     if(rc == GLOBUS_SUCCESS)
     {
         GlobusXIORegisterDriver(http);
@@ -427,6 +429,7 @@ globus_l_xio_http_deactivate(void)
     }
     globus_mutex_unlock(&globus_i_xio_http_cached_handle_mutex);
     globus_mutex_destroy(&globus_i_xio_http_cached_handle_mutex);
+    globus_mutex_destroy(&globus_i_xio_http_cancel_mutex);
 
     return globus_module_deactivate(GLOBUS_XIO_MODULE);
 }
