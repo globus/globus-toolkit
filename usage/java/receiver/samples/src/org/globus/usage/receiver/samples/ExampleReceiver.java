@@ -45,8 +45,8 @@ public class ExampleReceiver {
     public static void main(String[] args) {
         int port = 0;
         String databaseDriverClass, databaseURL, defaultTable, gftpTable;
-	String jwsCoreTable, rlsTable, gramTable, cCoreTable;
-	String rftTable;
+	String jwsCoreTable, rlsTable, gramTable, cCoreTable, gftpFilterTable;
+	String rftTable, domainsToFilter;
 	int ringBufferSize = 0;
         Properties props;
         InputStream propsIn;
@@ -75,6 +75,8 @@ public class ExampleReceiver {
             databaseURL = props.getProperty("database-url");
             defaultTable = props.getProperty("default-table");
             gftpTable = props.getProperty("gftp-table");
+	    gftpFilterTable = props.getProperty("gftp-filtered-out-table");
+	    domainsToFilter = props.getProperty("gftp-filter-domains");
 	    rftTable = props.getProperty("rft-table");
 	    jwsCoreTable = props.getProperty("jws-core-table");
 	    cCoreTable = props.getProperty("cws-core-table");
@@ -108,8 +110,8 @@ public class ExampleReceiver {
               one here, giving it the neccessary database information, and then
               register it to the receiver; it knows what to do with all
 	      incoming GFTP usage packets.*/
-            gftpHandler = new GridFTPPacketHandler(databaseURL,
-                                                   gftpTable);
+            gftpHandler = new GridFTPPacketHandler(databaseURL, gftpFilterTable,
+                                                   gftpTable, domainsToFilter);
             receiver.registerHandler(gftpHandler);
 	    
 	    /*Let's handle RFT usage packets too.  All packets that aren't
@@ -139,8 +141,6 @@ public class ExampleReceiver {
           and handler threads which will write incoming packets to the database.*/
     }
 }
-
-
 
 /*Thread used for interprocess communication, so that the receiver can be
   started/stopped/monitored remotely.  Accepts TCP socket connections on the control port.*/

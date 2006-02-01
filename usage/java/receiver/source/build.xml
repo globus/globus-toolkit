@@ -9,7 +9,7 @@
     <property environment="env"/>
     <property file="build.properties"/>
     <property file="${user.home}/build.properties"/>
-    <property name="env.GLOBUS_LOCATION" location="../../../../install"/>
+    <property name="env.GLOBUS_LOCATION" location="../../../../wsrf/install"/>
     <property name="deploy.dir" location="${env.GLOBUS_LOCATION}"/>
     <property name="gar.name" value="${package.name}.gar"/>
     <property name="jar.name" value="${package.name}.jar"/>
@@ -39,9 +39,12 @@
             debug="${java.debug}">
             <include name="**/*.java"/>
             <classpath>
+               <fileset dir="lib">
+                    <include name="**/*.jar"/>
+                </fileset>
                 <fileset dir="${deploy.dir}/lib">
                     <include name="**/*.jar"/>
-                     <exclude name="${jar.name}"/>
+                    <exclude name="${jar.name}"/>
                 </fileset>
             </classpath>
         </javac>
