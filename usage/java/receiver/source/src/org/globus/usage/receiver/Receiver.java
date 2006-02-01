@@ -21,6 +21,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.util.LinkedList;
 import java.util.ListIterator;
+import java.util.Date;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -34,8 +35,10 @@ import org.globus.usage.receiver.handlers.PacketHandler;
 public class Receiver {
     private static Log log = LogFactory.getLog(Receiver.class);
     public static final int DEFAULT_PORT = 4810;
-    private final static int RING_BUFFER_SIZE = 100;
+    private final static int RING_BUFFER_SIZE = 1024;
 
+    private Date lastResetDate;
+    
     RingBuffer theRing; /*receiver thread puts packets in here; handler
                           thread reads them out and pass them through the 
                           handlers.*/
@@ -43,7 +46,7 @@ public class Receiver {
                               the incoming packets.*/
     ReceiverThread theRecvThread;
     HandlerThread theHandleThread;
-
+    
 
     /*Creates a receiver which will listen on the given port and write
       packets to the given database.*/
@@ -61,6 +64,7 @@ public class Receiver {
         theHandleThread = new HandlerThread(handlerList, driverClass, 
 					    dburl, table, theRing);
         theHandleThread.start();
+	lastResetDate = new Date();
     }
 
     /*Constructor with no specified ringBuffer size uses default*/
@@ -112,33 +116,53 @@ public class Receiver {
         return packet;
     }
 
-    public String getStatus() {
+    public String getStatus(boolean doReset) {
 	/*Return a string with the following metadata:
-	  --Number of packets logged/ number dropped since last call
-	  --Number of packets in the ring buffer/size of ring buffer
+	  --Number of packets logged, total and in each protocol, since last
+	    call.
+	  --Number of packets unparseable
+	  --Number of packets dropped from ring buffer
+	  --Date/time from which these numbers were counted.
 	*/
 	StringBuffer buf = new StringBuffer();
-	int unparsablePackets = theHandleThread.getUnparseablePackets();
-	int packetsLogged = theHandleThread.getPacketsLogged();
-	int packetsLost = theRecvThread.getPacketsLost();
+	int unparsablePackets = this.theHandleThread.getUnparseablePackets();
+	int packetsLogged = this.theHandleThread.getPacketsLogged();
+	int packetsLost = this.theRecvThread.getPacketsLost();
 	String newline = System.getProperty("line.separator");
 
 	buf.append(packetsLogged);
-	buf.append(" packets received and successfully logged.");
+	buf.append(" packets received and successfully logged;");
 	buf.append(newline);
-	if (packetsDropped > 0) {
-	    buf.append(packetsDropped);
-	    buf.append(" packets received that could not be parsed as any known component.");
+	buf.append(unparsablePackets);
+	buf.append(" packets received that could not be parsed as any known component;");
+	buf.append(newline);
+	buf.append("And ");
+	buf.append(packetsLost);
+	buf.append(" packets were lost due to ring buffer overflow,");
+	buf.append(newline);
+	buf.append(" since ");
+	buf.append(this.lastResetDate.toString());
+	buf.append(newline);
+	buf.append("Breakdown by component:");
+	buf.append(newline);
+
+	//Now we have to loop through all registered handlers, combine the strings, append...
+	ListIterator it = handlerList.listIterator();
+	while (it.hasNext()) {
+	    PacketHandler oneHandler = (PacketHandler)it.next();
+	    buf.append(oneHandler.getStatus());
 	    buf.append(newline);
-	}
-	if (packetsLost > 0) {
-	    buf.append(packetsLost);
-	    buf.append(" packets were lost due to ring buffer overflow.");
-	    buf.append(newline);
+	    if (doReset) {
+		oneHandler.resetCounts();
+	    }
 	}
 
-	theRecvThread.resetCounts();
-	theHandleThread.resetCounts();
+	if (doReset) {
+	    theRecvThread.resetCounts();
+	    theHandleThread.resetCounts();
+	    lastResetDate = new Date();
+	}
+
 	return buf.toString();
     }
 

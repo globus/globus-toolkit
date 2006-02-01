@@ -40,7 +40,7 @@ public class DefaultPacketHandler implements PacketHandler {
     protected Connection con;
     /*Get a connection from the pool only when we need it, in handlePacket,
      to avoid monopolizing the connections.*/
-
+    protected long packetCount;
 
     /*Gets a database connection from the pool created by the HandlerThread.
      table is the name of the table in that database to write packets to.*/
@@ -48,7 +48,7 @@ public class DefaultPacketHandler implements PacketHandler {
 	//        this.dburl = dburl;
         this.table = table;
 
-
+	packetCount = 0;
     }
 
     public void finalize() {
@@ -67,9 +67,23 @@ public class DefaultPacketHandler implements PacketHandler {
         return new UsageMonitorPacket();
     }
    
+    public void resetCounts() {
+	packetCount = 0;
+    }
+
+    public String getStatus() {
+	StringBuffer output = new StringBuffer();
+	output.append(packetCount);
+	output.append(" ");
+	output.append(table);
+	output.append(" logged.");
+	return output.toString();
+    }
+ 
     public void handlePacket(UsageMonitorPacket pack) {
         PreparedStatement stmt;
 
+	packetCount ++;
         try {
 	    con = DriverManager.getConnection(HandlerThread.dbPoolName);
             log.debug("Will write this packet to database table"
@@ -83,14 +97,15 @@ public class DefaultPacketHandler implements PacketHandler {
         }
         
         catch( SQLException e ) {
+	    /*TODO: This should add to a global count returned with the email summary:
+	      database writing errors.*/
             log.error(e.getMessage());
 	    log.error("Packet contents:");
 	    showPacketContentsBinary(pack);
         }
 	try {
 	    con.close();
-	}
-	catch (SQLException e) {}
+	} catch (SQLException e) {}
 
     }
 

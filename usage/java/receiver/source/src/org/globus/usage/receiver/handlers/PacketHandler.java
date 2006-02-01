@@ -28,4 +28,6 @@ public interface PacketHandler {
     public boolean doCodesMatch(short componentCode, short versionCode);
     public UsageMonitorPacket instantiatePacket(CustomByteBuffer rawBytes);
     public void handlePacket(UsageMonitorPacket pack);
+    public void resetCounts();
+    public String getStatus();
 }
