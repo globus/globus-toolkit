@@ -274,18 +274,20 @@ public class GramUsageMonitorPacket
     public void unpackCustomFields(CustomByteBuffer buf)
     {
         super.unpackCustomFields(buf);
-
         //creationTime
         this.creationTime = new Date(buf.getLong());
 
+        //localResourceManager
+
+
         /*localResourceManager PROBLEM: How do we know how many bytes
 	to read for the localResourceManager?  The binary data after
-	the end of this text could look like more letters.  So far
-	every one has been "Fork", but we have to be ready.
-*/
+	the end of this text could look like more letters.  Solution:
+	the next byte after the end of the localResourceManager is for
+	the boolean jobCredential, so it must be either 0 or 1, which will
+	not appear in the string!*/
 
-        this.localResourceManager = buf.getUntilZeroOrOne(MAX_SCHEDULER_TYPE_SIZE);
-
+	this.localResourceManager = buf.getUntilZeroOrOne(MAX_SCHEDULER_TYPE_SIZE);
 
         //jobCredentialEndpointUsed
         this.jobCredentialEndpointUsed = (buf.get()==1?true:false);
@@ -305,14 +307,11 @@ public class GramUsageMonitorPacket
         //jobType
         this.jobType = buf.get();
 
-
         //gt2ErrorCode
         this.gt2ErrorCode = buf.getInt();
 
-
         //faultClass
         this.faultClass = buf.get();
-
     }
 
     public void display()
@@ -340,6 +339,7 @@ public class GramUsageMonitorPacket
 	ps.setShort(1, this.getComponentCode());
 	ps.setShort(2, this.getPacketVersion());
 	ps.setTimestamp(3, new Timestamp(this.getTimestamp()));
+
 	if (this.getHostIP() == null) {
 	    ps.setString(4, "unknown");
 	}

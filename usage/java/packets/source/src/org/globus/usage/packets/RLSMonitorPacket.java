@@ -52,6 +52,10 @@ public class RLSMonitorPacket extends CStylePacket {
 	super.unpackCustomFields(buf);
 	PacketFieldParser parser = parseTextSection(buf);
 
+	try {
+		senderAddress = InetAddress.getByName(parser.getString("HOSTNAME"));
+        } catch (UnknownHostException uhe) {}
+	
 	this.versionString = parser.getString("VER");
 	this.uptime = parser.getLong("UPTIME");
 	this.lrc = (parser.getInt("LRC") == 1);

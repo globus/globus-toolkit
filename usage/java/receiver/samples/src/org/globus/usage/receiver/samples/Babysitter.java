@@ -47,7 +47,7 @@ public class Babysitter {
                                         controlSocket.getInputStream()));
 
 
-	    out.println("info");
+	    out.println(args[0]);
 	    System.out.println("Got this from listener:");
 	    do {
 		result = in.readLine();

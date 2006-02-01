@@ -36,7 +36,7 @@ CREATE TABLE rft_packets(
     id SERIAL,
     component_code SMALLINT NOT NULL,
     version_code SMALLINT NOT NULL,
-    send_time DATETIME,
+    send_time TIMESTAMP,
     ip_address VARCHAR(64) NOT NULL,
     request_type SMALLINT NOT NULL,
     number_of_files BIGINT,
@@ -58,6 +58,9 @@ CREATE TABLE gftp_summaries(
     avg_size BIGINT,
     avg_time BIGINT,
     avg_speed BIGINT,
+    size_stddev DOUBLE PRECISION,
+    time_stddev DOUBLE PRECISION,
+    speed_stddev DOUBLE PRECISION,
     PRIMARY KEY (id)
 );
 
@@ -65,7 +68,7 @@ CREATE TABLE java_ws_core_packets(
     id SERIAL,
     component_code SMALLINT NOT NULL,
     version_code SMALLINT NOT NULL,
-    send_time DATETIME,
+    send_time TIMESTAMP,
     ip_address VARCHAR(64) NOT NULL,
     container_id INT,
     container_type SMALLINT,
@@ -77,9 +80,9 @@ CREATE TABLE gram_packets(
     id SERIAL,
     component_code SMALLINT NOT NULL,
     version_code SMALLINT NOT NULL,
-    send_time DATETIME,
+    send_time TIMESTAMP,
     ip_address VARCHAR(64) NOT NULL,
-    creation_time DATETIME,
+    creation_time TIMESTAMP,
     scheduler_type VARCHAR(20),
     job_credential_endpoint_used BOOLEAN,
     file_stage_in_used BOOLEAN,
@@ -96,7 +99,7 @@ CREATE TABLE c_ws_core_packets(
     id SERIAL,
     component_code SMALLINT NOT NULL,
     version_code SMALLINT NOT NULL,
-    send_time DATETIME,
+    send_time TIMESTAMP,
     ip_address VARCHAR(64) NOT NULL
 );
 
@@ -104,7 +107,7 @@ CREATE TABLE rls_packets(
     id SERIAL,
     component_code SMALLINT NOT NULL,
     version_code SMALLINT NOT NULL,
-    send_time DATETIME,
+    send_time TIMESTAMP,
     ip_address VARCHAR(64) NOT NULL,
     rls_version VARCHAR(64),
     uptime BIGINT,
@@ -123,8 +126,8 @@ CREATE TABLE rls_packets(
 );
 
 CREATE TABLE graph_image_files(
-    start_time DATETIME,
-    end_time DATETIME,
+    start_time TIMESTAMP,
+    end_time TIMESTAMP,
     granularity INT,
     graph_type INT,
     graph_quant INT,
