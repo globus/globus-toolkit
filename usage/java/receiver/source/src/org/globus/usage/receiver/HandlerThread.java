@@ -75,7 +75,7 @@ public class HandlerThread extends Thread {
 	}
     }
 
-    private void setUpDatabaseConnectionPool(String dburl) {
+    private void setUpDatabaseConnectionPool(String dburl) throws Exception {
 	/*Set up database connection pool:  all handlers which need a 
 	  database connection (which, so far, is all handlers) can take
 	  connections from this pool.*/
@@ -191,7 +191,8 @@ public class HandlerThread extends Thread {
 
 	try {
 	    PoolingDriver driver = (PoolingDriver)DriverManager.getDriver("jdbc:apache:commons:dbcp:");
-	    driver.closePool("usagestats");
+            // FIXME: this only works with newer dbcp library
+	    // driver.closePool("usagestats");
 	}
 	catch(Exception e) {
 	    log.warn(e.getMessage());
