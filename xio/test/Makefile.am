@@ -32,6 +32,7 @@ test_PROGRAMS=                          \
 	http_put_test			\
 	http_get_test			\
 	http_pingpong_test		\
+	http_timeout_test 		\
 	http_throughput_test
 
 Data =                                  \
@@ -65,6 +66,7 @@ Scripts = 				\
 	http-post-test.pl		\
 	http-put-test.pl		\
         http-pingpong-test.pl		\
+	http-timeout-test.pl		\
 	http-throughput-test.pl		\
 	test-common.pl                  \
 	run-http-tests.pl               \
@@ -100,8 +102,14 @@ http_get_test_LDFLAGS = $(GPT_LDFLAGS)
 http_pingpong_test_SOURCES = http_pingpong_test.c $(HTTP_PERFORMANCE_Sources)
 http_pingpong_test_LDFLAGS = $(GPT_LDFLAGS)
 
+http_timeout_test_SOURCES = http_timeout_test.c $(HTTP_COMMON_Sources)
+http_timeout_test_LDFLAGS = $(GPT_LDFLAGS)
+
 http_throughput_test_SOURCES = http_throughput_test.c $(HTTP_PERFORMANCE_Sources)
 http_throughput_test_LDFLAGS = $(GPT_LDFLAGS)
+
+http_timeout_test_SOURCES = http_timeout_test.c $(HTTP_COMMON_Sources) 		
+http_timeout_test_LDFLAGS = $(GPT_LDFLAGS)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

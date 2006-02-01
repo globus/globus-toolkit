@@ -36,7 +36,9 @@ unlink("test_results.txt");
             http-put-test.pl
             http-get-test.pl
 	    http-pingpong-test.pl
+            http-timeout-test.pl
 	    http-throughput-test.pl
+            http-timeout-test.pl
             );
 
 my $runserver;
