@@ -178,9 +178,18 @@ class ControlSocketThread extends Thread {
 	    try {
 		clientSocket = serverSocket.accept();
 		out = new PrintWriter(clientSocket.getOutputStream(), true);
-		//in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+		in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 
-		out.println(receiver.getStatus());
+                inputLine = new String(in.readLine());
+                if (inputLine.equals("check")) {
+                    out.println(receiver.getStatus(false));
+                }
+                if (inputLine.equals("clear")) {
+                    out.println(receiver.getStatus(true));
+                }
+                if (inputLine.equals("stop")) {
+                    allShutDown();
+                }
 		out.close();
 	    } catch (IOException e) {
 		log.error("Accept failed on port " + controlPort);
