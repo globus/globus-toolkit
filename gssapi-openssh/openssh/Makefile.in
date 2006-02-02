@@ -139,7 +139,7 @@ sshd$(EXEEXT): libssh.a	$(LIBCOMPAT) $(SSHDOBJS)
 	$(LD) -o $@ $(SSHDOBJS) $(LDFLAGS) -lssh -lopenbsd-compat $(LIBWRAP) $(LIBPAM) $(LIBS)
 
 scp$(EXEEXT): $(LIBCOMPAT) libssh.a scp.o progressmeter.o
-	$(LD) -o $@ scp.o progressmeter.o $(LDFLAGS) -lssh -lopenbsd-compat $(LIBS)
+	$(LD) -o $@ scp.o progressmeter.o bufaux.o $(LDFLAGS) -lssh -lopenbsd-compat $(LIBS)
 
 ssh-add$(EXEEXT): $(LIBCOMPAT) libssh.a ssh-add.o
 	$(LD) -o $@ ssh-add.o $(LDFLAGS) -lssh -lopenbsd-compat $(LIBS)
