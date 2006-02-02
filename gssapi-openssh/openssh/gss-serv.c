@@ -1,4 +1,4 @@
-/*	$OpenBSD: gss-serv.c,v 1.8 2005/08/30 22:08:05 djm Exp $	*/
+/*	$OpenBSD: gss-serv.c,v 1.13 2005/10/13 22:24:31 stevesk Exp $	*/
 
 /*
  * Copyright (c) 2001-2003 Simon Wilkinson. All rights reserved.
@@ -43,8 +43,6 @@
 #include "getput.h"
 
 #include "ssh-gss.h"
-
-extern ServerOptions options;
 
 static ssh_gssapi_client gssapi_client =
     { GSS_C_EMPTY_BUFFER, GSS_C_EMPTY_BUFFER,
@@ -126,7 +124,7 @@ ssh_gssapi_supported_oids(gss_OID_set *oidset)
  *    oid
  *    credentials	(from ssh_gssapi_acquire_cred)
  */
-/* Priviledged */
+/* Privileged */
 OM_uint32
 ssh_gssapi_accept_ctx(Gssctxt *ctx, gss_buffer_desc *recv_tok,
     gss_buffer_desc *send_tok, OM_uint32 *flags)
@@ -178,7 +176,7 @@ ssh_gssapi_parse_ename(Gssctxt *ctx, gss_buffer_t ename, gss_buffer_t name)
 	OM_uint32 offset;
 	OM_uint32 oidl;
 
-	tok=ename->value;
+	tok = ename->value;
 
 #ifdef GSI /* GSI gss_export_name() is broken. */
 	if ((ctx->oid->length == gssapi_gsi_mech.oid.length) &&
@@ -196,7 +194,7 @@ ssh_gssapi_parse_ename(Gssctxt *ctx, gss_buffer_t ename, gss_buffer_t name)
 	 * header, and that the initial ID bytes are correct
 	 */
 
-	if (ename->length<6 || memcmp(tok,"\x04\x01", 2)!=0)
+	if (ename->length < 6 || memcmp(tok, "\x04\x01", 2) != 0)
 		return GSS_S_FAILURE;
 
 	/*
@@ -215,7 +213,7 @@ ssh_gssapi_parse_ename(Gssctxt *ctx, gss_buffer_t ename, gss_buffer_t name)
 	 */
 	if (tok[4] != 0x06 || tok[5] != oidl ||
 	    ename->length < oidl+6 ||
-	    !ssh_gssapi_check_oid(ctx,tok+6,oidl))
+	    !ssh_gssapi_check_oid(ctx, tok+6, oidl))
 		return GSS_S_FAILURE;
 
 	offset = oidl+6;
@@ -230,7 +228,7 @@ ssh_gssapi_parse_ename(Gssctxt *ctx, gss_buffer_t ename, gss_buffer_t name)
 		return GSS_S_FAILURE;
 
 	name->value = xmalloc(name->length+1);
-	memcpy(name->value,tok+offset,name->length);
+	memcpy(name->value, tok+offset,name->length);
 	((char *)name->value)[name->length] = 0;
 
 	return GSS_S_COMPLETE;
@@ -239,7 +237,7 @@ ssh_gssapi_parse_ename(Gssctxt *ctx, gss_buffer_t ename, gss_buffer_t name)
 /* Extract the client details from a given context. This can only reliably
  * be called once for a context */
 
-/* Priviledged (called from accept_secure_ctx) */
+/* Privileged (called from accept_secure_ctx) */
 OM_uint32
 ssh_gssapi_getclient(Gssctxt *ctx, ssh_gssapi_client *client)
 {
@@ -314,15 +312,14 @@ ssh_gssapi_do_child(char ***envp, u_int *envsizep)
 
 	if (gssapi_client.store.envvar != NULL &&
 	    gssapi_client.store.envval != NULL) {
-
 		debug("Setting %s to %s", gssapi_client.store.envvar,
-		gssapi_client.store.envval);
+		    gssapi_client.store.envval);
 		child_set_env(envp, envsizep, gssapi_client.store.envvar,
 		    gssapi_client.store.envval);
 	}
 }
 
-/* Priviledged */
+/* Privileged */
 int
 ssh_gssapi_userok(char *user)
 {

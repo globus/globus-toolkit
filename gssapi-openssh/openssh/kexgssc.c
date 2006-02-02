@@ -54,6 +54,7 @@ kexgss_client(Kex *kex) {
 	BIGNUM *g = NULL;	
 	unsigned char *kbuf;
 	unsigned char *hash;
+	unsigned int hashlen;
 	unsigned char *serverhostkey = NULL;
 	char *msg;
 	char *lang;
@@ -244,7 +245,9 @@ kexgss_client(Kex *kex) {
 	xfree(kbuf);
 
 	if (gex) {
-		hash = kexgex_hash( kex->client_version_string,
+		kexgex_hash(
+		    kex->evp_md,
+		    kex->client_version_string,
 		    kex->server_version_string,
 		    buffer_ptr(&kex->my), buffer_len(&kex->my),
 		    buffer_ptr(&kex->peer), buffer_len(&kex->peer),
@@ -253,18 +256,20 @@ kexgss_client(Kex *kex) {
 		    dh->p, dh->g,
 		    dh->pub_key,
 		    dh_server_pub,
-		    shared_secret
+		    shared_secret,
+		    &hash, &hashlen
 		);
 	} else {
 		/* The GSS hash is identical to the DH one */
-		hash = kex_dh_hash( kex->client_version_string, 
+		kex_dh_hash( kex->client_version_string, 
 		    kex->server_version_string,
 		    buffer_ptr(&kex->my), buffer_len(&kex->my),
 		    buffer_ptr(&kex->peer), buffer_len(&kex->peer),
 		    serverhostkey, slen, /* server host key */
 		    dh->pub_key,	/* e */
 		    dh_server_pub,	/* f */
-		    shared_secret	/* K */
+		    shared_secret,	/* K */
+		    &hash, &hashlen
 		);
         }
 
@@ -294,7 +299,7 @@ kexgss_client(Kex *kex) {
 	else
 		ssh_gssapi_delete_ctx(&ctxt);
 
-	kex_derive_keys(kex, hash, shared_secret);
+	kex_derive_keys(kex, hash, hashlen, shared_secret);
 	BN_clear_free(shared_secret);
 	kex_finish(kex);
 }

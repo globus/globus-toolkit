@@ -450,6 +450,10 @@ struct winsize {
 # define __sentinel__
 #endif
 
+#if !defined(HAVE_ATTRIBUTE__BOUNDED__) && !defined(__bounded__)
+# define __bounded__(x, y, z)
+#endif
+
 /* *-*-nto-qnx doesn't define this macro in the system headers */
 #ifdef MISSING_HOWMANY
 # define howmany(x,y)	(((x)+((y)-1))/(y))
@@ -688,7 +692,7 @@ struct winsize {
 # define CUSTOM_SYS_AUTH_PASSWD 1
 #endif
 
-#if defined(HAVE_LIBIAF)  &&  !defined(BROKEN_LIBIAF)
+#ifdef HAVE_LIBIAF
 # define CUSTOM_SYS_AUTH_PASSWD 1
 #endif
 
@@ -709,6 +713,14 @@ struct winsize {
 
 #if defined(HAVE_MMAP) && defined(BROKEN_MMAP)
 # undef HAVE_MMAP
+#endif
+
+/* some system headers on HP-UX define YES/NO */
+#ifdef YES
+# undef YES
+#endif
+#ifdef NO
+# undef NO
 #endif
 
 #endif /* _DEFINES_H */

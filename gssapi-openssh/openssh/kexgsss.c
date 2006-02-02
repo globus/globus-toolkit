@@ -58,7 +58,7 @@ kexgss_server(Kex *kex)
 	gss_buffer_desc gssbuf, recv_tok, msg_tok;
 	gss_buffer_desc send_tok = GSS_C_EMPTY_BUFFER;
 	Gssctxt *ctxt = NULL;
-	unsigned int klen, kout;
+	unsigned int klen, kout, hashlen;
 	unsigned char *kbuf, *hash;
 	DH *dh;
 	int min = -1, max = -1, nbits = -1;
@@ -194,7 +194,8 @@ kexgss_server(Kex *kex)
 	xfree(kbuf);
 
 	if (gex) {
-		hash = kexgex_hash(
+		kexgex_hash(
+		    kex->evp_md,
 		    kex->client_version_string, kex->server_version_string,
 		    buffer_ptr(&kex->peer), buffer_len(&kex->peer),
 		    buffer_ptr(&kex->my), buffer_len(&kex->my),
@@ -203,17 +204,19 @@ kexgss_server(Kex *kex)
 		    dh->p, dh->g,
 		    dh_client_pub,
 		    dh->pub_key,
-		    shared_secret
+		    shared_secret,
+		    &hash, &hashlen
 		);
 	}
 	else {	
 		/* The GSSAPI hash is identical to the Diffie Helman one */
-		hash = kex_dh_hash(
+		kex_dh_hash(
 		    kex->client_version_string, kex->server_version_string,
 		    buffer_ptr(&kex->peer), buffer_len(&kex->peer),
 		    buffer_ptr(&kex->my), buffer_len(&kex->my),
 		    NULL, 0, /* Change this if we start sending host keys */
-		    dh_client_pub, dh->pub_key, shared_secret
+		    dh_client_pub, dh->pub_key, shared_secret,
+		    &hash, &hashlen
 		);
 	}
 	BN_free(dh_client_pub);
@@ -252,7 +255,7 @@ kexgss_server(Kex *kex)
 
 	DH_free(dh);
 
-	kex_derive_keys(kex, hash, shared_secret);
+	kex_derive_keys(kex, hash, hashlen, shared_secret);
 	BN_clear_free(shared_secret);
 	kex_finish(kex);
 }
