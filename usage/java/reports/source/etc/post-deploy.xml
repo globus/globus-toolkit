@@ -42,6 +42,12 @@ Build Instructions:
             <property name="class.name" 
                 value="org.globus.usage.report.ContainerReport"/>
         </ant>
+        <ant antfile="${build.launcher}" 
+             target="generateLauncher">
+            <property name="launcher-name" value="jwscore-container-up-report"/>
+            <property name="class.name" 
+                value="org.globus.usage.report.ContainerUpReport"/>
+        </ant>
     </target>
         
 </project>
