@@ -223,10 +223,7 @@ strdup(const char *str)
 	len = strlen(str) + 1;
 	cp = malloc(len);
 	if (cp != NULL)
-		if (strlcpy(cp, str, len) != len) {
-			free(cp);
-			return NULL;
-		}
-	return cp;
+		return(memcpy(cp, str, len));
+	return NULL;
 }
 #endif
