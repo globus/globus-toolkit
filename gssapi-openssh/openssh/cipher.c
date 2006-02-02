@@ -151,8 +151,8 @@ ciphers_valid(const char *names)
 	for ((p = strsep(&cp, CIPHER_SEP)); p && *p != '\0';
 	    (p = strsep(&cp, CIPHER_SEP))) {
 		c = cipher_by_name(p);
-		if (c == NULL || (c->number != SSH_CIPHER_SSH2 && 
-c->number != SSH_CIPHER_NONE)) {
+		if (c == NULL || (c->number != SSH_CIPHER_SSH2 &&
+				  c->number != SSH_CIPHER_NONE)) {
 			debug("bad cipher %s [%s]", p, names);
 			xfree(cipher_list);
 			return 0;
