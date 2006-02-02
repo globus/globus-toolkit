@@ -57,6 +57,7 @@ typedef struct {
 	int     compression_level;	/* Compression level 1 (fast) to 9
 					 * (best). */
 	int     tcp_keep_alive;	/* Set SO_KEEPALIVE. */
+        int     tcp_rcv_buf; /* user switch to set tcp recv buffer */
 	LogLevel log_level;	/* Level for logging. */
 
 	int     port;		/* Port to connect. */
@@ -102,6 +103,7 @@ typedef struct {
 
 	int	enable_ssh_keysign;
 	int	rekey_limit;
+	int	none_switch;
 	int	no_host_authentication_for_localhost;
 	int	identities_only;
 	int	server_alive_interval;

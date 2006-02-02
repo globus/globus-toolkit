@@ -288,6 +288,7 @@ channel_new(char *ctype, int type, int rfd, int wfd, int efd,
 	c->local_window_max = window;
 	c->local_consumed = 0;
 	c->local_maxpacket = maxpack;
+	c->dynamic_window = 0;
 	c->remote_id = -1;
 	c->remote_name = xstrdup(remote_name);
 	c->remote_window = 0;
@@ -748,9 +749,9 @@ static void
 channel_pre_open(Channel *c, fd_set * readset, fd_set * writeset)
 {
 	u_int limit = compat20 ? c->remote_window : packet_get_maxsize();
-
+	
 	/* check buffer limits */
-	limit = MIN(limit, (BUFFER_MAX_LEN - BUFFER_MAX_CHUNK - CHAN_RBUF));
+	limit = MIN(limit, (BUFFER_MAX_HPN_LEN - BUFFER_MAX_CHUNK - CHAN_RBUF));
 
 	if (c->istate == CHAN_INPUT_OPEN &&
 	    limit > 0 &&
@@ -1615,14 +1616,29 @@ channel_check_window(Channel *c)
 	    !(c->flags & (CHAN_CLOSE_SENT|CHAN_CLOSE_RCVD)) &&
 	    c->local_window < c->local_window_max/2 &&
 	    c->local_consumed > 0) {
+		u_int32_t tcpwinsz = 0;
+		socklen_t optsz = sizeof(tcpwinsz);
+		int ret = -1;
+		u_int32_t addition = 0;
+		if (c->dynamic_window) {
+			ret = getsockopt(packet_get_connection_in(), 
+				SOL_SOCKET, SO_RCVBUF, &tcpwinsz, &optsz);
+			if ((ret == 0) && tcpwinsz > BUFFER_MAX_HPN_LEN) 
+				tcpwinsz = BUFFER_MAX_HPN_LEN;
+		}
+		if (c->dynamic_window && (ret == 0) && 
+		    (tcpwinsz > c->local_window_max)) {
+			addition = tcpwinsz - c->local_window_max;
+			c->local_window_max += addition;
+		}
 		packet_start(SSH2_MSG_CHANNEL_WINDOW_ADJUST);
 		packet_put_int(c->remote_id);
-		packet_put_int(c->local_consumed);
+		packet_put_int(c->local_consumed + addition);
 		packet_send();
 		debug2("channel %d: window %d sent adjust %d",
 		    c->self, c->local_window,
 		    c->local_consumed);
-		c->local_window += c->local_consumed;
+		c->local_window += c->local_consumed + addition;
 		c->local_consumed = 0;
 	}
 	return 1;
