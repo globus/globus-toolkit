@@ -91,20 +91,18 @@ libglobus_gridftp_server___GLOBUS_FLAVOR_NAME__la_LIBADD = \
 # <directory_name>dir
 
 sbin_PROGRAMS= \
-	globus-gridftp-server \
-	globus-gridftp-server-embedded
+	globus-gridftp-server 
 	
 # _SOURCES is an automake macro which contains
 # a list of sources needed to compile the library.
 globus_gridftp_server_SOURCES = globus_gridftp_server.c
-globus_gridftp_server_embedded_SOURCES = globus_gridftp_server_embedded.c
+
 # _LDFLAGS is an automake macro which contains
 # directives to the linker add before the list of objects and libraries.
 # 
 # GPT_LDFLAGS is a macro that contains the linker directives GPT generated 
 # from the dependent packages
 globus_gridftp_server_LDFLAGS = $(LDFLHACK) $(GPT_LDFLAGS)
-globus_gridftp_server_embedded_LDFLAGS = $(LDFLHACK) $(GPT_LDFLAGS)
 
 # _LDADD is an automake macro which contains
 # directives to the linker added after the list of objects.  
@@ -113,10 +111,6 @@ globus_gridftp_server_embedded_LDFLAGS = $(LDFLHACK) $(GPT_LDFLAGS)
 # GPT_PGM_LINKS is a macro that contains the linker directives GPT generated 
 # from the dependent packages
 globus_gridftp_server_LDADD = \
-        ./libglobus_gridftp_server_$(GLOBUS_FLAVOR_NAME).la \
-        $(GPT_PGM_LINKS)
-
-globus_gridftp_server_embedded_LDADD = \
         ./libglobus_gridftp_server_$(GLOBUS_FLAVOR_NAME).la \
         $(GPT_PGM_LINKS)
 

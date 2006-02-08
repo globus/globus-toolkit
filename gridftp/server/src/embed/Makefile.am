@@ -1,8 +1,7 @@
 include $(top_srcdir)/globus_automake_pre
 include $(top_srcdir)/globus_automake_pre_top
 
-EXTRA_DIST = \
-	version.h.in \
+EXTRA_DIST =
 
 # INCLUDES is an automake macro which contains 
 # the include directives (-I..) for the compiler.
