@@ -4,8 +4,9 @@ include $(top_srcdir)/globus_automake_pre_top
 # SUBDIRS is an automake macro which contains 
 # the list of subdirectories that have Makefile.am's
 SUBDIRS = \
-	pkgdata \
 	modules \
+	.       \
+	pkgdata \
 	doxygen
 
 EXTRA_DIST = \
@@ -71,7 +72,10 @@ libglobus_gridftp_server___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
 # 
 # GPT_LIB_LINKS is a macro that contains the linker directives GPT generated 
 # from the dependent packages
-libglobus_gridftp_server___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS)
+libglobus_gridftp_server___GLOBUS_FLAVOR_NAME__la_LIBADD = \
+    $(MODULE_LIBS) \
+    $(GPT_LIB_LINKS)
+
 
 # bin_PROGRAMS is an automake macro which contains
 # a list of programs that are to be installed in a certain directory.
@@ -105,7 +109,6 @@ globus_gridftp_server_LDFLAGS = $(LDFLHACK) $(GPT_LDFLAGS)
 # from the dependent packages
 globus_gridftp_server_LDADD = \
         ./libglobus_gridftp_server_$(GLOBUS_FLAVOR_NAME).la \
-        $(MODULE_LIBS) \
         $(GPT_PGM_LINKS)
 
 include $(top_srcdir)/globus_automake_post

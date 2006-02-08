@@ -4008,6 +4008,10 @@ globus_gsi_sysconfig_get_username_unix(
     /* the below seems to be fairly portable */
 #ifdef _SC_GETPW_R_SIZE_MAX
     buf_len = sysconf(_SC_GETPW_R_SIZE_MAX) + 1;
+    if(buf_len < 1)
+    {
+        buf_len = 1024;
+    }
 #else
     buf_len = 1024;
 #endif
@@ -4429,6 +4433,10 @@ globus_gsi_sysconfig_get_home_dir_unix(
     
 #ifdef _SC_GETPW_R_SIZE_MAX
     buf_len = sysconf(_SC_GETPW_R_SIZE_MAX) + 1;
+    if(buf_len < 1)
+    {
+        buf_len = 1024;
+    }
 #else
     buf_len = 1024;
 #endif

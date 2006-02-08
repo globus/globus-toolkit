@@ -22,14 +22,9 @@
 #include <pwd.h>
 #include <grp.h>
 
-#define USER_NAME_MAX   64
 #define FTP_SERVICE_NAME "file"
-
-#if defined(_SC_GETPW_R_SIZE_MAX)
-#define GSC_GETPW_PWBUFSIZE         _SC_GETPW_R_SIZE_MAX
-#else
+#define USER_NAME_MAX   64
 #define GSC_GETPW_PWBUFSIZE        (USER_NAME_MAX*3)+(PATH_MAX*2)
-#endif
 
 #define GFSDataOpDec(_op, _d_op, _d_s)                                  \
 do                                                                      \
