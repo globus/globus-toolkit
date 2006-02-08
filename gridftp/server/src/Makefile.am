@@ -118,7 +118,6 @@ globus_gridftp_server_LDADD = \
 
 globus_gridftp_server_embedded_LDADD = \
         ./libglobus_gridftp_server_$(GLOBUS_FLAVOR_NAME).la \
-        $(MODULE_LIBS) \
         $(GPT_PGM_LINKS)
 
 include $(top_srcdir)/globus_automake_post
