@@ -343,9 +343,6 @@ main(int argc, char **argv)
 		case 'R':
 		  addargs(&args, "-r%s", optarg);
 		  break;
-		case 'w':
-		  addargs(&args, "-w%s", optarg);
-		  break;
 		default:
 			usage();
 		}

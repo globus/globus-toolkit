@@ -242,7 +242,6 @@ main(int ac, char **av)
 
 	/* Parse command-line arguments. */
 	host = NULL;
-
 	/* need to set options.tcp_rcv_buf to 0 */
 	options.tcp_rcv_buf = 0;
 
@@ -497,6 +496,9 @@ again:
 			break;
 		case 'b':
 			options.bind_address = optarg;
+		case 'F':
+			config = optarg;
+			break;
 		case 'r':
 		        options.tcp_rcv_buf = atoi(optarg) * 1024;
 		        break;
@@ -506,9 +508,6 @@ again:
 			if (!no_tty_flag) {
 				options.none_switch = 1;
 			}
-			break;
-		case 'F':
-			config = optarg;
 			break;
 
 		default:
@@ -1180,7 +1179,6 @@ ssh_session2_open(void)
 	    "session", SSH_CHANNEL_OPENING, in, out, err,
 	    window, packetmax, CHAN_EXTENDED_WRITE,
 	    "client-session", /*nonblock*/0);
-
 	if (!tty_flag && (!(datafellows & SSH_BUG_LARGEWINDOW))) {
 		c->dynamic_window = 1;
 	}

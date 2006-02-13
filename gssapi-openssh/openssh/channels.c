@@ -749,7 +749,7 @@ static void
 channel_pre_open(Channel *c, fd_set * readset, fd_set * writeset)
 {
 	u_int limit = compat20 ? c->remote_window : packet_get_maxsize();
-
+	
 	/* check buffer limits */
 	limit = MIN(limit, (BUFFER_MAX_HPN_LEN - BUFFER_MAX_CHUNK - CHAN_RBUF));
 
