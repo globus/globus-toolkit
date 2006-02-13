@@ -157,12 +157,13 @@ static void
 usage(void)
 {
 	fprintf(stderr,
-"usage: ssh [-1246AaCfgkMNnqsTtVvXxY] [-b bind_address] [-c cipher_spec]\n"
+"usage: ssh [-1246AaCfgkMNnqrsTtVvXxY] [-b bind_address] [-c cipher_spec]\n"
 "           [-D [bind_address:]port] [-e escape_char] [-F configfile]\n"
 "           [-i identity_file] [-L [bind_address:]port:host:hostport]\n"
 "           [-l login_name] [-m mac_spec] [-O ctl_cmd] [-o option] [-p port]\n"
 "           [-R [bind_address:]port:host:hostport] [-S ctl_path]\n"
 "           [-w tunnel:tunnel] [user@]hostname [command]\n"
+"           [-r Receive Buffer Size in K]\n"
 	);
 	exit(255);
 }
@@ -241,10 +242,12 @@ main(int ac, char **av)
 
 	/* Parse command-line arguments. */
 	host = NULL;
+	/* need to set options.tcp_rcv_buf to 0 */
+	options.tcp_rcv_buf = 0;
 
 again:
 	while ((opt = getopt(ac, av,
-	    "1246ab:c:e:fgi:kl:m:no:p:qstvxACD:F:I:L:MNO:PR:S:TVw:XY")) != -1) {
+	    "1246ab:c:e:fgi:kl:m:no:p:qrstvxACD:F:I:L:MNO:PR:S:TVw:XYz")) != -1) {
 		switch (opt) {
 		case '1':
 			options.protocol = SSH_PROTO_1;
@@ -472,6 +475,7 @@ again:
 			break;
 		case 'T':
 			no_tty_flag = 1;
+			options.none_switch = 0;
 			break;
 		case 'o':
 			dummy = 1;
@@ -495,6 +499,17 @@ again:
 		case 'F':
 			config = optarg;
 			break;
+		case 'r':
+		        options.tcp_rcv_buf = atoi(optarg) * 1024;
+		        break;
+		case 'z':
+			/* make sure we can't turn on the none_switch */
+			/* if they try to force a no tty flag on a tty session */
+			if (!no_tty_flag) {
+				options.none_switch = 1;
+			}
+			break;
+
 		default:
 			usage();
 		}
@@ -1130,6 +1145,7 @@ ssh_session2_open(void)
 	window = CHAN_SES_WINDOW_DEFAULT;
 	packetmax = CHAN_SES_PACKET_DEFAULT;
 	if (tty_flag) {
+		window = 4*CHAN_SES_PACKET_DEFAULT;
 		window >>= 1;
 		packetmax >>= 1;
 	}
@@ -1137,7 +1153,9 @@ ssh_session2_open(void)
 	    "session", SSH_CHANNEL_OPENING, in, out, err,
 	    window, packetmax, CHAN_EXTENDED_WRITE,
 	    "client-session", /*nonblock*/0);
-
+	if (!tty_flag && (!(datafellows & SSH_BUG_LARGEWINDOW))) {
+		c->dynamic_window = 1;
+	}
 	debug3("ssh_session2_open: channel_new: %d", c->self);
 
 	channel_send_open(c->self);
