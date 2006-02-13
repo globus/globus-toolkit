@@ -1,3 +1,36 @@
+20060211
+ - (dtucker) [README] Bump release notes URL.
+ - (djm) Release 4.3p2
+
+20060208
+ - (tim) [session.c] Logout records were not updated on systems with
+   post auth privsep disabled due to bug 1086 changes. Analysis and patch
+   by vinschen at redhat.com. OK tim@, dtucker@.
+ - (dtucker) [configure.ac] Typo in Ultrix and NewsOS sections (NEED_SETPRGP
+   -> NEED_SETPGRP), reported by Berhard Simon.  ok tim@
+
+20060206
+ - (tim) [configure.ac] Remove unnecessary tests for net/if.h and 
+   netinet/in_systm.h. OK dtucker@.
+
+20060205
+ - (tim) [configure.ac] Add AC_REVISION. Add sys/time.h to lastlog.h test
+   for Solaris. OK dtucker@.
+ - (tim) [configure.ac] Bug #1149. Changes in QNX section only. Patch by
+   kraai at ftbfs.org.
+
+20060203
+ - (tim) [configure.ac] test for egrep (AC_PROG_EGREP) before first
+   AC_CHECK_HEADERS test. Without it, if AC_CHECK_HEADERS is first run
+   by a platform specific check, builtin standard includes tests will be
+   skipped on the other platforms.
+   Analysis and suggestion by vinschen at redhat.com, patch by dtucker@.
+   OK tim@, djm@.
+
+20060202
+ - (dtucker) [configure.ac] Bug #1148: Fix "crippled AES" test so that it
+   works with picky compilers.  Patch from alex.kiernan at thus.net.
+
 20060201
  - (djm) [regress/test-exec.sh] Try 'logname' as well as 'whoami' to 
    determine the user's login name - needed for regress tests on Solaris 
