@@ -2391,7 +2391,6 @@ session_exit_message(Session *s, int status)
 
 	/* disconnect channel */
 	debug("session_exit_message: release channel %d", s->chanid);
-	s->pid = 0;
 
 	/*
 	 * Adjust cleanup callback attachment to send close messages when
@@ -2453,6 +2452,7 @@ session_close_by_pid(pid_t pid, int status)
 		session_exit_message(s, status);
 	if (s->ttyfd != -1)
 		session_pty_cleanup(s);
+	s->pid = 0;
 }
 
 /*

@@ -15,6 +15,7 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 AC_INIT(OpenSSH, Portable, openssh-unix-dev@mindrot.org)
+AC_REVISION($Revision$)
 AC_CONFIG_SRCDIR([ssh.c])
 
 AC_CONFIG_HEADER(config.h)
@@ -27,6 +28,7 @@ AC_PROG_AWK
 AC_PROG_CPP
 AC_PROG_RANLIB
 AC_PROG_INSTALL
+AC_PROG_EGREP
 AC_PATH_PROG(AR, ar)
 AC_PATH_PROG(CAT, cat)
 AC_PATH_PROG(KILL, kill)
@@ -358,7 +360,7 @@ case "$host" in
 	fi
 	;;
 mips-sony-bsd|mips-sony-newsos4)
-	AC_DEFINE(NEED_SETPRGP, 1, [Need setpgrp to acquire controlling tty])
+	AC_DEFINE(NEED_SETPGRP, 1, [Need setpgrp to acquire controlling tty])
 	SONY=1
 	;;
 *-*-netbsd*)
@@ -590,18 +592,19 @@ mips-sony-bsd|mips-sony-newsos4)
 	AC_DEFINE(BROKEN_SETREGID)
 	;;
 
-*-*-nto-qnx)
+*-*-nto-qnx*)
 	AC_DEFINE(USE_PIPES)
 	AC_DEFINE(NO_X11_UNIX_SOCKETS)
 	AC_DEFINE(MISSING_NFDBITS, 1, [Define on *nto-qnx systems])
 	AC_DEFINE(MISSING_HOWMANY, 1, [Define on *nto-qnx systems])
 	AC_DEFINE(MISSING_FD_MASK, 1, [Define on *nto-qnx systems])
+	AC_DEFINE(DISABLE_LASTLOG)
 	;;
 
 *-*-ultrix*)
 	AC_DEFINE(BROKEN_GETGROUPS, 1, [getgroups(0,NULL) will return -1])
 	AC_DEFINE(BROKEN_MMAP, 1, [Ultrix mmap can't map files])
-	AC_DEFINE(NEED_SETPRGP)
+	AC_DEFINE(NEED_SETPGRP)
 	AC_DEFINE(HAVE_SYS_SYSLOG_H, 1, [Force use of sys/syslog.h on Ultrix])
 	;;
 
@@ -687,16 +690,13 @@ AC_CHECK_HEADERS( \
 	glob.h \
 	ia.h \
 	iaf.h \
-	lastlog.h \
 	limits.h \
 	login.h \
 	login_cap.h \
 	maillock.h \
 	ndir.h \
-	net/if.h \
 	netdb.h \
 	netgroup.h \
-	netinet/in_systm.h \
 	pam/pam_appl.h \
 	paths.h \
 	pty.h \
@@ -737,6 +737,13 @@ AC_CHECK_HEADERS( \
 	utmpx.h \
 	vis.h \
 )
+
+# lastlog.h requires sys/time.h to be included first on Solaris
+AC_CHECK_HEADERS(lastlog.h, [], [], [
+#ifdef HAVE_SYS_TIME_H
+# include <sys/time.h>
+#endif
+])
 
 # sys/ptms.h requires sys/stream.h to be included first on Solaris
 AC_CHECK_HEADERS(sys/ptms.h, [], [], [
@@ -1995,7 +2002,7 @@ AC_COMPILE_IFELSE(
 	[AC_LANG_SOURCE([[
 #include <string.h>
 #include <openssl/evp.h>
-int main(void) { exit(EVP_aes_192_cbc() == NULL || EVP_aes_256_cbc() == NULL)}
+int main(void) { exit(EVP_aes_192_cbc() == NULL || EVP_aes_256_cbc() == NULL);}
 	]])],
 	[
 		AC_MSG_RESULT(no)
