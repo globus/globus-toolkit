@@ -216,21 +216,36 @@ case "$host" in
 	AC_DEFINE(BROKEN_SETREGID)
 	;;
 *-*-darwin*)
-	AC_MSG_CHECKING(if we have working getaddrinfo)
-	AC_TRY_RUN([#include <mach-o/dyld.h>
-main() { if (NSVersionOfRunTimeLibrary("System") >= (60 << 16))
-		exit(0);
-	else
-		exit(1);
-}], [AC_MSG_RESULT(working)],
-	[AC_MSG_RESULT(buggy)
 	AC_DEFINE(BROKEN_GETADDRINFO, 1, [getaddrinfo is broken (if present)])],
-	[AC_MSG_RESULT(assume it is working)])
 	AC_DEFINE(SETEUID_BREAKS_SETUID)
 	AC_DEFINE(BROKEN_SETREUID)
 	AC_DEFINE(BROKEN_SETREGID)
 	AC_DEFINE_UNQUOTED(BIND_8_COMPAT, 1,
 		[Define if your resolver libs need this for getrrsetbyname])
+	AC_MSG_CHECKING(if we have the Security Authorization Session API)
+	AC_TRY_COMPILE([#include <Security/AuthSession.h>],
+		[SessionCreate(0, 0);],
+		[ac_cv_use_security_session_api="yes"
+		 AC_DEFINE(USE_SECURITY_SESSION_API, 1,
+			[platform has a Security Authorization Session API])
+		 LIBS="$LIBS -framework Security"
+		 AC_MSG_RESULT(yes)],
+		[ac_cv_use_security_session_api="no"
+		 AC_MSG_RESULT(no)])
+	AC_MSG_CHECKING(if we have an in-memory credentials cache)
+	AC_TRY_COMPILE(
+		[#include <Kerberos/Kerberos.h>],
+		[cc_context_t c;
+		 (void) cc_initialize (&c, 0, NULL, NULL);],
+		[AC_DEFINE(USE_CCAPI, 1,
+			[platform uses an in-memory credentials cache])
+		 LIBS="$LIBS -framework Security"
+		 AC_MSG_RESULT(yes)
+		 if test "x$ac_cv_use_security_session_api" = "xno"; then
+			AC_MSG_ERROR(*** Need a security framework to use the credentials cache API ***)
+		fi],
+		[AC_MSG_RESULT(no)]
+	)
 	;;
 *-*-hpux*)
 	# first we define all of the options common to all HP-UX releases
@@ -956,6 +971,152 @@ int main(void){struct dirent d;exit(sizeof(d.d_name)<=sizeof(char));}
 		AC_DEFINE(BROKEN_ONE_BYTE_DIRENT_D_NAME)
 	]
 )
+
+# Check whether the user wants GSSAPI mechglue support
+AC_ARG_WITH(mechglue,
+	[  --with-mechglue=PATH    Build with GSSAPI mechglue library],
+	[
+		AC_MSG_CHECKING(for mechglue library)
+
+		if test -e ${withval}/libgssapi.a ; then
+		    mechglue_lib=${withval}/libgssapi.a
+		elif test -e ${withval}/lib/libgssapi.a ; then
+		    mechglue_lib=${withval}/lib/libgssapi.a
+		else
+		    AC_MSG_ERROR("Can't find libgssapi in ${withval}");
+		fi
+		LIBS="$LIBS ${mechglue_lib}"
+		AC_MSG_RESULT(${mechglue_lib})
+
+		AC_CHECK_LIB(dl, dlopen, , )
+		if test $ac_cv_lib_dl_dlopen = yes; then
+		   LDFLAGS="$LDFLAGS -ldl -Wl,-Bsymbolic"
+		fi
+
+		AC_DEFINE(GSSAPI)
+		AC_DEFINE(MECHGLUE, 1, [Define this if you're building with GSSAPI MechGlue.])
+		GSSAPI="mechglue"
+
+	]
+)
+
+
+# Check whether the user wants GSI (Globus) support
+gsi_path="no"
+AC_ARG_WITH(gsi,
+	[  --with-gsi              Enable Globus GSI authentication support],
+	[
+		gsi_path="$withval"
+	]
+)
+
+AC_ARG_WITH(globus,
+	[  --with-globus           Enable Globus GSI authentication support],
+	[
+		gsi_path="$withval"
+	]
+)
+
+AC_ARG_WITH(globus-static,
+	[  --with-globus-static    Link statically with Globus GSI libraries],
+	[
+		gsi_static="-static"
+		if test "x$gsi_path" = "xno" ; then
+			gsi_path="$withval"
+		fi
+	]
+)
+
+# Check whether the user has a Globus flavor type
+globus_flavor_type="no"
+AC_ARG_WITH(globus-flavor,
+	[  --with-globus-flavor=TYPE  Specify Globus flavor type (ex: gcc32dbg)],
+	[
+		globus_flavor_type="$withval"
+		if test "x$gsi_path" = "xno" ; then
+			gsi_path="yes"
+		fi
+	]
+)
+
+if test "x$gsi_path" != "xno" ; then
+	# Globus GSSAPI configuration
+	AC_MSG_CHECKING(for Globus GSI)
+	AC_DEFINE(GSI, 1, [Define if you want GSI/Globus authentication support.])
+
+	if test "$GSSAPI" -a "$GSSAPI" != "mechglue"; then
+		AC_MSG_ERROR([Previously configured GSSAPI library conflicts with Globus GSI.])
+	fi
+	if test -z "$GSSAPI"; then
+		AC_DEFINE(GSSAPI)
+		GSSAPI="GSI"
+	fi
+
+	if test "x$gsi_path" = "xyes" ; then
+		if test -z "$GLOBUS_LOCATION" ; then
+			AC_MSG_ERROR(GLOBUS_LOCATION environment variable must be set.)
+		else
+			gsi_path="$GLOBUS_LOCATION"
+		fi
+	fi
+	GLOBUS_LOCATION="$gsi_path"
+	export GLOBUS_LOCATION
+	if test ! -d "$GLOBUS_LOCATION" ; then
+		AC_MSG_ERROR(Cannot find Globus installation.  Set GLOBUS_LOCATION environment variable.)
+	fi
+
+        if test "x$globus_flavor_type" = "xno" ; then
+                AC_MSG_ERROR(--with-globus-flavor=TYPE must be specified)
+	fi
+        if test "x$globus_flavor_type" = "xyes" ; then
+                AC_MSG_ERROR(--with-globus-flavor=TYPE must specify a flavor type)
+	fi
+
+	GLOBUS_INCLUDE="${gsi_path}/include/${globus_flavor_type}"
+	if test ! -d "$GLOBUS_INCLUDE" ; then
+		AC_MSG_ERROR(Cannot find Globus flavor-specific include directory: ${GLOBUS_INCLUDE})
+	fi
+	GSI_CPPFLAGS="-I${GLOBUS_INCLUDE}"
+	
+	if test -x ${gsi_path}/bin/globus-makefile-header ; then
+		GSI_LIBS=`${gsi_path}/bin/globus-makefile-header --flavor=${globus_flavor_type} ${gsi_static} globus_gss_assist | perl -n -e 'if (/GLOBUS_PKG_LIBS = (.*)/){print $1;}'`
+	elif test -x ${gsi_path}/sbin/globus-makefile-header ; then
+		GSI_LIBS=`${gsi_path}/sbin/globus-makefile-header --flavor=${globus_flavor_type} ${gsi_static} globus_gss_assist | perl -n -e 'if (/GLOBUS_PKG_LIBS = (.*)/){print $1;}'`
+	else
+		AC_MSG_ERROR(Cannot find globus-makefile-header: Globus installation is incomplete)
+	fi
+	if test -n "${need_dash_r}"; then
+		GSI_LDFLAGS="-L${gsi_path}/lib -R{gsi_path}/lib"
+	else
+		GSI_LDFLAGS="-L${gsi_path}/lib"
+	fi
+	if test -z "$GSI_LIBS" ; then
+		AC_MSG_ERROR(globus-makefile-header failed)
+	fi
+
+	AC_DEFINE(HAVE_GSSAPI_H)
+
+	LIBS="$LIBS $GSI_LIBS"
+	LDFLAGS="$LDFLAGS $GSI_LDFLAGS"
+	CPPFLAGS="$CPPFLAGS $GSI_CPPFLAGS"
+
+	# test that we got the libraries OK
+	AC_TRY_LINK(
+		[],
+		[],
+		[
+			AC_MSG_RESULT(yes)
+		],
+		[
+			AC_MSG_ERROR(link with Globus libraries failed)
+		]
+	)
+	INSTALL_GSISSH="yes"
+else
+	INSTALL_GSISSH=""
+fi
+AC_SUBST(INSTALL_GSISSH)
+# End Globus/GSI section
 
 AC_MSG_CHECKING([for /proc/pid/fd directory])
 if test -d "/proc/$$/fd" ; then
@@ -1720,7 +1881,9 @@ AC_ARG_WITH(ssl-dir,
 		fi
 	]
 )
+if test -z "$GSI_LIBS" ; then
 LIBS="-lcrypto $LIBS"
+fi
 AC_TRY_LINK_FUNC(RAND_add, AC_DEFINE(HAVE_OPENSSL, 1,
 	[Define if your ssl headers are included
 	with #include <openssl/header.h>]),
@@ -3039,7 +3202,21 @@ AC_ARG_WITH(kerberos5,
 			AC_CHECK_HEADER(gssapi_krb5.h, ,
 					[ CPPFLAGS="$oldCPP" ])
 
-		fi
+			# If we're using some other GSSAPI
+			if test "$GSSAPI" -a "$GSSAPI" != "mechglue"; then
+				AC_MSG_ERROR([$GSSAPI GSSAPI library conflicts with Kerberos support.  Use mechglue instead.])
+			fi
+
+			if test -z "$GSSAPI"; then
+				GSSAPI="KRB5";
+			fi
+
+			oldCPP="$CPPFLAGS"
+			CPPFLAGS="$CPPFLAGS -I${KRB5ROOT}/include/gssapi"
+			AC_CHECK_HEADER(gssapi_krb5.h, ,
+					[ CPPFLAGS="$oldCPP" ])
+
+                fi
 		if test ! -z "$need_dash_r" ; then
 			LDFLAGS="$LDFLAGS -R${KRB5ROOT}/lib"
 		fi
@@ -3056,6 +3233,42 @@ AC_ARG_WITH(kerberos5,
 			[Define this if you want to use libkafs' AFS support]))
 	fi
 	]
+)
+
+# Check whether user wants AFS_KRB5 support
+AFS_KRB5_MSG="no"
+AC_ARG_WITH(afs-krb5,
+	[  --with-afs-krb5[[=AKLOG_PATH]]  Enable aklog to get token (default=/usr/bin/aklog).],
+	[
+		if test "x$withval" != "xno" ; then
+
+			if test "x$withval" != "xyes" ; then
+				AC_DEFINE_UNQUOTED(AKLOG_PATH, "$withval",
+					[Define this if you want to use AFS/Kerberos 5 option, which runs aklog.])
+			else
+				AC_DEFINE_UNQUOTED(AKLOG_PATH,
+					"/usr/bin/aklog",
+					[Define this if you want to use AFS/Kerberos 5 option, which runs aklog.])
+			fi
+
+			if test -z "$KRB5ROOT" ; then
+				AC_MSG_WARN([AFS_KRB5 requires Kerberos 5 support, build may fail])
+			fi
+
+			LIBS="-lkrbafs -lkrb4 $LIBS"
+			if test ! -z "$AFS_LIBS" ; then
+				LIBS="$LIBS $AFS_LIBS"
+			fi
+			AC_DEFINE(AFS_KRB5, 1,
+				[Define this if you want to use AFS/Kerberos 5 option, which runs aklog.])
+			AFS_KRB5_MSG="yes"
+		fi
+	]
+)
+
+AC_ARG_WITH(session-hooks,
+        [  --with-session-hooks    Enable hooks for executing external commands                                       before/after a session],
+        [ AC_DEFINE(SESSION_HOOKS, 1, [Define this if you want support for startup/shutdown hooks]) ]
 )
 
 # Looking for programs, paths and files

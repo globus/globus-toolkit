@@ -157,12 +157,13 @@ static void
 usage(void)
 {
 	fprintf(stderr,
-"usage: ssh [-1246AaCfgkMNnqsTtVvXxY] [-b bind_address] [-c cipher_spec]\n"
+"usage: ssh [-1246AaCfgkMNnqrsTtVvXxY] [-b bind_address] [-c cipher_spec]\n"
 "           [-D [bind_address:]port] [-e escape_char] [-F configfile]\n"
 "           [-i identity_file] [-L [bind_address:]port:host:hostport]\n"
 "           [-l login_name] [-m mac_spec] [-O ctl_cmd] [-o option] [-p port]\n"
 "           [-R [bind_address:]port:host:hostport] [-S ctl_path]\n"
 "           [-w tunnel:tunnel] [user@]hostname [command]\n"
+"           [-r Receive Buffer Size in K]\n"
 	);
 	exit(255);
 }
@@ -241,10 +242,12 @@ main(int ac, char **av)
 
 	/* Parse command-line arguments. */
 	host = NULL;
+	/* need to set options.tcp_rcv_buf to 0 */
+	options.tcp_rcv_buf = 0;
 
 again:
 	while ((opt = getopt(ac, av,
-	    "1246ab:c:e:fgi:kl:m:no:p:qstvxACD:F:I:L:MNO:PR:S:TVw:XY")) != -1) {
+	    "1246ab:c:e:fgi:kl:m:no:p:qstvxACD:F:I:L:MNO:PR:S:TVw:XYz")) != -1) {
 		switch (opt) {
 		case '1':
 			options.protocol = SSH_PROTO_1;
@@ -469,9 +472,11 @@ again:
 		case 'N':
 			no_shell_flag = 1;
 			no_tty_flag = 1;
+			options.none_switch = 0;
 			break;
 		case 'T':
 			no_tty_flag = 1;
+			options.none_switch = 0;
 			break;
 		case 'o':
 			dummy = 1;
@@ -491,10 +496,20 @@ again:
 			break;
 		case 'b':
 			options.bind_address = optarg;
-			break;
 		case 'F':
 			config = optarg;
 			break;
+		case 'r':
+		        options.tcp_rcv_buf = atoi(optarg) * 1024;
+		        break;
+		case 'z':
+			/* make sure we can't turn on the none_switch */
+			/* if they try to force a no tty flag on a tty session */
+			if (!no_tty_flag) {
+				options.none_switch = 1;
+			}
+			break;
+
 		default:
 			usage();
 		}
@@ -587,6 +602,29 @@ again:
 			fatal("Can't open user config file %.100s: "
 			    "%.100s", config, strerror(errno));
 	} else  {
+	    /*
+	     * Since the config file parsing code aborts if it sees
+	     * options it doesn't recognize, allow users to put
+	     * options specific to compile-time add-ons in alternate
+	     * config files so their primary config file will
+	     * interoperate SSH versions that don't support those
+	     * options.
+	     */
+#ifdef GSSAPI
+		snprintf(buf, sizeof buf, "%.100s/%.100s.gssapi", pw->pw_dir,
+		    _PATH_SSH_USER_CONFFILE);
+		(void)read_config_file(buf, host, &options, 1);
+#ifdef GSI
+		snprintf(buf, sizeof buf, "%.100s/%.100s.gsi", pw->pw_dir,
+		    _PATH_SSH_USER_CONFFILE);
+		(void)read_config_file(buf, host, &options, 1);
+#endif
+#if defined(KRB5)
+		snprintf(buf, sizeof buf, "%.100s/%.100s.krb", pw->pw_dir,
+		    _PATH_SSH_USER_CONFFILE);
+		(void)read_config_file(buf, host, &options, 1);
+#endif
+#endif
 		snprintf(buf, sizeof buf, "%.100s/%.100s", pw->pw_dir,
 		    _PATH_SSH_USER_CONFFILE);
 		(void)read_config_file(buf, host, &options, 1);
@@ -606,8 +644,11 @@ again:
 
 	seed_rng();
 
-	if (options.user == NULL)
+	if (options.user == NULL) {
 		options.user = xstrdup(pw->pw_name);
+		options.implicit = 1;
+	}
+        else options.implicit = 0;
 
 	if (options.hostname != NULL)
 		host = options.hostname;
@@ -1130,6 +1171,7 @@ ssh_session2_open(void)
 	window = CHAN_SES_WINDOW_DEFAULT;
 	packetmax = CHAN_SES_PACKET_DEFAULT;
 	if (tty_flag) {
+		window = 4*CHAN_SES_PACKET_DEFAULT;
 		window >>= 1;
 		packetmax >>= 1;
 	}
@@ -1137,7 +1179,9 @@ ssh_session2_open(void)
 	    "session", SSH_CHANNEL_OPENING, in, out, err,
 	    window, packetmax, CHAN_EXTENDED_WRITE,
 	    "client-session", /*nonblock*/0);
-
+	if (!tty_flag && (!(datafellows & SSH_BUG_LARGEWINDOW))) {
+		c->dynamic_window = 1;
+	}
 	debug3("ssh_session2_open: channel_new: %d", c->self);
 
 	channel_send_open(c->self);

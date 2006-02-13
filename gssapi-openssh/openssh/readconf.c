@@ -108,7 +108,8 @@ typedef enum {
 	oHostKeyAlgorithms, oBindAddress, oSmartcardDevice,
 	oClearAllForwardings, oNoHostAuthenticationForLocalhost,
 	oEnableSSHKeysign, oRekeyLimit, oVerifyHostKeyDNS, oConnectTimeout,
-	oAddressFamily, oGssAuthentication, oGssDelegateCreds,
+	oAddressFamily, oGssAuthentication, oGssKeyEx, oGssDelegateCreds,
+	oGssTrustDns,
 	oServerAliveInterval, oServerAliveCountMax, oIdentitiesOnly,
 	oSendEnv, oControlPath, oControlMaster, oHashKnownHosts,
 	oTunnel, oTunnelDevice, oLocalCommand, oPermitLocalCommand,
@@ -144,10 +145,14 @@ static struct {
 	{ "afstokenpassing", oUnsupported },
 #if defined(GSSAPI)
 	{ "gssapiauthentication", oGssAuthentication },
+	{ "gssapikeyexchange", oGssKeyEx },
 	{ "gssapidelegatecredentials", oGssDelegateCreds },
+	{ "gssapitrustdns", oGssTrustDns },
 #else
 	{ "gssapiauthentication", oUnsupported },
+	{ "gssapikeyexchange", oUnsupported },
 	{ "gssapidelegatecredentials", oUnsupported },
+	{ "gssapitrustdns", oUnsupported },
 #endif
 	{ "fallbacktorsh", oDeprecated },
 	{ "usersh", oDeprecated },
@@ -416,8 +421,16 @@ parse_flag:
 		intptr = &options->gss_authentication;
 		goto parse_flag;
 
+	case oGssKeyEx:
+	    	intptr = &options->gss_keyex;
+		goto parse_flag;
+
 	case oGssDelegateCreds:
 		intptr = &options->gss_deleg_creds;
+		goto parse_flag;
+
+	case oGssTrustDns:
+		intptr = &options->gss_trust_dns;
 		goto parse_flag;
 
 	case oBatchMode:
@@ -970,7 +983,9 @@ initialize_options(Options * options)
 	options->pubkey_authentication = -1;
 	options->challenge_response_authentication = -1;
 	options->gss_authentication = -1;
+	options->gss_keyex = -1;
 	options->gss_deleg_creds = -1;
+	options->gss_trust_dns = -1;
 	options->password_authentication = -1;
 	options->kbd_interactive_authentication = -1;
 	options->kbd_interactive_devices = NULL;
@@ -1016,6 +1031,7 @@ initialize_options(Options * options)
 	options->verify_host_key_dns = -1;
 	options->server_alive_interval = -1;
 	options->server_alive_count_max = -1;
+	options->none_switch = -1;
 	options->num_send_env = 0;
 	options->control_path = NULL;
 	options->control_master = -1;
@@ -1056,9 +1072,13 @@ fill_default_options(Options * options)
 	if (options->challenge_response_authentication == -1)
 		options->challenge_response_authentication = 1;
 	if (options->gss_authentication == -1)
-		options->gss_authentication = 0;
+		options->gss_authentication = 1;
+	if (options->gss_keyex == -1)
+		options->gss_keyex = 1;
 	if (options->gss_deleg_creds == -1)
-		options->gss_deleg_creds = 0;
+		options->gss_deleg_creds = 1;
+	if (options->gss_trust_dns == -1)
+		options->gss_trust_dns = 1;
 	if (options->password_authentication == -1)
 		options->password_authentication = 1;
 	if (options->kbd_interactive_authentication == -1)
@@ -1145,6 +1165,8 @@ fill_default_options(Options * options)
 		options->server_alive_interval = 0;
 	if (options->server_alive_count_max == -1)
 		options->server_alive_count_max = 3;
+	if (options->none_switch == -1)
+	        options->none_switch = 0;
 	if (options->control_master == -1)
 		options->control_master = 0;
 	if (options->hash_known_hosts == -1)
