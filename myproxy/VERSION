@@ -5,6 +5,8 @@ Binary compatibility of the C API is not guaranteed between releases.
 Version History
 ---------------
 v3.5 XX Xxx 2006
+  - delegate credentials with minimum lifetime of 5 minutes to avoid
+    problems with clock skew
   - fixed build problem with GT 2.4/3.0 introduced in v3.4:
     EVP_MD_CTX_cleanup() wasn't in OpenSSL 0.9.6
 
