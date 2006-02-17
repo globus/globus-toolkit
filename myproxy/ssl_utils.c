@@ -1718,6 +1718,8 @@ ssl_sign(unsigned char *data, int length,
 {
    EVP_MD_CTX ctx;
 
+   EVP_MD_CTX_init(&ctx);
+
    *signature = malloc(EVP_PKEY_size(creds->private_key));
    if (*signature == NULL) {
       verror_put_string("malloc()");
@@ -1747,6 +1749,8 @@ ssl_verify(unsigned char *data, int length,
 {
    EVP_MD_CTX ctx;
    EVP_PKEY *pubkey = NULL;
+
+   EVP_MD_CTX_init(&ctx);
 
    EVP_VerifyInit(&ctx, EVP_sha1());
    EVP_VerifyUpdate(&ctx, (void*) data, length);

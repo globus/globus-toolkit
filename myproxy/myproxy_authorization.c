@@ -138,6 +138,8 @@ decrypt_cookie(const unsigned char *inbuf, int inlen,
     int offset, i;
     int return_value = -1;
 
+    EVP_MD_CTX_init(&ctx);
+
     /* base64 decode the input */
 
     if (4 * sizeof(tmpbuf) < 3 * inlen) {
