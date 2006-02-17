@@ -20,6 +20,15 @@
 #ifndef WIN32
 #include <unistd.h>
 #include <sys/stat.h>
+#else
+#include "globus_common.h" /* For POSIX struct stat support, strcasecmp() */
+#  ifndef W_OK
+#    define W_OK	2
+#  endif
+#  ifndef R_OK
+#    define R_OK	4
+#  endif
+
 #endif
 #include <errno.h>
 

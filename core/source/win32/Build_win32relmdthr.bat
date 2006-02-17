@@ -4,16 +4,17 @@ echo .
 echo . Set Environment
 echo .
 call Setenv.bat
+if ERRORLEVEL 1 goto ErrorExit
 
 echo .
 echo . Create The Build Tree If Necessary
 echo .
-md %GLobusLocation%\lib
-md %GLobusLocation%\include
-md %GLobusLocation%\include\threaded
-md %GLobusLocation%\include\nonthreaded
-md %GLobusLocation%\include\openssl
-md %GLobusLocation%\bin
+if not exist %GLobusLocation%\lib                 (md %GLobusLocation%\lib)
+if not exist %GLobusLocation%\include             (md %GLobusLocation%\include)
+if not exist %GLobusLocation%\include\threaded    (md %GLobusLocation%\include\threaded)
+if not exist %GLobusLocation%\include\nonthreaded (md %GLobusLocation%\include\nonthreaded)
+if not exist %GLobusLocation%\include\openssl     (md %GLobusLocation%\include\openssl)
+if not exist %GLobusLocation%\bin                 (md %GLobusLocation%\bin)
 
 echo .
 echo . Go To Script Home
@@ -25,6 +26,10 @@ echo . Copy Core Windows Header Files (This Is Not Handled By The Script)
 echo .
 copy %GlobusLocation%\core\source\win32\threaded\globus_config.h %GlobusLocation%\include\threaded\*.*
 copy %GlobusLocation%\core\source\win32\nonthreaded\globus_config.h %GlobusLocation%\include\nonthreaded\*.*
+@rem ==================================================================================
+@rem fixes some XIO errors because of missing version.h - need to construct build_flavor dynamically
+@rem ==================================================================================
+copy %GlobusLocation%\common\source\win32\version.h %GlobusLocation%\include\*.*
 
 echo .
 echo . Copy OpenSSL Include Files (This Is Not Handled By The Script)
@@ -47,15 +52,24 @@ echo Starting Build On %DATE% At %TIME% > BuildResults.log
 echo .
 echo . Create And Execute Build For Dynamic Release Threaded Libraries (win32relmdthr)
 echo .
-WinCVSBuild.pl %GlobusLocation% win32relmdthr 14.2
-call WinCVSBuildLibs
-call WinCVSBuildExes
+WinCVSBuild.pl %GlobusLocation% win32relmdthr %WinGlobusVersion%
+call WinCVSBuildLibs-win32relmdthr
+call WinCVSBuildExes-win32relmdthr
 
 echo .
 echo . Put A Closing Time Stamp In BuildResults.log
 echo .
 echo Completed Build On %DATE% At %TIME% >> BuildResults.log
 
+rem Normal Exit
 echo .
 echo . Done
 echo .
+exit /b 0
+
+rem Error Exit
+:ErrorExit
+echo .
+echo . The build was not run due to an Error
+echo .
+exit /b 1

@@ -11,7 +11,14 @@
 # modifications, you must include this notice in the file.
 #
 
+my $test_prog = './run-common-tests.pl';
 
-my $res = system('./run-common-tests.pl');
+# Accomodate running tests on Windows platform - remove leading './'
+if ("$^O" =~ /win32/i)
+{
+   $test_prog =~ s/(.\/)//;
+}
+
+my $res = system("$test_prog");
 exit ( $res != 0 );
 

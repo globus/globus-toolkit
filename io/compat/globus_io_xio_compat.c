@@ -11,7 +11,9 @@
 
 
 #include "globus_io.h"
+#ifndef TARGET_ARCH_WIN32
 #include <arpa/inet.h>
+#endif
 #include <gssapi.h>
 #include <globus_error_gssapi.h>
 

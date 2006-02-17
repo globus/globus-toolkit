@@ -86,10 +86,7 @@ typedef struct globus_i_thread_t
 	globus_list_t * dataDestructionKeyList;
 } globus_i_thread_t;
 
-typedef struct __globus_thread_t
-{
-	unsigned long threadID;
-} globus_thread_t;
+typedef unsigned long globus_thread_t;
 
 typedef struct __globus_threadattr_t
 {
@@ -150,7 +147,6 @@ extern int		globus_thread_setspecific(globus_thread_key_t key,
 						  void *value);
 extern void *		globus_thread_getspecific(globus_thread_key_t key);
 extern globus_thread_t	globus_thread_self(void);
-extern long globus_thread_get_threadID_as_long( void );
 extern int		globus_thread_equal(globus_thread_t t1,
 					    globus_thread_t t2);
 extern int		globus_thread_once(globus_thread_once_t *once_control,

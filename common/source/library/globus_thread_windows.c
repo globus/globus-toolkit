@@ -205,8 +205,6 @@ int globus_thread_create(
 	globus_i_thread_t * internalThread;
 
 	/* validate the data */
-	//if ( thread == NULL || func == NULL )
-		//return GLOBUS_NULL_POINTER_PARAMETER;
 	if ( func == NULL )
 		return GLOBUS_NULL_POINTER_PARAMETER;
 
@@ -236,7 +234,9 @@ int globus_thread_create(
 	{
 		free( internalThread );
 		if ( thread != NULL )
-			thread->threadID= 0;
+        {
+			*thread = 0;
+        }
 
 		globus_mutex_unlock( &internalMutex );
 
@@ -262,7 +262,7 @@ int globus_thread_create(
 	// thread ID in it
 	if ( thread != NULL )
 	{
-		thread->threadID= threadID;
+		*thread = threadID;
 	}
 
 	return 0;
@@ -301,22 +301,11 @@ globus_bool_t globus_i_am_only_thread(void)
 /*
  * globus_thread_self()
  */
-/* QUESTION: Should we dynamically create a globus_thread_t so that it can live past the
- *  return, or should we just create a struct on the stack? In order to protect against
- *  memory leaks, I suggest that we create it on the stack and insist that the user make
- *  a copy upon the immediate return from the call.  Michael Lebman, 2-4-02
-*/
 globus_thread_t globus_thread_self(void)
 {
-	globus_thread_t thread;
-	thread.threadID= GetCurrentThreadId();
-	return thread;
+	return (globus_thread_t)GetCurrentThreadId();
 } /* globus_thread_self() */
 
-long globus_thread_get_threadID_as_long( void )
-{
-	return GetCurrentThreadId();
-}
 
 /*
  * globus_thread_equal()
@@ -325,7 +314,7 @@ int globus_thread_equal(
 	globus_thread_t t1,
 	globus_thread_t t2 )
 {
-	if ( t1.threadID == t2.threadID )
+	if ( t1 == t2 )
 		return 1;
 	return 0;
 } /* globus_thread_equal() */

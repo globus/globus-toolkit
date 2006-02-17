@@ -13,6 +13,11 @@
 
 #ifndef TARGET_ARCH_WIN32
 #include <fnmatch.h>
+#else
+struct dirent
+{
+    char *d_name;
+};
 #endif
 
 

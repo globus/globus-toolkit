@@ -16,6 +16,10 @@
 #include <netinet/tcp.h>
 #endif
 
+#ifdef WIN32
+#define EADDRINUSE              WSAEADDRINUSE
+#endif
+
 #ifdef HAVE_SOCKAPI_H
 #include <sockapi.h>
 #define SOMAXCONN 5

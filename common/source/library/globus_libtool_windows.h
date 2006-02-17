@@ -75,7 +75,7 @@ LT_BEGIN_C_DECLS
 /* LT_PARAMS is a macro used to wrap function prototypes, so that compilers
    that don't understand ANSI C prototypes still work, and ANSI C
    compilers can issue warnings about type mismatches.  */
-#if defined (__STDC__) || defined (_AIX) || (defined (__mips) && defined (_SYSTYPE_SVR4)) || defined(__cplusplus)
+#if defined (__STDC__) || defined (_AIX) || (defined (__mips) && defined (_SYSTYPE_SVR4)) || defined(WIN32) || defined(__cplusplus)
 # define LT_PARAMS(protos)	protos
 # define lt_ptr		void*
 #else
@@ -209,9 +209,26 @@ extern	int	lt_dlmutex_register	LT_PARAMS((lt_dlmutex_lock *lock,
 
 
 
-
+/* LT_STMT_START/END are used to create macros which expand to a
+   a single compound statement in a portable way.  */
+#if defined (__GNUC__) && !defined (__STRICT_ANSI__) && !defined (__cplusplus)
+#  define LT_STMT_START        (void)(
+#  define LT_STMT_END          )
+#else
+#  if (defined (sun) || defined (__sun__))
+#    define LT_STMT_START      if (1)
+#    define LT_STMT_END        else (void)0
+#  else
+#    define LT_STMT_START      do
+#    define LT_STMT_END        while (0)
+#  endif
+#endif
+
+
 /* --- MEMORY HANDLING --- */
 
+#define LT_DLFREE(p)						\
+	LT_STMT_START { if (p) (p) = (free (p), (lt_ptr) 0); } LT_STMT_END
 
 /* By default, the realloc function pointer is set to our internal
    realloc implementation which iself uses lt_dlmalloc and lt_dlfree.
@@ -220,7 +237,7 @@ extern	int	lt_dlmutex_register	LT_PARAMS((lt_dlmutex_lock *lock,
    it is safe to assign just a malloc() and a free() function.  */
 LT_SCOPE  lt_ptr   (*lt_dlmalloc)	LT_PARAMS((size_t size));
 LT_SCOPE  lt_ptr   (*lt_dlrealloc)	LT_PARAMS((lt_ptr ptr, size_t size));
-LT_SCOPE  void	   (*lt_dlfree)		LT_PARAMS((lt_ptr ptr));
+LT_SCOPE  void	    (*lt_dlfree)		LT_PARAMS((lt_ptr ptr));
 
 
 
@@ -356,6 +373,7 @@ enum {
 extern	int	lt_dladderror	LT_PARAMS((const char *diagnostic));
 extern	int	lt_dlseterror	LT_PARAMS((int errorcode));
 
+#define LT_DLSTRERROR(name)	lt_dlerror_strings[LT_CONC(LT_ERROR_,name)]
 
 
 

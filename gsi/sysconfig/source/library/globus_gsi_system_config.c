@@ -88,7 +88,7 @@ const char *default_gaa_file(void);
 #endif
 
 #ifdef WIN32
-#include "winglue.h"
+#include <windows.h>
 #include <io.h>
 #else
 #ifdef HAVE_UNISTD_H

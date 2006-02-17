@@ -12,7 +12,14 @@
 #include "globus_xio_driver.h"
 #include "globus_xio_udp_driver.h"
 #include "version.h"
+
+#ifndef WIN32
 #include <netinet/udp.h>
+#endif
+
+#ifdef WIN32
+#define ENOTSUP 95
+#endif
 
 static
 int
@@ -755,7 +762,7 @@ globus_l_xio_udp_join_multicast(
 #ifdef IP_ADD_MEMBERSHIP
     if(GlobusLibcSockaddrGetFamily(attr->multicast_addr) == AF_INET)
     {
-        struct in_addr                  interface;
+        struct in_addr                  inet_address;
         struct ip_mreq                  mreq;
         globus_addrinfo_t *             addrinfo;
         globus_addrinfo_t               addrinfo_hints;
@@ -777,17 +784,17 @@ globus_l_xio_udp_join_multicast(
                 goto error_join;
             }
             
-            interface = ((struct sockaddr_in *) addrinfo->ai_addr)->sin_addr;
+            inet_address = ((struct sockaddr_in *) addrinfo->ai_addr)->sin_addr;
             globus_libc_freeaddrinfo(addrinfo);
         }
         else
         {
-            interface.s_addr = htonl(INADDR_ANY);
+            inet_address.s_addr = htonl(INADDR_ANY);
         }
         
         mreq.imr_multiaddr =
             ((struct sockaddr_in *) &attr->multicast_addr)->sin_addr;
-        mreq.imr_interface = interface;
+        mreq.imr_interface = inet_address;
         
         result = globus_xio_system_socket_setsockopt(
             fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq));

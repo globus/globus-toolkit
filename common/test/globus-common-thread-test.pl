@@ -27,6 +27,12 @@ use Test;
 
 my $test_prog = './globus_common_thread_test';
 
+# Accomodate running tests on Windows platform - remove leading './'
+if ("$^O" =~ /win32/i)
+{
+   $test_prog =~ s/(.\/)//;
+}
+
 my $diff = 'diff';
 my @tests;
 my @todo;

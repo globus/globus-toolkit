@@ -9,11 +9,11 @@ if ERRORLEVEL 1 goto ErrorExit
 echo .
 echo . Create The Build Tree If Necessary
 echo .
-md %GLobusLocation%\lib
-md %GLobusLocation%\include
-md %GLobusLocation%\include\threaded
-md %GLobusLocation%\include\nonthreaded
-md %GLobusLocation%\bin
+if not exist %GLobusLocation%\lib                 (md %GLobusLocation%\lib)
+if not exist %GLobusLocation%\include             (md %GLobusLocation%\include)
+if not exist %GLobusLocation%\include\threaded    (md %GLobusLocation%\include\threaded)
+if not exist %GLobusLocation%\include\nonthreaded (md %GLobusLocation%\include\nonthreaded)
+if not exist %GLobusLocation%\bin                 (md %GLobusLocation%\bin)
 
 echo .
 echo . Go To Script Home
@@ -25,6 +25,10 @@ echo . Copy Core Windows Header Files (This Is Not Handled By The Script)
 echo .
 copy %GlobusLocation%\core\source\win32\threaded\globus_config.h %GlobusLocation%\include\threaded\*.*
 copy %GlobusLocation%\core\source\win32\nonthreaded\globus_config.h %GlobusLocation%\include\nonthreaded\*.*
+@rem ==================================================================================
+@rem fixes some XIO errors because of missing version.h - need to construct build_flavor dynamically
+@rem ==================================================================================
+copy %GlobusLocation%\common\source\win32\version.h %GlobusLocation%\include\*.*
 
 echo .
 echo . Clear BuildResults.log And Put An Opening Stamp Into It

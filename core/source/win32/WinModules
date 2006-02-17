@@ -23,12 +23,12 @@
 # ----------
 
 ModuleType          library
-SourceLocation      \i18n\source
-Win32Location       \i18n\source\win32
-
-ModuleType          library
 SourceLocation      \common\source\library
 Win32Location       \common\source\win32
+
+    ModuleType          library
+    SourceLocation      \i18n\source
+    Win32Location       \i18n\source\win32
 
 ModuleType          library
 SourceLocation      \callout\source\library
@@ -106,9 +106,9 @@ ModuleType          library
 SourceLocation      \gsi\gaa\gaa_plugin\source
 Win32Location       \gsi\gaa\gaa_plugin\source\win32
 
-    ModuleType          library
-    SourceLocation      \gsi\gaa_callbacks\gaa_simple\source
-    Win32Location       \gsi\gaa_callbacks\gaa_simple\source\win32
+ModuleType          library
+SourceLocation      \gsi\gaa_callbacks\gaa_simple\source
+Win32Location       \gsi\gaa_callbacks\gaa_simple\source\win32
 
     ModuleType          library
     SourceLocation      \gsi\gaa_callbacks\gaa_pthread\source
@@ -119,14 +119,6 @@ SourceLocation      \gsi\gaa_callbacks\gaa_gss_generic\source
 Win32Location       \gsi\gaa_callbacks\gaa_gss_generic\source\win32
 
 ModuleType          library
-SourceLocation      \gsi\authz_null_callout\source
-Win32Location       \gsi\authz_null_callout\source\win32
-
-ModuleType          library
-SourceLocation      \gsi\authz_gaa_callout\source
-Win32Location       \gsi\authz_gaa_callout\source\win32
-
-ModuleType          library
 SourceLocation      \gsi\authz\error
 Win32Location       \gsi\authz\error\win32
 
@@ -135,44 +127,12 @@ SourceLocation      \gsi\authz\source
 Win32Location       \gsi\authz\source\win32
 
 ModuleType          library
-SourceLocation      \io\source\library
-Win32Location       \io\source\win32
+SourceLocation      \gsi\authz_null_callout\source
+Win32Location       \gsi\authz_null_callout\source\win32
 
 ModuleType          library
-SourceLocation      \gridftp\control\source
-Win32Location       \gridftp\control\source\win32
-
-ModuleType          library
-SourceLocation      \gridftp\client\source
-Win32Location       \gridftp\client\source\win32
-
-ModuleType          library
-SourceLocation      \gridftp\gridftp_driver\source
-Win32Location       \gridftp\gridftp_driver\source\win32
-
-    ModuleType          library
-    SourceLocation      \gass\transfer\source\library
-    Win32Location       \gass\transfer\source\win32
-
-    ModuleType          library
-    SourceLocation      \gass\copy\source
-    Win32Location       \gass\copy\source\win32
-
-    ModuleType          library
-    SourceLocation      \gass\server_ez\source
-    Win32Location       \gass\server_ez\source\win32
-
-    ModuleType          library
-    SourceLocation      \gass\cache\source
-    Win32Location       \gass\cache\source\win32
-
-    ModuleType          library
-    SourceLocation      \gram\protocol\source
-    Win32Location       \gram\protocol\source\win32
-
-    ModuleType          library
-    SourceLocation      \gram\client\source
-    Win32Location       \gram\client\source\win32
+SourceLocation      \gsi\authz_gaa_callout\source
+Win32Location       \gsi\authz_gaa_callout\source\win32
 
 ModuleType          library
 SourceLocation      \xio\src
@@ -218,6 +178,45 @@ ModuleType          library
 SourceLocation      \xio\src\builtins\udt
 Win32Location       \xio\src\builtins\udt\win32
 
+ModuleType          library
+SourceLocation      \io\compat
+Win32Location       \io\compat\win32
+
+ModuleType          library
+SourceLocation      \gridftp\control\source
+Win32Location       \gridftp\control\source\win32
+
+ModuleType          library
+SourceLocation      \gridftp\client\source
+Win32Location       \gridftp\client\source\win32
+
+ModuleType          library
+SourceLocation      \gridftp\gridftp_driver\source
+Win32Location       \gridftp\gridftp_driver\source\win32
+
+ModuleType          library
+SourceLocation      \gram\protocol\source
+Win32Location       \gram\protocol\source\win32
+
+    ModuleType          library
+    SourceLocation      \gram\client\source
+    Win32Location       \gram\client\source\win32
+
+ModuleType          library
+SourceLocation      \gass\transfer\source\library
+Win32Location       \gass\transfer\source\win32
+
+ModuleType          library
+SourceLocation      \gass\server_ez\source
+Win32Location       \gass\server_ez\source\win32
+
+ModuleType          library
+SourceLocation      \gass\copy\source
+Win32Location       \gass\copy\source\win32
+
+ModuleType          library
+SourceLocation      \gass\cache\source
+Win32Location       \gass\cache\source\win32
 
 
 # ------------------------------------------
@@ -286,6 +285,10 @@ Win32Location       \gsi\proxy\proxy_utils\source\programs\win32
     SourceLocation      \io\test
     Win32Location       \io\test\win32
 
-    ModuleType          executable
-    SourceLocation      \gass\copy\source
-    Win32Location       \gass\copy\source\win32
+ModuleType          executable
+SourceLocation      \gass\copy\source
+Win32Location       \gass\copy\source\win32
+
+ModuleType          executable
+SourceLocation      \xio\example
+Win32Location       \xio\example\win32

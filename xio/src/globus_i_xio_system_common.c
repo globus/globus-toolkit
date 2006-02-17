@@ -764,6 +764,8 @@ error_errno:
     return result;
 }
 
+#ifndef WIN32
+
 globus_result_t
 globus_i_xio_system_file_try_read(
     globus_xio_system_file_t            handle,
@@ -815,6 +817,8 @@ globus_i_xio_system_file_try_write(
     GlobusXIOSystemDebugExit();
     return result;
 }
+
+#endif
 
 globus_result_t
 globus_i_xio_system_socket_try_read(

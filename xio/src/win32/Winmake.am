@@ -1,7 +1,11 @@
 
+# External Library Dependencies
 LibDependencies = \
     Ws2_32.lib \
-    libglobus_common_$(GLOBUS_FLAVOR_NAME).lib 
+    libglobus_common_$(GLOBUS_FLAVOR_NAME).lib \
+    libglobus_gssapi_gsi_$(GLOBUS_FLAVOR_NAME).lib \
+    libglobus_gss_assist_$(GLOBUS_FLAVOR_NAME).lib \
+    libgssapi_error_$(GLOBUS_FLAVOR_NAME).lib
 
 Sources = \
     globus_i_xio_win32_mode.c      \
@@ -9,3 +13,7 @@ Sources = \
     globus_xio_system_win32.c      \
     globus_i_xio_win32_complete.c  \
     globus_i_xio_win32_socket.c
+
+Exclude = \    
+    globus_xio_system_select.c
+
