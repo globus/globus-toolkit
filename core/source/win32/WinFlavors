@@ -2,7 +2,8 @@
 #
 #   Windows Flavors Definition File
 #
-#       Initial Creation    12/12/2003      R. Gaffaney
+#       Initial Creation                12/12/2003      R. Gaffaney
+#       Added static nonthreaded        02/17/2003      T. Wayne
 #
 #   These are The Valid Options
 #
@@ -22,7 +23,7 @@
 #                           MD  (Multi Threaded DLL)
 #                           MDd (Multi Threaded DLL Debug)
 #
-#       Note: Keep records in these definitions together and ordered as below.
+#       Note: Keep records within flavor definitions together and ordered as below.
 #
 # -----------------------------------------------------------------------------
 
@@ -53,3 +54,17 @@ GlobusThreading     threaded
 BuildConfig         debug
 LibraryType         dynamic
 CRuntimeLib         MDd
+
+# Non-threaded Static Debug Libraries
+FlavorName          win32dbgmtd
+GlobusThreading     nonthreaded
+BuildConfig         debug
+LibraryType         static
+CRuntimeLib         MTd
+
+# Non-threaded Static Release Libraries
+FlavorName          win32relmt
+GlobusThreading     nonthreaded
+BuildConfig         release
+LibraryType         static
+CRuntimeLib         MT

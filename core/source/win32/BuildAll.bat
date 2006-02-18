@@ -45,6 +45,20 @@ WinCVSBuild.pl %GlobusLocation% win32relmtthr %WinGlobusVersion%
 call WinCVSBuildLibs-win32relmtthr.bat
 call WinCVSBuildExes-win32relmtthr.bat
 
+echo .
+echo . Create And Execute Build For Static Debug Threaded Libraries (win32dbgmtd)
+echo .
+WinCVSBuild.pl %GlobusLocation% win32dbgmtd %WinGlobusVersion%
+call WinCVSBuildLibs-win32dbgmtd.bat
+call WinCVSBuildExes-win32dbgmtd.bat
+
+echo .
+echo . Create And Execute Build For Static Release Threaded Libraries (win32relmt)
+echo .
+WinCVSBuild.pl %GlobusLocation% win32relmt %WinGlobusVersion%
+call WinCVSBuildLibs-win32relmt.bat
+call WinCVSBuildExes-win32relmt.bat
+
 rem  **************************************************************************************
 rem  Skip This Until DLL Problems Are Fixed
 rem  echo .
