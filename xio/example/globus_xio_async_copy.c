@@ -34,6 +34,7 @@ typedef struct
     globus_bool_t                       source_is_open;
     globus_object_t *                   error;
     globus_size_t                       buffer_size;
+    globus_size_t                       read_size;
     
     globus_mutex_t                      lock;
     globus_cond_t                       cond;
@@ -74,6 +75,7 @@ help()
         "-dC <contact string>   The contact string to be used for the dest\n"
         "-s                     The source is a server.\n"
         "-b <buffer size>       The buffer size to use.\n"
+        "-r <min read size>     The minimum bytes to read in each read call.\n"
         "-i                     Interactive use. Will write stdin to source.\n"
         "\n"
         "-----------------\n"
@@ -226,7 +228,7 @@ dest_write_callback(
             copy_info->source_handle,
             buffer,
             copy_info->buffer_size,
-            1,
+            copy_info->read_size,
             NULL,
             source_read_callback,
             copy_info);
@@ -351,10 +353,8 @@ dest_open_callback(
         copy_info->source_handle,
         buffer,
         copy_info->buffer_size,
-        1, /* for high throughput, you would set this to the full buffer length
-            * but, since I don't know how we're being used, I'll just wait for
-            * any data
-            */
+        copy_info->read_size,   /* for high throughput, you would
+                                   set this to the full buffer length */
         NULL,
         source_read_callback,
         copy_info);
@@ -469,6 +469,7 @@ main(
     char *                              source_cs = NULL;
     char *                              dest_cs = NULL;
     globus_size_t                       buffer_size = 64 * 1024;
+    globus_size_t                       read_size = 1;
     globus_bool_t                       source_is_server = GLOBUS_FALSE;
     globus_result_t                     result;
     int                                 i;
@@ -532,6 +533,10 @@ main(
         {
             buffer_size = atoi(argv[++i]);
         }
+        else if(strcmp(argv[i], "-r") == 0 && i + 1 < argc)
+        {
+            read_size = atoi(argv[++i]);
+        }
         else if(strcmp(argv[i], "-i") == 0)
         {
             interactive = GLOBUS_TRUE;
@@ -545,12 +550,20 @@ main(
         return 1;
     }
     
+    if(read_size > buffer_size)
+    {
+        fprintf(
+            stderr, "Error: read_size can't be larger than the buffer size\n");
+        return 1;
+    }
+
     /* set up the copy info that will be passed through all of the callbacks */
     copy_info.source_handle = NULL;
     copy_info.dest_handle = NULL;
     copy_info.source_cs = source_cs;
     copy_info.dest_cs = dest_cs;
     copy_info.buffer_size = buffer_size;
+    copy_info.read_size = read_size;
     copy_info.eof_received = GLOBUS_FALSE;
     copy_info.source_is_open = GLOBUS_FALSE;
     globus_mutex_init(&copy_info.lock, NULL);
