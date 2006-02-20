@@ -54,8 +54,6 @@ void
 globus_l_xio_win32_wakeup_handler(
     void *                              user_arg)
 {
-    int                                 rc;
-    char                                byte;
     GlobusXIOName(globus_l_xio_win32_wakeup_handler);
 
     GlobusXIOSystemDebugEnter();
@@ -174,23 +172,23 @@ error_event:
     return GLOBUS_FAILURE;
 }
 
-struct globus_l_shutdown_info_s
+typedef struct
 {
     globus_cond_t                       cond;
     globus_mutex_t                      mutex;
-};
+} globus_l_shutdown_info_t;
 
 static
 void
 globus_l_xio_win32_unregister_poll_cb(
     void *                              user_arg)
 {
-    globus_l_shutdown_info_s *          info;
+    globus_l_shutdown_info_t *          info;
     GlobusXIOName(globus_l_xio_win32_unregister_poll_cb);
     
     GlobusXIOSystemDebugEnter();
     
-    info = (globus_l_shutdown_info_s *) user_arg;
+    info = (globus_l_shutdown_info_t *) user_arg;
     
     globus_mutex_lock(&info->mutex);
     {
@@ -206,9 +204,8 @@ globus_l_xio_win32_unregister_poll_cb(
 int
 globus_i_xio_win32_complete_deactivate(void)
 {
-    HANDLE                              unregistered;
     globus_result_t                     result;
-    globus_l_shutdown_info_s            info;
+    globus_l_shutdown_info_t            info;
     GlobusXIOName(globus_i_xio_win32_complete_deactivate);
     
     GlobusXIOSystemDebugEnter();
