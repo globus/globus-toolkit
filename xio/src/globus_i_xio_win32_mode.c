@@ -9,7 +9,7 @@
 
 /* all taken from DDK */
 #ifndef NT_SUCCESS
-typedef DWORD                           NTSTATUS;
+typedef LONG                            NTSTATUS;
 #define NT_SUCCESS(status) ((NTSTATUS)(status) >= 0)
 #endif
 
@@ -89,7 +89,9 @@ globus_i_xio_win32_mode_is_overlapped(
     
     if(NT_SUCCESS(globus_i_xio_win32_mode_query(
         handle, &iosb, &mode, sizeof(mode), FileModeInformation)) &&
-        mode.Mode == FILE_SYNCHRONOUS_IO_ALERT)
+        NT_SUCCESS(iosb.Status) &&
+        (mode.Mode &
+            (FILE_SYNCHRONOUS_IO_ALERT|FILE_SYNCHRONOUS_IO_NONALERT)) == 0)
     {
         return GLOBUS_TRUE;
     }
