@@ -346,12 +346,24 @@ EOF
             $process_count = $description->count();
         }
 
-        for(my $i = 0; $i < $process_count; $i++)
-        {
-            print JOB $description->executable(), " $args <",
-                $description->stdin(), "&\n";
-        }
-        print JOB "wait\n";
+        print JOB "pids=''\n";
+        print JOB "exit_code=0\n";
+	for(my $i = 0; $i < $process_count; $i++)
+	{
+	    print JOB $description->executable(), " $args <",
+	        $description->stdin(), "&\n";
+            print JOB "pids=\"\$pids \$!\"\n";
+	}
+	print JOB <<EOF;
+            for x in \$pids; do
+                wait \$x
+                tmp_exit_code=\$?
+                if [ \$exit_code = 0 -a \$tmp_exit_code != 0 ]; then
+                    exit_code=\$tmp_exit_code
+                fi
+            done
+            exit \$exit_code
+EOF
     }
     elsif($description->jobtype() eq 'mpi' ||
             $description->jobtype() eq 'multiple')
@@ -415,6 +427,8 @@ EOF
         }
         else
         {
+            my $exit_prefix=$self->job_dir() . '/exit';
+
             print JOB <<"EOF";
 
 hosts=\`cat \$PBS_NODEFILE\`;
@@ -422,7 +436,7 @@ counter=0
 while test \$counter -lt $count; do
     for host in \$hosts; do
         if test \$counter -lt $count; then
-            $remote_shell \$host "/bin/sh $cmd_script_name" < $stdin &
+            $remote_shell \$host "/bin/sh $cmd_script_name; echo \\\$? > $exit_prefix.\$counter" < $stdin &
             counter=\`expr \$counter + 1\`
         else
             break
@@ -431,6 +445,19 @@ while test \$counter -lt $count; do
 done
 wait
 
+counter=0
+exit_code=0
+while test \$counter -lt $count; do
+    /bin/touch $exit_prefix.\$counter;
+
+    read tmp_exit_code < $exit_prefix.\$counter
+    if [ \$exit_code = 0 -a \$tmp_exit_code != 0 ]; then
+        exit_code=\$tmp_exit_code
+    fi
+    counter=\`expr \$counter + 1\`
+done
+
+exit \$exit_code
 EOF
         }
     }
