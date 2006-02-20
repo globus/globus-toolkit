@@ -66,10 +66,10 @@ globus_l_xio_gsi_close_cb(
     void *                              user_arg);
 
 static int
-globus_l_xio_gsi_activate();
+globus_l_xio_gsi_activate(void);
 
 static int
-globus_l_xio_gsi_deactivate();
+globus_l_xio_gsi_deactivate(void);
 
 
 GlobusXIODefineModule(gsi) =

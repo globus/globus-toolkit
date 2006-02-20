@@ -348,7 +348,7 @@ globus_l_xio_win32_socket_cancel_cb(
                 op_info->state = GLOBUS_I_XIO_SYSTEM_OP_CANCELED;
                     
                 GlobusXIOSystemDebugPrintf(
-                    GLOBUS_L_XIO_SYSTEM_DEBUG_INFO,
+                    GLOBUS_I_XIO_SYSTEM_DEBUG_INFO,
                     ("[%s] fd=%lu, Canceling NEW\n",
                         _xio_name, (unsigned long)op_info->handle->socket));
             }
@@ -359,7 +359,7 @@ globus_l_xio_win32_socket_cancel_cb(
                 op_info->state = GLOBUS_I_XIO_SYSTEM_OP_COMPLETE;
                 
                 GlobusXIOSystemDebugPrintf(
-                    GLOBUS_L_XIO_SYSTEM_DEBUG_INFO,
+                    GLOBUS_I_XIO_SYSTEM_DEBUG_INFO,
                     ("[%s] fd=%lu, Canceling Pending\n",
                         _xio_name, (unsigned long)op_info->handle->socket));
                 

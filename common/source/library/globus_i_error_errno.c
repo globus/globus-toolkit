@@ -113,7 +113,7 @@ globus_l_error_errno_printable(
         NULL,
         *((int *) globus_object_get_local_instance_data(error)), 
         0, 
-        &sys_error,
+        (LPTSTR)&sys_error,
         0,
         NULL);
 #endif
