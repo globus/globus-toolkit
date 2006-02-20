@@ -174,21 +174,31 @@ error_event:
     return GLOBUS_FAILURE;
 }
 
+struct globus_l_shutdown_info_s
+{
+    globus_cond_t                       cond;
+    globus_mutex_t                      mutex;
+};
+
 static
 void
 globus_l_xio_win32_unregister_poll_cb(
     void *                              user_arg)
 {
-    HANDLE                              unregistered;
+    globus_l_shutdown_info_s *          info;
     GlobusXIOName(globus_l_xio_win32_unregister_poll_cb);
     
     GlobusXIOSystemDebugEnter();
     
-    unregistered = (HANDLE) user_arg;
-    if(unregistered != 0)
+    info = (globus_l_shutdown_info_s *) user_arg;
+    
+    globus_mutex_lock(&info->mutex);
     {
-        SetEvent(unregistered);
+        CloseHandle(globus_l_xio_win32_poll_event);
+        globus_l_xio_win32_poll_event = 0;
+        globus_cond_signal(&info->cond);
     }
+    globus_mutex_unlock(&info->mutex);
     
     GlobusXIOSystemDebugExit();
 }
@@ -198,36 +208,43 @@ globus_i_xio_win32_complete_deactivate(void)
 {
     HANDLE                              unregistered;
     globus_result_t                     result;
+    globus_l_shutdown_info_s            info;
     GlobusXIOName(globus_i_xio_win32_complete_deactivate);
     
     GlobusXIOSystemDebugEnter();
+
+    globus_mutex_init(&info.mutex, NULL);
+    globus_cond_init(&info.cond, NULL);
     
-    unregistered = CreateEvent(0, FALSE, FALSE, 0);
-    
-    result = globus_callback_unregister(
-        globus_l_xio_win32_poll_handle,
-        globus_l_xio_win32_unregister_poll_cb,
-        unregistered,
-        0);
-    
-    if(unregistered != 0)
+    globus_mutex_lock(&info.mutex);
     {
+        result = globus_callback_unregister(
+            globus_l_xio_win32_poll_handle,
+            globus_l_xio_win32_unregister_poll_cb,
+            &info,
+            0);
+            
         if(result == GLOBUS_SUCCESS)
         {
-            while(WaitForSingleObject(
-                unregistered, INFINITE) != WAIT_OBJECT_0)
+            /* unregister callback destroys this event object */
+            while(globus_l_xio_win32_poll_event != 0)
             {
-                /* XXX error */
+                globus_cond_wait(&info.cond, &info.mutex);
             }
         }
-        
-        CloseHandle(unregistered);
+        else
+        {
+            globus_mutex_unlock(&info.mutex);
+            globus_l_xio_win32_unregister_poll_cb(&info);
+            globus_mutex_lock(&info.mutex);
+        }
     }
+    globus_mutex_unlock(&info.mutex);
+    
+    globus_cond_destroy(&info.cond);
+    globus_mutex_destroy(&info.mutex);
     
     win32_mutex_destroy(&globus_l_xio_win32_poll_lock);
-    
-    CloseHandle(globus_l_xio_win32_poll_event);
-    globus_l_xio_win32_poll_event = 0;
     
     while(globus_l_xio_win32_poll_free)
     {
