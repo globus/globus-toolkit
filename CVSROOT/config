@@ -10,6 +10,7 @@
 # command.
 #TopLevelAdmin=no
 
-UseNewInfoFmtStrings=yes
+# To get rid of the info fmt warnings
+#UseNewInfoFmtStrings=yes
 
 LockDir=/sandbox/cvslocks/globus-packages
