@@ -1749,8 +1749,6 @@ sub bundle_sources()
             paranoia("cp of $package_output/${package}-* failed.");
             print PKG "$package\n";
         }
-        #TODO: Let user choose deps/nodeps
-        #TODO: backticks make me nervous about using log_system
         system("($ENV{'GPT_LOCATION'}/sbin/gpt-bundle -nodeps -bn=$bundle -bv=$version -srcdir=$bundle `cat $bundle/packaging_list`) > $bundlelog/$bundle 2>&1");
         paranoia("Bundling of $bundle failed.  See $bundlelog/$bundle.");
     }
