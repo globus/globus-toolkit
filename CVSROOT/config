@@ -10,4 +10,6 @@
 # command.
 #TopLevelAdmin=no
 
+UseNewInfoFmtStrings=yes
+
 LockDir=/sandbox/cvslocks/globus-packages

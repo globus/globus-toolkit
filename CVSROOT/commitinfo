@@ -13,5 +13,5 @@
 #
 # If the name "ALL" appears as a regular expression it is always used
 # in addition to the first matching regex or "DEFAULT".
-ALL perl $CVSROOT/cvs_scripts/commit_prep.pl %r/%p %s
+ALL perl $CVSROOT/cvs_scripts/commit_prep.pl %1r/%1p %1s
 # ALL perl $CVSROOT/dirt_active/scripts/lock.pl
