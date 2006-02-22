@@ -1,7 +1,5 @@
 #!/usr/bin/env perl
 
-# GT3.x build tool
-
 # Basic strategy:
 #  Iterate over etc/{cvstree}/package-list and /bundles
 #  to get a list of packages and bundles defined by that tree.
