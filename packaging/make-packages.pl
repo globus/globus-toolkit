@@ -32,7 +32,6 @@ my $bin_bundle_output = $top_dir . "/bin-bundle-output";
 my @cleanup_dirs = ('log-output', '$bundle_ouput/BUILD');
 
 # tree_name => [ cvs directory, module, checkout-dir tag ]
-# TODO: Make prereq builds separate?
 my %prereq_archives = (
      'autotools' => [ "/home/globdev/CVS/globus-packages", "side_tools", "autotools", "HEAD" ],
                        );
