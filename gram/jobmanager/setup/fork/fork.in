@@ -43,11 +43,14 @@ BEGIN
 
     foreach (split(' ', $Config::Config{sig_name})) 
     {
-	$signo{$_} = $i++;
+        $signo{$_} = $i++;
     }
 
-    $mpirun = '@MPIRUN@';
-    $mpiexec = '@MPIEXEC@';
+    $mpirun         = '@MPIRUN@';
+    $mpiexec        = '@MPIEXEC@';
+    $softenv_dir    = '@SOFTENV_DIR@';
+    $soft_msc       = "$softenv_dir/bin/soft-msc";
+    $softenv_load   = "$softenv_dir/etc/softenv-load.sh";
 }
 
 sub new
@@ -61,12 +64,12 @@ sub new
 
     if($description->jobtype() eq 'multiple' && $description->count > 1)
     {
-	$self->{STDIO_MERGER} =
-	    new Globus::GRAM::StdioMerger($self->job_dir(), $stdout, $stderr);
+        $self->{STDIO_MERGER} =
+            new Globus::GRAM::StdioMerger($self->job_dir(), $stdout, $stderr);
     }
     else
     {
-	$self->{STDIO_MERGER} = 0;
+        $self->{STDIO_MERGER} = 0;
     }
 
     return $self;
@@ -120,53 +123,53 @@ sub submit
     @environment = $description->environment();
     foreach $tuple ($description->environment())
     {
-	if(!ref($tuple) || scalar(@$tuple) != 2)
-	{
-	    return Globus::GRAM::Error::RSL_ENVIRONMENT();
-	}
-	$CHILD_ENV{$tuple->[0]} = $tuple->[1];
+        if(!ref($tuple) || scalar(@$tuple) != 2)
+        {
+            return Globus::GRAM::Error::RSL_ENVIRONMENT();
+        }
+        $CHILD_ENV{$tuple->[0]} = $tuple->[1];
     }
 
     @library_path = $description->library_path();
 
     foreach (@library_path)
     {
-	if(ref($_))
-	{
+        if(ref($_))
+        {
             $self->log("Invalid library_path value");
-	    return Globus::GRAM::Error::RSL_ENVIRONMENT();
-	}
-	$self->append_path(\%CHILD_ENV, 'LD_LIBRARY_PATH', $_);
-	if($Config::Config{osname} eq 'irix')
-	{
-	    $self->append_path(\%CHILD_ENV, 'LD_LIBRARYN32_PATH', $_);
-	    $self->append_path(\%CHILD_ENV, 'LD_LIBRARY64_PATH', $_);
-	}
+            return Globus::GRAM::Error::RSL_ENVIRONMENT();
+        }
+        $self->append_path(\%CHILD_ENV, 'LD_LIBRARY_PATH', $_);
+        if($Config::Config{osname} eq 'irix')
+        {
+            $self->append_path(\%CHILD_ENV, 'LD_LIBRARYN32_PATH', $_);
+            $self->append_path(\%CHILD_ENV, 'LD_LIBRARY64_PATH', $_);
+        }
     }
 
     if(ref($description->count()) ||
        $description->count() != int($description->count()))
     {
-	return Globus::GRAM::Error::INVALID_COUNT();
+        return Globus::GRAM::Error::INVALID_COUNT();
     }
     if($description->jobtype() eq 'multiple')
     {
-	$count = $description->count();
-	$multi_output = 1 if $count > 1;
+        $count = $description->count();
+        $multi_output = 1 if $count > 1;
     }
     elsif($description->jobtype() eq 'single')
     {
-	$count = 1;
+        $count = 1;
     }
     elsif($description->jobtype() eq 'mpi' && $mpiexec ne 'no')
     {
-	$count = 1;
-	@cmdline = ($mpiexec, '-n', $description->count());
+        $count = 1;
+        @cmdline = ($mpiexec, '-n', $description->count());
     }
     elsif($description->jobtype() eq 'mpi' && $mpirun ne 'no')
     {
-	$count = 1;
-	@cmdline = ($mpirun, '-np', $description->count());
+        $count = 1;
+        @cmdline = ($mpirun, '-np', $description->count());
     }
     else
     {
@@ -174,24 +177,24 @@ sub submit
     }
     if( $description->executable eq "")
     {
-	return Globus::GRAM::Error::RSL_EXECUTABLE();
+        return Globus::GRAM::Error::RSL_EXECUTABLE();
     }
     elsif(! -e $description->executable())
     {
-	return Globus::GRAM::Error::EXECUTABLE_NOT_FOUND();
+        return Globus::GRAM::Error::EXECUTABLE_NOT_FOUND();
     }
     elsif( (! -x $description->executable())
         || (! -f $description->executable()))
     {
-	return Globus::GRAM::Error::EXECUTABLE_PERMISSIONS();
+        return Globus::GRAM::Error::EXECUTABLE_PERMISSIONS();
     }
     elsif( $description->stdin() eq "")
     {
-	return Globus::GRAM::Error::RSL_STDIN;
+        return Globus::GRAM::Error::RSL_STDIN;
     }
     elsif(! -r $description->stdin())
     {
-	return Globus::GRAM::Error::STDIN_NOT_FOUND();
+        return Globus::GRAM::Error::STDIN_NOT_FOUND();
     }
 
     if ($description->executable() =~ m:^(/|\.):) {
@@ -206,17 +209,18 @@ sub submit
     @arguments = $description->arguments();
     foreach(@arguments)
     {
-	if(ref($_))
-	{
-	    return Globus::GRAM::Error::RSL_ARGUMENTS;
-	}
+        if(ref($_))
+        {
+            return Globus::GRAM::Error::RSL_ARGUMENTS;
+        }
     }
     if ($#arguments >= 0)
     {
-	push(@cmdline, @arguments);
+        push(@cmdline, @arguments);
     }
 
-    if ($description->use_fork_starter() && -x $fork_starter) {
+    if ($description->use_fork_starter() && -x $fork_starter)
+    {
         local(*STARTER_OUT, *STARTER_IN);
 
         $pid = IPC::Open2::open2(\*STARTER_OUT, \*STARTER_IN,
@@ -239,14 +243,48 @@ sub submit
 
         print STARTER_IN "count=$count;";
 
-        print STARTER_IN 'executable=' .
-                &escape_for_starter($cmdline[0]). ';';
-        shift @cmdline;
-        if ($#cmdline >= 0)
+        my @softenv = $description->softenv();
+        my $enable_default_software_environment
+            = $description->enable_default_software_environment();
+        if (   ($softenv_dir ne '')
+            && (@softenv || $enable_default_software_environment))
         {
-            print STARTER_IN 'arguments=' .
-                    join(',', map {&escape_for_starter($_)} @cmdline) .
-                    ';';
+            ### SoftEnv extension ###
+            $cmd_script_name = $self->job_dir() . '/scheduler_fork_cmd_script';
+            local(*CMD);
+            open( CMD, '>' . $cmd_script_name );
+
+            print CMD "#!/bin/sh\n";
+
+            $self->setup_softenv(
+                $self->job_dir() . '/fork_softenv_cmd_script',
+                $soft_msc,
+                $softenv_load,
+                *CMD);
+
+            print CMD 'cd ', $description->directory(), "\n";
+            print CMD "@cmdline\n";
+            print CMD "exit \$?\n";
+
+            close(CMD);
+            chmod 0700, $cmd_script_name;
+
+            print STARTER_IN 'executable=' .
+                &escape_for_starter($cmd_script_name). ';';
+            print STARTER_IN 'arguments=;';
+            #########################
+        }
+        else
+        {
+            print STARTER_IN 'executable=' .
+                    &escape_for_starter($cmdline[0]). ';';
+            shift @cmdline;
+            if ($#cmdline >= 0)
+            {
+                print STARTER_IN 'arguments=' .
+                        join(',', map {&escape_for_starter($_)} @cmdline) .
+                        ';';
+            }
         }
         
         my @job_stdout;
@@ -314,8 +352,8 @@ sub submit
             }
 
             # obtain plain old pipe into temporary variables
-            local $^F = 2;		# assure close-on-exec for pipe FDs
-            local(*READER,*WRITER);	# always use local on perl FDs
+            local $^F = 2;                # assure close-on-exec for pipe FDs
+            local(*READER,*WRITER);        # always use local on perl FDs
             pipe( READER, WRITER );
 
             select((select(WRITER),$|=1)[$[]);
@@ -403,7 +441,7 @@ sub submit
 
     $description->add('jobid', join(',', @job_id));
     return { JOB_STATE => Globus::GRAM::JobState::ACTIVE,
-	     JOB_ID => join(',', @job_id) };
+             JOB_ID => join(',', @job_id) };
 }
 
 sub poll
@@ -425,15 +463,15 @@ sub poll
 
     if($_ > 0)
     {
-	$state = Globus::GRAM::JobState::ACTIVE;
+        $state = Globus::GRAM::JobState::ACTIVE;
     }
     else
     {
-	$state = Globus::GRAM::JobState::DONE;
+        $state = Globus::GRAM::JobState::DONE;
     }
     if($self->{STDIO_MERGER})
     {
-	$self->{STDIO_MERGER}->poll($state == Globus::GRAM::JobState::DONE);
+        $self->{STDIO_MERGER}->poll($state == Globus::GRAM::JobState::DONE);
     }
 
     return { JOB_STATE => $state };

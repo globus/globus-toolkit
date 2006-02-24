@@ -28,14 +28,18 @@ my ($mpirun, $mpiexec, $qsub, $qstat, $qdel, $cluster, $cpu_per_node, $remote_sh
 
 BEGIN
 {
-    $mpiexec = '@MPIEXEC@';
-    $mpirun = '@MPIRUN@';
-    $qsub =   '@QSUB@';
-    $qstat =  '@QSTAT@';
-    $qdel = '@QDEL@';
-    $cluster = @CLUSTER@;
-    $cpu_per_node = @CPU_PER_NODE@;
-    $remote_shell = '@REMOTE_SHELL@';
+    $mpiexec        = '@MPIEXEC@';
+    $mpirun         = '@MPIRUN@';
+    $qsub           = '@QSUB@';
+    $qstat          = '@QSTAT@';
+    $qdel           = '@QDEL@';
+    $cluster        = @CLUSTER@;
+    $cpu_per_node   = @CPU_PER_NODE@;
+    $remote_shell   = '@REMOTE_SHELL@';
+    $softenv_dir    = '@SOFTENV_DIR@';
+    $soft_msc       = "$softenv_dir/bin/soft-msc";
+    $softenv_load   = "$softenv_dir/etc/softenv-load.sh";
+
 }
 
 sub myceil ($)
@@ -105,7 +109,7 @@ sub submit
     elsif(! -r $description->stdin())
     {
        return Globus::GRAM::Error::STDIN_NOT_FOUND();
-   }
+    }
 
     $self->log("Determining job max time cpu from job description");
     if(defined($description->max_cpu_time())) 
@@ -250,6 +254,17 @@ EOF
         myceil($description->count() / $cpu_per_node), "\n";
     }
 
+    ### SoftEnv extension ###
+    if ($softenv_dir ne '')
+    {
+        $self->setup_softenv(
+            $self->job_dir() . '/pbs_softenv_job_script',
+            $soft_msc,
+            $softenv_load,
+            *JOB);
+    }
+    #########################
+
     $rsh_env = '';
 
     $library_vars{LD_LIBRARY_PATH} = 0;
@@ -348,13 +363,13 @@ EOF
 
         print JOB "pids=''\n";
         print JOB "exit_code=0\n";
-	for(my $i = 0; $i < $process_count; $i++)
-	{
-	    print JOB $description->executable(), " $args <",
-	        $description->stdin(), "&\n";
+        for(my $i = 0; $i < $process_count; $i++)
+        {
+            print JOB $description->executable(), " $args <",
+                $description->stdin(), "&\n";
             print JOB "pids=\"\$pids \$!\"\n";
-	}
-	print JOB <<EOF;
+        }
+        print JOB <<EOF;
             for x in \$pids; do
                 wait \$x
                 tmp_exit_code=\$?
@@ -387,6 +402,14 @@ EOF
         if ( open( CMD, ">$cmd_script_name" ) ) 
         {
             print CMD "#!/bin/sh\n";
+
+            ### SoftEnv extension ###
+            $self->setup_softenv(
+                $self->job_dir() . '/pbs_softenv_cmd_script',
+                $soft_msc,
+                *CMD);
+            #########################
+
             print CMD 'cd ', $description->directory(), "\n";
             print CMD "$rsh_env\n";
             print CMD $description->executable(), " $args\n";
@@ -410,13 +433,27 @@ EOF
                 {
                     $machinefilearg = ' -machinefile $PBS_NODEFILE';
                 }
-
-                print JOB "$mpiexec $machinefilearg -n " . $count;
+                if ($description->totalprocesses() > 0)
+                {
+                    print JOB "$mpiexec $machinefilearg -n "
+                            . $description->totalprocesses();
+                }
+                else
+                {
+                    print JOB "$mpiexec $machinefilearg -n "
+                            . $description->count();
+                }
             }
             else
             {
-                print JOB "$mpirun -np " . $count;
-
+                if ($description->totalprocesses() > 0)
+                {
+                    print JOB "$mpirun -np " . $description->totalprocesses();
+                }
+                else
+                {
+                    print JOB "$mpirun -np " . $description->count();
+                }
                 if ($cluster)
                 {
                     print JOB ' -machinefile $PBS_NODEFILE';

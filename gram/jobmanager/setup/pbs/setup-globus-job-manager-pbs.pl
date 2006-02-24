@@ -15,29 +15,31 @@ if (!defined($gpath))
 require Grid::GPT::Setup;
 use Getopt::Long;
 
-my $name		= 'jobmanager-pbs';
-my $manager_type	= 'pbs';
+my $name                = 'jobmanager-pbs';
+my $manager_type        = 'pbs';
 my $cmd;
-my $non_cluster		= 0;
-my $cpu_per_node	= 1;
-my $remote_shell	= 'default';
-my $validate_queues	= 1;
-my $help		= 0;
+my $non_cluster         = 0;
+my $cpu_per_node        = 1;
+my $remote_shell        = 'default';
+my $validate_queues     = 1;
+my $softenv_dir         = '';
+my $help                = 0;
 
 GetOptions('service-name|s=s' => \$name,
            'non-cluster' => \$non_cluster,
            'cpu-per-node=i' => \$cpu_per_node,
-	   'remote-shell=s' => \$remote_shell,
-	   'validate-queues=s' => \$validate_queues,
-	   'help|h' => \$help);
+           'remote-shell=s' => \$remote_shell,
+           'validate-queues=s' => \$validate_queues,
+           'softenv-dir|e=s' => \$softenv_dir,
+           'help|h' => \$help);
 
 &usage if $help;
 
 my $metadata =
     new Grid::GPT::Setup(package_name => "globus_gram_job_manager_setup_pbs");
 
-my $globusdir	= $ENV{GLOBUS_LOCATION};
-my $libexecdir	= "$globusdir/libexec";
+my $globusdir        = $ENV{GLOBUS_LOCATION};
+my $libexecdir        = "$globusdir/libexec";
 
 if($validate_queues ne 'no')
 {
@@ -63,11 +65,11 @@ mkdir $ENV{GLOBUS_LOCATION} . "/lib/perl/Globus/GRAM/JobManager", 0777;
 my $setupdir = $ENV{GLOBUS_LOCATION} . '/setup/globus';
 chdir $setupdir;
 
-print `./find-pbs-tools $non_cluster --with-cpu-per-node=$cpu_per_node --with-remote-shell=$remote_shell --cache-file=/dev/null`;
+print `./find-pbs-tools $non_cluster --with-cpu-per-node=$cpu_per_node --with-remote-shell=$remote_shell --cache-file=/dev/null --with-softenv-dir=$softenv_dir`;
 if($? != 0)
 {
-    print STDERR "Error locating PBS commands, aborting!\n";
-    exit 2;
+    print STDERR "Warning: Error locating PBS commands!\n";
+    exit 0;
 }
 
 # Create service
@@ -90,7 +92,7 @@ ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
 Attribute: email_on_abort
 Description: "Send email to the job submitter (or the address specified in the
              email_address RSL attribute if present) if the job is aborted by the
-	     scheduler."
+             scheduler."
 Values: yes no
 ValidWhen: GLOBUS_GRAM_JOB_SUBMIT
 
@@ -120,17 +122,17 @@ if($validate_queues)
 
     while(<QSTAT>)
     {
-	chomp;
+        chomp;
 
-	$_ =~ m/^(\S+)/;
+        $_ =~ m/^(\S+)/;
 
-	push(@queues, $1);
+        push(@queues, $1);
     }
 
     if(@queues)
     {
-	print VALIDATION_FILE "Attribute: queue\n";
-	print VALIDATION_FILE join(" ", "Values:", @queues), "\n";
+        print VALIDATION_FILE "Attribute: queue\n";
+        print VALIDATION_FILE join(" ", "Values:", @queues), "\n";
     }
 }
 close VALIDATION_FILE;
@@ -142,10 +144,10 @@ sub usage
 {
     print "Usage: $0 [options]\n".
           "Options:  [--service-name|-s service_name]\n".
-	  "          [--non-cluster]\n".
-	  "          [--cpu-per-node=COUNT]\n".
-	  "          [--remote-shell=rsh|ssh]\n".
-	  "          [--validate-queues=yes|no]\n".
-	  "          [--help|-h]\n";
+          "          [--non-cluster]\n".
+          "          [--cpu-per-node=COUNT]\n".
+          "          [--remote-shell=rsh|ssh]\n".
+          "          [--validate-queues=yes|no]\n".
+          "          [--help|-h]\n";
     exit 1;
 }

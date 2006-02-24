@@ -52,6 +52,7 @@ Globus::GRAM::JobManager - Base class for all Job Manager scripts
  ($stderr, $rc) = $manager->pipe_err_cmd(@arglist);
  $status  = $manager->fork_and_exec_cmd(@arglist);
  $manager->append_path($hash, $variable, $path);
+ $scalar = $manager->setup_softenv();
 
 =head1 DESCRIPTION
 
@@ -1028,6 +1029,62 @@ sub job_dir {
 
     return $job_dir;
 
+}
+
+=item $manager->setup_softenv()
+
+Either add a line to the specified command script file handle to load the user's
+default SoftEnv configuration, or create a custom SoftEnv script and
+add commands to the specified command script file handle to load it.
+
+=cut
+
+sub setup_softenv
+{
+    my $self = shift;
+    my $softenv_script_name = shift;
+    my $soft_msc = shift;
+    my $softenv_load = shift;
+    my $job_script_fh = shift;
+
+    my $description = $self->{JobDescription};
+
+    my @softenv = $description->softenv();
+    my $enable_default_software_environment
+        = $description->enable_default_software_environment();
+    if ((not @softenv) && (not $enable_default_software_environment))
+    {
+        return 0;
+    }
+
+    if ((not @softenv) && $enable_default_software_environment)
+    {
+        $self->log("default software environment requested");
+
+        #load default software environment
+        print $job_script_fh ". $softenv_load\n";
+    }
+    else
+    {
+        $self->log("custom software environment requested");
+
+        local(*SOFTENV);
+        open(SOFTENV, '>' . $softenv_script_name);
+
+        foreach my $softenv (@softenv)
+        {
+            print SOFTENV $softenv . "\n";
+        }
+
+        close(SOFTENV);
+
+        print $job_script_fh "$soft_msc $softenv_script_name\n";
+        print $job_script_fh ". $softenv_script_name.cache.sh\n";
+        print $job_script_fh "rm $softenv_script_name"
+                           . " $softenv_script_name.cache.sh\n";
+    }
+
+    return 1;
 }
 
 1;
