@@ -14,7 +14,7 @@ done:
 
 # Cleanup targets
 clean:
-	rm -f gpt-stamp
+	:
 distclean: clean
 	rm -f Makefile config.status config.log
 
@@ -39,10 +39,9 @@ wsctests: gpt wsjava gt4-c-ws-core-test
 wstests: gpt wsjava gt4-java-ws-core-test gt4-c-ws-core-test gt4-mds-test gt4-gram-test gt4-cas-delegation-test gt4-rft-test
 
 # GPT targets
-gpt: gpt-stamp
-gpt-stamp:
+gpt: @gptlocation@/sbin/gpt-postinstall
+@gptlocation@/sbin/gpt-postinstall:
 	cd gpt && OBJECT_MODE=32 ./build_gpt
-	touch gpt-stamp
 install: postinstall
 postinstall:
 	${GPT_LOCATION}/sbin/gpt-postinstall
