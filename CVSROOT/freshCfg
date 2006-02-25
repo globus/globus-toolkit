@@ -12,3 +12,9 @@
 debug = ConfigurationSet([
     (None, None, None, DebugAction("Default debug log")),
     ])
+
+# Default PBService for Buildbot and IRC
+pb = ConfigurationSet([
+    (None, None, None, PBService(userpass=('freshcvs', 'iJhvrg0q'),
+    port='tcp:4519:interface=127.0.0.1')),
+    ])
