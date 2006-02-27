@@ -1771,6 +1771,11 @@ globus_gsi_cred_verify_cert_chain(
         X509_STORE_CTX_free(store_context);
     }
 
+    if(cert_dir)
+    {
+        free(cert_dir);
+    }
+
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }
