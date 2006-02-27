@@ -110,6 +110,7 @@ BUNDLE gt4-rft
         globus_wsrf_rft_service_java_setup
         globus_wsrf_rft_service_java_usage
         globus_c_rft_client_bindings
+        globus_crft_util
 
 BUNDLE gt4-rft-test
         globus_wsrf_rft_test
