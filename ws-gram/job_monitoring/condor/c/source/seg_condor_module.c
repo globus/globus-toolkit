@@ -22,8 +22,11 @@
 #include <time.h>
 #include <string.h>
 
-#define SEG_CONDOR_DEBUG(level, message) \
-    GlobusDebugPrintf(SEG_CONDOR, level, message)
+#define SEGCondorEnter() \
+        SEGCondorDebug(SEG_CONDOR_DEBUG_INFO, ("Enter %s\n", _globus_func_name))
+
+#define SEGCondorExit() \
+        SEGCondorDebug(SEG_CONDOR_DEBUG_INFO, ("Exit %s\n", _globus_func_name))
 
 /**
  * Debug levels:
@@ -61,6 +64,48 @@ enum
     SEG_CONDOR_ERROR_PARSE
 
 };
+
+#ifdef BUILD_DEBUG
+#define SEGCondorDebug(level, message) \
+    GlobusDebugPrintf(SEG_CONDOR, level, ("%s", globus_l_seg_condor_level_string(level))); \
+    GlobusDebugPrintf(SEG_CONDOR, level, message)
+#else
+#define SEGCondorDebug(level, message) \
+    if (level == SEG_CONDOR_DEBUG_ERROR) \
+    { \
+        fprintf(stderr, "%s", globus_l_seg_condor_level_string(level)); \
+        globus_l_seg_condor_debug message; \
+    }
+static
+void
+globus_l_seg_condor_debug(const char * fmt, ...)
+{
+    va_list ap;
+
+    va_start(ap, fmt);
+    vfprintf(stderr, fmt, ap);
+    va_end(ap);
+}
+#endif
+
+static
+char *
+globus_l_seg_condor_level_string(globus_l_seg_condor_debug_level_t level)
+{
+    switch (level)
+    {
+        case SEG_CONDOR_DEBUG_INFO:
+            return "[INFO] ";
+        case SEG_CONDOR_DEBUG_WARN:
+            return "[WARN] ";
+        case SEG_CONDOR_DEBUG_ERROR:
+            return "[ERROR] ";
+        case SEG_CONDOR_DEBUG_TRACE:
+            return "[TRACE] ";
+        default:
+            return "";
+    }
+}
 
 /**
  * State of the CONDOR log file parser.
@@ -163,32 +208,38 @@ globus_l_condor_module_activate(void)
     int                                 rc;
     globus_reltime_t                    delay;
     globus_result_t                     result;
+    GlobusFuncName(globus_l_condor_module_activate);
 
     rc = globus_module_activate(GLOBUS_COMMON_MODULE);
     if (rc != GLOBUS_SUCCESS)
     {
+        fprintf(stderr, "Fatal error activating GLOBUS_COMMON_MODULE\n");
         goto error;
     }
+    if (globus_module_getenv("SEG_CONDOR_DEBUG") == NULL)
+    {
+        globus_module_setenv("SEG_CONDOR_DEBUG", "ERROR");
+    }
+
+    GlobusDebugInit(SEG_CONDOR, INFO WARN ERROR TRACE);
+
     rc = globus_mutex_init(&globus_l_condor_mutex, NULL);
 
     if (rc != GLOBUS_SUCCESS)
     {
+        SEGCondorDebug(SEG_CONDOR_DEBUG_ERROR,
+                ("Fatal error initializing mutex\n"));
         goto deactivate_common_error;
     }
     rc = globus_cond_init(&globus_l_condor_cond, NULL);
     if (rc != GLOBUS_SUCCESS)
     {
+        SEGCondorDebug(SEG_CONDOR_DEBUG_ERROR,
+                ("Fatal error initializing cond\n"));
         goto destroy_mutex_error;
     }
     shutdown_called = GLOBUS_FALSE;
     callback_count = 0;
-
-    GlobusDebugInit(
-        SEG_CONDOR,
-        SEG_CONDOR_DEBUG_INFO
-        SEG_CONDOR_DEBUG_WARN
-        SEG_CONDOR_DEBUG_ERROR
-        SEG_CONDOR_DEBUG_TRACE);
 
     logfile_state = globus_libc_calloc(
             1,
@@ -196,13 +247,16 @@ globus_l_condor_module_activate(void)
 
     if (logfile_state == NULL)
     {
+        SEGCondorDebug(SEG_CONDOR_DEBUG_ERROR,
+                ("Fatal error: out of memory\n"));
         goto destroy_cond_error;
-        return 1;
     }
 
     rc = globus_l_condor_increase_buffer(logfile_state);
     if (rc != GLOBUS_SUCCESS)
     {
+        SEGCondorDebug(SEG_CONDOR_DEBUG_ERROR,
+                ("Fatal error: out of memory\n"));
         goto free_logfile_state_error;
     }
 
@@ -212,10 +266,13 @@ globus_l_condor_module_activate(void)
 
     if (result != GLOBUS_SUCCESS)
     {
+        fprintf(stderr, "Fatal error \n");
+        SEGCondorDebug(SEG_CONDOR_DEBUG_ERROR,
+                ("Fatal error (unable to parse timestamp)\n"));
         goto free_logfile_state_buffer_error;
     }
 
-    /* Convert timestamp to filename */
+    /* Locate logfile */
     rc = globus_l_condor_find_logfile(logfile_state);
 
     if (rc == GLOBUS_SUCCESS)
@@ -226,13 +283,13 @@ globus_l_condor_module_activate(void)
         {
             rc = SEG_CONDOR_ERROR_OUT_OF_MEMORY;
 
+            SEGCondorDebug(SEG_CONDOR_DEBUG_ERROR,
+                    ("Fatal error (open %s): %s\n",
+                    logfile_state->path,
+                    sys_errlist[errno]));
+
             goto free_logfile_state_path_error;
         }
-        GlobusTimeReltimeSet(delay, 0, 0);
-    }
-    else if(rc == SEG_CONDOR_ERROR_LOG_NOT_PRESENT)
-    {
-        GlobusTimeReltimeSet(delay, 60, 0);
     }
     else
     {
@@ -251,6 +308,7 @@ globus_l_condor_module_activate(void)
     }
     callback_count++;
 
+    SEGCondorExit();
     return 0;
 
 free_logfile_state_path_error:
@@ -264,6 +322,7 @@ destroy_cond_error:
 destroy_mutex_error:
     globus_mutex_destroy(&globus_l_condor_mutex);
 deactivate_common_error:
+    SEGCondorExit();
     globus_module_deactivate(GLOBUS_COMMON_MODULE);
 error:
     return 1;
@@ -274,6 +333,10 @@ static
 int
 globus_l_condor_module_deactivate(void)
 {
+    GlobusFuncName(globus_l_condor_module_deactivate);
+
+    SEGCondorEnter();
+
     globus_mutex_lock(&globus_l_condor_mutex);
     shutdown_called = GLOBUS_TRUE;
 
@@ -283,12 +346,14 @@ globus_l_condor_module_deactivate(void)
     }
     globus_mutex_unlock(&globus_l_condor_mutex);
 
+    SEGCondorExit();
     GlobusDebugDestroy(SEG_CONDOR);
 
     globus_module_deactivate(GLOBUS_COMMON_MODULE);
 
     return 0;
 }
+/* globus_l_condor_module_deactivate() */
 
 /**
  * read_cb:
@@ -314,15 +379,14 @@ globus_l_condor_read_callback(
     globus_bool_t                       eof_hit = GLOBUS_FALSE;
     globus_reltime_t                    delay;
     globus_result_t                     result;
+    GlobusFuncName(globus_l_condor_read_callback);
 
-    SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_INFO,
-            ("globus_l_condor_read_callback()\n"));
+    SEGCondorEnter();
 
     globus_mutex_lock(&globus_l_condor_mutex);
     if (shutdown_called)
     {
-        SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_INFO,
-                ("polling while deactivating"));
+        SEGCondorDebug(SEG_CONDOR_DEBUG_INFO, ("Polling while deactivating\n"));
 
         globus_mutex_unlock(&globus_l_condor_mutex);
         goto error;
@@ -337,20 +401,20 @@ globus_l_condor_read_callback(
         max_to_read = state->buffer_length - state->buffer_valid
                 - state->buffer_point - 1;
 
-        SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_TRACE,
+        SEGCondorDebug(SEG_CONDOR_DEBUG_TRACE,
                 ("reading a maximum of %u bytes\n", max_to_read));
 
         rc = fread(state->buffer + state->buffer_point + state->buffer_valid,
                 1, max_to_read, state->fp);
         
-        SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_TRACE,
+        SEGCondorDebug(SEG_CONDOR_DEBUG_TRACE,
                 ("read %d bytes\n", rc));
 
         if (rc < max_to_read)
         {
             if (feof(state->fp))
             {
-                SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_TRACE, ("hit eof\n"));
+                SEGCondorDebug(SEG_CONDOR_DEBUG_TRACE, ("EOF read\n"));
                 eof_hit = GLOBUS_TRUE;
                 clearerr(state->fp);
             }
@@ -363,10 +427,8 @@ globus_l_condor_read_callback(
         state->buffer_valid += rc;
 
         /* Parse data */
-        SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_TRACE, ("parsing events\n"));
         rc = globus_l_condor_parse_events(state);
 
-        SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_TRACE, ("cleaning buffer\n"));
         rc = globus_l_condor_clean_buffer(state);
 
         if (eof_hit)
@@ -401,8 +463,7 @@ globus_l_condor_read_callback(
     {
         goto error;
     }
-    SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_INFO,
-            ("globus_l_condor_read_callback() exited with/success\n"));
+    SEGCondorExit();
     return;
 error:
     globus_mutex_lock(&globus_l_condor_mutex);
@@ -417,8 +478,7 @@ error:
     }
     globus_mutex_unlock(&globus_l_condor_mutex);
 
-    SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_WARN,
-            ("globus_l_condor_read_callback() exited with/error\n"));
+    SEGCondorExit();
     return;
 }
 /* globus_l_condor_read_callback() */
@@ -443,13 +503,14 @@ globus_l_condor_find_logfile(
 {
     struct stat                         s;
     int                                 rc;
+    int                                 save_errno = 0;
+    GlobusFuncName(globus_l_condor_find_logfile);
 
-    SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_INFO,
-            ("globus_l_condor_find_logfile()\n"));
+    SEGCondorEnter();
 
     if (state->path == NULL)
     {
-        SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_TRACE, ("allocating path\n"));
+        SEGCondorDebug(SEG_CONDOR_DEBUG_TRACE, ("allocating path\n"));
 
         globus_common_get_attribute_from_config_file(NULL,
                 "etc/globus-condor.conf", "log_path", &state->path);
@@ -468,19 +529,20 @@ globus_l_condor_find_logfile(
 
         if (rc < 0)
         {
+            save_errno = errno;
             switch (errno)
             {
                 case ENOENT:
-                    SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_ERROR,
+                    SEGCondorDebug(SEG_CONDOR_DEBUG_WARN,
                         ("missing log file\n"));
                     rc = SEG_CONDOR_ERROR_LOG_NOT_PRESENT;
                     goto error;
 
                 case EACCES:
-                    SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_ERROR,
+                    /* Permission problem (fatal) */
+                    SEGCondorDebug(SEG_CONDOR_DEBUG_WARN,
                         ("permissions needed to access logfile %s\n",
                         state->path));
-                    /* Permission problem (fatal) */
                     rc = SEG_CONDOR_ERROR_LOG_PERMISSIONS;
                     goto error;
 
@@ -488,26 +550,26 @@ globus_l_condor_find_logfile(
                 case ELOOP:
                 case ENAMETOOLONG:
                     /* broken path (fatal) */
-                    SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_ERROR,
+                    SEGCondorDebug(SEG_CONDOR_DEBUG_WARN,
                         ("broken path to logfile %s\n",
                         state->path));
                     rc = SEG_CONDOR_ERROR_BAD_PATH;
                     goto error;
 
                 case EFAULT:
-                    SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_ERROR,
+                    SEGCondorDebug(SEG_CONDOR_DEBUG_WARN,
                         ("bad pointer\n"));
                     globus_assert(errno != EFAULT);
 
                 case EINTR:
                 case ENOMEM: /* low kernel mem */
                     /* try again later */
-                    SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_WARN,
+                    SEGCondorDebug(SEG_CONDOR_DEBUG_WARN,
                         ("going to have to retry stat()\n"));
                     continue;
 
                 default:
-                    SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_ERROR,
+                    SEGCondorDebug(SEG_CONDOR_DEBUG_WARN,
                         ("unexpected errno\n"));
                     rc = SEG_CONDOR_ERROR_UNKNOWN;
                     goto error;
@@ -521,13 +583,26 @@ globus_l_condor_find_logfile(
         goto error;
     }
 
-    SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_INFO,
-            ("globus_l_condor_find_logfile() exits w/out error\n"));
+    SEGCondorExit();
     return 0;
 
 error:
-    SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_WARN,
-            ("globus_l_condor_find_logfile() exits w/error\n"));
+    if (state->path == NULL)
+    {
+        SEGCondorDebug(SEG_CONDOR_DEBUG_ERROR,
+                ("Error retrieving log_path attribute from "
+                "$GLOBUS_LOCATION/etc/globus-condor.conf\n"));
+    }
+    else
+    {
+        errno = save_errno;
+        SEGCondorDebug(SEG_CONDOR_DEBUG_ERROR,
+                ("Error reading logfile %s: %s\n",
+                state->path,
+                sys_errlist[save_errno]));
+
+    }
+    SEGCondorExit();
     return rc;
 }
 /* globus_l_condor_find_logfile() */
@@ -541,8 +616,9 @@ int
 globus_l_condor_clean_buffer(
     globus_l_condor_logfile_state_t *      state)
 {
-    SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_INFO,
-            ("globus_l_condor_clean_buffer() called\n"));
+    GlobusFuncName(globus_l_condor_clean_buffer);
+
+    SEGCondorEnter();
 
     /* move data to head of buffer */
     if (state->buffer != NULL)
@@ -558,8 +634,7 @@ globus_l_condor_clean_buffer(
             state->buffer_point = 0;
         }
     }
-    SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_INFO,
-            ("globus_l_condor_clean_buffer() exits\n"));
+    SEGCondorExit();
     return 0;
 }
 /* globus_l_condor_clean_buffer() */
@@ -580,9 +655,9 @@ globus_l_condor_increase_buffer(
     char *                              save = state->buffer;
     const size_t                        GLOBUS_CONDOR_READ_BUFFER_SIZE = 4096;
     int                                 rc;
+    GlobusFuncName(globus_l_condor_increase_buffer);
 
-    SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_INFO,
-            ("globus_l_condor_increase_buffer() called\n"));
+    SEGCondorEnter();
     /* If the buffer is full, resize */
     if (state->buffer_valid == state->buffer_length)
     {
@@ -590,7 +665,7 @@ globus_l_condor_increase_buffer(
                     state->buffer_length + GLOBUS_CONDOR_READ_BUFFER_SIZE);
         if (state->buffer == NULL)
         {
-            SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_ERROR, ("realloc() failed\n"));
+            SEGCondorDebug(SEG_CONDOR_DEBUG_ERROR, ("realloc() failed\n"));
 
             rc = SEG_CONDOR_ERROR_OUT_OF_MEMORY;
             goto error;
@@ -599,13 +674,11 @@ globus_l_condor_increase_buffer(
 
     state->buffer_length += GLOBUS_CONDOR_READ_BUFFER_SIZE;
 
-    SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_INFO,
-            ("globus_l_condor_increase_buffer() exits w/success\n"));
+    SEGCondorExit();
     return 0;
 
 error:
-    SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_WARN,
-            ("globus_l_condor_increase_buffer() exits w/failure\n"));
+    SEGCondorExit();
     state->buffer = save;
     return rc;
 }
@@ -619,8 +692,9 @@ globus_l_condor_parse_events(
     char *                              eot;
     int                                 rc;
     char *                              p;
-    SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_INFO,
-            ("globus_l_condor_parse_events() called\n"));
+    GlobusFuncName(globus_l_condor_parse_events);
+
+    SEGCondorEnter();
 
     state->buffer[state->buffer_point + state->buffer_valid] = '\0';
 
@@ -654,8 +728,7 @@ globus_l_condor_parse_events(
         p = state->buffer + state->buffer_point;
     }
 
-    SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_INFO,
-            ("globus_l_condor_parse_events() exits\n"));
+    SEGCondorExit();
     return 0;
 }
 /* globus_l_condor_parse_events() */
@@ -730,8 +803,11 @@ globus_l_condor_parse_event(
             float r;
         } r;
     } pu;
+    GlobusFuncName(globus_l_condor_parse_event);
 
-    SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_TRACE,
+    SEGCondorEnter();
+
+    SEGCondorDebug(SEG_CONDOR_DEBUG_TRACE,
             ("parsing event %s\n", buffer));
     p = buffer;
 
@@ -749,14 +825,14 @@ globus_l_condor_parse_event(
         }
         if (!*p)
         {
-            SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_WARN,
+            SEGCondorDebug(SEG_CONDOR_DEBUG_WARN,
                 ("short buffer"));
             return 1;
         }
         *(p++) = '\0';
         if (*p == '\0')
         {
-            SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_WARN,
+            SEGCondorDebug(SEG_CONDOR_DEBUG_WARN,
                 ("short buffer"));
             return 1;
         }
@@ -801,7 +877,7 @@ globus_l_condor_parse_event(
 
             if (*p == '\0')
             {
-                SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_WARN,
+                SEGCondorDebug(SEG_CONDOR_DEBUG_WARN,
                     ("short buffer"));
                 return 1;
             }
@@ -818,7 +894,7 @@ globus_l_condor_parse_event(
             p += 3;
             if (*p == '\0')
             {
-                SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_WARN,
+                SEGCondorDebug(SEG_CONDOR_DEBUG_WARN,
                     ("short buffer"));
                 return 1;
             }
@@ -849,7 +925,7 @@ globus_l_condor_parse_event(
             p += 3;
             if (*p == '\0')
             {
-                SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_WARN,
+                SEGCondorDebug(SEG_CONDOR_DEBUG_WARN,
                     ("short buffer"));
                 return 1;
             }
@@ -859,13 +935,13 @@ globus_l_condor_parse_event(
             p += len;
             if (*p == '\0')
             {
-                SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_WARN,
+                SEGCondorDebug(SEG_CONDOR_DEBUG_WARN,
                     ("short buffer"));
                 return 1;
             }
             if (strncmp(p, "</r>", 4) != 0)
             {
-                SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_WARN,
+                SEGCondorDebug(SEG_CONDOR_DEBUG_WARN,
                     ("expected </r>, got %s\n", p));
                 return 1;
             }
@@ -875,7 +951,7 @@ globus_l_condor_parse_event(
         }
         else
         {
-            SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_ERROR,
+            SEGCondorDebug(SEG_CONDOR_DEBUG_ERROR,
                 ("unknown token at %s\n", p));
             break;
         }
@@ -885,7 +961,7 @@ globus_l_condor_parse_event(
         case EVENT_TYPE_NUMBER:
             if (pu.type != CONDOR_INTEGER)
             {
-                SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_WARN,
+                SEGCondorDebug(SEG_CONDOR_DEBUG_WARN,
                     ("EventTypeNumber: expected int, got %d\n", pu.type));
                 break;
 
@@ -895,7 +971,7 @@ globus_l_condor_parse_event(
         case EVENT_TIME:
             if (pu.type != CONDOR_STRING)
             {
-                SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_WARN,
+                SEGCondorDebug(SEG_CONDOR_DEBUG_WARN,
                     ("EventTime: expected string, got %d\n", pu.type));
                 break;
             }
@@ -919,7 +995,7 @@ globus_l_condor_parse_event(
         case CLUSTER:
             if (pu.type != CONDOR_INTEGER)
             {
-                SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_WARN,
+                SEGCondorDebug(SEG_CONDOR_DEBUG_WARN,
                     ("Cluster: expected int, got %d\n", pu.type));
                 break;
 
@@ -929,7 +1005,7 @@ globus_l_condor_parse_event(
         case PROC:
             if (pu.type != CONDOR_INTEGER)
             {
-                SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_WARN,
+                SEGCondorDebug(SEG_CONDOR_DEBUG_WARN,
                     ("Proc: expected int, got %d\n", pu.type));
                 break;
 
@@ -939,7 +1015,7 @@ globus_l_condor_parse_event(
         case SUBPROC:
             if (pu.type != CONDOR_INTEGER)
             {
-                SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_WARN,
+                SEGCondorDebug(SEG_CONDOR_DEBUG_WARN,
                     ("Subproc: expected int, got %d\n", pu.type));
                 break;
 
@@ -949,7 +1025,7 @@ globus_l_condor_parse_event(
         case TERMINATED_NORMALLY:
             if (pu.type != CONDOR_BOOLEAN)
             {
-                SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_WARN,
+                SEGCondorDebug(SEG_CONDOR_DEBUG_WARN,
                     ("TerminatedNormally: expected bool, got %d\n", pu.type));
                 break;
 
@@ -959,7 +1035,7 @@ globus_l_condor_parse_event(
         case RETURN_VALUE:
             if (pu.type != CONDOR_INTEGER)
             {
-                SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_WARN,
+                SEGCondorDebug(SEG_CONDOR_DEBUG_WARN,
                     ("ReturnValue: expected int, got %d\n", pu.type));
                 break;
 
@@ -968,13 +1044,13 @@ globus_l_condor_parse_event(
             break;
         case DONTCARE:
         default:
-            SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_TRACE,
+            SEGCondorDebug(SEG_CONDOR_DEBUG_TRACE,
                 ("Ignoring attribute %s\n", attr));
             break;
         }
         if (strncmp(p, "</a>", 4) != 0)
         {
-            SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_WARN,
+            SEGCondorDebug(SEG_CONDOR_DEBUG_WARN,
                 ("missing </a> at %s\n", p));
             return 1;
         }
@@ -988,7 +1064,7 @@ globus_l_condor_parse_event(
 
     if (event_stamp < start_timestamp)
     {
-        SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_TRACE,
+        SEGCondorDebug(SEG_CONDOR_DEBUG_TRACE,
             ("ignoring old event type %d for job %03d.%03d.%03d\n",
             event_type_number, cluster, proc, subproc));
 
@@ -1009,7 +1085,7 @@ globus_l_condor_parse_event(
 
         if (result != GLOBUS_SUCCESS)
         {
-            SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_WARN,
+            SEGCondorDebug(SEG_CONDOR_DEBUG_WARN,
                 ("Unable to send pending event: %s\n",
                 globus_object_printable_to_string(
                     globus_error_peek(result))));
@@ -1020,7 +1096,7 @@ globus_l_condor_parse_event(
 
         if (result != GLOBUS_SUCCESS)
         {
-            SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_WARN,
+            SEGCondorDebug(SEG_CONDOR_DEBUG_WARN,
                 ("Unable to send pending event: %s\n",
                 globus_object_printable_to_string(
                     globus_error_peek(result))));
@@ -1035,7 +1111,7 @@ globus_l_condor_parse_event(
 
             if (result != GLOBUS_SUCCESS)
             {
-                SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_WARN,
+                SEGCondorDebug(SEG_CONDOR_DEBUG_WARN,
                     ("Unable to send done event: %s\n",
                     globus_object_printable_to_string(
                         globus_error_peek(result))));
@@ -1049,7 +1125,7 @@ globus_l_condor_parse_event(
 
             if (result != GLOBUS_SUCCESS)
             {
-                SEG_CONDOR_DEBUG(SEG_CONDOR_DEBUG_WARN,
+                SEGCondorDebug(SEG_CONDOR_DEBUG_WARN,
                     ("Unable to send failed event: %s\n",
                     globus_object_printable_to_string(
                         globus_error_peek(result))));
