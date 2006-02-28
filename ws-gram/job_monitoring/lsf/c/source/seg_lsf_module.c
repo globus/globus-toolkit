@@ -20,9 +20,6 @@
 
 #include <string.h>
 
-#define SEG_LSF_DEBUG(level, message) \
-    GlobusDebugPrintf(SEG_LSF, level, message)
-
 enum {
     JOB_STAT_NULL = 0x00,
     JOB_STAT_PEND = 0x01,
@@ -37,6 +34,13 @@ enum {
     JOB_STAT_WAIT = (0x200),
     JOB_STAT_UNKWN = 0x10000
 };
+
+#define SEGLsfEnter() \
+        SEGLsfDebug(SEG_LSF_DEBUG_INFO, ("Enter %s\n", _globus_func_name))
+
+#define SEGLsfExit() \
+        SEGLsfDebug(SEG_LSF_DEBUG_INFO, ("Exit %s\n", _globus_func_name))
+
 
 /**
  * Debug levels:
@@ -63,6 +67,48 @@ typedef enum
     SEG_LSF_DEBUG_TRACE = (1<<3)
 }
 globus_l_seg_lsf_debug_level_t;
+
+#ifdef BUILD_DEBUG
+#define SEGLsfDebug(level, message) \
+    GlobusDebugPrintf(SEG_LSF, level, ("%s", globus_l_seg_lsf_level_string(level))); \
+    GlobusDebugPrintf(SEG_LSF, level, message)
+#else
+#define SEGLsfDebug(level, message) \
+    if (level == SEG_LSF_DEBUG_ERROR) \
+    { \
+        fprintf(stderr, "%s", globus_l_seg_lsf_level_string(level)); \
+        globus_l_seg_lsf_debug message; \
+    }
+static
+void
+globus_l_seg_lsf_debug(const char * fmt, ...)
+{
+    va_list ap;
+
+    va_start(ap, fmt);
+    vfprintf(stderr, fmt, ap);
+    va_end(ap);
+}
+#endif
+
+static
+char *
+globus_l_seg_lsf_level_string(globus_l_seg_lsf_debug_level_t level)
+{
+    switch (level)
+    {
+        case SEG_LSF_DEBUG_INFO:
+            return "[INFO] ";
+        case SEG_LSF_DEBUG_WARN:
+            return "[WARN] ";
+        case SEG_LSF_DEBUG_ERROR:
+            return "[ERROR] ";
+        case SEG_LSF_DEBUG_TRACE:
+            return "[TRACE] ";
+        default:
+            return "";
+    }
+}
 
 enum
 {
@@ -203,32 +249,39 @@ globus_l_lsf_module_activate(void)
     int                                 rc;
     globus_reltime_t                    delay;
     globus_result_t                     result;
+    GlobusFuncName(globus_l_lsf_module_activate);
 
     rc = globus_module_activate(GLOBUS_COMMON_MODULE);
     if (rc != GLOBUS_SUCCESS)
     {
+        fprintf(stderr, "Fatal error activating GLOBUS_COMMON_MODULE\n");
         goto error;
     }
+    if (globus_module_getenv("SEG_LSF_DEBUG") == NULL)
+    {
+        globus_module_setenv("SEG_LSF_DEBUG", "ERROR");
+    }
+    GlobusDebugInit(SEG_LSF, INFO WARN ERROR TRACE);
+
+    SEGLsfEnter();
+
     rc = globus_mutex_init(&globus_l_lsf_mutex, NULL);
 
     if (rc != GLOBUS_SUCCESS)
     {
+        SEGLsfDebug(SEG_LSF_DEBUG_ERROR,
+                ("Fatal error initializing mutex\n"));
         goto deactivate_common_error;
     }
     rc = globus_cond_init(&globus_l_lsf_cond, NULL);
     if (rc != GLOBUS_SUCCESS)
     {
+        SEGLsfDebug(SEG_LSF_DEBUG_ERROR,
+                ("Fatal error initializing cond\n"));
         goto destroy_mutex_error;
     }
     shutdown_called = GLOBUS_FALSE;
     callback_count = 0;
-
-    GlobusDebugInit(
-        SEG_LSF,
-        SEG_LSF_DEBUG_INFO
-        SEG_LSF_DEBUG_WARN
-        SEG_LSF_DEBUG_ERROR
-        SEG_LSF_DEBUG_TRACE);
 
     logfile_state = globus_libc_calloc(
             1,
@@ -236,13 +289,16 @@ globus_l_lsf_module_activate(void)
 
     if (logfile_state == NULL)
     {
+        SEGLsfDebug(SEG_LSF_DEBUG_ERROR,
+                ("Fatal error: out of memory\n"));
         goto destroy_cond_error;
-        return 1;
     }
 
     rc = globus_l_lsf_increase_buffer(logfile_state);
     if (rc != GLOBUS_SUCCESS)
     {
+        SEGLsfDebug(SEG_LSF_DEBUG_ERROR,
+            ("Fatal error (out of memory)\n"));
         goto free_logfile_state_error;
     }
 
@@ -252,6 +308,9 @@ globus_l_lsf_module_activate(void)
 
     if (result != GLOBUS_SUCCESS)
     {
+        SEGLsfDebug(SEG_LSF_DEBUG_ERROR,
+                ("Fatal error (unable to parse timestamp)\n"));
+
         goto free_logfile_state_buffer_error;
     }
 
@@ -267,8 +326,10 @@ globus_l_lsf_module_activate(void)
             &logfile_state->log_dir);
     if (result != GLOBUS_SUCCESS)
     {
-        SEG_LSF_DEBUG(SEG_LSF_DEBUG_WARN,
-                ("unable to find log file in configuration\n"));
+        SEGLsfDebug(SEG_LSF_DEBUG_ERROR,
+                ("Error retrieving log_path attribute from " 
+                 "$GLOBUS_LOCATION/etc/globus-lsf.conf\n"));
+                
         goto free_logfile_state_buffer_error;
     }
     /* Convert timestamp to filename */
@@ -280,15 +341,15 @@ globus_l_lsf_module_activate(void)
 
         if (logfile_state->fp == NULL)
         {
+            SEGLsfDebug(SEG_LSF_DEBUG_ERROR,
+                    ("Error opening %s: %s\n",
+                    logfile_state->path,
+                    sys_errlist[errno]));
             rc = SEG_LSF_ERROR_OUT_OF_MEMORY;
 
             goto free_logfile_state_path_error;
         }
         GlobusTimeReltimeSet(delay, 0, 0);
-    }
-    else if(rc == SEG_LSF_ERROR_LOG_NOT_PRESENT)
-    {
-        GlobusTimeReltimeSet(delay, 1, 0);
     }
     else
     {
@@ -303,6 +364,9 @@ globus_l_lsf_module_activate(void)
 
     if (result != GLOBUS_SUCCESS)
     {
+        SEGLsfDebug(SEG_LSF_DEBUG_ERROR,
+                ("Error registering oneshot: %s\n",
+                globus_error_print_friendly(globus_error_peek(result))));
         goto free_logfile_state_path_error;
     }
     callback_count++;
@@ -337,6 +401,10 @@ static
 int
 globus_l_lsf_module_deactivate(void)
 {
+    GlobusFuncName(globus_l_lsf_module_deactivate);
+
+    SEGLsfEnter();
+
     globus_mutex_lock(&globus_l_lsf_mutex);
     shutdown_called = GLOBUS_TRUE;
 
@@ -346,6 +414,7 @@ globus_l_lsf_module_deactivate(void)
     }
     globus_mutex_unlock(&globus_l_lsf_mutex);
 
+    SEGLsfExit();
     GlobusDebugDestroy(SEG_LSF);
 
     globus_module_deactivate(GLOBUS_COMMON_MODULE);
@@ -380,13 +449,14 @@ globus_l_lsf_read_callback(
     globus_reltime_t                    delay;
     globus_result_t                     result;
     struct stat                         s;
+    GlobusFuncName(globus_l_lsf_read_callback);
 
-    SEG_LSF_DEBUG(SEG_LSF_DEBUG_INFO, ("globus_l_lsf_read_callback()\n"));
+    SEGLsfEnter();
 
     globus_mutex_lock(&globus_l_lsf_mutex);
     if (shutdown_called)
     {
-        SEG_LSF_DEBUG(SEG_LSF_DEBUG_INFO, ("polling while deactivating"));
+        SEGLsfDebug(SEG_LSF_DEBUG_INFO, ("polling while deactivating"));
 
         globus_mutex_unlock(&globus_l_lsf_mutex);
         goto error;
@@ -399,6 +469,8 @@ globus_l_lsf_read_callback(
             state->event_idx_stat.st_mtime != s.st_mtime)
         || (rc != 0 && errno != ENOENT))
     {
+        SEGLsfDebug(SEG_LSF_DEBUG_INFO,
+                ("Log file was rotated since last read\n"));
         /* Log was rotated since we started our read, so we need to
          * figure out what we need to read
          */
@@ -429,20 +501,20 @@ globus_l_lsf_read_callback(
         max_to_read = state->buffer_length - state->buffer_valid
                 - state->buffer_point;
 
-        SEG_LSF_DEBUG(SEG_LSF_DEBUG_TRACE,
+        SEGLsfDebug(SEG_LSF_DEBUG_TRACE,
                 ("reading a maximum of %u bytes\n", max_to_read));
 
         rc = fread(state->buffer + state->buffer_point + state->buffer_valid,
                 1, max_to_read, state->fp);
         
-        SEG_LSF_DEBUG(SEG_LSF_DEBUG_TRACE,
+        SEGLsfDebug(SEG_LSF_DEBUG_TRACE,
                 ("read %d bytes\n", rc));
 
         if (rc < max_to_read)
         {
             if (feof(state->fp))
             {
-                SEG_LSF_DEBUG(SEG_LSF_DEBUG_TRACE, ("hit eof\n"));
+                SEGLsfDebug(SEG_LSF_DEBUG_TRACE, ("hit eof\n"));
                 eof_hit = GLOBUS_TRUE;
                 clearerr(state->fp);
             }
@@ -455,10 +527,8 @@ globus_l_lsf_read_callback(
         state->buffer_valid += rc;
 
         /* Parse data */
-        SEG_LSF_DEBUG(SEG_LSF_DEBUG_TRACE, ("parsing events\n"));
         rc = globus_l_lsf_parse_events(state);
 
-        SEG_LSF_DEBUG(SEG_LSF_DEBUG_TRACE, ("cleaning buffer\n"));
         rc = globus_l_lsf_clean_buffer(state);
     }
 
@@ -499,6 +569,7 @@ globus_l_lsf_read_callback(
     {
         goto error;
     }
+    SEGLsfExit();
     return;
 error:
     globus_mutex_lock(&globus_l_lsf_mutex);
@@ -513,8 +584,7 @@ error:
     }
     globus_mutex_unlock(&globus_l_lsf_mutex);
 
-    SEG_LSF_DEBUG(SEG_LSF_DEBUG_WARN,
-            ("globus_l_lsf_read_callback() exited with error\n"));
+    SEGLsfExit();
     return;
 
 }
@@ -546,17 +616,19 @@ globus_l_lsf_find_logfile(
     int                                 num_idx_files;
     time_t                              main_events_start;
     time_t                              most_recent_event;
+    GlobusFuncName(globus_l_lsf_find_logfile);
 
-    SEG_LSF_DEBUG(SEG_LSF_DEBUG_INFO, ("globus_l_lsf_find_logfile()\n"));
+    SEGLsfEnter();
 
     if (state->path == NULL)
     {
-        SEG_LSF_DEBUG(SEG_LSF_DEBUG_TRACE, ("allocating path\n"));
+        SEGLsfDebug(SEG_LSF_DEBUG_TRACE, ("Allocating path\n"));
         state->path = malloc(strlen(state->log_dir) + sizeof(lsf_log_prefix)
                 + 10);
 
         if (state->path == NULL)
         {
+            SEGLsfDebug(SEG_LSF_DEBUG_WARN, ("Out of memory\n"));
             rc = SEG_LSF_ERROR_OUT_OF_MEMORY;
             goto error;
         }
@@ -565,6 +637,12 @@ globus_l_lsf_find_logfile(
     {
         state->event_idx_path = malloc(strlen(state->log_dir)
                 + sizeof(lsf_idx_name) + 1);
+        if (state->event_idx_path == NULL)
+        {
+            SEGLsfDebug(SEG_LSF_DEBUG_WARN, ("Out of memory\n"));
+            rc = SEG_LSF_ERROR_OUT_OF_MEMORY;
+            goto error;
+        }
         sprintf(state->event_idx_path, "%s/%s", state->log_dir, lsf_idx_name);
     }
 
@@ -632,12 +710,12 @@ globus_l_lsf_find_logfile(
         while (state->event_idx_stat.st_mtime != s.st_mtime);
     }
 
-    SEG_LSF_DEBUG(SEG_LSF_DEBUG_INFO,
+    SEGLsfDebug(SEG_LSF_DEBUG_INFO,
             ("globus_l_lsf_find_logfile() exits w/out error\n"));
     return 0;
 
 error:
-    SEG_LSF_DEBUG(SEG_LSF_DEBUG_WARN,
+    SEGLsfDebug(SEG_LSF_DEBUG_WARN,
             ("globus_l_lsf_find_logfile() exits w/error\n"));
     return rc;
 }
@@ -652,7 +730,7 @@ int
 globus_l_lsf_clean_buffer(
     globus_l_lsf_logfile_state_t *      state)
 {
-    SEG_LSF_DEBUG(SEG_LSF_DEBUG_INFO,
+    SEGLsfDebug(SEG_LSF_DEBUG_INFO,
             ("globus_l_lsf_clean_buffer() called\n"));
 
     /* move data to head of buffer */
@@ -669,7 +747,7 @@ globus_l_lsf_clean_buffer(
             state->buffer_point = 0;
         }
     }
-    SEG_LSF_DEBUG(SEG_LSF_DEBUG_INFO,
+    SEGLsfDebug(SEG_LSF_DEBUG_INFO,
             ("globus_l_lsf_clean_buffer() exits\n"));
     return 0;
 }
@@ -692,7 +770,7 @@ globus_l_lsf_increase_buffer(
     const size_t                        GLOBUS_LSF_READ_BUFFER_SIZE = 4096;
     int                                 rc;
 
-    SEG_LSF_DEBUG(SEG_LSF_DEBUG_INFO,
+    SEGLsfDebug(SEG_LSF_DEBUG_INFO,
             ("globus_l_lsf_increase_buffer() called\n"));
     /* If the buffer is full, resize */
     if (state->buffer_valid == state->buffer_length)
@@ -701,7 +779,7 @@ globus_l_lsf_increase_buffer(
                     state->buffer_length + GLOBUS_LSF_READ_BUFFER_SIZE);
         if (state->buffer == NULL)
         {
-            SEG_LSF_DEBUG(SEG_LSF_DEBUG_ERROR, ("realloc() failed\n"));
+            SEGLsfDebug(SEG_LSF_DEBUG_ERROR, ("realloc() failed\n"));
 
             rc = SEG_LSF_ERROR_OUT_OF_MEMORY;
             goto error;
@@ -710,12 +788,12 @@ globus_l_lsf_increase_buffer(
 
     state->buffer_length += GLOBUS_LSF_READ_BUFFER_SIZE;
 
-    SEG_LSF_DEBUG(SEG_LSF_DEBUG_INFO,
+    SEGLsfDebug(SEG_LSF_DEBUG_INFO,
             ("globus_l_lsf_increase_buffer() exits w/success\n"));
     return 0;
 
 error:
-    SEG_LSF_DEBUG(SEG_LSF_DEBUG_WARN,
+    SEGLsfDebug(SEG_LSF_DEBUG_WARN,
             ("globus_l_lsf_increase_buffer() exits w/failure\n"));
     state->buffer = save;
     return rc;
@@ -735,7 +813,7 @@ globus_l_lsf_parse_events(
     int                                 job_status;
     int                                 exit_status;
     long                                offset;
-    SEG_LSF_DEBUG(SEG_LSF_DEBUG_INFO,
+    SEGLsfDebug(SEG_LSF_DEBUG_INFO,
             ("globus_l_lsf_parse_events() called\n"));
 
     while ((eol = memchr(state->buffer + state->buffer_point,
@@ -744,7 +822,7 @@ globus_l_lsf_parse_events(
     {
         *eol = '\0';
 
-        SEG_LSF_DEBUG(SEG_LSF_DEBUG_TRACE,
+        SEGLsfDebug(SEG_LSF_DEBUG_TRACE,
                 ("parsing line %s\n", state->buffer + state->buffer_point));
 
         if (state->buffer[state->buffer_point] == '#')
@@ -808,7 +886,7 @@ globus_l_lsf_parse_events(
                  * The job is pending, that is, it has not yet been started.
                  */
 
-                SEG_LSF_DEBUG(SEG_LSF_DEBUG_TRACE,
+                SEGLsfDebug(SEG_LSF_DEBUG_TRACE,
                         ("ignoring JOB_STATUS: job %s in PEND state (%ld)\n",
                         job_id_buffer, event_timestamp));
                 break;
@@ -817,7 +895,7 @@ globus_l_lsf_parse_events(
                  * The  job  has  been  suspended,  either  by its owner or
                  * the LSF administrator, while pending.
                  */
-                SEG_LSF_DEBUG(SEG_LSF_DEBUG_TRACE,
+                SEGLsfDebug(SEG_LSF_DEBUG_TRACE,
                         ("ignoring JOB_STATUS: job %s in PSUSP state (%ld)\n",
                         job_id_buffer, event_timestamp));
                 break;
@@ -825,7 +903,7 @@ globus_l_lsf_parse_events(
                 /*
                  * the job is currently running.
                  */
-                SEG_LSF_DEBUG(SEG_LSF_DEBUG_TRACE,
+                SEGLsfDebug(SEG_LSF_DEBUG_TRACE,
                         ("ignoring JOB_STATUS: job %s in RUN state (%ld)\n",
                         job_id_buffer, event_timestamp));
                 break;
@@ -841,7 +919,7 @@ globus_l_lsf_parse_events(
                  * - The run window  of  the  job's  queue  is  closed.  See
                  *   bqueues(1),
                  */
-                SEG_LSF_DEBUG(SEG_LSF_DEBUG_TRACE,
+                SEGLsfDebug(SEG_LSF_DEBUG_TRACE,
                         ("ignoring JOB_STATUS: job %s in SSUSP state (%ld)\n",
                         job_id_buffer, event_timestamp));
                 break;
@@ -850,7 +928,7 @@ globus_l_lsf_parse_events(
                  * The job has been suspended, either  by  its  owner  or
                  * the  LSF administrator, while running.
                  */
-                SEG_LSF_DEBUG(SEG_LSF_DEBUG_TRACE,
+                SEGLsfDebug(SEG_LSF_DEBUG_TRACE,
                         ("ignoring JOB_STATUS: job %s in SSUSP state (%ld)\n",
                         job_id_buffer, event_timestamp));
                 break;
@@ -913,7 +991,7 @@ globus_l_lsf_parse_events(
                 /*
                  * Post job process done successfully
                  */
-                SEG_LSF_DEBUG(SEG_LSF_DEBUG_TRACE,
+                SEGLsfDebug(SEG_LSF_DEBUG_TRACE,
                         ("ignoring JOB_STATUS: job %s in PDONE state (%ld)\n",
                         job_id_buffer, event_timestamp));
                 break;
@@ -921,7 +999,7 @@ globus_l_lsf_parse_events(
                 /*
                  * Post job process has error
                  */
-                SEG_LSF_DEBUG(SEG_LSF_DEBUG_TRACE,
+                SEGLsfDebug(SEG_LSF_DEBUG_TRACE,
                         ("ignoring JOB_STATUS: job %s in PERR state (%ld)\n",
                         job_id_buffer, event_timestamp));
                 break;
@@ -930,18 +1008,18 @@ globus_l_lsf_parse_events(
                  * For  jobs  submitted to a chunk job queue, members of a
                  * chunk job that are waiting to run.
                  */
-                SEG_LSF_DEBUG(SEG_LSF_DEBUG_TRACE,
+                SEGLsfDebug(SEG_LSF_DEBUG_TRACE,
                         ("ignoring JOB_STATUS: job %s in WAIT state (%ld)\n",
                         job_id_buffer, event_timestamp));
                 break;
             case JOB_STAT_UNKWN:
-                SEG_LSF_DEBUG(SEG_LSF_DEBUG_TRACE,
+                SEGLsfDebug(SEG_LSF_DEBUG_TRACE,
                         ("ignoring JOB_STATUS: job %s in UNKNWN state "
                                 "(%ld)\n",
                         job_id_buffer, event_timestamp));
                 break;
             case JOB_STAT_NULL:
-                SEG_LSF_DEBUG(SEG_LSF_DEBUG_TRACE,
+                SEGLsfDebug(SEG_LSF_DEBUG_TRACE,
                         ("ignoring JOB_STATUS: job %s in NULL state (%ld)\n",
                         job_id_buffer, event_timestamp));
                 break;
@@ -949,7 +1027,7 @@ globus_l_lsf_parse_events(
         }
         else
         {
-            SEG_LSF_DEBUG(SEG_LSF_DEBUG_TRACE,
+            SEGLsfDebug(SEG_LSF_DEBUG_TRACE,
                     ("ignoring line: %s",
                     state->buffer + state->buffer_point));
         }
@@ -962,7 +1040,7 @@ next_line:
         }
     }
 
-    SEG_LSF_DEBUG(SEG_LSF_DEBUG_INFO,
+    SEGLsfDebug(SEG_LSF_DEBUG_INFO,
             ("globus_l_lsf_parse_events() exits\n"));
     return 0;
 }

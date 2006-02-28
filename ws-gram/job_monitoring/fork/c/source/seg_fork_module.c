@@ -22,12 +22,15 @@
 #include <time.h>
 #include <string.h>
 
-#define SEG_FORK_DEBUG(level, message) \
-    GlobusDebugPrintf(SEG_FORK, level, message)
+#define SEGForkEnter() \
+        SEGForkDebug(SEG_FORK_DEBUG_INFO, ("Enter %s\n", _globus_func_name))
+
+#define SEGForkExit() \
+        SEGForkDebug(SEG_FORK_DEBUG_INFO, ("Exit %s\n", _globus_func_name))
 
 /**
  * Debug levels:
- * If the environment variable SEG_FORK_DEBUG is set to a bitwise or
+ * If the environment variable SEGForkDebug is set to a bitwise or
  * of these values, then a corresponding log message will be generated.
  */
 typedef enum
@@ -50,6 +53,48 @@ typedef enum
     SEG_FORK_DEBUG_TRACE = (1<<3)
 }
 globus_l_seg_fork_debug_level_t;
+
+#ifdef BUILD_DEBUG
+#define SEGForkDebug(level, message) \
+    GlobusDebugPrintf(SEG_FORK, level, ("%s", globus_l_seg_fork_level_string(level))); \
+    GlobusDebugPrintf(SEG_FORK, level, message)
+#else
+#define SEGForkDebug(level, message) \
+    if (level == SEG_FORK_DEBUG_ERROR) \
+    { \
+        fprintf(stderr, "%s", globus_l_seg_fork_level_string(level)); \
+        globus_l_seg_fork_debug message; \
+    }
+static
+void
+globus_l_seg_fork_debug(const char * fmt, ...)
+{
+    va_list ap;
+
+    va_start(ap, fmt);
+    vfprintf(stderr, fmt, ap);
+    va_end(ap);
+}
+#endif
+
+static
+char *
+globus_l_seg_fork_level_string(globus_l_seg_fork_debug_level_t level)
+{
+    switch (level)
+    {
+        case SEG_FORK_DEBUG_INFO:
+            return "[INFO] ";
+        case SEG_FORK_DEBUG_WARN:
+            return "[WARN] ";
+        case SEG_FORK_DEBUG_ERROR:
+            return "[ERROR] ";
+        case SEG_FORK_DEBUG_TRACE:
+            return "[TRACE] ";
+        default:
+            return "";
+    }
+}
 
 enum
 {
@@ -157,32 +202,40 @@ globus_l_fork_module_activate(void)
     int                                 rc;
     globus_reltime_t                    delay;
     globus_result_t                     result;
+    int                                 save_errno;
+    GlobusFuncName(globus_l_fork_module_activate);
 
     rc = globus_module_activate(GLOBUS_COMMON_MODULE);
     if (rc != GLOBUS_SUCCESS)
     {
+        fprintf(stderr, "Fatal error activating GLOBUS_COMMON_MODULE\n");
         goto error;
     }
+    if (globus_module_getenv("SEG_FORK_DEBUG") == NULL)
+    {
+        globus_module_setenv("SEG_FORK_DEBUG", "ERROR");
+    }
+    GlobusDebugInit(SEG_FORK, INFO WARN ERROR TRACE);
+
+    SEGForkEnter();
+
     rc = globus_mutex_init(&globus_l_fork_mutex, NULL);
 
     if (rc != GLOBUS_SUCCESS)
     {
+        SEGForkDebug(SEG_FORK_DEBUG_ERROR,
+                ("Fatal error initializing mutex\n"));
         goto deactivate_common_error;
     }
     rc = globus_cond_init(&globus_l_fork_cond, NULL);
     if (rc != GLOBUS_SUCCESS)
     {
+        SEGForkDebug(SEG_FORK_DEBUG_ERROR,
+                ("Fatal error initializing cond\n"));
         goto destroy_mutex_error;
     }
     shutdown_called = GLOBUS_FALSE;
     callback_count = 0;
-
-    GlobusDebugInit(
-        SEG_FORK,
-        SEG_FORK_DEBUG_INFO
-        SEG_FORK_DEBUG_WARN
-        SEG_FORK_DEBUG_ERROR
-        SEG_FORK_DEBUG_TRACE);
 
     logfile_state = globus_libc_calloc(
             1,
@@ -190,13 +243,18 @@ globus_l_fork_module_activate(void)
 
     if (logfile_state == NULL)
     {
+        save_errno = errno;
+        SEGForkDebug(SEG_FORK_DEBUG_ERROR,
+                ("Fatal error: out of memory\n"));
         goto destroy_cond_error;
-        return 1;
     }
 
     rc = globus_l_fork_increase_buffer(logfile_state);
     if (rc != GLOBUS_SUCCESS)
     {
+        save_errno = errno;
+        SEGForkDebug(SEG_FORK_DEBUG_ERROR,
+                ("Fatal error: out of memory\n"));
         goto free_logfile_state_error;
     }
 
@@ -206,6 +264,8 @@ globus_l_fork_module_activate(void)
 
     if (result != GLOBUS_SUCCESS)
     {
+        SEGForkDebug(SEG_FORK_DEBUG_ERROR,
+                ("Fatal error (unable to parse timestamp)\n"));
         goto free_logfile_state_buffer_error;
     }
 
@@ -225,13 +285,12 @@ globus_l_fork_module_activate(void)
         {
             rc = SEG_FORK_ERROR_OUT_OF_MEMORY;
 
+            SEGForkDebug(SEG_FORK_DEBUG_ERROR,
+                    ("Fatal error (open %s): %s\n",
+                    logfile_state->path,
+                    sys_errlist[errno]));
             goto free_logfile_state_path_error;
         }
-        GlobusTimeReltimeSet(delay, 0, 0);
-    }
-    else if(rc == SEG_FORK_ERROR_LOG_NOT_PRESENT)
-    {
-        GlobusTimeReltimeSet(delay, 60, 0);
     }
     else
     {
@@ -273,6 +332,10 @@ static
 int
 globus_l_fork_module_deactivate(void)
 {
+    GlobusFuncName(globus_l_fork_module_deactivate);
+
+    SEGForkEnter();
+
     globus_mutex_lock(&globus_l_fork_mutex);
     shutdown_called = GLOBUS_TRUE;
 
@@ -282,6 +345,7 @@ globus_l_fork_module_deactivate(void)
     }
     globus_mutex_unlock(&globus_l_fork_mutex);
 
+    SEGForkExit();
     GlobusDebugDestroy(SEG_FORK);
 
     globus_module_deactivate(GLOBUS_COMMON_MODULE);
@@ -300,14 +364,14 @@ globus_l_fork_read_callback(
     globus_bool_t                       eof_hit = GLOBUS_FALSE;
     globus_reltime_t                    delay;
     globus_result_t                     result;
+    GlobusFuncName(globus_l_fork_read_callback);
 
-    SEG_FORK_DEBUG(SEG_FORK_DEBUG_INFO,
-            ("globus_l_fork_read_callback()\n"));
+    SEGForkEnter();
 
     globus_mutex_lock(&globus_l_fork_mutex);
     if (shutdown_called)
     {
-        SEG_FORK_DEBUG(SEG_FORK_DEBUG_INFO,
+        SEGForkDebug(SEG_FORK_DEBUG_INFO,
                 ("polling while deactivating"));
 
         globus_mutex_unlock(&globus_l_fork_mutex);
@@ -323,20 +387,20 @@ globus_l_fork_read_callback(
         max_to_read = state->buffer_length - state->buffer_valid
                 - state->buffer_point - 1;
 
-        SEG_FORK_DEBUG(SEG_FORK_DEBUG_TRACE,
+        SEGForkDebug(SEG_FORK_DEBUG_TRACE,
                 ("reading a maximum of %u bytes\n", max_to_read));
 
         rc = fread(state->buffer + state->buffer_point + state->buffer_valid,
                 1, max_to_read, state->fp);
         
-        SEG_FORK_DEBUG(SEG_FORK_DEBUG_TRACE,
+        SEGForkDebug(SEG_FORK_DEBUG_TRACE,
                 ("read %d bytes\n", rc));
 
         if (rc < max_to_read)
         {
             if (feof(state->fp))
             {
-                SEG_FORK_DEBUG(SEG_FORK_DEBUG_TRACE, ("hit eof\n"));
+                SEGForkDebug(SEG_FORK_DEBUG_TRACE, ("hit eof\n"));
                 eof_hit = GLOBUS_TRUE;
                 clearerr(state->fp);
             }
@@ -349,10 +413,10 @@ globus_l_fork_read_callback(
         state->buffer_valid += rc;
 
         /* Parse data */
-        SEG_FORK_DEBUG(SEG_FORK_DEBUG_TRACE, ("parsing events\n"));
+        SEGForkDebug(SEG_FORK_DEBUG_TRACE, ("parsing events\n"));
         rc = globus_l_fork_parse_events(state);
 
-        SEG_FORK_DEBUG(SEG_FORK_DEBUG_TRACE, ("cleaning buffer\n"));
+        SEGForkDebug(SEG_FORK_DEBUG_TRACE, ("cleaning buffer\n"));
         rc = globus_l_fork_clean_buffer(state);
 
         if (eof_hit)
@@ -387,8 +451,7 @@ globus_l_fork_read_callback(
     {
         goto error;
     }
-    SEG_FORK_DEBUG(SEG_FORK_DEBUG_INFO,
-            ("globus_l_fork_read_callback() exited with/success\n"));
+    SEGForkExit();
     return;
 error:
     globus_mutex_lock(&globus_l_fork_mutex);
@@ -403,8 +466,7 @@ error:
     }
     globus_mutex_unlock(&globus_l_fork_mutex);
 
-    SEG_FORK_DEBUG(SEG_FORK_DEBUG_WARN,
-            ("globus_l_fork_read_callback() exited with/error\n"));
+    SEGForkExit();
     return;
 }
 /* globus_l_fork_read_callback() */
@@ -427,16 +489,16 @@ int
 globus_l_fork_find_logfile(
     globus_l_fork_logfile_state_t *     state)
 {
-    char                                logfile[] = "/tmp/gram_fork_log";
     struct stat                         s;
     int                                 rc;
+    int                                 save_errno;
+    GlobusFuncName(globus_l_fork_find_logfile);
 
-    SEG_FORK_DEBUG(SEG_FORK_DEBUG_INFO,
-            ("globus_l_fork_find_logfile()\n"));
+    SEGForkEnter();
 
     if (state->path == NULL)
     {
-        SEG_FORK_DEBUG(SEG_FORK_DEBUG_TRACE, ("allocating path\n"));
+        SEGForkDebug(SEG_FORK_DEBUG_TRACE, ("allocating path\n"));
 
         globus_common_get_attribute_from_config_file(NULL,
                 "etc/globus-fork.conf", "log_path", &state->path);
@@ -454,16 +516,18 @@ globus_l_fork_find_logfile(
 
         if (rc < 0)
         {
-            switch (errno)
+            save_errno = errno;
+
+            switch (save_errno)
             {
                 case ENOENT:
-                    SEG_FORK_DEBUG(SEG_FORK_DEBUG_ERROR,
+                    SEGForkDebug(SEG_FORK_DEBUG_WARN,
                         ("missing log file\n"));
                     rc = SEG_FORK_ERROR_LOG_NOT_PRESENT;
                     goto error;
 
                 case EACCES:
-                    SEG_FORK_DEBUG(SEG_FORK_DEBUG_ERROR,
+                    SEGForkDebug(SEG_FORK_DEBUG_WARN,
                         ("permissions needed to access logfile %s\n",
                         state->path));
                     /* Permission problem (fatal) */
@@ -474,26 +538,26 @@ globus_l_fork_find_logfile(
                 case ELOOP:
                 case ENAMETOOLONG:
                     /* broken path (fatal) */
-                    SEG_FORK_DEBUG(SEG_FORK_DEBUG_ERROR,
+                    SEGForkDebug(SEG_FORK_DEBUG_WARN,
                         ("broken path to logfile %s\n",
                         state->path));
                     rc = SEG_FORK_ERROR_BAD_PATH;
                     goto error;
 
                 case EFAULT:
-                    SEG_FORK_DEBUG(SEG_FORK_DEBUG_ERROR,
+                    SEGForkDebug(SEG_FORK_DEBUG_ERROR,
                         ("bad pointer\n"));
                     globus_assert(errno != EFAULT);
 
                 case EINTR:
                 case ENOMEM: /* low kernel mem */
                     /* try again later */
-                    SEG_FORK_DEBUG(SEG_FORK_DEBUG_WARN,
+                    SEGForkDebug(SEG_FORK_DEBUG_WARN,
                         ("going to have to retry stat()\n"));
                     continue;
 
                 default:
-                    SEG_FORK_DEBUG(SEG_FORK_DEBUG_ERROR,
+                    SEGForkDebug(SEG_FORK_DEBUG_WARN,
                         ("unexpected errno\n"));
                     rc = SEG_FORK_ERROR_UNKNOWN;
                     goto error;
@@ -507,13 +571,24 @@ globus_l_fork_find_logfile(
         goto error;
     }
 
-    SEG_FORK_DEBUG(SEG_FORK_DEBUG_INFO,
-            ("globus_l_fork_find_logfile() exits w/out error\n"));
+    SEGForkExit();
     return 0;
 
 error:
-    SEG_FORK_DEBUG(SEG_FORK_DEBUG_WARN,
-            ("globus_l_fork_find_logfile() exits w/error\n"));
+    if (state->path == NULL)
+    {
+        SEGForkDebug(SEG_FORK_DEBUG_ERROR,
+                ("Error retrieving log_path attribute from "
+                "$GLOBUS_LOCATION/etc/globus-fork.conf\n"));
+    }
+    else
+    {
+        SEGForkDebug(SEG_FORK_DEBUG_ERROR,
+                ("Error reading logfile %s: %s\n",
+                state->path,
+                sys_errlist[save_errno]));
+    }
+    SEGForkExit();
     return rc;
 }
 /* globus_l_fork_find_logfile() */
@@ -527,8 +602,9 @@ int
 globus_l_fork_clean_buffer(
     globus_l_fork_logfile_state_t *     state)
 {
-    SEG_FORK_DEBUG(SEG_FORK_DEBUG_INFO,
-            ("globus_l_fork_clean_buffer() called\n"));
+    GlobusFuncName(globus_l_fork_clean_buffer);
+
+    SEGForkEnter();
 
     /* move data to head of buffer */
     if (state->buffer != NULL)
@@ -544,8 +620,7 @@ globus_l_fork_clean_buffer(
             state->buffer_point = 0;
         }
     }
-    SEG_FORK_DEBUG(SEG_FORK_DEBUG_INFO,
-            ("globus_l_fork_clean_buffer() exits\n"));
+    SEGForkExit();
     return 0;
 }
 /* globus_l_fork_clean_buffer() */
@@ -566,9 +641,10 @@ globus_l_fork_increase_buffer(
     char *                              save = state->buffer;
     const size_t                        GLOBUS_FORK_READ_BUFFER_SIZE = 4096;
     int                                 rc;
+    GlobusFuncName(globus_l_fork_increase_buffer);
 
-    SEG_FORK_DEBUG(SEG_FORK_DEBUG_INFO,
-            ("globus_l_fork_increase_buffer() called\n"));
+    SEGForkEnter();
+
     /* If the buffer is full, resize */
     if (state->buffer_valid == state->buffer_length)
     {
@@ -576,7 +652,7 @@ globus_l_fork_increase_buffer(
                     state->buffer_length + GLOBUS_FORK_READ_BUFFER_SIZE);
         if (state->buffer == NULL)
         {
-            SEG_FORK_DEBUG(SEG_FORK_DEBUG_ERROR, ("realloc() failed\n"));
+            SEGForkDebug(SEG_FORK_DEBUG_ERROR, ("realloc() failed\n"));
 
             rc = SEG_FORK_ERROR_OUT_OF_MEMORY;
             goto error;
@@ -585,13 +661,11 @@ globus_l_fork_increase_buffer(
 
     state->buffer_length += GLOBUS_FORK_READ_BUFFER_SIZE;
 
-    SEG_FORK_DEBUG(SEG_FORK_DEBUG_INFO,
-            ("globus_l_fork_increase_buffer() exits w/success\n"));
+    SEGForkExit();
     return 0;
 
 error:
-    SEG_FORK_DEBUG(SEG_FORK_DEBUG_WARN,
-            ("globus_l_fork_increase_buffer() exits w/failure\n"));
+    SEGForkExit();
     state->buffer = save;
     return rc;
 }
@@ -612,13 +686,13 @@ globus_l_fork_parse_events(
     int                                 exit_code;
     int                                 jobid_start;
     int                                 jobid_end;
+    GlobusFuncName(globus_l_fork_parse_events);
     enum {
         EXIT_CODE_UNASSIGNED = -1492
 
     };
 
-    SEG_FORK_DEBUG(SEG_FORK_DEBUG_INFO,
-            ("globus_l_fork_parse_events() called\n"));
+    SEGForkEnter();
 
     state->buffer[state->buffer_point + state->buffer_valid] = '\0';
 
@@ -684,8 +758,7 @@ bad_line:
     state->buffer_valid -= p - (state->buffer + state->buffer_point);
     state->buffer_point = p - state->buffer;
 
-    SEG_FORK_DEBUG(SEG_FORK_DEBUG_INFO,
-            ("globus_l_fork_parse_events() exits\n"));
+    SEGForkExit();
     return 0;
 }
 /* globus_l_fork_parse_events() */

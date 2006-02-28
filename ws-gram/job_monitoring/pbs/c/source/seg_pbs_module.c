@@ -21,8 +21,11 @@
 
 #include <string.h>
 
-#define SEG_PBS_DEBUG(level, message) \
-    GlobusDebugPrintf(SEG_PBS, level, message)
+#define SEGPbsEnter() \
+        SEGPbsDebug(SEG_PBS_DEBUG_INFO, ("Enter %s\n", _globus_func_name))
+
+#define SEGPbsExit() \
+        SEGPbsDebug(SEG_PBS_DEBUG_INFO, ("Exit %s\n", _globus_func_name))
 
 /**
  * Debug levels:
@@ -50,6 +53,47 @@ typedef enum
 }
 globus_l_seg_pbs_debug_level_t;
 
+#ifdef BUILD_DEBUG
+#define SEGPbsDebug(level, message) \
+    GlobusDebugPrintf(SEG_PBS, level, ("%s", globus_l_seg_pbs_level_string(level))); \
+    GlobusDebugPrintf(SEG_PBS, level, message)
+#else
+#define SEGPbsDebug(level, message) \
+    if (level == SEG_PBS_DEBUG_ERROR) \
+    { \
+        fprintf(stderr, "%s", globus_l_seg_pbs_level_string(level)); \
+        globus_l_seg_pbs_debug message; \
+    }
+static
+void
+globus_l_seg_pbs_debug(const char * fmt, ...)
+{
+    va_list ap;
+
+    va_start(ap, fmt);
+    vfprintf(stderr, fmt, ap);
+    va_end(ap);
+}
+#endif
+
+static
+char *
+globus_l_seg_pbs_level_string(globus_l_seg_pbs_debug_level_t level)
+{
+    switch (level)
+    {
+        case SEG_PBS_DEBUG_INFO:
+            return "[INFO] ";
+        case SEG_PBS_DEBUG_WARN:
+            return "[WARN] ";
+        case SEG_PBS_DEBUG_ERROR:
+            return "[ERROR] ";
+        case SEG_PBS_DEBUG_TRACE:
+            return "[TRACE] ";
+        default:
+            return "";
+    }
+}
 enum
 {
     SEG_PBS_ERROR_UNKNOWN = 1,
@@ -168,32 +212,38 @@ globus_l_pbs_module_activate(void)
     int                                 rc;
     globus_reltime_t                    delay;
     globus_result_t                     result;
+    struct stat                         st;
+    GlobusFuncName(globus_l_pbs_module_activate);
 
     rc = globus_module_activate(GLOBUS_COMMON_MODULE);
     if (rc != GLOBUS_SUCCESS)
     {
+        fprintf(stderr, "Fatal error activating GLOBUS_COMMON_MODULE\n");
         goto error;
     }
+    if (globus_module_getenv("SEG_PBS_DEBUG") == NULL)
+    {
+        globus_module_setenv("SEG_PBS_DEBUG", "ERROR");
+    }
+    GlobusDebugInit(SEG_PBS, INFO WARN ERROR TRACE);
+
     rc = globus_mutex_init(&globus_l_pbs_mutex, NULL);
 
     if (rc != GLOBUS_SUCCESS)
     {
+        SEGPbsDebug(SEG_PBS_DEBUG_ERROR,
+                ("Fatal error initializing mutex\n"));
         goto deactivate_common_error;
     }
     rc = globus_cond_init(&globus_l_pbs_cond, NULL);
     if (rc != GLOBUS_SUCCESS)
     {
+        SEGPbsDebug(SEG_PBS_DEBUG_ERROR,
+                ("Fatal error initializing cond\n"));
         goto destroy_mutex_error;
     }
     shutdown_called = GLOBUS_FALSE;
     callback_count = 0;
-
-    GlobusDebugInit(
-        SEG_PBS,
-        SEG_PBS_DEBUG_INFO
-        SEG_PBS_DEBUG_WARN
-        SEG_PBS_DEBUG_ERROR
-        SEG_PBS_DEBUG_TRACE);
 
     logfile_state = globus_libc_calloc(
             1,
@@ -201,13 +251,16 @@ globus_l_pbs_module_activate(void)
 
     if (logfile_state == NULL)
     {
+        SEGPbsDebug(SEG_PBS_DEBUG_ERROR,
+                ("Fatal error: out of memory\n"));
         goto destroy_cond_error;
-        return 1;
     }
 
     rc = globus_l_pbs_increase_buffer(logfile_state);
     if (rc != GLOBUS_SUCCESS)
     {
+        SEGPbsDebug(SEG_PBS_DEBUG_ERROR,
+                ("Fatal error: out of memory\n"));
         goto free_logfile_state_error;
     }
 
@@ -216,6 +269,8 @@ globus_l_pbs_module_activate(void)
 
     if (result != GLOBUS_SUCCESS)
     {
+        SEGPbsDebug(SEG_PBS_DEBUG_ERROR,
+                ("Fatal error (unable to parse timestamp)\n"));
         goto free_logfile_state_buffer_error;
     }
 
@@ -234,10 +289,22 @@ globus_l_pbs_module_activate(void)
             &logfile_state->log_dir);
     if (result != GLOBUS_SUCCESS)
     {
-        SEG_PBS_DEBUG(SEG_PBS_DEBUG_WARN,
-                ("unable to find log file in configuration\n"));
+        SEGPbsDebug(SEG_PBS_DEBUG_ERROR,
+                ("Fatal error: unable to read log_path from "
+                "GLOBUS_LOCATION/etc/globus-lsf.conf\n"));
+
         goto free_logfile_state_buffer_error;
     }
+
+    if ((rc = stat(logfile_state->log_dir, &st)) != 0)
+    {
+        SEGPbsDebug(SEG_PBS_DEBUG_ERROR,
+                    ("Fatal error checking log directory: %s\n",
+                     sys_errlist[errno]));
+
+        goto free_logfile_state_buffer_error;
+    }
+
     /* Convert timestamp to filename */
     rc = globus_l_pbs_find_logfile(logfile_state);
 
@@ -247,6 +314,9 @@ globus_l_pbs_module_activate(void)
 
         if (logfile_state->fp == NULL)
         {
+            SEGPbsDebug(SEG_PBS_DEBUG_ERROR,
+                    ("Error opening %s: %s\n",
+                     logfile_state->path, sys_errlist[errno]));
             rc = SEG_PBS_ERROR_OUT_OF_MEMORY;
 
             goto free_logfile_state_path_error;
@@ -255,6 +325,9 @@ globus_l_pbs_module_activate(void)
     }
     else if(rc == SEG_PBS_ERROR_LOG_NOT_PRESENT)
     {
+            SEGPbsDebug(SEG_PBS_DEBUG_WARN,
+                    ("Log file %s not (currently) present\n",
+                     logfile_state->path));
         GlobusTimeReltimeSet(delay, 1, 0);
     }
     else
@@ -269,10 +342,15 @@ globus_l_pbs_module_activate(void)
             logfile_state);
     if (result != GLOBUS_SUCCESS)
     {
+        SEGPbsDebug(SEG_PBS_DEBUG_WARN,
+                ("Error registering oneshot: %s\n",
+                globus_error_print_friendly(globus_error_peek(result))));
+
         goto free_logfile_state_path_error;
     }
     callback_count++;
 
+    SEGPbsExit();
     return 0;
 
 free_logfile_state_path_error:
@@ -303,6 +381,10 @@ static
 int
 globus_l_pbs_module_deactivate(void)
 {
+    GlobusFuncName(globus_l_pbs_module_deactivate);
+
+    SEGPbsEnter();
+
     globus_mutex_lock(&globus_l_pbs_mutex);
     shutdown_called = GLOBUS_TRUE;
 
@@ -312,6 +394,7 @@ globus_l_pbs_module_deactivate(void)
     }
     globus_mutex_unlock(&globus_l_pbs_mutex);
 
+    SEGPbsExit();
     GlobusDebugDestroy(SEG_PBS);
 
     globus_module_deactivate(GLOBUS_COMMON_MODULE);
@@ -345,13 +428,14 @@ globus_l_pbs_read_callback(
     globus_result_t                     result;
     time_t                              now;
     struct tm *                         now_tm;
+    GlobusFuncName(globus_l_pbs_read_callback);
 
-    SEG_PBS_DEBUG(SEG_PBS_DEBUG_INFO, ("globus_l_pbs_read_callback()\n"));
+    SEGPbsEnter();
 
     globus_mutex_lock(&globus_l_pbs_mutex);
     if (shutdown_called)
     {
-        SEG_PBS_DEBUG(SEG_PBS_DEBUG_INFO, ("polling while deactivating"));
+        SEGPbsDebug(SEG_PBS_DEBUG_TRACE, ("polling while deactivating"));
 
         globus_mutex_unlock(&globus_l_pbs_mutex);
         goto error;
@@ -373,20 +457,20 @@ globus_l_pbs_read_callback(
         max_to_read = state->buffer_length - state->buffer_valid
                 - state->buffer_point;
 
-        SEG_PBS_DEBUG(SEG_PBS_DEBUG_TRACE,
+        SEGPbsDebug(SEG_PBS_DEBUG_TRACE,
                 ("reading a maximum of %u bytes\n", max_to_read));
 
         rc = fread(state->buffer + state->buffer_point + state->buffer_valid,
                 1, max_to_read, state->fp);
         
-        SEG_PBS_DEBUG(SEG_PBS_DEBUG_TRACE,
+        SEGPbsDebug(SEG_PBS_DEBUG_TRACE,
                 ("read %d bytes\n", rc));
 
         if (rc < max_to_read)
         {
             if (feof(state->fp))
             {
-                SEG_PBS_DEBUG(SEG_PBS_DEBUG_TRACE, ("hit eof\n"));
+                SEGPbsDebug(SEG_PBS_DEBUG_TRACE, ("hit eof\n"));
                 eof_hit = GLOBUS_TRUE;
                 clearerr(state->fp);
             }
@@ -399,10 +483,8 @@ globus_l_pbs_read_callback(
         state->buffer_valid += rc;
 
         /* Parse data */
-        SEG_PBS_DEBUG(SEG_PBS_DEBUG_TRACE, ("parsing events\n"));
         rc = globus_l_pbs_parse_events(state);
 
-        SEG_PBS_DEBUG(SEG_PBS_DEBUG_TRACE, ("cleaning buffer\n"));
         rc = globus_l_pbs_clean_buffer(state);
     }
 
@@ -411,7 +493,7 @@ globus_l_pbs_read_callback(
      */
     if ((eof_hit && state->old_log) || state->fp == NULL)
     {
-        SEG_PBS_DEBUG(SEG_PBS_DEBUG_TRACE, ("got Log closed msg\n"));
+        SEGPbsDebug(SEG_PBS_DEBUG_TRACE, ("got Log closed msg\n"));
 
         if (state->fp)
         {
@@ -471,8 +553,7 @@ globus_l_pbs_read_callback(
     {
         goto error;
     }
-    SEG_PBS_DEBUG(SEG_PBS_DEBUG_INFO,
-            ("globus_l_pbs_read_callback() exited with/success\n"));
+    SEGPbsExit();
     return;
 error:
     globus_mutex_lock(&globus_l_pbs_mutex);
@@ -487,8 +568,7 @@ error:
     }
     globus_mutex_unlock(&globus_l_pbs_mutex);
 
-    SEG_PBS_DEBUG(SEG_PBS_DEBUG_WARN,
-            ("globus_l_pbs_read_callback() exited with/error\n"));
+    SEGPbsExit();
     return;
 }
 /* globus_l_pbs_read_callback() */
@@ -518,16 +598,18 @@ globus_l_pbs_find_logfile(
     time_t                              now;
     struct stat                         s;
     int                                 rc;
+    GlobusFuncName(globus_l_pbs_find_logfile);
 
-    SEG_PBS_DEBUG(SEG_PBS_DEBUG_INFO, ("globus_l_pbs_find_logfile()\n"));
+    SEGPbsEnter();
 
     if (state->path == NULL)
     {
-        SEG_PBS_DEBUG(SEG_PBS_DEBUG_TRACE, ("allocating path\n"));
+        SEGPbsDebug(SEG_PBS_DEBUG_TRACE, ("allocating path\n"));
         state->path = malloc(strlen(state->log_dir) + 10);
 
         if (state->path == NULL)
         {
+            fprintf(stderr, "Out of memory\n");
             rc = SEG_PBS_ERROR_OUT_OF_MEMORY;
             goto error;
         }
@@ -538,7 +620,8 @@ globus_l_pbs_find_logfile(
     tm_result = globus_libc_localtime_r(&now, &tm_now);
     if (tm_result == NULL)
     {
-        SEG_PBS_DEBUG(SEG_PBS_DEBUG_WARN, ("localtime_r failed\n"));
+        fprintf(stderr, "localtime_r failed\n");
+        SEGPbsDebug(SEG_PBS_DEBUG_WARN, ("localtime_r failed\n"));
         rc = SEG_PBS_ERROR_OUT_OF_MEMORY;
 
         goto error;
@@ -558,7 +641,7 @@ globus_l_pbs_find_logfile(
         state->start_timestamp.tm_mon == 0 &&
         state->start_timestamp.tm_year == 0)
     {
-        SEG_PBS_DEBUG(SEG_PBS_DEBUG_TRACE,
+        SEGPbsDebug(SEG_PBS_DEBUG_TRACE,
                 ("no timestamp set, using current time\n"));
         memcpy(&state->start_timestamp, &tm_now, sizeof(struct tm));
         user_timestamp = GLOBUS_FALSE;
@@ -572,7 +655,9 @@ globus_l_pbs_find_logfile(
     {
         if (tm_result == NULL)
         {
-            SEG_PBS_DEBUG(SEG_PBS_DEBUG_WARN,
+            fprintf(stderr, "Couldn't parse timestamp\n");
+
+            SEGPbsDebug(SEG_PBS_DEBUG_WARN,
                 ("couldn't get tm from timestmap\n"));
 
             rc = SEG_PBS_ERROR_OUT_OF_MEMORY;
@@ -601,8 +686,9 @@ globus_l_pbs_find_logfile(
 
         if (rc < 0)
         {
-            SEG_PBS_DEBUG(SEG_PBS_DEBUG_WARN,
+            SEGPbsDebug(SEG_PBS_DEBUG_WARN,
                 ("couldn't format date to string\n"));
+            fprintf(stderr, "couldn't format date to string\n");
             rc = SEG_PBS_ERROR_OUT_OF_MEMORY;
             goto error;
         }
@@ -616,7 +702,7 @@ globus_l_pbs_find_logfile(
                     /* Doesn't exist, advance to the next day's log
                      * for next try if we're not looking to the future.
                      */
-                    SEG_PBS_DEBUG(SEG_PBS_DEBUG_ERROR,
+                    SEGPbsDebug(SEG_PBS_DEBUG_WARN,
                         ("file %s doesn't exist\n", state->path));
 
                     /* Increment day by 1, then normalize to be a proper
@@ -634,9 +720,10 @@ globus_l_pbs_find_logfile(
                          tm_val.tm_mon == tm_now.tm_mon &&
                          tm_val.tm_mday > tm_now.tm_mday))
                     {
-                        SEG_PBS_DEBUG(SEG_PBS_DEBUG_ERROR,
+                        SEGPbsDebug(SEG_PBS_DEBUG_WARN,
                             ("looking for file in the future!\n"));
                         rc = SEG_PBS_ERROR_LOG_NOT_PRESENT;
+
                         goto error;
                     }
 
@@ -652,7 +739,10 @@ globus_l_pbs_find_logfile(
                     break;
 
                 case EACCES:
-                    SEG_PBS_DEBUG(SEG_PBS_DEBUG_ERROR,
+                    fprintf(stderr, "Error checking file %s: %s\n",
+                            state->path,
+                            sys_errlist[errno]);
+                    SEGPbsDebug(SEG_PBS_DEBUG_ERROR,
                         ("permissions needed to access logfile %s\n",
                         state->path));
                     /* Permission problem (fatal) */
@@ -662,27 +752,30 @@ globus_l_pbs_find_logfile(
                 case ENOTDIR:
                 case ELOOP:
                 case ENAMETOOLONG:
+                    fprintf(stderr, "Error checking file %s: %s\n",
+                            state->path,
+                            sys_errlist[errno]);
                     /* broken path (fatal) */
-                    SEG_PBS_DEBUG(SEG_PBS_DEBUG_ERROR,
+                    SEGPbsDebug(SEG_PBS_DEBUG_ERROR,
                         ("broken path to logfile %s\n",
                         state->path));
                     rc = SEG_PBS_ERROR_BAD_PATH;
                     goto error;
 
                 case EFAULT:
-                    SEG_PBS_DEBUG(SEG_PBS_DEBUG_ERROR,
+                    SEGPbsDebug(SEG_PBS_DEBUG_ERROR,
                         ("bad pointer\n"));
                     globus_assert(errno != EFAULT);
 
                 case EINTR:
                 case ENOMEM: /* low kernel mem */
                     /* try again later */
-                    SEG_PBS_DEBUG(SEG_PBS_DEBUG_WARN,
+                    SEGPbsDebug(SEG_PBS_DEBUG_WARN,
                         ("going to have to retry stat()\n"));
                     continue;
 
                 default:
-                    SEG_PBS_DEBUG(SEG_PBS_DEBUG_ERROR,
+                    SEGPbsDebug(SEG_PBS_DEBUG_ERROR,
                         ("unexpected errno\n"));
                     rc = SEG_PBS_ERROR_UNKNOWN;
                     goto error;
@@ -696,13 +789,11 @@ globus_l_pbs_find_logfile(
         goto error;
     }
 
-    SEG_PBS_DEBUG(SEG_PBS_DEBUG_INFO,
-            ("globus_l_pbs_find_logfile() exits w/out error\n"));
+    SEGPbsExit();
     return 0;
 
 error:
-    SEG_PBS_DEBUG(SEG_PBS_DEBUG_WARN,
-            ("globus_l_pbs_find_logfile() exits w/error\n"));
+    SEGPbsExit();
     return rc;
 }
 /* globus_l_pbs_find_logfile() */
@@ -716,8 +807,9 @@ int
 globus_l_pbs_clean_buffer(
     globus_l_pbs_logfile_state_t *      state)
 {
-    SEG_PBS_DEBUG(SEG_PBS_DEBUG_INFO,
-            ("globus_l_pbs_clean_buffer() called\n"));
+    GlobusFuncName(globus_l_pbs_clean_buffer);
+
+    SEGPbsEnter();
 
     /* move data to head of buffer */
     if (state->buffer != NULL)
@@ -733,8 +825,7 @@ globus_l_pbs_clean_buffer(
             state->buffer_point = 0;
         }
     }
-    SEG_PBS_DEBUG(SEG_PBS_DEBUG_INFO,
-            ("globus_l_pbs_clean_buffer() exits\n"));
+    SEGPbsExit();
     return 0;
 }
 /* globus_l_pbs_clean_buffer() */
@@ -755,9 +846,9 @@ globus_l_pbs_increase_buffer(
     char *                              save = state->buffer;
     const size_t                        GLOBUS_PBS_READ_BUFFER_SIZE = 4096;
     int                                 rc;
+    GlobusFuncName(globus_l_pbs_increase_buffer);
 
-    SEG_PBS_DEBUG(SEG_PBS_DEBUG_INFO,
-            ("globus_l_pbs_increase_buffer() called\n"));
+    SEGPbsEnter();
     /* If the buffer is full, resize */
     if (state->buffer_valid == state->buffer_length)
     {
@@ -765,7 +856,8 @@ globus_l_pbs_increase_buffer(
                     state->buffer_length + GLOBUS_PBS_READ_BUFFER_SIZE);
         if (state->buffer == NULL)
         {
-            SEG_PBS_DEBUG(SEG_PBS_DEBUG_ERROR, ("realloc() failed\n"));
+            SEGPbsDebug(SEG_PBS_DEBUG_ERROR, ("realloc() failed: %s\n",
+                        sys_errlist[errno]));
 
             rc = SEG_PBS_ERROR_OUT_OF_MEMORY;
             goto error;
@@ -774,13 +866,11 @@ globus_l_pbs_increase_buffer(
 
     state->buffer_length += GLOBUS_PBS_READ_BUFFER_SIZE;
 
-    SEG_PBS_DEBUG(SEG_PBS_DEBUG_INFO,
-            ("globus_l_pbs_increase_buffer() exits w/success\n"));
+    SEGPbsExit();
     return 0;
 
 error:
-    SEG_PBS_DEBUG(SEG_PBS_DEBUG_WARN,
-            ("globus_l_pbs_increase_buffer() exits w/failure\n"));
+    SEGPbsExit();
     state->buffer = save;
     return rc;
 }
@@ -801,8 +891,9 @@ globus_l_pbs_parse_events(
     int                                 evttype;
     int                                 rc;
     int                                 exit_status;
-    SEG_PBS_DEBUG(SEG_PBS_DEBUG_INFO,
-            ("globus_l_pbs_parse_events() called\n"));
+    GlobusFuncName(globus_l_pbs_parse_events);
+
+    SEGPbsEnter();
 
     while ((eol = memchr(state->buffer + state->buffer_point,
                 '\n',
@@ -810,7 +901,7 @@ globus_l_pbs_parse_events(
     {
         *eol = '\0';
 
-        SEG_PBS_DEBUG(SEG_PBS_DEBUG_TRACE,
+        SEGPbsDebug(SEG_PBS_DEBUG_TRACE,
                 ("parsing line %s\n", state->buffer + state->buffer_point));
 
         rc = globus_l_pbs_split_into_fields(state, &fields, &nfields);
@@ -822,7 +913,7 @@ globus_l_pbs_parse_events(
 
         if (nfields < 3)
         {
-            SEG_PBS_DEBUG(SEG_PBS_DEBUG_TRACE,
+            SEGPbsDebug(SEG_PBS_DEBUG_TRACE,
                     ("too few fields, freeing and getting next line\n"));
             goto free_fields;
         }
@@ -878,13 +969,13 @@ globus_l_pbs_parse_events(
             }
             if (strstr(fields[5], "Job Queued") == fields[5])
             {
-                SEG_PBS_DEBUG(SEG_PBS_DEBUG_TRACE,
+                SEGPbsDebug(SEG_PBS_DEBUG_TRACE,
                         ("job %s pending\n", fields[4]));
                 rc = globus_scheduler_event_pending(stamp, fields[4]);
             }
             else if (strstr(fields[5], "Job Run") == fields[5])
             {
-                SEG_PBS_DEBUG(SEG_PBS_DEBUG_TRACE,
+                SEGPbsDebug(SEG_PBS_DEBUG_TRACE,
                         ("job %s active\n", fields[4]));
                 rc = globus_scheduler_event_active(stamp, fields[4]);
             }
@@ -896,7 +987,7 @@ globus_l_pbs_parse_events(
                 {
                     break;
                 }
-                SEG_PBS_DEBUG(SEG_PBS_DEBUG_TRACE,
+                SEGPbsDebug(SEG_PBS_DEBUG_TRACE,
                         ("job %s done\n", fields[4]));
                 rc = globus_scheduler_event_done(stamp,
                         fields[4],
@@ -904,7 +995,7 @@ globus_l_pbs_parse_events(
             }
             else if (strstr(fields[5], "Job deleted") == fields[5])
             {
-                SEG_PBS_DEBUG(SEG_PBS_DEBUG_TRACE,
+                SEGPbsDebug(SEG_PBS_DEBUG_TRACE,
                     ("job %s failed\n", fields[4]));
                 rc = globus_scheduler_event_failed(stamp, fields[4], 0);
             }
@@ -914,7 +1005,7 @@ globus_l_pbs_parse_events(
 free_fields:
         if (fields != NULL)
         {
-            SEG_PBS_DEBUG(SEG_PBS_DEBUG_INFO,
+            SEGPbsDebug(SEG_PBS_DEBUG_INFO,
                     ("freeing fields\n"));
             globus_libc_free(fields);
             fields = NULL;
@@ -924,8 +1015,7 @@ free_fields:
         state->buffer_point = eol + 1 - state->buffer;
     }
 
-    SEG_PBS_DEBUG(SEG_PBS_DEBUG_INFO,
-            ("globus_l_pbs_parse_events() exits\n"));
+    SEGPbsExit();
     return 0;
 }
 /* globus_l_pbs_parse_events() */
@@ -955,15 +1045,16 @@ globus_l_pbs_split_into_fields(
     size_t                              cnt = 1;
     char *                              tmp;
     int                                 rc;
+    GlobusFuncName(globus_l_pbs_split_into_fields);
 
-    SEG_PBS_DEBUG(SEG_PBS_DEBUG_INFO, ("globus_l_pbs_split_into_fields()\n"));
+    SEGPbsEnter();
 
     *fields = NULL;
     *nfields = 0;
 
     tmp = state->buffer + state->buffer_point;
 
-    SEG_PBS_DEBUG(SEG_PBS_DEBUG_TRACE, ("splitting %s\n", tmp));
+    SEGPbsDebug(SEG_PBS_DEBUG_TRACE, ("splitting %s\n", tmp));
 
     while (*tmp != '\0')
     {
@@ -973,7 +1064,7 @@ globus_l_pbs_split_into_fields(
         }
         tmp++;
     }
-    SEG_PBS_DEBUG(SEG_PBS_DEBUG_TRACE, ("%u fields\n", cnt));
+    SEGPbsDebug(SEG_PBS_DEBUG_TRACE, ("%u fields\n", cnt));
 
     *fields = globus_libc_calloc(cnt, sizeof(char **));
 
@@ -1002,21 +1093,19 @@ globus_l_pbs_split_into_fields(
     {
         for (i = 0; i < cnt; i++)
         {
-            SEG_PBS_DEBUG(SEG_PBS_DEBUG_TRACE, ("field[%u]=%s\n",
+            SEGPbsDebug(SEG_PBS_DEBUG_TRACE, ("field[%u]=%s\n",
                         i, (*fields)[i]));
         }
     }
 #   endif
 
-    SEG_PBS_DEBUG(SEG_PBS_DEBUG_INFO,
-            ("globus_l_pbs_split_into_fields(): exit success\n"));
+    SEGPbsExit();
 
     return 0;
 
 error:
-    SEG_PBS_DEBUG(SEG_PBS_DEBUG_WARN,
-            ("globus_l_pbs_split_into_fields(): exit failure: %d\n", rc));
-    return rc;;
+    SEGPbsExit();
+    return rc;
 }
 /* globus_l_pbs_split_into_fields() */
 
@@ -1060,3 +1149,4 @@ globus_l_pbs_normalize_date(
                 : tm->tm_mday - mday_max[tm->tm_mon];
     } while (overflow_days > 0);
 }
+
