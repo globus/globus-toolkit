@@ -291,7 +291,7 @@ globus_l_pbs_module_activate(void)
     {
         SEGPbsDebug(SEG_PBS_DEBUG_ERROR,
                 ("Fatal error: unable to read log_path from "
-                "GLOBUS_LOCATION/etc/globus-lsf.conf\n"));
+                "GLOBUS_LOCATION/etc/globus-pbs.conf\n"));
 
         goto free_logfile_state_buffer_error;
     }
@@ -300,7 +300,7 @@ globus_l_pbs_module_activate(void)
     {
         SEGPbsDebug(SEG_PBS_DEBUG_ERROR,
                     ("Fatal error checking log directory: %s\n",
-                     sys_errlist[errno]));
+                     strerror(errno)));
 
         goto free_logfile_state_buffer_error;
     }
@@ -316,7 +316,8 @@ globus_l_pbs_module_activate(void)
         {
             SEGPbsDebug(SEG_PBS_DEBUG_ERROR,
                     ("Error opening %s: %s\n",
-                     logfile_state->path, sys_errlist[errno]));
+                     logfile_state->path,
+                     strerror(errno)));
             rc = SEG_PBS_ERROR_OUT_OF_MEMORY;
 
             goto free_logfile_state_path_error;
@@ -609,7 +610,6 @@ globus_l_pbs_find_logfile(
 
         if (state->path == NULL)
         {
-            fprintf(stderr, "Out of memory\n");
             rc = SEG_PBS_ERROR_OUT_OF_MEMORY;
             goto error;
         }
@@ -620,7 +620,6 @@ globus_l_pbs_find_logfile(
     tm_result = globus_libc_localtime_r(&now, &tm_now);
     if (tm_result == NULL)
     {
-        fprintf(stderr, "localtime_r failed\n");
         SEGPbsDebug(SEG_PBS_DEBUG_WARN, ("localtime_r failed\n"));
         rc = SEG_PBS_ERROR_OUT_OF_MEMORY;
 
@@ -655,8 +654,6 @@ globus_l_pbs_find_logfile(
     {
         if (tm_result == NULL)
         {
-            fprintf(stderr, "Couldn't parse timestamp\n");
-
             SEGPbsDebug(SEG_PBS_DEBUG_WARN,
                 ("couldn't get tm from timestmap\n"));
 
@@ -688,7 +685,6 @@ globus_l_pbs_find_logfile(
         {
             SEGPbsDebug(SEG_PBS_DEBUG_WARN,
                 ("couldn't format date to string\n"));
-            fprintf(stderr, "couldn't format date to string\n");
             rc = SEG_PBS_ERROR_OUT_OF_MEMORY;
             goto error;
         }
@@ -739,9 +735,6 @@ globus_l_pbs_find_logfile(
                     break;
 
                 case EACCES:
-                    fprintf(stderr, "Error checking file %s: %s\n",
-                            state->path,
-                            sys_errlist[errno]);
                     SEGPbsDebug(SEG_PBS_DEBUG_ERROR,
                         ("permissions needed to access logfile %s\n",
                         state->path));
@@ -752,9 +745,6 @@ globus_l_pbs_find_logfile(
                 case ENOTDIR:
                 case ELOOP:
                 case ENAMETOOLONG:
-                    fprintf(stderr, "Error checking file %s: %s\n",
-                            state->path,
-                            sys_errlist[errno]);
                     /* broken path (fatal) */
                     SEGPbsDebug(SEG_PBS_DEBUG_ERROR,
                         ("broken path to logfile %s\n",
@@ -857,7 +847,7 @@ globus_l_pbs_increase_buffer(
         if (state->buffer == NULL)
         {
             SEGPbsDebug(SEG_PBS_DEBUG_ERROR, ("realloc() failed: %s\n",
-                        sys_errlist[errno]));
+                        strerror(errno)));
 
             rc = SEG_PBS_ERROR_OUT_OF_MEMORY;
             goto error;

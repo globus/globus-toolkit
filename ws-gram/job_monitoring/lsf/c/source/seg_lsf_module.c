@@ -344,7 +344,7 @@ globus_l_lsf_module_activate(void)
             SEGLsfDebug(SEG_LSF_DEBUG_ERROR,
                     ("Error opening %s: %s\n",
                     logfile_state->path,
-                    sys_errlist[errno]));
+                    strerror(errno)));
             rc = SEG_LSF_ERROR_OUT_OF_MEMORY;
 
             goto free_logfile_state_path_error;

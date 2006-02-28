@@ -586,7 +586,7 @@ error:
         SEGForkDebug(SEG_FORK_DEBUG_ERROR,
                 ("Error reading logfile %s: %s\n",
                 state->path,
-                sys_errlist[save_errno]));
+                strerror(save_errno)));
     }
     SEGForkExit();
     return rc;

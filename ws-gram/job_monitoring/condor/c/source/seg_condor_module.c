@@ -286,7 +286,7 @@ globus_l_condor_module_activate(void)
             SEGCondorDebug(SEG_CONDOR_DEBUG_ERROR,
                     ("Fatal error (open %s): %s\n",
                     logfile_state->path,
-                    sys_errlist[errno]));
+                    strerror(errno)));
 
             goto free_logfile_state_path_error;
         }
@@ -599,7 +599,7 @@ error:
         SEGCondorDebug(SEG_CONDOR_DEBUG_ERROR,
                 ("Error reading logfile %s: %s\n",
                 state->path,
-                sys_errlist[save_errno]));
+                strerror(save_errno)));
 
     }
     SEGCondorExit();
