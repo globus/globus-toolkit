@@ -5,6 +5,9 @@ Binary compatibility of the C API is not guaranteed between releases.
 Version History
 ---------------
 v3.5 XX Xxx 2006
+  - do not indicate in info command error output whether credentials
+    owned by someone else exist, to avoid giving potentially useful
+    information to an attacker
   - delegate credentials with minimum lifetime of 5 minutes to avoid
     problems with clock skew
   - fixed build problem with GT 2.4/3.0 introduced in v3.4:

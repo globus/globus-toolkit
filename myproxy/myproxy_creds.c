@@ -948,6 +948,8 @@ int myproxy_creds_retrieve_all(struct myproxy_creds *creds)
     closedir(dir);
 
     if (!cur_cred) {
+	verror_clear();	/* other errors may indicate if credentials
+			   owned by someone else exist */
 	verror_put_string("no credentials found for user %s, owner \"%s\"",
 			  username, owner_name);
 	goto error;
