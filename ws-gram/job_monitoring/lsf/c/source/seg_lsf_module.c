@@ -349,12 +349,12 @@ globus_l_lsf_module_activate(void)
 
             goto free_logfile_state_path_error;
         }
-        GlobusTimeReltimeSet(delay, 0, 0);
     }
     else
     {
         goto free_logfile_state_path_error;
     }
+    GlobusTimeReltimeSet(delay, 0, 0);
 
     result = globus_callback_register_oneshot(
             &logfile_state->callback,

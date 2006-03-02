@@ -288,7 +288,7 @@ globus_l_fork_module_activate(void)
             SEGForkDebug(SEG_FORK_DEBUG_ERROR,
                     ("Fatal error (open %s): %s\n",
                     logfile_state->path,
-                    sys_errlist[errno]));
+                    strerror(errno)));
             goto free_logfile_state_path_error;
         }
     }
@@ -296,6 +296,7 @@ globus_l_fork_module_activate(void)
     {
         goto free_logfile_state_path_error;
     }
+    GlobusTimeReltimeSet(delay, 0, 0);
 
     result = globus_callback_register_oneshot(
             &logfile_state->callback,
