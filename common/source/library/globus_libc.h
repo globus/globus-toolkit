@@ -358,6 +358,7 @@ globus_common_v_create_nstring(
 #endif
 
 #ifndef HAVE_GETADDRINFO
+#ifndef AI_PASSIVE
 # define AI_PASSIVE     0x0001
 # define AI_CANONNAME   0x0002
 # define AI_NUMERICHOST 0x0004
@@ -373,6 +374,7 @@ struct addrinfo
     char *                              ai_canonname;
     struct addrinfo *                   ai_next;
 };
+#endif
 
 #define GLOBUS_IMPLEMENT_GETADDRINFO 1
 #define HAVE_GETADDRINFO

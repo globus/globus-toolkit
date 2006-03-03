@@ -56,7 +56,7 @@ CVS Information:
 extern int h_errno;
 #endif
 
-#ifdef TARGET_ARCH_NETOS
+#ifdef NET_OS
 #include "appconf_api.h"
 #endif
 
