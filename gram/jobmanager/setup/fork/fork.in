@@ -410,7 +410,7 @@ sub submit
                 {
                     # fork or exec failed. kill rest of job and return an error
 
-                    $failure_code =~ s/\n/ /g;
+                    $failure_code =~ s/\n/\\n/g;
                     foreach(@job_id)
                     {
                         $pgid = getpgrp($_);

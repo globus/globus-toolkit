@@ -459,7 +459,7 @@ sub submit
         print ERR $failure_text;
         close(ERR);
 
-        $failure_text =~ s/\n/ /g;
+        $failure_text =~ s/\n/\\n/g;
 
         $self->respond({GT3_FAILURE_MESSAGE => $failure_text });
     }

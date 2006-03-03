@@ -536,7 +536,7 @@ EOF
         print ERR $stderr;
         close(ERR);
 
-        $stderr =~ s/\n/ /g;
+        $stderr =~ s/\n/\\n/g;
 
         $self->respond({GT3_FAILURE_MESSAGE => $stderr });
     }
