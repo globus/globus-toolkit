@@ -69,7 +69,10 @@
 #undef TARGET_ARCH_X86
 #undef TARGET_ARCH_IA64
 #undef TARGET_ARCH_ARM
+
+#ifdef NET_OS
 #undef TARGET_ARCH_NETOS
+#endif
 
 #undef HAVE_MALLOC_H
 #undef HAVE_PWD_H
