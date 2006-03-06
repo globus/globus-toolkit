@@ -57,11 +57,14 @@ public class ContainerUpReport {
         }
     }
 
-    public void display() {
+    public void output(PrintStream out) {
         for (int i = 0; i< this.slots.size(); i++) {
             Slot slot = (Slot)this.slots.get(i);
-            System.out.println(Util.formatTimeSec(slot.getTime()) + 
-                               ": " + slot.getCount());
+            out.println("  <slot>");
+            out.println("   <time>" + slot.getTime() + "</time>");
+            out.println("   <timeStr>" + Util.formatTimeSec(slot.getTime()) + "</timeStr>");
+            out.println("   <count>" + slot.getCount() + "</count>");
+            out.println("  </slot>");
         }
     }
     
@@ -168,11 +171,6 @@ public class ContainerUpReport {
                 n = -n;
             }
 
-            /*
-            System.out.println("<container-uptime-report type=\"" + 
-                               containerType + "\">");
-            */
-
             Date startDate = calendar.getTime();
             calendar.add(step, n);
             Date endDate = calendar.getTime();
@@ -184,7 +182,10 @@ public class ContainerUpReport {
                 
             String query = baseQuery + timeFilter + " order by send_time";
 
-            System.out.println(query);
+            System.out.println("<container-uptime-report container_type=\"" + 
+                               containerType + "\">");
+            System.out.println("  <start-date>" + startDateStr + "</start-date>");
+            System.out.println("  <end-date>" + endDateStr + "</end-date>");
 
             Statement stmt = con.createStatement();
 
@@ -197,13 +198,15 @@ public class ContainerUpReport {
             rs.close();
             stmt.close();
 
+            r.output(System.out);
+
+            System.out.println("</container-uptime-report>");
+
         } finally {
             if (con != null) {
                 con.close();
             }
         }
-
-        r.display();
     }
         
 }
