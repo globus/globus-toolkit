@@ -1,4 +1,3 @@
-o fix .closePool() in receiver 
 o the above requires the database module to upgrade to latest pool & dbcp libraries
 o write command line scripts to receiver deamon
 o add the ~/scripts to cvs
