@@ -22,9 +22,12 @@ import java.text.SimpleDateFormat;
 import java.io.PrintStream;
 import java.sql.Timestamp;
 
-import org.globus.util.Util;
-
 public class ContainerUpReport {
+
+    private static final long SEC_PER_HOUR = 60 * 60;
+    private static final long SEC_PER_DAY =  SEC_PER_HOUR * 24;
+    private static final long SEC_PER_MONTH =  SEC_PER_DAY * 30;
+    private static final long SEC_PER_YEAR =  SEC_PER_MONTH * 12;
 
     private Map containers = new HashMap();
     private List slots = new ArrayList();
@@ -45,15 +48,15 @@ public class ContainerUpReport {
         }
         // hours
         for (int i=1;i<=8;i++) {
-            this.slots.add(new Slot(3600 * i * 3));
+            this.slots.add(new Slot(SEC_PER_HOUR * i * 3));
         }
         // days
         for (int i=1;i<=10;i++) {
-            this.slots.add(new Slot(3600 * 24 * i * 3));
+            this.slots.add(new Slot(SEC_PER_DAY * i * 3));
         }
         // months
         for (int i=1;i<=6;i++) {
-            this.slots.add(new Slot(3600 * 24 * 30 * i * 2));
+            this.slots.add(new Slot(SEC_PER_MONTH * i * 2));
         }
     }
 
@@ -62,12 +65,68 @@ public class ContainerUpReport {
             Slot slot = (Slot)this.slots.get(i);
             out.println("  <slot>");
             out.println("   <time>" + slot.getTime() + "</time>");
-            out.println("   <timeStr>" + Util.formatTimeSec(slot.getTime()) + "</timeStr>");
+            out.println("   <timeStr>" + formatTimeSec(slot.getTime()) + "</timeStr>");
             out.println("   <count>" + slot.getCount() + "</count>");
             out.println("  </slot>");
         }
     }
     
+    // time in sec
+    public static String formatTimeSec(long time) {
+        
+        if (time < 60) {
+            return ((time == 1) ? "1 second" : time + " seconds");
+	} 
+
+        StringBuffer str = new StringBuffer();
+
+        long years = time / SEC_PER_YEAR;
+        if (years > 0) {
+            str.append((years == 1) ? "1 year" : years + " years");
+            time -= years * SEC_PER_YEAR;
+        }
+
+        long months = time / SEC_PER_MONTH; // assumes 30 days per month
+        if (months > 0) {
+            if (str.length() != 0) str.append(", ");
+            str.append((months == 1) ? "1 month" : months + " months");
+            time -= months * SEC_PER_MONTH;
+        }
+    
+	long days = time / SEC_PER_DAY;
+    
+	if (days > 0) {
+            if (str.length() != 0) str.append(", ");
+	    str.append((days == 1) ? "1 day" :  days + " days");
+	    time -= days *  SEC_PER_DAY;
+	}
+    
+	long hours = time / SEC_PER_HOUR;
+    
+	if (hours > 0) {
+	    if (str.length() != 0) str.append(", ");
+	    str.append((hours == 1) ? "1 hour" : hours + " hours");
+	    time -= hours * SEC_PER_HOUR;
+	}
+        
+	long mins = time / 60;
+        
+	if (mins > 0) {
+	    if (str.length() != 0) str.append(", ");
+	    str.append((mins == 1) ? "1 minute" : mins + " minutes");
+	    time -= mins * 60;
+	}
+    
+	long sec = time;
+    
+	if (sec > 0) {
+	    if (str.length() != 0) str.append(", ");
+	    str.append((sec == 1) ? "1 second" : sec + " seconds");
+	}
+    
+	return str.toString();
+    }
+
     private static class Slot {
         private int count;
         private long time;
