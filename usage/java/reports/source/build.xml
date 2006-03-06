@@ -104,6 +104,15 @@
          out="services.data"/>
  </target>
 
+ <target name="gnuplot-uptime">
+   <xslt style="etc/uptime/gnuplot-uptime-instructions.xsl" 
+         in="uptime.xml"
+         out="uptime.gnuplot"/>
+   <xslt style="etc/uptime/gnuplot-uptime-data.xsl" 
+         in="uptime.xml"
+         out="uptime.data"/>
+ </target>
+
  <target name="gnuplot-service">
    <xslt basedir="." 
          destdir="." 
