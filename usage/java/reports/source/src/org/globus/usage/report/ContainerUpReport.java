@@ -23,18 +23,21 @@ import java.sql.Timestamp;
 
 public class ContainerUpReport {
 
-    private static final long PERIOD = 1000 * 60 * 1;
+    private int period = 5; // always in secs
+    private int steps = 20;
 
     private Map containers = new HashMap();
-    private long average = 0;
-    private ArrayList list = new ArrayList();
-
-    public ContainerUpReport() {
-    }
+    private int[] slots = new int[steps+1];
 
     public void display() {
-        for (int i = 0; i< this.list.size(); i++) {
-            System.out.println( (i+1) + " " + this.list.get(i));
+
+        int start = 0;
+        int end = this.period;
+
+        for (int i = 0; i< this.slots.length; i++) {
+            System.out.println( i + " " + start + " " + end + ": " + this.slots[i]);
+            start = end;
+            end = end * 2;
         }
     }
 
@@ -48,16 +51,23 @@ public class ContainerUpReport {
             if (startTime != null) {
                 long diff = timestamp.getTime() - startTime.getTime();
 
-                Long v = new Long(diff / 1000);
-
-                int pos = Collections.binarySearch(this.list, v);
-                if (pos < 0) {
-                    pos++;
-                    pos = -pos;
-                }
-                this.list.add(pos, v);
+                int slot = getSlot(diff / 1000);
+                slots[slot]++;
             }
         }
+    }
+
+    public int getSlot(long seconds) {
+        int time = this.period;
+        int i = 0;
+        for (i = 0; i < this.steps; i++) {
+            if (seconds < time) {
+                return i;
+            } else {
+                time = time * 2;
+            }
+        }
+        return i;
     }
 
     public static void main(String[] args) throws Exception {

@@ -191,8 +191,7 @@ public class HandlerThread extends Thread {
 
 	try {
 	    PoolingDriver driver = (PoolingDriver)DriverManager.getDriver("jdbc:apache:commons:dbcp:");
-            // FIXME: this only works with newer dbcp library
-	    // driver.closePool("usagestats");
+	    driver.closePool("usagestats");
 	}
 	catch(Exception e) {
 	    log.warn(e.getMessage());
