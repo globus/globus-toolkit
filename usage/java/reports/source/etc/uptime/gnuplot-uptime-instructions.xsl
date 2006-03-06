@@ -31,7 +31,7 @@ set logscale y
  <xsl:text>)</xsl:text>
 
 <xsl:text>
-plot 'uptime.data' using 1:2 title "container up time" with boxes fs pattern 1
+plot 'uptime.data' using 1:2 title "# of containers" with boxes fs pattern 1
 </xsl:text>
 
 </xsl:template>

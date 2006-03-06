@@ -34,12 +34,13 @@ public class ContainerUpReport {
 
     public ContainerUpReport() {
 
-        this.slots.add(new Slot(0));
+        // 1 minute
+        this.slots.add(new Slot(60 * 1));
 
-        // 2 mins
+        // 2 minutes
         this.slots.add(new Slot(60 * 2));
 
-        // 5 mins
+        // 5 minutes
         this.slots.add(new Slot(60 * 5));
 
         // minutes
