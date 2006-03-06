@@ -121,14 +121,12 @@ public class ContainerReport {
 
     public static void main(String[] args) throws Exception {
     
-        String driverClass = "org.postgresql.Driver";
-        String url = "jdbc:postgresql://pgsql.mcs.anl.gov:5432/usagestats?user=allcock&password=bigio";
         String baseQuery = "select service_list,container_type,ip_address from java_ws_core_packets where event_type = 1 and ";
 
         Connection con = null;
 
         if (args.length == 0) {
-            System.err.println("Usage: java ContainerReport [options] <date (>");
+            System.err.println("Usage: java ContainerReport [options] <date (yyyy-MM-dd)>");
             System.exit(1);
         }
 
@@ -165,9 +163,9 @@ public class ContainerReport {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
         try {
-            Class.forName(driverClass);
+            Database db = new Database();
 
-            con = DriverManager.getConnection(url);
+            con = DriverManager.getConnection(db.getURL());
 
             Date date = dateFormat.parse(inputDate);
 
