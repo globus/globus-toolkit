@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Iterator;
 import java.util.StringTokenizer;
 import java.util.Date;
+import java.util.List;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Calendar;
@@ -21,23 +22,64 @@ import java.text.SimpleDateFormat;
 import java.io.PrintStream;
 import java.sql.Timestamp;
 
+import org.globus.util.Util;
+
 public class ContainerUpReport {
 
-    private int period = 5; // always in secs
-    private int steps = 20;
-
     private Map containers = new HashMap();
-    private int[] slots = new int[steps+1];
+    private List slots = new ArrayList();
+
+    public ContainerUpReport() {
+
+        this.slots.add(new Slot(0));
+
+        // 2 mins
+        this.slots.add(new Slot(60 * 2));
+
+        // 5 mins
+        this.slots.add(new Slot(60 * 5));
+
+        // minutes
+        for (int i=1;i<=6;i++) {
+            this.slots.add(new Slot(60 * i * 10));
+        }
+        // hours
+        for (int i=1;i<=8;i++) {
+            this.slots.add(new Slot(3600 * i * 3));
+        }
+        // days
+        for (int i=1;i<=10;i++) {
+            this.slots.add(new Slot(3600 * 24 * i * 3));
+        }
+        // months
+        for (int i=1;i<=6;i++) {
+            this.slots.add(new Slot(3600 * 24 * 30 * i * 2));
+        }
+    }
 
     public void display() {
-
-        int start = 0;
-        int end = this.period;
-
-        for (int i = 0; i< this.slots.length; i++) {
-            System.out.println( i + " " + start + " " + end + ": " + this.slots[i]);
-            start = end;
-            end = end * 2;
+        for (int i = 0; i< this.slots.size(); i++) {
+            Slot slot = (Slot)this.slots.get(i);
+            System.out.println(Util.formatTimeSec(slot.getTime()) + 
+                               ": " + slot.getCount());
+        }
+    }
+    
+    private static class Slot {
+        private int count;
+        private long time;
+        
+        public Slot(long time) {
+            this.time = time;
+        }
+        public void increment() {
+            this.count++;
+        }
+        public int getCount() {
+            return this.count;
+        }
+        public long getTime() {
+            return this.time;
         }
     }
 
@@ -51,39 +93,61 @@ public class ContainerUpReport {
             if (startTime != null) {
                 long diff = timestamp.getTime() - startTime.getTime();
 
-                int slot = getSlot(diff / 1000);
-                slots[slot]++;
+                Slot slot = getSlot(diff / 1000);
+                slot.increment();
             }
         }
     }
 
-    public int getSlot(long seconds) {
-        int time = this.period;
-        int i = 0;
-        for (i = 0; i < this.steps; i++) {
-            if (seconds < time) {
-                return i;
-            } else {
-                time = time * 2;
+    public Slot getSlot(long seconds) {
+        for (int i = 0; i < this.slots.size(); i++) {
+            Slot slot = (Slot)this.slots.get(i);
+            if (seconds < slot.getTime()) {
+                return slot;
             }
         }
-        return i;
+        return (Slot)this.slots.get(this.slots.size()-1);
     }
-
+    
     public static void main(String[] args) throws Exception {
     
-        String driverClass = "org.postgresql.Driver";
-        String url = "jdbc:postgresql://pgsql.mcs.anl.gov:5432/usagestats?user=allcock&password=bigio";
         String baseQuery = "select event_type,send_time,ip_address,container_id from java_ws_core_packets where ";
 
         Connection con = null;
 
-        String inputDate = args[0];
-        int n = Integer.parseInt(args[1]);
+        if (args.length == 0) {
+            System.err.println("Usage: java ContainerUpReport [options] <date (yyyy-MM-dd)>");
+            System.exit(1);
+        }
+
+        int n = 1;
         String containerType = "all";
-        if (args.length > 2) {
-            containerType = args[2];
-            baseQuery += " container_type = " + containerType + " and ";
+        String stepStr = "day";
+
+        for (int i=0;i<args.length-1;i++) {
+            if (args[i].equals("-n")) {
+                n = Integer.parseInt(args[++i]);
+            } else if (args[i].equals("-type")) {
+                baseQuery += " container_type = " + args[++i] + " and ";
+            } else if (args[i].equals("-step")) {
+                stepStr = args[++i];
+            } else {
+                System.err.println("Unknown argument: " + args[i]);
+                System.exit(1);
+            }
+        }
+
+        String inputDate = args[args.length-1];
+
+        // parse step info
+        int step = -1;
+        if (stepStr.equalsIgnoreCase("day")) {
+            step = Calendar.DATE;
+        } else if (stepStr.equalsIgnoreCase("month")) {
+            step = Calendar.MONTH;
+        } else {
+            System.err.println("Unsupported step: " + stepStr);
+            System.exit(2);
         }
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
@@ -91,16 +155,16 @@ public class ContainerUpReport {
         ContainerUpReport r = new ContainerUpReport();
 
         try {
-            Class.forName(driverClass);
+            Database db = new Database();
 
-            con = DriverManager.getConnection(url);
+            con = DriverManager.getConnection(db.getURL());
 
             Date date = dateFormat.parse(inputDate);
 
             Calendar calendar = dateFormat.getCalendar();
 
             if (n < 0) {
-                calendar.add(Calendar.DATE, n);
+                calendar.add(step, n);
                 n = -n;
             }
 
@@ -110,7 +174,7 @@ public class ContainerUpReport {
             */
 
             Date startDate = calendar.getTime();
-            calendar.add(Calendar.DATE, n);
+            calendar.add(step, n);
             Date endDate = calendar.getTime();
             
             String startDateStr = dateFormat.format(startDate);
