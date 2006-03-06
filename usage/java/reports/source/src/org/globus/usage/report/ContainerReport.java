@@ -127,12 +127,39 @@ public class ContainerReport {
 
         Connection con = null;
 
-        String inputDate = args[0];
-        int n = Integer.parseInt(args[1]);
+        if (args.length == 0) {
+            System.err.println("Usage: java ContainerReport [options] <date (>");
+            System.exit(1);
+        }
+
+        int n = 1;
         String containerType = "all";
-        if (args.length > 2) {
-            containerType = args[2];
-            baseQuery += " container_type = " + containerType + " and ";
+        String stepStr = "day";
+
+        for (int i=0;i<args.length-1;i++) {
+            if (args[i].equals("-n")) {
+                n = Integer.parseInt(args[++i]);
+            } else if (args[i].equals("-type")) {
+                baseQuery += " container_type = " + args[++i] + " and ";
+            } else if (args[i].equals("-step")) {
+                stepStr = args[++i];
+            } else {
+                System.err.println("Unknown argument: " + args[i]);
+                System.exit(1);
+            }
+        }
+
+        String inputDate = args[args.length-1];
+
+        // parse step info
+        int step = -1;
+        if (stepStr.equalsIgnoreCase("day")) {
+            step = Calendar.DATE;
+        } else if (stepStr.equalsIgnoreCase("month")) {
+            step = Calendar.MONTH;
+        } else {
+            System.err.println("Unsupported step: " + stepStr);
+            System.exit(2);
         }
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
@@ -147,7 +174,7 @@ public class ContainerReport {
             Calendar calendar = dateFormat.getCalendar();
 
             if (n < 0) {
-                calendar.add(Calendar.DATE, n);
+                calendar.add(step, n);
                 n = -n;
             }
 
@@ -156,7 +183,7 @@ public class ContainerReport {
 
             for (int i=0;i<n;i++) {
                 Date startDate = calendar.getTime();
-                calendar.add(Calendar.DATE, 1);
+                calendar.add(step, 1);
                 Date endDate = calendar.getTime();
 
                 String startDateStr = dateFormat.format(startDate);
