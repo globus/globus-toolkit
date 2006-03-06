@@ -1,0 +1,71 @@
+Generating container reports & graphs:
+======================================
+
+1. Generate the report & save results in container.xml file:
+
+   # $G_L/bin/jwscore-container-report <date> > container.xml
+
+2. Using the container.xml generate instructions and data files for gnuplot:
+
+   # ant gnuplot-container
+
+   This will generate the following files:
+    o uniqueservices.gnuplot & uniqueservices.data
+    o containers.gnuplot & containers.data
+    o services.gnuplot & services.data
+
+3. Run gnuplot on each of the generated .gnuplot file:
+
+   # gnuplot uniqueservices.gnuplot
+
+   This will create 'uniqueservices.png' file.
+
+   # gnuplot containers.gnuplot
+
+   This will create 'containers.png' file.
+
+   # gnuplot services.gnuplot
+
+   This will create 'services.png' file.
+
+
+
+Generating container up time reports & graphs:
+==============================================
+
+1. Generate the report & save results in uptime.xml file:
+
+   # $G_L/bin/jwscore-container-up-report <date> > uptime.xml
+
+2. Using the uptime.xml generate instructions and data files for gnuplot:
+
+   # ant gnuplot-uptime
+
+   This will generate uptime.gnuplot & uptime.data
+
+3. Run gnuplot on the generated .gnuplot file:
+
+   # gnuplot uptime.gnuplot
+
+   This will create 'uptime.png' file.
+
+
+
+Generating service reports & graphs:
+====================================
+
+1. Generate the report & save results in service.xml file:
+
+   # $G_L/bin/jwscore-service-report <date> > service.xml
+
+2. Using the service.xml generate instructions and data files for gnuplot:
+
+   # ant gnuplot-service
+
+   This will generate service.gnuplot & service.data
+
+3. Run gnuplot on the generated .gnuplot file:
+
+   # gnuplot service.gnuplot
+
+   This will create 'service.png' file.

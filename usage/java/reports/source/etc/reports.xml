@@ -1,0 +1,47 @@
+<?xml version="1.0"?>
+
+<project default="all" basedir=".">
+
+ <target name="gnuplot-container">
+   <xslt style="container/gnuplot-uniqueservices-inst.xsl" 
+         in="container.xml"
+         out="uniqueservices.gnuplot"/>
+   <xslt style="container/gnuplot-uniqueservices-data.xsl" 
+         in="container.xml"
+         out="uniqueservices.data"/>
+
+   <xslt style="container/gnuplot-containers-inst.xsl" 
+         in="container.xml"
+         out="containers.gnuplot"/>
+   <xslt style="container/gnuplot-containers-data.xsl" 
+         in="container.xml"
+         out="containers.data"/>
+
+   <xslt style="container/gnuplot-services-inst.xsl" 
+         in="container.xml"
+         out="services.gnuplot"/>
+   <xslt style="container/gnuplot-services-data.xsl" 
+         in="container.xml"
+         out="services.data"/>
+ </target>
+
+ <target name="gnuplot-uptime">
+   <xslt style="uptime/gnuplot-uptime-instructions.xsl" 
+         in="uptime.xml"
+         out="uptime.gnuplot"/>
+   <xslt style="uptime/gnuplot-uptime-data.xsl" 
+         in="uptime.xml"
+         out="uptime.data"/>
+ </target>
+
+ <target name="gnuplot-service">
+   <xslt style="service/gnuplot-service-instructions.xsl" 
+         in="service.xml"
+         out="service.gnuplot"/>
+   <xslt style="service/gnuplot-service-data.xsl" 
+         in="service.xml"
+         out="service.data"/>
+   </xslt>
+ </target>
+
+</project>
