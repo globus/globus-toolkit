@@ -31,7 +31,7 @@ set logscale y
  <xsl:text>)</xsl:text>
 
 <xsl:text>
-plot 'service.data.gnuplot' using 1:2 title "standalone container" with boxes fs pattern 1,'service.data.gnuplot' using ($1+my_width):3 title "servlet container" with boxes fs pattern 2
+plot 'service.data' using 1:2 title "standalone container" with boxes fs pattern 1,'service.data' using ($1+my_width):3 title "servlet container" with boxes fs pattern 2
 </xsl:text>
 
 </xsl:template>

@@ -3,31 +3,27 @@ Generating container reports & graphs:
 
 1. Generate the report & save results in container.xml file:
 
-   # $G_L/bin/jwscore-container-report <date> > container.xml
+   # $G_L/bin/jwscore-container-report <date> > $G_L/container.xml
 
 2. Using the container.xml generate instructions and data files for gnuplot:
 
-   # ant gnuplot-container
-
+   # ant -f etc/globus_usage_reports/reports.xml gnuplot-container \
+     -Dcontainer.xml=$G_L/container.xml
+   
    This will generate the following files:
-    o uniqueservices.gnuplot & uniqueservices.data
-    o containers.gnuplot & containers.data
-    o services.gnuplot & services.data
+    o 'uniqueservices.gnuplot' & 'uniqueservices.data'
+    o 'containers.gnuplot' & 'containers.data'
+    o 'services.gnuplot' & 'services.data'
+
+   Note:
+    -Dcontainer.xml property must always be an absoulte path.
 
 3. Run gnuplot on each of the generated .gnuplot file:
 
-   # gnuplot uniqueservices.gnuplot
+   # gnuplot uniqueservices.gnuplot containers.gnuplot services.gnuplot
 
-   This will create 'uniqueservices.png' file.
-
-   # gnuplot containers.gnuplot
-
-   This will create 'containers.png' file.
-
-   # gnuplot services.gnuplot
-
-   This will create 'services.png' file.
-
+   This will create 'uniqueservices.png', 'containers.png', and 
+   'services.png' files.
 
 
 Generating container up time reports & graphs:
@@ -35,13 +31,14 @@ Generating container up time reports & graphs:
 
 1. Generate the report & save results in uptime.xml file:
 
-   # $G_L/bin/jwscore-container-up-report <date> > uptime.xml
+   # $G_L/bin/jwscore-container-up-report <date> > $G_L/uptime.xml
 
 2. Using the uptime.xml generate instructions and data files for gnuplot:
 
-   # ant gnuplot-uptime
+   # ant -f etc/globus_usage_reports/reports.xml gnuplot-uptime \
+     -Duptime.xml=$G_L/uptime.xml
 
-   This will generate uptime.gnuplot & uptime.data
+   This will generate 'uptime.gnuplot' & 'uptime.data' files.
 
 3. Run gnuplot on the generated .gnuplot file:
 
@@ -56,13 +53,14 @@ Generating service reports & graphs:
 
 1. Generate the report & save results in service.xml file:
 
-   # $G_L/bin/jwscore-service-report <date> > service.xml
+   # $G_L/bin/jwscore-service-report <date> > $G_L/service.xml
 
 2. Using the service.xml generate instructions and data files for gnuplot:
 
-   # ant gnuplot-service
+   # ant -f etc/globus_usage_reports/reports.xml gnuplot-service \
+     -Dservice.xml=$G_L/service.xml
 
-   This will generate service.gnuplot & service.data
+   This will generate 'service.gnuplot' & 'service.data' files.
 
 3. Run gnuplot on the generated .gnuplot file:
 
