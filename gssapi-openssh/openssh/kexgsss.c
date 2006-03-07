@@ -221,13 +221,13 @@ kexgss_server(Kex *kex)
 	BN_free(dh_client_pub);
 
 	if (kex->session_id == NULL) {
-		kex->session_id_len = 20;
+		kex->session_id_len = hashlen;
 		kex->session_id = xmalloc(kex->session_id_len);
 		memcpy(kex->session_id, hash, kex->session_id_len);
 	}
 
 	gssbuf.value = hash;
-	gssbuf.length = 20; /* Hashlen appears to always be 20 */
+	gssbuf.length = hashlen;
 
 	if (GSS_ERROR(PRIVSEP(ssh_gssapi_sign(ctxt,&gssbuf,&msg_tok))))
 		fatal("Couldn't get MIC");
