@@ -36,6 +36,7 @@
 #include "servconf.h"
 #include "xmalloc.h"
 #include "getput.h"
+#include "monitor_wrap.h"
 
 #include "ssh-gss.h"
 
@@ -56,6 +57,28 @@ ssh_gssapi_mech* supported_mechs[]= {
 #endif
 	&gssapi_null_mech,
 };
+
+/* Unprivileged */
+char *
+ssh_gssapi_server_mechanisms() {
+	gss_OID_set	supported;
+
+	ssh_gssapi_supported_oids(&supported);
+	return (ssh_gssapi_kex_mechs(supported, &ssh_gssapi_server_check_mech,
+	    NULL));
+}
+
+/* Unprivileged */
+int
+ssh_gssapi_server_check_mech(gss_OID oid, void *data) {
+	Gssctxt * ctx = NULL;
+	int res;
+ 
+	res = !GSS_ERROR(PRIVSEP(ssh_gssapi_server_ctx(&ctx, oid)));
+	ssh_gssapi_delete_ctx(&ctx);
+
+	return (res);
+}
 
 /* Unprivileged */
 void
@@ -291,16 +314,6 @@ ssh_gssapi_userok(char *user)
 	else
 		debug("ssh_gssapi_userok: Unknown GSSAPI mechanism");
 	return (0);
-}
-
-/* Privileged */
-OM_uint32
-ssh_gssapi_checkmic(Gssctxt *ctx, gss_buffer_t gssbuf, gss_buffer_t gssmic)
-{
-	ctx->major = gss_verify_mic(&ctx->minor, ctx->context,
-	    gssbuf, gssmic, NULL);
-
-	return (ctx->major);
 }
 
 #endif
