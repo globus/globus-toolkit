@@ -19,6 +19,7 @@ set xtics 2
 set boxwidth my_width
 set xtic nomirror rotate
 set logscale y
+set bmargin 7
 </xsl:text>
 
  <xsl:text>set xtics (</xsl:text>
