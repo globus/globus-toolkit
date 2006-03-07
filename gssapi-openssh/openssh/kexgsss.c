@@ -40,8 +40,6 @@
 #include "ssh-gss.h"
 #include "monitor_wrap.h"
 
-static void kex_gss_send_error(Gssctxt *ctxt);
-
 void
 kexgss_server(Kex *kex)
 {
@@ -58,15 +56,14 @@ kexgss_server(Kex *kex)
 	gss_buffer_desc gssbuf, recv_tok, msg_tok;
 	gss_buffer_desc send_tok = GSS_C_EMPTY_BUFFER;
 	Gssctxt *ctxt = NULL;
-	unsigned int klen, kout, hashlen;
-	unsigned char *kbuf, *hash;
+	u_int slen, klen, kout, hashlen;
+	u_char *kbuf, *hash;
 	DH *dh;
 	int min = -1, max = -1, nbits = -1;
 	BIGNUM *shared_secret = NULL;
 	BIGNUM *dh_client_pub = NULL;
 	int type = 0;
 	int gex;
-	u_int slen;
 	gss_OID oid;
 	
 	/* Initialise GSSAPI */
@@ -85,10 +82,8 @@ kexgss_server(Kex *kex)
 
 	debug2("%s: Acquiring credentials", __func__);
 
-	if (GSS_ERROR(PRIVSEP(ssh_gssapi_server_ctx(&ctxt, oid)))) {
-		kex_gss_send_error(ctxt);
+	if (GSS_ERROR(PRIVSEP(ssh_gssapi_server_ctx(&ctxt, oid))))
         	fatal("Unable to acquire credentials for the server");
-	}
 
 	if (gex) {
 		debug("Doing group exchange");
@@ -166,13 +161,12 @@ kexgss_server(Kex *kex)
 	} while (maj_status & GSS_S_CONTINUE_NEEDED);
 
 	if (GSS_ERROR(maj_status)) {
-		kex_gss_send_error(ctxt);
 		if (send_tok.length > 0) {
 			packet_start(SSH2_MSG_KEXGSS_CONTINUE);
 			packet_put_string(send_tok.value, send_tok.length);
 			packet_send();
 		}
-		packet_disconnect("GSSAPI Key Exchange handshake failed");
+		fatal("accept_ctx died");
 	}
 
 	if (!(ret_flags & GSS_C_MUTUAL_FLAG))
@@ -222,13 +216,13 @@ kexgss_server(Kex *kex)
 	BN_free(dh_client_pub);
 
 	if (kex->session_id == NULL) {
-		kex->session_id_len = 20;
+		kex->session_id_len = hashlen;
 		kex->session_id = xmalloc(kex->session_id_len);
 		memcpy(kex->session_id, hash, kex->session_id_len);
 	}
 
 	gssbuf.value = hash;
-	gssbuf.length = 20; /* Hashlen appears to always be 20 */
+	gssbuf.length = hashlen;
 
 	if (GSS_ERROR(PRIVSEP(ssh_gssapi_sign(ctxt,&gssbuf,&msg_tok))))
 		fatal("Couldn't get MIC");
@@ -258,24 +252,5 @@ kexgss_server(Kex *kex)
 	kex_derive_keys(kex, hash, hashlen, shared_secret);
 	BN_clear_free(shared_secret);
 	kex_finish(kex);
-}
-
-static void 
-kex_gss_send_error(Gssctxt *ctxt) {
-	char *errstr;
-	OM_uint32 maj,min;
-		
-	errstr=PRIVSEP(ssh_gssapi_last_error(ctxt,&maj,&min));
-	if (errstr) {
-		packet_start(SSH2_MSG_KEXGSS_ERROR);
-		packet_put_int(maj);
-		packet_put_int(min);
-		packet_put_cstring(errstr);
-		packet_put_cstring("");
-		packet_send();
-		packet_write_wait();
-		/* XXX - We should probably log the error locally here */
-		xfree(errstr);
-	}
 }
 #endif /* GSSAPI */
