@@ -150,6 +150,13 @@ sub action {
       system($command);
     } else {
       my $output = `$command 2>&1`;
+
+      # if $? = -1, then $command failed to run, and would have produced
+      # no output (which causes inform() to chirp).  Print out $! instead
+      if ( $? eq -1 ) {
+         $output = $!;
+      }
+
       $me->inform($output);
       if ($? and ! $me->{'verbose'} and ! defined $suppress_error and
          ! ($command =~ m!make.+clean! and $me->{'suppress_clean_errors'})) {
