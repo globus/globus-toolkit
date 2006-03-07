@@ -548,6 +548,13 @@ sub import_package_dependencies
 sub setup_environment()
 # --------------------------------------------------------------------
 {
+    # Make STDOUT and STDERR flush after every write.
+    my $oldfh = select(STDOUT);
+    $| = 1;
+    select(STDERR);
+    $| = 1;
+    select($oldfh);
+
     print "Setting up build environment.\n";
 
     #TODO: figure out package list first, then set
@@ -893,6 +900,14 @@ sub log_system
         # except that I can get the return code too.
         open LOG, ">>$log";
         open FOO, "$command 2>&1 |";
+
+        my $oldfh = select(STDOUT);
+        select(LOG);
+        $| = 1;
+        select(FOO);
+        $| = 1;
+        select($oldfh);
+
 
         while (<FOO>)
         {
