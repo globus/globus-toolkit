@@ -46,24 +46,20 @@ kexgss_client(Kex *kex) {
         gss_buffer_desc recv_tok, gssbuf, msg_tok, *token_ptr;
 	Gssctxt *ctxt;
 	OM_uint32 maj_status, min_status, ret_flags;
-	unsigned int klen, kout;
+	u_int klen, kout, slen = 0, hashlen, strlen;
 	DH *dh; 
 	BIGNUM *dh_server_pub = NULL;
 	BIGNUM *shared_secret = NULL;
 	BIGNUM *p = NULL;
 	BIGNUM *g = NULL;	
-	unsigned char *kbuf;
-	unsigned char *hash;
-	unsigned int hashlen;
-	unsigned char *serverhostkey = NULL;
+	u_char *kbuf, *hash;
+	u_char *serverhostkey = NULL;
 	char *msg;
 	char *lang;
 	int type = 0;
 	int first = 1;
-	unsigned int slen = 0;
 	int gex = 0;
-	int nbits = -1, min = -1, max = -1;
-	u_int strlen;
+	int nbits = 0, min = DH_GRP_MIN, max = DH_GRP_MAX;
 
 	/* Initialise our GSSAPI world */	
 	ssh_gssapi_build_ctx(&ctxt);
@@ -76,8 +72,6 @@ kexgss_client(Kex *kex) {
 	if (gex) {
 		debug("Doing group exchange\n");
 		nbits = dh_estimate(kex->we_need * 8);
-		min = DH_GRP_MIN;
-		max = DH_GRP_MAX;
 		packet_start(SSH2_MSG_KEXGSS_GROUPREQ);
 		packet_put_int(min);
 		packet_put_int(nbits);
@@ -274,7 +268,7 @@ kexgss_client(Kex *kex) {
         }
 
 	gssbuf.value = hash;
-	gssbuf.length = 20;
+	gssbuf.length = hashlen;
 
         /* Verify that the hash matches the MIC we just got. */
 	if (GSS_ERROR(ssh_gssapi_checkmic(ctxt, &gssbuf, &msg_tok)))
@@ -289,7 +283,7 @@ kexgss_client(Kex *kex) {
 
 	/* save session id */
 	if (kex->session_id == NULL) {
-		kex->session_id_len = 20;
+		kex->session_id_len = hashlen;
 		kex->session_id = xmalloc(kex->session_id_len);
 		memcpy(kex->session_id, hash, kex->session_id_len);
 	}

@@ -29,13 +29,8 @@
 #ifdef GSSAPI
 
 #include "xmalloc.h"
-#include "buffer.h"
 #include "bufaux.h"
-#include "compat.h"
-#include <openssl/evp.h>
-#include "kex.h"
 #include "log.h"
-#include "monitor_wrap.h"
 #include "canohost.h"
 #include "ssh2.h"
 #include <openssl/evp.h>
@@ -90,7 +85,7 @@ ssh_gssapi_kex_mechs(gss_OID_set gss_supported, ssh_gssapi_check_fn *check,
 	size_t i;
 	int oidpos, enclen;
 	char *mechs, *encoded;
-	unsigned char digest[EVP_MAX_MD_SIZE];
+	u_char digest[EVP_MAX_MD_SIZE];
 	char deroid[2];
 	const EVP_MD *evp_md = EVP_md5();
 	EVP_MD_CTX md;

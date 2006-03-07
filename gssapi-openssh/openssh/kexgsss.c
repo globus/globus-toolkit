@@ -58,15 +58,14 @@ kexgss_server(Kex *kex)
 	gss_buffer_desc gssbuf, recv_tok, msg_tok;
 	gss_buffer_desc send_tok = GSS_C_EMPTY_BUFFER;
 	Gssctxt *ctxt = NULL;
-	unsigned int klen, kout, hashlen;
-	unsigned char *kbuf, *hash;
+	u_int slen, klen, kout, hashlen;
+	u_char *kbuf, *hash;
 	DH *dh;
 	int min = -1, max = -1, nbits = -1;
 	BIGNUM *shared_secret = NULL;
 	BIGNUM *dh_client_pub = NULL;
 	int type = 0;
 	int gex;
-	u_int slen;
 	gss_OID oid;
 	
 	/* Initialise GSSAPI */
