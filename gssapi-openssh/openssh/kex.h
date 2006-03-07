@@ -104,10 +104,6 @@ struct Newkeys {
 	Comp	comp;
 };
 
-struct KexOptions {
-	int	gss_deleg_creds;
-};
-
 struct Kex {
 	u_char	*session_id;
 	u_int	session_id_len;
@@ -129,7 +125,6 @@ struct Kex {
 #endif
 	char	*client_version_string;
 	char	*server_version_string;
-	struct  KexOptions options;
 	int	(*verify_host_key)(Key *);
 	Key	*(*load_host_key)(int);
 	int	(*host_key_index)(Key *);
