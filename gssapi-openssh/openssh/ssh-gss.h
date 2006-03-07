@@ -28,7 +28,6 @@
 
 #ifdef GSSAPI
 
-#include "kex.h"
 #include "buffer.h"
 
 #ifdef HAVE_GSSAPI_H

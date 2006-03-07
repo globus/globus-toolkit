@@ -28,19 +28,15 @@
 
 #ifdef GSSAPI
 
-#include "buffer.h"
 #include "bufaux.h"
-#include "compat.h"
-#include <openssl/evp.h>
-#include "kex.h"
 #include "auth.h"
 #include "log.h"
 #include "channels.h"
 #include "session.h"
 #include "servconf.h"
-#include "monitor_wrap.h"
 #include "xmalloc.h"
 #include "getput.h"
+#include "monitor_wrap.h"
 
 #include "ssh-gss.h"
 
