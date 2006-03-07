@@ -496,6 +496,7 @@ again:
 			break;
 		case 'b':
 			options.bind_address = optarg;
+			break;
 		case 'F':
 			config = optarg;
 			break;
