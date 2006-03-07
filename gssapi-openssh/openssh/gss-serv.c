@@ -72,7 +72,7 @@ ssh_gssapi_mech* supported_mechs[]= {
 static int limited = 0;
 #endif
 
-/* Unpriviledged */
+/* Unprivileged */
 char *
 ssh_gssapi_server_mechanisms() {
 	gss_OID_set	supported;
@@ -82,19 +82,19 @@ ssh_gssapi_server_mechanisms() {
 	    NULL));
 }
 
-/* Unpriviledged */
+/* Unprivileged */
 int
 ssh_gssapi_server_check_mech(gss_OID oid, void *data) {
-        Gssctxt * ctx = NULL;
+	Gssctxt * ctx = NULL;
 	int res;
-
+ 
 	res = !GSS_ERROR(PRIVSEP(ssh_gssapi_server_ctx(&ctx, oid)));
 	ssh_gssapi_delete_ctx(&ctx);
 
 	return (res);
 }
 
-/* Unpriviledged */
+/* Unprivileged */
 void
 ssh_gssapi_supported_oids(gss_OID_set *oidset)
 {

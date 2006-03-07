@@ -284,8 +284,8 @@ typedef enum {
 	sBanner, sUseDNS, sHostbasedAuthentication,
 	sHostbasedUsesNameFromPacketOnly, sClientAliveInterval,
 	sClientAliveCountMax, sAuthorizedKeysFile, sAuthorizedKeysFile2,
-	sGssKeyEx,
-	sGssAuthentication, sGssCleanupCreds, sAcceptEnv, sPermitTunnel,
+	sGssAuthentication, sGssKeyEx, sGssCleanupCreds, 
+	sAcceptEnv, sPermitTunnel,
 	sUsePrivilegeSeparation,
 	sDeprecated, sUnsupported
 } ServerOpCodes;

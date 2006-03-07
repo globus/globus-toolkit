@@ -226,7 +226,7 @@ ssh_krb5_cc_gen(krb5_context ctx, krb5_ccache *ccache) {
 
 	ret = snprintf(ccname, sizeof(ccname),
 	    cctemplate, geteuid());
-	if (ret == -1 || ret >= (int) sizeof(ccname))
+	if (ret < 0 || (size_t)ret >= sizeof(ccname))
 		return ENOMEM;
 
 #ifndef USE_CCAPI

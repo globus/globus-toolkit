@@ -174,9 +174,6 @@ ssh_kex2(char *host, struct sockaddr *hostaddr)
 	kex->client_version_string=client_version_string;
 	kex->server_version_string=server_version_string;
 	kex->verify_host_key=&verify_host_key_callback;
-#ifdef GSSAPI
-	kex->options.gss_deleg_creds=options.gss_deleg_creds;
-#endif
 
 #ifdef GSSAPI
 	kex->gss_deleg_creds = options.gss_deleg_creds;

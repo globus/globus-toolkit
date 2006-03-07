@@ -123,7 +123,7 @@ struct Kex {
 	int	flags;
 	const EVP_MD *evp_md;
 #ifdef GSSAPI
-	int 	gss_deleg_creds;
+	int	gss_deleg_creds;
 	int	gss_trust_dns;
 	char    *gss_host;
 #endif

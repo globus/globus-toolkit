@@ -222,30 +222,30 @@ case "$host" in
 	AC_DEFINE(BROKEN_SETREGID)
 	AC_DEFINE_UNQUOTED(BIND_8_COMPAT, 1,
 		[Define if your resolver libs need this for getrrsetbyname])
-	AC_MSG_CHECKING(if we have the Security Authorization Session API)
-	AC_TRY_COMPILE([#include <Security/AuthSession.h>],
-		[SessionCreate(0, 0);],
-		[ac_cv_use_security_session_api="yes"
-		 AC_DEFINE(USE_SECURITY_SESSION_API, 1,
-			[platform has a Security Authorization Session API])
-		 LIBS="$LIBS -framework Security"
-		 AC_MSG_RESULT(yes)],
-		[ac_cv_use_security_session_api="no"
-		 AC_MSG_RESULT(no)])
-	AC_MSG_CHECKING(if we have an in-memory credentials cache)
-	AC_TRY_COMPILE(
-		[#include <Kerberos/Kerberos.h>],
-		[cc_context_t c;
-		 (void) cc_initialize (&c, 0, NULL, NULL);],
-		[AC_DEFINE(USE_CCAPI, 1,
+ 	AC_MSG_CHECKING(if we have the Security Authorization Session API)
+ 	AC_TRY_COMPILE([#include <Security/AuthSession.h>],
+ 		[SessionCreate(0, 0);],
+ 		[ac_cv_use_security_session_api="yes"
+ 		 AC_DEFINE(USE_SECURITY_SESSION_API, 1, 
+			[platform has the Security Authorization Session API])
+ 		 LIBS="$LIBS -framework Security"
+ 		 AC_MSG_RESULT(yes)],
+ 		[ac_cv_use_security_session_api="no"
+ 		 AC_MSG_RESULT(no)])
+ 	AC_MSG_CHECKING(if we have an in-memory credentials cache)
+ 	AC_TRY_COMPILE(
+ 		[#include <Kerberos/Kerberos.h>],
+ 		[cc_context_t c;
+ 		 (void) cc_initialize (&c, 0, NULL, NULL);],
+ 		[AC_DEFINE(USE_CCAPI, 1, 
 			[platform uses an in-memory credentials cache])
-		 LIBS="$LIBS -framework Security"
-		 AC_MSG_RESULT(yes)
-		 if test "x$ac_cv_use_security_session_api" = "xno"; then
-			AC_MSG_ERROR(*** Need a security framework to use the credentials cache API ***)
-		fi],
-		[AC_MSG_RESULT(no)]
-	)
+ 		 LIBS="$LIBS -framework Security"
+ 		 AC_MSG_RESULT(yes)
+ 		 if test "x$ac_cv_use_security_session_api" = "xno"; then
+ 			AC_MSG_ERROR(*** Need a security framework to use the credentials cache API ***)
+ 		fi],
+ 		[AC_MSG_RESULT(no)]
+ 	)
 	;;
 *-*-hpux*)
 	# first we define all of the options common to all HP-UX releases
