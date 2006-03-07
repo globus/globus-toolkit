@@ -40,7 +40,7 @@ extern ServerOptions options;
 
 #ifdef HEIMDAL
 # include <krb5.h>
-#elsif !defined(MECHGLUE)
+#elif !defined(MECHGLUE)
 # ifdef HAVE_GSSAPI_KRB5_H
 #  include <gssapi_krb5.h>
 # elif HAVE_GSSAPI_GSSAPI_KRB5_H
