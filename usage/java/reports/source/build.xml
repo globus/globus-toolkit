@@ -24,7 +24,8 @@
     <property name="garjars.id" value="garjars"/>
     <fileset dir="${build.lib.dir}" id="garjars"/>
 
-    <!--<fileset dir="${share.dir}" id="garshare"/>-->
+    <property name="garshare.id" value="garshare"/>
+    <fileset file="README" id="garshare"/>
 
     <property name="garetc.id" value="garetc"/>
     <fileset dir="etc" id="garetc"/>
@@ -56,6 +57,7 @@
         <ant antfile="${build.packages}" target="makeGar">
             <reference refid="${garjars.id}"/>
             <reference refid="${garetc.id}"/>
+            <reference refid="${garshare.id}"/>
         </ant>
     </target>
 
