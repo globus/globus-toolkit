@@ -33,6 +33,101 @@ int resolve_via_mapfile ( char * username, char ** dn ) {
 
 }
 
+#define DN_BUFFER_SIZE 512
+
+int resolve_via_mapapp ( char * app_string, char * username, char ** dn ) {
+
+  int return_value = 0;
+  char * userdn = NULL;
+  /* Skip over leading '|' character */
+  char * app = &(app_string[1]);
+  FILE * app_stream = NULL;
+  char *cmd_string = NULL;
+
+  myproxy_debug("resolve_via_mapapp(%s, %s)", app, username);
+
+  userdn = malloc(DN_BUFFER_SIZE);
+
+  if (userdn == NULL) {
+    verror_put_string("malloc() failed.");
+    goto end;
+  }
+  
+  userdn[0] = '\0'; /* For safety's sake */
+
+  cmd_string = malloc(strlen(app) + strlen(username)
+		      + 4 /* two quotes, space and NUL */);
+
+  if (cmd_string == NULL) {
+    verror_put_string("malloc() failed.");
+    goto end;
+  }
+
+  sprintf(cmd_string, "%s \"%s\"", app, username);
+  myproxy_debug("Mapper command: %s", cmd_string);
+
+  /* XXX Be good to add some status checks here to make sure app exists
+     and is executable. */
+
+  app_stream = popen(cmd_string, "r");
+
+  if (app_stream == NULL) {
+    verror_put_string("popen() failed. Could not execute mapping application (%s).",
+		      app);
+    verror_put_errno(errno);
+    return_value = 1;
+    goto end;
+  }
+
+  if (fgets(userdn, DN_BUFFER_SIZE, app_stream) == NULL) {
+    verror_put_string("Error reading from mapping application.");
+    return_value = 1;
+    goto end;
+  }
+
+  if (pclose(app_stream) != 0) {
+      verror_put_string("Mapping application returned non-zero.");
+      return_value = 1;
+      goto end;
+  }
+  app_stream = NULL;
+
+  /* Chop trailing newline if present */
+  if (userdn[strlen(userdn) - 1] == '\n') {
+    userdn[strlen(userdn) - 1] = '\0';
+  }
+
+  if (strlen(userdn) == 0) {
+    verror_put_string("Got zero-length DN from mapping application.");
+    return_value = 1;
+    goto end;
+  }
+
+  *dn = userdn;
+
+ end:
+  if (cmd_string != NULL) {
+    free(cmd_string);
+    cmd_string = NULL;
+  }
+
+  if (app_stream != NULL) {
+    pclose(app_stream);
+    app_stream = NULL;
+  }
+
+  if (return_value) {
+    if (userdn) {
+      free(userdn);
+      userdn = NULL;
+    }
+    *dn = NULL;
+  }
+  return return_value;
+
+}
+
+
 #ifdef HAVE_LIBLDAP
 
 int resolve_via_ldap    ( char * username, char ** dn,
@@ -354,6 +449,14 @@ int user_dn_lookup( char * username, char ** dn,
   if ( server_context->ca_ldap_server != NULL ) {
     if ( resolve_via_ldap( username, &userdn, server_context ) ) {
       verror_put_string("resolve_via_ldap() call failed");
+      return_value = 1;
+      goto end;
+    }
+  } else if ((server_context->certificate_mapfile != NULL) &&
+	     (server_context->certificate_mapfile[0] == '|')) {
+    if (resolve_via_mapapp( server_context->certificate_mapfile,
+			    username, &userdn ) ) {
+      verror_put_string("resolve_via_mapfile() call failed");
       return_value = 1;
       goto end;
     }
