@@ -28,6 +28,9 @@
     <property name="garetc.id" value="garetc"/>
     <fileset dir="${etc.dir}" id="garetc"/>
 
+    <property name="garbin.id" value="garbin"/>
+    <fileset dir="bin" id="garbin"/>
+
     <target name="init">
         <mkdir dir="${build.dir}"/>
         <mkdir dir="${build.dest}"/>
@@ -59,6 +62,7 @@
         <ant antfile="${build.packages}" target="makeGar">
             <reference refid="${garjars.id}"/>
             <reference refid="${garetc.id}"/>
+            <reference refid="${garbin.id}"/>
         </ant>
     </target>
 
