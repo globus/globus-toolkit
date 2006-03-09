@@ -69,40 +69,41 @@ public class ExampleReceiver {
             System.exit(1);
         }
 
-        databaseDriverClass = props.getProperty("database-driver");
-        databaseURL = props.getProperty("database-url");
-        defaultTable = props.getProperty("default-table");
-        gftpTable = props.getProperty("gftp-table");
-        gftpFilterTable = props.getProperty("gftp-filtered-out-table");
-        domainsToFilter = props.getProperty("gftp-filter-domains");
-        rftTable = props.getProperty("rft-table");
-        jwsCoreTable = props.getProperty("jws-core-table");
-        cCoreTable = props.getProperty("cws-core-table");
-        gramTable = props.getProperty("gram-table");
-        rlsTable = props.getProperty("rls-table");
-            
-        ringBufferSize = Integer.parseInt(props.getProperty("ringbuffer-size"));
-
-        if (args.length == 1)
-            /*Get listening port number from command line*/
-            port = Integer.parseInt(args[0]);
-        else {
-            /*or else, read port from properties file:*/
-            port = Integer.parseInt(props.getProperty("listening-port"));
-        }
-        
-        if (port == 0) {
-            System.err.println("You must specify listening port either on the command line or in the properties file.");
-            System.exit(2);
-        }
-            
-        /*When creating the receiver, pass it the port to listen on,
-          the database connection class to use, the url to connect to your
-          database, and the database table where default packets will be
-          written if no other handler takes them:*/
-        System.out.println("Starting receiver on port "+port+"; will write to database at "+databaseURL+"; Ringbuffer size is "+ringBufferSize);
-
         try {
+            props.load(propsIn);
+            
+            databaseDriverClass = props.getProperty("database-driver");
+            databaseURL = props.getProperty("database-url");
+            defaultTable = props.getProperty("default-table");
+            gftpTable = props.getProperty("gftp-table");
+            gftpFilterTable = props.getProperty("gftp-filtered-out-table");
+            domainsToFilter = props.getProperty("gftp-filter-domains");
+            rftTable = props.getProperty("rft-table");
+            jwsCoreTable = props.getProperty("jws-core-table");
+            cCoreTable = props.getProperty("cws-core-table");
+            gramTable = props.getProperty("gram-table");
+            rlsTable = props.getProperty("rls-table");
+            
+            ringBufferSize = Integer.parseInt(props.getProperty("ringbuffer-size"));
+
+            if (args.length == 1)
+                /*Get listening port number from command line*/
+                port = Integer.parseInt(args[0]);
+            else {
+                /*or else, read port from properties file:*/
+                port = Integer.parseInt(props.getProperty("listening-port"));
+            }
+        
+            if (port == 0) {
+                throw new Exception("You must specify listening port either on the command line or in the properties file.");
+            }
+            
+            /*When creating the receiver, pass it the port to listen on,
+              the database connection class to use, the url to connect to your
+              database, and the database table where default packets will be
+              written if no other handler takes them:*/
+            System.out.println("Starting receiver on port "+port+"; will write to database at "+databaseURL+"; Ringbuffer size is "+ringBufferSize);
+
             receiver = new Receiver(port, ringBufferSize, props);
             
             /*gftpHandler is an example of a PacketHandler subclass.  I create
