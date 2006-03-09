@@ -9,7 +9,13 @@
  * modifications, you must include this notice in the file.
  */
 
-#ifndef GLOBUS_XIO_UDT_REF_H
-#define GLOBUS_XIO_UDT_REF_H
+#ifndef GLOBUS_XIO_QUANTA_RBUDP_H
+#define GLOBUS_XIO_QUANTA_RBUDP_H
+
+enum
+{
+    XIO_QUANTA_RBUDP_RDONLY = O_RDONLY,
+    XIO_QUANTA_RBUDP_WRONLY = O_WRONLY
+};
 
 #endif

@@ -1,6 +1,10 @@
 #include "globus_xio_driver.h"
 #include "globus_xio_wrapblock.h"
+#include "globus_xio_quanta_rbudp.h"
 #include "version.h"
+
+#include "QUANTA/QUANTAnet_rbudpReceiver_c.hxx"
+#include "QUANTA/QUANTAnet_rbudpSender_c.hxx"
 
 #define GlobusXIORbudpError(_r) globus_error_put(GlobusXIORbudpErrorObj(_r))
 
@@ -47,6 +51,11 @@ typedef struct globus_l_xio_quanta_rbudp_handle_s
     QUANTAnet_rbudpReceiver_c *         receiver;
     int                                 send_rate;
 } globus_l_xio_quanta_rbudp_handle_t;
+
+typedef struct globus_l_xio_quanta_rbudp_attr_s
+{
+    int                                 flags;
+} globus_l_xio_quanta_rbudp_attr_t;
 
 static
 int
@@ -121,6 +130,10 @@ globus_result_t
 globus_l_xio_quanta_rbudp_attr_init(
     void **                             out_attr)
 {
+    globus_l_xio_quanta_rbudp_attr_t *  attr;
+    attr = (globus_l_xio_quanta_rbudp_attr_t *)
+        globus_calloc(1, sizeof(globus_l_xio_quanta_rbudp_handle_t));
+    *out_attr = attr;
     return GLOBUS_SUCCESS;
 }
 
@@ -130,6 +143,8 @@ globus_l_xio_quanta_rbudp_attr_copy(
     void **                             dst,
     void *                              src)
 {
+    *dst = globus_calloc(1, sizeof(globus_l_xio_quanta_rbudp_handle_t));
+    memcpy(*dst, src, sizeof(globus_l_xio_quanta_rbudp_handle_t));
     return GLOBUS_SUCCESS;
 }
 
@@ -140,6 +155,21 @@ globus_l_xio_quanta_rbudp_attr_cntl(
     int                                 cmd,
     va_list                             ap)
 {
+    globus_l_xio_quanta_rbudp_attr_t *  attr;
+
+    attr = (globus_l_xio_quanta_rbudp_attr_t *) driver_specific_handle;
+
+    switch(cmd)
+    {
+        case XIO_QUANTA_RBUDP_RDONLY:
+        case XIO_QUANTA_RBUDP_WRONLY:
+            attr->flags = cmd;
+            break;
+
+        default:
+            break;
+    }
+
     return GLOBUS_SUCCESS;
 }
 
@@ -148,6 +178,7 @@ globus_result_t
 globus_l_xio_quanta_rbudp_attr_destroy(
     void *                              driver_attr)
 {
+    globus_free(driver_attr);
     return GLOBUS_SUCCESS;
 }
 
@@ -155,33 +186,6 @@ static
 globus_result_t
 globus_l_xio_quanta_rbudp_cntl(
     void  *                             driver_specific_handle,
-    int                                 cmd,
-    va_list                             ap)
-{
-    return GLOBUS_SUCCESS;
-}
-
-static
-globus_result_t
-globus_l_xio_quanta_rbudp_server_init(
-    void *                              driver_attr,
-    const globus_xio_contact_t *        contact_info,
-    globus_xio_operation_t              op)
-{
-}
-
-static
-globus_result_t
-globus_l_xio_quanta_rbudp_server_destroy(
-    void *                              driver_server)
-{
-    return GLOBUS_SUCCESS;
-}
-
-static
-globus_result_t
-globus_l_xio_quanta_rbudp_server_cntl(
-    void *                              driver_server,
     int                                 cmd,
     va_list                             ap)
 {
@@ -208,17 +212,6 @@ globus_l_xio_quanta_rbudp_link_destroy(
 
 static
 globus_result_t
-globus_l_xio_quanta_rbudp_accept(
-    void *                              driver_server,
-    void **                             out_link)
-{
-    return GLOBUS_SUCCESS;
-}
-
-
-
-static
-globus_result_t
 globus_l_xio_quanta_rbudp_open(
     const globus_xio_contact_t *        contact_info,
     void *                              driver_link,
@@ -226,14 +219,28 @@ globus_l_xio_quanta_rbudp_open(
     void **                             driver_handle)
 {
     globus_l_xio_quanta_rbudp_handle_t *    handle;
+    globus_l_xio_quanta_rbudp_attr_t *      attr;
+
+    attr = (globus_l_xio_quanta_rbudp_attr_t *) driver_attr;
 
     handle = (globus_l_xio_quanta_rbudp_handle_t *)
         globus_calloc(1, sizeof(globus_l_xio_quanta_rbudp_handle_t));
-
-    handle->sender = new QUANTAnet_rbudpSender_c(38000);
-    mysender->init(contact_info->host);
-    handle->receiver = new QUANTAnet_rbudpReceiver_c(38001);
-    receiver->init(contact_info->host);
+    handle->send_rate = 600000;
+    if(attr->flags | XIO_QUANTA_RBUDP_RDONLY)
+    {
+printf("rbudp open for read %s\n", contact_info->host);
+        handle->receiver = new QUANTAnet_rbudpReceiver_c(
+            atoi(contact_info->port));
+        handle->receiver->init(contact_info->host);
+    }
+    else
+    {
+printf("rbudp open for write %s\n", contact_info->host);
+        handle->sender = new QUANTAnet_rbudpSender_c(atoi(contact_info->port));
+        handle->sender->init(contact_info->host);
+    }
+printf("rbudp open handle @ 0x%x\n", handle);
+    *driver_handle = handle;
 
     return GLOBUS_SUCCESS;
 }
@@ -248,9 +255,13 @@ globus_l_xio_quanta_rbudp_read(
 {
     globus_l_xio_quanta_rbudp_handle_t *    handle;
 
+printf("rbudp read enter 0x%x\n", driver_specific_handle);
     handle = (globus_l_xio_quanta_rbudp_handle_t *) driver_specific_handle;
-    handle->receiver->receive(iovec[0].iov_base, iovec[0].iov_len, 1496);
+printf("receive(0x%x, %d, 1452)\n", iovec[0].iov_base, iovec[0].iov_len, 1452);
+    handle->receiver->receive(iovec[0].iov_base, iovec[0].iov_len, 1452);
+printf("rbudp read exit 0x%x\n", nbytes);
     *nbytes = iovec[0].iov_len;
+printf("rbudp read exit\n");
 
     return GLOBUS_SUCCESS;
 }
@@ -265,10 +276,12 @@ globus_l_xio_quanta_rbudp_write(
 {
     globus_l_xio_quanta_rbudp_handle_t *    handle;
 
+printf("rbudp wrte enter\n");
     handle = (globus_l_xio_quanta_rbudp_handle_t *) driver_specific_handle;
     handle->sender->send(
-        iovec[0].iov_base, iovec[0].iov_len, handle->send_rate, 1496);
+        iovec[0].iov_base, iovec[0].iov_len, handle->send_rate, 1452);
     *nbytes = iovec[0].iov_len;
+printf("rbudp wrte exit\n");
 
     return GLOBUS_SUCCESS;
 }
@@ -315,15 +328,6 @@ globus_l_xio_quanta_rbudp_init(
         NULL,
         globus_l_xio_quanta_rbudp_cntl);
 
-    globus_xio_driver_set_server(
-        driver,
-        globus_l_xio_quanta_rbudp_server_init,
-        NULL,
-        globus_l_xio_quanta_rbudp_server_destroy,
-        globus_l_xio_quanta_rbudp_server_cntl,
-        globus_l_xio_quanta_rbudp_link_cntl,
-        globus_l_xio_quanta_rbudp_link_destroy);
-
     globus_xio_driver_set_attr(
         driver,
         globus_l_xio_quanta_rbudp_attr_init,
@@ -336,7 +340,7 @@ globus_l_xio_quanta_rbudp_init(
         globus_l_xio_quanta_rbudp_close,
         globus_l_xio_quanta_rbudp_read,
         globus_l_xio_quanta_rbudp_write,
-        globus_l_xio_quanta_rbudp_accept);
+        NULL);
     *out_driver = driver;
     GlobusXIORBUDPRefDebugExit();
     return GLOBUS_SUCCESS;
