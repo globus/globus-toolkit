@@ -100,6 +100,7 @@ public class GridFTPPacketHandler extends DefaultPacketHandler {
 	output.append("  External to MCS: ");
 	output.append(externalPacketCount);
 	output.append(newline);
+        /*
 	output.append("  Outside of MCS, there were ");
 	output.append(dailySummary.getNumHosts());
 	output.append(" hosts, ");
@@ -107,7 +108,6 @@ public class GridFTPPacketHandler extends DefaultPacketHandler {
 	output.append(" of them not seen before, in the following top-level domains: ");
 	output.append(dailySummary.getCountries());
 	output.append(newline);
-        /*
 	output.append("  Longest delay between completion of transfer and receipt of packet: ");
 	output.append(longestDelay);
 	output.append("  Delay Histogram: ");
