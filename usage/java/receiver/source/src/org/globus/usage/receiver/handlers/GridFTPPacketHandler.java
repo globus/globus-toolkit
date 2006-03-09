@@ -107,11 +107,13 @@ public class GridFTPPacketHandler extends DefaultPacketHandler {
 	output.append(" of them not seen before, in the following top-level domains: ");
 	output.append(dailySummary.getCountries());
 	output.append(newline);
+        /*
 	output.append("  Longest delay between completion of transfer and receipt of packet: ");
 	output.append(longestDelay);
 	output.append("  Delay Histogram: ");
 	output.append(delayHistogram.toString());
 	output.append(newline);
+        */
 	return output.toString();
     }
 
