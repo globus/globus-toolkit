@@ -24,6 +24,9 @@
     <property name="garjars.id" value="garjars"/>
     <fileset dir="${build.lib.dir}" id="garjars"/>
 
+    <property name="garetc.id" value="garetc"/>
+    <fileset dir="etc" id="garetc"/>
+
     <target name="init">
         <mkdir dir="${build.dir}"/>
         <mkdir dir="${build.dest}"/>
@@ -44,11 +47,6 @@
     </target>
 
     <target name="jar" depends="compile">
-        <copy todir="${build.dest}">
-	<fileset dir="${properties.dir}">
-		<include name="*.properties"/>
-	</fileset>
-	</copy> 
         <jar destfile="${build.lib.dir}/${jar.name}" basedir="${build.dest}"/>
     </target>
 

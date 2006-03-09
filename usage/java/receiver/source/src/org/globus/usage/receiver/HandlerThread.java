@@ -17,25 +17,19 @@
 package org.globus.usage.receiver;
 
 import java.io.IOException;
-//import java.net.DatagramPacket;
-//import java.net.DatagramSocket;
 import java.util.LinkedList;
 import java.util.ListIterator;
+import java.util.Properties;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.globus.usage.packets.CustomByteBuffer;
-//import org.globus.usage.packets.IPTimeMonitorPacket;
 import org.globus.usage.packets.UsageMonitorPacket;
 import org.globus.usage.receiver.handlers.DefaultPacketHandler;
 import org.globus.usage.receiver.handlers.PacketHandler;
 
 import java.sql.DriverManager;
-//import java.sql.Connection;
-//import java.sql.Statement;
-//import java.sql.ResultSet;
-//import java.sql.SQLException;
 
 import org.apache.commons.pool.ObjectPool;
 import org.apache.commons.pool.impl.GenericObjectPool;
@@ -56,7 +50,7 @@ public class HandlerThread extends Thread {
 
     private int packetsLogged, errorCount;
 
-    public HandlerThread(LinkedList list, String driverClass, String dburl, String table, RingBuffer ring) {
+    public HandlerThread(LinkedList list, RingBuffer ring, Properties props) {
         super("UDPHandlerThread");
 
 	this.packetsLogged = 0;
@@ -64,9 +58,15 @@ public class HandlerThread extends Thread {
         this.handlerList = list;
         this.theRing = ring;
 
+        String driverClass = props.getProperty("database-driver");
+        String dburl = props.getProperty("database-url");
+        String dbuser = props.getProperty("database-user");
+        String dbpwd = props.getProperty("database-pwd");
+        String table = props.getProperty("default-table");
+
 	try {
 	    Class.forName(driverClass);
-	    setUpDatabaseConnectionPool(dburl);
+	    setUpDatabaseConnectionPool(dburl, dbuser, dbpwd);
 	    theDefaultHandler = new DefaultPacketHandler(dburl, table);
 	}
 	catch (Exception e) {
@@ -75,13 +75,16 @@ public class HandlerThread extends Thread {
 	}
     }
 
-    private void setUpDatabaseConnectionPool(String dburl) throws Exception {
+    private void setUpDatabaseConnectionPool(String dburl, 
+                                             String dbuser, 
+                                             String dbpwd) throws Exception {
 	/*Set up database connection pool:  all handlers which need a 
 	  database connection (which, so far, is all handlers) can take
 	  connections from this pool.*/
 	GenericObjectPool connectionPool = new GenericObjectPool(null);
-	ConnectionFactory connectionFactory = new DriverManagerConnectionFactory(dburl, "allcock", "bigio");
-	PoolableConnectionFactory poolableConnectionFactory = new PoolableConnectionFactory(connectionFactory, connectionPool, null, null, false, true);
+	ConnectionFactory connectionFactory = new DriverManagerConnectionFactory(dburl, dbuser, dbpwd);
+	PoolableConnectionFactory poolableConnectionFactory = 
+            new PoolableConnectionFactory(connectionFactory, connectionPool, null, null, false, true);
 	PoolingDriver driver = new PoolingDriver();
 	driver.registerPool("usagestats", connectionPool);
     }

@@ -48,7 +48,7 @@ public class ExampleReceiver {
 	String jwsCoreTable, rlsTable, gramTable, cCoreTable, gftpFilterTable;
 	String rftTable, domainsToFilter;
 	int ringBufferSize = 0;
-        Properties props;
+        Properties props = new Properties();
         InputStream propsIn;
         Receiver receiver;
 
@@ -61,50 +61,49 @@ public class ExampleReceiver {
 
         /*Open properties file (which gets compiled into jar) to read
           default port and database connection information:*/
-        try {
-            props = new Properties();
-            propsIn = Receiver.class.getResourceAsStream("/receiver.properties");
-            if (propsIn != null) {
-                props.load(propsIn);
-            }
-	    else {
-		log.error("Can't open properties file receiver.properties.");
-	    }
 
-            databaseDriverClass = props.getProperty("database-driver");
-            databaseURL = props.getProperty("database-url");
-            defaultTable = props.getProperty("default-table");
-            gftpTable = props.getProperty("gftp-table");
-	    gftpFilterTable = props.getProperty("gftp-filtered-out-table");
-	    domainsToFilter = props.getProperty("gftp-filter-domains");
-	    rftTable = props.getProperty("rft-table");
-	    jwsCoreTable = props.getProperty("jws-core-table");
-	    cCoreTable = props.getProperty("cws-core-table");
-	    gramTable = props.getProperty("gram-table");
-	    rlsTable = props.getProperty("rls-table");
+        String file = "etc/globus_usage_receiver/receiver.properties";
+        propsIn = Receiver.class.getResourceAsStream(file);
+        if (propsIn == null) {
+            System.err.println("Can't open properties file: " + file);
+            System.exit(1);
+        }
 
-            ringBufferSize = Integer.parseInt(props.getProperty("ringbuffer-size"));
-
-            if (args.length == 1)
-                /*Get listening port number from command line*/
-                port = Integer.parseInt(args[0]);
-            else {
-                /*or else, read port from properties file:*/
-                port = Integer.parseInt(props.getProperty("listening-port"));
-            }
-
-            if (port == 0) {
-                throw new Exception("You must specify listening port either on the command line or in the properties file.");
-            }
+        databaseDriverClass = props.getProperty("database-driver");
+        databaseURL = props.getProperty("database-url");
+        defaultTable = props.getProperty("default-table");
+        gftpTable = props.getProperty("gftp-table");
+        gftpFilterTable = props.getProperty("gftp-filtered-out-table");
+        domainsToFilter = props.getProperty("gftp-filter-domains");
+        rftTable = props.getProperty("rft-table");
+        jwsCoreTable = props.getProperty("jws-core-table");
+        cCoreTable = props.getProperty("cws-core-table");
+        gramTable = props.getProperty("gram-table");
+        rlsTable = props.getProperty("rls-table");
             
-            /*When creating the receiver, pass it the port to listen on,
-              the database connection class to use, the url to connect to your
-              database, and the database table where default packets will be
-	      written if no other handler takes them:*/
-	    System.out.println("Starting receiver on port "+port+"; will write to database at "+databaseURL+"; Ringbuffer size is "+ringBufferSize);
-            receiver = new Receiver(port, databaseDriverClass,
-				    databaseURL, defaultTable,
-				    ringBufferSize);
+        ringBufferSize = Integer.parseInt(props.getProperty("ringbuffer-size"));
+
+        if (args.length == 1)
+            /*Get listening port number from command line*/
+            port = Integer.parseInt(args[0]);
+        else {
+            /*or else, read port from properties file:*/
+            port = Integer.parseInt(props.getProperty("listening-port"));
+        }
+        
+        if (port == 0) {
+            System.err.println("You must specify listening port either on the command line or in the properties file.");
+            System.exit(2);
+        }
+            
+        /*When creating the receiver, pass it the port to listen on,
+          the database connection class to use, the url to connect to your
+          database, and the database table where default packets will be
+          written if no other handler takes them:*/
+        System.out.println("Starting receiver on port "+port+"; will write to database at "+databaseURL+"; Ringbuffer size is "+ringBufferSize);
+
+        try {
+            receiver = new Receiver(port, ringBufferSize, props);
             
             /*gftpHandler is an example of a PacketHandler subclass.  I create
               one here, giving it the neccessary database information, and then
@@ -128,7 +127,9 @@ public class ExampleReceiver {
 	    receiver.registerHandler(rlsHandler);
 
 	    //start the control socket thread:
-	    new ControlSocketThread(receiver, 4811).start();
+            int controlPort = 4811;
+	    new ControlSocketThread(receiver, controlPort).start();
+            System.out.println("Starting control socket at: "  + controlPort);
         }
         catch (IOException e) {
             log.fatal("An IOException occurred when trying to create Receiver:" +e.getMessage());
@@ -169,7 +170,7 @@ class ControlSocketThread extends Thread {
     public void run() {
 	/*When we get a connection on the control socket, either respond with
 	  the receiver.getStatus(), or shut down the receiver.*/
-    
+
 	PrintWriter out;
 	BufferedReader in;
 	String inputLine, outputLine;

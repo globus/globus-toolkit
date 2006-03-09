@@ -22,6 +22,7 @@ import java.net.DatagramSocket;
 import java.util.LinkedList;
 import java.util.ListIterator;
 import java.util.Date;
+import java.util.Properties;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -50,8 +51,10 @@ public class Receiver {
 
     /*Creates a receiver which will listen on the given port and write
       packets to the given database.*/
-    public Receiver(int port, String driverClass, String dburl,
-                    String table, int ringBufferSize) throws IOException {
+    public Receiver(int port, 
+                    int ringBufferSize,
+                    Properties props) 
+        throws IOException {
 
         theRing = new RingBuffer(ringBufferSize);
         handlerList = new LinkedList();
@@ -61,17 +64,15 @@ public class Receiver {
           pass them through all registered handlers...*/
         theRecvThread = new ReceiverThread(port, theRing);
         theRecvThread.start();
-        theHandleThread = new HandlerThread(handlerList, driverClass, 
-					    dburl, table, theRing);
+        theHandleThread = new HandlerThread(handlerList, theRing, props);
         theHandleThread.start();
 	lastResetDate = new Date();
     }
 
     /*Constructor with no specified ringBuffer size uses default*/
-    public Receiver(int port, String driverClass, String db, String table)
+    public Receiver(int port, Properties props) 
         throws IOException {
-
-        this(port, driverClass, db, table, RING_BUFFER_SIZE);
+        this(port, RING_BUFFER_SIZE, props);
     }
 
 
