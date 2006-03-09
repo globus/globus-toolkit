@@ -36,6 +36,12 @@ Build Instructions:
             <property name="class.name" 
                 value="org.globus.usage.receiver.samples.ExampleReceiver"/>
         </ant>
+        <ant antfile="${build.launcher}" 
+             target="generateLauncher">
+            <property name="launcher-name" value="globus-usage-babysitter"/>
+            <property name="class.name" 
+                value="org.globus.usage.receiver.samples.Babysitter"/>
+        </ant>
     </target>
         
 </project>

@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+package org.globus.usage.receiver.samples;
+
 /*
  * Jonathan DiCarlo
  * Simple program which connects to the running Receiver through a control socket
@@ -34,6 +36,11 @@ public class Babysitter {
     private static final int controlPort = 4811;
 
     public static void main(String[] args) throws IOException {
+
+        if (args.length < 1) {
+            System.err.println("Usage: java Babysitter <command>");
+            System.exit(1);
+        }
 
         Socket controlSocket = null;
         PrintWriter out = null;
