@@ -62,7 +62,7 @@ public class ExampleReceiver {
         /*Open properties file (which gets compiled into jar) to read
           default port and database connection information:*/
 
-        String file = "etc/globus_usage_receiver/receiver.properties";
+        String file = "/etc/globus_usage_receiver/receiver.properties";
         propsIn = Receiver.class.getResourceAsStream(file);
         if (propsIn == null) {
             System.err.println("Can't open properties file: " + file);
