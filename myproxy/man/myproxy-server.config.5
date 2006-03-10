@@ -343,6 +343,16 @@ to certificate subject distinguished names for the issued
 certificates using this mapfile, which has the same format as used
 by other Globus Toolkit services.
 By default, /etc/grid-security/grid-mapfile is used.
+.TP
+.BI certificate_mapapp " full-path-to-mapapp"
+When specifying certificate_issuer above, you can map account names
+to certificate subject distinguished names for the issued
+certificates using this call-out.  It will be passed the
+authenticated username as the single command argument.  On success,
+it should write the distinguished name to stdout and exit with zero
+status.  On error, it should write to stderr and exit with nonzero
+status.  If it is not defined, then mapfile lookup will be executed
+instead (see certificate_mapfile above).
 .PP
 If OpenLDAP support is built-in to the
 .BR myproxy-server (8),

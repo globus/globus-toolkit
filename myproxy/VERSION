@@ -5,6 +5,8 @@ Binary compatibility of the C API is not guaranteed between releases.
 Version History
 ---------------
 v3.5 XX Xxx 2006
+  - added certificate_mapapp call-out for mapping usernames to
+    certificate subject distinguished names for the CA module
   - do not indicate in info command error output whether credentials
     owned by someone else exist, to avoid giving potentially useful
     information to an attacker
