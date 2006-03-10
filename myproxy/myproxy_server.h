@@ -35,6 +35,7 @@ typedef struct
   char *certificate_issuer_key_passphrase; /* CA signing key passphrase */
   char *certificate_issuer_email_domain; /* CA email domain for alt name */
   char *certificate_mapfile;        /* CA gridmap file if not the default */
+  char *certificate_mapapp;         /* gridmap call-out */
   char *certificate_issuer;         /* CA issuer DN */
   int   max_cert_lifetime;          /* like proxy_lifetime for the CA */
   char *certificate_serialfile;     /* path to serialnumber file for CA */

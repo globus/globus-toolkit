@@ -334,6 +334,10 @@ line_parse_callback(void *context_arg,
     {
 	context->certificate_mapfile = strdup(tokens[1]);
     }
+    else if (strcmp(directive, "certificate_mapapp") == 0)
+    {
+	context->certificate_mapapp = strdup(tokens[1]);
+    }
     else if (strcmp(directive, "certificate_issuer") == 0)
     {
 	context->certificate_issuer = strdup(tokens[1]);
