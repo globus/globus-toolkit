@@ -92,7 +92,7 @@ external_callout( X509_REQ                 *request,
   char intbuf[128];
 
   pid_t pid;
-  int p0[2], p1[2], p2[2];
+  int fds[3];
   int status;
 
   FILE * pipestream = NULL;
@@ -104,46 +104,14 @@ external_callout( X509_REQ                 *request,
   myproxy_debug("callout using: %s", 
 		server_context->certificate_issuer_program);
 
-  /* create pipe */
-
-  if ( pipe(p0) < 0 || pipe(p1) < 0 || pipe(p2) < 0 ) {
-    verror_put_string("pipe() failed");
-    verror_put_errno(errno);
-    goto error;
+  if ((pid = myproxy_popen(fds,
+			   server_context->certificate_issuer_program,
+			   NULL)) < 0) {
+    return -1; /* myproxy_popen will set verror */
   }
-
-  /* create child */
-
-  if ( (pid = fork()) < 0 ) {
-    verror_put_string("fork() failed");
-    verror_put_errno(errno);
-    goto error;
-  }
-
-  /* attach pipes to appropriate streams in child and exec */
-
-  if (pid == 0) {
-    close(p0[1]); close(p1[0]); close(p2[0]);
-    dup2(p0[0], 0); /*in*/
-    dup2(p1[1], 1); /*out*/
-    dup2(p2[1], 2); /*error*/
-    execl(server_context->certificate_issuer_program, 
-	  server_context->certificate_issuer_program, NULL);
-    perror("exec");
-    fprintf(stderr, "failed to run %s: %s\n",
-	    server_context->certificate_issuer_program, strerror(errno));
-    exit(1);
-  }
-
-  /* close unused pipes on the parent side */
-
-  close(p0[0]);
-  close(p1[1]);
-  close(p2[1]);
 
   /* writing to program */
-
-  pipestream = fdopen( p0[1], "w" );
+  pipestream = fdopen( fds[0], "w" );
 
   if ( pipestream == NULL ) {
     verror_put_string("File stream to stdin pipe creation problem.");
@@ -178,7 +146,7 @@ external_callout( X509_REQ                 *request,
 
   fclose( pipestream );
 
-  close(p0[1]);
+  close(fds[0]);
 
   /* wait for program to exit */
 
@@ -195,7 +163,7 @@ external_callout( X509_REQ                 *request,
   if ( status != 0 ) {
     verror_put_string("external process exited abnormally\n");
     memset(buffer, '\0', BUF_SIZE);
-    if ( read( p2[0], buffer, BUF_SIZE ) > 0 ) {
+    if ( read( fds[2], buffer, BUF_SIZE ) > 0 ) {
       verror_put_string(buffer);
     } else {
       verror_put_string("did not recieve an error string from callout");
@@ -205,7 +173,7 @@ external_callout( X509_REQ                 *request,
 
   /* retrieve the certificate */
 
-  pipestream = fdopen( p1[0], "r" );
+  pipestream = fdopen( fds[1], "r" );
 
   if ( pipestream == NULL ) {
     verror_put_string("File stream to stdout pipe creation problem.");
@@ -223,8 +191,8 @@ external_callout( X509_REQ                 *request,
 
   fclose( pipestream );
 
-  close(p1[0]);
-  close(p2[0]);
+  close(fds[1]);
+  close(fds[2]);
 
   /* good to go */
 
