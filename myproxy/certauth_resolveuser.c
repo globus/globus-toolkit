@@ -13,7 +13,6 @@ int resolve_via_mapfile ( char * username, char ** dn ) {
 
   if ( globus_gss_assist_map_local_user( username,
 					 &userdn ) ) {
-    verror_put_string("Could not resolve user via grid-mapfile");
     return_value = 1;
     goto end;
   }
@@ -66,7 +65,7 @@ int resolve_via_mapapp ( char * app_string, char * username, char ** dn ) {
   if (exit_status != 0) {
       FILE *fp = NULL;
       char buf[100];
-      verror_put_string("Mapping application returned non-zero.");
+      verror_put_string("Mapping call-out returned error");
       fp = fdopen(fds[1], "r");
       if (fp) {
 	  while (fgets(buf, 100, fp) != NULL) {
@@ -448,20 +447,20 @@ int user_dn_lookup( char * username, char ** dn,
 
   if ( server_context->ca_ldap_server != NULL ) {
     if ( resolve_via_ldap( username, &userdn, server_context ) ) {
-      verror_put_string("resolve_via_ldap() call failed");
+      verror_put_string("Failed to map username to DN via LDAP");
       return_value = 1;
       goto end;
     }
   } else if (server_context->certificate_mapapp != NULL) {
     if (resolve_via_mapapp( server_context->certificate_mapapp,
 			    username, &userdn ) ) {
-      verror_put_string("resolve_via_mapapp() call failed");
+      verror_put_string("Failed to map username to DN via call-out");
       return_value = 1;
       goto end;
     }
   } else {
     if ( resolve_via_mapfile( username, &userdn ) ) {
-      verror_put_string("resolve_via_mapfile() call failed");
+      verror_put_string("Failed to map username to DN via grid-mapfile");
       return_value = 1;
       goto end;
     }
