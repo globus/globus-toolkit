@@ -459,6 +459,134 @@ is_name_in_list(const char **list,
     return return_code;
 }
 
+static int
+check_config(myproxy_server_context_t *context)
+{
+    int rval = 0;
+
+    if (!context->accepted_credential_dns) {
+	myproxy_debug("accepted_credentials not set.");
+	myproxy_debug("server will not allow clients to store credentials.");
+    }
+    if (!context->authorized_retriever_dns) {
+	myproxy_debug("authorized_retrievers not set.");
+	myproxy_debug("server will not allow clients to retrieve credentials.");
+    }
+    if (!context->authorized_renewer_dns) {
+	myproxy_debug("authorized_renewers not set.");
+	myproxy_debug("server will not allow clients to renew credentials.");
+    }
+    if (!context->authorized_key_retrievers_dns) {
+	myproxy_debug("authorized_key_retrievers not set.");
+	myproxy_debug("server will not allow clients to retrieve keys.");
+    }
+    if (context->passphrase_policy_pgm) {
+	if (access(context->passphrase_policy_pgm, X_OK) < 0) {
+	    verror_put_string("passphrase_policy_pgm %s not executable",
+			      context->passphrase_policy_pgm);
+	    verror_put_errno(errno);
+	    rval = -1;
+	} else {
+	    myproxy_log("passphrase policy checking enabled: %s",
+			context->passphrase_policy_pgm);
+	}
+    }
+    if (context->max_proxy_lifetime) {
+	myproxy_log("max_proxy_lifetime: %d seconds",
+		    context->max_proxy_lifetime);
+    }
+    if (context->pam_policy &&
+	(!strcmp(context->pam_policy, "required") ||
+	 (strcmp(context->pam_policy, "sufficient")))) {
+	myproxy_log("PAM enabled, policy %s", context->pam_policy);
+    }
+    if (context->sasl_policy &&
+	(!strcmp(context->sasl_policy, "required") ||
+	 (strcmp(context->sasl_policy, "sufficient")))) {
+	myproxy_log("SASL enabled, policy %s", context->sasl_policy);
+    }
+    if (context->certificate_issuer_program) {
+	if (access(context->certificate_issuer_program, X_OK) < 0) {
+	    verror_put_string("certificate_issuer_program %s not executable",
+			      context->certificate_issuer_program);
+	    verror_put_errno(errno);
+	    rval = -1;
+	} else {
+	    myproxy_log("CA enabled: %s", context->certificate_issuer_program);
+	}
+    }
+    if (context->certificate_issuer_cert) {
+	if (access(context->certificate_issuer_cert, R_OK) < 0) {
+	    verror_put_string("certificate_issuer_cert %s unreadable",
+			      context->certificate_issuer_cert);
+	    verror_put_errno(errno);
+	    rval = -1;
+	}
+	if (access(context->certificate_issuer_key, R_OK) < 0) {
+	    verror_put_string("certificate_issuer_key %s unreadable",
+			      context->certificate_issuer_key);
+	    verror_put_errno(errno);
+	    rval = -1;
+	}
+	if (context->certificate_extfile &&
+	    access(context->certificate_extfile, R_OK) < 0) {
+	    verror_put_string("certificate_extfile %s not readable",
+			      context->certificate_extfile);
+	    verror_put_errno(errno);
+	    rval = -1;
+	}
+	if (context->certificate_extapp &&
+	    access(context->certificate_extapp, X_OK) < 0) {
+	    verror_put_string("certificate_extapp %s not executable",
+			      context->certificate_extapp);
+	    verror_put_errno(errno);
+	    rval = -1;
+	}
+	if (context->certificate_mapfile &&
+	    access(context->certificate_mapfile, R_OK) < 0) {
+	    verror_put_string("certificate_mapfile %s not readable",
+			      context->certificate_mapfile);
+	    verror_put_errno(errno);
+	    rval = -1;
+	}
+	if (context->certificate_mapapp &&
+	    access(context->certificate_mapapp, X_OK) < 0) {
+	    verror_put_string("certificate_mapapp %s not executable",
+			      context->certificate_mapapp);
+	    verror_put_errno(errno);
+	    rval = -1;
+	}
+	if (!rval) {
+	    myproxy_log("CA enabled");
+	    if (context->max_cert_lifetime) {
+		myproxy_log("max certificate lifetime: %s seconds",
+			    context->max_cert_lifetime);
+	    }
+	    if (context->ca_ldap_server) {
+		if (!context->ca_ldap_searchbase) {
+		    verror_put_string("ca_ldap_server requires ca_ldap_searchbase");
+		    rval = -1;
+		}
+		if (!context->ca_ldap_uid_attribute) {
+		    verror_put_string("ca_ldap_server requires ca_ldap_searchbase");
+		    rval = -1;
+		}
+	    }
+	}
+    }
+    if (context->pubcookie_cert) {
+	if (access(context->pubcookie_cert, R_OK) < 0) {
+	    verror_put_string("pubcookie_cert %s unreadable",
+			      context->pubcookie_cert);
+	    verror_put_errno(errno);
+	    rval = -1;
+	} else {
+	    myproxy_log("Pubcookie support enabled");
+	}
+    }
+
+    return rval;
+}
 
 
 /**********************************************************************
@@ -550,8 +678,7 @@ myproxy_server_config_read(myproxy_server_context_t *context)
 	GLOBUS_GSI_SYSCONFIG_GET_CERT_DIR(&context->cert_dir);
     }
 
-    /* Success */
-    return_code = 0;
+    return_code = check_config(context);
     
   error:
     if (config_stream != NULL)
