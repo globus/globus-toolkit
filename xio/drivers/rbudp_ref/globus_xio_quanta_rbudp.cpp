@@ -286,6 +286,7 @@ globus_l_xio_quanta_rbudp_open_init(
     globus_result_t                     result;
     GlobusXIOName(globus_l_xio_quanta_rbudp_open_init);
 
+    GlobusXIORBUDPRefDebugEnter();
     globus_thread_blocking_will_block();
 
     result = globus_xio_handle_cntl(
@@ -328,9 +329,11 @@ globus_l_xio_quanta_rbudp_open_init(
     }
 
     globus_xio_driver_finished_open(handle, handle->op, GLOBUS_SUCCESS);
+    GlobusXIORBUDPRefDebugExit();
     return;
 error:
     globus_xio_driver_finished_open(handle, handle->op, result);
+    GlobusXIORBUDPRefDebugExitWithError();
 }
 
 static
@@ -343,7 +346,9 @@ globus_l_xio_quanta_rbudp_server_init(
     globus_xio_contact_t                my_contact_info;
     globus_result_t                     result;
     globus_l_xio_quanta_rbudp_server_t * server_handle;
+    GlobusXIOName(globus_l_xio_quanta_rbudp_server_init);
 
+    GlobusXIORBUDPRefDebugEnter();
     server_handle = (globus_l_xio_quanta_rbudp_server_t *)
         globus_calloc(1, sizeof(globus_l_xio_quanta_rbudp_server_t));
 
@@ -374,10 +379,12 @@ globus_l_xio_quanta_rbudp_server_init(
     {
         goto error_close;
     }
+    GlobusXIORBUDPRefDebugExit();
     return GLOBUS_SUCCESS;
 error_close:
     globus_xio_server_close(server_handle->tcp_server);
 error:
+    GlobusXIORBUDPRefDebugExitWithError();
     return result;
 }
 
@@ -391,7 +398,9 @@ globus_l_xio_quanta_rbudp_accept_cb(
 {
     globus_l_xio_quanta_rbudp_handle_t *    handle;
     globus_l_xio_quanta_rbudp_server_t *    server_handle;
+    GlobusXIOName(globus_l_xio_quanta_rbudp_accept_cb);
 
+    GlobusXIORBUDPRefDebugEnter();
     server_handle = (globus_l_xio_quanta_rbudp_server_t *)user_arg;
     if(result != GLOBUS_SUCCESS)
     {
@@ -403,10 +412,12 @@ globus_l_xio_quanta_rbudp_accept_cb(
 
     globus_xio_driver_finished_accept(
         server_handle->op, handle, GLOBUS_SUCCESS);
+    GlobusXIORBUDPRefDebugExit();
     return;
 
 error:
     globus_xio_driver_finished_accept(server_handle->op, NULL, result);
+    GlobusXIORBUDPRefDebugExitWithError();
 }
 
 static
@@ -417,7 +428,9 @@ globus_l_xio_quanta_rbudp_accept(
 {
     globus_result_t                     result;
     globus_l_xio_quanta_rbudp_server_t * server_handle;
+    GlobusXIOName(globus_l_xio_quanta_rbudp_accept);
 
+    GlobusXIORBUDPRefDebugEnter();
     server_handle = (globus_l_xio_quanta_rbudp_server_t *)driver_server;
     server_handle->op = accept_op;
 
@@ -430,8 +443,10 @@ globus_l_xio_quanta_rbudp_accept(
         goto error;
     }
 
+    GlobusXIORBUDPRefDebugExit();
     return GLOBUS_SUCCESS;
 error:
+    GlobusXIORBUDPRefDebugExitWithError();
     return result;
 }
 
@@ -447,7 +462,9 @@ globus_l_xio_quanta_rbudp_client_read_cb(
     void *                              user_arg)
 {
     globus_l_xio_quanta_rbudp_handle_t *    handle;
+    GlobusXIOName(globus_l_xio_quanta_rbudp_client_read_cb);
 
+    GlobusXIORBUDPRefDebugEnter();
     handle = (globus_l_xio_quanta_rbudp_handle_t *) user_arg;
 
     if(result != GLOBUS_SUCCESS)
@@ -458,9 +475,11 @@ globus_l_xio_quanta_rbudp_client_read_cb(
     /* we can now open */
     globus_l_xio_quanta_rbudp_open_init(handle);
 
+    GlobusXIORBUDPRefDebugExit();
     return;
 error:
     globus_xio_driver_finished_open(handle, handle->op, result);
+    GlobusXIORBUDPRefDebugExitWithError();
 }
 
 static
@@ -475,9 +494,10 @@ globus_l_xio_quanta_rbudp_client_write_cb(
     void *                              user_arg)
 {
     globus_l_xio_quanta_rbudp_handle_t *    handle;
+    GlobusXIOName(globus_l_xio_quanta_rbudp_client_write_cb);
 
+    GlobusXIORBUDPRefDebugEnter();
     handle = (globus_l_xio_quanta_rbudp_handle_t *) user_arg;
-    globus_free(buffer);
     if(result != GLOBUS_SUCCESS)
     {
         goto error;
@@ -495,9 +515,11 @@ globus_l_xio_quanta_rbudp_client_write_cb(
     {
         goto error;
     }
+    GlobusXIORBUDPRefDebugExit();
     return;
 error:
     globus_xio_driver_finished_open(handle, handle->op, result);
+    GlobusXIORBUDPRefDebugExitWithError();
 }
 
 static
@@ -508,7 +530,9 @@ globus_l_xio_quanta_rbudp_client_open_cb(
     void *                              user_arg)
 {
     globus_l_xio_quanta_rbudp_handle_t *    handle;
+    GlobusXIOName(globus_l_xio_quanta_rbudp_client_open_cb);
 
+    GlobusXIORBUDPRefDebugEnter();
     handle = (globus_l_xio_quanta_rbudp_handle_t *) user_arg;
 
     if(result != GLOBUS_SUCCESS)
@@ -529,9 +553,11 @@ globus_l_xio_quanta_rbudp_client_open_cb(
     {
         goto error;
     }
+    GlobusXIORBUDPRefDebugExit();
     return;
 error:
     globus_xio_driver_finished_open(handle, handle->op, result);
+    GlobusXIORBUDPRefDebugExitWithError();
 }
 
 static
@@ -546,17 +572,21 @@ globus_l_xio_quanta_rbudp_server_write_cb(
     void *                              user_arg)
 {
     globus_l_xio_quanta_rbudp_handle_t *    handle;
+    GlobusXIOName(globus_l_xio_quanta_rbudp_server_write_cb);
 
+    GlobusXIORBUDPRefDebugEnter();
     handle = (globus_l_xio_quanta_rbudp_handle_t *) user_arg;
     if(result != GLOBUS_SUCCESS)
     {
         goto error;
     }
+    GlobusXIORBUDPRefDebugExit();
     globus_l_xio_quanta_rbudp_open_init(handle);
 
     return;
 error:
     globus_xio_driver_finished_open(handle, handle->op, result);
+    GlobusXIORBUDPRefDebugExitWithError();
 }
 
 static
@@ -571,7 +601,9 @@ globus_l_xio_quanta_rbudp_server_read_cb(
     void *                              user_arg)
 {
     globus_l_xio_quanta_rbudp_handle_t *    handle;
+    GlobusXIOName(globus_l_xio_quanta_rbudp_server_read_cb);
 
+    GlobusXIORBUDPRefDebugEnter();
     handle = (globus_l_xio_quanta_rbudp_handle_t *) user_arg;
     if(result != GLOBUS_SUCCESS)
     {
@@ -592,9 +624,11 @@ globus_l_xio_quanta_rbudp_server_read_cb(
         goto error;
     }
 
+    GlobusXIORBUDPRefDebugExit();
     return;
 error:
     globus_xio_driver_finished_open(handle, handle->op, result);
+    GlobusXIORBUDPRefDebugExitWithError();
 }
 
 static
@@ -605,7 +639,9 @@ globus_l_xio_quanta_rbudp_server_open_cb(
     void *                              user_arg)
 {
     globus_l_xio_quanta_rbudp_handle_t *    handle;
+    GlobusXIOName(globus_l_xio_quanta_rbudp_server_open_cb);
 
+    GlobusXIORBUDPRefDebugEnter();
     handle = (globus_l_xio_quanta_rbudp_handle_t *) user_arg;
     if(result != GLOBUS_SUCCESS)
     {
@@ -614,7 +650,7 @@ globus_l_xio_quanta_rbudp_server_open_cb(
 
     result = globus_xio_register_read(
         handle->tcp_handle,
-        (globus_byte_t *)handle->port_buf,
+        (globus_byte_t *)&handle->port_buf,
         sizeof(handle->port_buf),
         sizeof(handle->port_buf),
         NULL,
@@ -624,9 +660,11 @@ globus_l_xio_quanta_rbudp_server_open_cb(
     {
         goto error;
     }
+    GlobusXIORBUDPRefDebugExit();
     return;
 error:
     globus_xio_driver_finished_open(handle, handle->op, result);
+    GlobusXIORBUDPRefDebugExitWithError();
 }
 
 static
@@ -640,7 +678,9 @@ globus_l_xio_quanta_rbudp_open(
     globus_l_xio_quanta_rbudp_handle_t *    handle;
     globus_result_t                     result;
     globus_l_xio_quanta_rbudp_attr_t *      attr;
+    GlobusXIOName(globus_l_xio_quanta_rbudp_open);
 
+    GlobusXIORBUDPRefDebugEnter();
     attr = (globus_l_xio_quanta_rbudp_attr_t *) driver_attr;
     if(attr == NULL)
     {
@@ -683,7 +723,7 @@ globus_l_xio_quanta_rbudp_open(
         handle->my_port = attr->my_port;
         result = globus_xio_register_open(
                 handle->tcp_handle,
-                NULL,
+                contact_info->unparsed,
                 NULL,
                 globus_l_xio_quanta_rbudp_client_open_cb,
                 handle);
@@ -693,9 +733,11 @@ globus_l_xio_quanta_rbudp_open(
         }
     }
 
+    GlobusXIORBUDPRefDebugExit();
     return GLOBUS_SUCCESS;
 
 error:
+    GlobusXIORBUDPRefDebugExitWithError();
     return result;
 }
 
@@ -708,14 +750,14 @@ globus_l_xio_quanta_rbudp_read(
     globus_size_t *                     nbytes)
 {
     globus_l_xio_quanta_rbudp_handle_t *    handle;
+    GlobusXIOName(globus_l_xio_quanta_rbudp_write);
 
-printf("rbudp read enter 0x%x\n", driver_specific_handle);
+    GlobusXIORBUDPRefDebugEnter();
+
     handle = (globus_l_xio_quanta_rbudp_handle_t *) driver_specific_handle;
-printf("receive(0x%x, %d, 1452)\n", iovec[0].iov_base, iovec[0].iov_len, 1452);
     handle->receiver->receive(iovec[0].iov_base, iovec[0].iov_len, 1452);
-printf("rbudp read exit 0x%x\n", nbytes);
     *nbytes = iovec[0].iov_len;
-printf("rbudp read exit\n");
+    GlobusXIORBUDPRefDebugExit();
 
     return GLOBUS_SUCCESS;
 }
@@ -729,13 +771,14 @@ globus_l_xio_quanta_rbudp_write(
     globus_size_t *                     nbytes)
 {
     globus_l_xio_quanta_rbudp_handle_t *    handle;
+    GlobusXIOName(globus_l_xio_quanta_rbudp_write);
 
-printf("rbudp wrte enter\n");
+    GlobusXIORBUDPRefDebugEnter();
     handle = (globus_l_xio_quanta_rbudp_handle_t *) driver_specific_handle;
     handle->sender->send(
         iovec[0].iov_base, iovec[0].iov_len, handle->send_rate, 1452);
     *nbytes = iovec[0].iov_len;
-printf("rbudp wrte exit\n");
+    GlobusXIORBUDPRefDebugExit();
 
     return GLOBUS_SUCCESS;
 }
@@ -750,6 +793,7 @@ globus_l_xio_quanta_rbudp_close(
 
     handle = (globus_l_xio_quanta_rbudp_handle_t *) driver_specific_handle;
 
+    globus_xio_close(handle->tcp_handle, NULL);
     handle->sender->close();
     handle->receiver->close();
     globus_free(handle);
@@ -781,7 +825,14 @@ globus_l_xio_quanta_rbudp_init(
         NULL,
         NULL,
         globus_l_xio_quanta_rbudp_cntl);
-
+   globus_xio_driver_set_server(
+        driver,
+        globus_l_xio_quanta_rbudp_server_init,
+        globus_l_xio_quanta_rbudp_accept,
+        NULL,
+        NULL,
+        NULL,
+        NULL);
     globus_xio_driver_set_attr(
         driver,
         globus_l_xio_quanta_rbudp_attr_init,
