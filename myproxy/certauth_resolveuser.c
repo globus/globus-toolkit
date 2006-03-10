@@ -1,7 +1,5 @@
 #include "myproxy_common.h"
 
-#include "certauth_resolveuser.h"
-
 #ifdef HAVE_LIBLDAP
 #include <ldap.h>
 #endif
@@ -37,59 +35,67 @@ int resolve_via_mapfile ( char * username, char ** dn ) {
 
 int resolve_via_mapapp ( char * app_string, char * username, char ** dn ) {
 
+  pid_t childpid;
+  int fds[3];
   int return_value = 0;
   char * userdn = NULL;
-  /* Skip over leading '|' character */
-  char * app = &(app_string[1]);
   FILE * app_stream = NULL;
-  char *cmd_string = NULL;
+  int exit_status;
 
-  myproxy_debug("resolve_via_mapapp(%s, %s)", app, username);
+  myproxy_debug("resolve_via_mapapp(%s, %s)", app_string, username);
 
   userdn = malloc(DN_BUFFER_SIZE);
-
   if (userdn == NULL) {
     verror_put_string("malloc() failed.");
     goto end;
   }
-  
-  userdn[0] = '\0'; /* For safety's sake */
+  memset(userdn, '\0', DN_BUFFER_SIZE);
 
-  cmd_string = malloc(strlen(app) + strlen(username)
-		      + 4 /* two quotes, space and NUL */);
+  if ((childpid = myproxy_popen(fds, app_string, username, NULL)) < 0) {
+     return -1; /* myproxy_popen will set verror */
+  }
+  close(fds[0]);
 
-  if (cmd_string == NULL) {
-    verror_put_string("malloc() failed.");
-    goto end;
+  /* wait for child */
+  if (waitpid(childpid, &exit_status, 0) == -1) {
+      verror_put_string("wait() failed for mapapp child");
+      verror_put_errno(errno);
+      return -1;
   }
 
-  sprintf(cmd_string, "%s \"%s\"", app, username);
-  myproxy_debug("Mapper command: %s", cmd_string);
-
-  /* XXX Be good to add some status checks here to make sure app exists
-     and is executable. */
-
-  app_stream = popen(cmd_string, "r");
-
-  if (app_stream == NULL) {
-    verror_put_string("popen() failed. Could not execute mapping application (%s).",
-		      app);
-    verror_put_errno(errno);
-    return_value = 1;
-    goto end;
+  if (exit_status != 0) {
+      FILE *fp = NULL;
+      char buf[100];
+      verror_put_string("Mapping application returned non-zero.");
+      fp = fdopen(fds[1], "r");
+      if (fp) {
+	  while (fgets(buf, 100, fp) != NULL) {
+	      verror_put_string(buf);
+	  }
+      }
+      fclose(fp);
+      fp = fdopen(fds[2], "r");
+      if (fp) {
+	  while (fgets(buf, 100, fp) != NULL) {
+	      verror_put_string(buf);
+	  }
+      }
+      fclose(fp);
+      return_value = 1;
+      goto end;
   }
+  close(fds[2]);
+
+  app_stream = fdopen(fds[1], "r");
 
   if (fgets(userdn, DN_BUFFER_SIZE, app_stream) == NULL) {
+    fclose(app_stream);
     verror_put_string("Error reading from mapping application.");
     return_value = 1;
     goto end;
   }
 
-  if (pclose(app_stream) != 0) {
-      verror_put_string("Mapping application returned non-zero.");
-      return_value = 1;
-      goto end;
-  }
+  fclose(app_stream);
   app_stream = NULL;
 
   /* Chop trailing newline if present */
@@ -106,16 +112,6 @@ int resolve_via_mapapp ( char * app_string, char * username, char ** dn ) {
   *dn = userdn;
 
  end:
-  if (cmd_string != NULL) {
-    free(cmd_string);
-    cmd_string = NULL;
-  }
-
-  if (app_stream != NULL) {
-    pclose(app_stream);
-    app_stream = NULL;
-  }
-
   if (return_value) {
     if (userdn) {
       free(userdn);
@@ -452,11 +448,10 @@ int user_dn_lookup( char * username, char ** dn,
       return_value = 1;
       goto end;
     }
-  } else if ((server_context->certificate_mapfile != NULL) &&
-	     (server_context->certificate_mapfile[0] == '|')) {
-    if (resolve_via_mapapp( server_context->certificate_mapfile,
+  } else if (server_context->certificate_mapapp != NULL) {
+    if (resolve_via_mapapp( server_context->certificate_mapapp,
 			    username, &userdn ) ) {
-      verror_put_string("resolve_via_mapfile() call failed");
+      verror_put_string("resolve_via_mapapp() call failed");
       return_value = 1;
       goto end;
     }
