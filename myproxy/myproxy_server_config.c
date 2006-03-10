@@ -46,15 +46,12 @@ add_entry(char **entries,
     
     my_entry = strdup(entry);
     
-    if (my_entry == NULL)
-    {
+    if (my_entry == NULL) {
 	return NULL;
     }
     
-    if (entries != NULL)
-    {
-	while (entries[current_length] != NULL)
-	{
+    if (entries != NULL) {
+	while (entries[current_length] != NULL) {
 	    current_length++;
 	}
     }
@@ -64,8 +61,7 @@ add_entry(char **entries,
 
     new_entries = realloc(entries, new_size);
     
-    if (new_entries == NULL)
-    {
+    if (new_entries == NULL) {
 	return NULL;
     }
     
@@ -91,303 +87,189 @@ line_parse_callback(void *context_arg,
     myproxy_server_context_t *context = context_arg;
     const char *directive;
     int return_code = -1;
+    int index;
     
     assert(context != NULL);
     
-    if ((tokens == NULL) ||
-	(*tokens == NULL) ||
-	(**tokens == '#'))
-    {
-	/* Blank line or comment */
-	return 0;
+    if ((tokens == NULL) || (*tokens == NULL) || (**tokens == '#')) {
+	return 0; /* Blank line or comment */
     }
 
     directive = tokens[0];
     
     /* allowed_clients is the old name for accepted_credentials */
     if ((strcmp(directive, "allowed_clients") == 0) ||
-	(strcmp(directive, "accepted_credentials") == 0))
-    {
-	int index = 1; /* Skip directive */
-	
-	while(tokens[index] != NULL)
-	{
+	(strcmp(directive, "accepted_credentials") == 0)) {
+	for (index=1; tokens[index] != NULL; index++) {
 	    context->accepted_credential_dns =
-		add_entry(context->accepted_credential_dns,
-			  tokens[index]);
-	    
-	    if (context->accepted_credential_dns == NULL)
-	    {
+		add_entry(context->accepted_credential_dns, tokens[index]);
+	    if (context->accepted_credential_dns == NULL) {
 		goto error;
 	    }
-
-	    index++;
 	}
     }
 
     /* allowed_services is the old name for authorized_retrievers */
     else if ((strcmp(directive, "allowed_services") == 0) ||
-	     (strcmp(directive, "authorized_retrievers") == 0))
-    {
-	int index = 1; /* Skip directive */
-	
-	while(tokens[index] != NULL)
-	{
+	     (strcmp(directive, "authorized_retrievers") == 0)) {
+	for (index=1; tokens[index] != NULL; index++) {
 	    context->authorized_retriever_dns =
 		add_entry(context->authorized_retriever_dns,
 			  tokens[index]);
-	    
-	    if (context->authorized_retriever_dns == NULL)
-	    {
+	    if (context->authorized_retriever_dns == NULL) {
 		goto error;
 	    }
-
-	    index++;
 	}
     }
-    
-    else if((strcmp(directive, "default_retrievers") == 0))
-    {
-	int index = 1; /* Skip directive */
-	
-	while(tokens[index] != NULL)
-	{
+    else if((strcmp(directive, "default_retrievers") == 0)) {
+	for (index=1; tokens[index] != NULL; index++) {
 	    context->default_retriever_dns =
 		add_entry(context->default_retriever_dns,
 			  tokens[index]);
-	    
-	    if (context->default_retriever_dns == NULL)
-	    {
+	    if (context->default_retriever_dns == NULL) {
 		goto error;
 	    }
-
-	    index++;
 	}
     }
-    
-    else if (strcmp(directive, "authorized_renewers") == 0)
-    {
-	int index = 1; /* Skip directive */
-	
-	while(tokens[index] != NULL)
-	{
+    else if (strcmp(directive, "authorized_renewers") == 0) {
+	for (index=1; tokens[index] != NULL; index++) {
 	    context->authorized_renewer_dns =
 		add_entry(context->authorized_renewer_dns,
 			  tokens[index]);
-	    
-	    if (context->authorized_renewer_dns == NULL)
-	    {
+	    if (context->authorized_renewer_dns == NULL) {
 		goto error;
 	    }
-
-	    index++;
 	}
     }
-    
-    else if (strcmp(directive, "default_renewers") == 0)
-    {
-	int index = 1; /* Skip directive */
-	
-	while(tokens[index] != NULL)
-	{
+    else if (strcmp(directive, "default_renewers") == 0) {
+	for (index=1; tokens[index] != NULL; index++) {
 	    context->default_renewer_dns =
 		add_entry(context->default_renewer_dns,
 			  tokens[index]);
-	    
-	    if (context->default_renewer_dns == NULL)
-	    {
+	    if (context->default_renewer_dns == NULL) {
 		goto error;
 	    }
-
-	    index++;
 	}
     }
-    
-    else if (strcmp(directive, "authorized_key_retrievers") == 0)
-    {
-	int index = 1; /* Skip directive */
-	
-	while(tokens[index] != NULL)
-	{
+    else if (strcmp(directive, "authorized_key_retrievers") == 0) {
+	for (index=1; tokens[index] != NULL; index++) {
 	    context->authorized_key_retrievers_dns =
 		add_entry(context->authorized_key_retrievers_dns,
 			  tokens[index]);
-	    
-	    if (context->authorized_key_retrievers_dns == NULL)
-	    {
+	    if (context->authorized_key_retrievers_dns == NULL) {
 		goto error;
 	    }
-
-	    index++;
 	}
     }
-    
-    else if (strcmp(directive, "default_key_retrievers") == 0)
-    {
-	int index = 1; /* Skip directive */
-	
-	while(tokens[index] != NULL)
-	{
+    else if (strcmp(directive, "default_key_retrievers") == 0) {
+	for (index=1; tokens[index] != NULL; index++) {
 	    context->default_key_retrievers_dns =
 		add_entry(context->default_key_retrievers_dns,
 			  tokens[index]);
-	    
-	    if (context->default_key_retrievers_dns == NULL)
-	    {
+	    if (context->default_key_retrievers_dns == NULL) {
 		goto error;
 	    }
-
-	    index++;
 	}
     }
-
-    else if (strcmp(directive, "trusted_retrievers") == 0)
-    {
-	int index = 1; /* Skip directive */
-	
-	while(tokens[index] != NULL)
-	{
+    else if (strcmp(directive, "trusted_retrievers") == 0) {
+	for (index=1; tokens[index] != NULL; index++) {
 	    context->trusted_retriever_dns =
 		add_entry(context->trusted_retriever_dns,
 			  tokens[index]);
-	    
-	    if (context->trusted_retriever_dns == NULL)
-	    {
+	    if (context->trusted_retriever_dns == NULL) {
 		goto error;
 	    }
-
-	    index++;
 	}
     }
-    
-    else if (strcmp(directive, "default_trusted_retrievers") == 0)
-    {
-	int index = 1; /* Skip directive */
-	
-	while(tokens[index] != NULL)
-	{
+    else if (strcmp(directive, "default_trusted_retrievers") == 0) {
+	for (index=1; tokens[index] != NULL; index++) {
 	    context->default_trusted_retriever_dns =
 		add_entry(context->default_trusted_retriever_dns,
 			  tokens[index]);
-	    
-	    if (context->default_trusted_retriever_dns == NULL)
-	    {
+	    if (context->default_trusted_retriever_dns == NULL) {
 		goto error;
 	    }
-
-	    index++;
 	}
     }
-
-    else if (strcmp(directive, "passphrase_policy_program") == 0)
-    {
+    else if (strcmp(directive, "passphrase_policy_program") == 0) {
 	context->passphrase_policy_pgm = strdup(tokens[1]);
     }
-
-    else if (strcmp(directive, "max_proxy_lifetime") == 0)
-    {
+    else if (strcmp(directive, "max_proxy_lifetime") == 0) {
 	context->max_proxy_lifetime = 60*60*atoi(tokens[1]);
     }
-
-    else if (strcmp(directive, "cert_dir") == 0)
-    {
+    else if (strcmp(directive, "cert_dir") == 0) {
 	context->cert_dir = strdup(tokens[1]);
     }
-
-    else if (strcmp(directive, "pam") == 0)
-    {
+    else if (strcmp(directive, "pam") == 0) {
 	context->pam_policy = strdup(tokens[1]);
     }
-
-    else if (strcmp(directive, "pam_id") == 0)
-    {
+    else if (strcmp(directive, "pam_id") == 0) {
 	context->pam_id = strdup(tokens[1]);
     }
-
-    else if (strcmp(directive, "sasl") == 0)
-    {
+    else if (strcmp(directive, "sasl") == 0) {
 	context->sasl_policy = strdup(tokens[1]);
     }
 
     /* these were added to support the online CA functionality */
-    else if (strcmp(directive, "certificate_issuer_program") == 0)
-    {
+    else if (strcmp(directive, "certificate_issuer_program") == 0) {
 	context->certificate_issuer_program = strdup(tokens[1]);
     }
-    else if (strcmp(directive, "certificate_issuer_cert") == 0)
-    {
+    else if (strcmp(directive, "certificate_issuer_cert") == 0) {
 	context->certificate_issuer_cert = strdup(tokens[1]);
     }
-    else if (strcmp(directive, "certificate_issuer_key") == 0)
-    {
+    else if (strcmp(directive, "certificate_issuer_key") == 0) {
 	context->certificate_issuer_key = strdup(tokens[1]);
     }
-    else if (strcmp(directive, "certificate_issuer_key_passphrase") == 0)
-    {
+    else if (strcmp(directive, "certificate_issuer_key_passphrase") == 0) {
 	context->certificate_issuer_key_passphrase = strdup(tokens[1]);
     }
-    else if (strcmp(directive, "certificate_issuer_email_domain") == 0)
-    {
+    else if (strcmp(directive, "certificate_issuer_email_domain") == 0) {
 	context->certificate_issuer_email_domain = strdup(tokens[1]);
     }
-    else if (strcmp(directive, "certificate_extfile") == 0)
-    {
+    else if (strcmp(directive, "certificate_extfile") == 0) {
 	context->certificate_extfile = strdup(tokens[1]);
     }
-    else if (strcmp(directive, "certificate_extapp") == 0)
-    {
+    else if (strcmp(directive, "certificate_extapp") == 0) {
 	context->certificate_extapp = strdup(tokens[1]);
     }
-    else if (strcmp(directive, "certificate_mapfile") == 0)
-    {
+    else if (strcmp(directive, "certificate_mapfile") == 0) {
 	context->certificate_mapfile = strdup(tokens[1]);
     }
-    else if (strcmp(directive, "certificate_mapapp") == 0)
-    {
+    else if (strcmp(directive, "certificate_mapapp") == 0) {
 	context->certificate_mapapp = strdup(tokens[1]);
     }
-    else if (strcmp(directive, "max_cert_lifetime") == 0)
-    {
+    else if (strcmp(directive, "max_cert_lifetime") == 0) {
 	context->max_cert_lifetime = 60*60*atoi(tokens[1]);
     }
-    else if (strcmp(directive, "certificate_serialfile") == 0)
-    {
+    else if (strcmp(directive, "certificate_serialfile") == 0) {
 	context->certificate_serialfile = strdup(tokens[1]);
     }
 
     /* added for username-to-dn ldap support for internal CA */
-    else if (strcmp(directive, "ca_ldap_server") == 0)
-    {
+    else if (strcmp(directive, "ca_ldap_server") == 0) {
 	context->ca_ldap_server = strdup(tokens[1]);
     }
-    else if (strcmp(directive, "ca_ldap_searchbase") == 0)
-    {
+    else if (strcmp(directive, "ca_ldap_searchbase") == 0) {
 	context->ca_ldap_searchbase = strdup(tokens[1]);
     }
-    else if (strcmp(directive, "ca_ldap_connect_dn") == 0)
-    {
+    else if (strcmp(directive, "ca_ldap_connect_dn") == 0) {
 	context->ca_ldap_connect_dn = strdup(tokens[1]);
     }
-    else if (strcmp(directive, "ca_ldap_connect_passphrase") == 0)
-    {
+    else if (strcmp(directive, "ca_ldap_connect_passphrase") == 0) {
 	context->ca_ldap_connect_passphrase = strdup(tokens[1]);
     }
-    else if (strcmp(directive, "ca_ldap_uid_attribute") == 0)
-    {
+    else if (strcmp(directive, "ca_ldap_uid_attribute") == 0) {
 	context->ca_ldap_uid_attribute = strdup(tokens[1]);
     }
-    else if (strcmp(directive, "ca_ldap_dn_attribute") == 0)
-    {
+    else if (strcmp(directive, "ca_ldap_dn_attribute") == 0) {
 	context->ca_ldap_dn_attribute = strdup(tokens[1]);
     }
 
     /* pubcookie stuff */
-    else if (strcmp(directive, "pubcookie_granting_cert") == 0)
-    {
+    else if (strcmp(directive, "pubcookie_granting_cert") == 0) {
 	context->pubcookie_cert = strdup(tokens[1]);
     }
-    else if (strcmp(directive, "pubcookie_app_server_key") == 0)
-    {
+    else if (strcmp(directive, "pubcookie_app_server_key") == 0) {
 	context->pubcookie_key = strdup(tokens[1]);
     }
 
