@@ -1,10 +1,13 @@
 #include "globus_xio_driver.h"
 #include "globus_xio_wrapblock.h"
 #include "globus_xio_quanta_rbudp.h"
+#include "globus_xio_tcp_driver.h"
 #include "version.h"
 
 #include "QUANTA/QUANTAnet_rbudpReceiver_c.hxx"
 #include "QUANTA/QUANTAnet_rbudpSender_c.hxx"
+
+#define QUANTA_RBUDP_IPSIZE             256
 
 #define GlobusXIORbudpError(_r) globus_error_put(GlobusXIORbudpErrorObj(_r))
 
@@ -47,15 +50,33 @@ enum globus_l_xio_quanta_rbudp_error_levels
 
 typedef struct globus_l_xio_quanta_rbudp_handle_s
 {
+    int                                 flags;
+    char *                              remote_ip;
+    int                                 my_port;
+    int                                 remote_port;
+    int32_t                             port_buf;
+    globus_xio_operation_t              op;
     QUANTAnet_rbudpSender_c *           sender;
     QUANTAnet_rbudpReceiver_c *         receiver;
     int                                 send_rate;
+    globus_xio_handle_t                 tcp_handle;
 } globus_l_xio_quanta_rbudp_handle_t;
+
+typedef struct globus_l_xio_quanta_rbudp_server_s
+{
+    char *                              cs;
+    globus_xio_operation_t              op;
+    globus_xio_server_t                 tcp_server;
+} globus_l_xio_quanta_rbudp_server_t;
 
 typedef struct globus_l_xio_quanta_rbudp_attr_s
 {
     int                                 flags;
+    int                                 send_rate;
+    int                                 my_port;
 } globus_l_xio_quanta_rbudp_attr_t;
+
+globus_l_xio_quanta_rbudp_attr_t        globus_l_xio_quanta_rbudp_default_attr;
 
 static
 int
@@ -64,6 +85,9 @@ globus_l_xio_quanta_rbudp_activate(void);
 static
 int
 globus_l_xio_quanta_rbudp_deactivate(void);
+
+static globus_xio_driver_t              globus_l_xio_quanta_rbudp_driver;
+static globus_xio_stack_t               globus_l_xio_quanta_rbudp_stack;
 
 GlobusXIODefineModule(quanta_rbudp) =
 {
@@ -80,7 +104,11 @@ static
 int
 globus_l_xio_quanta_rbudp_activate(void)
 {
-    int rc;
+    globus_result_t                     result;
+    char *                              env_str;
+    int                                 rc;
+    int                                 sc;
+    int                                 sr;
     GlobusXIOName(globus_l_xio_quanta_rbudp_activate);
 
     GlobusDebugInit(GLOBUS_XIO_QUANTA_RBUDP, TRACE);
@@ -91,15 +119,53 @@ globus_l_xio_quanta_rbudp_activate(void)
         goto error_xio_system_activate;
     }
     GlobusXIORegisterDriver(quanta_rbudp);
+
+    result = globus_xio_driver_load("tcp", &globus_l_xio_quanta_rbudp_driver);
+    if(result != GLOBUS_SUCCESS)
+    {
+        rc = -1;
+        goto error_xio_deactivate;
+    }
+    globus_xio_stack_init(&globus_l_xio_quanta_rbudp_stack, NULL);
+    result = globus_xio_stack_push_driver(
+        globus_l_xio_quanta_rbudp_stack, globus_l_xio_quanta_rbudp_driver);
+    if(result != GLOBUS_SUCCESS)
+    {
+        rc = -1;
+        goto error_xio_deactivate;
+    }
+
+    globus_l_xio_quanta_rbudp_default_attr.flags = O_WRONLY;
+    globus_l_xio_quanta_rbudp_default_attr.send_rate = 600000;
+    env_str = globus_libc_getenv("GLOBUS_XIO_QUANTA_RBUDP_SEND_RATE");
+    if(env_str != NULL)
+    {
+        sc = sscanf(env_str, "%d", &sr);
+        if(sc == 1)
+        {
+            globus_l_xio_quanta_rbudp_default_attr.send_rate = sr;
+        }
+    }
+    globus_l_xio_quanta_rbudp_default_attr.my_port = 50500;
+    env_str = globus_libc_getenv("GLOBUS_XIO_QUANTA_RBUDP_PORT");
+    if(env_str != NULL)
+    {
+        sc = sscanf(env_str, "%d", &sr);
+        if(sc == 1)
+        {
+            globus_l_xio_quanta_rbudp_default_attr.my_port = sr;
+        }
+    }
+
     GlobusXIORBUDPRefDebugExit();
     return GLOBUS_SUCCESS;
-
+error_xio_deactivate:
+    globus_module_deactivate(GLOBUS_XIO_MODULE);
 error_xio_system_activate:
     GlobusXIORBUDPRefDebugExitWithError();
     GlobusDebugDestroy(GLOBUS_XIO_QUANTA_RBUDP);
     return rc;
 }
-
 
 static
 int
@@ -211,38 +277,426 @@ globus_l_xio_quanta_rbudp_link_destroy(
 }
 
 static
+void
+globus_l_xio_quanta_rbudp_open_init(
+    globus_l_xio_quanta_rbudp_handle_t *    handle)
+{
+    char *                              tmp_str;
+    globus_xio_system_socket_t          system_handle;
+    globus_result_t                     result;
+    GlobusXIOName(globus_l_xio_quanta_rbudp_open_init);
+
+    globus_thread_blocking_will_block();
+
+    result = globus_xio_handle_cntl(
+        handle->tcp_handle,
+        globus_l_xio_quanta_rbudp_driver,
+        GLOBUS_XIO_TCP_GET_REMOTE_NUMERIC_CONTACT,
+        &handle->remote_ip);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+    tmp_str = strchr(handle->remote_ip, ':');
+    if(tmp_str == NULL)
+    {
+        result = GlobusXIORbudpError("no : in contact string");
+        goto error;
+    }
+    *tmp_str = '\0';
+
+    result = globus_xio_handle_cntl(
+        handle->tcp_handle,
+        globus_l_xio_quanta_rbudp_driver,
+        GLOBUS_XIO_TCP_GET_HANDLE,
+        &system_handle);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+    if(handle->flags | XIO_QUANTA_RBUDP_RDONLY)
+    {
+        handle->receiver = 
+            new QUANTAnet_rbudpReceiver_c(system_handle, handle->remote_port);
+        handle->receiver->init(handle->remote_ip);
+    }
+    else
+    {
+        handle->sender =
+            new QUANTAnet_rbudpSender_c(system_handle, handle->remote_port);
+        handle->sender->init(handle->remote_ip);
+    }
+
+    globus_xio_driver_finished_open(handle, handle->op, GLOBUS_SUCCESS);
+    return;
+error:
+    globus_xio_driver_finished_open(handle, handle->op, result);
+}
+
+static
+globus_result_t
+globus_l_xio_quanta_rbudp_server_init(
+    void *                              driver_attr,
+    const globus_xio_contact_t *        contact_info,
+    globus_xio_operation_t              op)
+{
+    globus_xio_contact_t                my_contact_info;
+    globus_result_t                     result;
+    globus_l_xio_quanta_rbudp_server_t * server_handle;
+
+    server_handle = (globus_l_xio_quanta_rbudp_server_t *)
+        globus_calloc(1, sizeof(globus_l_xio_quanta_rbudp_server_t));
+
+    result = globus_xio_server_create(
+        &server_handle->tcp_server,
+        NULL,
+        globus_l_xio_quanta_rbudp_stack);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+    result = globus_xio_server_get_contact_string(
+        server_handle->tcp_server,
+        &server_handle->cs);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_close;
+    }
+    result = globus_xio_contact_parse(&my_contact_info, server_handle->cs);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_close;
+    }
+    result = globus_xio_driver_pass_server_init(
+        op, &my_contact_info, server_handle);
+    globus_xio_contact_destroy(&my_contact_info);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_close;
+    }
+    return GLOBUS_SUCCESS;
+error_close:
+    globus_xio_server_close(server_handle->tcp_server);
+error:
+    return result;
+}
+
+static
+void
+globus_l_xio_quanta_rbudp_accept_cb(
+    globus_xio_server_t                 server,
+    globus_xio_handle_t                 accepted_handle,
+    globus_result_t                     result,
+    void *                              user_arg)
+{
+    globus_l_xio_quanta_rbudp_handle_t *    handle;
+    globus_l_xio_quanta_rbudp_server_t *    server_handle;
+
+    server_handle = (globus_l_xio_quanta_rbudp_server_t *)user_arg;
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+    handle = (globus_l_xio_quanta_rbudp_handle_t *)
+        globus_calloc(1, sizeof(globus_l_xio_quanta_rbudp_handle_t));
+    handle->tcp_handle = accepted_handle;
+
+    globus_xio_driver_finished_accept(
+        server_handle->op, handle, GLOBUS_SUCCESS);
+    return;
+
+error:
+    globus_xio_driver_finished_accept(server_handle->op, NULL, result);
+}
+
+static
+globus_result_t
+globus_l_xio_quanta_rbudp_accept(
+    void *                              driver_server,
+    globus_xio_operation_t              accept_op)
+{
+    globus_result_t                     result;
+    globus_l_xio_quanta_rbudp_server_t * server_handle;
+
+    server_handle = (globus_l_xio_quanta_rbudp_server_t *)driver_server;
+    server_handle->op = accept_op;
+
+    result = globus_xio_server_register_accept(
+        server_handle->tcp_server,
+        globus_l_xio_quanta_rbudp_accept_cb,
+        server_handle);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+
+    return GLOBUS_SUCCESS;
+error:
+    return result;
+}
+
+static
+void
+globus_l_xio_quanta_rbudp_client_read_cb(
+    globus_xio_handle_t                 xio_handle,
+    globus_result_t                     result,
+    globus_byte_t *                     buffer,
+    globus_size_t                       len,
+    globus_size_t                       nbytes,
+    globus_xio_data_descriptor_t        data_desc,
+    void *                              user_arg)
+{
+    globus_l_xio_quanta_rbudp_handle_t *    handle;
+
+    handle = (globus_l_xio_quanta_rbudp_handle_t *) user_arg;
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+    handle->remote_port = (int) htonl(handle->port_buf);
+    /* we can now open */
+    globus_l_xio_quanta_rbudp_open_init(handle);
+
+    return;
+error:
+    globus_xio_driver_finished_open(handle, handle->op, result);
+}
+
+static
+void
+globus_l_xio_quanta_rbudp_client_write_cb(
+    globus_xio_handle_t                 xio_handle,
+    globus_result_t                     result,
+    globus_byte_t *                     buffer,
+    globus_size_t                       len,
+    globus_size_t                       nbytes,
+    globus_xio_data_descriptor_t        data_desc,
+    void *                              user_arg)
+{
+    globus_l_xio_quanta_rbudp_handle_t *    handle;
+
+    handle = (globus_l_xio_quanta_rbudp_handle_t *) user_arg;
+    globus_free(buffer);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+    /* now post read for the server port */
+    result = globus_xio_register_read(
+        handle->tcp_handle,
+        (globus_byte_t *)&handle->port_buf,
+        sizeof(handle->port_buf),
+        sizeof(handle->port_buf),
+        NULL,
+        globus_l_xio_quanta_rbudp_client_read_cb,
+        handle);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+    return;
+error:
+    globus_xio_driver_finished_open(handle, handle->op, result);
+}
+
+static
+void
+globus_l_xio_quanta_rbudp_client_open_cb(
+    globus_xio_handle_t                 xio_handle,
+    globus_result_t                     result,
+    void *                              user_arg)
+{
+    globus_l_xio_quanta_rbudp_handle_t *    handle;
+
+    handle = (globus_l_xio_quanta_rbudp_handle_t *) user_arg;
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+    /* now exchange contact info */
+    handle->port_buf = htonl(handle->my_port);
+    result = globus_xio_register_write(
+        handle->tcp_handle,
+        (globus_byte_t *)&handle->port_buf,
+        sizeof(handle->port_buf),
+        sizeof(handle->port_buf),
+        NULL,
+        globus_l_xio_quanta_rbudp_client_write_cb,
+        handle);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+    return;
+error:
+    globus_xio_driver_finished_open(handle, handle->op, result);
+}
+
+static
+void
+globus_l_xio_quanta_rbudp_server_write_cb(
+    globus_xio_handle_t                 xio_handle,
+    globus_result_t                     result,
+    globus_byte_t *                     buffer,
+    globus_size_t                       len,
+    globus_size_t                       nbytes,
+    globus_xio_data_descriptor_t        data_desc,
+    void *                              user_arg)
+{
+    globus_l_xio_quanta_rbudp_handle_t *    handle;
+
+    handle = (globus_l_xio_quanta_rbudp_handle_t *) user_arg;
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+    globus_l_xio_quanta_rbudp_open_init(handle);
+
+    return;
+error:
+    globus_xio_driver_finished_open(handle, handle->op, result);
+}
+
+static
+void
+globus_l_xio_quanta_rbudp_server_read_cb(
+    globus_xio_handle_t                 xio_handle,
+    globus_result_t                     result,
+    globus_byte_t *                     buffer,
+    globus_size_t                       len,
+    globus_size_t                       nbytes,
+    globus_xio_data_descriptor_t        data_desc,
+    void *                              user_arg)
+{
+    globus_l_xio_quanta_rbudp_handle_t *    handle;
+
+    handle = (globus_l_xio_quanta_rbudp_handle_t *) user_arg;
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+    handle->remote_port = ntohl(handle->port_buf);
+    handle->port_buf = htonl(handle->my_port);
+    result = globus_xio_register_write(
+        handle->tcp_handle,
+        (globus_byte_t *)&handle->port_buf,
+        sizeof(handle->port_buf),
+        sizeof(handle->port_buf),
+        NULL,
+        globus_l_xio_quanta_rbudp_server_write_cb,
+        handle);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+
+    return;
+error:
+    globus_xio_driver_finished_open(handle, handle->op, result);
+}
+
+static
+void
+globus_l_xio_quanta_rbudp_server_open_cb(
+    globus_xio_handle_t                 xio_handle,
+    globus_result_t                     result,
+    void *                              user_arg)
+{
+    globus_l_xio_quanta_rbudp_handle_t *    handle;
+
+    handle = (globus_l_xio_quanta_rbudp_handle_t *) user_arg;
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+
+    result = globus_xio_register_read(
+        handle->tcp_handle,
+        (globus_byte_t *)handle->port_buf,
+        sizeof(handle->port_buf),
+        sizeof(handle->port_buf),
+        NULL,
+        globus_l_xio_quanta_rbudp_server_read_cb,
+        handle);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+    return;
+error:
+    globus_xio_driver_finished_open(handle, handle->op, result);
+}
+
+static
 globus_result_t
 globus_l_xio_quanta_rbudp_open(
     const globus_xio_contact_t *        contact_info,
     void *                              driver_link,
     void *                              driver_attr,
-    void **                             driver_handle)
+    globus_xio_operation_t              op)
 {
     globus_l_xio_quanta_rbudp_handle_t *    handle;
+    globus_result_t                     result;
     globus_l_xio_quanta_rbudp_attr_t *      attr;
 
     attr = (globus_l_xio_quanta_rbudp_attr_t *) driver_attr;
-
-    handle = (globus_l_xio_quanta_rbudp_handle_t *)
-        globus_calloc(1, sizeof(globus_l_xio_quanta_rbudp_handle_t));
-    handle->send_rate = 600000;
-    if(attr->flags | XIO_QUANTA_RBUDP_RDONLY)
+    if(attr == NULL)
     {
-printf("rbudp open for read %s\n", contact_info->host);
-        handle->receiver = new QUANTAnet_rbudpReceiver_c(
-            atoi(contact_info->port));
-        handle->receiver->init(contact_info->host);
+        attr = &globus_l_xio_quanta_rbudp_default_attr;
+    }
+
+    if(driver_link != NULL)
+    {
+        handle = (globus_l_xio_quanta_rbudp_handle_t *) driver_link;
+
+        handle->op = op;
+        handle->send_rate = attr->send_rate;
+        handle->flags = attr->flags;
+        handle->my_port = attr->my_port;
+        result = globus_xio_register_open(
+                handle->tcp_handle,
+                NULL,
+                NULL,
+                globus_l_xio_quanta_rbudp_server_open_cb,
+                handle);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error;
+        }
     }
     else
     {
-printf("rbudp open for write %s\n", contact_info->host);
-        handle->sender = new QUANTAnet_rbudpSender_c(atoi(contact_info->port));
-        handle->sender->init(contact_info->host);
+        handle = (globus_l_xio_quanta_rbudp_handle_t *)
+            globus_calloc(1, sizeof(globus_l_xio_quanta_rbudp_handle_t));
+
+        result = globus_xio_handle_create(
+            &handle->tcp_handle, globus_l_xio_quanta_rbudp_stack);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error;
+        }
+        handle->op = op;
+        handle->send_rate = attr->send_rate;
+        handle->flags = attr->flags;
+        handle->my_port = attr->my_port;
+        result = globus_xio_register_open(
+                handle->tcp_handle,
+                NULL,
+                NULL,
+                globus_l_xio_quanta_rbudp_client_open_cb,
+                handle);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error;
+        }
     }
-printf("rbudp open handle @ 0x%x\n", handle);
-    *driver_handle = handle;
 
     return GLOBUS_SUCCESS;
+
+error:
+    return result;
 }
 
 static
@@ -322,7 +776,7 @@ globus_l_xio_quanta_rbudp_init(
     }
     globus_xio_driver_set_transport(
         driver,
-        NULL,
+        globus_l_xio_quanta_rbudp_open,
         NULL,
         NULL,
         NULL,
@@ -336,7 +790,7 @@ globus_l_xio_quanta_rbudp_init(
         globus_l_xio_quanta_rbudp_attr_destroy);
     globus_xio_wrapblock_init(
         driver,
-        globus_l_xio_quanta_rbudp_open,
+        NULL,
         globus_l_xio_quanta_rbudp_close,
         globus_l_xio_quanta_rbudp_read,
         globus_l_xio_quanta_rbudp_write,
@@ -350,7 +804,6 @@ error_init:
     return result;
 }
 
-
 static
 void
 globus_l_xio_quanta_rbudp_destroy(
@@ -358,7 +811,6 @@ globus_l_xio_quanta_rbudp_destroy(
 {
     globus_xio_driver_destroy(driver);
 }
-
 
 GlobusXIODefineDriver(
     quanta_rbudp,
