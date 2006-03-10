@@ -57,7 +57,10 @@ do_log(const char *string, int level)
     
     if (my_context.log_stream != NULL)
     {
-	fprintf(my_context.log_stream, "%s\n", string);
+	fprintf(my_context.log_stream, "%s", string);
+	if (string[strlen(string)-1] != '\n') {
+	    fprintf(my_context.log_stream, "\n");
+	}
     }
 	       
     return;
