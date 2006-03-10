@@ -451,12 +451,8 @@ assign_serial_number( X509 *cert,
 }
 
 static void
-add_ext(X509 *cert, int nid, char *value) {
+add_ext(X509V3_CTX *ctxp, X509 *cert, int nid, char *value) {
     X509_EXTENSION *ex;
-    X509V3_CTX ctx, *ctxp;
-    ctxp = &ctx;		/* needed for X509V3 macros */
-    X509V3_set_ctx_nodb(ctxp);
-    X509V3_set_ctx(ctxp, cert, cert, NULL, NULL, 0);
     ex = X509V3_EXT_conf_nid(NULL, ctxp, nid, value);
     X509_add_ext(cert,ex,-1);
     X509_EXTENSION_free(ex);
@@ -472,29 +468,26 @@ generate_certificate( X509_REQ                 *request,
   int             return_value = 1;  
   int             not_after;
   char          * userdn;
+  char          * certificate_issuer = NULL;
 
+  X509           * issuer_cert = NULL;
   X509           * cert = NULL;
-  X509_NAME      * issuer = NULL;
   X509_NAME      * subject = NULL;
   EVP_PKEY       * cakey = NULL;
+  X509V3_CTX       ctx, *ctxp;
 
   FILE * inkey = NULL;
+  FILE * issuer_cert_file = NULL;
 
   myproxy_debug("Generating certificate internally.");
 
   cert = X509_new();
 
+  ctxp = &ctx;		/* needed for X509V3 macros */
+  X509V3_set_ctx_nodb(ctxp);
+
   if (cert == NULL) {
     verror_put_string("Problem creating new X509.");
-    goto error;
-  }
-
-  /* issuer info */
-
-  issuer = X509_get_issuer_name(cert);
-
-  if ( tokenize_to_x509_name( server_context->certificate_issuer, issuer ) ) {
-    verror_put_string("tokenize_to_x509_name() failed");
     goto error;
   }
 
@@ -504,7 +497,7 @@ generate_certificate( X509_REQ                 *request,
 
   if ( user_dn_lookup( client_request->username, &userdn,
 		       server_context ) ) {
-    verror_put_string("User/DN lookup failure: user_dn_lookup()");
+    verror_put_string("User DN lookup failure");
     goto error;
   }
 
@@ -516,6 +509,31 @@ generate_certificate( X509_REQ                 *request,
     verror_put_string("tokenize_to_x509_name() failed");
     goto error;
   }
+
+  /* issuer info */
+
+  issuer_cert_file = fopen(server_context->certificate_issuer_cert, "r");
+  if (issuer_cert_file == NULL) {
+      verror_put_string("Error opening certificate file %s",
+			server_context->certificate_issuer_cert);
+      verror_put_errno(errno);
+      goto error;
+  }
+  
+  if ((issuer_cert = PEM_read_X509(issuer_cert_file,
+				   NULL, NULL, NULL)) == NULL)
+  {
+      verror_put_string("Error reading certificate %s",
+			server_context->certificate_issuer_cert);
+      ssl_error_to_verror();
+      fclose(issuer_cert_file);
+      goto error;
+  }
+  fclose(issuer_cert_file);
+
+  X509_set_issuer_name(cert, X509_get_subject_name(issuer_cert));
+
+  X509V3_set_ctx(ctxp, issuer_cert, cert, NULL, NULL, 0);
 
   /* version, ttl, etc */
 
@@ -543,17 +561,93 @@ generate_certificate( X509_REQ                 *request,
 
   /* extensions */
 
-  add_ext(cert, NID_key_usage,
-	  "critical,Digital Signature, Key Encipherment, Data Encipherment");
-  add_ext(cert, NID_basic_constraints, "critical,CA:FALSE");
-  add_ext(cert, NID_subject_key_identifier, "hash");
+  if (server_context->certificate_extfile ||
+      server_context->certificate_extapp) {
+      CONF *extconf = NULL;
+      long errorline = -1;
+      extconf = NCONF_new(NULL);
+      if (server_context->certificate_extfile) {
+	  if (NCONF_load(extconf, server_context->certificate_extfile,
+			 &errorline) <= 0) {
+	      if (errorline <= 0) {
+		  verror_put_string("OpenSSL error loading the certificate_extfile '%s'", server_context->certificate_extfile);
+	      } else {
+		  verror_put_string("OpenSSL error on line %ld of certificate_extfile '%s'\n", errorline, server_context->certificate_extfile);
+	      }
+	      goto error;
+	  }
+	  myproxy_debug("Successfully loaded extensions file %s.",
+			server_context->certificate_extfile);
+      } else {
+	  pid_t childpid;
+	  int fds[3];
+	  int exit_status;
+	  FILE *nconf_stream = NULL;
+	  myproxy_debug("calling %s", server_context->certificate_extapp);
+	  if ((childpid = myproxy_popen(fds,
+					server_context->certificate_extapp,
+					client_request->username,
+					NULL)) < 0) {
+	      return -1; /* myproxy_popen will set verror */
+	  }
+	  close(fds[0]);
+	  if (waitpid(childpid, &exit_status, 0) == -1) {
+	      verror_put_string("wait() failed for extapp child");
+	      verror_put_errno(errno);
+	      return -1;
+	  }
+	  if (exit_status != 0) {
+	      FILE *fp = NULL;
+	      char buf[100];
+	      verror_put_string("Certificate extension call-out returned non-zero.");
+	      fp = fdopen(fds[1], "r");
+	      if (fp) {
+		  while (fgets(buf, 100, fp) != NULL) {
+		      verror_put_string(buf);
+		  }
+		  fclose(fp);
+	      }
+	      fp = fdopen(fds[2], "r");
+	      if (fp) {
+		  while (fgets(buf, 100, fp) != NULL) {
+		      verror_put_string(buf);
+		  }
+		  fclose(fp);
+	      }
+	      goto error;
+	  }
+	  close(fds[2]);
+	  nconf_stream = fdopen(fds[1], "r");
+	  if (NCONF_load_fp(extconf, nconf_stream, &errorline) <= 0) {
+	      if (errorline <= 0) {
+		  verror_put_string("OpenSSL error parsing output of certificate_extfile call-out.");
+	      } else {
+		  verror_put_string("OpenSSL error parsing line %ld of of certificate_extfile call-out output.", errorline);
+	      }
+	      fclose(nconf_stream);
+	      goto error;
+	  }
+	  fclose(nconf_stream);
+      }
+      X509V3_set_nconf(&ctx, extconf);
+      if (!X509V3_EXT_add_nconf(extconf, &ctx, "default", cert))
+      {
+	  verror_put_string("OpenSSL error adding extensions.");
+	  goto error;
+      }
+      myproxy_debug("Successfully added extensions.");
+  } else {			/* add some defaults */
+      add_ext(ctxp, cert, NID_key_usage, "critical,Digital Signature, Key Encipherment, Data Encipherment");
+      add_ext(ctxp, cert, NID_basic_constraints, "critical,CA:FALSE");
+      add_ext(ctxp, cert, NID_subject_key_identifier, "hash");
+  }
   if (server_context->certificate_issuer_email_domain) {
       char *email;
       email = malloc(strlen(client_request->username)+strlen("email:@")+1+
 		     strlen(server_context->certificate_issuer_email_domain));
       sprintf(email, "email:%s@%s", client_request->username,
 	      server_context->certificate_issuer_email_domain);
-      add_ext(cert, NID_subject_alt_name, email);
+      add_ext(ctxp, cert, NID_subject_alt_name, email);
       free(email);
   }
 
@@ -607,6 +701,8 @@ generate_certificate( X509_REQ                 *request,
     free(userdn);
     userdn = NULL;
   }
+  if (certificate_issuer)
+    free(certificate_issuer);
 
   return return_value;
 
@@ -676,24 +772,24 @@ handle_certificate(unsigned char            *input_buffer,
    */
 
   if ( ( server_context->certificate_issuer_program != NULL ) && 
-       ( server_context->certificate_issuer != NULL ) ) {
+       ( server_context->certificate_issuer_cert != NULL ) ) {
     verror_put_string("CA config error: both issuer and program defined");
     goto error;
   } 
 
   if ( ( server_context->certificate_issuer_program == NULL ) && 
-       ( server_context->certificate_issuer == NULL ) ) {
+       ( server_context->certificate_issuer_cert == NULL ) ) {
     verror_put_string("CA config error: neither issuer or program defined");
     goto error;
   }
 
-  if ( ( server_context->certificate_issuer != NULL ) && 
+  if ( ( server_context->certificate_issuer_cert != NULL ) && 
        ( server_context->certificate_issuer_key == NULL ) ) {
     verror_put_string("CA config error: issuer defined but no key defined");
     goto error;
   }
 
-  if ( ( server_context->certificate_issuer != NULL ) && 
+  if ( ( server_context->certificate_issuer_cert != NULL ) && 
        ( server_context->certificate_issuer_key != NULL ) ) {
     myproxy_debug("Using internal openssl/generate_certificate() code");
 
