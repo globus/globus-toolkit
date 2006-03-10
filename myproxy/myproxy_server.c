@@ -226,13 +226,6 @@ main(int argc, char *argv[])
       setenv( "GRIDMAP", "/etc/grid-security/grid-mapfile", 0 );
     }
 
-    /* setup certificate_issuer from certificate_issuer_cert if desired */
-    if ( ( server_context->certificate_issuer_cert != NULL) &&
-	 ( server_context->certificate_issuer == NULL) ) {
-	ssl_get_base_subject_file(server_context->certificate_issuer_cert,
-				  &server_context->certificate_issuer);
-    }
-
     /* Make sure all's well with the storage directory. */
     if (myproxy_check_storage_dir() == -1) {
 	myproxy_log_verror();
@@ -417,16 +410,20 @@ handle_client(myproxy_socket_attrs_t *attrs,
 	}
 	if (use_ca_callout) {
 	    if ( (context->certificate_issuer_program == NULL) && 
-		 (context->certificate_issuer == NULL) ) {
-		verror_put_string("No stored credentials and CA not enabled");
+		 (context->certificate_issuer_cert == NULL) ) {
+		if (client_request->credname) {
+		    verror_put_string("No credentials exist for username \"%s\".", client_request->username);
+		} else {
+		    verror_put_string("No credentials exist with username \"%s\" and credential name \"%s\".", client_request->username, client_request->credname);
+		}
 		respond_with_error_and_die(attrs, verror_get_string());
 	    }
 
-	    if (context->certificate_issuer != NULL) {
+	    if (context->certificate_issuer_cert) {
 
 	      if ( user_dn_lookup( client_request->username,
 				   &userdn, context ) ) {
-		verror_put_string("Internal CA enabled, user:%s unknown", 
+		verror_put_string("CA failed to map user ", 
 				  client_request->username);
 		respond_with_error_and_die(attrs, verror_get_string());
 	      }
