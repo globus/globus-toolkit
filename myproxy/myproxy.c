@@ -1747,7 +1747,8 @@ myproxy_recv_response(myproxy_socket_attrs_t *attrs,
     /* Check response */
     switch(response->response_type) {
         case MYPROXY_ERROR_RESPONSE:
-            verror_put_string("ERROR from server: %s", response->error_string);
+            verror_put_string("ERROR from myproxy-server (%s):\n%s",
+			      attrs->pshost, response->error_string);
 	    return(-1);
             break;
         case MYPROXY_OK_RESPONSE:
