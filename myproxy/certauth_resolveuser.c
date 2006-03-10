@@ -13,7 +13,7 @@ int resolve_via_mapfile ( char * username, char ** dn ) {
 
   if ( globus_gss_assist_map_local_user( username,
 					 &userdn ) ) {
-    verror_put_string("Could not resolve user to grid mapfile");
+    verror_put_string("Could not resolve user via grid-mapfile");
     return_value = 1;
     goto end;
   }
