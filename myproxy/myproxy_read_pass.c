@@ -213,15 +213,19 @@ myproxy_check_passphrase_policy(const char *passphrase,
 	    while (fgets(buf, 100, fp) != NULL) {
 		verror_put_string(buf);
 	    }
+	    fclose(fp);
+	} else {
+	    close(fds[1]);
 	}
-	fclose(fp);
 	fp = fdopen(fds[2], "r");
 	if (fp) {
 	    while (fgets(buf, 100, fp) != NULL) {
 		verror_put_string(buf);
 	    }
+	    fclose(fp);
+	} else {
+	    close(fds[2]);
 	}
-	fclose(fp);
 	return -1;
     }
 
