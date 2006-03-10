@@ -330,6 +330,14 @@ line_parse_callback(void *context_arg,
     {
 	context->certificate_issuer_email_domain = strdup(tokens[1]);
     }
+    else if (strcmp(directive, "certificate_extfile") == 0)
+    {
+	context->certificate_extfile = strdup(tokens[1]);
+    }
+    else if (strcmp(directive, "certificate_extapp") == 0)
+    {
+	context->certificate_extapp = strdup(tokens[1]);
+    }
     else if (strcmp(directive, "certificate_mapfile") == 0)
     {
 	context->certificate_mapfile = strdup(tokens[1]);
@@ -337,10 +345,6 @@ line_parse_callback(void *context_arg,
     else if (strcmp(directive, "certificate_mapapp") == 0)
     {
 	context->certificate_mapapp = strdup(tokens[1]);
-    }
-    else if (strcmp(directive, "certificate_issuer") == 0)
-    {
-	context->certificate_issuer = strdup(tokens[1]);
     }
     else if (strcmp(directive, "max_cert_lifetime") == 0)
     {

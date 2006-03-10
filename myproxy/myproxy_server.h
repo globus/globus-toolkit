@@ -34,9 +34,10 @@ typedef struct
   char *certificate_issuer_key;     /* CA signing key */
   char *certificate_issuer_key_passphrase; /* CA signing key passphrase */
   char *certificate_issuer_email_domain; /* CA email domain for alt name */
+  char *certificate_extfile;        /* CA extension file */
+  char *certificate_extapp;         /* CA extension call-out */
   char *certificate_mapfile;        /* CA gridmap file if not the default */
   char *certificate_mapapp;         /* gridmap call-out */
-  char *certificate_issuer;         /* CA issuer DN */
   int   max_cert_lifetime;          /* like proxy_lifetime for the CA */
   char *certificate_serialfile;     /* path to serialnumber file for CA */
   char *ca_ldap_server;             /* URL to CA ldap user DN server */

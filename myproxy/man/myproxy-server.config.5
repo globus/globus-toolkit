@@ -275,34 +275,13 @@ The MyProxy server can also be configured to act as a Certificate
 Authority (CA) to issue credentials to clients.  The following
 parameters enable and configure the CA functionality.
 .TP
-.BI certificate_issuer " \*(lqDistinguished Name of CA\*(rq"
-This line
-optionally configures the myproxy-server to act as an online
-certificate authority.  
-It specifies the
-issuer's distinguished name for certificates issued for
-authenticated clients that don't have credentials stored.  
-You can either specify 
-.BR certificate_issuer ,
-.BR certificate_issuer_cert , 
-or 
-.BR certificate_issuer_program .  
-See also the 
-.B certificate_issuer_key 
-and 
-.B certificate_mapfile 
-parameters below.
-.TP
 .BI certificate_issuer_cert " full-path-to-certificate"
-As an alternative to 
-.BR certificate_issuer , 
-you can instead specify certificate_issuer_cert to be used to obtain
-the issuer distinguished name.
+This line specifies the full path to the issuer certificate to
+optionally configure the myproxy-server to act as an online
+certificate authority. 
 .TP
 .BI certificate_issuer_key " full-path-to-key"
 When specifying 
-.B certificate_issuer 
-or 
 .B certificate_issuer_cert 
 above, you must also give the path to a CA private key in PEM format
 for signing certificates.
@@ -324,8 +303,7 @@ configures the myproxy-server to act as an online certificate
 authority, allowing programmatic control over the certificate
 issuance process.  
 You can either specify 
-.BR certificate_issuer ,
-.BR certificate_issuer_cert , 
+.B certificate_issuer_cert
 or 
 .BR certificate_issuer_program .  
 .TP
@@ -337,15 +315,46 @@ issued certificates.  Defaults to /var/myproxy/serial.
 Specifies the maximum lifetime (in hours) for certificates issued by
 the CA module.  Defaults to 12 hours.
 .TP
+.BI certificate_extfile " full-path-to-extension-file"
+Optionally specifies the full path to a file containing an OpenSSL
+formatted set of certificate extensions to include in all issued
+certificates.  For example:
+.RS
+.PD 0
+   keyUsage=digitalSignature,keyEncipherment,dataEncipherment
+.PP
+   subjectKeyIdentifier=hash
+.PP
+   authorityKeyIdentifier=keyid,issuer:always
+.PP
+   crlDistributionPoints=URI:http://ca.ncsa.uiuc.edu/4a6cd8b1.r0
+.PP
+   basicConstraints=CA:FALSE
+.PD
+.RE
+.RS
+If not set, the MyProxy CA will include a basic set of extensions in
+issued certificates.
+.RE
+.TP
+.BI certificate_extapp " full-path-to-extension-callout-program"
+This is the call-out version of certificate_extfile.  It optionally
+specifies the full path to a call-out program for specifying
+certificate extensions.  It will be passed the authenticated
+username as the single command argument.  On success, it should
+write the OpenSSL formatted set of certificate extensions #to stdout
+and exit with zero status.  On error, it should write to stderr and
+exit with nonzero status.
+.TP
 .BI certificate_mapfile " full-path-to-mapfile"
-When specifying certificate_issuer above, you can map account names
+When specifying certificate_issuer_cert above, you can map account names
 to certificate subject distinguished names for the issued
 certificates using this mapfile, which has the same format as used
 by other Globus Toolkit services.
 By default, /etc/grid-security/grid-mapfile is used.
 .TP
 .BI certificate_mapapp " full-path-to-mapapp"
-When specifying certificate_issuer above, you can map account names
+When specifying certificate_issuer_cert above, you can map account names
 to certificate subject distinguished names for the issued
 certificates using this call-out.  It will be passed the
 authenticated username as the single command argument.  On success,
