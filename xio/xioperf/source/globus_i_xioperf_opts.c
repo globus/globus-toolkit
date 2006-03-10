@@ -104,6 +104,23 @@ xio_perf_l_opts_interval(
 
 static
 globus_result_t
+xioperf_l_opts_quiet(
+    char *                              cmd,
+    char *                              opt,
+    void *                              arg,
+    int *                               out_parms_used)
+{
+    globus_i_xioperf_info_t *           info;
+
+    info = (globus_i_xioperf_info_t *) arg;
+    *out_parms_used = 0;
+    info->quiet = GLOBUS_TRUE;
+
+    return GLOBUS_SUCCESS;
+}
+
+static
+globus_result_t
 xioperf_l_opts_len(
     char *                              cmd,
     char *                              opt,
@@ -484,13 +501,16 @@ globus_options_entry_t                   globus_i_xioperf_opts_table[] =
     {"interval", "i", NULL, "#",
         "seconds between periodic bandwidth reports", 
         1, xio_perf_l_opts_interval},
+    {"quiet", "q", NULL, NULL,
+        "only output | <time> <read bytes> <read BW> <write bytes> <write BW>", 
+        0, xioperf_l_opts_quiet},
     {"len", "l", NULL, "#[KM]",
         "length of buffer to read or write (default 8 KB)", 
         1, xioperf_l_opts_len},
     {"port", "p", NULL, "#",
         "server port to listen on/connect to", 
         1, xioperf_l_opts_port},
-    {"clock-size", "bs", NULL, "#[GKM]",
+    {"block-size", "bs", NULL, "#[GKM]",
         "block size to post at once (also disk block size)", 
         1, xioperf_l_opts_blocksize},
     {"window", "w", NULL, "#[GKM]",

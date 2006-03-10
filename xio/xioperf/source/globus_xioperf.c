@@ -4,6 +4,9 @@
 
 extern globus_options_entry_t            globus_i_xioperf_opts_table[];
 
+static FILE *                           globus_l_xioperf_log_fptr;
+static FILE *                           globus_l_xioperf_err_fptr;
+
 static
 globus_result_t
 xioperf_next_write(
@@ -14,13 +17,32 @@ globus_result_t
 xioperf_start(
     globus_i_xioperf_info_t *           info);
 
+void
+xio_perf_log(
+    globus_i_xioperf_info_t *           info,
+    int                                 level,
+    char *                              fmt,
+    ...)
+{
+    va_list                             ap;
+
+    if(info->quiet && level != 0)
+    {
+        return;
+    }
+    va_start(ap, fmt);
+    vfprintf(globus_l_xioperf_log_fptr, fmt, ap);
+    va_end(ap);
+}
+
 static
 void
 xioperf_l_log(
     const char *                        msg,
     globus_result_t                     res)
 {
-    fprintf(stderr, "%s: %s\n", msg, globus_object_printable_to_string(
+    fprintf(globus_l_xioperf_err_fptr,
+        "%s: %s\n", msg, globus_object_printable_to_string(
         globus_error_get(res)));
 }
 
@@ -29,9 +51,11 @@ char *
 xioperf_outformat_bw(
     char                                type,
     double                              time,
-    globus_off_t                        bytes)
+    globus_off_t                        bytes,
+    globus_bool_t                       with_type)
 {
     char * str;
+    char * tmp_ptr;
     double val;
 
     if(type == 'm' || type == 'k' || type == 'b' || type == 'g')
@@ -57,7 +81,15 @@ xioperf_outformat_bw(
     val /= time;
 
     str = globus_common_create_string("%-10.2lf       ", val);
-    sprintf(strchr(str, ' '), " %c/s", type);
+    tmp_ptr = strchr(str, ' ');
+    if(with_type)
+    {
+        sprintf(tmp_ptr, " %c/s", type);
+    }
+    else
+    {
+        *tmp_ptr = '\0';
+    }
     return str;
 }
 
@@ -65,9 +97,11 @@ static
 char *
 xioperf_outformat_bytes(
     char                                type,
-    globus_off_t                        bytes)
+    globus_off_t                        bytes,
+    globus_bool_t                       with_type)
 {
     char * str;
+    char * tmp_ptr;
     double val;
 
     type = toupper(type);
@@ -86,10 +120,19 @@ xioperf_outformat_bytes(
     }
 
     str = globus_common_create_string("%-10.2lf       ", val);
-    sprintf(strchr(str, ' '), " %c", type);
+    tmp_ptr = strchr(str, ' ');
+    if(with_type)
+    {
+        sprintf(tmp_ptr, " %c", type);
+    }
+    else
+    {
+        *tmp_ptr = '\0';
+    }
     return str;
 }
 
+/* summary info always goes to stdout */
 static
 void
 xioperf_l_print_summary(
@@ -106,21 +149,33 @@ xioperf_l_print_summary(
 
     secs = usecs / 1000000.0;
     mins = (int)secs/60;
-    printf("\tTime:         %02d:%02.4f\n", mins, secs-(mins*60));
 
-    if(info->writer)
+    if(info->quiet)
     {
-        printf("\tBytes sent:   %s\n",
-            xioperf_outformat_bytes(info->format, info->bytes_sent));
-        printf("\tWrite BW:     %s\n",
-            xioperf_outformat_bw(info->format, secs, info->bytes_sent));
+        printf("%02d:%02.4f %s %s %s %s\n",
+            mins, secs-(mins*60),
+            xioperf_outformat_bytes(info->format, info->bytes_recv, 0),
+            xioperf_outformat_bw(info->format, secs, info->bytes_recv, 0),
+            xioperf_outformat_bytes(info->format, info->bytes_sent, 0),
+            xioperf_outformat_bw(info->format, secs, info->bytes_sent, 0));
     }
-    if(info->reader)
+    else
     {
-        printf("\tBytes recv:   %s\n",
-            xioperf_outformat_bytes(info->format, info->bytes_recv));
-        printf("\tRead BW:      %s\n",
-            xioperf_outformat_bw(info->format, secs, info->bytes_recv));
+        printf("\tTime:         %02d:%02.4f\n", mins, secs-(mins*60));
+        if(info->writer)
+        {
+            printf("\tBytes sent:   %s\n",
+                xioperf_outformat_bytes(info->format, info->bytes_sent, 1));
+            printf("\tWrite BW:     %s\n",
+                xioperf_outformat_bw(info->format, secs, info->bytes_sent, 1));
+        }
+        if(info->reader)
+        {
+            printf("\tBytes recv:   %s\n",
+                xioperf_outformat_bytes(info->format, info->bytes_recv, 1));
+            printf("\tRead BW:      %s\n",
+                xioperf_outformat_bw(info->format, secs, info->bytes_recv, 1));
+        }
     }
 }
 
@@ -184,7 +239,7 @@ xioperf_l_parse_opts(
     if(info->interval > 0 &&
         (info->file || info->bytes_to_transfer)) 
     {
-        fprintf(stderr, "ignoring interval parameter\n");
+        fprintf(globus_l_xioperf_err_fptr, "ignoring interval parameter\n");
     }
     if(info->daemon && !info->server)
     {
@@ -192,6 +247,11 @@ xioperf_l_parse_opts(
                 "only a server can be in daemon mode",
                 GLOBUS_XIO_PERF_ERROR_PARM);
         goto error_result;
+    }
+
+    if(info->quiet)
+    {
+        
     }
 
     info->next_write_buffer = (globus_byte_t *)globus_malloc(info->block_size);
@@ -215,7 +275,8 @@ xioperf_l_parse_opts(
         info->write_done = GLOBUS_TRUE;
         if(info->bytes_to_transfer > 0)
         {
-            fprintf(stderr, "ignoring --num, only relvent when sending\n");
+            fprintf(globus_l_xioperf_err_fptr, 
+                "ignoring --num, only relvent when sending\n");
         }
         info->bytes_to_transfer = 0;
     }
@@ -262,7 +323,7 @@ xioperf_l_parse_opts(
 
     return info;
 error_result:
-    fprintf(stderr, "%s\n",
+    fprintf(globus_l_xioperf_err_fptr, "%s\n",
         globus_error_print_friendly(globus_error_get(res)));
 error:
     return NULL;
@@ -280,7 +341,7 @@ xioperf_interval(
     globus_mutex_lock(&info->mutex);
     {
         xioperf_l_print_summary(info);
-        fprintf(stdout, 
+        xio_perf_log(info, 1,
         "---------------------------------------------------------------\n");
         GlobusTimeAbstimeGetCurrent(info->start_time);
         info->bytes_sent = 0;
@@ -300,7 +361,7 @@ xioperf_timeout(
 
     globus_mutex_lock(&info->mutex);
     {
-        printf("Time exceeded.  Terminating.\n");
+        fprintf(globus_l_xioperf_err_fptr, "Time exceeded.  Terminating.\n");
         info->read_done = GLOBUS_TRUE;
         info->write_done = GLOBUS_TRUE;
         globus_xio_handle_cancel_operations(
@@ -522,6 +583,9 @@ main(
  
     globus_module_activate(GLOBUS_XIO_MODULE);
 
+    globus_l_xioperf_log_fptr = stdout;
+    globus_l_xioperf_err_fptr = stderr;
+
     info = xioperf_l_parse_opts(argc, argv);
     if(info == NULL)
     {
@@ -593,8 +657,27 @@ main(
             }
         }
     }
+    driver = (globus_xio_driver_t) globus_hashtable_lookup(
+        &info->driver_table, (void *)"quanta_rbudp");
+    if(driver != NULL)
+    {
+        if(info->reader)
+        {
+            globus_xio_attr_cntl(
+                info->attr, driver,
+                O_RDONLY,
+                NULL);
+        }
+        else
+        {
+            globus_xio_attr_cntl(
+                info->attr, driver,
+                O_WRONLY,
+                NULL);
+        }
+    }
 
-    fprintf(stdout, 
+    xio_perf_log(info, 1,
     "---------------------------------------------------------------\n");
     /* driver specif stuff will be tricky */
     if(info->server)
@@ -607,8 +690,8 @@ main(
             goto error;
         }
         globus_xio_server_get_contact_string(info->server_handle, &cs);
-        fprintf(stdout, "server listening on: %s\n", cs);
-        fprintf(stdout, 
+        xio_perf_log(info, 1, "server listening on: %s\n", cs);
+        xio_perf_log(info, 1, 
         "---------------------------------------------------------------\n");
         globus_free(cs);
 
@@ -655,7 +738,7 @@ main(
     return 0;
 
 error:
-    fprintf(stdout, "failed.\n");
+    fprintf(globus_l_xioperf_err_fptr, "failed.\n");
     globus_module_deactivate(GLOBUS_XIO_MODULE);
     return 1;
 }
@@ -754,8 +837,8 @@ xioperf_start(
         {
             goto error;
         }
-        printf("Connection esstablished\n");
-        fprintf(stdout, 
+        xio_perf_log(info, 1, "Connection esstablished\n");
+        xio_perf_log(info, 1, 
         "---------------------------------------------------------------\n");
         res = xioperf_post_io(info);
 

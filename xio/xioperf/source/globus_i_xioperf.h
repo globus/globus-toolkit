@@ -70,7 +70,7 @@ typedef struct globus_i_xioperf_info_s
     globus_abstime_t                    start_time;
     globus_abstime_t                    end_time;
     globus_xio_attr_t                   attr;
+    globus_bool_t                       quiet;
 } globus_i_xioperf_info_t;
-
 
 #endif
