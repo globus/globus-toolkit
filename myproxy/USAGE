@@ -99,6 +99,7 @@ desperate attempt to maintain some consistency.
 -p | --psport         <port #>    Port of the myproxy-server
 -p | --psport   #          Port of the myproxy-server
 -p | --psport   #          Port of the myproxy-server
+-q | --quiet                      Only output on error
 -r | --remove                   Remove credentials matching query
 -r | --retrievable_by  <dn>       Allow specified entity to retrieve credential
 -r | --retrievable_by <dn>        Allow specified entity to retrieve credential
