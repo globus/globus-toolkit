@@ -32,6 +32,7 @@ static char usage[] = \
 "       -S | --stdin_pass                 Read passphrase from stdin\n"
 "       -T | --trustroots                 Manage trust roots\n"
 "       -n | --no_passphrase              Don't prompt for passphrase\n"
+"       -q | --quiet                      Only output on error\n"
 "\n";
 
 struct option long_options[] =
@@ -51,10 +52,11 @@ struct option long_options[] =
     {"stdin_pass",             no_argument, NULL, 'S'},
     {"trustroots",             no_argument, NULL, 'T'},
     {"no_passphrase",          no_argument, NULL, 'n'},
+    {"quiet",                  no_argument, NULL, 'q'},
     {0, 0, 0, 0}
 };
 
-static char short_options[] = "hus:p:l:t:o:vVa:dk:SnT";
+static char short_options[] = "hus:p:l:t:o:vVa:dk:SnTq";
 
 static char version[] =
 "myproxy-logon version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
@@ -75,6 +77,7 @@ static char *outputfile = NULL;
 static int dn_as_username = 0;
 static int read_passwd_from_stdin = 0;
 static int use_empty_passwd = 0;
+static int quiet = 0;
 
 int
 main(int argc, char *argv[]) 
@@ -177,8 +180,9 @@ main(int argc, char *argv[])
 	goto cleanup;
     }
 
-    printf("A credential has been received for user %s in %s.\n",
-           client_request->username, outputfile);
+    if (!quiet)
+	printf("A credential has been received for user %s in %s.\n",
+	       client_request->username, outputfile);
     free(outputfile);
     verror_clear();
 
@@ -191,7 +195,8 @@ main(int argc, char *argv[])
             } else {
 		char *path;
 		path = get_trusted_certs_path();
-		printf("Trust roots have been installed in %s.\n", path);
+		if (!quiet)
+		    printf("Trust roots have been installed in %s.\n", path);
 		free(path);
 	    }
         } else {
@@ -243,6 +248,7 @@ init_arguments(int argc,
             break;
 	case 'o':	/* output file */
 	    outputfile = strdup(optarg);
+	    if (outputfile[0] == '-' && outputfile[1] == '\0') quiet = 1;
             break;    
 	case 'a':       /* special authorization */
 	    request->authzcreds = strdup(optarg);
@@ -250,6 +256,9 @@ init_arguments(int argc,
 	    break;
 	case 'n':       /* no passphrase */
 	    use_empty_passwd = 1;
+	    break;
+	case 'q':
+	    quiet = 1;
 	    break;
 	case 'v':
 	    myproxy_debug_set_level(1);
