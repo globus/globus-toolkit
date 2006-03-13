@@ -161,6 +161,8 @@ myproxy_init_client(myproxy_socket_attrs_t *attrs) {
     
     myproxy_debug("MyProxy %s", myproxy_version(0,0,0));
 
+    assert(attrs);
+
     attrs->socket_fd = socket(AF_INET, SOCK_STREAM, 0);
 
     if (attrs->socket_fd == -1) {
@@ -243,6 +245,8 @@ myproxy_authenticate_init(myproxy_socket_attrs_t *attrs,
    char *accepted_peer_names[3] = { 0 };
    char *server_dn;
    int  rval, return_value = -1;
+
+   assert(attrs);
 
    if (GSI_SOCKET_use_creds(attrs->gsi_socket,
 			    proxyfile) == GSI_SOCKET_ERROR) {
@@ -332,6 +336,7 @@ myproxy_authenticate_accept(myproxy_socket_attrs_t *attrs, char *client_name, co
     char error_string[1024];
    
     assert(client_name != NULL);
+    assert(attrs);
 
     if (GSI_SOCKET_authentication_accept(attrs->gsi_socket) == GSI_SOCKET_ERROR) {
         GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
@@ -381,12 +386,35 @@ myproxy_accept_delegation(myproxy_socket_attrs_t *attrs, char *data, const int d
 {
   char error_string[1024];
 
+  assert(attrs);
   assert(data != NULL);
 
   if (GSI_SOCKET_delegation_accept_ext(attrs->gsi_socket, data, datalen, passphrase) == GSI_SOCKET_ERROR) {
     GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
 				sizeof(error_string));
     verror_put_string("Error accepting delegated credentials: %s\n", error_string);
+    return -1;
+  }
+  
+  return 0;
+}
+
+int
+myproxy_accept_delegation_ex(myproxy_socket_attrs_t *attrs, char **credentials,
+			     int *credential_len, char *passphrase)
+{
+  char error_string[1024];
+
+  assert(attrs);
+  assert(credentials != NULL);
+
+  if (GSI_SOCKET_delegation_accept(attrs->gsi_socket, credentials,
+				   credential_len,
+				   passphrase) == GSI_SOCKET_ERROR) {
+    GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
+				sizeof(error_string));
+    verror_put_string("Error accepting delegated credentials: %s\n",
+		      error_string);
     return -1;
   }
   
