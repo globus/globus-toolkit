@@ -21,6 +21,7 @@ static char usage[] = \
 "       -t | --proxy_lifetime  <hours>    Lifetime of proxies delegated by\n" 
 "                                         the server (default 12 hours)\n"
 "       -o | --out             <path>     Location of delegated proxy\n"
+"                                         (use '-' for stdout)\n"
 "       -s | --pshost          <hostname> Hostname of the myproxy-server\n"
 "       -p | --psport          <port #>   Port of the myproxy-server\n"
 "       -a | --authorization   <path>     Specify credential to renew\n"
