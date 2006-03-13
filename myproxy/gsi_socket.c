@@ -1259,10 +1259,10 @@ int GSI_SOCKET_delegation_init_ext(GSI_SOCKET *self,
 
 
 int
-GSI_SOCKET_delegation_accept_ext(GSI_SOCKET *self,
-				 char *delegated_credentials,
-				 int delegated_credentials_len,
-				 char *passphrase)
+GSI_SOCKET_delegation_accept(GSI_SOCKET *self,
+			     unsigned char **delegated_credentials,
+			     int *delegated_credentials_len,
+			     char *passphrase)
 {
     int			return_value = GSI_SOCKET_ERROR;
     SSL_CREDENTIALS	*creds = NULL;
@@ -1270,7 +1270,6 @@ GSI_SOCKET_delegation_accept_ext(GSI_SOCKET *self,
     int			output_buffer_len;
     unsigned char	*input_buffer = NULL;
     size_t		input_buffer_len;
-    char		filename[L_tmpnam];
     unsigned char	*fmsg;
     int                 i;
     
@@ -1333,26 +1332,14 @@ GSI_SOCKET_delegation_accept_ext(GSI_SOCKET *self,
 	goto error;
     }
     
-    /* Now store the credentials */
-    if (tmpnam(filename) == NULL)
-    {
-	self->error_number = errno;
-	self->error_string = strdup("tmpnam() failed");
-	goto error;
-    }
-    
     if (passphrase && passphrase[0] == '\0') {
 	passphrase = NULL;
     }
-    if (ssl_proxy_store_to_file(creds, filename, passphrase) == SSL_ERROR)
+    if (ssl_proxy_to_pem(creds, delegated_credentials,
+			 delegated_credentials_len, passphrase) == SSL_ERROR)
     {
 	GSI_SOCKET_set_error_from_verror(self);
 	goto error;
-    }
-    
-    if (delegated_credentials != NULL)
-    {
-	strncpy(delegated_credentials, filename, delegated_credentials_len);
     }
     
     /* Success */
@@ -1369,6 +1356,64 @@ GSI_SOCKET_delegation_accept_ext(GSI_SOCKET *self,
 	GSI_SOCKET_free_token(input_buffer);
     }
     
+    if (output_buffer != NULL)
+    {
+	ssl_free_buffer(output_buffer);
+    }
+
+    return return_value;
+}
+
+int
+GSI_SOCKET_delegation_accept_ext(GSI_SOCKET *self,
+				 char *delegated_credentials,
+				 int delegated_credentials_len,
+				 char *passphrase)
+{
+    int			return_value = GSI_SOCKET_ERROR;
+    unsigned char	*output_buffer = NULL;
+    int			output_buffer_len;
+    char		filename[L_tmpnam];
+    int			fd = -1;
+
+
+    if (GSI_SOCKET_delegation_accept(self, &output_buffer, &output_buffer_len,
+				     passphrase) != GSI_SOCKET_SUCCESS) {
+	goto error;
+    }
+    
+    /* Now store the credentials */
+    if (tmpnam(filename) == NULL)
+    {
+	self->error_number = errno;
+	self->error_string = strdup("tmpnam() failed");
+	goto error;
+    }
+    
+    fd = open(filename, O_CREAT | O_EXCL | O_WRONLY, S_IRUSR | S_IWUSR);
+    if (fd == -1)
+    {
+	verror_put_string("Error creating %s", filename);
+	verror_put_errno(errno);
+	goto error;
+    }
+
+    if (write(fd, output_buffer, output_buffer_len) == -1)
+    {
+	verror_put_errno(errno);
+	verror_put_string("Error writing proxy to %s", filename);
+	goto error;
+    }
+    
+    if (delegated_credentials != NULL)
+    {
+	strncpy(delegated_credentials, filename, delegated_credentials_len);
+    }
+    
+    /* Success */
+    return_value = GSI_SOCKET_SUCCESS;
+    
+  error:
     if (output_buffer != NULL)
     {
 	ssl_free_buffer(output_buffer);
@@ -1441,7 +1486,8 @@ int GSI_SOCKET_credentials_accept_ext(GSI_SOCKET *self,
     if ((fd = open(filename, O_CREAT | O_EXCL | O_WRONLY,
                  S_IRUSR | S_IWUSR)) < 0) 
     {
-      fprintf(stderr, "open(%s) failed: %s\n", filename, strerror(errno));
+      self->error_string =
+	  strdup("open() failed in GSI_SOCKET_credentials_accept_ext");
       goto error;
     }
 

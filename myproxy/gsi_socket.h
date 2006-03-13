@@ -210,6 +210,20 @@ int GSI_SOCKET_delegation_init_ext(GSI_SOCKET *gsi_socket,
 #define GSI_SOCKET_DELEGATION_RESTRICTIONS_DEFAULT		NULL
 
 /*
+ * GSI_SOCKET_delegation_accept()
+ *
+ * Accept delegated credentials from the peer.
+ *
+ * Return an allocated buffer with the given proxy encoded in PEM format.
+ * The private key is encrypted with passphrase if provided (can be NULL).
+ *
+ * Returns GSI_SOCKET_SUCCESS on success, GSI_SOCKET_ERROR otherwise.  */
+int GSI_SOCKET_delegation_accept(GSI_SOCKET *gsi_socket,
+				 unsigned char **delegated_credentials,
+                                 int *delegated_credentials_len,
+				 char *passphrase);
+
+/*
  * GSI_SOCKET_delegation_accept_ext()
  *
  * Accept delegated credentials from the peer.
