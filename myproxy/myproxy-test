@@ -14,8 +14,8 @@
 # Test cases are:
 #   1. Store a credential (myproxy-init).
 #   2. Get info on the stored credential (myproxy-info).
-#   3. Retrieve stored credential (myproxy-get-delegation).
-#   4. Verify myproxy-get-delegation fails on bad passphrase.
+#   3. Retrieve stored credential (myproxy-logon).
+#   4. Verify myproxy-logon fails on bad passphrase.
 #   5. Change passphrase (myproxy-change-pass-phrase).
 #   6. Retrieve with new passphrase.
 #   7. Verify old passphrase no longer accepted.
@@ -31,16 +31,16 @@
 #
 #  17. Store credential (myproxy-store -v -t 1)
 #  18. Get info on the stored credential (myproxy-info)
-#  19. Create proxy from stored credential (myproxy-get-delegation).
+#  19. Create proxy from stored credential (myproxy-logon).
 #  20. Retrieve stored credential (myproxy-retrieve)
-#  21. Verify passphrase checking (myproxy-get-delegation).
+#  21. Verify passphrase checking (myproxy-logon).
 #  22. Verify passphrase checking (myproxy-retrieve).
-#  23. Verify renewal fails by default (myproxy-get-delegation).
+#  23. Verify renewal fails by default (myproxy-logon).
 #  24. Verify renewal fails by default (myproxy-retrieve).
 #  25. Remove credential from repository (myproxy-destroy).
 #  26. Verify credential is removed (myproxy_info).
 #  27. Store credentials with retrieval policies (myproxy-store).
-#  28. Verify retrieval policies (one accept, one deny) (myproxy-get-delegation).
+#  28. Verify retrieval policies (one accept, one deny) (myproxy-logon).
 #  29. Verify retrieval policies (one accept, one deny) (myproxy-retrieve).
 #  30. Store renewable credentials.
 #  31. Get info on stored renewable credentials (myproxy-info -d).
@@ -133,8 +133,8 @@ chomp($myproxy_info = `which myproxy-info 2>/dev/null`);
 die "myproxy-info not in PATH, stopped" if (!(-x $myproxy_info));
 chomp($myproxy_destroy = `which myproxy-destroy 2>/dev/null`);
 die "myproxy-destroy not in PATH, stopped" if (!(-x $myproxy_destroy));
-chomp($myproxy_get = `which myproxy-get-delegation 2>/dev/null`);
-die "myproxy-get-delegation not in PATH, stopped" if (!(-x $myproxy_get));
+chomp($myproxy_get = `which myproxy-logon 2>/dev/null`);
+die "myproxy-logon not in PATH, stopped" if (!(-x $myproxy_get));
 chomp($myproxy_passwd = `which myproxy-change-pass-phrase 2>/dev/null`);
 die "myproxy-change-pass-phrase not in PATH, stopped"
     if (!(-x $myproxy_passwd));
@@ -231,7 +231,7 @@ if ($performance) {
 $SUCCESSES = $FAILURES = 0;
 
 # commands to test: myproxy-init, myproxy-info, myproxy-destroy,
-#                   myproxy-get-delegation, and myproxy-change-pass-phrase
+#                   myproxy-logon, and myproxy-change-pass-phrase
 
 ($exitstatus, $output) =
     &runtest("myproxy-init -v -a -c 1 -t 1 -S",
@@ -254,7 +254,7 @@ if ($exitstatus == 0 && $output =~ /username/) {
 }
 
 ($exitstatus, $output) =
-    &runtest("myproxy-get-delegation -t 1 -o /tmp/myproxy-test.$$ -v -S",
+    &runtest("myproxy-logon -t 1 -o /tmp/myproxy-test.$$ -v -S",
 	     $passphrase . "\n");
 print "MyProxy Test 3 (retrieve stored credential): ";
 if ($exitstatus == 0) {
@@ -269,7 +269,7 @@ if ($exitstatus == 0) {
 
 if ($test_trustroots) {
     ($exitstatus, $output) =
-	&runtest("myproxy-get-delegation -T -t 1 -o /tmp/myproxy-test.$$ -v -S",
+	&runtest("myproxy-logon -T -t 1 -o /tmp/myproxy-test.$$ -v -S",
 		 $passphrase . "\n");
     print "MyProxy Test 3T (retrieve stored credential w/ trustroots): ";
     if ($exitstatus == 0) {
@@ -288,7 +288,7 @@ if ($test_trustroots) {
 }
 
 ($exitstatus, $output) =
-    &runtest("myproxy-get-delegation -t 1 -o /tmp/myproxy-test.$$ -v -S",
+    &runtest("myproxy-logon -t 1 -o /tmp/myproxy-test.$$ -v -S",
 	     "badpassphrase\n");
 print "MyProxy Test 4 (verify passphrase checking on retrieve): ";
 if ($exitstatus != 0 && $output =~ /invalid pass phrase/) {
@@ -310,7 +310,7 @@ if ($exitstatus == 0 && $output =~ /Pass phrase changed/) {
 }
 
 ($exitstatus, $output) =
-    &runtest("myproxy-get-delegation -t 1 -o /tmp/myproxy-test.$$ -v -S",
+    &runtest("myproxy-logon -t 1 -o /tmp/myproxy-test.$$ -v -S",
 	     $passphrase . "\n");
 print "MyProxy Test 6 (verify new passphrase): ";
 if ($exitstatus == 0) {
@@ -324,7 +324,7 @@ if ($exitstatus == 0) {
 }
 
 ($exitstatus, $output) =
-    &runtest("myproxy-get-delegation -t 1 -o /tmp/myproxy-test.$$ -v -S",
+    &runtest("myproxy-logon -t 1 -o /tmp/myproxy-test.$$ -v -S",
 	     $old_passphrase . "\n");
 print "MyProxy Test 7 (verify old passphrase fails): ";
 if ($exitstatus != 0 && $output =~ /invalid pass phrase/) {
@@ -334,7 +334,7 @@ if ($exitstatus != 0 && $output =~ /invalid pass phrase/) {
 }
 
 ($exitstatus, $output) =
-    &runtest("myproxy-get-delegation -a \$X509_USER_PROXY -t 1 -o /tmp/myproxy-test.$$ -v", undef);
+    &runtest("myproxy-logon -a \$X509_USER_PROXY -t 1 -o /tmp/myproxy-test.$$ -v", undef);
 print "MyProxy Test 8 (verify default renewal policy): ";
 if ($exitstatus != 0) {
     print "SUCCEEDED\n"; $SUCCESSES++;
@@ -376,7 +376,7 @@ if ($exitstatus == 0) {
 }
 
 ($exitstatus, $output) =
-    &runtest("myproxy-get-delegation -k 'mine' -t 1 -o /tmp/myproxy-test.$$ -v -S",
+    &runtest("myproxy-logon -k 'mine' -t 1 -o /tmp/myproxy-test.$$ -v -S",
 	     $passphrase . "\n");
 print "MyProxy Test 12 (verify retrieval policies): ";
 if ($exitstatus == 0) {
@@ -385,7 +385,7 @@ if ($exitstatus == 0) {
 }
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
-	&runtest("myproxy-get-delegation -k 'nobody' -t 1 -o /tmp/myproxy-test.$$ -v -S",
+	&runtest("myproxy-logon -k 'nobody' -t 1 -o /tmp/myproxy-test.$$ -v -S",
 		 $passphrase . "\n");
     if ($exitstatus != 0) {
 	print "SUCCEEDED\n"; $SUCCESSES++;
@@ -424,7 +424,7 @@ if ($exitstatus == 0 && $output =~ /username/) {
 }
 
 ($exitstatus, $output) =
-    &runtest("myproxy-get-delegation -k 'mine' -a $ENV{'X509_USER_PROXY'} -t 1 -o /tmp/myproxy-test.$$ -v -d",
+    &runtest("myproxy-logon -k 'mine' -a $ENV{'X509_USER_PROXY'} -t 1 -o /tmp/myproxy-test.$$ -v -d",
 	     undef);
 print "MyProxy Test 15 (verify renewal policies): ";
 if ($exitstatus == 0) {
@@ -433,7 +433,7 @@ if ($exitstatus == 0) {
 }
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
-	&runtest("myproxy-get-delegation -k 'nobody' -a $ENV{'X509_USER_PROXY'} -t 1 -o /tmp/myproxy-test.$$ -v -d",
+	&runtest("myproxy-logon -k 'nobody' -a $ENV{'X509_USER_PROXY'} -t 1 -o /tmp/myproxy-test.$$ -v -d",
 		 undef);
     if ($exitstatus != 0) {
 	print "SUCCEEDED\n"; $SUCCESSES++;
@@ -454,7 +454,7 @@ if ($exitstatus == 0) {
 print "MyProxy Test 16 (verify lifetime of retrieved credentials): ";
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
-	&runtest("myproxy-get-delegation -o /tmp/myproxy-test.$$ -v -S",
+	&runtest("myproxy-logon -o /tmp/myproxy-test.$$ -v -S",
 		 $passphrase . "\n");
     $timeleft = `$grid_proxy_info -file /tmp/myproxy-test.$$ -timeleft`;
     if (defined($timeleft) &&
@@ -470,7 +470,7 @@ if ($exitstatus == 0) {
 }
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
-	&runtest("myproxy-get-delegation -t 1 -o /tmp/myproxy-test.$$ -v -S",
+	&runtest("myproxy-logon -t 1 -o /tmp/myproxy-test.$$ -v -S",
 		 $passphrase . "\n");
     $timeleft = `$grid_proxy_info -file /tmp/myproxy-test.$$ -timeleft`;
     if ($timeleft > 60*61 || $timeleft < 60*59) {
@@ -495,7 +495,7 @@ if ($exitstatus == 0) {
 #
 
 # commands to test: myproxy-store, myproxy-info, myproxy-destroy,
-#                   myproxy-get-delegation, myproxy-retrieve, and 
+#                   myproxy-logon, myproxy-retrieve, and 
 #                   myproxy-change-pass-phrase
 
 # For myproxy-store, we need an encrypted key to store.
@@ -540,7 +540,7 @@ if ($exitstatus == 0 && $output =~ /username/) {
 # Test 19
 #
 ($exitstatus, $output) =
-    &runtest("myproxy-get-delegation -t 1 -o /tmp/myproxy-test.$$ -v -S",
+    &runtest("myproxy-logon -t 1 -o /tmp/myproxy-test.$$ -v -S",
 	     $passphrase . "\n");
 print "MyProxy Test 19 (create proxy from stored credential): ";
 if ($exitstatus == 0) {
@@ -599,9 +599,9 @@ if ($test_trustroots) {
 # Test 21
 #
 ($exitstatus, $output) =
-    &runtest("myproxy-get-delegation -t 1 -o /tmp/myproxy-test.$$ -v -S",
+    &runtest("myproxy-logon -t 1 -o /tmp/myproxy-test.$$ -v -S",
 	     "badpassphrase\n");
-print "MyProxy Test 21 (verify passphrase checking on myproxy-get-delegation): ";
+print "MyProxy Test 21 (verify passphrase checking on myproxy-logon): ";
 if ($exitstatus != 0 && $output =~ /invalid pass phrase/) {
     print "SUCCEEDED\n"; $SUCCESSES++;
 } else {
@@ -627,8 +627,8 @@ unlink( "/tmp/myproxy-test.key.$$" );
 # Test 23
 #
 ($exitstatus, $output) =
-    &runtest("myproxy-get-delegation -a \$X509_USER_PROXY -t 1 -o /tmp/myproxy-test.$$ -v", undef);
-print "MyProxy Test 23 (verify myproxy-get-delegation default renewal policy): ";
+    &runtest("myproxy-logon -a \$X509_USER_PROXY -t 1 -o /tmp/myproxy-test.$$ -v", undef);
+print "MyProxy Test 23 (verify myproxy-logon default renewal policy): ";
 if ($exitstatus != 0) {
     print "SUCCEEDED\n"; $SUCCESSES++;
 } else {
@@ -695,9 +695,9 @@ if ($exitstatus == 0) {
 # Test 28
 #
 ($exitstatus, $output) =
-    &runtest("myproxy-get-delegation -k 'mine' -t 1 -o /tmp/myproxy-test.$$ -v -S",
+    &runtest("myproxy-logon -k 'mine' -t 1 -o /tmp/myproxy-test.$$ -v -S",
 	     $passphrase . "\n");
-print "MyProxy Test 28 (verify myproxy-get-delegation retrieval policies): ";
+print "MyProxy Test 28 (verify myproxy-logon retrieval policies): ";
 
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
@@ -705,7 +705,7 @@ if ($exitstatus == 0) {
 }
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
-	&runtest("myproxy-get-delegation -k 'nobody' -t 1 -o /tmp/myproxy-test.$$ -v -S",
+	&runtest("myproxy-logon -k 'nobody' -t 1 -o /tmp/myproxy-test.$$ -v -S",
 		 $passphrase . "\n");
 
     if ($exitstatus != 0) {
@@ -780,7 +780,7 @@ if ($exitstatus == 0 && $output =~ /username/) {
 # Test 32
 #
 ($exitstatus, $output) =
-    &runtest("myproxy-get-delegation -k 'mine' -a $ENV{'X509_USER_PROXY'} -t 1 -o /tmp/myproxy-test.$$ -v -d -S",
+    &runtest("myproxy-logon -k 'mine' -a $ENV{'X509_USER_PROXY'} -t 1 -o /tmp/myproxy-test.$$ -v -d -S",
 	     $passphrase . "\n");
 print "MyProxy Test 32 (verify renewal policies): ";
 if ($exitstatus == 0) {
@@ -789,7 +789,7 @@ if ($exitstatus == 0) {
 }
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
-	&runtest("myproxy-get-delegation -k 'nobody' -a $ENV{'X509_USER_PROXY'} -t 1 -o /tmp/myproxy-test.$$ -v -d -S",
+	&runtest("myproxy-logon -k 'nobody' -a $ENV{'X509_USER_PROXY'} -t 1 -o /tmp/myproxy-test.$$ -v -d -S",
 		 $passphrase . "\n");
     if ($exitstatus != 0) {
 	print "SUCCEEDED\n"; $SUCCESSES++;
@@ -813,7 +813,7 @@ if ($exitstatus == 0) {
 print "MyProxy Test 33 (verify lifetime of retrieved credentials): ";
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
-	&runtest("myproxy-get-delegation -o /tmp/myproxy-test.$$ -v -S",
+	&runtest("myproxy-logon -o /tmp/myproxy-test.$$ -v -S",
 		 $passphrase . "\n");
     $timeleft = `$grid_proxy_info -file /tmp/myproxy-test.$$ -timeleft`;
     if (defined($timeleft) &&
@@ -829,7 +829,7 @@ if ($exitstatus == 0) {
 }
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
-	&runtest("myproxy-get-delegation -t 1 -o /tmp/myproxy-test.$$ -v -S",
+	&runtest("myproxy-logon -t 1 -o /tmp/myproxy-test.$$ -v -S",
 		 $passphrase . "\n");
     $timeleft = `$grid_proxy_info -file /tmp/myproxy-test.$$ -timeleft`;
     if ($timeleft > 60*61 || $timeleft < 60*59) {
@@ -1212,10 +1212,10 @@ sub dogetdelegperftest {
 	$i = $perfiters;
 	while ($i--) {
 	    ($exitstatus, $output) =
-		&runtest("myproxy-get-delegation -t 1 -o /tmp/myproxy-test.$$ -v -S",
+		&runtest("myproxy-logon -t 1 -o /tmp/myproxy-test.$$ -v -S",
 			 $passphrase . "\n");
 	    if ($exitstatus != 0) {
-		print "$$: myproxy-get-delegation FAILED with $i iters to go.\n";
+		print "$$: myproxy-logon FAILED with $i iters to go.\n";
 		print STDERR $output;
 		exit($exitstatus>>8);
 	    }
@@ -1233,7 +1233,7 @@ sub dogetdelegperftest {
 	}
     }
     $endtime = time();
-    print $perfiters*$perfclients, " myproxy-get-delegations in ";
+    print $perfiters*$perfclients, " myproxy-logons in ";
     print $endtime-$starttime, " seconds.\n";
     &runtest("myproxy-destroy -v", undef);
 }
