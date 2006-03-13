@@ -7,6 +7,10 @@ Version History
 v3.5 XX Xxx 2006
   - dropped support for certificate_issuer option in
     myproxy-server.config; use certificate_issuer_cert instead
+  - added myproxy_accept_delegation_ex() to retrieve credentials to a
+    buffer rather than a file
+  - in myproxy-logon, added support for writing credential to standard
+    output via '-o -' option; also added --quiet option
   - added certificate_mapapp call-out for mapping usernames to
     certificate subject distinguished names for the CA module
   - added certificate_extfile and certificate_extapp (call-out) for
