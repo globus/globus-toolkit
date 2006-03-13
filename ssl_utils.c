@@ -385,6 +385,7 @@ my_init()
 	globus_module_activate(GLOBUS_GSI_PROXY_MODULE);
 	globus_module_activate(GLOBUS_GSI_CREDENTIAL_MODULE);
 	globus_module_activate(GLOBUS_GSI_SYSCONFIG_MODULE);
+	globus_module_activate(GLOBUS_GSI_CERT_UTILS_MODULE);
     }
 }
 
@@ -532,7 +533,7 @@ ssl_certificate_load_from_file(SSL_CREDENTIALS	*creds,
 	goto error;
     }
     
-    if (PEM_read_X509(cert_file, &cert, PEM_NO_CALLBACK) == NULL)
+    if ((cert = PEM_read_X509(cert_file, NULL, PEM_NO_CALLBACK)) == NULL)
     {
 	verror_put_string("Error reading certificate %s", path);
 	ssl_error_to_verror();
@@ -555,7 +556,7 @@ ssl_certificate_load_from_file(SSL_CREDENTIALS	*creds,
     {
 	cert = NULL;
 	
-	if (PEM_read_X509(cert_file, &cert, PEM_NO_CALLBACK) == NULL)
+	if ((cert = PEM_read_X509(cert_file, NULL, PEM_NO_CALLBACK)) == NULL)
 	{
 	    /*
 	     * If we just can't find a start line then we've reached EOF.
@@ -1129,6 +1130,7 @@ ssl_proxy_delegation_init(SSL_CREDENTIALS	**new_creds,
 {
     int				return_status = SSL_ERROR;
     globus_result_t		local_result;
+    globus_gsi_proxy_handle_attrs_t proxy_handle_attrs = NULL;
     BIO	      			*bio = NULL;
 #if defined(GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY)
     char                        *GT_PROXY_MODE = NULL;
@@ -1142,8 +1144,14 @@ ssl_proxy_delegation_init(SSL_CREDENTIALS	**new_creds,
 
     *new_creds = ssl_credentials_new();
 
+    globus_gsi_proxy_handle_attrs_init(&proxy_handle_attrs);
+    globus_gsi_proxy_handle_attrs_set_keybits(proxy_handle_attrs,
+					      MYPROXY_DEFAULT_KEYBITS);
+
     local_result = globus_gsi_proxy_handle_init(&(*new_creds)->proxy_req,
-						NULL);
+						proxy_handle_attrs);
+    /* done with proxy_handle_attrs now */
+    globus_gsi_proxy_handle_attrs_destroy(proxy_handle_attrs);
     if (local_result != GLOBUS_SUCCESS) {
 	verror_put_string("globus_gsi_proxy_handle_init() failed");
 	goto error;
@@ -1289,9 +1297,9 @@ ssl_proxy_delegation_sign(SSL_CREDENTIALS		*creds,
     BIO				*bio = NULL;
     unsigned char		number_of_certs;
     int				index;
-    globus_gsi_proxy_handle_t	proxy_handle;
-    globus_gsi_proxy_handle_attrs_t proxy_handle_attrs;
-    globus_gsi_cred_handle_t	cred_handle;
+    globus_gsi_proxy_handle_t	proxy_handle = NULL;
+    globus_gsi_proxy_handle_attrs_t proxy_handle_attrs = NULL;
+    globus_gsi_cred_handle_t	cred_handle = NULL;
     globus_result_t		local_result;
 #if defined(GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY) /* handle API changes */
     globus_gsi_cert_utils_cert_type_t   cert_type;
@@ -1343,13 +1351,14 @@ ssl_proxy_delegation_sign(SSL_CREDENTIALS		*creds,
     /* proxy handle is the proxy we're going to sign */
     local_result = globus_gsi_proxy_handle_init(&proxy_handle,
 						proxy_handle_attrs);
+
+    /* done with proxy_handle_attrs now */
+    globus_gsi_proxy_handle_attrs_destroy(proxy_handle_attrs);
+
     if (local_result != GLOBUS_SUCCESS) {
 	verror_put_string("globus_gsi_proxy_handle_init() failed");
 	goto error;
     }
-
-    /* done with proxy_handle_attrs now */
-    globus_gsi_proxy_handle_attrs_destroy(proxy_handle_attrs);
 
 #if defined(GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY)
     /* what type of certificate do we have in the repository? */
@@ -1509,6 +1518,16 @@ ssl_proxy_delegation_sign(SSL_CREDENTIALS		*creds,
     {
 	X509_free(proxy_certificate);
     }
+
+    if (proxy_handle)
+    {
+	globus_gsi_proxy_handle_destroy(proxy_handle);
+    }
+
+    if (cred_handle)
+    {
+	globus_gsi_cred_handle_destroy(cred_handle);
+    }
     
     return return_status;
 }
@@ -1572,10 +1591,15 @@ ssl_proxy_restrictions_set_lifetime(SSL_PROXY_RESTRICTIONS	*restrictions,
 	verror_put_errno(EINVAL);
 	goto error;
     }
-    
+
     /* OK */
     restrictions->lifetime = lifetime;
     return_value = SSL_SUCCESS;
+
+    /* keep minimum lifetime at 5min for clock skew issues */
+    if (restrictions->lifetime > 0 && restrictions->lifetime < 300) {
+	restrictions->lifetime = 300;
+    }
     
   error:
     return return_value;
@@ -1694,6 +1718,8 @@ ssl_sign(unsigned char *data, int length,
 {
    EVP_MD_CTX ctx;
 
+   EVP_MD_CTX_init(&ctx);
+
    *signature = malloc(EVP_PKEY_size(creds->private_key));
    if (*signature == NULL) {
       verror_put_string("malloc()");
@@ -1708,9 +1734,11 @@ ssl_sign(unsigned char *data, int length,
       verror_put_string("Creating signature (EVP_SignFinal())");
       ssl_error_to_verror();
       free(*signature);
+      EVP_MD_CTX_cleanup(&ctx);
       return SSL_ERROR;
    }
 
+   EVP_MD_CTX_cleanup(&ctx);
    return SSL_SUCCESS;
 }
 
@@ -1720,16 +1748,23 @@ ssl_verify(unsigned char *data, int length,
 	   unsigned char *signature, int signature_len)
 {
    EVP_MD_CTX ctx;
+   EVP_PKEY *pubkey = NULL;
+
+   EVP_MD_CTX_init(&ctx);
 
    EVP_VerifyInit(&ctx, EVP_sha1());
    EVP_VerifyUpdate(&ctx, (void*) data, length);
-   if (EVP_VerifyFinal(&ctx, signature, signature_len,
-	              X509_get_pubkey(creds->certificate)) != 1 ) {
+   pubkey = X509_get_pubkey(creds->certificate);
+   if (EVP_VerifyFinal(&ctx, signature, signature_len, pubkey) != 1 ) {
       verror_put_string("Verifying signature (EVP_VerifyFinal())");
       ssl_error_to_verror();
+      EVP_MD_CTX_cleanup(&ctx);
+      EVP_PKEY_free(pubkey);
       return SSL_ERROR;
    }
 
+   EVP_MD_CTX_cleanup(&ctx);
+   EVP_PKEY_free(pubkey);
    return SSL_SUCCESS;
 }
 
@@ -1744,7 +1779,7 @@ ssl_verify_gsi_chain(SSL_CREDENTIALS *chain)
    X509_LOOKUP           *lookup = NULL;
    X509_STORE            *cert_store = NULL;
    X509_STORE_CTX        csc;
-   SSL                   *ssl;
+   SSL                   *ssl = NULL;
    SSL_CTX               *sslContext = NULL;
 
    memset(&csc, 0, sizeof(csc));
@@ -1836,6 +1871,8 @@ ssl_get_times(const char *path, time_t *not_before, time_t *not_after)
 
    assert(path != NULL);
 
+   my_init();
+    
    cert_file = fopen(path, "r");
    if (cert_file == NULL) {
       verror_put_string("Failure opening file \"%s\"", cert_file);
@@ -1848,7 +1885,7 @@ ssl_get_times(const char *path, time_t *not_before, time_t *not_after)
    if (not_after)
        *not_after = 0;
 
-   while (PEM_read_X509(cert_file, &cert, PEM_NO_CALLBACK) != NULL) {
+   while ((cert = PEM_read_X509(cert_file, NULL, PEM_NO_CALLBACK)) != NULL) {
        if (not_before) {
 	   time_t new_not_before;
 	   globus_gsi_cert_utils_make_time(X509_get_notBefore(cert),
@@ -1865,12 +1902,12 @@ ssl_get_times(const char *path, time_t *not_before, time_t *not_after)
 	       *not_after = new_not_after;
 	   }
        }
-       
        X509_free(cert);
        cert = NULL;
    }
 
    fclose(cert_file);
+   ERR_clear_error();		/* clear EOF error */
 
    return 0;
 }

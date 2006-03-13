@@ -2,7 +2,7 @@
 /* GSSAPI SASL plugin
  * Leif Johansson
  * Rob Siemborski (SASL v2 Conversion)
- * $Id: gssapi.c,v 1.7 2004/07/27 21:17:15 jbasney Exp $
+ * $Id: gssapi.c,v 1.8 2006/03/13 23:01:27 jbasney Exp $
  */
 /* 
  * Copyright (c) 1998-2003 Carnegie Mellon University.  All rights reserved.
@@ -44,8 +44,6 @@
  * OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include <config.h>
-
 #include <stdlib.h>
 #include <string.h>
 #include <dlfcn.h>
@@ -73,6 +71,7 @@
 #endif /* WIN32 */
 #include <fcntl.h>
 #include <stdio.h>
+#include <sys/uio.h>
 #include <sasl.h>
 #include <saslutil.h>
 #include <saslplug.h>
@@ -87,7 +86,7 @@
 
 /*****************************  Common Section  *****************************/
 
-static const char plugin_id[] = "$Id: gssapi.c,v 1.7 2004/07/27 21:17:15 jbasney Exp $";
+static const char plugin_id[] = "$Id: gssapi.c,v 1.8 2006/03/13 23:01:27 jbasney Exp $";
 
 static const char * GSSAPI_BLANK_STRING = "";
 
@@ -176,41 +175,41 @@ enum {
 
 static void *h_krb5lib;
 static OM_uint32 (*p_krb5_gss_accept_sec_context)
-    (OM_uint32 FAR *, gss_ctx_id_t FAR *, gss_cred_id_t, gss_buffer_t,
-     gss_channel_bindings_t, gss_name_t FAR *, gss_OID FAR *, gss_buffer_t,
-     OM_uint32 FAR *, OM_uint32 FAR *, gss_cred_id_t FAR *);
+    (OM_uint32 *, gss_ctx_id_t *, gss_cred_id_t, gss_buffer_t,
+     gss_channel_bindings_t, gss_name_t *, gss_OID *, gss_buffer_t,
+     OM_uint32 *, OM_uint32 *, gss_cred_id_t *);
 static OM_uint32 (*p_krb5_gss_acquire_cred)
-    (OM_uint32 FAR *, gss_name_t, OM_uint32, gss_OID_set, gss_cred_usage_t,
-     gss_cred_id_t FAR *, gss_OID_set FAR *, OM_uint32 FAR *);
+    (OM_uint32 *, gss_name_t, OM_uint32, gss_OID_set, gss_cred_usage_t,
+     gss_cred_id_t *, gss_OID_set *, OM_uint32 *);
 static OM_uint32 (*p_krb5_gss_compare_name)
-    (OM_uint32 FAR *, gss_name_t, gss_name_t, int FAR *);
+    (OM_uint32 *, gss_name_t, gss_name_t, int *);
 static OM_uint32 (*p_krb5_gss_delete_sec_context)
-    (OM_uint32 FAR *, gss_ctx_id_t FAR *, gss_buffer_t);
+    (OM_uint32 *, gss_ctx_id_t *, gss_buffer_t);
 static OM_uint32 (*p_krb5_gss_display_name)
-    (OM_uint32 FAR *, gss_name_t, gss_buffer_t, gss_OID FAR *);
+    (OM_uint32 *, gss_name_t, gss_buffer_t, gss_OID *);
 static OM_uint32 (*p_krb5_gss_display_status)
-    (OM_uint32 FAR *, OM_uint32, int, gss_OID, OM_uint32 FAR *, gss_buffer_t);
+    (OM_uint32 *, OM_uint32, int, gss_OID, OM_uint32 *, gss_buffer_t);
 static OM_uint32 (*p_krb5_gss_import_name)
-    (OM_uint32 FAR *, gss_buffer_t, gss_OID, gss_name_t FAR *);
+    (OM_uint32 *, gss_buffer_t, gss_OID, gss_name_t *);
 static OM_uint32 (*p_krb5_gss_init_sec_context)
     (OM_uint32 *, const gss_cred_id_t, gss_ctx_id_t *, const gss_name_t,
      const gss_OID, OM_uint32, OM_uint32, const gss_channel_bindings_t,
      const gss_buffer_t, gss_OID *, gss_buffer_t, OM_uint32 *, OM_uint32 *);
 static OM_uint32 (*p_krb5_gss_inquire_context)
-    (OM_uint32 FAR *, gss_ctx_id_t, gss_name_t FAR *, gss_name_t FAR *,
-     OM_uint32 FAR *, gss_OID FAR *, OM_uint32 FAR *, int FAR *, int FAR *);
-static OM_uint32 (*p_krb5_gss_release_buffer)(OM_uint32 FAR *, gss_buffer_t);
+    (OM_uint32 *, gss_ctx_id_t, gss_name_t *, gss_name_t *,
+     OM_uint32 *, gss_OID *, OM_uint32 *, int *, int *);
+static OM_uint32 (*p_krb5_gss_release_buffer)(OM_uint32 *, gss_buffer_t);
 static OM_uint32 (*p_krb5_gss_release_cred)
-    (OM_uint32 FAR *, gss_cred_id_t FAR *);
-static OM_uint32 (*p_krb5_gss_release_name)(OM_uint32 FAR *, gss_name_t FAR *);
+    (OM_uint32 *, gss_cred_id_t *);
+static OM_uint32 (*p_krb5_gss_release_name)(OM_uint32 *, gss_name_t *);
 static OM_uint32 (*p_krb5_gss_unwrap)
-    (OM_uint32 FAR *, gss_ctx_id_t, gss_buffer_t, gss_buffer_t, int FAR *,
-     gss_qop_t FAR *);
+    (OM_uint32 *, gss_ctx_id_t, gss_buffer_t, gss_buffer_t, int *,
+     gss_qop_t *);
 static OM_uint32 (*p_krb5_gss_wrap)
-    (OM_uint32 FAR *, gss_ctx_id_t, int, gss_qop_t, gss_buffer_t, int FAR *,
+    (OM_uint32 *, gss_ctx_id_t, int, gss_qop_t, gss_buffer_t, int *,
      gss_buffer_t);
 static OM_uint32 (*p_krb5_gss_wrap_size_limit)
-    (OM_uint32 FAR *, gss_ctx_id_t, int, gss_qop_t, OM_uint32, OM_uint32 *);
+    (OM_uint32 *, gss_ctx_id_t, int, gss_qop_t, OM_uint32, OM_uint32 *);
 
 
 
@@ -1659,7 +1658,7 @@ static int gssapi_client_mech_step(void *conn_context,
     return SASL_FAIL; /* should never get here */
 }
 
-static const long gssapi_required_prompts[] = {
+static const unsigned long gssapi_required_prompts[] = {
     SASL_CB_LIST_END
 };  
 

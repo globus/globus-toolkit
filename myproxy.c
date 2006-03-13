@@ -24,9 +24,6 @@ static int convert_message(const char		*buffer,
 #define CONVERT_MESSAGE_DEFAULT_FLAGS		CONVERT_MESSAGE_NO_FLAGS
 #define CONVERT_MESSAGE_KNOWN_FLAGS		CONVERT_MESSAGE_ALLOW_MULTIPLE
 
-#define MYPROXY_DEFAULT_PROXY                   "/tmp/myproxy-proxy"
-#define SECONDS_PER_HOUR                        (60 * 60)
-
 
 static int parse_command(const char			*command_str,
 			 myproxy_proto_request_type_t	*command_value);
@@ -129,21 +126,6 @@ parse_entry(char *buffer, authorization_data_t *data);
 static int
 parse_auth_data(char *buffer, authorization_data_t ***auth_data);
 
-int grid_proxy_init(int hours, const char *proxyfile, int read_passwd_from_stdin);
-
-int grid_proxy_destroy(const char *proxyfile);
-
-int
-is_a_retry_command( int command );
-
-int
-parse_failover_list( char *tmp, char *server, char *port );
-
-int
-retry_authentication_init(myproxy_socket_attrs_t *attrs,
-                          char                   *accepted_peer_names[]);
-
-
 /* Values for string_to_int() */
 #define STRING_TO_INT_SUCCESS		1
 #define STRING_TO_INT_ERROR		-1
@@ -177,6 +159,10 @@ myproxy_init_client(myproxy_socket_attrs_t *attrs) {
     struct hostent *host_info;
     char *port_range;
     
+    myproxy_debug("MyProxy %s", myproxy_version(0,0,0));
+
+    assert(attrs);
+
     attrs->socket_fd = socket(AF_INET, SOCK_STREAM, 0);
 
     if (attrs->socket_fd == -1) {
@@ -189,21 +175,36 @@ myproxy_init_client(myproxy_socket_attrs_t *attrs) {
 
     if ((port_range = getenv("MYPROXY_TCP_PORT_RANGE")) ||
 	(port_range = getenv("GLOBUS_TCP_PORT_RANGE"))) {
-	unsigned short port, max_port;
-	if (sscanf(port_range, "%hu,%hu", &port, &max_port)) {
+	unsigned short port=0, min_port=0, max_port=0;
+	char *c;
+        c = strchr(port_range, ',');
+	if (c) {
+	    *c = ' ';
+	}
+	if (sscanf(port_range, "%hu %hu", &min_port, &max_port) == 2) {
+	    port = min_port;
 	    memset(&sin, 0, sizeof(sin));
 	    sin.sin_family = AF_INET;
 	    sin.sin_addr.s_addr = INADDR_ANY;
 	    sin.sin_port = htons(port);
 	    while (bind(attrs->socket_fd, (struct sockaddr *)&sin,
 			sizeof(sin)) < 0) {
-		if (errno != EADDRINUSE || port >= max_port) {
+		if (errno != EADDRINUSE) {
+		    verror_put_errno(errno);
 		    verror_put_string("Error in bind()");
+		    return -1;
+		} else if (port >= max_port) {
+		    verror_put_string("No available ports in range %hu-%hu.",
+				      min_port, max_port);
 		    return -1;
 		}
 		sin.sin_port = htons(++port);
 	    }
 	    myproxy_debug("Socket bound to port %hu.\n", port);
+	} else {
+	    verror_put_errno(errno);
+	    verror_put_string("Error parsing port range (%s)", port_range);
+	    return -1;
 	}
     }
 
@@ -235,54 +236,6 @@ myproxy_init_client(myproxy_socket_attrs_t *attrs) {
    return attrs->socket_fd;
 }
     
-/* The Globus standard is to resolve the hostname we're given on the
-   command-line with gethostbyname(), ignoring concerns about DNS
-   spoofing.
-*/
-void
-myproxy_resolve_hostname(char **host)
-{
-    struct hostent *hostinfo;
-
-    hostinfo = gethostbyname(*host);
-    if (hostinfo == NULL || hostinfo->h_name == NULL) {
-	myproxy_debug("gethostbyname(%s) failed", *host);
-	return;
-    }
-    if (hostinfo->h_addrtype == AF_INET) { /* check for localhost */
-	struct in_addr addr;
-	addr = *(struct in_addr *)(hostinfo->h_addr);
-	if (ntohl(addr.s_addr) == INADDR_LOOPBACK) {
-	    char buf[MAXHOSTNAMELEN];
-	    if (gethostname(buf, sizeof(buf)) < 0) {
-		myproxy_debug("gethostname() failed");
-		return;
-	    }
-	    hostinfo = gethostbyname(buf);
-	    if (hostinfo == NULL || hostinfo->h_name == NULL) {
-		free(*host);
-		*host = strdup(buf);
-		return;
-	    }
-	}
-    }
-    free(*host);
-    *host = strdup(hostinfo->h_name);
-}
-
-
-
-int
-retry_authentication_init(myproxy_socket_attrs_t *attrs, 
-                          char                   *accepted_peer_names[])
-{
-  return( GSI_SOCKET_authentication_init(attrs->gsi_socket, 
-                                        accepted_peer_names) );
-}
-
-
-
-
 int 
 myproxy_authenticate_init(myproxy_socket_attrs_t *attrs,
 			  const char *proxyfile) 
@@ -292,6 +245,8 @@ myproxy_authenticate_init(myproxy_socket_attrs_t *attrs,
    char *accepted_peer_names[3] = { 0 };
    char *server_dn;
    int  rval, return_value = -1;
+
+   assert(attrs);
 
    if (GSI_SOCKET_use_creds(attrs->gsi_socket,
 			    proxyfile) == GSI_SOCKET_ERROR) {
@@ -312,6 +267,14 @@ myproxy_authenticate_init(myproxy_socket_attrs_t *attrs,
    } else {
        char *fqhn, *buf;
        fqhn = GSI_SOCKET_get_peer_hostname(attrs->gsi_socket);
+       if (!fqhn) {
+	   GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
+				       sizeof(error_string));
+	   verror_put_string("Error getting name of remote party: %s\n",
+			     error_string);
+	   return_value = 1;
+	   goto error;
+       }
        buf = malloc(strlen(fqhn)+strlen("myproxy@")+1);
        sprintf(buf, "myproxy@%s", fqhn);
        accepted_peer_names[0] = buf;
@@ -332,20 +295,12 @@ myproxy_authenticate_init(myproxy_socket_attrs_t *attrs,
        GSI_SOCKET_get_peer_name(attrs->gsi_socket, peer_name,
 				sizeof(peer_name));
        if (server_dn) {
-
-           accepted_peer_names[0] = strdup(peer_name);
-           if( retry_authentication_init(attrs, accepted_peer_names) == 
-               GSI_SOCKET_UNAUTHORIZED )
-           {
-    	       verror_put_string("Server authorization failed.  Server identity\n"
-	    		         "(%s)\ndoes not match $MYPROXY_SERVER_DN\n"
-			         "(%s).\nIf the server identity is acceptable, "
-			         "set\nMYPROXY_SERVER_DN=\"%s\"\n"
-			         "and try again.\n",
-			         peer_name, server_dn, peer_name);
-
-               goto error;
-           }
+	   verror_put_string("Server authorization failed.  Server identity\n"
+			     "(%s)\ndoes not match $MYPROXY_SERVER_DN\n"
+			     "(%s).\nIf the server identity is acceptable, "
+			     "set\nMYPROXY_SERVER_DN=\"%s\"\n"
+			     "and try again.\n",
+			     peer_name, server_dn, peer_name);
        } else {
 	   verror_put_string("Server authorization failed.  Server identity\n"
 			     "(%s)\ndoes not match expected identities\n"
@@ -355,8 +310,8 @@ myproxy_authenticate_init(myproxy_socket_attrs_t *attrs,
 			     "and try again.\n",
 			     peer_name, accepted_peer_names[0],
 			     accepted_peer_names[1], peer_name);
-           goto error;
        }
+       goto error;
    } else if (rval == GSI_SOCKET_ERROR) {
        GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
                                    sizeof(error_string));
@@ -381,6 +336,7 @@ myproxy_authenticate_accept(myproxy_socket_attrs_t *attrs, char *client_name, co
     char error_string[1024];
    
     assert(client_name != NULL);
+    assert(attrs);
 
     if (GSI_SOCKET_authentication_accept(attrs->gsi_socket) == GSI_SOCKET_ERROR) {
         GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
@@ -399,7 +355,6 @@ myproxy_authenticate_accept(myproxy_socket_attrs_t *attrs, char *client_name, co
         verror_put_string("Error getting client name: %s\n", error_string);
         return -1;
     }
-
     return 0;
 }
 
@@ -431,12 +386,36 @@ myproxy_accept_delegation(myproxy_socket_attrs_t *attrs, char *data, const int d
 {
   char error_string[1024];
 
+  assert(attrs);
   assert(data != NULL);
 
   if (GSI_SOCKET_delegation_accept_ext(attrs->gsi_socket, data, datalen, passphrase) == GSI_SOCKET_ERROR) {
     GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
 				sizeof(error_string));
     verror_put_string("Error accepting delegated credentials: %s\n", error_string);
+    return -1;
+  }
+  
+  return 0;
+}
+
+int
+myproxy_accept_delegation_ex(myproxy_socket_attrs_t *attrs, char **credentials,
+			     int *credential_len, char *passphrase)
+{
+  char error_string[1024];
+
+  assert(attrs);
+  assert(credentials != NULL);
+
+  if (GSI_SOCKET_delegation_accept(attrs->gsi_socket,
+				   (unsigned char **)credentials,
+				   credential_len,
+				   passphrase) == GSI_SOCKET_ERROR) {
+    GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
+				sizeof(error_string));
+    verror_put_string("Error accepting delegated credentials: %s\n",
+		      error_string);
     return -1;
   }
   
@@ -550,7 +529,7 @@ myproxy_serialize_request_ex(const myproxy_request_t *request, char **data)
     {
 	char *buf = strdup (request->credname);
 	strip_char ( buf, '\n');
-
+				
 	len = my_append(data, MYPROXY_CRED_PREFIX, "_",
 			MYPROXY_CRED_NAME_STRING,
 			buf, "\n", NULL); 
@@ -581,31 +560,17 @@ myproxy_serialize_request_ex(const myproxy_request_t *request, char **data)
         return -1;
     }
 
-    /* owner */
-    if (request->owner != NULL)
-    {
-        char *buf = strdup (request->owner);
-        strip_char ( buf, '\n');
-        len = my_append(data, MYPROXY_CRED_PREFIX, "_",
-                        MYPROXY_CRED_OWNER_STRING,
-                        buf, "\n", NULL);
-        free(buf);
-        if (len < 0)
-            return -1;
-    }
-
-    /* server info */
-    if (request->replicate_info != NULL)
+    /* trusted retrievers */
+    if (request->trusted_retrievers != NULL)
     { 
-      len =  my_append(data, MYPROXY_REPLICA_INFO_STRING,
-                       request->replicate_info, "\n", NULL);
-
+      len = my_append(data, MYPROXY_TRUSTED_RETRIEVER_STRING,
+		      request->trusted_retrievers, "\n", NULL); 
       if (len < 0)
         return -1;
     }
 
     /* trusted root certificates */
-    myproxy_debug("want_trusted_certs = %d\n", request->want_trusted_certs);
+    myproxy_debug("want_trusted_certs = %d", request->want_trusted_certs);
     if (request->want_trusted_certs) {
       len = my_append(data, MYPROXY_TRUSTED_CERTS_STRING,
 				"1", "\n", NULL);
@@ -874,65 +839,30 @@ myproxy_deserialize_request(const char *data, const int datalen,
       }
     }
 
-    /* Server info request */
-/*
-    len = convert_message(data, datalen,
-			  MYPROXY_SERVER_INFO_STRING,
-			  CONVERT_MESSAGE_DEFAULT_FLAGS,
-			  buf, sizeof(buf));
-*/
+    /* trusted retriever */
     len = convert_message(data,
-			  MYPROXY_REPLICA_INFO_STRING,
+			  MYPROXY_TRUSTED_RETRIEVER_STRING,
 			  CONVERT_MESSAGE_DEFAULT_FLAGS,
 			  &buf);
 
     if (len == -2)  /*-2 indicates string not found*/
-       request->replicate_info = NULL;
+       request->trusted_retrievers = NULL;
     else
     if (len <= -1)
     {
-	verror_prepend_string("Error parsing server info from client request");
-	return -1;
+	verror_prepend_string("Error parsing trusted retrievers from client request");
+	goto error;
     }
     else
     {
-      request->replicate_info = strdup(buf);
+      request->trusted_retrievers = strdup(buf);
 
-      if (request->replicate_info == NULL)
+      if (request->trusted_retrievers == NULL)
       {
 	verror_put_errno(errno);
-	return -1;
+	goto error;
       }
     }
-
-    /* credential owner */
-    if (tmp) tmp[0] = '\0';
-    len = my_append(&tmp, MYPROXY_CRED_PREFIX, "_",
-                    MYPROXY_CRED_OWNER_STRING, NULL);
-
-    len = convert_message(data,
-                          tmp, CONVERT_MESSAGE_DEFAULT_FLAGS,
-                          &buf);
-
-    if (len == -2)  /*-2 indicates string not found*/
-        request->owner = NULL;
-    else
-       if (len <= -1)
-       {
-        verror_prepend_string("Error parsing credential owner from client request");
-        goto error;
-       }
-       else
-       {
-         request->owner = strdup(buf);
-
-         if (request->owner == NULL)
-         {
-          verror_put_errno(errno);
-          goto error;
-         }
-       }
-
 
     /* trusted root certificates */
     len = convert_message(data,
@@ -989,7 +919,6 @@ myproxy_serialize_response(const myproxy_response_t *response,
 	return -1;
     }
     memcpy(data, buf, len);
-
     free(buf);
     return len;
 }
@@ -1036,26 +965,6 @@ myproxy_serialize_response_ex(const myproxy_response_t *response,
 	  p++;
        }
     }
-
-    if( response->replicate_info != NULL )
-    {
-      if( response->replicate_info->secondary_servers != NULL )
-      { 
-	len = my_append(data, MYPROXY_SECONDARY_INFO_STRING,
-		     response->replicate_info->secondary_servers, "\n", NULL);
-	if (len < 0)
-	     return -1;
-      }
-
-      if( response->replicate_info->primary_server != NULL )
-      { 
-	len = my_append(data, MYPROXY_PRIMARY_INFO_STRING,
-		     response->replicate_info->primary_server, "\n", NULL);
-	if (len < 0)
-	     return -1;
-      }
-    }
-      
 
     /* Include credential info in OK response to INFO request */
     if (response->response_type == MYPROXY_OK_RESPONSE &&
@@ -1156,6 +1065,22 @@ myproxy_serialize_response_ex(const myproxy_response_t *response,
 				    "_", cred->credname,
 				    "_", MYPROXY_KEY_RETRIEVER_STRING,
 				    cred->keyretrieve, "\n", NULL);
+		}
+		if (len == -1)
+		    goto error;
+	    }	
+	    if (cred->trusted_retrievers) {
+		if (first_cred) {
+		    len = my_append(data,
+				    MYPROXY_CRED_PREFIX,
+				    "_", MYPROXY_TRUSTED_RETRIEVER_STRING,
+				    cred->trusted_retrievers, "\n", NULL);
+		} else {
+		    len = my_append(data,
+				    MYPROXY_CRED_PREFIX,
+				    "_", cred->credname,
+				    "_", MYPROXY_TRUSTED_RETRIEVER_STRING,
+				    cred->trusted_retrievers, "\n", NULL);
 		}
 		if (len == -1)
 		    goto error;
@@ -1353,40 +1278,6 @@ myproxy_deserialize_response(myproxy_response_t *response,
 	goto error;
     }
 
-    /* Get server information. */
-    len = convert_message(data, 
-                          MYPROXY_SECONDARY_INFO_STRING,
-    		      CONVERT_MESSAGE_DEFAULT_FLAGS,
-    		      &buf);
-    if (len == -1) return -1;
-    if (len > 0)
-    {        
-      if( response->replicate_info == NULL )
-      {
-        response->replicate_info = malloc(sizeof(struct myproxy_server));
-        memset(response->replicate_info, 0, sizeof(struct myproxy_server));
-      }
-
-      response->replicate_info->secondary_servers = strdup(buf);
-    }
-
-    len = convert_message(data, 
-                          MYPROXY_PRIMARY_INFO_STRING,
-		      CONVERT_MESSAGE_DEFAULT_FLAGS,
-		      &buf);
-    if (len == -1) return -1;
-    if (len > 0)
-    {        
-      if( response->replicate_info == NULL )
-      {
-        response->replicate_info = malloc(sizeof(struct myproxy_server));
-        memset(response->replicate_info, 0, sizeof(struct myproxy_server));
-      }
-
-      response->replicate_info->primary_server = strdup(buf);
-    }
-
-
     if (response->response_type == MYPROXY_ERROR_RESPONSE) {
 	/* It's ok if ERROR not present */
 	response->error_string = 0;
@@ -1394,7 +1285,8 @@ myproxy_deserialize_response(myproxy_response_t *response,
 			      MYPROXY_ERROR_STRING, 
 			      CONVERT_MESSAGE_ALLOW_MULTIPLE,
 			      &response->error_string);
-	return 0;
+	return_code = 0;
+	goto error;
     }
 
     /* Parse any cred info in response */
@@ -1504,6 +1396,18 @@ myproxy_deserialize_response(myproxy_response_t *response,
     	if (len == -1) goto error;
 	if (len >= 0)
 	    response->info_creds->keyretrieve = strdup(buf); 
+
+	if (tmp) tmp[0] = '\0';
+    	len = my_append(&tmp, MYPROXY_CRED_PREFIX,
+			"_", MYPROXY_TRUSTED_RETRIEVER_STRING, NULL);
+    	if (len < 0) goto error;
+		
+	len = convert_message(data, tmp,
+			      CONVERT_MESSAGE_DEFAULT_FLAGS,
+			      &buf);
+    	if (len == -1) goto error;
+	if (len >= 0)
+	    response->info_creds->trusted_retrievers = strdup(buf); 
 
 	if (tmp) tmp[0] = '\0';
     	len = my_append(&tmp, MYPROXY_CRED_PREFIX,
@@ -1656,6 +1560,21 @@ myproxy_deserialize_response(myproxy_response_t *response,
 		
 		if (len >= 0)
 		    cred->keyretrieve = strdup(buf);
+
+		if (tmp) tmp[0] = '\0';
+		len = my_append(&tmp,
+				MYPROXY_CRED_PREFIX, "_", strs[i],
+				"_", MYPROXY_TRUSTED_RETRIEVER_STRING,
+				NULL);
+		if (len == -1) goto error;
+
+		len = convert_message(data, tmp,
+				      CONVERT_MESSAGE_DEFAULT_FLAGS,
+				      &buf);
+		if (len == -1) goto error;
+		
+		if (len >= 0)
+		    cred->trusted_retrievers = strdup(buf);
 
 		if (tmp) tmp[0] = '\0';
 		len = my_append(&tmp,
@@ -1857,7 +1776,8 @@ myproxy_recv_response(myproxy_socket_attrs_t *attrs,
     /* Check response */
     switch(response->response_type) {
         case MYPROXY_ERROR_RESPONSE:
-            verror_put_string("ERROR from server: %s", response->error_string);
+            verror_put_string("ERROR from myproxy-server (%s):\n%s",
+			      attrs->pshost, response->error_string);
 	    return(-1);
             break;
         case MYPROXY_OK_RESPONSE:
@@ -1884,6 +1804,8 @@ int myproxy_recv_response_ex(myproxy_socket_attrs_t *socket_attrs,
 					     client_request) != 0) {
 		return -1;
 	    }
+	    authorization_data_free(server_response->authorization_data);
+	    server_response->authorization_data = NULL;
 	}
     } while (server_response->response_type == MYPROXY_AUTHORIZATION_RESPONSE);
 
@@ -1910,6 +1832,8 @@ int myproxy_handle_authorization(myproxy_socket_attrs_t *attrs,
 	           server_response->authorization_data,
 		   AUTHORIZETYPE_CERT, client_request->authzcreds,
 		   strlen(client_request->authzcreds) + 1);
+       } else {
+	   verror_put_string("No credentials for renewal authorization.");
        }
 #if defined(HAVE_LIBSASL2)
        if (d == NULL) { /* No luck with AUTHORIZETYPE_CERT. Try SASL. */
@@ -1926,7 +1850,7 @@ int myproxy_handle_authorization(myproxy_socket_attrs_t *attrs,
 		   strlen(client_request->passphrase) + 1);
        }
        if (d == NULL) { /* No acceptable methods found. */
-	   verror_put_string("Cannot create authorization response.");
+	   verror_put_string("Unable to respond to server's authentication challenge.");
 	   goto end;
        }
 
@@ -1983,8 +1907,16 @@ myproxy_free(myproxy_socket_attrs_t *attrs,
 	  free(request->retrievers);
        if (request->renewers != NULL)
 	  free(request->renewers);
+       if (request->credname != NULL)
+	  free(request->credname);
+       if (request->creddesc != NULL)
+	  free(request->creddesc);
+       if (request->authzcreds != NULL)
+	  free(request->authzcreds);
        if (request->keyretrieve != NULL)
 	  free(request->keyretrieve);
+       if (request->trusted_retrievers != NULL)
+	  free(request->trusted_retrievers);
        free(request);
     }
     
@@ -1993,1055 +1925,16 @@ myproxy_free(myproxy_socket_attrs_t *attrs,
     	  free(response->version);
        if (response->authorization_data != NULL)
     	  authorization_data_free(response->authorization_data);
+       if (response->error_string != NULL)
+	   free(response->error_string);
+       if (response->info_creds != NULL) {
+	   myproxy_creds_free(response->info_creds);
+       }
+       if (response->trusted_certs != NULL) {
+	   myproxy_certs_free(response->trusted_certs);
+       }
        free(response);
     }
-}
-
-/*
-**
-** MyProxy API functins
-**
-*/
-
-/*
-** 
-** try_another_server()
-**
-** Get socket_attrs, request_butter, requestlen
-**
-*/
-
-int 
-myproxy_init( myproxy_socket_attrs_t *socket_attrs,
-              myproxy_request_t      *client_request,
-              int                     cmd_type )
-{
-  myproxy_log_use_stream (stderr);
-
-  myproxy_init_socket_attrs( socket_attrs );
-  myproxy_init_client_request( client_request, cmd_type );
-
-  return( 0 );
-}
-
-int
-myproxy_init_socket_attrs( myproxy_socket_attrs_t *socket_attrs )
-{
-  char *pshost;
-
-  pshost = getenv("MYPROXY_SERVER");
-  if (pshost != NULL) 
-  {
-    socket_attrs->pshost = strdup(pshost);
-  }
-
-  if (getenv("MYPROXY_SERVER_PORT")) 
-  {
-    socket_attrs->psport = atoi(getenv("MYPROXY_SERVER_PORT"));
-  } 
-  else 
-  {
-    socket_attrs->psport = MYPROXY_SERVER_PORT;
-  }
-
-  return( 0 );
-}
-
-int
-myproxy_init_client_request( myproxy_request_t *client_request,
-                             int                cmd_type )
-{
-  /* setup defaults */
-  client_request->version = strdup( MYPROXY_VERSION ); 
-  client_request->command_type = cmd_type;
-  
-  return( 0 );
-}
-
-int
-myproxy_open_server_com( myproxy_socket_attrs_t *socket_attrs,
-                         const char             *proxyfile )
-{
-  /* Set up client socket attributes */
-  if(myproxy_init_client(socket_attrs) < 0) 
-  {
-    verror_print_error(stderr);
-    return 1;
-  }
-
-  /* Authenticate client to server */
-  if(myproxy_authenticate_init(socket_attrs, proxyfile) < 0) 
-  {
-    verror_print_error(stderr);
-    return 1;
-  }
-
-  return( 0 );
-}
-
-int
-myproxy_client_username( myproxy_request_t *client_request,
-                         const char        *proxyfile,
-                         int                dn_as_username )
-{
-  if (client_request->username == NULL) 
-  { /* set default username */
-    if (dn_as_username) 
-    {
-      if (client_request->authzcreds) 
-      {
-        if (ssl_get_base_subject_file(client_request->authzcreds,
-                                      &client_request->username)) 
-        {
-          fprintf(stderr, "Cannot get subject name from %s\n",
-                  client_request->authzcreds);
-          return( 1 );
-        }
-      } 
-      else 
-      {
-        if (ssl_get_base_subject_file(proxyfile,
-                                      &client_request->username)) 
-        {
-          fprintf(stderr,
-                  "Cannot get subject name from your certificate\n");
-          return( 1 );
-        }
-      }
-    } 
-    else 
-    {
-      char *username = NULL;
-
-      if (!(username = getenv("LOGNAME"))) 
-      {
-        fprintf(stderr, "Please specify a username.\n");
-        return( 1 );
-      }
-      client_request->username = strdup(username);
-    }
-  }
-
-  return( 0 );
-}
-
-int
-myproxy_user_password( myproxy_request_t *client_request,
-                       int                use_empty_passwd,
-                       int                read_passwd_from_stdin )
-{
-
-  if (!use_empty_passwd) 
-  {
-    /* Allow user to provide a passphrase */
-    int rval;
-
-    if (read_passwd_from_stdin) 
-    {
-      rval = myproxy_read_passphrase_stdin(
-                     client_request->passphrase,
-                     sizeof(client_request->passphrase),
-                     NULL);
-    } 
-    else 
-    {
-      rval = myproxy_read_passphrase(client_request->passphrase,
-                                     sizeof(client_request->passphrase),
-                                     NULL);
-    }
-
-    if (rval == -1) 
-    {
-      myproxy_debug( "myproxy_user_password ERROR\n" );
-      verror_print_error(stderr);
-      return( 1 );
-    }
-  }
-
-  return( 0 );
-}
-
-int
-myproxy_serialize_send_recv( myproxy_request_t      *client_request,
-                             myproxy_response_t     *server_response,
-                             myproxy_socket_attrs_t *socket_attrs )
-{
-  char                    request_buffer[2048];
-  int                     requestlen;
-
-  /* Serialize client request object */
-  requestlen = myproxy_serialize_request(client_request, request_buffer,
-                                         sizeof(request_buffer));
-  if (requestlen < 0) 
-  {
-    fprintf(stderr, "Error in myproxy_serialize_request():\n");
-    return( 1 );
-  }
-
-  /* Send request to the myproxy-server */
-  if (myproxy_send(socket_attrs, request_buffer, requestlen) < 0) 
-  {
-    fprintf(stderr, "Error in myproxy_send_request(): %s\n",
-            verror_get_string());
-    return( 1 );
-  }
-
-  /* Continue unless the response is not OK */
-  if (myproxy_recv_response_ex(socket_attrs, server_response,
-                               client_request) != 0) 
-  {
-    fprintf(stderr, "%s\n", verror_get_string());
-    return( 1 );
-  }
-
-  return( 0 );
-}
-
-/*
-**
-** MyProxy API facade functions
-**
-*/
-
-int
-myproxy_init_client_env( myproxy_socket_attrs_t *socket_attrs,
-                         myproxy_request_t      *client_request,
-                         myproxy_response_t     *server_response,
-                         myproxy_data_parameters_t  *data_parameters )
-{
-    int retval = 0;
-    int rval   = 0;
-
-    if( myproxy_client_username( client_request,
-                                 NULL,
-                                 data_parameters->dn_as_username ) != 0 )
-    {
-      retval = ( 1 );
-    }
-
-    switch(client_request->command_type)
-    {
-    case MYPROXY_INFO_PROXY:
-        /*
-         * We don't need to send the real pass phrase to the server as it
-         * will just use our identity to authenticate and authorize us.
-         * But we need to send over a dummy pass phrase at least
-         * MIN_PASS_PHASE_LEN (currently 6) characters long.
-         */
-        strncpy(client_request->passphrase, "DUMMY-PASSPHRASE",
-                sizeof(client_request->passphrase));
-        break;
-
-    case MYPROXY_GET_PROXY:
-        if (!data_parameters->outputfile) 
-        {
-            GLOBUS_GSI_SYSCONFIG_GET_PROXY_FILENAME(&(data_parameters->outputfile),
-                                                    GLOBUS_PROXY_FILE_OUTPUT);
-        }
-
-    case MYPROXY_RETRIEVE_CERT:
-        if( myproxy_user_password( client_request,
-                                   data_parameters->use_empty_passwd,
-                                   data_parameters->read_passwd_from_stdin ) != 0 )
-        {
-          return( 1 );
-        }
-
-        /* Attempt anonymous-mode credential retrieval if we don't have a
-           credential. */
-        GSI_SOCKET_allow_anonymous(socket_attrs->gsi_socket, 1);
-
-        printf("username: %s\n", client_request->username);
-        myproxy_print_cred_info(server_response->info_creds, stdout);
-        break;
-
-    case MYPROXY_PUT_PROXY:
-        /* Create a proxy by running [grid-proxy-init] */
-        sprintf(data_parameters->proxyfile, "%s.%u.%u", MYPROXY_DEFAULT_PROXY,
-                (unsigned)getuid(), (unsigned)getpid());
-
-        /* If this is a retry the proxy file should be there.  We shouldn't */
-        /* have to get it again.                                            */
-        if( !(file_exists( data_parameters->proxyfile )) )
-        {
-          /* Run grid-proxy-init to create a proxy */
-          if (grid_proxy_init(data_parameters->cred_lifetime, 
-                              data_parameters->proxyfile,
-                              data_parameters->read_passwd_from_stdin) != 0) 
-          {
-            fprintf(stderr, "grid-proxy-init failed\n");
-            return( 1 );
-          }
-        }
-       
-        data_parameters->destroy_proxy = 1;
-
-        if( myproxy_user_password( client_request,
-                                   data_parameters->use_empty_passwd,
-                                   data_parameters->read_passwd_from_stdin ) != 0 )
-        {
-          return( 1 );
-        }
-
-        if( myproxy_client_username( client_request,
-                                     data_parameters->proxyfile,
-                                     data_parameters->dn_as_username ) != 0 )
-        {
-          return( 1 );
-        }
-
-        break;
-
-    case MYPROXY_STORE_CERT:
-        if( myproxy_client_username( client_request,
-                                     data_parameters->proxyfile,
-                                     data_parameters->dn_as_username ) != 0 )
-        {
-          return( 1 );
-        }
-        break;
-
-    case MYPROXY_DESTROY_PROXY:
-    /*
-     * We don't need to send the real pass phrase to the server as it
-     * will just use our identity to authenticate and authorize us.
-     * But we need to send over a dummy pass phrase at least
-     * MIN_PASS_PHASE_LEN (currently 6) characters long.
-     */
-        strncpy(client_request->passphrase, "DUMMY-PASSPHRASE",
-                sizeof(client_request->passphrase));
-
-        if( myproxy_client_username( client_request,
-                                     data_parameters->proxyfile,
-                                     data_parameters->dn_as_username ) != 0 )
-        {
-          return( 1 );
-        }
-        break;
-
-    case MYPROXY_CHANGE_CRED_PASSPHRASE:
-        if( myproxy_user_password( client_request,
-                                   data_parameters->use_empty_passwd,
-                                   data_parameters->read_passwd_from_stdin ) != 0 )
-        {
-          return( 1 );
-        }
-
-        if (data_parameters->read_passwd_from_stdin) 
-        {
-          rval = myproxy_read_passphrase_stdin(client_request->new_passphrase,
-                                        sizeof(client_request->new_passphrase),
-                                             "Enter new MyProxy pass phrase:");
-        } 
-        else 
-        {
-          rval = myproxy_read_verified_passphrase(
-                                         client_request->new_passphrase,
-                                         sizeof(client_request->new_passphrase),
-                                         "Enter new MyProxy pass phrase:");
-        }
-
-        if (rval == -1) 
-        {
-          verror_print_error(stderr);
-          return( 1 );
-        }
-
-        if( myproxy_client_username( client_request,
-                                     data_parameters->proxyfile,
-                                     data_parameters->dn_as_username ) != 0 )
-        {
-          return( 1 );
-        }
-
-        break;
-
-    case MYPROXY_REPLICA_INFO:
-        break;
-
-    default:
-        fprintf(stderr, "Invalid response type received.\n");
-        return( 1 );
-        break;
-    }
-
-    if( myproxy_open_server_com( socket_attrs, 
-                                 data_parameters->proxyfile ) != 0 )
-    {
-      myproxy_debug( "myproxy_open_server_com FAILED\n" );
-      return( 1 );
-    }
-
-    /* Request information on server configuration. */
-    client_request->replicate_info = "1";
-
-    if( myproxy_serialize_send_recv( client_request,
-                                     server_response,
-                                     socket_attrs ) != 0 )
-    {
-      myproxy_debug( "myproxy_serialize_send_recv FAILED\n" );
-      retval = 1;
-    }
-
-    return( retval );
-}
-
-int
-parse_failover_list( char *tmp, char *server, char *port )
-{
-  char *secondary;
-
-  secondary = strchr( tmp, ':' );
-
-  if( secondary )
-  {
-    strncpy( server, tmp, secondary - tmp );
-    server[secondary - tmp] = '\0';
-    strcpy( port, secondary + 1 );
-  }
-  else
-  {
-    strcpy( server, tmp );
-
-    if (getenv("MYPROXY_SERVER_PORT"))
-    {
-      port = getenv("MYPROXY_SERVER_PORT");
-    }
-    else
-    {
-      sprintf( port, "%d", MYPROXY_SERVER_PORT );
-    }
-  }
-
-  return( 0 );
-}
-
-int
-is_a_retry_command( int command )
-{
-  int retval = 0;
-
-  switch( command )
-  {
-    case MYPROXY_PUT_PROXY:
-    case MYPROXY_DESTROY_PROXY:
-    case MYPROXY_CHANGE_CRED_PASSPHRASE:
-    case MYPROXY_STORE_CERT:
-    case MYPROXY_REPLICA_INFO: 
-    case MYPROXY_INFO_PROXY:
-        retval = 0; 
-        break;
-
-    case MYPROXY_GET_PROXY:
-    case MYPROXY_RETRIEVE_CERT: 
-        retval = 1; 
-        break;
-
-    default: 
-        retval = 0; 
-        break;
-  }
-
-  return( retval );
-}
-  
-int
-myproxy_failover( myproxy_socket_attrs_t *socket_attrs,
-                  myproxy_request_t      *client_request,
-                  myproxy_response_t     *server_response,
-                  myproxy_data_parameters_t  *data_parameters )
-{
-    struct    secondary_server
-    {
-      char   server[256];
-      char   port[256];
-      int    tried;
-      struct secondary_server *next;
-    };
-
-    struct    secondary_server *secnds        = NULL;
-    struct    secondary_server *another       = NULL;
-    struct    secondary_server *newone        = NULL;
-    struct    secondary_server *current_secnd = NULL;
-
-    int       isprimary                       = 0; 
-    int       retval                          = 0;
-    int       done                            = 0;
-    int       redirect                        = 0;
-    int       doing_secnds                    = 0;
-
-    char     *primary                          = NULL;
-    char     *env_list                         = NULL;
-    char     *pos;
-    char     *start;
-    char      delegfile[128];
-    char      mhost[256];
-    char      mport[256];
-    char      tmp[256];
-
-    do
-    {
-      myproxy_debug( "Trying socket: %s. %d\n", 
-                     socket_attrs->pshost, 
-                     socket_attrs->psport );
-
-      /* Open communications.  Send the command type.  Get response */
-      if( myproxy_init_client_env( socket_attrs, 
-                                   client_request, 
-                                   server_response, 
-                                   data_parameters ) != 0 )
-      {
-        myproxy_debug( "myproxy_init_client_env FAILED\n" );
-      }
-
-      /* If this is our first time through, get primary and list of secondary */
-      if( secnds == NULL && primary == NULL )
-      {
-        /*
-        ** Did we get any info back.  Is failover set up?                       
-        ** If failover is configured, we should get back a list of secondary    
-        ** or a primary.  We we are dealing with a primary, we will have a      
-        ** list of secondary to retry some commands on (delegate and retrieve). 
-        ** If we are dealing with a secondary, the command was probably sent to 
-        ** the wrong place.  Try to redirect it, unless it is a delegat or      
-        ** retrieve, then we can just deal with it on the secondary.            
-        */
-        if( server_response->replicate_info == NULL )
-        {
-          env_list = getenv("MYPROXY_SECONDARY_SERVERS");  
-
-          myproxy_debug( "MYPROXY_SECONDARY_SERVERS: %s\n", env_list );
-          
-          if( env_list != NULL )
-          {
-            server_response->replicate_info = 
-                malloc(sizeof(struct myproxy_server));
-            memset( server_response->replicate_info, 
-                    0, 
-                    sizeof(struct myproxy_server) );
-            server_response->replicate_info->secondary_servers = env_list;
-          }
-        }
-
-        if( server_response->replicate_info != NULL )
-        {
-          myproxy_debug( "Secondary: %s",  
-                         server_response->replicate_info->secondary_servers );
-          myproxy_debug( "Primary: %s",  
-                         server_response->replicate_info->primary_server );
-
-          if( server_response->replicate_info->primary_server )
-          {
-            primary = strdup( server_response->replicate_info->primary_server );
-          }
-
-          if( server_response->replicate_info->secondary_servers )
-          {
-            isprimary = 1;
-            start = server_response->replicate_info->secondary_servers;
-
-            while( (pos = strchr( start, ';' )) )
-            {
-              strncpy( tmp, start, pos - start );
-              tmp[pos - start] = '\0';
-              start = pos + 1;
-
-              newone = malloc( sizeof( struct secondary_server ) );
-              memset(newone, 0, sizeof(struct secondary_server));
-
-              if( secnds == NULL )
-              {
-                secnds = newone;
-                another = newone;
-              } 
-
-              parse_failover_list( tmp, newone->server, newone->port );
-
-              newone->tried = 0;
-              newone->next = NULL;
-
-              another->next = newone;
-              another = newone;
-            }     
- 
-            newone = malloc( sizeof( struct secondary_server ) );
-            memset(newone, 0, sizeof(struct secondary_server));
-
-            parse_failover_list( start, newone->server, newone->port );
-            newone->tried = 0;
-            newone->next = NULL;
-
-            if( secnds == NULL )
-            {
-              secnds = newone;
-            }
-            else
-            {
-              another->next = newone;
-            }
-          }
-        }
-      }
-
-      if( (server_response->response_type == MYPROXY_ERROR_RESPONSE) ||
-          ((verror_is_error()) && (doing_secnds)) ||
-          ((server_response->replicate_info != NULL) && verror_is_error()) )
-      {
-        myproxy_debug( "Error from server, attempt failover.\n" );
-
-        /* The failover stuff is not configured so do things like we use to, */
-        /* fail out and give the user an error message.                      */
-        if( secnds == NULL && primary == NULL )
-        {
-          myproxy_debug( "Failover not configured, no Secondary or Primary.\n" );
-          printf( "MyProxy server message: %s\n", 
-                  verror_get_string() );
-          return( 1 );
-        }
-
-        /* Figure out if this is a primary or secondary */
-        if( isprimary )
-        {
-          /*
-          ** Failover is configured and the command was originally sent to
-          ** the primary.  If the command can be done on the secondary, start
-          ** looping through the secondary until we either have success or we
-          ** have tried all of them.
-          */
-          myproxy_debug( "Original server a primary now try secondaries\n" );
-
-          if( is_a_retry_command( client_request->command_type ) )
-          {
-            myproxy_debug( "Find next secondary server in list\n" );
-
-            /* Point to first secondary in the list. */
-            if( current_secnd == NULL )
-            {
-              current_secnd = secnds;
-            } 
-            else
-            {
-              /* Try the next secondary in the list. */
-              current_secnd = current_secnd->next;
-            } 
-
-            /* There is a secondary to try command on. */
-            if( current_secnd != NULL )
-            {
-              myproxy_debug( "There is a secondary to try command on.\n" );
-
-              /* close old socket */
-              if (socket_attrs != NULL) 
-              {
-                 myproxy_debug( "Close old socket.\n" );
-                 if (socket_attrs->pshost != NULL)
-                 {
-                   free(socket_attrs->pshost);
-                 }
-
-                 GSI_SOCKET_destroy(socket_attrs->gsi_socket);
-                 close(socket_attrs->socket_fd);
-                 free(socket_attrs);
-              }
-
-              socket_attrs = malloc(sizeof(*socket_attrs));
-              memset(socket_attrs, 0, sizeof(*socket_attrs));
-
-              socket_attrs->pshost = current_secnd->server;
-
-              if( current_secnd->port )
-              {
-                socket_attrs->psport = atoi( current_secnd->port );
-              }  
-
-              /* Clear the server_response for next go around */
-              server_response = malloc(sizeof(*server_response));
-              memset(server_response, 0, sizeof(*server_response));
-
-              /* We will be passing password in as a value */
-              data_parameters->use_empty_passwd = 1;
-
-              /* Clear old error messages (Should we do this???) */
-              verror_clear();
-
-              /* Hack for handling error conditions and stuff... */
-              doing_secnds = 1;
-
-              myproxy_debug( "New secondary: %s. %d\n", 
-                             socket_attrs->pshost, 
-                             socket_attrs->psport ); 
-            }
-            else
-            {
-              printf( "Tried all of the secondary, still had error: %s\n", 
-                      verror_get_string() );
-              return( 1 );
-            }
-          }
-          else
-          {
-            printf( "Error occured on primary and this command is not " );
-            printf( "allowed on a secondary.\n" );
-            printf( "%s\n", verror_get_string() );
-            return( 1 );
-          }
-        }
-        else
-        {
-          myproxy_debug( "A command was sent to a secondary that should be tried on the primary.\n" );
-
-          /* This is a secondary */
-          /* A command was sent to a secondary that should be tried on the */
-          /* primary.  Check to see if we have a primary and redirect.   */
-          if( primary )
-          {
-            /* redirect to primary */
-            if( redirect == 1 )
-            {
-              printf( "Redirect failed: already tried.\n" );
-              done = 1;
-            }
-            else
-            {
-              redirect = 1;
-
-              myproxy_debug( "Redirect to primary: %s\n", primary );
-              printf( "Command sent to secondary when should have been sent to primary: %s.\nAttempting to redirect.\n", primary );
-
-              parse_failover_list( primary, mhost, mport );
-
-              /* close old socket */
-              if (socket_attrs != NULL) 
-              {
-                if (socket_attrs->pshost != NULL)
-                {
-                  free(socket_attrs->pshost);
-                }
-
-                GSI_SOCKET_destroy(socket_attrs->gsi_socket);
-                close(socket_attrs->socket_fd);
-                free(socket_attrs);
-              }
-
-              socket_attrs = malloc(sizeof(*socket_attrs));
-              memset(socket_attrs, 0, sizeof(*socket_attrs));
-
-              socket_attrs->pshost = mhost;
-
-              if( mport )
-              {
-                socket_attrs->psport = atoi( mport );
-              }  
-
-              /* Clear the server_response for next go around */
-              server_response = malloc(sizeof(*server_response));
-              memset(server_response, 0, sizeof(*server_response));
-
-              /* We will be passing password in as a value */
-              data_parameters->use_empty_passwd = 1;
-
-              /* Clear old error messages (Should we do this???) */
-              verror_clear();
-
-              myproxy_debug( "Primary redirect socket: %s. %d\n", 
-                             socket_attrs->pshost, 
-                             socket_attrs->psport ); 
-            }
-          }
-          else
-          {
-            myproxy_debug( "No where to redirect.\n" );
-            printf( "Can't redirect: %s\n", verror_get_string() );
-            return( 1 );
-          }
-        }
-      }
-      else if( (verror_is_error()) )
-      {
-        printf( "VERROR: %s\n", verror_get_string() );
-        return( 1 );
-      }
-      else if( server_response->response_type == MYPROXY_OK_RESPONSE )
-      {
-        done = 1;
-      }
-    }
-    while( !done );
-
-    switch(client_request->command_type)
-    {
-    case MYPROXY_INFO_PROXY:
-        switch(server_response->response_type)
-        {
-        case MYPROXY_ERROR_RESPONSE:
-            fprintf(stderr, "Received ERROR_RESPONSE: %s\n",
-                    server_response->error_string);
-            retval = (1);
-            break;
-
-        case MYPROXY_OK_RESPONSE:
-            printf("username: %s\n", client_request->username);
-            myproxy_print_cred_info(server_response->info_creds, stdout);
-            break;
-
-        default:
-            fprintf(stderr, "Invalid response type received.\n");
-            retval = (1);
-            break;
-        }
-        break;
-
-    case MYPROXY_GET_PROXY:
-        /* Accept delegated credentials from server */
-        if (myproxy_accept_delegation(socket_attrs, 
-                                      delegfile, 
-                                      sizeof(delegfile),
-                                      NULL) < 0) 
-        {
-            fprintf(stderr, "Error in myproxy_accept_delegation(): %s\n",
-                    verror_get_string());
-            return(1);
-        }
-
-#if 0 /* response was lost in myproxy_accept_delegation() */
-    if (myproxy_recv_response(socket_attrs, server_response) < 0) {
-       fprintf(stderr, "%s\n", verror_get_string());
-       return(1);
-    }
-#endif
-
-        /* move delegfile to outputfile if specified */
-        if (data_parameters->outputfile != NULL) 
-        {
-            if (copy_file(delegfile, data_parameters->outputfile, 0600) < 0) 
-            {
-                fprintf(stderr, "Error creating file: %s\n", 
-                        data_parameters->outputfile);
-                return(1);
-            }
-            ssl_proxy_file_destroy(delegfile);
-        }
-
-        printf("A proxy has been received for user %s in %s\n",
-               client_request->username, data_parameters->outputfile);
-
-        printf("username: %s\n", client_request->username);
-        myproxy_print_cred_info(server_response->info_creds, stdout);
-        break;
-
-    case MYPROXY_RETRIEVE_CERT:
-        printf("username: %s\n", client_request->username);
-
-        if (myproxy_accept_credentials(socket_attrs, delegfile,
-                                       sizeof(delegfile)) < 0) 
-        {
-          fprintf(stderr, "Error in (myproxy_accept_credentials(): %s\n",
-                  verror_get_string());
-          return( 1 );
-        }
-
-        /* I need to get this file out so that I don't have to pass key */
-        /* and cert in.                                                 */
-        data_parameters->outputfile = strdup( delegfile );
-        myproxy_print_cred_info(server_response->info_creds, stdout);
-        break;
-
-    case MYPROXY_PUT_PROXY:
-        /* Delegate credentials to server using the default lifetime of */
-        /* the cert.                                                    */
-
-        if (myproxy_init_delegation(socket_attrs, 
-                                    data_parameters->proxyfile, 
-                                    data_parameters->cred_lifetime,
-                                    NULL /* no passphrase */
-                                   ) < 0) 
-        {
-          verror_print_error(stderr);
-          return( 1 );
-        }
-
-        /* Get final response from server */
-        if (myproxy_recv_response(socket_attrs, server_response) != 0) 
-        {
-          verror_print_error(stderr);
-          return( 1 );
-        }
-
-        /* Get actual lifetime from credential. */
-        if (data_parameters->cred_lifetime == 0) 
-        {
-          time_t cred_expiration;
-
-          if( ssl_get_times(data_parameters->proxyfile, NULL, &cred_expiration) 
-                  == 0 )
-          {
-            data_parameters->cred_lifetime = cred_expiration-time(0);
-
-            if (data_parameters->cred_lifetime <= 0) 
-            {
-              fprintf(stderr, "Error: Credential expired!\n");
-              return( 1 );
-            }
-          }
-        }
-
-        /* Delete proxy file */
-        if (grid_proxy_destroy(data_parameters->proxyfile) != 0) 
-        {
-          fprintf(stderr, "Failed to remove temporary proxy credential.\n");
-          return( 1 );
-        }
-        data_parameters->destroy_proxy = 0;
-
-        printf( "A proxy valid for %d hours (%.1f days) for user %s now exists on %s.\n",
-                (int)(data_parameters->cred_lifetime/SECONDS_PER_HOUR), 
-                (float)((data_parameters->cred_lifetime/SECONDS_PER_HOUR)/24.0), 
-                client_request->username, 
-                socket_attrs->pshost );
-        break;
-
-    case MYPROXY_STORE_CERT:
-        /* Send end-entity credentials to server. */
-        if (myproxy_init_credentials(socket_attrs,
-                                     data_parameters->credkeybuf) < 0) 
-        {
-            fprintf(stderr, "%s\n", verror_get_string());
-            return( 1 );
-        }
-
-        /* Get final response from server */
-        if (myproxy_recv_response(socket_attrs, server_response) != 0) 
-        {
-            fprintf(stderr, "%s\n", verror_get_string());
-            return( 1 );
-        }
-
-        printf( "Credentials saved to myproxy server.\n" );
-        break;
-
-    case MYPROXY_DESTROY_PROXY:
-        /* Check response */
-        switch(server_response->response_type) 
-        {
-        case MYPROXY_ERROR_RESPONSE:
-            fprintf(stderr, "Received error from server: %s\n",
-                    server_response->error_string);
-            return 1;
-
-        case MYPROXY_OK_RESPONSE:
-            if (client_request->credname) 
-            {
-              printf( "MyProxy credential '%s' for user %s was successfully removed.\n",
-                     client_request->credname, client_request->username );
-            } 
-            else 
-            {
-              printf("Default MyProxy credential for user %s was successfully removed.\n",
-                     client_request->username);
-            }
-            break;
-
-        default:
-            fprintf(stderr, "Invalid response type received.\n");
-            return 1;
-        }
-        break;
-
-    case MYPROXY_CHANGE_CRED_PASSPHRASE:
-        /*Check response */
-        switch (server_response->response_type) 
-        {
-        case MYPROXY_ERROR_RESPONSE:
-            fprintf (stderr, "Error: %s\nPass phrase unchanged.\n",
-                     server_response->error_string);
-
-            return 1;
-
-        case MYPROXY_OK_RESPONSE:
-            printf("Pass phrase changed.\n");
-            break;
-
-        default:
-            fprintf (stderr, "Invalid response type received.\n");
-            return 1;
-        }
-        break;
-
-    case MYPROXY_REPLICA_INFO:
-        break;
-
-    default:
-        fprintf(stderr, "Invalid response type received.\n");
-        retval = (1);
-        break;
-    }
-
-    return( retval );
-}
-
-int
-myproxy_get_info( myproxy_request_t      *client_request,
-                  myproxy_response_t     *server_response,
-                  myproxy_socket_attrs_t *socket_attrs,
-                  int                     dn_as_username )
-{
-    int retval = 0;
-
-    /*
-     * We don't need to send the real pass phrase to the server as it
-     * will just use our identity to authenticate and authorize us.
-     * But we need to send over a dummy pass phrase at least
-     * MIN_PASS_PHASE_LEN (currently 6) characters long.
-     */
-    strncpy(client_request->passphrase, "DUMMY-PASSPHRASE",
-            sizeof(client_request->passphrase));
-
-    if( myproxy_client_username( client_request,
-                                 NULL,
-                                 dn_as_username ) != 0 )
-    {
-      retval = ( 1 );
-    }
-
-    if( myproxy_open_server_com( socket_attrs,
-                                 NULL ) != 0 )
-    {
-      retval = ( 1 );
-    }
-
-    /* Request information on server configuration. */
-    client_request->replicate_info = "1";
-
-    if( myproxy_serialize_send_recv( client_request,
-                                     server_response,
-                                     socket_attrs ) != 0 )
-    {
-      retval = ( 1 );
-    }
-
-    /* Check response */
-    switch(server_response->response_type)
-    {
-    case MYPROXY_ERROR_RESPONSE:
-        fprintf(stderr, "Received ERROR_RESPONSE: %s\n",
-                server_response->error_string);
-        retval = (1);
-        break;
-
-    case MYPROXY_OK_RESPONSE:
-        printf("username: %s\n", client_request->username);
-        myproxy_print_cred_info(server_response->info_creds, stdout);
-        break;
-
-    default:
-        fprintf(stderr, "Invalid response type received.\n");
-        retval = (1);
-        break;
-    }
-
-    printf ("\n");
-
-    return( retval );
 }
 
 /*--------- Helper functions ------------*/
@@ -3636,52 +2529,3 @@ myproxy_get_credentials(myproxy_socket_attrs_t *attrs,
 
   return 0;
 }
-
-/* grid_proxy_init()
- *
- * Uses the system() call to run grid-proxy-init to create a user proxy
- *
- * returns grid-proxy-init status 0 if OK, -1 on error
- */
-int
-grid_proxy_init(int seconds, const char *proxyfile, int read_passwd_from_stdin) {
-
-    int rc;
-    char command[128];
-    int hours;
-    char *proxy_mode;
-    int old=0;
-
-    assert(proxyfile != NULL);
-
-    hours = seconds / SECONDS_PER_HOUR;
-
-    proxy_mode = getenv("GT_PROXY_MODE");
-    if (proxy_mode && strcmp(proxy_mode, "old") == 0) {
-        old=1;
-    }
-
-    sprintf(command, "grid-proxy-init -verify -valid %d:0 -out %s%s%s%s",
-            hours, proxyfile, read_passwd_from_stdin ? " -pwstdin" : "",
-            myproxy_debug_get_level() ? " -debug" : "", old ? " -old" : "");
-    rc = system(command);
-
-    return rc;
-}
-
-/* grid_proxy_destroy()
- *
- * Fill the proxy file with zeros and unlink.
- *
- * returns 0 if OK, -1 on error
- */
-int
-grid_proxy_destroy(const char *proxyfile)
-{
-    if (ssl_proxy_file_destroy(proxyfile) != SSL_SUCCESS) {
-        verror_print_error(stderr);
-        return -1;
-    }
-    return 0;
-}
-

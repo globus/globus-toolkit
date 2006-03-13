@@ -12,6 +12,10 @@ SUBDIRS= \
 LibSources= \
 	auth_pam.c \
 	auth_pam.h \
+	certauth_extensions.c \
+	certauth_extensions.h \
+	certauth_resolveuser.c \
+	certauth_resolveuser.h \
 	getopt_long.c \
 	gsi_socket.c \
 	gsi_socket.h \
@@ -29,6 +33,8 @@ LibSources= \
 	myproxy_read_pass.h \
 	myproxy_log.c \
 	myproxy_log.h \
+	myproxy_popen.c \
+	myproxy_popen.h \
 	myproxy_sasl_client.c \
 	myproxy_sasl_client.h \
 	myproxy_sasl_server.h \
@@ -38,6 +44,7 @@ LibSources= \
 	plugin_common.c \
 	plugin_common.h \
 	port_getopt.h \
+	pubcookie.h \
 	ssl_utils.c \
 	ssl_utils.h \
 	string_funcs.c \
@@ -164,9 +171,7 @@ myproxy_admin_change_pass_LDFLAGS = $(GPT_LDFLAGS)
 
 myproxy_admin_change_pass_LDADD = ./libmyproxy_$(GLOBUS_FLAVOR_NAME).la $(GPT_PGM_LINKS)
 
-sysconf_DATA = myproxy-server.config
-
-pkgdata_DATA = README INSTALL \
+pkgdata_DATA = README INSTALL myproxy-server.config \
                LICENSE LICENSE.sasl LICENSE.netbsd \
                VERSION PROTOCOL \
                etc.services.modifications etc.inetd.conf.modifications \
@@ -195,6 +200,12 @@ gssapi.lo: gssapi.c plugin_common.h config.h
 
 plugin_common.lo: plugin_common.c plugin_common.h config.h
 	$(LIBTOOL) --mode=compile $(CC) $(DEFS) $(KRB5CPPFLAGS) $(CFLAGS) -c plugin_common.c
+
+splint:
+	splint +posixlib \
+	-Dsocklen_t=int -Din_addr_t=int \
+	-Du_int="unsigned int" -Du_char="unsigned char" \
+	$(DEFS) $(GPT_INCLUDES) *.c
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

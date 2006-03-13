@@ -4,11 +4,14 @@ desperate attempt to maintain some consistency.
 -A | --allow_anonymous_renewers   Allow credentials to be renewed by any client (not recommended)
 -A | --allow_anonymous_renewers   Allow credentials to be renewed by any client (not recommended)
 -A | --allow_anonymous_renewers   Allow credentials to be renewed by any client (not recommended)
+-C | --certfile        <filename> Certificate file name
 -E | --retrieve_key <dn>          Allow specified entity to retrieve credential key
 -K | --creddesc        <desc>     Specifies credential description
 -K | --creddesc       <desc>      Specifies credential description
 -K | --creddesc       <desc>      Specifies credential description
 -L | --lock         'msg'       Lock access to credential(s). Specified msg will be returned instead.
+-L | --local_proxy   Create a local proxy credential
+-N | --no_credentials       Authenticate only. Don't retrieve credentials.
 -P | --pidfile <path>       Specifies a file to write the pid to
 -R | --renewable_by    <dn>       Allow specified entity to renew credential
 -R | --renewable_by   <dn>        Allow specified entity to renew credential
@@ -18,6 +21,7 @@ desperate attempt to maintain some consistency.
 -S | --stdin_pass                 Read passphrase from stdin
 -S | --stdin_pass                 Read passphrase from stdin
 -S | --stdin_pass                 Read passphrase from stdin
+-T | --trustroots                 Manage trust roots
 -U | --unlock                   Unlock previously locked credential(s).
 -V | --version                    Displays version
 -V | --version                    Displays version
@@ -33,6 +37,7 @@ desperate attempt to maintain some consistency.
 -X | --match_cn_only              Set CN matching mode (default) for following policy options
 -X | --match_cn_only              Set CN matching mode (default) for following policy options
 -X | --match_cn_only              Set CN matching mode (default) for following policy options
+-Z | --retrievable_by_cert <dn>   Allow specified entity to retrieve credential w/o passphrase
 -a | --allow_anonymous_retrievers Allow credentials to be retrieved with just username/passphrase
 -a | --allow_anonymous_retrievers Allow credentials to be retrieved with just username/passphrase
 -a | --allow_anonymous_retrievers Allow credentials to be retrieved with just username/passphrase
@@ -95,6 +100,7 @@ desperate attempt to maintain some consistency.
 -p | --psport         <port #>    Port of the myproxy-server
 -p | --psport   #          Port of the myproxy-server
 -p | --psport   #          Port of the myproxy-server
+-q | --quiet                      Only output on error
 -r | --remove                   Remove credentials matching query
 -r | --retrievable_by  <dn>       Allow specified entity to retrieve credential
 -r | --retrievable_by <dn>        Allow specified entity to retrieve credential

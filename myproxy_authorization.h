@@ -8,8 +8,15 @@ typedef enum {
   AUTHORIZETYPE_NULL = 0,
   AUTHORIZETYPE_PASSWD,
   AUTHORIZETYPE_CERT,
-  AUTHORIZETYPE_SASL
+  AUTHORIZETYPE_SASL,
+  AUTHORIZETYPE_NUMMETHODS
 } author_method_t;
+
+typedef enum {
+  AUTHORIZEMETHOD_DISABLED,
+  AUTHORIZEMETHOD_REQUIRED,
+  AUTHORIZEMETHOD_SUFFICIENT
+} author_status_t;
 
 /* client/server authorization data */
 typedef struct
@@ -26,9 +33,14 @@ typedef struct
 int authorization_init_server (authorization_data_t ***data,
 			       author_method_t methods[]);
 void authorization_data_free (authorization_data_t **data);
+void authorization_data_free_contents (authorization_data_t *data);
 
 char * authorization_get_name(author_method_t method);
 author_method_t authorization_get_method(char *name);
+author_status_t authorization_get_status(author_method_t method,
+					 struct myproxy_creds *creds,
+					 char *client_name,
+					 myproxy_server_context_t* config);
 
 /* 
  * Fill in author_data with client's response and return pointer into 
@@ -56,7 +68,7 @@ authorization_create_response(authorization_data_t **,
                               size_t extra_data_len);
 /*
  * Verifies that data sent by the client matches the expecting value for the 
- * server's challenge.
+ * server's challenge.  Returns 1 on success, 0 on failure.
  */
 int authorization_check(authorization_data_t *client_auth_data,
                         struct myproxy_creds *creds,

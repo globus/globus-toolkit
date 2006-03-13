@@ -15,8 +15,7 @@ typedef enum
     MYPROXY_DESTROY_PROXY,
     MYPROXY_CHANGE_CRED_PASSPHRASE,
     MYPROXY_STORE_CERT,
-    MYPROXY_RETRIEVE_CERT,
-    MYPROXY_REPLICA_INFO
+    MYPROXY_RETRIEVE_CERT
 } myproxy_proto_request_type_t;
 
 /* server response codes */
@@ -24,8 +23,7 @@ typedef enum
 {
     MYPROXY_OK_RESPONSE,
     MYPROXY_ERROR_RESPONSE,
-    MYPROXY_AUTHORIZATION_RESPONSE,
-    MYPROXY_REPLICA_INFO_RESPONSE
+    MYPROXY_AUTHORIZATION_RESPONSE
 } myproxy_proto_response_type_t;
 
 /* client/server socket attributes */
@@ -55,54 +53,9 @@ typedef struct
     char			 *creddesc;
     char			 *authzcreds;
     char 		         *keyretrieve;
-    char                         *replicate_info;
-    char                         *owner;
+    char                         *trusted_retrievers;
     int                          want_trusted_certs; /* 1=yes, 0=no */
 } myproxy_request_t;
-
-struct myproxy_server
-{
-  char                          *secondary_servers;
-  char                          *primary_server;
-  int                            isprimary;
-}; 
-typedef struct myproxy_server myproxy_server_t;
-
-/*
-** This is stuff used by the failover routine.  These are values that are
-** unique to different operations.  Instead of passing lots of parameters
-** to the failover function we can pass a single struct.  Most of these 
-** values have meaning to only a single operation, it seemed silly to have
-** every operation have to worry about them when calling failover.
-*/
-typedef struct myproxy_data_parameters
-{
-  /*
-  ** Used by myproxy-store.  These values are the location of the 
-  ** end-entity user credintail that is being stored.
-  */
-  char                          *certfile;
-  char                          *keyfile;
-
-  char                          *credkeybuf;
-
-  /* File name holding returned proxy or credential. */
-  char                          *outputfile;
-
-  /* Proxy file created that will be stored in the repository */
-  char                          *proxyfile;
-
-  /* Define various ways data may be defined in reposiroty */
-  int                            use_empty_passwd;
-  int                            read_passwd_from_stdin;
-  int                            dn_as_username;
-
-  /* Used by myproxy-init.  Defines the lifetime of the proxy. */
-  int                            cred_lifetime;
-
-  /* Indicates if a proxy was created and needs to be destroyed */
-  int                            destroy_proxy;
-} myproxy_data_parameters_t;
 
 /* A server response object */
 typedef struct
@@ -112,12 +65,6 @@ typedef struct
   authorization_data_t		**authorization_data;
   char				*error_string;
   myproxy_creds_t		*info_creds;
-
-  /*
-  ** Extensions for replication and fail-over.
-  */
-  myproxy_server_t              *replicate_info;
-  char                          *redirect;
   myproxy_certs_t               *trusted_certs;
 } myproxy_response_t;
 
@@ -271,12 +218,26 @@ int myproxy_init_delegation(myproxy_socket_attrs_t *attrs,
 /*
  * myproxy_accept_delegation()
  *
- * Accepts delegated credentials into file location data
+ * Accepts delegated credentials into a file, and sets
+ * path in provided buffer.
  *
  * returns 0 on success, -1 on error 
  */
-int myproxy_accept_delegation(myproxy_socket_attrs_t *attrs, char *data,
-			      const int datalen, char *passphrase);
+int myproxy_accept_delegation(myproxy_socket_attrs_t *attrs, char *delegfile,
+			      const int delegfile_len, char *passphrase);
+
+/*
+ * myproxy_accept_delegation_ex()
+ *
+ * Accepts delegated credentials into a newly allocated buffer.
+ * The caller must deallocate the buffer.
+ * Private key is encrypted with passphrase, if provided (may be NULL).
+ *
+ * returns 0 on success, -1 on error 
+ */
+int myproxy_accept_delegation_ex(myproxy_socket_attrs_t *attrs,
+				 char **credentials,
+				 int *credential_len, char *passphrase);
 
 /*
  * myproxy_accept_credentials()
@@ -343,66 +304,5 @@ int myproxy_recv_response_ex(myproxy_socket_attrs_t *attrs,
 int myproxy_handle_authorization(myproxy_socket_attrs_t *attrs,
 				 myproxy_response_t *server_response,
 				 myproxy_request_t *client_request);
-
-/*
- * myproxy_resolve_hostname()
- *
- * Helper function to fully-qualify the given hostname for
- * authorization of server identity.
- *
- */
-void myproxy_resolve_hostname(char **host);
-
-int
-myproxy_init( myproxy_socket_attrs_t                *socket_attrs,
-              myproxy_request_t                     *client_request,
-              int                                    cmd_type );
-
-int
-myproxy_init_socket_attrs( myproxy_socket_attrs_t   *socket_attrs );
-
-int
-myproxy_init_client_request( myproxy_request_t      *client_request,
-                             int                     cmd_type );
-
-int
-myproxy_open_server_com( myproxy_socket_attrs_t     *socket_attrs,
-                         const char                 *proxyfile );
-
-int
-myproxy_client_username( myproxy_request_t          *client_request,
-                         const char                 *proxyfile,
-                         int                         dn_as_username );
-
-int
-myproxy_user_password( myproxy_request_t            *client_request,
-                       int                           use_empty_passwd,
-                       int                           read_passwd_from_stdin );
-
-int
-myproxy_serialize_send_recv( myproxy_request_t      *client_request,
-                             myproxy_response_t     *server_response,
-                             myproxy_socket_attrs_t *socket_attrs );
-
-/*
- * myproxy_failover()
- * 
- * Code to handle failover.  Each client operation calls this function.
- * The function will look for primary/secondary configuration information
- * and handle failover if configured. 
- *
- * returns !0 if unable to authenticate, 0 if authentication successful
- */ 
-int
-myproxy_failover( myproxy_socket_attrs_t *socket_attrs,
-                  myproxy_request_t      *client_request,
-                  myproxy_response_t     *server_response,
-                  myproxy_data_parameters_t  *data_parameters );
-
-int
-myproxy_init_client_env( myproxy_socket_attrs_t *socket_attrs,
-                         myproxy_request_t      *client_request,
-                         myproxy_response_t     *server_response,
-                         myproxy_data_parameters_t  *data_parameters );
 
 #endif /* __MYPROXY_PROTOCOL_H */

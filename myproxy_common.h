@@ -30,6 +30,7 @@
 #include <sys/param.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <time.h>
@@ -48,6 +49,9 @@ typedef int socklen_t;
 #include <gssapi.h>
 
 #include "myproxy.h" /* public headers */
+#include "myproxy_popen.h"
+#include "certauth_extensions.h"
+#include "certauth_resolveuser.h"
 #include "gsi_socket.h"
 #include "port_getopt.h"
 #include "ssl_utils.h"

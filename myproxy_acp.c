@@ -51,7 +51,7 @@ int
 main(int argc, char *argv[]) 
 {
     char passphrase[MAX_PASS_LEN+1], new_passphrase[MAX_PASS_LEN+1], *np=NULL;
-    int rval;
+    int rval = 0;
 
     /* check library version */
     if (myproxy_check_version()) {

@@ -1,9 +1,17 @@
 First, you need to install GPT and the Globus Toolkit packages
 required for MyProxy.  Right now the best way to do that is to run
-"make gsi-myproxy postinstall" in the gt4.0.0-all-source-installer
+"make gsi-myproxy postinstall" in the gt4.0.1-all-source-installer
 directory.  That will include all the Globus Toolkit packages needed
-by MyProxy.  You'll need GSI user credentials to run the MyProxy
-clients and host credentials to run the myproxy-server.
+by MyProxy.  
+
+Alternatively, you can use a gt4.0.1 binary installer, in which case
+you'll additionall need to install globus_core with the following
+command (replacing gcc32dbg with the flavor of your choice):
+
+  $ gpt-build -nosrc gcc32dbg
+
+You'll need GSI user credentials to run the MyProxy clients and host
+credentials to run the myproxy-server.
 
 Second, you need special versions of the GNU autotools for working
 with GPT.  Download
@@ -55,14 +63,24 @@ $ make dist
 
      $ gpt-build -verbose myproxy-*.tar.gz gcc32dbg
 
-4. Test the installation.
+   To submit test builds to the UW NMI system
+   (http://grandcentral.cs.wisc.edu:2500/nmi/show/HomePage):
+
+     $ ssh grandcentral.cs.wisc.edu
+     $ nwo/glue/myproxy/build
+     $ cvs update
+     $ vi cmdfile		# edit component_version
+     $ vi myproxy-src.ftp	# edit ftp_target
+     $ nmi_submit cmdfile
+
+4. Test the installation.  (-valgrind will work only on x86.)
 
      $ grid-proxy-init
-     $ myproxy-test -startserver
+     $ myproxy-test -startserver -valgrind
 
-5. Tag CVS with the version number (ex. MYPROXY_0_5_9).
+5. Tag CVS with the version number (ex. MYPROXY_3_3).
 
-     $ cvs tag MYPROXY_X_X_X
+     $ cvs tag MYPROXY_X_X
 
 6. Sign the release file with GPG.
 
@@ -91,4 +109,4 @@ $ make dist
 9. Send release announcement to myproxy-users@ncsa.uiuc.edu.
    Sign it with 'gpg --clearsign'.
 
-10. Add MyProxy version number to https://bugzilla.ncsa.uiuc.edu/.
+10. Add MyProxy version number to http://bugzilla.ncsa.uiuc.edu/.

@@ -2,7 +2,9 @@
 
 #include "myproxy_common.h"	/* all needed headers included here */
 
-sasl_conn_t *conn = NULL;
+int myproxy_sasl_authenticated = 0;
+
+static sasl_conn_t *conn = NULL;
 
 static void
 sasl_free_conn(void)
@@ -52,10 +54,11 @@ static int
 send_response_sasl_data(myproxy_socket_attrs_t *attrs, 
 			const char *data, int data_len)
 {
-    myproxy_response_t response;
+    myproxy_response_t response = {0};
     authorization_data_t*	auth_data;
     char	buf[SASL_BUFFER_SIZE];
-    int		len=0, result;
+    int		result;
+    unsigned    len=0;
     
     result = sasl_encode64(data, data_len, buf, SASL_BUFFER_SIZE, &len);
     buf[len] = '\0';
@@ -64,7 +67,7 @@ send_response_sasl_data(myproxy_socket_attrs_t *attrs,
        verror_put_errno(errno);
        return -1;
     }
-    myproxy_debug("S: %s\n", buf);
+    myproxy_debug("S: %s", buf);
 
     memset(&response, 0, sizeof (response));
     response.version = strdup(MYPROXY_VERSION);
@@ -90,6 +93,7 @@ send_response_sasl_data(myproxy_socket_attrs_t *attrs,
 	return -1;
     } 
 
+    free(response.version);
     authorization_data_free(response.authorization_data);
 
     return 0;
@@ -100,7 +104,8 @@ static int
 recv_response_sasl_data(myproxy_socket_attrs_t *attrs, char *data)
 {
    char  buf[SASL_BUFFER_SIZE];
-   int   len, result;
+   int   result;
+   unsigned len;
    author_method_t client_auth_method;
 
    int   client_data_len = 0;
@@ -120,7 +125,7 @@ recv_response_sasl_data(myproxy_socket_attrs_t *attrs, char *data)
    client_data_len = len - sizeof(int);
 
 
-   myproxy_debug("C: %s\n", buf + sizeof(int));
+   myproxy_debug("C: %s", buf + sizeof(int));
    result = sasl_decode64(buf + sizeof(int), client_data_len, data, SASL_BUFFER_SIZE, &len);
    if (result != SASL_OK) {
         myproxy_log("Decoding data from base64 failed in recv_response_sasl_data.");
@@ -138,7 +143,8 @@ auth_sasl_negotiate_server(myproxy_socket_attrs_t *attrs,
    char  client_buffer[SASL_BUFFER_SIZE];
    int   client_data_len = 0;
 
-   unsigned len, count;
+   unsigned len;
+   int count;
    const char *data;
    sasl_security_properties_t secprops;
    int result;
@@ -148,6 +154,13 @@ auth_sasl_negotiate_server(myproxy_socket_attrs_t *attrs,
        *localdomain = NULL, *userdomain = NULL;
 
    myproxy_debug("Server: begin SASL negotiation...");
+   myproxy_sasl_authenticated = 0;
+
+    if (getenv("SASL_PATH")) {
+	myproxy_debug("$SASL_PATH is %s", getenv("SASL_PATH"));
+    } else {
+	myproxy_debug("$SASL_PATH isn't set. Using /usr/lib/sasl2.");
+    }	
 
    result = sasl_server_init(callbacks, "myproxy");
    if (result != SASL_OK) {
@@ -204,10 +217,16 @@ auth_sasl_negotiate_server(myproxy_socket_attrs_t *attrs,
            myproxy_log("Generating SASL mechanism list failed.");
            return -1;
        }
+       if (count == 0) {
+	   myproxy_log("No SASL mechanisms available.");
+	   return -1;
+       }
    }
 
-   myproxy_debug("Sending list of %d mechanism(s): %s\n", count, data);
-   send_response_sasl_data(attrs, data, len);
+   myproxy_debug("Sending list of %d mechanism(s): %s", count, data);
+   if (send_response_sasl_data(attrs, data, len) < 0) {
+       return -1;
+   }
    
    myproxy_debug("Waiting for client mechanism...");
    len = recv_response_sasl_data(attrs, client_buffer);
@@ -240,9 +259,12 @@ auth_sasl_negotiate_server(myproxy_socket_attrs_t *attrs,
    while (result == SASL_CONTINUE) {
       if (data) {
 	  myproxy_debug("Sending response...");
-          send_response_sasl_data(attrs, data, len);
+          if (send_response_sasl_data(attrs, data, len) < 0) {
+	      return -1;
+	  }
       } else {
           myproxy_log("No SASL data to send--something's wrong");
+	  return -1;
       }
 
       myproxy_debug("Waiting for client reply...");
@@ -268,6 +290,7 @@ auth_sasl_negotiate_server(myproxy_socket_attrs_t *attrs,
        myproxy_log("Authentication failure: SASL username (%s) and "
 		   "request username (%s) differ.\n", (char *)data,
 		   client_request->username);
+       return -1;
    }
 
    if (sasl_getprop(conn, SASL_AUTHUSER, (const void **)&data) != SASL_OK) {
@@ -279,8 +302,10 @@ auth_sasl_negotiate_server(myproxy_socket_attrs_t *attrs,
        myproxy_log("Authentication failure: SASL authuser (%s) and "
 		   "request username (%s) differ.\n", (char *)data,
 		   client_request->username);
+       return -1;
    }
 
+   myproxy_sasl_authenticated = 1; /* for later sanity checks */
    return 0;
 }
 

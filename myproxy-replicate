@@ -166,11 +166,11 @@ sub main
   $new_rep_time = timelocal(localtime);
 
   ##
-  ## Retrieve all of the secondary MyProxy servers from config file.
+  ## Retrieve all of the slave MyProxy servers from config file.
   ##
-  my $secondary_servers = get_secondaries( $config );
+  my $slave_servers = get_slaves( $config );
 
-  print "Secondary Servers:\n" . Dumper $secondary_servers if( $dbglvl > 1 );
+  print "Slave Servers:\n" . Dumper $slave_servers if( $dbglvl > 1 );
 
   ##
   ## Read the repository and find the files that have changed since the
@@ -180,13 +180,13 @@ sub main
   print Dumper $files if( $dbglvl > 1 );
 
   ##
-  ## send the files to the secondary servers.
+  ## send the files to the slave servers.
   ##
-  my $ret = replicate_files( $repository, $files, $secondary_servers );
+  my $ret = replicate_files( $repository, $files, $slave_servers );
 
   if( $ret == 0 )
   {
-    $ret = delete_files( $repository, $files, $secondary_servers );
+    $ret = delete_files( $repository, $files, $slave_servers );
   }
 
   ##
@@ -235,28 +235,28 @@ sub get_last_replicate_time
 }
 
 ##
-## get_secondaries( file )
+## get_slaves( file )
 ##
-## Get the list of secondary servers from the configuration file. 
+## Get the list of slave servers from the configuration file. 
 ##
-sub get_secondaries
+sub get_slaves
 {
   my $config = shift;
 
   my $slist; 
   my $junk;
-  my @secondary_list;
+  my @slave_list;
 
   open CFG, $config;
 
   for (<CFG>)
   {
-    next if( !($_ =~ /^secondary_servers/) );
+    next if( !($_ =~ /^slave_servers/) );
 
-    ($junk, $slist) = split /secondary_servers/, $_;
-    my @secondaries = split /;/, $slist;
+    ($junk, $slist) = split /slave_servers/, $_;
+    my @slaves = split /;/, $slist;
 
-    for my $s (@secondaries)
+    for my $s (@slaves)
     {
       my ($server, $port) = split /:/, $s;
 
@@ -266,13 +266,13 @@ sub get_secondaries
       my $ops = "-s $server ";
       $ops .= "-p $port " if( length($port) > 0 );
 
-      push @secondary_list, $ops;
+      push @slave_list, $ops;
     }
   }
 
   close CFG;
 
-  return \@secondary_list;
+  return \@slave_list;
 }
 
 ##
@@ -323,15 +323,15 @@ sub read_dir
 }
 
 ##
-## replicate_files( reposityr, files, secondary )
+## replicate_files( reposityr, files, slaves )
 ##
-## Replicate all of the files listed to all of the secondary listed. 
+## Replicate all of the files listed to all of the slaves listed. 
 ##
 sub replicate_files
 {
   my $rep    = shift;
   my $files  = shift;
-  my $secondaries = shift;
+  my $slaves = shift;
 
   my ($exitstatus, $output);
   my $ret = 0;
@@ -349,7 +349,7 @@ sub replicate_files
 
     $options .= "-c $rep/$f -y $rep/$f ";
 
-    for my $s (@{$secondaries})
+    for my $s (@{$slaves})
     {
       print "OPTIONS: $myproxy_store\n$options $s\n\n" if( $dbglvl > 2 );
 
@@ -391,7 +391,6 @@ sub parse_datafile
     # but not flaged.  If this is true, how do we get it to replicate?
     if( $value =~ /OWNER=(.*)/ )
     {
-##      $options .= "-O \"$1\" ";
     }
     # LIFETIME -c
     elsif( $value =~ /LIFETIME=(.*)/ )
@@ -445,7 +444,7 @@ sub parse_datafile
 ##
 ## missing_files( repository, files )
 ##
-## Look at the last snapshot of the repository on the primary.  Compare it
+## Look at the last snapshot of the repository on the master.  Compare it
 ## to the current list of files in the repository.  If any are missing
 ## from the repository, they must have been deleted, so we need to delete
 ## them. 
@@ -483,16 +482,16 @@ sub missing_files
 }
 
 ##
-## delete_files( repostiroy, files, secondary )
+## delete_files( repostiroy, files, slaves )
 ##
 ## Using the list of files that are to be deleted, send a destroy command
-## to each of the listed secondary.
+## to each of the listed slaves.
 ##
 sub delete_files
 {
   my $rep    = shift;
   my $files  = shift;
-  my $secondaries = shift;
+  my $slaves = shift;
 
   my ($exitstatus, $output);
 
@@ -506,15 +505,13 @@ sub delete_files
     my $options = "-l $uname ";
     $options .= "-k $oname " if( length($oname) > 0 );
 
-    for my $s (@{$secondaries})
+    for my $s (@{$slaves})
     {
       print "OPTIONS: myproxy_destroy\n$options $s -v\n\n" if( $dbglvl > 2 );
 
       ($exitstatus, $output) = runcmd( "$myproxy_destroy $options $s -v" );
 
-      if( ($exitstatus != 0) && 
-          !($output =~ /No such file or directory/) &&
-          !($output =~ /Credentials do not exist/) )
+      if( ($exitstatus != 0) && !($output =~ /No such file or directory/) )
       {
 print "Bad delete\n";
         $ret = 1;
@@ -543,7 +540,7 @@ print "Bad delete\n";
         # cycles going.
         #
         # We need a better solution!  I still like the idea of just taring
-        # the directory and coping it over to each secondary.
+        # the directory and coping it over to each slave.
         #
       }
       print STDERR "STATUS: $exitstatus\n $output\n" if( $dbglvl > 0 );
@@ -633,8 +630,8 @@ __END__
 
 =head1 NAME
 
-B<myproxy-replicate> - Stores data from the MyProxy primary repository to all
-the secondary servers.
+B<myproxy-replicate> - Stores data from the MyProxy master repository to all
+the slave servers.
 
 =head1 SYNOPSIS
 
@@ -653,11 +650,11 @@ B<myproxy-replicate> [options] ...
 B<myproxy-replicate> Replicates data. 
 
 This utility will read a specified MyProxy repository and send any new or
-changed data to a secondary MyProxy server.  The secondary servers are 
-specified in the B<myproxy-server.config(5)> file.  
+changed data to a slave MyProxy server.  The slave servers are specified 
+in the B<myproxy-server.config(5)> file.  
 
 This utility will need to run at some specified interval in order to keep
-the secondary repositories semi current with the primary repository.  This can
+the slave repositories semi current with the Master repository.  This can
 best be accomplished using cron, or some similar mechanism.
 
 =head1 OPTIONS

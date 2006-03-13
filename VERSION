@@ -1,12 +1,85 @@
-This is MyProxy v2.3 28 Jul 2005.
+This is MyProxy v3.5 XX Xxx 2006.
 This version should be protocol compatible with all versions since v0.2.
 Binary compatibility of the C API is not guaranteed between releases.
 
 Version History
 ---------------
+v3.5 XX Xxx 2006
+  - dropped support for certificate_issuer option in
+    myproxy-server.config; use certificate_issuer_cert instead
+  - added myproxy_accept_delegation_ex() to retrieve credentials to a
+    buffer rather than a file
+  - in myproxy-logon, added support for writing credential to standard
+    output via '-o -' option; also added --quiet option
+  - added myproxy-logon --no_credentials option to authenticate
+    without retrieving credentials
+  - added certificate_mapapp call-out for mapping usernames to
+    certificate subject distinguished names for the CA module
+  - added certificate_extfile and certificate_extapp (call-out) for
+    setting extensions in certificates issued by CA module
+  - do not indicate in info command error output whether credentials
+    owned by someone else exist, to avoid giving potentially useful
+    information to an attacker
+  - delegate credentials with minimum lifetime of 5 minutes to avoid
+    problems with clock skew
+  - fixed build problem with GT 2.4/3.0 introduced in v3.4:
+    EVP_MD_CTX_cleanup() wasn't in OpenSSL 0.9.6
+
+v3.4 19 Dec 2005
+  - added myproxy-test -valgrind option for detecting memory errors
+  - fixed memory errors found with myproxy-test -valgrind
+
+v3.3 2 Dec 2005
+  - API changes: new trusted_retrievers member for
+    struct myproxy_creds and struct myproxy_request_t
+  - generate 1024 bit keys instead of 512 bit keys
+  - add support for certificate-only authentication to the
+    myproxy-server via myproxy-init -Z and myproxy-server.config
+    trusted_retrievers options
+  - add support for CA username to DN resolution via LDAP using
+    myproxy-server.config ca_ldap options
+  - add myproxy-server authentication support for Pubcookie
+    (http://www.pubcookie.org/) granting cookie via
+    pubcookie_granting_cert and pubcookie_app_server_key
+    myproxy-server.config options
+  - add myproxy-init --local_proxy option to create a local proxy
+    credential after storing a credential on the myproxy-server
+  - add myproxy-init --keyfile/--certfile options
+  - fix segmentation fault on reverse lookup in client
+  - fix SASL build problems on Darwin
+  - fix client-side memory leak in GSI_SOCKET_authentication_init()
+  - in CA, use SHA1 instead of MD5 digest algorithm, set CA:FALSE in
+    X509v3 Basic Constraints, include X509v3 Subject Key Identifier,
+    and optionally set email X509v3 Subject Alternative Name using
+    certificate_issuer_email_domain in myproxy-server.config
+  - support alternate syntax "min max" for GLOBUS_TCP_PORT_RANGE and
+    improve error handling and documentation for this environment
+    variable
+
+v3.2 11 Oct 2005
+  - fix fd_set compiler error introduced in v3.1
+
+v3.1 11 Oct 2005
+  - fix compilation problem on platforms without setenv()
+
+v3.0 28 Sep 2005
+  - add ability for myproxy-server to act as a CA by setting
+    certificate_issuer options in myproxy-server.config
+  - fix for static builds using 'gpt-build -static'
+  - fixes for SASL support
+  - increased myproxy-server's listen(2) backlog for improved
+    scalability
+  - modify myproxy-test to use "$LOGNAME.myproxy-test" for a username
+    to avoid overwriting any existing credentials
+  - include configured trusted certificate directory in debug/verbose
+    output
+  - install example myproxy-server.config to
+    $GLOBUS_LOCATION/share/myproxy instead of potentially overwriting
+    existing version in $GLOBUS_LOCATION/etc
+  - warn on unknown directives in myproxy-server.config
+
 v2.3 28 Jul 2005
   - fix AIX compliation problems in PAM module
-  - fix for static builds using 'gpt-build -static'
 
 v2.2 14 Jul 2005
   - fix TRU64 compilation problem
@@ -54,8 +127,6 @@ v0.6.5 8 Apr 2005 (GPT package version 1.17)
   - write temp proxy to /tmp/myproxy-proxy.<uid>.<pid> instead of
     /tmp/myproxy-proxy.<uid> so we can run more than one myproxy-init
     in an account at a time
-  - increased myproxy-server's listen(2) backlog for improved
-    scalability
   - added myproxy-test -performance option for performance testing
   - fixed potential logging race condition when running myproxy-server
     in verbose mode

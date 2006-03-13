@@ -46,15 +46,12 @@ add_entry(char **entries,
     
     my_entry = strdup(entry);
     
-    if (my_entry == NULL)
-    {
+    if (my_entry == NULL) {
 	return NULL;
     }
     
-    if (entries != NULL)
-    {
-	while (entries[current_length] != NULL)
-	{
+    if (entries != NULL) {
+	while (entries[current_length] != NULL) {
 	    current_length++;
 	}
     }
@@ -64,14 +61,13 @@ add_entry(char **entries,
 
     new_entries = realloc(entries, new_size);
     
-    if (new_entries == NULL)
-    {
+    if (new_entries == NULL) {
 	return NULL;
     }
-
+    
     new_entries[current_length] = my_entry;
     new_entries[current_length + 1] = NULL;
-
+    
     return new_entries;
 }
 
@@ -91,239 +87,195 @@ line_parse_callback(void *context_arg,
     myproxy_server_context_t *context = context_arg;
     const char *directive;
     int return_code = -1;
+    int index;
     
     assert(context != NULL);
     
-    if ((tokens == NULL) ||
-	(*tokens == NULL))
-    {
-	/* Blank line */
-	return 0;
+    if ((tokens == NULL) || (*tokens == NULL) || (**tokens == '#')) {
+	return 0; /* Blank line or comment */
     }
 
     directive = tokens[0];
-
+    
     /* allowed_clients is the old name for accepted_credentials */
     if ((strcmp(directive, "allowed_clients") == 0) ||
-	(strcmp(directive, "accepted_credentials") == 0))
-    {
-	int index = 1; /* Skip directive */
-	
-	while(tokens[index] != NULL)
-	{
+	(strcmp(directive, "accepted_credentials") == 0)) {
+	for (index=1; tokens[index] != NULL; index++) {
 	    context->accepted_credential_dns =
-		add_entry(context->accepted_credential_dns,
-			  tokens[index]);
-	    
-	    if (context->accepted_credential_dns == NULL)
-	    {
-                verror_put_string("Parameter: %s", directive);
+		add_entry(context->accepted_credential_dns, tokens[index]);
+	    if (context->accepted_credential_dns == NULL) {
 		goto error;
 	    }
-
-	    index++;
 	}
     }
 
     /* allowed_services is the old name for authorized_retrievers */
-    if ((strcmp(directive, "allowed_services") == 0) ||
-	(strcmp(directive, "authorized_retrievers") == 0))
-    {
-	int index = 1; /* Skip directive */
-	
-	while(tokens[index] != NULL)
-	{
+    else if ((strcmp(directive, "allowed_services") == 0) ||
+	     (strcmp(directive, "authorized_retrievers") == 0)) {
+	for (index=1; tokens[index] != NULL; index++) {
 	    context->authorized_retriever_dns =
 		add_entry(context->authorized_retriever_dns,
 			  tokens[index]);
-	    
-	    if (context->authorized_retriever_dns == NULL)
-	    {
-                verror_put_string("Parameter: %s", directive);
+	    if (context->authorized_retriever_dns == NULL) {
 		goto error;
 	    }
-
-	    index++;
 	}
     }
-    
-    if((strcmp(directive, "default_retrievers") == 0))
-    {
-	int index = 1; /* Skip directive */
-	
-	while(tokens[index] != NULL)
-	{
+    else if((strcmp(directive, "default_retrievers") == 0)) {
+	for (index=1; tokens[index] != NULL; index++) {
 	    context->default_retriever_dns =
 		add_entry(context->default_retriever_dns,
 			  tokens[index]);
-	    
-	    if (context->default_retriever_dns == NULL)
-	    {
-                verror_put_string("Parameter: %s", directive);
+	    if (context->default_retriever_dns == NULL) {
 		goto error;
 	    }
-
-	    index++;
 	}
     }
-    
-    if (strcmp(directive, "authorized_renewers") == 0)
-    {
-	int index = 1; /* Skip directive */
-	
-	while(tokens[index] != NULL)
-	{
+    else if (strcmp(directive, "authorized_renewers") == 0) {
+	for (index=1; tokens[index] != NULL; index++) {
 	    context->authorized_renewer_dns =
 		add_entry(context->authorized_renewer_dns,
 			  tokens[index]);
-	    
-	    if (context->authorized_renewer_dns == NULL)
-	    {
-                verror_put_string("Parameter: %s", directive);
+	    if (context->authorized_renewer_dns == NULL) {
 		goto error;
 	    }
-
-	    index++;
 	}
     }
-    
-    if (strcmp(directive, "default_renewers") == 0)
-    {
-	int index = 1; /* Skip directive */
-	
-	while(tokens[index] != NULL)
-	{
+    else if (strcmp(directive, "default_renewers") == 0) {
+	for (index=1; tokens[index] != NULL; index++) {
 	    context->default_renewer_dns =
 		add_entry(context->default_renewer_dns,
 			  tokens[index]);
-	    
-	    if (context->default_renewer_dns == NULL)
-	    {
-                verror_put_string("Parameter: %s", directive);
+	    if (context->default_renewer_dns == NULL) {
 		goto error;
 	    }
-
-	    index++;
 	}
     }
-    
-    if (strcmp(directive, "authorized_key_retrievers") == 0)
-    {
-	int index = 1; /* Skip directive */
-	
-	while(tokens[index] != NULL)
-	{
+    else if (strcmp(directive, "authorized_key_retrievers") == 0) {
+	for (index=1; tokens[index] != NULL; index++) {
 	    context->authorized_key_retrievers_dns =
 		add_entry(context->authorized_key_retrievers_dns,
 			  tokens[index]);
-	    
-	    if (context->authorized_key_retrievers_dns == NULL)
-	    {
-                verror_put_string("Parameter: %s", directive);
+	    if (context->authorized_key_retrievers_dns == NULL) {
 		goto error;
 	    }
-
-	    index++;
 	}
     }
-    
-    if (strcmp(directive, "default_key_retrievers") == 0)
-    {
-	int index = 1; /* Skip directive */
-	
-	while(tokens[index] != NULL)
-	{
+    else if (strcmp(directive, "default_key_retrievers") == 0) {
+	for (index=1; tokens[index] != NULL; index++) {
 	    context->default_key_retrievers_dns =
 		add_entry(context->default_key_retrievers_dns,
 			  tokens[index]);
-	    
-	    if (context->default_key_retrievers_dns == NULL)
-	    {
-                verror_put_string("Parameter: %s", directive);
+	    if (context->default_key_retrievers_dns == NULL) {
 		goto error;
 	    }
-
-	    index++;
 	}
     }
-   
-    /* List of myproxy secondary_servers. */ 
-    if (strcmp(directive, "secondary_servers") == 0)
-    {
-        if( context->primary_server != NULL)
-        {
-            verror_put_string("Can't have both secondary_servers and primary_server set.");
-            goto error;
-        }
-
-	int index = 1; /* Skip directive */
-	
-	while(tokens[index] != NULL)
-	{
-	    context->secondary_servers =
-		add_entry(context->secondary_servers,
+    else if (strcmp(directive, "trusted_retrievers") == 0) {
+	for (index=1; tokens[index] != NULL; index++) {
+	    context->trusted_retriever_dns =
+		add_entry(context->trusted_retriever_dns,
 			  tokens[index]);
-	    
-	    if (context->secondary_servers == NULL)
-	    {
-                verror_put_string("Parameter: %s", directive);
+	    if (context->trusted_retriever_dns == NULL) {
 		goto error;
 	    }
-
-	    index++;
 	}
     }
-   
-    /* Myproxy primary_server server used in fail over. */ 
-    if (strcmp(directive, "primary_server") == 0)
-    {
-        if( context->secondary_servers != NULL)
-        {
-            verror_put_string("Can't have both secondary_servers and primary_server set.");
-            goto error;
-        }
-
-	int index = 1; /* Skip directive */
-	
-	while(tokens[index] != NULL)
-	{
-	    context->primary_server =
-		add_entry(context->primary_server,
+    else if (strcmp(directive, "default_trusted_retrievers") == 0) {
+	for (index=1; tokens[index] != NULL; index++) {
+	    context->default_trusted_retriever_dns =
+		add_entry(context->default_trusted_retriever_dns,
 			  tokens[index]);
-	    
-	    if (context->primary_server == NULL)
-	    {
-                verror_put_string("Parameter: %s", directive);
+	    if (context->default_trusted_retriever_dns == NULL) {
 		goto error;
 	    }
-
-	    index++;
 	}
     }
-
-    if (strcmp(directive, "passphrase_policy_program") == 0)
-    {
+    else if (strcmp(directive, "passphrase_policy_program") == 0) {
 	context->passphrase_policy_pgm = strdup(tokens[1]);
     }
-
-    if (strcmp(directive, "max_proxy_lifetime") == 0)
-    {
+    else if (strcmp(directive, "max_proxy_lifetime") == 0) {
 	context->max_proxy_lifetime = 60*60*atoi(tokens[1]);
     }
-
-    if (strcmp(directive, "cert_dir") == 0)
-    {
+    else if (strcmp(directive, "cert_dir") == 0) {
 	context->cert_dir = strdup(tokens[1]);
     }
-
-    if (strcmp(directive, "pam") == 0)
-    {
+    else if (strcmp(directive, "pam") == 0) {
 	context->pam_policy = strdup(tokens[1]);
     }
-
-    if (strcmp(directive, "pam_id") == 0)
-    {
+    else if (strcmp(directive, "pam_id") == 0) {
 	context->pam_id = strdup(tokens[1]);
+    }
+    else if (strcmp(directive, "sasl") == 0) {
+	context->sasl_policy = strdup(tokens[1]);
+    }
+
+    /* these were added to support the online CA functionality */
+    else if (strcmp(directive, "certificate_issuer_program") == 0) {
+	context->certificate_issuer_program = strdup(tokens[1]);
+    }
+    else if (strcmp(directive, "certificate_issuer_cert") == 0) {
+	context->certificate_issuer_cert = strdup(tokens[1]);
+    }
+    else if (strcmp(directive, "certificate_issuer_key") == 0) {
+	context->certificate_issuer_key = strdup(tokens[1]);
+    }
+    else if (strcmp(directive, "certificate_issuer_key_passphrase") == 0) {
+	context->certificate_issuer_key_passphrase = strdup(tokens[1]);
+    }
+    else if (strcmp(directive, "certificate_issuer_email_domain") == 0) {
+	context->certificate_issuer_email_domain = strdup(tokens[1]);
+    }
+    else if (strcmp(directive, "certificate_extfile") == 0) {
+	context->certificate_extfile = strdup(tokens[1]);
+    }
+    else if (strcmp(directive, "certificate_extapp") == 0) {
+	context->certificate_extapp = strdup(tokens[1]);
+    }
+    else if (strcmp(directive, "certificate_mapfile") == 0) {
+	context->certificate_mapfile = strdup(tokens[1]);
+    }
+    else if (strcmp(directive, "certificate_mapapp") == 0) {
+	context->certificate_mapapp = strdup(tokens[1]);
+    }
+    else if (strcmp(directive, "max_cert_lifetime") == 0) {
+	context->max_cert_lifetime = 60*60*atoi(tokens[1]);
+    }
+    else if (strcmp(directive, "certificate_serialfile") == 0) {
+	context->certificate_serialfile = strdup(tokens[1]);
+    }
+
+    /* added for username-to-dn ldap support for internal CA */
+    else if (strcmp(directive, "ca_ldap_server") == 0) {
+	context->ca_ldap_server = strdup(tokens[1]);
+    }
+    else if (strcmp(directive, "ca_ldap_searchbase") == 0) {
+	context->ca_ldap_searchbase = strdup(tokens[1]);
+    }
+    else if (strcmp(directive, "ca_ldap_connect_dn") == 0) {
+	context->ca_ldap_connect_dn = strdup(tokens[1]);
+    }
+    else if (strcmp(directive, "ca_ldap_connect_passphrase") == 0) {
+	context->ca_ldap_connect_passphrase = strdup(tokens[1]);
+    }
+    else if (strcmp(directive, "ca_ldap_uid_attribute") == 0) {
+	context->ca_ldap_uid_attribute = strdup(tokens[1]);
+    }
+    else if (strcmp(directive, "ca_ldap_dn_attribute") == 0) {
+	context->ca_ldap_dn_attribute = strdup(tokens[1]);
+    }
+
+    /* pubcookie stuff */
+    else if (strcmp(directive, "pubcookie_granting_cert") == 0) {
+	context->pubcookie_cert = strdup(tokens[1]);
+    }
+    else if (strcmp(directive, "pubcookie_app_server_key") == 0) {
+	context->pubcookie_key = strdup(tokens[1]);
+    }
+
+    else {
+	myproxy_log("warning: unknown directive (%s) in myproxy-server.config",
+		    directive);
     }
 
     return_code = 0;
@@ -507,6 +459,134 @@ is_name_in_list(const char **list,
     return return_code;
 }
 
+static int
+check_config(myproxy_server_context_t *context)
+{
+    int rval = 0;
+
+    if (!context->accepted_credential_dns) {
+	myproxy_debug("accepted_credentials not set.");
+	myproxy_debug("server will not allow clients to store credentials.");
+    }
+    if (!context->authorized_retriever_dns) {
+	myproxy_debug("authorized_retrievers not set.");
+	myproxy_debug("server will not allow clients to retrieve credentials.");
+    }
+    if (!context->authorized_renewer_dns) {
+	myproxy_debug("authorized_renewers not set.");
+	myproxy_debug("server will not allow clients to renew credentials.");
+    }
+    if (!context->authorized_key_retrievers_dns) {
+	myproxy_debug("authorized_key_retrievers not set.");
+	myproxy_debug("server will not allow clients to retrieve keys.");
+    }
+    if (context->passphrase_policy_pgm) {
+	if (access(context->passphrase_policy_pgm, X_OK) < 0) {
+	    verror_put_string("passphrase_policy_pgm %s not executable",
+			      context->passphrase_policy_pgm);
+	    verror_put_errno(errno);
+	    rval = -1;
+	} else {
+	    myproxy_log("passphrase policy checking enabled: %s",
+			context->passphrase_policy_pgm);
+	}
+    }
+    if (context->max_proxy_lifetime) {
+	myproxy_log("max_proxy_lifetime: %d seconds",
+		    context->max_proxy_lifetime);
+    }
+    if (context->pam_policy &&
+	(!strcmp(context->pam_policy, "required") ||
+	 (strcmp(context->pam_policy, "sufficient")))) {
+	myproxy_log("PAM enabled, policy %s", context->pam_policy);
+    }
+    if (context->sasl_policy &&
+	(!strcmp(context->sasl_policy, "required") ||
+	 (strcmp(context->sasl_policy, "sufficient")))) {
+	myproxy_log("SASL enabled, policy %s", context->sasl_policy);
+    }
+    if (context->certificate_issuer_program) {
+	if (access(context->certificate_issuer_program, X_OK) < 0) {
+	    verror_put_string("certificate_issuer_program %s not executable",
+			      context->certificate_issuer_program);
+	    verror_put_errno(errno);
+	    rval = -1;
+	} else {
+	    myproxy_log("CA enabled: %s", context->certificate_issuer_program);
+	}
+    }
+    if (context->certificate_issuer_cert) {
+	if (access(context->certificate_issuer_cert, R_OK) < 0) {
+	    verror_put_string("certificate_issuer_cert %s unreadable",
+			      context->certificate_issuer_cert);
+	    verror_put_errno(errno);
+	    rval = -1;
+	}
+	if (access(context->certificate_issuer_key, R_OK) < 0) {
+	    verror_put_string("certificate_issuer_key %s unreadable",
+			      context->certificate_issuer_key);
+	    verror_put_errno(errno);
+	    rval = -1;
+	}
+	if (context->certificate_extfile &&
+	    access(context->certificate_extfile, R_OK) < 0) {
+	    verror_put_string("certificate_extfile %s not readable",
+			      context->certificate_extfile);
+	    verror_put_errno(errno);
+	    rval = -1;
+	}
+	if (context->certificate_extapp &&
+	    access(context->certificate_extapp, X_OK) < 0) {
+	    verror_put_string("certificate_extapp %s not executable",
+			      context->certificate_extapp);
+	    verror_put_errno(errno);
+	    rval = -1;
+	}
+	if (context->certificate_mapfile &&
+	    access(context->certificate_mapfile, R_OK) < 0) {
+	    verror_put_string("certificate_mapfile %s not readable",
+			      context->certificate_mapfile);
+	    verror_put_errno(errno);
+	    rval = -1;
+	}
+	if (context->certificate_mapapp &&
+	    access(context->certificate_mapapp, X_OK) < 0) {
+	    verror_put_string("certificate_mapapp %s not executable",
+			      context->certificate_mapapp);
+	    verror_put_errno(errno);
+	    rval = -1;
+	}
+	if (!rval) {
+	    myproxy_log("CA enabled");
+	    if (context->max_cert_lifetime) {
+		myproxy_log("max certificate lifetime: %s seconds",
+			    context->max_cert_lifetime);
+	    }
+	    if (context->ca_ldap_server) {
+		if (!context->ca_ldap_searchbase) {
+		    verror_put_string("ca_ldap_server requires ca_ldap_searchbase");
+		    rval = -1;
+		}
+		if (!context->ca_ldap_uid_attribute) {
+		    verror_put_string("ca_ldap_server requires ca_ldap_searchbase");
+		    rval = -1;
+		}
+	    }
+	}
+    }
+    if (context->pubcookie_cert) {
+	if (access(context->pubcookie_cert, R_OK) < 0) {
+	    verror_put_string("pubcookie_cert %s unreadable",
+			      context->pubcookie_cert);
+	    verror_put_errno(errno);
+	    rval = -1;
+	} else {
+	    myproxy_log("Pubcookie support enabled");
+	}
+    }
+
+    return rval;
+}
 
 
 /**********************************************************************
@@ -569,7 +649,8 @@ myproxy_server_config_read(myproxy_server_context_t *context)
 			  context->config_file);
 	goto error;
     }
-
+    myproxy_debug("reading configuration file %s", context->config_file);
+    
     /* Clear any outstanding error */
     verror_clear();
     
@@ -597,8 +678,7 @@ myproxy_server_config_read(myproxy_server_context_t *context)
 	GLOBUS_GSI_SYSCONFIG_GET_CERT_DIR(&context->cert_dir);
     }
 
-    /* Success */
-    return_code = 0;
+    return_code = check_config(context);
     
   error:
     if (config_stream != NULL)

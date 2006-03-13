@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_REVISION($Revision: 1.50 $)
+AC_REVISION($Revision: 1.51 $)
 AC_INIT(Makefile.am)
 
 GLOBUS_INIT
@@ -135,6 +135,28 @@ if test "x$ac_cv_header_security_pam_appl_h" = "xyes" || \
    AC_CHECK_LIB(dl, dlopen, , )
    AC_CHECK_LIB(pam, pam_set_item, , )
 fi
+
+dnl
+dnl Check for OpenLDAP
+dnl
+
+AC_ARG_WITH(openldap,
+       [ --with-openldap=PATH    Build with OpenLDAP CA support],
+       [
+               if test "x$withval" = "xyes" ; then
+                  AC_MSG_ERROR([--with-openldap requires PATH argument])
+               fi
+               if test "x$withval" != "xno" ; then
+		  CPPFLAGS="-I${withval}/include $CPPFLAGS"
+		  LDFLAGS="$LDFLAGS -L${withval}/lib"
+		  AC_CHECK_HEADERS(ldap.h)
+		  AC_CHECK_LIB(ldap, ldap_sasl_bind_s, ,
+				     AC_MSG_ERROR([ldap_sasl_bind_s not found in libldap]) )
+		  AC_CHECK_LIB(ldap, ldap_search_ext_s, ,
+				     AC_MSG_ERROR([ldap_search_ext_s not found in libldap]) )
+               fi
+       ]
+)
 
 LAC_DOXYGEN([" ../ "])
 

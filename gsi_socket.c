@@ -275,91 +275,6 @@ assist_write_token(void *sock,
 }
 
 /*
- * Wrapper around setenv() function
- */
-static int
-mysetenv(const char *var,
-	 const char *value,
-	 int override)
-{
-#ifdef HAVE_SETENV
-
-    return setenv(var, value, override);
-
-#else /* !HAVE_SETENV */
-
-    char *envstr = NULL;
-    int status;
-
-
-    assert(var != NULL);
-    assert(value != NULL);
-    
-    /* If we're not overriding and it's already set, then return */
-    if (!override && getenv(var))
-	return 0;
-
-    envstr = malloc(strlen(var) + strlen(value) + 2 /* '=' and NUL */);
-
-    if (envstr == NULL)
-    {
-	return -1;
-    }
-    
-    sprintf(envstr, "%s=%s", var, value);
-
-    status = putenv(envstr);
-
-    /* Don't free envstr as it may still be in use */
-  
-    return status;
-#endif /* !HAVE_SETENV */
-}
-
-static void
-myunsetenv(const char *var)
-{
-#ifdef HAVE_UNSETENV
-    unsetenv(var);
-
-    return;
-    
-#else /* !HAVE_UNSETENV */
-    extern char **environ;
-    char **p1 = environ;	/* New array list */
-    char **p2 = environ;	/* Current array list */
-    int len = strlen(var);
-
-    assert(var != NULL);
-    
-    /*
-     * Walk through current environ array (p2) copying each pointer
-     * to new environ array (p1) unless the pointer is to the item
-     * we want to delete. Copy happens in place.
-     */
-    while (*p2) {
-	if ((strncmp(*p2, var, len) == 0) &&
-	    ((*p2)[len] == '=')) {
-	    /*
-	     * *p2 points at item to be deleted, just skip over it
-	     */
-	    p2++;
-	} else {
-	    /*
-	     * *p2 points at item we want to save, so copy it
-	     */
-	    *p1 = *p2;
-	    p1++;
-	    p2++;
-	}
-    }
-
-    /* And make sure new array is NULL terminated */
-    *p1 = NULL;
-#endif /* HAVE_UNSETENV */
-}
-
-/*
  * GSI_SOCKET_set_error_from_verror()
  *
  * Set the given GSI_SOCKET's error state from verror.
@@ -409,6 +324,7 @@ GSI_SOCKET_new(int sock)
     self->sock = sock;
 
     globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE);
+    globus_module_activate(GLOBUS_GSI_SYSCONFIG_MODULE);
 
     return self;
 }
@@ -611,9 +527,9 @@ GSI_SOCKET_use_creds(GSI_SOCKET *self,
     }
     else
     {
-	myunsetenv("X509_USER_CERT");
-	myunsetenv("X509_USER_KEY");
-        return_code = (mysetenv("X509_USER_PROXY", creds, 1) == -1) ? GSI_SOCKET_ERROR : GSI_SOCKET_SUCCESS;
+	unsetenv("X509_USER_CERT");
+	unsetenv("X509_USER_KEY");
+        return_code = (setenv("X509_USER_PROXY", creds, 1) == -1) ? GSI_SOCKET_ERROR : GSI_SOCKET_SUCCESS;
     }
 
     return return_code;
@@ -663,7 +579,8 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self, char *accepted_peer_names[])
     gss_OID			target_name_type = GSS_C_NO_OID;
     int				i, rc=0, sock;
     FILE			*fp = NULL;
-
+    char                        *cert_dir = NULL;
+    
     if (self == NULL)
     {
 	return GSI_SOCKET_ERROR;
@@ -680,6 +597,13 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self, char *accepted_peer_names[])
 	goto error;
     }
 
+    GLOBUS_GSI_SYSCONFIG_GET_CERT_DIR(&cert_dir);
+    if (cert_dir) {
+	myproxy_debug("using trusted certificates directory %s", cert_dir);
+    } else {
+	myproxy_debug("error getting trusted certificates directory");
+    }
+
     self->major_status = globus_gss_assist_acquire_cred(&self->minor_status,
 							GSS_C_INITIATE,
 							&creds);
@@ -687,6 +611,8 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self, char *accepted_peer_names[])
     if (self->major_status != GSS_S_COMPLETE) {
 	if (self->allow_anonymous) {
 	    req_flags |= GSS_C_ANON_FLAG;
+	    myproxy_debug("no valid credentials found -- "
+			  "performing anonymous authentication");
 	} else {
 	    goto error;
 	}
@@ -787,6 +713,7 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self, char *accepted_peer_names[])
 	self->major_status = gss_compare_name(&self->minor_status,
 					      server_gss_name,
 					      target_name, &rc);
+        gss_release_name(&self->minor_status, &target_name);
 	if (self->major_status != GSS_S_COMPLETE) {
 	    char error_string[1050];
 	    sprintf(error_string,
@@ -795,6 +722,7 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self, char *accepted_peer_names[])
 	    self->error_string = strdup(error_string);
 	    goto error;
 	}
+
 	if (rc) {
 	    myproxy_debug("server name accepted");
 	    break;
@@ -818,6 +746,7 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self, char *accepted_peer_names[])
 	gss_release_buffer(&minor_status, &gss_buffer);
 	gss_release_name(&minor_status, &server_gss_name);
     }
+    if (cert_dir) free(cert_dir);
     if (fp) fclose(fp);
     
     return return_value;
@@ -833,6 +762,7 @@ GSI_SOCKET_authentication_accept(GSI_SOCKET *self)
     OM_uint32			gss_flags = 0;
     int				sock;
     FILE			*fp = NULL;
+    char                        *cert_dir = NULL;
 
     if (self == NULL) {	
 	return GSI_SOCKET_ERROR;
@@ -841,6 +771,13 @@ GSI_SOCKET_authentication_accept(GSI_SOCKET *self)
     if (self->gss_context != GSS_C_NO_CONTEXT) {
 	self->error_string = strdup("GSI_SOCKET already authenticated");
 	goto error;
+    }
+
+    GLOBUS_GSI_SYSCONFIG_GET_CERT_DIR(&cert_dir);
+    if (cert_dir) {
+	myproxy_debug("using trusted certificates directory %s", cert_dir);
+    } else {
+	myproxy_debug("error getting trusted certificates directory");
     }
 
     self->major_status = globus_gss_assist_acquire_cred(&self->minor_status,
@@ -874,7 +811,7 @@ GSI_SOCKET_authentication_accept(GSI_SOCKET *self)
 	self->error_number = errno;
 	goto error;
     }
- 
+    
     self->major_status =
 	globus_gss_assist_accept_sec_context(&self->minor_status,
 					     &self->gss_context,
@@ -904,6 +841,7 @@ GSI_SOCKET_authentication_accept(GSI_SOCKET *self)
 
 	gss_release_cred(&minor_status, &creds);
     }
+    if (cert_dir) free(cert_dir);
     if (fp) fclose(fp);
     
     return return_value;
@@ -932,7 +870,7 @@ GSI_SOCKET_get_peer_name(GSI_SOCKET *self,
 	self->error_string = strdup("Client not authenticated");
 	goto error;
     }
-
+    
     return_value = my_strncpy(buffer, self->peer_name, buffer_len);
 
     if (return_value == -1)
@@ -948,44 +886,45 @@ GSI_SOCKET_get_peer_name(GSI_SOCKET *self,
     return return_value;
 }
 
+
 char *
 GSI_SOCKET_get_peer_hostname(GSI_SOCKET *self)
 {
-    struct sockaddr_in          addr;
-    int                         addr_len = sizeof(addr);
-    struct hostent              *info;
+    struct sockaddr_in		addr;
+    socklen_t			addr_len = sizeof(addr);
+    struct hostent		*info;
 
     if (getpeername(self->sock, (struct sockaddr *) &addr,
-                    &addr_len) < 0) {
-        self->error_number = errno;
-        self->error_string = strdup("Could not get peer address");
-        return NULL;
+		    &addr_len) < 0) {
+	self->error_number = errno;
+	self->error_string = strdup("Could not get peer address");
+	return NULL;
     }
 
     info = gethostbyaddr((char *)&addr.sin_addr,
-                         sizeof(addr.sin_addr),
-                         addr.sin_family);
+			 sizeof(addr.sin_addr),
+			 addr.sin_family);
     if ((info == NULL) || (info->h_name == NULL)) {
-        self->error_number = errno;
-        self->error_string = strdup("Could not get peer hostname");
-        return NULL;
+	self->error_number = errno;
+	self->error_string = strdup("Could not get peer hostname");
+	return NULL;
     }
 
     if (info->h_addrtype == AF_INET) { /* check for localhost */
-        struct in_addr inaddr;
-        inaddr = *(struct in_addr *)(info->h_addr);
-        if (ntohl(inaddr.s_addr) == INADDR_LOOPBACK) {
-            char buf[MAXHOSTNAMELEN];
-            if (gethostname(buf, sizeof(buf)) < 0) {
-                self->error_number = errno;
-                self->error_string = strdup("gethostname() failed");
-                return NULL;
-            }
-            info = gethostbyname(buf);
-            if (info == NULL || info->h_name == NULL) {
-                return strdup(buf);
-            }
-        }
+	struct in_addr inaddr;
+	inaddr = *(struct in_addr *)(info->h_addr);
+	if (ntohl(inaddr.s_addr) == INADDR_LOOPBACK) {
+	    char buf[MAXHOSTNAMELEN];
+	    if (gethostname(buf, sizeof(buf)) < 0) {
+		self->error_number = errno;
+		self->error_string = strdup("gethostname() failed");
+		return NULL;
+	    }
+	    info = gethostbyname(buf);
+	    if (info == NULL || info->h_name == NULL) {
+		return strdup(buf);
+	    }
+	}
     }
 
     return strdup(info->h_name);
@@ -1004,6 +943,14 @@ GSI_SOCKET_write_buffer(GSI_SOCKET *self,
 	return GSI_SOCKET_ERROR;
     }
     
+#if 0
+    if (buffer[buffer_len-1] == '\0') {
+	myproxy_debug("writing a null-terminated message");
+    } else {
+	myproxy_debug("writing a non-null-terminated message");
+    }
+#endif
+
     if ((buffer == NULL) || (buffer_len == 0))
     {
 	return 0;
@@ -1168,6 +1115,14 @@ int GSI_SOCKET_read_token(GSI_SOCKET *self,
     *pbuffer_len = bytes_read;
     return_status = GSI_SOCKET_SUCCESS;
     /* myproxy_debug("\nread:\n%s\n", buffer); */
+
+#if 0
+    if (buffer[bytes_read-1] == '\0') {
+	myproxy_debug("read a null-terminated message");
+    } else {
+	myproxy_debug("read a non-null-terminated message");
+    }
+#endif
     
   error:
     return return_status;
@@ -1306,10 +1261,10 @@ int GSI_SOCKET_delegation_init_ext(GSI_SOCKET *self,
 
 
 int
-GSI_SOCKET_delegation_accept_ext(GSI_SOCKET *self,
-				 char *delegated_credentials,
-				 int delegated_credentials_len,
-				 char *passphrase)
+GSI_SOCKET_delegation_accept(GSI_SOCKET *self,
+			     unsigned char **delegated_credentials,
+			     int *delegated_credentials_len,
+			     char *passphrase)
 {
     int			return_value = GSI_SOCKET_ERROR;
     SSL_CREDENTIALS	*creds = NULL;
@@ -1317,7 +1272,6 @@ GSI_SOCKET_delegation_accept_ext(GSI_SOCKET *self,
     int			output_buffer_len;
     unsigned char	*input_buffer = NULL;
     size_t		input_buffer_len;
-    char		filename[L_tmpnam];
     unsigned char	*fmsg;
     int                 i;
     
@@ -1380,26 +1334,14 @@ GSI_SOCKET_delegation_accept_ext(GSI_SOCKET *self,
 	goto error;
     }
     
-    /* Now store the credentials */
-    if (tmpnam(filename) == NULL)
-    {
-	self->error_number = errno;
-	self->error_string = strdup("tmpnam() failed");
-	goto error;
-    }
-    
     if (passphrase && passphrase[0] == '\0') {
 	passphrase = NULL;
     }
-    if (ssl_proxy_store_to_file(creds, filename, passphrase) == SSL_ERROR)
+    if (ssl_proxy_to_pem(creds, delegated_credentials,
+			 delegated_credentials_len, passphrase) == SSL_ERROR)
     {
 	GSI_SOCKET_set_error_from_verror(self);
 	goto error;
-    }
-    
-    if (delegated_credentials != NULL)
-    {
-	strncpy(delegated_credentials, filename, delegated_credentials_len);
     }
     
     /* Success */
@@ -1416,6 +1358,64 @@ GSI_SOCKET_delegation_accept_ext(GSI_SOCKET *self,
 	GSI_SOCKET_free_token(input_buffer);
     }
     
+    if (output_buffer != NULL)
+    {
+	ssl_free_buffer(output_buffer);
+    }
+
+    return return_value;
+}
+
+int
+GSI_SOCKET_delegation_accept_ext(GSI_SOCKET *self,
+				 char *delegated_credentials,
+				 int delegated_credentials_len,
+				 char *passphrase)
+{
+    int			return_value = GSI_SOCKET_ERROR;
+    unsigned char	*output_buffer = NULL;
+    int			output_buffer_len;
+    char		filename[L_tmpnam];
+    int			fd = -1;
+
+
+    if (GSI_SOCKET_delegation_accept(self, &output_buffer, &output_buffer_len,
+				     passphrase) != GSI_SOCKET_SUCCESS) {
+	goto error;
+    }
+    
+    /* Now store the credentials */
+    if (tmpnam(filename) == NULL)
+    {
+	self->error_number = errno;
+	self->error_string = strdup("tmpnam() failed");
+	goto error;
+    }
+    
+    fd = open(filename, O_CREAT | O_EXCL | O_WRONLY, S_IRUSR | S_IWUSR);
+    if (fd == -1)
+    {
+	verror_put_string("Error creating %s", filename);
+	verror_put_errno(errno);
+	goto error;
+    }
+
+    if (write(fd, output_buffer, output_buffer_len) == -1)
+    {
+	verror_put_errno(errno);
+	verror_put_string("Error writing proxy to %s", filename);
+	goto error;
+    }
+    
+    if (delegated_credentials != NULL)
+    {
+	strncpy(delegated_credentials, filename, delegated_credentials_len);
+    }
+    
+    /* Success */
+    return_value = GSI_SOCKET_SUCCESS;
+    
+  error:
     if (output_buffer != NULL)
     {
 	ssl_free_buffer(output_buffer);
@@ -1488,7 +1488,8 @@ int GSI_SOCKET_credentials_accept_ext(GSI_SOCKET *self,
     if ((fd = open(filename, O_CREAT | O_EXCL | O_WRONLY,
                  S_IRUSR | S_IWUSR)) < 0) 
     {
-      fprintf(stderr, "open(%s) failed: %s\n", filename, strerror(errno));
+      self->error_string =
+	  strdup("open() failed in GSI_SOCKET_credentials_accept_ext");
       goto error;
     }
 
