@@ -408,7 +408,8 @@ myproxy_accept_delegation_ex(myproxy_socket_attrs_t *attrs, char **credentials,
   assert(attrs);
   assert(credentials != NULL);
 
-  if (GSI_SOCKET_delegation_accept(attrs->gsi_socket, credentials,
+  if (GSI_SOCKET_delegation_accept(attrs->gsi_socket,
+				   (unsigned char **)credentials,
 				   credential_len,
 				   passphrase) == GSI_SOCKET_ERROR) {
     GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
