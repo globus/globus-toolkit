@@ -127,5 +127,8 @@ int myproxy_get_delegation(
 	close(fd);
     }
 
+    memset(credentials, 0, credential_len);
+    free(credentials);
+
     return(0);
 }
