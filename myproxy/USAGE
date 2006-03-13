@@ -11,6 +11,7 @@ desperate attempt to maintain some consistency.
 -K | --creddesc       <desc>      Specifies credential description
 -L | --lock         'msg'       Lock access to credential(s). Specified msg will be returned instead.
 -L | --local_proxy   Create a local proxy credential
+-N | --no_credentials       Authenticate only. Don't retrieve credentials.
 -P | --pidfile <path>       Specifies a file to write the pid to
 -R | --renewable_by    <dn>       Allow specified entity to renew credential
 -R | --renewable_by   <dn>        Allow specified entity to renew credential

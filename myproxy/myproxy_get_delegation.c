@@ -33,6 +33,8 @@ static char usage[] = \
 "       -S | --stdin_pass                 Read passphrase from stdin\n"
 "       -T | --trustroots                 Manage trust roots\n"
 "       -n | --no_passphrase              Don't prompt for passphrase\n"
+"       -N | --no_credentials             Authenticate only. Don't retrieve\n"
+"                                         credentials.\n"
 "       -q | --quiet                      Only output on error\n"
 "\n";
 
@@ -53,11 +55,12 @@ struct option long_options[] =
     {"stdin_pass",             no_argument, NULL, 'S'},
     {"trustroots",             no_argument, NULL, 'T'},
     {"no_passphrase",          no_argument, NULL, 'n'},
+    {"no_passphrase",          no_argument, NULL, 'N'},
     {"quiet",                  no_argument, NULL, 'q'},
     {0, 0, 0, 0}
 };
 
-static char short_options[] = "hus:p:l:t:o:vVa:dk:SnTq";
+static char short_options[] = "hus:p:l:t:o:vVa:dk:SnNTq";
 
 static char version[] =
 "myproxy-logon version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
@@ -79,6 +82,7 @@ static int dn_as_username = 0;
 static int read_passwd_from_stdin = 0;
 static int use_empty_passwd = 0;
 static int quiet = 0;
+static int no_credentials = 0;
 
 int
 main(int argc, char *argv[]) 
@@ -122,7 +126,7 @@ main(int argc, char *argv[])
         goto cleanup;
     }
     
-    if (!outputfile) {
+    if (!outputfile && !no_credentials) {
 	globus_module_activate(GLOBUS_GSI_SYSCONFIG_MODULE);
 	GLOBUS_GSI_SYSCONFIG_GET_PROXY_FILENAME(&outputfile,
 						GLOBUS_PROXY_FILE_OUTPUT);
@@ -181,11 +185,13 @@ main(int argc, char *argv[])
 	goto cleanup;
     }
 
-    if (!quiet)
-	printf("A credential has been received for user %s in %s.\n",
-	       client_request->username, outputfile);
-    free(outputfile);
-    verror_clear();
+    if (outputfile) {
+	if (!quiet)
+	    printf("A credential has been received for user %s in %s.\n",
+		   client_request->username, outputfile);
+	free(outputfile);
+	verror_clear();
+    }
 
     /* Store file in trusted directory if requested and returned */
     if (client_request->want_trusted_certs) {
@@ -257,6 +263,9 @@ init_arguments(int argc,
 	    break;
 	case 'n':       /* no passphrase */
 	    use_empty_passwd = 1;
+	    break;
+	case 'N':
+	    no_credentials = 1;
 	    break;
 	case 'q':
 	    quiet = 1;
