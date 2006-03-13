@@ -218,12 +218,26 @@ int myproxy_init_delegation(myproxy_socket_attrs_t *attrs,
 /*
  * myproxy_accept_delegation()
  *
- * Accepts delegated credentials into file location data
+ * Accepts delegated credentials into a file, and sets
+ * path in provided buffer.
  *
  * returns 0 on success, -1 on error 
  */
-int myproxy_accept_delegation(myproxy_socket_attrs_t *attrs, char *data,
-			      const int datalen, char *passphrase);
+int myproxy_accept_delegation(myproxy_socket_attrs_t *attrs, char *delegfile,
+			      const int delegfile_len, char *passphrase);
+
+/*
+ * myproxy_accept_delegation_ex()
+ *
+ * Accepts delegated credentials into a newly allocated buffer.
+ * The caller must deallocate the buffer.
+ * Private key is encrypted with passphrase, if provided (may be NULL).
+ *
+ * returns 0 on success, -1 on error 
+ */
+int myproxy_accept_delegation_ex(myproxy_socket_attrs_t *attrs,
+				 char **credentials,
+				 int *credential_len, char *passphrase);
 
 /*
  * myproxy_accept_credentials()
