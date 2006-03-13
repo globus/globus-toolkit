@@ -54,12 +54,14 @@ void init_arguments(int argc, char *argv[],
 int
 main(int argc, char *argv[]) 
 {    
+    char *pshost = NULL;
+    char *request_buffer = NULL;
+    int requestlen;
+    int return_value = 1;
+
     myproxy_socket_attrs_t *socket_attrs;
     myproxy_request_t      *client_request;
     myproxy_response_t     *server_response;
-    myproxy_data_parameters_t  *data_parameters;
-
-    int retval = 0;
     
     /* check library version */
     if (myproxy_check_version()) {
@@ -80,38 +82,117 @@ main(int argc, char *argv[])
     server_response = malloc(sizeof(*server_response));
     memset(server_response, 0, sizeof(*server_response));
 
-    data_parameters = malloc(sizeof(*data_parameters));
-    memset(data_parameters, 0, sizeof(*data_parameters));
-
     /* setup defaults */
     client_request->version = malloc(strlen(MYPROXY_VERSION) + 1);
     strcpy(client_request->version, MYPROXY_VERSION);
-    client_request->proxy_lifetime = 0;
+    client_request->command_type = MYPROXY_DESTROY_PROXY;
 
-    if( myproxy_init( socket_attrs,
-                      client_request,
-                      MYPROXY_DESTROY_PROXY ) < 0 )
-    {
-      return( 1 );
+    pshost = getenv("MYPROXY_SERVER");
+    if (pshost != NULL) {
+        socket_attrs->pshost = strdup(pshost);
+    }
+
+    client_request->proxy_lifetime = 0;
+    
+    if (getenv("MYPROXY_SERVER_PORT")) {
+	socket_attrs->psport = atoi(getenv("MYPROXY_SERVER_PORT"));
+    } else {
+	socket_attrs->psport = MYPROXY_SERVER_PORT;
     }
 
     /* Initialize client arguments and create client request object */
     init_arguments(argc, argv, socket_attrs, client_request);
 
-    data_parameters->dn_as_username = dn_as_username;
+    /*
+     * We don't need to send the real pass phrase to the server as it
+     * will just use our identity to authenticate and authorize us.
+     * But we need to send over a dummy pass phrase at least
+     * MIN_PASS_PHASE_LEN (currently 6) characters long.
+     */
+    strncpy(client_request->passphrase, "DUMMY-PASSPHRASE",
+	    sizeof(client_request->passphrase));
+    
+    /* Set up client socket attributes */
+    if (myproxy_init_client(socket_attrs) < 0) {
+	verror_print_error(stderr);
+        goto cleanup;
+    }
 
-    if( myproxy_failover( socket_attrs,
-                          client_request,
-                          server_response,
-                          data_parameters ) != 0 )
-    {
-      retval = 1;
+    /* Authenticate client to server */
+    if (myproxy_authenticate_init(socket_attrs, NULL /* Default proxy */) < 0) {
+	verror_print_error(stderr);
+	goto cleanup;
+    }
+
+    if (client_request->username == NULL) { /* set default username */
+	if (dn_as_username) {
+	    if (ssl_get_base_subject_file(NULL,
+					  &client_request->username)) {
+		fprintf(stderr,
+			"Cannot get subject name from your certificate\n");
+		goto cleanup;
+	    }
+	} else {
+	    char *username = NULL;
+	    if (!(username = getenv("LOGNAME"))) {
+		fprintf(stderr, "Please specify a username.\n");
+		goto cleanup;
+	    }
+	    client_request->username = strdup(username);
+	}
+    }
+
+    /* Serialize client request object */
+    requestlen = myproxy_serialize_request_ex(client_request, 
+					      &request_buffer);
+    
+    if (requestlen < 0) {
+	verror_print_error(stderr);
+        goto cleanup;
+    }
+
+    /* Send request to the myproxy-server */
+    if (myproxy_send(socket_attrs, request_buffer, requestlen) < 0) {
+	verror_print_error(stderr);
+        goto cleanup;
+    }
+    free(request_buffer);
+    request_buffer = NULL;
+
+    /* Receive a response from the server */
+    if (myproxy_recv_response_ex(socket_attrs, server_response,
+				 client_request) < 0) {
+	verror_print_error(stderr);
+        goto cleanup;
+    }
+
+    /* Check response */
+    switch(server_response->response_type) {
+    case MYPROXY_ERROR_RESPONSE:
+        fprintf(stderr, "Received error from server: %s\n",
+		server_response->error_string);
+	goto cleanup;
+    case MYPROXY_OK_RESPONSE:
+	if (client_request->credname) {
+	    printf("MyProxy credential '%s' for user %s was successfully removed.\n",
+		   client_request->credname, client_request->username); 
+	} else {
+	    printf("Default MyProxy credential for user %s was successfully removed.\n",
+		   client_request->username); 
+	}
+        break;
+    default:
+        fprintf(stderr, "Invalid response type received.\n");
+	goto cleanup;
     }
     
+    return_value = 0;
+
+ cleanup:
     /* free memory allocated */
     myproxy_free(socket_attrs, client_request, server_response);
 
-    return retval;
+    return return_value;
 }
 
 void 

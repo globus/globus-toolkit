@@ -103,7 +103,7 @@ main(int argc, char *argv[])
 	do_unlock_creds (&cred);
     } else {
 	if (myproxy_print_cred_info(&cred, stdout) < 0) {
-	    fprintf(stderr, "%s\n", verror_get_string());
+	    verror_print_error(stderr);
 	    exit(1);
 	}
     }

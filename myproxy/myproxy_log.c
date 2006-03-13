@@ -57,7 +57,10 @@ do_log(const char *string, int level)
     
     if (my_context.log_stream != NULL)
     {
-	fprintf(my_context.log_stream, "%s\n", string);
+	fprintf(my_context.log_stream, "%s", string);
+	if (string[strlen(string)-1] != '\n') {
+	    fprintf(my_context.log_stream, "\n");
+	}
     }
 	       
     return;
@@ -190,12 +193,6 @@ myproxy_debug_set_level(int level)
     my_context.debug_level = level;
 
     return old_level;
-}
-
-int
-myproxy_debug_get_level(int level)
-{
-  return my_context.debug_level;
 }
 
 

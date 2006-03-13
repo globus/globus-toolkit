@@ -55,7 +55,7 @@ mystrdup(const char *string)
  *
  * Returns 1 if exists, 0 if not, -1 on error.
  */
-int
+static int
 file_exists(const char *path)
 {
     struct stat			statbuf = {0}; /* initialize with 0s */
@@ -418,6 +418,10 @@ write_data_file(const struct myproxy_creds *creds,
     if (creds->keyretrieve != NULL)
 	fprintf (data_stream, "KEYRETRIEVERS=%s\n", creds->keyretrieve);
 
+    if (creds->trusted_retrievers != NULL)
+	fprintf (data_stream, "TRUSTED_RETRIEVERS=%s\n",
+		 creds->trusted_retrievers);
+
     if (creds->renewers != NULL)
 	fprintf (data_stream, "RENEWERS=%s\n", creds->renewers);
 
@@ -582,6 +586,17 @@ read_data_file(struct myproxy_creds *creds,
             creds->keyretrieve = mystrdup(value);
             
             if (creds->keyretrieve == NULL)
+            {
+                goto error;
+            }
+            continue;
+        }
+        
+        if (strcmp(variable, "TRUSTED_RETRIEVERS") == 0)
+        {
+            creds->trusted_retrievers = mystrdup(value);
+            
+            if (creds->trusted_retrievers == NULL)
             {
                 goto error;
             }
@@ -833,7 +848,10 @@ myproxy_creds_retrieve(struct myproxy_creds *creds)
     }
 
     /* reset username from stashed value */
+    assert(creds->username == NULL);
     creds->username = username;
+    username = NULL;
+    assert(creds->location == NULL);
     creds->location = mystrdup(creds_path);
     ssl_get_times(creds_path, &creds->start_time, &creds->end_time);
 
@@ -844,6 +862,7 @@ error:
     if (creds_path) free(creds_path);
     if (data_path) free(data_path);
     if (lock_path) free(lock_path);
+    if (username) free(username);
 
     return return_code;
 }
@@ -912,6 +931,7 @@ int myproxy_creds_retrieve_all(struct myproxy_creds *creds)
 	    if (new_cred->credname) free(new_cred->credname);
 	    new_cred->username = strdup(username);
 	    new_cred->credname = strdup(credname);
+	    free(credname);
 	    if (myproxy_creds_retrieve(new_cred) == 0) {
 		if (strcmp(owner_name, new_cred->owner_name) == 0) {
 		    if (cur_cred) cur_cred->next = new_cred;
@@ -928,7 +948,10 @@ int myproxy_creds_retrieve_all(struct myproxy_creds *creds)
     closedir(dir);
 
     if (!cur_cred) {
-	verror_put_string("no credentials found for user %s", username);
+	verror_clear();	/* other errors may indicate if credentials
+			   owned by someone else exist */
+	verror_put_string("no credentials found for user %s, owner \"%s\"",
+			  username, owner_name);
 	goto error;
     }
 
@@ -1464,16 +1487,24 @@ myproxy_creds_verify_passphrase(const struct myproxy_creds *creds,
     return return_code;
 }
 
+void myproxy_creds_free(struct myproxy_creds *creds)
+{
+    if (!creds) return;
+    if (creds->next) myproxy_creds_free(creds->next);
+    myproxy_creds_free_contents(creds);
+    free(creds);
+}
+
 void myproxy_creds_free_contents(struct myproxy_creds *creds)
 {
     if (creds == NULL) return;
-    if (creds->next) myproxy_creds_free_contents(creds->next);
     if (creds->username != NULL)	free(creds->username);
     if (creds->passphrase != NULL)	free(creds->passphrase);
     if (creds->owner_name != NULL)	free(creds->owner_name);
     if (creds->location != NULL)	free(creds->location);
     if (creds->retrievers != NULL)	free(creds->retrievers);
     if (creds->keyretrieve != NULL)	free(creds->keyretrieve);
+    if (creds->trusted_retrievers != NULL) free(creds->trusted_retrievers);
     if (creds->renewers != NULL)	free(creds->renewers);
     if (creds->credname != NULL)	free(creds->credname);
     if (creds->creddesc != NULL)	free(creds->creddesc);
@@ -1486,6 +1517,7 @@ void myproxy_certs_free(struct myproxy_certs *certs)
     if (certs->filename) free(certs->filename);
     if (certs->contents) free(certs->contents);
     myproxy_certs_free(certs->next);
+    free(certs);
 }
 
 int myproxy_set_storage_dir(const char *dir)
@@ -1508,6 +1540,14 @@ int myproxy_check_storage_dir()
     return check_storage_directory();
 }
 
+const char *myproxy_get_storage_dir()
+{
+    if (check_storage_directory() < 0) {
+	return NULL;
+    }
+    return storage_dir;
+}
+
 int
 myproxy_print_cred_info(myproxy_creds_t *creds, FILE *out)
 {
@@ -1526,6 +1566,9 @@ myproxy_print_cred_info(myproxy_creds_t *creds, FILE *out)
 				       creds->renewers);
 	if (creds->keyretrieve) fprintf(out, "  key retrieval policy: %s\n",
 				       creds->keyretrieve);
+	if (creds->trusted_retrievers)
+	    fprintf(out, "  trusted retrieval policy: %s\n",
+				       creds->trusted_retrievers);
 	if (creds->lockmsg)    fprintf(out, "  locked: %s\n", creds->lockmsg);
 	now = time(0);
 	if (creds->end_time > now) {

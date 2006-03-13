@@ -18,10 +18,10 @@ PS="/bin/ps -e"
 
 # Optional server configuration arguments follow.
 # Uncomment and modify to change default settings.
-#PORT=-p 7512
-#CONFIG=-c ${GLOBUS_LOCATION}/etc/myproxy-server.config
-#STORE=-s ${GLOBUS_LOCATION}/var/myproxy
-#VERBOSE=-verbose
+#PORT="-p 7512"
+#CONFIG="-c ${GLOBUS_LOCATION}/etc/myproxy-server.config"
+#STORE="-s ${GLOBUS_LOCATION}/var/myproxy"
+#VERBOSE="-verbose"
 
 # By default, the myproxy-server uses /etc/grid-security/hostcert.pem
 # and /etc/grid-security/hostkey.pem.  Uncomment and modify the

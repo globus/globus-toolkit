@@ -7,8 +7,8 @@ use Crypt::Cracklib; # if missing, install with:
                      #   perl -MCPAN -e 'install Crypt::Cracklib'
 $Crypt::Cracklib::DICT = '/usr/lib/cracklib_dict';
 
-if ($renewer_policy && $passphrase eq "") {
-    exit(0);			# allow empty passphrase for renewable creds
+if ($passphrase eq "") {
+    exit(0);	# allow empty passphrase for other auth methods
 }
 
 $reason = fascist_check($passphrase);

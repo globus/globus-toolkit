@@ -209,6 +209,9 @@ auth_pam (
     my_appdata.password = password;
     my_appdata.pamh = NULL;
 
+     /* There's an unavoidable compiler warning in the following line
+        due to inconsistent use of const in the struct pam_message
+        argument to saslauthd_pam_conv across platforms. */
     my_conv.conv = saslauthd_pam_conv;
     my_conv.appdata_ptr = &my_appdata;
 

@@ -21,10 +21,10 @@ static char usage[] = \
 "       -t | --proxy_lifetime  <hours>    Lifetime of proxies delegated by\n" 
 "                                         the server (default 12 hours)\n"
 "       -o | --out             <path>     Location of delegated proxy\n"
+"                                         (use '-' for stdout)\n"
 "       -s | --pshost          <hostname> Hostname of the myproxy-server\n"
 "       -p | --psport          <port #>   Port of the myproxy-server\n"
-"       -a | --authorization   <path>     Use credential for authorization\n"
-"                                         (instead of passphrase)\n"
+"       -a | --authorization   <path>     Specify credential to renew\n"
 "       -d | --dn_as_username             Use subject of the authorization\n"
 "                                         credential (or default credential\n"
 "                                         if -a not used) as the default\n"
@@ -33,6 +33,9 @@ static char usage[] = \
 "       -S | --stdin_pass                 Read passphrase from stdin\n"
 "       -T | --trustroots                 Manage trust roots\n"
 "       -n | --no_passphrase              Don't prompt for passphrase\n"
+"       -N | --no_credentials             Authenticate only. Don't retrieve\n"
+"                                         credentials.\n"
+"       -q | --quiet                      Only output on error\n"
 "\n";
 
 struct option long_options[] =
@@ -52,10 +55,12 @@ struct option long_options[] =
     {"stdin_pass",             no_argument, NULL, 'S'},
     {"trustroots",             no_argument, NULL, 'T'},
     {"no_passphrase",          no_argument, NULL, 'n'},
+    {"no_passphrase",          no_argument, NULL, 'N'},
+    {"quiet",                  no_argument, NULL, 'q'},
     {0, 0, 0, 0}
 };
 
-static char short_options[] = "hus:p:l:t:o:vVa:dk:SnT";
+static char short_options[] = "hus:p:l:t:o:vVa:dk:SnNTq";
 
 static char version[] =
 "myproxy-logon version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
@@ -76,6 +81,8 @@ static char *outputfile = NULL;
 static int dn_as_username = 0;
 static int read_passwd_from_stdin = 0;
 static int use_empty_passwd = 0;
+static int quiet = 0;
+static int no_credentials = 0;
 
 int
 main(int argc, char *argv[]) 
@@ -83,9 +90,7 @@ main(int argc, char *argv[])
     myproxy_socket_attrs_t *socket_attrs;
     myproxy_request_t      *client_request;
     myproxy_response_t     *server_response;
-    myproxy_data_parameters_t  *data_parameters;
-
-    int retval = 0;
+    int return_value = 1;
 
     /* check library version */
     if (myproxy_check_version()) {
@@ -109,31 +114,109 @@ main(int argc, char *argv[])
     server_response = malloc(sizeof(*server_response));
     memset(server_response, 0, sizeof(*server_response));
 
-    data_parameters = malloc(sizeof(*data_parameters));
-    memset(data_parameters, 0, sizeof(*data_parameters));
-
     /* Setup defaults */
     myproxy_set_delegation_defaults(socket_attrs,client_request);
 
     /* Initialize client arguments and create client request object */
     init_arguments(argc, argv, socket_attrs, client_request);
 
-    data_parameters->use_empty_passwd       = use_empty_passwd;
-    data_parameters->read_passwd_from_stdin = read_passwd_from_stdin;
-    data_parameters->dn_as_username         = dn_as_username;
-    data_parameters->outputfile             = outputfile;
+    /* Connect to server. */
+    if (myproxy_init_client(socket_attrs) < 0) {
+        verror_print_error(stderr);
+        goto cleanup;
+    }
+    
+    if (!outputfile && !no_credentials) {
+	globus_module_activate(GLOBUS_GSI_SYSCONFIG_MODULE);
+	GLOBUS_GSI_SYSCONFIG_GET_PROXY_FILENAME(&outputfile,
+						GLOBUS_PROXY_FILE_OUTPUT);
+    }
 
-    retval = myproxy_failover( socket_attrs,
-                               client_request,
-                               server_response,
-                               data_parameters );
+    if (!use_empty_passwd) {
+       /* Allow user to provide a passphrase */
+	int rval;
+	if (read_passwd_from_stdin) {
+	    rval = myproxy_read_passphrase_stdin(
+			   client_request->passphrase,
+			   sizeof(client_request->passphrase),
+			   NULL);
+	} else {
+	    rval = myproxy_read_passphrase(client_request->passphrase,
+					   sizeof(client_request->passphrase),
+					   NULL);
+	}
+	if (rval == -1) {
+	    verror_print_error(stderr);
+	    goto cleanup;
+	}
+    }
 
-    free(outputfile);
-    verror_clear();
+    if (client_request->username == NULL) { /* set default username */
+	if (dn_as_username) {
+	    if (client_request->authzcreds) {
+		if (ssl_get_base_subject_file(client_request->authzcreds,
+					      &client_request->username)) {
+		    fprintf(stderr, "Cannot get subject name from %s.\n",
+			    client_request->authzcreds);
+		    goto cleanup;
+		}
+	    } else {
+		if (ssl_get_base_subject_file(NULL,
+					      &client_request->username)) {
+		    fprintf(stderr,
+			    "Cannot get subject name from your certificate.\n");
+		    goto cleanup;
+		}
+	    }
+	} else {
+	    char *username = NULL;
+	    if (!(username = getenv("LOGNAME"))) {
+		fprintf(stderr, "Please specify a username.\n");
+		goto cleanup;
+	    }
+	    client_request->username = strdup(username);
+	}
+    }
 
+    if (myproxy_get_delegation(socket_attrs, client_request, NULL,
+			       server_response, outputfile)!=0) {
+	fprintf(stderr, "Failed to receive credentials.\n");
+	verror_print_error(stderr);
+	goto cleanup;
+    }
+
+    if (outputfile) {
+	if (!quiet)
+	    printf("A credential has been received for user %s in %s.\n",
+		   client_request->username, outputfile);
+	free(outputfile);
+	verror_clear();
+    }
+
+    /* Store file in trusted directory if requested and returned */
+    if (client_request->want_trusted_certs) {
+        if (server_response->trusted_certs != NULL) {
+            if (myproxy_install_trusted_cert_files(server_response->trusted_certs) != 0) {       
+		verror_print_error(stderr);
+		goto cleanup;
+            } else {
+		char *path;
+		path = get_trusted_certs_path();
+		if (!quiet)
+		    printf("Trust roots have been installed in %s.\n", path);
+		free(path);
+	    }
+        } else {
+            myproxy_debug("Requested trusted certs but didn't get any.\n");
+        }
+    }
+    
+    return_value = 0;
+
+ cleanup:
     /* free memory allocated */
     myproxy_free(socket_attrs, client_request, server_response);
-    return(retval);
+    return return_value;
 }
 
 void 
@@ -172,6 +255,7 @@ init_arguments(int argc,
             break;
 	case 'o':	/* output file */
 	    outputfile = strdup(optarg);
+	    if (outputfile[0] == '-' && outputfile[1] == '\0') quiet = 1;
             break;    
 	case 'a':       /* special authorization */
 	    request->authzcreds = strdup(optarg);
@@ -179,6 +263,12 @@ init_arguments(int argc,
 	    break;
 	case 'n':       /* no passphrase */
 	    use_empty_passwd = 1;
+	    break;
+	case 'N':
+	    no_credentials = 1;
+	    break;
+	case 'q':
+	    quiet = 1;
 	    break;
 	case 'v':
 	    myproxy_debug_set_level(1);

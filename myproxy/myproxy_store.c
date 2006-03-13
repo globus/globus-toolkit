@@ -7,7 +7,6 @@
 #include "myproxy_common.h"	/* all needed headers included here */
 
 /* Location of default proxy */
-#define MYPROXY_DEFAULT_PROXY	  "/tmp/myproxy-proxy"
 #define MYPROXY_DEFAULT_USERCERT  "usercert.pem"
 #define MYPROXY_DEFAULT_USERKEY   "userkey.pem"
 #define MYPROXY_DEFAULT_DIRECTORY ".globus"
@@ -43,6 +42,8 @@ static char usage[] =
     "                                         credential\n"
     "       -R | --renewable_by   <dn>        Allow specified entity to renew\n"
     "                                         credential\n"
+    "       -Z | --retrievable_by_cert <dn>   Allow specified entity to retrieve\n"
+    "                                         credential w/o passphrase\n"
     "       -E | --retrieve_key <dn>          Allow specified entity to retrieve\n"
     "                                         credential key\n"
     "       -d | --dn_as_username             Use the proxy certificate subject\n"
@@ -68,6 +69,7 @@ struct option long_options[] = {
     {"allow_anonymous_retrievers",       no_argument, NULL, 'a'},
     {"allow_anonymous_renewers",         no_argument, NULL, 'A'},
     {"retrievable_by",             required_argument, NULL, 'r'},
+    {"retrievable_by_cert",        required_argument, NULL, 'Z'},
     {"renewable_by",               required_argument, NULL, 'R'},
     {"retrieve_key",               required_argument, NULL, 'E'},
     {"regex_dn_match",                   no_argument, NULL, 'x'},
@@ -78,7 +80,7 @@ struct option long_options[] = {
 };
 
 /*colon following an option indicates option takes an argument */
-static char short_options[] = "uhl:vVdr:R:xXaAk:K:t:c:y:s:p:E:"; 
+static char short_options[] = "uhl:vVdr:R:Z:xXaAk:K:t:c:y:s:p:E:";
 
 static char version[] =
     "myproxy-init version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "
@@ -107,12 +109,15 @@ int
 main(int   argc, 
      char *argv[])
 {
+    char                   *pshost             = NULL;
+    char                   *request_buffer     = NULL;
     char                   *credkeybuf         = NULL;
+    int                     requestlen;
+    int                     return_value = 1;
 
     myproxy_socket_attrs_t *socket_attrs;
     myproxy_request_t      *client_request;
     myproxy_response_t     *server_response;
-    myproxy_data_parameters_t  *data_parameters;
 
     /* check library version */
     if (myproxy_check_version()) {
@@ -133,19 +138,21 @@ main(int   argc,
     server_response = malloc(sizeof(*server_response));
     memset(server_response, 0, sizeof(*server_response));
 
-    data_parameters = malloc(sizeof(*data_parameters));
-    memset(data_parameters, 0, sizeof(*data_parameters));
-
     /* setup defaults */
     client_request->version = malloc(strlen(MYPROXY_VERSION) + 1);
     strcpy(client_request->version, MYPROXY_VERSION);
     client_request->command_type = MYPROXY_STORE_CERT;
 
-    if( myproxy_init( socket_attrs,
-                      client_request,
-                      MYPROXY_STORE_CERT ) < 0 )
-    {
-      return( 1 );
+    pshost = getenv("MYPROXY_SERVER");
+
+    if (pshost != NULL) {
+	socket_attrs->pshost = strdup(pshost);
+    }
+
+    if (getenv("MYPROXY_SERVER_PORT")) {
+	socket_attrs->psport = atoi(getenv("MYPROXY_SERVER_PORT"));
+    } else {
+	socket_attrs->psport = MYPROXY_SERVER_PORT;
     }
 
     globus_module_activate(GLOBUS_GSI_SYSCONFIG_MODULE);
@@ -184,21 +191,85 @@ main(int   argc,
       goto cleanup;
     }
 
-    data_parameters->dn_as_username = dn_as_username;
-    data_parameters->credkeybuf     = credkeybuf;
-
-    if( myproxy_failover( socket_attrs,
-                          client_request,
-                          server_response,
-                          data_parameters ) != 0 )
-    {
-      goto cleanup;
+    /* Set up client socket attributes */
+    if (myproxy_init_client(socket_attrs) < 0) {
+	verror_print_error(stderr);
+        goto cleanup;
     }
 
-    return 0;
+    if (client_request->username == NULL) { /* set default username */
+        if (dn_as_username) {
+            if (ssl_get_base_subject_file(certfile,
+                                          &client_request->username)) {
+                fprintf(stderr,
+                        "Cannot get subject name from your certificate\n");
+                goto cleanup;
+            }
+        } else {
+            char *username = NULL;
+            if (!(username = getenv("LOGNAME"))) {
+                fprintf(stderr, "Please specify a username.\n");
+                goto cleanup;
+            }
+            client_request->username = strdup(username);
+        }
+    }
+
+
+    /* Authenticate client to server */
+    if (myproxy_authenticate_init(socket_attrs, NULL) < 0) {
+	verror_print_error(stderr);
+        goto cleanup;
+    }
+
+    /* Serialize client request object */
+    requestlen = myproxy_serialize_request_ex(client_request, &request_buffer);
+
+    if (requestlen < 0) {
+        verror_print_error(stderr);
+        goto cleanup;
+    }
+
+    /* Send request to the myproxy-server */
+    if (myproxy_send(socket_attrs, request_buffer, requestlen) < 0) {
+        verror_print_error(stderr);
+        goto cleanup;
+    }
+    free(request_buffer);
+    request_buffer = NULL;
+
+    /* Continue unless the response is not OK */
+    if (myproxy_recv_response_ex(socket_attrs,
+				 server_response, client_request) != 0) {
+        verror_print_error(stderr);
+        goto cleanup;
+    }
+
+    /* Send end-entity credentials to server. */
+    if (myproxy_init_credentials(socket_attrs,
+				 credkeybuf) < 0) {
+        verror_print_error(stderr);
+        goto cleanup;
+    }
+
+    /* Get final response from server */
+    if (myproxy_recv_response(socket_attrs, server_response) != 0) {
+        verror_print_error(stderr);
+        goto cleanup;
+    }
+
+    printf( "Credentials saved to myproxy server.\n" );
+
+    return_value = 0;
 
  cleanup:
-    return 1;
+    /* free memory allocated */
+    myproxy_free(socket_attrs, client_request, server_response);
+    if (credkeybuf) free(credkeybuf);
+    if (certfile) free(certfile);
+    if (keyfile) free(keyfile);
+
+    return return_value;
 }
 
 int
@@ -225,10 +296,12 @@ init_arguments(int                     argc,
 	    break;
 
 	case 'c':		/* credential file name */
+	    if (certfile) free(certfile);
 	    certfile = strdup(optarg);
 	    break;
 
 	case 'y':		/* key file name */
+	    if (keyfile) free(keyfile);
 	    keyfile = strdup(optarg);
 	    break;
 
@@ -262,12 +335,6 @@ init_arguments(int                     argc,
 
 
 	case 'r':		/* retrievers list */
-	    if (request->renewers) {
-		fprintf(stderr,
-			"-r is incompatible with -A and -R.  A credential may not be used for both\nretrieval and renewal.  If both are desired, upload multiple credentials with\ndifferent names, using the -k option.\n");
-		exit(1);
-	    }
-
 	    if (request->retrievers) {
 		fprintf(stderr,
 			"Only one -a or -r option may be specified.\n");
@@ -280,7 +347,7 @@ init_arguments(int                     argc,
 		request->retrievers = strdup(optarg);
 	    } else {
 		request->retrievers =
-		    (char *) malloc(strlen(optarg) + 5);
+		    (char *) malloc(strlen(optarg) + 6);
 		strcpy(request->retrievers, "*/CN=");
 		myproxy_debug("authorized retriever %s",
 			      request->retrievers);
@@ -298,12 +365,6 @@ init_arguments(int                     argc,
             ** So, do we want to add code to unencrypt the private key if
             ** this option is used?
             */
-	    if (request->retrievers) {
-		fprintf(stderr,
-			"-R is incompatible with -a and -r.  A credential may not be used for both\nretrieval and renewal.  If both are desired, upload multiple credentials with\ndifferent names, using the -k option.\n");
-		exit(1);
-	    }
-
 	    if (request->renewers) {
 		fprintf(stderr,
 			"Only one -A or -R option may be specified.\n");
@@ -322,13 +383,35 @@ init_arguments(int                     argc,
 	    }
 	    break;
 
+	case 'Z':		/* retrievers list */
+	    if (request->trusted_retrievers) {
+		fprintf(stderr,
+			"Only one -a or -r option may be specified.\n");
+		exit(1);
+	    }
+
+	    if (expr_type == REGULAR_EXP) {
+		
+                /* Copy as is */
+		request->trusted_retrievers = strdup(optarg);
+	    } else {
+		request->trusted_retrievers =
+		    (char *) malloc(strlen(optarg) + 6);
+		strcpy(request->trusted_retrievers, "*/CN=");
+		myproxy_debug("trusted retriever %s",
+			      request->trusted_retrievers);
+		request->trusted_retrievers =
+		    strcat(request->trusted_retrievers, optarg);
+	    }
+	    break;
+
         case 'E' :              /* key retriever list */ 
 	    if (expr_type == REGULAR_EXP) {
 		/* Copy as is */
 		request->keyretrieve = strdup(optarg);
 	    } else {
 		request->keyretrieve =
-		    (char *) malloc(strlen(optarg) + 5);
+		    (char *) malloc(strlen(optarg) + 6);
 		strcpy(request->keyretrieve, "*/CN=");
 		myproxy_debug("authorized key retriever %s",
 			      request->keyretrieve);
@@ -355,12 +438,6 @@ init_arguments(int                     argc,
 	    break;
 
 	case 'a':		/*allow anonymous retrievers */
-	    if (request->renewers) {
-		fprintf(stderr,
-			"-a is incompatible with -A and -R.  A credential may not be used for both\nretrieval and renewal.  If both are desired, upload multiple credentials with\ndifferent names, using the -k option.\n");
-		exit(1);
-	    }
-
 	    if (request->retrievers) {
 		fprintf(stderr,
 			"Only one -a or -r option may be specified.\n");
@@ -372,12 +449,6 @@ init_arguments(int                     argc,
 	    break;
 
 	case 'A':		/*allow anonymous renewers */
-	    if (request->retrievers) {
-		fprintf(stderr,
-			"-A is incompatible with -a and -r.  A credential may not be used for both\nretrieval and renewal.  If both are desired, upload multiple credentials with\ndifferent names, using the -k option.\n");
-		exit(1);
-	    }
-
 	    if (request->renewers) {
 		fprintf(stderr,
 			"Only one -A or -R option may be specified.\n");
@@ -419,20 +490,20 @@ makecertfile(const char   certfile[],
              const char   keyfile[],
              char       **credbuf)
 {
-    unsigned char        *certbuf = NULL;
-    unsigned char        *keybuf  = NULL;
-    int                   retval  = -1;
-    int                   size;
-    int                   bytes;
-    struct stat           s;
-    static char           BEGINCERT[] = "-----BEGIN CERTIFICATE-----";
-    static char           ENDCERT[]   = "-----END CERTIFICATE-----";
-    static char           BEGINKEY[]  = "-----BEGIN RSA PRIVATE KEY-----";
-    static char           ENDKEY[]    = "-----END RSA PRIVATE KEY-----";
-    char                 *certstart; 
-    char                 *certend;
-    char                 *keystart; 
-    char                 *keyend;
+    unsigned char *certbuf = NULL;
+    unsigned char *keybuf  = NULL;
+    int         retval  = -1;
+    struct stat s;
+    int         bytes;
+    static char BEGINCERT[] = "-----BEGIN CERTIFICATE-----";
+    static char ENDCERT[] = "-----END CERTIFICATE-----";
+    static char BEGINKEY[] = "-----BEGIN RSA PRIVATE KEY-----";
+    static char ENDKEY[] = "-----END RSA PRIVATE KEY-----";
+    char        *certstart; 
+    char        *certend;
+    int          size;
+    char        *keystart; 
+    char        *keyend;
 
 
     /* Figure out how much memory we are going to need */

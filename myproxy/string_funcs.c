@@ -40,6 +40,8 @@ void strip_char (char *buf, char ch)
   	buf[i] = tmp[i];
 
   buf[i] = '\0';
+
+  free(tmp);
 }
      
 int
@@ -650,3 +652,73 @@ sterilize_string(char *string)
     return;
 }
 
+#ifndef HAVE_SETENV
+int
+setenv(const char *var,
+       const char *value,
+       int override)
+{
+    char *envstr = NULL;
+    int status;
+
+    assert(var != NULL);
+    assert(value != NULL);
+    
+    /* If we're not overriding and it's already set, then return */
+    if (!override && getenv(var))
+	return 0;
+
+    envstr = malloc(strlen(var) + strlen(value) + 2 /* '=' and NUL */);
+
+    if (envstr == NULL)
+    {
+	return -1;
+    }
+    
+    sprintf(envstr, "%s=%s", var, value);
+
+    status = putenv(envstr);
+
+    /* Don't free envstr as it may still be in use */
+  
+    return status;
+}
+#endif
+
+#ifndef HAVE_UNSETENV
+void
+unsetenv(const char *var)
+{
+    extern char **environ;
+    char **p1 = environ;	/* New array list */
+    char **p2 = environ;	/* Current array list */
+    int len = strlen(var);
+
+    assert(var != NULL);
+    
+    /*
+     * Walk through current environ array (p2) copying each pointer
+     * to new environ array (p1) unless the pointer is to the item
+     * we want to delete. Copy happens in place.
+     */
+    while (*p2) {
+	if ((strncmp(*p2, var, len) == 0) &&
+	    ((*p2)[len] == '=')) {
+	    /*
+	     * *p2 points at item to be deleted, just skip over it
+	     */
+	    p2++;
+	} else {
+	    /*
+	     * *p2 points at item we want to save, so copy it
+	     */
+	    *p1 = *p2;
+	    p1++;
+	    p2++;
+	}
+    }
+
+    /* And make sure new array is NULL terminated */
+    *p1 = NULL;
+}
+#endif

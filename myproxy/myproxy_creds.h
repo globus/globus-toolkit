@@ -25,6 +25,7 @@ struct myproxy_creds {
     char                 *retrievers;
     char                 *renewers;
     char                 *keyretrieve;
+    char                 *trusted_retrievers;
 
     /* start_time and end_time are set from the certificates in the cred */
     time_t                start_time;
@@ -191,6 +192,13 @@ int myproxy_creds_is_owner(const char *username, const char *credname,
 			   const char *client_name);
 
 /*
+ * myproxy_creds_free()
+ *
+ * Free a list of myproxy_creds structures.
+ */
+void myproxy_creds_free(struct myproxy_creds *certs);
+
+/*
  * myproxy_creds_free_contents()
  *
  * Free all the contents of the myproxy_creds structure, but not the
@@ -222,6 +230,15 @@ int myproxy_set_storage_dir(const char *dir);
 int myproxy_check_storage_dir();
 
 /*
+ * myproxy_get_storage_dir()
+ *
+ * Returns path to storage directory.
+ * Returns NULL on error.
+ */
+const char *myproxy_get_storage_dir();
+
+
+/*
  * myproxy_print_cred_info()
  *
  * Print info about creds to out.
@@ -244,16 +261,6 @@ myproxy_certs_t *myproxy_get_certs(const char cert_dir[]);
  * Returns 0 on success, -1 otherwise.
  */
 int myproxy_install_trusted_cert_files(myproxy_certs_t *);
-
-/*
- * file_exists()
- *
- * Check for existance of a file.
- *
- * Returns 1 if exists, 0 if not, -1 on error.
- */
-int
-file_exists(const char *path);
 
 #endif
 

@@ -70,13 +70,6 @@ void myproxy_log_close();
 int myproxy_debug_set_level(int value);
 
 /*
- * myproxy_debug_get_level()
- *
- * Find out if we are debugging. 
- */
-int myproxy_debug_get_level();
-
-/*
  * myproxy_debug()
  *
  * Log a debugging message. Will only be displayed if debugging is

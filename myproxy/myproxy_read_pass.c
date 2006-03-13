@@ -57,43 +57,24 @@ read_passphrase(char				*buffer,
 	    return -1;
 	}
     }
-   
+    
     return_code = des_read_pw(buffer,
 			      verify_buffer,
 			      buffer_len,
 			      prompt,
 			      verify);
 
-    switch(return_code)
-    {
-      case 0:
-        /* Success */
-        return_code = strlen(buffer);
-        if (return_code < MIN_PASS_PHRASE_LEN && return_code != 0) {
-            verror_put_string("Passphrase must be at least %d characters long.",
-                              MIN_PASS_PHRASE_LEN);
-            return_code = -1;
-        }
-        break;
-
-      case 1:
-        /* Interactive use error */
-        return_code = -1;
-        verror_put_string("Error entering passphrase");
-        break;
-
-      case -1:
-        /* System error */
-        return_code = -1;
-        verror_put_string("System error reading password");
-        break;
-
-      default:
-        /* Unknown value */
-        verror_put_string("Unrecognized return value(%d) from des_read_pw()",
-                         return_code);
-        return_code = -1;
-        break;
+    if (return_code == 0) {
+	/* Success */
+	return_code = strlen(buffer);
+	if (return_code < MIN_PASS_PHRASE_LEN && return_code != 0) {
+	    verror_put_string("Passphrase must be at least %d characters long.",
+			      MIN_PASS_PHRASE_LEN);
+	    return_code = -1;
+	}
+    } else {
+	return_code = -1;
+	verror_put_string("Error entering passphrase.");
     }
 
     if (verify_buffer != NULL)
@@ -176,7 +157,7 @@ myproxy_check_passphrase_policy(const char *passphrase,
 				const char *client_name)
 {
     pid_t childpid;
-    int p0[2], p1[2], p2[2];
+    int fds[3];
     size_t passphrase_len = 0;
     int exit_status;
 
@@ -199,51 +180,25 @@ myproxy_check_passphrase_policy(const char *passphrase,
     myproxy_debug("Running passphrase policy program: %s",
 		  passphrase_policy_pgm);
 
-    if (pipe(p0) < 0 || pipe(p1) < 0 || pipe(p2) < 0) {
-	verror_put_string("pipe() failed");
-	verror_put_errno(errno);
-	return -1;
+    if ((childpid = myproxy_popen(fds, passphrase_policy_pgm,
+				  username,
+				  client_name,
+				  (credname) ? credname : "",
+				  (retrievers) ? retrievers : "",
+				  (renewers) ? renewers : "",
+				  NULL)) < 0) {
+	return -1; /* myproxy_popen will set verror */
     }
-
-    /* fork/exec passphrase policy program */
-    if ((childpid = fork()) < 0) {
-	verror_put_string("fork() failed");
-	verror_put_errno(errno);
-	return -1;
-    }
-    
-    if (childpid == 0) {	/* child */
-	close(p0[1]); close(p1[0]); close(p2[0]);
-	if (dup2(p0[0], 0) < 0 ||
-	    dup2(p1[1], 1) < 0 ||
-	    dup2(p2[1], 2) < 0)	{
-	    perror("dup2");
-	    exit(1);
-	}
-	execl(passphrase_policy_pgm,
-	      passphrase_policy_pgm,
-	      username,
-	      client_name,
-	      (credname) ? credname : "",
-	      (retrievers) ? retrievers : "",
-	      (renewers) ? renewers : "",
-	      NULL);
-	fprintf(stderr, "failed to run %s: %s\n",
-		passphrase_policy_pgm, strerror(errno));
-	exit(1);
-    }
-
-    close(p0[0]); close(p1[1]); close(p2[1]);
 
     /* send passphrase to child's stdin */
     if (passphrase_len) {
-	write(p0[1], passphrase, passphrase_len);
+	write(fds[0], passphrase, passphrase_len);
     }
-    write(p0[1], "\n", 1);
-    close(p0[1]); 
+    write(fds[0], "\n", 1);
+    close(fds[0]); 
 
     /* wait for child */
-    if (wait4(childpid, &exit_status, 0, NULL) < 0) {
+    if (waitpid(childpid, &exit_status, 0) == -1) {
 	verror_put_string("wait() failed for passphrase policy child");
 	verror_put_errno(errno);
 	return -1;
@@ -253,23 +208,27 @@ myproxy_check_passphrase_policy(const char *passphrase,
 	FILE *fp = NULL;
 	char buf[100];
 	verror_put_string("Pass phrase violates local policy.");
-	fp = fdopen(p1[0], "r");
+	fp = fdopen(fds[1], "r");
 	if (fp) {
 	    while (fgets(buf, 100, fp) != NULL) {
 		verror_put_string(buf);
 	    }
+	    fclose(fp);
+	} else {
+	    close(fds[1]);
 	}
-	fclose(fp);
-	fp = fdopen(p2[0], "r");
+	fp = fdopen(fds[2], "r");
 	if (fp) {
 	    while (fgets(buf, 100, fp) != NULL) {
 		verror_put_string(buf);
 	    }
+	    fclose(fp);
+	} else {
+	    close(fds[2]);
 	}
-	fclose(fp);
 	return -1;
     }
 
-    close(p1[0]); close(p2[0]);
+    close(fds[1]); close(fds[2]);
     return 0;
 }

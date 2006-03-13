@@ -43,11 +43,12 @@
  * OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include <config.h>
 #ifndef macintosh
 #ifdef WIN32
 # include <winsock2.h>
 #else
+# include <sys/types.h>
+# include <sys/uio.h>
 # include <sys/socket.h>
 # include <netinet/in.h>
 # include <arpa/inet.h>
@@ -66,6 +67,7 @@
 #include <errno.h>
 #include <ctype.h>
 #include <stdio.h>
+#include <string.h>
 
 #ifdef HAVE_INTTYPES_H
 #include <inttypes.h>
@@ -291,7 +293,7 @@ void _plug_free_secret(const sasl_utils_t *utils, sasl_secret_t **secret)
 {
     if(!utils || !secret || !(*secret)) return;
 
-    utils->erasebuffer((*secret)->data, (*secret)->len);
+    utils->erasebuffer((char *)(*secret)->data, (*secret)->len);
     utils->free(*secret);
     *secret = NULL;
 }
