@@ -267,6 +267,34 @@ if ($exitstatus == 0) {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
 }
 
+($exitstatus, $output) =
+    &runtest("myproxy-logon -t 1 -o - -v -S > /tmp/myproxy-test.$$",
+	     $passphrase . "\n");
+print "MyProxy Test 3- (retrieve stored credential to stdout): ";
+if ($exitstatus == 0) {
+    ($exitstatus, $output) =
+	&verifyproxy("/tmp/myproxy-test.$$");
+}
+if ($exitstatus == 0) {
+    print "SUCCEEDED\n"; $SUCCESSES++;
+} else {
+    print "FAILED\n"; $FAILURES++; print STDERR $output;
+}
+
+($exitstatus, $output) =
+    &runtest("myproxy-logon -t 1 -N -v -S",
+	     $passphrase . "\n");
+print "MyProxy Test 3N (authenticate w/o retrieving credential): ";
+if ($exitstatus == 0) {
+    ($exitstatus, $output) =
+	&verifyproxy("/tmp/myproxy-test.$$");
+}
+if ($exitstatus == 0) {
+    print "SUCCEEDED\n"; $SUCCESSES++;
+} else {
+    print "FAILED\n"; $FAILURES++; print STDERR $output;
+}
+
 if ($test_trustroots) {
     ($exitstatus, $output) =
 	&runtest("myproxy-logon -T -t 1 -o /tmp/myproxy-test.$$ -v -S",
@@ -297,6 +325,16 @@ if ($exitstatus != 0 && $output =~ /invalid pass phrase/) {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
 }
 
+($exitstatus, $output) =
+    &runtest("myproxy-logon -t 1 -N -v -S",
+	     "badpassphrase\n");
+print "MyProxy Test 4N (verify passphrase checking on authenticate): ";
+if ($exitstatus != 0 && $output =~ /invalid pass phrase/) {
+    print "SUCCEEDED\n"; $SUCCESSES++;
+} else {
+    print "FAILED\n"; $FAILURES++; print STDERR $output;
+}
+
 $old_passphrase = $passphrase;
 $passphrase = sprintf "%010.d", int(rand(0x7fffffff));
 ($exitstatus, $output) =
@@ -310,7 +348,7 @@ if ($exitstatus == 0 && $output =~ /Pass phrase changed/) {
 }
 
 ($exitstatus, $output) =
-    &runtest("myproxy-logon -t 1 -o /tmp/myproxy-test.$$ -v -S",
+    &runtest("myproxy-logon -t 1 -N -v -S",
 	     $passphrase . "\n");
 print "MyProxy Test 6 (verify new passphrase): ";
 if ($exitstatus == 0) {
