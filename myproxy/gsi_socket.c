@@ -611,6 +611,8 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self, char *accepted_peer_names[])
     if (self->major_status != GSS_S_COMPLETE) {
 	if (self->allow_anonymous) {
 	    req_flags |= GSS_C_ANON_FLAG;
+	    myproxy_debug("no valid credentials found -- "
+			  "performing anonymous authentication");
 	} else {
 	    goto error;
 	}
