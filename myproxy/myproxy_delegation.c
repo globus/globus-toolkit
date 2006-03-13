@@ -42,7 +42,6 @@ int myproxy_get_delegation(
     assert(socket_attrs != NULL);
     assert(client_request != NULL);
     assert(server_response != NULL);
-    assert(outfile != NULL);
 
     myproxy_debug("want_trusted_certs = %d",
 		  client_request->want_trusted_certs);
@@ -93,6 +92,10 @@ int myproxy_get_delegation(
     if (myproxy_recv_response_ex(socket_attrs, server_response,
 				 client_request) != 0) {
 	return(1);
+    }
+
+    if (!outfile) {
+	return(0);		/* if no outfile specified, just do auth */
     }
     
     /* Accept delegated credentials from server */
