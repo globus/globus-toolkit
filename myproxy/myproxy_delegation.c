@@ -34,14 +34,15 @@ int myproxy_get_delegation(
     myproxy_response_t     *server_response,
     char                   *outfile)
 {    
-    char delegfile[MAXPATHLEN];
+    char *credentials = NULL;
     char *request_buffer = NULL;
-    int  requestlen;
+    int  requestlen, credential_len;
     myproxy_request_t tmp_request = { 0 };
 
     assert(socket_attrs != NULL);
     assert(client_request != NULL);
     assert(server_response != NULL);
+    assert(outfile != NULL);
 
     myproxy_debug("want_trusted_certs = %d",
 		  client_request->want_trusted_certs);
@@ -95,8 +96,8 @@ int myproxy_get_delegation(
     }
     
     /* Accept delegated credentials from server */
-    if (myproxy_accept_delegation(socket_attrs, delegfile, sizeof(delegfile),
-				  NULL) < 0) {
+    if (myproxy_accept_delegation_ex(socket_attrs, &credentials,
+				     &credential_len, NULL) < 0) {
 	return(1);
     }      
 
@@ -106,13 +107,24 @@ int myproxy_get_delegation(
     }
 #endif
 
-    /* move delegfile to outputfile if specified */
-    if (outfile != NULL) {
-        if (copy_file(delegfile, outfile, 0600) < 0) {
-	    verror_put_string("Error creating file: %s\n", outfile);
+    if (outfile[0] == '-' && outfile[1] == '\0') {
+	printf("%s", credentials);
+    } else {
+	int fd;
+	unlink(outfile);
+	if ((fd = open(outfile, O_CREAT | O_EXCL | O_WRONLY,
+		       S_IRUSR | S_IWUSR)) < 0) {
+	    verror_put_string("open(%s) failed: %s\n", outfile,
+			      strerror(errno));
 	    return(1);
 	}
-	ssl_proxy_file_destroy(delegfile);
+	if (write(fd, credentials, credential_len) == -1) {
+	    verror_put_errno(errno);
+	    verror_put_string("error writing %s", outfile);
+	    close(fd);
+	    return(1);
+	}
+	close(fd);
     }
 
     return(0);
