@@ -34,13 +34,13 @@ install the latest version of zlib in an alternate path and set the
     GSI_OPENSSH_GPTMACRO="--with-zlib=/usr/local/zlib-1.2.3"
 
 MD5 checksums:
-d1e093c92617184600b3b48eac00249f  gsi_openssh-3.6-src.tar.gz
-a6c3f94ff9a63662481a06471a69fc0e  gsi_openssh_bundle-3.6-src.tar.gz
-f6851d4ed2257cd86103ae984d508047  gsi_openssh_compat-3.6-src.tar.gz
-2d4ad548c30819a9634b3b6a5b542b49  gsi_openssh_setup-3.6-src.tar.gz
+fa879351d76ccb5051d093c2238b247b  gsi_openssh-3.7-src.tar.gz
+12d05240ed917cb75eb62e48f91a77c1  gsi_openssh_bundle-3.7-src.tar.gz
+005b093386112805b3b30c89a8406748  gsi_openssh_compat-3.7-src.tar.gz
+e0571b69b0587a2ae9f99f06440d1dd5  gsi_openssh_setup-3.7-src.tar.gz
 
 SHA1 checksums:
-0381b1a6ca64d0e45aa5824eef622c6d372cc0eb  gsi_openssh-3.6-src.tar.gz
-14c4ee377070fd41655fd34b431239b437efeb8e  gsi_openssh_bundle-3.6-src.tar.gz
-a142c408e9aa57e338e978aa4f61d16ec9b482da  gsi_openssh_compat-3.6-src.tar.gz
-dda5fe5fdb98145e640907c83915c952c6ea4c7b  gsi_openssh_setup-3.6-src.tar.gz
+3e3d01df784db8e30d45a4d1624fe5ac5988d093  gsi_openssh-3.7-src.tar.gz
+fb5b9ff78cb1b728df9cb9b61913f12abd3a727f  gsi_openssh_bundle-3.7-src.tar.gz
+51f3fe8e42ff11cfd341c38a9a8068481358c832  gsi_openssh_compat-3.7-src.tar.gz
+dc44c59cd2f5513cc5fcc66f9771ac7a9d0a34ab  gsi_openssh_setup-3.7-src.tar.gz
