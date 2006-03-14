@@ -1,4 +1,4 @@
-.TH myproxy-logon 1 "2005-6-8" "NCSA" "MyProxy"
+.TH myproxy-logon 1 "2005-12-12" "NCSA" "MyProxy"
 .SH NAME
 myproxy-logon \- retrieve a credential
 .SH SYNOPSIS
@@ -20,6 +20,10 @@ that was previously stored using
 .BR myproxy-init (1)
 or
 .BR myproxy-store (1).
+It can also be used to retrieve short-lived end entity credentials
+from a 
+.BR myproxy-server (8)
+configured to act as a Certificate Authority.
 In the default mode, the command prompts for the 
 MyProxy pass phrase associated with the credential to be retrieved and
 stores the retrieved credential in the standard location (
@@ -93,11 +97,14 @@ this option is not specified, the proxy credential will be stored in
 the default location (
 .I /tmp/x509up_u<uid>
 ).
+To write the credential to the command's standard output rather than
+to a file, use
+.B -o
+.BR - .
 .TP
 .BI -a " file, " --authorization " file"
-Specifies a credential to be used for authorizing the request instead
-of a passphrase.  When renewing a credential, use this option to
-specify the existing, valid credential that you want to renew.
+Use this option to
+specify an existing, valid credential that you want to renew.
 Renewing a credential generally requires two certificate-based
 authentications.  The client authenticates with its identity, using
 the credential in the standard location or specified by
@@ -119,10 +126,23 @@ non-interactively, there may be no associated tty.  Specifying this
 option tells the command to read passphrases from standard input
 without prompts or confirmation.
 .TP
+.B -n, --no_passphrase
+Don't prompt for a credential passphrase.
+Use other methods for authentication, such as Kerberos ticket
+or X.509 certificate.
+This option is implied by
+.B -a
+since passphrase authentication is not used for credential renewal.
+.TP
 .B -T, --trustroots
 Retrieve CA certificates directory from server (if available) to store
 in
-.IR ~/.globus/certificates .
+.TP
+.B -q, --quiet
+Only write output messages on error.
+.TP
+.B -N, --no_credentials
+Authenticate only.  Don't retrieve credentials.
 .SH "EXIT STATUS"
 0 on success, >0 on error
 .SH ENVIRONMENT
@@ -160,12 +180,24 @@ If the repository contains a proxy certificate, rather than an
 end-entity certificate, the retrieved proxy will be of the same type
 as the stored proxy, regardless of the setting of this environment
 variable.
+.TP
+.B MYPROXY_TCP_PORT_RANGE
+Specifies a range of valid port numbers 
+in the form "min,max"
+for the client side of the network connection to the server.
+By default, the client will bind to any available port.
+Use this environment variable to restrict the ports used to
+a range allowed by your firewall.
+If unset, MyProxy will follow the setting of the
+.B GLOBUS_TCP_PORT_RANGE
+environment variable.
 .SH AUTHORS
 Bill Baker,
 Jim Basney,
 Shiva Shankar Chetan,
 Patrick Duda,
 Jarek Gawor,
+Monte Goode,
 Daniel Kouril,
 Zhenmin Li,
 Jason Novotny,

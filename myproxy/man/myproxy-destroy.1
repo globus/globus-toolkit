@@ -1,4 +1,4 @@
-.TH myproxy-destroy 1 "2005-6-8" "NCSA" "MyProxy"
+.TH myproxy-destroy 1 "2005-12-2" "NCSA" "MyProxy"
 .SH NAME
 myproxy-destroy \- remove a credential from the repository
 .SH SYNOPSIS
@@ -93,12 +93,24 @@ form "host/<fqhn>" or "myproxy/<fqhn>"
 the server).  If the server is running with some other DN, you can set
 this environment variable to tell the MyProxy clients to accept the
 alternative DN.
+.TP
+.B MYPROXY_TCP_PORT_RANGE
+Specifies a range of valid port numbers 
+in the form "min,max"
+for the client side of the network connection to the server.
+By default, the client will bind to any available port.
+Use this environment variable to restrict the ports used to
+a range allowed by your firewall.
+If unset, MyProxy will follow the setting of the
+.B GLOBUS_TCP_PORT_RANGE
+environment variable.
 .SH AUTHORS
 Bill Baker,
 Jim Basney,
 Shiva Shankar Chetan,
 Patrick Duda,
 Jarek Gawor,
+Monte Goode,
 Daniel Kouril,
 Zhenmin Li,
 Jason Novotny,
