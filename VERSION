@@ -94,6 +94,7 @@ v2.1 6 Jul 2005
   - fix error message on server-side authorized_renewers check
   - perform reverse lookup on server IP address for authorization
     consistency with other GSI clients
+  - removed myproxy_resolve_hostname() from API
 
 v2.0 8 Jun 2005
   - unified versioning with GPT packaging
