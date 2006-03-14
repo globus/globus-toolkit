@@ -5,6 +5,7 @@ SUBDIRS = \
 	pkgdata 
 
 Sources= \
+    globus_i_xioperf.h \
     globus_xioperf.c  \
     globus_i_xioperf_opts.c
 
