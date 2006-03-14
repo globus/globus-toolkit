@@ -23,9 +23,12 @@
 #include <globus_gsi_system_config.h>
 #include <globus_gsi_system_config_constants.h>
 
-/* EVP_MD_CTX_cleanup() not in OpenSSL 0.9.6. */
+/* EVP_MD_CTX_init() and EVP_MD_CTX_cleanup() not in OpenSSL 0.9.6. */
 #if !defined(EVP_MD_CTX_FLAG_CLEANED)
+#define EVP_MD_CTX_init(ctx)
 #define EVP_MD_CTX_cleanup(ctx)
+#define X509V3_set_nconf X509V3_set_conf_lhash
+#define X509V3_EXT_add_nconf X509V3_EXT_add_conf
 #endif
 
 struct _ssl_credentials;
