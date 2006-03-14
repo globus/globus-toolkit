@@ -112,12 +112,13 @@ globus_l_xio_gsi_attr_init(
     /*
      *  create a gsi attr structure and intialize its values
      */
-    attr = (globus_l_attr_t *) malloc(sizeof(globus_l_attr_t));
+    attr = (globus_l_attr_t *) calloc(1, sizeof(globus_l_attr_t));
     if(!attr)
     {
         result = GlobusXIOErrorMemory("attr");
         goto error_attr;
     }
+    attr->target_name = GSS_C_NO_NAME;
 
     /* set to default attributes */
     

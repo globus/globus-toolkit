@@ -321,11 +321,6 @@ globus_i_xio_op_destroy(
             op->_op_context->entry[ctr].driver->attr_destroy_func(
                 op->entry[ctr].dd);
         }
-        if(op->entry[ctr].open_attr != NULL)
-        {
-            op->_op_context->entry[ctr].driver->attr_destroy_func(
-                op->entry[ctr].open_attr);
-        }
         if(op->_op_context->entry[ctr].driver->attr_destroy_func != NULL &&
             op->entry[ctr].open_attr != NULL)
         {
