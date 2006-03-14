@@ -1,4 +1,4 @@
-.TH myproxy-retrieve 1 "2005-6-8" "NCSA" "MyProxy"
+.TH myproxy-retrieve 1 "2005-12-2" "NCSA" "MyProxy"
 .SH NAME
 myproxy-retrieve \- retrieve an end-entity credential
 .SH SYNOPSIS
@@ -95,9 +95,8 @@ Specifies  the  filename  of  where the  certificate will be stored.
 Specifies the filename of where the private  key will be stored.
 .TP
 .BI -a " file, " --authorization " file"
-Specifies a credential to be used for authorizing the request instead
-of a passphrase.  When renewing a credential, use this option to
-specify the existing, valid credential that you want to renew.
+Use this option to
+specify an existing, valid credential that you want to renew.
 Renewing a credential generally requires two certificate-based
 authentications.  The client authenticates with its identity, using
 the credential in the standard location or specified by
@@ -147,12 +146,24 @@ form "host/<fqhn>" or "myproxy/<fqhn>"
 the server).  If the server is running with some other DN, you can set
 this environment variable to tell the MyProxy clients to accept the
 alternative DN.
+.TP
+.B MYPROXY_TCP_PORT_RANGE
+Specifies a range of valid port numbers 
+in the form "min,max"
+for the client side of the network connection to the server.
+By default, the client will bind to any available port.
+Use this environment variable to restrict the ports used to
+a range allowed by your firewall.
+If unset, MyProxy will follow the setting of the
+.B GLOBUS_TCP_PORT_RANGE
+environment variable.
 .SH AUTHORS
 Bill Baker,
 Jim Basney,
 Shiva Shankar Chetan,
 Patrick Duda,
 Jarek Gawor,
+Monte Goode,
 Daniel Kouril,
 Zhenmin Li,
 Jason Novotny,
