@@ -202,9 +202,6 @@ main(int argc, char *argv[])
     myproxy_log("myproxy-server %s starting at %s",
 		myproxy_version(0,0,0), timestamp());
 
-    /* Set up signal handling to deal with zombie processes left over  */
-    my_signal(SIGCHLD, sig_chld);
-    
     /* If process is killed or Ctrl-C */
     my_signal(SIGTERM, sig_exit); 
     my_signal(SIGINT,  sig_exit); 
@@ -243,6 +240,10 @@ main(int argc, char *argv[])
        /* Run as a daemon */
        listenfd = myproxy_init_server(socket_attrs);
        if (server_context->pidfile) write_pidfile(server_context->pidfile);
+
+       /* Set up signal handling to deal with zombie processes left over  */
+       my_signal(SIGCHLD, sig_chld);
+
        /* Set up concurrent server */
        while (1) {
 	  socket_attrs->socket_fd = accept(listenfd,
