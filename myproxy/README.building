@@ -96,7 +96,7 @@ $ make dist
    /afs/ncsa.uiuc.edu/web/grid.ncsa.uiuc.edu/htdocs/myproxy.
 
      download.html: add new entry at top of table for new release
-     index.html: add note to News
+     index.html/news.html/news.xml: add note to News
      install.html: any changes to install instructions needed?
      man: update html man pages
 
