@@ -1,4 +1,4 @@
-GSI-OpenSSH 3.6, based on OpenSSH 4.2p1, is now available from:
+GSI-OpenSSH 3.7, based on OpenSSH 4.2p1, is now available from:
 
   <http://grid.ncsa.uiuc.edu/ssh/download.html>
 
@@ -11,29 +11,16 @@ use our bugzilla system to report GSI-OpenSSH bugs:
 
   <http://bugzilla.ncsa.uiuc.edu/enter_bug.cgi?product=GSI-enabled%20OpenSSH>
 
-GSI-OpenSSH 3.6 Major changes
+GSI-OpenSSH 3.7 Major changes
 
    New features
 
-      * Moved to OpenSSH 4.2p1.
-
-      * Incorporated openssh-4.2p1-gsskex-20050926-2.patch from Simon
-        Wilkinson adding support for gssapi-keyex authentication
-        method (http://www.sxw.org.uk/computing/patches/openssh.html).
-
-      * Incorporated High Performance Networking (HPN) patch
-        (openssh-4.2p1-hpn11-none.diff) from Pittsburgh Supercomputing
-        Center (http://www.psc.edu/networking/projects/hpn-ssh/) for
-        improved network throughput over long and high bandwidth
-        links.
-
-      * Enabled PAM password authentication by default, unless PAM
-        library and headers are unusable.
+      * Added server-side GSIAllowLimitedProxy option to enable
+        acceptance of limited proxy credentials.
 
    Bugs fixed
 
-      * Only delegate credentials if GSI authentication is used.
-        http://bugzilla.ncsa.uiuc.edu/show_bug.cgi?id=300
+      * None.
 
 Please note that the configure script included in OpenSSH 4.2p1 checks
 ZLIB_VERSION in zlib.h for zlib versions with known vulnerabilities.
@@ -43,7 +30,7 @@ where your vendor has not provided a secure version of zlib, please
 install the latest version of zlib in an alternate path and set the
 --with-zlib GSI_OPENSSH_GPTMACRO option.  For example:
 
-  gpt-build -verbose gsi_openssh_bundle-3.6-src.tar.gz gcc32dbg \
+  gpt-build -verbose gsi_openssh_bundle-3.7-src.tar.gz gcc32dbg \
     GSI_OPENSSH_GPTMACRO="--with-zlib=/usr/local/zlib-1.2.3"
 
 MD5 checksums:
