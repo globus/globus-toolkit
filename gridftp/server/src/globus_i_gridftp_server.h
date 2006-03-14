@@ -97,6 +97,7 @@ typedef enum globus_l_gfs_auth_level_e
     GLOBUS_L_GFS_AUTH_IDENTIFY = 0x01,
     GLOBUS_L_GFS_AUTH_ACTION = 0x02,
     GLOBUS_L_GFS_AUTH_NOSETUID = 0x04,
+    GLOBUS_L_GFS_AUTH_NOGRIDMAP = 0x08,
 
     GLOBUS_L_GFS_AUTH_ALL = 0xFF
 } globus_l_gfs_auth_level_t;

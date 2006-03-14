@@ -81,13 +81,13 @@ globus_xio_driver_hook_t globus_i_xio_##driver_name##_hook =                \
 #define GlobusXIORegisterDriver(driver_name)                                \
     globus_extension_registry_add(                                          \
         GLOBUS_XIO_DRIVER_REGISTRY,                                         \
-        #driver_name,                                                       \
+        (void *)#driver_name,                                               \
         GlobusXIOMyModule(driver_name),                                     \
         GlobusXIOMyDriver(driver_name))
 #define GlobusXIOUnRegisterDriver(driver_name)                              \
     globus_extension_registry_remove(                                       \
         GLOBUS_XIO_DRIVER_REGISTRY,                                         \
-        #driver_name)
+        (void*)#driver_name)
 
 #define GlobusXIODefineModule(driver_name)                                  \
     GlobusExtensionDefineModule(globus_xio_##driver_name##_driver)

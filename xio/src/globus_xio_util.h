@@ -22,6 +22,17 @@
 EXTERN_C_BEGIN
 
 globus_bool_t
+globus_xio_get_env_pair(
+    const char *                        env_name,
+    int *                               min,
+    int *                               max);
+
+globus_result_t
+globus_xio_contact_info_copy(
+    globus_xio_contact_t **             dst,
+    const globus_xio_contact_t *        src);
+
+globus_bool_t
 globus_xio_error_is_eof(
     globus_result_t                     res);
 

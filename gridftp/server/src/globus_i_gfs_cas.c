@@ -19,6 +19,8 @@
  */
 #include "globus_i_gridftp_server.h"
 
+#define FTP_SERVICE_NAME "file"
+
 static void
 globus_gfs_acl_cas_cb(
     void *                              callback_arg,
@@ -39,24 +41,22 @@ static
 int
 globus_gfs_acl_cas_init(
     void **                             out_handle,
-    const struct passwd *               passwd,
-    const char *                        given_pw,
-    const char *                        resource_id,
-    globus_i_gfs_acl_handle_t *         acl_handle,
+    globus_gfs_acl_info_t *             acl_info,
+    globus_gfs_acl_handle_t             acl_handle,
     globus_result_t *                   out_res)
 {
     globus_gsi_authz_handle_t           cas_handle;
     GlobusGFSName(globus_gfs_acl_cas_init);
     GlobusGFSDebugEnter();
 
-    if(acl_handle->context == NULL)
+    if(acl_info->context == NULL)
     {
         goto err;
     }
     *out_res = globus_gsi_authz_handle_init(
         &cas_handle,
-        resource_id,
-        acl_handle->context,
+        FTP_SERVICE_NAME,
+        acl_info->context,
         globus_gfs_acl_cas_cb,
         acl_handle);
     if(*out_res != GLOBUS_SUCCESS)
@@ -78,7 +78,8 @@ globus_gfs_acl_cas_authorize(
     void *                              out_handle,
     const char *                        action,
     const char *                        object,
-    globus_i_gfs_acl_handle_t *         acl_handle,
+    globus_gfs_acl_info_t *             acl_info,
+    globus_gfs_acl_handle_t             acl_handle,
     globus_result_t *                   out_res)
 {
     globus_gsi_authz_handle_t           cas_handle;
@@ -87,7 +88,7 @@ globus_gfs_acl_cas_authorize(
     GlobusGFSDebugEnter();
 
     cas_handle = (globus_gsi_authz_handle_t) out_handle;
-    if(acl_handle->context == NULL)
+    if(acl_info->context == NULL)
     {
         goto err;
     }
@@ -99,7 +100,7 @@ globus_gfs_acl_cas_authorize(
     if (strcmp(action, "authz_assert"))
     {
         full_object = globus_common_create_string(
-            "ftp://%s%s", acl_handle->hostname, object);
+            "ftp://%s%s", acl_info->hostname, object);
     }
     else
     {

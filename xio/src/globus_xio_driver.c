@@ -326,6 +326,20 @@ globus_i_xio_op_destroy(
             op->_op_context->entry[ctr].driver->attr_destroy_func(
                 op->entry[ctr].open_attr);
         }
+        if(op->_op_context->entry[ctr].driver->attr_destroy_func != NULL &&
+            op->entry[ctr].open_attr != NULL)
+        {
+            op->_op_context->entry[ctr].driver->attr_destroy_func(
+                op->entry[ctr].open_attr);
+            op->entry[ctr].open_attr = NULL;
+        }
+        if(op->_op_context->entry[ctr].driver->attr_destroy_func != NULL &&
+            op->entry[ctr].close_attr != NULL)
+        {
+            op->_op_context->entry[ctr].driver->attr_destroy_func(
+                op->entry[ctr].close_attr);
+            op->entry[ctr].close_attr = NULL;
+        }
     }
 
     globus_memory_push_node(&context->op_memory, op);
@@ -714,13 +728,6 @@ globus_i_xio_driver_start_close(
                     my_op->close_attr,
                     op);
     my_op->in_register = GLOBUS_FALSE;
-
-    if(my_context->driver->attr_destroy_func != NULL && 
-        my_op->close_attr != NULL)
-    {
-        my_context->driver->attr_destroy_func(my_op->close_attr);
-        my_op->close_attr = NULL;
-    }
 
     if(res != GLOBUS_SUCCESS && !can_fail)
     {
@@ -2165,6 +2172,13 @@ globus_xio_operation_get_driver_specific(
     globus_xio_operation_t              op)
 {
     return op->_op_context->entry[op->ndx - 1].driver_handle;
+}
+
+globus_xio_driver_t
+globus_xio_operation_get_user_driver(
+    globus_xio_operation_t              op)
+{
+    return op->_op_context->entry[op->ndx - 1].driver;
 }
 
 globus_xio_driver_handle_t

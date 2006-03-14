@@ -1296,6 +1296,10 @@ void *
 globus_xio_operation_get_driver_specific(
     globus_xio_operation_t              op);
 
+globus_xio_driver_t
+globus_xio_operation_get_user_driver(
+    globus_xio_operation_t              op);
+
 /* this returns the handle to the drivers below you */
 globus_xio_driver_handle_t
 globus_xio_operation_get_driver_handle(
@@ -1303,6 +1307,7 @@ globus_xio_operation_get_driver_handle(
 
 /* this returns the handle to your driver.
  * (only useful for canceling operations in your possession)
+ * or getting user handle associated with the driver
  */
 globus_xio_driver_handle_t
 globus_xio_operation_get_driver_self_handle(

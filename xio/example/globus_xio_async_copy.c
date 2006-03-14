@@ -101,13 +101,13 @@ wakeup_main(
     copy_info_t *                       copy_info,
     globus_result_t                     result)
 {
-    if(result != GLOBUS_SUCCESS && copy_info->error == NULL)
-    {
-        copy_info->error = globus_error_get(result);
-    }
-    
     globus_mutex_lock(&copy_info->lock);
     {
+        if(result != GLOBUS_SUCCESS && copy_info->error == NULL)
+        {
+            copy_info->error = globus_error_get(result);
+        }
+
         copy_info->cb_count--;
         if(copy_info->cb_count == 0)
         {

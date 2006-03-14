@@ -199,7 +199,7 @@ globus_l_gfs_sighup(
     argv = (char **) globus_i_gfs_config_get("argv");
     argc = globus_i_gfs_config_int("argc");
 
-    globus_i_gfs_config_init(argc, argv);
+    globus_i_gfs_config_init(argc, argv, GLOBUS_FALSE);
     globus_i_gfs_log_message(
         GLOBUS_I_GFS_LOG_INFO, 
         "Done reloading config.\n");           
@@ -1069,19 +1069,19 @@ globus_l_gfs_be_daemon()
         }
     }
 
-    if(globus_i_gfs_config_int("port") == 0 ||
-        globus_i_gfs_config_bool("contact_string"))
+    result = globus_xio_server_get_contact_string(
+        globus_l_gfs_xio_server,
+        &contact_string);
+    if(result != GLOBUS_SUCCESS)
     {
-        result = globus_xio_server_get_contact_string(
-            globus_l_gfs_xio_server,
-            &contact_string);
-        if(result != GLOBUS_SUCCESS)
-        {
-            goto server_error;
-        }
+        goto server_error;
+    }
+    globus_gfs_config_set_ptr("contact_string", contact_string);
+
+    if(globus_i_gfs_config_int("port") == 0)
+    {
         globus_libc_printf(_GSSL("Server listening at %s\n"), contact_string);
         fflush(stdout);
-        globus_free(contact_string);
     }
 
     result = globus_xio_server_register_accept(
@@ -1241,7 +1241,7 @@ main(
     }
         
     /* init all the server modules */
-    globus_i_gfs_config_init(argc, argv);
+    globus_i_gfs_config_init(argc, argv, GLOBUS_FALSE);
     globus_i_gfs_log_open();
     globus_l_gfs_signal_init();
     globus_i_gfs_data_init();

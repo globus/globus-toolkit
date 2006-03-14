@@ -24,7 +24,8 @@
 void
 globus_i_gfs_config_init(
     int                                 argc,
-    char **                             argv);
+    char **                             argv,
+    globus_bool_t                       argv_only);
 
 void *
 globus_i_gfs_config_get(

@@ -100,7 +100,12 @@ globus_l_gfs_activate()
     {
         return rc;
     }
-
+    rc = globus_module_activate(GLOBUS_USAGE_MODULE);
+    if(rc != 0)
+    {
+        return rc;
+    }
+    
     GlobusDebugInit(GLOBUS_GRIDFTP_SERVER,
         ERROR WARNING TRACE INTERNAL_TRACE INFO STATE INFO_VERBOSE);
 
@@ -498,6 +503,10 @@ globus_l_gfs_auth_session_cb(
     {
         globus_free(auth_info->session_info->subject);
     }
+    if(auth_info->session_info->host_id != NULL)
+    {
+        globus_free(auth_info->session_info->host_id);
+    }
     globus_free(auth_info->session_info);
     globus_free(auth_info);
 
@@ -562,12 +571,20 @@ globus_l_gfs_request_auth(
     if(subject != NULL)
     {
         session_info->subject = strdup(subject);
-        if(session_info->password == NULL)
+        if(session_info->subject == NULL)
         {
             goto user_error;
         }
     }
-
+    if(instance->remote_contact != NULL)
+    {
+        session_info->host_id = strdup(instance->remote_contact);
+        if(session_info->host_id == NULL)
+        {
+            goto user_error;
+        }
+    }
+       
     auth_info = (globus_l_gfs_auth_info_t *) calloc(1,
         sizeof(globus_l_gfs_auth_info_t));
     if(auth_info == NULL)

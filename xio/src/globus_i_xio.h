@@ -595,6 +595,7 @@ typedef struct globus_i_xio_driver_s
 {
     char *                              name;
     void *                              user_data;
+    void *                              wrap_data;
     /* these are filled in by the driver loader */
     globus_xio_driver_hook_t *          hook;
     globus_extension_handle_t           extension_handle;

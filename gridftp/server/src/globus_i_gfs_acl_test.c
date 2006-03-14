@@ -36,10 +36,8 @@ static
 int
 globus_gfs_acl_test_init(
     void **                             out_handle,
-    const struct passwd *               passwd,
-    const char *                        given_pw,
-    const char *                        resource_id,
-    globus_i_gfs_acl_handle_t *         acl_handle,
+    globus_gfs_acl_info_t *             acl_info,
+    globus_gfs_acl_handle_t             acl_handle,
     globus_result_t *                   out_res)
 {
     char *                              fail_str;
@@ -75,7 +73,8 @@ globus_gfs_acl_test_authorize(
     void *                              out_handle,
     const char *                        action,
     const char *                        object,
-    globus_i_gfs_acl_handle_t *         acl_handle,
+    globus_gfs_acl_info_t *             acl_info,
+    globus_gfs_acl_handle_t             acl_handle,
     globus_result_t *                   out_res)
 {
     char *                              fail_str;

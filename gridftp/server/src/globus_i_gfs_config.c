@@ -303,6 +303,8 @@ static const globus_l_gfs_config_option_t option_list[] =
     0, "0", NULL, NULL, NULL,GLOBUS_TRUE, NULL},
  {"fqdn", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     NULL /* hostname found by gethostname() */, NULL, NULL,GLOBUS_TRUE, NULL},
+ {"contact_string", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+    NULL /* contact string that server is listening on */, NULL, NULL,GLOBUS_TRUE, NULL},
  {"loaded_config", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
      NULL /* placeholder so configfile check doesn't fail */, NULL, NULL,GLOBUS_FALSE, NULL},
  {"version_string", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
@@ -1882,7 +1884,8 @@ error_exit:
 void
 globus_i_gfs_config_init(
     int                                 argc,
-    char **                             argv)
+    char **                             argv,
+    globus_bool_t                       argv_only)
 {
     char *                              tmp_str;
     char *                              exec_name;
@@ -1891,6 +1894,7 @@ globus_i_gfs_config_init(
     globus_bool_t                       cmdline_config = GLOBUS_FALSE;
     int                                 arg_num;
     char *                              argp;
+    char **                             tmp_argv;
     int                                 rc;
     globus_result_t                     result;
     GlobusGFSName(globus_i_gfs_config_init);
@@ -1902,7 +1906,18 @@ globus_i_gfs_config_init(
         globus_hashtable_string_hash,
         globus_hashtable_string_keyeq);
 
-    exec_name = argv[0];
+    if(argv == NULL)
+    {
+        tmp_argv = globus_malloc(2 * sizeof(char *));
+        tmp_argv[0] = "globus-gridftp-server";
+        tmp_argv[1] = NULL;
+    }
+    else
+    {
+        tmp_argv = argv;
+    }
+    
+    exec_name = tmp_argv[0];
     /* set default exe name */
     tmp_str = globus_module_getenv("GLOBUS_LOCATION");
     if(tmp_str)
@@ -1921,7 +1936,7 @@ globus_i_gfs_config_init(
     }
     else
     {
-        exec_name = strdup(argv[0]);
+        exec_name = globus_libc_strdup(tmp_argv[0]);
     }
 
     global_config_file = "/etc/grid-security/gridftp.conf";
@@ -1929,32 +1944,42 @@ globus_i_gfs_config_init(
 
     for(arg_num = 0; arg_num < argc; arg_num++)
     {
-        argp = argv[arg_num];
-        if(*argp == '-' && *++argp == 'c' && argv[arg_num + 1])
+        argp = tmp_argv[arg_num];
+        if(*argp == '-' && *++argp == 'c' && tmp_argv[arg_num + 1])
         {
-            local_config_file = globus_libc_strdup(argv[arg_num + 1]);
+            local_config_file = globus_libc_strdup(tmp_argv[arg_num + 1]);
             arg_num = argc;
             cmdline_config = GLOBUS_TRUE;
         }
     }
-    if(local_config_file == NULL)
+    if(local_config_file == NULL && !argv_only)
     {
         local_config_file = globus_common_create_string(
         "%s/etc/gridftp.conf", globus_libc_getenv("GLOBUS_LOCATION"));
     }
 
     globus_l_gfs_config_load_defaults();
-    rc = globus_l_gfs_config_load_config_file(local_config_file);
+/*
+ * rc = globus_l_gfs_config_load_config_file(local_config_file);
     if(rc == -2 && !cmdline_config)
+*/
+    if(local_config_file != NULL)
     {
-        rc = globus_l_gfs_config_load_config_file(global_config_file);
+        rc = globus_l_gfs_config_load_config_file(local_config_file);
+        if(rc == -2)
+        {
+            rc = globus_l_gfs_config_load_config_file(global_config_file);
+        }
+        if(rc == -1)
+        {
+            goto error;
+        }
     }
-    if(rc == -1)
+    if(!argv_only)
     {
-        goto error;
+        globus_l_gfs_config_load_config_env();
     }
-    globus_l_gfs_config_load_config_env();
-    rc = globus_l_gfs_config_load_commandline(argc, argv);
+    rc = globus_l_gfs_config_load_commandline(argc, tmp_argv);
     if(rc == -1)
     {
         goto error;
@@ -1969,11 +1994,18 @@ globus_i_gfs_config_init(
     }
     
     globus_l_gfs_config_set("exec_name", 0, exec_name);
-    globus_l_gfs_config_set("argv", 0, argv);
+    globus_l_gfs_config_set("argv", 0, tmp_argv);
     globus_l_gfs_config_set("argc", argc, NULL);
 
-    globus_free(local_config_file);     
-
+    if(local_config_file != NULL)
+    {
+        globus_free(local_config_file);
+    }
+    if(argv == NULL)
+    {
+        globus_free(tmp_argv);
+    }
+    
     globus_mutex_init(&globus_i_gfs_config_mutex, NULL);
 
     GlobusGFSDebugExit();
