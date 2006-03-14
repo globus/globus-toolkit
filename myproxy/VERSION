@@ -1,10 +1,10 @@
-This is MyProxy v3.5 XX Xxx 2006.
+This is MyProxy v3.5 14 Mar 2006.
 This version should be protocol compatible with all versions since v0.2.
 Binary compatibility of the C API is not guaranteed between releases.
 
 Version History
 ---------------
-v3.5 XX Xxx 2006
+v3.5 14 Mar 2006
   - dropped support for certificate_issuer option in
     myproxy-server.config; use certificate_issuer_cert instead
   - added myproxy_accept_delegation_ex() to retrieve credentials to a
