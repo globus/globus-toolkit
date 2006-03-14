@@ -1188,12 +1188,48 @@ sub docleanup {
 }
 
 sub doperftests {
+    &dogpiperftest();
     &doinitperftest();
     &dogetdelegperftest();
     &doinfoperftest();
     &docpperftest();
     &dodbperftest() if ($dbperformance);
     &docleanup();
+}
+
+sub dogpiperftest {
+    $starttime = time();
+    $i = $perfclients;
+    while ($i--) {
+	$pid = fork();
+	last if ($pid == 0);
+    }
+    if ($pid == 0) {
+	$i = $perfiters;
+	while ($i--) {
+	    ($exitstatus, $output) =
+		&runtest("grid-proxy-init -hours 1 -out /tmp/myproxy-test.$$", undef);
+	    if ($exitstatus != 0) {
+		print "$$: grid-proxy-init FAILED with $i iters to go.\n";
+		print STDERR $output;
+		exit($exitstatus>>8);
+	    }
+	}
+	unlink("/tmp/myproxy-test.$$");
+	&debug("$$ is done.");
+	exit 0;
+    }
+    $i = $perfclients;
+    while ($i--) {
+	wait();
+	if ($?) {
+	    printf "child failed. aborting.\n";
+	    &docleanup(); exit 1;
+	}
+    }
+    $endtime = time();
+    print $perfiters*$perfclients, " grid-proxy-inits in ";
+    print $endtime-$starttime, " seconds.\n";
 }
 
 sub doinitperftest {
