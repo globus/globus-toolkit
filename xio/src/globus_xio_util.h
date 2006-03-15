@@ -27,11 +27,6 @@ globus_xio_get_env_pair(
     int *                               min,
     int *                               max);
 
-globus_result_t
-globus_xio_contact_info_copy(
-    globus_xio_contact_t **             dst,
-    const globus_xio_contact_t *        src);
-
 globus_bool_t
 globus_xio_error_is_eof(
     globus_result_t                     res);
@@ -82,6 +77,11 @@ globus_xio_contact_info_to_encoded_string(
     const globus_xio_contact_t *        contact_info,
     const globus_xio_contact_t *        encode_chars,
     char **                             contact_string);
+
+globus_result_t
+globus_xio_contact_copy(
+    globus_xio_contact_t *              dst,
+    const globus_xio_contact_t *        src);
 
 /**
  * Utility macros

@@ -25,7 +25,7 @@ globus_xio_get_env_pair(
     int *                               max)
 {
     char *                              min_max;
-    GlobusXIOName(globus_l_xio_tcp_get_env_pair);
+    GlobusXIOName(globus_xio_get_env_pair);
 
     min_max = globus_module_getenv(env_name);
 
@@ -63,13 +63,12 @@ globus_xio_error_match(
 }
 
 globus_result_t
-globus_xio_contact_info_copy(
-    globus_xio_contact_t **             dst,
+globus_xio_contact_copy(
+    globus_xio_contact_t *              dst,
     const globus_xio_contact_t *        src)
 {
     globus_result_t                     result;
-    globus_xio_contact_t *              ci;
-    GlobusXIOName(globus_xio_contact_info_copy);
+    GlobusXIOName(globus_xio_contact_copy);
 
     if(dst == NULL)
     {
@@ -82,48 +81,40 @@ globus_xio_contact_info_copy(
         goto error;
     }
 
-    ci = (globus_xio_contact_t *)
-        globus_calloc(1, sizeof(globus_xio_contact_t));
-    if(ci == NULL)
-    {
-        result = GlobusXIOErrorMemory("ci");
-        goto error;
-    }
+    memset(dst, '\0', sizeof(globus_xio_contact_t));
 
     if(src->unparsed)
     {
-        ci->unparsed = strdup(src->unparsed);
+        dst->unparsed = strdup(src->unparsed);
     }
     if(src->resource)
     {
-        ci->resource = strdup(src->resource);
+        dst->resource = strdup(src->resource);
     }
     if(src->host)
     {
-        ci->host = strdup(src->host);
+        dst->host = strdup(src->host);
     }
     if(src->port)
     {
-        ci->port = strdup(src->port);
+        dst->port = strdup(src->port);
     }
     if(src->scheme)
     {
-        ci->scheme = strdup(src->scheme);
+        dst->scheme = strdup(src->scheme);
     }
     if(src->user)
     {
-        ci->user = strdup(src->user);
+        dst->user = strdup(src->user);
     }
     if(src->pass)
     {
-        ci->pass = strdup(src->pass);
+        dst->pass = strdup(src->pass);
     }
     if(src->subject)
     {
-        ci->subject = strdup(src->subject);
+        dst->subject = strdup(src->subject);
     }
-
-    *dst = ci;
 
     return GLOBUS_SUCCESS;
 error:
