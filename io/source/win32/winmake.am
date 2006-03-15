@@ -1,0 +1,61 @@
+
+# Windows Only Headers In Linux Directory
+flavorinclude_HEADERS = \
+    globus_io_win_io_operation.h
+
+# Windows Only Source Files In Linux Directory
+Sources = \
+    globus_io_winsock.c \
+    globus_io_windows.c
+
+# External Library Dependencies
+LibDependencies = \
+    Ws2_32.lib \
+    Mswsock.lib \
+    libeay32.lib \
+    ssleay32.lib \
+    libglobus_common_$(GLOBUS_FLAVOR_NAME).lib \
+    libglobus_openssl_$(GLOBUS_FLAVOR_NAME).lib \
+    libglobus_openssl_error_$(GLOBUS_FLAVOR_NAME).lib \
+    libglobus_gsi_sysconfig_$(GLOBUS_FLAVOR_NAME).lib \
+    libglobus_proxy_ssl_$(GLOBUS_FLAVOR_NAME).lib \
+    libglobus_gsi_cert_utils_$(GLOBUS_FLAVOR_NAME).lib \
+    libglobus_oldgaa_$(GLOBUS_FLAVOR_NAME).lib \
+    libglobus_gsi_callback_$(GLOBUS_FLAVOR_NAME).lib \
+    libglobus_gsi_credential_$(GLOBUS_FLAVOR_NAME).lib \
+    libglobus_gsi_proxy_core_$(GLOBUS_FLAVOR_NAME).lib \
+    libglobus_gssapi_gsi_$(GLOBUS_FLAVOR_NAME).lib \
+    libglobus_gss_assist_$(GLOBUS_FLAVOR_NAME).lib
+	    
+# Export Exclusions Found By Linker
+ExportExclusions = \
+    globus_i_io_try_sendmsg \
+    globus_io_file_posix_convert \
+    globus_io_register_select \
+    globus_io_set_close_on_exec \
+    globus_io_udp_bind \
+    globus_io_udp_recvfrom \
+    globus_io_udp_recvfromv \
+    globus_io_udp_register_recvfrom \
+    globus_io_udp_register_recvfromv \
+    globus_io_udp_register_sendto \
+    globus_io_udp_register_sendvto \
+    globus_io_udp_sendto \
+    globus_io_udp_sendvto \
+    globus_io_udp_set_attr \
+    globus_io_udpattr_destroy \
+    globus_io_udpattr_init \
+    globus_l_io_udp_recvfromv_monitor_callback \
+    globus_l_io_udp_sendto_monitor_callback \
+    globus_l_io_udp_sendvto_monitor_callback \
+    globus_netlogger_get_nlhandle \
+    globus_l_io_module
+
+# Windows Only Exports
+#    (Delete This when these symbols show up in Linux build)
+WinExports = \
+    globus_io_tcp_get_credential \
+    globus_io_tcp_set_credential \
+    globus_i_io_module
+    
+ 
