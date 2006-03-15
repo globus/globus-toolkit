@@ -49,7 +49,7 @@ typedef struct globus_i_xioperf_info_s
     globus_off_t                        bytes_to_transfer;
     globus_off_t                        bytes_sent;
     globus_off_t                        bytes_recv;
-    globus_off_t                        daemon;
+    globus_bool_t                       daemon;
     globus_size_t                       block_size;
     int                                 stream_count;
     globus_xio_stack_t                  stack;

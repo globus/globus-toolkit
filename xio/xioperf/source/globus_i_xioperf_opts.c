@@ -21,19 +21,19 @@ xioperf_l_kmint(
     }
     if(strchr(arg, 'K') != NULL)
     {
-        *out_i = i * 1024;
+        *out_i = (globus_off_t)i * 1024;
     }
     else if(strchr(arg, 'M') != NULL)
     {
-        *out_i = i * 1024 * 1024;
+        *out_i = (globus_off_t)i * 1024 * 1024;
     }
     else if(strchr(arg, 'G') != NULL)
     {
-        *out_i = i * 1024 * 1024 * 1024;
+        *out_i = (globus_off_t)i * 1024 * 1024 * 1024;
     }
     else
     {
-        *out_i = i;
+        *out_i = (globus_off_t)i;
     }
 
     return GLOBUS_SUCCESS;

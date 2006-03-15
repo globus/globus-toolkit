@@ -752,30 +752,30 @@ xioperf_post_io(
     globus_result_t                     res;
     globus_byte_t *                     buffer;
 
+    if(info->reader && !info->read_done)
+    {
+        buffer = (globus_byte_t*)globus_malloc(info->block_size);
+        res = globus_xio_register_read(
+            info->xio_handle,
+            buffer,
+            info->block_size,
+            1,
+            NULL,
+            xioperf_read_cb,
+            info);
+        if(res != GLOBUS_SUCCESS)
+        {
+            info->read_done = GLOBUS_TRUE;
+            xioperf_l_log("initial read error:", res);
+            goto error;
+        }
+        else
+        {
+            info->ref++;
+        }
+    }
     for(i = 0; i < info->stream_count; i++)
     {
-        if(info->reader && !info->read_done)
-        {
-            buffer = (globus_byte_t*)globus_malloc(info->block_size);
-            res = globus_xio_register_read(
-                info->xio_handle,
-                buffer,
-                info->block_size,
-                1,
-                NULL,
-                xioperf_read_cb,
-                info);
-            if(res != GLOBUS_SUCCESS)
-            {
-                info->read_done = GLOBUS_TRUE;
-                xioperf_l_log("initial read error:", res);
-                goto error;
-            }
-            else
-            {
-                info->ref++;
-            }
-        }
         if(info->writer && !info->write_done)
         {
             res = xioperf_next_write(info);
