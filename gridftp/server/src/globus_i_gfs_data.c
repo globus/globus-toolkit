@@ -1083,8 +1083,6 @@ globus_l_gfs_data_authorize(
         }
         else
         {
-/*
- * < globus_i_gfs_data.c
             if(session_info->map_user == GLOBUS_TRUE ||
                 session_info->username == NULL)
             {
@@ -1106,45 +1104,12 @@ globus_l_gfs_data_authorize(
         if(pwent == NULL)
         {            
             if(auth_level & GLOBUS_L_GFS_AUTH_NOSETUID)
-= */
-            if(session_info->map_user == GLOBUS_TRUE ||
-                session_info->username == NULL)
-/* > 1.43.2.1 */
-            {
-/*
- * < globus_i_gfs_data.c
-                pwent = globus_l_gfs_getpwuid(getuid());
-                if(pwent == NULL)
-                {
-                    res = GlobusGFSErrorGeneric(
-                        "Invalid passwd entry for current user.");
-=
-*/              
-                pwent = globus_l_gfs_getpwuid(getuid());
-                if(pwent == NULL)
-                {
-                    res = GlobusGFSErrorGeneric(
-                        "Invalid passwd entry for current user.");
-                    goto pwent_error;
-                }
-                if(session_info->username)
-                {
-                    globus_free(session_info->username);
-                }
-                session_info->username = globus_libc_strdup(pwent->pw_name);
-            }
-        }
-
-        if(pwent == NULL)
-        {            
-            if(auth_level & GLOBUS_L_GFS_AUTH_NOSETUID)
             {
                 pwent = globus_l_gfs_getpwuid(getuid());
                 if(pwent == NULL)
                 {
                     res = GlobusGFSErrorGeneric(
                         "Invalid passwd entry for current user.");
-/* > 1.43.2.1 */
                     goto pwent_error;
                 }
             }

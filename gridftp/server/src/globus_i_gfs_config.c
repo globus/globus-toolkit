@@ -1959,14 +1959,11 @@ globus_i_gfs_config_init(
     }
 
     globus_l_gfs_config_load_defaults();
-/*
- * rc = globus_l_gfs_config_load_config_file(local_config_file);
-    if(rc == -2 && !cmdline_config)
-*/
+
     if(local_config_file != NULL)
     {
         rc = globus_l_gfs_config_load_config_file(local_config_file);
-        if(rc == -2)
+        if(rc == -2 && !cmdline_config)
         {
             rc = globus_l_gfs_config_load_config_file(global_config_file);
         }
