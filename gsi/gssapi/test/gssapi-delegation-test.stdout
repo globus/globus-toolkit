@@ -1,4 +1,0 @@
-gssapi_delegation_test.c:\d+: Successfully established initial security context
-gssapi_delegation_test.c:\d+: Successfully delegated credential
-gssapi_delegation_test.c:\d+: Successfully exported/imported the delegated credential
-gssapi_delegation_test.c:\d+: Successfully established security context with delegated credential
