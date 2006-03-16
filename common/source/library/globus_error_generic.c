@@ -778,10 +778,9 @@ globus_l_error_multiple_print(
             globus_list_t *             tmp;
             int                         j = 0;
             
-            if(data->desc)
+            if(data->desc && *data->desc)
             {
                 layout[i++] = data->desc;
-                layout[i++] = "\n";
             }
             
             for(tmp = data->chains;
@@ -793,11 +792,10 @@ globus_l_error_multiple_print(
                 instance = (globus_l_error_multiple_chain_t *)
                     globus_list_first(tmp);
                 
-                if(instance->desc)
+                if(instance->desc && *instance->desc)
                 {
-                    layout[i++] = "\n";
                     layout[i++] = instance->desc;
-                    layout[i++] = "\n\n";
+                    layout[i++] = "\n";
                 }
                 
                 if(friendly)
@@ -990,14 +988,13 @@ globus_error_print_friendly(
             {
                 bottom1 = globus_object_printable_to_string(source_error1);
             }
-            if(bottom1)
+            if(bottom1 && *bottom1)
             {
                 layout[i++] = bottom1;
-                layout[i++] = "\n";
             }
         }
         
-        if(friendly)
+        if(friendly && *friendly)
         {
             layout[i++] = friendly;
             layout[i++] = "\n";
