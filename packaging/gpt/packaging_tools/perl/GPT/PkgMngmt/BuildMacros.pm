@@ -213,8 +213,9 @@ sub setup_flavor_macros {
     $configopts = $me->{'macros'}->{'CORE_CONFIG_GPTMACRO'};
     $configenv = $me->{'macros'}->{'CORE_ENV_GPTMACRO'};
   } else {
-    $configopts = defined $me->{'user_macros'}->{'CONFIGOPTS_GPTMACRO'} ? 
-      $me->{'user_macros'}->{'CONFIGOPTS_GPTMACRO'}: "";
+    $configopts = ( defined $me->{'user_macros'}->{'CONFIGOPTS_GPTMACRO'} ?
+                   $me->{'user_macros'}->{'CONFIGOPTS_GPTMACRO'} : "") . " " .
+                   $me->{'macros'}->{'CORE_CONFIG_GPTMACRO'};
     $configenv = ( defined $me->{'user_macros'}->{'CONFIGENV_GPTMACRO'} ? 
                    $me->{'user_macros'}->{'CONFIGENV_GPTMACRO'} : "") . " " . 
                    $me->{'macros'}->{'CORE_ENV_GPTMACRO'};
