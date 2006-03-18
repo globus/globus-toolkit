@@ -21,6 +21,10 @@
 
 #ifdef BUILD_DEBUG
 
+#if !defined(strdup)
+char * strdup(const char *);
+#endif
+
 static
 void
 globus_l_debug_parse_level_names(
@@ -147,12 +151,12 @@ globus_debug_init(
         char *                          show_tid;
         char *                          timestamp_levels;
         
-        levels = globus_libc_strdup(tmp);
+        levels = strdup(tmp);
         if(!levels)
         {
             return;
         }
-        my_names = globus_libc_strdup(level_names);
+        my_names = strdup(level_names);
         if(!my_names)
         {
             free(levels);
