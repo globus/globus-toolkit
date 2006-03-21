@@ -428,7 +428,11 @@ globus_l_pbs_read_callback(
     globus_reltime_t                    delay;
     globus_result_t                     result;
     time_t                              now;
-    struct tm *                         now_tm;
+    struct tm                           tm_now;
+    struct tm *                         tm_result;
+    time_t                              now_day;
+    time_t                              restart_day;
+
     GlobusFuncName(globus_l_pbs_read_callback);
 
     SEGPbsEnter();
@@ -445,9 +449,25 @@ globus_l_pbs_read_callback(
 
     now = time(NULL);
 
-    now_tm = gmtime(&now);
+    tm_result = globus_libc_localtime_r(&now, &tm_now);
+    if (tm_result == NULL)
+    {
+        SEGPbsDebug(SEG_PBS_DEBUG_ERROR, ("error converting time"));
 
-    if (now_tm->tm_mday > state->start_timestamp.tm_mday)
+        goto error;
+    }
+    tm_now.tm_sec = 0;
+    tm_now.tm_min = 0;
+    tm_now.tm_hour = 0;
+    now_day = mktime(&tm_now);
+
+    memcpy(&tm_now, &state->start_timestamp, sizeof(struct tm));
+    tm_now.tm_sec = 0;
+    tm_now.tm_min = 0;
+    tm_now.tm_hour = 0;
+    restart_day = mktime(&tm_now);
+
+    if ((tm_result != NULL) && (now_day > restart_day))
     {
         state->old_log = GLOBUS_TRUE;
     }
