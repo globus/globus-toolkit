@@ -11,7 +11,7 @@ count=`ps -ef | grep receiver -c`
 #if it isn't, start the receiver:
 if [ $count -le 1 ]
 then
-    cp $GLOBUS_LOCATION/receiver.log $GLOBUS_LOCATION/receiver.log.`date +%Y%m%d-%H%M%S`
+    mv $GLOBUS_LOCATION/receiver.log $GLOBUS_LOCATION/receiver.log.`date +%Y%m%d-%H%M%S`
     nohup $GLOBUS_LOCATION/bin/globus-usage-receiver &> $GLOBUS_LOCATION/receiver.log &
     #notify that this has occured
     time=`date`

@@ -10,4 +10,5 @@ if [ -z "$GLOBUS_LOCATION" ] ; then
    exit 2
 fi
 
-$GLOBUS_LOCATION/bin/globus-usage-babysitter clear | mail -s "Daily Globus Usage-Stats Update" $1
+$GLOBUS_LOCATION/bin/globus-usage-babysitter clear | mail -s "Daily Globus Usage-Stats Update" "$@"
+
