@@ -518,7 +518,7 @@ sub poll
                     } elsif (/<r>([^<]+)<\/r>/) {
                         $record->{$attr} = $1;
                     }
-                } elsif (</c>) {
+                } elsif (/<\/c>/) {
                 }
             }
 
