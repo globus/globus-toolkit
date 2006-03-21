@@ -38,21 +38,20 @@ public class DefaultPacketHandler implements PacketHandler {
     protected String dburl;
     protected String table;
     protected Connection con;
-    /*Get a connection from the pool only when we need it, in handlePacket,
-     to avoid monopolizing the connections.*/
+
+    /* Get a connection from the pool only when we need it, in handlePacket,
+       to avoid monopolizing the connections.*/
     protected long packetCount;
+    protected long lostCount;
 
     /*Gets a database connection from the pool created by the HandlerThread.
      table is the name of the table in that database to write packets to.*/
     public DefaultPacketHandler(String dburl, String table) throws SQLException {
 	//        this.dburl = dburl;
         this.table = table;
-
-	packetCount = 0;
     }
 
     public void finalize() {
-
 	if( con != null ) {
 	    try { con.close(  ); }                
 	    catch( Exception e ) { }
@@ -68,57 +67,68 @@ public class DefaultPacketHandler implements PacketHandler {
     }
    
     public void resetCounts() {
-	packetCount = 0;
+	this.packetCount = 0;
+        this.lostCount = 0;
     }
 
     public String getStatus() {
 	StringBuffer output = new StringBuffer();
-	output.append(packetCount);
+	output.append(this.packetCount);
 	output.append(" ");
 	output.append(table);
 	output.append(" logged.");
+        if (this.lostCount > 0) {
+            output.append(" Lost ");
+            output.append(this.lostCount);
+            output.append(" packets.");
+        }
 	return output.toString();
     }
  
     public void handlePacket(UsageMonitorPacket pack) {
-        PreparedStatement stmt;
+        PreparedStatement stmt = null;
 
-	packetCount ++;
+	this.packetCount++;
+
         try {
 	    con = DriverManager.getConnection(HandlerThread.dbPoolName);
-            log.debug("Will write this packet to database table"
-                + table + ": ");
 
-            log.info(pack.toString());
+            if (log.isDebugEnabled()) {
+                log.debug("Will write this packet to database table "
+                          + table + ": ");
+                log.debug(pack.toString());
+            }
 	    
 	    stmt = makeSQLInsert(pack);
 	    stmt.executeUpdate();
-	    stmt.close();
-        }
-        
-        catch( SQLException e ) {
-	    /*TODO: This should add to a global count returned with the email summary:
-	      database writing errors.*/
+        } catch(SQLException e) {
+            this.lostCount++;
             log.error(e.getMessage());
+            String packetData = getPacketContentsBinary(pack);
 	    log.error("Packet contents:");
-	    showPacketContentsBinary(pack);
+            log.error(packetData);
+        } finally {
+            if (stmt != null) {
+                try {
+                    stmt.close();
+                } catch (SQLException e) {}
+            }
+            if (con != null) {
+                try {
+                    con.close();
+                } catch (SQLException e) {}
+            }
         }
-	try {
-	    con.close();
-	} catch (SQLException e) {}
-
     }
 
-    protected void showPacketContentsBinary(UsageMonitorPacket pack) {
-	int q;
+    protected String getPacketContentsBinary(UsageMonitorPacket pack) {
 	byte[] binary = pack.getBinaryContents();
 	StringBuffer output = new StringBuffer();
-
-	for (q = 0; q < binary.length; q++) {
-	    output.append(Byte.toString(binary[q]) + ", ");
+	for (int q = 0; q < binary.length; q++) {
+	    output.append(Byte.toString(binary[q]));
+            output.append(", ");
 	}
-
-	log.error(output.toString());
+        return output.toString();
     }
 
     /*If you want to write a handler that writes packets into a database,

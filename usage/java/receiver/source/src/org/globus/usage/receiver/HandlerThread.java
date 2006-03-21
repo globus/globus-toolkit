@@ -42,7 +42,10 @@ import org.apache.commons.dbcp.DriverManagerConnectionFactory;
 public class HandlerThread extends Thread {
 
     public static final String dbPoolName = "jdbc:apache:commons:dbcp:usagestats";
+    private static final String POOL_NAME = "usagestats";
+
     private static Log log = LogFactory.getLog(HandlerThread.class);
+
     private LinkedList handlerList; /*a reference to the one in Receiver*/
     private RingBuffer theRing; /*a reference to the one in Receiver*/
     private boolean stillGood = true;
@@ -60,33 +63,35 @@ public class HandlerThread extends Thread {
 
         String driverClass = props.getProperty("database-driver");
         String dburl = props.getProperty("database-url");
-        String dbuser = props.getProperty("database-user");
-        String dbpwd = props.getProperty("database-pwd");
         String table = props.getProperty("default-table");
-
+         
 	try {
 	    Class.forName(driverClass);
-	    setUpDatabaseConnectionPool(dburl, dbuser, dbpwd);
+	    setUpDatabaseConnectionPool(dburl, props);
 	    theDefaultHandler = new DefaultPacketHandler(dburl, table);
-	}
-	catch (Exception e) {
-	    log.error("Can't start handler thread: "+e.getMessage());
+	} catch (Exception e) {
+	    log.error("Can't start handler thread: " + e.getMessage());
 	    stillGood = false;
 	}
     }
 
-    private void setUpDatabaseConnectionPool(String dburl, 
-                                             String dbuser, 
-                                             String dbpwd) throws Exception {
+    private void setUpDatabaseConnectionPool(String dburl, Properties props) 
+        throws Exception {
 	/*Set up database connection pool:  all handlers which need a 
 	  database connection (which, so far, is all handlers) can take
 	  connections from this pool.*/
+        
+        String dbuser = props.getProperty("database-user");
+        String dbpwd = props.getProperty("database-pwd");
+        String dbValidationQuery = props.getProperty("database-validation-query");
+
 	GenericObjectPool connectionPool = new GenericObjectPool(null);
 	ConnectionFactory connectionFactory = new DriverManagerConnectionFactory(dburl, dbuser, dbpwd);
 	PoolableConnectionFactory poolableConnectionFactory = 
-            new PoolableConnectionFactory(connectionFactory, connectionPool, null, null, false, true);
+            new PoolableConnectionFactory(connectionFactory, connectionPool, null, 
+                                          dbValidationQuery, false, true);
 	PoolingDriver driver = new PoolingDriver();
-	driver.registerPool("usagestats", connectionPool);
+	driver.registerPool(POOL_NAME, connectionPool);
     }
 
     /*The handler thread maintains counts of the number of packets 
@@ -194,7 +199,7 @@ public class HandlerThread extends Thread {
 
 	try {
 	    PoolingDriver driver = (PoolingDriver)DriverManager.getDriver("jdbc:apache:commons:dbcp:");
-	    driver.closePool("usagestats");
+	    driver.closePool(POOL_NAME);
 	}
 	catch(Exception e) {
 	    log.warn(e.getMessage());
