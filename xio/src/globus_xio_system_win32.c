@@ -180,6 +180,38 @@ globus_l_xio_win32_event_deactivate(void)
 }
 
 static
+void
+globus_l_xio_win32_event_bad_apple(
+    const HANDLE *                      handles,
+    int                                 count)
+{
+    DWORD                               flags;
+    GlobusXIOName(globus_l_xio_win32_event_bad_apple);
+    
+    GlobusXIOSystemDebugEnter();
+    
+    while(count--)
+    {
+        globus_assert(handles[count] != NULL && "Null handle in event array");
+        
+        if(!GetHandleInformation(handles[count], &flags) &&
+            GetLastError() == ERROR_INVALID_HANDLE)
+        {
+            /* XXX at some point we may want to forcibly remove this bad
+             * handle, but at the moment this api is internal and therefore
+             * it is indicative of an internal bug 
+             */
+            GlobusXIOSystemDebugPrintf(
+                GLOBUS_I_XIO_SYSTEM_DEBUG_INFO,
+                ("[%s] Bad apple: handle=%lu\n",
+                    _xio_name, (unsigned long) handles[count]));
+        }
+    }
+    
+    GlobusXIOSystemDebugExit();
+}
+
+static
 int
 globus_l_xio_win32_event_wait(
     const HANDLE *                      handles,
@@ -187,7 +219,8 @@ globus_l_xio_win32_event_wait(
     int                                 offset,
     globus_bool_t                       infinite)
 {
-    DWORD                               rc = -1;
+    int                                 rc = -1;
+    DWORD                               wrc;
     GlobusXIOName(globus_l_xio_win32_event_wait);
     
     GlobusXIOSystemDebugEnter();
@@ -196,19 +229,48 @@ globus_l_xio_win32_event_wait(
     {
         count -= offset;
         
-        rc = WaitForMultipleObjects(
+        wrc = WaitForMultipleObjects(
             count, handles + offset, FALSE, infinite ? INFINITE : 0);
-        if(rc >= WAIT_OBJECT_0 && rc < WAIT_OBJECT_0 + count)
+        if(wrc == WAIT_FAILED)
         {
-            rc = rc - WAIT_OBJECT_0 + offset;
+            int                         err = GetLastError();
+            
+            if(GlobusDebugTrue(
+                GLOBUS_XIO_SYSTEM, GLOBUS_I_XIO_SYSTEM_DEBUG_INFO))
+            {
+                char *                      msg = NULL;
+                
+                FormatMessage( 
+                    FORMAT_MESSAGE_ALLOCATE_BUFFER|FORMAT_MESSAGE_FROM_SYSTEM, 
+                    NULL,
+                    err, 
+                    0, 
+                    (LPTSTR)&msg,
+                    0,
+                    NULL);
+            
+                GlobusXIOSystemDebugPrintf(
+                    GLOBUS_I_XIO_SYSTEM_DEBUG_INFO,
+                    ("[%s] Wait error: %d:%s", _xio_name, err, msg));
+                    
+                if(msg)
+                {
+                    LocalFree(msg);
+                }
+            }
+            
+            if(err == ERROR_INVALID_HANDLE)
+            {
+                globus_l_xio_win32_event_bad_apple(handles + offset, count);
+            }
         }
-        else if(rc >= WAIT_ABANDONED_0 && rc < WAIT_ABANDONED_0 + count)
+        else if(wrc >= WAIT_OBJECT_0 && wrc < WAIT_OBJECT_0 + count)
         {
-            rc = rc - WAIT_ABANDONED_0 + offset;
+            rc = wrc - WAIT_OBJECT_0 + offset;
         }
-        else
+        else if(wrc >= WAIT_ABANDONED_0 && wrc < WAIT_ABANDONED_0 + count)
         {
-            rc = -1;
+            rc = wrc - WAIT_ABANDONED_0 + offset;
         }
     }
     
@@ -258,7 +320,7 @@ globus_l_xio_win32_event_thread(
 {
     globus_l_xio_win32_event_thread_t * thread;
     int                                 count;
-    DWORD                               index;
+    int                                 index;
     GlobusXIOName(globus_l_xio_win32_event_thread);
     
     GlobusXIOSystemDebugEnter();
@@ -602,7 +664,10 @@ globus_l_xio_win32_event_add(
 
     entry->callback = callback;
     entry->user_arg = user_arg;
+    entry->post_pending = GLOBUS_FALSE;
     thread->events[entry->index] = event_handle;
+    
+    *uentry = entry;
     
     GlobusXIOSystemDebugExit();
     return GLOBUS_SUCCESS;

@@ -94,6 +94,12 @@
 #define HAVE_GETHOSTBYADDR 1
 #define HAVE_GETHOSTBYNAME 1
 
+#define HAVE_GETHOSTNAME        1
+#define HAVE_GETSERVBYNAME      1
+#define HAVE_GETPROTOBYNUMBER   1
+#define HAVE_INET_NTOA          1
+#define HAVE_MKTIME             1
+
 #define HAVE_MEMMOVE 1
 #define HAVE_CTYPE_H 1
 

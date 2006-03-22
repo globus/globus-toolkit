@@ -405,7 +405,7 @@ globus_l_xio_win32_socket_event_cb(
 {
     globus_l_xio_win32_socket_t *       handle;
     WSANETWORKEVENTS                    wsaevents;
-    long                                 events;
+    long                                events;
     GlobusXIOName(globus_l_xio_win32_socket_event_cb);
     
     handle = (globus_l_xio_win32_socket_t *) user_arg;
@@ -449,7 +449,7 @@ globus_l_xio_win32_socket_event_cb(
         }
     }
     win32_mutex_unlock(&handle->lock);
-    
+
     GlobusXIOSystemDebugExitFD(handle->socket);
     return GLOBUS_TRUE;
 
@@ -642,6 +642,11 @@ globus_xio_system_socket_init(
         goto error_register;
     }
     
+    GlobusXIOSystemDebugPrintf(
+        GLOBUS_I_XIO_SYSTEM_DEBUG_INFO,
+        ("[%s] Registered event handle=%lu\n",
+            _xio_name, (unsigned long) handle->event));
+        
     *uhandle = handle;
     
     GlobusXIOSystemDebugExitFD(socket);
@@ -677,6 +682,12 @@ globus_xio_system_socket_destroy(
      * in the callback and this is only place i unregister
      */
     globus_i_xio_win32_event_lock(handle->event_entry);
+    
+    GlobusXIOSystemDebugPrintf(
+        GLOBUS_I_XIO_SYSTEM_DEBUG_INFO,
+        ("[%s] Unregistering event handle=%lu\n",
+            _xio_name, (unsigned long) handle->event));
+            
     globus_i_xio_win32_event_unregister(handle->event_entry);
     globus_i_xio_win32_event_unlock(handle->event_entry);
     
