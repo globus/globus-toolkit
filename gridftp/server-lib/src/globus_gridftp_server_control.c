@@ -3931,6 +3931,9 @@ globus_i_gsc_list_line(
         {
             no_match = fnmatch(glob_match_str, stat_info[ctr].name, 0);
         }
+
+#else
+#error need fnmatch functionality
 #endif        
         if(no_match)
         {

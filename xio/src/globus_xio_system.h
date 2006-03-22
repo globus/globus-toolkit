@@ -326,37 +326,38 @@ globus_result_t
 globus_xio_system_socket_close(
     globus_xio_system_socket_t          socket);
 
-/* only read-only vs read-write file perms available */
 #ifdef WIN32
 
-#define GLOBUS_XIO_SYSTEM_FILE_READABLE 0
-#define GLOBUS_XIO_SYSTEM_FILE_WRITABLE 1
-
-/* use 1 for writable */
+/**
+ * XXX
+ * readonly on windows means something different than on unix.  don't support
+ * it for now
+ */
+ 
 #undef S_IRWXU
-#define S_IRWXU GLOBUS_XIO_SYSTEM_FILE_WRITABLE
+#define S_IRWXU 0
 #undef S_IRUSR
-#define S_IRUSR GLOBUS_XIO_SYSTEM_FILE_READABLE
+#define S_IRUSR 0
 #undef S_IWUSR
-#define S_IWUSR GLOBUS_XIO_SYSTEM_FILE_WRITABLE
+#define S_IWUSR 0
 #undef S_IXUSR
-#define S_IXUSR GLOBUS_XIO_SYSTEM_FILE_READABLE
+#define S_IXUSR 0
 #undef S_IRWXO
-#define S_IRWXO GLOBUS_XIO_SYSTEM_FILE_WRITABLE
+#define S_IRWXO 0
 #undef S_IROTH
-#define S_IROTH GLOBUS_XIO_SYSTEM_FILE_READABLE
+#define S_IROTH 0
 #undef S_IWOTH
-#define S_IWOTH GLOBUS_XIO_SYSTEM_FILE_WRITABLE
+#define S_IWOTH 0
 #undef S_IXOTH
-#define S_IXOTH GLOBUS_XIO_SYSTEM_FILE_READABLE
+#define S_IXOTH 0
 #undef S_IRWXG
-#define S_IRWXG GLOBUS_XIO_SYSTEM_FILE_WRITABLE
+#define S_IRWXG 0
 #undef S_IRGRP
-#define S_IRGRP GLOBUS_XIO_SYSTEM_FILE_READABLE
+#define S_IRGRP 0
 #undef S_IWGRP
-#define S_IWGRP GLOBUS_XIO_SYSTEM_FILE_WRITABLE
+#define S_IWGRP 0
 #undef S_IXGRP
-#define S_IXGRP GLOBUS_XIO_SYSTEM_FILE_READABLE
+#define S_IXGRP 0
 
 #endif
 

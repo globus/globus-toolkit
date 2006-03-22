@@ -2987,11 +2987,7 @@ globus_l_gass_copy_io_setup_get(
 	result = globus_io_file_open(
 	    parsed_url.url_path,
 	    GLOBUS_IO_FILE_RDONLY,
-#ifndef TARGET_ARCH_WIN32
 		GLOBUS_IO_FILE_IRUSR,
-#else
-		0,
-#endif
 	    state->source.attr->io,
 	    state->source.data.io.handle);
 
@@ -3071,13 +3067,9 @@ globus_l_gass_copy_io_setup_put(
 	    (handle->partial_offset == -1) ?
 	    (GLOBUS_IO_FILE_WRONLY|GLOBUS_IO_FILE_CREAT|GLOBUS_IO_FILE_TRUNC) :
 	    (GLOBUS_IO_FILE_WRONLY|GLOBUS_IO_FILE_CREAT),
-#ifndef TARGET_ARCH_WIN32
 	    (GLOBUS_IO_FILE_IRUSR|GLOBUS_IO_FILE_IWUSR|
 	        GLOBUS_IO_FILE_IRGRP|GLOBUS_IO_FILE_IWGRP|
 	        GLOBUS_IO_FILE_IROTH|GLOBUS_IO_FILE_IWOTH),
-#else
-		0,
-#endif
 	    state->dest.attr->io,
 	    state->dest.data.io.handle);
 
