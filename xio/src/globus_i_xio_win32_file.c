@@ -1199,14 +1199,8 @@ globus_xio_system_file_open(
         break;
     }
     
-    if(flags & O_CREAT && (mode & GLOBUS_XIO_SYSTEM_FILE_WRITABLE) == 0)
-    {
-        file_attr = FILE_ATTRIBUTE_READONLY;
-    }
-    else
-    {
-        file_attr = FILE_ATTRIBUTE_NORMAL;
-    }
+    /* not supporting readonly at the moment */
+    file_attr = FILE_ATTRIBUTE_NORMAL;
     
     file_attr |= FILE_FLAG_OVERLAPPED;
     

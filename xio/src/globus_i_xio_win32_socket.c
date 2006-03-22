@@ -120,30 +120,40 @@ globus_l_xio_win32_socket_handle_read(
         break;
 
       case GLOBUS_I_XIO_SYSTEM_OP_READ:
-        result = globus_i_xio_system_socket_try_read(
-            handle->socket,
-            read_info->sop.data.iov,
-            read_info->sop.data.iovc,
-            read_info->sop.data.flags,
-            read_info->sop.data.addr,
-            &nbytes);
-        if(result == GLOBUS_SUCCESS)
+        do
         {
-            if(nbytes == 0)
+            result = globus_i_xio_system_socket_try_read(
+                handle->socket,
+                read_info->sop.data.iov,
+                read_info->sop.data.iovc,
+                read_info->sop.data.flags,
+                read_info->sop.data.addr,
+                &nbytes);
+            if(result == GLOBUS_SUCCESS)
             {
-                /* this is only possible when there is no user buffer space to
-                 * read data into.  (user likely using select() behavior)
-                 * may not have re-enabled READ event, save it now
-                 */
-                handle->ready_events |= FD_READ;
+                if(nbytes == 0)
+                {
+                    /* this is only possible when there is no user buffer space
+                     * to read data into. 
+                     * (user likely using select() behavior)
+                     * may not have re-enabled READ event, save it now
+                     */
+                    handle->ready_events |= FD_READ;
+                }
+                else
+                {
+                    read_info->nbytes += nbytes;
+                    GlobusIXIOUtilAdjustIovec(
+                        read_info->sop.data.iov,
+                        read_info->sop.data.iovc, nbytes);
+                }
             }
-            else
-            {
-                read_info->nbytes += nbytes;
-                GlobusIXIOUtilAdjustIovec(
-                    read_info->sop.data.iov, read_info->sop.data.iovc, nbytes);
-            }
-        }
+            
+            /* if fd_close received, read again to catch eof */
+        } while(result == GLOBUS_SUCCESS &&
+            handle->ready_events & FD_CLOSE &&
+            read_info->nbytes < read_info->waitforbytes);
+        
         break;
 
       default:
@@ -415,12 +425,24 @@ globus_l_xio_win32_socket_event_cb(
     if(WSAEnumNetworkEvents(
         handle->socket, handle->event, &wsaevents) == SOCKET_ERROR)
     {
+        GlobusXIOSystemDebugSysError(
+            "WSAEnumNetworkEvents error", WSAGetLastError());
         goto error_enum;
     }
     
     events = wsaevents.lNetworkEvents;
     win32_mutex_lock(&handle->lock);
     {
+        GlobusXIOSystemDebugPrintf(
+            GLOBUS_I_XIO_SYSTEM_DEBUG_INFO,
+            ("[%s] Ready events: %s%s%s%s%s fd=%lu\n", _xio_name,
+                events & FD_ACCEPT  ? "accept;"     : "",
+                events & FD_CONNECT ? "connect;"    : "",
+                events & FD_READ    ? "read;"       : "",
+                events & FD_WRITE   ? "write;"      : "",
+                events & FD_CLOSE   ? "close;"      : "",
+                (unsigned long)handle->socket));
+        
         /* save the close event if it exists */
         handle->ready_events |= events & FD_CLOSE;
         

@@ -192,7 +192,7 @@ globus_l_xio_win32_event_bad_apple(
     
     while(count--)
     {
-        globus_assert(handles[count] != NULL && "Null handle in event array");
+        globus_assert(handles[count] != 0 && "Null handle in event array");
         
         if(!GetHandleInformation(handles[count], &flags) &&
             GetLastError() == ERROR_INVALID_HANDLE)
@@ -235,29 +235,7 @@ globus_l_xio_win32_event_wait(
         {
             int                         err = GetLastError();
             
-            if(GlobusDebugTrue(
-                GLOBUS_XIO_SYSTEM, GLOBUS_I_XIO_SYSTEM_DEBUG_INFO))
-            {
-                char *                      msg = NULL;
-                
-                FormatMessage( 
-                    FORMAT_MESSAGE_ALLOCATE_BUFFER|FORMAT_MESSAGE_FROM_SYSTEM, 
-                    NULL,
-                    err, 
-                    0, 
-                    (LPTSTR)&msg,
-                    0,
-                    NULL);
-            
-                GlobusXIOSystemDebugPrintf(
-                    GLOBUS_I_XIO_SYSTEM_DEBUG_INFO,
-                    ("[%s] Wait error: %d:%s", _xio_name, err, msg));
-                    
-                if(msg)
-                {
-                    LocalFree(msg);
-                }
-            }
+            GlobusXIOSystemDebugSysError("Wait error", err);
             
             if(err == ERROR_INVALID_HANDLE)
             {

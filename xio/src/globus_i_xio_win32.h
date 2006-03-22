@@ -105,4 +105,33 @@ typedef CRITICAL_SECTION win32_mutex_t;
 #define win32_mutex_lock(x) EnterCriticalSection(x)
 #define win32_mutex_unlock(x) LeaveCriticalSection(x)
 
+#define GlobusXIOSystemDebugSysError(message, err)                          \
+    do                                                                      \
+    {                                                                       \
+        if(GlobusDebugTrue(                                                 \
+            GLOBUS_XIO_SYSTEM, GLOBUS_I_XIO_SYSTEM_DEBUG_INFO))             \
+        {                                                                   \
+            char *                      msg = NULL;                         \
+            int                         err_ = err;                         \
+                                                                            \
+            FormatMessage(                                                  \
+                FORMAT_MESSAGE_ALLOCATE_BUFFER|FORMAT_MESSAGE_FROM_SYSTEM,  \
+                NULL,                                                       \
+                err_,                                                       \
+                0,                                                          \
+                (LPTSTR)&msg,                                               \
+                0,                                                          \
+                NULL);                                                      \
+                                                                            \
+            GlobusDebugMyPrintf(                                            \
+                GLOBUS_XIO_SYSTEM,                                          \
+                ("[%s] %s: %d:%s", _xio_name, message, err_, msg));         \
+                                                                            \
+            if(msg)                                                         \
+            {                                                               \
+                LocalFree(msg);                                             \
+            }                                                               \
+        }                                                                   \
+    } while(0)
+
 #endif
