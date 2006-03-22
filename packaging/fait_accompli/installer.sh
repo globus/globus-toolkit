@@ -7,20 +7,40 @@ GPT=gpt*.tar.gz
 # Pre-made tarfiles for gsi-openssh/myproxy
 TARFILES="gsi_openssh-3.5-src.tar.gz gsi_openssh_setup-3.5-src.tar.gz myproxy-2.3.tar.gz"
 
-echo Making configure/make installer
-./make-packages.pl --trees=autotools --skippackage --skipbundle $@
-#
-#if [ -d patches ]; then
-   #echo
-   #echo "Patching..."
-   #for PATCH in `ls patches 2>/dev/null`; do
-       #echo "Applying $PATCH"
-       #cat patches/$PATCH | patch -p0
-   #done
-   #echo
-#fi
+BUNDLES=globus-resource-management-server,globus-resource-management-client,globus-resource-management-sdk,globus-data-management-server,globus-data-management-client,globus-data-management-sdk,globus-information-services-server,globus-information-services-client,globus-information-services-sdk,globus-rls-server,gt4-java-ws-core,gt4-java-admin,gt4-mds,gt4-delegation,gt4-rft,gt4-gram,gt4-gram-pbs,gt4-gram-condor,gt4-gram-lsf,gt4-cas,gt4-c-ws-core,prews-test,globus-internationalization,gt4-java-ws-core-test,gt4-c-ws-core-test,gt4-mds-test,gt4-gram-test,gt4-cas-delegation-test,gt4-rft-test,gt4-webmds,gt4-webmds-test,globus-gsi,gt4-replicator
+PACKAGES=globus_rendezvous 
 
-./make-packages.pl --bundles=globus-resource-management-server,globus-resource-management-client,globus-resource-management-sdk,globus-data-management-server,globus-data-management-client,globus-data-management-sdk,globus-information-services-server,globus-information-services-client,globus-information-services-sdk,globus-rls-server,gt4-java-ws-core,gt4-java-admin,gt4-mds,gt4-delegation,gt4-rft,gt4-gram,gt4-gram-pbs,gt4-gram-condor,gt4-gram-lsf,gt4-cas,gt4-c-ws-core,prews-test,globus-internationalization,gt4-java-ws-core-test,gt4-c-ws-core-test,gt4-mds-test,gt4-gram-test,gt4-cas-delegation-test,gt4-rft-test,gt4-webmds,gt4-webmds-test,globus-gsi,gt4-replicator --packages=globus_rendezvous --list-packages --deps --deporder $@ --installer=farfleblatt
+echo Making configure/make installer
+echo Step: Checking out and building autotools.
+./make-packages.pl --trees=autotools --skippackage --skipbundle $@
+if [ $? -ne 0 ]; then
+	echo There was trouble building autotools
+	exit 2
+fi
+
+echo Step: Checking out source code.
+./make-packages.pl --bundles=$BUNDLES --packages=$PACKAGES --skippackage --skipbundle --deps $@
+if [ $? -ne 0 ]; then
+	echo There was trouble checking out sources
+	exit 8
+fi
+
+if [ -d patches ]; then
+   echo
+   echo "Step: Patching..."
+   for PATCH in `ls patches 2>/dev/null`; do
+       echo "Applying $PATCH"
+       cat patches/$PATCH | patch -p0
+       if [ $? -ne 0 ]; then
+           echo There was trouble applying patches/$PATCH
+           exit 16
+       fi
+   done
+   echo
+fi
+
+echo "Step: Creating installer Makefile and bootstrapping."
+./make-packages.pl --bundles=$BUNDLES --packages=$PACKAGES -n --list-packages --deps --deporder $@ --installer=farfleblatt
 
 if [ $? -ne 0 ]; then
 	echo There was trouble making the installer.
@@ -43,7 +63,7 @@ cp fait_accompli/installer.INSTALL $INSTALLER/INSTALL
 cp fait_accompli/installer.README $INSTALLER/README
 
 # untar GPT into the installer dir
-tar -C $INSTALLER -xzf $GPT 
+tar -C $INSTALLER -xzf $GPT
 
 # Symlink over the bootstrapped CVS dirs.
 # Must use -h in tar command to dereference them
@@ -59,8 +79,21 @@ fi
 cp -${CPOPTS} source-trees/wsrf-cvs/* $INSTALLER/source-trees
 cp -${CPOPTS} source-trees/gt2-cvs/* $INSTALLER/source-trees
 
-which lndir > /dev/null 2>&1;
-if [ $? -eq 0 ]; then
+HAVE_LNDIR=0
+if [ `uname` = HP-UX ]; then
+    if which lndir | grep "^no " > /dev/null 2>&1; then
+        HAVE_LNDIR=0
+    else
+        HAVE_LNDIR=1
+    fi
+else
+    which lndir > /dev/null 2>&1;
+    if [ $? -eq 0 ]; then
+        HAVE_LNDIR=1
+    fi
+fi
+
+if [ "X$HAVE_LNDIR" = "X1" ]; then
    mkdir -p $INSTALLER/source-trees-thr
    if [ $? -ne 0 ]; then
       echo Unable to create $INSTALLER/source-trees-thr
