@@ -116,6 +116,11 @@ globus_l_xio_win32_poll(
             
             entry->next = globus_l_xio_win32_poll_free;
             globus_l_xio_win32_poll_free = entry;
+            
+            if(globus_callback_has_time_expired())
+            {
+                break;
+            }
         }
     }
     win32_mutex_unlock(&globus_l_xio_win32_poll_lock);
