@@ -7,6 +7,14 @@
  */
 #include "globus_i_xio_system_common.h"
 
+#ifndef WIN32
+#define GlobusLXIOSystemWouldBlock(err)                                     \
+    (err == EAGAIN || err == EWOULDBLOCK)
+#else
+#define GlobusLXIOSystemWouldBlock(err)                                     \
+    (err == EAGAIN || err == EWOULDBLOCK || err == WSAEWOULDBLOCK)
+#endif
+
 GlobusDebugDefine(GLOBUS_XIO_SYSTEM);
 
 globus_memory_t                         globus_i_xio_system_op_info_memory;
@@ -91,7 +99,7 @@ globus_i_xio_system_try_read(
 
         if(rc < 0)
         {
-            if(errno == EAGAIN || errno == EWOULDBLOCK)
+            if(GlobusLXIOSystemWouldBlock(errno))
             {
                 rc = 0;
             }
@@ -151,7 +159,7 @@ globus_i_xio_system_try_readv(
 
     if(rc < 0)
     {
-        if(errno == EAGAIN || errno == EWOULDBLOCK)
+        if(GlobusLXIOSystemWouldBlock(errno))
         {
             rc = 0;
         }
@@ -211,7 +219,7 @@ globus_i_xio_system_try_recv(
 
         if(rc < 0)
         {
-            if(errno == EAGAIN || errno == EWOULDBLOCK)
+            if(GlobusLXIOSystemWouldBlock(errno))
             {
                 rc = 0;
             }
@@ -279,7 +287,7 @@ globus_i_xio_system_try_recvfrom(
 
         if(rc < 0)
         {
-            if(errno == EAGAIN || errno == EWOULDBLOCK)
+            if(GlobusLXIOSystemWouldBlock(errno))
             {
                 rc = 0;
             }
@@ -398,7 +406,7 @@ globus_i_xio_system_try_recvmsg(
 
     if(rc < 0)
     {
-        if(errno == EAGAIN || errno == EWOULDBLOCK)
+        if(GlobusLXIOSystemWouldBlock(errno))
         {
             rc = 0;
         }
@@ -458,7 +466,7 @@ globus_i_xio_system_try_write(
 
         if(rc < 0)
         {
-            if(errno == EAGAIN || errno == EWOULDBLOCK)
+            if(GlobusLXIOSystemWouldBlock(errno))
             {
                 rc = 0;
             }
@@ -512,7 +520,7 @@ globus_i_xio_system_try_writev(
 
     if(rc < 0)
     {
-        if(errno == EAGAIN || errno == EWOULDBLOCK)
+        if(GlobusLXIOSystemWouldBlock(errno))
         {
             rc = 0;
         }
@@ -566,7 +574,7 @@ globus_i_xio_system_try_send(
 
         if(rc < 0)
         {
-            if(errno == EAGAIN || errno == EWOULDBLOCK)
+            if(GlobusLXIOSystemWouldBlock(errno))
             {
                 rc = 0;
             }
@@ -626,7 +634,7 @@ globus_i_xio_system_try_sendto(
 
         if(rc < 0)
         {
-            if(errno == EAGAIN || errno == EWOULDBLOCK)
+            if(GlobusLXIOSystemWouldBlock(errno))
             {
                 rc = 0;
             }
@@ -736,7 +744,7 @@ globus_i_xio_system_try_sendmsg(
 
     if(rc < 0)
     {
-        if(errno == EAGAIN || errno == EWOULDBLOCK)
+        if(GlobusLXIOSystemWouldBlock(errno))
         {
             rc = 0;
         }

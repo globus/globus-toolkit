@@ -133,7 +133,7 @@ globus_l_xio_win32_socket_handle_read(
             {
                 if(nbytes == 0)
                 {
-                    /* this is only possible when there is no user buffer space
+                    /* this is also possible when there is no user buffer space
                      * to read data into. 
                      * (user likely using select() behavior)
                      * may not have re-enabled READ event, save it now
@@ -628,11 +628,10 @@ globus_xio_system_socket_init(
     if(handle->event == 0)
     {
         result = GlobusXIOErrorSystemError(
-            "WSACreateEvent", GetLastError());
+            "WSACreateEvent", WSAGetLastError());
         goto error_create;
     }
     
-    /* XXX not be necessary if I never clear events with WSAEventSelect */
     flag = 1;
     if(ioctlsocket(socket, FIONBIO, &flag) == SOCKET_ERROR)
     {
