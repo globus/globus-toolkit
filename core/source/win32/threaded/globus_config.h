@@ -85,7 +85,6 @@
 #define HAVE_CTIME 1
 
 #define HAVE_INET_ADDR     1
-#define HAVE_INET_PTON     1
 #define HAVE_GETADDRINFO   1
 #define HAVE_FREEADDRINFO  1
 #define HAVE_GAI_STRERROR  1
