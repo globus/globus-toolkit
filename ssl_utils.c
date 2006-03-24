@@ -1875,7 +1875,7 @@ ssl_get_times(const char *path, time_t *not_before, time_t *not_after)
     
    cert_file = fopen(path, "r");
    if (cert_file == NULL) {
-      verror_put_string("Failure opening file \"%s\"", cert_file);
+      verror_put_string("Failure opening file \"%s\"", path);
       verror_put_errno(errno);
       return -1;
    }
