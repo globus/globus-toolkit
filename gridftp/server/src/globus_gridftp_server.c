@@ -15,6 +15,7 @@
  */
 
 #include "globus_xio.h"
+#include "globus_io.h"
 #include "globus_xio_tcp_driver.h"
 #include "globus_i_gridftp_server.h"
 #include "version.h"

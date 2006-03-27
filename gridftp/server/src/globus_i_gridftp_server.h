@@ -41,6 +41,12 @@ typedef struct globus_i_gfs_monitor_s
     globus_mutex_t                      mutex;
 } globus_i_gfs_monitor_t;
 
+typedef struct gfs_i_stack_entry_s
+{
+    globus_xio_driver_t                 driver;
+    char *                              driver_name;
+    char *                              opts;
+} gfs_i_stack_entry_t;
 void
 globus_i_gfs_monitor_init(
     globus_i_gfs_monitor_t *            monitor);
@@ -102,6 +108,11 @@ typedef enum globus_l_gfs_auth_level_e
     GLOBUS_L_GFS_AUTH_ALL = 0xFF
 } globus_l_gfs_auth_level_t;
 
+globus_result_t
+globus_i_gfs_netlogger_attr(
+    int                                 trans_id,
+    globus_xio_attr_t                   xio_attr,
+    globus_xio_driver_t                 driver);
 
 #include "globus_i_gfs_log.h"
 #include "globus_i_gfs_control.h"

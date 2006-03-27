@@ -805,6 +805,16 @@ globus_ftp_control_data_set_interface(
     globus_ftp_control_handle_t *               handle,
     const char *                                interface_addr);
 
+globus_result_t
+globus_i_ftp_control_data_set_stack(
+    globus_ftp_control_handle_t *               handle,
+    globus_xio_stack_t                          stack);
+
+globus_result_t
+globus_i_ftp_control_data_get_attr(
+    globus_ftp_control_handle_t *               handle,
+    globus_xio_attr_t *                         attr);
+
 /*****************************************************************
  *  standard layout functions 
  ****************************************************************/

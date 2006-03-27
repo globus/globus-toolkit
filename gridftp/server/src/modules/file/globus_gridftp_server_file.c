@@ -18,6 +18,7 @@
 #include "globus_xio.h"
 #include "globus_xio_file_driver.h"
 #include "openssl/md5.h"
+#include "globus_i_gridftp_server.h"
 #include "version.h"
 
 
@@ -81,6 +82,125 @@ typedef struct
 } globus_l_buffer_info_t;
 
 static globus_xio_driver_t              globus_l_gfs_file_driver;
+
+int
+globus_i_gfs_data_get_transfer_id(
+    globus_gfs_operation_t      op);
+
+static
+globus_result_t
+globus_l_gfs_file_make_stack(
+    globus_l_file_monitor_t *           mon,
+    globus_xio_attr_t                   attr,
+    globus_xio_stack_t                  stack)
+{
+    int                                 id;
+    char *                              value;
+    char *                              driver_name;
+    char *                              ptr;
+    char *                              opts;
+    globus_result_t                     result;
+    globus_bool_t                       done = GLOBUS_FALSE;
+    gfs_i_stack_entry_t *               stack_ent;
+    globus_xio_driver_t                 driver;
+    globus_list_t *                     list;
+    globus_list_t *                     driver_list = NULL;
+    GlobusGFSName(globus_l_gfs_file_make_stack);
+
+    value = globus_i_gfs_config_string("file_stack");
+
+    if(value == NULL)
+    {
+        result = globus_xio_stack_push_driver(
+            stack, globus_l_gfs_file_driver);
+        if(result != GLOBUS_SUCCESS)
+        {
+            result = GlobusGFSErrorWrapFailed(
+                "globus_xio_stack_push_driver", result);
+            goto error_push;
+        }
+    }
+    else
+    {
+        value = strdup(value);
+        while(!done)
+        {
+            driver_name = value;
+            ptr = strchr(driver_name, ',');
+            if(ptr != NULL)
+            {
+                *ptr = '\0';
+                value = ptr+1; // move to next line
+            }
+            else
+            {
+                done = GLOBUS_TRUE;
+            }
+            opts = strchr(driver_name, ':');
+            if(opts != NULL)
+            {
+                *opts = '\0';
+                opts++;
+            }
+
+            if(strcmp(driver_name, "file") == 0)
+            {
+                driver = globus_l_gfs_file_driver;
+            }
+            else
+            {
+                result = globus_xio_driver_load(driver_name, &driver);
+                if(result != GLOBUS_SUCCESS)
+                {
+                    goto error_load;
+                }
+            }
+            stack_ent = (gfs_i_stack_entry_t *)
+                globus_calloc(1, sizeof(gfs_i_stack_entry_t));
+            stack_ent->opts = opts;
+            stack_ent->driver = driver;
+            stack_ent->driver_name = driver_name;
+
+            globus_list_insert(&driver_list, stack_ent);
+        }
+        for(list = driver_list;
+            !globus_list_empty(list);
+            list = globus_list_rest(list))
+        {
+            stack_ent = (gfs_i_stack_entry_t *) globus_list_first(list);
+
+            result = globus_xio_stack_push_driver(stack, stack_ent->driver);
+            if(result != GLOBUS_SUCCESS)
+            {
+                result = GlobusGFSErrorWrapFailed(
+                    "globus_xio_stack_push_driver", result);
+                goto error_push;
+            }
+            /* this should go away after demo? */
+            if(strcmp(stack_ent->driver_name, "netlogger") == 0)
+            {
+                /* getting the id for netlogger is some nasty bidnez */
+                id = globus_i_gfs_data_get_transfer_id(mon->op);
+                globus_i_gfs_netlogger_attr(
+                    id,
+                    attr,
+                    stack_ent->driver);
+            }
+            if(stack_ent->opts != NULL)
+            {
+                globus_xio_attr_cntl(
+                    attr,
+                    stack_ent->driver,
+                    GLOBUS_XIO_SET_STRING_OPTIONS,
+                    stack_ent->opts);
+            }
+        }
+    }
+    return GLOBUS_SUCCESS;
+error_load:
+error_push:
+    return result;
+}
 
 /*
  * if priority_1 comes after priority_2, return > 0
@@ -1054,7 +1174,7 @@ globus_l_gfs_file_cksm(
         result = GlobusGFSErrorWrapFailed("globus_xio_stack_init", result);
         goto error_stack;
     }
-    
+
     result = globus_xio_stack_push_driver(stack, globus_l_gfs_file_driver);
     if(result != GLOBUS_SUCCESS)
     {
@@ -1650,6 +1770,18 @@ globus_l_gfs_file_open(
         goto error_attr;
     }
     
+    result = globus_xio_stack_init(&stack, NULL);
+    if(result != GLOBUS_SUCCESS)
+    {
+        result = GlobusGFSErrorWrapFailed("globus_xio_stack_init", result);
+        goto error_stack;
+    }
+
+    result = globus_l_gfs_file_make_stack(arg, attr, stack);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_push;
+    }
     /* XXX should probably have an option to specify create mode.
      * for now, just the default (u+rw)
      */     
@@ -1662,21 +1794,6 @@ globus_l_gfs_file_open(
     {
         result = GlobusGFSErrorWrapFailed("globus_xio_attr_init", result);
         goto error_cntl;
-    }
-    
-    result = globus_xio_stack_init(&stack, NULL);
-    if(result != GLOBUS_SUCCESS)
-    {
-        result = GlobusGFSErrorWrapFailed("globus_xio_stack_init", result);
-        goto error_stack;
-    }
-    
-    result = globus_xio_stack_push_driver(stack, globus_l_gfs_file_driver);
-    if(result != GLOBUS_SUCCESS)
-    {
-        result = GlobusGFSErrorWrapFailed(
-            "globus_xio_stack_push_driver", result);
-        goto error_push;
     }
 
     result = globus_xio_handle_create(file_handle, stack);
@@ -2291,7 +2408,7 @@ globus_l_gfs_file_activate(void)
     {
         goto error_load_file;
     }
-    
+
     globus_extension_registry_add(
         GLOBUS_GFS_DSI_REGISTRY,
         "file",

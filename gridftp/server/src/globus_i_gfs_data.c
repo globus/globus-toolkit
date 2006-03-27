@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
+#include "globus_io.h"
 #include "globus_i_gridftp_server.h"
+#include "globus_xio_netlogger.h"
 /* provides local_extensions */
 #include "extensions.h"
 #include <unistd.h>
@@ -48,6 +50,10 @@ globus_extension_handle_t               globus_i_gfs_active_dsi_handle;
 static globus_bool_t                    globus_l_gfs_data_is_remote_node = GLOBUS_FALSE;
 globus_off_t                            globus_l_gfs_bytes_transferred;
 globus_mutex_t                          globus_l_gfs_global_counter_lock;
+
+static int                              globus_l_gfs_transfer_id = 0;
+
+int                              gfs_i_netloger_fd = -1;
 
 typedef enum
 {
@@ -133,6 +139,7 @@ typedef struct
     globus_gfs_operation_t              outstanding_op;
     globus_bool_t                       destroy_requested;
     globus_bool_t                       use_interface;
+    int                                 transfer_id;
 } globus_l_gfs_data_handle_t;
 
 typedef struct globus_l_gfs_data_operation_s
@@ -187,7 +194,6 @@ typedef struct globus_l_gfs_data_operation_s
     globus_off_t                        cksm_length;
     char *                              cksm_alg;
     char *                              cksm_response;
-    mode_t                              chmod_mode;
     char *                              rnfr_pathname;
     /**/
 
@@ -293,6 +299,17 @@ void
 globus_l_gfs_data_operation_destroy(
     globus_l_gfs_data_operation_t *     op,
     globus_bool_t                       free_session);
+
+int
+globus_i_gfs_data_get_transfer_id(
+    globus_l_gfs_data_operation_t *     op)
+{
+    globus_l_gfs_data_handle_t *        handle;
+
+    handle = (globus_l_gfs_data_handle_t *)op->session_handle->data_handle;
+
+    return handle->transfer_id;
+}
 
 static
 void
@@ -1413,6 +1430,7 @@ void
 globus_i_gfs_data_init()
 {
     char *                              dsi_name;
+    char *                              tmp_str;
     int                                 rc;
     GlobusGFSName(globus_i_gfs_data_init);
     GlobusGFSDebugEnter();
@@ -1462,6 +1480,18 @@ globus_i_gfs_data_init()
         sprintf(str_transferred, "0 bytes");
         globus_mutex_init(&globus_l_gfs_global_counter_lock, NULL);
         globus_gfs_config_set_ptr("byte_transfer_count", str_transferred);
+    }
+
+    tmp_str = globus_i_gfs_config_string("netlogger");
+    if(tmp_str != NULL)
+    {
+        gfs_i_netloger_fd = open(tmp_str, O_WRONLY | O_CREAT, S_IRWXU);
+        if(gfs_i_netloger_fd < 0)
+        {
+            globus_i_gfs_log_message(
+                GLOBUS_I_GFS_LOG_ERR,
+                "Could not open netlogger file :%s:\n", tmp_str);
+        }
     }
     GlobusGFSDebugExit();
 }
@@ -1884,6 +1914,43 @@ error_op:
     GlobusGFSDebugExitWithError();
 }
 
+globus_result_t
+globus_i_gfs_netlogger_attr(
+    int                                 trans_id,
+    globus_xio_attr_t                   xio_attr,
+    globus_xio_driver_t                 driver)
+{
+    globus_result_t                     result;
+
+    result = globus_xio_attr_cntl(
+        xio_attr,
+        driver,
+        GLOBUS_XIO_NETLOGGER_CNTL_SET_TRANSFER_ID,
+        trans_id);
+    if(result != GLOBUS_SUCCESS)
+    {
+        /* just log warning */
+        globus_i_gfs_log_message(
+            GLOBUS_I_GFS_LOG_WARN,
+            "Netlogger cntl failed to set transfer id: %s\n",
+            globus_error_print_friendly(globus_error_peek(result)));
+    }
+    result = globus_xio_attr_cntl(
+        xio_attr,
+        driver,
+        GLOBUS_XIO_NETLOGGER_CNTL_SET_FD,
+        gfs_i_netloger_fd);
+    if(result != GLOBUS_SUCCESS)
+    {
+        /* just log warning */
+        globus_i_gfs_log_message(
+            GLOBUS_I_GFS_LOG_WARN,
+            "Netlogger cntl failed to set fd: %s\n",
+            globus_error_print_friendly(globus_error_peek(result)));
+    }
+    return GLOBUS_SUCCESS;
+}
+
 static
 globus_result_t
 globus_l_gfs_data_handle_init(
@@ -1978,6 +2045,63 @@ globus_l_gfs_data_handle_init(
                 "globus_ftp_control_local_tcp_buffer", result);
             goto error_control;
         }
+    }
+
+    {
+        gfs_i_stack_entry_t *           stack_ent;
+        globus_list_t *                 driver_list;
+        globus_list_t *                 list;
+        globus_xio_stack_t              stack;
+        globus_xio_attr_t               xio_attr;
+
+        /* XXX sort of need a mutex here, but netlogger is tempary i think */
+        handle->transfer_id = globus_l_gfs_transfer_id++;
+
+        globus_xio_stack_init(&stack, NULL);
+        driver_list = (globus_list_t *) globus_i_gfs_config_list("stack");
+        globus_i_ftp_control_data_get_attr(&handle->data_channel, &xio_attr);
+        for(list = driver_list;
+            !globus_list_empty(list);
+            list = globus_list_rest(list))
+        {
+            stack_ent = (gfs_i_stack_entry_t *) globus_list_first(list);
+
+            result = GLOBUS_SUCCESS;
+            if(strcmp(stack_ent->driver_name, "gsi") == 0)
+            {
+                if(handle->info.dcau != 'N')
+                {
+                    result = globus_xio_stack_push_driver(
+                        stack, stack_ent->driver);
+                }
+            }
+            else
+            {
+                result=globus_xio_stack_push_driver(stack, stack_ent->driver);
+            }
+            if(result != GLOBUS_SUCCESS)
+            {
+                goto error_control;
+            }
+            /* this should go away after demo? */
+            if(strcmp(stack_ent->driver_name, "netlogger") == 0)
+            {
+                globus_i_gfs_netlogger_attr(
+                    handle->transfer_id,
+                    xio_attr,
+                    stack_ent->driver);
+            }
+            if(stack_ent->opts != NULL)
+            {
+                /* ignore error */
+                globus_xio_attr_cntl(
+                    xio_attr,
+                    stack_ent->driver,
+                    GLOBUS_XIO_SET_STRING_OPTIONS,
+                    stack_ent->opts);
+            }
+        }
+        globus_i_ftp_control_data_set_stack(&handle->data_channel, stack);
     }
 
     if(handle->info.mode == 'S')
@@ -2525,7 +2649,11 @@ globus_l_gfs_data_passive_kickout(
     }
 
     globus_free(reply.info.data.contact_strings);
-    globus_free(bounce_info->contact_string);
+    /* could be null on error */
+    if(bounce_info->contact_string != NULL)
+    {
+        globus_free(bounce_info->contact_string);
+    }
     globus_free(bounce_info);
 
     GlobusGFSDebugExit();
@@ -2662,7 +2790,7 @@ globus_i_gfs_data_request_passive(
         }
 
         bounce_info = (globus_l_gfs_data_passive_bounce_t *)
-            globus_malloc(sizeof(globus_l_gfs_data_passive_bounce_t));
+            globus_calloc(1, sizeof(globus_l_gfs_data_passive_bounce_t));
         if(!bounce_info)
         {
             result = GlobusGFSErrorMemory("bounce_info");
@@ -2705,7 +2833,7 @@ error_handle:
 error_op:
 
     bounce_info = (globus_l_gfs_data_passive_bounce_t *)
-        globus_malloc(sizeof(globus_l_gfs_data_passive_bounce_t));
+        globus_calloc(1, sizeof(globus_l_gfs_data_passive_bounce_t));
     if(!bounce_info)
     {
         result = GlobusGFSErrorMemory("bounce_info");
@@ -2715,7 +2843,6 @@ error_op:
     bounce_info->id = id;
     bounce_info->handle = handle;
     bounce_info->bi_directional = GLOBUS_TRUE; /* XXX MODE S only */
-    bounce_info->contact_string = cs;
     bounce_info->callback = cb;
     bounce_info->user_arg = user_arg;
     bounce_info->result = result;
@@ -3909,7 +4036,11 @@ globus_l_gfs_data_end_transfer_kickout(
                 "/",
                 type,
                 op->session_handle->username);
-        }            
+        }
+        if(gfs_i_netloger_fd > 0)
+        {
+            
+        }
     }
 
     /* XXX sc process bytes transferred count */

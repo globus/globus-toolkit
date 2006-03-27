@@ -185,7 +185,11 @@ typedef enum
      *      Specify the desired offset.
      */
     /* globus_off_t                     offset */
-    GLOBUS_XIO_SEEK
+    GLOBUS_XIO_SEEK,
+
+    /**
+     */
+    GLOBUS_XIO_SET_STRING_OPTIONS
     
 } globus_xio_handle_cmd_t;
 

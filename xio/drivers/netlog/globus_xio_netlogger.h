@@ -12,8 +12,6 @@
 #ifndef GLOBUS_XIO_NETLOGGER_H
 #define GLOBUS_XIO_NETLOGGER_H 1
 
-#include "nl_log.h"
-
 typedef enum globus_xio_netlogger_log_event_e
 {
     GLOBUS_XIO_NETLOGGER_LOG_OPEN = 0x1,
@@ -27,7 +25,10 @@ typedef enum globus_xio_netlogger_log_cntl_e
 {
     GLOBUS_XIO_NETLOGGER_CNTL_EVENT_ON = 1,
     GLOBUS_XIO_NETLOGGER_CNTL_EVENT_OFF,
-    GLOBUS_XIO_NETLOGGER_CNTL_SET_FD
+    GLOBUS_XIO_NETLOGGER_CNTL_SET_FD,
+    GLOBUS_XIO_NETLOGGER_CNTL_SET_TRANSFER_ID,
+    GLOBUS_XIO_NETLOGGER_CNTL_SET_STRING_PARAMS,
+    GLOBUS_XIO_NETLOGGER_CNTL_SET_TYPE
 } globus_xio_netlogger_log_cntl_t;
 
 
