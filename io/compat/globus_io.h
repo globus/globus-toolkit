@@ -818,6 +818,24 @@ globus_io_handle_get_socket_buf(
     int *                               rcvbuf,
     int *                               sndbuf);
 
+globus_xio_driver_t
+globus_io_compat_get_tcp_driver();
+
+globus_xio_driver_t
+globus_io_compat_get_gsi_driver();
+
+globus_xio_driver_t
+globus_io_compat_get_file_driver();
+
+globus_result_t
+globus_io_attr_get_xio_attr(
+    globus_io_attr_t *                  attr,
+    globus_xio_attr_t *                 xio_attr);
+
+globus_result_t
+globus_io_attr_set_stack(
+    globus_io_attr_t *                  attr,
+    globus_xio_stack_t                  stack);
 
 EXTERN_C_END
 

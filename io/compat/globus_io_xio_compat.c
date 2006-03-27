@@ -78,7 +78,7 @@
                 (char *) _io_name))
 
 #define GlobusLIOMalloc(pointer, type)                                      \
-    ((pointer = (type *) globus_malloc(sizeof(type)))                       \
+    ((pointer = (type *) globus_calloc(1, sizeof(type)))                    \
         ? (GLOBUS_SUCCESS)                                                  \
         : (globus_error_put(                                                \
             globus_io_error_construct_system_failure(                       \
@@ -88,7 +88,7 @@
                 errno))))
 
 #define GlobusLIOMallocSize(__pointer, __size)                              \
-    ((__pointer = globus_malloc(__size))                                    \
+    ((__pointer = globus_calloc(1, __size))                                 \
         ? (GLOBUS_SUCCESS)                                                  \
         : (globus_error_put(                                                \
             globus_io_error_construct_system_failure(                       \
@@ -149,6 +149,7 @@ typedef struct globus_l_io_attr_s
     globus_io_secure_channel_mode_t             channel_mode;
     globus_l_io_secure_authorization_data_t     authz_data;
     globus_callback_space_t                     space;
+    globus_xio_stack_t                          stack;
 } globus_l_io_attr_t;
 
 typedef struct globus_l_io_handle_s
@@ -2011,7 +2012,7 @@ globus_l_io_tcp_register_connect(
     {
         goto error_handle;
     }
-    
+
     stack = globus_l_io_tcp_stack;
     if(attr)
     {
@@ -2020,11 +2021,17 @@ globus_l_io_tcp_register_connect(
         {
             goto error_attr;
         }
-        
-        if(ihandle->attr->authentication_mode !=
-           GLOBUS_IO_SECURE_AUTHENTICATION_MODE_NONE)
+        if((*attr)->stack != NULL)
         {
-            stack = globus_l_io_gsi_stack;
+            stack = (*attr)->stack;
+        }
+        else
+        {
+            if(ihandle->attr->authentication_mode !=
+               GLOBUS_IO_SECURE_AUTHENTICATION_MODE_NONE)
+            {
+                stack = globus_l_io_gsi_stack;
+            }
         }
     }
     else
@@ -5179,3 +5186,57 @@ globus_netlogger_set_desc(
     GlobusIOName(globus_netlogger_set_desc);
     return GLOBUS_SUCCESS;
 }
+
+globus_xio_driver_t
+globus_io_compat_get_tcp_driver()
+{
+    return globus_l_io_tcp_driver;
+}
+
+globus_xio_driver_t
+globus_io_compat_get_gsi_driver()
+{
+    return globus_l_io_gsi_driver;
+}
+
+globus_xio_driver_t
+globus_io_compat_get_file_driver()
+{
+    return globus_l_io_file_driver;
+}
+
+globus_result_t
+globus_io_attr_get_xio_attr(
+    globus_io_attr_t *                  attr,
+    globus_xio_attr_t *                 xio_attr)
+{
+    GlobusIOName(globus_io_attr_get_xio_attr);
+
+    GlobusLIOCheckNullParam(attr);
+    *xio_attr = (*attr)->attr;
+
+    return GLOBUS_SUCCESS;
+}
+
+globus_result_t
+globus_io_attr_set_stack(
+    globus_io_attr_t *                  attr,
+    globus_xio_stack_t                  stack)
+{
+    globus_result_t                     result;
+    GlobusIOName(globus_io_attr_set_stack);
+
+    GlobusLIOCheckNullParam(attr);
+
+    result = globus_xio_stack_copy(&(*attr)->stack, stack);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+
+    return GLOBUS_SUCCESS;
+error:
+    return result;
+}
+
+
