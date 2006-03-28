@@ -2457,6 +2457,11 @@ globus_l_gfs_data_handle_free(
     globus_assert(data_handle->state == GLOBUS_L_GFS_DATA_HANDLE_CLOSED ||
         data_handle->state == GLOBUS_L_GFS_DATA_HANDLE_CLOSING_AND_DESTROYED);
 
+    if(data_handle->nl_fd > 0)
+    {
+        close(data_handle->nl_fd);
+    }
+
     if(data_handle->outstanding_op == NULL)
     {
         if(data_handle->is_mine && 
