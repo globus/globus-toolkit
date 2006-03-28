@@ -110,7 +110,7 @@ typedef enum globus_l_gfs_auth_level_e
 
 globus_result_t
 globus_i_gfs_netlogger_attr(
-    int                                 trans_id,
+    void *                              hidden_ptr,
     globus_xio_attr_t                   xio_attr,
     globus_xio_driver_t                 driver);
 

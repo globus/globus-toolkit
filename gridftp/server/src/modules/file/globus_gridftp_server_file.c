@@ -83,7 +83,7 @@ typedef struct
 
 static globus_xio_driver_t              globus_l_gfs_file_driver;
 
-int
+void *
 globus_i_gfs_data_get_transfer_id(
     globus_gfs_operation_t      op);
 
@@ -94,7 +94,6 @@ globus_l_gfs_file_make_stack(
     globus_xio_attr_t                   attr,
     globus_xio_stack_t                  stack)
 {
-    int                                 id;
     char *                              value;
     char *                              driver_name;
     char *                              ptr;
@@ -179,10 +178,11 @@ globus_l_gfs_file_make_stack(
             /* this should go away after demo? */
             if(strcmp(stack_ent->driver_name, "netlogger") == 0)
             {
+                void * hidden_ptr;
                 /* getting the id for netlogger is some nasty bidnez */
-                id = globus_i_gfs_data_get_transfer_id(mon->op);
+                hidden_ptr = globus_i_gfs_data_get_transfer_id(mon->op);
                 globus_i_gfs_netlogger_attr(
-                    id,
+                    hidden_ptr,
                     attr,
                     stack_ent->driver);
             }

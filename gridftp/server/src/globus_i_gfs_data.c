@@ -52,8 +52,6 @@ globus_mutex_t                          globus_l_gfs_global_counter_lock;
 
 static int                              globus_l_gfs_transfer_id = 0;
 
-int                              gfs_i_netloger_fd = -1;
-
 typedef enum
 {
     GLOBUS_L_GFS_DATA_REQUESTING = 1,
@@ -139,6 +137,7 @@ typedef struct
     globus_bool_t                       destroy_requested;
     globus_bool_t                       use_interface;
     int                                 transfer_id;
+    int                                 nl_fd;
 } globus_l_gfs_data_handle_t;
 
 typedef struct globus_l_gfs_data_operation_s
@@ -299,7 +298,7 @@ globus_l_gfs_data_operation_destroy(
     globus_l_gfs_data_operation_t *     op,
     globus_bool_t                       free_session);
 
-int
+void *
 globus_i_gfs_data_get_transfer_id(
     globus_l_gfs_data_operation_t *     op)
 {
@@ -307,7 +306,7 @@ globus_i_gfs_data_get_transfer_id(
 
     handle = (globus_l_gfs_data_handle_t *)op->session_handle->data_handle;
 
-    return handle->transfer_id;
+    return (void*)handle;
 }
 
 static
@@ -1429,7 +1428,6 @@ void
 globus_i_gfs_data_init()
 {
     char *                              dsi_name;
-    char *                              tmp_str;
     int                                 rc;
     GlobusGFSName(globus_i_gfs_data_init);
     GlobusGFSDebugEnter();
@@ -1481,17 +1479,8 @@ globus_i_gfs_data_init()
         globus_gfs_config_set_ptr("byte_transfer_count", str_transferred);
     }
 
-    tmp_str = globus_i_gfs_config_string("netlogger");
-    if(tmp_str != NULL)
-    {
-        gfs_i_netloger_fd = open(tmp_str, O_WRONLY | O_CREAT, S_IRWXU);
-        if(gfs_i_netloger_fd < 0)
-        {
-            globus_i_gfs_log_message(
-                GLOBUS_I_GFS_LOG_ERR,
-                "Could not open netlogger file :%s:\n", tmp_str);
-        }
-    }
+    /* for a unique NL number perhost, in case we fork */
+    globus_l_gfs_transfer_id = getpid() * 1000;
     GlobusGFSDebugExit();
 }
 
@@ -1915,17 +1904,20 @@ error_op:
 
 globus_result_t
 globus_i_gfs_netlogger_attr(
-    int                                 trans_id,
+    void *                              hidden_ptr,
     globus_xio_attr_t                   xio_attr,
     globus_xio_driver_t                 driver)
 {
     globus_result_t                     result;
+    globus_l_gfs_data_handle_t *        handle;
+
+    handle = (globus_l_gfs_data_handle_t *) hidden_ptr;
 
     result = globus_xio_attr_cntl(
         xio_attr,
         driver,
         4,/*GLOBUS_XIO_NETLOGGER_CNTL_SET_TRANSFER_ID, */
-        trans_id);
+        handle->transfer_id);
     if(result != GLOBUS_SUCCESS)
     {
         /* just log warning */
@@ -1938,7 +1930,7 @@ globus_i_gfs_netlogger_attr(
         xio_attr,
         driver,
         3, /*GLOBUS_XIO_NETLOGGER_CNTL_SET_FD, */
-        gfs_i_netloger_fd);
+        handle->nl_fd);
     if(result != GLOBUS_SUCCESS)
     {
         /* just log warning */
@@ -2085,8 +2077,23 @@ globus_l_gfs_data_handle_init(
             /* this should go away after demo? */
             if(strcmp(stack_ent->driver_name, "netlogger") == 0)
             {
+                char * tmp_str;
+                tmp_str = globus_i_gfs_config_string("netlogger");
+                if(tmp_str != NULL && handle->nl_fd == 0)
+                {
+                    char name[256];
+                    sprintf(name, "%s-%d", tmp_str, handle->transfer_id);
+                    handle->nl_fd = open(name, O_WRONLY | O_CREAT, S_IRWXU);
+                    if(handle->nl_fd < 0)
+                    {
+                        globus_i_gfs_log_message(
+                        GLOBUS_I_GFS_LOG_ERR,
+                        "Could not open netlogger file :%s:\n", tmp_str);
+                    }
+                }
+
                 globus_i_gfs_netlogger_attr(
-                    handle->transfer_id,
+                    handle,
                     xio_attr,
                     stack_ent->driver);
             }
@@ -4035,10 +4042,6 @@ globus_l_gfs_data_end_transfer_kickout(
                 "/",
                 type,
                 op->session_handle->username);
-        }
-        if(gfs_i_netloger_fd > 0)
-        {
-            
         }
     }
 
