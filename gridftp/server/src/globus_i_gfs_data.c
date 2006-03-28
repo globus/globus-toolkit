@@ -16,7 +16,6 @@
 
 #include "globus_io.h"
 #include "globus_i_gridftp_server.h"
-#include "globus_xio_netlogger.h"
 /* provides local_extensions */
 #include "extensions.h"
 #include <unistd.h>
@@ -1925,7 +1924,7 @@ globus_i_gfs_netlogger_attr(
     result = globus_xio_attr_cntl(
         xio_attr,
         driver,
-        GLOBUS_XIO_NETLOGGER_CNTL_SET_TRANSFER_ID,
+        4,/*GLOBUS_XIO_NETLOGGER_CNTL_SET_TRANSFER_ID, */
         trans_id);
     if(result != GLOBUS_SUCCESS)
     {
@@ -1938,7 +1937,7 @@ globus_i_gfs_netlogger_attr(
     result = globus_xio_attr_cntl(
         xio_attr,
         driver,
-        GLOBUS_XIO_NETLOGGER_CNTL_SET_FD,
+        3, /*GLOBUS_XIO_NETLOGGER_CNTL_SET_FD, */
         gfs_i_netloger_fd);
     if(result != GLOBUS_SUCCESS)
     {
