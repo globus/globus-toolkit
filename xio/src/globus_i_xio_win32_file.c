@@ -43,8 +43,9 @@
  * NOTE: cancelation of file i/o will not be supported at this time because
  * CancelIo does not discriminate between read or write operations.
  *
- * Blocking io is implemented by queuing asynchronous operations on the
- * request thread.  This means that user APCs may also be run.
+ * Blocking io of overlapped handles is implemented by queuing asynchronous
+ * operations on the request thread.
+ * This means that user APCs may also be run.
  */
 
 /* assume 10ms slices, try for up to 5s since the system may be thrashing */
@@ -1152,7 +1153,7 @@ globus_xio_system_file_open(
     GlobusXIOName(globus_xio_system_file_open);
     
     *fd = INVALID_HANDLE_VALUE;
-    GlobusXIOSystemDebugEnterFD(*fd);
+    GlobusXIOSystemDebugEnter();
 
     access = flags & (O_RDONLY|O_WRONLY|O_RDWR);
     if(access == O_WRONLY)

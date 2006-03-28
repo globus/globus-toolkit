@@ -62,22 +62,68 @@ globus_l_xio_win32_socket_kickout(
     GlobusXIOSystemDebugExitFD(fd);
 }
 
-/* must be safe to call from win32 thread */
 static
 void
-globus_l_xio_win32_socket_handle_read(
-    globus_l_xio_win32_socket_t *       handle,
+globus_l_xio_win32_socket_complete(
+    globus_i_xio_system_op_info_t *     op_info,
     globus_bool_t                       win32_thread)
 {
-    globus_i_xio_system_op_info_t *     read_info;
+    SOCKET                              fd;
+    globus_result_t                     result;
+    GlobusXIOName(globus_l_xio_win32_socket_complete);
+
+    fd = op_info->handle->socket;
+    
+    GlobusXIOSystemDebugEnterFD(fd);
+    
+    if(!op_info->op)
+    {
+        /* internal usage */
+        globus_l_xio_win32_socket_kickout(op_info);
+        result = GLOBUS_SUCCESS;
+    }
+    else if(win32_thread)
+    {
+        result = globus_i_xio_win32_complete(
+            globus_l_xio_win32_socket_kickout, op_info);
+    }
+    else
+    {
+        result = globus_callback_register_oneshot(
+            0, 0, globus_l_xio_win32_socket_kickout, op_info);
+    }
+    /* really cant do anything else */
+    if(result != GLOBUS_SUCCESS)
+    {
+        globus_panic(
+            GLOBUS_XIO_SYSTEM_MODULE,
+            result,
+            _XIOSL("[%s:%d] Couldn't register callback"),
+            _xio_name,
+            __LINE__);
+    }
+    
+    GlobusXIOSystemDebugExitFD(fd);
+}
+
+/* must be safe to call from win32 thread
+ * return true if op is complete
+ */
+static
+globus_bool_t
+globus_l_xio_win32_socket_handle_read(
+    globus_l_xio_win32_socket_t *       handle,
+    globus_i_xio_system_op_info_t *     read_info)
+{
     globus_size_t                       nbytes;
     globus_result_t                     result;
+    globus_bool_t                       complete;
     GlobusXIOName(globus_l_xio_win32_socket_handle_read);
     
     GlobusXIOSystemDebugEnterFD(handle->socket);
 
-    read_info = handle->read_info;
     result = GLOBUS_SUCCESS;
+    complete = GLOBUS_FALSE;
 
     if(read_info->op)
     {
@@ -158,7 +204,7 @@ globus_l_xio_win32_socket_handle_read(
 
       default:
         globus_assert(0 && "Unexpected type for read operation");
-        return;
+        return GLOBUS_FALSE;
         break;
     }
     
@@ -172,54 +218,31 @@ globus_l_xio_win32_socket_handle_read(
         result != GLOBUS_SUCCESS)
     {
         read_info->state = GLOBUS_I_XIO_SYSTEM_OP_COMPLETE;
-        handle->read_info = 0;
-        
-        if(!read_info->op)
-        {
-            /* internal usage */
-            globus_l_xio_win32_socket_kickout(read_info);
-        }
-        else if(win32_thread)
-        {
-            result = globus_i_xio_win32_complete(
-                globus_l_xio_win32_socket_kickout, read_info);
-        }
-        else
-        {
-            result = globus_callback_register_oneshot(
-                0, 0, globus_l_xio_win32_socket_kickout, read_info);
-        }
-        /* really cant do anything else */
-        if(result != GLOBUS_SUCCESS)
-        {
-            globus_panic(
-                GLOBUS_XIO_SYSTEM_MODULE,
-                result,
-                _XIOSL("[%s:%d] Couldn't register callback"),
-                _xio_name,
-                __LINE__);
-        }
+        complete = GLOBUS_TRUE;
     }
 
     GlobusXIOSystemDebugExitFD(handle->socket);
+    return complete;
 }
 
-/* must be safe to call from win32 thread */
+/* must be safe to call from win32 thread
+ * return true if op is complete
+ */
 static
-void
+globus_bool_t
 globus_l_xio_win32_socket_handle_write(
     globus_l_xio_win32_socket_t *       handle,
-    globus_bool_t                       win32_thread)
+    globus_i_xio_system_op_info_t *     write_info)
 {
-    globus_i_xio_system_op_info_t *     write_info;
     globus_size_t                       nbytes;
     globus_result_t                     result;
+    globus_bool_t                       complete;
     GlobusXIOName(globus_l_xio_win32_socket_handle_write);
     
     GlobusXIOSystemDebugEnterFD(handle->socket);
 
     result = GLOBUS_SUCCESS;
-    write_info = handle->write_info;
+    complete = GLOBUS_FALSE;
 
     if(write_info->op)
     {
@@ -275,7 +298,7 @@ globus_l_xio_win32_socket_handle_write(
 
       default:
         globus_assert(0 && "Unexpected type for write operation");
-        return;
+        return GLOBUS_FALSE;
         break;
     }
   
@@ -294,36 +317,11 @@ globus_l_xio_win32_socket_handle_write(
         handle->ready_events |= FD_WRITE;
         
         write_info->state = GLOBUS_I_XIO_SYSTEM_OP_COMPLETE;
-        handle->write_info = 0;
-        
-        if(!write_info->op)
-        {
-            /* internal usage */
-            globus_l_xio_win32_socket_kickout(write_info);
-        }
-        else if(win32_thread)
-        {
-            result = globus_i_xio_win32_complete(
-                globus_l_xio_win32_socket_kickout, write_info);
-        }
-        else
-        {
-            result = globus_callback_register_oneshot(
-                0, 0, globus_l_xio_win32_socket_kickout, write_info);
-        }
-        /* really cant do anything else */
-        if(result != GLOBUS_SUCCESS)
-        {
-            globus_panic(
-                GLOBUS_XIO_SYSTEM_MODULE,
-                result,
-                _XIOSL("[%s:%d] Couldn't register callback"),
-                _xio_name,
-                __LINE__);
-        }
+        complete = GLOBUS_TRUE;
     }
 
     GlobusXIOSystemDebugExitFD(handle->socket);
+    return complete;
 }
 
 static
@@ -416,6 +414,8 @@ globus_l_xio_win32_socket_event_cb(
     globus_l_xio_win32_socket_t *       handle;
     WSANETWORKEVENTS                    wsaevents;
     long                                events;
+    globus_i_xio_system_op_info_t *     read_info = 0;
+    globus_i_xio_system_op_info_t *     write_info = 0;
     GlobusXIOName(globus_l_xio_win32_socket_event_cb);
     
     handle = (globus_l_xio_win32_socket_t *) user_arg;
@@ -450,7 +450,12 @@ globus_l_xio_win32_socket_event_cb(
         {
             if(handle->read_info)
             {
-                globus_l_xio_win32_socket_handle_read(handle, GLOBUS_TRUE);
+                if(globus_l_xio_win32_socket_handle_read(
+                    handle, handle->read_info))
+                {
+                    read_info = handle->read_info;
+                    handle->read_info = 0;
+                }
             }
             else
             {
@@ -462,7 +467,12 @@ globus_l_xio_win32_socket_event_cb(
         {
             if(handle->write_info)
             {
-                globus_l_xio_win32_socket_handle_write(handle, GLOBUS_TRUE);
+                if(globus_l_xio_win32_socket_handle_write(
+                    handle, handle->write_info))
+                {
+                    write_info = handle->write_info;
+                    handle->write_info = 0;
+                }
             }
             else
             {
@@ -471,6 +481,17 @@ globus_l_xio_win32_socket_event_cb(
         }
     }
     win32_mutex_unlock(&handle->lock);
+
+    /* do this outside the lock to avoid unnecessary contention */
+    if(read_info)
+    {
+        globus_l_xio_win32_socket_complete(read_info, GLOBUS_TRUE);
+    }
+    
+    if(write_info)
+    {
+        globus_l_xio_win32_socket_complete(write_info, GLOBUS_TRUE);
+    }
 
     GlobusXIOSystemDebugExitFD(handle->socket);
     return GLOBUS_TRUE;
@@ -516,13 +537,26 @@ globus_l_xio_win32_socket_register_read(
         handle->read_info = read_info;
         read_info->state = GLOBUS_I_XIO_SYSTEM_OP_PENDING;
         
+        read_info = 0;
         if(handle->ready_events & (FD_ACCEPT|FD_READ|FD_CLOSE))
         {
             handle->ready_events &= ~(FD_ACCEPT|FD_READ);
-            globus_l_xio_win32_socket_handle_read(handle, GLOBUS_FALSE);
+            
+            if(globus_l_xio_win32_socket_handle_read(
+                handle, handle->read_info))
+            {
+                read_info = handle->read_info;
+                handle->read_info = 0;
+            }
         }
     }
     win32_mutex_unlock(&handle->lock);
+    
+    /* do this outside the lock to avoid unnecessary contention */
+    if(read_info)
+    {
+        globus_l_xio_win32_socket_complete(read_info, GLOBUS_FALSE);
+    }
     
     GlobusXIOSystemDebugExitFD(handle->socket);
     return GLOBUS_SUCCESS;
@@ -576,14 +610,27 @@ globus_l_xio_win32_socket_register_write(
         handle->write_info = write_info;
         write_info->state = GLOBUS_I_XIO_SYSTEM_OP_PENDING;
         
+        write_info = 0;
         if(handle->ready_events & (FD_CONNECT|FD_WRITE|FD_CLOSE))
         {
             handle->ready_events &= ~(FD_CONNECT|FD_WRITE);
-            globus_l_xio_win32_socket_handle_write(handle, GLOBUS_FALSE);
+            
+            if(globus_l_xio_win32_socket_handle_write(
+                handle, handle->write_info))
+            {
+                write_info = handle->write_info;
+                handle->write_info = 0;
+            }
         }
     }
     win32_mutex_unlock(&handle->lock);
     
+    /* do this outside the lock to avoid unnecessary contention */
+    if(write_info)
+    {
+        globus_l_xio_win32_socket_complete(write_info, GLOBUS_FALSE);
+    }
+
     GlobusXIOSystemDebugExitFD(handle->socket);
     return GLOBUS_SUCCESS;
 
@@ -679,7 +726,7 @@ error_select:
     flag = 0;
     ioctlsocket(socket, FIONBIO, &flag);
 error_ioctl:
-    CloseHandle(handle->event);
+    WSACloseEvent(handle->event);
 error_create:
     win32_mutex_destroy(&handle->lock);
     globus_free(handle);
@@ -714,7 +761,7 @@ globus_xio_system_socket_destroy(
     
     WSAEventSelect(handle->socket, 0, 0);
     ioctlsocket(handle->socket, FIONBIO, &flag);
-    CloseHandle(handle->event);
+    WSACloseEvent(handle->event);
     win32_mutex_destroy(&handle->lock);
     
     GlobusXIOSystemDebugExitFD(handle->socket);
@@ -1096,7 +1143,7 @@ globus_l_xio_win32_blocking_destroy(
     
     GlobusXIOSystemDebugEnter();
     
-    CloseHandle(blocking_info->event);
+    WSACloseEvent(blocking_info->event);
     globus_free(blocking_info);
     
     GlobusXIOSystemDebugExit();
@@ -1307,7 +1354,7 @@ globus_xio_system_socket_create(
     GlobusXIOName(globus_xio_system_socket_create);
     
     *sock = INVALID_SOCKET;
-    GlobusXIOSystemDebugEnterFD(*sock);
+    GlobusXIOSystemDebugEnter();
     
     *sock = socket(domain, type, protocol);
     if(*sock == INVALID_SOCKET)
