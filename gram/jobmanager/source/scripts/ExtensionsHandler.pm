@@ -237,10 +237,42 @@ sub EndTag
 
                 if ((not defined $cpuCount) and (not defined $cpusPerHost))
                 {
-                    $cpuCount = 1;
-                }
+                    $self->log("Processing without cpuCount or cpusPerHost\n");
 
-                if (defined $cpuCount)
+                    if (defined $hostType)
+                    {
+                        $self->log("Processing hostType\n");
+
+                        if (defined $hostCount)
+                        {
+                            $self->log("Processing hostCount\n");
+
+                            $nodes .= "$hostCount:$hostType";
+                        }
+                        else
+                        {
+                            $nodes .= "$hostType";
+                        }
+                    }
+                    elsif (defined $hostNames)
+                    {
+                        my @names = @$hostNames;
+                        $self->log("Processing hostName list\n");
+
+                        foreach my $name (@names)
+                        {
+                            $nodes .= "$name+";
+                        }
+                        $nodes =~ s/\+$//;
+                    }
+                    elsif(defined $hostCount)
+                    {
+                        $self->log("Processing hostCount without hostType\n");
+
+                        $nodes .= "$hostCount";
+                    }
+                }
+                elsif (defined $cpuCount)
                 {
                     $self->log("Processing cpuCount\n");
 
