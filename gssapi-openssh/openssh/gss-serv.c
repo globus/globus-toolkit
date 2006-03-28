@@ -327,7 +327,7 @@ ssh_gssapi_userok(char *user)
 		return 0;
 	}
 #ifdef GSS_C_GLOBUS_LIMITED_PROXY_FLAG
-	if (limited) {
+	if (limited && options.gsi_allow_limited_proxy != 1) {
 		debug("limited proxy not acceptable for remote login");
 		return 0;
 	}

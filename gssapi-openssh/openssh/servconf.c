@@ -79,6 +79,7 @@ initialize_server_options(ServerOptions *options)
 	options->gss_authentication=-1;
 	options->gss_keyex = -1;
 	options->gss_cleanup_creds = -1;
+	options->gsi_allow_limited_proxy = -1;
 	options->password_authentication = -1;
 	options->kbd_interactive_authentication = -1;
 	options->challenge_response_authentication = -1;
@@ -197,6 +198,8 @@ fill_default_server_options(ServerOptions *options)
 		options->gss_keyex = 1;
 	if (options->gss_cleanup_creds == -1)
 		options->gss_cleanup_creds = 1;
+	if (options->gsi_allow_limited_proxy == -1)
+		options->gsi_allow_limited_proxy = 0;
 	if (options->password_authentication == -1)
 		options->password_authentication = 1;
 	if (options->kbd_interactive_authentication == -1)
@@ -286,6 +289,7 @@ typedef enum {
 	sClientAliveCountMax, sAuthorizedKeysFile, sAuthorizedKeysFile2,
 	sGssAuthentication, sGssKeyEx, sGssCleanupCreds, 
 	sAcceptEnv, sPermitTunnel,
+	sGsiAllowLimitedProxy,
 	sUsePrivilegeSeparation,
 	sDeprecated, sUnsupported
 } ServerOpCodes;
@@ -341,6 +345,9 @@ static struct {
 	{ "gssapiauthentication", sGssAuthentication },
 	{ "gssapikeyexchange", sGssKeyEx },
 	{ "gssapicleanupcredentials", sGssCleanupCreds },
+#ifdef GSI
+	{ "gsiallowlimitedproxy", sGsiAllowLimitedProxy },
+#endif
 #else
 	{ "gssapiauthentication", sUnsupported },
 	{ "gssapikeyexchange", sUnsupported },
@@ -698,6 +705,10 @@ parse_flag:
 
 	case sGssCleanupCreds:
 		intptr = &options->gss_cleanup_creds;
+		goto parse_flag;
+
+	case sGsiAllowLimitedProxy:
+		intptr = &options->gsi_allow_limited_proxy;
 		goto parse_flag;
 
 #ifdef SESSION_HOOKS
