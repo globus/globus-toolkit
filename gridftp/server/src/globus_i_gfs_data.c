@@ -138,6 +138,7 @@ typedef struct
     globus_bool_t                       use_interface;
     int                                 transfer_id;
     int                                 nl_fd;
+    globus_xio_driver_t                 nl_driver;
 } globus_l_gfs_data_handle_t;
 
 typedef struct globus_l_gfs_data_operation_s
@@ -2084,6 +2085,7 @@ globus_l_gfs_data_handle_init(
                     char name[256];
                     sprintf(name, "%s-%d", tmp_str, handle->transfer_id);
                     handle->nl_fd = open(name, O_WRONLY | O_CREAT, S_IRWXU);
+                    handle->nl_driver = stack_ent->driver; /* doesn't mater which one, just need one.  MUST NOT BE COMMITTED TO TRUNK, UGLY UGLY */
                     if(handle->nl_fd < 0)
                     {
                         globus_i_gfs_log_message(
@@ -4047,6 +4049,30 @@ globus_l_gfs_data_end_transfer_kickout(
                 "/",
                 type,
                 op->session_handle->username);
+        }
+        if(op->data_handle->nl_fd >= 0)
+        {
+            globus_xio_attr_t attr;
+            globus_xio_attr_init(&attr);
+            globus_xio_attr_cntl(
+                attr,
+                op->data_handle->nl_driver,
+                7, /*GLOBUS_XIO_NETLOGGER_CNTL_CHEATER */
+                op->node_count,
+                op->node_count * op->data_handle->info.nstreams,
+                &op->start_timeval,
+                &end_timeval,
+                op->remote_ip ? op->remote_ip : "0.0.0.0",
+                op->data_handle->info.blocksize,
+                op->data_handle->info.tcp_bufsize,
+                info->pathname,
+                op->bytes_transferred,
+                226,
+                "/",
+                type,
+                op->session_handle->username,
+                op->data_handle->nl_fd);
+            globus_xio_attr_destroy(attr);
         }
     }
 

@@ -93,6 +93,108 @@ typedef struct xio_l_netlogger_handle_s
 xio_l_netlogger_handle_t *     globus_l_xio_netlogger_default_handle = NULL;
 
 static
+int
+globus_l_xio_nl_sprintf(
+    char *buf, const char *event, int level, char *fmt, ...)
+{
+    NL_fstrm_t *fs_p;
+    char *nlbuf;
+    int len;
+    va_list ap;
+
+    va_start(ap,fmt);
+    fs_p = NL_fstrm();
+    nlbuf = NL_fstrm_fmt(fs_p, &len, event, level, fmt, ap);
+    va_end(ap);
+
+    if(len > 0)
+    {
+        memcpy(buf,nlbuf,len);
+    }
+    return len;
+}
+
+static
+void
+xio_l_netlogger_log_transfer(
+    int                                 stripe_count,
+    int                                 stream_count,
+    struct timeval *                    start_t,
+    struct timeval *                    end_t,
+    char *                              dest_ip,
+    globus_size_t                       blksize,
+    globus_size_t                       tcp_bs,
+    const char *                        fname,
+    globus_off_t                        nbytes,
+    int                                 code,
+    char *                              volume,
+    char *                              type,
+    char *                              username,
+    int                                 fd)
+{
+    int                                 len;
+    char                                out_buf[4096];
+    long                                win_size;
+    char *                              hostname;
+
+    if(tcp_bs == 0)
+    {
+        win_size = 0;
+    }
+    else
+    {
+        win_size = tcp_bs;
+    }
+    hostname = ipaddr(); /* defined in nl_log.h */
+    if(hostname == NULL)
+    {
+        hostname = strdup("0.0.0.0");
+    }
+
+    len = globus_l_xio_nl_sprintf(
+        out_buf,
+        "gridftp.FTP_INFO",
+        NL_LVL_INFO,
+        "HOST=s "
+        "PROG=s "
+        "START.TM=d "
+        "END.TM=d "
+        "USER=s "
+        "FILE=s "
+        "BUFFER=l "
+        "BLOCK=l "
+        "NBYTES=l "
+        "VOLUME=s "
+        "STREAMS=i "
+        "STRIPES=i "
+        "DEST=[s] "
+        "TYPE=s "
+        "CODE=i",
+        /* end time */
+        hostname,
+        "globus-gridftp-server",
+        /* start time */
+        start_t->tv_sec + start_t->tv_usec/1e6,
+        end_t->tv_sec + end_t->tv_usec/1e6,
+        /* other args */
+        username,
+        fname,
+        (long long)win_size,
+        (long long) blksize,
+        (long long)nbytes,
+        volume,
+        stream_count,
+        stripe_count,
+        dest_ip,
+        type,
+        code);
+
+    write(fd, out_buf, len);
+}
+
+
+
+static
 void
 globus_l_xio_nl_addbuflen(
     NL_rec_t *                          recp)
@@ -495,6 +597,56 @@ globus_l_xio_netlogger_cntl(
             attr->type = va_arg(ap, int);
             GlobusXIONetloggerDebugPrintf(GLOBUS_L_XIO_NETLOGGER_DEBUG_CNTLS,
               ("GLOBUS_XIO_NETLOGGER_CNTL_SET_TRANSFER_ID: %d\n", attr->type));
+            break;
+
+        case GLOBUS_XIO_NETLOGGER_CNTL_CHEATER:
+            {
+                int                     stripe_count;
+                int                     stream_count;
+                struct timeval *        start_gtd_time;
+                struct timeval *        end_gtd_time;
+                char *                  dest_ip;
+                globus_size_t           blksize;
+                globus_size_t           tcp_bs;
+                char *                  fname;
+                globus_off_t            nbytes;
+                int                     code;
+                char *                  volume;
+                char *                  type;
+                char *                  username;
+                int                     fd;
+
+                stripe_count = va_arg(ap, int);
+                stream_count = va_arg(ap, int);
+                start_gtd_time = va_arg(ap, struct timeval *);
+                end_gtd_time = va_arg(ap, struct timeval *);
+                dest_ip = va_arg(ap, char *);
+                blksize = va_arg(ap, globus_size_t);
+                tcp_bs = va_arg(ap, globus_size_t);
+                fname = va_arg(ap, char *);
+                nbytes = va_arg(ap, globus_off_t);
+                code = va_arg(ap, int);
+                volume = va_arg(ap, char *);
+                type = va_arg(ap, char *);
+                username = va_arg(ap, char *);
+                fd = va_arg(ap, int);
+
+                xio_l_netlogger_log_transfer(
+                    stripe_count,
+                    stream_count,
+                    start_gtd_time,
+                    end_gtd_time,
+                    dest_ip,
+                    blksize,
+                    tcp_bs,
+                    fname,
+                    nbytes,
+                    code,
+                    volume,
+                    type,
+                    username,
+                    fd);
+            }
             break;
     }
 

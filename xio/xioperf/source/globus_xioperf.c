@@ -227,6 +227,7 @@ xioperf_l_parse_opts(
         globus_hashtable_string_keyeq);
     GlobusTimeReltimeSet(info->time, 10, 0);
     globus_xio_stack_init(&info->stack, NULL);
+    globus_xio_attr_init(&info->attr);
 
     globus_options_init(
         &opt_h, xioperf_l_opts_unknown, info, globus_i_xioperf_opts_table);
@@ -596,7 +597,6 @@ main(
         GLOBUS_TRUE,
         xioperf_l_interrupt_cb,
         info);
-    globus_xio_attr_init(&info->attr);
     /* tcp specific */
     driver = (globus_xio_driver_t) globus_hashtable_lookup(
         &info->driver_table, (void *)"tcp");
