@@ -531,13 +531,23 @@ globus_l_io_iattr_copy(
     {
         goto error_xio_copy;
     }
-    
+
+    if(source_iattr->stack != NULL)
+    {
+        result = globus_xio_stack_copy(&dest_iattr->stack, source_iattr->stack);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error_xio_stack_copy;
+        }
+    }
     dest_iattr->space = source_iattr->space;
     globus_callback_space_reference(dest_iattr->space);
     
     *dest = dest_iattr;
     return GLOBUS_SUCCESS;
 
+error_xio_stack_copy:
+    globus_xio_attr_destroy(dest_iattr->attr);
 error_xio_copy:
     if(dest_iattr->authz_data.identity != GSS_C_NO_NAME)
     {
