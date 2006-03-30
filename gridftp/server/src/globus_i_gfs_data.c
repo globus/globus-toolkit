@@ -50,8 +50,6 @@ static globus_bool_t                    globus_l_gfs_data_is_remote_node = GLOBU
 globus_off_t                            globus_l_gfs_bytes_transferred;
 globus_mutex_t                          globus_l_gfs_global_counter_lock;
 
-static int                              globus_l_gfs_transfer_id = 0;
-
 typedef enum
 {
     GLOBUS_L_GFS_DATA_REQUESTING = 1,
@@ -136,7 +134,7 @@ typedef struct
     globus_gfs_operation_t              outstanding_op;
     globus_bool_t                       destroy_requested;
     globus_bool_t                       use_interface;
-    int                                 transfer_id;
+    char                                transfer_id[GLOBUS_UUID_TEXTLEN];
     int                                 nl_fd;
     globus_xio_driver_t                 nl_driver;
 } globus_l_gfs_data_handle_t;
@@ -1481,7 +1479,6 @@ globus_i_gfs_data_init()
     }
 
     /* for a unique NL number perhost, in case we fork */
-    globus_l_gfs_transfer_id = getpid() * 1000;
     GlobusGFSDebugExit();
 }
 
@@ -2045,9 +2042,11 @@ globus_l_gfs_data_handle_init(
         globus_list_t *                 list;
         globus_xio_stack_t              stack;
         globus_xio_attr_t               xio_attr;
+        globus_uuid_t                   uuid;
 
         /* XXX sort of need a mutex here, but netlogger is tempary i think */
-        handle->transfer_id = globus_l_gfs_transfer_id++;
+        globus_uuid_create(&uuid);
+        memcpy(handle->transfer_id, uuid.text, GLOBUS_UUID_TEXTLEN);
 
         globus_xio_stack_init(&stack, NULL);
         driver_list = (globus_list_t *) globus_i_gfs_config_list("stack");
@@ -2083,7 +2082,7 @@ globus_l_gfs_data_handle_init(
                 if(tmp_str != NULL && handle->nl_fd == 0)
                 {
                     char name[256];
-                    sprintf(name, "%s-%d", tmp_str, handle->transfer_id);
+                    sprintf(name, "%s-%s", tmp_str, handle->transfer_id);
                     handle->nl_fd = open(name, O_WRONLY | O_CREAT, S_IRWXU);
                     handle->nl_driver = stack_ent->driver; /* doesn't mater which one, just need one.  MUST NOT BE COMMITTED TO TRUNK, UGLY UGLY */
                     if(handle->nl_fd < 0)
@@ -2461,7 +2460,7 @@ globus_l_gfs_data_handle_free(
 
     if(data_handle->nl_fd > 0)
     {
-        close(data_handle->nl_fd);
+//        close(data_handle->nl_fd);
     }
 
     if(data_handle->outstanding_op == NULL)
@@ -4050,7 +4049,7 @@ globus_l_gfs_data_end_transfer_kickout(
                 type,
                 op->session_handle->username);
         }
-        if(op->data_handle->nl_fd >= 0)
+        if(op->data_handle->nl_fd > 0)
         {
             globus_xio_attr_t attr;
             globus_xio_attr_init(&attr);
