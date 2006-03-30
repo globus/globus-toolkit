@@ -2317,8 +2317,13 @@ globus_l_io_tcp_create_listener(
     {
         goto error_alloc;
     }
-    
-    if(iattr->authentication_mode == GLOBUS_IO_SECURE_AUTHENTICATION_MODE_NONE)
+
+    if(iattr->stack != NULL)
+    {
+        stack = iattr->stack;
+    } 
+    else if(iattr->authentication_mode ==
+        GLOBUS_IO_SECURE_AUTHENTICATION_MODE_NONE)
     {
         stack = globus_l_io_tcp_stack;
     }
