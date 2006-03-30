@@ -66,11 +66,12 @@ enum globus_l_xio_netlogger_error_levels
 #define NL_XIO_BB_RECSZ                 9
 
 #define NL_MAXREC 1024
+#define ID_FIELD_LEN 64
 typedef struct xio_l_netlogger_handle_s
 {
     int                                 log_flag;
     int                                 fd;
-    int                                 id;
+    char                                id[ID_FIELD_LEN];
     int                                 type;
     NL_rec_t *                          open_start_rec;
     NL_rec_t *                          open_stop_rec;
@@ -167,7 +168,7 @@ xio_l_netlogger_log_transfer(
         "VOLUME=s "
         "STREAMS=i "
         "STRIPES=i "
-        "DEST=[s] "
+        "DEST=s "
         "TYPE=s "
         "CODE=i",
         /* end time */
@@ -240,7 +241,7 @@ globus_l_xio_nl_makerec(
     NL_rec_add(recp, NL_fld(NL_FLD_HOST, NL_FLD_HOST_LEN, hostname,
                             strlen(hostname), NL_string));
 
-    NL_rec_add(recp, NL_fld("id", 2,  &ival, sizeof(ival), NL_int));
+    NL_rec_add(recp, NL_fld("uuid", 2,  sval, ID_FIELD_LEN, NL_string));
     NL_rec_add(recp, NL_fld("type", 4,  &ival, sizeof(ival), NL_int));
 
     return recp;
@@ -259,7 +260,7 @@ xio_l_netlogger_fmtrec(
 
     gettimeofday(&tv, 0);
 
-    memcpy(recp->fields[NL_XIO_ID_FLD]->value, &handle->id, sizeof(int));
+    memcpy(recp->fields[NL_XIO_ID_FLD]->value, handle->id, ID_FIELD_LEN);
     memcpy(recp->fields[NL_XIO_TYPE_FLD]->value, &handle->type, sizeof(int));
 
     memcpy( recp->fields[NL_dtfld]->value, &tv, sizeof(struct timeval));
@@ -282,7 +283,7 @@ xio_l_netlogger_fmtrec_b(
 
     gettimeofday(&tv, 0);
 
-    memcpy(recp->fields[NL_XIO_ID_FLD]->value, &handle->id, sizeof(int));
+    memcpy(recp->fields[NL_XIO_ID_FLD]->value, handle->id, ID_FIELD_LEN);
     memcpy(recp->fields[NL_XIO_TYPE_FLD]->value, &handle->type, sizeof(int));
 
     memcpy(recp->fields[NL_dtfld]->value, &tv, sizeof(struct timeval));
@@ -308,7 +309,7 @@ xio_l_netlogger_fmtrec_bb(
     if(handle->fd < 0) return;
     gettimeofday(&tv, 0);
 
-    memcpy(recp->fields[NL_XIO_ID_FLD]->value, &handle->id, sizeof(int));
+    memcpy(recp->fields[NL_XIO_ID_FLD]->value, handle->id, ID_FIELD_LEN);
     memcpy(recp->fields[NL_XIO_TYPE_FLD]->value, &handle->type, sizeof(int));
 
     memcpy(((recp->fields)[NL_XIO_BUFLEN_FLD])->value, &buflen, sizeof(int));
@@ -468,7 +469,7 @@ globus_l_xio_netlogger_attr_copy(
     dst_attr->log_flag = src_attr->log_flag;
     dst_attr->fd = src_attr->fd;
     dst_attr->type = src_attr->type;
-    dst_attr->id = src_attr->id;
+    memcpy(dst_attr->id, src_attr->id, ID_FIELD_LEN);
     *dst = dst_attr;
 
     return GLOBUS_SUCCESS;
@@ -484,6 +485,7 @@ globus_l_xio_netlogger_parse_opts(
     int                                 sc;
     int                                 int_val;
     char *                              opts;
+    char *                              start_opts;
     char *                              tmp_str;
     char *                              key;
     char *                              val;
@@ -495,6 +497,7 @@ globus_l_xio_netlogger_parse_opts(
         return;
     }
     opts = strdup(in_opts);
+    start_opts = opts;
 
     key = "filename=";
     tmp_str = strstr(opts, key);
@@ -537,12 +540,14 @@ globus_l_xio_netlogger_parse_opts(
     if(tmp_str != NULL)
     {
         val = tmp_str + strlen(key);
-        sc = sscanf(val, "%d", &int_val);
-        if(sc == 1)
+        tmp_str = strchr(attr->id, '#');
+        if(tmp_str != NULL)
         {
-            attr->id = int_val;
+            *tmp_str = '\0';
         }
+        strcpy(attr->id, val);
     }
+    free(start_opts);
     GlobusXIONetloggerDebugExit();
 }
 
@@ -554,6 +559,7 @@ globus_l_xio_netlogger_cntl(
     va_list                             ap)
 {
     char *                              str;
+    char *                              tmp_str;
     globus_xio_netlogger_log_event_t    event;
     xio_l_netlogger_handle_t *          attr;
     GlobusXIOName(globus_l_xio_netlogger_cntl);
@@ -588,15 +594,16 @@ globus_l_xio_netlogger_cntl(
             break;
 
         case GLOBUS_XIO_NETLOGGER_CNTL_SET_TRANSFER_ID:
-            attr->id = va_arg(ap, int);
+            tmp_str = va_arg(ap, char *);
+            strcpy(attr->id, tmp_str);
             GlobusXIONetloggerDebugPrintf(GLOBUS_L_XIO_NETLOGGER_DEBUG_CNTLS,
-                ("GLOBUS_XIO_NETLOGGER_CNTL_SET_TRANSFER_ID: %d\n", attr->id));
+                ("GLOBUS_XIO_NETLOGGER_CNTL_SET_TRANSFER_ID: %s\n", attr->id));
             break;
 
         case GLOBUS_XIO_NETLOGGER_CNTL_SET_TYPE:
             attr->type = va_arg(ap, int);
             GlobusXIONetloggerDebugPrintf(GLOBUS_L_XIO_NETLOGGER_DEBUG_CNTLS,
-              ("GLOBUS_XIO_NETLOGGER_CNTL_SET_TRANSFER_ID: %d\n", attr->type));
+              ("GLOBUS_XIO_NETLOGGER_CNTL_SET_TRANSFER_TYPE: %d\n", attr->type));
             break;
 
         case GLOBUS_XIO_NETLOGGER_CNTL_CHEATER:
@@ -659,7 +666,10 @@ globus_result_t
 globus_l_xio_netlogger_handle_destroy(
     void *                              driver_attr)
 {
-    globus_free(driver_attr);
+    xio_l_netlogger_handle_t *          attr;
+
+    attr = (xio_l_netlogger_handle_t *) driver_attr;
+    globus_free(attr);
     return GLOBUS_SUCCESS;
 }
 
@@ -688,6 +698,7 @@ globus_l_xio_netlogger_server_init(
         cpy_handle = globus_l_xio_netlogger_default_handle;
     }
 
+    globus_l_xio_netlogger_attr_copy((void **)&handle, (void *)cpy_handle);
     res = globus_xio_driver_pass_server_init(op, contact_info, handle);
     if(res != GLOBUS_SUCCESS)
     {
@@ -728,13 +739,15 @@ globus_l_xio_netlogger_accept(
     void *                              driver_server,
     globus_xio_operation_t              op)
 {
+    xio_l_netlogger_handle_t *          cpy_handle;
     xio_l_netlogger_handle_t *          handle;
     globus_result_t                     res;
     GlobusXIOName(globus_l_xio_netlogger_accept);
 
     GlobusXIONetloggerDebugEnter();
 
-    handle = (xio_l_netlogger_handle_t *) driver_server;
+    cpy_handle = (xio_l_netlogger_handle_t *) driver_server;
+    globus_l_xio_netlogger_attr_copy((void **)&handle, (void *)cpy_handle);
     if(handle->log_flag & GLOBUS_XIO_NETLOGGER_LOG_ACCEPT)
     {
         xio_l_netlogger_fmtrec(handle, handle->accept_start_rec);
