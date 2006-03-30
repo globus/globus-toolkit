@@ -66,12 +66,11 @@ enum globus_l_xio_netlogger_error_levels
 #define NL_XIO_BB_RECSZ                 9
 
 #define NL_MAXREC 1024
-#define ID_FIELD_LEN 64
 typedef struct xio_l_netlogger_handle_s
 {
     int                                 log_flag;
     int                                 fd;
-    char                                id[ID_FIELD_LEN];
+    char                                id[GLOBUS_UUID_TEXTLEN];
     int                                 type;
     NL_rec_t *                          open_start_rec;
     NL_rec_t *                          open_stop_rec;
@@ -241,7 +240,7 @@ globus_l_xio_nl_makerec(
     NL_rec_add(recp, NL_fld(NL_FLD_HOST, NL_FLD_HOST_LEN, hostname,
                             strlen(hostname), NL_string));
 
-    NL_rec_add(recp, NL_fld("uuid", 2,  sval, ID_FIELD_LEN, NL_string));
+    NL_rec_add(recp, NL_fld("uuid", 2,  sval, GLOBUS_UUID_TEXTLEN, NL_string));
     NL_rec_add(recp, NL_fld("type", 4,  &ival, sizeof(ival), NL_int));
 
     return recp;
@@ -260,7 +259,7 @@ xio_l_netlogger_fmtrec(
 
     gettimeofday(&tv, 0);
 
-    memcpy(recp->fields[NL_XIO_ID_FLD]->value, handle->id, ID_FIELD_LEN);
+    memcpy(recp->fields[NL_XIO_ID_FLD]->value, handle->id, GLOBUS_UUID_TEXTLEN);
     memcpy(recp->fields[NL_XIO_TYPE_FLD]->value, &handle->type, sizeof(int));
 
     memcpy( recp->fields[NL_dtfld]->value, &tv, sizeof(struct timeval));
@@ -283,7 +282,7 @@ xio_l_netlogger_fmtrec_b(
 
     gettimeofday(&tv, 0);
 
-    memcpy(recp->fields[NL_XIO_ID_FLD]->value, handle->id, ID_FIELD_LEN);
+    memcpy(recp->fields[NL_XIO_ID_FLD]->value, handle->id, GLOBUS_UUID_TEXTLEN);
     memcpy(recp->fields[NL_XIO_TYPE_FLD]->value, &handle->type, sizeof(int));
 
     memcpy(recp->fields[NL_dtfld]->value, &tv, sizeof(struct timeval));
@@ -309,7 +308,7 @@ xio_l_netlogger_fmtrec_bb(
     if(handle->fd < 0) return;
     gettimeofday(&tv, 0);
 
-    memcpy(recp->fields[NL_XIO_ID_FLD]->value, handle->id, ID_FIELD_LEN);
+    memcpy(recp->fields[NL_XIO_ID_FLD]->value, handle->id, GLOBUS_UUID_TEXTLEN);
     memcpy(recp->fields[NL_XIO_TYPE_FLD]->value, &handle->type, sizeof(int));
 
     memcpy(((recp->fields)[NL_XIO_BUFLEN_FLD])->value, &buflen, sizeof(int));
@@ -469,7 +468,7 @@ globus_l_xio_netlogger_attr_copy(
     dst_attr->log_flag = src_attr->log_flag;
     dst_attr->fd = src_attr->fd;
     dst_attr->type = src_attr->type;
-    memcpy(dst_attr->id, src_attr->id, ID_FIELD_LEN);
+    memcpy(dst_attr->id, src_attr->id, GLOBUS_UUID_TEXTLEN);
     *dst = dst_attr;
 
     return GLOBUS_SUCCESS;

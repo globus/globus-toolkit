@@ -2460,7 +2460,7 @@ globus_l_gfs_data_handle_free(
 
     if(data_handle->nl_fd > 0)
     {
-//        close(data_handle->nl_fd);
+        close(data_handle->nl_fd);
     }
 
     if(data_handle->outstanding_op == NULL)
