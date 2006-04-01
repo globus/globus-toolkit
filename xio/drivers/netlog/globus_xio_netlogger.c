@@ -57,13 +57,12 @@ enum globus_l_xio_netlogger_error_levels
 };
 
 #define NL_XIO_ID_FLD                   4
-#define NL_XIO_TYPE_FLD                 5
-#define NL_XIO_BUFLEN_FLD               6
-#define NL_XIO_BYTES_FLD                7
+#define NL_XIO_BUFLEN_FLD               5
+#define NL_XIO_BYTES_FLD                6
 
-#define NL_XIO_RECSZ                    7
-#define NL_XIO_B_RECSZ                  8
-#define NL_XIO_BB_RECSZ                 9
+#define NL_XIO_RECSZ                    6
+#define NL_XIO_B_RECSZ                  7
+#define NL_XIO_BB_RECSZ                 8
 
 #define NL_MAXREC 1024
 typedef struct xio_l_netlogger_handle_s
@@ -71,7 +70,7 @@ typedef struct xio_l_netlogger_handle_s
     int                                 log_flag;
     int                                 fd;
     char                                id[GLOBUS_UUID_TEXTLEN];
-    int                                 type;
+    char *                              type;
     NL_rec_t *                          open_start_rec;
     NL_rec_t *                          open_stop_rec;
     NL_rec_t *                          close_start_rec;
@@ -130,7 +129,8 @@ xio_l_netlogger_log_transfer(
     char *                              volume,
     char *                              type,
     char *                              username,
-    int                                 fd)
+    int                                 fd,
+    char *                              trans_id)
 {
     int                                 len;
     char                                out_buf[4096];
@@ -169,6 +169,7 @@ xio_l_netlogger_log_transfer(
         "STRIPES=i "
         "DEST=s "
         "TYPE=s "
+        "uu=s "
         "CODE=i",
         /* end time */
         hostname,
@@ -187,6 +188,7 @@ xio_l_netlogger_log_transfer(
         stripe_count,
         dest_ip,
         type,
+        trans_id,
         code);
 
     write(fd, out_buf, len);
@@ -220,7 +222,6 @@ globus_l_xio_nl_makerec(
     const char *                        event,
     int                                 size)
 {
-    int                                 ival = 0;
     char                                sval[NL_MAX_STR];
     char *                              hostname;
     NL_rec_t *                          recp;
@@ -241,7 +242,6 @@ globus_l_xio_nl_makerec(
                             strlen(hostname), NL_string));
 
     NL_rec_add(recp, NL_fld("uuid", 2,  sval, GLOBUS_UUID_TEXTLEN, NL_string));
-    NL_rec_add(recp, NL_fld("type", 4,  &ival, sizeof(ival), NL_int));
 
     return recp;
 }
@@ -258,9 +258,6 @@ xio_l_netlogger_fmtrec(
     if(handle->fd < 0) return;
 
     gettimeofday(&tv, 0);
-
-    memcpy(recp->fields[NL_XIO_ID_FLD]->value, handle->id, GLOBUS_UUID_TEXTLEN);
-    memcpy(recp->fields[NL_XIO_TYPE_FLD]->value, &handle->type, sizeof(int));
 
     memcpy( recp->fields[NL_dtfld]->value, &tv, sizeof(struct timeval));
     len = NL_rfmt_format(handle->rfp, recp, handle->recbuf, NL_MAXREC);
@@ -281,9 +278,6 @@ xio_l_netlogger_fmtrec_b(
     if(handle->fd < 0) return;
 
     gettimeofday(&tv, 0);
-
-    memcpy(recp->fields[NL_XIO_ID_FLD]->value, handle->id, GLOBUS_UUID_TEXTLEN);
-    memcpy(recp->fields[NL_XIO_TYPE_FLD]->value, &handle->type, sizeof(int));
 
     memcpy(recp->fields[NL_dtfld]->value, &tv, sizeof(struct timeval));
     memcpy(((recp->fields)[NL_XIO_BUFLEN_FLD])->value, &buflen, sizeof(int));
@@ -308,9 +302,6 @@ xio_l_netlogger_fmtrec_bb(
     if(handle->fd < 0) return;
     gettimeofday(&tv, 0);
 
-    memcpy(recp->fields[NL_XIO_ID_FLD]->value, handle->id, GLOBUS_UUID_TEXTLEN);
-    memcpy(recp->fields[NL_XIO_TYPE_FLD]->value, &handle->type, sizeof(int));
-
     memcpy(((recp->fields)[NL_XIO_BUFLEN_FLD])->value, &buflen, sizeof(int));
     memcpy(((recp->fields)[NL_XIO_BYTES_FLD])->value, &bytes, sizeof(int));
 
@@ -322,45 +313,64 @@ xio_l_netlogger_fmtrec_bb(
 
 static
 xio_l_netlogger_handle_t *
-xio_l_netlogger_create_handle()
+xio_l_netlogger_create_handle(
+    xio_l_netlogger_handle_t *          handle)
 {
-    xio_l_netlogger_handle_t *          handle;
+    char                                msg[128];
     GlobusXIOName(xio_l_netlogger_create_handle);
 
     GlobusXIONetloggerDebugEnter();
-    handle = (xio_l_netlogger_handle_t *)
-        globus_calloc(1, sizeof(xio_l_netlogger_handle_t));
 
-    handle->accept_start_rec = 
-        globus_l_xio_nl_makerec("xio.XioSocket.accept.start",NL_XIO_RECSZ);
-    handle->accept_stop_rec = 
-        globus_l_xio_nl_makerec("xio.XioSocket.accept.end",NL_XIO_RECSZ);
+    sprintf(msg, "xio.%s.accept.start", handle->type);
+    handle->accept_start_rec = globus_l_xio_nl_makerec(msg, NL_XIO_RECSZ);
+    sprintf(msg, "xio.%s.accept.end", handle->type);
+    handle->accept_stop_rec = globus_l_xio_nl_makerec(msg,NL_XIO_RECSZ);
+    memcpy(handle->accept_stop_rec->fields[NL_XIO_ID_FLD]->value,
+        handle->id, GLOBUS_UUID_TEXTLEN);
+    memcpy(handle->accept_start_rec->fields[NL_XIO_ID_FLD]->value,
+        handle->id, GLOBUS_UUID_TEXTLEN);
 
-    handle->open_start_rec = 
-        globus_l_xio_nl_makerec("xio.XioSocket.open.start",NL_XIO_RECSZ);
-    handle->open_stop_rec = 
-        globus_l_xio_nl_makerec("xio.XioSocket.open.end",NL_XIO_RECSZ);
+    sprintf(msg, "xio.%s.open.start", handle->type);
+    handle->open_start_rec = globus_l_xio_nl_makerec(msg, NL_XIO_RECSZ);
+    sprintf(msg, "xio.%s.open.end", handle->type);
+    handle->open_stop_rec = globus_l_xio_nl_makerec(msg, NL_XIO_RECSZ);
+    memcpy(handle->open_stop_rec->fields[NL_XIO_ID_FLD]->value,
+        handle->id, GLOBUS_UUID_TEXTLEN);
+    memcpy(handle->open_start_rec->fields[NL_XIO_ID_FLD]->value,
+        handle->id, GLOBUS_UUID_TEXTLEN);
 
-    handle->close_start_rec = 
-        globus_l_xio_nl_makerec("xio.XioSocket.close.start",NL_XIO_RECSZ);
-    handle->close_stop_rec = 
-        globus_l_xio_nl_makerec("xio.XioSocket.close.end",NL_XIO_RECSZ);
+    sprintf(msg, "xio.%s.close.start", handle->type);
+    handle->close_start_rec = globus_l_xio_nl_makerec(msg, NL_XIO_RECSZ);
+    sprintf(msg, "xio.%s.close.end", handle->type);
+    handle->close_stop_rec = globus_l_xio_nl_makerec(msg, NL_XIO_RECSZ);
+    memcpy(handle->close_stop_rec->fields[NL_XIO_ID_FLD]->value,
+        handle->id, GLOBUS_UUID_TEXTLEN);
+    memcpy(handle->close_start_rec->fields[NL_XIO_ID_FLD]->value,
+        handle->id, GLOBUS_UUID_TEXTLEN);
 
-    handle->read_start_rec = 
-        globus_l_xio_nl_makerec("xio.XioSocket.read.start",NL_XIO_B_RECSZ);
+    sprintf(msg, "xio.%s.read.start", handle->type);
+    handle->read_start_rec = globus_l_xio_nl_makerec(msg, NL_XIO_B_RECSZ);
     globus_l_xio_nl_addbuflen(handle->read_start_rec);
-    handle->read_stop_rec = 
-        globus_l_xio_nl_makerec("xio.XioSocket.read.end",NL_XIO_BB_RECSZ);
+    sprintf(msg, "xio.%s.read.end", handle->type);
+    handle->read_stop_rec = globus_l_xio_nl_makerec(msg, NL_XIO_BB_RECSZ);
     globus_l_xio_nl_addbuflen(handle->read_stop_rec);
     globus_l_xio_nl_addbytes(handle->read_stop_rec);
+    memcpy(handle->read_stop_rec->fields[NL_XIO_ID_FLD]->value,
+        handle->id, GLOBUS_UUID_TEXTLEN);
+    memcpy(handle->read_start_rec->fields[NL_XIO_ID_FLD]->value,
+        handle->id, GLOBUS_UUID_TEXTLEN);
 
-    handle->write_start_rec =
-        globus_l_xio_nl_makerec("xio.XioSocket.write.start",NL_XIO_B_RECSZ);
+    sprintf(msg, "xio.%s.write.start", handle->type);
+    handle->write_start_rec =globus_l_xio_nl_makerec(msg, NL_XIO_B_RECSZ);
     globus_l_xio_nl_addbuflen(handle->write_start_rec);
-    handle->write_stop_rec =
-        globus_l_xio_nl_makerec("xio.XioSocket.write.end",NL_XIO_BB_RECSZ);
+    sprintf(msg, "xio.%s.write.end", handle->type);
+    handle->write_stop_rec =globus_l_xio_nl_makerec(msg, NL_XIO_BB_RECSZ);
     globus_l_xio_nl_addbuflen(handle->write_stop_rec);
     globus_l_xio_nl_addbytes(handle->write_stop_rec);
+    memcpy(handle->write_stop_rec->fields[NL_XIO_ID_FLD]->value,
+        handle->id, GLOBUS_UUID_TEXTLEN);
+    memcpy(handle->write_start_rec->fields[NL_XIO_ID_FLD]->value,
+        handle->id, GLOBUS_UUID_TEXTLEN);
 
     handle->rfp = NL_rfmt();
     handle->seq = 0U;
@@ -391,6 +401,7 @@ static
 int
 globus_l_xio_netlogger_activate(void)
 {
+    xio_l_netlogger_handle_t *          handle;
     int rc;
     GlobusXIOName(globus_l_xio_netlogger_activate);
 
@@ -403,7 +414,11 @@ globus_l_xio_netlogger_activate(void)
     }
     GlobusXIORegisterDriver(netlogger);
 
-    globus_l_xio_netlogger_default_handle = xio_l_netlogger_create_handle();
+    handle = (xio_l_netlogger_handle_t *)
+        globus_calloc(1, sizeof(xio_l_netlogger_handle_t));
+
+    globus_l_xio_netlogger_default_handle = 
+        xio_l_netlogger_create_handle(handle);
 
     GlobusXIONetloggerDebugExit();
     return GLOBUS_SUCCESS;
@@ -446,7 +461,10 @@ globus_l_xio_netlogger_attr_init(
     xio_l_netlogger_handle_t *          attr;
 
     /* intiialize everything to 0 */
-    attr = xio_l_netlogger_create_handle();
+    attr = (xio_l_netlogger_handle_t *)
+        globus_calloc(1, sizeof(xio_l_netlogger_handle_t));
+    attr->type = strdup("default");
+
     *out_attr = attr;
 
     return GLOBUS_SUCCESS;
@@ -467,7 +485,10 @@ globus_l_xio_netlogger_attr_copy(
 
     dst_attr->log_flag = src_attr->log_flag;
     dst_attr->fd = src_attr->fd;
-    dst_attr->type = src_attr->type;
+    if(src_attr->type != NULL)
+    {
+        dst_attr->type = strdup(src_attr->type);
+    }
     memcpy(dst_attr->id, src_attr->id, GLOBUS_UUID_TEXTLEN);
     *dst = dst_attr;
 
@@ -527,11 +548,12 @@ globus_l_xio_netlogger_parse_opts(
     if(tmp_str != NULL)
     {
         val = tmp_str + strlen(key);
-        sc = sscanf(val, "%d", &int_val);
-        if(sc == 1)
+        tmp_str = strchr(attr->id, '#');
+        if(tmp_str != NULL)
         {
-            attr->type = int_val;
+            *tmp_str = '\0';
         }
+        attr->type = strdup(val);
     }
 
     key = "id=";
@@ -600,9 +622,15 @@ globus_l_xio_netlogger_cntl(
             break;
 
         case GLOBUS_XIO_NETLOGGER_CNTL_SET_TYPE:
-            attr->type = va_arg(ap, int);
+            tmp_str = va_arg(ap, char *);
+
+            if(attr->type != NULL)
+            {
+                free(attr->type);
+            }
+            attr->type = strdup(tmp_str);
             GlobusXIONetloggerDebugPrintf(GLOBUS_L_XIO_NETLOGGER_DEBUG_CNTLS,
-              ("GLOBUS_XIO_NETLOGGER_CNTL_SET_TRANSFER_TYPE: %d\n", attr->type));
+            ("GLOBUS_XIO_NETLOGGER_CNTL_SET_TRANSFER_TYPE: %d\n", attr->type));
             break;
 
         case GLOBUS_XIO_NETLOGGER_CNTL_CHEATER:
@@ -621,6 +649,7 @@ globus_l_xio_netlogger_cntl(
                 char *                  type;
                 char *                  username;
                 int                     fd;
+                char *                  trans_id;
 
                 stripe_count = va_arg(ap, int);
                 stream_count = va_arg(ap, int);
@@ -636,6 +665,7 @@ globus_l_xio_netlogger_cntl(
                 type = va_arg(ap, char *);
                 username = va_arg(ap, char *);
                 fd = va_arg(ap, int);
+                trans_id = va_arg(ap, char *);
 
                 xio_l_netlogger_log_transfer(
                     stripe_count,
@@ -651,7 +681,8 @@ globus_l_xio_netlogger_cntl(
                     volume,
                     type,
                     username,
-                    fd);
+                    fd,
+                    trans_id);
             }
             break;
     }
@@ -668,6 +699,10 @@ globus_l_xio_netlogger_handle_destroy(
     xio_l_netlogger_handle_t *          attr;
 
     attr = (xio_l_netlogger_handle_t *) driver_attr;
+    if(attr->type != NULL)
+    {
+        globus_free(attr->type);
+    }
     globus_free(attr);
     return GLOBUS_SUCCESS;
 }
@@ -747,6 +782,7 @@ globus_l_xio_netlogger_accept(
 
     cpy_handle = (xio_l_netlogger_handle_t *) driver_server;
     globus_l_xio_netlogger_attr_copy((void **)&handle, (void *)cpy_handle);
+    xio_l_netlogger_create_handle(handle);
     if(handle->log_flag & GLOBUS_XIO_NETLOGGER_LOG_ACCEPT)
     {
         xio_l_netlogger_fmtrec(handle, handle->accept_start_rec);
@@ -803,15 +839,15 @@ globus_l_xio_netlogger_open(
 
     GlobusXIONetloggerDebugEnter();
 
+    /* then go to link */
+    if(driver_link != NULL)
+    {
+        cpy_handle = (xio_l_netlogger_handle_t *) driver_link;
+    }
     /* first copy attr if we have it */
     if(driver_attr != NULL)
     {
         cpy_handle = (xio_l_netlogger_handle_t *) driver_attr;
-    }
-    /* then go to link */
-    else if(driver_link != NULL)
-    {
-        cpy_handle = (xio_l_netlogger_handle_t *) driver_link;
     }
     /* else copy the default attr */
     else
@@ -819,6 +855,7 @@ globus_l_xio_netlogger_open(
         cpy_handle = globus_l_xio_netlogger_default_handle;
     }
     globus_l_xio_netlogger_attr_copy((void **)&handle, (void *)cpy_handle);
+    xio_l_netlogger_create_handle(handle);
 
     if(handle->log_flag & GLOBUS_XIO_NETLOGGER_LOG_OPEN)
     {
