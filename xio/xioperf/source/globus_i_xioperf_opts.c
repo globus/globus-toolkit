@@ -450,27 +450,45 @@ xioperf_l_opts_driver(
     void *                              arg,
     int *                               out_parms_used)
 {
+    char *                              driver_name;
+    char *                              driver_opts;
     globus_result_t                     result;
     globus_xio_driver_t                 driver;
     globus_i_xioperf_info_t *           info;
 
     info = (globus_i_xioperf_info_t *) arg;
 
-    result = globus_xio_driver_load(opt, &driver);
+    driver_name = strdup(opt);
+    driver_opts = strchr(driver_name, ':');
+    if(driver_opts != NULL)
+    {
+        *driver_opts = '\0';
+        driver_opts++;
+    }
+
+    result = globus_xio_driver_load(driver_name, &driver);
     if(result != GLOBUS_SUCCESS)
     {
-        return result;
+        goto error;
     }
     result = globus_xio_stack_push_driver(info->stack, driver);
     if(result != GLOBUS_SUCCESS)
     {
         goto error;
     }
-    globus_hashtable_insert(&info->driver_table, strdup(opt), driver);
+
+    globus_xio_attr_cntl(
+        info->attr,
+        driver,
+        GLOBUS_XIO_SET_STRING_OPTIONS,
+        driver_opts);
+
+    globus_hashtable_insert(&info->driver_table, driver_name, driver);
     *out_parms_used = 1;
 
     return GLOBUS_SUCCESS;
 error:
+    free(driver_name);
     return result;
 }
 
