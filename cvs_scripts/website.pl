@@ -40,6 +40,12 @@ $fulldir = "$webroot/$subdir";
 # CVS dirs want to be group-writeable
 umask 002;
 
+if ( $fulldir =~ /4.2-drafts/ ) {
+   print "4.2 drafts is updated on a regular schedule, not automatically.\n";
+   print "Your updates will appear at either noon or midnight.\n";
+   exit;
+}
+
 # If the directory does not exist on the filesystem, this is probably
 # a cvs add.  Check out the directory.
 # If the directory does exist, this is probably a commit/add of files
@@ -63,16 +69,35 @@ if ( ! -d $fulldir )
    system("chgrp -R $cvsgrp $checkoutdir");
 } else {
    chdir $fulldir;
+   my $releasenotes, $adminguide;
+   $adminguide = 1 if ( $fulldir =~ /admin/ );
    foreach my $f (@files) {
       print "Updating file $f in $fulldir\n" if $verbose;
       system("echo cvs up -dP $f") if $verbose;
       system("cvs up -dP $f");
       system("echo chgrp $cvsgrp $f") if $verbose;
       system("chgrp $cvsgrp $f");
+      # Extra hackitude for release notes and admin guides
+      if ( $f =~ /402.xml/ ) {
+         $releasenotes = 1;
+      } else {
+         print "These are not release notes.\n" if $verbose;
+      }
    }
    if ( -f "Makefile" ) {
       system("echo Running make in the target directory");
       system("make");
+   } elsif ( -f "../Makefile" ) {
+      system("echo Running make in the parent directory");
+      system("cd ..; make");
+   }
+   if ( $releasenotes eq 1 ) {
+      system("echo Updating release notes") if $verbose;
+      system("cd $webroot/releasenotes/4.0.2; make");
+   }
+   if ( $adminguide eq 1 ) {
+      system("echo Updating master admin guide") if $verbose;
+      system("cd $webroot/docs/4.0/admin/docbook; make");
    }
 }
 
