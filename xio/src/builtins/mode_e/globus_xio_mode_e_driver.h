@@ -190,20 +190,6 @@ typedef enum
     GLOBUS_XIO_MODE_E_GET_NUM_STREAMS,
 
     /** GlobusVarArgEnum(attr)
-     * Set the attr cntl function that should be called before creating a new
-     * connection with the stack specified. If any driver specific cntls is 
-     * needed on the stack, this function should take care of applying all 
-     * those cntls on the xio_attr passed to it.
-     * @see globus_xio_mode_e_attr_cntl_callback_t
-     * @ingroup mode_e_driver_cntls
-     *
-     * @param attr_cntl_cb
-     *      Specifies the function pointer.
-     */
-    /* globus_xio_mode_e_attr_cntl_callback_t 	attr_cntl_cb */
-    GLOBUS_XIO_MODE_E_APPLY_ATTR_CNTLS,
-
-    /** GlobusVarArgEnum(attr)
      * Set flag to indicate whether the data read from user would always be 
      * preceded by an offset read or not. The user can do a read with 
      * wait_for_bytes set to zero, to find the offset of the data that he is 
@@ -281,17 +267,35 @@ typedef enum
      *      offset will be stored here
      */
     /* globus_off_t *				offset_out */
-    GLOBUS_XIO_MODE_E_DD_GET_OFFSET
+    GLOBUS_XIO_MODE_E_DD_GET_OFFSET,
+
+    /** GlobusVarArgEnum(attr)
+     * Set the attr to be used with the stack set from 
+     * GLOBUS_XIO_MODE_E_SET_STACK.
+     * @ingroup mode_e_driver_cntls
+     * Do not create a new ftp client handle, use this handle instead.
+     *
+     * @param stack
+     *      Specifies the stack to use for the connection(s).
+     *      Note: this stack will not be destroyed.
+     */
+    /* globus_xio_stack_t           stack */
+
+    GLOBUS_XIO_MODE_E_SET_STACK_ATTR,
+
+    /** GlobusVarArgEnum(attr)
+     * Get the attr that will be used with the stack.  This is intended for
+     * use with GLOBUS_XIO_MODE_E_SET_STACK.
+     * @ingroup mode_e_driver_cntls
+     *
+     * @param stack_out
+     *      The stack will be stored here. If none is set, GLOBUS_NULL will be
+     *      set.
+     */
+    /* globus_xio_attr_t *         attr_out */
+
+    GLOBUS_XIO_MODE_E_GET_STACK_ATTR
 
 } globus_xio_mode_e_cmd_t;	
 
 #endif
-
-/**
- * MODE_E driver specific types
- * @ingroup mode_e_driver_types
- * @hideinitializer
- */
-typedef globus_result_t
-(*globus_xio_mode_e_attr_cntl_callback_t)(
-    globus_xio_attr_t                   attr);

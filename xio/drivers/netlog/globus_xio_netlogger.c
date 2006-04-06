@@ -641,7 +641,6 @@ globus_l_xio_netlogger_cntl(
             {
                 free(attr->type);
             }
-printf("SETTING TYPE 2 = %s\n", tmp_str);
             attr->type = strdup(tmp_str);
             GlobusXIONetloggerDebugPrintf(GLOBUS_L_XIO_NETLOGGER_DEBUG_CNTLS,
             ("GLOBUS_XIO_NETLOGGER_CNTL_SET_TRANSFER_TYPE: %d\n", attr->type));
