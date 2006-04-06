@@ -112,7 +112,8 @@ globus_result_t
 globus_i_gfs_netlogger_attr(
     void *                              hidden_ptr,
     globus_xio_attr_t                   xio_attr,
-    globus_xio_driver_t                 driver);
+    globus_xio_driver_t                 driver,
+    char *                              uuid_str);
 
 #include "globus_i_gfs_log.h"
 #include "globus_i_gfs_control.h"

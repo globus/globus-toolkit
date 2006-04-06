@@ -50,6 +50,8 @@ static globus_bool_t                    globus_l_gfs_data_is_remote_node = GLOBU
 globus_off_t                            globus_l_gfs_bytes_transferred;
 globus_mutex_t                          globus_l_gfs_global_counter_lock;
 
+static int                               globus_l_gfs_nl_fd = 0;
+
 typedef enum
 {
     GLOBUS_L_GFS_DATA_REQUESTING = 1,
@@ -121,6 +123,7 @@ typedef struct
 
     globus_handle_table_t               handle_table;
     int                                 node_ndx;
+
 } globus_l_gfs_data_session_t;
 
 typedef struct
@@ -137,6 +140,8 @@ typedef struct
     char                                transfer_id[GLOBUS_UUID_TEXTLEN];
     int                                 nl_fd;
     globus_xio_driver_t                 nl_driver;
+    globus_list_t *                     nl_list;
+    globus_xio_attr_t                   xio_attr;
 } globus_l_gfs_data_handle_t;
 
 typedef struct globus_l_gfs_data_operation_s
@@ -259,6 +264,11 @@ typedef struct
     int                                 stat_count;
     globus_gfs_stat_t *                 stat_array;
 } globus_l_gfs_data_stat_bounce_t;
+
+static
+globus_result_t
+globus_l_gfs_set_stack(
+    globus_l_gfs_data_handle_t *        handle);
 
 static
 void
@@ -1904,12 +1914,18 @@ globus_result_t
 globus_i_gfs_netlogger_attr(
     void *                              hidden_ptr,
     globus_xio_attr_t                   xio_attr,
-    globus_xio_driver_t                 driver)
+    globus_xio_driver_t                 driver,
+    char *                              uuid_str)
 {
     globus_result_t                     result;
     globus_l_gfs_data_handle_t *        handle;
 
     handle = (globus_l_gfs_data_handle_t *) hidden_ptr;
+
+    if(uuid_str != NULL)
+    {
+        strncpy(handle->transfer_id, uuid_str, GLOBUS_UUID_TEXTLEN);
+    }
 
     result = globus_xio_attr_cntl(
         xio_attr,
@@ -1946,6 +1962,7 @@ globus_l_gfs_data_handle_init(
     globus_l_gfs_data_handle_t **       u_handle,
     globus_gfs_data_info_t *            data_info)
 {
+
     globus_l_gfs_data_handle_t *        handle;
     globus_result_t                     result;
     globus_ftp_control_dcau_t           dcau;
@@ -2036,80 +2053,6 @@ globus_l_gfs_data_handle_init(
         }
     }
 
-    {
-        gfs_i_stack_entry_t *           stack_ent;
-        globus_list_t *                 driver_list;
-        globus_list_t *                 list;
-        globus_xio_stack_t              stack;
-        globus_xio_attr_t               xio_attr;
-        globus_uuid_t                   uuid;
-
-        /* XXX sort of need a mutex here, but netlogger is tempary i think */
-        globus_uuid_create(&uuid);
-        memcpy(handle->transfer_id, uuid.text, GLOBUS_UUID_TEXTLEN);
-
-        globus_xio_stack_init(&stack, NULL);
-        driver_list = (globus_list_t *) globus_i_gfs_config_list("stack");
-        globus_i_ftp_control_data_get_attr(&handle->data_channel, &xio_attr);
-        for(list = driver_list;
-            !globus_list_empty(list);
-            list = globus_list_rest(list))
-        {
-            stack_ent = (gfs_i_stack_entry_t *) globus_list_first(list);
-
-            result = GLOBUS_SUCCESS;
-            if(strcmp(stack_ent->driver_name, "gsi") == 0)
-            {
-                if(handle->info.dcau != 'N')
-                {
-                    result = globus_xio_stack_push_driver(
-                        stack, stack_ent->driver);
-                }
-            }
-            else
-            {
-                result=globus_xio_stack_push_driver(stack, stack_ent->driver);
-            }
-            if(result != GLOBUS_SUCCESS)
-            {
-                goto error_control;
-            }
-            /* this should go away after demo? */
-            if(strcmp(stack_ent->driver_name, "netlogger") == 0)
-            {
-                char * tmp_str;
-                tmp_str = globus_i_gfs_config_string("netlogger");
-                if(tmp_str != NULL && handle->nl_fd == 0)
-                {
-                    char name[256];
-                    sprintf(name, "%s-%s", tmp_str, handle->transfer_id);
-                    handle->nl_fd = open(name, O_WRONLY | O_CREAT, S_IRWXU);
-                    handle->nl_driver = stack_ent->driver; /* doesn't mater which one, just need one.  MUST NOT BE COMMITTED TO TRUNK, UGLY UGLY */
-                    if(handle->nl_fd < 0)
-                    {
-                        globus_i_gfs_log_message(
-                        GLOBUS_I_GFS_LOG_ERR,
-                        "Could not open netlogger file :%s:\n", tmp_str);
-                    }
-                }
-
-                globus_i_gfs_netlogger_attr(
-                    handle,
-                    xio_attr,
-                    stack_ent->driver);
-            }
-            if(stack_ent->opts != NULL)
-            {
-                /* ignore error */
-                globus_xio_attr_cntl(
-                    xio_attr,
-                    stack_ent->driver,
-                    GLOBUS_XIO_SET_STRING_OPTIONS,
-                    stack_ent->opts);
-            }
-        }
-        globus_i_ftp_control_data_set_stack(&handle->data_channel, stack);
-    }
 
     if(handle->info.mode == 'S')
     {
@@ -2176,6 +2119,21 @@ globus_l_gfs_data_handle_init(
         }
     }
 
+    {
+        globus_uuid_t uuid;
+        /* XXX sort of need a mutex here, but netlogger is tempary i think
+           intialize to some uuid, but will be overwritten most of the time */
+        globus_uuid_create(&uuid);
+        memcpy(handle->transfer_id, uuid.text, GLOBUS_UUID_TEXTLEN);
+        result = globus_l_gfs_set_stack(handle);
+        if(result != GLOBUS_SUCCESS)
+        {
+            globus_i_gfs_log_message(
+                GLOBUS_I_GFS_LOG_WARN,
+                "set stack failed: %s\n",
+                globus_error_print_friendly(globus_error_peek(result)));
+        }
+    }
     *u_handle = handle;
 
     GlobusGFSDebugExit();
@@ -2458,7 +2416,7 @@ globus_l_gfs_data_handle_free(
     globus_assert(data_handle->state == GLOBUS_L_GFS_DATA_HANDLE_CLOSED ||
         data_handle->state == GLOBUS_L_GFS_DATA_HANDLE_CLOSING_AND_DESTROYED);
 
-    if(data_handle->nl_fd > 0)
+    if(data_handle->nl_fd != globus_l_gfs_nl_fd)
     {
         close(data_handle->nl_fd);
     }
@@ -5266,6 +5224,105 @@ error_alloc:
     GlobusGFSDebugExitWithError();
 }
 
+static
+globus_result_t
+globus_l_gfs_set_stack(
+    globus_l_gfs_data_handle_t *        handle)
+{
+    globus_result_t                     result;
+    gfs_i_stack_entry_t *               stack_ent;
+    globus_list_t *                     driver_list;
+    globus_list_t *                     list;
+    globus_xio_stack_t                  stack;
+
+    globus_xio_stack_init(&stack, NULL);
+    driver_list = (globus_list_t *) globus_i_gfs_config_list("stack");
+    globus_i_ftp_control_data_get_attr(&handle->data_channel, &handle->xio_attr);
+    for(list = driver_list;
+        !globus_list_empty(list);
+        list = globus_list_rest(list))
+    {
+        stack_ent = (gfs_i_stack_entry_t *) globus_list_first(list);
+
+        result = GLOBUS_SUCCESS;
+        if(strcmp(stack_ent->driver_name, "gsi") == 0)
+        {
+            if(handle->info.dcau != 'N')
+            {
+                result = globus_xio_stack_push_driver(
+                    stack, stack_ent->driver);
+            }
+        }
+        else
+        {
+            result=globus_xio_stack_push_driver(stack, stack_ent->driver);
+        }
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error_control;
+        }
+        /* this should go away after demo? */
+        if(strcmp(stack_ent->driver_name, "netlogger") == 0)
+        {
+            char * tmp_str;
+
+            globus_list_insert(&handle->nl_list, stack_ent->driver);
+            tmp_str = globus_i_gfs_config_string("netlogger");
+            if(tmp_str != NULL && handle->nl_fd == 0)
+            {
+                char name[256];
+
+		if(strchr(tmp_str, '#') != NULL)
+                {
+                    sprintf(name, "%s-%s", tmp_str, handle->transfer_id);
+                    handle->nl_fd = open(name, O_WRONLY | O_CREAT, S_IRWXU);
+                }
+                else
+                {
+                    if(globus_l_gfs_nl_fd == 0)
+		    {
+                        globus_l_gfs_nl_fd = 
+                            open(tmp_str, O_WRONLY | O_CREAT, S_IRWXU);
+                    }
+                    handle->nl_fd = globus_l_gfs_nl_fd;
+                }
+                handle->nl_driver = stack_ent->driver; /* doesn't mater which one, just need one.  MUST NOT BE COMMITTED TO TRUNK, UGLY UGLY */
+                if(handle->nl_fd < 0)
+                {
+                    globus_i_gfs_log_message(
+                        GLOBUS_I_GFS_LOG_ERR,
+                        "Could not open netlogger file :%s:\n", tmp_str);
+                }
+                result = globus_xio_attr_cntl(
+                    handle->xio_attr,
+                    stack_ent->driver,
+                    3, /*GLOBUS_XIO_NETLOGGER_CNTL_SET_FD, */
+                    handle->nl_fd);
+                if(result != GLOBUS_SUCCESS)
+                {
+                    globus_i_gfs_log_message(
+                        GLOBUS_I_GFS_LOG_WARN,
+                        "Could not set nl fd :%sd:\n", handle->nl_fd);
+                }
+            }
+        }
+        if(stack_ent->opts != NULL)
+        {
+            /* ignore error */
+            globus_xio_attr_cntl(
+                handle->xio_attr,
+                stack_ent->driver,
+                GLOBUS_XIO_SET_STRING_OPTIONS,
+                stack_ent->opts);
+        }
+    }
+    globus_i_ftp_control_data_set_stack(&handle->data_channel, stack);
+
+    return GLOBUS_SUCCESS;
+error_control:
+    return result;
+}
+
 void
 globus_gridftp_server_begin_transfer(
     globus_gfs_operation_t              op,
@@ -5278,8 +5335,21 @@ globus_gridftp_server_begin_transfer(
     globus_result_t                     result;
     globus_gfs_event_info_t             event_reply;
     globus_gfs_event_info_t             event_info;
+    globus_xio_driver_t                 driver;
+    globus_list_t *                     list;
     GlobusGFSName(globus_gridftp_server_begin_transfer);
     GlobusGFSDebugEnter();
+
+    for(list = op->data_handle->nl_list; !globus_list_empty(list);
+        list = globus_list_rest(list))
+    {
+        driver = (globus_xio_driver_t) globus_list_first(list);
+        globus_i_gfs_netlogger_attr(
+            op->data_handle,
+            op->data_handle->xio_attr,
+            driver,
+            NULL);
+    }
 
     gettimeofday(&op->start_timeval, NULL);
     op->event_mask = event_mask;

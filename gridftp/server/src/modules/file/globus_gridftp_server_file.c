@@ -92,7 +92,8 @@ globus_result_t
 globus_l_gfs_file_make_stack(
     globus_l_file_monitor_t *           mon,
     globus_xio_attr_t                   attr,
-    globus_xio_stack_t                  stack)
+    globus_xio_stack_t                  stack,
+    char *                              uuid_str)
 {
     char *                              value;
     char *                              driver_name;
@@ -184,7 +185,8 @@ globus_l_gfs_file_make_stack(
                 globus_i_gfs_netlogger_attr(
                     hidden_ptr,
                     attr,
-                    stack_ent->driver);
+                    stack_ent->driver,
+                    uuid_str);
             }
             if(stack_ent->opts != NULL)
             {
@@ -1755,7 +1757,8 @@ globus_l_gfs_file_open(
     globus_xio_handle_t *               file_handle,
     const char *                        pathname,
     globus_xio_file_flag_t              open_flags,
-    void *                              arg)
+    void *                              arg,
+    char *                              uuid_str)
 {
     globus_result_t                     result;
     globus_xio_attr_t                   attr;
@@ -1777,7 +1780,7 @@ globus_l_gfs_file_open(
         goto error_stack;
     }
 
-    result = globus_l_gfs_file_make_stack(arg, attr, stack);
+    result = globus_l_gfs_file_make_stack(arg, attr, stack, uuid_str);
     if(result != GLOBUS_SUCCESS)
     {
         goto error_push;
@@ -1886,7 +1889,8 @@ globus_l_gfs_file_recv(
     }
         
     result = globus_l_gfs_file_open(
-        &monitor->file_handle, transfer_info->pathname, open_flags, monitor);
+        &monitor->file_handle, transfer_info->pathname, open_flags, monitor,
+        transfer_info->module_args);
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusGFSErrorWrapFailed("globus_l_gfs_file_open", result);
@@ -2306,7 +2310,8 @@ globus_l_gfs_file_send(
     open_flags = GLOBUS_XIO_FILE_BINARY | GLOBUS_XIO_FILE_RDONLY;
 
     result = globus_l_gfs_file_open(
-        &monitor->file_handle, transfer_info->pathname, open_flags, monitor);
+        &monitor->file_handle, transfer_info->pathname, open_flags, monitor,
+        transfer_info->module_args);
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusGFSErrorWrapFailed("globus_l_gfs_file_open", result);
