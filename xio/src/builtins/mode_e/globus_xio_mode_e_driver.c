@@ -91,7 +91,6 @@ static globus_l_xio_mode_e_attr_t       globus_l_xio_mode_e_attr_default =
     1,
     0,  
     GLOBUS_NULL,
-    GLOBUS_NULL,
     GLOBUS_FALSE,
     GLOBUS_FALSE,
     -1,
@@ -681,7 +680,6 @@ error_parse_cs:
 error_get_cs:
     globus_xio_server_close(handle->server);
 error_server_create:
-error_attr_cntl:
     globus_xio_attr_destroy(attr->xio_attr);
 error_attr_init:
     globus_l_xio_mode_e_handle_destroy(handle);
@@ -1808,7 +1806,6 @@ error_cancel_enable:
     }
 error_handle_create:
     globus_xio_register_close(xio_handle, NULL, NULL, NULL);
-error_attr_cntl:
     globus_xio_attr_destroy(handle->attr->xio_attr);
 error_attr_init:
     GlobusXIOModeEDebugExitWithError();
