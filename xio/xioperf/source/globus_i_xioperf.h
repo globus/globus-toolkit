@@ -1,6 +1,7 @@
 #include "globus_common.h"
 #include "globus_xio.h"
 #include "globus_xio_tcp_driver.h"
+#include "globus_xio_mode_e_driver.h"
 #include "version.h"
 
 
@@ -60,7 +61,6 @@ typedef struct globus_i_xioperf_info_s
     globus_bool_t                       read_done;
     globus_bool_t                       die;
     globus_bool_t                       eof;
-    globus_hashtable_t                  driver_table;
     globus_object_t *                   err;
     int                                 ref;
     FILE *                              fptr;
@@ -71,6 +71,7 @@ typedef struct globus_i_xioperf_info_s
     globus_abstime_t                    end_time;
     globus_xio_attr_t                   attr;
     globus_bool_t                       quiet;
+    globus_fifo_t                       driver_name_q;
 } globus_i_xioperf_info_t;
 
 #endif
