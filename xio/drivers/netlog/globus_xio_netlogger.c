@@ -69,7 +69,7 @@ typedef struct xio_l_netlogger_handle_s
 {
     int                                 log_flag;
     int                                 fd;
-    char                                id[GLOBUS_UUID_TEXTLEN];
+    char *                              id;
     char *                              type;
     NL_rec_t *                          open_start_rec;
     NL_rec_t *                          open_stop_rec;
@@ -88,6 +88,11 @@ typedef struct xio_l_netlogger_handle_s
     unsigned int                        seq;
     char                                recbuf[NL_MAXREC];
 } xio_l_netlogger_handle_t;
+
+static
+globus_result_t
+globus_l_xio_netlogger_attr_init(
+    void **                             out_attr);
 
 xio_l_netlogger_handle_t *     globus_l_xio_netlogger_default_handle = NULL;
 
@@ -220,7 +225,8 @@ static
 NL_rec_t *
 globus_l_xio_nl_makerec(
     const char *                        event,
-    int                                 size)
+    int                                 size,
+    char *                              id)
 {
     char                                sval[NL_MAX_STR];
     char *                              hostname;
@@ -241,7 +247,8 @@ globus_l_xio_nl_makerec(
     NL_rec_add(recp, NL_fld(NL_FLD_HOST, NL_FLD_HOST_LEN, hostname,
                             strlen(hostname), NL_string));
 
-    NL_rec_add(recp, NL_fld("uuid", 2,  sval, GLOBUS_UUID_TEXTLEN, NL_string));
+    NL_rec_add(recp, NL_fld("uuid", 2,  id, strlen(id), NL_string));
+    memcpy(recp->fields[NL_XIO_ID_FLD]->value, id, strlen(id));
 
     return recp;
 }
@@ -322,55 +329,45 @@ xio_l_netlogger_create_handle(
     GlobusXIONetloggerDebugEnter();
 
     sprintf(msg, "xio.%s.accept.start", handle->type);
-    handle->accept_start_rec = globus_l_xio_nl_makerec(msg, NL_XIO_RECSZ);
+    handle->accept_start_rec =
+        globus_l_xio_nl_makerec(msg, NL_XIO_RECSZ, handle->id);
     sprintf(msg, "xio.%s.accept.end", handle->type);
-    handle->accept_stop_rec = globus_l_xio_nl_makerec(msg,NL_XIO_RECSZ);
-    memcpy(handle->accept_stop_rec->fields[NL_XIO_ID_FLD]->value,
-        handle->id, GLOBUS_UUID_TEXTLEN);
-    memcpy(handle->accept_start_rec->fields[NL_XIO_ID_FLD]->value,
-        handle->id, GLOBUS_UUID_TEXTLEN);
+    handle->accept_stop_rec =
+        globus_l_xio_nl_makerec(msg, NL_XIO_RECSZ, handle->id);
 
     sprintf(msg, "xio.%s.open.start", handle->type);
-    handle->open_start_rec = globus_l_xio_nl_makerec(msg, NL_XIO_RECSZ);
+    handle->open_start_rec =
+        globus_l_xio_nl_makerec(msg, NL_XIO_RECSZ, handle->id);
     sprintf(msg, "xio.%s.open.end", handle->type);
-    handle->open_stop_rec = globus_l_xio_nl_makerec(msg, NL_XIO_RECSZ);
-    memcpy(handle->open_stop_rec->fields[NL_XIO_ID_FLD]->value,
-        handle->id, GLOBUS_UUID_TEXTLEN);
-    memcpy(handle->open_start_rec->fields[NL_XIO_ID_FLD]->value,
-        handle->id, GLOBUS_UUID_TEXTLEN);
+    handle->open_stop_rec =
+        globus_l_xio_nl_makerec(msg, NL_XIO_RECSZ, handle->id);
 
     sprintf(msg, "xio.%s.close.start", handle->type);
-    handle->close_start_rec = globus_l_xio_nl_makerec(msg, NL_XIO_RECSZ);
+    handle->close_start_rec =
+        globus_l_xio_nl_makerec(msg, NL_XIO_RECSZ, handle->id);
     sprintf(msg, "xio.%s.close.end", handle->type);
-    handle->close_stop_rec = globus_l_xio_nl_makerec(msg, NL_XIO_RECSZ);
-    memcpy(handle->close_stop_rec->fields[NL_XIO_ID_FLD]->value,
-        handle->id, GLOBUS_UUID_TEXTLEN);
-    memcpy(handle->close_start_rec->fields[NL_XIO_ID_FLD]->value,
-        handle->id, GLOBUS_UUID_TEXTLEN);
+    handle->close_stop_rec = 
+        globus_l_xio_nl_makerec(msg, NL_XIO_RECSZ, handle->id);
 
     sprintf(msg, "xio.%s.read.start", handle->type);
-    handle->read_start_rec = globus_l_xio_nl_makerec(msg, NL_XIO_B_RECSZ);
+    handle->read_start_rec =
+        globus_l_xio_nl_makerec(msg, NL_XIO_B_RECSZ, handle->id);
     globus_l_xio_nl_addbuflen(handle->read_start_rec);
     sprintf(msg, "xio.%s.read.end", handle->type);
-    handle->read_stop_rec = globus_l_xio_nl_makerec(msg, NL_XIO_BB_RECSZ);
+    handle->read_stop_rec =
+        globus_l_xio_nl_makerec(msg, NL_XIO_BB_RECSZ, handle->id);
     globus_l_xio_nl_addbuflen(handle->read_stop_rec);
     globus_l_xio_nl_addbytes(handle->read_stop_rec);
-    memcpy(handle->read_stop_rec->fields[NL_XIO_ID_FLD]->value,
-        handle->id, GLOBUS_UUID_TEXTLEN);
-    memcpy(handle->read_start_rec->fields[NL_XIO_ID_FLD]->value,
-        handle->id, GLOBUS_UUID_TEXTLEN);
 
     sprintf(msg, "xio.%s.write.start", handle->type);
-    handle->write_start_rec =globus_l_xio_nl_makerec(msg, NL_XIO_B_RECSZ);
+    handle->write_start_rec =
+        globus_l_xio_nl_makerec(msg, NL_XIO_B_RECSZ, handle->id);
     globus_l_xio_nl_addbuflen(handle->write_start_rec);
     sprintf(msg, "xio.%s.write.end", handle->type);
-    handle->write_stop_rec =globus_l_xio_nl_makerec(msg, NL_XIO_BB_RECSZ);
+    handle->write_stop_rec =
+        globus_l_xio_nl_makerec(msg, NL_XIO_BB_RECSZ, handle->id);
     globus_l_xio_nl_addbuflen(handle->write_stop_rec);
     globus_l_xio_nl_addbytes(handle->write_stop_rec);
-    memcpy(handle->write_stop_rec->fields[NL_XIO_ID_FLD]->value,
-        handle->id, GLOBUS_UUID_TEXTLEN);
-    memcpy(handle->write_start_rec->fields[NL_XIO_ID_FLD]->value,
-        handle->id, GLOBUS_UUID_TEXTLEN);
 
     handle->rfp = NL_rfmt();
     handle->seq = 0U;
@@ -416,6 +413,8 @@ globus_l_xio_netlogger_activate(void)
 
     handle = (xio_l_netlogger_handle_t *)
         globus_calloc(1, sizeof(xio_l_netlogger_handle_t));
+
+    globus_l_xio_netlogger_attr_init((void **)&handle);
 
     globus_l_xio_netlogger_default_handle = 
         xio_l_netlogger_create_handle(handle);
@@ -464,6 +463,7 @@ globus_l_xio_netlogger_attr_init(
     attr = (xio_l_netlogger_handle_t *)
         globus_calloc(1, sizeof(xio_l_netlogger_handle_t));
     attr->type = strdup("default");
+    attr->id = strdup("default");
 
     *out_attr = attr;
 
@@ -489,7 +489,10 @@ globus_l_xio_netlogger_attr_copy(
     {
         dst_attr->type = strdup(src_attr->type);
     }
-    memcpy(dst_attr->id, src_attr->id, GLOBUS_UUID_TEXTLEN);
+    if(src_attr->id != NULL)
+    {
+        dst_attr->id = strdup(src_attr->id);
+    }
     *dst = dst_attr;
 
     return GLOBUS_SUCCESS;
@@ -524,6 +527,11 @@ globus_l_xio_netlogger_parse_opts(
     if(tmp_str != NULL)
     {
         val = tmp_str + strlen(key);
+        tmp_str = strchr(val, '#');
+        if(tmp_str != NULL)
+        {
+            *tmp_str = '\0';
+        }
         fd = open(val, O_WRONLY);
         if(fd > 0)
         {
@@ -548,7 +556,7 @@ globus_l_xio_netlogger_parse_opts(
     if(tmp_str != NULL)
     {
         val = tmp_str + strlen(key);
-        tmp_str = strchr(attr->id, '#');
+        tmp_str = strchr(val, '#');
         if(tmp_str != NULL)
         {
             *tmp_str = '\0';
@@ -561,12 +569,12 @@ globus_l_xio_netlogger_parse_opts(
     if(tmp_str != NULL)
     {
         val = tmp_str + strlen(key);
-        tmp_str = strchr(attr->id, '#');
+        tmp_str = strchr(val, '#');
         if(tmp_str != NULL)
         {
             *tmp_str = '\0';
         }
-        strcpy(attr->id, val);
+        attr->id = strdup(val);
     }
     free(start_opts);
     GlobusXIONetloggerDebugExit();
@@ -616,7 +624,12 @@ globus_l_xio_netlogger_cntl(
 
         case GLOBUS_XIO_NETLOGGER_CNTL_SET_TRANSFER_ID:
             tmp_str = va_arg(ap, char *);
-            strcpy(attr->id, tmp_str);
+
+            if(attr->id != NULL)
+            {
+                free(attr->id);
+            }
+            attr->id = strdup(tmp_str);
             GlobusXIONetloggerDebugPrintf(GLOBUS_L_XIO_NETLOGGER_DEBUG_CNTLS,
                 ("GLOBUS_XIO_NETLOGGER_CNTL_SET_TRANSFER_ID: %s\n", attr->id));
             break;
@@ -628,6 +641,7 @@ globus_l_xio_netlogger_cntl(
             {
                 free(attr->type);
             }
+printf("SETTING TYPE 2 = %s\n", tmp_str);
             attr->type = strdup(tmp_str);
             GlobusXIONetloggerDebugPrintf(GLOBUS_L_XIO_NETLOGGER_DEBUG_CNTLS,
             ("GLOBUS_XIO_NETLOGGER_CNTL_SET_TRANSFER_TYPE: %d\n", attr->type));
