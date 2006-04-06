@@ -706,11 +706,14 @@ xioperf_l_build_stack(
                 info->attr = new_attr;
                 globus_xio_stack_init(&info->stack, NULL);
             }
-            globus_xio_attr_cntl(
+            res = globus_xio_attr_cntl(
                 info->attr, driver,
                 GLOBUS_XIO_MODE_E_SET_NUM_STREAMS,
                 info->stream_count);
-            info->stream_count = 1;
+            if(res != GLOBUS_SUCCESS)
+            {
+                goto error;
+            }
         }
 
 
