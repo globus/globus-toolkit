@@ -494,6 +494,7 @@ sub cancel
 
     foreach (split(/,/,$jobid))
     {
+        s/..*://;
         $pgid = getpgrp($_);
         
         $pgid == -1 ? kill($signo{TERM}, $_) :
