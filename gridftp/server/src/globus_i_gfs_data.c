@@ -1493,7 +1493,7 @@ globus_i_gfs_data_init()
     tmp_str = globus_i_gfs_config_string("netlogger");
     if(tmp_str != NULL)
     {
-        globus_l_gfs_nl_fd = open(tmp_str, O_WRONLY | O_CREAT, S_IRWXU);
+        globus_l_gfs_nl_fd = open(tmp_str, O_WRONLY | O_CREAT | O_APPEND, S_IRWXU);
         if(globus_l_gfs_nl_fd < 0)
         {
             globus_i_gfs_log_message(
