@@ -1437,6 +1437,7 @@ void
 globus_i_gfs_data_init()
 {
     char *                              dsi_name;
+    char *                              tmp_str;
     int                                 rc;
     GlobusGFSName(globus_i_gfs_data_init);
     GlobusGFSDebugEnter();
@@ -1487,6 +1488,20 @@ globus_i_gfs_data_init()
         globus_mutex_init(&globus_l_gfs_global_counter_lock, NULL);
         globus_gfs_config_set_ptr("byte_transfer_count", str_transferred);
     }
+
+
+    tmp_str = globus_i_gfs_config_string("netlogger");
+    if(tmp_str != NULL)
+    {
+        globus_l_gfs_nl_fd = open(tmp_str, O_WRONLY | O_CREAT, S_IRWXU);
+        if(globus_l_gfs_nl_fd < 0)
+        {
+            globus_i_gfs_log_message(
+                GLOBUS_I_GFS_LOG_WARN,
+                "Could not open the netlog file %s\n", tmp_str);
+        }
+    }
+
 
     /* for a unique NL number perhost, in case we fork */
     GlobusGFSDebugExit();
@@ -1962,7 +1977,6 @@ globus_l_gfs_data_handle_init(
     globus_l_gfs_data_handle_t **       u_handle,
     globus_gfs_data_info_t *            data_info)
 {
-
     globus_l_gfs_data_handle_t *        handle;
     globus_result_t                     result;
     globus_ftp_control_dcau_t           dcau;
@@ -5272,18 +5286,13 @@ globus_l_gfs_set_stack(
             {
                 char name[256];
 
-		if(strchr(tmp_str, '#') != NULL)
+                if(strchr(tmp_str, '#') != NULL)
                 {
                     sprintf(name, "%s-%s", tmp_str, handle->transfer_id);
                     handle->nl_fd = open(name, O_WRONLY | O_CREAT, S_IRWXU);
                 }
                 else
                 {
-                    if(globus_l_gfs_nl_fd == 0)
-		    {
-                        globus_l_gfs_nl_fd = 
-                            open(tmp_str, O_WRONLY | O_CREAT, S_IRWXU);
-                    }
                     handle->nl_fd = globus_l_gfs_nl_fd;
                 }
                 handle->nl_driver = stack_ent->driver; /* doesn't mater which one, just need one.  MUST NOT BE COMMITTED TO TRUNK, UGLY UGLY */
