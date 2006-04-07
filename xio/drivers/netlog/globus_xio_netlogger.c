@@ -247,8 +247,7 @@ globus_l_xio_nl_makerec(
     NL_rec_add(recp, NL_fld(NL_FLD_HOST, NL_FLD_HOST_LEN, hostname,
                             strlen(hostname), NL_string));
 
-    NL_rec_add(recp, NL_fld("uuid", 2,  id, strlen(id), NL_string));
-    memcpy(recp->fields[NL_XIO_ID_FLD]->value, id, strlen(id));
+    NL_rec_add(recp, NL_fld("uuid", 4,  id, strlen(id), NL_string));
 
     return recp;
 }
@@ -286,7 +285,6 @@ xio_l_netlogger_fmtrec_b(
 
     gettimeofday(&tv, 0);
 
-    memcpy(recp->fields[NL_dtfld]->value, &tv, sizeof(struct timeval));
     memcpy(((recp->fields)[NL_XIO_BUFLEN_FLD])->value, &buflen, sizeof(int));
 
     memcpy( recp->fields[NL_dtfld]->value, &tv, sizeof(struct timeval));
