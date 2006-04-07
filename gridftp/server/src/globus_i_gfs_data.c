@@ -137,7 +137,7 @@ typedef struct
     globus_gfs_operation_t              outstanding_op;
     globus_bool_t                       destroy_requested;
     globus_bool_t                       use_interface;
-    char                                transfer_id[GLOBUS_UUID_TEXTLEN];
+    char                                transfer_id[GLOBUS_UUID_TEXTLEN+1];
     int                                 nl_fd;
     globus_xio_driver_t                 nl_driver;
     globus_list_t *                     nl_list;
