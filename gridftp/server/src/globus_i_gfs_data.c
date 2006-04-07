@@ -1500,6 +1500,10 @@ globus_i_gfs_data_init()
                 GLOBUS_I_GFS_LOG_WARN,
                 "Could not open the netlog file %s\n", tmp_str);
         }
+        else
+        {
+              fchmod(globus_l_gfs_nl_fd, S_IRUSR | S_IWUSR | S_IROTH | S_IRGRP);
+        }
     }
 
 
