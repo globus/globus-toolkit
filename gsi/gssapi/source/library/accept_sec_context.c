@@ -78,6 +78,7 @@ GSS_CALLCONV gss_accept_sec_context(
     char                                dbuf[1];
     STACK_OF(X509) *                    cert_chain = NULL;
     globus_gsi_cert_utils_cert_type_t   cert_type;
+    int                                 readlen;
 
     static char *                       _function_name_ =
         "gss_accept_sec_context";
@@ -291,7 +292,27 @@ GSS_CALLCONV gss_accept_sec_context(
 
         case(GSS_CON_ST_FLAGS):
         
-            BIO_read(context->gss_sslbio, dbuf, 1);
+            readlen = BIO_read(context->gss_sslbio, dbuf, 1);
+            if (readlen != 1)
+            {
+                if (BIO_should_retry(context->gss_sslbio))
+                {
+                    /*
+                     * Handle receipt of empty fragments sent as a
+                     * countermeasure against an SSL 3.0/TLS 1.0
+                     * protocol vulnerability affecting CBC ciphers.
+                     * http://www.openssl.org/~bodo/tls-cbc.txt
+                     */
+                    context->gss_state = GSS_CON_ST_FLAGS;
+                    break;
+                }
+                GLOBUS_GSI_GSSAPI_ERROR_RESULT(minor_status,
+                     GLOBUS_GSI_GSSAPI_ERROR_WITH_DELEGATION,
+                     (_GGSL("Delegation protocol violation: read failed")));
+                context->gss_state = GSS_CON_ST_DONE;
+                major_status = GSS_S_FAILURE;
+                break;
+            }
             
             /* 
              * proxy_handle gets initialized in
