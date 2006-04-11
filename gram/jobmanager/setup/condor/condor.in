@@ -576,6 +576,8 @@ sub poll
         {
             $state = Globus::GRAM::JobState::SUSPENDED;
         }
+    } else {
+        $state = Globus::GRAM::JobState::DONE;
     }
 
     if($self->{STDIO_MERGER}) {
