@@ -100,6 +100,14 @@ static int become_daemon(myproxy_server_context_t *server_context);
 
 static void write_pidfile(const char path[]);
 
+static int myproxy_check_policy(myproxy_server_context_t *context,
+      				myproxy_socket_attrs_t *attrs,
+				const char *client_name,
+				const char *policy_name,
+				const char **server_policy,
+				const char *credential_policy,
+				const char **default_credential_policy);
+
 static int myproxy_authorize_accept(myproxy_server_context_t *context,
                                     myproxy_socket_attrs_t *attrs,
 				    myproxy_request_t *client_request,
@@ -1174,6 +1182,52 @@ write_pidfile(const char path[])
     }
 }
 
+/*
+ * check that all following conditions hold:
+ * (1) the client_name matches the server-wide policy (eg authorized_retrievers)
+ * (2) if the per-credential credential_policy isn't empty than the client_name
+ *     is allowed by the policy
+ * (3) if the per-credential credential_policy is empty and the server default
+ *     policy is not than the client_name matches the server-wide policy
+ *     (eg default_retrievers)
+ */
+static int myproxy_check_policy(myproxy_server_context_t *context,
+                                myproxy_socket_attrs_t *attrs,
+				const char *client_name,
+                                const char *policy_name,
+                                const char **server_policy,
+                                const char *credential_policy,
+                                const char **default_credential_policy)
+{
+    int authorization_ok = -1;
+
+    myproxy_debug("applying %s policy", policy_name);
+    authorization_ok = myproxy_server_check_policy_list(server_policy, client_name);
+    if (authorization_ok != 1) {
+       verror_put_string("\"%s\" not authorized by server's %s policy",
+	                 client_name, policy_name);
+       return authorization_ok;
+    }
+
+    if (credential_policy != NULL) {
+       authorization_ok = myproxy_server_check_policy(credential_policy, client_name);
+       if (authorization_ok != 1) {
+	  verror_put_string("\"%s\" not authorized by credential's %s policy",
+		            client_name, policy_name);
+	  return authorization_ok;
+       }
+    } else if (default_credential_policy != NULL) {
+       authorization_ok = myproxy_server_check_policy_list(default_credential_policy, client_name);
+       if (authorization_ok != 1) {
+	  verror_put_string("\"%s\" not authorized by server's default %s policy",
+		            client_name, policy_name);
+	  return authorization_ok;
+       }
+    }
+
+    return 1;
+}
+
 
 /* Check authorization for all incoming requests.  The authorization
  * rules are as follows.
@@ -1241,13 +1295,15 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 
    switch (client_request->command_type) {
    case MYPROXY_RETRIEVE_CERT:
-       myproxy_debug("applying authorized_key_retrievers policy");
        authorization_ok =
-	   myproxy_server_check_policy_list((const char **)context->authorized_key_retrievers_dns, client_name);
-       if (authorization_ok != 1) {
-	   verror_put_string("\"%s\" not authorized by server's authorized_key_retrievers policy", client_name);
-	   goto end;
-       }
+	  myproxy_check_policy(context, attrs, client_name,
+	                "authorized_key_retrievers",
+	                (const char **)context->authorized_key_retrievers_dns,
+			creds.keyretrieve,
+			(const char **)context->default_key_retrievers_dns);
+       if (authorization_ok != 1)
+	  goto end;
+       
        if (!credentials_exist) {
 	   if (client_request->credname) {
 	       verror_put_string("No credentials exist for username \"%s\".",
@@ -1257,58 +1313,22 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 	   }
 	   goto end;
        }
-       if (creds.keyretrieve) {
-	   authorization_ok =
-	       myproxy_server_check_policy(creds.keyretrieve, client_name);
-	   if (authorization_ok != 1) {
-	       verror_put_string("\"%s\" not authorized by credential's key retriever policy", client_name);
-	       goto end;
-	   }
-       } else if (context->default_key_retrievers_dns) {
-	   authorization_ok =
-	       myproxy_server_check_policy_list((const char **)context->default_key_retrievers_dns, client_name);
-	   if (authorization_ok != 1) {
-	       verror_put_string("\"%s\" not authorized by server's default_key_retrievers policy", client_name);
-	       goto end;
-	   }
-       }
        /* fall through to MYPROXY_GET_PROXY */
 
    case MYPROXY_GET_PROXY:
        /* check trusted_retrievers */
        if (context->trusted_retriever_dns) {
-	   authorization_ok =
-	       myproxy_server_check_policy_list((const char **)context->trusted_retriever_dns, client_name);
-	   if (authorization_ok == 1) {
-	       myproxy_debug("passed trusted_retrievers policy");
-	       /* check per-credential policy */
-	       if (creds.trusted_retrievers) {
-		   authorization_ok =
-		       myproxy_server_check_policy(creds.trusted_retrievers,
-						   client_name);
-		   if (authorization_ok == 1) {
-		       myproxy_debug("passed per-credential trusted retrieval policy");
-		       trusted_retriever = 1;
-		       myproxy_log("trusted retrievers policy matched");
-		   } else {
-		       verror_put_string("failed per-credential trusted retrieval policy");
-		   }
-	       } else if (context->default_trusted_retriever_dns) {
-		   authorization_ok =
-		       myproxy_server_check_policy_list((const char **)context->default_trusted_retriever_dns, client_name);
-		   if (authorization_ok == 1) {
-		       myproxy_debug("passed default_trusted_retrievers policy");
-		       trusted_retriever = 1;
-		       myproxy_log("trusted retrievers policy matched");
-		   } else {
-		       verror_put_string("failed default_trusted_retrievers policy");
-		   }
-	       }
-	   } else {
-	       verror_put_string("failed trusted_retrievers policy");
+	   trusted_retriever =
+	       myproxy_check_policy(context, attrs, client_name,
+			"trusted_retrievers",
+			(const char **)context->trusted_retriever_dns,
+			creds.trusted_retrievers,
+			(const char **)context->default_trusted_retriever_dns);
+	   if (trusted_retriever) {
+	       myproxy_log("trusted retrievers policy matched");
 	   }
        }
-
+			
        authorization_ok =
 	   authenticate_client(attrs, &creds, client_request, client_name,
 			       context, trusted_retriever);
@@ -1319,58 +1339,22 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
        }
 
        if (!credential_renewal) {
-	   myproxy_debug("retrieval authorization");
-	   /* check server-wide policy */
 	   authorization_ok =
-	       myproxy_server_check_policy_list((const char **)context->authorized_retriever_dns, client_name);
-	   if (authorization_ok != 1) {
-	       verror_put_string("\"%s\" not authorized by server's authorized_retrievers policy", client_name);
-	       goto end;
-	   }
-	   /* check per-credential policy */
-	   if (creds.retrievers) {
-	       authorization_ok =
-		   myproxy_server_check_policy(creds.retrievers, client_name);
-	       if (authorization_ok != 1) {
-		   verror_put_string("\"%s\" not authorized by credential's retriever policy", client_name);
-		   goto end;
-	       }
-	   } else if (context->default_retriever_dns) {
-	       authorization_ok =
-		   myproxy_server_check_policy_list((const char **)context->default_retriever_dns, client_name);
-	       if (authorization_ok != 1) {
-		   verror_put_string("\"%s\" not authorized by server's default_retrievers policy", client_name);
-		   goto end;
-	       }
-	   }
-	   break;
+	      myproxy_check_policy(context, attrs, client_name,
+			"authorized_retrievers",
+			(const char **)context->authorized_retriever_dns,
+			creds.retrievers,
+			(const char **)context->default_retriever_dns);
        } else {
-	   myproxy_debug("renewal authorization");
-	   /* check server-wide policy */
 	   authorization_ok =
-	       myproxy_server_check_policy_list((const char **)context->authorized_renewer_dns, client_name);
-	   if (authorization_ok != 1) {
-	       verror_put_string("\"%s\" not authorized by server's authorized_renewers policy", client_name);
-	       goto end;
-	   }
-	   /* check per-credential policy */
-	   if (creds.renewers) {
-	       authorization_ok =
-		   myproxy_server_check_policy(creds.renewers, client_name);
-	       if (authorization_ok != 1) {
-		   verror_put_string("\"%s\" not authorized by credential's renewer policy", client_name);
-		   goto end;
-	       }
-	   } else if (context->default_renewer_dns) {
-	       authorization_ok =
-		   myproxy_server_check_policy_list((const char **)context->default_renewer_dns, client_name);
-	       if (authorization_ok != 1) {
-		   verror_put_string("\"%s\" not authorized by server's default_renewers policy");
-		   goto end;
-	       }
-	   }
-	   break;
+	      myproxy_check_policy(context, attrs, client_name,
+		        "authorized_renewers",
+			(const char **)context->authorized_renewer_dns,
+			creds.renewers,
+			(const char **)context->default_renewer_dns);
        }
+       if (authorization_ok != 1)
+	  goto end;
        break;
 
    case MYPROXY_PUT_PROXY:
