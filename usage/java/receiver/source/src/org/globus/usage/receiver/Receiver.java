@@ -200,6 +200,9 @@ class ReceiverThread extends Thread {
         DatagramPacket packet;
         CustomByteBuffer storage;
 
+        long period = 1000 * 60 * 5;
+        long lastTime = System.currentTimeMillis() + period;
+
 	buf = new byte[UsageMonitorPacket.MAX_PACKET_SIZE];
 	/*this is a reusable receiving buffer big enough to hold any
 	  packet.  After receiving the packet, put it into a CustomByteBuffer
@@ -220,6 +223,11 @@ class ReceiverThread extends Thread {
                     //failed == ring is full
                     log.error("Ring buffer is FULL.  We are LOSING PACKETS!");
 		    this.packetsLost ++;
+                }
+
+                if (System.currentTimeMillis() > lastTime) {
+                    log.error("Queue size: " + theRing.getNumObjects());
+                    lastTime = System.currentTimeMillis() + period;
                 }
 
             } catch (IOException e) {
