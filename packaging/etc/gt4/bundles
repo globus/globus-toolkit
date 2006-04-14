@@ -284,3 +284,9 @@ BUNDLE gt4-replicator
         globus_wsrf_replicator_common_schema
         globus_wsrf_replicator_service_java
 
+BUNDLE gt4-wsrls
+        globus_wsrf_replicalocation_common_schema
+        globus_wsrf_replicalocation_common_java
+        globus_wsrf_replicalocation_client_java
+        globus_wsrf_replicalocation_service_java
+        globus_wsrf_replicalocation_resource_java

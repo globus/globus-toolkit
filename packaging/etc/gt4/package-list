@@ -166,6 +166,7 @@ globus_wsrf_replicator_client_java          ws-replica/replicator/client/java/so
 globus_wsrf_replicator_common_java          ws-replica/replicator/common/java/source
 globus_wsrf_replicator_common_schema        ws-replica/replicator/common/schema
 globus_wsrf_replicator_service_java         ws-replica/replicator/service/java/source
+
 globus_wsrf_gram_reliable_create_test       ws-gram/client/reliable_create_test gpt
 globus_scheduler_event_generator_job_manager       ws-gram/job_monitoring/job-manager/c/source gpt
 globus_scheduler_event_generator_job_manager_setup ws-gram/job_monitoring/job-manager/c/setup gpt
@@ -174,3 +175,9 @@ globus_crft_util                    ws-transfer/reliable/client/c/crft_util/sour
 globus_c_wsrf_service_group                 wsrf/c/core/servicegroup/source gpt
 globus_c_wsrf_service_group_test            wsrf/c/core/servicegroup/test gpt
 globus_c_service_group_test_schema          wsrf/c/core/servicegroup/test_wsdl gpt
+
+globus_wsrf_replicalocation_common_schema   ws-replica/location/common/schema
+globus_wsrf_replicalocation_common_java     ws-replica/location/common/java/source
+globus_wsrf_replicalocation_client_java     ws-replica/location/client/java/source
+globus_wsrf_replicalocation_service_java    ws-replica/location/service/java/source
+globus_wsrf_replicalocation_resource_java   ws-replica/location/resource/java/source
