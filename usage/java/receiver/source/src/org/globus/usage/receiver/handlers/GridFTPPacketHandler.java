@@ -171,7 +171,7 @@ public class GridFTPPacketHandler extends DefaultPacketHandler {
 	try {
 	    con = DriverManager.getConnection(connectionPoolName);
 	    runningSummary.storeToDB(con);
-	    System.out.println("Did the hourly write-to-database");
+	    log.error("Did the hourly write-to-database");
 	    //this will call KnownHosts.writeToDatabase
 	}
 	catch (SQLException e) {
