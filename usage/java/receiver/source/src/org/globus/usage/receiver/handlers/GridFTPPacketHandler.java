@@ -40,16 +40,20 @@ public class GridFTPPacketHandler extends DefaultPacketHandler {
     private static Log log = LogFactory.getLog(GridFTPPacketHandler.class);
 
     private long mcsPacketCount, externalPacketCount;
+
+    /*
     private long longestDelay;
     private HistogramBucketArray delayHistogram;
     private HourSummary runningSummary;
     private AggregateSummary dailySummary;
-    private Connection summaryDBCon;
     private Date startOfHour;
+    */
+
     private String[] domainsToFilter;
     private String tableForMCS, tableForOther;
     private static final String newline = System.getProperty("line.separator");
-    private static final long MILLISECONDS_IN_HOUR = 3600000;
+
+    //private static final long MILLISECONDS_IN_HOUR = 3600000;
     private static final String connectionPoolName = "jdbc:apache:commons:dbcp:usagestats";
 
     public GridFTPPacketHandler(String db, String tableForMCS, String tableForOther,
@@ -66,11 +70,14 @@ public class GridFTPPacketHandler extends DefaultPacketHandler {
 	this.tableForMCS = tableForMCS;
 	this.tableForOther = tableForOther;
 	this.mcsPacketCount = this.externalPacketCount = 0;
+
+        /*
 	this.startOfHour = roundDateDownToHour();
 	this.runningSummary = new HourSummary(this.startOfHour);
 	this.dailySummary = new AggregateSummary(this.startOfHour);
 	this.longestDelay = 0;
 	this.delayHistogram = new HistogramBucketArray(new double[] {-7.0*MILLISECONDS_IN_HOUR, -6.0*MILLISECONDS_IN_HOUR, -5.0*MILLISECONDS_IN_HOUR, -4.0*MILLISECONDS_IN_HOUR, -3.0*MILLISECONDS_IN_HOUR, -7200000.0, -3600000.0, -600000.0, -60000.0, -10000.0, -1000.0, -100.0, 0, 100.0, 1000.0, 10000.0, 60000.0, 600000.0, 3600000.0});
+        */
 
 	Connection con = DriverManager.getConnection(connectionPoolName);
 	KnownHosts.readFromDatabase(con);
@@ -87,7 +94,7 @@ public class GridFTPPacketHandler extends DefaultPacketHandler {
 
     public void resetCounts() {
 	mcsPacketCount = externalPacketCount = 0;
-	runningSummary = new HourSummary(new Date());
+	//runningSummary = new HourSummary(new Date());
     }
 
     public String getStatus() {
@@ -145,6 +152,7 @@ public class GridFTPPacketHandler extends DefaultPacketHandler {
 	}
 	else  {
 
+            /*
 	    //Check current date against startOfHour to see whether we should start a new 
 	    //hourly summary:
 	    Date now = new Date();
@@ -160,18 +168,20 @@ public class GridFTPPacketHandler extends DefaultPacketHandler {
 	    }
 	    //update summary with packet
 	    this.runningSummary.addRecord(record);
-	    this.externalPacketCount ++;
+            */
 
+	    this.externalPacketCount ++;
 	    writePacketToTable(pack, this.tableForOther);
 	}
     }
 
+    /*
     private void hourlyDatabaseUpdate() {
 	Connection con = null;
 	try {
 	    con = DriverManager.getConnection(connectionPoolName);
 	    runningSummary.storeToDB(con);
-	    log.error("Did the hourly write-to-database");
+	    log.info("Did the hourly write-to-database");
 	    //this will call KnownHosts.writeToDatabase
 	}
 	catch (SQLException e) {
@@ -194,6 +204,7 @@ public class GridFTPPacketHandler extends DefaultPacketHandler {
 	temp.set(Calendar.MILLISECOND, 0);
 	return temp.getTime();
     }
+    */
 
     /*Rewrite the following two methods to eliminate the callback into super.handlePacket*/
     private void writePacketToTable(UsageMonitorPacket pack, String tablename) {
