@@ -4033,6 +4033,7 @@ globus_l_gfs_data_end_transfer_kickout(
                 attr,
                 op->data_handle->nl_driver,
                 7, /*GLOBUS_XIO_NETLOGGER_CNTL_CHEATER */
+                GLOBUS_FALSE,
                 op->node_count,
                 op->node_count * op->data_handle->info.nstreams,
                 &op->start_timeval,
@@ -5367,6 +5368,37 @@ globus_gridftp_server_begin_transfer(
     gettimeofday(&op->start_timeval, NULL);
     op->event_mask = event_mask;
     op->event_arg = event_arg;
+
+    if(op->data_handle->nl_fd > 0)
+    {
+        globus_gfs_transfer_info_t *    info;
+
+        info = (globus_gfs_transfer_info_t *) op->info_struct;
+        globus_xio_attr_t attr;
+        globus_xio_attr_init(&attr);
+        globus_xio_attr_cntl(
+            attr,
+            op->data_handle->nl_driver,
+            7, /*GLOBUS_XIO_NETLOGGER_CNTL_CHEATER */
+            GLOBUS_TRUE,
+            op->node_count,
+            op->node_count * op->data_handle->info.nstreams,
+            &op->start_timeval,
+            NULL,
+            op->remote_ip ? op->remote_ip : "0.0.0.0",
+            op->data_handle->info.blocksize,
+            op->data_handle->info.tcp_bufsize,
+            info->pathname,
+            op->bytes_transferred,
+            NULL,
+            "/",
+            NULL,
+            op->session_handle->username,
+            op->data_handle->nl_fd,
+            op->data_handle->transfer_id);
+        globus_xio_attr_destroy(attr);
+    }
+
 
     /* increase refrence count for the events.  This gets decreased when
         the COMPLETE event occurs.  it is safe to increment outside of a
