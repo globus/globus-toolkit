@@ -358,7 +358,11 @@ When specifying certificate_issuer_cert above, you can map account names
 to certificate subject distinguished names for the issued
 certificates using this call-out.  It will be passed the
 authenticated username as the single command argument.  On success,
-it should write the distinguished name to stdout and exit with zero
+it should write the distinguished name 
+in OpenSSL one line format
+(for example,
+"/C=US/O=National Computational Science Alliance/CN=Jim Basney")
+to stdout and exit with zero
 status.  On error, it should write to stderr and exit with nonzero
 status.  If it is not defined, then mapfile lookup will be executed
 instead (see certificate_mapfile above).
