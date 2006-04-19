@@ -104,6 +104,7 @@ public class DefaultPacketHandler implements PacketHandler {
         } catch(SQLException e) {
             this.lostCount++;
             log.error(e.getMessage());
+            log.error(pack.toString());
             String packetData = getPacketContentsBinary(pack);
 	    log.error("Packet contents:");
             log.error(packetData);

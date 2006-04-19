@@ -28,11 +28,13 @@ import java.sql.PreparedStatement;
 import java.sql.Connection;
 import java.sql.DriverManager;
 
+/*
 import org.globus.cog.monitor.guss.HourSummary;
 import org.globus.cog.monitor.guss.KnownHosts;
 import org.globus.cog.monitor.guss.AggregateSummary;
 import org.globus.cog.monitor.guss.GFTPRecord;
 import org.globus.cog.monitor.guss.HistogramBucketArray;
+*/
 
 /*Handler which writes GridFTPPackets to database.*/
 public class GridFTPPacketHandler extends DefaultPacketHandler {
@@ -79,9 +81,11 @@ public class GridFTPPacketHandler extends DefaultPacketHandler {
 	this.delayHistogram = new HistogramBucketArray(new double[] {-7.0*MILLISECONDS_IN_HOUR, -6.0*MILLISECONDS_IN_HOUR, -5.0*MILLISECONDS_IN_HOUR, -4.0*MILLISECONDS_IN_HOUR, -3.0*MILLISECONDS_IN_HOUR, -7200000.0, -3600000.0, -600000.0, -60000.0, -10000.0, -1000.0, -100.0, 0, 100.0, 1000.0, 10000.0, 60000.0, 600000.0, 3600000.0});
         */
 
+        /*
 	Connection con = DriverManager.getConnection(connectionPoolName);
 	KnownHosts.readFromDatabase(con);
 	con.close();
+        */
     }
 
     public boolean doCodesMatch(short componentCode, short versionCode) {
@@ -126,6 +130,7 @@ public class GridFTPPacketHandler extends DefaultPacketHandler {
 
     /*org.globus.usage.packets.GFTPTextPacket and org.globus.cog.monitor.guss.GFTPRecord represent
       basically the same thing; this converts the former to the latter:*/
+    /*
     private org.globus.cog.monitor.guss.GFTPRecord convertToRecord(GFTPTextPacket packet) {
 	byte storeOrRetrByte = (byte)(packet.isStorOperation()?0:1);
 	return new GFTPRecord(packet.getStartTime(), packet.getEndTime(), packet.getHostIP().toString(), 
@@ -134,7 +139,8 @@ public class GridFTPPacketHandler extends DefaultPacketHandler {
 			      packet.getFTPReturnCode(), packet.getGridFTPVersion());
 	
     }
-   
+    */
+
     public void handlePacket(UsageMonitorPacket pack) {
 	/*We do two things with each UsageMonitorPacket: we wrpite it
 	  to the database, and if it's not an internal-to-MCS packet, we also
@@ -142,7 +148,8 @@ public class GridFTPPacketHandler extends DefaultPacketHandler {
 	  packet count...*/
 
 	GFTPTextPacket gftp = (GFTPTextPacket)pack;
-        GFTPRecord record = convertToRecord(gftp);
+
+        //GFTPRecord record = convertToRecord(gftp);
 
 	String hostname = gftp.getHostIP().toString();
 	

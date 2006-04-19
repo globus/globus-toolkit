@@ -15,10 +15,10 @@
  */
 
 package org.globus.usage.packets;
+
 import java.net.InetAddress;
 import java.net.Inet6Address;
 import java.net.UnknownHostException;
-import java.nio.ReadOnlyBufferException;
 import java.sql.Timestamp;
 import java.sql.PreparedStatement;
 import java.sql.Connection;
@@ -78,7 +78,7 @@ public class RLSMonitorPacket extends CStylePacket {
 	ps.setShort(1, this.getComponentCode());
 	ps.setShort(2, this.getPacketVersion());
 	ps.setTimestamp(3, new Timestamp(this.getTimestamp()));
-	ps.setString(4, this.getHostIP().toString());
+	ps.setString(4, Util.getAddressAsString(getHostIP()));
 
 	ps.setString(5, this.versionString);
 	ps.setLong(6, this.uptime);

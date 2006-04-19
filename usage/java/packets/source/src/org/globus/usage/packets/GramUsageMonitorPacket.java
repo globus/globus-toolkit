@@ -21,7 +21,6 @@
 package org.globus.usage.packets;
 
 import java.net.Inet6Address;
-import java.nio.ReadOnlyBufferException;
 import java.sql.Timestamp;
 import java.sql.PreparedStatement;
 import java.sql.Connection;
@@ -339,14 +338,7 @@ public class GramUsageMonitorPacket
 	ps.setShort(1, this.getComponentCode());
 	ps.setShort(2, this.getPacketVersion());
 	ps.setTimestamp(3, new Timestamp(this.getTimestamp()));
-
-	if (this.getHostIP() == null) {
-	    ps.setString(4, "unknown");
-	}
-	else {
-	    ps.setString(4, this.getHostIP().toString());
-	}
-
+        ps.setString(4, Util.getAddressAsString(getHostIP()));
 	ps.setTimestamp(5, new Timestamp(this.creationTime.getTime()));
 	ps.setString(6, this.localResourceManager);
 	ps.setBoolean(7, this.jobCredentialEndpointUsed);

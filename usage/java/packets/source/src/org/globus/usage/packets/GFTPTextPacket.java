@@ -15,10 +15,10 @@
  */
 
 package org.globus.usage.packets;
+
 import java.net.InetAddress;
 import java.net.Inet6Address;
 import java.net.UnknownHostException;
-import java.nio.ReadOnlyBufferException;
 import java.sql.Timestamp;
 import java.sql.PreparedStatement;
 import java.sql.Connection;
@@ -250,13 +250,7 @@ HOSTNAME=mayed.mcs.anl.gov START=20050225073026.426286 END=20050225073026.560613
 	ps.setShort(2, getPacketVersion());
 	ps.setTimestamp(3, new Timestamp(timeSent));
 	ps.setByte(4, getIPVersion());
-	//ps.setBytes(5, senderAddress.getAddress());
-	if (senderAddress == null) {
-	    ps.setString(5, "unknown");
-	}
-	else {
-	    ps.setString(5, senderAddress.toString());
-	}
+        ps.setString(5, Util.getAddressAsString(senderAddress));
 	ps.setString(6, gridFTPVersion);
 	ps.setByte(7, storOrRetr);
 	if (startTime == null)

@@ -18,7 +18,6 @@ package org.globus.usage.packets;
 
 import java.net.InetAddress;
 import java.net.Inet6Address;
-import java.nio.ReadOnlyBufferException;
 import java.sql.Timestamp;
 import java.sql.PreparedStatement;
 import java.sql.Connection;
@@ -208,12 +207,7 @@ public class GFTPMonitorPacket extends IPTimeMonitorPacket {
 	ps.setShort(2, getPacketVersion());
 	ps.setTimestamp(3, new Timestamp(timeSent));
 	ps.setByte(4, (byte)getIPVersion());
-	if (senderAddress == null) {
-	    ps.setString(5, "unknown");
-	}
-	else {
-	    ps.setString(5, senderAddress.toString());
-	}
+        ps.setString(5, Util.getAddressAsString(senderAddress));
 	ps.setString(6, gridFTPVersion);
 	ps.setByte(7, storOrRetr);
 	if (startTime == null)
