@@ -121,6 +121,7 @@ globus_l_xio_nl_sprintf(
 static
 void
 xio_l_netlogger_log_transfer(
+    globus_bool_t                       start,
     int                                 stripe_count,
     int                                 stream_count,
     struct timeval *                    start_t,
@@ -156,45 +157,86 @@ xio_l_netlogger_log_transfer(
         hostname = strdup("0.0.0.0");
     }
 
-    len = globus_l_xio_nl_sprintf(
-        out_buf,
-        "gridftp.FTP_INFO",
-        NL_LVL_INFO,
-        "HOST=s "
-        "PROG=s "
-        "START.TM=d "
-        "END.TM=d "
-        "USER=s "
-        "FILE=s "
-        "BUFFER=l "
-        "BLOCK=l "
-        "NBYTES=l "
-        "VOLUME=s "
-        "STREAMS=i "
-        "STRIPES=i "
-        "DEST=s "
-        "TYPE=s "
-        "uu=s "
-        "CODE=i",
-        /* end time */
-        hostname,
-        "globus-gridftp-server",
-        /* start time */
-        start_t->tv_sec + start_t->tv_usec/1e6,
-        end_t->tv_sec + end_t->tv_usec/1e6,
-        /* other args */
-        username,
-        fname,
-        (long long)win_size,
-        (long long) blksize,
-        (long long)nbytes,
-        volume,
-        stream_count,
-        stripe_count,
-        dest_ip,
-        type,
-        trans_id,
-        code);
+    if(!start)
+    {
+        len = globus_l_xio_nl_sprintf(
+            out_buf,
+            "gridftp.FTP_INFO",
+            NL_LVL_INFO,
+            "HOST=s "
+            "PROG=s "
+            "START.TM=d "
+            "END.TM=d "
+            "USER=s "
+            "FILE=s "
+            "BUFFER=l "
+            "BLOCK=l "
+            "NBYTES=l "
+            "VOLUME=s "
+            "STREAMS=i "
+            "STRIPES=i "
+            "DEST=s "
+            "TYPE=s "
+            "uu=s "
+            "CODE=i",
+            /* end time */
+            hostname,
+            "globus-gridftp-server",
+            /* start time */
+            start_t->tv_sec + start_t->tv_usec/1e6,
+            end_t->tv_sec + end_t->tv_usec/1e6,
+            /* other args */
+            username,
+            fname,
+            (long long)win_size,
+            (long long) blksize,
+            (long long)nbytes,
+            volume,
+            stream_count,
+            stripe_count,
+            dest_ip,
+            type,
+            trans_id,
+            code);
+    }
+    else
+    {
+        len = globus_l_xio_nl_sprintf(
+            out_buf,
+            "gridftp.FTP_INFO.start",
+            NL_LVL_INFO,
+            "HOST=s "
+            "PROG=s "
+            "START.TM=d "
+            "USER=s "
+            "FILE=s "
+            "BUFFER=l "
+            "BLOCK=l "
+            "NBYTES=l "
+            "VOLUME=s "
+            "STREAMS=i "
+            "STRIPES=i "
+            "DEST=s "
+            "uu=s "
+            "CODE=i",
+            /* end time */
+            hostname,
+            "globus-gridftp-server",
+            /* start time */
+            start_t->tv_sec + start_t->tv_usec/1e6,
+            /* other args */
+            username,
+            fname,
+            (long long)win_size,
+            (long long) blksize,
+            (long long)nbytes,
+            volume,
+            stream_count,
+            stripe_count,
+            dest_ip,
+            trans_id,
+            code);
+    }
 
     write(fd, out_buf, len);
 }
@@ -661,7 +703,9 @@ globus_l_xio_netlogger_cntl(
                 char *                  username;
                 int                     fd;
                 char *                  trans_id;
+                globus_bool_t           start;
 
+                start = va_arg(ap, globus_bool_t);
                 stripe_count = va_arg(ap, int);
                 stream_count = va_arg(ap, int);
                 start_gtd_time = va_arg(ap, struct timeval *);
@@ -679,6 +723,7 @@ globus_l_xio_netlogger_cntl(
                 trans_id = va_arg(ap, char *);
 
                 xio_l_netlogger_log_transfer(
+                    start,
                     stripe_count,
                     stream_count,
                     start_gtd_time,
