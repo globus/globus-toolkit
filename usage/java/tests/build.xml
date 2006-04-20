@@ -14,6 +14,7 @@
     <property name="package.name" value="globus_usage_tests"/>
     <property name="gar.name" value="${package.name}.gar"/>
     <property name="jar.name" value="${package.name}.jar"/>
+    <property name="reports.tests" value="test-reports"/>
     <property name="build.dir"  location="build"/>
     <property name="build.dest" location="build/classes"/>
     <property name="build.lib.dir" location="build/lib"/>
@@ -61,7 +62,7 @@
         <delete dir="tmp"/>
         <delete dir="${build.dir}"/>
         <delete file="${gar.name}"/>
-        <delete dir="${test-reports.dir}"/>
+        <delete dir="${reports.tests}"/>
     </target>
 
     <target name="deploy" depends="dist">
@@ -77,5 +78,29 @@
     </target>
 
     <target name="all" depends="deploy"/>
+
+
+   <target name="test" depends="compile">
+	<mkdir dir = "${reports.tests}" />
+	<junit printsummary="yes" haltonfailure="yes" timeout="600000">
+            <classpath>
+                <pathelement location="${build.dest}"/>
+                <fileset dir="${deploy.dir}/lib">
+                    <include name="**/*.jar"/>
+                </fileset>
+            </classpath>
+
+            <formatter type="plain" />
+
+            <batchtest fork="yes" todir="${reports.tests}">
+               <fileset dir="src">
+                  <include name="**/*Test*.java"/>
+                  <exclude name="**/ReceiverThreadTester.java"/>
+                  <exclude name="**/SendReceiveTester.java"/>
+                  <exclude name="**/UnitTester.java"/>
+               </fileset>
+            </batchtest>
+	</junit>
+  </target>
 
 </project>

@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-package org.globus.usage;
-
 import junit.framework.TestCase;
 import junit.framework.Test;
 import junit.framework.Assert;

@@ -44,7 +44,7 @@ public class ReceiverThreadTester extends TestCase {
     }
 
     protected void setUp() {
-	theRing = new RingBuffer(100);
+	theRing = new RingBufferArray(100);
 	try {   
 	    receiverThread = new ReceiverThread(testPort, theRing);
 	    receiverThread.start();

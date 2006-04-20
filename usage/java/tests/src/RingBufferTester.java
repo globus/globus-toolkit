@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-package org.globus.usage;
-
 import junit.framework.TestCase;
 import junit.framework.Test;
 import junit.framework.Assert;
@@ -23,6 +21,7 @@ import junit.framework.TestSuite;
 
 import org.globus.usage.packets.CustomByteBuffer;
 import org.globus.usage.receiver.RingBuffer;
+import org.globus.usage.receiver.RingBufferArray;
 
 public class RingBufferTester extends TestCase {
 
@@ -34,7 +33,7 @@ public class RingBufferTester extends TestCase {
     }
 
     protected void setUp() {
-	ringBuffer = new RingBuffer(5);
+	ringBuffer = new RingBufferArray(5);
 
 	pack1 = new CustomByteBuffer(1);
 	pack2 = new CustomByteBuffer(1);
