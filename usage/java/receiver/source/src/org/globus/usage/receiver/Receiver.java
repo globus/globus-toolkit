@@ -56,7 +56,7 @@ public class Receiver {
                     Properties props) 
         throws IOException {
 
-        theRing = new RingBuffer(ringBufferSize);
+        theRing = new RingBufferArray(ringBufferSize);
         handlerList = new LinkedList();
 
         /*Start two threads: a listener thread which listens on the port, and
