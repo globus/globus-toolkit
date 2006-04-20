@@ -15,11 +15,13 @@
  */
 package org.globus.usage.packets;
 
+import java.io.Serializable;
+
 /*
  * This replaces the java.nio.ByteBuffer class which is not in Java 
  * platform 1.3.
  */
-public class CustomByteBuffer {
+public class CustomByteBuffer implements Serializable {
 
     private int maxSize;
     private int bytesUsed;
