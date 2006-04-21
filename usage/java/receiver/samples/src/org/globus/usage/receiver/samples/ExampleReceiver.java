@@ -50,7 +50,7 @@ public class ExampleReceiver {
 	int ringBufferSize = 0;
         Properties props = new Properties();
         InputStream propsIn;
-        Receiver receiver;
+        final Receiver receiver;
 
         GridFTPPacketHandler gftpHandler;
 	RFTPacketHandler rftHandler;
@@ -106,6 +106,14 @@ public class ExampleReceiver {
 
             receiver = new Receiver(port, ringBufferSize, props);
             
+            Thread shutdownThread = (new Thread() {
+                public void run() {
+                    System.out.println("Shutting down...");
+                    receiver.shutDown();
+                }
+            });
+            Runtime.getRuntime().addShutdownHook(shutdownThread);
+
             /*gftpHandler is an example of a PacketHandler subclass.  I create
               one here, giving it the neccessary database information, and then
               register it to the receiver; it knows what to do with all
@@ -149,23 +157,19 @@ public class ExampleReceiver {
 class ControlSocketThread extends Thread {
 
     private ServerSocket serverSocket;
-    private Socket clientSocket;
     private boolean shutDown;
     private Receiver receiver;
-    private int controlPort;
 
     static Log log = LogFactory.getLog(ControlSocketThread.class);
 
-    public ControlSocketThread (Receiver receiver, int controlPort) throws SocketException {
+    public ControlSocketThread (Receiver receiver, int controlPort) 
+        throws IOException {
+        super("ReceiverControlThread");
+
 	this.receiver = receiver;
-	this.controlPort = controlPort;
 	this.shutDown = false;
 
-	try {
-	    serverSocket = new ServerSocket(controlPort);
-	} catch (IOException e) {
-	    log.error("Couldn't open server socket on port "+controlPort);
-	}
+        this.serverSocket = new ServerSocket(controlPort);
     }
 
     public void run() {
@@ -177,29 +181,36 @@ class ControlSocketThread extends Thread {
 	String inputLine, outputLine;
 
 	while (!shutDown) {
+            Socket clientSocket = null;
 	    try {
 		clientSocket = serverSocket.accept();
 		out = new PrintWriter(clientSocket.getOutputStream(), true);
 		in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 
-                inputLine = new String(in.readLine());
+                inputLine = in.readLine();
                 if (inputLine.equals("check")) {
                     out.println(receiver.getStatus(false));
-                }
-                if (inputLine.equals("clear")) {
+                } else if (inputLine.equals("clear")) {
                     out.println(receiver.getStatus(true));
-                }
-                if (inputLine.equals("stop")) {
+                } else if (inputLine.equals("stop")) {
                     allShutDown();
+                    out.println("OK");
+                } else {
+                    out.println("Error: Invalid command");
                 }
 		out.close();
 	    } catch (IOException e) {
-		log.error("Accept failed on port " + controlPort);
-	    }
+		log.error("Error processing control request", e);
+	    } finally {
+                if (clientSocket != null) {
+                    try {
+                        clientSocket.close();
+                    } catch (Exception e) {}
+                }
+            }
 	}
 
 	try {
-	    clientSocket.close();
 	    serverSocket.close();
 	} catch (Exception e) {}
     }
