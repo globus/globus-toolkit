@@ -13,17 +13,11 @@
     <With_Flavors build="yes" />
 
     <Source_Dependencies Type="compile" >
-      <Dependency Name="globus_gss_assist" > <Version > <Simple_Version Major="3" /> </Version> </Dependency>
-      <Dependency Name="gssapi_error" > <Version > <Simple_Version Major="2" /> </Version> </Dependency>
-      <Dependency Name="globus_gssapi_gsi" > <Version > <Simple_Version Major="4" /> </Version> </Dependency>
       <Dependency Name="globus_common" > <Version > <Simple_Version Major="4" /> </Version> </Dependency>
       <Dependency Name="globus_core" > <Version > <Simple_Version Major="4" /> </Version> </Dependency>
     </Source_Dependencies>
 
     <Source_Dependencies Type="lib_link" >
-      <Dependency Name="globus_gss_assist" > <Version > <Simple_Version Major="3" /> </Version> </Dependency>
-      <Dependency Name="gssapi_error" > <Version > <Simple_Version Major="2" /> </Version> </Dependency>
-      <Dependency Name="globus_gssapi_gsi" > <Version > <Simple_Version Major="4" /> </Version> </Dependency>
       <Dependency Name="globus_common" > <Version > <Simple_Version Major="4" /> </Version> </Dependency>
     </Source_Dependencies>
 
