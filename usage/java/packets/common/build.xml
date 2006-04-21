@@ -15,13 +15,13 @@
     <property name="jar.name" value="${package.name}.jar"/>
     <property name="build.dir"  location="build"/>
     <property name="build.dest" location="build/classes"/>
-    <property name="build.lib.dir" location="build/lib"/>
+    <property name="build.lib.dir" location="build/lib/common"/>
     <property name="build.packages" location=
         "${deploy.dir}/share/globus_wsrf_common/build-packages.xml"/>
     <property name="java.debug" value="on"/>
 
     <property name="garjars.id" value="garjars"/>
-    <fileset dir="${build.lib.dir}" id="garjars"/>
+    <fileset dir="build/lib" id="garjars"/>
 
     <target name="init">
         <mkdir dir="${build.dir}"/>
