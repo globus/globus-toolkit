@@ -18,6 +18,13 @@
       <Dependency Name="globus_xio" > <Version > <Simple_Version Major="0" /> </Version> </Dependency>
       <Dependency Name="globus_libtool" > <Version > <Simple_Version Major="1" /> </Version> </Dependency>
       <Dependency Name="globus_gram_protocol" > <Version > <Simple_Version Major="5" /> </Version> </Dependency>
+
+            <Dependency Name="globus_xio_gsi_driver">
+                <Version>
+                    <Simple_Version Major="0"/>
+                </Version>
+            </Dependency>
+
     </Source_Dependencies>
 
     <Source_Dependencies Type="lib_link" >
@@ -25,6 +32,12 @@
       <Dependency Name="globus_xio" > <Version > <Simple_Version Major="0" /> </Version> </Dependency>
       <Dependency Name="globus_libtool" > <Version > <Simple_Version Major="1" /> </Version> </Dependency>
       <Dependency Name="globus_gram_protocol" > <Version > <Simple_Version Major="5" /> </Version> </Dependency>
+            <Dependency Name="globus_xio_gsi_driver">
+                <Version>
+                    <Simple_Version Major="0"/>
+                </Version>
+            </Dependency>
+
     </Source_Dependencies>
     
 
