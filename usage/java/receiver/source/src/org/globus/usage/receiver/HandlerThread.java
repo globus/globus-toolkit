@@ -117,29 +117,34 @@ public class HandlerThread extends Thread {
         CustomByteBuffer bufFromRing = null;
 
         while(stillGood) {
-	  try {
-	      /*If ring is empty, this call will result in a thread wait
-		and will not return until there's something to read.*/
-            bufFromRing = theRing.getNext();
+            try {
+                /*If ring is empty, this call will result in a thread wait
+                  and will not return until there's something to read.*/
+                bufFromRing = theRing.getNext();
+                if (bufFromRing == null) {
+                    break;
+                }
+                componentCode = bufFromRing.getShort();
+                versionCode = bufFromRing.getShort();
+                bufFromRing.rewind();
+                tryHandlers(bufFromRing, componentCode, versionCode);
 	    
-            componentCode = bufFromRing.getShort();
-            versionCode = bufFromRing.getShort();
-            bufFromRing.rewind();
-	    tryHandlers(bufFromRing, componentCode, versionCode);
-	    
-	    packetsLogged ++;
-	  } catch (Exception e) {
-	    //this thread has to be able to catch any exception and keep going...
-	    //otherwise a bad packet could shut down the thread!
-	    log.error(e.getMessage());
-	    if (bufFromRing != null) {
-	  	log.error(new String(bufFromRing.array()));
-	    }
-	    errorCount ++;
-	    /*TODO: if this is an I/O exception, i.e. can't talk to database,
-	      maybe restart the connection right here.*/
-  	  }
+                packetsLogged ++;
+            } catch (Exception e) {
+                //this thread has to be able to catch any exception and keep
+                //going... otherwise a bad packet could shut down the thread!
+                log.error("Error during handler processing", e);
+                if (bufFromRing != null) {
+                    log.error(new String(bufFromRing.array()));
+                }
+                errorCount ++;
+                /*TODO: if this is an I/O exception, 
+                  i.e. can't talk to database,
+                  maybe restart the connection right here.*/
+            }
 	}
+
+        closeDatabaseConnectionPool();
     }
 
     private void debugRawPacketContents(CustomByteBuffer buf) {
@@ -193,16 +198,18 @@ public class HandlerThread extends Thread {
           handlers trigger.*/        
     }
 
+    protected void closeDatabaseConnectionPool() {
+        log.info("Closing database connection pool");
+	try {
+	    PoolingDriver driver = 
+                (PoolingDriver)DriverManager.getDriver("jdbc:apache:commons:dbcp:");
+	    driver.closePool(POOL_NAME);
+	} catch(Exception e) {
+	    log.warn(e.getMessage());
+	}
+    }
 
     public void shutDown() {
         stillGood = false; //lets the loop in run() finish
-
-	try {
-	    PoolingDriver driver = (PoolingDriver)DriverManager.getDriver("jdbc:apache:commons:dbcp:");
-	    driver.closePool(POOL_NAME);
-	}
-	catch(Exception e) {
-	    log.warn(e.getMessage());
-	}
     }
 }
