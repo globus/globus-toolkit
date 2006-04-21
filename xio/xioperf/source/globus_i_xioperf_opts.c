@@ -450,28 +450,17 @@ xioperf_l_opts_driver(
     void *                              arg,
     int *                               out_parms_used)
 {
-    globus_result_t                     result;
-    globus_xio_driver_t                 driver;
+    char *                              driver_name;
     globus_i_xioperf_info_t *           info;
 
     info = (globus_i_xioperf_info_t *) arg;
 
-    result = globus_xio_driver_load(opt, &driver);
-    if(result != GLOBUS_SUCCESS)
-    {
-        return result;
-    }
-    result = globus_xio_stack_push_driver(info->stack, driver);
-    if(result != GLOBUS_SUCCESS)
-    {
-        goto error;
-    }
-    globus_hashtable_insert(&info->driver_table, strdup(opt), driver);
+    driver_name = strdup(opt);
+
+    globus_fifo_enqueue(&info->driver_name_q, driver_name);
     *out_parms_used = 1;
 
     return GLOBUS_SUCCESS;
-error:
-    return result;
 }
 
 static

@@ -624,7 +624,7 @@ globus_xio_stack_copy(
     xio_stack_src = src;
 
     xio_stack_dst = (globus_i_xio_stack_t *)
-            globus_malloc(sizeof(globus_i_xio_stack_t));
+        globus_calloc(1, sizeof(globus_i_xio_stack_t));
 
     /* check for memory alloc failure */
     if(xio_stack_dst == NULL)
@@ -633,7 +633,6 @@ globus_xio_stack_copy(
         goto err;
     }
 
-    memset(xio_stack_dst, 0, sizeof(globus_i_xio_stack_t));
     xio_stack_dst->size = xio_stack_src->size;
     xio_stack_dst->driver_stack = globus_list_copy(
 					xio_stack_src->driver_stack);

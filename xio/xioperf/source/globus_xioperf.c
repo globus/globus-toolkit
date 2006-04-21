@@ -215,6 +215,7 @@ xioperf_l_parse_opts(
         goto error;
     }
 
+    globus_fifo_init(&info->driver_name_q);
     globus_mutex_init(&info->mutex, NULL);
     globus_cond_init(&info->cond, NULL);
     info->server = GLOBUS_TRUE;
@@ -222,11 +223,9 @@ xioperf_l_parse_opts(
     info->len = 8*1024;
     info->block_size = 64*1024;
     info->format = 'm';
-    globus_hashtable_init(&info->driver_table, 8, 
-        globus_hashtable_string_hash,
-        globus_hashtable_string_keyeq);
     GlobusTimeReltimeSet(info->time, 10, 0);
     globus_xio_stack_init(&info->stack, NULL);
+    globus_xio_attr_init(&info->attr);
 
     globus_options_init(
         &opt_h, xioperf_l_opts_unknown, info, globus_i_xioperf_opts_table);
@@ -236,6 +235,13 @@ xioperf_l_parse_opts(
         goto error_result;
     }
 
+    if(globus_fifo_size(&info->driver_name_q) == 0)
+    {
+        res = GlobusXIOPerfError(
+            "must have at least 1 driver on the stack",
+            GLOBUS_XIO_PERF_ERROR_PARM);
+        goto error_result;
+    }
     if(info->interval > 0 &&
         (info->file || info->bytes_to_transfer)) 
     {
@@ -570,6 +576,164 @@ xioperf_l_interrupt_cb(
     globus_mutex_unlock(&info->mutex);
 }
 
+static
+globus_result_t
+xioperf_l_build_stack(
+    globus_i_xioperf_info_t *           info)
+{
+    char *                              driver_opts;
+    char *                              driver_name;
+    globus_result_t                     res;
+    globus_xio_driver_t                 driver;
+    globus_bool_t                       push_driver;
+    int                                 driver_count = 0;
+
+    while(globus_fifo_size(&info->driver_name_q) > 0)
+    {
+        push_driver = GLOBUS_TRUE;
+        driver_name = (char *) globus_fifo_dequeue(&info->driver_name_q);
+
+        driver_opts = strchr(driver_name, ':');
+        if(driver_opts != NULL)
+        {
+            *driver_opts = '\0';
+            driver_opts++;
+        }
+        
+        res = globus_xio_driver_load(driver_name, &driver);
+        if(res != GLOBUS_SUCCESS)
+        {
+            goto error;
+        }
+        if(driver_opts != NULL)
+        {
+            globus_xio_attr_cntl(
+                info->attr,
+                driver,
+                GLOBUS_XIO_SET_STRING_OPTIONS,
+                driver_opts);
+        }
+
+        /* driver speical case code */
+        if(strcmp(driver_name, "tcp") == 0)
+        {
+            if(info->window > 0)
+            {
+                int                         w = (int)info->window;
+                res = globus_xio_attr_cntl(
+                    info->attr, driver, GLOBUS_XIO_TCP_SET_SNDBUF, w);
+                res = globus_xio_attr_cntl(
+                    info->attr, driver, GLOBUS_XIO_TCP_SET_RCVBUF, w);
+            }
+            globus_xio_attr_cntl(
+                info->attr, driver, GLOBUS_XIO_TCP_SET_NODELAY, info->nodelay);
+            if(info->bind_addr != NULL)
+            {
+                globus_xio_attr_cntl(
+                    info->attr,
+                    driver, GLOBUS_XIO_TCP_SET_INTERFACE, info->bind_addr);
+            }
+            if(info->port != 0)
+            {
+                globus_xio_attr_cntl(
+                    info->attr, driver, GLOBUS_XIO_TCP_SET_PORT, info->port);
+            }
+        }
+        if(strcmp(driver_name, "gsi") == 0)
+        {
+            if(info->subject != NULL)
+            {
+                gss_buffer_desc             send_tok;
+                OM_uint32                   min_stat;
+                OM_uint32                   maj_stat;
+                gss_name_t                  target_name;
+
+                send_tok.value = (void *) info->subject;
+                send_tok.length = strlen(info->subject) + 1;
+                maj_stat = gss_import_name(
+                    &min_stat,
+                    &send_tok,
+                    GSS_C_NT_USER_NAME,
+                    &target_name);
+                if(maj_stat == GSS_S_COMPLETE &&
+                    target_name != GSS_C_NO_NAME)
+                {
+                    globus_xio_attr_cntl(
+                        info->attr, driver,
+                        GLOBUS_XIO_GSI_SET_TARGET_NAME,
+                        target_name);
+                    gss_release_name(&min_stat, &target_name);
+                    globus_xio_attr_cntl(
+                        info->attr, driver,
+                        GLOBUS_XIO_GSI_SET_AUTHORIZATION_MODE,
+                        GLOBUS_XIO_GSI_IDENTITY_AUTHORIZATION);
+                }
+            }
+        }
+        if(strcmp(driver_name, "quanta_rbudp") == 0)
+        {
+            if(info->reader)
+            {
+                globus_xio_attr_cntl(
+                    info->attr, driver,
+                    O_RDONLY,
+                    NULL);
+            }
+            else
+            {
+                globus_xio_attr_cntl(
+                    info->attr, driver,
+                    O_WRONLY,
+                    NULL);
+            }
+        }
+        if(strcmp(driver_name, "mode_e") == 0)
+        {
+            globus_xio_attr_t           new_attr;
+
+            if(driver_count > 0)
+            {
+                globus_xio_attr_init(&new_attr);
+                globus_xio_attr_cntl(
+                    new_attr, driver, GLOBUS_XIO_MODE_E_SET_STACK,
+                    info->stack);
+                globus_xio_attr_cntl(
+                    new_attr, driver, GLOBUS_XIO_MODE_E_SET_STACK_ATTR,
+                    info->attr);
+
+                globus_xio_stack_destroy(info->stack);
+                globus_xio_attr_destroy(info->attr);
+                info->attr = new_attr;
+                globus_xio_stack_init(&info->stack, NULL);
+            }
+            res = globus_xio_attr_cntl(
+                info->attr, driver,
+                GLOBUS_XIO_MODE_E_SET_NUM_STREAMS,
+                info->stream_count);
+            if(res != GLOBUS_SUCCESS)
+            {
+                goto error;
+            }
+        }
+
+
+        if(push_driver)
+        {
+            res = globus_xio_stack_push_driver(info->stack, driver);
+            if(res != GLOBUS_SUCCESS)
+            {
+                goto error;
+            }
+        }
+
+        driver_count++;
+    }
+
+    return GLOBUS_SUCCESS;
+error:
+    return res;
+}
+
 int
 main(
     int                                 argc,
@@ -579,7 +743,6 @@ main(
     globus_i_xioperf_info_t *           info;
     globus_i_xioperf_info_t             info_copy;
     globus_result_t                     res;
-    globus_xio_driver_t                 driver;
  
     globus_module_activate(GLOBUS_XIO_MODULE);
 
@@ -596,86 +759,8 @@ main(
         GLOBUS_TRUE,
         xioperf_l_interrupt_cb,
         info);
-    globus_xio_attr_init(&info->attr);
-    /* tcp specific */
-    driver = (globus_xio_driver_t) globus_hashtable_lookup(
-        &info->driver_table, (void *)"tcp");
-    if(driver != NULL)
-    {
-        if(info->window > 0)
-        {
-            int                         w = (int)info->window;
-            res = globus_xio_attr_cntl(
-                info->attr, driver, GLOBUS_XIO_TCP_SET_SNDBUF, w);
-            res = globus_xio_attr_cntl(
-                info->attr, driver, GLOBUS_XIO_TCP_SET_RCVBUF, w);
-        }
-        globus_xio_attr_cntl(
-            info->attr, driver, GLOBUS_XIO_TCP_SET_NODELAY, info->nodelay);
-        if(info->bind_addr != NULL)
-        {
-            globus_xio_attr_cntl(
-                info->attr,
-                driver, GLOBUS_XIO_TCP_SET_INTERFACE, info->bind_addr);
-        }
-        if(info->port != 0)
-        {
-            globus_xio_attr_cntl(
-                info->attr, driver, GLOBUS_XIO_TCP_SET_PORT, info->port);
-        }
-    }
-    driver = (globus_xio_driver_t) globus_hashtable_lookup(
-        &info->driver_table, (void *)"gsi");
-    if(driver != NULL)
-    {
-        if(info->subject != NULL)
-        {
-            gss_buffer_desc             send_tok;
-            OM_uint32                   min_stat;
-            OM_uint32                   maj_stat;
-            gss_name_t                  target_name;
 
-            send_tok.value = (void *) info->subject;
-            send_tok.length = strlen(info->subject) + 1;
-            maj_stat = gss_import_name(
-                &min_stat,
-                &send_tok,
-                GSS_C_NT_USER_NAME,
-                &target_name);
-            if(maj_stat == GSS_S_COMPLETE &&
-                target_name != GSS_C_NO_NAME)
-            {
-                globus_xio_attr_cntl(
-                    info->attr, driver,
-                    GLOBUS_XIO_GSI_SET_TARGET_NAME,
-                    target_name);
-                gss_release_name(&min_stat, &target_name);
-                globus_xio_attr_cntl(
-                    info->attr, driver,
-                    GLOBUS_XIO_GSI_SET_AUTHORIZATION_MODE,
-                    GLOBUS_XIO_GSI_IDENTITY_AUTHORIZATION);
-            }
-        }
-    }
-    driver = (globus_xio_driver_t) globus_hashtable_lookup(
-        &info->driver_table, (void *)"quanta_rbudp");
-    if(driver != NULL)
-    {
-        if(info->reader)
-        {
-            globus_xio_attr_cntl(
-                info->attr, driver,
-                O_RDONLY,
-                NULL);
-        }
-        else
-        {
-            globus_xio_attr_cntl(
-                info->attr, driver,
-                O_WRONLY,
-                NULL);
-        }
-    }
+    xioperf_l_build_stack(info);
 
     xio_perf_log(info, 1,
     "---------------------------------------------------------------\n");
@@ -752,30 +837,30 @@ xioperf_post_io(
     globus_result_t                     res;
     globus_byte_t *                     buffer;
 
-    if(info->reader && !info->read_done)
-    {
-        buffer = (globus_byte_t*)globus_malloc(info->block_size);
-        res = globus_xio_register_read(
-            info->xio_handle,
-            buffer,
-            info->block_size,
-            1,
-            NULL,
-            xioperf_read_cb,
-            info);
-        if(res != GLOBUS_SUCCESS)
-        {
-            info->read_done = GLOBUS_TRUE;
-            xioperf_l_log("initial read error:", res);
-            goto error;
-        }
-        else
-        {
-            info->ref++;
-        }
-    }
     for(i = 0; i < info->stream_count; i++)
     {
+        if(info->reader && !info->read_done)
+        {
+            buffer = (globus_byte_t*)globus_malloc(info->block_size);
+            res = globus_xio_register_read(
+                info->xio_handle,
+                buffer,
+                info->block_size,
+                1,
+                NULL,
+                xioperf_read_cb,
+                info);
+            if(res != GLOBUS_SUCCESS)
+            {
+                info->read_done = GLOBUS_TRUE;
+                xioperf_l_log("initial read error:", res);
+                goto error;
+            }
+            else
+            {
+                info->ref++;
+            }
+        }
         if(info->writer && !info->write_done)
         {
             res = xioperf_next_write(info);
