@@ -101,12 +101,17 @@ public class RingBufferFile implements RingBuffer {
         return this.memoryPage.insert(buff);
     }
 
+    public synchronized void close() {
+        insert(null);
+        flush();
+    }
+
     public synchronized void flush() {
         try {
             // store current page
             File pageName = File.createTempFile(
                                    System.currentTimeMillis() + "-",
-                                   ".tmp",
+                                   ".dat",
                                    this.pageDir);
             log.debug("Writting buffer page: " + pageName.getAbsolutePath());
             RingBufferArray.write(pageName.getAbsolutePath(), this.memoryPage);

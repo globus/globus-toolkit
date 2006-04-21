@@ -99,6 +99,10 @@ public class RingBufferArray implements Serializable, RingBuffer {
         return numObjects;
     }
 
+    public synchronized void close() {
+        insert(null);
+    }
+
     public static RingBufferArray read(String filename) 
         throws IOException {
         ObjectInputStream ois = null;

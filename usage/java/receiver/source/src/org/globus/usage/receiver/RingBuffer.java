@@ -32,4 +32,6 @@ public interface RingBuffer {
     
     int getNumObjects();
 
+    void close();
+
 }
