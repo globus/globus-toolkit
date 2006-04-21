@@ -170,7 +170,11 @@ public class Receiver {
     public void shutDown() {
         log.debug("shutting down receiver.");
         theRecvThread.shutDown();
-        theHandleThread.shutDown();
+        try {
+            theHandleThread.join();
+        } catch (InterruptedException e) {
+            // ignore it
+        }
     }
 }
 
@@ -216,7 +220,7 @@ class ReceiverThread extends Thread {
                 socket.receive(packet);
 
                 storage = CustomByteBuffer.fitToData(buf, packet.getLength());
-                log.info("Packet received!");
+                log.info("Packet received");
                 
                 /*Put packet into ring buffer:*/
                 if (!theRing.insert(storage)) {
@@ -231,12 +235,15 @@ class ReceiverThread extends Thread {
                 }
 
             } catch (IOException e) {
-                log.error("When trying to recieve, an exception occurred:"+e.getMessage());
+                if (stillGood) {
+                    log.error("Error during receive", e);
+                }
             }
             /*Todo: if the socket is no longer open here, for some reason,
               should we maybe try to open a new socket?*/
         }
 
+        theRing.close();
     }
 
     public int getPacketsLost() {
@@ -246,7 +253,6 @@ class ReceiverThread extends Thread {
     public void resetCounts() {
 	this.packetsLost = 0;
     }
-
 
     public int getRingFullness() {
 	return theRing.getNumObjects();
