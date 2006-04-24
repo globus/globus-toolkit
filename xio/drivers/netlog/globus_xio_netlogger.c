@@ -541,82 +541,86 @@ globus_l_xio_netlogger_attr_copy(
 static
 void
 globus_l_xio_netlogger_parse_opts(
-    char *                              in_opts,
+    char *                              opts,
     xio_l_netlogger_handle_t *          attr)
 {
     int                                 fd;
     int                                 sc;
     int                                 int_val;
-    char *                              opts;
-    char *                              start_opts;
     char *                              tmp_str;
     char *                              key;
     char *                              val;
     GlobusXIOName(globus_l_xio_netlogger_parse_opts);
 
     GlobusXIONetloggerDebugEnter();
-    if(in_opts == NULL)
+    if(opts == NULL)
     {
         return;
     }
-    opts = strdup(in_opts);
-    start_opts = opts;
 
     key = "filename=";
     tmp_str = strstr(opts, key);
     if(tmp_str != NULL)
     {
-        val = tmp_str + strlen(key);
+        val = strdup(tmp_str + strlen(key));
         tmp_str = strchr(val, '#');
         if(tmp_str != NULL)
         {
             *tmp_str = '\0';
         }
-        fd = open(val, O_WRONLY);
+        fd = open(val, O_WRONLY | O_CREAT | O_APPEND,
+            S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
         if(fd > 0)
         {
             attr->fd = fd;
         }
+        free(val);
     }
 
     key = "mask=";
     tmp_str = strstr(opts, key);
     if(tmp_str != NULL)
     {
-        val = tmp_str + strlen(key);
+        val = strdup(tmp_str + strlen(key));
+        if(tmp_str != NULL)
+        {
+            *tmp_str = '\0';
+        }
         sc = sscanf(val, "%d", &int_val);
         if(sc == 1)
         {
             attr->log_flag = int_val;
         }
+        free(val);
     }
 
     key = "type=";
     tmp_str = strstr(opts, key);
     if(tmp_str != NULL)
     {
-        val = tmp_str + strlen(key);
+        val = strdup(tmp_str + strlen(key));
         tmp_str = strchr(val, '#');
         if(tmp_str != NULL)
         {
             *tmp_str = '\0';
         }
         attr->type = strdup(val);
+        free(val);
     }
 
     key = "id=";
     tmp_str = strstr(opts, key);
     if(tmp_str != NULL)
     {
-        val = tmp_str + strlen(key);
+        val = strdup(tmp_str + strlen(key));
         tmp_str = strchr(val, '#');
         if(tmp_str != NULL)
         {
             *tmp_str = '\0';
         }
         attr->id = strdup(val);
+        free(val);
     }
-    free(start_opts);
     GlobusXIONetloggerDebugExit();
 }
 
