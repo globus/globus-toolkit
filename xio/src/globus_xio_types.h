@@ -187,7 +187,14 @@ typedef enum
     /* globus_off_t                     offset */
     GLOBUS_XIO_SEEK,
 
-    /**
+    /** GlobusVarArgEnum(handle)
+     * Set the driver specific configuration string.  The format of the
+     * string is defined by the driver.  It is typically a set of key=value
+     * pairs
+     * @ingroup GLOBUS_XIO_API
+     *
+     * @param config_string
+     *      The driver specific paramter string.
      */
     GLOBUS_XIO_SET_STRING_OPTIONS
     

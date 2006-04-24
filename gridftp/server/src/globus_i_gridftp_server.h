@@ -41,6 +41,13 @@ typedef struct globus_i_gfs_monitor_s
     globus_mutex_t                      mutex;
 } globus_i_gfs_monitor_t;
 
+typedef struct gfs_i_stack_entry_s
+{
+    globus_xio_driver_t                 driver;
+    char *                              driver_name;
+    char *                              opts;
+} gfs_i_stack_entry_t;
+
 void
 globus_i_gfs_monitor_init(
     globus_i_gfs_monitor_t *            monitor);

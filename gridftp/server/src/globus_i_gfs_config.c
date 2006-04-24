@@ -320,12 +320,21 @@ static const globus_l_gfs_config_option_t option_list[] =
  {"argv", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_VOID, 0, NULL,
     NULL /* original argv */, NULL, NULL,GLOBUS_FALSE, NULL},
  {"argc", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_INT, 0, NULL,
-    NULL /* original argc */, NULL, NULL, GLOBUS_FALSE, NULL}
+    NULL /* original argc */, NULL, NULL, GLOBUS_FALSE, NULL},
+ {"file_stack", "file_stack", NULL, "file_stack", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+    "set file stack.  EXPERIMENTAL.", NULL, NULL,GLOBUS_FALSE, NULL},
+ {"protocol_stack", "protocol_stack", NULL, "protocol_stack", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+    "set protocol stack.  EXPERIMENTAL.", NULL, NULL,GLOBUS_FALSE, NULL},
+ {"net_stack_list", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_VOID, 0, NULL,
+   NULL, NULL, NULL,GLOBUS_FALSE, NULL},
+ {"fs_stack_list", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_VOID, 0, NULL,
+   NULL, NULL, NULL,GLOBUS_FALSE, NULL}
 };
 
 static int option_count = sizeof(option_list) / sizeof(globus_l_gfs_config_option_t);
 
 static globus_hashtable_t               option_table;
+
 
 
 /* for string options, setting with an int_val of 1 will free the old one */ 
@@ -1554,6 +1563,115 @@ error_exit:
 
 static
 globus_result_t
+globus_i_gfs_config_stack(
+    char *                              value,
+    char *                              config_name)
+{
+    globus_result_t                     result;
+    globus_list_t *                     driver_list = NULL;
+    globus_bool_t                       done = GLOBUS_FALSE;
+    char *                              opts;
+    char *                              ptr;
+    char *                              driver_name;
+    globus_xio_driver_t                 driver;
+    gfs_i_stack_entry_t *               stack_ent;
+    globus_bool_t                       tcp_used = GLOBUS_FALSE;
+    globus_bool_t                       gsi_used = GLOBUS_FALSE;
+
+    if(value != NULL)
+    {
+        while(!done)
+        {
+            driver_name = value;
+            ptr = strchr(driver_name, ',');
+            if(ptr != NULL)
+            {
+                *ptr = '\0';
+                value = ptr+1; // move to next line
+            }
+            else
+            {
+                done = GLOBUS_TRUE;
+            }
+            opts = strchr(driver_name, ':');
+            if(opts != NULL)
+            {
+                *opts = '\0';
+                opts++;
+            }
+
+            if(strcmp(driver_name, "tcp") == 0)
+            {
+                tcp_used = GLOBUS_TRUE;
+                driver = globus_io_compat_get_tcp_driver();
+            }
+            else if(strcmp(driver_name, "gsi") == 0)
+            {
+                gsi_used = GLOBUS_TRUE;
+                driver = globus_io_compat_get_gsi_driver();
+            }
+            else
+            {
+                result = globus_xio_driver_load(driver_name, &driver);
+                if(result != GLOBUS_SUCCESS)
+                {
+                    goto error_load;
+                }
+            }
+            stack_ent = (gfs_i_stack_entry_t *)
+                globus_calloc(1, sizeof(gfs_i_stack_entry_t));
+            stack_ent->opts = opts;
+            stack_ent->driver = driver;
+            stack_ent->driver_name = strdup(driver_name);
+
+            globus_list_insert(&driver_list, stack_ent);
+        }
+        if(!tcp_used)
+        {
+            globus_i_gfs_log_message(
+                GLOBUS_I_GFS_LOG_WARN,
+                "TCP not on stack.  No problem as long as you have set"
+                " a different transport protocol.\n");
+        }
+        if(!gsi_used)
+        {
+            globus_i_gfs_log_message(
+                GLOBUS_I_GFS_LOG_WARN,
+                "GSI not on stack.  No problem as long as you have set"
+                " a different security driver.\n");
+        }
+    }
+    else
+    {
+        stack_ent = (gfs_i_stack_entry_t *)
+            globus_calloc(1, sizeof(gfs_i_stack_entry_t));
+        stack_ent->opts = NULL;
+        stack_ent->driver = globus_io_compat_get_gsi_driver();
+        stack_ent->driver_name = "gsi";
+        globus_list_insert(&driver_list, stack_ent);
+
+        stack_ent = (gfs_i_stack_entry_t *)
+            globus_calloc(1, sizeof(gfs_i_stack_entry_t));
+        stack_ent->opts = NULL;
+        stack_ent->driver = globus_io_compat_get_tcp_driver();
+        stack_ent->driver_name = "tcp";
+        globus_list_insert(&driver_list, stack_ent);
+    }
+    globus_l_gfs_config_set(config_name, 0, driver_list);
+    return GLOBUS_SUCCESS;
+
+error_load:
+    globus_i_gfs_log_message(
+        GLOBUS_I_GFS_LOG_ERR,
+        "Unable to set data channel stack.: %s\n",
+                globus_error_print_friendly(
+                    globus_error_peek((globus_result_t) result)));
+
+    return result;
+}
+
+static
+globus_result_t
 globus_l_gfs_config_misc()
 {
     globus_list_t *                     module_list = NULL;
@@ -1864,6 +1982,14 @@ globus_l_gfs_config_misc()
         globus_l_gfs_config_set("ipc_user_name", 0, 
             globus_libc_strdup(pwent->pw_name));
     }
+
+    value = globus_i_gfs_config_string("protocol_stack");
+    result = globus_i_gfs_config_stack(value, "net_stack_list");
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_exit;
+    }
+
     
     GlobusGFSDebugExit();
     return GLOBUS_SUCCESS;

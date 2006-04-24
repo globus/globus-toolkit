@@ -21,6 +21,8 @@
 #include <openssl/des.h>
 #include <pwd.h>
 #include <grp.h>
+#include "globus_io.h"
+
 
 #define FTP_SERVICE_NAME "file"
 #define USER_NAME_MAX   64
@@ -133,6 +135,7 @@ typedef struct
     globus_gfs_operation_t              outstanding_op;
     globus_bool_t                       destroy_requested;
     globus_bool_t                       use_interface;
+    globus_xio_attr_t                   xio_attr;
 } globus_l_gfs_data_handle_t;
 
 typedef struct globus_l_gfs_data_operation_s
@@ -293,6 +296,11 @@ void
 globus_l_gfs_data_operation_destroy(
     globus_l_gfs_data_operation_t *     op,
     globus_bool_t                       free_session);
+
+static
+globus_result_t
+globus_l_gfs_set_stack(
+    globus_l_gfs_data_handle_t *        handle);
 
 static
 void
@@ -2044,6 +2052,16 @@ globus_l_gfs_data_handle_init(
             goto error_control;
         }
     }
+    {
+        result = globus_l_gfs_set_stack(handle);
+        if(result != GLOBUS_SUCCESS)
+        {
+            globus_i_gfs_log_message(
+                GLOBUS_I_GFS_LOG_WARN,
+                "set stack failed: %s\n",
+                globus_error_print_friendly(globus_error_peek(result)));
+        }
+    }
 
     *u_handle = handle;
 
@@ -2525,7 +2543,11 @@ globus_l_gfs_data_passive_kickout(
     }
 
     globus_free(reply.info.data.contact_strings);
-    globus_free(bounce_info->contact_string);
+    /* could be null on error */
+    if(bounce_info->contact_string != NULL)
+    {
+        globus_free(bounce_info->contact_string);
+    }
     globus_free(bounce_info);
 
     GlobusGFSDebugExit();
@@ -2662,7 +2684,7 @@ globus_i_gfs_data_request_passive(
         }
 
         bounce_info = (globus_l_gfs_data_passive_bounce_t *)
-            globus_malloc(sizeof(globus_l_gfs_data_passive_bounce_t));
+            globus_calloc(1, sizeof(globus_l_gfs_data_passive_bounce_t));
         if(!bounce_info)
         {
             result = GlobusGFSErrorMemory("bounce_info");
@@ -2705,7 +2727,7 @@ error_handle:
 error_op:
 
     bounce_info = (globus_l_gfs_data_passive_bounce_t *)
-        globus_malloc(sizeof(globus_l_gfs_data_passive_bounce_t));
+        globus_calloc(1, sizeof(globus_l_gfs_data_passive_bounce_t));
     if(!bounce_info)
     {
         result = GlobusGFSErrorMemory("bounce_info");
@@ -2715,7 +2737,6 @@ error_op:
     bounce_info->id = id;
     bounce_info->handle = handle;
     bounce_info->bi_directional = GLOBUS_TRUE; /* XXX MODE S only */
-    bounce_info->contact_string = cs;
     bounce_info->callback = cb;
     bounce_info->user_arg = user_arg;
     bounce_info->result = result;
@@ -6245,3 +6266,59 @@ globus_i_gfs_data_request_buffer_send(
     GlobusGFSDebugExit();
     return;
 }
+
+static
+globus_result_t
+globus_l_gfs_set_stack(
+    globus_l_gfs_data_handle_t *        handle)
+{
+    globus_result_t                     result;
+    gfs_i_stack_entry_t *               stack_ent;
+    globus_list_t *                     driver_list;
+    globus_list_t *                     list;
+    globus_xio_stack_t                  stack;
+
+    globus_xio_stack_init(&stack, NULL);
+    driver_list = (globus_list_t *) globus_i_gfs_config_list("net_stack_list");
+    globus_i_ftp_control_data_get_attr(&handle->data_channel, &handle->xio_attr);
+    for(list = driver_list;
+        !globus_list_empty(list);
+        list = globus_list_rest(list))
+    {
+        stack_ent = (gfs_i_stack_entry_t *) globus_list_first(list);
+
+        result = GLOBUS_SUCCESS;
+        if(strcmp(stack_ent->driver_name, "gsi") == 0)
+        {
+            if(handle->info.dcau != 'N')
+            {
+                result = globus_xio_stack_push_driver(
+                    stack, stack_ent->driver);
+            }
+        }
+        else
+        {
+            result=globus_xio_stack_push_driver(stack, stack_ent->driver);
+        }
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error_control;
+        }
+        /* this should go away after demo? */
+        if(stack_ent->opts != NULL)
+        {
+            /* ignore error */
+            globus_xio_attr_cntl(
+                handle->xio_attr,
+                stack_ent->driver,
+                GLOBUS_XIO_SET_STRING_OPTIONS,
+                stack_ent->opts);
+        }
+    }
+    globus_i_ftp_control_data_set_stack(&handle->data_channel, stack);
+
+    return GLOBUS_SUCCESS;
+error_control:
+    return result;
+}
+

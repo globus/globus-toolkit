@@ -657,6 +657,78 @@ globus_i_ftp_control_data_set_netlogger(
     return GLOBUS_SUCCESS;
 }
 
+globus_result_t
+globus_i_ftp_control_data_set_stack(
+    globus_ftp_control_handle_t *               handle,
+    globus_xio_stack_t                          stack)
+{
+    globus_i_ftp_dc_handle_t *                  dc_handle;
+    globus_object_t *                           err;
+    static char *                               myname =
+                                      "globus_i_ftp_control_data_set_stack";
+    /*
+     *  error checking
+     */
+    if(handle == GLOBUS_NULL)
+    {
+        err = globus_io_error_construct_null_parameter(
+                  GLOBUS_FTP_CONTROL_MODULE,
+                  GLOBUS_NULL,
+                  "handle",
+                  1,
+                  myname);
+        return globus_error_put(err);
+    }
+    if(stack == NULL)
+    {
+        err = globus_io_error_construct_null_parameter(
+                  GLOBUS_FTP_CONTROL_MODULE,
+                  GLOBUS_NULL,
+                  "stack",
+                  2,
+                  myname);
+        return globus_error_put(err);
+    }
+
+    dc_handle = &handle->dc_handle;
+    GlobusFTPControlDataTestMagic(dc_handle);
+    if(!dc_handle->initialized)
+    {
+        err = globus_io_error_construct_not_initialized(
+                  GLOBUS_FTP_CONTROL_MODULE,
+                  GLOBUS_NULL,
+                  "handle",
+                  1,
+                  myname);
+        return globus_error_put(err);
+    }
+
+    globus_mutex_lock(&dc_handle->mutex);
+    {
+        globus_io_attr_set_stack(&dc_handle->io_attr, stack);
+    }
+    globus_mutex_unlock(&dc_handle->mutex);
+
+    return GLOBUS_SUCCESS;
+}
+
+globus_result_t
+globus_i_ftp_control_data_get_attr(
+    globus_ftp_control_handle_t *               handle,
+    globus_xio_attr_t *                         attr)
+{
+    globus_result_t                             result;
+    globus_i_ftp_dc_handle_t *                  dc_handle;
+
+    dc_handle = &handle->dc_handle;
+    GlobusFTPControlDataTestMagic(dc_handle);
+
+    result = globus_io_attr_get_xio_attr(&dc_handle->io_attr, attr);
+
+    return result;
+}
+
+
 globus_bool_t
 globus_list_remove_element(
     globus_list_t * volatile *                  headp,
