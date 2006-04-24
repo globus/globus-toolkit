@@ -57,12 +57,13 @@ enum globus_l_xio_netlogger_error_levels
 };
 
 #define NL_XIO_ID_FLD                   4
-#define NL_XIO_BUFLEN_FLD               5
-#define NL_XIO_BYTES_FLD                6
+#define NL_XIO_SOCK_FLD                 5
+#define NL_XIO_BUFLEN_FLD               6
+#define NL_XIO_BYTES_FLD                7
 
-#define NL_XIO_RECSZ                    6
-#define NL_XIO_B_RECSZ                  7
-#define NL_XIO_BB_RECSZ                 8
+#define NL_XIO_RECSZ                    7
+#define NL_XIO_B_RECSZ                  8
+#define NL_XIO_BB_RECSZ                 9
 
 #define NL_MAXREC 1024
 typedef struct xio_l_netlogger_handle_s
@@ -268,12 +269,16 @@ NL_rec_t *
 globus_l_xio_nl_makerec(
     const char *                        event,
     int                                 size,
+    void *                              sock_id,
     char *                              id)
 {
     char                                sval[NL_MAX_STR];
     char *                              hostname;
     NL_rec_t *                          recp;
+    long long                           sock_id_ll;
 
+
+    sock_id_ll = (long long) sock_id;
     recp = NL_rec(size);
     NL_rec_add(recp, NL_fld(NL_FLD_DATE, NL_FLD_DATE_LEN, sval,
                             sizeof(struct timeval),NL_time));
@@ -290,6 +295,7 @@ globus_l_xio_nl_makerec(
                             strlen(hostname), NL_string));
 
     NL_rec_add(recp, NL_fld("uuid", 4,  id, strlen(id), NL_string));
+    NL_rec_add(recp, NL_fld("sock", 4,  &sock_id_ll, sizeof(sock_id_ll), NL_long));
 
     return recp;
 }
@@ -370,42 +376,42 @@ xio_l_netlogger_create_handle(
 
     sprintf(msg, "xio.%s.accept.start", handle->type);
     handle->accept_start_rec =
-        globus_l_xio_nl_makerec(msg, NL_XIO_RECSZ, handle->id);
+        globus_l_xio_nl_makerec(msg, NL_XIO_RECSZ, handle, handle->id);
     sprintf(msg, "xio.%s.accept.end", handle->type);
     handle->accept_stop_rec =
-        globus_l_xio_nl_makerec(msg, NL_XIO_RECSZ, handle->id);
+        globus_l_xio_nl_makerec(msg, NL_XIO_RECSZ, handle, handle->id);
 
     sprintf(msg, "xio.%s.open.start", handle->type);
     handle->open_start_rec =
-        globus_l_xio_nl_makerec(msg, NL_XIO_RECSZ, handle->id);
+        globus_l_xio_nl_makerec(msg, NL_XIO_RECSZ, handle, handle->id);
     sprintf(msg, "xio.%s.open.end", handle->type);
     handle->open_stop_rec =
-        globus_l_xio_nl_makerec(msg, NL_XIO_RECSZ, handle->id);
+        globus_l_xio_nl_makerec(msg, NL_XIO_RECSZ, handle, handle->id);
 
     sprintf(msg, "xio.%s.close.start", handle->type);
     handle->close_start_rec =
-        globus_l_xio_nl_makerec(msg, NL_XIO_RECSZ, handle->id);
+        globus_l_xio_nl_makerec(msg, NL_XIO_RECSZ, handle, handle->id);
     sprintf(msg, "xio.%s.close.end", handle->type);
     handle->close_stop_rec = 
-        globus_l_xio_nl_makerec(msg, NL_XIO_RECSZ, handle->id);
+        globus_l_xio_nl_makerec(msg, NL_XIO_RECSZ, handle, handle->id);
 
     sprintf(msg, "xio.%s.read.start", handle->type);
     handle->read_start_rec =
-        globus_l_xio_nl_makerec(msg, NL_XIO_B_RECSZ, handle->id);
+        globus_l_xio_nl_makerec(msg, NL_XIO_B_RECSZ, handle, handle->id);
     globus_l_xio_nl_addbuflen(handle->read_start_rec);
     sprintf(msg, "xio.%s.read.end", handle->type);
     handle->read_stop_rec =
-        globus_l_xio_nl_makerec(msg, NL_XIO_BB_RECSZ, handle->id);
+        globus_l_xio_nl_makerec(msg, NL_XIO_BB_RECSZ, handle, handle->id);
     globus_l_xio_nl_addbuflen(handle->read_stop_rec);
     globus_l_xio_nl_addbytes(handle->read_stop_rec);
 
     sprintf(msg, "xio.%s.write.start", handle->type);
     handle->write_start_rec =
-        globus_l_xio_nl_makerec(msg, NL_XIO_B_RECSZ, handle->id);
+        globus_l_xio_nl_makerec(msg, NL_XIO_B_RECSZ, handle, handle->id);
     globus_l_xio_nl_addbuflen(handle->write_start_rec);
     sprintf(msg, "xio.%s.write.end", handle->type);
     handle->write_stop_rec =
-        globus_l_xio_nl_makerec(msg, NL_XIO_BB_RECSZ, handle->id);
+        globus_l_xio_nl_makerec(msg, NL_XIO_BB_RECSZ, handle, handle->id);
     globus_l_xio_nl_addbuflen(handle->write_stop_rec);
     globus_l_xio_nl_addbytes(handle->write_stop_rec);
 
