@@ -588,6 +588,7 @@ globus_l_xio_netlogger_parse_opts(
     if(tmp_str != NULL)
     {
         val = strdup(tmp_str + strlen(key));
+        tmp_str = strchr(val, '#');
         if(tmp_str != NULL)
         {
             *tmp_str = '\0';
