@@ -76,6 +76,28 @@ public class ContainerUpReport {
         }
     }
 
+    static class Slot {
+
+        private int count;
+        private long time;
+        
+        public Slot(long time) {
+            this.time = time;
+        }
+        
+        public void increment() {
+            this.count++;
+        }
+        
+        public int getCount() {
+            return this.count;
+        }
+        
+        public long getTime() {
+            return this.time;
+        }
+    }
+
     public void output(PrintStream out) {
         for (int i = 0; i< this.slots.size(); i++) {
             Slot slot = (Slot)this.slots.get(i);
