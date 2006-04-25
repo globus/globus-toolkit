@@ -82,6 +82,41 @@ public class ContainerEventReport {
         }
     }
 
+    static class Slot {
+
+        private int startCount;
+        private int stopCount;
+        private long time;
+        
+        public Slot(long time) {
+            this.time = time;
+        }
+        
+        public void incrementStart() {
+            this.startCount++;
+        }
+
+        public int getStartCount() {
+            return this.startCount;
+        }
+
+        public void incrementStop() {
+            this.stopCount++;
+        }
+        
+        public int getStopCount() {
+            return this.stopCount;
+        }
+        
+        public long getTime() {
+            return this.time;
+        }
+        
+        public Date getDate() {
+            return new Date(this.time);
+        }
+    }
+
     private List createSlots() {
         Calendar calendar = new GregorianCalendar();
         calendar.setTime(this.startDate);
@@ -108,46 +143,46 @@ public class ContainerEventReport {
         return prevSlot;
     }
 
-    private List computeSlots(Map events) {
+    public void output(PrintStream out) {
         List slots = createSlots();
-        Iterator iter = events.entrySet().iterator();
+        Iterator iter;
+
+        iter = this.startEvents.entrySet().iterator();
         while(iter.hasNext()) {
             Map.Entry entry = (Map.Entry)iter.next();
             Timestamp timestamp = (Timestamp)entry.getValue();
-
             Slot s = getSlot(slots, timestamp.getTime());
-            s.increment();
+            s.incrementStart();
         }
+        
+        iter = this.stopEvents.entrySet().iterator();
+        while(iter.hasNext()) {
+            Map.Entry entry = (Map.Entry)iter.next();
+            Timestamp timestamp = (Timestamp)entry.getValue();
+            Slot s = getSlot(slots, timestamp.getTime());
+            s.incrementStop();
+        }
+        
+        // reporting starts here
 
-        return slots;
-    }
-
-    public void output(PrintStream out) {
-        out.println("  <matched-total>" + this.matched + "</matched-total>");
-        out.println("  <unmatched-start-events>");
-        output(out, "    ", this.startEvents);
-        out.println("  </unmatched-start-events>");
-
-        out.println("  <unmatched-stop-events>");
-        output(out, "    ", this.stopEvents);
-        out.println("  </unmatched-stop-events>");
-    }
-
-    private void output(PrintStream out, String tab, Map events) {
         SimpleDateFormat dateFormat =
             new SimpleDateFormat(getDateFormat(this.step));
-        
-        out.println(tab + "<total>" + events.size() + "</total>");
-        List slots = computeSlots(events);
+
+        out.println("  <total-matched>" + this.matched + "</total-matched>");
+        out.println("  <total-start-unmatched>" + this.startEvents.size() + "</total-start-unmatched>");
+        out.println("  <total-stop-unmatched>" + this.stopEvents.size() + "</total-stop-unmatched>");
+        out.println("  <unmatched-events>");
         for (int i = 0; i< slots.size(); i++) {
             Slot slot = (Slot)slots.get(i);
-            out.println(tab + "<slot>");
-            out.println(tab + "  <time>" + dateFormat.format(slot.getDate()) + "</time>");
-            out.println(tab + "  <count>" + slot.getCount() + "</count>");
-            out.println(tab + "</slot>");
+            out.println("    <slot>");
+            out.println("      <time>" + dateFormat.format(slot.getDate()) + "</time>");
+            out.println("      <startCount>" + slot.getStartCount() + "</startCount>");
+            out.println("      <stopCount>" + slot.getStopCount() + "</stopCount>");
+            out.println("    </slot>");
         }
+        out.println("  </unmatched-events>");
     }
-    
+
     public void compute(int eventType,
                         Timestamp timestamp,
                         String containerID) {
