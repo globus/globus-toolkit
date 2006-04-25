@@ -15,41 +15,31 @@
  */
 package org.globus.usage.report;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
+import java.util.Date;
 
-public class ServiceEntry extends IPTable {
+public class Slot {
 
-    int standalone;
-    int servlet;
-    int other;
+    private int count;
+    private long time;
     
-    public void standalone() {
-        standalone++;
+    public Slot(long time) {
+        this.time = time;
     }
 
-    public void servlet() {
-        servlet++;
+    public void increment() {
+        this.count++;
     }
 
-    public void other() {
-        other++;
+    public int getCount() {
+        return this.count;
     }
 
-    public int getStandaloneCount() {
-        return standalone;
+    public long getTime() {
+        return this.time;
     }
 
-    public int getServletCount() {
-        return servlet;
-    }
-
-    public int getOtherCount() {
-        return other;
+    public Date getDate() {
+        return new Date(this.time);
     }
 
 }
