@@ -82,4 +82,10 @@
 
     <target name="all" depends="deploy"/>
 
+    <target name="toUnix">
+      <fixcrlf srcdir="src"
+               eol="lf"
+               includes="**/*.java"/>
+    </target>
+
 </project>
