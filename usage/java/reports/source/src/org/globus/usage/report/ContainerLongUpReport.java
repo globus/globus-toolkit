@@ -51,8 +51,8 @@ public class ContainerLongUpReport extends BaseContainerUpReport {
         while(iter.hasNext()) {
             Map.Entry entry = (Map.Entry)iter.next();
             Long time = (Long)entry.getValue();
-
-            Slot s = getSlot(time.longValue()/1000);
+            long timeMilli = time.longValue()/1000;
+            Slot s = getSlot(timeMilli);
             s.increment();
         }
 

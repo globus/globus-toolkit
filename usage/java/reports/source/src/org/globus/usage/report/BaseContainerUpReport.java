@@ -46,7 +46,10 @@ public class BaseContainerUpReport {
 
     protected List slots = new ArrayList();
 
-    public void initializeSlots() {
+    protected void initializeSlots() {
+        // 0 sec
+        this.slots.add(new Slot(0));
+
         // 1 minute
         this.slots.add(new Slot(60 * 1));
 
@@ -163,15 +166,17 @@ public class BaseContainerUpReport {
 	return str.toString();
     }
 
-    public Slot getSlot(long seconds) {
-        for (int i = 0; i < this.slots.size(); i++) {
+    protected Slot getSlot(long mseconds) {
+        Slot prevSlot = (Slot)this.slots.get(0);
+        for (int i = 1; i < this.slots.size(); i++) {
             Slot slot = (Slot)this.slots.get(i);
-            if (seconds < slot.getTime()) {
-                return slot;
+            if (mseconds >= prevSlot.getTime() &&
+                mseconds < slot.getTime()) {
+                return prevSlot;
             }
+            prevSlot = slot;
         }
-        return (Slot)this.slots.get(this.slots.size()-1);
+        return prevSlot;
     }
-            
 }
 
