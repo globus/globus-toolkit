@@ -2784,6 +2784,10 @@ globus_i_xio_blocking_alloc()
 
     info = (globus_i_xio_blocking_t *) 
                 globus_malloc(sizeof(globus_i_xio_blocking_t));
+    if(info == NULL)
+    {
+        return info;
+    }
     globus_mutex_init(&info->mutex, NULL);
     globus_cond_init(&info->cond, NULL);
     info->done = GLOBUS_FALSE;
@@ -2903,7 +2907,7 @@ globus_xio_open(
     info = globus_i_xio_blocking_alloc();
     if(info == NULL)
     {
-        res = GlobusXIOErrorMemory("internal strucature");
+        res = GlobusXIOErrorMemory("internal structure");
         goto param_err;
     }
     
@@ -3063,7 +3067,7 @@ globus_xio_read(
     info = globus_i_xio_blocking_alloc();
     if(info == NULL)
     {
-        res = GlobusXIOErrorMemory("internal strucature");
+        res = GlobusXIOErrorMemory("internal structure");
         goto alloc_error;
     }
     /* set up the operation */
@@ -3186,7 +3190,7 @@ globus_xio_readv(
     info = globus_i_xio_blocking_alloc();
     if(info == NULL)
     {
-        res = GlobusXIOErrorMemory("internal strucature");
+        res = GlobusXIOErrorMemory("internal structure");
         goto alloc_error;
     }
     /* set up the operation */
@@ -3310,7 +3314,7 @@ globus_xio_write(
     info = globus_i_xio_blocking_alloc();
     if(info == NULL)
     {
-        res = GlobusXIOErrorMemory("internal strucature");
+        res = GlobusXIOErrorMemory("internal structure");
         goto alloc_error;
     }
     /* set up the operation */
@@ -3433,7 +3437,7 @@ globus_xio_writev(
     info = globus_i_xio_blocking_alloc();
     if(info == NULL)
     {
-        res = GlobusXIOErrorMemory("internal strucature");
+        res = GlobusXIOErrorMemory("internal structure");
         goto alloc_error;
     }
     /* set up the operation */
@@ -3520,7 +3524,7 @@ globus_xio_close(
     info = globus_i_xio_blocking_alloc();
     if(info == NULL)
     {
-        res = GlobusXIOErrorMemory("internal strucature");
+        res = GlobusXIOErrorMemory("internal structure");
         goto alloc_error;
     }
     
