@@ -8,7 +8,7 @@ Generating container reports & graphs:
 2. Using the container.xml generate instructions and data files for gnuplot:
 
    # ant -f etc/globus_usage_reports/reports.xml gnuplot-container \
-     -Dcontainer.xml=$G_L/container.xml
+     -Din.xml=$G_L/container.xml
    
    This will generate the following files:
     o 'uniqueservices.gnuplot' & 'uniqueservices.data'
@@ -36,7 +36,7 @@ Generating container up time reports & graphs:
 2. Using the uptime.xml generate instructions and data files for gnuplot:
 
    # ant -f etc/globus_usage_reports/reports.xml gnuplot-uptime \
-     -Duptime.xml=$G_L/uptime.xml
+     -Din.xml=$G_L/uptime.xml
 
    This will generate 'uptime.gnuplot' & 'uptime.data' files.
 
@@ -58,7 +58,7 @@ Generating service reports & graphs:
 2. Using the service.xml generate instructions and data files for gnuplot:
 
    # ant -f etc/globus_usage_reports/reports.xml gnuplot-service \
-     -Dservice.xml=$G_L/service.xml
+     -Din.xml=$G_L/service.xml
 
    This will generate 'service.gnuplot' & 'service.data' files.
 
