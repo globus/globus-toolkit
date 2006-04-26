@@ -136,15 +136,25 @@ public class ContainerReport {
 
     public static void main(String[] args) throws Exception {
     
-        String baseQuery = "select service_list,container_type,ip_address from java_ws_core_packets where event_type = 1 and ";
-
-        Connection con = null;
-
+        String USAGE = "Usage: java ContainerReport [options] <date (yyyy-MM-dd)>";
+        String HELP = 
+            "Where [options] are:\n" +
+            "  -help                    Displays this message\n" +
+            "  -step <day|month>        Specifies step type (default: 'day')\n" +
+            "  -n <steps>               Specifies number of steps to do to\n" +
+            "                           determine end date (default: 1)\n" +
+            "\n";
+        
         if (args.length == 0) {
-            System.err.println("Usage: java ContainerReport [options] <date (yyyy-MM-dd)>");
+            System.err.println(USAGE);
+            System.exit(1);
+        } else if (args.length == 1 && args[0].equalsIgnoreCase("-help")) {
+            System.err.println(USAGE);
+            System.err.println(HELP);
             System.exit(1);
         }
 
+        String baseQuery = "select service_list,container_type,ip_address from java_ws_core_packets where event_type = 1 and ";
         int n = 1;
         String containerType = "all";
         String stepStr = "day";
@@ -156,6 +166,10 @@ public class ContainerReport {
                 baseQuery += " container_type = " + args[++i] + " and ";
             } else if (args[i].equals("-step")) {
                 stepStr = args[++i];
+            } else if (args[i].equalsIgnoreCase("-help")) {
+                System.err.println(USAGE);
+                System.err.println(HELP);
+                System.exit(1);
             } else {
                 System.err.println("Unknown argument: " + args[i]);
                 System.exit(1);
@@ -176,6 +190,8 @@ public class ContainerReport {
         }
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
+        Connection con = null;
 
         try {
             Database db = new Database();
