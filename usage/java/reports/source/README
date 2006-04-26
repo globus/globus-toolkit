@@ -1,3 +1,15 @@
+Notes:
+======
+
+1) Generating reports for longer periods of time might require increasing
+   Java heap size. The GLOBUS_OPTIONS env. variable can be used to specify
+   larger heap size, for example:
+   
+   # export GLOBUS_OPTIONS=-Xmx512m
+
+
+
+
 Generating container reports & graphs:
 ======================================
 
@@ -26,8 +38,15 @@ Generating container reports & graphs:
    'services.png' files.
 
 
-Generating container up time reports & graphs:
-==============================================
+Generating container up time report & graph:
+============================================
+
+Description:
+
+This reports calculates the time difference between a stop and a start event
+of the same unique container (unique container = ip + container id).
+
+Steps:
 
 1. Generate the report & save results in uptime.xml file:
 
@@ -48,8 +67,38 @@ Generating container up time reports & graphs:
 
 
 
-Generating service reports & graphs:
-====================================
+Generating container long up time report & graph:
+=================================================
+
+Description:
+
+This reports computes the time difference between a stop and a start event
+of the same unique container (unique container = ip + container id) and then
+reports the longest container uptime on a given ip address.
+
+Steps:
+
+1. Generate the report & save results in uptime.xml file:
+
+   # $G_L/bin/jwscore-container-long-up-report <date> > $G_L/longuptime.xml
+
+2. Using the longuptime.xml generate instructions and data files for gnuplot:
+
+   # ant -f etc/globus_usage_reports/reports.xml gnuplot-long-uptime \
+     -Din.xml=$G_L/longuptime.xml
+
+   This will generate 'longuptime.gnuplot' & 'longuptime.data' files.
+
+3. Run gnuplot on the generated .gnuplot file:
+
+   # gnuplot longuptime.gnuplot
+
+   This will create 'longuptime.png' file.
+
+
+
+Generating service report & graph:
+==================================
 
 1. Generate the report & save results in service.xml file:
 
@@ -67,3 +116,35 @@ Generating service reports & graphs:
    # gnuplot service.gnuplot
 
    This will create 'service.png' file.
+
+
+
+Generating unmatched event report & graph:
+==========================================
+
+Description:
+
+This tries to find unmatched stop or start events (start without a stop or
+stop without a start) within a given time period. Of course, some unmatched
+events might be false-positives as the missing events might be outside of the
+specified time period.
+The graph shows when the unmatched start or stop event was received.
+
+Steps:
+
+1. Generate the report & save results in event.xml file:
+
+   # $G_L/bin/jwscore-container-event-report <date> > $G_L/event.xml
+
+2. Using the event.xml generate instructions and data files for gnuplot:
+
+   # ant -f etc/globus_usage_reports/reports.xml gnuplot-event \
+     -Din.xml=$G_L/event.xml
+
+   This will generate 'event.gnuplot' & 'event.data' files.
+
+3. Run gnuplot on the generated .gnuplot file:
+
+   # gnuplot event.gnuplot
+
+   This will create 'event.png' file.
