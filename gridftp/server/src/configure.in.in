@@ -65,7 +65,8 @@ GLOBUS_FINALIZE
 
 AC_OUTPUT(
 	Makefile
-	pkgdata/Makefile
+	embed/Makefile
+    pkgdata/Makefile
 	pkgdata/pkg_data_src.gpt
         modules/Makefile
 	doxygen/Makefile

@@ -2,7 +2,7 @@
 <!DOCTYPE gpt_package_metadata SYSTEM "globus_package.dtd">
 <gpt_package_metadata Format_Version="0.01" Name="globus_cyrus-sasl" >
 
-  <Aging_Version Age="0" Major="0" Minor="7" />
+  <Aging_Version Age="0" Major="0" Minor="8" />
   <Description> Globus binary package for sasl </Description>
   <Functional_Group >Security</Functional_Group>
   <Version_Stability Release="Experimental" />
@@ -39,7 +39,7 @@
       </Build_Step>
 	<Build_Step>touch aclocal.m4 config.h.in configure stamp-h.in</Build_Step>
 	<Build_Step>find . -name "Makefile.in" -print | xargs touch</Build_Step>
-      <Build_Step>CONFIGENV_GPTMACRO ./configure --prefix=INSTALLDIR_GPTMACRO --disable-gssapi  --disable-cram --disable-digest --disable-krb4 --disable-anon --without-pam --without-dblib --without-dbpath</Build_Step>
+      <Build_Step>CONFIGENV_GPTMACRO ./configure --prefix=INSTALLDIR_GPTMACRO --disable-gssapi  --disable-cram --disable-digest --disable-krb4 --disable-anon --without-pam --without-dblib --without-dbpath --disable-sample</Build_Step>
       <Build_Step>MAKE_GPTMACRO</Build_Step>
       <Build_Step>MAKE_GPTMACRO DESTDIR_GPTMACRO install</Build_Step>
       <Build_Step>RUN_FLAVOR_INSTALL_GPTMACRO</Build_Step>

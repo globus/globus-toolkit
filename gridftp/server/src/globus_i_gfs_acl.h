@@ -1,12 +1,17 @@
 /*
- * Portions of this file Copyright 1999-2005 University of Chicago
- * Portions of this file Copyright 1999-2005 The University of Southern California.
- *
- * This file or a portion of this file is licensed under the
- * terms of the Globus Toolkit Public License, found at
- * http://www.globus.org/toolkit/download/license.html.
- * If you redistribute this file, with or without
- * modifications, you must include this notice in the file.
+ * Copyright 1999-2006 University of Chicago
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 #ifndef GLOBUS_I_GFS_ACL_H
@@ -47,11 +52,10 @@ int
 globus_i_gfs_acl_init(
     struct globus_i_gfs_acl_handle_s *  acl_handle,
     const gss_ctx_id_t                  context,
-    const struct passwd *               pwent,
-    const struct group *                grent,
-    const char *                        given_pw,
+    const char *                        subject,
+    const char *                        username,
+    const char *                        password,
     const char *                        ipaddr,
-    const char *                        resource_id,
     globus_result_t *                   out_res,
     globus_gfs_acl_cb_t                 cb,
     void *                              user_arg);
@@ -60,56 +64,14 @@ void
 globus_i_gfs_acl_destroy(
     struct globus_i_gfs_acl_handle_s *  acl_handle);
 
-/*
- *  interface implementation functions
- */
-enum
-{
-    GLOBUS_GFS_ACL_COMPLETE,
-    GLOBUS_GFS_ACL_WOULD_BLOCK
-};
-
-typedef int
-(*globus_gfs_acl_init_t)(
-    void **                             out_handle,
-    const struct passwd *               passwd,
-    const char *                        given_pw,
-    const char *                        resource_id,
-    struct globus_i_gfs_acl_handle_s *  acl_handle,
-    globus_result_t *                   out_res);
-
-typedef int
-(*globus_gfs_acl_authorize_t)(
-    void *                              out_handle,
-    const char *                        action,
-    const char *                        object,
-    struct globus_i_gfs_acl_handle_s *  acl_handle,
-    globus_result_t *                   out_res);
-
-void
-globus_gfs_acl_authorized_finished(
-    struct globus_i_gfs_acl_handle_s *  acl_handle,
-    globus_result_t                     result);
-
-typedef void
-(*globus_gfs_acl_destroy_t)(
-    void *                              out_handle);
-
-typedef struct globus_gfs_acl_module_s
-{
-    globus_gfs_acl_init_t               init_func;
-    globus_gfs_acl_authorize_t          authorize_func;
-    globus_gfs_acl_destroy_t            destroy_func;
-} globus_gfs_acl_module_t;
 
 typedef struct globus_i_gfs_acl_handle_s
 {
-    struct passwd                       pwent;
-    struct group                        grpent;
-    char *                              given_pw;
+    char *                              password;
     char *                              ipaddr;
     globus_i_gfs_acl_type_t             type;
-    char *                              user_id;
+    char *                              subject;
+    char *                              username;
     char *                              hostname;
     char *                              auth_action;
     char *                              auth_object;
@@ -119,10 +81,9 @@ typedef struct globus_i_gfs_acl_handle_s
     globus_list_t *                     current_list;
     globus_result_t                     cached_res;
     gss_ctx_id_t                        context;
+    globus_gfs_acl_info_t               acl_info;
 } globus_i_gfs_acl_handle_t;
 
-void
-globus_gfs_acl_add_module(
-    globus_gfs_acl_module_t *           module);
+
 
 #endif

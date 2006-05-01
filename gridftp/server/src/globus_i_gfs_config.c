@@ -1,12 +1,17 @@
 /*
- * Portions of this file Copyright 1999-2005 University of Chicago
- * Portions of this file Copyright 1999-2005 The University of Southern California.
- *
- * This file or a portion of this file is licensed under the
- * terms of the Globus Toolkit Public License, found at
- * http://www.globus.org/toolkit/download/license.html.
- * If you redistribute this file, with or without
- * modifications, you must include this notice in the file.
+ * Copyright 1999-2006 University of Chicago
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 #include "globus_i_gridftp_server.h"
@@ -298,6 +303,8 @@ static const globus_l_gfs_config_option_t option_list[] =
     0, "0", NULL, NULL, NULL,GLOBUS_TRUE, NULL},
  {"fqdn", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     NULL /* hostname found by gethostname() */, NULL, NULL,GLOBUS_TRUE, NULL},
+ {"contact_string", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+    NULL /* contact string that server is listening on */, NULL, NULL,GLOBUS_TRUE, NULL},
  {"loaded_config", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
      NULL /* placeholder so configfile check doesn't fail */, NULL, NULL,GLOBUS_FALSE, NULL},
  {"version_string", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
@@ -313,12 +320,21 @@ static const globus_l_gfs_config_option_t option_list[] =
  {"argv", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_VOID, 0, NULL,
     NULL /* original argv */, NULL, NULL,GLOBUS_FALSE, NULL},
  {"argc", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_INT, 0, NULL,
-    NULL /* original argc */, NULL, NULL, GLOBUS_FALSE, NULL}
+    NULL /* original argc */, NULL, NULL, GLOBUS_FALSE, NULL},
+ {"file_stack", "file_stack", NULL, "file_stack", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+    "set file stack.  EXPERIMENTAL.", NULL, NULL,GLOBUS_FALSE, NULL},
+ {"protocol_stack", "protocol_stack", NULL, "protocol_stack", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+    "set protocol stack.  EXPERIMENTAL.", NULL, NULL,GLOBUS_FALSE, NULL},
+ {"net_stack_list", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_VOID, 0, NULL,
+   NULL, NULL, NULL,GLOBUS_FALSE, NULL},
+ {"fs_stack_list", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_VOID, 0, NULL,
+   NULL, NULL, NULL,GLOBUS_FALSE, NULL}
 };
 
 static int option_count = sizeof(option_list) / sizeof(globus_l_gfs_config_option_t);
 
 static globus_hashtable_t               option_table;
+
 
 
 /* for string options, setting with an int_val of 1 will free the old one */ 
@@ -1547,6 +1563,115 @@ error_exit:
 
 static
 globus_result_t
+globus_i_gfs_config_stack(
+    char *                              value,
+    char *                              config_name)
+{
+    globus_result_t                     result;
+    globus_list_t *                     driver_list = NULL;
+    globus_bool_t                       done = GLOBUS_FALSE;
+    char *                              opts;
+    char *                              ptr;
+    char *                              driver_name;
+    globus_xio_driver_t                 driver;
+    gfs_i_stack_entry_t *               stack_ent;
+    globus_bool_t                       tcp_used = GLOBUS_FALSE;
+    globus_bool_t                       gsi_used = GLOBUS_FALSE;
+
+    if(value != NULL)
+    {
+        while(!done)
+        {
+            driver_name = value;
+            ptr = strchr(driver_name, ',');
+            if(ptr != NULL)
+            {
+                *ptr = '\0';
+                value = ptr+1; // move to next line
+            }
+            else
+            {
+                done = GLOBUS_TRUE;
+            }
+            opts = strchr(driver_name, ':');
+            if(opts != NULL)
+            {
+                *opts = '\0';
+                opts++;
+            }
+
+            if(strcmp(driver_name, "tcp") == 0)
+            {
+                tcp_used = GLOBUS_TRUE;
+                driver = globus_io_compat_get_tcp_driver();
+            }
+            else if(strcmp(driver_name, "gsi") == 0)
+            {
+                gsi_used = GLOBUS_TRUE;
+                driver = globus_io_compat_get_gsi_driver();
+            }
+            else
+            {
+                result = globus_xio_driver_load(driver_name, &driver);
+                if(result != GLOBUS_SUCCESS)
+                {
+                    goto error_load;
+                }
+            }
+            stack_ent = (gfs_i_stack_entry_t *)
+                globus_calloc(1, sizeof(gfs_i_stack_entry_t));
+            stack_ent->opts = opts;
+            stack_ent->driver = driver;
+            stack_ent->driver_name = strdup(driver_name);
+
+            globus_list_insert(&driver_list, stack_ent);
+        }
+        if(!tcp_used)
+        {
+            globus_i_gfs_log_message(
+                GLOBUS_I_GFS_LOG_WARN,
+                "TCP not on stack.  No problem as long as you have set"
+                " a different transport protocol.\n");
+        }
+        if(!gsi_used)
+        {
+            globus_i_gfs_log_message(
+                GLOBUS_I_GFS_LOG_WARN,
+                "GSI not on stack.  No problem as long as you have set"
+                " a different security driver.\n");
+        }
+    }
+    else
+    {
+        stack_ent = (gfs_i_stack_entry_t *)
+            globus_calloc(1, sizeof(gfs_i_stack_entry_t));
+        stack_ent->opts = NULL;
+        stack_ent->driver = globus_io_compat_get_gsi_driver();
+        stack_ent->driver_name = "gsi";
+        globus_list_insert(&driver_list, stack_ent);
+
+        stack_ent = (gfs_i_stack_entry_t *)
+            globus_calloc(1, sizeof(gfs_i_stack_entry_t));
+        stack_ent->opts = NULL;
+        stack_ent->driver = globus_io_compat_get_tcp_driver();
+        stack_ent->driver_name = "tcp";
+        globus_list_insert(&driver_list, stack_ent);
+    }
+    globus_l_gfs_config_set(config_name, 0, driver_list);
+    return GLOBUS_SUCCESS;
+
+error_load:
+    globus_i_gfs_log_message(
+        GLOBUS_I_GFS_LOG_ERR,
+        "Unable to set data channel stack.: %s\n",
+                globus_error_print_friendly(
+                    globus_error_peek((globus_result_t) result)));
+
+    return result;
+}
+
+static
+globus_result_t
 globus_l_gfs_config_misc()
 {
     globus_list_t *                     module_list = NULL;
@@ -1857,6 +1982,14 @@ globus_l_gfs_config_misc()
         globus_l_gfs_config_set("ipc_user_name", 0, 
             globus_libc_strdup(pwent->pw_name));
     }
+
+    value = globus_i_gfs_config_string("protocol_stack");
+    result = globus_i_gfs_config_stack(value, "net_stack_list");
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_exit;
+    }
+
     
     GlobusGFSDebugExit();
     return GLOBUS_SUCCESS;
@@ -1877,7 +2010,8 @@ error_exit:
 void
 globus_i_gfs_config_init(
     int                                 argc,
-    char **                             argv)
+    char **                             argv,
+    globus_bool_t                       argv_only)
 {
     char *                              tmp_str;
     char *                              exec_name;
@@ -1886,6 +2020,7 @@ globus_i_gfs_config_init(
     globus_bool_t                       cmdline_config = GLOBUS_FALSE;
     int                                 arg_num;
     char *                              argp;
+    char **                             tmp_argv;
     int                                 rc;
     globus_result_t                     result;
     GlobusGFSName(globus_i_gfs_config_init);
@@ -1897,7 +2032,18 @@ globus_i_gfs_config_init(
         globus_hashtable_string_hash,
         globus_hashtable_string_keyeq);
 
-    exec_name = argv[0];
+    if(argv == NULL)
+    {
+        tmp_argv = globus_malloc(2 * sizeof(char *));
+        tmp_argv[0] = "globus-gridftp-server";
+        tmp_argv[1] = NULL;
+    }
+    else
+    {
+        tmp_argv = argv;
+    }
+    
+    exec_name = tmp_argv[0];
     /* set default exe name */
     tmp_str = globus_module_getenv("GLOBUS_LOCATION");
     if(tmp_str)
@@ -1916,7 +2062,7 @@ globus_i_gfs_config_init(
     }
     else
     {
-        exec_name = strdup(argv[0]);
+        exec_name = globus_libc_strdup(tmp_argv[0]);
     }
 
     global_config_file = "/etc/grid-security/gridftp.conf";
@@ -1924,32 +2070,39 @@ globus_i_gfs_config_init(
 
     for(arg_num = 0; arg_num < argc; arg_num++)
     {
-        argp = argv[arg_num];
-        if(*argp == '-' && *++argp == 'c' && argv[arg_num + 1])
+        argp = tmp_argv[arg_num];
+        if(*argp == '-' && *++argp == 'c' && tmp_argv[arg_num + 1])
         {
-            local_config_file = globus_libc_strdup(argv[arg_num + 1]);
+            local_config_file = globus_libc_strdup(tmp_argv[arg_num + 1]);
             arg_num = argc;
             cmdline_config = GLOBUS_TRUE;
         }
     }
-    if(local_config_file == NULL)
+    if(local_config_file == NULL && !argv_only)
     {
         local_config_file = globus_common_create_string(
         "%s/etc/gridftp.conf", globus_libc_getenv("GLOBUS_LOCATION"));
     }
 
     globus_l_gfs_config_load_defaults();
-    rc = globus_l_gfs_config_load_config_file(local_config_file);
-    if(rc == -2 && !cmdline_config)
+
+    if(local_config_file != NULL)
     {
-        rc = globus_l_gfs_config_load_config_file(global_config_file);
+        rc = globus_l_gfs_config_load_config_file(local_config_file);
+        if(rc == -2 && !cmdline_config)
+        {
+            rc = globus_l_gfs_config_load_config_file(global_config_file);
+        }
+        if(rc == -1)
+        {
+            goto error;
+        }
     }
-    if(rc == -1)
+    if(!argv_only)
     {
-        goto error;
+        globus_l_gfs_config_load_config_env();
     }
-    globus_l_gfs_config_load_config_env();
-    rc = globus_l_gfs_config_load_commandline(argc, argv);
+    rc = globus_l_gfs_config_load_commandline(argc, tmp_argv);
     if(rc == -1)
     {
         goto error;
@@ -1964,11 +2117,18 @@ globus_i_gfs_config_init(
     }
     
     globus_l_gfs_config_set("exec_name", 0, exec_name);
-    globus_l_gfs_config_set("argv", 0, argv);
+    globus_l_gfs_config_set("argv", 0, tmp_argv);
     globus_l_gfs_config_set("argc", argc, NULL);
 
-    globus_free(local_config_file);     
-
+    if(local_config_file != NULL)
+    {
+        globus_free(local_config_file);
+    }
+    if(argv == NULL)
+    {
+        globus_free(tmp_argv);
+    }
+    
     globus_mutex_init(&globus_i_gfs_config_mutex, NULL);
 
     GlobusGFSDebugExit();

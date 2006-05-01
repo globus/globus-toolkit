@@ -1,12 +1,17 @@
 /*
- * Portions of this file Copyright 1999-2005 University of Chicago
- * Portions of this file Copyright 1999-2005 The University of Southern California.
- *
- * This file or a portion of this file is licensed under the
- * terms of the Globus Toolkit Public License, found at
- * http://www.globus.org/toolkit/download/license.html.
- * If you redistribute this file, with or without
- * modifications, you must include this notice in the file.
+ * Copyright 1999-2006 University of Chicago
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 #ifndef GLOBUS_XIO_MODE_E_DRIVER_INCLUDE
@@ -185,20 +190,6 @@ typedef enum
     GLOBUS_XIO_MODE_E_GET_NUM_STREAMS,
 
     /** GlobusVarArgEnum(attr)
-     * Set the attr cntl function that should be called before creating a new
-     * connection with the stack specified. If any driver specific cntls is 
-     * needed on the stack, this function should take care of applying all 
-     * those cntls on the xio_attr passed to it.
-     * @see globus_xio_mode_e_attr_cntl_callback_t
-     * @ingroup mode_e_driver_cntls
-     *
-     * @param attr_cntl_cb
-     *      Specifies the function pointer.
-     */
-    /* globus_xio_mode_e_attr_cntl_callback_t 	attr_cntl_cb */
-    GLOBUS_XIO_MODE_E_APPLY_ATTR_CNTLS,
-
-    /** GlobusVarArgEnum(attr)
      * Set flag to indicate whether the data read from user would always be 
      * preceded by an offset read or not. The user can do a read with 
      * wait_for_bytes set to zero, to find the offset of the data that he is 
@@ -276,17 +267,35 @@ typedef enum
      *      offset will be stored here
      */
     /* globus_off_t *				offset_out */
-    GLOBUS_XIO_MODE_E_DD_GET_OFFSET
+    GLOBUS_XIO_MODE_E_DD_GET_OFFSET,
+
+    /** GlobusVarArgEnum(attr)
+     * Set the attr to be used with the stack set from 
+     * GLOBUS_XIO_MODE_E_SET_STACK.
+     * @ingroup mode_e_driver_cntls
+     * Do not create a new ftp client handle, use this handle instead.
+     *
+     * @param stack
+     *      Specifies the stack to use for the connection(s).
+     *      Note: this stack will not be destroyed.
+     */
+    /* globus_xio_stack_t           stack */
+
+    GLOBUS_XIO_MODE_E_SET_STACK_ATTR,
+
+    /** GlobusVarArgEnum(attr)
+     * Get the attr that will be used with the stack.  This is intended for
+     * use with GLOBUS_XIO_MODE_E_SET_STACK.
+     * @ingroup mode_e_driver_cntls
+     *
+     * @param stack_out
+     *      The stack will be stored here. If none is set, GLOBUS_NULL will be
+     *      set.
+     */
+    /* globus_xio_attr_t *         attr_out */
+
+    GLOBUS_XIO_MODE_E_GET_STACK_ATTR
 
 } globus_xio_mode_e_cmd_t;	
 
 #endif
-
-/**
- * MODE_E driver specific types
- * @ingroup mode_e_driver_types
- * @hideinitializer
- */
-typedef globus_result_t
-(*globus_xio_mode_e_attr_cntl_callback_t)(
-    globus_xio_attr_t                   attr);

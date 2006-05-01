@@ -1,12 +1,17 @@
 /*
- * Portions of this file Copyright 1999-2005 University of Chicago
- * Portions of this file Copyright 1999-2005 The University of Southern California.
- *
- * This file or a portion of this file is licensed under the
- * terms of the Globus Toolkit Public License, found at
- * http://www.globus.org/toolkit/download/license.html.
- * If you redistribute this file, with or without
- * modifications, you must include this notice in the file.
+ * Copyright 1999-2006 University of Chicago
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
@@ -73,6 +78,7 @@ GSS_CALLCONV gss_accept_sec_context(
     char                                dbuf[1];
     STACK_OF(X509) *                    cert_chain = NULL;
     globus_gsi_cert_utils_cert_type_t   cert_type;
+    int                                 readlen;
 
     static char *                       _function_name_ =
         "gss_accept_sec_context";
@@ -286,7 +292,27 @@ GSS_CALLCONV gss_accept_sec_context(
 
         case(GSS_CON_ST_FLAGS):
         
-            BIO_read(context->gss_sslbio, dbuf, 1);
+            readlen = BIO_read(context->gss_sslbio, dbuf, 1);
+            if (readlen != 1)
+            {
+                if (BIO_should_retry(context->gss_sslbio))
+                {
+                    /*
+                     * Handle receipt of empty fragments sent as a
+                     * countermeasure against an SSL 3.0/TLS 1.0
+                     * protocol vulnerability affecting CBC ciphers.
+                     * http://www.openssl.org/~bodo/tls-cbc.txt
+                     */
+                    context->gss_state = GSS_CON_ST_FLAGS;
+                    break;
+                }
+                GLOBUS_GSI_GSSAPI_ERROR_RESULT(minor_status,
+                     GLOBUS_GSI_GSSAPI_ERROR_WITH_DELEGATION,
+                     (_GGSL("Delegation protocol violation: read failed")));
+                context->gss_state = GSS_CON_ST_DONE;
+                major_status = GSS_S_FAILURE;
+                break;
+            }
             
             /* 
              * proxy_handle gets initialized in

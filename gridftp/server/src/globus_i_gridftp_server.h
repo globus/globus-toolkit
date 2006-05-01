@@ -1,12 +1,17 @@
 /*
- * Portions of this file Copyright 1999-2005 University of Chicago
- * Portions of this file Copyright 1999-2005 The University of Southern California.
- *
- * This file or a portion of this file is licensed under the
- * terms of the Globus Toolkit Public License, found at
- * http://www.globus.org/toolkit/download/license.html.
- * If you redistribute this file, with or without
- * modifications, you must include this notice in the file.
+ * Copyright 1999-2006 University of Chicago
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 #ifndef GLOBUS_I_GRIDFTP_SERVER_H
@@ -35,6 +40,13 @@ typedef struct globus_i_gfs_monitor_s
     globus_cond_t                       cond;
     globus_mutex_t                      mutex;
 } globus_i_gfs_monitor_t;
+
+typedef struct gfs_i_stack_entry_s
+{
+    globus_xio_driver_t                 driver;
+    char *                              driver_name;
+    char *                              opts;
+} gfs_i_stack_entry_t;
 
 void
 globus_i_gfs_monitor_init(
@@ -92,6 +104,7 @@ typedef enum globus_l_gfs_auth_level_e
     GLOBUS_L_GFS_AUTH_IDENTIFY = 0x01,
     GLOBUS_L_GFS_AUTH_ACTION = 0x02,
     GLOBUS_L_GFS_AUTH_NOSETUID = 0x04,
+    GLOBUS_L_GFS_AUTH_NOGRIDMAP = 0x08,
 
     GLOBUS_L_GFS_AUTH_ALL = 0xFF
 } globus_l_gfs_auth_level_t;

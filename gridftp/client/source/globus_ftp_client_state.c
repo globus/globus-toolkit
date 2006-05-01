@@ -1,12 +1,17 @@
 /*
- * Portions of this file Copyright 1999-2005 University of Chicago
- * Portions of this file Copyright 1999-2005 The University of Southern California.
- *
- * This file or a portion of this file is licensed under the
- * terms of the Globus Toolkit Public License, found at
- * http://www.globus.org/toolkit/download/license.html.
- * If you redistribute this file, with or without
- * modifications, you must include this notice in the file.
+ * Copyright 1999-2006 University of Chicago
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
@@ -1027,6 +1032,16 @@ redo:
 	{
 	    goto skip_bufsize;
 	}
+    if(!(client_handle->op == GLOBUS_FTP_CLIENT_GET ||
+        client_handle->op == GLOBUS_FTP_CLIENT_PUT ||
+        client_handle->op == GLOBUS_FTP_CLIENT_LIST ||
+        client_handle->op == GLOBUS_FTP_CLIENT_NLST ||
+        client_handle->op == GLOBUS_FTP_CLIENT_MLSD ||
+        client_handle->op == GLOBUS_FTP_CLIENT_TRANSFER))
+    {
+        goto skip_bufsize;
+    }
+    
 	buffer_cmd = globus_l_ftp_client_guess_buffer_command(client_handle,
 							      target);
 	if(buffer_cmd == GLOBUS_NULL)

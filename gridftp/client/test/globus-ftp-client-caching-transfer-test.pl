@@ -1,15 +1,20 @@
 #! /usr/bin/env perl
 
-#
-# Portions of this file Copyright 1999-2005 University of Chicago
-# Portions of this file Copyright 1999-2005 The University of Southern California.
-#
-# This file or a portion of this file is licensed under the
-# terms of the Globus Toolkit Public License, found at
-# http://www.globus.org/toolkit/download/license.html.
-# If you redistribute this file, with or without
-# modifications, you must include this notice in the file.
-#
+# 
+# Copyright 1999-2006 University of Chicago
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+# http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# 
 
 #
 # Test to exercise the "3rd party transfer" functionality of the Globus
@@ -47,12 +52,10 @@ sub basic_func
 {
     my ($use_proxy) = (shift);
     my ($errors,$rc) = ("",0);
-    my ($old_proxy);
 
-    $old_proxy=$ENV{'X509_USER_PROXY'}; 
     if($use_proxy == 0)
     {
-        $ENV{'X509_USER_PROXY'} = "/dev/null";
+        FtpTestLib::push_proxy("/dev/null");
     }
     my $command = "$test_exec -s $proto$source_host$source_file -d $proto$dest_host$dest_file >/dev/null 2>&1";
     $errors = run_command($command, $use_proxy ? 0 : -1);
@@ -72,13 +75,9 @@ sub basic_func
         $errors = "\n# Test failed\n# $command\n# " . $errors;
         ok($errors, 'success');
     }
-    if((!$use_proxy) && defined($old_proxy))
+    if($use_proxy == 0)
     {
-	$ENV{'X509_USER_PROXY'} = $old_proxy;
-    }
-    elsif((!$use_proxy))
-    {
-        delete $ENV{'X509_USER_PROXY'};
+        FtpTestLib::pop_proxy();
     }
     
     clean_remote_file($dest_host, $dest_file);

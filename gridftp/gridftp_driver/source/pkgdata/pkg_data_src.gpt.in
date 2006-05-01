@@ -20,6 +20,11 @@
                     <Simple_Version Major="2"/>
                 </Version>
             </Dependency>
+            <Dependency Name="globus_xio_gsi_driver">
+                <Version>
+                    <Simple_Version Major="0"/>
+                </Version>
+            </Dependency>
 
         </Source_Dependencies>
 
@@ -34,6 +39,12 @@
                     <Simple_Version Major="2"/>
                 </Version>
             </Dependency>
+            <Dependency Name="globus_xio_gsi_driver">
+                <Version>
+                    <Simple_Version Major="0"/>
+                </Version>
+            </Dependency>
+
         </Source_Dependencies>
 
         <Source_Dependencies Type="doc_runtime">

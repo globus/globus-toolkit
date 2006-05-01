@@ -1,15 +1,21 @@
 /*
- * Portions of this file Copyright 1999-2005 University of Chicago
- * Portions of this file Copyright 1999-2005 The University of Southern California.
- *
- * This file or a portion of this file is licensed under the
- * terms of the Globus Toolkit Public License, found at
- * http://www.globus.org/toolkit/download/license.html.
- * If you redistribute this file, with or without
- * modifications, you must include this notice in the file.
+ * Copyright 1999-2006 University of Chicago
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 #include "globus_xio.h"
+#include "globus_io.h"
 #include "globus_xio_tcp_driver.h"
 #include "globus_i_gridftp_server.h"
 #include "version.h"
@@ -194,7 +200,7 @@ globus_l_gfs_sighup(
     argv = (char **) globus_i_gfs_config_get("argv");
     argc = globus_i_gfs_config_int("argc");
 
-    globus_i_gfs_config_init(argc, argv);
+    globus_i_gfs_config_init(argc, argv, GLOBUS_FALSE);
     globus_i_gfs_log_message(
         GLOBUS_I_GFS_LOG_INFO, 
         "Done reloading config.\n");           
@@ -1064,19 +1070,19 @@ globus_l_gfs_be_daemon()
         }
     }
 
-    if(globus_i_gfs_config_int("port") == 0 ||
-        globus_i_gfs_config_bool("contact_string"))
+    result = globus_xio_server_get_contact_string(
+        globus_l_gfs_xio_server,
+        &contact_string);
+    if(result != GLOBUS_SUCCESS)
     {
-        result = globus_xio_server_get_contact_string(
-            globus_l_gfs_xio_server,
-            &contact_string);
-        if(result != GLOBUS_SUCCESS)
-        {
-            goto server_error;
-        }
+        goto server_error;
+    }
+    globus_gfs_config_set_ptr("contact_string", contact_string);
+
+    if(globus_i_gfs_config_int("port") == 0)
+    {
         globus_libc_printf(_GSSL("Server listening at %s\n"), contact_string);
         fflush(stdout);
-        globus_free(contact_string);
     }
 
     result = globus_xio_server_register_accept(
@@ -1236,7 +1242,7 @@ main(
     }
         
     /* init all the server modules */
-    globus_i_gfs_config_init(argc, argv);
+    globus_i_gfs_config_init(argc, argv, GLOBUS_FALSE);
     globus_i_gfs_log_open();
     globus_l_gfs_signal_init();
     globus_i_gfs_data_init();

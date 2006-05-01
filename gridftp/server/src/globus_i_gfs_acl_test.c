@@ -1,12 +1,17 @@
 /*
- * Portions of this file Copyright 1999-2005 University of Chicago
- * Portions of this file Copyright 1999-2005 The University of Southern California.
- *
- * This file or a portion of this file is licensed under the
- * terms of the Globus Toolkit Public License, found at
- * http://www.globus.org/toolkit/download/license.html.
- * If you redistribute this file, with or without
- * modifications, you must include this notice in the file.
+ * Copyright 1999-2006 University of Chicago
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 /*
@@ -31,10 +36,8 @@ static
 int
 globus_gfs_acl_test_init(
     void **                             out_handle,
-    const struct passwd *               passwd,
-    const char *                        given_pw,
-    const char *                        resource_id,
-    globus_i_gfs_acl_handle_t *         acl_handle,
+    globus_gfs_acl_info_t *             acl_info,
+    globus_gfs_acl_handle_t             acl_handle,
     globus_result_t *                   out_res)
 {
     char *                              fail_str;
@@ -70,7 +73,8 @@ globus_gfs_acl_test_authorize(
     void *                              out_handle,
     const char *                        action,
     const char *                        object,
-    globus_i_gfs_acl_handle_t *         acl_handle,
+    globus_gfs_acl_info_t *             acl_info,
+    globus_gfs_acl_handle_t             acl_handle,
     globus_result_t *                   out_res)
 {
     char *                              fail_str;

@@ -1,12 +1,17 @@
 /*
- * Portions of this file Copyright 1999-2005 University of Chicago
- * Portions of this file Copyright 1999-2005 The University of Southern California.
- *
- * This file or a portion of this file is licensed under the
- * terms of the Globus Toolkit Public License, found at
- * http://www.globus.org/toolkit/download/license.html.
- * If you redistribute this file, with or without
- * modifications, you must include this notice in the file.
+ * Copyright 1999-2006 University of Chicago
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 #include "globus_i_gridftp_server.h"
@@ -95,7 +100,12 @@ globus_l_gfs_activate()
     {
         return rc;
     }
-
+    rc = globus_module_activate(GLOBUS_USAGE_MODULE);
+    if(rc != 0)
+    {
+        return rc;
+    }
+    
     GlobusDebugInit(GLOBUS_GRIDFTP_SERVER,
         ERROR WARNING TRACE INTERNAL_TRACE INFO STATE INFO_VERBOSE);
 
@@ -493,6 +503,10 @@ globus_l_gfs_auth_session_cb(
     {
         globus_free(auth_info->session_info->subject);
     }
+    if(auth_info->session_info->host_id != NULL)
+    {
+        globus_free(auth_info->session_info->host_id);
+    }
     globus_free(auth_info->session_info);
     globus_free(auth_info);
 
@@ -557,12 +571,20 @@ globus_l_gfs_request_auth(
     if(subject != NULL)
     {
         session_info->subject = strdup(subject);
-        if(session_info->password == NULL)
+        if(session_info->subject == NULL)
         {
             goto user_error;
         }
     }
-
+    if(instance->remote_contact != NULL)
+    {
+        session_info->host_id = strdup(instance->remote_contact);
+        if(session_info->host_id == NULL)
+        {
+            goto user_error;
+        }
+    }
+       
     auth_info = (globus_l_gfs_auth_info_t *) calloc(1,
         sizeof(globus_l_gfs_auth_info_t));
     if(auth_info == NULL)

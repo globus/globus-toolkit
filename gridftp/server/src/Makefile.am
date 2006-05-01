@@ -4,8 +4,9 @@ include $(top_srcdir)/globus_automake_pre_top
 # SUBDIRS is an automake macro which contains 
 # the list of subdirectories that have Makefile.am's
 SUBDIRS = \
-	pkgdata \
 	modules \
+	.       \
+	pkgdata \
 	doxygen
 
 EXTRA_DIST = \
@@ -21,6 +22,7 @@ EXTRA_DIST = \
 # will need to be seperated into seperate macros.
 Sources = \
 	globus_gridftp_server.h		    \
+	globus_gridftp_server_embed.h   \
 	globus_i_gridftp_server.h	    \
 	globus_i_gfs_log.c 		        \
 	globus_i_gfs_brain.c            \
@@ -33,7 +35,8 @@ Sources = \
 	globus_i_gfs_acl.h 		        \
 	globus_i_gfs_data.c 		    \
 	globus_i_gfs_data.h 		    \
-        globus_i_gfs_cas.c          \
+    globus_i_gfs_cas.c              \
+    globus_i_gfs_embed.c            \
 	globus_i_gfs_ipc.c 		        \
 	globus_i_gfs_ipc.h 		        \
 	globus_i_gfs_control.c 		    \
@@ -48,7 +51,8 @@ INCLUDES = $(GPT_INCLUDES)
 
 # include_HEADERS is an automake macro which contains 
 # a list of header files that are to be installed in $prefix/include
-flavorinclude_HEADERS = globus_gridftp_server.h  
+flavorinclude_HEADERS = globus_gridftp_server.h \
+						globus_gridftp_server_embed.h
 
 # lib_LTLIBRARIES is an automake macro which contains
 # a list of libtool libraries that are to be installed in $prefix/lib
@@ -71,7 +75,10 @@ libglobus_gridftp_server___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS)
 # 
 # GPT_LIB_LINKS is a macro that contains the linker directives GPT generated 
 # from the dependent packages
-libglobus_gridftp_server___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS)
+libglobus_gridftp_server___GLOBUS_FLAVOR_NAME__la_LIBADD = \
+    $(MODULE_LIBS) \
+    $(GPT_LIB_LINKS)
+
 
 # bin_PROGRAMS is an automake macro which contains
 # a list of programs that are to be installed in a certain directory.
@@ -85,7 +92,7 @@ libglobus_gridftp_server___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS)
 
 sbin_PROGRAMS= \
 	globus-gridftp-server 
-
+	
 # _SOURCES is an automake macro which contains
 # a list of sources needed to compile the library.
 globus_gridftp_server_SOURCES = globus_gridftp_server.c
@@ -105,7 +112,6 @@ globus_gridftp_server_LDFLAGS = $(LDFLHACK) $(GPT_LDFLAGS)
 # from the dependent packages
 globus_gridftp_server_LDADD = \
         ./libglobus_gridftp_server_$(GLOBUS_FLAVOR_NAME).la \
-        $(MODULE_LIBS) \
         $(GPT_PGM_LINKS)
 
 include $(top_srcdir)/globus_automake_post

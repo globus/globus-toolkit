@@ -1,12 +1,17 @@
 /*
- * Portions of this file Copyright 1999-2005 University of Chicago
- * Portions of this file Copyright 1999-2005 The University of Southern California.
- *
- * This file or a portion of this file is licensed under the
- * terms of the Globus Toolkit Public License, found at
- * http://www.globus.org/toolkit/download/license.html.
- * If you redistribute this file, with or without
- * modifications, you must include this notice in the file.
+ * Copyright 1999-2006 University of Chicago
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 #ifndef GLOBUS_XIO_UTIL_INCLUDE
@@ -15,6 +20,12 @@
 #include "globus_xio.h"
 
 EXTERN_C_BEGIN
+
+globus_bool_t
+globus_xio_get_env_pair(
+    const char *                        env_name,
+    int *                               min,
+    int *                               max);
 
 globus_bool_t
 globus_xio_error_is_eof(
@@ -66,6 +77,11 @@ globus_xio_contact_info_to_encoded_string(
     const globus_xio_contact_t *        contact_info,
     const globus_xio_contact_t *        encode_chars,
     char **                             contact_string);
+
+globus_result_t
+globus_xio_contact_copy(
+    globus_xio_contact_t *              dst,
+    const globus_xio_contact_t *        src);
 
 /**
  * Utility macros

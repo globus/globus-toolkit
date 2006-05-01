@@ -1,12 +1,17 @@
 /*
- * Portions of this file Copyright 1999-2005 University of Chicago
- * Portions of this file Copyright 1999-2005 The University of Southern California.
- *
- * This file or a portion of this file is licensed under the
- * terms of the Globus Toolkit Public License, found at
- * http://www.globus.org/toolkit/download/license.html.
- * If you redistribute this file, with or without
- * modifications, you must include this notice in the file.
+ * Copyright 1999-2006 University of Chicago
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 #include "globus_xio_driver.h"
@@ -74,8 +79,6 @@ typedef struct
     int                                 max_connection_count;
     int                                 eod_count;
     globus_xio_attr_t                   xio_attr;       
-    globus_xio_mode_e_attr_cntl_callback_t      
-                                        attr_cntl_cb;
     globus_bool_t                       send_eod;
     globus_bool_t                       manual_eodc;
     globus_off_t                        offset;
@@ -87,7 +90,6 @@ static globus_l_xio_mode_e_attr_t       globus_l_xio_mode_e_attr_default =
     GLOBUS_NULL,
     1,
     0,  
-    GLOBUS_NULL,
     GLOBUS_NULL,
     GLOBUS_FALSE,
     GLOBUS_FALSE,
@@ -126,8 +128,6 @@ typedef struct
     globus_bool_t                       close_canceled;
     globus_fifo_t                       io_q;
     globus_mutex_t                      mutex;
-    globus_xio_mode_e_handle_cntl_callback_t
-                                        handle_cntl_cb;
     globus_off_t                        offset;
     globus_off_t                        eod_offset;
     globus_xio_operation_t              outstanding_op;
@@ -642,20 +642,15 @@ globus_l_xio_mode_e_server_init(
     if (!attr)
     {
         attr = handle->attr;
-    }    
-    result = globus_xio_attr_init(&attr->xio_attr);
-    if (result != GLOBUS_SUCCESS)
+    }
+    if(attr->xio_attr == NULL)
     {
-        goto error_attr_init;
-    }  
-    if (attr->attr_cntl_cb)
-    { 
-        result = attr->attr_cntl_cb(attr->xio_attr);
+        result = globus_xio_attr_init(&attr->xio_attr);
         if (result != GLOBUS_SUCCESS)
         {
-            goto error_attr_cntl;
+            goto error_attr_init;
         }
-    }   
+    }  
     result = globus_xio_server_create(
             &handle->server, attr->xio_attr, handle->stack);
     if (result != GLOBUS_SUCCESS)
@@ -685,7 +680,6 @@ error_parse_cs:
 error_get_cs:
     globus_xio_server_close(handle->server);
 error_server_create:
-error_attr_cntl:
     globus_xio_attr_destroy(attr->xio_attr);
 error_attr_init:
     globus_l_xio_mode_e_handle_destroy(handle);
@@ -1747,17 +1741,12 @@ globus_l_xio_mode_e_open_new_stream(
 
     GlobusXIOModeEDebugEnter();
     attr = handle->attr;
-    result = globus_xio_attr_init(&attr->xio_attr);
-    if (result != GLOBUS_SUCCESS)
+    if(attr->xio_attr == NULL)
     {
-        goto error_attr_init;
-    }
-    if (attr->attr_cntl_cb)
-    {
-        result = attr->attr_cntl_cb(attr->xio_attr);
+        result = globus_xio_attr_init(&attr->xio_attr);
         if (result != GLOBUS_SUCCESS)
         {
-            goto error_attr_cntl;
+            goto error_attr_init;
         }
     }
     result = globus_xio_handle_create(&xio_handle, handle->stack);
@@ -1817,7 +1806,6 @@ error_cancel_enable:
     }
 error_handle_create:
     globus_xio_register_close(xio_handle, NULL, NULL, NULL);
-error_attr_cntl:
     globus_xio_attr_destroy(handle->attr->xio_attr);
 error_attr_init:
     GlobusXIOModeEDebugExitWithError();
@@ -3446,13 +3434,6 @@ globus_l_xio_mode_e_attr_cntl(
             *max_connection_count_out = attr->max_connection_count;
             break;
         }
-        case GLOBUS_XIO_MODE_E_APPLY_ATTR_CNTLS:
-        {
-            globus_xio_mode_e_attr_cntl_callback_t attr_cntl_cb;
-            attr_cntl_cb = va_arg(ap, globus_xio_mode_e_attr_cntl_callback_t);
-            attr->attr_cntl_cb = attr_cntl_cb;
-            break;
-        }
         case GLOBUS_XIO_MODE_E_SET_OFFSET_READS:
             attr->offset_reads = va_arg(ap, globus_bool_t);
             break;
@@ -3481,6 +3462,30 @@ globus_l_xio_mode_e_attr_cntl(
         {
             globus_off_t * offset_out = va_arg(ap, globus_off_t *);
             *offset_out = attr->offset;
+            break;
+        }
+
+        case GLOBUS_XIO_MODE_E_SET_STACK_ATTR:
+        {
+            globus_xio_attr_t in_attr;
+            in_attr = va_arg(ap, globus_xio_attr_t);
+            if(attr->xio_attr != NULL)
+            {
+                globus_xio_attr_destroy(attr->xio_attr);
+            }
+            globus_xio_attr_copy(&attr->xio_attr, in_attr);
+            break;
+        }
+        case GLOBUS_XIO_MODE_E_GET_STACK_ATTR:
+        {
+            globus_xio_attr_t *         out_attr;
+
+            out_attr = va_arg(ap, globus_xio_attr_t *);
+            if(out_attr != NULL) /* jsut in case user is dumb */
+            {
+                *out_attr = attr->xio_attr;
+            }
+            break;
         }
         default:
            result = GlobusXIOErrorInvalidCommand(cmd);
@@ -3516,6 +3521,14 @@ globus_l_xio_mode_e_attr_copy(
     }
     src_attr = (globus_l_xio_mode_e_attr_t *) src;
     memcpy(dst_attr, src_attr, sizeof(globus_l_xio_mode_e_attr_t)); 
+    if(src_attr->stack != NULL)
+    {
+        globus_xio_stack_copy(&dst_attr->stack, src_attr->stack);
+    }
+    if(src_attr->xio_attr != NULL)
+    {
+        globus_xio_attr_copy(&dst_attr->xio_attr, src_attr->xio_attr);
+    }
     /*
      * if there is any ptr in the attr structure do attr->xptr =
      * globus_libc_strdup(attr->xptr) and do if (!attr->xptr) { result =

@@ -1,18 +1,25 @@
 /*
- * Portions of this file Copyright 1999-2005 University of Chicago
- * Portions of this file Copyright 1999-2005 The University of Southern California.
- *
- * This file or a portion of this file is licensed under the
- * terms of the Globus Toolkit Public License, found at
- * http://www.globus.org/toolkit/download/license.html.
- * If you redistribute this file, with or without
- * modifications, you must include this notice in the file.
+ * Copyright 1999-2006 University of Chicago
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 /*
  *  user functions.  used by control.c or DSI implementation if it choses.
  */
 #include "globus_i_gridftp_server.h"
+
+#define FTP_SERVICE_NAME "file"
 
 static void
 globus_gfs_acl_cas_cb(
@@ -34,24 +41,22 @@ static
 int
 globus_gfs_acl_cas_init(
     void **                             out_handle,
-    const struct passwd *               passwd,
-    const char *                        given_pw,
-    const char *                        resource_id,
-    globus_i_gfs_acl_handle_t *         acl_handle,
+    globus_gfs_acl_info_t *             acl_info,
+    globus_gfs_acl_handle_t             acl_handle,
     globus_result_t *                   out_res)
 {
     globus_gsi_authz_handle_t           cas_handle;
     GlobusGFSName(globus_gfs_acl_cas_init);
     GlobusGFSDebugEnter();
 
-    if(acl_handle->context == NULL)
+    if(acl_info->context == NULL)
     {
         goto err;
     }
     *out_res = globus_gsi_authz_handle_init(
         &cas_handle,
-        resource_id,
-        acl_handle->context,
+        FTP_SERVICE_NAME,
+        acl_info->context,
         globus_gfs_acl_cas_cb,
         acl_handle);
     if(*out_res != GLOBUS_SUCCESS)
@@ -73,7 +78,8 @@ globus_gfs_acl_cas_authorize(
     void *                              out_handle,
     const char *                        action,
     const char *                        object,
-    globus_i_gfs_acl_handle_t *         acl_handle,
+    globus_gfs_acl_info_t *             acl_info,
+    globus_gfs_acl_handle_t             acl_handle,
     globus_result_t *                   out_res)
 {
     globus_gsi_authz_handle_t           cas_handle;
@@ -82,7 +88,7 @@ globus_gfs_acl_cas_authorize(
     GlobusGFSDebugEnter();
 
     cas_handle = (globus_gsi_authz_handle_t) out_handle;
-    if(acl_handle->context == NULL)
+    if(acl_info->context == NULL)
     {
         goto err;
     }
@@ -94,7 +100,7 @@ globus_gfs_acl_cas_authorize(
     if (strcmp(action, "authz_assert"))
     {
         full_object = globus_common_create_string(
-            "ftp://%s%s", acl_handle->hostname, object);
+            "ftp://%s%s", acl_info->hostname, object);
     }
     else
     {

@@ -1,12 +1,17 @@
 /*
- * Portions of this file Copyright 1999-2005 University of Chicago
- * Portions of this file Copyright 1999-2005 The University of Southern California.
- *
- * This file or a portion of this file is licensed under the
- * terms of the Globus Toolkit Public License, found at
- * http://www.globus.org/toolkit/download/license.html.
- * If you redistribute this file, with or without
- * modifications, you must include this notice in the file.
+ * Copyright 1999-2006 University of Chicago
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 /**
@@ -651,6 +656,78 @@ globus_i_ftp_control_data_set_netlogger(
 
     return GLOBUS_SUCCESS;
 }
+
+globus_result_t
+globus_i_ftp_control_data_set_stack(
+    globus_ftp_control_handle_t *               handle,
+    globus_xio_stack_t                          stack)
+{
+    globus_i_ftp_dc_handle_t *                  dc_handle;
+    globus_object_t *                           err;
+    static char *                               myname =
+                                      "globus_i_ftp_control_data_set_stack";
+    /*
+     *  error checking
+     */
+    if(handle == GLOBUS_NULL)
+    {
+        err = globus_io_error_construct_null_parameter(
+                  GLOBUS_FTP_CONTROL_MODULE,
+                  GLOBUS_NULL,
+                  "handle",
+                  1,
+                  myname);
+        return globus_error_put(err);
+    }
+    if(stack == NULL)
+    {
+        err = globus_io_error_construct_null_parameter(
+                  GLOBUS_FTP_CONTROL_MODULE,
+                  GLOBUS_NULL,
+                  "stack",
+                  2,
+                  myname);
+        return globus_error_put(err);
+    }
+
+    dc_handle = &handle->dc_handle;
+    GlobusFTPControlDataTestMagic(dc_handle);
+    if(!dc_handle->initialized)
+    {
+        err = globus_io_error_construct_not_initialized(
+                  GLOBUS_FTP_CONTROL_MODULE,
+                  GLOBUS_NULL,
+                  "handle",
+                  1,
+                  myname);
+        return globus_error_put(err);
+    }
+
+    globus_mutex_lock(&dc_handle->mutex);
+    {
+        globus_io_attr_set_stack(&dc_handle->io_attr, stack);
+    }
+    globus_mutex_unlock(&dc_handle->mutex);
+
+    return GLOBUS_SUCCESS;
+}
+
+globus_result_t
+globus_i_ftp_control_data_get_attr(
+    globus_ftp_control_handle_t *               handle,
+    globus_xio_attr_t *                         attr)
+{
+    globus_result_t                             result;
+    globus_i_ftp_dc_handle_t *                  dc_handle;
+
+    dc_handle = &handle->dc_handle;
+    GlobusFTPControlDataTestMagic(dc_handle);
+
+    result = globus_io_attr_get_xio_attr(&dc_handle->io_attr, attr);
+
+    return result;
+}
+
 
 globus_bool_t
 globus_list_remove_element(

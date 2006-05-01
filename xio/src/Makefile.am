@@ -15,6 +15,7 @@ Sources= \
 	globus_xio_server.c                         \
 	globus_xio_pass.c                           \
 	globus_xio_util.c                           \
+	globus_xio_wrapblock.c                      \
 	globus_xio_system_select.c                  \
 	globus_i_xio_system_common.c                \
 	globus_xio_load.c
@@ -25,6 +26,7 @@ flavorinclude_HEADERS = \
     globus_xio_load.h                           \
     globus_xio_driver.h                         \
     globus_xio.h                                \
+	globus_xio_wrapblock.h                      \
     globus_xio_system.h 
 
 noinst_HEADERS = \

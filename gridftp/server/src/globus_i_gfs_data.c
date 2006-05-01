@@ -1,12 +1,17 @@
 /*
- * Portions of this file Copyright 1999-2005 University of Chicago
- * Portions of this file Copyright 1999-2005 The University of Southern California.
- *
- * This file or a portion of this file is licensed under the
- * terms of the Globus Toolkit Public License, found at
- * http://www.globus.org/toolkit/download/license.html.
- * If you redistribute this file, with or without
- * modifications, you must include this notice in the file.
+ * Copyright 1999-2006 University of Chicago
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 #include "globus_i_gridftp_server.h"
@@ -16,15 +21,12 @@
 #include <openssl/des.h>
 #include <pwd.h>
 #include <grp.h>
+#include "globus_io.h"
 
-#define USER_NAME_MAX   64
+
 #define FTP_SERVICE_NAME "file"
-
-#if defined(_SC_GETPW_R_SIZE_MAX)
-#define GSC_GETPW_PWBUFSIZE         _SC_GETPW_R_SIZE_MAX
-#else
+#define USER_NAME_MAX   64
 #define GSC_GETPW_PWBUFSIZE        (USER_NAME_MAX*3)+(PATH_MAX*2)
-#endif
 
 #define GFSDataOpDec(_op, _d_op, _d_s)                                  \
 do                                                                      \
@@ -133,6 +135,7 @@ typedef struct
     globus_gfs_operation_t              outstanding_op;
     globus_bool_t                       destroy_requested;
     globus_bool_t                       use_interface;
+    globus_xio_attr_t                   xio_attr;
 } globus_l_gfs_data_handle_t;
 
 typedef struct globus_l_gfs_data_operation_s
@@ -293,6 +296,11 @@ void
 globus_l_gfs_data_operation_destroy(
     globus_l_gfs_data_operation_t *     op,
     globus_bool_t                       free_session);
+
+static
+globus_result_t
+globus_l_gfs_set_stack(
+    globus_l_gfs_data_handle_t *        handle);
 
 static
 void
@@ -971,6 +979,8 @@ error:
     }
     globus_mutex_lock(&op->session_handle->mutex);
     {
+        /* dec session handle now since we won't get a stop_session */
+        op->session_handle->ref--;
         GFSDataOpDec(op, destroy_op, destroy_session);
     }
     globus_mutex_unlock(&op->session_handle->mutex);
@@ -997,41 +1007,81 @@ globus_l_gfs_data_authorize(
     char                                authz_usr[USER_NAME_MAX];
     struct passwd *                     pwent = NULL;
     struct group *                      grent = NULL;
+    int                                 auth_level;
     GlobusGFSName(globus_l_gfs_data_authorize);
     GlobusGFSDebugEnter();
 
+    auth_level = globus_i_gfs_config_int("auth_level");
     pw_file = (char *) globus_i_gfs_config_string("pw_file");
     /* if there is a del cred we are using gsi, look it up in the gridmap */
     if(session_info->del_cred != NULL)
     {
-        if(context != NULL)
+        if(!(auth_level & GLOBUS_L_GFS_AUTH_NOGRIDMAP))
         {
-            if(session_info->map_user)
+            if(context != NULL)
             {
-                usr = NULL;
+                if(session_info->map_user)
+                {
+                    usr = NULL;
+                }
+                else
+                {
+                    usr = session_info->username;
+                }
+    
+                *authz_usr = '\0';            
+                res = globus_gss_assist_map_and_authorize(
+                    context,
+                    FTP_SERVICE_NAME,
+                    usr,
+                    authz_usr,
+                    USER_NAME_MAX);
+                if(res != GLOBUS_SUCCESS)
+                {
+                    goto pwent_error;
+                }
+                /* if res=success and authz_usr is empty, assume usr is ok
+                 * and some callout just didn't copy it to authz_usr */
+                if(*authz_usr != '\0')
+                {
+                    usr = authz_usr;
+                
+                    if(session_info->username)
+                    {
+                        globus_free(session_info->username);
+                    }
+                    session_info->username = globus_libc_strdup(usr);
+                }
             }
             else
             {
-                usr = session_info->username;
-            }
-
-            *authz_usr = '\0';            
-            res = globus_gss_assist_map_and_authorize(
-                context,
-                FTP_SERVICE_NAME,
-                usr,
-                authz_usr,
-                USER_NAME_MAX);
-            if(res != GLOBUS_SUCCESS)
-            {
-                goto pwent_error;
-            }
-            /* if res=success and authz_usr is empty, assume usr is ok
-             * and some callout just didn't copy it to authz_usr */
-            if(*authz_usr != '\0')
-            {
-                usr = authz_usr;
-            
+                if(session_info->map_user)
+                {
+                    rc = globus_gss_assist_gridmap(
+                        (char *) session_info->subject, &usr);
+                    if(rc != 0)
+                    {
+                        GlobusGFSErrorGenericStr(res, 
+                            ("Gridmap lookup failure: unable to map '%s'.", 
+                            session_info->subject));
+                        goto pwent_error;
+                    }
+                }
+                else
+                {
+                    rc = globus_gss_assist_userok(
+                        session_info->subject, session_info->username);
+                    usr = session_info->username;
+                    if(rc != 0)
+                    {
+                        GlobusGFSErrorGenericStr(res,
+                            ("Gridmap lookup failure: "
+                            "unable to map '%s' to '%s'.", 
+                            session_info->subject,
+                            session_info->username));
+                        goto pwent_error;
+                    }
+                }
                 if(session_info->username)
                 {
                     globus_free(session_info->username);
@@ -1041,60 +1091,49 @@ globus_l_gfs_data_authorize(
         }
         else
         {
-            if(session_info->map_user)
+            if(session_info->map_user == GLOBUS_TRUE ||
+                session_info->username == NULL)
             {
-                rc = globus_gss_assist_gridmap(
-                    (char *) session_info->subject, &usr);
-                if(rc != 0)
+                pwent = globus_l_gfs_getpwuid(getuid());
+                if(pwent == NULL)
                 {
-                    GlobusGFSErrorGenericStr(res, 
-                        ("Gridmap lookup failure: unable to map '%s'.", 
-                        session_info->subject));
+                    res = GlobusGFSErrorGeneric(
+                        "Invalid passwd entry for current user.");
+                    goto pwent_error;
+                }
+                if(session_info->username)
+                {
+                    globus_free(session_info->username);
+                }
+                session_info->username = globus_libc_strdup(pwent->pw_name);
+            }
+        }
+
+        if(pwent == NULL)
+        {            
+            if(auth_level & GLOBUS_L_GFS_AUTH_NOSETUID)
+            {
+                pwent = globus_l_gfs_getpwuid(getuid());
+                if(pwent == NULL)
+                {
+                    res = GlobusGFSErrorGeneric(
+                        "Invalid passwd entry for current user.");
                     goto pwent_error;
                 }
             }
             else
             {
-                rc = globus_gss_assist_userok(
-                    session_info->subject, session_info->username);
-                usr = session_info->username;
-                if(rc != 0)
+                pwent = globus_l_gfs_getpwnam(session_info->username);
+                if(pwent == NULL)
                 {
                     GlobusGFSErrorGenericStr(res,
-                        ("Gridmap lookup failure: unable to map '%s' to '%s'.", 
-                        session_info->subject,
+                        ("Mapped user '%s' is invalid.",
                         session_info->username));
                     goto pwent_error;
                 }
             }
-            if(session_info->username)
-            {
-                globus_free(session_info->username);
-            }
-            session_info->username = globus_libc_strdup(usr);
         }
         
-        if(globus_i_gfs_config_int("auth_level") & GLOBUS_L_GFS_AUTH_NOSETUID)
-        {
-            pwent = globus_l_gfs_getpwuid(getuid());
-            if(pwent == NULL)
-            {
-                res = GlobusGFSErrorGeneric(
-                    "Invalid passwd entry for current user.");
-                goto pwent_error;
-            }
-        }
-        else
-        {
-            pwent = globus_l_gfs_getpwnam(session_info->username);
-            if(pwent == NULL)
-            {
-                GlobusGFSErrorGenericStr(res,
-                    ("Mapped user '%s' is invalid.",
-                    session_info->username));
-                goto pwent_error;
-            }
-        }
         gid = pwent->pw_gid;
         grent = globus_l_gfs_getgrgid(gid);
         if(grent == NULL)
@@ -1254,7 +1293,7 @@ globus_l_gfs_data_authorize(
     }
 
     /* change process ids */
-    if(!(globus_i_gfs_config_int("auth_level") & GLOBUS_L_GFS_AUTH_NOSETUID))
+    if(!(auth_level & GLOBUS_L_GFS_AUTH_NOSETUID))
     {
         rc = setgid(gid);
         if(rc != 0)
@@ -1309,16 +1348,17 @@ globus_l_gfs_data_authorize(
     rc = globus_i_gfs_acl_init(
         &op->session_handle->acl_handle,
         context,
-        pwent,
-        grent,
+        session_info->subject,
+        session_info->username,
         session_info->password,
         session_info->host_id,
-        FTP_SERVICE_NAME,
         &res,
         globus_l_gfs_data_auth_init_cb,
         op);
     if(rc < 0)
     {
+        res = GlobusGFSErrorGeneric(
+            "ACL initialization error.");
         goto acl_error;
     }
     else if(rc == GLOBUS_GFS_ACL_COMPLETE)
@@ -1344,6 +1384,8 @@ pwent_error:
         globus_l_gfs_gr_free(grent);
     }
     {
+        globus_bool_t                   destroy_session = GLOBUS_FALSE;
+        globus_bool_t                   destroy_op = GLOBUS_FALSE;
         globus_gfs_finished_info_t      finished_info;
         memset(&finished_info, '\0', sizeof(globus_gfs_finished_info_t));
 
@@ -1361,6 +1403,16 @@ pwent_error:
                 &finished_info,
                 op->user_arg);
         }
+
+        globus_mutex_lock(&op->session_handle->mutex);
+        {
+            /* dec session handle now since we won't get a stop_session */
+            op->session_handle->ref--;
+            GFSDataOpDec(op, destroy_op, destroy_session);
+        }
+        globus_mutex_unlock(&op->session_handle->mutex);
+        globus_assert(destroy_op);
+        globus_l_gfs_data_operation_destroy(op, destroy_session);
     }
     GlobusGFSDebugExitWithError();
 }
@@ -2000,6 +2052,16 @@ globus_l_gfs_data_handle_init(
             goto error_control;
         }
     }
+    {
+        result = globus_l_gfs_set_stack(handle);
+        if(result != GLOBUS_SUCCESS)
+        {
+            globus_i_gfs_log_message(
+                GLOBUS_I_GFS_LOG_WARN,
+                "set stack failed: %s\n",
+                globus_error_print_friendly(globus_error_peek(result)));
+        }
+    }
 
     *u_handle = handle;
 
@@ -2481,7 +2543,11 @@ globus_l_gfs_data_passive_kickout(
     }
 
     globus_free(reply.info.data.contact_strings);
-    globus_free(bounce_info->contact_string);
+    /* could be null on error */
+    if(bounce_info->contact_string != NULL)
+    {
+        globus_free(bounce_info->contact_string);
+    }
     globus_free(bounce_info);
 
     GlobusGFSDebugExit();
@@ -2618,7 +2684,7 @@ globus_i_gfs_data_request_passive(
         }
 
         bounce_info = (globus_l_gfs_data_passive_bounce_t *)
-            globus_malloc(sizeof(globus_l_gfs_data_passive_bounce_t));
+            globus_calloc(1, sizeof(globus_l_gfs_data_passive_bounce_t));
         if(!bounce_info)
         {
             result = GlobusGFSErrorMemory("bounce_info");
@@ -2661,7 +2727,7 @@ error_handle:
 error_op:
 
     bounce_info = (globus_l_gfs_data_passive_bounce_t *)
-        globus_malloc(sizeof(globus_l_gfs_data_passive_bounce_t));
+        globus_calloc(1, sizeof(globus_l_gfs_data_passive_bounce_t));
     if(!bounce_info)
     {
         result = GlobusGFSErrorMemory("bounce_info");
@@ -2671,7 +2737,6 @@ error_op:
     bounce_info->id = id;
     bounce_info->handle = handle;
     bounce_info->bi_directional = GLOBUS_TRUE; /* XXX MODE S only */
-    bounce_info->contact_string = cs;
     bounce_info->callback = cb;
     bounce_info->user_arg = user_arg;
     bounce_info->result = result;
@@ -5400,7 +5465,7 @@ globus_l_gfs_operation_finished_kickout(
         GFSDataOpDec(op, destroy_op, destroy_session);
     }
     globus_mutex_unlock(&op->session_handle->mutex);
-//    globus_assert(destroy_op);
+    globus_assert(destroy_op);
     globus_l_gfs_data_operation_destroy(op, destroy_session);
     globus_free(bounce);
 
@@ -6201,3 +6266,59 @@ globus_i_gfs_data_request_buffer_send(
     GlobusGFSDebugExit();
     return;
 }
+
+static
+globus_result_t
+globus_l_gfs_set_stack(
+    globus_l_gfs_data_handle_t *        handle)
+{
+    globus_result_t                     result;
+    gfs_i_stack_entry_t *               stack_ent;
+    globus_list_t *                     driver_list;
+    globus_list_t *                     list;
+    globus_xio_stack_t                  stack;
+
+    globus_xio_stack_init(&stack, NULL);
+    driver_list = (globus_list_t *) globus_i_gfs_config_list("net_stack_list");
+    globus_i_ftp_control_data_get_attr(&handle->data_channel, &handle->xio_attr);
+    for(list = driver_list;
+        !globus_list_empty(list);
+        list = globus_list_rest(list))
+    {
+        stack_ent = (gfs_i_stack_entry_t *) globus_list_first(list);
+
+        result = GLOBUS_SUCCESS;
+        if(strcmp(stack_ent->driver_name, "gsi") == 0)
+        {
+            if(handle->info.dcau != 'N')
+            {
+                result = globus_xio_stack_push_driver(
+                    stack, stack_ent->driver);
+            }
+        }
+        else
+        {
+            result=globus_xio_stack_push_driver(stack, stack_ent->driver);
+        }
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error_control;
+        }
+        /* this should go away after demo? */
+        if(stack_ent->opts != NULL)
+        {
+            /* ignore error */
+            globus_xio_attr_cntl(
+                handle->xio_attr,
+                stack_ent->driver,
+                GLOBUS_XIO_SET_STRING_OPTIONS,
+                stack_ent->opts);
+        }
+    }
+    globus_i_ftp_control_data_set_stack(&handle->data_channel, stack);
+
+    return GLOBUS_SUCCESS;
+error_control:
+    return result;
+}
+

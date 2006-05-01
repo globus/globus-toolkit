@@ -1,12 +1,17 @@
 /*
- * Portions of this file Copyright 1999-2005 University of Chicago
- * Portions of this file Copyright 1999-2005 The University of Southern California.
- *
- * This file or a portion of this file is licensed under the
- * terms of the Globus Toolkit Public License, found at
- * http://www.globus.org/toolkit/download/license.html.
- * If you redistribute this file, with or without
- * modifications, you must include this notice in the file.
+ * Copyright 1999-2006 University of Chicago
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 #include "globus_i_xio_http.h"
@@ -38,6 +43,11 @@ globus_result_t
 globus_l_xio_http_client_parse_response(
     globus_i_xio_http_handle_t *        http_handle,
     globus_bool_t *                     done);
+
+static
+globus_result_t
+globus_l_xio_http_cleanup_cancel(
+    globus_i_xio_http_handle_t *        http_handle);
 
 /**
  * Client-side connection open callback
@@ -682,6 +692,7 @@ globus_l_xio_http_client_read_response_callback(
         if (globus_xio_error_is_eof(result))
         {
             eof = GLOBUS_TRUE;
+            result = GLOBUS_SUCCESS;
         }
         else
         {
@@ -701,14 +712,23 @@ globus_l_xio_http_client_read_response_callback(
                         http_handle->write_operation.operation);
                 globus_assert(result == GLOBUS_SUCCESS);
             }
-            goto error_exit;
+            /* don't go to error exit yet because we may need to clean up
+             * the cancel info
+             */
+            if (!globus_xio_error_is_canceled(result))
+            {
+                goto error_exit;
+            }
         }
     }
 
     http_handle->read_buffer_valid += nbytes;
 
-    /* Parsed response line and headers. */
-    result = globus_l_xio_http_client_parse_response(http_handle, &done);
+    /* Parsed response line and headers (but don't bother if it was canceled. */
+    if (result == GLOBUS_SUCCESS)
+    {
+        result = globus_l_xio_http_client_parse_response(http_handle, &done);
+    }
 
     if (result == GLOBUS_SUCCESS && !done)
     {
@@ -720,6 +740,13 @@ globus_l_xio_http_client_read_response_callback(
      */
     if (http_handle->read_operation.operation != NULL)
     {
+        result = globus_l_xio_http_cleanup_cancel(http_handle);
+
+        if (result != GLOBUS_SUCCESS)
+        {
+            goto error_exit;
+        }
+
         /* Set metadata on this read to contain the response info */
         descriptor = globus_xio_operation_get_data_descriptor(
                 http_handle->read_operation.operation,
@@ -996,3 +1023,68 @@ error_exit:
     return result;
 }
 /* globus_i_xio_http_client_parse_response() */
+
+static
+globus_result_t
+globus_l_xio_http_cleanup_cancel(
+    globus_i_xio_http_handle_t *        http_handle)
+{
+    globus_list_t *                     l;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    GlobusXIOName(globus_l_xio_http_cleanup_cancel);
+
+    globus_assert(http_handle->cancellation != NULL);
+
+    /* At this point, we don't need to enable cancels for the op any more:
+     * the tcp driver can handle it for us. We disable our cancel handler
+     * here. If the cancel callback has fired, we can free the cancel
+     * info ourselves here.
+     * it here and let the cancel callback (if it occurs) remove it
+     */
+    globus_mutex_lock(&globus_i_xio_http_cancel_mutex);
+    if ((l = globus_list_search(globus_i_xio_http_cancellable_handles,
+                http_handle->cancellation)) != NULL)
+    {
+        /* Cancel callback hasn't occurred yet. We'll disable cancel.
+         * and remove the cancellation info from the list (which will
+         * cause any cancel callback to free the data), and if we know
+         * that no callback has or will happen, we can free it ourselves.
+         */
+        globus_list_remove(&globus_i_xio_http_cancellable_handles, l);
+
+        globus_xio_operation_disable_cancel(
+                http_handle->cancellation->user_read_op);
+
+        if (! globus_xio_operation_is_canceled(
+                    http_handle->cancellation->user_read_op))
+        {
+            /* Cancellation didn't happen while we were doing the above,
+             * and so the cancel callback will never be fired. We can
+             * free the cancellation info ourselves here.
+             */
+            free(http_handle->cancellation);
+            http_handle->cancellation = NULL;
+
+        }
+        else
+        {
+            http_handle->cancellation = NULL;
+            result = GlobusXIOErrorCanceled();
+        }
+    }
+    else
+    {
+        /* Cancel callback occurred in another thread. That thread will
+         * try to cancel this operation. We are obliged to free the 
+         * cancel info.
+         */
+
+        free(http_handle->cancellation);
+        http_handle->cancellation = NULL;
+
+        result = GlobusXIOErrorCanceled();
+    }
+    globus_mutex_unlock(&globus_i_xio_http_cancel_mutex);
+
+    return result;
+}
