@@ -131,7 +131,7 @@ globus_l_gfs_file_make_stack(
             if(ptr != NULL)
             {
                 *ptr = '\0';
-                value = ptr+1; // move to next line
+                value = ptr+1; /* move to next line */
             }
             else
             {
