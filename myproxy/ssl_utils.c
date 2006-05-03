@@ -782,6 +782,10 @@ ssl_proxy_from_pem(SSL_CREDENTIALS		*creds,
     }
 
     /* Read proxy private key */
+    /* ML: this changed for PKCS11 support, if we can't find a private key then
+     * we continue and leave it empty for now (will be filled with public key later)
+     */
+
     if (PEM_read_bio_PrivateKey(bio, &(key),
 				PEM_CALLBACK(my_pass_phrase_callback)) == NULL)
     {
@@ -789,19 +793,30 @@ ssl_proxy_from_pem(SSL_CREDENTIALS		*creds,
 	
 	error = ERR_peek_error();
 
-	/* If this is a bad password, return a better error message */
-	if (ERR_GET_REASON(error) == EVP_R_BAD_DECRYPT)
+#ifdef PKCS11
+        // PKCS11: if there is no priv key in the file then ignore silently
+        // and try to load a public key later 
+	if (ERR_GET_REASON(error) == EVP_R_UNSUPPORTED_KEY_SIZE)
+        { 
+            key = NULL;
+        }
+        // If this is a bad password, return a better error message 
+	else 
+#endif
+       if (ERR_GET_REASON(error) == EVP_R_BAD_DECRYPT)
 	{
 	    verror_put_string("Bad password");
-	}
-	else 
+	    goto error;
+        }	
+        else
 	{
 	    verror_put_string("Error parsing private key");
 	    ssl_error_to_verror();
+	    goto error;
 	}
 	
-	goto error;
     }
+
 
     /* Ok, now read the certificate chain */
 
@@ -847,7 +862,7 @@ ssl_proxy_from_pem(SSL_CREDENTIALS		*creds,
      */
     ssl_credentials_free_contents(creds);
     
-    creds->private_key = key;
+    creds->private_key = key; 
     creds->certificate = cert;
     creds->certificate_chain = cert_chain;
     
@@ -896,7 +911,8 @@ ssl_proxy_load_from_file(SSL_CREDENTIALS	*creds,
     unsigned char	*buffer = NULL;
     int			buffer_len;
     int			return_status = SSL_ERROR;
-    
+    FILE		* fp;
+ 
     assert(creds != NULL);
     assert(path != NULL);
 
@@ -914,6 +930,29 @@ ssl_proxy_load_from_file(SSL_CREDENTIALS	*creds,
 	goto error;
     }
     
+#ifdef PKCS11    
+    /* PKCS11 - Check if private key is empty, then try loading a public key
+       from the proxy file, if this also fails we will have to report an error
+ 
+       Eventually we may also want to check at this point if the corr. private key 
+       exists on the pkcs11 device .... but for that we need an engine handle ...
+       which I don't have, or?
+    */
+    if(creds->private_key == NULL) {
+ 
+      if (!(fp = fopen (path, "r"))) {
+	verror_prepend_string("Error reading proxy from %s", path);
+        goto error;
+      }
+      if (!(creds->private_key = PEM_read_PUBKEY(fp, NULL, NULL, NULL))) {
+	verror_prepend_string("Can neither read private nor public key from %s", path);
+        goto error;
+      }
+      fclose (fp);
+
+    }
+#endif
+    
     /* Success */
     return_status = SSL_SUCCESS;
     
@@ -925,6 +964,8 @@ ssl_proxy_load_from_file(SSL_CREDENTIALS	*creds,
 
     return return_status;
 }
+
+
 
 
 int
@@ -1438,6 +1479,8 @@ ssl_proxy_delegation_sign(SSL_CREDENTIALS		*creds,
     }
 
     /* sign request and write out proxy certificate to bio */
+    fprintf(stderr, "before proxy sign\n");   
+ 
     local_result = globus_gsi_proxy_sign_req(proxy_handle, cred_handle, bio);
     if (local_result != GLOBUS_SUCCESS) {
 	verror_put_string("globus_gsi_proxy_sign_req() failed");
@@ -1477,6 +1520,7 @@ ssl_proxy_delegation_sign(SSL_CREDENTIALS		*creds,
     return_status = SSL_SUCCESS;
 
   error:
+  
     if (bio != NULL)
     {
 	BIO_free(bio);

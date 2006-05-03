@@ -45,4 +45,7 @@
 #include "string_funcs.h"
 #include "vparse.h"
 
+/*pkcs11 */
+#include <openssl/engine.h>
+
 #endif /* __MYPROXY_COMMON_H */

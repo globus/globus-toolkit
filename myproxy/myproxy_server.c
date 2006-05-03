@@ -10,6 +10,9 @@
 #define MIN(x,y) ((x) < (y) ? (x) : (y))
 #endif
 
+/* temporary define for forking */
+#define NOFORK
+
 static char usage[] = \
 "\n"\
 "Syntax: myproxy-server [-d|-debug] [-p|-port #] "\
@@ -46,6 +49,11 @@ static char short_options[] = "dhc:p:s:vVuD:";
 static char version[] =
 "myproxy-server version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
 
+#ifdef PKCS11
+/* pkcs11 engine */
+ENGINE *e;
+#endif
+
 /* Signal handling */
 typedef void Sigfunc(int);  
 
@@ -68,7 +76,7 @@ int myproxy_init_server(myproxy_socket_attrs_t *server_attrs);
 int handle_client(myproxy_socket_attrs_t *server_attrs, 
                   myproxy_server_context_t *server_context);
 
-void respond_with_error_and_die(myproxy_socket_attrs_t *attrs,
+void respond_with_error(myproxy_socket_attrs_t *attrs,
 				const char *error);
 
 void send_response(myproxy_socket_attrs_t *server_attrs, 
@@ -119,6 +127,8 @@ main(int argc, char *argv[])
     struct sockaddr_in client_addr;
     int client_addr_len = sizeof(client_addr);
 
+
+    
     myproxy_socket_attrs_t         *socket_attrs;
     myproxy_server_context_t       *server_context;
   
@@ -142,6 +152,30 @@ main(int argc, char *argv[])
 	exit(1);
     }
 
+#ifdef PKCS11
+    /* initialize pkcs11 engine */
+
+    ENGINE_load_pkcs11();
+    e = ENGINE_by_id("pkcs11");
+    if(!e) {
+       /* the engine isn't available */
+       fprintf(stderr,"I am sorry, it appears the PKCS11 device is not available \n");
+       ERR_print_errors_fp(stderr);
+       exit(1);
+    }
+    if(!ENGINE_init(e)) {
+       ENGINE_free(e);
+       fprintf (stderr,"I am sorry, I was unable to initialize the PKCS11 device. \n");
+       fprintf (stderr,"This may be due to an incorrect PIN or a problem with the device itself.\n");
+       ERR_print_errors_fp(stderr);
+       exit(1);
+    }
+
+    /* register engine for all RSA operations */
+    ENGINE_register_RSA(e);
+#endif
+
+
     /* 
      * Test to see if we're run out of inetd 
      * If so, then stdin will be connected to a socket,
@@ -149,31 +183,39 @@ main(int argc, char *argv[])
      */
     if (getpeername(fileno(stdin), (struct sockaddr *) &client_addr, &client_addr_len) < 0) {
        server_context->run_as_daemon = 1;
+#ifndef NOFORK
        if (!debug) {
 	  if (become_daemon(server_context) < 0) {
 	     fprintf(stderr, "Error starting daemon\n");
 	     exit(1);
 	  }
        }
+#endif
     } else { 
        server_context->run_as_daemon = 0;
        close(1);
        (void) open("/dev/null",O_WRONLY);
     }
+
+
     /* Initialize Logging */
     if (debug) {
 	myproxy_debug_set_level(1);
         myproxy_log_use_stream(stderr);
     } else {
-	myproxy_log_use_syslog(LOG_DAEMON, server_context->my_name);
-    }
+#ifndef NOFORK
+ 	myproxy_log_use_syslog(LOG_DAEMON, server_context->my_name);
+#else
+        myproxy_log_use_stream(stderr);
+#endif 
+}
 
     /*
      * Logging initialized: For here on use myproxy_log functions
      * instead of fprintf() and ilk.
      */
     myproxy_log("starting at %s", timestamp());
-
+    
     /* Set up signal handling to deal with zombie processes left over  */
     my_signal(SIGCHLD, sig_chld);
     
@@ -210,6 +252,7 @@ main(int argc, char *argv[])
 		myproxy_log_perror("Error in accept()");
 	     }
 	  }
+#ifndef NOFORK /* no forks when an open cryptoki session is here */
 	  if (!debug) {
 	     childpid = fork();
 	     
@@ -231,12 +274,30 @@ main(int argc, char *argv[])
 	     }
 	     close(listenfd);
 	  }
+#endif
 	  if (handle_client(socket_attrs, server_context) < 0) {
 	     my_failure("error in handle_client()");
 	  } 
+          /* close the socket */
+          close(socket_attrs->socket_fd);
+
+#ifndef NOFORK
 	  _exit(0);
+#endif
+          
+
        }
     }
+
+#ifdef PKCS11
+
+     /* pkcs11 engine cleanup*/
+    if(e != NULL) ENGINE_finish(e);
+    if(e != NULL) ENGINE_free(e);
+    ENGINE_cleanup();
+
+#endif
+
     return 0;
 }   
 
@@ -271,12 +332,14 @@ handle_client(myproxy_socket_attrs_t *attrs,
         return -1;
     }
 
+
     /* Authenticate server to client and get DN of client */
     if (myproxy_authenticate_accept(attrs, client_name,
 				    sizeof(client_name)) < 0) {
 	/* Client_name may not be set on error so don't use it. */
 	myproxy_log_verror();
-	respond_with_error_and_die(attrs, "authentication failed");
+	respond_with_error(attrs, "authentication failed");
+        return 0;
     }
 
     /* Log client name */
@@ -286,24 +349,28 @@ handle_client(myproxy_socket_attrs_t *attrs,
     requestlen = myproxy_recv_ex(attrs, &client_buffer);
     if (requestlen <= 0) {
         myproxy_log_verror();
-	respond_with_error_and_die(attrs, "Error in myproxy_recv_ex()");
+	respond_with_error(attrs, "Error in myproxy_recv_ex()");
+        return 0;
     }
    
     /* Deserialize client request */
     if (myproxy_deserialize_request(client_buffer, requestlen, 
                                     client_request) < 0) {
 	myproxy_log_verror();
-        respond_with_error_and_die(attrs, "error parsing request");
+        respond_with_error(attrs, "error parsing request");
+        return 0;
     }
     free(client_buffer);
     client_buffer = NULL;
+
 
     /* Check client version */
     if (strcmp(client_request->version, MYPROXY_VERSION) != 0) {
 	myproxy_log("client %s Invalid version number (%s) received",
 		    client_name, client_request->version);
-        respond_with_error_and_die(attrs,
+        respond_with_error(attrs,
 				   "Invalid version number received.\n");
+        return 0;
     }
 
     /* Check client username and pass phrase */
@@ -314,15 +381,17 @@ handle_client(myproxy_socket_attrs_t *attrs,
 		    client_name,
 		    (client_request->username == NULL ? "<NULL>" :
 		     client_request->username));
-	respond_with_error_and_die(attrs,
+	respond_with_error(attrs,
 				   "Invalid username received.\n");
+        return 0;
     }
 
     /* All authorization policies are enforced in this function. */
     if (myproxy_authorize_accept(context, attrs, 
 	                         client_request, client_name) < 0) {
        myproxy_log("authorization failed");
-       respond_with_error_and_die(attrs, verror_get_string());
+       respond_with_error(attrs, verror_get_string());
+       return 0;
     }
     
     /* Fill in client_creds with info from the request that describes
@@ -350,7 +419,8 @@ handle_client(myproxy_socket_attrs_t *attrs,
 
 	/* Retrieve the credentials from the repository */
 	if (myproxy_creds_retrieve(client_creds) < 0) {
-	    respond_with_error_and_die(attrs, verror_get_string());
+	    respond_with_error(attrs, verror_get_string());
+            return 0;
 	}
 
 	myproxy_debug("  Owner: %s", client_creds->username);
@@ -366,8 +436,9 @@ handle_client(myproxy_socket_attrs_t *attrs,
 	    myproxy_debug("  warning: credentials not yet valid! "
 			  "(problem with local clock?)");
 	} else if (client_creds->end_time < now) {
-	    respond_with_error_and_die(attrs,
-				       "requested credentials have expired");
+	    respond_with_error(attrs,
+        	       "requested credentials have expired");
+            return 0;
 	}
 
 	/* Are credentials locked? */
@@ -376,7 +447,8 @@ handle_client(myproxy_socket_attrs_t *attrs,
 	    error = malloc(strlen(msg)+strlen(client_creds->lockmsg)+1);
 	    strcpy(error, msg);
 	    strcat(error, client_creds->lockmsg);
-	    respond_with_error_and_die(attrs, error);
+	    respond_with_error(attrs, error);
+            return 0;
 	}
 	
 	/* Send initial OK response */
@@ -404,7 +476,8 @@ handle_client(myproxy_socket_attrs_t *attrs,
 					    client_request->retrievers,
 					    client_request->renewers,
 					    client_name) < 0) {
-	    respond_with_error_and_die(attrs, verror_get_string());
+	    respond_with_error(attrs, verror_get_string());
+            return 0;
 	}
 
 	/* Send initial OK response */
@@ -438,8 +511,9 @@ handle_client(myproxy_socket_attrs_t *attrs,
 					    client_request->retrievers,
 					    client_request->renewers,
 					    client_name) < 0) {
-	    respond_with_error_and_die(attrs, verror_get_string());
-	}
+	    respond_with_error(attrs, verror_get_string());
+	    return 0;
+        }
 
 	change_passwd(client_creds, client_request->new_passphrase,
 		      server_response);
@@ -460,7 +534,11 @@ handle_client(myproxy_socket_attrs_t *attrs,
 	myproxy_creds_free_contents(client_creds);
 	free(client_creds);
     }
-    myproxy_free(attrs, client_request, server_response);
+    
+    
+    myproxy_free(NULL, client_request, server_response);
+    GSI_SOCKET_destroy(attrs->gsi_socket);
+
 
     return 0;
 }
@@ -601,7 +679,7 @@ myproxy_init_server(myproxy_socket_attrs_t *attrs)
 }
 
 void
-respond_with_error_and_die(myproxy_socket_attrs_t *attrs,
+respond_with_error(myproxy_socket_attrs_t *attrs,
 			   const char *error)
 {
     myproxy_response_t		response = {0}; /* initialize with 0s */
@@ -627,9 +705,8 @@ respond_with_error_and_die(myproxy_socket_attrs_t *attrs,
         my_failure("error in myproxy_send()\n");
     } 
 
-    myproxy_log("Exiting: %s", error);
+    myproxy_log("Error - closing connection: %s", error);
     
-    exit(1);
 }
 
 void send_response(myproxy_socket_attrs_t *attrs, myproxy_response_t *response,
@@ -855,7 +932,8 @@ become_daemon(myproxy_server_context_t *context)
     pid_t childpid;
     int fd = 0;
     int fdlimit;
-    
+
+   
     /* Steps taken from UNIX Programming FAQ */
     
     /* 1. Fork off a child so the new process is not a process group leader */
@@ -870,7 +948,8 @@ become_daemon(myproxy_server_context_t *context)
       _exit(0);
     }
 
-    /* 2. Set session id to become a process group and session group leader */
+ 
+   /* 2. Set session id to become a process group and session group leader */
     if (setsid() < 0) { 
         perror("Error in setsid()"); 
 	return -1;
@@ -892,7 +971,6 @@ become_daemon(myproxy_server_context_t *context)
 	_exit(0);
     }
 	
-   
     
     /* 4. `chdir("/")' to ensure that our process doesn't keep any directory in use */
     chdir("/");
@@ -901,6 +979,7 @@ become_daemon(myproxy_server_context_t *context)
           anything we write
     */
     umask(0);
+
 
     /* 6. Close all file descriptors */
     fdlimit = sysconf(_SC_OPEN_MAX);
@@ -918,6 +997,7 @@ become_daemon(myproxy_server_context_t *context)
       (void)close(fd);
     } 
 #endif /* TIOCNOTTY */
+
     return 0;
 }
 
@@ -1044,7 +1124,7 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 	      We store a crypt'ed empty passphrase instead.  (yuk!) */
 	   if (creds.passphrase && creds.passphrase[0]) {
 	       char *tmp;
-	       tmp = (char *)crypt("", &creds.owner_name[strlen(creds.owner_name)-3]);
+	       tmp = (char *)des_crypt("", &creds.owner_name[strlen(creds.owner_name)-3]);
 	       if (strcmp(tmp, creds.passphrase)) {
 		   verror_put_string("credential configured for retrieval, not renewal");
 		   goto end;

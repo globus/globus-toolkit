@@ -5,6 +5,11 @@
  */
 
 #include "myproxy_common.h"
+/* profiling */
+#include <sys/timeb.h>
+struct timeb start;
+struct timeb finish;
+/* profiling */
 
 struct _gsi_socket 
 {
@@ -20,6 +25,7 @@ struct _gsi_socket
 };
 
 #define DEFAULT_SERVICE_NAME		"host"
+
 
 /*********************************************************************
  *
@@ -1158,7 +1164,6 @@ int GSI_SOCKET_delegation_init_ext(GSI_SOCKET *self,
     unsigned char		*output_buffer = NULL;
     int				output_buffer_length;
     
-
     if (self == NULL)
     {
 	goto error;
@@ -1169,6 +1174,8 @@ int GSI_SOCKET_delegation_init_ext(GSI_SOCKET *self,
 	self->error_string = strdup("GSI_SOCKET not authenticated");
 	goto error;
     }
+
+
 
     /*
      * Load proxy we are going to use to sign delegation
@@ -1219,6 +1226,8 @@ int GSI_SOCKET_delegation_init_ext(GSI_SOCKET *self,
     /*
      * Sign the request
      */
+    ftime(&start);
+    myproxy_log("starting proxy sign at %u", start.time*1000+start.millitm);
     if (ssl_proxy_delegation_sign(creds,
 				  proxy_restrictions,
 				  input_buffer,
@@ -1229,7 +1238,11 @@ int GSI_SOCKET_delegation_init_ext(GSI_SOCKET *self,
 	GSI_SOCKET_set_error_from_verror(self);
 	goto error;
     }
-    
+
+    ftime(&finish); 
+    myproxy_log("finished proxy sign at %u", finish.time*1000+finish.millitm);
+    myproxy_log("time %u ms", finish.time*1000+finish.millitm-start.time*1000-start.millitm);
+
     /*
      * Write the proxy certificate back to user
      */
@@ -1239,6 +1252,7 @@ int GSI_SOCKET_delegation_init_ext(GSI_SOCKET *self,
     {
 	goto error;
     }
+
 
     /* Success */
     return_value = GSI_SOCKET_SUCCESS;

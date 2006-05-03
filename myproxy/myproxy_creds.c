@@ -11,7 +11,7 @@
 /*
  * Doesn't always seem to be define in <unistd.h>
  */
-char *crypt(const char *key, const char *salt);
+//char * des_crypt(const char *key, const char *salt);
 
 /* Files should only be readable by me */
 #define FILE_MODE               0600
@@ -425,7 +425,7 @@ write_data_file(const struct myproxy_creds *creds,
      * Please, don't try to free tmp1 - crypt() uses one 
      * static string space, a la getenv()
      */
-    tmp1=(char *)crypt(creds->passphrase, 
+    tmp1=(char *)des_crypt(creds->passphrase, 
 	&creds->owner_name[strlen(creds->owner_name)-3]);
  
     /*

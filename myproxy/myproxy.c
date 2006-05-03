@@ -333,6 +333,8 @@ myproxy_authenticate_accept(myproxy_socket_attrs_t *attrs, char *client_name, co
         return -1;
     }
 
+
+    printf("authenticate alive\n");
     if (GSI_SOCKET_get_peer_name(attrs->gsi_socket,
 				 client_name,
 				 namelen) == GSI_SOCKET_ERROR) {
@@ -341,6 +343,7 @@ myproxy_authenticate_accept(myproxy_socket_attrs_t *attrs, char *client_name, co
         verror_put_string("Error getting client name: %s\n", error_string);
         return -1;
     }
+    printf("authenticate alive2\n");
     return 0;
 }
 
