@@ -378,6 +378,7 @@ globus_i_xio_system_try_recvmsg(
     }
 #else
     {
+        /* XXX this is not an acceptable work around for udp sockets */
         do
         {
             if (msghdr->msg_name)
@@ -717,6 +718,7 @@ globus_i_xio_system_try_sendmsg(
     }
 #else
     {
+        /* XXX this is not an acceptable work around for udp sockets */
         do
         {
             if (msghdr->msg_name)

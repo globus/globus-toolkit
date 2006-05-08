@@ -225,6 +225,9 @@ globus_xio_system_socket_register_accept(
     void *                              user_arg);
 
 /* if using from, probably want waitforbytes to be 1 */
+/* if waitforbytes == 0 and iov[0].iov_len == 0
+ * behave like select()... ie notify when data ready
+ */
 globus_result_t
 globus_xio_system_socket_register_read(
     globus_xio_operation_t              op,
@@ -237,6 +240,9 @@ globus_xio_system_socket_register_read(
     globus_xio_system_data_callback_t   callback,
     void *                              user_arg);
 
+/* if waitforbytes == 0 and iov[0].iov_len == 0
+ * behave like select()... ie notify when data ready
+ */
 globus_result_t
 globus_xio_system_socket_register_write(
     globus_xio_operation_t              op,
@@ -249,6 +255,7 @@ globus_xio_system_socket_register_write(
     globus_xio_system_data_callback_t   callback,
     void *                              user_arg);
 
+/* if waitforbytes == 0, do a non-blocking read */
 globus_result_t
 globus_xio_system_socket_read(
     globus_xio_system_socket_handle_t   handle,
@@ -259,6 +266,7 @@ globus_xio_system_socket_read(
     globus_sockaddr_t *                 from,
     globus_size_t *                     nbytes);
 
+/* if waitforbytes == 0, do a non-blocking write */
 globus_result_t
 globus_xio_system_socket_write(
     globus_xio_system_socket_handle_t   handle,

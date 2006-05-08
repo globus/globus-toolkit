@@ -897,6 +897,9 @@ error_op_info:
 /* calling this with null op could cause deadlock... 
  * reserved for internal use
  */
+/* if waitforbytes == 0 and iov[0].iov_len == 0
+ * behave like select()... ie notify when data ready
+ */
 globus_result_t
 globus_l_xio_system_socket_register_read(
     globus_xio_operation_t              op,
@@ -1003,6 +1006,9 @@ globus_xio_system_socket_register_read(
 
 /* calling this with null op could cause deadlock... 
  * reserved for internal use
+ */
+/* if waitforbytes == 0 and iov[0].iov_len == 0
+ * behave like select()... ie notify when data ready
  */
 globus_result_t
 globus_l_xio_system_socket_register_write(
