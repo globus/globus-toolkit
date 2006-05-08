@@ -54,12 +54,12 @@ sub basic_func
         FtpTestLib::push_proxy(File::Spec::->devnull());
     }
     
-    my $command = "$test_exec -s $proto$source_host$source_file;
+    my $command = "$test_exec -s $proto$source_host$source_file";
     $errors = run_command($command, $use_proxy ? 0 : -1, $tmpname);
     if($errors eq "" && $use_proxy)
     {
         my ($newtmp)=(POSIX::tmpnam());
-	system("cat '$local_copy' '$local_copy' > $newtmp");
+	system("cat \"$local_copy\" \"$local_copy\" > $newtmp");
 
 	$errors .= compare_local_files($newtmp, $tmpname);
 
@@ -153,7 +153,7 @@ sub restart_test
     if($errors eq "")
     {
         my ($newtmp)=(POSIX::tmpnam());
-        system("cat '$local_copy' '$local_copy' > $newtmp");
+        system("cat \"$local_copy\" \"$local_copy\" > $newtmp");
 
         $errors .= compare_local_files($newtmp, $tmpname);
 

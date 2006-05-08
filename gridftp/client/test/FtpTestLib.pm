@@ -142,20 +142,28 @@ sub compare_local_files($$)
 {
     my($a,$b) = @_;
     my $diffs;
-
+    my $tmpfile = POSIX::tmpnam();
+    my $script =
+        'binmode(STDOUT); binmode(STDIN);' .
+        'while(<>) { s/\[restart plugin\].*\n//; print; }';
+    
+    `perl -e "$script" < "$b" > "$tmpfile"`;
+    
     if(-B $a or -B $b)
     {
-	$diffs = `perl -pe 's/\\[restart plugin\\].*\\n//' < $b | (cmp '$a' - 2>&1 ) | sed -e 's/^/# /'`;
+        $diffs = `(cmp "$a" "$tmpfile" 2>&1) | sed -e "s/^/# /"`;
     }
     else
     {
-        $diffs = `perl -pe 's/\\[restart plugin\\].*\\n//' < $b | (diff '$a' - 2>&1) | sed -e 's/^/# /'`;
+        $diffs = `(diff "$a" "$tmpfile" 2>&1) | sed -e "s/^/# /"`;
     }
 
     if($diffs ne '')
     {
         $diffs = "\n# Differences between $a and $b.\n" . $diffs;
     }
+    
+    unlink $tmpfile;
     
     return $diffs;
 }
@@ -298,7 +306,7 @@ sub clean_remote_file($$)
             $user = '';
         }
         
-        system("ssh -q $user$_host 'rm -f $file'") == 0 or die "ssh failed";
+        system("ssh -q $user$_host \"rm -f $file\"") == 0 or die "ssh failed";
     }
 }
 

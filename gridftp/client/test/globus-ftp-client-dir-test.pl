@@ -41,7 +41,7 @@ my ($source_host, $source_file, $local_copy) = setup_remote_source();
 my $source_url="$proto$source_host/~/gRidFTpTestdIR";
 
 # remove the file if it is there
-system("./globus-ftp-client-rmdir-test -s $source_file");
+run_command("./globus-ftp-client-rmdir-test -s $source_file", -2);
 push(@tests, "run_check('./globus-ftp-client-mkdir-test', '-s', '');");
 push(@tests, "run_check('./globus-ftp-client-rmdir-test', '-s', '');");
 push(@tests, "run_check('./globus-ftp-client-put-test', '-d', '< /etc/group');");
