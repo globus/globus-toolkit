@@ -20,8 +20,8 @@ require Exporter;
 
 BEGIN { push(@INC, $ENV{GLOBUS_LOCATION} . '/lib/perl'); }
 
-my $default_big_file = ($^O eq "MSWin32") and "/ntldr" or "/bin/sh";
-my $default_small_file = ($^O eq "MSWin32") and "/boot.ini" or "/etc/group";
+my $default_big_file = "/bin/sh";
+my $default_small_file = "/etc/group";
 my $self = {};
 use strict;
 
