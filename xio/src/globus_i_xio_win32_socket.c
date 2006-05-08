@@ -12,7 +12,7 @@ typedef struct globus_l_xio_win32_socket_s
     win32_mutex_t                       lock;
     SOCKET                              socket;
     WSAEVENT                            event;
-    long                                ready_events;
+    long                                eventselect;
     globus_i_xio_win32_event_entry_t    event_entry;
     globus_i_xio_system_op_info_t *     read_info;
     globus_i_xio_system_op_info_t *     write_info;
@@ -107,23 +107,20 @@ globus_l_xio_win32_socket_complete(
 }
 
 /* must be safe to call from win32 thread
- * return true if op is complete
  */
 static
-globus_bool_t
+void
 globus_l_xio_win32_socket_handle_read(
     globus_l_xio_win32_socket_t *       handle,
     globus_i_xio_system_op_info_t *     read_info)
 {
     globus_size_t                       nbytes;
     globus_result_t                     result;
-    globus_bool_t                       complete;
     GlobusXIOName(globus_l_xio_win32_socket_handle_read);
     
     GlobusXIOSystemDebugEnterFD(handle->socket);
 
     result = GLOBUS_SUCCESS;
-    complete = GLOBUS_FALSE;
 
     if(read_info->op)
     {
@@ -166,6 +163,13 @@ globus_l_xio_win32_socket_handle_read(
         break;
 
       case GLOBUS_I_XIO_SYSTEM_OP_READ:
+        /* we loop repeatedly here to read all available data until
+         * the read would return EWOULDBLOCK.  at that time, we'll get
+         * another event to land us back here.
+         * (This looping is necessary to work around a winsock bug where we
+         * aren't notified of the peer closing the connection on short lived
+         * connections)
+         */
         do
         {
             result = globus_i_xio_system_socket_try_read(
@@ -177,29 +181,12 @@ globus_l_xio_win32_socket_handle_read(
                 &nbytes);
             if(result == GLOBUS_SUCCESS)
             {
-                if(nbytes == 0)
-                {
-                    /* this is also possible when there is no user buffer space
-                     * to read data into. 
-                     * (user likely using select() behavior)
-                     * may not have re-enabled READ event, save it now
-                     */
-                    handle->ready_events |= FD_READ;
-                }
-                else
-                {
-                    read_info->nbytes += nbytes;
-                    GlobusIXIOUtilAdjustIovec(
-                        read_info->sop.data.iov,
-                        read_info->sop.data.iovc, nbytes);
-                }
+                read_info->nbytes += nbytes;
+                GlobusIXIOUtilAdjustIovec(
+                    read_info->sop.data.iov,
+                    read_info->sop.data.iovc, nbytes);
             }
-            
-            /* if fd_close received, read again to catch eof */
-        } while(result == GLOBUS_SUCCESS &&
-            handle->ready_events & FD_CLOSE &&
-            read_info->nbytes < read_info->waitforbytes);
-        
+        } while(nbytes > 0 && read_info->nbytes < read_info->waitforbytes);
         break;
 
       default:
@@ -218,31 +205,27 @@ globus_l_xio_win32_socket_handle_read(
         result != GLOBUS_SUCCESS)
     {
         read_info->state = GLOBUS_I_XIO_SYSTEM_OP_COMPLETE;
-        complete = GLOBUS_TRUE;
     }
 
     GlobusXIOSystemDebugExitFD(handle->socket);
-    return complete;
+    return;
 }
 
 /* must be safe to call from win32 thread
- * return true if op is complete
  */
 static
-globus_bool_t
+void
 globus_l_xio_win32_socket_handle_write(
     globus_l_xio_win32_socket_t *       handle,
     globus_i_xio_system_op_info_t *     write_info)
 {
     globus_size_t                       nbytes;
     globus_result_t                     result;
-    globus_bool_t                       complete;
     GlobusXIOName(globus_l_xio_win32_socket_handle_write);
     
     GlobusXIOSystemDebugEnterFD(handle->socket);
 
     result = GLOBUS_SUCCESS;
-    complete = GLOBUS_FALSE;
 
     if(write_info->op)
     {
@@ -311,17 +294,11 @@ globus_l_xio_win32_socket_handle_write(
     if(write_info->nbytes >= write_info->waitforbytes ||
         result != GLOBUS_SUCCESS)
     {
-        /* didn't use all available space (or this is a connect)
-         * record for next write
-         */
-        handle->ready_events |= FD_WRITE;
-        
         write_info->state = GLOBUS_I_XIO_SYSTEM_OP_COMPLETE;
-        complete = GLOBUS_TRUE;
     }
 
     GlobusXIOSystemDebugExitFD(handle->socket);
-    return complete;
+    return;
 }
 
 static
@@ -414,6 +391,7 @@ globus_l_xio_win32_socket_event_cb(
     globus_l_xio_win32_socket_t *       handle;
     WSANETWORKEVENTS                    wsaevents;
     long                                events;
+    long                                clearevents = 0;
     globus_i_xio_system_op_info_t *     read_info = 0;
     globus_i_xio_system_op_info_t *     write_info = 0;
     GlobusXIOName(globus_l_xio_win32_socket_event_cb);
@@ -443,15 +421,14 @@ globus_l_xio_win32_socket_event_cb(
                 events & FD_CLOSE   ? "close;"      : "",
                 (unsigned long)handle->socket));
         
-        /* save the close event if it exists */
-        handle->ready_events |= events & FD_CLOSE;
-        
         if(events & (FD_ACCEPT|FD_READ|FD_CLOSE))
         {
             if(handle->read_info)
             {
-                if(globus_l_xio_win32_socket_handle_read(
-                    handle, handle->read_info))
+                globus_l_xio_win32_socket_handle_read(
+                    handle, handle->read_info);
+                    
+                if(read_info->state == GLOBUS_I_XIO_SYSTEM_OP_COMPLETE)
                 {
                     read_info = handle->read_info;
                     handle->read_info = 0;
@@ -459,7 +436,7 @@ globus_l_xio_win32_socket_event_cb(
             }
             else
             {
-                handle->ready_events |= events & (FD_ACCEPT|FD_READ);
+                clearevents |= FD_ACCEPT|FD_READ;
             }
         }
         
@@ -467,8 +444,10 @@ globus_l_xio_win32_socket_event_cb(
         {
             if(handle->write_info)
             {
-                if(globus_l_xio_win32_socket_handle_write(
-                    handle, handle->write_info))
+                globus_l_xio_win32_socket_handle_write(
+                    handle, handle->write_info)
+                    
+                if(write_info->state == GLOBUS_I_XIO_SYSTEM_OP_COMPLETE)
                 {
                     write_info = handle->write_info;
                     handle->write_info = 0;
@@ -476,8 +455,15 @@ globus_l_xio_win32_socket_event_cb(
             }
             else
             {
-                handle->ready_events |= events & (FD_CONNECT|FD_WRITE);
+                clearevents |= FD_CONNECT|FD_WRITE;
             }
+        }
+        
+        /* clear any events we want to ignore */
+        if((handle->eventselect & clearevents))
+        {
+            handle->eventselect &= ~clearevents;
+            WSAEventSelect(handle->socket, handle->event, handle->eventselect);
         }
     }
     win32_mutex_unlock(&handle->lock);
@@ -534,19 +520,42 @@ globus_l_xio_win32_socket_register_read(
             goto error_already_registered;
         }
         
-        handle->read_info = read_info;
         read_info->state = GLOBUS_I_XIO_SYSTEM_OP_PENDING;
+        globus_l_xio_win32_socket_handle_read(handle, read_info);
         
-        read_info = 0;
-        if(handle->ready_events & (FD_ACCEPT|FD_READ|FD_CLOSE))
+        if(read_info->state != GLOBUS_I_XIO_SYSTEM_OP_COMPLETE)
         {
-            handle->ready_events &= ~(FD_ACCEPT|FD_READ);
+            /* make sure we're set up to be notified of events */
+            long needevents;
             
-            if(globus_l_xio_win32_socket_handle_read(
-                handle, handle->read_info))
+            if(read_info->type == GLOBUS_I_XIO_SYSTEM_OP_ACCEPT)
             {
-                read_info = handle->read_info;
-                handle->read_info = 0;
+                needevents = FD_ACCEPT;
+            }
+            else
+            {
+                needevents = FD_READ|FD_CLOSE;
+            }
+            
+            if((handle->eventselect & needevents) != needevents)
+            {
+                if(WSAEventSelect(
+                    handle->socket, handle->event,
+                    handle->eventselect|needevents) == SOCKET_ERROR)
+                {
+                    read_info->error = GlobusXIOErrorObjSystemError(
+                        "WSAEventSelect", WSAGetLastError());
+                }
+                else
+                {
+                    handle->eventselect |= needevents;
+                }
+            }
+            
+            if(!read_info->error)
+            {
+                handle->read_info = read_info;
+                read_info = 0;
             }
         }
     }
@@ -607,19 +616,45 @@ globus_l_xio_win32_socket_register_write(
             goto error_already_registered;
         }
         
-        handle->write_info = write_info;
         write_info->state = GLOBUS_I_XIO_SYSTEM_OP_PENDING;
-        
-        write_info = 0;
-        if(handle->ready_events & (FD_CONNECT|FD_WRITE|FD_CLOSE))
+        if(write_info->type != GLOBUS_I_XIO_SYSTEM_OP_CONNECT)
         {
-            handle->ready_events &= ~(FD_CONNECT|FD_WRITE);
+            globus_l_xio_win32_socket_handle_write(handle, write_info);
+        }
+        
+        if(write_info->state != GLOBUS_I_XIO_SYSTEM_OP_COMPLETE)
+        {
+            /* make sure we're set up to be notified of events */
+            long needevents;
             
-            if(globus_l_xio_win32_socket_handle_write(
-                handle, handle->write_info))
+            if(write_info->type == GLOBUS_I_XIO_SYSTEM_OP_CONNECT)
             {
-                write_info = handle->write_info;
-                handle->write_info = 0;
+                needevents = FD_CONNECT|FD_CLOSE;
+            }
+            else
+            {
+                needevents = FD_WRITE|FD_CLOSE;
+            }
+            
+            if((handle->eventselect & needevents) != needevents)
+            {
+                if(WSAEventSelect(
+                    handle->socket, handle->event,
+                    handle->eventselect|needevents) == SOCKET_ERROR)
+                {
+                    write_info->error = GlobusXIOErrorObjSystemError(
+                        "WSAEventSelect", WSAGetLastError());
+                }
+                else
+                {
+                    handle->eventselect |= needevents;
+                }
+            }
+            
+            if(!write_info->error)
+            {
+                handle->write_info = write_info;
+                write_info = 0;
             }
         }
     }
@@ -687,17 +722,6 @@ globus_xio_system_socket_init(
         goto error_ioctl;
     }
     
-    if(WSAEventSelect(
-        socket, handle->event,
-        type == GLOBUS_XIO_SYSTEM_TCP_LISTENER 
-            ? FD_ACCEPT 
-            : FD_CONNECT|FD_WRITE|FD_READ|FD_CLOSE) == SOCKET_ERROR)
-    {
-        result = GlobusXIOErrorSystemError(
-            "WSAEventSelect", WSAGetLastError());
-        goto error_select;
-    }
-    
     result = globus_i_xio_win32_event_register(
         &handle->event_entry,
         handle->event,
@@ -721,8 +745,6 @@ globus_xio_system_socket_init(
     return GLOBUS_SUCCESS;
 
 error_register:
-    WSAEventSelect(socket, 0, 0);
-error_select:
     flag = 0;
     ioctlsocket(socket, FIONBIO, &flag);
 error_ioctl:
@@ -1193,8 +1215,6 @@ globus_xio_system_socket_read(
     
     win32_mutex_lock(&handle->lock);
     {
-        handle->ready_events &= ~FD_READ;
-        
         result = globus_i_xio_system_socket_try_read(
             handle->socket,
             iov,
@@ -1283,13 +1303,6 @@ globus_xio_system_socket_write(
             flags,
             to,
             nbytes);
-        
-        if(result == GLOBUS_SUCCESS && *nbytes == 0 && 
-            (iovc > 1 || iov->iov_len > 0))
-        {
-            /* couldnt write any data, clear write event */
-            handle->ready_events &= ~FD_WRITE;
-        }
     }
     win32_mutex_unlock(&handle->lock);
     
