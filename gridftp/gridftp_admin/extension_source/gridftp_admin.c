@@ -22,8 +22,14 @@
 #include "wssg_MembershipContentRule.h"
 #include "wssg_EntryType_array.h"
 #include "wssg_EntryType.h"
+#include "FrontendStatsType.h"
+#include "BackendPool.h"
+#include "backendInfo.h"
+#include "backendInfo_array.h"
 
 #include "gridftp_admin.h"
+
+#define GFTP_ADMIN_ARG_DEL  '#'
 
 extern globus_module_descriptor_t       GridFTPAdminService_module;
 
@@ -58,164 +64,91 @@ GlobusExtensionDefineModule(gridftp_admin) =
     NULL
 };
 
+static
+backendInfo_array *
+gridftpA_l_make_backend_array()
+{
+    backendInfo_array *                 backend_array = NULL;
+    globus_list_t *                     list;
+    backendInfo *                       wsrf_b_info;
+    globus_i_gfs_brain_node_t *         backend_info;
+
+    backendInfo_array_init(&backend_array);
+    list = (globus_list_t *)globus_gfs_config_get("backend_pool");
+
+    while(!globus_list_empty(list))
+    {
+        list = globus_list_rest(list);
+        backend_info = (globus_i_gfs_brain_node_t *) globus_list_first(list);
+        wsrf_b_info = backendInfo_array_push(backend_array);
+
+        xsd_string_copy_contents_cstr(
+            &wsrf_b_info->indentifier, backend_info->host_id);
+        wsrf_b_info->approximate_load = (xsd_float) backend_info->load;
+        wsrf_b_info->connections = (xsd_int) backend_info->current_connection;
+    }
+
+    return backend_array;
+}
+
+static
+FrontendStatsType *
+gridftpA_l_make_fe_struct()
+{
+    FrontendStatsType *                 fe;
+    char *                              tmp_s;
+    int                                 tmp_i;
+
+    FrontendStatsType_init(&fe);
+
+    tmp_s = globus_gfs_config_get_string("");
+    xsd_string_init_contents_cstr(&fe->contact_string, tmp_s);
+    tmp_s = globus_gfs_config_get_string("banner");
+    xsd_string_init_contents_cstr(&fe->banner, tmp_s);
+    fe->load = (xsd_float) 0.5f;
+
+    tmp_i = globus_gfs_config_get_int("connections_max");
+    fe->connections_max = (xsd_int) tmp_i;
+    tmp_i = globus_gfs_config_get_int("open_connections_count");
+    fe->open_connections_count = (xsd_int) tmp_i;
+    tmp_i = globus_gfs_config_get_int("backends_registered");
+    fe->backends_registered = (xsd_int) tmp_i;
+    tmp_i = globus_gfs_config_get_int("data_connection_max");
+    fe->data_connection_max = (xsd_int) tmp_i;
+    fe->max_bw = (xsd_int) 0;
+    fe->current_bw = (xsd_int) 0;
+    tmp_i = globus_gfs_config_get_int("file_transfer_count");
+    fe->file_transfer_count = (xsd_int) tmp_i;
+
+    return fe;
+}
+
 
 void
-gridftpA_l_string_get_cb(
-    void *                              arg,
-    const xsd_QName *                   qname,
-    void **                             property)
-{
-    char *                              opt;
-    char *                              val;
-
-    opt = (char *) arg;
-
-    val = globus_gfs_config_get_string(qname->local);
-    if(val == NULL)
-    {
-        val = " ";
-    }
-    val = strdup(val);
-    xsd_string_init_cstr((xsd_string **) property, val);
-}
-
-void
-gridftpA_l_int_get_cb(
-    void *                              arg,
-    const xsd_QName *                   qname,
-    void **                             property)
-{
-    char *                              opt;
-    int                                 val;
-    xsd_int *                           i_ptr;
-
-    opt = (char *) qname->local;
-
-    val = globus_gfs_config_get_int(opt);
-    xsd_int_init(&i_ptr);
-    *i_ptr = val;
-    *property = i_ptr;
-}
-
-globus_bool_t
-gridftpA_l_int_set_cb(
-    void *                              arg,
-    const xsd_QName *                   qname,
-    void *                              property)
-{
-    int                                 val;
-    xsd_int *                           i_ptr;
-    char *                              opt;
-    globus_i_gfs_config_option_cb_ent_t * cb_ent;
-
-    cb_ent = (globus_i_gfs_config_option_cb_ent_t *) arg;
-    opt = (char *) qname->local;
-
-    val = globus_gfs_config_get_int(qname->local);
-    i_ptr = (xsd_int *) property;
-    if(val == *i_ptr)
-    {
-        return GLOBUS_TRUE;
-    }
-    globus_gfs_config_enable_cb(cb_ent, GLOBUS_FALSE);
-    globus_gfs_config_set_int(opt, *i_ptr);
-    globus_gfs_config_enable_cb(cb_ent, GLOBUS_TRUE);
-
-    return GLOBUS_TRUE;
-}
-
-globus_bool_t
-gridftpA_l_string_set_cb(
-    void *                              arg,
-    const xsd_QName *                   qname,
-    void *                              property)
-{
-    char *                              val;
-    xsd_string *                        i_ptr;
-    char *                              opt;
-    globus_i_gfs_config_option_cb_ent_t * cb_ent;
-
-    cb_ent = (globus_i_gfs_config_option_cb_ent_t *) arg;
-
-    opt = (char *) qname->local;
-
-    val = globus_gfs_config_get_string(opt);
-    i_ptr = (xsd_string *) property;
-    if(strcmp(*i_ptr, val) == 0)
-    {
-        return GLOBUS_TRUE;
-    }
-    globus_gfs_config_enable_cb(cb_ent, GLOBUS_FALSE);
-    globus_gfs_config_set_ptr(opt, strdup(*i_ptr));
-    globus_gfs_config_enable_cb(cb_ent, GLOBUS_TRUE);
-
-    return GLOBUS_TRUE;
-}
-
-void
-gridftpA_l_int_change_cb(
-    const char *                        opt_name,
-    int                                 val,
-    void *                              user_arg)
-{
-    xsd_int *                           i_ptr;
-    globus_result_t                     result;
-    globus_resource_t                   resource;
-    xsd_QName                           qname =
-        {
-            GRIDFTP_ADMIN_SERVICE_NAMESPACE,
-            NULL
-        };
-
-    qname.local = (char *)opt_name;
-    result = globus_resource_find(RESOURCE_NAME, &resource);
-    if(result != GLOBUS_SUCCESS)
-    {
-        goto error;
-    }
-    xsd_int_init(&i_ptr);
-    *i_ptr = val;
-    result = globus_resource_set_property(resource, &qname, (void *)i_ptr);
-    if(result != GLOBUS_SUCCESS)
-    {
-        goto error_set;
-    }
-
-    globus_resource_finish(resource);
-    return;
-error_set:
-    globus_resource_finish(resource);
-error:
-    return;
-}
-
-void
-gridftpA_l_string_change_cb(
+gridftpA_l_backend_change_cb(
     const char *                        opt_name,
     const char *                        val,
     void *                              user_arg)
 {
-    xsd_string *                        i_ptr;
+    backendInfo_array *                 backend_array;
     globus_result_t                     result;
     globus_resource_t                   resource;
-    xsd_QName                           qname =
-        {
-            GRIDFTP_ADMIN_SERVICE_NAMESPACE,
-            NULL
-        };
 
-    qname.local = (char *)opt_name;
     result = globus_resource_find(RESOURCE_NAME, &resource);
     if(result != GLOBUS_SUCCESS)
     {
         goto error;
     }
-    xsd_string_init_cstr(&i_ptr, strdup(val));
-    result = globus_resource_set_property(resource, &qname, (void *)i_ptr);
+
+    backend_array = gridftpA_l_make_backend_array();
+
+    result = globus_resource_set_property(
+        resource, &BackendPool_qname, (void *)backend_array);
     if(result != GLOBUS_SUCCESS)
     {
         goto error_set;
     }
+
     globus_resource_finish(resource);
 
     return;
@@ -223,6 +156,86 @@ error_set:
     globus_resource_finish(resource);
 error:
     return;
+}
+void
+gridftpA_l_fe_change_cb(
+    const char *                        opt_name,
+    const char *                        val,
+    void *                              user_arg)
+{
+    globus_result_t                     result;
+    globus_resource_t                   resource;
+    FrontendStatsType *                 fe;
+
+    result = globus_resource_find(RESOURCE_NAME, &resource);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+
+    fe = gridftpA_l_make_fe_struct();
+
+    result = globus_resource_set_property(
+        resource, &FrontendStatsType_qname, (void *)fe);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_set;
+    }
+
+    globus_resource_finish(resource);
+
+    return;
+error_set:
+    globus_resource_finish(resource);
+error:
+    return;
+}
+
+void
+gridftpA_l_fe_get_cb(
+    void *                              arg,
+    const xsd_QName *                   qname,
+    void **                             property)
+{
+    FrontendStatsType *                 fe;
+
+    fe = gridftpA_l_make_fe_struct();
+
+    *property = fe;
+}
+
+/* maynot externally set this */
+globus_bool_t
+gridftpA_l_fe_set_cb(
+    void *                              arg,
+    const xsd_QName *                   qname,
+    void *                              property)
+{
+    return GLOBUS_FALSE;
+}
+
+
+void
+gridftpA_l_backend_get_cb(
+    void *                              arg,
+    const xsd_QName *                   qname,
+    void **                             property)
+{
+    backendInfo_array *                 backend_array;
+
+    backend_array = gridftpA_l_make_backend_array();
+
+    *property = backend_array;
+}
+
+/* maynot externally set this */
+globus_bool_t
+gridftpA_l_backend_set_cb(
+    void *                              arg,
+    const xsd_QName *                   qname,
+    void *                              property)
+{
+    return GLOBUS_FALSE;
 }
 
 static
@@ -237,14 +250,14 @@ gridftp_admin_l_engine_stop_callback(
 static
 globus_result_t
 gridftp_admin_l_create_resource(
-    globus_service_engine_t             engine)
+    globus_service_engine_t             engine,
+    char *                              epr_filename)
 {
     wsa_EndpointReferenceType           epr;
     globus_result_t                     result;
     xsd_any *                           reference_properties;
     char *                              name = RESOURCE_NAME;
     globus_resource_t                   resource = NULL;
-    char *                              epr_filename = NULL;
     GlobusGFSName(gridftp_admin_l_create_resource);
 
     result = globus_resource_create(
@@ -295,7 +308,6 @@ gridftp_admin_l_create_resource(
 
     globus_resource_finish(resource);
     GridFTPAdminServiceInitResource(&epr);
-    epr_filename = globus_gfs_config_get_string("epr_outfile");
     if(epr_filename == NULL)
     {
         epr_filename = "/tmp/gridftp_admin_epr";
@@ -358,18 +370,24 @@ error:
     return result;
 }
 
-
-
 static
 globus_result_t
 gridftp_admin_l_init()
 {
+    int                                 key_len;
+    char *                              key;
+    char *                              next_arg;
+    char *                              tmp_s;
+    char *                              current_arg;
+    char *                              args = NULL;
     int                                 rc;
     char *                              prepend_name;
     globus_service_engine_t             engine;
     globus_result_t                     result;
-    char *                              pc;
+    char *                              epr_filename = NULL;
+    char *                              pc = NULL;
     char *                              real_pc;
+    globus_bool_t                       secure = GLOBUS_TRUE;
     GlobusGFSName(gridftp_admin_l_init);
 
     result = globus_module_activate(GLOBUS_SERVICE_ENGINE_MODULE);
@@ -377,47 +395,94 @@ gridftp_admin_l_init()
     {
         goto error;
     }
-    engine = (globus_service_engine_t)
-        globus_gfs_config_get("service_engine");
-    if(engine == NULL)
+
+    tmp_s = globus_gfs_config_get_string("extension_args");
+    if(tmp_s != NULL)
     {
-        pc = globus_gfs_config_get_string("service_port");
-        result = globus_service_engine_init(
-            &engine,
-            NULL,
-            pc,
-            NULL,
-            GLOBUS_FALSE);
-        if(result != GLOBUS_SUCCESS)
+        args = strdup(tmp_s);
+
+        current_arg = args;
+        while(current_arg != NULL && *current_arg != '\0')
         {
-            goto error_deactivate;
-        }
-        result = globus_service_engine_get_contact(engine, &real_pc);
-        if(result != GLOBUS_SUCCESS)
-        {
-            goto error_engine_destroy;
-        }
-        if(pc == NULL)
-        {
-            globus_gfs_config_set_ptr(
-                "service_port", (void *)strdup(real_pc));
-            /* print out real */
-            globus_gfs_log_message(
-                GLOBUS_GFS_LOG_STATUS, "WSRF Admin: %s\n", real_pc);
+            tmp_s = strchr(current_arg, GFTP_ADMIN_ARG_DEL);
+            if(tmp_s != NULL)
+            {
+                *tmp_s = '\0';
+                next_arg = tmp_s + 1;
+            }
+            else
+            {
+                next_arg = NULL;
+            }
+            /* check for parametes we car about */
+            key = "contact=";
+            key_len = strlen(key);
+            if(strncmp(key, current_arg, key_len) == 0)
+            {
+                pc = current_arg + key_len;
+            }
+
+            key = "epr_file=";
+            key_len = strlen(key);
+            if(strncmp(key, current_arg, key_len) == 0)
+            {
+                epr_filename = current_arg + key_len;
+            }
+
+            key = "secure=";
+            key_len = strlen(key);
+            if(strncmp(key, current_arg, key_len) == 0)
+            {
+                tmp_s = current_arg + key_len;
+                if(*tmp_s == 'N')
+                {
+                    secure = GLOBUS_FALSE;
+                }
+            }
+
+            current_arg = next_arg;
         }
 
-        globus_gfs_config_set_ptr("service_engine", engine);
-
-       result = globus_service_engine_register_start(
-            engine,
-            gridftp_admin_l_engine_stop_callback,
-            NULL);
-        if(result != GLOBUS_SUCCESS)
-        {
-            goto error_pc_free;
-        }
     }
 
+    result = globus_service_engine_init(
+        &engine,
+        NULL,
+        pc,
+        NULL,
+        secure);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_deactivate;
+    }
+    result = globus_service_engine_get_contact(engine, &real_pc);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_engine_destroy;
+    }
+    if(pc == NULL)
+    {
+        globus_gfs_config_set_ptr(
+            "extension_args", (void *)strdup(real_pc));
+    }
+    /* print out real */
+    globus_gfs_log_message(
+        GLOBUS_GFS_LOG_STATUS, "WSRF Admin: %s\n", real_pc);
+
+    result = globus_service_engine_register_start(
+        engine,
+        gridftp_admin_l_engine_stop_callback,
+        NULL);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_pc_free;
+    }
+
+    /* we have now used all the args and can free them */
+    if(args != NULL)
+    {
+        free(args);
+    }
     prepend_name = globus_common_create_string(
         "globus_service_modules/%s", GRIDFTPADMINSERVICE_BASE_PATH);
 
@@ -431,7 +496,7 @@ gridftp_admin_l_init()
     {
         goto error_pc_free;
     }
-    result = gridftp_admin_l_create_resource(engine);
+    result = gridftp_admin_l_create_resource(engine, epr_filename);
     if(result != GLOBUS_SUCCESS)
     {
         goto error_pc_free;
@@ -446,6 +511,10 @@ error_engine_destroy:
 error_deactivate:
     globus_module_deactivate(GLOBUS_SERVICE_ENGINE_MODULE);
 error:
+    if(args != NULL)
+    {
+        free(args);
+    }
     globus_gfs_log_message(
         GLOBUS_GFS_LOG_WARN, "Error starting WSRF service");
 

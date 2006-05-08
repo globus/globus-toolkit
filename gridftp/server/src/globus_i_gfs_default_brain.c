@@ -34,9 +34,9 @@ typedef struct gfs_l_db_node_s
     char *                              host_id;
     char *                              repo_name;
     void *                              brain_arg;
-    /* end over load */
     int                                 max_connection;
     int                                 current_connection;
+    /* end over load */
     gfs_l_db_node_type_t                type;
     globus_bool_t                       error;
     struct gfs_l_db_repo_s *            repo;
@@ -53,6 +53,10 @@ static globus_mutex_t                   globus_l_brain_mutex;
 static globus_xio_server_t              globus_l_brain_server_handle;
 static globus_hashtable_t               gfs_l_db_repo_table;
 static gfs_l_db_repo_t *                gfs_l_db_default_repo = NULL;
+
+static
+void
+globus_l_gfs_backend_changed();
 
 static
 int
@@ -290,6 +294,8 @@ error:
             NULL,
             NULL);
 	    globus_free(buffer);
+
+        globus_l_gfs_backend_changed();
     }
     globus_mutex_unlock(&globus_l_brain_mutex);
 
@@ -462,6 +468,33 @@ error_attr:
 error_attr_init:
 
     return res;
+}
+
+static
+void
+globus_l_gfs_backend_changed()
+{
+    globus_list_t *                     repo_list;
+    globus_list_t *                     node_list;
+    gfs_l_db_repo_t *                   repo;
+
+    globus_hashtable_to_list(&gfs_l_db_repo_table, &repo_list);
+
+    while(!globus_list_empty(repo_list))
+    {
+        repo = (gfs_l_db_repo_t *) globus_list_remove(&repo_list, repo_list);
+        globus_hashtable_to_list(&repo->node_table, &node_list); 
+
+        /* for mem saftey should walk this list and copy nodes */
+        globus_gfs_config_set_ptr("backend_pool", node_list);
+        /*
+        while(!globus_list_empty(node_list))
+        {
+            node = (gfs_l_db_node_t *)
+                globus_list_remove(&node_list, node_list);
+        }
+        */
+    }
 }
 
 static
@@ -660,6 +693,8 @@ globus_l_gfs_default_brain_select_nodes(
 
         *out_node_array = node_array;
         *out_array_length = count;
+
+        globus_l_gfs_backend_changed();
     }
     globus_mutex_unlock(&globus_l_brain_mutex);
 
@@ -808,6 +843,7 @@ globus_l_gfs_default_brain_release_node(
         {
             globus_priority_q_enqueue(&repo->node_q, node, node);
         }
+        globus_l_gfs_backend_changed();
     }
     globus_mutex_unlock(&globus_l_brain_mutex);
     /* depending on reason we may remove from list or whatever */

@@ -323,6 +323,8 @@ static const globus_l_gfs_config_option_t option_list[] =
     "mode.  Unlimited if not set.", NULL, NULL,GLOBUS_TRUE, NULL},
  {"open_connections_count", "open_connections_count", NULL, "open_connections_count", NULL, GLOBUS_L_GFS_CONFIG_INT, 0, NULL,
     "Current connections.  Applicable only to daemon mode.", NULL, NULL,GLOBUS_TRUE, NULL},
+ {"backend_pool", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_VOID, 0, NULL,
+    "Number of backends registered.", NULL, NULL,GLOBUS_TRUE, NULL},
  {"backends_registered", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_INT, 0, NULL,
     "Number of backends registered.", NULL, NULL,GLOBUS_TRUE, NULL},
  {"data_connection_max", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_INT, 0, NULL,

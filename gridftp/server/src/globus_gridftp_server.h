@@ -476,6 +476,9 @@ typedef struct globus_i_gfs_brain_node_s
     char *                              host_id;
     char *                              repo_name;
     void *                              brain_arg;
+    int                                 max_connection;
+    int                                 current_connection;
+    float                               load;
 } globus_i_gfs_brain_node_t;
 
 /**************************************************************************
