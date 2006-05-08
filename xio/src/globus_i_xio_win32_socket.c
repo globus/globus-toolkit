@@ -191,7 +191,7 @@ globus_l_xio_win32_socket_handle_read(
 
       default:
         globus_assert(0 && "Unexpected type for read operation");
-        return GLOBUS_FALSE;
+        return;
         break;
     }
     
@@ -208,7 +208,6 @@ globus_l_xio_win32_socket_handle_read(
     }
 
     GlobusXIOSystemDebugExitFD(handle->socket);
-    return;
 }
 
 /* must be safe to call from win32 thread
@@ -281,7 +280,7 @@ globus_l_xio_win32_socket_handle_write(
 
       default:
         globus_assert(0 && "Unexpected type for write operation");
-        return GLOBUS_FALSE;
+        return;
         break;
     }
   
@@ -298,7 +297,6 @@ globus_l_xio_win32_socket_handle_write(
     }
 
     GlobusXIOSystemDebugExitFD(handle->socket);
-    return;
 }
 
 static
@@ -428,7 +426,7 @@ globus_l_xio_win32_socket_event_cb(
                 globus_l_xio_win32_socket_handle_read(
                     handle, handle->read_info);
                     
-                if(read_info->state == GLOBUS_I_XIO_SYSTEM_OP_COMPLETE)
+                if(handle->read_info->state == GLOBUS_I_XIO_SYSTEM_OP_COMPLETE)
                 {
                     read_info = handle->read_info;
                     handle->read_info = 0;
@@ -445,9 +443,10 @@ globus_l_xio_win32_socket_event_cb(
             if(handle->write_info)
             {
                 globus_l_xio_win32_socket_handle_write(
-                    handle, handle->write_info)
+                    handle, handle->write_info);
                     
-                if(write_info->state == GLOBUS_I_XIO_SYSTEM_OP_COMPLETE)
+                if(handle->write_info->state ==
+                    GLOBUS_I_XIO_SYSTEM_OP_COMPLETE)
                 {
                     write_info = handle->write_info;
                     handle->write_info = 0;
