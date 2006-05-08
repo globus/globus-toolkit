@@ -20,6 +20,8 @@ require Exporter;
 
 BEGIN { push(@INC, $ENV{GLOBUS_LOCATION} . '/lib/perl'); }
 
+my $default_big_file = ($^O eq "MSWin32") and "\ntldr" or "/bin/sh";
+my $default_small_file = ($^O eq "MSWin32") and "\boot.ini" or "/etc/group";
 my $self = {};
 use strict;
 
@@ -28,6 +30,7 @@ use Carp;
 use Sys::Hostname;
 use Data::Dumper;
 use File::Copy;
+use File::Spec;
 use Cwd;
 use Config;
 defined $Config{sig_name} || die "No sigs?";
@@ -211,11 +214,11 @@ sub setup_remote_source(;$)
     $source_host = ($ENV{FTP_TEST_SOURCE_HOST} or 'localhost');
     if($use_big_file)
     {
-        $source_file = ($ENV{FTP_TEST_SOURCE_BIGFILE} or '/bin/sh');
+        $source_file = ($ENV{FTP_TEST_SOURCE_BIGFILE} or $default_big_file);
     }
     else
     {
-        $source_file = ($ENV{FTP_TEST_SOURCE_FILE} or '/etc/group');
+        $source_file = ($ENV{FTP_TEST_SOURCE_FILE} or $default_small_file);
     }
     
     $local_copy = get_remote_file($source_host, $source_file, 1);
@@ -231,11 +234,11 @@ sub setup_local_source(;$)
     
     if($use_big_file)
     {
-        $local_copy = ($ENV{FTP_TEST_LOCAL_BIGFILE} or '/bin/sh');
+        $local_copy = ($ENV{FTP_TEST_LOCAL_BIGFILE} or $default_big_file);
     }
     else
     {
-        $local_copy = ($ENV{FTP_TEST_LOCAL_FILE} or '/etc/group');
+        $local_copy = ($ENV{FTP_TEST_LOCAL_FILE} or $default_small_file);
     }
     
     return ($local_copy);
@@ -363,12 +366,23 @@ sub ftp_commands()
             'LIST', 'NLST', 'MDTM', 'MKD', 'RMD', 'RNFR', 'RNTO', 'NOOP' );
 }
 
-sub run_command($$)
+sub run_command
 {
     my $command = shift;
     my $expected_rc = shift;
+    my $stdout = shift;
+    my $stderr = shift;
     my $errors = "";
     my $rc;
+    
+    if($^O eq "MSWin32")
+    {
+        $command =~ s,\',\",g;
+        $command =~ s,^\./,,;
+    }
+    
+    $command .= ' >"' . ($stdout or File::Spec::->devnull()) . '"';
+    $command .= ' 2>"' . ($stderr or File::Spec::->devnull()) . '"';
     
     if(defined($ENV{"FTP_TEST_EF"}))
     {

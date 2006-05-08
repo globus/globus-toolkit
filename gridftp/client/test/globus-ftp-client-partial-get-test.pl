@@ -61,8 +61,8 @@ sub basic_func
 
     unlink($tmpname);
 
-    my $command = "$test_exec -R $range -s $proto$source_host$source_file  >$tmpname 2>/dev/null";
-    $errors = run_command($command, 0);
+    my $command = "$test_exec -R $range -s $proto$source_host$source_file";
+    $errors = run_command($command, 0, $tmpname);
     if($errors eq "")
     {
         $rc = &compare_data($data, $tmpname);
@@ -93,7 +93,7 @@ sub abort_test
     my ($errors,$rc) = ("", 0);
     my ($abort_point) = shift;
 
-    my $command = "$test_exec -a $abort_point -R $range -s $proto$source_host$source_file  >/dev/null 2>/dev/null";
+    my $command = "$test_exec -a $abort_point -R $range -s $proto$source_host$source_file";
     $errors = run_command($command, -2);
     if($errors eq "")
     {
@@ -123,8 +123,8 @@ sub restart_test
 
     unlink($tmpname);
 
-    my $command = "$test_exec -r $restart_point -R $range -s $proto$source_host$source_file  >$tmpname 2>/dev/null";
-    $errors = run_command($command, 0);
+    my $command = "$test_exec -r $restart_point -R $range -s $proto$source_host$source_file";
+    $errors = run_command($command, 0, $tmpname);
     if($errors eq "")
     {
         $rc = &compare_data($data, $tmpname);

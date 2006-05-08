@@ -22,6 +22,7 @@ use strict;
 use POSIX;
 use Test;
 use FtpTestLib;
+use File::Spec;
 
 my @tests;
 
@@ -57,7 +58,7 @@ sub run_check
 
     unlink('core');
 
-    my $command = "$test_exec $s_or_d $source_url $input 2>/dev/null";
+    my $command = "$test_exec $s_or_d $source_url $input".File::Spec::->devnull();
     `$command`;
     $rc = $?;
     if($rc / 256 != 0)

@@ -45,7 +45,7 @@ sub bad_buffer
 
     unlink('core');
     
-    my $command = "$test_exec -s $proto$source_host$source_file >/dev/null 2>&1";
+    my $command = "$test_exec -s $proto$source_host$source_file";
     $errors = run_command($command, 2);
     if($errors eq "")
     {

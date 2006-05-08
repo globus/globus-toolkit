@@ -19,6 +19,7 @@ use strict;
 use POSIX;
 use Test;
 use FtpTestLib;
+use File::Spec;
 use Globus::URL;
 
 my $test_exec = './globus-ftp-client-caching-get-test';
@@ -50,11 +51,11 @@ sub basic_func
 
     if($use_proxy == 0)
     {
-        FtpTestLib::push_proxy("/dev/null");
+        FtpTestLib::push_proxy(File::Spec::->devnull());
     }
     
-    my $command = "$test_exec -s $proto$source_host$source_file >$tmpname 2>/dev/null";
-    $errors = run_command($command, $use_proxy ? 0 : -1);
+    my $command = "$test_exec -s $proto$source_host$source_file;
+    $errors = run_command($command, $use_proxy ? 0 : -1, $tmpname);
     if($errors eq "" && $use_proxy)
     {
         my ($newtmp)=(POSIX::tmpnam());
@@ -93,7 +94,7 @@ sub bad_url
 
     $bogus_url->{path} = "/no-such-file-here";
     
-    my $command = "$test_exec -s ".$bogus_url->to_string()." >/dev/null 2>/dev/null";
+    my $command = "$test_exec -s ".$bogus_url->to_string();
     $errors = run_command($command, 2);
     if($errors eq "")
     {
@@ -117,7 +118,7 @@ sub abort_test
     my ($errors,$rc) = ("", 0);
     my ($abort_point) = shift;
 
-    my $command = "$test_exec -a $abort_point -s $proto$source_host$source_file >/dev/null 2>/dev/null";
+    my $command = "$test_exec -a $abort_point -s $proto$source_host$source_file";
     $errors = run_command($command, -2);
     if($errors eq "")
     {
@@ -147,8 +148,8 @@ sub restart_test
 
     unlink($tmpname);
 
-    my $command = "$test_exec -r $restart_point -s $proto$source_host$source_file >'$tmpname' 2>/dev/null";
-    $errors = run_command($command, 0);
+    my $command = "$test_exec -r $restart_point -s $proto$source_host$source_file";
+    $errors = run_command($command, 0, $tmpname);
     if($errors eq "")
     {
         my ($newtmp)=(POSIX::tmpnam());

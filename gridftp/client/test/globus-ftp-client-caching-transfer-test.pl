@@ -20,6 +20,7 @@ use strict;
 use POSIX;
 use Test;
 use FtpTestLib;
+use File::Spec;
 
 my $test_exec = './globus-ftp-client-caching-transfer-test';
 my @tests;
@@ -52,9 +53,9 @@ sub basic_func
     $old_proxy=$ENV{'X509_USER_PROXY'}; 
     if($use_proxy == 0)
     {
-        $ENV{'X509_USER_PROXY'} = "/dev/null";
+        $ENV{'X509_USER_PROXY'} = File::Spec::->devnull();
     }
-    my $command = "$test_exec -s $proto$source_host$source_file -d $proto$dest_host$dest_file >/dev/null 2>&1";
+    my $command = "$test_exec -s $proto$source_host$source_file -d $proto$dest_host$dest_file";
     $errors = run_command($command, $use_proxy ? 0 : -1);
     if($use_proxy && $errors eq "")
     {
@@ -93,7 +94,7 @@ sub bad_url_src
 {
     my ($errors,$rc) = ("",0);
 
-    my $command = "$test_exec -s $proto$source_host/no-such-file-here -d $proto$dest_host$dest_file >/dev/null 2>&1";
+    my $command = "$test_exec -s $proto$source_host/no-such-file-here -d $proto$dest_host$dest_file";
     $errors = run_command($command, 2);
     if($errors eq "")
     {
@@ -116,7 +117,7 @@ sub bad_url_dest
 {
     my ($errors,$rc) = ("",0);
 
-    my $command = "$test_exec -s $proto$source_host$source_file -d $proto$dest_host/no-such-file-here >/dev/null 2>&1";
+    my $command = "$test_exec -s $proto$source_host$source_file -d $proto$dest_host/no-such-file-here";
     $errors = run_command($command, 2);
     if($errors eq "")
     {
@@ -140,7 +141,7 @@ sub abort_test
     my ($errors,$rc) = ("", 0);
     my ($abort_point) = shift;
 
-    my $command = "$test_exec -a $abort_point -s $proto$source_host$source_file -d $proto$dest_host$dest_file >/dev/null 2>&1";
+    my $command = "$test_exec -a $abort_point -s $proto$source_host$source_file -d $proto$dest_host$dest_file";
     $errors = run_command($command, -2);
     if($errors eq "")
     {
@@ -169,7 +170,7 @@ sub restart_test
     my ($errors,$rc) = ("",0);
     my ($restart_point) = shift;
 
-    my $command = "$test_exec -r $restart_point -s $proto$source_host$source_file -d $proto$dest_host$dest_file >/dev/null 2>&1";
+    my $command = "$test_exec -r $restart_point -s $proto$source_host$source_file -d $proto$dest_host$dest_file";
     $errors = run_command($command, 0);
     if($errors eq "")
     {

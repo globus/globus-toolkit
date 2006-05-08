@@ -45,7 +45,7 @@ sub check_existence
     my $src_url = shift;
     my $existence_rc = shift;
 
-    my $command = "$test_exec -s $src_url >/dev/null 2>&1";
+    my $command = "$test_exec -s $src_url";
     $errors = run_command($command, $existence_rc);
     if($errors eq "")
     {

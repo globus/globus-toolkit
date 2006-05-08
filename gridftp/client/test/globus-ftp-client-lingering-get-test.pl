@@ -51,7 +51,7 @@ sub lingering_get
     my ($errors,$rc) = ("",0);
     my ($old_proxy);
 
-    my $command = "$test_exec -s $proto$source_host$source_file >/dev/null 2>&1";
+    my $command = "$test_exec -s $proto$source_host$source_file";
     $errors = run_command($command, 1);
     if($errors eq "")
     {

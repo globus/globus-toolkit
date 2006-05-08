@@ -58,8 +58,8 @@ sub basic_func
 
     unlink($tmpname);
 
-    my $command = "$test_exec -P $parallelism -s $proto$source_host$testfile >$tmpname 2>/dev/null";
-    $errors = run_command($command, 0);
+    my $command = "$test_exec -P $parallelism -s $proto$source_host$testfile";
+    $errors = run_command($command, 0, $tmpname);
     if($errors eq "" && 0 != &compare_data($test_data, $tmpname))
     {
 	$errors .= "\n# Differences between $testfile and output.";
@@ -87,7 +87,7 @@ sub bad_url
 {
     my ($errors,$rc) = ("",0);
 
-    my $command = "$test_exec -s $proto$source_host/no-such-file-here >/dev/null  2>/dev/null";
+    my $command = "$test_exec -s $proto$source_host/no-such-file-here";
     $errors = run_command($command, 1);
     if($errors eq "")
     {
@@ -111,7 +111,7 @@ sub abort_test
     my ($abort_point) = shift;
     my ($par) = shift;
 
-    my $command = "$test_exec -P $par -a $abort_point -s $proto$source_host$testfile >/dev/null 2>/dev/null";
+    my $command = "$test_exec -P $par -a $abort_point -s $proto$source_host$testfile";
     $errors = run_command($command, -2);
     if($errors eq "")
     {
@@ -146,8 +146,8 @@ sub restart_test
 
     unlink($tmpname);
 
-    my $command = "$test_exec -P $par -r $restart_point -s $proto$source_host$testfile >$tmpname 2>/dev/null";
-    $errors = run_command($command, 0);
+    my $command = "$test_exec -P $par -r $restart_point -s $proto$source_host$testfile";
+    $errors = run_command($command, 0, $tmpname);
     if($errors eq "" && 0 != &compare_data($test_data, $tmpname))
     {
         $errors .= "\n# Differences between $testfile and output.";
@@ -185,8 +185,8 @@ sub perf_test
     my $tmpname = POSIX::tmpnam();
     my ($errors,$rc) = ("",0);
 
-    my $command = "$test_exec -s $proto$source_host$testfile -M >$tmpname 2>/dev/null";
-    $errors = run_command($command, 0);
+    my $command = "$test_exec -s $proto$source_host$testfile -M";
+    $errors = run_command($command, 0, $tmpname);
     if($errors eq "")
     {
         ok('success', 'success');
@@ -213,8 +213,8 @@ sub throughput_test
     my $tmpname = POSIX::tmpnam();
     my ($errors,$rc) = ("",0);
 
-    my $command = "$test_exec -s $proto$source_host$testfile -T >$tmpname 2>/dev/null";
-    $errors = run_command($command, 0);
+    my $command = "$test_exec -s $proto$source_host$testfile -T";
+    $errors = run_command($command, 0, $tmpname);
     if($errors eq "")
     {
         ok('success', 'success');
