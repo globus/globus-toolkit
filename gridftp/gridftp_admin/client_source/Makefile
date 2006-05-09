@@ -14,7 +14,7 @@
 
 
 
-SOURCES = $(get_RP_SOURCES) $(globus_get_ip_SOURCES) $(globus_get_rp_SOURCES) $(gridftp_register_SOURCES) $(set_RP_SOURCES)
+SOURCES = $(get_RP_SOURCES) $(globus_get_ip_SOURCES) $(globus_get_rp_SOURCES) $(gridftp_register_SOURCES) $(monitor_SOURCES) $(set_RP_SOURCES)
 
 srcdir = .
 top_srcdir = .
@@ -44,8 +44,8 @@ DIST_COMMON = $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(top_srcdir)/globus_automake_pre_top compile config.guess \
 	config.sub install-sh ltmain.sh missing
 bin_PROGRAMS = get-RP$(EXEEXT) set-RP$(EXEEXT) \
-	gridftp-register$(EXEEXT) globus-get-rp$(EXEEXT) \
-	globus-get-ip$(EXEEXT)
+	gridftp-register$(EXEEXT) monitor$(EXEEXT) \
+	globus-get-rp$(EXEEXT) globus-get-ip$(EXEEXT)
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.in
@@ -80,8 +80,13 @@ am_gridftp_register_OBJECTS = $(am__objects_4)
 gridftp_register_OBJECTS = $(am_gridftp_register_OBJECTS)
 gridftp_register_LDADD = $(LDADD)
 gridftp_register_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am__objects_5 = set_RP-set_RP.$(OBJEXT)
-am_set_RP_OBJECTS = $(am__objects_5)
+am__objects_5 = monitor-monitor.$(OBJEXT)
+am_monitor_OBJECTS = $(am__objects_5)
+monitor_OBJECTS = $(am_monitor_OBJECTS)
+monitor_LDADD = $(LDADD)
+monitor_DEPENDENCIES = $(am__DEPENDENCIES_1)
+am__objects_6 = set_RP-set_RP.$(OBJEXT)
+am_set_RP_OBJECTS = $(am__objects_6)
 set_RP_OBJECTS = $(am_set_RP_OBJECTS)
 set_RP_LDADD = $(LDADD)
 set_RP_DEPENDENCIES = $(am__DEPENDENCIES_1)
@@ -98,10 +103,10 @@ LINK = $(LIBTOOL) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
 SOURCES = $(get_RP_SOURCES) $(globus_get_ip_SOURCES) \
 	$(globus_get_rp_SOURCES) $(gridftp_register_SOURCES) \
-	$(set_RP_SOURCES)
+	$(monitor_SOURCES) $(set_RP_SOURCES)
 DIST_SOURCES = $(get_RP_SOURCES) $(globus_get_ip_SOURCES) \
 	$(globus_get_rp_SOURCES) $(gridftp_register_SOURCES) \
-	$(set_RP_SOURCES)
+	$(monitor_SOURCES) $(set_RP_SOURCES)
 RECURSIVE_TARGETS = all-recursive check-recursive dvi-recursive \
 	html-recursive info-recursive install-data-recursive \
 	install-exec-recursive install-info-recursive \
@@ -122,26 +127,26 @@ DIST_ARCHIVES = $(distdir).tar.gz
 GZIP_ENV = --best
 distuninstallcheck_listfiles = find . -type f -print
 distcleancheck_listfiles = find . -type f -print
-ACLOCAL = ${SHELL} /home/bresnaha/Dev/Globus-buzzmds2/cvs/gridftp/gridftp_admin/client_source/missing --run aclocal-1.9
-AMTAR = ${SHELL} /home/bresnaha/Dev/Globus-buzzmds2/cvs/gridftp/gridftp_admin/client_source/missing --run tar
+ACLOCAL = ${SHELL} /disks/scratchgpfs1/bresnaha/Globus/cvs/gridftp/gridftp_admin/client_source/missing --run aclocal-1.9
+AMTAR = ${SHELL} /disks/scratchgpfs1/bresnaha/Globus/cvs/gridftp/gridftp_admin/client_source/missing --run tar
 AR = /usr/bin/ar
 ARFLAGS = ruv
-AUTOCONF = ${SHELL} /home/bresnaha/Dev/Globus-buzzmds2/cvs/gridftp/gridftp_admin/client_source/missing --run autoconf
-AUTOHEADER = ${SHELL} /home/bresnaha/Dev/Globus-buzzmds2/cvs/gridftp/gridftp_admin/client_source/missing --run autoheader
-AUTOMAKE = ${SHELL} /home/bresnaha/Dev/Globus-buzzmds2/cvs/gridftp/gridftp_admin/client_source/missing --run automake-1.9
+AUTOCONF = ${SHELL} /disks/scratchgpfs1/bresnaha/Globus/cvs/gridftp/gridftp_admin/client_source/missing --run autoconf
+AUTOHEADER = ${SHELL} /disks/scratchgpfs1/bresnaha/Globus/cvs/gridftp/gridftp_admin/client_source/missing --run autoheader
+AUTOMAKE = ${SHELL} /disks/scratchgpfs1/bresnaha/Globus/cvs/gridftp/gridftp_admin/client_source/missing --run automake-1.9
 AWK = gawk
 CC = /usr/bin/gcc
 CFLAGS = -g   -Wall
 CPP = /usr/bin/gcc -E
-CPPFLAGS =  -I/home/bresnaha/Dev/Globus/GL/include -I/home/bresnaha/Dev/Globus/GL/include/gcc32dbg
+CPPFLAGS =  -I/disks/scratchgpfs1/bresnaha/Globus-buzzmds2/GL/include -I/disks/scratchgpfs1/bresnaha/Globus-buzzmds2/GL/include/gcc64dbg
 CROSS = no
-CXX = /usr/bin/g++
-CXXCPP = /usr/bin/g++ -E
+CXX = /usr/bin/c++
+CXXCPP = /usr/bin/c++ -E
 CXXFLAGS = -g  
 CYGPATH_W = echo
 DEFS = -DPACKAGE_NAME=\"\" -DPACKAGE_TARNAME=\"\" -DPACKAGE_VERSION=\"\" -DPACKAGE_STRING=\"\" -DPACKAGE_BUGREPORT=\"\" -DPACKAGE=\"gridftp_admin_clients\" -DVERSION=\"0.1\" 
 DIRT_BRANCH_ID = 99999
-DIRT_TIMESTAMP = 1147128360
+DIRT_TIMESTAMP = 1147195604
 DOXYGEN = 
 ECHO_C = 
 ECHO_N = -n
@@ -149,29 +154,29 @@ ECHO_T =
 ENABLE_PROGRAMS_FALSE = #
 ENABLE_PROGRAMS_TRUE = 
 EXEEXT = 
-F77 = f95
+F77 = /usr/bin/f77
 F77FLAGS =  
 F90 = 
 F90FLAGS =  
-FILELIST_FILE = /home/bresnaha/Dev/Globus-buzzmds2/cvs/gridftp/gridftp_admin/client_source/pkgdata/master.filelist
-GLOBUS_FLAVOR_NAME = gcc32dbg
+FILELIST_FILE = /disks/scratchgpfs1/bresnaha/Globus/cvs/gridftp/gridftp_admin/client_source/pkgdata/master.filelist
+GLOBUS_FLAVOR_NAME = gcc64dbg
 GPT_CFLAGS =  -I$(GLOBUS_LOCATION)/include/$(GLOBUS_FLAVOR_NAME)/wsrf/services -I$(GLOBUS_LOCATION)/include/$(GLOBUS_FLAVOR_NAME)/ -I$(GLOBUS_LOCATION)/include/$(GLOBUS_FLAVOR_NAME)/wsrf/services 
 GPT_CONFIG_CFLAGS =  -I$(GLOBUS_LOCATION)/include/$(GLOBUS_FLAVOR_NAME)/wsrf/services -I$(GLOBUS_LOCATION)/include/$(GLOBUS_FLAVOR_NAME)/ -I$(GLOBUS_LOCATION)/include/$(GLOBUS_FLAVOR_NAME)/wsrf/services 
 GPT_CONFIG_INCLUDES =  
 GPT_CONFIG_LIBS =  -lm -lm -ldl -ldl -lm 
-GPT_CONFIG_PKG_LIBS = -lgridftp_admin_client_client_bindings_gcc32dbg -lgridftp_admin_client_types_gcc32dbg -lglobus_wsrf_core_tools_gcc32dbg -lglobus_c_wsrf_resource_gcc32dbg -lglobus_wsa_bindings_gcc32dbg -lglobus_ds_bindings_gcc32dbg -lglobus_wsu_bindings_gcc32dbg -lglobus_wsp_bindings_gcc32dbg -lglobus_wst_bindings_gcc32dbg -lglobus_wsse_bindings_gcc32dbg -lglobus_wsseu_bindings_gcc32dbg -lglobus_wsc_bindings_gcc32dbg -lglobus_wsbf_bindings_gcc32dbg -lglobus_wsnt_bindings_gcc32dbg -lglobus_wsrl_bindings_gcc32dbg -lglobus_wsrp_bindings_gcc32dbg -lglobus_wssg_bindings_gcc32dbg -lglobus_notification_consumer_bindings_gcc32dbg -lglobus_subscription_manager_bindings_gcc32dbg -lglobus_ws_messaging_gcc32dbg -lgssapi_error_gcc32dbg -lglobus_gss_assist_gcc32dbg -lglobus_gssapi_gsi_gcc32dbg -lglobus_gsi_proxy_core_gcc32dbg -lglobus_gsi_credential_gcc32dbg -lglobus_gsi_callback_gcc32dbg -lglobus_oldgaa_gcc32dbg -lglobus_gsi_sysconfig_gcc32dbg -lglobus_gsi_cert_utils_gcc32dbg -lglobus_usage_gcc32dbg -lglobus_openssl_gcc32dbg -lglobus_xio_gcc32dbg -lglobus_openssl_error_gcc32dbg -lglobus_callout_gcc32dbg -lglobus_proxy_ssl_gcc32dbg -lglobus_common_gcc32dbg -lssl_gcc32dbg -lcrypto_gcc32dbg -lxml2_gcc32dbg -lltdl_gcc32dbg 
+GPT_CONFIG_PKG_LIBS = -lgridftp_admin_client_client_bindings_gcc64dbg -lgridftp_admin_client_types_gcc64dbg -lglobus_notification_consumer_gcc64dbg -lglobus_wsrf_core_tools_gcc64dbg -lglobus_c_wsrf_resource_gcc64dbg -lglobus_wsa_bindings_gcc64dbg -lglobus_ds_bindings_gcc64dbg -lglobus_wsu_bindings_gcc64dbg -lglobus_wsp_bindings_gcc64dbg -lglobus_wst_bindings_gcc64dbg -lglobus_wsse_bindings_gcc64dbg -lglobus_wsseu_bindings_gcc64dbg -lglobus_wsc_bindings_gcc64dbg -lglobus_wsbf_bindings_gcc64dbg -lglobus_wsnt_bindings_gcc64dbg -lglobus_wsrl_bindings_gcc64dbg -lglobus_wsrp_bindings_gcc64dbg -lglobus_wssg_bindings_gcc64dbg -lglobus_notification_consumer_bindings_gcc64dbg -lglobus_subscription_manager_bindings_gcc64dbg -lglobus_ws_messaging_gcc64dbg -lgssapi_error_gcc64dbg -lglobus_gss_assist_gcc64dbg -lglobus_gssapi_gsi_gcc64dbg -lglobus_gsi_proxy_core_gcc64dbg -lglobus_gsi_credential_gcc64dbg -lglobus_gsi_callback_gcc64dbg -lglobus_oldgaa_gcc64dbg -lglobus_gsi_sysconfig_gcc64dbg -lglobus_gsi_cert_utils_gcc64dbg -lglobus_usage_gcc64dbg -lglobus_openssl_gcc64dbg -lglobus_xio_gcc64dbg -lglobus_openssl_error_gcc64dbg -lglobus_callout_gcc64dbg -lglobus_proxy_ssl_gcc64dbg -lglobus_common_gcc64dbg -lssl_gcc64dbg -lcrypto_gcc64dbg -lxml2_gcc64dbg -lltdl_gcc64dbg 
 GPT_EXTERNAL_INCLUDES = 
 GPT_EXTERNAL_LIBS =  
-GPT_INCLUDES = -I/home/bresnaha/Dev/Globus/GL/include/gcc32dbg  
+GPT_INCLUDES = -I/disks/scratchgpfs1/bresnaha/Globus/GL/include/gcc64dbg  
 GPT_IS_2 = yes
-GPT_LDFLAGS =  -L/home/bresnaha/Dev/Globus/GL/lib 
-GPT_LIBS = -lgridftp_admin_client_client_bindings_gcc32dbg -lgridftp_admin_client_types_gcc32dbg -lglobus_wsrf_core_tools_gcc32dbg -lglobus_c_wsrf_resource_gcc32dbg -lglobus_wsa_bindings_gcc32dbg -lglobus_ds_bindings_gcc32dbg -lglobus_wsu_bindings_gcc32dbg -lglobus_wsp_bindings_gcc32dbg -lglobus_wst_bindings_gcc32dbg -lglobus_wsse_bindings_gcc32dbg -lglobus_wsseu_bindings_gcc32dbg -lglobus_wsc_bindings_gcc32dbg -lglobus_wsbf_bindings_gcc32dbg -lglobus_wsnt_bindings_gcc32dbg -lglobus_wsrl_bindings_gcc32dbg -lglobus_wsrp_bindings_gcc32dbg -lglobus_wssg_bindings_gcc32dbg -lglobus_notification_consumer_bindings_gcc32dbg -lglobus_subscription_manager_bindings_gcc32dbg -lglobus_ws_messaging_gcc32dbg -lgssapi_error_gcc32dbg -lglobus_gss_assist_gcc32dbg -lglobus_gssapi_gsi_gcc32dbg -lglobus_gsi_proxy_core_gcc32dbg -lglobus_gsi_credential_gcc32dbg -lglobus_gsi_callback_gcc32dbg -lglobus_oldgaa_gcc32dbg -lglobus_gsi_sysconfig_gcc32dbg -lglobus_gsi_cert_utils_gcc32dbg -lglobus_usage_gcc32dbg -lglobus_openssl_gcc32dbg -lglobus_xio_gcc32dbg -lglobus_openssl_error_gcc32dbg -lglobus_callout_gcc32dbg -lglobus_proxy_ssl_gcc32dbg -lglobus_common_gcc32dbg -lssl_gcc32dbg -lcrypto_gcc32dbg -lxml2_gcc32dbg -lltdl_gcc32dbg   -lm -lm -ldl -ldl -lm 
-GPT_LIB_LINKS =  -lgridftp_admin_client_client_bindings_gcc32dbg -lgridftp_admin_client_types_gcc32dbg -lglobus_wsrf_core_tools_gcc32dbg -lglobus_c_wsrf_resource_gcc32dbg -lglobus_wsa_bindings_gcc32dbg -lglobus_ds_bindings_gcc32dbg -lglobus_wsu_bindings_gcc32dbg -lglobus_wsp_bindings_gcc32dbg -lglobus_wst_bindings_gcc32dbg -lglobus_wsse_bindings_gcc32dbg -lglobus_wsseu_bindings_gcc32dbg -lglobus_wsc_bindings_gcc32dbg -lglobus_wsbf_bindings_gcc32dbg -lglobus_wsnt_bindings_gcc32dbg -lglobus_wsrl_bindings_gcc32dbg -lglobus_wsrp_bindings_gcc32dbg -lglobus_wssg_bindings_gcc32dbg -lglobus_notification_consumer_bindings_gcc32dbg -lglobus_subscription_manager_bindings_gcc32dbg -lglobus_ws_messaging_gcc32dbg -lgssapi_error_gcc32dbg -lglobus_gss_assist_gcc32dbg -lglobus_gssapi_gsi_gcc32dbg -lglobus_gsi_proxy_core_gcc32dbg -lglobus_gsi_credential_gcc32dbg -lglobus_gsi_callback_gcc32dbg -lglobus_oldgaa_gcc32dbg -lglobus_gsi_sysconfig_gcc32dbg -lglobus_gsi_cert_utils_gcc32dbg -lglobus_usage_gcc32dbg -lglobus_openssl_gcc32dbg -lglobus_xio_gcc32dbg -lglobus_openssl_error_gcc32dbg -lglobus_callout_gcc32dbg -lglobus_proxy_ssl_gcc32dbg -lglobus_common_gcc32dbg -lssl_gcc32dbg -lcrypto_gcc32dbg -lxml2_gcc32dbg -lltdl_gcc32dbg   -lm -lm -ldl -ldl -lm  
+GPT_LDFLAGS =  -L/disks/scratchgpfs1/bresnaha/Globus/GL/lib 
+GPT_LIBS = -lgridftp_admin_client_client_bindings_gcc64dbg -lgridftp_admin_client_types_gcc64dbg -lglobus_notification_consumer_gcc64dbg -lglobus_wsrf_core_tools_gcc64dbg -lglobus_c_wsrf_resource_gcc64dbg -lglobus_wsa_bindings_gcc64dbg -lglobus_ds_bindings_gcc64dbg -lglobus_wsu_bindings_gcc64dbg -lglobus_wsp_bindings_gcc64dbg -lglobus_wst_bindings_gcc64dbg -lglobus_wsse_bindings_gcc64dbg -lglobus_wsseu_bindings_gcc64dbg -lglobus_wsc_bindings_gcc64dbg -lglobus_wsbf_bindings_gcc64dbg -lglobus_wsnt_bindings_gcc64dbg -lglobus_wsrl_bindings_gcc64dbg -lglobus_wsrp_bindings_gcc64dbg -lglobus_wssg_bindings_gcc64dbg -lglobus_notification_consumer_bindings_gcc64dbg -lglobus_subscription_manager_bindings_gcc64dbg -lglobus_ws_messaging_gcc64dbg -lgssapi_error_gcc64dbg -lglobus_gss_assist_gcc64dbg -lglobus_gssapi_gsi_gcc64dbg -lglobus_gsi_proxy_core_gcc64dbg -lglobus_gsi_credential_gcc64dbg -lglobus_gsi_callback_gcc64dbg -lglobus_oldgaa_gcc64dbg -lglobus_gsi_sysconfig_gcc64dbg -lglobus_gsi_cert_utils_gcc64dbg -lglobus_usage_gcc64dbg -lglobus_openssl_gcc64dbg -lglobus_xio_gcc64dbg -lglobus_openssl_error_gcc64dbg -lglobus_callout_gcc64dbg -lglobus_proxy_ssl_gcc64dbg -lglobus_common_gcc64dbg -lssl_gcc64dbg -lcrypto_gcc64dbg -lxml2_gcc64dbg -lltdl_gcc64dbg   -lm -lm -ldl -ldl -lm 
+GPT_LIB_LINKS =  -lgridftp_admin_client_client_bindings_gcc64dbg -lgridftp_admin_client_types_gcc64dbg -lglobus_notification_consumer_gcc64dbg -lglobus_wsrf_core_tools_gcc64dbg -lglobus_c_wsrf_resource_gcc64dbg -lglobus_wsa_bindings_gcc64dbg -lglobus_ds_bindings_gcc64dbg -lglobus_wsu_bindings_gcc64dbg -lglobus_wsp_bindings_gcc64dbg -lglobus_wst_bindings_gcc64dbg -lglobus_wsse_bindings_gcc64dbg -lglobus_wsseu_bindings_gcc64dbg -lglobus_wsc_bindings_gcc64dbg -lglobus_wsbf_bindings_gcc64dbg -lglobus_wsnt_bindings_gcc64dbg -lglobus_wsrl_bindings_gcc64dbg -lglobus_wsrp_bindings_gcc64dbg -lglobus_wssg_bindings_gcc64dbg -lglobus_notification_consumer_bindings_gcc64dbg -lglobus_subscription_manager_bindings_gcc64dbg -lglobus_ws_messaging_gcc64dbg -lgssapi_error_gcc64dbg -lglobus_gss_assist_gcc64dbg -lglobus_gssapi_gsi_gcc64dbg -lglobus_gsi_proxy_core_gcc64dbg -lglobus_gsi_credential_gcc64dbg -lglobus_gsi_callback_gcc64dbg -lglobus_oldgaa_gcc64dbg -lglobus_gsi_sysconfig_gcc64dbg -lglobus_gsi_cert_utils_gcc64dbg -lglobus_usage_gcc64dbg -lglobus_openssl_gcc64dbg -lglobus_xio_gcc64dbg -lglobus_openssl_error_gcc64dbg -lglobus_callout_gcc64dbg -lglobus_proxy_ssl_gcc64dbg -lglobus_common_gcc64dbg -lssl_gcc64dbg -lcrypto_gcc64dbg -lxml2_gcc64dbg -lltdl_gcc64dbg   -lm -lm -ldl -ldl -lm  
 GPT_LINKTYPE = shared
-GPT_LOCATION = /home/bresnaha/Dev/Globus/GL
+GPT_LOCATION = /disks/scratchgpfs1/bresnaha/Globus/GL
 GPT_MAJOR_VERSION = 0
 GPT_MINOR_VERSION = 1
-GPT_PGM_LINKS =  -lgridftp_admin_client_client_bindings_gcc32dbg -lgridftp_admin_client_types_gcc32dbg -lglobus_wsrf_core_tools_gcc32dbg -lglobus_c_wsrf_resource_gcc32dbg -lglobus_wsa_bindings_gcc32dbg -lglobus_ds_bindings_gcc32dbg -lglobus_wsu_bindings_gcc32dbg -lglobus_wsp_bindings_gcc32dbg -lglobus_wst_bindings_gcc32dbg -lglobus_wsse_bindings_gcc32dbg -lglobus_wsseu_bindings_gcc32dbg -lglobus_wsc_bindings_gcc32dbg -lglobus_wsbf_bindings_gcc32dbg -lglobus_wsnt_bindings_gcc32dbg -lglobus_wsrl_bindings_gcc32dbg -lglobus_wsrp_bindings_gcc32dbg -lglobus_wssg_bindings_gcc32dbg -lglobus_notification_consumer_bindings_gcc32dbg -lglobus_subscription_manager_bindings_gcc32dbg -lglobus_ws_messaging_gcc32dbg -lgssapi_error_gcc32dbg -lglobus_gss_assist_gcc32dbg -lglobus_gssapi_gsi_gcc32dbg -lglobus_gsi_proxy_core_gcc32dbg -lglobus_gsi_credential_gcc32dbg -lglobus_gsi_callback_gcc32dbg -lglobus_oldgaa_gcc32dbg -lglobus_gsi_sysconfig_gcc32dbg -lglobus_gsi_cert_utils_gcc32dbg -lglobus_usage_gcc32dbg -lglobus_openssl_gcc32dbg -lglobus_xio_gcc32dbg -lglobus_openssl_error_gcc32dbg -lglobus_callout_gcc32dbg -lglobus_proxy_ssl_gcc32dbg -lglobus_common_gcc32dbg -lssl_gcc32dbg -lcrypto_gcc32dbg -lxml2_gcc32dbg -lltdl_gcc32dbg   -lm -lm -ldl -ldl -lm  
+GPT_PGM_LINKS =  -lgridftp_admin_client_client_bindings_gcc64dbg -lgridftp_admin_client_types_gcc64dbg -lglobus_notification_consumer_gcc64dbg -lglobus_wsrf_core_tools_gcc64dbg -lglobus_c_wsrf_resource_gcc64dbg -lglobus_wsa_bindings_gcc64dbg -lglobus_ds_bindings_gcc64dbg -lglobus_wsu_bindings_gcc64dbg -lglobus_wsp_bindings_gcc64dbg -lglobus_wst_bindings_gcc64dbg -lglobus_wsse_bindings_gcc64dbg -lglobus_wsseu_bindings_gcc64dbg -lglobus_wsc_bindings_gcc64dbg -lglobus_wsbf_bindings_gcc64dbg -lglobus_wsnt_bindings_gcc64dbg -lglobus_wsrl_bindings_gcc64dbg -lglobus_wsrp_bindings_gcc64dbg -lglobus_wssg_bindings_gcc64dbg -lglobus_notification_consumer_bindings_gcc64dbg -lglobus_subscription_manager_bindings_gcc64dbg -lglobus_ws_messaging_gcc64dbg -lgssapi_error_gcc64dbg -lglobus_gss_assist_gcc64dbg -lglobus_gssapi_gsi_gcc64dbg -lglobus_gsi_proxy_core_gcc64dbg -lglobus_gsi_credential_gcc64dbg -lglobus_gsi_callback_gcc64dbg -lglobus_oldgaa_gcc64dbg -lglobus_gsi_sysconfig_gcc64dbg -lglobus_gsi_cert_utils_gcc64dbg -lglobus_usage_gcc64dbg -lglobus_openssl_gcc64dbg -lglobus_xio_gcc64dbg -lglobus_openssl_error_gcc64dbg -lglobus_callout_gcc64dbg -lglobus_proxy_ssl_gcc64dbg -lglobus_common_gcc64dbg -lssl_gcc64dbg -lcrypto_gcc64dbg -lxml2_gcc64dbg -lltdl_gcc64dbg   -lm -lm -ldl -ldl -lm  
 GPT_PKG_CFLAGS = 
 INSTALL_DATA = ${INSTALL} -m 644
 INSTALL_PROGRAM = ${INSTALL}
@@ -179,7 +184,7 @@ INSTALL_SCRIPT = ${INSTALL}
 INSTALL_STRIP_PROGRAM = ${SHELL} $(install_sh) -c -s
 INSURE = 
 LD = 
-LDFLAGS =  -L/home/bresnaha/Dev/Globus/GL/lib
+LDFLAGS =  -L/disks/scratchgpfs1/bresnaha/Globus-buzzmds2/GL/lib
 LIBOBJS = 
 LIBS =  
 LIBTOOL = $(SHELL) $(GLOBUS_LOCATION)/sbin/libtool-$(GLOBUS_FLAVOR_NAME)
@@ -188,7 +193,7 @@ LTLIBOBJS =
 MAINT = #
 MAINTAINER_MODE_FALSE = 
 MAINTAINER_MODE_TRUE = #
-MAKEINFO = ${SHELL} /home/bresnaha/Dev/Globus-buzzmds2/cvs/gridftp/gridftp_admin/client_source/missing --run makeinfo
+MAKEINFO = ${SHELL} /disks/scratchgpfs1/bresnaha/Globus/cvs/gridftp/gridftp_admin/client_source/missing --run makeinfo
 OBJECT_MODE = 
 OBJEXT = o
 PACKAGE = gridftp_admin_clients
@@ -219,7 +224,7 @@ exec_prefix = $(GLOBUS_LOCATION)
 host_alias = 
 includedir = ${prefix}/include
 infodir = ${prefix}/info
-install_sh = /home/bresnaha/Dev/Globus-buzzmds2/cvs/gridftp/gridftp_admin/client_source/install-sh
+install_sh = /disks/scratchgpfs1/bresnaha/Globus/cvs/gridftp/gridftp_admin/client_source/install-sh
 libdir = ${exec_prefix}/lib
 libexecdir = ${exec_prefix}/libexec
 localstatedir = ${prefix}/var
@@ -246,6 +251,7 @@ AUTOMAKE_OPTIONS = no-dependencies
 SUBDIRS = \
 	pkgdata
 
+monitor_Sources = monitor.c
 get_RP_Sources = get_RP.c
 set_RP_Sources = set_RP.c
 gridftp_register_Sources = gridftp_register.c
@@ -270,6 +276,9 @@ globus_get_ip_LDFLAGS = $(GPT_LDFLAGS)
 globus_get_rp_CFLAGS = $(GPT_CFLAGS)
 globus_get_rp_SOURCES = $(globus_get_rp_Sources)
 globus_get_rp_LDFLAGS = $(GPT_LDFLAGS)
+monitor_CFLAGS = $(GPT_CFLAGS)
+monitor_SOURCES = $(monitor_Sources)
+monitor_LDFLAGS = $(GPT_LDFLAGS)
 all: all-recursive
 
 .SUFFIXES:
@@ -347,6 +356,9 @@ globus-get-rp$(EXEEXT): $(globus_get_rp_OBJECTS) $(globus_get_rp_DEPENDENCIES)
 gridftp-register$(EXEEXT): $(gridftp_register_OBJECTS) $(gridftp_register_DEPENDENCIES) 
 	@rm -f gridftp-register$(EXEEXT)
 	$(LINK) $(gridftp_register_LDFLAGS) $(gridftp_register_OBJECTS) $(gridftp_register_LDADD) $(LIBS)
+monitor$(EXEEXT): $(monitor_OBJECTS) $(monitor_DEPENDENCIES) 
+	@rm -f monitor$(EXEEXT)
+	$(LINK) $(monitor_LDFLAGS) $(monitor_OBJECTS) $(monitor_LDADD) $(LIBS)
 set-RP$(EXEEXT): $(set_RP_OBJECTS) $(set_RP_DEPENDENCIES) 
 	@rm -f set-RP$(EXEEXT)
 	$(LINK) $(set_RP_LDFLAGS) $(set_RP_OBJECTS) $(set_RP_LDADD) $(LIBS)
@@ -395,6 +407,12 @@ gridftp_register-gridftp_register.o: gridftp_register.c
 
 gridftp_register-gridftp_register.obj: gridftp_register.c
 	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(gridftp_register_CFLAGS) $(CFLAGS) -c -o gridftp_register-gridftp_register.obj `if test -f 'gridftp_register.c'; then $(CYGPATH_W) 'gridftp_register.c'; else $(CYGPATH_W) '$(srcdir)/gridftp_register.c'; fi`
+
+monitor-monitor.o: monitor.c
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(monitor_CFLAGS) $(CFLAGS) -c -o monitor-monitor.o `test -f 'monitor.c' || echo '$(srcdir)/'`monitor.c
+
+monitor-monitor.obj: monitor.c
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(monitor_CFLAGS) $(CFLAGS) -c -o monitor-monitor.obj `if test -f 'monitor.c'; then $(CYGPATH_W) 'monitor.c'; else $(CYGPATH_W) '$(srcdir)/monitor.c'; fi`
 
 set_RP-set_RP.o: set_RP.c
 	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(set_RP_CFLAGS) $(CFLAGS) -c -o set_RP-set_RP.o `test -f 'set_RP.c' || echo '$(srcdir)/'`set_RP.c
