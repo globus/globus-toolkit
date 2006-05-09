@@ -654,6 +654,9 @@ globus_l_xio_win32_socket_register_write(
         write_info->state = GLOBUS_I_XIO_SYSTEM_OP_PENDING;
         /* if select() functionality requested, only handle after we recieve
          * write event
+         * 
+         * also dont call for connect operations.  waitforbytes == 0 in this
+         * case and handle->ready_events should not yet have a write event
          */
         if(write_info->waitforbytes > 0 || handle->ready_events & FD_WRITE)
         {
