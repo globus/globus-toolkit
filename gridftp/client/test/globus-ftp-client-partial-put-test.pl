@@ -59,6 +59,7 @@ sub basic_func
 
     # Create a file of known contents, for the partial update.
     open($newfile, ">$dest_file");
+    binmode($newfile);
     for(my $i = 0; $i < 4096; $i++)
     {
 	$data .= $i % 10;
@@ -69,6 +70,7 @@ sub basic_func
     
     my $command = "$test_exec -R $offset -d $proto$dest_host$dest_file -p >".File::Spec::->devnull()."2>&1";
     open($newfile, "|$command");
+    binmode($newfile);
     my $i = $offset;
     if($offset > 4096)
     {

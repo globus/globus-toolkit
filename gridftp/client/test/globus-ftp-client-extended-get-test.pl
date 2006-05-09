@@ -41,6 +41,7 @@ my ($source_host, $testfile, $local_copy) = setup_remote_source(1);
 my $handle = new FileHandle;
 
 open($handle, "<$local_copy");
+binmode($handle);
 my $test_data=join('', <$handle>);
 close($handle);
 my $num_bytes=length($test_data);
@@ -264,7 +265,7 @@ sub compare_data
 
     while(<$fh>)
     {
-        s/(\[restart plugin\][^\n]*\n)//m;
+        s/(\[restart plugin\].*?\n)//m;
 
 	if(m/\[(\d*),(\d*)\]/)
 	{

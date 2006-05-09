@@ -84,10 +84,12 @@ sub basic_func
 
     # put files in their appropriate locations
     open($newfile, ">>$tmpname2");
+    binmode($newfile);
     print $newfile $source_data;
     close $newfile;
 
     open($newfile, ">>$tmpname");
+    binmode($newfile);
     print $newfile $dest_data;
     close $newfile;
 
@@ -111,6 +113,7 @@ sub basic_func
     }
 
     open($newfile, "<$tmpname");
+    binmode($newfile);
     my $result_data = join('', <$newfile>);
 
     if($result_data ne $dest_data)

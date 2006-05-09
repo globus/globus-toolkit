@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
+#include <fcntl.h>
 
 #include "globus_ftp_client.h"
 #include "globus_ftp_client_plugin.h"
@@ -54,6 +55,12 @@ test_parse_args(int argc,
 
     setvbuf(stdout, 0, _IONBF, 0);
     
+#ifdef WIN32
+    _setmode(_fileno(stdin), _O_BINARY);
+    _setmode(_fileno(stdout), _O_BINARY);
+    _setmode(_fileno(stderr), _O_BINARY);
+#endif
+
     opterr = 0;
     while((c = getopt(argc, argv, "-f:a:ps:d:r:zMTc:t:i")) != -1)
     {

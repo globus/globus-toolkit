@@ -145,7 +145,7 @@ sub compare_local_files($$)
     my $tmpfile = POSIX::tmpnam();
     my $script =
         'binmode(STDOUT); binmode(STDIN);' .
-        'while(<>) { s/\[restart plugin\].*\n//; print; }';
+        'while(<>) { s/\[restart plugin\].*?\n//g; print; }';
     
     `perl -e "$script" < "$b" > "$tmpfile"`;
     

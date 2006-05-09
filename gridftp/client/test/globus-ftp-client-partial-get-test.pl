@@ -41,6 +41,7 @@ my ($proto) = setup_proto();
 my ($source_host, $source_file, $local_copy) = setup_remote_source();
 
 open($fh, "<$local_copy");
+binmode($fh);
 my $size = (stat($fh))[7];
 my $range = int($size / 4) . " " . int(2*int($size/4));
 my $num_bytes = int(2*int($size/4)) - int($size / 4);
@@ -184,7 +185,7 @@ sub compare_data
     open($fh, "<$filename");
     while(<$fh>)
     {
-        s/(\[restart plugin\][^\n]*\n)//m;
+        s/(\[restart plugin\].*?\n)//m;
 
 	if(m/\[(\d*),(\d*)\]/)
 	{
