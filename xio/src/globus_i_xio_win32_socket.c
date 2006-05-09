@@ -13,6 +13,13 @@ typedef struct globus_l_xio_win32_socket_s
     SOCKET                              socket;
     WSAEVENT                            event;
     long                                eventselect;
+    /* ready_events is used only for select() functionality
+     * note, select functionality is flawed due to winsock close notification
+     * bug.  It is possible that a read wont be signaled on a short lived
+     * connection.  To minimize the chance of being bit by this bug,
+     * initialize ready_events with a read event
+     */
+    long                                ready_events;
     globus_i_xio_win32_event_entry_t    event_entry;
     globus_i_xio_system_op_info_t *     read_info;
     globus_i_xio_system_op_info_t *     write_info;
@@ -181,10 +188,19 @@ globus_l_xio_win32_socket_handle_read(
                 &nbytes);
             if(result == GLOBUS_SUCCESS)
             {
-                read_info->nbytes += nbytes;
-                GlobusIXIOUtilAdjustIovec(
-                    read_info->sop.data.iov,
-                    read_info->sop.data.iovc, nbytes);
+                if(nbytes > 0)
+                {
+                    read_info->nbytes += nbytes;
+                    GlobusIXIOUtilAdjustIovec(
+                        read_info->sop.data.iov,
+                        read_info->sop.data.iovc, nbytes);
+                }
+                else if(read_info->sop.data.iovc > 0 &&
+                    read_info->sop.data.iov[0].iov_len > 0)
+                {
+                    /* we consumed read event */
+                    handle->ready_events &= ~FD_READ;
+                }
             }
         } while(nbytes > 0 && read_info->nbytes < read_info->waitforbytes);
         break;
@@ -269,11 +285,19 @@ globus_l_xio_win32_socket_handle_write(
                 &nbytes);
             if(result == GLOBUS_SUCCESS)
             {
-                write_info->nbytes += nbytes;
-                GlobusIXIOUtilAdjustIovec(
-                    write_info->sop.data.iov,
-                    write_info->sop.data.iovc,
-                    nbytes);
+                if(nbytes > 0)
+                {
+                    write_info->nbytes += nbytes;
+                    GlobusIXIOUtilAdjustIovec(
+                        write_info->sop.data.iov,
+                        write_info->sop.data.iovc, nbytes);
+                }
+                else if(write_info->sop.data.iovc > 0 &&
+                    write_info->sop.data.iov[0].iov_len > 0)
+                {
+                    /* we consumed write event */
+                    handle->ready_events &= ~FD_WRITE;
+                }
             }
         } while(nbytes > 0 && write_info->nbytes < write_info->waitforbytes);
         break;
@@ -421,6 +445,9 @@ globus_l_xio_win32_socket_event_cb(
         
         if(events & (FD_ACCEPT|FD_READ|FD_CLOSE))
         {
+            /* cache for select() like functionality */
+            handle->ready_events |= FD_READ;
+                
             if(handle->read_info)
             {
                 globus_l_xio_win32_socket_handle_read(
@@ -440,6 +467,9 @@ globus_l_xio_win32_socket_event_cb(
         
         if(events & (FD_CONNECT|FD_WRITE|FD_CLOSE))
         {
+            /* cache for select() like functionality */
+            handle->ready_events |= FD_WRITE;
+                
             if(handle->write_info)
             {
                 globus_l_xio_win32_socket_handle_write(
@@ -520,7 +550,13 @@ globus_l_xio_win32_socket_register_read(
         }
         
         read_info->state = GLOBUS_I_XIO_SYSTEM_OP_PENDING;
-        globus_l_xio_win32_socket_handle_read(handle, read_info);
+        /* if select() functionality requested, only handle after we recieve
+         * read event
+         */
+        if(read_info->waitforbytes > 0 || handle->ready_events & FD_READ)
+        {
+            globus_l_xio_win32_socket_handle_read(handle, read_info);
+        }
         
         if(read_info->state != GLOBUS_I_XIO_SYSTEM_OP_COMPLETE)
         {
@@ -616,7 +652,10 @@ globus_l_xio_win32_socket_register_write(
         }
         
         write_info->state = GLOBUS_I_XIO_SYSTEM_OP_PENDING;
-        if(write_info->type != GLOBUS_I_XIO_SYSTEM_OP_CONNECT)
+        /* if select() functionality requested, only handle after we recieve
+         * write event
+         */
+        if(write_info->waitforbytes > 0 || handle->ready_events & FD_WRITE)
         {
             globus_l_xio_win32_socket_handle_write(handle, write_info);
         }
@@ -704,6 +743,7 @@ globus_xio_system_socket_init(
     
     handle->socket = socket;
     win32_mutex_init(&handle->lock, 0);
+    handle->ready_events = FD_READ; /* to avoid winsock fd_close bug */
     
     handle->event = WSACreateEvent();
     if(handle->event == 0)
