@@ -13,6 +13,7 @@ if not exist %GLobusLocation%\lib                 (md %GLobusLocation%\lib)
 if not exist %GLobusLocation%\include             (md %GLobusLocation%\include)
 if not exist %GLobusLocation%\include\threaded    (md %GLobusLocation%\include\threaded)
 if not exist %GLobusLocation%\include\nonthreaded (md %GLobusLocation%\include\nonthreaded)
+if not exist %GLobusLocation%\include\openssl     (md %GLobusLocation%\include\openssl)
 if not exist %GLobusLocation%\bin                 (md %GLobusLocation%\bin)
 
 echo .

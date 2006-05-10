@@ -1,6 +1,7 @@
 # Windows Only Source Files In Linux Directory
 Sources = \
-    globus_libtool_windows.c
+    globus_libtool_windows.c \
+    getopt.c
 
 flavorinclude_HEADERS = \
     globus_object_cache.h \

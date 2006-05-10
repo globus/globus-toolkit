@@ -215,3 +215,7 @@ SSL_CTX_set_generate_session_id         264	EXIST::FUNCTION:
 SSL_renegotiate_pending                 265	EXIST::FUNCTION:
 SSL_CTX_set_msg_callback                266	EXIST::FUNCTION:
 SSL_set_msg_callback                    267	EXIST::FUNCTION:
+ssl3_cleanup_key_block                  300	EXIST::FUNCTION:
+ssl3_setup_key_block                    301	EXIST::FUNCTION:
+ssl_cipher_get_evp                      302	EXIST::FUNCTION:
+ssl3_setup_buffers                      303	EXIST::FUNCTION:

@@ -20,18 +20,19 @@ set WinGlobusVersion=15.1
 :: Append ICU and OpenSSL bin, lib and include paths
 if not "%WINGLOBUS_PATH%" == "%PATH%" (
 	set PATH=%PATH%;%GlobusLocation%\bin;%ICULocation%\bin;%SSLLocation%\out32dll
-	set WINGLOBUS_PATH=%PATH%
 )
 
 if not "%WINGLOBUS_LIB%" == "%LIB%" (
 	set LIB=%LIB%;%ICULocation%\lib;%SSLLocation%\out32dll
-	set WINGLOBUS_LIB=%LIB%
 )
 
 if not "%WINGLOBUS_INCLUDE%" == "%INCLUDE%" (
 	set INCLUDE=%INCLUDE%;%GlobusLocation%\include;%ICULocation%\include;%SSLLocation%\inc32
-	set WINGLOBUS_INCLUDE=%INCLUDE%
 )
+
+set WINGLOBUS_PATH=%PATH%
+set WINGLOBUS_LIB=%LIB%
+set WINGLOBUS_INCLUDE=%INCLUDE%
 
 @ echo . PATH:    %PATH%
 @ echo . LIB:     %LIB%

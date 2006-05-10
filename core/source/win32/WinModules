@@ -191,6 +191,10 @@ SourceLocation      \gridftp\client\source
 Win32Location       \gridftp\client\source\win32
 
 ModuleType          library
+SourceLocation      \gridftp\client\test
+Win32Location       \gridftp\client\test\win32
+
+ModuleType          library
 SourceLocation      \gridftp\gridftp_driver\source
 Win32Location       \gridftp\gridftp_driver\source\win32
 
@@ -254,9 +258,9 @@ Win32Location       \gsi\openssl_error\test\win32
     Win32Location       \gram\protocol\test\win32
 
     # These Tests Depend On A Local Library Using Macros That Won't Work Presently
-    ModuleType          executable
-    SourceLocation      \gridftp\client\test
-    Win32Location       \gridftp\client\test\win32
+ModuleType          executable
+SourceLocation      \gridftp\client\test
+Win32Location       \gridftp\client\test\win32
 
     # Note: This One Is Broken Due To Creative Use Of Macros In Makefile.am
     ModuleType          executable

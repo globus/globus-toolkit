@@ -529,8 +529,11 @@ globus_l_xio_udt_finished_open(
         char port[GLOBUS_L_XIO_UDT_IP_LEN];
         char* cs;
         int i;
+#ifndef HAVE_INET_NTOP
+    	struct in_addr *ia;
+	    char *cp;
+#endif
        
-
         handle->handshake->mss = handle->remote_handshake->mss;
         handle->handshake->max_flow_wnd_size =
             handle->remote_handshake->max_flow_wnd_size;
@@ -538,7 +541,14 @@ globus_l_xio_udt_finished_open(
         {
             ipnum[i] = (char)handle->remote_handshake->ip[i];
         }
+#ifdef HAVE_INET_NTOP	/* Mostly to workaround bug in IRIX 6.5's inet_ntoa */
         inet_ntop(AF_INET, ipnum, ipstr, GLOBUS_L_XIO_UDT_IP_LEN);
+#else
+		ia = (struct in_addr *)ipnum;
+		cp = inet_ntoa(*ia);
+		if ((cp != (char *) 0) && (cp != (char *) -1) && (cp[0] != '\0'))
+			(void) strncpy(ipstr, cp, GLOBUS_L_XIO_UDT_IP_LEN);
+#endif
         sprintf(port, "%d", handle->remote_handshake->port);
         cs = globus_malloc(strlen(ipstr) + strlen(port) + 2);
         sprintf(cs, "%s:%s", ipstr, port);
@@ -1285,6 +1295,10 @@ globus_l_xio_udt_server_read_cb(
     char *                                  cs;
     char *                                  contact=NULL;
     int                                     i;
+#ifndef HAVE_INET_NTOP
+	struct in_addr *ia;
+	char *cp;
+#endif
     GlobusXIOName(globus_l_xio_udt_server_read_cb);
 
     GlobusXIOUdtDebugEnter();
@@ -1303,7 +1317,14 @@ globus_l_xio_udt_server_read_cb(
     {
         ipnum[i] = (char)handshake->ip[i];
     }
+#ifdef HAVE_INET_NTOP	/* Mostly to workaround bug in IRIX 6.5's inet_ntoa */
     inet_ntop(AF_INET, ipnum, ipstr, GLOBUS_L_XIO_UDT_IP_LEN);
+#else
+		ia = (struct in_addr *)ipnum;
+		cp = inet_ntoa(*ia);
+		if ((cp != (char *) 0) && (cp != (char *) -1) && (cp[0] != '\0'))
+			(void) strncpy(ipstr, cp, GLOBUS_L_XIO_UDT_IP_LEN);
+#endif
     sprintf(port, "%d", handshake->port);
     cs = globus_malloc(strlen(ipstr) + strlen(port) + 2);
     sprintf(cs, "%s:%s", ipstr, port);

@@ -19,6 +19,7 @@
 #   12/12/2005 M. Colligan   Consolidate duplicate code in subs 
 #   01/31/2006 T. Wayne      Remove _MBCS compiler directive
 #   02/10/2006 T. Wayne      Fixed lib output in exe log
+#   03/16/2006 T. Wayne      Precompiler directives from configure.in
 #
 # -----------------------------------------------------------------------------
 
@@ -60,6 +61,8 @@ my @DLLExportExclusions;
 my $DLLExportExclusionCount = 0;
 my @DLLDependency;
 my $DLLDependencyCount = 0;
+my @CompilerFlags;
+my $CompilerFlagCount = 0;
 
 
 # Variables
@@ -268,6 +271,13 @@ print EXEBATCHEXEC "echo =======================================================
 print EXEBATCHEXEC "\n";
 
 # -------------------------------------
+# Create OpenSSL Libraries
+# -------------------------------------
+
+ExecuteOpenSSLMakeFile();
+
+
+# -------------------------------------
 # Spin Through The Windows Modules File
 # -------------------------------------
 
@@ -299,6 +309,8 @@ while (<MODULES>) {
     $DLLExportExclusionCount = 0;
     @DLLDependency           = {};
     $DLLDependencyCount      = 0;
+    @CompilerFlags           = {};
+    $CompilerFlagCount       = 0;
     
     # Look For A Module Record Block
     if(/^ModuleType/) {
@@ -344,7 +356,7 @@ while (<MODULES>) {
                 }
             }
             
-        # Executibles
+        # Executables
         else {
             print "Creating Makefiles For Program Modules At $SourceLocation\n";
 			ParseProgramMakeFile();
@@ -444,6 +456,147 @@ print EXEBATCHEXEC "\n";
 
 
 # -------------------------------------------------------------------------------------
+# ExecuteOpenSSLMakeFile
+#
+#
+#
+# -------------------------------------------------------------------------------------
+sub ExecuteOpenSSLMakeFile
+{
+my @nmakeCall;
+my $makefileName;
+
+    # Change The Working Directory To That Of The Target Makefile
+    $SourceLocation = "\\gsi\\openssl_gpt";
+    print LIBBATCHEXEC "\n";
+    print LIBBATCHEXEC "echo ================================================================\n";
+    print LIBBATCHEXEC "echo == Library                                                      \n";
+    print LIBBATCHEXEC "echo ==                                                              \n";
+    print LIBBATCHEXEC "echo == $SourceLocation                                              \n";
+    print LIBBATCHEXEC "echo ==                                                              \n";
+    print LIBBATCHEXEC "echo ==                                                              \n";
+    print LIBBATCHEXEC "echo ================================================================\n\n";
+    print LIBBATCHEXEC "echo ================================================================\>\> $GlobusLocation\\core\\source\\win32\\$FlavorName$LibSuffix.log\n";
+    print LIBBATCHEXEC "echo == Library                                                      \>\> $GlobusLocation\\core\\source\\win32\\$FlavorName$LibSuffix.log\n";
+    print LIBBATCHEXEC "echo ==                                                              \>\> $GlobusLocation\\core\\source\\win32\\$FlavorName$LibSuffix.log\n";
+    print LIBBATCHEXEC "echo == $SourceLocation                                              \>\> $GlobusLocation\\core\\source\\win32\\$FlavorName$LibSuffix.log\n";
+    print LIBBATCHEXEC "echo ==                                                              \>\> $GlobusLocation\\core\\source\\win32\\$FlavorName$LibSuffix.log\n";
+    print LIBBATCHEXEC "echo ==                                                              \>\> $GlobusLocation\\core\\source\\win32\\$FlavorName$LibSuffix.log\n";
+    print LIBBATCHEXEC "echo ================================================================\>\> $GlobusLocation\\core\\source\\win32\\$FlavorName$LibSuffix.log\n\n";
+    print LIBBATCHEXEC "CD $GlobusLocation$SourceLocation\n";
+
+    print LIBBATCHEXEC "set GLOBUS_FLAVOR_NAME=$FlavorName\n";
+
+    # Execute The Makefile
+    print LIBBATCHEXEC "echo       ---------------------------------------------------------- \>\> $GlobusLocation\\core\\source\\win32\\$FlavorName$LibSuffix.log\n";
+    print LIBBATCHEXEC "echo       NMAKE VCLEAN                                                \>\> $GlobusLocation\\core\\source\\win32\\$FlavorName$LibSuffix.log\n";
+    print LIBBATCHEXEC "echo       ---------------------------------------------------------- \>\> $GlobusLocation\\core\\source\\win32\\$FlavorName$LibSuffix.log\n";
+    print LIBBATCHEXEC "echo       ---------------------------------------------------------- \n";
+    print LIBBATCHEXEC "echo       NMAKE VCLEAN                                                \n";
+    print LIBBATCHEXEC "echo       ---------------------------------------------------------- \n";
+    #print LIBBATCHEXEC "nmake /F ms\\$makefileName VCLEAN \>\> $GlobusLocation\\core\\source\\win32\\$FlavorName$LibSuffix.log\n";
+    # "del" command errors if directory doesn't exist - replicate functionality here
+    print LIBBATCHEXEC "if exist MINFO del /f /q MINFO\n";
+    print LIBBATCHEXEC "if exist ms\\*.mak  del /f /q ms\\*.mak\n";
+    print LIBBATCHEXEC "if exist ms\\*.def  del /f /q ms\\*.def\n";
+    print LIBBATCHEXEC "if exist tmp32\\nul  rmdir /s /q tmp32\n";
+    print LIBBATCHEXEC "if exist tmp32.dbg\\nul  rmdir /s /q tmp32.dbg\n";
+    print LIBBATCHEXEC "if exist tmp32dll\\nul  rmdir /s /q tmp32dll\n";
+    print LIBBATCHEXEC "if exist tmp32dll.dbg\\nul  rmdir /s /q tmp32dll.dbg\n";
+    print LIBBATCHEXEC "if exist out32\\nul  rmdir /s /q out32\n";
+    print LIBBATCHEXEC "if exist out32.dbg\\nul  rmdir /s /q out32.dbg\n";
+    print LIBBATCHEXEC "if exist out32dll\\nul  rmdir /s /q out32dll\n";
+    print LIBBATCHEXEC "if exist out32dll.dbg\\nul  rmdir /s /q out32dll.dbg\n";
+    print LIBBATCHEXEC "if exist inc32\\nul  rmdir /s /q inc32\n";
+
+    print LIBBATCHEXEC "echo       ---------------------------------------------------------- \>\> $GlobusLocation\\core\\source\\win32\\$FlavorName$LibSuffix.log\n";
+    print LIBBATCHEXEC "echo       NMAKE ALL                                                  \>\> $GlobusLocation\\core\\source\\win32\\$FlavorName$LibSuffix.log\n";
+    print LIBBATCHEXEC "echo       ---------------------------------------------------------- \>\> $GlobusLocation\\core\\source\\win32\\$FlavorName$LibSuffix.log\n";
+    print LIBBATCHEXEC "echo       ---------------------------------------------------------- \n";
+    print LIBBATCHEXEC "echo       NMAKE ALL                                                  \n";
+    print LIBBATCHEXEC "echo       ---------------------------------------------------------- \n";
+
+    # Largely extracted from ms\do_ms.bat
+    # Create file list, which feeds makefile generation
+    print LIBBATCHEXEC "echo       Creating OpenSSL File List \>\> $GlobusLocation\\core\\source\\win32\\$FlavorName$LibSuffix.log\n";
+    print LIBBATCHEXEC "echo       Creating OpenSSL File List \n";
+    print LIBBATCHEXEC "perl util\\mkfiles.pl \>MINFO\n";
+
+    print LIBBATCHEXEC "echo       Generating OpenSSL Makefile  \>\> $GlobusLocation\\core\\source\\win32\\$FlavorName$LibSuffix.log\n";
+    print LIBBATCHEXEC "echo       Generating OpenSSL Makefile \n";
+    if ($FlavorName =~ m/^win32relmt/ ) {
+        # win32relmt and win32relmtthr flavors
+        $makefileName = "nt.mak";
+        print LIBBATCHEXEC "perl util\\mk1mf.pl no-asm VC-WIN32 \>ms\\nt.mak\n";
+    } else {
+    if ($FlavorName =~ m/^win32relmd/ ) {
+        # win32relmdthr
+        $makefileName = "ntdll.mak";
+        print LIBBATCHEXEC "perl util\\mk1mf.pl dll no-asm VC-WIN32 \>ms\\ntdll.mak\n";
+    } else {
+    if ($FlavorName =~ m/^win32dbgmt/ ) {
+        # win32dbgmtd and win32dbgmtdthr flavors
+        $makefileName = "nt-debug.mak";
+        print LIBBATCHEXEC "perl util\\mk1mf.pl no-asm debug VC-WIN32 \>ms\\nt-debug.mak\n";
+    } else {
+    if ($FlavorName =~ m/^win32dbgmd/ ) {
+        # win32dbgmddthr
+        $makefileName = "ntdll-debug.mak";
+        print LIBBATCHEXEC "perl util\\mk1mf.pl dll no-asm debug VC-WIN32 \>ms\\ntdll-debug.mak\n";
+    } else {
+        print LIBBATCHEXEC "echo ERROR: Unknown Flavor Name - $FlavorName \>\> $GlobusLocation\\core\\source\\win32\\BuildResults.log\n\n";
+        print LIBBATCHEXEC "echo ERROR: Unknown Flavor Name - $FlavorName \n\n";
+        exit
+    }
+    }}}
+    # Create export definition files to create SSL and crypto lib DLLs
+    print LIBBATCHEXEC "echo       Creating OpenSSL Export Definition Files  \>\> $GlobusLocation\\core\\source\\win32\\$FlavorName$LibSuffix.log\n";
+    print LIBBATCHEXEC "echo       Creating OpenSSL Export Definition Files \n";
+    print LIBBATCHEXEC "perl util\\mkdef.pl 32 libeay \>ms\\libeay32.def\n";
+    print LIBBATCHEXEC "perl util\\mkdef.pl 32 ssleay \>ms\\ssleay32.def\n";
+
+    # Embed Leader For This Makefile
+    print LIBBATCHEXEC "echo BEGIN nmake $SourceLocation\\ms\\$makefileName             \>\> $GlobusLocation\\core\\source\\win32\\$FlavorName$LibSuffix.log\n";
+    print LIBBATCHEXEC "echo  BEGIN nmake $SourceLocation\\ms\\$makefileName             \n";
+
+    print LIBBATCHEXEC "nmake /F ms\\$makefileName ALL   \>\> $GlobusLocation\\core\\source\\win32\\$FlavorName$LibSuffix.log\n";
+    
+    print LIBBATCHEXEC "echo       ---------------------------------------------------------- \>\> $GlobusLocation\\core\\source\\win32\\$FlavorName$LibSuffix.log\n";
+    print LIBBATCHEXEC "echo       NMAKE INSTALL                                              \>\> $GlobusLocation\\core\\source\\win32\\$FlavorName$LibSuffix.log\n";
+    print LIBBATCHEXEC "echo       ---------------------------------------------------------- \>\> $GlobusLocation\\core\\source\\win32\\$FlavorName$LibSuffix.log\n";
+    print LIBBATCHEXEC "echo       ---------------------------------------------------------- \n";
+    print LIBBATCHEXEC "echo       NMAKE INSTALL                                              \n";
+    print LIBBATCHEXEC "echo       ---------------------------------------------------------- \n";
+    #print LIBBATCHEXEC "nmake /F ms\\$makefileName INSTALL  \>\> $GlobusLocation\\core\\source\\win32\\$FlavorName$LibSuffix.log\n";
+
+    print LIBBATCHEXEC "echo       Copying OpenSSL Include Files \>\> $GlobusLocation\\core\\source\\win32\\$FlavorName$LibSuffix.log\n";
+    print LIBBATCHEXEC "echo       Copying OpenSSL Include Files \n";
+    print LIBBATCHEXEC "xcopy /E /Q /Y inc32\\openssl\\* $GlobusLocation\\include\\openssl\\ \n";
+
+    print LIBBATCHEXEC "echo       Copying OpenSSL Binaries \>\> $GlobusLocation\\core\\source\\win32\\$FlavorName$LibSuffix.log\n";
+    print LIBBATCHEXEC "echo       Copying OpenSSL Binaries \n";
+    print LIBBATCHEXEC "if exist out32\\*.lib xcopy /Q /Y out32\\*.lib $GlobusLocation\\lib\\ \n";
+    print LIBBATCHEXEC "if exist out32.dbg\\*.lib xcopy /Q /Y out32.dbg\\*.lib $GlobusLocation\\lib\\\n";
+    print LIBBATCHEXEC "if exist out32dll\\*.lib xcopy /Q /Y out32dll\\*.lib $GlobusLocation\\lib\\ \n";
+    print LIBBATCHEXEC "if exist out32dll.dbg\\*.lib xcopy /Q /Y out32dll.dbg\\*.lib $GlobusLocation\\lib\\ \n";
+    print LIBBATCHEXEC "if exist out32dll\\*.dll xcopy /Q /Y out32dll\\*.dll $GlobusLocation\\bin\\ \n";
+    print LIBBATCHEXEC "if exist out32dll.dbg\\*.dll xcopy /Q /Y out32dll.dbg\\*.dll $GlobusLocation\\bin\\ \n";
+
+    print LIBBATCHEXEC "set GLOBUS_FLAVOR_NAME=\n";
+
+    # Report Build Results (from nmake ALL Only)
+    print LIBBATCHEXEC "if NOT ERRORLEVEL 1 echo SUCCEEDED - $FlavorName Library At: $SourceLocation \>\> $GlobusLocation\\core\\source\\win32\\BuildResults.log\n\n";
+    #print LIBBATCHEXEC "if NOT ERRORLEVEL 1 echo SUCCEEDED - $FlavorName Library At: $SourceLocation \n\n";
+    print LIBBATCHEXEC "if ERRORLEVEL 1 echo FAILED    - $FlavorName Library At: $SourceLocation - nmake Return: %ERRORLEVEL% \>\> $GlobusLocation\\core\\source\\win32\\BuildResults.log\n\n";
+    #print LIBBATCHEXEC "if ERRORLEVEL 1 echo FAILED    - $FlavorName Library At: $SourceLocation - nmake Return: %ERRORLEVEL% \n\n";
+    
+    # Change The Working Directory To The 'Home' Directory
+    print LIBBATCHEXEC "CD $GlobusLocation\\core\\source\\win32\n";
+    print LIBBATCHEXEC "\n";
+} # ExecuteOpenSSLMakeFile
+
+
+# -------------------------------------------------------------------------------------
 # CreateStaticLibMakeFile
 #
 # Build A Static Library Makefile
@@ -491,7 +644,11 @@ my $Exclude;
     #
     ParseWinMakeamCommon();
     
-        
+    #
+    # Parse config.in
+    #
+    ParseConfigIn();
+
     #
     # Create The Winmake.mak
     #
@@ -605,14 +762,21 @@ my $Exclude;
     # Determine Compile Options Per Flavor Spec
     my $IncludeString = "/I \"$GlobusLocation\\include\" /I \"$GlobusLocation\\include\\$GlobusThreading\" /I \"$FullWin32Path\" ";
     my $FlagsPre;
-    my $FlagsPost;
+    my $FlagsPost = "";
+
+    if($CompilerFlagCount) {
+        foreach  $i (@CompilerFlags)  {
+            $FlagsPost = $FlagsPost . $i . " ";
+            }
+        }
+
     if($BuildConfig eq "debug") {
         $FlagsPre  = "/nologo /W3 /$CRuntimeLib /GX /Od /Gd /Z7 ";
-        $FlagsPost = "/D \"WIN32\" /D \"_DEBUG\" /D \"_LIB\" /Fo\"\$\(INTDIR\)\\\\\" /Fd\"\$\(INTDIR\)\\\\\" /FD /GZ /c";
+        $FlagsPost = $FlagsPost . "/D \"WIN32\" /D \"_DEBUG\" /D \"_LIB\" /D \"BUILD_DEBUG\" /Fo\"\$\(INTDIR\)\\\\\" /Fd\"\$\(INTDIR\)\\\\\" /FD /GZ /c";
         }
      else {
         $FlagsPre  = "/nologo /$CRuntimeLib /W3 /GX /O2 /Gd ";
-        $FlagsPost = "/D \"WIN32\" /D \"NDEBUG\" /D \"_LIB\" /Fo\"\$\(INTDIR\)\\\\\" /Fd\"\$\(INTDIR\)\\\\\" /FD /c";
+        $FlagsPost = $FlagsPost . "/D \"WIN32\" /D \"NDEBUG\" /D \"_LIB\" /Fo\"\$\(INTDIR\)\\\\\" /Fd\"\$\(INTDIR\)\\\\\" /FD /c";
         }
 
     # Create The Compile String
@@ -822,7 +986,13 @@ my $Exclude;
     # Parse Winmake.am
     #
     ParseWinMakeamCommon();
-    ParseWinMakeamDLL();        
+    ParseWinMakeamDLL();
+    
+    #
+    # Parse config.in
+    #
+    ParseConfigIn();
+
     #
     # Parse Winmake.exports
     #
@@ -1010,14 +1180,21 @@ my $Exclude;
     # Determine Compile Options Per Flavor Spec
     my $IncludeString = "/I \"$GlobusLocation\\include\" /I \"$GlobusLocation\\include\\$GlobusThreading\" /I \"$FullWin32Path\" ";
     my $FlagsPre;
-    my $FlagsPost;
+    my $FlagsPost = "";
+
+    if($CompilerFlagCount) {
+        foreach  $i (@CompilerFlags)  {
+            $FlagsPost = $FlagsPost . $i . " ";
+            }
+        }
+
     if($BuildConfig eq "debug") {
         $FlagsPre  = "/nologo /W3 /$CRuntimeLib /GX /Od /Gd /Z7 ";
-        $FlagsPost = "/D \"WIN32\" /D \"_DEBUG\" /D \"_USRDLL\" /D \"_WINDOWS\" /Fo\"\$\(INTDIR\)\\\\\" /Fd\"\$\(INTDIR\)\\\\\" /FD /GZ /c";
+        $FlagsPost = $FlagsPost . "/D \"WIN32\" /D \"_DEBUG\" /D \"_USRDLL\" /D \"_WINDOWS\" /D \"BUILD_DEBUG\" /Fo\"\$\(INTDIR\)\\\\\" /Fd\"\$\(INTDIR\)\\\\\" /FD /GZ /c";
         }
      else {
         $FlagsPre  = "/nologo /$CRuntimeLib /W3 /GX /O2 /Gd ";
-        $FlagsPost = "/D \"WIN32\" /D \"NDEBUG\" /D \"_USRDLL\" /D \"_WINDOWS\" /Fo\"\$\(INTDIR\)\\\\\" /Fd\"\$\(INTDIR\)\\\\\" /FD /c";
+        $FlagsPost = $FlagsPost . "/D \"WIN32\" /D \"NDEBUG\" /D \"_USRDLL\" /D \"_WINDOWS\" /Fo\"\$\(INTDIR\)\\\\\" /Fd\"\$\(INTDIR\)\\\\\" /FD /c";
         }
 
     # Create The Compile String
@@ -1331,6 +1508,11 @@ my $i;
     $ProgramDependencyCount = 0;
         
     #
+    # Parse config.in
+    #
+    ParseConfigIn();
+
+    #
     # Parse Winmake.am 
     #
     # Library Dependencies Are Needed. Note: All Programs In Makefile.am Use
@@ -1599,14 +1781,21 @@ my $i;
     # Determine Compile Options Per Flavor Spec
     my $IncludeString = "/I \"$GlobusLocation\\include\" /I \"$GlobusLocation\\include\\$GlobusThreading\" /I \"$FullWin32Path\" ";
     my $FlagsPre;
-    my $FlagsPost;
+    my $FlagsPost = "";
+
+    if($CompilerFlagCount) {
+        foreach  $i (@CompilerFlags)  {
+            $FlagsPost = $FlagsPost . $i . " ";
+            }
+        }
+
     if($BuildConfig eq "debug") {
         $FlagsPre  = "/nologo /W3 /$CRuntimeLib /GX /Od /Gd /Z7 ";
-        $FlagsPost = "/D \"WIN32\" /D \"_DEBUG\" /D \"_CONSOLE\" /D \"_WINDOWS\" /Fo\"\$\(INTDIR\)\\\\\" /Fd\"\$\(INTDIR\)\\\\\" /FD /GZ /c";
+        $FlagsPost = $FlagsPost . "/D \"WIN32\" /D \"_DEBUG\" /D \"_CONSOLE\" /D \"_WINDOWS\" /D \"BUILD_DEBUG\" /Fo\"\$\(INTDIR\)\\\\\" /Fd\"\$\(INTDIR\)\\\\\" /FD /GZ /c";
         }
      else {
         $FlagsPre  = "/nologo /$CRuntimeLib /W3 /GX /O2 /Gd ";
-        $FlagsPost = "/D \"WIN32\" /D \"NDEBUG\" /D \"_CONSOLE\" /D \"_WINDOWS\" /Fo\"\$\(INTDIR\)\\\\\" /Fd\"\$\(INTDIR\)\\\\\" /FD /c";
+        $FlagsPost = $FlagsPost . "/D \"WIN32\" /D \"NDEBUG\" /D \"_CONSOLE\" /D \"_WINDOWS\" /Fo\"\$\(INTDIR\)\\\\\" /Fd\"\$\(INTDIR\)\\\\\" /FD /c";
         }
 
     # Create The Compile String
@@ -1825,7 +2014,7 @@ my $Exclude;
     #
     while (<MAKEFILE_AM>) {
         # Capture Source File List (Ignore $(Sources) Assignment Statement)
-        if(((/^Sources/) || (/_SOURCES/)) && !(/\$\(Sources\)/)) {
+        if(((/^Sources/) || (/_SOURCES/) || (/^LibSources/)) && !(/\$\(Sources\)/) && !(/\$\(LibHeaders\)/)) {
             # Split The Arguments
             @stemp = split;
             
@@ -1872,7 +2061,7 @@ my $Exclude;
             
         # Capture Header File List
         @stemp = {};
-        if(/^flavorinclude_HEADERS/) {
+        if((/^flavorinclude_HEADERS/) || (/^LibHeaders/)) {
             # Split The Arguments
             @stemp = {};
             @stemp = split;
@@ -2258,4 +2447,82 @@ my $Exclude;
             
             } # while<WINMAKE_AM>
         } # else (open(WINMAKE_AM))
+}
+
+
+# -------------------------------------------------------------------------------------
+# ParseConfigIn
+#
+#
+#
+#
+#
+#
+#
+# -------------------------------------------------------------------------------------
+sub ParseConfigIn {
+# Temp Variables
+my @config_files;
+my @stemp;
+my $i = 0;
+my $config_file_path = $FullSourcePath;
+   
+    until($i) {
+        # Find configure file - configure.in, configure.in.in, service_configure.in
+        @config_files = glob($config_file_path . "\\*configure.in*");
+
+        # Confirm only one configure.in file found
+        $i = @config_files;
+
+        if ($i == 0) {
+            # Inherit from parent directory if not found locally
+            while (chop($config_file_path) !~ /\\/) {};
+            # print "    Info: Chopped config file path: " . $config_file_path . "\n";
+            # Bail out if we've iterated beyond where we could find a configure.in file
+            if($config_file_path !~ m/\Q$GlobusLocation\E/) {
+                last;
+                }
+            }
+        }
+
+    if($i == 1) {
+        if(open(CONFIG_IN,"$config_files[0]")) {
+            while (<CONFIG_IN>) {
+                # --------------------------------------------------
+                # Capture Preprocessor Definitions
+                # --------------------------------------------------
+                if(/^CFLAGS=\"\$CFLAGS/) {
+                    # Split The Arguments
+                    @stemp = split;
+                
+                    # Capture Source File(s) On This Line (If Any)
+                    foreach  $i (@stemp)  {
+                        # Find preprocessor directives "-D"
+                        if($i =~ /^\-D/) {
+                            # Remove quotes
+                            $i =~ tr/\"//d;
+                            # Translate preprocessor option '-D' => ' /D "'
+                            $i =~ s/-D/ \/D \"/;
+                            # Add end quote
+                            $i .= '"';
+                            # print "   Info: Found precompiler directive: ", $i , "\n";
+                            $CompilerFlags[$CompilerFlagCount++] = $i;
+                            }
+                        }
+                    } # if CFLAGS
+                } 
+            } 
+        else { # if(open(CONFIG_IN,"$config_files[0]"))
+            print "    Error: Unable to open \"$config_files[0]\" file in ", $FullSourcePath, ".\n";
+            }
+        }
+    else {
+        if ($i > 1) {
+            # Multiple configure files found
+            print "    Warning: ($i) \"*configure.in*\" files found in ", $FullSourcePath, ".\n";
+            }
+        else { # ($i == 0)
+            print "    Warning: No \"*configure.in*\" file found in ", $FullSourcePath, ".\n";
+            }
+        }
 }

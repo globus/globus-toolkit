@@ -133,6 +133,12 @@ typedef struct globus_barrier_s
     int                 count;
 } globus_barrier_t;
 
+/* Windows replacement for unix getopt() */
+int getopt(int argc, char * const argv[], const char *optstring);
+extern char *optarg;
+extern int optind, opterr, optopt;
+
+
 /******************************************************************************
 			       Define constants
 ******************************************************************************/

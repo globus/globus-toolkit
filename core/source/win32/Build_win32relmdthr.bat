@@ -32,19 +32,6 @@ copy %GlobusLocation%\core\source\win32\nonthreaded\globus_config.h %GlobusLocat
 copy %GlobusLocation%\common\source\win32\version.h %GlobusLocation%\include\*.*
 
 echo .
-echo . Copy OpenSSL Include Files (This Is Not Handled By The Script)
-echo .
-copy %SSLLocation%\inc32\openssl\*.* %GlobusLocation%\include\openssl\*.*
-
-echo .
-echo . Copy OpenSSL Binaries (This Is Not Handled By The Script)
-echo .
-copy %SSLLocation%\out32dll\libeay32.dll  %GlobusLocation%\bin\*.*
-copy %SSLLocation%\out32dll\ssleay32.dll  %GlobusLocation%\bin\*.*
-copy %SSLLocation%\out32dll\libeay32.lib  %GlobusLocation%\lib\*.*
-copy %SSLLocation%\out32dll\ssleay32.lib  %GlobusLocation%\lib\*.*
-
-echo .
 echo . Clear BuildResults.log And Put An Opening Stamp Into It
 echo .
 echo Starting Build On %DATE% At %TIME% > BuildResults.log
