@@ -1,0 +1,363 @@
+#! /bin/sh -f
+
+# 
+# Copyright 1999-2006 University of Chicago
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+# http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# 
+
+
+. ${GLOBUS_LOCATION}/libexec/globus-script-initializer
+globus_source ${libexecdir}/globus-sh-tools.sh
+
+#
+# globus-hostname2contacts: convert a hostname to a list of resource manager
+#   contact strings.
+#
+# synopsis:
+#
+#    % globus-hostname2contacts [options] hostname
+#
+#    -t or -type: narrow search to only include contacts associated with
+#        	   a specific job manager. "-t X -t Y" and "-t X Y" are
+#                  equivalent, and will first search X, then Y.
+#
+#    -s or -service: narrow search to a particular service name.
+#
+#    -x or -anonymous : Use anonymous binding instead of GSSAPI.
+#
+#    -mdshost    H  : set non-default hostname of MDS server
+#    -mdsport    P  : set non-default port number of MDS server
+#    -mdsbasedn  DN : set non-default base DN for MDS searches
+#    -mdstimeout T  : set non-default timeout for MDS searches
+#
+#    -local: do not perform MDS queries, instead grep the file
+#            ~/.globus/cached-gatekeepers for contacts based on
+#            the hostname and service.
+#
+#    Wildcards in types and hostname are allowed.
+#
+#    If -t is not given, all contacts associated with hostname will be
+#    returned, in the following order:
+#	1. All "batch" managers (all except poe and fork)
+#	2. POE managers
+#	3. fork managers
+#
+#    print nothing for hostnames not mappable to a contact.
+#
+#    Two examples for the same search: all fork managers at ISI
+#	% globus-hostname2contacts -t fork \*.isi.edu
+#       % globus-hostname2contacts \*.isi.edu-fork
+#    
+#    All poe or easy scheduler jobmanager interfaces that are installed
+#    on the ANL SP (ico):
+#	% globus-hostname2contacts -t easy\*,poe ico\*.anl.gov
+#
+
+# some configuration variables...
+#
+
+PROGRAM_NAME=`echo $0 | ${GLOBUS_SH_SED-sed} -e 's|.*/||g'`
+PROGRAM_VERSION="@GPT_MAJOR_VERSION@.@GPT_MINOR_VERSION@ (@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@)"
+
+# Help text
+#
+
+short_usage="${PROGRAM_NAME} [-help][-type ...|-service ...] <hostname>"
+
+long_usage ()
+{
+${GLOBUS_SH_CAT-cat} 1>&2 <<EOF
+
+Usage: ${short_usage}
+
+    globus-hostname2contacts returns contact strings on stdout, identifying
+    gatekeeper service(s) configured on the host(s) specified.
+
+    By default, contacts are returned in the following order:
+        contacts with Mds-Software-deployment=jobmanager, and Mds-Service-Gram-schedulertype not fork or poe
+        contacts with Mds-Software-deployment=jobmanager, and Mds-Service-Gram-schedulertype=poe
+        contacts with Mds-Software-deployment=jobmanager, and Mds-Service-Gram-schedulertype=fork
+
+    A contact string is on the form "host:port/service:certificate subject".
+
+Options:
+
+    -help,-usage              Show help
+    -version	              Show version
+    -debug                    Show extra output
+    -dryrun            (-d)   Don't search: print the MDS search commands
+    -anonymous         (-x)   Use anonymous binding instead of GSSAPI
+    -mdshost H         (-h)   Set non-default hostname of MDS server
+    -mdsport P         (-p)   Set non-default port number of MDS server
+    -mdsbasedn DN      (-b)   Set non-default base DN for MDS searches
+    -mdstimeout SEC    (-T)   Set non-default search timeout (SEC seconds)
+    -type T1,T2,...    (-t)   Narrow search to specific scheduler type(s)
+    -service S1,S2,... (-s)   Narrow search to specific service type(s)
+
+    NOTE: -type and -service are mutually exclusive!
+	
+    Wildcards in hostname, -type and -service arguments are accepted.
+
+    The following is equivalent and will search for types X, Y and Z,
+    in that order:
+         -t X,Y,Z  
+         -t X -t Y -t Z
+    The same holds for the service option (-s).
+
+EOF
+}
+
+globus_source ${libexecdir}/globus-args-parser-header $*
+
+# No command line arguments -> show short usage
+#
+if [ "$#" -lt 1 ]; then
+    globus_args_short_usage
+    exit 1
+fi
+
+
+# default settings
+#
+mds_search_exec="${bindir}/grid-info-host-search"
+debug=no
+doservices=false
+doschedulers=false
+user_mdshost=flase
+default_arg=""
+servicetypes=""
+schedulertypes=""
+anonymous_option=""
+execute=eval
+filter="${GLOBUS_SH_SED-sed} -n -e /^Mds-Service-url:/s/^Mds-Service-url://p"
+gram_filter="${GLOBUS_SH_SED-sed} -e s/x-gram:\/\///"
+user="`${GLOBUS_SH_WHOAMI}`"
+cache="${local_tmpdir}/globus-hostname2contacts.${user}.$$"
+
+cleanup ()
+{
+    ${GLOBUS_SH_RM-rm} -f ${cache}
+}
+
+trap cleanup 0 1 2 3 6 9 12 15 
+
+# Parse arguments.
+#
+parser_state=top
+count="$#";
+n="0";
+for arg in "$@"; do
+    n=`${GLOBUS_SH_EXPR-expr} $n + 1`
+    if [ $n = $count ]; then
+	if [ $parser_state != top ]; then
+	    echo "ERROR: missing hostname argument" >&2
+	    globus_args_short_usage
+	    exit 1
+	fi
+	parser_state=lastarg
+    fi
+
+    case ${arg} in
+	-debug)
+	    debug=yes
+	    ;;
+	-d | -dryrun)
+	    execute=echo
+	    filter=${GLOBUS_SH_CAT-cat}
+	    ;;
+	-x | -anonymous)
+	    anonymous_option="-x"
+	    ;;
+	-h | -mdshost)
+	    extra_options="${extra_options} -mdshost"
+	    parser_state=optionarg
+	    user_mdshost=true
+	    ;;
+	-p | -mdsport)
+	    extra_options="${extra_options} -mdsport"
+	    parser_state=optionarg
+	    ;;
+	-b | -mdsbasedn)
+	    extra_options="${extra_options} -mdsbasedn"
+	    parser_state=optionarg
+	    ;;
+	-T | -mdstimeout)
+	    extra_options="${extra_options} -mdstimeout"
+	    parser_state=optionarg
+	    ;;
+	-t | -type)
+	    if [ ${doservices} = true ]; then
+		globus_args_option_error "${arg}" \
+		    "Cannot mix scheduler type and service type searches"
+	    fi		
+	    doschedulers=true
+	    parser_state=typearg
+	    listvar=schedulertypes
+	    ;;
+	-s | -service)
+	    if [ ${doschedulers} = true ]; then
+		globus_args_option_error "${arg}" \
+		    "Cannot mix scheduler type and service type searches"
+	    fi		
+	    doservices=true
+	    parser_state=typearg
+	    listvar=servicetypes
+	    ;;
+	*)
+	    case ${parser_state} in
+		top)
+		    globus_args_unrecognized_option ${arg}
+		    ;;
+		optionarg)
+		    extra_options="${extra_options} \"${arg}\""
+		    parser_state=top
+		    ;;
+		typearg)
+		    # remove commas separating types.
+		    if [ ${doservices} = true ]; then
+			servicetypes=`echo "${servicetypes} ${arg}" | \
+					${GLOBUS_SH_SED-sed} 's/,/ /g'`
+		    else
+			schedulertypes=`echo "${schedulertypes} ${arg}" | \
+					${GLOBUS_SH_SED-sed} 's/,/ /g'`
+		    fi
+		    parser_state=top
+		    ;;
+		lastarg)
+		    hostname="${arg}"
+		    ;;
+	    esac
+	    ;;
+    esac
+    shift	
+done
+
+# if the hostname is not a host but host/service, do the right thing
+case "${hostname}" in
+    */*)
+	temp="${hostname}"
+	hostname=`echo "${temp}" | ${GLOBUS_SH_SED-sed} 's|/.*$||'`
+	servicetypes=`echo "${temp}" | ${GLOBUS_SH_SED-sed} 's|^.*/||'`
+	doservices=true
+	;;
+esac
+
+if [ ${user_mdshost} != true ]; then
+    default_arg="-mdshost $hostname"
+fi
+
+# default is to search for schedulers
+if [ "${doservices}:${doschedulers}" = "false:false" ]; then
+    doschedulers=true
+fi
+
+special_search=false
+
+if [ ${doservices} = true ]; then
+    class=MdsService
+    attr=Mds-Software-deployment
+    list="${servicetypes}" 
+else
+    class=MdsServiceGram
+    attr=Mds-Service-Gram-schedulertype
+    list="${schedulertypes}"
+    if [ -z "${list}" ]; then
+	special_search=true
+    fi
+fi
+
+if [ ${debug} = yes ]; then
+    echo "DEBUG:   Parsing done" >&2
+    echo "DEBUG:   search type     = [${attr}]" >&2
+    echo "DEBUG:   search for      = [${list}]" >&2
+    echo "DEBUG:   hostname        = [${hostname}]" >&2
+    echo "DEBUG:   extra opt       = [${extra_options}]" >&2
+    echo "DEBUG:   default_arg     = [${default_arg}]" >&2
+fi
+
+# BUG FIX: LDAP filter (cn=**) will not work (why?). Reduce to one asterisk
+#
+if [ "${hostname}" = "*" ]; then
+    hostname=""
+fi
+
+search_string="&(objectclass=${class})(Mds-Service-hn=${hostname}*)"
+
+if [ ${debug} = yes ]; then
+    echo "DEBUG:   search stub     = [${search_string}]" >&2
+fi
+
+# Special case: find all schedulertypes, with the following sort order:
+# other, poe, fork
+#
+if [ ${special_search} = true ]; then
+    if [ ${debug} = yes ] ; then
+	echo "DEBUG:   search for all schedulers" >&2
+    fi
+
+    ${execute} "${mds_search_exec} ${anonymous_option} -nowrap ${default_arg} ${extra_options} \
+               \"(${search_string})\" Mds-Service-Gram-schedulertype Mds-Service-url"\
+               2> /dev/null > ${cache}
+
+    if [ -n "${cache}" ]; then
+	${GLOBUS_SH_AWK-awk} '\
+	    BEGIN {t=0;} \
+	    /^Mds-Service-Gram-schedulertype/ { \
+		split($0,a,":"); \
+		if ((a[2] != "fork") && (a[2] != "poe")) t=1;  \
+	    } \
+	    /^Mds-Service-url/ { contact=$0;} \
+	    /^$/ { if (t) print contact; t=0; } \
+	    END { if (t) print contact; t=0; }' \
+	    ${cache} | ${filter} | ${gram_filter}
+
+	${GLOBUS_SH_AWK-awk} '\
+	    BEGIN {t=0;} \
+	    /^Mds-Service-Gram-schedulertype/ { split($0,a,":"); if ((a[2] == "poe")) t=1; } \
+	    /^Mds-Service-url/ { contact=$0;} \
+	    /^$/ { if (t) print contact; t=0; } \
+	    END { if (t) print contact; t=0; }' \
+	    ${cache} | ${filter} | ${gram_filter}
+
+	${GLOBUS_SH_AWK-awk} '\
+	    BEGIN {t=0;} \
+	    /^Mds-Service-Gram-schedulertype/ { split($0,a,":"); if ((a[2] == "fork")) t=1; } \
+	    /^Mds-Service-url/ { contact=$0;} \
+	    /^$/ { if (t) print contact; t=0; } \
+	    END { if (t) print contact; t=0; }' \
+	    ${cache} | ${filter} | ${gram_filter}
+    fi
+
+else
+
+    eval set -- "${list}"
+    for schedulertype in "$@" ; do
+	if [ ${debug} = yes ] ; then
+	    echo "DEBUG:   search for ${attr} = ${schedulertype}" >&2
+	fi
+
+	if [ -z "${schedulertype}" ]; then
+            searchtype="\*"
+        else
+            searchtype="${schedulertype}"
+        fi
+
+	${execute} "${mds_search_exec} ${anonymous_option} -nowrap ${default_arg} ${extra_options} \
+            	\"(${search_string}(${attr}=${searchtype}))\" Mds-Service-url" \
+        2> /dev/null | ${filter} | ${gram_filter}
+    done
+fi
+#
+# Done
+#

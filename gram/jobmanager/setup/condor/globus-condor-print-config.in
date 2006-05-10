@@ -1,0 +1,3 @@
+#! /bin/sh
+
+echo "-condor-arch @CONDOR_ARCH@ -condor-os @CONDOR_OS@"

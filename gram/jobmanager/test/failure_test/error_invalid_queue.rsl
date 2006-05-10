@@ -1,0 +1,3 @@
+(* GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_QUEUE *)
+&(executable=/bin/true)
+ (queue=bogus)

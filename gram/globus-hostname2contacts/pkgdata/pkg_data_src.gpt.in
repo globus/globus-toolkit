@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE gpt_package_metadata SYSTEM "globus_package.dtd">
+
+<gpt_package_metadata Name="globus_hostname2contacts" Format_Version="0.02">
+<Aging_Version Major="1" Minor="1" Age="0"/>
+<Description>Job Manager Service Lookup Tool</Description>
+<Functional_Group >ResourceManagement</Functional_Group>
+<Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
+<src_pkg>
+
+    <Source_Dependencies Type="pgm_runtime" >
+      <Dependency Name="globus_core" Package="pgm"> <Version><Simple_Version Major="4"></Simple_Version></Version> </Dependency>
+      <Dependency Name="globus_mds_common" Package="pgm"><Version > <Simple_Version Major="2" /> </Version> </Dependency>
+    </Source_Dependencies>
+
+<With_Flavors build="yes" />
+<Build_Environment>
+<cflags>@GPT_PKG_CFLAGS@</cflags>
+<external_includes>@GPT_EXTERNAL_INCLUDES@</external_includes>
+<external_libs>@GPT_EXTERNAL_LIBS@</external_libs>
+<pkg_libs></pkg_libs>
+</Build_Environment>
+
+</src_pkg>
+</gpt_package_metadata>
+

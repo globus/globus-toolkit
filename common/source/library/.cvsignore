@@ -1,0 +1,6 @@
+Makefile.in
+Makefile
+globus_common.h
+*.lo
+*.la
+.libs

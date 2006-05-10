@@ -1,0 +1,6 @@
+(* 1 *)
+&(executable = $(GLOBUS_LOCATION) # '/bin/globus-sh-exec')
+ (arguments = -e '$GLOBUS_SH_PERL -e ''print STDERR "stderr\n"; '
+            #                      'print STDOUT "stdout\n";''')
+ (stdout = ($(TEST_FTP_PREFIX) # $(TEST_STDOUT) # ".001" ))
+ (stderr = ($(TEST_FTP_PREFIX) # $(TEST_STDERR) # ".001" ))

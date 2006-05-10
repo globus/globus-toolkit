@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE gpt_package_metadata SYSTEM "package.dtd">
+
+<gpt_package_metadata Name="globus_gass_copy_test" Format_Version="0.02">
+
+    <Aging_Version Major="0" Minor="3" Age="0"/>
+    <Description >Globus Toolkit Tests</Description>
+    <Functional_Group >Testing</Functional_Group>
+    <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
+
+    <src_pkg>
+
+        <Source_Dependencies Type="pgm_runtime">
+            <Dependency Name="globus_proxy_utils" Package="pgm">
+                <Version>
+                    <Simple_Version Major="0"/>
+                </Version>
+            </Dependency>
+
+            <Dependency Name="globus_gss_assist" Package="pgm">
+                <Version>
+                    <Simple_Version Major="3"/>
+                </Version>
+            </Dependency>
+
+            <Dependency Name="globus_gass_copy" Package="pgm">
+                <Version>
+                    <Simple_Version Major="2"/>
+                </Version>
+            </Dependency>
+
+            <Dependency Name="globus_gram_client_tools" Package="pgm">
+                <Version>
+                    <Simple_Version Major="3"/>
+                </Version>
+            </Dependency>            
+
+            <Dependency Name="globus_gram_client_tools_test" Package="pgm">
+                <Version>
+                    <Simple_Version Major="0"/>
+                </Version>
+            </Dependency>            
+
+            <Dependency Name="globus_gridftp_server" Package="pgm">
+                <Version>
+                    <Simple_Version Major="0"/>
+                </Version>
+            </Dependency>
+        </Source_Dependencies>
+
+        <With_Flavors build="no"/>
+
+        <Build_Environment>
+            <cflags>@GPT_CFLAGS@</cflags>
+            <external_includes>@GPT_EXTERNAL_INCLUDES@</external_includes>
+            <external_libs>@GPT_EXTERNAL_LIBS@</external_libs>
+            <pkg_libs />
+        </Build_Environment>
+
+  </src_pkg>
+
+</gpt_package_metadata>
+

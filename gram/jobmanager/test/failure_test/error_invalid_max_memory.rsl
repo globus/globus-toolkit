@@ -1,0 +1,3 @@
+(* GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_MAX_MEMORY *)
+&(executable=/bin/true)
+ (max_memory=-1)

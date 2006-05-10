@@ -1,0 +1,189 @@
+#! @PERL@
+
+=head1 NAME
+
+globus-job-manager-service - Add or remove a job manager service
+
+=head1 SYNOPSIS
+
+B<globus-job-manager-service> -add -s I<NAME> -m I<TYPE> [options]
+
+B<globus-job-manager-service> -remove -s I<NAME> -m I<TYPE> [options]
+
+B<globus-job-manager-service> -help
+
+=head2 OPTIONS
+
+=over 4
+
+=item -jobmanager-config | -j I<FILENAME>
+
+Configure the job manager to look for configuration in I<FILENAME>. Only
+relevant when adding a job manager service.
+
+=item -service-directory | -d -I<DIRECTORY>
+
+Add or remove the job manager service to the named I<DIRECTORY>.
+
+=item -extra-config | -e -I<"CONFIG TEXT">
+
+Additional command line options besides the standard ones to the job
+manager's configuration. Only relevant when adding a job manager service.
+
+-item -help | -h
+
+Display a short usage message.
+
+=back
+
+=head1 DESCRIPTION
+
+Add or remove a Gatekeeper service entry which will invoke the job manager.
+Must be invoked with a required service name, service type, and one of either
+-add or -remove.
+
+Adding or removing a Gatekeeper service will affect the Gatekeeper which
+is using the service directory immediately, there is no need to restart
+the Gatekeeper. 
+
+This script is typically invoked by GRAM Job Manager setup scripts.
+
+=head1 BUGS
+
+If you remove a service entry while a job manager is initializing, it may
+be unable to read it's configuration information; or it may succeed and
+continue running after the service is removed.
+
+=cut
+
+
+BEGIN
+{
+    push(@INC, "@GLOBUS_LOCATION@/lib/perl");
+    $ENV{GLOBUS_LOCATION} = "@GLOBUS_LOCATION@" if(!exists($ENV{GLOBUS_LOCATION}));
+}
+
+use Getopt::Long;
+use IO::File;
+use File::Copy;
+
+my $servicename = 'jobmanager';
+my $method = 'fork';
+my $add = 0;
+my $remove = 0;
+my $help = 0;
+my $gpath;
+
+my $globusdir	= $ENV{GLOBUS_LOCATION};
+my $libexecdir	= "$globusdir/libexec";
+my $sysconfdir	= "$globusdir/etc";
+my $servicesdir	= "$sysconfdir/grid-services";
+my $setupdir = "$globusdir/setup/globus";
+my $job_manager_conf = "$sysconfdir/globus-job-manager.conf";
+my $perljmdir = "$globusdir/lib/perl/Globus/GRAM/JobManager";
+
+GetOptions('service-name|s=s' => \$servicename,
+           'manager-type|m=s' => \$manager_type,
+	   'extra-config|e=s' => \$extra_config,
+	   'add' => \$add,
+	   'remove' => \$remove,
+	   'jobmanager-config|j=s' => \$job_manager_conf,
+	   'service-directory|d=s' => \$servicesdir,
+	   'help|h' => \$help);
+
+&usage() if $help;
+
+if ( $remove && $add )
+{
+    print STDERR "Cannot have add and remove in the same command.\n";
+    exit 2;
+}
+
+if ( !$remove && !$add )
+{
+    print STDERR "Either -add or -remove are required.\n";
+    exit 2;
+}
+
+if(! &valid_manager_type($manager_type))
+{
+    print STDERR "Invalid job manager type $manager type.\n";
+    exit 2;
+}
+
+if(! -d $servicesdir)
+{
+    print "Creating grid services directory.\n";
+    mkdir $servicesdir, 0777;
+}
+
+my $symlink_exists = eval { symlink("", ""); 1 };
+
+if( $add )
+{
+   &create_services_file("$servicesdir/$servicename");
+   copy("${setupdir}/${manager_type}.pm", "${perljmdir}/");
+
+   if($symlink_exists && ! -r "$servicesdir/jobmanager")
+   {
+       symlink($servicename, "$servicesdir/jobmanager");
+   }
+}
+else
+{
+   if($symlink_exists && readlink("$servicesdir/jobmanager") eq "$servicename")
+   {
+       unlink("$servicesdir/jobmanager");
+       print STDERR "Warning: Removing default job manager\n";
+   }
+   unlink("$servicesdir/$servicename");
+}
+
+
+sub create_services_file
+{
+    my $filename = shift;
+    my $service_file = new IO::File(">$filename");
+
+    if(!defined($service_file))
+    {
+	print STDERR
+	    "ERROR: Can't create services file $filename}.\n";
+	exit 4;
+    }
+    print $service_file "stderr_log,local_cred - ".
+                    "${libexecdir}/globus-job-manager globus-job-manager ".
+		    "-conf ${job_manager_conf} -type ${manager_type} ".
+		    "-rdn ${servicename} -machine-type unknown ".
+		    "-publish-jobs $extra_config\n";
+
+    $service_file->close();
+}
+
+sub usage
+{
+    print "Usage: $0 [-service-name|-s service_name]\n".
+          "          [-manager-type|-m manager_type]\n".
+	  "          [-jobmanager-config|-j CONFIG FILE]\n".
+	  "          [-service-directory|-d DIRECTORY]\n".
+          "          [-extra-config EXTRA]\n".
+          "          [-add]\n".
+          "          [-remove]\n".
+          "          [-help]\n";
+    exit 1;
+}
+
+sub valid_manager_type
+{
+    my $name = $_[0];
+
+    if("${setupdir}/${name}.pm")
+    {
+	return 1;
+    }
+    else 
+    {
+	return 0;
+    }
+}
+

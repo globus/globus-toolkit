@@ -1,0 +1,2 @@
+&(executable = $(GLOBUS_LOCATION) # "/bin/globus-sh-exec")
+ (arguments  = -e '$GLOBUS_SH_PERL -e ''if((exists($ENV{X509_CERT_DIR}) && -d $ENV{X509_CERT_DIR}) || !exists($ENV{X509_CERT_DIR})) { print "1\n";} else { print "0\n";}''')

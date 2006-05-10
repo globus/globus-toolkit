@@ -1,0 +1,244 @@
+/*
+ * Copyright 1999-2006 University of Chicago
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#undef HAVE_EXTERNALTHREADS
+#undef HAVE_PTHREAD
+#undef HAVE_PTHREAD_DRAFT_10
+#undef HAVE_PTHREAD_DRAFT_4
+#undef HAVE_PTHREAD_DRAFT_6
+#undef HAVE_PTHREAD_DRAFT_8
+#undef HAVE_PTHREAD_INIT_FUNC
+#undef HAVE_PTHREAD_PLAIN_YIELD
+#undef HAVE_PTHREAD_PREEMPTIVE
+#undef HAVE_PTHREAD_SCHED
+#undef _POSIX_PTHREAD_SEMANTICS 
+#undef HAVE_SOLARISTHREADS
+#undef HAVE_SPROC
+#undef HAVE_THREAD_SAFE_SELECT
+#undef HAVE_THREAD_SAFE_STDIO
+#undef _CMA_REENTRANT_CLIB_
+#undef _REENTRANT
+#undef _SGI_MP_SOURCE
+#undef __USE_FIXED_PROTOTYPES__
+#undef BUILD_LITE
+#undef BUILD_DEBUG
+#undef BUILD_STATIC_ONLY
+
+#undef TARGET_ARCH_SUNOS41
+#undef TARGET_ARCH_SOLARIS
+#undef TARGET_ARCH_RS6000
+#undef TARGET_ARCH_AIX
+#undef TARGET_ARCH_MPL
+#undef TARGET_ARCH_AIX3
+#undef TARGET_ARCH_AIX4
+#undef TARGET_ARCH_AIX5
+#undef TARGET_ARCH_HP9000S700
+#undef TARGET_ARCH_HPUX
+#undef TARGET_ARCH_HPUX11
+#undef TARGET_ARCH_PARAGON
+#undef TARGET_ARCH_SGI
+#undef TARGET_ARCH_IRIX
+#undef TARGET_ARCH_IRIX5
+#undef TARGET_ARCH_IRIX6
+#undef TARGET_ARCH_AXP
+#undef TARGET_ARCH_OSF1
+#undef TARGET_ARCH_CRAYC90
+#undef TARGET_ARCH_CRAYT3E
+#undef TARGET_ARCH_CRAYSV1
+#undef TARGET_ARCH_UNICOS
+#undef TARGET_ARCH_FREEBSD
+#undef TARGET_ARCH_DARWIN
+#undef TARGET_ARCH_BSD
+#undef TARGET_ARCH_BSDI
+#undef TARGET_ARCH_NEXTSTEP
+#undef TARGET_ARCH_LINUX
+#undef TARGET_ARCH_CYGWIN
+#undef TARGET_ARCH_X86
+#undef TARGET_ARCH_IA64
+#undef TARGET_ARCH_ARM
+
+#ifdef NET_OS
+#undef TARGET_ARCH_NETOS
+#endif
+
+#undef HAVE_MALLOC_H
+#undef HAVE_PWD_H
+#undef HAVE_DIRENT_H
+#undef HAVE_SYS_FILE_H
+#undef GLOBUS_TIMESPEC_EXISTS
+#undef HAVE_NETINET_IN_H
+#undef HAVE_SYS_STAT_H
+#undef HAVE_SYS_TYPES_H
+#undef HAVE_IO_H
+#undef HAVE_SYS_SIGNAL_H
+#undef HAVE_UNISTD_H
+#undef HAVE_NETDB_H
+#undef HAVE_SYS_PARAM_H
+#undef HAVE_FCNTL_H
+#undef HAVE_SYS_TIME_H
+#undef HAVE_STRING_H
+#undef HAVE_CTYPE_H
+#undef HAVE_SYS_SOCKET_H
+#undef HAVE_STDARG_H
+#undef HAVE_ARPA_INET_H
+#undef HAVE_NET_IF_ARP_H
+#undef HAVE_NET_IF_DL_H
+#undef HAVE_IFADDRS_H
+#undef HAVE_SYS_IOCTL_H
+#undef HAVE_NET_IF_H
+#undef HAVE_FORK1
+#undef HAVE_GMTIME_R
+#undef HAVE_SYS_INTTYPES_H
+#undef HAVE_INTTYPES_H
+#undef HAVE_LIMITS
+#undef HAVE_LIMITS_H
+#undef HAVE_NDIR_H
+#undef HAVE_NETINET_TCP_H
+#undef HAVE_NO_CONDATTR_DEFAULT
+#undef HAVE_NO_PTHREAD_SETKIND
+#undef HAVE_ONEXIT
+#undef HAVE_PTHREAD_PRIO_MINMAX
+#undef HAVE_SEEKDIR
+#undef HAVE_TELLDIR
+#undef HAVE_WRITEV
+#undef HAVE_READV
+#undef HAVE_SIGNAL_H
+#undef HAVE_SNPRINTF
+#undef HAVE_STRERROR
+#undef HAVE_STRNCASECMP
+#undef HAVE_SYS_CNX_PATTR_H
+#undef HAVE_SYS_DIR_H
+#undef HAVE_SYS_LIMITS_H
+#undef HAVE_SYS_NDIR_H
+#undef HAVE_SYS_TYPES
+#undef HAVE_SYS_WAIT_H
+#undef HAVE_WAITPID
+#undef HAVE_VSNPRINTF
+#undef HAVE_STRTOUL
+#undef HAVE_LIBC_H
+#undef HAVE_SYSLOG_H
+
+/* NET+OS 6.x */
+#undef HAVE_SOCKAPI_H
+#undef HAVE_TX_API_H
+
+#undef HAVE_SYS_UIO_H
+#undef HAVE_STRUCT_IOVEC
+#undef HAVE_MEMMOVE
+#undef IOV_MAX
+#undef RETSIGTYPE
+#undef HAVE_ATEXIT
+#undef TIME_WITH_SYS_TIME
+#undef HAVE_ALLOCA_H
+#undef HAVE_SOCKLEN_T
+#undef HAVE_GETHOSTNAME
+#undef HAVE_GETHOSTBYADDR
+#undef HAVE_GETADDRINFO
+#undef HAVE_GETNAMEINFO
+#undef HAVE_GETSERVBYNAME
+#undef HAVE_GETPROTOBYNUMBER
+#undef HAVE_GETEUID
+#undef HAVE_GETPWNAM
+#undef HAVE_GETPWUID
+#undef HAVE_INET_NTOA
+#undef HAVE_INET_PTON
+#undef HAVE_INET_ADDR
+#undef HAVE_FORK
+#undef HAVE_DIR
+#undef HAVE_SIGACTION
+#undef HAVE_SENDMSG
+#undef HAVE_RECVMSG
+#undef HAVE_WAIT3
+#undef HAVE_SIGHOLD
+#undef HAVE_SIGBLOCK
+#undef HAVE_SIGSET
+#undef HAVE_GETWD
+#undef HAVE_GETCWD
+#undef HAVE_USLEEP
+#undef HAVE_STRPTIME
+#undef HAVE_FREEADDRINFO
+#undef HAVE_OPENDIR
+#undef HAVE_CLOSEDIR
+#undef HAVE_READDIR
+#undef HAVE_REWINDDIR
+#undef HAVE_NRAND48
+#undef HAVE_MKTIME
+#undef HAVE_GAI_STRERROR
+#undef HAVE_POLL
+
+#undef GLOBUS_OFF_T
+#undef GLOBUS_OFF_T_FORMAT 
+
+#undef SIZEOF_SHORT
+#undef SIZEOF_INT
+#undef SIZEOF_LONG
+
+#undef HAVE_INT8_T
+#undef HAVE_INT16_T
+#undef HAVE_INT32_T
+#undef HAVE_INT64_T
+
+#undef HAVE_UINT8_T
+#undef HAVE_UINT16_T
+#undef HAVE_UINT32_T
+#undef HAVE_UINT64_T
+
+#ifndef HAVE_INT8_T
+#undef int8_t
+#endif
+
+#ifndef HAVE_INT16_T
+#undef int16_t
+#endif
+
+#ifndef HAVE_INT32_T
+#undef int32_t
+#endif
+
+#ifndef HAVE_INT64_T
+#undef int64_t
+#endif
+
+#ifndef HAVE_UINT8_T
+#undef uint8_t
+#endif
+
+#ifndef HAVE_UINT16_T
+#undef uint16_t
+#endif
+
+#ifndef HAVE_UINT32_T
+#undef uint32_t
+#endif
+
+#ifndef HAVE_UINT64_T
+#undef uint64_t
+#endif
+
+/* Number of bits in a file offset, on hosts where this is settable. */
+#ifndef _FILE_OFFSET_BITS
+#undef _FILE_OFFSET_BITS
+#endif
+
+/* Define to make fseeko etc. visible, on some hosts. */
+#ifndef _LARGEFILE_SOURCE
+#undef _LARGEFILE_SOURCE
+#endif
+
+/* Define for large files, on AIX-style hosts. */
+#ifndef _LARGE_FILES
+#undef _LARGE_FILES
+#endif

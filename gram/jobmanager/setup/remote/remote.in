@@ -1,0 +1,304 @@
+# Copyright 1999-2006 University of Chicago
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+# http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+use Globus::GRAM::Error;
+use Globus::GRAM::JobState;
+use Globus::GRAM::JobManager;
+use Globus::Core::Paths;
+
+use POSIX;
+use File::stat;
+
+package Globus::GRAM::JobManager::remote;
+
+@ISA = qw(Globus::GRAM::JobManager);
+
+my ($rsh, $rcp, $host, $globus_location, $type);
+
+BEGIN
+{
+    $rsh = '@REMOTE_SHELL@';
+    $rcp =   '@REMOTE_COPY@';
+    $host = '@REMOTE_HOST@';
+    $globus_location = '@REMOTE_GLOBUS_LOCATION@';
+    $type = '@REMOTE_JOB_MANAGER_TYPE@';
+}
+
+sub new
+{
+    my $proto = shift;
+    my $class = ref($proto) || $proto;
+    my $self = $class->SUPER::new(@_);
+    
+    bless $self, $class;
+
+    $self->{hostname} = (POSIX::uname())[1];
+    return $self;
+}
+
+sub submit
+{
+    my $self = shift;
+    my $remote_cmd;
+    my $remote_stdout;
+    my $remote_stderr;
+    my $description = $self->{JobDescription};
+    my $tag = $description->cache_tag or $tag = $ENV{GLOBUS_GRAM_JOB_CONTACT};
+    my $stdout_url = "$ENV{GLOBUS_GRAM_JOB_CONTACT}dev/stdout";
+    my $stderr_url = "$ENV{GLOBUS_GRAM_JOB_CONTACT}dev/stderr";
+
+
+    $self->log("Creating remote cache files for stdout and stderr");
+
+    $remote_cmd = "GLOBUS_LOCATION=$globus_location;\n"
+                . "export GLOBUS_LOCATION;\n"
+                . "eval . \$GLOBUS_LOCATION/etc/globus-user-env.sh;\n"
+		. "globus-gass-cache -add -t \"$tag\" -n \"$stdout_url\" "
+                . "file:/dev/null;\n"
+		. "globus-gass-cache -add -t \"$tag\" -n \"$stderr_url\" "
+		. "file:/dev/null;\n"
+                . "globus-gass-cache -query -t \"$tag\" \"$stdout_url\";\n"
+                . "globus-gass-cache -query -t \"$tag\" \"$stderr_url\";\n";
+    $self->log("Remote command = " . $remote_cmd);
+
+    $result_string = `echo '$remote_cmd' | $rsh $host /bin/sh - 2>/dev/null`;
+
+    if($? != 0)
+    {
+	return Globus::GRAM::Error::OPENING_CACHE;
+    }
+
+    ($remote_stdout, $remote_stderr) = split(/\n/, $result_string);
+          
+    $description->add('stdout', $remote_stdout);
+    $description->add('stderr', $remote_stderr);
+
+    return $self->remote_cmd('submit');
+}
+
+sub poll
+{
+    my $self = shift;
+    my $description = $self->{JobDescription};
+    my $size;
+    my $st;
+    my $local_file;
+    my $remote_cmd;
+    my $type;
+    my $tag = $description->cache_tag or $tag = $ENV{GLOBUS_GRAM_JOB_CONTACT};
+    my $stdout_url = "$ENV{GLOBUS_GRAM_JOB_CONTACT}dev/stdout";
+    my $stderr_url = "$ENV{GLOBUS_GRAM_JOB_CONTACT}dev/stderr";
+    my %local_files = ('stdout' => $description->stdout(),
+                      'stderr' => $description->stderr());
+    my $remote_stdout;
+    my $remote_stderr;
+    my $result_string;
+    my $result;
+
+    $remote_cmd = "GLOBUS_LOCATION=$globus_location;\n"
+                . "export GLOBUS_LOCATION;\n"
+                . "eval . \$GLOBUS_LOCATION/etc/globus-user-env.sh;\n"
+                . "globus-gass-cache -query -t \"$tag\" \"$stdout_url\" && "
+                . "globus-gass-cache -query -t \"$tag\" \"$stderr_url\";\n";
+
+    $self->log("Remote command = " . $remote_cmd);
+
+    $result_string = `echo '$remote_cmd' | $rsh $host /bin/sh - 2>/dev/null`;
+
+    if($? != 0)
+    {
+	return Globus::GRAM::Error::OPENING_CACHE;
+    }
+
+    ($remote_stdout, $remote_stderr) = split(/\n/, $result_string);
+    $self->log("Remote command = " . $remote_cmd);
+
+    $description->add('stdout', $remote_stdout);
+    $description->add('stderr', $remote_stderr);
+
+    $result = $self->remote_cmd('poll');
+
+    foreach $type ('stdout', 'stderr')
+    {
+	$local_file = $local_files{$type};
+	$st = File::stat::stat($local_file);
+	$size = $st->size;
+	$remote_cmd = "GLOBUS_LOCATION=$globus_location;\n"
+                    . "export GLOBUS_LOCATION;\n"
+                    . "eval . \$GLOBUS_LOCATION/etc/globus-user-env.sh;\n"
+	            . "remote_file=\`globus-gass-cache "
+	            . "-query -t $tag $ENV{GLOBUS_GRAM_JOB_CONTACT}dev/$type\`;\n"
+	            . "dd if=\"\$remote_file\" bs=1 skip=$size;\n";
+
+	system("echo '$remote_cmd' | $rsh $host /bin/sh - >>$local_file 2>/dev/null");
+    }
+    return $result;
+}
+
+sub cancel
+{
+    my $self = shift;
+
+    return $self->remote_cmd('cancel');
+}
+
+sub signal
+{
+    my $self = shift;
+
+    return $self->remote_cmd('signal');
+}
+
+sub make_scratchdir
+{
+    my $self = shift;
+
+    return $self->remote_cmd('make_scratchdir');
+}
+
+sub remove_scratchdir
+{
+    my $self = shift;
+
+    return $self->remote_cmd('remove_scratchdir');
+}
+
+sub file_cleanup
+{
+    my $self = shift;
+
+    return $self->remote_cmd('file_cleanup');
+}
+
+sub stage_in
+{
+    my $self = shift;
+
+    return $self->remote_cmd('stage_in');
+}
+
+sub stage_out
+{
+    my $self = shift;
+
+    return $self->remote_cmd('stage_out');
+}
+
+sub cache_cleanup
+{
+    my $self = shift;
+
+    $self->remote_cmd('cache_cleanup');
+
+    return $self->SUPER::cache_cleanup();
+}
+
+sub remote_io_file_create
+{
+    my $self = shift;
+
+    return $self->remote_cmd('remote_io_file_create');
+}
+
+sub proxy_relocate
+{
+    my $self = shift;
+    my $proxy = $ENV{X509_USER_PROXY};
+
+    $self->log("Copying proxy to $host");
+    if($proxy eq "")
+    {
+        return Globus::GRAM::Error::OPENING_USER_PROXY;
+    }
+    return $self->remote_cmd('proxy_relocate');
+}
+
+
+sub rewrite_urls
+{
+    return ;
+}
+
+sub remote_cmd
+{
+    my $self = shift;
+    my $cmd = shift;
+    my $description = $self->{JobDescription};
+    my $remote_cmd;
+    my $args_filename;
+    my $tag = $description->cache_tag or $ENV{GLOBUS_GRAM_JOB_CONTACT};
+    my $contact = $ENV{GLOBUS_GRAM_JOB_CONTACT};
+    my $remote_script_url="x-gass-cache://$contact/remote_script_args_$$";
+    my $data;
+    my $datafile;
+    my $proxy_data;
+    my $proxy_datafile;
+    my $remote_proxy_url="x-gass-cache://$contact/remote_proxy";;
+
+    $self->log("Entering remote_cmd");
+
+    $args_filename = $Globus::Core::Paths::local_tmpdir .
+                     "/remote_" . $self->{hostname} . "_job.$$";
+    $self->log("Saving args file to $args_filename");
+    $description->save($args_filename);
+    $datafile=new IO::File("<$args_filename");
+    $data = join('', <$datafile>);
+    $data =~ s/'/'"'"'/g;
+    $datafile->close();
+    unlink($args_filename);
+
+    $remote_cmd  = "GLOBUS_LOCATION=$globus_location ;\n";
+    $remote_cmd .= "export GLOBUS_LOCATION;\n";
+    $remote_cmd .= "eval . \$GLOBUS_LOCATION/etc/globus-user-env.sh ; \n";
+    $remote_cmd .= "eval . \$GLOBUS_LOCATION/libexec/globus-sh-tools.sh ; \n";
+    $remote_cmd .= "globus-gass-cache -add -t \"$tag\" -n \"$remote_script_url\" file:///dev/null ;\n";
+    $remote_cmd .= "args_file=\`globus-gass-cache -query -t \"$tag\" $remote_script_url\`;\n";
+    $remote_cmd .= "\$GLOBUS_SH_CAT >> \$args_file <<\"EOF\";\n";
+    $remote_cmd .= "$data\nEOF\n";
+
+    if($cmd eq 'proxy_relocate')
+    {
+        $proxy_datafile = new IO::File("<$ENV{X509_USER_PROXY}");
+        $proxy_data = join('', <$proxy_datafile>);
+        $proxy_datafile->close();
+        $proxy_data =~ s/'/'"'"'/g;
+
+        $remote_cmd .= "globus-gass-cache -add -t \"$tag\" -n \"$remote_proxy_url\" file:///dev/null ;\n";
+        $remote_cmd .= "proxy_file=\`globus-gass-cache -query -t \"$tag\" $remote_proxy_url\`;\n";
+        $remote_cmd .= "\$GLOBUS_SH_CHMOD 600 \$proxy_file;\n";
+        $remote_cmd .= "\$GLOBUS_SH_CAT >> \$proxy_file <<\"EOF\";\n";
+        $remote_cmd .= "$proxy_data\nEOF\n";
+
+	$remote_cmd .="X509_USER_PROXY=\$proxy_file;\n";
+    }
+    else
+    {
+	$remote_cmd .="X509_USER_PROXY=\`globus-gass-cache -query -t $tag ".
+	            "$ENV{GLOBUS_GRAM_JOB_CONTACT}\`;\n";
+    }
+
+    $remote_cmd .= "GLOBUS_GRAM_JOB_CONTACT=$ENV{GLOBUS_GRAM_JOB_CONTACT} ;\n";
+    $remote_cmd .= "export GLOBUS_GRAM_JOB_CONTACT X509_USER_PROXY\n";
+    $remote_cmd .= "\$GLOBUS_LOCATION/libexec/globus-job-manager-script.pl "
+                 . "-m $type -f \$args_file -c $cmd;\n";
+    $remote_cmd .= "globus-gass-cache -cleanup-url $remote_script_url >/dev/null;\n";
+    $self->log("Running remote command: $remote_cmd");
+    $response = `echo '$remote_cmd' | $rsh $host /bin/sh - 2>/dev/null`;
+
+    $self->respond($response);
+
+    return {};
+}
+
+1;

@@ -1,0 +1,24 @@
+/**
+@mainpage GRAM Job Manager Callout Configuration
+
+This package contains an example of how to write a custom GRAM
+authorization callout setup package. It sets up a callout
+configuration file for the GRAM callout example package. The script
+setup-globus-job-manager-callout must be run to add the example
+callout to the callout configuration file.
+
+@section setup_usage Options to setup-globus-job-manager-callout
+
+@par -nonroot|-d[=PATH]
+This option modifies the location of the configuration file
+created/modified by the setup script. The default location (ie. if
+this option is not given) is /etc/grid-security/gsi-authz.conf.
+If this option is given without the optional PATH parameter then the
+configuration file is created/modified in $GLOBUS_LOCATION/etc/gsi-authz.conf.
+If the user also specifies the PATH parameter then the configuration
+file is created/modified in PATH/gsi-authz.conf.
+@par -help
+Prints the usage.
+@par -force|-f
+Overwrites existing GRAM authorization callout configuration.
+*/

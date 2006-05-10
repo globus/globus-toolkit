@@ -1,0 +1,4 @@
+(* GLOBUS_GRAM_PROTOCOL_ERROR_RSL_FILE_STAGE_IN_SHARED *)
+&(executable=/bin/true)
+ (file_stage_in_shared = ( ftp://ftp.globus.org /tmp/ftp)
+                  (ftp://ftp.globus.org/no/destination/for/stage))

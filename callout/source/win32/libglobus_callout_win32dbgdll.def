@@ -1,0 +1,9 @@
+;
+; Definition file for the DLL version of the SSLEAY32 library from OpenSSL
+;
+
+LIBRARY         SSLEAY32	
+
+DESCRIPTION     'OpenSSL SSLEAY32 - http://www.openssl.org/'
+
+EXPORTS

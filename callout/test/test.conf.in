@@ -1,0 +1,7 @@
+# Comment 1
+
+                 #Comment 2
+
+
+TEST    libtest             test_callout # Comment 3
+TEST    libtest_@GLOBUS_FLAVOR_NAME@    test_callout

@@ -1,0 +1,15 @@
+aclocal.m4
+missing
+install-sh
+mkinstalldirs
+Makefile.in
+Makefile
+config.log
+config.cache
+config.guess
+config.sub
+config.status
+globus_gram_protocol-[0-9]*
+*.lo
+*.la
+.libs

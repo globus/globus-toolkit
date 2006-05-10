@@ -1,0 +1,64 @@
+# Windows Only Source Files In Linux Directory
+Sources = \
+    globus_libtool_windows.c
+
+flavorinclude_HEADERS = \
+    globus_object_cache.h \
+    globus_libtool_windows.h
+
+wininclude_HEADERS = \
+	globus_common.h \
+    config.h \
+
+LibDependencies = \
+    Ws2_32.lib \
+    icudata.lib \
+    icuucd.lib \
+    icuind.lib \
+    icutud.lib \
+    iculed.lib \
+    icuiod.lib \
+    iculxd.lib
+
+# Export Exclusions Found By Linker
+ExportExclusions = \
+    globus_condattr_getspace \
+    globus_condattr_setspace \
+    globus_debug_init \
+    globus_dump_stack \
+    globus_i_thread_id \
+    globus_i_thread_ignore_sigpipe \
+    globus_libc_closedir \
+    globus_libc_gethomedir \
+    globus_libc_getpwnam_r \
+    globus_libc_getpwuid_r \
+    globus_libc_lseek \
+    globus_libc_opendir \
+    globus_libc_readdir_r \
+    globus_libc_rewinddir \
+    globus_thread_postfork \
+    globus_thread_preemptive_threads \
+    globus_thread_prefork \
+    thread_print \
+    globus_threadattr_destroy \
+    globus_threadattr_getstacksize \
+    globus_threadattr_init \
+    globus_threadattr_setstacksize \
+    globus_libc_seekdir \
+    globus_libc_telldir
+
+# Windows Only Exports
+WinExports = \
+    globus_thread_get_threadID_as_long \
+    globus_i_reltime_zero \
+    globus_i_abstime_zero \
+    globus_i_abstime_infinity \
+    globus_i_reltime_infinity \
+    globus_error_mutliple_add_chain \
+    globus_error_construct_multiple \
+    lt_dlinit \
+    lt_dlexit \
+    lt_dlsym \
+    lt_dlerror \
+    lt_dlopenext \
+    lt_dlclose

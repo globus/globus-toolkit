@@ -1,0 +1,15 @@
+#! /bin/sh
+
+. $GLOBUS_LOCATION/libexec/globus-sh-tools.sh
+
+GPATH=$GPT_LOCATION
+
+if [ "$GPATH" = "" ]; then
+    GPATH=$GLOBUS_LOCATION
+fi
+
+if [ "$GPATH" = "" ]; then
+    echo "GPT_LOCATION or GLOBUS_LOCATION needs to be set before running this script."
+fi
+
+$GLOBUS_SH_PERL -I${GPATH}/lib/perl ${GLOBUS_LOCATION}/setup/globus/setup-globus-job-manager-lsf.pl "$@"
