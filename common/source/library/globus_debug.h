@@ -41,7 +41,12 @@ globus_debug_init(
     globus_debug_handle_t *             handle);
 
 #ifdef BUILD_LITE
+#ifndef WIN32
 #define GlobusDebugThreadId() getpid()
+#else
+/* win32 always has threads (eg, under xio) */
+#define GlobusDebugThreadId() GetCurrentThreadId()
+#endif
 #else
 #define GlobusDebugThreadId() globus_thread_self()
 #endif

@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #ifndef GLOBUS_I_XIO_SYSTEM_COMMON_INCLUDE
 #define GLOBUS_I_XIO_SYSTEM_COMMON_INCLUDE
 
@@ -156,7 +155,8 @@ GlobusDebugDeclare(GLOBUS_XIO_SYSTEM);
 #define GlobusIXIOSystemFreeIovec(count, iovec)                             \
     do                                                                      \
     {                                                                       \
-        if((count) < 10)                                                    \
+        int                             _count = (count);                   \
+        if(_count < 10)                                                     \
         {                                                                   \
             globus_memory_push_node(                                        \
                 &globus_i_xio_system_iov_memory, (iovec));                  \

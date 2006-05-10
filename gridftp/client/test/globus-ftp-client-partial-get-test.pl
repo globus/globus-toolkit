@@ -46,6 +46,7 @@ my ($proto) = setup_proto();
 my ($source_host, $source_file, $local_copy) = setup_remote_source();
 
 open($fh, "<$local_copy");
+binmode($fh);
 my $size = (stat($fh))[7];
 my $range = int($size / 4) . " " . int(2*int($size/4));
 my $num_bytes = int(2*int($size/4)) - int($size / 4);
@@ -65,8 +66,8 @@ sub basic_func
 
     unlink($tmpname);
 
-    my $command = "$test_exec -R $range -s $proto$source_host$source_file  >$tmpname 2>/dev/null";
-    $errors = run_command($command, 0);
+    my $command = "$test_exec -R $range -s $proto$source_host$source_file";
+    $errors = run_command($command, 0, $tmpname);
     if($errors eq "")
     {
         $rc = &compare_data($data, $tmpname);
@@ -97,7 +98,7 @@ sub abort_test
     my ($errors,$rc) = ("", 0);
     my ($abort_point) = shift;
 
-    my $command = "$test_exec -a $abort_point -R $range -s $proto$source_host$source_file  >/dev/null 2>/dev/null";
+    my $command = "$test_exec -a $abort_point -R $range -s $proto$source_host$source_file";
     $errors = run_command($command, -2);
     if($errors eq "")
     {
@@ -127,8 +128,8 @@ sub restart_test
 
     unlink($tmpname);
 
-    my $command = "$test_exec -r $restart_point -R $range -s $proto$source_host$source_file  >$tmpname 2>/dev/null";
-    $errors = run_command($command, 0);
+    my $command = "$test_exec -r $restart_point -R $range -s $proto$source_host$source_file";
+    $errors = run_command($command, 0, $tmpname);
     if($errors eq "")
     {
         $rc = &compare_data($data, $tmpname);
@@ -186,9 +187,10 @@ sub compare_data
     my $rc = 0;
     my $stored_bytes = 0;
     open($fh, "<$filename");
+    binmode($fh);
     while(<$fh>)
     {
-        s/(\[restart plugin\][^\n]*\n)//m;
+        s/(\[restart plugin\].*?\n)//m;
 
 	if(m/\[(\d*),(\d*)\]/)
 	{

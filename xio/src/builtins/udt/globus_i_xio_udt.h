@@ -21,8 +21,13 @@
 #include "globus_xio_udt.h"
 #include <math.h>
 #include <sys/types.h>
+
+#ifndef WIN32
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#else
+#define ECONNREFUSED WSAECONNREFUSED
+#endif
 
 GlobusDebugDeclare(GLOBUS_XIO_UDT);
 

@@ -356,7 +356,7 @@ globus_xio_contact_copy(
 #define GlobusIXIOUtilTransferIovec(iov, siov, iovc)                        \
     do                                                                      \
     {                                                                       \
-        globus_size_t                   _i;                                 \
+        int                             _i;                                 \
         const struct iovec *            _siov;                              \
         struct iovec *                  _iov;                               \
         int                             _iovc;                              \
@@ -375,27 +375,28 @@ globus_xio_contact_copy(
 #define GlobusIXIOUtilAdjustIovec(iov, iovc, nbytes)                        \
     do                                                                      \
     {                                                                       \
-        globus_size_t                   _n;                                 \
-        struct iovec *                  _iov;                               \
-        int                             _iovc;                              \
-        int                             _i;                                 \
+        globus_size_t                   _n = (nbytes);                      \
                                                                             \
-        _iov = (iov);                                                       \
-        _iovc = (iovc);                                                     \
-                                                                            \
-        /* skip all completely filled iovecs */                             \
-        for(_i = 0, _n = (nbytes);                                          \
-            _i < _iovc &&  _n >= _iov[_i].iov_len;                          \
-            _n -= _iov[_i].iov_len, _i++);                                  \
-                                                                            \
-        if(_i < _iovc)                                                      \
+        if(_n > 0)                                                          \
         {                                                                   \
-            _iov[_i].iov_base = (char *) _iov[_i].iov_base + _n;            \
-            _iov[_i].iov_len -= _n;                                         \
-            (iov) += _i;                                                    \
-        }                                                                   \
+            struct iovec *              _iov = (iov);                       \
+            int                         _iovc = (iovc);                     \
+            int                         _i;                                 \
                                                                             \
-        (iovc) -= _i;                                                       \
+            /* skip all completely filled iovecs */                         \
+            for(_i = 0;                                                     \
+                _i < _iovc &&  _n >= _iov[_i].iov_len;                      \
+                _n -= _iov[_i].iov_len, _i++);                              \
+                                                                            \
+            if(_i < _iovc)                                                  \
+            {                                                               \
+                _iov[_i].iov_base = (char *) _iov[_i].iov_base + _n;        \
+                _iov[_i].iov_len -= _n;                                     \
+                (iov) += _i;                                                \
+            }                                                               \
+                                                                            \
+            (iovc) -= _i;                                                   \
+        }                                                                   \
     } while(0)
 
 #define GlobusIXIOUtilTransferAdjustedIovec(                                \

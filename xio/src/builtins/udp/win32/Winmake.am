@@ -1,0 +1,3 @@
+
+LibDependencies = \
+    libglobus_common_$(GLOBUS_FLAVOR_NAME).lib 

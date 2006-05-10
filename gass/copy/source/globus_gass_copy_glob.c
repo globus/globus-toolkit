@@ -18,6 +18,11 @@
 
 #ifndef TARGET_ARCH_WIN32
 #include <fnmatch.h>
+#else
+struct dirent
+{
+    char *d_name;
+};
 #endif
 
 
@@ -1424,12 +1429,10 @@ globus_l_gass_copy_mkdir_file(
         result = globus_error_put(
             globus_error_construct_string(
                 GLOBUS_GASS_COPY_MODULE,
-                globus_error_peek(
-                  globus_error_put(
-                    globus_error_construct_errno_error(
-                        GLOBUS_GASS_COPY_MODULE,
-                        NULL,
-                        errno))),
+                globus_error_construct_errno_error(
+                    GLOBUS_GASS_COPY_MODULE,
+                    NULL,
+                    errno),
                 "[%s]: error creating directory",
                 myname));
         goto error_mkdir;

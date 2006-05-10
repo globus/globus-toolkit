@@ -69,7 +69,18 @@ CVS Information:
 #include <fcntl.h>
 #include <limits.h>
 #include <string.h>
+#ifndef TARGET_ARCH_WIN32
 #include <utime.h>
+#else
+#include <sys/utime.h>
+struct dirent
+{
+    long d_ino;         /* Win32 filesystem doesn't have concept of "inode" */
+    char d_name[256];
+};
+#include "globus_libc.h"
+#define _POSIX_PATH_MAX     MAXPATHLEN
+#endif
 #include <sys/types.h>
 #include <ctype.h>
 
@@ -672,6 +683,7 @@ globus_l_gass_cache_trace(
 static int
 globus_l_gass_cache_linktest(globus_i_gass_cache_t  *cache)
 {
+#ifndef TARGET_ARCH_WIN32
     char         dir[PATH_MAX];
     char         file[PATH_MAX];
     char         link1[PATH_MAX];
@@ -732,6 +744,13 @@ globus_l_gass_cache_linktest(globus_i_gass_cache_t  *cache)
     rmdir(dir);
 
     return rc;
+#else
+    /* Windows platform does not full support hard links or symlinks.
+       Investigate "junction point" or "reparse point" functionality
+       found in Windows 2000 and up, specifically NTFS 5.0
+    */
+    return DIRECTORY_TYPE_NOLINK;
+#endif
 }
 
 /*
@@ -1856,6 +1875,7 @@ int
 globus_l_gass_cache_link( const char *oldfile,
 			  const char *newfile )
 {
+#ifndef TARGET_ARCH_WIN32
     int		link_retry = 0;		/* How many link() retries? */
 
     /* Loop til link fails w/o EINTR or 'til link succeeds */
@@ -1915,7 +1935,10 @@ globus_l_gass_cache_link( const char *oldfile,
 
     /* Return ok */
     return GLOBUS_SUCCESS;
-
+#else
+    /* Revisit Unix-style link() behavior under Windows. */
+    RET_ERROR( GLOBUS_L_ENOENT );
+#endif
 } /* globus_l_gass_cache_link() */
 
 /*

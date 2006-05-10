@@ -2,8 +2,8 @@
 # External Library Dependencies
 LibDependencies = \
     Ws2_32.lib \
-    libeay32.lib \
-    ssleay32.lib \
+    libcrypto_$(GLOBUS_FLAVOR_NAME).lib \
+    libssl_$(GLOBUS_FLAVOR_NAME).lib \
     libglobus_common_$(GLOBUS_FLAVOR_NAME).lib \
     libglobus_openssl_$(GLOBUS_FLAVOR_NAME).lib \
     libglobus_openssl_error_$(GLOBUS_FLAVOR_NAME).lib \
@@ -23,5 +23,20 @@ LibDependencies = \
 
 # Program Only External Library Dependencies
 ProgramLibDependencies = \
+    AdvAPI32.lib \
+    Gdi32.lib \
     libgssapi_error_$(GLOBUS_FLAVOR_NAME).lib \
-    libglobus_gass_copy_$(GLOBUS_FLAVOR_NAME).lib
+    libglobus_gass_copy_$(GLOBUS_FLAVOR_NAME).lib \
+    libglobus_callout_$(GLOBUS_FLAVOR_NAME).lib \
+    libglobus_xio_$(GLOBUS_FLAVOR_NAME).lib \
+    libglobus_xio_file_driver_$(GLOBUS_FLAVOR_NAME).lib \
+    libglobus_xio_gridftp_driver_$(GLOBUS_FLAVOR_NAME).lib \
+    libglobus_xio_gsi_driver_$(GLOBUS_FLAVOR_NAME).lib \
+    libglobus_xio_http_driver_$(GLOBUS_FLAVOR_NAME).lib \
+    libglobus_xio_mode_e_driver_$(GLOBUS_FLAVOR_NAME).lib \
+    libglobus_xio_ordering_driver_$(GLOBUS_FLAVOR_NAME).lib \
+    libglobus_xio_queue_driver_$(GLOBUS_FLAVOR_NAME).lib \
+    libglobus_xio_tcp_driver_$(GLOBUS_FLAVOR_NAME).lib \
+    libglobus_xio_telnet_driver_$(GLOBUS_FLAVOR_NAME).lib \
+    libglobus_xio_udp_driver_$(GLOBUS_FLAVOR_NAME).lib \
+    libglobus_xio_udt_driver_$(GLOBUS_FLAVOR_NAME).lib

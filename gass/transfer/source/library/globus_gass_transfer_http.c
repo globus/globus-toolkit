@@ -189,7 +189,11 @@ globus_l_gass_transfer_http_activate(void)
  error_exit:
     debug_printf(1, (_GTSL("Exiting %s()\n"),myname));
 
-    return GLOBUS_FAILURE;
+    /* no need to fail just because gsi isn't available 
+     * besides, if it were truly an error, the above modules should be 
+     * deactivated here
+     */
+    return GLOBUS_SUCCESS;
 }
 
 int

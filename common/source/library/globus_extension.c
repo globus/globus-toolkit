@@ -195,8 +195,13 @@ globus_l_extension_activate(void)
         
         if(globus_location(&tmp) == GLOBUS_SUCCESS)
         {
+#if defined(TARGET_ARCH_WIN32)
+            globus_l_globus_location =
+                globus_common_create_string("%s\\lib", tmp);
+#else
             globus_l_globus_location =
                 globus_common_create_string("%s/lib", tmp);
+#endif
             globus_free(tmp);
         }
         

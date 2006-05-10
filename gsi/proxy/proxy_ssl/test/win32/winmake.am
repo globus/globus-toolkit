@@ -2,8 +2,9 @@
 # External Library Dependencies
 LibDependencies = \
     Ws2_32.lib \
-    libeay32.lib \
-    ssleay32.lib \
+    Gdi32.lib \
+    libcrypto_$(GLOBUS_FLAVOR_NAME).lib \
+    libssl_$(GLOBUS_FLAVOR_NAME).lib \
     libglobus_common_$(GLOBUS_FLAVOR_NAME).lib \
     libglobus_openssl_$(GLOBUS_FLAVOR_NAME).lib \
     libglobus_openssl_error_$(GLOBUS_FLAVOR_NAME).lib \

@@ -27,6 +27,7 @@ use strict;
 use POSIX;
 use Test;
 use FtpTestLib;
+use File::Spec;
 use Globus::URL;
 
 my $test_exec = './globus-ftp-client-get-test';
@@ -72,10 +73,10 @@ sub basic_func
 
     if($use_proxy == 0)
     {
-        FtpTestLib::push_proxy("/dev/null");
+        FtpTestLib::push_proxy(File::Spec::->devnull());
     }
-    my $command = "$test_exec -s '$proto$source_host$source_file' > $tmpname 2>/dev/null";
-    $errors = run_command($command, $use_proxy ? 0 : -1);
+    my $command = "$test_exec -s '$proto$source_host$source_file'";
+    $errors = run_command($command, $use_proxy ? 0 : -1, $tmpname);
     if($errors eq "" && $use_proxy)
     {
         $errors .= compare_local_files($local_copy, $tmpname);
@@ -120,7 +121,7 @@ sub bad_url
     my ($bogus_url) = new Globus::URL("$proto$source_host$source_file");
 
     $bogus_url->{path} = "/no-such-file-here";
-    my $command = "$test_exec -s ".$bogus_url->to_string()." >/dev/null 2>/dev/null";
+    my $command = "$test_exec -s ".$bogus_url->to_string();
     $errors = run_command($command, 1);
     if($errors eq "")
     {
@@ -150,7 +151,7 @@ sub abort_test
     my ($errors,$rc) = ("", 0);
     my ($abort_point) = shift;
 
-    my $command = "$test_exec -a $abort_point -s '$proto$source_host$source_file' >/dev/null 2>&1";
+    my $command = "$test_exec -a $abort_point -s '$proto$source_host$source_file'";
     $errors = run_command($command, -2);
     if($errors eq "")
     {
@@ -180,8 +181,8 @@ sub restart_test
     my ($errors,$rc) = ("",0);
     my ($restart_point) = shift;
 
-    my $command = "$test_exec -r $restart_point -s '$proto$source_host$source_file' > $tmpname 2>/dev/null";
-    $errors = run_command($command, 0);
+    my $command = "$test_exec -r $restart_point -s '$proto$source_host$source_file'";
+    $errors = run_command($command, 0, $tmpname);
     if($errors eq "")
     {
         $errors .= compare_local_files($local_copy, $tmpname);
@@ -236,8 +237,8 @@ sub dcau_test
     my ($errors,$rc) = ("",0);
     my ($dcau, $desired_rc) = @_;
 
-    my $command = "$test_exec -c $dcau -s '$proto$source_host$source_file' > $tmpname 2>/dev/null";
-    $errors = run_command($command, $desired_rc);
+    my $command = "$test_exec -c $dcau -s '$proto$source_host$source_file'";
+    $errors = run_command($command, $desired_rc, $tmpname);
     if($errors eq "" && $desired_rc == 0)
     {
         $errors .= compare_local_files($local_copy, $tmpname);
@@ -301,8 +302,8 @@ sub prot_test
     my ($errors,$rc) = ("",0);
     my ($prot, $desired_rc) = @_;
 
-    my $command = "$test_exec -c self -t $prot -s '$proto$source_host$source_file' > $tmpname 2>/dev/null";
-    $errors = run_command($command, $desired_rc);
+    my $command = "$test_exec -c self -t $prot -s '$proto$source_host$source_file'";
+    $errors = run_command($command, $desired_rc, $tmpname);
     if($errors eq "" && $desired_rc == 0)
     {
         $errors .= compare_local_files($local_copy, $tmpname);
@@ -336,8 +337,8 @@ sub perf_test
     my $tmpname = POSIX::tmpnam();
     my ($errors,$rc) = ("",0);
 
-    my $command = "$test_exec -M -s '$proto$source_host$source_file' > $tmpname 2>/dev/null";
-    $errors = run_command($command, 0);
+    my $command = "$test_exec -M -s '$proto$source_host$source_file'";
+    $errors = run_command($command, 0, $tmpname);
     if($errors eq "")
     {
         $errors .= compare_local_files($local_copy, $tmpname);
@@ -369,8 +370,8 @@ sub throughput_test
     my $tmpname = POSIX::tmpnam();
     my ($errors,$rc) = ("",0);
 
-    my $command = "$test_exec -T -s '$proto$source_host$source_file' > $tmpname 2>/dev/null";
-    $errors = run_command($command, 0);
+    my $command = "$test_exec -T -s '$proto$source_host$source_file'";
+    $errors = run_command($command, 0, $tmpname);
     if($errors eq "")
     {
         $errors .= compare_local_files($local_copy, $tmpname);
@@ -411,8 +412,8 @@ sub restart_plugin_test
 	$other_args = "";
     }
 
-    my $command = "$test_exec -s '$proto$source_host$source_file' -f 0,0,0,0 $other_args > $tmpname 2>/dev/null";
-    $errors = run_command($command, 0);
+    my $command = "$test_exec -s '$proto$source_host$source_file' -f 0,0,0,0 $other_args";
+    $errors = run_command($command, 0, $tmpname);
     if($errors eq "")
     {
         $errors .= compare_local_files($local_copy, $tmpname);

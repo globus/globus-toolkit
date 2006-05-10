@@ -4,16 +4,16 @@ echo .
 echo . Set Environment
 echo .
 call Setenv.bat
+if ERRORLEVEL 1 goto ErrorExit
 
 echo .
 echo . Create The Build Tree If Necessary
 echo .
-md %GLobusLocation%\lib
-md %GLobusLocation%\include
-md %GLobusLocation%\include\threaded
-md %GLobusLocation%\include\nonthreaded
-md %GLobusLocation%\include\openssl
-md %GLobusLocation%\bin
+if not exist %GLobusLocation%\lib                 (md %GLobusLocation%\lib)
+if not exist %GLobusLocation%\include             (md %GLobusLocation%\include)
+if not exist %GLobusLocation%\include\threaded    (md %GLobusLocation%\include\threaded)
+if not exist %GLobusLocation%\include\nonthreaded (md %GLobusLocation%\include\nonthreaded)
+if not exist %GLobusLocation%\bin                 (md %GLobusLocation%\bin)
 
 echo .
 echo . Go To Script Home
@@ -27,19 +27,6 @@ copy %GlobusLocation%\core\source\win32\threaded\globus_config.h %GlobusLocation
 copy %GlobusLocation%\core\source\win32\nonthreaded\globus_config.h %GlobusLocation%\include\nonthreaded\*.*
 
 echo .
-echo . Copy OpenSSL Include Files (This Is Not Handled By The Script)
-echo .
-copy %SSLLocation%\inc32\openssl\*.* %GlobusLocation%\include\openssl\*.*
-
-echo .
-echo . Copy OpenSSL Binaries (This Is Not Handled By The Script)
-echo .
-copy %SSLLocation%\out32dll\libeay32.dll  %GlobusLocation%\bin\*.*
-copy %SSLLocation%\out32dll\ssleay32.dll  %GlobusLocation%\bin\*.*
-copy %SSLLocation%\out32dll\libeay32.lib  %GlobusLocation%\lib\*.*
-copy %SSLLocation%\out32dll\ssleay32.lib  %GlobusLocation%\lib\*.*
-
-echo .
 echo . Clear BuildResults.log And Put An Opening Stamp Into It
 echo .
 echo Starting Build On %DATE% At %TIME% > BuildResults.log
@@ -47,16 +34,30 @@ echo Starting Build On %DATE% At %TIME% > BuildResults.log
 echo .
 echo . Create And Execute Build For Static Debug Threaded Libraries (win32dbgmtdthr)
 echo .
-WinCVSBuild.pl %GlobusLocation% win32dbgmtdthr 14.2
+WinCVSBuild.pl %GlobusLocation% win32dbgmtdthr %WinGlobusVersion%
 call WinCVSBuildLibs-win32dbgmtdthr.bat
 call WinCVSBuildExes-win32dbgmtdthr.bat
 
 echo .
 echo . Create And Execute Build For Static Release Threaded Libraries (win32relmtthr)
 echo .
-WinCVSBuild.pl %GlobusLocation% win32relmtthr 14.2
+WinCVSBuild.pl %GlobusLocation% win32relmtthr %WinGlobusVersion%
 call WinCVSBuildLibs-win32relmtthr.bat
 call WinCVSBuildExes-win32relmtthr.bat
+
+echo .
+echo . Create And Execute Build For Static Debug Threaded Libraries (win32dbgmtd)
+echo .
+WinCVSBuild.pl %GlobusLocation% win32dbgmtd %WinGlobusVersion%
+call WinCVSBuildLibs-win32dbgmtd.bat
+call WinCVSBuildExes-win32dbgmtd.bat
+
+echo .
+echo . Create And Execute Build For Static Release Threaded Libraries (win32relmt)
+echo .
+WinCVSBuild.pl %GlobusLocation% win32relmt %WinGlobusVersion%
+call WinCVSBuildLibs-win32relmt.bat
+call WinCVSBuildExes-win32relmt.bat
 
 rem  **************************************************************************************
 rem  Skip This Until DLL Problems Are Fixed
@@ -80,6 +81,15 @@ echo . Put A Closing Time Stamp In BuildResults.log
 echo .
 echo Completed Build On %DATE% At %TIME% >> BuildResults.log
 
+rem Normal Exit
 echo .
 echo . Done
 echo .
+exit /b 0
+
+rem Error Exit
+:ErrorExit
+echo .
+echo . The build was not run due to an Error
+echo .
+exit /b 1

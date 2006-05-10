@@ -13,8 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #include "globus_i_xio_system_common.h"
+
+#ifndef WIN32
+#define GlobusLXIOSystemWouldBlock(err)                                     \
+    (err == EAGAIN || err == EWOULDBLOCK)
+#else
+#define GlobusLXIOSystemWouldBlock(err)                                     \
+    (err == EAGAIN || err == EWOULDBLOCK || err == WSAEWOULDBLOCK)
+#endif
 
 GlobusDebugDefine(GLOBUS_XIO_SYSTEM);
 
@@ -100,7 +107,7 @@ globus_i_xio_system_try_read(
 
         if(rc < 0)
         {
-            if(errno == EAGAIN || errno == EWOULDBLOCK)
+            if(GlobusLXIOSystemWouldBlock(errno))
             {
                 rc = 0;
             }
@@ -160,7 +167,7 @@ globus_i_xio_system_try_readv(
 
     if(rc < 0)
     {
-        if(errno == EAGAIN || errno == EWOULDBLOCK)
+        if(GlobusLXIOSystemWouldBlock(errno))
         {
             rc = 0;
         }
@@ -220,7 +227,7 @@ globus_i_xio_system_try_recv(
 
         if(rc < 0)
         {
-            if(errno == EAGAIN || errno == EWOULDBLOCK)
+            if(GlobusLXIOSystemWouldBlock(errno))
             {
                 rc = 0;
             }
@@ -288,7 +295,7 @@ globus_i_xio_system_try_recvfrom(
 
         if(rc < 0)
         {
-            if(errno == EAGAIN || errno == EWOULDBLOCK)
+            if(GlobusLXIOSystemWouldBlock(errno))
             {
                 rc = 0;
             }
@@ -379,6 +386,7 @@ globus_i_xio_system_try_recvmsg(
     }
 #else
     {
+        /* XXX this is not an acceptable work around for udp sockets */
         do
         {
             if (msghdr->msg_name)
@@ -407,7 +415,7 @@ globus_i_xio_system_try_recvmsg(
 
     if(rc < 0)
     {
-        if(errno == EAGAIN || errno == EWOULDBLOCK)
+        if(GlobusLXIOSystemWouldBlock(errno))
         {
             rc = 0;
         }
@@ -467,7 +475,7 @@ globus_i_xio_system_try_write(
 
         if(rc < 0)
         {
-            if(errno == EAGAIN || errno == EWOULDBLOCK)
+            if(GlobusLXIOSystemWouldBlock(errno))
             {
                 rc = 0;
             }
@@ -521,7 +529,7 @@ globus_i_xio_system_try_writev(
 
     if(rc < 0)
     {
-        if(errno == EAGAIN || errno == EWOULDBLOCK)
+        if(GlobusLXIOSystemWouldBlock(errno))
         {
             rc = 0;
         }
@@ -575,7 +583,7 @@ globus_i_xio_system_try_send(
 
         if(rc < 0)
         {
-            if(errno == EAGAIN || errno == EWOULDBLOCK)
+            if(GlobusLXIOSystemWouldBlock(errno))
             {
                 rc = 0;
             }
@@ -635,7 +643,7 @@ globus_i_xio_system_try_sendto(
 
         if(rc < 0)
         {
-            if(errno == EAGAIN || errno == EWOULDBLOCK)
+            if(GlobusLXIOSystemWouldBlock(errno))
             {
                 rc = 0;
             }
@@ -718,6 +726,7 @@ globus_i_xio_system_try_sendmsg(
     }
 #else
     {
+        /* XXX this is not an acceptable work around for udp sockets */
         do
         {
             if (msghdr->msg_name)
@@ -745,7 +754,7 @@ globus_i_xio_system_try_sendmsg(
 
     if(rc < 0)
     {
-        if(errno == EAGAIN || errno == EWOULDBLOCK)
+        if(GlobusLXIOSystemWouldBlock(errno))
         {
             rc = 0;
         }
@@ -772,6 +781,8 @@ error_errno:
     GlobusXIOSystemDebugExitWithErrorFD(fd);
     return result;
 }
+
+#ifndef WIN32
 
 globus_result_t
 globus_i_xio_system_file_try_read(
@@ -825,6 +836,8 @@ globus_i_xio_system_file_try_write(
     return result;
 }
 
+#endif
+
 globus_result_t
 globus_i_xio_system_socket_try_read(
     globus_xio_system_socket_t          handle,
@@ -840,7 +853,7 @@ globus_i_xio_system_socket_try_read(
     GlobusXIOSystemDebugEnter();
 
 #if !defined(WIN32) && !defined(TARGET_ARCH_NETOS)
-    /* unix can use readv for sockets */
+    /* posix can use readv for sockets */
     if(!flags && !from && iovc > 1)
     {
         result = globus_i_xio_system_try_readv(handle, iov, iovc, nbytes);
@@ -896,7 +909,7 @@ globus_i_xio_system_socket_try_write(
     GlobusXIOSystemDebugEnter();
 
 #if !defined(WIN32) && !defined(TARGET_ARCH_NETOS)
-    /* unix can use writev for sockets */
+    /* posix can use writev for sockets */
     if(!flags && !to && iovc > 1)
     {
         result = globus_i_xio_system_try_writev(handle, iov, iovc, nbytes);

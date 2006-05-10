@@ -2,8 +2,11 @@
 # VCw32lib.pl - the file for Visual C++ 4.[01] for windows NT, static libraries
 #
 
-$ssl=	"ssleay32";
-$crypto="libeay32";
+#$ssl=	"ssleay32";
+#$crypto="libeay32";
+# Didn't want to pass "Flavor" info through the perl script chain. Used an env. var.
+$ssl=	"libssl_" . $ENV{GLOBUS_FLAVOR_NAME};
+$crypto="libcrypto_" . $ENV{GLOBUS_FLAVOR_NAME};
 
 $o='\\';
 $cp='copy nul+';	# Timestamps get stuffed otherwise
@@ -11,7 +14,7 @@ $rm='del';
 
 # C compiler stuff
 $cc='cl';
-$cflags=' /MD /W3 /WX /G5 /Ox /O2 /Ob2 /Gs0 /GF /Gy /nologo -DOPENSSL_SYSNAME_WIN32 -DWIN32_LEAN_AND_MEAN -DL_ENDIAN -DDSO_WIN32';
+$cflags=' /MT /W3 /WX /G5 /Ox /O2 /Ob2 /Gs0 /GF /Gy /nologo -DOPENSSL_SYSNAME_WIN32 -DWIN32_LEAN_AND_MEAN -DL_ENDIAN -DDSO_WIN32';
 $lflags="/nologo /subsystem:console /machine:I386 /opt:ref";
 $mlflags='';
 
@@ -21,7 +24,7 @@ $inc_def="inc32";
 
 if ($debug)
 	{
-	$cflags=" /MDd /W3 /WX /Zi /Yd /Od /nologo -DOPENSSL_SYSNAME_WIN32 -D_DEBUG -DL_ENDIAN -DWIN32_LEAN_AND_MEAN -DDEBUG -DDSO_WIN32";
+	$cflags=" /MTd /W3 /WX /Z7 /Yd /Od /nologo -DOPENSSL_SYSNAME_WIN32 -D_DEBUG -DL_ENDIAN -DWIN32_LEAN_AND_MEAN -DDEBUG -DDSO_WIN32";
 	$lflags.=" /debug";
 	$mlflags.=' /debug';
 	}
@@ -90,13 +93,13 @@ if (!$no_asm)
 if ($shlib)
 	{
 	$mlflags.=" $lflags /dll";
-#	$cflags =~ s| /MD| /MT|;
+	$cflags =~ s| /MD| /MT|;
 	$lib_cflag=" -D_WINDLL";
 	$out_def="out32dll";
 	$tmp_def="tmp32dll";
 	}
 
-$cflags.=" /Fd$out_def";
+# $cflags.=" /Fd$out_def";
 
 sub do_lib_rule
 	{

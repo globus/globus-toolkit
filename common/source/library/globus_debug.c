@@ -221,7 +221,12 @@ globus_debug_init(
                 if(*filename == '#')
                 {
                     filename += 1;
-                    truncate(filename, 0);
+                    {
+                        /* portable way to truncate by name */
+                        FILE * h = fopen(filename, "w");
+                        if(h)
+                            fclose(h);
+                    }
                 }
                 
                 handle->file = fopen(filename, "a");

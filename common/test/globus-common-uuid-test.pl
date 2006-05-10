@@ -17,5 +17,13 @@
 # 
 
 
-system("./globus_common_uuid_test");
+my $test_prog = './globus_common_uuid_test';
+
+# Accomodate running tests on Windows platform - remove leading './'
+if ("$^O" =~ /win32/i)
+{
+   $test_prog =~ s/(.\/)//;
+}
+
+system("$test_prog");
 

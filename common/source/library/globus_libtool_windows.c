@@ -25,12 +25,39 @@ Date:           11/06/2003
 *****************************************************************************/
 
 #include <windows.h>
+#include <assert.h>
 #include "globus_libtool_windows.h"
 
 // Definitions
 #define MAX_FILE_NAME_Z         1024
 #define MAX_FILE_NAME           MAX_FILE_NAME_Z - 1
 #define MAX_SYMBOL_NAME         256
+
+#define LT_EMALLOC(tp, n)	((tp *) malloc ((n) * sizeof(tp)))
+
+/* Macros to make it easier to run the lock functions only if they have
+   been registered.  The reason for the complicated lock macro is to
+   ensure that the stored error message from the last error is not
+   accidentally erased if the current function doesn't generate an
+   error of its own.  */
+#define LT_DLMUTEX_LOCK()			LT_STMT_START {	\
+	if (lt_dlmutex_lock_func) (*lt_dlmutex_lock_func)();	\
+						} LT_STMT_END
+
+#define LT_DLMUTEX_UNLOCK()			LT_STMT_START { \
+	if (lt_dlmutex_unlock_func) (*lt_dlmutex_unlock_func)();\
+						} LT_STMT_END
+
+#define LT_DLMUTEX_SETERROR(errormsg)		LT_STMT_START {	\
+	if (lt_dlmutex_seterror_func)				\
+		(*lt_dlmutex_seterror_func) (errormsg);		\
+	else 	lt_dllast_error = (errormsg);	} LT_STMT_END
+
+#define LT_DLMUTEX_GETERROR(errormsg)		LT_STMT_START {	\
+	if (lt_dlmutex_seterror_func)				\
+		(errormsg) = (*lt_dlmutex_geterror_func) ();	\
+	else	(errormsg) = lt_dllast_error;	} LT_STMT_END
+
 
 // Forward Declaration
 typedef struct _DllModule *pDllModule;
@@ -49,12 +76,23 @@ CRITICAL_SECTION    csLibLock;
 int                 iEntryCount = 0;
 pDllModule          pModuleList = NULL;
 int                 iLastError = 0;
+
 static const char  *lt_dlerror_strings[] = {
     #define LT_ERROR(name, diagnostic)	(diagnostic),
     lt_dlerror_table
     #undef LT_ERROR
     0
     };
+
+static	char	       *user_search_path= 0;
+
+/* The mutex functions stored here are global, and are necessarily the
+   same for all threads that wish to share access to libltdl.  */
+static	lt_dlmutex_lock	    *lt_dlmutex_lock_func     = 0;
+static	lt_dlmutex_unlock   *lt_dlmutex_unlock_func   = 0;
+static	lt_dlmutex_seterror *lt_dlmutex_seterror_func = 0;
+static	lt_dlmutex_geterror *lt_dlmutex_geterror_func = 0;
+static	const char	    *lt_dllast_error	      = 0;
 
 
 // Local Function Prototypes
@@ -65,7 +103,13 @@ void NormalizeName(const char *filename,char *NormName);
 
 
 #ifdef MAKE_WIN_DLL
+// ---------------------------------------------------------------------- 
+// DllMain                                                                       
+//                                                                        
 // Empty (For Now) DllMain 
+//                                                                       
+//                                                                       
+// ----------------------------------------------------------------------
 unsigned char __stdcall DllMain( HANDLE hModule, DWORD dwReason, LPVOID lpReserved )
 {
 unsigned char bReturnValue = TRUE;
@@ -96,7 +140,13 @@ unsigned char bReturnValue = TRUE;
 #endif
 
 
+// ---------------------------------------------------------------------- 
+// lt_dlinit                                                                       
+//                                                                        
 // Initialize This Module
+//                                                                       
+//                                                                       
+// ----------------------------------------------------------------------
 int lt_dlinit (void)
 {
     if(++iEntryCount == 1) {
@@ -108,7 +158,13 @@ int lt_dlinit (void)
 }
 
 
+// ---------------------------------------------------------------------- 
+// lt_dlexit                                                                       
+//                                                                        
 // Exit This Module
+//                                                                       
+//                                                                       
+// ----------------------------------------------------------------------
 int lt_dlexit (void)
 {
     // ToDo: Spin Through Module List And Delete All Modules
@@ -120,8 +176,82 @@ int lt_dlexit (void)
     return 0;
 }
 
+// ---------------------------------------------------------------------- 
+// canonicalize_path                                                                       
+//                                                                        
+// 
+//                                                                       
+//                                                                       
+// ----------------------------------------------------------------------
+static int
+canonicalize_path (const char *path,
+                   char       **pcanonical)
+{
+  char *canonical = 0;
 
+  assert (path && *path);
+  assert (pcanonical);
+
+  canonical = LT_EMALLOC (char, 1+ LT_STRLEN (path));
+  if (!canonical)
+    return 1;
+
+  {
+    size_t dest = 0;
+    size_t src;
+    for (src = 0; path[src] != LT_EOS_CHAR; ++src)
+      {
+	/* Path separators are not copied to the beginning or end of
+	   the destination, or if another separator would follow
+	   immediately.  */
+	if (path[src] == LT_PATHSEP_CHAR)
+	  {
+	    if ((dest == 0)
+		|| (path[1+ src] == LT_PATHSEP_CHAR)
+		|| (path[1+ src] == LT_EOS_CHAR))
+	      continue;
+	  }
+
+	/* Anything other than a directory separator is copied verbatim.  */
+	if ((path[src] != '/')
+#ifdef LT_DIRSEP_CHAR
+	    && (path[src] != LT_DIRSEP_CHAR)
+#endif
+	    )
+	  {
+	    canonical[dest++] = path[src];
+	  }
+	/* Directory separators are converted and copied only if they are
+	   not at the end of a path -- i.e. before a path separator or
+	   NULL terminator.  */
+	else if ((path[1+ src] != LT_PATHSEP_CHAR)
+		 && (path[1+ src] != LT_EOS_CHAR)
+#ifdef LT_DIRSEP_CHAR
+		 && (path[1+ src] != LT_DIRSEP_CHAR)
+#endif
+		 && (path[1+ src] != '/'))
+	  {
+	    canonical[dest++] = '/';
+	  }
+      }
+
+    /* Add an end-of-string marker at the end.  */
+    canonical[dest] = LT_EOS_CHAR;
+  }
+
+  /* Assign new value.  */
+  *pcanonical = canonical;
+
+  return 0;
+}
+
+// ---------------------------------------------------------------------- 
+// lt_dlopenext                                                                       
+//                                                                        
 // Load A DLL
+//                                                                       
+//                                                                       
+// ----------------------------------------------------------------------
 lt_dlhandle lt_dlopenext (const char *filename)
 {
 pDllModule pModule = NULL;
@@ -182,7 +312,13 @@ pDllModule pModule = NULL;
 }
 
 
+// ---------------------------------------------------------------------- 
+// lt_dlsym                                                                       
+//                                                                        
 // Return A Pointer To A Function In The DLL
+//                                                                       
+//                                                                       
+// ----------------------------------------------------------------------
 lt_ptr lt_dlsym (lt_dlhandle handle, const char *name)
 {
 pDllModule pModule;
@@ -224,7 +360,13 @@ FARPROC pFunction = NULL;
 }
 
 
+// ---------------------------------------------------------------------- 
+// lt_dlerror                                                                       
+//                                                                        
 // Return The Last Reported Error
+//                                                                       
+//                                                                       
+// ----------------------------------------------------------------------
 const char *lt_dlerror (void)
 {
     return lt_dlerror_strings[iLastError];
@@ -298,21 +440,113 @@ pDllModule pTemp;
     return LT_ERROR_DEPLIB_NOT_FOUND;
 }
 
-/* This Is Called From common_extension.c */
-extern	int	lt_dlmutex_register	LT_PARAMS((lt_dlmutex_lock *lock,
-					    lt_dlmutex_unlock *unlock,
-					    lt_dlmutex_seterror *seterror,
-					    lt_dlmutex_geterror *geterror))
+
+// ---------------------------------------------------------------------- 
+// lt_dlmutex_register                                                                       
+//                                                                        
+// Either set or reset the mutex functions.  Either all the arguments must
+// be valid functions, or else all can be NULL to turn off locking entirely.
+// The registered functions should be manipulating a static global lock
+// from the lock() and unlock() callbacks, which needs to be reentrant.  
+//                                                                       
+//                                                                       
+// ----------------------------------------------------------------------
+extern int lt_dlmutex_register ( lt_dlmutex_lock     *lock,
+                                 lt_dlmutex_unlock   *unlock,
+                                 lt_dlmutex_seterror *seterror,
+                                 lt_dlmutex_geterror *geterror
+							   )
 {
-    return 0;
-}                        
+
+  lt_dlmutex_unlock *old_unlock = unlock;
+  int		     errors	= 0;
+
+  /* Lock using the old lock() callback, if any.  */
+  LT_DLMUTEX_LOCK ();
+
+  if ((lock && unlock && seterror && geterror)
+      || !(lock || unlock || seterror || geterror))
+    {
+      lt_dlmutex_lock_func     = lock;
+      lt_dlmutex_unlock_func   = unlock;
+      lt_dlmutex_geterror_func = geterror;
+    }
+  else
+    {
+      LT_DLMUTEX_SETERROR (LT_DLSTRERROR (INVALID_MUTEX_ARGS));
+      ++errors;
+    }
+
+  /* Use the old unlock() callback we saved earlier, if any.  Otherwise
+     record any errors using internal storage.  */
+  if (old_unlock)
+    (*old_unlock) ();
+
+  /* Return the number of errors encountered during the execution of
+     this function.  */
+  return errors;
+}
+
+// ---------------------------------------------------------------------- 
+// lt_dlgetsearchpath                                                                       
+//                                                                        
+// ToDo: Get The Search Path 
+//                                                                       
+//                                                                       
+// ----------------------------------------------------------------------
+extern const char *lt_dlgetsearchpath  LT_PARAMS((void))
+{
+
+  const char *saved_path;
+
+  LT_DLMUTEX_LOCK ();
+  saved_path = user_search_path;
+  LT_DLMUTEX_UNLOCK ();
+
+  return saved_path;
+}
+
+// ---------------------------------------------------------------------- 
+// lt_dlsetsearchpath                                                                       
+//                                                                        
+//  ToDo: Set The Search Path 
+//                                                                       
+//                                                                       
+// ----------------------------------------------------------------------
+extern int lt_dlsetsearchpath (const char *search_path)
+{
+   // ToDo: Figure out what this does on Linux and do it on windows
+  int   errors	    = 0;
+
+  LT_DLMUTEX_LOCK ();
+  LT_DLFREE (user_search_path);
+  LT_DLMUTEX_UNLOCK ();
+
+  if (!search_path || !LT_STRLEN (search_path))
+    {
+      return errors;
+    }
+
+  LT_DLMUTEX_LOCK ();
+  if (canonicalize_path (search_path, &user_search_path) != 0)
+    ++errors;
+  LT_DLMUTEX_UNLOCK ();
+
+  return errors;
+}
 
 /*
 **  Local Functions
 */
 
+// ---------------------------------------------------------------------- 
+// FindLoadedModuleByAddress                                                                       
+//                                                                        
 // Find A DLL In The Loaded Module List - By Address
 //      Assumes That Caller Owns The Lock
+//                                                                       
+//                                                                       
+// ----------------------------------------------------------------------
 pDllModule FindLoadedModuleByAddress(pDllModule pModule)
 {
 pDllModule pTemp;
@@ -340,8 +574,14 @@ pDllModule pTemp;
 }
 
 
+// ---------------------------------------------------------------------- 
+// FindLoadedModuleByName                                                 
+//                                                                        
 // Find A DLL In The Loaded Module List - By Name
 //      Assumes Caller Owns The Lock
+//                                                                        
+//                                                                        
+// ---------------------------------------------------------------------- 
 pDllModule FindLoadedModuleByName(const char *filename)
 {
 pDllModule pModule = NULL;
@@ -371,8 +611,13 @@ char NormName[MAX_FILE_NAME_Z];
 }
 
 
-// Open A DLL And Put It Into The Module List
-//      Assumes That Caller Owns The Lock
+// ---------------------------------------------------------------------- 
+// OpenModule                                                             
+//                                                                        
+// Open A DLL And Put It Into The Module List                             
+// Assumes That Caller Owns The Lock                                      
+//                                                                        
+// ---------------------------------------------------------------------- 
 pDllModule OpenModule(const char *filename)
 {
 pDllModule pModule = NULL;
@@ -429,7 +674,12 @@ HANDLE DllHandle;
 }
 
 
-// Normalize The Name - Lower Case, Add ".dll" Extension If Necessary
+// ---------------------------------------------------------------------- 
+// NormalizeName                                                          
+//                                                                        
+// Normalize The Name - Lower Case, Add ".dll" Extension If Necessary     
+//                                                                        
+// ---------------------------------------------------------------------- 
 void NormalizeName(const char *filename,char *NormName)
 {
 char *pcSubStr;

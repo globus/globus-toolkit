@@ -22,6 +22,10 @@
 #define GLOBUS_COMMON_INCLUDE_H 1
 
 #include "globus_config.h"
+#ifdef WIN32
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#endif
 
 #ifdef __GNUC__
 #define GlobusFuncName(func) static const char * _globus_func_name \
@@ -311,11 +315,20 @@ extern uint32_t inet_addr(const char * cp);
 #endif
 
 #if !defined(HAVE_STRUCT_IOVEC)
+#ifdef TARGET_ARCH_WIN32
+/* The ordering of the fields must match those in WSABUF */
     struct  iovec  
     {
-        void *             iov_base;  /* Starting address.  */
-        size_t             iov_len;  /* Length in bytes.  */
+        unsigned long      iov_len;   /* Length in bytes.  */
+        char *             iov_base;  /* Starting address.  */
     };
+#else
+    struct iovec
+    {
+        void *             iov_base;  /* Starting address */
+        size_t             iov_len;   /* Number of bytes */
+    };
+#endif
 #endif 
 
 /* POSIX error code remapping */
