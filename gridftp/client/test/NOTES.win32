@@ -19,6 +19,8 @@ set FTP_TEST_SOURCE_USER=link
 
 - user specified in FTP_TEST_DEST_USER/FTP_TEST_SOURCE_USER is used for scp-ing files to and from remote server.  Be sure to connect to server with ssh first to force host entry into known_hosts file.
 
+-note: running test suite with remote server disables a couple tests.. you will see 'FAILED before any test output arrived'
+
 -I've only tested without GSI using an anonymous/plain text gridftp server
 set FTP_TEST_NO_GSI=1
 
