@@ -67,7 +67,7 @@ sub correct_auth
     $errors = run_command($command, 0, $tmpname);
     if($errors eq "")
     {
-        my $diffs = `diff $local_copy $tmpname | sed -e 's/^/# /'`;
+        my $diffs = `diff $local_copy $tmpname | sed -e "s/^/# /"`;
         if($? != 0)
         {
             $errors .= "\n# Differences between /etc/group and output.";

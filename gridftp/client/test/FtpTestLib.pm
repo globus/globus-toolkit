@@ -387,6 +387,11 @@ sub run_command
     {
         $command =~ s,\',\",g;
         $command =~ s,^\./,,;
+        
+        # win32 exes are not named correctly yet, remove this when they are
+        my @parts = split(/ /, $command, 2);
+        $parts[0] =~ s/\-/_/g;
+        $command = join(" ", @parts);
     }
     
     $command .= ' >"' . ($stdout or File::Spec::->devnull()) . '"';

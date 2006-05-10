@@ -183,6 +183,7 @@ sub compare_data
     my $rc = 0;
     my $stored_bytes = 0;
     open($fh, "<$filename");
+    binmode($fh);
     while(<$fh>)
     {
         s/(\[restart plugin\].*?\n)//m;

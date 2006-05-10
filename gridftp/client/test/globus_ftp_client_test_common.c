@@ -11,10 +11,13 @@
 
 #include "globus_common.h"
 
-#include <unistd.h>
 #include <stdio.h>
 #include <string.h>
+#ifdef WIN32
 #include <fcntl.h>
+#else
+#include <unistd.h>
+#endif
 
 #include "globus_ftp_client.h"
 #include "globus_ftp_client_plugin.h"
