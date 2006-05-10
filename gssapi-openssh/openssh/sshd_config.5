@@ -275,7 +275,13 @@ The default is
 .It Cm GSSAPIAuthentication
 Specifies whether user authentication based on GSSAPI is allowed.
 The default is
-.Dq no .
+.Dq yes .
+Note that this option applies to protocol version 2 only.
+.It Cm GSSAPIKeyExchange
+Specifies whether key exchange based on GSSAPI is allowed. GSSAPI key exchange 
+doesn't rely on ssh keys to verify host identity.
+The default is
+.Dq yes .
 Note that this option applies to protocol version 2 only.
 .It Cm GSSAPICleanupCredentials
 Specifies whether to automatically destroy the user's credentials cache
@@ -283,6 +289,11 @@ on logout.
 The default is
 .Dq yes .
 Note that this option applies to protocol version 2 only.
+.It Cm GSIAllowLimitedProxy
+Specifies whether to accept limited proxy credentials for
+authentication.
+The default is
+.Dq no .
 .It Cm HostbasedAuthentication
 Specifies whether rhosts or /etc/hosts.equiv authentication together
 with successful public key client host authentication is allowed

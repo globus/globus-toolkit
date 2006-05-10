@@ -70,9 +70,16 @@ initialize_server_options(ServerOptions *options)
 	options->kerberos_authentication = -1;
 	options->kerberos_or_local_passwd = -1;
 	options->kerberos_ticket_cleanup = -1;
+#ifdef  SESSION_HOOKS
+        options->session_hooks_allow = -1;
+        options->session_hooks_startup_cmd = NULL;
+        options->session_hooks_shutdown_cmd = NULL;
+#endif
 	options->kerberos_get_afs_token = -1;
 	options->gss_authentication=-1;
+	options->gss_keyex = -1;
 	options->gss_cleanup_creds = -1;
+	options->gsi_allow_limited_proxy = -1;
 	options->password_authentication = -1;
 	options->kbd_interactive_authentication = -1;
 	options->challenge_response_authentication = -1;
@@ -186,9 +193,13 @@ fill_default_server_options(ServerOptions *options)
 	if (options->kerberos_get_afs_token == -1)
 		options->kerberos_get_afs_token = 0;
 	if (options->gss_authentication == -1)
-		options->gss_authentication = 0;
+		options->gss_authentication = 1;
+	if (options->gss_keyex == -1)
+		options->gss_keyex = 1;
 	if (options->gss_cleanup_creds == -1)
 		options->gss_cleanup_creds = 1;
+	if (options->gsi_allow_limited_proxy == -1)
+		options->gsi_allow_limited_proxy = 0;
 	if (options->password_authentication == -1)
 		options->password_authentication = 1;
 	if (options->kbd_interactive_authentication == -1)
@@ -260,6 +271,9 @@ typedef enum {
 	sKerberosAuthentication, sKerberosOrLocalPasswd, sKerberosTicketCleanup,
 	sKerberosGetAFSToken,
 	sKerberosTgtPassing, sChallengeResponseAuthentication,
+#ifdef SESSION_HOOKS
+        sAllowSessionHooks, sSessionHookStartupCmd, sSessionHookShutdownCmd,
+#endif
 	sPasswordAuthentication, sKbdInteractiveAuthentication,
 	sListenAddress, sAddressFamily,
 	sPrintMotd, sPrintLastLog, sIgnoreRhosts,
@@ -273,7 +287,9 @@ typedef enum {
 	sBanner, sUseDNS, sHostbasedAuthentication,
 	sHostbasedUsesNameFromPacketOnly, sClientAliveInterval,
 	sClientAliveCountMax, sAuthorizedKeysFile, sAuthorizedKeysFile2,
-	sGssAuthentication, sGssCleanupCreds, sAcceptEnv, sPermitTunnel,
+	sGssAuthentication, sGssKeyEx, sGssCleanupCreds, 
+	sAcceptEnv, sPermitTunnel,
+	sGsiAllowLimitedProxy,
 	sUsePrivilegeSeparation,
 	sDeprecated, sUnsupported
 } ServerOpCodes;
@@ -327,11 +343,21 @@ static struct {
 	{ "afstokenpassing", sUnsupported },
 #ifdef GSSAPI
 	{ "gssapiauthentication", sGssAuthentication },
+	{ "gssapikeyexchange", sGssKeyEx },
 	{ "gssapicleanupcredentials", sGssCleanupCreds },
+#ifdef GSI
+	{ "gsiallowlimitedproxy", sGsiAllowLimitedProxy },
+#endif
 #else
 	{ "gssapiauthentication", sUnsupported },
+	{ "gssapikeyexchange", sUnsupported },
 	{ "gssapicleanupcredentials", sUnsupported },
 #endif
+#ifdef SESSION_HOOKS
+        { "allowsessionhooks", sAllowSessionHooks },
+        { "sessionhookstartupcmd", sSessionHookStartupCmd },
+        { "sessionhookshutdowncmd", sSessionHookShutdownCmd },
+#endif        
 	{ "passwordauthentication", sPasswordAuthentication },
 	{ "kbdinteractiveauthentication", sKbdInteractiveAuthentication },
 	{ "challengeresponseauthentication", sChallengeResponseAuthentication },
@@ -673,9 +699,34 @@ parse_flag:
 		intptr = &options->gss_authentication;
 		goto parse_flag;
 
+	case sGssKeyEx:
+		intptr = &options->gss_keyex;
+		goto parse_flag;
+
 	case sGssCleanupCreds:
 		intptr = &options->gss_cleanup_creds;
 		goto parse_flag;
+
+	case sGsiAllowLimitedProxy:
+		intptr = &options->gsi_allow_limited_proxy;
+		goto parse_flag;
+
+#ifdef SESSION_HOOKS
+        case sAllowSessionHooks:
+                intptr = &options->session_hooks_allow;
+                goto parse_flag;
+        case sSessionHookStartupCmd:
+        case sSessionHookShutdownCmd:
+                arg = strdelim(&cp);
+                if (!arg || *arg == '\0')
+                    fatal("%s line %d: empty session hook command",
+                          filename, linenum);
+                if (opcode==sSessionHookStartupCmd)
+                    options->session_hooks_startup_cmd = strdup(arg);
+                else
+                    options->session_hooks_shutdown_cmd = strdup(arg);
+                break;
+#endif                  
 
 	case sPasswordAuthentication:
 		intptr = &options->password_authentication;
