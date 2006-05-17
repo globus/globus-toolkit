@@ -35,6 +35,7 @@
 
 #define gmon_test_result(_r) gmon_test_result_real(_r, __LINE__)
 
+
 globus_result_t
 chosting_i_util_add_notification(
     globus_soap_client_handle_t         handle,
@@ -100,9 +101,8 @@ printf("here2\n");
     {
         goto error;
     }
-printf("here3\n");
-
     wsnt_SubscribeType_destroy_contents(&subscribe);
+printf("here3\n");
 
     return GLOBUS_SUCCESS;
 
@@ -125,6 +125,16 @@ gmon_test_result_real(
             line, globus_error_print_friendly(globus_error_get(result)));
         exit(1);
     }
+}
+
+static
+void
+monitor_l_engine_stop(
+    globus_result_t                     result,
+    globus_service_engine_t             engine,
+    void *                              args)
+{
+    gmon_test_result(result);
 }
 
 static
@@ -228,7 +238,6 @@ main(
         NULL);
     gmon_test_result(result);
 
-/*
     printf("add backend notication\n");
     result = chosting_i_util_add_notification(
         client_handle,
@@ -238,7 +247,13 @@ main(
         l_backend_changed,
         NULL);
     gmon_test_result(result);
-*/
+
+    result = globus_service_engine_register_start(
+        engine,
+        monitor_l_engine_stop,
+        NULL);
+    gmon_test_result(result);
+
     printf("wait for events\n");
     while(1)
     {

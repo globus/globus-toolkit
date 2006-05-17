@@ -39,6 +39,7 @@ getrp_l_opts_epr(
         goto error;
     }
 
+    *out_parms_used = 1;
     element_name.Namespace = "http://docs.oasis-open.org/wsrf/2004/06/wsrf-WS-ServiceGroup-1.2-draft-01.xsd";
     element_name.local = "MemberServiceEPR";
 
@@ -67,7 +68,6 @@ getrp_l_opts_epr(
     }
     globus_soap_message_handle_destroy(soap_handle);
 
-    *out_parms_used = 1;
     return GLOBUS_SUCCESS;
 
 error:
