@@ -220,12 +220,12 @@ class ReceiverThread extends Thread {
                 socket.receive(packet);
 
                 storage = CustomByteBuffer.fitToData(buf, packet.getLength());
-                log.info("Packet received");
+                log.debug("Packet received");
                 
                 /*Put packet into ring buffer:*/
                 if (!theRing.insert(storage)) {
                     //failed == ring is full
-                    log.error("Ring buffer is FULL.  We are LOSING PACKETS!");
+                    log.info("Ring buffer is FULL.  We are LOSING PACKETS!");
 		    this.packetsLost ++;
                 }
 
