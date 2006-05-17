@@ -225,12 +225,12 @@ class ReceiverThread extends Thread {
                 /*Put packet into ring buffer:*/
                 if (!theRing.insert(storage)) {
                     //failed == ring is full
-                    log.info("Ring buffer is FULL.  We are LOSING PACKETS!");
+                    log.error("Ring buffer is FULL.  We are LOSING PACKETS!");
 		    this.packetsLost ++;
                 }
 
                 if (System.currentTimeMillis() > lastTime) {
-                    log.debug("Queue size: " + theRing.getNumObjects());
+                    log.info("Queue size: " + theRing.getNumObjects());
                     lastTime = System.currentTimeMillis() + period;
                 }
 
