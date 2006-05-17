@@ -230,7 +230,7 @@ class ReceiverThread extends Thread {
                 }
 
                 if (System.currentTimeMillis() > lastTime) {
-                    log.error("Queue size: " + theRing.getNumObjects());
+                    log.debug("Queue size: " + theRing.getNumObjects());
                     lastTime = System.currentTimeMillis() + period;
                 }
 
