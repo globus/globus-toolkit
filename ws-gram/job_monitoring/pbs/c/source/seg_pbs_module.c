@@ -525,6 +525,7 @@ globus_l_pbs_read_callback(
             state->start_timestamp.tm_hour = 0;
             state->start_timestamp.tm_min = 0;
             state->start_timestamp.tm_sec = 0;
+            globus_l_pbs_normalize_date(&state->start_timestamp);
         }
 
         rc = globus_l_pbs_find_logfile(state);
