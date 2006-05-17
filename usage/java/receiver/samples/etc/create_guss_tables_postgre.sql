@@ -73,7 +73,8 @@ CREATE TABLE java_ws_core_packets(
     container_id INT,
     container_type SMALLINT,
     event_type SMALLINT,
-    service_list TEXT
+    service_list TEXT,
+    optional_val INT
 );
 
 CREATE TABLE gram_packets( 
