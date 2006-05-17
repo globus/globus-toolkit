@@ -31,19 +31,20 @@ import java.sql.SQLException;
 import java.sql.PreparedStatement;
 import java.sql.Timestamp;
 
-public class JavaCorePacketHandler extends DefaultPacketHandler {
+public class JavaCorePacketHandlerV2 extends DefaultPacketHandler {
 
     private static Log log = 
-        LogFactory.getLog(JavaCorePacketHandler.class);
+        LogFactory.getLog(JavaCorePacketHandlerV2.class);
 
-    public JavaCorePacketHandler(String db, String table)
+    
+    public JavaCorePacketHandlerV2(String db, String table) 
         throws SQLException {
         super(db, table);
     }
 
     public boolean doCodesMatch(short componentCode, short versionCode) {
         return (componentCode == ContainerUsageBasePacket.COMPONENT_CODE) &&
-            (versionCode == ContainerUsageBasePacket.PACKET_VERSION);
+            (versionCode == ContainerUsageBasePacketV2.PACKET_VERSION);
     }
 
     public UsageMonitorPacket instantiatePacket(CustomByteBuffer rawBytes) {
@@ -60,9 +61,9 @@ public class JavaCorePacketHandler extends DefaultPacketHandler {
         short version = temp.getPacketVersion();
 
 	if (eventType == ContainerUsageStartPacket.START_EVENT) {
-            return new ContainerUsageStartPacket();
+            return new ContainerUsageStartPacketV2();
 	} else if (eventType == ContainerUsageStopPacket.STOP_EVENT) {
-            return new ContainerUsageStopPacket();
+            return new ContainerUsageStopPacketV2();
         } 
 
         throw new IllegalArgumentException(
@@ -75,14 +76,14 @@ public class JavaCorePacketHandler extends DefaultPacketHandler {
         throws SQLException {
 
 	PreparedStatement ps;
-	ContainerUsageBasePacket jPack;
+	ContainerUsageBasePacketV2 jPack;
 
-        if (!(pack instanceof ContainerUsageBasePacket)) {
+        if (!(pack instanceof ContainerUsageBasePacketV2)) {
 	    throw new SQLException("Can't happen.");
         }
-	jPack = (ContainerUsageBasePacket)pack;
+	jPack = (ContainerUsageBasePacketV2)pack;
 
-	ps = con.prepareStatement("INSERT INTO " + this.table + " (component_code, version_code, send_time, ip_address, container_id, container_type, event_type, service_list) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+	ps = con.prepareStatement("INSERT INTO " + this.table + " (component_code, version_code, send_time, ip_address, container_id, container_type, event_type, service_list, optional_val) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
 	ps.setShort(1, jPack.getComponentCode());
 	ps.setShort(2, jPack.getPacketVersion());
@@ -98,12 +99,9 @@ public class JavaCorePacketHandler extends DefaultPacketHandler {
 	ps.setShort(6, jPack.getContainerType());
 	ps.setShort(7, jPack.getEventType());
 
-	if (pack instanceof ContainerUsageStartPacket) {
-	    ContainerUsageStartPacket startPack = (ContainerUsageStartPacket)pack;
-	    ps.setString(8, startPack.getServiceList());
-	} else {
-	    ps.setString(8, "");
-	}
+        ps.setString(8, jPack.getServiceList());
+
+        ps.setInt(9, jPack.getOptionalIntField());
 
 	return ps;
         /*
@@ -117,7 +115,8 @@ public class JavaCorePacketHandler extends DefaultPacketHandler {
 	    container_id INT,
 	    container_type SMALLINT,
 	    event_type SMALLINT,
-	    service_list TEXT
+	    service_list TEXT,
+            optional_val INT
 	  );
 
 	  service_list is only used if event_type is 1.

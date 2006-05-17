@@ -33,6 +33,7 @@ import org.globus.usage.receiver.Receiver;
 import org.globus.usage.receiver.handlers.GridFTPPacketHandler;
 import org.globus.usage.receiver.handlers.RFTPacketHandler;
 import org.globus.usage.receiver.handlers.JavaCorePacketHandler;
+import org.globus.usage.receiver.handlers.JavaCorePacketHandlerV2;
 import org.globus.usage.receiver.handlers.CCorePacketHandler;
 import org.globus.usage.receiver.handlers.GRAMPacketHandler;
 import org.globus.usage.receiver.handlers.RLSPacketHandler;
@@ -126,8 +127,12 @@ public class ExampleReceiver {
 	      GFTP or RFT will end up in the unknown_packets table.*/
 	    rftHandler = new RFTPacketHandler(databaseURL, rftTable);
 	    receiver.registerHandler(rftHandler);
-	    jwsCoreHandler = new JavaCorePacketHandler(databaseURL, jwsCoreTable);
-	    receiver.registerHandler(jwsCoreHandler);
+
+            receiver.registerHandler(
+                  new JavaCorePacketHandler(databaseURL, jwsCoreTable));
+            receiver.registerHandler(
+                  new JavaCorePacketHandlerV2(databaseURL, jwsCoreTable));
+
 	    cCoreHandler = new CCorePacketHandler(databaseURL, cCoreTable);
 	    receiver.registerHandler(cCoreHandler);
 	    gramHandler = new GRAMPacketHandler(databaseURL, gramTable);
