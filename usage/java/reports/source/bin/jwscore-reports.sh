@@ -60,7 +60,7 @@ event)
         runReport "jwscore-container-event-report" "event.xml" "gnuplot-event" "event.gnuplot" "$@"
         ;;
 container)
-        runReport "jwscore-container-report" "container.xml" "gnuplot-container" "uniqueservices.gnuplot containers.gnuplot services.gnuplot" "$@"
+        runReport "jwscore-container-report" "containers.xml" "gnuplot-container" "uniqueservices.gnuplot containers.gnuplot services.gnuplot" "$@"
         ;;
 *)
     echo "Unknown report type: $REPORT_TYPE";
