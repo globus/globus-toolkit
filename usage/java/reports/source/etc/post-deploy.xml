@@ -50,9 +50,21 @@ Build Instructions:
         </ant>
         <ant antfile="${build.launcher}" 
              target="generateLauncher">
+            <property name="launcher-name" value="jwscore-container-up-2-report"/>
+            <property name="class.name" 
+                value="org.globus.usage.report.ContainerUpReportV2"/>
+        </ant>
+        <ant antfile="${build.launcher}" 
+             target="generateLauncher">
             <property name="launcher-name" value="jwscore-container-long-up-report"/>
             <property name="class.name" 
                 value="org.globus.usage.report.ContainerLongUpReport"/>
+        </ant>
+        <ant antfile="${build.launcher}" 
+             target="generateLauncher">
+            <property name="launcher-name" value="jwscore-container-long-up-2-report"/>
+            <property name="class.name" 
+                value="org.globus.usage.report.ContainerLongUpReportV2"/>
         </ant>
         <ant antfile="${build.launcher}" 
              target="generateLauncher">
