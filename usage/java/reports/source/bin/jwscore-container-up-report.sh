@@ -5,7 +5,6 @@ if [ ! -d "$GLOBUS_LOCATION" ] ; then
   exit 1
 fi
 
-. $GLOBUS_LOCATION/globus_usage_reports/common.sh
+. $GLOBUS_LOCATION/share/globus_usage_reports/common.sh
 
 runReport "jwscore-container-up-report" "uptime.xml" "gnuplot-uptime" "uptime.gnuplot" "$@"
-
