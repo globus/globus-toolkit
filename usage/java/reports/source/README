@@ -52,6 +52,9 @@ Steps:
 
    # $G_L/bin/jwscore-container-up-report <date> > $G_L/uptime.xml
 
+   Use 'jwscore-container-up-2-report' for newer more reliable way of computing
+   the uptimes)
+
 2. Using the uptime.xml generate instructions and data files for gnuplot:
 
    # ant -f etc/globus_usage_reports/reports.xml gnuplot-uptime \
@@ -81,6 +84,9 @@ Steps:
 1. Generate the report & save results in uptime.xml file:
 
    # $G_L/bin/jwscore-container-long-up-report <date> > $G_L/longuptime.xml
+
+   Use 'jwscore-container-long-up-2-report' for newer more reliable way of
+   computing the uptimes)
 
 2. Using the longuptime.xml generate instructions and data files for gnuplot:
 
