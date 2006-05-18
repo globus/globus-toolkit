@@ -40,6 +40,10 @@ if [ ! -d "$GLOBUS_LOCATION" ] ; then
   exit 1
 fi
 
+if [ ! "$GLOBUS_OPTIONS" ] ; then
+  export GLOBUS_OPTIONS=-Xmx512m
+fi
+
 REPORT_TYPE=$1
 shift
 
