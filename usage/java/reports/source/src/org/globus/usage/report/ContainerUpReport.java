@@ -82,7 +82,7 @@ public class ContainerUpReport extends BaseContainerUpReport {
             System.exit(1);
         }
         
-        String baseQuery = "select event_type,send_time,ip_address,container_id from java_ws_core_packets where ";
+        String baseQuery = "select event_type,send_time,ip_address,container_id,version_code from java_ws_core_packets where ";
         int n = 1;
         String containerType = "all";
         String stepStr = "day";
@@ -157,7 +157,12 @@ public class ContainerUpReport extends BaseContainerUpReport {
             ResultSet rs = stmt.executeQuery(query);
                 
             while (rs.next()) {
-                r.compute(rs.getInt(1), rs.getTimestamp(2), rs.getString(4) + rs.getString(3));
+                String ip = rs.getString(3);
+                String containerId = rs.getString(4);
+                String packetVersion = rs.getString(5);
+
+                r.compute(rs.getInt(1), rs.getTimestamp(2),
+                          ip + "/" + containerId + "/" + packetVersion);
             }
             
             rs.close();

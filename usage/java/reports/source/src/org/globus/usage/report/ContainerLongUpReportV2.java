@@ -37,48 +37,35 @@ import java.text.SimpleDateFormat;
 import java.io.PrintStream;
 import java.sql.Timestamp;
 
-public class ContainerLongUpReport extends BaseContainerUpReport {
+public class ContainerLongUpReportV2 extends BaseContainerUpReport {
 
-    private Map containers = new HashMap();
     private Map uptimes = new HashMap();
-
-    public ContainerLongUpReport() {
+    
+    public ContainerLongUpReportV2() {
         initializeSlots();
     }
-
+    
     public void output(PrintStream out) {
         Iterator iter = this.uptimes.entrySet().iterator();
         while(iter.hasNext()) {
             Map.Entry entry = (Map.Entry)iter.next();
-            Long time = (Long)entry.getValue();
-            long timeMilli = time.longValue()/1000;
-            Slot s = getSlot(timeMilli);
+            Integer time = (Integer)entry.getValue();
+            Slot s = getSlot(time.intValue());
             s.increment();
         }
-
+        
         super.output(out);
     }
 
-    public void compute(int eventType,
-                        Timestamp timestamp,
-                        String containerID,
-                        String ip) {
-        if (eventType == 1) { // start
-            this.containers.put(containerID, timestamp);
-        } else if (eventType == 2) { // stop
-            Timestamp startTime = 
-                (Timestamp)this.containers.remove(containerID);
-            if (startTime != null) {
-                long diff = timestamp.getTime() - startTime.getTime();
-                updateUptime(ip, diff);
-            }
-        }
+    // timeout in seconds
+    public void compute(String ip, int timeout) {
+        updateUptime(ip, timeout);
     }
 
-    private void updateUptime(String ip, long msec) {
-        Long time = (Long)this.uptimes.get(ip);
-        if (time == null || time.longValue() < msec) {
-            this.uptimes.put(ip, new Long(msec));
+    private void updateUptime(String ip, int sec) {
+        Integer time = (Integer)this.uptimes.get(ip);
+        if (time == null || time.intValue() < sec) {
+            this.uptimes.put(ip, new Integer(sec));
         }
     }
     
@@ -103,7 +90,7 @@ public class ContainerLongUpReport extends BaseContainerUpReport {
             System.exit(1);
         }
 
-        String baseQuery = "select event_type,send_time,ip_address,container_id,version_code from java_ws_core_packets where ";
+        String baseQuery = "select ip_address,optional_val from java_ws_core_packets where version_code = 2 and event_type = 2 and ";
         int n = 1;
         String containerType = "all";
         String stepStr = "day";
@@ -140,7 +127,7 @@ public class ContainerLongUpReport extends BaseContainerUpReport {
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
-        ContainerLongUpReport r = new ContainerLongUpReport();
+        ContainerLongUpReportV2 r = new ContainerLongUpReportV2();
 
         Connection con = null;
 
@@ -177,15 +164,9 @@ public class ContainerLongUpReport extends BaseContainerUpReport {
             Statement stmt = con.createStatement();
 
             ResultSet rs = stmt.executeQuery(query);
-                
+            
             while (rs.next()) {
-                String ip = rs.getString(3);
-                String containerId = rs.getString(4);
-                String packetVersion = rs.getString(5);
-
-                r.compute(rs.getInt(1), rs.getTimestamp(2), 
-                          ip + "/" + containerId + "/" + packetVersion,
-                          ip);
+                r.compute(rs.getString(1), rs.getInt(2));
             }
             
             rs.close();
