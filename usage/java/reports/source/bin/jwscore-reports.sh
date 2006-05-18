@@ -26,6 +26,9 @@ longuptime2)
 event)
         runReport "jwscore-container-event-report" "event.xml" "gnuplot-event" "event.gnuplot" "$@"
         ;;
+container)
+        runReport "jwscore-container-report" "container.xml" "gnuplot-container" "uniqueservices.gnuplot containers.gnuplot services.gnuplot" "$@"
+        ;;
 *)
     echo "Unknown report type: $REPORT_TYPE";
     exit 1
