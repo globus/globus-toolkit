@@ -78,14 +78,15 @@ gridftpA_l_make_backend_array()
 
     while(!globus_list_empty(list))
     {
-        list = globus_list_rest(list);
         backend_info = (globus_i_gfs_brain_node_t *) globus_list_first(list);
+
         wsrf_b_info = backendInfo_array_push(backend_array);
 
         xsd_string_copy_contents_cstr(
-            &wsrf_b_info->indentifier, backend_info->host_id);
+            &wsrf_b_info->indentifier, strdup(backend_info->host_id));
         wsrf_b_info->approximate_load = (xsd_float) backend_info->load;
         wsrf_b_info->connections = (xsd_int) backend_info->current_connection;
+        list = globus_list_rest(list);
     }
 
     return backend_array;
@@ -140,10 +141,8 @@ gridftpA_l_backend_change_cb(
         goto error;
     }
 
-    backend_array = gridftpA_l_make_backend_array();
-
-    result = globus_resource_set_property(
-        resource, &BackendPool_qname, (void *)backend_array);
+    result = globus_resource_property_changed(
+        resource, &BackendPool_qname);
     if(result != GLOBUS_SUCCESS)
     {
         goto error_set;

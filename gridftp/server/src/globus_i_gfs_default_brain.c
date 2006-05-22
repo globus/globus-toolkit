@@ -36,6 +36,7 @@ typedef struct gfs_l_db_node_s
     void *                              brain_arg;
     int                                 max_connection;
     int                                 current_connection;
+    float                               load;
     /* end over load */
     gfs_l_db_node_type_t                type;
     globus_bool_t                       error;
@@ -442,10 +443,10 @@ globus_l_brain_listen()
     {
         goto error_server;
     }
-    if(port == 0)
-    {
-        /* XXX log the port using */
-    }
+    globus_i_gfs_log_message(
+        GLOBUS_I_GFS_LOG_INFO,
+        "Braing listening on %s\n", contact_string);
+    globus_free(contact_string);
 
     res = globus_xio_server_register_accept(
         globus_l_brain_server_handle,
@@ -477,15 +478,22 @@ globus_l_gfs_backend_changed()
     globus_list_t *                     repo_list;
     globus_list_t *                     node_list;
     gfs_l_db_repo_t *                   repo;
+    gfs_l_db_node_t *                   node;
 
     globus_hashtable_to_list(&gfs_l_db_repo_table, &repo_list);
 
     while(!globus_list_empty(repo_list))
     {
         repo = (gfs_l_db_repo_t *) globus_list_remove(&repo_list, repo_list);
-        globus_hashtable_to_list(&repo->node_table, &node_list); 
 
         /* for mem saftey should walk this list and copy nodes */
+        node_list = globus_gfs_config_get("backend_pool");
+        while(!globus_list_empty(node_list))
+        {
+            node = (gfs_l_db_node_t *)
+                globus_list_remove(&node_list, node_list);
+        }
+        globus_hashtable_to_list(&repo->node_table, &node_list); 
         globus_gfs_config_set_ptr("backend_pool", node_list);
         /*
         while(!globus_list_empty(node_list))
@@ -539,6 +547,7 @@ globus_l_gfs_default_brain_init()
             node->repo_name = strdup(default_repo->name);
             node->max_connection = 0;
             node->current_connection = 0;
+            node->load = 0.0;
             node->error = GLOBUS_FALSE;
             node->type = GFS_DB_NODE_TYPE_STATIC;
             node->repo = default_repo;

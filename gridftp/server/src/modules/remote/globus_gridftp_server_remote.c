@@ -111,6 +111,7 @@ typedef struct globus_l_gfs_remote_node_info_s
     globus_i_gfs_brain_node_t *         brain_node;
     int                                 error_count;
     globus_l_gfs_remote_handle_t *      my_handle;
+    globus_result_t                     cached_result;
 } globus_l_gfs_remote_node_info_t;
 
 typedef struct globus_l_gfs_remote_request_s
@@ -138,7 +139,6 @@ typedef struct globus_l_gfs_remote_control_node_bounce_s
     globus_reltime_t                    retry_time;
     int                                 ndx_offset;
     int                                 retry_count;
-    globus_result_t                     cached_result;
 } globus_l_gfs_remote_control_node_bounce_t;
 
 #define GlobusGFSErrorOpFinished(_op, _type, _result)                       \
@@ -337,14 +337,12 @@ globus_l_gfs_remote_node_error_kickout(
     globus_result_t                     result;
 
     node_info = (globus_l_gfs_remote_node_info_t *) arg;
-    bounce = node_info->bounce;
-    result = bounce->cached_result;
+    result = node_info->cached_result;
 
     node_info->callback(
         node_info,
         result,
         node_info->user_arg);
-    /* will bounce leak? node_info? */
 }
 
 static
@@ -429,7 +427,6 @@ globus_l_gfs_remote_select_nodes(
         bounce->retry_count++;
         if(bounce->retry_count > BRAIN_RETRY)
         {
-            bounce->cached_result = result;
             globus_gfs_log_result(
                 GLOBUS_GFS_LOG_ERR,
                 "failed to find a node, retry after delay",
@@ -442,7 +439,7 @@ globus_l_gfs_remote_select_nodes(
                 node_info->callback = callback;
                 node_info->user_arg = user_arg;
                 node_info->my_handle = my_handle;
-                node_info->bounce = bounce;
+                node_info->cached_result = result;
                 bounce->ndx_offset++;
 
                 globus_callback_register_oneshot(
@@ -451,6 +448,7 @@ globus_l_gfs_remote_select_nodes(
                     globus_l_gfs_remote_node_error_kickout,
                     node_info);
             }
+            globus_free(bounce);
         }
         else
         {
@@ -472,7 +470,7 @@ globus_l_gfs_remote_select_nodes(
             node_info->callback = callback;
             node_info->user_arg = user_arg;
             node_info->my_handle = my_handle;
-                node_info->bounce = bounce;
+            node_info->bounce = bounce;
             bounce->ndx_offset++;
     
             my_handle->session_info.host_id = node_info->brain_node->host_id;
@@ -491,7 +489,7 @@ globus_l_gfs_remote_select_nodes(
                     node_info->brain_node,
                     GLOBUS_GFS_BRAIN_REASON_ERROR);
 
-                bounce->cached_result = result;
+                node_info->cached_result = result;
                 globus_callback_register_oneshot(
                     NULL,
                     NULL,
@@ -500,6 +498,7 @@ globus_l_gfs_remote_select_nodes(
             }
         }
         globus_free(brain_node_array);
+        globus_free(bounce);
     }
 }
 

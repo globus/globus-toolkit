@@ -49,7 +49,7 @@ typedef enum
 #define DEFAULT_PERIOD_US               100
 /* set to a gigabit per sec.  unit is kilabits */
 #define DEFAULT_RATE                    ((1024*1024)/8)
-#define DEFAULT_BURST                   (500000)
+#define DEFAULT_BURST                   (5000000)
 
 static int
 globus_l_xio_token_bucket_activate();
@@ -713,7 +713,7 @@ globus_l_xio_tb_attr_parse_opts(
         }
 
         sc = l_xio_tb_kmint(val, &rate);
-        if(sc == GLOBUS_SUCCESS)
+        if(sc == 0)
         {
             attr->read_rate = rate / 8;
             attr->write_rate = rate / 8;
@@ -730,11 +730,12 @@ globus_l_xio_tb_attr_parse_opts(
         {
             *tmp_str = '\0';
         }
-        sc = sscanf(val, "%d", &int_val);
-        if(sc == 1)
+
+        sc = l_xio_tb_kmint(val, &rate);
+        if(sc == 0)
         {
-            attr->read_burst_size = int_val;
-            attr->write_burst_size = int_val;
+            attr->read_burst_size = rate;
+            attr->write_burst_size = rate;
         }
         free(val);
     }

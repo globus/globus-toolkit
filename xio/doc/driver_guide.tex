@@ -55,11 +55,11 @@ Transform drivers sit on the stack between the transport driver on the
 bottom and the user API on the top.  There can be any number of transport
 drivers on a stack, although in most cases there will be no more than one or 
 two.  Transform drivers alway relie on the fact that there is a driver
-below then to which they can <I>pass</I> the data blocks.  The transform
+below then to which they can \emph{pass} the data blocks.  The transform
 driver knows it is not responisible for the actual delivery of the data.
 It is simply an interceptor in the operation change.  It can manipulate
 the operations in anyway it wants but they rely on the fact that there is
-a driver below then to which they can <I>pass</I> the data blocks.  The 
+a driver below then to which they can \emph{pass} the data blocks.  The 
 driver they pass to may be another transform driver, or it may be the
 tranport driver, it does not know or care.  The transform driver simply
 preforms its duties and then passes the work along.  Some good examples
@@ -82,38 +82,65 @@ at the payload.
 Figure 1 show the architecture of GlobusXIO.  The user interacts with 
 the simple open/close/read/write API and posts data operations to it.
 The GlobusXIO framework then forwards the buffers to along to the first
-driver in the stack.  When then driver <I>passes</I> the operation along
+driver in the stack.  When then driver \emph{passes} the operation along
 the framework forwards it to the next driver in the stack and so on
 until the operation reaches the transport driver.  Once the transport 
 driver has completed the operation it tells the framework it is 
-<I>finished</I>.  We refer to this as finishing an operation.  The 
+\emph{finished}.  We refer to this as finishing an operation.  The 
 framework then moves up the stack notifing each driver that the 
 one below it is done with the task that was passed to it.  Drivers
 are free to do some processing in between the time they are told
 the lower driver finished and the time they finish the operation.
 
 \section{Asynchronous C Programming}
-GlobusXIO is C library written on an asynchronous IO model.  Explaining
+GlobusXIO is designed on an asynchronous model, therefore
+the driver interface is desinged on an asynchronous model as well.
+The driver is signaled to perform a task.  It can complete this
+task at anytime without regard for the thread of execution that
+made the request.  When the driver completes the task it signals
+the GlobusXIO framework that it is finished.  That is the drivers 
+async model in a nutshell.  
+
+Explaining
 proper asynchronous programming techniques is a task of its own.  We
 do not intend to take on this task in this guide, however since 
 understanding at least the basic ideas behind it are crucial to 
 developing GlobusXIO drivers we will briefly discuss it in this section.
 Readers familar with asynchronous programming should skip this section.
 
-basic ap
---  enters at main.  control flows down.  branches are taken, control
-    jumps to functions and returns...  but control is a structered flow 
-    that the uesr can trace connected lines through.
+In C 101 we learn about the main() function.  When an application 
+begins a single thread starts executing instructions at the begining
+of the main function.  Execution continues, following branches, loops,
+jumps to function etc.  As soon execution reaches the end of the main()
+function it ends.  To the developer this model is very easy to follow.
+Processing occurs sequential and the line of code that will be executed
+is very predicable.
 
-asynchronous programming is different.  control does not flow in a connected
-line.  control is determed by events.  functions are associated with various
-events.  for example, a read function is defined, when data is ready to be 
-read that function is called.  similarly for write, timeout etc...
+The blocking models follows this way of thinking.  When a developer wishes
+to read data from a socket they call the read() function.  Exectution 
+enters that function and does not return until it has read the data which
+the user requested.  While in that function the users application 
+blocks.  This is an easy and predictable means of performan IO, however
+it is not the most efficient use of the CPU.  While waiting on for data
+to be read the CPU is largely idle and the application could very well
+have work it would to do that is independent of that read.  However, since
+it is blocked in that function it can do nothing but wait.
 
-the developer does not have any control of when these functions are called
-and must be prepared for anyone to happen at any time.... 
+The asynchronous IO model is much different.  Instead of blocking
+for an operation to complete the developer \emph{registers} the IO event.
+As part of the registration the developer passes in a function pointer.
+When the even completes that funciton pointer is called.  So in 
+asynchronous IO, many operations are posted and at any time an event
+can take place that will cause their callback to fire.  The developer
+must be prepared for the event to occur at any time after registration.
+This can get very complicated in the face of a many simulataneous
+operations.
 
-registering events....
+Developers must be aware that many event callbask could happen at the same
+time.  Therefore they need to use mutexs etc..
+This can lead to race conditions.  A race condition is a term
+used to describe a bug that occurs under specific timing, rave to the
+bug.
 
 The best way to approach asymchronous programming is with a finite state
 machine.  define state and transistion.  under each state there is 
@@ -126,17 +153,11 @@ void *.  when the user registers an event they can register a pointer
 to their own memory with the event.  this is just a block of mem that
 the developer defines.  usually it is a data structure with ....
 
-the developer needs to be aware of multithreaded issues.  many events
-can happen at 1 time in different threads.  they may be accessing the
-same void * and must therefore ues some sort of mutex for protection  this
-brings up issues of deadlock and race conditions.  the reader should make
-themselves familar with concepts of pthreads
-
 for more info see
 -- pthread manual
--- asynch guid
+-- asynch guide
+    http://www.globus.org/toolkit/docs/3.2/developer/globus-async.html
 -- lib event maybe
--- other shit
 
 
 \section{Driver Developement}
