@@ -152,6 +152,57 @@ globus_gram_job_manager_gsi_register_proxy_timeout(
 /* globus_gram_job_manager_gsi_register_proxy_timeout() */
 
 /**
+ * Look up subject name from the process's credential.
+ *
+ * @param request
+ */
+int
+globus_gram_job_manager_gsi_get_subject(
+    globus_gram_jobmanager_request_t *	request,
+    char **                             subject_name)
+{
+    OM_uint32				major_status;
+    OM_uint32				minor_status;
+    int					rc;
+    gss_name_t                          name;
+    gss_buffer_desc                     export_name;
+
+    export_name.value = NULL;
+    export_name.length = 0;
+
+    major_status = gss_inquire_cred(
+            &minor_status,
+            GSS_C_NO_CREDENTIAL,
+            &name,
+            NULL,
+            NULL,
+            NULL);
+    if (major_status != GSS_S_COMPLETE)
+    {
+        rc = GLOBUS_FAILURE;
+        goto out;
+    }
+
+    major_status = gss_display_name(
+            &minor_status,
+            name,
+            &export_name,
+            GSS_C_NO_OID);
+    if (major_status != GSS_S_COMPLETE)
+    {
+        rc = GLOBUS_FAILURE;
+        goto release_name_out;
+    }
+release_name_out:
+    major_status = gss_release_name(
+            &minor_status, 
+            &name);
+out:
+    *subject_name = export_name.value;
+    return rc;
+}
+/* globus_gram_job_manager_gsi_get_subject() */
+/**
  * Reset the function to be called before proxy expires based on the
  * time left in a newly delegated credential.
  *

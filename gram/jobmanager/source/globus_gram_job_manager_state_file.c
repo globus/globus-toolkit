@@ -178,6 +178,16 @@ globus_gram_job_manager_state_file_write(
     {
         goto error_exit;
     }
+    rc = fprintf(fp, "%lu\n", (unsigned long) request->creation_time);
+    if (rc < 0)
+    {
+        goto error_exit;
+    }
+    rc = fprintf(fp, "%lu\n", (unsigned long) request->queued_time);
+    if (rc < 0)
+    {
+        goto error_exit;
+    }
 
     globus_gram_job_manager_output_write_state(request, fp);
     globus_gram_job_manager_staging_write_state(request,fp);
@@ -363,6 +373,21 @@ globus_gram_job_manager_state_file_read(
     buffer[strlen(buffer)-1] = '\0';
     sscanf(buffer, "%lu", &tmp_timestamp);
     request->seg_last_timestamp = (time_t) tmp_timestamp;
+
+    if (fgets( buffer, sizeof(buffer), fp ) == NULL)
+    {
+        goto error_exit;
+    }
+    buffer[strlen(buffer)-1] = '\0';
+    sscanf(buffer, "%lu", &tmp_timestamp);
+    request->creation_time = (time_t) tmp_timestamp;
+    if (fgets( buffer, sizeof(buffer), fp ) == NULL)
+    {
+        goto error_exit;
+    }
+    buffer[strlen(buffer)-1] = '\0';
+    sscanf(buffer, "%lu", &tmp_timestamp);
+    request->queued_time = (time_t) tmp_timestamp;
 
     rc = globus_gram_job_manager_output_read_state(request, fp);
     if(rc != GLOBUS_SUCCESS)

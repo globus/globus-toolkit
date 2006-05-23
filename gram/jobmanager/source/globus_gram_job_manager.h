@@ -379,6 +379,14 @@ typedef struct
      */
     struct globus_l_gram_job_manager_output_info_t *
 					output;
+    /** Time when job manager process is first begun */
+    time_t                              creation_time;
+    /** Time when job manager gets jobid from scheduler */
+    time_t                              queued_time;
+    /** Globus Toolkit version */
+    char *                              globus_version;
+    /** GSI Subject name */
+    char *                              subject;
     globus_gass_cache_t			cache_handle;
     char *				cache_tag;
 
@@ -436,6 +444,7 @@ typedef struct
     globus_bool_t			relocated_proxy;
     int					proxy_timeout;
     char *                              job_dir;
+    char *                              auditing_dir;
 }
 globus_gram_jobmanager_request_t;
 
@@ -623,6 +632,11 @@ globus_gram_job_manager_gsi_used(
 int
 globus_gram_job_manager_gsi_register_proxy_timeout(
     globus_gram_jobmanager_request_t *	request);
+
+int
+globus_gram_job_manager_gsi_get_subject(
+    globus_gram_jobmanager_request_t *  request,
+    char **                             subject_name);
 
 int
 globus_gram_job_manager_gsi_update_credential(
@@ -838,6 +852,11 @@ globus_gram_job_manager_init_seg(
 
 void
 globus_gram_job_manager_seg_handle_event(
+    globus_gram_jobmanager_request_t *  request);
+
+/* globus_gram_job_manager_auditing.c */
+int
+globus_gram_job_manager_auditing_file_write(
     globus_gram_jobmanager_request_t *  request);
 
 EXTERN_C_END
