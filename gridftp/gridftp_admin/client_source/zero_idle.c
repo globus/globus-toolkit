@@ -37,6 +37,7 @@
 
 #define gmon_test_result(_r) gmon_test_result_real(_r, __LINE__)
 
+static int                              l_connections = 0;
 
 globus_result_t
 chosting_i_util_add_notification(
@@ -160,6 +161,7 @@ l_frontend_changed(
 {
     FrontendStatsType *                 old;
     FrontendStatsType *                 new;
+    int                                 i;
     notif_ResourcePropertyValueChangeNotificationElementType * rpne;
 
     rpne = (notif_ResourcePropertyValueChangeNotificationElementType*)
@@ -180,6 +182,13 @@ l_frontend_changed(
             old->open_connections_count,
             new->open_connections_count);
     }
+
+    for(i = l_connections; i < new->open_connections_count; i++)
+    {
+        printf("starting a new backend %d\n", i);
+    }
+
+    l_connections = new->open_connections_count;
     
     printf("l_frontend_changed\n");
 }
