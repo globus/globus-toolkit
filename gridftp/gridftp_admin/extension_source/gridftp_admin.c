@@ -102,11 +102,12 @@ gridftpA_l_make_fe_struct()
 
     FrontendStatsType_init(&fe);
 
-    tmp_s = globus_gfs_config_get_string("");
-    xsd_string_init_contents_cstr(&fe->contact_string, tmp_s);
+    tmp_s = globus_gfs_config_get_string("contact_string");
+    xsd_string_init_contents_cstr(&fe->contact_string, strdup(tmp_s));
     tmp_s = globus_gfs_config_get_string("banner");
-    xsd_string_init_contents_cstr(&fe->banner, tmp_s);
+    xsd_string_init_contents_cstr(&fe->banner, strdup(tmp_s));
     fe->load = (xsd_float) 0.5f;
+    xsd_string_init_contents_cstr(&fe->byte_transfer_count, strdup("0"));
 
     tmp_i = globus_gfs_config_get_int("connections_max");
     fe->connections_max = (xsd_int) tmp_i;
@@ -131,7 +132,6 @@ gridftpA_l_backend_change_cb(
     const char *                        val,
     void *                              user_arg)
 {
-    backendInfo_array *                 backend_array;
     globus_result_t                     result;
     globus_resource_t                   resource;
 
@@ -156,6 +156,7 @@ error_set:
 error:
     return;
 }
+
 void
 gridftpA_l_fe_change_cb(
     const char *                        opt_name,
@@ -164,7 +165,6 @@ gridftpA_l_fe_change_cb(
 {
     globus_result_t                     result;
     globus_resource_t                   resource;
-    FrontendStatsType *                 fe;
 
     result = globus_resource_find(RESOURCE_NAME, &resource);
     if(result != GLOBUS_SUCCESS)
@@ -172,10 +172,8 @@ gridftpA_l_fe_change_cb(
         goto error;
     }
 
-    fe = gridftpA_l_make_fe_struct();
-
-    result = globus_resource_set_property(
-        resource, &FrontendStatsType_qname, (void *)fe);
+    result = globus_resource_property_changed(
+        resource, &FrontendStats_qname);
     if(result != GLOBUS_SUCCESS)
     {
         goto error_set;

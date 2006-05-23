@@ -11,6 +11,7 @@
 #include <byte_transfer_count.h>
 #include "gridftp_admin.h"
 #include "backendInfo.h"
+#include "backendInfo_array.h"
 
 
 globus_result_t
@@ -54,7 +55,7 @@ gridftpA_l_setup_resource(
     result = globus_resource_create_property_callback(
         resource,
         &FrontendStats_qname,
-        &FrontendStats_info,
+        &FrontendStatsType_info,
         gridftpA_l_fe_get_cb,
         gridftpA_l_fe_set_cb,
         "FrontendStatsType");
@@ -69,7 +70,7 @@ gridftpA_l_setup_resource(
     result = globus_resource_create_property_callback(
         resource,
         &BackendPool_qname,
-        &BackendPool_info,
+        &backendInfo_array_info,
         gridftpA_l_backend_get_cb,
         gridftpA_l_backend_set_cb,
         "backend_pool");
