@@ -1,4 +1,4 @@
-package Utilities;
+package Globus::Testing::Utilities;
 
 # ====================================================================
 # Utility subroutines
