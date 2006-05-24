@@ -36,6 +36,7 @@ typedef struct gfs_l_db_node_s
     void *                              brain_arg;
     int                                 max_connection;
     int                                 current_connection;
+    int                                 total_max_connection;
     float                               load;
     /* end over load */
     gfs_l_db_node_type_t                type;
@@ -73,6 +74,11 @@ gfs_l_db_node_cmp(
 
     /* if the node is saturated always put it at the back of the queue */
     if(n1->current_connection >= n1->max_connection && n1->max_connection != 0)
+    {
+        return 1;
+    }
+    /* if max left is 0 send it to the back */
+    if(n1->total_max_connection == 0)
     {
         return 1;
     }
@@ -166,6 +172,7 @@ globus_l_brain_read_cb(
     gfs_l_db_repo_t *                   repo = NULL;
     int                                 i;
     int                                 con_max;
+    int                                 total_max;
     char *                              start_str;
     char *                              repo_name = NULL;
     char *                              cs = NULL;
@@ -184,8 +191,13 @@ globus_l_brain_read_cb(
 
         /* verify message */
         con_max = (int) buffer[0];
-        start_str = &buffer[1];
-        for(i = 1; i < len && cs == NULL; i++)
+        total_max = (int) buffer[1];
+        if(total_max == 0)
+        {
+            total_max = -1;
+        }
+        start_str = &buffer[2];
+        for(i = 2; i < len && cs == NULL; i++)
         {
             if(buffer[i] == '\0')
             {
@@ -199,7 +211,8 @@ globus_l_brain_read_cb(
                     cs = start_str;
                 }
             }
-            else if(!isalnum(buffer[i]) && buffer[i] != '.' && buffer[i] != ':')
+            else if(!isalnum(buffer[i]) && buffer[i] != '.'
+                && buffer[i] != ':')
             {
                 /* log an error */
                 globus_l_brain_log_socket(handle, "bad_ip");
@@ -257,15 +270,21 @@ globus_l_brain_read_cb(
             con_diff = con_max;
             node->current_connection = 0;
             node->max_connection = con_max;
+            node->total_max_connection = total_max;
             globus_i_gfs_log_message(
                 GLOBUS_I_GFS_LOG_WARN,
-                "A new backend registered, contact string: [%s] %s\n",
+                "A new backend registered, contact string: [%s] %s\n"
+                "  max=[%d]\n  total=[%d]\n",
                 node->repo_name,
-                node->host_id);
+                node->host_id,
+                node->max_connection,
+                node->total_max_connection);
             globus_gfs_config_inc_int("backends_registered", 1);
         }
         else
         {
+            /* XXX ? do i need to dequeue and requeue ? */
+            node->total_max_connection = total_max;
             con_diff = con_max - node->max_connection;
             node->max_connection = con_max;
         }
@@ -546,6 +565,7 @@ globus_l_gfs_default_brain_init()
             node->host_id = (char *) globus_list_first(list);
             node->repo_name = strdup(default_repo->name);
             node->max_connection = 0;
+            node->total_max_connection = -1; /* -1 is infinite */
             node->current_connection = 0;
             node->load = 0.0;
             node->error = GLOBUS_FALSE;
@@ -670,8 +690,10 @@ globus_l_gfs_default_brain_select_nodes(
             {
                 done = GLOBUS_TRUE;
             }
-            else if(node->current_connection >= node->max_connection &&
-                node->max_connection != 0)
+            else if(
+                (node->current_connection >= node->max_connection &&
+                 node->max_connection != 0) ||
+                node->total_max_connection == -1)
             {
                 /* need to up everything for sake of nice clean up*/
                 node->current_connection++;
@@ -696,6 +718,16 @@ globus_l_gfs_default_brain_select_nodes(
             new order */
         for(i = 0; i < count; i++)
         {
+            node = (gfs_l_db_node_t *) node_array[i];
+            /* do this just to avoid overflow */
+            node->total_max_connection--;
+            if(node->total_max_connection < -1)
+            {
+                node->total_max_connection = -1;
+            }
+            /* do not reenque if we have 0 total.  if the registration 
+                allowed an infinite amount this will start at 0 and be 
+                decremented */
             globus_priority_q_enqueue(
                 &repo->node_q, node_array[i], node_array[i]);
         }
@@ -719,11 +751,12 @@ error_short:
 
         globus_i_gfs_log_message(
             GLOBUS_I_GFS_LOG_WARN,
-            "Not enough nodes available: [%s] %s: %d, %d\n",
+            "Not enough nodes available: [%s] %s: %d, %d, %d\n",
             node->repo_name,
             node->host_id,
             node->current_connection,
-            node->max_connection);
+            node->max_connection,
+            node->total_max_connection);
     }
     globus_free(node_array);
 error:
@@ -850,7 +883,18 @@ globus_l_gfs_default_brain_release_node(
         }
         else
         {
-            globus_priority_q_enqueue(&repo->node_q, node, node);
+            /* infinite is negative */
+            if(node->total_max_connection != 0)
+            {
+                globus_priority_q_enqueue(&repo->node_q, node, node);
+            }
+            else
+            {
+                globus_assert(node->current_connection == 0);
+                globus_free(node->repo_name);
+                globus_free(node->host_id);
+                globus_free(node);
+            }
         }
         globus_l_gfs_backend_changed();
     }

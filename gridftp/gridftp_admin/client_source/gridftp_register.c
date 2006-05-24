@@ -37,7 +37,7 @@ test_res(
 void
 help()
 {
-    fprintf(stdout, "globus-gridftp-register <registry contact> <contact port> <max conneciton count> [<repo name>]\n");
+    fprintf(stdout, "globus-gridftp-register <registry contact> <contact port> <max conneciton count> [<total>] [<repo name>]\n");
 }
 
 int
@@ -47,6 +47,7 @@ main(
 {
     int                                     arg_i = 0;
     int                                     c_count;
+    int                                     total;
     globus_xio_driver_t                     tcp_driver;
     globus_xio_driver_t                     gsi_driver;
     globus_xio_stack_t                      stack;
@@ -97,6 +98,11 @@ main(
     c_count = atoi(argv[arg_i]);
     arg_i++;
 
+    if(arg_i != argc)
+    {
+        total = atoi(argv[arg_i]);
+        arg_i++;
+    }
     if(arg_i == argc)
     {
         repo = "";
@@ -128,12 +134,14 @@ main(
 
     memset(msg, '\0', 256);
     len = strlen(repo);
-    *msg = (char)c_count;
-    memcpy(&msg[1], repo, len);
-    msg[len+1] = '\0';
-    sprintf(&msg[len+2], "%s:%s", local_contact, cs);
-    printf("registering\n  repo=[%s]\n  server contact=[%s]\n  max=[%d]\n",
-        repo, &msg[len+2], c_count);
+    msg[0] = (char)c_count;
+    msg[1] = (char)total;
+    memcpy(&msg[2], repo, len);
+    msg[len+2] = '\0';
+    sprintf(&msg[len+3], "%s:%s", local_contact, cs);
+    printf("registering\n  repo=[%s]\n  server contact=[%s]\n  max=[%d]\n"
+                        "  total=[%d]\n",
+        repo, &msg[len+3], c_count, total);
     res = globus_xio_write(xio_handle, msg, 256, 256, &nbytes, NULL);
     test_res(res);
 

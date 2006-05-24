@@ -90,7 +90,7 @@ getrp_l_test_deserialize(
 {
     globus_result_t                     result;
     globus_xml_buffer                   buffer_handle;
-
+/*
     result =
         globus_i_soap_message_deserialize_next_content(soap_message_handle);
     result = globus_xml_buffer_deserialize_contents(
@@ -101,7 +101,7 @@ getrp_l_test_deserialize(
     getrp_l_test_result(result, 10);
 
     printf("\n%s\n", buffer_handle.buffer);
-
+*/
     return GLOBUS_SUCCESS; 
 }
 
@@ -166,10 +166,10 @@ getrp_l_parse(
 {
     globus_options_handle_t             opt_h;
     globus_result_t                     result;
-
+/*
     globus_soap_message_attr_init(&info->attr);
     globus_options_init(&opt_h,getrp_l_opts_unknown,info,getrp_i_opts_table);
-
+*/
     result = globus_options_command_line_process(opt_h, argc, argv);
     if(result != GLOBUS_SUCCESS)
     {

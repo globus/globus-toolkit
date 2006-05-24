@@ -475,11 +475,6 @@ gridftp_admin_l_init()
         goto error_pc_free;
     }
 
-    /* we have now used all the args and can free them */
-    if(args != NULL)
-    {
-        free(args);
-    }
     prepend_name = globus_common_create_string(
         "globus_service_modules/%s", GRIDFTPADMINSERVICE_BASE_PATH);
 
@@ -497,6 +492,11 @@ gridftp_admin_l_init()
     if(result != GLOBUS_SUCCESS)
     {
         goto error_pc_free;
+    }
+    /* we have now used all the args and can free them */
+    if(args != NULL)
+    {
+        free(args);
     }
 
     return GLOBUS_SUCCESS;

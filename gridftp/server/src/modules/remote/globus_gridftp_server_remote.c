@@ -19,7 +19,7 @@
 
 GlobusDebugDeclare(GLOBUS_GRIDFTP_SERVER_REMOTE);
 
-#define BRAIN_RETRY 4
+#define BRAIN_RETRY 256
 
 #define GlobusGFSRemoteDebugPrintf(level, message)                          \
     GlobusDebugPrintf(GLOBUS_GRIDFTP_SERVER_REMOTE, level, message)          
@@ -242,6 +242,7 @@ globus_l_gfs_remote_node_request_kickout(
     
     node_info = (globus_l_gfs_remote_node_info_t *) user_arg;
 
+/* LOCKS! */
     if(result == GLOBUS_SUCCESS)
     {
         node_info->ipc_handle = ipc_handle;
@@ -565,7 +566,7 @@ globus_l_gfs_remote_node_request(
         bounce->ndx_offset = ndx_offset;
         bounce->repo = NULL; /* maybe some day */
 
-        GlobusTimeReltimeSet(bounce->retry_time, 5, 0);
+        GlobusTimeReltimeSet(bounce->retry_time, 1, 0);
         globus_l_gfs_remote_select_nodes(bounce);
     }
 

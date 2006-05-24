@@ -33,11 +33,14 @@
 #include "FrontendStatsType.h"
 #include "BackendPool.h"
 #include "notif_ResourcePropertyValueChangeNotificationElementType.h"
+#include <sys/types.h>
+#include <sys/wait.h>
 
 
 #define gmon_test_result(_r) gmon_test_result_real(_r, __LINE__)
 
 static int                              l_connections = 0;
+static char *                           l_exe_name;
 
 globus_result_t
 chosting_i_util_add_notification(
@@ -164,6 +167,7 @@ l_frontend_changed(
     int                                 i;
     notif_ResourcePropertyValueChangeNotificationElementType * rpne;
 
+    printf("l_frontend_changed\n");
     rpne = (notif_ResourcePropertyValueChangeNotificationElementType*)
         message->value;
 
@@ -185,12 +189,19 @@ l_frontend_changed(
 
     for(i = l_connections; i < new->open_connections_count; i++)
     {
+        pid_t pid;
+        int rc;
         printf("starting a new backend %d\n", i);
+
+        pid = fork();
+        if(pid == 0)
+        {
+            rc = execl(l_exe_name, l_exe_name, NULL);
+            exit(rc);
+        }
     }
 
     l_connections = new->open_connections_count;
-    
-    printf("l_frontend_changed\n");
 }
 
 
@@ -208,13 +219,14 @@ main(
     globus_soap_message_attr_t          attr = NULL;
     globus_service_engine_t             engine;
 
-    if(argc < 2)
+    if(argc < 3)
     {
-        fprintf(stderr, "usage: %s <filename>\n", 
+        fprintf(stderr, "usage: %s <filename> <start exe>\n", 
             argv[0]);
         exit(1);
     }
     filename = argv[1];
+    l_exe_name = argv[2];
 
     globus_module_activate(GLOBUS_SOAP_MESSAGE_MODULE);
     globus_module_activate(GLOBUS_SERVICE_ENGINE_MODULE);
@@ -291,7 +303,9 @@ main(
     printf("wait for events\n");
     while(1)
     {
+        int     status;
 
+        waitpid(-1, &status, WNOHANG);
         globus_poll();
     }
 
