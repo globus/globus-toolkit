@@ -42,8 +42,10 @@ globus_result_t
 typedef
 globus_result_t
 (*globus_options_unknown_callback_t)(
-    const char *                        parm,
-    void *                              arg);
+    globus_options_handle_t             opts_handle,
+    void *                              unknown_arg,
+    int                                 argc,
+    char **                             argv);
 
 typedef struct globus_options_entry_s
 {

@@ -97,6 +97,17 @@ globus_module_activate(
     globus_module_descriptor_t *        module_descriptor);
 
 /**
+ * Activate an NULL-terminated array of modules. If any fail to activate, all are
+ * deactivated and the error from the failed activation is returned. If nonzero is
+ * returned, and failed_module is non-null, it will be set to point to the 1st
+ * module which failed to activate. 
+ */
+int
+globus_module_activate_array(
+    globus_module_descriptor_t *        modules[],
+    globus_module_descriptor_t **       failed_module);
+
+/**
  *  Deactivate a module
  */
 int
