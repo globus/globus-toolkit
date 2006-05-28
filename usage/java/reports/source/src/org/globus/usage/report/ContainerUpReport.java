@@ -55,7 +55,9 @@ public class ContainerUpReport extends BaseContainerUpReport {
                 (Timestamp)this.containers.remove(containerID);
             if (startTime != null) {
                 long diff = timestamp.getTime() - startTime.getTime();
-
+                if (diff < 0) {
+                    return;
+                }
                 Slot slot = getSlot(diff / 1000);
                 slot.increment();
             }

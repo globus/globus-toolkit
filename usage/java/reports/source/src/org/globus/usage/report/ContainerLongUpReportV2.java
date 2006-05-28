@@ -59,6 +59,9 @@ public class ContainerLongUpReportV2 extends BaseContainerUpReport {
 
     // timeout in seconds
     public void compute(String ip, int timeout) {
+        if (timeout < 0) {
+            return;
+        }
         updateUptime(ip, timeout);
     }
 

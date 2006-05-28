@@ -47,6 +47,9 @@ public class ContainerUpReportV2 extends BaseContainerUpReport {
     
     // timeout is in seconds
     public void compute(int timeout) {
+        if (timeout < 0) {
+            return;
+        }
         Slot slot = getSlot(timeout);
         slot.increment();
     }

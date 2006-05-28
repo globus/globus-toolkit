@@ -70,6 +70,9 @@ public class ContainerLongUpReport extends BaseContainerUpReport {
                 (Timestamp)this.containers.remove(containerID);
             if (startTime != null) {
                 long diff = timestamp.getTime() - startTime.getTime();
+                if (diff < 0) {
+                    return;
+                }
                 updateUptime(ip, diff);
             }
         }
