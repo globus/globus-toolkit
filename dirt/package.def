@@ -202,3 +202,4 @@ globus_c_wsrf_sample_counter_bindings wsrf/c/samples/counter/source dirt.sh
 globus_c_wsrf_service_group wsrf/c/core/servicegroup/source dirt.sh
 globus_c_service_group_test_schema wsrf/c/core/servicegroup/test_wsdl dirt.sh
 globus_c_wsrf_service_group_test wsrf/c/core/servicegroup/test dirt.sh
+globus_c_wsrf_sample_counter_client_test wsrf/c/samples/counter/test dirt.sh
