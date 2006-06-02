@@ -179,6 +179,7 @@ main(
     }
 
     globus_mutex_lock(&request->mutex);
+    request->creation_time = time(NULL);
 
     globus_symboltable_init(&request->symbol_table,
                             globus_hashtable_string_hash,
@@ -372,6 +373,16 @@ main(
         {
             request->seg_module = argv[++i];
         }
+        else if ((strcmp(argv[i], "-audit-directory") == 0) 
+                && (i+1 < argc))
+        {
+            request->auditing_dir = argv[++i];
+        }
+        else if ((strcmp(argv[i], "-globus-toolkit-version") == 0)
+                && (i+1 < argc))
+        {
+            request->globus_version = argv[++i];
+        }
         else if ((strcasecmp(argv[i], "-help" ) == 0) ||
                  (strcasecmp(argv[i], "--help") == 0))
         {
@@ -410,6 +421,8 @@ main(
 		    "\t-machine-type TYPE\n"
                     "\t-extra-envvars VAR1,VAR2,...\n"
                     "\t-seg-module SEG-MODULE\n"
+                    "\t-audit-directory DIRECTORY\n"
+                    "\t-globus-toolkit-version VERSION\n"
                     "\n"
                     "Note: if type=condor then\n"
                     "      -condor-os & -condor-arch are required.\n"
@@ -432,6 +445,11 @@ main(
 	globus_libc_usleep(sleeptime * 1000 * 1000);
     }
 
+    /* Subject name only used for auditing */
+    if (request->auditing_dir)
+    {
+        globus_gram_job_manager_gsi_get_subject(request, &request->subject);
+    }
     if(request->globus_location != NULL)
     {
         globus_libc_setenv("GLOBUS_LOCATION",
@@ -451,6 +469,18 @@ main(
 	  request->jobmanager_state != GLOBUS_GRAM_JOB_MANAGER_STATE_STOP_DONE)
     {
 	globus_cond_wait(&request->cond, &request->mutex);
+    }
+
+    /* Write auditing file if job is DONE or FAILED */
+    if (request->jobmanager_state == GLOBUS_GRAM_JOB_MANAGER_STATE_DONE ||
+	request->jobmanager_state == GLOBUS_GRAM_JOB_MANAGER_STATE_FAILED_DONE)
+    {
+        if (globus_gram_job_manager_auditing_file_write(request) != GLOBUS_SUCCESS)
+        {
+            globus_gram_job_manager_request_log(
+                    request,
+                    "JM: Error writing audit record\n");
+        }
     }
 
     /*

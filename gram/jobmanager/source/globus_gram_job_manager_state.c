@@ -1567,6 +1567,7 @@ globus_gram_job_manager_state_machine(
             globus_gram_job_manager_request_set_status(request, GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
             request->unsent_status_change = GLOBUS_TRUE;
 	}
+        request->queued_time = time(NULL);
 	globus_gram_job_manager_reporting_file_create(request);
         globus_gram_job_manager_history_file_create(request);
 	request->job_history_status = request->status;
