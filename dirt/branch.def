@@ -5,6 +5,7 @@
 #  - if a tag is encountered that is not listed here, 0 will be assumed
 #  - The trunk uses 1
 #  - For speed concerns, new branches should be added to the top of the list
+#
 campaign_4411_branch                75
 win32-6-branch                      74
 win32-5-branch                      73

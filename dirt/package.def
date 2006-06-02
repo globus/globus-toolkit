@@ -14,7 +14,7 @@
 #
 #  template files are maintained for modifications in all dirs below
 #  - a current limitation is that none of the paths listed here can overlap
-
+#
 globus_common                   common/source                   dirt.sh
 globus_common_setup             common/setup                    dirt.sh
 globus_common_test              common/test                     dirt.sh
