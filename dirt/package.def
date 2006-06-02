@@ -47,6 +47,8 @@ globus_gram_job_manager         gram/jobmanager/source          dirt.sh
 globus_gram_job_manager_test    gram/jobmanager/test            dirt.sh
 globus_gram_job_manager_setup   gram/jobmanager/setup/program   dirt.sh
 globus_gram_job_manager_scripts_setup   gram/jobmanager/setup/scripts   dirt.sh
+globus_gram_job_manager_auditing gram/jobmanager/auditing/source dirt.sh
+globus_gram_job_manager_auditing_setup_scripts gram/jobmanager/auditing/setup dirt.sh
 globus_gram_myjob               gram/myjob/source               dirt.sh
 globus_gram_protocol            gram/protocol/source            dirt.sh
 globus_gram_protocol_test       gram/protocol/test              dirt.sh
