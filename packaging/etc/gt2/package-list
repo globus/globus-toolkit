@@ -52,6 +52,8 @@ globus_gram_job_manager_setup_fork	gram/jobmanager/setup/fork
 globus_gram_job_manager_setup_lsf	gram/jobmanager/setup/lsf
 globus_gram_job_manager_setup_pbs	gram/jobmanager/setup/pbs
 globus_gram_job_manager_setup_remote	gram/jobmanager/setup/remote
+globus_gram_job_manager_auditing        gram/jobmanager/auditing/source
+globus_gram_job_manager_auditing_setup_scripts gram/jobmanager/auditing/setup
 globus_gram_myjob		gram/myjob/source
 globus_gram_protocol		gram/protocol/source
 globus_gram_protocol_test	gram/protocol/test
