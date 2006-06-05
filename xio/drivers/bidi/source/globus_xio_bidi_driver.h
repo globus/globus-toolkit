@@ -224,7 +224,21 @@ typedef enum
      */
     GLOBUS_XIO_BIDI_APPLY_READ_ATTR_CNTLS,
     GLOBUS_XIO_BIDI_APPLY_WRITE_ATTR_CNTLS,
-    GLOBUS_XIO_BIDI_APPLY_BOOTSTRAP_ATTR_CNTLS
+    GLOBUS_XIO_BIDI_APPLY_BOOTSTRAP_ATTR_CNTLS,
+
+    
+    /** GlobusVarArgEnum(attr)
+     * Set the maximum number of outbound streams to be used for the write
+     * handle.  (By definition of the mode E protocol, the read handle must
+     * accept any number of connections made to it).  
+     * @ingroup bidi_driver_cntls
+     *
+     * @param number of streams 
+     *     Sets the maximum number of write streams.
+     *     If you have substituted a non-default write stack, behavior of 
+     *     this attr cntl should be a no-op.
+     */
+    GLOBUS_XIO_BIDI_SET_MAX_WRITE_STREAMS
 
 } globus_xio_bidi_cmd_t;	
 

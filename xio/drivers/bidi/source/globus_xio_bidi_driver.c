@@ -19,6 +19,7 @@
 #include "globus_xio_load.h"
 #include "globus_xio_bidi_driver.h"
 #include "globus_xio_tcp_driver.h"
+#include "globus_xio_mode_e_driver.h"
 #include "version.h"
 
 
@@ -92,6 +93,7 @@ typedef struct
     globus_xio_attr_t                   	xio_read_attr;
     globus_xio_attr_t                   	xio_write_attr;
     globus_xio_attr_t				bootstrap_attr;
+    globus_xio_driver_t				mode_e_driver;
 } globus_l_xio_bidi_attr_t;
 
 
@@ -107,7 +109,6 @@ typedef struct
     globus_xio_server_t  			bootstrap_server;
     globus_xio_handle_t  			bootstrap_handle;
     char *					my_contact_string;
-    char *					connect_info;	
     unsigned char *                     	buffer;
     char *					bootstrap_cs;
     globus_xio_operation_t			outstanding_op;
@@ -117,6 +118,14 @@ typedef struct
     globus_i_xio_bidi_state_t			state;
 } globus_l_xio_bidi_handle_t;
 
+typedef struct
+{
+    globus_l_xio_bidi_attr_t *			attr;
+    globus_xio_server_t				bootstrap_server;
+    char *					bootstrap_cs;
+    char *					my_contact_string;
+    globus_xio_operation_t			outstanding_op;
+} globus_l_xio_bidi_server_t;
 
 static
 globus_result_t
@@ -147,6 +156,7 @@ globus_l_xio_bidi_attr_init(
     void **                                     out_attr)
 {
     globus_l_xio_bidi_attr_t *             bidi_attr;
+    globus_result_t			   result;
 
     GlobusXIOName(globus_l_xio_bidi_attr_init);
     
@@ -161,13 +171,40 @@ globus_l_xio_bidi_attr_init(
     bidi_attr->isserver = GLOBUS_FALSE;
     bidi_attr->read_port = 0;
 
-    /*initialize the stack objects--manually since stack_init doesn't like
-     * null pointers*/
-    /*bidi_attr->read_stack = globus_malloc(sizeof(globus_xio_stack_t));
-    memset(bidi_attr->read_stack, '\0', sizeof(globus_xio_stack_t));
-    bidi_attr->write_stack = globus_malloc(sizeof(globus_xio_stack_t));
-    memset(bidi_attr->write_stack, '\0', sizeof(globus_xio_stack_t));*/
-    
+
+    result=globus_xio_driver_load("mode_e", &bidi_attr->mode_e_driver);
+    if (result!=GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+
+    result = globus_xio_attr_init(&bidi_attr->xio_read_attr);
+    if (result != GLOBUS_SUCCESS)
+    {   
+        goto error_attr_init;
+    }       
+    if (bidi_attr->read_attr_cntl_cb)
+    {       
+        result = bidi_attr->read_attr_cntl_cb(bidi_attr->xio_read_attr);
+        if (result != GLOBUS_SUCCESS)
+        {
+            goto error_attr_cntl;
+        }
+    }   
+    result = globus_xio_attr_init(&bidi_attr->xio_write_attr);
+    if (result != GLOBUS_SUCCESS)
+    {   
+        goto error_attr_init;
+    }       
+    if (bidi_attr->write_attr_cntl_cb)
+    {       
+        result = bidi_attr->write_attr_cntl_cb(bidi_attr->xio_write_attr);
+        if (result != GLOBUS_SUCCESS)
+        {
+            goto error_attr_cntl;
+        }
+    }
+
 
 
     /* set the out parameter to the driver attr */
@@ -175,6 +212,11 @@ globus_l_xio_bidi_attr_init(
 
     GlobusXIOBidiDebugExit();
     return GLOBUS_SUCCESS;
+
+error:
+error_attr_cntl:
+error_attr_init:
+    return GLOBUS_FAILURE;
 }
 
 /*
@@ -300,6 +342,21 @@ globus_l_xio_bidi_attr_cntl(
             bidi_attr->bootstrap_attr_cntl_cb = attr_cntl_cb;
             break;
         }
+	case GLOBUS_XIO_BIDI_SET_MAX_WRITE_STREAMS:
+	{
+	    globus_result_t		res;
+	    
+	    if (res!=GLOBUS_SUCCESS)
+	    {
+		goto error;
+	    }
+	    globus_xio_attr_cntl(
+                bidi_attr->xio_write_attr,
+                bidi_attr->mode_e_driver,
+                GLOBUS_XIO_MODE_E_SET_NUM_STREAMS,
+	        va_arg(ap, int));
+	    break;
+	}
 
         default:
             return GLOBUS_FAILURE;
@@ -307,6 +364,7 @@ globus_l_xio_bidi_attr_cntl(
     }
     if (result != GLOBUS_SUCCESS)
     {
+error:
 	GlobusXIOBidiDebugExitWithError();
 	return GLOBUS_FAILURE;
     }
@@ -454,14 +512,11 @@ globus_l_xio_bidi_bootstrap_handle_create(
         goto error_handle;
     }
     memset(handle, 0, sizeof(globus_l_xio_bidi_handle_t));
-    handle->read_server=(globus_xio_server_t *)
-	    		   globus_malloc(sizeof(globus_xio_server_t));
+
     /*FIXME*/
     handle->buffer=globus_malloc(256*sizeof(globus_size_t));
     memset(handle->buffer, 0, 256*sizeof(globus_size_t));
-/*jj
-    handle->bootstrap_handle = globus_malloc(
-		    		sizeof(globus_l_xio_bidi_handle_t));*/
+
     if (!attr)
     {   
         result = globus_l_xio_bidi_attr_init((void**)&handle->attr);
@@ -504,22 +559,7 @@ globus_l_xio_bidi_bootstrap_handle_create(
     }
 
     if(handle->attr->isserver)
-    {
-        result = globus_xio_attr_init(&handle->attr->bootstrap_attr);
-        if (result != GLOBUS_SUCCESS)
-        {
-            goto error_push_driver;
-        }
-        result = globus_xio_attr_cntl( 
-		    		handle->attr->bootstrap_attr, 
-				driver, 
-				GLOBUS_XIO_TCP_SET_PORT, 
-				attr->read_port);
-        if (result != GLOBUS_SUCCESS)
-        {
-            goto error_push_driver;
-        }
-    }
+    {}
     else
     {
 	result = globus_xio_attr_init(&handle->attr->bootstrap_attr);
@@ -589,9 +629,11 @@ globus_l_xio_bidi_server_init(
     globus_xio_operation_t              op)
 {
     globus_l_xio_bidi_handle_t *		handle;
+    globus_l_xio_bidi_server_t *		server;
     globus_l_xio_bidi_attr_t *		attr;
     globus_result_t			result;
     globus_xio_contact_t                my_contact_info;
+    globus_xio_driver_t			driver=GLOBUS_NULL;
 
     GlobusXIOName(globus_l_xio_bidi_server_init);
 
@@ -609,66 +651,84 @@ globus_l_xio_bidi_server_init(
         }
     }
 
+    server = (globus_l_xio_bidi_server_t *)
+                globus_malloc(sizeof(globus_l_xio_bidi_server_t));
+    server->attr=attr;
     attr->isserver=1;
 
-    result = globus_l_xio_bidi_bootstrap_handle_create(&handle, attr);
-    if (result != GLOBUS_SUCCESS)
-    {       
-        goto error_handle_create;
-    }       
     if (!attr)
     {
-        attr = handle->attr;
+        attr = server->attr;
     }
-    result = globus_xio_attr_init(&attr->xio_read_attr);
-    if (result != GLOBUS_SUCCESS)
-    {   
-        goto error_attr_init;
-    }       
-    if (attr->read_attr_cntl_cb)
-    {       
-        result = attr->read_attr_cntl_cb(attr->xio_read_attr);
+/*XXX*/
+    globus_xio_driver_load("tcp", &driver);
+    if (!attr->bootstrap_stack)
+    {
+        result = globus_xio_driver_load("tcp", &driver);
         if (result != GLOBUS_SUCCESS)
         {
-            goto error_attr_cntl;
+            goto error_driver_load;
         }
-    }   
-    result = globus_xio_attr_init(&attr->xio_write_attr);
-    if (result != GLOBUS_SUCCESS)
-    {   
-        goto error_attr_init;
-    }       
-    if (attr->write_attr_cntl_cb)
-    {       
-        result = attr->write_attr_cntl_cb(attr->xio_write_attr);
+        result = globus_xio_stack_init(&attr->bootstrap_stack, NULL);
         if (result != GLOBUS_SUCCESS)
         {
-            goto error_attr_cntl;
+            goto error_stack_init;
+        }
+        result = globus_xio_stack_push_driver(attr->bootstrap_stack, driver);
+        if (result != GLOBUS_SUCCESS)
+        {
+            goto error_push_driver;
+        }
+    }
+
+    if(attr->isserver)
+    {
+        result = globus_xio_attr_init(&attr->bootstrap_attr);
+        if (result != GLOBUS_SUCCESS)
+        {
+            goto error_push_driver;
+        }
+        result = globus_xio_attr_cntl( 
+		    		attr->bootstrap_attr, 
+				driver, 
+				GLOBUS_XIO_TCP_SET_PORT, 
+				attr->read_port);
+        if (result != GLOBUS_SUCCESS)
+        {
+            goto error_push_driver;
+        }
+        result = globus_xio_attr_cntl(
+            attr->bootstrap_attr,
+            driver,
+            GLOBUS_XIO_TCP_SET_REUSEADDR,
+            GLOBUS_TRUE);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error_push_driver;
         }
     }
     result = globus_xio_server_create(
-            		&handle->bootstrap_server, 
-			handle->attr->bootstrap_attr, 
-			handle->attr->bootstrap_stack);
-
+            		&server->bootstrap_server, 
+			attr->bootstrap_attr, 
+			attr->bootstrap_stack);
     if (result != GLOBUS_SUCCESS)
     {
         goto error_server_create;
     }
     result = globus_xio_server_get_contact_string(
-		    			handle->bootstrap_server, 
-		    			&handle->bootstrap_cs);
+		    			server->bootstrap_server, 
+		    			&server->bootstrap_cs);
     if (result != GLOBUS_SUCCESS)
     {
         goto error_get_cs;
     }
     result = globus_xio_contact_parse(&my_contact_info, 
-					handle->bootstrap_cs);
+					server->bootstrap_cs);
     if (result != GLOBUS_SUCCESS)
     {
         goto error_parse_cs;
     }
-    result = globus_xio_driver_pass_server_init(op, &my_contact_info, handle);
+    result = globus_xio_driver_pass_server_init(op, &my_contact_info, server);
     if (result != GLOBUS_SUCCESS)
     {
         goto error_pass_server_init;
@@ -676,17 +736,26 @@ globus_l_xio_bidi_server_init(
     GlobusXIOBidiDebugExit();
     return GLOBUS_SUCCESS;
 
+error_push_driver:
+    if (!handle->attr->bootstrap_stack)
+    {
+        globus_xio_stack_destroy(handle->attr->bootstrap_stack);
+    }
+error_stack_init:
+    if (!handle->attr->bootstrap_stack)
+    {
+        globus_xio_driver_unload(driver);
+    }
+error_driver_load:
+    globus_l_xio_bidi_attr_destroy(handle->attr);
 error_pass_server_init:
 error_parse_cs:
 error_get_cs:
     /*globus_xio_server_close(handle->bootstrap_server);*/
 error_server_create:
-error_attr_cntl:
-    globus_xio_attr_destroy(attr->xio_read_attr);
-error_attr_init:
+   // globus_xio_attr_destroy(attr->xio_read_attr);
 error_attr:
     globus_l_xio_bidi_handle_destroy(handle);
-error_handle_create:
     GlobusXIOBidiDebugExitWithError();
     return result;
 }
@@ -727,8 +796,12 @@ globus_l_xio_bidi_create_read_handle(
 	handle->read_server=(globus_xio_server_t *)globus_malloc(
 				sizeof(globus_xio_server_t));
 	
+        memset(handle->read_server, 0, sizeof(globus_xio_server_t));
+
 	handle->read_handle=(globus_xio_handle_t *)globus_malloc(
 				sizeof(globus_xio_handle_t));
+
+        memset(handle->read_handle, 0, sizeof(globus_xio_handle_t));
 
 	if(!handle->attr->read_stack)
 	{
@@ -781,6 +854,7 @@ globus_l_xio_bidi_create_read_handle(
 
        result = globus_xio_server_get_contact_string(*handle->read_server,
                        &handle->my_contact_string); 
+       printf("CONTACT: %s\n", handle->my_contact_string);
 			
     }
     GlobusXIOBidiDebugExit();                             
@@ -803,7 +877,6 @@ globus_l_xio_bidi_create_write_handle(
     globus_result_t   	                      result;
     globus_l_xio_bidi_handle_t  *			handle;
     globus_xio_attr_t			attr=NULL;
-    globus_xio_driver_t                 mode_e;
     globus_xio_driver_t                 ordering;
 
 
@@ -825,11 +898,6 @@ globus_l_xio_bidi_create_write_handle(
 
 	    globus_xio_stack_init(&handle->attr->write_stack, NULL);
 
-            result=globus_xio_driver_load("mode_e", &mode_e);
-	    if (result!=GLOBUS_SUCCESS)
-	    {
-                goto error;
-	    }
             result=globus_xio_driver_load("ordering", &ordering);
 	    if (result!=GLOBUS_SUCCESS)
 	    {
@@ -837,7 +905,8 @@ globus_l_xio_bidi_create_write_handle(
 	    }
             result=globus_xio_stack_push_driver(
 			    		handle->attr->write_stack, 
-			    		mode_e);
+			    		handle->attr->mode_e_driver);
+			    		//mode_e);
 	    if (result!=GLOBUS_SUCCESS)
 	    {
                 goto error;
@@ -858,14 +927,6 @@ globus_l_xio_bidi_create_write_handle(
             goto error;
 	}
 
-/*	if (*handle->attr->write_stack==NULL)
-	{
-	    result = globus_xio_stack_copy(handle->attr->write_stack, stack);
-	    if (result!=GLOBUS_SUCCESS)
-	    {
-                goto error;
-	    }
-	}*/
 			
 	GlobusXIOBidiDebugExit();                             
 	return result;
@@ -889,15 +950,15 @@ globus_l_xio_bidi_accept_cb(
     GlobusXIOName(globus_l_xio_bidi_accept_cb);
 
     GlobusXIOBidiDebugEnter();
+
+    handle=user_arg;
+
     if(result != GLOBUS_SUCCESS)
     {
-        globus_l_xio_bidi_attr_destroy(user_arg);
+    /*    globus_l_xio_bidi_handle_destroy(user_arg);*/
         goto error;
     }
-    handle=user_arg;
     
-    handle->read_server = globus_malloc(sizeof(globus_xio_server_t));
-
     handle->bootstrap_handle=accepted_handle;
 
     globus_xio_driver_finished_accept(handle->outstanding_op, 
@@ -908,7 +969,7 @@ globus_l_xio_bidi_accept_cb(
     return;
 
  error:
-    globus_xio_driver_finished_accept(handle->outstanding_op, NULL, result);
+    /*globus_xio_driver_finished_accept(handle->outstanding_op, NULL, result);*/
     GlobusXIOBidiDebugExitWithError();
     return;
 }
@@ -920,16 +981,22 @@ globus_l_xio_bidi_accept(
 {
     globus_result_t                     result;
     globus_l_xio_bidi_handle_t *      handle;
+    globus_l_xio_bidi_server_t	*		server;
     
     GlobusXIOName(globus_l_xio_bidi_accept);
     GlobusXIOBidiDebugEnter();
     
-    handle = (globus_l_xio_bidi_handle_t*)driver_server;
+    server = (globus_l_xio_bidi_server_t*)driver_server;
+    result = globus_l_xio_bidi_bootstrap_handle_create(&handle, server->attr);
+    if (result != GLOBUS_SUCCESS)
+    {       
+        /*goto error_handle_create;*/
+    }       
     handle->attr->isserver = GLOBUS_TRUE;
     handle->outstanding_op = accept_op;
 
     result = globus_xio_server_register_accept(
-		    		handle->bootstrap_server,
+		    		server->bootstrap_server,
 				globus_l_xio_bidi_accept_cb, 
 				handle);
     if (result != GLOBUS_SUCCESS)
@@ -969,6 +1036,71 @@ globus_l_xio_bidi_server_destroy(
     return GLOBUS_SUCCESS;
 }
 
+static
+globus_result_t
+globus_l_xio_bidi_link_cntl(
+    void *                              driver_link,
+    int                                 cmd,
+    va_list                             ap)
+{
+    globus_l_xio_bidi_handle_t *        accepted_handle;
+    globus_result_t                     result;
+    char **                             out_string;
+    globus_l_xio_bidi_handle_t *        out_handle;
+    GlobusXIOName(globus_l_xio_bidi_link_cntl);
+
+    GlobusXIOBidiDebugEnter();
+    accepted_handle = (globus_l_xio_bidi_handle_t *) driver_link;
+    switch(cmd)
+    { 
+      /* globus_xio_system_handle_t *   handle_out */
+      case GLOBUS_XIO_TCP_GET_HANDLE:
+        out_handle = va_arg(ap, globus_xio_system_handle_t *);
+        *out_handle = *accepted_handle;
+        break;
+
+      /* char **                        contact_string_out */
+      case GLOBUS_XIO_TCP_GET_LOCAL_NUMERIC_CONTACT:
+      case GLOBUS_XIO_TCP_GET_LOCAL_CONTACT:
+      case GLOBUS_XIO_TCP_GET_REMOTE_NUMERIC_CONTACT:
+      case GLOBUS_XIO_TCP_GET_REMOTE_CONTACT:
+      case GLOBUS_XIO_GET_LOCAL_NUMERIC_CONTACT:
+      case GLOBUS_XIO_GET_LOCAL_CONTACT:
+      case GLOBUS_XIO_GET_REMOTE_NUMERIC_CONTACT:
+      case GLOBUS_XIO_GET_REMOTE_CONTACT:
+        out_string = va_arg(ap, char **);
+        /*result = globus_l_xio_tcp_contact_string(
+            *accepted_handle, cmd, out_string);*/
+	globus_xio_driver_t	driver;
+	globus_xio_driver_load("tcp", &driver);
+	result = globus_xio_handle_cntl(
+            accepted_handle->bootstrap_handle,  
+	    GLOBUS_XIO_QUERY,
+            cmd, 
+            out_string);
+        if(result != GLOBUS_SUCCESS)
+        {   
+            result = GlobusXIOErrorWrapFailed(
+                "globus_l_xio_tcp_contact_string", result);
+            goto error_contact;
+        }
+        break;
+
+      default:
+        result = GlobusXIOErrorInvalidCommand(cmd);
+        goto error_invalid;
+        break;
+    }
+
+    GlobusXIOBidiDebugExit();
+    return GLOBUS_SUCCESS;
+
+error_invalid:
+error_contact:
+    GlobusXIOBidiDebugExitWithError();
+    return result;
+                 
+}
 
 globus_result_t
 globus_l_xio_bidi_link_destroy(
@@ -1042,9 +1174,6 @@ globus_l_xio_bidi_read_server_accept_cb(
 	goto error;
     }
 
-/*    globus_xio_driver_finished_open(handle, handle->open_op, result);*/
-
-
      GlobusXIOBidiDebugExit();
      return; 
 error:
@@ -1086,53 +1215,6 @@ globus_l_xio_bidi_handshake_open_cb(
     }
 }
 
-static
-void
-globus_l_xio_bidi_bootstrap_connection_cb(
-    globus_xio_handle_t                 xio_handle,
-    globus_result_t                     result,
-    globus_xio_iovec_t *                iovec,
-    int                                 iovec_count,
-    globus_size_t                       nbytes,
-    globus_xio_data_descriptor_t        data_desc,
-    void *                              user_arg)
-{
-	globus_xio_operation_t              op;
-	globus_result_t			    res;
-    globus_l_xio_bidi_handle_t *        handle;
-
-	                                        
-    GlobusXIOName(globus_l_xio_bidi_bootstrap_connection_cb);
-
-    GlobusXIOBidiDebugEnter();
-	    op=user_arg;  
-    handle=user_arg;
-
-    if(result!=GLOBUS_SUCCESS)
-    {
-	/*globus_l_xio_bidi_close(xio_handle, xio_handle->attr, op);*/
-	  if((handle->state!=GLOBUS_XIO_BIDI_CLOSING)&
-		(handle->state!=GLOBUS_XIO_BIDI_READWRITE_CLOSED))
-	  {
-	   globus_mutex_lock(&handle->mutex);  /*XXX*/
-	handle->state=GLOBUS_XIO_BIDI_BOOTSTRAP_CLOSED;
-    /*globus_xio_handle_cancel_operations(*handle->read_handle,
-		    		GLOBUS_XIO_CANCEL_READ);*/
-    res = globus_xio_register_close(*handle->read_handle, 
-		    	handle->attr->xio_read_attr,
-			globus_l_xio_bidi_read_handle_close_cb,
-			handle);
-	  }
-	GlobusXIOErrorEOF();
-    }
-    else
-    {
-	    /*should never be here*/
-	    printf("WHAT IS GOING ON?\n");
-    }
-
-    GlobusXIOBidiDebugExit();
-}
 
 void
 globus_l_xio_bidi_end_handshake_cb(
@@ -1185,14 +1267,6 @@ globus_l_xio_bidi_end_handshake_cb(
     
     handle->state=GLOBUS_XIO_BIDI_OPEN;
     globus_mutex_unlock(&handle->mutex);
-/*
-    result = globus_xio_register_read( handle->bootstrap_handle, 
-		    			handle->buffer, 
-					256, 
-					1, 
-					NULL, 
-					globus_l_xio_bidi_bootstrap_connection_cb, 
-					handle);*/
 					
     GlobusXIOBidiDebugExit();
     return;
@@ -1218,12 +1292,13 @@ globus_l_xio_bidi_open_cb(
 
     GlobusXIOBidiDebugEnter();
 
+    handle = (globus_l_xio_bidi_handle_t *)user_arg;
+
     if(result != GLOBUS_SUCCESS)
     {   
         goto error_destroy_handle;
     } 
 
-    handle = (globus_l_xio_bidi_handle_t *)user_arg;
 
     /*set up the driver_handle to be used in subsequent calls*/
         res = globus_l_xio_bidi_create_read_handle(handle);
@@ -1288,6 +1363,7 @@ globus_l_xio_bidi_open(
 {
     globus_result_t                     result;
     globus_l_xio_bidi_handle_t *   	handle;
+
     globus_l_xio_bidi_attr_t *		attr;
     globus_xio_handle_t			bs_handle;
  
@@ -1314,9 +1390,7 @@ globus_l_xio_bidi_open(
 	    }
 	    attr->isserver=GLOBUS_FALSE;
         }
-    }
    
-   handle->open_op=op;
 
         result = globus_xio_handle_create(&bs_handle,
 				handle->attr->bootstrap_stack);
@@ -1324,6 +1398,8 @@ globus_l_xio_bidi_open(
 	{
 	    goto error_xio_handle_create;
 	}
+    }
+    handle->open_op=op;
     if(!handle->attr->isserver) 
     {
         result = globus_xio_register_open(bs_handle,
@@ -1432,9 +1508,6 @@ globus_l_xio_bidi_close_cb(
 	globus_l_xio_bidi_bootstrap_server_close_cb(NULL, handle);
     }
 
-    /*globus_mutex_unlock(&handle->mutex);*/
-    /*globus_mutex_destroy(&handle->mutex);*/
-    /*globus_free(handle);*/
     if (result==GLOBUS_SUCCESS)
     {
         GlobusXIOBidiDebugExit();
@@ -1458,9 +1531,6 @@ globus_l_xio_bidi_write_handle_close_cb(
     GlobusXIOBidiDebugEnter();
     handle = (globus_l_xio_bidi_handle_t *) user_arg;
 
-    globus_xio_handle_cancel_operations(handle->bootstrap_handle,
-		    		GLOBUS_XIO_CANCEL_READ);
-    
     res = globus_xio_register_close(handle->bootstrap_handle, 
 		    	handle->attr->bootstrap_attr,
 			globus_l_xio_bidi_close_cb,
@@ -1490,9 +1560,9 @@ globus_l_xio_bidi_read_handle_close_cb(
     GlobusXIOBidiDebugEnter();
     handle = (globus_l_xio_bidi_handle_t *) user_arg;
     /*XXX globus_mutex_lock(&handle->mutex);*/
-
+/*TODAY
     globus_xio_handle_cancel_operations(*handle->write_handle,
-		    		GLOBUS_XIO_CANCEL_WRITE);
+		    		GLOBUS_XIO_CANCEL_WRITE);*/
         res = globus_xio_register_close(*handle->write_handle, 
 		    	handle->attr->xio_write_attr,
 			globus_l_xio_bidi_write_handle_close_cb,
@@ -1530,14 +1600,7 @@ globus_l_xio_bidi_close(
     if((handle->state!=GLOBUS_XIO_BIDI_BOOTSTRAP_CLOSED)&
 	(handle->state!=GLOBUS_XIO_BIDI_READWRITE_CLOSED))
     {
-    globus_xio_handle_cancel_operations(*handle->read_handle,
-		    		GLOBUS_XIO_CANCEL_READ);
-    globus_xio_handle_cancel_operations(*handle->write_handle,
-		    		GLOBUS_XIO_CANCEL_WRITE);
-    /*globus_xio_handle_cancel_operations(handle->bootstrap_handle,
-		    		GLOBUS_XIO_CANCEL_READ);*/
     }
-       /*globus_mutex_unlock(&handle->mutex);*/
        if((handle->state!=GLOBUS_XIO_BIDI_CLOSING)&
 		(handle->state!=GLOBUS_XIO_BIDI_BOOTSTRAP_CLOSED)&
 		 (handle->state!=GLOBUS_XIO_BIDI_READWRITE_CLOSED))
@@ -1585,9 +1648,21 @@ globus_l_xio_bidi_read_cb(
     void *                              user_arg)
 {
     globus_xio_operation_t 		op;
+    globus_result_t			res;
 
-    op=user_arg;        
+    GlobusXIOName(globus_l_xio_bidi_read_cb);
+
+    GlobusXIOBidiDebugEnter();
+    op=user_arg;       
+
+    if(globus_xio_driver_eof_received(op))
+    {
+printf("XXX read is eof\n");
+    }
+		    
     globus_xio_driver_finished_read(op, result, nbytes);
+
+    GlobusXIOBidiDebugExit();
 }
 /*
  *  read
@@ -1713,15 +1788,6 @@ error_register:
     return res;
 }
 
-static
-globus_result_t
-globus_l_xio_bidi_cntl(
-    void *                              driver_specific_handle,
-    int                                 cmd,
-    va_list                             ap)
-{
-    return GLOBUS_SUCCESS;
-}
 
 static globus_result_t
 globus_l_xio_bidi_init(
@@ -1730,7 +1796,7 @@ globus_l_xio_bidi_init(
     globus_xio_driver_t                 driver;
     globus_result_t                     res;
 
-    GlobusXIOName(globus_l_xio_bidi_cntl);
+    GlobusXIOName(globus_l_xio_bidi_init);
 
     GlobusXIOBidiDebugEnter();
 
@@ -1747,7 +1813,7 @@ globus_l_xio_bidi_init(
         globus_l_xio_bidi_close,
         globus_l_xio_bidi_read,
         globus_l_xio_bidi_write,
-        globus_l_xio_bidi_cntl);
+        globus_l_xio_bidi_link_cntl);
 
     globus_xio_driver_set_server(
         driver,
@@ -1755,7 +1821,7 @@ globus_l_xio_bidi_init(
         globus_l_xio_bidi_accept,
         globus_l_xio_bidi_server_destroy,
         globus_l_xio_bidi_server_cntl,
-        NULL,
+        globus_l_xio_bidi_link_cntl,
 	NULL);
 	/*globus_l_xio_bidi_link_destroy);*/
 
