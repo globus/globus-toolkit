@@ -1587,7 +1587,7 @@ globus_i_gfs_config_stack(
             if(ptr != NULL)
             {
                 *ptr = '\0';
-                value = ptr+1; // move to next line
+                value = ptr+1; 
             }
             else
             {
