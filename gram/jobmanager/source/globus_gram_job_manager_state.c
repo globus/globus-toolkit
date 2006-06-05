@@ -217,6 +217,15 @@ globus_gram_job_manager_state_machine(
 		    "JM: GLOBUS_LOCATION = %s\n",
 		    request->globus_location);
 	}
+        if (request->target_globus_location == NULL)
+        {
+            request->target_globus_location =
+                globus_libc_strdup(request->globus_location);
+        }
+	    globus_gram_job_manager_request_log(
+		    request,
+		    "JM: TARGET_GLOBUS_LOCATION = %s\n",
+		    request->target_globus_location);
 
 	/*
 	 * Make sure all of the required parameters where passed in on
@@ -370,7 +379,7 @@ globus_gram_job_manager_state_machine(
 	{
             globus_symboltable_insert(&request->symbol_table,
                                 (void *) "GLOBUS_LOCATION",
-                                (void *) request->globus_location);
+                                (void *) request->target_globus_location);
 	}
 
 	rc = globus_rsl_assist_attributes_canonicalize(request->rsl);
@@ -1194,7 +1203,7 @@ globus_gram_job_manager_state_machine(
 	    globus_gram_job_manager_rsl_env_add(
 		request->rsl,
 		"GLOBUS_LOCATION",
-		request->globus_location);
+		request->target_globus_location);
 	}
 
 	if(request->tcp_port_range)

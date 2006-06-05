@@ -258,6 +258,10 @@ typedef struct
     char *				jobmanager_type;
     char *				tcp_port_range;
     char *				globus_location;
+    /**
+     * GLOBUS_LOCATION which can be used on the target execution nodes.
+     */
+    char *				target_globus_location;
 
     /**
      * Log File Name

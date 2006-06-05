@@ -230,6 +230,11 @@ main(
         {
             request->globus_location = globus_libc_strdup(argv[++i]);
         }
+        else if ((strcmp(argv[i], "-target-globus-location") == 0)
+                 && (i + 1 < argc))
+        {
+            request->target_globus_location = globus_libc_strdup(argv[++i]);
+        }
         else if ((strcmp(argv[i], "-type") == 0)
                  && (i + 1 < argc))
         {
@@ -404,6 +409,7 @@ main(
                     "\n"
                     "Non-required Arguments:\n"
                     "\t-home globus_location\n"
+                    "\t-target-globus-location globus_location\n"
                     "\t-condor-arch arch, i.e. SUN4x\n"
                     "\t-condor-os os, i.e. SOLARIS26\n"
                     "\t-history job-history-directory\n" 
