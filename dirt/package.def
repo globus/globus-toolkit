@@ -44,6 +44,7 @@ globus_gram_client_test         gram/client/test                dirt.sh
 globus_gram_client_tools        gram_client_tools/source        dirt.sh
 globus_gram_client_tools_test   gram_client_tools/test          dirt.sh
 globus_gram_job_manager         gram/jobmanager/source          dirt.sh
+globus_gram_job_manager_scripts gram/jobmanager/scripts         dirt.sh
 globus_gram_job_manager_test    gram/jobmanager/test            dirt.sh
 globus_gram_job_manager_setup   gram/jobmanager/setup/program   dirt.sh
 globus_gram_job_manager_scripts_setup   gram/jobmanager/setup/scripts   dirt.sh

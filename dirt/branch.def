@@ -6,6 +6,7 @@
 #  - The trunk uses 1
 #  - For speed concerns, new branches should be added to the top of the list
 #
+bug_3778_branch                     76
 campaign_4411_branch                75
 win32-6-branch                      74
 win32-5-branch                      73
