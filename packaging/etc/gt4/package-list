@@ -155,6 +155,7 @@ globus_rendezvous                           ws-gram/client/c/rendezvous/source g
 globus_rendezvous_test                      ws-gram/client/c/rendezvous/test gpt
 
 globus_database_common                      database/java/common/source
+globus_database_psqlodbc                    database/c/psqlodbc
 
 globus_usage_packets_common                 usage/java/packets/common
 globus_usage_packets                        usage/java/packets/source
