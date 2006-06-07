@@ -44,6 +44,7 @@ globus_gram_client_tools	gram_client_tools/source
 globus_gram_client_tools_test	gram_client_tools/test
 globus_gram_documentation	gram/documentation
 globus_gram_job_manager		gram/jobmanager/source
+globus_gram_job_manager_scripts	gram/jobmanager/scripts
 globus_gram_job_manager_callout_error   gram/jobmanager/callout_error
 globus_gram_job_manager_test	gram/jobmanager/test
 globus_gram_job_manager_setup	gram/jobmanager/setup/program
