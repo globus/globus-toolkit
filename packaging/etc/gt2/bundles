@@ -43,6 +43,7 @@ BUNDLE globus-resource-management-server
 	globus_gass_copy
 	globus_gass_cache_program
         globus_gram_job_manager_callout_error
+	globus_gram_job_manager_scripts
 	globus_gram_job_manager
         globus_scheduler_event_generator
         globus_scheduler_event_generator_job_manager
@@ -434,6 +435,7 @@ BUNDLE gt2-unthreaded
 	globus_gatekeeper_setup
 	globus_gram_client
 	globus_gram_client_tools
+	globus_gram_job_manager_scripts
 	globus_gram_job_manager
 	globus_gram_job_manager_callout_error
 	globus_gram_job_manager_setup
@@ -575,6 +577,7 @@ BUNDLE globus-gram
         globus_gram_job_manager_setup
         globus_duct_control
         globus_gram_job_manager_callout_error
+	globus_gram_job_manager_scripts
         globus_gram_job_manager
         globus_gram_job_manager_setup_fork
         globus_duroc_common
