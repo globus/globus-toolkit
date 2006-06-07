@@ -13,6 +13,14 @@
 
     <With_Flavors build="no" />
 
+    <Source_Dependencies Type="pgm_runtime">
+      <Dependency Name="globus_gram_job_manager_scripts" Package="pgm">
+        <Version>
+          <Simple_Version Major="0"/>
+        </Version>
+      </Dependency>
+    </Source_Dependencies>
+
     <Source_Setup_Dependency PkgType="pgm" >
       <Setup_Dependency Name="globus_common_setup" > <Version > <Simple_Version Major="2" /> </Version> </Setup_Dependency>
       <Setup_Dependency Name="globus_gatekeeper_setup" > <Version > <Simple_Version Major="2" /> </Version> </Setup_Dependency>

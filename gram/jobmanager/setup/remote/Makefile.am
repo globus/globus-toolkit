@@ -5,7 +5,6 @@ SUBDIRS = pkgdata
 
 setup_SCRIPTS = \
     remote.in \
-    setup-globus-job-manager-remote \
     setup-globus-job-manager-remote.pl \
     find-remote-tools
 

@@ -1,19 +1,48 @@
-my $gpath = $ENV{GPT_LOCATION};
+#! /usr/bin/env perl
 
-if (!defined($gpath))
+# Copyright 1999-2006 University of Chicago
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+BEGIN
 {
-    $gpath = $ENV{GLOBUS_LOCATION};
-}
+    use POSIX qw(getcwd);
 
-if (!defined($gpath))
-{
-    die "GPT_LOCATION or GLOBUS_LOCATION needs to be set before running this script";
-}
+    if (! exists($ENV{GLOBUS_LOCATION}))
+    {
+        my $p = $0;
 
-@INC = (@INC, "$gpath/lib/perl");
+        if ($p !~ m/^\//)
+        {
+            $p = getcwd() . '/' . $p;
+        }
+
+        my @p = split(/\//, $p);
+
+        $ENV{GLOBUS_LOCATION} = join('/', @p[0..$#p-2]);
+
+    }
+    push(@INC, "$ENV{GLOBUS_LOCATION}/lib/perl");
+
+    if (exists $ENV{GPT_LOCATION})
+    {
+        push(@INC, "$ENV{GPT_LOCATION}/lib/perl");
+    }
+}
 
 require Grid::GPT::Setup;
 use Getopt::Long;
+use strict;
 
 my $name		= 'jobmanager-remote';
 my $host;

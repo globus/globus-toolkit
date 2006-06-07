@@ -1,9 +1,24 @@
-#! @PERL@
+#! /usr/bin/env perl
 
 BEGIN
 {
-    push(@INC, "@GLOBUS_LOCATION@/lib/perl");
-    $ENV{GLOBUS_LOCATION} = "@GLOBUS_LOCATION@" if(!exists($ENV{GLOBUS_LOCATION}));
+    use POSIX qw(getcwd);
+
+    if (! exists($ENV{GLOBUS_LOCATION}))
+    {
+        my $p = $0;
+
+        if ($p !~ m/^\//)
+        {
+            $p = getcwd() . '/' . $p;
+        }
+
+        my @p = split(/\//, $p);
+
+        $ENV{GLOBUS_LOCATION} = join('/', @p[0..$#p-2]);
+
+    }
+    push(@INC, "$ENV{GLOBUS_LOCATION}/lib/perl");
 }
 
 use Getopt::Long;

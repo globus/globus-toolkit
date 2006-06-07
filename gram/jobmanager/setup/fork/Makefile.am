@@ -6,7 +6,6 @@ SUBDIRS = pkgdata doxygen
 setup_SCRIPTS = \
     fork.in \
     find-fork-tools \
-    setup-globus-job-manager-fork \
     setup-globus-job-manager-fork.pl
 
 EXTRA_DIST = $(setup_SCRIPTS) globus_gram_job_manager_fork.dox

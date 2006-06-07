@@ -17,8 +17,6 @@ use Globus::GRAM::JobState;
 use Globus::GRAM::JobManager;
 use Globus::Core::Paths;
 
-use Config;
-
 # NOTE: This package name must match the name of the .pm file!!
 package Globus::GRAM::JobManager::pbs;
 
@@ -268,7 +266,7 @@ EOF
     $rsh_env = '';
 
     $library_vars{LD_LIBRARY_PATH} = 0;
-    if($Config{osname} eq 'irix')
+    if($^O eq 'irix')
     {
         $library_vars{LD_LIBRARYN32_PATH} = 0;
         $library_vars{LD_LIBRARY64_PATH} = 0;

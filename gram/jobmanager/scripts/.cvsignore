@@ -1,5 +1,5 @@
-aclocal.m4
 autom4te.cache
+aclocal.m4
 missing
 install-sh
 mkinstalldirs
@@ -14,8 +14,9 @@ configure
 ltconfig
 ltmain.sh
 version.h
-find-fork-tools
 *.tar.gz
 *.lo
 *.la
-.libs
+*.html
+*.3
+*.tmp

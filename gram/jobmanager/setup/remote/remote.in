@@ -237,7 +237,7 @@ sub remote_cmd
     my $description = $self->{JobDescription};
     my $remote_cmd;
     my $args_filename;
-    my $tag = $description->cache_tag or $ENV{GLOBUS_GRAM_JOB_CONTACT};
+    my $tag = $description->cache_tag || $ENV{GLOBUS_GRAM_JOB_CONTACT};
     my $contact = $ENV{GLOBUS_GRAM_JOB_CONTACT};
     my $remote_script_url="x-gass-cache://$contact/remote_script_args_$$";
     my $data;

@@ -26,8 +26,6 @@ use Globus::GRAM::JobManager;
 use Globus::GRAM::StdioMerger;
 use Globus::Core::Paths;
 
-use Config;
-
 # NOTE: This package name must match the name of the .pm file!!
 package Globus::GRAM::JobManager::condor;
 
@@ -62,7 +60,7 @@ sub new
                 chomp;
                 if (m/log_path=(.*)$/) {
                     $self->{condor_logfile} = $1;
-                    break;
+                    last;
                 }
             }
             close(FH);
@@ -160,7 +158,7 @@ sub submit
     {
 	if(! -d $description->directory())
 	{
-	    return Globus::GRAM::Error::BAD_DIRECTORY;
+            return Globus::GRAM::Error::BAD_DIRECTORY();
 	}
 	elsif(! -r $description->stdin())
 	{
@@ -177,7 +175,7 @@ sub submit
     }
 
     $library_vars{LD_LIBRARY_PATH} = 0;
-    if($Config{osname} eq 'irix')
+    if($^O eq 'irix')
     {
 	$library_vars{LD_LIBRARYN32_PATH} = 0;
 	$library_vars{LD_LIBRARY64_PATH} = 0;
@@ -188,11 +186,6 @@ sub submit
 	if(!ref($tuple) || scalar(@$tuple) != 2)
 	{
 	    return Globus::GRAM::Error::RSL_ENVIRONMENT();
-	}
-	if(exists($library_vars{$tuple->[0]}))
-	{
-	    $tuple->[1] .= ":$library_string";
-	    $library_vars{$tuple->[0]} = 1;
 	}
     }
     foreach (keys %library_vars)
@@ -399,7 +392,7 @@ sub submit
             if ($rc == 127 && $response_text[0] =~ m/^exec: /) {
                 # exec failed
                 $self->log("exec failed\n");
-                $failure_text = join(//, @response_text);
+                $failure_text = join("", @response_text);
                 @response_text = ();
             } elsif (-s $error_filename) {
                 $self->log("Error file is not empty, and submission failed\n");
