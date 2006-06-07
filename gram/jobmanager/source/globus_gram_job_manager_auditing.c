@@ -100,6 +100,14 @@ globus_gram_job_manager_auditing_file_write(
         goto free_filename_out;
     }
 
+    rc = chmod(filename, 0750);
+    if (rc != 0)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_NO_RESOURCES;
+
+        goto free_filename_out;
+    }
+
     /* job_grid_id */
     rc = globus_l_gram_audit_write_string(auditing_file, request->job_contact, ",");
     if (rc != 0)
