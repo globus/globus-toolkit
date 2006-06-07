@@ -6,7 +6,6 @@ SUBDIRS = pkgdata doxygen
 setup_SCRIPTS = \
     lsf.in \
     find-lsf-tools \
-    setup-globus-job-manager-lsf \
     setup-globus-job-manager-lsf.pl
 
 EXTRA_DIST = $(setup_SCRIPTS) globus_gram_job_manager_lsf.dox

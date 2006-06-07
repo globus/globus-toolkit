@@ -158,7 +158,7 @@ sub EndTag
                     }
 
                     my $attributes = $self->{ATTRIBUTES};
-                    my $name = %$attributes->{name};
+                    my $name = %{$attributes->{name}};
                     if (defined $name)
                     {
                         push(@$newValue, [$name, $self->{CDATA}]);
@@ -171,7 +171,7 @@ sub EndTag
                 else
                 {
                     my $attributes = $self->{ATTRIBUTES};
-                    my $name = %$attributes->{name};
+                    my $name = %{$attributes->{name}};
                     if (defined $name)
                     {
                         $newValue = [ [ $name, $self->{CDATA} ] ];

@@ -1,4 +1,4 @@
-#! @PERL@
+#! /usr/bin/env perl
 
 =head1 NAME
 
@@ -30,7 +30,7 @@ Add or remove the job manager service to the named I<DIRECTORY>.
 Additional command line options besides the standard ones to the job
 manager's configuration. Only relevant when adding a job manager service.
 
--item -help | -h
+=item -help | -h
 
 Display a short usage message.
 
@@ -59,10 +59,26 @@ continue running after the service is removed.
 
 BEGIN
 {
-    push(@INC, "@GLOBUS_LOCATION@/lib/perl");
-    $ENV{GLOBUS_LOCATION} = "@GLOBUS_LOCATION@" if(!exists($ENV{GLOBUS_LOCATION}));
+    use POSIX qw(getcwd);
+
+    if (! exists($ENV{GLOBUS_LOCATION}))
+    {
+        my $p = $0;
+
+        if ($p !~ m/^\//)
+        {
+            $p = getcwd() . '/' . $p;
+        }
+
+        my @p = split(/\//, $p);
+
+        $ENV{GLOBUS_LOCATION} = join('/', @p[0..$#p-2]);
+
+    }
+    push(@INC, "$ENV{GLOBUS_LOCATION}/lib/perl");
 }
 
+use strict;
 use Getopt::Long;
 use IO::File;
 use File::Copy;
@@ -81,6 +97,11 @@ my $servicesdir	= "$sysconfdir/grid-services";
 my $setupdir = "$globusdir/setup/globus";
 my $job_manager_conf = "$sysconfdir/globus-job-manager.conf";
 my $perljmdir = "$globusdir/lib/perl/Globus/GRAM/JobManager";
+my $servicename = '';
+my $manager_type = '';
+my $extra_config = '';
+my $add = 0;
+my $remove = 0;
 
 GetOptions('service-name|s=s' => \$servicename,
            'manager-type|m=s' => \$manager_type,
@@ -107,7 +128,7 @@ if ( !$remove && !$add )
 
 if(! &valid_manager_type($manager_type))
 {
-    print STDERR "Invalid job manager type $manager type.\n";
+    print STDERR "Invalid job manager type $manager_type.\n";
     exit 2;
 }
 

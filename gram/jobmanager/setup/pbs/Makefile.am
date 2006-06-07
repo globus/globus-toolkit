@@ -5,7 +5,6 @@ SUBDIRS = pkgdata doxygen
 
 setup_SCRIPTS = \
     pbs.in \
-    setup-globus-job-manager-pbs \
     setup-globus-job-manager-pbs.pl \
     find-pbs-tools
 

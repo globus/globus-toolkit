@@ -1,4 +1,4 @@
-#! @PERL@
+#! /usr/bin/env perl
 
 # Copyright 1999-2006 University of Chicago
 # 
@@ -16,26 +16,39 @@
 
 BEGIN
 {
-    use Config;
+    use POSIX qw(getcwd);
 
-    push(@INC, '@GLOBUS_LOCATION@/lib/perl');
-    $ENV{GLOBUS_LOCATION} = '@GLOBUS_LOCATION@'
-        if(!exists($ENV{GLOBUS_LOCATION}));
+    if (! exists($ENV{GLOBUS_LOCATION}))
+    {
+        my $p = $0;
+
+        if ($p !~ m/^\//)
+        {
+            $p = getcwd() . '/' . $p;
+        }
+
+        my @p = split(/\//, $p);
+
+        $ENV{GLOBUS_LOCATION} = join('/', @p[0..$#p-2]);
+
+    }
+
+    push(@INC, "$ENV{GLOBUS_LOCATION}/lib/perl");
 }
 
 my $path = $ENV{GLOBUS_LOCATION} . '/lib';
 
-if($Config{osname} eq 'irix')
+if($^O eq 'irix')
 {
 
     &append_path(\%ENV, 'LD_LIBRARY64_PATH', $path);
     &append_path(\%ENV, 'LD_LIBRARYN32PATH', $path);
 }
-elsif($Config{osname} eq 'aix')
+elsif($^O eq 'aix')
 {
     &append_path(\%ENV, 'LIBPATH', $path);
 }
-elsif($Config{osname} eq 'darwin')
+elsif($^O eq 'darwin')
 {
     &append_path(\%ENV, 'DYLD_LIBRARY_PATH', $path);
 }

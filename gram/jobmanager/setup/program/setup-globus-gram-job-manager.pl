@@ -45,12 +45,6 @@ GetOptions('state-dir|s=s' => \$state_dir,
 
 &setup_state_dir();
 &setup_job_manager_conf();
-&setup_script_shbang("${setupdir}/globus-job-manager-service.in",
-                      "${libexecdir}/globus-job-manager-service");
-&setup_script_shbang("${setupdir}/globus-job-manager-mds-provider.in",
-                      "${libexecdir}/globus-job-manager-mds-provider");
-&setup_script_shbang("$setupdir/globus-job-manager-script.in",
-                     "$libexecdir/globus-job-manager-script.pl");
 print "Done\n";
 
 $metadata->finish();
@@ -219,26 +213,6 @@ sub lookup_shell_command
     chomp($cmd = `$bindir/globus-sh-exec -e echo \\\$$cmdvar`);
 
     return $cmd;
-}
-
-sub setup_script_shbang
-{
-    my $inname = shift;
-    my $outname = shift;
-    my $infile = new IO::File("<$inname");
-    my $outfile = new IO::File(">$outname");
-    my $perl = &lookup_shell_command("GLOBUS_SH_PERL");
-
-    while(<$infile>)
-    {
-	s/\@PERL\@/$perl/g;
-	s/\@GLOBUS_LOCATION\@/$globusdir/g;
-
-	$outfile->print($_);
-    }
-    $infile->close();
-    $outfile->close();
-    chmod 0755, $outname;
 }
 
 sub usage

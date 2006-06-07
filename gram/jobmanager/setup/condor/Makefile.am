@@ -7,7 +7,6 @@ setup_SCRIPTS = \
     condor.in \
     globus-condor-print-config.in \
     find-condor-tools \
-    setup-globus-job-manager-condor \
     setup-globus-job-manager-condor.pl
 
 EXTRA_DIST = $(setup_SCRIPTS) globus_gram_job_manager_condor.dox
