@@ -5,7 +5,14 @@ use strict;
 local(*APPEND_IN);
 
 my $audit_dir = &get_audit_dir();
+my $datadir = "$ENV{GLOBUS_LOCATION}/share/globus_gram_job_manager_auditing";
 my $audit_conf = "$ENV{GLOBUS_LOCATION}/etc/globus-job-manager-audit.conf";
+
+if (! exists $ENV{GLOBUS_OPTIONS})
+{
+    $ENV{GLOBUS_OPTIONS} = "";
+}
+$ENV{GLOBUS_OPTIONS} .= " -Dlog4j.configuration=file://$datadir/log4j.properties";
 
 if ($audit_dir eq '')
 {
