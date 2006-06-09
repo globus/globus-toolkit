@@ -16,16 +16,11 @@
 package org.globus.usage.packets;
 
 import java.util.Date;
-import java.util.List;
 
-import java.net.Inet6Address;
 import java.sql.Timestamp;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Connection;
-
-import commonj.timers.Timer;
-import commonj.timers.TimerListener;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -33,15 +28,11 @@ import org.apache.commons.logging.LogFactory;
 import org.globus.usage.packets.IPTimeMonitorPacket;
 import org.globus.usage.packets.CustomByteBuffer;
 
-import org.globus.wsrf.container.UsageConfig;
-import org.globus.wsrf.impl.timer.TimerManagerImpl;
-
 public class MDSAggregatorMonitorPacket 
        extends IPTimeMonitorPacket 
 {
     static Log log = LogFactory.getLog(MDSAggregatorMonitorPacket.class);
 
-    private List usageTargets;
     private long lifetimeRegistrationCount;
     private long currentRegistrantCount;
     private Date resourceCreationTime;
@@ -68,7 +59,7 @@ public class MDSAggregatorMonitorPacket
         this.lifetimeRegistrationCount = lifetimeRegistrationCount;
     }
     
-    public long getCurrentRegistrantCountt() 
+    public long getCurrentRegistrantCount() 
     {
         return this.currentRegistrantCount;
     }
