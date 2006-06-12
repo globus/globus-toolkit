@@ -122,8 +122,20 @@ Set the path to store job manager state files (used for restarting a job
 manager which fails). If this is not set, then job state files will be
 stored in the <code>$GLOBUS_LOCATION/tmp/gram_job_state</code> directory.
 
-@par -x509-cert-dir
+@par -x509-cert-dir PATH
 Set the path to the X.509 trusted certificate directory on the job execution
 hosts. If not present, then the trusted certificate directory
 used by the job manager (usually set by the Gatekeeper) will be used
+
+@para -seg-module MODULE
+Use the named module as a way to interact with the scheduler instead of polling
+for job status. 
+
+@para -audit-directory DIRECTORY
+Store job auditing records in DIRECTORY. This directory should be sticky and group
+writable but not group readable. Audit records can be uploaded to a database by
+using the globus-gram-audit command.
+
+@para -globus-toolkit-version VERSION-STRING
+Use the string VERSION-STRING as the toolkit version in audit records.
 */
