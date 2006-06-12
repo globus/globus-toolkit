@@ -182,3 +182,7 @@ globus_wsrf_replicalocation_common_java     ws-replica/location/common/java/sour
 globus_wsrf_replicalocation_client_java     ws-replica/location/client/java/source
 globus_wsrf_replicalocation_service_java    ws-replica/location/service/java/source
 globus_wsrf_replicalocation_resource_java   ws-replica/location/resource/java/source
+globus_index_util                           ws-mds/index/c/index_add gpt
+globus_c_wsrf_index_bindings                ws-mds/index/c/bindings  gpt
+globus_wsrf_mds_gkrellm                     ws-mds/gkrellm/source
+globus_wsrf_mds_gkrellm_schema              ws-mds/gkrellm/schema
