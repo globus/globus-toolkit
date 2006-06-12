@@ -1,5 +1,23 @@
 #! /usr/bin/env perl 
 
+=head1 NAME
+
+globus-gram-audit - Upload audit records to a database.
+
+=head1 SYNOPSIS
+
+B<globus-job-manager-service>
+
+=head1 DESCRIPTION
+
+Upload audit records to a database. Reads $GLOBUS_LOCATION/etc/globus-job-manager.conf
+to determine the audit directory and then uploads all files in that directory that
+contain valid audit records to the database configured by the 
+globus_gram_job_manager_auditing_setup_scripts package. If the upload completes successfully,
+the audit files will be removed. 
+
+=cut
+
 use strict;
 
 local(*APPEND_IN);
