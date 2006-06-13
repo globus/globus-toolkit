@@ -1349,16 +1349,32 @@ main(
     tmp_s = globus_i_gfs_config_string("extension");
     if(tmp_s != NULL)
     {
+        char *                          ext_name;
+        char *                          ext_args = NULL;
+
+        ext_name = strdup(tmp_s);
+        tmp_s = strchr(ext_name, ':');
+        if(tmp_s != NULL)
+        {
+            *tmp_s = '\0';
+            tmp_s++;
+            if(*tmp_s != '\0')
+            {
+                ext_args = strdup(tmp_s);
+                globus_gfs_config_set_ptr("extension_args", ext_args);
+            }
+        }
         globus_i_gfs_log_message(
             GLOBUS_I_GFS_LOG_INFO,
-            "loading extension %s\n", tmp_s);
-        rc = globus_extension_activate(tmp_s);
+            "loading extension %s\n", ext_name);
+        rc = globus_extension_activate(ext_name);
         if(rc != 0)
         {
             globus_i_gfs_log_message(
                 GLOBUS_I_GFS_LOG_ERR,
-                "failed to load loading extension %s\n", tmp_s);
+                "failed to load loading extension %s\n", ext_name);
         }
+        free(ext_name);
     }
 
     globus_mutex_lock(&globus_l_gfs_mutex);

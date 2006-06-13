@@ -84,5 +84,5 @@
             wsrpw:SetResourceProperties
             wsrpw:GetMultipleResourceProperties
             wsrpw:GetResourceProperty"
-        wsrpw:ResourceProperties ="tns:FrontendStats"/>
+        wsrpw:ResourceProperties ="tns:FrontendStats tns:BackendPool"/>
 </definitions>

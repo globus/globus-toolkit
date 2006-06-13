@@ -352,6 +352,41 @@ globus_xio_contact_copy(
             _xio_name,                                                      \
             __LINE__,                                                       \
             _XIOSL("Driver in handle has been unloaded.")))
+
+#define GlobusIXIOUtilCopyNIovec(iov, iovc, siov, siovc, bytes)             \
+    do                                                                      \
+    {                                                                       \
+        globus_size_t                   _i;                                 \
+        globus_size_t                   _tb = 0;                            \
+        globus_size_t                   _bytes;                             \
+        const struct iovec *            _siov;                              \
+        struct iovec *                  _iov;                               \
+        int                             _iovc;                              \
+        int                             _siovc;                             \
+                                                                            \
+        _siov = (siov);                                                     \
+        _siovc = (siovc);                                                   \
+        _iov = (iov);                                                       \
+        _iovc = (iovc);                                                     \
+        _bytes = (bytes);                                                   \
+                                                                            \
+        for(_i = 0; _i < _siovc && _tb < _bytes; _i++)                      \
+        {                                                                   \
+            if(_tb + _siov[_i].iov_len > _bytes)                            \
+            {                                                               \
+                _iov[_i].iov_len = _bytes - _tb;                            \
+            }                                                               \
+            else                                                            \
+            {                                                               \
+                _iov[_i].iov_len = _siov[_i].iov_len;                       \
+            }                                                               \
+            _tb += _siov[_i].iov_len;                                       \
+            _iov[_i].iov_base = _siov[_i].iov_base;                         \
+        }                                                                   \
+        _iovc = _i;                                                         \
+    } while(0)
+
+
                                                                             
 #define GlobusIXIOUtilTransferIovec(iov, siov, iovc)                        \
     do                                                                      \
