@@ -1,8 +1,13 @@
 all: gpt @prewsmds@ @gridftp@ @prewsgram@ @rls@ @myproxy@ @gsiopenssh@ @wsjava@ @wsmds@ @wsdel@ @wsrft@ @wsgram@ @wsgramcondor@ @wsgramlsf@ @wsgrampbs@ @wscas@ @webmds@ @wsc@ @i18n@ @tests@ @wstests@ @drs@ @rndvz@ done
 GLOBUS_LOCATION=@prefix@
 GPT_LOCATION=@gptlocation@
-GLOBUS_IODBC_PATH=@globus_iodbc@
-export GLOBUS_IODBC_PATH GPT_LOCATION GLOBUS_LOCATION
+GLOBUS_IODBC_INCLUDES=@globus_iodbc_includes@
+GLOBUS_IODBC_LIBS=@globus_iodbc_libs@
+GLOBUS_UNIXODBC_INCLUDES=@globus_unixodbc_includes@
+GLOBUS_UNIXODBC_LIBS=@globus_unixodbc_libs@
+export GLOBUS_IODBC_INCLUDES GLOBUS_IODBC_LIBS GPT_LOCATION GLOBUS_LOCATION 
+export GLOBUS_UNIXODBC_INCLUDES GLOBUS_UNIXODBC_LIBS
+
 BUILD_OPTS=@buildopts@
 FLAVOR=@flavor@
 THR=@thr@
@@ -25,7 +30,7 @@ prews: prewsmds gridftp prewsgram
 prewsgram: gpt globus-resource-management-sdk-thr globus-resource-management-server globus-resource-management-client globus-resource-management-sdk 
 gridftp: gpt globus-data-management-sdk-thr globus-data-management-server globus-data-management-client globus-data-management-sdk 
 prewsmds: gpt globus-information-services-server globus-information-services-client globus-information-services-sdk
-rls: gpt globus-rls-server
+rls: gpt globus_database_psqlodbc globus-rls-server
 drs: gpt common globus_rls_client wsjava gt4-replicator
 wsjava: gpt gt4-java-ws-core gt4-java-ws-core-test
 wsmds: gpt wsjava gt4-mds gt4-mds-test
