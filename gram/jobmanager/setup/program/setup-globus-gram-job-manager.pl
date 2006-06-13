@@ -28,6 +28,7 @@ my $bindir	= "$globusdir/bin";
 my $sbindir	= "$globusdir/sbin";
 my $state_dir   = "$globusdir/tmp/gram_job_state";
 my $help	= 0;
+my $auditing_dir = '';   
 
 eval {
     require "XML/Parser.pm";
@@ -39,11 +40,16 @@ if ($@)
     exit(1);
 }
 GetOptions('state-dir|s=s' => \$state_dir,
+           'auditing-dir|a=s' => \$auditing_dir,
            'help|h' => \$help);
 
 &usage if($help);
 
 &setup_state_dir();
+if ($auditing_dir ne '')
+{
+    &setup_audit_dir();
+}
 &setup_job_manager_conf();
 print "Done\n";
 
@@ -88,6 +94,50 @@ sub setup_state_dir
 	    {
 		print STDERR "WARNING: It looks like $built_path may not be on a local filesystem. WARNING: The test for local file systems is not 100% reliable. Ignore the below if this is a false positive.\n WARNING: The jobmanager requires state dir to be on a local filesystem\n WARNING: Rerun the jobmanager setup script with the -state-dir=<state dir> option.";
 	    }
+	    mkdir($built_path, 0755) ||
+                die "Unable to create directory $built_path\n";
+	}
+    }
+    
+    if((stat($state_dir))[2] != 01777)
+    {
+        chmod(01777, $state_dir) || die "Can't set permissions on $state_dir\n";
+    }
+
+    print "Done.\n";
+}
+
+sub setup_audit_dir
+{
+    my $last_built_path = '';
+    my $built_path = '';
+    my @components;
+
+    print "Creating auditing file directory.\n";
+
+    if( $auditing_dir !~ m|^/|)
+    {
+	print STDERR "Invalid directory for audit files \"$auditing_dir\"\n";
+	exit(1);
+    }
+
+    @components = split(/\//, $auditing_dir);
+
+    foreach(@components)
+    {
+	next if $_ eq '';
+
+	$last_built_path = $built_path;
+	$built_path .= "/$_";
+
+	if(-e $built_path && ! -d $built_path)
+	{
+	    print STDERR "Invalid path for state files: " .
+	                 "$built_path is not a directory\n";
+	    exit(1);
+	}
+	elsif(! -e $built_path)
+	{
 	    mkdir($built_path, 0777) ||
                 die "Unable to create directory $built_path\n";
 	    chmod(0755, $built_path) ||
@@ -95,9 +145,10 @@ sub setup_state_dir
 	}
     }
     
-    if(((stat($state_dir))[2] & oct(01777)) != oct(01777))
+    # Desired permissions: drwx-wx-wt 
+    if((stat($auditing_dir))[2] != 05733)
     {
-        chmod(01777, $state_dir) || die "Can't set permissions on $state_dir\n";
+        chmod(05733, $auditing_dir) || die "Can't set permissions on $auditing_dir\n";
     }
 
     print "Done.\n";
@@ -107,8 +158,12 @@ sub setup_job_manager_conf
 {
     my ($gatekeeper_port, $gatekeeper_subject);
     my ($hostname, $cpu, $manufacturer, $os_name, $os_version);
+    my ($toolkit_version);
     my $jm_conf	= "${sysconfdir}/globus-job-manager.conf";
     my $conf_file;
+    my $toolkit_version = `globus-version`;
+
+    chomp($toolkit_version);
 
     ($gatekeeper_subject, $gatekeeper_port) =
 	&get_gatekeeper_info("${sysconfdir}/globus-gatekeeper.conf");
@@ -127,10 +182,15 @@ sub setup_job_manager_conf
 	-globus-host-manufacturer $manufacturer
 	-globus-host-osname $os_name
 	-globus-host-osversion $os_version
+        -globus-toolkit-version $toolkit_version
 	-save-logfile on_error
 	-state-file-dir $state_dir
 	-machine-type unknown
 EOF
+    if ($auditing_dir ne '')
+    {
+        print $conf_file "-audit-directory $auditing_dir\n";
+    }
     $conf_file->close();
 }
 
@@ -219,6 +279,7 @@ sub usage
 {
     print "Usage: $0 [options]\n".
     "Options:  [--state-dir|-s DIR]\n".
+    "          [--auditing-dir|-a DIR]\n".
     "          [--help|-h]\n";
     exit 1;
 }
