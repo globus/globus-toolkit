@@ -1012,7 +1012,7 @@ sub job_dir {
         $posix_hostname = (POSIX::uname)[1];
 
         if ($posix_hostname !~ m/\./) {
-            my $aliases = gethostbyname($posix_hostname);
+            my $aliases = join(' ',(gethostbyname($posix_hostname))[0,1]);
 
             for $alias (split(/\s+/, $aliases)) {
                 if ($alias =~ m/\./) {
