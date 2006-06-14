@@ -1,0 +1,91 @@
+<?xml version="1.0"?>
+
+<project default="all" basedir=".">
+    <description>
+        Compact WSDL for GridFTP Server Provider
+    </description>
+
+    <!-- 
+    Give user a chance to override without editing this file
+    (and without typing -D each time it compiles it) 
+    -->
+
+    <property environment="env"/>
+    
+    <property file="build.properties"/>
+    <property file="${user.home}/build.properties"/>
+    
+    <property name="env.GLOBUS_LOCATION" value="../../../wsrf/install"/>
+    <property name="deploy.dir" location="${env.GLOBUS_LOCATION}"/>
+    <property name="abs.deploy.dir" location="${deploy.dir}"/>
+    
+    <property name="build.dir" value="build"/>    
+    <property name="schema.src" location="${deploy.dir}/share/schema"/>
+    <property name="schema.dest" location="${build.dir}/schema"/>
+    <property name="compact.suffix" value="_compact"/>
+    <property name="base.name" value="wsrf_gridftp_server_info"/>
+    <property name="package.name" value="globus_${base.name}"/>
+    
+    <property name="build.stubs" location=
+        "${abs.deploy.dir}/share/globus_wsrf_tools/build-stubs.xml"/>
+
+    <target name="clean">
+        <delete dir="${build.dir}"/>
+    </target>
+    
+    <target name="init">
+        <mkdir dir="${build.dir}"/>
+        <mkdir dir="${schema.dest}"/>
+        <copy toDir="${schema.dest}">
+            <fileset dir="${schema.src}" casesensitive="yes">
+                <include name="wsrf/**/*"/>
+                <include name="ws/**/*"/>
+            </fileset>
+        </copy>
+        <copy toDir="${schema.dest}">
+            <fileset dir="schema" casesensitive="yes">
+                <include name="gridftp/server/info/*"/>               
+            </fileset>
+        </copy>
+    </target>
+
+
+   <target depends="init" name="flatten">
+        <ant antfile="${build.stubs}" target="flatten">
+            <property name="source.flatten.dir"
+                location="${schema.dest}/gridftp/server/info"/>
+            <property name="target.flatten.dir"
+                location="${schema.dest}/gridftp/server/info"/>
+            <property name="wsdl.source"
+                value="gridftp_server_info${compact.suffix}.wsdl"/>
+            <property name="wsdl.target"
+                value="gridftp_server_info_port_type.wsdl"/>
+            <property name="wsdl.porttype" value="GridFTPServerInfoPortType"/>
+        </ant>
+    </target>
+    
+    <target name="bindings" unless="bindings.present" depends="flatten">
+        <property name="source.binding.dir"
+                  value="${schema.dest}/gridftp/server/info"/>
+        <property name="target.binding.dir"
+                  value="${schema.dest}/gridftp/server/info"/>
+        <ant antfile="${build.stubs}" target="generateBinding">
+            <property name="binding.root" value="gridftp_server_info"/>
+            <property name="porttype.wsdl"
+                value="gridftp_server_info_port_type.wsdl"/>
+        </ant>
+    </target>
+
+    
+    <target name="copySchema" depends="bindings">
+        <copy toDir="../schema">
+            <fileset dir="${schema.dest}" casesensitive="yes">
+                <include name="gridftp/server/info/*"/>
+                <exclude name="**/*${compact.suffix}.wsdl"/>              
+            </fileset>
+        </copy>
+    </target>
+    
+    <target name="all" depends="copySchema"/>
+
+</project>
