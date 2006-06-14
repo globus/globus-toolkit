@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright 1999-2006 University of Chicago
+  
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+  
+  http://www.apache.org/licenses/LICENSE-2.0
+  
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<definitions name="GridFTPServerInfo"
+    targetNamespace="http://gridftp.globus.org/2006/06/GridFTPServerInfo"
+    xmlns:tns="http://gridftp.globus.org/2006/06/GridFTPServerInfo"
+    xmlns:wsa="http://schemas.xmlsoap.org/ws/2004/03/addressing" 
+    xmlns="http://schemas.xmlsoap.org/wsdl/"
+    xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+    xmlns:wsdlpp="http://www.globus.org/namespaces/2004/10/WSDLPreprocessor"
+    xmlns:wsrlw=
+    "http://docs.oasis-open.org/wsrf/2004/06/wsrf-WS-ResourceLifetime-1.2-draft-01.wsdl"
+    xmlns:wsrpw=
+    "http://docs.oasis-open.org/wsrf/2004/06/wsrf-WS-ResourceProperties-1.2-draft-01.wsdl"
+    xmlns:wsnt=
+    "http://docs.oasis-open.org/wsn/2004/06/wsn-WS-BaseNotification-1.2-draft-01.xsd"
+    xmlns:wsntw=
+    "http://docs.oasis-open.org/wsn/2004/06/wsn-WS-BaseNotification-1.2-draft-01.wsdl"
+    xmlns:wssg=
+    "http://docs.oasis-open.org/wsrf/2004/06/wsrf-WS-ServiceGroup-1.2-draft-01.xsd"
+    xmlns:wssgw=
+    "http://docs.oasis-open.org/wsrf/2004/06/wsrf-WS-ServiceGroup-1.2-draft-01.wsdl"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+
+    <wsdl:import 
+        namespace=
+        "http://docs.oasis-open.org/wsrf/2004/06/wsrf-WS-ResourceProperties-1.2-draft-01.wsdl"
+        location="../../../wsrf/properties/WS-ResourceProperties.wsdl" />
+
+    <wsdl:import 
+        namespace=
+        "http://docs.oasis-open.org/wsrf/2004/06/wsrf-WS-ResourceLifetime-1.2-draft-01.wsdl"
+        location="../../../wsrf/lifetime/WS-ResourceLifetime.wsdl" />
+
+    <wsdl:import 
+        namespace=
+        "http://docs.oasis-open.org/wsn/2004/06/wsn-WS-BaseNotification-1.2-draft-01.wsdl"
+        location="../../../wsrf/notification/WS-BaseN.wsdl" />
+
+
+    <wsdl:import 
+        namespace=
+        "http://docs.oasis-open.org/wsrf/2004/06/wsrf-WS-ServiceGroup-1.2-draft-01.wsdl"
+        location="../../../wsrf/servicegroup/WS-ServiceGroup.wsdl" />
+
+    <types>
+        <xsd:schema targetNamespace=
+            "http://gridftp.globus.org/2006/06/GridFTPServerInfo"
+            xmlns:tns="http://gridftp.globus.org/2006/06/GridFTPServerInfo"
+            xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+
+            <xsd:import 
+                namespace="http://schemas.xmlsoap.org/ws/2004/03/addressing"
+                schemaLocation="../../../ws/addressing/WS-Addressing.xsd" 
+                />
+
+            <xsd:complexType name="backendInfo">
+                <xsd:sequence>
+                    <xsd:element name="indentifier" type="xsd:string"/>
+                    <xsd:element name="maxConnections" type="xsd:int"/>
+                    <xsd:element name="openConnections" type="xsd:int"/>
+                    <xsd:element name="approximateLoad" type="xsd:float"
+                        minOccurs="0" maxOccurs="1"/>
+                </xsd:sequence>
+            </xsd:complexType>
+
+            <xsd:element name="frontendInfo">
+                <xsd:complexType><xsd:sequence>                 
+                    <xsd:element name="contactString" type="xsd:string"/>
+                    <xsd:element name="banner" type="xsd:string"/>
+                    <xsd:element name="maxConnections" type="xsd:int"/>
+                    <xsd:element name="openConnections" type="xsd:int"/>
+                    <xsd:element name="backendsAvailable" type="xsd:int"
+                        minOccurs="0" maxOccurs="1"/>
+                    <xsd:element name="maxBW" type="xsd:int"
+                        minOccurs="0" maxOccurs="1"/>
+                    <xsd:element name="currentBW" type="xsd:int"
+                        minOccurs="0" maxOccurs="1"/>
+                    <xsd:element name="approximateLoad" type="xsd:float"
+                        minOccurs="0" maxOccurs="1"/>
+                    <xsd:element name="filesTransfered" type="xsd:long"
+                        minOccurs="0" maxOccurs="1"/>
+                    <xsd:element name="megaBytesTransfered" type="xsd:float"
+                        minOccurs="0" maxOccurs="1"/>
+                </xsd:sequence></xsd:complexType>
+            </xsd:element>                     
+
+            <xsd:element name="backendPool" type="tns:backendInfo"
+                minOccurs="0" maxOccurs="unbounded"/>
+
+        </xsd:schema>
+    </types>
+
+    <portType name="GridFTPServerInfoPortType"
+            wsdlpp:extends="
+            wsntw:NotificationProducer
+            wsrpw:QueryResourceProperties
+            wsrpw:SetResourceProperties
+            wsrpw:GetMultipleResourceProperties
+            wsrpw:GetResourceProperty"
+        wsrpw:ResourceProperties ="tns:frontendInfo tns:backendPool"/>
+</definitions>
