@@ -201,6 +201,20 @@ AC_CHECK_FUNCS(inet_addr, ,
         AC_DEFINE([HAVE_INET_ADDR], [1], [inet_addr is available]) 
     ])
 ])
+AC_CHECK_FUNCS(sendmsg, ,
+[
+    AC_SEARCH_LIBS(sendmsg, [$check_net_funcs_libs],
+    [
+        AC_DEFINE([HAVE_SENDMSG], [1], [sendmsg is available])
+    ])
+])
+AC_CHECK_FUNCS(recvmsg, ,
+[
+    AC_SEARCH_LIBS(recvmsg, [$check_net_funcs_libs],
+    [
+        AC_DEFINE([HAVE_RECVMSG], [1], [recvmsg is available])
+    ])
+])
 
 ])
 
@@ -236,8 +250,6 @@ AC_CHECK_FUNCS(strerror)
 AC_CHECK_FUNCS(gethostname)
 AC_CHECK_FUNCS(fork)
 AC_CHECK_FUNCS(sigaction)
-AC_CHECK_FUNCS(sendmsg)
-AC_CHECK_FUNCS(recvmsg)
 AC_CHECK_FUNCS(geteuid)
 AC_CHECK_FUNCS(getpwnam)
 AC_CHECK_FUNCS(getpwuid)
