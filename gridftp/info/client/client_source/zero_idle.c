@@ -28,10 +28,10 @@
 #include "wsnt_ResourceUnknownFault.h"
 #include "globus_notification_consumer.h"
 #include "globus_wsrf_core_tools.h"
-#include "GridFTPAdminService_client.h"
-#include "FrontendStats.h"
-#include "FrontendStatsType.h"
-#include "BackendPool.h"
+#include "GridFTPServerInfoService_client.h"
+#include "frontendInfo.h"
+#include "frontendInfoType.h"
+#include "backendPool.h"
 #include "notif_ResourcePropertyValueChangeNotificationElementType.h"
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -96,12 +96,12 @@ printf("here1\n");
     }
 
 printf("here2\n");
-    result = GridFTPAdminPortType_Subscribe_epr(
+    result = GridFTPServerInfoPortType_Subscribe_epr(
         handle,
         epr,
         &subscribe,
         &subscribeResponse,
-        (GridFTPAdminPortType_Subscribe_fault_t *)&fault_type,
+        (GridFTPServerInfoPortType_Subscribe_fault_t *)&fault_type,
         &fault);
     if (result != GLOBUS_SUCCESS)
     {
@@ -162,8 +162,8 @@ l_frontend_changed(
     wsa_EndpointReferenceType *         producer,
     xsd_anyType *                       message)
 {
-    FrontendStatsType *                 old;
-    FrontendStatsType *                 new;
+    frontendInfoType *                  old;
+    frontendInfoType *                  new;
     int                                 i;
     notif_ResourcePropertyValueChangeNotificationElementType * rpne;
 
@@ -171,23 +171,23 @@ l_frontend_changed(
     rpne = (notif_ResourcePropertyValueChangeNotificationElementType*)
         message->value;
 
-    new = (FrontendStatsType *)
+    new = (frontendInfoType *)
         rpne->ResourcePropertyValueChangeNotification.NewValue->any.value;
     if(rpne->ResourcePropertyValueChangeNotification.OldValue == NULL)
     {
         printf("Connection count %d\n", 
-            new->open_connections_count);
+            new->openConnections);
     }
     else
     {
-        old = (FrontendStatsType *)
+        old = (frontendInfoType *)
             rpne->ResourcePropertyValueChangeNotification.OldValue->any.value;
         printf("Old connection count: %d, new connection count %d\n", 
-            old->open_connections_count,
-            new->open_connections_count);
+            old->openConnections,
+            new->openConnections);
     }
 
-    for(i = l_connections; i < new->open_connections_count; i++)
+    for(i = l_connections; i < new->openConnections; i++)
     {
         pid_t pid;
         int rc;
@@ -201,7 +201,7 @@ l_frontend_changed(
         }
     }
 
-    l_connections = new->open_connections_count;
+    l_connections = new->openConnections;
 }
 
 
@@ -231,7 +231,7 @@ main(
     globus_module_activate(GLOBUS_SOAP_MESSAGE_MODULE);
     globus_module_activate(GLOBUS_SERVICE_ENGINE_MODULE);
     globus_module_activate(GLOBUS_NOTIFICATION_CONSUMER_MODULE);
-    globus_module_activate(GRIDFTPADMINSERVICE_MODULE);
+    globus_module_activate(GRIDFTPSERVERINFOSERVICE_MODULE);
 
     element_name.Namespace = "http://docs.oasis-open.org/wsrf/2004/06/wsrf-WS-ServiceGroup-1.2-draft-01.xsd";
     element_name.local = "MemberServiceEPR";
@@ -244,7 +244,7 @@ main(
             NULL,
             NULL,
             (void *) GLOBUS_SOAP_MESSAGE_AUTHZ_NONE);
-    result = GridFTPAdminService_client_init(&client_handle, attr, NULL);
+    result = GridFTPServerInfoService_client_init(&client_handle, attr, NULL);
     gmon_test_result(result);
 
     printf("reading EPR\n");
@@ -279,7 +279,7 @@ main(
         client_handle,
         engine,
         epr,
-        &FrontendStats_qname,
+        &frontendInfo_qname,
         l_frontend_changed,
         NULL);
     gmon_test_result(result);
@@ -289,7 +289,7 @@ main(
         client_handle,
         engine,
         epr,
-        &BackendPool_qname,
+        &backendPool_qname,
         l_backend_changed,
         NULL);
     gmon_test_result(result);
@@ -310,9 +310,9 @@ main(
     }
 
 
-    GridFTPAdminService_client_destroy(client_handle);
+    GridFTPServerInfoService_client_destroy(client_handle);
 
-    globus_module_deactivate(GRIDFTPADMINSERVICE_MODULE);
+    globus_module_deactivate(GRIDFTPSERVERINFOSERVICE_MODULE);
 
     return 0;
 }

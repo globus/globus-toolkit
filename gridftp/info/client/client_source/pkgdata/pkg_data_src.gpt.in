@@ -9,17 +9,27 @@
 
     <src_pkg>
         <Source_Dependencies Type="compile">
-            <Dependency Name="gridftp_admin_client_bindings">
+            <Dependency Name="gridftp_server_info_client_bindings">
                 <Version>
                     <Simple_Version Major="1"/>
+                </Version>
+            </Dependency>
+            <Dependency Name="globus_notification_consumer">
+                <Version>
+                    <Simple_Version Major="2"/>
                 </Version>
             </Dependency>
         </Source_Dependencies>
 
         <Source_Dependencies Type="pgm_link">
-            <Dependency Name="gridftp_admin_client_bindings">
+            <Dependency Name="gridftp_server_info_client_bindings">
                 <Version>
                     <Simple_Version Major="1"/>
+                </Version>
+            </Dependency>
+            <Dependency Name="globus_notification_consumer">
+                <Version>
+                    <Simple_Version Major="2"/>
                 </Version>
             </Dependency>
         </Source_Dependencies>
