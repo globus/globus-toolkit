@@ -11,7 +11,7 @@ NULL=
 
 
 CGEN=$(GLOBUS_LOCATION)/bin/globus-wsrf-cgen
-CGENARGS=-np -nk /home/bresnaha/Dev/Globus/GL/share/schema/gridftp/server/info/gridftp_server_info_service.wsdl
+CGENARGS=-np -nk $(GLOBUS_LOCATION)/share/schema/gridftp/server/info/gridftp_server_info_service.wsdl
 
 
 EXTRA_DIST=dirt.sh version.h groups.dox
