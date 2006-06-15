@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE gpt_package_metadata SYSTEM "package.dtd">
+<gpt_package_metadata Name="gridftp_server_info_client_bindings" Format_Version="0.02">
+  <Aging_Version Major="1" Minor="2" Age="0"/>
+  <Description>gridftp_server_info_client C WS Bindings</Description>
+  <Functional_Group>WS Bindings</Functional_Group>
+  <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
+  <src_pkg>
+    <Source_Dependencies Type="compile">
+      <Dependency Name="globus_core">
+        <Version>
+          <Simple_Version Major="2"/>
+        </Version>
+      </Dependency>
+      <Dependency Name="globus_c_ws_messaging">
+        <Version>
+          <Simple_Version Major="2"/>
+        </Version>
+      </Dependency>
+      <Dependency Name="globus_c_wsrf_core_bindings">
+        <Version>
+          <Simple_Version Major="0"/>
+        </Version>
+      </Dependency>
+      <Dependency Name="globus_c_wsrf_resource">
+        <Version>
+          <Simple_Version Major="1"/>
+        </Version>
+      </Dependency>
+      <Dependency Name="globus_c_wsrf_core_tools">
+        <Version>
+          <Simple_Version Major="0"/>
+        </Version>
+      </Dependency>
+      <Dependency Name="globus_c_wsrf_cgen" Package="pgm">
+        <Version>
+          <Simple_Version Major="2"/>
+        </Version>
+      </Dependency>
+    </Source_Dependencies>
+    <Source_Dependencies Type="doc_runtime">
+      <Dependency Name="globus_c_wsrf_core_bindings" Package="doc">
+        <Version>
+          <Simple_Version Major="0"/>
+        </Version>
+      </Dependency>
+    </Source_Dependencies>
+    <Source_Dependencies Type="lib_link">
+      <Dependency Name="globus_core">
+        <Version>
+          <Simple_Version Major="2"/>
+        </Version>
+      </Dependency>
+      <Dependency Name="globus_c_ws_messaging">
+        <Version>
+          <Simple_Version Major="2"/>
+        </Version>
+      </Dependency>
+      <Dependency Name="globus_c_wsrf_core_bindings">
+        <Version>
+          <Simple_Version Major="0"/>
+        </Version>
+      </Dependency>
+      <Dependency Name="globus_c_wsrf_resource">
+        <Version>
+          <Simple_Version Major="1"/>
+        </Version>
+      </Dependency>
+      <Dependency Name="globus_c_wsrf_core_tools">
+        <Version>
+          <Simple_Version Major="0"/>
+        </Version>
+      </Dependency>
+    </Source_Dependencies>
+    <Source_Dependencies Type="lib_runtime">
+      <Dependency Name="globus_c_wsrf_providers" Package="rtl">
+        <Version>
+          <Simple_Version Major="0"/>
+        </Version>
+      </Dependency>
+      <Dependency Name="globus_handler_ws_addressing" Package="rtl">
+        <Version>
+          <Simple_Version Major="0"/>
+        </Version>
+      </Dependency>
+    </Source_Dependencies>
+    <With_Flavors build="yes"/>
+    <Build_Environment><cflags>@GPT_PKG_CFLAGS@ -I\$(GLOBUS_LOCATION)/include/\$(GLOBUS_FLAVOR_NAME)/wsrf/services -I\$(GLOBUS_LOCATION)/include/\$(GLOBUS_FLAVOR_NAME)/</cflags><external_includes>@GPT_EXTERNAL_INCLUDES@</external_includes><external_libs>@GPT_EXTERNAL_LIBS@</external_libs>
+
+            <pkg_libs>-lgridftp_server_info_client_client_bindings -lgridftp_server_info_client_types</pkg_libs>
+
+        </Build_Environment>
+  </src_pkg>
+</gpt_package_metadata>
