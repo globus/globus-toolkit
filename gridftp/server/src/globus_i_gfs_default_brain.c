@@ -208,7 +208,7 @@ globus_l_brain_read_cb(
                 }
                 else if(cs == NULL)
                 {
-                    cs = start_str;
+                    cs = strdup(start_str);
                 }
             }
             else if(!isalnum(buffer[i]) && buffer[i] != '.'
@@ -223,7 +223,7 @@ globus_l_brain_read_cb(
                 goto error;
             }
         }
-        if(*cs == '\0')
+        if(cs != NULL && *cs == '\0')
         {
             globus_free(cs);
             goto error_cs;
@@ -799,6 +799,7 @@ globus_l_gfs_default_brain_release_node(
     globus_result_t                     result;
     gfs_l_db_node_t *                   node;
     gfs_l_db_node_t *                   tmp_node;
+    void *                              tmp_nptr;
     GlobusGFSName(globus_l_gfs_default_brain_release_node);
 
     node = (gfs_l_db_node_t *) b_node;
@@ -835,7 +836,6 @@ globus_l_gfs_default_brain_release_node(
         }
         if(node->error)
         {
-            void * tmp_nptr;
             tmp_nptr = globus_hashtable_remove(
                 &repo->node_table, node->host_id);
             assert(tmp_nptr == node || tmp_nptr == NULL);
@@ -890,6 +890,9 @@ globus_l_gfs_default_brain_release_node(
             }
             else
             {
+                tmp_nptr = globus_hashtable_remove(
+                    &repo->node_table, node->host_id);
+                assert(tmp_nptr == node || tmp_nptr == NULL);
                 globus_assert(node->current_connection == 0);
                 globus_free(node->repo_name);
                 globus_free(node->host_id);

@@ -139,6 +139,7 @@ gridftpA_l_make_fe_struct()
     frontendInfoType *                  fe;
     char *                              tmp_s;
     int                                 tmp_i;
+    int64_t                             tmp_l;
 
     frontendInfoType_init(&fe);
 
@@ -154,8 +155,8 @@ gridftpA_l_make_fe_struct()
 
     tmp_i = globus_gfs_config_get_int("backends_registered");
     xsd_int_copy(&fe->backendsAvailable, &tmp_i);
-    tmp_i = globus_gfs_config_get_int("file_transfer_count");
-    xsd_int_copy(&fe->filesTransfered, &tmp_i);
+    tmp_l = (int64_t)globus_gfs_config_get_int("file_transfer_count");
+    xsd_long_copy(&fe->filesTransfered, &tmp_l);
 
     return fe;
 }

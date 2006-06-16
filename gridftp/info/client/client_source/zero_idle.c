@@ -87,7 +87,6 @@ chosting_i_util_add_notification(
         goto error;
     }
     *subscribe.UseNotify = GLOBUS_TRUE;
-printf("here1\n");
     result = globus_notification_create_consumer(
         &subscribe.ConsumerReference, engine, cb, arg);
     if(result != GLOBUS_SUCCESS)
@@ -95,7 +94,6 @@ printf("here1\n");
         goto error;
     }
 
-printf("here2\n");
     result = GridFTPServerInfoPortType_Subscribe_epr(
         handle,
         epr,
@@ -108,7 +106,6 @@ printf("here2\n");
         goto error;
     }
     wsnt_SubscribeType_destroy_contents(&subscribe);
-printf("here3\n");
 
     return GLOBUS_SUCCESS;
 
@@ -167,7 +164,6 @@ l_frontend_changed(
     int                                 i;
     notif_ResourcePropertyValueChangeNotificationElementType * rpne;
 
-    printf("l_frontend_changed\n");
     rpne = (notif_ResourcePropertyValueChangeNotificationElementType*)
         message->value;
 
