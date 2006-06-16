@@ -36,7 +36,7 @@ set -f
 #  http://bugzilla.globus.org/globus/show_bug.cgi?id=1723 for more
 #  information about this.
 #
-GLOBUS_VERSION="4.0.0"
+GLOBUS_VERSION="4.1.0"
 
 DIRT_TIMESTAMP="@DIRT_TIMESTAMP@"
 DIRT_BRANCH_ID="@DIRT_BRANCH_ID@"
