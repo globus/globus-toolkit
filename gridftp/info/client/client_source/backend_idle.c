@@ -42,8 +42,12 @@
 #define gmon_test_result(_r) gmon_test_result_real(_r, __LINE__)
 
 static int                              l_connections = 0;
-static char *                           l_exe_name;
 static globus_hashtable_t               l_host_table;
+
+typedef struct backend_entry_s
+{
+    globus_bool_t                       timer_on;
+} backend_entry_t;
 
 globus_result_t
 chosting_i_util_add_notification(
@@ -152,6 +156,8 @@ l_backend_changed(
     wsa_EndpointReferenceType *         producer,
     xsd_anyType *                       message)
 {
+    backend_entry_t *                   be_ent;
+    globus_abstime_t                    now;
     backendInfo *                       bi;
     int                                 i;
     backendInfo_array *                 new;
@@ -172,13 +178,16 @@ l_backend_changed(
     }
 
 
-        globus_hashtable_lookup(&l_host_table, bi->indentifier);
+    {
+        be_ent = (backend_entry_t *)
+            globus_hashtable_lookup(&l_host_table, bi->indentifier);
 
         if(bi->openConnections == 0)
         {
             assert(!be_ent->timer_on);
+            GlobusTimeAbstimeGetCurrent(now);
             be_ent->timer_on = GLOBUS_TRUE;
-            printf("%s ON", bi->indentifier);
+            printf("%s ON %ld.%ld", bi->indentifier, now.tv_sec, now.tv_nsec);
             /* start idle timer */
         }
         else
@@ -186,63 +195,14 @@ l_backend_changed(
             /* stop the timer */
             if(be_ent->timer_on)
             {
-                printf("%s OFF", bi->indentifier);
+                GlobusTimeAbstimeGetCurrent(now);
+                printf("%s OFF %ld.%ld",
+                    bi->indentifieri, now.tv_sec, now.tv_nsec);
                 be_ent->timer_on = GLOBUS_FALSE;
             }
         }
-        openConnections;
-
+    }
 }
-
-static
-void
-l_frontend_changed(
-    void *                              arg,
-    wsnt_TopicExpressionType *          topic,
-    wsa_EndpointReferenceType *         producer,
-    xsd_anyType *                       message)
-{
-    frontendInfoType *                  old;
-    frontendInfoType *                  new;
-    int                                 i;
-    notif_ResourcePropertyValueChangeNotificationElementType * rpne;
-
-    rpne = (notif_ResourcePropertyValueChangeNotificationElementType*)
-        message->value;
-
-    new = (frontendInfoType *)
-        rpne->ResourcePropertyValueChangeNotification.NewValue->any.value;
-    if(rpne->ResourcePropertyValueChangeNotification.OldValue == NULL)
-    {
-        printf("Connection count %d\n", 
-            new->openConnections);
-    }
-    else
-    {
-        old = (frontendInfoType *)
-            rpne->ResourcePropertyValueChangeNotification.OldValue->any.value;
-        printf("Old connection count: %d, new connection count %d\n", 
-            old->openConnections,
-            new->openConnections);
-    }
-
-    for(i = l_connections; i < new->openConnections; i++)
-    {
-        pid_t pid;
-        int rc;
-        printf("starting a new backend %d\n", i);
-
-        pid = fork();
-        if(pid == 0)
-        {
-            rc = execl(l_exe_name, l_exe_name, NULL);
-            exit(rc);
-        }
-    }
-
-    l_connections = new->openConnections;
-}
-
 
 int
 main(
@@ -258,14 +218,13 @@ main(
     globus_soap_message_attr_t          attr = NULL;
     globus_service_engine_t             engine;
 
-    if(argc < 3)
+    if(argc < 2)
     {
-        fprintf(stderr, "usage: %s <filename> <start exe>\n", 
+        fprintf(stderr, "usage: %s <filename>\n", 
             argv[0]);
         exit(1);
     }
     filename = argv[1];
-    l_exe_name = argv[2];
 
     globus_module_activate(GLOBUS_SOAP_MESSAGE_MODULE);
     globus_module_activate(GLOBUS_SERVICE_ENGINE_MODULE);
@@ -317,17 +276,6 @@ main(
         NULL,
         NULL,
         GLOBUS_FALSE);
-    gmon_test_result(result);
-
-    printf("add frontend notication\n");
-    result = chosting_i_util_add_notification(
-        client_handle,
-        engine,
-        &xsd_QName_contents_info,
-        epr,
-        &frontendInfo_qname,
-        l_frontend_changed,
-        NULL);
     gmon_test_result(result);
 
     printf("add backend notication\n");
