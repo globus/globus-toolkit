@@ -16,6 +16,7 @@
 
 #include "WS_BaseNotificationService_client.h"
 
+
 #include "globus_options.h"
 #include "globus_wsrf_core_tools.h"
 #include "globus_common.h"
@@ -33,6 +34,12 @@
 #include "notif_ResourcePropertyValueChangeNotificationElementType.h"
 #include <sys/types.h>
 #include <sys/wait.h>
+#include "backendInfoType.h"
+#include "backendPoolType_array.h"
+#include "backendPool.h"
+#include "backendPoolType.h"
+#include "backendInfoType_array.h"
+#include "GridFTPServerInfoService_client.h"
 
 #define SIMPLE_TOPIC_EXPRESSION \
         "http://docs.oasis-open.org/wsn/2004/06/TopicExpression/Simple"
@@ -44,12 +51,15 @@
 
 #define gmon_test_result(_r) gmon_test_result_real(_r, __LINE__)
 
-static int                              l_connections = 0;
 static globus_hashtable_t               l_host_table;
 
 typedef struct backend_entry_s
 {
     globus_bool_t                       timer_on;
+    int                                 connections;
+    time_t                              start_time;
+    time_t                              idle_time;
+    char *                              name;
 } backend_entry_t;
 
 
@@ -84,7 +94,59 @@ l_backend_changed(
     wsa_EndpointReferenceType *         producer,
     xsd_anyType *                       message)
 {
-    printf("l_backend_changed\n");
+    time_t                              secs;
+    time_t                              diff;
+    backend_entry_t *                   be;
+    backendInfoType *                   bI;
+    backendPoolType *                   bP;
+    int                                 i;
+    notif_ResourcePropertyValueChangeNotificationElementType * rpne;
+
+    rpne = (notif_ResourcePropertyValueChangeNotificationElementType*)
+        message->value;
+
+    bP = (backendPoolType *)
+        rpne->ResourcePropertyValueChangeNotification.NewValue->any.value;
+    printf("l_backend_changed : %s\n", 
+        asctime(&bP->changedAt));
+//globus_wsrf_core_export_timestamp(&bP->changedAt));
+
+    secs = mktime(&bP->changedAt);
+
+    for(i = 0; i < bP->backendInfo.length; i++)
+    {
+        bI = &bP->backendInfo.elements[i];
+
+        be = (backend_entry_t *)
+            globus_hashtable_lookup(&l_host_table, bI->indentifier);
+        if(be == NULL)
+        {
+            be = globus_calloc(sizeof(backend_entry_t), 1);
+            be->name = strdup(bI->indentifier);
+            be->connections = -10; /* set to this so it changes when new */
+            globus_hashtable_insert(&l_host_table, be->name, be);
+        }
+
+        /* make sure this is the one that changed */
+        if(be->connections != bI->openConnections)
+        {   
+            be->connections = bI->openConnections;
+
+            if(!be->timer_on && bI->openConnections == 0)
+            {
+                be->timer_on = GLOBUS_TRUE;
+                be->start_time = secs;
+                printf("==> %s ON %ld\n", bI->indentifier, secs);
+            }
+            else if(be->timer_on && bI->openConnections > 0)
+            {
+                be->timer_on = GLOBUS_FALSE;
+                diff = secs - be->start_time;
+                be->idle_time += diff; 
+                printf("==> %s OFF %ld\n", bI->indentifier, secs);
+            }
+        }
+    }
 }
 
 int
@@ -103,7 +165,7 @@ main(
     char *                              ns;
     char *                              local;
     xsd_QName *                         qn;
-    NotificationProducer_Subscribe_fault_t
+    GridFTPServerInfoPortType_Subscribe_fault_t
                                         fault_type;
     wsnt_SubscribeType                  subscribe;
     wsnt_SubscribeResponseType *        subscribeResponse;
@@ -123,6 +185,13 @@ main(
 
     globus_module_activate(WS_BASENOTIFICATIONSERVICE_MODULE);
     globus_module_activate(GLOBUS_NOTIFICATION_CONSUMER_MODULE);
+    globus_module_activate(GRIDFTPSERVERINFOSERVICE_MODULE);
+
+    globus_hashtable_init(
+        &l_host_table,
+        256,
+        globus_hashtable_string_hash,
+        globus_hashtable_string_keyeq);
 
     result = wsnt_SubscribeType_init_contents(&subscribe);
     gmon_test_result(result);
@@ -155,7 +224,6 @@ main(
             NULL,
             NULL,
             (void *) GLOBUS_SOAP_MESSAGE_AUTHZ_NONE);
-    result = WS_BaseNotificationService_client_init(&client_handle, attr, NULL);
     gmon_test_result(result);
 
     printf("reading EPR\n");
@@ -198,10 +266,10 @@ main(
             NULL);
     gmon_test_result(result);
 
-    result = WS_BaseNotificationService_client_init(&client_handle, attr, NULL);
+    result = GridFTPServerInfoService_client_init(&client_handle, attr, NULL);
     gmon_test_result(result);
 
-    result = NotificationProducer_Subscribe_epr(
+    result = GridFTPServerInfoPortType_Subscribe_epr(
             client_handle,
             epr,
             &subscribe,
