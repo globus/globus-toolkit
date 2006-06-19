@@ -5,12 +5,14 @@ SUBDIRS=\
 	pkgdata
 
 bin_PROGRAMS= \
+    backend-idle \
     gridftp-register \
     monitor \
     zero-idle \
     globus-get-rp \
     globus-get-ip
 
+backend_idle_Sources= backend_idle.c
 monitor_Sources= monitor.c
 zero_idle_Sources= zero_idle.c
 gridftp_register_Sources= gridftp_register.c
@@ -21,6 +23,10 @@ globus_get_rp_Sources= globus_get_rp.c globus_get_rp_opts.c
 EXTRA_DIST =
 INCLUDES = $(GPT_INCLUDES)
 LDADD = $(GPT_PGM_LINKS)
+
+backend_idle_CFLAGS  = $(GPT_CFLAGS)
+backend_idle_SOURCES = $(backend_idle_Sources)
+backend_idle_LDFLAGS = $(GPT_LDFLAGS)
 
 gridftp_register_CFLAGS  = $(GPT_CFLAGS)
 gridftp_register_SOURCES = $(gridftp_register_Sources)

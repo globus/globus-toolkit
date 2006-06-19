@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include "WS_BaseNotificationService_client.h"
+
 #include "globus_options.h"
 #include "globus_wsrf_core_tools.h"
 #include "globus_common.h"
@@ -28,15 +30,16 @@
 #include "wsnt_ResourceUnknownFault.h"
 #include "globus_notification_consumer.h"
 #include "globus_wsrf_core_tools.h"
-#include "GridFTPServerInfoService_client.h"
-#include "frontendInfo.h"
-#include "frontendInfoType.h"
-#include "backendPool.h"
-#include "backendInfo.h"
-#include "backendInfo_array.h"
 #include "notif_ResourcePropertyValueChangeNotificationElementType.h"
 #include <sys/types.h>
 #include <sys/wait.h>
+
+#define SIMPLE_TOPIC_EXPRESSION \
+        "http://docs.oasis-open.org/wsn/2004/06/TopicExpression/Simple"
+#define CONCRETE_TOPIC_EXPRESSION \
+        "http://docs.oasis-open.org/wsn/2004/06/TopicExpression/Concrete"
+#define FULL_TOPIC_EXPRESSION \
+        "http://docs.oasis-open.org/wsn/2004/06/TopicExpression/Full"
 
 
 #define gmon_test_result(_r) gmon_test_result_real(_r, __LINE__)
@@ -48,81 +51,6 @@ typedef struct backend_entry_s
 {
     globus_bool_t                       timer_on;
 } backend_entry_t;
-
-globus_result_t
-chosting_i_util_add_notification(
-    globus_soap_client_handle_t         handle,
-    globus_service_engine_t             engine,
-    globus_xsd_type_info_t              info,
-    wsa_EndpointReferenceType *         epr,
-    xsd_QName *                         qname,
-    globus_notification_consumer_func_t cb,
-    void *                              arg)
-{
-    int                                 fault_type;
-    globus_result_t                     result;
-    wsnt_SubscribeType                  subscribe;
-    wsnt_SubscribeResponseType *        subscribeResponse;
-    xsd_any *                           fault;
-
-    wsnt_SubscribeType_init_contents(&subscribe);
-    result = xsd_any_init(&subscribe.TopicExpression.any);
-    if(result != GLOBUS_SUCCESS)
-    {
-        goto error;
-    }
-
-    subscribe.TopicExpression.any->any_info = info;
-    result = xsd_QName_copy(
-        (xsd_QName **) &subscribe.TopicExpression.any->value,
-        qname);
-    if(result != GLOBUS_SUCCESS)
-    {
-        goto error;
-    }
-
-    result = xsd_anyURI_copy_cstr(
-        &subscribe.TopicExpression._Dialect,
-        "http://docs.oasis-open.org/wsn/2004/06/TopicExpression/Simple");
-    if(result != GLOBUS_SUCCESS)
-    {
-        goto error;
-    }
-
-    result = xsd_boolean_init(&subscribe.UseNotify);
-    if(result != GLOBUS_SUCCESS)
-    {
-        goto error;
-    }
-    *subscribe.UseNotify = GLOBUS_TRUE;
-    result = globus_notification_create_consumer(
-        &subscribe.ConsumerReference, engine, cb, arg);
-    if(result != GLOBUS_SUCCESS)
-    {
-        goto error;
-    }
-
-    result = GridFTPServerInfoPortType_Subscribe_epr(
-        handle,
-        epr,
-        &subscribe,
-        &subscribeResponse,
-        (GridFTPServerInfoPortType_Subscribe_fault_t *)&fault_type,
-        &fault);
-    if (result != GLOBUS_SUCCESS)
-    {
-        goto error;
-    }
-    wsnt_SubscribeType_destroy_contents(&subscribe);
-
-    return GLOBUS_SUCCESS;
-
-error:
-    wsnt_SubscribeType_destroy_contents(&subscribe);
-
-    return result;
-}
-
 
 
 void
@@ -156,52 +84,7 @@ l_backend_changed(
     wsa_EndpointReferenceType *         producer,
     xsd_anyType *                       message)
 {
-    backend_entry_t *                   be_ent;
-    globus_abstime_t                    now;
-    backendInfo *                       bi;
-    int                                 i;
-    backendInfo_array *                 new;
-    notif_ResourcePropertyValueChangeNotificationElementType * rpne;
-
     printf("l_backend_changed\n");
-
-    rpne = (notif_ResourcePropertyValueChangeNotificationElementType*)
-        message->value;
-
-    new = (backendInfo_array *) 
-        rpne->ResourcePropertyValueChangeNotification.NewValue->any.value;
-
-    for(i = 0; new != NULL && i < new->length; i++)
-    {
-        bi = &new->elements[i];
-        printf("\t---> %s\n", bi->indentifier);
-    }
-
-
-    {
-        be_ent = (backend_entry_t *)
-            globus_hashtable_lookup(&l_host_table, bi->indentifier);
-
-        if(bi->openConnections == 0)
-        {
-            assert(!be_ent->timer_on);
-            GlobusTimeAbstimeGetCurrent(now);
-            be_ent->timer_on = GLOBUS_TRUE;
-            printf("%s ON %ld.%ld", bi->indentifier, now.tv_sec, now.tv_nsec);
-            /* start idle timer */
-        }
-        else
-        {
-            /* stop the timer */
-            if(be_ent->timer_on)
-            {
-                GlobusTimeAbstimeGetCurrent(now);
-                printf("%s OFF %ld.%ld",
-                    bi->indentifieri, now.tv_sec, now.tv_nsec);
-                be_ent->timer_on = GLOBUS_FALSE;
-            }
-        }
-    }
 }
 
 int
@@ -212,11 +95,23 @@ main(
     globus_result_t                     result = GLOBUS_SUCCESS;
     globus_soap_client_handle_t         client_handle;
     globus_soap_message_handle_t        soap_handle;
-    xsd_QName                           element_name;
     wsa_EndpointReferenceType *         epr;
     char *                              filename;
     globus_soap_message_attr_t          attr = NULL;
     globus_service_engine_t             engine;
+    xsd_anyURI                          dialect_choice = NULL;
+    char *                              ns;
+    char *                              local;
+    xsd_QName *                         qn;
+    NotificationProducer_Subscribe_fault_t
+                                        fault_type;
+    wsnt_SubscribeType                  subscribe;
+    wsnt_SubscribeResponseType *        subscribeResponse;
+    xsd_any *                           fault;
+
+
+    local = "backendPool";
+    ns = "http://gridftp.globus.org/2006/06/GridFTPServerInfo";
 
     if(argc < 2)
     {
@@ -226,29 +121,41 @@ main(
     }
     filename = argv[1];
 
-    globus_module_activate(GLOBUS_SOAP_MESSAGE_MODULE);
-    globus_module_activate(GLOBUS_SERVICE_ENGINE_MODULE);
+    globus_module_activate(WS_BASENOTIFICATIONSERVICE_MODULE);
     globus_module_activate(GLOBUS_NOTIFICATION_CONSUMER_MODULE);
-    globus_module_activate(GRIDFTPSERVERINFOSERVICE_MODULE);
 
-    element_name.Namespace = "http://docs.oasis-open.org/wsrf/2004/06/wsrf-WS-ServiceGroup-1.2-draft-01.xsd";
-    element_name.local = "MemberServiceEPR";
-
-    globus_hashtable_init(
-        &l_host_table,
-        64,
-        globus_hashtable_string_hash,
-        globus_hashtable_string_keyeq);
-
+    result = wsnt_SubscribeType_init_contents(&subscribe);
+    gmon_test_result(result);
+    result = xsd_boolean_init(&subscribe.UseNotify);
+    gmon_test_result(result);
+    *subscribe.UseNotify = GLOBUS_TRUE;
+    result = xsd_any_init(&subscribe.TopicExpression.any);
+    gmon_test_result(result);
+    dialect_choice = SIMPLE_TOPIC_EXPRESSION;
+    result = xsd_anyURI_copy(
+            &subscribe.TopicExpression._Dialect,
+            &dialect_choice);
+    gmon_test_result(result);
+    subscribe.TopicExpression.any->any_info = &xsd_QName_contents_info;
+    result = xsd_QName_init(&qn);
+    gmon_test_result(result);
+    subscribe.TopicExpression.any->value = qn;
+    result = xsd_string_copy_contents(
+            &qn->Namespace,
+            &ns);
+    gmon_test_result(result);
+    result = xsd_string_copy_contents(
+                &qn->local,
+                &local);
+    gmon_test_result(result);
     globus_soap_message_attr_init(&attr);
-
     globus_soap_message_attr_set(
             attr,
             GLOBUS_SOAP_MESSAGE_AUTHZ_METHOD_KEY,
             NULL,
             NULL,
             (void *) GLOBUS_SOAP_MESSAGE_AUTHZ_NONE);
-    result = GridFTPServerInfoService_client_init(&client_handle, attr, NULL);
+    result = WS_BaseNotificationService_client_init(&client_handle, attr, NULL);
     gmon_test_result(result);
 
     printf("reading EPR\n");
@@ -261,7 +168,6 @@ main(
     gmon_test_result(result);
 
     result = wsa_EndpointReferenceType_deserialize(
-        /*&element_name, */
         NULL,
         epr,
         soap_handle,
@@ -269,7 +175,7 @@ main(
     gmon_test_result(result);
     globus_soap_message_handle_destroy(soap_handle);
 
-    printf("starting engine\n");
+    printf("creating engine\n");
     result = globus_service_engine_init(
         &engine,
         attr,
@@ -278,36 +184,37 @@ main(
         GLOBUS_FALSE);
     gmon_test_result(result);
 
-    printf("add backend notication\n");
-    result = chosting_i_util_add_notification(
-        client_handle,
-        engine,
-        &xsd_QName_contents_info,
-        epr,
-        &backendPool_qname,
-        l_backend_changed,
-        NULL);
-    gmon_test_result(result);
-
+    printf("starting engine\n");
     result = globus_service_engine_register_start(
         engine,
         monitor_l_engine_stop,
         NULL);
     gmon_test_result(result);
 
+    result = globus_notification_create_consumer(
+            &subscribe.ConsumerReference,
+            engine,
+            l_backend_changed,
+            NULL);
+    gmon_test_result(result);
+
+    result = WS_BaseNotificationService_client_init(&client_handle, attr, NULL);
+    gmon_test_result(result);
+
+    result = NotificationProducer_Subscribe_epr(
+            client_handle,
+            epr,
+            &subscribe,
+            &subscribeResponse,
+            &fault_type,
+            &fault);
+    gmon_test_result(result);
+
     printf("wait for events\n");
     while(1)
     {
-        int     status;
-
-        waitpid(-1, &status, WNOHANG);
         globus_poll();
     }
-
-
-    GridFTPServerInfoService_client_destroy(client_handle);
-
-    globus_module_deactivate(GRIDFTPSERVERINFOSERVICE_MODULE);
 
     return 0;
 }

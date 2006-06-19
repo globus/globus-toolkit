@@ -31,9 +31,6 @@
 #include "GridFTPServerInfoService_client.h"
 #include "frontendInfo.h"
 #include "frontendInfoType.h"
-#include "backendPool.h"
-#include "backendInfo.h"
-#include "backendInfo_array.h"
 #include "notif_ResourcePropertyValueChangeNotificationElementType.h"
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -142,56 +139,6 @@ monitor_l_engine_stop(
     void *                              args)
 {
     gmon_test_result(result);
-}
-
-static
-void
-l_backend_changed(
-    void *                              arg,
-    wsnt_TopicExpressionType *          topic,
-    wsa_EndpointReferenceType *         producer,
-    xsd_anyType *                       message)
-{
-    backendInfo *                       bi;
-    int                                 i;
-    backendInfo_array *                 new;
-    notif_ResourcePropertyValueChangeNotificationElementType * rpne;
-
-    printf("l_backend_changed\n");
-
-    rpne = (notif_ResourcePropertyValueChangeNotificationElementType*)
-        message->value;
-
-    new = (backendInfo_array *) 
-        rpne->ResourcePropertyValueChangeNotification.NewValue->any.value;
-
-    for(i = 0; new != NULL && i < new->length; i++)
-    {
-        bi = &new->elements[i];
-        printf("\t---> %s\n", bi->indentifier);
-    }
-
-
-        globus_hashtable_lookup(&l_host_table, bi->indentifier);
-
-        if(bi->openConnections == 0)
-        {
-            assert(!be_ent->timer_on);
-            be_ent->timer_on = GLOBUS_TRUE;
-            printf("%s ON", bi->indentifier);
-            /* start idle timer */
-        }
-        else
-        {
-            /* stop the timer */
-            if(be_ent->timer_on)
-            {
-                printf("%s OFF", bi->indentifier);
-                be_ent->timer_on = GLOBUS_FALSE;
-            }
-        }
-        openConnections;
-
 }
 
 static
@@ -327,17 +274,6 @@ main(
         epr,
         &frontendInfo_qname,
         l_frontend_changed,
-        NULL);
-    gmon_test_result(result);
-
-    printf("add backend notication\n");
-    result = chosting_i_util_add_notification(
-        client_handle,
-        engine,
-        &xsd_QName_contents_info,
-        epr,
-        &backendPool_qname,
-        l_backend_changed,
         NULL);
     gmon_test_result(result);
 
