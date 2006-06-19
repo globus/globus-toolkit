@@ -25,11 +25,13 @@ AM_CPPFLAGS=-I$(GLOBUS_LOCATION)/include/$(GLOBUS_FLAVOR_NAME)/wsrf/services
 
 Types_Sources = \
          backendPool.c \
-         backendInfo.c \
+         backendPoolType.c \
          GridFTPServerInfoPortTypeGTWSDLResourceProperties.c \
          GridFTPServerInfoPortTypeGTWSDLResourcePropertiesType.c \
          frontendInfo.c \
          frontendInfoType.c \
+         backendInfo.c \
+         backendInfoType.c \
          GridFTPServerInfoService_type_registry.c \
        $(NULL)
 
@@ -57,14 +59,17 @@ libgridftp_server_info_client_client_bindings___GLOBUS_FLAVOR_NAME__la_LDFLAGS =
 
 nodist_gridftp_server_info_clientinclude_HEADERS = \
         backendPool.h \
-        backendInfo.h \
-        backendInfo_array.h \
+        backendPoolType.h \
+        backendPoolType_array.h \
         GridFTPServerInfoPortTypeGTWSDLResourceProperties.h \
         GridFTPServerInfoPortTypeGTWSDLResourcePropertiesType.h \
         GridFTPServerInfoPortTypeGTWSDLResourcePropertiesType_array.h \
         frontendInfo.h \
         frontendInfoType.h \
         frontendInfoType_array.h \
+        backendInfo.h \
+        backendInfoType.h \
+        backendInfoType_array.h \
         GridFTPServerInfoService.h \
         GridFTPServerInfoService_client.h \
         $(NULL)

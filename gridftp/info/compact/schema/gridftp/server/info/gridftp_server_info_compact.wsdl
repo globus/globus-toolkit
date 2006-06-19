@@ -67,15 +67,15 @@
                 schemaLocation="../../../ws/addressing/WS-Addressing.xsd" 
                 />
 
-            <xsd:complexType name="backendInfo">
-                <xsd:sequence>
+            <xsd:element name="backendInfo">
+                <xsd:complexType><xsd:sequence>
                     <xsd:element name="indentifier" type="xsd:string"/>
                     <xsd:element name="maxConnections" type="xsd:int"/>
                     <xsd:element name="openConnections" type="xsd:int"/>
                     <xsd:element name="approximateLoad" type="xsd:float"
                         minOccurs="0" maxOccurs="1"/>
-                </xsd:sequence>
-            </xsd:complexType>
+                </xsd:sequence></xsd:complexType>
+            </xsd:element>                     
 
             <xsd:element name="frontendInfo">
                 <xsd:complexType><xsd:sequence>                 
@@ -98,8 +98,13 @@
                 </xsd:sequence></xsd:complexType>
             </xsd:element>                     
 
-            <xsd:element name="backendPool" type="tns:backendInfo"
-                minOccurs="0" maxOccurs="unbounded"/>
+            <xsd:element name="backendPool">
+                <xsd:complexType><xsd:sequence> 
+                    <xsd:element name="changedAt"  type="xsd:dateTime"/>
+                    <xsd:element ref="tns:backendInfo"
+                        minOccurs="0" maxOccurs="unbounded"/>
+                </xsd:sequence></xsd:complexType>
+            </xsd:element>                     
 
         </xsd:schema>
     </types>

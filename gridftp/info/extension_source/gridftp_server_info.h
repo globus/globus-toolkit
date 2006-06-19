@@ -38,13 +38,14 @@
 #include "frontendInfo.h"
 #include "frontendInfoType.h"
 #include "backendPool.h"
-#include "backendInfo.h"
-#include "backendInfo_array.h"
+#include "backendPoolType.h"
+#include "backendInfoType.h"
+#include "backendInfoType_array.h"
 
 
-#define ELEMENT_NAME "GridFTPAdmin"
-#define RESOURCE_NAME "GridFTPAdmin"
-#define GRIDFTP_INFO_SERVICE_NAMESPACE "http://www.globus.org/namespaces/2005/09/GridFTPAdmin"
+#define ELEMENT_NAME "GridFTPServerInfo"
+#define RESOURCE_NAME "GridFTPServerInfo"
+#define GRIDFTP_INFO_SERVICE_NAMESPACE "http://gridftp.globus.org/2006/06/GridFTPServerInfo"
 
 
 void

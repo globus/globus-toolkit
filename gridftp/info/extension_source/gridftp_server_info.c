@@ -75,7 +75,7 @@ gridftpA_l_setup_resource(
     result = globus_resource_create_property_callback(
         resource,
         &backendPool_qname,
-        &backendInfo_array_info,
+        &backendPoolType_info,
         gridftpA_l_backend_get_cb,
         gridftpA_l_backend_set_cb,
         "backendPool");
@@ -105,31 +105,44 @@ GlobusExtensionDefineModule(gridftp_admin) =
 };
 
 static
-backendInfo_array *
+backendPoolType *
 gridftpA_l_make_backend_array()
 {
-    backendInfo_array *                 backend_array = NULL;
+    backendPoolType *                   bP;
+    backendInfoType_array *             backend_array = NULL;
     globus_list_t *                     list;
-    backendInfo *                       wsrf_b_info;
+    backendInfoType *                   wsrf_b_info;
     globus_i_gfs_brain_node_t *         backend_info;
+    int                                 i = 0;
+    globus_abstime_t                    tm_now;
 
-    backendInfo_array_init(&backend_array);
+    backendPoolType_init(&bP);
+    backend_array = &bP->backendInfo;
+
     list = (globus_list_t *)globus_gfs_config_get("backend_pool");
 
     while(!globus_list_empty(list))
     {
         backend_info = (globus_i_gfs_brain_node_t *) globus_list_first(list);
 
-        wsrf_b_info = backendInfo_array_push(backend_array);
+        wsrf_b_info = backendInfoType_array_push(backend_array);
 
         xsd_string_copy_contents_cstr(
             &wsrf_b_info->indentifier, strdup(backend_info->host_id));
         wsrf_b_info->openConnections = (xsd_int)
             backend_info->current_connection;
         list = globus_list_rest(list);
+
+        globus_gfs_log_message(
+            GLOBUS_GFS_LOG_ERR, "HOST: %s\n", wsrf_b_info->indentifier);
+
+        i++;
     }
 
-    return backend_array;
+    GlobusTimeAbstimeGetCurrent(tm_now);
+    globus_libc_gmtime_r(&tm_now.tv_sec, &bP->changedAt);
+
+    return bP;
 }
 
 static
@@ -254,11 +267,11 @@ gridftpA_l_backend_get_cb(
     const xsd_QName *                   qname,
     void **                             property)
 {
-    backendInfo_array *                 backend_array;
+    backendPoolType *                   bP;
 
-    backend_array = gridftpA_l_make_backend_array();
+    bP = gridftpA_l_make_backend_array();
 
-    *property = backend_array;
+    *property = bP;
 }
 
 /* maynot externally set this */

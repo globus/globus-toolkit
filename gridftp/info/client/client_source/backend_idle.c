@@ -52,6 +52,10 @@
 #define gmon_test_result(_r) gmon_test_result_real(_r, __LINE__)
 
 static globus_hashtable_t               l_host_table;
+static FILE *                           l_time_log;
+static globus_bool_t                    l_done = GLOBUS_FALSE;
+
+
 
 typedef struct backend_entry_s
 {
@@ -61,7 +65,6 @@ typedef struct backend_entry_s
     time_t                              idle_time;
     char *                              name;
 } backend_entry_t;
-
 
 void
 gmon_test_result_real(
@@ -125,6 +128,7 @@ l_backend_changed(
             be->name = strdup(bI->indentifier);
             be->connections = -10; /* set to this so it changes when new */
             globus_hashtable_insert(&l_host_table, be->name, be);
+            fprintf(l_time_log, "%s NEW\n", bI->indentifier);
         }
 
         /* make sure this is the one that changed */
@@ -136,17 +140,19 @@ l_backend_changed(
             {
                 be->timer_on = GLOBUS_TRUE;
                 be->start_time = secs;
-                printf("==> %s ON %ld\n", bI->indentifier, secs);
+                fprintf(l_time_log, "%s ON %ld 0\n", bI->indentifier, secs);
             }
             else if(be->timer_on && bI->openConnections > 0)
             {
                 be->timer_on = GLOBUS_FALSE;
                 diff = secs - be->start_time;
                 be->idle_time += diff; 
-                printf("==> %s OFF %ld\n", bI->indentifier, secs);
+                fprintf(l_time_log, "%s OFF %ld %ld\n",
+                    bI->indentifier, secs, diff);
             }
         }
     }
+    fflush(l_time_log);
 }
 
 int
@@ -172,16 +178,23 @@ main(
     xsd_any *                           fault;
 
 
+    l_time_log = stdout;
     local = "backendPool";
     ns = "http://gridftp.globus.org/2006/06/GridFTPServerInfo";
 
     if(argc < 2)
     {
-        fprintf(stderr, "usage: %s <filename>\n", 
+        fprintf(stderr, "usage: %s <filename> [<log file>]\n", 
             argv[0]);
         exit(1);
     }
     filename = argv[1];
+    if(argc > 2)
+    {
+        printf("openning %s for log\n", argv[2]);
+        l_time_log = fopen(argv[2], "w");
+        if(l_time_log == NULL) l_time_log = stdout;
+    }
 
     globus_module_activate(WS_BASENOTIFICATIONSERVICE_MODULE);
     globus_module_activate(GLOBUS_NOTIFICATION_CONSUMER_MODULE);
@@ -279,7 +292,7 @@ main(
     gmon_test_result(result);
 
     printf("wait for events\n");
-    while(1)
+    while(!l_done)
     {
         globus_poll();
     }
