@@ -521,3 +521,51 @@ void globus_list_destroy_all(
 
     return;
 }
+
+globus_list_t * 
+globus_list_from_string(
+    const char *                        in_string,
+    int                                 delim,
+    const char *                        ignored)
+{
+    globus_list_t *                     list = NULL;
+    char *                              string;
+    char *                              entry;
+    char *                              ptr;
+
+    if(in_string == NULL)
+    {
+        goto error_params;
+    }
+    
+    string = globus_libc_strdup(in_string);
+    if(string != NULL)
+    {
+        entry = string;
+        while((ptr = strchr(entry, delim)) != NULL)
+        {
+            *ptr = '\0';
+            if(ignored != NULL)
+            {
+                while(*entry && strchr(ignored, *entry) != NULL)
+                {
+                    entry++;
+                }
+            }
+            globus_list_insert(&list, globus_libc_strdup(entry)); 
+            entry = ptr + 1;
+        }
+        if(ptr == NULL)
+        {
+            globus_list_insert(&list, globus_libc_strdup(entry)); 
+        }               
+        globus_free(string);     
+    }
+    
+    return list;
+    
+error_params:
+    return NULL;
+}
+
+
