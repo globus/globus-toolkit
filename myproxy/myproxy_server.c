@@ -134,6 +134,12 @@ void put_credentials(myproxy_socket_attrs_t *attrs,
                      myproxy_creds_t        *creds,
                      myproxy_response_t     *response);
 
+/* Check if client_name/username mapping is present in non-null 
+   accepted_credentials_mapfile.  Returns 1 if okay to proceed, 0 else. */
+static int check_accepted_credentials_mapfile(char *client_name,
+                                              char *username,
+                                              myproxy_server_context_t* config);
+
 static int debug = 0;
 
 int
@@ -528,6 +534,13 @@ handle_client(myproxy_socket_attrs_t *attrs,
 	if (client_creds->renewers != NULL)
     	    myproxy_debug("  Renewer policy: %s", client_creds->renewers); 
 
+        if (!check_accepted_credentials_mapfile(client_name,
+                                                client_creds->username,
+                                                context)) {
+            respond_with_error_and_die(attrs,
+                "Username/UserDN not in accepted_credentials_mapfile");
+        }
+
 	if (myproxy_check_passphrase_policy(client_request->passphrase,
 					    context->passphrase_policy_pgm,
 					    client_request->username,
@@ -579,26 +592,33 @@ handle_client(myproxy_socket_attrs_t *attrs,
 		      server_response);
         break;
 
-      case MYPROXY_STORE_CERT:
-          /* Store the end-entity credential */
-          myproxy_log("Received STORE request from %s", client_name);
-          myproxy_debug("  Username: %s", client_creds->username);
-          myproxy_debug("  Max. delegation lifetime: %d seconds",
-                        client_creds->lifetime);
-          if (client_creds->retrievers != NULL)
-              myproxy_debug("  Retriever policy: %s", client_creds->retrievers);
-          if (client_creds->renewers != NULL)
-              myproxy_debug("  Renewer policy: %s", client_creds->renewers);
-          if (client_creds->keyretrieve != NULL)
-              myproxy_debug("  Key Retriever policy: %s", client_creds->keyretrieve);
+    case MYPROXY_STORE_CERT:
+        /* Store the end-entity credential */
+        myproxy_log("Received STORE request from %s", client_name);
+        myproxy_debug("  Username: %s", client_creds->username);
+        myproxy_debug("  Max. delegation lifetime: %d seconds",
+                      client_creds->lifetime);
+        if (client_creds->retrievers != NULL)
+            myproxy_debug("  Retriever policy: %s", client_creds->retrievers);
+        if (client_creds->renewers != NULL)
+            myproxy_debug("  Renewer policy: %s", client_creds->renewers);
+        if (client_creds->keyretrieve != NULL)
+            myproxy_debug("  Key Retriever policy: %s", client_creds->keyretrieve);
+        if (!check_accepted_credentials_mapfile(client_name,
+                                                client_creds->username,
+                                                context)) {
+            respond_with_error_and_die(attrs,
+                "Username/UserDN not in accepted_credentials_mapfile");
+        }
+
  
-          /* Send initial OK response */
-          send_response(attrs, server_response, client_name);
+        /* Send initial OK response */
+        send_response(attrs, server_response, client_name);
  
-          /* Store the credentials in the repository and
-             set final server_response */
-          put_credentials(attrs, client_creds, server_response);
-          break;
+        /* Store the credentials in the repository and
+           set final server_response */
+        put_credentials(attrs, client_creds, server_response);
+        break;
 
     default:
         server_response->error_string = strdup("Unknown command.\n");
@@ -1635,3 +1655,48 @@ end:
    authorization_data_free_contents(&auth_data);
    return return_status;
 }
+
+
+/**
+ * Check for presence of Username/UserDN mapping in the
+ * accepted_credentials_mapfile (if specified).  This function is called
+ * when doing a "put" or "store".  It takes in the client_name of the
+ * connection (which is the UserDN) and the username specified by the
+ * client.  If the accepted_credentials_mapfile has been given in the config
+ * file, we check for a client_name/username mapping.  If one exists, then
+ * we return true, otherwise false.
+ * @param client_name The userDN of the credential to be put/stored.
+ * @param username The username under which to put/store the credential
+ * @return 1 if okay to put/store, 0 otherwise
+ */
+static int check_accepted_credentials_mapfile(char *client_name, 
+                                              char *username,
+                                              myproxy_server_context_t* config)
+{
+    int retval = 1;   /* Assume success  */
+    char *oldenv = NULL;
+
+    /* First, check to see if the accepted_credentials_mapfile value has
+     * been specified in the config file or not. */
+    if (config->accepted_credentials_mapfile != NULL) {
+        myproxy_debug("check_accepted_credentials_mapfile");
+
+        /* Since I want to use the utility function
+         * globus_gss_assist_userok, I need to set the GRIDMAP environment
+         * variable to the location of accepted_credentials_mapfile.  But I
+         * want to save the current value of GRIDMAP so I can restore it
+         * after the function call.  It's a bit of a hack.  */
+        oldenv = (char*)getenv("GRIDMAP");
+        setenv("GRIDMAP", config->accepted_credentials_mapfile, 1);
+
+        /* Note: globus_gss_assist_userok returns 0 upon success */
+        if (globus_gss_assist_userok(client_name,username) != 0)
+            retval = 0;
+
+        /* Now, restore the GRIDMAP environment variable */
+        setenv("GRIDMAP", oldenv, 1);
+    }
+
+    return retval;
+}
+
