@@ -41,6 +41,9 @@
 static int                              l_connections = 0;
 static char *                           l_exe_name;
 static globus_hashtable_t               l_host_table;
+static globus_bool_t                    l_done = GLOBUS_FALSE;
+static globus_mutex_t                   l_mutex;
+static globus_cond_t                    l_cond;
 
 globus_result_t
 chosting_i_util_add_notification(
@@ -219,6 +222,9 @@ main(
     globus_module_activate(GLOBUS_NOTIFICATION_CONSUMER_MODULE);
     globus_module_activate(GRIDFTPSERVERINFOSERVICE_MODULE);
 
+    globus_mutex_init(&l_mutex, NULL);
+    globus_cond_init(&l_cond, NULL);
+
     element_name.Namespace = "http://docs.oasis-open.org/wsrf/2004/06/wsrf-WS-ServiceGroup-1.2-draft-01.xsd";
     element_name.local = "MemberServiceEPR";
 
@@ -277,20 +283,24 @@ main(
         NULL);
     gmon_test_result(result);
 
-    result = globus_service_engine_register_start(
-        engine,
-        monitor_l_engine_stop,
-        NULL);
-    gmon_test_result(result);
-
-    printf("wait for events\n");
-    while(1)
+    globus_mutex_lock(&l_mutex);
     {
-        int     status;
+        result = globus_service_engine_register_start(
+            engine,
+            monitor_l_engine_stop,
+            NULL);
+        gmon_test_result(result);
 
-        waitpid(-1, &status, WNOHANG);
-        globus_poll();
+        printf("wait for events\n");
+        while(!l_done)
+        {
+            int     status;
+
+            waitpid(-1, &status, WNOHANG);
+            globus_cond_wait(&l_cond, &l_mutex);
+        }
     }
+    globus_mutex_unlock(&l_mutex);
 
 
     GridFTPServerInfoService_client_destroy(client_handle);
