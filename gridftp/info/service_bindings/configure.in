@@ -24,8 +24,6 @@ LAC_DOXYGEN("../ ./", "*.dox")
 
 GLOBUS_INSTALLDIR=$GLOBUS_LOCATION
 AC_SUBST(GLOBUS_INSTALLDIR)
-
-CFLAGS="$CFLAGS -DGLOBUS_BUILTIN"
     
 GLOBUS_FINALIZE
 
@@ -35,16 +33,16 @@ AC_SUBST(PACKAGENAME)
 INCLUDEPATH=""
 AC_SUBST(INCLUDEPATH)
 
-OUTPUTHEADERS="backendPool.h backendInfo.h backendInfo_array.h GridFTPServerInfoPortTypeGTWSDLResourceProperties.h GridFTPServerInfoPortTypeGTWSDLResourcePropertiesType.h GridFTPServerInfoPortTypeGTWSDLResourcePropertiesType_array.h frontendInfo.h frontendInfoType.h frontendInfoType_array.h GridFTPServerInfoService.h GridFTPServerInfoService_skeleton.h GridFTPServerInfoService_internal_skeleton.h "
+OUTPUTHEADERS="backendPool.h backendPoolType.h backendPoolType_array.h GridFTPServerInfoPortTypeGTWSDLResourceProperties.h GridFTPServerInfoPortTypeGTWSDLResourcePropertiesType.h GridFTPServerInfoPortTypeGTWSDLResourcePropertiesType_array.h frontendInfo.h frontendInfoType.h frontendInfoType_array.h backendInfo.h backendInfoType.h backendInfoType_array.h GridFTPServerInfoService.h GridFTPServerInfoService_skeleton.h GridFTPServerInfoService_internal_skeleton.h "
 AC_SUBST(OUTPUTHEADERS)
 
-OUTPUTTYPES="backendPool.c backendInfo.c GridFTPServerInfoPortTypeGTWSDLResourceProperties.c GridFTPServerInfoPortTypeGTWSDLResourcePropertiesType.c frontendInfo.c frontendInfoType.c GridFTPServerInfoService_type_registry.c "
+OUTPUTTYPES="backendPool.c backendPoolType.c GridFTPServerInfoPortTypeGTWSDLResourceProperties.c GridFTPServerInfoPortTypeGTWSDLResourcePropertiesType.c frontendInfo.c frontendInfoType.c backendInfo.c backendInfoType.c GridFTPServerInfoService_type_registry.c "
 AC_SUBST(OUTPUTTYPES)
 
 OUTPUTCLIENT=""
 AC_SUBST(OUTPUTCLIENT)
 
-OUTPUTTYPESOBJECTS="backendPool.lo backendInfo.lo GridFTPServerInfoPortTypeGTWSDLResourceProperties.lo GridFTPServerInfoPortTypeGTWSDLResourcePropertiesType.lo frontendInfo.lo frontendInfoType.lo GridFTPServerInfoService_type_registry.lo "
+OUTPUTTYPESOBJECTS="backendPool.lo backendPoolType.lo GridFTPServerInfoPortTypeGTWSDLResourceProperties.lo GridFTPServerInfoPortTypeGTWSDLResourcePropertiesType.lo frontendInfo.lo frontendInfoType.lo backendInfo.lo backendInfoType.lo GridFTPServerInfoService_type_registry.lo "
 AC_SUBST(OUTPUTTYPESOBJECTS)
 
 OUTPUTCLIENTOBJECTS=""

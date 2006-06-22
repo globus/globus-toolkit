@@ -19,6 +19,15 @@ gridftp_register_Sources= gridftp_register.c
 globus_get_ip_Sources= globus_get_ip.c
 globus_get_rp_Sources= globus_get_rp.c globus_get_rp_opts.c
 
+client_time_plugin_Sources=globus_ftp_client_time_plugin.c
+lib_LTLIBRARIES = libclient_time_plugin_$(GLOBUS_FLAVOR_NAME).la
+libclient_time_plugin___GLOBUS_FLAVOR_NAME__la_CFLAGS = $(GPT_CFLAGS)
+libclient_time_plugin___GLOBUS_FLAVOR_NAME__la_LIBADD = \
+    @GPT_LIB_LINKS@
+libclient_time_plugin___GLOBUS_FLAVOR_NAME__la_SOURCES = $(client_time_plugin_Sources)
+libclient_time_plugin___GLOBUS_FLAVOR_NAME__la_LDFLAGS = \
+ -L @GPT_LDFLAGS@ -module -rpath $(GLOBUS_LOCATION)/lib
+
 
 EXTRA_DIST =
 INCLUDES = $(GPT_INCLUDES)

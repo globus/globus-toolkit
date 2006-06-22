@@ -19,6 +19,11 @@
                     <Simple_Version Major="2"/>
                 </Version>
             </Dependency>
+            <Dependency Name="globus_gass_copy">
+                <Version>
+                    <Simple_Version Major="5"/>
+                </Version>
+            </Dependency>
         </Source_Dependencies>
 
         <Source_Dependencies Type="pgm_link">
@@ -30,6 +35,11 @@
             <Dependency Name="globus_notification_consumer">
                 <Version>
                     <Simple_Version Major="2"/>
+                </Version>
+            </Dependency>
+            <Dependency Name="globus_gass_copy">
+                <Version>
+                    <Simple_Version Major="5"/>
                 </Version>
             </Dependency>
         </Source_Dependencies>
