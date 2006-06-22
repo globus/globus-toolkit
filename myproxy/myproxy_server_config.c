@@ -607,7 +607,8 @@ check_config(myproxy_server_context_t *context)
             verror_put_errno(errno);
             rval = -1;
         } else {
-            myproxy_log("Username/UserDN grid-mapfile authentication enabled");
+            myproxy_log("using accepted_credentials_mapfile %s",
+                        context->accepted_credentials_mapfile);
         }
     }
     if (context->check_multiple_credentials) {
