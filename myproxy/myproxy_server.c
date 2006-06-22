@@ -538,7 +538,7 @@ handle_client(myproxy_socket_attrs_t *attrs,
                                                 client_creds->username,
                                                 context)) {
             respond_with_error_and_die(attrs,
-                "Username/UserDN not in accepted_credentials_mapfile");
+                "PUT: Username/UserDN not in accepted_credentials_mapfile");
         }
 
 	if (myproxy_check_passphrase_policy(client_request->passphrase,
@@ -608,7 +608,7 @@ handle_client(myproxy_socket_attrs_t *attrs,
                                                 client_creds->username,
                                                 context)) {
             respond_with_error_and_die(attrs,
-                "Username/UserDN not in accepted_credentials_mapfile");
+                "STORE: Username/UserDN not in accepted_credentials_mapfile");
         }
 
  
@@ -1656,7 +1656,6 @@ end:
    return return_status;
 }
 
-
 /**
  * Check for presence of Username/UserDN mapping in the
  * accepted_credentials_mapfile (if specified).  This function is called
@@ -1673,7 +1672,7 @@ static int check_accepted_credentials_mapfile(char *client_name,
                                               char *username,
                                               myproxy_server_context_t* config)
 {
-    int retval = 1;   /* Assume success  */
+    int retval = 1;       /* Assume success  */
     char *oldenv = NULL;
 
     /* First, check to see if the accepted_credentials_mapfile value has
@@ -1690,8 +1689,12 @@ static int check_accepted_credentials_mapfile(char *client_name,
         setenv("GRIDMAP", config->accepted_credentials_mapfile, 1);
 
         /* Note: globus_gss_assist_userok returns 0 upon success */
-        if (globus_gss_assist_userok(client_name,username) != 0)
+        if (globus_gss_assist_userok(client_name,username) != 0) {
             retval = 0;
+            verror_put_string("No mapping found for '%s' and '%s' in '%s'",
+                              client_name,username,
+                              config->accepted_credentials_mapfile);
+        }
 
         /* Now, restore the GRIDMAP environment variable */
         setenv("GRIDMAP", oldenv, 1);
