@@ -531,11 +531,11 @@ gridftp_admin_l_init()
     }
     prepend_name = globus_common_create_string(
         "globus_service_modules/%s", GRIDFTPSERVERINFOSERVICE_BASE_PATH);
-
+/*
     rc = globus_extension_register_builtin(
         prepend_name, &GridFTPServerInfoService_module);
     globus_assert(rc == 0);
-
+*/
     result = globus_extension_activate(prepend_name);
     globus_free(prepend_name);
     if(result != GLOBUS_SUCCESS)
