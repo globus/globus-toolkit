@@ -113,7 +113,7 @@ public class CStylePacket extends UsageMonitorPacket {
 	int secondsSinceEpoch;
 	epoch = Calendar.getInstance();
         secondsSinceEpoch = buf.getIntBigEndian();
-        epoch.set(1970, 0, 0, 0, 0, 0);
+        epoch.clear();
         epoch.set(Calendar.MILLISECOND, 0);
         epoch.add(Calendar.SECOND, secondsSinceEpoch);
         if (secondsSinceEpoch < 0 ) {
