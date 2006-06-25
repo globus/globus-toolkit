@@ -38,8 +38,7 @@ public class MDSAggregatorMonitorPacket
     private Date resourceCreationTime;
     private String serviceName;
       
-    // what is the MDS component code? FIXME
-    private static short COMPONENT_CODE = 9;  
+    private static short COMPONENT_CODE = 6;  
     private static short PACKET_VERSION = 0;
     private static short MAX_SERVICE_NAME_LEN = 40; // too big/small?
     

@@ -34,9 +34,8 @@ public class MDSAggregatorPacketHandler extends DefaultPacketHandler {
         super(dburl, table);
     }
 
-    // TODO: make sure about component code
     public boolean doCodesMatch(short componentCode, short versionCode) {
-        return (componentCode == 9 && versionCode == 0);
+        return (componentCode == 6 && versionCode == 0);
     }
 
     public UsageMonitorPacket instantiatePacket(CustomByteBuffer rawBytes) {
