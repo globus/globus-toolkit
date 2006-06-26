@@ -987,7 +987,7 @@ sub runtest {
 
     $command = $valgrind . $command if (defined($valgrind));
     print STDERR "running: ", $command, "\n" if ($verbose);
-    $pid = open3(*Writer, *Reader, 0, "exec $command") ||
+    $pid = open3(*Writer, *Reader, '', "exec $command") ||
 	die "failed to run $command";
     print Writer $input if (defined($input));
     close(Writer);
