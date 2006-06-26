@@ -177,6 +177,7 @@ external_callout( X509_REQ                 *request,
 
   if ( pipestream == NULL ) {
     verror_put_string("File stream to stdout pipe creation problem.");
+    verror_put_errno(errno);
     goto error;
   }
 
@@ -184,6 +185,7 @@ external_callout( X509_REQ                 *request,
 
   if (certificate == NULL) {
     verror_put_string("Error reading certificate from external program.");
+    ssl_error_to_verror();
     goto error;
   } else {
     myproxy_debug("Recieved certificate from external callout.");
@@ -257,6 +259,7 @@ tokenize_to_x509_name( char * dn, X509_NAME * name ) {
 				     (unsigned char *) subtok, -1, -1, 0 )) {
       verror_put_string("Error adding %s = %s to x509 name", tmpTok, subtok );
       verror_put_string("Invalid field name");
+      ssl_error_to_verror();
       return_value = 1;
       goto end;
     }
@@ -329,6 +332,7 @@ assign_serial_number( X509 *cert,
 
   if ( (serial ==NULL) || (current==NULL) ) {
     verror_put_string("Bignum/asn1 INT init failure\n");
+    ssl_error_to_verror();
     goto error;
   }
 
@@ -350,6 +354,7 @@ assign_serial_number( X509 *cert,
 
   if ( fd == -1 ) {
     verror_put_string("Call to open() failed on %s\n", serialfile);
+    verror_put_errno(errno);
     goto error;
   }
 
@@ -363,12 +368,14 @@ assign_serial_number( X509 *cert,
 
   if ( serialstream == NULL ) {
     verror_put_string("Unable to open file stream\n");
+    verror_put_errno(errno);
     goto error;
   }
 
   /* check if file is empty, and if so, initialize with 1 */
   if (fseek(serialstream, 0L, SEEK_END) < 0) {
     verror_put_string("Unable to seek file stream\n");
+    verror_put_errno(errno);
     goto error;
   }
 
@@ -379,12 +386,14 @@ assign_serial_number( X509 *cert,
 
   if ( serialbio == NULL ) {
     verror_put_string("BIO_new_fp failure.\n");
+    ssl_error_to_verror();
     goto error;
   }
 
   if (serialset) {
       if (!a2i_ASN1_INTEGER(serialbio, current, buf, sizeof(buf))) {
 	  verror_put_string("Asn1 int read/conversion error\n");
+      ssl_error_to_verror();
 	  goto error;
       } else {
 	  myproxy_debug("Loaded serial number %s from %s", buf, serialfile);
@@ -396,16 +405,19 @@ assign_serial_number( X509 *cert,
   serial = BN_bin2bn( current->data, current->length, serial );
   if ( serial == NULL ) {
     verror_put_string("Error converting to bignum\n");
+    ssl_error_to_verror();
     goto error;
   }
 
   if (!BN_add_word(serial, increment)) {
     verror_put_string("Error incrementing serial number\n");
+    ssl_error_to_verror();
     goto error;
   }
 
   if (!(next = BN_to_ASN1_INTEGER(serial, NULL))) {
     verror_put_string("Error converting new serial to ASN1\n");
+    ssl_error_to_verror();
     goto error;
   }
 
@@ -425,6 +437,7 @@ assign_serial_number( X509 *cert,
 
   if (!X509_set_serialNumber(cert, current)) {
     verror_put_string("Error assigning serialnumber\n");
+    ssl_error_to_verror();
     goto error;
   }
 
@@ -488,6 +501,7 @@ generate_certificate( X509_REQ                 *request,
 
   if (cert == NULL) {
     verror_put_string("Problem creating new X509.");
+    ssl_error_to_verror();
     goto error;
   }
 
@@ -633,6 +647,7 @@ generate_certificate( X509_REQ                 *request,
       if (!X509V3_EXT_add_nconf(extconf, &ctx, "default", cert))
       {
 	  verror_put_string("OpenSSL error adding extensions.");
+      ssl_error_to_verror();
 	  goto error;
       }
       myproxy_debug("Successfully added extensions.");
@@ -656,13 +671,12 @@ generate_certificate( X509_REQ                 *request,
   inkey = fopen( server_context->certificate_issuer_key, "r");
 
   if (!inkey) {
-    myproxy_debug("Could not open cakey file handle: %s",
+    verror_put_string("Could not open cakey file handle: %s",
 		  server_context->certificate_issuer_key);
+    verror_put_errno(errno);
     goto error;
 
   }
-
-  /* cakey must be unencrypted */
 
   cakey = PEM_read_PrivateKey( inkey, NULL, NULL,
 	       (char *)server_context->certificate_issuer_key_passphrase );
@@ -671,6 +685,7 @@ generate_certificate( X509_REQ                 *request,
 
   if ( cakey == NULL ) {
     verror_put_string("Could not load cakey for certificate signing.");
+    ssl_error_to_verror();
     goto error;
   } else {
     myproxy_debug("CAkey: %s", server_context->certificate_issuer_key );
@@ -681,7 +696,8 @@ generate_certificate( X509_REQ                 *request,
   myproxy_debug("Signing internally generated certificate.");
 
   if (!X509_sign(cert, cakey, EVP_sha1() ) ) {
-    myproxy_debug("Certificate/cakey sign failed.");
+    verror_put_string("Certificate/cakey sign failed.");
+    ssl_error_to_verror();
     goto error;
   } 
 
@@ -734,11 +750,13 @@ handle_certificate(unsigned char            *input_buffer,
   request_bio = BIO_new(BIO_s_mem());
   if (request_bio == NULL) {
     verror_put_string("BIO_new() failed");
+    ssl_error_to_verror();
     goto error;
   }
 
   if (BIO_write(request_bio, input_buffer, input_buffer_length) < 0) {
     verror_put_string("BIO_write() failed");
+    ssl_error_to_verror();
     goto error;
   }
 
@@ -748,6 +766,7 @@ handle_certificate(unsigned char            *input_buffer,
 
   if (req == NULL) {
     verror_put_string("Request load failed");
+    ssl_error_to_verror();
     goto error;
   } else {
     myproxy_debug("Cert request loaded.");
@@ -757,6 +776,7 @@ handle_certificate(unsigned char            *input_buffer,
 
   if (pkey == NULL) {
     verror_put_string("Could not extract public key from request.");
+    ssl_error_to_verror();
     goto error;
   } 
 
@@ -764,6 +784,7 @@ handle_certificate(unsigned char            *input_buffer,
 
   if ( verify != 1 ) {
     verror_put_string("Req/key did not verify: %d", verify );
+    ssl_error_to_verror();
     goto error;
   } 
 
@@ -815,6 +836,7 @@ handle_certificate(unsigned char            *input_buffer,
   return_bio = BIO_new(BIO_s_mem());
   if (return_bio == NULL) {
     verror_put_string("BIO_new() failed");
+    ssl_error_to_verror();
     goto error;
   }
 
@@ -832,11 +854,13 @@ handle_certificate(unsigned char            *input_buffer,
   if (BIO_write(return_bio, &number_of_certs, 
 		sizeof(number_of_certs)) == SSL_ERROR) {
     verror_put_string("Failed dumping proxy certificate to buffer (BIO_write() failed)");
+    ssl_error_to_verror();
     goto error;
   }
 
   if (i2d_X509_bio(return_bio, cert) == SSL_ERROR) {
     verror_put_string("Could not write signed certificate to bio.");
+    ssl_error_to_verror();
     goto error;
   }
 
@@ -856,6 +880,7 @@ handle_certificate(unsigned char            *input_buffer,
   }
 
   if ( BIO_read(return_bio, buf, buf_len ) == SSL_ERROR ) {
+    ssl_error_to_verror();
     verror_put_string("Failed dumping bio to return buffer.");
     goto error;
   }
