@@ -126,6 +126,19 @@ CREATE TABLE rls_packets(
     PRIMARY KEY(id)	
 );
 
+CREATE TABLE mds_packets(
+    id SERIAL,
+    component_code SMALLINT NOT NULL,
+    version_code SMALLINT NOT NULL,
+    send_time TIMESTAMP,
+    ip_address VARCHAR(64) NOT NULL,
+    service_name VARCHAR(40),
+    lifetime_reg_count INT,
+    current_reg_count INT,
+    resource_creation_time INT,
+    PRIMARY KEY(id)
+);
+
 CREATE TABLE graph_image_files(
     start_time TIMESTAMP,
     end_time TIMESTAMP,
