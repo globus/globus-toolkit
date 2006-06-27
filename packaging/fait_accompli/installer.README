@@ -1,5 +1,5 @@
-The main documentation for 4.0.0 is at
-http://www-unix.globus.org/toolkit/docs/4.0
+The main documentation for 4.1.0 is at
+http://www-unix.globus.org/toolkit/docs/4.1
 
 For installation instructions, see the INSTALL file.
 
@@ -11,5 +11,5 @@ Makefile.in
 install-sh
 config.sub
 config.guess
-gpt-3.2autotools2004 - the packaging software
+gpt - the packaging software
 source-trees - the source code
