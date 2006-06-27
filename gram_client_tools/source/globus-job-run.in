@@ -864,7 +864,7 @@ then
     if [ ${job_verify} = true -o ${job_submit} = true ]; then
 	${bindir}/grid-proxy-info -exists
 	if [ $? -ne 0 ]; then
-	    echo "ERROR: proxy does not exists" >&2
+	    echo "ERROR: proxy does not exist" >&2
 	    error_exit 1
 	fi
 	hours=`${GLOBUS_SH_EXPR-expr} ${job_maxtime} / 60 + 1`
