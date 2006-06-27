@@ -1676,8 +1676,11 @@ static int check_accepted_credentials_mapfile(char *client_name,
     char *oldenv = NULL;
 
     /* First, check to see if the accepted_credentials_mapfile value has
-     * been specified in the config file or not. */
-    if (config->accepted_credentials_mapfile != NULL) {
+     * been specified in the config file or not.  Also do a sanity check and
+     * verify that the mapfile is still readable.  */
+    if ((config->accepted_credentials_mapfile != NULL) &&
+        (access(config->accepted_credentials_mapfile, R_OK) == 0)) {
+
         myproxy_debug("check_accepted_credentials_mapfile");
 
         /* Since I want to use the utility function
