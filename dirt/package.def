@@ -175,6 +175,7 @@ globus_notification_consumer wsrf/c/core/notification/source dirt.sh
 globus_notification_consumer_test wsrf/c/core/notification/test dirt.sh
 globus_notification_producer wsrf/c/core/notification/producer/source dirt.sh
 globus_handler_debug wsrf/c/handlers/debug/source dirt.sh
+globus_handler_ws_addressing wsrf/c/handlers/addressing/source dirt.sh
 globus_scheduler_provider_setup_fork ws-gram/discovery/provider/setup/fork dirt.sh
 globus_scheduler_provider_setup_pbs ws-gram/discovery/provider/setup/pbs dirt.sh
 globus_scheduler_provider_setup_lsf ws-gram/discovery/provider/setup/lsf dirt.sh
