@@ -600,8 +600,7 @@ check_config(myproxy_server_context_t *context)
 	}
     }
     if (context->accepted_credentials_mapfile) {
-        if (context->accepted_credentials_mapfile &&
-            access(context->accepted_credentials_mapfile, R_OK) < 0) {
+        if (access(context->accepted_credentials_mapfile, R_OK) < 0) {
             verror_put_string("accepted_credentials_mapfile %s not readable",
                               context->accepted_credentials_mapfile);
             verror_put_errno(errno);
