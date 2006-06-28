@@ -128,22 +128,31 @@ public class Receiver {
 	StringBuffer buf = new StringBuffer();
 	int unparsablePackets = this.theHandleThread.getUnparseablePackets();
 	int packetsLogged = this.theHandleThread.getPacketsLogged();
+        int unknownPackets =  this.theHandleThread.getUnknownPackets();
 	int packetsLost = this.theRecvThread.getPacketsLost();
 	String newline = System.getProperty("line.separator");
 
 	buf.append(packetsLogged);
-	buf.append(" packets received and successfully logged;");
+	buf.append(" packets received and successfully logged.");
 	buf.append(newline);
-	buf.append(unparsablePackets);
-	buf.append(" packets received that could not be parsed as any known component;");
-	buf.append(newline);
-	buf.append("And ");
-	buf.append(packetsLost);
-	buf.append(" packets were lost due to ring buffer overflow,");
-	buf.append(newline);
-	buf.append(" since ");
+
+        buf.append(unparsablePackets);
+        buf.append(" packets received that could not be parsed.");
+        buf.append(newline);
+        
+        buf.append(unknownPackets);
+        buf.append(" unrecognized packets.");
+        buf.append(newline);
+        
+        buf.append(packetsLost);
+        buf.append(" packets were lost due to buffer overflow.");
+        buf.append(newline);
+
+	buf.append("Since ");
 	buf.append(this.lastResetDate.toString());
 	buf.append(newline);
+        buf.append(newline);
+        
 	buf.append("Breakdown by component:");
 	buf.append(newline);
 

@@ -51,13 +51,13 @@ public class HandlerThread extends Thread {
     private boolean stillGood = true;
     private DefaultPacketHandler theDefaultHandler;
 
-    private int packetsLogged, errorCount;
+    private int packetsLogged;
+    private int errorCount;
+    private int unknownPackets;
 
     public HandlerThread(LinkedList list, RingBuffer ring, Properties props) {
         super("UDPHandlerThread");
 
-	this.packetsLogged = 0;
-	this.errorCount = 0;
         this.handlerList = list;
         this.theRing = ring;
 
@@ -105,9 +105,14 @@ public class HandlerThread extends Thread {
 	return this.errorCount;
     }
 
+    public int getUnknownPackets() {
+        return this.unknownPackets;
+    }
+    
     public void resetCounts() {
 	this.packetsLogged = 0;
 	this.errorCount = 0;
+        this.unknownPackets = 0;
     }
 
     /*This thread waits on the RingBuffer; when packets come in, it starts
@@ -129,15 +134,16 @@ public class HandlerThread extends Thread {
                 bufFromRing.rewind();
                 tryHandlers(bufFromRing, componentCode, versionCode);
 	    
-                packetsLogged ++;
+                this.packetsLogged ++;
             } catch (Exception e) {
+                this.errorCount ++;
+
                 //this thread has to be able to catch any exception and keep
                 //going... otherwise a bad packet could shut down the thread!
                 log.error("Error during handler processing", e);
                 if (bufFromRing != null) {
                     log.error(new String(bufFromRing.array()));
                 }
-                errorCount ++;
                 /*TODO: if this is an I/O exception, 
                   i.e. can't talk to database,
                   maybe restart the connection right here.*/
@@ -165,7 +171,8 @@ public class HandlerThread extends Thread {
 
     /*Use component code and version code in packet to decide
       which handler to use:*/
-    private void tryHandlers(CustomByteBuffer bufFromRing, short componentCode,
+    private void tryHandlers(CustomByteBuffer bufFromRing,
+                             short componentCode,
                              short versionCode) {
         UsageMonitorPacket packet;
         boolean hasBeenHandled;
@@ -190,6 +197,7 @@ public class HandlerThread extends Thread {
                 packet = theDefaultHandler.instantiatePacket(bufFromRing);
                 packet.parseByteArray(bufFromRing.array());
                 theDefaultHandler.handlePacket(packet);
+                this.unknownPackets++;
             }
         }
         /*If multiple handlers return true for doCodesMatch, each
