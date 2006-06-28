@@ -193,15 +193,17 @@ class ControlSocketThread extends Thread {
 		in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 
                 inputLine = in.readLine();
-                if (inputLine.equals("check")) {
-                    out.println(receiver.getStatus(false));
-                } else if (inputLine.equals("clear")) {
-                    out.println(receiver.getStatus(true));
-                } else if (inputLine.equals("stop")) {
-                    allShutDown();
-                    out.println("OK");
-                } else {
-                    out.println("Error: Invalid command");
+                if (inputLine != null) {
+                    if (inputLine.equals("check")) {
+                        out.println(receiver.getStatus(false));
+                    } else if (inputLine.equals("clear")) {
+                        out.println(receiver.getStatus(true));
+                    } else if (inputLine.equals("stop")) {
+                        allShutDown();
+                        out.println("OK");
+                    } else {
+                        out.println("Error: Invalid command");
+                    }
                 }
 		out.close();
 	    } catch (IOException e) {
