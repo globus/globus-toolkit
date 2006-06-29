@@ -109,8 +109,10 @@ public class MDSAggregatorMonitorPacket
         
         byte[] fixedServiceNameBytes = new byte[MAX_SERVICE_NAME_LEN];
 	buf.get(fixedServiceNameBytes);
+        /*
 	this.serviceName = new String(fixedServiceNameBytes);
-        
+        */
+
         this.lifetimeRegistrationCount = buf.getLong();
         this.currentRegistrantCount = buf.getLong();
         this.resourceCreationTime = new Date(buf.getLong());
