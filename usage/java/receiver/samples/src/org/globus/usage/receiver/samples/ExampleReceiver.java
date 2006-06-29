@@ -37,6 +37,7 @@ import org.globus.usage.receiver.handlers.JavaCorePacketHandlerV2;
 import org.globus.usage.receiver.handlers.CCorePacketHandler;
 import org.globus.usage.receiver.handlers.GRAMPacketHandler;
 import org.globus.usage.receiver.handlers.RLSPacketHandler;
+import org.globus.usage.receiver.handlers.MDSAggregatorPacketHandler;
 
 /*An example of how the Receiver class can be used in a program:*/
 public class ExampleReceiver {
@@ -47,7 +48,7 @@ public class ExampleReceiver {
         int port = 0;
         String databaseDriverClass, databaseURL, defaultTable, gftpTable;
 	String jwsCoreTable, rlsTable, gramTable, cCoreTable, gftpFilterTable;
-	String rftTable, domainsToFilter;
+	String rftTable, mdsTable, domainsToFilter;
 	int ringBufferSize = 0;
         Properties props = new Properties();
         InputStream propsIn;
@@ -59,6 +60,7 @@ public class ExampleReceiver {
 	CCorePacketHandler cCoreHandler;
 	GRAMPacketHandler gramHandler;
 	RLSPacketHandler rlsHandler;
+        MDSAggregatorPacketHandler mdsHandler;
 
         /*Open properties file (which gets compiled into jar) to read
           default port and database connection information:*/
@@ -69,6 +71,8 @@ public class ExampleReceiver {
             System.err.println("Can't open properties file: " + file);
             System.exit(1);
         }
+
+        int controlPort = 4811;
 
         try {
             props.load(propsIn);
@@ -84,8 +88,14 @@ public class ExampleReceiver {
             cCoreTable = props.getProperty("cws-core-table");
             gramTable = props.getProperty("gram-table");
             rlsTable = props.getProperty("rls-table");
+            mdsTable = props.getProperty("mds-table");
             
             ringBufferSize = Integer.parseInt(props.getProperty("ringbuffer-size"));
+
+            if (props.getProperty("control-port") != null) {
+                controlPort = Integer.parseInt(
+                                      props.getProperty("control-port"));
+            }
 
             if (args.length == 1)
                 /*Get listening port number from command line*/
@@ -103,8 +113,10 @@ public class ExampleReceiver {
               the database connection class to use, the url to connect to your
               database, and the database table where default packets will be
               written if no other handler takes them:*/
-            System.out.println("Starting receiver on port "+port+"; will write to database at "+databaseURL+"; Ringbuffer size is "+ringBufferSize);
-
+            System.out.println("Starting receiver on port "+port);
+            System.out.println("Database addresst "+databaseURL);
+            System.out.println("Ringbuffer size is "+ringBufferSize);
+            
             receiver = new Receiver(port, ringBufferSize, props);
             
             Thread shutdownThread = (new Thread() {
@@ -137,11 +149,12 @@ public class ExampleReceiver {
 	    receiver.registerHandler(cCoreHandler);
 	    gramHandler = new GRAMPacketHandler(databaseURL, gramTable);
 	    receiver.registerHandler(gramHandler);
-	    rlsHandler = new RLSPacketHandler(databaseURL, rlsTable);;
+	    rlsHandler = new RLSPacketHandler(databaseURL, rlsTable);
 	    receiver.registerHandler(rlsHandler);
+            mdsHandler = new MDSAggregatorPacketHandler(databaseURL, mdsTable);
+	    receiver.registerHandler(mdsHandler);
 
 	    //start the control socket thread:
-            int controlPort = 4811;
 	    new ControlSocketThread(receiver, controlPort).start();
             System.out.println("Starting control socket at: "  + controlPort);
         }
