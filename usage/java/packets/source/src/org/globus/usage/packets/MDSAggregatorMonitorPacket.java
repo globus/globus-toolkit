@@ -137,7 +137,7 @@ public class MDSAggregatorMonitorPacket
     public PreparedStatement toSQL(Connection con, String tablename) throws SQLException{
 
 	PreparedStatement ps;
-	ps = con.prepareStatement("INSERT INTO "+tablename+" (component_code, version_code, send_time, ip_address, service_name, lifetime_registration_count, current_registrant_count, creation_time) VALUES(?, ?, ?, ?, ?, ?, ?, ?);");
+	ps = con.prepareStatement("INSERT INTO "+tablename+" (component_code, version_code, send_time, ip_address, service_name, lifetime_reg_count, current_reg_count, resource_creation_time) VALUES(?, ?, ?, ?, ?, ?, ?, ?);");
 
 	ps.setShort(1, this.getComponentCode());
 	ps.setShort(2, this.getPacketVersion());
