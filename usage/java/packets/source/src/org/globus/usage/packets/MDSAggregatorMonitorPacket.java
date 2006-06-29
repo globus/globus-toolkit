@@ -112,11 +112,11 @@ public class MDSAggregatorMonitorPacket
 
         // drop trailing zeros
         int i = MAX_SERVICE_NAME_LEN - 1;
-        while(fixedServiceNameBytes[i] == 0) {
+        while(fixedServiceNameBytes[i] == 0 && i > 0) {
             i--;
         }
 
-	this.serviceName = new String(fixedServiceNameBytes, 0, i);
+	this.serviceName = new String(fixedServiceNameBytes, 0, i+1);
 
         this.lifetimeRegistrationCount = buf.getLong();
         this.currentRegistrantCount = buf.getLong();
