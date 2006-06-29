@@ -135,7 +135,7 @@ CREATE TABLE mds_packets(
     service_name VARCHAR(40),
     lifetime_reg_count INT,
     current_reg_count INT,
-    resource_creation_time INT,
+    resource_creation_time TIMESTAMP,
     PRIMARY KEY(id)
 );
 

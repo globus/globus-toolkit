@@ -109,9 +109,14 @@ public class MDSAggregatorMonitorPacket
         
         byte[] fixedServiceNameBytes = new byte[MAX_SERVICE_NAME_LEN];
 	buf.get(fixedServiceNameBytes);
-        /*
-	this.serviceName = new String(fixedServiceNameBytes);
-        */
+
+        // drop trailing zeros
+        int i = MAX_SERVICE_NAME_LEN - 1;
+        while(fixedServiceNameBytes[i] == 0) {
+            i--;
+        }
+
+	this.serviceName = new String(fixedServiceNameBytes, 0, i);
 
         this.lifetimeRegistrationCount = buf.getLong();
         this.currentRegistrantCount = buf.getLong();
@@ -121,10 +126,10 @@ public class MDSAggregatorMonitorPacket
     public String toString() 
     {
         return super.toString() +
-        "Service Name: " + this.serviceName + 
-        "Total Lifetime Registrations : " + this.lifetimeRegistrationCount +
-        "Current Registrant Count : " + this.currentRegistrantCount +
-        "Resource Creation Time: " + this.resourceCreationTime;
+        " Service Name: " + this.serviceName + 
+        " Total Lifetime Registrations : " + this.lifetimeRegistrationCount +
+        " Current Registrant Count : " + this.currentRegistrantCount +
+        " Resource Creation Time: " + this.resourceCreationTime;
     }
     
     public void debug() 
@@ -149,7 +154,7 @@ public class MDSAggregatorMonitorPacket
         ps.setString(5, this.serviceName);
 	ps.setLong(6, this.lifetimeRegistrationCount);
         ps.setLong(7, this.currentRegistrantCount);
-	ps.setLong(8, this.resourceCreationTime.getTime());
+	ps.setTimestamp(8, new Timestamp(this.resourceCreationTime.getTime()));
 
 	return ps;
     }    

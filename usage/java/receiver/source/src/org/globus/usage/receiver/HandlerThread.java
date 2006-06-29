@@ -153,22 +153,6 @@ public class HandlerThread extends Thread {
         closeDatabaseConnectionPool();
     }
 
-    private void debugRawPacketContents(CustomByteBuffer buf) {
-	short cc, vc;
-	long ts;
-	short ipv;
-
-	log.info("HandlerThread got a usagepacket.");	
-	cc = buf.getShort();
-	vc = buf.getShort();
-	log.info("component code = "+cc+", packet version = "+vc);
-	ts = buf.getLong();
-	log.info("Time sent = "+ts);
-	ipv = buf.getShort();
-	log.info("IP Version is "+ipv);
-	buf.rewind();
-    }
-
     /*Use component code and version code in packet to decide
       which handler to use:*/
     private void tryHandlers(CustomByteBuffer bufFromRing,
@@ -198,6 +182,11 @@ public class HandlerThread extends Thread {
                 packet.parseByteArray(bufFromRing.array());
                 theDefaultHandler.handlePacket(packet);
                 this.unknownPackets++;
+
+                if (log.isDebugEnabled()) {
+                    log.debug("Unknown packet: " +
+                       DefaultPacketHandler.getPacketContentsBinary(packet));
+                }
             }
         }
         /*If multiple handlers return true for doCodesMatch, each

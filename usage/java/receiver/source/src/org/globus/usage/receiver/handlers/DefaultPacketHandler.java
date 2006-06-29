@@ -122,7 +122,7 @@ public class DefaultPacketHandler implements PacketHandler {
         }
     }
 
-    protected String getPacketContentsBinary(UsageMonitorPacket pack) {
+    public static String getPacketContentsBinary(UsageMonitorPacket pack) {
 	byte[] binary = pack.getBinaryContents();
 	StringBuffer output = new StringBuffer();
 	for (int q = 0; q < binary.length; q++) {
