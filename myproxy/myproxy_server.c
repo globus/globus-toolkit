@@ -299,6 +299,7 @@ handle_client(myproxy_socket_attrs_t *attrs,
     int   requestlen;
     int   use_ca_callout = 0;
     int   found_auth_cred = 0;
+    int   num_auth_creds = 0;
     time_t now;
 
     myproxy_creds_t *client_creds;
@@ -380,20 +381,24 @@ handle_client(myproxy_socket_attrs_t *attrs,
      * error out here since there are no matching credentials with the given
      * username and other user-specified criteria (e.g. passphrase).  */
     if ((context->check_multiple_credentials) &&
-        (client_request->credname == NULL)) {
+        (client_request->credname == NULL) &&
+        /* Do an initial check for things like INFO which always authz ok */
+        (myproxy_authorize_accept(context,attrs,
+                                  client_request,client_name) != 0)) {
 
         /* Create a new temp cred struct pointer to fetch all creds */
         all_creds = malloc(sizeof(*all_creds));
         memset(all_creds, 0, sizeof(*all_creds));
-        /* For fetching all creds, we need set only owner_name and username */
-        all_creds->owner_name = strdup(client_name);
+        /* For fetching all creds, we need set only the username */
         all_creds->username = strdup(client_request->username);
 
-        if (myproxy_creds_retrieve_all(all_creds) == 0) {
+        if ((num_auth_creds = myproxy_admin_retrieve_all(all_creds)) >= 0) {
             /* Loop through all_creds searching for authorized credential */
             found_auth_cred = 0;
             cur_cred = all_creds;
             while ((!found_auth_cred) && (cur_cred != NULL)) {
+                myproxy_debug("Checking credential for '%s' named '%s'",
+                              cur_cred->username,cur_cred->credname);
                 /* Copy the cur_cred->credname (if present) into the
                  * client_request structure. Be sure to free later. */
                 if (cur_cred->credname)
@@ -401,7 +406,7 @@ handle_client(myproxy_socket_attrs_t *attrs,
                 /* Check to see if the credname is authorized */
                 if (myproxy_authorize_accept(context,attrs,client_request,
                                              client_name) == 0) {
-                    found_auth_cred = 1;  /* Good! Found one!!! */
+                    found_auth_cred = 1;  /* Good! Authz success! */
                 } else {
                     /* Free up char memory allocated by strdup earlier */
                     if (cur_cred->credname)
@@ -409,16 +414,17 @@ handle_client(myproxy_socket_attrs_t *attrs,
                     cur_cred = cur_cred->next;   /* Try next cred in list */
                 }
             } /* end while ((!found_auth_cred) && (cur_cred != NULL)) loop */
-        } /* end if (myproxy_creds_retrieve_all) */
+        } /* end if (myproxy_admin_retrieve_all) */
 
         myproxy_creds_free(all_creds);
 
         if (!found_auth_cred) {
-            myproxy_log("check_multiple_credentials with username '%s' "
-                        "but none were authorized",client_request->username);
-            respond_with_error_and_die(attrs,"Checked multiple credentials "
-                "but authorization failed for all of them.\n");
-        }
+            myproxy_log("checked %d credentials with username '%s' "
+                        "but none were authorized", 
+                        num_auth_creds,client_request->username);
+            respond_with_error_and_die(attrs,"Checked multiple credentials. "
+                "None were authorized for access.\n");
+        } /* end if (!found_auth_cred) */
     } /*** END check_multiple_credentials ***/
 
     /* All authorization policies are enforced in this function. */
