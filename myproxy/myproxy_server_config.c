@@ -611,7 +611,7 @@ check_config(myproxy_server_context_t *context)
         }
     }
     if (context->check_multiple_credentials) {
-        myproxy_log("Check multiple credentials for Username/Password enabled");
+        myproxy_log("Checking multiple credentials during authorization");
     }
 
     return rval;
