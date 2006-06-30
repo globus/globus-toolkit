@@ -21,7 +21,7 @@ use strict;
 use POSIX;
 use Test;
 
-require "test-common.pl";
+ require "test-common.pl";
 
 my $test_driver;
 if(@ARGV == 1)

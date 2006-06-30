@@ -21,7 +21,7 @@ use strict;
 use POSIX;
 use Test;
 
-require "test-common.pl";
+ require "test-common.pl";
 
 my $type = 0;
 if(@ARGV == 1)
