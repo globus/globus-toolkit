@@ -362,7 +362,7 @@ handle_client(myproxy_socket_attrs_t *attrs,
 				   "Invalid version number received.\n");
     }
 
-    /* Check client username and pass phrase */
+    /* Check client username */
     if ((client_request->username == NULL) ||
 	(strlen(client_request->username) == 0)) 
     {
@@ -420,7 +420,7 @@ handle_client(myproxy_socket_attrs_t *attrs,
 	if (use_ca_callout) {
 	    if ( (context->certificate_issuer_program == NULL) && 
 		 (context->certificate_issuer_cert == NULL) ) {
-		if (client_request->credname) {
+		if (!client_request->credname) {
 		    verror_put_string("No credentials exist for username \"%s\".", client_request->username);
 		} else {
 		    verror_put_string("No credentials exist with username \"%s\" and credential name \"%s\".", client_request->username, client_request->credname);
@@ -1305,7 +1305,7 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 	  goto end;
        
        if (!credentials_exist) {
-	   if (client_request->credname) {
+	   if (!client_request->credname) {
 	       verror_put_string("No credentials exist for username \"%s\".",
 				 client_request->username);
 	   } else {
