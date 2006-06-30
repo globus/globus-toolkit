@@ -270,6 +270,23 @@ globus_xio_attr_copy(
     xio_attr_dst->ndx = xio_attr_src->ndx;
     xio_attr_dst->space = xio_attr_src->space;
     globus_callback_space_reference(xio_attr_dst->space);
+
+    xio_attr_dst->open_timeout_cb = xio_attr_src->open_timeout_cb;
+    xio_attr_dst->open_timeout_period = xio_attr_src->open_timeout_period;
+    xio_attr_dst->read_timeout_cb = xio_attr_src->read_timeout_cb;
+    xio_attr_dst->read_timeout_period = xio_attr_src->read_timeout_period;
+    xio_attr_dst->write_timeout_cb = xio_attr_src->write_timeout_cb;
+    xio_attr_dst->write_timeout_period = xio_attr_src->write_timeout_period;
+    xio_attr_dst->close_timeout_cb = xio_attr_src->close_timeout_cb;
+    xio_attr_dst->close_timeout_period = xio_attr_src->close_timeout_period;
+    xio_attr_dst->accept_timeout_cb = xio_attr_src->accept_timeout_cb;
+    xio_attr_dst->accept_timeout_period = xio_attr_src->accept_timeout_period;
+    xio_attr_dst->cancel_open = xio_attr_src->cancel_open;
+    xio_attr_dst->cancel_close = xio_attr_src->cancel_close;
+    xio_attr_dst->cancel_read = xio_attr_src->cancel_read;
+    xio_attr_dst->cancel_write = xio_attr_src->cancel_write;
+    xio_attr_dst->no_cancel = xio_attr_src->no_cancel;
+    xio_attr_dst->timeout_arg = xio_attr_src->timeout_arg;
     
     for(ctr = 0; ctr < xio_attr_dst->ndx; ctr++)
     {
