@@ -228,7 +228,9 @@ xioperf_l_parse_opts(
     globus_xio_attr_init(&info->attr);
 
     globus_options_init(
-        &opt_h, xioperf_l_opts_unknown, info, globus_i_xioperf_opts_table);
+        &opt_h, xioperf_l_opts_unknown, info);
+
+    globus_options_add_table(opt_h, globus_i_xioperf_opts_table, info);
     res = globus_options_command_line_process(opt_h, argc, argv);
     if(res != GLOBUS_SUCCESS)
     {

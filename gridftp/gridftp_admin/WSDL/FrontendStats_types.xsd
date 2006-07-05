@@ -22,44 +22,43 @@
     xmlns:wsbf="http://docs.oasis-open.org/wsrf/2004/06/wsrf-WS-BaseFaults-1.2-draft-01.xsd"
     xmlns:xsd="http://www.w3.org/2001/XMLSchema">
 
-<xsd:element name="ipc_deny_from" type="xsd:string"/>
-    <xsd:element name="allow_from" type="xsd:string"/>
-    <xsd:element name="deny_from" type="xsd:string"/>
-    <xsd:element name="allow_anonymous" type="xsd:int"/>
-    <xsd:element name="anonymous_user" type="xsd:string"/>
-    <xsd:element name="anonymous_group" type="xsd:string"/>
-    <xsd:element name="data_connection_max" type="xsd:int"/>
-    <xsd:element name="open_connections_count" type="xsd:int"/>
-    <xsd:element name="connections_max" type="xsd:int"/>
-    <xsd:element name="blocksize" type="xsd:int"/>
-    <xsd:element name="sync_writes" type="xsd:int"/>
-    <xsd:element name="banner" type="xsd:string"/>
-    <xsd:element name="login_msg_file" type="xsd:string"/>
-    <xsd:element name="backends_registered" type="xsd:int"/>
-    <xsd:element name="fqdn" type="xsd:string"/>
-    <xsd:element name="byte_transfer_count" type="xsd:string"/>
-    <xsd:element name="file_transfer_count" type="xsd:int"/>
-    <xsd:element name="usage_stats_id" type="xsd:string"/>
-<xsd:element name="FrontendStats">
-    <xsd:complexType><xsd:sequence>
-        <xsd:element ref="tns:ipc_deny_from"/>
-        <xsd:element ref="tns:allow_from"/>
-        <xsd:element ref="tns:deny_from"/>
-        <xsd:element ref="tns:allow_anonymous"/>
-        <xsd:element ref="tns:anonymous_user"/>
-        <xsd:element ref="tns:anonymous_group"/>
-        <xsd:element ref="tns:data_connection_max"/>
-        <xsd:element ref="tns:open_connections_count"/>
-        <xsd:element ref="tns:connections_max"/>
-        <xsd:element ref="tns:blocksize"/>
-        <xsd:element ref="tns:sync_writes"/>
-        <xsd:element ref="tns:banner"/>
-        <xsd:element ref="tns:login_msg_file"/>
-        <xsd:element ref="tns:backends_registered"/>
-        <xsd:element ref="tns:byte_transfer_count"/>
-        <xsd:element ref="tns:file_transfer_count"/>
-        <xsd:element ref="tns:usage_stats_id"/>
-    </xsd:sequence></xsd:complexType>
-</xsd:element>
 
+    <xsd:complexType name="backendInfo">
+        <xsd:sequence>
+            <xsd:element name="indentifier" type="xsd:string"/>
+            <xsd:element name="approximate_load" type="xsd:float"/>
+            <xsd:element name="connections" type="xsd:int"/>
+        </xsd:sequence>
+    </xsd:complexType>
+
+    <xsd:element name="contact_string" type="xsd:string"/>
+    <xsd:element name="banner" type="xsd:string"/>
+    <xsd:element name="load" type="xsd:float"/>
+    <xsd:element name="connections_max" type="xsd:int"/>
+    <xsd:element name="open_connections_count" type="xsd:int"/>
+    <xsd:element name="backends_registered" type="xsd:int"/>
+    <xsd:element name="data_connection_max" type="xsd:int"/>
+    <xsd:element name="max_bw" type="xsd:int"/>
+    <xsd:element name="current_bw" type="xsd:int"/>
+    <xsd:element name="file_transfer_count" type="xsd:int"/>
+    <xsd:element name="byte_transfer_count" type="xsd:string"/>
+
+    <xsd:element name="FrontendStats">
+        <xsd:complexType><xsd:sequence>
+            <xsd:element ref="tns:contact_string"/>
+            <xsd:element ref="tns:banner"/>
+            <xsd:element ref="tns:load"/>
+            <xsd:element ref="tns:connections_max"/>
+            <xsd:element ref="tns:open_connections_count"/>
+            <xsd:element ref="tns:backends_registered"/>
+            <xsd:element ref="tns:data_connection_max"/>
+            <xsd:element ref="tns:max_bw"/>
+            <xsd:element ref="tns:current_bw"/>
+            <xsd:element ref="tns:file_transfer_count"/>
+            <xsd:element ref="tns:byte_transfer_count"/>
+        </xsd:sequence></xsd:complexType>
+    </xsd:element>
+
+    <xsd:element name="BackendPool" type="tns:backendInfo"
+        minOccurs="0" maxOccurs="unbounded"/>
 </xsd:schema>

@@ -25,7 +25,7 @@
             xmlns:xsd="http://www.w3.org/2001/XMLSchema"
             elementFormDefault="qualified">
 
-            <xsd:include schemaLocation="FrontendStats_types.xsd"/>
+            <xsd:include schemaLocation="GridFTPInfo_types.xsd"/>
         </xsd:schema>
     </wsdl:types>
 </definitions>
