@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE gpt_package_metadata SYSTEM "package.dtd">
+
+<gpt_package_metadata Format_Version="0.01" Name="globus_wsrf_gridftp_server_info_schema">
+
+    <Aging_Version Age="0" Major="0" Minor="3"/>
+    <Description>
+        Schema for exposing internal state of a gridftp server
+    </Description>
+    <Functional_Group>GridFTP</Functional_Group>
+    <Version_Stability Release="alpha"/>
+
+    <src_pkg >
+
+        <Source_Dependencies Type="compile" >
+            <Dependency Name="globus_java_ws_core_tools" Package="pgm">
+                <Version>
+                    <Simple_Version Major="0"/>
+                </Version>
+            </Dependency>
+            <Dependency Name="globus_ws_core_schema" Package="pgm">
+                <Version>
+                    <Simple_Version Major="0"/>
+                </Version>
+            </Dependency>
+        </Source_Dependencies>
+
+        <Build_Environment >
+            <cflags ></cflags>
+            <external_includes ></external_includes>
+            <pkg_libs ></pkg_libs>
+            <external_libs ></external_libs>
+        </Build_Environment>
+
+        <With_Flavors build="no" />
+
+        <Version_Label>0.1</Version_Label>
+
+        <Source_Dependencies Type="compile" >
+        </Source_Dependencies>
+
+        <Build_Instructions>
+            <Build_Step> ant -Denv.GLOBUS_LOCATION=INSTALLDIR_GPTMACRO</Build_Step>
+        </Build_Instructions>
+
+    </src_pkg>
+
+</gpt_package_metadata>

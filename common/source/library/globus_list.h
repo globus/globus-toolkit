@@ -122,6 +122,12 @@ void globus_list_destroy_all(
     globus_list_t *                     head,
     void                                (*data_free)(void *));
 
+extern globus_list_t *
+globus_list_from_string(
+    const char *                        in_string,
+    int                                 delim,
+    const char *                        ignored);
+
 EXTERN_C_END
 
 #endif /* GLOBUS_LIST_H */

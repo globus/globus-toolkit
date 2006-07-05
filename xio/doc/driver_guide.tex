@@ -1,0 +1,224 @@
+\documentclass[11pt]{article}
+
+\usepackage{amsmath}    % need for subequations
+\usepackage{graphicx}   % need for figures
+\usepackage{verbatim}   % useful for program listings
+\usepackage{color}      % use if color is used in text
+\usepackage{subfigure}  % use for side-by-side figures
+\usepackage{hyperref}   % use for hypertext links, including those to external documents and URLs
+\usepackage{epsfig}
+\usepackage{wrapfig}
+%----------------------------------------------------------------------
+% Title Information, Abstract and Keywords
+%-----{----------------------------------------------------------------
+\title{GlobusXIO Driver Development Guide}
+
+\begin{document}
+\maketitle
+
+\section{Introduction}
+GlobusXIO is the extensible input/output component of the Globus Toolkit(tm).
+It provides an abstranction layer to protocol and data transform
+implementations.  GlobusXIO allows application developers to write
+code against a single well know and intutive API and at any time later,
+insert an IO implementation behind that API.  The IO implementations
+that can be plugged in are known as GlobusXIO Drivers.  This document is 
+guide to writting GlobusXIO Drivers.
+
+The goal of XIO is to provide developers with a single user space API
+that allows them to to manipulate and ship data using any protocol they
+wish.  The decision of of what protocol to use does not have to be made
+at developement time or even at compile time.  With GlobusXIO this is
+a runtime decision.  
+
+At runtime the user can select what drivers they wish to plug in behind the
+API.  Drivers are arranged in a stack, and data flows through the stack
+from the top to the bottom on when writing, and from the bottom to the
+top when reading.  Each driver has chance to influence how and when
+the data operation is passed along to the next driver in the stack.  
+They can change the data, reorder it, frameit, add to it, remove from it,
+delay it, or even request additional IO operations before passing it along.
+
+There are 2 types of drivers, transform and transport drivers,
+Transport drivers are always at the bottom of the stack.  They are 
+the ones that move the data out of the user space processes.  This
+often involves calls to kernel to copy the data across the kernel
+barrier or otherwise arrange for it to be sent across a network, or
+put to disk.  The important characteristic of the transport driver is
+that it is always on the bottom of the stack.  It does not have
+a driver below it to which it can deligate responsibility.  It is
+the end of the line.  There must be one transport driver on every driver
+stack and it must be at the bottom of the stack.  A good example of
+a transport driver is the TCP driver or the FILE driver.
+
+Transform drivers sit on the stack between the transport driver on the
+bottom and the user API on the top.  There can be any number of transport
+drivers on a stack, although in most cases there will be no more than one or 
+two.  Transform drivers alway relie on the fact that there is a driver
+below then to which they can \emph{pass} the data blocks.  The transform
+driver knows it is not responisible for the actual delivery of the data.
+It is simply an interceptor in the operation change.  It can manipulate
+the operations in anyway it wants but they rely on the fact that there is
+a driver below then to which they can \emph{pass} the data blocks.  The 
+driver they pass to may be another transform driver, or it may be the
+tranport driver, it does not know or care.  The transform driver simply
+preforms its duties and then passes the work along.  Some good examples
+of transform drivers are GSI security, logging, compression, 
+and bandwidth limiting.
+
+From the description so far the reader may feel that transport drivers
+handle all of the actual protocol and transform drivers just change the
+data sent via protocol.  While this is true in many case and in some
+sense, it is not always true and it is important to look at the driver
+stack from a different perspective.  Each tranform driver can be 
+thought of as anohter layer of protocol.  Some tranform drivers, like the
+http driver, add headers to the data and then pass along both the
+header and the payload to the next driver in the stack (which is often,
+but not limited to the TCP driver).  In this case the protocol on the
+wire is http, not just TCP alone, and the remote side of the connection is
+going to have to be able to understand http in order to properly get
+at the payload.
+
+Figure 1 show the architecture of GlobusXIO.  The user interacts with 
+the simple open/close/read/write API and posts data operations to it.
+The GlobusXIO framework then forwards the buffers to along to the first
+driver in the stack.  When then driver \emph{passes} the operation along
+the framework forwards it to the next driver in the stack and so on
+until the operation reaches the transport driver.  Once the transport 
+driver has completed the operation it tells the framework it is 
+\emph{finished}.  We refer to this as finishing an operation.  The 
+framework then moves up the stack notifing each driver that the 
+one below it is done with the task that was passed to it.  Drivers
+are free to do some processing in between the time they are told
+the lower driver finished and the time they finish the operation.
+
+\section{Asynchronous C Programming}
+GlobusXIO is designed on an asynchronous model, therefore
+the driver interface is desinged on an asynchronous model as well.
+The driver is signaled to perform a task.  It can complete this
+task at anytime without regard for the thread of execution that
+made the request.  When the driver completes the task it signals
+the GlobusXIO framework that it is finished.  That is the drivers 
+async model in a nutshell.  
+
+Explaining
+proper asynchronous programming techniques is a task of its own.  We
+do not intend to take on this task in this guide, however since 
+understanding at least the basic ideas behind it are crucial to 
+developing GlobusXIO drivers we will briefly discuss it in this section.
+Readers familar with asynchronous programming should skip this section.
+
+In C 101 we learn about the main() function.  When an application 
+begins a single thread starts executing instructions at the begining
+of the main function.  Execution continues, following branches, loops,
+jumps to function etc.  As soon execution reaches the end of the main()
+function it ends.  To the developer this model is very easy to follow.
+Processing occurs sequential and the line of code that will be executed
+is very predicable.
+
+The blocking models follows this way of thinking.  When a developer wishes
+to read data from a socket they call the read() function.  Exectution 
+enters that function and does not return until it has read the data which
+the user requested.  While in that function the users application 
+blocks.  This is an easy and predictable means of performan IO, however
+it is not the most efficient use of the CPU.  While waiting on for data
+to be read the CPU is largely idle and the application could very well
+have work it would to do that is independent of that read.  However, since
+it is blocked in that function it can do nothing but wait.
+
+The asynchronous IO model is much different.  Instead of blocking
+for an operation to complete the developer \emph{registers} the IO event.
+As part of the registration the developer passes in a function pointer.
+When the even completes that funciton pointer is called.  So in 
+asynchronous IO, many operations are posted and at any time an event
+can take place that will cause their callback to fire.  The developer
+must be prepared for the event to occur at any time after registration.
+This can get very complicated in the face of a many simulataneous
+operations.
+
+Developers must be aware that many event callbask could happen at the same
+time.  Therefore they need to use mutexs etc..
+This can lead to race conditions.  A race condition is a term
+used to describe a bug that occurs under specific timing, rave to the
+bug.
+
+The best way to approach asymchronous programming is with a finite state
+machine.  define state and transistion.  under each state there is 
+a set of events that can happen.  each event defines a transition from
+the current state to the next state....
+
+many times people developers need to maintain state across event.  events
+need to be glued together with data.  in globus this is handled with 
+void *.  when the user registers an event they can register a pointer
+to their own memory with the event.  this is just a block of mem that
+the developer defines.  usually it is a data structure with ....
+
+for more info see
+-- pthread manual
+-- asynch guide
+    http://www.globus.org/toolkit/docs/3.2/developer/globus-async.html
+-- lib event maybe
+
+
+\section{Driver Developement}
+In this section we explain how to make a driver...
+
+basic idea is that there is a set function with a well defined parameter
+list.  pointers to the functions are wrapped together in a data structure.
+this structure is symbol name that is know according to a naming convention,
+xio loads driver and looks up symble, then it has all the iface funcs.
+as part of the contract between iface func and driver devleoper, all iface
+funcs have an expected behavior.  for ecample, the read one, expects to read,
+the driver auth must honor this contract.  there is an API that assist in this
+goal and a set of rules that must be followed in impl.  this section
+gives a quick overview of how it works.  the tricky bits and hardcore 
+rules are left out.  first the reader should get an understanding of 
+the general flow, then we show the gorey details.
+
+\subsection{The Operation}
+first this to look at is the operation structure.  every iterface function
+represents a call from the framework to the driver requesting that the 
+driver perform some operation (depending on which iface was called).  the 
+driver can perform this on its own time.  since this is an asyn model it 
+is not expected to finish withing scope of funciton call.  needs a way to 
+signal to the framework that it finished.  op struct is used for this.
+on any iface call driver is given an op struct.  it hangs onto this
+struct until it is finished honoring the request, at which point it calls
+finished.  as soon as finished is called the op is no longer valid.  there
+are some funcs that use it, cant call those after finished is called.
+
+hiw does the driver accompilsh the request... system helpers... transform.
+passing.  if the driver is transform it can pass the request along the stack.
+can pass anything along, no reason it has to be the same op.... gsi driver,
+can implment drivers using GlobusXIO.  some examples of impl.  
+how do we talk about transform work?
+
+\subsection{Handles}
+glueing together operations... nflating state, blah...
+
+\subsection{The Big Four}
+lets take a look at simple flow from open to close with IO operations in
+between
+
+\subsection{Servers}
+servers sonfuse the model slightly... prior to open need some work.  passive
+open spawns link.  link goes to open...
+
+\subsection{Driver Specific Optimizations}
+attrs
+controls
+
+\subsection{Data Descriptors}
+no idea
+
+\section{Guidelines}
+the real rules
+
+\section{Wrapblock}
+brief
+
+\section{Summary}
+
+\section*{Acknowledgements}
+
+\end{document}

@@ -262,6 +262,44 @@ globus_module_activate(
     return globus_module_activate_proxy(module_descriptor, NULL, NULL);
 }
 
+int
+globus_module_activate_array(
+    globus_module_descriptor_t *        module_array[],
+    globus_module_descriptor_t **       failed_module)
+{
+    int                                 i;
+    int                                 rc = GLOBUS_SUCCESS;
+
+    if (failed_module)
+    {
+        *failed_module = NULL;
+    }
+    for (i = 0; module_array[i] != NULL; i++)
+    {
+        rc = globus_module_activate(module_array[i]);
+
+        if (rc != GLOBUS_SUCCESS)
+        {
+            if (failed_module)
+            {
+                *failed_module = module_array[i];
+            }
+            goto deactivate_out;
+        }
+    }
+
+deactivate_out:
+    if (rc != GLOBUS_SUCCESS)
+    {
+        for (--i; i >=0; i--)
+        {
+            globus_module_deactivate(module_array[i]);
+        }
+    }
+    return rc;
+}
+/* globus_module_activate_array() */
+
 /*
  * globus_module_deactivate()
  */
