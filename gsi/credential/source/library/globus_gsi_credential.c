@@ -994,6 +994,7 @@ globus_gsi_cred_read_proxy_bio(
             /* appears to continue reading after EOF and
              * so an error occurs here
              */
+            ERR_clear_error();
             break;
         }
         
