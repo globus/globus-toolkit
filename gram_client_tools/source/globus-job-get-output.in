@@ -94,20 +94,21 @@ while [ -n "$1" ]; do
 	    if [ -z "$2" ]; then
 		globus_args_option_error "$1" "need an integer argument"
 	    fi
-	    if ! ${GLOBUS_SH_EXPR-expr} "$2" + 1 - 1 \> 0 \
+	    if ${GLOBUS_SH_EXPR-expr} "$2" + 1 - 1 \> 0 \
 		1>/dev/null 2>/dev/null
 	    then
+                case "$1" in
+                    -t|-tail)
+                        tailopt="$2"
+                        ;;
+                    -f|-follow)
+                        followopt="$2"
+                        ;;
+                esac
+                shift
+            else
 		globus_args_option_error "$1" "need an integer argument"
 	    fi
-	    case "$1" in
-		-t|-tail)
-		    tailopt="$2"
-		    ;;
-		-f|-follow)
-		    followopt="$2"
-		    ;;
-	    esac
-	    shift
 	    ;;
 	--)
 	    break
