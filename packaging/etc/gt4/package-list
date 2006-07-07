@@ -173,6 +173,7 @@ globus_scheduler_event_generator_job_manager       ws-gram/job_monitoring/job-ma
 globus_scheduler_event_generator_job_manager_setup ws-gram/job_monitoring/job-manager/c/setup gpt
 globus_c_static_container_gen               wsrf/c/parser/static_container gpt
 globus_crft_util                    ws-transfer/reliable/client/c/crft_util/source gpt
+globus_c_wsrf_registry_bindings             wsrf/c/core/registry/bindings gpt
 globus_c_wsrf_service_group                 wsrf/c/core/servicegroup/source gpt
 globus_c_wsrf_service_group_test            wsrf/c/core/servicegroup/test gpt
 globus_c_service_group_test_schema          wsrf/c/core/servicegroup/test_wsdl gpt

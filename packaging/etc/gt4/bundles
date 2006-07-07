@@ -46,6 +46,7 @@ BUNDLE gt4-c-ws-core
         globus_notification_consumer
         globus_c_ws_security
         globus_ws_core_schema 
+        globus_c_wsrf_registry_bindings
         globus_c_wsrf_service_group
         globus_libxml2
 
