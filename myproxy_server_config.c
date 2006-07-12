@@ -273,6 +273,21 @@ line_parse_callback(void *context_arg,
 	context->pubcookie_key = strdup(tokens[1]);
     }
 
+    /* added by Terry Fleury to support web portal security */
+    else if (strcmp(directive, "accepted_credentials_mapfile") == 0) {
+        context->accepted_credentials_mapfile = strdup(tokens[1]);
+    }
+    else if (strcmp(directive, "check_multiple_credentials") == 0) {
+        context->check_multiple_credentials = 0;
+        if ((strcasecmp(tokens[1], "true")) ||
+            (strcasecmp(tokens[1], "enabled")) ||
+            (strcasecmp(tokens[1], "yes")) ||
+            (strcasecmp(tokens[1], "on")) ||
+            (strcmp(tokens[1], "1"))) {
+            context->check_multiple_credentials = 1;
+        }
+    }
+
     else {
 	myproxy_log("warning: unknown directive (%s) in myproxy-server.config",
 		    directive);
@@ -583,6 +598,20 @@ check_config(myproxy_server_context_t *context)
 	} else {
 	    myproxy_log("Pubcookie support enabled");
 	}
+    }
+    if (context->accepted_credentials_mapfile) {
+        if (access(context->accepted_credentials_mapfile, R_OK) < 0) {
+            verror_put_string("accepted_credentials_mapfile %s not readable",
+                              context->accepted_credentials_mapfile);
+            verror_put_errno(errno);
+            rval = -1;
+        } else {
+            myproxy_log("using accepted_credentials_mapfile %s",
+                        context->accepted_credentials_mapfile);
+        }
+    }
+    if (context->check_multiple_credentials) {
+        myproxy_log("Checking multiple credentials during authorization");
     }
 
     return rval;
