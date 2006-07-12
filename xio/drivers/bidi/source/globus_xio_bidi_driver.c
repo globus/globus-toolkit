@@ -242,6 +242,7 @@ globus_l_xio_bidi_attr_cntl(
         case GLOBUS_XIO_BIDI_SET_PORT:
 	{
 	    bidi_attr->read_port = va_arg(ap, int);
+	    result = GLOBUS_SUCCESS;
             break;
 	}
         case GLOBUS_XIO_BIDI_SET_READ_STACK:
@@ -269,6 +270,7 @@ globus_l_xio_bidi_attr_cntl(
 	{
 	    globus_xio_stack_t * stack = va_arg(ap, globus_xio_stack_t *);
 	    *stack = bidi_attr->read_stack;
+	    result = GLOBUS_SUCCESS;
             break;
 	}
 
@@ -276,6 +278,7 @@ globus_l_xio_bidi_attr_cntl(
 	{
 	    globus_xio_stack_t * stack = va_arg(ap, globus_xio_stack_t *);
 	    *stack = bidi_attr->write_stack;
+	    result = GLOBUS_SUCCESS;
             break;
 	}
 
@@ -283,6 +286,7 @@ globus_l_xio_bidi_attr_cntl(
 	{
 	    globus_xio_stack_t * stack = va_arg(ap, globus_xio_stack_t *);
 	    *stack = bidi_attr->bootstrap_stack;
+	    result = GLOBUS_SUCCESS;
             break;
 	}
         case GLOBUS_XIO_BIDI_SET_READ_ATTR:
@@ -295,6 +299,7 @@ globus_l_xio_bidi_attr_cntl(
 	{
 	    globus_xio_attr_t * attr = va_arg(ap, globus_xio_attr_t *);
 	    *attr = bidi_attr->xio_read_attr;
+	    result = GLOBUS_SUCCESS;
             break;
 	}
         case GLOBUS_XIO_BIDI_SET_WRITE_ATTR:
@@ -307,6 +312,7 @@ globus_l_xio_bidi_attr_cntl(
 	{
 	    globus_xio_attr_t * attr = va_arg(ap, globus_xio_attr_t *);
 	    *attr = bidi_attr->xio_write_attr;
+	    result = GLOBUS_SUCCESS;
             break;
 	}
         case GLOBUS_XIO_BIDI_SET_BOOTSTRAP_ATTR:
@@ -319,6 +325,7 @@ globus_l_xio_bidi_attr_cntl(
 	{
 	    globus_xio_attr_t * attr = va_arg(ap, globus_xio_attr_t *);
 	    *attr = bidi_attr->bootstrap_attr;
+	    result = GLOBUS_SUCCESS;
             break;
 	}
         case GLOBUS_XIO_BIDI_APPLY_READ_ATTR_CNTLS:
@@ -326,6 +333,7 @@ globus_l_xio_bidi_attr_cntl(
             globus_xio_bidi_attr_cntl_callback_t attr_cntl_cb;
             attr_cntl_cb = va_arg(ap, globus_xio_bidi_attr_cntl_callback_t);
             bidi_attr->read_attr_cntl_cb = attr_cntl_cb;
+	    result = GLOBUS_SUCCESS;
             break;
         }
         case GLOBUS_XIO_BIDI_APPLY_WRITE_ATTR_CNTLS:
@@ -333,6 +341,7 @@ globus_l_xio_bidi_attr_cntl(
             globus_xio_bidi_attr_cntl_callback_t attr_cntl_cb;
             attr_cntl_cb = va_arg(ap, globus_xio_bidi_attr_cntl_callback_t);
             bidi_attr->write_attr_cntl_cb = attr_cntl_cb;
+	    result = GLOBUS_SUCCESS;
             break;
         }
         case GLOBUS_XIO_BIDI_APPLY_BOOTSTRAP_ATTR_CNTLS:
@@ -340,17 +349,14 @@ globus_l_xio_bidi_attr_cntl(
             globus_xio_bidi_attr_cntl_callback_t attr_cntl_cb;
             attr_cntl_cb = va_arg(ap, globus_xio_bidi_attr_cntl_callback_t);
             bidi_attr->bootstrap_attr_cntl_cb = attr_cntl_cb;
+	    result = GLOBUS_SUCCESS;
             break;
         }
 	case GLOBUS_XIO_BIDI_SET_MAX_WRITE_STREAMS:
 	{
 	    globus_result_t		res;
 	    
-	    if (res!=GLOBUS_SUCCESS)
-	    {
-		goto error;
-	    }
-	    globus_xio_attr_cntl(
+	    result = globus_xio_attr_cntl(
                 bidi_attr->xio_write_attr,
                 bidi_attr->mode_e_driver,
                 GLOBUS_XIO_MODE_E_SET_NUM_STREAMS,
@@ -479,8 +485,14 @@ globus_l_xio_bidi_attr_destroy(
     GlobusXIOBidiDebugEnter();
     bidi_attr=(globus_l_xio_bidi_attr_t *)attr;
 
-    globus_xio_stack_destroy(bidi_attr->read_stack);
-    globus_xio_stack_destroy(bidi_attr->write_stack);
+    if (bidi_attr->read_stack != NULL)
+    {
+    	globus_xio_stack_destroy(bidi_attr->read_stack);
+    }
+    if (bidi_attr->write_stack != NULL)
+    {
+    	globus_xio_stack_destroy(bidi_attr->write_stack);
+    }
     globus_free(attr);
     GlobusXIOBidiDebugExit();
     return GLOBUS_SUCCESS;
@@ -854,7 +866,7 @@ globus_l_xio_bidi_create_read_handle(
 
        result = globus_xio_server_get_contact_string(*handle->read_server,
                        &handle->my_contact_string); 
-       printf("CONTACT: %s\n", handle->my_contact_string);
+       /*printf("CONTACT: %s\n", handle->my_contact_string);*/
 			
     }
     GlobusXIOBidiDebugExit();                             
@@ -1055,7 +1067,8 @@ globus_l_xio_bidi_link_cntl(
     { 
       /* globus_xio_system_handle_t *   handle_out */
       case GLOBUS_XIO_TCP_GET_HANDLE:
-        out_handle = va_arg(ap, globus_xio_system_handle_t *);
+	out_handle = va_arg(ap, globus_xio_system_handle_t *);
+        /*out_handle = va_arg(ap, globus_xio_system_socket_handle_t *);*/
         *out_handle = *accepted_handle;
         break;
 
@@ -1446,10 +1459,13 @@ globus_l_xio_bidi_read_server_close_cb(
     GlobusXIOName(globus_l_xio_bidi_read_server_close_cb);
     GlobusXIOBidiDebugEnter();
     handle=user_arg;
+    /*NEWLOCK
+    	globus_mutex_lock(&handle->mutex);*/
         if(handle->outstanding_op)
         {
 	    if(handle->state==GLOBUS_XIO_BIDI_CLOSING)
 	    {
+		    /*I think this is causing the errors*/
                 globus_xio_driver_finished_close(handle->outstanding_op, GLOBUS_SUCCESS);
 	    }
 	}
@@ -1524,21 +1540,27 @@ globus_l_xio_bidi_write_handle_close_cb(
     void *                              user_arg)
 {
     globus_l_xio_bidi_handle_t *     handle;
-    globus_result_t		     res;
+    globus_result_t		     res=GLOBUS_SUCCESS;
     
     GlobusXIOName(globus_l_xio_bidi_write_handle_close_cb);
 
     GlobusXIOBidiDebugEnter();
     handle = (globus_l_xio_bidi_handle_t *) user_arg;
 
+        globus_l_xio_bidi_bootstrap_server_close_cb(NULL, handle);
+
+	/*taking this out for the moment
     res = globus_xio_register_close(handle->bootstrap_handle, 
 		    	handle->attr->bootstrap_attr,
 			globus_l_xio_bidi_close_cb,
-			handle);
+			handle);*/
+    /*Add mutex here
+    globus_mutex_lock(&handle->mutex);*/
     if (handle->state!=GLOBUS_XIO_BIDI_CLOSING)
     {
         handle->state=GLOBUS_XIO_BIDI_READWRITE_CLOSED;
     }
+    /*globus_mutex_unlock(&handle->mutex);*/
     if(res !=GLOBUS_SUCCESS)
     {
     GlobusXIOBidiDebugExitWithError();
@@ -1597,12 +1619,12 @@ globus_l_xio_bidi_close(
 
     globus_mutex_lock(&handle->mutex);
     handle->outstanding_op=op;
-    if((handle->state!=GLOBUS_XIO_BIDI_BOOTSTRAP_CLOSED)&
+    if((handle->state!=GLOBUS_XIO_BIDI_BOOTSTRAP_CLOSED)&&
 	(handle->state!=GLOBUS_XIO_BIDI_READWRITE_CLOSED))
     {
     }
-       if((handle->state!=GLOBUS_XIO_BIDI_CLOSING)&
-		(handle->state!=GLOBUS_XIO_BIDI_BOOTSTRAP_CLOSED)&
+       if((handle->state!=GLOBUS_XIO_BIDI_CLOSING)&&
+		(handle->state!=GLOBUS_XIO_BIDI_BOOTSTRAP_CLOSED)&&
 		 (handle->state!=GLOBUS_XIO_BIDI_READWRITE_CLOSED))
        {
 
@@ -1655,11 +1677,7 @@ globus_l_xio_bidi_read_cb(
     GlobusXIOBidiDebugEnter();
     op=user_arg;       
 
-    if(globus_xio_driver_eof_received(op))
-    {
-printf("XXX read is eof\n");
-    }
-		    
+
     globus_xio_driver_finished_read(op, result, nbytes);
 
     GlobusXIOBidiDebugExit();
