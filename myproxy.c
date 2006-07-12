@@ -331,7 +331,7 @@ myproxy_authenticate_init(myproxy_socket_attrs_t *attrs,
 
 
 int 
-myproxy_authenticate_accept(myproxy_socket_attrs_t *attrs, char *client_name, const int namelen) 
+myproxy_authenticate_accept_fqans(myproxy_socket_attrs_t *attrs, char *client_name, const int namelen, char ***fqans)
 {
     char error_string[1024];
    
@@ -355,7 +355,20 @@ myproxy_authenticate_accept(myproxy_socket_attrs_t *attrs, char *client_name, co
         verror_put_string("Error getting client name: %s\n", error_string);
         return -1;
     }
+
+    if (fqans && (GSI_SOCKET_get_peer_fqans(attrs->gsi_socket, fqans) == GSI_SOCKET_ERROR)) {
+        GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
+	      			    sizeof(error_string));
+	verror_put_string("Error getting client attributes: %s. Continuing withou attributes support.\n", error_string);
+    }
+
     return 0;
+}
+
+int
+myproxy_authenticate_accept(myproxy_socket_attrs_t *attrs, char *client_name, const int namelen)
+{
+   return myproxy_authenticate_accept_fqans(attrs, client_name, namelen, NULL);
 }
 
 int

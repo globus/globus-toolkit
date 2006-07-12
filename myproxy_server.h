@@ -6,6 +6,9 @@
 #ifndef __MYPROXY_SERVER_H
 #define __MYPROXY_SERVER_H
 
+#define MYPROXY_SERVER_POLICY_TYPE_FQAN "FQAN:"
+#define MYPROXY_SERVER_POLICY_TYPE_SUBJECT "SUBJECT:"
+
 extern int errno;
 
 typedef struct 
@@ -50,6 +53,11 @@ typedef struct
   char *pubcookie_key;              /* Pubcookie application server key */
 } myproxy_server_context_t;
 
+typedef struct myproxy_server_peer_t {
+  char name[1024];	/* shouldn't be allocated dynamicaly? */
+  char **fqans;
+} myproxy_server_peer_t;
+
 
 /**********************************************************************
  *
@@ -79,6 +87,15 @@ int myproxy_server_check_policy_list(const char **dn_list,
 				     const char *client_name);
 
 /*
+ * myproxy_server_check_policy_list_ext()
+ *
+ * Same as myproxy_server_check_policy_list() but receives more detailed
+ * client description.
+ */
+int myproxy_server_check_policy_list_ext(const char **dn_list,
+					 myproxy_server_peer_t *client);
+
+/*
  * myproxy_server_check_policy()
  *
  * Check to see if the given client matches the dn_regex.
@@ -87,6 +104,14 @@ int myproxy_server_check_policy_list(const char **dn_list,
  * -1 on error, setting verror.
  */
 int myproxy_server_check_policy(const char *dn_regex,
-				const char *client_name);
+				const char *client);
 
+/*
+ * myproxy_server_check_policy_ext()
+ *
+ * Same as myproxy_server_check_policy() but receives more detailed client
+ * description.
+ */
+int myproxy_server_check_policy_ext(const char *dn_regex,
+				    myproxy_server_peer_t *client);
 #endif /* !__MYPROXY_SERVER_H */

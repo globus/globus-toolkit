@@ -930,6 +930,84 @@ GSI_SOCKET_get_peer_hostname(GSI_SOCKET *self)
     return strdup(info->h_name);
 }
 
+static int
+add_fqan(char ***fqans, const char *fqan)
+{
+   int current_len;
+   char **new_fqans;
+
+   current_len = 0;
+   if (fqans != NULL) {
+      while (fqans[current_len] != NULL)
+	 current_len++;
+   }
+
+   new_fqans = realloc(*fqans, (current_len + 2) * sizeof(*new_fqans));
+   if (new_fqans == NULL) {
+      return GSI_SOCKET_ERROR;
+   }
+
+   new_fqans[current_len] = strdup(fqan);
+   new_fqans[current_len+1] = NULL;
+   *fqans = new_fqans;
+
+   return 0;
+}
+
+int
+GSI_SOCKET_get_peer_fqans(GSI_SOCKET *self, char ***fqans)
+{
+#ifndef HAVE_VOMS
+   *fqans = NULL;
+   return 0;
+#else
+   char **local_fqans = NULL;
+   int ret;
+   struct vomsdata *voms_data = NULL;
+   struct voms **voms_cert  = NULL;
+   char **fqan = NULL;
+   int voms_err;
+   char *err_msg;
+
+   voms_data = VOMS_Init(NULL, NULL);
+   if (voms_data == NULL) {
+      self->error_string = strdup("Failed to read VOMS attributes, VOMS_Init() failed");
+      return GSI_SOCKET_ERROR;
+   }
+
+   ret = VOMS_RetrieveFromCtx(self->gss_context, RECURSE_CHAIN,
+	                      voms_data, &voms_err);
+   if (ret == 0) {
+      if (voms_err == VERR_NOEXT) {
+	 /* No VOMS extensions present, return silently */
+	 ret = 0;
+	 goto end;
+      } else {
+         err_msg = VOMS_ErrorMessage(voms_data, voms_err, NULL, 0);
+	 asprintf(&self->error_string, "Failed to read VOMS attributes: %s",
+	          err_msg);
+	 free(err_msg);
+	 ret = GSI_SOCKET_ERROR;
+	 goto end;
+      }
+   }
+
+   for (voms_cert = voms_data->data; voms_cert && *voms_cert; voms_cert++) {
+      for (fqan = (*voms_cert)->fqan; fqan && *fqan; fqan++) {
+	 add_fqan(&local_fqans, *fqan);
+      }
+   }
+
+   *fqans = local_fqans;
+   ret = 0;
+
+end:
+   if (voms_data)
+      VOMS_Destroy(voms_data);
+
+   return ret;
+#endif
+}
 
 int
 GSI_SOCKET_write_buffer(GSI_SOCKET *self,

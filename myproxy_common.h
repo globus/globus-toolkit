@@ -68,6 +68,10 @@ typedef int socklen_t;
 #include <krb5.h>
 #endif
 
+#if defined(HAVE_VOMS)
+#include <voms_apic.h>
+#endif
+
 #if defined(HAVE_SECURITY_PAM_APPL_H)
 # include <security/pam_appl.h>
 #elif defined(HAVE_PAM_PAM_APPL_H)
