@@ -691,21 +691,63 @@ myproxy_server_config_read(myproxy_server_context_t *context)
 
 
 int
-myproxy_server_check_policy_list(const char **dn_list, const char *client_name)
+myproxy_server_check_policy_list_ext(const char **policy_list, myproxy_server_peer_t *client)
 {
-    if ((dn_list == NULL) || (client_name == NULL)) {
+    const char *policy;
+    int ret;
+
+    if ((policy_list == NULL) || (client == NULL)) {
 	return 0;
     }
 
-    return is_name_in_list(dn_list, client_name);
+    while ((policy = *policy_list++) != NULL) {
+       ret = myproxy_server_check_policy_ext(policy, client);
+       if (ret == 1)
+	  return 1;
+    }
+
+    return 0;
 }
 
 int
-myproxy_server_check_policy(const char *dn_regex, const char *client_name)
+myproxy_server_check_policy_list(const char **dn_list, const char *client)
 {
-    if ((dn_regex == NULL) || (client_name == NULL)) {
+   myproxy_server_peer_t peer;
+   
+   memset(&peer, 0, sizeof(peer));
+   strncpy(peer.name, client, sizeof(peer.name)-1);
+   return myproxy_server_check_policy_list_ext(dn_list, &peer);
+}
+
+int
+myproxy_server_check_policy_ext(const char *policy, myproxy_server_peer_t *client)
+{
+    if ((policy == NULL) || (client == NULL)) {
 	return 0;
     }
 
-    return regex_compare(dn_regex, client_name);
+    if (strncasecmp(policy, MYPROXY_SERVER_POLICY_TYPE_FQAN,
+	            strlen(MYPROXY_SERVER_POLICY_TYPE_FQAN)) == 0) {
+       if (client->fqans == NULL)
+	  return 0;
+       policy += strlen(MYPROXY_SERVER_POLICY_TYPE_FQAN);
+       return is_name_in_list(client->fqans, policy);
+    } else if (strncasecmp(policy, MYPROXY_SERVER_POLICY_TYPE_SUBJECT,
+	     strlen(MYPROXY_SERVER_POLICY_TYPE_SUBJECT)) == 0) {
+       policy += strlen(MYPROXY_SERVER_POLICY_TYPE_SUBJECT);
+    }
+    if (client->name == NULL)
+       return 0;
+
+    return regex_compare(policy, client->name);
+}
+
+int
+myproxy_server_check_policy(const char *dn_regex, const char *client)
+{
+   myproxy_server_peer_t peer;
+
+   memset(&peer, 0, sizeof(peer));
+   strncpy(peer.name, client, sizeof(peer.name)-1);
+   return myproxy_server_check_policy_ext(dn_regex, &peer);
 }

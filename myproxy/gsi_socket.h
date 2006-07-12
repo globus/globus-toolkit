@@ -137,6 +137,16 @@ int GSI_SOCKET_get_peer_name(GSI_SOCKET *gsi_socket,
 char *GSI_SOCKET_get_peer_hostname(GSI_SOCKET *gsi_socket);
 
 /*
+ * GSI_SOCKET_get_peer_fqans()
+ *
+ * Returns a NULL terminated list of the client's FQAN's (full quolified
+ * attribute names).
+ *
+ */
+
+int GSI_SOCKET_get_peer_fqans(GSI_SOCKET *gsi_socket, char ***fqans);
+
+/*
  * GSI_SOCKET_write_buffer()
  *
  * Write the given buffer to the peer. If authentication has been done,

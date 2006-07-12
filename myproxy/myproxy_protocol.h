@@ -100,6 +100,17 @@ int myproxy_authenticate_accept(myproxy_socket_attrs_t *attr,
                                 char *client_name, const int namelen);
 
 /*
+ * myproxy_authenticate_accept_fqans()
+ *
+ * The same as myproxy_authenticate_accept() but also returns a list of FQANs
+ * if suggested by the peer.
+ *
+ */
+int myproxy_authenticate_accept_fqans(myproxy_socket_attrs_t *attr,
+                                      char *client_name, const int namelen,
+				      char ***fqans); 
+
+/*
  * myproxy_serialize_request()
  * 
  * Serialize a request object into a buffer to be sent over the network.
