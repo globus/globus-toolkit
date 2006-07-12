@@ -6,6 +6,8 @@
 # and stores the credential in the repository using
 #   myproxy-admin-load-credential
 
+use File::Temp qw(tempdir);
+
 # check for program dependencies
 
 chomp($grid_cert_request = `which grid-cert-request 2>/dev/null`);
@@ -66,7 +68,7 @@ if (!$opt_c) {
     chop($opt_c = <STDIN>);
 }
 
-$tmp_dir_name = "/tmp";
+$tmp_dir_name = tempdir("myproxy_adduser_XXXXXX", TMPDIR => 1, CLEANUP => 1);
 $prefix="myproxy_adduser_";
 $certfile = "${tmp_dir_name}/${prefix}cert.pem";
 $reqfile = "${tmp_dir_name}/${prefix}cert_request.pem";
@@ -146,6 +148,7 @@ sub cleanup {
 	&wipefile($keyfile);
 	unlink($keyfile);
     }
+    # temporary directory is automatically removed by File::Temp
 }
 
 sub wipefile {
