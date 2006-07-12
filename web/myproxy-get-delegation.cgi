@@ -12,9 +12,6 @@ my $username    = param(USERNAME);
 my $password    = param(PASSWORD);
 my $lifetime    = param(LIFETIME);
 
-my $outfile = "$username.cred";
-my $args     = "-s localhost -l $username -t $lifetime -o $outfile";
-
 # Check length of password
 my $len = length ($password);
 if (($len < 5) || ($len > 10)) {
@@ -28,6 +25,8 @@ if ($lifetime =~ /\D/) {
   invalidlifetime();
 }
 
+my $outfile = "$username.cred";
+my $args     = "-s localhost -l $username -t $lifetime -o $outfile";
 
 # use expect to run the command
 my $cmd_filehandle = Expect->spawn("$program $args");
