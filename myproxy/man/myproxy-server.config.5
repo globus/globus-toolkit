@@ -424,6 +424,34 @@ certificate for verifying signatures on Pubcookie granting cookies.
 .BI pubcookie_app_server_key " full-path-to-key-file"
 Sets the full path to the
 2048 byte application server key (PubcookieCryptKeyfile).
+.PP
+The following parameters are used primarily when utilizing MyProxy as a
+delegation service for web portals.
+.TP
+.BI accepted_credentials_mapfile " full-path-to-mapfile"
+This parameter points to a grid-mapfile, which is possibly different from
+other mapfiles above. When specified, this mapfile is utilized during
+puts/stores (e.g. with 
+.BR myproxy-init (1)
+and
+.BR myproxy-store (1)).
+A credential is authorized to be put/stored only under the username
+specified in the mapfile.  This prevents storing a user's credential under a
+different username.  Note that the credential checked for the presence of a
+UserDN/Username entry in the mapfile is the credential utilized to secure
+the connection between client and server, NOT the actual credential being
+stored.  As the credential which secures the TLS connection is typically the
+same as the credential being stored, this should not be a major issue.
+.TP
+.BI check_multiple_credentials " boolean"
+Typically when a credential is accessed by a client, the server checks only
+one credential for possible access authorization, even if there are multiple
+credentials stored under the given username.  If this option is set to
+"true" AND the client does not specify a credential name for a MyProxy
+operation, then the server will check multiple credentials with the given
+username.  If a credential is found to be authorized for client access, then
+that one will be used during processing.  The default value for this option
+is "false".
 .SH EXAMPLES
 The following policy enables all credential repository features.
 .PP
@@ -487,6 +515,7 @@ Bill Baker,
 Jim Basney,
 Shiva Shankar Chetan,
 Patrick Duda,
+Terry Fleury,
 Jarek Gawor,
 Monte Goode,
 Daniel Kouril,

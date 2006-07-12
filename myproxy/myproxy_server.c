@@ -305,9 +305,13 @@ handle_client(myproxy_socket_attrs_t *attrs,
     char  *userdn = NULL;
     int   requestlen;
     int   use_ca_callout = 0;
+    int   found_auth_cred = 0;
+    int   num_auth_creds = 0;
     time_t now;
 
     myproxy_creds_t *client_creds;
+    myproxy_creds_t *all_creds;
+    myproxy_creds_t *cur_cred;
     myproxy_request_t *client_request;
     myproxy_response_t *server_response;
 
@@ -384,6 +388,62 @@ handle_client(myproxy_socket_attrs_t *attrs,
 	respond_with_error_and_die(attrs,
 				   "Invalid username received.\n");
     }
+
+    /* If the check_multiple_credentials option has been set AND no
+     * client_request->credname is specified, then check ALL credentials
+     * with the specified username for one that matches all other criteria
+     * set by the user.  If we find at least one credential that is okay
+     * according to myproxy_authorize_accept, we SET the credname and
+     * continue processing as normal.  (Thus we know that the credential
+     * with that username AND credname will be utilized.)  Otherwise, we
+     * error out here since there are no matching credentials with the given
+     * username and other user-specified criteria (e.g. passphrase).  */
+    if ((context->check_multiple_credentials) &&
+        (client_request->credname == NULL) &&
+        /* Do an initial check for things like INFO which always authz ok */
+        (myproxy_authorize_accept(context,attrs,
+                                  client_request,client_name) != 0)) {
+
+        /* Create a new temp cred struct pointer to fetch all creds */
+        all_creds = malloc(sizeof(*all_creds));
+        memset(all_creds, 0, sizeof(*all_creds));
+        /* For fetching all creds, we need set only the username */
+        all_creds->username = strdup(client_request->username);
+
+        if ((num_auth_creds = myproxy_admin_retrieve_all(all_creds)) >= 0) {
+            /* Loop through all_creds searching for authorized credential */
+            found_auth_cred = 0;
+            cur_cred = all_creds;
+            while ((!found_auth_cred) && (cur_cred != NULL)) {
+                myproxy_debug("Checking credential for '%s' named '%s'",
+                              cur_cred->username,cur_cred->credname);
+                /* Copy the cur_cred->credname (if present) into the
+                 * client_request structure. Be sure to free later. */
+                if (cur_cred->credname)
+                    client_request->credname = strdup(cur_cred->credname);
+                /* Check to see if the credname is authorized */
+                if (myproxy_authorize_accept(context,attrs,client_request,
+                                             client_name) == 0) {
+                    found_auth_cred = 1;  /* Good! Authz success! */
+                } else {
+                    /* Free up char memory allocated by strdup earlier */
+                    if (cur_cred->credname)
+                        free(client_request->credname);
+                    cur_cred = cur_cred->next;   /* Try next cred in list */
+                }
+            } /* end while ((!found_auth_cred) && (cur_cred != NULL)) loop */
+        } /* end if (myproxy_admin_retrieve_all) */
+
+        myproxy_creds_free(all_creds);
+
+        if (!found_auth_cred) {
+            myproxy_log("checked %d credentials with username '%s' "
+                        "but none were authorized", 
+                        num_auth_creds,client_request->username);
+            respond_with_error_and_die(attrs,"Checked multiple credentials. "
+                "None were authorized for access.\n");
+        } /* end if (!found_auth_cred) */
+    } /*** END check_multiple_credentials ***/
 
     /* All authorization policies are enforced in this function. */
     if (myproxy_authorize_accept(context, attrs, 
@@ -1263,6 +1323,9 @@ static int myproxy_check_policy(myproxy_server_context_t *context,
  *   Client DN must match credential-specific authorized_renewers policy.
  *   DN in second X.509 authentication must match owner of credentials.
  *   Private key can not be encrypted in this case.
+ * PUT, STORE:
+ *   If accepted_credentials_mapfile, client_name / client_request->username
+ *   map entry must be present.
  * PUT, STORE, and DESTROY:
  *   Client DN must match accepted_credentials.
  *   If credentials already exist for the username, the client must own them.
@@ -1286,6 +1349,8 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
    int   trusted_retriever = 0;
    int   return_status = -1;
    myproxy_creds_t creds = { 0 };
+   char* oldenv = NULL;
+   int   accepted = 1;         /* For accepted_credentials_mapfile test */
 
    credentials_exist = myproxy_creds_exist(client_request->username,
 					   client_request->credname);
@@ -1377,7 +1442,37 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 
    case MYPROXY_PUT_PROXY:
    case MYPROXY_STORE_CERT:
-   case MYPROXY_DESTROY_PROXY:
+        /* Check to see if the accepted_credentials_mapfile value has been
+         * specified in the config file.  Also do a sanity check and verify
+         * that the mapfile is still readable.  */
+        if ((context->accepted_credentials_mapfile != NULL) &&
+            (access(context->accepted_credentials_mapfile, R_OK) == 0)) {
+            myproxy_debug("checking accepted_credentials_mapfile");
+
+            /* Save the current GRIDMAP environment variable so we can set it 
+             * to accepted_credentials_mapfile for a globus_gss_assist call */
+            oldenv = (char*)getenv("GRIDMAP");
+            setenv("GRIDMAP", context->accepted_credentials_mapfile, 1);
+
+            /* Note: globus_gss_assist_userok returns 0 upon success */
+            if (globus_gss_assist_userok(client_name,
+                                         client_request->username) != 0) {
+                accepted = 0;  /* So we can first restore GRIDMAP env var  */
+                verror_put_string("PUT/STORE: No mapping found for "
+                                  "'%s' and '%s' in '%s'",
+                                  client_name,client_request->username,
+                                  context->accepted_credentials_mapfile);
+            }
+
+            /* Now, restore the previous GRIDMAP environment variable */
+            setenv("GRIDMAP", oldenv, 1);
+            if (!accepted) {  /* globus_gss_assist call failed! */
+                goto end;
+            }
+        }
+        /* Fall through to more checking, including MYPROXY_DESTROY_PROXY */
+
+   case MYPROXY_DESTROY_PROXY:  /* Note: Includes PUT and STORE */
        /* Is this client authorized to store credentials here? */
        authorization_ok =
 	   myproxy_server_check_policy_list_ext((const char **)context->accepted_credential_dns, client);
@@ -1637,3 +1732,4 @@ end:
    authorization_data_free_contents(&auth_data);
    return return_status;
 }
+
