@@ -119,10 +119,6 @@ sub EndTag
 
     if ($#scope == 0)
     {
-        if ($self->{TOTAL_PROCESSES} eq 0)
-        {
-            $self->{TOTAL_PROCESSES} = 1;
-        }
         $self->log("Adding totalprocesses=" . $self->{TOTAL_PROCESSES});
 
         $self->{JOB_DESCRIPTION}->add(
@@ -158,7 +154,7 @@ sub EndTag
                     }
 
                     my $attributes = $self->{ATTRIBUTES};
-                    my $name = %{$attributes->{name}};
+                    my $name = %$attributes->{name};
                     if (defined $name)
                     {
                         push(@$newValue, [$name, $self->{CDATA}]);
@@ -171,7 +167,7 @@ sub EndTag
                 else
                 {
                     my $attributes = $self->{ATTRIBUTES};
-                    my $name = %{$attributes->{name}};
+                    my $name = %$attributes->{name};
                     if (defined $name)
                     {
                         $newValue = [ [ $name, $self->{CDATA} ] ];
@@ -186,6 +182,15 @@ sub EndTag
                 if(defined($self->{JOB_DESCRIPTION}->logfile()))
                 {
                     $logIsOpen = 1;
+                }
+
+                if (ref($newValue) eq 'ARRAY')
+                {
+                    $self->log("Adding $tagName=@$newValue\n");
+                }
+                else
+                {
+                    $self->log("Adding $tagName=$newValue\n");
                 }
 
                 $self->{JOB_DESCRIPTION}->add($tagName, $newValue);
