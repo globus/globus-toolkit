@@ -5,6 +5,7 @@ Binary compatibility of the C API is not guaranteed between releases.
 Version History
 ---------------
 v3.6 XX Xxx 2006
+  - support VOMS attributes in myproxy-server.config(5) policies
   - in CA, issue certificates valid starting 5 minutes in the past to
     account for possible clock skew between hosts
 
