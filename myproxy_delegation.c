@@ -43,9 +43,6 @@ int myproxy_get_delegation(
     assert(client_request != NULL);
     assert(server_response != NULL);
 
-    myproxy_debug("want_trusted_certs = %d",
-		  client_request->want_trusted_certs);
-    
     /* Compatibility with older API. Caller's client_request struct
        may not have the new authzcreds member, so we need a new struct. */
     if (certfile != NULL) {
