@@ -467,9 +467,11 @@ author_status_t
 auth_cert_get_status(struct myproxy_creds *creds, char *client_name,
 		     myproxy_server_context_t* config)
 {
-    if (myproxy_creds_exist(creds->username, creds->credname) == 1 &&
-	config->authorized_renewer_dns) {
-	return AUTHORIZEMETHOD_SUFFICIENT;
+    /* Just check here if this server allows renewal.
+       Other checks for credential existence or CA configuration
+       are done elsewhere. */
+    if (config->authorized_renewer_dns) {
+        return AUTHORIZEMETHOD_SUFFICIENT;
     }
 
     return AUTHORIZEMETHOD_DISABLED;
@@ -588,6 +590,7 @@ int auth_cert_check_client (authorization_data_t *auth_data,
    unsigned char *p;
    unsigned int signature_len;
    char * authorization_subject = NULL;
+   char * cred_subject = NULL;
    int return_status = 0;
 
    p = (unsigned char *)auth_data->client_data;
@@ -621,7 +624,19 @@ int auth_cert_check_client (authorization_data_t *auth_data,
        goto end;
    }
 
-   if (strcmp(authorization_subject, creds->owner_name) != 0) {
+   if (creds->location) {
+       if (ssl_get_base_subject_file(creds->location, &cred_subject)) {
+           verror_put_string("internal error: ssl_get_base_subject_file() failed");
+           goto end;
+       }
+   } else {
+       if (user_dn_lookup(creds->username, &cred_subject, config)) {
+           verror_put_string("CA failed to map user ", creds->username);
+           goto end;
+       }
+   }
+
+   if (strcmp(authorization_subject, cred_subject) != 0) {
        verror_prepend_string("certificate subject does not match credential to be renewed");
        goto end;
    }
@@ -634,6 +649,8 @@ end:
       ssl_credentials_destroy(chain);
    if (authorization_subject)
       free(authorization_subject);
+   if (cred_subject)
+      free(cred_subject);
 
    return return_status;
 }
