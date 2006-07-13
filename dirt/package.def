@@ -170,6 +170,7 @@ globus_wsrf_resource_test wsrf/c/resource/test dirt.sh
 globus_c_ws_messaging wsrf/c/message/source dirt.sh
 globus_c_ws_messaging_test wsrf/c/message/test dirt.sh
 globus_c_wsrf_core_test_interop_client_test wsrf/c/core/tests/interop/test dirt.sh
+globus_c_wsrf_securewidget_bindings wsrf/c/core/tests/interop/secure-source dirt.sh
 globus_c_wsrf_core_performance_test wsrf/c/core/tests/performance dirt.sh
 globus_notification_consumer wsrf/c/core/notification/source dirt.sh
 globus_notification_consumer_test wsrf/c/core/notification/test dirt.sh
