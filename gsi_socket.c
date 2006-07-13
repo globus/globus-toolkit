@@ -930,6 +930,7 @@ GSI_SOCKET_get_peer_hostname(GSI_SOCKET *self)
     return strdup(info->h_name);
 }
 
+#ifdef HAVE_VOMS
 static int
 add_fqan(char ***fqans, const char *fqan)
 {
@@ -953,6 +954,7 @@ add_fqan(char ***fqans, const char *fqan)
 
    return 0;
 }
+#endif
 
 int
 GSI_SOCKET_get_peer_fqans(GSI_SOCKET *self, char ***fqans)
