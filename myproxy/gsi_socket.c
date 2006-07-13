@@ -685,12 +685,11 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self, char *accepted_peer_names[])
 
     self->peer_name = strdup(gss_buffer.value);
     myproxy_debug("server name: %s", self->peer_name);
+    myproxy_debug("checking that server name is acceptable...");
 
     /* We told gss_assist_init_sec_context() not to check the server
        name so we can check it manually here. */
     for (i=0; accepted_peer_names[i] != NULL; i++) {
-	myproxy_debug("checking if server name matches \"%s\"",
-		      accepted_peer_names[i]);
 	tmp_gss_buffer.value = (void *)accepted_peer_names[i];
 	tmp_gss_buffer.length = strlen(accepted_peer_names[i]);
 	if (strchr(accepted_peer_names[i],'@') && 
@@ -724,10 +723,12 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self, char *accepted_peer_names[])
 	}
 
 	if (rc) {
-	    myproxy_debug("server name accepted");
+	    myproxy_debug("server name matches \"%s\"",
+                      accepted_peer_names[i]);
 	    break;
 	} else {
-	    myproxy_debug("server name does not match");
+	    myproxy_debug("server name does not match \"%s\"",
+                      accepted_peer_names[i]);
 	}
     }
     if (!rc) {		/* no match with acceptable target names */
@@ -735,6 +736,7 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self, char *accepted_peer_names[])
 	return_value = GSI_SOCKET_UNAUTHORIZED;
 	goto error;
     }
+    myproxy_debug("authenticated server name is acceptable");
 
     /* Success */
     return_value = GSI_SOCKET_SUCCESS;
