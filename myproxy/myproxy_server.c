@@ -402,7 +402,7 @@ handle_client(myproxy_socket_attrs_t *attrs,
         (client_request->credname == NULL) &&
         /* Do an initial check for things like INFO which always authz ok */
         (myproxy_authorize_accept(context,attrs,
-                                  client_request,client_name) != 0)) {
+                                  client_request,&client) != 0)) {
 
         /* Create a new temp cred struct pointer to fetch all creds */
         all_creds = malloc(sizeof(*all_creds));
@@ -423,7 +423,7 @@ handle_client(myproxy_socket_attrs_t *attrs,
                     client_request->credname = strdup(cur_cred->credname);
                 /* Check to see if the credname is authorized */
                 if (myproxy_authorize_accept(context,attrs,client_request,
-                                             client_name) == 0) {
+                                             &client) == 0) {
                     found_auth_cred = 1;  /* Good! Authz success! */
                 } else {
                     /* Free up char memory allocated by strdup earlier */
@@ -1455,12 +1455,12 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
             setenv("GRIDMAP", context->accepted_credentials_mapfile, 1);
 
             /* Note: globus_gss_assist_userok returns 0 upon success */
-            if (globus_gss_assist_userok(client_name,
+            if (globus_gss_assist_userok(client->name,
                                          client_request->username) != 0) {
                 accepted = 0;  /* So we can first restore GRIDMAP env var  */
                 verror_put_string("PUT/STORE: No mapping found for "
                                   "'%s' and '%s' in '%s'",
-                                  client_name,client_request->username,
+                                  client->name,client_request->username,
                                   context->accepted_credentials_mapfile);
             }
 
