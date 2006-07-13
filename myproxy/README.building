@@ -14,14 +14,17 @@ You'll need GSI user credentials to run the MyProxy clients and host
 credentials to run the myproxy-server.
 
 Second, you need special versions of the GNU autotools for working
-with GPT.  Download
-<ftp://ftp.globus.org/pub/gt4/4.0/4.0.0/gpt/autotools-for-gpt3.2autotools2004.tar.gz>
-and run "./install-autotools $GLOBUS_LOCATION" in the
-autotools-for-gpt3.2autotools2004 directory to install autoheader,
-automake, autoconf, etc., into $GLOBUS_LOCATION/bin.  These special
-autotools must be in your $PATH when you run the commands below.
+with GPT:
 
-Beware: the above procedure changes frequently.
+  $ cvs -d \
+    :pserver:anonymous@cvs.globus.org:/home/globdev/CVS/globus-packages \
+    co autotools
+  $ cd autotools
+  $ ./install-autotools $GLOBUS_LOCATION
+
+This will install special versions of autoheader, automake, autoconf,
+etc., into $GLOBUS_LOCATION/bin.  These special autotools must be in
+your $PATH when you run the commands below.
 
 To build in a CVS workspace (replacing gcc32dbg with the flavor of
 your Globus Toolkit installation):
