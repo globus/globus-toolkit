@@ -297,7 +297,7 @@ ssl_get_base_subject_file(const char *proxyfile, char **subject);
  *
  * Get user's subject name from SSL_CREDENTIALS.
  *
- * Returns 0 on success or -1 on error
+ * Returns SSL_SUCCESS or SSL_ERROR
  */
 int
 ssl_get_base_subject(SSL_CREDENTIALS *creds, char **subject);
