@@ -128,7 +128,8 @@ static int authenticate_client(myproxy_socket_attrs_t *attrs,
 			       myproxy_request_t *client_request,
 			       char *client_name,
 			       myproxy_server_context_t* config,
-			       int already_authenticated);
+			       int already_authenticated,
+                               int allowed_to_renew);
 
 /* Delegate requested credentials to the client */
 void get_credentials(myproxy_socket_attrs_t *attrs,
@@ -302,7 +303,6 @@ handle_client(myproxy_socket_attrs_t *attrs,
 {
     myproxy_server_peer_t client;
     char  *client_buffer = NULL;
-    char  *userdn = NULL;
     int   requestlen;
     int   use_ca_callout = 0;
     int   found_auth_cred = 0;
@@ -479,39 +479,9 @@ handle_client(myproxy_socket_attrs_t *attrs,
     switch (client_request->command_type) {
     case MYPROXY_GET_PROXY: 
 
-	/* if it appears that we need to use the ca callouts because
-	 * of no stored creds, we should check if the ca is configured
-	 * and if the user exists in the mapfile if not using the
-	 * external program callout.
-	 */
 	if (!myproxy_creds_exist(client_request->username,
 				 client_request->credname)) {
 	    use_ca_callout = 1;
-	}
-	if (use_ca_callout) {
-	    if ( (context->certificate_issuer_program == NULL) && 
-		 (context->certificate_issuer_cert == NULL) ) {
-		if (!client_request->credname) {
-		    verror_put_string("No credentials exist for username \"%s\".", client_request->username);
-		} else {
-		    verror_put_string("No credentials exist with username \"%s\" and credential name \"%s\".", client_request->username, client_request->credname);
-		}
-		respond_with_error_and_die(attrs, verror_get_string());
-	    }
-
-	    if (context->certificate_issuer_cert) {
-
-	      if ( user_dn_lookup( client_request->username,
-				   &userdn, context ) ) {
-		verror_put_string("CA failed to map user ", 
-				  client_request->username);
-		respond_with_error_and_die(attrs, verror_get_string());
-	      }
-	      if (userdn) {
-		free(userdn);
-		userdn = NULL;
-	      }
-	    }
 	}
 	/* fall through to MYPROXY_RETRIEVE_CERT */
 
@@ -874,7 +844,6 @@ respond_with_error_and_die(myproxy_socket_attrs_t *attrs,
         my_failure("error in myproxy_send()\n");
     } 
 
-    myproxy_log_verror();
     myproxy_log("Exiting: %s", error);
     
     exit(1);
@@ -1306,6 +1275,18 @@ static int myproxy_check_policy(myproxy_server_context_t *context,
     return 1;
 }
 
+static void
+no_creds_abort(myproxy_socket_attrs_t *attrs, char username[], char credname[])
+{
+    verror_clear();  /* don't distract with other errors */
+    if (!credname) {
+        verror_put_string("No credentials exist for username \"%s\".",
+                          username);
+    } else {
+        verror_put_string("No credentials exist with username \"%s\" and credential name \"%s\".", username, credname);
+    }
+    respond_with_error_and_die(attrs, verror_get_string());
+}
 
 /* Check authorization for all incoming requests.  The authorization
  * rules are as follows.
@@ -1345,12 +1326,14 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
    int   credentials_exist = 0;
    int   client_owns_credentials = 0;
    int   authorization_ok = -1; /* 1 = success, 0 = failure, -1 = error */
-   int   credential_renewal = 0;
+   int   allowed_to_retrieve = 0;
+   int   allowed_to_renew = 0;
    int   trusted_retriever = 0;
    int   return_status = -1;
    myproxy_creds_t creds = { 0 };
    char* oldenv = NULL;
    int   accepted = 1;         /* For accepted_credentials_mapfile test */
+   char  *userdn = NULL;
 
    credentials_exist = myproxy_creds_exist(client_request->username,
 					   client_request->credname);
@@ -1388,13 +1371,8 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 	  goto end;
        
        if (!credentials_exist) {
-	   if (!client_request->credname) {
-	       verror_put_string("No credentials exist for username \"%s\".",
-				 client_request->username);
-	   } else {
-	       verror_put_string("No credentials exist with username \"%s\" and credential name \"%s\".", client_request->username, client_request->credname);
-	   }
-	   goto end;
+           no_creds_abort(attrs,
+                          client_request->username, client_request->credname);
        }
        /* fall through to MYPROXY_GET_PROXY */
 
@@ -1406,38 +1384,70 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 			(const char **)context->trusted_retriever_dns,
 			creds.trusted_retrievers,
 			(const char **)context->default_trusted_retriever_dns);
-       verror_clear();
        if (authorization_ok == 1) {
 	  trusted_retriever = 1;
           myproxy_log("trusted retrievers policy matched");
        }
 			
-       authorization_ok =
-	   authenticate_client(attrs, &creds, client_request, client->name,
-			       context, trusted_retriever);
-       if (authorization_ok < 0) {
-	   goto end;		/* authentication failed */
-       } else if (authorization_ok == 1) {
-	   credential_renewal = 1;
+       allowed_to_retrieve =
+               myproxy_check_policy(context, attrs, client,
+                   "authorized_retrievers",
+                   (const char **)context->authorized_retriever_dns,
+                   creds.retrievers,
+                   (const char **)context->default_retriever_dns);
+
+       allowed_to_renew =
+           myproxy_check_policy(context, attrs, client,
+                   "authorized_renewers",
+                   (const char **)context->authorized_renewer_dns,
+                   creds.renewers,
+                   (const char **)context->default_renewer_dns);
+
+       if (!allowed_to_retrieve && !allowed_to_renew) {
+           goto end;
        }
 
-       if (!credential_renewal) {
-	   authorization_ok =
-	      myproxy_check_policy(context, attrs, client,
-			"authorized_retrievers",
-			(const char **)context->authorized_retriever_dns,
-			creds.retrievers,
-			(const char **)context->default_retriever_dns);
-       } else {
-	   authorization_ok =
-	      myproxy_check_policy(context, attrs, client,
-		        "authorized_renewers",
-			(const char **)context->authorized_renewer_dns,
-			creds.renewers,
-			(const char **)context->default_renewer_dns);
+       /* if it appears that we need to use the ca callouts because
+        * of no stored creds, we should check if the ca is configured
+        * and if the user exists in the mapfile if not using the
+        * external program callout.
+        */
+       if (!credentials_exist) {
+           if ( (context->certificate_issuer_program == NULL) && 
+                (context->certificate_issuer_cert == NULL) ) {
+               no_creds_abort(attrs, client_request->username,
+                              client_request->credname);
+           }
+
+           if (context->certificate_issuer_cert) {
+
+               if ( user_dn_lookup( client_request->username,
+                                    &userdn, context ) ) {
+                   verror_put_string("CA failed to map user ", 
+                                     client_request->username);
+                   respond_with_error_and_die(attrs, verror_get_string());
+               }
+               if (userdn) {
+                   free(userdn);
+                   userdn = NULL;
+               }
+           }
        }
-       if (authorization_ok != 1)
-	  goto end;
+
+   authorization_ok =
+	   authenticate_client(attrs, &creds, client_request, client->name,
+			       context, trusted_retriever, allowed_to_renew);
+
+       if (authorization_ok < 0) {
+           verror_put_string("authentication failed");
+	   goto end;		/* authentication failed */
+       } else if (authorization_ok == 0) {
+           authorization_ok = allowed_to_retrieve;
+       }
+
+       if (authorization_ok != 1) {
+           goto end;
+       }
        break;
 
    case MYPROXY_PUT_PROXY:
@@ -1648,7 +1658,8 @@ authenticate_client(myproxy_socket_attrs_t *attrs,
                     myproxy_request_t *client_request,
 		    char *client_name,
 		    myproxy_server_context_t* config,
-		    int already_authenticated)
+		    int already_authenticated,
+                    int allowed_to_renew)
 {
    int return_status = -1, authcnt, certauth = 0;
    int i, j;
@@ -1659,7 +1670,11 @@ authenticate_client(myproxy_socket_attrs_t *attrs,
    authcnt = already_authenticated; /* if already authenticated, just
 				       do required methods */
    for (i=0; i < AUTHORIZETYPE_NUMMETHODS; i++) {
-       status[i] = authorization_get_status(i, creds, client_name, config);
+       if (i == AUTHORIZETYPE_CERT && allowed_to_renew != 1) {
+           status[i] = AUTHORIZEMETHOD_DISABLED;
+       } else {
+           status[i] = authorization_get_status(i, creds, client_name, config);
+       }
    }
 
    /* First, check any required methods. */
