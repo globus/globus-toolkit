@@ -760,7 +760,7 @@ myproxy_server_check_policy_ext(const char *policy, myproxy_server_peer_t *clien
        if (client->fqans == NULL)
 	  return 0;
        policy += strlen(MYPROXY_SERVER_POLICY_TYPE_FQAN);
-       return is_name_in_list(client->fqans, policy);
+       return is_name_in_list((const char **)client->fqans, policy);
     } else if (strncasecmp(policy, MYPROXY_SERVER_POLICY_TYPE_SUBJECT,
 	     strlen(MYPROXY_SERVER_POLICY_TYPE_SUBJECT)) == 0) {
        policy += strlen(MYPROXY_SERVER_POLICY_TYPE_SUBJECT);
