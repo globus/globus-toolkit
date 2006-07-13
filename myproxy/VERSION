@@ -5,14 +5,16 @@ Binary compatibility of the C API is not guaranteed between releases.
 Version History
 ---------------
 v3.6 XX Xxx 2006
+  - support credential renewal via the MyProxy CA using
+    myproxy-server.config authorized_renewers/default_renewers options
   - provide an access control list for storing credentials via the
-    myproxy-server.config(5) accepted_credentials_mapfile option
+    myproxy-server.config accepted_credentials_mapfile option
   - fix insecure temporary file handling in myproxy-admin-adduser
   - fix insecure input handling in myproxy-get-delegation.cgi example
-  - support VOMS attributes in myproxy-server.config(5) policies
+  - support VOMS attributes in myproxy-server.config policies
   - in CA, issue certificates valid starting 5 minutes in the past to
     account for possible clock skew between hosts
-  - add check_multiple_credentials option in myproxy-server.config(5)
+  - add check_multiple_credentials option in myproxy-server.config
     to allow clients to retrieve a credential for a given username
     even if the associated "credential name" isn't provided (via
     myproxy-logon --credname)
