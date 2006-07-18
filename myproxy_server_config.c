@@ -574,7 +574,7 @@ check_config(myproxy_server_context_t *context)
 	if (!rval) {
 	    myproxy_log("CA enabled");
 	    if (context->max_cert_lifetime) {
-		myproxy_log("max certificate lifetime: %s seconds",
+		myproxy_log("max certificate lifetime: %d seconds",
 			    context->max_cert_lifetime);
 	    }
 	    if (context->ca_ldap_server) {
