@@ -1193,6 +1193,10 @@ sub cvs_checkout_subdir
     {
         $cvsopts = "";
     }
+    elsif ( $tag =~ m/\d{4}-\d{2}-\d{2}/)
+    {
+        $cvsopts = "-D $tag";
+    }
 
     $locallog = $dir;
     $locallog =~ tr|/|_|;
@@ -1252,6 +1256,10 @@ sub cvs_checkout_generic ()
         if ( $tag eq "HEAD" )
         {
             $cvsopts = "";
+        }
+        elsif ( $tag =~ m/\d{4}-\d{2}-\d{2}/)
+        {
+            $cvsopts = "-D $tag";
         }
 
         log_system("cvs -d $cvsroot co -P $cvsopts $module",
