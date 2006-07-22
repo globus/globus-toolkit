@@ -154,6 +154,8 @@ AC_ARG_WITH(openldap,
 				     AC_MSG_ERROR([ldap_sasl_bind_s not found in libldap]) )
 		  AC_CHECK_LIB(ldap, ldap_search_ext_s, ,
 				     AC_MSG_ERROR([ldap_search_ext_s not found in libldap]) )
+		  AC_CHECK_LIB(ldap, ldap_str2dn, ,
+				     AC_MSG_ERROR([ldap_str2dn not found in libldap]) )
                fi
        ]
 )
