@@ -162,18 +162,6 @@ int resolve_via_ldap    ( char * username, char ** dn,
   size_t filterlen;
 
   myproxy_debug("resolve_via_ldap()");
-  myproxy_debug("ca_ldap_server: %s", 
-		server_context->ca_ldap_server);
-  myproxy_debug("ca_ldap_uid_attribute: %s", 
-		server_context->ca_ldap_uid_attribute);
-  myproxy_debug("ca_ldap_searchbase: %s", 
-		server_context->ca_ldap_searchbase);
-  myproxy_debug("ca_ldap_connect_dn: %s", 
-		server_context->ca_ldap_connect_dn);
-  myproxy_debug("ca_ldap_connect_passphase: %s", 
-		server_context->ca_ldap_connect_passphrase);
-  myproxy_debug("ca_ldap_dn_attribute: %s", 
-		server_context->ca_ldap_dn_attribute);
 
   /* check directives to make sure all is in order.... */
 
@@ -188,6 +176,25 @@ int resolve_via_ldap    ( char * username, char ** dn,
     return_value = 1;
     goto end;
   }
+
+  if (server_context->ca_ldap_server)
+      myproxy_debug("ca_ldap_server: %s", 
+                    server_context->ca_ldap_server);
+  if (server_context->ca_ldap_uid_attribute)
+      myproxy_debug("ca_ldap_uid_attribute: %s", 
+                    server_context->ca_ldap_uid_attribute);
+  if (server_context->ca_ldap_searchbase)
+      myproxy_debug("ca_ldap_searchbase: %s", 
+                    server_context->ca_ldap_searchbase);
+  if (server_context->ca_ldap_connect_dn)
+      myproxy_debug("ca_ldap_connect_dn: %s", 
+                    server_context->ca_ldap_connect_dn);
+  if (server_context->ca_ldap_connect_passphrase)
+      myproxy_debug("ca_ldap_connect_passphase: %s", 
+                    server_context->ca_ldap_connect_passphrase);
+  if (server_context->ca_ldap_dn_attribute)
+      myproxy_debug("ca_ldap_dn_attribute: %s", 
+                    server_context->ca_ldap_dn_attribute);
 
   /* prodeed with the connection */
 
