@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -T
 
 ($username, $dn, $credname, $retriever_policy, $renewer_policy) = @ARGV;
 chomp($passphrase = <STDIN>);
