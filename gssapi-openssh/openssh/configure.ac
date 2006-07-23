@@ -1111,6 +1111,7 @@ if test "x$gsi_path" != "xno" ; then
 			AC_MSG_ERROR(link with Globus libraries failed)
 		]
 	)
+    AC_CHECK_FUNCS(globus_gss_assist_map_and_authorize)
 	INSTALL_GSISSH="yes"
 else
 	INSTALL_GSISSH=""
