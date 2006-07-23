@@ -208,6 +208,16 @@ $GLOBUS_LOCATION can't be used in the myproxy-server.config file.
 A sample program is installed in
 .I $GLOBUS_LOCATION/share/myproxy/myproxy-passphrase-policy
 but is not enabled by default.
+.RS
+.PP
+.B Be sure to follow secure coding practices for this call-out:
+.PD 0
+.PP
+- Don't allow input to overflow fixed-size buffers.
+.PP
+- Don't pass unchecked input to a shell command.
+.PD
+.RE
 .TP
 .BI max_proxy_lifetime " hours"
 This line specifies a server-wide maximum lifetime for retrieved proxy
@@ -306,6 +316,16 @@ You can either specify
 .B certificate_issuer_cert
 or 
 .BR certificate_issuer_program .  
+.RS
+.PD 0
+.PP
+.B Be sure to follow secure coding practices for this call-out:
+.PP
+- Don't allow input to overflow fixed-size buffers.
+.PP
+- Don't pass unchecked input to a shell command.
+.PD
+.RE
 .TP
 .BI certificate_serialfile " full-path-to-serial-file"
 Specifies the path to a file to store the serial number counter for
@@ -345,6 +365,16 @@ username as the single command argument.  On success, it should
 write the OpenSSL formatted set of certificate extensions #to stdout
 and exit with zero status.  On error, it should write to stderr and
 exit with nonzero status.
+.RS
+.PP
+.B Be sure to follow secure coding practices for this call-out:
+.PD 0
+.PP
+- Don't allow input to overflow fixed-size buffers.
+.PP
+- Don't pass unchecked input to a shell command.
+.PD
+.RE
 .TP
 .BI certificate_mapfile " full-path-to-mapfile"
 When specifying certificate_issuer_cert above, you can map account names
@@ -366,6 +396,16 @@ to stdout and exit with zero
 status.  On error, it should write to stderr and exit with nonzero
 status.  If it is not defined, then mapfile lookup will be executed
 instead (see certificate_mapfile above).
+.RS
+.PD 0
+.PP
+.B Be sure to follow secure coding practices for this call-out:
+.PP
+- Don't allow input to overflow fixed-size buffers.
+.PP
+- Don't pass unchecked input to a shell command.
+.PD
+.RE
 .PP
 If OpenLDAP support is built-in to the
 .BR myproxy-server (8),
