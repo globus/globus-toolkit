@@ -64,6 +64,10 @@ static int
 ssh_gssapi_gsi_userok(ssh_gssapi_client *client, char *name)
 {
     int authorized = 0;
+    globus_result_t res;
+#ifdef HAVE_GLOBUS_GSS_ASSIST_MAP_AND_AUTHORIZE
+    char lname[256] = "";
+#endif
     
 #ifdef GLOBUS_GSI_GSS_ASSIST_MODULE
     if (globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE) != 0) {
@@ -71,9 +75,28 @@ ssh_gssapi_gsi_userok(ssh_gssapi_client *client, char *name)
     }
 #endif
 
-    /* This returns 0 on success */
-    authorized = (globus_gss_assist_userok(client->displayname.value,
-					   name) == 0);
+/* use new globus_gss_assist_map_and_authorize() interface if available */
+#ifdef HAVE_GLOBUS_GSS_ASSIST_MAP_AND_AUTHORIZE
+    debug("calling globus_gss_assist_map_and_authorize()");
+    if (GLOBUS_SUCCESS !=
+        (res = globus_gss_assist_map_and_authorize(client->context, "ssh",
+                                                   name, lname, 256))) {
+        debug("%s", globus_error_print_chain(globus_error_get(res)));
+    } else if (strcmp(name, lname) != 0) {
+        debug("GSI user maps to %s, not %s", lname, name);
+    } else {
+        authorized = 1;
+    }
+#else
+    debug("calling globus_gss_assist_userok()");
+    if (GLOBUS_SUCCESS !=
+        (res = (globus_gss_assist_userok(client->displayname.value,
+                                         name)))) {
+        debug("%s", globus_error_print_chain(globus_error_get(res)));
+    } else {
+        authorized = 1;
+    }
+#endif
     
     logit("GSI user %s is%s authorized as target user %s",
 	(char *) client->displayname.value, (authorized ? "" : " not"), name);
@@ -87,12 +110,42 @@ ssh_gssapi_gsi_userok(ssh_gssapi_client *client, char *name)
 int
 ssh_gssapi_gsi_localname(ssh_gssapi_client *client, char **user)
 {
+    globus_result_t res;
+#ifdef HAVE_GLOBUS_GSS_ASSIST_MAP_AND_AUTHORIZE
+    char lname[256] = "";
+#endif
+
 #ifdef GLOBUS_GSI_GSS_ASSIST_MODULE
     if (globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE) != 0) {
 	return 0;
     }
 #endif
-    return(globus_gss_assist_gridmap(client->displayname.value, user) == 0);
+
+/* use new globus_gss_assist_map_and_authorize() interface if available */
+#ifdef HAVE_GLOBUS_GSS_ASSIST_MAP_AND_AUTHORIZE
+    debug("calling globus_gss_assist_map_and_authorize()");
+    if (GLOBUS_SUCCESS !=
+        (res = globus_gss_assist_map_and_authorize(client->context, "ssh",
+                                                   NULL, lname, 256))) {
+        debug("%s", globus_error_print_chain(globus_error_get(res)));
+        logit("failed to map GSI user %s", (char *)client->displayname.value);
+        return 0;
+    }
+    *user = strdup(lname);
+#else
+    debug("calling globus_gss_assist_gridmap()");
+    if (GLOBUS_SUCCESS !=
+        (res = globus_gss_assist_gridmap(client->displayname.value, user))) {
+        debug("%s", globus_error_print_chain(globus_error_get(res)));
+        logit("failed to map GSI user %s", (char *)client->displayname.value);
+        return 0;
+    }
+#endif
+
+    logit("GSI user %s mapped to target user %s",
+          (char *) client->displayname.value, *user);
+
+    return 1;
 }
 
 /*
