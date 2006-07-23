@@ -87,6 +87,7 @@ typedef struct {
 	gss_cred_id_t creds;
 	struct ssh_gssapi_mech_struct *mech;
 	ssh_gssapi_ccache store;
+    gss_ctx_id_t context;
 } ssh_gssapi_client;
 
 typedef struct ssh_gssapi_mech_struct {

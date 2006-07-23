@@ -276,6 +276,10 @@ ssh_gssapi_getclient(Gssctxt *ctx, ssh_gssapi_client *client)
 	/* We can't copy this structure, so we just move the pointer to it */
 	client->creds = ctx->client_creds;
 	ctx->client_creds = GSS_C_NO_CREDENTIAL;
+
+    /* needed for globus_gss_assist_map_and_authorize() */
+    client->context = ctx->context;
+
 	return (ctx->major);
 }
 
