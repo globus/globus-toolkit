@@ -4,6 +4,9 @@
 #include <ldap.h>
 #endif
 
+#define DN_BUFFER_SIZE 512
+#define USERNAME_BUFFER_SIZE 256
+
 int resolve_via_mapfile ( char * username, char ** dn ) {
 
   int return_value = 0;
@@ -29,8 +32,6 @@ int resolve_via_mapfile ( char * username, char ** dn ) {
   return return_value;
 
 }
-
-#define DN_BUFFER_SIZE 512
 
 int resolve_via_mapapp ( char * app_string, char * username, char ** dn ) {
 
@@ -444,15 +445,21 @@ int resolve_via_ldap    ( char * username, char ** dn,
 
 #endif  /* HAVE_LIBLDAP */
 
+/* not thread safe. uses static buffers. */
 int user_dn_lookup( char * username, char ** dn,
 		    myproxy_server_context_t *server_context ) {
 
   int return_value = 0;
   char * userdn = NULL;
+  static char cached_username[USERNAME_BUFFER_SIZE] = "";
+  static char cached_dn[DN_BUFFER_SIZE] = "";
 
   myproxy_debug("user_dn_lookup()");
 
-  if ( server_context->ca_ldap_server != NULL ) {
+  if (strcmp(username, cached_username) == 0) {
+      myproxy_debug("using cached value");
+      *dn = strdup(cached_dn);
+  } else if ( server_context->ca_ldap_server != NULL ) {
     if ( resolve_via_ldap( username, &userdn, server_context ) ) {
       verror_put_string("Failed to map username to DN via LDAP");
       return_value = 1;
@@ -474,6 +481,13 @@ int user_dn_lookup( char * username, char ** dn,
   }
 
   *dn = userdn;
+
+  /* keep cache of last result so we don't need to call-out multiple times */
+  if (strlen(username) < USERNAME_BUFFER_SIZE &&
+      strlen(userdn) < DN_BUFFER_SIZE) {
+      strcpy(cached_username, username);
+      strcpy(cached_dn, userdn);
+  }
 
  end:
   if (return_value) {

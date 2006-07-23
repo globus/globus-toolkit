@@ -3,6 +3,7 @@
   to do username to DN resolution when the internal CA is being used.
   The mode of resolution (grid-mapfile or ldap query) is decided on the basis
   of configuration file directives.  Returns a slash-delimited DN.
+  Not thread safe.
 */
 
 
