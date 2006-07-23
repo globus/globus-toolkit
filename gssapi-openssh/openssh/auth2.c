@@ -163,6 +163,7 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
 		    debug("set username to %s from gssapi context", user);
 		} else {
 		    debug("failed to set username from gssapi context");
+		    packet_send_debug("failed to set username from gssapi context");
 		}
 	    }
 	}

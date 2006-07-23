@@ -294,6 +294,7 @@ gssapi_set_implicit_username(Authctxt *authctxt)
 	    }
 	} else {
 	    debug("failed to set username from gssapi context");
+	    packet_send_debug("failed to set username from gssapi context");
 	}
     }
     if (authctxt->pw) {
