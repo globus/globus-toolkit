@@ -1,6 +1,7 @@
 #include "globus_i_xioperf.h"
 #include "globus_options.h"
 #include "globus_xio_gsi.h"
+#include "globus_xio_ordering_driver.h"
 
 extern globus_options_entry_t            globus_i_xioperf_opts_table[];
 
@@ -182,8 +183,10 @@ xioperf_l_print_summary(
 static
 globus_result_t
 xioperf_l_opts_unknown(
-    const char *                        parm,
-    void *                              arg)
+   globus_options_handle_t             opts_handle,
+    void *                              unknown_arg,
+    int                                 argc,
+    char **                             argv)
 {
     return globus_error_put(globus_error_construct_error(
         NULL,
@@ -193,7 +196,7 @@ xioperf_l_opts_unknown(
         "xioperf_l_opts_unknown",
         __LINE__,
         "Unknown parameter: %s",
-        parm));
+        unknown_arg));
 }
 
 static
@@ -263,6 +266,7 @@ xioperf_l_parse_opts(
     }
 
     info->next_write_buffer = (globus_byte_t *)globus_malloc(info->block_size);
+    info->next_buf_size = info->block_size;
     if(!info->reader && !info->writer)
     {
         if(info->server)
@@ -323,9 +327,9 @@ xioperf_l_parse_opts(
                fread(info->next_write_buffer, 1, info->block_size, info->fptr);
             if(nbytes < info->block_size)
             {
-                info->block_size = nbytes;
                 info->eof = GLOBUS_TRUE;
             }
+            info->next_buf_size = nbytes;
         }
     }
 
@@ -517,8 +521,8 @@ xioperf_next_write(
     res = globus_xio_register_write(
         info->xio_handle,
         info->next_write_buffer,
-        info->block_size,
-        info->block_size,
+        info->next_buf_size,
+        info->next_buf_size,
         NULL,
         xioperf_write_cb,
         info);
@@ -541,6 +545,7 @@ xioperf_next_write(
         {
             info->eof = GLOBUS_TRUE;
         }
+        info->next_buf_size = nbytes;
     }
     return GLOBUS_SUCCESS;
 error:
@@ -672,23 +677,6 @@ xioperf_l_build_stack(
                 }
             }
         }
-        if(strcmp(driver_name, "quanta_rbudp") == 0)
-        {
-            if(info->reader)
-            {
-                globus_xio_attr_cntl(
-                    info->attr, driver,
-                    O_RDONLY,
-                    NULL);
-            }
-            else
-            {
-                globus_xio_attr_cntl(
-                    info->attr, driver,
-                    O_WRONLY,
-                    NULL);
-            }
-        }
         if(strcmp(driver_name, "mode_e") == 0)
         {
             globus_xio_attr_t           new_attr;
@@ -715,6 +703,32 @@ xioperf_l_build_stack(
             if(res != GLOBUS_SUCCESS)
             {
                 goto error;
+            }
+        }
+        if(strcmp(driver_name, "bidi") == 0)
+        {
+            globus_xio_attr_t           new_attr;
+
+            if(driver_count > 0)
+            {
+                globus_xio_attr_init(&new_attr);
+                globus_xio_attr_cntl(
+                    new_attr, driver, 1, /*GLOBUS_XIO_BIDI_SET_READ_STACK, */
+                    info->stack);
+                globus_xio_attr_cntl(
+                    new_attr, driver, 2, /*GLOBUS_XIO_BIDI_SET_WRITE_STACK, */
+                    info->stack);
+                globus_xio_attr_cntl(
+                    new_attr, driver, 4, /*GLOBUS_XIO_BIDI_SET_READ_ATTR, */
+                    info->attr);
+                globus_xio_attr_cntl(
+                    new_attr, driver, 5, /*GLOBUS_XIO_BIDI_SET_WRITE_ATTR, */
+                    info->attr);
+
+                globus_xio_stack_destroy(info->stack);
+                globus_xio_attr_destroy(info->attr);
+                info->attr = new_attr;
+                globus_xio_stack_init(&info->stack, NULL);
             }
         }
 

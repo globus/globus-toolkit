@@ -124,6 +124,19 @@ xioperf_l_opts_quiet(
 
 static
 globus_result_t
+xioperf_l_opts_help(
+    globus_options_handle_t             opts_handle,
+    char *                              cmd,
+    char **                             opt,
+    void *                              arg,
+    int *                               out_parms_used)
+{
+    globus_options_help(opts_handle);
+    exit(0);
+}
+
+static
+globus_result_t
 xioperf_l_opts_len(
     globus_options_handle_t             opts_handle,
     char *                              cmd,
@@ -518,6 +531,9 @@ globus_options_entry_t                   globus_i_xioperf_opts_table[] =
     {"len", "l", NULL, "#[KM]",
         "length of buffer to read or write (default 8 KB)", 
         1, xioperf_l_opts_len},
+    {"help", "h", NULL, "#[KM]",
+        "print the help message",
+        0, xioperf_l_opts_help},
     {"port", "p", NULL, "#",
         "server port to listen on/connect to", 
         1, xioperf_l_opts_port},
