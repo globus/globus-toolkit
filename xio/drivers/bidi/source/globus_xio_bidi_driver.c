@@ -822,6 +822,8 @@ globus_l_xio_bidi_server_init(
         goto error_parse_cs;
     }
     result = globus_xio_driver_pass_server_init(op, &my_contact_info, server);
+
+    globus_xio_contact_destroy(&my_contact_info);
     if (result != GLOBUS_SUCCESS)
     {
         goto error_pass_server_init;
@@ -1544,6 +1546,20 @@ error:
 
 static
 void
+bidi_l_handle_destroy(
+    globus_l_xio_bidi_handle_t *        handle)
+{
+    if(handle->bootstrap_cs != NULL)
+    {
+        globus_free(handle->bootstrap_cs);
+    }
+    globus_l_xio_bidi_attr_destroy(handle->attr);
+    globus_mutex_destroy(&handle->mutex);
+    globus_free(handle);
+}
+
+static
+void
 globus_l_xio_bidi_read_server_close_cb(
     globus_xio_server_t                 server,
     void *                              user_arg)
@@ -1556,6 +1572,7 @@ globus_l_xio_bidi_read_server_close_cb(
 
     /*I think this is causing the errors*/
     globus_xio_driver_finished_close(handle->outstanding_op, GLOBUS_SUCCESS);
+    bidi_l_handle_destroy(handle);
 
     GlobusXIOBidiDebugExit();
 }
@@ -1586,6 +1603,7 @@ globus_l_xio_bidi_write_handle_close_cb(
 
 error:
     globus_xio_driver_finished_close(handle->outstanding_op, result);
+    bidi_l_handle_destroy(handle);
 
     GlobusXIOBidiDebugExitWithError();
 }
@@ -1786,6 +1804,7 @@ globus_l_xio_bidi_write_cb(
         {
             globus_free(write_op->iov[i]);
         }
+        globus_free(write_op->iov); 
         globus_free(write_op); 
     }
 }
@@ -1898,6 +1917,7 @@ error_register:
     {
         globus_free(write_op->iov[i]);
     }
+    globus_free(write_op->iov); 
     globus_free(write_op);
 
     GlobusXIOBidiDebugExitWithError();
