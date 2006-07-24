@@ -705,6 +705,17 @@ xioperf_l_build_stack(
                 goto error;
             }
         }
+        if(strcmp(driver_name, "ordering") == 0)
+        {
+            res = globus_xio_attr_cntl(
+                info->attr, driver,
+                GLOBUS_XIO_ORDERING_SET_MAX_READ_COUNT,
+                info->stream_count*2);
+            if(res != GLOBUS_SUCCESS)
+            {
+                goto error;
+            }
+        }
         if(strcmp(driver_name, "bidi") == 0)
         {
             globus_xio_attr_t           new_attr;
@@ -730,6 +741,7 @@ xioperf_l_build_stack(
                 info->attr = new_attr;
                 globus_xio_stack_init(&info->stack, NULL);
             }
+            info->stream_count = 1;
         }
 
 
