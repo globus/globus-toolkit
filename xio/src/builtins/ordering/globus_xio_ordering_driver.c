@@ -848,10 +848,8 @@ globus_l_xio_ordering_read_cb(
 			requestor_nbytes = handle->user_req->nbytes;
 		    }
 		}
-		if ((handle->outstanding_read_count < 
-		    handle->attr->max_read_count) || 
-		    (handle->outstanding_read_count == 0 && 
-		     offset != expected_offset))
+		if (handle->outstanding_read_count < 
+					    handle->attr->max_read_count)
 		{
 		    res = globus_i_xio_ordering_register_read(
 							handle, GLOBUS_NULL);
