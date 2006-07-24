@@ -434,6 +434,7 @@ xioperf_read_cb(
                 info);
             if(result != GLOBUS_SUCCESS)
             {
+                info->err = globus_error_get(result);
                 goto error;
             }
             info->ref++;
@@ -449,6 +450,7 @@ xioperf_read_cb(
     return;
 error:
     globus_free(buffer);
+    globus_error_print_friendly(info->err);
     info->read_done = GLOBUS_TRUE;
     globus_cond_signal(&info->cond);
     globus_mutex_unlock(&info->mutex);
@@ -705,44 +707,6 @@ xioperf_l_build_stack(
                 goto error;
             }
         }
-        if(strcmp(driver_name, "ordering") == 0)
-        {
-            res = globus_xio_attr_cntl(
-                info->attr, driver,
-                GLOBUS_XIO_ORDERING_SET_MAX_READ_COUNT,
-                info->stream_count*2);
-            if(res != GLOBUS_SUCCESS)
-            {
-                goto error;
-            }
-        }
-        if(strcmp(driver_name, "bidi") == 0)
-        {
-            globus_xio_attr_t           new_attr;
-
-            if(driver_count > 0)
-            {
-                globus_xio_attr_init(&new_attr);
-                globus_xio_attr_cntl(
-                    new_attr, driver, 1, /*GLOBUS_XIO_BIDI_SET_READ_STACK, */
-                    info->stack);
-                globus_xio_attr_cntl(
-                    new_attr, driver, 2, /*GLOBUS_XIO_BIDI_SET_WRITE_STACK, */
-                    info->stack);
-                globus_xio_attr_cntl(
-                    new_attr, driver, 4, /*GLOBUS_XIO_BIDI_SET_READ_ATTR, */
-                    info->attr);
-                globus_xio_attr_cntl(
-                    new_attr, driver, 5, /*GLOBUS_XIO_BIDI_SET_WRITE_ATTR, */
-                    info->attr);
-
-                globus_xio_stack_destroy(info->stack);
-                globus_xio_attr_destroy(info->attr);
-                info->attr = new_attr;
-                globus_xio_stack_init(&info->stack, NULL);
-            }
-            info->stream_count = 1;
-        }
 
 
         if(push_driver)
@@ -979,6 +943,7 @@ xioperf_start(
                 globus_cond_wait(&info->cond, &info->mutex);
             }
         }
+        xio_perf_log(info, 1, "Closing connection\n");
         res = globus_xio_close(info->xio_handle, close_attr);
         if(res != GLOBUS_SUCCESS)
         {
