@@ -282,7 +282,7 @@ globus_i_gsi_gss_create_and_fill_context(
     }
     
     /* get the local credential */
-    if (cred_handle == GSS_C_NO_CREDENTIAL)
+    if (cred_handle == GSS_C_NO_CREDENTIAL || (req_flags & GSS_C_ANON_FLAG))
     {
         if(req_flags & GSS_C_ANON_FLAG)
         {
