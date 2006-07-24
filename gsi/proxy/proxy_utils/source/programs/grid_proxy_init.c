@@ -1142,7 +1142,6 @@ main(
             "\nWarning: your certificate and proxy will expire %s "
             "which is within the requested lifetime of the proxy\n",
             asctime(localtime(&goodtill)));
-        return_value = 1;
     }
     else if(!quiet)
     {
