@@ -1403,6 +1403,19 @@ globus_xio_driver_set_string_table(
     globus_xio_driver_t                 driver,
     globus_i_xio_attr_parse_table_t *   table);
 
+
+/**
+ *  @ingroup string_driver_pgm
+ *
+ *  New type functions call this one
+ */
+void
+globus_i_xio_attr_string_bouncer(
+    globus_xio_driver_attr_cntl_t       cntl_func,
+    void *                              attr,
+    int                                 cmd,
+    ...);
+
 /* list all of the built in parsing functions */
 /**
  *  @ingroup string_driver_pgm

@@ -804,7 +804,6 @@ globus_i_xio_attr_string_parser(
     }
 }
 
-static
 void
 globus_i_xio_attr_string_bouncer(
     globus_xio_driver_attr_cntl_t       cntl_func,
