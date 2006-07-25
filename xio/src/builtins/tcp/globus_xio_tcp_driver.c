@@ -2780,7 +2780,7 @@ globus_l_xio_tcp_init(
         globus_l_xio_tcp_attr_cntl,
         globus_l_xio_tcp_attr_destroy);
 
-    globus_xio_string_cntl_set_table(
+    globus_xio_driver_string_cntl_set_table(
         driver,
         tcp_l_string_opts_table);
     

@@ -781,6 +781,7 @@ globus_i_xio_string_cntl_parser(
     globus_bool_t                       multiple = GLOBUS_FALSE;
     globus_object_t *                   error = NULL;
     globus_result_t                     res = GLOBUS_SUCCESS;
+    GlobusXIOName(globus_i_xio_string_cntl_parser);
     
     list = globus_list_from_string(env_str, '#', NULL);
 

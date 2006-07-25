@@ -1399,7 +1399,7 @@ typedef struct globus_xio_string_cntl_table_s
  *
  */
 globus_result_t
-globus_xio_string_cntl_set_table(
+globus_xio_driver_string_cntl_set_table(
     globus_xio_driver_t                 driver,
     globus_xio_string_cntl_table_t *   table);
 
