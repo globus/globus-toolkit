@@ -804,7 +804,7 @@ globus_i_xio_string_cntl_parser(
                     if(res != GLOBUS_SUCCESS)
                     {
                         /* restore '=' */
-                        *(tmp_s - 1) = '=';
+                        *tmp_s = '=';
                         res = GlobusXIOErrorWrapFailedWithMessage(
                             res, "String cntl '%s' failed", key);
                     }
