@@ -89,7 +89,6 @@ GlobusXIODefineModule(gsi) =
 
 GlobusDebugDefine(GLOBUS_XIO_GSI);
 
-
 /*
  *  initialize a driver attribute
  */
@@ -3448,6 +3447,166 @@ globus_l_xio_gsi_cntl(
     return result;
 }
 
+
+static void
+gsi_l_attr_parse_auth(
+    void *                              attr,
+    const char *                        key,
+    const char *                        val,
+    int                                 cmd,
+    globus_xio_driver_attr_cntl_t       cntl_func)
+{
+    globus_xio_gsi_authorization_mode_t type = -1;
+
+    if(strcasecmp(val, "none") == 0)
+    {
+        type = GLOBUS_XIO_GSI_NO_AUTHORIZATION;
+    }
+    else if(strcasecmp(val, "self") == 0)
+    {
+        type = GLOBUS_XIO_GSI_SELF_AUTHORIZATION;
+    }
+    else if(strcasecmp(val, "host") == 0)
+    {
+        type = GLOBUS_XIO_GSI_HOST_AUTHORIZATION;
+    }
+    else if(strcasecmp(val, "id") == 0)
+    {
+        type = GLOBUS_XIO_GSI_IDENTITY_AUTHORIZATION;
+    }
+
+    if(type != -1)
+    {
+        globus_i_xio_attr_string_bouncer(cntl_func, attr, cmd, type);
+    }
+}
+
+static void
+gsi_l_attr_parse_prot(
+    void *                              attr,
+    const char *                        key,
+    const char *                        val,
+    int                                 cmd,
+    globus_xio_driver_attr_cntl_t       cntl_func)
+{
+    globus_xio_gsi_protection_level_t   type = -1;
+
+    if(strcasecmp(val, "none") == 0)
+    {
+        type = GLOBUS_XIO_GSI_PROTECTION_LEVEL_NONE;
+    }
+    else if(strcasecmp(val, "private") == 0)
+    {
+        type = GLOBUS_XIO_GSI_PROTECTION_LEVEL_PRIVACY;
+    }
+    else if(strcasecmp(val, "integrity") == 0)
+    {
+        type = GLOBUS_XIO_GSI_PROTECTION_LEVEL_INTEGRITY;
+    }
+
+    if(type != -1)
+    {
+        globus_i_xio_attr_string_bouncer(cntl_func, attr, cmd, type);
+    }
+}
+
+static void
+gsi_l_attr_parse_del(
+    void *                              attr,
+    const char *                        key,
+    const char *                        val,
+    int                                 cmd,
+    globus_xio_driver_attr_cntl_t       cntl_func)
+{
+    globus_xio_gsi_delegation_mode_t    type = -1;
+
+    if(strcasecmp(val, "none") == 0)
+    {
+        type = GLOBUS_XIO_GSI_DELEGATION_MODE_NONE;
+    }
+    else if(strcasecmp(val, "full") == 0)
+    {
+        type = GLOBUS_XIO_GSI_DELEGATION_MODE_FULL;
+    }
+    else if(strcasecmp(val, "limited") == 0)
+    {
+        type = GLOBUS_XIO_GSI_DELEGATION_MODE_LIMITED;
+    }
+
+    if(type != -1)
+    {
+        globus_i_xio_attr_string_bouncer(cntl_func, attr, cmd, type);
+    }
+}
+
+static void
+gsi_l_attr_parse_proxy(
+    void *                              attr,
+    const char *                        key,
+    const char *                        val,
+    int                                 cmd,
+    globus_xio_driver_attr_cntl_t       cntl_func)
+{
+    globus_xio_gsi_proxy_mode_t         type = -1;
+
+    if(strcasecmp(val, "many") == 0)
+    {
+        type = GLOBUS_XIO_GSI_PROXY_MODE_MANY;
+    }
+    else if(strcasecmp(val, "full") == 0)
+    {
+        type = GLOBUS_XIO_GSI_PROXY_MODE_FULL;
+    }
+    else if(strcasecmp(val, "limited") == 0)
+    {
+        type = GLOBUS_XIO_GSI_PROXY_MODE_LIMITED;
+    }
+
+    if(type != -1)
+    {
+        globus_i_xio_attr_string_bouncer(cntl_func, attr, cmd, type);
+    }
+}
+
+static void
+gsi_l_attr_parse_subject(
+    void *                              attr,
+    const char *                        key,
+    const char *                        val,
+    int                                 cmd,
+    globus_xio_driver_attr_cntl_t       cntl_func)
+{
+    gss_buffer_desc                     send_tok;
+    OM_uint32                           min_stat;
+    OM_uint32                           maj_stat;
+    gss_name_t                          target_name;
+
+    send_tok.value = (void *) val;
+    send_tok.length = strlen(val) + 1;
+    maj_stat = gss_import_name(
+        &min_stat,
+        &send_tok,
+        GSS_C_NT_USER_NAME,
+        &target_name);
+    if(maj_stat == GSS_S_COMPLETE &&
+        target_name != GSS_C_NO_NAME)
+    {
+        globus_i_xio_attr_string_bouncer(cntl_func, attr, cmd, target_name);
+        gss_release_name(&min_stat, &target_name);
+    }
+}
+
+static globus_i_xio_attr_parse_table_t  gsi_l_string_opts_table[] =
+{
+    {"subject", GLOBUS_XIO_GSI_SET_TARGET_NAME, gsi_l_attr_parse_subject},
+    {"protection", GLOBUS_XIO_GSI_SET_PROTECTION_LEVEL, gsi_l_attr_parse_prot},
+    {"delegation", GLOBUS_XIO_GSI_SET_DELEGATION_MODE, gsi_l_attr_parse_del},
+    {"auth", GLOBUS_XIO_GSI_SET_AUTHORIZATION_MODE, gsi_l_attr_parse_auth},
+    {"proxy", GLOBUS_XIO_GSI_SET_PROXY_MODE, gsi_l_attr_parse_proxy},
+    {NULL, 0, NULL}
+};
+
+
 /*
  * Driver load function
  */
@@ -3493,6 +3652,9 @@ globus_l_xio_gsi_init(
         globus_l_xio_gsi_attr_cntl,
         globus_l_xio_gsi_attr_destroy);
 
+    globus_xio_driver_set_string_table(
+        driver,
+        gsi_l_string_opts_table);
     
     *out_driver = driver;
 
