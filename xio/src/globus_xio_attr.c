@@ -778,7 +778,6 @@ globus_i_xio_string_cntl_parser(
     char *                              val;
     char *                              tmp_s;
     globus_list_t *                     list;
-    globus_bool_t                       multiple = GLOBUS_FALSE;
     globus_object_t *                   error = NULL;
     globus_result_t                     res = GLOBUS_SUCCESS;
     GlobusXIOName(globus_i_xio_string_cntl_parser);
@@ -828,28 +827,14 @@ globus_i_xio_string_cntl_parser(
         {
             if(!error)
             {
-                error = globus_error_get(res);
-            }
-            else if(!multiple)
-            {
-                globus_object_t *       multiple_obj;
-                
-                multiple = GLOBUS_TRUE;
-                multiple_obj = globus_error_construct_multiple(
+                error = globus_error_construct_multiple(
                     GLOBUS_XIO_MODULE,
                     GLOBUS_XIO_ERROR_PARAMETER,
                     "One or more of the string cntls failed");
-                globus_error_mutliple_add_chain(
-                    multiple_obj, error, NULL);
-                    
-                error = multiple_obj;
             }
             
-            if(multiple)
-            {
-                globus_error_mutliple_add_chain(
-                    error, globus_error_get(res), NULL);
-            }
+            globus_error_mutliple_add_chain(
+                error, globus_error_get(res), NULL);
         }
         
         globus_free(key);
