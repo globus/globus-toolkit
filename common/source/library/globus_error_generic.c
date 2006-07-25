@@ -771,7 +771,7 @@ globus_l_error_multiple_print(
     if(data && data->chains)
     {
         count = globus_list_size(data->chains);
-        layout = (char **) globus_malloc(sizeof(char *) * (2 + (4 * count)));
+        layout = (char **) globus_malloc(sizeof(char *) * (3 + (4 * count)));
         free_ptrs = (char **) globus_malloc(sizeof(char *) * count);
         if(layout && free_ptrs)
         {
@@ -781,6 +781,7 @@ globus_l_error_multiple_print(
             if(data->desc && *data->desc)
             {
                 layout[i++] = data->desc;
+                layout[i++] = "\n";
             }
             
             for(tmp = data->chains;
