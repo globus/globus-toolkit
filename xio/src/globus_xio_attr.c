@@ -843,7 +843,8 @@ globus_i_xio_string_cntl_parser(
                     
                 error = multiple_obj;
             }
-            else
+            
+            if(multiple)
             {
                 globus_error_mutliple_add_chain(
                     error, globus_error_get(res), NULL);

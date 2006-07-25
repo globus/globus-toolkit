@@ -1163,7 +1163,7 @@ globus_i_xio_driver_attr_cntl(
             char *                      opt_str;
 
             opt_str = va_arg(ap, char *);
-            globus_i_xio_string_cntl_parser(
+            res = globus_i_xio_string_cntl_parser(
                 opt_str,
                 driver->string_table,
                 ds,
@@ -1172,10 +1172,11 @@ globus_i_xio_driver_attr_cntl(
         else
         {
             res = driver->attr_cntl_func(ds, cmd, ap);
-            if(res != GLOBUS_SUCCESS)
-            {
-                goto err;
-            }
+        }
+        
+        if(res != GLOBUS_SUCCESS)
+        {
+            goto err;
         }
     }
     else
