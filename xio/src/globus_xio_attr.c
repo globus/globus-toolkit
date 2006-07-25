@@ -767,9 +767,9 @@ globus_xio_stack_destroy(
 
 /* STRING PARSING ATTR SETTING */
 void
-globus_i_xio_attr_string_parser(
+globus_i_xio_string_cntl_parser(
     const char *                        env_str,
-    globus_i_xio_attr_parse_table_t *   table,
+    globus_xio_string_cntl_table_t *    table,
     void *                              attr,
     globus_xio_driver_attr_cntl_t       cntl_func)
 {
@@ -800,34 +800,39 @@ globus_i_xio_attr_string_parser(
                 }
             }
         }
+        globus_free(key);
         list = globus_list_rest(list);
     }
 }
 
-void
-globus_i_xio_attr_string_bouncer(
+globus_result_t
+globus_xio_string_cntl_bouncer(
     globus_xio_driver_attr_cntl_t       cntl_func,
     void *                              attr,
     int                                 cmd,
     ...)
 {
+    globus_result_t                     result;
     va_list                             ap;
 
     va_start(ap, cmd);
-
-    cntl_func(attr, cmd, ap);
-
+    result = cntl_func(attr, cmd, ap);
     va_end(ap);
+
+    return result;
 }
 
 static
 int
-globus_l_xio_attr_string_tb_kmgint(
+globus_xio_string_cntl_tb_kmgint(
     const char *                        arg,
     globus_off_t *                      out_i)
 {
     int                                 i;
     int                                 sc;
+    GlobusXIOName(globus_xio_string_cntl_tb_kmgint);
+
+    GlobusXIODebugEnter();
 
     sc = sscanf(arg, "%d", &i);
     if(sc != 1)
@@ -854,9 +859,8 @@ globus_l_xio_attr_string_tb_kmgint(
     return 0;
 }
 
-
-void
-globus_i_xio_attr_string_formated_off(
+globus_result_t
+globus_xio_string_cntl_formated_off(
     void *                              attr,
     const char *                        key,
     const char *                        val,
@@ -865,17 +869,27 @@ globus_i_xio_attr_string_formated_off(
 {
     int                                 sc;
     globus_off_t                        o;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    GlobusXIOName(globus_xio_string_cntl_formated_off);
 
-    sc = globus_l_xio_attr_string_tb_kmgint(val, &o);
+    GlobusXIODebugEnter();
+
+    sc = globus_xio_string_cntl_tb_kmgint(val, &o);
     if(sc != 0)
     {
-        return;
+        result = GlobusXIOErrorParse(val);
     }
-    globus_i_xio_attr_string_bouncer(cntl_func, attr, cmd, o);
+    else
+    {
+        result = globus_xio_string_cntl_bouncer(cntl_func, attr, cmd, o);
+    }
+    GlobusXIODebugExit();
+
+    return result;
 }
 
-void
-globus_i_xio_attr_string_formated_int(
+globus_result_t
+globus_xio_string_cntl_formated_int(
     void *                              attr,
     const char *                        key,
     const char *                        val,
@@ -885,19 +899,27 @@ globus_i_xio_attr_string_formated_int(
     int                                 sc;
     int                                 i;
     globus_off_t                        o;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    GlobusXIOName(globus_xio_string_cntl_formated_int);
 
-    sc = globus_l_xio_attr_string_tb_kmgint(val, &o);
+    GlobusXIODebugEnter();
+
+    sc = globus_xio_string_cntl_tb_kmgint(val, &o);
     if(sc != 0)
     {
-        return;
+        result = GlobusXIOErrorParse(val);
     }
-    i = (int) o;
-    globus_i_xio_attr_string_bouncer(cntl_func, attr, cmd, i);
+    else
+    {
+        i = (int) o;
+        result = globus_xio_string_cntl_bouncer(cntl_func, attr, cmd, i);
+    }
+    GlobusXIODebugExit();
+    return result;
 }
 
-
-void
-globus_i_xio_attr_string_single_int(
+globus_result_t
+globus_xio_string_cntl_int(
     void *                              attr,
     const char *                        key,
     const char *                        val,
@@ -906,17 +928,26 @@ globus_i_xio_attr_string_single_int(
 {
     int                                 sc;
     int                                 i;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    GlobusXIOName(globus_xio_string_cntl_int);
+
+    GlobusXIODebugEnter();
 
     sc = sscanf(val, "%d", &i);
     if(sc != 1)
     {
-        return;
+        result = GlobusXIOErrorParse(val);
     }
-    globus_i_xio_attr_string_bouncer(cntl_func, attr, cmd, i);
+    else
+    {
+        result = globus_xio_string_cntl_bouncer(cntl_func, attr, cmd, i);
+    }
+    GlobusXIODebugExit();
+    return result;
 }
 
-void
-globus_i_xio_attr_string_dual_positive_int(
+globus_result_t
+globus_xio_string_cntl_int_int(
     void *                              attr,
     const char *                        key,
     const char *                        val,
@@ -928,12 +959,17 @@ globus_i_xio_attr_string_dual_positive_int(
     int                                 j;
     char *                              tmp_s;
     char *                              new_val;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    GlobusXIOName(globus_xio_string_cntl_int_int);
+
+    GlobusXIODebugEnter();
 
     /* turn all non digits into spaces for the scanf easiness */
     tmp_s = strdup(val);
     if(tmp_s == NULL)
     {
-        return;
+        result = GlobusXIOErrorParse(val);
+        return result;
     }
     new_val = tmp_s;
     while(*tmp_s != '\0')
@@ -949,14 +985,18 @@ globus_i_xio_attr_string_dual_positive_int(
     free(new_val);
     if(sc != 2)
     {
-        return;
+        result = GlobusXIOErrorParse(val);
     }
-    globus_i_xio_attr_string_bouncer(cntl_func, attr, cmd, i, j);
+    else
+    {
+        result = globus_xio_string_cntl_bouncer(cntl_func, attr, cmd, i, j);
+    }
+    GlobusXIODebugExit();
+    return result;
 }
 
-
-void
-globus_i_xio_attr_string_single_float(
+globus_result_t
+globus_xio_string_cntl_float(
     void *                              attr,
     const char *                        key,
     const char *                        val,
@@ -965,28 +1005,45 @@ globus_i_xio_attr_string_single_float(
 {
     int                                 sc;
     float                               f;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    GlobusXIOName(globus_xio_string_cntl_float);
+
+    GlobusXIODebugEnter();
 
     sc = sscanf(val, "%f", &f);
     if(sc != 1)
     {
-        return;
+        result = GlobusXIOErrorParse(val);
     }
-    globus_i_xio_attr_string_bouncer(cntl_func, attr, cmd, f);
+    else
+    {
+        result = globus_xio_string_cntl_bouncer(cntl_func, attr, cmd, f);
+    }
+    GlobusXIODebugExit();
+    return result;
 }
 
-void
-globus_i_xio_attr_string_single_string(
+globus_result_t
+globus_xio_string_cntl_string(
     void *                              attr,
     const char *                        key,
     const char *                        val,
     int                                 cmd,
     globus_xio_driver_attr_cntl_t       cntl_func)
 {
-    globus_i_xio_attr_string_bouncer(cntl_func, attr, cmd, val);
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    GlobusXIOName(globus_xio_string_cntl_string);
+
+    GlobusXIODebugEnter();
+
+    result = globus_xio_string_cntl_bouncer(cntl_func, attr, cmd, val);
+
+    GlobusXIODebugExit();
+    return result;
 }
 
-void
-globus_i_xio_attr_string_single_bool(
+globus_result_t
+globus_xio_string_cntl_bool(
     void *                              attr,
     const char *                        key,
     const char *                        val,
@@ -997,6 +1054,10 @@ globus_i_xio_attr_string_single_bool(
     int                                 i;
     globus_bool_t                       found = GLOBUS_FALSE;
     globus_bool_t                       b;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    GlobusXIOName(globus_xio_string_cntl_bool);
+
+    GlobusXIODebugEnter();
 
     if(strcasecmp(val, "yes") == 0)
     {
@@ -1049,8 +1110,15 @@ globus_i_xio_attr_string_single_bool(
     }
     if(found)
     {
-        globus_i_xio_attr_string_bouncer(cntl_func, attr, cmd, b);
+        result = globus_xio_string_cntl_bouncer(cntl_func, attr, cmd, b);
     }
+    else
+    {
+        result = GlobusXIOErrorParse(val);
+    }
+
+    GlobusXIODebugExit();
+    return result;
 }
 
 

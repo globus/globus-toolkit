@@ -1163,7 +1163,7 @@ globus_i_xio_driver_attr_cntl(
             char *                      opt_str;
 
             opt_str = va_arg(ap, char *);
-            globus_i_xio_attr_string_parser(
+            globus_i_xio_string_cntl_parser(
                 opt_str,
                 driver->string_table,
                 ds,
@@ -2080,9 +2080,9 @@ globus_xio_driver_set_attr(
 }
 
 globus_result_t
-globus_xio_driver_set_string_table(
+globus_xio_string_cntl_set_table(
     globus_xio_driver_t                 driver,
-    globus_i_xio_attr_parse_table_t *   table)
+    globus_xio_string_cntl_table_t *    table)
 {
     globus_result_t                     result;
     GlobusXIOName(globus_xio_driver_set_string_table);

@@ -1327,8 +1327,8 @@ globus_xio_operation_copy_stack(
 /**
  *  @ingroup driver_pgm
  */
-typedef void
-(*globus_i_xio_attr_parse_func_t)(
+typedef globus_result_t
+(*globus_xio_string_cntl_parse_func_t)(
     void *                              attr,
     const char *                        key,
     const char *                        val,
@@ -1338,12 +1338,12 @@ typedef void
 /**
  *  @ingroup driver_pgm
  */
-typedef struct globus_i_xio_attr_parse_table_s
+typedef struct globus_xio_string_cntl_table_s
 {
     char *                              key;
     int                                 cmd;
-    globus_i_xio_attr_parse_func_t      parse_func;
-} globus_i_xio_attr_parse_table_t;
+    globus_xio_string_cntl_parse_func_t parse_func;
+} globus_xio_string_cntl_table_t;
 
 /**
  *
@@ -1399,9 +1399,9 @@ typedef struct globus_i_xio_attr_parse_table_s
  *
  */
 globus_result_t
-globus_xio_driver_set_string_table(
+globus_xio_string_cntl_set_table(
     globus_xio_driver_t                 driver,
-    globus_i_xio_attr_parse_table_t *   table);
+    globus_xio_string_cntl_table_t *   table);
 
 
 /**
@@ -1409,8 +1409,8 @@ globus_xio_driver_set_string_table(
  *
  *  New type functions call this one
  */
-void
-globus_i_xio_attr_string_bouncer(
+globus_result_t
+globus_xio_string_cntl_bouncer(
     globus_xio_driver_attr_cntl_t       cntl_func,
     void *                              attr,
     int                                 cmd,
@@ -1422,8 +1422,8 @@ globus_i_xio_attr_string_bouncer(
  *
  *  String option parsing function.
  */
-void
-globus_i_xio_attr_string_single_bool(
+globus_result_t
+globus_xio_string_cntl_bool(
     void *                              attr,
     const char *                        key,
     const char *                        val,
@@ -1435,8 +1435,8 @@ globus_i_xio_attr_string_single_bool(
  *
  *  String option parsing function.
  */
-void
-globus_i_xio_attr_string_single_float(
+globus_result_t
+globus_xio_string_cntl_float(
     void *                              attr,
     const char *                        key,
     const char *                        val,
@@ -1448,8 +1448,8 @@ globus_i_xio_attr_string_single_float(
  *
  *  String option parsing function.
  */
-void
-globus_i_xio_attr_string_single_int(
+globus_result_t
+globus_xio_string_cntl_int(
     void *                              attr,
     const char *                        key,
     const char *                        val,
@@ -1461,8 +1461,8 @@ globus_i_xio_attr_string_single_int(
  *
  *  String option parsing function.
  */
-void
-globus_i_xio_attr_string_single_string(
+globus_result_t
+globus_xio_string_cntl_string(
     void *                              attr,
     const char *                        key,
     const char *                        val,
@@ -1474,24 +1474,24 @@ globus_i_xio_attr_string_single_string(
  *
  *  String option parsing function.
  */
-void
-globus_i_xio_attr_string_dual_positive_int(
+globus_result_t
+globus_xio_string_cntl_int_int(
     void *                              attr,
     const char *                        key,
     const char *                        val,
     int                                 cmd,
     globus_xio_driver_attr_cntl_t       cntl_func);
 
-void
-globus_i_xio_attr_string_formated_off(
+globus_result_t
+globus_xio_string_cntl_formated_off(
     void *                              attr,
     const char *                        key,
     const char *                        val,
     int                                 cmd,
     globus_xio_driver_attr_cntl_t       cntl_func);
 
-void
-globus_i_xio_attr_string_formated_int(
+globus_result_t
+globus_xio_string_cntl_formated_int(
     void *                              attr,
     const char *                        key,
     const char *                        val,

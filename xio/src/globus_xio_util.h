@@ -353,6 +353,18 @@ globus_xio_contact_copy(
             __LINE__,                                                       \
             _XIOSL("Driver in handle has been unloaded.")))
 
+#define GlobusXIOErrorParse(arg)                                            \
+    globus_error_put(                                                       \
+        globus_error_construct_error(                                       \
+            GLOBUS_XIO_MODULE,                                              \
+            NULL,                                                           \
+            GLOBUS_XIO_ERROR_PARSE,                                         \
+            __FILE__,                                                       \
+            _xio_name,                                                      \
+            __LINE__,                                                       \
+            _XIOSL("An error occured parsing the string: %s"), arg))
+
+
 #define GlobusIXIOUtilCopyNIovec(iov, iovc, siov, siovc, bytes)             \
     do                                                                      \
     {                                                                       \
