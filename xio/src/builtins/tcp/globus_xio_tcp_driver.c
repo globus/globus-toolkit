@@ -160,30 +160,29 @@ static globus_mutex_t                   globus_l_xio_tcp_port_range_state_lock;
 
 /* string parse options table.  this rable has all of the options that
     the use can set via strings */
-static globus_i_xio_attr_parse_table_t  tcp_l_string_opts_table[] =
+static globus_xio_string_cntl_table_t tcp_l_string_opts_table[] =
 
 {
-    {"port", GLOBUS_XIO_TCP_SET_PORT, globus_i_xio_attr_string_single_int},
+    {"port", GLOBUS_XIO_TCP_SET_SERVICE,
+        globus_xio_string_cntl_string},
     {"listen_range", GLOBUS_XIO_TCP_SET_LISTEN_RANGE,
-        globus_i_xio_attr_string_dual_positive_int},
+        globus_xio_string_cntl_int_int},
     {"iface", GLOBUS_XIO_TCP_SET_INTERFACE,
-        globus_i_xio_attr_string_single_string},
+        globus_xio_string_cntl_string},
     {"reuse", GLOBUS_XIO_TCP_SET_REUSEADDR,
-        globus_i_xio_attr_string_single_bool},
+        globus_xio_string_cntl_bool},
     {"noipv6", GLOBUS_XIO_TCP_SET_NO_IPV6,
-        globus_i_xio_attr_string_single_bool},
-    {"connect_range", GLOBUS_XIO_TCP_SET_CONNECT_RANGE,
-        globus_i_xio_attr_string_dual_positive_int},
+        globus_xio_string_cntl_bool},
     {"keepalive", GLOBUS_XIO_TCP_SET_KEEPALIVE,
-        globus_i_xio_attr_string_single_bool},
+        globus_xio_string_cntl_bool},
     {"linger", GLOBUS_XIO_TCP_SET_LINGER,
-        globus_i_xio_attr_string_single_bool},
+        globus_xio_string_cntl_bool},
     {"sndbuf", GLOBUS_XIO_TCP_SET_SNDBUF,
-        globus_i_xio_attr_string_single_int},
+        globus_xio_string_cntl_formated_int},
     {"rcvbuf", GLOBUS_XIO_TCP_SET_RCVBUF,
-        globus_i_xio_attr_string_single_int},
+        globus_xio_string_cntl_formated_int},
     {"nodelay", GLOBUS_XIO_TCP_SET_NODELAY,
-        globus_i_xio_attr_string_single_bool},
+        globus_xio_string_cntl_bool},
     {NULL, 0, NULL}
 };
 /*
@@ -2781,7 +2780,7 @@ globus_l_xio_tcp_init(
         globus_l_xio_tcp_attr_cntl,
         globus_l_xio_tcp_attr_destroy);
 
-    globus_xio_driver_set_string_table(
+    globus_xio_string_cntl_set_table(
         driver,
         tcp_l_string_opts_table);
     

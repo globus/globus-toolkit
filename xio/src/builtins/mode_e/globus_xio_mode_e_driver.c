@@ -265,9 +265,9 @@ GlobusXIODefineModule(mode_e) =
             "Header error: %s", (reason)))
 
 
-static globus_i_xio_attr_parse_table_t  mode_e_l_string_opts_table[] =
+static globus_xio_string_cntl_table_t mode_e_l_string_opts_table[] =
 {
-    {"streams", GLOBUS_XIO_MODE_E_SET_NUM_STREAMS, globus_i_xio_attr_string_single_int},
+    {"streams", GLOBUS_XIO_MODE_E_SET_NUM_STREAMS, globus_xio_string_cntl_int},
     {NULL, 0, NULL}
 };
 
@@ -3606,7 +3606,7 @@ globus_l_xio_mode_e_init(
         globus_l_xio_mode_e_attr_cntl,
         globus_l_xio_mode_e_attr_destroy);
 
-    globus_xio_driver_set_string_table(
+    globus_xio_string_cntl_set_table(
         driver,
         mode_e_l_string_opts_table);
 
