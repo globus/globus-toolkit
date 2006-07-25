@@ -615,11 +615,21 @@ xioperf_l_build_stack(
         }
         if(driver_opts != NULL)
         {
-            globus_xio_attr_cntl(
+            res = globus_xio_attr_cntl(
                 info->attr,
                 driver,
                 GLOBUS_XIO_SET_STRING_OPTIONS,
                 driver_opts);
+            if(res != GLOBUS_SUCCESS)
+            {
+                globus_object_t * obj;
+                char * tmp_s;
+
+                obj = globus_error_get(res);
+                tmp_s = globus_error_print_friendly(obj);
+                xio_perf_log(info, 1, "string opts error: %s\n", tmp_s);
+                free(tmp_s);
+            }
         }
 
         /* driver speical case code */
