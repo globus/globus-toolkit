@@ -820,6 +820,81 @@ globus_i_xio_attr_string_bouncer(
     va_end(ap);
 }
 
+static
+int
+globus_l_xio_attr_string_tb_kmgint(
+    const char *                        arg,
+    globus_off_t *                      out_i)
+{
+    int                                 i;
+    int                                 sc;
+
+    sc = sscanf(arg, "%d", &i);
+    if(sc != 1)
+    {
+        return 1;
+    }
+    if(strchr(arg, 'K') != NULL)
+    {
+        *out_i = (globus_off_t)i * 1024;
+    }
+    else if(strchr(arg, 'M') != NULL)
+    {
+        *out_i = (globus_off_t)i * 1024 * 1024;
+    }
+    else if(strchr(arg, 'G') != NULL)
+    {
+        *out_i = (globus_off_t)i * 1024 * 1024 * 1024;
+    }
+    else
+    {
+        *out_i = (globus_off_t)i;
+    }
+
+    return 0;
+}
+
+
+void
+globus_i_xio_attr_string_formated_off(
+    void *                              attr,
+    const char *                        key,
+    const char *                        val,
+    int                                 cmd,
+    globus_xio_driver_attr_cntl_t       cntl_func)
+{
+    int                                 sc;
+    globus_off_t                        o;
+
+    sc = globus_l_xio_attr_string_tb_kmgint(val, &o);
+    if(sc != 0)
+    {
+        return;
+    }
+    globus_i_xio_attr_string_bouncer(cntl_func, attr, cmd, o);
+}
+
+void
+globus_i_xio_attr_string_formated_int(
+    void *                              attr,
+    const char *                        key,
+    const char *                        val,
+    int                                 cmd,
+    globus_xio_driver_attr_cntl_t       cntl_func)
+{
+    int                                 sc;
+    int                                 i;
+    globus_off_t                        o;
+
+    sc = globus_l_xio_attr_string_tb_kmgint(val, &o);
+    if(sc != 0)
+    {
+        return;
+    }
+    i = (int) o;
+    globus_i_xio_attr_string_bouncer(cntl_func, attr, cmd, i);
+}
+
 
 void
 globus_i_xio_attr_string_single_int(

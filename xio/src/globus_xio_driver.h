@@ -1482,6 +1482,21 @@ globus_i_xio_attr_string_dual_positive_int(
     int                                 cmd,
     globus_xio_driver_attr_cntl_t       cntl_func);
 
+void
+globus_i_xio_attr_string_formated_off(
+    void *                              attr,
+    const char *                        key,
+    const char *                        val,
+    int                                 cmd,
+    globus_xio_driver_attr_cntl_t       cntl_func);
+
+void
+globus_i_xio_attr_string_formated_int(
+    void *                              attr,
+    const char *                        key,
+    const char *                        val,
+    int                                 cmd,
+    globus_xio_driver_attr_cntl_t       cntl_func);
 
 EXTERN_C_END
 
