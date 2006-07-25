@@ -861,7 +861,7 @@ globus_i_xio_driver_attr_cntl(
     int                                 cmd,
     va_list                             ap);
 
-void
+globus_result_t
 globus_i_xio_string_cntl_parser(
     const char *                        env_str,
     globus_xio_string_cntl_table_t *    table,

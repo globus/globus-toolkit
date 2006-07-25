@@ -766,7 +766,7 @@ globus_xio_stack_destroy(
 }
 
 /* STRING PARSING ATTR SETTING */
-void
+globus_result_t
 globus_i_xio_string_cntl_parser(
     const char *                        env_str,
     globus_xio_string_cntl_table_t *    table,
@@ -778,12 +778,15 @@ globus_i_xio_string_cntl_parser(
     char *                              val;
     char *                              tmp_s;
     globus_list_t *                     list;
-
+    globus_bool_t                       multiple = GLOBUS_FALSE;
+    globus_object_t *                   error = NULL;
+    globus_result_t                     res = GLOBUS_SUCCESS;
+    
     list = globus_list_from_string(env_str, '#', NULL);
 
     while(!globus_list_empty(list))
     {
-        key = globus_list_first(list);
+        key = (char *) globus_list_remove(&list, list);
 
         tmp_s = strchr(key, '=');
         if(tmp_s != NULL)
@@ -796,13 +799,61 @@ globus_i_xio_string_cntl_parser(
                 /* if we have a match */
                 if(strcmp(table[i].key, key) == 0)
                 {
-                    table[i].parse_func(attr, key, val, table[i].cmd, cntl_func);
+                    res = table[i].parse_func(
+                        attr, key, val, table[i].cmd, cntl_func);
+                    if(res != GLOBUS_SUCCESS)
+                    {
+                        /* restore '=' */
+                        *(tmp_s - 1) = '=';
+                        res = GlobusXIOErrorWrapFailedWithMessage(
+                            res, "String cntl '%s' failed", key);
+                    }
+                    
+                    break;
                 }
             }
+            
+            if(!table[i].key)
+            {
+                res = GlobusXIOErrorParameter(key);
+            }
         }
+        else
+        {
+            res = GlobusXIOErrorParameter(key);
+        }
+        
+        if(res != GLOBUS_SUCCESS)
+        {
+            if(!error)
+            {
+                error = globus_error_get(res);
+            }
+            else if(!multiple)
+            {
+                globus_object_t *       multiple_obj;
+                
+                multiple = GLOBUS_TRUE;
+                multiple_obj = globus_error_construct_multiple(
+                    GLOBUS_XIO_MODULE,
+                    GLOBUS_XIO_ERROR_PARAMETER,
+                    "One or more of the string cntls failed");
+                globus_error_mutliple_add_chain(
+                    multiple_obj, error, NULL);
+                    
+                error = multiple_obj;
+            }
+            else
+            {
+                globus_error_mutliple_add_chain(
+                    error, globus_error_get(res), NULL);
+            }
+        }
+        
         globus_free(key);
-        list = globus_list_rest(list);
     }
+    
+    return globus_error_put(error);
 }
 
 globus_result_t
