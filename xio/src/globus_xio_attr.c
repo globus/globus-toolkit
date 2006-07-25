@@ -782,7 +782,7 @@ globus_i_xio_string_cntl_parser(
     globus_result_t                     res = GLOBUS_SUCCESS;
     GlobusXIOName(globus_i_xio_string_cntl_parser);
     
-    list = globus_list_from_string(env_str, '#', NULL);
+    list = globus_list_from_string(env_str, ';', NULL);
 
     while(!globus_list_empty(list))
     {
