@@ -247,18 +247,25 @@ int main(
                 "tmp directory proxies are stored in\n");
             GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
         }
-        
-        result = GLOBUS_GSI_SYSCONFIG_REMOVE_ALL_OWNED_FILES(
-            default_file);
-        if(result != GLOBUS_SUCCESS)
+	if (dryrun_flag)
         {
-            free(default_full_file);
-            globus_libc_fprintf(
-                stderr,
-                "\nERROR: Couldn't remove the all the files "
-                "owned by you in secure tmp directory.\n");
-            GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
-        }
+	    fprintf(stderr, "Would remove all proxies found in %s directory that are owned by the current user \n", 
+			dummy_dir_string ? dummy_dir_string : "(null)");
+	}
+	else 
+	{
+            result = GLOBUS_GSI_SYSCONFIG_REMOVE_ALL_OWNED_FILES(
+                default_file);
+	    if(result != GLOBUS_SUCCESS)
+	    {
+		free(default_full_file);
+		globus_libc_fprintf(
+		    stderr,
+		    "\nERROR: Couldn't remove the all the files "
+		    "owned by you in secure tmp directory.\n");
+		GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
+	    }
+	}
     }
         
     /* 
