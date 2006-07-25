@@ -594,6 +594,7 @@ BUNDLE globus-gridftp
         gaa_util
         gaa_plugin
         gaa_simple
+        globus_xioperf
         globus_gaa_authz_callout_setup
         gaa_gss_generic
         globus_authz_callout_error

@@ -85,6 +85,7 @@ globus_io_test			io/test
 globus_xio_gsi_driver       xio/drivers/gsi
 globus_xio			xio/src
 globus_xio_test			xio/test
+globus_xioperf			xio/xioperf/source
 globus_ldapmodules		mds/openldap/ldapmodules
 globus_libtool mds/libtool pnb libtool-1.5.8.tar.gz
 globus_libtool_fake mds/libtool-fake
