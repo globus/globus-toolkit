@@ -158,6 +158,34 @@ static globus_l_attr_t                  globus_l_xio_tcp_attr_default =
 static int                              globus_l_xio_tcp_port_range_state_file;
 static globus_mutex_t                   globus_l_xio_tcp_port_range_state_lock;
 
+/* string parse options table.  this rable has all of the options that
+    the use can set via strings */
+static globus_i_xio_attr_parse_table_t  tcp_l_string_opts_table[] =
+
+{
+    {"port", GLOBUS_XIO_TCP_SET_PORT, globus_i_xio_attr_string_single_int},
+    {"listen_range", GLOBUS_XIO_TCP_SET_LISTEN_RANGE,
+        globus_i_xio_attr_string_dual_positive_int},
+    {"iface", GLOBUS_XIO_TCP_SET_INTERFACE,
+        globus_i_xio_attr_string_single_string},
+    {"reuse", GLOBUS_XIO_TCP_SET_REUSEADDR,
+        globus_i_xio_attr_string_single_bool},
+    {"noipv6", GLOBUS_XIO_TCP_SET_NO_IPV6,
+        globus_i_xio_attr_string_single_bool},
+    {"connect_range", GLOBUS_XIO_TCP_SET_CONNECT_RANGE,
+        globus_i_xio_attr_string_dual_positive_int},
+    {"keepalive", GLOBUS_XIO_TCP_SET_KEEPALIVE,
+        globus_i_xio_attr_string_single_bool},
+    {"linger", GLOBUS_XIO_TCP_SET_LINGER,
+        globus_i_xio_attr_string_single_bool},
+    {"sndbuf", GLOBUS_XIO_TCP_SET_SNDBUF,
+        globus_i_xio_attr_string_single_int},
+    {"rcvbuf", GLOBUS_XIO_TCP_SET_RCVBUF,
+        globus_i_xio_attr_string_single_int},
+    {"nodelay", GLOBUS_XIO_TCP_SET_NODELAY,
+        globus_i_xio_attr_string_single_bool},
+    {NULL, 0, NULL}
+};
 /*
  *  server structure
  */
@@ -2752,6 +2780,10 @@ globus_l_xio_tcp_init(
         globus_l_xio_tcp_attr_copy,
         globus_l_xio_tcp_attr_cntl,
         globus_l_xio_tcp_attr_destroy);
+
+    globus_xio_driver_set_string_table(
+        driver,
+        tcp_l_string_opts_table);
     
     *out_driver = driver;
     
@@ -2861,3 +2893,4 @@ globus_l_xio_tcp_deactivate(void)
     
     return GLOBUS_SUCCESS;
 }
+

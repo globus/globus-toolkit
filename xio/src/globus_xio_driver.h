@@ -1323,6 +1323,153 @@ globus_xio_operation_copy_stack(
     globus_xio_operation_t              op,
     globus_xio_stack_t *                stack);
 
+/* STRING PARSING STUFF */
+/**
+ *  @ingroup driver_pgm
+ */
+typedef void
+(*globus_i_xio_attr_parse_func_t)(
+    void *                              attr,
+    const char *                        key,
+    const char *                        val,
+    int                                 cmd,
+    globus_xio_driver_attr_cntl_t       cntl_func);
+
+/**
+ *  @ingroup driver_pgm
+ */
+typedef struct globus_i_xio_attr_parse_table_s
+{
+    char *                              key;
+    int                                 cmd;
+    globus_i_xio_attr_parse_func_t      parse_func;
+} globus_i_xio_attr_parse_table_t;
+
+/**
+ *
+ *  The set of interface functions that the driver author must implement
+ *  to create a driver and the functions to assist in the creation.
+ *
+ *  Driver attribute functions
+ *
+ *  If the driver wishes to provide driver specific attributes to the
+ *  user it must implement the following functions:
+ *
+ *  globus_xio_driver_attr_init_t
+ *  globus_xio_driver_attr_copy_t
+ *  globus_xio_driver_attr_cntl_t
+ *  globus_xio_driver_attr_destroy_t
+ */
+
+/**
+ *  @defgroup string_driver_pgm Driver Programming: String options
+ *
+ *  A driver can choose to expose parameters as in a string form.  Providing
+ *  this feature makes dynamicly setting driver specific options much easier.
+ *  a user can then load the driverby name and set specific options by name
+ *  all at runtime with no object module references.  For example, a TCP driver
+ *  can be loaded with the string: tcp, and the options can be set with:
+ *
+ *  port=50668#keepalive=yes#nodelay=N
+ *
+ *  this would set the port to 50668, keepalive to true and nodelay to false.
+ *  The particular string definition is defined by the tcp driver by properly 
+ *  creating a globus_i_xio_attr_parse_table_t array.  Each element of the
+ *  array is 1 options.  There are 3 members of each array entry: key, cmd, and
+ *  parse function.  The key is a string that defines what option is to be set.
+ *  In the above example string "port" would be 1 key.  cmd tells the driver what
+ *  cntl is associated with the key.  In otherwords, once the string is parsed out
+ *  what driver specific control must be called to set the requested option.  For
+ *  more information on controls see @ref globus_xio_attr_cntl.  The final value
+ *  in the array entry is the parsing function.  The pasing function takes the 
+ *  value of the <key>=<value> portion of the string and parses it into data types.
+ *  once parsed globus_xio_attr_cntl is called and thus the option is set.  There are 
+ *  many available parsing functions but the developer is free to right their own
+ *  if the provided ones are not sufficient.  Sample parsing functions follow:
+ *
+ *  - @ref globus_i_xio_attr_string_single_bool
+ *  - @ref globus_i_xio_attr_string_single_float
+ *  - @ref globus_i_xio_attr_string_single_int
+ *  - @ref globus_i_xio_attr_string_single_string
+ *  - @ref globus_i_xio_attr_string_dual_positive_int
+ *
+ */
+/**
+ *  @ingroup string_driver_pgm
+ *
+ */
+globus_result_t
+globus_xio_driver_set_string_table(
+    globus_xio_driver_t                 driver,
+    globus_i_xio_attr_parse_table_t *   table);
+
+/* list all of the built in parsing functions */
+/**
+ *  @ingroup string_driver_pgm
+ *
+ *  String option parsing function.
+ */
+void
+globus_i_xio_attr_string_single_bool(
+    void *                              attr,
+    const char *                        key,
+    const char *                        val,
+    int                                 cmd,
+    globus_xio_driver_attr_cntl_t       cntl_func);
+
+/**
+ *  @ingroup string_driver_pgm
+ *
+ *  String option parsing function.
+ */
+void
+globus_i_xio_attr_string_single_float(
+    void *                              attr,
+    const char *                        key,
+    const char *                        val,
+    int                                 cmd,
+    globus_xio_driver_attr_cntl_t       cntl_func);
+
+/**
+ *  @ingroup string_driver_pgm
+ *
+ *  String option parsing function.
+ */
+void
+globus_i_xio_attr_string_single_int(
+    void *                              attr,
+    const char *                        key,
+    const char *                        val,
+    int                                 cmd,
+    globus_xio_driver_attr_cntl_t       cntl_func);
+
+/**
+ *  @ingroup string_driver_pgm
+ *
+ *  String option parsing function.
+ */
+void
+globus_i_xio_attr_string_single_string(
+    void *                              attr,
+    const char *                        key,
+    const char *                        val,
+    int                                 cmd,
+    globus_xio_driver_attr_cntl_t       cntl_func);
+
+/**
+ *  @ingroup string_driver_pgm
+ *
+ *  String option parsing function.
+ */
+void
+globus_i_xio_attr_string_dual_positive_int(
+    void *                              attr,
+    const char *                        key,
+    const char *                        val,
+    int                                 cmd,
+    globus_xio_driver_attr_cntl_t       cntl_func);
+
+
 EXTERN_C_END
 
 #endif /* GLOBUS_XIO_DRIVER_H */

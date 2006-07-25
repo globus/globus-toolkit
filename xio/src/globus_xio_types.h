@@ -237,6 +237,7 @@ typedef struct
     char *                              subject;
 } globus_xio_contact_t;
 
+
 EXTERN_C_END
 
 #endif

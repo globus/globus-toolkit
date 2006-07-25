@@ -764,3 +764,219 @@ globus_xio_stack_destroy(
     GlobusXIODebugExitWithError();
     return res;
 }
+
+/* STRING PARSING ATTR SETTING */
+void
+globus_i_xio_attr_string_parser(
+    const char *                        env_str,
+    globus_i_xio_attr_parse_table_t *   table,
+    void *                              attr,
+    globus_xio_driver_attr_cntl_t       cntl_func)
+{
+    int                                 i;
+    char *                              key;
+    char *                              val;
+    char *                              tmp_s;
+    globus_list_t *                     list;
+
+    list = globus_list_from_string(env_str, '#', NULL);
+
+    while(!globus_list_empty(list))
+    {
+        key = globus_list_first(list);
+
+        tmp_s = strchr(key, '=');
+        if(tmp_s != NULL)
+        {
+            *tmp_s = '\0';
+            val = tmp_s + 1;
+
+            for(i = 0; table[i].key != NULL; i++)
+            {
+                /* if we have a match */
+                if(strcmp(table[i].key, key) == 0)
+                {
+                    table[i].parse_func(attr, key, val, table[i].cmd, cntl_func);
+                }
+            }
+        }
+        list = globus_list_rest(list);
+    }
+}
+
+static
+void
+globus_i_xio_attr_string_bouncer(
+    globus_xio_driver_attr_cntl_t       cntl_func,
+    void *                              attr,
+    int                                 cmd,
+    ...)
+{
+    va_list                             ap;
+
+    va_start(ap, cmd);
+
+    cntl_func(attr, cmd, ap);
+
+    va_end(ap);
+}
+
+
+void
+globus_i_xio_attr_string_single_int(
+    void *                              attr,
+    const char *                        key,
+    const char *                        val,
+    int                                 cmd,
+    globus_xio_driver_attr_cntl_t       cntl_func)
+{
+    int                                 sc;
+    int                                 i;
+
+    sc = sscanf(val, "%d", &i);
+    if(sc != 1)
+    {
+        return;
+    }
+    globus_i_xio_attr_string_bouncer(cntl_func, attr, cmd, i);
+}
+
+void
+globus_i_xio_attr_string_dual_positive_int(
+    void *                              attr,
+    const char *                        key,
+    const char *                        val,
+    int                                 cmd,
+    globus_xio_driver_attr_cntl_t       cntl_func)
+{
+    int                                 sc;
+    int                                 i;
+    int                                 j;
+    char *                              tmp_s;
+    char *                              new_val;
+
+    /* turn all non digits into spaces for the scanf easiness */
+    tmp_s = strdup(val);
+    if(tmp_s == NULL)
+    {
+        return;
+    }
+    new_val = tmp_s;
+    while(*tmp_s != '\0')
+    {
+        if(!isdigit(*tmp_s))
+        {
+            *tmp_s = ' ';
+        }
+        tmp_s++;
+    }
+
+    sc = sscanf(new_val, "%d %d", &i, &j);
+    free(new_val);
+    if(sc != 2)
+    {
+        return;
+    }
+    globus_i_xio_attr_string_bouncer(cntl_func, attr, cmd, i, j);
+}
+
+
+void
+globus_i_xio_attr_string_single_float(
+    void *                              attr,
+    const char *                        key,
+    const char *                        val,
+    int                                 cmd,
+    globus_xio_driver_attr_cntl_t       cntl_func)
+{
+    int                                 sc;
+    float                               f;
+
+    sc = sscanf(val, "%f", &f);
+    if(sc != 1)
+    {
+        return;
+    }
+    globus_i_xio_attr_string_bouncer(cntl_func, attr, cmd, f);
+}
+
+void
+globus_i_xio_attr_string_single_string(
+    void *                              attr,
+    const char *                        key,
+    const char *                        val,
+    int                                 cmd,
+    globus_xio_driver_attr_cntl_t       cntl_func)
+{
+    globus_i_xio_attr_string_bouncer(cntl_func, attr, cmd, val);
+}
+
+void
+globus_i_xio_attr_string_single_bool(
+    void *                              attr,
+    const char *                        key,
+    const char *                        val,
+    int                                 cmd,
+    globus_xio_driver_attr_cntl_t       cntl_func)
+{
+    int                                 sc;
+    int                                 i;
+    globus_bool_t                       found = GLOBUS_FALSE;
+    globus_bool_t                       b;
+
+    if(strcasecmp(val, "yes") == 0)
+    {
+        b = GLOBUS_TRUE;
+        found = GLOBUS_TRUE;
+    }
+    else if(strcasecmp(val, "y") == 0)
+    {
+        b = GLOBUS_TRUE;
+        found = GLOBUS_TRUE;
+    }
+    else if(strcasecmp(val, "true") == 0)
+    {
+        b = GLOBUS_TRUE;
+        found = GLOBUS_TRUE;
+    }
+    else if(strcasecmp(val, "t") == 0)
+    {
+        b = GLOBUS_TRUE;
+        found = GLOBUS_TRUE;
+    }
+    else if(strcasecmp(val, "no") == 0)
+    {
+        b = GLOBUS_FALSE;
+        found = GLOBUS_TRUE;
+    }
+    else if(strcasecmp(val, "n") == 0)
+    {
+        b = GLOBUS_FALSE;
+        found = GLOBUS_TRUE;
+    }
+    else if(strcasecmp(val, "false") == 0)
+    {
+        b = GLOBUS_FALSE;
+        found = GLOBUS_TRUE;
+    }
+    else if(strcasecmp(val, "f") == 0)
+    {
+        b = GLOBUS_FALSE;
+        found = GLOBUS_TRUE;
+    }
+    else
+    {
+        sc = sscanf(val, "%d", &i);
+        if(sc == 1)
+        {
+            b = i;
+            found = GLOBUS_TRUE;
+        }
+    }
+    if(found)
+    {
+        globus_i_xio_attr_string_bouncer(cntl_func, attr, cmd, b);
+    }
+}
+
+

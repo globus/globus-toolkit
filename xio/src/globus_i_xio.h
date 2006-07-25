@@ -600,7 +600,9 @@ typedef struct globus_i_xio_driver_s
     globus_xio_driver_hook_t *          hook;
     globus_extension_handle_t           extension_handle;
     globus_bool_t                       extension_activated;
-    
+
+    globus_i_xio_attr_parse_table_t *   string_table;
+
     /*
      *  main io interface functions
      */
@@ -858,6 +860,13 @@ globus_i_xio_driver_attr_cntl(
     globus_xio_driver_t                 driver,
     int                                 cmd,
     va_list                             ap);
+
+void
+globus_i_xio_attr_string_parser(
+    const char *                        env_str,
+    globus_i_xio_attr_parse_table_t *   table,
+    void *                              attr,
+    globus_xio_driver_attr_cntl_t       attr_func);
 
 
 extern globus_i_xio_timer_t             globus_i_xio_timeout_timer;
