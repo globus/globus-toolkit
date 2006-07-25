@@ -992,6 +992,7 @@ globus_error_print_friendly(
             if(bottom1 && *bottom1)
             {
                 layout[i++] = bottom1;
+                layout[i++] = "\n";
             }
         }
         
