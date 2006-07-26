@@ -157,13 +157,12 @@ static void
 usage(void)
 {
 	fprintf(stderr,
-"usage: ssh [-1246AaCfgkMNnqrsTtVvXxY] [-b bind_address] [-c cipher_spec]\n"
+"usage: ssh [-1246AaCfgkMNnqsTtVvXxY] [-b bind_address] [-c cipher_spec]\n"
 "           [-D [bind_address:]port] [-e escape_char] [-F configfile]\n"
 "           [-i identity_file] [-L [bind_address:]port:host:hostport]\n"
 "           [-l login_name] [-m mac_spec] [-O ctl_cmd] [-o option] [-p port]\n"
 "           [-R [bind_address:]port:host:hostport] [-S ctl_path]\n"
 "           [-w tunnel:tunnel] [user@]hostname [command]\n"
-"           [-r Receive Buffer Size in K]\n"
 	);
 	exit(255);
 }
@@ -242,12 +241,10 @@ main(int ac, char **av)
 
 	/* Parse command-line arguments. */
 	host = NULL;
-	/* need to set options.tcp_rcv_buf to 0 */
-	options.tcp_rcv_buf = 0;
 
 again:
 	while ((opt = getopt(ac, av,
-	    "1246ab:c:e:fgi:kl:m:no:p:qrstvxACD:F:I:L:MNO:PR:S:TVw:XYz")) != -1) {
+	    "1246ab:c:e:fgi:kl:m:no:p:qstvxACD:F:I:L:MNO:PR:S:TVw:XY")) != -1) {
 		switch (opt) {
 		case '1':
 			options.protocol = SSH_PROTO_1;
@@ -499,9 +496,6 @@ again:
 		case 'F':
 			config = optarg;
 			break;
-		case 'r':
-		        options.tcp_rcv_buf = atoi(optarg) * 1024;
-		        break;
 		case 'z':
 			/* make sure we can't turn on the none_switch */
 			/* if they try to force a no tty flag on a tty session */
@@ -808,7 +802,8 @@ ssh_init_forwarding(void)
 		    options.local_forwards[i].listen_port,
 		    options.local_forwards[i].connect_host,
 		    options.local_forwards[i].connect_port,
-		    options.gateway_ports);
+		    options.gateway_ports, options.hpn_disabled,
+		    options.hpn_buffer_size);
 	}
 	if (i > 0 && success == 0)
 		error("Could not request local forwarding.");
@@ -1090,9 +1085,14 @@ ssh_session2_setup(int id, void *arg)
 		debug("Requesting tun.");
 		if ((fd = tun_open(options.tun_local,
 		    options.tun_open)) >= 0) {
-			c = channel_new("tun", SSH_CHANNEL_OPENING, fd, fd, -1,
-			    CHAN_TCP_WINDOW_DEFAULT, CHAN_TCP_PACKET_DEFAULT,
-			    0, "tun", 1);
+			if(options.hpn_disabled)
+				c = channel_new("tun", SSH_CHANNEL_OPENING, fd, fd, -1,
+				    CHAN_TCP_WINDOW_DEFAULT, CHAN_TCP_PACKET_DEFAULT,
+				    0, "tun", 1);
+			else
+				c = channel_new("tun", SSH_CHANNEL_OPENING, fd, fd, -1,
+				    options.hpn_buffer_size, CHAN_TCP_PACKET_DEFAULT,
+				    0, "tun", 1);
 			c->datagram = 1;
 #if defined(SSH_TUN_FILTER)
 			if (options.tun_open == SSH_TUNMODE_POINTOPOINT)
@@ -1142,7 +1142,10 @@ ssh_session2_open(void)
 	if (!isatty(err))
 		set_nonblock(err);
 
-	window = CHAN_SES_WINDOW_DEFAULT;
+	if(options.hpn_disabled)
+		window = CHAN_SES_WINDOW_DEFAULT;
+	else
+		window = options.hpn_buffer_size;
 	packetmax = CHAN_SES_PACKET_DEFAULT;
 	if (tty_flag) {
 		window = 4*CHAN_SES_PACKET_DEFAULT;
@@ -1153,8 +1156,9 @@ ssh_session2_open(void)
 	    "session", SSH_CHANNEL_OPENING, in, out, err,
 	    window, packetmax, CHAN_EXTENDED_WRITE,
 	    "client-session", /*nonblock*/0);
-	if (!tty_flag && (!(datafellows & SSH_BUG_LARGEWINDOW))) {
+	if ((options.tcp_rcv_buf_poll > 0) && (!options.hpn_disabled)) {
 		c->dynamic_window = 1;
+		debug ("Enabled Dynamic Window Scaling\n");
 	}
 	debug3("ssh_session2_open: channel_new: %d", c->self);
 
@@ -1335,12 +1339,23 @@ control_client(const char *path)
 		flags |= SSHMUX_FLAG_X11_FWD;
 	if (options.forward_agent)
 		flags |= SSHMUX_FLAG_AGENT_FWD;
-
+	if (options.num_local_forwards > 0)
+		flags |= SSHMUX_FLAG_PORTFORWARD;
 	buffer_init(&m);
 
 	/* Send our command to server */
 	buffer_put_int(&m, mux_command);
 	buffer_put_int(&m, flags);
+	if (options.num_local_forwards > 0)
+        {
+		if (options.local_forwards[0].listen_host == NULL)
+ 			buffer_put_string(&m,"LOCALHOST",11);
+		else
+			buffer_put_string(&m,options.local_forwards[0].listen_host,512);
+		buffer_put_int(&m,options.local_forwards[0].listen_port);
+		buffer_put_string(&m,options.local_forwards[0].connect_host,512);	
+		buffer_put_int(&m,options.local_forwards[0].connect_port);
+	}
 	if (ssh_msg_send(sock, SSHMUX_VER, &m) == -1)
 		fatal("%s: msg_send", __func__);
 	buffer_clear(&m);

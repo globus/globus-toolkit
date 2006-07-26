@@ -186,6 +186,7 @@ auth_input_request_forwarding(struct passwd * pw)
 		packet_disconnect("listen: %.100s", strerror(errno));
 
 	/* Allocate a channel for the authentication agent socket. */
+	/* this shouldn't matter if its hpn or not - cjr */
 	nc = channel_new("auth socket",
 	    SSH_CHANNEL_AUTH_SOCKET, sock, sock, -1,
 	    CHAN_X11_WINDOW_DEFAULT, CHAN_X11_PACKET_DEFAULT,
@@ -322,7 +323,9 @@ do_authenticated1(Authctxt *authctxt)
 				break;
 			}
 			debug("Received TCP/IP port forwarding request.");
-			channel_input_port_forward_request(s->pw->pw_uid == 0, options.gateway_ports);
+			channel_input_port_forward_request(s->pw->pw_uid == 0, options.gateway_ports, 
+                                                           options.hpn_disabled, 
+ 							   options.hpn_buffer_size);
 			success = 1;
 			break;
 
@@ -2017,11 +2020,18 @@ session_set_fds(Session *s, int fdin, int fdout, int fderr)
 	 */
 	if (s->chanid == -1)
 		fatal("no channel for session %d", s->self);
-	channel_set_fds(s->chanid,
-	    fdout, fdin, fderr,
-	    fderr == -1 ? CHAN_EXTENDED_IGNORE : CHAN_EXTENDED_READ,
-	    1,
-	    CHAN_SES_WINDOW_DEFAULT);
+	if(options.hpn_disabled) 
+		channel_set_fds(s->chanid,
+		    fdout, fdin, fderr,
+		    fderr == -1 ? CHAN_EXTENDED_IGNORE : CHAN_EXTENDED_READ,
+		    1,
+		    CHAN_SES_WINDOW_DEFAULT);
+	else
+		channel_set_fds(s->chanid,
+		    fdout, fdin, fderr,
+		    fderr == -1 ? CHAN_EXTENDED_IGNORE : CHAN_EXTENDED_READ,
+		    1,
+		    options.hpn_buffer_size);
 }
 
 /*
@@ -2365,7 +2375,8 @@ session_setup_x11fwd(Session *s)
 	}
 	if (x11_create_display_inet(options.x11_display_offset,
 	    options.x11_use_localhost, s->single_connection,
-	    &s->display_number, &s->x11_chanids) == -1) {
+	    &s->display_number, &s->x11_chanids, 
+	    options.hpn_disabled, options.hpn_buffer_size) == -1) {
 		debug("x11_create_display_inet failed.");
 		return 0;
 	}

@@ -144,6 +144,31 @@ ssh_proxy_connect(const char *host, u_short port, const char *proxy_command)
 }
 
 /*
+ * Set TCP receive buffer if requested.
+ * Note: tuning needs to happen after the socket is
+ * created but before the connection happens
+ * so winscale is negotiated properly -cjr
+ */
+static void
+ssh_set_socket_recvbuf(int sock)
+{
+	void *buf = (void *)&options.tcp_rcv_buf;
+	int sz = sizeof(options.tcp_rcv_buf);
+	int socksize;
+	int socksizelen = sizeof(int);
+
+	debug("setsockopt Attempting to set SO_RCVBUF to %d", options.tcp_rcv_buf);
+	if (setsockopt(sock, SOL_SOCKET, SO_RCVBUF, buf, sz) >= 0) {
+	  getsockopt(sock, SOL_SOCKET, SO_RCVBUF, &socksize, &socksizelen);
+	  debug("setsockopt SO_RCVBUF: %.100s %d", strerror(errno), socksize);
+	}
+	else
+		error("Couldn't set socket receive buffer to %d: %.100s",
+		    options.tcp_rcv_buf, strerror(errno));
+}
+
+
+/*
  * Creates a (possibly privileged) socket for use as the ssh connection.
  */
 static int
@@ -167,55 +192,16 @@ ssh_create_socket(int privileged, struct addrinfo *ai)
 		else
 			debug("Allocated local port %d.", p);
 
-		
-		/* tuning needs to happen after the socket is */
-		/* created but before the connection happens */
-		/* so winscale is negotiated properly -cjr */
-		
-		/* Set tcp receive buffer if requested */
-		if (options.tcp_rcv_buf) 
-		  {
-		    if (setsockopt(sock, SOL_SOCKET, SO_RCVBUF, 
-				   (void *)&options.tcp_rcv_buf, 
-				   sizeof(options.tcp_rcv_buf)) >= 0)
-		      {             
-			debug("setsockopt SO_RCVBUF: %.100s", strerror(errno));
-		      } 
-		    else 
-		      {
-			/* coudln't set the socket size to use spec. */
-			/* should default to system param and continue */
-			/* warn the user though - cjr */
-			error("Couldn't set socket receive buffer as requested. Continuing anyway.");
-		      }
-		  }
+		if (options.tcp_rcv_buf > 0)
+			ssh_set_socket_recvbuf(sock);		
 		return sock;
 	}
 	sock = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
 	if (sock < 0)
 		error("socket: %.100s", strerror(errno));
 	
-	/* tuning needs to happen after the socket is */
-	/* created but before the connection happens */
-	/* so winscale is negotiated properly -cjr */
-	
-	/* Set tcp receive buffer if requested */
-	if (options.tcp_rcv_buf) 
-	  {
-	    if (setsockopt(sock, SOL_SOCKET, SO_RCVBUF, 
-			   (void *)&options.tcp_rcv_buf, 
-			   sizeof(options.tcp_rcv_buf)) >= 0)
-	      {             
-		debug("setsockopt SO_RCVBUF: %.100s", strerror(errno));
-	      }
-	    else 
-	      {
-		/* coudln't set the socket size to use spec. */
-		/* should default to system param and continue */
-		/* warn the user though - cjr */
-		error("Couldn't set socket receive buffer as requested. Continuing anyway.");
-	      }
-	  }
+		if (options.tcp_rcv_buf > 0)
+			ssh_set_socket_recvbuf(sock);
 	
        	/* Bind the socket to an alternative local IP address */
 	if (options.bind_address == NULL)
