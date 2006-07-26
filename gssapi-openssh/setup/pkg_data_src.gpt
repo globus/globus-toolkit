@@ -3,14 +3,14 @@
 
 <gpt_package_metadata Format_Version="0.02" Name="gsi_openssh_setup" >
 
-  <Aging_Version Major="3" Minor="7" Age="0" />
+  <Aging_Version Major="3" Minor="8" Age="0" />
   <Description>GSI-Enabled OpenSSH setup package</Description>
   <Functional_Group >gsi_openssh</Functional_Group>
   <Version_Stability Release="stable" />
 
   <src_pkg >
 
-    <Version_Label>GSI-OpenSSH 3.7 / OpenSSH 4.2p1</Version_Label>
+    <Version_Label>GSI-OpenSSH 3.8 / OpenSSH 4.3p2</Version_Label>
 
     <With_Flavors build="no" />
 
@@ -36,7 +36,7 @@
     </Post_Install_Message>
 
     <Setup Name="gsi_openssh_setup">
-      <Aging_Version Major="3" Minor="7" Age="0" />
+      <Aging_Version Major="3" Minor="8" Age="0" />
     </Setup>
 
   </src_pkg >
