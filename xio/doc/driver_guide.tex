@@ -11,24 +11,24 @@
 %----------------------------------------------------------------------
 % Title Information, Abstract and Keywords
 %-----{----------------------------------------------------------------
-\title{GlobusXIO Driver Development Guide}
+\title{Globus XIO Driver Development Guide}
 
 \begin{document}
 \maketitle
 
 \section{Introduction}
-GlobusXIO is the extensible input/output component of the Globus Toolkit(tm).
-It provides an abstranction layer to protocol and data transform
-implementations.  GlobusXIO allows application developers to write
-code against a single, well know, and intutive API and then, at any time later,
+Globus XIO is the extensible input/output component of the Globus Toolkit(tm).
+It provides an abstraction layer to protocol and data transform
+implementations.  Globus XIO allows application developers to write
+code against a single, well know, and intuitive API and then, at any time later,
 insert an IO implementation behind that API.  The IO implementations
-that can be plugged in are known as \emph{GlobusXIO drivers}.  
-This document is guide to writting GlobusXIO drivers.
+that can be plugged in are known as \emph{Globus XIO drivers}.  
+This document is guide to writing Globus XIO drivers.
 
 The goal of XIO is to provide developers with a single user space API
 that allows them to to manipulate and ship data using any protocol they
 wish.  The decision of what protocol to use does not have to be made
-at developement time, or even at compile time.  With GlobusXIO this is
+at development time, or even at compile time.  With Globus XIO this is
 a runtime decision.  
 
 At runtime the user can select what drivers they wish to plug in behind the
@@ -46,7 +46,7 @@ often involves calls to kernel to copy the data across the kernel
 barrier or otherwise arrange for it to be sent across a network, or
 put to disk.  The important characteristic of the transport driver is
 that it is always on the bottom of the stack.  It does not have
-a driver below it to which it can deligate responsibility.  It is
+a driver below it to which it can delegate responsibility.  It is
 the end of the line.  There must be one transport driver on every driver
 stack and it must be at the bottom of the stack.  A good example of
 a transport driver is the TCP driver or the FILE driver.
@@ -54,14 +54,14 @@ a transport driver is the TCP driver or the FILE driver.
 Transform drivers sit on the stack between the transport driver on the
 bottom and the user API on the top.  There can be any number of transport
 drivers on a stack, although in most cases there will be no more than one or 
-two.  Transform drivers alway rely on the fact that there is a driver
+two.  Transform drivers always rely on the fact that there is a driver
 below then to which they can \emph{pass} the data blocks.  The transform
-driver knows it is not responisible for the actual delivery of the data.
+driver knows it is not responsible for the actual delivery of the data.
 It is simply an interceptor in the operation chain.  It can manipulate
 the operations in anyway it wants but they rely on the fact that there is
 a driver below them to which they can \emph{pass} the data blocks.  The 
 driver they pass to may be another transform driver, or it may be the
-tranport driver, it does not know or care.  The transform driver simply
+transport driver, it does not know or care.  The transform driver simply
 preforms its duties and then passes the work along.  Some good examples
 of transform drivers are GSI security, logging, compression, 
 and bandwidth limiting.
@@ -79,7 +79,7 @@ wire is HTTP, not just TCP alone, and the remote side of the connection is
 going to have to be able to understand HTTP in order to properly get
 at the payload.
 
-Figure 1 show the architecture of GlobusXIO.  The user interacts with 
+Figure 1 show the architecture of Globus XIO.  The user interacts with 
 the simple open/close/read/write API and posts data operations to it.
 The Globus XIO framework then forwards the buffers along to the first
 driver in the stack.  When then driver \emph{passes} the operation along
@@ -87,14 +87,14 @@ the framework forwards it to the next driver in the stack and so on
 until the operation reaches the transport driver.  Once the transport 
 driver has completed the operation it tells the framework it is 
 \emph{finished}.  We refer to this as finishing an operation.  The 
-framework then moves up the stack notifing each driver that the 
+framework then moves up the stack notifying each driver that the 
 one below it is done with the task that was passed to it.  Drivers
 are free to do some processing in between the time they are told
 the lower driver finished and the time they finish the operation.
 
 \section{Asynchronous C Programming}
-GlobusXIO is designed on an asynchronous model, therefore
-the driver interface is desinged on an asynchronous model as well.
+Globus XIO is designed on an asynchronous model, therefore
+the driver interface is designed on an asynchronous model as well.
 The driver is signaled to perform a task.  It can complete this
 task at anytime without regard for the thread of execution that
 made the request.  When the driver completes the task it signals
@@ -105,11 +105,11 @@ Explaining
 proper asynchronous programming techniques is a task of its own.  We
 do not intend to take on this task in this guide, however since 
 understanding at least the basic ideas behind it are crucial to 
-developing GlobusXIO drivers we will briefly discuss it in this section.
-Readers familar with asynchronous programming should skip this section.
+developing Globus XIO drivers we will briefly discuss it in this section.
+Readers familiar with asynchronous programming should skip this section.
 
 In C 101 we learn about the $main()$ function.  When an application 
-begins a single thread starts executing instructions at the begining
+begins a single thread starts executing instructions at the beginning
 of the main function.  Execution continues, following branches, loops,
 jumps to function etc.  As soon execution reaches the end of the $main()$
 function it ends.  To the developer this model is very easy to follow.
@@ -117,10 +117,10 @@ Processing occurs sequential and the next line of code that will be executed
 is very predicable.
 
 The blocking models follows this way of thinking.  When a developer wishes
-to read data from a socket they call the read() function.  Exectution 
+to read data from a socket they call the read() function.  Execution 
 enters that function and does not return until it has read the data which
 the user requested.  While in that function the users application 
-blocks.  This is an easy and predictable means of performan IO, however
+blocks.  This is an easy and predictable means of performing IO, however
 it is not the most efficient use of the CPU.  While waiting for data
 to be read the CPU is largely idle and the application could very well
 have work it to do that is independent of that read.  However, since
@@ -129,11 +129,11 @@ it is blocked in that function it can do nothing but wait.
 The asynchronous IO model is much different.  Instead of blocking
 for an operation to complete the developer \emph{registers} the IO event.
 As part of the registration the developer passes in a function pointer.
-When the event completes that funciton pointer is called.  So in 
+When the event completes that function pointer is called.  So in 
 asynchronous IO, many operations are posted and at any time an event
 can take place that will cause their callback to fire.  The developer
 must be prepared for the event to occur at any time after registration.
-This can get very complicated in the face of a many simulataneous
+This can get very complicated in the face of a many simultaneous
 operations.
 
 Developers must be aware that many event callbacks could happen at the same
@@ -142,11 +142,11 @@ of code.  In this model, as in any multithreaded programming model,
 users must be careful of race conditions and deadlock situations.
 The recommended approach in the asynchronous programming model is 
 to use a finite state machine.  In this approach the developer 
-indentifies and enumnerates all of the distinct states that a program 
+identifies and enumerates all of the distinct states that a program 
 can go through as well as all of the transitions from one of these
 states to another.  When an event occurs the developer checks the current
-state and the type of event against against this state machine to determing
-what the next state to transtion to will be.
+state and the type of event against against this state machine to determine
+what the next state to transition to will be.
 
 A very simple example:  opening, open, reading, closing, closed
 
@@ -157,32 +157,32 @@ for more info see
 -- lib event maybe
 
 
-\section{Driver Developement Introduction}
-In this section we explain how to make a GlobusXIO driver.  A driver is 
+\section{Driver Development Introduction}
+In this section we explain how to make a Globus XIO driver.  A driver is 
 a dynamically loadable C library with a well defined set of interface
 functions.  
 The interface functions are wrapped together in a in a data structure.
-When a GlobusXIO application chooses to load a driver it locates this
+When a Globus XIO application chooses to load a driver it locates this
 symbol in the shared library according to a naming convention.
-The application gives GlobusXIO a driver name, a driver with this name
+The application gives Globus XIO a driver name, a driver with this name
 is then searched for in the $LB_LIBRARY_PATH$.  If found the library is
-loaded and the symbol containing the interface functions is aquirred,
+loaded and the symbol containing the interface functions is acquired,
 at which point Globus XIO has all it needs to use the driver.
 
 All interface functions are expected to provide a well defined operation.
-This can be viewed as a contract between GlobusXIO and the driver.
+This can be viewed as a contract between Globus XIO and the driver.
 For example, the \emph{read} function is expected to get new data
-and give that data to GlobusXIO.  It does not matter how the driver
+and give that data to Globus XIO.  It does not matter how the driver
 does it.  The file driver will get the data from the file system, the
 TCP driver will get the data from a socket.  The contract does not
-care \emph{how} the data is aquirred, it only cares that the driver
+care \emph{how} the data is acquired, it only cares that the driver
 copy the data into the provided buffers.  In order to help the driver 
 developer honor the interface function contracts
 there is an assist API.  
 
 Before we go into greater detail on the interface function, their contacts,
-and all of the data structions that go along with it we first introduce
-the reader to ome general concepts in driver development and try to 
+and all of the data structures that go along with it we first introduce
+the reader to more general concepts in driver development and try to 
 provide an understanding of the flow of a driver.
 First we give a quick overview of how it works.  
 The tricky bits and hardcore rules are left out for now.
@@ -191,15 +191,15 @@ The tricky bits and hardcore rules are left out for now.
 First we look at \emph{operations}.  The interface functions
 represents a call from the framework to the driver requesting that some
 specific operation be performed (for example, read/write/open/close).  
-Since GlobusXIO drivers are on an 
+Since Globus XIO drivers are on an 
 asynchronous model *(wrapblock), the driver may perform 
 this operation on its own time.  The driver
 is not expected to finish the operation withing scope of the interface
-funciton call.  The driver is free to schedule the request for later, 
+function call.  The driver is free to schedule the request for later, 
 or perform the request in some low priority thread or in some other out
-of band asynchronous funciton without stopping up the entire system.
-GlobusXIO signals the driver when it wants an operation
-to be completed, and the driver signals GlobusXIO when it has 
+of band asynchronous function without stopping up the entire system.
+Globus XIO signals the driver when it wants an operation
+to be completed, and the driver signals Globus XIO when it has 
 completed the operation.  Once receiving the start signal, the driver
 can give the finished signal at anytime, and from any thread/callstack
 that it likes.
@@ -210,8 +210,8 @@ to signal the driver that an operation must be performed.  The second
 thing required is an operation data type which encapsulates what operation
 is in question.  This is just a type defined pointer to internal state
 which is associated with the requested operation.  Finally we need 
-an \emph{operation finshed} function that the driver
-may use to signal GlobusXIO that it has completed it request.
+an \emph{operation finished} function that the driver
+may use to signal Globus XIO that it has completed it request.
 
 Let us look at an example using a read operation.
 
@@ -234,7 +234,7 @@ sample_read(
 \end{verbatim}
 
 In this oversimplified example $sample_read$ will be called
-by GlobusXIO when an application requests a read via a call to
+by Globus XIO when an application requests a read via a call to
 $globus_xio_read()$ and the like.  The first parameter to
 $sample_read$ is $driver_specific_handle$, this is a pointer
 to driver defined memory.  We will look at this parameter in detail
@@ -242,11 +242,11 @@ later but for now we shall ignore it.  The next two parameters
 $iovec$ and $iovec_count$ point to memory buffers into which
 the driver is to read data.  Much information exists on iovec as it 
 is a common BSD socket idiom.  And the final parameter is $op$.
-$op$ is a GlobusXIO data type that holds internal information about
+$op$ is a Globus XIO data type that holds internal information about
 the specific read operation called.  The driver developer must 
 hang onto this operation data type until it has completed the request,
 at which time it calls $globus_xio_driver_finished_read()$, passing
-in $op$ and thereby signaling GlobusXIO of its completion.
+in $op$ and thereby signaling Globus XIO of its completion.
 
 In the above example $globus_xio_driver_finished_read()$ \emph{is} called
 with in the scope of the $sample_read$ function.  This is only done
@@ -265,7 +265,7 @@ communicate an error.  Details on Globus errors are documented
 elsewhere, for our purposes we only need to know that $GLOBUS_SUCCESS$ 
 is success and anything else is a failure.
 The value  returned from the interface function indicates
-if the driver is willing to \emph{attempt} to fullfil the request.  
+if the driver is willing to \emph{attempt} to fulfill the request.  
 $GLOBUS_SUCCESS$ indicates that it is willing to try and an error
 type indicates that it is not.  
 If the interface function returns $GLOBUS_SUCCESS$
@@ -275,20 +275,20 @@ an error type it \emph{must not} call $globus_xio_driver_finished_read()$
 with the $op$ and should further consider that $op$ invalid as soon as it
 returns from the function.
 
-Just because the driver said it was willing to try to fullfill the
+Just because the driver said it was willing to try to fulfill the
 request, it does not mean that it will be successful.  Since we are
 dealing with an asynchronous model the driver may not know right away
-if it can successfully fullfill the request.  If after returning 
+if it can successfully fulfill the request.  If after returning 
 $GLOBUS_SUCCESS$ in the interface function some situation occurs 
 which prevents the driver from servicing
 the operation, the driver will call $globus_xio_driver_finished_read()$
 passing in the given op and an error type in the place of $GLOBUS_SUCCESS$
 that indicates it failed in its attempt to complete the operation.
 
-\subsection{Handles}
+\subsection{Tying Operations Together}
 Talk about driver specific handle...  use example of open to 
 read to close.
-glueing together operations... nflating state, blah...
+gluing together operations... nflating state, blah...
 
 \subsection{Servers}
 servers sonfuse the model slightly... prior to open need some work.  passive
@@ -302,6 +302,8 @@ controls
 Now that general flow and concepts are outlined, more hard core explaination
 
 point to iface functions and API functions.
+
+True operation sequence.  handle create, to close.  links.  server...
 
 \subsection{Guidelines}
 the real rules
