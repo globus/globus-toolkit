@@ -286,9 +286,143 @@ passing in the given op and an error type in the place of $GLOBUS_SUCCESS$
 that indicates it failed in its attempt to complete the operation.
 
 \subsection{Tying Operations Together}
-Talk about driver specific handle...  use example of open to 
-read to close.
-gluing together operations... nflating state, blah...
+In the previous section we introduced the $driver_specific_handle$ parameter
+but delayed the discussion of it.  In this section it will play a 
+prominent role.  IO operations are typically not slef contained things.
+In most cases they interrelate to each other.  As an example look at file
+IO.  In order to read a file, you must first open it, and the current
+read position depends on the provious read position.  Finally to clean up
+you need to close the file.  All of these operations depend upon having some
+shared state that each individual operation can check.  What this state
+consists of will differ for each driver.  ...
+some drivers user x, other uses y.  therefore it is the driver that must 
+define this state.
+
+we use the $driver_specific_handle$ for this.  at initialize time the
+driver allocates a structure and returns a pointer to that structures
+memory back to Globus XIO.  This pointer is then threaded through to all
+operations via the $driver_specific_handle$.  To Globus XIO
+$driver_specific_handle$ is just a void *, just a pointer to memory, so 
+the driver must up-cast the void * back to its structure.  look at over-
+simplified example:
+
+\begin{verbatim}
+
+typedef struct simple_file_handle_s
+{
+    FILE *                              fptr;
+    ssize_t                             total_bytes;
+} simple_file_handle_t;
+
+globus_result_t
+sample_open(
+    const globus_xio_contact_t *        contact_info,
+    void *                              driver_link,
+    void *                              driver_attr,
+    globus_xio_operation_t              op)
+{
+    char *                              filename;
+    simple_file_handle_t *              handle;
+
+    handle = (simple_file_handle_t *) malloc(sizeof(simple_file_handle_t));
+
+    filename = contact_info->resource;
+    handle->fptr = fopen(filename, "r");
+    handle->total_bytes = 0;
+                   
+    globus_xio_driver_finished_open(handle, op, GLOBUS_SUCCESS);
+}
+
+globus_result_t
+sample_write(
+    void *                              driver_specific_handle,
+    const globus_xio_iovec_t *          iovec,
+    int                                 iovec_count,
+    globus_xio_operation_t              op)
+{
+    globus_size_t                       nbytes = 0;
+    int                                 i;
+    simple_file_handle_t *              handle;
+
+    handle = (simple_file_handle_t *) driver_specific_handle;
+
+    /* walk through iovec and write all the bytes */
+    for(i = 0; i < iovec_count; i++)
+    {
+        nbytes += fwrite(iovec[i].iov_base, 1, iovec[i].iov_len, handle->fptr);
+    }
+    handle->total_bytes += nbytes; /* keep the overall total */
+
+    globus_xio_driver_finished_write(op, GLOBUS_SUCCESS, nbytes);
+
+    return GLOBUS_SUCCESS;
+}
+
+globus_result_t
+sample_close(
+    void *                              driver_specific_handle,
+    void *                              attr,
+    globus_xio_operation_t              op)
+{
+    simple_file_handle_t *              handle;
+
+    handle = (simple_file_handle_t *) driver_specific_handle;
+
+    fclose(handle->fptr);
+    free(handle);
+
+    globus_xio_driver_finished_close(op, GLOBUS_SUCCESS);
+
+    return GLOBUS_SUCCESS;
+}
+
+
+\end{verbatim}
+
+In this example we show how state is maintained across the open, close,
+and write interface functions.  The reader should note that this is
+a greatly over simplifed example for the purpose of explaination.  It is
+not intended to actually work as a Globus XIO driver, but rather is intended
+for didactic purposes.  In this example all processing is done inline in a
+blocking fashion.  This is atypical for Globus XIO driver, but makes for
+a much more comapct example.
+
+In the example the data structure $simple_file_handle_t$ is allocated
+and initialized in the open function.  Since this is a very basic file
+driver example we open a file and put the $FILE *$ in the 
+$simple_file_handle_t$.  We get the filename that the user wishes to
+open from the $contact_info$ structure.  More details on that can be found
+in the user API.
+To show that multiple data members can be useful in a $driver_specific_handle$
+we keep a running total of the number of bytes writen in the handle as well.
+Once open we \emph{finish} the open operation with a call to
+$globus_xio_driver_finished_open()$.  The first parameter to this function
+is the pointer to the $simple_file_handle_t$.  Globus XIO will associate
+that pointer with all operations called upon this handle and pass this 
+pointer into all other operations associated with this handle.
+
+Notice how the $driver_specific_handle$ is passed into $simple_write()$
+where the $void *$ is cast back into a $simple_file_handle_t *$.  The
+driver now has access to the needed $FILE *$ and it uses it to write the 
+data in the iovec array to the file.  The driver keeps track of all
+the bytes it has writen and passes that number into 
+$globus_xio_driver_finished_write$ along with the operation to 
+tell Globus XIO exactly how much of the write that it has completed.  
+In this example we ignore all possible errors for the purpose of simplicty.
+The driver is allowed to return a short value for nbytes if it wishes.
+
+The $driver_specific_handle$ is also passed into the clsoe function.
+The close funciton is the final operation that will be requested on this 
+handle so it is where all of the associated memory is cleaned up.  We
+again cast the $void *$ to a $simple_file_handle_t *$.  We then call 
+$fclose()$ to close the file and free memory pointed to by the handle.
+Finally $globus_xio_driver_finished_close$ is called and the driver has 
+completed its use of this handle.
+
+\subsection{Passing}
+transform drivers.  delgate resposibility... pass in handle, handle comes
+back in callback...  once passed op is gone, cant touch until it returns
+to you.
 
 \subsection{Servers}
 servers sonfuse the model slightly... prior to open need some work.  passive
