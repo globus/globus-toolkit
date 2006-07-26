@@ -58,6 +58,12 @@ RCSID("$OpenBSD: sshconnect2.c,v 1.143 2005/10/14 02:17:59 stevesk Exp $");
 extern char *client_version_string;
 extern char *server_version_string;
 extern Options options;
+extern Kex *xxx_kex;
+
+/* tty_flag is set in ssh.c. use this in ssh_userauth2 */
+/* if it is set then prevent the switch to the null cipher */
+
+extern int tty_flag;
 
 /*
  * SSH2 key exchange
@@ -84,8 +90,35 @@ ssh_kex2(char *host, struct sockaddr *hostaddr)
 {
 	Kex *kex;
 
+#ifdef GSSAPI
+	char *orig = NULL, *gss = NULL;
+	int len;
+        char *gss_host = NULL;
+#endif
+
 	xxx_host = host;
 	xxx_hostaddr = hostaddr;
+
+#ifdef GSSAPI
+	if (options.gss_keyex) {
+	/* Add the GSSAPI mechanisms currently supported on this client to
+	 * the key exchange algorithm proposal */
+	orig = myproposal[PROPOSAL_KEX_ALGS];
+	if (options.gss_trust_dns)
+		gss_host = (char *)get_canonical_hostname(1);
+	else
+		gss_host = host;
+
+	gss = ssh_gssapi_client_mechanisms(gss_host);
+	if (gss) {
+		debug("Offering GSSAPI proposal: %s", gss);
+		len = strlen(orig) + strlen(gss) + 2;
+		myproposal[PROPOSAL_KEX_ALGS] = xmalloc(len);
+		snprintf(myproposal[PROPOSAL_KEX_ALGS], len, "%s,%s", gss, 
+		    orig);
+	}
+	}
+#endif
 
 	if (options.ciphers == (char *)-1) {
 		logit("No valid ciphers for protocol version 2 given, using defaults.");
@@ -94,7 +127,8 @@ ssh_kex2(char *host, struct sockaddr *hostaddr)
 	if (options.ciphers != NULL) {
 		myproposal[PROPOSAL_ENC_ALGS_CTOS] =
 		myproposal[PROPOSAL_ENC_ALGS_STOC] = options.ciphers;
-	}
+	} 
+
 	myproposal[PROPOSAL_ENC_ALGS_CTOS] =
 	    compat_cipher_proposal(myproposal[PROPOSAL_ENC_ALGS_CTOS]);
 	myproposal[PROPOSAL_ENC_ALGS_STOC] =
@@ -114,6 +148,18 @@ ssh_kex2(char *host, struct sockaddr *hostaddr)
 		myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS] =
 		    options.hostkeyalgorithms;
 
+#ifdef GSSAPI
+	/* If we've got GSSAPI algorithms, then we also support the
+	 * 'null' hostkey, as a last resort */
+	if (options.gss_keyex && gss) {
+		orig = myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS];
+		len = strlen(orig) + sizeof(",null");
+		myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS] = xmalloc(len);
+		snprintf(myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS], len, 
+		    "%s,null", orig);
+	}
+#endif
+
 	if (options.rekey_limit)
 		packet_set_rekey_limit(options.rekey_limit);
 
@@ -122,9 +168,19 @@ ssh_kex2(char *host, struct sockaddr *hostaddr)
 	kex->kex[KEX_DH_GRP1_SHA1] = kexdh_client;
 	kex->kex[KEX_DH_GRP14_SHA1] = kexdh_client;
 	kex->kex[KEX_DH_GEX_SHA1] = kexgex_client;
+#ifdef GSSAPI
+	kex->kex[KEX_GSS_GRP1_SHA1] = kexgss_client;
+	kex->kex[KEX_GSS_GEX_SHA1] = kexgss_client;
+#endif
 	kex->client_version_string=client_version_string;
 	kex->server_version_string=server_version_string;
 	kex->verify_host_key=&verify_host_key_callback;
+
+#ifdef GSSAPI
+	kex->gss_deleg_creds = options.gss_deleg_creds;
+	kex->gss_trust_dns = options.gss_trust_dns;
+	kex->gss_host = gss_host;
+#endif
 
 	xxx_kex = kex;
 
@@ -202,12 +258,16 @@ int	userauth_hostbased(Authctxt *);
 int	userauth_kerberos(Authctxt *);
 
 #ifdef GSSAPI
+int	userauth_external(Authctxt *authctxt);
 int	userauth_gssapi(Authctxt *authctxt);
+int	userauth_gssapi_with_mic(Authctxt *authctxt);
+int	userauth_gssapi_without_mic(Authctxt *authctxt);
 void	input_gssapi_response(int type, u_int32_t, void *);
 void	input_gssapi_token(int type, u_int32_t, void *);
 void	input_gssapi_hash(int type, u_int32_t, void *);
 void	input_gssapi_error(int, u_int32_t, void *);
 void	input_gssapi_errtok(int, u_int32_t, void *);
+int	userauth_gsskeyex(Authctxt *authctxt);
 #endif
 
 void	userauth(Authctxt *, char *);
@@ -223,7 +283,19 @@ static char *authmethods_get(void);
 
 Authmethod authmethods[] = {
 #ifdef GSSAPI
+	{"gssapi-keyex",
+		userauth_gsskeyex,
+		&options.gss_authentication,
+		NULL},
+	{"external-keyx",
+		userauth_external,
+		&options.gss_authentication,
+		NULL},
 	{"gssapi-with-mic",
+		userauth_gssapi,
+		&options.gss_authentication,
+		NULL},
+	{"gssapi",
 		userauth_gssapi,
 		&options.gss_authentication,
 		NULL},
@@ -309,7 +381,15 @@ ssh_userauth2(const char *local_user, const char *server_user, char *host,
 
 	pubkey_cleanup(&authctxt);
 	dispatch_range(SSH2_MSG_USERAUTH_MIN, SSH2_MSG_USERAUTH_MAX, NULL);
-
+	if ((options.none_switch == 1) && (options.none_enabled == 1) && !tty_flag) /* no null on tty sessions */
+	{
+		debug("Requesting none rekeying...");
+		myproposal[PROPOSAL_ENC_ALGS_STOC] = "none";
+		myproposal[PROPOSAL_ENC_ALGS_CTOS] = "none";
+		kex_prop2buf(&xxx_kex->my,myproposal);
+		packet_request_rekeying();
+		fprintf(stderr, "WARNING: ENABLED NULL CIPHER\n");
+	}
 	debug("Authentication succeeded (%s).", authctxt.method->name);
 }
 
@@ -485,6 +565,17 @@ userauth_gssapi(Authctxt *authctxt)
 	static u_int mech = 0;
 	OM_uint32 min;
 	int ok = 0;
+	char *gss_host = NULL;
+
+	if (!options.gss_authentication) {
+		verbose("GSSAPI authentication disabled.");
+		return 0;
+	}
+
+	if (options.gss_trust_dns)
+		gss_host = (char *)get_canonical_hostname(1);
+	else
+		gss_host = (char *)authctxt->host;
 
 	/* Try one GSSAPI method at a time, rather than sending them all at
 	 * once. */
@@ -501,8 +592,10 @@ userauth_gssapi(Authctxt *authctxt)
 
 		/* My DER encoding requires length<128 */
 		if (gss_supported->elements[mech].length < 128 &&
+		    ssh_gssapi_check_mechanism(&gss_supported->elements[mech],
+					       gss_host) &&
 		    !GSS_ERROR(ssh_gssapi_import_name(gssctxt,
-		    authctxt->host))) {
+						      gss_host))) {
 			ok = 1; /* Mechanism works */
 		} else {
 			mech++;
@@ -566,7 +659,8 @@ process_gssapi_token(void *ctxt, gss_buffer_t recv_tok)
 
 	if (status == GSS_S_COMPLETE) {
 		/* send either complete or MIC, depending on mechanism */
-		if (!(flags & GSS_C_INTEG_FLAG)) {
+		if (strcmp(authctxt->method->name,"gssapi")==0 ||
+		    (!(flags & GSS_C_INTEG_FLAG))) {
 			packet_start(SSH2_MSG_USERAUTH_GSSAPI_EXCHANGE_COMPLETE);
 			packet_send();
 		} else {
@@ -598,8 +692,8 @@ input_gssapi_response(int type, u_int32_t plen, void *ctxt)
 {
 	Authctxt *authctxt = ctxt;
 	Gssctxt *gssctxt;
-	int oidlen;
-	char *oidv;
+	unsigned int oidlen;
+	unsigned char *oidv;
 
 	if (authctxt == NULL)
 		fatal("input_gssapi_response: no authentication context");
@@ -706,6 +800,106 @@ input_gssapi_error(int type, u_int32_t plen, void *ctxt)
 	xfree(msg);
 	xfree(lang);
 }
+
+#ifdef GSI
+extern
+const gss_OID_desc * const              gss_mech_globus_gssapi_openssl;
+#define is_gsi_oid(oid) \
+  (oid->length == gss_mech_globus_gssapi_openssl->length && \
+   (memcmp(oid->elements, gss_mech_globus_gssapi_openssl->elements, \
+	   oid->length) == 0))
+#endif
+
+int
+userauth_external(Authctxt *authctxt)
+{
+        static int attempt = 0;
+        
+        if (attempt++ >= 1)
+        	return 0;
+                                
+	/* The client MUST NOT try this method if initial key exchange
+	   was not performed using a GSSAPI-based key exchange
+	   method. */
+	if (gss_kex_context == NULL) {
+		debug2("gsskex not performed, skipping external-keyx");
+		return 0;
+	}
+
+        debug2("userauth_external");
+        packet_start(SSH2_MSG_USERAUTH_REQUEST);
+#ifdef GSI
+        if (options.implicit && is_gsi_oid(gss_kex_context->oid)) {
+	packet_put_cstring("");
+	} else {
+#endif
+	packet_put_cstring(authctxt->server_user);
+#ifdef GSI
+	}
+#endif
+        packet_put_cstring(authctxt->service);
+        packet_put_cstring(authctxt->method->name);
+        packet_send();
+        packet_write_wait();
+        return 1;
+}                                                                                                
+int
+userauth_gsskeyex(Authctxt *authctxt)
+{
+	Buffer b;
+	gss_buffer_desc gssbuf;
+	gss_buffer_desc mic = GSS_C_EMPTY_BUFFER;
+	OM_uint32 ms;
+
+	static int attempt = 0;
+	if (attempt++ >= 1)
+		return (0);
+
+	if (gss_kex_context == NULL) {
+		debug("No valid Key exchange context"); 
+		return (0);
+	}
+
+#ifdef GSI
+        if (options.implicit && is_gsi_oid(gss_kex_context->oid)) {
+	ssh_gssapi_buildmic(&b, "", authctxt->service, "gssapi-keyex");
+	} else {
+#endif
+	ssh_gssapi_buildmic(&b, authctxt->server_user, authctxt->service,
+	    "gssapi-keyex");
+#ifdef GSI
+	}
+#endif
+
+	gssbuf.value = buffer_ptr(&b);
+	gssbuf.length = buffer_len(&b);
+
+	if (GSS_ERROR(ssh_gssapi_sign(gss_kex_context, &gssbuf, &mic))) {
+		buffer_free(&b);
+		return (0);
+	}
+
+	packet_start(SSH2_MSG_USERAUTH_REQUEST);
+#ifdef GSI
+        if (options.implicit && is_gsi_oid(gss_kex_context->oid)) {
+	packet_put_cstring("");
+	} else {
+#endif
+	packet_put_cstring(authctxt->server_user);
+#ifdef GSI
+	}
+#endif
+	packet_put_cstring(authctxt->service);
+	packet_put_cstring(authctxt->method->name);
+	packet_put_string(mic.value, mic.length);
+	packet_send();
+
+	buffer_free(&b);
+	gss_release_buffer(&ms, &mic);
+
+	return (1);
+}
+
 #endif /* GSSAPI */
 
 int

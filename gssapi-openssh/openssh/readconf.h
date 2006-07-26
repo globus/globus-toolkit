@@ -45,7 +45,9 @@ typedef struct {
 	int     challenge_response_authentication;
 					/* Try S/Key or TIS, authentication. */
 	int     gss_authentication;	/* Try GSS authentication */
+	int	gss_keyex;
 	int     gss_deleg_creds;	/* Delegate GSS credentials */
+	int	gss_trust_dns;		/* Trust DNS for GSS canonicalization */
 	int     password_authentication;	/* Try password
 						 * authentication. */
 	int     kbd_interactive_authentication; /* Try keyboard-interactive auth. */
@@ -57,6 +59,11 @@ typedef struct {
 	int     compression_level;	/* Compression level 1 (fast) to 9
 					 * (best). */
 	int     tcp_keep_alive;	/* Set SO_KEEPALIVE. */
+        int     tcp_rcv_buf; /* user switch to set tcp recv buffer */
+	int	tcp_rcv_buf_poll; /* Option to poll recv buf every window transfer */
+	int 	hpn_disabled; 	 /* Switch to disable HPN buffer management */
+	int	hpn_buffer_size; /* User definable size for HPN buffer window */
+
 	LogLevel log_level;	/* Level for logging. */
 
 	int     port;		/* Port to connect. */
@@ -76,6 +83,8 @@ typedef struct {
 	char   *host_key_alias;	/* hostname alias for .ssh/known_hosts */
 	char   *proxy_command;	/* Proxy command for connecting the host. */
 	char   *user;		/* User to log in as. */
+	int    implicit;	/* Login user was not specified.
+				   Server may choose based on authctxt. */
 	int     escape_char;	/* Escape character; -2 = none */
 
 	char   *system_hostfile;/* Path for /etc/ssh/ssh_known_hosts. */
@@ -102,6 +111,8 @@ typedef struct {
 
 	int	enable_ssh_keysign;
 	int	rekey_limit;
+	int	none_switch;	/* use none cipher */
+	int	none_enabled;	/* Allow none to be used */
 	int	no_host_authentication_for_localhost;
 	int	identities_only;
 	int	server_alive_interval;
