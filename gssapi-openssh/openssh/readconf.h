@@ -1,4 +1,4 @@
-/*	$OpenBSD: readconf.h,v 1.67 2005/06/08 11:25:09 djm Exp $	*/
+/*	$OpenBSD: readconf.h,v 1.68 2005/12/06 22:38:27 reyk Exp $	*/
 
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
@@ -60,6 +60,10 @@ typedef struct {
 					 * (best). */
 	int     tcp_keep_alive;	/* Set SO_KEEPALIVE. */
         int     tcp_rcv_buf; /* user switch to set tcp recv buffer */
+	int	tcp_rcv_buf_poll; /* Option to poll recv buf every window transfer */
+	int 	hpn_disabled; 	 /* Switch to disable HPN buffer management */
+	int	hpn_buffer_size; /* User definable size for HPN buffer window */
+
 	LogLevel log_level;	/* Level for logging. */
 
 	int     port;		/* Port to connect. */
@@ -107,7 +111,8 @@ typedef struct {
 
 	int	enable_ssh_keysign;
 	int	rekey_limit;
-	int	none_switch;
+	int	none_switch;	/* use none cipher */
+	int	none_enabled;	/* Allow none to be used */
 	int	no_host_authentication_for_localhost;
 	int	identities_only;
 	int	server_alive_interval;
@@ -120,6 +125,14 @@ typedef struct {
 	int	control_master;
 
 	int	hash_known_hosts;
+
+	int	tun_open;	/* tun(4) */
+	int     tun_local;	/* force tun device (optional) */
+	int     tun_remote;	/* force tun device (optional) */
+
+	char	*local_command;
+	int	permit_local_command;
+
 }       Options;
 
 #define SSHCTL_MASTER_NO	0

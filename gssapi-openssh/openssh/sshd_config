@@ -1,4 +1,4 @@
-#	$OpenBSD: sshd_config,v 1.72 2005/07/25 11:59:40 markus Exp $
+#	$OpenBSD: sshd_config,v 1.73 2005/12/06 22:38:28 reyk Exp $
 
 # This is the sshd server system-wide configuration file.  See
 # sshd_config(5) for more information.
@@ -101,9 +101,24 @@ X11Forwarding yes
 #UseDNS yes
 #PidFile /var/run/sshd.pid
 #MaxStartups 10
+#PermitTunnel no
+
+# override default of no subsystems
+Subsystem	sftp	/usr/libexec/sftp-server
 
 # no default banner path
 #Banner /some/path
 
-# override default of no subsystems
-Subsystem	sftp	/usr/libexec/sftp-server
+# the following are HPN related configuration options
+# tcp receive buffer polling. enable in autotuning kernels
+#TcpRcvBufPoll no
+
+# allow the use of the none cipher
+#NoneEnabled no
+
+# disable hpn performance boosts. 
+#HPNDisabled no
+
+# buffer size for hpn to non-hn connections
+#HPNBufferSize 2048
+

@@ -33,7 +33,7 @@
  */
 
 #include "includes.h"
-RCSID("$OpenBSD: session.c,v 1.186 2005/07/25 11:59:40 markus Exp $");
+RCSID("$OpenBSD: session.c,v 1.191 2005/12/24 02:27:41 djm Exp $");
 
 #include "ssh.h"
 #include "ssh1.h"
@@ -191,6 +191,7 @@ auth_input_request_forwarding(struct passwd * pw)
 		packet_disconnect("listen: %.100s", strerror(errno));
 
 	/* Allocate a channel for the authentication agent socket. */
+	/* this shouldn't matter if its hpn or not - cjr */
 	nc = channel_new("auth socket",
 	    SSH_CHANNEL_AUTH_SOCKET, sock, sock, -1,
 	    CHAN_X11_WINDOW_DEFAULT, CHAN_X11_PACKET_DEFAULT,
@@ -214,15 +215,6 @@ do_authenticated(Authctxt *authctxt)
 {
 	setproctitle("%s", authctxt->pw->pw_name);
 
-	/*
-	 * Cancel the alarm we set to limit the time taken for
-	 * authentication.
-	 */
-	alarm(0);
-	if (startup_pipe != -1) {
-		close(startup_pipe);
-		startup_pipe = -1;
-	}
 	/* setup the channel layer */
 	if (!no_port_forwarding_flag && options.allow_tcp_forwarding)
 		channel_permit_all_opens();
@@ -351,7 +343,9 @@ do_authenticated1(Authctxt *authctxt)
 				break;
 			}
 			debug("Received TCP/IP port forwarding request.");
-			channel_input_port_forward_request(s->pw->pw_uid == 0, options.gateway_ports);
+			channel_input_port_forward_request(s->pw->pw_uid == 0, options.gateway_ports, 
+                                                           options.hpn_disabled, 
+ 							   options.hpn_buffer_size);
 			success = 1;
 			break;
 
@@ -1591,7 +1585,7 @@ child_close_fds(void)
 	endpwent();
 
 	/*
-	 * Close any extra open file descriptors so that we don\'t have them
+	 * Close any extra open file descriptors so that we don't have them
 	 * hanging around in clients.  Note that we want to do this after
 	 * initgroups, because at least on Solaris 2.3 it leaves file
 	 * descriptors open.
@@ -1655,7 +1649,9 @@ do_child(Session *s, const char *command)
 		if (!check_quietlogin(s, command))
 			do_motd();
 #else /* HAVE_OSF_SIA */
-		do_nologin(pw);
+		/* When PAM is enabled we rely on it to do the nologin check */
+		if (!options.use_pam)
+			do_nologin(pw);
 		do_setusercontext(pw);
 		/*
 		 * PAM session modules in do_setusercontext may have
@@ -1771,7 +1767,7 @@ do_child(Session *s, const char *command)
         }
 #endif
 
-	/* Change current directory to the user\'s home directory. */
+	/* Change current directory to the user's home directory. */
 	if (chdir(pw->pw_dir) < 0) {
 		fprintf(stderr, "Could not chdir to home directory %s: %s\n",
 		    pw->pw_dir, strerror(errno));
@@ -2086,7 +2082,7 @@ session_x11_req(Session *s)
 
 	if (s->auth_proto != NULL || s->auth_data != NULL) {
 		error("session_x11_req: session %d: "
-		    "x11 fowarding already active", s->self);
+		    "x11 forwarding already active", s->self);
 		return 0;
 	}
 	s->single_connection = packet_get_char();
@@ -2243,11 +2239,18 @@ session_set_fds(Session *s, int fdin, int fdout, int fderr)
 	 */
 	if (s->chanid == -1)
 		fatal("no channel for session %d", s->self);
-	channel_set_fds(s->chanid,
-	    fdout, fdin, fderr,
-	    fderr == -1 ? CHAN_EXTENDED_IGNORE : CHAN_EXTENDED_READ,
-	    1,
-	    CHAN_SES_WINDOW_DEFAULT);
+	if(options.hpn_disabled) 
+		channel_set_fds(s->chanid,
+		    fdout, fdin, fderr,
+		    fderr == -1 ? CHAN_EXTENDED_IGNORE : CHAN_EXTENDED_READ,
+		    1,
+		    CHAN_SES_WINDOW_DEFAULT);
+	else
+		channel_set_fds(s->chanid,
+		    fdout, fdin, fderr,
+		    fderr == -1 ? CHAN_EXTENDED_IGNORE : CHAN_EXTENDED_READ,
+		    1,
+		    options.hpn_buffer_size);
 }
 
 /*
@@ -2318,7 +2321,7 @@ session_close_x11(int id)
 {
 	Channel *c;
 
-	if ((c = channel_lookup(id)) == NULL) {
+	if ((c = channel_by_id(id)) == NULL) {
 		debug("session_close_x11: x11 channel %d missing", id);
 	} else {
 		/* Detach X11 listener */
@@ -2373,7 +2376,6 @@ static void
 session_exit_message(Session *s, int status)
 {
 	Channel *c;
-	u_int i;
 
 	if ((c = channel_lookup(s->chanid)) == NULL)
 		fatal("session_exit_message: session %d: no channel %d",
@@ -2403,7 +2405,14 @@ session_exit_message(Session *s, int status)
 
 	/* disconnect channel */
 	debug("session_exit_message: release channel %d", s->chanid);
-	channel_cancel_cleanup(s->chanid);
+
+	/*
+	 * Adjust cleanup callback attachment to send close messages when
+	 * the channel gets EOF. The session will be then be closed 
+	 * by session_close_by_channel when the childs close their fds.
+	 */
+	channel_register_cleanup(c->self, session_close_by_channel, 1);
+
 	/*
 	 * emulate a write failure with 'chan_write_failed', nobody will be
 	 * interested in data we write.
@@ -2412,15 +2421,6 @@ session_exit_message(Session *s, int status)
 	 */
 	if (c->ostate != CHAN_OUTPUT_CLOSED)
 		chan_write_failed(c);
-	s->chanid = -1;
-
-	/* Close any X11 listeners associated with this session */
-	if (s->x11_chanids != NULL) {
-		for (i = 0; s->x11_chanids[i] != -1; i++) {
-			session_close_x11(s->x11_chanids[i]);
-			s->x11_chanids[i] = -1;
-		}
-	}
 }
 
 void
@@ -2464,7 +2464,9 @@ session_close_by_pid(pid_t pid, int status)
 	}
 	if (s->chanid != -1)
 		session_exit_message(s, status);
-	session_close(s);
+	if (s->ttyfd != -1)
+		session_pty_cleanup(s);
+	s->pid = 0;
 }
 
 /*
@@ -2475,6 +2477,7 @@ void
 session_close_by_channel(int id, void *arg)
 {
 	Session *s = session_by_channel(id);
+	u_int i;
 
 	if (s == NULL) {
 		debug("session_close_by_channel: no session for id %d", id);
@@ -2494,6 +2497,15 @@ session_close_by_channel(int id, void *arg)
 	}
 	/* detach by removing callback */
 	channel_cancel_cleanup(s->chanid);
+
+	/* Close any X11 listeners associated with this session */
+	if (s->x11_chanids != NULL) {
+		for (i = 0; s->x11_chanids[i] != -1; i++) {
+			session_close_x11(s->x11_chanids[i]);
+			s->x11_chanids[i] = -1;
+		}
+	}
+
 	s->chanid = -1;
 	session_close(s);
 }
@@ -2582,13 +2594,14 @@ session_setup_x11fwd(Session *s)
 	}
 	if (x11_create_display_inet(options.x11_display_offset,
 	    options.x11_use_localhost, s->single_connection,
-	    &s->display_number, &s->x11_chanids) == -1) {
+	    &s->display_number, &s->x11_chanids, 
+	    options.hpn_disabled, options.hpn_buffer_size) == -1) {
 		debug("x11_create_display_inet failed.");
 		return 0;
 	}
 	for (i = 0; s->x11_chanids[i] != -1; i++) {
 		channel_register_cleanup(s->x11_chanids[i],
-		    session_close_single_x11);
+		    session_close_single_x11, 0);
 	}
 
 	/* Set up a suitable value for the DISPLAY variable. */

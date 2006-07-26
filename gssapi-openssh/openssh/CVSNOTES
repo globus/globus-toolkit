@@ -51,6 +51,26 @@ module that contains the GSI-OpenSSH code.  Consider it a living document.
 
   [ History ]
 
+    2006/07/26
+    ----------
+      Action: Merge
+        - occurred on: GPT branch
+        - orig base: OPENSSH_4_2P1_GSSAPI_20051220
+        - new base: OPENSSH_4_3P2_20060726
+      Conflicts: 
+        - configure.ac
+          OpenSSH change was near GSI change. No real conflict.
+        - servconf.c
+          New sGsiAllowLimitedProxy config option.
+        - sftp.c
+          OpenSSH change near init_pathnames().
+        - ssh-keysign.c
+          OpenSSH change near init_pathnames().
+        - ssh_config
+          OpenSSH change near ForwardX11 yes
+        - version.h
+          Update to new package version information.	  
+
     2005/12/20
     ----------
       Action: Merge

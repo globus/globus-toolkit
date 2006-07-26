@@ -1589,7 +1589,7 @@ lastlog_get_entry(struct logininfo *li)
 		return (0);
 	default:
 		error("%s: Error reading from %s: Expecting %d, got %d",
-		    __func__, LASTLOG_FILE, sizeof(last), ret);
+		    __func__, LASTLOG_FILE, (int)sizeof(last), ret);
 		return (0);
 	}
 
@@ -1613,7 +1613,7 @@ record_failed_login(const char *username, const char *hostname,
 	int fd;
 	struct utmp ut;
 	struct sockaddr_storage from;
-	size_t fromlen = sizeof(from);
+	socklen_t fromlen = sizeof(from);
 	struct sockaddr_in *a4;
 	struct sockaddr_in6 *a6;
 	time_t t;

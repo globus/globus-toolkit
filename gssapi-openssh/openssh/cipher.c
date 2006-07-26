@@ -151,8 +151,8 @@ ciphers_valid(const char *names)
 	for ((p = strsep(&cp, CIPHER_SEP)); p && *p != '\0';
 	    (p = strsep(&cp, CIPHER_SEP))) {
 		c = cipher_by_name(p);
-		if (c == NULL || (c->number != SSH_CIPHER_SSH2 && 
-c->number != SSH_CIPHER_NONE)) {
+		if (c == NULL || (c->number != SSH_CIPHER_SSH2 &&
+				  c->number != SSH_CIPHER_NONE)) {
 			debug("bad cipher %s [%s]", p, names);
 			xfree(cipher_list);
 			return 0;
@@ -336,7 +336,7 @@ cipher_get_keyiv(CipherContext *cc, u_char *iv, u_int len)
 		if ((u_int)evplen != len)
 			fatal("%s: wrong iv length %d != %d", __func__,
 			    evplen, len);
-#if OPENSSL_VERSION_NUMBER < 0x00907000L
+#ifdef USE_BUILTIN_RIJNDAEL
 		if (c->evptype == evp_rijndael)
 			ssh_rijndael_iv(&cc->evp, 0, iv, len);
 		else
@@ -368,7 +368,7 @@ cipher_set_keyiv(CipherContext *cc, u_char *iv)
 		evplen = EVP_CIPHER_CTX_iv_length(&cc->evp);
 		if (evplen == 0)
 			return;
-#if OPENSSL_VERSION_NUMBER < 0x00907000L
+#ifdef USE_BUILTIN_RIJNDAEL
 		if (c->evptype == evp_rijndael)
 			ssh_rijndael_iv(&cc->evp, 1, iv, evplen);
 		else

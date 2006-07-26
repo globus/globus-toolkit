@@ -59,7 +59,7 @@
  */
 
 #include "includes.h"
-RCSID("$OpenBSD: clientloop.c,v 1.141 2005/07/16 01:35:24 djm Exp $");
+RCSID("$OpenBSD: clientloop.c,v 1.149 2005/12/30 15:56:37 reyk Exp $");
 
 #include "ssh.h"
 #include "ssh1.h"
@@ -77,6 +77,7 @@ RCSID("$OpenBSD: clientloop.c,v 1.141 2005/07/16 01:35:24 djm Exp $");
 #include "log.h"
 #include "readconf.h"
 #include "clientloop.h"
+#include "sshconnect.h"
 #include "authfd.h"
 #include "atomicio.h"
 #include "sshpty.h"
@@ -113,7 +114,7 @@ extern char *host;
 static volatile sig_atomic_t received_window_change_signal = 0;
 static volatile sig_atomic_t received_signal = 0;
 
-/* Flag indicating whether the user\'s terminal is in non-blocking mode. */
+/* Flag indicating whether the user's terminal is in non-blocking mode. */
 static int in_non_blocking_mode = 0;
 
 /* Common data for the client loop code. */
@@ -266,7 +267,7 @@ client_x11_get_proto(const char *display, const char *xauth_path,
 			}
 		}
 		snprintf(cmd, sizeof(cmd),
-		    "%s %s%s list %s . 2>" _PATH_DEVNULL,
+		    "%s %s%s list %s 2>" _PATH_DEVNULL,
 		    xauth_path,
 		    generated ? "-f " : "" ,
 		    generated ? xauthfile : "",
@@ -688,6 +689,10 @@ client_process_control(fd_set * readset)
 	u_int i, len, env_len, command, flags;
 	uid_t euid;
 	gid_t egid;
+	int listen_port = 0;
+	int connect_port = 0;
+	char * listen_host = NULL;
+	char * connect_host = NULL;
 
 	/*
 	 * Accept connection on control socket
@@ -736,6 +741,13 @@ client_process_control(fd_set * readset)
 	command = buffer_get_int(&m);
 	flags = buffer_get_int(&m);
 
+	if (SSHMUX_FLAG_PORTFORWARD & flags)
+	{
+		listen_host = buffer_get_string(&m,NULL);
+		listen_port = buffer_get_int(&m);
+		connect_host = buffer_get_string(&m,NULL);
+		connect_port = buffer_get_int(&m);
+	}
 	buffer_clear(&m);
 
 	switch (command) {
@@ -774,6 +786,31 @@ client_process_control(fd_set * readset)
 		close(client_fd);
 		return;
 	}
+
+	if (allowed && (SSHMUX_FLAG_PORTFORWARD & flags) && listen_host && connect_host)
+	{
+		int ret;
+		Forward * fwd;
+
+		fwd = &options.local_forwards[options.num_local_forwards++];
+		fwd->listen_host = xstrdup(listen_host);
+		fwd->listen_port = listen_port;
+		fwd->connect_host = xstrdup(connect_host);
+		fwd->connect_port = connect_port;
+		ret = channel_setup_local_fwd_listener(
+			options.local_forwards[options.num_local_forwards-1].listen_host,
+			options.local_forwards[options.num_local_forwards-1].listen_port,
+			options.local_forwards[options.num_local_forwards-1].connect_host,
+	                options.local_forwards[options.num_local_forwards-1].connect_port,
+                        options.gateway_ports, options.hpn_disabled, options.hpn_buffer_size);
+
+        }
+
+	
+	if (listen_host)
+		xfree(listen_host);
+	if (connect_host)
+		xfree(connect_host);
 
 	/* Reply for SSHMUX_COMMAND_OPEN */
 	buffer_clear(&m);
@@ -873,11 +910,16 @@ client_process_control(fd_set * readset)
 
 	set_nonblock(client_fd);
 
-	c = channel_new("session", SSH_CHANNEL_OPENING,
-	    new_fd[0], new_fd[1], new_fd[2],
-	    CHAN_SES_WINDOW_DEFAULT, CHAN_SES_PACKET_DEFAULT,
-	    CHAN_EXTENDED_WRITE, "client-session", /*nonblock*/0);
-
+	if (options.hpn_disabled) 
+		c = channel_new("session", SSH_CHANNEL_OPENING,
+		    new_fd[0], new_fd[1], new_fd[2],
+		    CHAN_SES_WINDOW_DEFAULT, CHAN_SES_PACKET_DEFAULT,
+		    CHAN_EXTENDED_WRITE, "client-session", /*nonblock*/0);
+	else 
+		c = channel_new("session", SSH_CHANNEL_OPENING,
+		    new_fd[0], new_fd[1], new_fd[2],
+		    options.hpn_buffer_size, CHAN_SES_PACKET_DEFAULT,
+		    CHAN_EXTENDED_WRITE, "client-session", /*nonblock*/0);
 	/* XXX */
 	c->ctl_fd = client_fd;
 
@@ -914,6 +956,15 @@ process_cmdline(void)
 		logit("      -Lport:host:hostport    Request local forward");
 		logit("      -Rport:host:hostport    Request remote forward");
 		logit("      -KRhostport             Cancel remote forward");
+		if (!options.permit_local_command)
+			goto out;
+		logit("      !args                   Execute local command");
+		goto out;
+	}
+
+	if (*s == '!' && options.permit_local_command) {
+		s++;
+		ssh_local_cmd(s);
 		goto out;
 	}
 
@@ -963,7 +1014,8 @@ process_cmdline(void)
 		if (local) {
 			if (channel_setup_local_fwd_listener(fwd.listen_host,
 			    fwd.listen_port, fwd.connect_host,
-			    fwd.connect_port, options.gateway_ports) < 0) {
+			    fwd.connect_port, options.gateway_ports, 
+			    options.hpn_disabled, options.hpn_buffer_size) < 0) {
 				logit("Port forwarding failed.");
 				goto out;
 			}
@@ -1376,10 +1428,10 @@ client_loop(int have_pty, int escape_char_arg, int ssh2_chan_id)
 		session_ident = ssh2_chan_id;
 		if (escape_char != SSH_ESCAPECHAR_NONE)
 			channel_register_filter(session_ident,
-			    simple_escape_filter);
+			    simple_escape_filter, NULL);
 		if (session_ident != -1)
 			channel_register_cleanup(session_ident,
-			    client_channel_closed);
+			    client_channel_closed, 0);
 	} else {
 		/* Check if we should immediately send eof on stdin. */
 		client_check_initial_eof_on_stdin();
@@ -1659,10 +1711,16 @@ client_request_forwarded_tcpip(const char *request_type, int rchan)
 		xfree(listen_address);
 		return NULL;
 	}
-	c = channel_new("forwarded-tcpip",
-	    SSH_CHANNEL_CONNECTING, sock, sock, -1,
-	    CHAN_TCP_WINDOW_DEFAULT, CHAN_TCP_WINDOW_DEFAULT, 0,
-	    originator_address, 1);
+	if (options.hpn_disabled) 
+		c = channel_new("forwarded-tcpip",
+		    SSH_CHANNEL_CONNECTING, sock, sock, -1,
+		    CHAN_TCP_WINDOW_DEFAULT, CHAN_TCP_WINDOW_DEFAULT, 0,
+		    originator_address, 1);
+	else
+		c = channel_new("forwarded-tcpip",
+		    SSH_CHANNEL_CONNECTING, sock, sock, -1,
+		    options.hpn_buffer_size, options.hpn_buffer_size, 0,
+		    originator_address, 1);
 	xfree(originator_address);
 	xfree(listen_address);
 	return c;
@@ -1678,7 +1736,7 @@ client_request_x11(const char *request_type, int rchan)
 
 	if (!options.forward_x11) {
 		error("Warning: ssh server tried X11 forwarding.");
-		error("Warning: this is probably a break in attempt by a malicious server.");
+		error("Warning: this is probably a break-in attempt by a malicious server.");
 		return NULL;
 	}
 	originator = packet_get_string(NULL);
@@ -1696,9 +1754,14 @@ client_request_x11(const char *request_type, int rchan)
 	sock = x11_connect_display();
 	if (sock < 0)
 		return NULL;
-	c = channel_new("x11",
-	    SSH_CHANNEL_X11_OPEN, sock, sock, -1,
-	    CHAN_TCP_WINDOW_DEFAULT, CHAN_X11_PACKET_DEFAULT, 0, "x11", 1);
+	if (options.hpn_disabled) 
+		c = channel_new("x11",
+		    SSH_CHANNEL_X11_OPEN, sock, sock, -1,
+		    CHAN_TCP_WINDOW_DEFAULT, CHAN_X11_PACKET_DEFAULT, 0, "x11", 1);
+	else 
+		c = channel_new("x11",
+		    SSH_CHANNEL_X11_OPEN, sock, sock, -1,
+		    options.hpn_buffer_size, CHAN_X11_PACKET_DEFAULT, 0, "x11", 1);
 	c->force_drain = 1;
 	return c;
 }
@@ -1711,16 +1774,22 @@ client_request_agent(const char *request_type, int rchan)
 
 	if (!options.forward_agent) {
 		error("Warning: ssh server tried agent forwarding.");
-		error("Warning: this is probably a break in attempt by a malicious server.");
+		error("Warning: this is probably a break-in attempt by a malicious server.");
 		return NULL;
 	}
 	sock =  ssh_get_authentication_socket();
 	if (sock < 0)
 		return NULL;
-	c = channel_new("authentication agent connection",
-	    SSH_CHANNEL_OPEN, sock, sock, -1,
-	    CHAN_X11_WINDOW_DEFAULT, CHAN_TCP_WINDOW_DEFAULT, 0,
-	    "authentication agent connection", 1);
+	if (options.hpn_disabled) 
+		c = channel_new("authentication agent connection",
+		    SSH_CHANNEL_OPEN, sock, sock, -1,
+		    CHAN_X11_WINDOW_DEFAULT, CHAN_TCP_WINDOW_DEFAULT, 0,
+		    "authentication agent connection", 1);
+	else
+		c = channel_new("authentication agent connection",
+		    SSH_CHANNEL_OPEN, sock, sock, -1,
+		    options.hpn_buffer_size, options.hpn_buffer_size, 0,
+		    "authentication agent connection", 1);
 	c->force_drain = 1;
 	return c;
 }
@@ -1880,7 +1949,7 @@ client_session2_setup(int id, int want_tty, int want_subsystem,
 			/* Split */
 			name = xstrdup(env[i]);
 			if ((val = strchr(name, '=')) == NULL) {
-				free(name);
+				xfree(name);
 				continue;
 			}
 			*val++ = '\0';
@@ -1894,7 +1963,7 @@ client_session2_setup(int id, int want_tty, int want_subsystem,
 			}
 			if (!matched) {
 				debug3("Ignored env %s", name);
-				free(name);
+				xfree(name);
 				continue;
 			}
 
@@ -1903,7 +1972,7 @@ client_session2_setup(int id, int want_tty, int want_subsystem,
 			packet_put_cstring(name);
 			packet_put_cstring(val);
 			packet_send();
-			free(name);
+			xfree(name);
 		}
 	}
 

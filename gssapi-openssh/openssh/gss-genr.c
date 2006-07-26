@@ -1,4 +1,4 @@
-/*	$OpenBSD: gss-genr.c,v 1.4 2005/07/17 07:17:55 djm Exp $	*/
+/*	$OpenBSD: gss-genr.c,v 1.6 2005/10/13 22:24:31 stevesk Exp $	*/
 
 /*
  * Copyright (c) 2001-2005 Simon Wilkinson. All rights reserved.
@@ -29,13 +29,8 @@
 #ifdef GSSAPI
 
 #include "xmalloc.h"
-#include "buffer.h"
 #include "bufaux.h"
-#include "compat.h"
-#include <openssl/evp.h>
-#include "kex.h"
 #include "log.h"
-#include "monitor_wrap.h"
 #include "canohost.h"
 #include "ssh2.h"
 #include <openssl/evp.h>
@@ -90,7 +85,7 @@ ssh_gssapi_kex_mechs(gss_OID_set gss_supported, ssh_gssapi_check_fn *check,
 	size_t i;
 	int oidpos, enclen;
 	char *mechs, *encoded;
-	unsigned char digest[EVP_MAX_MD_SIZE];
+	u_char digest[EVP_MAX_MD_SIZE];
 	char deroid[2];
 	const EVP_MD *evp_md = EVP_md5();
 	EVP_MD_CTX md;
@@ -445,7 +440,8 @@ ssh_gssapi_buildmic(Buffer *b, const char *user, const char *service,
 }
 
 OM_uint32
-ssh_gssapi_server_ctx(Gssctxt **ctx, gss_OID oid) {
+ssh_gssapi_server_ctx(Gssctxt **ctx, gss_OID oid)
+{
 	if (*ctx)
 		ssh_gssapi_delete_ctx(ctx);
 	ssh_gssapi_build_ctx(ctx);

@@ -163,6 +163,7 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
 		    debug("set username to %s from gssapi context", user);
 		} else {
 		    debug("failed to set username from gssapi context");
+		    packet_send_debug("failed to set username from gssapi context");
 		}
 	    }
 	}
@@ -201,23 +202,19 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
 		if (authctxt->pw && strcmp(service, "ssh-connection")==0) {
 			authctxt->valid = 1;
 			debug2("input_userauth_request: setting up authctxt for %s", user);
-#ifdef USE_PAM
-			if (options.use_pam)
-				PRIVSEP(start_pam(authctxt));
-#endif
 		} else {
 			logit("input_userauth_request: invalid user %s", user);
 			authctxt->pw = fakepw();
-#ifdef USE_PAM
-			if (options.use_pam)
-				PRIVSEP(start_pam(authctxt));
-#endif
 #ifdef SSH_AUDIT_EVENTS
 			PRIVSEP(audit_event(SSH_INVALID_USER));
 #endif
 		}
 #ifdef GSSAPI
 		} /* endif for setting username based on GSSAPI context */
+#endif
+#ifdef USE_PAM
+		if (options.use_pam)
+			PRIVSEP(start_pam(authctxt));
 #endif
 		setproctitle("%s%s", authctxt->valid ? user : "unknown",
 		    use_privsep ? " [net]" : "");

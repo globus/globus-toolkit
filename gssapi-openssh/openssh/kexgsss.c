@@ -58,15 +58,14 @@ kexgss_server(Kex *kex)
 	gss_buffer_desc gssbuf, recv_tok, msg_tok;
 	gss_buffer_desc send_tok = GSS_C_EMPTY_BUFFER;
 	Gssctxt *ctxt = NULL;
-	unsigned int klen, kout;
-	unsigned char *kbuf, *hash;
+	u_int slen, klen, kout, hashlen;
+	u_char *kbuf, *hash;
 	DH *dh;
 	int min = -1, max = -1, nbits = -1;
 	BIGNUM *shared_secret = NULL;
 	BIGNUM *dh_client_pub = NULL;
 	int type = 0;
 	int gex;
-	u_int slen;
 	gss_OID oid;
 	
 	/* Initialise GSSAPI */
@@ -194,7 +193,8 @@ kexgss_server(Kex *kex)
 	xfree(kbuf);
 
 	if (gex) {
-		hash = kexgex_hash(
+		kexgex_hash(
+		    kex->evp_md,
 		    kex->client_version_string, kex->server_version_string,
 		    buffer_ptr(&kex->peer), buffer_len(&kex->peer),
 		    buffer_ptr(&kex->my), buffer_len(&kex->my),
@@ -203,29 +203,31 @@ kexgss_server(Kex *kex)
 		    dh->p, dh->g,
 		    dh_client_pub,
 		    dh->pub_key,
-		    shared_secret
+		    shared_secret,
+		    &hash, &hashlen
 		);
 	}
 	else {	
 		/* The GSSAPI hash is identical to the Diffie Helman one */
-		hash = kex_dh_hash(
+		kex_dh_hash(
 		    kex->client_version_string, kex->server_version_string,
 		    buffer_ptr(&kex->peer), buffer_len(&kex->peer),
 		    buffer_ptr(&kex->my), buffer_len(&kex->my),
 		    NULL, 0, /* Change this if we start sending host keys */
-		    dh_client_pub, dh->pub_key, shared_secret
+		    dh_client_pub, dh->pub_key, shared_secret,
+		    &hash, &hashlen
 		);
 	}
 	BN_free(dh_client_pub);
 
 	if (kex->session_id == NULL) {
-		kex->session_id_len = 20;
+		kex->session_id_len = hashlen;
 		kex->session_id = xmalloc(kex->session_id_len);
 		memcpy(kex->session_id, hash, kex->session_id_len);
 	}
 
 	gssbuf.value = hash;
-	gssbuf.length = 20; /* Hashlen appears to always be 20 */
+	gssbuf.length = hashlen;
 
 	if (GSS_ERROR(PRIVSEP(ssh_gssapi_sign(ctxt,&gssbuf,&msg_tok))))
 		fatal("Couldn't get MIC");
@@ -252,7 +254,7 @@ kexgss_server(Kex *kex)
 
 	DH_free(dh);
 
-	kex_derive_keys(kex, hash, shared_secret);
+	kex_derive_keys(kex, hash, hashlen, shared_secret);
 	BN_clear_free(shared_secret);
 	kex_finish(kex);
 }

@@ -10,7 +10,7 @@
  */
 
 #include "includes.h"
-RCSID("$OpenBSD: servconf.c,v 1.144 2005/08/06 10:03:12 dtucker Exp $");
+RCSID("$OpenBSD: servconf.c,v 1.146 2005/12/08 18:34:11 reyk Exp $");
 
 #include "ssh.h"
 #include "log.h"
@@ -108,6 +108,11 @@ initialize_server_options(ServerOptions *options)
 	options->authorized_keys_file = NULL;
 	options->authorized_keys_file2 = NULL;
 	options->num_accept_env = 0;
+	options->permit_tun = -1;
+        options->none_enabled = -1;
+        options->tcp_rcv_buf_poll = -1;
+	options->hpn_disabled = -1;
+	options->hpn_buffer_size = -1;
 
 	/* Needs to be accessable in many places */
 	use_privsep = -1;
@@ -116,6 +121,7 @@ initialize_server_options(ServerOptions *options)
 void
 fill_default_server_options(ServerOptions *options)
 {
+
 	/* Portable-specific options */
 	if (options->use_pam == -1)
 		options->use_pam = 0;
@@ -240,10 +246,28 @@ fill_default_server_options(ServerOptions *options)
 	}
 	if (options->authorized_keys_file == NULL)
 		options->authorized_keys_file = _PATH_SSH_USER_PERMITTED_KEYS;
+	if (options->permit_tun == -1)
+		options->permit_tun = SSH_TUNMODE_NO;
+
+	if (options->hpn_disabled == -1) 
+		options->hpn_disabled = 0;
+
+	if (options->hpn_buffer_size == -1)
+	        options->hpn_buffer_size = 2*1024*1024;
+	else {
+		if (options->hpn_buffer_size == 0)
+			options->hpn_buffer_size = 1;
+		/* limit the maximum buffer to 7MB */
+		if (options->hpn_buffer_size > 7168)
+			options->hpn_buffer_size = 7168;
+		options->hpn_buffer_size *=1024;
+	}
 
 	/* Turn privilege separation on by default */
 	if (use_privsep == -1)
 		use_privsep = 1;
+
+
 
 #ifndef HAVE_MMAP
 	if (use_privsep && options->compression == 1) {
@@ -284,9 +308,11 @@ typedef enum {
 	sBanner, sUseDNS, sHostbasedAuthentication,
 	sHostbasedUsesNameFromPacketOnly, sClientAliveInterval,
 	sClientAliveCountMax, sAuthorizedKeysFile, sAuthorizedKeysFile2,
-	sGssAuthentication, sGssKeyEx, sGssCleanupCreds, sAcceptEnv,
+	sGssKeyEx, 
 	sGsiAllowLimitedProxy,
-	sUsePrivilegeSeparation,
+	sGssAuthentication, sGssCleanupCreds, sAcceptEnv, sPermitTunnel,
+	sUsePrivilegeSeparation, sNoneEnabled, sTcpRcvBufPoll, 
+	sHPNDisabled, sHPNBufferSize,
 	sDeprecated, sUnsupported
 } ServerOpCodes;
 
@@ -398,6 +424,11 @@ static struct {
 	{ "authorizedkeysfile2", sAuthorizedKeysFile2 },
 	{ "useprivilegeseparation", sUsePrivilegeSeparation},
 	{ "acceptenv", sAcceptEnv },
+	{ "noneenabled", sNoneEnabled },
+	{ "hpndisabled", sHPNDisabled },
+	{ "hpnbuffersize", sHPNBufferSize },
+	{ "tcprcvbufpoll", sTcpRcvBufPoll },
+	{ "permittunnel", sPermitTunnel },
 	{ NULL, sBadOption }
 };
 
@@ -412,9 +443,9 @@ parse_token(const char *cp, const char *filename,
 	u_int i;
 
 	for (i = 0; keywords[i].name; i++)
-		if (strcasecmp(cp, keywords[i].name) == 0)
-			return keywords[i].opcode;
-
+		if (strcasecmp(cp, keywords[i].name) == 0){
+			debug ("TOKEN IS %s", keywords[i].name);
+			return keywords[i].opcode;}
 	error("%s: line %d: Bad configuration option: %s",
 	    filename, linenum, cp);
 	return sBadOption;
@@ -478,6 +509,7 @@ process_server_config_line(ServerOptions *options, char *line,
 	intptr = NULL;
 	charptr = NULL;
 	opcode = parse_token(arg, filename, linenum);
+
 	switch (opcode) {
 	/* Portable-specific options */
 	case sUsePAM:
@@ -649,6 +681,22 @@ parse_flag:
 		if (*intptr == -1)
 			*intptr = value;
 		break;
+
+	case sNoneEnabled:
+		intptr = &options->none_enabled;
+		goto parse_flag;
+
+	case sTcpRcvBufPoll:
+		intptr = &options->tcp_rcv_buf_poll;
+		goto parse_flag;
+
+	case sHPNDisabled:
+		intptr = &options->hpn_disabled;
+		goto parse_flag;
+
+	case sHPNBufferSize:
+		intptr = &options->hpn_buffer_size;
+		goto parse_int;
 
 	case sIgnoreUserKnownHosts:
 		intptr = &options->ignore_user_known_hosts;
@@ -1010,6 +1058,28 @@ parse_flag:
 			options->accept_env[options->num_accept_env++] =
 			    xstrdup(arg);
 		}
+		break;
+
+	case sPermitTunnel:
+		intptr = &options->permit_tun;
+		arg = strdelim(&cp);
+		if (!arg || *arg == '\0')
+			fatal("%s line %d: Missing yes/point-to-point/"
+			    "ethernet/no argument.", filename, linenum);
+		value = 0;	/* silence compiler */
+		if (strcasecmp(arg, "ethernet") == 0)
+			value = SSH_TUNMODE_ETHERNET;
+		else if (strcasecmp(arg, "point-to-point") == 0)
+			value = SSH_TUNMODE_POINTOPOINT;
+		else if (strcasecmp(arg, "yes") == 0)
+			value = SSH_TUNMODE_YES;
+		else if (strcasecmp(arg, "no") == 0)
+			value = SSH_TUNMODE_NO;
+		else
+			fatal("%s line %d: Bad yes/point-to-point/ethernet/"
+			    "no argument: %s", filename, linenum, arg);
+		if (*intptr == -1)
+			*intptr = value;
 		break;
 
 	case sDeprecated:
