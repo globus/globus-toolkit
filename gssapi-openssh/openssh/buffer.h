@@ -23,9 +23,15 @@ typedef struct {
 	u_int	 end;		/* Offset of last byte containing data. */
 }       Buffer;
 
-#define	BUFFER_MAX_CHUNK	0x100000
-#define	BUFFER_MAX_LEN		0xa00000
-#define BUFFER_MAX_HPN_LEN	(2<<29)-1
+#define	BUFFER_MAX_CHUNK	0x100000  /*1MB*/
+#define	BUFFER_MAX_LEN		0xa00000  /*10MB*/
+
+/* this value for BUFFER_MAX_HPN_LEN is */
+/* still undersized for the faster networks */
+/* it might make sense to have yet another */
+/* MAX_LEN for 10+GB networks. Something closer to */
+/* 128MB or 192MB -cjr*/
+#define	BUFFER_MAX_HPN_LEN	0x2000000 /*32MB*/
 
 void	 buffer_init(Buffer *);
 void	 buffer_clear(Buffer *);

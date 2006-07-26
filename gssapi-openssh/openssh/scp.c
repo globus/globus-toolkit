@@ -278,7 +278,7 @@ main(int argc, char **argv)
 	addargs(&args, "-oClearAllForwardings yes");
 
 	fflag = tflag = 0;
-	while ((ch = getopt(argc, argv, "dfl:prtvBCc:i:P:q1246zS:o:F:R:")) != -1)
+	while ((ch = getopt(argc, argv, "dfl:prtvBCc:i:P:q1246zS:o:F:w:")) != -1)
 		switch (ch) {
 		/* User-visible flags. */
 		case '1':
@@ -340,9 +340,9 @@ main(int argc, char **argv)
 			setmode(0, O_BINARY);
 #endif
 			break;
-		case 'R':
-		  addargs(&args, "-r%s", optarg);
-		  break;
+		case 'w':
+			addargs(&args, "-w%s", optarg);
+			break;
 		default:
 			usage();
 		}
@@ -617,10 +617,6 @@ syserr:			run_err("%s: %s", name, strerror(errno));
 		(void) atomicio(vwrite, remout, buf, strlen(buf));
 		if (response() < 0)
 			goto next;
-		/* this change decreases the number of read/write syscalls*/
-		/* when scp acts as data source. this is the critical change*/
-		/* buf can actually remain at 2k but increasing both to 16k*/
-		/* seemed to make sense*/
 		if ((bp = allocbuf(&buffer, fd, sizeof(buf))) == NULL) {
 next:			if (fd != -1) {
 				(void) close(fd);
@@ -1093,7 +1089,7 @@ usage(void)
 {
 	(void) fprintf(stderr,
 	    "usage: scp [-1246BCpqrv] [-c cipher] [-F ssh_config] [-i identity_file]\n"
-	    "           [-l limit] [-o ssh_option] [-P port] [-R Receive buffer size (Kb)] [-S program]\n"
+	    "           [-l limit] [-o ssh_option] [-P port] [-w buffer size] [-S program]\n"
 	    "           [[user@]host1:]file1 [...] [[user@]host2:]file2\n");
 	exit(1);
 }

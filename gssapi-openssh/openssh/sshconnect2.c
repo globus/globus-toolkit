@@ -127,7 +127,8 @@ ssh_kex2(char *host, struct sockaddr *hostaddr)
 	if (options.ciphers != NULL) {
 		myproposal[PROPOSAL_ENC_ALGS_CTOS] =
 		myproposal[PROPOSAL_ENC_ALGS_STOC] = options.ciphers;
-	}
+	} 
+
 	myproposal[PROPOSAL_ENC_ALGS_CTOS] =
 	    compat_cipher_proposal(myproposal[PROPOSAL_ENC_ALGS_CTOS]);
 	myproposal[PROPOSAL_ENC_ALGS_STOC] =
@@ -380,7 +381,7 @@ ssh_userauth2(const char *local_user, const char *server_user, char *host,
 
 	pubkey_cleanup(&authctxt);
 	dispatch_range(SSH2_MSG_USERAUTH_MIN, SSH2_MSG_USERAUTH_MAX, NULL);
-	if ((options.none_switch == 1) && !tty_flag) /* no null on tty sessions */
+	if ((options.none_switch == 1) && (options.none_enabled == 1) && !tty_flag) /* no null on tty sessions */
 	{
 		debug("Requesting none rekeying...");
 		myproposal[PROPOSAL_ENC_ALGS_STOC] = "none";
