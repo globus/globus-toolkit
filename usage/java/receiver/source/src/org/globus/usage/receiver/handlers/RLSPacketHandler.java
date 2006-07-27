@@ -36,7 +36,8 @@ public class RLSPacketHandler extends DefaultPacketHandler {
     }
 
     public boolean doCodesMatch(short componentCode, short versionCode) {
-        return (componentCode == 7 && (versionCode == 0 || versionCode == 7));
+        return ((componentCode == 7 && (versionCode == 0 || versionCode == 7)) ||
+                (componentCode == 1792 && versionCode == 0)); // little endian encoding
     }
 
     public UsageMonitorPacket instantiatePacket(CustomByteBuffer rawBytes) {

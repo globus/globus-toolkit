@@ -39,7 +39,8 @@ public class CCorePacketHandler extends DefaultPacketHandler {
 	/*1 is the correct version code, but there are many installations
 	out there that erroneously send packets with version code 4, and
 	we want to catch both:*/
-        return (componentCode == 4 && (versionCode == 1 || versionCode == 4));
+        return ((componentCode == 4 && (versionCode == 1 || versionCode == 4)) ||
+                (componentCode == 1024 && versionCode == 256)); // little endian encoding
     }
 
     public UsageMonitorPacket instantiatePacket(CustomByteBuffer rawBytes) {
