@@ -165,7 +165,7 @@ The interface functions are wrapped together in a in a data structure.
 When a Globus XIO application chooses to load a driver it locates this
 symbol in the shared library according to a naming convention.
 The application gives Globus XIO a driver name, a driver with this name
-is then searched for in the $LB_LIBRARY_PATH$.  If found the library is
+is then searched for in the $LB\_LIBRARY\_PATH$.  If found the library is
 loaded and the symbol containing the interface functions is acquired,
 at which point Globus XIO has all it needs to use the driver.
 
@@ -233,45 +233,45 @@ sample_read(
 
 \end{verbatim}
 
-In this oversimplified example $sample_read$ will be called
+In this oversimplified example $sample\_read$ will be called
 by Globus XIO when an application requests a read via a call to
-$globus_xio_read()$ and the like.  The first parameter to
-$sample_read$ is $driver_specific_handle$, this is a pointer
+$globus\_xio\_read()$ and the like.  The first parameter to
+$sample\_read$ is $driver\_specific\_handle$, this is a pointer
 to driver defined memory.  We will look at this parameter in detail
 later but for now we shall ignore it.  The next two parameters 
-$iovec$ and $iovec_count$ point to memory buffers into which
+$iovec$ and $iovec\_count$ point to memory buffers into which
 the driver is to read data.  Much information exists on iovec as it 
 is a common BSD socket idiom.  And the final parameter is $op$.
 $op$ is a Globus XIO data type that holds internal information about
 the specific read operation called.  The driver developer must 
 hang onto this operation data type until it has completed the request,
-at which time it calls $globus_xio_driver_finished_read()$, passing
+at which time it calls $globus\_xio\_driver\_finished\_read()$, passing
 in $op$ and thereby signaling Globus XIO of its completion.
 
-In the above example $globus_xio_driver_finished_read()$ \emph{is} called
-with in the scope of the $sample_read$ function.  This is only done
+In the above example $globus\_xio\_driver\_finished\_read()$ \emph{is} called
+with in the scope of the $sample\_read$ function.  This is only done
 for example clarity, this in no way must be the case, and most often
 it is not the
-case.  The driver could copy the $globus_xio_operation_t$ by using
-the $=$ operator, return from the $sample_read$ function and at any time
-later call $globus_xio_driver_finished_read()$ passing in the copied
+case.  The driver could copy the $globus\_xio\_operation\_t$ by using
+the $=$ operator, return from the $sample\_read$ function and at any time
+later call $globus\_xio\_driver\_finished\_read()$ passing in the copied
 $op$.
 
-The reader may also take note of the use of $GLOBUS_SUCCESS$ in the example.
-$GLOBUS_SUCCESS$ is a value of a $globus_result_t$ which is used to
-communicate success and failure.  Any value other that $GLOBUS_SUCCESS$
-indicates failure.  A $globus_result_t$ can take on many values to
+The reader may also take note of the use of $GLOBUS\_SUCCESS$ in the example.
+$GLOBUS\_SUCCESS$ is a value of a $globus\_result\_t$ which is used to
+communicate success and failure.  Any value other that $GLOBUS\_SUCCESS$
+indicates failure.  A $globus\_result\_t$ can take on many values to
 communicate an error.  Details on Globus errors are documented 
-elsewhere, for our purposes we only need to know that $GLOBUS_SUCCESS$ 
+elsewhere, for our purposes we only need to know that $GLOBUS\_SUCCESS$ 
 is success and anything else is a failure.
 The value  returned from the interface function indicates
 if the driver is willing to \emph{attempt} to fulfill the request.  
-$GLOBUS_SUCCESS$ indicates that it is willing to try and an error
+$GLOBUS\_SUCCESS$ indicates that it is willing to try and an error
 type indicates that it is not.  
-If the interface function returns $GLOBUS_SUCCESS$
-it \emph{must} call $globus_xio_driver_finished_read()$ at a later time, 
+If the interface function returns $GLOBUS\_SUCCESS$
+it \emph{must} call $globus\_xio\_driver\_finished\_read()$ at a later time, 
 passing in the given $op$.  If it returns
-an error type it \emph{must not} call $globus_xio_driver_finished_read()$
+an error type it \emph{must not} call $globus\_xio\_driver\_finished\_read()$
 with the $op$ and should further consider that $op$ invalid as soon as it
 returns from the function.
 
@@ -279,14 +279,14 @@ Just because the driver said it was willing to try to fulfill the
 request, it does not mean that it will be successful.  Since we are
 dealing with an asynchronous model the driver may not know right away
 if it can successfully fulfill the request.  If after returning 
-$GLOBUS_SUCCESS$ in the interface function some situation occurs 
+$GLOBUS\_SUCCESS$ in the interface function some situation occurs 
 which prevents the driver from servicing
-the operation, the driver will call $globus_xio_driver_finished_read()$
-passing in the given op and an error type in the place of $GLOBUS_SUCCESS$
+the operation, the driver will call $globus\_xio\_driver\_finished\_read()$
+passing in the given op and an error type in the place of $GLOBUS\_SUCCESS$
 that indicates it failed in its attempt to complete the operation.
 
 \subsection{Tying Operations Together}
-In the previous section we introduced the $driver_specific_handle$ parameter
+In the previous section we introduced the $driver\_specific\_handle$ parameter
 but delayed the discussion of it.  In this section it will play a 
 prominent role.  IO operations are typically not slef contained things.
 In most cases they interrelate to each other.  As an example look at file
@@ -298,11 +298,11 @@ consists of will differ for each driver.  ...
 some drivers user x, other uses y.  therefore it is the driver that must 
 define this state.
 
-we use the $driver_specific_handle$ for this.  at initialize time the
+we use the $driver\_specific\_handle$ for this.  at initialize time the
 driver allocates a structure and returns a pointer to that structures
 memory back to Globus XIO.  This pointer is then threaded through to all
-operations via the $driver_specific_handle$.  To Globus XIO
-$driver_specific_handle$ is just a void *, just a pointer to memory, so 
+operations via the $driver\_specific\_handle$.  To Globus XIO
+$driver\_specific\_handle$ is just a void *, just a pointer to memory, so 
 the driver must up-cast the void * back to its structure.  look at over-
 simplified example:
 
@@ -331,6 +331,8 @@ sample_open(
     handle->total_bytes = 0;
                    
     globus_xio_driver_finished_open(handle, op, GLOBUS_SUCCESS);
+
+    return GLOBUS_SUCCESS;
 }
 
 globus_result_t
@@ -387,42 +389,192 @@ for didactic purposes.  In this example all processing is done inline in a
 blocking fashion.  This is atypical for Globus XIO driver, but makes for
 a much more comapct example.
 
-In the example the data structure $simple_file_handle_t$ is allocated
+In the example the data structure $simple\_file\_handle\_t$ is allocated
 and initialized in the open function.  Since this is a very basic file
 driver example we open a file and put the $FILE *$ in the 
-$simple_file_handle_t$.  We get the filename that the user wishes to
-open from the $contact_info$ structure.  More details on that can be found
+$simple\_file\_handle\_t$.  We get the filename that the user wishes to
+open from the $contact\_info$ structure.  More details on that can be found
 in the user API.
-To show that multiple data members can be useful in a $driver_specific_handle$
+To show that multiple data members can be useful in a
+$driver\_specific\_handle$
 we keep a running total of the number of bytes writen in the handle as well.
 Once open we \emph{finish} the open operation with a call to
-$globus_xio_driver_finished_open()$.  The first parameter to this function
-is the pointer to the $simple_file_handle_t$.  Globus XIO will associate
+$globus\_xio\_driver\_finished\_open()$.  The first parameter to this function
+is the pointer to the $simple\_file\_handle\_t$.  Globus XIO will associate
 that pointer with all operations called upon this handle and pass this 
 pointer into all other operations associated with this handle.
 
-Notice how the $driver_specific_handle$ is passed into $simple_write()$
-where the $void *$ is cast back into a $simple_file_handle_t *$.  The
+Notice how the $driver\_specific\_handle$ is passed into $simple\_write()$
+where the $void *$ is cast back into a $simple\_file\_handle\_t *$.  The
 driver now has access to the needed $FILE *$ and it uses it to write the 
 data in the iovec array to the file.  The driver keeps track of all
 the bytes it has writen and passes that number into 
-$globus_xio_driver_finished_write$ along with the operation to 
+$globus\_xio\_driver\_finished\_write$ along with the operation to 
 tell Globus XIO exactly how much of the write that it has completed.  
 In this example we ignore all possible errors for the purpose of simplicty.
 The driver is allowed to return a short value for nbytes if it wishes.
 
-The $driver_specific_handle$ is also passed into the clsoe function.
+The $driver\_specific\_handle$ is also passed into the clsoe function.
 The close funciton is the final operation that will be requested on this 
 handle so it is where all of the associated memory is cleaned up.  We
-again cast the $void *$ to a $simple_file_handle_t *$.  We then call 
+again cast the $void *$ to a $simple\_file\_handle\_t *$.  We then call 
 $fclose()$ to close the file and free memory pointed to by the handle.
-Finally $globus_xio_driver_finished_close$ is called and the driver has 
+Finally $globus\_xio\_driver\_finished\_close$ is called and the driver has 
 completed its use of this handle.
 
 \subsection{Passing}
-transform drivers.  delgate resposibility... pass in handle, handle comes
-back in callback...  once passed op is gone, cant touch until it returns
-to you.
+The previous section gives an overview of the general flow of control
+in a driver.  Specifically it shows the interactions of a \emph{transport}
+driver.  We know it is a \emph{transport} by two things described above.
+The first is that it is doing the actual work of transporting the data
+outside of the process space (in this case across the kernel boundry) 
+with the call to $fwrite()$.  The second way is that it doesn't rely
+on any other driver for help.  In this section we show how drivers 
+can be written such that they do rely on other drivers to help service
+their requests.
+
+A \emph{transform} driver can delegate the responsibility of completing
+part, or all of an operation to the next driver down the stack.  We call
+this \emph{passing} an operation.  To illustrate this process we will
+look at another simple example.  
+In this example we will create a $simple\_zip$ transform driver.  This
+driver will compress data buffers and then pass the new buffers down the 
+stack.  The next driver in the stack could be anything at all, the 
+$simple\_zip$ driver doesn't know or care what is next, it only knows
+that it can ask the next driver to open/close/read/write (and a few other 
+operations discussed later) on its behalf.
+
+For clairity the reader can consider the stack to be a the $simple\_zip$
+driver on top of the $simple\_file$ driver.  This would result in a stack
+that writes compressed data to a disk.  However, the example should make it
+clear that the $simple\_zip$ driver could be mixed and matched with any 
+valid driver set.  In the example we will use an imaginary function that 
+when given a buffer and a length it will return a new buffer and length
+that contains the compressed data of the first.
+
+\begin{verbatim}
+
+typedef struct zipped_data_s
+{
+    globus_xio_iovec_t *                iov;
+    int                                 iovc;
+} zipped_data_t;
+
+globus_result_t
+zip_open(
+    const globus_xio_contact_t *        contact_info,
+    void *                              driver_link,
+    void *                              driver_attr,
+    globus_xio_operation_t              op)
+{
+    globus_result_t                     result;
+
+    result = globus_xio_driver_pass_open(op, contact_info, NULL, NULL);
+
+    return result;
+}
+
+void
+zip_write_cb(
+    globus_xio_operation_t              op,
+    globus_result_t                     result,
+    globus_size_t                       nbytes,
+    void *                              user_arg)
+{
+    int                                 i;
+    zipped_data_t *                     zipped_data;
+
+    /* clean up */
+    zipped_data = (zipped_data_t *) user_arg;
+    for(i = 0; i < zipped_data->iovc; i++)
+    {
+        free(zipped_data->iov[i].iov_base);
+    }
+    free(zipped_data->iov);
+    free(zipped_data);
+
+    globus_xio_driver_finished_write(op, result, nbytes);
+}
+
+globus_result_t
+zip_write(
+    void *                              driver_specific_handle,
+    const globus_xio_iovec_t *          iovec,
+    int                                 iovec_count,
+    globus_xio_operation_t              op)
+{
+    int                                 i;
+    globus_size_t                       nbytes = 0;
+    zipped_data_t *                     zipped_data;
+
+    zipped_data = (zipped_data_t *) malloc(sizeof(zipped_data_t));
+    zipped_data->iovc = iovec_count;
+    zipped_data->iov = calloc(iovc, sizeof(zipped_data_t);
+
+    /* walk through iovec and write all the bytes */
+    for(i = 0; i < iovec_count; i++)
+    {
+        /* a fake function the compresses the first buffer into the 2nd */
+        simple_zip(
+            iovec[i].iov_base, iovec[i].iov_len,
+            &zipped_data->iov[i].iov_base, &zipped_data->iov[i].iov_len);
+        nbytes += zipped_data->iov[i].iov_len;
+    }
+
+    result = globus_xio_driver_pass_write(op, zipped_data->iov,
+        zipped_data->iovc, nbytes, zip_write_cb, zipped_data);
+
+    return result;
+}
+
+globus_result_t
+zip_close(
+    void *                              driver_specific_handle,
+    void *                              attr,
+    globus_xio_operation_t              op)
+{
+    globus_result_t                     result;
+
+    result = globus_xio_driver_pass_close(op, NULL, NULL);
+
+    return result;
+}
+
+\end{verbatim}
+
+The first thing to notice in this example is the use of the \emph{pass}
+functions.  For starters lets look at the \emph{open} and \emph{close}
+interface functions.  Since the imaginary compression library used in this
+example doesn't require any state we do not have to thread 
+$driver\_specific\_handle$ through all of the interface functions and thus
+$zip\_open$ and $zip\_close$ do very little.  In fact, the only thing they
+do is \emph{pass} the operation off to the next driver.  If the zip driver
+wanted to know when the open completed it could pass a function
+pointer in as the second argument to $globus\_xio\_driver\_pass\_open()$ and
+that function would be called upon completion.  However since it does
+not need to know the example simply passes NULL in for this parameter.
+As soon as the operation is passed down the stack the $zip$ driver is 
+done with it and relies on the other drivers in the stack to complete
+the operation.
+
+The write interface function is slightly more complicated.  The job of
+this function is simply to compress the data and then send it down the stack.
+However, since the driver cannot alter the users buffers, it must create
+new buffers for the compressed data to reside.  This is done by creating
+the $zipped\_data\_t$ structure.  In it is an iovec with the same number 
+of enties as the users iovec.  For each of the enties $simple\_zip$ is
+called to create the zipped buffer.  Once all of the zipped buffers are
+created they can be passed down the stack with 
+$globus\_xio\_driver\_pass\_write()$.  Unlike with open and close, here we
+must know when the write has completed so that we can free this
+memory.  We cannot free the memory before the write has completed or
+we will corrupt the system memory, and if we never free it we will leak
+memory.  Therefore we have to pass a pointer to the function 
+$zip\_write\_cb()$ (\emph{cb} stands for \emph{callback}).  Once the
+write operation has been completed by the remainder of the driver stack
+that function will be called and we can free memory.  $zip\_write()$ frees
+the memory and then calls $globus\_xio\_driver\_finished\_write$ to notify
+Globus XIO that it has completed the operation it was asked to do.
 
 \subsection{Servers}
 servers sonfuse the model slightly... prior to open need some work.  passive
