@@ -40,6 +40,10 @@ public class JavaCorePacketHandler extends DefaultPacketHandler {
         throws SQLException {
         super(db, table);
     }
+    
+    public String getDescription() {
+        return "Java WS Core v1 packets";
+    }
 
     public boolean doCodesMatch(short componentCode, short versionCode) {
         return (componentCode == ContainerUsageBasePacket.COMPONENT_CODE) &&

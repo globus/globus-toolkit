@@ -42,6 +42,10 @@ public class JavaCorePacketHandlerV2 extends DefaultPacketHandler {
         super(db, table);
     }
 
+    public String getDescription() {
+        return "Java WS Core v2 packets";
+    }
+
     public boolean doCodesMatch(short componentCode, short versionCode) {
         return (componentCode == ContainerUsageBasePacket.COMPONENT_CODE) &&
             (versionCode == ContainerUsageBasePacketV2.PACKET_VERSION);

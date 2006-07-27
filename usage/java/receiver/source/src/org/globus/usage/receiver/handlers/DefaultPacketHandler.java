@@ -71,11 +71,15 @@ public class DefaultPacketHandler implements PacketHandler {
         this.lostCount = 0;
     }
 
+    public String getDescription() {
+        return this.table;
+    }
+
     public String getStatus() {
 	StringBuffer output = new StringBuffer();
 	output.append(this.packetCount);
 	output.append(" ");
-	output.append(table);
+	output.append(getDescription());
 	output.append(" logged.");
         if (this.lostCount > 0) {
             output.append(" Lost ");
