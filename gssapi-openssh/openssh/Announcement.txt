@@ -1,4 +1,4 @@
-GSI-OpenSSH 3.7, based on OpenSSH 4.2p1, is now available from:
+GSI-OpenSSH 3.8, based on OpenSSH 4.3p2, is now available from:
 
   <http://grid.ncsa.uiuc.edu/ssh/download.html>
 
@@ -11,18 +11,24 @@ use our bugzilla system to report GSI-OpenSSH bugs:
 
   <http://bugzilla.ncsa.uiuc.edu/enter_bug.cgi?product=GSI-enabled%20OpenSSH>
 
-GSI-OpenSSH 3.7 Major changes
+GSI-OpenSSH 3.8 Major changes
 
    New features
 
-      * Added server-side GSIAllowLimitedProxy option to enable
-        acceptance of limited proxy credentials.
+      * Upgraded to OpenSSH 4.3p2.
+
+      * Upgraded to HPN12 patch from
+        <http://www.psc.edu/networking/projects/hpn-ssh/>.
+
+      * Added support for Globus Authorization Callouts using service
+        name "ssh"
+        (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=4592).
 
    Bugs fixed
 
       * None.
 
-Please note that the configure script included in OpenSSH 4.2p1 checks
+Please note that the configure script included in OpenSSH 4.3p2 checks
 ZLIB_VERSION in zlib.h for zlib versions with known vulnerabilities.
 See <http://www.zlib.net/> for details on zlib vulnerabilities.  The
 current acceptable versions of zlib are 1.1.4 and 1.2.3.  In cases
@@ -30,17 +36,17 @@ where your vendor has not provided a secure version of zlib, please
 install the latest version of zlib in an alternate path and set the
 --with-zlib GSI_OPENSSH_GPTMACRO option.  For example:
 
-  gpt-build -verbose gsi_openssh_bundle-3.7-src.tar.gz gcc32dbg \
+  gpt-build -verbose gsi_openssh_bundle-3.8-src.tar.gz gcc32dbg \
     GSI_OPENSSH_GPTMACRO="--with-zlib=/usr/local/zlib-1.2.3"
 
 MD5 checksums:
-27d48a51a7c569669ca25236d1ba7851  gsi_openssh-3.7-src.tar.gz
-f403f5c4fa4d2242d1542631ff4bca34  gsi_openssh_bundle-3.7-src.tar.gz
-005b093386112805b3b30c89a8406748  gsi_openssh_compat-3.7-src.tar.gz
-e0571b69b0587a2ae9f99f06440d1dd5  gsi_openssh_setup-3.7-src.tar.gz
+126f907d2a02954743ff9141712fe812  gsi_openssh-3.8-src.tar.gz
+3a86e18fe34f4239dacd89f02e7bdf0b  gsi_openssh_bundle-3.8-src.tar.gz
+b7d4b30a59282dd81d5e615802b6b293  gsi_openssh_compat-3.8-src.tar.gz
+d2d61e3d8289c17068aab8e0c74253d6  gsi_openssh_setup-3.8-src.tar.gz
 
 SHA1 checksums:
-462de4a6f35d0e57dc0ea41b2b675c9a08eae256  gsi_openssh-3.7-src.tar.gz
-bb1b7cfc811b37582b86dd6432e3df9cfda041a2  gsi_openssh_bundle-3.7-src.tar.gz
-51f3fe8e42ff11cfd341c38a9a8068481358c832  gsi_openssh_compat-3.7-src.tar.gz
-dc44c59cd2f5513cc5fcc66f9771ac7a9d0a34ab  gsi_openssh_setup-3.7-src.tar.gz
+0ff6e4678532466e858f72f172fe614ec9923e5a  gsi_openssh-3.8-src.tar.gz
+06a045a02236347fb577bac0ec499ee5fccf8bdc  gsi_openssh_bundle-3.8-src.tar.gz
+9aa786ac0f85c2f2dde9cfdc4e49e15c4e9dc33d  gsi_openssh_compat-3.8-src.tar.gz
+9255eb5e90e934339609a69490e8b3685174cf9f  gsi_openssh_setup-3.8-src.tar.gz
