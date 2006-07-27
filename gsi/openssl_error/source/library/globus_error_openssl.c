@@ -65,7 +65,7 @@ globus_l_gsi_openssl_error_activate(void)
     static char *                       _function_name_ =
         "globus_l_gsi_openssl_error_activate";
 
-    tmp_string = globus_module_getenv("GLOBUS_GIS_OPENSSL_ERROR_DEBUG_LEVEL");
+    tmp_string = globus_module_getenv("GLOBUS_GSI_OPENSSL_ERROR_DEBUG_LEVEL");
     if(tmp_string != GLOBUS_NULL)
     {
         globus_i_gsi_openssl_error_debug_level = atoi(tmp_string);
