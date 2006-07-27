@@ -28,14 +28,6 @@ module that contains the GSI-OpenSSH code.  Consider it a living document.
 
           $ cvs update -kk -jOPENSSH_GSI_GPT_BASE -j<newBase>
 
-    5. Add any new files to the branch.  Run:
-
-          $ cvs diff -rOPENSSH_GSI_GPT_BASE -r<newBase> > /dev/null
-
-       For each "tag OPENSSH_GSI_GPT_BASE is not in file", run:
-
-          $ cvs update -jHEAD <filename>
-
     5. Retrieve a list of any conflicts that were discovered as a result 
        of the merge.
 

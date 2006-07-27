@@ -1,0 +1,128 @@
+#!/usr/bin/env perl
+#
+# make_gpt_dist - adapted from GPT's make_gpt_dist script
+#
+# Create a GPT source package after deriving the necessary build files.
+#
+
+#
+# You can define the source directory and package names to suit your needs.  It's
+# important to remember that GPT needs the source package name to be similar to
+# the name of the package as defined in the package metadata (pkg_data_src.gpt).
+#
+# Failing to do this correctly will not affect bundle-creation, but will affect
+# globus-build's ability to select and untar the correct package corresponding
+# to the name gpt-bundle gives in its 'packaging_list'.
+#
+
+$srcdirname = "gsi_openssh_setup-3.8-src";
+$srcpkgname = $srcdirname;
+
+#
+# uncomment when we've got a better place to get the current version from
+#
+# determine gpt version number
+#
+#open (CFG, 'packaging_tools/configure.in');
+#
+#my $version;
+#for (<CFG>) {
+#  if (m!AM_INIT_AUTOMAKE\(\w+,([^,\)]+)!) {
+#    $version = $1;
+#    $version =~ s!\s+!!g;
+#  }
+#}
+
+#
+# test to make sure we're okay to
+#   o create/use the $srcdirname directories
+#   o create the source package
+#
+
+if ( (!defined($srcdirname)) || length($srcdirname) le 0 )
+{
+    printf("\$srcdirname must be defined to a usable value!\n");
+    die;
+}
+
+if ( (!defined($srcpkgname)) || length($srcpkgname) le 0 )
+{
+    printf("\$srcpkgname must be defined to a usable value!\n");
+    die;
+}
+
+if ( -e "../$srcdirname" )
+{
+    printf("found existing '../$srcdirname'... please remove before continuing\n");
+    die;
+}
+
+if ( -e "./$srcdirname" )
+{
+    printf("found existing './$srcdirname'... please remove before continuing\n");
+    die;
+}
+
+if ( -e "./$srcpkgname.tar" )
+{
+    printf("found existing './$srcpkgname.tar'... please remove before continuing\n");
+    die;
+}
+
+if ( -e "./$srcpkgname.tar.gz" )
+{
+    printf("found existing './$srcpkgname.tar.gz'... please remove before continuing\n");
+    die;
+}
+
+#
+# prep the source directory by creating a temp directory containing all of the
+# required files.
+#
+
+printf("copying files into source directory...\n");
+system("mkdir ../$srcdirname")==0 or die "Unable to create ../$srcdirname: $?";
+system("cp -rf * ../$srcdirname")==0 or die "Unable to copy . into ../$srcdirname: $?";
+system("mv ../$srcdirname ./$srcdirname")==0 or die "Unable to move $srcdirname from ../ to ./: $?";
+
+chdir("./$srcdirname");
+
+#
+# remove any 'unnecessary' files from the source directory.
+#
+
+printf("pruning source directory of extraneous files...\n");
+
+system("rm -rf `find . -name CVS -print`")==0 or die "Unable to remove cvs directories: $?";
+system("rm -f ./todo")==0 or die "Unable to remove todo file: $?";
+
+#
+# #
+# # run the standard development tools to get the necessary derived files.
+# #
+# 
+# printf("running autoheader...\n");
+# system("autoheader")==0 or die "Could not run autoheader: $?";
+# 
+# printf("running autoconf...\n");
+# system("autoconf")==0 or die "Could not run autoheader: $?";
+#
+
+chdir("../");
+
+#
+# create the source package from the source directory.
+#
+
+printf("creating source tarball '$srcpkgname.tar.gz'...\n");
+system("tar -cf ./$srcpkgname.tar ./$srcdirname")==0 or die "Unable to create $srcpkgname.tar: $?";
+system("gzip -f ./$srcpkgname.tar")==0 or die "Unable to gzip $srcpkgname.tar: $?";
+
+printf("cleaning up after myself...\n");
+system("rm -rf ./$srcdirname")==0 or die "Unable to remove ./$srcdirname: $?";
+
+#
+# done.
+#
+
+printf("done.\n");
