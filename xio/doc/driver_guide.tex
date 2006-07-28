@@ -52,8 +52,8 @@ stack and it must be at the bottom of the stack.  A good example of
 a transport driver is the TCP driver or the FILE driver.
 
 Transform drivers sit on the stack between the transport driver on the
-bottom and the user API on the top.  There can be any number of transport
-drivers on a stack, although in most cases there will be no more than one or 
+bottom and the user API on the top.  There can be any number of transform
+drivers on a stack, although in most cases there will only be one or 
 two.  Transform drivers always rely on the fact that there is a driver
 below then to which they can \emph{pass} the data blocks.  The transform
 driver knows it is not responsible for the actual delivery of the data.
@@ -386,7 +386,7 @@ and write interface functions.  The reader should note that this is
 a greatly over simplifed example for the purpose of explaination.  It is
 not intended to actually work as a Globus XIO driver, but rather is intended
 for didactic purposes.  In this example all processing is done inline in a
-blocking fashion.  This is atypical for Globus XIO driver, but makes for
+blocking fashion.  This is $not$ typical for Globus XIO driver, but makes for
 a much more comapct example.
 
 In the example the data structure $simple\_file\_handle\_t$ is allocated
@@ -394,7 +394,7 @@ and initialized in the open function.  Since this is a very basic file
 driver example we open a file and put the $FILE *$ in the 
 $simple\_file\_handle\_t$.  We get the filename that the user wishes to
 open from the $contact\_info$ structure.  More details on that can be found
-in the user API.
+in the user API. XXX no it can't... this is a driver structure only * XXX
 To show that multiple data members can be useful in a
 $driver\_specific\_handle$
 we keep a running total of the number of bytes writen in the handle as well.
