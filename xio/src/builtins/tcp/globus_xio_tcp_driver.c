@@ -2092,19 +2092,22 @@ globus_l_xio_tcp_open(
     handle->use_blocking_io = attr->use_blocking_io;
     if(!driver_link && attr->fd == GLOBUS_XIO_TCP_INVALID_HANDLE)
     {
-        if(!(contact_info->host && contact_info->port))
+        char *                          port;
+        
+        port = contact_info->port ? contact_info->port : contact_info->scheme;
+        if(!(contact_info->host && port))
         {
             result = GlobusXIOErrorContactString("missing host or port");
             goto error_contact_string;
         }
         
         result = globus_l_xio_tcp_connect(
-            op, handle, attr, contact_info->host, contact_info->port);
+            op, handle, attr, contact_info->host, port);
         if(result != GLOBUS_SUCCESS)
         {
             result = GlobusXIOErrorWrapFailedWithMessage2(result,
                 "Unable to connect to %s:%s",
-                contact_info->host, contact_info->port);
+                contact_info->host,  port);
             goto error_connect;
         }
     }
