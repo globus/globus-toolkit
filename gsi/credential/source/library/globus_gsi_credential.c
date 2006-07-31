@@ -1611,21 +1611,21 @@ globus_result_t globus_gsi_cred_write_proxy(
         goto exit;
     }
 
-    if(!(proxy_bio = BIO_new_file(proxy_filename, "w")))
-    {
-        GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_CRED_ERROR_WRITING_PROXY_CRED,
-            (_GCRSL("Can't open bio stream for writing to file: %s"), proxy_filename));
-        goto exit;
-    }
-
     result = GLOBUS_GSI_SYSCONFIG_SET_KEY_PERMISSIONS(proxy_filename);
     if(result != GLOBUS_SUCCESS)
     {
         GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_WRITING_PROXY_CRED);
+        goto exit;
+    }
+
+    if(!(proxy_bio = BIO_new_file(proxy_filename, "w")))
+    {
+        GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CRED_ERROR_WRITING_PROXY_CRED,
+            (_GCRSL("Can't open bio stream for writing to file: %s"), proxy_filename));
         goto exit;
     }
 
