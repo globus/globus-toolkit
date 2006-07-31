@@ -351,10 +351,12 @@ globus_rsl_copy_recursive(globus_rsl_t * ast_node)
     globus_rsl_t *       new_rsl_ptr;
     globus_list_t *      tmp_rsl_list;
     globus_list_t *      new_rsl_list;
+    globus_list_t *      new_rsl_list_reverse;
     globus_rsl_value_t * tmp_rsl_value_ptr;
     globus_rsl_value_t * new_rsl_value_ptr;
     globus_list_t *      tmp_value_list;
     globus_list_t *      new_value_list;
+    globus_list_t *      new_value_list_reverse;
     char *               tmp_string;
 
     if (ast_node==NULL) return(NULL);
@@ -379,11 +381,12 @@ globus_rsl_copy_recursive(globus_rsl_t * ast_node)
                 tmp_rsl_list = globus_list_rest(tmp_rsl_list);
             }
 
-            new_rsl_list = globus_list_copy_reverse(new_rsl_list);
+            new_rsl_list_reverse = globus_list_copy_reverse(new_rsl_list);
+            globus_list_free(new_rsl_list);
 
             return(globus_rsl_make_boolean
                        (globus_rsl_boolean_get_operator(ast_node),
-                       new_rsl_list));
+                       new_rsl_list_reverse));
 
         case GLOBUS_RSL_RELATION:
 
@@ -404,7 +407,8 @@ globus_rsl_copy_recursive(globus_rsl_t * ast_node)
                 tmp_value_list = globus_list_rest(tmp_value_list);
             }
 
-            new_value_list = globus_list_copy_reverse(new_value_list);
+        new_value_list_reverse = globus_list_copy_reverse(new_value_list);
+        globus_list_free(new_value_list);
 
             tmp_string = (char *) globus_malloc
                  (strlen(globus_rsl_relation_get_attribute(ast_node)) + 1);
@@ -414,7 +418,7 @@ globus_rsl_copy_recursive(globus_rsl_t * ast_node)
             return(globus_rsl_make_relation
                        (globus_rsl_relation_get_operator(ast_node),
                        tmp_string,
-                       globus_rsl_value_make_sequence(new_value_list)));
+                       globus_rsl_value_make_sequence(new_value_list_reverse)));
 
         default:
             return(NULL);
@@ -431,6 +435,7 @@ globus_rsl_value_copy_recursive(globus_rsl_value_t * globus_rsl_value_ptr)
     globus_rsl_value_t * new_rsl_value_right;
     globus_list_t *      tmp_value_list;
     globus_list_t *      new_value_list;
+    globus_list_t *      new_value_list_reverse;
     char *               tmp_string;
     char *               literal_ptr;
 
@@ -478,9 +483,10 @@ globus_rsl_value_copy_recursive(globus_rsl_value_t * globus_rsl_value_ptr)
                 tmp_value_list = globus_list_rest(tmp_value_list);
             }
 
-            new_value_list = globus_list_copy_reverse(new_value_list);
-            
-            return(globus_rsl_value_make_sequence(new_value_list));
+        new_value_list_reverse = globus_list_copy_reverse(new_value_list);
+        globus_list_free(new_value_list);
+
+        return(globus_rsl_value_make_sequence(new_value_list_reverse));
 
         case GLOBUS_RSL_VALUE_VARIABLE:
 
