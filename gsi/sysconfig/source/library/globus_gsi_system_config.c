@@ -3806,7 +3806,7 @@ globus_gsi_sysconfig_set_key_permissions_unix(
         "globus_gsi_sysconfig_set_key_permissions_unix";
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_ENTER;
 
-    if((fd = open(filename, O_RDONLY|O_CREAT)) < 0)
+    if((fd = open(filename, O_RDONLY|O_CREAT|O_NONBLOCK)) < 0)
     {
         result = globus_error_put(
             globus_error_wrap_errno_error(
