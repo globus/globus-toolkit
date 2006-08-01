@@ -228,11 +228,11 @@ main(
 		exit(1);
 	    }
             port = atoi(argv[ctr+1]);
-            test_res(globus_xio_attr_cntl(
+         /*   test_res(globus_xio_attr_cntl(
                 attr,
                 mode_e_driver,
 		GLOBUS_XIO_MODE_E_APPLY_ATTR_CNTLS,
-		attr_cntl_cb));
+		attr_cntl_cb));*/
         } 
         else if(strcmp(argv[ctr], "-P") == 0)
         {

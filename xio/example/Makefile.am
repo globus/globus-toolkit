@@ -12,8 +12,11 @@ test_PROGRAMS= \
 	globus-xio-udp-echo \
 	globus-xio-udt-file \
 	globus-xio-mode-e-file \
+	globus-xio-bidi-file \
 	globus-xio-ordering-file \
 	globus-xio-async-copy \
+	globus-xio-async-client \
+	globus-xio-async-server \
 	globus-xio-bidi-client
 
 
@@ -35,10 +38,16 @@ globus_xio_udt_file_SOURCES = globus_xio_udt_file.c
 globus_xio_udt_file_LDFLAGS = $(GPT_LDFLAGS)
 globus_xio_mode_e_file_SOURCES = globus_xio_mode_e_file.c
 globus_xio_mode_e_file_LDFLAGS = $(GPT_LDFLAGS)
+globus_xio_bidi_file_SOURCES = globus_xio_bidi_file.c
+globus_xio_bidi_file_LDFLAGS = $(GPT_LDFLAGS)
 globus_xio_ordering_file_SOURCES = globus_xio_ordering_file.c
 globus_xio_ordering_file_LDFLAGS = $(GPT_LDFLAGS)
 globus_xio_async_copy_SOURCES = globus_xio_async_copy.c
 globus_xio_async_copy_LDFLAGS = $(GPT_LDFLAGS)
+globus_xio_async_client_SOURCES = globus_xio_async_client.c
+globus_xio_async_client_LDFLAGS = $(GPT_LDFLAGS)
+globus_xio_async_server_SOURCES = globus_xio_async_server.c
+globus_xio_async_server_LDFLAGS = $(GPT_LDFLAGS)
 globus_xio_bidi_client_SOURCES = globus_xio_bidi_client.c
 globus_xio_bidi_client_LDFLAGS = $(GPT_LDFLAGS)
 
