@@ -159,6 +159,7 @@ typedef struct
     globus_xio_attr_t                       xio_write_attr;
     globus_xio_attr_t                   bootstrap_attr;
     int                                 P;
+    globus_bool_t			pulsing;
 } globus_l_xio_bidi_attr_t;
 
 typedef struct
@@ -170,6 +171,7 @@ typedef struct
     globus_xio_operation_t              op;
     int                                 iov_total;
     globus_xio_iovec_t **               iov;
+    globus_bool_t			pulsing;
 } globus_l_xio_bidi_write_op_t;
 
 /*
@@ -255,6 +257,7 @@ globus_l_xio_bidi_attr_init(
     memset(bidi_attr, 0, sizeof(globus_l_xio_bidi_attr_t));
 
     bidi_attr->isserver = GLOBUS_FALSE;
+    bidi_attr->pulsing = GLOBUS_TRUE;
     bidi_attr->read_port = 0;
 
     /* we must also load TCP under mode e by default so that we
@@ -465,8 +468,42 @@ globus_l_xio_bidi_attr_cntl(
             write_streams=va_arg(ap, int);
 
             bidi_attr->P = write_streams;
+	    result = GLOBUS_SUCCESS;
             break;
         }
+	case GLOBUS_XIO_BIDI_SET_PULSING:
+	{
+	    globus_bool_t		pulsing;
+	    pulsing=va_arg(ap, globus_bool_t);
+
+	    bidi_attr->pulsing = pulsing;
+	    result = GLOBUS_SUCCESS;
+	    break; 
+	}
+	case GLOBUS_XIO_BIDI_SET_SNDBUF:
+	{
+	    int		sndbuf;
+	    sndbuf=va_arg(ap, int);
+
+	    
+            result = globus_xio_attr_cntl(
+                bidi_l_default_mode_e_attr, 
+                bidi_l_tcp_driver,
+                GLOBUS_XIO_TCP_SET_SNDBUF,
+                sndbuf);
+	}
+	case GLOBUS_XIO_BIDI_SET_RCVBUF:
+	{
+	    int		recbuf;
+	    recbuf=va_arg(ap, int);
+
+	    
+            result = globus_xio_attr_cntl(
+                bidi_l_default_mode_e_attr, 
+                bidi_l_tcp_driver,
+                GLOBUS_XIO_TCP_SET_RCVBUF,
+                recbuf);
+	}
 
         default:
             return GLOBUS_FAILURE;
@@ -1112,8 +1149,12 @@ globus_l_xio_bidi_link_cntl(
     { 
       /* globus_xio_system_handle_t *   handle_out */
       case GLOBUS_XIO_TCP_GET_HANDLE:
-        /* out_handle = va_arg(ap, globus_xio_system_handle_t *);  */
+
+        /*out_handle = va_arg(ap, globus_xio_system_handle_t *);  */
+
+	/* Trunk has globus_xio_system_socket_handle_t instead */
         out_handle = va_arg(ap, globus_xio_system_socket_handle_t *);
+	
         *out_handle = *accepted_handle;
         break;
 
@@ -1778,34 +1819,44 @@ globus_l_xio_bidi_write_cb(
     globus_bool_t                       finished = GLOBUS_FALSE;
     globus_l_xio_bidi_write_op_t *      write_op;
 
+
     write_op = (globus_l_xio_bidi_write_op_t *) user_arg;
 
-    globus_mutex_lock(&write_op->mutex);
+    if (write_op->pulsing)  /*pulsing is on by default*/
     {
-        write_op->count--;
-        write_op->nbytes += nbytes;
-        if(result != GLOBUS_SUCCESS)
+
+        globus_mutex_lock(&write_op->mutex);
         {
-            write_op->result = result;
+            write_op->count--;
+            write_op->nbytes += nbytes;
+            if(result != GLOBUS_SUCCESS)
+            {
+                write_op->result = result;
+            }
+            if(write_op->count == 0)
+            {
+                finished = GLOBUS_TRUE;
+            }
         }
-        if(write_op->count == 0)
+        globus_mutex_unlock(&write_op->mutex);
+
+        if(finished)
         {
-            finished = GLOBUS_TRUE;
+            globus_xio_driver_finished_write(
+                write_op->op, write_op->result, write_op->nbytes);
+            globus_mutex_destroy(&write_op->mutex);
+            for(i = 0; i < write_op->iov_total; i++)
+            {
+                globus_free(write_op->iov[i]);
+            }
+            globus_free(write_op->iov); 
+            globus_free(write_op); 
         }
     }
-    globus_mutex_unlock(&write_op->mutex);
-
-    if(finished)
+    else  /*non pulsing*/
     {
-        globus_xio_driver_finished_write(
-            write_op->op, write_op->result, write_op->nbytes);
-        globus_mutex_destroy(&write_op->mutex);
-        for(i = 0; i < write_op->iov_total; i++)
-        {
-            globus_free(write_op->iov[i]);
-        }
-        globus_free(write_op->iov); 
-        globus_free(write_op); 
+        globus_xio_driver_finished_write(write_op->op, result, nbytes);
+	globus_free(write_op);
     }
 }
 /*
@@ -1839,7 +1890,7 @@ globus_l_xio_bidi_write(
 
     wait_for = globus_xio_operation_get_wait_for(op);
     handle=driver_specific_handle;
-
+    if (handle->attr->pulsing)		/*pulsing is on by default*/
     {
         GlobusXIOUtilIovTotalLength(total_len, iovec, iovec_count);
         if(total_len == 0)
@@ -1855,6 +1906,7 @@ globus_l_xio_bidi_write(
             P, sizeof(globus_xio_iovec_t *));
         globus_mutex_init(&write_op->mutex, NULL);
         write_op->op = op;
+	write_op->pulsing = GLOBUS_TRUE;
 
         offset = 0;
         /* put the change on the first one */
@@ -1908,6 +1960,29 @@ globus_l_xio_bidi_write(
             goto error_register;
         }
     }
+    else  /*no pulsing, app is responsible for multiple writes */
+    {
+        write_op = (globus_l_xio_bidi_write_op_t *) globus_calloc(1,
+            sizeof(globus_l_xio_bidi_write_op_t));
+
+        write_op->op = op;
+	write_op->pulsing = GLOBUS_FALSE;
+
+        res = globus_xio_register_writev(
+			handle->write_handle,
+                        (globus_xio_iovec_t *)iovec,
+                        iovec_count,
+                        wait_for,
+                        NULL,
+                        globus_l_xio_bidi_write_cb,
+                        write_op); 
+	if(res != GLOBUS_SUCCESS)
+        {
+            res = GlobusXIOErrorWrapFailed(
+                "globus_l_xio_bidi_write", res);
+            goto error_register_nonpulse;
+        }
+    }
 
     GlobusXIOBidiDebugExit();
     return GLOBUS_SUCCESS;
@@ -1922,6 +1997,11 @@ error_register:
 
     GlobusXIOBidiDebugExitWithError();
     return res;
+
+error_register_nonpulse:
+    globus_free(write_op);
+    GlobusXIOBidiDebugExitWithError();                        
+    return res; 
 }
 
 
