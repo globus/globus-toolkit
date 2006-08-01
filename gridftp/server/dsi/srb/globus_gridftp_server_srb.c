@@ -317,7 +317,7 @@ void
 globus_l_gfs_srb_read_ahead_next(
     globus_l_gfs_srb_handle_t *         srb_handle)
 {
-    globus_size_t                       read_length;
+    int                                 read_length;
     globus_result_t                     result;
     globus_l_srb_read_ahead_t *         rh;
     globus_off_t                        start_offset;
@@ -348,20 +348,22 @@ globus_l_gfs_srb_read_ahead_next(
     if(srb_handle->blk_length == -1 || 
         srb_handle->blk_length > srb_handle->block_size)
     {
-        read_length = srb_handle->block_size;
+        read_length = (int)srb_handle->block_size;
     }
     else
     {
-        read_length = srb_handle->blk_length;
+        read_length = (int)srb_handle->blk_length;
     }
     rh = (globus_l_srb_read_ahead_t *) calloc(1,
         sizeof(globus_l_srb_read_ahead_t)+read_length);
     rh->offset = srb_handle->blk_offset;
     rh->srb_handle = srb_handle;
 
+#ifdef SRB_CAN_SEEK
     /* read it from srb */
     start_offset = srbObjSeek(
-        srb_handle->conn, srb_handle->fd, srb_handle->blk_offset, SEEK_SET);
+        srb_handle->conn, srb_handle->fd,
+        (int)srb_handle->blk_offset, SEEK_SET);
     /* verify that it worked */
     if(start_offset != rh->offset)
     {
@@ -369,6 +371,7 @@ globus_l_gfs_srb_read_ahead_next(
             "seek failed", srb_handle->conn, clStatus(srb_handle->conn));
         goto attempt_error;
     }
+#endif
 
     rh->length = srbObjRead(
         srb_handle->conn, srb_handle->fd, rh->buffer, read_length);
@@ -721,7 +724,7 @@ globus_l_gfs_srb_recv(
 {
     globus_bool_t                       finish = GLOBUS_FALSE;
     int                                 status;
-    char *                              collection;
+    char *                              collection = NULL;
     char *                              tmp_ptr;
     char *                              object;
     char *                              resource = "";
@@ -741,7 +744,10 @@ globus_l_gfs_srb_recv(
         goto alloc_error;
     }
 
-    collection = strdup(transfer_info->pathname);
+    if(transfer_info->pathname != NULL)
+    {
+        collection = strdup(transfer_info->pathname);
+    }
     if(collection == NULL)
     {
         result = GlobusGFSErrorGeneric("SRB: strdup failed");
@@ -817,6 +823,7 @@ globus_l_gfs_srb_recv(
             srb_handle->conn, srb_handle->fd);
         goto error;
     }
+    free(collection);
 
     srb_handle = (globus_l_gfs_srb_handle_t *) user_arg;
 
@@ -909,6 +916,7 @@ globus_l_gfs_srb_start(
     }
 
     globus_mutex_init(&srb_handle->mutex, NULL);
+    globus_fifo_init(&srb_handle->rh_q);
 
     memset(&finished_info, '\0', sizeof(globus_gfs_finished_info_t));
     finished_info.type = GLOBUS_GFS_OP_SESSION_START;
@@ -923,7 +931,7 @@ globus_l_gfs_srb_start(
     {
         result = GlobusGFSErrorGeneric(
             "srbConnect failed.  setenv GLOBUS_SRB_HOSTNAME properly");
-        goto zone_alloc_error;
+        goto hostname_error;
     }
     srb_handle->port = "";
     srb_handle->hostname = strdup(tmp_str);
@@ -987,6 +995,7 @@ globus_l_gfs_srb_start(
 
     /* allocate mem for the strings */
     srb_handle->zone = strdup(srbUserStr);
+    free(srbUserStr);
     tmp_str = strchr(srb_handle->zone, ':');
     if(tmp_str == NULL)
     {
@@ -1007,8 +1016,6 @@ globus_l_gfs_srb_start(
     finished_info.info.session.home_dir = globus_common_create_string(
         "/%s/home/%s.%s",
         srb_handle->zone, srb_handle->user, srb_handle->domain);
-    
-    globus_fifo_init(&srb_handle->rh_q);
 
     srb_handle->stor_sys_type = UNIX_FT;
 
@@ -1019,6 +1026,7 @@ globus_l_gfs_srb_start(
 
 zone_alloc_error:
 handle_alloc_error:
+hostname_error:
 error:
     globus_gridftp_server_operation_finished(op, result, &finished_info);
 
@@ -1041,6 +1049,7 @@ globus_l_gfs_srb_destroy(
     srb_handle = (globus_l_gfs_srb_handle_t *) user_arg;
 
     globus_mutex_destroy(&srb_handle->mutex);
+    globus_fifo_destroy(&srb_handle->rh_q);
     clFinish(srb_handle->conn);
 
     if(srb_handle->hostname != NULL)
@@ -1061,7 +1070,7 @@ globus_l_gfs_srb_stat_cpy(
     globus_gfs_stat_t *                 stat_array,
     struct stat *                       statbuf)
 {
-    stat_array[0].name = name;
+    stat_array[0].name = strdup(name);
     stat_array[0].mode = statbuf->st_mode;
     stat_array[0].nlink = statbuf->st_nlink;
     stat_array[0].uid = statbuf->st_uid;
@@ -1142,8 +1151,8 @@ globus_l_gfs_srb_stat(
         {
             globus_gfs_log_message(
                 GLOBUS_GFS_LOG_ERR,
-                "globus_l_gfs_srb_stat() : srbListCollect() error |%s| : %d\n", 
-                    stat_info->pathname, status);
+              "globus_l_gfs_srb_stat() : srbListCollect() error |%s| : %d\n", 
+                 stat_info->pathname, status);
             result = globus_l_gfs_srb_make_error(
                 "Error reading directory", srb_handle->conn, status);
             goto error;
@@ -1155,7 +1164,7 @@ globus_l_gfs_srb_stat(
         stat_array = (globus_gfs_stat_t *) globus_calloc(
             myresult.row_count, sizeof(globus_gfs_stat_t));
 
-        stat_count = myresult.row_count;
+        stat_count = 0;
         for (j = 0; j < myresult.row_count; j++)
         {
             char * tmp_fname;
@@ -1164,14 +1173,25 @@ globus_l_gfs_srb_stat(
             tmp_fname = rval;
             while(isspace(*tmp_fname)) tmp_fname++;
 
-            sprintf(full_path, "%s/%s", stat_info->pathname, tmp_fname);
-            globus_gfs_log_message(
-                GLOBUS_GFS_LOG_INFO,
-                "globus_l_gfs_srb_stat() : --->> |%s|\n",
-                full_path);
-
-            if(*tmp_fname != '/')
+            /* skip the first one, its the full dir */
+            if(strcmp(tmp_fname, stat_info->pathname) != 0)
             {
+                globus_gfs_log_message(
+                    GLOBUS_GFS_LOG_INFO,
+                    "globus_l_gfs_srb_stat() : --->> |%s| \n",
+                    tmp_fname);
+
+                /* full conversion */
+                if(*tmp_fname == '/')
+                {
+                    sprintf(full_path, "%s", tmp_fname);
+                }
+                else
+                {
+                    sprintf(full_path, "%s/%s",
+                        stat_info->pathname, tmp_fname);
+                }
+
                 status = srbObjStat(
                     srb_handle->conn, MDAS_CATALOG,
                     full_path, &statbuf);
@@ -1181,20 +1201,45 @@ globus_l_gfs_srb_stat(
                         "stat failed", srb_handle->conn, status);
                     goto error_free;
                 }
+                if(S_ISDIR(statbuf.st_mode))
+                {
+                    globus_gfs_log_message(
+                        GLOBUS_GFS_LOG_INFO,
+                        "|%s| is a directory\n",
+                        full_path);
+                }
                 globus_l_gfs_srb_stat_cpy(
-                    tmp_fname, &stat_array[j], &statbuf);
+                    full_path, &stat_array[stat_count], &statbuf);
+                stat_count++;
+            }
+            else
+            {
+                globus_gfs_log_message(
+                    GLOBUS_GFS_LOG_INFO,
+                    "looking at DIR name |%s| |%s|\n",
+                    tmp_fname, stat_info->pathname);
             }
             rval+=MAX_DATA_SIZE;
             globus_poll();
         }  
+        clearSqlResult(&myresult);
     }
 
     globus_gridftp_server_finished_stat(
         op, GLOBUS_SUCCESS, stat_array, stat_count);
+    /* gota free the names */
+    for(i = 0; i < stat_count; i++)
+    {
+        globus_free(stat_array[i].name);
+    }
     globus_free(stat_array);
     return;
 
 error_free:
+    for(i = 0; i < stat_count; i++)
+    {
+        globus_free(stat_array[i].name);
+    }
     globus_free(stat_array);
 error:
     globus_gfs_log_message(
@@ -1316,6 +1361,7 @@ globus_l_gfs_srb_command(
             break;
 
         case GLOBUS_GFS_CMD_SITE_CHMOD:
+            status = 0;
             break;
 
         default:
@@ -1423,6 +1469,7 @@ globus_l_gfs_srb_activate(void)
     globus_srb_options_file_process(opts_h, srb_config_file);
     globus_srb_options_env_process(opts_h);
     globus_srb_options_destroy(opts_h);
+    globus_free(srb_config_file);
 
     return 0;
 }
