@@ -459,6 +459,7 @@ int user_dn_lookup( char * username, char ** dn,
   if (strcmp(username, cached_username) == 0) {
       myproxy_debug("using cached value");
       *dn = strdup(cached_dn);
+      goto end;
   } else if ( server_context->ca_ldap_server != NULL ) {
     if ( resolve_via_ldap( username, &userdn, server_context ) ) {
       verror_put_string("Failed to map username to DN via LDAP");
@@ -483,8 +484,8 @@ int user_dn_lookup( char * username, char ** dn,
   *dn = userdn;
 
   /* keep cache of last result so we don't need to call-out multiple times */
-  if (strlen(username) < USERNAME_BUFFER_SIZE &&
-      strlen(userdn) < DN_BUFFER_SIZE) {
+  if (username && strlen(username) < USERNAME_BUFFER_SIZE &&
+      userdn && strlen(userdn) < DN_BUFFER_SIZE) {
       strcpy(cached_username, username);
       strcpy(cached_dn, userdn);
   }
