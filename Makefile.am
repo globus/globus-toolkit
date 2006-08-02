@@ -3,13 +3,6 @@
 include $(top_srcdir)/globus_automake_pre
 include $(top_srcdir)/globus_automake_pre_top
 
-VOMS_CPPFLAGS = @VOMS_CPPFLAGS@
-VOMS_LDFLAGS = @VOMS_LDFLAGS@
-VOMS_LIBS = @VOMS_LIBS@
-
-AM_CPPFLAGS = $(VOMS_CPPFLAGS)
-AM_LDFLAGS = $(VOMS_LDFLAGS)
-
 SUBDIRS= \
 	pkgdata \
 	doxygen \
