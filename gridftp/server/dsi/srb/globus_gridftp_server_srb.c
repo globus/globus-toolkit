@@ -10,6 +10,7 @@ static char *                           srb_l_default_hostname = NULL;
 static char *                           srb_l_default_hostname_dn = NULL;
 static char *                           srb_l_default_resource = NULL;
 
+static unsigned int                     srb_l_default_dev_wrap = 0;
 extern char inCondition[];
 
 int
@@ -26,6 +27,10 @@ srb_l_opts_unknown(
     return GLOBUS_SUCCESS;
 }
 
+extern 
+char *
+getAttributeColumn(mdasC_sql_result_struct *result,
+            int attrIndex);
 
 static
 globus_result_t
@@ -254,6 +259,295 @@ printf("X509_USER_PROXY=%s\n", tmp_str);
 */
 }
 #endif
+
+static
+int
+srb_l_filename_hash(
+    char *                              string)
+{
+    unsigned long                       h = 0;
+    unsigned long                       g;
+    char *                              key;
+
+    if(string == NULL)
+    {
+        return 0;
+    }
+
+    key = (char *) string;
+
+    while(*key)
+    {
+        h = (h << 4) + *key++;
+        if((g = (h & 0xF0UL)))
+        {
+            h ^= g >> 24;
+            h ^= g;
+        }
+    }
+
+    return h % 2147483647;
+}
+
+static
+int
+srb_l_stats(
+    srbConn *                           conn,
+    globus_gfs_stat_t **                out_stat,
+    int *                               out_count,
+    char *                              start_dir)
+{
+    int                                 i;
+    int                                 status;
+    mdasC_sql_result_struct             myresult;
+    char                                qval[MAX_DCS_NUM][MAX_TOKEN];
+    int                                 selval[MAX_DCS_NUM];
+    char *                              tmp_s;
+    char *                              rsrcName;
+    char *                              rsrcNameStart;
+    char *                              sizeName;
+    char *                              sizeNameStart;
+    char *                              ownerName;
+    char *                              ownerNameStart;
+    char *                              pathName;
+    char *                              pathNameStart;
+    char *                              modTime;
+    char *                              modTimeStart;
+    int                                 maxRows = 128;
+    globus_gfs_stat_t *                 stat_array = NULL;
+    int                                 stat_count = 0;
+    int                                 stat_ndx = 0;
+    struct tm                           tm;
+    int                                 sc;
+    int                                 done = 0;
+
+    for (i = 0; i < MAX_DCS_NUM; i++)
+    {
+        selval[i] = 0;
+        *qval[i] = '\0';
+    }
+
+    sprintf(qval[DATA_GRP_NAME]," = '%s'", start_dir);
+
+    /* ones that i want */
+    selval[DATA_NAME] = 1;
+    selval[DATA_GRP_NAME] = 1;
+    selval[SIZE] = 1;
+    selval[DATA_OWNER] = 1;
+    selval[REPL_TIMESTAMP] = 1;
+    /* ones that i seem to need to not hang */
+    selval[IS_DIRTY] = 1;  
+    selval[DATA_TYP_NAME] = 1; 
+    selval[DATA_REPL_ENUM] = 1; 
+    selval[CONTAINER_SIZE] = 1; 
+    selval[OFFSET] = 1;
+    selval[PHY_RSRC_NAME] = 1; 
+    selval[CONTAINER_NAME] = 1; 
+    sprintf(qval[ORDERBY], "DATA_NAME");
+
+    /* perform the MCAT query */
+    status = srbGetDataDirInfo(conn, MDAS_CATALOG,
+                qval, selval, &myresult, maxRows);
+    if(status != 0 && status != -3005)
+    {
+        return status;
+    }
+    while(status == 0 && !done)
+    {
+        /* first free all the values that we needed so srb wouldn't HANG!
+            not sure what the deal is there */
+/*
+        bsName = (char *) getAttributeColumn(
+            (mdasC_sql_result_struct *) &myresult,
+            CONTAINER_NAME);
+        free(bsName);
+        bsName = (char *) getAttributeColumn(
+            (mdasC_sql_result_struct *) &myresult,
+            PHY_RSRC_NAME);
+        free(bsName);
+        bsName = (char *) getAttributeColumn(
+            (mdasC_sql_result_struct *) &myresult,
+            OFFSET);
+        free(bsName);
+        bsName = (char *) getAttributeColumn(
+            (mdasC_sql_result_struct *) &myresult,
+            CONTAINER_SIZE);
+        free(bsName);
+        bsName = (char *) getAttributeColumn(
+            (mdasC_sql_result_struct *) &myresult,
+            DATA_TYP_NAME);
+        free(bsName);
+        bsName = (char *) getAttributeColumn(
+            (mdasC_sql_result_struct *) &myresult,
+            IS_DIRTY);
+        free(bsName);
+*/
+        /* retrieve the values */
+        pathName = (char *) getAttributeColumn(
+            (mdasC_sql_result_struct *) &myresult,
+            DATA_GRP_NAME);
+        pathNameStart = pathName;
+        modTime = (char *) getAttributeColumn(
+            (mdasC_sql_result_struct *) &myresult,
+            REPL_TIMESTAMP);
+        modTimeStart = modTime;
+        rsrcName = (char *) getAttributeColumn(
+            (mdasC_sql_result_struct *) &myresult,
+            DATA_NAME);
+        rsrcNameStart = rsrcName;
+        sizeName = (char *) getAttributeColumn(
+            (mdasC_sql_result_struct *) &myresult,
+            SIZE);
+        sizeNameStart = sizeName;
+        ownerName = (char *) getAttributeColumn(
+            (mdasC_sql_result_struct *) &myresult,
+            DATA_OWNER);
+        ownerNameStart = ownerName;
+
+        stat_count = myresult.row_count + stat_count;
+        stat_array = (globus_gfs_stat_t *) globus_realloc(stat_array,
+            stat_count * sizeof(globus_gfs_stat_t));
+        for (i = 0; i < myresult.row_count; i++)
+        {
+            memset(&stat_array[stat_ndx], '\0', sizeof(globus_gfs_stat_t));
+            stat_array[stat_ndx].symlink_target = NULL;
+            stat_array[stat_ndx].name = globus_libc_strdup(rsrcName);
+            stat_array[stat_ndx].nlink = 0;
+            stat_array[stat_ndx].uid = 1;
+            stat_array[stat_ndx].gid = 1;
+            sc = sscanf(sizeName, "%"GLOBUS_OFF_T_FORMAT,
+                &stat_array[stat_ndx].size);
+            if(sc != 1)
+            {
+                stat_array[stat_ndx].size = -1;
+            }
+
+            memset(&tm, '\0', sizeof(struct tm));
+            sc = sscanf(modTime, "%d-%d-%d-%d.%d.%d",
+                &tm.tm_year, &tm.tm_mon, &tm.tm_mday,
+                &tm.tm_hour, &tm.tm_min, &tm.tm_sec);
+            if(sc == 6)
+            {
+                tm.tm_wday = 0;
+                tm.tm_yday = 0;
+                tm.tm_isdst = 1;
+                tm.tm_year -= 1900;
+                tm.tm_mon -= 1;
+
+                stat_array[stat_ndx].ctime = mktime(&tm);
+                stat_array[stat_ndx].mtime = mktime(&tm);
+                stat_array[stat_ndx].atime = mktime(&tm);
+            }
+            /* need to fake these next 2 better */
+            stat_array[stat_ndx].dev = srb_l_default_dev_wrap++;
+            stat_array[stat_ndx].ino = srb_l_filename_hash(pathName);
+
+            stat_array[stat_ndx].mode =
+                S_IFREG | S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
+
+            if(rsrcName) 
+            {
+                rsrcName += MAX_DATA_SIZE;
+            }
+            if(pathName)
+            {
+                pathName += MAX_DATA_SIZE;
+            }
+            if(sizeName)
+            {
+                sizeName += MAX_DATA_SIZE;
+            }
+            if(ownerName)
+            {
+                ownerName += MAX_DATA_SIZE;
+            }
+            stat_ndx++;
+        }
+        clearSqlResult(&myresult);
+        if (myresult.continuation_index >= 0)
+        {
+            status = srbGetMoreRows(conn, MDAS_CATALOG,
+                myresult.continuation_index, &myresult, maxRows);
+        }
+        else
+        {
+            done = 1;
+        }
+/*
+        free(pathNameStart);
+        free(modTimeStart);
+        free(sizeNameStart);
+        free(ownerNameStart);
+*/
+    }
+
+    done = 0;
+    /* now we need to do directories/collections */
+    for (i = 0; i < MAX_DCS_NUM; i++)
+    {
+        selval[i] = 0;
+        *qval[i] = '\0';
+    }
+
+
+    selval[DATA_GRP_NAME] = 1;
+    sprintf(qval[PARENT_COLLECTION_NAME]," = '%s'", start_dir);
+    status = srbGetDataDirInfo(conn, MDAS_CATALOG,
+                qval, selval, &myresult, maxRows);
+    if(status != 0 && status != -3005)
+    {
+        /* free some leaks here */
+        return status;
+    }
+    while(status == 0 && !done)
+    {
+        rsrcName = (char *) getAttributeColumn(
+            (mdasC_sql_result_struct *) &myresult,
+            DATA_GRP_NAME);
+
+        stat_count = myresult.row_count + stat_count;
+        stat_array = (globus_gfs_stat_t *) globus_realloc(stat_array,
+            stat_count * sizeof(globus_gfs_stat_t));
+        for (i = 0; i < myresult.row_count; i++)
+        {
+            char * fname;
+
+            memset(&stat_array[stat_ndx], '\0', sizeof(globus_gfs_stat_t));
+            stat_array[stat_ndx].ino = srb_l_filename_hash(rsrcName);
+            fname = rsrcName ? rsrcName : "(null)";
+            tmp_s = strrchr(fname, '/');
+            if(tmp_s != NULL) fname = tmp_s + 1;
+            stat_array[stat_ndx].name = strdup(fname);
+            stat_array[stat_ndx].nlink = 0;
+            stat_array[stat_ndx].uid = 1;
+            stat_array[stat_ndx].gid = 1;
+                stat_array[stat_ndx].size = 0;;
+            stat_array[stat_ndx].dev = srb_l_default_dev_wrap++;
+
+            stat_array[stat_ndx].mode =
+                S_IFDIR | S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
+
+            if(rsrcName) rsrcName += MAX_DATA_SIZE;
+            stat_ndx++;
+        }
+        clearSqlResult(&myresult);
+        if (myresult.continuation_index >= 0)
+        {
+            status = srbGetMoreRows(conn, MDAS_CATALOG,
+                myresult.continuation_index, &myresult, maxRows);
+        }
+        else
+        {
+            done = 1;
+        }
+    }
+
+    *out_stat = stat_array;
+    *out_count = stat_count;
+    return 0;
+}
+
+
 
 /***********************************************************************
  *    logic for sending to the client
@@ -1063,6 +1357,43 @@ globus_l_gfs_srb_destroy(
     globus_free(srb_handle);
 }
 
+#define SRBSTAT2 1
+#ifdef SRBSTAT2
+static
+void
+globus_l_gfs_srb_stat(
+    globus_gfs_operation_t              op,
+    globus_gfs_stat_info_t *            stat_info,
+    void *                              user_arg)
+{
+    globus_gfs_stat_t *                 stat_array;
+    int                                 stat_count;
+    int                                 rc;
+    globus_result_t                     result;
+    globus_l_gfs_srb_handle_t *         srb_handle;
+    GlobusGFSName(globus_l_gfs_srb_stat);
+
+    srb_handle = (globus_l_gfs_srb_handle_t *) user_arg;
+
+    rc = srb_l_stats(
+        srb_handle->conn, &stat_array, &stat_count, stat_info->pathname);
+    if(rc != 0)
+    {
+        result = globus_l_gfs_srb_make_error(
+            "stat error", srb_handle->conn, rc);
+        goto error;
+    }
+    globus_gridftp_server_finished_stat(
+        op, GLOBUS_SUCCESS, stat_array, stat_count);
+
+    return;
+error:
+
+    globus_gridftp_server_finished_stat(op, result, NULL, 0);
+}
+
+#else
+
 static
 void
 globus_l_gfs_srb_stat_cpy(
@@ -1084,6 +1415,7 @@ globus_l_gfs_srb_stat_cpy(
     stat_array[0].dev = statbuf->st_dev;
     stat_array[0].ino = statbuf->st_ino;
 }
+
 /*************************************************************************
  *  stat
  *  ----
@@ -1247,6 +1579,8 @@ error:
         "globus_l_gfs_srb_stat() : srbObjStat Failed\n");
     globus_gridftp_server_finished_stat(op, result, NULL, 0);
 }
+
+#endif
 
 /*************************************************************************
  *  command
