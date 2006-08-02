@@ -515,7 +515,8 @@ generate_certificate( X509_REQ                 *request,
     goto error;
   }
 
-  myproxy_debug("DN for user %s: %s", client_request->username, userdn);
+  myproxy_log("issuing certificate for user %s with DN \"%s\"",
+              client_request->username, userdn);
 
   subject = X509_get_subject_name(cert);
 
