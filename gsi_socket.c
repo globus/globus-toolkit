@@ -988,8 +988,9 @@ GSI_SOCKET_get_peer_fqans(GSI_SOCKET *self, char ***fqans)
 	 goto end;
       } else {
          err_msg = VOMS_ErrorMessage(voms_data, voms_err, NULL, 0);
-	 asprintf(&self->error_string, "Failed to read VOMS attributes: %s",
-	          err_msg);
+         self->error_string = (char *)malloc(strlen(err_msg)+50);
+         snprintf(self->error_string, strlen(err_msg)+50,
+                  "Failed to read VOMS attributes: %s", err_msg);
 	 free(err_msg);
 	 ret = GSI_SOCKET_ERROR;
 	 goto end;
