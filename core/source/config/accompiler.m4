@@ -85,6 +85,11 @@ AC_ARG_ENABLE(64bit,
         [lac_cv_build_64bit="$enableval"],
         [lac_cv_build_64bit=${lac_cv_build_64bit='no'}])
 
+AC_ARG_ENABLE(profiling,
+        [  --enable-profiling            enable profile build (GCC only)],
+        [lac_cv_build_profile="$enableval"],
+        [lac_cv_build_profile=${lac_cv_build_profile='no'}])
+
 AC_ARG_ENABLE(insure,
         changequote(<<, >>)dnl
   <<--enable-insure[=PATH]      use Insure++ [default=insure]>>,
@@ -954,6 +959,12 @@ else
         lac_CXXFLAGS="$lac_cxxflags_opt $lac_CXXFLAGS"
     fi
 fi
+
+if test "$lac_cv_build_profile" = "yes" -a "$GLOBUS_CC" = "gcc"; then
+    lac_CFLAGS="-fprofile-arcs -ftest-coverage $lac_CFLAGS"
+    lac_LDFLAGS="$lac_LDFLAGS -fprofile-arcs"
+fi
+
 
 GLOBUS_DEBUG="$lac_cv_debug"
 AC_SUBST(GLOBUS_DEBUG)
