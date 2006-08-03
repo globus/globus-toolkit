@@ -122,3 +122,4 @@ globus_i18n			i18n/source
 globus_libxml2                  libxml2/
 globus_utp                      utp/source
 globus_usage                    usage/c/sender/source
+globus_coverage                 common/coverage/source
