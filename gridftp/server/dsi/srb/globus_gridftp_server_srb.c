@@ -32,6 +32,36 @@ char *
 getAttributeColumn(mdasC_sql_result_struct *result,
             int attrIndex);
 
+
+int
+srb_l_reduce_path(
+    char *                              path)
+{
+    char *                              ptr;
+    int                                 len;
+    int                                 end;
+
+    len = strlen(path);
+
+    while(len > 1 && path[len-1] == '/')
+    {
+        len--;
+        path[len] = '\0';
+    }
+    end = len-2;
+    while(end >= 0)
+    {
+        ptr = &path[end];
+        if(strncmp(ptr, "//", 2) == 0)
+        {
+            memmove(ptr, &ptr[1], len - end);
+            len--;
+        }
+        end--;
+    }
+    return 0;
+}
+
 static
 globus_result_t
 srb_l_opts_default_hostname(
@@ -210,6 +240,7 @@ globus_l_gfs_srb_make_error(
     err_str = globus_common_create_string("SRB Error: %s: %s status: %d", 
             msg, clErrorMessage(conn), status);
     result = GlobusGFSErrorGeneric(err_str);
+    free(err_str);
 
     return result;
 }
@@ -291,7 +322,7 @@ srb_l_filename_hash(
 
 static
 int
-srb_l_stats(
+srb_l_stat_dir(
     srbConn *                           conn,
     globus_gfs_stat_t **                out_stat,
     int *                               out_count,
@@ -315,11 +346,27 @@ srb_l_stats(
     char *                              modTimeStart;
     int                                 maxRows = 128;
     globus_gfs_stat_t *                 stat_array = NULL;
-    int                                 stat_count = 0;
+    int                                 stat_count = 1;
     int                                 stat_ndx = 0;
     struct tm                           tm;
     int                                 sc;
     int                                 done = 0;
+
+
+    /* add in a single '.' entry */
+    stat_count = 1;
+    stat_array = (globus_gfs_stat_t *) globus_calloc(
+        stat_count, sizeof(globus_gfs_stat_t));
+    stat_array[stat_ndx].ino = srb_l_filename_hash(start_dir);
+    stat_array[stat_ndx].name = strdup(".");
+    stat_array[stat_ndx].nlink = 0;
+    stat_array[stat_ndx].uid = 1;
+    stat_array[stat_ndx].gid = 1;
+        stat_array[stat_ndx].size = 0;
+    stat_array[stat_ndx].dev = 0;
+    stat_array[stat_ndx].mode =
+        S_IFDIR | S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
+    stat_ndx++;
 
     for (i = 0; i < MAX_DCS_NUM; i++)
     {
@@ -354,34 +401,6 @@ srb_l_stats(
     }
     while(status == 0 && !done)
     {
-        /* first free all the values that we needed so srb wouldn't HANG!
-            not sure what the deal is there */
-/*
-        bsName = (char *) getAttributeColumn(
-            (mdasC_sql_result_struct *) &myresult,
-            CONTAINER_NAME);
-        free(bsName);
-        bsName = (char *) getAttributeColumn(
-            (mdasC_sql_result_struct *) &myresult,
-            PHY_RSRC_NAME);
-        free(bsName);
-        bsName = (char *) getAttributeColumn(
-            (mdasC_sql_result_struct *) &myresult,
-            OFFSET);
-        free(bsName);
-        bsName = (char *) getAttributeColumn(
-            (mdasC_sql_result_struct *) &myresult,
-            CONTAINER_SIZE);
-        free(bsName);
-        bsName = (char *) getAttributeColumn(
-            (mdasC_sql_result_struct *) &myresult,
-            DATA_TYP_NAME);
-        free(bsName);
-        bsName = (char *) getAttributeColumn(
-            (mdasC_sql_result_struct *) &myresult,
-            IS_DIRTY);
-        free(bsName);
-*/
         /* retrieve the values */
         pathName = (char *) getAttributeColumn(
             (mdasC_sql_result_struct *) &myresult,
@@ -522,7 +541,7 @@ srb_l_stats(
             stat_array[stat_ndx].uid = 1;
             stat_array[stat_ndx].gid = 1;
                 stat_array[stat_ndx].size = 0;;
-            stat_array[stat_ndx].dev = srb_l_default_dev_wrap++;
+            stat_array[stat_ndx].dev = 0;
 
             stat_array[stat_ndx].mode =
                 S_IFDIR | S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
@@ -1357,7 +1376,6 @@ globus_l_gfs_srb_destroy(
     globus_free(srb_handle);
 }
 
-#define SRBSTAT2 1
 #ifdef SRBSTAT2
 static
 void
@@ -1375,7 +1393,7 @@ globus_l_gfs_srb_stat(
 
     srb_handle = (globus_l_gfs_srb_handle_t *) user_arg;
 
-    rc = srb_l_stats(
+    rc = srb_l_stat_dir(
         srb_handle->conn, &stat_array, &stat_count, stat_info->pathname);
     if(rc != 0)
     {
@@ -1436,11 +1454,13 @@ globus_l_gfs_srb_stat(
     int                                 stat_count = 1;
     globus_l_gfs_srb_handle_t *         srb_handle;
     struct stat                         statbuf;
-        globus_result_t                           result;
+    globus_result_t                     result;
     GlobusGFSName(globus_l_gfs_srb_stat);
 
     srb_handle = (globus_l_gfs_srb_handle_t *) user_arg;
 
+    /* first test for obvious directories */
+    srb_l_reduce_path(stat_info->pathname);
     globus_gfs_log_message(
         GLOBUS_GFS_LOG_INFO,
         "globus_l_gfs_srb_stat() : %s\n", stat_info->pathname);
@@ -1468,93 +1488,16 @@ globus_l_gfs_srb_stat(
     }
     else
     {
-        mdasC_sql_result_struct myresult;
-        char *rval;
-        int j;
+        int                             rc;
 
-        globus_gfs_log_message(
-            GLOBUS_GFS_LOG_INFO,
-            "globus_l_gfs_srb_stat() : directory : |%s|\n",
-            stat_info->pathname);
-        status = srbListCollect(
-            srb_handle->conn, MDAS_CATALOG, stat_info->pathname,
-            "C", &myresult, 300);
-        if(status < 0)
+        rc = srb_l_stat_dir(
+            srb_handle->conn, &stat_array, &stat_count, stat_info->pathname);
+        if(rc != 0)
         {
-            globus_gfs_log_message(
-                GLOBUS_GFS_LOG_ERR,
-              "globus_l_gfs_srb_stat() : srbListCollect() error |%s| : %d\n", 
-                 stat_info->pathname, status);
             result = globus_l_gfs_srb_make_error(
-                "Error reading directory", srb_handle->conn, status);
+                "stat error", srb_handle->conn, rc);
             goto error;
         }
-        rval = (char *) getFromResultStruct(
-            (mdasC_sql_result_struct *) &myresult,
-            dcs_tname[DATA_GRP_NAME], dcs_aname[DATA_GRP_NAME]);
-
-        stat_array = (globus_gfs_stat_t *) globus_calloc(
-            myresult.row_count, sizeof(globus_gfs_stat_t));
-
-        stat_count = 0;
-        for (j = 0; j < myresult.row_count; j++)
-        {
-            char * tmp_fname;
-            char full_path[256];
-
-            tmp_fname = rval;
-            while(isspace(*tmp_fname)) tmp_fname++;
-
-            /* skip the first one, its the full dir */
-            if(strcmp(tmp_fname, stat_info->pathname) != 0)
-            {
-                globus_gfs_log_message(
-                    GLOBUS_GFS_LOG_INFO,
-                    "globus_l_gfs_srb_stat() : --->> |%s| \n",
-                    tmp_fname);
-
-                /* full conversion */
-                if(*tmp_fname == '/')
-                {
-                    sprintf(full_path, "%s", tmp_fname);
-                }
-                else
-                {
-                    sprintf(full_path, "%s/%s",
-                        stat_info->pathname, tmp_fname);
-                }
-
-                status = srbObjStat(
-                    srb_handle->conn, MDAS_CATALOG,
-                    full_path, &statbuf);
-                if(status < 0)
-                {
-                    result = globus_l_gfs_srb_make_error(
-                        "stat failed", srb_handle->conn, status);
-                    goto error_free;
-                }
-                if(S_ISDIR(statbuf.st_mode))
-                {
-                    globus_gfs_log_message(
-                        GLOBUS_GFS_LOG_INFO,
-                        "|%s| is a directory\n",
-                        full_path);
-                }
-                globus_l_gfs_srb_stat_cpy(
-                    full_path, &stat_array[stat_count], &statbuf);
-                stat_count++;
-            }
-            else
-            {
-                globus_gfs_log_message(
-                    GLOBUS_GFS_LOG_INFO,
-                    "looking at DIR name |%s| |%s|\n",
-                    tmp_fname, stat_info->pathname);
-            }
-            rval+=MAX_DATA_SIZE;
-            globus_poll();
-        }  
-        clearSqlResult(&myresult);
     }
 
     globus_gridftp_server_finished_stat(
