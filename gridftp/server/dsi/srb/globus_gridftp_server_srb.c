@@ -10,7 +10,7 @@ static char *                           srb_l_default_hostname = NULL;
 static char *                           srb_l_default_hostname_dn = NULL;
 static char *                           srb_l_default_resource = NULL;
 
-static unsigned int                     srb_l_default_dev_wrap = 0;
+static unsigned int                     srb_l_default_dev_wrap = 10;
 extern char inCondition[];
 
 int
@@ -296,6 +296,7 @@ int
 srb_l_filename_hash(
     char *                              string)
 {
+    int                                 rc;
     unsigned long                       h = 0;
     unsigned long                       g;
     char *                              key;
@@ -317,7 +318,8 @@ srb_l_filename_hash(
         }
     }
 
-    return h % 2147483647;
+    rc = h % 2147483647;
+    return rc;
 }
 
 static
@@ -326,7 +328,8 @@ srb_l_stat_dir(
     srbConn *                           conn,
     globus_gfs_stat_t **                out_stat,
     int *                               out_count,
-    char *                              start_dir)
+    char *                              start_dir,
+    char *                              username)
 {
     int                                 i;
     int                                 status;
@@ -335,25 +338,22 @@ srb_l_stat_dir(
     int                                 selval[MAX_DCS_NUM];
     char *                              tmp_s;
     char *                              rsrcName;
-    char *                              rsrcNameStart;
     char *                              sizeName;
-    char *                              sizeNameStart;
     char *                              ownerName;
-    char *                              ownerNameStart;
     char *                              pathName;
-    char *                              pathNameStart;
     char *                              modTime;
-    char *                              modTimeStart;
+    char *                              full_name;
     int                                 maxRows = 128;
     globus_gfs_stat_t *                 stat_array = NULL;
-    int                                 stat_count = 1;
+    int                                 stat_count = 0;
     int                                 stat_ndx = 0;
     struct tm                           tm;
     int                                 sc;
     int                                 done = 0;
 
 
-    /* add in a single '.' entry */
+    /* add in a single '.' entry 
+*/
     stat_count = 1;
     stat_array = (globus_gfs_stat_t *) globus_calloc(
         stat_count, sizeof(globus_gfs_stat_t));
@@ -363,7 +363,7 @@ srb_l_stat_dir(
     stat_array[stat_ndx].uid = 1;
     stat_array[stat_ndx].gid = 1;
         stat_array[stat_ndx].size = 0;
-    stat_array[stat_ndx].dev = 0;
+    stat_array[stat_ndx].dev = srb_l_default_dev_wrap++;
     stat_array[stat_ndx].mode =
         S_IFDIR | S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
     stat_ndx++;
@@ -405,23 +405,18 @@ srb_l_stat_dir(
         pathName = (char *) getAttributeColumn(
             (mdasC_sql_result_struct *) &myresult,
             DATA_GRP_NAME);
-        pathNameStart = pathName;
         modTime = (char *) getAttributeColumn(
             (mdasC_sql_result_struct *) &myresult,
             REPL_TIMESTAMP);
-        modTimeStart = modTime;
         rsrcName = (char *) getAttributeColumn(
             (mdasC_sql_result_struct *) &myresult,
             DATA_NAME);
-        rsrcNameStart = rsrcName;
         sizeName = (char *) getAttributeColumn(
             (mdasC_sql_result_struct *) &myresult,
             SIZE);
-        sizeNameStart = sizeName;
         ownerName = (char *) getAttributeColumn(
             (mdasC_sql_result_struct *) &myresult,
             DATA_OWNER);
-        ownerNameStart = ownerName;
 
         stat_count = myresult.row_count + stat_count;
         stat_array = (globus_gfs_stat_t *) globus_realloc(stat_array,
@@ -459,11 +454,16 @@ srb_l_stat_dir(
             }
             /* need to fake these next 2 better */
             stat_array[stat_ndx].dev = srb_l_default_dev_wrap++;
-            stat_array[stat_ndx].ino = srb_l_filename_hash(pathName);
+            full_name = globus_common_create_string(
+                "%s/%s", pathName, rsrcName);
+            stat_array[stat_ndx].ino = srb_l_filename_hash(full_name);
+            free(full_name);
 
-            stat_array[stat_ndx].mode =
-                S_IFREG | S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
-
+            stat_array[stat_ndx].mode = S_IFREG;
+            if(strcmp(ownerName, username) == 0)
+            {
+                stat_array[stat_ndx].mode |= S_IRUSR | S_IWUSR | S_IXUSR;
+            }
             if(rsrcName) 
             {
                 rsrcName += MAX_DATA_SIZE;
@@ -480,6 +480,10 @@ srb_l_stat_dir(
             {
                 ownerName += MAX_DATA_SIZE;
             }
+            if(modTime)
+            {
+                modTime += MAX_DATA_SIZE;
+            }
             stat_ndx++;
         }
         clearSqlResult(&myresult);
@@ -492,12 +496,6 @@ srb_l_stat_dir(
         {
             done = 1;
         }
-/*
-        free(pathNameStart);
-        free(modTimeStart);
-        free(sizeNameStart);
-        free(ownerNameStart);
-*/
     }
 
     done = 0;
@@ -507,7 +505,6 @@ srb_l_stat_dir(
         selval[i] = 0;
         *qval[i] = '\0';
     }
-
 
     selval[DATA_GRP_NAME] = 1;
     sprintf(qval[PARENT_COLLECTION_NAME]," = '%s'", start_dir);
@@ -532,19 +529,21 @@ srb_l_stat_dir(
             char * fname;
 
             memset(&stat_array[stat_ndx], '\0', sizeof(globus_gfs_stat_t));
-            stat_array[stat_ndx].ino = srb_l_filename_hash(rsrcName);
             fname = rsrcName ? rsrcName : "(null)";
             tmp_s = strrchr(fname, '/');
             if(tmp_s != NULL) fname = tmp_s + 1;
+            stat_array[stat_ndx].ino = srb_l_filename_hash(rsrcName);
             stat_array[stat_ndx].name = strdup(fname);
             stat_array[stat_ndx].nlink = 0;
             stat_array[stat_ndx].uid = 1;
             stat_array[stat_ndx].gid = 1;
-                stat_array[stat_ndx].size = 0;;
-            stat_array[stat_ndx].dev = 0;
+            stat_array[stat_ndx].size = 0;
+            stat_array[stat_ndx].dev = srb_l_default_dev_wrap++;
 
-            stat_array[stat_ndx].mode =
-                S_IFDIR | S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
+            stat_array[stat_ndx].mode = S_IFDIR;
+            {
+                stat_array[stat_ndx].mode |= S_IRUSR | S_IWUSR | S_IXUSR;
+            }
 
             if(rsrcName) rsrcName += MAX_DATA_SIZE;
             stat_ndx++;
@@ -805,6 +804,7 @@ globus_l_gfs_srb_send(
         result = GlobusGFSErrorGeneric("SRB: strdup failed");
         goto alloc_error;
     }
+    srb_l_reduce_path(collection);
     tmp_ptr = strrchr(collection, '/');
     if(tmp_ptr == NULL)
     {
@@ -1035,6 +1035,7 @@ globus_l_gfs_srb_recv(
     globus_gfs_transfer_info_t *        transfer_info,
     void *                              user_arg)
 {
+    int                                       flags = O_WRONLY;
     globus_bool_t                       finish = GLOBUS_FALSE;
     int                                 status;
     char *                              collection = NULL;
@@ -1057,10 +1058,8 @@ globus_l_gfs_srb_recv(
         goto alloc_error;
     }
 
-    if(transfer_info->pathname != NULL)
-    {
-        collection = strdup(transfer_info->pathname);
-    }
+    srb_l_reduce_path(transfer_info->pathname);
+    collection = strdup(transfer_info->pathname);
     if(collection == NULL)
     {
         result = GlobusGFSErrorGeneric("SRB: strdup failed");
@@ -1080,29 +1079,37 @@ globus_l_gfs_srb_recv(
        what resource to create it in, it NULL then shoose the default */
 
     /* try to open */ 
+#ifdef NOT_IN
+    /* take this out for now */
+    globus_gfs_log_message(
+        GLOBUS_GFS_LOG_INFO,
+        "srb: [recv] pre-srbObjStat(%s)\n", transfer_info->pathname);
     status = srbObjStat(
         srb_handle->conn, MDAS_CATALOG, transfer_info->pathname, &statbuf);
-    if(status == 0)
+    globus_gfs_log_message(
+        GLOBUS_GFS_LOG_INFO,
+        "srb: [recv] post-srbObjStat(%s)\n", transfer_info->pathname);
+#endif
+    if(transfer_info->truncate)
     {
-        int                                       flags = O_WRONLY;
+        flags |= O_TRUNC;
+    }
+    srb_handle->fd = srbObjOpen(
+        srb_handle->conn,
+        object,
+        flags,
+        collection);
 
-        if(transfer_info->truncate)
-        {
-            flags |= O_TRUNC;
-        }
-        srb_handle->fd = srbObjOpen(
-            srb_handle->conn,
-            object,
-            flags,
-            collection);
-
+    globus_gfs_log_message(
+        GLOBUS_GFS_LOG_INFO,
+        "opening already existing file :%s: for write\n",
+        transfer_info->pathname);
+    if(srb_handle->fd <= 0)
+    {
         globus_gfs_log_message(
             GLOBUS_GFS_LOG_INFO,
-            "opening already existing file :%s: for write\n",
-                transfer_info->pathname);
-    }
-    else
-    {
+            "opening failed, try creating file :%s: for write\n",
+            transfer_info->pathname);
          if(transfer_info->module_args == NULL)
          {
              resource = srb_l_default_resource;
@@ -1268,6 +1275,17 @@ globus_l_gfs_srb_start(
         domain_name = tmp_str + 1;
     }
 
+    globus_gfs_log_message(
+        GLOBUS_GFS_LOG_INFO,
+        "srb: calling srbConnect(%s,%s,%s,%s,%s,%s,%s)\n", 
+        srb_handle->hostname,
+        srb_handle->port,
+        "",
+        user_name,
+        domain_name,
+        "GSI_AUTH",
+        srb_handle->srb_dn);
+
     srb_handle->conn = srbConnect(
            srb_handle->hostname,
            srb_handle->port,
@@ -1293,6 +1311,7 @@ globus_l_gfs_srb_start(
         goto handle_alloc_error;
     }
     free(user_name);
+    globus_gfs_log_message(GLOBUS_GFS_LOG_INFO, "srb: connected\n");
 
     rc = srbGetUserByDn(srb_handle->conn, 0, 0,
         session_info->subject, &srbUserStr);
@@ -1334,6 +1353,9 @@ globus_l_gfs_srb_start(
 
     globus_gridftp_server_operation_finished(op, GLOBUS_SUCCESS, &finished_info);
     globus_free(finished_info.info.session.home_dir);
+    globus_gfs_log_message(GLOBUS_GFS_LOG_INFO,
+        "srb: start_complete: /%s/home/%s.%s\n",
+        srb_handle->zone, srb_handle->user, srb_handle->domain);
 
     return;
 
@@ -1376,42 +1398,6 @@ globus_l_gfs_srb_destroy(
     globus_free(srb_handle);
 }
 
-#ifdef SRBSTAT2
-static
-void
-globus_l_gfs_srb_stat(
-    globus_gfs_operation_t              op,
-    globus_gfs_stat_info_t *            stat_info,
-    void *                              user_arg)
-{
-    globus_gfs_stat_t *                 stat_array;
-    int                                 stat_count;
-    int                                 rc;
-    globus_result_t                     result;
-    globus_l_gfs_srb_handle_t *         srb_handle;
-    GlobusGFSName(globus_l_gfs_srb_stat);
-
-    srb_handle = (globus_l_gfs_srb_handle_t *) user_arg;
-
-    rc = srb_l_stat_dir(
-        srb_handle->conn, &stat_array, &stat_count, stat_info->pathname);
-    if(rc != 0)
-    {
-        result = globus_l_gfs_srb_make_error(
-            "stat error", srb_handle->conn, rc);
-        goto error;
-    }
-    globus_gridftp_server_finished_stat(
-        op, GLOBUS_SUCCESS, stat_array, stat_count);
-
-    return;
-error:
-
-    globus_gridftp_server_finished_stat(op, result, NULL, 0);
-}
-
-#else
-
 static
 void
 globus_l_gfs_srb_stat_cpy(
@@ -1430,8 +1416,8 @@ globus_l_gfs_srb_stat_cpy(
     stat_array[0].atime = statbuf->st_atime;
     stat_array[0].ctime = statbuf->st_ctime;
 
-    stat_array[0].dev = statbuf->st_dev;
-    stat_array[0].ino = statbuf->st_ino;
+    stat_array[0].ino = srb_l_filename_hash(name);
+    stat_array[0].dev = srb_l_default_dev_wrap++;
 }
 
 /*************************************************************************
@@ -1465,8 +1451,14 @@ globus_l_gfs_srb_stat(
         GLOBUS_GFS_LOG_INFO,
         "globus_l_gfs_srb_stat() : %s\n", stat_info->pathname);
 
+    globus_gfs_log_message(
+        GLOBUS_GFS_LOG_INFO,
+        "srb: [stat] pre-srbObjStat(%s)\n", stat_info->pathname);
     status = srbObjStat(
         srb_handle->conn, MDAS_CATALOG, stat_info->pathname, &statbuf);
+    globus_gfs_log_message(
+        GLOBUS_GFS_LOG_INFO,
+        "srb: [stat] pre-srbObjStat(%s)\n", stat_info->pathname);
     if(status < 0)
     {
         result = globus_l_gfs_srb_make_error(
@@ -1491,7 +1483,8 @@ globus_l_gfs_srb_stat(
         int                             rc;
 
         rc = srb_l_stat_dir(
-            srb_handle->conn, &stat_array, &stat_count, stat_info->pathname);
+            srb_handle->conn, &stat_array, &stat_count,
+            stat_info->pathname, srb_handle->user);
         if(rc != 0)
         {
             result = globus_l_gfs_srb_make_error(
@@ -1510,20 +1503,12 @@ globus_l_gfs_srb_stat(
     globus_free(stat_array);
     return;
 
-error_free:
-    for(i = 0; i < stat_count; i++)
-    {
-        globus_free(stat_array[i].name);
-    }
-    globus_free(stat_array);
 error:
     globus_gfs_log_message(
         GLOBUS_GFS_LOG_INFO,
         "globus_l_gfs_srb_stat() : srbObjStat Failed\n");
     globus_gridftp_server_finished_stat(op, result, NULL, 0);
 }
-
-#endif
 
 /*************************************************************************
  *  command
