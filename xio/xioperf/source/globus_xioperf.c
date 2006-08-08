@@ -892,7 +892,7 @@ xioperf_start(
         {
             goto error;
         }
-        xio_perf_log(info, 1, "Connection esstablished\n");
+        xio_perf_log(info, 1, "Connection established\n");
         xio_perf_log(info, 1, 
         "---------------------------------------------------------------\n");
         res = xioperf_post_io(info);
