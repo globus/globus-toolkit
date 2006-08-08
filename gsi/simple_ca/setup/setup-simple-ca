@@ -52,7 +52,7 @@ make_template_ca_setup() {
     template_package_dir=${GLOBUS_LOCATION}/setup/globus/
     template_package_file=${template_package_dir}/globus_simple_ca_setup_template.tar.gz
     tmp_ca_setup_dir=${GLOBUS_SH_TMP-/tmp/}/${USER}_tmp_ca_setup
-    ${GLOBUS_SH_MKDIR-mkdir} -p ${tmp_ca_setup_dir}
+    ${GLOBUS_SH_MKDIR-mkdir} ${tmp_ca_setup_dir}
     if test $? -ne 0; then
         echo ""
         echo "Failed to create directory: ${tmp_ca_setup_dir}."
@@ -530,13 +530,19 @@ ${GLOBUS_SH_AWK-awk}  < $_config_file '
 ############################################################
 generate_ca_certificate() {
 
+generatecadir=/tmp/generate_ca_certification.$RANDOM.$$
+(umask 077 && mkdir ${generatecadir}) || {
+    echo "Could not create temporary directory! Exiting." 1>&2
+    exit 1
+}
+
 check_file ${grid_security_conf_template}
 
 . ${grid_security_conf_template}
 
 ca_ssl_conf_template=${tmp_ca_setup_dir}/grid-ca-ssl.conf.tmpl
 
-tmp_ca_conf=${GLOBUS_SH_TMP-/tmp/}/tmp_ssl.conf.1.$$
+tmp_ca_conf=$generatecadir/tmp_ssl.conf.1.$$
 
 ${GLOBUS_SH_SED-sed} -e "1,/BEGIN CONFIG/p" -e d \
 		     < $ca_ssl_conf_template > $tmp_ca_conf
@@ -568,7 +574,7 @@ if test $? -ne 0; then
     exit 1
 fi
 
-CA_REQ_INPUT=${GLOBUS_SH_TMP-/tmp}/tmp_openssl_input.conf.1.$$
+CA_REQ_INPUT=${generatecadir}/tmp_openssl_input.conf.1.$$
 
 create_input_file "${GSI_CA_NAME}" "${grid_ca_conf}" > ${CA_REQ_INPUT}
 check_file ${CA_REQ_INPUT}
@@ -599,7 +605,7 @@ else
 fi
 
 
-${GLOBUS_SH_RM-rm} -f ${CA_REQ_INPUT}
+${GLOBUS_SH_RM-rm} -rf ${generatecadir}
 
 if test ${RET} -eq 0; then
     ${GLOBUS_SH_CLEAR-clear}
@@ -925,7 +931,9 @@ do_trap() {
     echo ""
 
     ${GLOBUS_SH_RM-rm} -rf ${tmp_ca_setup_dir}
-
+    if test -d "${generatecadir}"; then
+        ${GLOBUS_SH_RM-rm} -rf "${generatecadir}"
+    fi
     cd ${current_dir}
     
     exit 1
@@ -1172,6 +1180,9 @@ if test -z "$nobuild"; then
     install_security_config
 fi
 
+if test -d "$tmp_ca_setup_dir" ; then
+    ${GLOBUS_SH_RM-rm} -rf ${tmp_ca_setup_dir}
+fi
 #finish_simple_ca_setup
 
 
