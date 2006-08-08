@@ -9,8 +9,8 @@
 static char *                           srb_l_default_hostname = NULL;
 static char *                           srb_l_default_hostname_dn = NULL;
 static char *                           srb_l_default_resource = NULL;
+static int                              srb_l_dev_wrapper = 10;
 
-static unsigned int                     srb_l_default_dev_wrap = 10;
 extern char inCondition[];
 
 int
@@ -324,6 +324,166 @@ srb_l_filename_hash(
 
 static
 int
+srb_l_stat1(
+    srbConn *                           conn,
+    globus_gfs_stat_t *                 stat_out,
+    char *                              start_dir)
+{
+    int                                 i;
+    int                                 status;
+    mdasC_sql_result_struct             myresult;
+    char                                qval[MAX_DCS_NUM][MAX_TOKEN];
+    int                                 selval[MAX_DCS_NUM];
+    char *                              tmp_s;
+    char *                              rsrcName;
+    char *                              sizeName;
+    char *                              anotherName;
+    char *                              pathName;
+    char *                              modTime;
+    int                                 maxRows = 128;
+    struct tm                           tm;
+    int                                 sc;
+    int                                 done = 0;
+    char *                              fname;
+    char *                              data_dir;
+    char *                              data_name;
+    char *                              full_name;
+
+    for (i = 0; i < MAX_DCS_NUM; i++)
+    {
+        selval[i] = 0;
+        *qval[i] = '\0';
+    }
+
+    data_dir = strdup(start_dir);
+    tmp_s = strrchr( data_dir, '/' );
+    *tmp_s = '\0';
+    data_name = tmp_s + 1;
+
+    /* test to see if it is a directory */
+    done = 0;
+    /* now we need to do directories/collections */
+    for (i = 0; i < MAX_DCS_NUM; i++)
+    {
+        selval[i] = 0;
+        *qval[i] = '\0';
+    }
+
+    selval[DATA_GRP_NAME] = 1;
+    sprintf(qval[DATA_GRP_NAME]," = '%s'", start_dir);
+    status = srbGetDataDirInfo(conn, MDAS_CATALOG,
+                qval, selval, &myresult, maxRows);
+    if(status == 0 && myresult.row_count == 1)
+    {
+        rsrcName = (char *) getAttributeColumn(
+            (mdasC_sql_result_struct *) &myresult,
+            DATA_GRP_NAME);
+
+        memset(stat_out, '\0', sizeof(globus_gfs_stat_t));
+        fname = rsrcName ? rsrcName : "(null)";
+        tmp_s = strrchr(fname, '/');
+        if(tmp_s != NULL) fname = tmp_s + 1;
+        stat_out->ino = srb_l_filename_hash(rsrcName);
+        stat_out->name = strdup(fname);
+        stat_out->nlink = 0;
+        stat_out->uid = 1;
+        stat_out->gid = 1;
+        stat_out->size = 0;
+        stat_out->dev = srb_l_dev_wrapper++;
+        stat_out->mode = S_IFDIR;
+        stat_out->mode |= S_IRUSR | S_IWUSR | S_IXUSR | S_IROTH | S_IXOTH;
+    }
+    else
+    {
+        /* try regular file, get the full boat of info */
+        sprintf(qval[DATA_GRP_NAME]," = '%s'", data_dir);
+        sprintf(qval[DATA_NAME]," = '%s'", data_name);
+
+        selval[DATA_NAME] = 1;
+        selval[DATA_GRP_NAME] = 1;
+
+        selval[SIZE] = 1;
+        selval[IS_DIRTY] = 1;
+        selval[DATA_TYP_NAME] = 1;
+        selval[DATA_OWNER] = 1;
+        selval[REPL_TIMESTAMP] = 1;
+        selval[DATA_REPL_ENUM] = 1;
+        selval[CONTAINER_SIZE] = 1;
+        selval[OFFSET] = 1;
+        selval[PHY_RSRC_NAME] = 1;
+        selval[CONTAINER_NAME] = 1;
+        sprintf(qval[ORDERBY], "DATA_NAME");
+    /* perform the MCAT query */
+        status = srbGetDataDirInfo(conn, MDAS_CATALOG,
+                qval, selval, &myresult, maxRows);
+        if(status == 0 && myresult.row_count == 1)
+        {
+            pathName = (char *) getAttributeColumn(
+                (mdasC_sql_result_struct *) &myresult,
+                DATA_GRP_NAME);
+            modTime = (char *) getAttributeColumn(
+                (mdasC_sql_result_struct *) &myresult,
+                REPL_TIMESTAMP);
+            rsrcName = (char *) getAttributeColumn(
+                (mdasC_sql_result_struct *) &myresult,
+                DATA_NAME);
+            sizeName = (char *) getAttributeColumn(
+                (mdasC_sql_result_struct *) &myresult,
+                SIZE);
+            anotherName = (char *) getAttributeColumn(
+                (mdasC_sql_result_struct *) &myresult,
+                DATA_OWNER);
+            memset(stat_out, '\0', sizeof(globus_gfs_stat_t));
+            stat_out->symlink_target = NULL;
+            stat_out->name = strdup(rsrcName);
+            stat_out->nlink = 0;
+            stat_out->uid = 1;
+            stat_out->gid = 1;
+            sc = sscanf(sizeName, "%"GLOBUS_OFF_T_FORMAT,
+                &stat_out->size);
+            if(sc != 1)
+            {
+                stat_out->size = -1;
+            }
+
+            memset(&tm, '\0', sizeof(struct tm));
+            sc = sscanf(modTime, "%d-%d-%d-%d.%d.%d",
+                &tm.tm_year, &tm.tm_mon, &tm.tm_mday,
+                &tm.tm_hour, &tm.tm_min, &tm.tm_sec);
+            if(sc == 6)
+            {
+                tm.tm_wday = 0;
+                tm.tm_yday = 0;
+                tm.tm_isdst = 1;
+                tm.tm_year -= 1900;
+                tm.tm_mon -= 1;
+
+                stat_out->ctime = mktime(&tm);
+                stat_out->mtime = mktime(&tm);
+                stat_out->atime = mktime(&tm);
+            }
+            /* need to fake these next 2 better */
+            stat_out->dev = srb_l_dev_wrapper++;
+            full_name = globus_common_create_string(
+                "%s/%s", pathName, rsrcName);
+            stat_out->ino = srb_l_filename_hash(full_name);
+            free(full_name);
+
+            stat_out->mode = S_IFREG;
+            {
+                stat_out->mode |= S_IRUSR|S_IWUSR|S_IXUSR|S_IXOTH;
+            }
+        }
+    }
+    free(data_dir);
+
+    return status;
+}
+
+
+
+static
+int
 srb_l_stat_dir(
     srbConn *                           conn,
     globus_gfs_stat_t **                out_stat,
@@ -363,9 +523,9 @@ srb_l_stat_dir(
     stat_array[stat_ndx].uid = 1;
     stat_array[stat_ndx].gid = 1;
         stat_array[stat_ndx].size = 0;
-    stat_array[stat_ndx].dev = srb_l_default_dev_wrap++;
+    stat_array[stat_ndx].dev = srb_l_dev_wrapper++;
     stat_array[stat_ndx].mode =
-        S_IFDIR | S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
+        S_IFDIR | S_IRUSR|S_IWUSR|S_IXUSR|S_IXOTH;
     stat_ndx++;
 
     for (i = 0; i < MAX_DCS_NUM; i++)
@@ -453,7 +613,7 @@ srb_l_stat_dir(
                 stat_array[stat_ndx].atime = mktime(&tm);
             }
             /* need to fake these next 2 better */
-            stat_array[stat_ndx].dev = srb_l_default_dev_wrap++;
+            stat_array[stat_ndx].dev = srb_l_dev_wrapper;
             full_name = globus_common_create_string(
                 "%s/%s", pathName, rsrcName);
             stat_array[stat_ndx].ino = srb_l_filename_hash(full_name);
@@ -462,7 +622,7 @@ srb_l_stat_dir(
             stat_array[stat_ndx].mode = S_IFREG;
             if(strcmp(ownerName, username) == 0)
             {
-                stat_array[stat_ndx].mode |= S_IRUSR | S_IWUSR | S_IXUSR;
+                stat_array[stat_ndx].mode |= S_IRUSR|S_IWUSR|S_IXUSR|S_IROTH|S_IXOTH;
             }
             if(rsrcName) 
             {
@@ -538,11 +698,12 @@ srb_l_stat_dir(
             stat_array[stat_ndx].uid = 1;
             stat_array[stat_ndx].gid = 1;
             stat_array[stat_ndx].size = 0;
-            stat_array[stat_ndx].dev = srb_l_default_dev_wrap++;
+            stat_array[stat_ndx].dev = srb_l_dev_wrapper++;
 
             stat_array[stat_ndx].mode = S_IFDIR;
             {
-                stat_array[stat_ndx].mode |= S_IRUSR | S_IWUSR | S_IXUSR;
+                stat_array[stat_ndx].mode |= 
+                    S_IRUSR|S_IWUSR|S_IXUSR|S_IROTH|S_IXOTH;
             }
 
             if(rsrcName) rsrcName += MAX_DATA_SIZE;
@@ -1037,13 +1198,11 @@ globus_l_gfs_srb_recv(
 {
     int                                       flags = O_WRONLY;
     globus_bool_t                       finish = GLOBUS_FALSE;
-    int                                 status;
     char *                              collection = NULL;
     char *                              tmp_ptr;
     char *                              object;
     char *                              resource = "";
     globus_result_t                     result;
-    struct stat                         statbuf;
     globus_l_gfs_srb_handle_t *         srb_handle;
     struct mdasEnvData *                tmpMdasEnvData;
     GlobusGFSName(globus_l_gfs_srb_recv);
@@ -1398,28 +1557,6 @@ globus_l_gfs_srb_destroy(
     globus_free(srb_handle);
 }
 
-static
-void
-globus_l_gfs_srb_stat_cpy(
-    char *                              name,
-    globus_gfs_stat_t *                 stat_array,
-    struct stat *                       statbuf)
-{
-    stat_array[0].name = strdup(name);
-    stat_array[0].mode = statbuf->st_mode;
-    stat_array[0].nlink = statbuf->st_nlink;
-    stat_array[0].uid = statbuf->st_uid;
-    stat_array[0].gid = statbuf->st_gid;
-    stat_array[0].size = statbuf->st_size;
-
-    stat_array[0].mtime = statbuf->st_mtime;
-    stat_array[0].atime = statbuf->st_atime;
-    stat_array[0].ctime = statbuf->st_ctime;
-
-    stat_array[0].ino = srb_l_filename_hash(name);
-    stat_array[0].dev = srb_l_default_dev_wrap++;
-}
-
 /*************************************************************************
  *  stat
  *  ----
@@ -1437,9 +1574,9 @@ globus_l_gfs_srb_stat(
 {
     int                                 status;
     globus_gfs_stat_t *                 stat_array;
+    globus_gfs_stat_t                   stat_buf;
     int                                 stat_count = 1;
     globus_l_gfs_srb_handle_t *         srb_handle;
-    struct stat                         statbuf;
     globus_result_t                     result;
     GlobusGFSName(globus_l_gfs_srb_stat);
 
@@ -1451,14 +1588,8 @@ globus_l_gfs_srb_stat(
         GLOBUS_GFS_LOG_INFO,
         "globus_l_gfs_srb_stat() : %s\n", stat_info->pathname);
 
-    globus_gfs_log_message(
-        GLOBUS_GFS_LOG_INFO,
-        "srb: [stat] pre-srbObjStat(%s)\n", stat_info->pathname);
-    status = srbObjStat(
-        srb_handle->conn, MDAS_CATALOG, stat_info->pathname, &statbuf);
-    globus_gfs_log_message(
-        GLOBUS_GFS_LOG_INFO,
-        "srb: [stat] pre-srbObjStat(%s)\n", stat_info->pathname);
+    status = srb_l_stat1(
+        srb_handle->conn, &stat_buf, stat_info->pathname);
     if(status < 0)
     {
         result = globus_l_gfs_srb_make_error(
@@ -1469,18 +1600,20 @@ globus_l_gfs_srb_stat(
         GLOBUS_GFS_LOG_INFO,
         "globus_l_gfs_srb_stat() : srbObjStat Success\n");
     /* srbFileStat */
-    if(!S_ISDIR(statbuf.st_mode) || stat_info->file_only)
+    if(!S_ISDIR(stat_buf.mode) || stat_info->file_only)
     {
         globus_gfs_log_message(
             GLOBUS_GFS_LOG_INFO,
             "globus_l_gfs_srb_stat() : single file\n");
         stat_array = (globus_gfs_stat_t *) globus_calloc(
             1, sizeof(globus_gfs_stat_t));
-        globus_l_gfs_srb_stat_cpy(stat_info->pathname,stat_array,&statbuf);
+        memcpy(stat_array, &stat_buf, sizeof(globus_gfs_stat_t));
     }
     else
     {
         int                             rc;
+
+        free(stat_buf.name);
 
         rc = srb_l_stat_dir(
             srb_handle->conn, &stat_array, &stat_count,
@@ -1492,7 +1625,6 @@ globus_l_gfs_srb_stat(
             goto error;
         }
     }
-
     globus_gridftp_server_finished_stat(
         op, GLOBUS_SUCCESS, stat_array, stat_count);
     /* gota free the names */
