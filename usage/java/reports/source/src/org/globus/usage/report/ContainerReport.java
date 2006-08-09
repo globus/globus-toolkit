@@ -33,6 +33,8 @@ import java.net.InetAddress;
 import java.text.SimpleDateFormat;
 import java.io.PrintStream;
 
+import org.globus.usage.report.common.Database;
+
 public class ContainerReport {
 
     // unique services for all containers

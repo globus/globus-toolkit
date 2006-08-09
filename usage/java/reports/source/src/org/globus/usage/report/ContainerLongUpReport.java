@@ -37,6 +37,8 @@ import java.text.SimpleDateFormat;
 import java.io.PrintStream;
 import java.sql.Timestamp;
 
+import org.globus.usage.report.common.Database;
+
 public class ContainerLongUpReport extends BaseContainerUpReport {
 
     private Map containers = new HashMap();

@@ -38,6 +38,8 @@ import java.text.SimpleDateFormat;
 import java.io.PrintStream;
 import java.sql.Timestamp;
 
+import org.globus.usage.report.common.Database;
+
 public class ContainerEventReport {
 
     private Date startDate;

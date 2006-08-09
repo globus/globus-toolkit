@@ -32,6 +32,8 @@ import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.text.SimpleDateFormat;
 
+import org.globus.usage.report.common.Database;
+
 public class ServiceReport {
 
     private Map services = new TreeMap(new StringComparator());

@@ -33,14 +33,13 @@ public class IPTable {
         Iterator ipIter = getUniqueIPList().keySet().iterator();
         while(ipIter.hasNext()) {
             String ip = (String)ipIter.next();
-            IPEntry ipEntry;
-            try{
-            ipEntry = (IPEntry)ipLookupTable.get(ip);
+            
+            IPEntry ipEntry = (IPEntry)ipLookupTable.get(ip);
+            if (ipEntry == null) {
+                ipEntry = IPEntry.getIPEntry(ip);
+                ipLookupTable.put(ip, ipEntry);
             }
-            catch(Exception e){
-                    ipEntry = IPEntry.getIPEntry(ip);
-                    ipLookupTable.put(ip, ipEntry);
-            }
+            
             addDomain(ipEntry.getDomain());
         }
     }
@@ -83,7 +82,7 @@ public class IPTable {
         while(iter.hasNext()) {
             DomainEntry entry = (DomainEntry)iter.next();
             out.println(tab + "\t<domain-entry name=\"" + 
-                        entry.getDomain()+"\" count=\"" +
+                        entry.getDomain() + "\" count=\"" +
                         entry.getCount() + "\"/>");
         }
         out.println(tab + "</domains>");
@@ -109,7 +108,7 @@ public class IPTable {
             return false;
         } else {
             return false;
-        } 
+        }
     }
 
     public static class DomainEntry implements Comparator {
