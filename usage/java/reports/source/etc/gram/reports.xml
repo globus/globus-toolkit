@@ -1,0 +1,118 @@
+<?xml version="1.0"?>
+
+<project default="all">
+
+<target name="gnuplot-scheduler">
+<fail message="Must specify in.xml" unless="in.xml"/>
+<xslt style="scheduler/gnuplot-scheduler-instructions.xsl"
+        in="${in.xml}"
+        out="scheduler.gnuplot"/>
+<xslt style="scheduler/gnuplot-scheduler-data.xsl"
+        in="${in.xml}"
+        out="scheduler.data"/>
+</target>
+
+<target name="gnuplot-error-histogram">
+<fail message="Must specify in.xml" unless="in.xml"/>
+<delete file="histograms.gnuplot"/>
+<delete file="histograms.data"/>
+<xslt style="histograms/gnuplot-histogram-data.xsl"
+        in="${in.xml}"
+        out="histograms.data"/>
+<xslt style="histograms/gnuplot-histogram-instructions.xsl"
+        in="${in.xml}"
+	out="histograms.gnuplot"/>
+</target>
+
+<target name="gnuplot-domain-histogram">
+<fail message="Must specify in.xml" unless="in.xml"/>
+<delete file="histograms.gnuplot"/>
+<delete file="histograms.data"/>
+<xslt style="histograms/gnuplot-histogram-data.xsl"
+          in="${in.xml}"
+          out="histograms.data"/>
+<xslt style="histograms/gnuplot-histogram-instructions.xsl"
+          in="${in.xml}"
+	  out="histograms.gnuplot"/>
+</target>
+
+<target name="gnuplot-slots">
+<fail message="Must specify in.xml" unless="in.xml"/>
+<delete file="slots.data"/>
+<delete file="slots.gnuplot"/>
+<xslt style="slots/gnuplot-slot-data.xsl"
+           in="${in.xml}"
+           out="slots.data"/>
+<xslt style="slots/gnuplot-slot-instructions.xsl"
+           in="${in.xml}"
+           out="slots.gnuplot"/>
+</target>
+
+<target name="gnuplot-job-histogram">
+<delete file="histograms.gnuplot"/>
+<delete file="histograms.data"/>
+<fail message="Must specify in.xml" unless="in.xml"/>
+<xslt style="histograms/gnuplot-histogram-data.xsl"
+         in="${in.xml}"
+         out="histograms.data"/>
+<xslt style="histograms/gnuplot-histogram-instructions.xsl"
+         in="${in.xml}"
+         out="histograms.gnuplot"/>
+</target>
+
+<target name="gnuplot-features">
+<fail message="Must specify in.xml" unless="in.xml"/>
+<xslt style="features/gnuplot-features-instructions.xsl"
+        in="${in.xml}"
+        out="features.gnuplot"/>
+<xslt style="features/gnuplot-features-data.xsl"
+        in="${in.xml}"
+        out="features.data"/>
+</target>
+
+<target name="html-error-tables">
+<fail message="Must Specify in.xml" unless="in.xml"/>
+<xslt style="tables/html-gt2-instructions.xsl" 
+        in="${in.xml}"
+        out="errortables.html"/>
+<xslt style="tables/html-fault-tables.xsl"
+        in="${in.xml}"
+	out="faulttables.html"/>
+</target>
+
+<target name="gnuplot-jobtype">
+<fail message="Must specify in.xml" unless="in.xml"/>
+<xslt style="jobtype/gnuplot-jobtype-instructions.xsl"
+        in="${in.xml}"
+        out="jobtype.gnuplot"/>
+<xslt style="jobtype/gnuplot-jobtype-data.xsl"
+        in="${in.xml}"
+        out="jobtype.data"/>
+</target>
+
+<target name="gnuplot-error">
+<fail message="Must specify in.xml" unless="in.xml"/>
+<xslt style="error/gnuplot-error-instructions.xsl"
+        in="${in.xml}"
+        out="error.gnuplot"/>
+<xslt style="error/gnuplot-error-data.xsl"
+        in="${in.xml}"
+        out="error.data"/>
+</target>
+
+<target name="clean">
+<delete file="slots.data"/>
+<delete file="slots.gnuplot"/>
+<delete file="jobtype.gnuplot"/>
+<delete file="jobtype.data"/>
+<delete file="error.gnuplot"/>
+<delete file="error.data"/>
+<delete file="features.data"/>
+<delete file="features.gnuplot"/>
+<delete file="scheduler.gnuplot"/>
+<delete file="scheduler.data"/>
+<delete file="histograms.data"/>
+<delete file="histograms.gnuplot"/>
+</target>
+
+</project>

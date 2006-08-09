@@ -1,0 +1,59 @@
+<?xml version="1.0"?>
+
+<project default="gnuplot-byte-histogram">
+
+
+<target name="html-statistics">
+<fail message="Must specify in.xml" unless="in.xml"/>
+<xslt style="tables/html-statistics-tables.xsl"
+        in="${in.xml}"
+        out="GFTPstatistics.html"/>
+</target>
+
+<target name="gnuplot-slot">
+<fail message="Must specify in.xml" unless="in.xml"/>
+<delete file="slots.gnuplot"/>
+<delete file="slots.data"/>
+<xslt style="slots/gnuplot-slot-data.xsl"
+        in="${in.xml}"
+	out="slots.data"/>
+<xslt style="slots/gnuplot-slot-instructions.xsl"
+        in="${in.xml}"
+        out="slots.gnuplot"/>
+</target>
+
+<target name="gnuplot-ranged">
+<fail message="Must specify in.xml" unless="in.xml"/>
+<delete file="ranged.gnuplot"/>
+<delete file="ranged.data"/>
+<xslt style="slots/gnuplot-ranged-data.xsl"
+        in="${in.xml}"
+        out="ranged.data"/>
+<xslt style="slots/gnuplot-ranged-instructions.xsl"
+        in="${in.xml}"
+        out="ranged.gnuplot"/>
+</target>
+
+<target name="gnuplot-histogram">
+<fail message="Must specify in.xml" unless="in.xml"/>
+<delete file="histograms.gnuplot"/>
+<delete file="histograms.data"/>
+<xslt style="histograms/gnuplot-histogram-data.xsl"
+        in="${in.xml}"
+        out="histograms.data"/>
+<xslt style="histograms/gnuplot-histogram-instructions.xsl"
+        in="${in.xml}"
+	out="histograms.gnuplot"/>
+</target>
+
+
+<target name="clean">
+<delete file="histograms.data"/>
+<delete file="histograms.gnuplot"/>
+<delete file="slots.gnuplot"/>
+<delete file="slots.data"/>
+<delete file="ranged.data"/>
+<delete file="ranged.gnuplot"/>
+</target>
+
+</project>
