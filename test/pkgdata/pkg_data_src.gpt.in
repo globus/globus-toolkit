@@ -16,6 +16,8 @@
                     <Simple_Version Major="0"/>
                 </Version>
             </Dependency>
+        </Source_Dependencies>
+        <Source_Dependencies Type="pgm_runtime">
             <Dependency Name="globus_proxy_utils">
                 <Version>
                     <Simple_Version Major="0"/>
