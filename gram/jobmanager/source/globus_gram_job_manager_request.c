@@ -262,13 +262,6 @@ globus_gram_job_manager_request_open_logfile(
 	
 	if(request->jobmanager_log_fp == NULL)
         {
-            sprintf(request->jobmanager_logfile,
-		    "/tmp/gram_job_mgr_%lu.log",
-                    (unsigned long) getpid());
-
-            request->jobmanager_log_fp =
-		fopen(request->jobmanager_logfile, "a");
-
 	    if(request->jobmanager_log_fp == NULL)
             {
                 sprintf(request->jobmanager_logfile, "/dev/null");
