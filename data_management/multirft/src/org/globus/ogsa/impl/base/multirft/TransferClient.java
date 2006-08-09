@@ -31,6 +31,8 @@ import org.globus.ftp.exception.FTPException;
 import org.globus.ftp.exception.ServerException;
 import org.globus.ftp.vanilla.FTPServerFacade;
 
+import org.globus.util.Util;
+
 import org.globus.gsi.gssapi.auth.IdentityAuthorization;
 
 import org.globus.ogsa.ServiceData;
@@ -821,8 +823,9 @@ public class TransferClient {
     private void noTptNonExtendedTransfer() {
 
         try {
-
-            String fullLocalFile = "/tmp/TempGridFTP_" + transferid;
+            File fullLocalFile = File.createTempFile("/tmp/TempRFT",
+                    String.valueOf(transferid));
+            Util.setOwnerAccessOnly(fullLocalFile.getAbsolutePath());
             sourceHost.setOptions( new RetrieveOptions( parallelism ) );
             sourceHost.setTCPBufferSize( this.tcpBufferSize );
 
@@ -884,8 +887,10 @@ public class TransferClient {
     private void noTptTransfer() {
 
         try {
+            File fullLocalFile = File.createTempFile("/tmp/TempRFT",
+                    String.valueOf(transferid));
+            Util.setOwnerAccessOnly(fullLocalFile.getAbsolutePath());
 
-            String fullLocalFile = "/tmp/TempGridFTP_" + transferid;
             sourceHost.setOptions( new RetrieveOptions( parallelism ) );
             sourceHost.setTCPBufferSize( this.tcpBufferSize );
 
