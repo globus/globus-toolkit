@@ -823,7 +823,7 @@ public class TransferClient {
     private void noTptNonExtendedTransfer() {
 
         try {
-            File fullLocalFile = File.createTempFile("/tmp/TempRFT",
+            File fullLocalFile = File.createTempFile("TempRFT",
                     String.valueOf(transferid));
             Util.setOwnerAccessOnly(fullLocalFile.getAbsolutePath());
             sourceHost.setOptions( new RetrieveOptions( parallelism ) );
@@ -887,7 +887,7 @@ public class TransferClient {
     private void noTptTransfer() {
 
         try {
-            File fullLocalFile = File.createTempFile("/tmp/TempRFT",
+            File fullLocalFile = File.createTempFile("TempRFT",
                     String.valueOf(transferid));
             Util.setOwnerAccessOnly(fullLocalFile.getAbsolutePath());
 
