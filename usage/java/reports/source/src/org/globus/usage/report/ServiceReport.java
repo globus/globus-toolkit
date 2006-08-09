@@ -26,10 +26,8 @@ import java.util.Comparator;
 import java.util.Map;
 import java.util.Iterator;
 import java.util.StringTokenizer;
-import java.net.InetAddress;
 import java.util.Date;
 import java.util.Calendar;
-import java.util.GregorianCalendar;
 import java.text.SimpleDateFormat;
 
 import org.globus.usage.report.common.Database;

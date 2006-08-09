@@ -15,27 +15,9 @@
  */
 package org.globus.usage.report;
 
-import java.sql.DriverManager;
-import java.sql.Connection;
-import java.sql.Statement;
-import java.sql.ResultSet;
-
-import java.util.HashMap;
-import java.util.TreeMap;
-import java.util.Comparator;
-import java.util.Map;
-import java.util.Iterator;
-import java.util.StringTokenizer;
-import java.util.Date;
 import java.util.List;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Calendar;
-import java.util.GregorianCalendar;
-import java.net.InetAddress;
-import java.text.SimpleDateFormat;
 import java.io.PrintStream;
-import java.sql.Timestamp;
 
 public class BaseContainerUpReport {
 

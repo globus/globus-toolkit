@@ -15,12 +15,8 @@
  */
 package org.globus.usage.report.gram;
 
-import org.globus.usage.report.common.Database;
 import org.globus.usage.report.common.DatabaseRetriever;
 import org.globus.usage.report.common.HistogramParser;
-import org.globus.usage.report.common.IPEntry;
-import org.globus.usage.report.common.IPTable;
-import org.globus.usage.report.common.Slotter;
 import org.globus.usage.report.common.TimeStep;
 
 import java.sql.ResultSet;
@@ -28,15 +24,8 @@ import java.sql.ResultSet;
 import java.text.NumberFormat;
 import java.text.DecimalFormat;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Iterator;
 import java.util.Date;
 import java.util.Locale;
-
-import java.text.SimpleDateFormat;
-
-import java.io.PrintStream;
 
 public class ErrorReport{
     

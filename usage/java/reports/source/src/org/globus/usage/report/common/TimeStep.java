@@ -17,7 +17,6 @@ package org.globus.usage.report.common;
 
 import java.util.Date;
 import java.util.Calendar;
-import java.util.GregorianCalendar;
 import java.text.SimpleDateFormat;
 
 public class TimeStep{

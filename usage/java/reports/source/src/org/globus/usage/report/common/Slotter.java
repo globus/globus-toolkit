@@ -15,9 +15,7 @@
  */
 package org.globus.usage.report.common;
 
-import java.util.ArrayList;
 import java.util.Vector;
-import java.lang.Long;
 import java.io.InputStream;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;

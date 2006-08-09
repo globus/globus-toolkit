@@ -99,4 +99,15 @@
                includes="**/*.java"/>
     </target>
 
+<target name="pmd">
+   <property name="pmd.rules" value="rulesets/imports.xml,rulesets/unusedcode.xml,rulesets/imports.xml,rulesets/basic.xml"/>
+   <taskdef name="pmd" classname="net.sourceforge.pmd.ant.PMDTask"/>
+   <pmd rulesetfiles="${pmd.rules}" shortFilenames="true">
+      <formatter type="html" toFile="pmd_report.html"/>
+      <fileset dir="src">
+            <include name="**/*.java"/>
+      </fileset>
+   </pmd>
+ </target>
+
 </project>

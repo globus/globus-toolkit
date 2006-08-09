@@ -17,7 +17,6 @@ package org.globus.usage.report.common;
 
 import java.util.Vector;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.Iterator;
 
 import java.io.PrintStream;
