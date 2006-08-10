@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.globus.usage.report;
+package org.globus.usage.report.jwscore;
 
 import java.net.InetAddress;
 

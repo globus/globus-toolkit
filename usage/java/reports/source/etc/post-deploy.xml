@@ -35,43 +35,43 @@ Build Instructions:
              target="generateLauncher">
             <property name="launcher-name" value="jwscore-service-report"/>
             <property name="class.name" 
-                value="org.globus.usage.report.ServiceReport"/>
+                value="org.globus.usage.report.jwscore.ServiceReport"/>
         </ant>
         <ant antfile="${build.launcher}" 
              target="generateLauncher">
             <property name="launcher-name" value="jwscore-container-report"/>
             <property name="class.name" 
-                value="org.globus.usage.report.ContainerReport"/>
+                value="org.globus.usage.report.jwscore.ContainerReport"/>
         </ant>
         <ant antfile="${build.launcher}" 
              target="generateLauncher">
             <property name="launcher-name" value="jwscore-container-up-report"/>
             <property name="class.name" 
-                value="org.globus.usage.report.ContainerUpReport"/>
+                value="org.globus.usage.report.jwscore.ContainerUpReport"/>
         </ant>
         <ant antfile="${build.launcher}" 
              target="generateLauncher">
             <property name="launcher-name" value="jwscore-container-up-2-report"/>
             <property name="class.name" 
-                value="org.globus.usage.report.ContainerUpReportV2"/>
+                value="org.globus.usage.report.jwscore.ContainerUpReportV2"/>
         </ant>
         <ant antfile="${build.launcher}" 
              target="generateLauncher">
             <property name="launcher-name" value="jwscore-container-long-up-report"/>
             <property name="class.name" 
-                value="org.globus.usage.report.ContainerLongUpReport"/>
+                value="org.globus.usage.report.jwscore.ContainerLongUpReport"/>
         </ant>
         <ant antfile="${build.launcher}" 
              target="generateLauncher">
             <property name="launcher-name" value="jwscore-container-long-up-2-report"/>
             <property name="class.name" 
-                value="org.globus.usage.report.ContainerLongUpReportV2"/>
+                value="org.globus.usage.report.jwscore.ContainerLongUpReportV2"/>
         </ant>
         <ant antfile="${build.launcher}" 
              target="generateLauncher">
             <property name="launcher-name" value="jwscore-container-event-report"/>
             <property name="class.name" 
-                value="org.globus.usage.report.ContainerEventReport"/>
+                value="org.globus.usage.report.jwscore.ContainerEventReport"/>
         </ant>
 
 

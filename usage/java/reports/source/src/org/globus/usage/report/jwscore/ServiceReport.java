@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.globus.usage.report;
+package org.globus.usage.report.jwscore;
 
 import java.sql.DriverManager;
 import java.sql.Connection;
@@ -21,68 +21,85 @@ import java.sql.Statement;
 import java.sql.ResultSet;
 
 import java.util.HashMap;
+import java.util.TreeMap;
+import java.util.Comparator;
 import java.util.Map;
 import java.util.Iterator;
+import java.util.StringTokenizer;
 import java.util.Date;
 import java.util.Calendar;
 import java.text.SimpleDateFormat;
-import java.io.PrintStream;
-import java.sql.Timestamp;
 
 import org.globus.usage.report.common.Database;
 
-public class ContainerLongUpReport extends BaseContainerUpReport {
+public class ServiceReport {
 
-    private Map containers = new HashMap();
-    private Map uptimes = new HashMap();
+    private Map services = new TreeMap(new StringComparator());
+    private Map ipLookupTable = new HashMap();
 
-    public ContainerLongUpReport() {
-        initializeSlots();
-    }
-
-    public void output(PrintStream out) {
-        Iterator iter = this.uptimes.entrySet().iterator();
+    private void discoverDomains() {
+        Iterator iter = services.entrySet().iterator();
         while(iter.hasNext()) {
             Map.Entry entry = (Map.Entry)iter.next();
-            Long time = (Long)entry.getValue();
-            long timeMilli = time.longValue()/1000;
-            Slot s = getSlot(timeMilli);
-            s.increment();
-        }
 
-        super.output(out);
+            ServiceEntry serviceEntry = (ServiceEntry)entry.getValue();
+            serviceEntry.discoverDomains(ipLookupTable);
+        }
     }
 
-    public void compute(int eventType,
-                        Timestamp timestamp,
-                        String containerID,
-                        String ip) {
-        if (eventType == 1) { // start
-            this.containers.put(containerID, timestamp);
-        } else if (eventType == 2) { // stop
-            Timestamp startTime = 
-                (Timestamp)this.containers.remove(containerID);
-            if (startTime != null) {
-                long diff = timestamp.getTime() - startTime.getTime();
-                if (diff < 0) {
-                    return;
-                }
-                updateUptime(ip, diff);
+    private void compute(String listOfServices,
+                         int containerType,
+                         String ip) {
+        // handle the case where all the service names do not fit in the
+        // packet
+        if (listOfServices.length() >= 1445) {
+            int pos = listOfServices.lastIndexOf(',');
+            if (pos != -1) {
+                listOfServices = listOfServices.substring(0, pos);
+            }
+        } 
+
+        boolean isPrivateAddress = ServiceEntry.isPrivateAddress(ip);
+        if (ip.startsWith("/")) {
+            ip = ip.substring(1);
+        }
+        
+        StringTokenizer tokens = new StringTokenizer(listOfServices, ",");
+        while(tokens.hasMoreTokens()) {
+            String serviceName = tokens.nextToken();
+            
+            ServiceEntry entry = (ServiceEntry)services.get(serviceName);
+            if (entry == null) {
+                entry = new ServiceEntry();
+                services.put(serviceName, entry);
+            }
+
+            switch (containerType) {
+            case 1: 
+                entry.standalone(); break;
+            case 2: 
+                entry.servlet(); break;
+            default: 
+                entry.other(); break;
+            }
+
+            if (!isPrivateAddress) {
+                entry.addAddress(ip);
             }
         }
     }
 
-    private void updateUptime(String ip, long msec) {
-        Long time = (Long)this.uptimes.get(ip);
-        if (time == null || time.longValue() < msec) {
-            this.uptimes.put(ip, new Long(msec));
+    private static class StringComparator implements Comparator {
+        public int compare(Object o1, Object o2) {
+            String s1 = (String)o1;
+            String s2 = (String)o2;
+            return s1.compareTo(s2);
         }
     }
-    
-    public static void main(String[] args) throws Exception {
 
-        String USAGE = "Usage: java ContainerLongUpReport [options] <date (yyyy-MM-dd)>";
-        
+    public static void main(String[] args) throws Exception {
+            
+        String USAGE = "Usage: java ServiceReport [options] <date (yyyy-MM-dd)>";
         String HELP = 
             "Where [options] are:\n" +
             "  -help                    Displays this message\n" +
@@ -100,7 +117,7 @@ public class ContainerLongUpReport extends BaseContainerUpReport {
             System.exit(1);
         }
 
-        String baseQuery = "select event_type,send_time,ip_address,container_id,version_code from java_ws_core_packets where ";
+        String baseQuery = "select service_list,container_type,ip_address from java_ws_core_packets where event_type = 1 and ";
         int n = 1;
         String containerType = "all";
         String stepStr = "day";
@@ -137,7 +154,7 @@ public class ContainerLongUpReport extends BaseContainerUpReport {
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
-        ContainerLongUpReport r = new ContainerLongUpReport();
+        ServiceReport r = new ServiceReport();
 
         Connection con = null;
 
@@ -147,7 +164,6 @@ public class ContainerLongUpReport extends BaseContainerUpReport {
             con = DriverManager.getConnection(db.getURL());
 
             Date date = dateFormat.parse(inputDate);
-
             Calendar calendar = dateFormat.getCalendar();
 
             if (n < 0) {
@@ -158,46 +174,63 @@ public class ContainerLongUpReport extends BaseContainerUpReport {
             Date startDate = calendar.getTime();
             calendar.add(step, n);
             Date endDate = calendar.getTime();
-            
+
             String startDateStr = dateFormat.format(startDate);
             String endDateStr = dateFormat.format(endDate);
             String timeFilter = "send_time >= '" + startDateStr + 
                 "' and send_time < '" + endDateStr + "'";
                 
-            String query = baseQuery + timeFilter + " order by send_time";
 
-            System.out.println("<container-long-uptime-report container_type=\"" + 
+            System.out.println("<service-report container_type=\"" + 
                                containerType + "\">");
             System.out.println("  <start-date>" + startDateStr + "</start-date>");
             System.out.println("  <end-date>" + endDateStr + "</end-date>");
 
+
+            String query = baseQuery + timeFilter;
+
             Statement stmt = con.createStatement();
 
             ResultSet rs = stmt.executeQuery(query);
-                
-            while (rs.next()) {
-                String ip = rs.getString(3);
-                String containerId = rs.getString(4);
-                String packetVersion = rs.getString(5);
 
-                r.compute(rs.getInt(1), rs.getTimestamp(2), 
-                          ip + "/" + containerId + "/" + packetVersion,
-                          ip);
+            while (rs.next()) {
+                r.compute(rs.getString(1), rs.getInt(2), rs.getString(3));
             }
-            
+
             rs.close();
             stmt.close();
-
-            r.output(System.out);
-
-            System.out.println("</container-long-uptime-report>");
 
         } finally {
             if (con != null) {
                 con.close();
             }
         }
-    }
-        
-}
 
+        // generate xml report
+
+        r.discoverDomains();
+
+        System.out.println("  <unique-services>" + r.services.size() + "</unique-services>");
+        
+        Iterator iter = r.services.entrySet().iterator();
+        while(iter.hasNext()) {
+            Map.Entry entry = (Map.Entry)iter.next();
+            
+            ServiceEntry serviceEntry = (ServiceEntry)entry.getValue();
+            
+            System.out.println("  <entry>");
+            
+            System.out.println("\t<service-name>" + entry.getKey() + "</service-name>");
+            System.out.println("\t<standalone-count>" + serviceEntry.getStandaloneCount() + "</standalone-count>");
+            System.out.println("\t<servlet-count>" + serviceEntry.getServletCount() + "</servlet-count>");
+            System.out.println("\t<other-count>" + serviceEntry.getOtherCount() + "</other-count>");
+
+            serviceEntry.output(System.out, "\t");
+            
+            System.out.println("  </entry>");
+        }
+        
+        System.out.println("</service-report>");
+    }
+    
+}
