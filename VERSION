@@ -1,10 +1,10 @@
-This is MyProxy vX.X XX Xxx 2006.
+This is MyProxy v3.6 10 Aug 2006.
 This version should be protocol compatible with all versions since v0.2.
 Binary compatibility of the C API is not guaranteed between releases.
 
 Version History
 ---------------
-v3.6 XX Xxx 2006
+v3.6 10 Aug 2006
   - support credential renewal via the MyProxy CA using
     myproxy-server.config authorized_renewers/default_renewers options
   - provide an access control list for storing credentials via the
