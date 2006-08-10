@@ -20,8 +20,6 @@ import java.sql.Connection;
 import java.sql.Statement;
 import java.sql.ResultSet;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Date;
 import java.util.Calendar;
 import java.text.SimpleDateFormat;
@@ -29,8 +27,6 @@ import java.text.SimpleDateFormat;
 import org.globus.usage.report.common.Database;
 
 public class ContainerUpReportV2 extends BaseContainerUpReport {
-
-    private Map containers = new HashMap();
 
     public ContainerUpReportV2() {
         initializeSlots();

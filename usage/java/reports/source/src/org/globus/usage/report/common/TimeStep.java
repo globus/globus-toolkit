@@ -29,7 +29,8 @@ public class TimeStep {
 
     Calendar calendar;
 
-    public TimeStep(String step, int stepNumber, String date) throws ParseException {
+    public TimeStep(String step, int stepNumber, String date)
+            throws ParseException {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
         steps = stepNumber;
         this.stepNumber = stepNumber;

@@ -31,28 +31,35 @@ public class DatabaseRetriever {
     private Statement stmt;
 
     public DatabaseRetriever() throws Exception {
-	this.db = new Database();
-	this.con = DriverManager.getConnection(db.getURL());
+        this.db = new Database();
+        this.con = DriverManager.getConnection(db.getURL());
     }
 
     public DatabaseRetriever(String databaseproperties) throws Exception {
-	this.db = new Database(databaseproperties);
-	this.con = DriverManager.getConnection(db.getURL());
+        this.db = new Database(databaseproperties);
+        this.con = DriverManager.getConnection(db.getURL());
     }
 
-    public ResultSet retrieve(String packetType, String[] columns,
-            Date startDate, Date endDate) throws Exception {
+    public ResultSet retrieve(String packetType,
+                              String[] columns,
+                              Date startDate,
+                              Date endDate) throws Exception {
         return retrieve(packetType, columns, new String[0], startDate, endDate);
     }
 
-    public ResultSet retrieve(String packetType, String[] columns,
-            String startDateString, String endDateString) throws Exception {
+    public ResultSet retrieve(String packetType,
+                              String[] columns,
+                              String startDateString,
+                              String endDateString) throws Exception {
         return retrieve(packetType, columns, new String[0], startDateString,
                 endDateString);
     }
 
-    public ResultSet retrieve(String packetType, String[] columns,
-            String[] conditions, Date startDate, Date endDate) throws Exception {
+    public ResultSet retrieve(String packetType,
+                              String[] columns,
+                              String[] conditions,
+                              Date startDate,
+                              Date endDate) throws Exception {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
         String startDateString = dateFormat.format(startDate);
         String endDateString = dateFormat.format(endDate);
@@ -60,9 +67,11 @@ public class DatabaseRetriever {
                 endDateString);
     }
 
-    public ResultSet retrieve(String packetType, String[] columns,
-            String[] conditions, String startDateString, String endDateString) 
-    	throws Exception {
+    public ResultSet retrieve(String packetType,
+                              String[] columns,
+                              String[] conditions,
+                              String startDateString,
+                              String endDateString) throws Exception {
         String query = "select ";
 
         for (int n = 0; n < columns.length - 1; n++) {
@@ -77,22 +86,24 @@ public class DatabaseRetriever {
 
         query = query + "send_time >= '" + startDateString
                 + "' and send_time < '" + endDateString + "'";
-        
+
         this.stmt = this.con.createStatement();
-        return stmt.executeQuery(query);
+        return this.stmt.executeQuery(query);
     }
 
-    public void close() { 
+    public void close() {
         if (this.stmt != null) {
-	    try {
-		    this.stmt.close();
-	    } catch (Exception e) {}
-	}
-    	if (this.con != null) {
             try {
-        	    this.con.close();
-            } catch (Exception e) {}
-    	}
+                this.stmt.close();
+            } catch (Exception e) {
+            }
+        }
+        if (this.con != null) {
+            try {
+                this.con.close();
+            } catch (Exception e) {
+            }
+        }
     }
-    
+
 }
