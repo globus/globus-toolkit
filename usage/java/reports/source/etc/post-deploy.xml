@@ -150,7 +150,7 @@ Build Instructions:
             <property name="launcher-name"
             value="gftp-response-report"/>
             <property name="class.name"
-                value="org.globus.usage.report.gftp.ReturnReport"/>
+                value="org.globus.usage.report.gftp.ResponseReport"/>
         </ant>
         <ant antfile="${build.launcher}"
              target="generateLauncher">
@@ -158,6 +158,13 @@ Build Instructions:
             value="gftp-stripe-report"/>
             <property name="class.name"
                 value="org.globus.usage.report.gftp.StripeReport"/>
+        </ant>
+        <ant antfile="${build.launcher}"
+             target="generateLauncher">
+            <property name="launcher-name"
+            value="gftp-statistics-report"/>
+            <property name="class.name"
+                value="org.globus.usage.report.gftp.Statistics"/>
         </ant>
     </target>
         

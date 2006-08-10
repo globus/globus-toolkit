@@ -97,6 +97,9 @@
       <fixcrlf srcdir="src"
                eol="lf"
                includes="**/*.java"/>
+      <fixcrlf srcdir="etc"
+               eol="lf"
+               includes="**/*.xml"/>
     </target>
 
 <target name="pmd">
