@@ -16,6 +16,7 @@
 package org.globus.usage.report.common;
 
 import java.util.Vector;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -27,18 +28,20 @@ public class Slotter {
 
     private long[] values;
 
-    Slotter(String name) {
+    public Slotter(String name) throws IOException {
 
-        slots = new Vector();
+        this.slots = new Vector();
 
-        try {
-            InputStream is = getClass().getClassLoader().getResourceAsStream(
+        InputStream is = getClass().getClassLoader().getResourceAsStream(
                     "etc/globus_usage_reports/slots.data");
-            if (is == null) {
-                throw new Exception("Unable to load resource");
-            }
+        if (is == null) {
+            throw new IOException("Unable to load resource");
+        }
 
-            BufferedReader in = new BufferedReader(new InputStreamReader(is));
+        BufferedReader in = null;
+        
+        try {
+            in = new BufferedReader(new InputStreamReader(is));
             String read;
             while ((read = in.readLine()) != null) {
                 if ((read.trim()).equalsIgnoreCase(name)) {
@@ -53,10 +56,13 @@ public class Slotter {
                     this.slots.add(size);
                 }
             }
+        } finally {
+            if (in != null) {
+        	try { in.close(); } catch (IOException e) {}
+            }
             in.close();
-        } catch (Exception e) {
-            System.err.println(e.getMessage());
         }
+        
         values = new long[slots.size()];
         for (int i = 0; i < values.length; i++) {
             values[i] = 0;

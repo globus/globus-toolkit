@@ -19,6 +19,7 @@ import java.util.Vector;
 import java.util.HashMap;
 import java.util.Iterator;
 
+import java.io.IOException;
 import java.io.PrintStream;
 
 public class HistogramParser {
@@ -52,7 +53,8 @@ public class HistogramParser {
         totalData = 0;
     }
 
-    public HistogramParser(String t, String o, int stepNumber, String rangeName) {
+    public HistogramParser(String t, String o, int stepNumber, String rangeName) 
+    	throws IOException {
         uniqueItems = new HashMap(5);
         title = t;
         output = o;

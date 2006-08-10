@@ -17,6 +17,7 @@ package org.globus.usage.report.common;
 
 import java.util.Date;
 import java.util.Calendar;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 
 public class TimeStep {
@@ -28,7 +29,7 @@ public class TimeStep {
 
     Calendar calendar;
 
-    public TimeStep(String step, int stepNumber, String date) {
+    public TimeStep(String step, int stepNumber, String date) throws ParseException {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
         steps = stepNumber;
         this.stepNumber = stepNumber;
@@ -37,19 +38,16 @@ public class TimeStep {
         } else {
             stepSize = Calendar.MONTH;
         }
-        try {
-            Date currentDate = dateFormat.parse(date);
-            calendar = dateFormat.getCalendar();
-        } catch (Exception e) {
-            System.err.println("Could not parse date from form yyyy-MM-dd");
-        }
+
+        Date currentDate = dateFormat.parse(date);
+        calendar = dateFormat.getCalendar();
     }
 
-    public TimeStep(int stepNumber, String date) {
+    public TimeStep(int stepNumber, String date) throws ParseException {
         new TimeStep(new String("day"), stepNumber, date);
     }
 
-    public TimeStep(String date) {
+    public TimeStep(String date) throws ParseException {
         new TimeStep(new String("day"), 1, date);
     }
 
@@ -85,8 +83,6 @@ public class TimeStep {
             steps = steps - 1;
             return calendar.getTime();
         } else {
-            System.out
-                    .println("All steps have been completed, can not advance the date");
             return null;
         }
     }
