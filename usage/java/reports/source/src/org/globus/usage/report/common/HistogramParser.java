@@ -53,8 +53,8 @@ public class HistogramParser {
         totalData = 0;
     }
 
-    public HistogramParser(String t, String o, int stepNumber, String rangeName) 
-    	throws IOException {
+    public HistogramParser(String t, String o, int stepNumber, String rangeName)
+            throws IOException {
         uniqueItems = new HashMap(5);
         title = t;
         output = o;
@@ -78,11 +78,14 @@ public class HistogramParser {
     }
 
     public void addData(String item, double data) {
-        if (!uniqueItems.containsKey(item)) {
-            uniqueItems.put(item, new ItemEntry(0));
+        ItemEntry entry = (ItemEntry) uniqueItems.get(item);
+        if (entry == null) {
+            entry = new ItemEntry(0);
+            uniqueItems.put(item, entry);
         }
+        entry.add(data);
+
         entries[index].addData(item, data);
-        uniqueItems.put(item, ((ItemEntry) uniqueItems.get(item)).add(data));
         totalData += data;
     }
 
@@ -240,19 +243,20 @@ public class HistogramParser {
         }
 
         public void addData(String keyName, double data) {
-            if (itemMap.containsKey(keyName)) {
-                itemMap.put(keyName, ((ItemEntry) itemMap.get(keyName))
-                        .add(data));
-            } else {
-                itemMap.put(keyName, new ItemEntry(data));
+            ItemEntry entry = (ItemEntry) itemMap.get(keyName);
+            if (entry == null) {
+                entry = new ItemEntry(0);
+                itemMap.put(keyName, entry);
             }
+            entry.add(data);
         }
 
         public double getData(String keyName) {
-            if (itemMap.containsKey(keyName)) {
-                return ((ItemEntry) itemMap.get(keyName)).get();
-            } else {
+            ItemEntry entry = (ItemEntry) itemMap.get(keyName);
+            if (entry == null) {
                 return 0.0;
+            } else {
+                return entry.get();
             }
         }
     }
@@ -261,16 +265,15 @@ public class HistogramParser {
         private double data;
 
         public ItemEntry(double in) {
-            data = in;
+            this.data = in;
         }
 
-        public ItemEntry add(double in) {
-            data += in;
-            return new ItemEntry(data);
+        public void add(double in) {
+            this.data += in;
         }
 
         public double get() {
-            return data;
+            return this.data;
         }
 
     }
