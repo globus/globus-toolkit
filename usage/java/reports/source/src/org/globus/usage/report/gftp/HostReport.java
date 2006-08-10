@@ -25,21 +25,20 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Date;
 
-public class HostReport{
-    
-    public static void main (String [] args) throws Exception{
+public class HostReport {
+
+    public static void main(String[] args) throws Exception {
         String USAGE = "Usage: java JobFlagReport [options] <date (YYYY-MM-DD)> Enter -help for a list of options\n";
 
-        String HELP = "Where [options] are:\n"+
-            " -help                 Displays help\n"+
-            " -step <day|month>     Specifies size of step (day by default)\n"+
-            " -n <steps>            Specifies number of steps to do\n";
+        String HELP = "Where [options] are:\n"
+                + " -help                 Displays help\n"
+                + " -step <day|month>     Specifies size of step (day by default)\n"
+                + " -n <steps>            Specifies number of steps to do\n";
 
-        if (args.length == 0){
+        if (args.length == 0) {
             System.err.println(USAGE);
             System.exit(1);
-        }
-        else if (args.length == 1 && args[0].equalsIgnoreCase("-help")){
+        } else if (args.length == 1 && args[0].equalsIgnoreCase("-help")) {
             System.err.println(USAGE);
             System.err.println(HELP);
             System.exit(1);
@@ -48,11 +47,10 @@ public class HostReport{
         int n = 1;
         String stepStr = "day";
 
-        for (int i=0;i<args.length-1;i++){
+        for (int i = 0; i < args.length - 1; i++) {
             if (args[i].equals("-n")) {
                 n = Integer.parseInt(args[++i]);
-            }
-            else if (args[i].equals("-step")) {
+            } else if (args[i].equals("-step")) {
                 stepStr = args[++i];
             } else if (args[i].equalsIgnoreCase("-help")) {
                 System.err.println(USAGE);
@@ -64,48 +62,57 @@ public class HostReport{
             }
         }
 
-        String inputDate = args[args.length-1];
+        String inputDate = args[args.length - 1];
 
         DatabaseRetriever dbr = new DatabaseRetriever();
 
-        TimeStep ts = new TimeStep (stepStr, n, inputDate);     
+        TimeStep ts = new TimeStep(stepStr, n, inputDate);
 
-        HistogramParser hostHist = new HistogramParser("Number of Unique Hostnames Shown by Domain","GFTPhosthistogram","Number of Hosts", n);
+        HistogramParser hostHist = new HistogramParser(
+                "Number of Unique Hostnames Shown by Domain",
+                "GFTPhosthistogram", "Number of Hosts", n);
 
-        HistogramParser ipHist = new HistogramParser("Number of Unique IPs Shown by Domain","GFTPiphistogram","Number of IP Addresses",n);
-       
-        while(ts.next()){
+        HistogramParser ipHist = new HistogramParser(
+                "Number of Unique IPs Shown by Domain", "GFTPiphistogram",
+                "Number of IP Addresses", n);
+
+        while (ts.next()) {
             Date startD = ts.getTime();
             String startS = ts.getFormattedTime();
             ts.stepTime();
 
-            HashMap iptracker= new HashMap();
+            HashMap iptracker = new HashMap();
 
             hostHist.nextEntry(startS, ts.getFormattedTime());
             ipHist.nextEntry(startS, ts.getFormattedTime());
 
-            ResultSet rs = dbr.retrieve("gftp_packets", new String [] {"Distinct(hostname)"}, startD, ts.getTime());
+            ResultSet rs = dbr
+                    .retrieve("gftp_packets",
+                            new String[] { "Distinct(hostname)" }, startD, ts
+                                    .getTime());
 
-            while (rs.next()){
+            while (rs.next()) {
                 String hostname = rs.getString(1);
-                String ip = hostname.substring(hostname.indexOf("/")+1, hostname.length());
-                hostname = hostname.substring(0,hostname.lastIndexOf("/"));
-                if (hostname.indexOf(".")!= -1 ){
-                    hostname = hostname.substring(hostname.lastIndexOf("."), hostname.length());
-                    hostHist.addData(hostname,1);
+                String ip = hostname.substring(hostname.indexOf("/") + 1,
+                        hostname.length());
+                hostname = hostname.substring(0, hostname.lastIndexOf("/"));
+
+                if (hostname.indexOf(".") != -1) {
+                    hostname = hostname.substring(hostname.lastIndexOf("."),
+                            hostname.length());
+                    hostHist.addData(hostname, 1);
+                } else {
+                    hostHist.addData("unknown", 1);
                 }
-                else{
-                    hostHist.addData("unknown",1);
-                }
-                iptracker.put(ip,"");
+                iptracker.put(ip, "");
             }
             Iterator keys = iptracker.keySet().iterator();
-            while (keys.hasNext()){
-                IPEntry ipentry = IPEntry.getIPEntry((String)keys.next());
-                ipHist.addData(ipentry.getDomain(),1);
+            while (keys.hasNext()) {
+                IPEntry ipentry = IPEntry.getIPEntry((String) keys.next());
+                ipHist.addData(ipentry.getDomain(), 1);
             }
             rs.close();
-           
+
         }
         dbr.close();
         System.out.println("<report>");

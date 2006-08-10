@@ -26,21 +26,20 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Date;
 
-public class DomainReport{
+public class DomainReport {
 
-    public static void main (String [] args) throws Exception {
+    public static void main(String[] args) throws Exception {
         String USAGE = "Usage: java SchedulerReport [options] <date (YYYY-MM-DD)> Enter -help for a list of options\n";
 
-        String HELP = "Where [options] are:\n"+
-            " -help                 Displays help\n"+
-            " -step <day|month>     Specifies size of step (day by default)\n"+
-            " -n <steps>            Specifies number of steps to do\n";
+        String HELP = "Where [options] are:\n"
+                + " -help                 Displays help\n"
+                + " -step <day|month>     Specifies size of step (day by default)\n"
+                + " -n <steps>            Specifies number of steps to do\n";
 
-        if (args.length == 0){
+        if (args.length == 0) {
             System.err.println(USAGE);
             System.exit(1);
-        }
-        else if (args.length == 1 && args[0].equalsIgnoreCase("-help")){
+        } else if (args.length == 1 && args[0].equalsIgnoreCase("-help")) {
             System.err.println(USAGE);
             System.err.println(HELP);
             System.exit(1);
@@ -49,14 +48,12 @@ public class DomainReport{
         int n = 1;
         String stepStr = "day";
 
-        for (int i=0;i<args.length-1;i++){
+        for (int i = 0; i < args.length - 1; i++) {
             if (args[i].equals("-n")) {
                 n = Integer.parseInt(args[++i]);
-            }
-            else if (args[i].equals("-step")) {
+            } else if (args[i].equals("-step")) {
                 stepStr = args[++i];
-            }
-            else if (args[i].equalsIgnoreCase("-help")) {
+            } else if (args[i].equalsIgnoreCase("-help")) {
                 System.err.println(USAGE);
                 System.err.println(HELP);
                 System.exit(1);
@@ -65,18 +62,22 @@ public class DomainReport{
                 System.exit(1);
             }
         }
-        String inputDate = args[args.length-1];
-        
+        String inputDate = args[args.length - 1];
+
         DatabaseRetriever dbr = new DatabaseRetriever();
 
-        TimeStep ts = new TimeStep (stepStr, n, inputDate);
+        TimeStep ts = new TimeStep(stepStr, n, inputDate);
 
         System.out.println("<report>");
 
-        HistogramParser ipReport = new HistogramParser("Number of Unique IP Addresses Using RFT Broken Down by Domain", "rftiphistogram", "Number of Unique IP Addresses", n);
-        HistogramParser domainReport = new HistogramParser("Total RFT Resources Created Shown by Domain", "rftdomainhistogram", "Number of Resources Created", n);
+        HistogramParser ipReport = new HistogramParser(
+                "Number of Unique IP Addresses Using RFT Broken Down by Domain",
+                "rftiphistogram", "Number of Unique IP Addresses", n);
+        HistogramParser domainReport = new HistogramParser(
+                "Total RFT Resources Created Shown by Domain",
+                "rftdomainhistogram", "Number of Resources Created", n);
 
-        while (ts.next()){
+        while (ts.next()) {
             HashMap iptracker = new HashMap();
 
             String startDate = ts.getFormattedTime();
@@ -86,25 +87,26 @@ public class DomainReport{
             ipReport.nextEntry(startDate, ts.getFormattedTime());
             domainReport.nextEntry(startDate, ts.getFormattedTime());
 
-            ResultSet rs = dbr.retrieve("rft_packets",new String [] {"ip_address"}, startTime, ts.getTime());
-           
-            while(rs.next()){
+            ResultSet rs = dbr.retrieve("rft_packets",
+                    new String[] { "ip_address" }, startTime, ts.getTime());
+
+            while (rs.next()) {
                 IPEntry ipEntry = IPEntry.getIPEntry(rs.getString(1));
-                iptracker.put(rs.getString(1),"");
+                iptracker.put(rs.getString(1), "");
                 domainReport.addData(ipEntry.getDomain(), 1);
             }
-            
+
             Iterator ipIterator = iptracker.keySet().iterator();
-            while(ipIterator.hasNext())
-                {
-                    IPEntry ipEntry = IPEntry.getIPEntry((String)ipIterator.next());
-                    ipReport.addData(ipEntry.getDomain(),1);
-                }
+            while (ipIterator.hasNext()) {
+                IPEntry ipEntry = IPEntry
+                        .getIPEntry((String) ipIterator.next());
+                ipReport.addData(ipEntry.getDomain(), 1);
+            }
             rs.close();
         }
         dbr.close();
         ipReport.output(System.out);
         domainReport.output(System.out);
-    System.out.println("</report>");
-}
+        System.out.println("</report>");
+    }
 }

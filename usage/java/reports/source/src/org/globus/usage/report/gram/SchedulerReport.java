@@ -25,37 +25,34 @@ import java.sql.ResultSet;
 
 import java.util.Date;
 
-public class SchedulerReport{
-    
-    public static void main (String [] args) throws Exception {
+public class SchedulerReport {
+
+    public static void main(String[] args) throws Exception {
         String USAGE = "Usage: java SchedulerReport [options] <date (YYYY-MM-DD)> Enter -help for a list of options\n";
-        
-        String HELP = "Where [options] are:\n"+
-            " -help                 Displays help\n"+
-            " -step <day|month>     Specifies size of step (day by default)\n"+
-            " -n <steps>            Specifies number of steps to do\n";
-            
-            if (args.length == 0){
-                System.err.println(USAGE);
-                System.exit(1);
-            }
-            else if (args.length == 1 && args[0].equalsIgnoreCase("-help")){
-                System.err.println(USAGE);
-                System.err.println(HELP);
-                System.exit(1);
-            }
-            
+
+        String HELP = "Where [options] are:\n"
+                + " -help                 Displays help\n"
+                + " -step <day|month>     Specifies size of step (day by default)\n"
+                + " -n <steps>            Specifies number of steps to do\n";
+
+        if (args.length == 0) {
+            System.err.println(USAGE);
+            System.exit(1);
+        } else if (args.length == 1 && args[0].equalsIgnoreCase("-help")) {
+            System.err.println(USAGE);
+            System.err.println(HELP);
+            System.exit(1);
+        }
+
         int n = 1;
         String stepStr = "day";
 
-        for (int i=0;i<args.length-1;i++){
+        for (int i = 0; i < args.length - 1; i++) {
             if (args[i].equals("-n")) {
                 n = Integer.parseInt(args[++i]);
-            } 
-            else if (args[i].equals("-step")) {
+            } else if (args[i].equals("-step")) {
                 stepStr = args[++i];
-            } 
-            else if (args[i].equalsIgnoreCase("-help")) {
+            } else if (args[i].equalsIgnoreCase("-help")) {
                 System.err.println(USAGE);
                 System.err.println(HELP);
                 System.exit(1);
@@ -64,23 +61,26 @@ public class SchedulerReport{
                 System.exit(1);
             }
         }
-        
-        String inputDate = args[args.length-1];
-        
+
+        String inputDate = args[args.length - 1];
+
         DatabaseRetriever dbr = new DatabaseRetriever();
-        
-        TimeStep ts = new TimeStep (stepStr, n, inputDate);
-        
+
+        TimeStep ts = new TimeStep(stepStr, n, inputDate);
+
         System.out.println("<report>");
 
-        String [] schedulerNames = {"Fork", "Condor", "PBS", "LSF", "Loadleveler", "SGE"};
+        String[] schedulerNames = { "Fork", "Condor", "PBS", "LSF",
+                "Loadleveler", "SGE" };
 
-        HistogramParser jobHist = new HistogramParser("Total Jobs by Scheduler Used", "jobhistogram","Total Jobs Shown by Scheduler Used", n);
+        HistogramParser jobHist = new HistogramParser(
+                "Total Jobs by Scheduler Used", "jobhistogram",
+                "Total Jobs Shown by Scheduler Used", n);
 
-        while (ts.next()){
+        while (ts.next()) {
             int totalJobs = 0;
             IPTable iptracker;
-        
+
             String startDate = ts.getFormattedTime();
             Date startTime = ts.getTime();
 
@@ -88,38 +88,48 @@ public class SchedulerReport{
 
             jobHist.nextEntry(startDate, ts.getFormattedTime());
 
-            ResultSet rs = dbr.retrieve(new String ("gram_packets"), new String [] {"Count(*)"}, startTime, ts.getTime());
+            ResultSet rs = dbr.retrieve(new String("gram_packets"),
+                    new String[] { "Count(*)" }, startTime, ts.getTime());
 
             rs.next();
-            totalJobs+=rs.getInt(1);
+            totalJobs += rs.getInt(1);
 
             System.out.println(" <entry>");
             System.out.println("\t<start-date>" + startDate + "</start-date>");
-            System.out.println("\t<end-date>" + ts.getFormattedTime() + "</end-date>");
+            System.out.println("\t<end-date>" + ts.getFormattedTime()
+                    + "</end-date>");
             System.out.println("\t<total-jobs>" + totalJobs + "</total-jobs>");
-            
-            for (int i=0; i<6; i++)
-            {
-                int x=0;
-                iptracker = new IPTable();
-                 System.out.println("\t<scheduler>");
-                 System.out.println("\t\t<name>"+schedulerNames[i]+"</name>");
-                 System.out.println("\t\t<index>"+(i+1)+"</index>");
-                 
-                 rs = dbr.retrieve(new String ("gram_packets"), new String [] {"Count(*)"}, new String [] {"scheduler_type LIKE '"+schedulerNames[i]+"%'"}, startTime, ts.getTime());
-                 rs.next();
-                 
-                 System.out.println("\t\t<jobs>"+rs.getInt(1)+"</jobs>");
-                 jobHist.addData(schedulerNames[i],rs.getInt(1));
 
-                 rs = dbr.retrieve(new String ("gram_packets"), new String [] {"DISTINCT ip_address"},  new String [] {"scheduler_type LIKE '%"+schedulerNames[i]+"%'"}, startTime, ts.getTime());
-                 
-                 while (rs.next()){
-                     IPEntry ipEntry = IPEntry.getIPEntry(rs.getString(1));
-                     iptracker.addAddress(rs.getString(1));
-                     iptracker.addDomain(ipEntry.getDomain());
-                 }
-                System.out.println("\t\t<unique-domains>"+iptracker.getDomains().size()+"</unique-domains>");
+            for (int i = 0; i < 6; i++) {
+                iptracker = new IPTable();
+                System.out.println("\t<scheduler>");
+                System.out
+                        .println("\t\t<name>" + schedulerNames[i] + "</name>");
+                System.out.println("\t\t<index>" + (i + 1) + "</index>");
+
+                rs = dbr.retrieve(new String("gram_packets"),
+                        new String[] { "Count(*)" },
+                        new String[] { "scheduler_type LIKE '"
+                                + schedulerNames[i] + "%'" }, startTime, ts
+                                .getTime());
+                rs.next();
+
+                System.out.println("\t\t<jobs>" + rs.getInt(1) + "</jobs>");
+                jobHist.addData(schedulerNames[i], rs.getInt(1));
+
+                rs = dbr.retrieve(new String("gram_packets"),
+                        new String[] { "DISTINCT ip_address" },
+                        new String[] { "scheduler_type LIKE '%"
+                                + schedulerNames[i] + "%'" }, startTime, ts
+                                .getTime());
+
+                while (rs.next()) {
+                    IPEntry ipEntry = IPEntry.getIPEntry(rs.getString(1));
+                    iptracker.addAddress(rs.getString(1));
+                    iptracker.addDomain(ipEntry.getDomain());
+                }
+                System.out.println("\t\t<unique-domains>"
+                        + iptracker.getDomains().size() + "</unique-domains>");
                 iptracker.output(System.out, "\t\t");
                 System.out.println("\t</scheduler>");
             }

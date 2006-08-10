@@ -117,7 +117,6 @@ public class IPTable {
         
         public DomainEntry(String domain) {
             this.domain = domain;
-            this.value = value;
         }
 
         public void increment() {

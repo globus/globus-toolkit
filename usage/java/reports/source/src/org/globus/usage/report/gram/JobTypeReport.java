@@ -25,21 +25,20 @@ import java.text.DecimalFormat;
 
 import java.util.Locale;
 
-public class JobTypeReport{
-    
-    public static void main (String [] args) throws Exception{
+public class JobTypeReport {
+
+    public static void main(String[] args) throws Exception {
         String USAGE = "Usage: java JobFlagReport [options] <date (YYYY-MM-DD)> Enter -help for a list of options\n";
 
-        String HELP = "Where [options] are:\n"+
-            " -help                 Displays help\n"+
-            " -step <day|month>     Specifies size of step (day by default)\n"+
-            " -n <steps>            Specifies number of steps to do\n";
+        String HELP = "Where [options] are:\n"
+                + " -help                 Displays help\n"
+                + " -step <day|month>     Specifies size of step (day by default)\n"
+                + " -n <steps>            Specifies number of steps to do\n";
 
-        if (args.length == 0){
+        if (args.length == 0) {
             System.err.println(USAGE);
             System.exit(1);
-        }
-        else if (args.length == 1 && args[0].equalsIgnoreCase("-help")){
+        } else if (args.length == 1 && args[0].equalsIgnoreCase("-help")) {
             System.err.println(USAGE);
             System.err.println(HELP);
             System.exit(1);
@@ -48,11 +47,10 @@ public class JobTypeReport{
         int n = 1;
         String stepStr = "day";
 
-        for (int i=0;i<args.length-1;i++){
+        for (int i = 0; i < args.length - 1; i++) {
             if (args[i].equals("-n")) {
                 n = Integer.parseInt(args[++i]);
-            }
-            else if (args[i].equals("-step")) {
+            } else if (args[i].equals("-step")) {
                 stepStr = args[++i];
             } else if (args[i].equalsIgnoreCase("-help")) {
                 System.err.println(USAGE);
@@ -64,14 +62,14 @@ public class JobTypeReport{
             }
         }
 
-        String inputDate = args[args.length-1];
+        String inputDate = args[args.length - 1];
 
         DecimalFormat f = (DecimalFormat) NumberFormat.getInstance(Locale.US);
         f.setMaximumFractionDigits(3);
 
         DatabaseRetriever dbr = new DatabaseRetriever();
 
-        TimeStep ts = new TimeStep (stepStr, n, inputDate);     
+        TimeStep ts = new TimeStep(stepStr, n, inputDate);
 
         System.out.println("<job-type-report>");
 
@@ -81,8 +79,8 @@ public class JobTypeReport{
         int condorJobs;
         int multipleJobs;
 
-        while(ts.next()){
-            totalJobs=0;
+        while (ts.next()) {
+            totalJobs = 0;
             singleJobs = 0;
             MPIJobs = 0;
             condorJobs = 0;
@@ -90,30 +88,45 @@ public class JobTypeReport{
 
             String startDate = ts.getFormattedTime();
 
-            ResultSet rs = dbr.retrieve(new String ("gram_packets"), new String [] {"job_type"}, ts.getTime(), ts.stepTime());
-            while (rs.next()){
+            ResultSet rs = dbr.retrieve(new String("gram_packets"),
+                    new String[] { "job_type" }, ts.getTime(), ts.stepTime());
+
+            while (rs.next()) {
                 totalJobs++;
                 int type = rs.getInt(1);
-                if (type == 0 || type==2) {multipleJobs++;}
-                else if (type == 1) {singleJobs++;}
-                else if (type == 3) {MPIJobs++;}
-                else if (type == 4) {condorJobs++;}
+                if (type == 0 || type == 2) {
+                    multipleJobs++;
+                } else if (type == 1) {
+                    singleJobs++;
+                } else if (type == 3) {
+                    MPIJobs++;
+                } else if (type == 4) {
+                    condorJobs++;
+                }
             }
             rs.close();
 
-                System.out.println(" <entry>");
-                System.out.println("\t<start-date>" + startDate + "</start-date>");
-                System.out.println("\t<end-date>" + ts.getFormattedTime() + "</end-date>");
+            System.out.println(" <entry>");
+            System.out.println("\t<start-date>" + startDate + "</start-date>");
+            System.out.println("\t<end-date>" + ts.getFormattedTime()
+                    + "</end-date>");
 
-                System.out.println("\t<job-types>");
-                System.out.println("\t\t<single-jobs>"+f.format(100.0*singleJobs/totalJobs)+"</single-jobs>");
-                System.out.println("\t\t<multiple-jobs>"+f.format(100.0*multipleJobs/totalJobs)+"</multiple-jobs>");
-                System.out.println("\t\t<condor-jobs>"+f.format(100.0*condorJobs/totalJobs)+"</condor-jobs>");
-                System.out.println("\t\t<MPI-jobs>"+f.format(100.0*MPIJobs/totalJobs)+"</MPI-jobs>");
-                System.out.println("\t</job-types>");
+            System.out.println("\t<job-types>");
+            System.out.println("\t\t<single-jobs>"
+                    + f.format(100.0 * singleJobs / totalJobs)
+                    + "</single-jobs>");
+            System.out.println("\t\t<multiple-jobs>"
+                    + f.format(100.0 * multipleJobs / totalJobs)
+                    + "</multiple-jobs>");
+            System.out.println("\t\t<condor-jobs>"
+                    + f.format(100.0 * condorJobs / totalJobs)
+                    + "</condor-jobs>");
+            System.out.println("\t\t<MPI-jobs>"
+                    + f.format(100.0 * MPIJobs / totalJobs) + "</MPI-jobs>");
+            System.out.println("\t</job-types>");
 
-                System.out.println(" </entry>");
-            
+            System.out.println(" </entry>");
+
         }
         dbr.close();
         System.out.println("</job-type-report>");

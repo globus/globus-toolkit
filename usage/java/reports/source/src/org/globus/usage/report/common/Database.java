@@ -21,6 +21,7 @@ import java.util.Properties;
 public class Database {
 
     private String driverClass;
+
     private String url;
 
     public Database() throws Exception {
@@ -29,8 +30,7 @@ public class Database {
 
     public Database(String props) throws Exception {
 
-        InputStream in =
-            getClass().getClassLoader().getResourceAsStream(props);
+        InputStream in = getClass().getClassLoader().getResourceAsStream(props);
         if (in == null) {
             throw new Exception("Unable to load resource");
         }
@@ -41,7 +41,8 @@ public class Database {
         } finally {
             try {
                 in.close();
-            } catch (Exception e) {}
+            } catch (Exception e) {
+            }
         }
 
         this.driverClass = properties.getProperty("db.driver");

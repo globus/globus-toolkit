@@ -22,29 +22,31 @@ import java.io.InputStreamReader;
 import java.io.PrintStream;
 
 public class Slotter {
-    
+
     private Vector slots;
-    private long [] values;
-    
-    Slotter (String name){ 
+
+    private long[] values;
+
+    Slotter(String name) {
 
         slots = new Vector();
-             
-        try{
-            InputStream is =
-                getClass().getClassLoader().getResourceAsStream("etc/globus_usage_reports/slots.data");
+
+        try {
+            InputStream is = getClass().getClassLoader().getResourceAsStream(
+                    "etc/globus_usage_reports/slots.data");
             if (is == null) {
                 throw new Exception("Unable to load resource");
             }
-            
+
             BufferedReader in = new BufferedReader(new InputStreamReader(is));
             String read;
             while ((read = in.readLine()) != null) {
-                if ((read.trim()).equalsIgnoreCase(name)){
+                if ((read.trim()).equalsIgnoreCase(name)) {
                     read = in.readLine();
-                    while (read.indexOf(",") != -1){
-                        String size = (read.substring(0, read.indexOf(","))).trim();
-                        read = read.substring(read.indexOf(",")+1);
+                    while (read.indexOf(",") != -1) {
+                        String size = (read.substring(0, read.indexOf(",")))
+                                .trim();
+                        read = read.substring(read.indexOf(",") + 1);
                         this.slots.add(size);
                     }
                     String size = read.trim();
@@ -52,87 +54,70 @@ public class Slotter {
                 }
             }
             in.close();
-        }
-        catch (Exception e){
+        } catch (Exception e) {
             System.err.println(e.getMessage());
         }
-        values = new long [slots.size()];
-        for(int i=0; i<values.length; i++)
-            {
-                values[i]=0;
-            }
+        values = new long[slots.size()];
+        for (int i = 0; i < values.length; i++) {
+            values[i] = 0;
+        }
     }
-    
-    public static long slotValue(String value){
+
+    public static long slotValue(String value) {
         String number;
         String label;
-        if (value.indexOf(" ")!=-1){
+        if (value.indexOf(" ") != -1) {
             number = value.substring(0, value.indexOf(" ")).trim();
             label = value.substring(value.indexOf(" "), value.length()).trim();
-        }
-        else{
+        } else {
             number = value.trim();
-            label="";
+            label = "";
         }
-        try{
-               long x = Long.parseLong(number);
-               if (label.startsWith("k") || label.startsWith("K"))
-                   {
-                       return x*1024;
-                   }
-               if (label.startsWith("m") || label.startsWith("M"))
-                   {
-                       return x*1024*1024;
-                   }
-               if (label.startsWith("g") || label.startsWith("G"))
-                   {
-                       return x*1024*1024*1024;
-                   }
-               else{
-                   return x;
-               }
-           }
-
-                catch(Exception e){
-                    System.err.println(e.getMessage());
-                }
+        try {
+            long x = Long.parseLong(number);
+            if (label.startsWith("k") || label.startsWith("K")) {
+                return x * 1024;
+            } else if (label.startsWith("m") || label.startsWith("M")) {
+                return x * 1024 * 1024;
+            } else if (label.startsWith("g") || label.startsWith("G")) {
+                return x * 1024 * 1024 * 1024;
+            } else {
+                return x;
+            }
+        } catch (Exception e) {
+            System.err.println(e.getMessage());
+        }
         return -1;
     }
 
-    public void addValue(double value)
-    {
+    public void addValue(double value) {
         values[slots.indexOf(this.whichSlot(value))]++;
     }
 
-    public void addValue(double value, int valueToAdd)
-    {
-        values[slots.indexOf(this.whichSlot(value))]+=valueToAdd;
+    public void addValue(double value, int valueToAdd) {
+        values[slots.indexOf(this.whichSlot(value))] += valueToAdd;
     }
 
-    public void output(PrintStream io)
-    {
-        for(int i=0; i<this.slots.size(); i++)
-            {
-                io.println("\t<item>");
-                if(i!=slots.size()-1)
-                    {
-                    io.println("\t\t<name>"+(String)this.slots.get(i)+"-"+(String)this.slots.get(i+1)+"</name>");
-                    }
-                else{
-                    io.println("\t\t<name>"+(String)this.slots.get(i)+"+"+"</name>");
-                }
-                io.println("\t\t<single-value>"+values[i]+"</single-value>");
-                io.println("\t</item>");
+    public void output(PrintStream io) {
+        for (int i = 0; i < this.slots.size(); i++) {
+            io.println("\t<item>");
+            if (i != slots.size() - 1) {
+                io.println("\t\t<name>" + (String) this.slots.get(i) + "-"
+                        + (String) this.slots.get(i + 1) + "</name>");
+            } else {
+                io.println("\t\t<name>" + (String) this.slots.get(i) + "+"
+                        + "</name>");
             }
+            io.println("\t\t<single-value>" + values[i] + "</single-value>");
+            io.println("\t</item>");
+        }
     }
 
-    public String whichSlot(double value)
-    {
-        String prevSlot = (String)this.slots.get(0);
+    public String whichSlot(double value) {
+        String prevSlot = (String) this.slots.get(0);
         for (int i = 1; i < this.slots.size(); i++) {
-            String slot = (String)this.slots.get(i);
-            if (value >= slotValue(prevSlot) &&
-                value < slotValue(slot)) {
+            String slot = (String) this.slots.get(i);
+            if (value >= slotValue(prevSlot) && value < slotValue(slot)) {
                 return prevSlot;
             }
             prevSlot = slot;
@@ -141,9 +126,3 @@ public class Slotter {
     }
 
 }
-
-
-
-
-
-

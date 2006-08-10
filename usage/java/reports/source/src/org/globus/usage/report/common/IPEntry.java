@@ -33,8 +33,8 @@ public class IPEntry {
 
     public static IPEntry getIPEntry(String ip) {
         String hostname = null;
-        if (ip.startsWith("/")){
-            ip = ip.substring(1,ip.length());
+        if (ip.startsWith("/")) {
+            ip = ip.substring(1, ip.length());
         }
         try {
             hostname = InetAddress.getByName(ip).getHostName();
@@ -42,20 +42,18 @@ public class IPEntry {
             System.err.println(e.getMessage());
             return IPEntry.NULL_IP;
         }
-        if (hostname.equalsIgnoreCase("localhost")){
+        if (hostname.equalsIgnoreCase("localhost")) {
             return new IPEntry("MCS");
-        }
-        else if (hostname.startsWith("128.9")){
+        } else if (hostname.startsWith("128.9")) {
             return new IPEntry("ISI");
-        }
-        else if (IPTable.isPrivateAddress("/"+hostname)){
+        } else if (IPTable.isPrivateAddress("/" + hostname)) {
             return new IPEntry("Private");
         }
         int pos = hostname.lastIndexOf('.');
         if (pos != -1) {
-            String domain = hostname.substring(pos+1);
+            String domain = hostname.substring(pos + 1);
             if (Character.isDigit(domain.charAt(0))) {
-                //System.out.println("unable to get domain: "+ ip);
+                // System.out.println("unable to get domain: "+ ip);
             } else {
                 return new IPEntry(domain.toLowerCase());
             }

@@ -23,21 +23,20 @@ import java.sql.ResultSet;
 
 import java.util.Date;
 
-public class StripeReport{
+public class StripeReport {
 
-    public static void main (String [] args) throws Exception {
+    public static void main(String[] args) throws Exception {
         String USAGE = "Usage: java SchedulerReport [options] <date (YYYY-MM-DD)> Enter -help for a list of options\n";
 
-        String HELP = "Where [options] are:\n"+
-            " -help                 Displays help\n"+
-            " -step <day|month>     Specifies size of step (day by default)\n"+
-            " -n <steps>            Specifies number of steps to do\n";
+        String HELP = "Where [options] are:\n"
+                + " -help                 Displays help\n"
+                + " -step <day|month>     Specifies size of step (day by default)\n"
+                + " -n <steps>            Specifies number of steps to do\n";
 
-        if (args.length == 0){
+        if (args.length == 0) {
             System.err.println(USAGE);
             System.exit(1);
-        }
-        else if (args.length == 1 && args[0].equalsIgnoreCase("-help")){
+        } else if (args.length == 1 && args[0].equalsIgnoreCase("-help")) {
             System.err.println(USAGE);
             System.err.println(HELP);
             System.exit(1);
@@ -46,14 +45,12 @@ public class StripeReport{
         int n = 1;
         String stepStr = "day";
 
-        for (int i=0;i<args.length-1;i++){
+        for (int i = 0; i < args.length - 1; i++) {
             if (args[i].equals("-n")) {
                 n = Integer.parseInt(args[++i]);
-            }
-            else if (args[i].equals("-step")) {
+            } else if (args[i].equals("-step")) {
                 stepStr = args[++i];
-            }
-            else if (args[i].equalsIgnoreCase("-help")) {
+            } else if (args[i].equalsIgnoreCase("-help")) {
                 System.err.println(USAGE);
                 System.err.println(HELP);
                 System.exit(1);
@@ -62,30 +59,35 @@ public class StripeReport{
                 System.exit(1);
             }
         }
-        String inputDate = args[args.length-1];
-        
+        String inputDate = args[args.length - 1];
 
-        TimeStep ts = new TimeStep (stepStr, n, inputDate);
+        TimeStep ts = new TimeStep(stepStr, n, inputDate);
 
+        HistogramParser streamHist = new HistogramParser(
+                "Number of Packets shown by Streams Used",
+                "GFTPstreamhistogram",
+                "Number of GFTP Packets with Given Number of Streams", n);
 
-        HistogramParser streamHist = new HistogramParser("Number of Packets shown by Streams Used","GFTPstreamhistogram", "Number of GFTP Packets with Given Number of Streams", n);
-        
-        HistogramParser stripeHist = new HistogramParser("Number of Packets Shown by Stripes Used", "GFTPstripehistogram", "Number of GFTP Packets with Given Number of Stripes", n);
-        
+        HistogramParser stripeHist = new HistogramParser(
+                "Number of Packets Shown by Stripes Used",
+                "GFTPstripehistogram",
+                "Number of GFTP Packets with Given Number of Stripes", n);
+
         DatabaseRetriever dbr = new DatabaseRetriever();
 
-        while (ts.next()){
+        while (ts.next()) {
             String startTime = ts.getFormattedTime();
             Date startDate = ts.getTime();
             ts.stepTime();
 
             streamHist.nextEntry(startTime, ts.getFormattedTime());
             stripeHist.nextEntry(startTime, ts.getFormattedTime());
-            
-            ResultSet rs = dbr.retrieve("gftp_packets", new String [] {"num_streams","num_stripes"}, startDate, ts.getTime());
-            while(rs.next()){
+
+            ResultSet rs = dbr.retrieve("gftp_packets", new String[] {
+                    "num_streams", "num_stripes" }, startDate, ts.getTime());
+            while (rs.next()) {
                 streamHist.addData(rs.getString(1), 1);
-                stripeHist.addData(rs.getString(2), 1); 
+                stripeHist.addData(rs.getString(2), 1);
             }
             rs.close();
         }

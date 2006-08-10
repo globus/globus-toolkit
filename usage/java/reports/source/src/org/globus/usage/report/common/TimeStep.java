@@ -19,78 +19,74 @@ import java.util.Date;
 import java.util.Calendar;
 import java.text.SimpleDateFormat;
 
-public class TimeStep{
+public class TimeStep {
     int stepSize;
+
     int stepNumber;
+
     int steps;
+
     Calendar calendar;
- 
-    public TimeStep (String step, int stepNumber, String date)
-    {
+
+    public TimeStep(String step, int stepNumber, String date) {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
         steps = stepNumber;
         this.stepNumber = stepNumber;
-        if (step.equalsIgnoreCase("day")){
+        if (step.equalsIgnoreCase("day")) {
             stepSize = Calendar.DATE;
-        }
-        else{
+        } else {
             stepSize = Calendar.MONTH;
         }
-        try{
+        try {
             Date currentDate = dateFormat.parse(date);
             calendar = dateFormat.getCalendar();
-        }
-        catch (Exception e){
+        } catch (Exception e) {
             System.err.println("Could not parse date from form yyyy-MM-dd");
         }
-        
     }
-    
-    public TimeStep (int stepNumber, String date)
-    {
-        new TimeStep(new String ("day"), stepNumber, date);
+
+    public TimeStep(int stepNumber, String date) {
+        new TimeStep(new String("day"), stepNumber, date);
     }
-    
-    public TimeStep (String date)
-    {
-        new TimeStep(new String ("day"), 1, date);
+
+    public TimeStep(String date) {
+        new TimeStep(new String("day"), 1, date);
     }
-    
-    public boolean next(){
+
+    public boolean next() {
         return (steps > 0);
     }
-    
-    public Date getTime(){
+
+    public Date getTime() {
         return calendar.getTime();
     }
 
-    public String getFormattedTime()
-    {
-        if (stepSize == Calendar.MONTH)
-            {
-                SimpleDateFormat df = new SimpleDateFormat("MMM,''yy");
+    public String getFormattedTime() {
+        if (stepSize == Calendar.MONTH) {
+            SimpleDateFormat df = new SimpleDateFormat("MMM,''yy");
+            String datestr = df.format(calendar.getTime());
+            return datestr;
+        }
+        if (stepSize == Calendar.DATE) {
+            if (calendar.get(Calendar.DAY_OF_MONTH) == 1
+                    || calendar.get(Calendar.DAY_OF_MONTH) % 10 == 0
+                    || steps == 1 || steps == stepNumber) {
+                SimpleDateFormat df = new SimpleDateFormat("MMM d,''yy");
                 String datestr = df.format(calendar.getTime());
                 return datestr;
             }
-        if (stepSize == Calendar.DATE)
-            {
-                if (calendar.get(Calendar.DAY_OF_MONTH) == 1 || calendar.get(Calendar.DAY_OF_MONTH)%10 == 0 || steps == 1 || steps == stepNumber){
-                    SimpleDateFormat df = new SimpleDateFormat("MMM d,''yy");
-                    String datestr = df.format(calendar.getTime());
-                    return datestr;
-                }
-            }
+        }
         return "";
     }
 
-    public Date stepTime(){
-        if (steps > 0){
+    public Date stepTime() {
+        if (steps > 0) {
             calendar.add(stepSize, 1);
-            steps = steps-1;
+            steps = steps - 1;
             return calendar.getTime();
-        }
-        else {
-            System.out.println("All steps have been completed, can not advance the date");
+        } else {
+            System.out
+                    .println("All steps have been completed, can not advance the date");
             return null;
         }
     }

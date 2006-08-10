@@ -23,21 +23,20 @@ import java.sql.ResultSet;
 
 import java.util.Date;
 
-public class FileReport{
-    
-    public static void main (String [] args) throws Exception{
+public class FileReport {
+
+    public static void main(String[] args) throws Exception {
         String USAGE = "Usage: java JobFlagReport [options] <date (YYYY-MM-DD)> Enter -help for a list of options\n";
 
-        String HELP = "Where [options] are:\n"+
-            " -help                 Displays help\n"+
-            " -step <day|month>     Specifies size of step (day by default)\n"+
-            " -n <steps>            Specifies number of steps to do\n";
+        String HELP = "Where [options] are:\n"
+                + " -help                 Displays help\n"
+                + " -step <day|month>     Specifies size of step (day by default)\n"
+                + " -n <steps>            Specifies number of steps to do\n";
 
-        if (args.length == 0){
+        if (args.length == 0) {
             System.err.println(USAGE);
             System.exit(1);
-        }
-        else if (args.length == 1 && args[0].equalsIgnoreCase("-help")){
+        } else if (args.length == 1 && args[0].equalsIgnoreCase("-help")) {
             System.err.println(USAGE);
             System.err.println(HELP);
             System.exit(1);
@@ -46,11 +45,10 @@ public class FileReport{
         int n = 1;
         String stepStr = "day";
 
-        for (int i=0;i<args.length-1;i++){
+        for (int i = 0; i < args.length - 1; i++) {
             if (args[i].equals("-n")) {
                 n = Integer.parseInt(args[++i]);
-            }
-            else if (args[i].equals("-step")) {
+            } else if (args[i].equals("-step")) {
                 stepStr = args[++i];
             } else if (args[i].equalsIgnoreCase("-help")) {
                 System.err.println(USAGE);
@@ -62,19 +60,27 @@ public class FileReport{
             }
         }
 
-        String inputDate = args[args.length-1];
+        String inputDate = args[args.length - 1];
 
-        TimeStep ts = new TimeStep (stepStr, n, inputDate);     
+        TimeStep ts = new TimeStep(stepStr, n, inputDate);
 
-        HistogramParser fileHist = new HistogramParser("Average Number of Files Transfered by a RFT Resource", "rftfilehistogram", "Number of Files", n);
+        HistogramParser fileHist = new HistogramParser(
+                "Average Number of Files Transfered by a RFT Resource",
+                "rftfilehistogram", "Number of Files", n);
 
-        HistogramParser deleteHist = new HistogramParser("Average Number of Files deleted by a RFT Resource","rftdeletehistogram", "Number of Files Deleted",n);
+        HistogramParser deleteHist = new HistogramParser(
+                "Average Number of Files deleted by a RFT Resource",
+                "rftdeletehistogram", "Number of Files Deleted", n);
 
-        HistogramParser byteHist = new HistogramParser("Average Number of Bytes Transfered by a RFT Resource", "rftbytehistogram", "Bytes Transferred", n); 
+        HistogramParser byteHist = new HistogramParser(
+                "Average Number of Bytes Transfered by a RFT Resource",
+                "rftbytehistogram", "Bytes Transferred", n);
 
-        HistogramParser typeHist = new HistogramParser("Percent of Requests forDeletion vs. Transfer", "rfttypehistogram","Percent of total requests",n); 
+        HistogramParser typeHist = new HistogramParser(
+                "Percent of Requests forDeletion vs. Transfer",
+                "rfttypehistogram", "Percent of total requests", n);
 
-        while(ts.next()){
+        while (ts.next()) {
             int requests = 0;
             int delete = 0;
             int transfer = 0;
@@ -93,30 +99,31 @@ public class FileReport{
 
             DatabaseRetriever dbr = new DatabaseRetriever();
             String startDate = ts.getFormattedTime();
-            
-            ResultSet rs = dbr.retrieve("rft_packets", new String [] {"number_of_files", "number_of_bytes","request_type"}, startD, ts.getTime());
-            while(rs.next()){
+
+            ResultSet rs = dbr.retrieve("rft_packets", new String[] {
+                    "number_of_files", "number_of_bytes", "request_type" },
+                    startD, ts.getTime());
+            while (rs.next()) {
                 requests++;
-                if (rs.getInt(3) == 0)
-                    {
+                if (rs.getInt(3) == 0) {
                     numFilesTransfer += rs.getInt(1);
                     transfer++;
-                    }
-                if (rs.getInt(3) == 1)
-                    {
-                        numFilesDelete += rs.getInt(1);
-                        delete++;
-                    }
+                } else if (rs.getInt(3) == 1) {
+                    numFilesDelete += rs.getInt(1);
+                    delete++;
+                }
                 numBytes += rs.getLong(2);
             }
 
-            byteHist.addData("Number of Bytes", (double)numBytes/transfer);
-            fileHist.addData("File Number Transferred", (double)numFilesTransfer/transfer);
-            deleteHist.addData("File Number Deleted", (double)numFilesDelete/delete);
-            typeHist.addData("% Transfers", 100.0*transfer/requests);
-            typeHist.addData("% Deletions", 100.0*delete/requests);
+            byteHist.addData("Number of Bytes", (double) numBytes / transfer);
+            fileHist.addData("File Number Transferred",
+                    (double) numFilesTransfer / transfer);
+            deleteHist.addData("File Number Deleted", (double) numFilesDelete
+                    / delete);
+            typeHist.addData("% Transfers", 100.0 * transfer / requests);
+            typeHist.addData("% Deletions", 100.0 * delete / requests);
             rs.close();
-            dbr.close();            
+            dbr.close();
         }
         System.out.println("<report>");
         typeHist.output(System.out);
