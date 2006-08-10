@@ -30,6 +30,7 @@ Build Instructions:
         location="${abs.deploy.dir}/share/globus_wsrf_common/build-launcher.xml"/>
 
     <target name="setup" >
+        <!-- Java WS Core Reports -->
         <ant antfile="${build.launcher}" 
              target="generateLauncher">
             <property name="launcher-name" value="jwscore-service-report"/>
@@ -71,6 +72,92 @@ Build Instructions:
             <property name="launcher-name" value="jwscore-container-event-report"/>
             <property name="class.name" 
                 value="org.globus.usage.report.ContainerEventReport"/>
+        </ant>
+
+
+        <!-- RFT Reports -->
+        <ant antfile="${build.launcher}"
+             target="generateLauncher">
+            <property name="launcher-name"
+            value="rft-file-report"/>
+            <property name="class.name"
+                value="org.globus.usage.report.rft.FileReport"/>
+        </ant>
+        <ant antfile="${build.launcher}"
+             target="generateLauncher">
+            <property name="launcher-name"
+            value="rft-domain-report"/>
+            <property name="class.name"
+                value="org.globus.usage.report.rft.DomainReport"/>
+        </ant>
+
+
+        <!-- Gram Reports -->
+        <ant antfile="${build.launcher}"
+             target="generateLauncher">
+            <property name="launcher-name"
+            value="gram-jobtype-report"/>
+            <property name="class.name"
+                value="org.globus.usage.report.gram.JobTypeReport"/>
+        </ant>
+        <ant antfile="${build.launcher}"
+             target="generateLauncher">
+            <property name="launcher-name"
+            value="gram-features-report"/>
+            <property name="class.name"
+                value="org.globus.usage.report.gram.FeaturesReport"/>
+        </ant>
+        <ant antfile="${build.launcher}"
+             target="generateLauncher">
+            <property name="launcher-name"
+            value="gram-error-report"/>
+            <property name="class.name"
+                value="org.globus.usage.report.gram.ErrorReport"/>
+        </ant>
+        <ant antfile="${build.launcher}"
+             target="generateLauncher">
+            <property name="launcher-name"
+            value="gram-scheduler-report"/>
+            <property name="class.name"
+                value="org.globus.usage.report.gram.SchedulerReport"/>
+        </ant>
+        <ant antfile="${build.launcher}"
+             target="generateLauncher">
+            <property name="launcher-name"
+            value="gram-domain-report"/>
+            <property name="class.name"
+                value="org.globus.usage.report.gram.DomainReport"/>
+        </ant>
+
+
+       <!-- GridFTP Reports -->
+        <ant antfile="${build.launcher}"
+             target="generateLauncher">
+            <property name="launcher-name"
+            value="gftp-buffer-report"/>
+            <property name="class.name"
+                value="org.globus.usage.report.gftp.BufferReport"/>
+        </ant>
+        <ant antfile="${build.launcher}"
+             target="generateLauncher">
+            <property name="launcher-name"
+            value="gftp-host-report"/>
+            <property name="class.name"
+                value="org.globus.usage.report.gftp.HostReport"/>
+        </ant>
+        <ant antfile="${build.launcher}"
+             target="generateLauncher">
+            <property name="launcher-name"
+            value="gftp-return-report"/>
+            <property name="class.name"
+                value="org.globus.usage.report.gftp.ReturnReport"/>
+        </ant>
+        <ant antfile="${build.launcher}"
+             target="generateLauncher">
+            <property name="launcher-name"
+            value="gftp-stripe-report"/>
+            <property name="class.name"
+                value="org.globus.usage.report.gftp.StripeReport"/>
         </ant>
     </target>
         
