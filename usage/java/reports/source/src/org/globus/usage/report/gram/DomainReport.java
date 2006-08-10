@@ -28,7 +28,7 @@ import java.util.Date;
 public class DomainReport {
 
     public static void main(String[] args) throws Exception {
-        String USAGE = "Usage: java SchedulerReport [options] <date (YYYY-MM-DD)> Enter -help for a list of options\n";
+        String USAGE = "Usage: java DomainReport [options] <date (YYYY-MM-DD)> Enter -help for a list of options\n";
 
         String HELP = "Where [options] are:\n"
                 + " -help                 Displays help\n"
