@@ -15,11 +15,17 @@
  */
 package org.globus.usage.report.jwscore;
 
+import org.globus.usage.report.common.IPTable;
+
 public class ServiceEntry extends IPTable {
 
     int standalone;
     int servlet;
     int other;
+    
+    public ServiceEntry() {
+        super(false);
+    }
     
     public void standalone() {
         standalone++;

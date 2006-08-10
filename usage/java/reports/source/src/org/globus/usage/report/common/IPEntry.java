@@ -32,6 +32,10 @@ public class IPEntry {
     }
 
     public static IPEntry getIPEntry(String ip) {
+        return getIPEntry(ip, true);
+    }
+    
+    public static IPEntry getIPEntry(String ip, boolean groupCommon) {
         String hostname = null;
         if (ip.startsWith("/")) {
             ip = ip.substring(1, ip.length());
@@ -39,16 +43,19 @@ public class IPEntry {
         try {
             hostname = InetAddress.getByName(ip).getHostName();
         } catch (Exception e) {
-            System.err.println(e.getMessage());
             return IPEntry.NULL_IP;
         }
-        if (hostname.equalsIgnoreCase("localhost")) {
-            return new IPEntry("MCS");
-        } else if (hostname.startsWith("128.9")) {
-            return new IPEntry("ISI");
-        } else if (IPTable.isPrivateAddress("/" + hostname)) {
-            return new IPEntry("Private");
+
+        if (groupCommon) {
+            if (ip.startsWith("128.9")) {
+                return new IPEntry("ISI");
+            } else if (ip.startsWith("140.221")) {
+                return new IPEntry("MCS");
+            } else if (IPTable.isPrivateAddress("/" + ip)) {
+                return new IPEntry("Private");
+            }
         }
+
         int pos = hostname.lastIndexOf('.');
         if (pos != -1) {
             String domain = hostname.substring(pos + 1);

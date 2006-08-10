@@ -29,7 +29,17 @@ public class IPTable {
     HashMap uniqueIPs = new HashMap();
 
     HashMap domains = new HashMap();
+    
+    private boolean groupCommonDomains;
 
+    public IPTable() {
+        this(true);
+    }
+    
+    public IPTable(boolean groupCommonDomains) {
+        this.groupCommonDomains = groupCommonDomains;
+    }
+    
     public void discoverDomains(Map ipLookupTable) {
         Iterator ipIter = getUniqueIPList().keySet().iterator();
         while (ipIter.hasNext()) {
@@ -37,11 +47,15 @@ public class IPTable {
 
             IPEntry ipEntry = (IPEntry) ipLookupTable.get(ip);
             if (ipEntry == null) {
-                ipEntry = IPEntry.getIPEntry(ip);
+                ipEntry = getIPEntry(ip);
                 ipLookupTable.put(ip, ipEntry);
             }
             addDomain(ipEntry.getDomain());
         }
+    }
+    
+    protected IPEntry getIPEntry(String ip) {
+        return IPEntry.getIPEntry(ip, this.groupCommonDomains);
     }
 
     public void addDomain(String domain) {

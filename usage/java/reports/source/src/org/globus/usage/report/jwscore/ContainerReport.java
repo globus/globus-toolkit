@@ -29,6 +29,7 @@ import java.text.SimpleDateFormat;
 import java.io.PrintStream;
 
 import org.globus.usage.report.common.Database;
+import org.globus.usage.report.common.IPTable;
 
 public class ContainerReport {
 
@@ -47,6 +48,10 @@ public class ContainerReport {
         private int containers;
         private int services;
         private Map uniqueServices = new HashMap();
+        
+        public ServiceData() {
+            super(false);
+        }
         
         public void addService(String serviceName) {
             if (this.uniqueServices.get(serviceName) == null) {
