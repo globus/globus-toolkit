@@ -148,7 +148,7 @@ Build Instructions:
         <ant antfile="${build.launcher}"
              target="generateLauncher">
             <property name="launcher-name"
-            value="gftp-return-report"/>
+            value="gftp-response-report"/>
             <property name="class.name"
                 value="org.globus.usage.report.gftp.ReturnReport"/>
         </ant>
