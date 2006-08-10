@@ -30,7 +30,7 @@ public class IPTable {
 
     HashMap domains = new HashMap();
     
-    private boolean groupCommonDomains;
+    protected boolean groupCommonDomains;
 
     public IPTable() {
         this(true);
@@ -47,17 +47,13 @@ public class IPTable {
 
             IPEntry ipEntry = (IPEntry) ipLookupTable.get(ip);
             if (ipEntry == null) {
-                ipEntry = getIPEntry(ip);
+                ipEntry = IPEntry.getIPEntry(ip, this.groupCommonDomains);
                 ipLookupTable.put(ip, ipEntry);
             }
             addDomain(ipEntry.getDomain());
         }
     }
     
-    protected IPEntry getIPEntry(String ip) {
-        return IPEntry.getIPEntry(ip, this.groupCommonDomains);
-    }
-
     public void addDomain(String domain) {
         DomainEntry c = (DomainEntry) domains.get(domain);
         if (c == null) {
