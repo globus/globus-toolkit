@@ -54,6 +54,11 @@ generateSlotsReport() {
   generateReportSub "common" "gnuplot-slots" "slots.gnuplot"
 }
 
+generateRangedReport() {
+  generateReportSub "common" "gnuplot-ranged" "ranged.gnuplot"
+}
+
+
 ### MAIN ###
 
 if [ ! -d "$GLOBUS_LOCATION" ] ; then
@@ -69,16 +74,34 @@ REPORT_TYPE=$1
 shift
 
 case $REPORT_TYPE in
-file)
-        OUTPUT=$PWD/RFTFileReport.xml
-        runReport "rft-file-report" "$@"
-        generateHistogramReport
+buffer)
+	OUTPUT=$PWD/GFTPBufferReport.xml
+	runReport "gftp-buffer-report" "$@"
+	generateRangedReport
+	generateHistogramReport
+	;;
+
+host)
+        OUTPUT=$PWD/GFTPHostReport.xml
+        runReport "gftp-host-report" "$@"
+	generateHistogramReport
+	generateSlotsReport
         ;;
-domain)
-        OUTPUT=$PWD/RFTDomainReport.xml
-        runReport "rft-domain-report" "$@"
+
+response)
+        OUTPUT=$PWD/GFTPResponseReport.xml
+        runReport "gftp-response-report" "$@"
         generateHistogramReport
+        generateSlotsReport
         ;;
+
+stripe)
+        OUTPUT=$PWD/GFTPStripeReport.xml
+        runReport "gftp-stripe-report" "$@"
+        generateHistogramReport
+        generateSlotsReport
+        ;;
+
 *)
     echo "Unknown report type: $REPORT_TYPE";
     exit 1

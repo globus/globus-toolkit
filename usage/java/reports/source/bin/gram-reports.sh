@@ -18,21 +18,22 @@ runReport() {
   fi
 }
 
-
-generateReport() {
+generateReportSub() {
 
   if [ -z "$OUTPUT" ] ; then
     echo "Error: Output file not specified" 1>&2
     exit 1
   fi
 
-  ANT_TARGET=$1
-  PLOT_FILES=$2
+  COMPONENT=$1
+  ANT_TARGET=$2
+  PLOT_FILES=$3
 
   shift
   shift
+  shift
 
-  ant -f $GLOBUS_LOCATION/etc/globus_usage_reports/gram/reports.xml $ANT_TARGET -Din.xml=$OUTPUT
+  ant -f $GLOBUS_LOCATION/etc/globus_usage_reports/$COMPONENT/reports.xml $ANT_TARGET -Din.xml=$OUTPUT
   if [ $? != 0 ]; then
     echo "Error: Failed to generate gnuplot files"
     exit 3
@@ -46,13 +47,17 @@ generateReport() {
 }
 
 generateHistogramReport() {
-  generateReport "gnuplot-histogram" "histograms.gnuplot"
+  generateReportSub "common" "gnuplot-histogram" "histograms.gnuplot"
 }
 
 generateSlotsReport() {
-  generateReport "gnuplot-slots" "slots.gnuplot"
+  generateReportSub "common" "gnuplot-slots" "slots.gnuplot"
 }
 
+
+generateReport() {
+  generateReportSub "gram" "$@"
+}
 
 ### MAIN ###
 
@@ -70,19 +75,19 @@ shift
 
 case $REPORT_TYPE in
 jobtype)
-	OUTPUT=$PWD/JobTypeReport.xml
+	OUTPUT=$PWD/GRAMJobTypeReport.xml
 	runReport "gram-jobtype-report" "$@"
         generateReport "gnuplot-jobtype" "jobtype.gnuplot"
 	;;
 
 features)
-        OUTPUT=$PWD/FeaturesReport.xml
+        OUTPUT=$PWD/GRAMFeaturesReport.xml
         runReport "gram-features-report" "$@"
         generateReport "gnuplot-features" "features.gnuplot"
         ;;
 
 error)
-        OUTPUT=$PWD/ErrorReport.xml
+        OUTPUT=$PWD/GRAMErrorReport.xml
         runReport "gram-error-report" "$@"
         generateReport "gnuplot-error" "error.gnuplot"
         generateHistogramReport
@@ -97,14 +102,14 @@ error)
         ;;
 
 domain)
-        OUTPUT=$PWD/DomainReport.xml
+        OUTPUT=$PWD/GRAMDomainReport.xml
         runReport "gram-domain-report" "$@"
         generateHistogramReport
         generateSlotsReport
         ;;
 
 scheduler)
-        OUTPUT=$PWD/SchedulerReport.xml
+        OUTPUT=$PWD/GRAMSchedulerReport.xml
         runReport "gram-scheduler-report" "$@"
         generateReport "gnuplot-scheduler" "scheduler.gnuplot"
         generateHistogramReport
