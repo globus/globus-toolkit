@@ -19,7 +19,7 @@ Generating container reports & graphs:
 
 2. Using the container.xml generate instructions and data files for gnuplot:
 
-   # ant -f etc/globus_usage_reports/reports.xml gnuplot-container \
+   # ant -f etc/globus_usage_reports/jwscore/reports.xml gnuplot-container \
      -Din.xml=$G_L/container.xml
    
    This will generate the following files:
@@ -57,7 +57,7 @@ Steps:
 
 2. Using the uptime.xml generate instructions and data files for gnuplot:
 
-   # ant -f etc/globus_usage_reports/reports.xml gnuplot-uptime \
+   # ant -f etc/globus_usage_reports/jwscore/reports.xml gnuplot-uptime \
      -Din.xml=$G_L/uptime.xml
 
    This will generate 'uptime.gnuplot' & 'uptime.data' files.
@@ -90,7 +90,7 @@ Steps:
 
 2. Using the longuptime.xml generate instructions and data files for gnuplot:
 
-   # ant -f etc/globus_usage_reports/reports.xml gnuplot-long-uptime \
+   # ant -f etc/globus_usage_reports/jwscore/reports.xml gnuplot-long-uptime \
      -Din.xml=$G_L/longuptime.xml
 
    This will generate 'longuptime.gnuplot' & 'longuptime.data' files.
@@ -112,7 +112,7 @@ Generating service report & graph:
 
 2. Using the service.xml generate instructions and data files for gnuplot:
 
-   # ant -f etc/globus_usage_reports/reports.xml gnuplot-service \
+   # ant -f etc/globus_usage_reports/jwscore/reports.xml gnuplot-service \
      -Din.xml=$G_L/service.xml
 
    This will generate 'service.gnuplot' & 'service.data' files.
@@ -144,7 +144,7 @@ Steps:
 
 2. Using the event.xml generate instructions and data files for gnuplot:
 
-   # ant -f etc/globus_usage_reports/reports.xml gnuplot-event \
+   # ant -f etc/globus_usage_reports/jwscore/reports.xml gnuplot-event \
      -Din.xml=$G_L/event.xml
 
    This will generate 'event.gnuplot' & 'event.data' files.

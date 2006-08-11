@@ -60,7 +60,6 @@
 
     <target name="dist" depends="jar">
          <copy todir="${build.share.dir}">
-           <fileset dir="share"/>
            <fileset file="README"/>
         </copy>
 
