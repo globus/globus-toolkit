@@ -17,6 +17,8 @@ test_PROGRAMS= \
 	globus-xio-async-copy \
 	globus-xio-async-client \
 	globus-xio-async-server \
+	globus-xio-simple-server \
+	globus-xio-simple-client \
 	globus-xio-bidi-client
 
 
@@ -50,6 +52,11 @@ globus_xio_async_server_SOURCES = globus_xio_async_server.c
 globus_xio_async_server_LDFLAGS = $(GPT_LDFLAGS)
 globus_xio_bidi_client_SOURCES = globus_xio_bidi_client.c
 globus_xio_bidi_client_LDFLAGS = $(GPT_LDFLAGS)
+
+globus_xio_simple_client_SOURCES = globus_xio_simple_client.c
+globus_xio_simple_client_LDFLAGS = $(GPT_LDFLAGS)
+globus_xio_simple_server_SOURCES = globus_xio_simple_server.c
+globus_xio_simple_server_LDFLAGS = $(GPT_LDFLAGS)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
