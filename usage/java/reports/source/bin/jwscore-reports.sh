@@ -20,7 +20,7 @@ runReport() {
     exit 2
   fi
 
-  ant -f $GLOBUS_LOCATION/etc/globus_usage_reports/reports.xml $ANT_TARGET -Din.xml=$OUTPUT
+  ant -f $GLOBUS_LOCATION/etc/globus_usage_reports/jwscore/reports.xml $ANT_TARGET -Din.xml=$OUTPUT
   if [ $? != 0 ]; then
     echo "Error: Failed to generate gnuplot files"
     exit 3
