@@ -25,8 +25,8 @@ test_res(
         return;
     }
 
-    fprintf(stderr, "ERROR: %s\n", globus_object_printable_to_string(
-        globus_error_get(res)));
+    fprintf(stderr, "ERROR: %s\n", globus_error_print_friendly(
+        globus_error_peek(res)));
 
     globus_assert(0);
 }
