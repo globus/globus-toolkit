@@ -70,7 +70,7 @@ $ make dist
    (http://grandcentral.cs.wisc.edu:2500/nmi/show/HomePage):
 
      $ ssh grandcentral.cs.wisc.edu
-     $ nwo/glue/myproxy/build
+     $ cd nwo/glue/myproxy/build
      $ cvs update
      $ vi cmdfile		# edit component_version
      $ vi myproxy-src.ftp	# edit ftp_target
