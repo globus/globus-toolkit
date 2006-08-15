@@ -13,10 +13,9 @@ use Config;
 use File::Find;
 use Globus::Testing::Utilities;
 
-# ------------------------------------------------------------------------
-# $Revision$
-# ------------------------------------------------------------------------
-my $VERSION = "test-toolkit version:  ".`ident $0 | grep Revision | awk {'print \$2;'}`;
+my $REVISION = '$Revision$';
+$REVISION =~ m/Revision: ([0-9\.]+)/;
+my $VERSION = "test-toolkit version: $1";
 
 # ------------------------------------------------------------------------
 # Get options
@@ -34,7 +33,7 @@ GetOptions (
 );
 
 if (defined $help)        { help(); exit; }
-if (defined $version)     { print "$VERSION"; exit; }
+if (defined $version)     { print "$VERSION\n"; exit; }
 
 if (! -d "$ENV{GLOBUS_LOCATION}") 
 {
@@ -50,7 +49,7 @@ if (defined $remote)
 $ENV{TEST_DEBUG} = $debug;
 $ENV{TEST_COLOR} = $color;
 
-my $u = new Utilities();
+my $u = new Globus::Testing::Utilities();
 
 $u->debug("color -> $color");
 $u->debug("debug -> $debug");

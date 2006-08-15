@@ -22,5 +22,6 @@ fi
 rm -f $SECURITY_DESCRIPTOR 2> /dev/null 2>&1;
 
 sed -e "s|@GRIDMAP@|$GRIDMAP|" \
+    -e "s|@PROXY@|$X509_USER_PROXY|" \
             < ${SECURITY_DESCRIPTOR}.in \
             > $SECURITY_DESCRIPTOR

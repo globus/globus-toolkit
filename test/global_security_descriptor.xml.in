@@ -9,4 +9,9 @@
       </parameter>
     </interceptor>
   </defaultAuthzParam>
+  <credential>
+    <proxy-file value="@PROXY@"/>
+  </credential>
+
+
 </containerSecurityConfig>
