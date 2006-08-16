@@ -44,6 +44,7 @@ static globus_hashtable_t               l_host_table;
 static globus_bool_t                    l_done = GLOBUS_FALSE;
 static globus_mutex_t                   l_mutex;
 static globus_cond_t                    l_cond;
+static globus_fifo_t                    l_host_q;
 
 globus_result_t
 chosting_i_util_add_notification(
@@ -180,12 +181,16 @@ l_frontend_changed(
     {
         pid_t pid;
         int rc;
-        printf("starting a new backend %d\n", i);
+        char * hn;
+
+        hn = (char *) globus_fifo_dequeue(&l_host_q);
+        globus_fifo_enqueue(&l_host_q, hn);
 
         pid = fork();
         if(pid == 0)
         {
-            rc = execl(l_exe_name, l_exe_name, NULL);
+            printf("starting a new backend %d: %s %s\n", i, l_exe_name, hn);
+            rc = execl(l_exe_name, l_exe_name, hn, NULL);
             exit(rc);
         }
     }
@@ -207,6 +212,12 @@ main(
     char *                              filename;
     globus_soap_message_attr_t          attr = NULL;
     globus_service_engine_t             engine;
+    int                                 i;
+
+    globus_module_activate(GLOBUS_SOAP_MESSAGE_MODULE);
+    globus_module_activate(GLOBUS_SERVICE_ENGINE_MODULE);
+    globus_module_activate(GLOBUS_NOTIFICATION_CONSUMER_MODULE);
+    globus_module_activate(GRIDFTPSERVERINFOSERVICE_MODULE);
 
     if(argc < 3)
     {
@@ -217,10 +228,12 @@ main(
     filename = argv[1];
     l_exe_name = argv[2];
 
-    globus_module_activate(GLOBUS_SOAP_MESSAGE_MODULE);
-    globus_module_activate(GLOBUS_SERVICE_ENGINE_MODULE);
-    globus_module_activate(GLOBUS_NOTIFICATION_CONSUMER_MODULE);
-    globus_module_activate(GRIDFTPSERVERINFOSERVICE_MODULE);
+    globus_fifo_init(&l_host_q);
+    for(i = 3; i < argc; i++)
+    {
+        printf("adding %s\n", argv[i]);
+        globus_fifo_enqueue(&l_host_q, argv[i]);
+    }
 
     globus_mutex_init(&l_mutex, NULL);
     globus_cond_init(&l_cond, NULL);

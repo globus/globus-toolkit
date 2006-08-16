@@ -292,7 +292,7 @@ l_time_complete(
     login_sec = (float)login_usec / 1000000.0;
 
 
-    fprintf(d->stream, "%ld %s%f %f %s %s\n", 
+    fprintf(d->stream, "%ld %s %f %f %s %s\n", 
         now.tv_sec, d->text,
         login_sec, transfer_sec, d->src_url, d->dst_url);
 
