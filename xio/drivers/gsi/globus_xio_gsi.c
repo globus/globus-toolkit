@@ -3457,10 +3457,9 @@ gsi_l_attr_parse_auth(
     globus_xio_driver_attr_cntl_t       cntl_func)
 {
     globus_result_t                     result;
+    globus_xio_gsi_authorization_mode_t type = -1;
     GlobusXIOName(gsi_l_attr_parse_auth);
     GlobusXIOGSIDebugEnter();
-
-    globus_xio_gsi_authorization_mode_t type = -1;
 
     if(strcasecmp(val, "none") == 0)
     {
