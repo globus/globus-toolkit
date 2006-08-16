@@ -1280,9 +1280,9 @@ globus_l_xio_ordering_close(
 		    ("got lock\n"));
     if (!globus_priority_q_empty(&handle->buffer_q))
     {
+        globus_l_xio_ordering_buffer_t* buffer;
         GlobusXIOOrderingDebugPrintf(GLOBUS_L_XIO_ORDERING_DEBUG_TRACE, 
 			("priority queue not empty\n"));
-        globus_l_xio_ordering_buffer_t* buffer;
 	do
 	{
 	    buffer = globus_priority_q_dequeue(&handle->buffer_q);
