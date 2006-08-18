@@ -373,8 +373,12 @@ srb_l_stat1(
     sprintf(qval[DATA_GRP_NAME]," = '%s'", start_dir);
     status = srbGetDataDirInfo(conn, MDAS_CATALOG,
                 qval, selval, &myresult, maxRows);
-    if(status == 0 && myresult.row_count == 1)
+    if(status == 0 && myresult.row_count > 0)
     {
+        globus_gfs_log_message(
+            GLOBUS_GFS_LOG_INFO,
+            "srb_l_stat1 :: directory detected: %s\n",
+            start_dir);
         rsrcName = (char *) getAttributeColumn(
             (mdasC_sql_result_struct *) &myresult,
             DATA_GRP_NAME);
@@ -386,15 +390,21 @@ srb_l_stat1(
         stat_out->ino = srb_l_filename_hash(rsrcName);
         stat_out->name = strdup(fname);
         stat_out->nlink = 0;
-        stat_out->uid = 1;
-        stat_out->gid = 1;
+        stat_out->uid = getuid();
+        stat_out->gid = getgid();
         stat_out->size = 0;
         stat_out->dev = srb_l_dev_wrapper++;
-        stat_out->mode = S_IFDIR;
-        stat_out->mode |= S_IRUSR | S_IWUSR | S_IXUSR | S_IROTH | S_IXOTH;
+        stat_out->mode =
+            S_IFDIR | S_IRUSR | S_IWUSR | S_IXUSR |
+            S_IROTH | S_IXOTH | S_IRGRP | S_IXGRP;
     }
     else
     {
+        globus_gfs_log_message(
+            GLOBUS_GFS_LOG_INFO,
+            "srb_l_stat1 :: directory test failed with status = %d and row count = %d.  Trying file: %s\n",
+            status, myresult.row_count,
+            start_dir);
         /* try regular file, get the full boat of info */
         sprintf(qval[DATA_GRP_NAME]," = '%s'", data_dir);
         sprintf(qval[DATA_NAME]," = '%s'", data_name);
@@ -416,7 +426,7 @@ srb_l_stat1(
     /* perform the MCAT query */
         status = srbGetDataDirInfo(conn, MDAS_CATALOG,
                 qval, selval, &myresult, maxRows);
-        if(status == 0 && myresult.row_count == 1)
+        if(status == 0 && myresult.row_count > 0)
         {
             pathName = (char *) getAttributeColumn(
                 (mdasC_sql_result_struct *) &myresult,
@@ -437,13 +447,17 @@ srb_l_stat1(
             stat_out->symlink_target = NULL;
             stat_out->name = strdup(rsrcName);
             stat_out->nlink = 0;
-            stat_out->uid = 1;
-            stat_out->gid = 1;
+            stat_out->uid = getuid();
+            stat_out->gid = getgid();
             sc = sscanf(sizeName, "%"GLOBUS_OFF_T_FORMAT,
                 &stat_out->size);
             if(sc != 1)
             {
                 stat_out->size = -1;
+                globus_gfs_log_message(
+                    GLOBUS_GFS_LOG_INFO,
+                    "srb_l_stat1 :: failed to get size: %s\n",
+                    start_dir);
             }
 
             memset(&tm, '\0', sizeof(struct tm));
@@ -462,6 +476,13 @@ srb_l_stat1(
                 stat_out->mtime = mktime(&tm);
                 stat_out->atime = mktime(&tm);
             }
+            else
+            {
+                globus_gfs_log_message(
+                    GLOBUS_GFS_LOG_INFO,
+                    "srb_l_stat1 :: failed to mod time: %s\n",
+                    start_dir);
+            }
             /* need to fake these next 2 better */
             stat_out->dev = srb_l_dev_wrapper++;
             full_name = globus_common_create_string(
@@ -469,10 +490,17 @@ srb_l_stat1(
             stat_out->ino = srb_l_filename_hash(full_name);
             free(full_name);
 
-            stat_out->mode = S_IFREG;
-            {
-                stat_out->mode |= S_IRUSR|S_IWUSR|S_IXUSR|S_IXOTH;
-            }
+            stat_out->mode = S_IFREG | S_IRUSR | S_IWUSR | 
+                            S_IXUSR | S_IXOTH | S_IRGRP | S_IXGRP;
+        }
+        else if(myresult.row_count < 1 && status == 0)
+        {
+            globus_gfs_log_message(
+                GLOBUS_GFS_LOG_WARN,
+                "srb_l_stat1 :: status is %d, but row count is %d. "
+                "strage srb result.  setting error code to -1",
+                status, myresult.row_count);
+            status = -1;
         }
     }
     free(data_dir);
@@ -520,12 +548,12 @@ srb_l_stat_dir(
     stat_array[stat_ndx].ino = srb_l_filename_hash(start_dir);
     stat_array[stat_ndx].name = strdup(".");
     stat_array[stat_ndx].nlink = 0;
-    stat_array[stat_ndx].uid = 1;
-    stat_array[stat_ndx].gid = 1;
+    stat_array[stat_ndx].uid = getuid();
+    stat_array[stat_ndx].gid = getgid();
         stat_array[stat_ndx].size = 0;
     stat_array[stat_ndx].dev = srb_l_dev_wrapper++;
     stat_array[stat_ndx].mode =
-        S_IFDIR | S_IRUSR|S_IWUSR|S_IXUSR|S_IXOTH;
+        S_IFDIR | S_IRUSR|S_IWUSR|S_IXUSR|S_IXOTH| S_IRGRP | S_IXGRP;
     stat_ndx++;
 
     for (i = 0; i < MAX_DCS_NUM; i++)
@@ -587,8 +615,8 @@ srb_l_stat_dir(
             stat_array[stat_ndx].symlink_target = NULL;
             stat_array[stat_ndx].name = globus_libc_strdup(rsrcName);
             stat_array[stat_ndx].nlink = 0;
-            stat_array[stat_ndx].uid = 1;
-            stat_array[stat_ndx].gid = 1;
+            stat_array[stat_ndx].uid = getuid();
+            stat_array[stat_ndx].gid = getgid();
             sc = sscanf(sizeName, "%"GLOBUS_OFF_T_FORMAT,
                 &stat_array[stat_ndx].size);
             if(sc != 1)
@@ -619,11 +647,8 @@ srb_l_stat_dir(
             stat_array[stat_ndx].ino = srb_l_filename_hash(full_name);
             free(full_name);
 
-            stat_array[stat_ndx].mode = S_IFREG;
-            if(strcmp(ownerName, username) == 0)
-            {
-                stat_array[stat_ndx].mode |= S_IRUSR|S_IWUSR|S_IXUSR|S_IROTH|S_IXOTH;
-            }
+            stat_array[stat_ndx].mode = S_IFREG | S_IRUSR | S_IWUSR | 
+                        S_IXUSR | S_IROTH | S_IXOTH | S_IRGRP | S_IXGRP;
             if(rsrcName) 
             {
                 rsrcName += MAX_DATA_SIZE;
@@ -695,16 +720,13 @@ srb_l_stat_dir(
             stat_array[stat_ndx].ino = srb_l_filename_hash(rsrcName);
             stat_array[stat_ndx].name = strdup(fname);
             stat_array[stat_ndx].nlink = 0;
-            stat_array[stat_ndx].uid = 1;
-            stat_array[stat_ndx].gid = 1;
+            stat_array[stat_ndx].uid = getuid();
+            stat_array[stat_ndx].gid = getgid();
             stat_array[stat_ndx].size = 0;
             stat_array[stat_ndx].dev = srb_l_dev_wrapper++;
 
-            stat_array[stat_ndx].mode = S_IFDIR;
-            {
-                stat_array[stat_ndx].mode |= 
-                    S_IRUSR|S_IWUSR|S_IXUSR|S_IROTH|S_IXOTH;
-            }
+            stat_array[stat_ndx].mode = S_IFDIR | S_IRUSR | S_IWUSR | 
+                S_IXUSR | S_IROTH | S_IXOTH | S_IRGRP | S_IXGRP;
 
             if(rsrcName) rsrcName += MAX_DATA_SIZE;
             stat_ndx++;
@@ -1238,17 +1260,6 @@ globus_l_gfs_srb_recv(
        what resource to create it in, it NULL then shoose the default */
 
     /* try to open */ 
-#ifdef NOT_IN
-    /* take this out for now */
-    globus_gfs_log_message(
-        GLOBUS_GFS_LOG_INFO,
-        "srb: [recv] pre-srbObjStat(%s)\n", transfer_info->pathname);
-    status = srbObjStat(
-        srb_handle->conn, MDAS_CATALOG, transfer_info->pathname, &statbuf);
-    globus_gfs_log_message(
-        GLOBUS_GFS_LOG_INFO,
-        "srb: [recv] post-srbObjStat(%s)\n", transfer_info->pathname);
-#endif
     if(transfer_info->truncate)
     {
         flags |= O_TRUNC;
@@ -1598,7 +1609,7 @@ globus_l_gfs_srb_stat(
     }
     globus_gfs_log_message(
         GLOBUS_GFS_LOG_INFO,
-        "globus_l_gfs_srb_stat() : srbObjStat Success\n");
+        "globus_l_gfs_srb_stat() : srb_l_stat1 Success\n");
     /* srbFileStat */
     if(!S_ISDIR(stat_buf.mode) || stat_info->file_only)
     {
@@ -1638,7 +1649,7 @@ globus_l_gfs_srb_stat(
 error:
     globus_gfs_log_message(
         GLOBUS_GFS_LOG_INFO,
-        "globus_l_gfs_srb_stat() : srbObjStat Failed\n");
+        "globus_l_gfs_srb_stat() : globus_l_gfs_srb_stat Failed\n");
     globus_gridftp_server_finished_stat(op, result, NULL, 0);
 }
 
@@ -1681,6 +1692,7 @@ globus_l_gfs_srb_command(
     srb_handle = (globus_l_gfs_srb_handle_t *) user_arg;
 
     collection = strdup(cmd_info->pathname);
+    srb_l_reduce_path(collection);
     if(collection == NULL)
     {
         result = GlobusGFSErrorGeneric("SRB: strdup failed");
