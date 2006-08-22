@@ -92,7 +92,8 @@ typedef enum
     GLOBUS_XIO_ERROR_NOT_REGISTERED,
     GLOBUS_XIO_ERROR_NOT_ACTIVATED,
     GLOBUS_XIO_ERROR_UNLOADED,
-    GLOBUS_XIO_ERROR_TIMEOUT
+    GLOBUS_XIO_ERROR_TIMEOUT,
+    GLOBUS_XIO_ERROR_PARSE
 } globus_xio_error_type_t;
 
 
@@ -236,6 +237,7 @@ typedef struct
     char *                              pass;
     char *                              subject;
 } globus_xio_contact_t;
+
 
 EXTERN_C_END
 

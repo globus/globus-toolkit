@@ -353,6 +353,9 @@ typedef enum
      * server
      * @ingroup gridftp_driver_cntls
      *
+     * @param credential
+     *      The credential to use for authenticating with a GridFTP server.
+     *      This may be GSS_C_NO_CREDENTIAL to use the default credential.
      * @param user
      *      The user name to send to the gridftp server. When doing a gsiftp 
      *      transfer, this may be set to NULL, and the default gridmap entry 
@@ -368,7 +371,8 @@ typedef enum
      *      name does not match the hostname of the server (ie, when the server
      *      is being run by a user). 
      */
-    /* const char *			user,
+    /* gss_cred_id_t			credential,
+     * const char *			user,
      * const char *			password,
      * const char *			account,
      * const char *			subject */
@@ -378,6 +382,8 @@ typedef enum
      * Get the authentication information on the attr.
      * @ingroup gridftp_driver_cntls
      *
+     * @param credential_out
+     *      The credential will be stored here.
      * @param user_out
      *      The user name will be stored here.
      * @param password_out
@@ -387,7 +393,8 @@ typedef enum
      * @param subject_out
      *      The subject name will be stored here.
      */
-    /* const char **                    user_out,
+    /* gss_cred_id_t *			credential_out,
+     * const char **                    user_out,
      * const char **                    password_out,
      * const char **                    account_out,
      * const char **                    subject_out */

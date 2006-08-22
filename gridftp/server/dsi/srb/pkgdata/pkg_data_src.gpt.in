@@ -1,35 +1,34 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE gpt_package_metadata SYSTEM "globus_package.dtd">
 
-<gpt_package_metadata Name="globus_xio_bidi_driver" Format_Version="0.01">
+<gpt_package_metadata Name="globus_srb_dsi" Format_Version="0.01">
 
-    <Aging_Version Major="0" Minor="9" Age="0"/>
-    <Description> Globus XIO Bidirectional Driver</Description>
+    <Aging_Version Major="0" Minor="28" Age="0"/>
+    <Description> Globus SRB DSI</Description>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
 
     <src_pkg>
 
         <Source_Dependencies Type="compile">
-            <Dependency Name="globus_xio">
+            <Dependency Name="globus_gridftp_server">
                 <Version>
-                    <Simple_Version Major="0"/>
+                    <Simple_Version Major="2"/>
                 </Version>
             </Dependency>
-
         </Source_Dependencies>
 
         <Source_Dependencies Type="pgm_link">
-            <Dependency Name="globus_xio">
+            <Dependency Name="globus_gridftp_server">
                 <Version>
-                    <Simple_Version Major="0"/>
+                    <Simple_Version Major="2"/>
                 </Version>
             </Dependency>
         </Source_Dependencies>
 
         <Source_Dependencies Type="doc_runtime">
-            <Dependency Name="globus_xio" Package="doc">
+            <Dependency Name="globus_gridftp_server" Package="doc">
                 <Version>
-                    <Simple_Version Major="0"/>
+                    <Simple_Version Major="2"/>
                 </Version>
             </Dependency>
         </Source_Dependencies>

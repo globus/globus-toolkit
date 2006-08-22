@@ -1990,6 +1990,7 @@ globus_i_xio_gridftp_set_authorization(
     va_list                             ap)
 {       
     globus_result_t                     result; 
+    gss_cred_id_t			credential;
     char *                              user;
     char *                              password;
     char *                              account;
@@ -1997,13 +1998,14 @@ globus_i_xio_gridftp_set_authorization(
     GlobusXIOName(globus_i_xio_gridftp_set_authorization);
 
     GlobusXIOGridftpDebugEnter();
+    credential = va_arg(ap, gss_cred_id_t);
     user = va_arg(ap, char *);
     password = va_arg(ap, char *);
     account = va_arg(ap, char *);
     subject = va_arg(ap, char *);
     result = globus_ftp_client_operationattr_set_authorization(
         attr,
-        GSS_C_NO_CREDENTIAL,
+	credential,
         user,
         password,
         account, 
@@ -2286,14 +2288,15 @@ globus_l_xio_gridftp_attr_cntl(
             break;
         case GLOBUS_XIO_GRIDFTP_GET_AUTH:
         {
-            gss_cred_id_t credential;
+            gss_cred_id_t * credential = va_arg(ap, gss_cred_id_t*);
             char ** user_out = va_arg(ap, char**);
             char ** password_out = va_arg(ap, char**);
             char ** account_out = va_arg(ap, char**);
             char ** subject_out = va_arg(ap, char**);
+	    
             result = globus_ftp_client_operationattr_get_authorization(
                 &attr->ftp_operation_attr,
-                &credential,
+                credential,
                 user_out,
                 password_out,
                 account_out,

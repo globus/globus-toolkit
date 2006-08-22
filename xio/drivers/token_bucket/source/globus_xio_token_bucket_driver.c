@@ -682,6 +682,20 @@ globus_l_xio_tb_attr_destroy(
     return GLOBUS_SUCCESS;
 }
 
+
+static globus_i_xio_attr_parse_table_t  gsi_l_string_opts_table[] =
+{
+    {"rate", GLOBUS_XIO_TOKEN_BUCKET_SET_RATE, },
+    {"read_rate", GLOBUS_XIO_TOKEN_BUCKET_SET_READ_RATE, },
+    {"write_rate", GLOBUS_XIO_TOKEN_BUCKET_SET_WRITE_RATE, },
+    {"period", GLOBUS_XIO_TOKEN_BUCKET_SET_PERIOD, },
+    {"read_period", GLOBUS_XIO_TOKEN_BUCKET_SET_READ_PERIOD, },
+    {"write_period", GLOBUS_XIO_TOKEN_BUCKET_SET_WRITE_PERIOD, },
+    {"burst", , },
+    {NULL, 0, NULL}
+};
+
+
 static
 void
 globus_l_xio_tb_attr_parse_opts(

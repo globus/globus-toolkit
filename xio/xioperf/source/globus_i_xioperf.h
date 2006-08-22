@@ -52,6 +52,7 @@ typedef struct globus_i_xioperf_info_s
     globus_off_t                        bytes_recv;
     globus_bool_t                       daemon;
     globus_size_t                       block_size;
+    globus_size_t                       next_buf_size;
     int                                 stream_count;
     globus_xio_stack_t                  stack;
     globus_reltime_t                    time;

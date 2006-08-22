@@ -3394,6 +3394,10 @@ globus_libc_cached_getpwuid(
         {
             goto error_pwent;
         }
+        if(pwent->pw.pw_uid != uid)
+        {
+            goto error_pwent;
+        }
         globus_hashtable_insert(
             &globus_l_gsc_pwent_cache,
             (void *) pwent->pw.pw_uid,

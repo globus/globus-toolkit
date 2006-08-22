@@ -764,3 +764,399 @@ globus_xio_stack_destroy(
     GlobusXIODebugExitWithError();
     return res;
 }
+
+/* STRING PARSING ATTR SETTING */
+globus_result_t
+globus_i_xio_string_cntl_parser(
+    const char *                        env_str,
+    globus_xio_string_cntl_table_t *    table,
+    void *                              attr,
+    globus_xio_driver_attr_cntl_t       cntl_func)
+{
+    int                                 i;
+    char *                              key;
+    char *                              val;
+    char *                              tmp_s;
+    globus_list_t *                     list;
+    globus_object_t *                   error = NULL;
+    globus_result_t                     res = GLOBUS_SUCCESS;
+    GlobusXIOName(globus_i_xio_string_cntl_parser);
+    
+    list = globus_list_from_string(env_str, ';', NULL);
+
+    while(!globus_list_empty(list))
+    {
+        key = (char *) globus_list_remove(&list, list);
+
+        tmp_s = strchr(key, '=');
+        if(tmp_s != NULL)
+        {
+            *tmp_s = '\0';
+            val = tmp_s + 1;
+
+            for(i = 0; table[i].key != NULL; i++)
+            {
+                /* if we have a match */
+                if(strcmp(table[i].key, key) == 0)
+                {
+                    res = table[i].parse_func(
+                        attr, key, val, table[i].cmd, cntl_func);
+                    if(res != GLOBUS_SUCCESS)
+                    {
+                        /* restore '=' */
+                        *tmp_s = '=';
+                        res = GlobusXIOErrorWrapFailedWithMessage(
+                            res, "String cntl '%s' failed", key);
+                    }
+                    
+                    break;
+                }
+            }
+            
+            if(!table[i].key)
+            {
+                res = GlobusXIOErrorParameter(key);
+            }
+        }
+        else
+        {
+            res = GlobusXIOErrorParameter(key);
+        }
+        
+        if(res != GLOBUS_SUCCESS)
+        {
+            if(!error)
+            {
+                error = globus_error_construct_multiple(
+                    GLOBUS_XIO_MODULE,
+                    GLOBUS_XIO_ERROR_PARAMETER,
+                    "One or more of the string cntls failed");
+            }
+            
+            globus_error_mutliple_add_chain(
+                error, globus_error_get(res), NULL);
+        }
+        
+        globus_free(key);
+    }
+    
+    return globus_error_put(error);
+}
+
+globus_result_t
+globus_xio_string_cntl_bouncer(
+    globus_xio_driver_attr_cntl_t       cntl_func,
+    void *                              attr,
+    int                                 cmd,
+    ...)
+{
+    globus_result_t                     result;
+    va_list                             ap;
+
+    va_start(ap, cmd);
+    result = cntl_func(attr, cmd, ap);
+    va_end(ap);
+
+    return result;
+}
+
+static
+int
+globus_xio_string_cntl_tb_kmgint(
+    const char *                        arg,
+    globus_off_t *                      out_i)
+{
+    int                                 i;
+    int                                 sc;
+    GlobusXIOName(globus_xio_string_cntl_tb_kmgint);
+
+    GlobusXIODebugEnter();
+
+    sc = sscanf(arg, "%d", &i);
+    if(sc != 1)
+    {
+        return 1;
+    }
+    if(strchr(arg, 'K') != NULL)
+    {
+        *out_i = (globus_off_t)i * 1024;
+    }
+    else if(strchr(arg, 'M') != NULL)
+    {
+        *out_i = (globus_off_t)i * 1024 * 1024;
+    }
+    else if(strchr(arg, 'G') != NULL)
+    {
+        *out_i = (globus_off_t)i * 1024 * 1024 * 1024;
+    }
+    else
+    {
+        *out_i = (globus_off_t)i;
+    }
+
+    return 0;
+}
+
+globus_result_t
+globus_xio_string_cntl_formated_off(
+    void *                              attr,
+    const char *                        key,
+    const char *                        val,
+    int                                 cmd,
+    globus_xio_driver_attr_cntl_t       cntl_func)
+{
+    int                                 sc;
+    globus_off_t                        o;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    GlobusXIOName(globus_xio_string_cntl_formated_off);
+
+    GlobusXIODebugEnter();
+
+    sc = globus_xio_string_cntl_tb_kmgint(val, &o);
+    if(sc != 0)
+    {
+        result = GlobusXIOErrorParse(val);
+    }
+    else
+    {
+        result = globus_xio_string_cntl_bouncer(cntl_func, attr, cmd, o);
+    }
+    GlobusXIODebugExit();
+
+    return result;
+}
+
+globus_result_t
+globus_xio_string_cntl_formated_int(
+    void *                              attr,
+    const char *                        key,
+    const char *                        val,
+    int                                 cmd,
+    globus_xio_driver_attr_cntl_t       cntl_func)
+{
+    int                                 sc;
+    int                                 i;
+    globus_off_t                        o;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    GlobusXIOName(globus_xio_string_cntl_formated_int);
+
+    GlobusXIODebugEnter();
+
+    sc = globus_xio_string_cntl_tb_kmgint(val, &o);
+    if(sc != 0)
+    {
+        result = GlobusXIOErrorParse(val);
+    }
+    else
+    {
+        i = (int) o;
+        result = globus_xio_string_cntl_bouncer(cntl_func, attr, cmd, i);
+    }
+    GlobusXIODebugExit();
+    return result;
+}
+
+globus_result_t
+globus_xio_string_cntl_int(
+    void *                              attr,
+    const char *                        key,
+    const char *                        val,
+    int                                 cmd,
+    globus_xio_driver_attr_cntl_t       cntl_func)
+{
+    int                                 sc;
+    int                                 i;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    GlobusXIOName(globus_xio_string_cntl_int);
+
+    GlobusXIODebugEnter();
+
+    sc = sscanf(val, "%d", &i);
+    if(sc != 1)
+    {
+        result = GlobusXIOErrorParse(val);
+    }
+    else
+    {
+        result = globus_xio_string_cntl_bouncer(cntl_func, attr, cmd, i);
+    }
+    GlobusXIODebugExit();
+    return result;
+}
+
+globus_result_t
+globus_xio_string_cntl_int_int(
+    void *                              attr,
+    const char *                        key,
+    const char *                        val,
+    int                                 cmd,
+    globus_xio_driver_attr_cntl_t       cntl_func)
+{
+    int                                 sc;
+    int                                 i;
+    int                                 j;
+    char *                              tmp_s;
+    char *                              new_val;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    GlobusXIOName(globus_xio_string_cntl_int_int);
+
+    GlobusXIODebugEnter();
+
+    /* turn all non digits into spaces for the scanf easiness */
+    tmp_s = strdup(val);
+    if(tmp_s == NULL)
+    {
+        result = GlobusXIOErrorParse(val);
+        return result;
+    }
+    new_val = tmp_s;
+    while(*tmp_s != '\0')
+    {
+        if(!isdigit(*tmp_s))
+        {
+            *tmp_s = ' ';
+        }
+        tmp_s++;
+    }
+
+    sc = sscanf(new_val, "%d %d", &i, &j);
+    free(new_val);
+    if(sc != 2)
+    {
+        result = GlobusXIOErrorParse(val);
+    }
+    else
+    {
+        result = globus_xio_string_cntl_bouncer(cntl_func, attr, cmd, i, j);
+    }
+    GlobusXIODebugExit();
+    return result;
+}
+
+globus_result_t
+globus_xio_string_cntl_float(
+    void *                              attr,
+    const char *                        key,
+    const char *                        val,
+    int                                 cmd,
+    globus_xio_driver_attr_cntl_t       cntl_func)
+{
+    int                                 sc;
+    float                               f;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    GlobusXIOName(globus_xio_string_cntl_float);
+
+    GlobusXIODebugEnter();
+
+    sc = sscanf(val, "%f", &f);
+    if(sc != 1)
+    {
+        result = GlobusXIOErrorParse(val);
+    }
+    else
+    {
+        result = globus_xio_string_cntl_bouncer(cntl_func, attr, cmd, f);
+    }
+    GlobusXIODebugExit();
+    return result;
+}
+
+globus_result_t
+globus_xio_string_cntl_string(
+    void *                              attr,
+    const char *                        key,
+    const char *                        val,
+    int                                 cmd,
+    globus_xio_driver_attr_cntl_t       cntl_func)
+{
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    GlobusXIOName(globus_xio_string_cntl_string);
+
+    GlobusXIODebugEnter();
+
+    result = globus_xio_string_cntl_bouncer(cntl_func, attr, cmd, val);
+
+    GlobusXIODebugExit();
+    return result;
+}
+
+globus_result_t
+globus_xio_string_cntl_bool(
+    void *                              attr,
+    const char *                        key,
+    const char *                        val,
+    int                                 cmd,
+    globus_xio_driver_attr_cntl_t       cntl_func)
+{
+    int                                 sc;
+    int                                 i;
+    globus_bool_t                       found = GLOBUS_FALSE;
+    globus_bool_t                       b;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    GlobusXIOName(globus_xio_string_cntl_bool);
+
+    GlobusXIODebugEnter();
+
+    if(strcasecmp(val, "yes") == 0)
+    {
+        b = GLOBUS_TRUE;
+        found = GLOBUS_TRUE;
+    }
+    else if(strcasecmp(val, "y") == 0)
+    {
+        b = GLOBUS_TRUE;
+        found = GLOBUS_TRUE;
+    }
+    else if(strcasecmp(val, "true") == 0)
+    {
+        b = GLOBUS_TRUE;
+        found = GLOBUS_TRUE;
+    }
+    else if(strcasecmp(val, "t") == 0)
+    {
+        b = GLOBUS_TRUE;
+        found = GLOBUS_TRUE;
+    }
+    else if(strcasecmp(val, "no") == 0)
+    {
+        b = GLOBUS_FALSE;
+        found = GLOBUS_TRUE;
+    }
+    else if(strcasecmp(val, "n") == 0)
+    {
+        b = GLOBUS_FALSE;
+        found = GLOBUS_TRUE;
+    }
+    else if(strcasecmp(val, "false") == 0)
+    {
+        b = GLOBUS_FALSE;
+        found = GLOBUS_TRUE;
+    }
+    else if(strcasecmp(val, "f") == 0)
+    {
+        b = GLOBUS_FALSE;
+        found = GLOBUS_TRUE;
+    }
+    else
+    {
+        sc = sscanf(val, "%d", &i);
+        if(sc == 1)
+        {
+            b = i;
+            found = GLOBUS_TRUE;
+        }
+    }
+    if(found)
+    {
+        result = globus_xio_string_cntl_bouncer(cntl_func, attr, cmd, b);
+    }
+    else
+    {
+        result = GlobusXIOErrorParse(val);
+    }
+
+    GlobusXIODebugExit();
+    return result;
+}
+
+
