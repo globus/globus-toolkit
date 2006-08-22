@@ -93,6 +93,7 @@ typedef struct
     int					buffer_count;
     globus_xio_operation_t              close_op;
     globus_xio_driver_handle_t		driver_handle;
+    globus_object_t *			error;
 } globus_l_xio_ordering_handle_t;
 
 struct globus_l_xio_ordering_user_req_s
@@ -167,6 +168,28 @@ GlobusXIODefineModule(ordering) =
     GLOBUS_NULL,
     &local_version
 };
+
+#define GlobusXIOOrderingErrorRead(reason)                                  \
+    globus_error_put(                                                       \
+        globus_error_construct_error(                                       \
+            GlobusXIOMyModule(ordering),                                    \
+            GLOBUS_NULL,                                                    \
+            GLOBUS_XIO_ORDERING_ERROR_READ,                                 \
+            __FILE__,                                                       \
+            _xio_name,                                                      \
+            __LINE__,                                                       \
+            "Read error: %s", (reason)))
+
+#define GlobusXIOOrderingErrorCancel(reason)                                \
+    globus_error_put(                                                       \
+        globus_error_construct_error(                                       \
+            GlobusXIOMyModule(ordering),                                    \
+            GLOBUS_NULL,                                                    \
+            GLOBUS_XIO_ORDERING_ERROR_CANCEL,                               \
+            __FILE__,                                                       \
+            _xio_name,                                                      \
+            __LINE__,                                                       \
+            "Read error: %s", (reason)))
 
 #define GlobusXIOOrderingMin(min, size1, size2)				    \
     do									    \
@@ -281,6 +304,7 @@ globus_l_xio_ordering_handle_destroy(
             "globus_l_xio_ordering_attr_destroy", result);
         goto error;
     }
+    globus_object_free(handle->error);
     globus_priority_q_destroy(&handle->buffer_q);
     if (handle->driver_op_list)
     {
@@ -294,6 +318,23 @@ globus_l_xio_ordering_handle_destroy(
 error:
     GlobusXIOOrderingDebugExitWithError();
     return result;
+}
+
+static
+void
+globus_i_xio_ordering_save_error(
+    globus_l_xio_ordering_handle_t *    handle,
+    globus_result_t                     result)
+{
+    GlobusXIOName(globus_i_xio_ordering_save_error);
+
+    GlobusXIOOrderingDebugEnter();
+    handle->state = GLOBUS_XIO_ORDERING_ERROR;
+    if (handle->error == GLOBUS_NULL)
+    {
+        handle->error = globus_object_copy(globus_error_peek(result));
+    }
+    GlobusXIOOrderingDebugExit();
 }
 
 
@@ -536,6 +577,7 @@ globus_l_xio_ordering_cancel_cb(
     globus_size_t			nbytes;
     globus_bool_t			finish_read = GLOBUS_FALSE;
     globus_bool_t			finish_close = GLOBUS_FALSE;
+    globus_result_t                     result;
     GlobusXIOName(globus_l_xio_ordering_cancel_cb);
 
     GlobusXIOOrderingDebugEnter();
@@ -574,8 +616,12 @@ globus_l_xio_ordering_cancel_cb(
 	    finish_close = GLOBUS_TRUE;
 	    handle->state = GLOBUS_XIO_ORDERING_READY;
 	    break;
-	default:
-	    handle->state = GLOBUS_XIO_ORDERING_ERROR;
+	case GLOBUS_XIO_ORDERING_ERROR:
+            goto error;
+	default:    
+            result = GlobusXIOOrderingErrorCancel(
+			    "Invalid state in cancel_cb"); 
+            globus_i_xio_ordering_save_error(handle, result);
 	    goto error;
     }
     globus_mutex_unlock(&handle->mutex);
@@ -807,6 +853,7 @@ globus_l_xio_ordering_read_cb(
 				op, NULL, GLOBUS_XIO_DD_GET_OFFSET, &offset);
 		    if (res != GLOBUS_SUCCESS)
 		    {
+			globus_i_xio_ordering_save_error(handle, res);
 			goto error;
 		    }
 		    buffer->data_offset = offset;
@@ -855,7 +902,7 @@ globus_l_xio_ordering_read_cb(
 							handle, GLOBUS_NULL);
 		    if (res != GLOBUS_SUCCESS)
 		    {
-			handle->state = GLOBUS_XIO_ORDERING_ERROR;
+                        globus_i_xio_ordering_save_error(handle, res);
 			/* 
 			 * I do not have a goto error; here coz under error 
 			 * label, i finish read with error but there may not 
@@ -867,7 +914,8 @@ globus_l_xio_ordering_read_cb(
 	    else if (eof)
 	    {
 	        handle->state = GLOBUS_XIO_ORDERING_EOF_RECEIVED;
-		if (handle->read_count > 0)
+		if (handle->read_count > 0 && 
+				globus_priority_q_empty(&handle->buffer_q))
 		{
 		    requestor_op = handle->user_req->op;
 		    requestor_result = result;
@@ -889,7 +937,7 @@ globus_l_xio_ordering_read_cb(
 		res = globus_i_xio_ordering_register_read(handle, buffer);
 		if (res != GLOBUS_SUCCESS)
 		{
-		    handle->state = GLOBUS_XIO_ORDERING_ERROR;
+                    globus_i_xio_ordering_save_error(handle, res);
 		    /* 
 		     * Here I do not have a goto error; coz this error does
 		     * not correspond to the finished read
@@ -898,7 +946,7 @@ globus_l_xio_ordering_read_cb(
 	    }
 	    else
 	    {
-		res = result;
+		globus_i_xio_ordering_save_error(handle, result);
 		goto error;
 	    }
 	    globus_mutex_unlock(&handle->mutex);
@@ -932,8 +980,11 @@ globus_l_xio_ordering_read_cb(
 	case GLOBUS_XIO_ORDERING_EOF_DELIVERED:
 	    globus_mutex_unlock(&handle->mutex);
 	    break;
+	case GLOBUS_XIO_ORDERING_ERROR:
+	    goto error;
 	default:
-	    res = GlobusXIOErrorInvalidState(handle->state);
+	    res = GlobusXIOOrderingErrorRead("Invalid state in read cb");
+	    globus_i_xio_ordering_save_error(handle, res);
 	    goto error;
     }
     if (finish)
@@ -961,8 +1012,8 @@ error:
     {
 	--handle->read_count;
 	finish = GLOBUS_TRUE;
+        res = globus_error_put(globus_object_copy(handle->error));
     }
-    handle->state = GLOBUS_XIO_ORDERING_ERROR;
     globus_mutex_unlock(&handle->mutex);
     /*
      * I access the handle->user_req etc after unlock coz there is no 
@@ -978,6 +1029,27 @@ error:
     return;
 }
 
+static
+void
+globus_i_xio_ordering_user_req_init(
+    globus_l_xio_ordering_user_req_t *  user_req,
+    globus_xio_operation_t              op,
+    const globus_xio_iovec_t *          iovec,
+    int                                 iovec_count)
+{
+    GlobusXIOName(globus_l_xio_ordering_read);
+
+    GlobusXIOOrderingDebugEnter();
+    user_req->op = op;
+    user_req->iovec = (globus_xio_iovec_t *)iovec;
+    user_req->iovec_count = iovec_count;
+    GlobusXIOUtilIovTotalLength(user_req->length, iovec, iovec_count);
+    user_req->index = 0;
+    user_req->offset = 0;
+    user_req->nbytes = 0;
+    user_req->wait_for = globus_xio_operation_get_wait_for(op);
+    GlobusXIOOrderingDebugExit();
+}
 
 static
 globus_result_t
@@ -988,7 +1060,6 @@ globus_l_xio_ordering_read(
     globus_xio_operation_t              op)
 {
     globus_l_xio_ordering_handle_t *    handle;
-    globus_l_xio_ordering_user_req_t *  user_req;
     globus_bool_t                       finish = GLOBUS_FALSE;
     globus_result_t                     result;
     globus_result_t                     res;
@@ -1002,11 +1073,38 @@ globus_l_xio_ordering_read(
     switch (handle->state)
     {
 	case GLOBUS_XIO_ORDERING_EOF_RECEIVED:
-	/* 
-	 * The framework should allow any further reads after an eof is
-	 * delivered but just in case
-	 */
-	    handle->state = GLOBUS_XIO_ORDERING_EOF_DELIVERED;
+            if (!globus_priority_q_empty(&handle->buffer_q))
+            {
+		globus_i_xio_ordering_user_req_init(
+			    handle->user_req, op, iovec, iovec_count);
+    		offset = (globus_off_t *) 
+                	globus_priority_q_first_priority(&handle->buffer_q);
+		if (*offset == handle->expected_offset)
+		{
+		    finish = globus_l_xio_ordering_copy(handle);
+		}
+		nbytes = handle->user_req->nbytes;
+		if (finish)
+		{
+		    res = globus_error_put(handle->user_req->error);
+		}
+		else
+		{   
+		    result = GlobusXIOOrderingErrorRead(
+		      "EOF already received but requested data not in buffer"); 
+		    goto error;
+		}
+		break;
+            }
+	    else 
+	    {
+		handle->state = GLOBUS_XIO_ORDERING_EOF_DELIVERED;
+		/* fall through */
+	    }
+	    /* 
+	     * The framework should allow any further reads after an eof is
+	     * delivered but just in case
+	     */
 	case GLOBUS_XIO_ORDERING_EOF_DELIVERED: 
 	    res = GlobusXIOErrorEOF();
 	    finish = GLOBUS_TRUE;
@@ -1019,20 +1117,14 @@ globus_l_xio_ordering_read(
 	     */ 
 	    if (handle->read_count == 1)
 	    {
-		result = GlobusXIOErrorInvalidState(handle->state);
+		result = GlobusXIOOrderingErrorRead(
+		  "Ordering driver does not allow multiple simultaneous reads");
 		goto error;
 	    }
 	    /* fall through */
         case GLOBUS_XIO_ORDERING_READY:
-	    user_req = handle->user_req;
-	    user_req->op = op;
-            user_req->iovec = (globus_xio_iovec_t *)iovec;
-            user_req->iovec_count = iovec_count;
-            GlobusXIOUtilIovTotalLength(user_req->length, iovec, iovec_count);
-            user_req->index = 0;
-            user_req->offset = 0;
-            user_req->nbytes = 0;
-	    user_req->wait_for = globus_xio_operation_get_wait_for(op);
+	    globus_i_xio_ordering_user_req_init(
+			    handle->user_req, op, iovec, iovec_count);
             if (!globus_priority_q_empty(&handle->buffer_q))
             {
     		offset = (globus_off_t *) 
@@ -1059,7 +1151,7 @@ globus_l_xio_ordering_read(
 	    if (finish)
 	    {
 		nbytes = handle->user_req->nbytes;
-		res = globus_error_put(user_req->error);
+		res = globus_error_put(handle->user_req->error);
 	    }
 	    else
 	    {
@@ -1067,6 +1159,9 @@ globus_l_xio_ordering_read(
 	        ++handle->read_count;
 	    }
             break;
+	case GLOBUS_XIO_ORDERING_ERROR:
+	    result = globus_error_put(globus_object_copy(handle->error));
+	    goto error;
         default:
 	    result = GlobusXIOErrorInvalidState(handle->state);
             goto error;
@@ -1212,6 +1307,9 @@ globus_l_xio_ordering_write(
             }
             handle->offset += length;
             break;
+	case GLOBUS_XIO_ORDERING_ERROR:
+	    result = globus_error_put(globus_object_copy(handle->error));
+	    goto error;
         default:
 	    result = GlobusXIOErrorInvalidState(handle->state);
             goto error;
@@ -1359,7 +1457,7 @@ globus_l_xio_ordering_close(
     return GLOBUS_SUCCESS;      
 
 error:
-    handle->state = GLOBUS_XIO_ORDERING_ERROR;
+    globus_i_xio_ordering_save_error(handle, result);
     globus_mutex_unlock(&handle->mutex);
     GlobusXIOOrderingDebugExitWithError();
     return result;      
@@ -1405,7 +1503,7 @@ globus_l_xio_ordering_cntl(
 						handle->driver_handle, op);
 			if (result != GLOBUS_SUCCESS)
 			{
-			    handle->state = GLOBUS_XIO_ORDERING_ERROR;
+                            globus_i_xio_ordering_save_error(handle, result);
 			    goto error;
 			}
 		    } while (!globus_list_empty(handle->driver_op_list));
@@ -1424,7 +1522,7 @@ globus_l_xio_ordering_cntl(
 							    handle, buffer);
 			if (result != GLOBUS_SUCCESS)
 			{
-			    handle->state = GLOBUS_XIO_ORDERING_ERROR;
+			    globus_i_xio_ordering_save_error(handle, result);
 			    goto error;
 			}
 		    } while (!globus_priority_q_empty(&handle->buffer_q));
@@ -1438,7 +1536,6 @@ globus_l_xio_ordering_cntl(
 		 * no need to worry about this like in the above if 
 		 */
 		globus_off_t 		offset;
-		globus_xio_operation_t	op;
 		offset = va_arg(ap, globus_off_t);
 		handle->offset = offset;
 	    }
