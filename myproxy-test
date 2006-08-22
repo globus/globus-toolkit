@@ -6,10 +6,7 @@
 # Assumes myproxy-server running as root on the local machine if
 # MYPROXY_SERVER not set.
 # Requires a valid proxy credential with lifetime of atleast 3 hours.
-# Assumes myproxy-server.config has:
-#   1. accepted_credentials, authorized_retrievers, and
-#      authorized_renewers matching the proxy credential
-#   2. default_renewers "none"
+# Assumes myproxy-server.config has default policy.
 #
 # Test cases are:
 #   1. Store a credential (myproxy-init).
@@ -28,7 +25,6 @@
 #  14. Get info on stored renewable credentials (myproxy-info -d).
 #  15. Verify renewal policies (one accept, one deny).
 #  16. Verify correct lifetime of retrieved credentials.
-#
 #  17. Store credential (myproxy-store -v -t 1)
 #  18. Get info on the stored credential (myproxy-info)
 #  19. Create proxy from stored credential (myproxy-logon).
@@ -49,6 +45,8 @@
 #  34. Store credentials with retrieve key policies.
 #  35. Get info for stored retrieve key credentials.
 #  36. Verify myproxy-retrieve key retrieval policies.
+#  37. Store credentials with retrievable_by_cert policy.
+#  38. Verify retrievable_by_cert policies.
 #
 # CoG test cases are:
 #   1. CoG anonget of myproxy-init stored credential.
@@ -195,6 +193,8 @@ if ($startserver) {
     print CONF "default_renewers      \"none\"\n";
     print CONF "authorized_key_retrievers \"*\"\n";
     print CONF "default_key_retrievers    \"none\"\n";
+    print CONF "trusted_retrievers    \"*\"\n";
+    print CONF "default_trusted_retrievers \"none\"\n";
     print CONF "passphrase_policy_program $bintrue\n" if (-x $bintrue);
     close(CONF);
     $SERVERPIDFILE = "/tmp/myproxy-test.serverpid.$$";
@@ -947,6 +947,54 @@ end_of_store_tests:
 unlink("/tmp/myproxy-test.$$.key");
 
 #
+# Test 37
+#
+($exitstatus, $output) =
+    &runtest("myproxy-init -v -Z 'nobody' -k 'nobody' -c 1 -t 1 -d -S -n",
+	     $passphrase . "\n");
+print "MyProxy Test 37 (store credentials w/ retrievable_by_cert policies): ";
+if ($exitstatus == 0) {
+    ($exitstatus, $output) =
+	&runtest("myproxy-init -v -x -Z '$cert_subject' -k 'mine' -c 1 -t 1 -d -S -n",
+		 $passphrase . "\n");
+}
+if ($exitstatus == 0) {
+    print "SUCCEEDED\n"; $SUCCESSES++;
+} else {
+    print "FAILED\n"; $FAILURES++; print STDERR $output;
+}
+
+#
+# Test 38
+#
+($exitstatus, $output) =
+    &runtest("myproxy-logon -k 'mine' -t 1 -o /tmp/myproxy-test.$$ -v -d -n",
+	     undef);
+print "MyProxy Test 38 (verify retrievable_by_cert policies): ";
+if ($exitstatus == 0) {
+    ($exitstatus, $output) =
+	&verifyproxy("/tmp/myproxy-test.$$");
+}
+if ($exitstatus == 0) {
+    ($exitstatus, $output) =
+	&runtest("myproxy-logon -k 'nobody' -t 1 -o /tmp/myproxy-test.$$ -v -d -n",
+		 undef);
+    if ($exitstatus != 0) {
+	print "SUCCEEDED\n"; $SUCCESSES++;
+    } else {
+	print "FAILED\n"; $FAILURES++;
+	print STDERR "Shouldn't have allowed retrieval.\n";
+	print STDERR $output;
+    }
+} else {
+    print "FAILED\n"; $FAILURES++; print STDERR $output;
+}
+&runtest("myproxy-destroy -v -k 'mine' -d", undef);
+&runtest("myproxy-destroy -v -k 'nobody' -d", undef);
+
+
+
+#
 # COG tests
 #
 if (defined($ENV{"COG_INSTALL_PATH"})) {
@@ -1056,19 +1104,19 @@ sub docogtests {
 	print "FAILED\n"; $FAILURES++; print STDERR $output;
     }
 
-#     This test is disabled for now, pending new Java CoG release
-#     with certificate chain support:
-#       (http://bugzilla.globus.org/globus/show_bug.cgi?id=1914)
+#   This test requires a recent Java CoG release
+#   with certificate chain support:
+#     (http://bugzilla.globus.org/globus/show_bug.cgi?id=1914)
 #
-#     ($exitstatus, $output) =
-# 	&runtest("$cogmyproxy put -a -c 1 -t 1",
-# 		 $passphrase . "\n");
-#     print "MyProxy CoG Test 3 (store credential with default name): ";
-#     if ($exitstatus == 0) {
-# 	print "SUCCEEDED\n"; $SUCCESSES++;
-#     } else {
-# 	print "FAILED\n"; $FAILURES++; print STDERR $output;
-#     }
+    ($exitstatus, $output) =
+        &runtest("$cogmyproxy put -a -c 1 -t 1",
+                 $passphrase . "\n");
+    print "MyProxy CoG Test 3 (store credential with default name): ";
+    if ($exitstatus == 0) {
+        print "SUCCEEDED\n"; $SUCCESSES++;
+    } else {
+        print "FAILED\n"; $FAILURES++; print STDERR $output;
+    }
 }
 
 #
