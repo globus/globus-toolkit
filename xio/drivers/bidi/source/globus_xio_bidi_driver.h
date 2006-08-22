@@ -277,7 +277,37 @@ typedef enum
      *     parallelism is achieved only by registering multiple outstanding 
      *     writes.
      */
-    GLOBUS_XIO_BIDI_SET_PULSING
+    GLOBUS_XIO_BIDI_SET_PULSING,
+
+    /** GlobusVarArgEnum(attr)
+     * Set the maximum number of buffers for the ordering driver in the read stack.
+     * The default is a maximum of 100 buffers of 1mb.   This needs to be increased if 
+     * there will ever be more than 100mb outstanding (when writing large buffers and/or
+     * waiting for more than 100mb on the read.)
+     * @ingroup bidi_driver_cntls
+     *
+     * @param number of buffers 
+     *     Sets the maximum number of buffers for the ordering driver on the read stack.
+     *     If you have substituted a non-default read stack that 
+     *     does not include the ordering driver, behavior of 
+     *     this attr cntl should be a no-op.
+     */
+    GLOBUS_XIO_BIDI_SET_READ_MAX_BUF_COUNT,
+
+    /** GlobusVarArgEnum(attr)
+     * Set the size of the buffers for the ordering driver in the read stack.
+     * The default is a maximum of 100 buffers of 1mb.   This needs to be increased if 
+     * there will ever be more than 100mb outstanding (when writing large buffers and/or
+     * waiting for more than 100mb on the read.)
+     * @ingroup bidi_driver_cntls
+     *
+     * @param number of buffers 
+     *     Sets the maximum number of buffers for the ordering driver on the read stack.
+     *     If you have substituted a non-default read stack that 
+     *     does not include the ordering driver, behavior of 
+     *     this attr cntl should be a no-op.
+     */
+    GLOBUS_XIO_BIDI_SET_READ_BUF_SIZE
 
 } globus_xio_bidi_cmd_t;	
 

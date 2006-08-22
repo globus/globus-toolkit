@@ -315,6 +315,14 @@ globus_l_xio_bidi_attr_init(
         GLOBUS_XIO_MODE_E_SET_STACK_ATTR,
         bidi_l_default_mode_e_attr);
 
+    /*set the ordering driver buffer size to a default of a real megabyte*/
+    
+            result = globus_xio_attr_cntl(
+                bidi_attr->xio_read_attr,
+                bidi_l_ordering_driver,
+                GLOBUS_XIO_ORDERING_SET_BUF_SIZE,
+                1024*1024);
+
     bidi_attr->P = bidi_l_P;
     /* set the out parameter to the driver attr */
     *out_attr = bidi_attr;
@@ -491,6 +499,7 @@ globus_l_xio_bidi_attr_cntl(
                 bidi_l_tcp_driver,
                 GLOBUS_XIO_TCP_SET_SNDBUF,
                 sndbuf);
+            break;
 	}
 	case GLOBUS_XIO_BIDI_SET_RCVBUF:
 	{
@@ -503,6 +512,31 @@ globus_l_xio_bidi_attr_cntl(
                 bidi_l_tcp_driver,
                 GLOBUS_XIO_TCP_SET_RCVBUF,
                 recbuf);
+            break;
+	}
+        case GLOBUS_XIO_BIDI_SET_READ_MAX_BUF_COUNT:
+	{
+	    int		maxbufcount;
+	    maxbufcount=va_arg(ap, int);
+
+            result = globus_xio_attr_cntl(
+                bidi_attr->xio_read_attr,
+                bidi_l_ordering_driver,
+                GLOBUS_XIO_ORDERING_SET_MAX_BUF_COUNT,
+                maxbufcount);
+            break;
+	}
+        case GLOBUS_XIO_BIDI_SET_READ_BUF_SIZE:
+	{
+	    int		orderingbuf;
+	    orderingbuf=va_arg(ap, int);
+
+            result = globus_xio_attr_cntl(
+                bidi_attr->xio_read_attr,
+                bidi_l_ordering_driver,
+                GLOBUS_XIO_ORDERING_SET_BUF_SIZE,
+                orderingbuf);
+            break;
 	}
 
         default:
@@ -941,11 +975,6 @@ globus_l_xio_bidi_create_read_handle(
                 bidi_l_ordering_driver,
                 GLOBUS_XIO_ORDERING_SET_MAX_READ_COUNT,
                 handle->attr->P*2);
-            result = globus_xio_attr_cntl(
-                handle->attr->xio_read_attr,
-                bidi_l_ordering_driver,
-                GLOBUS_XIO_ORDERING_SET_BUF_SIZE,
-                1024*1024);
         }
 
         result = globus_xio_server_create(
