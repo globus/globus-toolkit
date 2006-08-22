@@ -1069,7 +1069,6 @@ sub docogtests {
     ($exitstatus, $output) =
 	&runtest("myproxy-init -v -a -c 1 -t 1 -S",
 		 $passphrase . "\n");
-    print "MyProxy CoG Test 1 (anonget of myproxy-init credential): ";
     if ($exitstatus == 0) {
 	($exitstatus, $output) =
 	    &runtest("$cogmyproxy anonget -o /tmp/myproxy-test.$$",
@@ -1079,16 +1078,13 @@ sub docogtests {
 	($exitstatus, $output) =
 	    &verifyproxy("/tmp/myproxy-test.$$");
     }
+    print "MyProxy CoG Test 1 (anonget of myproxy-init credential): ";
     if ($exitstatus == 0) {
 	print "SUCCEEDED\n"; $SUCCESSES++;
     } else {
 	print "FAILED\n"; $FAILURES++; print STDERR $output;
     }
 
-    ($exitstatus, $output) =
-	&runtest("myproxy-init -v -a -c 1 -t 1 -S",
-		 $passphrase . "\n");
-    print "MyProxy CoG Test 2 (get of myproxy-init credential): ";
     if ($exitstatus == 0) {
 	($exitstatus, $output) =
 	    &runtest("$cogmyproxy get -o /tmp/myproxy-test.$$",
@@ -1098,6 +1094,7 @@ sub docogtests {
 	($exitstatus, $output) =
 	    &verifyproxy("/tmp/myproxy-test.$$");
     }
+    print "MyProxy CoG Test 2 (get of myproxy-init credential): ";
     if ($exitstatus == 0) {
 	print "SUCCEEDED\n"; $SUCCESSES++;
     } else {
@@ -1117,6 +1114,57 @@ sub docogtests {
     } else {
         print "FAILED\n"; $FAILURES++; print STDERR $output;
     }
+
+    if ($exitstatus == 0) {
+	($exitstatus, $output) =
+	    &runtest("$cogmyproxy anonget -o /tmp/myproxy-test.$$",
+		     $passphrase . "\n");
+    }
+    if ($exitstatus == 0) {
+	($exitstatus, $output) =
+	    &verifyproxy("/tmp/myproxy-test.$$");
+    }
+    print "MyProxy CoG Test 4 (anonget of CoG stored credential): ";
+    if ($exitstatus == 0) {
+	print "SUCCEEDED\n"; $SUCCESSES++;
+    } else {
+	print "FAILED\n"; $FAILURES++; print STDERR $output;
+    }
+
+    if ($exitstatus == 0) {
+	($exitstatus, $output) =
+	    &runtest("$cogmyproxy get -o /tmp/myproxy-test.$$",
+		     $passphrase . "\n");
+    }
+    if ($exitstatus == 0) {
+	($exitstatus, $output) =
+	    &verifyproxy("/tmp/myproxy-test.$$");
+    }
+    print "MyProxy CoG Test 5 (get of CoG stored credential): ";
+    if ($exitstatus == 0) {
+	print "SUCCEEDED\n"; $SUCCESSES++;
+    } else {
+	print "FAILED\n"; $FAILURES++; print STDERR $output;
+    }
+
+    ($exitstatus, $output) = &runtest("$cogmyproxy info", undef);
+    print "MyProxy CoG Test 6 (get info for stored credentials): ";
+    if ($exitstatus == 0 && $output =~ /Owner/) {
+        print "SUCCEEDED\n"; $SUCCESSES++;
+    } else {
+        print "FAILED\n"; $FAILURES++; print STDERR $output;
+    }
+
+
+    ($exitstatus, $output) =
+        &runtest("$cogmyproxy destroy", undef);
+    print "MyProxy CoG Test 7 (remove credential from repository): ";
+    if ($exitstatus == 0 && $output =~ /was succes+fully/) {
+        print "SUCCEEDED\n"; $SUCCESSES++;
+    } else {
+        print "FAILED\n"; $FAILURES++; print STDERR $output;
+    }
+
 }
 
 #
