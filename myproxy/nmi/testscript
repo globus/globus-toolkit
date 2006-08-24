@@ -21,7 +21,8 @@ make gsi-myproxy install
 . $GLOBUS_LOCATION/etc/globus-user-env.sh
 echo ==================================================
 flavor=`gpt-query -name=myproxy | perl -n -e 'if (/myproxy-(.*)-pgm/){print "$1\n";}'|head -1`
-echo GPT flavor is $flavor.
+echo GPT flavor is $flavor.  Installing globus_core.
+gpt-build -nosrc $flavor
 echo ==================================================
 echo Installing autotools...
 cd ../autotools
