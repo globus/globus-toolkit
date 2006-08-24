@@ -35,4 +35,3 @@ cd ../myproxy
 make dist
 gpt-build -verbose myproxy-*.tar.gz $flavor
 ) 2>&1 # we want stdout & stderr mixed in the output file
-exit 0
