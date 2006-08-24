@@ -33,5 +33,6 @@ cd ../myproxy
 ./bootstrap
 ./configure --with-flavor=$flavor
 make dist
+gpt-uninstall myproxy
 gpt-build -verbose myproxy-*.tar.gz $flavor
 ) 2>&1 # we want stdout & stderr mixed in the output file
