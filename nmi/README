@@ -1,0 +1,47 @@
+This directory contains files for automated testing of MyProxy using
+the NMI Build and Test Lab (http://nmi.cs.wisc.edu/).
+
+To submit a test build:
+
+  $ ssh grandcentral.cs.wisc.edu
+  $ cvs -d :pserver:anonymous@cvs.ncsa.uiuc.edu:/CVS/myproxy co myproxy
+  $ cd myproxy/nmi
+  $ nmi_submit -notify-fail-only cmdfile
+
+The build platforms are specified in cmdfile.
+The nmi_platforms script will show the current list of available
+platforms if run on grandcentral.
+The MyProxy CVS tag can be specified in myproxy.cvs.
+Otherwise, all the intelligence is in testscript.
+In particular, the GT installers corresponding to the chosen platforms
+must be set in testscript.
+
+To view the results of the builds:
+
+  http://grandcentral.cs.wisc.edu/pavlo/index.php?page=results%2Foverview&opt_project=MyProxy
+
+There is a cron job that submits a test build each night at midnight
+running in jbasney's account on grandcentral.
+
+Environment variables you can use in testscript (with example values):
+
+  softenv_root=/soft/softenv-1.4.2
+  NMI_USER_HAWKEYE_DIR=/tmp/nmi-hawkeye/
+  _NMI_TASKNAME=remote_task
+  NMI_inputs=myproxy.cvs, autotools.cvs
+  _CONDOR_SCRATCH_DIR=/home/condor/execute/dir_21636
+  NMI_project=MyProxy
+  USER=jbasney
+  NMI_component=MyProxy
+  NMI_notify=jbasney@ncsa.uiuc.edu
+  PATH=/bin:/usr/bin:/home/condor/execute/dir_21636/userdir
+  PWD=/home/condor/execute/dir_21636/userdir
+  NMI_PLATFORM=x86_fc_4
+  _CONDOR_ANCESTOR_21636=21638:1156446869:536884800
+  _CONDOR_ANCESTOR_20365=20369:1154984661:1023080128
+  _CONDOR_ANCESTOR_20369=21636:1156446867:4049277325
+  SHLVL=1
+  NMI_remote_task=myproxy/nmi/testscript
+  NMI_component_version=CVS
+  NMI_platforms=x86_fc_4
+  NMI_run_type=build
