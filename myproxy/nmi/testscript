@@ -7,8 +7,10 @@ echo ==================================================
 echo Environment variables:
 printenv
 echo ==================================================
+echo Directory contents:
+ls -Rl
+echo ==================================================
 echo Installing Globus Toolkit...
-cd $NMI_PLATFORM
 wget $GLOBUS_INSTALLER
 cd gt*-installer
 ./configure --prefix=$GLOBUS_LOCATION --with-buildopts="-verbose"
