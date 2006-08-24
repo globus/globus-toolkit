@@ -1,0 +1,3 @@
+#!/bin/sh
+printenv
+exit 0
