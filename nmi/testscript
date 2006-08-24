@@ -1,6 +1,7 @@
 #!/bin/sh
 set -e # exit on any error
-GLOBUS_INSTALLER=http://www.globus.org/ftppub/gt4/4.0/4.0.2/installers/bin/gt4.0.2-$NMI_PLATFORM-installer.tar.gz
+GT_INSTALLER=gt4.0.2-$NMI_PLATFORM-installer.tar.gz
+GT_INSTALLER_URL=http://www.globus.org/ftppub/gt4/4.0/4.0.2/installers/bin/$GT_INSTALLER
 GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/globus
 export GLOBUS_LOCATION
 echo ==================================================
@@ -11,7 +12,8 @@ echo Directory contents:
 ls -Rl
 echo ==================================================
 echo Installing Globus Toolkit...
-wget $GLOBUS_INSTALLER
+wget $GT_INSTALLER_URL
+tar xfz $GT_INSTALLER
 cd gt*-installer
 ./configure --prefix=$GLOBUS_LOCATION --with-buildopts="-verbose"
 make gsi-myproxy install
