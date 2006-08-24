@@ -4,6 +4,7 @@ GT_INSTALLER=gt4.0.2-$NMI_PLATFORM-installer.tar.gz
 GT_INSTALLER_URL=http://www.globus.org/ftppub/gt4/4.0/4.0.2/installers/bin/$GT_INSTALLER
 GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/globus
 export GLOBUS_LOCATION
+(
 echo ==================================================
 echo Environment variables:
 printenv
@@ -28,7 +29,9 @@ cd ../autotools
 echo ==================================================
 echo Building MyProxy...
 cd ../myproxy
+./bootstrap
 ./configure --with-flavor=$flavor
 make dist
 gpt-build -verbose myproxy-*.tar.gz $flavor
+) 2>&1 # we want stdout & stderr mixed in the output file
 exit 0
