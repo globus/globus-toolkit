@@ -1,3 +1,30 @@
 #!/bin/sh
+set -e # exit on any error
+GLOBUS_INSTALLER=http://www.globus.org/ftppub/gt4/4.0/4.0.2/installers/bin/gt4.0.2-$NMI_PLATFORM-installer.tar.gz
+GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/globus
+export GLOBUS_LOCATION
+echo ==================================================
+echo Environment variables:
 printenv
+echo ==================================================
+echo Installing Globus Toolkit...
+cd $NMI_PLATFORM
+wget $GLOBUS_INSTALLER
+cd gt*-installer
+./configure --prefix=$GLOBUS_LOCATION --with-buildopts="-verbose"
+make gsi-myproxy install
+. $GLOBUS_LOCATION/etc/globus-user-env.sh
+echo ==================================================
+flavor=`gpt-query -name=myproxy | perl -n -e 'if (/myproxy-(.*)-pgm/){print "$1\n";}'|head -1`
+echo GPT flavor is $flavor.
+echo ==================================================
+echo Installing autotools...
+cd ../autotools
+./install-autotools $GLOBUS_LOCATION
+echo ==================================================
+echo Building MyProxy...
+cd ../myproxy
+./configure --with-flavor=$flavor
+make dist
+gpt-build -verbose myproxy-*.tar.gz $flavor
 exit 0
