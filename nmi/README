@@ -23,7 +23,9 @@ To view the results of the builds:
 There is a cron job that submits a test build each night at midnight
 running in jbasney's account on grandcentral using an up-to-date
 checkout of this directory, so you can commit changes here, and
-they'll automatically be run with the next nightly build.
+they'll automatically be run with the next nightly build.  Note the
+test build will only be submitted if there are CVS changes since the
+last build.
 
 Environment variables you can use in testscript (with example values):
 
