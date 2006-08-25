@@ -43,6 +43,7 @@ echo ==================================================
 echo Testing MyProxy...
 mkdir $GLOBUS_LOCATION/share/certificates
 cp nmi/*.0 nmi/*.signing_policy $GLOBUS_LOCATION/share/certificates
+chmod 0600 nmi/userkey.pem
 grid-proxy-init -cert nmi/usercert.pem -key nmi/userkey.pem
 myproxy-test -startserver
 ) 2>&1 # we want stdout & stderr mixed in the output file
