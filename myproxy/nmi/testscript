@@ -13,7 +13,11 @@ echo Directory contents:
 ls -Rl
 echo ==================================================
 echo Installing Globus Toolkit...
-curl $GT_INSTALLER_URL > $GT_INSTALLER
+if test -x `which wget`; then
+  wget $GT_INSTALLER_URL
+else
+  curl $GT_INSTALLER_URL > $GT_INSTALLER
+fi
 tar xfz $GT_INSTALLER
 cd gt*-installer
 ./configure --prefix=$GLOBUS_LOCATION --with-buildopts="-verbose"
