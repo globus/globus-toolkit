@@ -14,10 +14,10 @@ echo Directory contents:
 ls -Rl
 echo ==================================================
 echo PATHs:
-which wget
-which curl
-which ncftpget
-which ftp
+echo `which wget`
+echo `which curl`
+echo `which ncftpget`
+echo `which ftp`
 echo ==================================================
 echo Installing Globus Toolkit...
 if test -x `which wget`; then
