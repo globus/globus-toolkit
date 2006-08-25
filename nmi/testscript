@@ -2,7 +2,7 @@
 set -e # exit on any error
 if ("x$NMI_PLATFORM" = "xia64_sles_9"); then
   GT_INSTALLER=gt4.0.2-all-source-installer.tar.gz
-  GT_INSTALLER_URL=http://www.globus.org/ftppub/gt4/4.0/4.0.2/installers/bin/$G\T_INSTALLER
+  GT_INSTALLER_URL=http://www.globus.org/ftppub/gt4/4.0/4.0.2/installers/src/$G\T_INSTALLER
 else
   GT_INSTALLER=gt4.0.2-$NMI_PLATFORM-installer.tar.gz
   GT_INSTALLER_URL=http://www.globus.org/ftppub/gt4/4.0/4.0.2/installers/bin/$G\T_INSTALLER
