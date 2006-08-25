@@ -3,7 +3,7 @@ set -e # exit on any error
 GT_INSTALLER=gt4.0.2-$NMI_PLATFORM-installer.tar.gz
 GT_INSTALLER_URL=http://www.globus.org/ftppub/gt4/4.0/4.0.2/installers/bin/$GT_INSTALLER
 GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/globus
-LOGNAME=USER
+LOGNAME=$USER
 export GLOBUS_LOCATION LOGNAME
 (
 echo ==================================================
