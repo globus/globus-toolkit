@@ -3,7 +3,8 @@ set -e # exit on any error
 GT_INSTALLER=gt4.0.2-$NMI_PLATFORM-installer.tar.gz
 GT_INSTALLER_URL=http://www.globus.org/ftppub/gt4/4.0/4.0.2/installers/bin/$GT_INSTALLER
 GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/globus
-export GLOBUS_LOCATION
+LOGNAME=USER
+export GLOBUS_LOCATION LOGNAME
 (
 echo ==================================================
 echo Environment variables:
@@ -11,6 +12,12 @@ env
 echo ==================================================
 echo Directory contents:
 ls -Rl
+echo ==================================================
+echo PATHs:
+which wget
+which curl
+which ncftpget
+which ftp
 echo ==================================================
 echo Installing Globus Toolkit...
 if test -x `which wget`; then
