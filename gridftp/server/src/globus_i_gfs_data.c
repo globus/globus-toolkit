@@ -51,6 +51,8 @@ static globus_bool_t                    globus_l_gfs_data_is_remote_node = GLOBU
 globus_off_t                            globus_l_gfs_bytes_transferred;
 globus_mutex_t                          globus_l_gfs_global_counter_lock;
 
+
+
 typedef enum
 {
     GLOBUS_L_GFS_DATA_REQUESTING = 1,
@@ -124,6 +126,10 @@ typedef struct
     int                                 node_ndx;
 } globus_l_gfs_data_session_t;
 
+#define WITH_NETLOGGER 1
+#if defined(WITH_NETLOGGER)
+#include "nl_log.h"
+#endif
 typedef struct
 {
     globus_l_gfs_data_session_t *       session_handle;
@@ -136,6 +142,11 @@ typedef struct
     globus_bool_t                       destroy_requested;
     globus_bool_t                       use_interface;
     globus_xio_attr_t                   xio_attr;
+#   if defined(WITH_NETLOGGER)
+    NL_log_t *                          nl_log;
+    char                                transfer_id[GLOBUS_UUID_TEXTLEN+1];
+    char *                              nl_hostname;
+#   endif /* WITH_NETLOGGER */
 } globus_l_gfs_data_handle_t;
 
 typedef struct globus_l_gfs_data_operation_s
@@ -1471,6 +1482,8 @@ globus_i_gfs_data_init()
         globus_mutex_init(&globus_l_gfs_global_counter_lock, NULL);
         globus_gfs_config_set_ptr("byte_transfer_count", str_transferred);
     }
+
+
     GlobusGFSDebugExit();
 }
 
@@ -2063,6 +2076,27 @@ globus_l_gfs_data_handle_init(
         }
     }
 
+#   if defined(WITH_NETLOGGER)
+    {
+        char * tmp_str;
+        tmp_str = globus_i_gfs_config_string("netlogger");
+        if(tmp_str != NULL)
+        {
+            handle->nl_log = NL_log();
+
+            handle->nl_hostname = ipaddr(); /* defined in nl_log.h */
+            if(handle->nl_hostname == NULL)
+            {
+                handle->nl_hostname = strdup("0.0.0.0");
+            }
+
+            NL_log_open(handle->nl_log, 0, tmp_str);
+            NL_log_const(handle->nl_log, 0, "HOST:s", handle->nl_hostname);
+            NL_log_level(handle->nl_log, 0, NL_LVL_INFO);
+        }
+    }
+#   endif
+
     *u_handle = handle;
 
     GlobusGFSDebugExit();
@@ -2344,6 +2378,11 @@ globus_l_gfs_data_handle_free(
 
     globus_assert(data_handle->state == GLOBUS_L_GFS_DATA_HANDLE_CLOSED ||
         data_handle->state == GLOBUS_L_GFS_DATA_HANDLE_CLOSING_AND_DESTROYED);
+
+    if(data_handle->nl_log != NULL)
+    {
+        NL_log_del(data_handle->nl_log);
+    }
 
     if(data_handle->outstanding_op == NULL)
     {
@@ -3930,7 +3969,47 @@ globus_l_gfs_data_end_transfer_kickout(
                 "/",
                 type,
                 op->session_handle->username);
-        }            
+        }        
+#       if defined(WITH_NETLOGGER)
+        if(op->data_handle->nl_log != NULL)
+        {
+            NL_log_write(
+                op->data_handle->nl_log, 
+                NL_LVL_INFO, 0, "gridftp.FTP_INFO",
+                "HOST=s "
+                "PROG=s "
+                "START.TM=d "
+                "END.TM=d "
+                "USER=s "
+                "FILE=s "
+                "BUFFER=l "
+                "BLOCK=l "
+                "NBYTES=l "
+                "VOLUME=s "
+                "STREAMS=i "
+                "STRIPES=i "
+                "DEST=s "
+                "TYPE=s "
+                "uu=s "
+                "CODE=i",
+                op->data_handle->nl_hostname,
+                "globus-gridftp-server",
+                op->start_timeval.tv_sec + op->start_timeval.tv_usec/1e6,
+                end_timeval.tv_sec + end_timeval.tv_usec/1e6,
+                op->session_handle->username,
+                info->pathname,
+                op->data_handle->info.tcp_bufsize,
+                op->data_handle->info.blocksize,
+                op->bytes_transferred,
+                "/",
+                op->node_count * op->data_handle->info.nstreams,
+                op->node_count,
+                op->remote_ip ? op->remote_ip : "0.0.0.0",
+                type,
+                op->data_handle->transfer_id,
+                226);
+        }
+#       endif
     }
 
     /* XXX sc process bytes transferred count */
@@ -5141,6 +5220,45 @@ globus_gridftp_server_begin_transfer(
     gettimeofday(&op->start_timeval, NULL);
     op->event_mask = event_mask;
     op->event_arg = event_arg;
+
+#   if defined(WITH_NETLOGGER)
+    if(op->data_handle->nl_log != NULL)
+    {
+        NL_log_write(
+            op->data_handle->nl_log,
+            NL_LVL_INFO, 0, "gridftp.FTP_INFO.start",
+            "HOST=s "
+            "PROG=s "
+            "START.TM=d "
+            "USER=s "
+            "FILE=s "
+            "BUFFER=l "
+            "BLOCK=l "
+            "NBYTES=l "
+            "VOLUME=s "
+            "STREAMS=i "
+            "STRIPES=i "
+            "DEST=s "
+            "uu=s "
+            "CODE=i",
+            op->data_handle->nl_hostname,
+            "globus-gridftp-server",
+            op->start_timeval.tv_sec + op->start_timeval.tv_usec/1e6,
+            op->session_handle->username,
+            op->data_handle->info.pathname,
+            op->data_handle->info.tcp_bufsize,
+            op->data_handle->info.blocksize,
+            0,
+            "/",
+            op->node_count * op->data_handle->info.nstreams,
+            op->node_count,
+            op->remote_ip ? op->remote_ip : "0.0.0.0",
+            op->data_handle->info.type,
+            op->data_handle->transfer_id,
+            226);
+        }
+#       endif
+
 
     /* increase refrence count for the events.  This gets decreased when
         the COMPLETE event occurs.  it is safe to increment outside of a

@@ -61,6 +61,14 @@ case "$build" in
 esac
 AC_SUBST(LDFLHACK)
 
+
+AC_ARG_WITH( netlogger-path,
+[  --with-netlogger-path=DIR    location of srb ],
+    CONFIG_NETLOGGER_PATH="${withval}", AC_MSG_ERROR( [must specify netlogger path: --with-netlogger-path] ))
+
+NETLOGGER_PATH=${CONFIG_NETLOGGER_PATH}
+AC_SUBST( NETLOGGER_PATH)
+
 GLOBUS_FINALIZE
 
 AC_OUTPUT(
