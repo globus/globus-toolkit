@@ -15,11 +15,13 @@ INCLUDES = $(GPT_INCLUDES) -I $(NETLOGGER_PATH)/include
 lib_LTLIBRARIES = libglobus_xio_netlogger_driver_$(GLOBUS_FLAVOR_NAME).la
 
 libglobus_xio_netlogger_driver___GLOBUS_FLAVOR_NAME__la_LIBADD = \
-	@GPT_LIB_LINKS@ $(NETLOGGER_PATH)/lib/libnllite.a
+	@GPT_LIB_LINKS@ $(NETLOGGER_PATH)/lib/libnllite.la \
+    $(NETLOGGER_PATH)/lib/libnltsumm.la
 libglobus_xio_netlogger_driver___GLOBUS_FLAVOR_NAME__la_SOURCES = \
 	globus_xio_netlogger.c
 libglobus_xio_netlogger_driver___GLOBUS_FLAVOR_NAME__la_LDFLAGS = \
-	@GPT_LDFLAGS@ -module -rpath $(GLOBUS_LOCATION)/lib
+	@GPT_LDFLAGS@ -module -rpath $(GLOBUS_LOCATION)/lib -rpath $(NETLOGGER_PATH)/lib
+
 
 EXTRA_DIST = version.h.in
 
