@@ -421,7 +421,11 @@ assign_serial_number( X509 *cert,
     goto error;
   }
 
-  BIO_reset(serialbio);
+  if (BIO_reset(serialbio) != 0) {
+    verror_put_string("Error resetting serialbio\n");
+    ssl_error_to_verror();
+    goto error;
+  }
   i2a_ASN1_INTEGER(serialbio, next);
   BIO_puts(serialbio, "\n");
 
