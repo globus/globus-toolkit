@@ -412,7 +412,10 @@ b64_encode(const char *input, char **output)
 	verror_put_string("error in BIO_write when base64 encoding");
 	return -1;
     }
-    BIO_flush(bio);
+    if (BIO_flush(bio) != 1) {
+	verror_put_string("error in BIO_flush when base64 encoding");
+	return -1;
+    }
 
     outlen = BIO_get_mem_data(bio, &outbuf);
 
