@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_REVISION($Revision: 1.54 $)
+AC_REVISION($Revision: 1.55 $)
 AC_INIT(Makefile.am)
 
 GLOBUS_INIT
@@ -92,7 +92,7 @@ AC_ARG_WITH(sasl2,
 		fi
 		if test "x$withval" != "xno" ; then
 		   CPPFLAGS="-I${withval}/include/sasl $CPPFLAGS"
-		   LDFLAGS="$LDFLAGS -L${withval}/lib"
+		   LDFLAGS="-L${withval}/lib $LDFLAGS"
 		   AC_CHECK_HEADER(sasl.h)
 		   AC_CHECK_LIB(sasl2, sasl_client_init, ,
 				AC_MSG_ERROR([libsasl2 not found]))
@@ -148,14 +148,6 @@ AC_ARG_WITH(openldap,
                fi
                if test "x$withval" != "xno" ; then
 		  CPPFLAGS="-I${withval}/include $CPPFLAGS"
-		  LDFLAGS="$LDFLAGS -L${withval}/lib"
-		  AC_CHECK_HEADERS(ldap.h)
-		  AC_CHECK_LIB(ldap, ldap_sasl_bind_s, ,
-				     AC_MSG_ERROR([ldap_sasl_bind_s not found in libldap]) )
-		  AC_CHECK_LIB(ldap, ldap_search_ext_s, ,
-				     AC_MSG_ERROR([ldap_search_ext_s not found in libldap]) )
-		  AC_CHECK_LIB(ldap, ldap_str2dn, ,
-				     AC_MSG_ERROR([ldap_str2dn not found in libldap]) )
 		  AC_MSG_CHECKING(for OpenLDAP v2.3 or later)
           AC_TRY_RUN([
 #include <ldap.h>
@@ -167,6 +159,17 @@ int main() { if (LDAP_VENDOR_VERSION < 20300) exit(1); else exit(0); }
 			AC_MSG_ERROR([OpenLDAP is not v2.3 or later])
 		      ],
 		      [AC_MSG_RESULT([yes])])
+          # warning: if ${withval}/lib isn't in the shared library
+          # search path, then adding -lldap may cause AC_TRY_RUN tests
+          # below to fail
+		  LDFLAGS="-L${withval}/lib $LDFLAGS"
+		  AC_CHECK_HEADERS(ldap.h)
+		  AC_CHECK_LIB(ldap, ldap_sasl_bind_s, ,
+				     AC_MSG_ERROR([ldap_sasl_bind_s not found in libldap]) )
+		  AC_CHECK_FUNC(ldap_search_ext_s, ,
+				     AC_MSG_ERROR([ldap_search_ext_s not found in libldap]) )
+		  AC_CHECK_FUNC(ldap_str2dn, ,
+				     AC_MSG_ERROR([ldap_str2dn not found in libldap]) )
                fi
        ]
 )
@@ -186,7 +189,7 @@ AC_ARG_WITH(voms,
 		   LDFLAGS="-L${withval}/lib $LDFLAGS"
 		   AC_CHECK_HEADER(voms_apic.h)
            AC_CHECK_LIB(vomsc, VOMS_Init, ,
-			     AC_MSG_ERROR([ldap_sasl_bind_s not found in libvomsc]) )
+			     AC_MSG_ERROR([VOMS_Init not found in libvomsc]) )
            AC_DEFINE(HAVE_VOMS)
 		fi
 	]
