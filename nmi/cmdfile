@@ -1,6 +1,7 @@
 project = MyProxy
 component = MyProxy
 component_version = CVS
+description = automated MyProxy builds
 run_type = build
 inputs = myproxy.cvs, autotools.cvs
 remote_task = myproxy/nmi/testscript
