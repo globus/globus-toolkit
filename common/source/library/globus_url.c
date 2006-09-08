@@ -1016,6 +1016,10 @@ globusl_url_get_scheme(const char **stringp,
   {
       *scheme_type=GLOBUS_URL_SCHEME_GSIFTP;
   }
+  else if(strcmp(*scheme, "sshftp") == 0)
+  {
+      *scheme_type=GLOBUS_URL_SCHEME_SSHFTP;
+  }
   else
   {
       *scheme_type=GLOBUS_URL_SCHEME_UNKNOWN;
@@ -2085,6 +2089,10 @@ globus_url_get_scheme(const char *url_string, globus_url_scheme_t *scheme_type)
     else if(strncmp(url_string, "gsiftp:", 7) == 0)
     {
 	*scheme_type = GLOBUS_URL_SCHEME_GSIFTP;
+    }
+    else if(strncmp(url_string, "sshftp:", 7) == 0)
+    {
+	*scheme_type = GLOBUS_URL_SCHEME_SSHFTP;
     }
     else if(strncmp(url_string, "http:", 5) == 0)
     {
