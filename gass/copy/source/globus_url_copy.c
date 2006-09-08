@@ -871,6 +871,8 @@ globus_l_guc_interrupt_handler(
         return;
     }
 
+printf("SDFSDF int\n");
+
     monitor = (my_monitor_t *) user_arg;
     
     globus_mutex_lock(&monitor->mutex);
@@ -1085,6 +1087,8 @@ globus_l_url_copy_monitor_callback(void * callback_arg,
 
     if (error != GLOBUS_SUCCESS)
     {
+
+printf("ERRRROR--- globus_l_url_copy_monitor_callback\n");
         use_err = GLOBUS_TRUE;
     }
 

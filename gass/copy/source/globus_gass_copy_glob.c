@@ -218,6 +218,7 @@ globus_gass_copy_glob_expand_url(
         {
           case GLOBUS_URL_SCHEME_FTP:
           case GLOBUS_URL_SCHEME_GSIFTP:
+          case GLOBUS_URL_SCHEME_SSHFTP:
             result = globus_l_gass_copy_glob_expand_ftp_url(info);
             break;
             

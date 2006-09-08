@@ -989,6 +989,7 @@ globus_gass_copy_get_url_mode(
     }
 
     if ( (url_info.scheme_type == GLOBUS_URL_SCHEME_FTP) ||
+	 (url_info.scheme_type == GLOBUS_URL_SCHEME_SSHFTP) ||
 	 (url_info.scheme_type == GLOBUS_URL_SCHEME_GSIFTP) )
     {
 	*mode = GLOBUS_GASS_COPY_URL_MODE_FTP;
