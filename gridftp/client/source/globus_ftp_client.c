@@ -40,6 +40,10 @@ static int globus_l_ftp_client_deactivate(void);
  */
 int globus_i_ftp_client_debug_level = 0;
 
+globus_xio_stack_t               ftp_client_i_popen_stack;
+globus_xio_driver_t              ftp_client_i_popen_driver;
+globus_bool_t                    ftp_client_i_popen_ready = GLOBUS_FALSE;
+
 /**
  * Default authorization information for GSIFTP.
  */
@@ -145,6 +149,19 @@ globus_l_ftp_client_activate(void)
     globus_i_ftp_client_debug_printf(1,
         (stderr, "globus_l_ftp_client_activate() exiting\n"));
 
+    {
+        globus_result_t res;
+
+        res = globus_xio_driver_load("popen", &ftp_client_i_popen_driver);
+        if(res == GLOBUS_SUCCESS)
+        {
+            globus_xio_stack_init(&ftp_client_i_popen_stack, NULL);
+            globus_xio_stack_push_driver(
+                ftp_client_i_popen_stack, ftp_client_i_popen_driver);
+            ftp_client_i_popen_ready = GLOBUS_TRUE;
+        }
+    }
+
     return GLOBUS_SUCCESS;
 }
 
@@ -160,6 +177,11 @@ globus_l_ftp_client_deactivate(void)
         (stderr, "globus_l_ftp_client_deactivate() entering\n"));
 
     globus_mutex_lock(&globus_l_ftp_client_active_list_mutex);
+
+    globus_xio_driver_unload(ftp_client_i_popen_driver);
+    globus_xio_stack_destroy(ftp_client_i_popen_stack);
+    ftp_client_i_popen_ready = GLOBUS_FALSE;
+
 
     /* Wait for all client library callbacks to complete.
      */
