@@ -99,6 +99,24 @@
  */
 
 /**
+ * ORDERING driver specific error types
+ * @ingroup ordering_driver_errors
+ */
+typedef enum
+{
+    /**
+     * Indicates that an error occured in reading data
+     */
+    GLOBUS_XIO_ORDERING_ERROR_READ,
+    /**
+     * Indicates an error occured in canceling an operation
+     */
+    GLOBUS_XIO_ORDERING_ERROR_CANCEL
+
+} globus_xio_ordering_error_type_t;
+
+
+/**
  * ORDERING driver specific cntls
  * @ingroup ordering_driver_cntls
  */

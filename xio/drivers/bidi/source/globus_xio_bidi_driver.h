@@ -238,7 +238,76 @@ typedef enum
      *     If you have substituted a non-default write stack, behavior of 
      *     this attr cntl should be a no-op.
      */
-    GLOBUS_XIO_BIDI_SET_MAX_WRITE_STREAMS
+    GLOBUS_XIO_BIDI_SET_MAX_WRITE_STREAMS,
+
+    /** GlobusVarArgEnum(attr)
+     * Set the tcp buffer size for the read or write stack.
+     * @ingroup bidi_driver_cntls
+     *
+     * @param buffer size
+     *     Sets the tcp buffer size for the read or write stack.
+     *     If you have substituted a non-default read write stack that 
+     *     does not include the mode_e driver, behavior of 
+     *     this attr cntl should be a no-op.
+     */
+    GLOBUS_XIO_BIDI_SET_SNDBUF,
+    GLOBUS_XIO_BIDI_SET_RCVBUF,
+
+    
+    /** GlobusVarArgEnum(attr)
+     * Set the behavior of the bidirectional driver with regard to 
+     * parallel writes.  By default, or if this attr is set with a value of 
+     * GLOBUS_TRUE, the bidirectional driver will split all writes across
+     * available parallel streams.  This ensures parallelism on writes while
+     * being a drop-in replacement for the xio tcp driver, but may not 
+     * achieve optimal performance in certain situations.  Setting this attr
+     * with a value of GLOBUS_FALSE will turn of this "pulsing" write, which
+     * then requires the application using the driver to be modified to 
+     * post multiple simultaneous writes in order to achieve parallelism.  The
+     * advantage of this approach is that the application can then be tweaked 
+     * for write performance.
+     * @ingroup bidi_driver_cntls
+     *
+     * @param true or false
+     *     Sets behavior of driver with regard to parallel writes.  By default
+     *     or when set to GLOBUS_TRUE, the driver will accept a single 
+     *     outstanding registered write at a time, and will split that data 
+     *     across available parallel streams.  When set to GLOBUS_FALSE, the 
+     *     driver will adopt the default mode_e driver behavior, where 
+     *     parallelism is achieved only by registering multiple outstanding 
+     *     writes.
+     */
+    GLOBUS_XIO_BIDI_SET_PULSING,
+
+    /** GlobusVarArgEnum(attr)
+     * Set the maximum number of buffers for the ordering driver in the read stack.
+     * The default is a maximum of 100 buffers of 1mb.   This needs to be increased if 
+     * there will ever be more than 100mb outstanding (when writing large buffers and/or
+     * waiting for more than 100mb on the read.)
+     * @ingroup bidi_driver_cntls
+     *
+     * @param number of buffers 
+     *     Sets the maximum number of buffers for the ordering driver on the read stack.
+     *     If you have substituted a non-default read stack that 
+     *     does not include the ordering driver, behavior of 
+     *     this attr cntl should be a no-op.
+     */
+    GLOBUS_XIO_BIDI_SET_READ_MAX_BUF_COUNT,
+
+    /** GlobusVarArgEnum(attr)
+     * Set the size of the buffers for the ordering driver in the read stack.
+     * The default is a maximum of 100 buffers of 1mb.   This needs to be increased if 
+     * there will ever be more than 100mb outstanding (when writing large buffers and/or
+     * waiting for more than 100mb on the read.)
+     * @ingroup bidi_driver_cntls
+     *
+     * @param number of buffers 
+     *     Sets the maximum number of buffers for the ordering driver on the read stack.
+     *     If you have substituted a non-default read stack that 
+     *     does not include the ordering driver, behavior of 
+     *     this attr cntl should be a no-op.
+     */
+    GLOBUS_XIO_BIDI_SET_READ_BUF_SIZE
 
 } globus_xio_bidi_cmd_t;	
 

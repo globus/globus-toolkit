@@ -771,7 +771,7 @@ globus_l_error_multiple_print(
     if(data && data->chains)
     {
         count = globus_list_size(data->chains);
-        layout = (char **) globus_malloc(sizeof(char *) * (2 + (4 * count)));
+        layout = (char **) globus_malloc(sizeof(char *) * (3 + (4 * count)));
         free_ptrs = (char **) globus_malloc(sizeof(char *) * count);
         if(layout && free_ptrs)
         {
@@ -781,6 +781,7 @@ globus_l_error_multiple_print(
             if(data->desc && *data->desc)
             {
                 layout[i++] = data->desc;
+                layout[i++] = "\n";
             }
             
             for(tmp = data->chains;
@@ -830,6 +831,36 @@ globus_l_error_multiple_print(
     }
 
     return error_string;
+}
+
+static
+char *
+globus_l_add_error_string(
+    char **                             layout,
+    int *                               idx,
+    globus_object_t *                   error)
+{
+    char *                              msg;
+
+    if(globus_object_get_type(error) == GLOBUS_ERROR_TYPE_MULTIPLE)
+    {
+        msg = globus_l_error_multiple_print(error, GLOBUS_TRUE);
+        if(msg && *msg)
+        {
+            layout[(*idx)++] = msg;
+        }
+    }
+    else
+    {
+         msg = globus_object_printable_to_string(error);
+         if(msg && *msg)
+         {
+             layout[(*idx)++] = msg;
+             layout[(*idx)++] = "\n";
+         }
+    }
+    
+    return msg;
 }
 
 /**
@@ -923,19 +954,7 @@ globus_error_print_friendly(
             }
         } while((current_error = globus_error_get_cause(current_error)));
         
-        if(globus_object_get_type(error) == GLOBUS_ERROR_TYPE_MULTIPLE)
-        {
-            top = globus_l_error_multiple_print(error, GLOBUS_TRUE);
-        }
-        else
-        {
-            top = globus_object_printable_to_string(error);
-        }
-        if(top)
-        {
-            layout[i++] = top;
-            layout[i++] = "\n";
-        }
+        top = globus_l_add_error_string(layout, &i, error);
         
         if(error != source_error1)
         {
@@ -943,55 +962,14 @@ globus_error_print_friendly(
             {
                 if(error != source_error3)
                 {
-                    if(globus_object_get_type(source_error3)
-                        == GLOBUS_ERROR_TYPE_MULTIPLE)
-                    {
-                        bottom3 = globus_l_error_multiple_print(
-                            source_error3, GLOBUS_TRUE);
-                    }
-                    else
-                    {
-                        bottom3 = globus_object_printable_to_string(
-                            source_error3);
-                    }
-                    if(bottom3)
-                    {
-                        layout[i++] = bottom3;
-                        layout[i++] = "\n";
-                    }
+                    bottom3 = globus_l_add_error_string(
+                        layout, &i, source_error3);
                 }
-                
-                if(globus_object_get_type(source_error2)
-                    == GLOBUS_ERROR_TYPE_MULTIPLE)
-                {
-                    bottom2 = globus_l_error_multiple_print(
-                        source_error2, GLOBUS_TRUE);
-                }
-                else
-                {
-                    bottom2 = globus_object_printable_to_string(source_error2);
-                }
-                if(bottom2)
-                {
-                    layout[i++] = bottom2;
-                    layout[i++] = "\n";
-                }
+ 
+                bottom2 = globus_l_add_error_string(layout, &i, source_error2);
             }
             
-            if(globus_object_get_type(source_error1)
-                == GLOBUS_ERROR_TYPE_MULTIPLE)
-            {
-                bottom1 = globus_l_error_multiple_print(
-                    source_error1, GLOBUS_TRUE);
-            }
-            else
-            {
-                bottom1 = globus_object_printable_to_string(source_error1);
-            }
-            if(bottom1 && *bottom1)
-            {
-                layout[i++] = bottom1;
-            }
+            bottom1 = globus_l_add_error_string(layout, &i, source_error1);
         }
         
         if(friendly && *friendly)

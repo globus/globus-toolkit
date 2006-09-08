@@ -1,0 +1,20 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+      <title>Code Coverage for <TMPL_VAR NAME=FILE></title>
+      <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1"/>
+      <link href="coverage.css" rel="stylesheet" type="text/css" />
+  </head>
+
+  <body>
+      <table class="srcView">
+      <TMPL_LOOP NAME=LINES>
+        <tr>
+          <td class="lineCount<TMPL_IF NAME=EXECUTABLE>Hilight</TMPL_IF>"><TMPL_VAR NAME=LINE></td>
+          <td class="coverageCount<TMPL_UNLESS NAME=COUNT><TMPL_IF NAME=EXECUTABLE>Hilight</TMPL_IF></TMPL_UNLESS>"><TMPL_VAR NAME=COUNT></td>
+          <td class="srcCell"><span class="srcLine<TMPL_UNLESS NAME=COUNT><TMPL_IF NAME=EXECUTABLE>Hilight</TMPL_IF></TMPL_UNLESS>"><TMPL_VAR NAME=TEXT></span></td>
+        </tr>
+      </TMPL_LOOP>
+      </table>
+  </body>
+</html>

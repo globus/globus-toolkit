@@ -1119,7 +1119,7 @@ globus_i_xio_driver_attr_cntl(
     int                                 cmd,
     va_list                             ap)
 {
-    globus_result_t                     res;
+    globus_result_t                     res = GLOBUS_SUCCESS;
     void *                              ds;
     globus_xio_attr_cmd_t               general_cmd;
     globus_xio_timeout_server_callback_t server_timeout_cb;
@@ -1151,7 +1151,29 @@ globus_i_xio_driver_attr_cntl(
             attr->entry[attr->ndx].driver_data = ds;
             attr->ndx++;
         }
-        res = driver->attr_cntl_func(ds, cmd, ap);
+
+        /* if the driver is capable of parsing the strings 
+            and this is the string parser command, if there is
+            no table defined the SET_STRING command will be passed
+            to the driver.  this is fine.  they may want to parse it
+            in their own way */
+        if(driver->string_table != NULL && 
+            cmd == GLOBUS_XIO_SET_STRING_OPTIONS)
+        {
+            char *                      opt_str;
+
+            opt_str = va_arg(ap, char *);
+            res = globus_i_xio_string_cntl_parser(
+                opt_str,
+                driver->string_table,
+                ds,
+                driver->attr_cntl_func);
+        }
+        else
+        {
+            res = driver->attr_cntl_func(ds, cmd, ap);
+        }
+        
         if(res != GLOBUS_SUCCESS)
         {
             goto err;
@@ -2056,6 +2078,36 @@ globus_xio_driver_set_attr(
     GlobusXIODebugExit();
 
     return GLOBUS_SUCCESS;
+}
+
+globus_result_t
+globus_xio_driver_string_cntl_set_table(
+    globus_xio_driver_t                 driver,
+    globus_xio_string_cntl_table_t *    table)
+{
+    globus_result_t                     result;
+    GlobusXIOName(globus_xio_driver_set_string_table);
+
+    GlobusXIODebugEnter();
+
+    if(driver == NULL)
+    {
+        result = GlobusXIOErrorParameter("driver");
+        goto error;
+    }
+    if(table == NULL)
+    {
+        result = GlobusXIOErrorParameter("table");
+        goto error;
+    }
+    driver->string_table = table;
+
+    GlobusXIODebugExit();
+
+    return GLOBUS_SUCCESS;
+error:
+    GlobusXIODebugExitWithError();
+    return result;
 }
 
 void
