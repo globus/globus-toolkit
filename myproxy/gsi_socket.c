@@ -78,6 +78,26 @@ append_gss_status(char *buffer,
     return total_chars;
 }
 
+static int
+is_initiator(GSI_SOCKET *self)
+{
+    OM_uint32 major_status, minor_status;
+    int locally_initiated=-1;
+
+    if (self->gss_context != GSS_C_NO_CONTEXT) {
+        major_status = gss_inquire_context(&minor_status,
+                                           self->gss_context,
+                                           NULL,
+                                           NULL,
+                                           NULL,
+                                           NULL,
+                                           NULL,
+                                           &locally_initiated,
+                                           NULL);
+    }
+    return locally_initiated;
+}
+
 /*
  * read_all()
  *
@@ -456,11 +476,31 @@ GSI_SOCKET_get_error_string(GSI_SOCKET *self,
 	switch(self->major_status) 
 	{
 	  case GSS_S_DEFECTIVE_TOKEN | GSS_S_CALL_INACCESSIBLE_READ:
-	    chars = my_strncpy(buffer, "Error reading token", bufferlen);
+          switch (is_initiator(self))
+          {
+          case 1:
+              chars = my_strncpy(buffer, "\nGSS token read error.  The server may have aborted the network connection.\nCheck the server logs for more information.", bufferlen);
+              break;
+          case 0:
+              chars = my_strncpy(buffer, "\nGSS token read error.  The client may have aborted the network connection.\nCheck client-side error messages for more information.", bufferlen);
+              break;
+          default:
+              chars = my_strncpy(buffer, "\nGSS token read error.  The peer may have aborted the network connection.\nCheck remote error messages for more information.", bufferlen);
+          }
 	    break;
 	    
 	  case GSS_S_DEFECTIVE_TOKEN | GSS_S_CALL_INACCESSIBLE_WRITE:
-	    chars = my_strncpy(buffer, "Error writing token", bufferlen);
+          switch (is_initiator(self))
+          {
+          case 1:
+              chars = my_strncpy(buffer, "\nGSS token write error.  The server may have aborted the network connection.\nCheck the server logs for more information.", bufferlen);
+              break;
+          case 0:
+              chars = my_strncpy(buffer, "\nGSS token write error.  The client may have aborted the network connection.\nCheck client-side error messages for more information.", bufferlen);
+              break;
+          default:
+              chars = my_strncpy(buffer, "\nGSS token write error.  The peer may have aborted the network connection.\nCheck remote error messages for more information.", bufferlen);
+          }
 	    break;
 	}
 
