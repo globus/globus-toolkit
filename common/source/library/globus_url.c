@@ -182,6 +182,7 @@ globus_url_parse(const char *url_string,
     {
     case GLOBUS_URL_SCHEME_FTP:
     case GLOBUS_URL_SCHEME_GSIFTP:
+    case GLOBUS_URL_SCHEME_SSHFTP:
 	/* optional part of an ftp scheme, password is
 	   only set if user is set
 	*/
@@ -415,6 +416,7 @@ globus_url_parse_rfc1738(const char *url_string,
     {
     case GLOBUS_URL_SCHEME_FTP:
     case GLOBUS_URL_SCHEME_GSIFTP:
+    case GLOBUS_URL_SCHEME_SSHFTP:
 	/* optional part of an ftp scheme, password is
 	   only set if user is set
 	*/
@@ -666,6 +668,7 @@ globus_url_parse_loose(const char *url_string,
     {
     case GLOBUS_URL_SCHEME_FTP:
     case GLOBUS_URL_SCHEME_GSIFTP:
+    case GLOBUS_URL_SCHEME_SSHFTP:
 	/* optional part of an ftp scheme, password is
 	   only set if user is set
 	*/
@@ -1011,10 +1014,6 @@ globusl_url_get_scheme(const char **stringp,
   else if(strcmp(*scheme, "x-gass-cache") == 0)
   {
       *scheme_type=GLOBUS_URL_SCHEME_X_GASS_CACHE;
-  }
-  else if(strcmp(*scheme, "gsiftp") == 0)
-  {
-      *scheme_type=GLOBUS_URL_SCHEME_GSIFTP;
   }
   else if(strcmp(*scheme, "sshftp") == 0)
   {
@@ -1736,7 +1735,8 @@ globusl_url_get_path(const char **stringp,
     /* reduce /~ to ~ if FTP */
 
     if((scheme_type == GLOBUS_URL_SCHEME_FTP ||
-	scheme_type == GLOBUS_URL_SCHEME_GSIFTP) &&
+	scheme_type == GLOBUS_URL_SCHEME_GSIFTP ||
+        scheme_type == GLOBUS_URL_SCHEME_SSHFTP) &&
 	pos > 1 && **stringp == '/' && *(*stringp + 1) == '~')
     {
 	*stringp = *stringp + 1;
@@ -1926,7 +1926,8 @@ globusl_url_get_path_loose(const char **stringp,
     /* reduce /~ to ~ if FTP */
 
     if((scheme_type == GLOBUS_URL_SCHEME_FTP ||
-	scheme_type == GLOBUS_URL_SCHEME_GSIFTP) &&
+	scheme_type == GLOBUS_URL_SCHEME_GSIFTP ||
+        scheme_type == GLOBUS_URL_SCHEME_SSHFTP) &&
 	pos > 1 && **stringp == '/' && *(*stringp + 1) == '~')
     {
 	*stringp = *stringp + 1;
