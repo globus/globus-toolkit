@@ -219,8 +219,10 @@ globus_l_xio_popen_attr_cntl(
     switch(cmd)
     {
         case GLOBUS_XIO_POPEN_SET_PROGRAM:
-            attr->argc = va_arg(ap, int);
             argv = va_arg(ap, char **);
+            for(attr->argc = 0; argv[attr->argc] != NULL; attr->argc++)
+            {
+            }
             attr->argv = calloc(attr->argc + 1, sizeof(char *));
             for(i = 0; i < attr->argc; i++)
             {

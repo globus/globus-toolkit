@@ -1195,7 +1195,7 @@ globus_xio_string_cntl_string_list(
         i--;
     }
 
-    result = globus_xio_string_cntl_bouncer(cntl_func, attr, cmd, argc, argv);
+    result = globus_xio_string_cntl_bouncer(cntl_func, attr, cmd, argv);
 
     return result;
 }
