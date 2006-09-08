@@ -1159,4 +1159,46 @@ globus_xio_string_cntl_bool(
     return result;
 }
 
+globus_result_t
+globus_xio_string_cntl_string_list(
+    void *                              attr,
+    const char *                        key,
+    const char *                        val,
+    int                                 cmd,
+    globus_xio_driver_attr_cntl_t       cntl_func)
+{
+    int                                 i = 0;
+    globus_list_t *                     list;
+    char **                             argv;
+    int                                 argc;
+    globus_result_t                     result;
+    int                                 del;
+
+    /* delimitor is the first character */
+    if(val == NULL)
+    {
+        return GLOBUS_SUCCESS;
+    }
+
+    del = (int)*val;
+    val++;
+
+    list = globus_list_from_string(val, del, NULL);
+
+    argc = globus_list_size(list);
+    argv = (char **) calloc(argc+1, sizeof(char *));
+    i = argc - 1;
+    while(!globus_list_empty(list))
+    {
+        argv[i] = (char *)globus_list_first(list);
+        globus_list_remove(&list, list);
+        i--;
+    }
+
+    result = globus_xio_string_cntl_bouncer(cntl_func, attr, cmd, argc, argv);
+
+    return result;
+}
+
+
 

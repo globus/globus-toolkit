@@ -1498,6 +1498,15 @@ globus_xio_string_cntl_formated_int(
     int                                 cmd,
     globus_xio_driver_attr_cntl_t       cntl_func);
 
+globus_result_t
+globus_xio_string_cntl_string_list(
+    void *                              attr,
+    const char *                        key,
+    const char *                        val,
+    int                                 cmd,
+    globus_xio_driver_attr_cntl_t       cntl_func);
+
+
 EXTERN_C_END
 
 #endif /* GLOBUS_XIO_DRIVER_H */
