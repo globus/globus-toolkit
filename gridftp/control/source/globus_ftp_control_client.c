@@ -333,6 +333,57 @@ globus_i_ftp_control_client_set_netlogger(
     return GLOBUS_SUCCESS;
 }
 
+globus_result_t
+globus_i_ftp_control_client_set_stack(
+    globus_ftp_control_handle_t *               handle,
+    globus_xio_stack_t                          stack)
+{
+    globus_result_t                             result;
+
+    if(handle == NULL)
+    {
+        return globus_error_put(
+            globus_error_construct_string(
+                GLOBUS_FTP_CONTROL_MODULE,
+                GLOBUS_NULL,
+                "globus_i_ftp_control_set_stack: Null handle argument")
+            );
+    }
+
+    if(stack == NULL)
+    {
+        return globus_error_put(
+            globus_error_construct_string(
+                GLOBUS_FTP_CONTROL_MODULE,
+                GLOBUS_NULL,
+                "globus_i_ftp_control_set_stack: Null stack")
+            );
+    }
+
+    globus_mutex_lock(&(handle->cc_handle.mutex));
+    {
+        result = globus_io_attr_set_stack(
+            &handle->cc_handle.io_attr,
+            stack);
+    }
+    globus_mutex_unlock(&(handle->cc_handle.mutex));
+
+    return result;
+}
+
+globus_result_t
+globus_i_ftp_control_client_get_attr(
+    globus_ftp_control_handle_t *               handle,
+    globus_xio_attr_t *                         attr)
+{
+    globus_result_t                             result;
+
+    result = globus_io_attr_get_xio_attr(
+        &handle->cc_handle.io_attr, attr);
+
+    return result;
+}
+
 
 /**
  * Create a new control connection to an FTP server.
@@ -600,6 +651,7 @@ globus_l_ftp_control_connect_cb(
         goto return_error;
     }
            
+    *cc_handle->serverhost = '\0';
     /* get the actual host we connected to */            
     rc = globus_io_tcp_get_remote_address_ex(
         &cc_handle->io_handle,
@@ -608,27 +660,20 @@ globus_l_ftp_control_connect_cb(
         &tmp_port);
     if(rc != GLOBUS_SUCCESS)
     {
-        error = globus_error_get(rc);
-        goto return_error;
+        tmp_cs = globus_libc_ints_to_contact_string(
+            tmp_host,
+            tmp_hostlen,
+            0);
+        if(tmp_cs != NULL)
+        {
+            strncpy(cc_handle->serverhost, 
+                tmp_cs, sizeof(cc_handle->serverhost));
+            cc_handle->serverhost[sizeof(cc_handle->serverhost) - 1] = 0;
+    
+            globus_free(tmp_cs);
+        }
     }
-    tmp_cs = globus_libc_ints_to_contact_string(
-        tmp_host,
-        tmp_hostlen,
-        0);
-    if(tmp_cs == NULL)
-    {
-        error = globus_error_construct_string(
-            GLOBUS_FTP_CONTROL_MODULE,
-            GLOBUS_NULL,
-            "globus_l_ftp_control_connect_cb: error with remote host cs");
-        goto return_error;
-    }
-    
-    strncpy(cc_handle->serverhost, tmp_cs, sizeof(cc_handle->serverhost));
-    cc_handle->serverhost[sizeof(cc_handle->serverhost) - 1] = 0;
-    
-    globus_free(tmp_cs);
-    
+
     rc=globus_io_register_read(handle,
                                cc_handle->read_buffer,
                                GLOBUS_FTP_CONTROL_READ_BUFFER_SIZE,
@@ -2527,9 +2572,16 @@ globus_l_ftp_control_send_cmd_cb(
 	     * string or the remote hostname
 	     */
 	    
-	    if(handle->cc_handle.auth_info.auth_gssapi_subject ==
-	       GLOBUS_NULL)
+	    if(handle->cc_handle.auth_info.auth_gssapi_subject == NULL)
 	    {
+                if(*handle->cc_handle.serverhost == '\0')
+                {
+		    error_obj = globus_error_construct_string(
+                        GLOBUS_FTP_CONTROL_MODULE,
+                        GLOBUS_NULL,
+		        "No possible GSI subject.  If using a non TCP protocol and GSI you must specifiy a subject.");
+                    goto return_error;
+                }
 	        rc = globus_gss_assist_authorization_host_name(
                     handle->cc_handle.serverhost,
                     &handle->cc_handle.auth_info.target_name);
