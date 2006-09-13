@@ -3800,13 +3800,29 @@ globus_gsi_sysconfig_set_key_permissions_unix(
     return GLOBUS_SUCCESS;
 #else
     globus_result_t                     result = GLOBUS_SUCCESS;
-    int					                fd = -1;
+    int					fd = -1;
+    int                                 rc;
+    mode_t                              oldmask;
     struct stat                         stx, stx2;
     static char *                       _function_name_ =
         "globus_gsi_sysconfig_set_key_permissions_unix";
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_ENTER;
 
-    if((fd = open(filename, O_RDONLY|O_CREAT|O_NONBLOCK)) < 0)
+    if ((rc = unlink(filename)) < 0)
+    {
+        result = globus_error_put(
+            globus_error_wrap_errno_error(
+                GLOBUS_GSI_SYSCONFIG_MODULE,
+                errno,
+                GLOBUS_GSI_SYSCONFIG_ERROR_ERRNO,
+                __FILE__,
+                _function_name_,
+                __LINE__,
+                "Error deleting keyfile\n"));
+        goto exit;
+    } 
+    oldmask = umask(0077);
+    if((fd = globus_libc_open(filename, O_RDONLY|O_CREAT|O_EXCL, 0600)) < 0)
     {
         result = globus_error_put(
             globus_error_wrap_errno_error(
@@ -3893,7 +3909,7 @@ globus_gsi_sysconfig_set_key_permissions_unix(
     {
 	close(fd);
     }
-
+    umask(oldmask);
     GLOBUS_I_GSI_SYSCONFIG_DEBUG_EXIT;
     return result;
 #endif
