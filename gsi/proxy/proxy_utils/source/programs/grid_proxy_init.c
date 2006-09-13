@@ -496,7 +496,8 @@ main(
             cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_INDEPENDENT_PROXY;
         }
     }
-    
+   
+    umask(0077);
     /* A few sanity checks */
 
     if(policy_filename && !policy_language)
