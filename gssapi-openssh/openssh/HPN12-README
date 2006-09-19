@@ -41,3 +41,5 @@ with nonHPN SSH installations. Conceptually this is similar to the TcpRcvBuf
 option as applied to the internal SSH flow control. This value can range from 
 1KB to 14MB (1-14336). Use of oversized or undersized buffers can cause performance
 problems depending on the length of the network path. The default size of this buffer
+is 2MB. TcpRcvBufPoll, if set to yes, will override this value. This behaviour may
+change in future versions. 
