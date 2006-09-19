@@ -769,6 +769,7 @@ globus_l_gram_protocol_listen_callback(
     }
     connection->listener = listener;
     connection->handle = ++globus_i_gram_protocol_handle;
+    connection->accepting = GLOBUS_TRUE;
     globus_list_insert(&globus_i_gram_protocol_connections, connection);
     listener->connection_count++;
 
@@ -884,6 +885,8 @@ globus_l_gram_protocol_accept_callback(
     connection = callback_arg;
 
     globus_mutex_lock(&globus_i_gram_protocol_mutex);
+    connection->accepting = GLOBUS_FALSE;
+
     if(globus_i_gram_protocol_shutdown_called)
     {
         rc = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_REQUEST;
@@ -1121,6 +1124,7 @@ globus_l_gram_protocol_connect_callback(
     					connection;
     connection = callback_arg;
     globus_mutex_lock(&globus_i_gram_protocol_mutex);
+    connection->accepting = GLOBUS_FALSE;
     if(result != GLOBUS_SUCCESS)
     {
 	err = globus_error_get(result);
@@ -1703,6 +1707,10 @@ globus_l_gram_protocol_free_old_credentials()
 	while(!globus_list_empty(conn_list))
 	{
 	    conn = (globus_i_gram_protocol_connection_t *) globus_list_first(conn_list);
+            if (conn->accepting)
+            {
+                return;
+            }
             
 	    if (conn->io_handle != GLOBUS_NULL)
 	    {
@@ -2082,6 +2090,7 @@ globus_l_gram_protocol_post(
     connection->callback_arg = callback_arg;
     connection->buf = framed;
     connection->bufsize = framedsize;
+    connection->accepting = GLOBUS_TRUE;
     if(keep_open)
     {
 	connection->keep_open = keep_open;

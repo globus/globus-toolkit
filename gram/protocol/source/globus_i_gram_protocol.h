@@ -90,6 +90,7 @@ globus_i_gram_protocol_listener_t;
 typedef struct
 {
     globus_bool_t			got_header;
+    globus_bool_t                       accepting;
     globus_byte_t *			buf;
     globus_size_t			bufsize;
     globus_gram_protocol_read_type_t	read_type;
