@@ -1453,7 +1453,7 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
         /* Check for a valid mapping in accepted_credentials_mapfile or
          * accepted_credentials_mapapp.  Note that accept_credmap returns 0
          * upon success (or if no check of mapfile/mapapp is needed). */
-        if (accept_credmap(client_name,client_request->username,context)) {
+        if (accept_credmap(client->name,client_request->username,context)) {
             goto end;  /* No valid UserDN/Username mapping found! */
         }
        
