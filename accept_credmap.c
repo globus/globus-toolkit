@@ -1,7 +1,8 @@
 #include "myproxy_common.h"
 
 
-int consult_mapfile ( char * mapfile, char * userdn, char * username ) {
+static int
+consult_mapfile ( char * mapfile, char * userdn, char * username ) {
 
     int retval = 0;  /* Assume success */
     char * oldenv = NULL;
@@ -28,7 +29,8 @@ int consult_mapfile ( char * mapfile, char * userdn, char * username ) {
 }
 
 
-int consult_mapapp ( char * mapapp, char * userdn, char * username) {
+static int
+consult_mapapp ( char * mapapp, char * userdn, char * username) {
 
     int retval = 0;   /* Assume success */
     pid_t childpid;
@@ -101,8 +103,13 @@ int accept_credmap( char * userdn, char * username,
     /* Check to see if the accepted_credentials_mapapp value has been 
      * specified in the config file.  Also do a sanity check and verify
      * that the mapapp is still executable. */
-    if ((server_context->accepted_credentials_mapapp != NULL) &&
-        (access(server_context->accepted_credentials_mapapp, X_OK) == 0)) {
+    if (server_context->accepted_credentials_mapapp != NULL) {
+        if (access(server_context->accepted_credentials_mapapp, X_OK) < 0) {
+            verror_put_string("accepted_credentials_mapapp %s not executable",
+                              server_context->accepted_credentials_mapapp);
+            verror_put_errno(errno);
+            retval = -1;
+        }
         
         if (consult_mapapp(server_context->accepted_credentials_mapapp,
                            userdn,username)) {
@@ -115,10 +122,15 @@ int accept_credmap( char * userdn, char * username,
      * the accepted_credentials_mapfile value has been specified in the
      * config file.  Also do a sanity check and verify that the mapfile is
      * still readable. */
-    } else if ((server_context->accepted_credentials_mapfile != NULL) &&
-        (access(server_context->accepted_credentials_mapfile, R_OK) == 0)) {
+    } else if (server_context->accepted_credentials_mapfile != NULL) {
+        if (access(server_context->accepted_credentials_mapfile, R_OK) < 0) {
+            verror_put_string("accepted_credentials_mapfile %s not readable",
+                              server_context->accepted_credentials_mapfile);
+            verror_put_errno(errno);
+            retval = -1;
+        }            
 
-        if (consult_mapapp(server_context->accepted_credentials_mapfile,
+        if (consult_mapfile(server_context->accepted_credentials_mapfile,
                            userdn,username)) {
             verror_put_string("Accepted credentials failure for DN/Username "
                               "via grid-mapfile");
