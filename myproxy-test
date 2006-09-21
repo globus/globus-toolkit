@@ -196,6 +196,7 @@ if ($startserver) {
     print CONF "trusted_retrievers    \"*\"\n";
     print CONF "default_trusted_retrievers \"none\"\n";
     print CONF "passphrase_policy_program $bintrue\n" if (-x $bintrue);
+    print CONF "accepted_credentials_mapapp $bintrue\n" if (-x $bintrue);
     close(CONF);
     $SERVERPIDFILE = "/tmp/myproxy-test.serverpid.$$";
     $servercmd = "$myproxy_server -s $serverdir -c $serverconf";
