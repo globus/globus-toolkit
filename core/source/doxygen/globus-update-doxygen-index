@@ -119,7 +119,7 @@ print $file <<EOF;
 <html>
 <head>
 <title>API Documentation</title>
-<link href="globus_common/html/globus.css" title="Globus" rel="stylesheet" type="text/css">
+<link href="globus.css" title="Globus" rel="stylesheet" type="text/css">
 </head>
 <body>
 <h1>API Documentation</h1>
@@ -150,3 +150,7 @@ print "Done\n";
 print $file "</body></html>\n";
 
 $file->close();
+
+print "Run the following command to modify the documention for globus.org stylesheets:\n";
+print "find $docpath -name \"*.html\" -print | xargs sed -i \"s#globus.css#/toolkit/css/default.css#\" \n";
+
