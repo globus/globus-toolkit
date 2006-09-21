@@ -478,10 +478,20 @@ and
 A credential is authorized to be put/stored only under the username
 specified in the mapfile.  This prevents storing a user's credential under a
 different username.  Note that the credential checked for the presence of a
-UserDN/Username entry in the mapfile is the credential utilized to secure
+SubjectDN/Username entry in the mapfile is the credential utilized to secure
 the connection between client and server, NOT the actual credential being
 stored.  As the credential which secures the TLS connection is typically the
 same as the credential being stored, this should not be a major issue.
+.TP
+.BI accepted_credentials_mapapp " full-path-to-mapapp"
+As an alternative to the accepted_credentials_mapfile option above, you can
+specify a call-out which is passed two parameters: a certificate subject
+distinguished name and a username (in that order).  In essence, the call-out
+performs a lookup in a 'virtual' accepted_credentials_mapfile.  If the
+SubjectDN/Username line would appear in such a mapfile, then the call-out
+should exit with zero status indicating that a credential with the given
+SubjectDN is allowed to be stored under the given Username.  Otherwise, the
+call-out should exit with nonzero status indicating error.
 .TP
 .BI check_multiple_credentials " boolean"
 Typically when a credential is accessed by a client, the server checks only

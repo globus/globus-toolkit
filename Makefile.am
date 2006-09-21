@@ -10,6 +10,8 @@ SUBDIRS= \
 	man
 
 LibSources= \
+	accept_credmap.c \
+	accept_credmap.h \
 	auth_pam.c \
 	auth_pam.h \
 	certauth_extensions.c \

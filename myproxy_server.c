@@ -1305,8 +1305,8 @@ no_creds_abort(myproxy_socket_attrs_t *attrs, char username[], char credname[])
  *   DN in second X.509 authentication must match owner of credentials.
  *   Private key can not be encrypted in this case.
  * PUT, STORE:
- *   If accepted_credentials_mapfile, client_name / client_request->username
- *   map entry must be present.
+ *   If accepted_credentials_mapfile or accepted_credentials_mapapp, 
+ *   client_name / client_request->username map entry must be present/valid.
  * PUT, STORE, and DESTROY:
  *   Client DN must match accepted_credentials.
  *   If credentials already exist for the username, the client must own them.
@@ -1331,8 +1331,6 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
    int   trusted_retriever = 0;
    int   return_status = -1;
    myproxy_creds_t creds = { 0 };
-   char* oldenv = NULL;
-   int   accepted = 1;         /* For accepted_credentials_mapfile test */
    char  *userdn = NULL;
 
    credentials_exist = myproxy_creds_exist(client_request->username,
@@ -1452,34 +1450,13 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 
    case MYPROXY_PUT_PROXY:
    case MYPROXY_STORE_CERT:
-        /* Check to see if the accepted_credentials_mapfile value has been
-         * specified in the config file.  Also do a sanity check and verify
-         * that the mapfile is still readable.  */
-        if ((context->accepted_credentials_mapfile != NULL) &&
-            (access(context->accepted_credentials_mapfile, R_OK) == 0)) {
-            myproxy_debug("checking accepted_credentials_mapfile");
-
-            /* Save the current GRIDMAP environment variable so we can set it 
-             * to accepted_credentials_mapfile for a globus_gss_assist call */
-            oldenv = (char*)getenv("GRIDMAP");
-            setenv("GRIDMAP", context->accepted_credentials_mapfile, 1);
-
-            /* Note: globus_gss_assist_userok returns 0 upon success */
-            if (globus_gss_assist_userok(client->name,
-                                         client_request->username) != 0) {
-                accepted = 0;  /* So we can first restore GRIDMAP env var  */
-                verror_put_string("PUT/STORE: No mapping found for "
-                                  "'%s' and '%s' in '%s'",
-                                  client->name,client_request->username,
-                                  context->accepted_credentials_mapfile);
-            }
-
-            /* Now, restore the previous GRIDMAP environment variable */
-            setenv("GRIDMAP", oldenv, 1);
-            if (!accepted) {  /* globus_gss_assist call failed! */
-                goto end;
-            }
+        /* Check for a valid mapping in accepted_credentials_mapfile or
+         * accepted_credentials_mapapp.  Note that accept_credmap returns 0
+         * upon success (or if no check of mapfile/mapapp is needed). */
+        if (accept_credmap(client->name,client_request->username,context)) {
+            goto end;  /* No valid UserDN/Username mapping found! */
         }
+       
         /* Fall through to more checking, including MYPROXY_DESTROY_PROXY */
 
    case MYPROXY_DESTROY_PROXY:  /* Note: Includes PUT and STORE */
