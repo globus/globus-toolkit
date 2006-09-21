@@ -52,6 +52,7 @@ typedef struct
   char *pubcookie_cert;             /* Pubcookie login server certificate */
   char *pubcookie_key;              /* Pubcookie application server key */
   char *accepted_credentials_mapfile; /* Force username/userDN gridmap lookup */
+  char *accepted_credentials_mapapp;/* gridmap call-out */
   int check_multiple_credentials;   /* Check multiple creds for U/P match */
 } myproxy_server_context_t;
 

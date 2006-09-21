@@ -277,6 +277,9 @@ line_parse_callback(void *context_arg,
     else if (strcmp(directive, "accepted_credentials_mapfile") == 0) {
         context->accepted_credentials_mapfile = strdup(tokens[1]);
     }
+    else if (strcmp(directive, "accepted_credentials_mapapp") == 0) {
+        context->accepted_credentials_mapapp = strdup(tokens[1]);
+    }
     else if (strcmp(directive, "check_multiple_credentials") == 0) {
         context->check_multiple_credentials = 0;
         if ((strcasecmp(tokens[1], "true")) ||
@@ -610,6 +613,13 @@ check_config(myproxy_server_context_t *context)
                         context->accepted_credentials_mapfile);
         }
     }
+	if (context->accepted_credentials_mapapp &&
+	    access(context->accepted_credentials_mapapp, X_OK) < 0) {
+	    verror_put_string("accepted_credentials_mapapp %s not executable",
+			      context->accepted_credentials_mapapp);
+	    verror_put_errno(errno);
+	    rval = -1;
+	}
     if (context->check_multiple_credentials) {
         myproxy_log("Checking multiple credentials during authorization");
     }
