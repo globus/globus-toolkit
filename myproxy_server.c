@@ -1304,10 +1304,9 @@ no_creds_abort(myproxy_socket_attrs_t *attrs, char username[], char credname[])
  *   Client DN must match credential-specific authorized_renewers policy.
  *   DN in second X.509 authentication must match owner of credentials.
  *   Private key can not be encrypted in this case.
- * PUT, STORE:
+ * PUT, STORE, and DESTROY:
  *   If accepted_credentials_mapfile or accepted_credentials_mapapp, 
  *   client_name / client_request->username map entry must be present/valid.
- * PUT, STORE, and DESTROY:
  *   Client DN must match accepted_credentials.
  *   If credentials already exist for the username, the client must own them.
  * INFO:
@@ -1450,6 +1449,7 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 
    case MYPROXY_PUT_PROXY:
    case MYPROXY_STORE_CERT:
+   case MYPROXY_DESTROY_PROXY:
         /* Check for a valid mapping in accepted_credentials_mapfile or
          * accepted_credentials_mapapp.  Note that accept_credmap returns 0
          * upon success (or if no check of mapfile/mapapp is needed). */
@@ -1457,9 +1457,6 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
             goto end;  /* No valid UserDN/Username mapping found! */
         }
        
-        /* Fall through to more checking, including MYPROXY_DESTROY_PROXY */
-
-   case MYPROXY_DESTROY_PROXY:  /* Note: Includes PUT and STORE */
        /* Is this client authorized to store credentials here? */
        authorization_ok =
 	   myproxy_server_check_policy_list_ext((const char **)context->accepted_credential_dns, client);
