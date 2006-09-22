@@ -247,7 +247,7 @@ install-pkgDATA: $(pkg_DATA)
 	  f=$(am__strip_dir) \
 	  echo " $(pkgDATA_INSTALL) '$$d$$p' '$(DESTDIR)$(pkgdir)/$$f'"; \
 	  $(pkgDATA_INSTALL) "$$d$$p" "$(DESTDIR)$(pkgdir)/$$f"; \
-	done
+        done || true
 
 uninstall-pkgDATA:
 	@$(NORMAL_UNINSTALL)
