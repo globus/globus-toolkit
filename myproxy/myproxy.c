@@ -235,6 +235,7 @@ myproxy_init_client(myproxy_socket_attrs_t *attrs) {
                     inet_ntoa(*(struct in_addr *)host_info->h_addr_list[i]),
                     attrs->psport);
         } else {
+            verror_clear();
             attrs->gsi_socket = GSI_SOCKET_new(attrs->socket_fd);
             if (attrs->gsi_socket == NULL) {
                 verror_put_string("GSI_SOCKET_new()\n");
