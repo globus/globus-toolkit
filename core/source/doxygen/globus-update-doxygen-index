@@ -152,5 +152,5 @@ print $file "</body></html>\n";
 $file->close();
 
 print "Run the following command to modify the documention for globus.org stylesheets:\n";
-print "find $docpath -name \"*.html\" -print | xargs sed -i \"s#globus.css#/toolkit/css/default.css#\" \n";
+print "find $docpath -name \"*.html\" -print | xargs sed -i \"s#globus.css#/toolkit/css/c-api.css#\" \n";
 
