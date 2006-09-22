@@ -158,6 +158,7 @@ myproxy_init_client(myproxy_socket_attrs_t *attrs) {
     struct sockaddr_in sin;
     struct hostent *host_info;
     char *port_range;
+    int i;
     
     myproxy_debug("MyProxy %s", myproxy_version(0,0,0));
 
@@ -216,20 +217,35 @@ myproxy_init_client(myproxy_socket_attrs_t *attrs) {
 
     memset(&sin, 0, sizeof(sin));
     sin.sin_family = AF_INET;
-    memcpy(&(sin.sin_addr), host_info->h_addr, sizeof(sin.sin_addr));
     sin.sin_port = htons(attrs->psport);
+    attrs->gsi_socket = NULL;
 
-    if (connect(attrs->socket_fd, (struct sockaddr *) &sin, sizeof(sin)) < 0) {
-        verror_put_errno(errno);
-        verror_put_string("Unable to connect to %s:%d\n", attrs->pshost,
-			  attrs->psport);
-        return -1;
+    for (i=0; host_info->h_addr_list[i]; i++) {
+        memcpy(&(sin.sin_addr), host_info->h_addr_list[i],
+               sizeof(sin.sin_addr));
+
+        myproxy_debug("Attempting to connect to %s:%d\n", 
+                    inet_ntoa(*(struct in_addr *)host_info->h_addr_list[i]),
+                    attrs->psport);
+
+        if (connect(attrs->socket_fd, (struct sockaddr *) &sin,
+                    sizeof(sin)) < 0) {
+            verror_put_errno(errno);
+            verror_put_string("Unable to connect to %s:%d\n", 
+                    inet_ntoa(*(struct in_addr *)host_info->h_addr_list[i]),
+                    attrs->psport);
+        } else {
+            attrs->gsi_socket = GSI_SOCKET_new(attrs->socket_fd);
+            if (attrs->gsi_socket == NULL) {
+                verror_put_string("GSI_SOCKET_new()\n");
+                return -1;
+            }
+            break;              /* success */
+        }
     }
 
-    attrs->gsi_socket = GSI_SOCKET_new(attrs->socket_fd);
-    
-    if (attrs->gsi_socket == NULL) {
-        verror_put_string("GSI_SOCKET_new()\n");
+    if (!attrs->gsi_socket) {
+        verror_put_string("Unable to connect to %s\n", attrs->pshost);
         return -1;
     }
 
