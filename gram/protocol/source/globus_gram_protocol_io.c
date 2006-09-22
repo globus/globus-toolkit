@@ -2209,7 +2209,8 @@ globus_l_gram_protocol_delegation_read_callback(
 
     connection = callback_arg;
     
-    if(connection->token_length == 0)
+    if(connection->token_length == 0 &&
+       nbytes >= 4)
     {
 	connection->token_length  = buf[0] << 24;
 	connection->token_length |= buf[1] << 16;
