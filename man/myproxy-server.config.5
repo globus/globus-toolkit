@@ -396,6 +396,8 @@ to stdout and exit with zero
 status.  On error, it should write to stderr and exit with nonzero
 status.  If it is not defined, then mapfile lookup will be executed
 instead (see certificate_mapfile above).
+An example is installed in
+.IR $GLOBUS_LOCATION/share/myproxy/myproxy-certificate-mapapp .
 .RS
 .PD 0
 .PP
@@ -492,6 +494,18 @@ SubjectDN/Username line would appear in such a mapfile, then the call-out
 should exit with zero status indicating that a credential with the given
 SubjectDN is allowed to be stored under the given Username.  Otherwise, the
 call-out should exit with nonzero status indicating error.
+An example is installed in
+.IR $GLOBUS_LOCATION/share/myproxy/myproxy-accepted-credentials-mapapp .
+.RS
+.PD 0
+.PP
+.B Be sure to follow secure coding practices for this call-out:
+.PP
+- Don't allow input to overflow fixed-size buffers.
+.PP
+- Don't pass unchecked input to a shell command.
+.PD
+.RE
 .TP
 .BI check_multiple_credentials " boolean"
 Typically when a credential is accessed by a client, the server checks only
@@ -552,7 +566,24 @@ A different location can be specified by using the
 option.
 .TP
 .I $GLOBUS_LOCATION/share/myproxy/myproxy-passphrase-policy
-A sample program for evaluating passphrase quality.
+A sample program for evaluating passphrase quality for use with the
+.I passphrase_policy_program 
+option.
+.TP
+.I $GLOBUS_LOCATION/share/myproxy/myproxy-certificate-mapapp
+A sample 
+.I certificate_mapapp
+program for mapping account names to certificate subject distinguished
+names.
+.TP
+.I $GLOBUS_LOCATION/share/myproxy/myproxy-accepted-credentials-mapapp
+A sample
+.I accepted_credentials_mapapp
+program for authorizing 
+puts/stores (e.g. with 
+.BR myproxy-init (1)
+and
+.BR myproxy-store (1)).
 .SH ENVIRONMENT
 .TP
 .B GLOBUS_LOCATION
