@@ -189,7 +189,9 @@ EXTRA_DIST = $(Scripts) LICENSE LICENSE.sasl LICENSE.netbsd \
                etc.services.modifications etc.inetd.conf.modifications \
                myproxy.cron \
                etc.init.d.myproxy etc.init.d.myproxy.nonroot \
-               etc.xinetd.myproxy myproxy-passphrase-policy
+               etc.xinetd.myproxy myproxy-passphrase-policy \
+               myproxy-certificate-mapapp \
+               myproxy-accepted-credentials-mapapp
 
 dirt.sh:
 	touch dirt.sh
