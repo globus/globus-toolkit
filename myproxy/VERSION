@@ -5,6 +5,10 @@ Binary compatibility of the C API is not guaranteed between releases.
 Version History
 ---------------
 v3.7 XX Xxx 2006
+  - fix handling of usernames containing '/', '-', and '.' characters;
+    note this required a change to the myproxy-server repository
+    format, so credential data files written by a new myproxy-server
+    won't be readable by an older myproxy-server
   - if the myproxy-server hostname given by $MYPROXY_SERVER or the -s
     option resolves to multiple IP addresses, clients will connect to
     each address until a connection is established or all fail
