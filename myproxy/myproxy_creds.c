@@ -270,7 +270,7 @@ get_storage_locations(const char *username,
         goto error;
     }
 
-    if (strchr(username, '/')) {
+    if (strchr(username, '/') || strchr(username, '-')) {
        sterile_username = strmd5(username, NULL);
        if (sterile_username == NULL)
 	  goto error;
@@ -424,6 +424,9 @@ write_data_file(const struct myproxy_creds *creds,
 
     if (creds->renewers != NULL)
 	fprintf (data_stream, "RENEWERS=%s\n", creds->renewers);
+
+    if (creds->username != NULL)
+    fprintf (data_stream, "USERNAME=%s\n", creds->username);
 
     fprintf (data_stream, "END_OPTIONS\n");
 
@@ -643,6 +646,17 @@ read_data_file(struct myproxy_creds *creds,
             continue;
         }
         
+        if (strcmp(variable, "USERNAME") == 0)
+        {
+            creds->username = mystrdup(value);
+            
+            if (creds->username == NULL)
+            {
+                goto error;
+            }
+            continue;
+        }
+        
         /* Unrecognized varibale */
         verror_put_string("unrecognized line: %s line %d",
                           datafile_path, line_number);
@@ -848,8 +862,9 @@ myproxy_creds_retrieve(struct myproxy_creds *creds)
     }
 
     /* reset username from stashed value */
-    assert(creds->username == NULL);
-    creds->username = username;
+    if (creds->username == NULL) {
+        creds->username = username;
+    }
     username = NULL;
     assert(creds->location == NULL);
     creds->location = mystrdup(creds_path);
@@ -890,7 +905,7 @@ int myproxy_creds_retrieve_all(struct myproxy_creds *creds)
 
     /* stash username and owner_name so we can test each credential */
     username = strdup(creds->username);
-    if (strchr(creds->username, '/')) {
+    if (strchr(creds->username, '/') || strchr(username, '-')) {
 	h_username = strmd5(username, NULL);
     } else {
 	h_username = strdup(creds->username);
@@ -925,7 +940,7 @@ int myproxy_creds_retrieve_all(struct myproxy_creds *creds)
 	    !strncmp(de->d_name+strlen(de->d_name)-5, ".data", 5)) {
 	    char *credname, *dot;
 	    credname = strdup(de->d_name+h_username_len+1);
-	    dot = strchr(credname, '.');
+	    dot = strrchr(credname, '.');
 	    *dot = '\0';
 	    if (new_cred->username) free(new_cred->username);
 	    if (new_cred->credname) free(new_cred->credname);
@@ -1035,7 +1050,7 @@ int myproxy_admin_retrieve_all(struct myproxy_creds *creds)
 
 	    dash = strchr (de->d_name, '-');	/*Get a pointer to '-' */
 
-	    dot = strchr(de->d_name, '.');
+	    dot = strrchr(de->d_name, '.');
 	    *dot = '\0';
 
 	    if (dash) /*Credential with a name */
