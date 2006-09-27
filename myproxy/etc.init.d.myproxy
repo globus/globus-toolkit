@@ -6,15 +6,20 @@
 # description: MyProxy online credential repository
 
 # Set GLOBUS_LOCATION as appropriate for your installation.
-GLOBUS_LOCATION="/usr/grid"
+GLOBUS_LOCATION=""
 export GLOBUS_LOCATION
+
+if [ -z $GLOBUS_LOCATION ]; then
+    echo "GLOBUS_LOCATION is not set."
+    echo "Please edit $0 to set GLOBUS_LOCATION."
+    exit 1
+fi
 
 . ${GLOBUS_LOCATION}/libexec/globus-script-initializer
 . ${libexecdir}/globus-sh-tools.sh
 
 MYPROXY=${GLOBUS_LOCATION}/sbin/myproxy-server
-
-PS="/bin/ps -e"
+PID_FILE=${localstatedir}/myproxy.pid
 
 # Optional server configuration arguments follow.
 # Uncomment and modify to change default settings.
@@ -31,32 +36,67 @@ PS="/bin/ps -e"
 #X509_USER_KEY="/usr/local/etc/myproxykey.pem"
 #export X509_USER_CERT X509_USER_KEY
 
-case $1 in
-'start')
-    if [ -x $MYPROXY ]; then
-        echo "Starting up MyProxy"
-        $MYPROXY $PORT $CONFIG $STORE $VERBOSE
-    else
+do_start()
+{
+    if [ ! -x $MYPROXY ]; then
         echo "$MYPROXY is not executable.  Skipping MyProxy startup."
         exit 1
     fi
-    ;;
-
-'stop')
-    pid=`$PS | grep myproxy-server | grep -v grep | awk '{print $1}'`
-    if [ -n "$pid" ]; then 
-        echo "Shutting down MyProxy"
-        kill -TERM $pid
+    if [ ! -d $localstatedir ]; then
+        mkdir -p $localstatedir
+    fi
+    echo -n "Starting up MyProxy server... "
+    $MYPROXY $PORT $CONFIG $STORE $VERBOSE -P $PID_FILE
+    if [ $? -eq 0 ]; then
+        echo "done."
     else
-        echo "MyProxy not running"
-    fi  
-    ;;
+        echo "Failed to start MyProxy server!"
+        exit 1
+    fi
+}
 
-*)
-    echo "Usage: myproxy {start|stop}"
-    exit 1
-    ;;
+do_stop()
+{
+    echo -n "Stopping the MyProxy server... "
+    pid=`cat $PID_FILE`
+    kill -TERM $pid
+    rm -f $PID_FILE
+    echo "done."
+}
 
+case "$1" in
+    start)
+        if [ ! -f $PID_FILE ]; then
+            do_start
+        else
+            pid=`cat $PID_FILE`
+            psout=`ps -A | grep $pid | grep -v grep | awk "{if (\\\$1 == $pid) print}"`
+            if [ "x$psout" = "x" ]; then
+                echo "Found stale myproxy-server pid file... removing it."
+                rm -f $PID_FILE
+                do_start
+            else
+                echo "MyProxy server is already running!"
+            fi
+        fi
+        ;;
+
+    stop)
+        if [ -f $PID_FILE ] ; then
+            do_stop
+        else
+            echo "The server's pid file does not exist!  Are you sure the server is running?"
+        fi
+        ;;
+
+    restart)
+        $0 stop
+        $0 start
+        ;;
+
+    *)
+        echo "Usage: $0 (start|stop|restart)"
+        exit 1
 esac
 
 exit 0
