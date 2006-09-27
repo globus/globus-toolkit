@@ -37,8 +37,15 @@
 #include "includes.h"
 #if defined(USE_BSM_AUDIT)
 
+#include <sys/types.h>
+
+#include <stdarg.h>
+#include <unistd.h>
+
 #include "ssh.h"
 #include "log.h"
+#include "key.h"
+#include "hostfile.h"
 #include "auth.h"
 #include "xmalloc.h"
 
