@@ -6,11 +6,17 @@ Every credential stored on the myproxy server has a credential file
 credential file stores the proxy while the data file stores other
 information about the credential.
 
-The credential filename has the format 
+The credential filename has the format
+<username>.creds or
 <username>-<credname>.creds
 
 and the data filename has the format
+<username>.data or
 <username>-<credname>.data
+
+where, if <username> contains '/' or '-', then it's the MD5 digest of
+the username instead, and '/' characters in <credname> are replaced
+with '-' characters.
 
 The format of a data file is as follows :
 
@@ -24,8 +30,8 @@ NAME=<credential name>
 DESCRIPTION=<credential description>
 RETRIEVERS=<retriever regex>
 RENEWERS=<renewer regex>
+USERNAME=<username>
 
 Every data file ends with END_OPTIONS field that marks the end of the
 data file.
-
 
