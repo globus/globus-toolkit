@@ -52,7 +52,10 @@
 #include <sys/secstat.h>
 #include <sys/stat.h>
 #include <sys/session.h>
+#include <stdarg.h>
 #include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 #include <pwd.h>
 #include <fcntl.h>
 #include <errno.h>

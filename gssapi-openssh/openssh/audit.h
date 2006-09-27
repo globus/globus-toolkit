@@ -24,8 +24,6 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "auth.h"
-
 #ifndef _SSH_AUDIT_H
 # define _SSH_AUDIT_H
 enum ssh_audit_event_type {
