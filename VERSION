@@ -5,6 +5,9 @@ Binary compatibility of the C API is not guaranteed between releases.
 Version History
 ---------------
 v3.7 XX Xxx 2006
+  - update etc.init.d.myproxy script to use pidfile to locate server
+    to stop (rather than searching ps output), include a restart
+    option, and exit with error if $GLOBUS_LOCATION isn't set
   - fix handling of usernames containing '/', '-', and '.' characters;
     note this required a change to the myproxy-server repository
     format, so credential data files written by a new myproxy-server
