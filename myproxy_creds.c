@@ -270,7 +270,7 @@ get_storage_locations(const char *username,
         goto error;
     }
 
-    if (strchr(username, '/') || strchr(username, '-')) {
+    if (strchr(username, '/')) {
        sterile_username = strmd5(username, NULL);
        if (sterile_username == NULL)
 	  goto error;
@@ -905,7 +905,7 @@ int myproxy_creds_retrieve_all(struct myproxy_creds *creds)
 
     /* stash username and owner_name so we can test each credential */
     username = strdup(creds->username);
-    if (strchr(creds->username, '/') || strchr(username, '-')) {
+    if (strchr(creds->username, '/')) {
 	h_username = strmd5(username, NULL);
     } else {
 	h_username = strdup(creds->username);
