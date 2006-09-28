@@ -14,9 +14,13 @@ and the data filename has the format
 <username>.data or
 <username>-<credname>.data
 
-where, if <username> contains '/' or '-', then it's the MD5 digest of
-the username instead, and '/' characters in <credname> are replaced
-with '-' characters.
+where, if <username> contains '/', then it's the MD5 digest of the
+username instead, and '/' characters in <credname> are replaced with
+'-' characters.
+
+Unfortunately, <username> may contain '-' making it ambiguous as to
+where <username> ends and <credname> starts, so USERNAME and NAME in
+the data file must be used to disambiguate.
 
 The format of a data file is as follows :
 
