@@ -32,6 +32,8 @@
 #include "xmalloc.h"
 #include "buffer.h"
 #include "bufaux.h"
+#include "cipher.h"
+#include "key.h"
 #include "kex.h"
 #include "log.h"
 #include "packet.h"

@@ -1,4 +1,4 @@
-/*	$OpenBSD: ssh-gss.h,v 1.5 2004/06/21 17:36:31 avsm Exp $	*/
+/* $OpenBSD: ssh-gss.h,v 1.9 2006/08/18 14:40:34 djm Exp $ */
 /*
  * Copyright (c) 2001-2003 Simon Wilkinson. All rights reserved.
  *
@@ -27,8 +27,6 @@
 #define _SSH_GSS_H
 
 #ifdef GSSAPI
-
-#include "buffer.h"
 
 #ifdef HAVE_GSSAPI_H
 #include <gssapi.h>
@@ -134,16 +132,16 @@ void ssh_gssapi_delete_ctx(Gssctxt **);
 OM_uint32 ssh_gssapi_sign(Gssctxt *, gss_buffer_t, gss_buffer_t);
 OM_uint32 ssh_gssapi_server_ctx(Gssctxt **, gss_OID);
 void ssh_gssapi_buildmic(Buffer *, const char *, const char *, const char *);
+int ssh_gssapi_check_mechanism(Gssctxt **, gss_OID, const char *);
 
 int ssh_gssapi_localname(char **name);
 
-typedef int ssh_gssapi_check_fn(gss_OID, void *);
+typedef int ssh_gssapi_check_fn(Gssctxt **, gss_OID, const char *);
 char *ssh_gssapi_client_mechanisms(const char *host);
 char *ssh_gssapi_kex_mechs(gss_OID_set, ssh_gssapi_check_fn *, void *);
-int ssh_gssapi_check_mechanism(gss_OID, void *);
 gss_OID ssh_gssapi_id_kex(Gssctxt *, char *, int *);
 
-int ssh_gssapi_server_check_mech(gss_OID, void *);
+int ssh_gssapi_server_check_mech(Gssctxt **, gss_OID, const char *);
 int ssh_gssapi_userok(char *name);
 OM_uint32 ssh_gssapi_checkmic(Gssctxt *, gss_buffer_t, gss_buffer_t);
 void ssh_gssapi_do_child(char ***, u_int *);

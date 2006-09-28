@@ -27,12 +27,19 @@
 #ifdef GSSAPI
 #ifdef GSI
 
-#include "auth.h"
-#include "auth-pam.h"
+#include <sys/types.h>
+
+#include <stdarg.h>
+#include <string.h>
+
 #include "xmalloc.h"
+#include "key.h"
+#include "hostfile.h"
+#include "auth.h"
 #include "log.h"
 #include "servconf.h"
 
+#include "buffer.h"
 #include "ssh-gss.h"
 
 extern ServerOptions options;
