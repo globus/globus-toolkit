@@ -310,7 +310,7 @@ main(int argc, char **argv)
 	addargs(&args, "-oClearAllForwardings yes");
 
 	fflag = tflag = 0;
-	while ((ch = getopt(argc, argv, "dfl:prtvBCc:i:P:q1246S:o:F:")) != -1)
+	while ((ch = getopt(argc, argv, "dfl:prtvBCc:i:P:q1246zS:o:F:w:")) != -1)
 		switch (ch) {
 		/* User-visible flags. */
 		case '1':
@@ -318,6 +318,7 @@ main(int argc, char **argv)
 		case '4':
 		case '6':
 		case 'C':
+		case 'z':	
 			addargs(&args, "-%c", ch);
 			break;
 		case 'o':
@@ -370,6 +371,9 @@ main(int argc, char **argv)
 #ifdef HAVE_CYGWIN
 			setmode(0, O_BINARY);
 #endif
+			break;
+		case 'w':
+			addargs(&args, "-w%s", optarg);
 			break;
 		default:
 			usage();
@@ -582,7 +586,7 @@ source(int argc, char **argv)
 	off_t i, amt, statbytes;
 	size_t result;
 	int fd = -1, haderr, indx;
-	char *last, *name, buf[2048];
+	char *last, *name, buf[16384];
 	int len;
 
 	for (indx = 0; indx < argc; ++indx) {
@@ -642,7 +646,7 @@ syserr:			run_err("%s: %s", name, strerror(errno));
 		(void) atomicio(vwrite, remout, buf, strlen(buf));
 		if (response() < 0)
 			goto next;
-		if ((bp = allocbuf(&buffer, fd, 2048)) == NULL) {
+		if ((bp = allocbuf(&buffer, fd, sizeof(buf))) == NULL) {
 next:			if (fd != -1) {
 				(void) close(fd);
 				fd = -1;
@@ -810,7 +814,7 @@ sink(int argc, char **argv)
 	mode_t mode, omode, mask;
 	off_t size, statbytes;
 	int setimes, targisdir, wrerrno = 0;
-	char ch, *cp, *np, *targ, *why, *vect[1], buf[2048];
+	char ch, *cp, *np, *targ, *why, *vect[1], buf[16384];
 	struct timeval tv[2];
 
 #define	atime	tv[0]
@@ -971,7 +975,7 @@ bad:			run_err("%s: %s", np, strerror(errno));
 			continue;
 		}
 		(void) atomicio(vwrite, remout, "", 1);
-		if ((bp = allocbuf(&buffer, ofd, 4096)) == NULL) {
+		if ((bp = allocbuf(&buffer, ofd, sizeof(buf))) == NULL) {
 			(void) close(ofd);
 			continue;
 		}
@@ -981,8 +985,8 @@ bad:			run_err("%s: %s", np, strerror(errno));
 		statbytes = 0;
 		if (showprogress)
 			start_progress_meter(curfile, size, &statbytes);
-		for (count = i = 0; i < size; i += 4096) {
-			amt = 4096;
+		for (count = i = 0; i < size; i += sizeof(buf)) {
+			amt = sizeof(buf);
 			if (i + amt > size)
 				amt = size - i;
 			count += amt;
@@ -999,7 +1003,7 @@ bad:			run_err("%s: %s", np, strerror(errno));
 			} while (amt > 0);
 
 			if (limit_rate)
-				bwlimit(4096);
+				bwlimit(sizeof(buf));
 
 			if (count == bp->cnt) {
 				/* Keep reading so we stay sync'd up. */
@@ -1115,7 +1119,7 @@ usage(void)
 {
 	(void) fprintf(stderr,
 	    "usage: scp [-1246BCpqrv] [-c cipher] [-F ssh_config] [-i identity_file]\n"
-	    "           [-l limit] [-o ssh_option] [-P port] [-S program]\n"
+	    "           [-l limit] [-o ssh_option] [-P port] [-w buffer size] [-S program]\n"
 	    "           [[user@]host1:]file1 [...] [[user@]host2:]file2\n");
 	exit(1);
 }

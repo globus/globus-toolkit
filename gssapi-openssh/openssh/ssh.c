@@ -497,9 +497,11 @@ main(int ac, char **av)
 		case 'N':
 			no_shell_flag = 1;
 			no_tty_flag = 1;
+			options.none_switch = 0;
 			break;
 		case 'T':
 			no_tty_flag = 1;
+			options.none_switch = 0;
 			break;
 		case 'o':
 			dummy = 1;
@@ -523,6 +525,14 @@ main(int ac, char **av)
 		case 'F':
 			config = optarg;
 			break;
+		case 'z':
+			/* make sure we can't turn on the none_switch */
+			/* if they try to force a no tty flag on a tty session */
+			if (!no_tty_flag) {
+				options.none_switch = 1;
+			}
+			break;
+
 		default:
 			usage();
 		}
@@ -615,6 +625,29 @@ main(int ac, char **av)
 			fatal("Can't open user config file %.100s: "
 			    "%.100s", config, strerror(errno));
 	} else  {
+	    /*
+	     * Since the config file parsing code aborts if it sees
+	     * options it doesn't recognize, allow users to put
+	     * options specific to compile-time add-ons in alternate
+	     * config files so their primary config file will
+	     * interoperate SSH versions that don't support those
+	     * options.
+	     */
+#ifdef GSSAPI
+		snprintf(buf, sizeof buf, "%.100s/%.100s.gssapi", pw->pw_dir,
+		    _PATH_SSH_USER_CONFFILE);
+		(void)read_config_file(buf, host, &options, 1);
+#ifdef GSI
+		snprintf(buf, sizeof buf, "%.100s/%.100s.gsi", pw->pw_dir,
+		    _PATH_SSH_USER_CONFFILE);
+		(void)read_config_file(buf, host, &options, 1);
+#endif
+#if defined(KRB5)
+		snprintf(buf, sizeof buf, "%.100s/%.100s.krb", pw->pw_dir,
+		    _PATH_SSH_USER_CONFFILE);
+		(void)read_config_file(buf, host, &options, 1);
+#endif
+#endif
 		snprintf(buf, sizeof buf, "%.100s/%.100s", pw->pw_dir,
 		    _PATH_SSH_USER_CONFFILE);
 		(void)read_config_file(buf, host, &options, 1);
@@ -634,8 +667,11 @@ main(int ac, char **av)
 
 	seed_rng();
 
-	if (options.user == NULL)
+	if (options.user == NULL) {
 		options.user = xstrdup(pw->pw_name);
+		options.implicit = 1;
+	}
+        else options.implicit = 0;
 
 	if (options.hostname != NULL)
 		host = options.hostname;
@@ -825,7 +861,8 @@ ssh_init_forwarding(void)
 		    options.local_forwards[i].listen_port,
 		    options.local_forwards[i].connect_host,
 		    options.local_forwards[i].connect_port,
-		    options.gateway_ports);
+		    options.gateway_ports, options.hpn_disabled,
+		    options.hpn_buffer_size);
 	}
 	if (i > 0 && success != i && options.exit_on_forward_failure)
 		fatal("Could not request local forwarding.");
@@ -1122,9 +1159,14 @@ ssh_session2_setup(int id, void *arg)
 		debug("Requesting tun.");
 		if ((fd = tun_open(options.tun_local,
 		    options.tun_open)) >= 0) {
-			c = channel_new("tun", SSH_CHANNEL_OPENING, fd, fd, -1,
-			    CHAN_TCP_WINDOW_DEFAULT, CHAN_TCP_PACKET_DEFAULT,
-			    0, "tun", 1);
+			if(options.hpn_disabled)
+				c = channel_new("tun", SSH_CHANNEL_OPENING, fd, fd, -1,
+				    CHAN_TCP_WINDOW_DEFAULT, CHAN_TCP_PACKET_DEFAULT,
+				    0, "tun", 1);
+			else
+				c = channel_new("tun", SSH_CHANNEL_OPENING, fd, fd, -1,
+				    options.hpn_buffer_size, CHAN_TCP_PACKET_DEFAULT,
+				    0, "tun", 1);
 			c->datagram = 1;
 #if defined(SSH_TUN_FILTER)
 			if (options.tun_open == SSH_TUNMODE_POINTOPOINT)
@@ -1174,9 +1216,13 @@ ssh_session2_open(void)
 	if (!isatty(err))
 		set_nonblock(err);
 
-	window = CHAN_SES_WINDOW_DEFAULT;
+	if(options.hpn_disabled)
+		window = CHAN_SES_WINDOW_DEFAULT;
+	else
+		window = options.hpn_buffer_size;
 	packetmax = CHAN_SES_PACKET_DEFAULT;
 	if (tty_flag) {
+		window = 4*CHAN_SES_PACKET_DEFAULT;
 		window >>= 1;
 		packetmax >>= 1;
 	}
@@ -1184,7 +1230,10 @@ ssh_session2_open(void)
 	    "session", SSH_CHANNEL_OPENING, in, out, err,
 	    window, packetmax, CHAN_EXTENDED_WRITE,
 	    "client-session", /*nonblock*/0);
-
+	if ((options.tcp_rcv_buf_poll > 0) && (!options.hpn_disabled)) {
+		c->dynamic_window = 1;
+		debug ("Enabled Dynamic Window Scaling\n");
+	}
 	debug3("ssh_session2_open: channel_new: %d", c->self);
 
 	channel_send_open(c->self);
@@ -1374,12 +1423,23 @@ control_client(const char *path)
 		flags |= SSHMUX_FLAG_X11_FWD;
 	if (options.forward_agent)
 		flags |= SSHMUX_FLAG_AGENT_FWD;
-
+	if (options.num_local_forwards > 0)
+		flags |= SSHMUX_FLAG_PORTFORWARD;
 	buffer_init(&m);
 
 	/* Send our command to server */
 	buffer_put_int(&m, mux_command);
 	buffer_put_int(&m, flags);
+	if (options.num_local_forwards > 0)
+        {
+		if (options.local_forwards[0].listen_host == NULL)
+ 			buffer_put_string(&m,"LOCALHOST",11);
+		else
+			buffer_put_string(&m,options.local_forwards[0].listen_host,512);
+		buffer_put_int(&m,options.local_forwards[0].listen_port);
+		buffer_put_string(&m,options.local_forwards[0].connect_host,512);	
+		buffer_put_int(&m,options.local_forwards[0].connect_port);
+	}
 	if (ssh_msg_send(sock, SSHMUX_VER, &m) == -1)
 		fatal("%s: msg_send", __func__);
 	buffer_clear(&m);

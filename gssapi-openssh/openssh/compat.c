@@ -168,6 +168,14 @@ compat_datafellows(const char *version)
 		    strlen(check[i].pat), 0) == 1) {
 			debug("match: %s pat %s", version, check[i].pat);
 			datafellows = check[i].bugs;
+			/* Check to see if the remote side is OpenSSH and not HPN */
+			if(strstr(version,"OpenSSH") != NULL)
+			{
+				if (strstr(version,"hpn") == NULL)
+				{
+					datafellows |= SSH_BUG_LARGEWINDOW;
+				}
+			}
 			return;
 		}
 	}

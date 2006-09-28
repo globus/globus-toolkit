@@ -65,8 +65,13 @@
 #KerberosTicketCleanup yes
 #KerberosGetAFSToken no
 
+# Session hooks: if allowed, specify the commands to execute
+#AllowSessionHooks yes
+#SessionHookStartupCmd /bin/true
+#SessionHookShutdownCmd /bin/true
+
 # GSSAPI options
-#GSSAPIAuthentication no
+#GSSAPIAuthentication yes
 #GSSAPICleanupCredentials yes
 
 # Set this to 'yes' to enable PAM authentication, account processing, 
@@ -98,6 +103,20 @@
 #PidFile /var/run/sshd.pid
 #MaxStartups 10
 #PermitTunnel no
+
+# the following are HPN related configuration options
+# tcp receive buffer polling. enable in autotuning kernels
+#TcpRcvBufPoll no
+
+# allow the use of the none cipher
+#NoneEnabled no
+
+# disable hpn performance boosts. 
+#HPNDisabled no
+
+# buffer size for hpn to non-hn connections
+#HPNBufferSize 2048
+# end of HPN options
 
 # no default banner path
 #Banner /some/path

@@ -62,6 +62,8 @@ enum kex_exchange {
 	KEX_DH_GRP1_SHA1,
 	KEX_DH_GRP14_SHA1,
 	KEX_DH_GEX_SHA1,
+	KEX_GSS_GRP1_SHA1,
+	KEX_GSS_GEX_SHA1,
 	KEX_DH_GEX_SHA256,
 	KEX_MAX
 };
@@ -101,6 +103,7 @@ struct Newkeys {
 	Mac	mac;
 	Comp	comp;
 };
+
 struct Kex {
 	u_char	*session_id;
 	u_int	session_id_len;
@@ -115,6 +118,11 @@ struct Kex {
 	sig_atomic_t done;
 	int	flags;
 	const EVP_MD *evp_md;
+#ifdef GSSAPI
+	int	gss_deleg_creds;
+	int	gss_trust_dns;
+	char    *gss_host;
+#endif
 	char	*client_version_string;
 	char	*server_version_string;
 	int	(*verify_host_key)(Key *);
@@ -122,6 +130,8 @@ struct Kex {
 	int	(*host_key_index)(Key *);
 	void	(*kex[KEX_MAX])(Kex *);
 };
+
+void kex_prop2buf(Buffer *, char *proposal[PROPOSAL_MAX]);
 
 Kex	*kex_setup(char *[PROPOSAL_MAX]);
 void	 kex_finish(Kex *);
@@ -136,6 +146,11 @@ void	 kexdh_client(Kex *);
 void	 kexdh_server(Kex *);
 void	 kexgex_client(Kex *);
 void	 kexgex_server(Kex *);
+
+#ifdef GSSAPI
+void	kexgss_client(Kex *);
+void	kexgss_server(Kex *);
+#endif
 
 void
 kex_dh_hash(char *, char *, char *, int, char *, int, u_char *, int,

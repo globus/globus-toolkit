@@ -28,6 +28,13 @@
 #define	BUFFER_MAX_LEN		0xa00000
 #define	BUFFER_ALLOCSZ		0x008000
 
+/* this value for BUFFER_MAX_HPN_LEN is */
+/* still undersized for the faster networks */
+/* it might make sense to have yet another */
+/* MAX_LEN for 10+GB networks. Something closer to */
+/* 128MB or 192MB -cjr*/
+#define	BUFFER_MAX_HPN_LEN	0x2000000 /*32MB*/
+
 /* Initializes the buffer structure. */
 
 void
@@ -127,7 +134,7 @@ restart:
 
 	/* Increase the size of the buffer and retry. */
 	newlen = roundup(buffer->alloc + len, BUFFER_ALLOCSZ);
-	if (newlen > BUFFER_MAX_LEN)
+	if (newlen > BUFFER_MAX_HPN_LEN)
 		fatal("buffer_append_space: alloc %u not supported",
 		    newlen);
 	buffer->buf = xrealloc(buffer->buf, 1, newlen);
