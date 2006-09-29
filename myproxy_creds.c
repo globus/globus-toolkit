@@ -909,6 +909,7 @@ int myproxy_creds_retrieve_all(struct myproxy_creds *creds)
 	h_username = strmd5(username, NULL);
     } else {
 	h_username = strdup(creds->username);
+    sterilize_string(h_username);
     }
     h_username_len = strlen(h_username);
     owner_name = strdup(creds->owner_name);
