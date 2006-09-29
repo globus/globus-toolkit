@@ -20,7 +20,9 @@
 #define GFS_BRAIN_FIXED_SIZE    256
 #define GFS_DB_REPO_SIZE        16
 #define GFS_DB_REPO_NAME        "default"
-#define STATIC_TIMEOUT          30
+#define STATIC_TIMEOUT          90
+
+#define COOKIE_LEN              16
 
 typedef enum gfs_l_db_node_type_e
 {
@@ -42,6 +44,7 @@ typedef struct gfs_l_db_node_s
     /* end over load */
     gfs_l_db_node_type_t                type;
     globus_bool_t                       error;
+    char *                              cookie_id;
     struct gfs_l_db_repo_s *            repo;
 } gfs_l_db_node_t;
 
@@ -179,8 +182,13 @@ globus_l_brain_read_cb(
     char *                              start_str;
     char *                              repo_name = NULL;
     char *                              cs = NULL;
+    char                                cookie[COOKIE_LEN];
+    char *                              cookie_id;
     GlobusGFSName(globus_l_brain_read_cb);
 
+    globus_i_gfs_log_message(
+        GLOBUS_I_GFS_LOG_WARN,
+        "[%s] enter", "globus_l_brain_read_cb");
     globus_mutex_lock(&globus_l_brain_mutex);
     {
         if(result != GLOBUS_SUCCESS)
@@ -199,8 +207,9 @@ globus_l_brain_read_cb(
         {
             total_max = -1;
         }
-        start_str = &buffer[2];
-        for(i = 2; i < len && cs == NULL; i++)
+        memcpy(cookie, &buffer[2], COOKIE_LEN);
+        start_str = &buffer[2+COOKIE_LEN];
+        for(i = 2+COOKIE_LEN; i < len && cs == NULL; i++)
         {
             if(buffer[i] == '\0')
             {
@@ -222,7 +231,7 @@ globus_l_brain_read_cb(
                 globus_i_gfs_log_message(
                     GLOBUS_I_GFS_LOG_WARN,
                     "bad ip registered %s",
-                    &buffer[1]);
+                    start_str);
                 goto error;
             }
         }
@@ -231,6 +240,8 @@ globus_l_brain_read_cb(
             globus_free(cs);
             goto error_cs;
         }
+
+        cookie_id = globus_common_create_string("%s::%s", cookie, cs);
 
         if(*repo_name == '\0')
         {
@@ -256,17 +267,18 @@ globus_l_brain_read_cb(
         else
         {
             node = (gfs_l_db_node_t *)
-                globus_hashtable_lookup(&repo->node_table, cs);
+                globus_hashtable_lookup(&repo->node_table, cookie_id);
         }
 
         if(node == NULL)
         { 
             node = (gfs_l_db_node_t*)globus_calloc(1, sizeof(gfs_l_db_node_t));
             node->host_id = strdup(cs);
+            node->cookie_id = cookie_id;
             node->repo_name = strdup(repo_name);
             node->repo = repo;
             globus_priority_q_enqueue(&repo->node_q, node, node);
-            globus_hashtable_insert(&repo->node_table, node->host_id, node);
+            globus_hashtable_insert(&repo->node_table, node->cookie_id, node);
             /* the next line is here so that if it was static it will
                 remain static */
             node->type = GFS_DB_NODE_TYPE_DYNAMIC;
@@ -277,11 +289,12 @@ globus_l_brain_read_cb(
             globus_i_gfs_log_message(
                 GLOBUS_I_GFS_LOG_WARN,
                 "A new backend registered, contact string: [%s] %s\n"
-                "  max=[%d]\n  total=[%d]\n",
+                "  max=[%d]\n  total=[%d]\n id=[%s]\n",
                 node->repo_name,
                 node->host_id,
                 node->max_connection,
-                node->total_max_connections);
+                node->total_max_connections,
+                node->cookie_id);
             globus_gfs_config_inc_int("backends_registered", 1);
         }
         else
@@ -290,6 +303,7 @@ globus_l_brain_read_cb(
             node->total_max_connections = total_max;
             con_diff = con_max - node->max_connection;
             node->max_connection = con_max;
+            free(cookie_id);
         }
         /* it already set to unlimited dont change it */
         if(globus_gfs_config_get_int("data_connection_max") >= 0)
@@ -574,9 +588,11 @@ globus_l_gfs_default_brain_init()
             node->error = GLOBUS_FALSE;
             node->type = GFS_DB_NODE_TYPE_STATIC;
             node->repo = default_repo;
+            node->cookie_id = globus_common_create_string("STATIC::%s",
+                node->host_id);
 
             globus_hashtable_insert(
-                &gfs_l_db_default_repo->node_table, node->host_id, node);
+                &gfs_l_db_default_repo->node_table, node->cookie_id, node);
             globus_priority_q_enqueue(&default_repo->node_q, node, node);
             list = globus_list_rest(list);
         }
@@ -747,7 +763,6 @@ error_short:
         node = (gfs_l_db_node_t *) node_array[i];
         node->current_connection--;
         globus_priority_q_enqueue(&repo->node_q, node, node);
-
         globus_i_gfs_log_message(
             GLOBUS_I_GFS_LOG_WARN,
             "Not enough nodes available: [%s] %s: %d, %d, %d\n",
@@ -778,7 +793,7 @@ gfs_l_db_static_error_timeout(
         /* clear the error and let it try again */
         node->error = GLOBUS_FALSE;
         globus_priority_q_enqueue(&repo->node_q, node, node);
-        globus_hashtable_insert(&repo->node_table, node->host_id, node);
+        globus_hashtable_insert(&repo->node_table, node->cookie_id, node);
     }
     globus_mutex_unlock(&globus_l_brain_mutex);
 }
@@ -836,7 +851,7 @@ globus_l_gfs_default_brain_release_node(
         if(node->error)
         {
             tmp_nptr = globus_hashtable_remove(
-                &repo->node_table, node->host_id);
+                &repo->node_table, node->cookie_id);
             assert(tmp_nptr == node || tmp_nptr == NULL);
             if(node->type == GFS_DB_NODE_TYPE_DYNAMIC)
             {
@@ -891,9 +906,10 @@ globus_l_gfs_default_brain_release_node(
             else
             {
                 tmp_nptr = globus_hashtable_remove(
-                    &repo->node_table, node->host_id);
+                    &repo->node_table, node->cookie_id);
                 assert(tmp_nptr == node || tmp_nptr == NULL);
                 globus_assert(node->current_connection == 0);
+                globus_free(node->cookie_id);
                 globus_free(node->repo_name);
                 globus_free(node->host_id);
                 globus_free(node);
