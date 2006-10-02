@@ -227,6 +227,21 @@ globus_gsi_proxy_handle_get_policy(
     int *                               policy_NID);
 
 globus_result_t
+globus_gsi_proxy_handle_add_extension(
+    globus_gsi_proxy_handle_t           handle,
+    X509_EXTENSION *                    extension);
+
+globus_result_t
+globus_gsi_proxy_handle_set_extensions(
+    globus_gsi_proxy_handle_t           handle,
+    STACK_OF(X509_EXTENSION)*           extensions);
+
+globus_result_t
+globus_gsi_proxy_handle_get_extensions(
+    globus_gsi_proxy_handle_t           handle,
+    STACK_OF(X509_EXTENSION)**          extension);
+
+globus_result_t
 globus_gsi_proxy_handle_set_pathlen(
     globus_gsi_proxy_handle_t           handle,
     long                                pathlen);

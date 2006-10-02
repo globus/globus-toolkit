@@ -1395,7 +1395,40 @@ globus_l_gsi_proxy_sign_key(
             goto done;
         }
     }
-    
+
+    /*
+     * Add any extensions added to the handle
+     */
+    if (handle->extensions != NULL)
+    {
+        int index;
+        
+        /*
+         * There doesn't seem to be a function to add a stack of extensions
+         * to a X509 structure, so we do it iteratively.
+         */
+        for (index = 0;
+             index < sk_X509_EXTENSION_num(handle->extensions);
+             index++)
+        {
+            X509_EXTENSION *ext;
+
+            ext = sk_X509_EXTENSION_value(handle->extensions, index);
+            
+            if(!X509_add_ext(
+                   *signed_cert,
+                   ext,
+                   -1 /* at end */))
+            {
+                GLOBUS_GSI_PROXY_OPENSSL_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_PROXY_ERROR_WITH_X509_EXTENSIONS,
+                    (_PCSL("Couldn't add X509 extension to new proxy cert")));
+                goto done;
+            }        
+        }
+    }
+
     /* create proxy subject name */
     result = globus_i_gsi_proxy_set_subject(*signed_cert, issuer_cert, common_name);
     if(result != GLOBUS_SUCCESS)
@@ -1666,6 +1699,18 @@ globus_gsi_proxy_create_signed(
         goto exit;
     }
     
+    result = globus_gsi_proxy_handle_set_extensions(
+        inquire_handle,
+        handle->extensions);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE);
+        goto exit;
+    }
+
     result = globus_gsi_proxy_sign_req(inquire_handle, issuer, rw_mem_bio);
     if(result != GLOBUS_SUCCESS)
     {
