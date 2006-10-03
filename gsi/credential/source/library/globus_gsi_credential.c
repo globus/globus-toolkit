@@ -1596,11 +1596,19 @@ globus_result_t globus_gsi_cred_write_proxy(
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
     BIO *                               proxy_bio = NULL;
-
+    mode_t                              oldmask;
+    FILE *                              temp_proxy_fp = NULL;
+    int                                 temp_proxy_fd = -1;
+    
     static char *                       _function_name_ =
         "globus_gsi_cred_write_proxy";
 
     GLOBUS_I_GSI_CRED_DEBUG_ENTER;
+
+    /*
+     * For systems that does not support a third (mode) argument in open()
+     */
+    oldmask = globus_libc_umask(0077);
 
     if(handle == NULL)
     {
@@ -1611,8 +1619,22 @@ globus_result_t globus_gsi_cred_write_proxy(
         goto exit;
     }
 
-    result = GLOBUS_GSI_SYSCONFIG_SET_KEY_PERMISSIONS(proxy_filename);
-    if(result != GLOBUS_SUCCESS)
+    /* 
+     * We always unlink the file first; it is the only way to be
+     * certain that the file we open has never in its entire lifetime
+     * had the world-readable bit set.  
+     */
+    unlink(proxy_filename);
+
+    /* 
+     * Now, we must open w/ O_EXCL to make certain that WE are 
+     * creating the file, so we know that the file was BORN w/ mode 0600.
+     * As a bonus, O_EXCL flag will cause a failure in the presence
+     * of a symlink, so we are safe from zaping a file due to the
+     * presence of a symlink.
+     */
+    if ((temp_proxy_fd = globus_libc_open(
+              proxy_filename, O_WRONLY|O_EXCL|O_CREAT, S_IRUSR|S_IWUSR)) < 0)
     {
         GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
             result,
@@ -1620,14 +1642,34 @@ globus_result_t globus_gsi_cred_write_proxy(
         goto exit;
     }
 
-    if(!(proxy_bio = BIO_new_file(proxy_filename, "w")))
+    /* Finally, we have a safe fd.  Make it a stream like ssl wants. */
+    temp_proxy_fp = fdopen(temp_proxy_fd,"w");
+
+    /* Hand the stream over to ssl */
+    if( !(temp_proxy_fp) || 
+        !(proxy_bio = BIO_new_fp(temp_proxy_fp, BIO_CLOSE)))
     {
         GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_WRITING_PROXY_CRED,
             (_GCRSL("Can't open bio stream for writing to file: %s"), proxy_filename));
+        if ( temp_proxy_fp ) 
+        {
+            fclose(temp_proxy_fp);
+        } 
+        else if (temp_proxy_fd >= 0 ) 
+        {
+            /* close underlying fd if we do not have a stream */
+            close(temp_proxy_fd);
+        }
+
         goto exit;
     }
+
+    /* 
+     * Note: at this point, calling BIO_free(proxy_bio) will
+     * fclose the temp_proxy_fp, which in turn should close temp_proxy_fd.
+     */
 
     result = globus_gsi_cred_write(handle, proxy_bio);
     if(result != GLOBUS_SUCCESS)
@@ -1654,7 +1696,7 @@ globus_result_t globus_gsi_cred_write_proxy(
     }
 
  exit:
-
+    globus_libc_umask(oldmask);
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }    
