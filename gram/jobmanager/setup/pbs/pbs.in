@@ -156,6 +156,10 @@ sub submit
 #PBS -S /bin/sh
 EOF
 
+    if($description->name() ne '')
+    {
+        print JOB '#PBS -N ', $description->name(), "\n";
+    }
     if($description->email_address() ne '')
     {
         print JOB '#PBS -M ', $description->email_address(), "\n";
