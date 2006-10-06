@@ -1469,7 +1469,15 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 	   if (!client_owns_credentials) {
 	       if ((client_request->command_type == MYPROXY_PUT_PROXY) ||
                    (client_request->command_type == MYPROXY_STORE_CERT)) {
-		   verror_put_string("Username and credential name in use by someone else.");
+               verror_put_string("Credentials are already stored for user %s",
+                                 client_request->username);
+               if (client_request->credname) {
+                   verror_put_string("and credential name \"%s\"",
+                                     client_request->credname);
+               }
+               verror_put_string("with a different distinguished name, so you may not overwrite them.");
+               verror_put_string("Please choose a different username or credential name or");
+               verror_put_string("contact your myproxy-server administrator.");
 	       } else {
 		   verror_put_string("Credentials owned by someone else.");
 	       }
