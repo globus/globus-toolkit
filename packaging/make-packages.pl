@@ -1510,9 +1510,14 @@ sub patch_package
                "$pkglog/$package");
     paranoia "Untarring $package failed.  See $pkglog/$package.";
     chdir $tarbase;
-    log_system("patch -N -s -p1 -i ../patches/$patchfile",
-               "$pkglog/$package");
-    paranoia "patch failed.  See $pkglog/$package.";
+    if ( -f "../patches/$patchfile" )
+    {
+       log_system("patch -N -s -p1 -i ../patches/$patchfile",
+                  "$pkglog/$package");
+       paranoia "patch failed.  See $pkglog/$package.";
+    } else {
+       print "Not patching PNB $package.\n";
+    }       
 }
 
 # --------------------------------------------------------------------
