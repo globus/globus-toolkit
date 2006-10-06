@@ -1475,11 +1475,14 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
                    verror_put_string("and credential name \"%s\"",
                                      client_request->credname);
                }
-               verror_put_string("with a different distinguished name, so you may not overwrite them.");
+               verror_put_string("and they are not owned by\n\"%s\",",
+                                 client->name);
+               verror_put_string("so you may not overwrite them.");
                verror_put_string("Please choose a different username or credential name or");
                verror_put_string("contact your myproxy-server administrator.");
 	       } else {
-		   verror_put_string("Credentials owned by someone else.");
+               verror_put_string("Credentials not owned by \"%s\".",
+                                 client->name);
 	       }
 	       goto end;
 	   }
