@@ -1755,3 +1755,58 @@ myproxy_install_trusted_cert_files(myproxy_certs_t *trusted_certs)
     }
     return -1;
 }
+
+int myproxy_creds_verify(const struct myproxy_creds *creds)
+{
+    char *creds_path = NULL;
+    char *data_path = NULL;
+    char *lock_path = NULL;
+    int return_code = -1;
+    time_t now;
+    SSL_CREDENTIALS *ssl_creds = NULL;
+
+    if (!creds || !creds->username) {
+        verror_put_errno(EINVAL);
+        goto error;
+    }
+
+    /* Are credentials expired? */
+    now = time(0);
+    if (creds->start_time > now) {
+        verror_put_string("credentials not yet valid");
+        goto error;
+    } else if (creds->end_time < now) {
+        verror_put_string("credentials have expired");
+        goto error;
+    }
+
+    /* Are credentials locked? */
+    if (creds->lockmsg) {
+        verror_put_string("credentials locked");
+        verror_put_string(creds->lockmsg);
+        goto error;
+    }
+
+    if (get_storage_locations(creds->username, creds->credname,
+                              &creds_path, &data_path, &lock_path) == -1) {
+        goto error;
+    }
+
+    /* Do the certificates check out with OpenSSL? */
+	if ((ssl_creds = ssl_credentials_new()) == NULL ||
+        ssl_certificate_load_from_file(ssl_creds, creds_path) != SSL_SUCCESS ||
+        ssl_verify_gsi_chain(ssl_creds) != SSL_SUCCESS) {
+        goto error;
+    }
+
+    /* Success */
+    return_code = 0;
+
+  error:
+    ssl_credentials_destroy(ssl_creds);
+    if (creds_path) free(creds_path);
+    if (data_path) free(data_path);
+    if (lock_path) free(lock_path);
+
+    return return_code;
+}
