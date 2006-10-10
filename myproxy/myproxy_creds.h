@@ -262,5 +262,21 @@ myproxy_certs_t *myproxy_get_certs(const char cert_dir[]);
  */
 int myproxy_install_trusted_cert_files(myproxy_certs_t *);
 
+/*
+ * myproxy_creds_verify()
+ *
+ * Check the validity of the credentials in the myproxy_creds structure:
+ *   - check Not Before and Not After fields against current time
+ *   - check signature by trusted CA
+ *   - check revocation status (CRL, OCSP)
+ *   - check if credentials are locked
+ *
+ * The myproxy_creds structure should be filled in by a previous call to
+ * myproxy_creds_retrieve().
+ *
+ * Returns 0 on success, -1 on error (setting verror).
+ */
+int myproxy_creds_verify(const struct myproxy_creds *);
+
 #endif
 
