@@ -373,10 +373,12 @@ myproxy_authenticate_accept_fqans(myproxy_socket_attrs_t *attrs, char *client_na
         return -1;
     }
 
-    if (fqans && (GSI_SOCKET_get_peer_fqans(attrs->gsi_socket, fqans) == GSI_SOCKET_ERROR)) {
+    if (fqans && strcmp(client_name, "<anonymous>") &&
+        (GSI_SOCKET_get_peer_fqans(attrs->gsi_socket, fqans) ==
+         GSI_SOCKET_ERROR)) {
         GSI_SOCKET_get_error_string(attrs->gsi_socket, error_string,
 	      			    sizeof(error_string));
-	verror_put_string("Error getting client attributes: %s. Continuing withou attributes support.\n", error_string);
+	verror_put_string("Error getting client VOMS attributes (%s). Continuing without attributes support.", error_string);
     }
 
     return 0;
