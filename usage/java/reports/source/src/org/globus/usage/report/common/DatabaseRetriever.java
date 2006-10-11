@@ -87,7 +87,17 @@ public class DatabaseRetriever {
         query = query + "send_time >= '" + startDateString
                 + "' and send_time < '" + endDateString + "'";
 
+	try {
+	    this.con.setAutoCommit(false);
+	} catch (Exception e) {
+	    System.err.println("WARN: setAutoCommit(false) not supported");
+	}
         this.stmt = this.con.createStatement();
+	try {
+	    this.stmt.setFetchSize(1000);
+	} catch (Exception e) {
+	    System.err.println("WARN: setFetchSize() not supported");
+	}
         return this.stmt.executeQuery(query);
     }
 
