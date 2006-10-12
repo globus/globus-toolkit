@@ -25,8 +25,8 @@ typedef struct
   char **default_trusted_retriever_dns; /* DNs we'll delegate to w/o pass */
   char **authorized_renewer_dns;    /* List of DNs that can renew creds */
   char **default_renewer_dns; 	    /* List of DNs that can renew creds */
-  char **authorized_key_retrievers_dns; /* List of DNs that can retroeve keys */
-  char **default_key_retrievers_dns;    /* List of DNs that can retroeve keys */
+  char **authorized_key_retrievers_dns; /* List of DNs that can retrieve keys */
+  char **default_key_retrievers_dns;    /* List of DNs that can retrieve keys */
   int max_proxy_lifetime;	    /* Max life (in seconds) of retrieved creds */
   char *cert_dir;		    /* Trusted certificate directory to send */
   char *pam_policy;                 /* How we depend on PAM for passwd auth */
