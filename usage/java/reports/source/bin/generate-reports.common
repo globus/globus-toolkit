@@ -1,0 +1,53 @@
+### MODIFY ###
+
+export GLOBUS_LOCATION=/home/gawor/usage/wsrf/install
+export ANT_HOME=/home/dsl/javapkgs/apache-ant-1.6.2
+export JAVA_HOME=/home/dsl/javapkgs/linux/j2sdk1.4.2_10
+export PATH=$JAVA_HOME/bin:$ANT_HOME/bin:$PATH
+
+REPORT_BASE_DIR=/home/gawor/public_html/stats
+REPORT_BASE_WWW=http://www.mcs.anl.gov/~gawor/stats
+USAGE_DIR=/home/gawor/usage
+EMAIL=gawor@mcs.anl.gov
+MAIL=mail
+
+MONTHS=1
+DATE=`date +%Y-%m-01 --date "${MONTH} months ago"`
+
+### DO NOT MODIFY ###
+
+runReport() {
+
+  REPORT_SCRIPT=$1
+  REPORT_NAMES=$2
+
+  for i in $REPORT_NAMES
+  do
+    echo "Executing $REPORT_SCRIPT $i -n $MONTHS -step month ${DATE}"
+    $GLOBUS_LOCATION/bin/$REPORT_SCRIPT $i -n $MONTHS -step month $DATE
+    if [ "$?" != "0" ] ; then
+      return 1
+    fi 
+  done
+
+  return 0
+}
+
+createReport() {
+
+  REPORT_DIR=$REPORT_BASE_DIR/$REPORT_NAME
+  REPORT_WWW=$REPORT_BASE_WWW/$REPORT_NAME/$DATE
+
+  mkdir -p $REPORT_DIR/$DATE
+  cd $REPORT_DIR/$DATE
+
+  runReport "$@"
+  if [ "$?" == "0" ] ; then
+    cp $GLOBUS_LOCATION/etc/globus_usage_reports/$REPORT_NAME/reports.html $REPORT_DIR/$DATE/index.html
+    cp $GLOBUS_LOCATION/etc/globus_usage_reports/common/list.php $REPORT_DIR/index.php
+    echo "New $REPORT_DESCRIPTION Usage Reports are available at: $REPORT_WWW." | ${MAIL} -s "New $REPORT_DESCRIPTION Usage Reports" ${EMAIL}
+  else
+    echo "Failed to generate $REPORT_DESCRIPTION Usage Reports." | ${MAIL} -s "Error generating $REPORT_DESCRIPTION Usage Reports" ${EMAIL}
+  fi
+
+}
