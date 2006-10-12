@@ -44,6 +44,7 @@ createReport() {
   runReport "$@"
   if [ "$?" == "0" ] ; then
     cp $GLOBUS_LOCATION/etc/globus_usage_reports/$REPORT_NAME/reports.html $REPORT_DIR/$DATE/index.html
+    cp $GLOBUS_LOCATION/etc/globus_usage_reports/$REPORT_NAME/*.html $REPORT_DIR/$DATE/
     cp $GLOBUS_LOCATION/etc/globus_usage_reports/common/list.php $REPORT_DIR/index.php
     echo "New $REPORT_DESCRIPTION Usage Reports are available at: $REPORT_WWW." | ${MAIL} -s "New $REPORT_DESCRIPTION Usage Reports" ${EMAIL}
   else
