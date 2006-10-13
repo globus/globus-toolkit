@@ -291,6 +291,14 @@ line_parse_callback(void *context_arg,
         }
     }
 
+    /* OCSP stuff */
+    else if (strcmp(directive, "ocsp_policy") == 0) {
+        myproxy_ocsp_set_policy(tokens[1]);
+    }
+    else if (strcmp(directive, "ocsp_responder_url") == 0) {
+        myproxy_ocsp_set_responder(tokens[1]);
+    }
+
     else {
 	myproxy_log("warning: unknown directive (%s) in myproxy-server.config",
 		    directive);
