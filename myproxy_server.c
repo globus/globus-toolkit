@@ -307,7 +307,6 @@ handle_client(myproxy_socket_attrs_t *attrs,
     int   use_ca_callout = 0;
     int   found_auth_cred = 0;
     int   num_auth_creds = 0;
-    time_t now;
 
     myproxy_creds_t *client_creds;
     myproxy_creds_t *all_creds;
@@ -511,16 +510,6 @@ handle_client(myproxy_socket_attrs_t *attrs,
 			    context->max_proxy_lifetime);
 	  }
 
-	  /* Are credentials expired? */
-	  now = time(0);
-	  if (client_creds->start_time > now) {
-	    myproxy_debug("  warning: credentials not yet valid! "
-			  "(problem with local clock?)");
-	  } else if (client_creds->end_time < now) {
-	    respond_with_error_and_die(attrs,
-				       "requested credentials have expired");
-	  }
-
 	  /* Are credentials locked? */
 	  if (client_creds->lockmsg) {
 	    char *error, *msg="credential locked\n";
@@ -529,6 +518,10 @@ handle_client(myproxy_socket_attrs_t *attrs,
 	    strcat(error, client_creds->lockmsg);
 	    respond_with_error_and_die(attrs, error);
 	  }
+
+      if (myproxy_creds_verify(client_creds) < 0) {
+	    respond_with_error_and_die(attrs, verror_get_string());
+      }
 	}
 
 	if (client_request->want_trusted_certs) {
