@@ -823,11 +823,8 @@ myproxy_init_server(myproxy_socket_attrs_t *attrs)
             /* pshost was not valid IP addr, so try gethostbyname */
             hp = gethostbyname(attrs->pshost);
             if (hp != NULL) {
-                /* Got resolv of hostname, try inet_addr again */
-                sin.sin_addr.s_addr = inet_addr(hp->h_addr);
-                if (sin.sin_addr.s_addr == -1) {
-                    failure("Hostname specified by --listen is invalid.");
-                }
+                /* Got resolv of hostname, so use it */
+                memcpy(&(sin.sin_addr.s_addr),hp->h_addr,hp->h_length);
             } else {
                 failure("Hostname specified by --listen is invalid.");
             }
