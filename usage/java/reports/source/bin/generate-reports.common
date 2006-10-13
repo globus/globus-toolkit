@@ -11,7 +11,7 @@ USAGE_DIR=/home/gawor/usage
 EMAIL=gawor@mcs.anl.gov
 MAIL=mail
 
-MONTHS=1
+MONTHS=12
 DATE=`date +%Y-%m-01 --date "${MONTH} months ago"`
 
 ### DO NOT MODIFY ###
