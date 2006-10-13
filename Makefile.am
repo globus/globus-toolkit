@@ -35,6 +35,10 @@ LibSources= \
 	myproxy_read_pass.h \
 	myproxy_log.c \
 	myproxy_log.h \
+	myproxy_ocsp.c \
+	myproxy_ocsp.h \
+	myproxy_ocsp_aia.c \
+	myproxy_ocsp_aia.h \
 	myproxy_popen.c \
 	myproxy_popen.h \
 	myproxy_sasl_client.c \
