@@ -5,6 +5,10 @@ Binary compatibility of the C API is not guaranteed between releases.
 Version History
 ---------------
 v3.7 XX Xxx 2006
+  - verify that credentials in the myproxy-server repository are still
+    valid (i.e., not revoked) before performing delegation
+  - optionally check OCSP status of stored credentials before
+    performing delegation via myproxy-server.config ocsp settings
   - update etc.init.d.myproxy script to use pidfile to locate server
     to stop (rather than searching ps output), include a restart
     option, and exit with error if $GLOBUS_LOCATION isn't set
