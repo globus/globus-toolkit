@@ -1775,19 +1775,20 @@ ssl_verify_gsi_chain(SSL_CREDENTIALS *chain)
    int                   return_status = SSL_ERROR;
    int                   i,j;
    char                  *certdir = NULL;
-   X509                  *xcert = NULL;
+   X509                  *cert = NULL, *issuer = NULL;
    X509_LOOKUP           *lookup = NULL;
    X509_STORE            *cert_store = NULL;
    X509_STORE_CTX        csc;
    SSL                   *ssl = NULL;
    SSL_CTX               *sslContext = NULL;
+   globus_gsi_cert_utils_cert_type_t   cert_type;
 
    memset(&csc, 0, sizeof(csc));
    cert_store=X509_STORE_new();
    if (chain->certificate_chain != NULL) {
       for (i = 0; i < sk_X509_num(chain->certificate_chain); i++) {
-	 xcert = sk_X509_value(chain->certificate_chain, i);
-	 j = X509_STORE_add_cert(cert_store, xcert);
+	 cert = sk_X509_value(chain->certificate_chain, i);
+	 j = X509_STORE_add_cert(cert_store, cert);
 	 if (!j) {
 	    if ((ERR_GET_REASON(ERR_peek_error()) == 
 		                       X509_R_CERT_ALREADY_IN_HASH_TABLE)) {
@@ -1843,6 +1844,38 @@ ssl_verify_gsi_chain(SSL_CREDENTIALS *chain)
       verror_put_string("X509_verify_cert() failed");
       ssl_error_to_verror();
       goto end;
+   }
+
+   /* check OCSP status of the EEC */
+   if (globus_gsi_cert_utils_get_cert_type(chain->certificate,
+                                           &cert_type) != GLOBUS_SUCCESS) {
+       verror_put_string("globus_gsi_cert_utils_get_cert_type() failed");
+       goto end;
+   }
+   if (!GLOBUS_GSI_CERT_UTILS_IS_PROXY(cert_type)) {
+       cert = chain->certificate;
+   } else {
+       for (i = 0; i < sk_num(chain->certificate_chain); i++) {
+           cert = (X509 *)sk_value(chain->certificate_chain, i);
+           if (globus_gsi_cert_utils_get_cert_type(cert, &cert_type)
+               != GLOBUS_SUCCESS) {
+               verror_put_string("globus_gsi_cert_utils_get_cert_type() failed");
+               goto end;
+           }
+           if (!GLOBUS_GSI_CERT_UTILS_IS_PROXY(cert_type)) {
+               break;
+           }
+       }
+   }
+   if (X509_STORE_CTX_get1_issuer(&issuer, &csc, cert) != 1) {
+       verror_put_string("X509_STORE_CTX_get1_issuer() failed");
+       ssl_error_to_verror();
+       goto end;
+   }
+
+   if (myproxy_ocsp_verify(cert, issuer) == 1) {
+       verror_put_string("OCSP says EEC is revoked!");
+       goto end;
    }
 
    return_status = SSL_SUCCESS;
