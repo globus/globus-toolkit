@@ -12,7 +12,7 @@ EMAIL=gawor@mcs.anl.gov
 MAIL=mail
 
 MONTHS=12
-DATE=`date +%Y-%m-01 --date "${MONTH} months ago"`
+DATE=`date +%Y-%m-01 --date "${MONTHS} months ago"`
 
 ### DO NOT MODIFY ###
 
