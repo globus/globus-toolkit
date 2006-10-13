@@ -516,6 +516,11 @@ operation, then the server will check multiple credentials with the given
 username.  If a credential is found to be authorized for client access, then
 that one will be used during processing.  The default value for this option
 is "false".
+.TP
+.BI syslog_ident " name"
+You can optionally specify the string to be prepended to every message
+written to the syslog.  If not specified, the name defaults to the the
+program name, i.e. myproxy-server.
 .SH EXAMPLES
 The following policy enables all credential repository features.
 .PP

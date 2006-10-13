@@ -291,6 +291,11 @@ line_parse_callback(void *context_arg,
         }
     }
 
+    /* added by Terry Fleury for enhanced logging */
+    else if (strcmp(directive, "syslog_ident") == 0) {
+        context->syslog_ident = strdup(tokens[1]);
+    }
+
     else {
 	myproxy_log("warning: unknown directive (%s) in myproxy-server.config",
 		    directive);

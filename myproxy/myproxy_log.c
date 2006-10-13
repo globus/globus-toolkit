@@ -46,13 +46,11 @@ do_log(const char *string, int level)
 {
     /*
      * We always want to use '"%s", string' when logging in case
-     * string itself contains a '%s".
+     * string itself contains a '%s'.
      */
     if (my_context.syslog_facility != 0) 
     {
-	/* syslog() seems to automatically prepend process name */
-	syslog(my_context.syslog_facility|level, "<%d> %s",
-	       getpid(), string);
+	syslog(my_context.syslog_facility|level, "%s", string);
     }
     
     if (my_context.log_stream != NULL)
@@ -79,7 +77,11 @@ myproxy_log_use_syslog(const int facility,
 		       const char *name)
 {
     my_context.syslog_facility = facility;
+    if (my_context.syslog_name != NULL) {
+        free(my_context.syslog_name);  /* Mem allocated by strdup */
+    }
     my_context.syslog_name = (name == NULL) ? NULL : strdup(name);
+    openlog(my_context.syslog_name,LOG_PID,my_context.syslog_facility);
 }
 
 void

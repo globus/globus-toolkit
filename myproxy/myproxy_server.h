@@ -54,6 +54,7 @@ typedef struct
   char *accepted_credentials_mapfile; /* Force username/userDN gridmap lookup */
   char *accepted_credentials_mapapp;/* gridmap call-out */
   int check_multiple_credentials;   /* Check multiple creds for U/P match */
+  char *syslog_ident;               /* Identity for logging to syslog */
 } myproxy_server_context_t;
 
 typedef struct myproxy_server_peer_t {
