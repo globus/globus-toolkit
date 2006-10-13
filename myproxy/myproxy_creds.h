@@ -269,7 +269,6 @@ int myproxy_install_trusted_cert_files(myproxy_certs_t *);
  *   - check Not Before and Not After fields against current time
  *   - check signature by trusted CA
  *   - check revocation status (CRL, OCSP)
- *   - check if credentials are locked
  *
  * The myproxy_creds structure should be filled in by a previous call to
  * myproxy_creds_retrieve().

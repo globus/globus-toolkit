@@ -1780,13 +1780,6 @@ int myproxy_creds_verify(const struct myproxy_creds *creds)
         goto error;
     }
 
-    /* Are credentials locked? */
-    if (creds->lockmsg) {
-        verror_put_string("credentials locked");
-        verror_put_string(creds->lockmsg);
-        goto error;
-    }
-
     if (get_storage_locations(creds->username, creds->credname,
                               &creds_path, &data_path, &lock_path) == -1) {
         goto error;
