@@ -7,7 +7,6 @@ export PATH=$JAVA_HOME/bin:$ANT_HOME/bin:$PATH
 
 REPORT_BASE_DIR=/home/gawor/public_html/stats
 REPORT_BASE_WWW=http://www.mcs.anl.gov/~gawor/stats
-USAGE_DIR=/home/gawor/usage
 EMAIL=gawor@mcs.anl.gov
 MAIL=mail
 
