@@ -15,6 +15,9 @@
  */
 package org.globus.usage.report.jwscore;
 
+import java.sql.DriverManager;
+import java.sql.Connection;
+import java.sql.Statement;
 import java.sql.ResultSet;
 
 import java.util.HashMap;
@@ -27,7 +30,7 @@ import java.util.Date;
 import java.util.Calendar;
 import java.text.SimpleDateFormat;
 
-import org.globus.usage.report.common.DatabaseRetriever;
+import org.globus.usage.report.common.Database;
 
 public class ServiceReport {
 
@@ -153,10 +156,12 @@ public class ServiceReport {
 
         ServiceReport r = new ServiceReport();
 
-        DatabaseRetriever db = null;
+        Connection con = null;
 
         try {
-            db = new DatabaseRetriever();
+            Database db = new Database();
+
+            con = DriverManager.getConnection(db.getURL());
 
             Date date = dateFormat.parse(inputDate);
             Calendar calendar = dateFormat.getCalendar();
@@ -184,17 +189,20 @@ public class ServiceReport {
 
             String query = baseQuery + timeFilter;
 
-            ResultSet rs = db.retrieve(query);
+            Statement stmt = con.createStatement();
+
+            ResultSet rs = stmt.executeQuery(query);
 
             while (rs.next()) {
                 r.compute(rs.getString(1), rs.getInt(2), rs.getString(3));
             }
 
             rs.close();
+            stmt.close();
 
         } finally {
-            if (db != null) {
-                db.close();
+            if (con != null) {
+                con.close();
             }
         }
 

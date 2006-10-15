@@ -15,6 +15,9 @@
  */
 package org.globus.usage.report.jwscore;
 
+import java.sql.DriverManager;
+import java.sql.Connection;
+import java.sql.Statement;
 import java.sql.ResultSet;
 
 import java.util.HashMap;
@@ -25,7 +28,7 @@ import java.util.Calendar;
 import java.text.SimpleDateFormat;
 import java.io.PrintStream;
 
-import org.globus.usage.report.common.DatabaseRetriever;
+import org.globus.usage.report.common.Database;
 import org.globus.usage.report.common.IPTable;
 
 public class ContainerReport {
@@ -190,11 +193,13 @@ public class ContainerReport {
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
-        DatabaseRetriever db = null;
+        Connection con = null;
 
         try {
-            db = new DatabaseRetriever();
-            
+            Database db = new Database();
+
+            con = DriverManager.getConnection(db.getURL());
+
             Date date = dateFormat.parse(inputDate);
 
             Calendar calendar = dateFormat.getCalendar();
@@ -219,7 +224,9 @@ public class ContainerReport {
                 
                 String query = baseQuery + timeFilter;
 
-                ResultSet rs = db.retrieve(query);
+                Statement stmt = con.createStatement();
+
+                ResultSet rs = stmt.executeQuery(query);
                 
                 ContainerReport r = new ContainerReport();
 
@@ -227,7 +234,8 @@ public class ContainerReport {
                     r.compute(rs.getString(1), rs.getInt(2), rs.getString(3));
                 }
 
-                rs.close();       
+                rs.close();
+                stmt.close();
 
                 System.out.println("  <entry>");
                 System.out.println("\t<start-date>" + startDateStr + "</start-date>");
@@ -259,8 +267,8 @@ public class ContainerReport {
             System.out.println("</container-report>");
 
         } finally {
-            if (db != null) {
-                db.close();
+            if (con != null) {
+                con.close();
             }
         }
     }

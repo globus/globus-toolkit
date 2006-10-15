@@ -32,23 +32,14 @@ public class DatabaseRetriever {
 
     public DatabaseRetriever() throws Exception {
         this.db = new Database();
-        init();
+        this.con = DriverManager.getConnection(db.getURL());
     }
 
     public DatabaseRetriever(String databaseproperties) throws Exception {
         this.db = new Database(databaseproperties);
-        init();
+        this.con = DriverManager.getConnection(db.getURL());
     }
 
-    protected void init() throws Exception {
-        this.con = DriverManager.getConnection(db.getURL());
-        try {
-            this.con.setAutoCommit(false);
-        } catch (Exception e) {
-            System.err.println("WARN: setAutoCommit(false) not supported");
-        }
-    }
-    
     public ResultSet retrieve(String packetType,
                               String[] columns,
                               Date startDate,
@@ -81,33 +72,6 @@ public class DatabaseRetriever {
                               String[] conditions,
                               String startDateString,
                               String endDateString) throws Exception {
-        return retrieve(createQuery(packetType,
-                                    columns,
-                                    conditions,
-                                    startDateString,
-                                    endDateString));
-    }
-    
-    public ResultSet retrieve(String query) throws Exception { 
-        // make sure to close previous statement
-        closeStatement();
-        
-        this.stmt = this.con.createStatement();
-        
-        try {
-            this.stmt.setFetchSize(1000);
-        } catch (Exception e) {
-            System.err.println("WARN: setFetchSize() not supported");
-        }
-        
-        return this.stmt.executeQuery(query);
-    }
-
-    public String createQuery(String packetType,
-                              String[] columns,
-                              String[] conditions,
-                              String startDateString,
-                              String endDateString) {
         String query = "select ";
 
         for (int n = 0; n < columns.length - 1; n++) {
@@ -116,7 +80,6 @@ public class DatabaseRetriever {
 
         query = query + columns[columns.length - 1] + " from " + packetType
                 + " where ";
-        
         for (int n = 0; n < conditions.length; n++) {
             query = query + conditions[n] + " and ";
         }
@@ -124,35 +87,23 @@ public class DatabaseRetriever {
         query = query + "send_time >= '" + startDateString
                 + "' and send_time < '" + endDateString + "'";
 
-        return query;
+        this.stmt = this.con.createStatement();
+        return this.stmt.executeQuery(query);
     }
-        
-    public void closeStatement() {
+
+    public void close() {
         if (this.stmt != null) {
             try {
                 this.stmt.close();
             } catch (Exception e) {
             }
-            this.stmt = null;
         }
-    }
-    
-    public void closeConnection() {
         if (this.con != null) {
             try {
                 this.con.close();
             } catch (Exception e) {
             }
         }
-    }
-    
-    public void closeAll() {
-        close();
-    }
-    
-    public void close() {
-        closeStatement();
-        closeConnection();
     }
 
 }
