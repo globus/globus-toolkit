@@ -12,7 +12,8 @@ EMAIL=gawor@mcs.anl.gov
 MAIL=mail
 
 MONTHS=12
-DATE=`date +%Y-%m-01 --date "${MONTHS} months ago"`
+REPORT_DATE=`date +%Y-%m-01 --date "${MONTHS} months ago"`
+DATE=`date +%Y-%m-01`
 
 ### DO NOT MODIFY ###
 
@@ -23,8 +24,8 @@ runReport() {
 
   for i in $REPORT_NAMES
   do
-    echo "Executing $REPORT_SCRIPT $i -n $MONTHS -step month ${DATE}"
-    $GLOBUS_LOCATION/bin/$REPORT_SCRIPT $i -n $MONTHS -step month $DATE
+    echo "Executing $REPORT_SCRIPT $i -n $MONTHS -step month ${REPORT_DATE}"
+    $GLOBUS_LOCATION/bin/$REPORT_SCRIPT $i -n $MONTHS -step month $REPORT_DATE
     if [ "$?" != "0" ] ; then
       return 1
     fi 
