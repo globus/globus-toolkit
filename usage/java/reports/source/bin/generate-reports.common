@@ -1,16 +1,13 @@
-### MODIFY ###
+BASEDIR=`dirname $0`
+CONFIG=$BASEDIR/generate-reports.config
 
-export GLOBUS_LOCATION=/home/gawor/usage/wsrf/install
-export ANT_HOME=/home/dsl/javapkgs/apache-ant-1.6.2
-export JAVA_HOME=/home/dsl/javapkgs/linux/j2sdk1.4.2_10
-export PATH=$JAVA_HOME/bin:$ANT_HOME/bin:$PATH
+if [ -f "$CONFIG" ]; then
+  . "$CONFIG"
+else
+  echo "ERROR: $CONFIG does not exist."
+  exit 2
+fi 
 
-REPORT_BASE_DIR=/home/gawor/public_html/stats
-REPORT_BASE_WWW=http://www.mcs.anl.gov/~gawor/stats
-EMAIL=gawor@mcs.anl.gov
-MAIL=mail
-
-MONTHS=12
 REPORT_DATE=`date +%Y-%m-01 --date "${MONTHS} months ago"`
 DATE=`date +%Y-%m-01`
 
