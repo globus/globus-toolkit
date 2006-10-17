@@ -15,9 +15,6 @@
  */
 package org.globus.usage.report.jwscore;
 
-import java.sql.DriverManager;
-import java.sql.Connection;
-import java.sql.Statement;
 import java.sql.ResultSet;
 
 import java.util.HashMap;
@@ -28,7 +25,7 @@ import java.util.Calendar;
 import java.text.SimpleDateFormat;
 import java.io.PrintStream;
 
-import org.globus.usage.report.common.Database;
+import org.globus.usage.report.common.DatabaseRetriever;
 
 public class ContainerLongUpReportV2 extends BaseContainerUpReport {
 
@@ -125,12 +122,10 @@ public class ContainerLongUpReportV2 extends BaseContainerUpReport {
 
         ContainerLongUpReportV2 r = new ContainerLongUpReportV2();
 
-        Connection con = null;
+        DatabaseRetriever db = null;
 
         try {
-            Database db = new Database();
-
-            con = DriverManager.getConnection(db.getURL());
+            db = new DatabaseRetriever();
 
             Date date = dateFormat.parse(inputDate);
 
@@ -157,24 +152,21 @@ public class ContainerLongUpReportV2 extends BaseContainerUpReport {
             System.out.println("  <start-date>" + startDateStr + "</start-date>");
             System.out.println("  <end-date>" + endDateStr + "</end-date>");
 
-            Statement stmt = con.createStatement();
-
-            ResultSet rs = stmt.executeQuery(query);
+            ResultSet rs = db.retrieve(query);
             
             while (rs.next()) {
                 r.compute(rs.getString(1), rs.getInt(2));
             }
             
             rs.close();
-            stmt.close();
 
             r.output(System.out);
 
             System.out.println("</container-long-uptime-report>");
 
         } finally {
-            if (con != null) {
-                con.close();
+            if (db != null) {
+                db.close();
             }
         }
     }

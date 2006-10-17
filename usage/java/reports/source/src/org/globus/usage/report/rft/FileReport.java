@@ -69,7 +69,7 @@ public class FileReport {
                 "rftfilehistogram", "Number of Files", n);
 
         HistogramParser deleteHist = new HistogramParser(
-                "Average Number of Files deleted by a RFT Resource",
+                "Average Number of Files Deleted by a RFT Resource",
                 "rftdeletehistogram", "Number of Files Deleted", n);
 
         HistogramParser byteHist = new HistogramParser(
@@ -77,7 +77,7 @@ public class FileReport {
                 "rftbytehistogram", "Bytes Transferred", n);
 
         HistogramParser typeHist = new HistogramParser(
-                "Percent of Requests forDeletion vs. Transfer",
+                "Percent of Requests for Deletion vs. Transfer",
                 "rfttypehistogram", "Percent of total requests", n);
 
         while (ts.next()) {
