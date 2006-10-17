@@ -139,6 +139,21 @@ CREATE TABLE mds_packets(
     PRIMARY KEY(id)
 );
 
+CREATE TABLE mds_extended_packets(
+    id SERIAL,
+    component_code SMALLINT NOT NULL,
+    version_code SMALLINT NOT NULL,
+    send_time TIMESTAMP,
+    ip_address VARCHAR(64) NOT NULL,
+    service_name VARCHAR(40),
+    successful_quieries INT,
+    failed_queries INT,
+    total_queries INT,
+    resource_creation_time TIMESTAMP,
+    last_update_start_time TIMESTAMP,
+    PRIMARY KEY(id)
+);
+
 CREATE TABLE graph_image_files(
     start_time TIMESTAMP,
     end_time TIMESTAMP,

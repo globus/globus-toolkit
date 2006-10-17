@@ -38,6 +38,7 @@ import org.globus.usage.receiver.handlers.CCorePacketHandler;
 import org.globus.usage.receiver.handlers.GRAMPacketHandler;
 import org.globus.usage.receiver.handlers.RLSPacketHandler;
 import org.globus.usage.receiver.handlers.MDSAggregatorPacketHandler;
+import org.globus.usage.receiver.handlers.MDSExtendedPacketHandler;
 
 /*An example of how the Receiver class can be used in a program:*/
 public class ExampleReceiver {
@@ -48,7 +49,7 @@ public class ExampleReceiver {
         int port = 0;
         String databaseDriverClass, databaseURL, defaultTable, gftpTable;
 	String jwsCoreTable, rlsTable, gramTable, cCoreTable, gftpFilterTable;
-	String rftTable, mdsTable, domainsToFilter;
+	String rftTable, mdsTable, mdsExtendedTable, domainsToFilter;
 	int ringBufferSize = 0;
         Properties props = new Properties();
         InputStream propsIn;
@@ -61,6 +62,7 @@ public class ExampleReceiver {
 	GRAMPacketHandler gramHandler;
 	RLSPacketHandler rlsHandler;
         MDSAggregatorPacketHandler mdsHandler;
+        MDSExtendedPacketHandler mdsExtendedHandler;
 
         /*Open properties file (which gets compiled into jar) to read
           default port and database connection information:*/
@@ -89,6 +91,7 @@ public class ExampleReceiver {
             gramTable = props.getProperty("gram-table");
             rlsTable = props.getProperty("rls-table");
             mdsTable = props.getProperty("mds-table");
+            mdsExtendedTable = props.getProperty("mds-extended-table");
             
             ringBufferSize = Integer.parseInt(props.getProperty("ringbuffer-size"));
 
@@ -153,6 +156,8 @@ public class ExampleReceiver {
 	    receiver.registerHandler(rlsHandler);
             mdsHandler = new MDSAggregatorPacketHandler(databaseURL, mdsTable);
 	    receiver.registerHandler(mdsHandler);
+            mdsExtendedHandler = new MDSExtendedPacketHandler(databaseURL, mdsExtendedTable);
+	    receiver.registerHandler(mdsExtendedHandler);
 
 	    //start the control socket thread:
 	    new ControlSocketThread(receiver, controlPort).start();
