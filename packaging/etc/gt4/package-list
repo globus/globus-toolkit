@@ -137,6 +137,7 @@ globus_wsrf_cas_client_java                 ws-cas/client/java/source
 globus_wsrf_cas_service_java                ws-cas/service/java/source
 globus_wsrf_cas_service_unit_test           ws-cas/service/java/test/unit
 globus_wsrf_cas_common                      ws-cas/common/schema
+globus_wsrf_cas_stubs_java                  ws-cas/common/java/source
 globus_wsrf_cas_utils_java                  ws-cas/utils/java/source
 
 globus_wsrf_delegation_client_java          ws-delegation/client/java/source

@@ -249,6 +249,7 @@ BUNDLE gt4-cas
         globus_wsrf_cas_client_java
         globus_wsrf_cas_service_java
         globus_wsrf_cas_common
+        globus_wsrf_cas_stubs_java
         globus_wsrf_cas_utils_java
         globus_database_common
         globus_wsrf_servicegroup
