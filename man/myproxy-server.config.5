@@ -462,10 +462,16 @@ authentication.
 .BI pubcookie_granting_cert " full-path-to-pem-file"
 Sets the full path to the PEM-encoded Pubcookie granting
 certificate for verifying signatures on Pubcookie granting cookies.
+Setting this parameter enables Pubcookie support.
 .TP
 .BI pubcookie_app_server_key " full-path-to-key-file"
-Sets the full path to the
-2048 byte application server key (PubcookieCryptKeyfile).
+Sets the full path to the 2048 byte application server key (see
+Pubcookie's Apache directive PubcookieCryptKeyfile).  This parameter
+is optional; if omitted, cookie decryption will be disabled, and
+MyProxy will only accept plaintext cookies, although it will still
+verify their signatures with
+.B pubcookie_granting_cert
+(see above).
 .PP
 The following parameters are used primarily when utilizing MyProxy as a
 delegation service for web portals.

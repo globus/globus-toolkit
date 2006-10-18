@@ -36,6 +36,8 @@ v3.6 10 Aug 2006
     to allow clients to retrieve a credential for a given username
     even if the associated "credential name" isn't provided (via
     myproxy-logon --credname)
+  - support unencrypted, although still signed, Pubcookie granting
+    cookies as passwords
 
 v3.5 14 Mar 2006
   - dropped support for certificate_issuer option in
