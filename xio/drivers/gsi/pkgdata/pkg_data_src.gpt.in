@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Name="globus_xio_gsi_driver" Format_Version="0.01">
 
-    <Aging_Version Major="0" Minor="3" Age="0"/>
+    <Aging_Version Major="0" Minor="4" Age="0"/>
     <Description> Globus XIO GSI Driver</Description>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
 

@@ -28,7 +28,7 @@
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
-#define GLOBUS_L_FTP_CLIENT_EXIST_BUFFER_LENGTH 256
+#define GLOBUS_L_FTP_CLIENT_EXIST_BUFFER_LENGTH 4096
 
 /* Module specific data types */
 /**
@@ -40,11 +40,10 @@
  */
 typedef enum
 {
-    GLOBUS_FTP_CLIENT_EXIST_MDTM,
     GLOBUS_FTP_CLIENT_EXIST_SIZE,
     GLOBUS_FTP_CLIENT_EXIST_MLST,
     GLOBUS_FTP_CLIENT_EXIST_STAT,
-    GLOBUS_FTP_CLIENT_EXIST_NLST
+    GLOBUS_FTP_CLIENT_EXIST_LIST
 }
 globus_l_ftp_client_existence_state_t;
 
@@ -81,12 +80,13 @@ typedef struct
     /** True once we've determined that the file exists. */
     globus_bool_t				exists;
 
-    /** Modification time of the file, used for one of the existence checks */
-    globus_abstime_t				modification_time;
-
     /** Size of the file, used for one of the existence checks */
     globus_off_t				size;
     
+    /** stat/mlst buffer, used for one of the existence checks */
+    globus_byte_t *                             mlst_buffer;
+    globus_size_t                               mlst_buffer_len;
+        
     /** Error object containing the reason for why the existence check
      * failed, or GLOBUS_SUCCESS.
      */
@@ -196,13 +196,15 @@ globus_ftp_client_exists(
     {
 	goto result_exit;
     }
-
-    result = globus_ftp_client_modification_time(u_handle,
-	    url,
-	    attr,
-	    &existence_info->modification_time,
-	    globus_l_ftp_client_exist_callback,
-	    existence_info);
+    
+    existence_info->state = GLOBUS_FTP_CLIENT_EXIST_SIZE;
+    result = globus_ftp_client_size(
+        u_handle,
+        url,
+        attr,
+        &existence_info->size,
+        globus_l_ftp_client_exist_callback,
+        existence_info);
 
     if(result != GLOBUS_SUCCESS)
     {
@@ -361,6 +363,11 @@ globus_l_ftp_client_existence_info_destroy(
     {
 	globus_object_free((*existence_info)->error);
     }
+    if((*existence_info)->mlst_buffer)
+    {
+	globus_free((*existence_info)->mlst_buffer);
+    }
+
     globus_ftp_client_operationattr_destroy(&(*existence_info)->attr);
 
     globus_libc_free(*existence_info);
@@ -400,23 +407,25 @@ globus_l_ftp_client_exist_callback(
     globus_result_t				result;
     globus_bool_t				myerr = GLOBUS_FALSE;
     globus_bool_t				try_again = GLOBUS_FALSE;
-
+    
     info = user_arg;
 
     switch(info->state)
     {
-	case GLOBUS_FTP_CLIENT_EXIST_MDTM:
+	case GLOBUS_FTP_CLIENT_EXIST_SIZE:
 	    if(error == GLOBUS_SUCCESS)
 	    {
 		info->exists = GLOBUS_TRUE;
 	    }
 	    else
 	    {
-		result = globus_ftp_client_size(
+                info->state = GLOBUS_FTP_CLIENT_EXIST_MLST;
+		result = globus_ftp_client_mlst(
 			handle,
 			info->url_string,
 			&info->attr,
-			&info->size,
+			&info->mlst_buffer,
+			&info->mlst_buffer_len,
 			globus_l_ftp_client_exist_callback,
 			info);
 
@@ -427,18 +436,50 @@ globus_l_ftp_client_exist_callback(
 		}
 		else
 		{
-		    info->state = GLOBUS_FTP_CLIENT_EXIST_SIZE;
 		    try_again = GLOBUS_TRUE;
 		}
 	    }
 	    break;
-	case GLOBUS_FTP_CLIENT_EXIST_SIZE:
+	case GLOBUS_FTP_CLIENT_EXIST_MLST:
 	    if(error == GLOBUS_SUCCESS)
 	    {
 		info->exists = GLOBUS_TRUE;
 	    }
 	    else
 	    {
+                info->state = GLOBUS_FTP_CLIENT_EXIST_STAT;
+		result = globus_ftp_client_stat(
+			handle,
+			info->url_string,
+			&info->attr,
+			&info->mlst_buffer,
+			&info->mlst_buffer_len,
+			globus_l_ftp_client_exist_callback,
+			info);
+
+		if(result != GLOBUS_SUCCESS)
+		{
+		    error = globus_error_get(result);
+		    myerr = GLOBUS_TRUE;
+		}
+		else
+		{
+		    try_again = GLOBUS_TRUE;
+		}
+	    }
+	    break;
+	case GLOBUS_FTP_CLIENT_EXIST_STAT:
+	    if(error == GLOBUS_SUCCESS)
+	    {
+		info->exists = GLOBUS_TRUE;
+	    }
+	    else
+	    {                   
+             /* some servers reply successfully to a LIST even if the path
+             doesn't exist.  CWD to the path first will work around this 
+             * -- if we got this far, we can be fairly sure it is a dir */
+                info->attr->cwd_first = GLOBUS_TRUE;
+                info->state = GLOBUS_FTP_CLIENT_EXIST_LIST;
 		result = globus_ftp_client_verbose_list(
 			handle,
 			info->url_string,
@@ -466,15 +507,16 @@ globus_l_ftp_client_exist_callback(
 		    }
 		    else
 		    {
-			info->state = GLOBUS_FTP_CLIENT_EXIST_NLST;
 			try_again = GLOBUS_TRUE;
 		    }
 		}
 	    }
 	    break;
-	case GLOBUS_FTP_CLIENT_EXIST_MLST:
-	case GLOBUS_FTP_CLIENT_EXIST_STAT:
-	case GLOBUS_FTP_CLIENT_EXIST_NLST:
+	case GLOBUS_FTP_CLIENT_EXIST_LIST:
+            if(error != GLOBUS_SUCCESS)
+	    {
+		info->exists = GLOBUS_FALSE;
+	    }
 	    try_again = GLOBUS_FALSE;
 	    break;
     }
@@ -502,7 +544,7 @@ globus_l_ftp_client_exist_callback(
  * Existence check state machine data callback.
  * @internal
  *
- * This function handles the data which arrives as part of the NLST
+ * This function handles the data which arrives as part of the LIST
  * check of the existence check state machine. It just discards the
  * data which arrives until EOF.
  *
@@ -545,10 +587,7 @@ globus_l_ftp_client_exist_data_callback(
     }
     if(!error)
     {
-	if(length > 0)
-	{
-	    info->exists = GLOBUS_TRUE;
-	}
+        info->exists = GLOBUS_TRUE;
     }
     if(! eof)
     {

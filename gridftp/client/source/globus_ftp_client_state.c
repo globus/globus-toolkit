@@ -123,6 +123,12 @@ globus_l_ftp_client_parse_mlst(
     globus_i_ftp_client_handle_t *		client_handle,
     globus_ftp_control_response_t *		response);
 
+static
+void
+globus_l_ftp_client_parse_stat(
+    globus_i_ftp_client_handle_t *		client_handle,
+    globus_ftp_control_response_t *		response);
+
 /**
  * Buffer size command applicability information.
  * @internal
@@ -1684,6 +1690,10 @@ redo:
 	{
 	    target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_MLST;
 	}
+	else if(client_handle->op == GLOBUS_FTP_CLIENT_STAT)
+	{
+	    target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_STAT;
+	}
 	/* Prefer PASV data connections for most operations */
 	else if(client_handle->state ==
 		GLOBUS_FTP_CLIENT_HANDLE_DEST_SETUP_CONNECTION ||
@@ -2357,7 +2367,14 @@ redo:
 	  case GLOBUS_FTP_CLIENT_LIST:
 	  case GLOBUS_FTP_CLIENT_NLST:
 	  case GLOBUS_FTP_CLIENT_MLSD:
-	    target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_LIST;
+	    if(target->attr->cwd_first)
+            {
+                target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_LIST_CWD;
+            }
+            else
+            {
+                target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_LIST;
+            }
 	    goto redo;
 	  case GLOBUS_FTP_CLIENT_GET:
 	    target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_GET;
@@ -2384,13 +2401,60 @@ redo:
 	    globus_assert(0 && "Unexpected state");
 	}
 
+    case GLOBUS_FTP_CLIENT_TARGET_SETUP_LIST_CWD:
+	/*
+	 * CWD before a listing operation.
+	 */
+	globus_assert(
+	    client_handle->state ==
+	    GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION);
+
+	target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_LIST;
+	target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_FILE_ACTIONS;
+
+	globus_i_ftp_client_plugin_notify_command(
+	    client_handle,
+            target->url_string,
+	    target->mask,
+	    "CWD %s" CRLF,
+	    pathname);
+
+	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE)
+	{
+	    break;
+	}
+
+	result = globus_ftp_control_send_command(
+	    handle,
+	    "CWD %s" CRLF,
+	    globus_i_ftp_client_response_callback,
+	    user_arg,
+	    pathname);
+	if(result != GLOBUS_SUCCESS)
+	{
+	    goto result_fault;
+	}
+	break;
+
     case GLOBUS_FTP_CLIENT_TARGET_SETUP_LIST:
 	globus_assert(
 	    client_handle->state ==
 	    GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION);
         
-    
-	result =
+	if((!error) &&
+	   response->response_class == GLOBUS_FTP_POSITIVE_COMPLETION_REPLY)
+	{
+	}
+	else
+	{
+	    target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_CONNECTION;
+
+	    goto notify_fault;
+	}
+        
+        result =
 	    globus_ftp_control_data_connect_read(target->control_handle,
 						 GLOBUS_NULL,
 						 GLOBUS_NULL);
@@ -2432,7 +2496,7 @@ redo:
 	    target->mask,
 	    "%s %s" CRLF,
 	    list_str,
-	    pathname);
+	    target->attr->cwd_first ? "" : pathname);
 
 	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
 	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
@@ -2451,7 +2515,7 @@ redo:
 		globus_i_ftp_client_response_callback,
 		user_arg,
 		list_str,
-		pathname);
+		target->attr->cwd_first ? "" : pathname);
 	if(result != GLOBUS_SUCCESS)
 	{
 	    goto result_fault;
@@ -2485,6 +2549,43 @@ redo:
 	    globus_ftp_control_send_command(
 		handle,
 		"MLST %s" CRLF,
+		globus_i_ftp_client_response_callback,
+		user_arg,
+		pathname);
+
+	if(result != GLOBUS_SUCCESS)
+	{
+	    goto result_fault;
+	}
+	break;
+
+    case GLOBUS_FTP_CLIENT_TARGET_SETUP_STAT:
+
+	target->state = GLOBUS_FTP_CLIENT_TARGET_NEED_COMPLETE;
+
+	target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_FILE_ACTIONS;
+
+	globus_i_ftp_client_plugin_notify_command(
+	    client_handle,
+	    target->url_string,
+	    target->mask,
+	    "STAT %s" CRLF,
+	    pathname);
+
+	if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
+	    client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE)
+	{
+	    break;
+	}
+
+	globus_assert(client_handle->state ==
+		      GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION);
+
+	result =
+	    globus_ftp_control_send_command(
+		handle,
+		"STAT %s" CRLF,
 		globus_i_ftp_client_response_callback,
 		user_arg,
 		pathname);
@@ -3370,7 +3471,8 @@ redo:
 		       client_handle->op != GLOBUS_FTP_CLIENT_SIZE &&
 		       client_handle->op != GLOBUS_FTP_CLIENT_FEAT &&
 		       client_handle->op != GLOBUS_FTP_CLIENT_CKSM &&
-		       client_handle->op != GLOBUS_FTP_CLIENT_MLST)
+		       client_handle->op != GLOBUS_FTP_CLIENT_MLST &&
+		       client_handle->op != GLOBUS_FTP_CLIENT_STAT)
 		    {
 			client_handle->state =
 			    GLOBUS_FTP_CLIENT_HANDLE_FAILURE;
@@ -3411,6 +3513,11 @@ redo:
 			response->code == 250)
 		{
 		    globus_l_ftp_client_parse_mlst(client_handle,
+			                           response);
+		}
+		else if(client_handle->op == GLOBUS_FTP_CLIENT_STAT)
+		{
+		    globus_l_ftp_client_parse_stat(client_handle,
 			                           response);
 		}
 	    }
@@ -4876,6 +4983,101 @@ nomem_exit:
     }
     return;
 } /* globus_l_ftp_client_parse_mlst() */
+
+static
+void
+globus_l_ftp_client_parse_stat(
+    globus_i_ftp_client_handle_t *		client_handle,
+    globus_ftp_control_response_t *		response)
+{
+    char *					p;
+    char *					listing_start;
+    globus_byte_t *                             buffer = NULL;
+    int                                         listing_length = 0;
+    char                                        res_code[5];
+
+    GlobusFuncName(globus_l_ftp_client_parse_stat);
+
+    if(response->code != 211 &&
+        response->code != 212 &&
+        response->code != 213)
+    {
+	goto error_exit;
+    }
+    
+    snprintf(res_code, 5, "%d ", response->code);
+    
+    buffer = (globus_byte_t *) globus_malloc(
+        response->response_length * sizeof(globus_byte_t));
+    if(buffer == GLOBUS_NULL)
+    {
+        goto nomem_exit;
+    }
+    
+    p = (char *) response->response_buffer;
+
+    /* advancing past the starting control response */   
+    while(*p && *p != '\r' && *p != '\n')
+    {
+        p++;
+    }
+    while(*p && (*p == '\r' || *p == '\n'))
+    {
+        p++;
+    }
+    
+    listing_start = p;
+
+    /* check for the end control response */
+    while(*p && strncmp(p, res_code, 4) != 0)
+    {                
+        /* advancing to the end of the listing */
+        while(*p && *p != '\r' && *p != '\n')
+        {
+            p++;
+        }        
+        /* advancing past the CRLF to the start of the next line */
+        while(*p && (*p == '\r' || *p == '\n'))
+        {
+            p++;
+        }        
+    }    
+    listing_length = p - listing_start;
+    
+    if(*p == '\0' || listing_length == 0)
+    {
+        goto error_exit;
+    }
+        
+    memcpy(buffer, listing_start, listing_length);
+        
+    /* null terminate the buffer since the user 
+       will likely treat it as a string */
+    buffer[listing_length] = '\0';
+    
+    *client_handle->mlst_buffer_pointer = buffer;
+    *client_handle->mlst_buffer_length_pointer = listing_length; 
+      
+    return;
+
+error_exit:
+    if(client_handle->err == GLOBUS_SUCCESS)
+    {
+	client_handle->err = GLOBUS_I_FTP_CLIENT_ERROR_PROTOCOL_ERROR();
+    }
+    if(buffer)
+    {
+        globus_free(buffer);
+    }
+    return;
+
+nomem_exit:
+    if(client_handle->err == GLOBUS_SUCCESS)
+    {
+	client_handle->err = GLOBUS_I_FTP_CLIENT_ERROR_OUT_OF_MEMORY();
+    }
+    return;
+} /* globus_l_ftp_client_parse_stat() */
 
 
 static
