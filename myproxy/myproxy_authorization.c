@@ -182,8 +182,7 @@ decrypt_cookie(const unsigned char *inbuf, int inlen,
 
     siglen = EVP_PKEY_size(pubkey);
 
-    binary_debug("inbuf", inbuf, inlen);
-    myproxy_debug("inlen = %d, cookie len = %d, siglen = %d", inlen, sizeof(*cookie), siglen);
+    /* binary_debug("inbuf", inbuf, inlen); */
     if (siglen + sizeof(*cookie) == inlen) is_encrypted = 0;
     else if (siglen + sizeof(*cookie) + 2 == inlen) is_encrypted = 1;
     else {
@@ -229,8 +228,8 @@ decrypt_cookie(const unsigned char *inbuf, int inlen,
 	des_cfb64_encrypt (inbuf + siglen, (unsigned char *)cookie,
 			   sizeof(*cookie), ks, &ivec, &i, DES_DECRYPT);
 
-	binary_debug("decrypted cookie", cookie, sizeof(*cookie));
-	binary_debug("decrypted signature", signature, siglen);
+	/* binary_debug("decrypted cookie", cookie, sizeof(*cookie)); */
+	/* binary_debug("decrypted signature", signature, siglen); */
     }
 
     /* 3b. not encrypted, so copy cookie data structure and signature */
@@ -239,8 +238,8 @@ decrypt_cookie(const unsigned char *inbuf, int inlen,
 	memcpy(cookie, inbuf, sizeof(*cookie));
 	memcpy(signature, inbuf + sizeof(*cookie), siglen);
 
-	binary_debug("cookie", cookie, sizeof(*cookie));
-	binary_debug("signature", signature, siglen);
+	/* binary_debug("cookie", cookie, sizeof(*cookie)); */
+	/* binary_debug("signature", signature, siglen); */
     }
 
     /* 4. verify signature */
@@ -250,7 +249,7 @@ decrypt_cookie(const unsigned char *inbuf, int inlen,
 	myproxy_debug("decrypt_cookie: invalid pubcookie signature");
 	goto cleanup;
     }
-    myproxy_debug("valid pubcookie signature");
+    myproxy_debug("decrypt_cookie: valid pubcookie signature");
 
     /* 5. convert to host byte order */
     cookie->pre_sess_token = ntohl(cookie->pre_sess_token);
