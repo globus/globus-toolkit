@@ -25,6 +25,7 @@
 #include <fnmatch.h>
 #endif
 
+#define DEFAULT_MAX_Q_LEN               10
 #define GSU_MAX_USERNAME_LENGTH         64
 #define GSU_MAX_PW_LENGTH               GSU_MAX_USERNAME_LENGTH*6
 #define GSC_MAX_COMMAND_NAME_LEN        4
@@ -706,20 +707,31 @@ globus_l_gsc_read_cb(
                     {
                         globus_l_gsc_process_next_cmd(server_handle);
                     }
-                    /* allow outstanding commands, just queue them up */
-                    res = globus_xio_register_read(
-                            xio_handle,
-                            globus_l_gsc_fake_buffer,
-                            globus_l_gsc_fake_buffer_len,
-                            1,
-                            NULL,
-                            globus_l_gsc_read_cb,
-                            (void *) server_handle);
-                    if(res != GLOBUS_SUCCESS)
+                    /* allow outstanding commands, just queue them up, but 
+                        only to a certain number */
+                    if(globus_fifo_size(&server_handle->read_q) < 
+                            server_handle->max_q_len || 
+                        server_handle->max_q_len <= 0)
                     {
-                        goto err_alloc_unlock;
+                        res = globus_xio_register_read(
+                                xio_handle,
+                                globus_l_gsc_fake_buffer,
+                                globus_l_gsc_fake_buffer_len,
+                                1,
+                                NULL,
+                                globus_l_gsc_read_cb,
+                                (void *) server_handle);
+                        if(res != GLOBUS_SUCCESS)
+                        {
+                            goto err_alloc_unlock;
+                        }
+                        server_handle->q_backup = GLOBUS_FALSE;
+                        GlobusLServerRefInc(server_handle);
                     }
-                    GlobusLServerRefInc(server_handle);
+                    else
+                    {
+                        server_handle->q_backup = GLOBUS_TRUE;
+                    }
                 }
                 else
                 {
@@ -1370,6 +1382,31 @@ globus_l_gsc_final_reply_cb(
                 GlobusGSCHandleStateChange(
                     server_handle, GLOBUS_L_GSC_STATE_OPEN);
                 globus_l_gsc_process_next_cmd(server_handle);
+
+                /* need to post another read IF the queue is backedup
+                    and we are below the max.  i *think* we will always
+                    be blow the max here */
+                if((globus_fifo_size(&server_handle->read_q) <
+                            server_handle->max_q_len ||
+                        server_handle->max_q_len <= 0) &&
+                    server_handle->q_backup)
+                {
+                    res = globus_xio_register_read(
+                            xio_handle,
+                            globus_l_gsc_fake_buffer,
+                            globus_l_gsc_fake_buffer_len,
+                            1,
+                            NULL,
+                            globus_l_gsc_read_cb,
+                            (void *) server_handle);
+                    if(res != GLOBUS_SUCCESS)
+                    {
+                        goto err;
+                    }
+                    server_handle->q_backup = GLOBUS_FALSE;
+                    GlobusLServerRefInc(server_handle);
+                }
+
                 break;
 
             case GLOBUS_L_GSC_STATE_ABORTING_STOPPING:
@@ -2412,6 +2449,7 @@ globus_gridftp_server_control_init(
 
     globus_mutex_init(&server_handle->mutex, NULL);
 
+    server_handle->max_q_len = DEFAULT_MAX_Q_LEN;
     server_handle->state = GLOBUS_L_GSC_STATE_NONE;
     server_handle->reply_outstanding = GLOBUS_FALSE;
     server_handle->pre_auth_banner = 
