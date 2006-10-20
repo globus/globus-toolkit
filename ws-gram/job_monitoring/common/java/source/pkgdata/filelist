@@ -1,2 +1,2 @@
 etc/gpt/packages/globus_wsrf_gram_monitoring_common_java/undeploy.xml
-lib/globus_wsrf_gram_monitoring_common_java.jar
+lib/globus_wsrf_gram_monitoring_common.jar
