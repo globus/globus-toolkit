@@ -519,9 +519,6 @@ generate_certificate( X509_REQ                 *request,
     goto error;
   }
 
-  myproxy_log("issuing certificate for user %s with DN \"%s\"",
-              client_request->username, userdn);
-
   subject = X509_get_subject_name(cert);
 
   if( tokenize_to_x509_name( userdn, subject ) ) {
@@ -710,6 +707,13 @@ generate_certificate( X509_REQ                 *request,
 
   *certificate = cert;
 
+  myproxy_log("Issued certificate for user \"%s\", with DN \"%s\", "
+              "lifetime \"%d\", and serial number \"%s\"",
+              client_request->username, userdn, 
+              not_after,
+              i2s_ASN1_INTEGER(NULL,cert->cert_info->serialNumber)
+             );
+
  error:
   if (return_value) {
     if ( cert != NULL ) {
@@ -742,6 +746,8 @@ handle_certificate(unsigned char            *input_buffer,
   unsigned char number_of_certs;
   char        * buf = NULL;
   int           buf_len;
+  int           pkey_strlen = 0;
+  unsigned char * pkey_str = NULL;
 
   BIO      * request_bio  = NULL;
   X509_REQ * req          = NULL;
@@ -792,6 +798,25 @@ handle_certificate(unsigned char            *input_buffer,
     ssl_error_to_verror();
     goto error;
   } 
+
+  /* convert pkey into string for output to log */
+  pkey_strlen = i2d_PublicKey(pkey,NULL);
+  if ((pkey_str = (unsigned char *)malloc(pkey_strlen+1)) != NULL) {
+      i2d_PublicKey(pkey,&pkey_str);
+  } else {
+      pkey_str = (unsigned char *)strdup("UNKNOWN");
+  }
+
+  myproxy_log("Got a cert request for user \"%s\", "
+              "with pubkey \"%s\", and lifetime \"%d\"",
+              client_request->username, 
+              pkey_str,
+              client_request->proxy_lifetime
+             );
+
+  if (pkey_str != NULL) {
+    free(pkey_str);
+  }
 
   /* check to see if the configuration is sound, and call the appropriate
    * cert generation method based on what has been defined
@@ -947,6 +972,10 @@ void get_certificate_authority(myproxy_socket_attrs_t   *server_attrs,
     response->error_string = \
       strdup("Unable to read cert request from client.\n");
     goto error;
+  } else {
+    myproxy_log("Reading cert request from \"%s\"",
+                GSI_SOCKET_get_peer_hostname(server_attrs->gsi_socket)
+               );
   }
 
   if ( handle_certificate( input_buffer, input_buffer_length,
