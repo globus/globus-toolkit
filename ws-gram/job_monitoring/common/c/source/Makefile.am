@@ -41,7 +41,7 @@ globus_scheduler_event_generator_SOURCES = \
 	globus_scheduler_event_generator_stdout.h \
 	globus_scheduler_event_generator.h \
 	globus_scheduler_event_generator_app.h
-globus_scheduler_event_generator_LDFLAGS = $(GPT_LDFLAGS)
+globus_scheduler_event_generator_LDFLAGS = $(GPT_LDFLAGS) -export-dynamic
 globus_scheduler_event_generator_LDADD = \
 	libglobus_scheduler_event_generator_$(GLOBUS_FLAVOR_NAME).la \
 	$(GPT_PGM_LINKS)
