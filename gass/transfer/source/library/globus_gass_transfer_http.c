@@ -4353,17 +4353,36 @@ globus_l_gass_transfer_http_register_read(
 
 	smaller = proto->user_waitlen;
 
-	if(smaller > proto->response_buflen - proto->response_offset)
-	{
-	    smaller = proto->response_buflen - proto->response_offset;
-	}
-	if(smaller == 0)
-	{
+        if (proto->response_buflen - proto->response_offset == 0)
+        {
+            /* if buffer is full, shift unparsed data to buffer head */
 	    memmove(proto->response_buffer,
 		    proto->response_buffer + proto->parsed_offset,
 		    proto->response_offset - proto->parsed_offset);
 	    proto->response_offset -= proto->parsed_offset;
 	    proto->parsed_offset = 0;
+        }
+        if (proto->response_buflen - proto->response_offset == 0)
+        {
+            char * tmp;
+            /* buffer still full... resize buffer */
+            tmp = realloc(proto->response_buffer, proto->response_buflen * 2);
+            if(tmp == GLOBUS_NULL)
+            {
+                proto->code = GLOBUS_L_MALLOC_FAILURE_CODE;
+                proto->reason = globus_libc_strdup(GLOBUS_L_MALLOC_FAILURE_REASON);
+
+                return GLOBUS_FAILURE;
+            }
+            else
+            {
+                proto->response_buffer = tmp;
+                proto->response_buflen *= 2;
+            }
+        }
+	if(smaller > proto->response_buflen - proto->response_offset)
+	{
+	    smaller = proto->response_buflen - proto->response_offset;
 	}
 
 	debug_printf(4,(_GTSL("%s(): Registering read on %p\n"),
