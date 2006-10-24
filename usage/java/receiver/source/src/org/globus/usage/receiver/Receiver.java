@@ -30,7 +30,6 @@ import org.apache.commons.logging.LogFactory;
 import org.globus.usage.packets.CustomByteBuffer;
 import org.globus.usage.packets.IPTimeMonitorPacket;
 import org.globus.usage.packets.UsageMonitorPacket;
-import org.globus.usage.receiver.handlers.DefaultPacketHandler;
 import org.globus.usage.receiver.handlers.PacketHandler;
 
 public class Receiver {
@@ -66,7 +65,7 @@ public class Receiver {
         theRecvThread.start();
         theHandleThread = new HandlerThread(handlerList, theRing, props);
         theHandleThread.start();
-	lastResetDate = new Date();
+        lastResetDate = new Date();
     }
 
     /*Constructor with no specified ringBuffer size uses default*/
@@ -125,16 +124,21 @@ public class Receiver {
 	  --Number of packets dropped from ring buffer
 	  --Date/time from which these numbers were counted.
 	*/
-	StringBuffer buf = new StringBuffer();
-	int unparsablePackets = this.theHandleThread.getUnparseablePackets();
-	int packetsLogged = this.theHandleThread.getPacketsLogged();
+        StringBuffer buf = new StringBuffer();
+        int unparsablePackets = this.theHandleThread.getUnparseablePackets();
+        int packetsLogged = this.theHandleThread.getPacketsLogged();
         int unknownPackets =  this.theHandleThread.getUnknownPackets();
-	int packetsLost = this.theRecvThread.getPacketsLost();
-	String newline = System.getProperty("line.separator");
+        int packetsReceived = this.theRecvThread.getPacketsReceived();
+        int packetsLost = this.theRecvThread.getPacketsLost();
+        String newline = System.getProperty("line.separator");
 
-	buf.append(packetsLogged);
-	buf.append(" packets received and successfully logged.");
-	buf.append(newline);
+        buf.append(packetsReceived);
+        buf.append(" packets received.");
+        buf.append(newline);
+        
+        buf.append(packetsLogged);
+        buf.append(" packets successfully logged.");
+        buf.append(newline);
 
         buf.append(unparsablePackets);
         buf.append(" packets received that could not be parsed.");
@@ -148,32 +152,32 @@ public class Receiver {
         buf.append(" packets were lost due to buffer overflow.");
         buf.append(newline);
 
-	buf.append("Since ");
-	buf.append(this.lastResetDate.toString());
-	buf.append(newline);
+        buf.append("Since ");
+        buf.append(this.lastResetDate.toString());
+        buf.append(newline);
         buf.append(newline);
         
-	buf.append("Breakdown by component:");
-	buf.append(newline);
+        buf.append("Breakdown by component:");
+        buf.append(newline);
 
-	//Now we have to loop through all registered handlers, combine the strings, append...
-	ListIterator it = handlerList.listIterator();
-	while (it.hasNext()) {
-	    PacketHandler oneHandler = (PacketHandler)it.next();
-	    buf.append(oneHandler.getStatus());
-	    buf.append(newline);
-	    if (doReset) {
-		oneHandler.resetCounts();
-	    }
-	}
+        // Now we have to loop through all registered handlers, combine the strings, append...
+        ListIterator it = handlerList.listIterator();
+        while (it.hasNext()) {
+            PacketHandler oneHandler = (PacketHandler)it.next();
+            buf.append(oneHandler.getStatus());
+            buf.append(newline);
+            if (doReset) {
+                oneHandler.resetCounts();
+            }
+        }
 
-	if (doReset) {
-	    theRecvThread.resetCounts();
-	    theHandleThread.resetCounts();
-	    lastResetDate = new Date();
-	}
+        if (doReset) {
+            theRecvThread.resetCounts();
+            theHandleThread.resetCounts();
+            lastResetDate = new Date();
+        }
 
-	return buf.toString();
+        return buf.toString();
     }
 
     public void shutDown() {
@@ -197,6 +201,7 @@ class ReceiverThread extends Thread {
     private RingBuffer theRing; /*a reference to the one in Receiver*/
     private boolean stillGood = true;
     private int packetsLost;
+    private int packetsReceived;
 
     public ReceiverThread(int port, RingBuffer ring) throws IOException {
         super("UDPReceiverThread");
@@ -205,7 +210,8 @@ class ReceiverThread extends Thread {
         this.theRing = ring;
         socket = new DatagramSocket(listeningPort);
         log.info("Receiver is listening on port " + port);
-	this.packetsLost = 0;
+        this.packetsLost = 0;
+        this.packetsReceived = 0;
     }
 
     public void run() {
@@ -216,11 +222,11 @@ class ReceiverThread extends Thread {
         long period = 1000 * 60 * 5;
         long lastTime = System.currentTimeMillis() + period;
 
-	buf = new byte[UsageMonitorPacket.MAX_PACKET_SIZE];
-	/*this is a reusable receiving buffer big enough to hold any
-	  packet.  After receiving the packet, put it into a CustomByteBuffer
-	  only as large as the packet data itself, so as to avoid writing
-	  tons of zero bytes into the database.*/
+        buf = new byte[UsageMonitorPacket.MAX_PACKET_SIZE];
+        /* this is a reusable receiving buffer big enough to hold any
+	       packet.  After receiving the packet, put it into a CustomByteBuffer
+	       only as large as the packet data itself, so as to avoid writing
+	       tons of zero bytes into the database. */
         while(stillGood) {
 
             packet = new DatagramPacket(buf, buf.length);
@@ -230,12 +236,13 @@ class ReceiverThread extends Thread {
 
                 storage = CustomByteBuffer.fitToData(buf, packet.getLength());
                 log.debug("Packet received");
+                this.packetsReceived++;
                 
                 /*Put packet into ring buffer:*/
                 if (!theRing.insert(storage)) {
                     //failed == ring is full
                     log.error("Ring buffer is FULL.  We are LOSING PACKETS!");
-		    this.packetsLost ++;
+                    this.packetsLost ++;
                 }
 
                 if (System.currentTimeMillis() > lastTime) {
@@ -256,21 +263,26 @@ class ReceiverThread extends Thread {
     }
 
     public int getPacketsLost() {
-	return this.packetsLost;
+        return this.packetsLost;
+    }
+    
+    public int getPacketsReceived() {
+        return this.packetsReceived;
     }
     
     public void resetCounts() {
-	this.packetsLost = 0;
+        this.packetsLost = 0;
+        this.packetsReceived = 0;
     }
 
     public int getRingFullness() {
-	return theRing.getNumObjects();
+        return theRing.getNumObjects();
     }
 
     public void shutDown() {
         stillGood = false; //lets the loop in run() finish.
-	try {
-	    socket.close();
-	} catch (Exception e) {}
-    }
+        try {
+            socket.close();
+        } catch (Exception e) {}
+        }
 }
