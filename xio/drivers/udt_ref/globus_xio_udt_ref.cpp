@@ -487,27 +487,30 @@ globus_l_xio_udt_ref_read(
 {
     globus_result_t                     result;
     xio_l_udt_ref_handle_t *            handle;
+    int                                 rc;
     GlobusXIOName(globus_l_xio_udt_ref_read);
 
     handle = (xio_l_udt_ref_handle_t *) driver_specific_handle;
 
-    *nbytes = (globus_size_t) UDT::recv(
+    rc = (globus_size_t) UDT::recv(
         handle->sock, (char *)iovec[0].iov_base, iovec[0].iov_len, 0);
-
-    /* need to figure out eof */
-    if(*nbytes < 0)
+    if(rc == UDT::ERROR)
     {
-        result = GlobusXIOUdtError("UDT::recv failed");
+        if(UDT::getlasterror().getErrorCode() == 2001) /* this seems to mean EOF */
+        {
+            result = GlobusXIOErrorEOF();
+        }
+        else
+        {
+            result = GlobusXIOUdtError(UDT::getlasterror().getErrorMessage());
+        }
         goto error;
     }
-    if(*nbytes == 0)
-    {
-        result = GlobusXIOUdtError("UDT::recv EOF?");
-        goto error;
-    }
+    *nbytes = (globus_size_t) rc;
 
     return GLOBUS_SUCCESS;
 error:
+    *nbytes = 0;
     return result;
 }
 
