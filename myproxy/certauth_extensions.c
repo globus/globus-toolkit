@@ -746,8 +746,9 @@ handle_certificate(unsigned char            *input_buffer,
   unsigned char number_of_certs;
   char        * buf = NULL;
   int           buf_len;
-  int           pkey_strlen = 0;
-  unsigned char * pkey_str = NULL;
+  long          sub_hash;
+  unsigned char md[SHA_DIGEST_LENGTH];
+  unsigned int  md_len = 0;
 
   BIO      * request_bio  = NULL;
   X509_REQ * req          = NULL;
@@ -800,23 +801,15 @@ handle_certificate(unsigned char            *input_buffer,
   } 
 
   /* convert pkey into string for output to log */
-  pkey_strlen = i2d_PublicKey(pkey,NULL);
-  if ((pkey_str = (unsigned char *)malloc(pkey_strlen+1)) != NULL) {
-      i2d_PublicKey(pkey,&pkey_str);
-  } else {
-      pkey_str = (unsigned char *)strdup("UNKNOWN");
-  }
+  ASN1_digest(i2d_PUBKEY,EVP_sha1(),(char*)pkey,md,&md_len);
+  sub_hash = md[0] + (md[1] + (md[2] + (md[3] >> 1) * 256) * 256) * 256; 
 
   myproxy_log("Got a cert request for user \"%s\", "
-              "with pubkey \"%s\", and lifetime \"%d\"",
+              "with pubkey hash \"%ld\", and lifetime \"%d\"",
               client_request->username, 
-              pkey_str,
+              sub_hash,
               client_request->proxy_lifetime
              );
-
-  if (pkey_str != NULL) {
-    free(pkey_str);
-  }
 
   /* check to see if the configuration is sound, and call the appropriate
    * cert generation method based on what has been defined
