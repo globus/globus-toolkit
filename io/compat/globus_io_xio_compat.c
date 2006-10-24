@@ -2633,21 +2633,6 @@ globus_l_io_tcp_register_accept(
     ihandle->xio_handle = ilistener_handle->accepted_handle;
     ilistener_handle->accepted_handle = GLOBUS_NULL;
 
-    result = globus_xio_handle_cntl(
-        ihandle->xio_handle,
-        globus_l_io_tcp_driver,
-        GLOBUS_XIO_TCP_GET_REMOTE_CONTACT,
-        &contact_string);
-    if(result != GLOBUS_SUCCESS)
-    {
-        /*goto error_gsi; */
-        /* this allows NON-TCP stacks to work.  the way we hcae implemented
-           non TCP stacks is a bit of a hack and certainly some controls
-           will not work.  io compat is VERY TCP specific.  This is
-           definitly an experimental work around */
-        contact_string = NULL;
-    }
-    
     result = globus_xio_attr_cntl(
         ihandle->attr->attr,
         GLOBUS_NULL,
