@@ -965,10 +965,6 @@ void get_certificate_authority(myproxy_socket_attrs_t   *server_attrs,
     response->error_string = \
       strdup("Unable to read cert request from client.\n");
     goto error;
-  } else {
-    myproxy_log("Reading cert request from \"%s\"",
-                GSI_SOCKET_get_peer_hostname(server_attrs->gsi_socket)
-               );
   }
 
   if ( handle_certificate( input_buffer, input_buffer_length,
