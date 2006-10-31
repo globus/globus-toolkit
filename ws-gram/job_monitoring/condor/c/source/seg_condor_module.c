@@ -120,8 +120,6 @@ typedef struct
     FILE *                              fp;
     /** Buffer of log file data */
     char *                              buffer;
-    /** Callback for periodic file polling */
-    globus_callback_handle_t            callback;
     /** Length of the buffer */
     size_t                              buffer_length;
     /** Starting offset of valid data in the buffer. */
@@ -298,7 +296,7 @@ globus_l_condor_module_activate(void)
     GlobusTimeReltimeSet(delay, 0, 0);
 
     result = globus_callback_register_oneshot(
-            &logfile_state->callback,
+            NULL,
             &delay,
             globus_l_condor_read_callback,
             logfile_state);
@@ -456,7 +454,7 @@ globus_l_condor_read_callback(
     }
 
     result = globus_callback_register_oneshot(
-            &state->callback,
+            NULL,
             &delay,
             globus_l_condor_read_callback,
             state);
@@ -617,6 +615,7 @@ int
 globus_l_condor_clean_buffer(
     globus_l_condor_logfile_state_t *      state)
 {
+    int                                     rc = 0;
     GlobusFuncName(globus_l_condor_clean_buffer);
 
     SEGCondorEnter();
@@ -634,9 +633,10 @@ globus_l_condor_clean_buffer(
             }
             state->buffer_point = 0;
         }
+        rc = globus_l_condor_increase_buffer(state);
     }
     SEGCondorExit();
-    return 0;
+    return rc;
 }
 /* globus_l_condor_clean_buffer() */
 
@@ -671,9 +671,8 @@ globus_l_condor_increase_buffer(
             rc = SEG_CONDOR_ERROR_OUT_OF_MEMORY;
             goto error;
         }
+        state->buffer_length += GLOBUS_CONDOR_READ_BUFFER_SIZE;
     }
-
-    state->buffer_length += GLOBUS_CONDOR_READ_BUFFER_SIZE;
 
     SEGCondorExit();
     return 0;
