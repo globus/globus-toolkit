@@ -5,7 +5,7 @@ export GPT_LOCATION GLOBUS_LOCATION
 
 # Final info target
 done:
-        echo "Your build completed successfully.  Please run ${MAKE} install."
+	echo "Your build completed successfully.  Please run ${MAKE} install."
 
 # Cleanup targets
 clean:
@@ -33,10 +33,9 @@ wsctests: gpt wsjava gt4-c-ws-core-test
 wstests: gpt wsjava gt4-java-ws-core-test gt4-c-ws-core-test gt4-mds-test gt4-gram-test gt4-cas-delegation-test gt4-rft-test
 
 # GPT targets
-gpt: gpt-stamp
-gpt-stamp:
-	cd gpt-3.2autotools2004 && OBJECT_MODE=32 ./build_gpt
-	touch gpt-stamp
+gpt: @gptlocation@/sbin/gpt-postinstall
+@gptlocation@/sbin/gpt-postinstall:
+	cd gpt && OBJECT_MODE=32 ./build_gpt
 install: postinstall
 postinstall:
 	ln -s ${GLOBUS_LOCATION}/etc/gpt/packages ${GLOBUS_LOCATION}/etc/globus_packages

@@ -66,7 +66,7 @@ source-trees/autotools/bin/autoconf fait_accompli/binary.configure.in > tmp/conf
 chmod +x tmp/configure
 
 echo Adding GPT source to binary installer
-tar -C tmp -xzf fait_accompli/gpt-3.2autotools2004-src.tar.gz
+tar -C tmp -xzf gpt-*.tar.gz
 
 echo Adding README/INSTALL
 cp fait_accompli/binary.INSTALL tmp/INSTALL
