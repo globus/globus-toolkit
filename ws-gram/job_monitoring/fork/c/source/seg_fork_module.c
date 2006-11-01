@@ -619,7 +619,7 @@ globus_l_fork_clean_buffer(
             }
             state->buffer_point = 0;
         }
-        rc = globus_l_fork_increase_buffer(logfile_state);
+        rc = globus_l_fork_increase_buffer(state);
     }
     SEGForkExit();
     return rc;
