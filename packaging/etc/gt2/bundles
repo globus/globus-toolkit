@@ -374,6 +374,7 @@ BUNDLE globus-gsi
 	globus_common
 	globus_core
 	gssapi_error
+
 BUNDLE globus-rls-server THREADED
         globus_core
         globus_callout
@@ -396,10 +397,14 @@ BUNDLE globus-rls-server THREADED
         globus_io
         gssapi_error
         globus_usage
+        globus_database_iodbc
+        globus_database_sqlite
+        globus_database_sqliteodbc
         globus_rls_client
         globus_rls_server
         globus_rls_server_setup
         globus_xio
+
 BUNDLE gt2-unthreaded
 	gaa_core
 	gaa_debug
