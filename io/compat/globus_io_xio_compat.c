@@ -1321,6 +1321,10 @@ globus_io_fileattr_destroy(
     
     globus_callback_space_destroy(iattr->space);
     globus_xio_attr_destroy(iattr->attr);
+    if(iattr->stack)
+    {
+        globus_xio_stack_destroy(iattr->stack);
+    }
     globus_free(iattr);
     *attr = GLOBUS_NULL;
     
@@ -1433,6 +1437,10 @@ globus_io_tcpattr_destroy(
     
     globus_callback_space_destroy(iattr->space);
     globus_xio_attr_destroy(iattr->attr);
+    if(iattr->stack)
+    {
+        globus_xio_stack_destroy(iattr->stack);
+    }
     globus_free(iattr);
     *attr = GLOBUS_NULL;
     

@@ -6317,8 +6317,12 @@ globus_l_gfs_set_stack(
     }
     globus_i_ftp_control_data_set_stack(&handle->data_channel, stack);
 
+    globus_xio_stack_destroy(stack);
+
     return GLOBUS_SUCCESS;
 error_control:
+
+    globus_xio_stack_destroy(stack);
     return result;
 }
 

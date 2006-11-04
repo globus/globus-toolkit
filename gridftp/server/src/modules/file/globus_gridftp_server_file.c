@@ -187,9 +187,16 @@ globus_l_gfs_file_make_stack(
                     stack_ent->opts);
             }
         }
+        
+        globus_list_destroy_all(driver_list, globus_libc_free);
+        globus_free(value);
     }
     return GLOBUS_SUCCESS;
+
 error_load:
+    globus_list_destroy_all(driver_list, globus_libc_free);
+    globus_free(value);
+
 error_push:
     return result;
 }
