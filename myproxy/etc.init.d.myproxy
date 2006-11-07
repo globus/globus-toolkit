@@ -23,6 +23,7 @@ PID_FILE=${localstatedir}/myproxy.pid
 
 # Optional server configuration arguments follow.
 # Uncomment and modify to change default settings.
+#LISTEN="-l myserver.mydomain.com"
 #PORT="-p 7512"
 #CONFIG="-c ${GLOBUS_LOCATION}/etc/myproxy-server.config"
 #STORE="-s ${GLOBUS_LOCATION}/var/myproxy"
@@ -46,7 +47,7 @@ do_start()
         mkdir -p $localstatedir
     fi
     echo -n "Starting up MyProxy server... "
-    $MYPROXY $PORT $CONFIG $STORE $VERBOSE -P $PID_FILE
+    $MYPROXY $LISTEN $PORT $CONFIG $STORE $VERBOSE -P $PID_FILE
     if [ $? -eq 0 ]; then
         echo "done."
     else
