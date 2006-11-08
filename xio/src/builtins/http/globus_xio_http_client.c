@@ -849,6 +849,10 @@ reregister_read:
 error_exit:
     if (http_handle->read_operation.operation != NULL)
     {
+        if (http_handle->cancellation != NULL)
+        {
+            globus_l_xio_http_cleanup_cancel(http_handle);
+        }
         /*
          * Either we've read enough, hit end of chunk, no entity was
          * present, or pass to transport failed. Call finished_read
@@ -863,18 +867,27 @@ error_exit:
         http_handle->read_operation.nbytes = 0;
 
         finish_read = GLOBUS_TRUE;
+
+        if (eof && response_error == NULL)
+        {
+            result = GlobusXIOErrorEOF();
+        }
     }
-    descriptor = globus_xio_operation_get_data_descriptor(op, GLOBUS_TRUE);
-    if (descriptor == NULL)
+
+    if (result == GLOBUS_SUCCESS)
     {
-        result = GlobusXIOErrorMemory("descriptor");
-    }
-    else
-    {
-        globus_i_xio_http_response_destroy(&descriptor->response);
-        result = globus_i_xio_http_response_copy(
-                &descriptor->response,
-                &http_handle->response_info);
+        descriptor = globus_xio_operation_get_data_descriptor(op, GLOBUS_TRUE);
+        if (descriptor == NULL)
+        {
+            result = GlobusXIOErrorMemory("descriptor");
+        }
+        else
+        {
+            globus_i_xio_http_response_destroy(&descriptor->response);
+            result = globus_i_xio_http_response_copy(
+                    &descriptor->response,
+                    &http_handle->response_info);
+        }
     }
     globus_xio_driver_operation_destroy(http_handle->response_read_operation);
     http_handle->response_read_operation = NULL;
