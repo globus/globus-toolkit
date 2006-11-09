@@ -130,6 +130,7 @@ globus_c_gram_client_bindings               ws-gram/client/c/bindings gpt
 globus_c_rft_client_bindings                ws-transfer/reliable/client/c/bindings gpt
 globus_c_delegation_client_bindings         ws-delegation/client/c/bindings gpt
 globus_c_delegation_client_util             ws-delegation/client/c/util gpt
+globus_c_delegation_test             	    ws-delegation/client/c/test gpt
 
 globus_c_wsrf_core_test_interop_client_test wsrf/c/core/tests/interop/test gpt
 

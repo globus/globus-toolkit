@@ -232,6 +232,7 @@ BUNDLE gt4-gram-test
         globus_gridmap_and_execute_test
         globus_wsrf_gram_client_tools_test
         globus_c_wsrf_rendezvous_test
+        globus_c_delegation_test
         globus_wsrf_gram_reliable_create_test
 
 BUNDLE gt4-gram-test-no-c
