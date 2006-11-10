@@ -422,7 +422,7 @@ sshd_exchange_identification(int sock_in, int sock_out)
 		major = PROTOCOL_MAJOR_1;
 		minor = PROTOCOL_MINOR_1;
 	}
-	snprintf(buf, sizeof buf, "SSH-%d.%d-%.100s\n", major, minor, SSH_VERSION);
+	snprintf(buf, sizeof buf, "SSH-%d.%d-%.100s\n", major, minor, SSH_RELEASE);
 	server_version_string = xstrdup(buf);
 
 	/* Send our protocol version identification. */
@@ -2149,6 +2149,10 @@ do_ssh2_kex(void)
 	if (options.ciphers != NULL) {
 		myproposal[PROPOSAL_ENC_ALGS_CTOS] =
 		myproposal[PROPOSAL_ENC_ALGS_STOC] = options.ciphers;
+	} else if (options.none_enabled == 1) {
+		debug ("WARNING: None cipher enabled");
+		myproposal[PROPOSAL_ENC_ALGS_CTOS] =
+		myproposal[PROPOSAL_ENC_ALGS_STOC] = KEX_ENCRYPT_INCLUDE_NONE;
 	}
 	myproposal[PROPOSAL_ENC_ALGS_CTOS] =
 	    compat_cipher_proposal(myproposal[PROPOSAL_ENC_ALGS_CTOS]);

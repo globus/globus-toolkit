@@ -124,11 +124,16 @@ initialize_server_options(ServerOptions *options)
 	options->permit_tun = -1;
 	options->num_permitted_opens = -1;
 	options->adm_forced_command = NULL;
+        options->none_enabled = -1;
+        options->tcp_rcv_buf_poll = -1;
+        options->hpn_disabled = -1;
+        options->hpn_buffer_size = -1;
 }
 
 void
 fill_default_server_options(ServerOptions *options)
 {
+
 	/* Portable-specific options */
 	if (options->use_pam == -1)
 		options->use_pam = 0;
@@ -256,9 +261,25 @@ fill_default_server_options(ServerOptions *options)
 	if (options->permit_tun == -1)
 		options->permit_tun = SSH_TUNMODE_NO;
 
+	if (options->hpn_disabled == -1) 
+		options->hpn_disabled = 0;
+
+	if (options->hpn_buffer_size == -1)
+	        options->hpn_buffer_size = 2*1024*1024;
+	else {
+		if (options->hpn_buffer_size == 0)
+			options->hpn_buffer_size = 1;
+		/* limit the maximum buffer to 7MB */
+		if (options->hpn_buffer_size > 7168)
+			options->hpn_buffer_size = 7168;
+		options->hpn_buffer_size *=1024;
+	}
+
 	/* Turn privilege separation on by default */
 	if (use_privsep == -1)
 		use_privsep = 1;
+
+
 
 #ifndef HAVE_MMAP
 	if (use_privsep && options->compression == 1) {
@@ -300,7 +321,8 @@ typedef enum {
 	sGssKeyEx,
 	sAcceptEnv, sPermitTunnel,
 	sMatch, sPermitOpen, sForceCommand,
-	sUsePrivilegeSeparation,
+	sUsePrivilegeSeparation, sNoneEnabled, sTcpRcvBufPoll, 
+        sHPNDisabled, sHPNBufferSize,
 	sDeprecated, sUnsupported
 } ServerOpCodes;
 
@@ -415,6 +437,10 @@ static struct {
  	{ "match", sMatch, SSHCFG_ALL },
 	{ "permitopen", sPermitOpen, SSHCFG_ALL },
 	{ "forcecommand", sForceCommand, SSHCFG_ALL },
+        { "noneenabled", sNoneEnabled },
+        { "hpndisabled", sHPNDisabled },
+        { "hpnbuffersize", sHPNBufferSize },
+        { "tcprcvbufpoll", sTcpRcvBufPoll },
 	{ NULL, sBadOption, 0 }
 };
 
@@ -430,6 +456,7 @@ parse_token(const char *cp, const char *filename,
 
 	for (i = 0; keywords[i].name; i++)
 		if (strcasecmp(cp, keywords[i].name) == 0) {
+		        debug ("Config token is %s", keywords[i].name);
 			*flags = keywords[i].flags;
 			return keywords[i].opcode;
 		}
@@ -839,6 +866,22 @@ parse_flag:
 		if (*activep && *intptr == -1)
 			*intptr = value;
 		break;
+
+	case sNoneEnabled:
+		intptr = &options->none_enabled;
+		goto parse_flag;
+
+	case sTcpRcvBufPoll:
+		intptr = &options->tcp_rcv_buf_poll;
+		goto parse_flag;
+
+	case sHPNDisabled:
+		intptr = &options->hpn_disabled;
+		goto parse_flag;
+
+	case sHPNBufferSize:
+		intptr = &options->hpn_buffer_size;
+		goto parse_int;
 
 	case sIgnoreUserKnownHosts:
 		intptr = &options->ignore_user_known_hosts;

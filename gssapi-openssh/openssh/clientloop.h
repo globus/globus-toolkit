@@ -52,8 +52,10 @@ void	 client_session2_setup(int, int, int, const char *, struct termios *,
 #define SSHMUX_COMMAND_OPEN		1	/* Open new connection */
 #define SSHMUX_COMMAND_ALIVE_CHECK	2	/* Check master is alive */
 #define SSHMUX_COMMAND_TERMINATE	3	/* Ask master to exit */
+#define SSHMUX_COMMAND_PORTFORWARD      4       /* Ask master to portforward */
 
 #define SSHMUX_FLAG_TTY			(1)	/* Request tty on open */
 #define SSHMUX_FLAG_SUBSYS		(1<<1)	/* Subsystem request on open */
 #define SSHMUX_FLAG_X11_FWD		(1<<2)	/* Request X11 forwarding */
 #define SSHMUX_FLAG_AGENT_FWD		(1<<3)	/* Request agent forwarding */
+#define SSHMUX_FLAG_PORTFORWARD         (1<<4)  /* Request portforward */
