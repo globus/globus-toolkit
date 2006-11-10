@@ -369,8 +369,8 @@ do_authenticated1(Authctxt *authctxt)
 			}
 			debug("Received TCP/IP port forwarding request.");
 			if (channel_input_port_forward_request(s->pw->pw_uid == 0,
-                options.gateway_ports,
-                options.hpn_disabled, options.hpn_buffer_size) < 0) {
+			      options.gateway_ports, options.hpn_disabled,
+                              options.hpn_buffer_size) < 0) {
 				debug("Port forwarding failed.");
 				break;
 			}

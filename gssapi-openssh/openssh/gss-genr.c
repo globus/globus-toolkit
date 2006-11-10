@@ -40,6 +40,9 @@
 #include "log.h"
 #include "canohost.h"
 #include "ssh2.h"
+#include "cipher.h"
+#include "key.h"
+#include "kex.h"
 #include <openssl/evp.h>
 
 #include "ssh-gss.h"
@@ -73,7 +76,6 @@ ssh_gssapi_oid_table_ok() {
  * a key exchange with a bad mechanism
  */
 
-
 char *
 ssh_gssapi_client_mechanisms(const char *host) {
 	gss_OID_set gss_supported;
@@ -82,12 +84,12 @@ ssh_gssapi_client_mechanisms(const char *host) {
 	gss_indicate_mechs(&min_status, &gss_supported);
 
 	return(ssh_gssapi_kex_mechs(gss_supported, ssh_gssapi_check_mechanism,
-	    (void *)host));
+	    host));
 }
 
 char *
 ssh_gssapi_kex_mechs(gss_OID_set gss_supported, ssh_gssapi_check_fn *check,
-    void *data) {
+    const char *data) {
 	Buffer buf;
 	size_t i;
 	int oidpos, enclen;
@@ -96,24 +98,22 @@ ssh_gssapi_kex_mechs(gss_OID_set gss_supported, ssh_gssapi_check_fn *check,
 	char deroid[2];
 	const EVP_MD *evp_md = EVP_md5();
 	EVP_MD_CTX md;
-	Gssctxt *gssctxt = NULL;
 
 	if (gss_enc2oid != NULL) {
-		for (i=0;gss_enc2oid[i].encoded!=NULL;i++)
+		for (i = 0; gss_enc2oid[i].encoded != NULL; i++)
 			xfree(gss_enc2oid[i].encoded);
 		xfree(gss_enc2oid);
 	}
 
 	gss_enc2oid = xmalloc(sizeof(ssh_gss_kex_mapping)*
-	    (gss_supported->count+1));
+	    (gss_supported->count + 1));
 
 	buffer_init(&buf);
 
 	oidpos = 0;
-	for (i = 0;i < gss_supported->count;i++) {
+	for (i = 0; i < gss_supported->count; i++) {
 		if (gss_supported->elements[i].length < 128 &&
-		    (*check)(&gssctxt, &(gss_supported->elements[i]), data)) {
-
+		    (*check)(NULL, &(gss_supported->elements[i]), data)) {
 			deroid[0] = SSH_GSS_OIDTYPE;
 			deroid[1] = gss_supported->elements[i].length;
 
@@ -124,19 +124,23 @@ ssh_gssapi_kex_mechs(gss_OID_set gss_supported, ssh_gssapi_check_fn *check,
 			    gss_supported->elements[i].length);
 			EVP_DigestFinal(&md, digest, NULL);
 
-			encoded = xmalloc(EVP_MD_size(evp_md)*2);
+			encoded = xmalloc(EVP_MD_size(evp_md) * 2);
 			enclen = __b64_ntop(digest, EVP_MD_size(evp_md),
-			    encoded, EVP_MD_size(evp_md)*2);
+			    encoded, EVP_MD_size(evp_md) * 2);
 
 			if (oidpos != 0)
-			    buffer_put_char(&buf, ',');
+				buffer_put_char(&buf, ',');
 
 			buffer_append(&buf, KEX_GSS_GEX_SHA1_ID,
-			    sizeof(KEX_GSS_GEX_SHA1_ID)-1);
+			    sizeof(KEX_GSS_GEX_SHA1_ID) - 1);
 			buffer_append(&buf, encoded, enclen);
-			buffer_put_char(&buf,',');
+			buffer_put_char(&buf, ',');
 			buffer_append(&buf, KEX_GSS_GRP1_SHA1_ID, 
-			    sizeof(KEX_GSS_GRP1_SHA1_ID)-1);
+			    sizeof(KEX_GSS_GRP1_SHA1_ID) - 1);
+			buffer_append(&buf, encoded, enclen);
+			buffer_put_char(&buf, ',');
+			buffer_append(&buf, KEX_GSS_GRP14_SHA1_ID,
+			    sizeof(KEX_GSS_GRP14_SHA1_ID) - 1);
 			buffer_append(&buf, encoded, enclen);
 
 			gss_enc2oid[oidpos].oid = &(gss_supported->elements[i]);
@@ -158,33 +162,30 @@ ssh_gssapi_kex_mechs(gss_OID_set gss_supported, ssh_gssapi_check_fn *check,
 		mechs = NULL;
 	}
 	
-    if (gssctxt) {
-        ssh_gssapi_delete_ctx(&gssctxt);
-    }
-
 	return (mechs);
 }
 
 gss_OID
-ssh_gssapi_id_kex(Gssctxt *ctx, char *name, int *gex) {
+ssh_gssapi_id_kex(Gssctxt *ctx, char *name, int kex_type) {
 	int i = 0;
-
-	if (strncmp(name, KEX_GSS_GRP1_SHA1_ID,
-	    sizeof(KEX_GSS_GRP1_SHA1_ID)-1) == 0) {
-		name+=sizeof(KEX_GSS_GRP1_SHA1_ID)-1;
-		*gex = 0;
-	} else if (strncmp(name, KEX_GSS_GEX_SHA1_ID,
-	    sizeof(KEX_GSS_GEX_SHA1_ID)-1) == 0) {
-		name+=sizeof(KEX_GSS_GEX_SHA1_ID)-1;
-		*gex = 1;
-	} else {
-		return NULL;
+	
+	switch (kex_type) {
+	case KEX_GSS_GRP1_SHA1:
+		name += sizeof(KEX_GSS_GRP1_SHA1_ID) - 1;
+		break;
+	case KEX_GSS_GRP14_SHA1:
+		name += sizeof(KEX_GSS_GRP14_SHA1_ID) - 1;
+		break;
+	case KEX_GSS_GEX_SHA1:
+		name += sizeof(KEX_GSS_GEX_SHA1_ID) - 1;
+		break;
+	default:
+		return GSS_C_NO_OID;
 	}
 
 	while (gss_enc2oid[i].encoded != NULL &&
-	    strcmp(name, gss_enc2oid[i].encoded) != 0) {
+	    strcmp(name, gss_enc2oid[i].encoded) != 0)
 		i++;
-	}
 
 	if (gss_enc2oid[i].oid != NULL && ctx != NULL)
 		ssh_gssapi_set_oid(ctx, gss_enc2oid[i].oid);
@@ -387,39 +388,6 @@ ssh_gssapi_import_name(Gssctxt *ctx, const char *host)
 	return (ctx->major);
 }
 
-/* Acquire credentials for a server running on the current host.
- * Requires that the context structure contains a valid OID
- */
-
-/* Returns a GSSAPI error code */
-OM_uint32
-ssh_gssapi_acquire_cred(Gssctxt *ctx)
-{
-	OM_uint32 status;
-	char lname[MAXHOSTNAMELEN];
-	gss_OID_set oidset;
-
-	gss_create_empty_oid_set(&status, &oidset);
-	gss_add_oid_set_member(&status, ctx->oid, &oidset);
-
-	if (gethostname(lname, MAXHOSTNAMELEN)) {
-		gss_release_oid_set(&status, &oidset);
-		return (-1);
-	}
-
-	if (GSS_ERROR(ssh_gssapi_import_name(ctx, lname))) {
-		gss_release_oid_set(&status, &oidset);
-		return (ctx->major);
-	}
-
-	if ((ctx->major = gss_acquire_cred(&ctx->minor,
-	    ctx->name, 0, oidset, GSS_C_ACCEPT, &ctx->creds, NULL, NULL)))
-		ssh_gssapi_error(ctx);
-
-	gss_release_oid_set(&status, &oidset);
-	return (ctx->major);
-}
-
 OM_uint32
 ssh_gssapi_sign(Gssctxt *ctx, gss_buffer_t buffer, gss_buffer_t hash)
 {
@@ -458,22 +426,16 @@ ssh_gssapi_buildmic(Buffer *b, const char *user, const char *service,
 	buffer_put_cstring(b, context);
 }
 
-OM_uint32
-ssh_gssapi_server_ctx(Gssctxt **ctx, gss_OID oid)
-{
-	if (*ctx)
-		ssh_gssapi_delete_ctx(ctx);
-	ssh_gssapi_build_ctx(ctx);
-	ssh_gssapi_set_oid(*ctx, oid);
-	return (ssh_gssapi_acquire_cred(*ctx));
-}
-
 int
 ssh_gssapi_check_mechanism(Gssctxt **ctx, gss_OID oid, const char *host)
 {
 	gss_buffer_desc token = GSS_C_EMPTY_BUFFER;
 	OM_uint32 major, minor;
 	gss_OID_desc spnego_oid = {6, (void *)"\x2B\x06\x01\x05\x05\x02"};
+	Gssctxt *intctx = NULL;
+
+	if (ctx == NULL)
+		ctx = &intctx;
 
 	/* RFC 4462 says we MUST NOT do SPNEGO */
 	if (oid->length == spnego_oid.length && 
@@ -492,7 +454,7 @@ ssh_gssapi_check_mechanism(Gssctxt **ctx, gss_OID oid, const char *host)
 			    GSS_C_NO_BUFFER);
 	}
 
-	if (GSS_ERROR(major)) 
+	if (GSS_ERROR(major) || intctx != NULL) 
 		ssh_gssapi_delete_ctx(ctx);
 
 	return (!GSS_ERROR(major));

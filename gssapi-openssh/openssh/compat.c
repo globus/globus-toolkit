@@ -174,6 +174,7 @@ compat_datafellows(const char *version)
 				if (strstr(version,"hpn") == NULL)
 				{
 					datafellows |= SSH_BUG_LARGEWINDOW;
+					debug("Remote is NON-HPN aware");
 				}
 			}
 			return;

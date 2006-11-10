@@ -97,6 +97,7 @@ initialize_server_options(ServerOptions *options)
 	options->gss_authentication=-1;
 	options->gss_keyex = -1;
 	options->gss_cleanup_creds = -1;
+	options->gss_strict_acceptor = -1;
 	options->gsi_allow_limited_proxy = -1;
 	options->password_authentication = -1;
 	options->kbd_interactive_authentication = -1;
@@ -129,11 +130,10 @@ initialize_server_options(ServerOptions *options)
 	options->permit_tun = -1;
 	options->num_permitted_opens = -1;
 	options->adm_forced_command = NULL;
-
-    options->none_enabled = -1;
-    options->tcp_rcv_buf_poll = -1;
-	options->hpn_disabled = -1;
-	options->hpn_buffer_size = -1;
+        options->none_enabled = -1;
+        options->tcp_rcv_buf_poll = -1;
+        options->hpn_disabled = -1;
+        options->hpn_buffer_size = -1;
 }
 
 void
@@ -221,6 +221,8 @@ fill_default_server_options(ServerOptions *options)
 		options->gss_keyex = 1;
 	if (options->gss_cleanup_creds == -1)
 		options->gss_cleanup_creds = 1;
+	if (options->gss_strict_acceptor == -1)
+		options->gss_strict_acceptor = 0;
 	if (options->gsi_allow_limited_proxy == -1)
 		options->gsi_allow_limited_proxy = 0;
 	if (options->password_authentication == -1)
@@ -326,9 +328,10 @@ typedef enum {
 	sBanner, sUseDNS, sHostbasedAuthentication,
 	sHostbasedUsesNameFromPacketOnly, sClientAliveInterval,
 	sClientAliveCountMax, sAuthorizedKeysFile, sAuthorizedKeysFile2,
+	sGssAuthentication, sGssCleanupCreds, sGssStrictAcceptor,
 	sGssKeyEx, 
 	sGsiAllowLimitedProxy,
-	sGssAuthentication, sGssCleanupCreds, sAcceptEnv, sPermitTunnel,
+    sAcceptEnv, sPermitTunnel,
 	sMatch, sPermitOpen, sForceCommand,
 	sUsePrivilegeSeparation,
     sNoneEnabled, sTcpRcvBufPoll, 
@@ -390,15 +393,20 @@ static struct {
 	{ "afstokenpassing", sUnsupported, SSHCFG_GLOBAL },
 #ifdef GSSAPI
 	{ "gssapiauthentication", sGssAuthentication, SSHCFG_GLOBAL },
-	{ "gssapikeyexchange", sGssKeyEx, SSHCFG_GLOBAL },
 	{ "gssapicleanupcredentials", sGssCleanupCreds, SSHCFG_GLOBAL },
+	{ "gssapistrictacceptorcheck", sGssStrictAcceptor, SSHCFG_GLOBAL },
+	{ "gssapikeyexchange", sGssKeyEx, SSHCFG_GLOBAL },
 #ifdef GSI
 	{ "gsiallowlimitedproxy", sGsiAllowLimitedProxy, SSHCFG_GLOBAL },
 #endif
 #else
 	{ "gssapiauthentication", sUnsupported, SSHCFG_GLOBAL },
-	{ "gssapikeyexchange", sUnsupported, SSHCFG_GLOBAL },
 	{ "gssapicleanupcredentials", sUnsupported, SSHCFG_GLOBAL },
+	{ "gssapistrictacceptorcheck", sUnsupported, SSHCFG_GLOBAL },
+	{ "gssapikeyexchange", sUnsupported, SSHCFG_GLOBAL },
+#ifdef GSI
+	{ "gsiallowlimitedproxy", sUnsupported, SSHCFG_GLOBAL },
+#endif
 #endif
 #ifdef SESSION_HOOKS
     { "allowsessionhooks", sAllowSessionHooks, SSHCFG_GLOBAL },
@@ -453,6 +461,10 @@ static struct {
  	{ "match", sMatch, SSHCFG_ALL },
 	{ "permitopen", sPermitOpen, SSHCFG_ALL },
 	{ "forcecommand", sForceCommand, SSHCFG_ALL },
+    { "noneenabled", sNoneEnabled },
+        { "hpndisabled", sHPNDisabled },
+        { "hpnbuffersize", sHPNBufferSize },
+        { "tcprcvbufpoll", sTcpRcvBufPoll },
 	{ NULL, sBadOption, 0 }
 };
 
@@ -945,6 +957,9 @@ parse_flag:
 	case sGssCleanupCreds:
 		intptr = &options->gss_cleanup_creds;
 		goto parse_flag;
+
+	case sGssStrictAcceptor:
+		intptr = &options->gss_strict_acceptor;
 
 	case sGsiAllowLimitedProxy:
 		intptr = &options->gsi_allow_limited_proxy;

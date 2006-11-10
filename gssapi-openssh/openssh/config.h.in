@@ -1,11 +1,17 @@
 /* config.h.in.  Generated from configure.ac by autoheader.  */
 
+/* Define this if you want to use AFS/Kerberos 5 option, which runs aklog. */
+#undef AFS_KRB5
+
 /* Define if you have a getaddrinfo that fails for the all-zeros IPv6 address
    */
 #undef AIX_GETNAMEINFO_HACK
 
 /* Define if your AIX loginfailed() function takes 4 arguments (AIX >= 5.2) */
 #undef AIX_LOGINFAILED_4ARG
+
+/* Define this if you want to use AFS/Kerberos 5 option, which runs aklog. */
+#undef AKLOG_PATH
 
 /* Define if your resolver libs need this for getrrsetbyname */
 #undef BIND_8_COMPAT
@@ -124,6 +130,9 @@
 
 /* Define if your system glob() function has gl_matchc options in glob_t */
 #undef GLOB_HAS_GL_MATCHC
+
+/* Define if you want GSI/Globus authentication support. */
+#undef GSI
 
 /* Define this if you want GSSAPI support in the version 2 protocol */
 #undef GSSAPI
@@ -398,6 +407,10 @@
 
 /* Define to 1 if you have the `glob' function. */
 #undef HAVE_GLOB
+
+/* Define to 1 if you have the `globus_gss_assist_map_and_authorize' function.
+   */
+#undef HAVE_GLOBUS_GSS_ASSIST_MAP_AND_AUTHORIZE
 
 /* Define to 1 if you have the <glob.h> header file. */
 #undef HAVE_GLOB_H
@@ -1113,6 +1126,9 @@
 /* Set this to your mail directory if you don't have maillock.h */
 #undef MAIL_DIRECTORY
 
+/* Define this if you're building with GSSAPI MechGlue. */
+#undef MECHGLUE
+
 /* Define on *nto-qnx systems */
 #undef MISSING_FD_MASK
 
@@ -1174,22 +1190,25 @@
 /* read(1) can return 0 for a non-closed fd */
 #undef PTY_ZEROREAD
 
+/* Define this if you want support for startup/shutdown hooks */
+#undef SESSION_HOOKS
+
 /* Define if your platform breaks doing a seteuid before a setuid */
 #undef SETEUID_BREAKS_SETUID
 
-/* The size of `char', as computed by sizeof. */
+/* The size of a `char', as computed by sizeof. */
 #undef SIZEOF_CHAR
 
-/* The size of `int', as computed by sizeof. */
+/* The size of a `int', as computed by sizeof. */
 #undef SIZEOF_INT
 
-/* The size of `long int', as computed by sizeof. */
+/* The size of a `long int', as computed by sizeof. */
 #undef SIZEOF_LONG_INT
 
-/* The size of `long long int', as computed by sizeof. */
+/* The size of a `long long int', as computed by sizeof. */
 #undef SIZEOF_LONG_LONG_INT
 
-/* The size of `short int', as computed by sizeof. */
+/* The size of a `short int', as computed by sizeof. */
 #undef SIZEOF_SHORT_INT
 
 /* Define if you want S/Key support */
@@ -1262,6 +1281,9 @@
 /* Use btmp to log bad logins */
 #undef USE_BTMP
 
+/* platform uses an in-memory credentials cache */
+#undef USE_CCAPI
+
 /* Use libedit for sftp */
 #undef USE_LIBEDIT
 
@@ -1279,6 +1301,9 @@
 
 /* Define if you want smartcard support using sectok */
 #undef USE_SECTOK
+
+/* platform has the Security Authorization Session API */
+#undef USE_SECURITY_SESSION_API
 
 /* Define if you have Solaris process contracts */
 #undef USE_SOLARIS_PROCESS_CONTRACTS

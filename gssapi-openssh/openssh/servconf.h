@@ -94,6 +94,7 @@ typedef struct {
 	int     gss_authentication;	/* If true, permit GSSAPI authentication */
 	int 	gss_keyex;		/* If true, permit GSSAPI key exchange */
 	int     gss_cleanup_creds;	/* If true, destroy cred cache on logout */
+	int 	gss_strict_acceptor;	/* If true, restrict the GSSAPI acceptor name */
 	int     gsi_allow_limited_proxy;	/* If true, accept limited proxies */
 	int     password_authentication;	/* If true, permit password
 						 * authentication. */

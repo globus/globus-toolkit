@@ -2202,15 +2202,13 @@ do_ssh2_kex(void)
 	else
 		gss = NULL;
 
-	if (gss && orig) {
-		int len = strlen(orig) + strlen(gss) + 2;
-		newstr = xmalloc(len);
-		snprintf(newstr, len, "%s,%s", gss, orig);
-	} else if (gss) {
+	if (gss && orig)
+		xasprintf(&newstr, "%s,%s", gss, orig);
+	else if (gss)
 		newstr = gss;
-	} else if (orig) {
+	else if (orig)
 		newstr = orig;
-	}
+
 	/* 
 	 * If we've got GSSAPI mechanisms, then we've got the 'null' host
 	 * key alg, but we can't tell people about it unless its the only
@@ -2227,15 +2225,17 @@ do_ssh2_kex(void)
 #endif
 
   	/* start key exchange */
-  	kex = kex_setup(myproposal);
-  	kex->kex[KEX_DH_GRP1_SHA1] = kexdh_server;
+	/* start key exchange */
+	kex = kex_setup(myproposal);
+	kex->kex[KEX_DH_GRP1_SHA1] = kexdh_server;
 	kex->kex[KEX_DH_GRP14_SHA1] = kexdh_server;
 	kex->kex[KEX_DH_GEX_SHA1] = kexgex_server;
+	kex->kex[KEX_DH_GEX_SHA256] = kexgex_server;
 #ifdef GSSAPI
 	kex->kex[KEX_GSS_GRP1_SHA1] = kexgss_server;
+	kex->kex[KEX_GSS_GRP14_SHA1] = kexgss_server;
 	kex->kex[KEX_GSS_GEX_SHA1] = kexgss_server;
 #endif
-	kex->kex[KEX_DH_GEX_SHA256] = kexgex_server;
 	kex->server = 1;
 	kex->client_version_string=client_version_string;
 	kex->server_version_string=server_version_string;

@@ -1,4 +1,4 @@
-SCP(1)                     OpenBSD Reference Manual                     SCP(1)
+SCP(1)                    BSD General Commands Manual                   SCP(1)
 
 NAME
      scp - secure copy (remote file copy program)
@@ -28,8 +28,8 @@ DESCRIPTION
 
      -6      Forces scp to use IPv6 addresses only.
 
-     -B      Selects batch mode (prevents asking for passwords or passphras-
-             es).
+     -B      Selects batch mode (prevents asking for passwords or
+             passphrases).
 
      -C      Compression enable.  Passes the -C flag to ssh(1) to enable com-
              pression.
@@ -108,7 +108,7 @@ DESCRIPTION
 
      -P port
              Specifies the port to connect to on the remote host.  Note that
-             this option is written with a capital `P', because -p is already
+             this option is written with a capital 'P', because -p is already
              reserved for preserving the times and modes of the file in
              rcp(1).
 
@@ -141,4 +141,4 @@ AUTHORS
      Timo Rinne <tri@iki.fi>
      Tatu Ylonen <ylo@cs.hut.fi>
 
-OpenBSD 4.0                   September 25, 1999                             3
+BSD                           September 25, 1999                           BSD

@@ -1,4 +1,4 @@
-SSH-KEYSIGN(8)          OpenBSD System Manager's Manual         SSH-KEYSIGN(8)
+SSH-KEYSIGN(8)            BSD System Manager's Manual           SSH-KEYSIGN(8)
 
 NAME
      ssh-keysign - ssh helper program for host-based authentication
@@ -39,4 +39,4 @@ HISTORY
 AUTHORS
      Markus Friedl <markus@openbsd.org>
 
-OpenBSD 4.0                      May 24, 2002                                1
+BSD                              May 24, 2002                              BSD

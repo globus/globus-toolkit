@@ -310,7 +310,7 @@ main(int argc, char **argv)
 	addargs(&args, "-oClearAllForwardings yes");
 
 	fflag = tflag = 0;
-	while ((ch = getopt(argc, argv, "dfl:prtvBCc:i:P:q1246zS:o:F:w:")) != -1)
+	while ((ch = getopt(argc, argv, "dfl:prtvBCc:i:P:q1246S:o:F:")) != -1)
 		switch (ch) {
 		/* User-visible flags. */
 		case '1':
@@ -318,9 +318,8 @@ main(int argc, char **argv)
 		case '4':
 		case '6':
 		case 'C':
-		case 'z':	
-			addargs(&args, "-%c", ch);
-			break;
+                        addargs(&args, "-%c", ch);
+                        break;
 		case 'o':
 		case 'c':
 		case 'i':
@@ -371,9 +370,6 @@ main(int argc, char **argv)
 #ifdef HAVE_CYGWIN
 			setmode(0, O_BINARY);
 #endif
-			break;
-		case 'w':
-			addargs(&args, "-w%s", optarg);
 			break;
 		default:
 			usage();
@@ -1119,7 +1115,7 @@ usage(void)
 {
 	(void) fprintf(stderr,
 	    "usage: scp [-1246BCpqrv] [-c cipher] [-F ssh_config] [-i identity_file]\n"
-	    "           [-l limit] [-o ssh_option] [-P port] [-w buffer size] [-S program]\n"
+	    "           [-l limit] [-o ssh_option] [-P port] [-S program]\n"
 	    "           [[user@]host1:]file1 [...] [[user@]host2:]file2\n");
 	exit(1);
 }

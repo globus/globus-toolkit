@@ -482,7 +482,7 @@ host key database instead of
 .Pa /etc/ssh/ssh_known_hosts .
 .It Cm GSSAPIAuthentication
 Specifies whether user authentication based on GSSAPI is allowed.
-The default is 
+The default is
 .Dq yes .
 Note that this option applies to protocol version 2 only.
 .It Cm GSSAPIKeyExchange
@@ -498,14 +498,15 @@ The default is
 Note that this option applies to protocol version 2 only.
 .It Cm GSSAPITrustDns
 Set to 
-.Dq yes to indicate that the DNS is trusted to securely canonicalize
+.Dq yes 
+to indicate that the DNS is trusted to securely canonicalize
 the name of the host being connected to. If 
-.Dq no, the hostname entered on the
+.Dq no, 
+the hostname entered on the
 command line will be passed untouched to the GSSAPI library.
 The default is
 .Dq yes .
-This option only applies to protocol version 2 connections using GSSAPI 
-key exchange.
+This option only applies to protocol version 2 connections using GSSAPI.
 .It Cm HashKnownHosts
 Indicates that
 .Xr ssh 1

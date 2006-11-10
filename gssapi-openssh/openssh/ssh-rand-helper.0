@@ -1,4 +1,4 @@
-SSH-RAND-HELPER(8)      OpenBSD System Manager's Manual     SSH-RAND-HELPER(8)
+SSH-RAND-HELPER(8)        BSD System Manager's Manual       SSH-RAND-HELPER(8)
 
 NAME
      ssh-rand-helper - Random number gatherer for OpenSSH
@@ -46,4 +46,4 @@ AUTHORS
 SEE ALSO
      ssh(1), ssh-add(1), ssh-keygen(1), sshd(8)
 
-OpenBSD 4.0                     April 14, 2002                               1
+BSD                             April 14, 2002                             BSD

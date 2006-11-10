@@ -766,11 +766,34 @@ channel_pre_open_13(Channel *c, fd_set *readset, fd_set *writeset)
 		FD_SET(c->sock, writeset);
 }
 
+int channel_tcpwinsz () {
+        u_int32_t tcpwinsz = 0;
+        socklen_t optsz = sizeof(tcpwinsz);
+	int ret = -1;
+	if(!packet_connection_is_on_socket()) 
+	    return(131072);
+	ret = getsockopt(packet_get_connection_in(),
+			 SOL_SOCKET, SO_RCVBUF, &tcpwinsz, &optsz);
+	if ((ret == 0) && tcpwinsz > BUFFER_MAX_LEN_HPN)
+	    tcpwinsz = BUFFER_MAX_LEN_HPN;
+	debug2("tcpwinsz: %d for connection: %d", tcpwinsz, 
+	       packet_get_connection_in());
+	return(tcpwinsz);
+}
+
 static void
 channel_pre_open(Channel *c, fd_set *readset, fd_set *writeset)
 {
 	u_int limit = compat20 ? c->remote_window : packet_get_maxsize();
 
+        /* check buffer limits */
+	if (!c->tcpwinsz) 
+    	    c->tcpwinsz = channel_tcpwinsz();
+	if (c->dynamic_window > 0)
+	    c->tcpwinsz = channel_tcpwinsz();
+	
+	limit = MIN(limit, 2 * c->tcpwinsz);
+	
 	if (c->istate == CHAN_INPUT_OPEN &&
 	    limit > 0 &&
 	    buffer_len(&c->input) < limit &&
@@ -2629,7 +2652,7 @@ channel_request_rforward_cancel(const char *host, u_short port)
  */
 int
 channel_input_port_forward_request(int is_root, int gateway_ports, 
-	int hpn_disabled, int hpn_buffer_size)
+				   int hpn_disabled, int hpn_buffer_size)
 {
 	u_short port, host_port;
 	int success = 0;

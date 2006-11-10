@@ -164,6 +164,7 @@ ssh_gssapi_krb5_storecreds(ssh_gssapi_client *client)
 	OM_uint32 maj_status, min_status;
 	gss_cred_id_t krb5_cred_handle;
 	int len;
+    const char* new_ccname;
 
 	if (client->creds == NULL) {
 		debug("No credentials stored");
@@ -220,11 +221,16 @@ ssh_gssapi_krb5_storecreds(ssh_gssapi_client *client)
 		return;
 	}
 
-	client->store.filename = xstrdup(krb5_cc_get_name(krb_context, ccache));
+	new_ccname = krb5_cc_get_name(krb_context, ccache);
+
 	client->store.envvar = "KRB5CCNAME";
-	len = strlen(client->store.filename) + 6;
-	client->store.envval = xmalloc(len);
-	snprintf(client->store.envval, len, "FILE:%s", client->store.filename);
+#ifdef USE_CCAPI
+	xasprintf(&client->store.envval, "API:%s", new_ccname);
+	client->store.filename = NULL;
+#else
+	xasprintf(&client->store.envval, "FILE:%s", new_ccname);
+	client->store.filename = xstrdup(new_ccname);
+#endif
 
 #ifdef USE_PAM
 	if (options.use_pam)

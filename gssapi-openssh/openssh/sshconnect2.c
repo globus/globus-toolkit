@@ -106,8 +106,7 @@ ssh_kex2(char *host, struct sockaddr *hostaddr)
 
 #ifdef GSSAPI
 	char *orig = NULL, *gss = NULL;
-	int len;
-        char *gss_host = NULL;
+	char *gss_host = NULL;
 #endif
 
 	xxx_host = host;
@@ -115,22 +114,21 @@ ssh_kex2(char *host, struct sockaddr *hostaddr)
 
 #ifdef GSSAPI
 	if (options.gss_keyex) {
-	/* Add the GSSAPI mechanisms currently supported on this client to
-	 * the key exchange algorithm proposal */
-	orig = myproposal[PROPOSAL_KEX_ALGS];
-	if (options.gss_trust_dns)
-		gss_host = (char *)get_canonical_hostname(1);
-	else
-		gss_host = host;
+		/* Add the GSSAPI mechanisms currently supported on this 
+		 * client to the key exchange algorithm proposal */
+		orig = myproposal[PROPOSAL_KEX_ALGS];
 
-	gss = ssh_gssapi_client_mechanisms(gss_host);
-	if (gss) {
-		debug("Offering GSSAPI proposal: %s", gss);
-		len = strlen(orig) + strlen(gss) + 2;
-		myproposal[PROPOSAL_KEX_ALGS] = xmalloc(len);
-		snprintf(myproposal[PROPOSAL_KEX_ALGS], len, "%s,%s", gss, 
-		    orig);
-	}
+		if (options.gss_trust_dns)
+			gss_host = (char *)get_canonical_hostname(1);
+		else
+			gss_host = host;
+
+		gss = ssh_gssapi_client_mechanisms(gss_host);
+		if (gss) {
+			debug("Offering GSSAPI proposal: %s", gss);
+			xasprintf(&myproposal[PROPOSAL_KEX_ALGS],
+			    "%s,%s", gss, orig);
+		}
 	}
 #endif
 
@@ -142,6 +140,7 @@ ssh_kex2(char *host, struct sockaddr *hostaddr)
 		myproposal[PROPOSAL_ENC_ALGS_CTOS] =
 		myproposal[PROPOSAL_ENC_ALGS_STOC] = options.ciphers;
 	}
+
 	myproposal[PROPOSAL_ENC_ALGS_CTOS] =
 	    compat_cipher_proposal(myproposal[PROPOSAL_ENC_ALGS_CTOS]);
 	myproposal[PROPOSAL_ENC_ALGS_STOC] =
@@ -166,9 +165,7 @@ ssh_kex2(char *host, struct sockaddr *hostaddr)
 	 * 'null' hostkey, as a last resort */
 	if (options.gss_keyex && gss) {
 		orig = myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS];
-		len = strlen(orig) + sizeof(",null");
-		myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS] = xmalloc(len);
-		snprintf(myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS], len, 
+		xasprintf(&myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS], 
 		    "%s,null", orig);
 	}
 #endif
@@ -181,11 +178,12 @@ ssh_kex2(char *host, struct sockaddr *hostaddr)
 	kex->kex[KEX_DH_GRP1_SHA1] = kexdh_client;
 	kex->kex[KEX_DH_GRP14_SHA1] = kexdh_client;
 	kex->kex[KEX_DH_GEX_SHA1] = kexgex_client;
+	kex->kex[KEX_DH_GEX_SHA256] = kexgex_client;
 #ifdef GSSAPI
 	kex->kex[KEX_GSS_GRP1_SHA1] = kexgss_client;
+	kex->kex[KEX_GSS_GRP14_SHA1] = kexgss_client;
 	kex->kex[KEX_GSS_GEX_SHA1] = kexgss_client;
 #endif
-	kex->kex[KEX_DH_GEX_SHA256] = kexgex_client;
 	kex->client_version_string=client_version_string;
 	kex->server_version_string=server_version_string;
 	kex->verify_host_key=&verify_host_key_callback;
@@ -395,14 +393,28 @@ ssh_userauth2(const char *local_user, const char *server_user, char *host,
 
 	pubkey_cleanup(&authctxt);
 	dispatch_range(SSH2_MSG_USERAUTH_MIN, SSH2_MSG_USERAUTH_MAX, NULL);
-	if ((options.none_switch == 1) && (options.none_enabled == 1) && !tty_flag) /* no null on tty sessions */
+
+	/* if the user wants to use the none cipher do it */
+	/* post authentication and only if the right conditions are met */
+	/* both of the NONE commands must be true and there must be no */
+	/* tty allocated */
+	if ((options.none_switch == 1) && (options.none_enabled == 1)) 
 	{
-		debug("Requesting none rekeying...");
-		myproposal[PROPOSAL_ENC_ALGS_STOC] = "none";
-		myproposal[PROPOSAL_ENC_ALGS_CTOS] = "none";
-		kex_prop2buf(&xxx_kex->my,myproposal);
-		packet_request_rekeying();
-		fprintf(stderr, "WARNING: ENABLED NULL CIPHER\n");
+		if (!tty_flag) /* no null on tty sessions */
+		{
+			debug("Requesting none rekeying...");
+			myproposal[PROPOSAL_ENC_ALGS_STOC] = "none";
+			myproposal[PROPOSAL_ENC_ALGS_CTOS] = "none";
+			kex_prop2buf(&xxx_kex->my,myproposal);
+			packet_request_rekeying();
+			fprintf(stderr, "WARNING: ENABLED NONE CIPHER\n");
+		}
+		else
+		{
+			/* requested NONE cipher when in a tty */
+			debug("Cannot switch to NONE cipher with tty allocated");
+			fprintf(stderr, "NONE cipher switch disabled when a TTY is allocated\n");
+		}
 	}
 	debug("Authentication succeeded (%s).", authctxt.method->name);
 }
@@ -699,8 +711,8 @@ input_gssapi_response(int type, u_int32_t plen, void *ctxt)
 {
 	Authctxt *authctxt = ctxt;
 	Gssctxt *gssctxt;
-	unsigned int oidlen;
-	unsigned char *oidv;
+	u_int oidlen;
+	u_char *oidv;
 
 	if (authctxt == NULL)
 		fatal("input_gssapi_response: no authentication context");

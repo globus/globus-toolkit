@@ -73,6 +73,8 @@
 # GSSAPI options
 #GSSAPIAuthentication yes
 #GSSAPICleanupCredentials yes
+#GSSAPIStrictAcceptorCheck yes
+#GSSAPIKeyExchange yes
 
 # Set this to 'yes' to enable PAM authentication, account processing, 
 # and session processing. If this is enabled, PAM authentication will 
@@ -104,10 +106,16 @@
 #MaxStartups 10
 #PermitTunnel no
 
+# no default banner path
+#Banner /some/path
+
+# override default of no subsystems
+Subsystem	sftp	/usr/libexec/sftp-server
+
 # the following are HPN related configuration options
 # tcp receive buffer polling. enable in autotuning kernels
 #TcpRcvBufPoll no
-
+ 
 # allow the use of the none cipher
 #NoneEnabled no
 
@@ -116,13 +124,7 @@
 
 # buffer size for hpn to non-hn connections
 #HPNBufferSize 2048
-# end of HPN options
 
-# no default banner path
-#Banner /some/path
-
-# override default of no subsystems
-Subsystem	sftp	/usr/libexec/sftp-server
 
 # Example of overriding settings on a per-user basis
 #Match User anoncvs

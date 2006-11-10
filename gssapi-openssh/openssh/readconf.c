@@ -1250,16 +1250,19 @@ fill_default_options(Options * options)
 	        options->none_switch = 0;
 	if (options->hpn_disabled == -1)
 	        options->hpn_disabled = 0;
-	if (options->hpn_buffer_size == -1)
-	        options->hpn_buffer_size = 2*1024*1024;
-	else {
+	if (options->hpn_buffer_size > -1)
+	{
 		if (options->hpn_buffer_size == 0)
-			options->hpn_buffer_size = 1;
+		options->hpn_buffer_size = 1;
 		/*limit the buffer to 7MB*/
-		if (options->hpn_buffer_size > 7168)
+			if (options->hpn_buffer_size > 7168)
+		{
 			options->hpn_buffer_size = 7168;
+			debug("User requested buffer larger than 7MB. Request reverted to 7MB");
+		}
 		options->hpn_buffer_size *=1024;
-	}	
+		debug("hpn_buffer_size set to %d", options->hpn_buffer_size);
+	}
 	if (options->tcp_rcv_buf == 0)
 		options->tcp_rcv_buf = 1;
 	if (options->tcp_rcv_buf > -1) 
