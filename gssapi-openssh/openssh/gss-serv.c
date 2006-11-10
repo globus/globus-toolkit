@@ -1,7 +1,7 @@
 /* $OpenBSD: gss-serv.c,v 1.20 2006/08/03 03:34:42 deraadt Exp $ */
 
 /*
- * Copyright (c) 2001-2003 Simon Wilkinson. All rights reserved.
+ * Copyright (c) 2001-2006 Simon Wilkinson. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -43,8 +43,13 @@
 #include "channels.h"
 #include "session.h"
 #include "misc.h"
+#include "servconf.h"
 
+#include "xmalloc.h"
 #include "ssh-gss.h"
+#include "monitor_wrap.h"
+
+extern ServerOptions options;
 
 static ssh_gssapi_client gssapi_client =
     { GSS_C_EMPTY_BUFFER, GSS_C_EMPTY_BUFFER,
@@ -56,13 +61,45 @@ ssh_gssapi_mech gssapi_null_mech =
 #ifdef KRB5
 extern ssh_gssapi_mech gssapi_kerberos_mech;
 #endif
+#ifdef GSI
+extern ssh_gssapi_mech gssapi_gsi_mech;
+#endif
 
 ssh_gssapi_mech* supported_mechs[]= {
 #ifdef KRB5
 	&gssapi_kerberos_mech,
 #endif
+#ifdef GSI
+	&gssapi_gsi_mech,
+#endif
 	&gssapi_null_mech,
 };
+
+#ifdef GSS_C_GLOBUS_LIMITED_PROXY_FLAG
+static int limited = 0;
+#endif
+
+/* Unprivileged */
+char *
+ssh_gssapi_server_mechanisms() {
+	gss_OID_set	supported;
+
+	ssh_gssapi_supported_oids(&supported);
+	return (ssh_gssapi_kex_mechs(supported, &ssh_gssapi_server_check_mech,
+	    NULL));
+}
+
+/* Unprivileged */
+int
+ssh_gssapi_server_check_mech(Gssctxt **dum, gss_OID oid, const char *data) {
+	Gssctxt *ctx = NULL;
+	int res;
+ 
+	res = !GSS_ERROR(PRIVSEP(ssh_gssapi_server_ctx(&ctx, oid)));
+	ssh_gssapi_delete_ctx(&ctx);
+
+	return (res);
+}
 
 /* Unprivileged */
 void
@@ -74,7 +111,8 @@ ssh_gssapi_supported_oids(gss_OID_set *oidset)
 	gss_OID_set supported;
 
 	gss_create_empty_oid_set(&min_status, oidset);
-	gss_indicate_mechs(&min_status, &supported);
+	/* Ask priviledged process what mechanisms it supports. */
+	PRIVSEP(gss_indicate_mechs(&min_status, &supported));
 
 	while (supported_mechs[i]->name != NULL) {
 		if (GSS_ERROR(gss_test_oid_set_member(&min_status,
@@ -87,6 +125,56 @@ ssh_gssapi_supported_oids(gss_OID_set *oidset)
 	}
 
 	gss_release_oid_set(&min_status, &supported);
+}
+
+OM_uint32
+ssh_gssapi_server_ctx(Gssctxt **ctx, gss_OID oid)
+{
+	if (*ctx)
+		ssh_gssapi_delete_ctx(ctx);
+	ssh_gssapi_build_ctx(ctx);
+	ssh_gssapi_set_oid(*ctx, oid);
+	return (ssh_gssapi_acquire_cred(*ctx));
+}
+
+/* Acquire credentials for a server running on the current host.
+ * Requires that the context structure contains a valid OID
+ */
+
+/* Returns a GSSAPI error code */
+OM_uint32
+ssh_gssapi_acquire_cred(Gssctxt *ctx)
+{
+	OM_uint32 status;
+	char lname[MAXHOSTNAMELEN];
+	gss_OID_set oidset;
+
+	if (options.gss_strict_acceptor) {
+		gss_create_empty_oid_set(&status, &oidset);
+		gss_add_oid_set_member(&status, ctx->oid, &oidset);
+
+		if (gethostname(lname, MAXHOSTNAMELEN)) {
+			gss_release_oid_set(&status, &oidset);
+			return (-1);
+		}
+
+		if (GSS_ERROR(ssh_gssapi_import_name(ctx, lname))) {
+			gss_release_oid_set(&status, &oidset);
+			return (ctx->major);
+		}
+
+		if ((ctx->major = gss_acquire_cred(&ctx->minor,
+		    ctx->name, 0, oidset, GSS_C_ACCEPT, &ctx->creds, 
+		    NULL, NULL)))
+			ssh_gssapi_error(ctx);
+
+		gss_release_oid_set(&status, &oidset);
+		return (ctx->major);
+	} else {
+		ctx->name = GSS_C_NO_NAME;
+		ctx->creds = GSS_C_NO_CREDENTIAL;
+	}
+	return GSS_S_COMPLETE;
 }
 
 
@@ -126,6 +214,10 @@ ssh_gssapi_accept_ctx(Gssctxt *ctx, gss_buffer_desc *recv_tok,
 	    (*flags & GSS_C_INTEG_FLAG))) && (ctx->major == GSS_S_COMPLETE)) {
 		if (ssh_gssapi_getclient(ctx, &gssapi_client))
 			fatal("Couldn't convert client name");
+#ifdef GSS_C_GLOBUS_LIMITED_PROXY_FLAG
+		if (flags && (*flags & GSS_C_GLOBUS_LIMITED_PROXY_FLAG))
+			limited=1;
+#endif
 	}
 
 	return (status);
@@ -144,6 +236,17 @@ ssh_gssapi_parse_ename(Gssctxt *ctx, gss_buffer_t ename, gss_buffer_t name)
 	OM_uint32 oidl;
 
 	tok = ename->value;
+
+#ifdef GSI /* GSI gss_export_name() is broken. */
+	if ((ctx->oid->length == gssapi_gsi_mech.oid.length) &&
+	    (memcmp(ctx->oid->elements, gssapi_gsi_mech.oid.elements,
+		    gssapi_gsi_mech.oid.length) == 0)) {
+	    name->length = ename->length;
+	    name->value = xmalloc(ename->length+1);
+	    memcpy(name->value, ename->value, ename->length);
+	    return GSS_S_COMPLETE;
+	}
+#endif
 
 	/*
 	 * Check that ename is long enough for all of the fixed length
@@ -234,6 +337,10 @@ ssh_gssapi_getclient(Gssctxt *ctx, ssh_gssapi_client *client)
 	/* We can't copy this structure, so we just move the pointer to it */
 	client->creds = ctx->client_creds;
 	ctx->client_creds = GSS_C_NO_CREDENTIAL;
+
+    /* needed for globus_gss_assist_map_and_authorize() */
+    client->context = ctx->context;
+
 	return (ctx->major);
 }
 
@@ -287,6 +394,12 @@ ssh_gssapi_userok(char *user)
 		debug("No suitable client data");
 		return 0;
 	}
+#ifdef GSS_C_GLOBUS_LIMITED_PROXY_FLAG
+	if (limited && options.gsi_allow_limited_proxy != 1) {
+		debug("limited proxy not acceptable for remote login");
+		return 0;
+	}
+#endif
 	if (gssapi_client.mech && gssapi_client.mech->userok)
 		if ((*gssapi_client.mech->userok)(&gssapi_client, user))
 			return 1;
@@ -303,14 +416,22 @@ ssh_gssapi_userok(char *user)
 	return (0);
 }
 
-/* Privileged */
-OM_uint32
-ssh_gssapi_checkmic(Gssctxt *ctx, gss_buffer_t gssbuf, gss_buffer_t gssmic)
+/* Priviledged */
+int
+ssh_gssapi_localname(char **user)
 {
-	ctx->major = gss_verify_mic(&ctx->minor, ctx->context,
-	    gssbuf, gssmic, NULL);
-
-	return (ctx->major);
+    	*user = NULL;
+	if (gssapi_client.displayname.length==0 || 
+	    gssapi_client.displayname.value==NULL) {
+		debug("No suitable client data");
+		return(0);;
+	}
+	if (gssapi_client.mech && gssapi_client.mech->localname) {
+		return((*gssapi_client.mech->localname)(&gssapi_client,user));
+	} else {
+		debug("Unknown client authentication type");
+	}
+	return(0);
 }
 
 #endif
