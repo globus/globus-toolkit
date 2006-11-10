@@ -11,6 +11,7 @@ bindir=@bindir@
 sbindir=@sbindir@
 libexecdir=@libexecdir@
 datadir=@datadir@
+datarootdir=@datarootdir@
 mandir=@mandir@
 mansubdir=@mansubdir@
 sysconfdir=@sysconfdir@
