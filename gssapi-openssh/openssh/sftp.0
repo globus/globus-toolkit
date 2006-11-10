@@ -1,4 +1,4 @@
-SFTP(1)                    OpenBSD Reference Manual                    SFTP(1)
+SFTP(1)                   BSD General Commands Manual                  SFTP(1)
 
 NAME
      sftp - secure file transfer program
@@ -15,8 +15,8 @@ DESCRIPTION
      sftp is an interactive file transfer program, similar to ftp(1), which
      performs all operations over an encrypted ssh(1) transport.  It may also
      use many features of ssh, such as public key authentication and compres-
-     sion.  sftp connects and logs into the specified host, then enters an in-
-     teractive command mode.
+     sion.  sftp connects and logs into the specified host, then enters an
+     interactive command mode.
 
      The second usage format will retrieve files automatically if a non-inter-
      active authentication method is used; otherwise it will do so after suc-
@@ -37,14 +37,14 @@ DESCRIPTION
              higher memory consumption.  The default is 32768 bytes.
 
      -b batchfile
-             Batch mode reads a series of commands from an input batchfile in-
-             stead of stdin.  Since it lacks user interaction it should be
+             Batch mode reads a series of commands from an input batchfile
+             instead of stdin.  Since it lacks user interaction it should be
              used in conjunction with non-interactive authentication.  A
-             batchfile of `-' may be used to indicate standard input.  sftp
+             batchfile of '-' may be used to indicate standard input.  sftp
              will abort if any of the following commands fail: get, put,
              rename, ln, rm, mkdir, chdir, ls, lchdir, chmod, chown, chgrp,
              lpwd and lmkdir.  Termination on error can be suppressed on a
-             command by command basis by prefixing the command with a `-'
+             command by command basis by prefixing the command with a '-'
              character (for example, -rm /tmp/blah*).
 
      -C      Enables compression (via ssh's -C flag).
@@ -136,7 +136,7 @@ INTERACTIVE COMMANDS
      those of ftp(1).  Commands are case insensitive.  Pathnames that contain
      spaces must be enclosed in quotes.  Any special characters contained
      within pathnames that are recognized by glob(3) must be escaped with
-     backslashes (`\').
+     backslashes ('\').
 
      bye     Quit sftp.
 
@@ -161,10 +161,10 @@ INTERACTIVE COMMANDS
              Retrieve the remote-path and store it on the local machine.  If
              the local path name is not specified, it is given the same name
              it has on the remote machine.  remote-path may contain glob(3)
-             characters and may match multiple files.  If it does and local-
-             path is specified, then local-path must specify a directory.  If
-             the -P flag is specified, then full file permissions and access
-             times are copied too.
+             characters and may match multiple files.  If it does and
+             local-path is specified, then local-path must specify a direc-
+             tory.  If the -P flag is specified, then full file permissions
+             and access times are copied too.
 
      help    Display help text.
 
@@ -195,7 +195,7 @@ INTERACTIVE COMMANDS
 
              -1      Produce single columnar output.
 
-             -a      List files beginning with a dot (`.').
+             -a      List files beginning with a dot ('.').
 
              -f      Do not sort the listing.  The default sort order is lexi-
                      cographical.
@@ -222,10 +222,10 @@ INTERACTIVE COMMANDS
              Toggle display of progress meter.
 
      put [-P] local-path [remote-path]
-             Upload local-path and store it on the remote machine.  If the re-
-             mote path name is not specified, it is given the same name it has
-             on the local machine.  local-path may contain glob(3) characters
-             and may match multiple files.  If it does and remote-path is
+             Upload local-path and store it on the remote machine.  If the
+             remote path name is not specified, it is given the same name it
+             has on the local machine.  local-path may contain glob(3) charac-
+             ters and may match multiple files.  If it does and remote-path is
              specified, then remote-path must specify a directory.  If the -P
              flag is specified, then the file's full permission and access
              time are copied too.
@@ -263,4 +263,4 @@ SEE ALSO
      T. Ylonen and S. Lehtinen, SSH File Transfer Protocol, draft-ietf-secsh-
      filexfer-00.txt, January 2001, work in progress material.
 
-OpenBSD 4.0                    February 4, 2001                              4
+BSD                            February 4, 2001                            BSD
