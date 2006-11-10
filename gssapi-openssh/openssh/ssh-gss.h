@@ -60,6 +60,17 @@
 
 #define SSH_GSS_OIDTYPE 0x06
 
+#define SSH2_MSG_KEXGSS_INIT                            30
+#define SSH2_MSG_KEXGSS_CONTINUE                        31
+#define SSH2_MSG_KEXGSS_COMPLETE                        32
+#define SSH2_MSG_KEXGSS_HOSTKEY                         33
+#define SSH2_MSG_KEXGSS_ERROR                           34
+#define SSH2_MSG_KEXGSS_GROUPREQ			40
+#define SSH2_MSG_KEXGSS_GROUP				41
+#define KEX_GSS_GRP1_SHA1_ID				"gss-group1-sha1-"
+#define KEX_GSS_GRP14_SHA1_ID				"gss-group14-sha1-"
+#define KEX_GSS_GEX_SHA1_ID				"gss-gex-sha1-"
+
 typedef struct {
 	char *filename;
 	char *envvar;
@@ -97,6 +108,7 @@ typedef struct {
 } Gssctxt;
 
 extern ssh_gssapi_mech *supported_mechs[];
+extern Gssctxt *gss_kex_context;
 
 int  ssh_gssapi_check_oid(Gssctxt *, void *, size_t);
 void ssh_gssapi_set_oid_data(Gssctxt *, void *, size_t);
@@ -121,12 +133,19 @@ void ssh_gssapi_buildmic(Buffer *, const char *, const char *, const char *);
 int ssh_gssapi_check_mechanism(Gssctxt **, gss_OID, const char *);
 
 /* In the server */
+typedef int ssh_gssapi_check_fn(Gssctxt **, gss_OID, const char *);
+char *ssh_gssapi_client_mechanisms(const char *host);
+char *ssh_gssapi_kex_mechs(gss_OID_set, ssh_gssapi_check_fn *, const char *);
+gss_OID ssh_gssapi_id_kex(Gssctxt *, char *, int);
+int ssh_gssapi_server_check_mech(Gssctxt **,gss_OID, const char *);
 int ssh_gssapi_userok(char *name);
 OM_uint32 ssh_gssapi_checkmic(Gssctxt *, gss_buffer_t, gss_buffer_t);
 void ssh_gssapi_do_child(char ***, u_int *);
 void ssh_gssapi_cleanup_creds(void);
 void ssh_gssapi_storecreds(void);
 
+char *ssh_gssapi_server_mechanisms(void);
+int ssh_gssapi_oid_table_ok();
 #endif /* GSSAPI */
 
 #endif /* _SSH_GSS_H */
