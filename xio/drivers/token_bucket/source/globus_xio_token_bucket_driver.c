@@ -49,7 +49,7 @@ typedef enum
 
 #define DEFAULT_PERIOD_US               100
 /* set to a gigabit per sec.  unit is kilabits */
-#define DEFAULT_RATE                    -1
+#define DEFAULT_RATE                    (1024*1024*1024/8)
 #define DEFAULT_BURST                   (5000000)
 
 static int
@@ -120,7 +120,6 @@ typedef struct l_xio_token_bucket_op_handle_s
     globus_size_t                       max_allowed;
     int                                 ref;
     char *                              group_name;
-    struct l_xio_token_bucket_handle_s * whos_my_daddy;
 } l_xio_token_bucket_op_handle_t;
 
 typedef struct l_xio_token_bucket_data_s
@@ -372,7 +371,7 @@ xio_l_tb_start_ticker(
     globus_hashtable_t *                table,
     l_xio_token_bucket_op_handle_t *    handle)
 {
-    globus_bool_t                       start = GLOBUS_TRUE;
+    globus_bool_t                       start = GLOBUS_FALSE;
     l_xio_token_bucket_op_handle_t *    tmp_h = NULL;
 
     if(handle == NULL)
@@ -389,7 +388,6 @@ xio_l_tb_start_ticker(
         {
             l_xio_token_bucket_destroy_op_handle(handle);
             handle = tmp_h;
-            start = GLOBUS_FALSE;
         }
         else
         {
@@ -401,6 +399,10 @@ xio_l_tb_start_ticker(
     globus_mutex_lock(&handle->mutex);
     {
         handle->ref++;
+        if(handle->ref == 1)
+        {
+            start = GLOBUS_TRUE;
+        }
     }
     globus_mutex_unlock(&handle->mutex);
 
@@ -441,9 +443,9 @@ globus_l_xio_token_bucket_open_cb(
         globus_mutex_lock(&xio_l_tb_hash_mutex);
         {
             handle->write_handle = xio_l_tb_start_ticker(
-                &l_tb_read_group_hash, handle->write_handle);
+                &l_tb_write_group_hash, handle->write_handle);
             handle->read_handle = xio_l_tb_start_ticker(
-                &l_tb_write_group_hash, handle->read_handle);
+                &l_tb_read_group_hash, handle->read_handle);
         }
         globus_mutex_unlock(&xio_l_tb_hash_mutex);
     }
@@ -475,7 +477,6 @@ xio_l_tb_attr_to_handle(
     globus_mutex_init(&handle->mutex, NULL);
     handle->finished_func = finished_func;
     handle->pass_func = pass_func;
-    handle->whos_my_daddy = daddy;
 
     handle->per_tic = (int)((float)attr->rate *
         ((float)attr->us_period / 1000000.0f));
@@ -527,8 +528,8 @@ globus_l_xio_token_bucket_open(
 
     handle->write_handle = xio_l_tb_attr_to_handle(
         handle,
-        &l_tb_read_group_hash,
-        &attr->read_attr,
+        &l_tb_write_group_hash,
+        &attr->write_attr,
         globus_xio_driver_finished_write,
         globus_xio_driver_pass_write);
 
@@ -787,7 +788,7 @@ globus_l_xio_token_bucket_write(
     GlobusXIOTBDebugEnter();
     handle = (l_xio_token_bucket_handle_t *) driver_specific_handle;
 
-    if(handle->read_handle == NULL)
+    if(handle->write_handle == NULL)
     {
         globus_size_t wait_for = globus_xio_operation_get_wait_for(op);
         res = globus_xio_driver_pass_write(
@@ -861,6 +862,17 @@ globus_l_xio_tb_attr_copy(
     dst_attr->write_attr.us_period = src_attr->write_attr.us_period;
     dst_attr->write_attr.burst_size = src_attr->write_attr.burst_size;
 
+    if(src_attr->read_attr.group_name != NULL)
+    {
+        dst_attr->read_attr.group_name =
+            strdup(src_attr->read_attr.group_name);
+    }
+    if(src_attr->write_attr.group_name != NULL)
+    {
+        dst_attr->write_attr.group_name =
+            strdup(src_attr->write_attr.group_name);
+    }
+
     *dst = dst_attr;
 
     return GLOBUS_SUCCESS;
@@ -913,6 +925,7 @@ globus_l_xio_tb_attr_cntl(
     int                                 cmd,
     va_list                             ap)
 {
+    char *                              group;
     l_xio_tb_attr_rw_t *                attr;
     GlobusXIOName(globus_l_xio_tb_attr_cntl);
 
@@ -947,9 +960,31 @@ globus_l_xio_tb_attr_cntl(
             break;
 
         case GLOBUS_XIO_TOKEN_BUCKET_SET_GROUP:
+            group = va_arg(ap, char *);
+            if(group == NULL)
+            {
+                goto error;
+            }
+            attr->write_attr.group_name = strdup(group);
+            attr->read_attr.group_name = strdup(group);
             break;
 
-        case GLOBUS_XIO_TOKEN_BUCKET_GET_GROUP:
+        case GLOBUS_XIO_TOKEN_BUCKET_SET_READ_GROUP:
+            group = va_arg(ap, char *);
+            if(group == NULL)
+            {
+                goto error;
+            }
+            attr->read_attr.group_name = strdup(group);
+            break;
+
+        case GLOBUS_XIO_TOKEN_BUCKET_SET_WRITE_GROUP:
+            group = va_arg(ap, char *);
+            if(group == NULL)
+            {
+                goto error;
+            }
+            attr->write_attr.group_name = strdup(group);
             break;
 
         default:
@@ -957,6 +992,8 @@ globus_l_xio_tb_attr_cntl(
     }
 
     return GLOBUS_SUCCESS;
+error:
+    return 0x1;
 }
 
 
@@ -1060,4 +1097,118 @@ globus_l_xio_token_bucket_deactivate(void)
 
     GlobusXIOUnRegisterDriver(token_bucket);
     return globus_module_deactivate(GLOBUS_XIO_MODULE);
+}
+
+static
+globus_result_t
+xio_l_tb_set_group(
+    char *                              group_name,
+    globus_off_t                        rate,
+    int                                 us_period,
+    globus_size_t                       burst_size,
+    globus_bool_t *                     in_out_create,
+    globus_hashtable_t *                table,
+    l_xio_tb_finished_func_t            finished_func,
+    l_xio_tb_pass_func_t                pass_func)
+{
+    globus_bool_t                       create = GLOBUS_TRUE;
+    l_xio_token_bucket_op_handle_t *    handle;
+
+    if(in_out_create != NULL)
+    {
+        create = *in_out_create;
+    }
+
+    globus_mutex_lock(&xio_l_tb_hash_mutex);
+    {
+        handle = (l_xio_token_bucket_op_handle_t *)
+            globus_hashtable_lookup(table, group_name);
+
+        if(handle == NULL)
+        {
+            if(!create)
+            {
+                goto error_create;
+            }
+            create = GLOBUS_TRUE;
+
+            handle = (l_xio_token_bucket_op_handle_t *)
+                globus_calloc(sizeof(l_xio_token_bucket_op_handle_t), 1);
+            if(handle == NULL)
+            {
+                goto error_alloc;
+            }
+            globus_mutex_init(&handle->mutex, NULL);
+            globus_fifo_init(&handle->q);
+            handle->group_name = strdup(group_name);
+
+            handle->finished_func = finished_func;
+            handle->pass_func = pass_func;
+
+            globus_hashtable_insert(table, handle->group_name, handle);
+        }
+        else
+        {
+            create = GLOBUS_FALSE;
+        }
+
+        globus_mutex_lock(&handle->mutex);
+        {
+            handle->per_tic = (int)((float)rate * ((float)us_period / 1000000.0f));
+            GlobusTimeReltimeSet(handle->us_period, 0, us_period);
+            handle->max_allowed = burst_size;
+        }
+        globus_mutex_unlock(&handle->mutex);
+    }
+    globus_mutex_unlock(&xio_l_tb_hash_mutex);
+
+    if(in_out_create != NULL)
+    {
+        *in_out_create = create;
+    }
+
+    return GLOBUS_SUCCESS;
+
+error_alloc:
+error_create:
+
+    return 0x1;
+}
+
+globus_result_t
+globus_xio_token_bucket_set_read_group(
+    char *                              group_name,
+    globus_off_t                        rate,
+    int                                 us_period,
+    globus_size_t                       burst_size,
+    globus_bool_t *                     in_out_create)
+{
+    return xio_l_tb_set_group(
+        group_name,
+        rate,
+        us_period,
+        burst_size,
+        in_out_create,
+        &l_tb_read_group_hash,
+        globus_xio_driver_finished_read,
+        globus_xio_driver_pass_read);
+}
+
+globus_result_t
+globus_xio_token_bucket_set_write_group(
+    char *                              group_name,
+    globus_off_t                        rate,
+    int                                 us_period,
+    globus_size_t                       burst_size,
+    globus_bool_t *                     in_out_create)
+{
+    return xio_l_tb_set_group(
+        group_name,
+        rate,
+        us_period,
+        burst_size,
+        in_out_create,
+        &l_tb_write_group_hash,
+        globus_xio_driver_finished_write,
+        globus_xio_driver_pass_write);
 }
