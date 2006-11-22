@@ -212,8 +212,8 @@ EOF
 	{
 	    return Globus::GRAM::Error::RSL_ENVIRONMENT();
 	}
-	print JOB $tuple->[0], '=', $tuple->[1],
-		'; export ', $tuple->[0], "\n";
+	print JOB $tuple->[0], '="', $tuple->[1],
+		'"; export ', $tuple->[0], "\n";
     }
 
     $library_path = join(':', $description->library_path());
