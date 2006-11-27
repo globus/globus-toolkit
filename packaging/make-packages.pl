@@ -75,7 +75,7 @@ my @cvs_build_list;
 my %cvs_build_hash;
 
 # What flavor shall things be built as?
-my $flavor = "gcc32dbg";
+my $flavor = "default";
 my $thread = "pthr";
 
 my ($install, $installer, $anonymous, $force,
@@ -138,6 +138,20 @@ GetOptions( 'i|install=s' => \$install,
 if ( $help or $man ) {
     pod2usage(2) if $help;
     pod2usage(1) if $man;
+}
+
+if ($flavor eq 'default')
+{
+    my $archname = $Config{'archname'};
+
+    if ($archname =~ m/^ia64-/)
+    {
+        $flavor = 'gcc64dbg';
+    }
+    else
+    {
+        $flavor = 'gcc32dbg';
+    }
 }
 
 # Allow comma separated packages or multiple instances.
