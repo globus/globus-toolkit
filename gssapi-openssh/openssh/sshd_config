@@ -11,7 +11,7 @@
 # default value.
 
 #Port 22
-#Protocol 2,1
+Protocol 2
 #AddressFamily any
 #ListenAddress 0.0.0.0
 #ListenAddress ::
