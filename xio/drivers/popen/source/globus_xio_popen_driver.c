@@ -73,6 +73,7 @@ typedef struct xio_l_popen_attr_s
     char *                              program_name;
     char **                             argv;
     int                                 argc;
+    globus_xio_popen_preexec_func_t     fork_cb;
 } xio_l_popen_attr_t;
 
 /* default attr */
@@ -82,7 +83,8 @@ static const xio_l_popen_attr_t         xio_l_popen_attr_default =
     GLOBUS_FALSE,
     NULL,
     NULL,
-    0
+    0,
+    NULL
 };
 
 /*
@@ -98,6 +100,7 @@ typedef struct xio_l_popen_handle_s
     globus_mutex_t                      lock; /* only used to protect below */
     globus_off_t                        file_position;
     pid_t                               pid;
+    globus_xio_popen_preexec_func_t     fork_cb;
 } xio_l_popen_handle_t;
 
 #define GlobusXIOPOpenPosition(handle)                                \
@@ -210,6 +213,7 @@ globus_l_xio_popen_attr_cntl(
     int                                 i;
     char **                             argv;
     xio_l_popen_attr_t *                attr;
+    globus_xio_popen_preexec_func_t     cb;
     GlobusXIOName(globus_l_xio_popen_attr_cntl);
 
     GlobusXIOPOpenDebugEnter();
@@ -238,6 +242,10 @@ globus_l_xio_popen_attr_cntl(
 
         case GLOBUS_XIO_POPEN_SET_BLOCKING_IO:
             attr->use_blocking_io = va_arg(ap, globus_bool_t);
+            break;
+
+        case GLOBUS_XIO_POPEN_SET_PREEXEC_FUNC:
+            attr->fork_cb = (globus_xio_popen_preexec_func_t *) cb;
             break;
 
         default:

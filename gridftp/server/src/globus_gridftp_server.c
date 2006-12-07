@@ -895,7 +895,7 @@ globus_l_gfs_server_accept_cb(
         else
         {
             /* if we fail to actually open a connection with either method we
-                do not fail, just lof that the connection failed */
+                do not fail, just log that the connection failed */
             if(globus_i_gfs_config_bool("daemon"))
             {
                 result = globus_l_gfs_spawn_child(handle);
