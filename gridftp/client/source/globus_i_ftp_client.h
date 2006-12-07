@@ -29,6 +29,8 @@
 #include "globus_ftp_client_plugin.h"
 #include "globus_error_string.h"
 
+#define SSH_EXEC_SCRIPT "gridftp-ssh"
+
 #ifndef GLOBUS_L_INCLUDE_FTP_CLIENT_H
 #define GLOBUS_L_INCLUDE_FTP_CLIENT_H
 
@@ -823,6 +825,11 @@ globus_i_ftp_client_count_digits(
 
 extern globus_ftp_control_auth_info_t globus_i_ftp_client_default_auth_info;
 extern globus_reltime_t                 globus_i_ftp_client_noop_idle;
+
+extern globus_xio_stack_t               ftp_client_i_popen_stack;
+extern globus_xio_driver_t              ftp_client_i_popen_driver;
+extern globus_bool_t                    ftp_client_i_popen_ready;
+
 
 /* globus_ftp_client_handle.c */
 globus_object_t *

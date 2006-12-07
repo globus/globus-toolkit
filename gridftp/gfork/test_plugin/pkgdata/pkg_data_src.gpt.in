@@ -1,35 +1,49 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE gpt_package_metadata SYSTEM "globus_package.dtd">
 
-<gpt_package_metadata Name="globus_xio_token_bucket_driver" Format_Version="0.01">
+<gpt_package_metadata Name="globus_gfork_test_plugin" Format_Version="0.01">
 
-    <Aging_Version Major="0" Minor="4" Age="0"/>
-    <Description> Globus XIO BW Limit Driver</Description>
+    <Aging_Version Major="0" Minor="1" Age="0"/>
+    <Description> GFork Test Plugin</Description>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
 
     <src_pkg>
 
         <Source_Dependencies Type="compile">
-            <Dependency Name="globus_xio">
+            <Dependency Name="globus_gfork">
                 <Version>
                     <Simple_Version Major="0"/>
                 </Version>
             </Dependency>
-
+            <Dependency Name="globus_xio">
+                <Version>
+                    <Simple_Version Major="2"/>
+                </Version>
+            </Dependency>
         </Source_Dependencies>
 
         <Source_Dependencies Type="pgm_link">
-            <Dependency Name="globus_xio">
+            <Dependency Name="globus_gfork">
                 <Version>
                     <Simple_Version Major="0"/>
                 </Version>
             </Dependency>
+            <Dependency Name="globus_xio">
+                <Version>
+                    <Simple_Version Major="2"/>
+                </Version>
+            </Dependency>
         </Source_Dependencies>
 
-        <Source_Dependencies Type="doc_runtime">
-            <Dependency Name="globus_xio" Package="doc">
+        <Source_Dependencies Type="lib_link">
+            <Dependency Name="globus_gfork">
                 <Version>
                     <Simple_Version Major="0"/>
+                </Version>
+            </Dependency>
+            <Dependency Name="globus_xio">
+                <Version>
+                    <Simple_Version Major="2"/>
                 </Version>
             </Dependency>
         </Source_Dependencies>
@@ -40,7 +54,6 @@
             <cflags>@GPT_PKG_CFLAGS@</cflags>
             <external_includes>@GPT_EXTERNAL_INCLUDES@</external_includes>
             <external_libs>@GPT_EXTERNAL_LIBS@</external_libs>
-            <pkg_libs> -lglobus_xio_token_bucket_driver </pkg_libs>
         </Build_Environment>
 
     </src_pkg>

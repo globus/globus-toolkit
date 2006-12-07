@@ -25,9 +25,9 @@
 #endif
 
 #include "globus_i_ftp_client.h"
+#include "globus_xio.h"
 
 #include <string.h>
-
 
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 /**
@@ -100,6 +100,7 @@ static
 void
 globus_l_ftp_client_target_delete(
     globus_i_ftp_client_target_t *		target);
+
 #endif
 
 /**
@@ -755,6 +756,7 @@ globus_l_ftp_client_target_new(
     globus_i_ftp_client_target_t *		target;
     globus_result_t				result;
     globus_object_t *				err;
+        globus_result_t             res;
     
     globus_i_ftp_client_debug_printf(1, 
         (stderr, "globus_l_ftp_client_target_new() entering\n"));
@@ -777,6 +779,7 @@ globus_l_ftp_client_target_new(
     {
 	goto free_control_handle;
     }
+
 
     result = globus_ftp_control_auth_info_init(
         &target->auth_info,
@@ -808,6 +811,63 @@ globus_l_ftp_client_target_new(
     err = globus_l_ftp_client_url_parse(url,
 					&target->url,
 					handle->attr.rfc1738_url);
+
+    if(strcmp(target->url.scheme, "sshftp") == 0)
+    {
+        globus_xio_attr_t               xio_attr;
+        char *                          string_opts;
+        char *                          globus_location;
+        char *                          remote_program;
+
+        if(!ftp_client_i_popen_ready)
+        {
+	        goto free_url_string;
+        }
+        res = globus_i_ftp_control_client_get_attr(
+            target->control_handle, &xio_attr);
+        if(res != GLOBUS_SUCCESS)
+        {
+	        goto free_url_string;
+        }
+
+        remote_program = globus_libc_getenv("GLOBUS_REMOTE_SSHFTP");
+        if(remote_program == NULL)
+        {
+            remote_program = "/etc/grid-security/sshftp";
+        }
+        globus_location = globus_libc_getenv("GLOBUS_LOCATION");
+        string_opts = globus_common_create_string(
+            "argv=#%s/bin/%s#%s#%s#%s#%d",
+            globus_location,
+            SSH_EXEC_SCRIPT,
+            remote_program,
+            target->url_string,
+            target->url.host,
+            (int)target->url.port);
+        if(target->url.user != NULL)
+        {
+            char * tmp_s;
+
+            tmp_s = globus_common_create_string("%s#%s", 
+                string_opts, target->url.user);
+
+            globus_free(string_opts);
+            string_opts = tmp_s;
+        }
+        res = globus_xio_attr_cntl(
+            xio_attr,
+            ftp_client_i_popen_driver,
+            GLOBUS_XIO_SET_STRING_OPTIONS,
+            string_opts);
+        globus_free(string_opts);
+        res = globus_i_ftp_control_client_set_stack(
+            target->control_handle, ftp_client_i_popen_stack);
+        if(res != GLOBUS_SUCCESS)
+        {
+	        goto free_url_string;
+        }
+    }
+
     if(err)
     {
 	globus_object_free(err);
@@ -1406,6 +1466,14 @@ globus_l_ftp_client_url_parse(
 	if(url->port == 0)
 	{
 	    url->port = 2811;	/* IANA-defined GSIFTP control port*/
+	}
+    }
+    else if(url->scheme_type == GLOBUS_URL_SCHEME_SSHFTP &&
+        ftp_client_i_popen_ready)
+    {
+	if(url->port == 0)
+	{
+	    url->port = 22;	/* IANA-defined SSH port*/
 	}
     }
     else
