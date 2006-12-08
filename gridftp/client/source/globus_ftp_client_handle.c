@@ -904,7 +904,7 @@ globus_l_ftp_client_target_new(
         }
         globus_location = globus_libc_getenv("GLOBUS_LOCATION");
         string_opts = globus_common_create_string(
-            "argv=#%s#%s#%s#%s#%d",
+            "pass_env=T;argv=#%s#%s#%s#%s#%d",
             globus_l_ftp_client_ssh_client_program,
             remote_program,
             target->url_string,
