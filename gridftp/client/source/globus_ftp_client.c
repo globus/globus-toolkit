@@ -179,10 +179,12 @@ globus_l_ftp_client_deactivate(void)
 
     globus_mutex_lock(&globus_l_ftp_client_active_list_mutex);
 
-    globus_xio_driver_unload(ftp_client_i_popen_driver);
-    globus_xio_stack_destroy(ftp_client_i_popen_stack);
-    ftp_client_i_popen_ready = GLOBUS_FALSE;
-
+    if(ftp_client_i_popen_ready)
+    {
+        globus_xio_driver_unload(ftp_client_i_popen_driver);
+        globus_xio_stack_destroy(ftp_client_i_popen_stack);
+        ftp_client_i_popen_ready = GLOBUS_FALSE;
+    }
 
     /* Wait for all client library callbacks to complete.
      */
