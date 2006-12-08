@@ -1538,11 +1538,13 @@ globus_l_ftp_client_url_parse(
     {
         if(!ftp_client_i_popen_ready)
         {
-            err = GLOBUS_I_FTP_CLIENT_ERROR_UNSUPPORTED_FEATURE("popen driver not installed");
+            err = GLOBUS_I_FTP_CLIENT_ERROR_UNSUPPORTED_FEATURE("popen driver not installed");  
+            return err;
         }
         if(globus_l_ftp_client_ssh_client_program == NULL)
         {
             err = GLOBUS_I_FTP_CLIENT_ERROR_UNSUPPORTED_FEATURE("SSH client script not installed");
+            return err;
         }
     	if(url->port == 0)
 	    {
