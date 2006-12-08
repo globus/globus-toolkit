@@ -72,10 +72,15 @@ if(defined($nogsi) or defined($ENV{FTP_TEST_NO_GSI}))
     $ENV{FTP_TEST_NO_GSI} = 1;
     print "Not using GSI security.\n";
 }
-if(defined($runserver))
+if(defined($runserver) && !defined($ENV{FTP_TEST_SSH_FTP}))
 {
     $server_pid = setup_server();
 }
+if(defined($ENV{FTP_TEST_SSH_FTP}))
+{
+    $nogsi = 1;
+}
+
 elsif(defined($runwuserver))
 {
     $server_pid = setup_wuserver();
