@@ -26,6 +26,7 @@
 
 #include "globus_i_ftp_client.h"
 #include "globus_xio.h"
+#include "globus_gsi_system_config.h"
 
 #include <string.h>
 
@@ -102,6 +103,72 @@ globus_l_ftp_client_target_delete(
     globus_i_ftp_client_target_t *		target);
 
 #endif
+
+static char *                           globus_l_ftp_client_ssh_client_program = NULL;
+
+void
+globus_i_ftp_client_find_ssh_client_program()
+{
+    char *                              gl;
+    char *                              hd;
+    char *                              path;
+    globus_result_t                     result;
+
+    /* first tr .globus */
+    result = GLOBUS_GSI_SYSCONFIG_GET_HOME_DIR(&hd);
+    if(result == GLOBUS_SUCCESS)
+    {
+        path = globus_common_create_string("%s/.globus/%s",
+            hd, SSH_EXEC_SCRIPT);
+        free(hd);
+        result = GLOBUS_GSI_SYSCONFIG_FILE_EXISTS(path);
+        if(result == GLOBUS_SUCCESS)
+        {
+            globus_l_ftp_client_ssh_client_program = path;
+        }
+        else
+        {
+            free(path);
+        }
+    }
+
+    /* now try $GL */
+    if(globus_l_ftp_client_ssh_client_program == NULL)
+    {
+        result = globus_location(&gl);
+        if(result == GLOBUS_SUCCESS)
+        {
+            path = globus_common_create_string("%s/bin/%s",
+                gl, SSH_EXEC_SCRIPT);
+            free(gl);
+            result = GLOBUS_GSI_SYSCONFIG_FILE_EXISTS(path);
+            if(result == GLOBUS_SUCCESS)
+            {
+                globus_l_ftp_client_ssh_client_program = path;
+            }
+            else
+            {
+                free(path);
+            }
+        }
+    }
+
+    /* now /etc/grid-security */
+    if(globus_l_ftp_client_ssh_client_program == NULL)
+    {
+        path = globus_common_create_string(
+            "/etc/grid-security/%s", SSH_EXEC_SCRIPT);
+        result = GLOBUS_GSI_SYSCONFIG_FILE_EXISTS(path);
+        if(result == GLOBUS_SUCCESS)
+        {
+            globus_l_ftp_client_ssh_client_program = path;
+        }
+        else
+        {
+            free(path);
+        }
+    }
+}
 
 /**
  * @name Initialize
@@ -837,9 +904,8 @@ globus_l_ftp_client_target_new(
         }
         globus_location = globus_libc_getenv("GLOBUS_LOCATION");
         string_opts = globus_common_create_string(
-            "argv=#%s/bin/%s#%s#%s#%s#%d",
-            globus_location,
-            SSH_EXEC_SCRIPT,
+            "argv=#%s#%s#%s#%s#%d",
+            globus_l_ftp_client_ssh_client_program,
             remote_program,
             target->url_string,
             target->url.host,
@@ -1468,13 +1534,20 @@ globus_l_ftp_client_url_parse(
 	    url->port = 2811;	/* IANA-defined GSIFTP control port*/
 	}
     }
-    else if(url->scheme_type == GLOBUS_URL_SCHEME_SSHFTP &&
-        ftp_client_i_popen_ready)
+    else if(url->scheme_type == GLOBUS_URL_SCHEME_SSHFTP)
     {
-	if(url->port == 0)
-	{
-	    url->port = 22;	/* IANA-defined SSH port*/
-	}
+        if(!ftp_client_i_popen_ready)
+        {
+            err = GLOBUS_I_FTP_CLIENT_ERROR_UNSUPPORTED_FEATURE("popen driver not installed");
+        }
+        if(globus_l_ftp_client_ssh_client_program == NULL)
+        {
+            err = GLOBUS_I_FTP_CLIENT_ERROR_UNSUPPORTED_FEATURE("SSH client script not installed");
+        }
+    	if(url->port == 0)
+	    {
+	        url->port = 22;	/* IANA-defined SSH port*/
+	    }
     }
     else
     {

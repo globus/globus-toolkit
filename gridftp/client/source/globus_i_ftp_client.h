@@ -414,6 +414,9 @@ globus_i_ftp_client_feature_set(
     globus_ftp_client_probed_feature_t           feature,
     globus_ftp_client_tristate_t                 value);
 
+void
+globus_i_ftp_client_find_ssh_client_program();
+
 /**
  * Data connection caching information.
  * @ingroup globus_ftp_client_handle

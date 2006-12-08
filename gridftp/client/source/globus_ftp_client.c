@@ -159,6 +159,7 @@ globus_l_ftp_client_activate(void)
             globus_xio_stack_push_driver(
                 ftp_client_i_popen_stack, ftp_client_i_popen_driver);
             ftp_client_i_popen_ready = GLOBUS_TRUE;
+            globus_i_ftp_client_find_ssh_client_program();
         }
     }
 
