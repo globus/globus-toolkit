@@ -179,13 +179,6 @@ globus_l_ftp_client_deactivate(void)
 
     globus_mutex_lock(&globus_l_ftp_client_active_list_mutex);
 
-    if(ftp_client_i_popen_ready)
-    {
-        globus_xio_driver_unload(ftp_client_i_popen_driver);
-        globus_xio_stack_destroy(ftp_client_i_popen_stack);
-        ftp_client_i_popen_ready = GLOBUS_FALSE;
-    }
-
     /* Wait for all client library callbacks to complete.
      */
     while(! globus_list_empty(globus_l_ftp_client_active_handle_list))
@@ -219,6 +212,13 @@ globus_l_ftp_client_deactivate(void)
     globus_mutex_destroy(&globus_l_ftp_client_control_list_mutex);
     globus_cond_destroy(&globus_l_ftp_client_control_list_cond);
     globus_module_deactivate(GLOBUS_FTP_CONTROL_MODULE);
+
+    if(ftp_client_i_popen_ready)
+    {
+        globus_xio_driver_unload(ftp_client_i_popen_driver);
+        globus_xio_stack_destroy(ftp_client_i_popen_stack);
+        ftp_client_i_popen_ready = GLOBUS_FALSE;
+    }
 
     globus_i_ftp_client_debug_printf(1,
         (stderr, "globus_l_ftp_client_deactivate() exiting\n"));

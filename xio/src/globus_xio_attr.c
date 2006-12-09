@@ -1168,6 +1168,7 @@ globus_xio_string_cntl_string_list(
     globus_xio_driver_attr_cntl_t       cntl_func)
 {
     int                                 i = 0;
+    globus_list_t *                     val_list;
     globus_list_t *                     list;
     char **                             argv;
     int                                 argc;
@@ -1183,7 +1184,8 @@ globus_xio_string_cntl_string_list(
     del = (int)*val;
     val++;
 
-    list = globus_list_from_string(val, del, NULL);
+    val_list = globus_list_from_string(val, del, NULL);
+    list = val_list;
 
     argc = globus_list_size(list);
     argv = (char **) calloc(argc+1, sizeof(char *));
@@ -1191,12 +1193,15 @@ globus_xio_string_cntl_string_list(
     while(!globus_list_empty(list))
     {
         argv[i] = (char *)globus_list_first(list);
-        globus_list_remove(&list, list);
+        list = globus_list_rest(list);
         i--;
     }
 
     result = globus_xio_string_cntl_bouncer(cntl_func, attr, cmd, argv);
 
+    globus_list_destroy_all(val_list, globus_libc_free);
+    globus_free(argv);
+    
     return result;
 }
 

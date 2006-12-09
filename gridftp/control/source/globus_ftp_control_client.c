@@ -658,7 +658,7 @@ globus_l_ftp_control_connect_cb(
         tmp_host,
         &tmp_hostlen,
         &tmp_port);
-    if(rc != GLOBUS_SUCCESS)
+    if(rc == GLOBUS_SUCCESS)
     {
         tmp_cs = globus_libc_ints_to_contact_string(
             tmp_host,
