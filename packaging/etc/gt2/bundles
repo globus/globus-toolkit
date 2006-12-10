@@ -600,6 +600,7 @@ BUNDLE globus-gridftp
         gaa_plugin
         gaa_simple
         globus_xioperf
+        globus_xio_popen_driver
         globus_gaa_authz_callout_setup
         gaa_gss_generic
         globus_authz_callout_error
