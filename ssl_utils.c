@@ -66,30 +66,30 @@ static const char *_ssl_pass_phrase = NULL;
 void
 ssl_error_to_verror()
 {
-    while (ERR_peek_error() != 0)
-    {
 	unsigned long error;
 	ERR_STATE *error_state;
 	const char *error_data;
 	int error_number;
-	
-	/* Find data for last error */
-	error_state = ERR_get_state();
 
-	error_number = (error_state->bottom + 1) % ERR_NUM_ERRORS;
-	
-	error_data = error_state->err_data[error_number];
+    while ((error = ERR_peek_error()) != 0)
+    {
+        /* Find data for last error */
+        error_state = ERR_get_state();
 
-	/* Pop error off of stack */
-	error = ERR_get_error();
+        error_number = (error_state->bottom + 1) % ERR_NUM_ERRORS;
 	
-	/* Now add to verror state */
-	verror_put_string(ERR_error_string(error, NULL));
+        error_data = error_state->err_data[error_number];
 
-	if (error_data != NULL)
-	{
-	    verror_put_string(error_data);
-	}
+        /* Now add to verror state */
+        verror_put_string(ERR_error_string(error, NULL));
+
+        if (error_data != NULL)
+        {
+            verror_put_string(error_data);
+        }
+
+        /* Pop error off of stack */
+        ERR_get_error();
     }
     
     ERR_clear_error();
