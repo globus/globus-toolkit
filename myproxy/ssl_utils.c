@@ -1841,8 +1841,8 @@ ssl_verify_gsi_chain(SSL_CREDENTIALS *chain)
    X509_STORE_CTX_set_app_data(&csc, (void*)ssl);
 
    if(!X509_verify_cert(&csc)) {
-      verror_put_string("X509_verify_cert() failed");
-      ssl_error_to_verror();
+      verror_put_string("X509_verify_cert() failed: %s",
+			(char *)X509_verify_cert_error_string(csc.error));
       goto end;
    }
 
