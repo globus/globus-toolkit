@@ -55,10 +55,10 @@ my $sshftp = <<EOF;
 # limitations under the License.
 # 
 
-GLOBUS_LOCATION=$globusdir
+export GLOBUS_LOCATION=$globusdir
 . \$GLOBUS_LOCATION/etc/globus-user-env.sh
 
-#GLOBUS_TCP_PORT_RANGE=50000,50100
+#export GLOBUS_TCP_PORT_RANGE=50000,50100
 
 \$GLOBUS_LOCATION/sbin/globus-gridftp-server -ssh 
 # -data-interface <interface to force data connections>
