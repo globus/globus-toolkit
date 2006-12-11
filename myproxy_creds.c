@@ -1770,16 +1770,6 @@ int myproxy_creds_verify(const struct myproxy_creds *creds)
         goto error;
     }
 
-    /* Are credentials expired? */
-    now = time(0);
-    if (creds->start_time > now) {
-        verror_put_string("credentials not yet valid");
-        goto error;
-    } else if (creds->end_time < now) {
-        verror_put_string("credentials have expired");
-        goto error;
-    }
-
     if (get_storage_locations(creds->username, creds->credname,
                               &creds_path, &data_path, &lock_path) == -1) {
         goto error;
