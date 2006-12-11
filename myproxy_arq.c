@@ -27,6 +27,7 @@ static char usage[] =
 "                                    specified <hours>\n"
 "    -t | --time_left    <hours>     Query for creds with lifetime greater \n"
 "                                    than specified <hours>\n"
+"    -i | --invalid                  Query for invalid credentials\n"
 "    -r | --remove                   Remove credentials matching query\n"
 "    -L | --lock         'msg'       Lock access to credential(s).\n"
 "                                    Specified msg will be returned instead.\n"
@@ -49,10 +50,11 @@ struct option long_options[] =
     {"verbose",           no_argument, NULL, 'v'},
     {"version",           no_argument, NULL, 'V'},
     {"remove",            no_argument, NULL, 'r'},
+    {"invalid",           no_argument, NULL, 'i'},
     {0, 0, 0, 0}
 };
 
-static char short_options[] = "hul:k:e:t:s:vVrL:U";
+static char short_options[] = "hul:k:e:t:s:vVriL:U";
 
 static char version[] =
 BINARY_NAME "version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
@@ -68,11 +70,15 @@ struct myproxy_creds cred = {0};
 int remove_creds = 0;
 char *lock_msg = NULL;
 int unlock_creds = 0;
+int invalid_creds = 0;
+int verbose = 0;
 
 int
 main(int argc, char *argv[]) 
 {
     int numcreds;
+    myproxy_server_context_t server_context = { 0 };
+    struct myproxy_creds *credp = NULL;
 
     /* check library version */
     if (myproxy_check_version()) {
@@ -82,10 +88,13 @@ main(int argc, char *argv[])
 	exit(1);
     }
 
-    myproxy_log_use_stream (stderr);
-
     /* Initialize arguments*/
     init_arguments(argc, argv);
+
+    if (verbose) myproxy_log_use_stream (stderr);
+
+    /* Read server config file for OCSP options, etc. */
+    myproxy_server_config_read(&server_context);
 
     numcreds = myproxy_admin_retrieve_all(&cred);
     if (numcreds < 0) {
@@ -93,16 +102,40 @@ main(int argc, char *argv[])
         fprintf (stderr, "Failed to read credentials.\n%s\n",
 		 verror_get_string());
 	exit(1);
-    } else if (numcreds == 0) {
+    }
+
+    if (numcreds && invalid_creds) {
+        int i;
+        struct myproxy_creds **credlist;
+        credlist = malloc(sizeof(struct myproxy_creds *)*(numcreds+1));
+        numcreds = 0;
+        for (credp = &cred; credp; credp = credp->next) {
+            verror_clear();
+            if (myproxy_creds_verify(credp) < 0) {
+                fprintf(stderr, "%s: %s",
+                        credp->location, verror_get_string());
+                credlist[numcreds++] = credp;
+            }
+        }
+        for (i = 0; i < numcreds; i++) {
+            credlist[i]->next = credlist[i+1];
+        }
+        credp = credlist[0];
+    } else {
+        credp = &cred;
+    }
+    verror_clear();
+
+    if (numcreds == 0) {
 	printf("No credentials found.\n");
     } else if (remove_creds) {
-	do_remove_creds (&cred);
+	do_remove_creds (credp);
     } else if (lock_msg) {
-	do_lock_creds (&cred);
+	do_lock_creds (credp);
     } else if (unlock_creds) {
-	do_unlock_creds (&cred);
+	do_unlock_creds (credp);
     } else {
-	if (myproxy_print_cred_info(&cred, stdout) < 0) {
+	if (myproxy_print_cred_info(credp, stdout) < 0) {
 	    verror_print_error(stderr);
 	    exit(1);
 	}
@@ -138,6 +171,9 @@ init_arguments(int argc,
 	case 'e':	/* expiring in <hours> */
 	    cred.end_time = (SECONDS_PER_HOUR * atoi(optarg)) + time(0);
 	    break;
+	case 'i':
+        invalid_creds = 1;
+        break;
 	case 't':	/* time left */
 	    cred.start_time = (SECONDS_PER_HOUR * atoi(optarg)) + time(0);
 	    break;
@@ -152,6 +188,7 @@ init_arguments(int argc,
 	    break;
 	case 'v':	/* verbose */
 	    myproxy_debug_set_level(1);
+        verbose = 1;
 	    break;
         case 'V':       /* print version and exit */
             fprintf(stderr, version);
