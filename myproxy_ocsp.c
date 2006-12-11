@@ -358,6 +358,11 @@ int myproxy_ocsp_verify(X509 *cert, X509 *issuer) {
   }
 
 end:
+  if (result < 0 && result != MYPROXY_OCSPRESULT_ERROR_NOTCONFIGURED) {
+      ssl_error_to_verror();
+      myproxy_log("OCSP check failed");
+      myproxy_log_verror();
+  }
   if (bio) BIO_free_all(bio);
   if (host) OPENSSL_free(host);
   if (port) OPENSSL_free(port);
@@ -368,11 +373,6 @@ end:
   if (ctx) SSL_CTX_free(ctx);   /* this does X509_STORE_free(store) */
   if (certdir) free(certdir);
   if (aiaocspurl) free(aiaocspurl);
-  if (result < 0 && result != MYPROXY_OCSPRESULT_ERROR_NOTCONFIGURED) {
-      ssl_error_to_verror();
-      myproxy_log("OCSP check failed");
-      myproxy_log_verror();
-  }
 
   return result;
 }
