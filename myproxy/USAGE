@@ -69,6 +69,7 @@ desperate attempt to maintain some consistency.
 -h | --help                     Displays usage
 -h | --help                Displays usage
 -h | --help                Displays usage
+-i | --invalid                    Query for invalid credentials
 -k | --credname        <name>     Specifies credential name
 -k | --credname        <name>     Specify credential name
 -k | --credname        <name>     Specify credential name
