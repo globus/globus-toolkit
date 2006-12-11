@@ -173,6 +173,7 @@ BUNDLE globus-data-management-server
         globus_gridftp_server_control
         globus_usage
         globus_gridftp_server
+    globus_gridftp_sshftp_setup
 
 BUNDLE globus-data-management-sdk
 	globus_core
@@ -202,6 +203,7 @@ BUNDLE globus-data-management-sdk
 	globus_ftp_client
     globus_xio_gridftp_driver
 	globus_gass_copy
+    globus_gridftp_sshftp_setup
 
 BUNDLE globus-data-management-client
 	globus_core
@@ -232,6 +234,7 @@ BUNDLE globus-data-management-client
 	globus_ftp_client
     globus_xio_gridftp_driver
     globus_gass_copy
+    globus_gridftp_sshftp_setup
 
 BUNDLE globus-information-services-server THREADED
 	globus_core
@@ -476,6 +479,7 @@ BUNDLE gt2-unthreaded
         globus_gridftp_server_control
         globus_usage
         globus_gridftp_server
+        globus_gridftp_sshftp_setup
         globus_xio_gridftp_driver
 
 BUNDLE gt2-threaded THREADED
@@ -486,6 +490,7 @@ BUNDLE gt2-threaded THREADED
 	globus_cyrus-sasl
         globus_ftp_client
         globus_ftp_control
+        globus_gridftp_sshftp_setup
         globus_gram_protocol
         globus_gram_client
         globus_gass_transfer
@@ -561,6 +566,7 @@ BUNDLE globus-common-libs
         globus_gass_transfer
         globus_ftp_control
         globus_ftp_client
+        globus_gridftp_sshftp_setup
         globus_gass_copy
         globus_gass_cache
         globus_gram_protocol
@@ -612,6 +618,7 @@ BUNDLE globus-gridftp
         globus_gridftp_server
         globus_authz_gaa_callout
         globus_gridmap_callout_error
+        globus_gridftp_sshftp_setup
 
 BUNDLE globus-mds
         globus_sasl_gssapi_gsi
