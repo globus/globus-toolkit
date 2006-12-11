@@ -2630,7 +2630,8 @@ globus_i_gfs_data_request_passive(
         handle->session_handle = session_handle;
         
         handle->info.cs_count = 1;
-        address.host[0] = 1; /* prevent address lookup */
+        /* prevent address lookup, we know what we want */
+        address.host[0] = 1; 
         address.port = 0;
         result = globus_ftp_control_local_pasv(&handle->data_channel, &address);
         if(result != GLOBUS_SUCCESS)
@@ -2647,13 +2648,15 @@ globus_i_gfs_data_request_passive(
         /* its ok to use AF_INET here since we are requesting the LOCAL
          * address.  we just use AF_INET to store the port
          */
-        if(!globus_l_gfs_data_is_remote_node || handle->use_interface)
+        if(handle->info.interface && 
+            (!globus_l_gfs_data_is_remote_node || handle->use_interface))
         {
             ipv6_addr = (strchr(handle->info.interface, ':') != NULL);
         }
 
         if((globus_l_gfs_data_is_remote_node && !handle->use_interface) ||
-            (ipv6_addr && !handle->info.ipv6))
+            (ipv6_addr && !handle->info.ipv6) || 
+            handle->info.interface == NULL)
         {
             GlobusLibcSockaddrSetFamily(addr, AF_INET);
             GlobusLibcSockaddrSetPort(addr, address.port);
@@ -2682,7 +2685,7 @@ globus_i_gfs_data_request_passive(
                     "%s:%d", handle->info.interface, (int) address.port);
             }
         }
-
+        
         bounce_info = (globus_l_gfs_data_passive_bounce_t *)
             globus_calloc(1, sizeof(globus_l_gfs_data_passive_bounce_t));
         if(!bounce_info)

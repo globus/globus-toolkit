@@ -2617,14 +2617,31 @@ globus_ftp_control_local_pasv(
                           address->host,
                           &address->hostlen,
                           &p);
-               if(res != GLOBUS_SUCCESS)
-               {
-                   address->host[0] = 0;
-                   address->host[1] = 0;
-                   address->host[2] = 0;
-                   address->host[3] = 0;
-                   address->hostlen = 4;
-               }
+                if(res != GLOBUS_SUCCESS)
+                {
+                    char *              cs;
+                    globus_sockaddr_t   addr;
+                    
+                    GlobusLibcSockaddrSetFamily(addr, AF_INET);
+                    GlobusLibcSockaddrSetPort(addr, address->port);
+                    result = globus_libc_addr_to_contact_string(
+                        &addr,
+                        GLOBUS_LIBC_ADDR_LOCAL | 
+                        GLOBUS_LIBC_ADDR_NUMERIC |
+                        GLOBUS_LIBC_ADDR_IPV4,
+                        &cs);
+                    if(result != GLOBUS_SUCCESS)
+                    {
+                        return result;
+                    }
+                    result = globus_libc_contact_string_to_ints(
+                        cs, address->host, &address->hostlen, NULL);
+                    if(result != GLOBUS_SUCCESS)
+                    {
+                        return result;
+                    }
+                    globus_free(cs);
+                }
            }
     
            dc_handle->state = GLOBUS_FTP_DATA_STATE_PASV;
