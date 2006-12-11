@@ -1723,6 +1723,7 @@ globus_l_gfs_config_misc()
     {
         globus_l_gfs_config_set("inetd", GLOBUS_TRUE, NULL);
         globus_l_gfs_config_set("allow_anonymous", GLOBUS_TRUE, NULL);
+        globus_l_gfs_config_set("anonymous_names_allowed", 0, "*");
     }
 
     if(globus_i_gfs_config_bool("inetd"))

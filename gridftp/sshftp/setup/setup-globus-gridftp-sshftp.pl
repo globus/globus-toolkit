@@ -19,7 +19,7 @@ use Getopt::Long;
 use English;
 use File::Path;
 
-if(!&GetOptions("help|h","force|f","server|s")) 
+if(!&GetOptions("help|h","force|f","server|s","nonroot|n")) 
 {
     usage(1);
 }
@@ -84,6 +84,7 @@ my $gridftpssh = <<EOF;
 url_string=\$1
 remote_host=\$2
 port=\$3
+user=\$4
 
 port_str=""
 if  [ "X" = "X\$port" ]; then
@@ -92,9 +93,16 @@ else
     port_str=" -p \$port "
 fi
 
+if  [ "X" != "X\$user" ]; then
+    remote_host="\$user@\$remote_host"
+fi
+
+remote_default1=.globus/sshftp
+remote_default2=/etc/grid-security/sshftp
+
 remote_program=\$GLOBUS_REMOTE_SSHFTP
 if  [ "X" = "X\$remote_program" ]; then
-    remote_program=/etc/grid-security/sshftp
+    remote_program="(( test -f \$remote_default1 && \$remote_default1 ) || \$remote_default2 )"
 fi
 
 $sshprog \$port_str \$remote_host \$remote_program
@@ -135,9 +143,17 @@ GridFTP clients from this installation to access sshftp:// urls.
 
 
 You will still need to run the following command as 'root' to enable 
-this machine to *accept* sshftp connections.
+this machine to *accept* sshftp connections.  This will create the 
+file /etc/grid-security/sshftp.
 
-    \$GLOBUS_LOCATION/setup/globus/setup-globus-gridftp-sshftp -server 
+    \$GLOBUS_LOCATION/setup/globus/setup-globus-gridftp-sshftp -server
+
+    
+If root access is not available, the option -nonroot may be added
+to enable connections as your user only.  This will create the file
+\$HOME/.globus/sshftp.
+
+    \$GLOBUS_LOCATION/setup/globus/setup-globus-gridftp-sshftp -server -nonroot
 
 ##############################################################
 ##############################################################    
