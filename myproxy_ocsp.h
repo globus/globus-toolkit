@@ -11,6 +11,7 @@
  * Return 0 on success, -1 on error (setting verror).
  */
 int myproxy_ocsp_set_responder(const char *url);
+int myproxy_ocsp_set_responder_cert(const char *path);
 int myproxy_ocsp_set_policy(const char *policy);
 int myproxy_ocsp_set_signer(X509 *sign_cert, EVP_PKEY *sign_key);
 int myproxy_ocsp_set_times(long skew, long maxage);
