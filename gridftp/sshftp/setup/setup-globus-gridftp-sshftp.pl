@@ -56,6 +56,10 @@ my $sshftp = <<EOF;
 # 
 
 GLOBUS_LOCATION=$globusdir
+. \$GLOBUS_LOCATION/etc/globus-user-env.sh
+
+#GLOBUS_TCP_PORT_RANGE=50000,50100
+
 \$GLOBUS_LOCATION/sbin/globus-gridftp-server -ssh 
 # -data-interface <interface to force data connections>
 EOF
