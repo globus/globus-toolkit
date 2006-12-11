@@ -61,7 +61,8 @@ typedef enum {
   MYPROXY_OCSPRESULT_CERTIFICATE_REVOKED     = 1
 } myproxy_ocspresult_t;
 
-static char      *url         = NULL;
+static char      *responder_url = NULL;
+static STACK_OF(X509) *responder_cert = NULL;
 static char      *policy      = NULL;
 static X509      *sign_cert   = NULL;
 static EVP_PKEY  *sign_key    = NULL;
@@ -71,9 +72,55 @@ static int       usenonce     = 0;
 
 int
 myproxy_ocsp_set_responder(const char *newurl) {
-    if (url) free(url);
-    url = strdup(newurl);
+    if (responder_url) free(responder_url);
+    responder_url = strdup(newurl);
     return 0;
+}
+
+int
+myproxy_ocsp_set_responder_cert(const char *path) {
+    BIO *    in = NULL;
+    X509 *   x  = NULL;
+    int      count;
+    int      rval = -1;
+
+	sk_X509_pop_free(responder_cert, X509_free);
+    responder_cert = NULL;
+
+    in = BIO_new(BIO_s_file_internal());
+    if (in == NULL || BIO_read_filename(in, path) <= 0) {
+        verror_put_string("error reading %s", path);
+        goto exit;
+    }
+    responder_cert = sk_X509_new_null();
+    if (!responder_cert) {
+        verror_put_string("sk_X509_new_null() failed in "
+                          "myproxy_ocsp_set_responder_cert()");
+        goto exit;
+    }
+    for (count = 0; ; count++) {
+        x = PEM_read_bio_X509(in, NULL, NULL, NULL);
+        if (x == NULL) {
+            if ((ERR_GET_REASON(ERR_peek_error()) ==
+                 PEM_R_NO_START_LINE) && (count > 0)) {
+                ERR_clear_error();
+                break;
+            } else {
+                verror_put_string("error reading %s", path);
+                goto exit;
+            }
+        }
+        sk_X509_insert(responder_cert,x,sk_X509_num(responder_cert));
+        x = NULL;
+    }
+
+    rval = 0;                   /* success */
+
+ exit:
+    if (in) BIO_free_all(in);
+    if (x)  X509_free(x);
+
+    return rval;
 }
 
 int
@@ -157,7 +204,6 @@ my_connect_ssl(char *host, int port, SSL_CTX **ctx) {
 
 error_exit:
   if (conn) BIO_free_all(conn);
-  if (*ctx) SSL_CTX_free(*ctx);
   return 0;
 }
 
@@ -175,7 +221,6 @@ my_connect(char *host, int port, int ssl, SSL_CTX **ctx) {
     return conn;
   }
 
-  *ctx = 0;
   if (!(conn = BIO_new_connect(host))) goto error_exit;
   BIO_set_conn_int_port(conn, &port);
   if (BIO_do_connect(conn) <= 0) goto error_exit;
@@ -201,23 +246,23 @@ int myproxy_ocsp_verify(X509 *cert, X509 *issuer) {
   myproxy_ocspresult_t  result;
   ASN1_GENERALIZEDTIME  *producedAt, *thisUpdate, *nextUpdate;
 
-  if (!policy && !url) {
+  if (!policy && !responder_url) {
       result = MYPROXY_OCSPRESULT_ERROR_NOTCONFIGURED;
       goto end;
   }
 
   result = MYPROXY_OCSPRESULT_ERROR_UNKNOWN;
 
-  if (strstr(policy, "aia")) {
+  if (policy && strstr(policy, "aia")) {
       aiaocspurl = myproxy_get_aia_ocsp_uri(cert);
   }
 
-  if (!url && !aiaocspurl) {
+  if (!responder_url && !aiaocspurl) {
       result = MYPROXY_OCSPRESULT_ERROR_NOTCONFIGURED;
       goto end;
   }
 
-  chosenurl = aiaocspurl ? aiaocspurl : url;
+  chosenurl = aiaocspurl ? aiaocspurl : responder_url;
   if (!OCSP_parse_url(chosenurl, &host, &port, &path, &ssl)) {
     result = MYPROXY_OCSPRESULT_ERROR_BADOCSPADDRESS;
     goto end;
@@ -254,12 +299,13 @@ int myproxy_ocsp_verify(X509 *cert, X509 *issuer) {
     goto end;
   }
   X509_LOOKUP_add_dir(lookup, certdir, X509_FILETYPE_PEM);
-  ctx = SSL_CTX_new(SSLv3_server_method());
+  ctx = SSL_CTX_new(SSLv3_client_method());
   if (ctx == NULL) {
     result = MYPROXY_OCSPRESULT_ERROR_OUTOFMEMORY;
     goto end;
   }
   SSL_CTX_set_cert_store(ctx, store);
+  SSL_CTX_set_verify(ctx,SSL_VERIFY_PEER,NULL);
 
   /* establish a connection to the OCSP responder */
   if (!(bio = my_connect(host, atoi(port), ssl, &ctx))) {
@@ -289,7 +335,12 @@ int myproxy_ocsp_verify(X509 *cert, X509 *issuer) {
   result = MYPROXY_OCSPRESULT_ERROR_INVALIDRESPONSE;
   if (!(basic = OCSP_response_get1_basic(resp))) goto end;
   if (usenonce && OCSP_check_nonce(req, basic) <= 0) goto end;
-  if ((rc = OCSP_basic_verify(basic, 0, store, 0)) <= 0) goto end;
+
+  if (!responder_cert ||
+      (rc = OCSP_basic_verify(basic, responder_cert, store,
+                              OCSP_TRUSTOTHER)) <= 0)
+      if ((rc = OCSP_basic_verify(basic, NULL, store, 0)) <= 0) 
+          goto end;
 
   if (!OCSP_resp_find_status(basic, id, &status, &reason, &producedAt,
                              &thisUpdate, &nextUpdate))
@@ -314,10 +365,14 @@ end:
   if (req) OCSP_REQUEST_free(req);
   if (resp) OCSP_RESPONSE_free(resp);
   if (basic) OCSP_BASICRESP_free(basic);
-  if (ctx) SSL_CTX_free(ctx);
-  if (store) X509_STORE_free(store);
+  if (ctx) SSL_CTX_free(ctx);   /* this does X509_STORE_free(store) */
   if (certdir) free(certdir);
   if (aiaocspurl) free(aiaocspurl);
-  if (result < 0) ssl_error_to_verror();
+  if (result < 0 && result != MYPROXY_OCSPRESULT_ERROR_NOTCONFIGURED) {
+      ssl_error_to_verror();
+      myproxy_log("OCSP check failed");
+      myproxy_log_verror();
+  }
+
   return result;
 }
