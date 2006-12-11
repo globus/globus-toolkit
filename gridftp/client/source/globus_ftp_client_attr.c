@@ -679,6 +679,7 @@ globus_ftp_client_operationattr_init(
     i_attr->resume_third_party		= GLOBUS_FALSE;
     i_attr->force_striped		= GLOBUS_FALSE;
     i_attr->allocated_size		= 0;
+    i_attr->cwd_first                   = GLOBUS_FALSE;
     i_attr->authz_assert                = GLOBUS_NULL;
 
     i_attr->module_alg_str = NULL;
@@ -2884,6 +2885,7 @@ globus_ftp_client_operationattr_copy(
         }
     }
 
+    (*dst)->cwd_first = i_src->cwd_first;
 
     if(!i_src->using_default_auth)
     {

@@ -40,7 +40,7 @@
             <cflags>@GPT_PKG_CFLAGS@</cflags>
             <external_includes>@GPT_EXTERNAL_INCLUDES@</external_includes>
             <external_libs>@GPT_EXTERNAL_LIBS@</external_libs>
-            <pkg_libs></pkg_libs>
+            <pkg_libs> -lglobus_xio_token_bucket_driver </pkg_libs>
         </Build_Environment>
 
     </src_pkg>

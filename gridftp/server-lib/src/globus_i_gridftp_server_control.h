@@ -436,6 +436,9 @@ typedef struct globus_i_gsc_server_handle_s
 
     int                                 idle_timeout;
     int                                 preauth_timeout;
+
+    globus_bool_t                       q_backup;
+    int                                 max_q_len;
 } globus_i_gsc_server_handle_t;
 
 

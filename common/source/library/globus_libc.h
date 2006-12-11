@@ -122,6 +122,7 @@ extern int globus_libc_read(int fd, char *buf, int nbytes);
 extern int globus_libc_write(int fd, char *buf, int nbytes);
 extern int globus_libc_writev(int fd, struct iovec *iov, int iovcnt);
 extern int globus_libc_fstat(int fd, struct stat *buf);
+extern int globus_libc_umask(mode_t mask);
 
 extern DIR *globus_libc_opendir(char *filename);
 extern long globus_libc_telldir(DIR *dirp);
@@ -135,6 +136,7 @@ extern void globus_libc_closedir(DIR *dirp);
 #define globus_libc_close close
 #define globus_libc_read read
 #define globus_libc_write write
+#define globus_libc_umask umask
 #if defined(HAVE_WRITEV)
 #define globus_libc_writev writev
 #else
@@ -165,10 +167,17 @@ extern void globus_libc_closedir(DIR *dirp);
         struct dirent **                result);
 
 #else /* TARGET_ARCH_WIN32 */
+
+extern
+mode_t
+globus_libc_umask_win32(
+    mode_t                          mask); 
+
 #    define globus_libc_open            _open
 #    define globus_libc_close           _close
 #    define globus_libc_read            _read
 #    define globus_libc_write           _write
+#    define globus_libc_umask           globus_libc_umask_win32
 #           define globus_libc_writev(fd,iov,iovcnt) \
 	            write(fd,iov[0].iov_base,iov[0].iov_len)
 #   define uid_t int

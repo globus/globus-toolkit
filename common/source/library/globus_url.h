@@ -69,6 +69,7 @@ typedef enum
     GLOBUS_URL_SCHEME_X_GASS_CACHE,
     /** Any other URL of the form <scheme>://<something */
     GLOBUS_URL_SCHEME_UNKNOWN,
+    GLOBUS_URL_SCHEME_SSHFTP,
     /** Total number of URL schemes supported */
     GLOBUS_URL_NUM_SCHEMES
 } globus_url_scheme_t;

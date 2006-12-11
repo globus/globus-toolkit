@@ -375,6 +375,26 @@ globus_libc_write(int fd,
 } /* globus_libc_write() */
 
 /******************************************************************************
+Function: globus_libc_umask()
+
+Description:
+
+Parameters:
+
+Returns:
+******************************************************************************/
+#undef globus_libc_umask
+mode_t
+globus_libc_umask(mode_t mask)
+{
+    mode_t oldmask;
+    globus_libc_lock();
+    oldmask = umask(mask);
+    globus_libc_unlock();
+    return(oldmask);
+} /* globus_libc_umask */
+
+/******************************************************************************
 Function: globus_libc_fstat()
 
 Description:
@@ -1134,6 +1154,13 @@ globus_libc_gethostaddr(
  *  The windows definition of the following funtions differs
  */
 #if defined(TARGET_ARCH_WIN32)
+
+/* As there isn't a equivalent of umask() for windows, this is a noop */
+mode_t
+globus_libc_umask_win32(mode_t mask)
+{
+    return mask;
+}
 
 int
 globus_libc_system_memory(

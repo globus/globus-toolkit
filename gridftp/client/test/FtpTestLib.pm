@@ -227,6 +227,11 @@ sub setup_proto()
 {
     my $proto = "gsiftp://";
     
+    if(defined($ENV{FTP_TEST_SSH_FTP}))
+    {
+        $proto = "sshftp://";
+        return ($proto);
+    }
     if(defined($ENV{FTP_TEST_NO_GSI}))
     {
         $proto = "ftp://";

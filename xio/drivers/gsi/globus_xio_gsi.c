@@ -1037,175 +1037,181 @@ globus_l_xio_gsi_read_token_cb(
 
     handle->bytes_read += nbytes;
 
-    do
-    { 
-    
-        /* if it is not a ssl token we have a header */
-    
-        if(globus_l_xio_gsi_is_ssl_token(&handle->read_buffer[offset],
-                                         &wait_for) ==
-           GLOBUS_FALSE)
+    if (handle->bytes_read <= offset + 5)
+    {
+        /* Not enough of token header to do anything */
+        major_status = GSS_S_CONTINUE_NEEDED;
+    }
+    else
+    {
+        do
         {
-            header = 4;
-        }
-        else
-        {
-            header = 0;
-        }
+            /* if it is not a ssl token we have a header */
+            if(globus_l_xio_gsi_is_ssl_token(&handle->read_buffer[offset],
+                                             &wait_for) ==
+               GLOBUS_FALSE)
+            {
+                header = 4;
+            }
+            else
+            {
+                header = 0;
+            }
 
-        if(wait_for > MAX_TOKEN_LENGTH)
-        {
-            result = GlobusXioGSIErrorTokenTooBig();
-            goto error_pass_close;
-        }        
+            if(wait_for > MAX_TOKEN_LENGTH)
+            {
+                result = GlobusXioGSIErrorTokenTooBig();
+                goto error_pass_close;
+            }        
 
-        prev_offset = offset;
-        offset = offset + wait_for + header;
-    
-        GlobusXIOGSIDebugPrintf(
-            GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,
-            (_XIOSL("[%s:%d] Bytes in buffer %d;bytes wanted %d\n"), _xio_name,
-             handle->connection_id, handle->bytes_read, offset));
-    
-        /* read more if we have not received a full token or in the case of non
-         * wrapped ssl at least a full record.
-         */
-    
-        if(offset > handle->bytes_read)
-        {
-            if(handle->eof == GLOBUS_FALSE)
-            { 
-                handle->bytes_read -= prev_offset;
-                memmove(handle->read_buffer,
-                        &handle->read_buffer[prev_offset],
-                        handle->bytes_read);
+            prev_offset = offset;
+            offset = offset + wait_for + header;
+        
+            GlobusXIOGSIDebugPrintf(
+                GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,
+                (_XIOSL("[%s:%d] Bytes in buffer %d;bytes wanted %d\n"), _xio_name,
+                 handle->connection_id, handle->bytes_read, offset));
+        
+            /* read more if we have not received a full token or in the case of non
+             * wrapped ssl at least a full record.
+             */
+        
+            if(offset > handle->bytes_read)
+            {
+                if(handle->eof == GLOBUS_FALSE)
+                { 
+                    handle->bytes_read -= prev_offset;
+                    memmove(handle->read_buffer,
+                            &handle->read_buffer[prev_offset],
+                            handle->bytes_read);
 
-                offset -= prev_offset;
-                
-                /* grow read buffer so we can read a full token */
-                
-                if(offset > handle->attr->buffer_size)
-                {
-                    unsigned char *     tmp_ptr;
+                    offset -= prev_offset;
                     
-                    tmp_ptr = realloc(handle->read_buffer,
-                                      offset);
-                    if(!tmp_ptr)
+                    /* grow read buffer so we can read a full token */
+                    
+                    if(offset > handle->attr->buffer_size)
                     {
-                        result = GlobusXIOErrorMemory("handle->read_buffer");
+                        unsigned char *     tmp_ptr;
+                        
+                        tmp_ptr = realloc(handle->read_buffer,
+                                          offset);
+                        if(!tmp_ptr)
+                        {
+                            result = GlobusXIOErrorMemory("handle->read_buffer");
+                            goto error_pass_close;
+                        }
+                        
+                        handle->attr->buffer_size = offset;
+                        handle->read_buffer = tmp_ptr;
+                    }
+
+                    handle->read_iovec[1].iov_base =
+                        &(handle->read_buffer[handle->bytes_read]);
+                    handle->read_iovec[1].iov_len =
+                        handle->attr->buffer_size - handle->bytes_read;
+                    iovec = &(handle->read_iovec[1]);
+                    iovec_count = 1;
+                    
+                    result = globus_xio_driver_pass_read(
+                        op, iovec, iovec_count,
+                        offset - handle->bytes_read,
+                        globus_l_xio_gsi_read_token_cb, handle);
+                    if(result != GLOBUS_SUCCESS)
+                    {
                         goto error_pass_close;
                     }
-                    
-                    handle->attr->buffer_size = offset;
-                    handle->read_buffer = tmp_ptr;
+                    GlobusXIOGSIDebugInternalExit();
+                    return;
                 }
-
-                handle->read_iovec[1].iov_base =
-                    &(handle->read_buffer[handle->bytes_read]);
-                handle->read_iovec[1].iov_len =
-                    handle->attr->buffer_size - handle->bytes_read;
-                iovec = &(handle->read_iovec[1]);
-                iovec_count = 1;
-                
-                result = globus_xio_driver_pass_read(
-                    op, iovec, iovec_count,
-                    offset - handle->bytes_read,
-                    globus_l_xio_gsi_read_token_cb, handle);
-                if(result != GLOBUS_SUCCESS)
+                else
                 {
                     goto error_pass_close;
                 }
-                GlobusXIOGSIDebugInternalExit();
-                return;
             }
             else
             {
-                goto error_pass_close;
+                input_token.length = wait_for;
+                input_token.value = &handle->read_buffer[offset - wait_for];
             }
-        }
-        else
-        {
-            input_token.length = wait_for;
-            input_token.value = &handle->read_buffer[offset - wait_for];
-        }
 
-        GlobusXIOGSIDebugPrintf(
-            GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,
-            (_XIOSL("[%s:%d] Read input token of length %d\n"), _xio_name,
-             handle->connection_id, input_token.length));
-    
-        /* init/accept sec context */
-    
-        if(handle->attr->init == GLOBUS_TRUE)
-        {
-            major_status = gss_init_sec_context(
-                &minor_status,
-                handle->attr->credential,
-                &handle->context,
-                handle->attr->target_name,
-                handle->attr->mech_type,
-                handle->attr->req_flags,
-                handle->attr->time_req, 
-                handle->attr->channel_bindings,
-                &input_token,
-                &handle->mech_used,
-                &output_token,
-                &handle->ret_flags,
-                &handle->time_rec);
-        }
-        else
-        {
-            major_status = gss_accept_sec_context(
-                &minor_status,
-                &handle->context,
-                handle->attr->credential,
-                &input_token,
-                handle->attr->channel_bindings,
-                &handle->peer_name,
-                &handle->mech_used,
-                &output_token,
-                &handle->ret_flags,
-                &handle->time_rec,
-                &handle->delegated_cred);
-        }
-
-        GlobusXIOGSIDebugPrintf(
-            GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,
-            (_XIOSL("[%s:%d] Generated output token of length %d\n"), _xio_name,
-             handle->connection_id, output_token.length));
-    
-        if(GSS_ERROR(major_status))
-        {
-            result = GlobusXIOErrorWrapGSSFailed(
-                handle->attr->init == GLOBUS_TRUE ? "gss_init_sec_context" :
-                "gss_accept_sec_context",
-                major_status,
-                minor_status);
+            GlobusXIOGSIDebugPrintf(
+                GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,
+                (_XIOSL("[%s:%d] Read input token of length %d\n"), _xio_name,
+                 handle->connection_id, input_token.length));
         
-            /* if we have a output token try to send it */
-            if(output_token.length == 0)
+            /* init/accept sec context */
+        
+            if(handle->attr->init == GLOBUS_TRUE)
             {
-                if(handle->result_obj)
-                {
-                    globus_object_free(handle->result_obj);
-                    handle->result_obj = NULL;
-                }
-                goto error_pass_close;
+                major_status = gss_init_sec_context(
+                    &minor_status,
+                    handle->attr->credential,
+                    &handle->context,
+                    handle->attr->target_name,
+                    handle->attr->mech_type,
+                    handle->attr->req_flags,
+                    handle->attr->time_req, 
+                    handle->attr->channel_bindings,
+                    &input_token,
+                    &handle->mech_used,
+                    &output_token,
+                    &handle->ret_flags,
+                    &handle->time_rec);
             }
             else
             {
-                if(handle->result_obj)
+                major_status = gss_accept_sec_context(
+                    &minor_status,
+                    &handle->context,
+                    handle->attr->credential,
+                    &input_token,
+                    handle->attr->channel_bindings,
+                    &handle->peer_name,
+                    &handle->mech_used,
+                    &output_token,
+                    &handle->ret_flags,
+                    &handle->time_rec,
+                    &handle->delegated_cred);
+            }
+
+            GlobusXIOGSIDebugPrintf(
+                GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,
+                (_XIOSL("[%s:%d] Generated output token of length %d\n"), _xio_name,
+                 handle->connection_id, output_token.length));
+        
+            if(GSS_ERROR(major_status))
+            {
+                result = GlobusXIOErrorWrapGSSFailed(
+                    handle->attr->init == GLOBUS_TRUE ? "gss_init_sec_context" :
+                    "gss_accept_sec_context",
+                    major_status,
+                    minor_status);
+            
+                /* if we have a output token try to send it */
+                if(output_token.length == 0)
                 {
-                    globus_object_free(handle->result_obj);
+                    if(handle->result_obj)
+                    {
+                        globus_object_free(handle->result_obj);
+                        handle->result_obj = NULL;
+                    }
+                    goto error_pass_close;
                 }
-                handle->result_obj = globus_error_get(result);
-                handle->done = GLOBUS_TRUE;
+                else
+                {
+                    if(handle->result_obj)
+                    {
+                        globus_object_free(handle->result_obj);
+                    }
+                    handle->result_obj = globus_error_get(result);
+                    handle->done = GLOBUS_TRUE;
+                }
             }
         }
+        while(major_status == GSS_S_CONTINUE_NEEDED &&
+              output_token.length == 0 &&
+              handle->bytes_read > offset + 5);
     }
-    while(major_status == GSS_S_CONTINUE_NEEDED &&
-          output_token.length == 0 &&
-          handle->bytes_read > offset + 5);
         
     if(major_status == GSS_S_COMPLETE)
     {

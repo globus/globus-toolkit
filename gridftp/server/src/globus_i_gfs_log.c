@@ -227,16 +227,27 @@ globus_i_gfs_log_open()
             globus_l_gfs_log_file = fopen(logfilename, "a");
             if(globus_l_gfs_log_file == NULL)
             {
-                goto error;
+                if(!globus_i_gfs_config_bool("inetd"))
+                {
+                    globus_libc_fprintf(stderr, 
+                        "Unable to open %s for logging. "
+                        "Using stderr instead.\n", logfilename);
+                    globus_l_gfs_log_file = stderr;
+                }
             }
-            setvbuf(globus_l_gfs_log_file, NULL, _IOLBF, 0);
-            if((log_filemode = globus_i_gfs_config_string("log_filemode")) != NULL)
+            else
             {
-                int                     mode = 0;
-                mode = strtoul(log_filemode, NULL, 0);
-                chmod(logfilename, mode);
+                setvbuf(globus_l_gfs_log_file, NULL, _IOLBF, 0);
+                if((log_filemode = 
+                    globus_i_gfs_config_string("log_filemode")) != NULL)
+                {
+                    int                     mode = 0;
+                    mode = strtoul(log_filemode, NULL, 0);
+                    chmod(logfilename, mode);
+                }
             }
         }
+
         if(globus_l_gfs_log_file == NULL)
         {
             globus_l_gfs_log_file = stderr;
@@ -250,37 +261,44 @@ globus_i_gfs_log_open()
         }
     }
        
-    globus_logging_init(
-        &globus_l_gfs_log_handle,
-        &flush_interval,
-        buffer,
-        log_mask, 
-        log_mod,
-        log_arg);
+    if(!(log_mod == &globus_logging_stdio_module && log_arg == NULL))
+    {
+        globus_logging_init(
+            &globus_l_gfs_log_handle,
+            &flush_interval,
+            buffer,
+            log_mask, 
+            log_mod,
+            log_arg);
+    }
         
     if((logfilename = globus_i_gfs_config_string("log_transfer")) != NULL)
     {
         globus_l_gfs_transfer_log_file = fopen(logfilename, "a"); 
         if(globus_l_gfs_transfer_log_file == NULL)
         {
-            goto error;
+            if(!globus_i_gfs_config_bool("inetd"))
+            {
+                globus_libc_fprintf(stderr, 
+                    "Unable to open %s for transfer logging.\n", logfilename);
+            }
         }
-        setvbuf(globus_l_gfs_transfer_log_file, NULL, _IOLBF, 0);
-        if((log_filemode = globus_i_gfs_config_string("log_filemode")) != 0)
+        else
         {
-            int                     mode = 0;
-            mode = strtoul(log_filemode, NULL, 0);
-            chmod(logfilename, mode);
+            setvbuf(globus_l_gfs_transfer_log_file, NULL, _IOLBF, 0);
+            if((log_filemode = globus_i_gfs_config_string("log_filemode")) != 0)
+            {
+                int                     mode = 0;
+                mode = strtoul(log_filemode, NULL, 0);
+                chmod(logfilename, mode);
+            }
         }
     }
 
     if(!globus_i_gfs_config_bool("disable_usage_stats"))
     {
        result = globus_usage_stats_handle_init(
-            &globus_l_gfs_usage_handle, 
-            0, 
-            0, 
-            globus_i_gfs_config_string("usage_stats_target"));      
+            &globus_l_gfs_usage_handle, 0, 0, NULL);      
     }
     
     if(module_str)
@@ -288,11 +306,7 @@ globus_i_gfs_log_open()
         globus_free(module_str);
     }
 
-    GlobusGFSDebugExit();        
-
-error:
-    GlobusGFSDebugExitWithError();        
-    
+    GlobusGFSDebugExit();    
 }
 
 void
@@ -301,8 +315,11 @@ globus_i_gfs_log_close(void)
     GlobusGFSName(globus_i_gfs_log_close);
     GlobusGFSDebugEnter();
 
-    globus_logging_flush(globus_l_gfs_log_handle);
-    globus_logging_destroy(globus_l_gfs_log_handle);
+    if(globus_l_gfs_log_handle != NULL)
+    {
+        globus_logging_flush(globus_l_gfs_log_handle);
+        globus_logging_destroy(globus_l_gfs_log_handle);
+    }
     if(globus_l_gfs_log_file != stderr && globus_l_gfs_log_file != NULL)
     {
         fclose(globus_l_gfs_log_file);
@@ -330,11 +347,14 @@ globus_gfs_log_message(
     va_list                             ap;
     GlobusGFSName(globus_gfs_log_message);
     GlobusGFSDebugEnter();
-    
-    va_start(ap, format);
-    globus_logging_vwrite(globus_l_gfs_log_handle, type, format, ap);
-    va_end(ap);
 
+    if(globus_l_gfs_log_handle != NULL)
+    {
+        va_start(ap, format);
+        globus_logging_vwrite(globus_l_gfs_log_handle, type, format, ap);
+        va_end(ap);
+    }
+    
     GlobusGFSDebugExit();
 }
 

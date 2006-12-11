@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Format_Version="0.02" Name="globus_xio" >
 
-  <Aging_Version Age="3" Major="2" Minor="1" />
+  <Aging_Version Age="3" Major="2" Minor="3" />
   <Description >Globus XIO Framework</Description>
   <Functional_Group >Communication</Functional_Group>
   <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@" />

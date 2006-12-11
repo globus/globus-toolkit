@@ -815,6 +815,16 @@ globus_i_ftp_control_data_get_attr(
     globus_ftp_control_handle_t *               handle,
     globus_xio_attr_t *                         attr);
 
+globus_result_t
+globus_i_ftp_control_client_get_attr(
+    globus_ftp_control_handle_t *               handle,
+    globus_xio_attr_t *                         attr);
+
+globus_result_t
+globus_i_ftp_control_client_set_stack(
+    globus_ftp_control_handle_t *               handle,
+    globus_xio_stack_t                          stack);
+
 /*****************************************************************
  *  standard layout functions 
  ****************************************************************/

@@ -573,6 +573,42 @@ typedef void (*globus_ftp_client_plugin_mlst_t)(
 
 
 /**
+ * Plugin stat notification callback.
+ * @ingroup globus_ftp_client_plugins
+ *
+ * This callback is used to notify a plugin that a stat is being
+ * requested  on a client handle. This notification happens both when
+ * the user requests a list, and when a plugin restarts the currently
+ * active list request.
+ *
+ * If this function is not defined by the plugin, then no plugin
+ * callbacks associated with the list will be called.
+ *
+ * @param plugin
+ *        The plugin which is being notified.
+ * @param plugin_specific
+ *        Plugin-specific data.
+ * @param handle
+ *        The handle associated with the list operation.
+ * @param url
+ *        The url of the list operation.
+ * @param attr
+ *        The attributes to be used during this transfer.
+ * @param restart
+ *        This value is set to GLOBUS_TRUE when this callback is
+ *        caused by a plugin restarting the current list transfer;
+ *	  otherwise, this is set to GLOBUS_FALSE.
+ */
+typedef void (*globus_ftp_client_plugin_stat_t)(
+    globus_ftp_client_plugin_t *		plugin,
+    void *					plugin_specific,
+    globus_ftp_client_handle_t *		handle,
+    const char *				url,
+    const globus_ftp_client_operationattr_t *	attr,
+    globus_bool_t				restart);
+
+
+/**
  * Plugin move notification callback.
  * @ingroup globus_ftp_client_plugins
  *
@@ -1048,6 +1084,13 @@ globus_ftp_client_plugin_restart_mlst(
     const globus_abstime_t *            	when);
 
 globus_result_t
+globus_ftp_client_plugin_restart_stat(
+    globus_ftp_client_handle_t *		handle,
+    const char *				url,
+    const globus_ftp_client_operationattr_t *	attr,
+    const globus_abstime_t *            	when);
+
+globus_result_t
 globus_ftp_client_plugin_restart_delete(
     globus_ftp_client_handle_t *		handle,
     const char *				url,
@@ -1242,6 +1285,11 @@ globus_result_t
 globus_ftp_client_plugin_set_mlst_func(
     globus_ftp_client_plugin_t *		plugin,
     globus_ftp_client_plugin_mlst_t		mlst_func);
+
+globus_result_t
+globus_ftp_client_plugin_set_stat_func(
+    globus_ftp_client_plugin_t *		plugin,
+    globus_ftp_client_plugin_stat_t		stat_func);
 
 globus_result_t
 globus_ftp_client_plugin_set_get_func(
