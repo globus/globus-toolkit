@@ -548,7 +548,7 @@ globus_l_gfs_new_server_cb(
         if(result != GLOBUS_SUCCESS)
         {
             globus_i_gfs_log_message(
-                GLOBUS_I_GFS_LOG_WARN,
+                GLOBUS_I_GFS_LOG_INFO,
              "Couldnt get remote contact.  Possible using a non-tcp protocol");
             remote_contact = strdup("0.0.0.0");
         }
@@ -569,7 +569,7 @@ globus_l_gfs_new_server_cb(
         if(result != GLOBUS_SUCCESS)
         {
             globus_i_gfs_log_message(
-                GLOBUS_I_GFS_LOG_WARN,
+                GLOBUS_I_GFS_LOG_INFO,
              "Couldnt get remote contact.  Possible using a non-tcp protocol");
             remote_contact = strdup("0.0.0.0");
         }
@@ -586,7 +586,7 @@ globus_l_gfs_new_server_cb(
         if(result != GLOBUS_SUCCESS)
         {
             globus_i_gfs_log_message(
-                GLOBUS_I_GFS_LOG_WARN,
+                GLOBUS_I_GFS_LOG_INFO,
              "Couldnt get local contact.  Possible using a non-tcp protocol");
             local_contact = strdup("0.0.0.0");
         }

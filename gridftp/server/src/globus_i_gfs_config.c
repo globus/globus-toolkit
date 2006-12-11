@@ -67,6 +67,8 @@ static const globus_l_gfs_config_option_t option_list[] =
     "Run as a daemon.  All connections will fork off a new process and setuid if allowed.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"detach", "detach", NULL, "detach", "S", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
     "Run as a background daemon detached from any controlling terminals.", NULL, NULL,GLOBUS_FALSE, NULL},
+ {"ssh", "ssh", NULL, "ssh", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
+    "Run over a connected ssh session.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"exec", "exec", NULL, "exec", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "For staticly compiled or non-GLOBUS_LOCATION standard binary locations, specify the full "
     "path of the server binary here.  Only needed when run in daemon mode.", NULL, NULL,GLOBUS_FALSE, NULL},
@@ -1716,6 +1718,13 @@ globus_l_gfs_config_misc()
         globus_l_gfs_config_set("daemon", GLOBUS_FALSE, NULL);
         globus_l_gfs_config_set("chdir", GLOBUS_FALSE, NULL);
     }
+
+    if(globus_i_gfs_config_bool("ssh"))
+    {
+        globus_l_gfs_config_set("inetd", GLOBUS_TRUE, NULL);
+        globus_l_gfs_config_set("allow_anonymous", GLOBUS_TRUE, NULL);
+    }
+
     if(globus_i_gfs_config_bool("inetd"))
     {
         globus_l_gfs_config_set("single", GLOBUS_TRUE, NULL);

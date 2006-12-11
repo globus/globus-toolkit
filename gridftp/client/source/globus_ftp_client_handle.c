@@ -138,7 +138,7 @@ globus_i_ftp_client_find_ssh_client_program()
         result = globus_location(&gl);
         if(result == GLOBUS_SUCCESS)
         {
-            path = globus_common_create_string("%s/bin/%s",
+            path = globus_common_create_string("%s/libexec/%s",
                 gl, SSH_EXEC_SCRIPT);
             free(gl);
             result = GLOBUS_GSI_SYSCONFIG_FILE_EXISTS(path);
@@ -883,7 +883,6 @@ globus_l_ftp_client_target_new(
     {
         globus_xio_attr_t               xio_attr;
         char *                          string_opts;
-        char *                          globus_location;
         char *                          remote_program;
 
         if(!ftp_client_i_popen_ready)
@@ -897,16 +896,23 @@ globus_l_ftp_client_target_new(
 	        goto free_url_string;
         }
 
+/*
         remote_program = globus_libc_getenv("GLOBUS_REMOTE_SSHFTP");
         if(remote_program == NULL)
         {
             remote_program = "/etc/grid-security/sshftp";
         }
-        globus_location = globus_libc_getenv("GLOBUS_LOCATION");
         string_opts = globus_common_create_string(
             "pass_env=T;argv=#%s#%s#%s#%s#%d",
             globus_l_ftp_client_ssh_client_program,
             remote_program,
+            target->url_string,
+            target->url.host,
+            (int)target->url.port);
+*/
+        string_opts = globus_common_create_string(
+            "pass_env=T;argv=#%s#%s#%s#%d",
+            globus_l_ftp_client_ssh_client_program,
             target->url_string,
             target->url.host,
             (int)target->url.port);
