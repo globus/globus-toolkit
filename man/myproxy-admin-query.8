@@ -1,4 +1,4 @@
-.TH myproxy-admin-query 1 "2005-6-8" "NCSA" "MyProxy"
+.TH myproxy-admin-query 1 "2006-12-12" "NCSA" "MyProxy"
 .SH NAME
 myproxy-admin-query \- query MyProxy repository contents
 .SH SYNOPSIS
@@ -11,7 +11,9 @@ The
 .B myproxy-admin-query
 command displays information about the credentials stored in the
 MyProxy repository.
-It can also be used to remove credentials from the repository.
+It can also be used to remove credentials from the repository,
+by combining query options with 
+.BR --remove .
 It accesses the repository directly and must be run on the machine
 where the
 .BR myproxy-server (8)
@@ -46,6 +48,9 @@ will return all expired credentials.
 .BI -t " hours, " --time_left " hours"
 Return information on credentials with remaining lifetime greater than the
 specified number of hours.
+.TP
+.B -i, --invalid
+Return information on invalid (expired, revoked, etc.) credentials.
 .TP
 .BI -s " dir, " --storage " dir"
 Specifies the location of the credential storage directory.
