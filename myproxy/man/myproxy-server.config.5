@@ -1,4 +1,4 @@
-.TH myproxy-server.config 5 "2005-12-2" "NCSA" "MyProxy"
+.TH myproxy-server.config 5 "2006-12-12" "NCSA" "MyProxy"
 .SH NAME
 myproxy-server.config \- myproxy-server configuration file
 .SH DESCRIPTION
@@ -522,6 +522,40 @@ operation, then the server will check multiple credentials with the given
 username.  If a credential is found to be authorized for client access, then
 that one will be used during processing.  The default value for this option
 is "false".
+.PP
+The following parameters enable OCSP status checking of stored
+credentials in the 
+.BR myproxy-server (8)
+repository, to avoid use of expired credentials.
+.TP
+.BI ocsp_policy " policy"
+Controls the policy for checking certificate validity via OCSP
+before credentials may be delegated.  
+Currently, only the status of the end entity certificate is checked
+via OCSP (and not any proxy certificates or CA certificates).
+OCSP will not be used unless ocsp_responder_url and/or ocsp_policy
+are set.
+Supported policies are:
+  "aia" - use OCSP responder in certificate AIA extension, if
+          present; otherwise use ocsp_responder_url, if set
+.TP
+.BI ocsp_responder_url " URL"
+Specifies the URL of an OCSP responder to use to check the validity
+of credentials stored in the myproxy-server repository before
+they may be delegated, so that revoked credentials can not be
+retrieved and used where their revocation status may not be checked.
+Currently, only the status of the end entity certificate is checked
+via OCSP (and not any proxy certificates or CA certificates).
+In any case, CRL checks are always performed.
+Both http and https urls are supported.
+OCSP will not be used unless ocsp_responder_url and/or ocsp_policy
+are set.
+.TP
+.BI ocsp_responder_cert " path"
+Specifies the path to the certificate of a trusted OCSP responder.
+This is needed if the OCSP responder must be explicity trusted in
+cases where standard path validation fails for the OCSP responder's
+certificate.
 .SH EXAMPLES
 The following policy enables all credential repository features.
 .PP
