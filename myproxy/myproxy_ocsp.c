@@ -37,11 +37,13 @@
 #include "myproxy_ocsp.h"
 #include "myproxy_ocsp_aia.h"
 
+#if defined(HAVE_OCSP)
 #include <openssl/bio.h>
 #include <openssl/conf.h>
 #include <openssl/ocsp.h>
 #include <openssl/ssl.h>
 #include <openssl/x509v3.h>
+#endif
 
 typedef enum {
   MYPROXY_OCSPRESULT_ERROR_NOTCONFIGURED     = -14,
@@ -231,6 +233,11 @@ error_exit:
   return 0;
 }
 
+#if !defined(HAVE_OCSP)
+int myproxy_ocsp_verify(X509 *cert, X509 *issuer) {
+    return MYPROXY_OCSPRESULT_ERROR_NOTCONFIGURED;
+}
+#else
 int myproxy_ocsp_verify(X509 *cert, X509 *issuer) {
   BIO                   *bio = 0;
   int                   rc, reason, ssl, status;
@@ -376,3 +383,4 @@ end:
 
   return result;
 }
+#endif

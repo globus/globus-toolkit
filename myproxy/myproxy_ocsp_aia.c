@@ -28,6 +28,7 @@
 #include "myproxy_common.h"
 #include "myproxy_ocsp_aia.h"
 
+#if defined(HAVE_OCSP)
 #include <openssl/bio.h>
 #include <openssl/conf.h>
 #include <openssl/ocsp.h>
@@ -133,3 +134,4 @@ myproxy_get_aia_ocsp_uri(X509 *cert)
 
     return uri;
 }
+#endif
