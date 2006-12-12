@@ -519,9 +519,6 @@ generate_certificate( X509_REQ                 *request,
     goto error;
   }
 
-  myproxy_log("issuing certificate for user %s with DN \"%s\"",
-              client_request->username, userdn);
-
   subject = X509_get_subject_name(cert);
 
   if( tokenize_to_x509_name( userdn, subject ) ) {
@@ -710,6 +707,13 @@ generate_certificate( X509_REQ                 *request,
 
   *certificate = cert;
 
+  myproxy_log("Issued certificate for user \"%s\", with DN \"%s\", "
+              "lifetime \"%d\", and serial number \"%s\"",
+              client_request->username, userdn, 
+              not_after,
+              i2s_ASN1_INTEGER(NULL,cert->cert_info->serialNumber)
+             );
+
  error:
   if (return_value) {
     if ( cert != NULL ) {
@@ -742,6 +746,9 @@ handle_certificate(unsigned char            *input_buffer,
   unsigned char number_of_certs;
   char        * buf = NULL;
   int           buf_len;
+  long          sub_hash;
+  unsigned char md[SHA_DIGEST_LENGTH];
+  unsigned int  md_len = 0;
 
   BIO      * request_bio  = NULL;
   X509_REQ * req          = NULL;
@@ -792,6 +799,17 @@ handle_certificate(unsigned char            *input_buffer,
     ssl_error_to_verror();
     goto error;
   } 
+
+  /* convert pkey into string for output to log */
+  ASN1_digest(i2d_PUBKEY,EVP_sha1(),(char*)pkey,md,&md_len);
+  sub_hash = md[0] + (md[1] + (md[2] + (md[3] >> 1) * 256) * 256) * 256; 
+
+  myproxy_log("Got a cert request for user \"%s\", "
+              "with pubkey hash \"%ld\", and lifetime \"%d\"",
+              client_request->username, 
+              sub_hash,
+              client_request->proxy_lifetime
+             );
 
   /* check to see if the configuration is sound, and call the appropriate
    * cert generation method based on what has been defined

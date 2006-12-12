@@ -302,6 +302,11 @@ line_parse_callback(void *context_arg,
         myproxy_ocsp_set_responder_cert(tokens[1]);
     }
 
+    /* added by Terry Fleury for enhanced logging */
+    else if (strcmp(directive, "syslog_ident") == 0) {
+        context->syslog_ident = strdup(tokens[1]);
+    }
+
     else {
 	myproxy_log("warning: unknown directive (%s) in myproxy-server.config",
 		    directive);

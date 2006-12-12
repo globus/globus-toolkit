@@ -25,6 +25,9 @@ v3.7 12 Dec 2006
     accepted_credentials_mapfile in myproxy-server.config
   - support unencrypted, although still signed, Pubcookie granting
     cookies as passwords
+  - added myproxy-server.config syslog_ident option
+  - improved MyProxy CA logging
+  - added myproxy-server --listen to specify host/ip to bind to
 
 v3.6 10 Aug 2006
   - support credential renewal via the MyProxy CA using

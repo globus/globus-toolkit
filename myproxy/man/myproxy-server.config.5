@@ -189,7 +189,7 @@ policy is set, then only the
 .B trusted_retrievers 
 policy is applied.
 .PP
-The following lines in the configuration file set other server policy
+The following lines in the configuration file set other server
 options.
 .TP
 .BI passphrase_policy_program " full-path-to-script"
@@ -224,6 +224,11 @@ This line specifies a server-wide maximum lifetime for retrieved proxy
 credentials.  By default, no server-wide maximum is enforced.
 However, if this option is specified, the server will limit the
 lifetime of any retrieved proxy credentials to the value given.
+.TP
+.BI syslog_ident " name"
+You can optionally specify the string to be prepended to every message
+written to the syslog.  If not specified, the name defaults to the the
+program name, i.e. myproxy-server.
 .PP
 The MyProxy server can be optionally configured for authentication
 based on Pluggable Authentication Modules (PAM) and/or
