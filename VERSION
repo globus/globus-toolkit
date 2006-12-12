@@ -14,7 +14,8 @@ v3.7 12 Dec 2006
   - added myproxy-admin-query --invalid option for listing, locking,
     or removing invalid credentials from repository
   - optionally check OCSP status of stored credentials before
-    performing delegation via myproxy-server.config ocsp settings
+    performing delegation via myproxy-server.config ocsp settings;
+    requires GT 3.2 (OpenSSL 0.9.7) or later
   - update etc.init.d.myproxy script to use pidfile to locate server
     to stop (rather than searching ps output), include a restart
     option, and exit with error if $GLOBUS_LOCATION isn't set
