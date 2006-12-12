@@ -82,6 +82,10 @@ if test "$uname" != IRIX -a "$uname" != IRIX64 ; then
 fi
 AC_SUBST(SYSLIBS)
 dnl
+dnl Check for OCSP
+dnl
+AC_CHECK_LIB(ssl_$GLOBUS_FLAVOR_NAME, OCSP_basic_verify, AC_DEFINE(HAVE_OCSP))
+dnl
 dnl Check for SASL
 dnl
 AC_ARG_WITH(sasl2,
