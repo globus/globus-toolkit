@@ -16,13 +16,14 @@ static char usage[] = \
 "        myproxy-server [-h|-help] [-version]\n"\
 "\n"\
 "   Options\n"\
-"       -h | --help                     Displays usage\n"\
-"       -u | --usage                             \n"\
-"                                               \n"\
+"       -h | --help                 Displays usage\n"\
+"       -u | --usage                \n"\
+"                                   \n"\
 "       -v | --verbose              Display debugging messages\n"\
 "       -V | --version              Displays version\n"\
 "       -d | --debug                Run in debug mode (don't fork)\n"\
 "       -c | --config               Specifies configuration file to use\n"\
+"       -l | --listen  <hostname>   Specifies hostname/ip to listen to\n"\
 "       -p | --port    <portnumber> Specifies the port to run on\n"\
 "       -P | --pidfile <path>       Specifies a file to write the pid to\n"\
 "       -s | --storage <directory>  Specifies the credential storage directory\n"\
@@ -32,6 +33,7 @@ struct option long_options[] =
 {
     {"debug",            no_argument, NULL, 'd'},
     {"help",             no_argument, NULL, 'h'},
+    {"listen",     required_argument, NULL, 'l'},
     {"port",       required_argument, NULL, 'p'},
     {"pidfile",    required_argument, NULL, 'P'},
     {"config",     required_argument, NULL, 'c'},       
@@ -42,7 +44,7 @@ struct option long_options[] =
     {0, 0, 0, 0}
 };
 
-static char short_options[] = "dhc:p:P:s:vVuD:";
+static char short_options[] = "dhc:l:p:P:s:vVuD:";
 
 static char version[] =
 "myproxy-server version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
@@ -219,6 +221,13 @@ main(int argc, char *argv[])
     if (myproxy_server_config_read(server_context) == -1) {
 	verror_print_error(stderr);
 	exit(1);
+    }
+
+    /* Check to see if config file had syslog_ident specified. */
+    /* If so, then re-open the syslog with the new name.       */
+    if ((!debug) && (server_context->syslog_ident != NULL)) {
+        closelog();
+        myproxy_log_use_syslog(LOG_DAEMON,server_context->syslog_ident);
     }
 
     /* 
@@ -683,8 +692,8 @@ init_arguments(int argc, char *argv[],
     char *last_directory_seperator;
     char directory_seperator = '/';
     
-    /* Could do something smarter to get FQDN */
-    attrs->pshost = strdup("localhost");
+    /* NULL implies INADDR_ANY */
+    attrs->pshost = NULL;
     
     attrs->psport = MYPROXY_SERVER_PORT;
 
@@ -705,6 +714,9 @@ init_arguments(int argc, char *argv[],
     {
         switch(arg) 
         {
+        case 'l':   /* listen to hostname / ipaddr */
+            attrs->pshost = strdup(optarg);
+            break;
         case 'p': 	/* port */
             attrs->psport = atoi(optarg);
             break;
@@ -767,6 +779,7 @@ myproxy_init_server(myproxy_socket_attrs_t *attrs)
     struct sockaddr_in sin;
     struct linger lin = {0,0};
     GSI_SOCKET *tmp_gsi_sock;
+    struct hostent *hp;
 
     if ((tmp_gsi_sock = GSI_SOCKET_new(0)) == NULL) {
 	failure("malloc() failed in GSI_SOCKET_new()");
@@ -793,21 +806,43 @@ myproxy_init_server(myproxy_socket_attrs_t *attrs)
 
     memset(&sin, 0, sizeof(sin));
     sin.sin_family = AF_INET;
-    sin.sin_addr.s_addr = INADDR_ANY;
     sin.sin_port = htons(attrs->psport);
+    if (attrs->pshost == NULL) {
+        sin.sin_addr.s_addr = INADDR_ANY;
+    } else {
+        /* First, try inet_addr to see if pshost is an IP addr */
+        sin.sin_addr.s_addr = inet_addr(attrs->pshost);
+        if (sin.sin_addr.s_addr == -1) {
+            /* pshost was not valid IP addr, so try gethostbyname */
+            hp = gethostbyname(attrs->pshost);
+            if (hp != NULL) {
+                /* Got resolv of hostname, so use it */
+                memcpy(&(sin.sin_addr.s_addr),hp->h_addr,hp->h_length);
+            } else {
+                failure("Hostname specified by --listen is invalid.");
+            }
+        }
+    }
 
     if (bind(listen_sock, (struct sockaddr *) &sin, sizeof(sin)) < 0) {
 	if (errno == EADDRINUSE) {
-	    myproxy_log("Port %d already in use, probably by another "
+	    myproxy_log("Port %d on %s already in use, probably by another "
 			"myproxy-server instance.\nUse the -p option to run "
 			"multiple myproxy-server instances on different "
-			"ports.", attrs->psport);
+			"ports.", attrs->psport, 
+            ((attrs->pshost == NULL) ? "localhost" : attrs->pshost) );
 	}
 	failure("Error in bind()");
     }
     if (listen(listen_sock, INT_MAX) < 0) {
 	    failure("Error in listen()");
     }
+
+    /* Got this far? Then log success! */
+    myproxy_log("Starting myproxy-server on %s:%d...",
+                ((attrs->pshost == NULL) ? "localhost" : attrs->pshost),
+                attrs->psport);
+                
     return listen_sock;
 }
 

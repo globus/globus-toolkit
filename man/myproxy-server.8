@@ -39,6 +39,11 @@ the foreground, will accept one connection, write log messages to the
 terminal while processing the incoming request, and exit after
 completing one request.
 .TP
+.BI -l " hostname/ipaddr, " --listen " hostname/ipaddr"
+Specifies the hostname or IP address that the 
+.B myproxy-server
+should listen (bind) to.  Default: all interfaces on the localhost
+.TP
 .BI -p " port, " --port " port"
 Specifies the TCP port number that the
 .B myproxy-server
