@@ -1,10 +1,14 @@
-This is MyProxy v3.7 XX Xxx 2006.
+This is MyProxy v3.7 12 Dec 2006.
 This version should be protocol compatible with all versions since v0.2.
 Binary compatibility of the C API is not guaranteed between releases.
 
 Version History
 ---------------
-v3.7 XX Xxx 2006
+v3.7 12 Dec 2006
+  - fix handling of usernames containing '/', '-', and '.' characters;
+    note this required a change to the myproxy-server repository
+    format, so credential data files written by a new myproxy-server
+    won't be readable by an older myproxy-server
   - verify that credentials in the myproxy-server repository are still
     valid (i.e., not revoked) before performing delegation
   - added myproxy-admin-query --invalid option for listing, locking,
@@ -14,10 +18,6 @@ v3.7 XX Xxx 2006
   - update etc.init.d.myproxy script to use pidfile to locate server
     to stop (rather than searching ps output), include a restart
     option, and exit with error if $GLOBUS_LOCATION isn't set
-  - fix handling of usernames containing '/', '-', and '.' characters;
-    note this required a change to the myproxy-server repository
-    format, so credential data files written by a new myproxy-server
-    won't be readable by an older myproxy-server
   - if the myproxy-server hostname given by $MYPROXY_SERVER or the -s
     option resolves to multiple IP addresses, clients will connect to
     each address until a connection is established or all fail
