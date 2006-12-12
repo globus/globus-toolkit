@@ -291,6 +291,7 @@ line_parse_callback(void *context_arg,
         }
     }
 
+#if defined(HAVE_OCSP)
     /* OCSP stuff */
     else if (strcmp(directive, "ocsp_policy") == 0) {
         myproxy_ocsp_set_policy(tokens[1]);
@@ -301,6 +302,7 @@ line_parse_callback(void *context_arg,
     else if (strcmp(directive, "ocsp_responder_cert") == 0) {
         myproxy_ocsp_set_responder_cert(tokens[1]);
     }
+#endif
 
     /* added by Terry Fleury for enhanced logging */
     else if (strcmp(directive, "syslog_ident") == 0) {
