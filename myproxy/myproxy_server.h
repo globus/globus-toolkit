@@ -43,6 +43,7 @@ typedef struct
   char *certificate_mapapp;         /* gridmap call-out */
   int   max_cert_lifetime;          /* like proxy_lifetime for the CA */
   char *certificate_serialfile;     /* path to serialnumber file for CA */
+  char *certificate_out_dir;        /* path to certificate directory */
   char *ca_ldap_server;             /* URL to CA ldap user DN server */
   char *ca_ldap_uid_attribute;      /* Username attribute name */
   char *ca_ldap_searchbase;         /* Search base DN for ldap query */
