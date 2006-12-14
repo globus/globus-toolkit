@@ -244,6 +244,9 @@ line_parse_callback(void *context_arg,
     else if (strcmp(directive, "certificate_serialfile") == 0) {
 	context->certificate_serialfile = strdup(tokens[1]);
     }
+    else if (strcmp(directive, "certificate_out_dir") == 0) {
+	context->certificate_out_dir = strdup(tokens[1]);
+    }
 
     /* added for username-to-dn ldap support for internal CA */
     else if (strcmp(directive, "ca_ldap_server") == 0) {
@@ -589,6 +592,20 @@ check_config(myproxy_server_context_t *context)
 	    access(context->certificate_mapapp, X_OK) < 0) {
 	    verror_put_string("certificate_mapapp %s not executable",
 			      context->certificate_mapapp);
+	    verror_put_errno(errno);
+	    rval = -1;
+	}
+	if (context->certificate_serialfile &&
+	    access(context->certificate_serialfile, W_OK) < 0) {
+	    verror_put_string("certificate_serialfile %s not writeable",
+			      context->certificate_serialfile);
+	    verror_put_errno(errno);
+	    rval = -1;
+	}
+	if (context->certificate_out_dir &&
+	    access(context->certificate_out_dir, W_OK) < 0) {
+	    verror_put_string("certificate_out_dir %s not writeable",
+			      context->certificate_out_dir);
 	    verror_put_errno(errno);
 	    rval = -1;
 	}

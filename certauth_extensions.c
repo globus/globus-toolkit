@@ -396,7 +396,7 @@ assign_serial_number( X509 *cert,
       ssl_error_to_verror();
 	  goto error;
       } else {
-	  myproxy_debug("Loaded serial number %s from %s", buf, serialfile);
+	  myproxy_debug("Loaded serial number 0x%s from %s", buf, serialfile);
       }
   } else {
       ASN1_INTEGER_set(current, 1);
@@ -475,6 +475,35 @@ add_ext(X509V3_CTX *ctxp, X509 *cert, int nid, char *value) {
     X509_EXTENSION_free(ex);
 }
 
+static int
+write_certificate(X509 *cert, const char serial[], const char dir[]) {
+    BIO *bp=NULL;
+    char *path;
+    int rval = -1;
+
+    path = malloc(strlen(dir)+strlen(serial)+strlen("/.pem")+1);
+    sprintf(path, "%s/%s.pem", dir, serial);
+	if ((bp=BIO_new(BIO_s_file())) == NULL) {
+        myproxy_debug("BIO_new(BIO_s_file()) failed");
+        goto error;
+    }
+    if (BIO_write_filename(bp, path) <= 0) {
+        myproxy_debug("BIO_write_filename(%s) failed", path);
+        goto error;
+    }
+    myproxy_debug("writing certificate to %s", path);
+    X509_print(bp, cert);
+    PEM_write_bio_X509(bp, cert);
+
+    rval = 0;
+
+ error:
+    free(path);
+	BIO_free_all(bp);
+
+    return rval;
+}
+
 static int 
 generate_certificate( X509_REQ                 *request, 
 		      X509                     **certificate,
@@ -486,6 +515,7 @@ generate_certificate( X509_REQ                 *request,
   int             not_after;
   char          * userdn;
   char          * certificate_issuer = NULL;
+  char          * serial = NULL;
 
   X509           * issuer_cert = NULL;
   X509           * cert = NULL;
@@ -707,12 +737,17 @@ generate_certificate( X509_REQ                 *request,
 
   *certificate = cert;
 
+  serial = i2s_ASN1_OCTET_STRING(NULL,cert->cert_info->serialNumber);
   myproxy_log("Issued certificate for user \"%s\", with DN \"%s\", "
-              "lifetime \"%d\", and serial number \"%s\"",
+              "lifetime \"%d\", and serial number \"0x%s\"",
               client_request->username, userdn, 
               not_after,
-              i2s_ASN1_INTEGER(NULL,cert->cert_info->serialNumber)
+              serial
              );
+
+  if (server_context->certificate_out_dir) {
+      write_certificate(cert, serial, server_context->certificate_out_dir);
+  }
 
  error:
   if (return_value) {
@@ -728,6 +763,8 @@ generate_certificate( X509_REQ                 *request,
   }
   if (certificate_issuer)
     free(certificate_issuer);
+  if (serial)
+    free(serial);
 
   return return_value;
 
@@ -805,7 +842,7 @@ handle_certificate(unsigned char            *input_buffer,
   sub_hash = md[0] + (md[1] + (md[2] + (md[3] >> 1) * 256) * 256) * 256; 
 
   myproxy_log("Got a cert request for user \"%s\", "
-              "with pubkey hash \"%ld\", and lifetime \"%d\"",
+              "with pubkey hash \"0x%lx\", and lifetime \"%d\"",
               client_request->username, 
               sub_hash,
               client_request->proxy_lifetime
