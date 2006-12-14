@@ -1762,7 +1762,6 @@ int myproxy_creds_verify(const struct myproxy_creds *creds)
     char *data_path = NULL;
     char *lock_path = NULL;
     int return_code = -1;
-    time_t now;
     SSL_CREDENTIALS *ssl_creds = NULL;
 
     if (!creds || !creds->username) {
