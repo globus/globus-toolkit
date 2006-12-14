@@ -4,7 +4,8 @@
  */
 
 #include "myproxy_common.h"
-
+#include <openssl/engine.h>
+#include <openssl/ui.h>
 #define BUF_SIZE 16384
 
 #ifndef MIN
@@ -471,6 +472,10 @@ add_ext(X509V3_CTX *ctxp, X509 *cert, int nid, char *value) {
     X509_EXTENSION_free(ex);
 }
 
+static EVP_PKEY  *e_cakey=NULL;
+static ENGINE    *engine=NULL;
+static int        engine_used=0;
+
 static int 
 generate_certificate( X509_REQ                 *request, 
 		      X509                     **certificate,
@@ -669,20 +674,23 @@ generate_certificate( X509_REQ                 *request,
 
   /* load ca key */
 
-  inkey = fopen( server_context->certificate_issuer_key, "r");
+  if(e_cakey) {
+      cakey = e_cakey;
+  } else {
+      inkey = fopen( server_context->certificate_issuer_key, "r");
 
-  if (!inkey) {
-    verror_put_string("Could not open cakey file handle: %s",
-		  server_context->certificate_issuer_key);
-    verror_put_errno(errno);
-    goto error;
+      if (!inkey) {
+         verror_put_string("Could not open cakey file handle: %s",
+	     	      server_context->certificate_issuer_key);
+         verror_put_errno(errno);
+         goto error;
+      }
 
+      cakey = PEM_read_PrivateKey( inkey, NULL, NULL,
+	           (char *)server_context->certificate_issuer_key_passphrase );
+
+      fclose(inkey);
   }
-
-  cakey = PEM_read_PrivateKey( inkey, NULL, NULL,
-	       (char *)server_context->certificate_issuer_key_passphrase );
-
-  fclose(inkey);
 
   if ( cakey == NULL ) {
     verror_put_string("Could not load cakey for certificate signing.");
@@ -701,18 +709,18 @@ generate_certificate( X509_REQ                 *request,
     ssl_error_to_verror();
     goto error;
   } 
+  engine_used=1;
 
   return_value = 0;
 
   *certificate = cert;
-
- error:
+error:
   if (return_value) {
     if ( cert != NULL ) {
       X509_free(cert);
     }
   }
-  if (cakey)
+  if (cakey && !e_cakey)
     EVP_PKEY_free( cakey );
   if (userdn) {
     free(userdn);
@@ -723,6 +731,157 @@ generate_certificate( X509_REQ                 *request,
 
   return return_value;
 
+}
+
+
+int count(const char **options) {
+  const char **ptr = options;
+  int c = 0;
+  while(*ptr++!=NULL) c++;
+  return c;
+}
+
+void shutdown_openssl_engine(void) {
+  if (e_cakey) EVP_PKEY_free( e_cakey );
+  if (engine) ENGINE_finish(engine);
+
+  /* there is a bug in OpenSSL 0.9.7d which causes a segmentation fault if I call ENGINE_cleanup() here
+   * unless the key has been used.  So we only call it if the key has been used.
+  */
+
+  if (engine_used) ENGINE_cleanup();
+}
+
+static int ui_read_fn(UI *ui, UI_STRING *ui_string) {
+    switch(UI_get_string_type(ui_string)) {
+  	case UIT_PROMPT:
+	case UIT_VERIFY:
+	    if(UI_get_input_flags(ui_string) & UI_INPUT_FLAG_ECHO) {
+		UI_set_result(ui, ui_string, (char *) UI_get0_user_data(ui));
+		return 1;
+	    } else {
+		return 0; // not supported!
+	    }
+	case UIT_BOOLEAN:
+	default:
+	    return 0; // not supported!
+    }
+}
+
+static int ui_write_fn(UI *ui, UI_STRING *ui_string) {
+    switch(UI_get_string_type(ui_string)) {
+	case UIT_ERROR:
+	    verror_put_string(UI_get0_output_string(ui_string));
+	    break;
+	case UIT_INFO:
+	    myproxy_log(UI_get0_output_string(ui_string));
+	    break;
+	default:
+	    break;
+    }
+    return 1;
+}
+
+int initialise_openssl_engine(myproxy_server_context_t *server_context) {
+    /* first set-up a UI that does not actually prompt.*/
+        UI_METHOD *ui_method = UI_create_method("MyProxy-OpenSSL Interface");
+        UI_method_set_reader(ui_method, ui_read_fn);
+        UI_method_set_writer(ui_method, ui_write_fn);
+
+
+        ENGINE_load_builtin_engines();
+        ENGINE *e;
+        const char *engine_id = server_context->certificate_openssl_engine_id;
+        myproxy_log("Initialising OpenSSL signing engine '%s'....", engine_id);
+        e = ENGINE_by_id(engine_id);
+        if(!e) {
+                verror_put_string("Could not find engine '%s'.", engine_id);
+		 ENGINE_cleanup();
+                 UI_destroy_method(ui_method);
+	 	 return 0;
+        }
+	if(server_context->certificate_openssl_engine_pre) {
+	    char **pre_cmds=server_context->certificate_openssl_engine_pre;
+	    int pre_num = count(pre_cmds);
+	    while(pre_num--) {
+		char *name, *value=NULL;
+		char *n = strchr(pre_cmds[0], ':');
+		if(n==NULL) {
+		    name=pre_cmds[0];
+		} else {
+		    n[0]=0;
+		    name=pre_cmds[0];
+		    value=n+1;
+		}
+         	if(!ENGINE_ctrl_cmd_string(e, name, value, 0)) {
+             	    fprintf(stderr, "Failed pre command (%s - %s:%s)\n", engine_id,
+                 	value[0], value ? value : "(NULL)");
+             	    ENGINE_free(e);
+		    ENGINE_cleanup();
+	            UI_destroy_method(ui_method);
+             	    return 0;
+         	}
+         	pre_cmds++;
+	    }
+     	}
+     	if(!ENGINE_init(e)) {
+	    verror_put_string("Could not initialise engine '%s'.", engine_id);
+            ENGINE_free(e);
+            ENGINE_cleanup();
+            UI_destroy_method(ui_method);
+            return 0;
+     	}
+     	/* ENGINE_init() returned a functional reference, so free the structural
+      	* reference from ENGINE_by_id(). */
+     	ENGINE_free(e);
+        if(server_context->certificate_openssl_engine_post) {
+            char **post_cmds=server_context->certificate_openssl_engine_post;
+            int post_num = count(post_cmds);
+            while(post_num--) {
+                char *name, *value=NULL;
+                char *n = strchr(post_cmds[0], ':');
+                if(n==NULL) {
+                    name=post_cmds[0];
+                } else {
+                    n[0]=0;
+                    name=post_cmds[0];
+                    value=n+1;
+                }
+                if(!ENGINE_ctrl_cmd_string(e, name, value, 0)) {
+                    fprintf(stderr, "Failed post command (%s - %s:%s)\n", engine_id,
+                        value[0], value ? value : "(NULL)");
+                    ENGINE_free(e);
+                    ENGINE_cleanup();
+	            UI_destroy_method(ui_method);
+                    return 0;
+                }
+                post_cmds++;
+            }
+        }
+
+        EVP_PKEY *cakey = ENGINE_load_private_key(e, server_context->certificate_issuer_key, ui_method, (char *)server_context->certificate_issuer_key_passphrase);
+  	if (cakey == NULL) {
+    	    verror_put_string("Could not load cakey for certificate signing.");
+  	    ENGINE_finish(e);
+	    ENGINE_cleanup();
+            UI_destroy_method(ui_method);
+  	    return 0;		
+	}
+
+	// Share with the other functions in this module.
+	e_cakey = cakey; 
+	engine  = e;
+        if(atexit(&shutdown_openssl_engine)!=0) {
+            verror_put_string("Could not register shutdown handler for engine '%s'.", engine_id);
+	    if (cakey) EVP_PKEY_free( cakey );
+            ENGINE_finish(e);
+            ENGINE_cleanup();
+            UI_destroy_method(ui_method);
+            return 0;
+	} 
+        myproxy_log("Initialised engine '%s' (CAKey=%s)", engine_id, server_context->certificate_issuer_key);
+	UI_destroy_method(ui_method);
+	return 1;
 }
 
 static int 

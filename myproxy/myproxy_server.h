@@ -35,6 +35,9 @@ typedef struct
   char *certificate_issuer_program; /* CA callout external program */
   char *certificate_issuer_cert;    /* CA certificate */
   char *certificate_issuer_key;     /* CA signing key */
+  char *certificate_openssl_engine_id;   /* Which OpenSSL engine to use */
+  char **certificate_openssl_engine_pre; /* Which 'pre' commands to use */
+  char **certificate_openssl_engine_post;/* Which 'post' commands to use */
   char *certificate_issuer_key_passphrase; /* CA signing key passphrase */
   char *certificate_issuer_email_domain; /* CA email domain for alt name */
   char *certificate_extfile;        /* CA extension file */
