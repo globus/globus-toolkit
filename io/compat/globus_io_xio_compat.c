@@ -975,7 +975,8 @@ globus_l_io_bounce_authz_cb(
     
     bounce_info = (globus_l_io_bounce_t *) user_arg;
     
-    if(globus_l_io_should_bounce(bounce_info))
+    if(globus_l_io_should_bounce(bounce_info) ||
+       handle != NULL && bounce_info->handle->attr->authz_data.callback)
     {
         bounce_info->error = result == GLOBUS_SUCCESS 
             ? GLOBUS_NULL : globus_error_get(result);
