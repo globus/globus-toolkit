@@ -123,7 +123,7 @@ globus_scheduler_event_generator_stdout_handler(
                 "001;%lu;%s;%d;%d\n",
                 event->timestamp,
                 event->job_id,
-                GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE,
+                GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED,
                 event->failure_code);
 
     case GLOBUS_SCHEDULER_EVENT_RAW:

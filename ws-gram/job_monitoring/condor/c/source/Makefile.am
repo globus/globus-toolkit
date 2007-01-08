@@ -31,7 +31,7 @@ libglobus_seg_condor___GLOBUS_FLAVOR_NAME__la_SOURCES = $(Sources)
 libglobus_seg_condor___GLOBUS_FLAVOR_NAME__la_LDFLAGS = $(GPT_LDFLAGS) -module
 libglobus_seg_condor___GLOBUS_FLAVOR_NAME__la_LIBADD = $(GPT_LIB_LINKS)
 
-EXTRA_DIST= version.h.in
+EXTRA_DIST= version.h.in pkgdata/MyFilelists.pm
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

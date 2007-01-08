@@ -130,7 +130,7 @@ typedef struct
     char *                              log_dir;
 
     /**
-     * Last known status for the lsb.events.index file. This will only
+     * Last known status for the lsb.events.1 file. This will only
      * change when a log file is being rotated. When this happens, we
      * may need to be very careful about what is going on with our latest
      * read.
@@ -138,13 +138,13 @@ typedef struct
     struct stat                         event_idx_stat;
 
     /**
-     * Path to lsb.events.index file
+     * Path to lsb.events.1 file
      */
     char *                              event_idx_path;
 
     /**
      * Current historical log file we are looking at if we are replaying
-     * older events. Seems to be in the range [1..?] on the ISI system.
+     * older events.
      */
     unsigned int                        event_idx;
 
@@ -184,8 +184,6 @@ typedef struct
     size_t                              buffer_point;
     /** Amount of valid data in the buffer */
     size_t                              buffer_valid;
-    /** Callback for periodic file polling */
-    globus_callback_handle_t            callback;
 } globus_l_lsf_logfile_state_t;
 
 static globus_mutex_t                   globus_l_lsf_mutex;
@@ -357,7 +355,7 @@ globus_l_lsf_module_activate(void)
     GlobusTimeReltimeSet(delay, 0, 0);
 
     result = globus_callback_register_oneshot(
-            &logfile_state->callback,
+            NULL,
             &delay,
             globus_l_lsf_read_callback,
             logfile_state);
@@ -486,7 +484,7 @@ globus_l_lsf_read_callback(
             GlobusTimeReltimeSet(delay, 0, 0);
 
             result = globus_callback_register_oneshot(
-                    &state->callback,
+                    NULL,
                     &delay,
                     globus_l_lsf_read_callback,
                     state);
@@ -495,7 +493,7 @@ globus_l_lsf_read_callback(
         return;
     }
 
-    if (state->fp != NULL)
+    while (state->fp != NULL && !eof_hit)
     {
         /* Read data */
         max_to_read = state->buffer_length - state->buffer_valid
@@ -520,28 +518,33 @@ globus_l_lsf_read_callback(
             }
             else
             {
-                /* XXX: Read error */
+                SEGLsfDebug(SEG_LSF_DEBUG_TRACE, ("read error: log rotated?\n"));
+                /* Log was rotated? */
+                eof_hit = GLOBUS_TRUE;
             }
         }
 
         state->buffer_valid += rc;
 
-        /* Parse data */
-        rc = globus_l_lsf_parse_events(state);
+        if (rc > 0)
+        {
+            /* Parse data */
+            rc = globus_l_lsf_parse_events(state);
 
-        rc = globus_l_lsf_clean_buffer(state);
+            rc = globus_l_lsf_clean_buffer(state);
+        }
     }
 
     /* If end of log and it's not the current log, find a new logfile
      */
     if (eof_hit && !state->is_current_file)
     {
-        fclose(state->fp);
-        if (state->start_timestamp > 0 &&
-                state->start_timestamp <= state->end_of_file_timestamp)
+        if ((!ferror(state->fp) &&
+            state->start_timestamp <= state->end_of_file_timestamp))
         {
             state->start_timestamp = state->end_of_file_timestamp;
         }
+        fclose(state->fp);
         rc = globus_l_lsf_find_logfile(state);
 
         if (rc == GLOBUS_SUCCESS)
@@ -551,17 +554,13 @@ globus_l_lsf_read_callback(
             GlobusTimeReltimeSet(delay, 0, 0);
         }
     }
-    else if (eof_hit)
+    else
     {
         GlobusTimeReltimeSet(delay, 2, 0);
     }
-    else
-    {
-        GlobusTimeReltimeSet(delay, 0, 0);
-    }
 
     result = globus_callback_register_oneshot(
-            &state->callback,
+            NULL,
             &delay,
             globus_l_lsf_read_callback,
             state);
@@ -611,10 +610,8 @@ globus_l_lsf_find_logfile(
     struct stat                         s;
     int                                 rc;
     const char                          lsf_log_prefix[] = "lsb.events.";
-    const char                          lsf_idx_name[] = "lsb.events.index";
-    FILE *                              idx_file;
-    int                                 num_idx_files;
-    time_t                              main_events_start;
+    const char                          lsf_idx_name[] = "lsb.events.1";
+    int                                 i;
     time_t                              most_recent_event;
     GlobusFuncName(globus_l_lsf_find_logfile);
 
@@ -646,68 +643,53 @@ globus_l_lsf_find_logfile(
         sprintf(state->event_idx_path, "%s/%s", state->log_dir, lsf_idx_name);
     }
 
-    if (state->start_timestamp == 0)
+    do
     {
-        sprintf(state->path, "%s/lsb.events", state->log_dir);
-        state->is_current_file = GLOBUS_TRUE;
+        /* To decide which log file to use, we'll read the 1st line of each
+         * historical logfile, and stop when the most_recent_event is
+         * before start_timestamp and use the previous one. If lsb.events.1
+         * changes between the time we start and end, we'll need to
+         * reevaluate
+         */
+        memset(&state->event_idx_stat, 0, sizeof(struct stat));
         stat(state->event_idx_path, &state->event_idx_stat);
-    }
-    else
-    {
-        do
-        {
-            stat(state->event_idx_path, &state->event_idx_stat);
-            idx_file = fopen(state->event_idx_path, "r");
-            if (idx_file == NULL)
-            {
-                sprintf(state->path, "%s/lsb.events", state->log_dir);
-                state->is_current_file = GLOBUS_TRUE;
-                rc = 0;
 
-                break;
-            }
-            fscanf(idx_file, 
-                    "#LSF_JOBID_INDEX_FILE %*d.%*d %d %ld",
-                    &num_idx_files,
-                    &main_events_start);
-            fclose(idx_file);
-            if (main_events_start < state->start_timestamp)
+        most_recent_event = (time_t) INT32_MAX;
+        for (i = 0; most_recent_event > state->start_timestamp; i++)
+        {
+            sprintf(state->path, "%s/lsb.events.%d", state->log_dir, i+1);
+
+            state->fp = fopen(state->path, "r");
+
+            if (state->fp == NULL)
             {
-                /* The main lsb.events file starts before our start event,
-                 * so we'll use that instead of an historic file
-                 */
-                sprintf(state->path, "%s/lsb.events", state->log_dir);
-                state->is_current_file = GLOBUS_TRUE;
+                /* We've passed the earliest log file */
+                most_recent_event = 0;
             }
             else
             {
-                int i;
-
-                for (i = 0; i < num_idx_files; i++)
-                {
-                    sprintf(state->path, "%s/%s%d",
-                            state->log_dir,
-                            lsf_log_prefix,
-                            num_idx_files - i);
-                    idx_file = fopen(state->path, "r");
-                    fscanf(idx_file, "#%ld",
-                            &most_recent_event);
-                    fclose(idx_file);
-                    if (most_recent_event > state->start_timestamp)
-                    {
-                        state->end_of_file_timestamp = most_recent_event;
-                        break;
-                    }
-                }
-                if (i == num_idx_files)
-                {
-                    sprintf(state->path, "%s/lsb.events", state->log_dir);
-                    state->is_current_file = GLOBUS_TRUE;
-                }
+                fscanf(state->fp, "#%ld", &most_recent_event);
+                fclose(state->fp);
+                state->fp = NULL;
             }
-            stat(state->event_idx_path, &s);
         }
-        while (state->event_idx_stat.st_mtime != s.st_mtime);
+
+        memset(&s, 0, sizeof(struct stat));
+        stat(state->event_idx_path, &s);
+    } while (state->event_idx_stat.st_mtime != s.st_mtime);
+
+    if (i <= 1)
+    {
+        /* The main lsb.events file starts before our start event,
+         * so we'll use that instead of a historic file.
+         */
+        sprintf(state->path, "%s/lsb.events", state->log_dir);
+        state->is_current_file = GLOBUS_TRUE;
+    }
+    else
+    {
+        sprintf(state->path, "%s/lsb.events.%d", state->log_dir, i-1);
+        state->is_current_file = GLOBUS_FALSE;
     }
 
     SEGLsfDebug(SEG_LSF_DEBUG_INFO,
@@ -730,6 +712,7 @@ int
 globus_l_lsf_clean_buffer(
     globus_l_lsf_logfile_state_t *      state)
 {
+    int                                 rc = 0;
     SEGLsfDebug(SEG_LSF_DEBUG_INFO,
             ("globus_l_lsf_clean_buffer() called\n"));
 
@@ -746,10 +729,11 @@ globus_l_lsf_clean_buffer(
             }
             state->buffer_point = 0;
         }
+        rc = globus_l_lsf_increase_buffer(state);
     }
     SEGLsfDebug(SEG_LSF_DEBUG_INFO,
             ("globus_l_lsf_clean_buffer() exits\n"));
-    return 0;
+    return rc;
 }
 /* globus_l_lsf_clean_buffer() */
 
@@ -784,9 +768,8 @@ globus_l_lsf_increase_buffer(
             rc = SEG_LSF_ERROR_OUT_OF_MEMORY;
             goto error;
         }
+        state->buffer_length += GLOBUS_LSF_READ_BUFFER_SIZE;
     }
-
-    state->buffer_length += GLOBUS_LSF_READ_BUFFER_SIZE;
 
     SEGLsfDebug(SEG_LSF_DEBUG_INFO,
             ("globus_l_lsf_increase_buffer() exits w/success\n"));
@@ -842,11 +825,17 @@ globus_l_lsf_parse_events(
                 state->buffer_valid = 0;
                 break;
             }
-            /* If this is one of the lsb.events.N files, then the first
-             * line is the last timestamp covered by this file... we don't
-             * care about this info at this point.
-             */
-            goto next_line;
+            else
+            {
+                /* If this is one of the lsb.events.N files, then the first
+                 * line is the last timestamp covered by this file... it might
+                 * be bigger than the last event in the file, so we will
+                 * the parsing timestamp to match that when we hit EOF.
+                 */
+                sscanf(state->buffer + state->buffer_point + 1,
+                    "%ld", &state->end_of_file_timestamp);
+                goto next_line;
+            }
         }
         sscanf(state->buffer + state->buffer_point,
                 "\"%[^\"]\" \"%*[^\"]\" %ld %s",
@@ -854,6 +843,10 @@ globus_l_lsf_parse_events(
                 &event_timestamp,
                 job_id_buffer);
 
+        if (event_timestamp < state->start_timestamp)
+        {
+            goto next_line;
+        }
         if (!strcmp(event_type_buffer, "JOB_NEW"))
         {
             if (event_timestamp >= state->start_timestamp)
