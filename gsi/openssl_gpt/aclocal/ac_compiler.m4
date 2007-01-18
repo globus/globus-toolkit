@@ -251,8 +251,20 @@ AC_DEFUN([LAC_COMPILER_SET_DEFINES],
         *-ibm-aix*)
             lac_CFLAGS="$lac_CFLAGS -DOPENSSL_SYSNAME_AIX -DB_ENDIAN"
         ;;
-        *-darwin*)
+        powerpc-*-darwin*)
             lac_CFLAGS="$lac_CFLAGS -D_DARWIN -DB_ENDIAN -DOPENSSL_SYSNAME_MACOSX"
+        ;;
+
+        i*86-*-darwin*)
+            lac_CFLAGS="$lac_CFLAGS -D_DARWIN -DL_ENDIAN -DOPENSSL_SYSNAME_MACOSX"
+            case ${GLOBUS_FLAVOR_NAME} in
+                *64* )
+                    lac_CFLAGS="$lac_CFLAGS -m64"
+                ;;
+                *32* )
+                    lac_CFLAGS="$lac_CFLAGS -m32"
+                ;;
+            esac
         ;;
     esac
 ])

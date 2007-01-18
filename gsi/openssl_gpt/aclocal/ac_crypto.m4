@@ -293,6 +293,21 @@ AC_DEFUN([LAC_CRYPTO_SET],
                 lac_RC4_CHUNK="unsigned long"
             fi
         ;;
+        i*86*darwin*)
+            lac_RC4_INT="unsigned char"
+	    lac_RC4_CHUNK="unsigned long"
+            lac_DES_UNROLL="1"
+            lac_BF_PTR="1"
+            case ${GLOBUS_FLAVOR_NAME} in
+                *64* )
+                    lac_SIXTY_FOUR_BIT_LONG="1"
+                    lac_THIRTY_TWO_BIT=""
+                ;;
+                *32* )
+                    lac_BN_LLONG="1"
+                ;;
+            esac
+        ;;
         *-darwin*)
             # gcc
             lac_BN_LLONG="1"
