@@ -67,25 +67,28 @@ my @test_rsls=qw(
 );
 
 my @todo_rsls=qw(
-    error_invalid_file_cleanup.rsl
-    error_invalid_host_count2.rsl
-    error_invalid_host_count.rsl
-    error_invalid_max_cpu_time.rsl
-    error_invalid_max_memory.rsl
-    error_invalid_maxtime.rsl
-    error_invalid_max_wall_time.rsl
-    error_invalid_min_memory.rsl
-    error_invalid_project.rsl
-    error_invalid_queue.rsl
-    error_rsl_host_count.rsl
-    error_rsl_max_cpu_time.rsl
-    error_rsl_max_memory.rsl
-    error_rsl_maxtime.rsl
-    error_rsl_max_wall_time.rsl
-    error_rsl_min_memory.rsl
-    error_rsl_project.rsl
-    error_rsl_queue.rsl
 );
+
+#my @todo_rsls=qw(
+#    error_invalid_file_cleanup.rsl
+#    error_invalid_host_count2.rsl
+#    error_invalid_host_count.rsl
+#    error_invalid_max_cpu_time.rsl
+#    error_invalid_max_memory.rsl
+#    error_invalid_maxtime.rsl
+#    error_invalid_max_wall_time.rsl
+#    error_invalid_min_memory.rsl
+#    error_invalid_project.rsl
+#    error_invalid_queue.rsl
+#    error_rsl_host_count.rsl
+#    error_rsl_max_cpu_time.rsl
+#    error_rsl_max_memory.rsl
+#    error_rsl_maxtime.rsl
+#    error_rsl_max_wall_time.rsl
+#    error_rsl_min_memory.rsl
+#    error_rsl_project.rsl
+#    error_rsl_queue.rsl
+#);
 
 sub test_rsl
 {
