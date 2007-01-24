@@ -214,7 +214,7 @@ listem ()
             if [ -r ${dir}/gatekeeper.log ]; then
                 contact="`${GLOBUS_SH_GREP-grep} 'GRAM contact' ${dir}/gatekeeper.log |
                     ${GLOBUS_SH_TAIL-tail} -1 |
-                    ${GLOBUS_SH_SED-sed} s/\^.\*$host/$host/`"
+                    ${GLOBUS_SH_SED-sed} s/\^.\*$host\:/$host\:/`"
                 ${debug} "found contact= [${contact}]"
                 ${bindir}/globusrun -a -r "${contact}" 1>/dev/null 2>/dev/null
                 if [ $? -eq 0 ]; then
