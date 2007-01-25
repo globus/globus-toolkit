@@ -450,8 +450,8 @@ if [ ${count} -ge 10 -o -n "${shallexit}" ]; then
     docleanup=true
     exit 1
 else
-    host=`echo "$contact" | ${GLOBUS_SH_CUT-cut} -d: -f4`
-    port=`echo "$contact" | ${GLOBUS_SH_CUT-cut} -d: -f5`
+    host=`echo "$contact" | ${GLOBUS_SH_CUT-cut} -d: -f5`
+    port=`echo "$contact" | ${GLOBUS_SH_CUT-cut} -d: -f6`
 
     ${GLOBUS_SH_CAT-cat} >> ${scratch}/jobmanager.conf <<EOF
 -globus-gatekeeper-host $host
