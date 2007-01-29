@@ -5818,17 +5818,23 @@ globus_l_gass_transfer_http_scan_chunk_ext(
 	{
 	    return GLOBUS_TRUE;
 	}
-	else if(globus_l_gass_transfer_http_scan_star_lws(
-	    input + i,
-	    max_to_scan - i,
-	    &j))
-	{
-	    return GLOBUS_TRUE; /* more to scan */
-	}
-	else if(j != 0)
-	{
-	    i += j; /* scanned some leading LWS */
-	}
+        else if (input[i] != CR)
+        {
+            /* Don't scan *LWS if the first character is a newline. Assume that no
+             * client will stick \r\n\t; as a chunk extension start.
+             */
+            if(globus_l_gass_transfer_http_scan_star_lws(
+                input + i,
+                max_to_scan - i,
+                &j))
+            {
+                return GLOBUS_TRUE; /* more to scan */
+            }
+            else if(input[i] != CR && j != 0)
+            {
+                i += j; /* scanned some leading LWS */
+            }
+        }
 
 	if(i + 1 >= max_to_scan)
 	{
