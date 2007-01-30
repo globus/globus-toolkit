@@ -18,6 +18,7 @@
 
 #undef HAVE_TIME_T_TIMEZONE
 #undef HAVE_TIME_T__TIMEZONE
+#undef HAVE_TIMEGM
 
 /* Define if you have the <malloc.h> header file.  */
 #undef HAVE_MALLOC_H

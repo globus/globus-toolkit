@@ -239,6 +239,8 @@ globus_gsi_cert_utils_make_time(
     *newtime = (mktime(&tm) + offset*60*60 - timezone);
 #elif defined(HAVE_TIME_T__TIMEZONE)
     *newtime = (mktime(&tm) + offset*60*60 - _timezone);
+#elif defined(HAVE_TIMEGM)
+    *newtime = (timegm(&tm) + offset*60*60);
 #else
     *newtime = (mktime(&tm) + offset*60*60);
 #endif
