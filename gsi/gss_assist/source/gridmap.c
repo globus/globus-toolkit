@@ -848,6 +848,12 @@ globus_i_gss_assist_gridmap_parse_line(
 
 	do
 	{
+            /* If loop below resolves bug 4979 */
+            if (strchr(ESCAPING_CHARS, *(dn_end - 1))) 
+            {
+                dn_end++;
+            }
+	    
 	    dn_end += strcspn(dn_end, QUOTING_CHARS);
 
 	    if (*dn_end == NUL)
