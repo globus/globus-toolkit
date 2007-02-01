@@ -18,15 +18,10 @@ package org.globus.exec.monitoring.seg;
 import java.io.File;
 import java.io.IOException;
 import java.util.Date;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
-import org.globus.wsrf.ResourceKey;
 import org.globus.exec.generated.StateEnumeration;
-import org.globus.exec.monitoring.AlreadyRegisteredException;
 import org.globus.exec.monitoring.JobStateMonitor;
-import org.globus.exec.monitoring.NotRegisteredException;
 import org.globus.exec.monitoring.SchedulerEvent;
 
 /**
@@ -49,7 +44,6 @@ class SchedulerEventGenerator extends Thread {
     private File path;
     /**
      * Username of the account to run the SEG as.
-     *
      * <b>This is currently ignored.</b>
      */
     private String userName;
@@ -99,12 +93,17 @@ class SchedulerEventGenerator extends Thread {
      *     Username to sudo(8) to start the SEG.
      * @param schedulerName
      *     Name of the scheduler SEG module to use (fork, lsf, etc).
+     * @param monitor
+     *     JobStateMonitor that will be notified if and Event comes in
+     * @param segDaemon
+     *     Indicates whether the SEG should be started as daemon or not
      */
     public SchedulerEventGenerator(
         File                                path,
         String                              userName,
         String                              schedulerName,
-        JobStateMonitor                     monitor) 
+        JobStateMonitor                     monitor,
+        boolean                             segDaemon) 
     {
         this.path = path;
         this.userName = userName;
@@ -113,9 +112,10 @@ class SchedulerEventGenerator extends Thread {
         this.shutdownCalled = false;
         this.timeStamp = null;
         this.monitor = monitor;
-
+        this.setDaemon(segDaemon);
         lastRestart = 0;
     }
+    
 
     /**
      * Start and monitor a SEG process.
@@ -151,7 +151,6 @@ class SchedulerEventGenerator extends Thread {
                     logger.debug("seg input line: " + input);
                     java.util.StringTokenizer tok =
                             new java.util.StringTokenizer(input, ";");
-                    int tokenCount = tok.countTokens();
                     String tokens[] = new String[tok.countTokens()];
 
                     for (int i = 0; i < tokens.length; i++) {
