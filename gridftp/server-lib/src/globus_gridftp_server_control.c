@@ -1513,6 +1513,7 @@ error:
         {
             globus_i_gsc_op_destroy(reply_ent->op);
         }
+        server_handle->outstanding_op = NULL;
 
         if(reply_ent->msg != NULL)
         {

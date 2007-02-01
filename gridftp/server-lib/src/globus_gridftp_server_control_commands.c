@@ -250,7 +250,6 @@ globus_l_gsc_cmd_trev(
     void *                                  user_arg)
 {
     char *                                  event_name;
-    char *                                  info;
     int                                     frequency;
     int                                     sc;
 
@@ -266,7 +265,6 @@ globus_l_gsc_cmd_trev(
     {
         globus_gsc_959_finished_command(op, _FSMSL("501 Bad paramter mode.\r\n"));
     }
-    info = cmd_a[3];
 
     if(strcmp(event_name, "RESTART") == 0)
     {
@@ -3264,8 +3262,8 @@ globus_i_gsc_add_commands(
         "TREV", 
         globus_l_gsc_cmd_trev,
         GLOBUS_GSC_COMMAND_POST_AUTH,
-        2,
-        2,
+        3,
+        3,
         "TREV <event name> <frequency> [info list]",
         NULL);
 

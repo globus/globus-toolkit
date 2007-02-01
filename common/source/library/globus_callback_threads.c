@@ -25,8 +25,12 @@
 #include "globus_handle_table.h"
 #include "globus_libc.h"
 #include "globus_print.h"
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/sysctl.h>
 
-#define GLOBUS_CALLBACK_POLLING_THREADS 1
+#define GLOBUS_CALLBACK_POLLING_THREADS (getnumcpus() + 1)
+
 #define GLOBUS_L_CALLBACK_INFO_BLOCK_SIZE 32
 #define GLOBUS_L_CALLBACK_SPACE_BLOCK_SIZE 16
 #ifdef NSIG
@@ -182,6 +186,25 @@ static int                              globus_l_callback_signal_active_count;
 static sigset_t                         globus_l_callback_signal_active_set;
 static sigset_t                         globus_l_callback_signal_saved_set;
 #endif
+
+static
+int
+getnumcpus()
+{
+#ifdef _SC_NPROCESSORS_CONF
+    return sysconf(_SC_NPROCESSORS_CONF);
+#else
+#ifdef HW_NCPU
+    int mib[2] = {CTL_HW, HW_NCPU};
+    int ncpus;
+    size_t len = sizeof(ncpus);
+    if(sysctl(mib, 2, &ncpus, &len, NULL, 0) == 0)
+        return ncpus;
+#endif
+#endif
+
+    return 1;
+}
 
 static
 void

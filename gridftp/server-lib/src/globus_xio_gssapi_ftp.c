@@ -1098,7 +1098,8 @@ globus_l_xio_gssapi_ftp_wrap(
     globus_l_xio_gssapi_ftp_handle_t *  handle,
     globus_byte_t  *                    in_buf, 
     globus_size_t                       length,
-    char **                             out_buffer,
+    void **                             out_buffer,
+    globus_size_t *                     out_len,
     globus_bool_t                       client)
 {
     char *                              encoded_buf;
@@ -1169,7 +1170,8 @@ globus_l_xio_gssapi_ftp_wrap(
     encoded_buf[gss_out_buf.length+4]='\r';
     encoded_buf[gss_out_buf.length+5]='\n';
     encoded_buf[gss_out_buf.length+6]='\0';
-    *out_buffer = encoded_buf;
+    *out_buffer = (void *)encoded_buf;
+    *out_len = gss_out_buf.length+6;
 
     gss_release_buffer(&min_stat, &gss_out_buf);
 
@@ -2436,7 +2438,7 @@ globus_l_xio_gssapi_ftp_write_cb(
 
     globus_mutex_lock(&handle->mutex);
     {
-        globus_free(handle->auth_write_iov.iov_base);
+        /*globus_free(handle->auth_write_iov.iov_base); */
         handle->write_posted = GLOBUS_FALSE;
     }
     globus_mutex_unlock(&handle->mutex);
@@ -2467,16 +2469,20 @@ globus_l_xio_gssapi_ftp_user_server_write_cb(
     globus_xio_driver_finished_write(op, result, nbytes);
 }
 
+typedef struct  xio_l_gssapi_ftp_bounce_s
+{
+    void *                              driver_specific_handle;
+    globus_xio_iovec_t *          iovec;
+    int                                 iovec_count;
+    globus_xio_operation_t              op;
+} xio_l_gssapi_ftp_bounce_t;
 /* client and server are both the same except for the header */
-static globus_result_t
-globus_l_xio_gssapi_ftp_write(
-    void *                              driver_specific_handle,
-    const globus_xio_iovec_t *          iovec,
-    int                                 iovec_count,
-    globus_xio_operation_t              op)
+static
+void
+globus_l_xio_gssapi_ftp_write_bounce(
+    void *                              arg)
 {
     globus_result_t                     res;
-    char *                              encoded_buf;
     globus_size_t                       length;
     globus_size_t                       len;
     globus_l_xio_gssapi_ftp_handle_t *  handle;
@@ -2484,12 +2490,25 @@ globus_l_xio_gssapi_ftp_write(
     globus_byte_t *                     out_buf;
     globus_byte_t *                     next_ptr;
     globus_byte_t *                     tmp_ptr;
-    globus_byte_t *                     tmp_ptr2;
     int                                 tmp_i;
     int                                 tmp_i2;
+    globus_xio_iovec_t *                l_iov;
+    int                                 l_iov_ndx = 1;
     GlobusXIOName(globus_l_xio_gssapi_ftp_write);
+    void *                              driver_specific_handle;
+    globus_xio_iovec_t *          iovec;
+    int                                 iovec_count;
+    globus_xio_operation_t              op;
+    xio_l_gssapi_ftp_bounce_t *         bounce;
+
 
     GlobusXIOGssapiftpDebugEnter();
+
+    bounce = (xio_l_gssapi_ftp_bounce_t *) arg;
+    op = bounce->op;
+    iovec = bounce->iovec;
+    iovec_count = bounce->iovec_count;
+    driver_specific_handle = bounce->driver_specific_handle;
 
     handle = (globus_l_xio_gssapi_ftp_handle_t *) driver_specific_handle;
 
@@ -2521,18 +2540,22 @@ globus_l_xio_gssapi_ftp_write(
         /* deconstipation */
         if(handle->client)
         {
+            l_iov = (globus_xio_iovec_t *)
+                calloc(sizeof(globus_xio_iovec_t), 1);
+
             res = globus_l_xio_gssapi_ftp_wrap(
                     handle, handle->write_buffer, length, 
-                   &encoded_buf, handle->client);
+                    &l_iov[0].iov_base,
+                    &l_iov[0].iov_len,
+                    handle->client);
             globus_free(handle->write_buffer);
+            length = l_iov[0].iov_len;
             if(res != GLOBUS_SUCCESS)
             {
                 globus_mutex_unlock(&handle->mutex);
                 goto err;
             }
 
-            handle->auth_write_iov.iov_base = encoded_buf;
-            handle->auth_write_iov.iov_len = globus_libc_strlen(encoded_buf);
             cb = globus_l_xio_gssapi_ftp_write_cb;
         }
         else
@@ -2543,19 +2566,26 @@ globus_l_xio_gssapi_ftp_write(
             {
                 handle->auth_write_iov.iov_len = length;
                 handle->auth_write_iov.iov_base = handle->write_buffer;
+                l_iov = &handle->auth_write_iov;
                 cb = globus_l_xio_gssapi_ftp_user_server_write_cb;
             }
             /* check multiline replies */
             else
             {
+                globus_bool_t           first = GLOBUS_TRUE;
+                globus_size_t           total_len = 0;
+
+                l_iov = (globus_xio_iovec_t *) globus_calloc(
+                    sizeof(globus_xio_iovec_t), 15);
+                l_iov_ndx = 0;
                 out_buf = NULL;
                 tmp_i = 3;
                 tmp_ptr = handle->write_buffer;
                 while(tmp_ptr - handle->write_buffer < length)
                 {
-                    if(out_buf)
+                    if(!first)
                     {
-                        out_buf[tmp_i] = '-';
+                        out_buf[3] = '-';
                         tmp_i += tmp_i2;
                     }
                     next_ptr = strstr(tmp_ptr, "\r\n");
@@ -2563,35 +2593,27 @@ globus_l_xio_gssapi_ftp_write(
 
                     res = globus_l_xio_gssapi_ftp_wrap(
                         handle, tmp_ptr, len,
-                        &encoded_buf, handle->client);
-                    tmp_i2 = strlen(encoded_buf);
+                        &l_iov[l_iov_ndx].iov_base,
+                        &l_iov[l_iov_ndx].iov_len,
+                        handle->client);
+                    tmp_i2 = l_iov[l_iov_ndx].iov_len;
+                    total_len += tmp_i2;
+                    out_buf = l_iov[l_iov_ndx].iov_base;
 
-                    if(out_buf == NULL)
-                    {
-                        out_buf = encoded_buf;
-                    }
-                    else
-                    {
-                        tmp_ptr2 = globus_common_create_string(
-                            "%s%s", out_buf, encoded_buf);
-                        globus_free(encoded_buf);
-                        globus_free(out_buf);
-                        out_buf = tmp_ptr2;
-                    }
-
+                    l_iov_ndx++;
                     tmp_ptr = next_ptr + 2;
+                    first = GLOBUS_FALSE;
                 }
+                length = total_len;
                 globus_free(handle->write_buffer);
-                handle->auth_write_iov.iov_len = globus_libc_strlen(out_buf);
-                handle->auth_write_iov.iov_base = out_buf;
                 cb = globus_l_xio_gssapi_ftp_write_cb;
             }
         }
 
         res = globus_xio_driver_pass_write(
             op, 
-            &handle->auth_write_iov, 
-            1,
+            l_iov,
+            l_iov_ndx,
             length,
             cb,
             handle);
@@ -2604,12 +2626,48 @@ globus_l_xio_gssapi_ftp_write(
     }
     globus_mutex_unlock(&handle->mutex);
 
+    globus_free(bounce);
+    globus_free(iovec);
     GlobusXIOGssapiftpDebugExit();
-    return GLOBUS_SUCCESS;
+    return;
 
   err:
+    globus_free(bounce);
+    globus_free(iovec);
+    globus_xio_driver_finished_write(op, res, 0);
     GlobusXIOGssapiftpDebugExitWithError();
-    return res;
+}
+
+static globus_result_t
+globus_l_xio_gssapi_ftp_write(
+    void *                              driver_specific_handle,
+    const globus_xio_iovec_t *          iovec,
+    int                                 iovec_count,
+    globus_xio_operation_t              op)
+{
+    int                                 i;
+    xio_l_gssapi_ftp_bounce_t *         bounce;
+
+    bounce = (xio_l_gssapi_ftp_bounce_t *)
+        malloc(sizeof(xio_l_gssapi_ftp_bounce_t));
+    bounce->driver_specific_handle = driver_specific_handle;
+    bounce->iovec = malloc(sizeof(globus_xio_iovec_t) * iovec_count);
+    bounce->iovec_count = iovec_count;
+    bounce->op = op;
+
+    for(i = 0; i < iovec_count; i++)
+    {
+        bounce->iovec[i].iov_base = iovec[i].iov_base;
+        bounce->iovec[i].iov_len = iovec[i].iov_len;
+    }
+
+    globus_callback_register_oneshot(
+        NULL,
+        NULL,
+        globus_l_xio_gssapi_ftp_write_bounce,
+        bounce);
+
+    return GLOBUS_SUCCESS;
 }
 
 /************************************************************************
