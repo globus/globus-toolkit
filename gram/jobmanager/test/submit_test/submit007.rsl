@@ -1,2 +1,0 @@
-&(executable=/usr/bin/printf)
- (arguments="%s %s %s %s\n" string with some \\backslashes)
