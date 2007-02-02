@@ -23,7 +23,6 @@
 #include <grp.h>
 #include "globus_io.h"
 
-
 #define FTP_SERVICE_NAME "file"
 #define USER_NAME_MAX   64
 #define GSC_GETPW_PWBUFSIZE        (USER_NAME_MAX*3)+(PATH_MAX*2)
@@ -50,6 +49,7 @@ globus_extension_handle_t               globus_i_gfs_active_dsi_handle;
 static globus_bool_t                    globus_l_gfs_data_is_remote_node = GLOBUS_FALSE;
 globus_off_t                            globus_l_gfs_bytes_transferred;
 globus_mutex_t                          globus_l_gfs_global_counter_lock;
+globus_extension_registry_t             globus_i_gfs_acl_registry;
 
 typedef enum
 {
@@ -711,12 +711,12 @@ globus_l_gfs_data_auth_stat_cb(
     /* if the file does not exist */
     if(reply->info.stat.stat_count == 0)
     {
-        action = "create";
+        action = GFS_ACL_ACTION_CREATE;
     }
     /* if the file does exist */
     else
     {
-        action = "write";
+        action = GFS_ACL_ACTION_WRITE;
     }
 
     stat_wrapper = op->stat_wrapper;
@@ -760,7 +760,7 @@ globus_l_gfs_data_send_stat_cb(
     stat_wrapper = op->stat_wrapper;
     rc = globus_gfs_acl_authorize(
         &op->session_handle->acl_handle,
-        "read",
+        GFS_ACL_ACTION_READ,
         send_info->pathname,
         &res,
         globus_l_gfs_authorize_cb,
@@ -1650,7 +1650,7 @@ globus_i_gfs_data_request_stat(
     {
         rc = globus_gfs_acl_authorize(
             &session_handle->acl_handle,
-            "lookup",
+            GFS_ACL_ACTION_LOOKUP,
             stat_info->pathname,
             &res,
             globus_l_gfs_authorize_cb,
@@ -1818,31 +1818,31 @@ globus_i_gfs_data_request_command(
 
         case GLOBUS_GFS_CMD_DELE:
         case GLOBUS_GFS_CMD_SITE_RDEL:
-            action = "delete";
+            action = GFS_ACL_ACTION_DELETE;
             break;
 
         case GLOBUS_GFS_CMD_RNTO:
-            action = "write";
+            action = GFS_ACL_ACTION_WRITE;
             break;
 
         case GLOBUS_GFS_CMD_RMD:
-            action = "delete";
+            action = GFS_ACL_ACTION_DELETE;
             break;
 
         case GLOBUS_GFS_CMD_RNFR:
-            action = "delete";
+            action = GFS_ACL_ACTION_DELETE;
             break;
 
         case GLOBUS_GFS_CMD_CKSM:
-            action = "read";
+            action = GFS_ACL_ACTION_READ;
             break;
 
         case GLOBUS_GFS_CMD_MKD:
-            action = "create";
+            action = GFS_ACL_ACTION_CREATE;
             break;
 
         case GLOBUS_GFS_CMD_SITE_CHMOD:
-            action = "write";
+            action = GFS_ACL_ACTION_WRITE;
             break;
 
         case GLOBUS_GFS_CMD_SITE_AUTHZ_ASSERT:
@@ -1850,7 +1850,7 @@ globus_i_gfs_data_request_command(
              * A new action to provide authorization assertions received
              * over the control channel to the authorization callout
              */
-            action = "authz_assert";
+            action = GFS_ACL_ACTION_AUTHZ_ASSERT;
             rc = globus_gfs_acl_authorize(
                 &session_handle->acl_handle,
                 action,
@@ -3210,7 +3210,7 @@ globus_i_gfs_data_request_send(
     {
         rc = globus_gfs_acl_authorize(
             &session_handle->acl_handle,
-            "read",
+            GFS_ACL_ACTION_READ,
             send_info->pathname,
             &res,
             globus_l_gfs_authorize_cb,
@@ -3390,7 +3390,7 @@ globus_i_gfs_data_request_list(
     {
         rc = globus_gfs_acl_authorize(
             &session_handle->acl_handle,
-            "lookup",
+            GFS_ACL_ACTION_LOOKUP,
             list_info->pathname,
             &res,
             globus_l_gfs_authorize_cb,

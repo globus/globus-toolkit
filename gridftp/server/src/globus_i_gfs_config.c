@@ -51,6 +51,9 @@ static globus_mutex_t                   globus_i_gfs_config_mutex;
 
 static const globus_l_gfs_config_option_t option_list[] = 
 { 
+ {"acl", "acl", NULL, "acl", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+    "list of acl modules",
+    NULL, NULL,GLOBUS_FALSE, NULL}, 
 {NULL, "Informational Options", NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL, GLOBUS_FALSE, NULL},
  {"help", "help", NULL, "help", "h", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
     "Show usage information and exit.", NULL, NULL,GLOBUS_FALSE, NULL},
@@ -1912,6 +1915,7 @@ globus_l_gfs_config_misc()
         }               
         globus_free(value);             
     }
+
     default_dsi = globus_i_gfs_config_string("load_dsi_module");
     globus_assert(default_dsi != NULL);
     globus_list_insert(&module_list, strdup(default_dsi));
