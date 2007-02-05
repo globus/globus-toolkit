@@ -1147,24 +1147,6 @@ globus_l_ftp_client_target_delete(
     globus_ftp_client_operationattr_destroy(&target->attr);
     target->owner = GLOBUS_NULL;
 
-    connected = (target->state != GLOBUS_FTP_CLIENT_TARGET_START ||
-		 target->state != GLOBUS_FTP_CLIENT_TARGET_CLOSED);
-
-    globus_i_ftp_client_control_is_active(target->control_handle);
-
-    if(connected)
-    {
-	result = globus_ftp_control_quit(target->control_handle,
-					 globus_l_ftp_client_quit_callback,
-					 target);
-    }
-    if(result != GLOBUS_SUCCESS)
-    {
-	result = globus_ftp_control_force_close(target->control_handle,
-						globus_l_ftp_client_quit_callback,
-						target);
-    }
-
     if(target->url_string)
     {
 	globus_libc_free(target->url_string);
@@ -1195,6 +1177,24 @@ globus_l_ftp_client_target_delete(
     if(target->features)
     {
         globus_i_ftp_client_features_destroy(target->features);
+    }
+
+    globus_i_ftp_client_control_is_active(target->control_handle);
+
+    connected = (target->state != GLOBUS_FTP_CLIENT_TARGET_START ||
+		 target->state != GLOBUS_FTP_CLIENT_TARGET_CLOSED);
+
+    if(connected)
+    {
+	result = globus_ftp_control_quit(target->control_handle,
+					 globus_l_ftp_client_quit_callback,
+					 target);
+    }
+    if(result != GLOBUS_SUCCESS)
+    {
+	result = globus_ftp_control_force_close(target->control_handle,
+						globus_l_ftp_client_quit_callback,
+						target);
     }
     if((!connected) || result != GLOBUS_SUCCESS)
     {
