@@ -2442,18 +2442,7 @@ redo:
 	globus_assert(
 	    client_handle->state ==
 	    GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION);
-        
-	if((!error) &&
-	   response->response_class == GLOBUS_FTP_POSITIVE_COMPLETION_REPLY)
-	{
-	}
-	else
-	{
-	    target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_CONNECTION;
 
-	    goto notify_fault;
-	}
-        
         result =
 	    globus_ftp_control_data_connect_read(target->control_handle,
 						 GLOBUS_NULL,

@@ -1271,6 +1271,15 @@ globus_i_ftp_client_target_release(
 		cache_entry->target = target;
 		GlobusTimeAbstimeGetCurrent(target->last_access);
 	    }
+            else
+            {
+	        /* duplicate url in cache, can't add */
+                globus_i_ftp_client_debug_printf(1, 
+                    (stderr, "globus_i_ftp_client_target_release() " 
+                    "cannot cache duplicate url, deleting target\n"));
+
+                globus_l_ftp_client_target_delete(target);
+            }
 	    
             globus_i_ftp_client_debug_printf(1, 
                 (stderr, "globus_i_ftp_client_target_release() exiting\n"));
