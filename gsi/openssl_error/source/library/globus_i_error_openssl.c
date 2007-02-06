@@ -52,10 +52,26 @@ globus_l_error_copy_openssl(
     void *                              src,
     void **                             dst)
 {
+    globus_i_openssl_error_handle_t *   i_src;
+    globus_i_openssl_error_handle_t *   i_dst;
+    
     if(src == NULL || dst == NULL) return;
-    (*dst) = (void *) malloc(sizeof(globus_i_openssl_error_handle_t));
-    *((globus_openssl_error_handle_t) *dst) 
-        = *((globus_openssl_error_handle_t) src);
+
+    i_src = (globus_i_openssl_error_handle_t *) src;
+    i_dst = malloc(sizeof(globus_i_openssl_error_handle_t));
+    
+    *i_dst = *i_src;
+    
+    if(i_src->data && 
+        (i_src->flags & ERR_TXT_MALLOCED) && 
+        (i_src->flags & ERR_TXT_STRING))
+    {
+        i_dst->data = strdup(i_src->data);
+        assert(i_dst->data);
+    }
+    
+    *dst = i_dst;
+            
     return;
 }/* globus_l_error_copy_openssl */
 /*@}*/
