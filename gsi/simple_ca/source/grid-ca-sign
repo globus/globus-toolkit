@@ -354,7 +354,7 @@ if test ${openssl_result} != 0; then
         exp_date=`${openssl_cmd} x509 -in ${SIGNED_CERT} -noout -enddate | \
                          ${GLOBUS_SH_SED-sed} -e "s|notAfter=[ ]*||"`
         expired=`check_expired ${exp_date}`
-        if test -n "${force_sign}" || test "${expired}" == "0"; then
+        if test -n "${force_sign}" || test "${expired}" = "0"; then
 
             echo ""
             echo "Revoking previous certificate"
