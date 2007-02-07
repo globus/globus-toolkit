@@ -3610,6 +3610,10 @@ globus_i_gsc_mlsx_line_single(
                 {
                     sprintf(tmp_ptr, "Type=OS.unix=blk;"); 
                 }
+                else if(S_ISFIFO(stat_info->mode))
+                {
+                    sprintf(tmp_ptr, "Type=OS.unix=pipe;"); 
+                }
                 else
                 {
                     sprintf(tmp_ptr, "Type=OS.unix=other;"); 
@@ -3875,7 +3879,7 @@ globus_i_gsc_list_single_line(
     }
     else if(S_ISFIFO(stat_info->mode))
     {
-        perms[0] = 'x';
+        perms[0] = 'p';
     }
     else if(S_ISCHR(stat_info->mode))
     {
