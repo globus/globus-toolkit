@@ -637,7 +637,7 @@ create_certs () {
     umask 066
     ${GLOBUS_SH_TOUCH-touch} ${RAND_TEMP}
     if [ -r /dev/urandom ] ; then
-        head -c 1000 /dev/urandom >> ${RAND_TEMP} 2>&1
+        head -1000 /dev/urandom >> ${RAND_TEMP} 2>&1
     fi
     date >> ${RAND_TEMP} 2>&1
     netstat -in >> ${RAND_TEMP} 2>&1
