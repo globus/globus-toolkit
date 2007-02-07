@@ -917,10 +917,9 @@ globus_l_ftp_control_read_cb(
 				GLOBUS_NULL,
 				&(cc_handle->response));
 	    
-	    
-	    memcpy(cc_handle->response.response_buffer,
-		   &cc_handle->read_buffer[end_of_reply],
-		   response_length-end_of_reply);
+            memcpy(cc_handle->response.response_buffer,
+                &cc_handle->read_buffer[nbytes-(response_length-end_of_reply)],
+                response_length-end_of_reply);
 	    
 	    cc_handle->response.response_length = response_length - 
 		end_of_reply;
