@@ -125,3 +125,4 @@ globus_libxml2                  libxml2/
 globus_utp                      utp/source
 globus_usage                    usage/c/sender/source
 globus_coverage                 common/coverage/source
+globus_hostname_lookup          gsi/hostname_lookup

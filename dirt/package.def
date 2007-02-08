@@ -101,6 +101,7 @@ globus_gssapi_gsi_test          gsi/gssapi/test                 dirt.sh
 gssapi_error                    gsi/gssapi_error/source         dirt.sh
 globus_openssl                  gsi/openssl_gpt                 dirt.sh
 globus_openssl_module           gsi/openssl_module/source       dirt.sh
+globus_hostname_lookup          gsi/hostname_lookup             dirt.sh
 globus_sasl_gssapi_gsi          gsi/sasl/gssplugins             dirt.sh
 globus_ssl_utils_setup          gsi/ssl_utils/setup             dirt.sh
 globus_ssl_utils                gsi/ssl_utils/source            dirt.sh
