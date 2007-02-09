@@ -103,6 +103,7 @@
 #undef HAVE_GMTIME_R
 #undef HAVE_SYS_INTTYPES_H
 #undef HAVE_INTTYPES_H
+#undef HAVE_STDINT_H
 #undef HAVE_LIMITS
 #undef HAVE_LIMITS_H
 #undef HAVE_NDIR_H

@@ -43,6 +43,9 @@ extern const char * _globus_func_name;
 /*
  * include system files if we have them
  */
+#ifdef HAVE_STDINT_H
+#   include <stdint.h>
+#endif
 #ifdef HAVE_SYS_TYPES_H
 #   include <sys/types.h>
 #endif
