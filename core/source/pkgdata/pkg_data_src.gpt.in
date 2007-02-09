@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Name="globus_core" Format_Version="0.02">
 
-  <Aging_Version Major="5" Minor="10" Age="1"/>
+  <Aging_Version Major="5" Minor="11" Age="1"/>
   <Description >Globus Core</Description>
   <Functional_Group >Core</Functional_Group>
   <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@" />
