@@ -325,7 +325,7 @@ auth_root_allowed(char *method)
  *
  * This returns a buffer allocated by xmalloc.
  */
-static char *
+char *
 expand_authorized_keys(const char *filename, struct passwd *pw)
 {
 	char *file, ret[MAXPATHLEN];

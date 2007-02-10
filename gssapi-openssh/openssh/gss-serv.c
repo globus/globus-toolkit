@@ -50,6 +50,7 @@
 #include "monitor_wrap.h"
 
 extern ServerOptions options;
+extern Authctxt *the_authctxt;
 
 static ssh_gssapi_client gssapi_client =
     { GSS_C_EMPTY_BUFFER, GSS_C_EMPTY_BUFFER,
@@ -361,6 +362,11 @@ void
 ssh_gssapi_storecreds(void)
 {
 	if (gssapi_client.mech && gssapi_client.mech->storecreds) {
+        if (options.gss_creds_path) {
+            gssapi_client.store.filename =
+                expand_authorized_keys(options.gss_creds_path,
+                                       the_authctxt->pw);
+        }
 		(*gssapi_client.mech->storecreds)(&gssapi_client);
 	} else
 		debug("ssh_gssapi_storecreds: Not a GSSAPI mechanism");

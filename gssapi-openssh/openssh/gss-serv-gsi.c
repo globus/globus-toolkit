@@ -199,17 +199,25 @@ ssh_gssapi_gsi_storecreds(ssh_gssapi_client *client)
 	} else {
 	    client->store.envvar = strdup((char *)export_cred.value);
 	}
+	if (access(p, R_OK) == 0) {
+        if (client->store.filename) {
+            if (rename(p, client->store.filename) < 0) {
+                logit("Failed to rename %s to %s: %s", p,
+                      client->store.filename, strerror(errno));
+                xfree(client->store.filename);
+                client->store.filename = strdup(p);
+            } else {
+                p = client->store.filename;
+            }
+        } else {
+            client->store.filename = strdup(p);
+        }
+	}
 	client->store.envval = strdup(p);
 #ifdef USE_PAM
 	if (options.use_pam)
 	    do_pam_putenv(client->store.envvar, client->store.envval);
 #endif
-	if (strncmp(p, "FILE:", 5) == 0) {
-	    p += 5;
-	}
-	if (access(p, R_OK) == 0) {
-	    client->store.filename = strdup(p);
-	}
 	gss_release_buffer(&minor_status, &export_cred);
 }
 

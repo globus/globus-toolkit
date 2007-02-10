@@ -330,6 +330,7 @@ typedef enum {
 	sClientAliveCountMax, sAuthorizedKeysFile, sAuthorizedKeysFile2,
 	sGssAuthentication, sGssCleanupCreds, sGssStrictAcceptor,
 	sGssKeyEx, 
+    sGssCredsPath,
 	sGsiAllowLimitedProxy,
     sAcceptEnv, sPermitTunnel,
 	sMatch, sPermitOpen, sForceCommand,
@@ -394,6 +395,7 @@ static struct {
 #ifdef GSSAPI
 	{ "gssapiauthentication", sGssAuthentication, SSHCFG_GLOBAL },
 	{ "gssapicleanupcredentials", sGssCleanupCreds, SSHCFG_GLOBAL },
+	{ "gssapicredentialspath", sGssCredsPath, SSHCFG_GLOBAL },
 	{ "gssapistrictacceptorcheck", sGssStrictAcceptor, SSHCFG_GLOBAL },
 	{ "gssapikeyexchange", sGssKeyEx, SSHCFG_GLOBAL },
 #ifdef GSI
@@ -402,6 +404,7 @@ static struct {
 #else
 	{ "gssapiauthentication", sUnsupported, SSHCFG_GLOBAL },
 	{ "gssapicleanupcredentials", sUnsupported, SSHCFG_GLOBAL },
+	{ "gssapicredentialspath", sUnsupported, SSHCFG_GLOBAL },
 	{ "gssapistrictacceptorcheck", sUnsupported, SSHCFG_GLOBAL },
 	{ "gssapikeyexchange", sUnsupported, SSHCFG_GLOBAL },
 #ifdef GSI
@@ -958,8 +961,13 @@ parse_flag:
 		intptr = &options->gss_cleanup_creds;
 		goto parse_flag;
 
+	case sGssCredsPath:
+		charptr = &options->gss_creds_path;
+		goto parse_filename;
+
 	case sGssStrictAcceptor:
 		intptr = &options->gss_strict_acceptor;
+		goto parse_flag;
 
 	case sGsiAllowLimitedProxy:
 		intptr = &options->gsi_allow_limited_proxy;

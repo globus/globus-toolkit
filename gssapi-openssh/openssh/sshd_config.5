@@ -349,6 +349,17 @@ Note that this option applies only to protocol version 2 GSSAPI connections,
 and setting it to 
 .Dq no
 may only work with recent Kerberos GSSAPI libraries.
+.It Cm GSSAPICredentialsPath
+If specified, the delegated GSSAPI credential is stored in the
+given path, overwriting any existing credentials.  
+Paths can be specified with syntax similar to the AuthorizedKeysFile 
+option (i.e., accepting %h and %u tokens).  
+When using this option,
+setting 'GssapiCleanupCredentials no' is recommended,
+so logging out of one session
+doesn't remove the credentials in use by another session of
+the same user.
+Currently only implemented for the GSI mechanism.
 .It Cm GSIAllowLimitedProxy
 Specifies whether to accept limited proxy credentials for
 authentication.
