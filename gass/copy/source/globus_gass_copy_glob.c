@@ -517,7 +517,7 @@ globus_l_gass_copy_glob_expand_ftp_url(
 
     if(result != GLOBUS_SUCCESS)
     {
-        goto error_feat;
+        goto error_feat_init;
     }
 
     info->callbacks_left = 1;
@@ -546,23 +546,19 @@ globus_l_gass_copy_glob_expand_ftp_url(
     }
     globus_mutex_unlock(&info->mutex);
   
-    if(result == GLOBUS_SUCCESS)
-    {    
-        result = globus_ftp_client_is_feature_supported(
-                    &features, 
-                    &feature_response, 
-                    GLOBUS_FTP_CLIENT_FEATURE_MLST);
-                    
-        globus_ftp_client_features_destroy(&features);
-    
-        if(result != GLOBUS_SUCCESS)
-        {
-            goto error_feat;
-        }
-    }    
-    else
+    if(result != GLOBUS_SUCCESS)
     {
-        feature_response = GLOBUS_FTP_CLIENT_FALSE;
+        goto error_feat;
+    }
+
+    result = globus_ftp_client_is_feature_supported(
+                &features, 
+                &feature_response, 
+                GLOBUS_FTP_CLIENT_FEATURE_MLST);
+                    
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_feat;
     }
     
     if(feature_response == GLOBUS_FTP_CLIENT_TRUE)
@@ -573,8 +569,6 @@ globus_l_gass_copy_glob_expand_ftp_url(
     {
         info->list_op = GLOBUS_GASS_COPY_FTP_OP_NLST;
     }
-
-    
 
     result = globus_l_gass_copy_glob_ftp_list(info);    
          
@@ -595,6 +589,8 @@ globus_l_gass_copy_glob_expand_ftp_url(
         globus_free(info->list_buffer);
     }
    
+    globus_ftp_client_features_destroy(&features);
+
     globus_cond_destroy(&info->cond);
     globus_mutex_destroy(&info->mutex);
         
@@ -605,9 +601,12 @@ globus_l_gass_copy_glob_expand_ftp_url(
 
 error_list:
 error_feat:
+    globus_ftp_client_features_destroy(&features);
+
+error_feat_init:    
     globus_cond_destroy(&info->cond);
     globus_mutex_destroy(&info->mutex);
-    
+
 error_url:
     globus_free(info->base_url);
 

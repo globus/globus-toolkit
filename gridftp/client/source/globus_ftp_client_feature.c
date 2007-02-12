@@ -28,7 +28,12 @@ globus_i_ftp_client_feature_get(
     globus_i_ftp_client_features_t *    features,
     globus_ftp_client_probed_feature_t  feature) 
 {
-    return features->list[feature];
+    if(features)
+    {
+        return features->list[feature];
+    }
+    
+    return GLOBUS_FTP_CLIENT_MAYBE;
 }
 
 
