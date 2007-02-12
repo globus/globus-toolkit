@@ -129,7 +129,7 @@ restart:
 	if (buffer_compact(buffer))
 		goto restart;
 
-	// if hpn is disabled use the smaller buffer size
+	/* if hpn is disabled use the smaller buffer size */
 	buf_max = BUFFER_MAX_LEN_HPN;
 	buf_alloc_sz = BUFFER_ALLOCSZ_HPN;
 
@@ -166,7 +166,7 @@ buffer_check_alloc(Buffer *buffer, u_int len)
 	if (buffer_compact(buffer))
 		goto restart;
 
-	// if hpn is disabled use the smaller buffer size
+	/* if hpn is disabled use the smaller buffer size */
 	buf_max = BUFFER_MAX_LEN_HPN;
 	buf_alloc_sz = BUFFER_ALLOCSZ_HPN;
 
