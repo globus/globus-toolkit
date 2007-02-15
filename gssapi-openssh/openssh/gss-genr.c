@@ -105,7 +105,7 @@ ssh_gssapi_kex_mechs(gss_OID_set gss_supported, ssh_gssapi_check_fn *check,
 		xfree(gss_enc2oid);
 	}
 
-	gss_enc2oid = xmalloc(sizeof(ssh_gss_kex_mapping)*
+	gss_enc2oid = xmalloc(sizeof(ssh_gss_kex_mapping) *
 	    (gss_supported->count + 1));
 
 	buffer_init(&buf);
@@ -114,6 +114,7 @@ ssh_gssapi_kex_mechs(gss_OID_set gss_supported, ssh_gssapi_check_fn *check,
 	for (i = 0; i < gss_supported->count; i++) {
 		if (gss_supported->elements[i].length < 128 &&
 		    (*check)(NULL, &(gss_supported->elements[i]), data)) {
+
 			deroid[0] = SSH_GSS_OIDTYPE;
 			deroid[1] = gss_supported->elements[i].length;
 
