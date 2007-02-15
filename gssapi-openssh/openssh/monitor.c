@@ -1699,6 +1699,7 @@ mm_get_kex(Buffer *m)
 	kex->kex[KEX_DH_GEX_SHA256] = kexgex_server;
 #ifdef GSSAPI
 	kex->kex[KEX_GSS_GRP1_SHA1] = kexgss_server;
+	kex->kex[KEX_GSS_GRP14_SHA1] = kexgss_server;
 	kex->kex[KEX_GSS_GEX_SHA1] = kexgss_server;
 #endif
 	kex->server = 1;
@@ -2095,5 +2096,4 @@ mm_answer_gss_localname(int socket, Buffer *m) {
 
         return(0);
 }
-
 #endif /* GSSAPI */
