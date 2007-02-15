@@ -137,12 +137,12 @@ int ssh_gssapi_check_mechanism(Gssctxt **, gss_OID, const char *);
 
 int ssh_gssapi_localname(char **name);
 
+/* In the server */
 typedef int ssh_gssapi_check_fn(Gssctxt **, gss_OID, const char *);
 char *ssh_gssapi_client_mechanisms(const char *host);
 char *ssh_gssapi_kex_mechs(gss_OID_set, ssh_gssapi_check_fn *, const char *);
 gss_OID ssh_gssapi_id_kex(Gssctxt *, char *, int);
-int ssh_gssapi_server_check_mech(Gssctxt **, gss_OID, const char *);
-
+int ssh_gssapi_server_check_mech(Gssctxt **,gss_OID, const char *);
 int ssh_gssapi_userok(char *name);
 OM_uint32 ssh_gssapi_checkmic(Gssctxt *, gss_buffer_t, gss_buffer_t);
 void ssh_gssapi_do_child(char ***, u_int *);
