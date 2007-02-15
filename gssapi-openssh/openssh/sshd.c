@@ -945,6 +945,8 @@ server_listen(void)
 	int ret, listen_sock, on = 1;
 	struct addrinfo *ai;
 	char ntop[NI_MAXHOST], strport[NI_MAXSERV];
+	int socksize;
+	int socksizelen = sizeof(int);
 
 	for (ai = options.listen_addrs; ai; ai = ai->ai_next) {
 		if (ai->ai_family != AF_INET && ai->ai_family != AF_INET6)
@@ -981,6 +983,11 @@ server_listen(void)
 			error("setsockopt SO_REUSEADDR: %s", strerror(errno));
 
 		debug("Bind to port %s on %s.", strport, ntop);
+	
+		getsockopt(listen_sock, SOL_SOCKET, SO_RCVBUF, 
+				   &socksize, &socksizelen);
+		debug("Server TCP RWIN socket size: %d", socksize);
+		debug("HPN Buffer Size: %d", options.hpn_buffer_size);
 
 		/* Bind the socket to the desired port. */
 		if (bind(listen_sock, ai->ai_addr, ai->ai_addrlen) < 0) {
@@ -2184,8 +2191,6 @@ do_ssh2_kex(void)
 
 	myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS] = list_hostkey_types();
 
-	/* start key exchange */
-  
 #ifdef GSSAPI
 	{
 	char *orig;
@@ -2194,8 +2199,8 @@ do_ssh2_kex(void)
 	orig = myproposal[PROPOSAL_KEX_ALGS];
 
 	/* 
- 	 * If we don't have a host key, then there's no point advertising
-         * the other key exchange algorithms
+	 * If we don't have a host key, then there's no point advertising
+	 * the other key exchange algorithms
 	 */
 
 	if (strlen(myproposal[PROPOSAL_SERVER_HOST_KEY_ALGS]) == 0)
@@ -2228,7 +2233,7 @@ do_ssh2_kex(void)
 	}
 #endif
 
-  	/* start key exchange */
+	/* start key exchange */
 	/* start key exchange */
 	kex = kex_setup(myproposal);
 	kex->kex[KEX_DH_GRP1_SHA1] = kexdh_server;

@@ -139,6 +139,9 @@ initialize_server_options(ServerOptions *options)
 void
 fill_default_server_options(ServerOptions *options)
 {
+	int sock;
+	int socksize;
+	int socksizelen = sizeof(int);
 
 	/* Portable-specific options */
 	if (options->use_pam == -1)
@@ -222,7 +225,7 @@ fill_default_server_options(ServerOptions *options)
 	if (options->gss_cleanup_creds == -1)
 		options->gss_cleanup_creds = 1;
 	if (options->gss_strict_acceptor == -1)
-		options->gss_strict_acceptor = 0;
+		options->gss_strict_acceptor = 1;
 	if (options->gsi_allow_limited_proxy == -1)
 		options->gsi_allow_limited_proxy = 0;
 	if (options->password_authentication == -1)
@@ -272,15 +275,43 @@ fill_default_server_options(ServerOptions *options)
 	if (options->hpn_disabled == -1) 
 		options->hpn_disabled = 0;
 
-	if (options->hpn_buffer_size == -1)
-	        options->hpn_buffer_size = 2*1024*1024;
-	else {
-		if (options->hpn_buffer_size == 0)
-			options->hpn_buffer_size = 1;
-		/* limit the maximum buffer to 7MB */
-		if (options->hpn_buffer_size > 7168)
-			options->hpn_buffer_size = 7168;
-		options->hpn_buffer_size *=1024;
+	if (options->hpn_buffer_size == -1) 
+	{
+		/* option not explicitly set. Now we have to figure out */
+		/* what value to use */
+		if (options->hpn_disabled == 1) 
+		{
+			options->hpn_buffer_size = CHAN_SES_WINDOW_DEFAULT;
+		}
+		else 
+		{
+			/* get the current RCV size and set it to that */
+			/*create a socket but don't connect it */
+			/* we use that the get the rcv socket size */
+			sock = socket(AF_INET, SOCK_STREAM, 0);
+			getsockopt(sock, SOL_SOCKET, SO_RCVBUF, 
+				   &socksize, &socksizelen);
+			close(sock);
+			options->hpn_buffer_size = socksize;
+			debug ("HPN Buffer Size: %d", options->hpn_buffer_size);
+			
+		} 
+	}
+	else 
+	{
+		/* we have to do this incase the user sets both values in a contradictory */
+		/* manner. hpn_disabled overrrides hpn_buffer_size*/
+		if (options->hpn_disabled <= 0) 
+		{
+			if (options->hpn_buffer_size == 0)
+				options->hpn_buffer_size = 1;
+			/* limit the maximum buffer to 64MB */
+			if (options->hpn_buffer_size > 64*1024)
+				options->hpn_buffer_size = 64*1024;
+			options->hpn_buffer_size *=1024;
+		}
+		else
+			options->hpn_buffer_size = CHAN_SES_WINDOW_DEFAULT;
 	}
 
 	/* Turn privilege separation on by default */
@@ -334,9 +365,8 @@ typedef enum {
 	sGsiAllowLimitedProxy,
     sAcceptEnv, sPermitTunnel,
 	sMatch, sPermitOpen, sForceCommand,
-	sUsePrivilegeSeparation,
-    sNoneEnabled, sTcpRcvBufPoll, 
-	sHPNDisabled, sHPNBufferSize,
+	sUsePrivilegeSeparation, sNoneEnabled, sTcpRcvBufPoll, 
+        sHPNDisabled, sHPNBufferSize,
 	sDeprecated, sUnsupported
 } ServerOpCodes;
 
@@ -395,8 +425,8 @@ static struct {
 #ifdef GSSAPI
 	{ "gssapiauthentication", sGssAuthentication, SSHCFG_GLOBAL },
 	{ "gssapicleanupcredentials", sGssCleanupCreds, SSHCFG_GLOBAL },
-	{ "gssapicredentialspath", sGssCredsPath, SSHCFG_GLOBAL },
 	{ "gssapistrictacceptorcheck", sGssStrictAcceptor, SSHCFG_GLOBAL },
+	{ "gssapicredentialspath", sGssCredsPath, SSHCFG_GLOBAL },
 	{ "gssapikeyexchange", sGssKeyEx, SSHCFG_GLOBAL },
 #ifdef GSI
 	{ "gsiallowlimitedproxy", sGsiAllowLimitedProxy, SSHCFG_GLOBAL },
@@ -404,8 +434,8 @@ static struct {
 #else
 	{ "gssapiauthentication", sUnsupported, SSHCFG_GLOBAL },
 	{ "gssapicleanupcredentials", sUnsupported, SSHCFG_GLOBAL },
-	{ "gssapicredentialspath", sUnsupported, SSHCFG_GLOBAL },
 	{ "gssapistrictacceptorcheck", sUnsupported, SSHCFG_GLOBAL },
+	{ "gssapicredentialspath", sUnsupported, SSHCFG_GLOBAL },
 	{ "gssapikeyexchange", sUnsupported, SSHCFG_GLOBAL },
 #ifdef GSI
 	{ "gsiallowlimitedproxy", sUnsupported, SSHCFG_GLOBAL },
@@ -464,7 +494,7 @@ static struct {
  	{ "match", sMatch, SSHCFG_ALL },
 	{ "permitopen", sPermitOpen, SSHCFG_ALL },
 	{ "forcecommand", sForceCommand, SSHCFG_ALL },
-    { "noneenabled", sNoneEnabled },
+        { "noneenabled", sNoneEnabled },
         { "hpndisabled", sHPNDisabled },
         { "hpnbuffersize", sHPNBufferSize },
         { "tcprcvbufpoll", sTcpRcvBufPoll },
@@ -483,6 +513,7 @@ parse_token(const char *cp, const char *filename,
 
 	for (i = 0; keywords[i].name; i++)
 		if (strcasecmp(cp, keywords[i].name) == 0) {
+		        debug ("Config token is %s", keywords[i].name);
 			*flags = keywords[i].flags;
 			return keywords[i].opcode;
 		}
@@ -961,13 +992,13 @@ parse_flag:
 		intptr = &options->gss_cleanup_creds;
 		goto parse_flag;
 
-	case sGssCredsPath:
-		charptr = &options->gss_creds_path;
-		goto parse_filename;
-
 	case sGssStrictAcceptor:
 		intptr = &options->gss_strict_acceptor;
 		goto parse_flag;
+
+	case sGssCredsPath:
+		charptr = &options->gss_creds_path;
+		goto parse_filename;
 
 	case sGsiAllowLimitedProxy:
 		intptr = &options->gsi_allow_limited_proxy;

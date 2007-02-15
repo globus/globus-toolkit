@@ -1243,26 +1243,29 @@ ssh_session2_open(void)
 	{
 		if (options.hpn_buffer_size < 0)
 			options.hpn_buffer_size = BUFFER_MAX_LEN_HPN;
+
+		/*create a socket but don't connect it */
+		/* we use that the get the rcv socket size */
+		sock = socket(AF_INET, SOCK_STREAM, 0);
+		/* if they are using the tcp_rcv_buf option */
+		/* attempt to set the buffer size to that */
+		if (options.tcp_rcv_buf) 
+			setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (void *)&options.tcp_rcv_buf, 
+				   sizeof(options.tcp_rcv_buf));
+		getsockopt(sock, SOL_SOCKET, SO_RCVBUF, 
+			   &socksize, &socksizelen);
+		close(sock);
+		debug("socksize %d", socksize);
 		if (options.tcp_rcv_buf_poll <= 0) 
 		{
-			/*create a socket but don't connect it */
-			/* we use that the get the rcv socket size */
-			sock = socket(AF_INET, SOCK_STREAM, 0);
-			/* if they are using the tcp_rcv_buf option */
-			/* attempt to set the buffer size to that */
-			if (options.tcp_rcv_buf) 
-				setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (void *)&options.tcp_rcv_buf, 
-					   sizeof(options.tcp_rcv_buf));
-			getsockopt(sock, SOL_SOCKET, SO_RCVBUF, 
-				   &socksize, &socksizelen);
-			close(sock);
-			debug("socksize %d", socksize);
-			options.hpn_buffer_size = MIN(socksize,options.hpn_buffer_size);			
+			options.hpn_buffer_size = MIN(socksize,options.hpn_buffer_size);
+			debug ("MIN of TCP RWIN and HPNBufferSize: %d", options.hpn_buffer_size);
 		} 
 		else
 		{
 			if (options.tcp_rcv_buf > 0) 
 				options.hpn_buffer_size = MIN(options.tcp_rcv_buf, options.hpn_buffer_size);
+				debug ("MIN of TCPRcvBuf and HPNBufferSize: %d", options.hpn_buffer_size);
  		}
 		
 	}
