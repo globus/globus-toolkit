@@ -90,7 +90,9 @@ initialize_server_options(ServerOptions *options)
 	options->kerberos_ticket_cleanup = -1;
 	options->kerberos_get_afs_token = -1;
 	options->gss_authentication=-1;
+	options->gss_keyex = -1;
 	options->gss_cleanup_creds = -1;
+	options->gss_strict_acceptor = -1;
 	options->password_authentication = -1;
 	options->kbd_interactive_authentication = -1;
 	options->challenge_response_authentication = -1;
@@ -204,8 +206,12 @@ fill_default_server_options(ServerOptions *options)
 		options->kerberos_get_afs_token = 0;
 	if (options->gss_authentication == -1)
 		options->gss_authentication = 0;
+	if (options->gss_keyex == -1)
+		options->gss_keyex = 0;
 	if (options->gss_cleanup_creds == -1)
 		options->gss_cleanup_creds = 1;
+	if (options->gss_strict_acceptor == -1)
+		options->gss_strict_acceptor = 1;
 	if (options->password_authentication == -1)
 		options->password_authentication = 1;
 	if (options->kbd_interactive_authentication == -1)
@@ -290,7 +296,9 @@ typedef enum {
 	sBanner, sUseDNS, sHostbasedAuthentication,
 	sHostbasedUsesNameFromPacketOnly, sClientAliveInterval,
 	sClientAliveCountMax, sAuthorizedKeysFile, sAuthorizedKeysFile2,
-	sGssAuthentication, sGssCleanupCreds, sAcceptEnv, sPermitTunnel,
+	sGssAuthentication, sGssCleanupCreds, sGssStrictAcceptor,
+	sGssKeyEx,
+	sAcceptEnv, sPermitTunnel,
 	sMatch, sPermitOpen, sForceCommand,
 	sUsePrivilegeSeparation,
 	sDeprecated, sUnsupported
@@ -351,9 +359,13 @@ static struct {
 #ifdef GSSAPI
 	{ "gssapiauthentication", sGssAuthentication, SSHCFG_GLOBAL },
 	{ "gssapicleanupcredentials", sGssCleanupCreds, SSHCFG_GLOBAL },
+	{ "gssapistrictacceptorcheck", sGssStrictAcceptor, SSHCFG_GLOBAL },
+	{ "gssapikeyexchange", sGssKeyEx, SSHCFG_GLOBAL },
 #else
 	{ "gssapiauthentication", sUnsupported, SSHCFG_GLOBAL },
 	{ "gssapicleanupcredentials", sUnsupported, SSHCFG_GLOBAL },
+	{ "gssapistrictacceptorcheck", sUnsupported, SSHCFG_GLOBAL },
+	{ "gssapikeyexchange", sUnsupported, SSHCFG_GLOBAL },
 #endif
 	{ "passwordauthentication", sPasswordAuthentication, SSHCFG_GLOBAL },
 	{ "kbdinteractiveauthentication", sKbdInteractiveAuthentication, SSHCFG_GLOBAL },
@@ -872,8 +884,16 @@ parse_flag:
 		intptr = &options->gss_authentication;
 		goto parse_flag;
 
+	case sGssKeyEx:
+		intptr = &options->gss_keyex;
+		goto parse_flag;
+
 	case sGssCleanupCreds:
 		intptr = &options->gss_cleanup_creds;
+		goto parse_flag;
+
+	case sGssStrictAcceptor:
+		intptr = &options->gss_strict_acceptor;
 		goto parse_flag;
 
 	case sPasswordAuthentication:
