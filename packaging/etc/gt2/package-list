@@ -83,8 +83,10 @@ globus_gss_assist_test		gsi/gss_assist/test
 globus_hostname2contacts	gram/globus-hostname2contacts
 globus_io			io/compat
 globus_io_test			io/test
-globus_xio_popen_driver       xio/drivers/popen/source
-globus_xio_gsi_driver       xio/drivers/gsi
+globus_xio_popen_driver         xio/drivers/popen/source
+globus_xio_gsi_driver           xio/drivers/gsi
+globus_xio_udt_ref_driver       xio/drivers/udt_ref
+globus_xio_skeleton_driver      xio/drivers/skeleton/source
 globus_xio			xio/src
 globus_xio_test			xio/test
 globus_xioperf			xio/xioperf/source
