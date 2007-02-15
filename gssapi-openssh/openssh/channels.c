@@ -76,6 +76,7 @@
 #include "authfd.h"
 #include "pathnames.h"
 
+
 /* -- channel core */
 
 /*
@@ -2651,7 +2652,7 @@ channel_request_rforward_cancel(const char *host, u_short port)
  * message if there was an error).
  */
 int
-channel_input_port_forward_request(int is_root, int gateway_ports, 
+channel_input_port_forward_request(int is_root, int gateway_ports,
 				   int hpn_disabled, int hpn_buffer_size)
 {
 	u_short port, host_port;
