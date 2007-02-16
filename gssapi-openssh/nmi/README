@@ -1,2 +1,18 @@
 This directory contains files for GSI-OpenSSH build testing using
 the NMI Build and Test Lab (http://nmi.cs.wisc.edu/).
+
+To submit a test build:
+
+  $ ssh grandcentral.cs.wisc.edu
+  $ cvs -d :pserver:anonymous@cvs.ncsa.uiuc.edu:/CVS/gssapi-openssh co nmi
+  $ cd nmi
+  $ nmi_submit -notify-fail-only cmdfile
+
+The build platforms are specified in cmdfile.
+The nmi_platforms script will show the current list of available
+platforms if run on grandcentral.
+The gsi_openssh_bundle-*-src.tar.gz location must be specified in
+gsissh-src.ftp.
+Otherwise, all the intelligence is in testscript.
+In particular, the GT installers corresponding to the chosen platforms
+must be set in testscript.

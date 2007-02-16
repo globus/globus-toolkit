@@ -1,0 +1,4 @@
+method = ftp
+ftp_root = ftp://
+ftp_target = ftp.ncsa.uiuc.edu/aces/gssapi-openssh/bundle/testing/gsi_openssh_bundle-3.9-src.tar.gz
+ftp_args = -q
