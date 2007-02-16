@@ -1,7 +1,0 @@
-#!/bin/sh
-
-NAME="gsi_openssh_bundle-2.1-i686-pc-linux-gnu.tar.gz"
-
-if [ ! -e $NAME ]; then
-    $GPT_LOCATION/sbin/gpt-bundle -output=$NAME -xml=gsi_openssh_bundle-bin.xml
-fi
