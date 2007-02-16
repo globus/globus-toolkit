@@ -91,7 +91,7 @@ AC_C_INLINE
 AC_CHECK_DECL(LLONG_MAX, have_llong_max=1, , [#include <limits.h>])
 
 if test "$GCC" = "yes" || test "$GCC" = "egcs"; then
-	CFLAGS="$CFLAGS -Wall -Wpointer-arith -Wuninitialized"
+	CFLAGS="$CFLAGS -Wall -Wpointer-arith"
 	GCC_VER=`$CC -v 2>&1 | $AWK '/gcc version /{print $3}'`
 	case $GCC_VER in
 		1.*) ;;
