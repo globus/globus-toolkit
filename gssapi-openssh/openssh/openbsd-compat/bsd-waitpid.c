@@ -24,8 +24,6 @@
 
 #include "includes.h"
 
-RCSID("$Id$");
-
 #ifndef HAVE_WAITPID 
 #include <errno.h>
 #include <sys/wait.h>

@@ -16,6 +16,9 @@
  */
 
 #include "includes.h"
+
+#include <string.h>
+
 #include <openssl/evp.h>
 
 #if !defined(EVP_CTRL_SET_ACSS_MODE) && (OPENSSL_VERSION_NUMBER >= 0x00906000L)

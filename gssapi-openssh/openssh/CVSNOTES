@@ -59,6 +59,24 @@ module that contains the GSI-OpenSSH code.  Consider it a living document.
 
   [ History ]
 
+    2007/02/15
+    ----------
+      Action: Merge
+        - occurred on: GPT branch
+        - orig base: OPENSSH_4_3P2_20060726
+        - new base: OPENSSH_4_5P1_20070215
+      Conflicts: 
+        - Makefile.in
+          new file bufbn.o
+        - configure.ac
+          PAM checks moved and updated.  Merged by hand.
+        - sftp-server.c
+          Comment moved.
+        - sshd_config
+          UsePam description changed, and we default to yes.
+        - version.h
+          NCSA_VERSION constant added on trunk.
+
     2006/07/26
     ----------
       Action: Merge

@@ -1,7 +1,3 @@
-20061220
-  - [ servconf.c ]
-    Make default for GSSAPIStrictAcceptorCheck be Yes, to match previous, and 
-    documented, behaviour. Reported by Dan Watson.
 
 20060910
   - [ gss-genr.c kexgssc.c kexgsss.c kex.h monitor.c sshconnect2.c sshd.c

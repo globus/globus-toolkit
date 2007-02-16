@@ -11,9 +11,11 @@
 #include "includes.h"
 
 #if defined(HAVE_MD5_PASSWORDS) && !defined(HAVE_MD5_CRYPT)
-#include <openssl/md5.h>
+#include <sys/types.h>
 
-RCSID("$Id$");
+#include <string.h>
+
+#include <openssl/md5.h>
 
 /* 0 ... 63 => ascii - 64 */
 static unsigned char itoa64[] =

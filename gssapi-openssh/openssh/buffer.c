@@ -1,3 +1,4 @@
+/* $OpenBSD: buffer.c,v 1.31 2006/08/03 03:34:41 deraadt Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -12,11 +13,22 @@
  */
 
 #include "includes.h"
-RCSID("$OpenBSD: buffer.c,v 1.23 2005/03/14 11:46:56 markus Exp $");
+
+#include <sys/param.h>
+
+#include <stdio.h>
+#include <string.h>
+#include <stdarg.h>
 
 #include "xmalloc.h"
 #include "buffer.h"
 #include "log.h"
+
+#define	BUFFER_MAX_CHUNK	0x100000
+#define	BUFFER_MAX_LEN		0xa00000
+/* try increasing to 256k in hpnxfers */
+#define	BUFFER_ALLOCSZ		0x008000  /* 32k */
+#define BUFFER_ALLOCSZ_HPN      0x040000  /* 256k */
 
 /* Initializes the buffer structure. */
 
@@ -66,6 +78,23 @@ buffer_append(Buffer *buffer, const void *data, u_int len)
 	memcpy(p, data, len);
 }
 
+static int
+buffer_compact(Buffer *buffer)
+{
+	/*
+	 * If the buffer is quite empty, but all data is at the end, move the
+	 * data to the beginning.
+	 */
+	if (buffer->offset > MIN(buffer->alloc, BUFFER_MAX_CHUNK)) {
+		memmove(buffer->buf, buffer->buf + buffer->offset,
+			buffer->end - buffer->offset);
+		buffer->end -= buffer->offset;
+		buffer->offset = 0;
+		return (1);
+	}
+	return (0);
+}
+
 /*
  * Appends space to the buffer, expanding the buffer if necessary. This does
  * not actually copy the data into the buffer, but instead returns a pointer
@@ -76,6 +105,8 @@ void *
 buffer_append_space(Buffer *buffer, u_int len)
 {
 	u_int newlen;
+	u_int buf_max;
+	u_int buf_alloc_sz;
 	void *p;
 
 	if (len > BUFFER_MAX_CHUNK)
@@ -93,27 +124,55 @@ restart:
 		buffer->end += len;
 		return p;
 	}
-	/*
-	 * If the buffer is quite empty, but all data is at the end, move the
-	 * data to the beginning and retry.
-	 */
-	if (buffer->offset > MIN(buffer->alloc, BUFFER_MAX_CHUNK)) {
-		memmove(buffer->buf, buffer->buf + buffer->offset,
-			buffer->end - buffer->offset);
-		buffer->end -= buffer->offset;
-		buffer->offset = 0;
-		goto restart;
-	}
-	/* Increase the size of the buffer and retry. */
 
-	newlen = buffer->alloc + len + 32768;
-	if (newlen > BUFFER_MAX_HPN_LEN)
+	/* Compact data back to the start of the buffer if necessary */
+	if (buffer_compact(buffer))
+		goto restart;
+
+	/* if hpn is disabled use the smaller buffer size */
+	buf_max = BUFFER_MAX_LEN_HPN;
+	buf_alloc_sz = BUFFER_ALLOCSZ_HPN;
+
+	/* Increase the size of the buffer and retry. */
+	newlen = roundup(buffer->alloc + len, buf_alloc_sz);
+
+
+	if (newlen > buf_max)
 		fatal("buffer_append_space: alloc %u not supported",
 		    newlen);
-	buffer->buf = xrealloc(buffer->buf, newlen);
+	buffer->buf = xrealloc(buffer->buf, 1, newlen);
 	buffer->alloc = newlen;
 	goto restart;
 	/* NOTREACHED */
+}
+
+/*
+ * Check whether an allocation of 'len' will fit in the buffer
+ * This must follow the same math as buffer_append_space
+ */
+int
+buffer_check_alloc(Buffer *buffer, u_int len)
+{
+        u_int buf_max;
+        u_int buf_alloc_sz;
+
+	if (buffer->offset == buffer->end) {
+		buffer->offset = 0;
+		buffer->end = 0;
+	}
+ restart:
+	if (buffer->end + len < buffer->alloc)
+		return (1);
+	if (buffer_compact(buffer))
+		goto restart;
+
+	/* if hpn is disabled use the smaller buffer size */
+	buf_max = BUFFER_MAX_LEN_HPN;
+	buf_alloc_sz = BUFFER_ALLOCSZ_HPN;
+
+	if (roundup(buffer->alloc + len, buf_alloc_sz) <= buf_max)
+		return (1);
+	return (0);
 }
 
 /* Returns the number of bytes of data in the buffer. */

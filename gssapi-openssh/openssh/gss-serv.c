@@ -1,7 +1,7 @@
-/*	$OpenBSD: gss-serv.c,v 1.13 2005/10/13 22:24:31 stevesk Exp $	*/
+/* $OpenBSD: gss-serv.c,v 1.20 2006/08/03 03:34:42 deraadt Exp $ */
 
 /*
- * Copyright (c) 2001-2003 Simon Wilkinson. All rights reserved.
+ * Copyright (c) 2001-2006 Simon Wilkinson. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -28,19 +28,29 @@
 
 #ifdef GSSAPI
 
-#include "bufaux.h"
+#include <sys/types.h>
+
+#include <stdarg.h>
+#include <string.h>
+#include <unistd.h>
+
+#include "xmalloc.h"
+#include "buffer.h"
+#include "key.h"
+#include "hostfile.h"
 #include "auth.h"
 #include "log.h"
 #include "channels.h"
 #include "session.h"
+#include "misc.h"
 #include "servconf.h"
+
 #include "xmalloc.h"
-#include "getput.h"
+#include "ssh-gss.h"
 #include "monitor_wrap.h"
 
-#include "ssh-gss.h"
-
 extern ServerOptions options;
+extern Authctxt *the_authctxt;
 
 static ssh_gssapi_client gssapi_client =
     { GSS_C_EMPTY_BUFFER, GSS_C_EMPTY_BUFFER,
@@ -82,8 +92,8 @@ ssh_gssapi_server_mechanisms() {
 
 /* Unprivileged */
 int
-ssh_gssapi_server_check_mech(gss_OID oid, void *data) {
-	Gssctxt * ctx = NULL;
+ssh_gssapi_server_check_mech(Gssctxt **dum, gss_OID oid, const char *data) {
+	Gssctxt *ctx = NULL;
 	int res;
  
 	res = !GSS_ERROR(PRIVSEP(ssh_gssapi_server_ctx(&ctx, oid)));
@@ -114,6 +124,58 @@ ssh_gssapi_supported_oids(gss_OID_set *oidset)
 			    &supported_mechs[i]->oid, oidset);
 		i++;
 	}
+
+	gss_release_oid_set(&min_status, &supported);
+}
+
+OM_uint32
+ssh_gssapi_server_ctx(Gssctxt **ctx, gss_OID oid)
+{
+	if (*ctx)
+		ssh_gssapi_delete_ctx(ctx);
+	ssh_gssapi_build_ctx(ctx);
+	ssh_gssapi_set_oid(*ctx, oid);
+	return (ssh_gssapi_acquire_cred(*ctx));
+}
+
+/* Acquire credentials for a server running on the current host.
+ * Requires that the context structure contains a valid OID
+ */
+
+/* Returns a GSSAPI error code */
+OM_uint32
+ssh_gssapi_acquire_cred(Gssctxt *ctx)
+{
+	OM_uint32 status;
+	char lname[MAXHOSTNAMELEN];
+	gss_OID_set oidset;
+
+	if (options.gss_strict_acceptor) {
+		gss_create_empty_oid_set(&status, &oidset);
+		gss_add_oid_set_member(&status, ctx->oid, &oidset);
+
+		if (gethostname(lname, MAXHOSTNAMELEN)) {
+			gss_release_oid_set(&status, &oidset);
+			return (-1);
+		}
+
+		if (GSS_ERROR(ssh_gssapi_import_name(ctx, lname))) {
+			gss_release_oid_set(&status, &oidset);
+			return (ctx->major);
+		}
+
+		if ((ctx->major = gss_acquire_cred(&ctx->minor,
+		    ctx->name, 0, oidset, GSS_C_ACCEPT, &ctx->creds, 
+		    NULL, NULL)))
+			ssh_gssapi_error(ctx);
+
+		gss_release_oid_set(&status, &oidset);
+		return (ctx->major);
+	} else {
+		ctx->name = GSS_C_NO_NAME;
+		ctx->creds = GSS_C_NO_CREDENTIAL;
+	}
+	return GSS_S_COMPLETE;
 }
 
 
@@ -202,7 +264,7 @@ ssh_gssapi_parse_ename(Gssctxt *ctx, gss_buffer_t ename, gss_buffer_t name)
 	 * second without.
 	 */
 
-	oidl = GET_16BIT(tok+2); /* length including next two bytes */
+	oidl = get_u16(tok+2); /* length including next two bytes */
 	oidl = oidl-2; /* turn it into the _real_ length of the variable OID */
 
 	/*
@@ -219,14 +281,14 @@ ssh_gssapi_parse_ename(Gssctxt *ctx, gss_buffer_t ename, gss_buffer_t name)
 	if (ename->length < offset+4)
 		return GSS_S_FAILURE;
 
-	name->length = GET_32BIT(tok+offset);
+	name->length = get_u32(tok+offset);
 	offset += 4;
 
 	if (ename->length < offset+name->length)
 		return GSS_S_FAILURE;
 
 	name->value = xmalloc(name->length+1);
-	memcpy(name->value, tok+offset,name->length);
+	memcpy(name->value, tok+offset, name->length);
 	((char *)name->value)[name->length] = 0;
 
 	return GSS_S_COMPLETE;
@@ -289,7 +351,8 @@ ssh_gssapi_cleanup_creds(void)
 {
 	if (gssapi_client.store.filename != NULL) {
 		/* Unlink probably isn't sufficient */
-		debug("removing gssapi cred file\"%s\"", gssapi_client.store.filename);
+		debug("removing gssapi cred file\"%s\"",
+		    gssapi_client.store.filename);
 		unlink(gssapi_client.store.filename);
 	}
 }
@@ -299,6 +362,11 @@ void
 ssh_gssapi_storecreds(void)
 {
 	if (gssapi_client.mech && gssapi_client.mech->storecreds) {
+        if (options.gss_creds_path) {
+            gssapi_client.store.filename =
+                expand_authorized_keys(options.gss_creds_path,
+                                       the_authctxt->pw);
+        }
 		(*gssapi_client.mech->storecreds)(&gssapi_client);
 	} else
 		debug("ssh_gssapi_storecreds: Not a GSSAPI mechanism");

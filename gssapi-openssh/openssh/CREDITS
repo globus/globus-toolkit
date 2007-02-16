@@ -25,6 +25,7 @@ Chris, the Young One <cky@pobox.com> - Password auth fixes
 Christos Zoulas <christos@zoulas.com> - Autoconf fixes
 Chun-Chung Chen <cjj@u.washington.edu> - RPM fixes
 Corinna Vinschen <vinschen@redhat.com> - Cygwin support
+Chad Mynhier <mynhier@interstel.net> - Solaris Process Contract support
 Dan Brosemer <odin@linuxfreak.com> - Autoconf support, build fixes
 Darren Hall <dhall@virage.org> - AIX patches
 Darren Tucker <dtucker@zip.com.au> - AIX BFF package scripts

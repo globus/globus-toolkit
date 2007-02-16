@@ -31,19 +31,6 @@
 #ifdef HAVE_SYS_SOCKET_H
 # include <sys/socket.h>
 #endif
-#ifdef HAVE_UNISTD_H
-# include <unistd.h>	/* for seteuid() */
-#endif
-
-#ifdef WITH_AIXAUTHENTICATE
-# include <login.h>
-# include <userpw.h>
-# if defined(HAVE_SYS_AUDIT_H) && defined(AIX_LOGINFAILED_4ARG)
-#  undef T_NULL
-#  include <sys/audit.h>
-# endif
-# include <usersec.h>
-#endif
 
 #include "buffer.h"
 
