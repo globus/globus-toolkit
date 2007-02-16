@@ -29,5 +29,3 @@ ALL perl $CVSROOT/cvs_scripts/log_accum.pl %s
 ALL perl $CVSROOT/dirt_active/scripts/dolog.pl -r $CVSROOT cvs-update@globus.org
 #myproxy perl /afs/ncsa/projects/globus/mbletzin/CVSROOT/log_accum.pl -d -m novotny@ncsa.uiuc.edu -m vwelch@ncsa.uiuc.edu -w -s %s
 ^dirt (echo "Updating dirt_active files..." ; (sleep 2; cd $CVSROOT/dirt_active; cvs -Q update -d; ) &) 
-# ^documentation/web (echo "Updating docs."; (sleep 2; perl $CVSROOT/cvs_scripts/website.pl %s ) &)
-ALL /usr/bin/loginfo  %{sVv}
