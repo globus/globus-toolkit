@@ -41,7 +41,6 @@ cd ..
 echo ==================================================
 echo Building zlib-1.2.3...
 ls -l
-tar xvfz zlib-1.2.3.tar.gz
 cd zlib-1.2.3
 ./configure --prefix=$ZLIB_LOCATION
 make
