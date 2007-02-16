@@ -1,6 +1,10 @@
 This directory contains files for automated testing of MyProxy using
 the NMI Build and Test Lab (http://nmi.cs.wisc.edu/).
 
+The first step is to request an account at
+<http://nmi.cs.wisc.edu/labs/uw-madison/account-request> if you
+haven't already.
+
 To submit a test build:
 
   $ ssh grandcentral.cs.wisc.edu
