@@ -50,13 +50,19 @@ GLOBUS_FLAVOR_NAME=`gpt-query -name=gsi_openssh | perl -n -e 'if (/gsi_openssh-(
 export GLOBUS_FLAVOR_NAME
 echo GPT GLOBUS_FLAVOR_NAME is $GLOBUS_FLAVOR_NAME.  Installing globus_core.
 gpt-build -nosrc $GLOBUS_FLAVOR_NAME
-echo ==================================================
 if test -f gsi_openssh_bundle-*.tar.gz; then
+  echo ==================================================
   echo Building GSI-OpenSSH GPT bundle...
   gpt-build -force -verbose gsi_openssh_bundle-*.tar.gz $GLOBUS_FLAVOR_NAME \
     GSI_OPENSSH_GPTMACRO="--with-zlib=$ZLIB_LOCATION"
 fi
 if test -d openssh; then
+  echo ==================================================
+  echo Installing autotools...
+  cd autotools
+  ./install-autotools $GLOBUS_LOCATION
+  cd ..
+  echo ==================================================
   echo Building GSI-OpenSSH from CVS...
   cd openssh
   make -f Makefile.in distprep
