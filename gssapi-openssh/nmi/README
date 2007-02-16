@@ -8,11 +8,12 @@ To submit a test build:
   $ cd nmi
   $ nmi_submit -notify-fail-only cmdfile
 
-The build platforms are specified in cmdfile.
+The build platforms and inputs are specified in cmdfile.
 The nmi_platforms script will show the current list of available
 platforms if run on grandcentral.
-The gsi_openssh_bundle-*-src.tar.gz location must be specified in
-gsissh-src.ftp.
+If testing a GPT bundle, the gsi_openssh_bundle-*-src.tar.gz location
+must be specified in gsissh-src.ftp.
+Define cvs_tag in gsissh-src.cvs to build from a specific CVS tag.
 Otherwise, all the intelligence is in testscript.
 In particular, the GT installers corresponding to the chosen platforms
 must be set in testscript.

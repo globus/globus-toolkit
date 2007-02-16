@@ -46,11 +46,22 @@ make
 make install
 cd ..
 echo ==================================================
-flavor=`gpt-query -name=gsi_openssh | perl -n -e 'if (/gsi_openssh-(.*)-pgm/){print "$1\n";}'|head -1`
-echo GPT flavor is $flavor.  Installing globus_core.
-gpt-build -nosrc $flavor
+GLOBUS_FLAVOR_NAME=`gpt-query -name=gsi_openssh | perl -n -e 'if (/gsi_openssh-(.*)-pgm/){print "$1\n";}'|head -1`
+export GLOBUS_FLAVOR_NAME
+echo GPT GLOBUS_FLAVOR_NAME is $GLOBUS_FLAVOR_NAME.  Installing globus_core.
+gpt-build -nosrc $GLOBUS_FLAVOR_NAME
 echo ==================================================
-echo Building GSI-OpenSSH...
-gpt-build -force -verbose gsi_openssh_bundle-*.tar.gz $flavor \
-  GSI_OPENSSH_GPTMACRO="--with-zlib=$ZLIB_LOCATION"
+if test -f gsi_openssh_bundle-*.tar.gz; then
+  echo Building GSI-OpenSSH GPT bundle...
+  gpt-build -force -verbose gsi_openssh_bundle-*.tar.gz $GLOBUS_FLAVOR_NAME \
+    GSI_OPENSSH_GPTMACRO="--with-zlib=$ZLIB_LOCATION"
+fi
+if test -d openssh; then
+  echo Building GSI-OpenSSH from CVS...
+  cd openssh
+  make -f Makefile.in distprep
+  ./configure --prefix=$GLOBUS_LOCATION \
+    --with-globus-flavor=$GLOBUS_FLAVOR_NAME
+  make install
+fi
 ) 2>&1 # we want stdout & stderr mixed in the output file
