@@ -8,7 +8,8 @@ GPT=gpt*.tar.gz
 TARFILES="gsi_openssh-3.5-src.tar.gz gsi_openssh_setup-3.5-src.tar.gz myproxy-2.3.tar.gz"
 
 BUNDLES=globus-resource-management-server,globus-resource-management-client,globus-resource-management-sdk,globus-data-management-server,globus-data-management-client,globus-data-management-sdk,globus-rls-server,gt4-java-ws-core,gt4-java-admin,gt4-mds,gt4-delegation,gt4-rft,gt4-gram,gt4-gram-pbs,gt4-gram-condor,gt4-gram-lsf,gt4-cas,gt4-c-ws-core,prews-test,globus-internationalization,gt4-java-ws-core-test,gt4-c-ws-core-test,gt4-mds-test,gt4-gram-test,gt4-cas-delegation-test,gt4-rft-test,gt4-webmds,gt4-webmds-test,globus-gsi,gt4-replicator,gt4-wsrls
-PACKAGES=globus_rendezvous,globus_database_psqlodbc
+PACKAGES=globus_rendezvous,globus_database_psqlodbc,globus_xio_udt_ref_driver,globus_xio_skeleton_driver
+
 
 echo Making configure/make installer
 echo Step: Checking out and building autotools.
