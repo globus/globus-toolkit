@@ -1,4 +1,4 @@
-GSI-OpenSSH 3.8, based on OpenSSH 4.3p2, is now available from:
+GSI-OpenSSH 3.9, based on OpenSSH 4.5p1, is now available from:
 
   <http://grid.ncsa.uiuc.edu/ssh/download.html>
 
@@ -11,33 +11,21 @@ use our bugzilla system to report GSI-OpenSSH bugs:
 
   <http://bugzilla.ncsa.uiuc.edu/enter_bug.cgi?product=GSI-enabled%20OpenSSH>
 
-GSI-OpenSSH 3.8 Major changes
+GSI-OpenSSH 3.9 Major changes
 
    New features
 
-      * Upgraded to OpenSSH 4.3p2.
+      * Upgraded to OpenSSH 4.5p1.
 
-      * Upgraded to HPN12 patch from
+      * Upgraded to HPN12v14 patch from
         <http://www.psc.edu/networking/projects/hpn-ssh/>.
 
-      * Added support for Globus Authorization Callouts using service
-        name "ssh"
-        (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=4592).
+      * Added sshd_config GssapiCredentialsPath option 
+        (http://bugzilla.ncsa.uiuc.edu/show_bug.cgi?id=348).
 
    Bugs fixed
 
       * None.
-
-Please note that the configure script included in OpenSSH 4.3p2 checks
-ZLIB_VERSION in zlib.h for zlib versions with known vulnerabilities.
-See <http://www.zlib.net/> for details on zlib vulnerabilities.  The
-current acceptable versions of zlib are 1.1.4 and 1.2.3.  In cases
-where your vendor has not provided a secure version of zlib, please
-install the latest version of zlib in an alternate path and set the
---with-zlib GSI_OPENSSH_GPTMACRO option.  For example:
-
-  gpt-build -verbose gsi_openssh_bundle-3.8-src.tar.gz gcc32dbg \
-    GSI_OPENSSH_GPTMACRO="--with-zlib=/usr/local/zlib-1.2.3"
 
 MD5 checksums:
 126f907d2a02954743ff9141712fe812  gsi_openssh-3.8-src.tar.gz
