@@ -43,5 +43,6 @@ gpt-build -nosrc $flavor
 echo ==================================================
 echo Building GSI-OpenSSH...
 cd ..
-gpt-build -force -verbose gsi_openssh_bundle-*.tar.gz $flavor
+gpt-build -force -verbose gsi_openssh_bundle-*.tar.gz $flavor \
+  GSI_OPENSSH_GPTMACRO="--with-zlib=/prereq/zlib-1.2.3"
 ) 2>&1 # we want stdout & stderr mixed in the output file
