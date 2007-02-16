@@ -44,6 +44,7 @@ cd zlib-1.2.3
 ./configure --prefix=$ZLIB_LOCATION
 make
 make install
+cd ..
 echo ==================================================
 flavor=`gpt-query -name=gsi_openssh | perl -n -e 'if (/gsi_openssh-(.*)-pgm/){print "$1\n";}'|head -1`
 echo GPT flavor is $flavor.  Installing globus_core.
