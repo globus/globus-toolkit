@@ -3588,6 +3588,32 @@ else
 	AC_SUBST(XAUTH_PATH)
 fi
 
+AC_CHECK_DECL(_PATH_BSHELL, ,
+ AC_DEFINE_UNQUOTED(_PATH_BSHELL, "/bin/sh",
+ [Define to your C shell if not defined in paths.h])
+ [ #include <paths.h> ]
+)
+
+AC_CHECK_DECL(_PATH_CSHELL, ,
+ AC_DEFINE_UNQUOTED(_PATH_CSHELL, "/bin/csh",
+ [Define to your Bourne shell if not defined in paths.h])
+ [ #include <paths.h> ]
+)
+
+AC_CHECK_DECL(_PATH_SHELLS, ,
+ AC_DEFINE_UNQUOTED(_PATH_BSHELL, "/etc/shells",
+ [Define to your shells file if not defined in paths.h])
+ [ #include <paths.h> ]
+)
+
+# if _PATH_MAILDIR is in paths.h then we won't go hunting for it.
+AC_CHECK_DECL(_PATH_MAILDIR,
+ AC_DEFINE(PATH_MAILDIR_IN_PATHS_H, 1,
+ [Define if _PATH_MAILDIR is in paths.h]),
+ ,
+ [ #include <paths.h> ]
+)
+
 # Check for mail directory (last resort if we cannot get it from headers)
 if test ! -z "$MAIL" ; then
 	maildir=`dirname $MAIL`
