@@ -60,8 +60,8 @@ init_pathnames()
 {
     char *gl;
 
-    gl = getenv("GLOBUS_LOCATION");
-    if (gl == NULL) {
+    gl = (char *)getenv("GLOBUS_LOCATION");
+    if (gl == (char *)NULL) {
 	fatal("GLOBUS_LOCATION environment variable undefined.");
     }
 
