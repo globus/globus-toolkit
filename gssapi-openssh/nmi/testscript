@@ -65,9 +65,11 @@ if test -d openssh; then
   echo ==================================================
   echo Building GSI-OpenSSH from CVS...
   cd openssh
-  make -f Makefile.in distprep
+  autoreconf
   ./configure --prefix=$GLOBUS_LOCATION \
-    --with-globus-flavor=$GLOBUS_FLAVOR_NAME
+    --with-globus-flavor=$GLOBUS_FLAVOR_NAME \
+    --with-zlib=$ZLIB_LOCATION \
+    --with-privsep-user=$USER --with-privsep-path=$GLOBUS_LOCATION/var/empty
   make install
 fi
 ) 2>&1 # we want stdout & stderr mixed in the output file
