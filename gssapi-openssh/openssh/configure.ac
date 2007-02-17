@@ -3590,19 +3590,19 @@ fi
 
 AC_CHECK_DECL(_PATH_BSHELL, ,
  AC_DEFINE_UNQUOTED(_PATH_BSHELL, "/bin/sh",
- [Define to your C shell if not defined in paths.h])
+ [Define to your C shell if not defined in paths.h]),
  [ #include <paths.h> ]
 )
 
 AC_CHECK_DECL(_PATH_CSHELL, ,
  AC_DEFINE_UNQUOTED(_PATH_CSHELL, "/bin/csh",
- [Define to your Bourne shell if not defined in paths.h])
+ [Define to your Bourne shell if not defined in paths.h]),
  [ #include <paths.h> ]
 )
 
 AC_CHECK_DECL(_PATH_SHELLS, ,
  AC_DEFINE_UNQUOTED(_PATH_BSHELL, "/etc/shells",
- [Define to your shells file if not defined in paths.h])
+ [Define to your shells file if not defined in paths.h]),
  [ #include <paths.h> ]
 )
 
