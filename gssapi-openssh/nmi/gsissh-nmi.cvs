@@ -1,4 +1,4 @@
 method = cvs
 cvs_root = :pserver:anonymous@cvs.ncsa.uiuc.edu:/CVS/gssapi-openssh
 cvs_module = nmi
-#cvs_tag = 
+#cvs_tag = OPENSSH_3_1P1_GSSAPI_GPT-branch
