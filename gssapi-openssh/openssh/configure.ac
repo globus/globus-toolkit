@@ -3542,7 +3542,7 @@ AC_CHECK_DECL(_PATH_CSHELL, ,
 )
 
 AC_CHECK_DECL(_PATH_SHELLS, ,
- AC_DEFINE_UNQUOTED(_PATH_BSHELL, "/etc/shells",
+ AC_DEFINE_UNQUOTED(_PATH_SHELLS, "/etc/shells",
  [Define to your shells file if not defined in paths.h]),
  [ #include <paths.h> ]
 )
