@@ -67,7 +67,7 @@ if test -d openssh; then
   if test -f make_gpt_dist; then
     echo Building GSI-OpenSSH GPT package from CVS...
     ./make_gpt_dist
-    gpt-build -force -verbose gsi_openssh_bundle-*.tar.gz $GLOBUS_FLAVOR_NAME \
+    gpt-build -force -verbose gsi_openssh-*.tar.gz $GLOBUS_FLAVOR_NAME \
       GSI_OPENSSH_GPTMACRO="--with-zlib=$ZLIB_LOCATION"
   else
     echo Building GSI-OpenSSH from CVS trunk...
