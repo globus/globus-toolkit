@@ -63,13 +63,20 @@ if test -d openssh; then
   ./install-autotools $GLOBUS_LOCATION
   cd ..
   echo ==================================================
-  echo Building GSI-OpenSSH from CVS...
   cd openssh
-  autoreconf
-  ./configure --prefix=$GLOBUS_LOCATION \
-    --with-globus-flavor=$GLOBUS_FLAVOR_NAME \
-    --with-zlib=$ZLIB_LOCATION \
-    --with-privsep-user=$USER --with-privsep-path=$GLOBUS_LOCATION/var/empty
-  make install
+  if test -f make_gpt_dist; then
+    echo Building GSI-OpenSSH GPT package from CVS...
+    ./make_gpt_dist
+    gpt-build -force -verbose gsi_openssh_bundle-*.tar.gz $GLOBUS_FLAVOR_NAME \
+      GSI_OPENSSH_GPTMACRO="--with-zlib=$ZLIB_LOCATION"
+  else
+    echo Building GSI-OpenSSH from CVS trunk...
+    autoreconf
+    ./configure --prefix=$GLOBUS_LOCATION \
+      --with-globus-flavor=$GLOBUS_FLAVOR_NAME \
+      --with-zlib=$ZLIB_LOCATION \
+      --with-privsep-user=$USER --with-privsep-path=$GLOBUS_LOCATION/var/empty
+    make install
+  fi
 fi
 ) 2>&1 # we want stdout & stderr mixed in the output file
