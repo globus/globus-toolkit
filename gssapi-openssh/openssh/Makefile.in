@@ -247,7 +247,7 @@ catman-do:
 distprep: catman-do
 	$(AUTORECONF)
 	-rm -rf autom4te.cache
-	(cd scard && $(MAKE) -f Makefile.in distprep)
+#	(cd scard && $(MAKE) -f Makefile.in distprep)
 
 install: $(CONFIGFILES) ssh_prng_cmds.out $(MANPAGES) $(TARGETS) install-files install-sysconf host-key check-config
 install-nokeys: $(CONFIGFILES) ssh_prng_cmds.out $(MANPAGES) $(TARGETS) install-files install-sysconf
