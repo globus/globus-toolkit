@@ -163,6 +163,10 @@ int mm_answer_gss_setup_ctx(int, Buffer *);
 int mm_answer_gss_accept_ctx(int, Buffer *);
 int mm_answer_gss_userok(int, Buffer *);
 int mm_answer_gss_checkmic(int, Buffer *);
+int mm_answer_gss_sign(int, Buffer *);
+int mm_answer_gss_error(int, Buffer *);
+int mm_answer_gss_indicate_mechs(int, Buffer *);
+int mm_answer_gss_localname(int, Buffer *);
 #endif
 
 #ifdef SSH_AUDIT_EVENTS
@@ -202,12 +206,12 @@ struct mon_table {
 struct mon_table mon_dispatch_proto20[] = {
     {MONITOR_REQ_MODULI, MON_ONCE, mm_answer_moduli},
     {MONITOR_REQ_SIGN, MON_ONCE, mm_answer_sign},
-    {MONITOR_REQ_PWNAM, MON_ONCE, mm_answer_pwnamallow},
+    {MONITOR_REQ_PWNAM, MON_AUTH, mm_answer_pwnamallow},
     {MONITOR_REQ_AUTHSERV, MON_ONCE, mm_answer_authserv},
     {MONITOR_REQ_AUTH2_READ_BANNER, MON_ONCE, mm_answer_auth2_read_banner},
     {MONITOR_REQ_AUTHPASSWORD, MON_AUTH, mm_answer_authpassword},
 #ifdef USE_PAM
-    {MONITOR_REQ_PAM_START, MON_ONCE, mm_answer_pam_start},
+    {MONITOR_REQ_PAM_START, MON_ISAUTH, mm_answer_pam_start},
     {MONITOR_REQ_PAM_ACCOUNT, 0, mm_answer_pam_account},
     {MONITOR_REQ_PAM_INIT_CTX, MON_ISAUTH, mm_answer_pam_init_ctx},
     {MONITOR_REQ_PAM_QUERY, MON_ISAUTH, mm_answer_pam_query},
@@ -232,11 +236,22 @@ struct mon_table mon_dispatch_proto20[] = {
     {MONITOR_REQ_GSSSTEP, MON_ISAUTH, mm_answer_gss_accept_ctx},
     {MONITOR_REQ_GSSUSEROK, MON_AUTH, mm_answer_gss_userok},
     {MONITOR_REQ_GSSCHECKMIC, MON_ISAUTH, mm_answer_gss_checkmic},
+    {MONITOR_REQ_GSSSIGN, MON_ONCE, mm_answer_gss_sign},
+    {MONITOR_REQ_GSSERR, MON_ISAUTH | MON_ONCE, mm_answer_gss_error},
+    {MONITOR_REQ_GSSMECHS, MON_ISAUTH, mm_answer_gss_indicate_mechs},
+    {MONITOR_REQ_GSSLOCALNAME, MON_ISAUTH, mm_answer_gss_localname},
 #endif
     {0, 0, NULL}
 };
 
 struct mon_table mon_dispatch_postauth20[] = {
+#ifdef GSSAPI
+    {MONITOR_REQ_GSSSETUP, 0, mm_answer_gss_setup_ctx},
+    {MONITOR_REQ_GSSSTEP, 0, mm_answer_gss_accept_ctx},
+    {MONITOR_REQ_GSSSIGN, 0, mm_answer_gss_sign},
+    {MONITOR_REQ_GSSERR, 0, mm_answer_gss_error},
+    {MONITOR_REQ_GSSMECHS, 0, mm_answer_gss_indicate_mechs},
+#endif
     {MONITOR_REQ_MODULI, 0, mm_answer_moduli},
     {MONITOR_REQ_SIGN, 0, mm_answer_sign},
     {MONITOR_REQ_PTY, 0, mm_answer_pty},
@@ -266,8 +281,15 @@ struct mon_table mon_dispatch_proto15[] = {
     {MONITOR_REQ_SKEYQUERY, MON_ISAUTH, mm_answer_skeyquery},
     {MONITOR_REQ_SKEYRESPOND, MON_AUTH, mm_answer_skeyrespond},
 #endif
+#ifdef GSSAPI
+    {MONITOR_REQ_GSSSETUP, MON_ISAUTH, mm_answer_gss_setup_ctx},
+    {MONITOR_REQ_GSSSTEP, MON_ISAUTH, mm_answer_gss_accept_ctx},
+    {MONITOR_REQ_GSSSIGN, MON_ONCE, mm_answer_gss_sign},
+    {MONITOR_REQ_GSSUSEROK, MON_AUTH, mm_answer_gss_userok},
+    {MONITOR_REQ_GSSMECHS, MON_ISAUTH, mm_answer_gss_indicate_mechs},
+#endif
 #ifdef USE_PAM
-    {MONITOR_REQ_PAM_START, MON_ONCE, mm_answer_pam_start},
+    {MONITOR_REQ_PAM_START, MON_ISAUTH, mm_answer_pam_start},
     {MONITOR_REQ_PAM_ACCOUNT, 0, mm_answer_pam_account},
     {MONITOR_REQ_PAM_INIT_CTX, MON_ISAUTH, mm_answer_pam_init_ctx},
     {MONITOR_REQ_PAM_QUERY, MON_ISAUTH, mm_answer_pam_query},
@@ -341,6 +363,12 @@ monitor_child_preauth(Authctxt *_authctxt, struct monitor *pmonitor)
 		/* Permit requests for moduli and signatures */
 		monitor_permit(mon_dispatch, MONITOR_REQ_MODULI, 1);
 		monitor_permit(mon_dispatch, MONITOR_REQ_SIGN, 1);
+#ifdef GSSAPI		
+		/* and for the GSSAPI key exchange */
+		monitor_permit(mon_dispatch, MONITOR_REQ_GSSSETUP, 1);
+		monitor_permit(mon_dispatch, MONITOR_REQ_GSSERR, 1);
+		monitor_permit(mon_dispatch, MONITOR_REQ_GSSMECHS, 1);
+#endif
 	} else {
 		mon_dispatch = mon_dispatch_proto15;
 
@@ -417,10 +445,21 @@ monitor_child_postauth(struct monitor *pmonitor)
 		monitor_permit(mon_dispatch, MONITOR_REQ_MODULI, 1);
 		monitor_permit(mon_dispatch, MONITOR_REQ_SIGN, 1);
 		monitor_permit(mon_dispatch, MONITOR_REQ_TERM, 1);
+
+#ifdef GSSAPI
+		/* and for the GSSAPI key exchange */
+		monitor_permit(mon_dispatch, MONITOR_REQ_GSSMECHS,1);
+		monitor_permit(mon_dispatch, MONITOR_REQ_GSSSETUP,1);
+		monitor_permit(mon_dispatch, MONITOR_REQ_GSSERR,1);
+#endif
+
 	} else {
 		mon_dispatch = mon_dispatch_postauth15;
 		monitor_permit(mon_dispatch, MONITOR_REQ_TERM, 1);
 	}
+#ifdef GSSAPI		
+	monitor_permit(mon_dispatch, MONITOR_REQ_GSSERR, 1);
+#endif
 	if (!no_pty_flag) {
 		monitor_permit(mon_dispatch, MONITOR_REQ_PTY, 1);
 		monitor_permit(mon_dispatch, MONITOR_REQ_PTYCLEANUP, 1);
@@ -609,13 +648,11 @@ mm_answer_pwnamallow(int sock, Buffer *m)
 
 	debug3("%s", __func__);
 
-	if (authctxt->attempt++ != 0)
-		fatal("%s: multiple attempts for getpwnam", __func__);
-
 	username = buffer_get_string(m, NULL);
 
 	pwent = getpwnamallow(username);
 
+	if (authctxt->user) xfree(authctxt->user);
 	authctxt->user = xstrdup(username);
 	setproctitle("%s [priv]", pwent ? username : "unknown");
 	xfree(username);
@@ -1660,6 +1697,11 @@ mm_get_kex(Buffer *m)
 	kex->kex[KEX_DH_GRP14_SHA1] = kexdh_server;
 	kex->kex[KEX_DH_GEX_SHA1] = kexgex_server;
 	kex->kex[KEX_DH_GEX_SHA256] = kexgex_server;
+#ifdef GSSAPI
+	kex->kex[KEX_GSS_GRP1_SHA1] = kexgss_server;
+	kex->kex[KEX_GSS_GRP14_SHA1] = kexgss_server;
+	kex->kex[KEX_GSS_GEX_SHA1] = kexgss_server;
+#endif
 	kex->server = 1;
 	kex->hostkey_type = buffer_get_int(m);
 	kex->kex_type = buffer_get_int(m);
@@ -1900,7 +1942,9 @@ mm_answer_gss_accept_ctx(int sock, Buffer *m)
 	if (major == GSS_S_COMPLETE) {
 		monitor_permit(mon_dispatch, MONITOR_REQ_GSSSTEP, 0);
 		monitor_permit(mon_dispatch, MONITOR_REQ_GSSUSEROK, 1);
+		monitor_permit(mon_dispatch, MONITOR_REQ_GSSSIGN, 1);
 		monitor_permit(mon_dispatch, MONITOR_REQ_GSSCHECKMIC, 1);
+		monitor_permit(mon_dispatch, MONITOR_REQ_GSSSIGN, 1);
 	}
 	return (0);
 }
@@ -1950,5 +1994,106 @@ mm_answer_gss_userok(int sock, Buffer *m)
 
 	/* Monitor loop will terminate if authenticated */
 	return (authenticated);
+}
+
+int 
+mm_answer_gss_sign(int socket, Buffer *m)
+{
+	gss_buffer_desc data;
+	gss_buffer_desc hash = GSS_C_EMPTY_BUFFER;
+	OM_uint32 major, minor;
+	u_int len;
+
+	data.value = buffer_get_string(m, &len);
+	data.length = len;
+	if (data.length != 20) 
+		fatal("%s: data length incorrect: %d", __func__, data.length);
+
+	/* Save the session ID on the first time around */
+	if (session_id2_len == 0) {
+		session_id2_len = data.length;
+		session_id2 = xmalloc(session_id2_len);
+		memcpy(session_id2, data.value, session_id2_len);
+	}
+	major = ssh_gssapi_sign(gsscontext, &data, &hash);
+
+	xfree(data.value);
+
+	buffer_clear(m);
+	buffer_put_int(m, major);
+	buffer_put_string(m, hash.value, hash.length);
+
+	mm_request_send(socket, MONITOR_ANS_GSSSIGN, m);
+
+	gss_release_buffer(&minor, &hash);
+
+	/* Turn on getpwnam permissions */
+	monitor_permit(mon_dispatch, MONITOR_REQ_PWNAM, 1);
+
+	return (0);
+}
+
+int
+mm_answer_gss_error(int socket, Buffer *m) {
+        OM_uint32 major,minor;
+        char *msg;
+
+	msg=ssh_gssapi_last_error(gsscontext,&major,&minor);
+	buffer_clear(m);
+	buffer_put_int(m,major);
+	buffer_put_int(m,minor);
+	buffer_put_cstring(m,msg);
+
+	mm_request_send(socket,MONITOR_ANS_GSSERR,m);
+
+	xfree(msg);
+	
+        return(0);
+}
+
+int
+mm_answer_gss_indicate_mechs(int socket, Buffer *m) {
+        OM_uint32 major,minor;
+	gss_OID_set mech_set;
+	size_t i;
+
+	major=gss_indicate_mechs(&minor, &mech_set);
+
+	buffer_clear(m);
+	buffer_put_int(m, major);
+	buffer_put_int(m, mech_set->count);
+	for (i=0; i < mech_set->count; i++) {
+	    buffer_put_string(m, mech_set->elements[i].elements,
+			      mech_set->elements[i].length);
+	}
+
+#if !defined(MECHGLUE) /* mechglue memory management bug ??? */
+	gss_release_oid_set(&minor,&mech_set);
+#endif
+	
+	mm_request_send(socket,MONITOR_ANS_GSSMECHS,m);
+
+	return(0);
+}
+
+int
+mm_answer_gss_localname(int socket, Buffer *m) {
+	char *name;
+
+	ssh_gssapi_localname(&name);
+
+        buffer_clear(m);
+	if (name) {
+	    buffer_put_cstring(m, name);
+	    debug3("%s: sending result %s", __func__, name);
+	    xfree(name);
+	} else {
+	    buffer_put_cstring(m, "");
+	    debug3("%s: sending result \"\"", __func__);
+	}
+
+        mm_request_send(socket, MONITOR_ANS_GSSLOCALNAME, m);
+
+        return(0);
 }
 #endif /* GSSAPI */
