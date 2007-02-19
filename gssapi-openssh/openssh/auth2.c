@@ -187,7 +187,7 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
 	if ((style = strchr(user, ':')) != NULL)
 		*style++ = 0;
 
-	/* If first time or username changed or implicit username,
+	/* If first time or username changed or empty username,
 	   setup/reset authentication context. */
 	if ((authctxt->attempt++ == 0) ||
 	    (strcmp(user, authctxt->user) != 0) ||
@@ -197,6 +197,10 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
 		    authctxt->user = NULL;
 		}
 		authctxt->valid = 0;
+        authctxt->user = xstrdup(user);
+        if (strcmp(service, "ssh-connection") != 0) {
+            packet_disconnect("Unsupported service %s", service);
+        }
 #ifdef GSSAPI
 		/* If we're going to set the username based on the
 		   GSSAPI context later, then wait until then to
@@ -205,12 +209,10 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
 		    ((strcmp(method, "gssapi") == 0) ||
 		     (strcmp(method, "gssapi-with-mic") == 0))) {
 			authctxt->pw = fakepw();
-			authctxt->user = xstrdup(user);
 		} else {
 #endif
 		authctxt->pw = PRIVSEP(getpwnamallow(user));
-		authctxt->user = xstrdup(user);
-		if (authctxt->pw && strcmp(service, "ssh-connection")==0) {
+		if (authctxt->pw) {
 			authctxt->valid = 1;
 			debug2("input_userauth_request: setting up authctxt for %s", user);
 		} else {
@@ -229,16 +231,12 @@ input_userauth_request(int type, u_int32_t seq, void *ctxt)
 #endif
 		setproctitle("%s%s", authctxt->valid ? user : "unknown",
 		    use_privsep ? " [net]" : "");
-#ifdef GSSAPI
 		if (authctxt->attempt == 1) {
-#endif
-		authctxt->service = xstrdup(service);
-		authctxt->style = style ? xstrdup(style) : NULL;
-		if (use_privsep)
-			mm_inform_authserv(service, style);
-#ifdef GSSAPI
-		} /* if (authctxt->attempt == 1) */
-#endif
+            authctxt->service = xstrdup(service);
+            authctxt->style = style ? xstrdup(style) : NULL;
+            if (use_privsep)
+                mm_inform_authserv(service, style);
+		}
 	}
 	if (strcmp(service, authctxt->service) != 0) {
 		packet_disconnect("Change of service not allowed: "
