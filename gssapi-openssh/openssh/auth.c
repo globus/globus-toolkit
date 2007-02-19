@@ -269,7 +269,7 @@ auth_log(Authctxt *authctxt, int authenticated, char *method, char *info)
 	    method,
 	    authctxt->valid ? "" : "invalid user ",
 	    (authctxt->user && authctxt->user[0]) ?
-		authctxt->user : "<implicit>",
+		authctxt->user : "unknown",
 	    get_remote_ipaddr(),
 	    get_remote_port(),
 	    info);
@@ -488,7 +488,7 @@ getpwnamallow(const char *user)
 	pw = getpwnam(user);
 	if (pw == NULL) {
 		logit("Invalid user %.100s from %.100s",
-		      (user && user[0]) ? user : "<implicit>",
+		      (user && user[0]) ? user : "unknown",
 		      get_remote_ipaddr());
 #ifdef CUSTOM_FAILED_LOGIN
 		record_failed_login(user,

@@ -287,29 +287,28 @@ input_gssapi_errtok(int type, u_int32_t plen, void *ctxt)
 }
 
 static void
-gssapi_set_implicit_username(Authctxt *authctxt)
+gssapi_set_username(Authctxt *authctxt)
 {
+    char *lname = NULL;
+
     if ((authctxt->user == NULL) || (authctxt->user[0] == '\0')) {
-	char *lname = NULL;
-	PRIVSEP(ssh_gssapi_localname(&lname));
-	if (lname && lname[0] != '\0') {
-	    if (authctxt->user) xfree(authctxt->user);
-	    authctxt->user = lname;
-	    debug("set username to %s from gssapi context", lname);
-	    authctxt->pw = PRIVSEP(getpwnamallow(authctxt->user));
-	    if (authctxt->pw) {
-		authctxt->valid = 1;
-	    }
-	} else {
-	    debug("failed to set username from gssapi context");
-	    packet_send_debug("failed to set username from gssapi context");
-	}
-    }
-    if (authctxt->pw) {
+        PRIVSEP(ssh_gssapi_localname(&lname));
+        if (lname && lname[0] != '\0') {
+            if (authctxt->user) xfree(authctxt->user);
+            authctxt->user = lname;
+            debug("set username to %s from gssapi context", lname);
+            authctxt->pw = PRIVSEP(getpwnamallow(authctxt->user));
+            if (authctxt->pw) {
+                authctxt->valid = 1;
 #ifdef USE_PAM
-	if (options.use_pam)
-		PRIVSEP(start_pam(authctxt));
+                if (options.use_pam)
+                    PRIVSEP(start_pam(authctxt));
 #endif
+            }
+        } else {
+            debug("failed to set username from gssapi context");
+            packet_send_debug("failed to set username from gssapi context");
+        }
     }
 }
 
@@ -383,8 +382,6 @@ input_gssapi_mic(int type, u_int32_t plen, void *ctxt)
 	if (authctxt == NULL || (authctxt->methoddata == NULL && !use_privsep))
 		fatal("No authentication or GSSAPI context");
 
-	gssapi_set_implicit_username(authctxt);
-
 	gssctxt = authctxt->methoddata;
 
 	mic.value = packet_get_string(&len);
@@ -395,6 +392,8 @@ input_gssapi_mic(int type, u_int32_t plen, void *ctxt)
 
 	gssbuf.value = buffer_ptr(&b);
 	gssbuf.length = buffer_len(&b);
+
+    gssapi_set_username(authctxt);
 
 	if (!GSS_ERROR(PRIVSEP(ssh_gssapi_checkmic(gssctxt, &gssbuf, &mic))))
 	    if (authctxt->valid && authctxt->user && authctxt->user[0]) {
