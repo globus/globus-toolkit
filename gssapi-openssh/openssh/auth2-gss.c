@@ -328,7 +328,7 @@ input_gssapi_exchange_complete(int type, u_int32_t plen, void *ctxt)
 	if (authctxt == NULL || (authctxt->methoddata == NULL && !use_privsep))
 		fatal("No authentication or GSSAPI context");
 
-	gssapi_set_implicit_username(authctxt);
+	gssapi_set_username(authctxt);
 
 	gssctxt = authctxt->methoddata;
 
