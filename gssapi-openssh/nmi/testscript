@@ -40,7 +40,7 @@ make gsi-openssh install
 cd ..
 echo ==================================================
 if test -d /prereq/zlib-1.2.3; then
-  $ZLIB_LOCATION=/prereq/zlib-1.2.3
+  ZLIB_LOCATION=/prereq/zlib-1.2.3
   echo zlib found in $ZLIB_LOCATION
 else
   echo Building zlib-1.2.3...
