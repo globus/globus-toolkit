@@ -82,6 +82,7 @@
 #undef HAVE_NETINET_IN_H
 #undef HAVE_SYS_STAT_H
 #undef HAVE_SYS_TYPES_H
+#undef HAVE_SYS_SYSCTL_H
 #undef HAVE_IO_H
 #undef HAVE_SYS_SIGNAL_H
 #undef HAVE_UNISTD_H

@@ -25,9 +25,9 @@
 #include "globus_handle_table.h"
 #include "globus_libc.h"
 #include "globus_print.h"
-#include <unistd.h>
-#include <sys/types.h>
+#ifdef HAVE_SYS_SYSCTL_H
 #include <sys/sysctl.h>
+#endif
 
 #define GLOBUS_CALLBACK_POLLING_THREADS (getnumcpus() + 1)
 
@@ -194,7 +194,7 @@ getnumcpus()
 #ifdef _SC_NPROCESSORS_CONF
     return sysconf(_SC_NPROCESSORS_CONF);
 #else
-#ifdef HW_NCPU
+#if defined(HW_NCPU) && defined(HAVE_SYS_SYSCTL_H)
     int mib[2] = {CTL_HW, HW_NCPU};
     int ncpus;
     size_t len = sizeof(ncpus);
