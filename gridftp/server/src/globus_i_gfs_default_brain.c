@@ -20,7 +20,7 @@
 #define GFS_BRAIN_FIXED_SIZE    256
 #define GFS_DB_REPO_SIZE        16
 #define GFS_DB_REPO_NAME        "default"
-#define STATIC_TIMEOUT          90
+#define STATIC_TIMEOUT          10
 
 #define COOKIE_LEN              16
 

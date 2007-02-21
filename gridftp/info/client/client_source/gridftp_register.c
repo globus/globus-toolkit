@@ -61,8 +61,10 @@ main(
     int                                     len;
     char *                                  local_contact = NULL;
     char *                                  tmp_ptr;
+    char *                                  cookie_str;
+    char                                    cookie[16];
 
-    if(argc < 4)
+    if(argc < 5)
     {
         help();
         return 1;
@@ -95,6 +97,8 @@ main(
     arg_i++;
     cs = argv[arg_i];
     arg_i++;
+    cookie_str = argv[arg_i];
+    arg_i++;
     c_count = atoi(argv[arg_i]);
     arg_i++;
 
@@ -111,9 +115,14 @@ main(
     {
         repo = argv[arg_i];
     }
+
+    memset(cookie, '\0', 16);
+    strncpy(cookie, cookie_str, 16);
+
     res = globus_xio_handle_create(&xio_handle, stack);
     test_res(res);
 
+printf("##### %s\n", registry_cs);
     res = globus_xio_open(xio_handle, registry_cs, NULL);
     test_res(res);
 
@@ -136,14 +145,17 @@ main(
     len = strlen(repo);
     msg[0] = (char)c_count;
     msg[1] = (char)total;
-    memcpy(&msg[2], repo, len);
-    msg[len+2] = '\0';
-    sprintf(&msg[len+3], "%s:%s", local_contact, cs);
+    strncpy(&msg[2], cookie, 16);
+    
+    memcpy(&msg[16+2], repo, len);
+    msg[len+16+2] = '\0';
+    sprintf(&msg[len+16+3], "%s:%s", local_contact, cs);
     printf("registering\n  repo=[%s]\n  server contact=[%s]\n  max=[%d]\n"
-                        "  total=[%d]\n",
-        repo, &msg[len+3], c_count, total);
+                        "  total=[%d]\n  cookie=[%s]\n",
+        repo, &msg[len+16+3], c_count, total, &msg[len+2]);
     res = globus_xio_write(xio_handle, msg, 256, 256, &nbytes, NULL);
     test_res(res);
+    assert(nbytes == 256);
 
     globus_xio_close(xio_handle, NULL);
 

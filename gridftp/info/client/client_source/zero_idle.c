@@ -38,6 +38,11 @@
 
 #define gmon_test_result(_r) gmon_test_result_real(_r, __LINE__)
 
+#define NIDLE 4
+#define TIMESPACE 0
+#define TIMESPACE_CAP 5000
+/*#define FAKE_HOST "ONLY" */
+
 static int                              l_connections = 0;
 static char *                           l_exe_name;
 static globus_hashtable_t               l_host_table;
@@ -45,6 +50,15 @@ static globus_bool_t                    l_done = GLOBUS_FALSE;
 static globus_mutex_t                   l_mutex;
 static globus_cond_t                    l_cond;
 static globus_fifo_t                    l_host_q;
+static globus_hashtable_t               l_last_time;
+
+
+static
+void
+period_cb(void * user_arg)
+{
+
+}
 
 globus_result_t
 chosting_i_util_add_notification(
@@ -177,25 +191,58 @@ l_frontend_changed(
             new->openConnections);
     }
 
-    for(i = l_connections; i < new->openConnections; i++)
+    for(i = l_connections; i < new->openConnections + NIDLE; i++)
     {
         pid_t pid;
         int rc;
         char * hn;
+        char * hash_hn;
+        time_t next_tm;
+        time_t now_tm;
+        int diff;
 
         hn = (char *) globus_fifo_dequeue(&l_host_q);
         globus_fifo_enqueue(&l_host_q, hn);
 
+        hash_hn = hn;
+#       if defined(FAKE_HOST)
+            hash_hn = FAKE_HOST;
+#       endif
+        next_tm = (time_t)globus_hashtable_lookup(&l_last_time, hash_hn);
+        now_tm = time(NULL);
+        if(next_tm == 0)
+        {
+            next_tm = now_tm;
+            globus_hashtable_insert(&l_last_time, hash_hn, (void *)next_tm);
+        }
+
+        if(next_tm > now_tm)
+        {
+            diff = next_tm - now_tm;
+        }
+        else
+        {
+            diff = 0;
+        }
+        if(diff > TIMESPACE_CAP)
+        {
+            diff = TIMESPACE_CAP;
+        }
+        next_tm = TIMESPACE + now_tm + diff;
+
+        globus_hashtable_update(&l_last_time, hash_hn, (void *)next_tm);
+
         pid = fork();
         if(pid == 0)
         {
+            printf("### SLEEPING %d first\n", diff);
+            sleep(diff);
             printf("starting a new backend %d: %s %s\n", i, l_exe_name, hn);
             rc = execl(l_exe_name, l_exe_name, hn, NULL);
             exit(rc);
         }
     }
-
-    l_connections = new->openConnections;
+    l_connections = new->openConnections + NIDLE;
 }
 
 
@@ -213,6 +260,7 @@ main(
     globus_soap_message_attr_t          attr = NULL;
     globus_service_engine_t             engine;
     int                                 i;
+    globus_reltime_t                    per;
 
     globus_module_activate(GLOBUS_SOAP_MESSAGE_MODULE);
     globus_module_activate(GLOBUS_SERVICE_ENGINE_MODULE);
@@ -247,6 +295,12 @@ main(
         globus_hashtable_string_hash,
         globus_hashtable_string_keyeq);
 
+    globus_hashtable_init(
+        &l_last_time,
+        64,
+        globus_hashtable_string_hash,
+        globus_hashtable_string_keyeq);
+
     globus_soap_message_attr_init(&attr);
 
     globus_soap_message_attr_set(
@@ -275,6 +329,14 @@ main(
         0);
     gmon_test_result(result);
     globus_soap_message_handle_destroy(soap_handle);
+
+    GlobusTimeReltimeSet(per, 1, 0);
+    globus_callback_register_periodic(
+        NULL,
+        &per,
+        &per,
+        period_cb,
+        NULL);
 
     printf("starting engine\n");
     result = globus_service_engine_init(
@@ -307,9 +369,16 @@ main(
         printf("wait for events\n");
         while(!l_done)
         {
-            int     status;
+            int     status, rc;
 
-            waitpid(-1, &status, WNOHANG);
+            rc = waitpid(-1, &status, WNOHANG);
+            if(rc > 0)
+            {
+                if(WEXITSTATUS(status) != 0)
+                {
+                    printf("CHILD RETURNED AN ERROR\n");
+                }
+            }
             globus_cond_wait(&l_cond, &l_mutex);
         }
     }
