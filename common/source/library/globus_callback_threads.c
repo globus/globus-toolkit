@@ -29,7 +29,8 @@
 #include <sys/sysctl.h>
 #endif
 
-#define GLOBUS_CALLBACK_POLLING_THREADS (GLOBUS_MIN(getnumcpus(), 8) + 1)
+#define GLOBUS_CALLBACK_POLLING_THREADS_MAX 9 
+#define GLOBUS_CALLBACK_POLLING_THREADS_DEFAULT (getnumcpus() + 1)
 
 #define GLOBUS_L_CALLBACK_INFO_BLOCK_SIZE 32
 #define GLOBUS_L_CALLBACK_SPACE_BLOCK_SIZE 16
@@ -489,7 +490,14 @@ globus_l_callback_activate()
     globus_thread_key_create(
         &globus_l_callback_restart_info_key, GLOBUS_NULL);
     
-    globus_l_callback_max_polling_threads = GLOBUS_CALLBACK_POLLING_THREADS;
+    globus_l_callback_max_polling_threads = 
+        GLOBUS_CALLBACK_POLLING_THREADS_DEFAULT;
+    if(globus_l_callback_max_polling_threads > 
+        GLOBUS_CALLBACK_POLLING_THREADS_MAX)
+    {
+        globus_l_callback_max_polling_threads = 
+            GLOBUS_CALLBACK_POLLING_THREADS_MAX;
+    }
     tmp_string = globus_module_getenv("GLOBUS_CALLBACK_POLLING_THREADS");
     if(tmp_string)
     {
