@@ -29,7 +29,7 @@
 #include <sys/sysctl.h>
 #endif
 
-#define GLOBUS_CALLBACK_POLLING_THREADS (getnumcpus() + 1)
+#define GLOBUS_CALLBACK_POLLING_THREADS (GLOBUS_MIN(getnumcpus(), 8) + 1)
 
 #define GLOBUS_L_CALLBACK_INFO_BLOCK_SIZE 32
 #define GLOBUS_L_CALLBACK_SPACE_BLOCK_SIZE 16
