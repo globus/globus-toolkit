@@ -131,14 +131,15 @@ globus_gfs_ipc_iface_t  globus_gfs_ipc_default_iface =
 typedef struct globus_gfs_ipc_request_s
 {
     globus_gfs_ipc_handle_t             ipc;
-    globus_gfs_operation_type_t       type;
+    globus_gfs_operation_type_t         type;
+    globus_gfs_operation_type_t         last_type;
     int                                 id;
     globus_gfs_ipc_callback_t           cb;
     globus_gfs_ipc_open_callback_t      open_cb;
     globus_gfs_ipc_event_callback_t     event_cb;
     void *                              user_arg;
-    globus_gfs_finished_info_t *            reply;
-    globus_gfs_event_info_t *      event_reply;
+    globus_gfs_finished_info_t *        reply;
+    globus_gfs_event_info_t *           event_reply;
     void *                              info_struct;
 } globus_gfs_ipc_request_t;
 
@@ -447,6 +448,7 @@ globus_l_gfs_ipc_request_destroy(
         {
             /* nothing to do for these */
             case GLOBUS_GFS_OP_RECV:
+            case GLOBUS_GFS_OP_EVENT_REPLY:
             case GLOBUS_GFS_OP_SEND:
             case GLOBUS_GFS_OP_LIST:
             case GLOBUS_GFS_OP_DESTROY:
@@ -3488,7 +3490,7 @@ globus_l_gfs_ipc_request_read_body_cb(
 
                 /* parse based on type
                    callout on all types excet for reply, reply needs lock */
-                switch(request->type)
+                switch(request->last_type)
                 {
                     case GLOBUS_GFS_OP_FINAL_REPLY:
                         reply = globus_l_gfs_ipc_unpack_reply(ipc, buffer, len);
@@ -3647,7 +3649,7 @@ globus_l_gfs_ipc_request_read_header_cb(
                         rc = globus_handle_table_decrement_reference(
                             &ipc->call_table, id);
                         globus_assert(!rc);
-                        request->type = type;
+                        request->last_type = type;
                         break;
                 
                     case GLOBUS_GFS_OP_EVENT_REPLY:
@@ -3658,7 +3660,7 @@ globus_l_gfs_ipc_request_read_header_cb(
                             result = GlobusGFSErrorIPC();
                             goto error;
                         }
-                        request->type = type;                
+                        request->last_type = type;
                         break;
 
                     default:
