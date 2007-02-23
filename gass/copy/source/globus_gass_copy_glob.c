@@ -908,8 +908,8 @@ globus_l_gass_copy_glob_parse_ftp_list(
         }
         
         endline = startline;
-        while(endline < info->list_buffer + info->buffer_length && 
-            *endline != '\r' && *endline != '\n')
+        while(endline + 1 < info->list_buffer + info->buffer_length && 
+            (*endline != '\r' || *(endline + 1) != '\n'))
         {
             endline++;
         } 
