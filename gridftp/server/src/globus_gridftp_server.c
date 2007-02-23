@@ -38,6 +38,7 @@ static globus_bool_t                    globus_l_gfs_sigint_caught = GLOBUS_FALS
 static char **                          globus_l_gfs_child_argv = NULL;
 static int                              globus_l_gfs_child_argc = 0;
 
+
 #ifndef BUILD_LITE
 #define GLOBUS_L_GFS_SIGCHLD_DELAY 10
 static globus_callback_handle_t         globus_l_gfs_sigchld_periodic_handle = 
@@ -1226,6 +1227,60 @@ globus_l_gfs_server_detached()
 
 }
 
+static
+void
+gfs_l_add_acls()
+{
+    globus_gfs_acl_module_t *           mod;
+    char *                              value;
+    char *                              name;
+    globus_bool_t                       cas_found = GLOBUS_FALSE;
+    globus_extension_handle_t           ext_handle;
+    globus_list_t *                     list = NULL;
+    int                                 rc;
+
+    value = globus_i_gfs_config_string("acl");
+    if(value != NULL)
+    {
+        list = globus_list_from_string(value, ',', NULL);
+        while(!globus_list_empty(list))
+        {
+            name = (char *) globus_list_remove(&list, list);
+            if(strncmp(name, "cas", 3) == 0)
+            {
+                cas_found = GLOBUS_TRUE;
+            }
+            else
+            {
+                rc = globus_extension_activate(name);
+                if(rc != 0)
+                {
+                    /* log error */
+                }
+                else
+                {
+                    mod = (globus_gfs_acl_module_t *)
+                        globus_extension_lookup(
+                        &ext_handle,
+                        GLOBUS_GFS_ACL_REGISTRY,
+                        (void *) name);
+                    if(mod != NULL)
+                    {
+                        globus_gfs_acl_add_module(mod);
+                    }
+                }
+            }
+        }
+    }
+
+    /* maintain older parameter */
+    if(cas_found || globus_i_gfs_config_bool("cas"))
+    {
+        globus_gfs_acl_add_module(&globus_gfs_acl_cas_module);
+    }
+}
+
+
 int
 main(
     int                                 argc,
@@ -1346,14 +1401,8 @@ main(
             }
        }
     }
-    if(globus_i_gfs_config_bool("cas"))
-    {
-        globus_gfs_acl_add_module(&globus_gfs_acl_cas_module);
-    }
-    if(globus_i_gfs_config_string("test_acl"))
-    {
-        globus_gfs_acl_add_module(&globus_gfs_acl_test_module);
-    }
+
+    gfs_l_add_acls();
 
     tmp_s = globus_i_gfs_config_string("extension");
     if(tmp_s != NULL)

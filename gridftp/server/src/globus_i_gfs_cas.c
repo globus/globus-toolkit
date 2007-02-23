@@ -139,6 +139,16 @@ globus_gfs_acl_cas_destroy_cb(
     GlobusGFSDebugExit();
 }
 
+
+static void
+globus_gfs_acl_cas_audit(
+    void *                              out_handle,
+    const char *                        action,
+    const char *                        object,
+    const char *                        message)
+{
+}
+
 static void
 globus_gfs_acl_cas_destroy(
     void *                              out_handle)
@@ -158,6 +168,7 @@ globus_gfs_acl_module_t                 globus_gfs_acl_cas_module =
 {
     globus_gfs_acl_cas_init,
     globus_gfs_acl_cas_authorize,
-    globus_gfs_acl_cas_destroy
+    globus_gfs_acl_cas_destroy,
+    globus_gfs_acl_cas_audit
 };
 

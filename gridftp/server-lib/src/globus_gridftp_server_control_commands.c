@@ -27,30 +27,9 @@
  *  These commands will only come in one at a time
  */
 
-typedef struct globus_l_gsc_cmd_wrapper_s
-{
-    globus_i_gsc_op_t *                     op;
-    char *                                  strarg;
-    char *                                  mod_name;
-    char *                                  mod_parms;
-    char *                                  path;
-
-    globus_bool_t                           transfer_flag;
-    int                                     dc_parsing_alg;
-    int                                     max;
-    globus_gridftp_server_control_network_protocol_t prt;
-
-    globus_i_gsc_op_type_t                  type;
-    int                                     cmd_ndx;
-
-    char **                                 cs;
-    int                                     cs_count;
-    int                                     reply_code;
-} globus_l_gsc_cmd_wrapper_t;
-
 static void
 globus_l_gsc_cmd_transfer(
-    globus_l_gsc_cmd_wrapper_t *            wrapper);
+    globus_i_gsc_cmd_wrapper_t *            wrapper);
 
 /*************************************************************************
  *                      simple commands
@@ -250,7 +229,6 @@ globus_l_gsc_cmd_trev(
     void *                                  user_arg)
 {
     char *                                  event_name;
-    char *                                  info;
     int                                     frequency;
     int                                     sc;
 
@@ -266,7 +244,6 @@ globus_l_gsc_cmd_trev(
     {
         globus_gsc_959_finished_command(op, _FSMSL("501 Bad paramter mode.\r\n"));
     }
-    info = cmd_a[3];
 
     if(strcmp(event_name, "RESTART") == 0)
     {
@@ -1756,10 +1733,10 @@ globus_l_gsc_cmd_pasv_cb(
     unsigned short                          port;
     int                                     sc;
     char *                                  msg = NULL;
-    globus_l_gsc_cmd_wrapper_t *            wrapper = NULL;
+    globus_i_gsc_cmd_wrapper_t *            wrapper = NULL;
     GlobusGridFTPServerName(globus_l_gsc_cmd_pasv_cb);
 
-    wrapper = (globus_l_gsc_cmd_wrapper_t *) user_arg;
+    wrapper = (globus_i_gsc_cmd_wrapper_t *) user_arg;
     wrapper->op = op;
 
     if(response_type != GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS)
@@ -2001,7 +1978,9 @@ globus_l_gsc_cmd_pasv_cb(
     if(wrapper->transfer_flag)
     {
         globus_i_gsc_cmd_intermediate_reply(op, msg);
-        globus_l_gsc_cmd_transfer(wrapper);
+        globus_l_gsc_cmd_transfer(wrapper->transfer_info);
+        op->server_handle->pasv_info = NULL;
+        globus_free(wrapper);
         globus_free(msg);
     }
     else
@@ -2019,6 +1998,7 @@ globus_l_gsc_cmd_pasv_cb(
     {
         globus_free(msg);
     }
+    op->server_handle->pasv_info = NULL;
     globus_free(wrapper);
 }
 
@@ -2034,19 +2014,17 @@ globus_l_gsc_cmd_pasv(
     void *                                  user_arg)
 {
     int                                     sc;
-    globus_l_gsc_cmd_wrapper_t *            wrapper = NULL;
+    globus_i_gsc_cmd_wrapper_t *            wrapper = NULL;
     char *                                  msg = NULL;
     globus_bool_t                           reply_flag;
-    globus_bool_t                           dp;
     globus_result_t                         res;
     GlobusGridFTPServerName(globus_l_gsc_cmd_pasv);
 
-    wrapper = (globus_l_gsc_cmd_wrapper_t *)
-        globus_calloc(1, sizeof(globus_l_gsc_cmd_wrapper_t));
+    wrapper = (globus_i_gsc_cmd_wrapper_t *)
+        globus_calloc(1, sizeof(globus_i_gsc_cmd_wrapper_t));
 
     globus_i_gsc_log(op->server_handle, full_command,
         GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_TRANSFER_STATE);
-    dp = op->server_handle->opts.delayed_passive;
     reply_flag = op->server_handle->opts.delayed_passive;
 
     if(strncmp(cmd_a[0], "PASV", 4) == 0)
@@ -2054,7 +2032,6 @@ globus_l_gsc_cmd_pasv(
         wrapper->dc_parsing_alg = 0;
         wrapper->max = 1;
         wrapper->prt = GLOBUS_GRIDFTP_SERVER_CONTROL_PROTOCOL_IPV4;
-        msg = _FSMSL("227 Passive delayed.\r\n");
         wrapper->cmd_ndx = 1;
         wrapper->reply_code = 227;
     }
@@ -2063,7 +2040,6 @@ globus_l_gsc_cmd_pasv(
         wrapper->dc_parsing_alg = 1;
         wrapper->prt = GLOBUS_GRIDFTP_SERVER_CONTROL_PROTOCOL_IPV6;
         wrapper->max = 1;
-        msg = _FSMSL("229 Passive delayed.\r\n");
         if(argc == 2)
         {
             if(strstr(cmd_a[1], "ALL") != NULL)
@@ -2071,14 +2047,12 @@ globus_l_gsc_cmd_pasv(
                 reply_flag = GLOBUS_TRUE;
                 op->server_handle->opts.passive_only = GLOBUS_TRUE;
                 msg = _FSMSL("229 EPSV ALL Successful.\r\n");
-                dp = op->server_handle->opts.delayed_passive;
             }
             else
             {
                 sc = sscanf(cmd_a[1], "%d", (int*)&wrapper->prt);
                 if(sc != 1)
                 {
-                    dp = op->server_handle->opts.delayed_passive;
                     reply_flag = GLOBUS_TRUE;
                     msg = _FSMSL("501 Invalid network command.\r\n");
                 }
@@ -2087,7 +2061,6 @@ globus_l_gsc_cmd_pasv(
                     && wrapper->prt !=
                         GLOBUS_GRIDFTP_SERVER_CONTROL_PROTOCOL_IPV6)
                 {
-                    dp = op->server_handle->opts.delayed_passive;
                     reply_flag = GLOBUS_TRUE;
                     msg = _FSMSL("501 Invalid protocol.\r\n");
                 }
@@ -2099,7 +2072,6 @@ globus_l_gsc_cmd_pasv(
     }
     else if(strcmp(cmd_a[0], "SPAS") == 0)
     {
-        msg = _FSMSL("229 Passive delayed.\r\n");
         wrapper->max = -1;
         wrapper->cmd_ndx = 3;
         wrapper->reply_code = 229;
@@ -2143,9 +2115,14 @@ globus_l_gsc_cmd_pasv(
     }
     else
     {
-        op->server_handle->opts.delayed_passive = dp;
+        wrapper->transfer_flag = GLOBUS_TRUE;
+        wrapper->reply_code -= 100;
+        op->server_handle->pasv_info = wrapper;
+        if(msg == NULL)
+        {
+            msg = _FSMSL("200 Passive delayed.\r\n");
+        }
         globus_gsc_959_finished_command(op, msg);
-        globus_free(wrapper);
     }
 }
 
@@ -2160,12 +2137,12 @@ globus_l_gsc_cmd_port_cb(
     void *                                  user_arg)
 {
     int                                     i;
-    globus_l_gsc_cmd_wrapper_t *            wrapper;
+    globus_i_gsc_cmd_wrapper_t *            wrapper;
     int                                     code;
     char *                                  msg;
     char *                                  tmp_ptr;
 
-    wrapper = (globus_l_gsc_cmd_wrapper_t *) user_arg;
+    wrapper = (globus_i_gsc_cmd_wrapper_t *) user_arg;
     if(response_type != GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS)
     {
         /* TODO: evaulated error type */
@@ -2214,15 +2191,15 @@ globus_l_gsc_cmd_port(
     int                                     i;
     int                                     stripe_count;
     char                                    delim;
-    globus_l_gsc_cmd_wrapper_t *            wrapper = NULL;
+    globus_i_gsc_cmd_wrapper_t *            wrapper = NULL;
     char *                                  msg = NULL;
     char *                                  p;
     char **                                 contact_strings = NULL;
     globus_result_t                         res;
     GlobusGridFTPServerName(globus_l_gsc_cmd_port);
 
-    wrapper = (globus_l_gsc_cmd_wrapper_t *) globus_calloc(
-        1, sizeof(globus_l_gsc_cmd_wrapper_t));
+    wrapper = (globus_i_gsc_cmd_wrapper_t *) globus_calloc(
+        1, sizeof(globus_i_gsc_cmd_wrapper_t));
     if(wrapper == NULL)
     {
         goto err;
@@ -2487,9 +2464,9 @@ globus_l_gsc_data_cb(
     int                                     code;
     char *                                  msg;
     char *                                  tmp_ptr;
-    globus_l_gsc_cmd_wrapper_t *            wrapper;
+    globus_i_gsc_cmd_wrapper_t *            wrapper;
 
-    wrapper = (globus_l_gsc_cmd_wrapper_t *) user_arg;
+    wrapper = (globus_i_gsc_cmd_wrapper_t *) user_arg;
 
     if(response_type != GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS)
     {
@@ -2530,7 +2507,7 @@ globus_l_gsc_data_cb(
 
 static void
 globus_l_gsc_cmd_transfer(
-    globus_l_gsc_cmd_wrapper_t *            wrapper)
+    globus_i_gsc_cmd_wrapper_t *            wrapper)
 {
     globus_result_t                         res;
 
@@ -2610,10 +2587,10 @@ globus_l_gsc_cmd_stor_retr_cb(
     int                                     code;
     char *                                  tmp_ptr;
     char *                                  msg = NULL;
-    globus_l_gsc_cmd_wrapper_t *            wrapper = NULL;
+    globus_i_gsc_cmd_wrapper_t *            wrapper = NULL;
     GlobusGridFTPServerName(globus_l_gsc_cmd_stor_retr_cb);
 
-    wrapper = (globus_l_gsc_cmd_wrapper_t *) user_arg;
+    wrapper = (globus_i_gsc_cmd_wrapper_t *) user_arg;
     wrapper->op = op;
     wrapper->path = globus_libc_strdup(path);    
 
@@ -2698,7 +2675,7 @@ globus_l_gsc_cmd_stor_retr(
     char *                                  mod_name = NULL;
     char *                                  mod_parm = NULL;
     char *                                  tmp_ptr = NULL;
-    globus_l_gsc_cmd_wrapper_t *            wrapper = NULL;
+    globus_i_gsc_cmd_wrapper_t *            wrapper = NULL;
     globus_off_t                            tmp_o;
     globus_bool_t                           transfer = GLOBUS_TRUE;
     GlobusGridFTPServerName(globus_l_gsc_cmd_stor);
@@ -2708,8 +2685,8 @@ globus_l_gsc_cmd_stor_retr(
         globus_gsc_959_finished_command(op, _FSMSL("500 command failed.\r\n"));
         return;
     }
-    wrapper = (globus_l_gsc_cmd_wrapper_t *) globus_malloc(
-        sizeof(globus_l_gsc_cmd_wrapper_t));
+    wrapper = (globus_i_gsc_cmd_wrapper_t *) globus_malloc(
+        sizeof(globus_i_gsc_cmd_wrapper_t));
     if(wrapper == NULL)
     {
         globus_i_gsc_command_panic(op);
@@ -2958,15 +2935,17 @@ globus_l_gsc_cmd_stor_retr(
         wrapper->path = path;
         wrapper->reply_code = 129;
         /* if in delayed passive tell library to go passive */
-        if(op->server_handle->opts.delayed_passive)
+        if(op->server_handle->opts.delayed_passive &&
+            op->server_handle->pasv_info != NULL)
         {
+            op->server_handle->pasv_info->transfer_info = wrapper;
             res = globus_i_gsc_passive(
                 wrapper->op,
-                wrapper->max,
-                wrapper->prt,
+                op->server_handle->pasv_info->max,
+                op->server_handle->pasv_info->prt,
                 wrapper->path,
                 globus_l_gsc_cmd_pasv_cb,
-                wrapper);
+                op->server_handle->pasv_info);
             if(res != GLOBUS_SUCCESS)
             {
                 globus_free(wrapper);
@@ -3264,8 +3243,8 @@ globus_i_gsc_add_commands(
         "TREV", 
         globus_l_gsc_cmd_trev,
         GLOBUS_GSC_COMMAND_POST_AUTH,
-        2,
-        2,
+        3,
+        3,
         "TREV <event name> <frequency> [info list]",
         NULL);
 
@@ -3502,6 +3481,7 @@ globus_i_gsc_add_commands(
         NULL);
     
     /* add features */
+    globus_gridftp_server_control_add_feature(server_handle, "PASV AllowDelayed;");
     globus_gridftp_server_control_add_feature(server_handle, "MDTM");
     globus_gridftp_server_control_add_feature(server_handle, "REST STREAM");
     globus_gridftp_server_control_add_feature(server_handle, "SPOR");

@@ -417,10 +417,10 @@ sub run_command($$)
     }
     elsif(defined($ENV{"FTP_TEST_VALGRIND"}))
     {
-        $ENV{"VALGRIND_OPTS"} = $ENV{"VALGRIND_SUPP"} .
+        $ENV{"VALGRIND_OPTS"} = 
+        (defined($ENV{"VALGRIND_SUPP"}) ? $ENV{"VALGRIND_SUPP"} : "") .
             " -q --error-limit=no --num-callers=10 " .
-            "--profile=no --leak-check=yes --leak-resolution=med " .
-            "--freelist-vol=10000000 --logfile=valgrind";
+            "--log-file=valgrind.log";
         $command = "valgrind $command";
     }
 

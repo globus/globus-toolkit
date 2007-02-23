@@ -512,6 +512,8 @@ globus_options_file_process(
             !globus_list_empty(list);
             list = globus_list_rest(list))
         {
+            table = (globus_l_options_table_t *) globus_list_first(list);
+                        
             for(i = 0; i < table->table_size; i++)
             {
                 if(strcmp(file_option, table->table[i].opt_name) == 0)

@@ -356,6 +356,30 @@ typedef enum globus_l_gsc_state_e
     GLOBUS_L_GSC_STATE_STOPPED
 } globus_l_gsc_state_t;
 
+
+typedef struct globus_i_gsc_cmd_wrapper_s
+{
+    globus_i_gsc_op_t *                     op;
+    char *                                  strarg;
+    char *                                  mod_name;
+    char *                                  mod_parms;
+    char *                                  path;
+
+    globus_bool_t                           transfer_flag;
+    int                                     dc_parsing_alg;
+    int                                     max;
+    globus_gridftp_server_control_network_protocol_t prt;
+
+    globus_i_gsc_op_type_t                  type;
+    int                                     cmd_ndx;
+
+    char **                                 cs;
+    int                                     cs_count;
+    int                                     reply_code;
+    
+    struct globus_i_gsc_cmd_wrapper_s *     transfer_info;
+} globus_i_gsc_cmd_wrapper_t;
+
 /* the server handle */
 typedef struct globus_i_gsc_server_handle_s
 {
@@ -436,6 +460,8 @@ typedef struct globus_i_gsc_server_handle_s
 
     int                                 idle_timeout;
     int                                 preauth_timeout;
+    
+    globus_i_gsc_cmd_wrapper_t *        pasv_info;
 
     globus_bool_t                       q_backup;
     int                                 max_q_len;

@@ -3393,8 +3393,99 @@ globus_libc_getnameinfo(
 {
     int                                 rc;
     globus_result_t                     result;
+    static globus_bool_t                broken_getnameinfo_servname = 0;
+    static globus_bool_t                broken_getnameinfo_check = 1;
+    /*
+     * Code to work around a bug in getnameinfo() on OS X on Intel (bug
+     * #4292 in Globus bugzilla).
+     * Problem observed on OS X 10.4.8: 
+     *    getnameinfo() fails to convert port number to host byte order
+     *    when generating service port string. If the host is requested
+     *    in numeric form, a different code path in getnameinfo() is used
+     *    and the port is returned correctly.
+     * This workaround checks (1st time this is called) to see if the port
+     * number returned is different with numeric vs non-numeric hosts. If
+     * so, it calls getnameinfo() twice to get the host and port in different
+     * steps.
+     */
+#if !defined(TARGET_ARCH_DARWIN)
+#define BROKEN_GETNAMEINFO_SERVNAME 0
+#define BROKEN_GETNAMEINFO_SERVNAME_CHECK 0
+#else
+#define BROKEN_GETNAMEINFO_SERVNAME broken_getnameinfo_servname
+#define BROKEN_GETNAMEINFO_SERVNAME_CHECK broken_getnameinfo_check
+#endif
+
+    globus_libc_lock();
+    if (BROKEN_GETNAMEINFO_SERVNAME_CHECK)
+    {
+        char                            checkbuf1[8];
+        char                            checkbuf2[8];
+        struct sockaddr                 sa;
+
+        memset(&sa, 0, sizeof(struct sockaddr));
+        GlobusLibcSockaddrSetFamily(sa, AF_INET);
+        GlobusLibcSockaddrSetPort(sa, 30002);
+
+        *hostbuf = 0;
+        rc = getnameinfo(
+            &sa,
+            sizeof(struct sockaddr_in),
+            0,
+            0,
+            checkbuf1,
+            sizeof(checkbuf1),
+            (flags & (~GLOBUS_NI_NUMERICHOST)) | GLOBUS_NI_NUMERICSERV);
+
+        if (rc != 0)
+        {
+            goto out;
+        }
+
+        rc = getnameinfo(
+            &sa,
+            sizeof(struct sockaddr_in),
+            0,
+            0,
+            checkbuf1,
+            sizeof(checkbuf1),
+            flags | GLOBUS_NI_NUMERICHOST | GLOBUS_NI_NUMERICSERV);
+        if (rc != 0)
+        {
+            goto out;
+        }
+
+        if (strcmp(checkbuf1, checkbuf2) != 0)
+        {
+            /* Service name isn't getting converted to host byte order */
+            broken_getnameinfo_servname = 1;
+        }
+        broken_getnameinfo_check = 0;
+    }
+    globus_libc_unlock();
 
     result = GLOBUS_SUCCESS;
+    if (BROKEN_GETNAMEINFO_SERVNAME)
+    {
+        /* Can't get host and service name in 1 call because of system bugs,
+         * so we'll get them separately.
+         */
+        rc = getnameinfo(
+            (const struct sockaddr *) addr,
+            GlobusLibcSockaddrLen(addr),
+            0,
+            0,
+            servbuf,
+            servbuf_len,
+            flags|GLOBUS_NI_NUMERICHOST);
+        if(rc != 0)
+        {
+            goto out;
+        }
+        /* Hide buffer from subsequent calls. */
+        servbuf_len = 0;
+        servbuf = 0;
+    }
     *hostbuf = 0;
     rc = getnameinfo(
         (const struct sockaddr *) addr,
@@ -3420,6 +3511,7 @@ globus_libc_getnameinfo(
             flags | GLOBUS_NI_NUMERICHOST);
     }
 
+out:
     if(rc != 0)
     {
 #       ifdef EAI_SYSTEM

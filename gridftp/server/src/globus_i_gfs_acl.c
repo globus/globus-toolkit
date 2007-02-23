@@ -312,6 +312,39 @@ globus_gfs_acl_authorized_finished(
 }
 
 void
+globus_gfs_acl_audit(
+    struct globus_i_gfs_acl_handle_s *  acl_handle,
+    const char *                        action,
+    const char *                        object,
+    const char *                        message)
+{
+    globus_list_t *                     list;
+    int                                 rc;
+    globus_l_gfs_acl_request_t *        acl_request;
+    GlobusGFSName(globus_gfs_acl_log);
+    GlobusGFSDebugEnter();
+   
+    for(list = acl_handle->module_list;
+        !globus_list_empty(list);
+        list = globus_list_rest(list))
+    {
+        acl_request = (globus_l_gfs_acl_request_t *) globus_list_first(list);
+
+        if(acl_request->module->audit_func)
+        {
+            acl_request->module->audit_func(
+                &acl_request->user_handle,
+                action,
+                object,
+                message);
+        }
+    }
+
+    GlobusGFSDebugExit();
+}
+
+
+void
 globus_gfs_acl_add_module(
     globus_gfs_acl_module_t *           module)
 {

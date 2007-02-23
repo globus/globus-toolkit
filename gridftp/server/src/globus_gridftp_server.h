@@ -49,6 +49,8 @@ extern globus_module_descriptor_t      globus_i_gfs_module;
 extern globus_extension_registry_t      globus_i_gfs_dsi_registry;
 #define GLOBUS_GFS_DSI_REGISTRY         &globus_i_gfs_dsi_registry
 
+extern globus_extension_registry_t      globus_i_gfs_acl_registry;
+#define GLOBUS_GFS_ACL_REGISTRY         &globus_i_gfs_acl_registry
 
 /*
  *  globus_gfs_error_type_t
@@ -1633,11 +1635,20 @@ typedef void
 (*globus_gfs_acl_destroy_t)(
     void *                              out_handle);
 
+typedef int
+(*globus_gfs_acl_audit_t)(
+    void *                              out_handle,
+    const char *                        action,
+    const char *                        object,
+    const char *                        message);
+
+
 typedef struct globus_gfs_acl_module_s
 {
     globus_gfs_acl_init_t               init_func;
     globus_gfs_acl_authorize_t          authorize_func;
     globus_gfs_acl_destroy_t            destroy_func;
+    globus_gfs_acl_audit_t              audit_func;
 } globus_gfs_acl_module_t;
 
 void
