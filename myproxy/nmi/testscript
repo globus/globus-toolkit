@@ -1,12 +1,7 @@
 #!/bin/sh
 set -e # exit on any error
-if test "$NMI_PLATFORM" = "ia64_sles_9"; then
-  GT_INSTALLER=gt4.0.3-all-source-installer.tar.gz
-  GT_INSTALLER_URL=http://www.globus.org/ftppub/gt4/4.0/4.0.3/installers/src/$GT_INSTALLER
-else
-  GT_INSTALLER=gt4.0.3-$NMI_PLATFORM-installer.tar.gz
-  GT_INSTALLER_URL=http://www.globus.org/ftppub/gt4/4.0/4.0.3/installers/bin/$GT_INSTALLER
-fi
+GT_INSTALLER=gt4.0.4-$NMI_PLATFORM-installer.tar.gz
+GT_INSTALLER_URL=http://www.globus.org/ftppub/gt4/4.0/4.0.4/installers/bin/$GT_INSTALLER
 GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/globus
 LOGNAME=$USER
 X509_CERT_DIR=$GLOBUS_LOCATION/share/certificates
