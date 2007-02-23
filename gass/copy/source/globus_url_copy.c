@@ -105,6 +105,7 @@ typedef struct
     globus_bool_t                       list_uses_data_mode;
     globus_bool_t                       ipv6;
     globus_bool_t                       allo;
+    globus_bool_t                       delayed_pasv;
     char *                              src_authz_assert;
     char *                              dst_authz_assert;
     globus_bool_t                       cache_src_authz_assert;
@@ -364,39 +365,41 @@ const char * long_usage =
 "       If set to >0, Blocked mode will be used, with this as the blocksize.\n"
 "  -ipv6\n"
 "       use ipv6 when available (EXPERIMENTAL)\n"
-"   -mn  | -module-name <gridftp storage module name>\n"
-"       Set the backend storage module to use for both the source and\n"
-"       destination in a GridFTP transfer\n"
-"   -mp  | -module-parameters <gridftp storage module parameters>\n"
-"       Set the backend storage module arguments to use for both the source\n"
-"       and destination in a GridFTP transfer\n"
-"   -smn | -src-module-name <gridftp storage module name>\n"
-"       Set the backend storage module to use for the source in a GridFTP\n"
-"       transfer\n"
-"   -smp | -src-module-parameters <gridftp storage module parameters>\n"
-"       Set the backend storage module arguments to use for the source\n"
-"       in a GridFTP transfer\n"
-"   -dmn | -dst-module-name <gridftp storage module name>\n"
-"       Set the backend storage module to use for the destination in a GridFTP\n"
-"       transfer\n"
-"   -dmp | -dst-module-parameters <gridftp storage module parameters>\n"
-"       Set the backend storage module arguments to use for the destination\n"
-"       in a GridFTP transfer\n"
-"   -aa | -authz-assert <authorization assertion file>\n"
-"       Use the assertions in this file to authorize the access with both\n"
-"       source and dest servers\n" 
-"   -saa | -src-authz-assert <authorization assertion file>\n"
-"       Use the assertions in this file to authorize the access with source\n"
-"       server\n" 
-"   -daa | -dst-authz-assert <authorization assertion file>\n"
-"       Use the assertions in this file to authorize the access with dest\n"
-"       server\n" 
-"   -cache-aa | -cache-authz-assert\n"
-"       Cache the authz assertion for subsequent transfers\n"
-"   -cache-saa | -cache-src-authz-assert\n"
-"       Cache the src authz assertion for subsequent transfers\n"
-"   -cache-daa | -cache-dst-authz-assert\n"
-"       Cache the dst authz assertion for subsequent transfers\n"
+"  -dp | -delayed-pasv\n"
+"       enable delayed passive\n"
+"  -mn | -module-name <gridftp storage module name>\n"
+"      Set the backend storage module to use for both the source and\n"
+"      destination in a GridFTP transfer\n"
+"  -mp | -module-parameters <gridftp storage module parameters>\n"
+"      Set the backend storage module arguments to use for both the source\n"
+"      and destination in a GridFTP transfer\n"
+"  -smn | -src-module-name <gridftp storage module name>\n"
+"      Set the backend storage module to use for the source in a GridFTP\n"
+"      transfer\n"
+"  -smp | -src-module-parameters <gridftp storage module parameters>\n"
+"      Set the backend storage module arguments to use for the source\n"
+"      in a GridFTP transfer\n"
+"  -dmn | -dst-module-name <gridftp storage module name>\n"
+"      Set the backend storage module to use for the destination in a GridFTP\n"
+"      transfer\n"
+"  -dmp | -dst-module-parameters <gridftp storage module parameters>\n"
+"      Set the backend storage module arguments to use for the destination\n"
+"      in a GridFTP transfer\n"
+"  -aa | -authz-assert <authorization assertion file>\n"
+"      Use the assertions in this file to authorize the access with both\n"
+"      source and dest servers\n" 
+"  -saa | -src-authz-assert <authorization assertion file>\n"
+"      Use the assertions in this file to authorize the access with source\n"
+"      server\n" 
+"  -daa | -dst-authz-assert <authorization assertion file>\n"
+"      Use the assertions in this file to authorize the access with dest\n"
+"      server\n" 
+"  -cache-aa | -cache-authz-assert\n"
+"      Cache the authz assertion for subsequent transfers\n"
+"  -cache-saa | -cache-src-authz-assert\n"
+"      Cache the src authz assertion for subsequent transfers\n"
+"  -cache-daa | -cache-dst-authz-assert\n"
+"      Cache the dst authz assertion for subsequent transfers\n"
 "\n";
 
 /***********
@@ -493,6 +496,7 @@ enum
     arg_cache_dst_authz_assert,
     arg_allo,
     arg_noallo,
+    arg_delayed_pasv,
     arg_stripe_bs,
     arg_striped,
     arg_num = arg_striped
@@ -545,6 +549,7 @@ flagdef(arg_rfc1738, "-rp", "-relative-paths");
 flagdef(arg_create_dest, "-cd", "-create-dest");
 flagdef(arg_fast, "-fast", "-fast-data-channels");
 flagdef(arg_ipv6, "-ipv6","-IPv6");
+flagdef(arg_delayed_pasv, "-dp","-delayed-pasv");
 flagdef(arg_allo, "-allo","-allocate");
 flagdef(arg_noallo, "-no-allo","-no-allocate");
 flagdef(arg_cache_authz_assert, "-cache-aa","-cache-authz-assert");
@@ -627,6 +632,7 @@ static globus_args_option_descriptor_t args_options[arg_num];
     setupopt(arg_cache_authz_assert);         \
     setupopt(arg_cache_src_authz_assert);     \
     setupopt(arg_cache_dst_authz_assert);     \
+    setupopt(arg_delayed_pasv);         \
     setupopt(arg_allo);         	\
     setupopt(arg_noallo);         	\
     setupopt(arg_stripe_bs);         	\
@@ -1900,6 +1906,7 @@ globus_l_guc_parse_arguments(
     guc_info->list_uses_data_mode = GLOBUS_FALSE;
     guc_info->ipv6 = GLOBUS_FALSE;
     guc_info->allo = GLOBUS_TRUE;
+    guc_info->delayed_pasv = GLOBUS_FALSE;
     guc_info->create_dest = GLOBUS_FALSE;
     guc_info->dst_module_name = GLOBUS_NULL;
     guc_info->src_module_name = GLOBUS_NULL;
@@ -2158,6 +2165,9 @@ globus_l_guc_parse_arguments(
         case arg_cache_dst_authz_assert:
             guc_info->cache_dst_authz_assert = GLOBUS_TRUE;
             break;
+	case arg_delayed_pasv:
+	    guc_info->delayed_pasv = GLOBUS_TRUE;
+	    break;
 	case arg_allo:
 	    guc_info->allo = GLOBUS_TRUE;
 	    break;
@@ -2930,6 +2940,12 @@ globus_l_guc_gass_attr_init(
                         GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK);
             globus_ftp_client_operationattr_set_striped(ftp_attr, GLOBUS_TRUE);    
             globus_ftp_client_operationattr_set_layout(ftp_attr, &layout);
+	}
+
+	if (guc_info->delayed_pasv)
+	{
+            globus_ftp_client_operationattr_set_delayed_pasv(
+                ftp_attr, GLOBUS_TRUE);    
 	}
 
 	if (guc_info->ipv6)

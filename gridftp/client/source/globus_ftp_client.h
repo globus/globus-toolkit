@@ -884,6 +884,16 @@ globus_ftp_client_operationattr_get_list_uses_data_mode(
     globus_bool_t *     			list_uses_data_mode);
 
 globus_result_t
+globus_ftp_client_operationattr_set_delayed_pasv(
+    const globus_ftp_client_operationattr_t *	attr,
+    globus_bool_t        			delayed_pasv);
+
+globus_result_t
+globus_ftp_client_operationattr_get_delayed_pasv(
+    const globus_ftp_client_operationattr_t *	attr,
+    globus_bool_t *     			delayed_pasv);
+
+globus_result_t
 globus_ftp_client_operationattr_set_dcau(
     globus_ftp_client_operationattr_t *		attr,
     const globus_ftp_control_dcau_t *		dcau);
@@ -1081,9 +1091,10 @@ typedef enum
     GLOBUS_FTP_CLIENT_FEATURE_ERET,
     GLOBUS_FTP_CLIENT_FEATURE_SIZE,
     GLOBUS_FTP_CLIENT_FEATURE_CKSM,
-    GLOBUS_FTP_CLIENT_FEATURE_MLST,
     GLOBUS_FTP_CLIENT_FEATURE_CHMOD,
     GLOBUS_FTP_CLIENT_FEATURE_AUTHZ_ASSERT,
+    GLOBUS_FTP_CLIENT_FEATURE_DELAYED_PASV,
+    GLOBUS_FTP_CLIENT_FEATURE_MLST,
     GLOBUS_FTP_CLIENT_FEATURE_MAX,
     GLOBUS_FTP_CLIENT_LAST_BUFFER_COMMAND = GLOBUS_FTP_CLIENT_FEATURE_ABUF,
     GLOBUS_FTP_CLIENT_FIRST_FEAT_FEATURE = GLOBUS_FTP_CLIENT_FEATURE_SBUF,

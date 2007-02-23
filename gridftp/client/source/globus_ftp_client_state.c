@@ -1712,11 +1712,73 @@ redo:
 
 	goto redo;
 
+    case GLOBUS_FTP_CLIENT_TARGET_OPTS_PASV_DELAYED:
+        globus_assert(
+            client_handle->state ==
+            GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION ||
+            client_handle->state ==
+            GLOBUS_FTP_CLIENT_HANDLE_DEST_SETUP_CONNECTION);
+
+        if((!error) &&
+            response->response_class == GLOBUS_FTP_POSITIVE_COMPLETION_REPLY)
+        {
+            target->delayed_pasv = target->attr->delayed_pasv;
+            target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_PASV;
+            
+            goto redo;
+        }
+        /* XXX need to ignore error */
+        
+        target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_CONNECTION;
+        goto notify_fault;       
+
     case GLOBUS_FTP_CLIENT_TARGET_SETUP_PASV:
 	if(globus_i_ftp_client_can_reuse_data_conn(client_handle))
 	{
 	    goto skip_pasv;
 	}
+	
+        if(target->delayed_pasv != target->attr->delayed_pasv && 
+            globus_i_ftp_client_feature_get(target->features, 
+            GLOBUS_FTP_CLIENT_FEATURE_DELAYED_PASV) == GLOBUS_FTP_CLIENT_TRUE)
+        {
+	    target->state = GLOBUS_FTP_CLIENT_TARGET_OPTS_PASV_DELAYED;
+            
+            target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_TRANSFER_PARAMETERS;
+            globus_i_ftp_client_plugin_notify_command(
+                client_handle,
+                target->url_string,
+                target->mask,
+                "OPTS PASV AllowDelayed=%c;" CRLF,
+                target->attr->delayed_pasv ? '1' : '0');
+                
+            if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
+                client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
+                client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE)
+            {
+                break;
+            }
+            globus_assert(
+                client_handle->state ==
+                GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION ||
+                client_handle->state ==
+                GLOBUS_FTP_CLIENT_HANDLE_DEST_SETUP_CONNECTION);
+            
+            result =
+                globus_ftp_control_send_command(
+                target->control_handle,
+                "OPTS PASV AllowDelayed=%c;" CRLF,
+                globus_i_ftp_client_response_callback,
+                target,
+                target->attr->delayed_pasv ? '1' : '0');
+            
+            if(result != GLOBUS_SUCCESS)
+            {
+                goto result_fault;
+            }
+            
+            break;
+        }
 
 	if((client_handle->op == GLOBUS_FTP_CLIENT_PUT ||
 	   client_handle->op == GLOBUS_FTP_CLIENT_TRANSFER) &&
@@ -1783,6 +1845,10 @@ redo:
 	{
 	    goto skip_port;
 	}
+	
+	/* turn off delayed pasv now that we're going to use PORT */
+	target->delayed_pasv = GLOBUS_FALSE;
+	
 	if(client_handle->op != GLOBUS_FTP_CLIENT_TRANSFER)
 	{
 	    if(client_handle->pasv_address)
@@ -1958,6 +2024,11 @@ redo:
 	if((!error) &&
 	   response->response_class == GLOBUS_FTP_POSITIVE_COMPLETION_REPLY)
 	{
+	    if(target->delayed_pasv)
+	    {
+	        goto skip_pasv;	    
+	    }
+	    
 	    globus_l_ftp_client_parse_pasv(
 	        handle,
 	        response, 
@@ -2459,10 +2530,18 @@ redo:
             }
         }
 
-        result =
-	    globus_ftp_control_data_connect_read(target->control_handle,
-						 GLOBUS_NULL,
-						 GLOBUS_NULL);
+        if(!target->delayed_pasv)
+        {
+            result =
+                globus_ftp_control_data_connect_read(target->control_handle,
+                                                     GLOBUS_NULL,
+                                                     GLOBUS_NULL);
+        }
+        else
+        {
+            result = GLOBUS_SUCCESS;
+        }
+        
 	target->state = GLOBUS_FTP_CLIENT_TARGET_LIST;
 
 	if(result != GLOBUS_SUCCESS)
@@ -2901,11 +2980,18 @@ redo:
 	    client_handle->state ==
 	    GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION);
 
+        if(!target->delayed_pasv)
+        {
+            result =
+                globus_ftp_control_data_connect_read(target->control_handle,
+                                                     GLOBUS_NULL,
+                                                     GLOBUS_NULL);
+        }
+        else
+        {
+            result = GLOBUS_SUCCESS;
+        }
 
-	result =
-	    globus_ftp_control_data_connect_read(target->control_handle,
-						 GLOBUS_NULL,
-						 GLOBUS_NULL);
 	target->state = GLOBUS_FTP_CLIENT_TARGET_RETR;
 
 	if(result != GLOBUS_SUCCESS)
@@ -2981,10 +3067,18 @@ redo:
 	    client_handle->state ==
 	    GLOBUS_FTP_CLIENT_HANDLE_DEST_SETUP_CONNECTION);
 
-	result =
-	    globus_ftp_control_data_connect_write(target->control_handle,
-						  GLOBUS_NULL,
-						 GLOBUS_NULL);
+        if(!target->delayed_pasv)       
+        {
+            result =
+                globus_ftp_control_data_connect_write(target->control_handle,
+                                                      GLOBUS_NULL,
+                                                      GLOBUS_NULL);
+        }
+        else
+        {
+            result = GLOBUS_SUCCESS;
+        }
+
 	target->state = GLOBUS_FTP_CLIENT_TARGET_STOR;
 
 	if(result != GLOBUS_SUCCESS)
@@ -3133,24 +3227,27 @@ redo:
 	    goto result_fault;
 	}
 
-	target = client_handle->source;
-
-	error =
-	    globus_i_ftp_client_target_activate(client_handle,
-						target,
-						&registered);
-	if(registered == GLOBUS_FALSE)
-	{
-	    if(client_handle->state==GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
-	       client_handle->state==GLOBUS_FTP_CLIENT_HANDLE_RESTART)
-	    {
-		break;
-	    }
-	    else
-	    {
-		goto connection_error;
-	    }
-	}
+        if(!target->delayed_pasv)
+        {
+            target = client_handle->source;
+    
+            error =
+                globus_i_ftp_client_target_activate(client_handle,
+                                                    target,
+                                                    &registered);
+            if(registered == GLOBUS_FALSE)
+            {
+                if(client_handle->state==GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
+                   client_handle->state==GLOBUS_FTP_CLIENT_HANDLE_RESTART)
+                {
+                    break;
+                }
+                else
+                {
+                    goto connection_error;
+                }
+            }
+        }
 	break;
 
     case GLOBUS_FTP_CLIENT_TARGET_SETUP_TRANSFER_SOURCE:
@@ -3236,11 +3333,132 @@ redo:
 	    (client_handle->op == GLOBUS_FTP_CLIENT_TRANSFER &&
 	     client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION) ||
 	    (client_handle->op == GLOBUS_FTP_CLIENT_TRANSFER &&
-	     client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_SOURCE_CONNECT));
+	     client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_SOURCE_CONNECT) ||
+	    (target->delayed_pasv && client_handle->op == GLOBUS_FTP_CLIENT_TRANSFER &&
+	     client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_DEST_SETUP_CONNECTION));
 
 	if((!error) &&
 	   response->response_class == GLOBUS_FTP_POSITIVE_PRELIMINARY_REPLY)
 	{
+	    if(response->code == 127 || response->code == 129)
+            {
+/* XXX START copy from GLOBUS_FTP_CLIENT_TARGET_PASV */    
+                globus_l_ftp_client_parse_pasv(
+                    handle,
+                    response, 
+                    &client_handle->pasv_address, 
+                    &client_handle->num_pasv_addresses);
+                
+                if(client_handle->op != GLOBUS_FTP_CLIENT_TRANSFER)
+                {
+                    
+                    if(client_handle->num_pasv_addresses == 1)
+                    {
+                        result =
+                            globus_ftp_control_local_port(
+                                handle,
+                                client_handle->pasv_address);
+                    }
+                    else
+                    {
+                        result =
+                            globus_ftp_control_local_spor(
+                                handle,
+                                client_handle->pasv_address,
+                                client_handle->num_pasv_addresses);
+                    }
+                    if(result != GLOBUS_SUCCESS)
+                    {
+                        goto result_fault;
+                    }
+                }
+        
+                /* Store the current data connection in the cache for
+                 * the target associated with this transfer, if the server
+                 * will support it.
+                 */
+                if(globus_l_ftp_client_can_cache_data_connection(target))
+                {
+                    if(client_handle->op == GLOBUS_FTP_CLIENT_LIST ||
+                       client_handle->op == GLOBUS_FTP_CLIENT_NLST ||
+                       client_handle->op == GLOBUS_FTP_CLIENT_MLSD)
+                    {
+                        target->cached_data_conn.operation = GLOBUS_FTP_CLIENT_GET;
+                    }
+                    else
+                    {
+                        target->cached_data_conn.operation = client_handle->op;
+                    }
+                          
+                    target->cached_data_conn.source = client_handle->source;
+                    target->cached_data_conn.dest = client_handle->dest;
+                }
+                /* In a 3rd party transfer, we need to clear the peer's
+                 * data connection cache if we've called passive on the
+                 * destination server.
+                 */
+                if(client_handle->op == GLOBUS_FTP_CLIENT_TRANSFER)
+                {
+                    memset(&client_handle->source->cached_data_conn,
+                           '\0',
+                           sizeof(globus_i_ftp_client_data_target_t));
+                }       
+/* XXX END copy from GLOBUS_FTP_CLIENT_TARGET_PASV */    
+            }
+
+            if((target->delayed_pasv && response->code == 125) || 
+                response->code == 127 || response->code == 129)
+            {
+                if(client_handle->op != GLOBUS_FTP_CLIENT_TRANSFER)
+                {
+                    if(target->state == GLOBUS_FTP_CLIENT_TARGET_RETR ||
+                        target->state == GLOBUS_FTP_CLIENT_TARGET_LIST)
+                    {
+                        result = globus_ftp_control_data_connect_read(
+                            handle,
+                            GLOBUS_NULL,
+                            GLOBUS_NULL);
+                    }
+                    else
+                    {
+                        result = globus_ftp_control_data_connect_write(
+                            handle,
+                            GLOBUS_NULL,
+                            GLOBUS_NULL);
+                    }
+                    if(result != GLOBUS_SUCCESS)
+                    {
+                        goto result_fault;
+                    }
+                }
+                else
+                {
+                    target = client_handle->source;
+            
+                    error =
+                        globus_i_ftp_client_target_activate(client_handle,
+                                                            target,
+                                                            &registered);
+                    if(registered == GLOBUS_FALSE)
+                    {
+                        if(client_handle->state==GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
+                           client_handle->state==GLOBUS_FTP_CLIENT_HANDLE_RESTART)
+                        {
+                            break;
+                        }
+                        else
+                        {
+                            goto connection_error;
+                        }
+                    }
+                } 
+            } 
+            
+	    if(response->code == 127 || response->code == 129)
+            {
+                break;
+            }
+
 	    /*
 	     * this should be a "connected" or "using existing
 	     * data connection" response
@@ -3963,6 +4181,16 @@ globus_l_ftp_client_parse_feat(
 	            target->features,
 	            GLOBUS_FTP_CLIENT_FEATURE_MLST,
 	            GLOBUS_FTP_CLIENT_TRUE);
+	    }
+            else if(strncmp(feature_label, "PASV", 4) == 0)
+	    {
+		if(strstr(feature_parms, "AllowDelayed"))
+		{
+		    globus_i_ftp_client_feature_set(
+		        target->features,
+		        GLOBUS_FTP_CLIENT_FEATURE_DELAYED_PASV,
+		        GLOBUS_FTP_CLIENT_TRUE);
+		}
 	    }
 	    p = eol + 2;
 

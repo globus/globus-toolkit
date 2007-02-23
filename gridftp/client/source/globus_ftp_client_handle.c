@@ -971,6 +971,7 @@ globus_l_ftp_client_target_new(
     target->cached_data_conn.dest = GLOBUS_NULL;
     target->cached_data_conn.operation = GLOBUS_FTP_CLIENT_IDLE;
     target->authz_assert = GLOBUS_NULL;
+    target->delayed_pasv = GLOBUS_FALSE;
 
     /* Make a local copy of the desired FTP client attributes */
     if(attr)

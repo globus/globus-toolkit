@@ -681,6 +681,7 @@ globus_ftp_client_operationattr_init(
     i_attr->allocated_size		= 0;
     i_attr->cwd_first                   = GLOBUS_FALSE;
     i_attr->authz_assert                = GLOBUS_NULL;
+    i_attr->delayed_pasv                = GLOBUS_FALSE;
 
     i_attr->module_alg_str = NULL;
 
@@ -1803,6 +1804,74 @@ error_exit:
 /* globus_ftp_client_operationattr_get_list_uses_data_mode() */
 /* @} */
 
+/**
+ * Set/Get whether or not delayed passive should be used
+ * @ingroup globus_ftp_client_operationattr
+ *
+ * This attribute allows the user to enable delayed passive so the
+ * server can provide the passive address after it knows the filename
+ * to be transferred.
+ *
+ * @param attr
+ *        The attribute set to query or modify.
+ * @param delayed_pasv
+ *        globus_bool_t
+ *
+ *
+ * @note Delayed passive is a GridFTP extension,
+ * and may not be supported on all FTP servers.
+ */
+globus_result_t
+globus_ftp_client_operationattr_set_delayed_pasv(
+    const globus_ftp_client_operationattr_t *	attr,
+    globus_bool_t        			delayed_pasv)
+{
+    globus_object_t *				err;
+    globus_i_ftp_client_operationattr_t *	i_attr;
+    GlobusFuncName(globus_ftp_client_operationattr_set_delayed_pasv);
+
+    if(attr == GLOBUS_NULL)
+    {
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr");
+
+	goto error_exit;
+    }
+    
+    i_attr = *(globus_i_ftp_client_operationattr_t **) attr;
+
+    i_attr->delayed_pasv = delayed_pasv;
+
+    return GLOBUS_SUCCESS;
+error_exit:
+    return globus_error_put(err);
+}
+/* globus_ftp_client_operationattr_set_delayed_pasv() */
+
+globus_result_t
+globus_ftp_client_operationattr_get_delayed_pasv(
+    const globus_ftp_client_operationattr_t *	attr,
+    globus_bool_t *     			delayed_pasv)
+{
+    globus_object_t *				err;
+    const globus_i_ftp_client_operationattr_t * i_attr;
+    GlobusFuncName(globus_ftp_client_operationattr_get_delayed_pasv);
+
+    if(attr == GLOBUS_NULL)
+    {
+	err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr");
+
+	goto error_exit;
+    }
+    i_attr = *(globus_i_ftp_client_operationattr_t **) attr;
+
+    *delayed_pasv = i_attr->delayed_pasv;
+
+    return GLOBUS_SUCCESS;
+error_exit:
+    return globus_error_put(err);
+}
+/* globus_ftp_client_operationattr_get_delayed_pasv() */
+/* @} */
 
 
 /**
@@ -2867,6 +2936,16 @@ globus_ftp_client_operationattr_copy(
 	globus_ftp_client_operationattr_set_list_uses_data_mode(
             dst,
             i_src->list_uses_data_mode);
+            
+    if(result)
+    {
+	goto destroy_exit;
+    }
+
+   result = 
+	globus_ftp_client_operationattr_set_delayed_pasv(
+            dst,
+            i_src->delayed_pasv);
             
     if(result)
     {
