@@ -5468,8 +5468,14 @@ globus_l_gfs_operation_finished_kickout(
         GFSDataOpDec(op, destroy_op, destroy_session);
     }
     globus_mutex_unlock(&op->session_handle->mutex);
-    globus_assert(destroy_op);
-    globus_l_gfs_data_operation_destroy(op, destroy_session);
+ 
+     /* globus_assert(destroy_op); this was wrong, there could stull
+        be an event out there */
+     if(destroy_op)
+     {
+         globus_l_gfs_data_operation_destroy(op, destroy_session);
+     }
+
     globus_free(bounce);
 
     GlobusGFSDebugExit();
@@ -5501,6 +5507,8 @@ globus_gridftp_server_operation_finished(
 
     switch(finished_info->type)
     {
+        case GLOBUS_GFS_OP_RECV:
+        case GLOBUS_GFS_OP_SEND:
         case GLOBUS_GFS_OP_TRANSFER:
             if(!op->data_handle->is_mine)
             {
