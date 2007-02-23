@@ -23,7 +23,6 @@
 #include <grp.h>
 #include "globus_io.h"
 
-
 #define FTP_SERVICE_NAME "file"
 #define USER_NAME_MAX   64
 #define GSC_GETPW_PWBUFSIZE        (USER_NAME_MAX*3)+(PATH_MAX*2)
@@ -50,6 +49,7 @@ globus_extension_handle_t               globus_i_gfs_active_dsi_handle;
 static globus_bool_t                    globus_l_gfs_data_is_remote_node = GLOBUS_FALSE;
 globus_off_t                            globus_l_gfs_bytes_transferred;
 globus_mutex_t                          globus_l_gfs_global_counter_lock;
+globus_extension_registry_t             globus_i_gfs_acl_registry;
 
 typedef enum
 {
@@ -711,12 +711,12 @@ globus_l_gfs_data_auth_stat_cb(
     /* if the file does not exist */
     if(reply->info.stat.stat_count == 0)
     {
-        action = "create";
+        action = GFS_ACL_ACTION_CREATE;
     }
     /* if the file does exist */
     else
     {
-        action = "write";
+        action = GFS_ACL_ACTION_WRITE;
     }
 
     stat_wrapper = op->stat_wrapper;
@@ -760,7 +760,7 @@ globus_l_gfs_data_send_stat_cb(
     stat_wrapper = op->stat_wrapper;
     rc = globus_gfs_acl_authorize(
         &op->session_handle->acl_handle,
-        "read",
+        GFS_ACL_ACTION_READ,
         send_info->pathname,
         &res,
         globus_l_gfs_authorize_cb,
@@ -1650,7 +1650,7 @@ globus_i_gfs_data_request_stat(
     {
         rc = globus_gfs_acl_authorize(
             &session_handle->acl_handle,
-            "lookup",
+            GFS_ACL_ACTION_LOOKUP,
             stat_info->pathname,
             &res,
             globus_l_gfs_authorize_cb,
@@ -1818,31 +1818,31 @@ globus_i_gfs_data_request_command(
 
         case GLOBUS_GFS_CMD_DELE:
         case GLOBUS_GFS_CMD_SITE_RDEL:
-            action = "delete";
+            action = GFS_ACL_ACTION_DELETE;
             break;
 
         case GLOBUS_GFS_CMD_RNTO:
-            action = "write";
+            action = GFS_ACL_ACTION_WRITE;
             break;
 
         case GLOBUS_GFS_CMD_RMD:
-            action = "delete";
+            action = GFS_ACL_ACTION_DELETE;
             break;
 
         case GLOBUS_GFS_CMD_RNFR:
-            action = "delete";
+            action = GFS_ACL_ACTION_DELETE;
             break;
 
         case GLOBUS_GFS_CMD_CKSM:
-            action = "read";
+            action = GFS_ACL_ACTION_READ;
             break;
 
         case GLOBUS_GFS_CMD_MKD:
-            action = "create";
+            action = GFS_ACL_ACTION_CREATE;
             break;
 
         case GLOBUS_GFS_CMD_SITE_CHMOD:
-            action = "write";
+            action = GFS_ACL_ACTION_WRITE;
             break;
 
         case GLOBUS_GFS_CMD_SITE_AUTHZ_ASSERT:
@@ -1850,7 +1850,7 @@ globus_i_gfs_data_request_command(
              * A new action to provide authorization assertions received
              * over the control channel to the authorization callout
              */
-            action = "authz_assert";
+            action = GFS_ACL_ACTION_AUTHZ_ASSERT;
             rc = globus_gfs_acl_authorize(
                 &session_handle->acl_handle,
                 action,
@@ -2630,7 +2630,8 @@ globus_i_gfs_data_request_passive(
         handle->session_handle = session_handle;
         
         handle->info.cs_count = 1;
-        address.host[0] = 1; /* prevent address lookup */
+        /* prevent address lookup, we know what we want */
+        address.host[0] = 1; 
         address.port = 0;
         result = globus_ftp_control_local_pasv(&handle->data_channel, &address);
         if(result != GLOBUS_SUCCESS)
@@ -2647,13 +2648,15 @@ globus_i_gfs_data_request_passive(
         /* its ok to use AF_INET here since we are requesting the LOCAL
          * address.  we just use AF_INET to store the port
          */
-        if(!globus_l_gfs_data_is_remote_node || handle->use_interface)
+        if(handle->info.interface && 
+            (!globus_l_gfs_data_is_remote_node || handle->use_interface))
         {
             ipv6_addr = (strchr(handle->info.interface, ':') != NULL);
         }
 
         if((globus_l_gfs_data_is_remote_node && !handle->use_interface) ||
-            (ipv6_addr && !handle->info.ipv6))
+            (ipv6_addr && !handle->info.ipv6) || 
+            handle->info.interface == NULL)
         {
             GlobusLibcSockaddrSetFamily(addr, AF_INET);
             GlobusLibcSockaddrSetPort(addr, address.port);
@@ -2682,7 +2685,7 @@ globus_i_gfs_data_request_passive(
                     "%s:%d", handle->info.interface, (int) address.port);
             }
         }
-
+        
         bounce_info = (globus_l_gfs_data_passive_bounce_t *)
             globus_calloc(1, sizeof(globus_l_gfs_data_passive_bounce_t));
         if(!bounce_info)
@@ -3207,7 +3210,7 @@ globus_i_gfs_data_request_send(
     {
         rc = globus_gfs_acl_authorize(
             &session_handle->acl_handle,
-            "read",
+            GFS_ACL_ACTION_READ,
             send_info->pathname,
             &res,
             globus_l_gfs_authorize_cb,
@@ -3387,7 +3390,7 @@ globus_i_gfs_data_request_list(
     {
         rc = globus_gfs_acl_authorize(
             &session_handle->acl_handle,
-            "lookup",
+            GFS_ACL_ACTION_LOOKUP,
             list_info->pathname,
             &res,
             globus_l_gfs_authorize_cb,
@@ -5465,8 +5468,14 @@ globus_l_gfs_operation_finished_kickout(
         GFSDataOpDec(op, destroy_op, destroy_session);
     }
     globus_mutex_unlock(&op->session_handle->mutex);
-    globus_assert(destroy_op);
-    globus_l_gfs_data_operation_destroy(op, destroy_session);
+ 
+     /* globus_assert(destroy_op); this was wrong, there could stull
+        be an event out there */
+     if(destroy_op)
+     {
+         globus_l_gfs_data_operation_destroy(op, destroy_session);
+     }
+
     globus_free(bounce);
 
     GlobusGFSDebugExit();
@@ -5498,6 +5507,8 @@ globus_gridftp_server_operation_finished(
 
     switch(finished_info->type)
     {
+        case GLOBUS_GFS_OP_RECV:
+        case GLOBUS_GFS_OP_SEND:
         case GLOBUS_GFS_OP_TRANSFER:
             if(!op->data_handle->is_mine)
             {
@@ -6317,8 +6328,12 @@ globus_l_gfs_set_stack(
     }
     globus_i_ftp_control_data_set_stack(&handle->data_channel, stack);
 
+    globus_xio_stack_destroy(stack);
+
     return GLOBUS_SUCCESS;
 error_control:
+
+    globus_xio_stack_destroy(stack);
     return result;
 }
 

@@ -459,6 +459,7 @@ globus_i_gfs_connection_closed()
     GlobusGFSDebugEnter();
 
     globus_gfs_config_inc_int("open_connections_count", -1);
+
     if(globus_l_gfs_terminated || globus_i_gfs_config_bool("single"))
     {
         if(globus_gfs_config_get_int("open_connections_count") == 0)

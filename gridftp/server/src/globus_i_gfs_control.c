@@ -405,6 +405,8 @@ globus_l_gfs_done_cb(
     GlobusGFSName(globus_l_gfs_done_cb);
     GlobusGFSDebugEnter();
 
+printf(stderr, "globus_l_gfs_done_cb()\n");
+
     instance = (globus_l_gfs_server_instance_t *) user_arg;
 
     globus_gridftp_server_control_destroy(instance->server_handle);
