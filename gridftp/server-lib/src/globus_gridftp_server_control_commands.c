@@ -2017,7 +2017,6 @@ globus_l_gsc_cmd_pasv(
     globus_i_gsc_cmd_wrapper_t *            wrapper = NULL;
     char *                                  msg = NULL;
     globus_bool_t                           reply_flag;
-    globus_bool_t                           dp;
     globus_result_t                         res;
     GlobusGridFTPServerName(globus_l_gsc_cmd_pasv);
 
@@ -2026,7 +2025,6 @@ globus_l_gsc_cmd_pasv(
 
     globus_i_gsc_log(op->server_handle, full_command,
         GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_TRANSFER_STATE);
-    dp = op->server_handle->opts.delayed_passive;
     reply_flag = op->server_handle->opts.delayed_passive;
 
     if(strncmp(cmd_a[0], "PASV", 4) == 0)
@@ -2034,7 +2032,6 @@ globus_l_gsc_cmd_pasv(
         wrapper->dc_parsing_alg = 0;
         wrapper->max = 1;
         wrapper->prt = GLOBUS_GRIDFTP_SERVER_CONTROL_PROTOCOL_IPV4;
-        msg = _FSMSL("227 Passive delayed.\r\n");
         wrapper->cmd_ndx = 1;
         wrapper->reply_code = 227;
     }
@@ -2043,7 +2040,6 @@ globus_l_gsc_cmd_pasv(
         wrapper->dc_parsing_alg = 1;
         wrapper->prt = GLOBUS_GRIDFTP_SERVER_CONTROL_PROTOCOL_IPV6;
         wrapper->max = 1;
-        msg = _FSMSL("229 Passive delayed.\r\n");
         if(argc == 2)
         {
             if(strstr(cmd_a[1], "ALL") != NULL)
@@ -2051,14 +2047,12 @@ globus_l_gsc_cmd_pasv(
                 reply_flag = GLOBUS_TRUE;
                 op->server_handle->opts.passive_only = GLOBUS_TRUE;
                 msg = _FSMSL("229 EPSV ALL Successful.\r\n");
-                dp = op->server_handle->opts.delayed_passive;
             }
             else
             {
                 sc = sscanf(cmd_a[1], "%d", (int*)&wrapper->prt);
                 if(sc != 1)
                 {
-                    dp = op->server_handle->opts.delayed_passive;
                     reply_flag = GLOBUS_TRUE;
                     msg = _FSMSL("501 Invalid network command.\r\n");
                 }
@@ -2067,7 +2061,6 @@ globus_l_gsc_cmd_pasv(
                     && wrapper->prt !=
                         GLOBUS_GRIDFTP_SERVER_CONTROL_PROTOCOL_IPV6)
                 {
-                    dp = op->server_handle->opts.delayed_passive;
                     reply_flag = GLOBUS_TRUE;
                     msg = _FSMSL("501 Invalid protocol.\r\n");
                 }
@@ -2079,7 +2072,6 @@ globus_l_gsc_cmd_pasv(
     }
     else if(strcmp(cmd_a[0], "SPAS") == 0)
     {
-        msg = _FSMSL("229 Passive delayed.\r\n");
         wrapper->max = -1;
         wrapper->cmd_ndx = 3;
         wrapper->reply_code = 229;
@@ -2123,10 +2115,13 @@ globus_l_gsc_cmd_pasv(
     }
     else
     {
-        op->server_handle->opts.delayed_passive = dp;
         wrapper->transfer_flag = GLOBUS_TRUE;
         wrapper->reply_code -= 100;
         op->server_handle->pasv_info = wrapper;
+        if(msg == NULL)
+        {
+            msg = _FSMSL("200 Passive delayed.\r\n");
+        }
         globus_gsc_959_finished_command(op, msg);
     }
 }
@@ -3486,6 +3481,7 @@ globus_i_gsc_add_commands(
         NULL);
     
     /* add features */
+    globus_gridftp_server_control_add_feature(server_handle, "PASV AllowDelayed;");
     globus_gridftp_server_control_add_feature(server_handle, "MDTM");
     globus_gridftp_server_control_add_feature(server_handle, "REST STREAM");
     globus_gridftp_server_control_add_feature(server_handle, "SPOR");
