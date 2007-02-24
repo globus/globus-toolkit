@@ -21,6 +21,8 @@
 #define GLOBUS_URL_COPY_ARG_BINARY      2
 #define GLOBUS_URL_COPY_ARG_VERBOSE     4
 
+#include "globus_ftp_client_plugin.h"
+
 typedef struct globus_guc_src_dst_pair_s
 {
     char *                              src_url;
@@ -106,8 +108,20 @@ typedef struct globus_guc_plugin_funcs_s
     globus_guc_plugin_cancel_t          cancel_func;
     globus_guc_plugin_cleanup_t         cleanup_func;
 } globus_guc_plugin_funcs_t;
+
+typedef globus_result_t
+(*globus_guc_client_plugin_init_t)(
+    globus_ftp_client_plugin_t *        plugin,
+    char *                              in_args);
+
+
+typedef struct globus_guc_client_plugin_funcs_s
+{
+    globus_guc_client_plugin_init_t     init_func;
+} globus_guc_client_plugin_funcs_t;
  
 extern globus_extension_registry_t      globus_guc_plugin_registry;
+extern globus_extension_registry_t      globus_guc_client_plugin_registry;
 
 #define GUC_PLUGIN_FUNCS                "guc_funcs"
 
