@@ -9,12 +9,14 @@ bin_PROGRAMS= \
     gridftp-register \
     monitor \
     zero-idle \
+    cache-idle \
     globus-get-rp \
     globus-get-ip
 
 backend_idle_Sources= backend_idle.c
 monitor_Sources= monitor.c
 zero_idle_Sources= zero_idle.c
+cache_idle_Sources= cache_idle.c
 gridftp_register_Sources= gridftp_register.c
 globus_get_ip_Sources= globus_get_ip.c
 globus_get_rp_Sources= globus_get_rp.c globus_get_rp_opts.c
@@ -55,6 +57,9 @@ zero_idle_CFLAGS  = $(GPT_CFLAGS)
 zero_idle_SOURCES = $(zero_idle_Sources)
 zero_idle_LDFLAGS = $(GPT_LDFLAGS)
 
+cache_idle_CFLAGS  = $(GPT_CFLAGS)
+cache_idle_SOURCES = $(cache_idle_Sources)
+cache_idle_LDFLAGS = $(GPT_LDFLAGS)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

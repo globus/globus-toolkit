@@ -220,6 +220,7 @@ waitpid_cb(
 {
     int     status;
     int     rc;
+    char *  hn;
 
     rc = waitpid(-1, &status, WNOHANG);
     if(rc > 0)
