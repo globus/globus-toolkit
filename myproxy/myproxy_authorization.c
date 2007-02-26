@@ -674,6 +674,20 @@ int auth_cert_check_client (authorization_data_t *auth_data,
        goto end;
    }
 
+   if (config->limited_proxy == 0) {
+       switch (ssl_limited_proxy_chain(chain)) {
+       case 1:
+           config->limited_proxy = 1;
+           myproxy_debug("client has a limited proxy chain");
+           break;
+       case 0:
+           break;
+       default:
+           verror_prepend_string("unable to determine if limited proxy is present");
+           goto end;
+       }
+   }
+
    if (ssl_get_base_subject(chain, &authorization_subject) == SSL_ERROR) {
        verror_prepend_string("internal error: ssl_get_base_subject() failed");
        goto end;

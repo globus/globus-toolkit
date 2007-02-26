@@ -5,6 +5,9 @@ Binary compatibility of the C API is not guaranteed between releases.
 Version History
 ---------------
 v3.8 XX Xxx 2007
+  - check if client authenticates with a limited proxy, and if so,
+    only allow the client to obtain another limited proxy, unless
+    ignore_globus_limited_proxy_flag is set in myproxy-server.config
   - optionally store all certificates issued by the MyProxy CA in a
     directory via the certificate_out_dir myproxy-server.config option
 

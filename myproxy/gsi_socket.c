@@ -17,6 +17,7 @@ struct _gsi_socket
     OM_uint32			major_status;
     OM_uint32			minor_status;
     char			*peer_name;
+    int             limited_proxy; /* 1 if peer used a limited proxy */
 };
 
 #define DEFAULT_SERVICE_NAME		"host"
@@ -553,6 +554,25 @@ GSI_SOCKET_allow_anonymous(GSI_SOCKET *self, const int value)
     return GSI_SOCKET_SUCCESS;
 }
 
+int
+GSI_SOCKET_peer_used_limited_proxy(GSI_SOCKET *self)
+{
+    if (self == NULL) {
+        return GSI_SOCKET_ERROR;
+    }
+    return self->limited_proxy;
+}
+
+int
+GSI_SOCKET_set_peer_limited_proxy(GSI_SOCKET *self, int flag)
+{
+    if (self == NULL) {
+        return GSI_SOCKET_ERROR;
+    }
+    self->limited_proxy = flag;
+    return 0;
+}
+
 /* XXX This routine really needs a complete overhaul */
 int
 GSI_SOCKET_use_creds(GSI_SOCKET *self,
@@ -703,6 +723,10 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self, char *accepted_peer_names[])
       self->error_string =
 	strdup("requested GSSAPI service not supported");
       goto error;
+    }
+
+    if (ret_flags & GSS_C_GLOBUS_LIMITED_PROXY_FLAG) {
+        self->limited_proxy = 1;
     }
 
     /* Check the authenticated identity of the server. */
@@ -873,7 +897,11 @@ GSI_SOCKET_authentication_accept(GSI_SOCKET *self)
     if (self->major_status != GSS_S_COMPLETE) {
 	goto error;
     }
-    
+
+    if (gss_flags & GSS_C_GLOBUS_LIMITED_PROXY_FLAG) {
+        self->limited_proxy = 1;
+    }
+
     /* Success */
     return_value = GSI_SOCKET_SUCCESS;
     
@@ -1331,6 +1359,10 @@ int GSI_SOCKET_delegation_init_ext(GSI_SOCKET *self,
 	goto error;
     }
    
+    if (GSI_SOCKET_peer_used_limited_proxy(self)) {
+        ssl_proxy_restrictions_set_limited(proxy_restrictions, 1);
+    }
+
     /*
      * Sign the request
      */

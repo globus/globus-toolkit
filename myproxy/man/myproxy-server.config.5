@@ -225,6 +225,15 @@ credentials.  By default, no server-wide maximum is enforced.
 However, if this option is specified, the server will limit the
 lifetime of any retrieved proxy credentials to the value given.
 .TP
+.BI ignore_globus_limited_proxy_flag " boolean"
+By default, MyProxy will respect the policy of "limited" proxy
+certificates as follows.  If a client authenticates with a limited
+proxy, the client should only be able to obtain another limited
+proxy, not a full proxy or end entity certificate.  Thus, the
+MyProxy CA will not accept limited proxies for authentication.
+However, if this option is set, MyProxy will treat limited proxy
+certificates as if they were full proxy certificates.
+.TP
 .BI syslog_ident " name"
 You can optionally specify the string to be prepended to every message
 written to the syslog.  If not specified, the name defaults to the the
