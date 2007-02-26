@@ -78,6 +78,8 @@ globus_ws_core_schema                       wsrf/schema/ tar
 globus_wsrf_xindice                         wsrf/java/xindice
 globus_java_container_admin_tools           wsrf/java/container_tools/source gpt
 globus_java_container_admin_tools_setup     wsrf/java/container_tools/setup gpt
+globus_java_authzFramework		    wsrf/java/authzFramework/engine/source
+globus_java_authzFramework_test		    wsrf/java/authzFramework/engine/test
 globus_java_ws_core_common                  wsrf/java/common/source
 globus_java_ws_core_tools                   wsrf/java/tools/source
 globus_java_ws_core_tools_test              wsrf/java/tools/test

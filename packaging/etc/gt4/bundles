@@ -1,6 +1,7 @@
 BUNDLE gt4-java-ws-core
         globus_ws_core_schema
         globus_java_ws_core_common
+	globus_java_authzFramework
         globus_java_ws_core_usage 
         globus_java_ws_core_tools
         globus_java_ws_core
@@ -22,6 +23,7 @@ BUNDLE gt4-java-admin
 BUNDLE gt4-java-ws-core-test
         globus_java_ws_core_tools_test
         globus_java_ws_core_test_base
+	globus_java_authzFramework_test
         globus_java_ws_core_test_interop
         globus_java_ws_core_test_unit
 
