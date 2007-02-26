@@ -1459,6 +1459,7 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
            }
        }
 
+       /* this call may set context->limited_proxy */
    authorization_ok =
 	   authenticate_client(attrs, &creds, client_request, client->name,
 			       context, trusted_retriever, allowed_to_renew);
@@ -1472,6 +1473,35 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 
        if (authorization_ok != 1) {
            goto end;
+       }
+
+       if (context->limited_proxy == -1) { /* config says ignore limited */
+           GSI_SOCKET_set_peer_limited_proxy(attrs->gsi_socket, 0);
+       } else if (context->limited_proxy == 1) {
+           GSI_SOCKET_set_peer_limited_proxy(attrs->gsi_socket, 1);
+       }
+
+       if (GSI_SOCKET_peer_used_limited_proxy(attrs->gsi_socket)) {
+           myproxy_debug("client authenticated with a limited proxy chain");
+           if (!credentials_exist) {
+               verror_put_string("MyProxy CA will not accept limited proxy for authentication.");
+               authorization_ok = 0;
+               goto end;
+           }
+           if (client_request->command_type == MYPROXY_RETRIEVE_CERT) {
+               switch(ssl_limited_proxy_file(creds.location)) {
+               case 1:
+                   break;       /* ok */
+               case 0:
+                   verror_put_string("Client with limited proxy may not retrieve full credentials.");
+                   authorization_ok = 0;
+                   goto end;
+               default:
+                   verror_put_string("Can't determine if credentials contain a limited proxy.");
+                   authorization_ok = 0;
+                   goto end;
+               }
+           }
        }
        break;
 

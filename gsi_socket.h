@@ -284,4 +284,22 @@ GSI_SOCKET_credentials_init_ext(GSI_SOCKET *self,
  */
 int GSI_SOCKET_allow_anonymous(GSI_SOCKET *self, const int value);
 
+/*
+ * GSI_SOCKET_peer_used_limited_proxy()
+ *
+ * Returns 1 if peer used a limited proxy, 0 otherwise.
+ *
+ */
+int GSI_SOCKET_peer_used_limited_proxy(GSI_SOCKET *self);
+
+/*
+ * GSI_SOCKET_set_peer_limited_proxy()
+ *
+ * Set the peer's limited proxy flag (1 if yes, 0 if no).
+ * Used when secondary authentication used a limited proxy
+ * and so limited proxy policies should apply.
+ *
+ */
+int GSI_SOCKET_set_peer_limited_proxy(GSI_SOCKET *self, int flag);
+
 #endif /* !__GSI_SOCKET_H */

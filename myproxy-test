@@ -47,6 +47,8 @@
 #  36. Verify myproxy-retrieve key retrieval policies.
 #  37. Store credentials with retrievable_by_cert policy.
 #  38. Verify retrievable_by_cert policies.
+#  39. Verify limited proxy retrieves a limited proxy.
+#  40. Verify renewed limited proxy is still limited.
 #
 # CoG test cases are:
 #   1. CoG anonget of myproxy-init stored credential.
@@ -113,6 +115,7 @@ die "grid-proxy-info failed, stopped"
     if (!defined($timeleft) || $timeleft eq "");
 die "proxy expired, stopped" if ($timeleft < 60);
 die "proxy lifetime too short, stopped" if ($timeleft < 60*60*3);
+die "proxy is limited, stopped" if (`$grid_proxy_info -type` =~ /limited/);
 chomp($cert_subject = `$grid_proxy_info -subject`);
 die "grid-proxy-info -subject failed, stopped"
     if (!defined($cert_subject) || $cert_subject eq "");
@@ -994,6 +997,56 @@ if ($exitstatus == 0) {
 &runtest("myproxy-destroy -v -k 'mine' -d", undef);
 &runtest("myproxy-destroy -v -k 'nobody' -d", undef);
 
+#
+# Test 39
+#
+&runtest("myproxy-init -v -a -c 1 -t 1 -S", $passphrase . "\n");
+&runtest("myproxy-init -v -x -R '$cert_subject' -k renew -c 1 -t 1",
+		 undef);
+&runtest("grid-proxy-init -limited -o \$X509_USER_PROXY.limited", undef);
+rename("\$X509_USER_PROXY", "\$X509_USER_PROXY.orig");
+rename("\$X509_USER_PROXY.limited", "\$X509_USER_PROXY");
+($exitstatus, $output) =
+    &runtest("myproxy-logon -t 1 -o /tmp/myproxy-test.$$ -v -S",
+	     $passphrase . "\n");
+print "MyProxy Test 39 (verify limited proxy retrieves a limited proxy): ";
+if ($exitstatus == 0) {
+	($exitstatus, $output) =
+	    &verifyproxy("/tmp/myproxy-test.$$");
+}
+if ($exitstatus != 0) {
+    print "FAILED\n"; $FAILURES++; print STDERR $output;
+    goto cleanup_limited;
+}
+if (!`$grid_proxy_info -file /tmp/myproxy-test.$$ -type` =~ /limited/) {
+    print "FAILED\nRetrieved proxy is not limited.\n"; $FAILURES++; 
+}
+print "SUCCEEDED\n"; $SUCCESSES++;
+
+
+#
+# Test 40
+#
+($exitstatus, $output) =
+    &runtest("myproxy-logon -a \$X509_USER_PROXY -k renew -t 1 -o /tmp/myproxy-test.$$ -v", undef);
+print "MyProxy Test 40 (verify renewed limited proxy is still limited): ";
+if ($exitstatus == 0) {
+	($exitstatus, $output) =
+	    &verifyproxy("/tmp/myproxy-test.$$");
+}
+if ($exitstatus != 0) {
+    print "FAILED\n"; $FAILURES++; print STDERR $output;
+    goto cleanup_limited;
+}
+if (!`$grid_proxy_info -file /tmp/myproxy-test.$$ -type` =~ /limited/) {
+    print "FAILED\nRetrieved proxy is not limited.\n"; $FAILURES++; 
+}
+print "SUCCEEDED\n"; $SUCCESSES++;
+
+cleanup_limited:
+&runtest("myproxy-destroy -v", undef);
+&runtest("myproxy-destroy -v -k renew", undef);
+rename("\$X509_USER_PROXY.orig", "\$X509_USER_PROXY");
 
 
 #

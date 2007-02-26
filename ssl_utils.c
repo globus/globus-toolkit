@@ -1606,6 +1606,33 @@ ssl_proxy_restrictions_set_lifetime(SSL_PROXY_RESTRICTIONS	*restrictions,
 }
 
 int
+ssl_proxy_restrictions_set_limited(SSL_PROXY_RESTRICTIONS	*restrictions,
+				    const int			limited)
+{
+    int				return_value = SSL_ERROR;
+    
+    /* Check arguments */
+    if (restrictions == NULL)
+    {
+	verror_put_errno(EINVAL);
+	goto error;
+    }
+    
+    if (limited < 0)
+    {
+	verror_put_errno(EINVAL);
+	goto error;
+    }
+
+    /* OK */
+    restrictions->limited_proxy = limited;
+    return_value = SSL_SUCCESS;
+
+  error:
+    return return_value;
+}
+
+int
 ssl_get_base_subject_file(const char *proxyfile, char **subject)
 {
    SSL_CREDENTIALS	*creds = NULL;
@@ -1894,7 +1921,53 @@ end:
    return return_status;
 }
 
+int
+ssl_limited_proxy_chain(SSL_CREDENTIALS *chain)
+{
+    X509 *cert = NULL;
+    globus_gsi_cert_utils_cert_type_t   cert_type;
+    int i;
 
+    if (globus_gsi_cert_utils_get_cert_type(chain->certificate, &cert_type)
+        != GLOBUS_SUCCESS) {
+        verror_put_string("globus_gsi_cert_utils_get_cert_type() failed");
+        return -1;
+    }
+    if (GLOBUS_GSI_CERT_UTILS_IS_LIMITED_PROXY(cert_type)) {
+        return 1;
+    }
+    for (i = 0; i < sk_num(chain->certificate_chain); i++) {
+        cert = (X509 *)sk_value(chain->certificate_chain, i);
+        if (globus_gsi_cert_utils_get_cert_type(cert, &cert_type)
+            != GLOBUS_SUCCESS) {
+            verror_put_string("globus_gsi_cert_utils_get_cert_type() failed");
+            return -1;
+        }
+        if (GLOBUS_GSI_CERT_UTILS_IS_LIMITED_PROXY(cert_type)) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+
+int
+ssl_limited_proxy_file(const char path[])
+{
+   SSL_CREDENTIALS	*creds = NULL;
+   int			return_value = -1;
+
+   creds = ssl_credentials_new();
+
+   if (ssl_certificate_load_from_file(creds, path) != SSL_SUCCESS)
+       goto error;
+
+   return_value = ssl_limited_proxy_chain(creds);
+
+   error:
+   if (creds) ssl_credentials_destroy(creds);
+   return return_value;
+}
 
 int
 ssl_get_times(const char *path, time_t *not_before, time_t *not_after)

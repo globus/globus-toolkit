@@ -197,6 +197,15 @@ line_parse_callback(void *context_arg,
     else if (strcmp(directive, "max_proxy_lifetime") == 0) {
 	context->max_proxy_lifetime = 60*60*atoi(tokens[1]);
     }
+    else if (strcmp(directive, "ignore_globus_limited_proxy_flag") == 0) {
+        if ((strcasecmp(tokens[1], "true")) ||
+            (strcasecmp(tokens[1], "enabled")) ||
+            (strcasecmp(tokens[1], "yes")) ||
+            (strcasecmp(tokens[1], "on")) ||
+            (strcmp(tokens[1], "1"))) {
+            context->limited_proxy = -1;
+        }
+    }
     else if (strcmp(directive, "cert_dir") == 0) {
 	context->cert_dir = strdup(tokens[1]);
     }

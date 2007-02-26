@@ -281,7 +281,19 @@ void ssl_proxy_restrictions_destroy(SSL_PROXY_RESTRICTIONS *restrictions);
  * Returns SSL_SUCCESS on success, SSL_ERROR otherwise setting verror.
  */
 int ssl_proxy_restrictions_set_lifetime(SSL_PROXY_RESTRICTIONS *restrictions,
-					long seconds);
+					const long seconds);
+
+			   
+/*
+ * ssl_proxy_restrictions_set_limited()
+ *
+ * Set whether a limited proxy should be delegated.
+ * A limited flag of 1 indicates yes, a flag of 0 indicates no (default).
+ *
+ * Returns SSL_SUCCESS on success, SSL_ERROR otherwise setting verror.
+ */
+int ssl_proxy_restrictions_set_limited(SSL_PROXY_RESTRICTIONS *restrictions,
+					const int limited);
 
 			   
 /* ssl_get_base_subject_file()
@@ -351,6 +363,21 @@ int ssl_verify(unsigned char *data, int length, SSL_CREDENTIALS *creds,
  */
 int ssl_verify_gsi_chain(SSL_CREDENTIALS *chain);
 
+/*
+ * int ssl_limited_proxy_chain()
+ *
+ * Return 1 if certificate chain includes a limited proxy,
+ * 0 if not, -1 on error.
+ */
+int ssl_limited_proxy_chain(SSL_CREDENTIALS *chain);
+
+/*
+ * int ssl_limited_proxy_file()
+ *
+ * Return 1 if certificate chain in path includes a limited proxy,
+ * 0 if not, -1 on error.
+ */
+int ssl_limited_proxy_file(const char path[]);
 
 /*
  * ssl_get_times
