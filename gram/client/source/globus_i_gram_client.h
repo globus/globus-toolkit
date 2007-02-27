@@ -36,7 +36,8 @@ EXTERN_C_BEGIN
 ******************************************************************************/
 typedef struct
 {
-    gss_cred_id_t                   credential;
+    gss_cred_id_t                       credential;
+    globus_io_secure_delegation_mode_t  delegation_mode;
 }
 globus_i_gram_client_attr_t;
 

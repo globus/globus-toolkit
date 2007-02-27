@@ -58,6 +58,7 @@ globus_gram_client_attr_init(
     {
         return GLOBUS_GRAM_PROTOCOL_ERROR_MALLOC_FAILED;
     }
+    iattr->delegation_mode = GLOBUS_IO_SECURE_DELEGATION_MODE_LIMITED_PROXY;
 
     *attr = (void*) iattr;
 
@@ -183,3 +184,87 @@ globus_gram_client_attr_get_credential(
 out:
     return rc;
 }
+
+/**
+ * Set the delegation mode associated with an attribute set.
+ * @ingroup globus_gram_client_attr
+ *
+ * @param attr
+ *     The attribute set to update.
+ * @param credential
+ *     The new value of the delegation mode.
+ *
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_ATTR
+ *     An invalid attribute set was passed to this function.
+ *
+ * @see globus_gram_client_attr_get_delegation_mode()
+ */
+int
+globus_gram_client_attr_set_delegation_mode(
+    globus_gram_client_attr_t           attr,
+    globus_io_secure_delegation_mode_t  mode)
+{
+    int                                 rc = GLOBUS_SUCCESS;
+    globus_i_gram_client_attr_t *       iattr;
+
+    if (attr == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_ATTR;
+        goto out;
+    }
+    if (mode != GLOBUS_IO_SECURE_DELEGATION_MODE_LIMITED_PROXY &&
+        mode != GLOBUS_IO_SECURE_DELEGATION_MODE_FULL_PROXY)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_ATTR;
+        goto out;
+    }
+    iattr = (globus_i_gram_client_attr_t *) attr;
+    iattr->delegation_mode = mode;
+out:
+    return rc;
+}
+
+/**
+ * Get the delegation mode associated with an attribute set.
+ * @ingroup globus_gram_client_attr
+ *
+ * @param attr
+ *     The attribute set to query.
+ * @param credential
+ *     Pointer to a location to set to the value of the delegation mode.
+ *
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_ATTR
+ *     An invalid attribute set was passed to this function.
+ * @retval GLOBUS_GRAM_PROTOCOL_ERROR_NULL_PARAMETER
+ *     An null @a mode pointer was passed to this function.
+ *
+ * @see globus_gram_client_attr_get_delegation_mode()
+ */
+int
+globus_gram_client_attr_get_delegation_mode(
+    globus_gram_client_attr_t           attr,
+    globus_io_secure_delegation_mode_t *mode)
+{
+    int                                 rc = GLOBUS_SUCCESS;
+    globus_i_gram_client_attr_t *       iattr;
+
+    iattr = (globus_i_gram_client_attr_t *) attr;
+
+    if (iattr == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_ATTR;
+
+        goto out;
+    }
+    if (mode == NULL)
+    {
+        rc = GLOBUS_GRAM_PROTOCOL_ERROR_NULL_PARAMETER;
+
+        goto out;
+    }
+    *mode = iattr->delegation_mode;
+
+out:
+    return rc;
+}
+/* globus_gram_client_attr_get_delegation_mode() */

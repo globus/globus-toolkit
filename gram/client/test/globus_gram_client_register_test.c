@@ -56,12 +56,13 @@ int main(int argc, char ** argv)
     my_monitor_t			Monitor;
     gss_cred_id_t                       credential;
     globus_gram_client_attr_t           attr;
+    int                                 i;
 
     /* Retrieve relevant parameters from the command line */ 
-    if (argc < 3 || argc > 4)
+    if (argc < 3 || argc > 5)
     {
         /* invalid parameters passed */
-        printf("Usage: %s resource_manager_contact rsl_spec [credential path]\n",
+        printf("Usage: %s resource_manager_contact rsl_spec [-f] [credential path]\n",
                 argv[0]);
         return(1);
     }
@@ -75,35 +76,49 @@ int main(int argc, char ** argv)
 
     globus_gram_client_attr_init(&attr);
 
-    if(argc == 4)
+    for (i = 3; i < argc; i++)
     {
-        OM_uint32 major_status, minor_status;
-        gss_buffer_desc buffer;
-        buffer.value = globus_libc_malloc(
-                strlen("X509_USER_PROXY=") +
-                strlen(argv[3]) + 1);
-        sprintf(buffer.value, "X509_USER_PROXY=%s", argv[3]);
-        buffer.length = strlen(buffer.value);
-
-        major_status = gss_import_cred(
-                &minor_status,
-                &credential,
-                GSS_C_NO_OID,
-                1,
-                &buffer,
-                0,
-                NULL);
-        if(major_status != GSS_S_COMPLETE)
+        if (strcmp(argv[i], "-f") == 0)
         {
-            fprintf(stderr, "ERROR: could not import cred from %s\n", argv[3]);
-            return(1);
+            rc = globus_gram_client_attr_set_delegation_mode(
+                attr,
+                GLOBUS_XIO_GSI_DELEGATION_MODE_FULL);
+            if(rc != GLOBUS_SUCCESS)
+            {
+                fprintf(stderr, "ERROR: setting full delegation mode  on attr\n");
+                return 1;
+            }
         }
-        rc = globus_gram_client_attr_set_credential(attr, credential);
-
-        if(rc != GLOBUS_SUCCESS)
+        else
         {
-            fprintf(stderr, "ERROR: setting credential on attr\n");
-            return 1;
+            OM_uint32 major_status, minor_status;
+            gss_buffer_desc buffer;
+            buffer.value = globus_libc_malloc(
+                    strlen("X509_USER_PROXY=") +
+                    strlen(argv[3]) + 1);
+            sprintf(buffer.value, "X509_USER_PROXY=%s", argv[3]);
+            buffer.length = strlen(buffer.value);
+
+            major_status = gss_import_cred(
+                    &minor_status,
+                    &credential,
+                    GSS_C_NO_OID,
+                    1,
+                    &buffer,
+                    0,
+                    NULL);
+            if(major_status != GSS_S_COMPLETE)
+            {
+                fprintf(stderr, "ERROR: could not import cred from %s\n", argv[3]);
+                return(1);
+            }
+            rc = globus_gram_client_attr_set_credential(attr, credential);
+
+            if(rc != GLOBUS_SUCCESS)
+            {
+                fprintf(stderr, "ERROR: setting credential on attr\n");
+                return 1;
+            }
         }
     }
 

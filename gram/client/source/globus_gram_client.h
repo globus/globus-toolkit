@@ -319,6 +319,16 @@ globus_gram_client_attr_get_credential(
     globus_gram_client_attr_t           attr,
     gss_cred_id_t *                     credential);
 
+int
+globus_gram_client_attr_set_delegation_mode(
+    globus_gram_client_attr_t           attr,
+    globus_io_secure_delegation_mode_t  mode);
+
+int
+globus_gram_client_attr_get_delegation_mode(
+    globus_gram_client_attr_t           attr,
+    globus_io_secure_delegation_mode_t *mode);
+
 #define GLOBUS_GRAM_CLIENT_MODULE (&globus_gram_client_module)
 
 extern globus_module_descriptor_t	globus_gram_client_module;

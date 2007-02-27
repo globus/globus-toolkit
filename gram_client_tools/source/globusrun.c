@@ -70,9 +70,15 @@ typedef struct globus_i_globusrun_gram_monitor_s
 
     globus_bool_t  verbose;
     unsigned long  job_state;
+    int            submit_done;
     int            failure_code;
     char *         job_contact;
 } globus_i_globusrun_gram_monitor_t;
+
+
+static
+globus_io_secure_delegation_mode_t  globus_l_delegation_mode =
+        GLOBUS_IO_SECURE_DELEGATION_MODE_LIMITED_PROXY;
 
 /*****************************************************************************
                           Module specific prototypes
@@ -128,6 +134,15 @@ globus_l_globusrun_kill_job(char * job_contact);
 
 static int
 globus_l_globusrun_status_job(char * job_contact);
+
+static
+void
+globus_l_submit_callback(
+    void *                              user_callback_arg,
+    globus_gram_protocol_error_t        operation_failure_code,
+    const char *                        job_contact,
+    globus_gram_protocol_job_state_t    job_state,
+    globus_gram_protocol_error_t        job_failure_code);
 
 /**** Support for SIGINT handling ****/
 static RETSIGTYPE
@@ -249,6 +264,8 @@ static char *  long_usage = \
 "           to the GRAM job manager service without waiting for a callback\n"\
 "           with job submission state. Useful for hosts which are not able\n"\
 "           to receive job state callbacks.\n"\
+"    -full-proxy | -D\n"\
+"           Delegate a full proxy instead of a limited proxy.\n"\
 "    -refresh-proxy | -y <job ID>\n"\
 "           Cause globusrun to delegate a new proxy to the job named by the\n"\
 "           <job ID>\n"\
@@ -364,8 +381,8 @@ enum { arg_i = 1, arg_q, arg_o, arg_s, arg_w, arg_n, arg_l, arg_b,
 	     arg_r, arg_f, arg_k, arg_y, arg_mpirun, arg_status,
 	     arg_stop_manager,
 	     arg_mdshost, arg_mdsport, arg_mdsbasedn, arg_mdstimeout,
-             arg_F,
-	     arg_num = arg_F };
+	     arg_F, arg_full_proxy,
+	     arg_num = arg_full_proxy };
 
 #define listname(x) x##_aliases
 #define namedef(id,alias1,alias2) \
@@ -397,6 +414,7 @@ flagdef(arg_p, "-p", "-parse");
 flagdef(arg_d, "-d", "-dryrun");
 flagdef(arg_a, "-a", "-authenticate-only");
 flagdef(arg_F, "-F", "-fast-batch");
+flagdef(arg_full_proxy, "-D", "-full-proxy");
 
 static int arg_f_mode = O_RDONLY;
 
@@ -423,7 +441,8 @@ static int arg_f_mode = O_RDONLY;
 	setupopt(arg_r); setupopt(arg_f); setupopt(arg_k); setupopt(arg_y); \
 	setupopt(arg_mpirun); setupopt(arg_stop_manager); \
 	setupopt(arg_status); setupopt(arg_mdshost); setupopt(arg_mdsport); \
-	setupopt(arg_mdsbasedn); setupopt(arg_mdstimeout); setupopt(arg_F);
+	setupopt(arg_mdsbasedn); setupopt(arg_mdstimeout); setupopt(arg_F); \
+	setupopt(arg_full_proxy);
 
     static globus_bool_t globus_l_globusrun_ctrlc = GLOBUS_FALSE;
     static globus_bool_t globus_l_globusrun_ctrlc_handled = GLOBUS_FALSE;
@@ -608,6 +627,11 @@ static int arg_f_mode = O_RDONLY;
 
 	case arg_k:
 	    return(globus_l_globusrun_kill_job(instance->values[0]));
+	    break;
+
+	case arg_full_proxy:
+            globus_l_delegation_mode =
+                    GLOBUS_IO_SECURE_DELEGATION_MODE_FULL_PROXY;
 	    break;
 
 	case arg_y:
@@ -1269,6 +1293,7 @@ globus_l_globusrun_gramrun(char * request_string,
     globus_bool_t verbose = !(options & GLOBUSRUN_ARG_QUIET);
     globus_bool_t send_commit = GLOBUS_FALSE;
     int tmp1, tmp2;
+    globus_gram_client_attr_t attr = NULL;
 
     /* trap SIGINTs */
     if(!(options & GLOBUSRUN_ARG_IGNORE_CTRLC))
@@ -1291,11 +1316,39 @@ globus_l_globusrun_gramrun(char * request_string,
 #       endif
     }
 
+    if (globus_l_delegation_mode !=
+                GLOBUS_IO_SECURE_DELEGATION_MODE_LIMITED_PROXY)
+    {
+        err = globus_gram_client_attr_init(&attr);
+        if (err != GLOBUS_SUCCESS)
+        {
+
+            fprintf(stderr,
+                   "Error initialized attribute %s (errorcode %d)\n",
+                                globus_gram_protocol_error_string(err),
+                                err);
+            goto hard_exit;
+        }
+        err = globus_gram_client_attr_set_delegation_mode(
+                attr,
+                globus_l_delegation_mode);
+        if (err != GLOBUS_SUCCESS)
+        {
+
+            fprintf(stderr,
+               "Error setting delegation mode attribute: %s (errorcode %d)\n",
+               globus_gram_protocol_error_string(err),
+               err);
+            goto hard_exit;
+        }
+    }
+
     monitor.done = GLOBUS_FALSE;
     monitor.failure_code = 0;
     monitor.verbose=verbose;
     monitor.job_state = 0;
     monitor.job_contact = NULL;
+    monitor.submit_done = GLOBUS_FALSE;
     globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
     globus_cond_init(&monitor.cond, GLOBUS_NULL);
 
@@ -1335,11 +1388,33 @@ globus_l_globusrun_gramrun(char * request_string,
     }
 
     globus_mutex_lock(&monitor.mutex);
-    err = globus_gram_client_job_request(rm_contact,
-					 request_string,
-					 GLOBUS_GRAM_PROTOCOL_JOB_STATE_ALL,
-					 callback_contact,
-					 &monitor.job_contact);
+    err = globus_gram_client_register_job_request(
+            rm_contact,
+            request_string,
+            GLOBUS_GRAM_PROTOCOL_JOB_STATE_ALL,
+            callback_contact,
+            attr,
+            globus_l_submit_callback,
+            &monitor);
+    if (err != GLOBUS_SUCCESS)
+    {
+	if(callback_contact)
+	{
+	    globus_gram_client_callback_disallow(callback_contact);
+	    globus_free(callback_contact);
+	}
+        globus_libc_fprintf(stderr,
+                            "GRAM Job submission failed because %s (error code %d)\n",
+                            globus_gram_protocol_error_string(err),
+                            err);
+	goto hard_exit;
+    }
+
+    while (!monitor.submit_done)
+    {
+        globus_cond_wait(&monitor.cond, &monitor.mutex);
+        err = monitor.failure_code;
+    }
     globus_mutex_unlock(&monitor.mutex);
 
     if(err == GLOBUS_GRAM_PROTOCOL_ERROR_WAITING_FOR_COMMIT)
@@ -1522,6 +1597,15 @@ globus_l_globusrun_durocrun(char *request_string,
     int *results;
     int err=0;
     globus_bool_t verbose = !(options & (GLOBUSRUN_ARG_QUIET));
+
+    if (globus_l_delegation_mode !=
+            GLOBUS_IO_SECURE_DELEGATION_MODE_LIMITED_PROXY)
+    {
+        fprintf(stderr, "Error: full delegation not supported for multijobs\n");
+        err = GLOBUS_GRAM_PROTOCOL_ERROR_DELEGATION_FAILED;
+
+        goto user_exit;
+    }
 
     /* trap SIGINTs until job is submitted, then potentially ignore them */
     globus_l_globusrun_signal(SIGINT,
@@ -2056,7 +2140,10 @@ globus_l_globusrun_durocrun(char *request_string,
 
 user_exit:
 
-    globus_libc_free(job_contact);
+    if (job_contact != NULL)
+    {
+        globus_libc_free(job_contact);
+    }
     return err;
 } /* globus_l_globusrun_durocrun() */
 
@@ -2113,17 +2200,67 @@ globus_l_globusrun_refresh_proxy(
     char *			job_contact)
 {
     int err;
+    globus_i_globusrun_gram_monitor_t monitor;
+    globus_gram_client_attr_t attr = NULL;
     
-    err = globus_gram_client_job_refresh_credentials(
-	    job_contact,
-	    GSS_C_NO_CREDENTIAL);
+    monitor.done = GLOBUS_FALSE;
+    monitor.failure_code = 0;
+    monitor.verbose = GLOBUS_FALSE;
+    monitor.job_state = 0;
+    monitor.job_contact = NULL;
+    monitor.submit_done = GLOBUS_FALSE;
+    globus_mutex_init(&monitor.mutex, GLOBUS_NULL);
+    globus_cond_init(&monitor.cond, GLOBUS_NULL);
+
+    if (globus_l_delegation_mode !=
+                GLOBUS_IO_SECURE_DELEGATION_MODE_LIMITED_PROXY)
+    {
+        err = globus_gram_client_attr_init(&attr);
+        if (err != GLOBUS_SUCCESS)
+        {
+
+            fprintf(stderr,
+                   "Error initialized attribute %s (errorcode %d)\n",
+                                globus_gram_protocol_error_string(err),
+                                err);
+            goto hard_exit;
+        }
+        err = globus_gram_client_attr_set_delegation_mode(
+                attr,
+                globus_l_delegation_mode);
+        if (err != GLOBUS_SUCCESS)
+        {
+
+            fprintf(stderr,
+               "Error setting delegation mode attribute: %s (errorcode %d)\n",
+               globus_gram_protocol_error_string(err),
+               err);
+            goto hard_exit;
+        }
+    }
+
+    err = globus_gram_client_register_job_refresh_credentials(
+            job_contact,
+            GSS_C_NO_CREDENTIAL,
+            attr,
+            globus_l_submit_callback,
+            &monitor);
 
     if ( err != GLOBUS_SUCCESS )
     {
 	globus_libc_fprintf(stderr, "Error refreshing proxy: %s\n",
 		            globus_gram_client_error_string(err));
     }
+    while (!monitor.submit_done)
+    {
+        globus_cond_wait(&monitor.cond, &monitor.mutex);
+        err = monitor.failure_code;
+    }
+    globus_mutex_unlock(&monitor.mutex);
+    globus_mutex_destroy(&monitor.mutex);
+    globus_cond_destroy(&monitor.cond);
 
+hard_exit:
     return err;
 }
 
@@ -2430,5 +2567,30 @@ globus_l_globusrun_get_credential(void)
 }/* globus_l_globusrun_get_credential() */
 
 
+static
+void
+globus_l_submit_callback(
+    void *                              user_callback_arg,
+    globus_gram_protocol_error_t        operation_failure_code,
+    const char *                        job_contact,
+    globus_gram_protocol_job_state_t    job_state,
+    globus_gram_protocol_error_t        job_failure_code)
+{
+    globus_i_globusrun_gram_monitor_t * monitor = user_callback_arg;
 
-
+    globus_mutex_lock(&monitor->mutex);
+    monitor->submit_done = GLOBUS_TRUE;
+    monitor->job_contact = globus_libc_strdup(job_contact);
+    if (operation_failure_code != GLOBUS_SUCCESS)
+    {
+        monitor->failure_code = operation_failure_code;
+    }
+    else if (job_state > monitor->job_state)
+    {
+        monitor->job_state = job_state;
+        monitor->failure_code = job_failure_code;
+    }
+    globus_cond_signal(&monitor->cond);
+    globus_mutex_unlock(&monitor->mutex);
+}
+/* globus_l_submit_callback() */

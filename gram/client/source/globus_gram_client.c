@@ -144,6 +144,7 @@ int
 globus_l_gram_client_job_refresh_credentials(
     char *				job_contact,
     gss_cred_id_t			creds,
+    globus_i_gram_client_attr_t *       iattr,
     globus_l_gram_client_monitor_t *	monitor);
 
 static
@@ -1844,6 +1845,7 @@ globus_gram_client_job_refresh_credentials(
     rc = globus_l_gram_client_job_refresh_credentials(
 	    job_contact,
 	    creds,
+            NULL,
 	    &monitor);
 
     if (rc != GLOBUS_SUCCESS)
@@ -1916,6 +1918,7 @@ globus_gram_client_register_job_refresh_credentials(
     rc = globus_l_gram_client_job_refresh_credentials(
 	    job_contact,
 	    creds,
+            attr,
 	    monitor);
 
     if (rc != GLOBUS_SUCCESS)
@@ -2357,7 +2360,9 @@ globus_l_gram_client_job_request(
 	             &attr,
                      (iattr != NULL)
                          ? iattr->credential : GSS_C_NO_CREDENTIAL,
-		     GLOBUS_IO_SECURE_DELEGATION_MODE_LIMITED_PROXY,
+		     (iattr != NULL)
+                         ? iattr->delegation_mode
+                         : GLOBUS_IO_SECURE_DELEGATION_MODE_LIMITED_PROXY,
 		     dn )) != GLOBUS_SUCCESS)
     {
         goto globus_gram_client_job_request_attr_failed;
@@ -2470,13 +2475,37 @@ int
 globus_l_gram_client_job_refresh_credentials(
     char *				job_contact,
     gss_cred_id_t			creds,
+    globus_i_gram_client_attr_t *       attr,
     globus_l_gram_client_monitor_t *	monitor)
 {
     int					rc;
     globus_byte_t *			query = GLOBUS_NULL;
     globus_size_t			querysize;
+    OM_uint32                           reqflags = 0;
 
     globus_mutex_lock(&monitor->mutex);
+
+    if (attr)
+    {
+        switch (attr->delegation_mode)
+        {
+            case GLOBUS_IO_SECURE_DELEGATION_MODE_NONE:
+                rc = GLOBUS_GRAM_PROTOCOL_ERROR_DELEGATION_FAILED;
+                goto end;
+            case GLOBUS_IO_SECURE_DELEGATION_MODE_LIMITED_PROXY:
+                reqflags = GSS_C_DELEG_FLAG |
+                           GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG; 
+                break;
+            case GLOBUS_IO_SECURE_DELEGATION_MODE_FULL_PROXY:
+                reqflags = GSS_C_DELEG_FLAG;
+                break;
+        }
+    }
+    else
+    {
+        reqflags = GSS_C_DELEG_FLAG | GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG; 
+    }
+    reqflags |= GSS_C_GLOBUS_SSL_COMPATIBLE;
 
     monitor->type = GLOBUS_GRAM_CLIENT_RENEW;
 
@@ -2500,7 +2529,7 @@ globus_l_gram_client_job_refresh_credentials(
 	 creds,
 	 GSS_C_NO_OID_SET,
 	 GSS_C_NO_BUFFER_SET,
-	 GSS_C_GLOBUS_LIMITED_DELEG_PROXY_FLAG | GSS_C_GLOBUS_SSL_COMPATIBLE,
+         reqflags,
 	 0,
 	 (monitor->callback != GLOBUS_NULL)
 	     ?  globus_l_gram_client_register_callback
