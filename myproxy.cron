@@ -1,6 +1,7 @@
 #!/bin/sh
 
-# The MyProxy cron script deletes users proxies that have expired.
+# This cron script deletes invalid MyProxy credentials
+# (expired, revoked, etc.).
 
 # Set GLOBUS_LOCATION as appropriate for your installation.
 GLOBUS_LOCATION="/usr/grid"
@@ -8,6 +9,6 @@ export GLOBUS_LOCATION
 
 . ${GLOBUS_LOCATION}/libexec/globus-script-initializer
 
-${GLOBUS_LOCATION}/sbin/myproxy-admin-query -e 0 -r 2>&1 | logger -t myproxy.cron -p cron.info
+${GLOBUS_LOCATION}/sbin/myproxy-admin-query -i -r 2>&1 | logger -t myproxy.cron -p cron.info
 
 exit 0
