@@ -1,6 +1,6 @@
 #!/bin/sh
 set -e # exit on any error
-if test "$NMI_PLATFORM" = "ia64_sles_9" -o
+if test "$NMI_PLATFORM" = "ia64_sles_9" -o \
         "$NMI_PLATFORM" = "sun4u_sol_5.9"; then
   GT_INSTALLER=gt4.0.4-all-source-installer.tar.gz
   GT_INSTALLER_URL=http://www.globus.org/ftppub/gt4/4.0/4.0.4/installers/src/$GT_INSTALLER
