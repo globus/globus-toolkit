@@ -248,6 +248,13 @@ main(int argc, char *argv[])
 	exit(1);
     }
 
+    if(server_context->certificate_openssl_engine_id) {
+        if(!initialise_openssl_engine(server_context)) {
+            myproxy_log_verror();
+            my_failure("Could not initialise OpenSSL engine.");
+        }
+    }
+
     if (!server_context->run_as_daemon) {
        myproxy_log("Connection from %s", inet_ntoa(client_addr.sin_addr));
        socket_attrs->socket_fd = fileno(stdin);
