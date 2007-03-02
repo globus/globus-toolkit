@@ -307,8 +307,12 @@ certificate authority.
 .BI certificate_issuer_key " full-path-to-key"
 When specifying 
 .B certificate_issuer_cert 
-above, you must also give the path to a CA private key in PEM format
-for signing certificates.
+above, you must also give the name of the CA private key for 
+signing certificates.  This is
+normally path to a CA private key in PEM format, but if you
+are using an OpenSSL engine (see
+.B certificate_openssl_engine_id
+) then it can be the key name.
 .TP
 .BI certificate_issuer_key_passphrase " \*(lqpassphrase\*(rq"
 If the 
@@ -318,6 +322,41 @@ is encrypted, give the passphrase here.
 .BI certificate_issuer_email_domain " \*(lqdomain\*(rq"
 If set, specifies the domain part of the X509v3 Subject Alternative
 Name email address included in issued certificates.
+.PP
+.BI certificate_openssl_engine_id " engineId"
+.PP
+.BI certificate_openssl_engine_pre " pre-initialization-commands"
+.TP
+.BI certificate_openssl_engine_post " post-initialization-commands"
+These commands can be used to allow any OpenSSL engine to be used
+with MyProxy.  This enables the use of hardware tokens and signing 
+modules to sign certificates.  Given the parameters of an OpenSSL 
+"engine" command, the first argument, the identity of the engine
+becomes the argument to
+.B certificate_openssl_engine_id 
+and -pre commands are listed in order using 
+.B certificate_openssl_engine_pre
+and -post commands are listed in order using
+.B certificate_openssl_engine_post.
+For example the command-line:
+.IP 
+   openssl engine dynamic -pre SO_PATH:/usr/lib/engines/engine_pkcs11.so 
+-pre ID:pkcs11 -pre LIST_ADD:1 -pre LOAD 
+-pre MODULE_PATH:/usr/lib/opensc-pksc11.so
+.IP
+becomes:
+.IP
+   certificate_openssl_engine_id "dynamic"
+.IP 
+   certificate_openssl_engine_pre 
+"SO_PATH:/usr/lib/engines/engine_pkcs11.so"
+"ID:pkcs11" "LIST_ADD:1" "LOAD"
+"MODULE_PATH:/usr/lib/opensc-pksc11.so"
+.IP
+Please note that any shared library engines loaded through the
+"dynamic" engine MUST be compiled againt the correct version of
+OpenSSL.  The Globus toolkit has its own installation and can
+be found by running /path/to/globus/bin/openssl version.
 .TP
 .BI certificate_issuer_program " full-path-to-script"
 This line specifies the path to a program to issue certificates for

@@ -5,6 +5,9 @@ Binary compatibility of the C API is not guaranteed between releases.
 Version History
 ---------------
 v3.8 XX Xxx 2007
+  - add OpenSSL Engine support in the MyProxy CA to enable the use of
+    hardware tokens via new myproxy-server.config
+    certificate_openssl_engine options
   - check if client authenticates with a limited proxy, and if so,
     only allow the client to obtain another limited proxy, unless
     ignore_globus_limited_proxy_flag is set in myproxy-server.config

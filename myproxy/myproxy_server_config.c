@@ -232,6 +232,29 @@ line_parse_callback(void *context_arg,
     else if (strcmp(directive, "certificate_issuer_key_passphrase") == 0) {
 	context->certificate_issuer_key_passphrase = strdup(tokens[1]);
     }
+    else if (strcmp(directive, "certificate_openssl_engine_id") == 0) {
+        context->certificate_openssl_engine_id = strdup(tokens[1]);
+    }
+    else if (strcmp(directive, "certificate_openssl_engine_pre") == 0) {
+        for (index=1; tokens[index] != NULL; index++) {
+            context->certificate_openssl_engine_pre =
+                add_entry(context->certificate_openssl_engine_pre,
+                          tokens[index]);
+            if (context->certificate_openssl_engine_pre == NULL) {
+                goto error;
+            }
+        }
+    }
+    else if (strcmp(directive, "certificate_openssl_engine_post") == 0) {
+        for (index=1; tokens[index] != NULL; index++) {
+            context->certificate_openssl_engine_post =
+                add_entry(context->certificate_openssl_engine_post,
+                          tokens[index]);
+            if (context->certificate_openssl_engine_post == NULL) {
+                goto error;
+            }
+        }
+    }
     else if (strcmp(directive, "certificate_issuer_email_domain") == 0) {
 	context->certificate_issuer_email_domain = strdup(tokens[1]);
     }
@@ -570,11 +593,19 @@ check_config(myproxy_server_context_t *context)
 	    verror_put_errno(errno);
 	    rval = -1;
 	}
-	if (access(context->certificate_issuer_key, R_OK) < 0) {
-	    verror_put_string("certificate_issuer_key %s unreadable",
-			      context->certificate_issuer_key);
-	    verror_put_errno(errno);
-	    rval = -1;
+	if (context->certificate_openssl_engine_id) {
+	   if (!context->certificate_issuer_key) {
+	       verror_put_string("certificate_issuer_key not set");
+               verror_put_errno(errno);
+               rval = -1;
+ 	    }
+	} else {
+	    if (access(context->certificate_issuer_key, R_OK) < 0) {
+	        verror_put_string("certificate_issuer_key %s unreadable",
+	    		          context->certificate_issuer_key);
+	        verror_put_errno(errno);
+	        rval = -1;
+	    }
 	}
 	if (context->certificate_extfile &&
 	    access(context->certificate_extfile, R_OK) < 0) {
