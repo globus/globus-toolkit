@@ -5,15 +5,18 @@ SUBDIRS = \
 	pkgdata \
 	doxygen
 
+flavorinclude_HEADERS = \
+    globus_xio_gridftp_driver.h
+
 INCLUDES = $(GPT_INCLUDES)
 
-lib_LTLIBRARIES = libglobus_gfs_acl_example_$(GLOBUS_FLAVOR_NAME).la
+lib_LTLIBRARIES = libglobus_xio_gridftp_driver_$(GLOBUS_FLAVOR_NAME).la
 
-libglobus_gfs_acl_example___GLOBUS_FLAVOR_NAME__la_LIBADD = \
+libglobus_xio_gridftp_driver___GLOBUS_FLAVOR_NAME__la_LIBADD = \
 	@GPT_LIB_LINKS@
-libglobus_gfs_acl_example___GLOBUS_FLAVOR_NAME__la_SOURCES = \
-	globus_i_gfs_acl_example.c
-libglobus_gfs_acl_example___GLOBUS_FLAVOR_NAME__la_LDFLAGS = \
+libglobus_xio_gridftp_driver___GLOBUS_FLAVOR_NAME__la_SOURCES = \
+	globus_xio_gridftp_driver.c
+libglobus_xio_gridftp_driver___GLOBUS_FLAVOR_NAME__la_LDFLAGS = \
 	@GPT_LDFLAGS@ -module -rpath $(GLOBUS_LOCATION)/lib
 
 EXTRA_DIST = version.h.in
