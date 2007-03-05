@@ -832,11 +832,11 @@ static int ui_read_fn(UI *ui, UI_STRING *ui_string) {
 		UI_set_result(ui, ui_string, (char *) UI_get0_user_data(ui));
 		return 1;
 	    } else {
-		return 0; // not supported!
+            return 0; /* not supported! */
 	    }
 	case UIT_BOOLEAN:
 	default:
-	    return 0; // not supported!
+	    return 0; /* not supported! */
     }
 }
 
@@ -961,7 +961,7 @@ int initialise_openssl_engine(myproxy_server_context_t *server_context) {
 
     myproxy_log("Initialised engine '%s' (CAKey=%s)", engine_id, server_context->certificate_issuer_key);
 
-	// Share with the other functions in this module.
+	/* Share with the other functions in this module. */
 	e_cakey = cakey; 
 	engine  = e;
 
