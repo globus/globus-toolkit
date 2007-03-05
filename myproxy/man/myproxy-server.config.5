@@ -1,4 +1,4 @@
-.TH myproxy-server.config 5 "2006-12-12" "NCSA" "MyProxy"
+TH myproxy-server.config 5 "2006-12-12" "NCSA" "MyProxy"
 .SH NAME
 myproxy-server.config \- myproxy-server configuration file
 .SH DESCRIPTION
@@ -357,6 +357,12 @@ Please note that any shared library engines loaded through the
 "dynamic" engine MUST be compiled againt the correct version of
 OpenSSL.  The Globus toolkit has its own installation and can
 be found by running /path/to/globus/bin/openssl version.
+.TP
+.BI certificate_openssl_engine_lockfile " full-path-to-file"
+If your hardware token or HSM is unable to handle simultaneous
+operations, provide a path to a lockfile for synchronizing
+operations to the engine device.  The myproxy-server will create the
+file if it does not already exist.
 .TP
 .BI certificate_issuer_program " full-path-to-script"
 This line specifies the path to a program to issue certificates for

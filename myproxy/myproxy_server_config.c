@@ -235,6 +235,9 @@ line_parse_callback(void *context_arg,
     else if (strcmp(directive, "certificate_openssl_engine_id") == 0) {
         context->certificate_openssl_engine_id = strdup(tokens[1]);
     }
+    else if (strcmp(directive, "certificate_openssl_engine_lockfile") == 0) {
+        context->certificate_openssl_engine_lockfile = strdup(tokens[1]);
+    }
     else if (strcmp(directive, "certificate_openssl_engine_pre") == 0) {
         for (index=1; tokens[index] != NULL; index++) {
             context->certificate_openssl_engine_pre =

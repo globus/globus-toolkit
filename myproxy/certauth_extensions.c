@@ -519,6 +519,7 @@ generate_certificate( X509_REQ                 *request,
 
   int             return_value = 1;  
   int             not_after;
+  int             lockfd = -1;
   char          * userdn;
   char          * certificate_issuer = NULL;
   char          * serial = NULL;
@@ -707,11 +708,28 @@ generate_certificate( X509_REQ                 *request,
   /* load ca key */
 
   if (engine) {
-    if (!ENGINE_set_default(engine, ENGINE_METHOD_ALL)) {
-        verror_put_string("ENGINE_set_default(ENGINE_METHOD_ALL) failed.");
-        ssl_error_to_verror();
-        goto error;
-    }
+      if (server_context->certificate_openssl_engine_lockfile) {
+          lockfd = open(server_context->certificate_openssl_engine_lockfile,
+                        O_RDWR|O_CREAT, 0600);
+
+          if (lockfd == -1) {
+              verror_put_string("Call to open() failed on %s", server_context->certificate_openssl_engine_lockfile);
+              verror_put_errno(errno);
+              goto error;
+          }
+
+          if ( lock_file(lockfd) == -1 ) {
+              verror_put_string("Failed to get lock on %s", server_context->certificate_openssl_engine_lockfile);
+              verror_put_errno(errno);
+              goto error;
+          }
+      }
+
+      if (!ENGINE_set_default(engine, ENGINE_METHOD_ALL)) {
+          verror_put_string("ENGINE_set_default(ENGINE_METHOD_ALL) failed.");
+          ssl_error_to_verror();
+          goto error;
+      }
   }
 
   if(e_cakey) {
@@ -757,6 +775,7 @@ generate_certificate( X509_REQ                 *request,
   } 
   if (engine) {
       engine_used=1;
+      if (lockfd != -1) close(lockfd);
       if (!ENGINE_set_default(engine, ENGINE_METHOD_NONE)) {
           verror_put_string("ENGINE_set_default(ENGINE_METHOD_NONE) failed.");
           ssl_error_to_verror();
@@ -796,6 +815,7 @@ generate_certificate( X509_REQ                 *request,
     free(certificate_issuer);
   if (serial)
     free(serial);
+  if (lockfd != -1) close(lockfd);
 
   return return_value;
 
