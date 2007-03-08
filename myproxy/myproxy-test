@@ -155,6 +155,7 @@ if (!defined($ENV{'X509_USER_PROXY'})) {
 # make proxy from existing proxy, so we don't need to deal with long-term cred
 $ENV{'X509_USER_CERT'} = $ENV{'X509_USER_PROXY'};
 $ENV{'X509_USER_KEY'} = $ENV{'X509_USER_PROXY'};
+$ENV{'LOGNAME'} = $ENV{'USER'} if (!defined($ENV{'LOGNAME'}));
 $ENV{'LOGNAME'} = $ENV{'LOGNAME'} . ".myproxy-test";
 
 srand(time||$$);
