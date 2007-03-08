@@ -773,6 +773,7 @@ generate_certificate( X509_REQ                 *request,
     ssl_error_to_verror();
     goto error;
   } 
+  serial = i2s_ASN1_OCTET_STRING(NULL,cert->cert_info->serialNumber);
   if (engine) {
       engine_used=1;
       if (lockfd != -1) close(lockfd);
@@ -787,7 +788,6 @@ generate_certificate( X509_REQ                 *request,
 
   *certificate = cert;
 
-  serial = i2s_ASN1_OCTET_STRING(NULL,cert->cert_info->serialNumber);
   myproxy_log("Issued certificate for user \"%s\", with DN \"%s\", "
               "lifetime \"%d\", and serial number \"0x%s\"",
               client_request->username, userdn, 
