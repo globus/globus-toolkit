@@ -731,8 +731,8 @@ init_arguments(int argc, char *argv[],
             context->pidfile = strdup(optarg);
             break;
         case 'h': 	/* print help and exit */
-            fprintf(stderr, usage);
-            exit(1);
+            printf(usage);
+            exit(0);
             break;
         case 'c':
             context->config_file =  malloc(strlen(optarg) + 1);
@@ -742,15 +742,15 @@ init_arguments(int argc, char *argv[],
 	    myproxy_debug_set_level(1);
 	    break;
         case 'V': /* print version and exit */
-            fprintf(stderr, version);
-            exit(1);
+            printf(version);
+            exit(0);
             break;
         case 's': /* set the credential storage directory */
             myproxy_set_storage_dir(optarg);
             break;
 	case 'u': /* print version and exit */
-            fprintf(stderr, usage);
-            exit(1);
+            printf(usage);
+            exit(0);
             break;
         case 'd':
             debug = 1;

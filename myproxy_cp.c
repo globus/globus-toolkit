@@ -241,19 +241,16 @@ init_arguments(int argc,
         switch(arg) 
         {
 	case 'h': 	/* print help and exit */
-            fprintf(stderr, usage);
-            exit(1);
-            break;
         case 'u': 	/* print usage and exit*/
-            fprintf(stderr, usage);
-            exit(1);
+            printf(usage);
+            exit(0);
             break;
 	case 'v':
 	    myproxy_debug_set_level(1);
 	    break;
         case 'V':       /* print version and exit */
-            fprintf(stderr, version);
-            exit(1);
+            printf(version);
+            exit(0);
             break;
         case 'l':	/* username */
             request->username = strdup(optarg);

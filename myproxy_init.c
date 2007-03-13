@@ -330,8 +330,8 @@ init_arguments(int argc,
 	switch(arg) 
 	{
 	case 'h':       /* print help and exit */
-	    fprintf(stderr, usage);
-	    return -1;
+	    printf(usage);
+	    exit(0);
 	    break;
 	case 'c': 	/* Specify cred lifetime in hours */
 	    *cred_lifetime  = SECONDS_PER_HOUR * atoi(optarg);
@@ -352,8 +352,8 @@ init_arguments(int argc,
 	    keyfile = strdup(optarg);
 	    break;
 	case 'u': 	/* print help and exit */
-	    fprintf(stderr, usage);
-	    return -1;
+	    printf(usage);
+	    exit(0);
 	    break;
 	case 'l':	/* username */
 	    request->username = strdup(optarg);
@@ -363,8 +363,8 @@ init_arguments(int argc,
 	    verbose = 1;
 	    break;
 	case 'V': /* print version and exit */
-	    fprintf(stderr, version);
-	    return -1;
+	    printf(version);
+	    exit(0);
 	    break;
 	case 'n':
 	    use_empty_passwd = 1;

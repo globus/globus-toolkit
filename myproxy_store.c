@@ -306,8 +306,8 @@ init_arguments(int                     argc,
 	    break;
 
 	case 'u':		/* print help and exit */
-	    fprintf(stderr, usage);
-	    exit(1);
+	    printf(usage);
+	    exit(0);
 	    break;
 
 	case 't':		/* Specify proxy lifetime in hours */
@@ -315,8 +315,8 @@ init_arguments(int                     argc,
 	    break;
 
 	case 'h':		/* print help and exit */
-	    fprintf(stderr, usage);
-	    exit(1);
+	    printf(usage);
+	    exit(0);
 	    break;
 
 	case 'l':		/* username */
@@ -329,8 +329,8 @@ init_arguments(int                     argc,
 	    break;
 
 	case 'V':		/* print version and exit */
-	    fprintf(stderr, version);
-	    exit(1);
+	    printf(version);
+	    exit(0);
 	    break;
 
 
