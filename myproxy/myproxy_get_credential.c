@@ -337,12 +337,9 @@ init_arguments(int argc,
             attrs->psport = atoi(optarg);
             break;
 	case 'h': 	/* print help and exit */
-            fprintf(stderr, usage);
-            exit(1);
-            break;
         case 'u': 	/* print help and exit */
-            fprintf(stderr, usage);
-            exit(1);
+            printf(usage);
+            exit(0);
             break;
         case 'l':	/* username */
             request->username = strdup(optarg);
@@ -358,8 +355,8 @@ init_arguments(int argc,
 	    myproxy_debug_set_level(1);
 	    break;
         case 'V':       /* print version and exit */
-            fprintf(stderr, version);
-            exit(1);
+            printf(version);
+            exit(0);
             break;
 	case 'd':       /* use the certificate subject (DN) as the default
 		           username instead of LOGNAME */

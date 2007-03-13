@@ -156,8 +156,8 @@ init_arguments(int argc,
         switch(arg) {  
 	case 'h': 	/* print help and exit */
         case 'u': 	/* print help and exit */
-            fprintf(stderr, usage);
-            exit(1);
+            printf(usage);
+            exit(0);
        	    break;
         case 's': /* set the credential storage directory */
 	    myproxy_set_storage_dir(optarg);
@@ -191,8 +191,8 @@ init_arguments(int argc,
         verbose = 1;
 	    break;
         case 'V':       /* print version and exit */
-            fprintf(stderr, version);
-            exit(1);
+            printf(version);
+            exit(0);
             break;
         default:        /* print usage and exit */ 
             fprintf(stderr, usage);
