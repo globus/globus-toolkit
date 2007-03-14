@@ -423,7 +423,7 @@ sshd_exchange_identification(int sock_in, int sock_out)
 		major = PROTOCOL_MAJOR_1;
 		minor = PROTOCOL_MINOR_1;
 	}
-	snprintf(buf, sizeof buf, "SSH-%d.%d-%.100s\n", major, minor, SSH_VERSION);
+	snprintf(buf, sizeof buf, "SSH-%d.%d-%.100s\n", major, minor, SSH_RELEASE);
 	server_version_string = xstrdup(buf);
 
 	/* Send our protocol version identification. */
@@ -946,6 +946,8 @@ server_listen(void)
 	int ret, listen_sock, on = 1;
 	struct addrinfo *ai;
 	char ntop[NI_MAXHOST], strport[NI_MAXSERV];
+	int socksize;
+	int socksizelen = sizeof(int);
 
 	for (ai = options.listen_addrs; ai; ai = ai->ai_next) {
 		if (ai->ai_family != AF_INET && ai->ai_family != AF_INET6)
@@ -982,6 +984,11 @@ server_listen(void)
 			error("setsockopt SO_REUSEADDR: %s", strerror(errno));
 
 		debug("Bind to port %s on %s.", strport, ntop);
+	
+		getsockopt(listen_sock, SOL_SOCKET, SO_RCVBUF, 
+				   &socksize, &socksizelen);
+		debug("Server TCP RWIN socket size: %d", socksize);
+		debug("HPN Buffer Size: %d", options.hpn_buffer_size);
 
 		/* Bind the socket to the desired port. */
 		if (bind(listen_sock, ai->ai_addr, ai->ai_addrlen) < 0) {
@@ -2154,6 +2161,10 @@ do_ssh2_kex(void)
 	if (options.ciphers != NULL) {
 		myproposal[PROPOSAL_ENC_ALGS_CTOS] =
 		myproposal[PROPOSAL_ENC_ALGS_STOC] = options.ciphers;
+	} else if (options.none_enabled == 1) {
+		debug ("WARNING: None cipher enabled");
+		myproposal[PROPOSAL_ENC_ALGS_CTOS] =
+		myproposal[PROPOSAL_ENC_ALGS_STOC] = KEX_ENCRYPT_INCLUDE_NONE;
 	}
 	myproposal[PROPOSAL_ENC_ALGS_CTOS] =
 	    compat_cipher_proposal(myproposal[PROPOSAL_ENC_ALGS_CTOS]);
