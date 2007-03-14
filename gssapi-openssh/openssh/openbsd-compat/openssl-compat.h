@@ -46,6 +46,11 @@ extern const EVP_CIPHER *evp_acss(void);
 # endif
 #endif
 
+/* OpenSSL 0.9.8e returns cipher key len not context key len */
+#if (OPENSSL_VERSION_NUMBER == 0x0090805fL)
+# define EVP_CIPHER_CTX_key_length(c) ((c)->key_len)
+#endif
+
 /*
  * We overload some of the OpenSSL crypto functions with ssh_* equivalents
  * which cater for older and/or less featureful OpenSSL version.
