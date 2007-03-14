@@ -84,7 +84,7 @@ AC_SUBST(SYSLIBS)
 dnl
 dnl Check for OCSP
 dnl
-AC_CHECK_LIB(ssl_$GLOBUS_FLAVOR_NAME, OCSP_basic_verify, AC_DEFINE(HAVE_OCSP))
+AC_CHECK_LIB(crypto_$GLOBUS_FLAVOR_NAME, OCSP_basic_verify, AC_DEFINE(HAVE_OCSP))
 dnl
 dnl Check for SASL
 dnl
