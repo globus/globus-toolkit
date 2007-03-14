@@ -49,6 +49,10 @@
 #include "dispatch.h"
 #include "monitor.h"
 
+#ifdef GSSAPI
+#include "ssh-gss.h"
+#endif
+
 #define KEX_COOKIE_LEN	16
 
 #if OPENSSL_VERSION_NUMBER >= 0x00907000L
@@ -322,6 +326,20 @@ choose_kex(Kex *k, char *client, char *server)
 	} else if (strcmp(k->name, KEX_DHGEX_SHA256) == 0) {
 		k->kex_type = KEX_DH_GEX_SHA256;
 		k->evp_md = evp_ssh_sha256();
+#endif
+#ifdef GSSAPI
+	} else if (strncmp(k->name, KEX_GSS_GEX_SHA1_ID,
+	    sizeof(KEX_GSS_GEX_SHA1_ID) - 1) == 0) {
+		k->kex_type = KEX_GSS_GEX_SHA1;
+		k->evp_md = EVP_sha1();
+	} else if (strncmp(k->name, KEX_GSS_GRP1_SHA1_ID,
+	    sizeof(KEX_GSS_GRP1_SHA1_ID) - 1) == 0) {
+		k->kex_type = KEX_GSS_GRP1_SHA1;
+		k->evp_md = EVP_sha1();
+	} else if (strncmp(k->name, KEX_GSS_GRP14_SHA1_ID,
+	    sizeof(KEX_GSS_GRP14_SHA1_ID) - 1) == 0) {
+		k->kex_type = KEX_GSS_GRP14_SHA1;
+		k->evp_md = EVP_sha1();
 #endif
 	} else
 		fatal("bad kex alg %s", k->name);
