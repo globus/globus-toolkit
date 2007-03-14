@@ -360,7 +360,7 @@ int main(void) { exit(0); }
 	;;
 *-*-cygwin*)
 	check_for_libcrypt_later=1
-	LIBS="$LIBS /usr/lib/textmode.o"
+	LIBS="$LIBS /usr/lib/textreadmode.o"
 	AC_DEFINE(HAVE_CYGWIN, 1, [Define if you are on Cygwin])
 	AC_DEFINE(USE_PIPES, 1, [Use PIPES instead of a socketpair()])
 	AC_DEFINE(DISABLE_SHADOW, 1,
@@ -383,7 +383,8 @@ int main(void) { exit(0); }
 	AC_DEFINE(BROKEN_SETREGID)
 	;;
 *-*-darwin*)
-	AC_DEFINE(BROKEN_GETADDRINFO, 1, [getaddrinfo is broken (if present)])],
+	AC_DEFINE(BROKEN_GETADDRINFO, 1, [Define if getaddrinfo is broken)])
+	AC_DEFINE(BROKEN_GETADDRINFO)
 	AC_DEFINE(SETEUID_BREAKS_SETUID)
 	AC_DEFINE(BROKEN_SETREUID)
 	AC_DEFINE(BROKEN_SETREGID)
@@ -2021,6 +2022,14 @@ int main(void) {
 	]
 )
 
+AC_ARG_WITH(openssl-header-check,
+	[  --without-openssl-header-check Disable OpenSSL version consistency check],
+	[  if test "x$withval" = "xno" ; then
+		openssl_check_nonfatal=1
+	   fi
+	]
+)
+
 # Sanity check OpenSSL headers
 AC_MSG_CHECKING([whether OpenSSL's headers match the library])
 AC_RUN_IFELSE(
@@ -2034,9 +2043,18 @@ int main(void) { exit(SSLeay() == OPENSSL_VERSION_NUMBER ? 0 : 1); }
 	],
 	[
 		AC_MSG_RESULT(no)
-		AC_MSG_ERROR([Your OpenSSL headers do not match your library.
-Check config.log for details.
+		if test "x$openssl_check_nonfatal" = "x"; then
+			AC_MSG_ERROR([Your OpenSSL headers do not match your
+library. Check config.log for details.
+If you are sure your installation is consistent, you can disable the check
+by running "./configure --without-openssl-header-check".
+Also see contrib/findssl.sh for help identifying header/library mismatches.
+])
+		else
+			AC_MSG_WARN([Your OpenSSL headers do not match your
+library. Check config.log for details.
 Also see contrib/findssl.sh for help identifying header/library mismatches.])
+		fi
 	],
 	[
 		AC_MSG_WARN([cross compiling: not checking])
