@@ -5,6 +5,8 @@ Binary compatibility of the C API is not guaranteed between releases.
 Version History
 ---------------
 v3.8 XX Xxx 2007
+  - fix configure check for OCSP functions in OpenSSL for enabling
+    OCSP support
   - for --help, --usage, and --version options, exit with status 0
     after printing help/usage/version information
   - add OpenSSL Engine support in the MyProxy CA to enable the use of

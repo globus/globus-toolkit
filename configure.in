@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_REVISION($Revision: 1.56 $)
+AC_REVISION($Revision: 1.57 $)
 AC_INIT(Makefile.am)
 
 GLOBUS_INIT
@@ -84,7 +84,7 @@ AC_SUBST(SYSLIBS)
 dnl
 dnl Check for OCSP
 dnl
-AC_CHECK_LIB(ssl_$GLOBUS_FLAVOR_NAME, OCSP_basic_verify, AC_DEFINE(HAVE_OCSP))
+AC_CHECK_LIB(crypto_$GLOBUS_FLAVOR_NAME, OCSP_basic_verify, AC_DEFINE(HAVE_OCSP))
 dnl
 dnl Check for SASL
 dnl
