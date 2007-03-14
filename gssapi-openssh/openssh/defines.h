@@ -318,16 +318,6 @@ struct winsize {
 
 /* Paths */
 
-#ifndef _PATH_BSHELL
-# define _PATH_BSHELL "/bin/sh"
-#endif
-#ifndef _PATH_CSHELL
-# define _PATH_CSHELL "/bin/csh"
-#endif
-#ifndef _PATH_SHELLS
-# define _PATH_SHELLS "/etc/shells"
-#endif
-
 #ifdef USER_PATH
 # ifdef _PATH_STDPATH
 #  undef _PATH_STDPATH
@@ -347,6 +337,8 @@ struct winsize {
 # define _PATH_DEVNULL "/dev/null"
 #endif
 
+#ifndef PATH_MAILDIR_IN_PATHS_H
+
 #ifndef MAIL_DIRECTORY
 # define MAIL_DIRECTORY "/var/spool/mail"
 #endif
@@ -358,6 +350,8 @@ struct winsize {
 #if !defined(_PATH_MAILDIR) && defined(MAILDIR)
 # define _PATH_MAILDIR MAILDIR
 #endif /* !defined(_PATH_MAILDIR) && defined(MAILDIR) */
+
+#endif /* PATH_MAILDIR_IN_PATHS_H */
 
 #ifndef _PATH_NOLOGIN
 # define _PATH_NOLOGIN "/etc/nologin"

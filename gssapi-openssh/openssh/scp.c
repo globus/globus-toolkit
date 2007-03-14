@@ -318,8 +318,8 @@ main(int argc, char **argv)
 		case '4':
 		case '6':
 		case 'C':
-			addargs(&args, "-%c", ch);
-			break;
+                        addargs(&args, "-%c", ch);
+                        break;
 		case 'o':
 		case 'c':
 		case 'i':
@@ -582,7 +582,7 @@ source(int argc, char **argv)
 	off_t i, amt, statbytes;
 	size_t result;
 	int fd = -1, haderr, indx;
-	char *last, *name, buf[2048];
+	char *last, *name, buf[16384];
 	int len;
 
 	for (indx = 0; indx < argc; ++indx) {
@@ -642,7 +642,7 @@ syserr:			run_err("%s: %s", name, strerror(errno));
 		(void) atomicio(vwrite, remout, buf, strlen(buf));
 		if (response() < 0)
 			goto next;
-		if ((bp = allocbuf(&buffer, fd, 2048)) == NULL) {
+		if ((bp = allocbuf(&buffer, fd, sizeof(buf))) == NULL) {
 next:			if (fd != -1) {
 				(void) close(fd);
 				fd = -1;
@@ -810,7 +810,7 @@ sink(int argc, char **argv)
 	mode_t mode, omode, mask;
 	off_t size, statbytes;
 	int setimes, targisdir, wrerrno = 0;
-	char ch, *cp, *np, *targ, *why, *vect[1], buf[2048];
+	char ch, *cp, *np, *targ, *why, *vect[1], buf[16384];
 	struct timeval tv[2];
 
 #define	atime	tv[0]
@@ -971,7 +971,7 @@ bad:			run_err("%s: %s", np, strerror(errno));
 			continue;
 		}
 		(void) atomicio(vwrite, remout, "", 1);
-		if ((bp = allocbuf(&buffer, ofd, 4096)) == NULL) {
+		if ((bp = allocbuf(&buffer, ofd, sizeof(buf))) == NULL) {
 			(void) close(ofd);
 			continue;
 		}
@@ -981,8 +981,8 @@ bad:			run_err("%s: %s", np, strerror(errno));
 		statbytes = 0;
 		if (showprogress)
 			start_progress_meter(curfile, size, &statbytes);
-		for (count = i = 0; i < size; i += 4096) {
-			amt = 4096;
+		for (count = i = 0; i < size; i += sizeof(buf)) {
+			amt = sizeof(buf);
 			if (i + amt > size)
 				amt = size - i;
 			count += amt;
@@ -999,7 +999,7 @@ bad:			run_err("%s: %s", np, strerror(errno));
 			} while (amt > 0);
 
 			if (limit_rate)
-				bwlimit(4096);
+				bwlimit(sizeof(buf));
 
 			if (count == bp->cnt) {
 				/* Keep reading so we stay sync'd up. */

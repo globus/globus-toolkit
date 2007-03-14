@@ -26,7 +26,9 @@
 
 #define	BUFFER_MAX_CHUNK	0x100000
 #define	BUFFER_MAX_LEN		0xa00000
-#define	BUFFER_ALLOCSZ		0x008000
+/* try increasing to 256k in hpnxfers */
+#define	BUFFER_ALLOCSZ		0x008000  /* 32k */
+#define BUFFER_ALLOCSZ_HPN      0x040000  /* 256k */
 
 /* Initializes the buffer structure. */
 
@@ -103,6 +105,8 @@ void *
 buffer_append_space(Buffer *buffer, u_int len)
 {
 	u_int newlen;
+	u_int buf_max;
+	u_int buf_alloc_sz;
 	void *p;
 
 	if (len > BUFFER_MAX_CHUNK)
@@ -125,9 +129,15 @@ restart:
 	if (buffer_compact(buffer))
 		goto restart;
 
+	/* if hpn is disabled use the smaller buffer size */
+	buf_max = BUFFER_MAX_LEN_HPN;
+	buf_alloc_sz = BUFFER_ALLOCSZ_HPN;
+
 	/* Increase the size of the buffer and retry. */
-	newlen = roundup(buffer->alloc + len, BUFFER_ALLOCSZ);
-	if (newlen > BUFFER_MAX_LEN)
+	newlen = roundup(buffer->alloc + len, buf_alloc_sz);
+
+
+	if (newlen > buf_max)
 		fatal("buffer_append_space: alloc %u not supported",
 		    newlen);
 	buffer->buf = xrealloc(buffer->buf, 1, newlen);
@@ -143,6 +153,9 @@ restart:
 int
 buffer_check_alloc(Buffer *buffer, u_int len)
 {
+        u_int buf_max;
+        u_int buf_alloc_sz;
+
 	if (buffer->offset == buffer->end) {
 		buffer->offset = 0;
 		buffer->end = 0;
@@ -152,7 +165,12 @@ buffer_check_alloc(Buffer *buffer, u_int len)
 		return (1);
 	if (buffer_compact(buffer))
 		goto restart;
-	if (roundup(buffer->alloc + len, BUFFER_ALLOCSZ) <= BUFFER_MAX_LEN)
+
+	/* if hpn is disabled use the smaller buffer size */
+	buf_max = BUFFER_MAX_LEN_HPN;
+	buf_alloc_sz = BUFFER_ALLOCSZ_HPN;
+
+	if (roundup(buffer->alloc + len, buf_alloc_sz) <= buf_max)
 		return (1);
 	return (0);
 }
