@@ -152,6 +152,14 @@ myproxy_ocsp_use_nonce(int newusenonce) {
     return 0;
 }
 
+#if !defined(HAVE_OCSP)
+
+int myproxy_ocsp_verify(X509 *cert, X509 *issuer) {
+    return MYPROXY_OCSPRESULT_ERROR_NOTCONFIGURED;
+}
+
+#else
+
 static int
 verify_cert_hostname(X509 *cert, char *hostname) {
   int                   extcount, i, j, ok = 0;
@@ -233,11 +241,6 @@ error_exit:
   return 0;
 }
 
-#if !defined(HAVE_OCSP)
-int myproxy_ocsp_verify(X509 *cert, X509 *issuer) {
-    return MYPROXY_OCSPRESULT_ERROR_NOTCONFIGURED;
-}
-#else
 int myproxy_ocsp_verify(X509 *cert, X509 *issuer) {
   BIO                   *bio = 0;
   int                   rc, reason, ssl, status;
