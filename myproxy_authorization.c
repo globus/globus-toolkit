@@ -480,7 +480,7 @@ int auth_passwd_check_client(authorization_data_t *client_auth_data,
 	    else verror_put_string(auth_pam_result);
 	 }
 	 else 
-	    verror_put_string("PAM authentication failed");
+         verror_put_string("PAM authentication failed with unknown error for user %s", creds->username);
       }
       if (auth_pam_result != NULL) {
 	 free(auth_pam_result);
