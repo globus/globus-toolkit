@@ -700,7 +700,7 @@ int auth_cert_check_client (authorization_data_t *auth_data,
        }
    } else {
        if (user_dn_lookup(creds->username, &cred_subject, config)) {
-           verror_put_string("CA failed to map user ", creds->username);
+           verror_put_string("unknown username: %s ", creds->username);
            goto end;
        }
    }

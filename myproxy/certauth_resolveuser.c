@@ -462,20 +462,20 @@ int user_dn_lookup( char * username, char ** dn,
       goto end;
   } else if ( server_context->ca_ldap_server != NULL ) {
     if ( resolve_via_ldap( username, &userdn, server_context ) ) {
-      verror_put_string("Failed to map username to DN via LDAP");
+      myproxy_log("Failed to map username %s to DN via LDAP", username);
       return_value = 1;
       goto end;
     }
   } else if (server_context->certificate_mapapp != NULL) {
     if (resolve_via_mapapp( server_context->certificate_mapapp,
 			    username, &userdn ) ) {
-      verror_put_string("Failed to map username to DN via call-out");
+      myproxy_log("Failed to map username %s to DN via call-out", username);
       return_value = 1;
       goto end;
     }
   } else {
     if ( resolve_via_mapfile( username, &userdn ) ) {
-      verror_put_string("Failed to map username to DN via grid-mapfile");
+      myproxy_log("Failed to map username %s to DN via grid-mapfile", username);
       return_value = 1;
       goto end;
     }

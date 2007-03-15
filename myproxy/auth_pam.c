@@ -7,8 +7,7 @@
  *     unnecessary)
  *   - #include "myproxy_common.h" instead of system headers
  *   - changed failure return values from auth_pam to improve
- *     usefulness of error messages -- old versions are commented out
- *     above new versions
+ *     usefulness of error messages
  *   - remove const from struct pam_message argument to
  *     saslauthd_pam_conv to match PAM types on AIX
  *   - remove instances of __attribute__((unused))
@@ -126,7 +125,7 @@ saslauthd_pam_conv (
 	case PAM_PROMPT_ECHO_OFF:	/* password */
 	    my_resp[i].resp = strdup(my_appdata->password);
 	    if (my_resp[i].resp == NULL) {
-		syslog(LOG_DEBUG, "DEBUG: saslauthd_pam_conv: strdup failed");
+		myproxy_log("saslauthd_pam_conv: strdup failed");
 		goto ret_error;
 	    }
 	    my_resp[i].resp_retcode = PAM_SUCCESS;
@@ -138,7 +137,7 @@ saslauthd_pam_conv (
 	    rc = pam_get_item(my_appdata->pamh, PAM_USER_PROMPT,
 			      (void *) &login_prompt);
 	    if (rc != PAM_SUCCESS) {
-		syslog(LOG_DEBUG, "DEBUG: saslauthd_pam_conv: unable to read "
+		myproxy_log("saslauthd_pam_conv: unable to read "
 		       "login prompt string: %s",
 		       pam_strerror(my_appdata->pamh, rc));
 		goto ret_error;
@@ -148,7 +147,7 @@ saslauthd_pam_conv (
 		my_resp[i].resp = strdup(my_appdata->login);
 		my_resp[i].resp_retcode = PAM_SUCCESS;
 	    } else {			/* ignore */
-		syslog(LOG_DEBUG, "DEBUG: saslauthd_pam_conv: unknown prompt "
+		myproxy_log("saslauthd_pam_conv: unknown prompt "
 		       "string: %s", msg[i]->msg);
 		my_resp[i].resp = NULL;
 		my_resp[i].resp_retcode = PAM_SUCCESS;
@@ -157,7 +156,7 @@ saslauthd_pam_conv (
 
 	case PAM_ERROR_MSG:		/* ignore */
 	case PAM_TEXT_INFO:		/* ignore */
-        myproxy_debug("PAM: %s", msg[i]->msg);
+        myproxy_log("PAM: %s", msg[i]->msg);
 	    my_resp[i].resp = NULL;
 	    my_resp[i].resp_retcode = PAM_SUCCESS;
 	    break;
@@ -218,40 +217,42 @@ auth_pam (
 
     rc = pam_start(service, login, &my_conv, &pamh);
     if (rc != PAM_SUCCESS) {
-	syslog(LOG_DEBUG, "DEBUG: auth_pam: pam_start failed for %s: %s",
-	       login, pam_strerror(pamh, rc));
-	snprintf(result, sizeof(result), "NO unable to initialize PAM for %s: %s",
-             login, pam_strerror(pamh, rc));
-	/* RETURN("NO PAM start error"); */
-	RETURN(result);
+        myproxy_log("unable to initialize PAM for %s: %s",
+                    login, pam_strerror(pamh, rc));
+        goto error;
     }
 
     my_appdata.pamh = pamh;
 
     rc = pam_authenticate(pamh, 0);
     if (rc != PAM_SUCCESS) {
-	syslog(LOG_DEBUG, "DEBUG: auth_pam: pam_authenticate failed for %s: %s",
-	       login, pam_strerror(pamh, rc));
-	snprintf(result, sizeof(result), "NO PAM authentication failed for %s: %s",
-             login, pam_strerror(pamh, rc));
-	pam_end(pamh, rc);
-	/* RETURN("NO PAM auth error"); */
-	RETURN(result);
+        myproxy_log("PAM authentication failed for %s: %s",
+                    login, pam_strerror(pamh, rc));
+        pam_end(pamh, rc);
+        goto error;
     }
 
     rc = pam_acct_mgmt(pamh, PAM_SILENT);
     if (rc != PAM_SUCCESS) {
-	syslog(LOG_DEBUG, "DEBUG: auth_pam: pam_acct_mgmt failed for %s: %s",
-	       login, pam_strerror(pamh, rc));
-	snprintf(result, sizeof(result), "NO PAM account check failed for %s: %s",
-             login, pam_strerror(pamh, rc));
-	pam_end(pamh, rc);
-	/* RETURN("NO PAM acct error"); */
-	RETURN(result);
+        myproxy_log("PAM account check failed for %s: %s",
+                    login, pam_strerror(pamh, rc));
+        pam_end(pamh, rc);
+        goto error;
     }
 
     pam_end(pamh, PAM_SUCCESS);
     RETURN("OK");
+
+ error:
+    if (rc == PAM_USER_UNKNOWN) {
+        RETURN("NO invalid username");
+    }
+    if (rc == PAM_AUTH_ERR) {
+        RETURN("NO invalid password");
+    }
+	snprintf(result, sizeof(result), "NO PAM authentication failed: %s",
+             pam_strerror(pamh, rc));
+    RETURN(result);
 }
 
 /* END FUNCTION: auth_pam */
