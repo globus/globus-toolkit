@@ -81,7 +81,16 @@ globus_gram_protocol_frame_request(
 
     if(rc != GLOBUS_SUCCESS)
     {
-	return GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_JOB_CONTACT;
+	rc = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_JOB_CONTACT;
+
+        goto out;
+    }
+
+    if (parsed.url_path == NULL)
+    {
+	rc = GLOBUS_GRAM_PROTOCOL_ERROR_INVALID_JOB_CONTACT;
+
+        goto destroy_out;
     }
 
     /*
@@ -139,9 +148,10 @@ globus_gram_protocol_frame_request(
     *framedmsg = (globus_byte_t *) buf;
     *framedsize = tmp + msgsize;
 
+destroy_out:
     globus_url_destroy(&parsed);
-
-    return GLOBUS_SUCCESS;
+out:
+    return rc;
 }
 
 /**

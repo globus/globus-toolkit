@@ -1092,6 +1092,10 @@ globus_l_gram_client_to_jobmanager(
 	    monitor->errorcode =
 		GLOBUS_GRAM_PROTOCOL_ERROR_CONTACTING_JOB_MANAGER;
 	}
+        else
+        {
+            monitor->errorcode = rc;
+        }
     }
 
     if(query)
