@@ -219,6 +219,15 @@ but is not enabled by default.
 .PD
 .RE
 .TP
+.BI cert_dir " full-path-to-certificates-directory"
+Specifies the path to the CA certificates directory to be returned
+to clients requesting trust roots (such as via the 
+.BR myproxy-logon (1)
+.B -T
+option).
+Defaults to 
+.IR /etc/grid-security/certificates .
+.TP
 .BI max_proxy_lifetime " hours"
 This line specifies a server-wide maximum lifetime for retrieved proxy
 credentials.  By default, no server-wide maximum is enforced.
