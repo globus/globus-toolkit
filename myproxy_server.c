@@ -1307,7 +1307,7 @@ static int myproxy_check_policy(myproxy_server_context_t *context,
        }
     }
 
-    return 1;
+    return authorization_ok;
 }
 
 static void
@@ -1439,6 +1439,11 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
            goto end;
        }
 
+       /* log non-fatal errors collected so far and clear them
+          so we don't confuse the client with too much diagnostics */
+       if (debug) myproxy_log_verror();
+       verror_clear();
+
        /* if it appears that we need to use the ca callouts because
         * of no stored creds, we should check if the ca is configured
         * and if the user exists in the mapfile if not using the
@@ -1455,7 +1460,7 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 
                if ( user_dn_lookup( client_request->username,
                                     &userdn, context ) ) {
-                   verror_put_string("CA failed to map user ", 
+                   verror_put_string("unknown username: %s", 
                                      client_request->username);
                    respond_with_error_and_die(attrs, verror_get_string());
                }
@@ -1472,8 +1477,16 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
 			       context, trusted_retriever, allowed_to_renew);
 
        if (authorization_ok < 0) {
-           verror_put_string("authentication failed");
-	   goto end;		/* authentication failed */
+           if (!verror_is_error()) {
+               /* if we don't have a good error message already,
+                  it means we had insufficient authentication */
+               if (!client_request->passphrase ||
+                   client_request->passphrase[0] == '\0') {
+                   verror_put_string("no passphrase");
+               }
+               verror_put_string("authentication failed");
+           }
+           goto end;		/* authentication failed */
        } else if (authorization_ok == 0) {
            authorization_ok = allowed_to_retrieve;
        }
@@ -1587,7 +1600,7 @@ myproxy_authorize_accept(myproxy_server_context_t *context,
    }
 
    if (authorization_ok != 1) {
-      verror_put_string("Authorization failed");
+      verror_put_string("authorization failed");
       goto end;
    }
 

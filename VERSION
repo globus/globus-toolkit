@@ -5,6 +5,8 @@ Binary compatibility of the C API is not guaranteed between releases.
 Version History
 ---------------
 v3.8 XX Xxx 2007
+  - return more concise error messages to clients for common errors,
+    with additional diagnostics written to the server log
   - fix configure check for OCSP functions in OpenSSL for enabling
     OCSP support
   - for --help, --usage, and --version options, exit with status 0

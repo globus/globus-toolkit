@@ -552,7 +552,7 @@ generate_certificate( X509_REQ                 *request,
 
   if ( user_dn_lookup( client_request->username, &userdn,
 		       server_context ) ) {
-    verror_put_string("User DN lookup failure");
+    verror_put_string("unknown username: %s", client_request->username);
     goto error;
   }
 
