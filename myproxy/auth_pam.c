@@ -157,6 +157,7 @@ saslauthd_pam_conv (
 
 	case PAM_ERROR_MSG:		/* ignore */
 	case PAM_TEXT_INFO:		/* ignore */
+        myproxy_debug("PAM: %s", msg[i]->msg);
 	    my_resp[i].resp = NULL;
 	    my_resp[i].resp_retcode = PAM_SUCCESS;
 	    break;
@@ -217,35 +218,35 @@ auth_pam (
 
     rc = pam_start(service, login, &my_conv, &pamh);
     if (rc != PAM_SUCCESS) {
-	syslog(LOG_DEBUG, "DEBUG: auth_pam: pam_start failed: %s",
-	       pam_strerror(pamh, rc));
+	syslog(LOG_DEBUG, "DEBUG: auth_pam: pam_start failed for %s: %s",
+	       login, pam_strerror(pamh, rc));
+	snprintf(result, sizeof(result), "NO unable to initialize PAM for %s: %s",
+             login, pam_strerror(pamh, rc));
 	/* RETURN("NO PAM start error"); */
-	snprintf(result, sizeof(result), "NO unable to initialize PAM: %s",
-		 pam_strerror(pamh, rc));
 	RETURN(result);
     }
 
     my_appdata.pamh = pamh;
 
-    rc = pam_authenticate(pamh, PAM_SILENT);
+    rc = pam_authenticate(pamh, 0);
     if (rc != PAM_SUCCESS) {
-	syslog(LOG_DEBUG, "DEBUG: auth_pam: pam_authenticate failed: %s",
-	       pam_strerror(pamh, rc));
+	syslog(LOG_DEBUG, "DEBUG: auth_pam: pam_authenticate failed for %s: %s",
+	       login, pam_strerror(pamh, rc));
+	snprintf(result, sizeof(result), "NO PAM authentication failed for %s: %s",
+             login, pam_strerror(pamh, rc));
 	pam_end(pamh, rc);
 	/* RETURN("NO PAM auth error"); */
-	snprintf(result, sizeof(result), "NO PAM authentication failed: %s",
-		 pam_strerror(pamh, rc));
 	RETURN(result);
     }
 
     rc = pam_acct_mgmt(pamh, PAM_SILENT);
     if (rc != PAM_SUCCESS) {
-	syslog(LOG_DEBUG, "DEBUG: auth_pam: pam_acct_mgmt failed: %s",
-	       pam_strerror(pamh, rc));
+	syslog(LOG_DEBUG, "DEBUG: auth_pam: pam_acct_mgmt failed for %s: %s",
+	       login, pam_strerror(pamh, rc));
+	snprintf(result, sizeof(result), "NO PAM account check failed for %s: %s",
+             login, pam_strerror(pamh, rc));
 	pam_end(pamh, rc);
 	/* RETURN("NO PAM acct error"); */
-	snprintf(result, sizeof(result), "NO PAM account check failed: %s",
-		 pam_strerror(pamh, rc));
 	RETURN(result);
     }
 
