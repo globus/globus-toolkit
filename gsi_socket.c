@@ -856,7 +856,6 @@ GSI_SOCKET_authentication_accept(GSI_SOCKET *self)
     
     /* These are supposed to be return flags only, according to RFC
        2774, but GSI helpfully uses them as request flags too. */
-    gss_flags |= GSS_C_ANON_FLAG;
     gss_flags |= GSS_C_REPLAY_FLAG;
     gss_flags |= GSS_C_MUTUAL_FLAG;
     gss_flags |= GSS_C_CONF_FLAG;
