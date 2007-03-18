@@ -5,6 +5,8 @@ Binary compatibility of the C API is not guaranteed between releases.
 Version History
 ---------------
 v3.8 XX Xxx 2007
+  - fix server-side problem when linking against globus_gssapi_gsi
+    version 4.12 and later that causes "no shared cipher" errors
   - return more concise error messages to clients for common errors,
     with additional diagnostics written to the server log
   - fix configure check for OCSP functions in OpenSSL for enabling
