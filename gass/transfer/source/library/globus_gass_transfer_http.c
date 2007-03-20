@@ -308,8 +308,8 @@ globus_l_gass_transfer_http_send(
 
 	/* send chunk header and footer as an iovec array */
 	sprintf((char *) new_proto->iov[0].iov_base,
-		"%x%s",
-		new_proto->user_buflen,
+		"%lx%s",
+		(long) new_proto->user_buflen,
 		CRLF);
 	new_proto->iov[0].iov_len = strlen((char *) new_proto->iov[0].iov_base);
 
@@ -317,7 +317,7 @@ globus_l_gass_transfer_http_send(
 	new_proto->iov[1].iov_len = new_proto->user_buflen;
 
 	new_proto->iov[2].iov_base = CRLF;
-	new_proto->iov[2].iov_len = strlen(CRLF);
+	new_proto->iov[2].iov_len = 2;
 
 	if(last_data && new_proto->user_buflen != 0)
 	{
@@ -329,8 +329,8 @@ globus_l_gass_transfer_http_send(
 	else if(last_data && new_proto->user_buflen == 0)
 	{
 	    /* last data, with a zero-length chunk from the user */
-	    new_proto->iov[1].iov_base = CRLF "0" CRLF;
-	    new_proto->iov[1].iov_len = strlen(CRLF "0" CRLF);
+	    new_proto->iov[1].iov_base = CRLF;
+	    new_proto->iov[1].iov_len = 2;
 	    num_iovecs = 2;
 	}
 	else
@@ -865,7 +865,7 @@ globus_l_gass_transfer_http_read_callback(
 	response_len += strlen(GLOBUS_L_GENERIC_RESPONSE);
 	response_len += 3;
 	response_len += strlen(GLOBUS_L_OK);
-	response_len += strlen(CRLF);
+	response_len += 2;
 	response = globus_malloc(response_len);
 
 	proto->state = GLOBUS_GASS_TRANSFER_HTTP_STATE_RESPONDING;
@@ -1026,7 +1026,7 @@ globus_l_gass_transfer_http_read_buffered_callback(
 	response_len += strlen(GLOBUS_L_GENERIC_RESPONSE);
 	response_len += 3;
 	response_len += strlen(GLOBUS_L_OK);
-	response_len += strlen(CRLF);
+	response_len += 2;
 	response = globus_malloc(response_len);
 
 	proto->state = GLOBUS_GASS_TRANSFER_HTTP_STATE_RESPONDING;
@@ -1630,7 +1630,7 @@ globus_l_gass_transfer_http_request_refer(
     referral_count = 1;
     referral_count += strlen(GLOBUS_L_REFER_RESPONSE);
     referral_count += strlen(GLOBUS_L_LOCATION_HEADER);
-    referral_count += strlen(CRLF);
+    referral_count += 2;
     referral_count += strlen(GLOBUS_L_CONTENT_LENGTH_HEADER);
 
     referral_count += strlen(GLOBUS_L_HTML_HEADER);
@@ -1668,7 +1668,7 @@ globus_l_gass_transfer_http_request_refer(
 		      GLOBUS_L_HTML_HEADER);
     offset += sprintf(referral_string + offset,
 		      GLOBUS_L_CONTENT_LENGTH_HEADER,
-		      (int) body_count);
+		      (long) body_count);
     offset += sprintf(referral_string + offset,
 		      CRLF);
 
@@ -1752,7 +1752,7 @@ globus_l_gass_transfer_http_request_deny(
     deny_count += strlen(message);
     deny_count += strlen(GLOBUS_L_CONTENT_LENGTH_HEADER);
     deny_count += strlen(GLOBUS_L_HTML_HEADER);
-    deny_count += strlen(CRLF);
+    deny_count += 2;
 
     body_count += strlen(GLOBUS_L_HTML_DENIAL_BODY);
     body_count += (strlen(message) * 3);
@@ -1778,7 +1778,7 @@ globus_l_gass_transfer_http_request_deny(
 		      GLOBUS_L_HTML_HEADER);
     offset += sprintf(deny_string + offset,
 		      GLOBUS_L_CONTENT_LENGTH_HEADER,
-		      (int) body_count);
+		      (long) body_count);
     offset += sprintf(deny_string + offset,
 		      CRLF);
 
@@ -1850,7 +1850,7 @@ globus_l_gass_transfer_http_request_authorize(
 	authorize_count += strlen(GLOBUS_L_GENERIC_RESPONSE);
 	authorize_count += 3;
 	authorize_count += strlen(GLOBUS_L_OK);
-	authorize_count += strlen(CRLF);
+	authorize_count += 2;
 
 	if(proto->text_mode)
 	{
@@ -1881,7 +1881,7 @@ globus_l_gass_transfer_http_request_authorize(
 	{
 	    offset += sprintf(authorize_string + offset,
 			      GLOBUS_L_CONTENT_LENGTH_HEADER,
-			      length);
+			      (long) length);
 	}
 	offset += sprintf(authorize_string + offset,
 			  CRLF);
@@ -4364,7 +4364,7 @@ globus_l_gass_transfer_http_register_read(
         }
         if (proto->response_buflen - proto->response_offset == 0)
         {
-            char * tmp;
+            unsigned char * tmp;
             /* buffer still full... resize buffer */
             tmp = realloc(proto->response_buffer, proto->response_buflen * 2);
             if(tmp == GLOBUS_NULL)
@@ -4411,7 +4411,7 @@ globus_l_gass_transfer_http_hex_escape(
     unsigned char *                     tmp_out;
     char                                hex[3];
 
-    new_url = globus_libc_malloc(strlen(url)*3+1);
+    new_url = globus_libc_malloc(strlen((char *) url)*3+1);
 
     if (new_url == NULL)
     {
@@ -4436,7 +4436,7 @@ globus_l_gass_transfer_http_hex_escape(
         }
     }
     *tmp_out = '\0';
-    return new_url;
+    return (char *) new_url;
 }
 /* globus_l_gass_transfer_http_hex_escape() */
 
@@ -4455,7 +4455,7 @@ globus_l_gass_transfer_http_construct_request(
     cmd_len += strlen(proto->url.host); /* Required for http/1.1*/
     if(proto->proxy_connect)
     {
-        url = globus_l_gass_transfer_http_hex_escape(proto->url_string);
+        url = globus_l_gass_transfer_http_hex_escape((unsigned char *) proto->url_string);
 
         if (url == NULL)
         {
@@ -4466,7 +4466,7 @@ globus_l_gass_transfer_http_construct_request(
     }
     else
     {
-        url = globus_l_gass_transfer_http_hex_escape(proto->url.url_path);
+        url = globus_l_gass_transfer_http_hex_escape((unsigned char *) proto->url.url_path);
 
         if (url == NULL)
         {
@@ -4554,12 +4554,12 @@ globus_l_gass_transfer_http_construct_request(
 	     * plus a CRLF to end the chunk header
 	     */
 	    proto->iov[0].iov_base = (void *)
-		globus_malloc((sizeof(globus_size_t) * 2) + strlen(CRLF));
+		globus_malloc((sizeof(globus_size_t) * 2) + 2);
 	    /* This never changes */
 	    proto->iov[2].iov_base = CRLF;
-	    proto->iov[2].iov_len = strlen(CRLF);
-	    proto->iov[3].iov_base = "0" CRLF "0" CRLF;
-	    proto->iov[3].iov_len = strlen("0" CRLF "0" CRLF);
+	    proto->iov[2].iov_len = 2;
+	    proto->iov[3].iov_base = "0" CRLF CRLF;
+	    proto->iov[3].iov_len = strlen("0" CRLF CRLF);
 
 	    if(cmd == GLOBUS_NULL)
 	    {
@@ -4644,12 +4644,12 @@ globus_l_gass_transfer_http_construct_request(
 	     * plus a CRLF to end the chunk header
 	     */
 	    proto->iov[0].iov_base = (void *)
-		globus_malloc((sizeof(globus_size_t) * 2) + strlen(CRLF));
+		globus_malloc((sizeof(globus_size_t) * 2) + 2);
 	    /* This never changes */
 	    proto->iov[2].iov_base = CRLF;
-	    proto->iov[2].iov_len = strlen(CRLF);
-	    proto->iov[3].iov_base = "0" CRLF "0" CRLF;
-	    proto->iov[3].iov_len = strlen("0" CRLF "0" CRLF);
+	    proto->iov[2].iov_len = 2;
+	    proto->iov[3].iov_base = "0" CRLF CRLF;
+	    proto->iov[3].iov_len = 5;
 
 	    if(cmd == GLOBUS_NULL)
 	    {
@@ -5034,7 +5034,7 @@ globus_l_gass_transfer_http_parse_one_header(
        continuation + offset == 0)
     {
 	*last_header = GLOBUS_TRUE;
-	proto->parsed_offset += strlen(CRLF);
+	proto->parsed_offset += 2;
 
 	return GLOBUS_FALSE;
     }
