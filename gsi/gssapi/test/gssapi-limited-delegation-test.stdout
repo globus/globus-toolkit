@@ -1,5 +1,0 @@
-gssapi_limited_delegation_test.c:\d+: Successfully established initial security context
-gssapi_limited_delegation_test.c:\d+: Successfully delegated credential
-gssapi_limited_delegation_test.c:\d+: Successfully exported/imported the delegated credential
-gssapi_limited_delegation_test.c:\d+: Successfully established security context with delegated credential
-gssapi_limited_delegation_test.c:\d+: Received subject name: /O=Grid/OU=GlobusTest/OU=simpleCA-globus.org/OU=mcs.anl.gov/CN=Test Certificate/CN=\d+/CN=\d+
