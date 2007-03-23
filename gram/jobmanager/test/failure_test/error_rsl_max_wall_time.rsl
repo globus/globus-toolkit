@@ -1,3 +1,0 @@
-(* GLOBUS_GRAM_PROTOCOL_ERROR_RSL_MAX_WALL_TIME *)
-&(executable=/bin/true)
- (max_wall_time=(1))
