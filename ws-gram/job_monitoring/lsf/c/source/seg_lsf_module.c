@@ -654,7 +654,7 @@ globus_l_lsf_find_logfile(
         memset(&state->event_idx_stat, 0, sizeof(struct stat));
         stat(state->event_idx_path, &state->event_idx_stat);
 
-        most_recent_event = (time_t) INT32_MAX;
+        most_recent_event = (time_t) GLOBUS_I_TIME_INFINITY_SEC;
         for (i = 0; most_recent_event > state->start_timestamp; i++)
         {
             sprintf(state->path, "%s/lsb.events.%d", state->log_dir, i+1);
