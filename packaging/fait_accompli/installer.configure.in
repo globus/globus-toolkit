@@ -1,7 +1,7 @@
 dnl Intended to be used with a Makefile.in generated from installer.sh
 AC_INIT(Globus Toolkit, 999)
 AC_CONFIG_FILES(Makefile)
-AC_PREFIX_DEFAULT(/usr/local/globus-4.1.0)
+AC_PREFIX_DEFAULT(/usr/local/globus-4.1.1)
 AC_CANONICAL_BUILD
 if test "x$flavor" = "x"; then
    case "$build" in
@@ -113,8 +113,7 @@ AC_SUBST(globus_unixodbc_libs, $[GLOBUS_UNIXODBC_LIBS])
 rls="globus-rls-server"
 AC_ARG_ENABLE(rls, AC_HELP_STRING([--disable-rls],\
    [Don't build [RLS].  Default is enabled, but you must also specify an [IODBC] driver using --with-iodbc]),
-   [if test $enableval = "no"; then rls=" "; fi],
-   [if test x${GLOBUS_IODBC_PATH}${GLOBUS_UNIXODBC_PATH} = "x"; then rls=" "; fi])
+   [if test $enableval = "no"; then rls=" "; fi], [])
 AC_SUBST(rls, $rls)
 dnl Java code
 wsjava="gt4-java-ws-core gt4-java-admin"
@@ -165,10 +164,10 @@ AC_ARG_ENABLE(i18n, AC_HELP_STRING([--enable-i18n],\
    [if test $enableval = "yes"; then i18n="i18n"; fi],
    [])
 AC_SUBST(i18n, $i18n)
-drs=" "
-AC_ARG_ENABLE(drs, AC_HELP_STRING([--enable-drs],\
-   [Enable Data Replication Service.  Default is disabled.]),
-   [if test $enableval = "yes"; then drs="gt4-replicator"; fi],
+drs="gt4-replicator"
+AC_ARG_ENABLE(drs, AC_HELP_STRING([--disable-drs],\
+   [Enable Data Replication Service.  Default is enabled.]),
+   [if test $enableval = "no"; then drs=" "; fi],
    [])
 AC_SUBST(drs, $drs)
 rndvz="globus_rendezvous"
