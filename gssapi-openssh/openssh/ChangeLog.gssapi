@@ -1,3 +1,8 @@
+20070317
+  - [ gss-serv-krb5.c ]
+    Remove C99ism, where new_ccname was being declared in the middle of a 
+    function
+
 20061220
   - [ servconf.c ]
     Make default for GSSAPIStrictAcceptorCheck be Yes, to match previous, and 
