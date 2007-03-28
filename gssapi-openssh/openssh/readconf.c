@@ -478,10 +478,21 @@ parse_flag:
 	case oNoneEnabled:
 		intptr = &options->none_enabled;
 		goto parse_flag;
-
+ 
+	/* we check to see if the command comes from the */
+	/* command line or not. If it does then enable it */
+	/* otherwise fail. NONE should never be a default configuration */
 	case oNoneSwitch:
-		intptr = &options->none_switch;
-		goto parse_flag;
+		if(strcmp(filename,"command-line")==0)
+		{		
+		    intptr = &options->none_switch;
+		    goto parse_flag;
+		} else {
+		    error("NoneSwitch is found in %.200s.\nYou may only use this configuration option from the command line", filename);
+		    error("Continuing...");
+		    debug("NoneSwitch directive found in %.200s.", filename);
+		    return 0;
+	        }
 
 	case oHPNDisabled:
 		intptr = &options->hpn_disabled;
@@ -1254,11 +1265,11 @@ fill_default_options(Options * options)
 	{
 		if (options->hpn_buffer_size == 0)
 		options->hpn_buffer_size = 1;
-		/*limit the buffer to 7MB*/
-			if (options->hpn_buffer_size > 7168)
+		/*limit the buffer to 64MB*/
+			if (options->hpn_buffer_size > 65536)
 		{
-			options->hpn_buffer_size = 7168;
-			debug("User requested buffer larger than 7MB. Request reverted to 7MB");
+			options->hpn_buffer_size = 65536;
+			debug("User requested buffer larger than 64MB. Request reverted to 64MB");
 		}
 		options->hpn_buffer_size *=1024;
 		debug("hpn_buffer_size set to %d", options->hpn_buffer_size);
