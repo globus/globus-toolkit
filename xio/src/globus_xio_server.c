@@ -265,6 +265,9 @@ globus_l_xio_server_accept_kickout(
         {
             if(xio_op->entry[ctr].link != NULL)
             {
+                globus_assert(
+                    xio_server->entry[ctr].driver->link_destroy_func != NULL
+                    && "If the driver link is non-NULL the link_destroy_func must be defined");
                 /* ignore result code.  user should be more interested in
                     result from callback */
                 xio_server->entry[ctr].driver->link_destroy_func(
