@@ -17,10 +17,14 @@ static globus_mutex_t                   gwtftp_l_mutex;
 static globus_cond_t                    gwtftp_l_cond;
 static globus_bool_t                    gwtftp_l_done = GLOBUS_FALSE;
 static globus_bool_t                    gwtftp_l_daemon = GLOBUS_FALSE;
+static globus_bool_t                    gwtftp_l_child = GLOBUS_FALSE;
 static int                              gwtftp_l_log_level = 255;
 static FILE *                           gwtftp_l_log_fptr;
 static const char *                     gwtftp_l_pw_file = NULL;
 static int                              gwtftp_l_listen_port = 0;
+static globus_list_t *                  gwtftp_l_ip_list;
+
+static char **                          gwtftp_l_exec_program;
 
 static globus_list_t *                  gwtftp_l_connection_list = NULL;
 
@@ -44,6 +48,33 @@ gwtftp_i_log(
     va_end(ap);
 }
 
+void
+gwtftp_i_log_result(
+    int                                 level,
+    globus_result_t                     result,
+    char *                              fmt,
+    ...)
+{
+    va_list                             ap;
+
+    if(level > gwtftp_l_log_level)
+    {
+        return;
+    }
+
+    va_start(ap, fmt);
+    vfprintf(gwtftp_l_log_fptr, fmt, ap);
+    va_end(ap);
+    if(result != GLOBUS_SUCCESS)
+    {
+        char *                          err_msg;
+
+        err_msg = globus_error_print_friendly(globus_error_peek(result));
+        fprintf(gwtftp_l_log_fptr, "Error: %s\n", err_msg);
+        free(err_msg);
+    }
+}
+
 static
 void
 gwtftp_l_accept_cb(
@@ -52,6 +83,8 @@ gwtftp_l_accept_cb(
     globus_result_t                     result,
     void *                              user_arg)
 {
+   gwtftp_i_log(
+       FTP2GRID_LOG_INFO, "A client has connected\n");
 
     globus_mutex_lock(&gwtftp_l_mutex);
     {
@@ -120,8 +153,6 @@ globus_result_t
 gwtftp_l_setup_xio_stack()
 {
     globus_result_t                     result;
-    globus_xio_attr_t                   xio_attr;
-    char *                              cs;
 
     globus_xio_stack_init(&gwtftp_l_server_stack, NULL);
     globus_xio_stack_init(&gwtftp_l_client_stack, NULL);
@@ -154,14 +185,6 @@ gwtftp_l_setup_xio_stack()
     {
         goto error_client_telnet_push;
     }
-/*
-    result = globus_xio_stack_push_driver(
-        gwtftp_l_client_stack, gwtftp_l_gssapi_driver);
-    if(result != GLOBUS_SUCCESS)
-    {
-        goto error_client_telnet_push;
-    }
-*/
 
     result = globus_xio_stack_push_driver(
         gwtftp_l_server_stack, gwtftp_l_tcp_driver);
@@ -175,6 +198,46 @@ gwtftp_l_setup_xio_stack()
     {
         goto error_server_gss_push;
     }
+    return GLOBUS_SUCCESS;
+
+error_server_gss_push:
+error_server_tcp_push:
+error_client_telnet_push:
+error_client_tcp_push:
+    globus_xio_driver_unload(gwtftp_l_gssapi_driver);
+error_gss_load:
+    globus_xio_driver_unload(gwtftp_l_telnet_driver);
+error_telnet_load:
+    globus_xio_driver_unload(gwtftp_l_tcp_driver);
+error_tcp_load:
+    globus_xio_stack_destroy(gwtftp_l_server_stack);
+    globus_xio_stack_destroy(gwtftp_l_client_stack);
+
+    return result;
+}
+
+static
+void
+gwtftp_l_interrupt_cb(
+    void *                              user_arg)
+{
+    /* attempt a nice shutdown */
+
+    globus_mutex_lock(&gwtftp_l_mutex);
+    {
+        gwtftp_l_done = GLOBUS_TRUE;
+        globus_cond_signal(&gwtftp_l_cond);
+    }
+    globus_mutex_unlock(&gwtftp_l_mutex);
+}
+
+static
+globus_result_t
+gwtftp_l_master_start()
+{
+    globus_xio_attr_t                   xio_attr;
+    char *                              cs;
+    globus_result_t                     result;
 
     globus_xio_attr_init(&xio_attr);
     result = globus_xio_attr_cntl(xio_attr, gwtftp_l_telnet_driver,
@@ -183,15 +246,6 @@ gwtftp_l_setup_xio_stack()
     {
         goto error_server_create;
     }
-/*
-    result = globus_xio_attr_cntl(
-            xio_attr, gwtftp_l_gssapi_driver,
-            GLOBUS_XIO_GSSAPI_ATTR_TYPE_ALLOW_CLEAR, GLOBUS_TRUE);
-    if(result != GLOBUS_SUCCESS)
-    {
-        goto error_server_create;
-    }
-*/
 
     if(gwtftp_l_listen_port != 0)
     {
@@ -231,46 +285,60 @@ gwtftp_l_setup_xio_stack()
     free(cs);
     globus_xio_attr_destroy(xio_attr);
 
+    globus_mutex_lock(&gwtftp_l_mutex);
+    {
+        result = globus_xio_server_register_accept(
+            gwtftp_l_server,
+            gwtftp_l_accept_cb,
+            NULL);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error_accept;
+        }
+
+        /* register signal handler */
+        globus_callback_register_signal_handler(
+            GLOBUS_SIGNAL_INTERRUPT,
+            GLOBUS_TRUE,
+            gwtftp_l_interrupt_cb,
+            NULL);
+        while(!gwtftp_l_done)
+        {
+            globus_cond_wait(&gwtftp_l_cond, &gwtftp_l_mutex);
+        }
+        /* close the server socket */
+        globus_xio_server_close(gwtftp_l_server);
+    
+        /* walk through all created handles and close them all */
+        while(!globus_list_empty(gwtftp_l_connection_list))
+        {
+            globus_xio_handle_t         close_handle;
+
+            close_handle = (globus_xio_handle_t) globus_list_remove(
+                &gwtftp_l_connection_list, gwtftp_l_connection_list);
+
+            globus_xio_close(close_handle, NULL);
+        }
+    }    
+    globus_mutex_unlock(&gwtftp_l_mutex);
+
     return GLOBUS_SUCCESS;
+
+error_accept:
 error_attr:
     /* close the server */
     globus_xio_server_close(gwtftp_l_server);
 error_server_create:
     globus_xio_attr_destroy(xio_attr);
-error_server_gss_push:
-error_server_tcp_push:
-error_client_telnet_push:
-error_client_tcp_push:
-    globus_xio_driver_unload(gwtftp_l_gssapi_driver);
-error_gss_load:
-    globus_xio_driver_unload(gwtftp_l_telnet_driver);
-error_telnet_load:
-    globus_xio_driver_unload(gwtftp_l_tcp_driver);
-error_tcp_load:
-    globus_xio_stack_destroy(gwtftp_l_server_stack);
-    globus_xio_stack_destroy(gwtftp_l_client_stack);
 
     return result;
 }
 
-static
-void
-gwtftp_l_interrupt_cb(
-    void *                              user_arg)
-{
-    /* attempt a nice shutdown */
-
-    globus_mutex_lock(&gwtftp_l_mutex);
-    {
-        gwtftp_l_done = GLOBUS_TRUE;
-        globus_cond_signal(&gwtftp_l_cond);
-    }
-    globus_mutex_unlock(&gwtftp_l_mutex);
-}
-
 void
 gwtftp_i_close(
-    globus_xio_handle_t                 handle)
+    globus_xio_handle_t                 handle,
+    globus_xio_callback_t               close_cb,
+    void *                              user_arg)
 {
     globus_list_t *                     list;
 
@@ -279,12 +347,14 @@ gwtftp_i_close(
         list = globus_list_search(gwtftp_l_connection_list, handle);
         if(list == NULL)
         {
+            gwtftp_i_log(
+                FTP2GRID_LOG_INFO, "handle not in list, not closing\n");
         }
         else
         {
             globus_list_remove(&gwtftp_l_connection_list, list);
 
-            globus_xio_register_close(handle, NULL, NULL, NULL);
+            globus_xio_register_close(handle, NULL, close_cb, user_arg);
         }
     }
     globus_mutex_unlock(&gwtftp_l_mutex);
@@ -296,9 +366,11 @@ gwtftp_i_options(
     int                                 argc,
     char **                             argv)
 {
-    globus_i_gwtftp_cmd_opts_t        cmd_opts;
+    int                                 i;
+    globus_i_gwtftp_cmd_opts_t          cmd_opts;
     globus_options_handle_t             opt_h;
     globus_result_t                     result;
+    GlobusFTP2GridFuncName(gwtftp_i_options);
 
     gwtftp_l_log_fptr = stderr;
 
@@ -341,9 +413,37 @@ gwtftp_i_options(
     }
 
     gwtftp_l_listen_port = cmd_opts.port;
+    gwtftp_l_daemon = cmd_opts.daemon;
+
+    gwtftp_l_ip_list = cmd_opts.ip_list;
+    if(globus_list_empty(gwtftp_l_ip_list))
+    {
+        globus_list_insert(&gwtftp_l_ip_list, (void *)"127.0.0.1");
+        globus_list_insert(&gwtftp_l_ip_list, (void *)"[::ffff:127.0.0.1]");
+    }
+
+    gwtftp_l_exec_program = (char **) globus_calloc(argc+2, sizeof(char *));
+    if(gwtftp_l_exec_program == NULL)
+    {
+        result = GlobusFTP2GridError("Small malloc failure.",
+            GLOBUS_FTP2GRID_ERROR_MALLOC);
+        goto error;
+    }
+    for(i = 0; i < argc; i++)
+    {
+        gwtftp_l_exec_program[i] = argv[i];
+    }
+    gwtftp_l_exec_program[i] = "-CH";
+    i++;
+    gwtftp_l_exec_program[i] = NULL;
+
+    gwtftp_l_child = cmd_opts.child;
+
+    globus_options_destroy(opt_h);
 
     return GLOBUS_SUCCESS;
 error:
+    globus_options_destroy(opt_h);
     return result;
 }
 
@@ -372,44 +472,17 @@ main(
     }
 
     gwtftp_i_server_init();
-
-
-    globus_mutex_lock(&gwtftp_l_mutex);
+    if(gwtftp_l_child)
     {
-        result = globus_xio_server_register_accept(
-            gwtftp_l_server,
-            gwtftp_l_accept_cb,
-            NULL);
+    }
+    else
+    {
+        result = gwtftp_l_master_start();
         if(result != GLOBUS_SUCCESS)
         {
             goto error;
         }
-
-        /* register signal handler */
-        globus_callback_register_signal_handler(
-            GLOBUS_SIGNAL_INTERRUPT,
-            GLOBUS_TRUE,
-            gwtftp_l_interrupt_cb,
-            NULL);
-        while(!gwtftp_l_done)
-        {
-            globus_cond_wait(&gwtftp_l_cond, &gwtftp_l_mutex);
-        }
-        /* close the server socket */
-        globus_xio_server_close(gwtftp_l_server);
-
-        /* walk through all created handles and close them all */
-        while(!globus_list_empty(gwtftp_l_connection_list))
-        {
-            globus_xio_handle_t         close_handle;
-
-            close_handle = (globus_xio_handle_t) globus_list_remove(
-                &gwtftp_l_connection_list, gwtftp_l_connection_list);
-
-            globus_xio_close(close_handle, NULL);
-        }
-    }    
-    globus_mutex_unlock(&gwtftp_l_mutex);
+    }
 
     globus_module_deactivate(GLOBUS_GRIDFTP_SERVER_CONTROL_MODULE);
     globus_module_deactivate(GLOBUS_XIO_MODULE);
@@ -473,6 +546,16 @@ gwtftp_i_ip_ok(
 {
     globus_result_t                     result;
     char *                              remote_contact;
+    int                                 remote_host_ints[16];
+    int                                 remote_host_count;
+    char *                              ok_mask;
+    int                                 ok_mask_ints[16];
+    int                                 ok_mask_count;
+    int                                 i;
+    int                                 count;
+    globus_bool_t                       ok = GLOBUS_FALSE;
+    globus_list_t *                     list;
+    GlobusFTP2GridFuncName(gwtftp_i_ip_ok);
 
     result = globus_xio_handle_cntl(
         handle,
@@ -484,13 +567,67 @@ gwtftp_i_ip_ok(
         goto error;
     }
 
-    /* by default we just check localhost */
-    if(strcmp(remote_contact, "127.0.0.1") == 0)
+    result = globus_libc_contact_string_to_ints(
+        remote_contact,
+        remote_host_ints,
+        &remote_host_count,
+        NULL);
+    free(remote_contact);
+    if(result != GLOBUS_SUCCESS)
     {
-        return GLOBUS_SUCCESS;
+        goto error_convert;
     }
 
-    /* fall through on error */
+    for(list = gwtftp_l_ip_list;
+        !globus_list_empty(list) && !ok;
+        list = globus_list_rest(list))
+    {
+        ok_mask = (char *) globus_list_first(list);
+
+        result = globus_libc_contact_string_to_ints(
+            ok_mask,
+            ok_mask_ints,
+            &ok_mask_count,
+            NULL);
+        if(result != GLOBUS_SUCCESS)
+        {
+            continue;
+        }
+        if(remote_host_count != ok_mask_count)
+        {
+            continue;
+        }
+
+        count = -1;
+        /* find out how many matter */
+        for(i = ok_mask_count - 1; count == -1 && i >= 0; i--)
+        {
+            if(ok_mask_ints[i] != 0)
+            {
+                count = i;
+            }
+        } 
+
+        /* compare all that matter */
+        ok = GLOBUS_TRUE;
+        for(i = 0; i <= count; i++)
+        {
+            if(remote_host_ints[i] != ok_mask_ints[i])
+            {
+                ok = GLOBUS_FALSE;
+            }
+        }
+    }
+    if(!ok)
+    {
+        goto error_not_ok;
+    }
+
+    return GLOBUS_SUCCESS;
+error_not_ok:
+    result = GlobusFTP2GridError("Connection from unathorized IP",
+        GLOBUS_FTP2GRID_ERROR_IP);
+error_convert:
 error:
     return result;
 }
@@ -514,6 +651,8 @@ gwtftp_i_exec__unix(
         rc = setuid(uid);
         if(rc != 0)
         {
+            gwtftp_i_log(FTP2GRID_LOG_WARN, "Child setuid failed.\n");
+            exit(rc);
         }
         /* extract the FD */
         result = globus_xio_handle_cntl(
@@ -523,13 +662,19 @@ gwtftp_i_exec__unix(
             &socket_handle);
         if(result != GLOBUS_SUCCESS)
         {
+            gwtftp_i_log(FTP2GRID_LOG_WARN, "Failed to extract socket.\n");
+            exit(1);
         }
         rc = dup2(socket_handle, STDIN_FILENO);
         if(rc < 0)
         {
+            gwtftp_i_log(FTP2GRID_LOG_WARN, "Failed to dup2 socket.\n");
+            exit(rc);
         }
         /* all xio sockets will close on exec */
 
+        rc = execvp(gwtftp_l_exec_program[0], gwtftp_l_exec_program);
+        exit(rc);
     }
     else if(pid < 0)
     {

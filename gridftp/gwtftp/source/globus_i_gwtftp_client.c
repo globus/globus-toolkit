@@ -71,6 +71,7 @@ gwtftp_l_client_read_pass_cb(
     }
     else
     {
+        free(buffer);
         auth_session->read_cb = gwtftp_l_client_read_pass_cb;
         /* pass this callback pointer just to same repeated code
             between this and pass error msgs */
@@ -86,14 +87,12 @@ gwtftp_l_client_read_pass_cb(
         {
             goto error_write;
         }
-        free(buffer);
     }
     return;
 
 error_write:
-    free(buffer);
 error:
-    gwtftp_i_close(auth_session->client_xio);
+    gwtftp_i_close(auth_session->client_xio, NULL, NULL);
     free(auth_session->user_buffer);
     free(auth_session);
 }
@@ -134,7 +133,7 @@ gwtftp_l_user_reply_write_cb(
 
     return;
 error:
-    gwtftp_i_close(auth_session->client_xio);
+    gwtftp_i_close(auth_session->client_xio, NULL, NULL);
     free(auth_session->user_buffer);
     free(auth_session);
 }
@@ -175,7 +174,7 @@ gwtftp_l_client_badcmd_write_cb(
 
     return;
 error:
-    gwtftp_i_close(auth_session->client_xio);
+    gwtftp_i_close(auth_session->client_xio, NULL, NULL);
     free(auth_session);
 }
 
@@ -264,7 +263,7 @@ gwtftp_l_client_read_user_cb(
 error_write:
     free(auth_session->user_buffer);
 error:
-    gwtftp_i_close(auth_session->client_xio);
+    gwtftp_i_close(auth_session->client_xio, NULL, NULL);
     free(auth_session);
 }
 
@@ -303,7 +302,7 @@ gwtftp_l_client_write220_cb(
     return;
 
 error:
-    gwtftp_i_close(auth_session->client_xio);
+    gwtftp_i_close(auth_session->client_xio, NULL, NULL);
     free(auth_session);
 }
 
@@ -338,7 +337,7 @@ gwtftp_l_client_open_cb(
     return;
 
 error:
-    gwtftp_i_close(auth_session->client_xio);
+    gwtftp_i_close(auth_session->client_xio, NULL, NULL);
     free(auth_session);
 }
 
@@ -374,6 +373,7 @@ gwtftp_i_new_connection(
     return GLOBUS_SUCCESS;
 error_open:
 error_ip:
+    gwtftp_i_close(auth_session->client_xio, NULL, NULL);
     free(auth_session);
 error_mem:
     return result;

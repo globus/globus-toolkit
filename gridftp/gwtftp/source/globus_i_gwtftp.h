@@ -6,6 +6,7 @@
 #include "version.h"
 #include "globus_xio_telnet.h"
 #include "globus_xio_gssapi_ftp.h"
+#include "globus_error_generic.h"
 
 #if !defined(GLOBUS_I_FTP2GRID_H)
 #define GLOBUS_I_FTP2GRID_H 1
@@ -42,7 +43,9 @@ extern globus_byte_t                    gwtftp_l_fake_buf[1];
 #define FTP_331_MSG_LENGTH              strlen(FTP_331_MSG)
 enum
 {
-    GLOBUS_FTP2GRID_ERROR_PARM = 1
+    GLOBUS_FTP2GRID_ERROR_PARM = 1,
+    GLOBUS_FTP2GRID_ERROR_IP,
+    GLOBUS_FTP2GRID_ERROR_MALLOC
 };
 
 enum
@@ -62,6 +65,7 @@ typedef struct globus_i_gwtftp_cmd_opts_s
     int                                 log_mask;
     char *                              log_file;
     char *                              pw_file;
+    globus_list_t *                     ip_list;
 } globus_i_gwtftp_cmd_opts_t;
 
 globus_result_t
@@ -71,11 +75,20 @@ globus_gwtftp_new_session(
 
 void
 gwtftp_i_close(
-    globus_xio_handle_t                 handle);
+    globus_xio_handle_t                 handle,
+    globus_xio_callback_t               close_cb,
+    void *                              user_arg);
 
 void
 gwtftp_i_log(
     int                                 level,
+    char *                              fmt,
+    ...);
+
+void
+gwtftp_i_log_result(
+    int                                 level,
+    globus_result_t                     result,
     char *                              fmt,
     ...);
 

@@ -47,6 +47,7 @@ gwtftp_l_read_opening_reply_cb(
 
     buffer[len - 2] = '\0';
     gwtftp_i_log(FTP2GRID_LOG_INFO, "%s\n", buffer);
+    free(buffer);
 
     gwtftp_l_write_next_opening_cmd(session);
 }
@@ -80,8 +81,12 @@ gwtftp_l_write_opening_cb(
     }
     return;
 error:
-    gwtftp_i_close(session->client_xio);
-    gwtftp_i_close(session->server_xio);
+    gwtftp_i_log_result(FTP2GRID_LOG_WARN, result,
+        "Error sending openning commands, closing\n");
+    gwtftp_i_close(session->client_xio,  NULL, NULL);
+    gwtftp_i_close(session->server_xio, NULL, NULL);
+    globus_free(session->greeting);
+    globus_fifo_destroy(session->openning_command_q);
     free(session);
 
 }
@@ -128,8 +133,12 @@ gwtftp_l_write_next_opening_cmd(
 
     return;
 error:
-    gwtftp_i_close(session->client_xio);
-    gwtftp_i_close(session->server_xio);
+    gwtftp_i_log_result(FTP2GRID_LOG_WARN, result,
+        "Error sending openning commands, closing: %s\n");
+    gwtftp_i_close(session->client_xio, NULL, NULL);
+    gwtftp_i_close(session->server_xio, NULL, NULL);
+    globus_free(session->greeting);
+    globus_fifo_destroy(session->openning_command_q);
     free(session);
 
 }
@@ -159,11 +168,18 @@ gwtftp_l_write_pass_reply_cb(
     {
         goto error;
     }
+    globus_fifo_destroy(session->openning_command_q);
+    globus_free(session->greeting);
+    free(session);
     return;
 
 error:
-    gwtftp_i_close(session->client_xio);
-    gwtftp_i_close(session->server_xio);
+    gwtftp_i_log_result(FTP2GRID_LOG_WARN, result,
+        "Writting PASS reply to client with error, closing:\n");
+    gwtftp_i_close(session->client_xio, NULL, NULL);
+    gwtftp_i_close(session->server_xio, NULL, NULL);
+    globus_fifo_destroy(session->openning_command_q);
+    globus_free(session->greeting);
     free(session);
 }
 
@@ -194,9 +210,11 @@ gwtftp_l_server_read_pass_reply_cb(
     return;
 
 error:
-    free(buffer);
-    gwtftp_i_close(session->client_xio);
-    gwtftp_i_close(session->server_xio);
+    gwtftp_i_log_result(FTP2GRID_LOG_WARN, result,
+        "Reading PASS reply from server with error, closing\n");
+    gwtftp_i_close(session->client_xio, NULL, NULL);
+    gwtftp_i_close(session->server_xio, NULL, NULL);
+    globus_fifo_destroy(session->openning_command_q);
     free(session);
 }
 
@@ -235,8 +253,11 @@ gwtftp_l_server_write_pass_cb(
 
     return;
 error:
-    gwtftp_i_close(session->client_xio);
-    gwtftp_i_close(session->server_xio);
+    gwtftp_i_log_result(FTP2GRID_LOG_WARN, result,
+        "Writting PASS to server with error, closing\n");
+    gwtftp_i_close(session->client_xio, NULL, NULL);
+    gwtftp_i_close(session->server_xio, NULL, NULL);
+    globus_fifo_destroy(session->openning_command_q);
     free(session);
 }
 
@@ -255,7 +276,6 @@ gwtftp_l_server_read_user_reply_cb(
     gwtftp_l_server_session_t *         session;
 
     /* maybe log the buffer */
-    free(buffer);
     session = (gwtftp_l_server_session_t *) user_arg;
 
     if(result != GLOBUS_SUCCESS)
@@ -273,13 +293,19 @@ gwtftp_l_server_read_user_reply_cb(
         session);
     if(result != GLOBUS_SUCCESS)
     {
-        goto error;
+        goto error_write;
     }
+    globus_free(buffer);
 
     return;
+error_write:
+    globus_free(buffer);
 error:
-    gwtftp_i_close(session->client_xio);
-    gwtftp_i_close(session->server_xio);
+    gwtftp_i_log_result(FTP2GRID_LOG_WARN, result,
+        "Reading USER reply from server with error, closing\n");
+    gwtftp_i_close(session->client_xio, NULL, NULL);
+    gwtftp_i_close(session->server_xio, NULL, NULL);
+    globus_fifo_destroy(session->openning_command_q);
     free(session);
 }
 
@@ -318,8 +344,11 @@ gwtftp_l_server_write_user_cb(
 
     return;
 error:
-    gwtftp_i_close(session->client_xio);
-    gwtftp_i_close(session->server_xio);
+    gwtftp_i_log_result(FTP2GRID_LOG_WARN, result,
+        "Writing user to server with error, closing\n");
+    gwtftp_i_close(session->client_xio, NULL, NULL);
+    gwtftp_i_close(session->server_xio, NULL, NULL);
+    globus_fifo_destroy(session->openning_command_q);
     free(session);
 }
 
@@ -339,13 +368,13 @@ gwtftp_l_server_read_banner_cb(
 
     session = (gwtftp_l_server_session_t *) user_arg;
 
-    buffer[len -2] = '\0';
-    gwtftp_i_log(FTP2GRID_LOG_INFO,"Banner %s\n", buffer);
-
     if(result != GLOBUS_SUCCESS)
     {
         goto error;
     }
+    buffer[len -2] = '\0';
+    gwtftp_i_log(FTP2GRID_LOG_INFO,"Banner %s\n", buffer);
+    free(buffer);
 
     session->server_xio = handle;
 
@@ -365,8 +394,11 @@ gwtftp_l_server_read_banner_cb(
 
     return;
 error:
-    gwtftp_i_close(session->client_xio);
-    gwtftp_i_close(session->server_xio);
+    gwtftp_i_log_result(FTP2GRID_LOG_WARN, result,
+        "Reading banner with error, closing\n");
+    gwtftp_i_close(session->client_xio, NULL, NULL);
+    gwtftp_i_close(session->server_xio, NULL, NULL);
+    globus_fifo_destroy(session->openning_command_q);
     free(session);
 }
 
@@ -381,13 +413,11 @@ gwtftp_l_server_open_cb(
 
     session = (gwtftp_l_server_session_t *) user_arg;
 
-    gwtftp_i_log(FTP2GRID_LOG_INFO,
-        "Connected to server\n");
-
     if(result != GLOBUS_SUCCESS)
     {
         goto error;
     }
+    gwtftp_i_log(FTP2GRID_LOG_INFO, "Connected to server\n");
 
     session->server_xio = handle;
 
@@ -407,8 +437,11 @@ gwtftp_l_server_open_cb(
 
     return;
 error:
-    gwtftp_i_close(session->client_xio);
-    gwtftp_i_close(session->server_xio);
+    gwtftp_i_log_result(FTP2GRID_LOG_WARN, result,
+        "Connected to server with error, closing:\n");
+    gwtftp_i_close(session->client_xio, NULL, NULL);
+    gwtftp_i_close(session->server_xio, NULL, NULL);
+    globus_fifo_destroy(session->openning_command_q);
     free(session);
 }
 
@@ -448,6 +481,8 @@ gwtftp_i_server_conn_open(
     return GLOBUS_SUCCESS;
 
 error_open:
+    globus_fifo_destroy(session->openning_command_q);
+    free(session);
 error_allo:
     return result;
 }

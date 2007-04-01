@@ -6,8 +6,17 @@ typedef struct gwtftp_l_connection_s
     globus_xio_handle_t                 write_xio;
     globus_fifo_t                       write_q;
     globus_bool_t                       outstanding_write;
-    globus_mutex_t                      mutex;
+    struct gwtftp_l_connection_pair_s * whos_my_daddy;
 } gwtftp_l_connection_t;
+
+typedef struct gwtftp_l_connection_pair_s
+{
+    gwtftp_l_connection_t               c2s;
+    gwtftp_l_connection_t               s2c;
+    globus_mutex_t                      mutex;
+    int                                 ref;
+    globus_bool_t                       closing;
+} gwtftp_l_connection_pair_t;
 
 typedef struct gwtftp_l_write_ent_s
 {
@@ -15,14 +24,14 @@ typedef struct gwtftp_l_write_ent_s
     globus_size_t                       len;
 } gwtftp_l_write_ent_t;
 
-typedef void
+typedef globus_bool_t
 (*gwtftp_l_msg_handler_t)(
-    gwtftp_l_connection_t *           conn,
+    gwtftp_l_connection_t *             conn,
     globus_byte_t *                     buffer,
     globus_size_t                       len);
 
 static
-void
+globus_bool_t
 gwtftp_l_quit(
     gwtftp_l_connection_t *           conn,
     globus_byte_t *                     buffer,
@@ -35,7 +44,7 @@ typedef struct gwtftp_l_command_ent_s
 } gwtftp_l_command_ent_t;
 
 static
-void
+globus_bool_t
 gwtftp_l_route(
     gwtftp_l_connection_t *           conn,
     globus_byte_t *                     buffer,
@@ -53,11 +62,11 @@ gwtftp_l_read_cb(
     void *                              user_arg);
 
 static
-void
+globus_result_t
 gwtftp_l_write(
     globus_byte_t *                     buffer,
     globus_size_t                       len,
-    gwtftp_l_connection_t *           conn);
+    gwtftp_l_connection_t *             conn);
 
 static gwtftp_l_command_ent_t         gwtftp_l_cmd_table[] =
 {
@@ -76,31 +85,31 @@ globus_gwtftp_new_session(
     globus_xio_handle_t                 server_xio)
 {
     globus_result_t                     result;
-    gwtftp_l_connection_t *           c2s_conn;
-    gwtftp_l_connection_t *           s2c_conn;
+    gwtftp_l_connection_pair_t *        conn_pair;
+    gwtftp_l_connection_t *             c2s_conn;
+    gwtftp_l_connection_t *             s2c_conn;
 
-    c2s_conn = (gwtftp_l_connection_t *)
-        globus_calloc(1, sizeof(gwtftp_l_connection_t));
-    if(c2s_conn == NULL)
+    conn_pair = (gwtftp_l_connection_pair_t *)
+        globus_calloc(1, sizeof(gwtftp_l_connection_pair_t));
+    if(conn_pair == NULL)
     {
-        goto error_client_mem;
+        goto error_mem;
     }
-    s2c_conn = (gwtftp_l_connection_t *)
-        globus_calloc(1, sizeof(gwtftp_l_connection_t));
-    if(s2c_conn == NULL)
-    {
-        goto error_server_mem;
-    }
+    globus_mutex_init(&conn_pair->mutex, NULL);
+    conn_pair->ref = 2;
 
+    c2s_conn = &conn_pair->c2s;
+    s2c_conn = &conn_pair->s2c;
+
+    c2s_conn->whos_my_daddy = conn_pair;
     c2s_conn->read_xio = client_xio;
     c2s_conn->write_xio = server_xio;
     globus_fifo_init(&c2s_conn->write_q);
-    globus_mutex_init(&c2s_conn->mutex, NULL);
 
+    s2c_conn->whos_my_daddy = conn_pair;
     s2c_conn->read_xio = server_xio;
     s2c_conn->write_xio = client_xio;
     globus_fifo_init(&s2c_conn->write_q);
-    globus_mutex_init(&s2c_conn->mutex, NULL);
 
     result = globus_xio_register_read(
         c2s_conn->read_xio,
@@ -132,25 +141,63 @@ globus_gwtftp_new_session(
 
 error_server_post:
 error_client_post:
-    globus_free(s2c_conn);
-error_server_mem:
-    globus_free(c2s_conn);
-error_client_mem:
+    globus_free(conn_pair);
+error_mem:
 
     return result;
 }
 
-/* called locked */
+static
+void
+gwtftp_l_error_close_cb(
+    globus_xio_handle_t                 handle,
+    globus_result_t                     result,
+    void *                              user_arg)
+{
+    gwtftp_l_connection_pair_t *        conn_pair;
+    globus_bool_t                       free_it = GLOBUS_FALSE;
+
+    conn_pair = (gwtftp_l_connection_pair_t *) user_arg;
+
+    globus_mutex_lock(&conn_pair->mutex);
+    {
+        conn_pair->ref--;
+        if(conn_pair->ref == 0)
+        {
+            free_it = GLOBUS_TRUE;
+        }
+    }
+    globus_mutex_unlock(&conn_pair->mutex);
+
+    if(free_it)
+    {
+        globus_mutex_destroy(&conn_pair->mutex);
+        globus_fifo_destroy(&conn_pair->c2s.write_q);
+        globus_fifo_destroy(&conn_pair->s2c.write_q);
+        globus_free(conn_pair);
+    }
+}
+
 static
 void
 gwtftp_l_error(
-    gwtftp_l_connection_t *           conn,
+    gwtftp_l_connection_pair_t *        conn_pair,
     globus_result_t                     result)
 {
-    gwtftp_i_close(conn->read_xio);
-    gwtftp_i_close(conn->write_xio);
+    if(conn_pair->closing)
+    {
+        gwtftp_i_log(FTP2GRID_LOG_INFO,
+            "Error alread closed: 0x%x)\n", conn_pair);
+        return;
+    }
+
+    conn_pair->closing = GLOBUS_TRUE;
+    gwtftp_i_close(
+        conn_pair->c2s.read_xio, gwtftp_l_error_close_cb, conn_pair);
+    gwtftp_i_close(
+        conn_pair->c2s.write_xio, gwtftp_l_error_close_cb, conn_pair);
     gwtftp_i_log(FTP2GRID_LOG_INFO,
-        "Error on: 0x%x)\n", conn);
+        "Error on: 0x%x)\n", conn_pair);
 }
 
 static
@@ -182,13 +229,15 @@ gwtftp_l_write_cb(
     globus_xio_data_descriptor_t        data_desc,
     void *                              user_arg)
 {
-    gwtftp_l_connection_t *           conn;
-    gwtftp_l_write_ent_t *            write_ent; 
+    gwtftp_l_connection_pair_t *        conn_pair;
+    gwtftp_l_connection_t *             conn;
+    gwtftp_l_write_ent_t *              write_ent; 
 
     conn = (gwtftp_l_connection_t *) user_arg;
+    conn_pair = conn->whos_my_daddy;
 
     globus_free(buffer);
-    globus_mutex_lock(&conn->mutex);
+    globus_mutex_lock(&conn_pair->mutex);
     {
         conn->outstanding_write = GLOBUS_FALSE;
 
@@ -202,29 +251,32 @@ gwtftp_l_write_cb(
             write_ent = (gwtftp_l_write_ent_t *) 
                 globus_fifo_dequeue(&conn->write_q);
 
-            gwtftp_l_write(write_ent->buffer, write_ent->len, conn);
-
+            result = gwtftp_l_write(write_ent->buffer, write_ent->len, conn);
             free(write_ent);
+            if(result != GLOBUS_SUCCESS)
+            {
+                goto error_write;
+            }
         }
     }
-    globus_mutex_unlock(&conn->mutex);
+    globus_mutex_unlock(&conn_pair->mutex);
 
     return;
-
+error_write:
 error_callback:
-    gwtftp_l_error(conn, result);
-    globus_mutex_unlock(&conn->mutex);
+    gwtftp_l_error(conn_pair, result);
+    globus_mutex_unlock(&conn_pair->mutex);
 }
 
 /* just to have the writing and error handling in the same place
    called locked.
 */
 static
-void
+globus_result_t
 gwtftp_l_write(
     globus_byte_t *                     buffer,
     globus_size_t                       len,
-    gwtftp_l_connection_t *           conn)
+    gwtftp_l_connection_t *             conn)
 {
     globus_result_t                     result;
 
@@ -243,10 +295,11 @@ gwtftp_l_write(
     }
     conn->outstanding_write = GLOBUS_TRUE;
 
-    return;
+    return GLOBUS_SUCCESS;
 
 error_write:
-    gwtftp_l_error(conn, result);
+    globus_free(buffer);
+    return result;
 }
 
 
@@ -256,25 +309,28 @@ error_write:
  */
 
 static
-void
+globus_bool_t
 gwtftp_l_quit(
-    gwtftp_l_connection_t *           conn,
+    gwtftp_l_connection_t *             conn,
     globus_byte_t *                     buffer,
     globus_size_t                       len)
 {
+    globus_free(buffer);
     gwtftp_i_log(FTP2GRID_LOG_INFO, "Qutting\n");
-    gwtftp_l_error(conn, GLOBUS_SUCCESS);
+    gwtftp_l_error(conn->whos_my_daddy, GLOBUS_SUCCESS);
+
+    return GLOBUS_FALSE;
 }
 
 static
-void
+globus_bool_t
 gwtftp_l_route(
-    gwtftp_l_connection_t *           conn,
+    gwtftp_l_connection_t *             conn,
     globus_byte_t *                     buffer,
     globus_size_t                       len)
 {
     globus_result_t                     result;
-    gwtftp_l_write_ent_t *            write_ent;
+    gwtftp_l_write_ent_t *              write_ent;
     char *                              forlog;
 
     forlog = malloc(len+1);
@@ -286,7 +342,11 @@ gwtftp_l_route(
 
     if(!conn->outstanding_write)
     {
-        gwtftp_l_write(buffer, len, conn);
+        result = gwtftp_l_write(buffer, len, conn);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error;
+        }
     }
     else
     {
@@ -303,9 +363,10 @@ gwtftp_l_route(
         globus_fifo_enqueue(&conn->write_q, write_ent);
     }
 
-    return;
+    return GLOBUS_TRUE;
 error:
-    gwtftp_l_error(conn, result);
+    gwtftp_l_error(conn->whos_my_daddy, result);
+    return GLOBUS_FALSE;
 }
 
 /* 
@@ -325,13 +386,16 @@ gwtftp_l_read_cb(
     globus_xio_data_descriptor_t        data_desc,
     void *                              user_arg)
 {
-    gwtftp_l_connection_t *           conn;
+    gwtftp_l_connection_t *             conn;
     char *                              tmp_ptr;
-    gwtftp_l_command_ent_t *          cmd_ent;
+    gwtftp_l_command_ent_t *            cmd_ent;
+    globus_bool_t                       post;
+    gwtftp_l_connection_pair_t *        conn_pair;
 
     conn = (gwtftp_l_connection_t *) user_arg;
+    conn_pair = conn->whos_my_daddy;
 
-    globus_mutex_lock(&conn->mutex);
+    globus_mutex_lock(&conn_pair->mutex);
     {
         if(result != GLOBUS_SUCCESS)
         {
@@ -344,27 +408,30 @@ gwtftp_l_read_cb(
         /* Look up the command */
         cmd_ent = gwtftp_l_command_lookup(buffer, len);
 
-        cmd_ent->handler(conn, buffer, nbytes);
+        post = cmd_ent->handler(conn, buffer, nbytes);
 
-        result = globus_xio_register_read(
-            conn->read_xio,
-            FAKE_BUFFER,
-            FAKE_BUFFER_LENGTH,
-            FAKE_BUFFER_LENGTH,
-            NULL,
-            gwtftp_l_read_cb,
-            conn);
-        if(result != GLOBUS_SUCCESS)
+        if(post)
         {
-            goto error_post;
+            result = globus_xio_register_read(
+                conn->read_xio,
+                FAKE_BUFFER,
+                FAKE_BUFFER_LENGTH,
+                FAKE_BUFFER_LENGTH,
+                NULL,
+                gwtftp_l_read_cb,
+                conn);
+            if(result != GLOBUS_SUCCESS)
+            {
+                goto error_post;
+            }
         }
     }
-    globus_mutex_unlock(&conn->mutex);
+    globus_mutex_unlock(&conn_pair->mutex);
 
     return;
 
 error_post:
 error_callback:
-    gwtftp_l_error(conn, result);
-    globus_mutex_unlock(&conn->mutex);
+    gwtftp_l_error(conn_pair, result);
+    globus_mutex_unlock(&conn_pair->mutex);
 }

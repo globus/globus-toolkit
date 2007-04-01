@@ -47,7 +47,7 @@ gwtftp_l_opts_child(
     void *                              arg,
     int *                               out_parms_used)
 {
-    globus_i_gwtftp_cmd_opts_t *      opts;
+    globus_i_gwtftp_cmd_opts_t *        opts;
 
     opts = (globus_i_gwtftp_cmd_opts_t *) arg;
     opts->child = GLOBUS_TRUE;
@@ -56,6 +56,25 @@ gwtftp_l_opts_child(
     return GLOBUS_SUCCESS;
 }
 
+static
+globus_result_t
+gwtftp_l_opts_ip_mask(
+    globus_options_handle_t             opts_handle,
+    char *                              cmd,
+    char **                             opt,
+    void *                              arg,
+    int *                               out_parms_used)
+{
+    globus_i_gwtftp_cmd_opts_t *        opts;
+    GlobusFTP2GridFuncName(gwtftp_l_opts_ip_mask);
+
+    opts = (globus_i_gwtftp_cmd_opts_t *) arg;
+
+    opts->ip_list = globus_list_from_string(opt[0], (int)',', NULL);
+
+    *out_parms_used = 1;
+    return GLOBUS_SUCCESS;
+}
 
 
 static
@@ -197,6 +216,9 @@ gwtftp_l_opts_version(
 
 globus_options_entry_t                   globus_i_gwtftp_opts_table[] =
 {
+    {"authorized-hosts", "ah", NULL, NULL,
+        "Comma seperated list of authorized IP masks.", 
+        1, gwtftp_l_opts_ip_mask},
     {"port", "p", NULL, NULL,
         "Port to listen where incoming clinet connections are accepted.", 
         1, gwtftp_l_opts_port},
