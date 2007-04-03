@@ -298,7 +298,10 @@ globus_i_gfs_log_open()
     if(!globus_i_gfs_config_bool("disable_usage_stats"))
     {
        result = globus_usage_stats_handle_init(
-            &globus_l_gfs_usage_handle, 0, 0, NULL);      
+            &globus_l_gfs_usage_handle, 
+            0, 
+            0, 
+            globus_i_gfs_config_string("usage_stats_target"));      
     }
     
     if(module_str)
