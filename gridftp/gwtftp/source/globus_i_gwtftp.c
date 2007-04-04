@@ -420,6 +420,7 @@ gwtftp_i_options(
     {
         globus_list_insert(&gwtftp_l_ip_list, (void *)"127.0.0.1");
         globus_list_insert(&gwtftp_l_ip_list, (void *)"[::ffff:127.0.0.1]");
+        globus_list_insert(&gwtftp_l_ip_list, (void *)"[::1]");
     }
 
     gwtftp_l_exec_program = (char **) globus_calloc(argc+2, sizeof(char *));
@@ -693,9 +694,15 @@ gwtftp_i_pass_ok__unix(
     uid_t                               uid = -1;
     globus_bool_t                       done = GLOBUS_FALSE;
 
+    /* WHAT TO DO ABOUT NULL USERNAME */
+    if(username == NULL)
+    {
+        return -1;
+    }
     if(gwtftp_l_pw_file == NULL)
     {
-        return getpid();
+        uid = getuid();
+        return uid;
     }
     pw_fptr = fopen(gwtftp_l_pw_file, "r");
     if(pw_fptr == NULL)
@@ -740,6 +747,8 @@ gwtftp_i_authorized_user(
     globus_xio_handle_t                 server_xio;
     globus_result_t                     result;
     globus_url_t                        g_url;
+    char *                              url_retry = NULL;
+    char *                              tmp_ptr;
 
     gwtftp_i_log(FTP2GRID_LOG_INFO,
         "Authorizing: %s\n", full_username);
@@ -749,13 +758,36 @@ gwtftp_i_authorized_user(
         globus_assert(list != NULL);
 
         rc = globus_url_parse(full_username, &g_url);
+        if(rc == GLOBUS_URL_ERROR_BAD_SCHEME)
+        {
+            /* try to recover */
+            url_retry = globus_common_create_string(
+                "gsiftp://%s", full_username);
+            tmp_ptr = strchr(url_retry, '!');
+            if(tmp_ptr != NULL)
+            {
+                *tmp_ptr = ':';
+            }
+            tmp_ptr = strchr(url_retry, '^');
+            if(tmp_ptr != NULL)
+            {
+                *tmp_ptr = '@';
+            }
+            rc = globus_url_parse(url_retry, &g_url);
+        }
         if(rc != 0)
         {
             goto error;
         }
-        if(g_url.scheme_type != GLOBUS_URL_SCHEME_GSIFTP)
+        if(g_url.scheme_type != GLOBUS_URL_SCHEME_GSIFTP &&
+            g_url.scheme_type != GLOBUS_URL_SCHEME_FTP)
         {
             goto error_scheme;
+        }
+
+        if(g_url.port == 0)
+        {
+            g_url.port = 2811;
         }
 
         uid = gwtftp_i_pass_ok__unix(g_url.user, pass);
@@ -801,6 +833,10 @@ gwtftp_i_authorized_user(
     }
     globus_mutex_unlock(&gwtftp_l_mutex);
     globus_url_destroy(&g_url);
+    if(url_retry != NULL)
+    {
+        globus_free(url_retry);
+    }
 
     return;
 
@@ -809,6 +845,11 @@ error_open:
 error_scheme:
     globus_url_destroy(&g_url);
 error:
+
+    if(url_retry != NULL)
+    {
+        globus_free(url_retry);
+    }
     globus_list_remove(&gwtftp_l_connection_list, list);
     globus_xio_register_close(client_xio, NULL, NULL, NULL);
 

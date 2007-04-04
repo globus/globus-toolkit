@@ -202,6 +202,11 @@ gwtftp_l_client_read_user_cb(
         goto error;
     }
     auth_session->user_buffer = buffer;
+
+    /* set the \r to a \0 */
+    buf[nbytes - 2] = '\0';
+    gwtftp_i_log(FTP2GRID_LOG_INFO, "Received user cmd: %s\n", buf);
+
     /* parse out and validate user info */
 
     ok = GLOBUS_TRUE;
@@ -211,9 +216,6 @@ gwtftp_l_client_read_user_cb(
         /* go past all the spaces */
         while(*tmp_ptr == ' ' && tmp_ptr - buf < nbytes) tmp_ptr++;
         auth_session->cs = tmp_ptr;
-
-        /* set the \r to a \0 */
-        buf[len - 2] = '\0';
 
         if(strlen(auth_session->cs) <= 0)
         {
@@ -242,6 +244,7 @@ gwtftp_l_client_read_user_cb(
     }
     else
     {
+        gwtftp_i_log(FTP2GRID_LOG_INFO, "Rejecting user cmd: %s\n", buf);
         auth_session->read_cb = gwtftp_l_client_read_user_cb;
         /* pass this callback pointer just to same repeated code
             between this and pass error msgs */

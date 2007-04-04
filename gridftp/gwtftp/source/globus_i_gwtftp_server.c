@@ -87,6 +87,7 @@ error:
     gwtftp_i_close(session->server_xio, NULL, NULL);
     globus_free(session->greeting);
     globus_fifo_destroy(session->openning_command_q);
+    globus_free(session->openning_command_q);
     free(session);
 
 }
@@ -139,6 +140,7 @@ error:
     gwtftp_i_close(session->server_xio, NULL, NULL);
     globus_free(session->greeting);
     globus_fifo_destroy(session->openning_command_q);
+    globus_free(session->openning_command_q);
     free(session);
 
 }
@@ -169,6 +171,7 @@ gwtftp_l_write_pass_reply_cb(
         goto error;
     }
     globus_fifo_destroy(session->openning_command_q);
+    globus_free(session->openning_command_q);
     globus_free(session->greeting);
     free(session);
     return;
@@ -179,6 +182,7 @@ error:
     gwtftp_i_close(session->client_xio, NULL, NULL);
     gwtftp_i_close(session->server_xio, NULL, NULL);
     globus_fifo_destroy(session->openning_command_q);
+    globus_free(session->openning_command_q);
     globus_free(session->greeting);
     free(session);
 }
@@ -215,6 +219,7 @@ error:
     gwtftp_i_close(session->client_xio, NULL, NULL);
     gwtftp_i_close(session->server_xio, NULL, NULL);
     globus_fifo_destroy(session->openning_command_q);
+    globus_free(session->openning_command_q);
     free(session);
 }
 
@@ -258,6 +263,7 @@ error:
     gwtftp_i_close(session->client_xio, NULL, NULL);
     gwtftp_i_close(session->server_xio, NULL, NULL);
     globus_fifo_destroy(session->openning_command_q);
+    globus_free(session->openning_command_q);
     free(session);
 }
 
@@ -306,6 +312,7 @@ error:
     gwtftp_i_close(session->client_xio, NULL, NULL);
     gwtftp_i_close(session->server_xio, NULL, NULL);
     globus_fifo_destroy(session->openning_command_q);
+    globus_free(session->openning_command_q);
     free(session);
 }
 
@@ -349,6 +356,7 @@ error:
     gwtftp_i_close(session->client_xio, NULL, NULL);
     gwtftp_i_close(session->server_xio, NULL, NULL);
     globus_fifo_destroy(session->openning_command_q);
+    globus_free(session->openning_command_q);
     free(session);
 }
 
@@ -399,6 +407,7 @@ error:
     gwtftp_i_close(session->client_xio, NULL, NULL);
     gwtftp_i_close(session->server_xio, NULL, NULL);
     globus_fifo_destroy(session->openning_command_q);
+    globus_free(session->openning_command_q);
     free(session);
 }
 
@@ -442,6 +451,7 @@ error:
     gwtftp_i_close(session->client_xio, NULL, NULL);
     gwtftp_i_close(session->server_xio, NULL, NULL);
     globus_fifo_destroy(session->openning_command_q);
+    globus_free(session->openning_command_q);
     free(session);
 }
 
@@ -482,6 +492,7 @@ gwtftp_i_server_conn_open(
 
 error_open:
     globus_fifo_destroy(session->openning_command_q);
+    globus_free(session->openning_command_q);
     free(session);
 error_allo:
     return result;

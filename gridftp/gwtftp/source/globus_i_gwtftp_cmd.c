@@ -4,6 +4,7 @@ typedef struct gwtftp_l_connection_s
 {
     globus_xio_handle_t                 read_xio;
     globus_xio_handle_t                 write_xio;
+    globus_bool_t                       data_listening;
     globus_fifo_t                       write_q;
     globus_bool_t                       outstanding_write;
     struct gwtftp_l_connection_pair_s * whos_my_daddy;
@@ -16,6 +17,7 @@ typedef struct gwtftp_l_connection_pair_s
     globus_mutex_t                      mutex;
     int                                 ref;
     globus_bool_t                       closing;
+    globus_xio_server_t                 data_server;
 } gwtftp_l_connection_pair_t;
 
 typedef struct gwtftp_l_write_ent_s
@@ -33,20 +35,27 @@ typedef globus_bool_t
 static
 globus_bool_t
 gwtftp_l_quit(
-    gwtftp_l_connection_t *           conn,
+    gwtftp_l_connection_t *             conn,
     globus_byte_t *                     buffer,
     globus_size_t                       len);
 
 typedef struct gwtftp_l_command_ent_s
 {
     char *                              name;
-    gwtftp_l_msg_handler_t            handler;
+    gwtftp_l_msg_handler_t              handler;
 } gwtftp_l_command_ent_t;
 
 static
 globus_bool_t
 gwtftp_l_route(
-    gwtftp_l_connection_t *           conn,
+    gwtftp_l_connection_t *             conn,
+    globus_byte_t *                     buffer,
+    globus_size_t                       len);
+
+static
+globus_bool_t
+gwtftp_l_pasv(
+    gwtftp_l_connection_t *             conn,
     globus_byte_t *                     buffer,
     globus_size_t                       len);
 
@@ -70,6 +79,7 @@ gwtftp_l_write(
 
 static gwtftp_l_command_ent_t         gwtftp_l_cmd_table[] =
 {
+    {"PASV", gwtftp_l_pasv},
     {"221", gwtftp_l_quit},
     {NULL, gwtftp_l_route}
 };
@@ -302,11 +312,172 @@ error_write:
     return result;
 }
 
+static
+char *
+gwtftp_l_pasv_reply_to_cs(
+    int                                 type,
+    char *                              reply,
+    globus_size_t                       len)
+{
+    int                                 sc;
+    char *                              tmp_ptr;
 
-/* this handler just sends the command along the other handler
+    if(type == 1)
+    {
+        tmp_ptr = memchr(buffer, '(', nbytes);
+        if(tmp_ptr == NULL)
+        {
+            goto error;
+        }
+        sc = sscanf(tmp_ptr, "(%d,%d,%d,%d,%d,%d)",
+            &host[0],
+            &host[1],
+            &host[2],
+            &host[3],
+            &hi,
+            &low);
+        if(sc != 6)
+        {
+            goto error;
+        }
+        cs = globus_common_string_create("%d.%d.%d.%d:%d",
+            host[0], host[1], host[2], host[3], hi*256+low);
+    }
+    else
+    {
+        goto error;
+    }
 
-    called locked
- */
+    return cs;
+
+error:
+
+    return NULL;
+}
+
+static
+char *
+gwtftp_l_pasv_cs_to_reply(
+    int                                 type,
+    char *                              reply,
+    globus_size_t                       len)
+{
+
+}
+
+static
+void
+gwtftp_l_pasv_read_cb(
+    globus_xio_handle_t                 handle,
+    globus_result_t                     result,
+    globus_byte_t *                     buffer,
+    globus_size_t                       len,
+    globus_size_t                       nbytes,
+    globus_xio_data_descriptor_t        data_desc,
+    void *                              user_arg)
+{
+    gwtftp_l_connection_pair_t *        conn_pair;
+    gwtftp_l_connection_t *             conn;
+    char *                              passive_cs;
+
+    conn = (gwtftp_l_connection_t *) user_arg;
+    conn_pair = conn->whos_my_daddy;
+
+    globus_mutex_lock(&conn_pair->mutex);
+    {
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error;
+        }
+
+        cs = gwtftp_l_pasv_reply_to_cs(type, buffer, len);
+        if(cs == NULL)
+        {
+            /* forward through */
+        }
+        /* parse passive response */
+        result = gwtftp_i_data_new(
+            &conn_pair->data_h,
+            cs,
+            &passive_cs,
+            gwtftp_l_error_close_cb,
+            conn_pair);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error;
+        }
+        conn_pair->ref++;
+        conn_pair->data_listening = GLOBUS_TRUE;
+
+        reply = gwtftp_l_pasv_cs_to_reply(
+            type, passive_cs, strlen(passive_cs));
+        if(reply == NULL)
+        {
+            goto error;
+        }
+        /* form new message */
+        post = wtftp_l_route(conn_pair->s2c, reply, strlen(reply));
+        if(post)
+        {
+            result = globus_xio_register_read(
+                conn->read_xio,
+                FAKE_BUFFER,
+                FAKE_BUFFER_LENGTH,
+                FAKE_BUFFER_LENGTH,
+                NULL,
+                gwtftp_l_read_cb,
+                conn);
+            if(result != GLOBUS_SUCCESS)
+            {
+                goto error_post;
+            }
+        }
+    }
+    globus_mutex_unlock(&conn_pair->mutex);
+    return;
+error:
+    gwtftp_l_error(conn_pair, result);
+    globus_mutex_unlock(&conn_pair->mutex);
+}
+
+static
+globus_bool_t
+gwtftp_l_pasv(
+    gwtftp_l_connection_t *             conn,
+    globus_byte_t *                     buffer,
+    globus_size_t                       len)
+{
+    gwtftp_l_connection_pair_t *        conn_pair;
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+    conn_pair = conn->whos_my_daddy;
+    /* create a listener */
+    if(conn_pair->data_listening)
+    {
+        /* close the open server */
+    }
+    result = globus_xio_register_read(
+        conn->read_xio,
+        FAKE_BUFFER,
+        FAKE_BUFFER_LENGTH,
+        FAKE_BUFFER_LENGTH,
+        NULL,
+        gwtftp_l_pasv_read_cb,
+        conn);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_post;
+    }
+    return GLOBUS_FALSE;
+
+error_post:
+error:
+    gwtftp_l_error(conn->whos_my_daddy, result);
+    return GLOBUS_FALSE;
+}
 
 static
 globus_bool_t
