@@ -209,7 +209,7 @@ AC_ARG_ENABLE(gsiopenssh, AC_HELP_STRING([--disable-gsiopenssh],\
 AC_SUBST(gsiopenssh, $gsiopenssh)
 AC_ARG_WITH(gsiopensshargs, AC_HELP_STRING([--with-gsiopensshargs="args"],\
    [Arguments to pass to the build of GSI-OpenSSH, like --with-tcp-wrappers]),
-   [gsiopensshargs="GSI_OPENSSH_GPTMACRO=\"$withval\""], [])
+   [gsiopensshargs="GSI_OPENSSH_GPTMACRO=\"$withval\""], [gsiopensshargs="GSI_OPENSSH_GPTMACRO=\"--without-zlib-version-check\""])
 AC_SUBST(gsiopensshargs, $gsiopensshargs)
 webmds="webmds"
 AC_ARG_ENABLE(webmds, AC_HELP_STRING([--disable-webmds],\
