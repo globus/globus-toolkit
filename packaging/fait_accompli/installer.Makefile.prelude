@@ -54,13 +54,13 @@ postinstall:
 # NCSA targets
 gsi-myproxy: gpt globus-gsi myproxy
 myproxy-only: gpt 
-	${GPT_LOCATION}/sbin/gpt-build ${BUILD_OPTS} -srcdir=source-trees/myproxy-2.3 ${FLAVOR}
+	${GPT_LOCATION}/sbin/gpt-build ${BUILD_OPTS} -srcdir=source-trees/myproxy-3.7 ${FLAVOR}
 myproxy: gpt globus_gss_assist globus_gssapi_gsi
-	${GPT_LOCATION}/sbin/gpt-build ${BUILD_OPTS} -srcdir=source-trees/myproxy-2.3 ${FLAVOR}
+	${GPT_LOCATION}/sbin/gpt-build ${BUILD_OPTS} -srcdir=source-trees/myproxy-3.7 ${FLAVOR}
 gsi-openssh: gpt globus-gsi gsi_openssh gsi_openssh_setup
 gsi_openssh: gpt globus_openssl globus_gss_assist
-	${GPT_LOCATION}/sbin/gpt-build ${BUILD_OPTS} -srcdir=source-trees/gsi_openssh-3.5-src ${FLAVOR} @gsiopensshargs@
+	${GPT_LOCATION}/sbin/gpt-build ${BUILD_OPTS} -srcdir=source-trees/gsi_openssh-3.9-src ${FLAVOR} @gsiopensshargs@
 gsi_openssh_setup: gpt
-	${GPT_LOCATION}/sbin/gpt-build ${BUILD_OPTS} -srcdir=source-trees/gsi_openssh_setup-3.5-src ${FLAVOR}
+	${GPT_LOCATION}/sbin/gpt-build ${BUILD_OPTS} -srcdir=source-trees/gsi_openssh_setup-3.9-src ${FLAVOR}
 
 # Bundle dependencies, expressed in packages.
