@@ -211,7 +211,7 @@ myproxy_check_passphrase_policy(const char *passphrase,
 	fp = fdopen(fds[1], "r");
 	if (fp) {
 	    while (fgets(buf, 100, fp) != NULL) {
-		verror_put_string(buf);
+		verror_put_string("%s", buf);
 	    }
 	    fclose(fp);
 	} else {
@@ -220,7 +220,7 @@ myproxy_check_passphrase_policy(const char *passphrase,
 	fp = fdopen(fds[2], "r");
 	if (fp) {
 	    while (fgets(buf, 100, fp) != NULL) {
-		verror_put_string(buf);
+		verror_put_string("%s", buf);
 	    }
 	    fclose(fp);
 	} else {

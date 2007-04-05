@@ -252,7 +252,7 @@ auth_sasl_negotiate_server(myproxy_socket_attrs_t *attrs,
                               &len);
    if (result != SASL_OK && result != SASL_CONTINUE) {
        myproxy_log("Starting SASL negotiation failed.");
-       verror_put_string(sasl_errdetail(conn));
+       verror_put_string("%s", sasl_errdetail(conn));
        return -1;
    }
 
@@ -274,7 +274,7 @@ auth_sasl_negotiate_server(myproxy_socket_attrs_t *attrs,
                                &data, &len);
 
       if (result != SASL_OK && result != SASL_CONTINUE) {
-	  verror_put_string(sasl_errdetail(conn));
+	  verror_put_string("%s", sasl_errdetail(conn));
 	  myproxy_log("Performing SASL negotiation failed.");
 	  return -1;
       }
