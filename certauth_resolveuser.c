@@ -70,7 +70,7 @@ int resolve_via_mapapp ( char * app_string, char * username, char ** dn ) {
       fp = fdopen(fds[1], "r");
       if (fp) {
 	  while (fgets(buf, 100, fp) != NULL) {
-	      verror_put_string(buf);
+	      verror_put_string("%s", buf);
 	  }
 	  fclose(fp);
       } else {
@@ -79,7 +79,7 @@ int resolve_via_mapapp ( char * app_string, char * username, char ** dn ) {
       fp = fdopen(fds[2], "r");
       if (fp) {
 	  while (fgets(buf, 100, fp) != NULL) {
-	      verror_put_string(buf);
+	      verror_put_string("%s", buf);
 	  }
 	  fclose(fp);
       } else {

@@ -81,11 +81,11 @@ ssl_error_to_verror()
         error_data = error_state->err_data[error_number];
 
         /* Now add to verror state */
-        verror_put_string(ERR_error_string(error, NULL));
+        verror_put_string("%s", ERR_error_string(error, NULL));
 
         if (error_data != NULL)
         {
-            verror_put_string(error_data);
+            verror_put_string("%s", error_data);
         }
 
         /* Pop error off of stack */

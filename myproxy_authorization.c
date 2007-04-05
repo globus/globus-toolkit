@@ -475,9 +475,9 @@ int auth_passwd_check_client(authorization_data_t *client_auth_data,
 	    if (strlen(auth_pam_result) > 3 
 		&& strncmp(auth_pam_result, "NO ", 3) == 0) 
 	    {
-	       verror_put_string(auth_pam_result + 3);
+	       verror_put_string("%s", auth_pam_result + 3);
 	    }
-	    else verror_put_string(auth_pam_result);
+	    else verror_put_string("%s", auth_pam_result);
 	 }
 	 else 
          verror_put_string("PAM authentication failed with unknown error for user %s", creds->username);

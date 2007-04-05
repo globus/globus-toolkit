@@ -166,7 +166,7 @@ external_callout( X509_REQ                 *request,
     verror_put_string("external process exited abnormally\n");
     memset(buffer, '\0', BUF_SIZE);
     if ( read( fds[2], buffer, BUF_SIZE ) > 0 ) {
-      verror_put_string(buffer);
+      verror_put_string("%s", buffer);
     } else {
       verror_put_string("did not recieve an error string from callout");
     }
@@ -656,14 +656,14 @@ generate_certificate( X509_REQ                 *request,
 	      fp = fdopen(fds[1], "r");
 	      if (fp) {
 		  while (fgets(buf, 100, fp) != NULL) {
-		      verror_put_string(buf);
+		      verror_put_string("%s", buf);
 		  }
 		  fclose(fp);
 	      }
 	      fp = fdopen(fds[2], "r");
 	      if (fp) {
 		  while (fgets(buf, 100, fp) != NULL) {
-		      verror_put_string(buf);
+		      verror_put_string("%s", buf);
 		  }
 		  fclose(fp);
 	      }
@@ -863,10 +863,10 @@ static int ui_read_fn(UI *ui, UI_STRING *ui_string) {
 static int ui_write_fn(UI *ui, UI_STRING *ui_string) {
     switch(UI_get_string_type(ui_string)) {
 	case UIT_ERROR:
-	    verror_put_string(UI_get0_output_string(ui_string));
+	    verror_put_string("%s", UI_get0_output_string(ui_string));
 	    break;
 	case UIT_INFO:
-	    myproxy_log(UI_get0_output_string(ui_string));
+	    myproxy_log("%s", UI_get0_output_string(ui_string));
 	    break;
 	default:
 	    break;

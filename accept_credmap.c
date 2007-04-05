@@ -64,7 +64,7 @@ consult_mapapp ( char * mapapp, char * userdn, char * username) {
         fp = fdopen(fds[1],"r");
         if (fp) {
             while (fgets(buf,100,fp) != NULL) {
-                verror_put_string(buf);
+                verror_put_string("%s", buf);
             }
             fclose(fp);
         } else {
@@ -75,7 +75,7 @@ consult_mapapp ( char * mapapp, char * userdn, char * username) {
         fp = fdopen(fds[2],"r");
         if (fp) {
             while (fgets(buf,100,fp) != NULL) {
-                verror_put_string(buf);
+                verror_put_string("%s", buf);
             }
             fclose(fp);
         } else {
