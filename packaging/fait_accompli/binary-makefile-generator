@@ -19,8 +19,10 @@ while (<>)
    {
       $package = $1;
       $deps = $2;
+      # There are no binary -thr packages
+      $deps =~ s/([a-z_\-0-9]+)-thr/\1/g;
       # There's no binary version of globus_core, leave it out;
-      $deps =~ s/ globus_core//;
+      $deps =~ s/globus_core//;
       print "${package}: ${deps}\n";
    } elsif ( /gpt-build/ )
    {

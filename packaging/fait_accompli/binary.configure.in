@@ -9,6 +9,18 @@ AC_ARG_WITH(gptlocation, AC_HELP_STRING([--with-gptlocation=dir],\
    gptlocation=$ac_default_prefix; else gptlocation=$prefix; fi])
 AC_SUBST(gptlocation, $gptlocation)
 
+dnl These auto-substitutes let us re-use the Makefile.in from
+dnl the source installer.  RLS should get turned on at some point.
+aixargs=""
+AC_SUBST(aixargs, $aixargs)
+prewsmds=""
+AC_SUBST(prewsmds, $prewsmds)
+rndvz="globus_rendezvous"
+AC_SUBST(rndvz, $rndvz)
+rls=""
+AC_SUBST(rls, $rls)
+
+
 prewsgram="prewsgram"
 AC_ARG_ENABLE(prewsgram, AC_HELP_STRING([--disable-prewsgram],\
    [Don't build pre-webservices [GRAM].  Default is enabled.]),\
