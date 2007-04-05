@@ -12,6 +12,7 @@ To submit a test build:
   $ cd myproxy/nmi
   $ nmi_submit -notify-fail-only cmdfile
 
+The nmi_* commands are in /nmi/bin on grandcentral.cs.wisc.edu.
 The build platforms are specified in cmdfile.
 The nmi_platforms script will show the current list of available
 platforms if run on grandcentral.
@@ -19,6 +20,10 @@ The MyProxy CVS tag can be specified in myproxy.cvs.
 Otherwise, all the intelligence is in testscript.
 In particular, the GT installers corresponding to the chosen platforms
 must be set in testscript.
+
+To see the available pre-requisite packages, run:
+
+  nmi_list_prereqs
 
 To view the results of the builds:
 
