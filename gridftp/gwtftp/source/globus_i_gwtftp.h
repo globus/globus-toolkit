@@ -7,6 +7,7 @@
 #include "globus_xio_telnet.h"
 #include "globus_xio_gssapi_ftp.h"
 #include "globus_error_generic.h"
+#include "globus_xio_gsi.h"
 
 #if !defined(GLOBUS_I_FTP2GRID_H)
 #define GLOBUS_I_FTP2GRID_H 1
@@ -68,6 +69,38 @@ typedef struct globus_i_gwtftp_cmd_opts_s
     globus_list_t *                     ip_list;
 } globus_i_gwtftp_cmd_opts_t;
 
+typedef struct gwtftp_l_data_s
+{
+    globus_xio_stack_t                  active_stack;
+    globus_xio_stack_t                  passive_stack;
+    globus_xio_server_t                 server;
+    globus_xio_handle_t                 passive_xio;
+    globus_xio_handle_t                 active_xio;
+    globus_mutex_t                      mutex;
+    globus_byte_t *                     active_buffer;
+    globus_byte_t *                     passive_buffer;
+    globus_result_t                     error_result;
+    globus_size_t                       buffer_size;
+    globus_xio_callback_t               close_cb;
+    void *                              user_arg;
+    int                                 state;
+    char *                              active_cs;
+} gwtftp_i_data_t;
+
+globus_result_t
+gwtftp_i_data_new(
+    gwtftp_i_data_t **                  out_handle,
+    globus_xio_stack_t                  active_stack,
+    globus_xio_stack_t                  passive_stack,
+    char *                              active_cs,
+    char **                             out_passive_cs,
+    globus_xio_callback_t               close_cb,
+    void *                              user_arg);
+
+void
+gwtftp_i_data_close(
+    gwtftp_i_data_t *                   data_h);
+
 globus_result_t
 globus_gwtftp_new_session(
     globus_xio_handle_t                 client_xio,
@@ -118,5 +151,10 @@ gwtftp_i_authorized_user(
 
 void
 gwtftp_i_server_init();
+
+extern globus_xio_driver_t             gwtftp_l_tcp_driver;
+extern globus_xio_driver_t             gwtftp_l_gsi_driver;
+extern globus_xio_stack_t              gwtftp_l_data_tcp_stack;
+extern globus_xio_stack_t              gwtftp_l_data_gsi_stack;
 
 #endif

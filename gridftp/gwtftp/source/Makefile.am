@@ -10,6 +10,7 @@ Sources= \
     globus_i_gwtftp_client.c \
     globus_i_gwtftp_server.c \
     globus_i_gwtftp_cmd.c  \
+    globus_i_gwtftp_data.c  \
     globus_i_gwtftp_opts.c
 
 

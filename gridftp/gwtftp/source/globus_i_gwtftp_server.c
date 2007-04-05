@@ -502,6 +502,8 @@ void
 gwtftp_i_server_init()
 {
     globus_fifo_init(&gwtftp_l_open_cmd_q);
-    globus_fifo_enqueue(&gwtftp_l_open_cmd_q, "DCAU N\r\n");
-    globus_fifo_enqueue(&gwtftp_l_open_cmd_q, "STAT\r\n");
+    /*globus_fifo_enqueue(&gwtftp_l_open_cmd_q, "DCAU N\r\n"); */
+
+    /* gotta have at least 1 in the list.  STAT is fine */
+    globus_fifo_enqueue(&gwtftp_l_open_cmd_q, "STAT\r\n"); 
 }

@@ -6,9 +6,14 @@
  *  it hands the new connection to connect.c for the FTP handlshake processing
  */
 
+globus_xio_driver_t                     gwtftp_l_tcp_driver;
+globus_xio_driver_t                     gwtftp_l_gsi_driver;
+globus_xio_stack_t                      gwtftp_l_data_tcp_stack;
+globus_xio_stack_t                      gwtftp_l_data_gsi_stack;
+
+static globus_xio_stack_t               gwtftp_l_client_stack;
 static globus_xio_stack_t               gwtftp_l_server_stack;
 static globus_xio_stack_t               gwtftp_l_client_stack;
-static globus_xio_driver_t              gwtftp_l_tcp_driver;
 static globus_xio_driver_t              gwtftp_l_telnet_driver;
 static globus_xio_driver_t              gwtftp_l_gssapi_driver;
 static globus_xio_server_t              gwtftp_l_server;
@@ -156,6 +161,8 @@ gwtftp_l_setup_xio_stack()
 
     globus_xio_stack_init(&gwtftp_l_server_stack, NULL);
     globus_xio_stack_init(&gwtftp_l_client_stack, NULL);
+    globus_xio_stack_init(&gwtftp_l_data_tcp_stack, NULL);
+    globus_xio_stack_init(&gwtftp_l_data_gsi_stack, NULL);
 
     result = globus_xio_driver_load("tcp", &gwtftp_l_tcp_driver);
     if(result != GLOBUS_SUCCESS)
@@ -168,6 +175,11 @@ gwtftp_l_setup_xio_stack()
         goto error_telnet_load;
     }
     result = globus_xio_driver_load("gssapi_ftp", &gwtftp_l_gssapi_driver);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_gss_load;
+    }
+    result = globus_xio_driver_load("gsi", &gwtftp_l_gsi_driver);
     if(result != GLOBUS_SUCCESS)
     {
         goto error_gss_load;
@@ -198,6 +210,14 @@ gwtftp_l_setup_xio_stack()
     {
         goto error_server_gss_push;
     }
+
+    result = globus_xio_stack_push_driver(
+        gwtftp_l_data_tcp_stack, gwtftp_l_tcp_driver);
+    result = globus_xio_stack_push_driver(
+        gwtftp_l_data_gsi_stack, gwtftp_l_tcp_driver);
+    result = globus_xio_stack_push_driver(
+        gwtftp_l_data_gsi_stack, gwtftp_l_gsi_driver);
+
     return GLOBUS_SUCCESS;
 
 error_server_gss_push:
