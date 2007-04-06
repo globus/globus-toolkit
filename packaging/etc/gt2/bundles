@@ -349,7 +349,6 @@ BUNDLE	prews-test
 	globus_gram_protocol_test
 	globus_gssapi_gsi_test
 	globus_io_test
-	globus_mds_test
 	globus_openssl_error_test
 	globus_proxy_ssl_test
 	globus_authz_test
