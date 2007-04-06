@@ -39,6 +39,10 @@ gwtftp_l_data_passive_close_cb(
 
     data_h->close_cb(handle, data_h->error_result, data_h->user_arg);
 
+    if(data_h->active_cs)
+    {
+        globus_free(data_h->active_cs);
+    }
     globus_free(data_h->active_buffer);
     globus_free(data_h->passive_buffer);
     globus_free(data_h);
@@ -530,7 +534,7 @@ gwtftp_i_data_new(
     {
         goto error_accept;
     }
-    data_h->active_cs = active_cs;
+    data_h->active_cs = strdup(active_cs);
     *out_passive_cs = cs;
     *out_handle = data_h;
 

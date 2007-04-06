@@ -43,6 +43,7 @@ gwtftp_l_read_opening_reply_cb(
 {
     gwtftp_l_server_session_t *         session;
 
+    /* XXX check result */
     session = (gwtftp_l_server_session_t *) user_arg;
 
     buffer[len - 2] = '\0';
@@ -220,6 +221,7 @@ error:
     gwtftp_i_close(session->server_xio, NULL, NULL);
     globus_fifo_destroy(session->openning_command_q);
     globus_free(session->openning_command_q);
+    globus_free(buffer);
     free(session);
 }
 
@@ -305,7 +307,6 @@ gwtftp_l_server_read_user_reply_cb(
 
     return;
 error_write:
-    globus_free(buffer);
 error:
     gwtftp_i_log_result(FTP2GRID_LOG_WARN, result,
         "Reading USER reply from server with error, closing\n");
@@ -313,6 +314,7 @@ error:
     gwtftp_i_close(session->server_xio, NULL, NULL);
     globus_fifo_destroy(session->openning_command_q);
     globus_free(session->openning_command_q);
+    globus_free(buffer);
     free(session);
 }
 

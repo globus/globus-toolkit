@@ -159,6 +159,39 @@ error_mem:
 
 static
 void
+gwtftp_l_cmd_error_data_close_cb(
+    globus_xio_handle_t                 handle,
+    globus_result_t                     result,
+    void *                              user_arg)
+{
+    gwtftp_l_connection_pair_t *        conn_pair;
+    globus_bool_t                       free_it = GLOBUS_FALSE;
+
+    conn_pair = (gwtftp_l_connection_pair_t *) user_arg;
+
+    globus_mutex_lock(&conn_pair->mutex);
+    {
+        conn_pair->data_listening = GLOBUS_FALSE;
+        conn_pair->ref--;
+        if(conn_pair->ref == 0)
+        {
+            free_it = GLOBUS_TRUE;
+        }
+    }
+    globus_mutex_unlock(&conn_pair->mutex);
+
+    if(free_it)
+    {
+        globus_mutex_destroy(&conn_pair->mutex);
+        globus_fifo_destroy(&conn_pair->c2s.write_q);
+        globus_fifo_destroy(&conn_pair->s2c.write_q);
+        globus_free(conn_pair);
+    }
+}
+
+
+static
+void
 gwtftp_l_error_close_cb(
     globus_xio_handle_t                 handle,
     globus_result_t                     result,
@@ -455,8 +488,9 @@ gwtftp_l_pasv227(
         gwtftp_l_data_tcp_stack,
         cs,
         &passive_cs,
-        gwtftp_l_error_close_cb,
+        gwtftp_l_cmd_error_data_close_cb,
         conn_pair);
+    globus_free(cs);
     if(result != GLOBUS_SUCCESS)
     {
         goto error;
@@ -466,15 +500,18 @@ gwtftp_l_pasv227(
 
     reply = gwtftp_l_pasv_cs_to_reply(
         type, passive_cs, strlen(passive_cs));
+    globus_free(passive_cs);
     if(reply == NULL)
     {
         goto error;
     }
     /* form new message */
     post = gwtftp_l_route(&conn_pair->s2c, reply, strlen(reply));
+    globus_free(buffer);
 
     return post;
 error:
+    globus_free(buffer);
     gwtftp_l_error(conn_pair, result);
 
     return GLOBUS_FALSE;
@@ -537,6 +574,7 @@ gwtftp_l_route(
 
     return GLOBUS_TRUE;
 error:
+    globus_free(buffer);
     gwtftp_l_error(conn->whos_my_daddy, result);
     return GLOBUS_FALSE;
 }

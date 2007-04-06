@@ -213,10 +213,22 @@ gwtftp_l_setup_xio_stack()
 
     result = globus_xio_stack_push_driver(
         gwtftp_l_data_tcp_stack, gwtftp_l_tcp_driver);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_server_gss_push;
+    }
     result = globus_xio_stack_push_driver(
         gwtftp_l_data_gsi_stack, gwtftp_l_tcp_driver);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_server_gss_push;
+    }
     result = globus_xio_stack_push_driver(
         gwtftp_l_data_gsi_stack, gwtftp_l_gsi_driver);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_server_gss_push;
+    }
 
     return GLOBUS_SUCCESS;
 
