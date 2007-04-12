@@ -33,7 +33,7 @@ else
   curl $GT_INSTALLER_URL > $GT_INSTALLER
 fi
 tar xfz $GT_INSTALLER
-cd gt*-installer
+cd gt4*-installer
 ./configure --prefix=$GLOBUS_LOCATION --with-buildopts="-verbose"
 make gsi-myproxy install
 . $GLOBUS_LOCATION/etc/globus-user-env.sh
@@ -61,4 +61,36 @@ chmod 0600 nmi/userkey.pem
 grid-proxy-init -debug -verify -cert nmi/usercert.pem -key nmi/userkey.pem
 myproxy-test -startserver
 myproxy-test-replicate
+if test -d gtTRUNK-all-source-installer; then
+    echo ==================================================
+    echo Installing GT CVS Trunk...
+    GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/globus-trunk
+    cd gtTRUNK-all-source-installer
+    ./configure --prefix=$GLOBUS_LOCATION --with-buildopts="-verbose"
+    make gsi-myproxy install
+    . $GLOBUS_LOCATION/etc/globus-user-env.sh
+    echo ==================================================
+    flavor=`gpt-query -name=myproxy | perl -n -e 'if (/myproxy-(.*)-pgm/){print "$1\n";}'|head -1`
+    echo GPT flavor is $flavor.
+    echo ==================================================
+    echo Installing autotools...
+    cd ../autotools
+    ./install-autotools $GLOBUS_LOCATION
+    echo ==================================================
+    echo Building MyProxy...
+    cd ../myproxy
+    ./bootstrap
+    ./configure --with-flavor=$flavor
+    make dist
+    gpt-uninstall myproxy
+    gpt-build -verbose myproxy-*.tar.gz $flavor
+    echo ==================================================
+    echo Testing MyProxy...
+    mkdir $X509_CERT_DIR
+    cp nmi/*.0 nmi/*.signing_policy $X509_CERT_DIR
+    chmod 0600 nmi/userkey.pem
+    grid-proxy-init -debug -verify -cert nmi/usercert.pem -key nmi/userkey.pem
+    myproxy-test -startserver
+    myproxy-test-replicate
+fi
 ) 2>&1 # we want stdout & stderr mixed in the output file
