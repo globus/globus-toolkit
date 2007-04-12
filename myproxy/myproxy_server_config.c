@@ -347,6 +347,10 @@ line_parse_callback(void *context_arg,
         context->syslog_ident = strdup(tokens[1]);
     }
 
+    else if (strcmp(directive, "slave_servers") == 0) {
+        /* ignore. used by myproxy-replicate. */
+    }
+
     else {
 	myproxy_log("warning: unknown directive (%s) in myproxy-server.config",
 		    directive);
