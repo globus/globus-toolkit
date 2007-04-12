@@ -1255,7 +1255,7 @@ sub verifyproxy {
     if ($proxytype =~ /legacy/) {
 	$oldproxy = "-old";
     }
-    local($output) = '$grid_proxy_init $oldproxy -debug -verify -cert $proxyfile -key $proxyfile -valid 0:1 -out /tmp/tmpproxy.$$';
+    local($output) = `$grid_proxy_init $oldproxy -debug -verify -cert $proxyfile -key $proxyfile -valid 0:1 -out /tmp/tmpproxy.$$ 2>&1`;
     if ($? != 0) {
 	$output = "failed to verify proxy\n" . $output;
 	unlink("/tmp/tmpproxy.$$");
@@ -1283,7 +1283,7 @@ sub verifyproxy {
 sub verifycert {
     local($certfile, $keyfile) = @_;
 
-    local($output) = '$grid_proxy_init $oldproxy -debug -verify -cert $certfile -key $keyfile -valid 0:1 -out /tmp/tmpproxy.$$';
+    local($output) = `$grid_proxy_init $oldproxy -debug -verify -cert $certfile -key $keyfile -valid 0:1 -out /tmp/tmpproxy.$$ 2>&1`;
     if ($? != 0) {
 	$output = "failed to verify certificate from: $certfile and $keyfile\n" . $output;
 	unlink("/tmp/tmpproxy.$$");
