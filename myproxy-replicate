@@ -347,7 +347,7 @@ sub replicate_files
         if( !defined($options) );
     next if( !defined($options) );
 
-    $options .= "-c $rep/$f -y $rep/$f ";
+    $options .= "-c \"$rep/$f\" -y \"$rep/$f\" ";
 
     for my $s (@{$slaves})
     {
@@ -392,20 +392,25 @@ sub parse_datafile
     if( $value =~ /OWNER=(.*)/ )
     {
     }
-    # LIFETIME -c
+    # LIFETIME -t
     elsif( $value =~ /LIFETIME=(.*)/ )
     {
       $options .= "-t " . $1 / $SECONDS_PER_HOUR . " ";
     }
     # NAME -k creds->credname
-    elsif( $value =~ /NAME=(.*)/ )
+    elsif( $value =~ /^NAME=(.*)/ )
     {
-      $options .= "-k $1 ";
+      $options .= "-k \"$1\" ";
+    }
+    # USERNAME -l 
+    elsif( $value =~ /^USERNAME=(.*)/ )
+    {
+      $options .= "-l \"$1\" ";
     }
     # DESCRIPTION -K creds->creddesc
     elsif( $value =~ /DESCRIPTION=(.*)/ )
     {
-      $options .= "-K $1 ";
+      $options .= "-K \"$1\" ";
     }
     # RETRIEVERS -r creds->retrievers
     # what about anonymous retrievers?
@@ -430,13 +435,6 @@ sub parse_datafile
     }
   }
   close FN;
-
-  # Find out what name should be attached to the file when it is stored by
-  # the server.
-  my ($name, $ext) = split /\./, $fname;
-  my ($uname, $oname ) = split /-/, $name;
-
-  $options .= "-l $uname ";
 
   return $options;
 }
@@ -502,8 +500,8 @@ sub delete_files
     my ($name, $ext) = split /\./, $f;
     my ($uname, $oname ) = split /-/, $name;
 
-    my $options = "-l $uname ";
-    $options .= "-k $oname " if( length($oname) > 0 );
+    my $options = "-l \"$uname\" ";
+    $options .= "-k \"$oname\" " if( length($oname) > 0 );
 
     for my $s (@{$slaves})
     {
@@ -511,7 +509,9 @@ sub delete_files
 
       ($exitstatus, $output) = runcmd( "$myproxy_destroy $options $s -v" );
 
-      if( ($exitstatus != 0) && !($output =~ /No such file or directory/) )
+      if( ($exitstatus != 0) &&
+          !($output =~ /No such file or directory/ ||
+            $output =~ /do not exist/) )
       {
 print "Bad delete\n";
         $ret = 1;
