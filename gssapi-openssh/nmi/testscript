@@ -85,4 +85,47 @@ if test -d openssh; then
     make install
   fi
 fi
+if test -d gtTRUNK-all-source-installer; then
+    echo ==================================================
+    echo Installing GT CVS Trunk...
+    GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/globus-trunk
+    cd gtTRUNK-all-source-installer
+    ./configure --prefix=$GLOBUS_LOCATION --with-buildopts="-verbose"
+    make gsi-openssh install
+    . $GLOBUS_LOCATION/etc/globus-user-env.sh
+    cd ..
+    echo ==================================================
+    GLOBUS_FLAVOR_NAME=`gpt-query -name=gsi_openssh | perl -n -e 'if (/gsi_openssh-(.*)-pgm/){print "$1\n";}'|head -1`
+    export GLOBUS_FLAVOR_NAME
+    echo GPT GLOBUS_FLAVOR_NAME is $GLOBUS_FLAVOR_NAME.
+    if test -f gsi_openssh_bundle-*.tar.gz; then
+        echo ==================================================
+        echo Building GSI-OpenSSH GPT bundle...
+        gpt-build -force -verbose gsi_openssh_bundle-*.tar.gz $GLOBUS_FLAVOR_NAME \
+            GSI_OPENSSH_GPTMACRO="--with-zlib=$ZLIB_LOCATION"
+    fi
+    if test -d openssh; then
+        echo ==================================================
+        echo Installing autotools...
+        cd autotools
+        ./install-autotools $GLOBUS_LOCATION
+        cd ..
+        echo ==================================================
+        cd openssh
+        if test -f make_gpt_dist; then
+            echo Building GSI-OpenSSH GPT package from CVS...
+            ./make_gpt_dist
+            gpt-build -force -verbose gsi_openssh-*.tar.gz $GLOBUS_FLAVOR_NAME \
+                GSI_OPENSSH_GPTMACRO="--with-zlib=$ZLIB_LOCATION"
+        else
+            echo Building GSI-OpenSSH from CVS trunk...
+            autoreconf
+            ./configure --prefix=$GLOBUS_LOCATION \
+                --with-globus-flavor=$GLOBUS_FLAVOR_NAME \
+                --with-zlib=$ZLIB_LOCATION \
+                --with-privsep-user=$USER --with-privsep-path=$GLOBUS_LOCATION/var/empty
+            make clean
+            make install
+        fi
+    fi
 ) 2>&1 # we want stdout & stderr mixed in the output file
