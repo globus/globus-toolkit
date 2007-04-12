@@ -85,10 +85,11 @@ if test -d openssh; then
     make install
   fi
 fi
-if test -d gtTRUNK-all-source-installer; then
+if test -f nightly.tar.gz; then
     echo ==================================================
     echo Installing GT CVS Trunk...
     GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/globus-trunk
+    tar xfz nightly.tar.gz
     cd gtTRUNK-all-source-installer
     ./configure --prefix=$GLOBUS_LOCATION --with-buildopts="-verbose"
     make gsi-openssh install
