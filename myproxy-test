@@ -105,6 +105,8 @@ chomp($grid_proxy_init = `which grid-proxy-init 2>/dev/null`);
 die "grid-proxy-init not found, stopped" if (!(-x $grid_proxy_init));
 chomp($grid_proxy_info = `which grid-proxy-info 2>/dev/null`);
 die "grid-proxy-info not found, stopped" if (!(-x $grid_proxy_info));
+chomp($grid_cert_info = `which grid-cert-info 2>/dev/null`);
+die "grid-cert-info not found, stopped" if (!(-x $grid_cert_info));
 $timeleft = `$grid_proxy_info -timeleft 2>/dev/null`;
 if (!defined($timeleft) || $timeleft eq "" || ($timeleft < 60*60*3)) {
     &debug("Problem with proxy.  Will try to create a new one.");
@@ -1283,7 +1285,12 @@ sub verifyproxy {
 sub verifycert {
     local($certfile, $keyfile) = @_;
 
-    local($output) = `$grid_proxy_init $oldproxy -debug -verify -cert $certfile -key $keyfile -valid 0:1 -out /tmp/tmpproxy.$$ 2>&1`;
+    chomp (my $subject = `$grid_cert_info -file $certfile -subject`);
+    local($oldproxy) = "";
+    if ($subject =~ /CN=proxy|\/CN=limited proxy/) {
+	$oldproxy = "-old";
+    }
+    local($output) = &runtest("$grid_proxy_init $oldproxy -debug -verify -cert $certfile -key $keyfile -valid 0:1 -out /tmp/tmpproxy.$$ -pwstdin", $passphrase);
     if ($? != 0) {
 	$output = "failed to verify certificate from: $certfile and $keyfile\n" . $output;
 	unlink("/tmp/tmpproxy.$$");
