@@ -84,6 +84,7 @@ if test -d openssh; then
       --with-privsep-user=$USER --with-privsep-path=$GLOBUS_LOCATION/var/empty
     make install
   fi
+  cd ..
 fi
 if test -f nightly.tar.gz; then
     echo ==================================================
