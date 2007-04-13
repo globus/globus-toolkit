@@ -1,10 +1,10 @@
-This is MyProxy v3.8 XX Xxx 2007.
+This is MyProxy v3.8 13 Apr 2007.
 This version should be protocol compatible with all versions since v0.2.
 Binary compatibility of the C API is not guaranteed between releases.
 
 Version History
 ---------------
-v3.8 XX Xxx 2007
+v3.8 13 Apr 2007
   - fix myproxy-replicate errors for credentials with usernames or
     crednames containing spaces
   - fix server-side problem when linking against globus_gssapi_gsi
