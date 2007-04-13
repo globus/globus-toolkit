@@ -61,12 +61,13 @@ chmod 0600 nmi/userkey.pem
 grid-proxy-init -debug -verify -cert nmi/usercert.pem -key nmi/userkey.pem
 myproxy-test -startserver
 myproxy-test-replicate
+cd ..
 if test -f nightly.tar.gz; then
     echo ==================================================
     echo Installing GT CVS Trunk...
     GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/globus-trunk
-    tar xfz gtTRUNK-all-source-installer.tar.gz
-    cd nightly.tar.gz
+    tar xfz nightly.tar.gz
+    cd gtTRUNK-all-source-installer
     ./configure --prefix=$GLOBUS_LOCATION --with-buildopts="-verbose"
     make gsi-myproxy install
     . $GLOBUS_LOCATION/etc/globus-user-env.sh
