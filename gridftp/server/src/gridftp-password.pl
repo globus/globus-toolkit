@@ -5,7 +5,7 @@
 $salt=join '', ('.', '/', 0..9, 'A'..'Z', 'a'..'z')[rand 64, rand 64];
 
 system "stty -echo";
-print "Password: ";
+print STDERR "Password: ";
 chomp($pword = <STDIN>);
 print "\n";
 system "stty echo";
