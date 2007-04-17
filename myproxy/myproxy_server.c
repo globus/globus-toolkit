@@ -161,7 +161,7 @@ main(int argc, char *argv[])
     /* check library version */
     if (myproxy_check_version()) {
 	fprintf(stderr, "MyProxy library version mismatch.\n"
-		"Expecting %s.  Found %s.\n",
+		"Expecting %s.  Found %s.  Exiting.\n",
 		MYPROXY_VERSION_DATE, myproxy_version(0,0,0));
 	exit(1);
     }
@@ -189,7 +189,7 @@ main(int argc, char *argv[])
        server_context->run_as_daemon = 1;
        if (!debug) {
 	  if (become_daemon(server_context) < 0) {
-	     fprintf(stderr, "Error starting daemon\n");
+	     fprintf(stderr, "Error starting daemon.  Exiting.\n");
 	     exit(1);
 	  }
        }
@@ -219,8 +219,9 @@ main(int argc, char *argv[])
     
     /* Read my configuration */
     if (myproxy_server_config_read(server_context) == -1) {
-	verror_print_error(stderr);
-	exit(1);
+        myproxy_log_verror();
+        myproxy_log("Exiting.");
+        exit(1);
     }
 
     /* Check to see if config file had syslog_ident specified. */
