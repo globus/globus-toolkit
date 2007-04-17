@@ -56,15 +56,23 @@ do_log(const char *string, int level)
     if (my_context.log_stream != NULL)
     {
 	fprintf(my_context.log_stream, "%s", string);
-	if (string[strlen(string)-1] != '\n') {
-	    fprintf(my_context.log_stream, "\n");
-	}
     }
 	       
     return;
 }
 
+/* syslog() messages should be on a single line */
+static void
+strip_newlines(char *string)
+{
+    int i, len;
 
+    for (i=0, len = strlen(string); i < len; i++) {
+        if (string[i] == '\n') {
+            string[i] = ' ';
+        }
+    }
+}
 
 /**********************************************************************
  *
@@ -109,6 +117,7 @@ myproxy_log(const char *format, ...)
 	goto error;
     }
     
+    strip_newlines(string);
     do_log(string, LOG_NOTICE);
     
   error:
@@ -129,7 +138,8 @@ myproxy_log_verror()
     
     if (string != NULL)
     {
-	do_log(verror_get_string(), LOG_ERR);
+        strip_newlines(string);
+        do_log(string, LOG_ERR);
     }
 
     if (verror_get_errno() != 0)
@@ -158,6 +168,7 @@ myproxy_log_perror(const char *format, ...)
 	goto error;
     }
     
+    strip_newlines(string);
     do_log(string, LOG_ERR);
     do_log(strerror(errno), LOG_ERR);
     
@@ -221,6 +232,7 @@ myproxy_debug(const char *format, ...)
 	goto error;
     }
     
+    strip_newlines(string);
     do_log(string, LOG_NOTICE);
     
   error:
