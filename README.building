@@ -85,10 +85,10 @@ $ make dist
 
      $ gpg -b myproxy-*.tar.gz
 
-7. Copy README, LICENSE, VERSION, and myproxy-*.tar.gz to
+7. Copy README, LICENSE, VERSION, and myproxy-*.tar.gz* to
    /afs/ncsa.uiuc.edu/ftp/ftp/aces/myproxy.
 
-     $ cp README LICENSE VERSION myproxy-*.tar.gz \
+     $ cp README LICENSE VERSION myproxy-*.tar.gz* \
        /afs/ncsa.uiuc.edu/ftp/ftp/aces/myproxy
 
 8. Update MyProxy web site in
