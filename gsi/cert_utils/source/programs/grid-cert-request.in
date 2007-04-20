@@ -62,13 +62,6 @@ if [ ! -z "${GRID_SECURITY_DIR}" ] ; then
         else
             trusted_certs_dir="${secconfdir}/certificates"
         fi
-    else
-        echo "Can't find valid CA config files in " \
-             "GRID_SECURITY_DIR  = ${GRID_SECURITY_DIR}." 
-        echo "Please make sure that you have installed and " \
-             "setup a CA setup package."
-        echo ""
-        exit 1   
     fi
 elif [ -r "/etc/grid-security/globus-user-ssl.conf" ] && 
      [ -r "/etc/grid-security/globus-host-ssl.conf" ] ; then
@@ -86,11 +79,6 @@ elif [ -r "${GLOBUS_LOCATION}/etc/globus-user-ssl.conf" ] &&
     else
         trusted_certs_dir="${GLOBUS_LOCATION}/share/certificates"
     fi
-else
-    echo "Can't find valid CA config files. Please make sure"
-    echo "that you have installed and setup a CA setup package."
-    echo ""
-    exit 1
 fi
 
 #
@@ -801,6 +789,21 @@ CERTREQ="${bindir}/grid-cert-request"
 # Parse the command line
 
 read_command_line "$@"
+
+if test -z "$trusted_certs_dir"; then
+    if test -n "$GRID_SECURITY_DIR"; then
+        echo "Can't find valid CA config files in " \
+             "GRID_SECURITY_DIR \"${GRID_SECURITY_DIR}\"." 
+        echo "Please make sure that you have installed and " \
+             "setup a CA setup package."
+    else
+        echo "Can't find valid CA config files. Please make sure"
+        echo "that you have installed and setup a CA setup package."
+    fi
+
+    echo ""
+    exit 1   
+fi
 
 # set temporary files
 REQ_HEAD=${TARGET_DIR}/$PROGRAM_NAME.$$.head
