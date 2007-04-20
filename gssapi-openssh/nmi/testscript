@@ -130,4 +130,5 @@ if test -f nightly.tar.gz; then
             make install
         fi
     fi
+fi
 ) 2>&1 # we want stdout & stderr mixed in the output file
