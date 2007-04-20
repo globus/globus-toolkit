@@ -88,10 +88,6 @@ if test -f nightly.tar.gz; then
     gpt-build -verbose myproxy-*.tar.gz $flavor
     echo ==================================================
     echo Testing MyProxy...
-    mkdir $X509_CERT_DIR
-    cp nmi/*.0 nmi/*.signing_policy $X509_CERT_DIR
-    chmod 0600 nmi/userkey.pem
-    grid-proxy-init -debug -verify -cert nmi/usercert.pem -key nmi/userkey.pem
     myproxy-test -startserver
     myproxy-test-replicate
 fi
