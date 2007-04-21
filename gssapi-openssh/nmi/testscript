@@ -35,7 +35,8 @@ else
 fi
 tar xfz $GT_INSTALLER
 cd gt*-installer
-./configure --prefix=$GLOBUS_LOCATION --with-buildopts="-verbose"
+./configure --prefix=$GLOBUS_LOCATION --with-buildopts="-verbose" \
+            --with-gsiopensshargs="--with-zlib=$ZLIB_LOCATION"
 make gsi-openssh install
 . $GLOBUS_LOCATION/etc/globus-user-env.sh
 cd ..
@@ -92,7 +93,8 @@ if test -f nightly.tar.gz; then
     GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/globus-trunk
     tar xfz nightly.tar.gz
     cd gtTRUNK-all-source-installer
-    ./configure --prefix=$GLOBUS_LOCATION --with-buildopts="-verbose"
+    ./configure --prefix=$GLOBUS_LOCATION --with-buildopts="-verbose" \
+                --with-gsiopensshargs="--with-zlib=$ZLIB_LOCATION"
     make gsi-openssh install
     . $GLOBUS_LOCATION/etc/globus-user-env.sh
     cd ..
