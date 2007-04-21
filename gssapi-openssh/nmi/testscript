@@ -116,7 +116,6 @@ if test -f nightly.tar.gz; then
         cd openssh
         if test -f make_gpt_dist; then
             echo Building GSI-OpenSSH GPT package from CVS...
-            ./make_gpt_dist
             gpt-build -force -verbose gsi_openssh-*.tar.gz $GLOBUS_FLAVOR_NAME \
                 GSI_OPENSSH_GPTMACRO="--with-zlib=$ZLIB_LOCATION"
         else
