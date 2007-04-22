@@ -27,6 +27,18 @@ echo `which curl`
 echo `which ncftpget`
 echo `which ftp`
 echo ==================================================
+if test -d /prereq/zlib-1.2.3; then
+  ZLIB_LOCATION=/prereq/zlib-1.2.3
+  echo zlib found in $ZLIB_LOCATION
+else
+  echo Building zlib-1.2.3...
+  cd zlib-1.2.3
+  ./configure --prefix=$ZLIB_LOCATION
+  make
+  make install
+  cd ..
+fi
+echo ==================================================
 echo Installing Globus Toolkit...
 if test -x `which wget`; then
   wget $GT_INSTALLER_URL
@@ -40,18 +52,6 @@ cd gt*-installer
 make gsi-openssh install
 . $GLOBUS_LOCATION/etc/globus-user-env.sh
 cd ..
-echo ==================================================
-if test -d /prereq/zlib-1.2.3; then
-  ZLIB_LOCATION=/prereq/zlib-1.2.3
-  echo zlib found in $ZLIB_LOCATION
-else
-  echo Building zlib-1.2.3...
-  cd zlib-1.2.3
-  ./configure --prefix=$ZLIB_LOCATION
-  make
-  make install
-  cd ..
-fi
 echo ==================================================
 GLOBUS_FLAVOR_NAME=`gpt-query -name=gsi_openssh | perl -n -e 'if (/gsi_openssh-(.*)-pgm/){print "$1\n";}'|head -1`
 export GLOBUS_FLAVOR_NAME
