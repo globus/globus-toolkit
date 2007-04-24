@@ -524,13 +524,14 @@ grid_proxy_init(int seconds,
 	old=1;
     }
     
-    cmdlen = 200;
+    cmdlen = 250;
     if (cert) cmdlen += strlen(cert);
     if (key) cmdlen += strlen(key);
     if (outfile) cmdlen += strlen(outfile);
+    if (voms) cmdlen += strlen(voms);
     command = (char *)malloc(cmdlen);
 
-    sprintf(command, "%s%s -verify -hours %d "
+    snprintf(command, cmdlen, "%s%s -verify -hours %d "
 	    "-bits %d%s%s%s%s%s%s%s%s%s",
         voms ? "voms-proxy-init -voms " : "grid-proxy-init",
         voms ? voms : "",
