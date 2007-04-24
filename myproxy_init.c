@@ -52,6 +52,7 @@ static char usage[] = \
 "       -k | --credname        <name>     Specifies credential name\n"
 "       -K | --creddesc        <desc>     Specifies credential description\n"
 "       -L | --local_proxy                Create a local proxy credential\n"
+"       -m | --voms            <voms>     Include VOMS attributes\n"
 "\n";
 
 struct option long_options[] =
@@ -80,6 +81,7 @@ struct option long_options[] =
   {"creddesc",	      required_argument, NULL, 'K'},
   {"stdin_pass",            no_argument, NULL, 'S'},
   {"local_proxy",           no_argument, NULL, 'L'},
+  {"voms",            required_argument, NULL, 'm'},
   {0, 0, 0, 0}
 };
 
@@ -91,6 +93,7 @@ static char version[] =
 
 static char *certfile               = NULL;	/* certificate file name */
 static char *keyfile                = NULL;	/* key file name */
+static char *voms                   = NULL;
 static int use_empty_passwd = 0;
 static int dn_as_username = 0;
 static int read_passwd_from_stdin = 0;
@@ -186,7 +189,11 @@ main(int argc, char *argv[])
 
     /* Run grid-proxy-init to create a proxy */
     if (grid_proxy_init(cred_lifetime, certfile, keyfile, proxyfile) != 0) {
-        fprintf(stderr, "grid-proxy-init failed\n");
+        if (voms) {
+            fprintf(stderr, "voms-proxy-init failed\n");
+        } else {
+            fprintf(stderr, "grid-proxy-init failed\n");
+        }
         goto cleanup;
     }
 
@@ -283,7 +290,11 @@ main(int argc, char *argv[])
 	unsetenv("X509_USER_PROXY"); /* GSI_SOCKET_use_creds() sets it */
 	if (grid_proxy_init(client_request->proxy_lifetime,
 			    proxyfile, proxyfile, x509_user_proxy) != 0) {
-	    fprintf(stderr, "grid-proxy-init failed\n");
+        if (voms) {
+            fprintf(stderr, "voms-proxy-init failed\n");
+        } else {
+            fprintf(stderr, "grid-proxy-init failed\n");
+        }
 	    goto cleanup;
 	}
     }
@@ -460,6 +471,9 @@ init_arguments(int argc,
 	case 'L':
 	    create_local_proxy = 1;
 	    break;
+	case 'm':
+	    voms = strdup(optarg);
+	    break;
 
         default:  
 	    fprintf(stderr, usage);
@@ -516,8 +530,10 @@ grid_proxy_init(int seconds,
     if (outfile) cmdlen += strlen(outfile);
     command = (char *)malloc(cmdlen);
 
-    sprintf(command, "grid-proxy-init -verify -hours %d "
+    sprintf(command, "%s%s -verify -hours %d "
 	    "-bits %d%s%s%s%s%s%s%s%s%s",
+        voms ? "voms-proxy-init -voms " : "grid-proxy-init",
+        voms ? voms : "",
 	    hours, MYPROXY_DEFAULT_KEYBITS,
 	    cert ? " -cert " : "",
 	    cert ? cert : "",
