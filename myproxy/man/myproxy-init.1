@@ -1,4 +1,4 @@
-.TH myproxy-init 1 "2005-12-2" "NCSA" "MyProxy"
+.TH myproxy-init 1 "2007-04-24" "NCSA" "MyProxy"
 .SH NAME
 myproxy-init \- store a credential for later retrieval
 .SH SYNOPSIS
@@ -252,6 +252,12 @@ always requires some type of authentication for retrieving
 credentials, so if you store a credential with no passphrase and other
 authentication methods are not configured, the credential will not be
 accessible.
+.TP
+.BI -m " voms, "  --voms " voms"
+Include VOMS attributes in stored credential.
+The VOMS server name must be provided,
+as required by
+.BR "voms-proxy-init -voms" .
 .SH "EXIT STATUS"
 0 on success, >0 on error
 .SH FILES
