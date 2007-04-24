@@ -36,6 +36,7 @@ static char usage[] = \
 "       -N | --no_credentials             Authenticate only. Don't retrieve\n"
 "                                         credentials.\n"
 "       -q | --quiet                      Only output on error\n"
+"       -m | --voms            <voms>     Include VOMS attributes\n"
 "\n";
 
 struct option long_options[] =
@@ -57,6 +58,7 @@ struct option long_options[] =
     {"no_passphrase",          no_argument, NULL, 'n'},
     {"no_passphrase",          no_argument, NULL, 'N'},
     {"quiet",                  no_argument, NULL, 'q'},
+    {"voms",            required_argument, NULL, 'm'},
     {0, 0, 0, 0}
 };
 
@@ -83,6 +85,7 @@ static int read_passwd_from_stdin = 0;
 static int use_empty_passwd = 0;
 static int quiet = 0;
 static int no_credentials = 0;
+static char *voms = NULL;
 
 int
 main(int argc, char *argv[]) 
@@ -186,11 +189,51 @@ main(int argc, char *argv[])
     }
 
     if (outputfile) {
-	if (!quiet)
-	    printf("A credential has been received for user %s in %s.\n",
-		   client_request->username, outputfile);
-	free(outputfile);
-	verror_clear();
+        if (voms) {
+            int cmdlen, hours, minutes, cred_lifetime;
+            char *command;
+            time_t cred_expiration;
+
+            if (ssl_get_times(outputfile, NULL, &cred_expiration) == 0) {
+                cred_lifetime = cred_expiration-time(0);
+                if (cred_lifetime <= 0) {
+                    fprintf(stderr, "Error: Credential expired!\n");
+                    goto cleanup;
+                }
+            }
+
+            hours = (int)(cred_lifetime/(60*60));
+            minutes = (int)(cred_lifetime/60)%60;
+            if (minutes) {
+                minutes--;
+            } else {
+                hours--;
+                minutes = 59;
+            }
+
+            cmdlen = 100;
+            cmdlen += strlen(voms);
+            cmdlen += strlen(outputfile)*3;
+            command = (char *)malloc(cmdlen);
+
+            snprintf(command, cmdlen, "voms-proxy-init -valid %d:%d "
+                     "-voms %s -cert %s -key %s -out %s -bits %d",
+                     hours, minutes,
+                     voms, outputfile, outputfile, outputfile,
+                     MYPROXY_DEFAULT_KEYBITS);
+            if (system(command) != 0) {
+                fprintf(stderr, "voms-proxy-init failed. command was:\n%s\n",
+                        command);
+            }
+            free(command);
+        }
+
+        if (!quiet)
+            printf("A credential has been received for user %s in %s.\n",
+                   client_request->username, outputfile);
+        free(outputfile);
+        outputfile = NULL;
+        verror_clear();
     }
 
     /* Store file in trusted directory if requested and returned */
@@ -288,6 +331,9 @@ init_arguments(int argc,
 	    request->want_trusted_certs = 1;
             myproxy_debug("Requesting trusted certificates.\n");
 	    break;
+        case 'm':
+            voms = strdup(optarg);
+            break;
         default:        /* print usage and exit */ 
 	    fprintf(stderr, usage);
 	    exit(1);
