@@ -1,4 +1,4 @@
-.TH myproxy-logon 1 "2006-10-9" "NCSA" "MyProxy"
+.TH myproxy-logon 1 "2007-04-24" "NCSA" "MyProxy"
 .SH NAME
 myproxy-logon \- retrieve a credential
 .SH SYNOPSIS
@@ -144,6 +144,12 @@ Only write output messages on error.
 .TP
 .B -N, --no_credentials
 Authenticate only.  Don't retrieve credentials.
+.TP
+.BI -m " voms, "  --voms " voms"
+Include VOMS attributes in the retrieved credential.
+The VOMS server name must be provided,
+as required by
+.BR "voms-proxy-init -voms" .
 .SH "EXIT STATUS"
 0 on success, >0 on error
 .SH ENVIRONMENT
