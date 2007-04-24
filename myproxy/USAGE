@@ -89,6 +89,7 @@ desperate attempt to maintain some consistency.
 -l | --username     <name>      Query by username
 -l | --username <username> Username for the delegated proxy
 -l | --username <username> Username for the delegated proxy
+-M | --voms <voms>
 -n | --no_passphrase              Don't prompt for passphrase
 -n | --no_passphrase              Don't prompt for passphrase
 -n | --no_passphrase              Don't prompt for passphrase
