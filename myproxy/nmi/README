@@ -7,7 +7,7 @@ haven't already.
 
 To submit a test build:
 
-  $ ssh grandcentral.cs.wisc.edu
+  $ ssh nmi-s003.cs.wisc.edu
   $ cvs -d :pserver:anonymous@cvs.ncsa.uiuc.edu:/CVS/myproxy co myproxy
   $ cd myproxy/nmi
   $ nmi_submit -notify-fail-only cmdfile

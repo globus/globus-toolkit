@@ -70,7 +70,7 @@ $ make dist
    see nmi/README.  The results of all test builds, including
    automated nightly builds, can be viewed at:
 
-   http://grandcentral.cs.wisc.edu/pavlo/index.php?page=results%2Foverview&opt_project=MyProxy
+   http://nmi-s003.cs.wisc.edu/nmi/index.php?page=results%2Foverview&opt_project=MyProxy
 
 4. Test the installation.  (-valgrind will work only on x86.)
 
