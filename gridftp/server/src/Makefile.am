@@ -92,6 +92,9 @@ libglobus_gridftp_server___GLOBUS_FLAVOR_NAME__la_LIBADD = \
 
 sbin_PROGRAMS= \
 	globus-gridftp-server 
+
+sbin_SCRIPTS = \
+    gridftp-password.pl
 	
 # _SOURCES is an automake macro which contains
 # a list of sources needed to compile the library.
