@@ -323,6 +323,14 @@ globus_l_gsc_activate()
 
 static
 void
+globus_l_gsc_pwent_hash_destroy(
+    void *                              arg)
+{
+    /* right now this is just to get around the assertion */
+}
+
+static
+void
 globus_l_gsc_grent_hash_destroy(
     void *                              arg)
 {
@@ -343,7 +351,7 @@ globus_l_gsc_deactivate()
 
     globus_gridftp_server_control_attr_destroy(globus_l_gsc_default_attr);
     globus_hashtable_destroy_all(
-        &globus_l_gsc_pwent_cache, NULL);
+        &globus_l_gsc_pwent_cache, globus_l_gsc_pwent_hash_destroy);
     globus_hashtable_destroy_all(
         &globus_l_gsc_grent_cache, globus_l_gsc_grent_hash_destroy);
 
