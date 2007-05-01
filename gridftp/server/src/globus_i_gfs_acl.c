@@ -291,7 +291,9 @@ globus_gfs_acl_authorized_finished(
     /* if we fail here, cancel rest of acl chain */
     if(result != GLOBUS_SUCCESS)
     {
+  /*
         globus_list_free(acl_handle->current_list);
+  */
     }
 
     globus_callback_register_oneshot(
