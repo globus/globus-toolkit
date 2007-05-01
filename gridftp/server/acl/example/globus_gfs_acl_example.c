@@ -115,8 +115,8 @@ globus_gfs_acl_example_init(
     GlobusGFSName(globus_gfs_acl_example_init);
     GlobusGFSDebugEnter();
 
-    immediate_fail = random() % 2;
-    callback = random() % 2;
+    immediate_fail = (random() % 4 == 0);
+    callback = (random() % 4 > 1);
 
     if(immediate_fail)
     {
@@ -174,31 +174,31 @@ globus_gfs_acl_example_authorize(
 
     state = (globus_gfs_acl_example_state_t *) out_handle;
 
-    immediate_fail = random() % 2;
-    callback = random() % 2;
+    immediate_fail = (random() % 4 == 0);
+    callback = (random() % 4 > 1);
 
     switch(action)
     {
         case GFS_ACL_ACTION_DELETE:
-            care_about_this_action = random() % 2;
+            care_about_this_action = GLOBUS_TRUE;
             break;
         case GFS_ACL_ACTION_WRITE:
-            care_about_this_action = random() % 2;
+            care_about_this_action = GLOBUS_TRUE;
             break;
         case GFS_ACL_ACTION_CREATE:
-            care_about_this_action = random() % 2;
+            care_about_this_action = GLOBUS_TRUE;
             break;
         case GFS_ACL_ACTION_READ:
-            care_about_this_action = random() % 2;
+            care_about_this_action = GLOBUS_TRUE;
             break;
         case GFS_ACL_ACTION_LOOKUP:
-            care_about_this_action = random() % 2;
+            care_about_this_action = GLOBUS_TRUE;
             break;
         case GFS_ACL_ACTION_AUTHZ_ASSERT:
-            care_about_this_action = random() % 2;
+            care_about_this_action = GLOBUS_FALSE;
             break;
         case GFS_ACL_ACTION_COMMIT:
-            care_about_this_action = random() % 2;
+            care_about_this_action = GLOBUS_TRUE;
             break;
         default:
             care_about_this_action = GLOBUS_FALSE;
