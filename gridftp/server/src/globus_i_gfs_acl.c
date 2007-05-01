@@ -60,7 +60,7 @@ globus_l_gfs_acl_next(
                 rc = acl_request->module->authorize_func(
                     acl_request->user_handle,
                     acl_handle->auth_action, 
-                    acl_handle->auth_object,
+                    &acl_handle->auth_object,
                     &acl_handle->acl_info,
                     acl_handle, 
                     out_res);
@@ -91,6 +91,7 @@ globus_l_gfs_acl_kickout(
     if(globus_list_empty(acl_handle->current_list))
     {
         acl_handle->cb(
+            &acl_handle->auth_object,
             acl_handle->auth_action,
             acl_handle->user_arg,
             acl_handle->cached_res);
@@ -101,6 +102,7 @@ globus_l_gfs_acl_kickout(
         if(rc == GLOBUS_GFS_ACL_COMPLETE)
         {
             acl_handle->cb(
+                &acl_handle->auth_object,
                 acl_handle->auth_action,
                 acl_handle->user_arg,
                 acl_handle->cached_res);
@@ -218,14 +220,6 @@ globus_i_gfs_acl_destroy(
         acl_request->module->destroy_func(acl_request->user_handle);
         globus_free(acl_request);
     }
-    if(acl_handle->auth_action != NULL)
-    {
-        globus_free(acl_handle->auth_action);
-    }
-    if(acl_handle->auth_object)
-    {
-        globus_free(acl_handle->auth_object);
-    }
     if(acl_handle->username)
     {
         globus_free(acl_handle->username);
@@ -249,8 +243,8 @@ globus_i_gfs_acl_destroy(
 int
 globus_gfs_acl_authorize(
     struct globus_i_gfs_acl_handle_s *  acl_handle,
-    const char *                        action,
-    const char *                        object,
+    globus_gfs_acl_action_t             action,
+    globus_gfs_acl_object_desc_t *      object,
     globus_result_t *                   out_res,
     globus_gfs_acl_cb_t                 cb,
     void *                              user_arg)
@@ -263,21 +257,13 @@ globus_gfs_acl_authorize(
     acl_handle->cb = cb;
     acl_handle->user_arg = user_arg;
 
-    if(acl_handle->auth_action)
+    acl_handle->auth_action = action;
+    if(acl_handle->auth_object.name != NULL)
     {
-        globus_free(acl_handle->auth_action);
+        globus_free(acl_handle->auth_object.name);
     }
-    acl_handle->auth_action = strdup(action);
-    if(acl_handle->auth_action == NULL)
-    {
-        goto err;
-    }
-    if(acl_handle->auth_object)
-    {
-        globus_free(acl_handle->auth_object);
-    }
-    acl_handle->auth_object = strdup(object);
-    if(acl_handle->auth_object == NULL)
+    acl_handle->auth_object.name = globus_libc_strdup(object->name);
+    if(acl_handle->auth_object.name == NULL)
     {
         goto err;
     }
@@ -314,12 +300,11 @@ globus_gfs_acl_authorized_finished(
 void
 globus_gfs_acl_audit(
     struct globus_i_gfs_acl_handle_s *  acl_handle,
-    const char *                        action,
-    const char *                        object,
+    globus_gfs_acl_action_t             action,
+    globus_gfs_acl_object_desc_t *      object,
     const char *                        message)
 {
     globus_list_t *                     list;
-    int                                 rc;
     globus_l_gfs_acl_request_t *        acl_request;
     GlobusGFSName(globus_gfs_acl_log);
     GlobusGFSDebugEnter();
@@ -355,3 +340,30 @@ globus_gfs_acl_add_module(
 
     GlobusGFSDebugExit();
 }
+
+
+const char * 
+globus_gfs_acl_action_to_string(
+    globus_gfs_acl_action_t             action)
+{
+    switch(action)
+    {
+        case GFS_ACL_ACTION_DELETE:
+            return "delete";
+        case GFS_ACL_ACTION_WRITE:
+            return "write";
+        case GFS_ACL_ACTION_CREATE:
+            return "create";
+        case GFS_ACL_ACTION_READ:
+            return "read";
+        case GFS_ACL_ACTION_LOOKUP:
+            return "lookup";
+        case GFS_ACL_ACTION_AUTHZ_ASSERT:
+            return "authz_assert";
+        case GFS_ACL_ACTION_COMMIT:
+            return "commit";
+        default:
+            return NULL;
+    }
+}
+

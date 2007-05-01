@@ -1252,21 +1252,37 @@ gfs_l_add_acls()
             }
             else
             {
-                rc = globus_extension_activate(name);
-                if(rc != 0)
+                mod = (globus_gfs_acl_module_t *)
+                    globus_extension_lookup(
+                    &ext_handle,
+                    GLOBUS_GFS_ACL_REGISTRY,
+                    (void *) name);
+                if(mod != NULL)
                 {
-                    /* log error */
+                    globus_gfs_acl_add_module(mod);
                 }
                 else
                 {
-                    mod = (globus_gfs_acl_module_t *)
-                        globus_extension_lookup(
-                        &ext_handle,
-                        GLOBUS_GFS_ACL_REGISTRY,
-                        (void *) name);
-                    if(mod != NULL)
+                    char                            buf[256];
+
+                    snprintf(buf, 256, "globus_gridftp_server_acl_%s", name);
+                    buf[255] = 0;
+                    rc = globus_extension_activate(buf);
+                    if(rc != 0)
                     {
-                        globus_gfs_acl_add_module(mod);
+                        /* log error */
+                    }
+                    else
+                    {
+                        mod = (globus_gfs_acl_module_t *)
+                            globus_extension_lookup(
+                            &ext_handle,
+                            GLOBUS_GFS_ACL_REGISTRY,
+                            (void *) name);
+                        if(mod != NULL)
+                        {
+                            globus_gfs_acl_add_module(mod);
+                        }
                     }
                 }
             }

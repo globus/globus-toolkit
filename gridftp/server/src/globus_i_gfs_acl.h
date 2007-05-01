@@ -17,15 +17,6 @@
 #ifndef GLOBUS_I_GFS_ACL_H
 #define GLOBUS_I_GFS_ACL_H
 
-/* define some acl actions */
-#define GFS_ACL_ACTION_DELETE "delete"
-#define GFS_ACL_ACTION_WRITE "write"
-#define GFS_ACL_ACTION_CREATE "create"
-#define GFS_ACL_ACTION_READ "read"
-#define GFS_ACL_ACTION_LOOKUP "lookup"
-#define GFS_ACL_ACTION_AUTHZ_ASSERT "authz_assert"
-
-
 #include <pwd.h>
 #include <sys/types.h>
 #include <grp.h>
@@ -43,7 +34,8 @@ typedef enum globus_l_gfs_acl_type_e
  */
 typedef void
 (*globus_gfs_acl_cb_t)(
-    const char *                        resource_id,
+    globus_gfs_acl_object_desc_t *      object,
+    globus_gfs_acl_action_t             action,
     void *                              user_arg,
     globus_result_t                     result);
 
@@ -51,8 +43,8 @@ typedef void
 int
 globus_gfs_acl_authorize(
     struct globus_i_gfs_acl_handle_s *  acl_handle,
-    const char *                        action,
-    const char *                        object,
+    globus_gfs_acl_action_t             action,
+    globus_gfs_acl_object_desc_t *      object,
     globus_result_t *                   out_res,
     globus_gfs_acl_cb_t                 cb,
     void *                              user_arg);
@@ -76,8 +68,8 @@ globus_i_gfs_acl_destroy(
 void
 globus_gfs_acl_audit(
     struct globus_i_gfs_acl_handle_s *  acl_handle,
-    const char *                        action,
-    const char *                        object,
+    globus_gfs_acl_action_t             action,
+    globus_gfs_acl_object_desc_t *      object,
     const char *                        msg);
 
 typedef struct globus_i_gfs_acl_handle_s
@@ -88,14 +80,14 @@ typedef struct globus_i_gfs_acl_handle_s
     char *                              subject;
     char *                              username;
     char *                              hostname;
-    char *                              auth_action;
-    char *                              auth_object;
     globus_gfs_acl_cb_t                 cb;
     void *                              user_arg;
     globus_list_t *                     module_list;
     globus_list_t *                     current_list;
     globus_result_t                     cached_res;
     gss_ctx_id_t                        context;
+    globus_gfs_acl_action_t             auth_action;
+    globus_gfs_acl_object_desc_t        auth_object;
     globus_gfs_acl_info_t               acl_info;
 } globus_i_gfs_acl_handle_t;
 

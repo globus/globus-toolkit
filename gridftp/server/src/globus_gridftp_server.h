@@ -1599,6 +1599,18 @@ extern globus_gfs_ipc_iface_t  globus_gfs_ipc_default_iface;
 
 typedef struct globus_i_gfs_acl_handle_s * globus_gfs_acl_handle_t;
 
+typedef enum globus_gfs_acl_action_e
+{
+    GFS_ACL_ACTION_INIT = 1,
+    GFS_ACL_ACTION_DELETE,
+    GFS_ACL_ACTION_WRITE,
+    GFS_ACL_ACTION_CREATE,
+    GFS_ACL_ACTION_READ,
+    GFS_ACL_ACTION_LOOKUP,
+    GFS_ACL_ACTION_AUTHZ_ASSERT,
+    GFS_ACL_ACTION_COMMIT
+} globus_gfs_acl_action_t;
+
 typedef struct globus_gfs_acl_info_s
 {
     char *                              hostname;
@@ -1608,6 +1620,12 @@ typedef struct globus_gfs_acl_info_s
     char *                              ipaddr;
     gss_ctx_id_t                        context;
 } globus_gfs_acl_info_t;
+
+typedef struct globus_gfs_acl_object_desc_s
+{
+    char *                              name;
+    globus_off_t                        size;
+} globus_gfs_acl_object_desc_t;
 
 typedef enum globus_gfs_acl_status_e
 {
@@ -1625,8 +1643,8 @@ typedef int
 typedef int
 (*globus_gfs_acl_authorize_t)(
     void *                              out_handle,
-    const char *                        action,
-    const char *                        object,
+    globus_gfs_acl_action_t             action,
+    globus_gfs_acl_object_desc_t *      object,
     globus_gfs_acl_info_t *             acl_info,
     globus_gfs_acl_handle_t             acl_handle,
     globus_result_t *                   out_res);
@@ -1635,11 +1653,11 @@ typedef void
 (*globus_gfs_acl_destroy_t)(
     void *                              out_handle);
 
-typedef int
+typedef void
 (*globus_gfs_acl_audit_t)(
     void *                              out_handle,
-    const char *                        action,
-    const char *                        object,
+    globus_gfs_acl_action_t             action,
+    globus_gfs_acl_object_desc_t *      object,
     const char *                        message);
 
 
@@ -1659,6 +1677,11 @@ globus_gfs_acl_authorized_finished(
 void
 globus_gfs_acl_add_module(
     globus_gfs_acl_module_t *           module);
+    
+const char * 
+globus_gfs_acl_action_to_string(
+    globus_gfs_acl_action_t             action);
+
     
 /* end ACL */
 

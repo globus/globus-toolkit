@@ -618,7 +618,8 @@ globus_l_gfs_blocking_dispatch_kickout(
 static
 void
 globus_l_gfs_authorize_cb(
-    const char *                        resource_id,
+    globus_gfs_acl_object_desc_t *      object,
+    globus_gfs_acl_action_t             action,
     void *                              user_arg,
     globus_result_t                     result)
 {
@@ -698,10 +699,11 @@ globus_l_gfs_data_auth_stat_cb(
 {
     void *                              stat_wrapper;
     globus_result_t                     res;
-    char *                              action;
+    globus_gfs_acl_action_t             action;
     int                                 rc;
     globus_l_gfs_data_operation_t *     op;
     globus_gfs_transfer_info_t *        recv_info;
+    globus_gfs_acl_object_desc_t        object;
     GlobusGFSName(globus_l_gfs_data_auth_stat_cb);
     GlobusGFSDebugEnter();
 
@@ -718,18 +720,18 @@ globus_l_gfs_data_auth_stat_cb(
     {
         action = GFS_ACL_ACTION_WRITE;
     }
-
+    object.name = recv_info->pathname;
     stat_wrapper = op->stat_wrapper;
     rc = globus_gfs_acl_authorize(
         &op->session_handle->acl_handle,
         action,
-        recv_info->pathname,
+        &object,
         &res,
         globus_l_gfs_authorize_cb,
         op);
     if(rc == GLOBUS_GFS_ACL_COMPLETE)
     {
-        globus_l_gfs_authorize_cb(recv_info->pathname, op, res);
+        globus_l_gfs_authorize_cb(&object, action, op, res);
     }
     globus_free(stat_wrapper);
 
@@ -747,6 +749,7 @@ globus_l_gfs_data_send_stat_cb(
     int                                 rc;
     globus_l_gfs_data_operation_t *     op;
     globus_gfs_transfer_info_t *        send_info;
+    globus_gfs_acl_object_desc_t        object;
     GlobusGFSName(globus_l_gfs_data_recv_stat_cb);
     GlobusGFSDebugEnter();
 
@@ -757,17 +760,20 @@ globus_l_gfs_data_send_stat_cb(
         send_info->alloc_size = reply->info.stat.stat_array[0].size;
     }
 
+    object.name = send_info->pathname;
+
     stat_wrapper = op->stat_wrapper;
     rc = globus_gfs_acl_authorize(
         &op->session_handle->acl_handle,
         GFS_ACL_ACTION_READ,
-        send_info->pathname,
+        &object,
         &res,
         globus_l_gfs_authorize_cb,
         op);
     if(rc == GLOBUS_GFS_ACL_COMPLETE)
     {
-        globus_l_gfs_authorize_cb(send_info->pathname, op, res);
+        globus_l_gfs_authorize_cb(
+            &object, GFS_ACL_ACTION_READ, op, res);
     }
     globus_free(stat_wrapper);
 
@@ -904,7 +910,8 @@ type_error:
 static
 void
 globus_l_gfs_data_auth_init_cb(
-    const char *                        resource_id,
+    globus_gfs_acl_object_desc_t *      object,
+    globus_gfs_acl_action_t             action,
     void *                              user_arg,
     globus_result_t                     result)
 {
@@ -1363,7 +1370,7 @@ globus_l_gfs_data_authorize(
     }
     else if(rc == GLOBUS_GFS_ACL_COMPLETE)
     {
-        globus_l_gfs_data_auth_init_cb(NULL, op, res);
+        globus_l_gfs_data_auth_init_cb(NULL, GFS_ACL_ACTION_INIT, op, res);
     }
 
     globus_l_gfs_pw_free(pwent);
@@ -1618,6 +1625,7 @@ globus_i_gfs_data_request_stat(
     globus_l_gfs_data_operation_t *     op;
     globus_result_t                     result;
     globus_l_gfs_data_session_t *       session_handle;
+    globus_gfs_acl_object_desc_t        object;
     GlobusGFSName(globus_i_gfs_data_request_stat);
     GlobusGFSDebugEnter();
 
@@ -1641,6 +1649,9 @@ globus_i_gfs_data_request_stat(
     op->session_handle = session_handle;
     op->info_struct = stat_info;
     op->type = GLOBUS_L_GFS_DATA_INFO_TYPE_STAT;
+
+    object.name = stat_info->pathname;
+    
     if(stat_info->internal)
     {
         res = GLOBUS_SUCCESS;
@@ -1651,7 +1662,7 @@ globus_i_gfs_data_request_stat(
         rc = globus_gfs_acl_authorize(
             &session_handle->acl_handle,
             GFS_ACL_ACTION_LOOKUP,
-            stat_info->pathname,
+            &object,
             &res,
             globus_l_gfs_authorize_cb,
             op);
@@ -1659,14 +1670,16 @@ globus_i_gfs_data_request_stat(
     if(rc == GLOBUS_GFS_ACL_COMPLETE)
     {
         /* this should possibly be a one shot */
-        globus_l_gfs_authorize_cb(stat_info->pathname, op, res);
+        globus_l_gfs_authorize_cb(
+            &object, GFS_ACL_ACTION_LOOKUP, op, res);
     }
 
     GlobusGFSDebugExit();
     return;
 
 error_op:
-    globus_l_gfs_authorize_cb(stat_info->pathname, op, result);
+    globus_l_gfs_authorize_cb(
+        &object, GFS_ACL_ACTION_LOOKUP, op, result);
     GlobusGFSDebugExitWithError();
 }
 
@@ -1748,7 +1761,7 @@ globus_i_gfs_data_request_command(
 {
     globus_result_t                     res;
     int                                 rc;
-    char *                              action;
+    globus_gfs_acl_action_t             action;
     globus_bool_t                       call = GLOBUS_TRUE;
     globus_l_gfs_data_operation_t *     op;
     globus_result_t                     result;
@@ -1756,6 +1769,7 @@ globus_i_gfs_data_request_command(
     globus_gfs_storage_iface_t *        new_dsi;
     globus_l_gfs_data_session_t *       session_handle;
     char *                              dsi_name;
+    globus_gfs_acl_object_desc_t        object;
     GlobusGFSName(globus_i_gfs_data_request_command);
     GlobusGFSDebugEnter();
 
@@ -1778,7 +1792,8 @@ globus_i_gfs_data_request_command(
     op->info_struct = cmd_info;
     op->type = GLOBUS_L_GFS_DATA_INFO_TYPE_COMMAND;
     dsi_name = cmd_info->pathname;
-
+    object.name = op->pathname;
+    
     switch(cmd_info->command)
     {
         case GLOBUS_GFS_CMD_SITE_DSI:
@@ -1850,17 +1865,19 @@ globus_i_gfs_data_request_command(
              * A new action to provide authorization assertions received
              * over the control channel to the authorization callout
              */
+            object.name = cmd_info->authz_assert;
             action = GFS_ACL_ACTION_AUTHZ_ASSERT;
             rc = globus_gfs_acl_authorize(
                 &session_handle->acl_handle,
                 action,
-                cmd_info->authz_assert,
+                &object,
                 &res,
                 globus_l_gfs_authorize_cb,
                 op);
             if(rc == GLOBUS_GFS_ACL_COMPLETE)
             {
-                globus_l_gfs_authorize_cb("authz_assert", op, res);
+                globus_l_gfs_authorize_cb(
+                    &object, action, op, res);
             }
             call = GLOBUS_FALSE;
             break;
@@ -1874,13 +1891,13 @@ globus_i_gfs_data_request_command(
         rc = globus_gfs_acl_authorize(
             &session_handle->acl_handle,
             action,
-            op->pathname,
+            &object,
             &res,
             globus_l_gfs_authorize_cb,
             op);
         if(rc == GLOBUS_GFS_ACL_COMPLETE)
         {
-            globus_l_gfs_authorize_cb(op->pathname, op, res);
+            globus_l_gfs_authorize_cb(&object, action, op, res);
         }
     }
 
@@ -1888,7 +1905,7 @@ globus_i_gfs_data_request_command(
     return;
 
 error_op:
-    globus_l_gfs_authorize_cb(op->pathname, op, result);
+    globus_l_gfs_authorize_cb(&object, action, op, result);
     GlobusGFSDebugExitWithError();
 }
 
@@ -3090,8 +3107,11 @@ globus_i_gfs_data_request_recv(
     }
     else
     {
+        globus_gfs_acl_object_desc_t    object;
+        object.name = recv_info->pathname;
         result = GLOBUS_SUCCESS;
-        globus_l_gfs_authorize_cb(recv_info->pathname, op, result);
+        globus_l_gfs_authorize_cb(
+            &object, GFS_ACL_ACTION_WRITE, op, result);
     }
     GlobusGFSDebugExit();
     return;
@@ -3120,6 +3140,7 @@ globus_i_gfs_data_request_send(
     globus_result_t                     result;
     globus_l_gfs_data_handle_t *        data_handle;
     globus_l_gfs_data_session_t *       session_handle;
+    globus_gfs_acl_object_desc_t        object;
     GlobusGFSName(globus_i_gfs_data_send_request);
     GlobusGFSDebugEnter();
     
@@ -3208,16 +3229,18 @@ globus_i_gfs_data_request_send(
     }
     else
     {
+        object.name = send_info->pathname;
         rc = globus_gfs_acl_authorize(
             &session_handle->acl_handle,
             GFS_ACL_ACTION_READ,
-            send_info->pathname,
+            &object,
             &res,
             globus_l_gfs_authorize_cb,
             op);
         if(rc == GLOBUS_GFS_ACL_COMPLETE)
         {
-            globus_l_gfs_authorize_cb(send_info->pathname, op, res);
+            globus_l_gfs_authorize_cb(
+                &object, GFS_ACL_ACTION_READ, op, res);
         }
     }
     GlobusGFSDebugExit();
@@ -3330,6 +3353,7 @@ globus_i_gfs_data_request_list(
     globus_l_gfs_data_handle_t *        data_handle;
     globus_gfs_stat_info_t *            stat_info;
     globus_l_gfs_data_session_t *       session_handle;
+    globus_gfs_acl_object_desc_t        object;
     GlobusGFSName(globus_i_gfs_data_request_list);
     GlobusGFSDebugEnter();
 
@@ -3388,16 +3412,18 @@ globus_i_gfs_data_request_list(
 
     if(session_handle->dsi->list_func != NULL)
     {
+        object.name = list_info->pathname;
         rc = globus_gfs_acl_authorize(
             &session_handle->acl_handle,
             GFS_ACL_ACTION_LOOKUP,
-            list_info->pathname,
+            &object,
             &res,
             globus_l_gfs_authorize_cb,
             data_op);
         if(rc == GLOBUS_GFS_ACL_COMPLETE)
         {
-            globus_l_gfs_authorize_cb(data_op->pathname, data_op, res);
+            globus_l_gfs_authorize_cb(
+                &object, GFS_ACL_ACTION_LOOKUP, data_op, res);
         }
     }
     else
@@ -4903,7 +4929,8 @@ globus_i_gfs_data_session_start(
         {
             op->session_handle->home_dir = strdup(pwent->pw_dir);
         }
-        globus_l_gfs_data_auth_init_cb(NULL, op, GLOBUS_SUCCESS);
+        globus_l_gfs_data_auth_init_cb(
+            NULL, GFS_ACL_ACTION_INIT, op, GLOBUS_SUCCESS);
     }
 
     GlobusGFSDebugExit();

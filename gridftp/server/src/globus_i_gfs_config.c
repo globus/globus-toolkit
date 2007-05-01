@@ -51,9 +51,6 @@ static globus_mutex_t                   globus_i_gfs_config_mutex;
 
 static const globus_l_gfs_config_option_t option_list[] = 
 { 
- {"acl", "acl", NULL, "acl", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
-    "list of acl modules",
-    NULL, NULL,GLOBUS_FALSE, NULL}, 
 {NULL, "Informational Options", NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL, GLOBUS_FALSE, NULL},
  {"help", "help", NULL, "help", "h", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
     "Show usage information and exit.", NULL, NULL,GLOBUS_FALSE, NULL},
@@ -142,6 +139,9 @@ static const globus_l_gfs_config_option_t option_list[] =
  {"connections_disabled", "connections_disabled", NULL, "connections-disabled", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
     "Disable all new connections.  Does not affect ongoing connections.  This would have be set "
     "in the configuration file and then the server issued a SIGHUP in order to reload that config.", NULL, NULL,GLOBUS_FALSE, NULL},
+ {"acl", "acl", NULL, "acl", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+    "A comma seperated list of ACL modules to load.",
+    NULL, NULL,GLOBUS_FALSE, NULL}, 
 {NULL, "Logging Options", NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL,GLOBUS_FALSE, NULL},
  {"log_level", "log_level", NULL, "log-level", "d", GLOBUS_L_GFS_CONFIG_STRING, 0, "ERROR",
     "Log level. A comma seperated list of levels from: 'ERROR, WARN, INFO, DUMP, ALL'. "
