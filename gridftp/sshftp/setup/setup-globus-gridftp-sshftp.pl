@@ -114,15 +114,21 @@ EOF
 
 ######################################################
 
-umask(077);
+umask(022);
 
 if(defined($opt_server))
 {
-    $target = "/etc/grid-security/sshftp"; 
     if(defined($opt_nonroot))
     {
+        mkdir "$ENV{HOME}/.globus" unless (-d "$ENV{HOME}/.globus");
         $target = "$ENV{HOME}/.globus/sshftp";
     }
+    else
+    {
+        mkdir "/etc/grid-security" unless (-d "/etc/grid-security");
+        $target = "/etc/grid-security/sshftp"; 
+    }
+
     open(FILE, "> $target") ||
         die("Error while trying to open $target. Check your permissions\n");
     print FILE $sshftp;
@@ -132,11 +138,16 @@ if(defined($opt_server))
 }
 else
 {
-    $target = "$globusdir/libexec/gridftp-ssh";
     if(defined($opt_nonroot))
     {
+        mkdir "$ENV{HOME}/.globus" unless (-d "$ENV{HOME}/.globus");
         $target = "$ENV{HOME}/.globus/gridftp-ssh";
     }
+    else
+    {
+        $target = "$globusdir/libexec/gridftp-ssh";
+    }
+
     print <<EOF;
     
 ##############################################################
