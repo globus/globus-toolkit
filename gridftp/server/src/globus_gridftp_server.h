@@ -1594,23 +1594,44 @@ extern globus_gfs_ipc_iface_t  globus_gfs_ipc_default_iface;
 /* ACL interface */
 
 /*
- *  interface implementation functions
+ * interface implementation functions
+ * see the globus_gridftp_server_acl_example package at 
+ * gridftp/server/acl/example for an example implementation.
  */
 
+/* acl handle object.  members are internal use only. */
 typedef struct globus_i_gfs_acl_handle_s * globus_gfs_acl_handle_t;
 
+/* supported actions, all authorization callouts will be of these types.
+ * an authorization callout should return success for any actions that 
+ * are not interesting. */
 typedef enum globus_gfs_acl_action_e
 {
+    /* internal use only */
     GFS_ACL_ACTION_INIT = 1,
+    /* the named object. will be deleted. */
     GFS_ACL_ACTION_DELETE,
+    /* write to an existing object */
     GFS_ACL_ACTION_WRITE,
+    /* create and write to a non-existant object */
     GFS_ACL_ACTION_CREATE,
+    /* read an object */
     GFS_ACL_ACTION_READ,
+    /* query metadata of an object (i.e. list) */
     GFS_ACL_ACTION_LOOKUP,
+    /* speficy an authorization assertion.  client may submit data to 
+     * influence future authorization decisions.  data is in an unspecified
+     * format. */
     GFS_ACL_ACTION_AUTHZ_ASSERT,
-    GFS_ACL_ACTION_COMMIT
+    /* report data safely written to disk.  failure means data written has
+     * overrun acceptable limits. */
+    GFS_ACL_ACTION_COMMIT,
+    /* increase previously requested write limits for an object */
+    GFS_ACL_ACTION_GROW
 } globus_gfs_acl_action_t;
 
+/* user connection descriptor.  this provides info about the user
+ * attempting the connection or action */
 typedef struct globus_gfs_acl_info_s
 {
     char *                              hostname;
@@ -1621,18 +1642,54 @@ typedef struct globus_gfs_acl_info_s
     gss_ctx_id_t                        context;
 } globus_gfs_acl_info_t;
 
+/* object descriptor.  this provides various info about the object of the 
+ * action attempt. */
 typedef struct globus_gfs_acl_object_desc_s
 {
+    /* ALL: name of the object.  commonly a filename. 
+     * value is NULL when not known or not used. */
     char *                              name;
+
+    /* WRITE/CREATE: size being requested to write.
+     * COMMIT: amount of data already written safely.
+     * GROW: new full size being requested to write. 
+     * value is 0 when not known or not used. */
     globus_off_t                        size;
+
+    /* AUTHZ_ASSERT: assertion data from the client. 
+     * value is NULL when not known or not used. */
+    char *                              data;
+ 
+    /* COMMIT: all data has been safely written 
+     * value is FALSE when not known or not used. */
+    globus_bool_t                       final;
+
 } globus_gfs_acl_object_desc_t;
 
+/* return values for authorization functions */
 typedef enum globus_gfs_acl_status_e
 {
+    /* decision is complete */
     GLOBUS_GFS_ACL_COMPLETE = 1,
+    /* decision will be made in a seperate call to 
+    globus_gfs_acl_authorized_finished() */
     GLOBUS_GFS_ACL_WOULD_BLOCK
 } globus_gfs_acl_status_t;
 
+/* initialization callout.  this is ususally necessary.  must be
+ * implemented if:
+ * 1) we need to set up some sort of internal state/handle that can be passed
+ * back to us in all callouts
+ * and/or
+ * 2) we are interested in authorizing the gridftp session based on client
+ * user information.
+ * 
+ * must return GLOBUS_GFS_ACL_COMPLETE or GLOBUS_GFS_ACL_WOULD_BLOCK, and
+ * store GLOBUS_SUCCESS or an error result_t in out_res.  if returning 
+ * GLOBUS_GFS_ACL_WOULD_BLOCK, the result must be returned in a call to 
+ * globus_gfs_acl_authorized_finished().  optionally, a pointer may be stored
+ * in out_handle.  this pointer will then be passed back in later callouts.
+ */
 typedef int
 (*globus_gfs_acl_init_t)(
     void **                             out_handle,
@@ -1640,6 +1697,15 @@ typedef int
     globus_gfs_acl_handle_t             acl_handle,
     globus_result_t *                   out_res);
 
+/* authorization callout.  this is usually necessary.  here we will 
+ * get called to authrorize all actions the client performs.  see the
+ * globus_gfs_acl_action_t declaration for all of the supported actions.
+ * 
+ * must return GLOBUS_GFS_ACL_COMPLETE or GLOBUS_GFS_ACL_WOULD_BLOCK, and
+ * store GLOBUS_SUCCESS or an error result_t in out_res.  If returning 
+ * GLOBUS_GFS_ACL_WOULD_BLOCK, the result must be returned in a call to 
+ * globus_gfs_acl_authorized_finished().
+ */
 typedef int
 (*globus_gfs_acl_authorize_t)(
     void *                              out_handle,
@@ -1649,10 +1715,13 @@ typedef int
     globus_gfs_acl_handle_t             acl_handle,
     globus_result_t *                   out_res);
 
+/* destructor callout. clean up our session state if necessary */
 typedef void
 (*globus_gfs_acl_destroy_t)(
     void *                              out_handle);
 
+/* audit callout.  informational callout only.  implement this if you would
+ * like to be notified of activities, but don't need to allow/deny them. */
 typedef void
 (*globus_gfs_acl_audit_t)(
     void *                              out_handle,
@@ -1660,7 +1729,8 @@ typedef void
     globus_gfs_acl_object_desc_t *      object,
     const char *                        message);
 
-
+/* acl module descriptor.  
+ * Only define the functions you implement, otherwise NULL */
 typedef struct globus_gfs_acl_module_s
 {
     globus_gfs_acl_init_t               init_func;
@@ -1669,15 +1739,16 @@ typedef struct globus_gfs_acl_module_s
     globus_gfs_acl_audit_t              audit_func;
 } globus_gfs_acl_module_t;
 
+/* authorization finalization function.  this must be called when the 
+ * initialization or authorization callouts return GLOBUS_GFS_ACL_WOULD_BLOCK.
+ */ 
 void
 globus_gfs_acl_authorized_finished(
     globus_gfs_acl_handle_t             acl_handle,
     globus_result_t                     result);
 
-void
-globus_gfs_acl_add_module(
-    globus_gfs_acl_module_t *           module);
-    
+/* helper function to get strings from action types. useful for log/error 
+ * messages */
 const char * 
 globus_gfs_acl_action_to_string(
     globus_gfs_acl_action_t             action);

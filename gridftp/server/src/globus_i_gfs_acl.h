@@ -17,10 +17,6 @@
 #ifndef GLOBUS_I_GFS_ACL_H
 #define GLOBUS_I_GFS_ACL_H
 
-#include <pwd.h>
-#include <sys/types.h>
-#include <grp.h>
-
 struct globus_i_gfs_acl_handle_s;
 
 typedef enum globus_l_gfs_acl_type_e
@@ -29,9 +25,6 @@ typedef enum globus_l_gfs_acl_type_e
     GLOBUS_L_GFS_ACL_TYPE_AUTHORIZE
 } globus_i_gfs_acl_type_t;
 
-/*
- *  user functions.  used by control.c or DSI implementation if it choses.
- */
 typedef void
 (*globus_gfs_acl_cb_t)(
     globus_gfs_acl_object_desc_t *      object,
@@ -39,7 +32,10 @@ typedef void
     void *                              user_arg,
     globus_result_t                     result);
 
-
+void
+globus_gfs_acl_add_module(
+    globus_gfs_acl_module_t *           module);
+    
 int
 globus_gfs_acl_authorize(
     struct globus_i_gfs_acl_handle_s *  acl_handle,

@@ -358,6 +358,8 @@ globus_gfs_acl_action_to_string(
 {
     switch(action)
     {
+        case GFS_ACL_ACTION_INIT:
+            return "init";
         case GFS_ACL_ACTION_DELETE:
             return "delete";
         case GFS_ACL_ACTION_WRITE:
@@ -372,6 +374,8 @@ globus_gfs_acl_action_to_string(
             return "authz_assert";
         case GFS_ACL_ACTION_COMMIT:
             return "commit";
+        case GFS_ACL_ACTION_GROW:
+            return "grow";
         default:
             return NULL;
     }
