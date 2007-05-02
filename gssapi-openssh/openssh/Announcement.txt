@@ -6,8 +6,8 @@ For installation instructions, please see:
 
   <http://grid.ncsa.uiuc.edu/ssh/install.html>
 
-We appreciate your feedback and help in testing this version.  Please
-use our bugzilla system to report GSI-OpenSSH bugs:
+We appreciate your feedback and help in testing this version.
+Please use our bugzilla system to report GSI-OpenSSH bugs:
 
   <http://bugzilla.ncsa.uiuc.edu/enter_bug.cgi?product=GSI-enabled%20OpenSSH>
 
@@ -27,14 +27,14 @@ GSI-OpenSSH 3.9 Major changes
 
       * None.
 
-MD5 checksums:
-126f907d2a02954743ff9141712fe812  gsi_openssh-3.8-src.tar.gz
-3a86e18fe34f4239dacd89f02e7bdf0b  gsi_openssh_bundle-3.8-src.tar.gz
-b7d4b30a59282dd81d5e615802b6b293  gsi_openssh_compat-3.8-src.tar.gz
-d2d61e3d8289c17068aab8e0c74253d6  gsi_openssh_setup-3.8-src.tar.gz
-
 SHA1 checksums:
-0ff6e4678532466e858f72f172fe614ec9923e5a  gsi_openssh-3.8-src.tar.gz
-06a045a02236347fb577bac0ec499ee5fccf8bdc  gsi_openssh_bundle-3.8-src.tar.gz
-9aa786ac0f85c2f2dde9cfdc4e49e15c4e9dc33d  gsi_openssh_compat-3.8-src.tar.gz
-9255eb5e90e934339609a69490e8b3685174cf9f  gsi_openssh_setup-3.8-src.tar.gz
+a79e716c0c5eaf8445efc5f091040fbbc0e5ea4f  gsi_openssh-3.9-src.tar.gz
+aa12e6118e92c9501088060d8fec862e1dbe114f  gsi_openssh_bundle-3.9-src.tar.gz
+e6c43cbcf1aa3a0b335c60aac892a778587bc5e5  gsi_openssh_compat-3.9-src.tar.gz
+5fb3bcfcb0829554c961e148cb64a4cece76bc96  gsi_openssh_setup-3.9-src.tar.gz
+
+MD5 checksums:
+62662a6fb1c60f01e70a0ef810b327e5  gsi_openssh-3.9-src.tar.gz
+0478bd00b9679234223f9ef117256c5f  gsi_openssh_bundle-3.9-src.tar.gz
+893557d99ef57d5eefa399e85fd3df5c  gsi_openssh_compat-3.9-src.tar.gz
+58337fe5c4fddb12e015b449f848639e  gsi_openssh_setup-3.9-src.tar.gz
