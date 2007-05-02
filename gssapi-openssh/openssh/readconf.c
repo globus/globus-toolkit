@@ -1,4 +1,4 @@
-/* $OpenBSD: readconf.c,v 1.159 2006/08/03 03:34:42 deraadt Exp $ */
+/* $OpenBSD: readconf.c,v 1.161 2007/01/21 01:45:35 stevesk Exp $ */
 /*
  * Author: Tatu Ylonen <ylo@cs.hut.fi>
  * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
@@ -378,7 +378,7 @@ parse_time:
 		if ((value = convtime(arg)) == -1)
 			fatal("%s line %d: invalid time value.",
 			    filename, linenum);
-		if (*intptr == -1)
+		if (*activep && *intptr == -1)
 			*intptr = value;
 		break;
 
@@ -478,10 +478,21 @@ parse_flag:
 	case oNoneEnabled:
 		intptr = &options->none_enabled;
 		goto parse_flag;
-
+ 
+	/* we check to see if the command comes from the */
+	/* command line or not. If it does then enable it */
+	/* otherwise fail. NONE should never be a default configuration */
 	case oNoneSwitch:
-		intptr = &options->none_switch;
-		goto parse_flag;
+		if(strcmp(filename,"command-line")==0)
+		{		
+		    intptr = &options->none_switch;
+		    goto parse_flag;
+		} else {
+		    error("NoneSwitch is found in %.200s.\nYou may only use this configuration option from the command line", filename);
+		    error("Continuing...");
+		    debug("NoneSwitch directive found in %.200s.", filename);
+		    return 0;
+	        }
 
 	case oHPNDisabled:
 		intptr = &options->hpn_disabled;
@@ -588,7 +599,7 @@ parse_yesnoask:
 			if (*intptr >= SSH_MAX_IDENTITY_FILES)
 				fatal("%.200s line %d: Too many identity files specified (max %d).",
 				    filename, linenum, SSH_MAX_IDENTITY_FILES);
-			charptr =  &options->identity_files[*intptr];
+			charptr = &options->identity_files[*intptr];
 			*charptr = xstrdup(arg);
 			*intptr = *intptr + 1;
 		}
@@ -1254,11 +1265,11 @@ fill_default_options(Options * options)
 	{
 		if (options->hpn_buffer_size == 0)
 		options->hpn_buffer_size = 1;
-		/*limit the buffer to 7MB*/
-			if (options->hpn_buffer_size > 7168)
+		/*limit the buffer to 64MB*/
+			if (options->hpn_buffer_size > 65536)
 		{
-			options->hpn_buffer_size = 7168;
-			debug("User requested buffer larger than 7MB. Request reverted to 7MB");
+			options->hpn_buffer_size = 65536;
+			debug("User requested buffer larger than 64MB. Request reverted to 64MB");
 		}
 		options->hpn_buffer_size *=1024;
 		debug("hpn_buffer_size set to %d", options->hpn_buffer_size);
