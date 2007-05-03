@@ -68,6 +68,7 @@ globus_wuftpd_gridftp_server	gridftp/gsi-wuftpd/source
 globus_gridftp_server_control	gridftp/server-lib/src
 globus_gridftp_server		    gridftp/server/src
 globus_gridftp_sshftp_setup     gridftp/sshftp/setup
+globus_gridftp_server_acl_example     gridftp/server/acl/example
 globus_gridmap_callout_error    gsi/gridmap_callout/error
 globus_gsi_callback		gsi/callback/source
 globus_gsi_cert_utils		gsi/cert_utils/source
