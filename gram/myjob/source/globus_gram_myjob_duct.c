@@ -174,7 +174,10 @@ s_myjob_done ()
 {
   globus_fifo_destroy (&s_incoming_msgs);
 
-  globus_duct_runtime_destroy (&s_duct);
+  if (!s_myjob_alone)
+  {
+      globus_duct_runtime_destroy (&s_duct);
+  }
 
   nexus_mutex_destroy (&s_mutex);
   nexus_cond_destroy (&s_cond);
