@@ -20,6 +20,7 @@ static char usage[] =
 "    -h | --help                     Displays usage\n"
 "    -u | --usage                                  \n"
 "                                                  \n"
+"    -c | --config                   Specifies configuration file to use\n"\
 "    -s | --storage      <directory> Specifies the credential storage directory\n"
 "    -l | --username     <name>      Query by username\n"
 "    -k | --credname     <name>      Query by credential name\n"
@@ -42,6 +43,7 @@ struct option long_options[] =
     {"usage",             no_argument, NULL, 'u'},
     {"username",    required_argument, NULL, 'l'},
     {"credname",    required_argument, NULL, 'k'},
+    {"config",      required_argument, NULL, 'c'},
     {"expiring_in", required_argument, NULL, 'e'},
     {"time_left",   required_argument, NULL, 't'},
     {"storage",	    required_argument, NULL, 's'},
@@ -54,7 +56,7 @@ struct option long_options[] =
     {0, 0, 0, 0}
 };
 
-static char short_options[] = "hul:k:e:t:s:vVriL:U";
+static char short_options[] = "hul:c:k:e:t:s:vVriL:U";
 
 static char version[] =
 BINARY_NAME "version " MYPROXY_VERSION " (" MYPROXY_VERSION_DATE ") "  "\n";
@@ -69,6 +71,7 @@ void do_unlock_creds(myproxy_creds_t *creds);
 struct myproxy_creds cred = {0};
 int remove_creds = 0;
 char *lock_msg = NULL;
+char *config_file = NULL;
 int unlock_creds = 0;
 int invalid_creds = 0;
 int verbose = 0;
@@ -94,6 +97,7 @@ main(int argc, char *argv[])
     if (verbose) myproxy_log_use_stream (stderr);
 
     /* Read server config file for OCSP options, etc. */
+    server_context.config_file = config_file;
     myproxy_server_config_read(&server_context);
 
     numcreds = myproxy_admin_retrieve_all(&cred);
@@ -168,6 +172,8 @@ init_arguments(int argc,
         case 'k':	/* credname */
 	    cred.credname = strdup(optarg);
 	    break;
+    case 'c':
+        config_file = strdup(optarg);
 	case 'e':	/* expiring in <hours> */
 	    cred.end_time = (SECONDS_PER_HOUR * atoi(optarg)) + time(0);
 	    break;
