@@ -1,4 +1,4 @@
-.TH myproxy-admin-query 1 "2006-12-12" "NCSA" "MyProxy"
+.TH myproxy-admin-query 1 "2007-05-04" "NCSA" "MyProxy"
 .SH NAME
 myproxy-admin-query \- query MyProxy repository contents
 .SH SYNOPSIS
@@ -57,6 +57,12 @@ Specifies the location of the credential storage directory.
 The directory must be accessible only by the user running the 
 .B myproxy-server
 process for security reasons.  Default: /var/myproxy or $GLOBUS_LOCATION/var/myproxy
+.TP
+.BI -c " file, " --config " file"
+Specifies the location of the
+.B myproxy-server
+configuration file, for OCSP options.
+Default: /etc/myproxy-server.config or $GLOBUS_LOCATION/etc/myproxy-server.config
 .TP
 .B -r, --remove
 Remove the credentials matching the query from the repository.

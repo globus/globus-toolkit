@@ -7,6 +7,7 @@ Version History
 v3.9 XX Xxx 2007
   - add --voms options to myproxy-init and myproxy-logon to add VOMS
     attributes, analogous to voms-proxy-init -voms
+  - add myproxy-admin-query --config option
 
 v3.8 13 Apr 2007
   - fix myproxy-replicate errors for credentials with usernames or
