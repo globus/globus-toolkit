@@ -112,6 +112,8 @@ globus_proxy_wrapper		gsi/proxy/proxy_utils/wrapper
 globus_rls_client		replica/rls/client
 globus_rls_server		replica/rls/server
 globus_rls_server_setup		replica/rls/setup
+globus_rls_client_java		replica/rls/client/java/source
+globus_rls_test		replica/rls/test/unit
 globus_rsl			gram/rsl/source
 globus_rsl_assist		gram/rsl_assist/source
 globus_sasl_gssapi_gsi		gsi/sasl/gssplugins
