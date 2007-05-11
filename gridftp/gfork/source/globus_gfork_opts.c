@@ -61,18 +61,63 @@ error_format:
 
 static
 globus_result_t
-gfork_l_opts_plugin(
+gfork_l_opts_master_uid(
+    globus_options_handle_t             opts_handle,
+    char *                              cmd,
+    char **                             opt,
+    void *                              arg,
+    int *                               out_parms_used)
+{   
+    int                                 sc;
+    int                                 mu;
+    gfork_i_options_t *                 gfork_h;
+
+    gfork_h = (gfork_i_options_t *) arg;
+    
+    sc = sscanf(opt[0], "%d", &mu);
+    if(sc != 1)
+    {
+        goto error_format;
+    }
+
+    gfork_h->master_user = mu;
+    
+    *out_parms_used = 1;
+    return GLOBUS_SUCCESS;
+
+error_format:
+    *out_parms_used = 0;
+
+    return 0x1;
+}
+
+
+static
+globus_result_t
+gfork_l_opts_master(
     globus_options_handle_t             opts_handle,
     char *                              cmd,
     char **                             opt,
     void *                              arg,
     int *                               out_parms_used)
 {
+    int                                 i;
     gfork_i_options_t *                 gfork_h;
+    globus_list_t *                     list = NULL;
 
     gfork_h = (gfork_i_options_t *) arg;
 
-    gfork_h->plugin_name = opt[0];
+    list = globus_list_from_string(opt[0], ' ', NULL);
+
+    i = globus_list_size(list);
+    gfork_h->master_program = (char **) globus_calloc(i+1, sizeof(char *));
+
+    i--;
+    while(i >= 0)
+    {
+        gfork_h->master_program[i] = (char *) globus_list_remove(&list, list);
+        i--;
+    }
 
     *out_parms_used = 1;
     return GLOBUS_SUCCESS;
@@ -138,9 +183,12 @@ globus_options_entry_t                   gfork_l_opts_table[] =
     {"executable", "e", NULL, "<program name>",
         "The port number for the TCP listener",
         1, gfork_l_opts_exe},
-    {"plugin", "P", NULL, "<plugin name>",
-        "The name of the plugin",
-        1, gfork_l_opts_plugin},
+    {"master-uid", "M", NULL, "<uid>",
+        "The uid under which the master program will be run",
+        1, gfork_l_opts_master_uid},
+    {"master", "m", NULL, "<master program name>",
+        "The name of the master program",
+        1, gfork_l_opts_master},
     {"version", "v", NULL, NULL,
         "Print version information.",
         0, gfork_l_opts_version},

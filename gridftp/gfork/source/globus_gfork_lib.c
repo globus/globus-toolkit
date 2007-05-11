@@ -10,7 +10,6 @@ globus_xio_driver_t                     gfork_i_tcp_driver;
 globus_xio_stack_t                      gfork_i_file_stack;
 globus_xio_attr_t                       gfork_i_file_attr;
 globus_xio_driver_t                     gfork_i_file_driver;
-globus_extension_registry_t             gfork_i_plugin_registry;
 
 static globus_bool_t                    gfork_l_globals_set = GLOBUS_FALSE;
 static int                              gfork_l_read_fd = -1;

@@ -76,7 +76,31 @@ enum
     GLOBUS_GFORK_ERROR_STR
 };
 
-typedef enum gfork_i_state_s
+typedef enum gfork_i_msg_type_e
+{
+    GLOBUS_GFORK_MSG_OPEN = 'O',
+    GLOBUS_GFORK_MSG_CLOSE = 'C',
+    GLOBUS_GFORK_MSG_DATA = 'D'
+} gfork_i_msg_type_t;
+
+typedef struct gfork_i_msg_header_s
+{
+    uint64_t                size;
+    pid_t                   from_pid;
+    pid_t                   to_pid;
+    gfork_i_msg_type_t      type;
+} gfork_i_msg_header_t;
+
+typedef struct gfork_i_msg_s
+{
+    gfork_i_msg_header_t                header;
+    struct gfork_i_child_handle_s *     kid;
+    int                                 ref;
+    globus_xio_iovec_t                  iov[2];
+    globus_byte_t *                     data;
+} gfork_i_msg_t;
+
+typedef enum gfork_i_state_e
 {
     GFORK_STATE_NONE = 0,
     GFORK_STATE_OPENING,
@@ -102,7 +126,8 @@ typedef struct gfork_i_options_s
     globus_xio_server_t                 tcp_server;
     int                                 port;
     globus_gfork_module_t *             module;
-    char *                              plugin_name;
+    char **                             master_program;
+    uid_t                               master_user;
     char **                             argv;
     int                                 argc;
     void *                              user_arg;
@@ -119,6 +144,11 @@ typedef struct gfork_i_child_handle_s
     gfork_i_options_t *                 whos_my_daddy;
     void *                              user_arg;
     gfork_i_state_t                     state;
+    globus_bool_t                       dead;
+    gfork_i_msg_header_t                header;
+    globus_fifo_t                       write_q;
+    globus_bool_t                       writting;
+    globus_bool_t                       master;
 } gfork_i_child_handle_t;
 
 globus_result_t

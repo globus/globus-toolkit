@@ -93,7 +93,6 @@ globus_gfork_child_get_xio(
     globus_xio_handle_t *               read_xio_handle,
     globus_xio_handle_t *               write_xio_handle);
 
-extern globus_extension_registry_t      gfork_i_plugin_registry;
 extern globus_module_descriptor_t       globus_i_gfork_parent_module;
 #define GLOBUS_GFORK_PARENT_MODULE &globus_i_gfork_parent_module
 extern globus_module_descriptor_t       globus_i_gfork_child_module;
