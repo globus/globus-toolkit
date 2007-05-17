@@ -102,6 +102,13 @@ GSS_CALLCONV gss_import_sec_context(
         &once_control,
         globus_l_gsi_gssapi_activate_once);
 
+    globus_mutex_lock(&globus_i_gssapi_activate_mutex);
+    if (!globus_i_gssapi_active)
+    {
+        globus_module_activate(GLOBUS_GSI_GSSAPI_MODULE);
+    }
+    globus_mutex_unlock(&globus_i_gssapi_activate_mutex);
+    
     if (interprocess_token == NULL || 
         interprocess_token == GSS_C_NO_BUFFER || 
         context_handle_P == NULL)

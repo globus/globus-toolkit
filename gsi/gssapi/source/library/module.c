@@ -75,8 +75,8 @@ globus_module_descriptor_t		globus_i_gsi_gssapi_module =
  */
 
 globus_thread_once_t                once_control = GLOBUS_THREAD_ONCE_INIT;
-
-static int                          active = 0;
+globus_mutex_t                      globus_i_gssapi_activate_mutex;
+globus_bool_t                       globus_i_gssapi_active = GLOBUS_FALSE;
 
 /**
  * Module activation
@@ -90,60 +90,57 @@ globus_l_gsi_gssapi_activate(void)
     static char *                       _function_name_ =
         "globus_l_gsi_gssapi_activate";
 
-    if(!active)
+    tmp_string = globus_module_getenv("GLOBUS_GSSAPI_DEBUG_LEVEL");
+    if(tmp_string != GLOBUS_NULL)
     {
-        tmp_string = globus_module_getenv("GLOBUS_GSSAPI_DEBUG_LEVEL");
-        if(tmp_string != GLOBUS_NULL)
+        globus_i_gsi_gssapi_debug_level = atoi(tmp_string);
+    
+        if(globus_i_gsi_gssapi_debug_level < 0)
         {
-            globus_i_gsi_gssapi_debug_level = atoi(tmp_string);
-        
-            if(globus_i_gsi_gssapi_debug_level < 0)
-            {
-                globus_i_gsi_gssapi_debug_level = 0;
-            }
+            globus_i_gsi_gssapi_debug_level = 0;
         }
-
-        tmp_string = globus_module_getenv("GLOBUS_GSSAPI_DEBUG_FILE");
-        if(tmp_string != GLOBUS_NULL)
-        {
-            globus_i_gsi_gssapi_debug_fstream = fopen(tmp_string, "a");
-            if(!globus_i_gsi_gssapi_debug_fstream)
-            {
-                result = (int) GLOBUS_FAILURE;
-                goto exit;
-            }
-        }
-        else
-        {
-            globus_i_gsi_gssapi_debug_fstream = stderr;
-            if(!globus_i_gsi_gssapi_debug_fstream)
-            {
-                result = (int) GLOBUS_FAILURE;
-                goto exit;
-            }
-        }
-
-        tmp_string = globus_module_getenv("GLOBUS_GSSAPI_FORCE_TLS");
-        if(tmp_string != GLOBUS_NULL)
-        {
-            globus_i_gsi_gssapi_force_tls = 1;
-        }
-        else
-        {
-            globus_i_gsi_gssapi_force_tls = 0;
-        }
-
-        GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
-
-        globus_module_activate(GLOBUS_COMMON_MODULE);
-        globus_module_activate(GLOBUS_OPENSSL_MODULE);
-	globus_module_activate(GLOBUS_GSI_PROXY_MODULE);
-        globus_module_activate(GLOBUS_GSI_CALLBACK_MODULE);
-
-        GLOBUS_I_GSI_GSSAPI_INTERNAL_DEBUG_EXIT;
-
-        active = 1;
     }
+
+    tmp_string = globus_module_getenv("GLOBUS_GSSAPI_DEBUG_FILE");
+    if(tmp_string != GLOBUS_NULL)
+    {
+        globus_i_gsi_gssapi_debug_fstream = fopen(tmp_string, "a");
+        if(!globus_i_gsi_gssapi_debug_fstream)
+        {
+            result = (int) GLOBUS_FAILURE;
+            goto exit;
+        }
+    }
+    else
+    {
+        globus_i_gsi_gssapi_debug_fstream = stderr;
+        if(!globus_i_gsi_gssapi_debug_fstream)
+        {
+            result = (int) GLOBUS_FAILURE;
+            goto exit;
+        }
+    }
+
+    tmp_string = globus_module_getenv("GLOBUS_GSSAPI_FORCE_TLS");
+    if(tmp_string != GLOBUS_NULL)
+    {
+        globus_i_gsi_gssapi_force_tls = 1;
+    }
+    else
+    {
+        globus_i_gsi_gssapi_force_tls = 0;
+    }
+
+    GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
+
+    globus_module_activate(GLOBUS_COMMON_MODULE);
+    globus_module_activate(GLOBUS_OPENSSL_MODULE);
+    globus_module_activate(GLOBUS_GSI_PROXY_MODULE);
+    globus_module_activate(GLOBUS_GSI_CALLBACK_MODULE);
+
+    GLOBUS_I_GSI_GSSAPI_INTERNAL_DEBUG_EXIT;
+
+    globus_i_gssapi_active = GLOBUS_TRUE;
 
  exit:
     return result;
@@ -167,8 +164,7 @@ globus_l_gsi_gssapi_deactivate(void)
     globus_module_deactivate(GLOBUS_GSI_PROXY_MODULE);
     globus_module_deactivate(GLOBUS_OPENSSL_MODULE);
     globus_module_deactivate(GLOBUS_COMMON_MODULE);
-    active = 0;
-
+    globus_i_gssapi_active = GLOBUS_FALSE;
     GLOBUS_I_GSI_GSSAPI_INTERNAL_DEBUG_EXIT;
 
     return GLOBUS_SUCCESS;
@@ -178,7 +174,7 @@ globus_l_gsi_gssapi_deactivate(void)
 void
 globus_l_gsi_gssapi_activate_once(void)
 {
-    globus_module_activate(GLOBUS_GSI_GSSAPI_MODULE);
+    globus_mutex_init(&globus_i_gssapi_activate_mutex, NULL);
 }
 
 #endif

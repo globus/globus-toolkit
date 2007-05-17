@@ -107,6 +107,13 @@ GSS_CALLCONV gss_accept_sec_context(
     globus_thread_once(
         &once_control,
         globus_l_gsi_gssapi_activate_once);
+
+    globus_mutex_lock(&globus_i_gssapi_activate_mutex);
+    if (!globus_i_gssapi_active)
+    {
+        globus_module_activate(GLOBUS_GSI_GSSAPI_MODULE);
+    }
+    globus_mutex_unlock(&globus_i_gssapi_activate_mutex);
     
     if (context == (gss_ctx_id_t) GSS_C_NO_CONTEXT ||
         !(context->ctx_flags & GSS_I_CTX_INITIALIZED))

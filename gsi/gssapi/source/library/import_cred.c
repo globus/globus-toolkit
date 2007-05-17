@@ -103,6 +103,13 @@ GSS_CALLCONV gss_import_cred(
         &once_control,
         globus_l_gsi_gssapi_activate_once);
     
+    globus_mutex_lock(&globus_i_gssapi_activate_mutex);
+    if (!globus_i_gssapi_active)
+    {
+        globus_module_activate(GLOBUS_GSI_GSSAPI_MODULE);
+    }
+    globus_mutex_unlock(&globus_i_gssapi_activate_mutex);
+    
     *minor_status = (OM_uint32) GLOBUS_SUCCESS;
 
     if (import_buffer == NULL ||
