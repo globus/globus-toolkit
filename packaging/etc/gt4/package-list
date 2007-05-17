@@ -69,6 +69,7 @@ globus_wsrf_mds_archive                     ws-mds/archive/source
 globus_wsrf_mds_archive_schema              ws-mds/archive/schema
 globus_wsrf_mds_archive_test                ws-mds/archive/test
 globus_wsrf_mds_ganglia                     ws-mds/ganglia/source
+globus_wsrf_mds_nagios                      ws-mds/nagios/source
 globus_wsrf_mds_usefulrp                    ws-mds/usefulrp/source
 globus_wsrf_mds_usefulrp_schema             ws-mds/usefulrp/schema
 globus_wsrf_mds_hawkeye                     ws-mds/hawkeye/source
