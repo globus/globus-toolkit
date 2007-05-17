@@ -127,6 +127,18 @@ Set the path to the X.509 trusted certificate directory on the job execution
 hosts. If not present, then the trusted certificate directory
 used by the job manager (usually set by the Gatekeeper) will be used
 
+@par -duct disable | without-gsi
+Control the use of Duct and Nexus within the job manager and job environment.
+If <b>-duct disable</b> is present in the job manager configuration, the job
+manager will not activate the Globus Duct module. If Duct is disabled, the
+job manager can not run MPICH-G jobs.  When enabled (the default) the job
+manager listens on two TCP ports for duct-related communications. If <b>-duct
+without-gsi</b> is present in the job manager configuration, the job manager
+and the job itself operate in a mode compatible with Nexus 6.6 and prior.  This
+compatibility mode uses insecure protocols and is susceptible to remote DoS
+attacks. This should only be used if it is necessary to run jobs across sites
+which use the older protocol.<b>[Globus Toolkit 4.0.5 and later]</b> 
+
 @para -seg-module MODULE
 Use the named module as a way to interact with the scheduler instead of polling
 for job status. 

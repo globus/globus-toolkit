@@ -89,6 +89,11 @@ main(
     int	                                debugging_without_client = 0;
     globus_reltime_t			delay;
 
+    if ((sleeptime_str = globus_libc_getenv("GLOBUS_JOB_MANAGER_SLEEP")))
+    {
+	sleeptime = atoi(sleeptime_str);
+	sleep(sleeptime);
+    }
     /*
      * Stdin and stdout point at socket to client
      * Make sure no buffering.
@@ -166,10 +171,6 @@ main(
     {
         exit(1);
     }
-
-    globus_nexus_enable_fault_tolerance(
-        globus_l_jobmanager_fault_callback,
-        GLOBUS_NULL);
 
     if (globus_gram_job_manager_request_init(&request) != GLOBUS_SUCCESS)
     {
@@ -388,6 +389,24 @@ main(
         {
             request->globus_version = argv[++i];
         }
+        else if (strcmp(argv[i], "-duct") == 0
+                && (i + 1 < argc))
+        {
+            if (strcmp(argv[i+1], "disable") == 0)
+            {
+                request->disable_duct = GLOBUS_TRUE;
+            }
+            else if (strcmp(argv[i+1], "without-gsi") == 0)
+            {
+                globus_libc_setenv("GLOBUS_NEXUS_NO_GSI", "1", 1);
+            }
+            else
+            {
+                fprintf(stderr, "Warning: Ignoring unknown argument %s %s\n\n",
+                        argv[i], argv[i+1]);
+            }
+            i++;
+        }
         else if ((strcasecmp(argv[i], "-help" ) == 0) ||
                  (strcasecmp(argv[i], "--help") == 0))
         {
@@ -426,6 +445,7 @@ main(
 		    "\t-globus-org-dn DN\n"
 		    "\t-machine-type TYPE\n"
                     "\t-extra-envvars VAR1,VAR2,...\n"
+                    "\t-duct [ disable | without-gsi ]\n"
                     "\t-seg-module SEG-MODULE\n"
                     "\t-audit-directory DIRECTORY\n"
                     "\t-globus-toolkit-version VERSION\n"
@@ -445,10 +465,26 @@ main(
                     argv[i]);
         }
     }
-    if ((sleeptime_str = globus_libc_getenv("GLOBUS_JOB_MANAGER_SLEEP")))
+
+    if (request->disable_duct == GLOBUS_FALSE)
     {
-	sleeptime = atoi(sleeptime_str);
-	globus_libc_usleep(sleeptime * 1000 * 1000);
+        rc = globus_module_activate(GLOBUS_DUCT_CONTROL_MODULE);
+        if (rc != GLOBUS_SUCCESS)
+        {
+            fprintf(stderr, "%s activation failed with rc=%d\n",
+                    GLOBUS_DUCT_CONTROL_MODULE->module_name, rc);
+            goto duct_control_failed;
+        }
+        rc = globus_module_activate(GLOBUS_NEXUS_MODULE);
+        if (rc != GLOBUS_SUCCESS)
+        {
+            fprintf(stderr, "nexus module activation failed with rc=%d\n", rc);
+            goto nexus_failed;
+        }
+
+        globus_nexus_enable_fault_tolerance(
+            globus_l_jobmanager_fault_callback,
+            GLOBUS_NULL);
     }
 
     /* Subject name only used for auditing */
@@ -489,6 +525,8 @@ main(
         }
     }
 
+nexus_failed:
+duct_control_failed:
     /*
      * If we ran without a client, display final state and error if applicable
      */
@@ -709,20 +747,6 @@ globus_l_gram_job_manager_activate(void)
 	goto gass_cache_failed;
     }
 
-    rc = globus_module_activate(GLOBUS_DUCT_CONTROL_MODULE);
-    if (rc != GLOBUS_SUCCESS)
-    {
-	fprintf(stderr, "%s activation failed with rc=%d\n",
-		GLOBUS_DUCT_CONTROL_MODULE->module_name, rc);
-	goto duct_control_failed;
-    }
-    rc = globus_module_activate(GLOBUS_NEXUS_MODULE);
-    if (rc != GLOBUS_SUCCESS)
-    {
-	fprintf(stderr, "nexus module activation failed with rc=%d\n", rc);
-	goto nexus_failed;
-    }
-
     rc = globus_module_activate(GLOBUS_GASS_TRANSFER_MODULE);
     if (rc != GLOBUS_SUCCESS)
     {
@@ -739,8 +763,6 @@ globus_l_gram_job_manager_activate(void)
     
 ftp_client_failed:
 gass_transfer_failed:
-nexus_failed:
-duct_control_failed:
 gass_cache_failed:
 gram_protocol_failed:
 io_failed:

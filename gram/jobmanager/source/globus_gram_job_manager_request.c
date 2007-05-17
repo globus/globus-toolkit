@@ -98,6 +98,7 @@ globus_gram_job_manager_request_init(
     globus_cond_init(&r->cond, GLOBUS_NULL);
     r->extra_envvars = GLOBUS_NULL;
     r->response_context = GSS_C_NO_CONTEXT;
+    r->disable_duct = GLOBUS_FALSE;
 
     r->seg_module = NULL;
     r->seg_started = GLOBUS_FALSE;

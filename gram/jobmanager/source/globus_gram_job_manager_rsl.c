@@ -760,7 +760,10 @@ globus_gram_job_manager_rsl_request_fill(
      *
      * (Depends on myjob and count parameters)
      */
-    rc = globus_l_gram_job_manager_setup_duct(request, count, gram_myjob);
+    if (!request->disable_duct)
+    {
+        rc = globus_l_gram_job_manager_setup_duct(request, count, gram_myjob);
+    }
 
     globus_libc_free(gram_myjob);
 
@@ -1043,6 +1046,21 @@ globus_l_gram_job_manager_setup_duct(
     int					rc;
     char *				newval;
 
+    if (globus_libc_getenv("GLOBUS_NEXUS_NO_GSI") != NULL)
+    {
+        rc = globus_gram_job_manager_rsl_env_add(
+            request->rsl,
+            "GLOBUS_NEXUS_NO_GSI",
+            "1");
+
+        if(rc != GLOBUS_SUCCESS)
+        {
+            globus_gram_job_manager_request_log( request,
+                           "JM: duct_control_init_failed: %d\n",
+                           rc);
+            return GLOBUS_GRAM_PROTOCOL_ERROR_DUCT_INIT_FAILED;
+        }
+    }
     duct = globus_libc_malloc(sizeof(globus_duct_control_t));
 
     if(strcmp(myjob, "collective") != 0)

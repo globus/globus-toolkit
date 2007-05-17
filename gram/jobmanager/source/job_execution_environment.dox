@@ -43,6 +43,10 @@ option is present in the job manager configuration file.
 The path to a file containing a URL string of a GASS server which the job
 may access (if the remote_io_url attribute is present).
 
+@par GLOBUS_NEXUS_NO_GSI
+Disables GSI in Nexus's TCP protocol, for compatibility with Nexus 4.6 and
+earlier.
+
 @subsection globus_gram_job_manager_rsl_subs RSL Substitions
 
 In addition to the environment variables described above, a number of RSL
