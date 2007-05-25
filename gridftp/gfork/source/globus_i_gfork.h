@@ -96,7 +96,9 @@ typedef struct gfork_i_msg_s
     gfork_i_msg_header_t                header;
     struct gfork_i_child_handle_s *     kid;
     int                                 ref;
+    void *                              user_arg;
     globus_xio_iovec_t                  iov[2];
+    globus_xio_data_callback_t          client_cb;
     globus_byte_t *                     data;
 } gfork_i_msg_t;
 
@@ -125,7 +127,6 @@ typedef struct gfork_i_options_s
 {
     globus_xio_server_t                 tcp_server;
     int                                 port;
-    globus_gfork_module_t *             module;
     char **                             master_program;
     uid_t                               master_user;
     char **                             argv;
@@ -145,7 +146,6 @@ typedef struct gfork_i_child_handle_s
     void *                              user_arg;
     gfork_i_state_t                     state;
     globus_bool_t                       dead;
-    gfork_i_msg_header_t                header;
     globus_fifo_t                       write_q;
     globus_bool_t                       writting;
     globus_bool_t                       master;

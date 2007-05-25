@@ -2,6 +2,8 @@
 
 static gfork_i_state_t **               gfork_l_state_tansitions;
 
+static gfork_i_state_t **               gfork_l_child_state_tansitions;
+
 static char *                           gfork_l_state_names[] =
 {
     "GFORK_STATE_NONE",
@@ -22,6 +24,7 @@ static char *                           gfork_l_event_names[] =
     "GFORK_EVENT_CLOSE_RETURNS",
     "GFORK_EVENT_COUNT"
 };
+
 
 void
 gfork_i_state_init()
