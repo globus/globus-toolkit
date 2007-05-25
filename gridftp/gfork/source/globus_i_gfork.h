@@ -91,15 +91,23 @@ typedef struct gfork_i_msg_header_s
     gfork_i_msg_type_t      type;
 } gfork_i_msg_header_t;
 
+typedef struct gfork_i_msg_data_s
+{
+    int                                 ref;
+    globus_byte_t                       buffer[1];
+} gfork_i_msg_data_t;
+
 typedef struct gfork_i_msg_s
 {
     gfork_i_msg_header_t                header;
-    struct gfork_i_child_handle_s *     kid;
-    int                                 ref;
+    struct gfork_i_child_handle_s *     to_kid;
+    struct gfork_i_child_handle_s *     from_kid;
     void *                              user_arg;
     globus_xio_iovec_t                  iov[2];
     globus_xio_data_callback_t          client_cb;
-    globus_byte_t *                     data;
+    globus_xio_iovec_callback_t         cb;
+    gfork_i_msg_data_t *                data;
+    globus_byte_t *                     buffer;
 } gfork_i_msg_t;
 
 typedef enum gfork_i_state_e

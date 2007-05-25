@@ -145,8 +145,8 @@ gfork_l_child_read_body_cb(
     result = globus_xio_register_read(
         handle->read_xio,
         (globus_byte_t *)&handle->header,
-        sizeof(handle->header),
-        sizeof(handle->header),
+        sizeof(gfork_i_msg_header_t),
+        sizeof(gfork_i_msg_header_t),
         NULL,
         gfork_l_child_read_header_cb,
         handle);
@@ -202,8 +202,8 @@ gfork_l_child_read_header_cb(
                     result = globus_xio_register_read(
                         handle->read_xio,
                         (globus_byte_t *)&handle->header,
-                        sizeof(handle->header),
-                        sizeof(handle->header),
+                        sizeof(gfork_i_msg_header_t),
+                        sizeof(gfork_i_msg_header_t),
                         NULL,
                         gfork_l_child_read_header_cb,
                         handle);
@@ -512,8 +512,11 @@ gfork_l_client_writev_cb(
     msg = (gfork_i_msg_t *) user_arg;
 
     /* lazy reuse of XIO callback.  perhaps we should define our own */
-    msg->client_cb(NULL, result, msg->data, msg->iov[1].iov_len,
-        nbytes, data_desc, msg->user_arg);
+    if(msg->client_cb)
+    {
+        msg->client_cb(NULL, result, msg->buffer, msg->iov[1].iov_len,
+            nbytes, data_desc, msg->user_arg);
+    }
 
     globus_free(msg);
 }
@@ -539,7 +542,7 @@ globus_l_gfork_send(
     msg->header.type = GLOBUS_GFORK_MSG_DATA;
 
     msg->user_arg = user_arg;
-    msg->data = data;
+    msg->buffer = data;
 
     msg->iov[0].iov_base = &msg->header;
     msg->iov[0].iov_len = sizeof(gfork_i_msg_header_t);

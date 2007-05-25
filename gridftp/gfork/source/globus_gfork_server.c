@@ -46,8 +46,7 @@ gfork_new_child(
 static
 void
 gfork_l_write(
-    gfork_i_child_handle_t *            to_kid,
-    globus_xio_iovec_callback_t         write_cb);
+    gfork_i_child_handle_t *            to_kid);
 
 void
 gfork_log(
@@ -115,6 +114,7 @@ gfork_l_kid_read_close_cb(
         {
             kill(kid_handle->pid, SIGKILL);
         }
+        globus_fifo_destroy(&kid_handle->write_q);
         globus_free(kid_handle);
 
         globus_cond_signal(&gfork_l_cond);
@@ -162,10 +162,11 @@ gfork_l_write_open_cb(
     gfork_i_msg_t *                     msg;
 
     msg = (gfork_i_msg_t *) user_arg;
-    kid_handle = msg->kid;
+    kid_handle = msg->to_kid;
 
     globus_mutex_lock(&gfork_l_mutex);
     {
+        kid_handle->writting = GLOBUS_FALSE;
         if(result != GLOBUS_SUCCESS)
         {
             goto error_param;
@@ -177,7 +178,7 @@ gfork_l_write_open_cb(
 
         /* reuse the msg */
         memset(msg, '\0', sizeof(gfork_i_msg_t));
-        msg->kid = kid_handle;
+        msg->from_kid = kid_handle;
         result = globus_xio_register_read(
             kid_handle->read_xio_handle,
             (globus_byte_t *)&msg->header,
@@ -190,6 +191,7 @@ gfork_l_write_open_cb(
         {
             goto error_post;
         }
+        gfork_l_write(kid_handle);
     }
     globus_mutex_unlock(&gfork_l_mutex);
 
@@ -214,10 +216,11 @@ gfork_i_write_open(
     msg->header.from_pid = kid_handle->pid;
     msg->header.to_pid = gfork_l_master_child_handle->pid;
     msg->header.size = 0;
+    msg->from_kid = kid_handle;
+    msg->cb = gfork_l_write_open_cb;
 
-    msg->ref++;
     globus_fifo_enqueue(&gfork_l_master_child_handle->write_q, msg);
-    gfork_l_write(gfork_l_master_child_handle, gfork_l_write_open_cb);
+    gfork_l_write(gfork_l_master_child_handle);
 }
 
 static void
@@ -231,8 +234,23 @@ gfork_l_write_close_cb(
     void *                              user_arg)
 {
     gfork_i_child_handle_t *            kid_handle;
+    gfork_i_msg_t *                     msg;
 
-    kid_handle = (gfork_i_child_handle_t *) user_arg;
+    msg = (gfork_i_msg_t *) user_arg;
+    kid_handle = msg->from_kid;
+
+    globus_mutex_lock(&gfork_l_mutex);
+    {
+        if(gfork_l_master_child_handle)
+        {
+            gfork_l_master_child_handle->writting = GLOBUS_FALSE;
+
+            gfork_l_write(gfork_l_master_child_handle);
+        }
+    }
+    globus_mutex_unlock(&gfork_l_mutex);
+
+    globus_free(msg);
 
     result = globus_xio_register_close(
         kid_handle->write_xio_handle, NULL,
@@ -258,10 +276,11 @@ gfork_i_write_close(
     msg->header.from_pid = kid_handle->pid;
     msg->header.to_pid = gfork_l_master_child_handle->pid;
     msg->header.size = 0;
+    msg->cb = gfork_l_write_close_cb;
+    msg->from_kid = kid_handle;
 
-    msg->ref++;
     globus_fifo_enqueue(&gfork_l_master_child_handle->write_q, msg);
-    gfork_l_write(gfork_l_master_child_handle, gfork_l_write_close_cb);
+    gfork_l_write(gfork_l_master_child_handle);
 }
 
 
@@ -281,6 +300,9 @@ gfork_l_spawn_master()
     gfork_i_msg_t *                     msg;
     GForkFuncName(gfork_l_spawn_master);
 
+    gfork_h = &gfork_l_options;
+    gfork_log(1, "spawn master: %s\n",
+        gfork_h->master_program[0]);
     if(gfork_l_options.master_program == NULL)
     {
         gfork_log(1, "There is no master program.\n");
@@ -317,6 +339,8 @@ gfork_l_spawn_master()
         sprintf(tmp_str, "%d", write_fd);
         globus_libc_setenv(GFORK_CHILD_WRITE_ENV, tmp_str, 1);
 
+        gfork_log(1, "running master program: %s\n",
+            gfork_h->master_program[0]);
         rc = execv(gfork_h->master_program[0], gfork_h->master_program);
 
         /* XXX log error */
@@ -357,7 +381,7 @@ gfork_l_spawn_master()
             (void *)gfork_l_master_child_handle->pid);
 
         msg = (gfork_i_msg_t *) globus_calloc(1, sizeof(gfork_i_msg_t));
-        msg->kid = gfork_l_master_child_handle;
+        msg->from_kid = gfork_l_master_child_handle;
 
         result = globus_xio_register_read(
             gfork_l_master_child_handle->read_xio_handle,
@@ -446,7 +470,7 @@ gfork_l_dead_master(
     globus_result_t                     result;
     gfork_i_child_handle_t *            kid_handle;
 
-    gfork_log(1, "Master is being executed\n");
+    gfork_log(1, "Master is dead\n");
 
     if(gfork_l_master_child_handle == NULL)
     {
@@ -815,6 +839,7 @@ gfork_new_child(
 
     gfork_h = &gfork_l_options;
 
+    gfork_log(1, "starting child %s\n", gfork_h->argv[0]);
     /* set up the state pipe and envs */
     sprintf(tmp_str, "%d", read_fd);
     globus_libc_setenv(GFORK_CHILD_READ_ENV, tmp_str, 1);
@@ -881,10 +906,13 @@ gfork_l_read_body_cb(
     gfork_i_child_handle_t *            to_kid;
     gfork_i_msg_t *                     msg;
     globus_list_t *                     list = NULL;
+    gfork_i_msg_t *                     msg2 = NULL;
 
     /* now we have the message, gotta decide where it goes */
     msg = (gfork_i_msg_t *) user_arg;
+    msg->cb = gfork_l_writev_cb;
 
+    gfork_log(1, "gfork_l_read_body_cb\n");
     globus_mutex_lock(&gfork_l_mutex);
     {
         if(result != GLOBUS_SUCCESS)
@@ -892,7 +920,7 @@ gfork_l_read_body_cb(
             goto error_incoming;
         }
 
-        from_kid = msg->kid;
+        from_kid = msg->from_kid;
 
         if(msg->header.from_pid != from_kid->pid)
         {
@@ -903,31 +931,22 @@ gfork_l_read_body_cb(
         /* if it has a specific to_pid just add it to the guys write queue */
         if(msg->header.to_pid > 0)
         {
+            gfork_log(1, "gfork_l_read_body_cb() specific destination\n");
             to_kid = (gfork_i_child_handle_t *) globus_hashtable_lookup(
                 &gfork_l_pid_table, (void *) msg->header.to_pid);
             if(to_kid == NULL)
             {
                 /* just cleat in up and  repost header */
                 globus_free(msg->data);
-                /* assume a bad message, report header */
-                result = globus_xio_register_read(
-                    handle,
-                    (globus_byte_t *)&msg->header,
-                    sizeof(msg->header),
-                    sizeof(msg->header),
-                    NULL,
-                    gfork_l_read_header_cb,
-                    msg);
-                if(result != GLOBUS_SUCCESS)
-                {
-                    goto error_post;
-                }
             }
             else
             {
-                msg->ref++;
-                globus_fifo_enqueue(&to_kid->write_q, msg);
-                gfork_l_write(to_kid, gfork_l_writev_cb);
+                msg2 = (gfork_i_msg_t *)
+                    globus_malloc(sizeof(gfork_i_msg_t));
+                memcpy(msg2, msg, sizeof(gfork_i_msg_t));
+
+                globus_fifo_enqueue(&to_kid->write_q, msg2);
+                gfork_l_write(to_kid);
             }
         }
         /* if no specific to_pid behavior depends on master status.
@@ -935,6 +954,8 @@ gfork_l_read_body_cb(
              */
         else if(from_kid->master)
         {
+
+            gfork_log(1, "gfork_l_read_body_cb() from master\n");
             /* if master sends a negitive pid we need to broadcast it */
             globus_hashtable_to_list(&gfork_l_pid_table, &list);
 
@@ -943,23 +964,42 @@ gfork_l_read_body_cb(
                 to_kid = (gfork_i_child_handle_t *)
                     globus_list_remove(&list, list);
 
+                gfork_log(1, "gfork_l_read_body_cb() %d\n", to_kid->pid);
                 /* master can exclude a child from broadcast */
                 if(msg->header.to_pid != -to_kid->pid)
                 {
-                    msg->ref++;
-                    globus_fifo_enqueue(&to_kid->write_q, msg);
-                    gfork_l_write(to_kid, gfork_l_writev_cb);
+                    msg2 = (gfork_i_msg_t *)
+                        globus_malloc(sizeof(gfork_i_msg_t));
+                    memcpy(msg2, msg, sizeof(gfork_i_msg_t));
+
+                    globus_fifo_enqueue(&to_kid->write_q, msg2);
+                    gfork_l_write(to_kid);
                 }
             }
         }
         else
         {
+            gfork_log(1, "gfork_l_read_body_cb() from kid\n");
             /* just have 1 message case, forward to the master */
-            msg->ref++;
-            globus_fifo_enqueue(&gfork_l_master_child_handle->write_q, msg);
-            gfork_l_write(gfork_l_master_child_handle, gfork_l_writev_cb);
+            msg2 = (gfork_i_msg_t *) globus_malloc(sizeof(gfork_i_msg_t));
+            memcpy(msg2, msg, sizeof(gfork_i_msg_t));
+
+            globus_fifo_enqueue(&gfork_l_master_child_handle->write_q, msg2);
+            gfork_l_write(gfork_l_master_child_handle);
         }
     
+        result = globus_xio_register_read(
+            handle,
+            (globus_byte_t *)&msg->header,
+            sizeof(gfork_i_msg_header_t),
+            sizeof(gfork_i_msg_header_t),
+            NULL,
+            gfork_l_read_header_cb,
+            msg);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error_post;
+        }
     }
     globus_mutex_unlock(&gfork_l_mutex);
 
@@ -967,6 +1007,8 @@ gfork_l_read_body_cb(
 
 error_post:
 error_incoming:
+    globus_free(msg);
+    gfork_log(1, "gfork_l_read_body_cb() error\n");
     return;
 }
 
@@ -999,8 +1041,8 @@ gfork_l_read_header_cb(
                 result = globus_xio_register_read(
                     handle,
                     (globus_byte_t *)&msg->header,
-                    sizeof(msg->header),
-                    sizeof(msg->header),
+                    sizeof(gfork_i_msg_header_t),
+                    sizeof(gfork_i_msg_header_t),
                     NULL,
                     gfork_l_read_header_cb,
                     msg);
@@ -1011,11 +1053,13 @@ gfork_l_read_header_cb(
             }
             else
             {
-                msg->data = globus_malloc(msg->header.size);
+                msg->data = (gfork_i_msg_data_t *) globus_malloc(
+                    msg->header.size + sizeof(gfork_i_msg_data_t));
+                msg->data->ref = 0;
 
                 result = globus_xio_register_read(
                     handle,
-                    msg->data,
+                    msg->data->buffer,
                     msg->header.size,
                     msg->header.size,
                     NULL,
@@ -1050,6 +1094,7 @@ gfork_l_read_header_cb(
 
 error_incoming:
 error_post:
+    globus_free(msg);
 
     return;
 }
@@ -1073,15 +1118,22 @@ gfork_l_writev_cb(
 
     globus_mutex_lock(&gfork_l_mutex);
     {
-        to_kid = msg->kid;
+        to_kid = msg->to_kid;
         to_kid->writting = GLOBUS_FALSE;
+
+        msg->data->ref--;
+        if(msg->data->ref == 0)
+        {
+            globus_free(msg->data);
+        }
+        globus_free(msg);
 
         if(result != GLOBUS_SUCCESS)
         {
             goto error_incoming;
         }
 
-        gfork_l_write(to_kid, gfork_l_writev_cb);
+        gfork_l_write(to_kid);
     }
     globus_mutex_unlock(&gfork_l_mutex);
 
@@ -1093,8 +1145,7 @@ error_incoming:
 static
 void
 gfork_l_write(
-    gfork_i_child_handle_t *            to_kid,
-    globus_xio_iovec_callback_t         write_cb)
+    gfork_i_child_handle_t *            to_kid)
 {
     gfork_i_msg_t *                     msg;
     globus_result_t                     result;
@@ -1104,12 +1155,14 @@ gfork_l_write(
     {
         msg = (gfork_i_msg_t *) globus_fifo_dequeue(&to_kid->write_q);
 
+        msg->to_kid = to_kid;
         msg->iov[0].iov_base = &msg->header;
         msg->iov[0].iov_len = sizeof(gfork_i_msg_header_t);
         if(msg->header.size > 0)
         {
-            msg->iov[1].iov_base = msg->data;
+            msg->iov[1].iov_base = msg->data->buffer;
             msg->iov[1].iov_len = msg->header.size;
+            msg->data->ref++;
             iovc++;
         }
         result = globus_xio_register_writev(
@@ -1118,13 +1171,15 @@ gfork_l_write(
             iovc,
             msg->header.size + sizeof(gfork_i_msg_header_t),
             NULL,
-            write_cb,
+            msg->cb,
             msg);
+        assert(msg->cb != NULL);
         if(result != GLOBUS_SUCCESS)
         {
             goto error_register;
         }
         to_kid->writting = GLOBUS_TRUE;
+        gfork_log(1, "gfork_l_write() writing to %d\n", to_kid->pid);
     }
 
     return;
