@@ -196,3 +196,4 @@ globus_index_util                           ws-mds/index/c/index_add gpt
 globus_c_wsrf_index_bindings                ws-mds/index/c/bindings  gpt
 globus_wsrf_mds_gkrellm                     ws-mds/gkrellm/source
 globus_wsrf_mds_gkrellm_schema              ws-mds/gkrellm/schema
+globus_rls_client_java			    replica/rls/client/java/source
