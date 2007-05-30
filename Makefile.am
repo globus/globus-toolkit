@@ -64,7 +64,8 @@ Scripts= \
 	myproxy-test \
 	myproxy-replicate \
 	myproxy-test-replicate \
-	myproxy-admin-adduser
+	myproxy-admin-adduser \
+	myproxy-admin-addservice
 
 sbin_SCRIPTS = $(Scripts)
 
