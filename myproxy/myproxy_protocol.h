@@ -316,4 +316,14 @@ int myproxy_handle_authorization(myproxy_socket_attrs_t *attrs,
 				 myproxy_response_t *server_response,
 				 myproxy_request_t *client_request);
 
+/*
+ * myproxy_bootstrap_trust()
+ *
+ * Get server's CA certificate(s) via the SSL handshake and install
+ * them in the trusted certificates directory.
+ * 
+ */
+int myproxy_bootstrap_trust(myproxy_socket_attrs_t *attrs);
+ 
+
 #endif /* __MYPROXY_PROTOCOL_H */
