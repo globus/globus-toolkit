@@ -523,6 +523,19 @@ get_trusted_certs_path()
         return path;
     }
 
+    if (getuid() == 0)
+    {
+        path = strdup("/etc/grid-security/certificates");
+
+        if (path == NULL)
+        {
+            verror_put_errno(errno);
+            verror_put_string("strdup() failed.");
+            return NULL;
+        }
+        return path;
+    }
+
     path = get_home_path();
         
     if (path == NULL)
