@@ -5,6 +5,7 @@ myproxy-logon.1: myproxy-get-delegation.1
 
 
 man_MANS = myproxy-admin-adduser.8 \
+           myproxy-admin-addservice.8 \
            myproxy-admin-change-pass.8 \
            myproxy-admin-load-credential.8 \
            myproxy-admin-query.8 \
