@@ -678,8 +678,8 @@ read_data_file(struct myproxy_creds *creds,
 /*
 ** Check trusted certificates directory, create if needed.
 */
-static int
-check_trusted_certs_dir()
+int
+myproxy_check_trusted_certs_dir()
 {
     char *path = NULL;
     struct stat statbuf;
@@ -1628,7 +1628,7 @@ myproxy_get_certs(const char cert_dir[])
 	}
 	memset(curr, 0, sizeof(myproxy_certs_t));
 	curr->filename = strdup(de->d_name);
-	sprintf(path, "%s/%s", cert_dir, curr->filename);
+	snprintf(path, MAXPATHLEN, "%s/%s", cert_dir, curr->filename);
 	if (buffer_from_file(path, (unsigned char **)&curr->contents,
 			     NULL) < 0) {
 	    goto failure;
@@ -1666,7 +1666,7 @@ myproxy_install_trusted_cert_files(myproxy_certs_t *trusted_certs)
     /* Make writable only by user */
     umask(S_IWGRP|S_IWOTH);
     
-    if (check_trusted_certs_dir() != 0)
+    if (myproxy_check_trusted_certs_dir() != 0)
     {
         goto error;
     }
