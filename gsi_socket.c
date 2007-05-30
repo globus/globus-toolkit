@@ -573,6 +573,16 @@ GSI_SOCKET_set_peer_limited_proxy(GSI_SOCKET *self, int flag)
     return 0;
 }
 
+int
+GSI_SOCKET_context_established(GSI_SOCKET *self)
+{
+    if (self->gss_context == GSS_C_NO_CONTEXT) {
+        return 0;
+    }
+
+    return 1;
+}
+
 /* XXX This routine really needs a complete overhaul */
 int
 GSI_SOCKET_use_creds(GSI_SOCKET *self,
@@ -713,7 +723,7 @@ GSI_SOCKET_authentication_init(GSI_SOCKET *self, char *accepted_peer_names[])
 					   (void *)&self->sock);
 
     if (self->major_status != GSS_S_COMPLETE) {
-	goto error;
+        goto error;
     }
 
     
