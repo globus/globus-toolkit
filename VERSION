@@ -6,7 +6,8 @@ Version History
 ---------------
 v3.9 XX Xxx 2007
   - add --voms options to myproxy-init and myproxy-logon to add VOMS
-    attributes, analogous to voms-proxy-init -voms
+    attributes, analogous to voms-proxy-init -voms; requires
+    voms-proxy-init to be installed and configured
   - add myproxy-admin-query --config option
 
 v3.8 13 Apr 2007
