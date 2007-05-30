@@ -153,6 +153,96 @@ myproxy_check_version_ex(int major, int minor, int micro) {
     return 0;
 }
 
+int
+myproxy_bootstrap_trust(myproxy_socket_attrs_t *attrs)
+{
+    char *cert_dir = NULL;
+    int return_value = -1;
+    BIO *sbio = 0;
+    SSL_CTX *ctx = 0;
+    SSL *ssl = 0;
+    STACK_OF(X509) *sk = 0;
+    int i;
+    char buf[BUFSIZ];
+
+	globus_module_activate(GLOBUS_GSI_PROXY_MODULE);
+	globus_module_activate(GLOBUS_GSI_CREDENTIAL_MODULE);
+	globus_module_activate(GLOBUS_GSI_CERT_UTILS_MODULE);
+
+    /* Make writable only by user */
+    umask(S_IWGRP|S_IWOTH);
+
+    /* create our new trusted certificates directory */
+    if (myproxy_check_trusted_certs_dir() != 0) {
+        goto error;
+    }
+
+    cert_dir = get_trusted_certs_path();
+
+    /* get trust root(s) from the myproxy-server */
+    ctx = SSL_CTX_new(SSLv3_client_method());
+    if (!(sbio = BIO_new_ssl_connect(ctx))) goto error;
+    BIO_get_ssl(sbio, &ssl);
+    BIO_set_conn_hostname(sbio, attrs->pshost);
+    BIO_set_conn_int_port(sbio, &attrs->psport);
+        
+    if (BIO_do_connect(sbio) <= 0) goto error;
+    if (BIO_do_handshake(sbio) <= 0) goto error;
+
+    sk=SSL_get_peer_cert_chain(ssl);
+    for (i=1; i<sk_X509_num(sk); i++) {
+        X509 *x;
+        BIO *certbio, *policybio;
+        unsigned long hash;
+        char path[MAXPATHLEN];
+
+        x = sk_X509_value(sk,i);
+        hash = X509_subject_name_hash(x);
+        snprintf(path, MAXPATHLEN, "%s%08lx.0", cert_dir, hash);
+        certbio = BIO_new_file(path, "w");
+        if (!certbio) {
+            verror_put_string("failed to open %s", path);
+            goto error;
+        }
+        PEM_write_bio_X509(certbio,x);
+        BIO_free(certbio);
+        myproxy_debug("wrote trusted certificate to %s", path);
+        snprintf(path, MAXPATHLEN, "%s%08lx.signing_policy",
+                 cert_dir, hash);
+        policybio = BIO_new_file(path, "w");
+        if (!policybio) {
+            verror_put_string("failed to open %s", path);
+            goto error;
+        }
+        X509_NAME_oneline(X509_get_subject_name(x),buf,sizeof buf);
+        BIO_printf(policybio, "access_id_CA X509 '%s'\npos_rights globus CA:sign\ncond_subjects globus \"*\"\n", buf);
+        BIO_free(policybio);
+        myproxy_debug("wrote trusted certificate policy to %s", path);
+        snprintf(path, MAXPATHLEN, "%s%08lx.r0", cert_dir, hash);
+        if (unlink(path == 0)) {
+            myproxy_debug("unlinked %s", path);
+        } else if (errno != ENOENT) {
+            myproxy_log("failed to unlink %s: %s", path, strerror(errno));
+        }
+    }
+
+    return_value = 0;
+
+ error:
+    if (sbio) {
+        BIO_ssl_shutdown(sbio);
+        BIO_free_all(sbio);
+    }
+    if (cert_dir) free(cert_dir);
+    if (return_value) {
+        ssl_error_to_verror();
+        myproxy_log("trust root bootstrap failed");
+        myproxy_log_verror();
+    }
+
+    return return_value;
+}
+
 int 
 myproxy_init_client(myproxy_socket_attrs_t *attrs) {
     struct sockaddr_in sin;
