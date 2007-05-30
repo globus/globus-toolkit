@@ -123,12 +123,51 @@ main(int argc, char *argv[])
     /* Initialize client arguments and create client request object */
     init_arguments(argc, argv, socket_attrs, client_request);
 
+    /* Bootstrap trusted certificate directory if none exists. */
+    if (client_request->want_trusted_certs) {
+        char *cert_dir = NULL;
+        globus_result_t res;
+
+        globus_module_activate(GLOBUS_GSI_CERT_UTILS_MODULE);
+        res = GLOBUS_GSI_SYSCONFIG_GET_CERT_DIR(&cert_dir);
+        if (res != GLOBUS_SUCCESS) {
+            myproxy_log("Bootstrapping MyProxy server root of trust.");
+            myproxy_bootstrap_trust(socket_attrs);
+        }
+        if (cert_dir) free(cert_dir);
+    }
+
     /* Connect to server. */
     if (myproxy_init_client(socket_attrs) < 0) {
         verror_print_error(stderr);
         goto cleanup;
     }
     
+    /* Attempt anonymous-mode credential retrieval if we don't have a
+       credential. */
+    GSI_SOCKET_allow_anonymous(socket_attrs->gsi_socket, 1);
+
+     /* Authenticate client to server */
+    if (myproxy_authenticate_init(socket_attrs, NULL) < 0) {
+        /* If no -T option, we give up. */
+        if (!client_request->want_trusted_certs) {
+            verror_print_error(stderr);
+            goto cleanup;
+        }
+        /* If -T option, we try to fix the CA certificates. */
+        verror_print_error(stderr);
+        myproxy_log("Re-initializing trust roots and retrying.");
+        myproxy_bootstrap_trust(socket_attrs);
+        if (myproxy_init_client(socket_attrs) < 0) {
+            verror_print_error(stderr);
+            goto cleanup;
+        }
+        if (myproxy_authenticate_init(socket_attrs, NULL) < 0) {
+            verror_print_error(stderr);
+            goto cleanup;
+        }
+    }
+
     if (!outputfile && !no_credentials) {
 	globus_module_activate(GLOBUS_GSI_SYSCONFIG_MODULE);
 	GLOBUS_GSI_SYSCONFIG_GET_PROXY_FILENAME(&outputfile,
