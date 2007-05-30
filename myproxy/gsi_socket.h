@@ -19,6 +19,7 @@ typedef struct _gsi_socket GSI_SOCKET;
 #define GSI_SOCKET_ERROR		-1
 #define GSI_SOCKET_TRUNCATED		-2
 #define GSI_SOCKET_UNAUTHORIZED		-3
+#define GSI_SOCKET_UNTRUSTED        -4
 
 /*
  * GSI_SOCKET_new()
@@ -301,5 +302,15 @@ int GSI_SOCKET_peer_used_limited_proxy(GSI_SOCKET *self);
  *
  */
 int GSI_SOCKET_set_peer_limited_proxy(GSI_SOCKET *self, int flag);
+
+/*
+ * GSI_SOCKET_context_established()
+ *
+ * Returns 1 if the socket's secure context has been established via
+ * GSI_SOCKET_authentication_init() or
+ * GSI_SOCKET_authentication_accept(). Returns 0 otherwise.
+ *
+ */
+int GSI_SOCKET_context_established(GSI_SOCKET *self);
 
 #endif /* !__GSI_SOCKET_H */
