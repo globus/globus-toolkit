@@ -5,6 +5,14 @@ Binary compatibility of the C API is not guaranteed between releases.
 Version History
 ---------------
 v3.9 XX Xxx 2007
+  - update myproxy-logon/myproxy-retrieve -T behavior:
+    - if no certificates directory exists, install the
+      myproxy-server's CA certificate to bootstrap trust
+    - if authentication to the myproxy-server fails, 
+      re-initialize trust roots and retry
+    - if running as root, store trust roots in
+      /etc/grid-security/certificates rather than
+      ~root/.globus/certificates
   - add --voms options to myproxy-init and myproxy-logon to add VOMS
     attributes, analogous to voms-proxy-init -voms; requires
     voms-proxy-init to be installed and configured
