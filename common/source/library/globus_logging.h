@@ -91,5 +91,7 @@ globus_logging_destroy(
 
 extern globus_logging_module_t          globus_logging_stdio_module;
 extern globus_logging_module_t          globus_logging_syslog_module;
+extern globus_logging_module_t          globus_logging_stdio_ng_module;
+extern globus_logging_module_t          globus_logging_syslog_ng_module;
 
 #endif

@@ -383,6 +383,29 @@ globus_logging_stdio_header_func(
     (*len) = snprintf(buf, *len, "[%d] %s :: ", globus_l_logging_pid, str);
 }
 
+void
+globus_logging_ng_header_func(
+    char *                              buf,
+    globus_size_t *                     len)
+{
+    struct timeval                      tv;
+    struct tm                           tm;
+
+    if(gettimeofday(&tv, NULL) == 0)
+    {
+        gmtime_r(&tv.tv_sec, &tm);
+        (*len) = snprintf(buf, *len, "ts=%04d-%02d-%02dT%02d:%02d:%02d.%06dZ id=%d ", 
+            tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, 
+            tm.tm_hour, tm.tm_min, tm.tm_sec , (int) tv.tv_usec, 
+            globus_l_logging_pid);
+    }
+    else
+    {
+        (*len) = snprintf(buf, *len, "ts=0000-00-00T00:00:00.000000Z id=%d ", 
+            globus_l_logging_pid);
+    }
+}
+
 #ifdef HAVE_SYSLOG_H
 void
 globus_logging_syslog_open_func(
@@ -416,6 +439,14 @@ globus_logging_module_t                 globus_logging_stdio_module =
     globus_logging_stdio_header_func
 };
 
+globus_logging_module_t                 globus_logging_stdio_ng_module =
+{
+    NULL,
+    globus_logging_stdio_write_func,
+    NULL,
+    globus_logging_ng_header_func
+};
+
 globus_logging_module_t                 globus_logging_syslog_module =
 {
 #ifdef HAVE_SYSLOG_H
@@ -423,6 +454,21 @@ globus_logging_module_t                 globus_logging_syslog_module =
     globus_logging_syslog_write_func,
     globus_logging_syslog_close_func,
     NULL
+#else
+    NULL,
+    NULL,
+    NULL,
+    NULL
+#endif
+};
+
+globus_logging_module_t                 globus_logging_syslog_ng_module =
+{
+#ifdef HAVE_SYSLOG_H
+    globus_logging_syslog_open_func,
+    globus_logging_syslog_write_func,
+    globus_logging_syslog_close_func,
+    globus_logging_ng_header_func
 #else
     NULL,
     NULL,
