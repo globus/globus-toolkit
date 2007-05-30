@@ -68,8 +68,10 @@ int myproxy_get_delegation(
     GSI_SOCKET_allow_anonymous(socket_attrs->gsi_socket, 1);
 
      /* Authenticate client to server */
+    if (GSI_SOCKET_context_established(socket_attrs->gsi_socket) == 0) {
     if (myproxy_authenticate_init(socket_attrs, NULL) < 0) {
         return(1);
+    }
     }
 
     /* Serialize client request object */
