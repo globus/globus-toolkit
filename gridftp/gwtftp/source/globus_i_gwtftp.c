@@ -715,7 +715,7 @@ gwtftp_i_exec__unix(
     }
 }
 
-uid_t
+int
 gwtftp_i_pass_ok__unix(
     const char *                        username,
     const char *                        pw)
@@ -725,16 +725,30 @@ gwtftp_i_pass_ok__unix(
     FILE *                              pw_fptr;
     uid_t                               uid = -1;
     globus_bool_t                       done = GLOBUS_FALSE;
+    struct passwd                       l_pw;
+    struct passwd *                     l_pw2;
+    char                                pw_buf[256];
+    int                                 rc;
 
     /* WHAT TO DO ABOUT NULL USERNAME */
     if(username == NULL)
     {
-        return -1;
+        rc = globus_libc_getpwuid_r(
+            getuid(),
+            &l_pw,
+            pw_buf,
+            256,
+            &l_pw2);
+        if(rc != 0)
+        {
+            return -1;
+        }
+        username = l_pw.pw_name;
     }
     if(gwtftp_l_pw_file == NULL)
     {
         uid = getuid();
-        return uid;
+        return (int)uid;
     }
     pw_fptr = fopen(gwtftp_l_pw_file, "r");
     if(pw_fptr == NULL)
@@ -764,7 +778,7 @@ gwtftp_i_pass_ok__unix(
     }
     fclose(pw_fptr);
 
-    return uid;
+    return (int)uid;
 }
 
 void
@@ -822,8 +836,8 @@ gwtftp_i_authorized_user(
             g_url.port = 2811;
         }
 
-        uid = gwtftp_i_pass_ok__unix(g_url.user, pass);
-        if(uid < 0)
+        rc = gwtftp_i_pass_ok__unix(g_url.user, pass);
+        if(rc < 0)
         {
             /* if it is bad. 
                 XXX: we can send a nice little message, but just close for now
@@ -832,6 +846,7 @@ gwtftp_i_authorized_user(
         }
         else
         {
+            uid = (uid_t)rc;
             if(gwtftp_l_daemon)
             {
                 gwtftp_i_exec__unix(uid, client_xio, &g_url);
