@@ -3,6 +3,8 @@ include $(top_srcdir)/globus_automake_pre
 myproxy-logon.1: myproxy-get-delegation.1
 	$(LN_S) myproxy-get-delegation.1 myproxy-logon.1
 
+myproxy-admin-addservice.8: myproxy-admin-adduser.8
+	$(LN_S) myproxy-admin-adduser.8 myproxy-admin-addservice.8
 
 man_MANS = myproxy-admin-adduser.8 \
            myproxy-admin-addservice.8 \
