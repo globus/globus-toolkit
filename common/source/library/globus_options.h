@@ -91,6 +91,12 @@ globus_options_file_process(
     globus_options_handle_t             handle,
     char *                              filename);
 
+globus_result_t
+globus_options_xinetd_file_process(
+    globus_options_handle_t             handle,
+    char *                              filename,
+    char *                              service_name);
+
 void
 globus_options_help(
     globus_options_handle_t             handle);
