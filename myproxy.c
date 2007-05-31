@@ -181,6 +181,7 @@ myproxy_bootstrap_trust(myproxy_socket_attrs_t *attrs)
 
     /* get trust root(s) from the myproxy-server */
     ctx = SSL_CTX_new(SSLv3_client_method());
+    SSL_CTX_set_options(ctx, SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS);
     if (!(sbio = BIO_new_ssl_connect(ctx))) goto error;
     BIO_get_ssl(sbio, &ssl);
     BIO_set_conn_hostname(sbio, attrs->pshost);
@@ -188,6 +189,8 @@ myproxy_bootstrap_trust(myproxy_socket_attrs_t *attrs)
         
     if (BIO_do_connect(sbio) <= 0) goto error;
     if (BIO_do_handshake(sbio) <= 0) goto error;
+    BIO_write(sbio, "0", 1);    /* GSI deleg flag */
+    BIO_flush(sbio);
 
     sk=SSL_get_peer_cert_chain(ssl);
     for (i=1; i<sk_X509_num(sk); i++) {
