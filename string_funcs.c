@@ -367,7 +367,7 @@ make_path(char *path)
         if (stat(path, &sb) < 0) {
             if (errno == ENOENT) { /* doesn't exist. create it. */
                 myproxy_debug("Creating directory %s", path);
-                if (mkdir(path, 0700) < 0) {
+                if (mkdir(path, 0755) < 0) {
                     verror_put_errno(errno);
                     verror_put_string("Failed to create directory %s",
                             strerror(errno));
