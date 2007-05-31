@@ -222,7 +222,7 @@ myproxy_bootstrap_trust(myproxy_socket_attrs_t *attrs)
         BIO_free(policybio);
         myproxy_debug("wrote trusted certificate policy to %s", path);
         snprintf(path, MAXPATHLEN, "%s%08lx.r0", cert_dir, hash);
-        if (unlink(path == 0)) {
+        if (unlink(path) == 0) {
             myproxy_debug("unlinked %s", path);
         } else if (errno != ENOENT) {
             myproxy_log("failed to unlink %s: %s", path, strerror(errno));
