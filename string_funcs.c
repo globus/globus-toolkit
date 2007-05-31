@@ -460,6 +460,8 @@ b64_decode(const char *input, char **output)
 #define TRUSTED_CERT_PATH "/.globus/certificates/"
 #define USER_CERT_PATH "/.globus/usercert.pem"
 #define USER_KEY_PATH "/.globus/userkey.pem"
+#define HOST_CERT_PATH "/etc/grid-security/hostcert.pem"
+#define HOST_KEY_PATH "/etc/grid-security/hostkey.pem"
 
 /*
 ** Return the path to the user's home directory.
@@ -525,7 +527,7 @@ get_trusted_certs_path()
 
     if (getuid() == 0)
     {
-        path = strdup("/etc/grid-security/certificates");
+        path = strdup("/etc/grid-security/certificates/");
 
         if (path == NULL)
         {
@@ -626,6 +628,28 @@ get_user_credential_filenames( char **certfile, char **keyfile )
 		free(*keyfile);
 		*keyfile = NULL;
 	    }
+	}
+    }
+
+    return 0;
+}
+
+int
+get_host_credential_filenames( char **certfile, char **keyfile )
+{
+    if (certfile) {
+	*certfile = NULL;
+	if (getenv("X509_USER_CERT")) {
+	    *certfile = strdup(getenv("X509_USER_CERT"));
+	} else {
+	    *certfile = strdup(HOST_CERT_PATH);
+	}
+    }
+    if (keyfile) {
+	if (getenv("X509_USER_KEY")) {
+	    *keyfile = strdup(getenv("X509_USER_KEY"));
+	} else {
+	    *keyfile = strdup(HOST_KEY_PATH);
 	}
     }
 
