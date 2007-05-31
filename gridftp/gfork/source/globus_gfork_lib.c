@@ -4,9 +4,6 @@
 #define GFORK_CHILD_READ_ENV "GFORK_CHILD_READ_ENV"
 #define GFORK_CHILD_WRITE_ENV "GFORK_CHILD_WRITE_ENV"
 
-globus_xio_stack_t                      gfork_i_tcp_stack;
-globus_xio_attr_t                       gfork_i_tcp_attr;
-globus_xio_driver_t                     gfork_i_tcp_driver;
 globus_xio_stack_t                      gfork_i_file_stack;
 globus_xio_attr_t                       gfork_i_file_attr;
 globus_xio_driver_t                     gfork_i_file_driver;
@@ -606,34 +603,6 @@ gfork_l_activate()
 
         gfork_i_state_init();
 
-        res = globus_xio_stack_init(&gfork_i_tcp_stack, NULL);
-        if(res != GLOBUS_SUCCESS)
-        {
-            goto error_tcp_stack;
-        }
-        res = globus_xio_driver_load("tcp", &gfork_i_tcp_driver);
-        if(res != GLOBUS_SUCCESS)
-        {
-            goto error_tcp_driver;
-        }
-        res = globus_xio_stack_push_driver(
-            gfork_i_tcp_stack, gfork_i_tcp_driver);
-        if(res != GLOBUS_SUCCESS)
-        {
-            goto error_tcp_push;
-        }
-        globus_xio_attr_init(&gfork_i_tcp_attr);
-        res = globus_xio_attr_cntl(
-            gfork_i_tcp_attr,
-            gfork_i_tcp_driver,
-            GLOBUS_XIO_TCP_SET_REUSEADDR,
-            GLOBUS_TRUE);
-        if(res != GLOBUS_SUCCESS)
-        {
-            goto error_tcp_attr;
-        }
-        /* set whatever other default attrs */
-
         res = globus_xio_stack_init(&gfork_i_file_stack, NULL);
         if(res != GLOBUS_SUCCESS)
         {
@@ -661,13 +630,6 @@ error_file_push:
 error_file_driver:
     globus_xio_stack_destroy(gfork_i_file_stack);
 error_file_stack:
-error_tcp_attr:
-    globus_xio_attr_destroy(gfork_i_tcp_attr);
-error_tcp_push:
-    globus_xio_driver_unload(gfork_i_tcp_driver);
-error_tcp_driver:
-    globus_xio_stack_destroy(gfork_i_tcp_stack);
-error_tcp_stack:
     globus_module_deactivate(GLOBUS_XIO_MODULE);
 error_activate:
     return 1;
@@ -711,10 +673,6 @@ error_activate:
 static int
 gfork_l_deactivate()
 {
-    globus_xio_stack_destroy(gfork_i_tcp_stack);
-    globus_xio_driver_unload(gfork_i_tcp_driver);
-    globus_xio_attr_destroy(gfork_i_tcp_attr);
-
     gfork_l_globals_set = GLOBUS_FALSE;
 
     globus_module_deactivate(GLOBUS_XIO_MODULE);

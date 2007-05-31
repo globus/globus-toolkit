@@ -133,15 +133,34 @@ typedef enum gfork_i_events_s
 
 typedef struct gfork_i_options_s
 {
-    globus_xio_server_t                 tcp_server;
+    char *                              id;
+    globus_list_t *                     protocol_list;
+    char *                              server;
+    globus_list_t *                     server_arg_list;
     int                                 port;
-    char **                             master_program;
+    int                                 instances;
+    int                                 nice;
+    char *                              interface;
+    globus_list_t *                     env_list;
     uid_t                               master_user;
-    char **                             argv;
-    int                                 argc;
+    char *                              master;
+    globus_list_t *                     master_arg_list;
     void *                              user_arg;
     globus_bool_t                       quiet;
+    char *                              conf_file;
 } gfork_i_options_t;
+
+typedef struct gfork_i_handle_s
+{
+    globus_xio_stack_t                  stack;
+    char **                             server_argv;
+    char **                             master_argv;
+    char **                             env_argv;
+    globus_list_t *                     loaded_drivers;
+    globus_xio_driver_t                 tcp_driver;
+    globus_xio_server_t                 server_xio;
+    gfork_i_options_t *                 opts;
+} gfork_i_handle_t;
 
 typedef struct gfork_i_child_handle_s
 {
@@ -150,7 +169,7 @@ typedef struct gfork_i_child_handle_s
     int                                 read_fd;
     globus_xio_handle_t                 write_xio_handle;
     globus_xio_handle_t                 read_xio_handle;
-    gfork_i_options_t *                 whos_my_daddy;
+    gfork_i_handle_t *                  whos_my_daddy;
     void *                              user_arg;
     gfork_i_state_t                     state;
     globus_bool_t                       dead;
@@ -172,10 +191,11 @@ gfork_i_state_next(
     gfork_i_state_t                 current_state,
     gfork_i_events_t                event);
 
+globus_result_t
+globus_i_opts_to_handle(
+    gfork_i_options_t *                 opts,
+    gfork_i_handle_t *                  handle);
 
-extern globus_xio_stack_t               gfork_i_tcp_stack;
-extern globus_xio_attr_t                gfork_i_tcp_attr;
-extern globus_xio_driver_t              gfork_i_tcp_driver;
 extern globus_xio_stack_t               gfork_i_file_stack;
 extern globus_xio_attr_t                gfork_i_file_attr;
 extern globus_xio_driver_t              gfork_i_file_driver;

@@ -4,6 +4,9 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
+extern char **environ;
+
+
 static globus_mutex_t                   gfork_l_mutex;
 static globus_cond_t                    gfork_l_cond;
 static globus_hashtable_t               gfork_l_pid_table;
@@ -13,6 +16,7 @@ static globus_list_t *                  gfork_l_pid_list = NULL;
 
 static gfork_i_child_handle_t *         gfork_l_master_child_handle = NULL;
 static gfork_i_options_t                gfork_l_options;
+static gfork_i_handle_t                 gfork_l_handle;
 
 static
 void
@@ -39,6 +43,7 @@ gfork_l_read_header_cb(
 static
 void
 gfork_new_child(
+    gfork_i_handle_t *                  gfork_handle,
     globus_xio_system_socket_t          socket_handle,
     int                                 read_fd,
     int                                 write_fd);
@@ -82,7 +87,7 @@ gfork_l_stop_posting(
     }
 
     gfork_l_done = GLOBUS_TRUE;
-    globus_xio_server_close(gfork_l_options.tcp_server);
+    globus_xio_server_close(gfork_l_handle.server_xio);
     globus_cond_signal(&gfork_l_cond);
 }
 
@@ -301,13 +306,12 @@ gfork_l_spawn_master()
     GForkFuncName(gfork_l_spawn_master);
 
     gfork_h = &gfork_l_options;
-    gfork_log(1, "spawn master: %s\n",
-        gfork_h->master_program[0]);
-    if(gfork_l_options.master_program == NULL)
+    if(gfork_l_handle.master_argv == NULL)
     {
         gfork_log(1, "There is no master program.\n");
         return GLOBUS_SUCCESS;
     }
+    gfork_log(1, "spawn master: %s\n", gfork_l_handle.master_argv[0]);
 
     rc = pipe(infds);
     if(rc != 0)
@@ -333,6 +337,8 @@ gfork_l_spawn_master()
         read_fd = outfds[0];
         write_fd = infds[1];
 
+        environ = gfork_l_handle.env_argv;
+        nice(gfork_l_handle.opts->nice);
         /* set up the state pipe and envs */
         sprintf(tmp_str, "%d", read_fd);
         globus_libc_setenv(GFORK_CHILD_READ_ENV, tmp_str, 1);
@@ -340,8 +346,10 @@ gfork_l_spawn_master()
         globus_libc_setenv(GFORK_CHILD_WRITE_ENV, tmp_str, 1);
 
         gfork_log(1, "running master program: %s\n",
-            gfork_h->master_program[0]);
-        rc = execv(gfork_h->master_program[0], gfork_h->master_program);
+            gfork_l_handle.master_argv[0]);
+        rc = execv(
+            gfork_l_handle.master_argv[0],
+            gfork_l_handle.master_argv);
 
         /* XXX log error */
         gfork_log(1, "Unable to exec program\n");
@@ -430,7 +438,6 @@ gfork_l_dead_kid(
     globus_bool_t                       dead)
 {
     gfork_i_state_t                     temp_state;
-    gfork_i_options_t *                 gfork_h;
 
     /* is null if it is already dieing.
        if no master program nothing to do, return
@@ -443,7 +450,6 @@ gfork_l_dead_kid(
     else
     {
         kid_handle->dead = dead;
-        gfork_h = kid_handle->whos_my_daddy;
         globus_hashtable_remove(&gfork_l_pid_table, (void *) kid_handle->pid);
 
         temp_state = gfork_i_state_next(
@@ -542,11 +548,9 @@ gfork_l_sigchld(
     int                                 child_pid;
     int                                 child_status;
     int                                 child_rc;
-    gfork_i_options_t *                 gfork_h;
     globus_result_t                     res;
 
     gfork_log(2, "Sigchld\n");
-    gfork_h = (gfork_i_options_t *) &gfork_l_options;
 
     globus_mutex_lock(&gfork_l_mutex);
     {
@@ -579,7 +583,7 @@ gfork_l_sigchld(
             SIGCHLD,
             GLOBUS_FALSE,
             gfork_l_sigchld,
-            &gfork_h);
+            user_arg);
         globus_assert(res == GLOBUS_SUCCESS);
     }
     globus_mutex_unlock(&gfork_l_mutex);
@@ -612,12 +616,12 @@ gfork_l_server_accept_cb(
     int                                 infds[2];
     int                                 outfds[2];
     int                                 rc;
-    gfork_i_options_t *                 gfork_h;
     globus_xio_system_socket_t          socket_handle;
     gfork_i_child_handle_t *            kid_handle;
+    gfork_i_handle_t *                  gfork_handle;
     GForkFuncName(gfork_l_server_accept_cb);
 
-    gfork_h = (gfork_i_options_t *) &gfork_l_options;
+    gfork_handle = (gfork_i_handle_t *) user_arg;
 
     globus_mutex_lock(&gfork_l_mutex);
     {
@@ -641,7 +645,7 @@ gfork_l_server_accept_cb(
 
         result = globus_xio_handle_cntl(
             handle,
-            gfork_i_tcp_driver,
+            gfork_handle->tcp_driver,
             GLOBUS_XIO_TCP_GET_HANDLE,
             &socket_handle);
         if(result != GLOBUS_SUCCESS)
@@ -674,7 +678,7 @@ gfork_l_server_accept_cb(
                 write_fd = -1;
             }
 
-            gfork_new_child(socket_handle, read_fd, write_fd);
+            gfork_new_child(&gfork_l_handle, socket_handle, read_fd, write_fd);
 
             /* hsould not return from this, if we do it is an error */
             goto error_fork;
@@ -701,7 +705,7 @@ gfork_l_server_accept_cb(
             kid_handle = (gfork_i_child_handle_t *)
                 globus_calloc(1, sizeof(gfork_i_child_handle_t));
             kid_handle->pid = pid;
-            kid_handle->whos_my_daddy = gfork_h;
+            kid_handle->whos_my_daddy = gfork_handle;
             kid_handle->write_fd = outfds[1];
             kid_handle->read_fd = infds[0];
             kid_handle->state = GFORK_STATE_OPENING;
@@ -738,9 +742,9 @@ gfork_l_server_accept_cb(
         }
 
         result = globus_xio_server_register_accept(
-            gfork_h->tcp_server,
+            gfork_handle->server_xio,
             gfork_l_server_accept_cb,
-            gfork_h);
+            gfork_handle);
         if(result != GLOBUS_SUCCESS)
         {
             gfork_l_stop_posting(result);
@@ -752,7 +756,6 @@ gfork_l_server_accept_cb(
 
 error_fork:
     globus_mutex_lock(&gfork_l_mutex);
-    globus_xio_register_close(handle, NULL, NULL, NULL);
     close(socket_handle);
     close(outfds[0]);
     close(outfds[1]);
@@ -761,6 +764,7 @@ error_outpipe:
     close(infds[0]);
     close(infds[1]);
 error_inpipe:
+    globus_xio_register_close(handle, NULL, NULL, NULL);
 error_accept:
     globus_mutex_unlock(&gfork_l_mutex);
 
@@ -786,15 +790,8 @@ gfork_init_server()
         goto error_master;
     }
 
-    res = globus_xio_server_create(
-        &gfork_h->tcp_server, gfork_i_tcp_attr, gfork_i_tcp_stack);
-    if(res != GLOBUS_SUCCESS)
-    {
-        goto error_create;
-    }
-
     res = globus_xio_server_get_contact_string(
-        gfork_h->tcp_server, &contact_string);
+        gfork_l_handle.server_xio, &contact_string);
     if(res != GLOBUS_SUCCESS)
     {
         goto error_contact;
@@ -803,9 +800,9 @@ gfork_init_server()
     globus_free(contact_string);
 
     res = globus_xio_server_register_accept(
-        gfork_h->tcp_server,
+        gfork_l_handle.server_xio,
         gfork_l_server_accept_cb,
-        gfork_h);
+        &gfork_l_handle);
     if(res != GLOBUS_SUCCESS)
     {
         goto error_register;
@@ -815,7 +812,6 @@ gfork_init_server()
 error_register:
     free(contact_string);
 error_contact:
-error_create:
 error_master:
 
     return res;
@@ -827,19 +823,19 @@ error_master:
 static
 void
 gfork_new_child(
+    gfork_i_handle_t *                  gfork_handle,
     globus_xio_system_socket_t          socket_handle,
     int                                 read_fd,
     int                                 write_fd)
 {
-    gfork_i_options_t *                 gfork_h;
     globus_result_t                     res;
     int                                 rc = 1;
     char                                tmp_str[32];
     GlobusGForkFuncName(gfork_new_child);
 
-    gfork_h = &gfork_l_options;
+    gfork_log(1, "starting child %s\n", gfork_handle->server_argv[0]);
 
-    gfork_log(1, "starting child %s\n", gfork_h->argv[0]);
+    environ = gfork_handle->env_argv;
     /* set up the state pipe and envs */
     sprintf(tmp_str, "%d", read_fd);
     globus_libc_setenv(GFORK_CHILD_READ_ENV, tmp_str, 1);
@@ -862,7 +858,7 @@ gfork_new_child(
     close(socket_handle);
 
     /* start it */
-    rc = execv(gfork_h->argv[0], gfork_h->argv);
+    rc = execv(gfork_handle->server_argv[0], gfork_handle->server_argv);
     /* if we get to here ecxec failed, fall through to error handling */
 
 error_dupout:
@@ -1201,7 +1197,7 @@ main(
 {
     int                                 rc;
     globus_options_handle_t             opt_h;
-    globus_result_t                     res;
+    globus_result_t                     result = GLOBUS_SUCCESS;
 
     rc = globus_module_activate(GLOBUS_GFORK_PARENT_MODULE);
     if(rc != 0)
@@ -1223,16 +1219,35 @@ main(
         &opt_h, gfork_i_opts_unknown, &gfork_l_options);
     globus_options_add_table(opt_h, gfork_l_opts_table, &gfork_l_options);
 
-    res = globus_options_command_line_process(opt_h, argc, argv);
-    if(res != GLOBUS_SUCCESS)
+    result = globus_options_command_line_process(opt_h, argc, argv);
+    if(result != GLOBUS_SUCCESS)
     {
         gfork_log(1, "Bad command line options\n");
         goto error_opts;
     }
     gfork_log(1, "port %d\n", gfork_l_options.port);
 
+    /* parse out file */
+    if(gfork_l_options.conf_file == NULL)
+    {
+        gfork_l_options.conf_file = globus_common_create_string(
+            "%s/etc/gfork.conf", globus_libc_getenv("GLOBUS_LOCATION"));
+    }
+    result = globus_options_xinetd_file_process(
+        opt_h, gfork_l_options.conf_file, "gridftp");
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_opts;
+    }
+
+    result = globus_i_opts_to_handle(&gfork_l_options, &gfork_l_handle);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_opts;
+    }
+
     /* verify options */
-    if(gfork_l_options.argv == NULL)
+    if(gfork_l_handle.server_argv == NULL)
     {
         gfork_log(1, "You must specify a a program to run\n");
         goto error_opts;
@@ -1240,24 +1255,24 @@ main(
 
     globus_mutex_lock(&gfork_l_mutex);
     {
-        res = globus_callback_register_signal_handler(
+        result = globus_callback_register_signal_handler(
             SIGINT,
             GLOBUS_FALSE,
             gfork_l_int,
             &gfork_l_options);
-        res = globus_callback_register_signal_handler(
+        result = globus_callback_register_signal_handler(
             SIGCHLD,
             GLOBUS_FALSE,
             gfork_l_sigchld,
             &gfork_l_options);
-        if(res != GLOBUS_SUCCESS)
+        if(result != GLOBUS_SUCCESS)
         {
             gfork_log(1, "Failed to register signal handler\n");
             goto error_signal;
         }
 
-        res = gfork_init_server();
-        if(res != GLOBUS_SUCCESS)
+        result = gfork_init_server();
+        if(result != GLOBUS_SUCCESS)
         {
             gfork_log(1, "Failed to init server\n");
             goto error_server;
@@ -1277,6 +1292,13 @@ error_signal:
 error_server:
 error_opts:
 error_act:
+    if(result != GLOBUS_SUCCESS)
+    {
+        char * tmp_msg = globus_error_print_friendly(
+            globus_error_peek(result));
+        gfork_log(2, "Error: %s", tmp_msg);
+        globus_free(tmp_msg);
+    }
 
     gfork_log(1, "Error\n");
     return 1;
