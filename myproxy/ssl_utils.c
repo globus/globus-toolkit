@@ -673,6 +673,54 @@ ssl_private_key_load_from_file(SSL_CREDENTIALS	*creds,
 }
 
 int
+ssl_private_key_store_to_file(SSL_CREDENTIALS *creds,
+                              const char *path,
+                              const char *pass_phrase)
+{
+    BIO *keybio = 0;
+    const EVP_CIPHER		*cipher;
+    int				pass_phrase_len;
+    int return_status = SSL_ERROR;
+
+    keybio = BIO_new_file(path, "w");
+    if (!keybio) {
+        verror_put_string("failed to open %s", path);
+        goto error;
+    }
+
+    if (pass_phrase == NULL)
+    {
+        /* No encryption */
+        cipher = NULL;
+        pass_phrase_len = 0;
+    }
+    else
+    {
+        /* Encrypt with pass phrase */
+        /* XXX This is my best guess at a cipher */
+        cipher = EVP_des_ede3_cbc();
+        pass_phrase_len = strlen(pass_phrase);
+    }
+
+    if (PEM_write_bio_PrivateKey(keybio, creds->private_key, cipher,
+                                 (unsigned char *) pass_phrase,
+                                 pass_phrase_len,
+                                 PEM_NO_CALLBACK) == SSL_ERROR)
+    {
+        verror_put_string("Error packing private key");
+        ssl_error_to_verror();
+        goto error;
+    }
+
+    return_status = SSL_SUCCESS;
+
+ error:
+    if (keybio) BIO_free(keybio);
+
+    return return_status;
+}
+
+int
 ssl_private_key_is_encrypted(const char	*path)
 {
     FILE		*key_file = NULL;
