@@ -144,6 +144,12 @@ int
 get_user_credential_filenames( char **certfile, char **keyfile );
 
 /*
+** Return the paths to the host certificate and key files.
+*/
+int
+get_host_credential_filenames( char **certfile, char **keyfile );
+
+/*
  * sterilize_string
  *
  * Walk through a string and make sure that is it acceptable for using
