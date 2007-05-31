@@ -12,7 +12,8 @@ v3.9 XX Xxx 2007
       re-initialize trust roots and retry
     - if running as root, store trust roots in
       /etc/grid-security/certificates rather than
-      ~root/.globus/certificates
+      ~root/.globus/certificates and credentials in
+      /etc/grid-security/hostcert.pem/hostkey.pem
   - add --voms options to myproxy-init and myproxy-logon to add VOMS
     attributes, analogous to voms-proxy-init -voms; requires
     voms-proxy-init to be installed and configured
