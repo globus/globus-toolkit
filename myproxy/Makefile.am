@@ -198,6 +198,9 @@ EXTRA_DIST = $(Scripts) LICENSE LICENSE.sasl LICENSE.netbsd \
                myproxy-certificate-mapapp \
                myproxy-accepted-credentials-mapapp
 
+myproxy-admin-addservice: myproxy-admin-adduser
+	$(LN_S) myproxy-admin-adduser myproxy-admin-addservice
+
 dirt.sh:
 	touch dirt.sh
 
