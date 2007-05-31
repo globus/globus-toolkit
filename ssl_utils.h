@@ -72,7 +72,7 @@ int ssl_certificate_load_from_file(SSL_CREDENTIALS	*creds,
 				   const char		*path);
 
 /*
- * ssl_load_private_key()
+ * ssl_private_key_load_from_file()
  *
  * Load a key from the given file and store it in the given credentials
  * structure.
@@ -89,6 +89,16 @@ int ssl_private_key_load_from_file(SSL_CREDENTIALS	*creds,
 				   const char		*path,
 				   const char		*pass_phrase,
 				   const char		*pass_phrase_prompt);
+
+/*
+ * ssl_private_key_store_to_file()
+ *
+ * Returns SSL_SUCCESS or SSL_ERROR, setting verror.
+ */
+int ssl_private_key_store_to_file(SSL_CREDENTIALS *creds,
+                                  const char *path,
+                                  const char *pass_phrase);
+
 
 /*
  * ssl_private_key_is_encrypted()
