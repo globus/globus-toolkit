@@ -149,7 +149,11 @@ main(int argc, char *argv[])
         socket_attrs->psport = MYPROXY_SERVER_PORT;
     }
 
-    get_user_credential_filenames( &certfile, &keyfile ); 
+    if (getuid() == 0) {
+        get_host_credential_filenames( &certfile, &keyfile ); 
+    } else {
+        get_user_credential_filenames( &certfile, &keyfile ); 
+    }
 
     /* Initialize client arguments and create client request object */
     init_arguments(argc, argv, socket_attrs, client_request);
@@ -178,12 +182,51 @@ main(int argc, char *argv[])
 	goto error;
     }
 
+    /* Bootstrap trusted certificate directory if none exists. */
+    if (client_request->want_trusted_certs) {
+        char *cert_dir = NULL;
+        globus_result_t res;
+
+        globus_module_activate(GLOBUS_GSI_CERT_UTILS_MODULE);
+        res = GLOBUS_GSI_SYSCONFIG_GET_CERT_DIR(&cert_dir);
+        if (res != GLOBUS_SUCCESS) {
+            myproxy_log("Bootstrapping MyProxy server root of trust.");
+            myproxy_bootstrap_trust(socket_attrs);
+        }
+        if (cert_dir) free(cert_dir);
+    }
+
     /* Connect to server. */
     if (myproxy_init_client(socket_attrs) < 0) {
         verror_print_error(stderr);
         goto error;
     }
     
+    /* Attempt anonymous-mode credential retrieval if we don't have a
+       credential. */
+    GSI_SOCKET_allow_anonymous(socket_attrs->gsi_socket, 1);
+
+     /* Authenticate client to server */
+    if (myproxy_authenticate_init(socket_attrs, NULL) < 0) {
+        /* If no -T option, we give up. */
+        if (!client_request->want_trusted_certs) {
+            verror_print_error(stderr);
+            goto error;
+        }
+        /* If -T option, we try to fix the CA certificates. */
+        verror_print_error(stderr);
+        myproxy_log("Re-initializing trust roots and retrying.");
+        myproxy_bootstrap_trust(socket_attrs);
+        if (myproxy_init_client(socket_attrs) < 0) {
+            verror_print_error(stderr);
+            goto error;
+        }
+        if (myproxy_authenticate_init(socket_attrs, NULL) < 0) {
+            verror_print_error(stderr);
+            goto error;
+        }
+    }
+
     if (!use_empty_passwd) {
        /* Allow user to provide a passphrase */
 	int rval;
@@ -230,16 +273,6 @@ main(int argc, char *argv[])
 	}
     }
 
-    /* Attempt anonymous-mode credential retrieval if we don't have a
-       credential. */
-    GSI_SOCKET_allow_anonymous(socket_attrs->gsi_socket, 1);
-
-     /* Authenticate client to server */
-    if (myproxy_authenticate_init(socket_attrs, NULL) < 0) {
-	verror_print_error(stderr);
-        goto error;
-    }
-
     /* Serialize client request object */
     requestlen = myproxy_serialize_request_ex(client_request, &request_buffer);
     if (requestlen < 0) {
@@ -277,6 +310,17 @@ main(int argc, char *argv[])
     }
 
     ssl_proxy_file_destroy(delegfile);
+
+    /* host credentials should not be encrypted */
+    if (getuid() == 0) {
+        SSL_CREDENTIALS *creds;
+
+        creds = ssl_credentials_new();
+        ssl_private_key_load_from_file(creds, keyfile,
+                                       client_request->passphrase, NULL);
+        ssl_private_key_store_to_file(creds, keyfile, NULL);
+        ssl_credentials_destroy(creds);
+    }
 
     printf("Credentials for %s have been stored in\n%s and\n%s.\n",
            client_request->username, certfile, keyfile);
