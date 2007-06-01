@@ -258,13 +258,13 @@ globus_logging_vwrite(
             {
                 nbytes = remain;
                 handle->module.header_func(
-                    &handle->buffer[handle->used_length],
+                    (char *) &handle->buffer[handle->used_length],
                     &nbytes);
                 handle->used_length += nbytes;
                 remain -= nbytes;
             }
-            nbytes = vsnprintf(
-                &handle->buffer[handle->used_length], remain, fmt, ap);
+            nbytes = vsnprintf((char *) &handle->buffer[handle->used_length], 
+                remain, fmt, ap);
             handle->used_length += nbytes;
             if(type & GLOBUS_LOGGING_INLINE || 
                 handle->type_mask & GLOBUS_LOGGING_INLINE)
@@ -369,12 +369,13 @@ globus_logging_stdio_header_func(
     char *                              buf,
     globus_size_t *                     len)
 {
-    char *                              str;
+    char                                str[256];
+    char *                              tmp;
     time_t                              tm;
     globus_size_t                       str_len;
 
     tm = time(NULL);
-    str = ctime(&tm);
+    tmp = globus_libc_ctime_r(&tm, str, sizeof(str));
     str_len = strlen(str);
     if(str[str_len - 1] == '\n')
     {
@@ -393,7 +394,7 @@ globus_logging_ng_header_func(
 
     if(gettimeofday(&tv, NULL) == 0)
     {
-        gmtime_r(&tv.tv_sec, &tm);
+        globus_libc_gmtime_r(&tv.tv_sec, &tm);
         (*len) = snprintf(buf, *len, "ts=%04d-%02d-%02dT%02d:%02d:%02d.%06dZ id=%d ", 
             tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, 
             tm.tm_hour, tm.tm_min, tm.tm_sec , (int) tv.tv_usec, 
