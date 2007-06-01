@@ -8,8 +8,8 @@ v3.9 XX Xxx 2007
   - update myproxy-logon/myproxy-retrieve -T behavior:
     - if no certificates directory exists, install the
       myproxy-server's CA certificate to bootstrap trust
-    - if authentication to the myproxy-server fails, 
-      re-initialize trust roots and retry
+    - if authentication to the myproxy-server fails due to a CRL
+      error, remove problematic CRL file(s) and retry
     - if running as root, store trust roots in
       /etc/grid-security/certificates rather than
       ~root/.globus/certificates and credentials in
