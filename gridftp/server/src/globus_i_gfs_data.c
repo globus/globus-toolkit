@@ -721,6 +721,7 @@ globus_l_gfs_data_auth_stat_cb(
         action = GFS_ACL_ACTION_WRITE;
     }
     object.name = recv_info->pathname;
+    object.size = recv_info->alloc_size;
     stat_wrapper = op->stat_wrapper;
     rc = globus_gfs_acl_authorize(
         &op->session_handle->acl_handle,
