@@ -268,6 +268,14 @@ int myproxy_check_trusted_certs_dir();
 int myproxy_install_trusted_cert_files(myproxy_certs_t *);
 
 /*
+ * myproxy_clean_crls()
+ *
+ * Remove any bad CRLs in the trusted cert dir.
+ * Returns 1 if bad CRL(s) removed, 0 of none found, -1 on error.
+ */
+int myproxy_clean_crls();
+
+/*
  * myproxy_creds_verify()
  *
  * Check the validity of the credentials in the myproxy_creds structure:
