@@ -65,13 +65,6 @@ globus_l_ftp_client_target_search_t;
 
 /* MODULE SPECIFIC PROTOTYPES */
 static
-globus_object_t *
-globus_l_ftp_client_url_parse(
-    const char *				url_string,
-    globus_url_t *				url,
-    globus_bool_t 				rfc1738_url);
-
-static
 void
 globus_l_ftp_client_quit_callback(
     void *					callback_arg,
@@ -277,6 +270,11 @@ globus_ftp_client_handle_init(
     i_handle->checksum_offset = 0;
     i_handle->checksum_length = -1;
     i_handle->checksum = GLOBUS_NULL;
+    globus_fifo_init(&i_handle->src_op_queue);
+    globus_fifo_init(&i_handle->dst_op_queue);
+    globus_fifo_init(&i_handle->src_response_pending_queue);
+    globus_fifo_init(&i_handle->dst_response_pending_queue);
+    
     
     globus_i_ftp_client_handle_unlock(i_handle);
 
@@ -353,6 +351,10 @@ globus_ftp_client_handle_destroy(
     globus_i_ftp_client_handle_unlock(i_handle);
     globus_mutex_destroy(&i_handle->mutex);
     globus_i_ftp_client_handleattr_destroy(&i_handle->attr);
+    globus_fifo_destroy(&i_handle->src_op_queue);
+    globus_fifo_destroy(&i_handle->dst_op_queue);
+    globus_fifo_destroy(&i_handle->src_response_pending_queue);
+    globus_fifo_destroy(&i_handle->dst_response_pending_queue);
 
     globus_libc_free(i_handle);
 
@@ -828,7 +830,7 @@ globus_l_ftp_client_target_new(
     globus_i_ftp_client_debug_printf(1, 
         (stderr, "globus_l_ftp_client_target_new() entering\n"));
 
-    target = globus_libc_malloc(sizeof(globus_i_ftp_client_target_t));
+    target = globus_libc_calloc(1, sizeof(globus_i_ftp_client_target_t));
 
     if(!target)
     {
@@ -883,7 +885,6 @@ globus_l_ftp_client_target_new(
     {
         globus_xio_attr_t               xio_attr;
         char *                          string_opts;
-        char *                          remote_program;
 
         if(!ftp_client_i_popen_ready)
         {
@@ -1440,7 +1441,8 @@ globus_i_ftp_client_target_find(
 	}
 
     }
-
+    handle->fake_response = GLOBUS_FALSE;
+    
     if((*target) == GLOBUS_NULL)
     {
 	err = GLOBUS_I_FTP_CLIENT_ERROR_OUT_OF_MEMORY();
@@ -1497,7 +1499,7 @@ error_exit:
  *	   URL. As a side effect, the url structure will be populated,
  *         and must be destroyed by an explicit call to globus_url_destroy().
  */
-static
+
 globus_object_t *
 globus_l_ftp_client_url_parse(
     const char *				url_string,

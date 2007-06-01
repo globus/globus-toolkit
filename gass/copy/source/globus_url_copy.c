@@ -106,6 +106,7 @@ typedef struct
     globus_bool_t                       ipv6;
     globus_bool_t                       allo;
     globus_bool_t                       delayed_pasv;
+    globus_bool_t                       pipeline;
     char *                              src_authz_assert;
     char *                              dst_authz_assert;
     globus_bool_t                       cache_src_authz_assert;
@@ -497,6 +498,7 @@ enum
     arg_allo,
     arg_noallo,
     arg_delayed_pasv,
+    arg_pipeline,
     arg_stripe_bs,
     arg_striped,
     arg_num = arg_striped
@@ -550,6 +552,7 @@ flagdef(arg_create_dest, "-cd", "-create-dest");
 flagdef(arg_fast, "-fast", "-fast-data-channels");
 flagdef(arg_ipv6, "-ipv6","-IPv6");
 flagdef(arg_delayed_pasv, "-dp","-delayed-pasv");
+flagdef(arg_pipeline, "-pp","-pipeline");
 flagdef(arg_allo, "-allo","-allocate");
 flagdef(arg_noallo, "-no-allo","-no-allocate");
 flagdef(arg_cache_authz_assert, "-cache-aa","-cache-authz-assert");
@@ -633,6 +636,7 @@ static globus_args_option_descriptor_t args_options[arg_num];
     setupopt(arg_cache_src_authz_assert);     \
     setupopt(arg_cache_dst_authz_assert);     \
     setupopt(arg_delayed_pasv);         \
+    setupopt(arg_pipeline);             \
     setupopt(arg_allo);         	\
     setupopt(arg_noallo);         	\
     setupopt(arg_stripe_bs);         	\
@@ -794,6 +798,8 @@ globus_l_guc_ext(
     ext_info.allo = guc_info->allo;
     ext_info.verbose = g_verbose_flag;
     ext_info.quiet = g_quiet_flag;
+    ext_info.delayed_pasv = guc_info->delayed_pasv;
+    ext_info.pipeline = guc_info->pipeline;
 
     rc = globus_extension_activate(g_ext);
     if(rc != 0)
@@ -1907,6 +1913,7 @@ globus_l_guc_parse_arguments(
     guc_info->ipv6 = GLOBUS_FALSE;
     guc_info->allo = GLOBUS_TRUE;
     guc_info->delayed_pasv = GLOBUS_FALSE;
+    guc_info->pipeline = GLOBUS_FALSE;
     guc_info->create_dest = GLOBUS_FALSE;
     guc_info->dst_module_name = GLOBUS_NULL;
     guc_info->src_module_name = GLOBUS_NULL;
@@ -2167,6 +2174,9 @@ globus_l_guc_parse_arguments(
             break;
 	case arg_delayed_pasv:
 	    guc_info->delayed_pasv = GLOBUS_TRUE;
+	    break;
+	case arg_pipeline:
+	    guc_info->pipeline = GLOBUS_TRUE;
 	    break;
 	case arg_allo:
 	    guc_info->allo = GLOBUS_TRUE;
@@ -2789,6 +2799,19 @@ globus_l_guc_init_gass_copy_handle(
         if(result != GLOBUS_SUCCESS)
         {
             fprintf(stderr, _GASCSL("Error: Unable to set rfc1738 support %s\n"),
+                globus_error_print_friendly(globus_error_peek(result)));
+
+            return -1;
+        }
+    }        
+
+    if(guc_info->pipeline)
+    {
+        result = globus_ftp_client_handleattr_set_pipeline(
+            &ftp_handleattr, GLOBUS_TRUE, 0, GLOBUS_TRUE);
+        if(result != GLOBUS_SUCCESS)
+        {
+            fprintf(stderr, _GASCSL("Error: Unable to enable pipeline %s\n"),
                 globus_error_print_friendly(globus_error_peek(result)));
 
             return -1;

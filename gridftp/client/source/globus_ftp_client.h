@@ -515,6 +515,20 @@ globus_ftp_client_handleattr_get_rfc1738_url(
     globus_bool_t *				rfc1738_url);
 
 globus_result_t
+globus_ftp_client_handleattr_set_pipeline(
+    globus_ftp_client_handleattr_t *            attr,
+    globus_bool_t                               allow_queue,
+    globus_size_t                               queue_size,
+    globus_bool_t                               fake_transfer_callback);
+
+globus_result_t
+globus_ftp_client_handleattr_get_pipeline(
+    const globus_ftp_client_handleattr_t *      attr,
+    globus_bool_t *                             allow_queue,
+    globus_size_t *                             queue_size,
+    globus_bool_t *                             fake_transfer_callback);
+
+globus_result_t
 globus_ftp_client_handleattr_set_netlogger(
     globus_ftp_client_handleattr_t *		attr,
     globus_netlogger_handle_t *	                nl_handle);

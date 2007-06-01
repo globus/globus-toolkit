@@ -62,6 +62,8 @@ typedef struct globus_guc_info_s
 
     globus_bool_t                       verbose;
     globus_bool_t                       quiet;
+    globus_bool_t                       delayed_pasv;
+    globus_bool_t                       pipeline;
 } globus_guc_info_t;
 
 typedef struct globus_l_guc_plugin_op_s * globus_guc_plugin_op_t;

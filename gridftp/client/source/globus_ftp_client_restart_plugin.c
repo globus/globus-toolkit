@@ -1030,7 +1030,6 @@ globus_ftp_client_restart_plugin_init(
     globus_abstime_t *				deadline)
 {
     globus_l_ftp_client_restart_plugin_t *	d;
-    globus_object_t *				err;
     globus_result_t				result;
     GlobusFuncName(globus_ftp_client_restart_plugin_init);
 

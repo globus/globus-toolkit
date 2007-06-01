@@ -1277,6 +1277,7 @@ globus_ftp_client_debug_plugin_init(
     GLOBUS_FTP_CLIENT_DEBUG_PLUGIN_SET_FUNC(plugin, connect);
     GLOBUS_FTP_CLIENT_DEBUG_PLUGIN_SET_FUNC(plugin, authenticate);
     GLOBUS_FTP_CLIENT_DEBUG_PLUGIN_SET_FUNC(plugin, read);
+    GLOBUS_FTP_CLIENT_DEBUG_PLUGIN_SET_FUNC(plugin, write);
     GLOBUS_FTP_CLIENT_DEBUG_PLUGIN_SET_FUNC(plugin, data);
     GLOBUS_FTP_CLIENT_DEBUG_PLUGIN_SET_FUNC(plugin, command);
     GLOBUS_FTP_CLIENT_DEBUG_PLUGIN_SET_FUNC(plugin, response);
