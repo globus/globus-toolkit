@@ -1072,9 +1072,10 @@ globus_l_ftp_client_debug_plugin_command(
 	return;
     }
 
-    fprintf(d->stream, "%s%ssending command:\n%s\n",
+    fprintf(d->stream, "%s%ssending command to %s:\n%s\n",
 	    d->text ? d->text : "",
 	    d->text ? ": " : "",
+	    url,
 	    command_name);
 }
 /* globus_l_ftp_client_debug_plugin_command() */

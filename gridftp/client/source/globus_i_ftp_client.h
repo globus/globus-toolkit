@@ -218,10 +218,10 @@ typedef struct globus_i_ftp_client_handleattr_t
      */
     globus_list_t *                             plugins;
 
+    globus_size_t                               outstanding_commands;
+    globus_ftp_client_pipeline_callback_t       pipeline_callback;
+    void *                                      pipeline_arg;
     
-    globus_bool_t                               allow_queue;
-    globus_size_t                               queue_size;
-    globus_bool_t                               fake_response;
     /*
      *  NETLOGGER
      */
@@ -362,32 +362,15 @@ typedef enum
 globus_ftp_client_target_state_t;
 
 
-typedef struct globus_i_ftp_client_op_ent_s
+typedef struct globus_i_ftp_client_url_ent_s
 {
     globus_i_ftp_client_operation_t             op;
     char *                                      source_url;
-    globus_ftp_client_operationattr_t *         source_attr;
     globus_url_t                                src_url;
     char *                                      dest_url;
-    globus_ftp_client_operationattr_t *         dest_attr;
     globus_url_t                                dst_url;
-    const char *                                eret_alg_str;
-    const char *                                esto_alg_str;
-    globus_off_t                                partial_offset;
-    globus_off_t                                partial_end_offset;
-    globus_ftp_client_restart_marker_t *        restart;
-    globus_ftp_client_complete_callback_t       complete_callback;
-    void *                                      callback_arg;
-    globus_byte_t **                            stat_buffer_out;
-    globus_size_t *                             stat_buffer_length;
-    int                                         chmod_mode;
-    globus_off_t *                              size_out;
-    globus_abstime_t *                          mdtm_out;
-    char *                                      cksm_out;
-    globus_off_t                                cksm_offset;
-    globus_off_t                                cksm_length;
-    const char *                                cksm_alg;
-} globus_i_ftp_client_op_ent_t;
+    
+} globus_i_ftp_client_url_ent_t;
 
 
 /**
@@ -630,7 +613,7 @@ typedef struct globus_i_ftp_client_handle_t
     globus_fifo_t                               src_response_pending_queue;
     globus_fifo_t                               dst_response_pending_queue;
 
-    globus_bool_t                               fake_response;
+    int                                         no_callback_count;
     /** User pointer
      * @see globus_ftp_client_handle_set_user_pointer(),
      *      globus_ftp_client_handle_get_user_pointer()

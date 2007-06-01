@@ -514,19 +514,25 @@ globus_ftp_client_handleattr_get_rfc1738_url(
     const globus_ftp_client_handleattr_t *	attr,
     globus_bool_t *				rfc1738_url);
 
+typedef void (*globus_ftp_client_pipeline_callback_t)(
+    globus_ftp_client_handle_t *                handle,
+    char **                                     source_url,
+    char **                                     dest_url,
+    void *                                      user_arg);
+
 globus_result_t
 globus_ftp_client_handleattr_set_pipeline(
     globus_ftp_client_handleattr_t *            attr,
-    globus_bool_t                               allow_queue,
-    globus_size_t                               queue_size,
-    globus_bool_t                               fake_transfer_callback);
+    globus_size_t                               outstanding_commands,
+    globus_ftp_client_pipeline_callback_t       pipeline_callback,
+    void *                                      pipeline_arg);
 
 globus_result_t
 globus_ftp_client_handleattr_get_pipeline(
     const globus_ftp_client_handleattr_t *      attr,
-    globus_bool_t *                             allow_queue,
-    globus_size_t *                             queue_size,
-    globus_bool_t *                             fake_transfer_callback);
+    globus_size_t *                             outstanding_commands,
+    globus_ftp_client_pipeline_callback_t *     pipeline_callback,
+    void **                                     pipeline_arg);
 
 globus_result_t
 globus_ftp_client_handleattr_set_netlogger(

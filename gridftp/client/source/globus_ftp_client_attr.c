@@ -69,9 +69,9 @@ globus_ftp_client_handleattr_init(
     i_attr->nl_ftp = GLOBUS_FALSE;
     i_attr->nl_io = GLOBUS_FALSE;
     i_attr->rfc1738_url = GLOBUS_FALSE;
-    i_attr->allow_queue = GLOBUS_FALSE;
-    i_attr->queue_size = 4;
-    i_attr->fake_response = GLOBUS_FALSE;
+    i_attr->outstanding_commands = 4;
+    i_attr->pipeline_callback = GLOBUS_NULL;
+    i_attr->pipeline_arg = GLOBUS_NULL;
     *attr = i_attr;
     
     return GLOBUS_SUCCESS;
@@ -356,24 +356,23 @@ globus_ftp_client_handleattr_get_rfc1738_url(
  *
  * @param attr
  *        Attribute to modify
- * @param allow_queue
- *        Set to GLOBUS_TRUE to enable command queueing and pipelining.
- * @param queue_size
+ * @param outstanding_commands
  *        Set to the number of commands to have sent without receiving
- *        a reply. Set to 0 to use the library default.
- * @param fake_transfer_callback
- *        Set to GLOBUS_TRUE to allow a fake complete callback
- *        before the actual control channel response is received 
- *        from the server.  This may allow use of pipelining
- *        transparently by existing applications.
+ *        a reply. Use 0 for the library default.
+ * @param pipeline_callback
+ *        Set to a function of type globus_ftp_client_pipeline_callback_t
+ *        to enable command pipelining.  This function will be called during
+ *        a transfer operation to request the next urls to be transferred.
+ * @param pipeline_arg
+ *        User data that will be passed in the pipeline_callback.
  *        
  */
 globus_result_t
 globus_ftp_client_handleattr_set_pipeline(
     globus_ftp_client_handleattr_t *            attr,
-    globus_bool_t                               allow_queue,
-    globus_size_t                               queue_size,
-    globus_bool_t                               fake_transfer_callback)
+    globus_size_t                               outstanding_commands,
+    globus_ftp_client_pipeline_callback_t       pipeline_callback,
+    void *                                      pipeline_arg)
 {
     globus_object_t *                           err = GLOBUS_SUCCESS;
     globus_i_ftp_client_handleattr_t *          i_attr;
@@ -387,12 +386,12 @@ globus_ftp_client_handleattr_set_pipeline(
     }
     i_attr = *(globus_i_ftp_client_handleattr_t **) attr;
 
-    i_attr->allow_queue = allow_queue;
-    if(queue_size > 0)
+    if(outstanding_commands > 0)
     {
-        i_attr->queue_size = queue_size;
+        i_attr->outstanding_commands = outstanding_commands;
     }
-    i_attr->fake_response = fake_transfer_callback;
+    i_attr->pipeline_callback = pipeline_callback;
+    i_attr->pipeline_arg = pipeline_arg;
 
     return GLOBUS_SUCCESS;
 
@@ -404,9 +403,9 @@ globus_ftp_client_handleattr_set_pipeline(
 globus_result_t
 globus_ftp_client_handleattr_get_pipeline(
     const globus_ftp_client_handleattr_t *      attr,
-    globus_bool_t *                             allow_queue,
-    globus_size_t *                             queue_size,
-    globus_bool_t *                             fake_transfer_callback)
+    globus_size_t *                             outstanding_commands,
+    globus_ftp_client_pipeline_callback_t *     pipeline_callback,
+    void **                                     pipeline_arg)
 {
     const globus_i_ftp_client_handleattr_t *    i_attr;
     globus_object_t *                           err = GLOBUS_SUCCESS;
@@ -420,17 +419,17 @@ globus_ftp_client_handleattr_get_pipeline(
     }
     i_attr = *(const globus_i_ftp_client_handleattr_t **) attr;
 
-    if(allow_queue != GLOBUS_NULL)
+    if(outstanding_commands != GLOBUS_NULL)
     {
-        (*allow_queue) = i_attr->allow_queue;
+        (*outstanding_commands) = i_attr->outstanding_commands;
     }
-    if(queue_size != GLOBUS_NULL)
+    if(pipeline_callback != GLOBUS_NULL)
     {
-        (*queue_size) = i_attr->queue_size;
+        (*pipeline_callback) = i_attr->pipeline_callback;
     }
-    if(fake_transfer_callback != GLOBUS_NULL)
+    if(pipeline_arg != GLOBUS_NULL)
     {
-        (*fake_transfer_callback) = i_attr->fake_response;
+        (*pipeline_arg) = i_attr->pipeline_arg;
     }
 
     return GLOBUS_SUCCESS;
@@ -3122,9 +3121,9 @@ globus_i_ftp_client_handleattr_copy(
     dest->nl_io = src->nl_io;
     dest->url_cache = GLOBUS_NULL;
     dest->plugins = GLOBUS_NULL;
-    dest->allow_queue = src->allow_queue;
-    dest->queue_size = src->queue_size;
-    dest->fake_response = src->fake_response;
+    dest->outstanding_commands = src->outstanding_commands;
+    dest->pipeline_callback = src->pipeline_callback;
+    dest->pipeline_arg = src->pipeline_arg;
     tmp = src->url_cache;
 
     while(!globus_list_empty(tmp))

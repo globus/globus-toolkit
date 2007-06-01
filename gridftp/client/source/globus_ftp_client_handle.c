@@ -274,6 +274,7 @@ globus_ftp_client_handle_init(
     globus_fifo_init(&i_handle->dst_op_queue);
     globus_fifo_init(&i_handle->src_response_pending_queue);
     globus_fifo_init(&i_handle->dst_response_pending_queue);
+    i_handle->no_callback_count = 0;
     
     
     globus_i_ftp_client_handle_unlock(i_handle);
@@ -1117,6 +1118,11 @@ globus_l_ftp_client_override_attr(
 	}
     }
     
+    if(target->owner->attr.pipeline_callback)
+    {
+        target->attr->allocated_size = 0;
+    }
+    
     return GLOBUS_SUCCESS;
     
 destroy_attr:
@@ -1441,7 +1447,6 @@ globus_i_ftp_client_target_find(
 	}
 
     }
-    handle->fake_response = GLOBUS_FALSE;
     
     if((*target) == GLOBUS_NULL)
     {

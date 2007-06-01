@@ -401,6 +401,9 @@ const char * long_usage =
 "      Cache the src authz assertion for subsequent transfers\n"
 "  -cache-daa | -cache-dst-authz-assert\n"
 "      Cache the dst authz assertion for subsequent transfers\n"
+"  -pipeline | -pp\n"
+"      Enable pipelining support for multi-file ftp transfers.  Currently\n"
+"      third-party transfers benefit from this. *EXPERIMENTAL*\n"
 "\n";
 
 /***********
@@ -2309,6 +2312,11 @@ globus_l_guc_parse_arguments(
 
     if(authz_assert) globus_free(authz_assert);
 
+    if(guc_info->pipeline && guc_info->num_streams < 1)
+    {
+        guc_info->num_streams = 1;
+    }
+
     /* check arguemnt validity */
     if((guc_info->options & GLOBUS_URL_COPY_ARG_ASCII) &&
        (guc_info->options & GLOBUS_URL_COPY_ARG_BINARY) )
@@ -2678,6 +2686,57 @@ error_expand:
     return result;                
 }
 
+static
+void 
+globus_l_guc_pipeline(
+    globus_ftp_client_handle_t *                handle,
+    char **                                     source_url,
+    char **                                     dest_url,
+    void *                                      user_arg)
+{
+    globus_l_guc_info_t *                       guc_info;
+    globus_l_guc_src_dst_pair_t *               pair;
+    globus_bool_t                               none = GLOBUS_FALSE;
+    guc_info = (globus_l_guc_info_t *) user_arg;
+
+    *source_url = NULL;
+    *dest_url = NULL;
+
+    if(!globus_fifo_empty(&guc_info->expanded_url_list))
+    {
+        pair = (globus_l_guc_src_dst_pair_t *)
+            globus_fifo_peek(&guc_info->expanded_url_list);
+        
+        if(pair->dst_url[strlen(pair->dst_url) - 1] == '/')
+        {
+            none = GLOBUS_TRUE;   
+        }
+        
+        if(strncmp(pair->src_url, "file:/", 5) == 0 || 
+            strncmp(pair->src_url, "http", 4) == 0 ||
+            strncmp(pair->dst_url, "file:/", 5) == 0 || 
+            strncmp(pair->dst_url, "http", 4) == 0)       
+        {
+            none = GLOBUS_TRUE;
+        }
+        
+        if(!none)
+        {
+            *source_url = pair->src_url;
+            *dest_url = pair->dst_url;
+            
+            globus_fifo_dequeue(&guc_info->expanded_url_list);
+            if(!g_quiet_flag)
+            {
+                globus_libc_fprintf(stdout,
+                "Pipelining:\n  %s\n  %s\n", *source_url, *dest_url);
+            }
+        }
+    }
+        
+}
+
+
 
 
 static
@@ -2808,7 +2867,7 @@ globus_l_guc_init_gass_copy_handle(
     if(guc_info->pipeline)
     {
         result = globus_ftp_client_handleattr_set_pipeline(
-            &ftp_handleattr, GLOBUS_TRUE, 0, GLOBUS_TRUE);
+            &ftp_handleattr, 0, globus_l_guc_pipeline, guc_info);
         if(result != GLOBUS_SUCCESS)
         {
             fprintf(stderr, _GASCSL("Error: Unable to enable pipeline %s\n"),
@@ -2843,7 +2902,10 @@ globus_l_guc_init_gass_copy_handle(
             guc_info->partial_offset + guc_info->partial_length);
     }
 
-    globus_gass_copy_set_allocate(gass_copy_handle, guc_info->allo);
+    if(!guc_info->pipeline)
+    {
+        globus_gass_copy_set_allocate(gass_copy_handle, guc_info->allo);
+    }
     
     if (g_verbose_flag)
     {

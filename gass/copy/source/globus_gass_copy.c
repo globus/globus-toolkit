@@ -312,6 +312,7 @@ globus_gass_copy_handle_init(
 	handle->partial_offset = -1;
 	handle->partial_end_offset = -1;
         handle->partial_bytes_remaining = -1;
+        handle->send_allo = GLOBUS_FALSE;
 	return GLOBUS_SUCCESS;
     }
     else
