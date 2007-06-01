@@ -208,21 +208,27 @@ main(int argc, char *argv[])
 
      /* Authenticate client to server */
     if (myproxy_authenticate_init(socket_attrs, NULL) < 0) {
-        /* If no -T option, we give up. */
-        if (!client_request->want_trusted_certs) {
-            verror_print_error(stderr);
-            goto error;
-        }
-        /* If -T option, we try to fix the CA certificates. */
         verror_print_error(stderr);
-        myproxy_log("Re-initializing trust roots and retrying.");
-        myproxy_bootstrap_trust(socket_attrs);
-        if (myproxy_init_client(socket_attrs) < 0) {
-            verror_print_error(stderr);
-            goto error;
-        }
-        if (myproxy_authenticate_init(socket_attrs, NULL) < 0) {
-            verror_print_error(stderr);
+        if (client_request->want_trusted_certs &&
+            strstr(verror_get_string(), "CRL") != NULL) {
+            verror_clear();
+            myproxy_log("CRL error detected.  Attempting to recover.");
+            switch (myproxy_clean_crls()) {
+            case -1:
+                verror_print_error(stderr);
+            case 0:
+                goto error;
+            case 1:
+                if (myproxy_init_client(socket_attrs) < 0) {
+                    verror_print_error(stderr);
+                    goto error;
+                }
+                if (myproxy_authenticate_init(socket_attrs, NULL) < 0) {
+                    verror_print_error(stderr);
+                    goto error;
+                }
+            }
+        } else {
             goto error;
         }
     }
