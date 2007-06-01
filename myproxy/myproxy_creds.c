@@ -1792,3 +1792,144 @@ int myproxy_creds_verify(const struct myproxy_creds *creds)
 
     return return_code;
 }
+
+#define UNLINK_CRL(path)                                               \
+    if (unlink(path) == 0) {                                           \
+        myproxy_log("removed bad CRL file at %s", path);               \
+        return_value = 1;                                              \
+    } else {                                                           \
+        myproxy_log("failed to unlink %s: %s", path, strerror(errno)); \
+    }                                                                  \
+    continue;
+
+
+int
+myproxy_clean_crls()
+{
+    char *cert_dir = NULL;
+    DIR *dir = NULL;
+    struct dirent *de = NULL;
+    int return_value = -1;
+	X509_STORE *store = NULL;
+	X509_STORE_CTX ctx;
+	X509_LOOKUP *lookup = NULL;
+	X509_OBJECT xobj;
+	X509_CRL *x=NULL;
+	EVP_PKEY *pkey = NULL;
+    BIO *in = NULL;
+    char path[MAXPATHLEN];
+    int ok = 0;
+
+    cert_dir = get_trusted_certs_path();
+
+    if (cert_dir == NULL) {
+        goto error;
+    }
+
+    myproxy_debug("Trusted cert dir is %s\n", cert_dir);
+    
+    if ((dir = opendir(cert_dir)) == NULL) {
+        verror_put_string("failed to open trusted cert dir");
+        verror_put_errno(errno);
+        goto error;
+    }
+
+    store = X509_STORE_new();
+    lookup=X509_STORE_add_lookup(store,X509_LOOKUP_hash_dir());
+    if (lookup == NULL) {
+        verror_put_string("X509_STORE_add_lookup() failed");
+        ssl_error_to_verror();
+        goto error;
+    }
+    if (!X509_LOOKUP_add_dir(lookup,cert_dir,X509_FILETYPE_PEM)) {
+        verror_put_string("X509_LOOKUP_add_dir() failed");
+        ssl_error_to_verror();
+        goto error;
+    }
+    ERR_clear_error();
+
+    if(!X509_STORE_CTX_init(&ctx, store, NULL, NULL)) {
+        verror_put_string("X509_STORE_CTX_init() failed");
+        ssl_error_to_verror();
+        goto error;
+    }
+
+    while ((de = readdir(dir)) != NULL) {
+        if (!strstr(de->d_name, ".r")) {
+            continue;
+        }
+        snprintf(path, MAXPATHLEN, "%s%s", cert_dir, de->d_name);
+        if (in) BIO_free_all(in);
+        in = BIO_new(BIO_s_file());
+        if (BIO_read_filename(in, path) <= 0) {
+            myproxy_debug("can't read %s", path);
+            continue;
+        }
+        if (x) X509_CRL_free(x);
+		x=PEM_read_bio_X509_CRL(in, NULL, NULL, NULL);
+        if (!x) {
+            myproxy_debug("can't parse CRL at %s", path);
+            continue;
+        }
+        BIO_free_all(in);
+        in = NULL;
+		ok = X509_STORE_get_by_subject(&ctx, X509_LU_X509, 
+					X509_CRL_get_issuer(x), &xobj);
+		if(ok <= 0) {
+			myproxy_log("CRL issuer certificate not found for %s", path);
+            UNLINK_CRL(path);
+		}
+        if (pkey) EVP_PKEY_free(pkey);
+		pkey = X509_get_pubkey(xobj.data.x509);
+		X509_OBJECT_free_contents(&xobj);
+		if(!pkey) {
+			myproxy_log("unable to get CRL issuer public key for %s", path);
+            UNLINK_CRL(path);
+		}
+		ok = X509_CRL_verify(x, pkey);
+		EVP_PKEY_free(pkey);
+        pkey = NULL;
+        if (!ok) {
+            myproxy_log("bad CRL signature: %s", path);
+            UNLINK_CRL(path);
+        }
+        ok = X509_cmp_time(X509_CRL_get_lastUpdate(x), NULL);
+        if (ok == 0) {
+            myproxy_log("bad CRL last update field: %s", path);
+            UNLINK_CRL(path);
+        }
+        if (ok > 0) {
+            myproxy_log("CRL not yet valid: %s", path);
+            UNLINK_CRL(path);
+        }
+        if (X509_CRL_get_nextUpdate(x)) {
+            ok=X509_cmp_time(X509_CRL_get_nextUpdate(x), NULL);
+            if (ok == 0) {
+                myproxy_log("BAD CRL next update field: %s", path);
+                UNLINK_CRL(path);
+            }
+            if (ok < 0) {
+                myproxy_log("CRL has expired: %s", path);
+                UNLINK_CRL(path);
+            }
+		}
+        X509_CRL_free(x);
+        x = NULL;
+    }
+        
+    if (return_value < 0) return_value = 0;
+
+ error:
+    if (cert_dir) free(cert_dir);
+    if (dir) closedir(dir);
+    if (pkey) EVP_PKEY_free(pkey);
+    if (x) X509_CRL_free(x);
+    if (in) BIO_free_all(in);
+    if (store) {
+		X509_STORE_CTX_cleanup(&ctx);
+		X509_STORE_free(store);
+    }
+
+    return return_value;
+}
+
