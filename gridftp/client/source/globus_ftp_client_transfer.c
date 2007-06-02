@@ -4754,10 +4754,9 @@ globus_ftp_client_abort(
 		goto unlock_error;
 	    }
 	}
-	else
+	else if(handle->dest->state == 
+	    GLOBUS_FTP_CLIENT_TARGET_COMPLETED_OPERATION)
 	{
-	    globus_assert(handle->dest->state == 
-			  GLOBUS_FTP_CLIENT_TARGET_COMPLETED_OPERATION);
 	    result = globus_ftp_control_force_close(
 		handle->source->control_handle,
 		globus_i_ftp_client_force_close_callback,
@@ -4778,6 +4777,45 @@ globus_ftp_client_abort(
 		goto unlock_error; 
 	    }
 	}
+        else
+        {
+            result = globus_ftp_control_force_close(
+                handle->source->control_handle,
+                globus_i_ftp_client_force_close_callback,
+                handle->source);
+            if(result == GLOBUS_SUCCESS)
+            {
+                result = globus_ftp_control_force_close(
+                    handle->dest->control_handle,
+                    globus_i_ftp_client_force_close_callback,
+                    handle->dest);
+
+                if(result == GLOBUS_SUCCESS)
+                {
+                    handle->source->state = GLOBUS_FTP_CLIENT_TARGET_FAULT;
+                    handle->dest->state = GLOBUS_FTP_CLIENT_TARGET_FAULT;
+                    handle->state = GLOBUS_FTP_CLIENT_HANDLE_ABORT;
+
+                    handle->err = GLOBUS_I_FTP_CLIENT_ERROR_OPERATION_ABORTED();
+
+                    globus_i_ftp_client_plugin_notify_abort(handle);
+                }
+                else
+                {
+                    handle->source->state = GLOBUS_FTP_CLIENT_TARGET_FAULT;
+                    handle->dest->state = GLOBUS_FTP_CLIENT_TARGET_CLOSED;
+                    handle->state = GLOBUS_FTP_CLIENT_HANDLE_ABORT;
+
+                    handle->err = GLOBUS_I_FTP_CLIENT_ERROR_OPERATION_ABORTED();
+                }
+            }
+            else
+            {
+                err = globus_error_get(result);
+
+                goto unlock_error;
+            }
+        }           
 
     }
     globus_i_ftp_client_handle_unlock(handle);
