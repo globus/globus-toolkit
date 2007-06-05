@@ -183,12 +183,6 @@ main(int argc, char *argv[])
         goto cleanup;
     }
 
-    /* Authenticate client to server */
-    if (myproxy_authenticate_init(socket_attrs, proxyfile) < 0) {
-	verror_print_error(stderr);
-        goto cleanup;
-    }
-
     /* Create a proxy by running [grid-proxy-init] */
     sprintf(proxyfile, "%s.%u.%u", MYPROXY_DEFAULT_PROXY,
 	    (unsigned)getuid(), (unsigned)getpid());
@@ -206,6 +200,12 @@ main(int argc, char *argv[])
     /* Be sure to delete the user proxy on abnormal exit */
     cleanup_user_proxy = 1;
     
+    /* Authenticate client to server */
+    if (myproxy_authenticate_init(socket_attrs, proxyfile) < 0) {
+	verror_print_error(stderr);
+        goto cleanup;
+    }
+
     if (client_request->username == NULL) { /* set default username */
 	if (dn_as_username) {
 	    if (ssl_get_base_subject_file(proxyfile,
