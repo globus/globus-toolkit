@@ -103,6 +103,7 @@ test_PROGRAMS= \
 	globus-ftp-client-put-test \
 	globus-ftp-client-transfer-test \
 	globus-ftp-client-caching-transfer-test \
+	globus-ftp-client-pipelined-transfer-test \
 	globus-ftp-client-user-auth-test \
     globus-ftp-client-restart-marker-test
     
@@ -145,6 +146,9 @@ globus_ftp_client_multiple_block_put_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_ftp_client_caching_transfer_test_SOURCES = globus_ftp_client_caching_transfer_test.c $(LibHeaders)
 globus_ftp_client_caching_transfer_test_LDFLAGS = $(GPT_LDFLAGS)
+
+globus_ftp_client_pipelined_transfer_test_SOURCES = globus_ftp_client_pipelined_transfer_test.c $(LibHeaders)
+globus_ftp_client_pipelined_transfer_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_ftp_client_partial_get_test_SOURCES = globus_ftp_client_partial_get_test.c $(LibHeaders)
 globus_ftp_client_partial_get_test_LDFLAGS = $(GPT_LDFLAGS)
