@@ -3376,7 +3376,9 @@ redo:
         {
             char *                          pl_source_url;
             char *                          pl_dest_url;
+            globus_i_ftp_client_url_ent_t * src_url_ent;
             globus_i_ftp_client_url_ent_t * url_ent;
+            
             globus_bool_t                   pl_done = GLOBUS_FALSE;
                         
             while(!pl_done)
@@ -3387,17 +3389,17 @@ redo:
                     &pl_dest_url,
                     client_handle->attr.pipeline_arg);
                 
-                url_ent = globus_malloc(sizeof(globus_i_ftp_client_url_ent_t));
-                
-                url_ent->source_url = globus_libc_strdup(pl_source_url);
-                url_ent->dest_url = globus_libc_strdup(pl_dest_url);
-                
-                if(url_ent->source_url == NULL && url_ent->dest_url == NULL)
+                if(pl_source_url == NULL && pl_dest_url == NULL)
                 {
                     pl_done = GLOBUS_TRUE;
                     continue;
                 }
+
+                url_ent = globus_malloc(sizeof(globus_i_ftp_client_url_ent_t));
                 
+                url_ent->source_url = globus_libc_strdup(pl_source_url);
+                url_ent->dest_url = globus_libc_strdup(pl_dest_url);
+                                
                 if(url_ent->source_url)
                 {
                     globus_l_ftp_client_url_parse(
@@ -3437,9 +3439,12 @@ redo:
                 {
                     goto result_fault;
                 }
-                              
+                
+                src_url_ent = globus_malloc(sizeof(globus_i_ftp_client_url_ent_t));
+                memcpy(src_url_ent, url_ent, sizeof(globus_i_ftp_client_url_ent_t));
+                                
                 globus_fifo_enqueue(
-                    &client_handle->src_op_queue, url_ent);
+                    &client_handle->src_op_queue, src_url_ent);
                 globus_fifo_enqueue(
                     &client_handle->dst_response_pending_queue, url_ent);
             }
@@ -3813,9 +3818,19 @@ redo:
                         {
                             url_ent = globus_fifo_dequeue(
                                 &client_handle->src_response_pending_queue);
-                            target->url_string = url_ent->source_url;
-                            client_handle->source_url = 
-                                globus_libc_strdup(url_ent->source_url);
+                            if(target->url_string)
+                            {
+                                globus_free(target->url_string);
+                                target->url_string = 
+                                    globus_libc_strdup(url_ent->source_url);
+                            }
+                            if(client_handle->source_url)
+                            {
+                                globus_free(client_handle->source_url);
+                                client_handle->source_url = url_ent->source_url;
+                            }
+                            globus_url_destroy(&url_ent->src_url);
+                            globus_free(url_ent);
                         }
                     }
                     else
@@ -3824,10 +3839,19 @@ redo:
                         {
                             url_ent = globus_fifo_dequeue(
                                 &client_handle->dst_response_pending_queue);
-                            target->url_string = url_ent->dest_url;
-                            client_handle->dest_url = 
-                                globus_libc_strdup(url_ent->dest_url);
-
+                            if(target->url_string)
+                            {
+                                globus_free(target->url_string);
+                                target->url_string = 
+                                    globus_libc_strdup(url_ent->dest_url);
+                            }
+                            if(client_handle->dest_url)
+                            {
+                                globus_free(client_handle->dest_url);
+                                client_handle->dest_url = url_ent->dest_url;
+                            }
+                            globus_url_destroy(&url_ent->dst_url);
+                            globus_free(url_ent);
                         }
                     }
 		}

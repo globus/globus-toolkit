@@ -5304,27 +5304,44 @@ globus_i_ftp_client_transfer_complete(
                     url_ent = globus_fifo_dequeue(
                         &client_handle->src_response_pending_queue); 
                     client_handle->source->state = GLOBUS_FTP_CLIENT_TARGET_RETR;
-                    if(client_handle->source->url_string && url_ent)
+                    if(url_ent)
                     {
-                        globus_libc_free(client_handle->source->url_string);
-                        client_handle->source->url_string = url_ent->source_url;
-                        url_ent->source_url = GLOBUS_NULL;
+                        if(client_handle->source->url_string)
+                        {
+                            globus_free(client_handle->source->url_string);
+                            client_handle->source->url_string = 
+                                globus_libc_strdup(url_ent->source_url);
+                        }
+                        if(client_handle->source_url)
+                        {
+                            globus_free(client_handle->source_url);
+                            client_handle->source_url = url_ent->source_url;
+                        }
+                        globus_url_destroy(&url_ent->src_url);
+                        globus_free(url_ent);
                     }
-                    client_handle->source_url = strdup(client_handle->source->url_string);
                 }
                 else
                 {
                     url_ent = globus_fifo_dequeue(
                         &client_handle->dst_response_pending_queue); 
                     client_handle->dest->state = GLOBUS_FTP_CLIENT_TARGET_STOR;
-                    if(client_handle->dest->url_string && url_ent)
+                    if(url_ent)
                     {
-                        globus_libc_free(client_handle->dest->url_string);
-                        client_handle->dest->url_string = url_ent->dest_url;
-                        url_ent->dest_url = GLOBUS_NULL;
+                        if(client_handle->dest->url_string)
+                        {
+                            globus_free(client_handle->dest->url_string);
+                            client_handle->dest->url_string = 
+                                globus_libc_strdup(url_ent->dest_url);
+                        }
+                        if(client_handle->dest_url)
+                        {
+                            globus_free(client_handle->dest_url);
+                            client_handle->dest_url = url_ent->dest_url;
+                        }
+                        globus_url_destroy(&url_ent->dst_url);
+                        globus_free(url_ent);
                     }
-                    client_handle->dest_url = strdup(client_handle->dest->url_string);
-
                 }                    
                                
                 break;

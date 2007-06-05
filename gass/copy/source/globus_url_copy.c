@@ -111,7 +111,8 @@ typedef struct
     char *                              dst_authz_assert;
     globus_bool_t                       cache_src_authz_assert;
     globus_bool_t                       cache_dst_authz_assert;
-
+    globus_l_guc_src_dst_pair_t *       free_pair;
+    
     char *                              list_url;
     /* the need for 2 is due to the fact that gass copy is
      * not copying attributes
@@ -2702,6 +2703,21 @@ globus_l_guc_pipeline(
     *source_url = NULL;
     *dest_url = NULL;
 
+    if(guc_info->free_pair)
+    {
+        if(guc_info->free_pair->src_url)
+        {
+            globus_free(guc_info->free_pair->src_url);
+
+        }
+        if(guc_info->free_pair->dst_url)
+        {
+            globus_free(guc_info->free_pair->dst_url);
+        }
+        globus_free(guc_info->free_pair);
+        guc_info->free_pair = NULL;
+    }
+
     if(!globus_fifo_empty(&guc_info->expanded_url_list))
     {
         pair = (globus_l_guc_src_dst_pair_t *)
@@ -2709,7 +2725,7 @@ globus_l_guc_pipeline(
         
         if(pair->dst_url[strlen(pair->dst_url) - 1] == '/')
         {
-            none = GLOBUS_TRUE;   
+            none = GLOBUS_TRUE;
         }
         
         if(strncmp(pair->src_url, "file:/", 5) == 0 || 
@@ -2725,7 +2741,8 @@ globus_l_guc_pipeline(
             *source_url = pair->src_url;
             *dest_url = pair->dst_url;
             
-            globus_fifo_dequeue(&guc_info->expanded_url_list);
+            guc_info->free_pair = globus_fifo_dequeue(
+                &guc_info->expanded_url_list);
             if(!g_quiet_flag)
             {
                 globus_libc_fprintf(stdout,
