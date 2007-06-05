@@ -12,7 +12,7 @@
 #define GlobusXIOGForkName(func) static const char * _gfork_func_name = #func
 #endif
 
-typedef void *                          gfork_child_handle_t;
+typedef struct gfork_i_child_handle_s * globus_gfork_handle_t;
 
 typedef enum
 {
@@ -29,59 +29,71 @@ typedef enum
  *  server plug in functions
  */
 
+/* when the listener is started */
+typedef void 
+(*globus_gfork_startup_func_t)(
+    void **                             user_arg);
+
 /* whne a connection is accepted */
 typedef void 
 (*globus_gfork_open_func_t)(
-    gfork_child_handle_t                handle,
     void *                              user_arg,
-    pid_t                               from_pid);
+    globus_gfork_handle_t               handle,
+    void **                             connection_user_arg);
 
 /* connection cloesd */
 typedef void
 (*globus_gfork_closed_func_t)(
-    gfork_child_handle_t                handle,
     void *                              user_arg,
-    pid_t                               from_pid);
+    globus_gfork_handle_t               handle,
+    void *                              connection_user_arg);
 
-typedef void
-(*globus_gfork_incoming_cb_t)(
-    gfork_child_handle_t                handle,
-    void *                              user_arg,
-    pid_t                               from_pid,
-    globus_byte_t *                     buffer,
-    globus_size_t                       len);
-    
+/* listener is closed */
+typedef void 
+(*globus_gfork_shutdown_func_t)(
+    void *                              user_arg);
 
+typedef struct globus_gfork_module_s
+{
+    globus_gfork_startup_func_t         startup_func;
+    globus_gfork_open_func_t            open_func;
+    globus_gfork_closed_func_t          close_func;
+    globus_gfork_shutdown_func_t        shutdown_func;
+} globus_gfork_module_t;
+
+globus_result_t
+globus_gfork_get_fd(
+    globus_gfork_handle_t               handle,
+    int *                               read_fd,
+    int *                               write_fd);
+
+globus_result_t
+globus_gfork_get_xio(
+    globus_gfork_handle_t               handle,
+    globus_xio_handle_t *               read_xio_handle,
+    globus_xio_handle_t *               write_xio_handle);
+
+globus_result_t
+globus_gfork_get_time_open(
+    globus_gfork_handle_t               handle,
+    time_t *                            time);
 /* ... other randomly useless function */
 
 /*
  * client functions
  */
-globus_result_t
-globus_gfork_child_worker_start(
-    gfork_child_handle_t *              out_handle,
-    const char *                        in_env_suffix,
-    globus_gfork_closed_func_t          close_cb,
-    globus_gfork_incoming_cb_t          incoming_cb,
-    void *                              user_arg);
 
 globus_result_t
-globus_gfork_child_master_start(
-    gfork_child_handle_t *              out_handle,
-    const char *                        in_env_suffix,
-    globus_gfork_open_func_t            open_cb,
-    globus_gfork_closed_func_t          close_cb,
-    globus_gfork_incoming_cb_t          incoming_cb,
-    void *                              user_arg);
+globus_gfork_child_get_fd(
+    int *                               read_fd,
+    int *                               write_fd);
 
 globus_result_t
-globus_gfork_broadcast(
-    gfork_child_handle_t                handle,
-    globus_byte_t *                     data,
-    globus_size_t                       len,
-    globus_xio_data_callback_t          cb,
-    void *                              user_arg);
+globus_gfork_child_get_xio(
+    globus_xio_handle_t *               read_xio_handle,
+    globus_xio_handle_t *               write_xio_handle);
 
+extern globus_extension_registry_t      gfork_i_plugin_registry;
 extern globus_module_descriptor_t       globus_i_gfork_parent_module;
 #define GLOBUS_GFORK_PARENT_MODULE &globus_i_gfork_parent_module
 extern globus_module_descriptor_t       globus_i_gfork_child_module;

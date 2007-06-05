@@ -84,11 +84,6 @@ globus_result_t
 globus_options_destroy(
     globus_options_handle_t              handle)
 {
-    globus_l_options_table_t *          table;
-
-    table = (globus_l_options_table_t *)globus_list_first(handle->table_list);
-    globus_free(table);
-    globus_list_free(handle->table_list);
     globus_free(handle);
 
     return GLOBUS_SUCCESS;
@@ -409,37 +404,11 @@ globus_options_env_process(
     return GLOBUS_SUCCESS;
 }
 
-static
-char *
-globus_l_options_trim(
-    char *                              ins)
-{
-    char *                              end;
-    while(isspace(*ins))
-    {
-        ins++;
-    }
 
-    end = strchr(ins, '\0') - 1;
-
-    while(isspace(*end))
-    {
-        end--;
-    } 
-
-    end++;
-    *end = '\0';
-
-    return ins;
-}
-
-
-static
 globus_result_t
-globus_l_options_file_process(
+globus_options_file_process(
     globus_options_handle_t             handle,
-    char *                              filename,
-    char *                              xinetd_name)
+    char *                              filename)
 {
     globus_list_t *                     list;
     globus_l_options_table_t *          table;
@@ -447,7 +416,6 @@ globus_l_options_file_process(
     int                                 used;
     globus_result_t                     res;
     FILE *                              fptr;
-    char *                              trim_line;
     char                                line[1024];
     char                                file_option[1024];
     char                                value[1024];
@@ -456,7 +424,6 @@ globus_l_options_file_process(
     int                                 line_num;
     int                                 optlen;
     char *                              p;
-    globus_bool_t                       done;
     GlobusFuncName(globus_options_file_process);
 
     fptr = fopen(filename, "r");
@@ -473,49 +440,15 @@ globus_l_options_file_process(
     }
 
     line_num = 0;
-    if(xinetd_name != NULL)
-    {
-        done = GLOBUS_FALSE;
-        while(!done && fgets(line, sizeof(line), fptr) != NULL)
-        {
-            trim_line = globus_l_options_trim(line);
-
-            if(strcmp(line, "{") == 0)
-            {
-                done = GLOBUS_TRUE;
-            }
-            line_num++;
-        }
-    }
-
     while(fgets(line, sizeof(line), fptr) != NULL)
     {
-        trim_line = globus_l_options_trim(line);
-        if(xinetd_name != NULL)
-        {
-            char *                      tmp_str;
-
-            tmp_str = strstr(line, "+=");
-            if(tmp_str != NULL)
-            {
-                tmp_str[0] = ' ';
-                tmp_str[1] = ' ';
-            }
-            tmp_str = strchr(line, '=');
-            if(tmp_str != NULL)
-            {
-                *tmp_str = ' ';
-            }
-            tmp_str = globus_l_options_trim(line);
-            if(strcmp(tmp_str, "}") == 0)
-            {
-                break; /* so lazy */
-            }
-        }
-
         line_num++;
-        p = trim_line;
+        p = line;
         optlen = 0;
+        while(*p && isspace(*p))
+        {
+            p++;
+        }
         if(*p == '\0')
         {
             continue;
@@ -553,8 +486,7 @@ globus_l_options_file_process(
         }
         else
         {
-            strcpy(value, p);
-            rc = 1;
+            rc = sscanf(p, "%s", value);
         }
         if(rc != 1)
         {
@@ -565,6 +497,15 @@ globus_l_options_file_process(
         {
             opt_arg = value;
             optlen += strlen(value);
+        }
+        p = p + optlen;
+        while(*p && isspace(*p))
+        {
+            p++;
+        }
+        if(*p && !isspace(*p))
+        {
+            goto error_parse;
         }
 
         for(list = handle->table_list;
@@ -601,21 +542,4 @@ error_parse:
     fprintf(stderr, "Problem parsing config file %s: line %d\n",
         filename, line_num);
     return -1;
-}
-
-globus_result_t
-globus_options_file_process(
-    globus_options_handle_t             handle,
-    char *                              filename)
-{
-    return globus_l_options_file_process(handle, filename, NULL);
-}
-
-globus_result_t
-globus_options_xinetd_file_process(
-    globus_options_handle_t             handle,
-    char *                              filename,
-    char *                              service_name)
-{
-    return globus_l_options_file_process(handle, filename, service_name);
 }
