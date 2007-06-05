@@ -183,6 +183,12 @@ main(int argc, char *argv[])
         goto cleanup;
     }
 
+    /* Authenticate client to server */
+    if (myproxy_authenticate_init(socket_attrs, proxyfile) < 0) {
+	verror_print_error(stderr);
+        goto cleanup;
+    }
+
     /* Create a proxy by running [grid-proxy-init] */
     sprintf(proxyfile, "%s.%u.%u", MYPROXY_DEFAULT_PROXY,
 	    (unsigned)getuid(), (unsigned)getpid());
@@ -232,12 +238,6 @@ main(int argc, char *argv[])
 	}
     }
     
-    /* Authenticate client to server */
-    if (myproxy_authenticate_init(socket_attrs, proxyfile) < 0) {
-	verror_print_error(stderr);
-        goto cleanup;
-    }
-
     /* Serialize client request object */
     requestlen = myproxy_serialize_request_ex(client_request, 
 					      &request_buffer);
