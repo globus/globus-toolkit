@@ -206,8 +206,6 @@ globus_usage_stats_handle_init(
     int                                 count;
     size_t                              data_length = 0;
     char                                hostname[255];
-    uint16_t                            ncode;
-    uint16_t                            nversion;
     int                                 rc = 0;
 
     new_handle = globus_calloc(1, sizeof(globus_i_usage_stats_handle_t));
@@ -236,14 +234,12 @@ globus_usage_stats_handle_init(
 
     memset(new_handle->data, 0, 1472);
 
-    ncode = htons(new_handle->code);
     memcpy(new_handle->data + data_length, 
-           (void *)&ncode, 2);
+           (void *)&new_handle->code, 2);
     data_length += 2;
 
-    nversion = htons(new_handle->version);
     memcpy(new_handle->data + data_length, 
-           (void *)&nversion, 2);
+           (void *)&new_handle->version, 2);
     data_length += 2;
 
     rc = globus_libc_gethostaddr(&addr);
