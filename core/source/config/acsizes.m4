@@ -45,10 +45,10 @@ AC_DEFUN([CHECK_FOR_INTTYPE],
 
     AC_MSG_CHECKING(for $inttype_name)
     AC_TRY_COMPILE([
-#ifdef HAVE_STDINT_H
-#    include <stdint.h>
-#elif defined(HAVE_INTTYPES_H)
+#ifdef HAVE_INTTYPES_H
 #    include <inttypes.h>
+#elif defined(HAVE_STDINT_H)
+#    include <stdint.h>
 #elif defined(HAVE_SYS_INTTYPES_H)
 #    include <sys/inttypes.h>
 #endif
