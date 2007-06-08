@@ -1915,6 +1915,8 @@ ssl_verify_gsi_chain(SSL_CREDENTIALS *chain)
 
    X509_STORE_CTX_set_app_data(&csc, (void*)ssl);
 
+   X509_STORE_CTX_set_depth(&csc, 100); /* allow more than 9 certs in chain */
+
    if(!X509_verify_cert(&csc)) {
       verror_put_string("X509_verify_cert() failed: %s",
 			(char *)X509_verify_cert_error_string(csc.error));
