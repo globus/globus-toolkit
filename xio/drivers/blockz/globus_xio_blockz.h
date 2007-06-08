@@ -9,12 +9,12 @@
  * modifications, you must include this notice in the file.
  */
 
-#ifndef GLOBUS_XIO_LIBZ_H
-#define GLOBUS_XIO_LIBZ_H 1
+#ifndef GLOBUS_XIO_BLOCKZ_H
+#define GLOBUS_XIO_BLOCKZ_H 1
 
 enum
 {
-    GLOBUS_L_XIO_LIBZ_DEBUG_TRACE = 1
+    GLOBUS_L_XIO_BLOCKZ_DEBUG_TRACE = 1
 };
 
 #endif
