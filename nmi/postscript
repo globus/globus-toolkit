@@ -1,0 +1,2 @@
+#!/bin/sh
+cat valgrind.log.* 2>/dev/null
