@@ -87,10 +87,10 @@ while (($arg = shift @ARGV)) {
 	chomp($valgrind = `which valgrind 2>/dev/null`);
 	die "valgrind not in PATH, stopped" if (!(-x $valgrind));
 	$valgrind .= " --leak-check=full";
-	$valgrind .= " --suppressions=$ENV{HOME}/.valgrind.supp";
+#	$valgrind .= " --suppressions=$ENV{HOME}/.valgrind.supp";
 	$valgrind .= " --log-file=/tmp/valgrind.log.$$";
 	$valgrind .= " --undef-value-errors=no";
-	$valgrind .= " --gen-suppressions=all";
+#	$valgrind .= " --gen-suppressions=all";
 	$valgrind .= " --num-callers=50 -q ";
     } else {
 	print STDERR $usage;
