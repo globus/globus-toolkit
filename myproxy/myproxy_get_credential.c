@@ -340,8 +340,10 @@ main(int argc, char *argv[])
             } else {
 		char *path;
 		path = get_trusted_certs_path();
-		printf("Trust roots have been installed in %s.\n", path);
-		free(path);
+        if (path) {
+            printf("Trust roots have been installed in %s.\n", path);
+            free(path);
+        }
 	    }
         } else {
             myproxy_debug("Requested trusted certs but didn't get any.\n");
