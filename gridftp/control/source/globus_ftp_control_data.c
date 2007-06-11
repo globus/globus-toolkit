@@ -9274,6 +9274,10 @@ globus_l_ftp_eb_connect_callback(
              */
             else
             {
+                if(error)
+                {
+                    globus_object_free(error);
+                }
                 error = globus_error_construct_string(
                        GLOBUS_FTP_CONTROL_MODULE,
                        GLOBUS_NULL,
