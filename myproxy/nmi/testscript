@@ -20,6 +20,13 @@ echo ==================================================
 echo Directory contents:
 ls -Rl
 echo ==================================================
+valgrind=""
+if test -d /prereq/valgrind-2.4.0/bin; then
+    echo /prereq/valgrind-2.4.0/bin exists
+    PATH=$PATH:/prereq/valgrind-2.4.0/bin
+    export PATH
+    valgrind="-valgrind"
+fi
 echo PATHs:
 echo `which wget`
 echo `which curl`
@@ -59,7 +66,7 @@ mkdir $X509_CERT_DIR
 cp nmi/*.0 nmi/*.signing_policy $X509_CERT_DIR
 chmod 0600 nmi/userkey.pem
 grid-proxy-init -debug -verify -cert nmi/usercert.pem -key nmi/userkey.pem
-myproxy-test -startserver
+myproxy-test -startserver $valgrind
 myproxy-test-replicate
 cd ..
 if test -f nightly.tar.gz; then
@@ -88,7 +95,7 @@ if test -f nightly.tar.gz; then
     gpt-build -verbose myproxy-*.tar.gz $flavor
     echo ==================================================
     echo Testing MyProxy...
-    myproxy-test -startserver
+    myproxy-test -startserver $valgrind
     myproxy-test-replicate
 fi
 ) 2>&1 # we want stdout & stderr mixed in the output file
