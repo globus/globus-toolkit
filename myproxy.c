@@ -178,6 +178,9 @@ myproxy_bootstrap_trust(myproxy_socket_attrs_t *attrs)
     }
 
     cert_dir = get_trusted_certs_path();
+    if (cert_dir) {
+        goto error;
+    }
 
     /* get trust root(s) from the myproxy-server */
     ctx = SSL_CTX_new(SSLv3_client_method());
