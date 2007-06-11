@@ -27,7 +27,7 @@ To see the available pre-requisite packages, run:
 
 To view the results of the builds:
 
-  http://grandcentral.cs.wisc.edu/pavlo/index.php?page=results%2Foverview&opt_project=MyProxy
+  http://nmi-s003.cs.wisc.edu/nmi/index.php?page=results%2Foverview&opt_project=MyProxy
 
 There is a cron job that submits a test build each night at midnight
 running in jbasney's account on grandcentral using an up-to-date
