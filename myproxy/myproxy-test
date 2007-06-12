@@ -163,21 +163,10 @@ $ENV{'LOGNAME'} = $ENV{'LOGNAME'} . ".myproxy-test";
 
 srand(time||$$);
 $passphrase = sprintf "%010.d", int(rand(0x7fffffff));
+$trustrootdir = "$ENV{HOME}/.globus/certificates.test.$$";
 
 # all temporary files accessible only by running user
 umask(0077);
-
-# only test trusted certificates management if no certificates directory
-# exists for us to mess up
-if (!defined($ENV{X509_CERT_DIR}) &&
-    defined($ENV{HOME}) && !(-e "$ENV{HOME}/.globus/certificates")) {
-    $test_trustroots = 1;
-    print STDERR "Testing with $ENV{HOME}/.globus/certificates.\n"
-	if ($verbose);
-} else {
-    $test_trustroots = 0;
-    print STDERR "Not testing CA certificate management because $ENV{HOME}/.globus/certificates exists.\n" if ($verbose);
-}
 
 #
 # start server if requested
@@ -304,25 +293,25 @@ if ($exitstatus == 0) {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
 }
 
-if ($test_trustroots) {
-    ($exitstatus, $output) =
-	&runtest("myproxy-logon -T -t 1 -o /tmp/myproxy-test.$$ -v -S",
-		 $passphrase . "\n");
-    print "MyProxy Test 3T (retrieve stored credential w/ trustroots): ";
-    if ($exitstatus == 0) {
-	($exitstatus, $output) =
-	    &verifyproxy("/tmp/myproxy-test.$$");
-    }
-    if ($exitstatus == 0) {
-	($exitstatus, $output) =
-	    &verifytrustroots();
-    }
-    if ($exitstatus == 0) {
-	print "SUCCEEDED\n"; $SUCCESSES++;
-    } else {
-	print "FAILED\n"; $FAILURES++; print STDERR $output;
-    }
+$ENV{'X509_CERT_DIR'} = $trustrootdir;
+($exitstatus, $output) =
+  &runtest("myproxy-logon -T -t 1 -o /tmp/myproxy-test.$$ -v -S",
+           $passphrase . "\n");
+print "MyProxy Test 3T (retrieve stored credential w/ trustroots): ";
+if ($exitstatus == 0) {
+  ($exitstatus, $output) =
+    &verifyproxy("/tmp/myproxy-test.$$");
 }
+if ($exitstatus == 0) {
+  ($exitstatus, $output) =
+    &verifytrustroots();
+}
+if ($exitstatus == 0) {
+  print "SUCCEEDED\n"; $SUCCESSES++;
+} else {
+  print "FAILED\n"; $FAILURES++; print STDERR $output;
+}
+delete $ENV{'X509_CERT_DIR'};
 
 ($exitstatus, $output) =
     &runtest("myproxy-logon -t 1 -o /tmp/myproxy-test.$$ -v -S",
@@ -620,27 +609,27 @@ if ($exitstatus == 0) {
 unlink( "/tmp/myproxy-test.cert.$$" );
 unlink( "/tmp/myproxy-test.key.$$" );
 
-if ($test_trustroots) {
-    ($exitstatus, $output) =
-	&runtest("myproxy-retrieve -T -c /tmp/myproxy-test.cert.$$ -y /tmp/myproxy-test.key.$$ -v -S",
-		 $passphrase . "\n");
-    print "MyProxy Test 20T (retrieve stored credential w/ trustroots): ";
-    if ($exitstatus == 0) {
-	($exitstatus, $output) =
-	    &verifycert("/tmp/myproxy-test.cert.$$", "/tmp/myproxy-test.key.$$");
-    }
-    if ($exitstatus == 0) {
-	($exitstatus, $output) =
-	    &verifytrustroots();
-    }
-    if ($exitstatus == 0) {
-	print "SUCCEEDED\n"; $SUCCESSES++;
-    } else {
-	print "FAILED\n"; $FAILURES++; print STDERR $output;
-    }
-    unlink( "/tmp/myproxy-test.cert.$$" );
-    unlink( "/tmp/myproxy-test.key.$$" );
+$ENV{'X509_CERT_DIR'} = $trustrootdir;
+($exitstatus, $output) =
+  &runtest("myproxy-retrieve -T -c /tmp/myproxy-test.cert.$$ -y /tmp/myproxy-test.key.$$ -v -S",
+           $passphrase . "\n");
+print "MyProxy Test 20T (retrieve stored credential w/ trustroots): ";
+if ($exitstatus == 0) {
+  ($exitstatus, $output) =
+    &verifycert("/tmp/myproxy-test.cert.$$", "/tmp/myproxy-test.key.$$");
 }
+if ($exitstatus == 0) {
+  ($exitstatus, $output) =
+    &verifytrustroots();
+}
+if ($exitstatus == 0) {
+  print "SUCCEEDED\n"; $SUCCESSES++;
+} else {
+  print "FAILED\n"; $FAILURES++; print STDERR $output;
+}
+unlink( "/tmp/myproxy-test.cert.$$" );
+unlink( "/tmp/myproxy-test.key.$$" );
+delete $ENV{'X509_CERT_DIR'};
 
 #
 # Test 21
@@ -1103,6 +1092,7 @@ sub runtest {
     waitpid($pid, 0);
     $exitstatus = $?;
     $output = join('', @output);
+    print STDERR $output if ($verbose);
 
     return ($exitstatus, $output);
 }
@@ -1312,9 +1302,6 @@ sub verifycert {
 # ~/.globus/certificates, then remove that directory.
 #
 sub verifytrustroots {
-    return (1, "internal error: not supposed to test trustroots!")
-	if (!$test_trustroots);
-    $trustrootdir = "$ENV{HOME}/.globus/certificates";
     if (!(-d $trustrootdir)) {
 	return (1, "trust root directory $trustrootdir doesn't exist!");
     }
