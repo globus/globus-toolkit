@@ -224,7 +224,7 @@ char *
 verror_get_string()
 {
     if (!my_context.string) {
-	return "unknown error\n";
+	return "unknown error";
     }
     return my_context.string;
 }
