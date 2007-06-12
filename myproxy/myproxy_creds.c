@@ -864,6 +864,8 @@ myproxy_creds_retrieve(struct myproxy_creds *creds)
     /* reset username from stashed value */
     if (creds->username == NULL) {
         creds->username = username;
+    } else {
+        free(username);
     }
     username = NULL;
     assert(creds->location == NULL);
@@ -1524,6 +1526,7 @@ void myproxy_creds_free_contents(struct myproxy_creds *creds)
     if (creds->renewers != NULL)	free(creds->renewers);
     if (creds->credname != NULL)	free(creds->credname);
     if (creds->creddesc != NULL)	free(creds->creddesc);
+    if (creds->lockmsg != NULL)     free(creds->lockmsg);
     memset(creds, 0, sizeof(struct myproxy_creds));
 }
 
