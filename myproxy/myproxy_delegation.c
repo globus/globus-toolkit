@@ -110,7 +110,7 @@ int myproxy_get_delegation(
 #endif
 
     if (outfile[0] == '-' && outfile[1] == '\0') {
-	printf("%s", credentials);
+        printf("%.*s", credential_len, credentials);
     } else {
 	int fd;
 	unlink(outfile);
