@@ -178,7 +178,7 @@ myproxy_bootstrap_trust(myproxy_socket_attrs_t *attrs)
     }
 
     cert_dir = get_trusted_certs_path();
-    if (cert_dir) {
+    if (!cert_dir) {
         goto error;
     }
 
