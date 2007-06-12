@@ -1,9 +1,0 @@
-Makefile
-Zlib.bs
-Zlib.c
-Zlib.o
-Zlib.pm.bak
-blib
-constants.h
-constants.xs
-
