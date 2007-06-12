@@ -156,7 +156,8 @@ bio_to_buffer(BIO				*bio,
     
     buffer_len = BIO_pending(bio);
     
-    buffer = malloc(buffer_len);
+    buffer = malloc(buffer_len+1);
+    memset(buffer, '\0', buffer_len+1);
     
     if (buffer == NULL)
     {
