@@ -522,6 +522,16 @@ get_trusted_certs_path()
             verror_put_string("strdup() failed.");
             return NULL;
         }
+
+        if (path[strlen(path)-1] != '/')
+        {
+            if (my_append(&path, "/", NULL) == -1)
+            {
+                free(path);
+                return NULL;
+            }
+        }
+
         return path;
     }
 
