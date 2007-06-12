@@ -511,10 +511,11 @@ gfork_l_client_writev_cb(
     /* lazy reuse of XIO callback.  perhaps we should define our own */
     if(msg->client_cb)
     {
-        msg->client_cb(NULL, result, msg->buffer, msg->iov[1].iov_len,
-            nbytes, data_desc, msg->user_arg);
+        msg->client_cb(NULL, result, &msg->iov[1],
+            count - 1, nbytes, data_desc, msg->user_arg);
     }
 
+    globus_free(msg->iov);
     globus_free(msg);
 }
 
@@ -523,36 +524,44 @@ globus_result_t
 globus_l_gfork_send(
     gfork_l_child_handle_t *            handle,
     uid_t                               pid,
-    globus_byte_t *                     data,
-    globus_size_t                       len,
-    globus_xio_data_callback_t          cb,
+    globus_xio_iovec_t *                iov,
+    int                                 iovc,
+    globus_xio_iovec_callback_t         cb,
     void *                              user_arg)
 {
+    int                                 i;
+    globus_size_t                       nbytes;
     gfork_i_msg_t *                     msg;
     globus_result_t                     result;
 
     msg = (gfork_i_msg_t *) globus_calloc(1, sizeof(gfork_i_msg_t));
 
-    msg->header.size = len;
     msg->header.from_pid = getpid();
     msg->header.to_pid = pid;
     msg->header.type = GLOBUS_GFORK_MSG_DATA;
 
     msg->user_arg = user_arg;
-    msg->buffer = data;
 
+    msg->iov = (globus_xio_iovec_t *) globus_calloc(
+        iovc + 1, sizeof(globus_xio_iovec_t));
     msg->iov[0].iov_base = &msg->header;
     msg->iov[0].iov_len = sizeof(gfork_i_msg_header_t);
-    msg->iov[1].iov_base = data;
-    msg->iov[1].iov_len = len;
 
+    nbytes = msg->iov[0].iov_len;
+    for(i = 0; i < iovc; i++)
+    {
+        msg->iov[i+1].iov_base = iov[i].iov_base;
+        msg->iov[i+1].iov_len = iov[i].iov_len;
+        nbytes += iov[i].iov_len;
+    }
     msg->client_cb = cb;
+    msg->header.size = nbytes;
 
     result = globus_xio_register_writev(
         handle->write_xio,
         msg->iov,
-        2,
-        len + sizeof(gfork_i_msg_header_t),
+        iovc+1,
+        nbytes,
         NULL,
         gfork_l_client_writev_cb,
         msg);
@@ -562,24 +571,24 @@ globus_l_gfork_send(
 globus_result_t
 globus_gfork_broadcast(
     gfork_child_handle_t                handle,
-    globus_byte_t *                     data,
-    globus_size_t                       len,
-    globus_xio_data_callback_t          cb,
+    globus_xio_iovec_t *                iov,
+    int                                 iovc,
+    globus_xio_iovec_callback_t         cb,
     void *                              user_arg)
 {
-    return globus_l_gfork_send(handle, -1, data, len, cb, user_arg);
+    return globus_l_gfork_send(handle, -1, iov, iovc, cb, user_arg);
 }
 
 globus_result_t
 globus_gfork_send(
     gfork_child_handle_t                handle,
     uid_t                               pid,
-    globus_byte_t *                     data,
-    globus_size_t                       len,
-    globus_xio_data_callback_t          cb,
+    globus_xio_iovec_t *                iov,
+    int                                 iovc,
+    globus_xio_iovec_callback_t         cb,
     void *                              user_arg)
 {
-    return globus_l_gfork_send(handle, pid, data, len, cb, user_arg);
+    return globus_l_gfork_send(handle, pid, iov, iovc, cb, user_arg);
 }
 
 static

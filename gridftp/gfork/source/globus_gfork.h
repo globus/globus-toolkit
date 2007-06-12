@@ -77,9 +77,18 @@ globus_gfork_child_master_start(
 globus_result_t
 globus_gfork_broadcast(
     gfork_child_handle_t                handle,
-    globus_byte_t *                     data,
-    globus_size_t                       len,
-    globus_xio_data_callback_t          cb,
+    globus_xio_iovec_t *                iov,
+    int                                 iovc,
+    globus_xio_iovec_callback_t         cb,
+    void *                              user_arg);
+
+globus_result_t
+globus_gfork_send(
+    gfork_child_handle_t                handle,
+    uid_t                               pid,
+    globus_xio_iovec_t *                iov,
+    int                                 iovc,
+    globus_xio_iovec_callback_t         cb,
     void *                              user_arg);
 
 extern globus_module_descriptor_t       globus_i_gfork_parent_module;
