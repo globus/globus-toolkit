@@ -1,2 +1,3 @@
 #!/bin/sh
-cat valgrind.log.* 2>/dev/null
+cat myproxy/valgrind.log.* 2>/dev/null
+exit 0
