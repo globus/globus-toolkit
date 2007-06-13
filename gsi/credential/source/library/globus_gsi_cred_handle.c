@@ -27,6 +27,8 @@
 
 #include "globus_i_gsi_credential.h"
 #include "globus_gsi_system_config.h"
+#include "globus_gsi_callback.h"
+#include "globus_gsi_callback_constants.h"
 #include "openssl/pem.h"
 #include "openssl/x509.h"
 #include "openssl/x509v3.h"
@@ -1697,6 +1699,7 @@ globus_gsi_cred_verify_cert_chain(
     cert_store = X509_STORE_new();
     X509_STORE_set_verify_cb_func(cert_store, 
                                   globus_gsi_callback_create_proxy_callback);
+    X509_STORE_set_depth(cert_store, GLOBUS_GSI_CALLBACK_VERIFY_DEPTH);
 
     result = globus_gsi_callback_get_cert_dir(callback_data, &cert_dir);
     if(result != GLOBUS_SUCCESS)
@@ -1715,6 +1718,8 @@ globus_gsi_cred_verify_cert_chain(
         store_context = X509_STORE_CTX_new();
         X509_STORE_CTX_init(store_context, cert_store, cert,
                             cred_handle->cert_chain);
+        X509_STORE_CTX_set_depth(store_context,
+                                 GLOBUS_GSI_CALLBACK_VERIFY_DEPTH);
 
         /* override the check_issued with our version */
         store_context->check_issued = globus_gsi_callback_check_issued;

@@ -30,6 +30,7 @@ static char *rcsid = "$Id$";
 #include "globus_i_gsi_gss_utils.h"
 #include "globus_gsi_credential.h"
 #include "globus_gsi_callback.h"
+#include "globus_gsi_callback_constants.h"
 #include "globus_gsi_system_config.h"
 #include "openssl/ssl3.h"
 
@@ -2150,6 +2151,9 @@ globus_i_gsi_gssapi_init_ssl_context(
      */
     SSL_CTX_set_verify(cred_handle->ssl_context, SSL_VERIFY_PEER,
                        globus_gsi_callback_handshake_callback);
+
+    SSL_CTX_set_verify_depth(cred_handle->ssl_context,
+                             GLOBUS_GSI_CALLBACK_VERIFY_DEPTH);
 
     /*
      * for now we will accept any purpose, as Globus does

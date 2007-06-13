@@ -89,6 +89,14 @@ typedef enum
 
 } globus_gsi_callback_error_t;
 
+/**
+ * Constant passed to SSL_CTX_set_verify_depth() and
+ * SSL_set_verify_depth() to increase allowed certificate depth to 100
+ * rather than the OpenSSL default of 9. 100 is an arbitrarily chosen
+ * large value.
+ */
+#define GLOBUS_GSI_CALLBACK_VERIFY_DEPTH 100
+
 EXTERN_C_END
 
 #endif /* GLOBUS_GSI_CALLBACK_CONSTANTS_H */
