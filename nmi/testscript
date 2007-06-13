@@ -10,8 +10,7 @@ else
 fi
 GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/globus
 LOGNAME=$USER
-X509_CERT_DIR=$GLOBUS_LOCATION/share/certificates
-export GLOBUS_LOCATION LOGNAME X509_CERT_DIR
+export GLOBUS_LOCATION LOGNAME
 (
 echo ==================================================
 echo Environment variables:
@@ -62,8 +61,9 @@ gpt-uninstall myproxy
 gpt-build -verbose myproxy-*.tar.gz $flavor
 echo ==================================================
 echo Testing MyProxy...
-mkdir $X509_CERT_DIR
-cp nmi/*.0 nmi/*.signing_policy $X509_CERT_DIR
+MY_X509_CERT_DIR=$GLOBUS_LOCATION/share/certificates
+mkdir $MY_X509_CERT_DIR
+cp nmi/*.0 nmi/*.signing_policy $MY_X509_CERT_DIR
 chmod 0600 nmi/userkey.pem
 grid-proxy-init -debug -verify -cert nmi/usercert.pem -key nmi/userkey.pem
 myproxy-test -startserver $valgrind
@@ -95,6 +95,9 @@ if test -f nightly.tar.gz; then
     gpt-build -verbose myproxy-*.tar.gz $flavor
     echo ==================================================
     echo Testing MyProxy...
+    MY_X509_CERT_DIR=$GLOBUS_LOCATION/share/certificates
+    mkdir $MY_X509_CERT_DIR
+    cp nmi/*.0 nmi/*.signing_policy $MY_X509_CERT_DIR
     myproxy-test -startserver $valgrind
     myproxy-test-replicate
 fi
