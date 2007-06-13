@@ -134,13 +134,6 @@ void binary_debug(char* msg, unsigned char *buf, int len) {
  * then we return 0.  We return -1 on any failure.
  */
 
-/* Note we (temporarily) use des_ functions instead of the DES_
-   functions introduced in OpenSSL 0.9.7 for backwards compatibility
-   with OpenSSL 0.9.6.  At some point we should switch (back) to the
-   DES_ versions, at which point, beware the old functions take
-   des_key_schedule arguments whereas the new ones take
-   (DES_key_schedule *) arguments. */
-
 int
 decrypt_cookie(const unsigned char *inbuf, int inlen,
     struct cookie_data *cookie, const unsigned char *keybuf,
@@ -150,8 +143,8 @@ decrypt_cookie(const unsigned char *inbuf, int inlen,
     unsigned char signature[1024];
     int siglen;
     BIO *bio, *b64;
-    des_cblock deskey, ivec;	/* see note about des_ vs. DES_ above */
-    des_key_schedule ks;
+    DES_cblock deskey, ivec;
+    DES_key_schedule ks;
     EVP_PKEY *pubkey = NULL;
     EVP_MD_CTX ctx;
     int offset, i;
@@ -209,8 +202,8 @@ decrypt_cookie(const unsigned char *inbuf, int inlen,
 	/* get the DES key from keybuf */
 	offset = inbuf[inlen - 2];
 	memcpy (deskey, keybuf + offset, sizeof(deskey));
-	des_set_odd_parity(&deskey);
-	if (des_set_key_checked(&deskey, ks) != 0) {
+	DES_set_odd_parity(&deskey);
+	if (DES_set_key_checked(&deskey, &ks) != 0) {
 	    goto cleanup;
 	}
 
@@ -222,11 +215,11 @@ decrypt_cookie(const unsigned char *inbuf, int inlen,
 
 	/* decrypt signature and cookie data */
 	i = 0;
-	des_cfb64_encrypt(inbuf, signature, siglen, ks, &ivec, &i,
+	DES_cfb64_encrypt(inbuf, signature, siglen, &ks, &ivec, &i,
 			  DES_DECRYPT);
 
-	des_cfb64_encrypt (inbuf + siglen, (unsigned char *)cookie,
-			   sizeof(*cookie), ks, &ivec, &i, DES_DECRYPT);
+	DES_cfb64_encrypt (inbuf + siglen, (unsigned char *)cookie,
+			   sizeof(*cookie), &ks, &ivec, &i, DES_DECRYPT);
 
 	/* binary_debug("decrypted cookie", cookie, sizeof(*cookie)); */
 	/* binary_debug("decrypted signature", signature, siglen); */
