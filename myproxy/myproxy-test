@@ -164,6 +164,7 @@ $ENV{'LOGNAME'} = $ENV{'LOGNAME'} . ".myproxy-test";
 srand(time||$$);
 $passphrase = sprintf "%010.d", int(rand(0x7fffffff));
 $trustrootdir = "$ENV{HOME}/.globus/certificates.test.$$";
+$origtrustrootdir = $ENV{'X509_CERT_DIR'} if defined($ENV{'X509_CERT_DIR'});
 
 # all temporary files accessible only by running user
 umask(0077);
@@ -311,7 +312,11 @@ if ($exitstatus == 0) {
 } else {
   print "FAILED\n"; $FAILURES++; print STDERR $output;
 }
-delete $ENV{'X509_CERT_DIR'};
+if (defined($origtrustrootdir)) {
+  $ENV{'X509_CERT_DIR'} = $origtrustrootdir;
+} else {
+  delete $ENV{'X509_CERT_DIR'};
+}
 
 ($exitstatus, $output) =
     &runtest("myproxy-logon -t 1 -o /tmp/myproxy-test.$$ -v -S",
@@ -629,7 +634,11 @@ if ($exitstatus == 0) {
 }
 unlink( "/tmp/myproxy-test.cert.$$" );
 unlink( "/tmp/myproxy-test.key.$$" );
-delete $ENV{'X509_CERT_DIR'};
+if (defined($origtrustrootdir)) {
+  $ENV{'X509_CERT_DIR'} = $origtrustrootdir;
+} else {
+  delete $ENV{'X509_CERT_DIR'};
+}
 
 #
 # Test 21
