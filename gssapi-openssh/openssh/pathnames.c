@@ -2,6 +2,8 @@
 #include "xmalloc.h"
 #include "log.h"
 
+#include <string.h>
+
 #define BINDIR "/bin"
 #define LIBEXEC "/libexec"
 #define SSHDIR "/etc/ssh"
