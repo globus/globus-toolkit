@@ -1158,18 +1158,18 @@ gfork_l_write(
         msg = (gfork_i_msg_t *) globus_fifo_dequeue(&to_kid->write_q);
 
         msg->to_kid = to_kid;
-        msg->iov[0].iov_base = &msg->header;
-        msg->iov[0].iov_len = sizeof(gfork_i_msg_header_t);
+        msg->write_iov[0].iov_base = &msg->header;
+        msg->write_iov[0].iov_len = sizeof(gfork_i_msg_header_t);
         if(msg->header.size > 0)
         {
-            msg->iov[1].iov_base = msg->data->buffer;
-            msg->iov[1].iov_len = msg->header.size;
+            msg->write_iov[1].iov_base = msg->data->buffer;
+            msg->write_iov[1].iov_len = msg->header.size;
             msg->data->ref++;
             iovc++;
         }
         result = globus_xio_register_writev(
             to_kid->write_xio_handle,
-            msg->iov,
+            msg->write_iov,
             iovc,
             msg->header.size + sizeof(gfork_i_msg_header_t),
             NULL,

@@ -104,6 +104,7 @@ typedef struct gfork_i_msg_s
     struct gfork_i_child_handle_s *     from_kid;
     void *                              user_arg;
     globus_xio_iovec_t *                iov;
+    globus_xio_iovec_t                  write_iov[2];
     globus_xio_iovec_callback_t         client_cb;
     globus_xio_iovec_callback_t         cb;
     gfork_i_msg_data_t *                data;

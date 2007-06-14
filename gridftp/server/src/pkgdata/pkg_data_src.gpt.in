@@ -17,7 +17,11 @@
                     <Simple_Version Major="0"/>
                 </Version>
             </Dependency>
-
+           <Dependency Name="globus_gfork">
+                <Version>
+                    <Simple_Version Major="0"/>
+                </Version>
+            </Dependency>
         </Source_Dependencies>
         <Source_Dependencies Type="compile">
             <Dependency Name="globus_gridftp_server_control">
@@ -55,6 +59,11 @@
                 </Version>
             </Dependency>
             <Dependency Name="globus_xio_gsi_driver">
+                <Version>
+                    <Simple_Version Major="0"/>
+                </Version>
+            </Dependency>
+           <Dependency Name="globus_gfork">
                 <Version>
                     <Simple_Version Major="0"/>
                 </Version>
