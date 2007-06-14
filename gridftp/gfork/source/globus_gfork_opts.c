@@ -278,13 +278,21 @@ gfork_l_list_to_list(
     const char *                        in_str,
     globus_list_t *                     old_list)
 {
+    void *                              tmp_ent;
     globus_list_t *                     out_list;
     globus_list_t *                     list;
+    globus_list_t *                     rev_list = NULL;
 
     list = globus_list_from_string(in_str, ' ', NULL);
+    /* gotta reverse this */
+    while(!globus_list_empty(list))
+    {
+        tmp_ent = globus_list_remove(&list, list);
+        globus_list_insert(&rev_list, tmp_ent);
+    }
 
-    out_list = globus_list_concat(old_list, list);
-    globus_list_free(list);
+    out_list = globus_list_concat(old_list, rev_list);
+    globus_list_free(rev_list);
     globus_list_free(old_list);
 
     return out_list;

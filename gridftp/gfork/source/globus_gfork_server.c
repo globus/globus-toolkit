@@ -120,6 +120,7 @@ gfork_l_kid_read_close_cb(
             kill(kid_handle->pid, SIGKILL);
         }
         globus_fifo_destroy(&kid_handle->write_q);
+
         globus_free(kid_handle);
 
         globus_cond_signal(&gfork_l_cond);
@@ -447,6 +448,9 @@ gfork_l_dead_kid(
     {
         return;
     }
+    else if(gfork_l_master_child_handle == NULL)
+    {
+    }
     else
     {
         kid_handle->dead = dead;
@@ -737,8 +741,8 @@ gfork_l_server_accept_cb(
         }
         else
         {
-            close(outfds[0]);
-            close(infds[1]);
+            close(outfds[1]);
+            close(infds[0]);
         }
 
         result = globus_xio_server_register_accept(
@@ -767,6 +771,8 @@ error_inpipe:
     globus_xio_register_close(handle, NULL, NULL, NULL);
 error_accept:
     globus_mutex_unlock(&gfork_l_mutex);
+    gfork_log(1, "GFORK has stopped accepting connections: %s\n",
+        globus_error_print_friendly(globus_error_peek(result)));
 
     /* log an error */
     return;
