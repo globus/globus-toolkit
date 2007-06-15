@@ -346,6 +346,11 @@ gfork_l_spawn_master()
         sprintf(tmp_str, "%d", write_fd);
         globus_libc_setenv(GFORK_CHILD_WRITE_ENV, tmp_str, 1);
 
+
+        gfork_log(2, "Master Child FDs %s %s\n",
+            globus_libc_getenv(GFORK_CHILD_READ_ENV),
+            globus_libc_getenv(GFORK_CHILD_WRITE_ENV));
+
         gfork_log(1, "running master program: %s\n",
             gfork_l_handle.master_argv[0]);
         rc = execv(
@@ -863,6 +868,8 @@ gfork_new_child(
     }
     close(socket_handle);
 
+    gfork_log(2, "Worker Child FDs %s %s\n", globus_libc_getenv(GFORK_CHILD_READ_ENV),
+        globus_libc_getenv(GFORK_CHILD_WRITE_ENV));
     /* start it */
     rc = execv(gfork_handle->server_argv[0], gfork_handle->server_argv);
     /* if we get to here ecxec failed, fall through to error handling */

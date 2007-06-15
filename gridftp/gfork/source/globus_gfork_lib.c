@@ -297,6 +297,8 @@ globus_l_gfork_child_start(
     }
     env = globus_common_create_string("%s%s", GFORK_CHILD_READ_ENV, env_suffix);
     result = gfork_l_get_env_fd(env, &read_fd);
+
+fprintf(stderr, "%s :: %d\n", env, read_fd);
     globus_free(env);
     if(result != GLOBUS_SUCCESS)
     {
@@ -454,7 +456,7 @@ gfork_i_make_xio_handle(
     globus_xio_attr_t                   attr;
     globus_xio_handle_t                 handle;
 
-    res = globus_xio_attr_copy(&attr, gfork_i_file_attr);
+    res = globus_xio_attr_init(&attr);
     if(res != GLOBUS_SUCCESS)
     {
         goto error_copy;
