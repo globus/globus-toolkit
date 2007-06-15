@@ -363,6 +363,19 @@ globus_l_gfs_default_brain_init()
     globus_list_t *                     list;
     gfs_l_db_node_t *                   node;
     globus_result_t                     result;
+    int                                 rc;
+
+    rc = globus_module_activate(GLOBUS_GFORK_CHILD_MODULE);
+    if(rc != 0)
+    {
+        globus_i_gfs_log_message(
+            GLOBUS_I_GFS_LOG_WARN,
+            "Could not activate GFork\n");
+    }
+        globus_i_gfs_log_message(
+            GLOBUS_I_GFS_LOG_WARN,
+            "GFork FDs: %s, %s\n", globus_libc_getenv("GFORK_CHILD_READ_ENV"), globus_libc_getenv("GFORK_CHILD_WRITE_ENV"));
+
 
     globus_mutex_init(&globus_l_brain_mutex, NULL);
 
@@ -426,7 +439,7 @@ globus_l_gfs_default_brain_init()
         if(result != GLOBUS_SUCCESS)
         {
             globus_i_gfs_log_result_warn(
-                "GFork functionality not enabled",
+                "GFork functionality not enabled: globus_gfork_child_worker_start() failed",
                 result);
         }
     }

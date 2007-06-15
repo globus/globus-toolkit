@@ -98,7 +98,8 @@ sbin_SCRIPTS = \
     gridftp-password.pl
 
 libexec_PROGRAMS= \
-    gfs-gfork-master
+    gfs-gfork-master \
+    gfs-dynbe-client
 
 # _SOURCES is an automake macro which contains
 # a list of sources needed to compile the library.
@@ -125,6 +126,10 @@ globus_gridftp_server_LDADD = \
 gfs_gfork_master_SOURCES = gfs_gfork_master.c
 gfs_gfork_master_LDFLAGS = $(GPT_LDFLAGS)
 gfs_gfork_master_LDADD = $(GPT_PGM_LINKS)
+
+gfs_dynbe_client_SOURCES = gfs_dynbe_client.c
+gfs_dynbe_client_LDFLAGS = $(GPT_LDFLAGS)
+gfs_dynbe_client_LDADD = $(GPT_PGM_LINKS)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
