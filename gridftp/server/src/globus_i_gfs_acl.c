@@ -319,7 +319,6 @@ globus_gfs_acl_audit(
     const char *                        message)
 {
     globus_list_t *                     list;
-    int                                 rc;
     globus_l_gfs_acl_request_t *        acl_request;
     GlobusGFSName(globus_gfs_acl_log);
     GlobusGFSDebugEnter();

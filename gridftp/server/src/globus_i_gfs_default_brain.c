@@ -189,12 +189,14 @@ globus_l_gfs_gfork_incoming_cb(
     gfs_l_db_repo_t *                   repo = NULL;
     int                                 con_max;
     int                                 total_max;
-    char *                              repo_name = NULL;
+    char                                repo_name[GF_REPO_LEN];
     char                                cs[GF_CS_LEN];
     char                                cookie[GF_COOKIE_LEN];
     char *                              cookie_id;
     GlobusGFSName(globus_l_brain_read_cb);
 
+
+fprintf(stderr, "HEREHRHERHEREHRE!\n");
     globus_i_gfs_log_message(
         GLOBUS_I_GFS_LOG_WARN,
         "[%s] enter", "globus_l_brain_read_cb");
@@ -224,9 +226,9 @@ globus_l_gfs_gfork_incoming_cb(
         {
             goto error_cs;
         }
-        if(*repo_name == '\0')
+        if(repo_name[0] == '\0')
         {
-            repo_name = GFS_DB_REPO_NAME;
+            strcpy(repo_name, GFS_DB_REPO_NAME);
         }
         cookie_id = globus_common_create_string("%s::%s", cookie, cs);
 
@@ -307,11 +309,6 @@ globus_l_gfs_gfork_incoming_cb(
         }
 error_cs:
 error:
-        globus_xio_register_close(
-            handle,
-            NULL,
-            NULL,
-            NULL);
 	    globus_free(buffer);
 
         globus_l_gfs_backend_changed();

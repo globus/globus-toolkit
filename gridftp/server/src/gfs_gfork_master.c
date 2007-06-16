@@ -18,6 +18,7 @@
 #include "globus_xio_tcp_driver.h"
 #include "globus_xio_gsi.h"
 #include "globus_gfork.h"
+#include "gfs_i_gfork_plugin.h"
 
 #define GFSGforkError(error_msg, _type)                                     \
     globus_error_put(                                                       \
@@ -36,38 +37,6 @@
 #else
 #define GFSGForkFuncName(func) static const char * _gfs_gfork_func_name = #func
 #endif
-
-
-#define GF_VERSION                  'a'
-
-/* use this to mark buffer in fifo as bad.  we know it was not 
-   sent over the wire because we would not have alloed it in the first
-   place */
-#define GF_VERSION_INVALID         'F'
-#define REGISTRATION_TIMEOUT    600
-
-#define GF_VERSION_LEN             1
-#define AT_ONCE_LEN             1
-#define TOTAL_LEN               1
-#define HEADER_RESERVE_LEN      5
-#define COOKIE_LEN              32
-#define REPO_LEN                108
-#define CS_LEN                  108
-#define REG_PACKET_LEN          (GF_VERSION+AT_ONCE_LEN+TOTAL_LEN+HEADER_RESERVE_LEN+COOKIE_LEN+REPO_LEN+CS_LEN)
-
-#define GF_VERSION_NDX             0
-#define AT_ONCE_NDX             (GF_VERSION_NDX+GF_VERSION_LEN)
-#define TOTAL_NDX               (AT_ONCE_NDX+AT_ONCE_LEN)
-#define HEADER_RESERVE_NDX      (TOTAL_NDX+TOTAL_LEN)
-#define COOKIE_NDX              (HEADER_RESERVE_NDX+COOKIE_LEN)
-#define REPO_NDX                (COOKIE_NDX+COOKIE_NDX)
-#define CS_NDX                  (REPO_NDX+REPO_LEN)
-
-
-typedef enum gfs_gfork_error_e
-{
-    GFS_GFORK_ERROR_PARAMETER = 1
-} gfs_gfork_error_t;
 
 static globus_mutex_t                   g_mutex;
 static globus_mutex_t                   g_cond;
@@ -147,6 +116,7 @@ gfs_l_gfork_read_cb(
     globus_xio_data_descriptor_t        data_desc,
     void *                              user_arg)
 {
+    globus_xio_iovec_t                  iov[1];
     globus_bool_t                       ok;
     globus_bool_t                       done;
     int                                 i;
@@ -173,7 +143,7 @@ gfs_l_gfork_read_cb(
 
         done = GLOBUS_FALSE;
         ok = GLOBUS_FALSE;
-        for(i = CS_NDX; i < CS_NDX + CS_LEN && !done; i++)
+        for(i = GF_CS_NDX; i < GF_CS_NDX + GF_CS_LEN && !done; i++)
         {
             if(buffer[i] == '\0')
             {
@@ -192,13 +162,13 @@ gfs_l_gfork_read_cb(
         }
 
         /* registering client may not be same byte order */
-        memcpy(&tmp_32, &buffer[AT_ONCE_NDX], sizeof(uint32_t));
+        memcpy(&tmp_32, &buffer[GF_AT_ONCE_NDX], sizeof(uint32_t));
         converted_32 = ntohl(tmp_32);
-        memcpy(&buffer[AT_ONCE_NDX], &converted_32, sizeof(uint32_t));
+        memcpy(&buffer[GF_AT_ONCE_NDX], &converted_32, sizeof(uint32_t));
 
-        memcpy(&tmp_32, &buffer[TOTAL_NDX], sizeof(uint32_t));
+        memcpy(&tmp_32, &buffer[GF_TOTAL_NDX], sizeof(uint32_t));
         converted_32 = ntohl(tmp_32);
-        memcpy(&buffer[TOTAL_NDX], &converted_32, sizeof(uint32_t));
+        memcpy(&buffer[GF_TOTAL_NDX], &converted_32, sizeof(uint32_t));
 
         if(!ok)
         {
@@ -207,6 +177,7 @@ gfs_l_gfork_read_cb(
         /* at this point it is fine to add to lsit */
         globus_fifo_enqueue(&gfs_l_gfork_be_q, buffer);
 
+        GlobusTimeReltimeSet(delay, GF_REGISTRATION_TIMEOUT, 0);
         globus_callback_register_oneshot(
             NULL,
             &delay,
@@ -216,6 +187,16 @@ gfs_l_gfork_read_cb(
         globus_xio_register_close(
             handle,
             NULL,
+            NULL,
+            NULL);
+
+        iov[0].iov_base = buffer;
+        iov[0].iov_len = GF_REG_PACKET_LEN;
+
+        globus_gfork_broadcast(
+            handle,
+            iov,
+            1,
             NULL,
             NULL);
     }
@@ -369,12 +350,12 @@ gfs_l_gfork_open_server_cb(
         }
     }
 
-    buffer = globus_malloc(REG_PACKET_LEN);
+    buffer = globus_malloc(GF_REG_PACKET_LEN);
     result = globus_xio_register_read(
         handle,
         buffer,
-        REG_PACKET_LEN,
-        REG_PACKET_LEN,
+        GF_REG_PACKET_LEN,
+        GF_REG_PACKET_LEN,
         NULL,
         gfs_l_gfork_read_cb,
         NULL);
@@ -510,7 +491,7 @@ gfs_l_gfork_open_cb(
                 {
                     /* a good buffer */
                     iov[i].iov_base = buffer;
-                    iov[i].iov_len = REG_PACKET_LEN;
+                    iov[i].iov_len = GF_REG_PACKET_LEN;
                     i++;
                 }
             }
