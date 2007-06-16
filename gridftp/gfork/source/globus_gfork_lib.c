@@ -178,8 +178,8 @@ gfork_l_child_read_header_cb(
     void *                              user_arg)
 {
     gfork_l_child_handle_t *            handle;
-    globus_bool_t                       call_close;
-    globus_bool_t                       call_open;
+    globus_bool_t                       call_close = GLOBUS_FALSE;
+    globus_bool_t                       call_open = GLOBUS_FALSE;
 
     handle = (gfork_l_child_handle_t *) user_arg;
 
@@ -298,7 +298,6 @@ globus_l_gfork_child_start(
     env = globus_common_create_string("%s%s", GFORK_CHILD_READ_ENV, env_suffix);
     result = gfork_l_get_env_fd(env, &read_fd);
 
-fprintf(stderr, "%s :: %d\n", env, read_fd);
     globus_free(env);
     if(result != GLOBUS_SUCCESS)
     {
@@ -549,7 +548,7 @@ globus_l_gfork_send(
     msg->iov[0].iov_base = &msg->header;
     msg->iov[0].iov_len = sizeof(gfork_i_msg_header_t);
 
-    nbytes = msg->iov[0].iov_len;
+    nbytes = 0;
     for(i = 0; i < iovc; i++)
     {
         msg->iov[i+1].iov_base = iov[i].iov_base;
