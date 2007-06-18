@@ -14,6 +14,14 @@
  * limitations under the License.
  */
 
+/* TODO: 
+   1) memory limitation, perhaps just implemented in brain based on
+      connection count?
+
+   2) better load balancing.  maintain a 'who needs a beer?' list
+*/
+
+
 #include "globus_xio.h"
 #include "globus_xio_tcp_driver.h"
 #include "globus_xio_gsi.h"
@@ -52,6 +60,7 @@ static globus_xio_driver_t              g_gsi_driver;
 static FILE *                           g_log_fptr;
 static int                              g_repo_count = 0;
 static gfork_child_handle_t             g_handle;
+static int                              g_connection_count = 0;
 
 static
 globus_result_t
@@ -100,9 +109,33 @@ gfs_l_gfork_timeout(
     globus_mutex_lock(&g_mutex);
     {
         buffer = user_arg;
-        buffer[GF_VERSION_NDX] = GF_VERSION_INVALID;
+        buffer[GF_VERSION_NDX] = GF_VERSION_TIMEOUT;
+
+        gfs_l_gfork_log(
+            GLOBUS_SUCCESS, 2, "Backend registration for %s expired\n",
+            &buffer[GF_CS_NDX]);
     }
     globus_mutex_lock(&g_mutex);
+}
+
+static
+void
+gfs_l_gfork_write_cb(
+    globus_xio_handle_t                 handle,
+    globus_result_t                     result,
+    globus_byte_t *                     buffer,
+    globus_size_t                       len,
+    globus_size_t                       nbytes,
+    globus_xio_data_descriptor_t        data_desc,
+    void *                              user_arg)
+{
+    globus_free(buffer);
+
+    globus_xio_register_close(
+        handle,
+        NULL,
+        NULL,
+        NULL);
 }
 
 static
@@ -116,6 +149,7 @@ gfs_l_gfork_read_cb(
     globus_xio_data_descriptor_t        data_desc,
     void *                              user_arg)
 {
+    globus_byte_t *                     ack_buffer;
     globus_xio_iovec_t                  iov[1];
     globus_bool_t                       ok;
     globus_bool_t                       done;
@@ -126,7 +160,7 @@ gfs_l_gfork_read_cb(
     GFSGForkFuncName(gfs_l_gfork_read_cb);
 
     gfs_l_gfork_log(
-        result, 0, "Reading incoming registration message\n");
+        result, 3, "Reading incoming registration message\n");
 
     globus_mutex_lock(&g_mutex);
     {
@@ -137,6 +171,10 @@ gfs_l_gfork_read_cb(
 
         /* before addind to list make sure the packet is ok */
         if(buffer[GF_VERSION_NDX] != GF_VERSION)
+        {
+            goto error_version;
+        }
+        if(buffer[GF_MSG_TYPE_NDX] != GFS_GFORK_MSG_TYPE_DYNBE)
         {
             goto error_version;
         }
@@ -172,6 +210,8 @@ gfs_l_gfork_read_cb(
 
         if(!ok)
         {
+            gfs_l_gfork_log(
+                GLOBUS_SUCCESS, 2, "Registration message not ok\n");
             goto error_cs;
         }
         /* at this point it is fine to add to lsit */
@@ -184,21 +224,48 @@ gfs_l_gfork_read_cb(
             gfs_l_gfork_timeout,
             buffer);
 
-        globus_xio_register_close(
-            handle,
-            NULL,
-            NULL,
-            NULL);
+        /* write ack */
+        ack_buffer = globus_malloc(GF_REG_PACKET_LEN);
+        ack_buffer[GF_VERSION_NDX] = GF_VERSION;
+        ack_buffer[GF_MSG_TYPE_NDX] = GFS_GFORK_MSG_TYPE_ACK;
 
+        result = globus_xio_register_write(
+            handle,
+            ack_buffer,
+            GF_REG_PACKET_LEN,
+            GF_REG_PACKET_LEN,
+            NULL,
+            gfs_l_gfork_write_cb,
+            NULL);
+        if(result != GLOBUS_SUCCESS)
+        {
+            globus_xio_register_close(
+                handle,
+                NULL,
+                NULL,
+                NULL);
+            globus_free(ack_buffer);
+        }
         iov[0].iov_base = buffer;
         iov[0].iov_len = GF_REG_PACKET_LEN;
 
-        globus_gfork_broadcast(
-            handle,
+        gfs_l_gfork_log(
+            GLOBUS_SUCCESS, 2, "Successful registration from: %s\n",
+            &buffer[GF_CS_NDX]);
+        /* TODO: keep an "in need" list.  if only 3 were available at
+            the time the client asked but wanted 4, send this message,
+            otherwise, do not send.
+
+            for now this is fine because all children have knowledge
+            of all servers and choose themselves. */
+        result = globus_gfork_broadcast(
+            g_handle,
             iov,
             1,
             NULL,
             NULL);
+        gfs_l_gfork_log(
+            result, 3, "Broadcasted new registration\n");
     }
     globus_mutex_unlock(&g_mutex);
 
@@ -208,14 +275,30 @@ error_cs:
 error_version:
 error:
     gfs_l_gfork_log(
-        result, 0, "Done reading registration.\n");
-    globus_free(buffer);
+        result, 3, "Reading registration exit it error.\n");
 
-    globus_xio_register_close(
+    /* reuse the buffer we already have */
+    buffer[GF_VERSION_NDX] = GF_VERSION;
+    buffer[GF_MSG_TYPE_NDX] = GFS_GFORK_MSG_TYPE_NACK;
+    result = globus_xio_register_write(
         handle,
+        buffer,
+        GF_REG_PACKET_LEN,
+        GF_REG_PACKET_LEN,
         NULL,
-        NULL,
+        gfs_l_gfork_write_cb,
         NULL);
+    if(result != GLOBUS_SUCCESS)
+    {
+        globus_xio_register_close(
+            handle,
+            NULL,
+            NULL,
+            NULL);
+        globus_free(buffer);
+        gfs_l_gfork_log(
+            result, 3, "Write NACK failed.\n");
+    }
     globus_mutex_unlock(&g_mutex);
 }
 
@@ -335,6 +418,7 @@ gfs_l_gfork_open_server_cb(
 {
     globus_byte_t *                     buffer;
 
+    buffer = globus_malloc(GF_REG_PACKET_LEN);
     if(result != GLOBUS_SUCCESS)
     {
         goto error_accept;
@@ -350,7 +434,6 @@ gfs_l_gfork_open_server_cb(
         }
     }
 
-    buffer = globus_malloc(GF_REG_PACKET_LEN);
     result = globus_xio_register_read(
         handle,
         buffer,
@@ -367,14 +450,32 @@ gfs_l_gfork_open_server_cb(
     return;
 
 error_read:
-    globus_free(buffer);
 error_not_allowed:
 error_accept:
-    globus_xio_register_close(
+
+    buffer[GF_VERSION_NDX] = GF_VERSION;
+    buffer[GF_MSG_TYPE_NDX] = GFS_GFORK_MSG_TYPE_NACK;
+    result = globus_xio_register_write(
         handle,
+        buffer,
+        GF_REG_PACKET_LEN,
+        GF_REG_PACKET_LEN,
         NULL,
-        NULL,
+        gfs_l_gfork_write_cb,
         NULL);
+    if(result != GLOBUS_SUCCESS)
+    {
+        globus_xio_register_close(
+            handle,
+            NULL,
+            NULL,
+            NULL);
+        globus_free(buffer);
+        gfs_l_gfork_log(
+            result, 3, "Write NACK failed.\n");
+    }
+    gfs_l_gfork_log(
+        result, 2, "Open server error.\n");
     return;
 }
 
@@ -393,6 +494,7 @@ gfs_l_gfork_add_server_accept_cb(
             goto error;
         }
 
+
        result = globus_xio_register_open(
             handle,
             NULL,
@@ -401,6 +503,8 @@ gfs_l_gfork_add_server_accept_cb(
             NULL);
         if(result != GLOBUS_SUCCESS)
         {
+            gfs_l_gfork_log(
+                result, 1, "Failed to open\n");
             goto error;
         }
 
@@ -411,7 +515,11 @@ error:
             NULL);
         if(result != GLOBUS_SUCCESS)
         {
+            gfs_l_gfork_log(
+                result, 0, "Failed to accept\n");
         }
+        gfs_l_gfork_log(
+            result, 3, "Accept callback ending.\n");
     }
     globus_mutex_unlock(&g_mutex);
 }
@@ -467,12 +575,13 @@ gfs_l_gfork_open_cb(
     char *                              buffer;
 
     gfs_l_gfork_log(
-        GLOBUS_SUCCESS, 0, "Open called for pid %d\n", from_pid);
+        GLOBUS_SUCCESS, 2, "Open called for pid %d\n", from_pid);
 
     iov = (globus_xio_iovec_t *) globus_calloc(g_repo_count,
         sizeof(globus_xio_iovec_t));
     globus_mutex_lock(&g_mutex);
     {
+        g_connection_count++;
         while(!done && (i < g_repo_count || g_repo_count == 0))
         {
             if(globus_fifo_empty(&gfs_l_gfork_be_q))
@@ -483,7 +592,7 @@ gfs_l_gfork_open_cb(
             {
                 buffer = (char *) globus_fifo_dequeue(&gfs_l_gfork_be_q);
 
-                if(buffer[GF_VERSION_NDX] == GF_VERSION_INVALID)
+                if(buffer[GF_VERSION_NDX] == GF_VERSION_TIMEOUT)
                 {
                     globus_free(buffer);
                 }
@@ -506,7 +615,7 @@ gfs_l_gfork_open_cb(
         if(iovc > 0)
         {
             gfs_l_gfork_log(
-                GLOBUS_SUCCESS, 0, "sending to pid %d\n", from_pid);
+                GLOBUS_SUCCESS, 3, "sending to pid %d\n", from_pid);
             globus_gfork_send(
                 handle,
                 from_pid,
@@ -529,6 +638,13 @@ gfs_l_gfork_closed_cb(
     void *                              user_arg,
     pid_t                               from_pid)
 {
+    globus_mutex_lock(&g_mutex);
+    {
+        g_connection_count--;
+        gfs_l_gfork_log(
+            GLOBUS_SUCCESS, 2, "Closed called for pid %d\n", from_pid);
+    }
+    globus_mutex_unlock(&g_mutex);
 }
 
 static

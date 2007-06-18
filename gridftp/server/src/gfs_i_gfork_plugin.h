@@ -46,10 +46,11 @@
 /* use this to mark buffer in fifo as bad.  we know it was not 
    sent over the wire because we would not have alloed it in the first
    place */
-#define GF_VERSION_INVALID         'F'
+#define GF_VERSION_TIMEOUT         'F'
 #define GF_REGISTRATION_TIMEOUT    600
 
 #define GF_VERSION_LEN             1
+#define GF_MSG_TYPE_LEN            1
 #define GF_AT_ONCE_LEN             (sizeof(uint32_t))
 #define GF_TOTAL_LEN               (sizeof(uint32_t))
 #define GF_HEADER_RESERVE_LEN      5
@@ -59,12 +60,23 @@
 #define GF_REG_PACKET_LEN          (GF_VERSION+GF_AT_ONCE_LEN+GF_TOTAL_LEN+GF_HEADER_RESERVE_LEN+GF_COOKIE_LEN+GF_REPO_LEN+GF_CS_LEN)
 
 #define GF_VERSION_NDX             0
-#define GF_AT_ONCE_NDX             (GF_VERSION_NDX+GF_VERSION_LEN)
+#define GF_MSG_TYPE_NDX            (GF_VERSION_NDX+GF_VERSION_LEN)
+
+
+#define GF_AT_ONCE_NDX             (GF_MSG_TYPE_NDX+GF_MSG_TYPE_LEN)
 #define GF_TOTAL_NDX               (GF_AT_ONCE_NDX+GF_AT_ONCE_LEN)
 #define GF_HEADER_RESERVE_NDX      (GF_TOTAL_NDX+GF_TOTAL_LEN)
 #define GF_COOKIE_NDX              (GF_HEADER_RESERVE_NDX+GF_COOKIE_LEN)
 #define GF_REPO_NDX                (GF_COOKIE_NDX+GF_COOKIE_NDX)
 #define GF_CS_NDX                  (GF_REPO_NDX+GF_REPO_LEN)
+
+typedef enum gfs_gfork_msg_type_e
+{
+    GFS_GFORK_MSG_TYPE_DYNBE = 1,
+    GFS_GFORK_MSG_TYPE_ACK,
+    GFS_GFORK_MSG_TYPE_NACK,
+    GFS_GFORK_MSG_TYPE_CC
+} gfs_gfork_msg_type_t;
 
 
 typedef enum gfs_gfork_error_e

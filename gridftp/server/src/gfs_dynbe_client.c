@@ -191,6 +191,7 @@ main(
 
     memset(buffer, '\0', GF_REG_PACKET_LEN);
     buffer[GF_VERSION_NDX] = GF_VERSION;
+    buffer[GF_MSG_TYPE_NDX] = GFS_GFORK_MSG_TYPE_DYNBE;
 
     tmp32 = htonl(g_at_once);
     memcpy(&buffer[GF_AT_ONCE_NDX], &g_at_once, sizeof(uint32_t));
@@ -212,17 +213,47 @@ main(
     {
         goto error_write;
     }
+    /* read reply */
+    result = globus_xio_read(
+        g_xio_handle, buffer,
+        GF_REG_PACKET_LEN, GF_REG_PACKET_LEN, &nbytes, NULL);
+    if(result != GLOBUS_SUCCESS)
+    {
+        gfs_l_dynclient_log(GLOBUS_SUCCESS, 0,
+            "Read failed\n");
+        goto error_read;
+    }
     result = globus_xio_close(g_xio_handle, NULL);
     if(result != GLOBUS_SUCCESS)
     {
+        gfs_l_dynclient_log(GLOBUS_SUCCESS, 0,
+            "Close failed\n");
         goto error_close;
     }
-    gfs_l_dynclient_log(GLOBUS_SUCCESS, 0, "Successfully registered %s to %s",
-        be_cs, reg_cs);
 
-    return 0;
+    gfs_l_dynclient_log(GLOBUS_SUCCESS, 1,
+        "proper net commication with %s\n",
+        reg_cs);
+
+    if(buffer[GF_MSG_TYPE_NDX] == GFS_GFORK_MSG_TYPE_ACK)
+    {
+        gfs_l_dynclient_log(GLOBUS_SUCCESS, 0,
+            "SUCCESS: registered %s to %s",
+            be_cs, reg_cs);
+        rc = 0;
+    }
+    else
+    {
+        gfs_l_dynclient_log(GLOBUS_SUCCESS, 0,
+            "ERROR: %s rejected registration of %s",
+            reg_cs, be_cs);
+        rc = 1;
+    }
+
+    return rc;
 
 error_close:
+error_read:
 error_write:
 error_open:
 error_xio:
@@ -230,7 +261,7 @@ error_opts:
 error_activate:
     gfs_l_dynclient_log(result, 0, "");
 
-    return 1;
+    return 2;
 }
 
 static

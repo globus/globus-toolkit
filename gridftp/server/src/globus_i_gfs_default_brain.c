@@ -62,10 +62,6 @@ static gfs_l_db_repo_t *                gfs_l_db_default_repo = NULL;
 static gfork_child_handle_t             globus_l_gfs_gfork_handle;
 
 static
-void
-globus_l_gfs_backend_changed();
-
-static
 int
 gfs_l_db_node_cmp(
     void *                              priority_1,
@@ -176,7 +172,7 @@ globus_l_gfs_gfork_close_cb(
 
 static
 void
-globus_l_gfs_gfork_incoming_cb(
+globus_l_gfs_gfork_dyn_reg(
     gfork_child_handle_t                handle,
     void *                              user_arg,
     pid_t                               from_pid,
@@ -193,20 +189,11 @@ globus_l_gfs_gfork_incoming_cb(
     char                                cs[GF_CS_LEN];
     char                                cookie[GF_COOKIE_LEN];
     char *                              cookie_id;
-    GlobusGFSName(globus_l_brain_read_cb);
+    GlobusGFSName(globus_l_gfs_gfork_incoming_cb);
 
-
-fprintf(stderr, "HEREHRHERHEREHRE!\n");
     globus_i_gfs_log_message(
         GLOBUS_I_GFS_LOG_WARN,
-        "[%s] enter", "globus_l_brain_read_cb");
-    globus_mutex_lock(&globus_l_brain_mutex);
-    {
-        /* verify message */
-        if(buffer[GF_VERSION_NDX] != GF_VERSION)
-        {
-            goto error;
-        }
+        "[%s] enter", "globus_l_gfs_gfork_dyn_reg");
 
         memcpy(&tmp_32, &buffer[GF_AT_ONCE_NDX], sizeof(uint32_t));
         con_max = (int) ntohl(tmp_32);
@@ -310,45 +297,50 @@ fprintf(stderr, "HEREHRHERHEREHRE!\n");
 error_cs:
 error:
 	    globus_free(buffer);
-
-        globus_l_gfs_backend_changed();
-    }
-    globus_mutex_unlock(&globus_l_brain_mutex);
-
 }
 
 static
 void
-globus_l_gfs_backend_changed()
+globus_l_gfs_gfork_incoming_cb(
+    gfork_child_handle_t                handle,
+    void *                              user_arg,
+    pid_t                               from_pid,
+    globus_byte_t *                     buffer,
+    globus_size_t                       len)
 {
-    globus_list_t *                     repo_list;
-    globus_list_t *                     node_list;
-    gfs_l_db_repo_t *                   repo;
-    gfs_l_db_node_t *                   node;
-
-    globus_hashtable_to_list(&gfs_l_db_repo_table, &repo_list);
-
-    while(!globus_list_empty(repo_list))
+    GlobusGFSName(globus_l_gfs_gfork_incoming_cb);
+    
+    globus_i_gfs_log_message(
+        GLOBUS_I_GFS_LOG_WARN,
+        "[%s] enter", "globus_l_brain_read_cb");
+    globus_mutex_lock(&globus_l_brain_mutex);
     {
-        repo = (gfs_l_db_repo_t *) globus_list_remove(&repo_list, repo_list);
+        /* verify message */
+        if(buffer[GF_VERSION_NDX] != GF_VERSION)
+        {
+            goto error;
+        }
 
-        /* for mem saftey should walk this list and copy nodes */
-        node_list = globus_gfs_config_get("backend_pool");
-        while(!globus_list_empty(node_list))
+        switch(buffer[GF_MSG_TYPE_NDX])
         {
-            node = (gfs_l_db_node_t *)
-                globus_list_remove(&node_list, node_list);
+            case GFS_GFORK_MSG_TYPE_DYNBE:
+
+                globus_l_gfs_gfork_dyn_reg(
+                    handle,
+                    user_arg,
+                    from_pid,
+                    buffer,
+                    len);
+                break;
         }
-        globus_hashtable_to_list(&repo->node_table, &node_list); 
-        globus_gfs_config_set_ptr("backend_pool", node_list);
-        /*
-        while(!globus_list_empty(node_list))
-        {
-            node = (gfs_l_db_node_t *)
-                globus_list_remove(&node_list, node_list);
-        }
-        */
     }
+    globus_mutex_unlock(&globus_l_brain_mutex);
+
+    return;
+
+error:
+    globus_free(buffer);
+    globus_mutex_unlock(&globus_l_brain_mutex);
 }
 
 static
@@ -497,6 +489,10 @@ globus_l_gfs_default_brain_select_nodes(
     char *                              repo_name;
     GlobusGFSName(globus_gfs_brain_select_nodes);
 
+    globus_i_gfs_log_message(
+        GLOBUS_I_GFS_LOG_WARN,
+        "[%s] enter", "globus_l_gfs_default_brain_select_nodes");
+
     repo_name = (char *) r_name;
     if(repo_name == NULL || *repo_name =='\0')
     {
@@ -574,8 +570,6 @@ globus_l_gfs_default_brain_select_nodes(
 
         *out_node_array = node_array;
         *out_array_length = count;
-
-        globus_l_gfs_backend_changed();
     }
     globus_mutex_unlock(&globus_l_brain_mutex);
 
@@ -740,7 +734,6 @@ globus_l_gfs_default_brain_release_node(
                 globus_free(node);
             }
         }
-        globus_l_gfs_backend_changed();
     }
     globus_mutex_unlock(&globus_l_brain_mutex);
     /* depending on reason we may remove from list or whatever */
