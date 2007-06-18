@@ -13,24 +13,6 @@
         <With_Flavors build="yes"/>
 
         <Source_Dependencies Type="compile">
-            <Dependency Name="globus_ftp_client_test">
-                <Version>
-                    <Simple_Version Major="1"/>
-                </Version>
-            </Dependency>
-            <Dependency Name="globus_gridftp_server">
-                <Version>
-                    <Simple_Version Major="4"/>
-                </Version>
-            </Dependency>
-        </Source_Dependencies>
-
-        <Source_Dependencies Type="doc_runtime">
-            <Dependency Name="globus_ftp_client_test">
-                <Version>
-                    <Simple_Version Major="1"/>
-                </Version>
-            </Dependency>
             <Dependency Name="globus_gridftp_server">
                 <Version>
                     <Simple_Version Major="4"/>
@@ -39,11 +21,6 @@
         </Source_Dependencies>
 
         <Source_Dependencies Type="lib_link">
-            <Dependency Name="globus_ftp_client_test">
-                <Version>
-                    <Simple_Version Major="1"/>
-                </Version>
-            </Dependency>
             <Dependency Name="globus_gridftp_server">
                 <Version>
                     <Simple_Version Major="4"/>
@@ -52,24 +29,6 @@
         </Source_Dependencies>
 
         <Source_Dependencies Type="pgm_link">
-            <Dependency Name="globus_ftp_client_test">
-                <Version>
-                    <Simple_Version Major="1"/>
-                </Version>
-            </Dependency>
-            <Dependency Name="globus_gridftp_server">
-                <Version>
-                    <Simple_Version Major="4"/>
-                </Version>
-            </Dependency>
-        </Source_Dependencies>
-
-        <Source_Dependencies Type="pgm_runtime">
-            <Dependency Name="globus_ftp_client_test">
-                <Version>
-                    <Simple_Version Major="1"/>
-                </Version>
-            </Dependency>
             <Dependency Name="globus_gridftp_server">
                 <Version>
                     <Simple_Version Major="4"/>

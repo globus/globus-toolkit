@@ -149,6 +149,7 @@ typedef struct gfork_i_options_s
     void *                              user_arg;
     globus_bool_t                       quiet;
     char *                              conf_file;
+    int                                 loglevel;
 } gfork_i_options_t;
 
 typedef struct gfork_i_handle_s

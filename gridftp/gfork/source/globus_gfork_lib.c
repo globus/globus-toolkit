@@ -231,9 +231,38 @@ gfork_l_child_read_header_cb(
             /* any of these we consider garbage */
             case GLOBUS_GFORK_MSG_OPEN:
                 call_open = handle->master;
+                /* assume a bad message, report header */
+                result = globus_xio_register_read(
+                    handle->read_xio,
+                    (globus_byte_t *)&handle->header,
+                    sizeof(gfork_i_msg_header_t),
+                    sizeof(gfork_i_msg_header_t),
+                    NULL,
+                    gfork_l_child_read_header_cb,
+                    handle);
+                if(result != GLOBUS_SUCCESS)
+                {
+                    goto error_post;
+                }
+
                 break;
             case GLOBUS_GFORK_MSG_CLOSE:
                 call_close = handle->master;
+
+                /* assume a bad message, report header */
+                result = globus_xio_register_read(
+                    handle->read_xio,
+                    (globus_byte_t *)&handle->header,
+                    sizeof(gfork_i_msg_header_t),
+                    sizeof(gfork_i_msg_header_t),
+                    NULL,
+                    gfork_l_child_read_header_cb,
+                    handle);
+                if(result != GLOBUS_SUCCESS)
+                {
+                    goto error_post;
+                }
+
                 break;
         }
     }

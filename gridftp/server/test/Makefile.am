@@ -2,11 +2,9 @@ include $(top_srcdir)/globus_automake_pre
 include $(top_srcdir)/globus_automake_pre_top
 
 SUBDIRS= \
-	pkgdata \
-	doxygen
+	pkgdata 
 
 globusperldir = $(GLOBUS_LOCATION)/lib/perl/Globus
-globusperl_DATA = URL.pm
 
 Scripts= \
 	globus-gridftp-dyn-be.pl
@@ -18,7 +16,7 @@ Data = \
 
 test_DATA = $(Data) 
 
-EXTRA_DIST = $(Scripts) $(Data) $(globusperl_DATA)
+EXTRA_DIST = $(Scripts) $(Data)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

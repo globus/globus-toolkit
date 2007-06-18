@@ -180,7 +180,6 @@ globus_l_gfs_gfork_dyn_reg(
     globus_size_t                       len)
 {
     uint32_t                            tmp_32;
-    int                                 con_diff;
     gfs_l_db_node_t *                   node = NULL;
     gfs_l_db_repo_t *                   repo = NULL;
     int                                 con_max;
@@ -253,7 +252,6 @@ globus_l_gfs_gfork_dyn_reg(
             /* the next line is here so that if it was static it will
                 remain static */
             node->type = GFS_DB_NODE_TYPE_DYNAMIC;
-            con_diff = con_max;
             node->current_connection = 0;
             node->max_connection = con_max;
             node->total_max_connections = total_max;
@@ -266,33 +264,13 @@ globus_l_gfs_gfork_dyn_reg(
                 node->max_connection,
                 node->total_max_connections,
                 node->cookie_id);
-            globus_gfs_config_inc_int("backends_registered", 1);
         }
         else
         {
             /* XXX ? do i need to dequeue and requeue ? */
             node->total_max_connections = total_max;
-            con_diff = con_max - node->max_connection;
             node->max_connection = con_max;
             free(cookie_id);
-        }
-        /* it already set to unlimited dont change it */
-        if(globus_gfs_config_get_int("data_connection_max") >= 0)
-        {
-            /* if the new one is unlimited set the cout to reflect that */
-            if(con_max == 0)
-            {
-                globus_gfs_config_set_int("data_connection_max", -1);
-            }
-            else
-            {
-                globus_gfs_config_inc_int("data_connection_max", con_diff);
-            }
-            globus_i_gfs_log_message(
-                GLOBUS_I_GFS_LOG_WARN,
-                "Backend [%s] %s has refreshed its contact information.\n",
-                node->repo_name,
-                node->host_id);
         }
 error_cs:
 error:
@@ -361,10 +339,6 @@ globus_l_gfs_default_brain_init()
             GLOBUS_I_GFS_LOG_WARN,
             "Could not activate GFork\n");
     }
-        globus_i_gfs_log_message(
-            GLOBUS_I_GFS_LOG_WARN,
-            "GFork FDs: %s, %s\n", globus_libc_getenv("GFORK_CHILD_READ_ENV"), globus_libc_getenv("GFORK_CHILD_WRITE_ENV"));
-
 
     globus_mutex_init(&globus_l_brain_mutex, NULL);
 
@@ -674,10 +648,6 @@ globus_l_gfs_default_brain_release_node(
             assert(tmp_nptr == node || tmp_nptr == NULL);
             if(node->type == GFS_DB_NODE_TYPE_DYNAMIC)
             {
-                if(first_error)
-                {
-                    globus_gfs_config_inc_int("backends_registered", -1);
-                }
                 if(node->current_connection == 0)
                 {
                     globus_free(node->repo_name);

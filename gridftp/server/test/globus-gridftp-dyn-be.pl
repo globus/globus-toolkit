@@ -21,7 +21,6 @@ use strict;
 use Test::Harness;
 use Cwd;
 use Getopt::Long;
-use FtpTestLib;
 require 5.005;
 use vars qw(@tests);
 
@@ -32,6 +31,7 @@ my $globus_location = $ENV{GLOBUS_LOCATION};
 my $nogsi;
 my $register_args;
 my $be_pid;
+my $be_cmd;
 my $gfork_pid;
 
 if(defined($nogsi) or defined($ENV{FTP_TEST_NO_GSI}))
@@ -41,26 +41,30 @@ if(defined($nogsi) or defined($ENV{FTP_TEST_NO_GSI}))
     print "Not using GSI security.\n";
 }
 
+
+push(@INC, $ENV{GLOBUS_LOCATION} . "/lib/perl");
+
+&setup_server();
 if((0 != system("grid-proxy-info -exists -hours 2 >/dev/null 2>&1") / 256) && !defined($nogsi))
 {
     print "Security proxy required to run the tests.\n";
     exit 1;
 }
 
-push(@INC, $ENV{GLOBUS_LOCATION} . "/lib/perl");
-
-&setup_server();
-
 # start registration program
-print "registering be\n";
+$be_cmd = "$globus_location/libexec/gfs-dynbe-client $register_args";
+print "registering be: $be_cmd\n";
 &register_db();
-$SIG{ALRM} = sub { $register_db };
+$SIG{ALRM} = \&register_db;
 alarm 30;
 
 # run tests
 print "starting tests\n";
 
-my $rc = system("$globus_location/test/globus_ftp_client_test/globus-ftp-client-run-tests.pl");
+my $rc;
+#my $rc = system("cd $globus_location/test/globus_ftp_client_test; ./globus-ftp-client-run-tests.pl");
+
+wait;
 
 exit $rc;
 
@@ -68,12 +72,12 @@ sub clean_up()
 {
     if($be_pid)
     {
-        kill(9,$be_pid);
+        kill(9,-$be_pid);
         $be_pid=0;
     }
     if($gfork_pid)
     {
-        kill(9,$gfork_pid);
+        kill(9,-$gfork_pid);
         $gfork_pid=0;
     }
 }
@@ -83,7 +87,7 @@ sub register_db()
 {
     my $rc;
 
-    $rc = $globus_location/libexec/gfs-dynbe-client $register_args / 256;
+    $rc = system("$globus_location/libexec/gfs-dynbe-client $register_args") / 256;
 
     if($rc != 0)
     {
@@ -91,6 +95,8 @@ sub register_db()
         &clean_up();
         exit 1;
     }
+    $SIG{ALRM} = \&register_db;
+    alarm 30;
 }
 
 sub setup_server()
@@ -98,12 +104,15 @@ sub setup_server()
     my $gfork_prog = "$globus_location/sbin/gfork";
     my $be_prog = "$globus_location/sbin/globus-gridftp-server";
     my $be_args = "-dn -aa";
+    my $be_port;
     my $server_host = "localhost";
     my $server_port = 0;
     my $server_nosec = "";
     my $subject;
     my $use_gsi_opt;
     my $master_gmap;
+    my $x;
+
     if(defined($nogsi))
     {
         $server_nosec = "-aa";
@@ -116,16 +125,17 @@ sub setup_server()
     {
         if(0 != system("grid-proxy-info -exists -hours 2 >/dev/null 2>&1") / 256)
         {
-            $ENV{X509_CERT_DIR} = $globus_location . "test/globus_ftp_client_test";
-            $ENV{X509_USER_PROXY} = $globus_location . "test/globus_ftp_client_test/testcred.pem";
+            $ENV{X509_CERT_DIR} = $globus_location . "/test/globus_ftp_client_test";
+            $ENV{X509_USER_PROXY} = $globus_location . "/test/globus_ftp_client_test/testcred.pem";
         }
-    
-        system('chmod go-rw testcred.pem');
+   
+        my $cmd = "chmod go-rw $globus_location"."/test/globus_ftp_client_test/testcred.pem" ;
+        system($cmd);
          
         $subject = `grid-proxy-info -identity`;
         chomp($subject);
         
-        $ENV{GRIDMAP} =  $globus_location . "test/globus_ftp_client_test/gridmap";
+        $ENV{GRIDMAP} =  $globus_location . "/test/globus_ftp_client_test/gridmap";
         if ( -f $ENV{GRIDMAP})
         {
             system('mv $GRIDMAP $GRIDMAP.old');    
@@ -142,15 +152,26 @@ sub setup_server()
             exit 1;
         }
 
-        $use_gsi_opt = " y ";
-        $register_args = " -G y ";
+        $use_gsi_opt = "n";
+        $register_args = " -G n ";
     }
     else
     {
         $register_args = " -G n ";
-        $use_gsi_opt = " n ";
+        $use_gsi_opt = "n";
     }
 
+    # sub in the files
+    open(IN, "<$gfork_conf.in") || die "couldnt open $gfork_conf.in";
+    open(OUT, ">$gfork_conf") || die "couldnt open $gfork_conf";
+    $x = join('', <IN>);
+    $x =~ s/\@GLOBUS_LOCATION@/$globus_location/g;
+    $x =~ s/\@GSI@/$use_gsi_opt/g;
+    print OUT $x;
+    close(IN);
+    close(OUT);
+
+    print "starting $gfork_prog -c $gfork_conf\n";
     $gfork_pid = open(SERVER, "$gfork_prog -c $gfork_conf |");
     if($gfork_pid == -1)
     {
@@ -159,7 +180,7 @@ sub setup_server()
     }
     select((select(SERVER), $| = 1)[0]);
     $server_port = <SERVER>;
-    $server_port =~ s/Listening on .*?:(\d+)/\1/;
+    $server_port =~ s/Listening on: .*?:(\d+)/\1/;
     chomp($server_port);
     if($server_port !~ /\d+/)
     {
@@ -168,6 +189,7 @@ sub setup_server()
     }
     print "Started gfork on port $server_port\n";
 
+    print "starting $be_prog $be_args\n";
     $be_pid = open(BE_SERVER, "$be_prog $be_args |");
     if($be_pid == -1)
     {
@@ -186,16 +208,6 @@ sub setup_server()
     print "Started backend on port $be_port\n";
 
     # sleep a second, some hosts are slow....
-
-    # sub in the files
-    open(IN, "<$gfork_conf.in");
-    open(OUT, ">$gfork_conf");
-    $x = join('', <IN>);
-    $x =~ s/"\@GLOBUS_LOCATION@"/$globus_location/g;
-    $x =~ s/"\@GSI@"/$use_gsi_opt/g;
-    print OUT $x;
-    close(IN);
-    close(OUT);
 
     sleep 5;
     

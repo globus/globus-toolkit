@@ -65,9 +65,14 @@ gfork_log(
     {
         return;
     }
+    if(level > gfork_l_options.loglevel)
+    {
+        return;
+    }
     va_start(ap, fmt);
-    vfprintf(stderr, fmt, ap);
+    vfprintf(stdout, fmt, ap);
     va_end(ap);
+    fflush(stdout);
 }
 
 static
@@ -312,7 +317,7 @@ gfork_l_spawn_master()
         gfork_log(1, "There is no master program.\n");
         return GLOBUS_SUCCESS;
     }
-    gfork_log(1, "spawn master: %s\n", gfork_l_handle.master_argv[0]);
+    gfork_log(2, "spawn master: %s\n", gfork_l_handle.master_argv[0]);
 
     rc = pipe(infds);
     if(rc != 0)
@@ -351,7 +356,7 @@ gfork_l_spawn_master()
             globus_libc_getenv(GFORK_CHILD_READ_ENV),
             globus_libc_getenv(GFORK_CHILD_WRITE_ENV));
 
-        gfork_log(1, "running master program: %s\n",
+        gfork_log(2, "running master program: %s\n",
             gfork_l_handle.master_argv[0]);
         rc = execv(
             gfork_l_handle.master_argv[0],
@@ -1230,6 +1235,7 @@ main(
 
     globus_options_init(
         &opt_h, gfork_i_opts_unknown, &gfork_l_options);
+    gfork_l_options.loglevel = 1;
     globus_options_add_table(opt_h, gfork_l_opts_table, &gfork_l_options);
 
     result = globus_options_command_line_process(opt_h, argc, argv);
@@ -1238,7 +1244,6 @@ main(
         gfork_log(1, "Bad command line options\n");
         goto error_opts;
     }
-    gfork_log(1, "port %d\n", gfork_l_options.port);
 
     /* parse out file */
     if(gfork_l_options.conf_file == NULL)

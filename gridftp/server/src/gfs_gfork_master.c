@@ -594,6 +594,9 @@ gfs_l_gfork_open_cb(
 
                 if(buffer[GF_VERSION_NDX] == GF_VERSION_TIMEOUT)
                 {
+                    gfs_l_gfork_log(
+                        GLOBUS_SUCCESS, 2, "Freeing timed-out buffer %s\n",
+                        &buffer[GF_CS_NDX]);
                     globus_free(buffer);
                 }
                 else
@@ -610,6 +613,8 @@ gfs_l_gfork_open_cb(
         for(i = 0; i < iovc; i++)
         {
             globus_fifo_enqueue(&gfs_l_gfork_be_q, iov[i].iov_base);
+            gfs_l_gfork_log(
+                GLOBUS_SUCCESS, 2, "Re-enqueue\n");
         }
         /* put them back in */
         if(iovc > 0)
@@ -916,7 +921,6 @@ gfs_l_gfork_opts_dn_file(
     int *                               out_parms_used)
 {
     g_allowed_dn_file = opt[0];
-    g_use_gsi = GLOBUS_TRUE;
     *out_parms_used = 1;
 
     return GLOBUS_SUCCESS;

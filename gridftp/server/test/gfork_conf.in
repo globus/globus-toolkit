@@ -5,10 +5,10 @@ service gridftp2
   env += LD_LIBRARY_PATH=@GLOBUS_LOCATION@/lib
   env += PATH=@GLOBUS_LOCATION@/sbin:@GLOBUS_LOCATION@/bin
   server = @GLOBUS_LOCATION@/sbin/globus-gridftp-server
-  server_args = -i -aa
-  server_args += -dsi remote -ia self
+  server_args = -i -aa -l @GLOBUS_LOCATION@/test/globus_gridftp_server_test/server.log
+  server_args += -dsi remote -ia self -d WARN
   nice = 10
   master = @GLOBUS_LOCATION@/libexec/gfs-gfork-master
   master_args = -port 6065 -G @GSI@
-  master_args += -dn @GLOBUS_LOCATION@/test/globus_gridftp_server_test/master_gridmap 
+  master_args += -dn @GLOBUS_LOCATION@/test/globus_gridftp_server_test/master_gridmap -l @GLOBUS_LOCATION@/test/globus_gridftp_server_test/master.log
 }
