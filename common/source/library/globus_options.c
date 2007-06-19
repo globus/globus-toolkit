@@ -495,11 +495,10 @@ globus_l_options_file_process(
         {
             char *                      tmp_str;
 
-            tmp_str = strstr(line, "+=");
+            tmp_str = strstr(line, "+");
             if(tmp_str != NULL)
             {
                 tmp_str[0] = ' ';
-                tmp_str[1] = ' ';
             }
             tmp_str = strchr(line, '=');
             if(tmp_str != NULL)
