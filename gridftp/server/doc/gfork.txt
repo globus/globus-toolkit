@@ -1,0 +1,74 @@
+Running the Globus GridFTP Server With GFork
+============================================
+
+Running the globus-gridftp-server under gfork is almost identical to 
+running it under xinetd.  First you need a configuration file:
+
+service gridftp2
+{
+  env += GLOBUS_LOCATION=<path to GL>
+  env += LD_LIBRARY_PATH=<path to GL>/lib
+  server = <path to GL>/sbin/globus-gridftp-server
+  server_args = -i -aa
+  server_args += -d ALL -l /home/bresnaha/tst.log
+  server_args += -dsi remote -repo-count 1
+  port = 5000
+}
+
+That portion is identical to xinetd.  In fact an existing xinetd 
+configuration file should work.  Once you have a configuration file 
+gfork is run with:
+
+% gfork -c <path to config file>
+
+Dynamic Backends
+----------------
+
+To user dynamic backends GFork must be configured with a master program. 
+To do this we need 2 additional lines to the configuration:
+
+  master = <path to GL>/libexec/gfs-gfork-master
+  master_args = <master program options>
+
+These 2 lines are added anywhere with in the curly brackets of the 
+configuration file.  The master program options are as follows:
+
+  -dn | --dn-file <path>      Path to a file containing the list of acceptable
+                              DNs.  Default is system gridmap file
+  -G | --gsi <bool>           Enable or disable GSI.  Default is on.
+  -h | --help                 print the help message
+  -l | --logfile <path>       Path to the logfile.
+  -p | --port <int>           Port where server listens for connections.
+  -s | --stripe-count <int>   The max number of stripes to give to each server.
+                              0 is all available.
+
+Registration Client
+-------------------
+To register a backend user the program: 
+$GLOBUS_LOCATION/libexec/gfs-dynbe-client
+
+The options to it are as follows:
+
+ -G | --gsi <bool>           Enable or disable GSI.  Default is on.
+ -h | --help                 print the help message
+ -m | --max <int>            set the maximum number of connections allowed to
+                             the backend at one time
+ -q | --quiet                print no output
+ -t | --total <int>          set the maximum total number of connections
+                             allowed to the backend
+
+
+Registering a Backend
+---------------------
+
+Once GFork is started with the master program gfs-dynbe-client can be 
+used to register backends with it.  The value for the -G option must be 
+the same for both the client and the server.  It determines if any 
+security will be used.  The registration program contacts the master 
+program on its listening port.  If security is on, the master program 
+checks the clients GSI distinguished name again the file pointed to by 
+the -dn options to the master program.  If not the client is just 
+trusted.  An example client invocation is:
+
+% gfs-dynbe-client -G y <backend host>:<backend port> <master host>:<master port>
+
