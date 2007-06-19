@@ -110,6 +110,7 @@ sub setup_server()
     my $use_gsi_opt;
     my $master_gmap;
     my $x;
+    my $sec_envs;
 
     if(defined($nogsi))
     {
@@ -119,12 +120,18 @@ sub setup_server()
     my $gfork_conf = cwd() . "/gfork_conf";
     $master_gmap = "$globus_location/test/globus_gridftp_server_test/master_gridmap";
     
+    $ENV{GRIDMAP} =  $globus_location . "/test/globus_ftp_client_test/gridmap";
+
+    $sec_envs = "GRIDMAP=$ENV{GRIDMAP}";
     if(!defined($nogsi))
     {
         if(0 != system("grid-proxy-info -exists -hours 2 >/dev/null 2>&1") / 256)
         {
             $ENV{X509_CERT_DIR} = $globus_location . "/test/globus_ftp_client_test";
             $ENV{X509_USER_PROXY} = $globus_location . "/test/globus_ftp_client_test/testcred.pem";
+            $sec_envs = "$sec_envs\n  env += X509_CERT_DIR=$ENV{X509_CERT_DIR}";
+            $sec_envs = "$sec_envs\n  env += X509_USER_PROXY=$ENV{X509_USER_PROXY}";
+            $sec_envs = "$sec_envs\n  env += X509_USER_CERT=$ENV{X509_USER_PROXY}";
         }
    
         my $cmd = "chmod go-rw $globus_location"."/test/globus_ftp_client_test/testcred.pem" ;
@@ -133,7 +140,6 @@ sub setup_server()
         $subject = `grid-proxy-info -identity`;
         chomp($subject);
         
-        $ENV{GRIDMAP} =  $globus_location . "/test/globus_ftp_client_test/gridmap";
         if ( -f $ENV{GRIDMAP})
         {
             system('mv $GRIDMAP $GRIDMAP.old');    
@@ -159,6 +165,7 @@ sub setup_server()
         $use_gsi_opt = "n";
     }
 
+
     my $reg_port = 8000 + int(rand(1000));
 
     # sub in the files
@@ -168,6 +175,7 @@ sub setup_server()
     $x =~ s/\@GLOBUS_LOCATION@/$globus_location/g;
     $x =~ s/\@GSI@/$use_gsi_opt/g;
     $x =~ s/\@REG_PORT@/$reg_port/g;
+    $x =~ s/\@SEC_ENVS@/$sec_envs/g;
     print OUT $x;
     close(IN);
     close(OUT);
@@ -210,12 +218,12 @@ sub setup_server()
 
     # sleep a second, some hosts are slow....
 
-    sleep 10;
-    
     $ENV{GLOBUS_FTP_CLIENT_TEST_SUBJECT} = $subject;
     $ENV{FTP_TEST_SOURCE_HOST} = "$server_host:$server_port";
     $ENV{FTP_TEST_DEST_HOST} = "$server_host:$server_port";   
 
+    sleep 5;
+    
     $register_args = $register_args . " localhost:$be_port localhost:$reg_port";
 
     return;

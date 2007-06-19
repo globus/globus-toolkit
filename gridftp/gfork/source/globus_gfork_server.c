@@ -6,6 +6,17 @@
 
 extern char **environ;
 
+char *                                  gfork_l_keep_envs[] =
+{
+    "X509_CERT_DIR",
+    "X509_USER_PROXY",
+    "GRIDMAP",
+    "GLOBUS_HOSTNAME",
+    "GLOBUS_TCP_PORT_RANGE",
+    "X509_USER_CERT",
+    "X509_USER_KEY",
+    NULL
+};
 
 static globus_mutex_t                   gfork_l_mutex;
 static globus_cond_t                    gfork_l_cond;
@@ -344,6 +355,7 @@ gfork_l_spawn_master()
         write_fd = infds[1];
 
         environ = gfork_l_handle.env_argv;
+
         nice(gfork_l_handle.opts->nice);
         /* set up the state pipe and envs */
         sprintf(tmp_str, "%d", read_fd);

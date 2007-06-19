@@ -323,10 +323,6 @@ gfs_l_gfork_read_cb(
 
 error_cs:
 error_version:
-error:
-    gfs_l_gfork_log(
-        result, 3, "Reading registration exit it error.\n");
-
     /* reuse the buffer we already have */
     buffer[GF_VERSION_NDX] = GF_VERSION;
     buffer[GF_MSG_TYPE_NDX] = GFS_GFORK_MSG_TYPE_NACK;
@@ -349,6 +345,10 @@ error:
         gfs_l_gfork_log(
             result, 3, "Write NACK failed.\n");
     }
+error:
+    gfs_l_gfork_log(
+        result, 3, "Reading registration exit it error.\n");
+
     globus_mutex_unlock(&g_mutex);
 }
 
@@ -482,6 +482,8 @@ gfs_l_gfork_open_server_cb(
         result = gfs_l_gfork_dn_ok(handle);
         if(result != GLOBUS_SUCCESS)
         {
+            gfs_l_gfork_log(
+                result, 2, "DN rejected.\n");
             goto error_not_allowed;
         }
     }
@@ -503,7 +505,6 @@ gfs_l_gfork_open_server_cb(
 
 error_read:
 error_not_allowed:
-error_accept:
 
     ent_buf->buffer[GF_VERSION_NDX] = GF_VERSION;
     ent_buf->buffer[GF_MSG_TYPE_NDX] = GFS_GFORK_MSG_TYPE_NACK;
@@ -526,6 +527,7 @@ error_accept:
         gfs_l_gfork_log(
             result, 3, "Write NACK failed.\n");
     }
+error_accept:
     gfs_l_gfork_log(
         result, 2, "Open server error.\n");
     return;
@@ -539,18 +541,31 @@ gfs_l_gfork_add_server_accept_cb(
     globus_result_t                     result,
     void *                              user_arg)
 {
+    globus_xio_attr_t                   attr;
+
     globus_mutex_lock(&g_mutex);
     {
         if(result != GLOBUS_SUCCESS)
         {
             goto error;
         }
-
-
+        globus_xio_attr_init(&attr);
+        if(g_use_gsi)
+        {
+            result = globus_xio_attr_cntl(
+                attr,
+                g_gsi_driver,
+                GLOBUS_XIO_GSI_SET_AUTHORIZATION_MODE,
+                GLOBUS_XIO_GSI_SELF_AUTHORIZATION);
+            if(result != GLOBUS_SUCCESS)
+            {
+                goto error;
+            }
+        }
        result = globus_xio_register_open(
             handle,
             NULL,
-            NULL,
+            attr,
             gfs_l_gfork_open_server_cb,
             NULL);
         if(result != GLOBUS_SUCCESS)
@@ -559,6 +574,7 @@ gfs_l_gfork_add_server_accept_cb(
                 result, 1, "Failed to open\n");
             goto error;
         }
+        globus_xio_attr_destroy(attr);
 
 error:
         result = globus_xio_server_register_accept(
@@ -774,6 +790,15 @@ gfs_l_gfork_xio_setup()
         {
             goto error_gsi_push;
         }
+        result = globus_xio_attr_cntl(
+            attr,
+            g_gsi_driver,
+            GLOBUS_XIO_GSI_SET_AUTHORIZATION_MODE,
+            GLOBUS_XIO_GSI_NO_AUTHORIZATION);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error_gsi_push;
+        }
     }
 
     result = globus_xio_server_create(
@@ -782,6 +807,8 @@ gfs_l_gfork_xio_setup()
     {
         goto error_server_create;
     }
+
+    globus_xio_attr_destroy(attr);
 
     return GLOBUS_SUCCESS;
 
