@@ -65,14 +65,14 @@ gfork_log(
     {
         return;
     }
-    if(level > gfork_l_options.loglevel)
+    if(level > gfork_l_options.log_level)
     {
         return;
     }
     va_start(ap, fmt);
-    vfprintf(stdout, fmt, ap);
+    vfprintf(gfork_l_options.log_fptr, fmt, ap);
     va_end(ap);
-    fflush(stdout);
+    fflush(gfork_l_options.log_fptr);
 }
 
 static
@@ -812,7 +812,7 @@ gfork_init_server()
     {
         goto error_contact;
     }
-    gfork_log(1, "Listening on: %s\n", contact_string);
+    gfork_log(0, "Listening on: %s\n", contact_string);
     globus_free(contact_string);
 
     res = globus_xio_server_register_accept(
@@ -926,7 +926,7 @@ gfork_l_read_body_cb(
     msg = (gfork_i_msg_t *) user_arg;
     msg->cb = gfork_l_writev_cb;
 
-    gfork_log(1, "gfork_l_read_body_cb\n");
+    gfork_log(2, "gfork_l_read_body_cb\n");
     globus_mutex_lock(&gfork_l_mutex);
     {
         if(result != GLOBUS_SUCCESS)
@@ -1193,7 +1193,7 @@ gfork_l_write(
             goto error_register;
         }
         to_kid->writting = GLOBUS_TRUE;
-        gfork_log(1, "gfork_l_write() writing to %d\n", to_kid->pid);
+        gfork_log(2, "gfork_l_write() writing to %d\n", to_kid->pid);
     }
 
     return;
@@ -1235,7 +1235,8 @@ main(
 
     globus_options_init(
         &opt_h, gfork_i_opts_unknown, &gfork_l_options);
-    gfork_l_options.loglevel = 1;
+    gfork_l_options.log_level = 1;
+    gfork_l_options.log_fptr = stdout;
     globus_options_add_table(opt_h, gfork_l_opts_table, &gfork_l_options);
 
     result = globus_options_command_line_process(opt_h, argc, argv);

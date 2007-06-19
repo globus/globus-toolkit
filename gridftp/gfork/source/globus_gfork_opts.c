@@ -391,12 +391,15 @@ gfork_l_opts_port(
     int                                 sc;
     int                                 port;
     gfork_i_options_t *                 gfork_h;
+    globus_result_t                     result;
+    GForkFuncName(gfork_l_opts_port);
 
     gfork_h = (gfork_i_options_t *) arg;
 
     sc = sscanf(opt[0], "%d", &port);
     if(sc != 1)
     {
+        result = GForkErrorStr("Port must be an integer");
         goto error_format;
     }
     gfork_h->port = port;
@@ -407,7 +410,7 @@ gfork_l_opts_port(
 error_format:
     *out_parms_used = 0;
 
-    return 0x1;
+    return result;
 }
 
 static
@@ -422,12 +425,15 @@ gfork_l_opts_instances(
     gfork_i_options_t *                 gfork_h;
     int                                 instances;
     int                                 sc;
+    globus_result_t                     result;
+    GForkFuncName(gfork_l_opts_instances);
 
     gfork_h = (gfork_i_options_t *) arg;
 
     sc = sscanf(opt[0], "%d", &instances);
     if(sc != 1)
     {
+        result = GForkErrorStr("Instance must be an integer");
         goto error_format;
     }
     gfork_h->instances = instances;
@@ -438,7 +444,7 @@ gfork_l_opts_instances(
 error_format:
     *out_parms_used = 0;
 
-    return 0x1;
+    return result;
 }
 
 
@@ -454,12 +460,15 @@ gfork_l_opts_nice(
     gfork_i_options_t *                 gfork_h;
     int                                 sc;
     int                                 nice;
+    globus_result_t                     result;
+    GForkFuncName(gfork_l_opts_nice);
     
     gfork_h = (gfork_i_options_t *) arg;
 
     sc = sscanf(opt[0], "%d", &nice);
     if(sc != 1)
     {
+        result = GForkErrorStr("Nice must be an integer");
         goto error_format;
     }
     gfork_h->nice = nice;
@@ -469,7 +478,7 @@ gfork_l_opts_nice(
 error_format:
     *out_parms_used = 0;
 
-    return 0x1;
+    return result;
 }   
 
 static
@@ -530,7 +539,108 @@ gfork_l_opts_env(
     *out_parms_used = 1;
 
     return GLOBUS_SUCCESS;
-}   
+}
+
+static
+globus_result_t
+gfork_l_opts_log_level(
+    globus_options_handle_t             opts_handle,
+    char *                              cmd,
+    char **                             opt,
+    void *                              arg,
+    int *                               out_parms_used)
+{
+    gfork_i_options_t *                 gfork_h;
+    int                                 level;
+    int                                 sc;
+    globus_result_t                     result;
+    GForkFuncName(gfork_l_opts_log_level);
+
+    gfork_h = (gfork_i_options_t *) arg;
+
+    sc = sscanf(opt[0], "%d", &level);
+    if(sc != 1)
+    {
+        result = GForkErrorStr("Log level must be an integer");
+        goto error_format;
+    }
+    gfork_h->log_level = level;
+
+    *out_parms_used = 1;
+    return GLOBUS_SUCCESS;
+
+error_format:
+    *out_parms_used = 0;
+
+    return result;
+}
+
+static
+globus_result_t
+gfork_l_opts_log_file(
+    globus_options_handle_t             opts_handle,
+    char *                              cmd,
+    char **                             opt,
+    void *                              arg,
+    int *                               out_parms_used)
+{
+    gfork_i_options_t *                 gfork_h;
+    globus_result_t                     result;
+    FILE *                              fptr;
+    GForkFuncName(gfork_l_opts_log_file);
+
+    gfork_h = (gfork_i_options_t *) arg;
+
+    if(strcmp(opt[0], "-") == 0)
+    {
+        gfork_h->log_fptr = stdout;
+    }
+    else
+    {
+        gfork_h->log_fptr = fopen(opt[0], "w");
+        if(fptr == NULL)
+        {
+            result = GForkErrorStr("Could not open log file");
+            goto error;
+        }
+        gfork_h->log_fptr = fptr;
+    }
+
+    *out_parms_used = 1;
+    return GLOBUS_SUCCESS;
+error:
+    return result;
+}
+
+static
+globus_result_t
+gfork_l_opts_quiet(
+    globus_options_handle_t             opts_handle,
+    char *                              cmd,
+    char **                             opt,
+    void *                              arg,
+    int *                               out_parms_used)
+{   
+    gfork_i_options_t *                 gfork_h;
+
+    gfork_h = (gfork_i_options_t *) arg;
+
+    if(strcasecmp("true", opt[0]) == 0 ||
+        strcasecmp("yes", opt[0]) == 0 ||
+        strcasecmp("t", opt[0]) == 0 ||
+        strcasecmp("y", opt[0]) == 0)
+    {
+        gfork_h->quiet = GLOBUS_TRUE;
+    }
+    else
+    {
+        gfork_h->quiet = GLOBUS_FALSE;
+    }
+
+    *out_parms_used = 1;
+    return GLOBUS_SUCCESS;
+}
+
 /* 
  *  for xinetd, ignoting type, flags, disable, socket_type, user, group
  */
@@ -584,5 +694,14 @@ globus_options_entry_t                   gfork_l_opts_table[] =
     {"help", "h", NULL, NULL,
         "print the help message",
         0, gfork_l_opts_help},
+    {"log_level", "L", NULL, "<int>",
+        "Set the logging level 0 - 9",
+        1, gfork_l_opts_log_level},
+    {"log_file", "f", NULL, "<path>",
+        "Set the log file",
+        1, gfork_l_opts_log_file},
+    {"quiet", "q", NULL, "<true|false>",
+        "Turn off all output",
+        1, gfork_l_opts_quiet},
     {NULL, NULL, NULL, NULL, NULL, 0, NULL}
 };

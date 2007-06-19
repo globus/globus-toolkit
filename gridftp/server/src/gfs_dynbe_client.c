@@ -44,6 +44,7 @@ enum
     GLOBUS_DYNCLIENT_ERROR_PARM = 1
 };
 
+static globus_bool_t                    g_quiet = GLOBUS_FALSE;
 static globus_bool_t                    g_use_gsi;
 static globus_xio_handle_t              g_xio_handle;
 static uint32_t                         g_at_once = 0;
@@ -66,6 +67,11 @@ gfs_l_dynclient_log(
     ...)
 {
     va_list                             ap;
+
+    if(g_quiet)
+    {
+        return;
+    }
 
     va_start(ap, fmt);
 
@@ -343,6 +349,20 @@ gfs_l_dynclient_opts_help(
 
 static
 globus_result_t
+gfs_l_dynclient_opts_quiet(
+    globus_options_handle_t             opts_handle,
+    char *                              cmd,
+    char **                             opt,
+    void *                              arg,
+    int *                               out_parms_used)
+{
+    g_quiet = GLOBUS_TRUE;
+
+    return GLOBUS_SUCCESS;
+}
+
+static
+globus_result_t
 gfs_l_dynclient_opts_gsi(
     globus_options_handle_t             opts_handle,
     char *                              cmd,
@@ -368,6 +388,9 @@ gfs_l_dynclient_opts_gsi(
 
 globus_options_entry_t                   gfork_l_opts_table[] =
 {
+    {"quiet", "q", NULL, NULL,
+        "print no output",
+        0, gfs_l_dynclient_opts_quiet},
     {"help", "h", NULL, NULL,
         "print the help message",
         0, gfs_l_dynclient_opts_help},

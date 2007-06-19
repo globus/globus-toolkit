@@ -29,7 +29,7 @@ my $globus_location = $ENV{GLOBUS_LOCATION};
 #$Test::Harness::verbose = 1;
 
 my $nogsi;
-my $register_args;
+my $register_args = " -q ";
 my $be_pid;
 my $be_cmd;
 my $gfork_pid;
@@ -56,7 +56,7 @@ $be_cmd = "$globus_location/libexec/gfs-dynbe-client $register_args";
 print "registering be: $be_cmd\n";
 &register_db();
 $SIG{ALRM} = \&register_db;
-alarm 30;
+alarm 60;
 
 # run tests
 print "starting tests\n";
@@ -85,7 +85,7 @@ sub register_db()
 {
     my $rc;
 
-    $rc = system("$globus_location/libexec/gfs-dynbe-client $register_args") / 256;
+    $rc = system("$globus_location/libexec/gfs-dynbe-client $register_args ") / 256;
 
     if($rc != 0)
     {
@@ -94,7 +94,7 @@ sub register_db()
         exit 1;
     }
     $SIG{ALRM} = \&register_db;
-    alarm 30;
+    alarm 60;
 }
 
 sub setup_server()
@@ -150,14 +150,16 @@ sub setup_server()
             exit 1;
         }
 
-        $use_gsi_opt = "n";
-        $register_args = " -G n ";
+        $use_gsi_opt = "y";
+        $register_args = "-q -G y";
     }
     else
     {
-        $register_args = " -G n ";
+        $register_args = "-q -G n";
         $use_gsi_opt = "n";
     }
+
+    my $reg_port = 8000 + int(rand(1000));
 
     # sub in the files
     open(IN, "<$gfork_conf.in") || die "couldnt open $gfork_conf.in";
@@ -165,6 +167,7 @@ sub setup_server()
     $x = join('', <IN>);
     $x =~ s/\@GLOBUS_LOCATION@/$globus_location/g;
     $x =~ s/\@GSI@/$use_gsi_opt/g;
+    $x =~ s/\@REG_PORT@/$reg_port/g;
     print OUT $x;
     close(IN);
     close(OUT);
@@ -207,13 +210,13 @@ sub setup_server()
 
     # sleep a second, some hosts are slow....
 
-    sleep 5;
+    sleep 10;
     
     $ENV{GLOBUS_FTP_CLIENT_TEST_SUBJECT} = $subject;
     $ENV{FTP_TEST_SOURCE_HOST} = "$server_host:$server_port";
     $ENV{FTP_TEST_DEST_HOST} = "$server_host:$server_port";   
 
-    $register_args = $register_args . "localhost:$be_port localhost:6065";
+    $register_args = $register_args . " localhost:$be_port localhost:$reg_port";
 
     return;
 }
