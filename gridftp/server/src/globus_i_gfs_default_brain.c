@@ -194,87 +194,87 @@ globus_l_gfs_gfork_dyn_reg(
         GLOBUS_I_GFS_LOG_WARN,
         "[%s] enter", "globus_l_gfs_gfork_dyn_reg");
 
-        memcpy(&tmp_32, &buffer[GF_AT_ONCE_NDX], sizeof(uint32_t));
-        con_max = (int) ntohl(tmp_32);
+    memcpy(&tmp_32, &buffer[GF_AT_ONCE_NDX], sizeof(uint32_t));
+    con_max = (int) ntohl(tmp_32);
 
-        memcpy(&tmp_32, &buffer[GF_TOTAL_NDX], sizeof(uint32_t));
-        total_max = (int) ntohl(tmp_32);
-        if(total_max == 0)
-        {
-            total_max = -1;
-        }
+    memcpy(&tmp_32, &buffer[GF_TOTAL_NDX], sizeof(uint32_t));
+    total_max = (int) ntohl(tmp_32);
+    if(total_max == 0)
+    {
+        total_max = -1;
+    }
 
-        memcpy(cookie, &buffer[GF_COOKIE_NDX], GF_COOKIE_LEN);
-        memcpy(cs, &buffer[GF_CS_NDX], GF_CS_LEN);
-        memcpy(repo_name, &buffer[GF_REPO_NDX], GF_REPO_LEN);
+    memcpy(cookie, &buffer[GF_COOKIE_NDX], GF_COOKIE_LEN);
+    memcpy(cs, &buffer[GF_CS_NDX], GF_CS_LEN);
+    memcpy(repo_name, &buffer[GF_REPO_NDX], GF_REPO_LEN);
 
-        if(*cs == '\0')
-        {
-            goto error_cs;
-        }
-        if(repo_name[0] == '\0')
-        {
-            strcpy(repo_name, GFS_DB_REPO_NAME);
-        }
-        cookie_id = globus_common_create_string("%s::%s", cookie, cs);
+    if(*cs == '\0')
+    {
+        goto error_cs;
+    }
+    if(repo_name[0] == '\0')
+    {
+        strcpy(repo_name, GFS_DB_REPO_NAME);
+    }
+    cookie_id = globus_common_create_string("%s::%s", cookie, cs);
 
-        repo = (gfs_l_db_repo_t *) globus_hashtable_lookup(
-            &gfs_l_db_repo_table, repo_name);
-        if(repo == NULL)
-        {
-            /* create a new repo */
-            repo = (gfs_l_db_repo_t *) calloc(1, sizeof(gfs_l_db_repo_t));
-            globus_priority_q_init(&repo->node_q, gfs_l_db_node_cmp);
-            globus_hashtable_init(
-                &repo->node_table, 
-                32,
-                globus_hashtable_string_hash,
-                globus_hashtable_string_keyeq);
+    repo = (gfs_l_db_repo_t *) globus_hashtable_lookup(
+        &gfs_l_db_repo_table, repo_name);
+    if(repo == NULL)
+    {
+        /* create a new repo */
+        repo = (gfs_l_db_repo_t *) calloc(1, sizeof(gfs_l_db_repo_t));
+        globus_priority_q_init(&repo->node_q, gfs_l_db_node_cmp);
+        globus_hashtable_init(
+            &repo->node_table, 
+            32,
+            globus_hashtable_string_hash,
+            globus_hashtable_string_keyeq);
 
-            repo->name = strdup(repo_name);
-            globus_hashtable_insert(&gfs_l_db_repo_table, repo->name, repo);
-        }
-        else
-        {
-            node = (gfs_l_db_node_t *)
-                globus_hashtable_lookup(&repo->node_table, cookie_id);
-        }
+        repo->name = strdup(repo_name);
+        globus_hashtable_insert(&gfs_l_db_repo_table, repo->name, repo);
+    }
+    else
+    {
+        node = (gfs_l_db_node_t *)
+            globus_hashtable_lookup(&repo->node_table, cookie_id);
+    }
 
-        if(node == NULL)
-        { 
-            node = (gfs_l_db_node_t*)globus_calloc(1, sizeof(gfs_l_db_node_t));
-            node->host_id = strdup(cs);
-            node->cookie_id = cookie_id;
-            node->repo_name = strdup(repo_name);
-            node->repo = repo;
-            globus_priority_q_enqueue(&repo->node_q, node, node);
-            globus_hashtable_insert(&repo->node_table, node->cookie_id, node);
-            /* the next line is here so that if it was static it will
-                remain static */
-            node->type = GFS_DB_NODE_TYPE_DYNAMIC;
-            node->current_connection = 0;
-            node->max_connection = con_max;
-            node->total_max_connections = total_max;
-            globus_i_gfs_log_message(
-                GLOBUS_I_GFS_LOG_WARN,
-                "A new backend registered, contact string: [%s] %s\n"
-                "  max=[%d]\n  total=[%d]\n id=[%s]\n",
-                node->repo_name,
-                node->host_id,
-                node->max_connection,
-                node->total_max_connections,
-                node->cookie_id);
-        }
-        else
-        {
-            /* XXX ? do i need to dequeue and requeue ? */
-            node->total_max_connections = total_max;
-            node->max_connection = con_max;
-            free(cookie_id);
-        }
+    if(node == NULL)
+    { 
+        node = (gfs_l_db_node_t*)globus_calloc(1, sizeof(gfs_l_db_node_t));
+        node->host_id = strdup(cs);
+        node->cookie_id = cookie_id;
+        node->repo_name = strdup(repo_name);
+        node->repo = repo;
+        globus_priority_q_enqueue(&repo->node_q, node, node);
+        globus_hashtable_insert(&repo->node_table, node->cookie_id, node);
+        /* the next line is here so that if it was static it will
+            remain static */
+        node->type = GFS_DB_NODE_TYPE_DYNAMIC;
+        node->current_connection = 0;
+        node->max_connection = con_max;
+        node->total_max_connections = total_max;
+        globus_i_gfs_log_message(
+            GLOBUS_I_GFS_LOG_WARN,
+            "A new backend registered, contact string: [%s] %s\n"
+            "  max=[%d]\n  total=[%d]\n id=[%s]\n",
+            node->repo_name,
+            node->host_id,
+            node->max_connection,
+            node->total_max_connections,
+            node->cookie_id);
+    }
+    else
+    {
+        /* XXX ? do i need to dequeue and requeue ? */
+        node->total_max_connections = total_max;
+        node->max_connection = con_max;
+        free(cookie_id);
+    }
 error_cs:
 error:
-	    globus_free(buffer);
+    globus_free(buffer);
 }
 
 static
@@ -302,7 +302,6 @@ globus_l_gfs_gfork_incoming_cb(
         switch(buffer[GF_MSG_TYPE_NDX])
         {
             case GFS_GFORK_MSG_TYPE_DYNBE:
-
                 globus_l_gfs_gfork_dyn_reg(
                     handle,
                     user_arg,
@@ -428,16 +427,9 @@ globus_l_gfs_default_brain_available(
     int                                 size;
     int                                 max;
     
-    max = globus_i_gfs_config_int("repo_count");
     size = globus_priority_q_size(&gfs_l_db_default_repo->node_q);
-    if(max > 0)
-    {
-        *count = (max > size) ? size : max;
-    }
-    else
-    {
-        *count = size;
-    }
+    *count = size;
+
     return GLOBUS_SUCCESS;
 }
 
@@ -463,6 +455,12 @@ globus_l_gfs_default_brain_select_nodes(
     char *                              repo_name;
     GlobusGFSName(globus_gfs_brain_select_nodes);
 
+    if(min_count < 1)
+    {
+        result = globus_error_put(GlobusGFSErrorObjParameter("min_count"));
+        goto error_paramater;
+    }
+
     globus_i_gfs_log_message(
         GLOBUS_I_GFS_LOG_WARN,
         "[%s] enter", "globus_l_gfs_default_brain_select_nodes");
@@ -482,7 +480,7 @@ globus_l_gfs_default_brain_select_nodes(
             goto error;
         }
 
-        best_count = globus_i_gfs_config_int("repo_count");
+        best_count = globus_i_gfs_config_int("best_stripe_count");
         if(best_count > max_count || best_count <= 0)
         {
             best_count = max_count;
@@ -568,6 +566,7 @@ error_short:
     globus_free(node_array);
 error:
     globus_mutex_unlock(&globus_l_brain_mutex);
+error_paramater:
     return result;
 }
 

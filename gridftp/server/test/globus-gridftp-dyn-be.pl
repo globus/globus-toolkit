@@ -62,9 +62,7 @@ alarm 30;
 print "starting tests\n";
 
 my $rc;
-#my $rc = system("cd $globus_location/test/globus_ftp_client_test; ./globus-ftp-client-run-tests.pl");
-
-wait;
+my $rc = system("cd $globus_location/test/globus_ftp_client_test; ./globus-ftp-client-run-tests.pl");
 
 exit $rc;
 

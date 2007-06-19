@@ -61,12 +61,22 @@ static FILE *                           g_log_fptr;
 static int                              g_repo_count = 0;
 static gfork_child_handle_t             g_handle;
 static int                              g_connection_count = 0;
+static globus_hashtable_t               g_gfork_be_table;
 
 static
 globus_result_t
 gfs_gfork_master_options(
     int                                 argc,
     char **                             argv);
+
+
+typedef struct gfs_l_gfork_master_entry_s
+{
+    char *                              table_key;
+    globus_callback_handle_t            callback_handle;
+    int                                 timeout_count;
+    globus_byte_t                       buffer[GF_REG_PACKET_LEN];
+} gfs_l_gfork_master_entry_t;
 
 static
 void
@@ -105,15 +115,22 @@ gfs_l_gfork_timeout(
     void *                              user_arg)
 {
     char *                              buffer;
+    gfs_l_gfork_master_entry_t *        ent_buf;
+
+    ent_buf = (gfs_l_gfork_master_entry_t *) user_arg;
 
     globus_mutex_lock(&g_mutex);
     {
-        buffer = user_arg;
-        buffer[GF_VERSION_NDX] = GF_VERSION_TIMEOUT;
-
-        gfs_l_gfork_log(
-            GLOBUS_SUCCESS, 2, "Backend registration for %s expired\n",
-            &buffer[GF_CS_NDX]);
+        ent_buf->timeout_count--;
+        if(ent_buf->timeout_count == 0)
+        {
+            gfs_l_gfork_log(
+                GLOBUS_SUCCESS, 2, "Backend registration for %s expired\n",
+                &buffer[GF_CS_NDX]);
+            ent_buf->buffer[GF_VERSION_NDX] = GF_VERSION_TIMEOUT;
+            ent_buf = (gfs_l_gfork_master_entry_t *) globus_hashtable_remove(
+                &g_gfork_be_table, ent_buf->table_key);
+        }
     }
     globus_mutex_lock(&g_mutex);
 }
@@ -129,7 +146,10 @@ gfs_l_gfork_write_cb(
     globus_xio_data_descriptor_t        data_desc,
     void *                              user_arg)
 {
-    globus_free(buffer);
+    gfs_l_gfork_master_entry_t *        ent_buf;
+
+    ent_buf = (gfs_l_gfork_master_entry_t *) user_arg;
+    globus_free(ent_buf);
 
     globus_xio_register_close(
         handle,
@@ -149,7 +169,8 @@ gfs_l_gfork_read_cb(
     globus_xio_data_descriptor_t        data_desc,
     void *                              user_arg)
 {
-    globus_byte_t *                     ack_buffer;
+    gfs_l_gfork_master_entry_t *        ent_buf;
+    gfs_l_gfork_master_entry_t *        write_ent;
     globus_xio_iovec_t                  iov[1];
     globus_bool_t                       ok;
     globus_bool_t                       done;
@@ -157,6 +178,7 @@ gfs_l_gfork_read_cb(
     globus_reltime_t                    delay;
     uint32_t                            tmp_32;
     uint32_t                            converted_32;
+    char *                              table_key;
     GFSGForkFuncName(gfs_l_gfork_read_cb);
 
     gfs_l_gfork_log(
@@ -168,7 +190,6 @@ gfs_l_gfork_read_cb(
         {
             goto error;
         }
-
         /* before addind to list make sure the packet is ok */
         if(buffer[GF_VERSION_NDX] != GF_VERSION)
         {
@@ -179,12 +200,14 @@ gfs_l_gfork_read_cb(
             goto error_version;
         }
 
+        /* we are only ok if the string ends in a \0 */
         done = GLOBUS_FALSE;
-        ok = GLOBUS_FALSE;
+        ok = GLOBUS_TRUE;
         for(i = GF_CS_NDX; i < GF_CS_NDX + GF_CS_LEN && !done; i++)
         {
             if(buffer[i] == '\0')
             {
+                ok = !ok;
                 done = GLOBUS_TRUE;
             }
             else if(!isalnum(buffer[i]) && buffer[i] != '.' &&
@@ -195,11 +218,12 @@ gfs_l_gfork_read_cb(
             }
             else
             {
-                ok = GLOBUS_TRUE;
+                ok = GLOBUS_FALSE;
             }
         }
 
-        /* registering client may not be same byte order */
+        /* registering client may not be same byte order but worker child
+            will be */
         memcpy(&tmp_32, &buffer[GF_AT_ONCE_NDX], sizeof(uint32_t));
         converted_32 = ntohl(tmp_32);
         memcpy(&buffer[GF_AT_ONCE_NDX], &converted_32, sizeof(uint32_t));
@@ -214,29 +238,55 @@ gfs_l_gfork_read_cb(
                 GLOBUS_SUCCESS, 2, "Registration message not ok\n");
             goto error_cs;
         }
-        /* at this point it is fine to add to lsit */
-        globus_fifo_enqueue(&gfs_l_gfork_be_q, buffer);
 
         GlobusTimeReltimeSet(delay, GF_REGISTRATION_TIMEOUT, 0);
+        table_key = &buffer[GF_CS_NDX];
+        ent_buf = (gfs_l_gfork_master_entry_t *) globus_hashtable_lookup(
+            &g_gfork_be_table, table_key);
+        if(ent_buf != NULL)
+        {
+            /* this is a new one */
+            write_ent = (gfs_l_gfork_master_entry_t *) user_arg;
+            memset(write_ent, '\0', sizeof(gfs_l_gfork_master_entry_t));
+        }
+        else
+        {
+            /* this is a new one */
+            ent_buf = (gfs_l_gfork_master_entry_t *) user_arg;
+            ent_buf->table_key = table_key;
+            globus_hashtable_insert(
+                &g_gfork_be_table,
+                table_key,
+                ent_buf);
+            globus_fifo_enqueue(&gfs_l_gfork_be_q, ent_buf);
+
+            write_ent = (gfs_l_gfork_master_entry_t *) 
+                globus_calloc(1, sizeof(gfs_l_gfork_master_entry_t));
+        }
+
+        /* count the timeout callbacks.  For each refresh there will
+            be a timeout oneshot.  They all must come back before it is
+            considered dead.  this way we gaurentee that the latest
+            refresh got at least its fair share of time */
+        ent_buf->timeout_count++;
         globus_callback_register_oneshot(
-            NULL,
+            &ent_buf->callback_handle,
             &delay,
             gfs_l_gfork_timeout,
-            buffer);
+            ent_buf);
 
         /* write ack */
-        ack_buffer = globus_malloc(GF_REG_PACKET_LEN);
-        ack_buffer[GF_VERSION_NDX] = GF_VERSION;
-        ack_buffer[GF_MSG_TYPE_NDX] = GFS_GFORK_MSG_TYPE_ACK;
+        write_ent->buffer[GF_VERSION_NDX] = GF_VERSION;
+        write_ent->buffer[GF_MSG_TYPE_NDX] = GFS_GFORK_MSG_TYPE_ACK;
 
         result = globus_xio_register_write(
             handle,
-            ack_buffer,
+            write_ent->buffer,
             GF_REG_PACKET_LEN,
             GF_REG_PACKET_LEN,
             NULL,
             gfs_l_gfork_write_cb,
-            NULL);
+            write_ent);
         if(result != GLOBUS_SUCCESS)
         {
             globus_xio_register_close(
@@ -244,7 +294,7 @@ gfs_l_gfork_read_cb(
                 NULL,
                 NULL,
                 NULL);
-            globus_free(ack_buffer);
+            globus_free(write_ent);
         }
         iov[0].iov_base = buffer;
         iov[0].iov_len = GF_REG_PACKET_LEN;
@@ -282,12 +332,12 @@ error:
     buffer[GF_MSG_TYPE_NDX] = GFS_GFORK_MSG_TYPE_NACK;
     result = globus_xio_register_write(
         handle,
-        buffer,
+        write_ent->buffer,
         GF_REG_PACKET_LEN,
         GF_REG_PACKET_LEN,
         NULL,
         gfs_l_gfork_write_cb,
-        NULL);
+        write_ent);
     if(result != GLOBUS_SUCCESS)
     {
         globus_xio_register_close(
@@ -295,7 +345,7 @@ error:
             NULL,
             NULL,
             NULL);
-        globus_free(buffer);
+        globus_free(write_ent);
         gfs_l_gfork_log(
             result, 3, "Write NACK failed.\n");
     }
@@ -416,9 +466,11 @@ gfs_l_gfork_open_server_cb(
     globus_result_t                     result,
     void *                              user_arg)
 {
-    globus_byte_t *                     buffer;
+    gfs_l_gfork_master_entry_t *        ent_buf;
 
-    buffer = globus_malloc(GF_REG_PACKET_LEN);
+    ent_buf = (gfs_l_gfork_master_entry_t *) globus_calloc(
+        1, sizeof(gfs_l_gfork_master_entry_t));
+
     if(result != GLOBUS_SUCCESS)
     {
         goto error_accept;
@@ -436,12 +488,12 @@ gfs_l_gfork_open_server_cb(
 
     result = globus_xio_register_read(
         handle,
-        buffer,
+        ent_buf->buffer,
         GF_REG_PACKET_LEN,
         GF_REG_PACKET_LEN,
         NULL,
         gfs_l_gfork_read_cb,
-        NULL);
+        ent_buf);
     if(result != GLOBUS_SUCCESS)
     {
         goto error_read;
@@ -453,16 +505,16 @@ error_read:
 error_not_allowed:
 error_accept:
 
-    buffer[GF_VERSION_NDX] = GF_VERSION;
-    buffer[GF_MSG_TYPE_NDX] = GFS_GFORK_MSG_TYPE_NACK;
+    ent_buf->buffer[GF_VERSION_NDX] = GF_VERSION;
+    ent_buf->buffer[GF_MSG_TYPE_NDX] = GFS_GFORK_MSG_TYPE_NACK;
     result = globus_xio_register_write(
         handle,
-        buffer,
+        ent_buf->buffer,
         GF_REG_PACKET_LEN,
         GF_REG_PACKET_LEN,
         NULL,
         gfs_l_gfork_write_cb,
-        NULL);
+        ent_buf);
     if(result != GLOBUS_SUCCESS)
     {
         globus_xio_register_close(
@@ -470,7 +522,7 @@ error_accept:
             NULL,
             NULL,
             NULL);
-        globus_free(buffer);
+        globus_free(ent_buf);
         gfs_l_gfork_log(
             result, 3, "Write NACK failed.\n");
     }
@@ -572,12 +624,13 @@ gfs_l_gfork_open_cb(
     int                                 i = 0;
     int                                 iovc = 0;
     globus_bool_t                       done = GLOBUS_FALSE;
-    char *                              buffer;
+    gfs_l_gfork_master_entry_t *        ent_buf;
 
     gfs_l_gfork_log(
         GLOBUS_SUCCESS, 2, "Open called for pid %d\n", from_pid);
 
-    iov = (globus_xio_iovec_t *) globus_calloc(g_repo_count,
+    iov = (globus_xio_iovec_t *) globus_calloc(
+        globus_fifo_size(&gfs_l_gfork_be_q),
         sizeof(globus_xio_iovec_t));
     globus_mutex_lock(&g_mutex);
     {
@@ -590,19 +643,23 @@ gfs_l_gfork_open_cb(
             }
             else
             {
-                buffer = (char *) globus_fifo_dequeue(&gfs_l_gfork_be_q);
+                ent_buf = (gfs_l_gfork_master_entry_t *)
+                    globus_fifo_dequeue(&gfs_l_gfork_be_q);
 
-                if(buffer[GF_VERSION_NDX] == GF_VERSION_TIMEOUT)
+                if(ent_buf->buffer[GF_VERSION_NDX] == GF_VERSION_TIMEOUT)
                 {
                     gfs_l_gfork_log(
                         GLOBUS_SUCCESS, 2, "Freeing timed-out buffer %s\n",
-                        &buffer[GF_CS_NDX]);
-                    globus_free(buffer);
+                        &ent_buf->buffer[GF_CS_NDX]);
+                    globus_free(ent_buf);
                 }
                 else
                 {
                     /* a good buffer */
-                    iov[i].iov_base = buffer;
+
+                    /* temparily assign ent_buf here, we ultimatale 
+                        want ent_buf-> buffer */
+                    iov[i].iov_base = ent_buf;
                     iov[i].iov_len = GF_REG_PACKET_LEN;
                     i++;
                 }
@@ -612,7 +669,9 @@ gfs_l_gfork_open_cb(
 
         for(i = 0; i < iovc; i++)
         {
-            globus_fifo_enqueue(&gfs_l_gfork_be_q, iov[i].iov_base);
+            ent_buf = (gfs_l_gfork_master_entry_t *) iov[i].iov_base;
+            globus_fifo_enqueue(&gfs_l_gfork_be_q, ent_buf);
+            iov[i].iov_base = ent_buf->buffer;
             gfs_l_gfork_log(
                 GLOBUS_SUCCESS, 2, "Re-enqueue\n");
         }
@@ -762,6 +821,12 @@ main(
     globus_mutex_init(&g_mutex, NULL);
     globus_cond_init(&g_cond, NULL);
     g_done = GLOBUS_FALSE;
+
+    globus_hashtable_init(
+        &g_gfork_be_table, 
+        256,
+        globus_hashtable_string_hash,
+        globus_hashtable_string_keyeq);
 
     result = gfs_l_gfork_xio_setup();
     if(result != GLOBUS_SUCCESS)
