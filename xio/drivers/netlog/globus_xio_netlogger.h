@@ -9,29 +9,12 @@
  * modifications, you must include this notice in the file.
  */
 
-#ifndef GLOBUS_XIO_NETLOGGER_H
-#define GLOBUS_XIO_NETLOGGER_H 1
+#ifndef GLOBUS_XIO_LIBZ_H
+#define GLOBUS_XIO_LIBZ_H 1
 
-typedef enum globus_xio_netlogger_log_event_e
+enum
 {
-    GLOBUS_XIO_NETLOGGER_LOG_OPEN = 0x1,
-    GLOBUS_XIO_NETLOGGER_LOG_CLOSE = 0x2,
-    GLOBUS_XIO_NETLOGGER_LOG_READ = 0x4,
-    GLOBUS_XIO_NETLOGGER_LOG_WRITE = 0x8,
-    GLOBUS_XIO_NETLOGGER_LOG_ACCEPT = 0x10
-} globus_xio_netlogger_log_event_t;
-
-typedef enum globus_xio_netlogger_log_cntl_e
-{
-    GLOBUS_XIO_NETLOGGER_CNTL_EVENT_ON = 1,
-    GLOBUS_XIO_NETLOGGER_CNTL_EVENT_OFF,
-    GLOBUS_XIO_NETLOGGER_CNTL_SET_FD,
-    GLOBUS_XIO_NETLOGGER_CNTL_SET_TRANSFER_ID,
-    GLOBUS_XIO_NETLOGGER_CNTL_SET_ID,
-    GLOBUS_XIO_NETLOGGER_CNTL_SET_FILENAME,
-    GLOBUS_XIO_NETLOGGER_CNTL_SET_MASK,
-    GLOBUS_XIO_NETLOGGER_CNTL_SET_TYPE
-} globus_xio_netlogger_log_cntl_t;
-
+    GLOBUS_L_XIO_LIBZ_DEBUG_TRACE = 1
+};
 
 #endif
