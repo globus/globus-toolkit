@@ -92,16 +92,21 @@ BUNDLE gt4-mds
         globus_wsrf_mds_trigger
         globus_wsrf_mds_usefulrp
         globus_wsrf_mds_usefulrp_schema
+        globus_wsrf_mds_archive
+        globus_wsrf_mds_archive_schema
         globus_wsrf_servicegroup
         globus_wsrf_servicegroup_schema
         globus_wsrf_mds_hawkeye
         globus_wsrf_mds_gkrellm
         globus_wsrf_mds_gkrellm_schema
+        globus_wsrf_mds_providers
 
 BUNDLE gt4-mds-test
         globus_wsrf_mds_index_test
         globus_wsrf_mds_trigger_test
+        globus_wsrf_mds_archive_test
         globus_wsrf_mds_aggregator_test
+        globus_wsrf_mds_usefulrp_test
 
 BUNDLE gt4-rft
         globus_wsrf_rft_client_java
