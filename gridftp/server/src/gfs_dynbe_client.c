@@ -202,8 +202,8 @@ main(
     tmp32 = htonl(g_at_once);
     memcpy(&buffer[GF_AT_ONCE_NDX], &g_at_once, sizeof(uint32_t));
 
-    tmp32 = htonl(g_at_once);
-    memcpy(&buffer[GF_TOTAL_NDX], &g_at_once, sizeof(uint32_t));
+    tmp32 = htonl(g_total_cons);
+    memcpy(&buffer[GF_TOTAL_NDX], &g_total_cons, sizeof(uint32_t));
 
     strncpy(&buffer[GF_CS_NDX], be_cs, GF_CS_LEN);
 

@@ -192,16 +192,13 @@ sub setup_server()
     sleep 15;
 
     print "starting $gfork_be_prog -c $gfork_be_conf\n";
-    $gfork_be_pid = open(SERVER, "$gfork_be_prog -c $gfork_be_conf |");
-    print "starting $gfork_be_prog -c $gfork_be_conf\n";
+    $gfork_be_pid = open(BE_SERVER, "$gfork_be_prog -c $gfork_be_conf |");
     if($gfork_be_pid == -1)
     {
         print "Unable to start server\n";
         exit 1;
     }
-    print "starting $gfork_be_prog -c $gfork_be_conf\n";
     select((select(BE_SERVER), $| = 1)[0]);
-    print "starting $gfork_be_prog -c $gfork_be_conf\n";
     $server_be_port = <BE_SERVER>;
     $server_be_port =~ s/Listening on: .*?:(\d+)/\1/;
     chomp($server_be_port);

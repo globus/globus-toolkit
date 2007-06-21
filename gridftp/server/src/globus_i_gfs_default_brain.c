@@ -188,7 +188,7 @@ globus_l_gfs_gfork_dyn_reg(
     char                                cs[GF_CS_LEN];
     char                                cookie[GF_COOKIE_LEN];
     char *                              cookie_id;
-    GlobusGFSName(globus_l_gfs_gfork_incoming_cb);
+    GlobusGFSName(globus_l_gfs_gfork_dyn_reg);
 
     globus_i_gfs_log_message(
         GLOBUS_I_GFS_LOG_WARN,
@@ -273,7 +273,6 @@ globus_l_gfs_gfork_dyn_reg(
         free(cookie_id);
     }
 error_cs:
-error:
     globus_free(buffer);
 }
 

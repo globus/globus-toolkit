@@ -14,11 +14,14 @@
  * limitations under the License.
  */
 
+/* This is ment to be a fairly simple program.  If it starts creeping too
+    much we need to reconsider it */
+
 /* TODO: 
    1) memory limitation, perhaps just implemented in brain based on
       connection count?
 
-   2) better load balancing.  maintain a 'who needs a beer?' list
+   2) better load balancing.  maintain a 'whos ready?' list
 */
 
 
@@ -62,6 +65,14 @@ static int                              g_repo_count = 0;
 static gfork_child_handle_t             g_handle;
 static int                              g_connection_count = 0;
 static globus_hashtable_t               g_gfork_be_table;
+static globus_bool_t                    g_backend = GLOBUS_FALSE;
+static globus_xio_attr_t                g_attr;
+static globus_xio_stack_t               g_stack;
+static int                              g_be_timer_sec = (GF_REGISTRATION_TIMEOUT/2);
+static char *                           g_reg_cs = NULL;
+static char *                           g_be_cs;
+static uint32_t                         g_at_once;
+static uint32_t                         g_total_cons;
 
 static
 globus_result_t
@@ -482,8 +493,7 @@ gfs_l_gfork_open_server_cb(
         result = gfs_l_gfork_dn_ok(handle);
         if(result != GLOBUS_SUCCESS)
         {
-            gfs_l_gfork_log(
-                result, 2, "DN rejected.\n");
+            gfs_l_gfork_log(result, 2, "DN rejected.\n");
             goto error_not_allowed;
         }
     }
@@ -524,8 +534,7 @@ error_not_allowed:
             NULL,
             NULL);
         globus_free(ent_buf);
-        gfs_l_gfork_log(
-            result, 3, "Write NACK failed.\n");
+        gfs_l_gfork_log(result, 3, "Write NACK failed.\n");
     }
 error_accept:
     gfs_l_gfork_log(
@@ -562,7 +571,7 @@ gfs_l_gfork_add_server_accept_cb(
                 goto error;
             }
         }
-       result = globus_xio_register_open(
+        result = globus_xio_register_open(
             handle,
             NULL,
             attr,
@@ -600,6 +609,13 @@ gfs_l_gfork_listen()
     globus_result_t                     res;
     GFSGForkFuncName(gfs_l_gfork_listen);
 
+    res = globus_xio_server_create(
+        &gfs_l_gfork_server_handle, g_attr, g_stack);
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto error_server_create;
+    }
+
     res = globus_xio_server_get_contact_string(
         gfs_l_gfork_server_handle,
         &contact_string);
@@ -625,13 +641,15 @@ gfs_l_gfork_listen()
 error_accept:
     globus_free(contact_string);
 error_server:
+error_server_create:
 
     return res;
 }
 
+
 static
 void
-gfs_l_gfork_open_cb(
+gfs_l_gfork_dyn_be_open(
     gfork_child_handle_t                handle,
     void *                              user_arg,
     pid_t                               from_pid)
@@ -642,72 +660,91 @@ gfs_l_gfork_open_cb(
     globus_bool_t                       done = GLOBUS_FALSE;
     gfs_l_gfork_master_entry_t *        ent_buf;
 
-    gfs_l_gfork_log(
-        GLOBUS_SUCCESS, 2, "Open called for pid %d\n", from_pid);
-
     iov = (globus_xio_iovec_t *) globus_calloc(
         globus_fifo_size(&gfs_l_gfork_be_q),
         sizeof(globus_xio_iovec_t));
-    globus_mutex_lock(&g_mutex);
+
+    while(!done && (i < g_repo_count || g_repo_count == 0))
     {
-        g_connection_count++;
-        while(!done && (i < g_repo_count || g_repo_count == 0))
+        if(globus_fifo_empty(&gfs_l_gfork_be_q))
         {
-            if(globus_fifo_empty(&gfs_l_gfork_be_q))
+            done = GLOBUS_TRUE;
+        }
+        else
+        {
+            ent_buf = (gfs_l_gfork_master_entry_t *)
+                globus_fifo_dequeue(&gfs_l_gfork_be_q);
+
+            if(ent_buf->buffer[GF_VERSION_NDX] == GF_VERSION_TIMEOUT)
             {
-                done = GLOBUS_TRUE;
+                gfs_l_gfork_log(
+                    GLOBUS_SUCCESS, 2, "Freeing timed-out buffer %s\n",
+                    &ent_buf->buffer[GF_CS_NDX]);
+                globus_free(ent_buf);
             }
             else
             {
-                ent_buf = (gfs_l_gfork_master_entry_t *)
-                    globus_fifo_dequeue(&gfs_l_gfork_be_q);
+                /* a good buffer */
 
-                if(ent_buf->buffer[GF_VERSION_NDX] == GF_VERSION_TIMEOUT)
-                {
-                    gfs_l_gfork_log(
-                        GLOBUS_SUCCESS, 2, "Freeing timed-out buffer %s\n",
-                        &ent_buf->buffer[GF_CS_NDX]);
-                    globus_free(ent_buf);
-                }
-                else
-                {
-                    /* a good buffer */
-
-                    /* temparily assign ent_buf here, we ultimatale 
-                        want ent_buf-> buffer */
-                    iov[i].iov_base = ent_buf;
-                    iov[i].iov_len = GF_REG_PACKET_LEN;
-                    i++;
-                }
+                /* temparily assign ent_buf here, we ultimatale 
+                    want ent_buf-> buffer */
+                iov[i].iov_base = ent_buf;
+                iov[i].iov_len = GF_REG_PACKET_LEN;
+                i++;
             }
         }
-        iovc = i;
+    }
+    iovc = i;
 
-        for(i = 0; i < iovc; i++)
+    for(i = 0; i < iovc; i++)
+    {
+        ent_buf = (gfs_l_gfork_master_entry_t *) iov[i].iov_base;
+        globus_fifo_enqueue(&gfs_l_gfork_be_q, ent_buf);
+        iov[i].iov_base = ent_buf->buffer;
+        gfs_l_gfork_log(
+            GLOBUS_SUCCESS, 2, "Re-enqueue\n");
+    }
+    /* put them back in */
+    if(iovc > 0)
+    {
+        gfs_l_gfork_log(
+            GLOBUS_SUCCESS, 3, "sending to pid %d\n", from_pid);
+        globus_gfork_send(
+            handle,
+            from_pid,
+            iov,
+            iovc,
+            NULL,
+            NULL);
+    }
+
+    globus_free(iov);
+}
+
+static
+void
+gfs_l_gfork_open_cb(
+    gfork_child_handle_t                handle,
+    void *                              user_arg,
+    pid_t                               from_pid)
+{
+
+    gfs_l_gfork_log(
+        GLOBUS_SUCCESS, 2, "Open called for pid %d\n", from_pid);
+
+    globus_mutex_lock(&g_mutex);
+    {
+        g_connection_count++;
+
+        if(!g_backend)
         {
-            ent_buf = (gfs_l_gfork_master_entry_t *) iov[i].iov_base;
-            globus_fifo_enqueue(&gfs_l_gfork_be_q, ent_buf);
-            iov[i].iov_base = ent_buf->buffer;
-            gfs_l_gfork_log(
-                GLOBUS_SUCCESS, 2, "Re-enqueue\n");
+            gfs_l_gfork_dyn_be_open(handle, user_arg, from_pid);
         }
-        /* put them back in */
-        if(iovc > 0)
+        else
         {
-            gfs_l_gfork_log(
-                GLOBUS_SUCCESS, 3, "sending to pid %d\n", from_pid);
-            globus_gfork_send(
-                handle,
-                from_pid,
-                iov,
-                iovc,
-                NULL,
-                NULL);
         }
     }
     globus_mutex_unlock(&g_mutex);
-
-    globus_free(iov);
 }
 
 /* connection cloesd */
@@ -743,15 +780,13 @@ globus_result_t
 gfs_l_gfork_xio_setup()
 {
     globus_result_t                     result;
-    globus_xio_attr_t                   attr;
-    globus_xio_stack_t                  stack;
 
-    result = globus_xio_attr_init(&attr);
+    result = globus_xio_attr_init(&g_attr);
     if(result != GLOBUS_SUCCESS)
     {
         goto error_attr_init;
     }
-    result = globus_xio_stack_init(&stack, NULL);
+    result = globus_xio_stack_init(&g_stack, NULL);
     if(result != GLOBUS_SUCCESS)
     {
         goto error_stack_init;
@@ -763,13 +798,13 @@ gfs_l_gfork_xio_setup()
         goto error_tcp;
     }
 
-    result = globus_xio_stack_push_driver(stack, g_tcp_driver);
+    result = globus_xio_stack_push_driver(g_stack, g_tcp_driver);
     if(result != GLOBUS_SUCCESS)
     {
         goto error_tcp_push;
     }
     result = globus_xio_attr_cntl(
-        attr,
+        g_attr,
         g_tcp_driver,
         GLOBUS_XIO_TCP_SET_PORT,
         g_port);
@@ -785,13 +820,13 @@ gfs_l_gfork_xio_setup()
         {
             goto error_gsi;
         }
-        result = globus_xio_stack_push_driver(stack, g_gsi_driver);
+        result = globus_xio_stack_push_driver(g_stack, g_gsi_driver);
         if(result != GLOBUS_SUCCESS)
         {
             goto error_gsi_push;
         }
         result = globus_xio_attr_cntl(
-            attr,
+            g_attr,
             g_gsi_driver,
             GLOBUS_XIO_GSI_SET_AUTHORIZATION_MODE,
             GLOBUS_XIO_GSI_NO_AUTHORIZATION);
@@ -801,18 +836,8 @@ gfs_l_gfork_xio_setup()
         }
     }
 
-    result = globus_xio_server_create(
-        &gfs_l_gfork_server_handle, attr, stack);
-    if(result != GLOBUS_SUCCESS)
-    {
-        goto error_server_create;
-    }
-
-    globus_xio_attr_destroy(attr);
-
     return GLOBUS_SUCCESS;
 
-error_server_create:
 error_gsi_push:
 error_gsi:
 error_port:
@@ -823,6 +848,181 @@ error_attr_init:
 
     return result;
 }
+
+/* BACKEND LOGIC */
+static
+void
+gfs_l_gfork_backend_xio_read_cb(
+    globus_xio_handle_t                 handle,
+    globus_result_t                     result,
+    globus_byte_t *                     buffer,
+    globus_size_t                       len,
+    globus_size_t                       nbytes,
+    globus_xio_data_descriptor_t        data_desc,
+    void *                              user_arg)
+{
+    if(result != GLOBUS_SUCCESS)
+    {
+        /* just log it */
+        gfs_l_gfork_log(result, 0, "Backend registration failed\n");
+    }
+
+    globus_free(buffer);
+
+    globus_xio_register_close(
+        handle,
+        NULL,
+        NULL,
+        NULL);
+}
+
+static
+void
+gfs_l_gfork_backend_xio_write_cb(
+    globus_xio_handle_t                 handle,
+    globus_result_t                     result,
+    globus_byte_t *                     buffer,
+    globus_size_t                       len,
+    globus_size_t                       nbytes,
+    globus_xio_data_descriptor_t        data_desc,
+    void *                              user_arg)
+{
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        /* just log it */
+        gfs_l_gfork_log(result, 0, "Backend registration failed\n");
+        goto error;
+    }
+
+    result = globus_xio_register_read(
+        handle,
+        buffer,
+        GF_REG_PACKET_LEN,
+        GF_REG_PACKET_LEN,
+        NULL,
+        gfs_l_gfork_backend_xio_read_cb,
+        NULL);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+    return;
+
+error:
+    globus_free(buffer);
+
+    globus_xio_register_close(
+        handle,
+        NULL,
+        NULL,
+        NULL);
+}
+
+static
+void
+gfs_l_gfork_backend_xio_open_cb(
+    globus_xio_handle_t                 handle,
+    globus_result_t                     result,
+    void *                              user_arg)
+{
+    globus_byte_t *                     buffer;
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_param;
+    }
+
+    buffer = globus_calloc(1, GF_REG_PACKET_LEN);
+    buffer[GF_VERSION_NDX] = GF_VERSION;
+    buffer[GF_MSG_TYPE_NDX] = GFS_GFORK_MSG_TYPE_DYNBE;
+    memcpy(&buffer[GF_AT_ONCE_NDX], &g_at_once, sizeof(uint32_t));
+    memcpy(&buffer[GF_TOTAL_NDX], &g_total_cons, sizeof(uint32_t));
+    strncpy(&buffer[GF_CS_NDX], g_be_cs, GF_CS_LEN);
+
+    result = globus_xio_register_write(
+        handle,
+        buffer,
+        GF_REG_PACKET_LEN,
+        GF_REG_PACKET_LEN,
+        NULL,
+        gfs_l_gfork_backend_xio_write_cb,
+        NULL);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_write;
+    }
+
+    return;
+error_write:
+    globus_free(buffer);
+error_param:
+    gfs_l_gfork_log(result, 0, "Backend registration failed\n");
+    globus_xio_register_close(
+        handle,
+        NULL,
+        NULL,
+        NULL);
+}
+
+static
+void
+gfs_l_gfork_backend_timer(
+    void *                              user_arg)
+{
+    globus_result_t                     result;
+    globus_xio_handle_t                 xio_handle;
+
+    result = globus_xio_handle_create(&xio_handle, g_stack);
+    if(result != GLOBUS_SUCCESS)
+    {
+        /* log nasty error, but dont exit */
+        goto error_create;
+    }
+
+    gfs_l_gfork_log(GLOBUS_SUCCESS, 0,
+        "Attempting to open :%s:\n", g_reg_cs);
+    result = globus_xio_register_open(
+        xio_handle,
+        g_reg_cs,
+        g_attr,
+        gfs_l_gfork_backend_xio_open_cb,
+        NULL);
+    if(result != GLOBUS_SUCCESS)
+    {
+        /* log nasty error, but dont exit */
+        goto error_open;
+    }
+
+    return;
+
+error_open:
+error_create:
+    gfs_l_gfork_log(result, 0, "Backend registration failed\n");
+}
+
+
+static
+globus_result_t
+gfs_l_gfork_backend_setup()
+{
+    globus_reltime_t                    period;
+    globus_reltime_t                    delay;
+
+    GlobusTimeReltimeSet(delay, 0, 0);
+    GlobusTimeReltimeSet(period, g_be_timer_sec, 0);
+
+    gfs_l_gfork_log(GLOBUS_SUCCESS, 1, "Starting timer\n");
+    globus_callback_register_periodic(
+        NULL,
+        &delay,
+        &period,
+        gfs_l_gfork_backend_timer,
+        NULL);
+
+    return GLOBUS_SUCCESS;
+}
+
 
 int
 main(
@@ -855,14 +1055,14 @@ main(
         globus_hashtable_string_hash,
         globus_hashtable_string_keyeq);
 
-    result = gfs_l_gfork_xio_setup();
-    if(result != GLOBUS_SUCCESS)
-    {
-        goto error_xio;
-    }
-
     globus_mutex_lock(&g_mutex);
     {
+        result = gfs_l_gfork_xio_setup();
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error_xio;
+        }
+
         result = globus_gfork_child_master_start(
             &g_handle,
             NULL,
@@ -875,10 +1075,22 @@ main(
             goto error_start;
         }
 
-        result = gfs_l_gfork_listen();
-        if(result != GLOBUS_SUCCESS)
+        if(!g_backend)
         {
-            goto error_listen;
+            result = gfs_l_gfork_listen();
+            if(result != GLOBUS_SUCCESS)
+            {
+                goto error_listen;
+            }
+        }
+        else
+        {
+            /* start time for registration */
+            result = gfs_l_gfork_backend_setup();
+            if(result != GLOBUS_SUCCESS)
+            {
+                goto error_xio;
+            }
         }
 
         while(!g_done)
@@ -893,9 +1105,10 @@ main(
 error_listen:
 error_start:
 error_xio:
+    globus_mutex_unlock(&g_mutex);
 error_opts:
 error_activate:
-    gfs_l_gfork_log(result, 0, "");
+    gfs_l_gfork_log(result, 0, "\n");
 
     return 1;
 }
@@ -1020,6 +1233,21 @@ gfs_l_gfork_opts_dn_file(
 
 static
 globus_result_t
+gfs_l_gfork_opts_reg(
+    globus_options_handle_t             opts_handle,
+    char *                              cmd,
+    char **                             opt,
+    void *                              arg,
+    int *                               out_parms_used)
+{
+    g_reg_cs = opt[0];
+    *out_parms_used = 1;
+
+    return GLOBUS_SUCCESS;
+}
+
+static
+globus_result_t
 gfs_l_gfork_opts_log(
     globus_options_handle_t             opts_handle,
     char *                              cmd,
@@ -1048,6 +1276,37 @@ error_open:
     return result;
 }
 
+static
+globus_result_t
+gfs_l_gfork_opts_updatetime(
+    globus_options_handle_t             opts_handle,
+    char *                              cmd,
+    char **                             opt,
+    void *                              arg,
+    int *                               out_parms_used)
+{   
+    globus_result_t                     result;
+    int                                 sc;
+    int                                 tm;
+    GFSGForkFuncName(gfs_l_gfork_opts_stripe_count);
+
+    sc = sscanf(opt[0], "%d", &tm);
+    if(sc != 1)
+    {
+        result = GFSGforkError("stripe count must be an int",
+            GFS_GFORK_ERROR_PARAMETER);
+        goto error_format;
+    }
+
+    g_be_timer_sec = tm;
+    *out_parms_used = 1;
+
+    return GLOBUS_SUCCESS;
+error_format:
+    return result;
+
+}
+
 globus_options_entry_t                   gfork_l_opts_table[] =
 {
     {"help", "h", NULL, NULL,
@@ -1066,10 +1325,16 @@ globus_options_entry_t                   gfork_l_opts_table[] =
     {"gsi", "G", NULL, "<bool>",
         "Enable or disable GSI.  Default is on.",
         1, gfs_l_gfork_opts_gsi},
-    {"dn-file", "dn", NULL, "<path>",
+    {"dn-file", "df", NULL, "<path>",
         "Path to a file containing the list of acceptable DNs."
         "  Default is system gridmap file",
         1, gfs_l_gfork_opts_dn_file},
+    {"reg-cs", "b", NULL, "<contact string>",
+        "Contact to the frontend registry.  This option makes it a data node",
+        1, gfs_l_gfork_opts_reg},
+    {"update-interval", "u", NULL, "<int>",
+        "Number of seconds between registration updates.",
+        1, gfs_l_gfork_opts_updatetime},
     {NULL, NULL, NULL, NULL, NULL, 0, NULL}
 };
 
@@ -1102,6 +1367,7 @@ gfs_gfork_master_options(
 {
     globus_options_handle_t             opt_h;
     globus_result_t                     result;
+    GFSGForkFuncName(gfs_gfork_master_options);
 
     globus_options_init(
         &opt_h, gfs_l_gfork_master_opts_unknown, NULL);
@@ -1111,6 +1377,20 @@ gfs_gfork_master_options(
     {
         goto error;
     }
+    if(g_reg_cs != NULL)
+    {
+        g_backend = GLOBUS_TRUE;
+    }
+
+    g_be_cs = globus_libc_getenv(GFORK_CHILD_CS_ENV);
+    if(g_be_cs == NULL)
+    {
+        result = GFSGforkError(
+            "GFork contact string not set. Was this program forked from GFork?",
+            0);
+        goto error;
+    }
+
     return GLOBUS_SUCCESS;
 error:
     return result;
