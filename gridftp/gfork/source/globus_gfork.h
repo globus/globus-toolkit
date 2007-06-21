@@ -12,6 +12,10 @@
 #define GlobusXIOGForkName(func) static const char * _gfork_func_name = #func
 #endif
 
+#define GFORK_CHILD_READ_ENV "GFORK_CHILD_READ_ENV"
+#define GFORK_CHILD_WRITE_ENV "GFORK_CHILD_WRITE_ENV"
+#define GFORK_CHILD_CS_ENV "GFORK_CHILD_CS_ENV"
+
 typedef void *                          gfork_child_handle_t;
 
 typedef enum

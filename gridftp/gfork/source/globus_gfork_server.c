@@ -28,6 +28,7 @@ static globus_list_t *                  gfork_l_pid_list = NULL;
 static gfork_i_child_handle_t *         gfork_l_master_child_handle = NULL;
 static gfork_i_options_t                gfork_l_options;
 static gfork_i_handle_t                 gfork_l_handle;
+static char *                           g_contact_string;
 
 static
 void
@@ -362,7 +363,7 @@ gfork_l_spawn_master()
         globus_libc_setenv(GFORK_CHILD_READ_ENV, tmp_str, 1);
         sprintf(tmp_str, "%d", write_fd);
         globus_libc_setenv(GFORK_CHILD_WRITE_ENV, tmp_str, 1);
-
+        globus_libc_setenv(GFORK_CHILD_CS_ENV, g_contact_string, 1);
 
         gfork_log(2, "Master Child FDs %s %s\n",
             globus_libc_getenv(GFORK_CHILD_READ_ENV),
@@ -807,9 +808,16 @@ gfork_init_server()
 {
     gfork_i_options_t *                 gfork_h;
     globus_result_t                     res;
-    char *                              contact_string;
 
     gfork_h = &gfork_l_options;
+
+    res = globus_xio_server_get_contact_string(
+        gfork_l_handle.server_xio, &g_contact_string);
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto error_contact;
+    }
+    gfork_log(0, "Listening on: %s\n", g_contact_string);
 
     /* start the master program */
     res = gfork_l_spawn_master(gfork_h);
@@ -817,15 +825,6 @@ gfork_init_server()
     {
         goto error_master;
     }
-
-    res = globus_xio_server_get_contact_string(
-        gfork_l_handle.server_xio, &contact_string);
-    if(res != GLOBUS_SUCCESS)
-    {
-        goto error_contact;
-    }
-    gfork_log(0, "Listening on: %s\n", contact_string);
-    globus_free(contact_string);
 
     res = globus_xio_server_register_accept(
         gfork_l_handle.server_xio,
@@ -838,9 +837,8 @@ gfork_init_server()
     return GLOBUS_SUCCESS;
 
 error_register:
-    free(contact_string);
-error_contact:
 error_master:
+error_contact:
 
     return res;
 }

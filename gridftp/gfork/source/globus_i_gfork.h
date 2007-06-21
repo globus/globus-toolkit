@@ -28,9 +28,6 @@
             "System error in %s",                                           \
             _msg)
 
-#define GFORK_CHILD_READ_ENV "GFORK_CHILD_READ_ENV"
-#define GFORK_CHILD_WRITE_ENV "GFORK_CHILD_WRITE_ENV"
-
 #define GForkErrorStr(_msg) \
     globus_error_put(GForkErrorObjStr(_msg))
 
@@ -104,11 +101,13 @@ typedef struct gfork_i_msg_s
     struct gfork_i_child_handle_s *     from_kid;
     void *                              user_arg;
     globus_xio_iovec_t *                iov;
+    int                                 iovc;
     globus_xio_iovec_t                  write_iov[2];
     globus_xio_iovec_callback_t         client_cb;
     globus_xio_iovec_callback_t         cb;
     gfork_i_msg_data_t *                data;
     globus_byte_t *                     buffer;
+    struct gfork_i_lib_handle_s *       lib_handle;
 } gfork_i_msg_t;
 
 typedef enum gfork_i_state_e
@@ -180,6 +179,23 @@ typedef struct gfork_i_child_handle_s
     globus_bool_t                       writting;
     globus_bool_t                       master;
 } gfork_i_child_handle_t;
+
+typedef struct gfork_i_lib_handle_s
+{
+    globus_xio_handle_t                 read_xio;
+    globus_xio_handle_t                 write_xio;
+    gfork_i_msg_header_t                header;
+    globus_byte_t *                     data;
+    globus_gfork_incoming_cb_t          incoming_cb;
+    globus_gfork_open_func_t            open_cb;
+    globus_gfork_closed_func_t          close_cb;
+    globus_bool_t                       master;
+    void *                              user_arg;
+    globus_mutex_t                      mutex;
+    gfork_i_state_t                     state;
+    globus_fifo_t                       write_q;
+    globus_bool_t                       writing;
+} gfork_i_lib_handle_t;
 
 globus_result_t
 gfork_i_make_xio_handle(
