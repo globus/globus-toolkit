@@ -29,9 +29,8 @@ my $globus_location = $ENV{GLOBUS_LOCATION};
 #$Test::Harness::verbose = 1;
 
 my $nogsi;
-my $be_pid;
-my $be_cmd;
 my $gfork_pid;
+my $gfork_be_pid;
 
 if(defined($nogsi) or defined($ENV{FTP_TEST_NO_GSI}))
 {
@@ -62,10 +61,10 @@ exit $rc;
 
 sub clean_up()
 {
-    if($be_pid)
+    if($gfork_be_pid)
     {
-        kill(9,-$be_pid);
-        $be_pid=0;
+        kill(9,-$gfork_be_pid);
+        $gfork_be_pid=0;
     }
     if($gfork_pid)
     {
@@ -77,7 +76,7 @@ sub clean_up()
 sub setup_server()
 {
     my $gfork_prog = "$globus_location/sbin/gfork";
-    my $gfork_be_prog = "$globus_location/sbin/globus-gridftp-server";
+    my $gfork_be_prog = "$globus_location/sbin/gfork";
     my $gfork_be_port;
     my $server_host = "localhost";
     my $server_port = 0;
@@ -87,6 +86,7 @@ sub setup_server()
     my $master_gmap;
     my $x;
     my $sec_envs;
+    my $server_be_port;
 
     if(defined($nogsi))
     {
@@ -176,6 +176,8 @@ sub setup_server()
     print "Started gfork on port $server_port\n";
 
     # sub in the name for frontend
+
+    $fe_cs = "localhost:$reg_port";
     open(IN, "<$gfork_be_conf.in") || die "couldnt open $gfork_be_conf.in";
     open(OUT, ">$gfork_be_conf") || die "couldnt open $gfork_be_conf";
     $x = join('', <IN>);
@@ -187,6 +189,28 @@ sub setup_server()
     close(IN);
     close(OUT);
 
+    sleep 15;
+
+    print "starting $gfork_be_prog -c $gfork_be_conf\n";
+    $gfork_be_pid = open(SERVER, "$gfork_be_prog -c $gfork_be_conf |");
+    print "starting $gfork_be_prog -c $gfork_be_conf\n";
+    if($gfork_be_pid == -1)
+    {
+        print "Unable to start server\n";
+        exit 1;
+    }
+    print "starting $gfork_be_prog -c $gfork_be_conf\n";
+    select((select(BE_SERVER), $| = 1)[0]);
+    print "starting $gfork_be_prog -c $gfork_be_conf\n";
+    $server_be_port = <BE_SERVER>;
+    $server_be_port =~ s/Listening on: .*?:(\d+)/\1/;
+    chomp($server_be_port);
+    if($server_be_port !~ /\d+/)
+    {
+        print "Unable to start server\n";
+        exit 1;
+    }
+    print "Started gfork backend on port $server_be_port\n";
 
 
     # sleep a second, some hosts are slow....
