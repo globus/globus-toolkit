@@ -1,5 +1,5 @@
-Running the Globus GridFTP Server With GFork
-============================================
+         Running the Globus GridFTP Server With GFork
+         ============================================
 
 Running the globus-gridftp-server under gfork is almost identical to 
 running it under xinetd.  First you need a configuration file:
@@ -9,9 +9,8 @@ service gridftp2
   env += GLOBUS_LOCATION=<path to GL>
   env += LD_LIBRARY_PATH=<path to GL>/lib
   server = <path to GL>/sbin/globus-gridftp-server
-  server_args = -i -aa
-  server_args += -d ALL -l /home/bresnaha/tst.log
-  server_args += -dsi remote -repo-count 1
+  server_args = -i 
+  server_args += -d ALL -l <path to GL>/var/gridftp.log
   port = 5000
 }
 
@@ -21,26 +20,131 @@ gfork is run with:
 
 % gfork -c <path to config file>
 
-Dynamic Backends
-----------------
-
-To user dynamic backends GFork must be configured with a master program. 
-To do this we need 2 additional lines to the configuration:
+When running GridFTP out of GFork the server should be run with a master
+program.  The master program provides enhanced functionality such as
+dynamic backend registration for striped servers, managed system memory 
+pools and internal data monitoring for both striped and non striped
+servers.  For information about what a gfork master program is see the
+GFork documentaton.  To run with a master program the following two lines 
+are needed.
 
   master = <path to GL>/libexec/gfs-gfork-master
-  master_args = <master program options>
+  master_args = <options>
 
-These 2 lines are added anywhere with in the curly brackets of the 
-configuration file.  The master program options are as follows:
+The first line tells GFork what master program to use, for the GridFTP
+server we use gfs-gfork-master.  The second line provides options to
+the master program
 
-  -dn | --dn-file <path>      Path to a file containing the list of acceptable
-                              DNs.  Default is system gridmap file
-  -G | --gsi <bool>           Enable or disable GSI.  Default is on.
-  -h | --help                 print the help message
-  -l | --logfile <path>       Path to the logfile.
-  -p | --port <int>           Port where server listens for connections.
-  -s | --stripe-count <int>   The max number of stripes to give to each server.
-                              0 is all available.
+The full list of master options (to date, run the program with --help for
+newer options) are:
+
+ -b | --reg-cs <contact string>
+                             Contact to the frontend registry.  This option
+                             makes it a data node
+ -df | --dn-file <path>      Path to a file containing the list of acceptable
+                             DNs.  Default is system gridmap file
+ -G | --gsi <bool>           Enable or disable GSI.  Default is on.
+ -h | --help                 print the help message
+ -l | --logfile <path>       Path to the logfile.
+ -p | --port <int>           Port where server listens for connections.
+ -s | --stripe-count <int>   The max number of stripes to give to each server.
+                             0 is all avaiable.
+ -u | --update-interval <int>
+                             Number of seconds between registration updates.
+
+Striped Servers
+===============
+GridFTP offers a powerful enhancement called striped servers.  In this 
+mode a GridFTP server is setup with a single frontend and one or many 
+backends.  All of the backends work in concert to transfer a single file
+and thereby achieve high through put rates.  More information can be 
+found about striped servers on the GridFTP web pages.  Here we describe
+how to configure a frontend and all the backends for use as a striped 
+server.
+
+Frontend Configuration
+----------------------
+The frontend server described here is run using dynamic backends. 
+We need additional options to both the GridFTP server itself and
+to the master program.  The following lines are added:
+
+  server_args += -dsi remote 
+  master_args = -port 8588
+  master_args += -df <path to gridmap file>
+
+The first line is an additional argument to the GridFTP server.  It tells
+the server that it will be operating in split mode (seperate frontend
+and backend processes) and that it will be the frontend.  (Specifically
+it tells the server to use the 'remote' DSI).
+
+The second line tells the master program on which port it should listen
+for backend registrations.  Backend services can then connect to this
+port to notify the frontend of their existance.  By default a registration
+is good for 10 minutes, but a backend is free to refresh its registration.
+In this way a frontend is provided with the list of possible backends 
+(stripes) which maybe used for a transfer.
+
+The third line provides the master program with a list of authorized DNs.
+Each line in the file must contain a GSI DN (certificate subject).
+In order to register the backend
+must authenticate and provide its DN.  The provided DN is checked against
+this file.  In short the file is a list of DNs that may register with the
+frontend.
+
+If the master program is not given a -df option and is given the -G n option
+then there is no registration security at all.
+
+
+Backend Configuration
+----------------------
+Any striped server setup can have more than one backend service.  Furhter,
+any one computer can run multiple backends.  Here we explain how to setup
+a backend server.  These steps should be repeated for ever needed backend
+instance.
+
+A backend server can also be run with GFork, it just needs different 
+options to both the GridFTP server and the master program.  A sample 
+backend config file is show here:
+
+service gridftp2
+{
+  env += GLOBUS_LOCATION=<path to GL>
+  env += LD_LIBRARY_PATH=<path to GL>/lib
+
+  server = <path to GL>/sbin/globus-gridftp-server
+  server_args = -i  
+  server_args += -dn
+  master = <path to GL>/libexec/gfs-gfork-master
+  master_args = -b localhost:8588
+}
+
+Notable additions to this file are:
+
+  server_args += -dn
+  master_args = -b localhost:8588
+
+These first line tells the gridftp server that it will be a 'data node', 
+which is another name for a backend.  The second line tells the master
+program two things, first that it will be a master of a data node, and
+second what the frontends registration contact point is.  Note that in
+our example we have a hostname of 'localhost' and a port of '8588'.  
+8588 is (and must be) the same port that was provided to the frontend's
+master program in the previous step.
+
+Once the configuration file is complete GFork is again run as:
+
+% gfork -c <conf file>
+
+This will start up the data node and the master program will register
+itself to the frontend and refresh its registration every 5 minutes 
+(default setting).
+
+
+================================
+Alternative Backend Registration
+================================
+This is not a recommended method, but it is provided for situations that may
+need it.
 
 Registration Client
 -------------------
