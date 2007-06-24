@@ -175,7 +175,7 @@ sub probe_for_tools {
     if (! defined $me->{'gunzip_location'}) {
       if (-f "$d/gunzip" ) {
         my $result = `$d/gunzip --version 2>&1`;
-        $me->{'gunzip_location'} = "$d/gunzip" if $result =~ m!gunzip\s+!;
+        $me->{'gunzip_location'} = "$d/gunzip" if $result =~ m!zip\s+!;
       }
     }
 
