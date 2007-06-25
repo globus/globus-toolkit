@@ -239,6 +239,11 @@ globus_error_initialize_error(
     globus_l_error_data_t *             instance_data;
     int                                 size;
     va_list                             ap_copy;
+
+    if ((error = globus_object_upcast(error, GLOBUS_ERROR_TYPE_GLOBUS)) == NULL)
+    {
+        return NULL;
+    }
     
     instance_data = (globus_l_error_data_t *)
         malloc(sizeof(globus_l_error_data_t));
@@ -247,7 +252,6 @@ globus_error_initialize_error(
     {
         return NULL;
     }
-    
     memset((void *) instance_data,0,sizeof(globus_l_error_data_t));
 
     instance_data->type = type;
@@ -392,18 +396,17 @@ int
 globus_error_get_type(
     globus_object_t *                   error)
 {
-    const globus_object_type_t *        obj_type;
+    globus_object_t *                   tmp;
     
-    obj_type = globus_object_get_type(error);
-    if(obj_type == GLOBUS_ERROR_TYPE_GLOBUS)
+    if ((tmp = globus_object_upcast(error, GLOBUS_ERROR_TYPE_GLOBUS)) != NULL)
     {
         return ((globus_l_error_data_t *)
-                globus_object_get_local_instance_data(error))->type;
+                globus_object_get_local_instance_data(tmp))->type;
     }
-    else if(obj_type == GLOBUS_ERROR_TYPE_MULTIPLE)
+    else if ((tmp = globus_object_upcast(error, GLOBUS_ERROR_TYPE_MULTIPLE)) != NULL)
     {
         return ((globus_l_error_multiple_t *)
-                globus_object_get_local_instance_data(error))->type;
+                globus_object_get_local_instance_data(tmp))->type;
     }
     else
     {
@@ -432,8 +435,13 @@ globus_error_set_type(
     globus_object_t *                   error,
     const int                           type)
 {
-    ((globus_l_error_data_t *)
-     globus_object_get_local_instance_data(error))->type = type;
+    globus_object_t *                   tmp;
+
+    if ((error = globus_object_upcast(error, GLOBUS_ERROR_TYPE_GLOBUS)) != NULL)
+    {
+        ((globus_l_error_data_t *)
+                globus_object_get_local_instance_data(tmp))->type = type;
+    }
 }/* globus_error_set_type */
 /*@}*/
 
@@ -456,9 +464,16 @@ char *
 globus_error_get_short_desc(
     globus_object_t *                   error)
 {
-    return globus_libc_strdup(
-        ((globus_l_error_data_t *)
-         globus_object_get_local_instance_data(error))->short_desc);
+    if ((error = globus_object_upcast(error, GLOBUS_ERROR_TYPE_GLOBUS)) != NULL)
+    {
+        return globus_libc_strdup(
+            ((globus_l_error_data_t *)
+             globus_object_get_local_instance_data(error))->short_desc);
+    }
+    else
+    {
+        return NULL;
+    }
 }/* globus_error_get_short_desc */
 /*@}*/
 
@@ -490,6 +505,10 @@ globus_error_set_short_desc(
     va_list                             ap;
     int                                 size;
     
+    if ((error = globus_object_upcast(error, GLOBUS_ERROR_TYPE_GLOBUS)) == NULL)
+    {
+        return;
+    }
     instance_short_desc =
         &((globus_l_error_data_t *)
           globus_object_get_local_instance_data(error))->short_desc;
@@ -546,6 +565,10 @@ char *
 globus_error_get_long_desc(
     globus_object_t *                   error)
 {
+    if ((error = globus_object_upcast(error, GLOBUS_ERROR_TYPE_GLOBUS)) == NULL)
+    {
+        return NULL;
+    }
     return globus_libc_strdup(
         ((globus_l_error_data_t *)
          globus_object_get_local_instance_data(error))->long_desc);
@@ -578,6 +601,10 @@ globus_error_set_long_desc(
     va_list                             ap;
     int                                 size;
     
+    if ((error = globus_object_upcast(error, GLOBUS_ERROR_TYPE_GLOBUS)) == NULL)
+    {
+        return;
+    }
     instance_long_desc =
         &((globus_l_error_data_t *)
           globus_object_get_local_instance_data(error))->long_desc;
@@ -647,16 +674,22 @@ globus_error_match(
 {
     globus_module_descriptor_t *        source_module;
     int                                 error_type;
-    const globus_object_type_t *        obj_type;
+    globus_object_t *                   tmp;
     
     if(error == NULL)
     {
         return GLOBUS_FALSE;
     }
     
-    obj_type = globus_object_get_type(error);
-    if(obj_type != GLOBUS_ERROR_TYPE_GLOBUS &&
-        obj_type != GLOBUS_ERROR_TYPE_MULTIPLE)
+    if ((tmp = globus_object_upcast(error, GLOBUS_ERROR_TYPE_GLOBUS)) != NULL)
+    {
+        error = tmp;
+    }
+    else if ((tmp = globus_object_upcast(error, GLOBUS_ERROR_TYPE_MULTIPLE)) != NULL)
+    {
+        error = tmp;
+    }
+    else
     {
         /* not our type, skip it */
         return globus_error_match(
@@ -664,7 +697,6 @@ globus_error_match(
             module,
             type);
     }
-
     source_module = globus_error_get_source(error);
     error_type = globus_error_get_type(error);
     
@@ -766,6 +798,10 @@ globus_l_error_multiple_print(
     char *                              error_string;
     int                                 i = 0;
     
+    if ((error = globus_object_upcast(error, GLOBUS_ERROR_TYPE_MULTIPLE)) == NULL)
+    {
+        return NULL;
+    }
     data = (globus_l_error_multiple_t *)
         globus_object_get_local_instance_data(error);
     if(data && data->chains)
