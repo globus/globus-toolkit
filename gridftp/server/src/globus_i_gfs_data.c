@@ -1563,8 +1563,11 @@ globus_l_gfs_data_operation_destroy(
                 {
                     remote_data_arg = op->data_handle->remote_data_arg;
                 }
+/*
+    XXX this is cuasing trouble at 2294.
 		globus_l_gfs_data_handle_free(op->data_handle);
-            }
+*/ 
+           }
         }
     }
     globus_mutex_unlock(&op->session_handle->mutex);
