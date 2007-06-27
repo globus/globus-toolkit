@@ -1398,6 +1398,7 @@ globus_l_gfs_request_send(
     return;
     
 error_init:
+printf("HERE 1\n");
     tmp_str = globus_error_print_friendly(globus_error_peek(result));
     globus_gridftp_server_control_finished_transfer(
         op,
@@ -1507,6 +1508,7 @@ globus_l_gfs_request_recv(
     return;
     
 error_init:
+printf("HERE 2\n");
     tmp_str = globus_error_print_friendly(globus_error_peek(result));
     globus_gridftp_server_control_finished_transfer(
         op,
@@ -1565,6 +1567,7 @@ globus_l_gfs_request_list(
     return;
     
 error_init:
+printf("HERE 3\n");
     tmp_str = globus_error_print_friendly(globus_error_peek(result));
     globus_gridftp_server_control_finished_transfer(
         op,

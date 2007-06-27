@@ -55,6 +55,7 @@ typedef enum
 {
     GLOBUS_L_GFS_DATA_REQUESTING = 1,
     GLOBUS_L_GFS_DATA_CONNECTING,
+    GLOBUS_L_GFS_DATA_CONNECT_CB,
     GLOBUS_L_GFS_DATA_CONNECTED,
     GLOBUS_L_GFS_DATA_ABORTING,
     GLOBUS_L_GFS_DATA_ABORT_CLOSING,
@@ -3516,6 +3517,7 @@ globus_l_gfs_data_begin_cb(
     globus_gfs_event_info_t        event_reply;
     globus_gfs_event_info_t             event_info;
     globus_l_gfs_data_operation_t *     op;
+    globus_l_gfs_data_handle_state_t    last_state;
     GlobusGFSName(globus_l_gfs_data_begin_cb);
     GlobusGFSDebugEnter();
 
@@ -3523,6 +3525,7 @@ globus_l_gfs_data_begin_cb(
 
     globus_mutex_lock(&op->session_handle->mutex);
     {
+        last_state = op->state;
         switch(op->state)
         {
             case GLOBUS_L_GFS_DATA_CONNECTING:
@@ -3540,7 +3543,7 @@ globus_l_gfs_data_begin_cb(
                 {
                     dec_op = GLOBUS_TRUE;
                     /* everything is well, send the begin event */
-                    op->state = GLOBUS_L_GFS_DATA_CONNECTED;
+                    op->state = GLOBUS_L_GFS_DATA_CONNECT_CB;
                     connect_event = GLOBUS_TRUE;
                 }
                 break;
@@ -3586,6 +3589,7 @@ globus_l_gfs_data_begin_cb(
 
             case GLOBUS_L_GFS_DATA_COMPLETE:
             case GLOBUS_L_GFS_DATA_CONNECTED:
+            case GLOBUS_L_GFS_DATA_CONNECT_CB:
             case GLOBUS_L_GFS_DATA_REQUESTING:
             default:
                 globus_assert(0 && "not possible state.  memory corruption");
@@ -3691,6 +3695,15 @@ globus_l_gfs_data_begin_cb(
             }
         }
     }
+    globus_mutex_lock(&op->session_handle->mutex);
+    {
+        if(op->state == GLOBUS_L_GFS_DATA_CONNECT_CB)
+        {
+            op->state = GLOBUS_L_GFS_DATA_CONNECTED;
+        }
+        finish = op->finished_delayed;
+    }
+    globus_mutex_unlock(&op->session_handle->mutex);
 
     if(finish)
     {
@@ -5376,14 +5389,16 @@ globus_gridftp_server_finished_transfer(
                 through and change state to finished
                 XXX think we need another state here, what if we get
                 an abort while waiting for connect_cb but we are finished */
+            case GLOBUS_L_GFS_DATA_CONNECT_CB:
             case GLOBUS_L_GFS_DATA_CONNECTING:
+                op->finished_delayed = GLOBUS_TRUE;
+                op->state = GLOBUS_L_GFS_DATA_FINISH;
                 if(result != GLOBUS_SUCCESS)
                 {
                     GlobusGFSDebugInfo("passed error in CONNECTING state\n");
-                    goto err_close;
+                    op->cached_res = result;
+                    op->state = GLOBUS_L_GFS_DATA_FINISH_WITH_ERROR;
                 }
-                op->state = GLOBUS_L_GFS_DATA_FINISH;
-                op->finished_delayed = GLOBUS_TRUE;
                 break;
 
             case GLOBUS_L_GFS_DATA_ABORTING:
