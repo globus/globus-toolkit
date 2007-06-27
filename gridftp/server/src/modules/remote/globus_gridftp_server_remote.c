@@ -560,7 +560,7 @@ globus_l_gfs_remote_node_request(
         bounce->ndx_offset = ndx_offset;
         bounce->repo = NULL; /* maybe some day */
 
-        GlobusTimeReltimeSet(bounce->retry_time, 1, 0);
+        GlobusTimeReltimeSet(bounce->retry_time, 0, 250);
         globus_l_gfs_remote_select_nodes(bounce);
     }
 

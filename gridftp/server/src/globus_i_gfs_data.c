@@ -2169,6 +2169,8 @@ globus_l_gfs_data_fc_return(
         case GLOBUS_L_GFS_DATA_HANDLE_INUSE:
         case GLOBUS_L_GFS_DATA_HANDLE_CLOSED:
         default:
+            printf("bad state %d\n", op->data_handle->state);
+
             globus_assert(0 && "possible memory corruption");
             break;
     }
@@ -4713,6 +4715,8 @@ globus_i_gfs_data_request_transfer_event(
                     case GLOBUS_L_GFS_DATA_FINISH_WITH_ERROR:
                         if(op->data_handle->is_mine)
                         {
+                            op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_CLOSING;
+
                             result = globus_ftp_control_data_force_close(
                                 &op->data_handle->data_channel,
                                 globus_l_gfs_data_complete_fc_cb,
