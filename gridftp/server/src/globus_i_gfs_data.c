@@ -1564,10 +1564,7 @@ globus_l_gfs_data_operation_destroy(
                 {
                     remote_data_arg = op->data_handle->remote_data_arg;
                 }
-/*
-    XXX this is cuasing trouble at 2294.
-		globus_l_gfs_data_handle_free(op->data_handle);
-*/ 
+    		    globus_l_gfs_data_handle_free(op->data_handle);
            }
         }
     }
@@ -2203,7 +2200,9 @@ globus_l_gfs_data_complete_fc_cb(
         GFSDataOpDec(op, destroy_op, destroy_session);
         if(destroy_op)
         {
-            globus_assert(op->state == GLOBUS_L_GFS_DATA_COMPLETING);
+            globus_assert(op->state == GLOBUS_L_GFS_DATA_COMPLETING &&
+                op->data_handle != NULL);
+            op->data_handle->outstanding_op = NULL;
         }
     }
     globus_mutex_unlock(&op->session_handle->mutex);
@@ -3064,6 +3063,10 @@ globus_i_gfs_data_request_recv(
     op->stripe_count = recv_info->stripe_count;
     /* events and disconnects cannot happen while i am in this
         function */
+    if(data_handle->state != GLOBUS_L_GFS_DATA_HANDLE_VALID)
+    {
+        printf("EVIL STATE 2 is %d\n", data_handle->state);
+    }
     globus_assert(data_handle->state == GLOBUS_L_GFS_DATA_HANDLE_VALID);
     data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_INUSE;
 
@@ -3704,39 +3707,40 @@ globus_l_gfs_data_begin_cb(
             op->state = GLOBUS_L_GFS_DATA_CONNECTED;
         }
         finish = op->finished_delayed;
+        if(finish)
+        {
+            globus_l_gfs_data_finish_connected(op);
+        }
+        if(dec_op)
+        {
+            /* must delay decrement otherwise the callback could result in
+                destroing the op once the lock is released */
+            GFSDataOpDec(op, destroy_op, destroy_session);
+
+            if(destroy_op)
+            {
+                globus_assert(op->data_handle != NULL);
+                op->data_handle->outstanding_op = NULL;
+            }
+        }
     }
     globus_mutex_unlock(&op->session_handle->mutex);
 
-    if(finish)
-    {
-        globus_l_gfs_data_finish_connected(op);
-    }
 
-    if(dec_op)
+    if(destroy_op)
     {
-        /* must delay decrement otherwise the callback could result in
-            destroing the op once the lock is released */
-        globus_mutex_lock(&op->session_handle->mutex);
+        /* pass the complete event */
+        if(op->session_handle->dsi->trev_func &&
+            op->event_mask & GLOBUS_GFS_EVENT_TRANSFER_COMPLETE)
         {
-            GFSDataOpDec(op, destroy_op, destroy_session);
+            event_info.type = GLOBUS_GFS_EVENT_TRANSFER_COMPLETE;
+            event_info.event_arg = op->event_arg;
+            op->session_handle->dsi->trev_func(
+                &event_info,
+                op->session_handle->session_arg);
         }
-        globus_mutex_unlock(&op->session_handle->mutex);
-
-        if(destroy_op)
-        {
-            /* pass the complete event */
-            if(op->session_handle->dsi->trev_func &&
-                op->event_mask & GLOBUS_GFS_EVENT_TRANSFER_COMPLETE)
-            {
-                event_info.type = GLOBUS_GFS_EVENT_TRANSFER_COMPLETE;
-                event_info.event_arg = op->event_arg;
-                op->session_handle->dsi->trev_func(
-                    &event_info,
-                    op->session_handle->session_arg);
-            }
-            /* destroy the op */
-            globus_l_gfs_data_operation_destroy(op, destroy_session);
-        }
+        /* destroy the op */
+        globus_l_gfs_data_operation_destroy(op, destroy_session);
     }
 
     GlobusGFSDebugExit();
@@ -4014,6 +4018,12 @@ globus_l_gfs_data_end_transfer_kickout(
     globus_mutex_lock(&op->session_handle->mutex);
     {
         GFSDataOpDec(op, destroy_op, destroy_session);
+
+        if(destroy_op)
+        {
+            globus_assert(op->data_handle != NULL);
+            op->data_handle->outstanding_op = NULL;
+        }
     }
     globus_mutex_unlock(&op->session_handle->mutex);
 
@@ -4505,6 +4515,8 @@ globus_l_gfs_data_trev_kickout(
         {
             globus_assert(
                 bounce_info->op->state == GLOBUS_L_GFS_DATA_COMPLETING);
+            globus_assert(bounce_info->op->data_handle != NULL);
+            bounce_info->op->data_handle->outstanding_op = NULL;
         }
     }
     globus_mutex_unlock(&bounce_info->op->session_handle->mutex);
@@ -4826,6 +4838,17 @@ globus_i_gfs_data_request_transfer_event(
         the reference count. */
     if(pass)
     {
+        globus_mutex_lock(&op->session_handle->mutex);
+        {
+            GFSDataOpDec(op, destroy_op, destroy_session);
+            if(destroy_op)
+            {
+                globus_assert(op->state == GLOBUS_L_GFS_DATA_COMPLETING &&
+                    op->data_handle != NULL);
+                op->data_handle->outstanding_op = NULL;
+            }
+        }
+        globus_mutex_unlock(&op->session_handle->mutex);
         /* if a TRANSFER_COMPLETE event we must respect the barrier */
         if(event_info->type != GLOBUS_GFS_EVENT_TRANSFER_COMPLETE)
         {
@@ -4835,15 +4858,6 @@ globus_i_gfs_data_request_transfer_event(
                 event_info,
                 session_handle->session_arg);
         }
-        globus_mutex_lock(&op->session_handle->mutex);
-        {
-            GFSDataOpDec(op, destroy_op, destroy_session);
-            if(destroy_op)
-            {
-                globus_assert(op->state == GLOBUS_L_GFS_DATA_COMPLETING);
-            }
-        }
-        globus_mutex_unlock(&op->session_handle->mutex);
         if(destroy_op)
         {
             if(session_handle->dsi->trev_func &&
@@ -5337,7 +5351,9 @@ globus_gridftp_server_begin_transfer(
             GFSDataOpDec(op, destroy_op, destroy_session);
             if(destroy_op)
             {
-                globus_assert(op->state == GLOBUS_L_GFS_DATA_COMPLETING);
+                globus_assert(op->state == GLOBUS_L_GFS_DATA_COMPLETING &&
+                    op->data_handle != NULL);
+                op->data_handle->outstanding_op = NULL;
             }
         }
         globus_mutex_unlock(&op->session_handle->mutex);
