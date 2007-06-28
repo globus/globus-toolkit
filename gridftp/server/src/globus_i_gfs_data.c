@@ -3707,10 +3707,6 @@ globus_l_gfs_data_begin_cb(
             op->state = GLOBUS_L_GFS_DATA_CONNECTED;
         }
         finish = op->finished_delayed;
-        if(finish)
-        {
-            globus_l_gfs_data_finish_connected(op);
-        }
         if(dec_op)
         {
             /* must delay decrement otherwise the callback could result in
@@ -3722,6 +3718,10 @@ globus_l_gfs_data_begin_cb(
                 globus_assert(op->data_handle != NULL);
                 op->data_handle->outstanding_op = NULL;
             }
+        }
+        if(finish)
+        {
+            globus_l_gfs_data_finish_connected(op);
         }
     }
     globus_mutex_unlock(&op->session_handle->mutex);
