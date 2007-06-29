@@ -5,6 +5,8 @@ Binary compatibility of the C API is not guaranteed between releases.
 Version History
 ---------------
 v4.0 XX Xxx 2007
+  - fix myproxy-logon/myproxy-retrieve -T bug that caused trust
+    bootstrap to fail when no certificates directory exists
 
 v3.9 12 Jun 2007
   - update myproxy-logon/myproxy-retrieve -T behavior:
