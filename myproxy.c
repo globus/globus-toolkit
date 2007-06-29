@@ -1982,13 +1982,14 @@ int myproxy_handle_authorization(myproxy_socket_attrs_t *attrs,
 	   goto end;
        }
 
-       buffer = malloc(d->client_data_len + sizeof(int));
+       bufferlen = d->client_data_len + sizeof(int);
+       buffer = malloc(bufferlen);
        if (!buffer) {
 	   verror_put_string("malloc() failed");
 	   goto end;
        }
+       memset(buffer, '\0', bufferlen);
        (*buffer) = d->method;
-       bufferlen = d->client_data_len + sizeof(int);
 
        memcpy(buffer + sizeof(int), d->client_data, d->client_data_len);
 
