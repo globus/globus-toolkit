@@ -1120,7 +1120,7 @@ GSI_SOCKET_write_buffer(GSI_SOCKET *self,
 	
 	gss_release_buffer(&self->minor_status, &wrapped_buffer);
     }
-    /* myproxy_debug("\nwrote:\n%s\n", buffer); */
+/*     fprintf(stderr, "\nwrote:\n%s\n", buffer); */
   error:
     return return_value;
 }
@@ -1239,7 +1239,7 @@ int GSI_SOCKET_read_token(GSI_SOCKET *self,
     *pbuffer = buffer;
     *pbuffer_len = bytes_read;
     return_status = GSI_SOCKET_SUCCESS;
-    /* myproxy_debug("\nread:\n%s\n", buffer); */
+/*     fprintf(stderr, "\nread:\n%s\n", buffer); */
 
 #if 0
     if (buffer[bytes_read-1] == '\0') {
