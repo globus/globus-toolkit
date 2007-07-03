@@ -239,12 +239,13 @@ myproxy_bootstrap_trust(myproxy_socket_attrs_t *attrs)
         BIO_ssl_shutdown(sbio);
         BIO_free_all(sbio);
     }
-    if (cert_dir) free(cert_dir);
     if (return_value) {
         ssl_error_to_verror();
         myproxy_log("trust root bootstrap failed");
         myproxy_log_verror();
+        if (cert_dir) rmdir(cert_dir);
     }
+    if (cert_dir) free(cert_dir);
 
     return return_value;
 }
