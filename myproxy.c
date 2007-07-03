@@ -1310,7 +1310,7 @@ myproxy_serialize_response_ex(const myproxy_response_t *response,
 	    return -1;
 
 	for (cert = response->trusted_certs; cert; cert = cert->next) {
-        if (strchr(cert->filename, ',') {
+        if (strchr(cert->filename, ',')) {
                 myproxy_log("skipping trusted cert w/ filename containing ',': %s", cert->filename);
                 continue;
         }
