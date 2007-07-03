@@ -1,12 +1,13 @@
 #!/usr/bin/perl
 
-# myproxy admin adduser script
+# myproxy admin adduser/addservice script
 # generates a certificate request using grid-cert-request
 # signs the request using grid-ca-sign
 # and stores the credential in the repository using
 #   myproxy-admin-load-credential
 
 use File::Temp qw(tempdir);
+use File::Basename;
 
 # check for program dependencies
 
@@ -28,11 +29,13 @@ if (!(-x $mpalc)) {
     exit 1;
 }
 
+$cmdname = basename($0);
+
 # handle arguments
 
 require "getopts.pl";
 
-if (!&Getopts('huc:s:l:t:aAxXr:R:ndk:K:') || $opt_h || $opt_u) {
+if (!&Getopts('huc:s:l:t:aAxXr:R:ndk:K:Z:E:') || $opt_h || $opt_u) {
     print STDERR <<"EOF";
 Syntax: $0 [-c cn] [-l username] ...
         $0 [-usage|-help]
@@ -53,6 +56,9 @@ Syntax: $0 [-c cn] [-l username] ...
                          for following policy options
        -r <dn>           Allow specified entity to retrieve credential
        -R <dn>           Allow specified entity to renew credential
+       -Z <dn>           Allow specified entity to retrieve credential
+                         w/o passphrase
+       -E <dn>           Allow specified entity to retrieve credential key
        -n                Disable passphrase authentication
        -d                Use the proxy certificate subject as username
        -k <name>         Specifies credential name
@@ -124,9 +130,19 @@ if ($opt_r) {
 if ($opt_R) {
     push(@args, "-R"); push(@args, $opt_R);
 }
+if ($opt_Z) {
+    push(@args, "-Z"); push(@args, $opt_Z);
+}
+if ($opt_E) {
+    push(@args, "-E"); push(@args, $opt_E);
+} elsif ($cmdname eq "myproxy-admin-addservice") {
+    push(@args, "-x"); push(@args, "-E"); push(@args, "\*");
+}
 push(@args, "-d") if ($opt_d);
 if ($opt_k) {
     push(@args, "-k"); push(@args, $opt_k);
+} elsif ($opt_c && $cmdname eq "myproxy-admin-addservice") {
+    push(@args, "-k"); push(@args, $opt_c);
 }
 if ($opt_K) {
     push(@args, "-K"); push(@args, $opt_K);
