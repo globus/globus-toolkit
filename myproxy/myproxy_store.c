@@ -385,7 +385,7 @@ init_arguments(int                     argc,
 	case 'Z':		/* retrievers list */
 	    if (request->trusted_retrievers) {
 		fprintf(stderr,
-			"Only one -a or -r option may be specified.\n");
+			"Only one -Z option may be specified.\n");
 		exit(1);
 	    }
 
