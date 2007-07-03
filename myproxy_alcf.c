@@ -40,6 +40,10 @@ static char usage[] = \
 "                                         credential\n"
 "       -R | --renewable_by   <dn>        Allow specified entity to renew\n"
 "                                         credential\n"
+"       -Z | --retrievable_by_cert <dn>   Allow specified entity to retrieve\n"
+"                                         credential w/o passphrase\n"
+"       -E | --retrieve_key <dn>          Allow specified entity to retrieve\n"
+"                                         credential key\n"
 "       -d | --dn_as_username             Use the proxy certificate subject\n"
 "                                         (DN) as the default username,\n"
 "                                         instead of the LOGNAME env. var.\n"
@@ -67,12 +71,14 @@ struct option long_options[] =
   {"match_cn_only", 	    no_argument, NULL, 'X'},
   {"credname",	      required_argument, NULL, 'k'},
   {"creddesc",	      required_argument, NULL, 'K'},
+  {"retrievable_by_cert", required_argument, NULL, 'Z'},
+  {"retrieve_key",    required_argument, NULL, 'E'},
   {0, 0, 0, 0}
 };
 
 /*colon following an option indicates option takes an argument */
 
-static char short_options[] = "uhl:vVdr:R:xXaAk:K:t:c:y:s:";
+static char short_options[] = "uhl:vVdr:R:xXaAk:K:t:c:y:s:Z:E:";
 
 static char *certfile   = NULL;  /* certificate file name */
 static char *keyfile    = NULL;  /* key file name */
@@ -231,10 +237,27 @@ init_arguments(int argc,
 	    {
 		my_creds->retrievers = (char *)malloc(strlen(optarg)+5);
 		strcpy (my_creds->retrievers, "*/CN=");
-		myproxy_debug("authorized retriever %s",
-			      my_creds->retrievers);
 		my_creds->retrievers = strcat(my_creds->retrievers,
 					      optarg);
+		myproxy_debug("authorized retriever %s",
+			      my_creds->retrievers);
+	    }
+	    break;
+	case 'Z':   /* retrievers list */
+	    if (my_creds->trusted_retrievers) {
+		fprintf(stderr, "Only one -Z option may be specified.\n");
+		exit(1);
+	    }
+	    if (expr_type == REGULAR_EXP)  /*copy as is */
+		my_creds->trusted_retrievers = strdup (optarg);
+	    else
+	    {
+		my_creds->trusted_retrievers = (char *)malloc(strlen(optarg)+5);
+		strcpy (my_creds->trusted_retrievers, "*/CN=");
+		my_creds->trusted_retrievers = strcat(my_creds->trusted_retrievers,
+					      optarg);
+		myproxy_debug("trusted retriever %s",
+			      my_creds->trusted_retrievers);
 	    }
 	    break;
 	case 'R':   /* renewers list */
@@ -252,9 +275,9 @@ init_arguments(int argc,
 	    {
 		my_creds->renewers = (char *)malloc(strlen(optarg)+6);
 		strcpy (my_creds->renewers, "*/CN=");
+		my_creds->renewers = strcat (my_creds->renewers,optarg);
 		myproxy_debug("authorized renewer %s",
 			      my_creds->renewers);
-		my_creds->renewers = strcat (my_creds->renewers,optarg);
 	    }
 	    break;
 	case 'd':   /* use the certificate subject (DN) as the default
@@ -292,6 +315,20 @@ init_arguments(int argc,
 	    }
 	    my_creds->renewers = strdup ("*");
 	    myproxy_debug("anonymous renewers allowed");
+	    break;
+    case 'E' :              /* key retriever list */ 
+	    if (expr_type == REGULAR_EXP) {
+		/* Copy as is */
+		my_creds->keyretrieve = strdup(optarg);
+	    } else {
+		my_creds->keyretrieve =
+		    (char *) malloc(strlen(optarg) + 6);
+		strcpy(my_creds->keyretrieve, "*/CN=");
+		my_creds->keyretrieve =
+		    strcat(my_creds->keyretrieve, optarg);
+		myproxy_debug("authorized key retriever %s",
+			      my_creds->keyretrieve);
+	    }
 	    break;
 	case 'k':  /*credential name*/
 	    my_creds->credname = strdup (optarg);
