@@ -7,6 +7,10 @@ Version History
 v4.0 XX Xxx 2007
   - fix myproxy-logon/myproxy-retrieve -T bug that caused trust
     bootstrap to fail when no certificates directory exists
+  - add myproxy-admin-load-credential --retrieve_key and
+    --retrievable_by_cert options
+  - add myproxy-admin-addservice for distributing host/service
+    credentials
 
 v3.9 12 Jun 2007
   - update myproxy-logon/myproxy-retrieve -T behavior:
