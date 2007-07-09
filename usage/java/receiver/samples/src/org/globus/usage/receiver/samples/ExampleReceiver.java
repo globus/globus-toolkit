@@ -38,9 +38,11 @@ import org.globus.usage.receiver.handlers.CCorePacketHandler;
 import org.globus.usage.receiver.handlers.GRAMPacketHandler;
 import org.globus.usage.receiver.handlers.RLSPacketHandler;
 import org.globus.usage.receiver.handlers.MDSAggregatorPacketHandler;
+import org.globus.usage.receiver.handlers.OGSADAIPacketHandler;
 
-/*An example of how the Receiver class can be used in a program:*/
-public class ExampleReceiver {
+/* An example of how the Receiver class can be used in a program */
+public class ExampleReceiver
+{
 
     static Log log = LogFactory.getLog(ExampleReceiver.class);
 
@@ -48,7 +50,7 @@ public class ExampleReceiver {
         int port = 0;
         String databaseDriverClass, databaseURL, defaultTable, gftpTable;
 	String jwsCoreTable, rlsTable, gramTable, cCoreTable, gftpFilterTable;
-	String rftTable, mdsTable, domainsToFilter;
+	String rftTable, mdsTable, ogsadaiTable, domainsToFilter;
 	int ringBufferSize = 0;
         Properties props = new Properties();
         InputStream propsIn;
@@ -61,6 +63,7 @@ public class ExampleReceiver {
 	GRAMPacketHandler gramHandler;
 	RLSPacketHandler rlsHandler;
         MDSAggregatorPacketHandler mdsHandler;
+        OGSADAIPacketHandler ogsadaiHandler;
 
         /*Open properties file (which gets compiled into jar) to read
           default port and database connection information:*/
@@ -89,7 +92,8 @@ public class ExampleReceiver {
             gramTable = props.getProperty("gram-table");
             rlsTable = props.getProperty("rls-table");
             mdsTable = props.getProperty("mds-table");
-            
+            ogsadaiTable = props.getProperty("ogsadai-table");
+
             ringBufferSize = Integer.parseInt(props.getProperty("ringbuffer-size"));
 
             if (props.getProperty("control-port") != null) {
@@ -113,9 +117,9 @@ public class ExampleReceiver {
               the database connection class to use, the url to connect to your
               database, and the database table where default packets will be
               written if no other handler takes them:*/
-            System.out.println("Starting receiver on port "+port);
-            System.out.println("Database addresst "+databaseURL);
-            System.out.println("Ringbuffer size is "+ringBufferSize);
+            System.out.println("Starting receiver on port " + port);
+            System.out.println("Database address " + databaseURL);
+            System.out.println("Ringbuffer size is " + ringBufferSize);
             
             receiver = new Receiver(port, ringBufferSize, props);
             
@@ -153,6 +157,8 @@ public class ExampleReceiver {
 	    receiver.registerHandler(rlsHandler);
             mdsHandler = new MDSAggregatorPacketHandler(databaseURL, mdsTable);
 	    receiver.registerHandler(mdsHandler);
+            ogsadaiHandler = new OGSADAIPacketHandler(databaseURL, ogsadaiTable);
+	    receiver.registerHandler(ogsadaiHandler);
 
 	    //start the control socket thread:
 	    new ControlSocketThread(receiver, controlPort).start();
@@ -172,8 +178,8 @@ public class ExampleReceiver {
 
 /*Thread used for interprocess communication, so that the receiver can be
   started/stopped/monitored remotely.  Accepts TCP socket connections on the control port.*/
-class ControlSocketThread extends Thread {
-
+class ControlSocketThread extends Thread
+{
     private ServerSocket serverSocket;
     private boolean shutDown;
     private Receiver receiver;

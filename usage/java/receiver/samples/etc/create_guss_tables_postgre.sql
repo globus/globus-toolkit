@@ -139,6 +139,16 @@ CREATE TABLE mds_packets(
     PRIMARY KEY(id)
 );
 
+CREATE TABLE ogsadai_packets(
+    id SERIAL,
+    component_code SMALLINT NOT NULL,
+    version_code SMALLINT NOT NULL,
+    send_time TIMESTAMP,
+    ip_address VARCHAR(64) NOT NULL,
+    resource_creation_time TIMESTAMP,
+    PRIMARY KEY(id)
+);
+
 CREATE TABLE graph_image_files(
     start_time TIMESTAMP,
     end_time TIMESTAMP,

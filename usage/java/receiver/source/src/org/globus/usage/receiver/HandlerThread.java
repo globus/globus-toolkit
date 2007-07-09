@@ -200,7 +200,7 @@ public class HandlerThread extends Thread {
 	try {
 	    PoolingDriver driver = 
                 (PoolingDriver)DriverManager.getDriver("jdbc:apache:commons:dbcp:");
-	    driver.closePool(POOL_NAME);
+	    //driver.closePool(POOL_NAME);
 	} catch(Exception e) {
 	    log.warn(e.getMessage());
 	}
