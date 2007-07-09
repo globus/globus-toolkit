@@ -137,6 +137,8 @@ typedef struct
     globus_bool_t                       destroy_requested;
     globus_bool_t                       use_interface;
     globus_xio_attr_t                   xio_attr;
+
+    int                                 xx;
 } globus_l_gfs_data_handle_t;
 
 typedef struct globus_l_gfs_data_operation_s
@@ -278,6 +280,11 @@ globus_l_gfs_data_handle_free(
     
 static
 void
+globus_l_gfs_free_session_handle(
+    globus_l_gfs_data_session_t *       session_handle);
+
+static
+void
 globus_l_gfs_data_write_eof_cb(
     void *                              user_arg,
     globus_ftp_control_handle_t *       handle,
@@ -302,6 +309,82 @@ static
 globus_result_t
 globus_l_gfs_set_stack(
     globus_l_gfs_data_handle_t *        handle);
+
+static
+void *
+globus_l_gfs_data_check(
+    globus_l_gfs_data_handle_t *        data_handle)
+{
+    void *                              remote_data_arg = NULL;
+
+    if(data_handle == NULL)
+    {
+        return NULL;
+    }
+
+    switch(data_handle->state)
+    {
+        case GLOBUS_L_GFS_DATA_HANDLE_INUSE:
+        case GLOBUS_L_GFS_DATA_HANDLE_CLOSING:
+            break;
+
+        case GLOBUS_L_GFS_DATA_HANDLE_CLOSED:
+        case GLOBUS_L_GFS_DATA_HANDLE_CLOSING_AND_DESTROYED:
+            if(!data_handle->is_mine)
+            {
+                remote_data_arg = data_handle->remote_data_arg;
+            }
+            break;
+
+        case GLOBUS_L_GFS_DATA_HANDLE_VALID:
+        default:
+            /*globus_assert(0 && "possible memory corruption"); */
+            break;
+    }
+
+    return remote_data_arg;
+}
+
+static
+void
+globus_l_gfs_data_fire_cb(
+    globus_l_gfs_data_operation_t *     op,
+    void *                              remote_data_arg,
+    globus_bool_t                       free_session)
+{
+    if(remote_data_arg != NULL)
+    {
+        if(op->session_handle->dsi->data_destroy_func != NULL)
+        {
+            op->session_handle->dsi->data_destroy_func(
+                remote_data_arg,
+                op->session_handle->session_arg);
+        }
+        else
+        {
+            /* XXX dsi impl error, what to do? */
+        }
+        globus_l_gfs_data_handle_free(op->data_handle);
+    }
+
+    if(free_session)
+    {
+        if(op->session_handle->dsi->destroy_func != NULL)
+        {
+            op->session_handle->dsi->destroy_func(
+                op->session_handle->session_arg);
+        }
+
+        if(op->session_handle->dsi != globus_l_gfs_dsi)
+        {
+            globus_extension_release(op->session_handle->dsi_handle);
+        }
+        globus_l_gfs_free_session_handle(op->session_handle);
+    }
+
+}
+
+
 
 static
 void
@@ -623,6 +706,7 @@ globus_l_gfs_authorize_cb(
     void *                              user_arg,
     globus_result_t                     result)
 {
+    void *                              remote_data_arg = NULL;
     globus_bool_t                       destroy_session = GLOBUS_FALSE;
     globus_bool_t                       destroy_op = GLOBUS_FALSE;
     GlobusGFSName(globus_l_gfs_authorize_cb);
@@ -667,8 +751,15 @@ globus_l_gfs_authorize_cb(
                         break;
         
                     case GLOBUS_L_GFS_DATA_HANDLE_CLOSING:
+                        break;
+
                     case GLOBUS_L_GFS_DATA_HANDLE_CLOSED:
                     case GLOBUS_L_GFS_DATA_HANDLE_CLOSING_AND_DESTROYED:
+                        globus_l_gfs_data_handle_free(op->data_handle);
+                        if(!op->data_handle->is_mine)
+                        {
+                            remote_data_arg = op->data_handle->remote_data_arg;
+                        }
                         break;
         
                     case GLOBUS_L_GFS_DATA_HANDLE_VALID:
@@ -681,6 +772,9 @@ globus_l_gfs_authorize_cb(
         }
         globus_mutex_unlock(&op->session_handle->mutex);
         globus_assert(destroy_op);
+
+        globus_l_gfs_data_fire_cb(op, remote_data_arg, destroy_session);
+
         globus_l_gfs_data_operation_destroy(op, destroy_session);
     }
 
@@ -909,6 +1003,7 @@ globus_l_gfs_data_auth_init_cb(
     void *                              user_arg,
     globus_result_t                     result)
 {
+    void *                              remote_data_arg = NULL;
     globus_bool_t                       destroy_session = GLOBUS_FALSE;
     globus_bool_t                       destroy_op = GLOBUS_FALSE;
     globus_l_gfs_data_operation_t *     op;
@@ -954,9 +1049,14 @@ globus_l_gfs_data_auth_init_cb(
         globus_mutex_lock(&op->session_handle->mutex);
         {
             GFSDataOpDec(op, destroy_op, destroy_session);
+
+            remote_data_arg = globus_l_gfs_data_check(op->data_handle);
         }
         globus_mutex_unlock(&op->session_handle->mutex);
         globus_assert(destroy_op);
+
+        globus_l_gfs_data_fire_cb(op, remote_data_arg, destroy_session);
+
         globus_l_gfs_data_operation_destroy(op, destroy_session);
     }
 
@@ -983,9 +1083,11 @@ error:
         /* dec session handle now since we won't get a stop_session */
         op->session_handle->ref--;
         GFSDataOpDec(op, destroy_op, destroy_session);
+        remote_data_arg = globus_l_gfs_data_check(op->data_handle);
     }
     globus_mutex_unlock(&op->session_handle->mutex);
     globus_assert(destroy_op);
+    globus_l_gfs_data_fire_cb(op, remote_data_arg, destroy_session);
     globus_l_gfs_data_operation_destroy(op, destroy_session);
     GlobusGFSDebugExitWithError();
 }
@@ -998,6 +1100,7 @@ globus_l_gfs_data_authorize(
     const gss_ctx_id_t                  context,
     globus_gfs_session_info_t *         session_info)
 {
+    void *                              remote_data_arg = NULL;
     int                                 rc;
     globus_result_t                     res;
     int                                 gid;
@@ -1410,9 +1513,11 @@ pwent_error:
             /* dec session handle now since we won't get a stop_session */
             op->session_handle->ref--;
             GFSDataOpDec(op, destroy_op, destroy_session);
+            remote_data_arg = globus_l_gfs_data_check(op->data_handle);
         }
         globus_mutex_unlock(&op->session_handle->mutex);
         globus_assert(destroy_op);
+        globus_l_gfs_data_fire_cb(op, remote_data_arg, destroy_session);
         globus_l_gfs_data_operation_destroy(op, destroy_session);
     }
     GlobusGFSDebugExitWithError();
@@ -1523,7 +1628,6 @@ globus_l_gfs_data_operation_destroy(
     globus_l_gfs_data_operation_t *     op,
     globus_bool_t                       free_session)
 {
-    void *                              remote_data_arg = NULL;
     GlobusGFSName(globus_l_gfs_data_operation_destroy);
     GlobusGFSDebugEnter();
 
@@ -1548,55 +1652,6 @@ globus_l_gfs_data_operation_destroy(
     if(op->eof_count != NULL)
     {
         globus_free(op->eof_count);
-    }
-
-    globus_mutex_lock(&op->session_handle->mutex);
-    {
-        if(op->data_handle != NULL)
-        {
-            op->data_handle->outstanding_op = NULL;
-            if((op->data_handle->state == GLOBUS_L_GFS_DATA_HANDLE_CLOSED ||
-               op->data_handle->state == 
-                    GLOBUS_L_GFS_DATA_HANDLE_CLOSING_AND_DESTROYED) &&
-               op->data_handle->destroy_requested)
-            {
-                if(!op->data_handle->is_mine)
-                {
-                    remote_data_arg = op->data_handle->remote_data_arg;
-                }
-    		    globus_l_gfs_data_handle_free(op->data_handle);
-           }
-        }
-    }
-    globus_mutex_unlock(&op->session_handle->mutex);
-
-    if(remote_data_arg != NULL)
-    {
-        if(op->session_handle->dsi->data_destroy_func != NULL)
-        {
-            op->session_handle->dsi->data_destroy_func(
-                remote_data_arg,
-                op->session_handle->session_arg);
-        }
-        else
-        {
-            /* XXX dsi impl error, what to do? */
-        }
-    }
-    
-    if(free_session)
-    {
-        if(op->session_handle->dsi->destroy_func != NULL)
-        {
-            op->session_handle->dsi->destroy_func(
-                op->session_handle->session_arg);
-        }
-
-        if(op->session_handle->dsi != globus_l_gfs_dsi)
-        {
-            globus_extension_release(op->session_handle->dsi_handle);
-        }
-        globus_l_gfs_free_session_handle(op->session_handle);
     }
 
     globus_free(op);
@@ -1676,6 +1731,7 @@ void
 globus_l_gfs_data_stat_kickout(
     void *                              user_arg)
 {
+    void *                              remote_data_arg = NULL;
     globus_bool_t                       destroy_session = GLOBUS_FALSE;
     globus_bool_t                       destroy_op = GLOBUS_FALSE;
     globus_l_gfs_data_stat_bounce_t *   bounce_info;
@@ -1714,9 +1770,13 @@ globus_l_gfs_data_stat_kickout(
     globus_mutex_lock(&bounce_info->op->session_handle->mutex);
     {
         GFSDataOpDec(bounce_info->op, destroy_op, destroy_session);
+        remote_data_arg = globus_l_gfs_data_check(
+            bounce_info->op->data_handle);
     }
     globus_mutex_unlock(&bounce_info->op->session_handle->mutex);
     globus_assert(destroy_op);
+    globus_l_gfs_data_fire_cb(
+        bounce_info->op, remote_data_arg, destroy_session);
     globus_l_gfs_data_operation_destroy(bounce_info->op, destroy_session);
     if(bounce_info->stat_array)
     {
@@ -2160,14 +2220,13 @@ globus_l_gfs_data_fc_return(
 
         case GLOBUS_L_GFS_DATA_HANDLE_CLOSING_AND_DESTROYED:
             globus_l_gfs_data_handle_free(op->data_handle);
+            op->data_handle = NULL;
             break;
 
         case GLOBUS_L_GFS_DATA_HANDLE_VALID:
         case GLOBUS_L_GFS_DATA_HANDLE_INUSE:
         case GLOBUS_L_GFS_DATA_HANDLE_CLOSED:
         default:
-            printf("bad state %d\n", op->data_handle->state);
-
             globus_assert(0 && "possible memory corruption");
             break;
     }
@@ -2182,6 +2241,7 @@ globus_l_gfs_data_complete_fc_cb(
     globus_ftp_control_handle_t *       ftp_handle,
     globus_object_t *                   error)
 {
+    void *                              remote_data_arg = NULL;
     globus_bool_t                       destroy_session = GLOBUS_FALSE;
     globus_bool_t                       destroy_op = GLOBUS_FALSE;
     globus_gfs_event_info_t             event_info;
@@ -2203,6 +2263,7 @@ globus_l_gfs_data_complete_fc_cb(
             globus_assert(op->state == GLOBUS_L_GFS_DATA_COMPLETING &&
                 op->data_handle != NULL);
             op->data_handle->outstanding_op = NULL;
+            remote_data_arg = globus_l_gfs_data_check(op->data_handle);
         }
     }
     globus_mutex_unlock(&op->session_handle->mutex);
@@ -2219,6 +2280,7 @@ globus_l_gfs_data_complete_fc_cb(
                 op->session_handle->session_arg);
         }
         /* destroy the op */
+        globus_l_gfs_data_fire_cb(op, remote_data_arg, destroy_session);
         globus_l_gfs_data_operation_destroy(op, destroy_session);
     }
 
@@ -2407,7 +2469,6 @@ globus_i_gfs_data_request_handle_destroy(
             &session_handle->handle_table, (int) data_arg);
         globus_assert(!rc);
 
-        
         data_handle->destroy_requested = GLOBUS_TRUE;
 
         session_arg = session_handle->session_arg;
@@ -2461,6 +2522,7 @@ globus_i_gfs_data_request_handle_destroy(
                 }
                 else
                 {
+                    /* This isn't right */
                     data_handle->state =
                         GLOBUS_L_GFS_DATA_HANDLE_CLOSING_AND_DESTROYED;
                     globus_l_gfs_data_handle_free(data_handle);
@@ -3063,10 +3125,6 @@ globus_i_gfs_data_request_recv(
     op->stripe_count = recv_info->stripe_count;
     /* events and disconnects cannot happen while i am in this
         function */
-    if(data_handle->state != GLOBUS_L_GFS_DATA_HANDLE_VALID)
-    {
-        printf("EVIL STATE 2 is %d\n", data_handle->state);
-    }
     globus_assert(data_handle->state == GLOBUS_L_GFS_DATA_HANDLE_VALID);
     data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_INUSE;
 
@@ -3523,6 +3581,7 @@ globus_l_gfs_data_begin_cb(
     globus_gfs_event_info_t             event_info;
     globus_l_gfs_data_operation_t *     op;
     globus_l_gfs_data_handle_state_t    last_state;
+    void *                              remote_data_arg = NULL;
     GlobusGFSName(globus_l_gfs_data_begin_cb);
     GlobusGFSDebugEnter();
 
@@ -3716,7 +3775,7 @@ globus_l_gfs_data_begin_cb(
             if(destroy_op)
             {
                 globus_assert(op->data_handle != NULL);
-                op->data_handle->outstanding_op = NULL;
+                remote_data_arg = globus_l_gfs_data_check(op->data_handle);
             }
         }
         if(finish)
@@ -3739,6 +3798,8 @@ globus_l_gfs_data_begin_cb(
                 &event_info,
                 op->session_handle->session_arg);
         }
+
+        globus_l_gfs_data_fire_cb(op, remote_data_arg, destroy_session);
         /* destroy the op */
         globus_l_gfs_data_operation_destroy(op, destroy_session);
     }
@@ -3786,6 +3847,7 @@ globus_l_gfs_data_end_transfer_kickout(
     globus_bool_t                       destroy_session = GLOBUS_FALSE;
     globus_bool_t                       destroy_op = GLOBUS_FALSE;
     globus_bool_t                       disconnect = GLOBUS_FALSE;
+    void *                              remote_data_arg = NULL;
     globus_gfs_event_info_t             event_info;
     GlobusGFSName(globus_l_gfs_data_end_transfer_kickout);
     GlobusGFSDebugEnter();
@@ -4022,7 +4084,7 @@ globus_l_gfs_data_end_transfer_kickout(
         if(destroy_op)
         {
             globus_assert(op->data_handle != NULL);
-            op->data_handle->outstanding_op = NULL;
+            remote_data_arg = globus_l_gfs_data_check(op->data_handle);
         }
     }
     globus_mutex_unlock(&op->session_handle->mutex);
@@ -4040,6 +4102,7 @@ globus_l_gfs_data_end_transfer_kickout(
                 op->session_handle->session_arg);
         }
         /* destroy the op */
+        globus_l_gfs_data_fire_cb(op, remote_data_arg, destroy_session);
         globus_l_gfs_data_operation_destroy(op, destroy_session);
     }
 
@@ -4105,6 +4168,8 @@ globus_l_gfs_data_end_read_kickout(
                 /* if not mode e we need to close it */
                 if(op->data_handle->info.mode != 'E')
                 {
+                    op->data_handle->xx = 1;
+
                     op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_CLOSING;
                     result = globus_ftp_control_data_force_close(
                         &op->data_handle->data_channel,
@@ -4282,6 +4347,8 @@ globus_l_gfs_data_write_eof_cb(
                 }
                 else
                 {
+                    op->data_handle->xx = 2;
+
                     op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_CLOSING;
                     result = globus_ftp_control_data_force_close(
                         &op->data_handle->data_channel,
@@ -4428,6 +4495,7 @@ globus_l_gfs_data_trev_kickout(
 {
     globus_l_gfs_data_trev_bounce_t *   bounce_info;
     globus_gfs_event_info_t *      event_reply;
+    void *                              remote_data_arg = NULL;
     globus_bool_t                       pass;
     globus_bool_t                       destroy_session = GLOBUS_FALSE;
     globus_bool_t                       destroy_op = GLOBUS_FALSE;
@@ -4516,7 +4584,8 @@ globus_l_gfs_data_trev_kickout(
             globus_assert(
                 bounce_info->op->state == GLOBUS_L_GFS_DATA_COMPLETING);
             globus_assert(bounce_info->op->data_handle != NULL);
-            bounce_info->op->data_handle->outstanding_op = NULL;
+            remote_data_arg = globus_l_gfs_data_check(
+                bounce_info->op->data_handle);
         }
     }
     globus_mutex_unlock(&bounce_info->op->session_handle->mutex);
@@ -4533,6 +4602,8 @@ globus_l_gfs_data_trev_kickout(
                 &event_info,
                 bounce_info->op->session_handle->session_arg);
         }
+        globus_l_gfs_data_fire_cb(
+            bounce_info->op, remote_data_arg, destroy_session);
         globus_l_gfs_data_operation_destroy(bounce_info->op, destroy_session);
     }
 
@@ -4688,6 +4759,7 @@ globus_i_gfs_data_request_transfer_event(
     void *                              session_arg,
     globus_gfs_event_info_t *           event_info)
 {
+    void *                              remote_data_arg = NULL;
     globus_result_t                     result;
     globus_l_gfs_data_trev_bounce_t *   bounce_info;
     globus_l_gfs_data_session_t *       session_handle;
@@ -4846,6 +4918,7 @@ globus_i_gfs_data_request_transfer_event(
                 globus_assert(op->state == GLOBUS_L_GFS_DATA_COMPLETING &&
                     op->data_handle != NULL);
                 op->data_handle->outstanding_op = NULL;
+                remote_data_arg = globus_l_gfs_data_check(op->data_handle);
             }
         }
         globus_mutex_unlock(&op->session_handle->mutex);
@@ -4869,6 +4942,7 @@ globus_i_gfs_data_request_transfer_event(
                     event_info,
                     op->session_handle->session_arg);
             }
+            globus_l_gfs_data_fire_cb(op, remote_data_arg, destroy_session);
             /* destroy the op */
             globus_l_gfs_data_operation_destroy(op, destroy_session);
         }
@@ -4993,6 +5067,7 @@ globus_l_gfs_finished_command_kickout(
     globus_bool_t                       destroy_session = GLOBUS_FALSE;
     globus_bool_t                       destroy_op = GLOBUS_FALSE;
     globus_gfs_finished_info_t          reply;
+    void *                              remote_data_arg = NULL;
     globus_l_gfs_data_operation_t *     op;
 
     op = (globus_l_gfs_data_operation_t *) user_arg;
@@ -5021,9 +5096,11 @@ globus_l_gfs_finished_command_kickout(
     globus_mutex_lock(&op->session_handle->mutex);
     {
         GFSDataOpDec(op, destroy_op, destroy_session);
+        remote_data_arg = globus_l_gfs_data_check(op->data_handle);
     }
     globus_mutex_unlock(&op->session_handle->mutex);
     globus_assert(destroy_op);
+    globus_l_gfs_data_fire_cb(op, remote_data_arg, destroy_session);
     globus_l_gfs_data_operation_destroy(op, destroy_session);
 }
 
@@ -5166,6 +5243,7 @@ globus_gridftp_server_begin_transfer(
     int                                 event_mask,
     void *                              event_arg)
 {
+    void *                              remote_data_arg = NULL;
     globus_bool_t                       pass_abort = GLOBUS_FALSE;
     globus_bool_t                       destroy_session = GLOBUS_FALSE;
     globus_bool_t                       destroy_op = GLOBUS_FALSE;
@@ -5354,6 +5432,7 @@ globus_gridftp_server_begin_transfer(
                 globus_assert(op->state == GLOBUS_L_GFS_DATA_COMPLETING &&
                     op->data_handle != NULL);
                 op->data_handle->outstanding_op = NULL;
+                remote_data_arg = globus_l_gfs_data_check(op->data_handle);
             }
         }
         globus_mutex_unlock(&op->session_handle->mutex);
@@ -5372,6 +5451,7 @@ globus_gridftp_server_begin_transfer(
                 op->session_handle->session_arg);
         }
         /* destroy the op */
+        globus_l_gfs_data_fire_cb(op, remote_data_arg, destroy_session);
         globus_l_gfs_data_operation_destroy(op, destroy_session);
     }
 
@@ -5472,6 +5552,7 @@ globus_l_gfs_operation_finished_kickout(
     globus_bool_t                       destroy_session = GLOBUS_FALSE;
     globus_bool_t                       destroy_op = GLOBUS_FALSE;
     globus_l_gfs_data_bounce_t *        bounce;
+    void *                              remote_data_arg = NULL;
     globus_l_gfs_data_operation_t *     op;
     GlobusGFSName(globus_l_gfs_operation_finished_kickout);
     GlobusGFSDebugEnter();
@@ -5504,15 +5585,17 @@ globus_l_gfs_operation_finished_kickout(
     globus_mutex_lock(&op->session_handle->mutex);
     {
         GFSDataOpDec(op, destroy_op, destroy_session);
+        remote_data_arg = globus_l_gfs_data_check(op->data_handle);
     }
     globus_mutex_unlock(&op->session_handle->mutex);
  
      /* globus_assert(destroy_op); this was wrong, there could stull
         be an event out there */
-     if(destroy_op)
-     {
-         globus_l_gfs_data_operation_destroy(op, destroy_session);
-     }
+    if(destroy_op)
+    {
+        globus_l_gfs_data_fire_cb(op, remote_data_arg, destroy_session);
+        globus_l_gfs_data_operation_destroy(op, destroy_session);
+    }
 
     globus_free(bounce);
 

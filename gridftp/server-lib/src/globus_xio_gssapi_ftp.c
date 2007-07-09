@@ -2889,6 +2889,8 @@ globus_l_xio_gssapi_ftp_handle_cntl(
                 *out_cred = ds_handle->cred_handle;
                 *out_del_cred = ds_handle->delegated_cred_handle;
                 *out_subject = ds_handle->auth_gssapi_subject;
+
+                ds_handle->delegated_cred_handle = GSS_C_NO_CREDENTIAL;
                 break;
 
             default:
