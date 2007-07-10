@@ -5,6 +5,7 @@ Binary compatibility of the C API is not guaranteed between releases.
 Version History
 ---------------
 v4.0 XX Xxx 2007
+  - added myproxy-server-setup script for simple server install
   - fix myproxy-logon/myproxy-retrieve -T bug that caused trust
     bootstrap to fail when no certificates directory exists
   - add myproxy-admin-load-credential --retrieve_key and
