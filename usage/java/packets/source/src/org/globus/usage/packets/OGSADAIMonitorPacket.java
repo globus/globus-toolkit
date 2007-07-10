@@ -33,7 +33,6 @@ public class OGSADAIMonitorPacket extends IPTimeMonitorPacket
 {
     static Log log = LogFactory.getLog(OGSADAIMonitorPacket.class);
 
-    private Date resourceCreationTime;
     private String currentActivity;
 
     private static short COMPONENT_CODE = 8;
@@ -43,16 +42,6 @@ public class OGSADAIMonitorPacket extends IPTimeMonitorPacket
     {
         setComponentCode(COMPONENT_CODE);
         setPacketVersion(PACKET_VERSION);
-    }
-
-    public Date getResourceCreationTime() 
-    {
-        return this.resourceCreationTime;
-    }
-
-    public void setResourceCreationTime(Date resourceCreationTime) 
-    {
-        this.resourceCreationTime = resourceCreationTime;
     }
 
     public String getCurrentActivity()
@@ -68,7 +57,6 @@ public class OGSADAIMonitorPacket extends IPTimeMonitorPacket
     public void packCustomFields(CustomByteBuffer buf) 
     {
         super.packCustomFields(buf);
-        buf.putLong(this.resourceCreationTime.getTime());
 
         long activityLen = currentActivity.length();
         buf.putLong(activityLen);
@@ -80,7 +68,6 @@ public class OGSADAIMonitorPacket extends IPTimeMonitorPacket
     public void unpackCustomFields(CustomByteBuffer buf) 
     {
         super.unpackCustomFields(buf);
-        this.resourceCreationTime = new Date(buf.getLong());
 
         int activityLen = new Long(buf.getLong()).intValue();
 
@@ -92,8 +79,7 @@ public class OGSADAIMonitorPacket extends IPTimeMonitorPacket
 
     public String toString() 
     {
-        return super.toString() + " Resource Creation Time: " +
-            this.resourceCreationTime.getTime() + " Current Activity: " +
+        return super.toString() + " Activity: " +
             this.currentActivity;
     }
 
@@ -112,14 +98,13 @@ public class OGSADAIMonitorPacket extends IPTimeMonitorPacket
 	PreparedStatement ps;
 	ps = con.prepareStatement(
             "INSERT INTO " + tablename +
-            " (component_code, version_code, send_time, ip_address, resource_creation_time, activity) VALUES(?, ?, ?, ?, ?, ?);");
+            " (component_code, version_code, send_time, ip_address, activity) VALUES(?, ?, ?, ?, ?);");
 
 	ps.setShort(1, this.getComponentCode());
 	ps.setShort(2, this.getPacketVersion());
 	ps.setTimestamp(3, new Timestamp(this.getTimestamp()));
         ps.setString(4, Util.getAddressAsString(getHostIP()));
-	ps.setTimestamp(5, new Timestamp(this.resourceCreationTime.getTime()));
-	ps.setString(6, this.currentActivity);
+	ps.setString(5, this.currentActivity);
 
 	return ps;
     }

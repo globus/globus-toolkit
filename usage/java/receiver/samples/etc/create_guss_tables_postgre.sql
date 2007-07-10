@@ -145,7 +145,6 @@ CREATE TABLE ogsadai_packets(
     version_code SMALLINT NOT NULL,
     send_time TIMESTAMP,
     ip_address VARCHAR(64) NOT NULL,
-    resource_creation_time TIMESTAMP,
     activity TEXT,
     PRIMARY KEY(id)
 );

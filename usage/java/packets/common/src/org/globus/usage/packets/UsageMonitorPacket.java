@@ -211,6 +211,7 @@ public class UsageMonitorPacket {
     }
 
     public void sendPacket(List targets) {
+        System.out.println("SEND PACKET CALLED");
         Iterator iter = targets.iterator();
         while(iter.hasNext()) {
             String hostport = (String)iter.next();
@@ -229,6 +230,7 @@ public class UsageMonitorPacket {
             
             try {
                 InetAddress addr = InetAddress.getByName(host);
+                System.out.println("SENDING PACKET TO " + addr + ":" + port);
                 sendPacket(addr, port);
             } catch (Throwable e) {
                 log.debug("Failed to send packet", e);
