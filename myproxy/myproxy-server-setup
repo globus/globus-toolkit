@@ -13,6 +13,8 @@ $tmpdir = tempdir(CLEANUP => 1);
 &checkcerts();
 &setupconfig();
 &setupboot();
+&startserver();
+&testserver();
 
 exit 0;
 
@@ -44,7 +46,7 @@ sub checkcerts {
     }
     $cmd = "$gpi -debug -verify -cert $hostcert -key $hostkey -out $tmpdir/p";
     ($exitstatus, $output) = &runcmd($cmd, undef);
-    `$gpd $tmpdir/p >/dev/null 2>&1`;
+    system("$gpd $tmpdir/p >/dev/null 2>&1");
     if ($exitstatus) {
         print STDERR "Problem with host credentials:\n$output\n";
         exit 1;
@@ -97,7 +99,6 @@ sub setupboot {
     }
     close(IN);
     close(OUT);
-    # `cp $ENV{'GLOBUS_LOCATION'}/share/myproxy/etc.init.d.myproxy $initdir`;
     chmod(0755, "$initdir/myproxy");
     print "Installed $initdir/myproxy.\n";
     chomp($chkconfig = `which chkconfig 2>/dev/null`);
@@ -109,15 +110,33 @@ sub setupboot {
     } else {
       print "Manual configuration of rc.d links may be required.\n";
     }
-    chomp($service = `which service 2>/dev/null`);
-    chomp($invokercd = `which invoke-rc.d 2>/dev/null`);
-    if (-x $service) {
-      system("$service myproxy start");
-    } elsif (-x $invokercd) {
-      system("invoke-rc.d myproxy start");
-    } else {
-      system("$initdir/myproxy start");
-    }
+  }
+}
+
+sub startserver {
+  if (defined $initdir && -x "$initdir/myproxy") {
+    system("$initdir/myproxy start") &&
+      die "failed to start myproxy-server, stopped";
+  } else {
+    print "Starting myproxy-server.\n";
+    system("myproxy-server") &&
+      die "failed to start myproxy-server, stopped";
+  }
+}
+
+sub testserver {
+  print "Running myproxy-server tests...\n";
+  delete $ENV{'$COG_INSTALL_PATH'};
+  $ENV{'X509_USER_PROXY'} = "$tmpdir/p";
+  $cmd = "$gpi -cert $hostcert -key $hostkey -out $ENV{'X509_USER_PROXY'}";
+  system("$cmd >/dev/null 2>&1");
+  ($exitstatus, $output) = &runcmd("myproxy-test", undef);
+  system("$gpd $ENV{'X509_USER_PROXY'} >/dev/null 2>&1");
+  if ($exitstatus) {
+    print STDERR "myproxy-test failed:\n$output\n";
+    exit 1;
+  } else {
+    print "Success!\n";
   }
 }
 
