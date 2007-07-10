@@ -17,6 +17,7 @@ send_response_sasl_data(myproxy_socket_attrs_t *attrs,
     authorization_data_t*  auth_data;
 	
     result = sasl_encode64(data, data_len, buf, SASL_BUFFER_SIZE, &len);
+    assert(len < SASL_BUFFER_SIZE);
     buf[len] = '\0';
     if (result != SASL_OK) {
        verror_put_string(
@@ -28,7 +29,7 @@ send_response_sasl_data(myproxy_socket_attrs_t *attrs,
 	               server_response->authorization_data,
 		       AUTHORIZETYPE_SASL,
 		       buf,
-		       len + 1);
+		       len);
 
     if (auth_data == NULL) {
 	verror_put_string(
