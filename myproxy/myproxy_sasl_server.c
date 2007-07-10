@@ -107,6 +107,7 @@ recv_response_sasl_data(myproxy_socket_attrs_t *attrs, char *data)
    int   result;
    unsigned len;
    author_method_t client_auth_method;
+   char *b64data;
 
    int   client_data_len = 0;
 
@@ -124,9 +125,10 @@ recv_response_sasl_data(myproxy_socket_attrs_t *attrs, char *data)
 
    client_data_len = len - sizeof(int);
 
-
-   myproxy_debug("C: %s", buf + sizeof(int));
-   result = sasl_decode64(buf + sizeof(int), client_data_len, data, SASL_BUFFER_SIZE, &len);
+   b64data = buf + sizeof(int);
+   myproxy_debug("C: %s", b64data);
+   result = sasl_decode64(b64data, strnlen(b64data, client_data_len),
+                          data, SASL_BUFFER_SIZE, &len);
    if (result != SASL_OK) {
         myproxy_log("Decoding data from base64 failed in recv_response_sasl_data.");
 	return -1;
