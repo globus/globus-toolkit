@@ -18,15 +18,16 @@ package org.globus.usage.packets;
 import java.util.Date;
 
 import java.sql.Timestamp;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.PreparedStatement;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import org.globus.usage.packets.IPTimeMonitorPacket;
+import org.globus.usage.packets.Util;
 import org.globus.usage.packets.CustomByteBuffer;
+import org.globus.usage.packets.IPTimeMonitorPacket;
 
 public class OGSADAIMonitorPacket extends IPTimeMonitorPacket
 {
@@ -37,7 +38,6 @@ public class OGSADAIMonitorPacket extends IPTimeMonitorPacket
 
     private static short COMPONENT_CODE = 8;
     private static short PACKET_VERSION = 1;
-    private static short MAX_CURRENT_ACTIVITY_LEN = 64;
 
     public OGSADAIMonitorPacket() 
     {
@@ -69,17 +69,12 @@ public class OGSADAIMonitorPacket extends IPTimeMonitorPacket
     {
         super.packCustomFields(buf);
         buf.putLong(this.resourceCreationTime.getTime());
-        
+
+        long activityLen = currentActivity.length();
+        buf.putLong(activityLen);
+
         byte[] currentActivityBytes = this.currentActivity.getBytes();
-        byte[] fixedCurrentActivityBytes = new byte[MAX_CURRENT_ACTIVITY_LEN];
-        for (int i = 0; i < MAX_CURRENT_ACTIVITY_LEN; i++)
-        {
-            if (currentActivityBytes.length > i)
-            {
-                fixedCurrentActivityBytes[i] = currentActivityBytes[i];
-            }
-        }
-        buf.put(fixedCurrentActivityBytes);
+        buf.put(currentActivityBytes);
     }
 
     public void unpackCustomFields(CustomByteBuffer buf) 
@@ -87,16 +82,12 @@ public class OGSADAIMonitorPacket extends IPTimeMonitorPacket
         super.unpackCustomFields(buf);
         this.resourceCreationTime = new Date(buf.getLong());
 
-        byte[] fixedCurrentActivityBytes = new byte[MAX_CURRENT_ACTIVITY_LEN];
+        int activityLen = new Long(buf.getLong()).intValue();
+
+        byte[] fixedCurrentActivityBytes = new byte[activityLen];
         buf.get(fixedCurrentActivityBytes);
 
-        // drop trailing zeros
-        int i = (MAX_CURRENT_ACTIVITY_LEN - 1);
-        while((fixedCurrentActivityBytes[i] == 0) && (i > 0))
-        {
-            i--;
-        }
-        this.currentActivity = new String(fixedCurrentActivityBytes, 0, i+1);
+        this.currentActivity = new String(fixedCurrentActivityBytes);
     }
 
     public String toString() 
