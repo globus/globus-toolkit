@@ -55,7 +55,8 @@ public class Receiver {
                     Properties props) 
         throws IOException {
 
-        theRing = new RingBufferFile(1000); //Array(ringBufferSize);
+//        theRing = new RingBufferFile(1000); //Array(ringBufferSize);
+        theRing = new RingBufferArray(1000);
         handlerList = new LinkedList();
 
         /*Start two threads: a listener thread which listens on the port, and
@@ -252,6 +253,7 @@ class ReceiverThread extends Thread {
 
             } catch (IOException e) {
                 if (stillGood) {
+                    System.err.println("Error during receive" + e);
                     log.error("Error during receive", e);
                 }
             }
