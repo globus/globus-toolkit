@@ -1,0 +1,140 @@
+#!/usr/bin/perl -w
+
+# myproxy-server-setup: interactive myproxy-server installer
+
+use File::Temp qw(tempdir);
+use IPC::Open3;
+
+$CONFIG = "/etc/myproxy-server.config";
+
+$tmpdir = tempdir(CLEANUP => 1);
+
+&checksanity();
+&checkcerts();
+&setupconfig();
+&setupboot();
+
+exit 0;
+
+sub checksanity {
+    die "must be run as root, stopped" if ($>);
+    die "\$GLOBUS_LOCATION not defined, stopped"
+        if (!defined $ENV{'GLOBUS_LOCATION'});
+	chomp($gpi = `which grid-proxy-init 2>/dev/null`);
+	die "grid-proxy-init not in PATH, stopped" if (!(-x $gpi));
+	chomp($gpd = `which grid-proxy-destroy 2>/dev/null`);
+	die "grid-proxy-destroy not in PATH, stopped" if (!(-x $gpd));
+	chomp($mps = `which myproxy-server 2>/dev/null`);
+	die "myproxy-server not in PATH, stopped" if (!(-x $mps));
+}
+
+sub checkcerts {
+    if (defined $ENV{'X509_USER_CERT'}) {
+        $hostcert = $ENV{'X509_USER_CERT'};
+    } else {
+        $hostcert = "/etc/grid-security/hostcert.pem";
+    }
+    if (defined $ENV{'X509_USER_KEY'}) {
+        $hostkey = $ENV{'X509_USER_KEY'};
+    } else {
+        $hostkey = "/etc/grid-security/hostkey.pem";
+    }
+    if (!-e $hostcert && !-e $hostkey) {
+        die "no host credentials found, stopped";
+    }
+    $cmd = "$gpi -debug -verify -cert $hostcert -key $hostkey -out $tmpdir/p";
+    ($exitstatus, $output) = &runcmd($cmd, undef);
+    `$gpd $tmpdir/p >/dev/null 2>&1`;
+    if ($exitstatus) {
+        print STDERR "Problem with host credentials:\n$output\n";
+        exit 1;
+    }
+}
+
+sub setupconfig {
+  if (-e $CONFIG) {
+    print "Existing $CONFIG not modified.\n";
+  } else {
+    open(CONF, ">$CONFIG") || die "failed to open $CONFIG, stopped";
+    open(CONF, ">$serverconf") ||
+	 die "failed to open $serverconf, stopped";
+    print CONF "# Default policy written by myproxy-server-setup.\n";
+    print CONF "accepted_credentials  \"*\"\n";
+    print CONF "authorized_retrievers \"*\"\n";
+    print CONF "default_retrievers    \"*\"\n";
+    print CONF "authorized_renewers   \"*\"\n";
+    print CONF "default_renewers      \"none\"\n";
+    print CONF "authorized_key_retrievers \"*\"\n";
+    print CONF "default_key_retrievers    \"none\"\n";
+    print CONF "trusted_retrievers    \"*\"\n";
+    print CONF "default_trusted_retrievers \"none\"\n";
+    close(CONF);
+    print "Wrote a default myproxy-server configuration to $CONFIG.\n";
+  }
+}
+
+sub setupboot {
+  if (-e "/etc/init.d/myproxy") {
+    print "Existing /etc/init.d/myproxy not modified.\n";
+  } elsif (-e "/etc/rc.d/init.d/myproxy") {
+    print "Existing /etc/rc.d/init.d/myproxy not modified.\n"
+  } elsif (-d "/etc/init.d") {
+    $initdir = "/etc/init.d";
+  } elsif (-d "/etc/rc.d/init.d") {
+    $initdir = "/etc/rc.d/init.d";
+  } else {
+    print "No init.d directory found.  Manual installation of myproxy init script required.\n";
+  }
+  if (defined $initdir) {
+    $IN = "$ENV{'GLOBUS_LOCATION'}/share/myproxy/etc.init.d.myproxy";
+    open(IN) || die "failed to open $IN, stopped";
+    open(OUT, ">$initdir/myproxy") ||
+      die "failed to open $initdir/myproxy, stopped";
+    while (<IN>) {
+      if (/GLOBUS_LOCATION=/) {
+        print OUT "GLOBUS_LOCATION=\"$ENV{'GLOBUS_LOCATION'}\"\n";
+      } else {
+        print OUT;
+      }
+    }
+    close(IN);
+    close(OUT);
+    # `cp $ENV{'GLOBUS_LOCATION'}/share/myproxy/etc.init.d.myproxy $initdir`;
+    chmod(0755, "$initdir/myproxy");
+    print "Installed $initdir/myproxy.\n";
+	chomp($chkconfig = `which chkconfig 2>/dev/null`);
+	chomp($updatercd = `which update-rc.d 2>/dev/null`);
+    if (-x $chkconfig) {
+      `$chkconfig --add myproxy`;
+    } elsif (-x $updatercd) {
+      `update-rc.d myproxy`;
+    } else {
+      print "Manual configuration of rc.d links may be required.\n";
+    }
+	chomp($service = `which service 2>/dev/null`);
+	chomp($invokercd = `which invoke-rc.d 2>/dev/null`);
+    if (-x $service) {
+      `$service myproxy start`;
+    } elsif (-x $invokercd) {
+      `invoke-rc.d myproxy start`;
+    } else {
+      `myproxy-server && echo Starting myproxy-server.`;
+    }
+  }
+}
+
+sub runcmd {
+    local($command, $input) = @_;
+
+    $pid = open3(*Writer, *Reader, '', "exec $command") ||
+      die "failed to run $command";
+    print Writer $input if (defined($input));
+    close(Writer);
+    @output = <Reader>;
+    close(Reader);
+    waitpid($pid, 0);
+    $exitstatus = $?;
+    $output = join('', @output);
+
+    return ($exitstatus, $output);
+}
