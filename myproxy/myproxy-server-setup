@@ -56,8 +56,6 @@ sub setupconfig {
     print "Existing $CONFIG not modified.\n";
   } else {
     open(CONF, ">$CONFIG") || die "failed to open $CONFIG, stopped";
-    open(CONF, ">$serverconf") ||
-	 die "failed to open $serverconf, stopped";
     print CONF "# Default policy written by myproxy-server-setup.\n";
     print CONF "accepted_credentials  \"*\"\n";
     print CONF "authorized_retrievers \"*\"\n";
@@ -102,23 +100,23 @@ sub setupboot {
     # `cp $ENV{'GLOBUS_LOCATION'}/share/myproxy/etc.init.d.myproxy $initdir`;
     chmod(0755, "$initdir/myproxy");
     print "Installed $initdir/myproxy.\n";
-	chomp($chkconfig = `which chkconfig 2>/dev/null`);
-	chomp($updatercd = `which update-rc.d 2>/dev/null`);
+    chomp($chkconfig = `which chkconfig 2>/dev/null`);
+    chomp($updatercd = `which update-rc.d 2>/dev/null`);
     if (-x $chkconfig) {
-      `$chkconfig --add myproxy`;
+      system("$chkconfig --add myproxy");
     } elsif (-x $updatercd) {
-      `update-rc.d myproxy`;
+      system("update-rc.d myproxy defaults");
     } else {
       print "Manual configuration of rc.d links may be required.\n";
     }
-	chomp($service = `which service 2>/dev/null`);
-	chomp($invokercd = `which invoke-rc.d 2>/dev/null`);
+    chomp($service = `which service 2>/dev/null`);
+    chomp($invokercd = `which invoke-rc.d 2>/dev/null`);
     if (-x $service) {
-      `$service myproxy start`;
+      system("$service myproxy start");
     } elsif (-x $invokercd) {
-      `invoke-rc.d myproxy start`;
+      system("invoke-rc.d myproxy start");
     } else {
-      `myproxy-server && echo Starting myproxy-server.`;
+      system("$initdir/myproxy start");
     }
   }
 }
