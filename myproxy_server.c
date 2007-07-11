@@ -703,7 +703,11 @@ init_arguments(int argc, char *argv[],
     /* NULL implies INADDR_ANY */
     attrs->pshost = NULL;
     
-    attrs->psport = MYPROXY_SERVER_PORT;
+    if (getenv("MYPROXY_SERVER_PORT")) {
+        attrs->psport = atoi(getenv("MYPROXY_SERVER_PORT"));
+    } else {
+        attrs->psport = MYPROXY_SERVER_PORT;
+    }
 
     /* Get my name, removing any preceding path */
     last_directory_seperator = strrchr(argv[0], directory_seperator);
