@@ -193,7 +193,7 @@ myproxy_bootstrap_trust(myproxy_socket_attrs_t *attrs)
     if (BIO_do_connect(sbio) <= 0) goto error;
     if (BIO_do_handshake(sbio) <= 0) goto error;
     BIO_write(sbio, "0", 1);    /* GSI deleg flag */
-    BIO_flush(sbio);
+    if (BIO_flush(sbio) <= 0) goto error;
 
     sk=SSL_get_peer_cert_chain(ssl);
     for (i=1; i<sk_X509_num(sk); i++) {
