@@ -1,10 +1,10 @@
-This is MyProxy v4.0 XX Xxx 2007.
+This is MyProxy v4.0 11 Jul 2007.
 This version should be protocol compatible with all versions since v0.2.
 Binary compatibility of the C API is not guaranteed between releases.
 
 Version History
 ---------------
-v4.0 XX Xxx 2007
+v4.0 11 Jul 2007
   - add myproxy-server-setup script for simple server install
   - fix myproxy-logon/myproxy-retrieve -T bug that caused trust
     bootstrap to fail when no certificates directory exists
