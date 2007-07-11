@@ -1,4 +1,4 @@
-.TH myproxy-server 8 "2005-6-8" "NCSA" "MyProxy"
+.TH myproxy-server 8 "2007-7-11" "NCSA" "MyProxy"
 .SH NAME
 myproxy-server \- store credentials in an online repository
 .SH SYNOPSIS
@@ -114,6 +114,13 @@ appropriately for the Globus libraries in an interactive shell, source
 (for sh shells) or 
 .I $GLOBUS_LOCATION/etc/globus-user.env.csh
 (for csh shells).
+.TP
+.B MYPROXY_SERVER_PORT
+Specifies the port where the
+.BR myproxy-server (8)
+is running.  This environment variable can be used in place of the 
+.B -p
+option.
 .TP
 .B X509_USER_CERT
 Specifies an alternative location for the server's certificate.  By
