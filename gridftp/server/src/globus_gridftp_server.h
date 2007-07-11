@@ -748,6 +748,14 @@ globus_gridftp_server_finished_stat(
     globus_gfs_stat_t *                 stat_array,
     int                                 stat_count);
 
+void
+globus_gridftp_server_finished_stat_custom_list(
+    globus_gfs_operation_t              op,
+    globus_result_t                     result,
+    globus_byte_t *                     list_response,
+    globus_size_t                       list_response_len,
+    globus_bool_t                       free_buffer);
+
 /*
  * finished active data
  * 
