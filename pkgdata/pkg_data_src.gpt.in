@@ -2,8 +2,8 @@
 <!DOCTYPE gpt_package_metadata SYSTEM "package.dtd">
 
 <gpt_package_metadata Name="myproxy" Format_Version="0.02">
-<Aging_Version Major="3" Minor="9" Age="0"/>
-<VersionLabel>NCSA MyProxy v3.9 12 Jun 2007</VersionLabel>
+<Aging_Version Major="4" Minor="0" Age="0"/>
+<VersionLabel>NCSA MyProxy v4.0 11 Jul 2007</VersionLabel>
 <Description>
 MyProxy Online Credential Repository
 </Description>
