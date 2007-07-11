@@ -1888,7 +1888,8 @@ globus_l_gfs_config_misc()
     {
         if(value)
         {
-            if(globus_i_gfs_config_string("load_dsi_module") == NULL)
+            if(globus_i_gfs_config_string("load_dsi_module") == NULL &&
+                !globus_i_gfs_config_bool("data_node"))
             {
                 globus_l_gfs_config_set("load_dsi_module", 0, globus_libc_strdup("remote"));    
             }            

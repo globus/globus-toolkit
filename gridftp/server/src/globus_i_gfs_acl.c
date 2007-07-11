@@ -220,6 +220,10 @@ globus_i_gfs_acl_destroy(
         acl_request->module->destroy_func(acl_request->user_handle);
         globus_free(acl_request);
     }
+    if(acl_handle->auth_object.name != NULL)
+    {
+        globus_free(acl_handle->auth_object.name);
+    }
     if(acl_handle->username)
     {
         globus_free(acl_handle->username);
