@@ -3114,6 +3114,7 @@ globus_i_gfs_data_request_recv(
     {
         globus_gfs_acl_object_desc_t    object;
         object.name = recv_info->pathname;
+        object.size = recv_info->alloc_size;
         result = GLOBUS_SUCCESS;
         globus_l_gfs_authorize_cb(
             &object, GFS_ACL_ACTION_WRITE, op, result);
