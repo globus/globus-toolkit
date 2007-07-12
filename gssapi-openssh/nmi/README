@@ -4,7 +4,7 @@ the NMI Build and Test Lab (http://nmi.cs.wisc.edu/).
 To submit a test build:
 
   $ ssh grandcentral.cs.wisc.edu
-  $ cvs -d :pserver:anonymous@cvs.ncsa.uiuc.edu:/CVS/gssapi-openssh co nmi
+  $ cvs -d :pserver:anonymous@cvs.globus.org:/home/globdev/CVS/globus-packages co gssapi-openssh/nmi
   $ cd nmi
   $ nmi_submit -notify-fail-only cmdfile
 
