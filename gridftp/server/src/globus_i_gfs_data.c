@@ -634,7 +634,10 @@ globus_l_gfs_authorize_cb(
 
     if(result == GLOBUS_SUCCESS)
     {
-        globus_l_gfs_blocking_dispatch_kickout(user_arg);
+        if(user_arg)
+        {
+            globus_l_gfs_blocking_dispatch_kickout(user_arg);
+        }         
     }
     else
     {
@@ -4150,6 +4153,13 @@ globus_l_gfs_data_end_read_kickout(
     globus_result_t                     result;
     globus_bool_t                       end = GLOBUS_FALSE;
     globus_l_gfs_data_operation_t *     op;
+
+    globus_gfs_acl_action_t             action;
+    int                                 rc;
+    globus_result_t                     res;
+    globus_gfs_transfer_info_t *        recv_info;
+    globus_gfs_acl_object_desc_t        object;
+
     GlobusGFSName(globus_l_gfs_data_end_read_kickout);
     GlobusGFSDebugEnter();
 
@@ -4191,6 +4201,23 @@ globus_l_gfs_data_end_read_kickout(
                 op->ipc_handle,
                 &event_reply);
         }
+    }
+
+    recv_info = op->info_struct;
+    object.name = recv_info->pathname;
+    object.size = op->bytes_transferred;
+    object.final = GLOBUS_TRUE;
+    action = GFS_ACL_ACTION_COMMIT;
+    rc = globus_gfs_acl_authorize(
+        &op->session_handle->acl_handle,
+        action,
+        &object,
+        &res,
+        globus_l_gfs_authorize_cb,
+        NULL);
+    if(rc == GLOBUS_GFS_ACL_COMPLETE)
+    {
+        globus_l_gfs_authorize_cb(&object, action, NULL, res);
     }
 
     globus_mutex_lock(&op->session_handle->mutex);
@@ -4528,6 +4555,13 @@ globus_l_gfs_data_trev_kickout(
     globus_bool_t                       destroy_session = GLOBUS_FALSE;
     globus_bool_t                       destroy_op = GLOBUS_FALSE;
     globus_gfs_event_info_t             event_info;
+
+    globus_gfs_acl_action_t             action;
+    int                                 rc;
+    globus_result_t                     res;
+    globus_gfs_transfer_info_t *        recv_info;
+    globus_gfs_acl_object_desc_t        object;
+
     GlobusGFSName(globus_l_gfs_data_trev_kickout);
     GlobusGFSDebugEnter();
 
@@ -4587,6 +4621,24 @@ globus_l_gfs_data_trev_kickout(
     {
         sync();
     }
+    
+    recv_info = bounce_info->op->info_struct;
+    object.name = recv_info->pathname;
+    object.size = bounce_info->op->bytes_transferred;
+    object.final = GLOBUS_FALSE;
+    action = GFS_ACL_ACTION_COMMIT;
+    rc = globus_gfs_acl_authorize(
+        &bounce_info->op->session_handle->acl_handle,
+        action,
+        &object,
+        &res,
+        globus_l_gfs_authorize_cb,
+        NULL);
+    if(rc == GLOBUS_GFS_ACL_COMPLETE)
+    {
+        globus_l_gfs_authorize_cb(&object, action, NULL, res);
+    }
+
 
     if(pass)
     {
