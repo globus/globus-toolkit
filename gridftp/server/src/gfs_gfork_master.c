@@ -143,7 +143,7 @@ gfs_l_gfork_timeout(
                 &g_gfork_be_table, ent_buf->table_key);
         }
     }
-    globus_mutex_lock(&g_mutex);
+    globus_mutex_unlock(&g_mutex);
 }
 
 static
@@ -972,6 +972,17 @@ gfs_l_gfork_backend_timer(
 {
     globus_result_t                     result;
     globus_xio_handle_t                 xio_handle;
+    globus_xio_attr_t                   xio_attr;
+    globus_reltime_t                    to;
+
+    globus_xio_attr_copy(&xio_attr, g_attr);
+
+    GlobusTimeReltimeSet(to, 15, 0);
+    globus_xio_attr_cntl(
+        xio_attr,
+        NULL,
+        GLOBUS_XIO_ATTR_SET_TIMEOUT_ALL,
+        &to);
 
     result = globus_xio_handle_create(&xio_handle, g_stack);
     if(result != GLOBUS_SUCCESS)
@@ -985,7 +996,7 @@ gfs_l_gfork_backend_timer(
     result = globus_xio_register_open(
         xio_handle,
         g_reg_cs,
-        g_attr,
+        xio_attr,
         gfs_l_gfork_backend_xio_open_cb,
         NULL);
     if(result != GLOBUS_SUCCESS)
@@ -993,11 +1004,13 @@ gfs_l_gfork_backend_timer(
         /* log nasty error, but dont exit */
         goto error_open;
     }
+    globus_xio_attr_destroy(xio_attr);
 
     return;
 
 error_open:
 error_create:
+    globus_xio_attr_destroy(xio_attr);
     gfs_l_gfork_log(result, 0, "Backend registration failed\n");
 }
 

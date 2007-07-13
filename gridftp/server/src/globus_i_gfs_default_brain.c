@@ -289,7 +289,7 @@ globus_l_gfs_gfork_incoming_cb(
     
     globus_i_gfs_log_message(
         GLOBUS_I_GFS_LOG_WARN,
-        "[%s] enter", "globus_l_brain_read_cb");
+        "[%s] enter", "globus_l_gfs_gfork_incoming_cb()");
     globus_mutex_lock(&globus_l_brain_mutex);
     {
         /* verify message */
@@ -413,6 +413,7 @@ static
 void
 globus_l_gfs_default_brain_stop()
 {
+    globus_gfork_child_stop(globus_l_gfs_gfork_handle);
     globus_mutex_destroy(&globus_l_brain_mutex);
 }
 
@@ -424,7 +425,6 @@ globus_l_gfs_default_brain_available(
     int *                               count)
 {
     int                                 size;
-    int                                 max;
     
     size = globus_priority_q_size(&gfs_l_db_default_repo->node_q);
     *count = size;
@@ -449,6 +449,7 @@ globus_l_gfs_default_brain_select_nodes(
     int                                 i;
     globus_i_gfs_brain_node_t **        node_array;
     gfs_l_db_node_t *                   node;
+
     globus_result_t                     result;
     gfs_l_db_repo_t *                   repo = NULL;
     char *                              repo_name;
@@ -461,8 +462,8 @@ globus_l_gfs_default_brain_select_nodes(
     }
 
     globus_i_gfs_log_message(
-        GLOBUS_I_GFS_LOG_WARN,
-        "[%s] enter", "globus_l_gfs_default_brain_select_nodes");
+        GLOBUS_I_GFS_LOG_INFO,
+        "[%s] enter", "globus_l_gfs_default_brain_select_nodes\n");
 
     repo_name = (char *) r_name;
     if(repo_name == NULL || *repo_name =='\0')
@@ -566,6 +567,11 @@ error_short:
 error:
     globus_mutex_unlock(&globus_l_brain_mutex);
 error_paramater:
+    globus_i_gfs_log_message(
+        GLOBUS_I_GFS_LOG_WARN,
+        "No nodes given because paramater error: %d: %d: %s\n", 
+        min_count, count,
+        globus_error_print_friendly(globus_error_peek(result)));
     return result;
 }
 
