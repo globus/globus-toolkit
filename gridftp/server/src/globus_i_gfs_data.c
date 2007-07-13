@@ -421,12 +421,13 @@ globus_l_gfs_data_post_transfer_event_cb(
                     remote_data_arg = data_handle->remote_data_arg;
                 }
                 break;
+            case GLOBUS_L_GFS_DATA_HANDLE_VALID:
+                break;
 
             case GLOBUS_L_GFS_DATA_HANDLE_CLOSING_AND_DESTROYED:
                 /* this cant happen because TE_PRE state prevents */
             case GLOBUS_L_GFS_DATA_HANDLE_CLOSING:
                 /* havent even gotten a close, how did this happen? */
-            case GLOBUS_L_GFS_DATA_HANDLE_VALID:
             case GLOBUS_L_GFS_DATA_HANDLE_INUSE:
             case GLOBUS_L_GFS_DATA_HANDLE_CLOSED:
             default:
@@ -2431,6 +2432,7 @@ globus_l_gfs_data_destroy_cb(
                 break;
 
             /* someone else got to it first */
+            case GLOBUS_L_GFS_DATA_HANDLE_TE_PRE_AND_DESTROYED:
             case GLOBUS_L_GFS_DATA_HANDLE_CLOSING:
             case GLOBUS_L_GFS_DATA_HANDLE_CLOSED:
                 break;
@@ -2546,17 +2548,14 @@ globus_i_gfs_data_request_handle_destroy(
             case GLOBUS_L_GFS_DATA_HANDLE_VALID:
                 if(!data_handle->is_mine)
                 {
-                    data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_CLOSED;
-/*                    if(data_handle->outstanding_op == NULL)
-*/                    {
-                        pass = GLOBUS_TRUE;
-                        free_it = GLOBUS_TRUE;
-                    }
+                    pass = GLOBUS_TRUE;
+                    data_handle->state =
+                        GLOBUS_L_GFS_DATA_HANDLE_TE_PRE_AND_DESTROYED;
                 }
                 else
                 {
                     data_handle->state =
-                        GLOBUS_L_GFS_DATA_HANDLE_CLOSING_AND_DESTROYED;
+                        GLOBUS_L_GFS_DATA_HANDLE_TE_PRE_AND_DESTROYED;
                     session_handle->ref++;
                     /* set directly to closed to that when callback
                         returns we clean it up */
@@ -2588,20 +2587,16 @@ globus_i_gfs_data_request_handle_destroy(
                 {
                     pass = GLOBUS_TRUE;
                 }
-                else
-                {
-                    data_handle->state =
-                        GLOBUS_L_GFS_DATA_HANDLE_TE_PRE_AND_DESTROYED;
-                }
+                data_handle->state =
+                    GLOBUS_L_GFS_DATA_HANDLE_TE_PRE_AND_DESTROYED;
                 break;
 
             case GLOBUS_L_GFS_DATA_HANDLE_CLOSED:
                 if(!data_handle->is_mine)
                 {
-/*                    if(data_handle->outstanding_op == NULL)
-*/                    {
-                        pass = GLOBUS_TRUE;
-                    }
+                    pass = GLOBUS_TRUE;
+                    data_handle->state =
+                        GLOBUS_L_GFS_DATA_HANDLE_CLOSING_AND_DESTROYED;
                 }
                 else
                 {
@@ -5014,7 +5009,6 @@ globus_i_gfs_data_request_transfer_event(
             {
                 globus_assert(op->state == GLOBUS_L_GFS_DATA_COMPLETING &&
                     op->data_handle != NULL);
-                op->data_handle->outstanding_op = NULL;
                 remote_data_arg = globus_l_gfs_data_check(op->data_handle);
             }
         }
