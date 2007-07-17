@@ -1,4 +1,4 @@
-.TH myproxy-server.config 5 "2007-03-15" "NCSA" "MyProxy"
+.TH myproxy-server.config 5 "2007-07-17" "NCSA" "MyProxy"
 .SH NAME
 myproxy-server.config \- myproxy-server configuration file
 .SH DESCRIPTION
@@ -450,6 +450,11 @@ to certificate subject distinguished names for the issued
 certificates using this mapfile, which has the same format as used
 by other Globus Toolkit services.
 By default, /etc/grid-security/grid-mapfile is used.
+The Globus Toolkit
+.B grid-mapfile-add-entry
+and
+.B grid-mapfile-delete-entry
+commands can be used to manage the grid-mapfile.
 .TP
 .BI certificate_mapapp " full-path-to-mapapp"
 When specifying certificate_issuer_cert above, you can map account names
@@ -558,6 +563,11 @@ SubjectDN/Username entry in the mapfile is the credential utilized to secure
 the connection between client and server, NOT the actual credential being
 stored.  As the credential which secures the TLS connection is typically the
 same as the credential being stored, this should not be a major issue.
+The Globus Toolkit
+.B grid-mapfile-add-entry
+and
+.B grid-mapfile-delete-entry
+commands can be used to manage the grid-mapfile.
 .TP
 .BI accepted_credentials_mapapp " full-path-to-mapapp"
 As an alternative to the accepted_credentials_mapfile option above, you can
