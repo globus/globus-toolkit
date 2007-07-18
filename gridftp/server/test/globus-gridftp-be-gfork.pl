@@ -51,6 +51,17 @@ if((0 != system("grid-proxy-info -exists -hours 2 >/dev/null 2>&1") / 256) && !d
 
 # start registration program
 
+#$SIG{ALRM} = \&eatfd_db;
+#alarm 20;
+
+#sub eatfd_db()
+#{
+#    my $junk = <SERVER>;
+#    $junk = <BE_SERVER>;
+#    $SIG{ALRM} = \&eatfd_db;
+#    alarm 20;
+#}
+
 # run tests
 print "starting tests\n";
 

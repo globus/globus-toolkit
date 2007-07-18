@@ -58,6 +58,14 @@ do                                                                      \
     _s->ref++;                                                          \
 } while(0)
 
+#define GlobusLServerRefDec(_s)                                         \
+do                                                                      \
+{                                                                       \
+    globus_assert(_s->ref > 0);                                         \
+    _s->ref--;                                                          \
+} while(0)
+
+
 #define GlobusLRegisterDone(_h)                                         \
 do                                                                      \
 {                                                                       \
@@ -526,7 +534,7 @@ globus_i_gsc_op_destroy(
             globus_free(op->gid_array);
         }
 
-        op->server_handle->ref--;
+        GlobusLServerRefDec(op->server_handle);
         globus_l_gsc_server_ref_check(op->server_handle);
         globus_range_list_destroy(op->perf_range_list);
 
@@ -650,7 +658,7 @@ globus_l_gsc_read_cb(
 
     globus_mutex_lock(&server_handle->mutex);
     {
-        server_handle->ref--;
+        GlobusLServerRefDec(server_handle);
         if(result != GLOBUS_SUCCESS)
         {
             res = result;
@@ -939,7 +947,7 @@ i
     switch(server_handle->state)
     {
         case GLOBUS_L_GSC_STATE_OPENING:
-            server_handle->ref--;
+            GlobusLServerRefDec(server_handle);
             GlobusGSCHandleStateChange(
                 server_handle, GLOBUS_L_GSC_STATE_STOPPING);
             globus_assert(server_handle->ref == 0);
@@ -950,7 +958,7 @@ i
             break;
 
         case GLOBUS_L_GSC_STATE_OPEN:
-            server_handle->ref--;
+            GlobusLServerRefDec(server_handle);
             GlobusGSCHandleStateChange(
                 server_handle, GLOBUS_L_GSC_STATE_STOPPING);
             /* ok to ignore result here */
@@ -961,7 +969,7 @@ i
             break;
 
         case GLOBUS_L_GSC_STATE_PROCESSING:
-            server_handle->ref--;
+            GlobusLServerRefDec(server_handle);
             GlobusGSCHandleStateChange(
                 server_handle, GLOBUS_L_GSC_STATE_ABORTING_STOPPING);
 
@@ -998,7 +1006,7 @@ i
             break;
 
         case GLOBUS_L_GSC_STATE_ABORTING:
-            server_handle->ref--;
+            GlobusLServerRefDec(server_handle);
             GlobusGSCHandleStateChange(
                 server_handle, GLOBUS_L_GSC_STATE_ABORTING_STOPPING);
             globus_l_gsc_server_ref_check(server_handle);
@@ -1311,7 +1319,7 @@ globus_l_gsc_open_cb(
 
 err:
     server_handle->cached_res = res;
-    server_handle->ref--;
+    GlobusLServerRefDec(server_handle);
     globus_l_gsc_server_ref_check(server_handle);
     globus_mutex_unlock(&server_handle->mutex);
 
@@ -1344,7 +1352,7 @@ globus_l_gsc_final_reply_cb(
     globus_mutex_lock(&server_handle->mutex);
     {
         server_handle->reply_outstanding = GLOBUS_FALSE;
-        server_handle->ref--;
+        GlobusLServerRefDec(server_handle);
 
         if(result != GLOBUS_SUCCESS)
         {
@@ -1467,7 +1475,7 @@ globus_l_gsc_intermediate_reply_cb(
     globus_mutex_lock(&server_handle->mutex);
     {
         server_handle->reply_outstanding = GLOBUS_FALSE;
-        server_handle->ref--;
+        GlobusLServerRefDec(server_handle);
         if(result != GLOBUS_SUCCESS)
         {
             goto error;
@@ -1559,7 +1567,7 @@ globus_l_gsc_user_data_destroy_cb_kickout(
 
     globus_mutex_lock(&server_handle->mutex);
     {
-        server_handle->ref--;
+        GlobusLServerRefDec(server_handle);
         globus_l_gsc_server_ref_check(server_handle);
     }
     globus_mutex_unlock(&server_handle->mutex);

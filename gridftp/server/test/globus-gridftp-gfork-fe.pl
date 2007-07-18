@@ -51,10 +51,20 @@ if((0 != system("grid-proxy-info -exists -hours 2 >/dev/null 2>&1") / 256) && !d
     exit 1;
 }
 
+#$SIG{ALRM} = \&eatfd_db;
+#alarm 20;
+
 my $rc;
 my $rc = system("cd $globus_location/test/globus_ftp_client_test; ./globus-ftp-client-run-tests.pl");
 
 exit $rc;
+
+sub eatfd_db()
+{
+    my $junk = <SERVER>;
+    $SIG{ALRM} = \&eatfd_db;
+    alarm 20;
+}
 
 sub clean_up()
 {

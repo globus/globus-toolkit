@@ -781,7 +781,7 @@ globus_l_gfs_session_info_free(
         }
         if(session_info->free_cred && session_info->del_cred != NULL)
         {
-            gss_release_cred(&min_rc, &session_info->del_cred);
+            /*gss_release_cred(&min_rc, &session_info->del_cred); */
         }
         globus_free(session_info);
     }

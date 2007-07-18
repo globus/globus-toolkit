@@ -670,7 +670,7 @@ globus_i_gfs_log_usage_stats(
     sprintf(stripes_b, "%d", stripe_count);
     sprintf(code_b, "%d", code);
 
-    if((id = globus_i_gfs_config_string("usage_stats_id")) != NULL)
+    if((id = (char *)globus_gfs_config_get("usage_stats_id")) != NULL)
     {
         result = globus_usage_stats_send(
             globus_l_gfs_usage_handle,
