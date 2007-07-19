@@ -266,6 +266,7 @@ globus_gfs_acl_authorize(
     {
         globus_free(acl_handle->auth_object.name);
     }
+    memcpy(acl_handle->auth_object, object, sizeof(globus_gfs_acl_object_desc_t));
     acl_handle->auth_object.name = globus_libc_strdup(object->name);
     if(acl_handle->auth_object.name == NULL)
     {
