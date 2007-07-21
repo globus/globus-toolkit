@@ -90,24 +90,24 @@ AC_ARG_ENABLE(gridftp, AC_HELP_STRING([--disable-gridftp],\
    [if test $enableval = "no"; then gridftp=" "; fi], [])
 AC_SUBST(gridftp, $gridftp)
 AC_ARG_WITH(iodbc-includes, AC_HELP_STRING([--with-iodbc-includes=dir],\
-   [Specify where to find IODBC include files.  Either IODBC or unixODBC is required for [RLS] builds.]),
+   [Specify where to find [IODBC] include files.  [IODBC] and unixODBC are optional for [RLS] builds.]),
    [[GLOBUS_IODBC_INCLUDES]=$withval], [])
 AC_SUBST(globus_iodbc_includes, $[GLOBUS_IODBC_INCLUDES])
 AC_ARG_WITH(iodbc-libs, AC_HELP_STRING([--with-iodbc-libs=dir],\
-   [Specify where to find [IODBC] libraries.  Either [IODBC] or unixODBC is required for [RLS] builds.]),
+   [Specify where to find [IODBC] libraries.  [IODBC] and unixODBC are optional for [RLS] builds.]),
    [[GLOBUS_IODBC_LIBS]=$withval], [])
 AC_SUBST(globus_iodbc_libs, $[GLOBUS_IODBC_LIBS])
 AC_ARG_WITH(unixodbc-includes, AC_HELP_STRING([--with-unixodbc-includes=dir],\
-   [Specify where to find unixODBC include files.  Either IODBC or unixODBC is required for [RLS] builds.]),
+   [Specify where to find unixODBC include files.  [IODBC] and unixODBC are optional for [RLS] builds.]),
    [[GLOBUS_UNIXODBC_INCLUDES]=$withval], [])
 AC_SUBST(globus_unixodbc_includes, $[GLOBUS_UNIXODBC_INCLUDES])
 AC_ARG_WITH(unixodbc-libs, AC_HELP_STRING([--with-unixodbc-libs=dir],\
-   [Specify where to find unixODBC libraries.  Either [IODBC] or unixODBC is required for [RLS] builds.]),
+   [Specify where to find unixODBC libraries.  [IODBC] and unixODBC are optional for [RLS] builds.]),
    [[GLOBUS_UNIXODBC_LIBS]=$withval], [])
 AC_SUBST(globus_unixodbc_libs, $[GLOBUS_UNIXODBC_LIBS])
 rls="globus-rls-server"
 AC_ARG_ENABLE(rls, AC_HELP_STRING([--disable-rls],\
-   [Don't build [RLS].  Default is enabled, but you must also specify an [IODBC] driver using --with-iodbc]),
+   [Don't build [RLS].  Default is enabled.]),
    [if test $enableval = "no"; then rls=" "; fi], [])
 AC_SUBST(rls, $rls)
 dnl Java code
