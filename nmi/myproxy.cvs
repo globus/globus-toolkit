@@ -1,4 +1,4 @@
 method = cvs
-cvs_root = :pserver:anonymous@cvs.ncsa.uiuc.edu:/CVS/myproxy
+cvs_root = :pserver:anonymous@cvs.globus.org:/home/globdev/CVS/globus-packages
 cvs_module = myproxy
 #cvs_tag = 
