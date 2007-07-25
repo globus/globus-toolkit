@@ -173,6 +173,7 @@ globus_usage_packets                        usage/java/packets/source
 globus_usage_packets_samples                usage/java/packets/samples
 globus_usage_receiver                       usage/java/receiver/source
 globus_usage_receiver_samples               usage/java/receiver/samples
+globus_usage_tests                          usage/java/tests
 
 globus_wsrf_replicator_client_java          ws-replica/replicator/client/java/source
 globus_wsrf_replicator_common_java          ws-replica/replicator/common/java/source
