@@ -16,7 +16,6 @@
 
 package org.globus.usage.receiver;
 
-
 import junit.framework.TestCase;
 import junit.framework.Test;
 import junit.framework.Assert;
@@ -29,13 +28,12 @@ import java.net.DatagramPacket;
 import java.net.SocketException;
 import java.io.IOException;
 
+import org.globus.usage.receiver.ReceiverThread;
 import org.globus.usage.packets.CustomByteBuffer;
 import org.globus.usage.packets.UsageMonitorPacket;
 
 public class ReceiverThreadTester extends TestCase {
-    
     private final static int testPort = 12180;
-
     private ReceiverThread receiverThread;
     private RingBuffer theRing;
 
@@ -65,7 +63,7 @@ public class ReceiverThreadTester extends TestCase {
 	outSock = new DatagramSocket();
 	outPack = new DatagramPacket(outData, outData.length);
 	outPack.setPort(testPort);
-	outPack.setAddress(InetAddress.getByName("localhost"));
+	outPack.setAddress(InetAddress.getLocalHost());
 	outSock.send(outPack);
 	outSock.close();
     }
@@ -91,7 +89,6 @@ public class ReceiverThreadTester extends TestCase {
 	    Assert.assertEquals("3rd byte", inBuf.get(), (byte)36);
 	    Assert.assertEquals("inbuf should be at end",
 				inBuf.remaining(), 0);
-
 	} catch (Exception e) {
 	    Assert.fail("Socket experiment failed: "+e.getMessage());
 	}
@@ -186,28 +183,5 @@ public class ReceiverThreadTester extends TestCase {
 	/*Hypothesis: datagramPacket.getLength returns something too short,
 	  custom byte buffer gets prematurely truncated, buf.get fails
 	  because array is out of bounds.  How to test this?*/
-	
-	
     }
-
-
-    public void testEvilPackets() {
-
-	/*The following is the actual binary data captured from two packets which caused the parser to fail.  What ho!  These are both RFT packets.*/
-
-	byte[] evilData1 = new byte[] {5, 0, 1, 0, 62, 120, 7, -114, 2, 1, 0, 0, 4, -128, 9, 72, -116, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,-90, 102, 7, -114, 2, 1, 0, 0, 63, 120, 7, -114, 2, 1, 0, 0, 24,  42, 106, 10, 2, 0, 0, 0, -115, 97, 1,0, 0, 0, 0, 0};
-
-	byte[] evilData2 = new byte[] {5, 0, 1, 0, 71, -91, 7, -114, 2, 1, 0, 0, 4, -128, 9, 72, -78, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 127, -96, 7, -114, 2, 1, 0, 0, 73, -91, 7, -114, 2, 1,0, 0, 97, 123, 124, 30, 0, 0, 0, 0, -24, -49, 0, 0, 0, 0, 0, 0};
-
-	
-    }
-    /*	    inData = new byte[1400];
-	    inPack = new DatagramPacket(inData, inData.length);
-
-	    inSock.receive(inPack);
-	
-	    trimmedOutData = inPack.getData();
-	    System.out.println("Incoming packet has length "+ inPack.getLength());
-	    System.out.println("But its data buffer is "+ trimmedOutData.length);*/
-
 }

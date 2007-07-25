@@ -172,8 +172,6 @@ public class SendReceiveTester extends TestCase {
 	    Assert.assertTrue(gmp.getBlockSize() == 64000);
 	    Assert.assertTrue(gmp.getFTPReturnCode() == 227);
 	    Assert.assertTrue(gmp.getGridFTPVersion().equals("Version1"));
-
-
     }
 
 }

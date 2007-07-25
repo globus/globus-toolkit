@@ -21,8 +21,8 @@
     <property name="build.packages" location=
         "${deploy.dir}/share/globus_wsrf_common/build-packages.xml"/>
     <property name="java.debug" value="on"/>
-
     <property name="garjars.id" value="garjars"/>
+    <!-- Define values in build.properties for DB-enabled tests -->
     <fileset dir="${build.lib.dir}" id="garjars"/>
 
     <target name="init">
@@ -83,6 +83,7 @@
    <target name="test" depends="compile">
 	<mkdir dir = "${reports.tests}" />
 	<junit printsummary="yes" haltonfailure="yes" timeout="600000">
+            <sysproperty key="dburl" value="${dburl}"/>
             <classpath>
                 <pathelement location="${build.dest}"/>
                 <fileset dir="${deploy.dir}/lib">
@@ -95,7 +96,9 @@
             <batchtest fork="yes" todir="${reports.tests}">
                <fileset dir="src">
                   <include name="**/*Test*.java"/>
+                  <!--
                   <exclude name="**/ReceiverThreadTester.java"/>
+                  -->
                   <exclude name="**/SendReceiveTester.java"/>
                   <exclude name="**/UnitTester.java"/>
                </fileset>
