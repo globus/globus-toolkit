@@ -39,6 +39,9 @@ include the following:
 public class RFTUsageMonitorPacket extends IPTimeMonitorPacket {
     static Log log = LogFactory.getLog(RFTUsageMonitorPacket.class);
 
+    private static short COMPONENT_CODE = 5;
+    private static short PACKET_VERSION = 1;
+
     public final static byte TRANSFER = 0;
     public final static byte DELETE = 1;
     private byte requestType; 
@@ -48,16 +51,20 @@ public class RFTUsageMonitorPacket extends IPTimeMonitorPacket {
     private Date resourceCreationTime;
     private Date factoryStartTime;
 
+    public RFTUsageMonitorPacket() {
+        setComponentCode(COMPONENT_CODE);
+        setPacketVersion(PACKET_VERSION);
+    }
     public long getNumberOfFiles() {
         return this.numberOfFiles;
     }
-    public void setNumberOfFiles() {
+    public void setNumberOfFiles(long numberOfFiles) {
         this.numberOfFiles = numberOfFiles;
     }
     public long getNumberOfBytes() {
         return this.numberOfBytes;
     }
-    public void setNumberOfBytes() {
+    public void setNumberOfBytes(long numberOfBytes) {
         this.numberOfBytes = numberOfBytes;
     }
     public long getNumberOfResources() {

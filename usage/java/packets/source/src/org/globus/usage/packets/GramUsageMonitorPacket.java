@@ -285,8 +285,19 @@ public class GramUsageMonitorPacket
 	the next byte after the end of the localResourceManager is for
 	the boolean jobCredential, so it must be either 0 or 1, which will
 	not appear in the string!*/
+        /* BUG: the GRAM service sends LRM Name + char[].toString() which yields a
+         * java object pointer if the LRM name is shorter than
+         * MAX_SCHEDULER_TYPE_SIZE. We'll extend our getUntilZeroOrOne
+         * to be longer so we can pull of the pointer
+         */
+	this.localResourceManager = buf.getUntilZeroOrOne(MAX_SCHEDULER_TYPE_SIZE + 10);
 
-	this.localResourceManager = buf.getUntilZeroOrOne(MAX_SCHEDULER_TYPE_SIZE);
+        int garbage = this.localResourceManager.indexOf("[C");
+
+        if (garbage != -1)
+        {
+            this.localResourceManager =  this.localResourceManager.substring(0, garbage);
+        }
 
         //jobCredentialEndpointUsed
         this.jobCredentialEndpointUsed = (buf.get()==1?true:false);
@@ -311,6 +322,27 @@ public class GramUsageMonitorPacket
 
         //faultClass
         this.faultClass = buf.get();
+    }
+
+    public String toString()
+    {
+        StringBuffer buf = new StringBuffer();
+
+        buf.append(super.toString());
+
+        buf.append("creationTime = "+this.creationTime + ", ");
+        buf.append("localResourceManager = "+this.localResourceManager + ", ");
+        buf.append("jobCredentialEndpointUsed = "
+                    +this.jobCredentialEndpointUsed + ", ");
+        buf.append("FileStageInUsed = "+fileStageInUsed + ", ");
+        buf.append("FileStageOutUsed = "+fileStageOutUsed + ", ");
+        buf.append("FileCleanUpUsed = "+fileCleanUpUsed + ", ");
+        buf.append("CleanUpHoldUsed = "+cleanUpHoldUsed + ", ");
+        buf.append("jobType = "+jobType + ", ");
+        buf.append("gt2ErrorCode = "+gt2ErrorCode + ", ");
+        buf.append("faultClass = "+faultClass);
+
+        return buf.toString();
     }
 
     public void display()
