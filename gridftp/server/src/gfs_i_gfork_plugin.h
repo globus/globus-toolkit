@@ -51,17 +51,17 @@
 
 #define GF_VERSION_LEN             1
 #define GF_MSG_TYPE_LEN            1
+
+/* dyn be messaging */
 #define GF_AT_ONCE_LEN             (sizeof(uint32_t))
 #define GF_TOTAL_LEN               (sizeof(uint32_t))
 #define GF_HEADER_RESERVE_LEN      5
 #define GF_COOKIE_LEN              32
 #define GF_REPO_LEN                108
 #define GF_CS_LEN                  108
-#define GF_REG_PACKET_LEN          (GF_VERSION+GF_AT_ONCE_LEN+GF_TOTAL_LEN+GF_HEADER_RESERVE_LEN+GF_COOKIE_LEN+GF_REPO_LEN+GF_CS_LEN)
 
 #define GF_VERSION_NDX             0
 #define GF_MSG_TYPE_NDX            (GF_VERSION_NDX+GF_VERSION_LEN)
-
 
 #define GF_AT_ONCE_NDX             (GF_MSG_TYPE_NDX+GF_MSG_TYPE_LEN)
 #define GF_TOTAL_NDX               (GF_AT_ONCE_NDX+GF_AT_ONCE_LEN)
@@ -70,9 +70,29 @@
 #define GF_REPO_NDX                (GF_COOKIE_NDX+GF_COOKIE_NDX)
 #define GF_CS_NDX                  (GF_REPO_NDX+GF_REPO_LEN)
 
+#define GF_REG_PACKET_LEN          (GF_CS_LEN+GF_CS_NDX)
+
+/* mem messaging */
+#define GF_MEM_LIMIT_NDX            (GF_MSG_TYPE_NDX+GF_MSG_TYPE_LEN)
+#define GF_MEM_LIMIT_LEN            (sizeof(uint32_t))
+
+#define GF_MEM_MSG_LEN              (GF_MEM_LIMIT_NDX+GF_MEM_LIMIT_LEN)
+
+/* kill msgin*/
+#define GF_KILL_STRING_NDX          (GF_MSG_TYPE_NDX+GF_MSG_TYPE_LEN)
+#define GF_KILL_STRING_LEN          128
+
+#define GF_KILL_MSG_LEN             (GF_KILL_STRING_NDX+GF_KILL_STRING_LEN)
+
+/* ready message */
+#define GF_READY_MSG_LEN            (GF_MSG_TYPE_NDX+GF_MSG_TYPE_LEN)
+
 typedef enum gfs_gfork_msg_type_e
 {
     GFS_GFORK_MSG_TYPE_DYNBE = 1,
+    GFS_GFORK_MSG_TYPE_KILL,
+    GFS_GFORK_MSG_TYPE_MEM,
+    GFS_GFORK_MSG_TYPE_READY,
     GFS_GFORK_MSG_TYPE_ACK,
     GFS_GFORK_MSG_TYPE_NACK,
     GFS_GFORK_MSG_TYPE_CC

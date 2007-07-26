@@ -331,6 +331,8 @@ static const globus_l_gfs_config_option_t option_list[] =
     "Number of backends registered.", NULL, NULL,GLOBUS_TRUE, NULL},
  {"data_connection_max", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_INT, 0, NULL,
     "Data node connection count.", NULL, NULL,GLOBUS_TRUE, NULL},
+ {"tcp_mem_limit", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_INT, 0, NULL,
+    "TCP memory limit", NULL, NULL,GLOBUS_TRUE, NULL},
  {"max_bw", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_INT,
     0, "0", NULL, NULL, NULL,GLOBUS_TRUE, NULL},
  {"current_bw", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_INT,

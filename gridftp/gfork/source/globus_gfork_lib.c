@@ -540,6 +540,7 @@ gfork_l_client_writev_cb(
 
     globus_mutex_lock(&handle->mutex);
     {
+        handle->writing = GLOBUS_FALSE;
         if(result != GLOBUS_SUCCESS)
         {
             goto error;
@@ -552,7 +553,7 @@ gfork_l_client_writev_cb(
                 handle->write_xio,
                 msg->iov,
                 msg->iovc,
-                nbytes,
+                msg->nbytes,
                 NULL,
                 gfork_l_client_writev_cb,
                 msg);
@@ -560,24 +561,21 @@ gfork_l_client_writev_cb(
             {
                 goto error;
             }
-        }
-        else
-        {
-            handle->writing = GLOBUS_FALSE;
+            handle->writing = GLOBUS_TRUE;
         }
     }
     globus_mutex_unlock(&handle->mutex);
 
     return;
 error:
-
+assert(0);
     globus_mutex_unlock(&handle->mutex);
 }
 
 
 globus_result_t
 globus_l_gfork_send(
-    gfork_i_lib_handle_t *            handle,
+    gfork_i_lib_handle_t *              handle,
     uid_t                               pid,
     globus_xio_iovec_t *                iov,
     int                                 iovc,
@@ -587,7 +585,7 @@ globus_l_gfork_send(
     int                                 i;
     globus_size_t                       nbytes;
     gfork_i_msg_t *                     msg;
-    globus_result_t                     result;
+    globus_result_t                     result = GLOBUS_SUCCESS;
 
     msg = (gfork_i_msg_t *) globus_calloc(1, sizeof(gfork_i_msg_t));
 
@@ -613,6 +611,9 @@ globus_l_gfork_send(
     msg->client_cb = cb;
     msg->header.size = nbytes;
 
+    nbytes += msg->iov[0].iov_len;
+
+    msg->nbytes = nbytes;
     msg->iovc = iovc+1;
     if(!handle->writing)
     {
@@ -621,7 +622,7 @@ globus_l_gfork_send(
             handle->write_xio,
             msg->iov,
             msg->iovc,
-            nbytes,
+            msg->nbytes,
             NULL,
             gfork_l_client_writev_cb,
             msg);

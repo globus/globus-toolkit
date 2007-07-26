@@ -102,6 +102,7 @@ typedef struct gfork_i_msg_s
     void *                              user_arg;
     globus_xio_iovec_t *                iov;
     int                                 iovc;
+    globus_size_t                       nbytes;
     globus_xio_iovec_t                  write_iov[2];
     globus_xio_iovec_callback_t         client_cb;
     globus_xio_iovec_callback_t         cb;

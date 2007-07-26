@@ -2063,6 +2063,7 @@ globus_l_gfs_data_handle_init(
     globus_l_gfs_data_handle_t **       u_handle,
     globus_gfs_data_info_t *            data_info)
 {
+    int                                 tcp_mem_limit;
     globus_l_gfs_data_handle_t *        handle;
     globus_result_t                     result;
     globus_ftp_control_dcau_t           dcau;
@@ -2184,6 +2185,29 @@ globus_l_gfs_data_handle_init(
             goto error_control;
         }
     }
+
+    tcp_mem_limit = globus_gfs_config_get_int("tcp_mem_limit");
+    if(tcp_mem_limit > 0 && tcp_mem_limit < handle->info.tcp_bufsize)
+    {
+        globus_ftp_control_tcpbuffer_t  tcpbuffer;
+
+        globus_i_gfs_log_message(
+            GLOBUS_I_GFS_LOG_WARN,
+            "Limiting TCP memory to: %d\n", tcp_mem_limit);
+        tcpbuffer.mode = GLOBUS_FTP_CONTROL_TCPBUFFER_FIXED;
+        tcpbuffer.fixed.size = tcp_mem_limit / handle->info.nstreams;
+
+        result = globus_ftp_control_local_tcp_buffer(
+            &handle->data_channel, &tcpbuffer);
+        if(result != GLOBUS_SUCCESS)
+        {
+            result = GlobusGFSErrorWrapFailed(
+                "globus_ftp_control_local_tcp_buffer", result);
+            goto error_control;
+        }
+
+    }
+
     dcau.mode = handle->info.dcau;
     dcau.subject.mode = handle->info.dcau;
     dcau.subject.subject = handle->info.subject;

@@ -186,29 +186,37 @@ gfork_l_write_open_cb(
     void *                              user_arg)
 {
     int                                 temp_state;
-    gfork_i_child_handle_t *            kid_handle;
+    gfork_i_child_handle_t *            to_kid;
+    gfork_i_child_handle_t *            from_kid;
     gfork_i_msg_t *                     msg;
 
     msg = (gfork_i_msg_t *) user_arg;
-    kid_handle = msg->to_kid;
+    to_kid = msg->to_kid;
 
     globus_mutex_lock(&gfork_l_mutex);
     {
-        kid_handle->writting = GLOBUS_FALSE;
+        /* will post a read on the kid that was jsut opened.  hte 'from_kid'
+            caused the open, now we prime read pipe on it */
+        from_kid = msg->from_kid;
+
+        /* since callback returned we set the one that was writting to false */
+        to_kid->writting = GLOBUS_FALSE;
         if(result != GLOBUS_SUCCESS)
         {
             goto error_param;
         }
 
         temp_state =
-            gfork_i_state_next(kid_handle->state, GFORK_EVENT_OPEN_RETURNS);
-        kid_handle->state = temp_state;
+            gfork_i_state_next(to_kid->state, GFORK_EVENT_OPEN_RETURNS);
+        to_kid->state = temp_state;
 
-        /* reuse the msg */
+        /* reuse the msg, must chane the from_kid */
         memset(msg, '\0', sizeof(gfork_i_msg_t));
-        msg->from_kid = kid_handle;
+        msg->from_kid = from_kid;
+        gfork_log(1, "posting header read on %d for %d bytes\n",
+            msg->from_kid->pid, sizeof(gfork_i_msg_header_t));
         result = globus_xio_register_read(
-            kid_handle->read_xio_handle,
+            from_kid->read_xio_handle,
             (globus_byte_t *)&msg->header,
             sizeof(gfork_i_msg_header_t),
             sizeof(gfork_i_msg_header_t),
@@ -219,7 +227,7 @@ gfork_l_write_open_cb(
         {
             goto error_post;
         }
-        gfork_l_write(kid_handle);
+        gfork_l_write(to_kid);
     }
     globus_mutex_unlock(&gfork_l_mutex);
 
@@ -228,6 +236,7 @@ gfork_l_write_open_cb(
 error_post:
 error_param:
 
+    gfork_log(1, "Error writing to %d.\n", from_kid->pid);
     globus_free(msg);
     /* XXX this is a dead master issue */
     globus_mutex_unlock(&gfork_l_mutex);
@@ -419,7 +428,8 @@ gfork_l_spawn_master()
 
         msg = (gfork_i_msg_t *) globus_calloc(1, sizeof(gfork_i_msg_t));
         msg->from_kid = gfork_l_master_child_handle;
-
+        gfork_log(1, "posting header read on %d for %d bytes\n",
+            msg->from_kid->pid, sizeof(gfork_i_msg_header_t));
         result = globus_xio_register_read(
             gfork_l_master_child_handle->read_xio_handle,
             (globus_byte_t *)&msg->header,
@@ -432,6 +442,7 @@ gfork_l_spawn_master()
         {
             goto error_read_post;
         }
+        gfork_log(2, "master is pid %d\n", pid);
     }
     else
     {
@@ -987,6 +998,7 @@ gfork_l_read_body_cb(
 
     /* now we have the message, gotta decide where it goes */
     msg = (gfork_i_msg_t *) user_arg;
+    gfork_log(2, "Body read from pid %d\n", msg->from_kid->pid);
     msg->cb = gfork_l_writev_cb;
 
     gfork_log(2, "gfork_l_read_body_cb\n");
@@ -1065,8 +1077,10 @@ gfork_l_read_body_cb(
             gfork_l_write(gfork_l_master_child_handle);
         }
     
+        gfork_log(1, "posting header read on %d for %d bytes\n",
+            msg->from_kid->pid, sizeof(gfork_i_msg_header_t));
         result = globus_xio_register_read(
-            handle,
+            msg->from_kid->read_xio_handle,
             (globus_byte_t *)&msg->header,
             sizeof(gfork_i_msg_header_t),
             sizeof(gfork_i_msg_header_t),
@@ -1106,6 +1120,7 @@ gfork_l_read_header_cb(
 
     msg = (gfork_i_msg_t *) user_arg;
 
+    gfork_log(2, "Header read from pid %d\n", msg->from_kid->pid);
     if(result != GLOBUS_SUCCESS)
     {
         goto error_incoming;
@@ -1117,8 +1132,10 @@ gfork_l_read_header_cb(
             if(msg->header.size <= 0)
             {
                 /* assume a bad message, report header */
+                gfork_log(1, "posting header read on %d for %d bytes\n",
+                    msg->from_kid->pid, sizeof(gfork_i_msg_header_t));
                 result = globus_xio_register_read(
-                    handle,
+                    msg->from_kid->read_xio_handle,
                     (globus_byte_t *)&msg->header,
                     sizeof(gfork_i_msg_header_t),
                     sizeof(gfork_i_msg_header_t),
@@ -1136,8 +1153,10 @@ gfork_l_read_header_cb(
                     msg->header.size + sizeof(gfork_i_msg_data_t));
                 msg->data->ref = 0;
 
+                gfork_log(1, "posting body read on %d for %d bytes\n",
+                    msg->from_kid->pid, msg->header.size);
                 result = globus_xio_register_read(
-                    handle,
+                    msg->from_kid->read_xio_handle,
                     msg->data->buffer,
                     msg->header.size,
                     msg->header.size,
@@ -1155,8 +1174,10 @@ gfork_l_read_header_cb(
         case GLOBUS_GFORK_MSG_OPEN:
         case GLOBUS_GFORK_MSG_CLOSE:
         default:
+            gfork_log(1, "posting header read on %d for %d bytes\n",
+                msg->from_kid->pid, sizeof(gfork_i_msg_header_t));
             result = globus_xio_register_read(
-                handle,
+                msg->from_kid->read_xio_handle,
                 (globus_byte_t *)&msg->header,
                 sizeof(gfork_i_msg_header_t),
                 sizeof(gfork_i_msg_header_t),
@@ -1173,6 +1194,7 @@ gfork_l_read_header_cb(
 
 error_incoming:
 error_post:
+    gfork_log(2, "No read posted for pid %d\n", msg->from_kid->pid);
     globus_free(msg);
 
     return;

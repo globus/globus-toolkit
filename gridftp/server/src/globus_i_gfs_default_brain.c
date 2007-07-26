@@ -285,6 +285,7 @@ globus_l_gfs_gfork_incoming_cb(
     globus_byte_t *                     buffer,
     globus_size_t                       len)
 {
+    uint32_t                            n32;
     GlobusGFSName(globus_l_gfs_gfork_incoming_cb);
     
     globus_i_gfs_log_message(
@@ -307,6 +308,26 @@ globus_l_gfs_gfork_incoming_cb(
                     from_pid,
                     buffer,
                     len);
+                break;
+
+            case GFS_GFORK_MSG_TYPE_MEM:
+                memcpy(&n32, &buffer[GF_MEM_LIMIT_NDX], sizeof(uint32_t));
+                globus_gfs_config_set_int("tcp_mem_limit", (int)n32);
+
+                globus_i_gfs_log_message(
+                    GLOBUS_I_GFS_LOG_WARN,
+                    "TCP mem limit set to: %d\n", (int)n32);
+                break;
+
+            case GFS_GFORK_MSG_TYPE_READY:
+                globus_i_gfs_log_message(
+                    GLOBUS_I_GFS_LOG_WARN, "Ready message received.\n");
+                break;
+
+            case GFS_GFORK_MSG_TYPE_KILL:
+                globus_i_gfs_log_message(
+                    GLOBUS_I_GFS_LOG_WARN, "Kill message received.\n");
+                exit(1);
                 break;
         }
     }

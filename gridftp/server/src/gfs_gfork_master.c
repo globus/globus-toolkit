@@ -49,8 +49,13 @@
 #define GFSGForkFuncName(func) static const char * _gfs_gfork_func_name = #func
 #endif
 
+typedef struct gfs_l_memlimit_entry_s
+{
+    int                                 mem_size;
+} gfs_l_memlimit_entry_t;
+
 static globus_mutex_t                   g_mutex;
-static globus_mutex_t                   g_cond;
+static globus_cond_t                    g_cond;
 static globus_bool_t                    g_done = GLOBUS_FALSE;
 static globus_xio_server_t              gfs_l_gfork_server_handle;
 static globus_fifo_t                    gfs_l_gfork_be_q = NULL;
@@ -74,12 +79,22 @@ static char *                           g_be_cs;
 static uint32_t                         g_at_once;
 static uint32_t                         g_total_cons;
 
+/* memory limiting globals */
+static globus_bool_t                    gfs_l_memlimiting = GLOBUS_FALSE;
+static globus_off_t                     gfs_l_memlimit_available;
+static globus_off_t                     gfs_l_memlimit_threshold = 0;
+static int                              gfs_l_memlimit_per_session = 
+        32*1024*1024;
+static globus_hashtable_t               gfs_l_memlimit_table;
+
 static
 globus_result_t
 gfs_gfork_master_options(
     int                                 argc,
     char **                             argv);
 
+#define GFS_421_NO_TCP_MEM \
+    "421 Not enough memory for TCP buffers.  Try later."
 
 typedef struct gfs_l_gfork_master_entry_s
 {
@@ -654,6 +669,7 @@ gfs_l_gfork_dyn_be_open(
     void *                              user_arg,
     pid_t                               from_pid)
 {
+    globus_result_t                     result;
     globus_xio_iovec_t *                iov;
     int                                 i = 0;
     int                                 iovc = 0;
@@ -709,17 +725,150 @@ gfs_l_gfork_dyn_be_open(
     {
         gfs_l_gfork_log(
             GLOBUS_SUCCESS, 3, "sending to pid %d\n", from_pid);
-        globus_gfork_send(
+        result = globus_gfork_send(
             handle,
             from_pid,
             iov,
             iovc,
             NULL,
             NULL);
+        if(result != GLOBUS_SUCCESS)
+        {
+            gfs_l_gfork_log(
+                result, 3, "failed to send to %d\n", from_pid);
+        }
     }
 
     globus_free(iov);
 }
+
+static
+void
+gfs_l_gfork_free_write_cb(
+    globus_xio_handle_t                 handle,
+    globus_result_t                     result,
+    globus_xio_iovec_t *                iovec,
+    int                                 count,
+    globus_size_t                       nbytes,
+    globus_xio_data_descriptor_t        data_desc,
+    void *                              user_arg)
+{
+    int                                 i;
+
+    for(i = 0; i < count; i++)
+    {
+        globus_free(iovec[i].iov_base);
+    }
+}
+
+static
+void
+gfs_l_gfork_mem_limit_send(
+    gfork_child_handle_t                handle,
+    pid_t                               to_pid,
+    int                                 limit)
+{
+    uint32_t                            n;
+    globus_xio_iovec_t                  iov;
+    globus_byte_t *                     buffer;
+    globus_result_t                     result;
+
+    n = (uint32_t) limit;
+    buffer = globus_malloc(GF_MEM_MSG_LEN);
+
+    buffer[GF_VERSION_NDX] = GF_VERSION;
+    buffer[GF_MSG_TYPE_NDX] = GFS_GFORK_MSG_TYPE_MEM;
+    memcpy(&buffer[GF_MEM_LIMIT_NDX], &n, sizeof(uint32_t));
+
+    iov.iov_base = buffer;
+    iov.iov_len = GF_MEM_MSG_LEN;
+
+    gfs_l_gfork_log(
+        GLOBUS_SUCCESS, 3, "sending mem limit %d to %d\n", limit, to_pid);
+    result = globus_gfork_send(
+        handle,
+        to_pid,
+        &iov,
+        1,
+        gfs_l_gfork_free_write_cb,
+        NULL);
+        if(result != GLOBUS_SUCCESS)
+        {
+            gfs_l_gfork_log(
+                result, 3, "failed to send to %d\n", to_pid);
+        }
+}
+
+static
+void
+gfs_l_gfork_kill_send(
+    gfork_child_handle_t                handle,
+    pid_t                               to_pid,
+    const char *                        msg)
+{
+    globus_xio_iovec_t                  iov;
+    globus_byte_t *                     buffer;
+    globus_result_t                     result;
+
+    buffer = globus_calloc(1, GF_KILL_MSG_LEN);
+
+    buffer[GF_VERSION_NDX] = GF_VERSION;
+    buffer[GF_MSG_TYPE_NDX] = GFS_GFORK_MSG_TYPE_KILL;
+
+    strncpy(&buffer[GF_KILL_STRING_NDX], msg, GF_KILL_STRING_LEN);
+
+    iov.iov_base = buffer;
+    iov.iov_len = GF_KILL_MSG_LEN;
+
+    gfs_l_gfork_log(
+        GLOBUS_SUCCESS, 3, "sending to pid %d\n", to_pid);
+    result = globus_gfork_send(
+        handle,
+        to_pid,
+        &iov,
+        1,
+        gfs_l_gfork_free_write_cb,
+        NULL);
+    if(result != GLOBUS_SUCCESS)
+    {
+        gfs_l_gfork_log(
+            result, 3, "failed to send to %d\n", to_pid);
+    }
+}
+
+static
+void
+gfs_l_gfork_ready_send(
+    gfork_child_handle_t                handle,
+    pid_t                               to_pid)
+{
+    globus_xio_iovec_t                  iov;
+    globus_byte_t *                     buffer;
+    globus_result_t                     result;
+
+    buffer = globus_calloc(1, GF_READY_MSG_LEN);
+
+    buffer[GF_VERSION_NDX] = GF_VERSION;
+    buffer[GF_MSG_TYPE_NDX] = GFS_GFORK_MSG_TYPE_READY;
+
+    iov.iov_base = buffer;
+    iov.iov_len = GF_READY_MSG_LEN;
+
+    gfs_l_gfork_log(
+        GLOBUS_SUCCESS, 3, "sending ready to pid %d\n", to_pid);
+    result = globus_gfork_send(
+        handle,
+        to_pid,
+        &iov,
+        1, 
+        gfs_l_gfork_free_write_cb,
+        NULL);
+    if(result != GLOBUS_SUCCESS)
+    {
+        gfs_l_gfork_log(
+            result, 3, "failed to send to %d\n", to_pid);
+    }
+}   
 
 static
 void
@@ -728,6 +877,8 @@ gfs_l_gfork_open_cb(
     void *                              user_arg,
     pid_t                               from_pid)
 {
+    gfs_l_memlimit_entry_t *            entry;
+    int                                 mem_given;
 
     gfs_l_gfork_log(
         GLOBUS_SUCCESS, 2, "Open called for pid %d\n", from_pid);
@@ -740,9 +891,38 @@ gfs_l_gfork_open_cb(
         {
             gfs_l_gfork_dyn_be_open(handle, user_arg, from_pid);
         }
-        else
+
+        /* if we are using a memory limit */
+        if(gfs_l_memlimiting)
         {
+            /* if there is enough memory to give */
+            if(gfs_l_memlimit_available > gfs_l_memlimit_threshold)
+            {
+                mem_given = gfs_l_memlimit_per_session;
+                gfs_l_memlimit_available -= mem_given;
+                if(gfs_l_memlimit_available < 0)
+                {
+                    mem_given += gfs_l_memlimit_available;
+                    gfs_l_memlimit_available = 0;
+                }
+
+                entry = (gfs_l_memlimit_entry_t *) globus_calloc(
+                        1, sizeof(gfs_l_memlimit_entry_t));
+                entry->mem_size = mem_given;
+
+                globus_hashtable_insert(
+                    &gfs_l_memlimit_table, (void *) from_pid, entry);
+
+                gfs_l_gfork_mem_limit_send(handle, from_pid, mem_given);
+            }
+            /* when there is not enough memory, send a kill */
+            else
+            {
+                gfs_l_gfork_kill_send(handle, from_pid, GFS_421_NO_TCP_MEM);
+            }
         }
+
+        gfs_l_gfork_ready_send(handle, from_pid);
     }
     globus_mutex_unlock(&g_mutex);
 }
@@ -755,11 +935,18 @@ gfs_l_gfork_closed_cb(
     void *                              user_arg,
     pid_t                               from_pid)
 {
+    gfs_l_memlimit_entry_t *            entry;
+
     globus_mutex_lock(&g_mutex);
     {
         g_connection_count--;
         gfs_l_gfork_log(
             GLOBUS_SUCCESS, 2, "Closed called for pid %d\n", from_pid);
+        entry = (gfs_l_memlimit_entry_t *) globus_hashtable_remove(
+            &gfs_l_memlimit_table, (void *) from_pid);
+
+        gfs_l_memlimit_available += entry->mem_size;
+        globus_free(entry);
     }
     globus_mutex_unlock(&g_mutex);
 }
@@ -1068,6 +1255,12 @@ main(
         globus_hashtable_string_hash,
         globus_hashtable_string_keyeq);
 
+    globus_hashtable_init(
+        &gfs_l_memlimit_table,
+        256,
+        globus_hashtable_int_hash,
+        globus_hashtable_int_keyeq);
+
     globus_mutex_lock(&g_mutex);
     {
         result = gfs_l_gfork_xio_setup();
@@ -1125,6 +1318,43 @@ error_activate:
 
     return 1;
 }
+
+static
+globus_result_t
+gfs_l_gfork_opts_kmgint(
+    const char *                        arg,
+    globus_off_t *                      out_i)
+{
+    int                                 i;
+    int                                 sc;
+    GFSGForkFuncName(gfs_l_gfork_opts_kmgint);
+
+    sc = sscanf(arg, "%d", &i);
+    if(sc != 1)
+    {
+        return GFSGforkError("size is not an integer",
+            GFS_GFORK_ERROR_PARAMETER);
+    }
+    if(strchr(arg, 'K') != NULL)
+    {
+        *out_i = (globus_off_t)i * 1024;
+    }
+    else if(strchr(arg, 'M') != NULL)
+    {
+        *out_i = (globus_off_t)i * 1024 * 1024;
+    }
+    else if(strchr(arg, 'G') != NULL)
+    {
+        *out_i = (globus_off_t)i * 1024 * 1024 * 1024;
+    }
+    else
+    {
+        *out_i = (globus_off_t)i;
+    }
+
+    return GLOBUS_SUCCESS;
+}
+
 
 static
 globus_result_t
@@ -1320,6 +1550,57 @@ error_format:
 
 }
 
+static
+globus_result_t
+gfs_l_gfork_opts_tcp_mem_limit(
+    globus_options_handle_t             opts_handle,
+    char *                              cmd,
+    char **                             opt,
+    void *                              arg,
+    int *                               out_parms_used)
+{
+    globus_result_t                     result;
+    globus_off_t                        val;
+
+    result = gfs_l_gfork_opts_kmgint(opt[0], &val);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+
+    gfs_l_memlimiting = GLOBUS_TRUE;
+    gfs_l_memlimit_available = val;
+
+    return GLOBUS_SUCCESS;
+error:
+    return result;
+}
+
+static
+globus_result_t
+gfs_l_gfork_opts_tmp_mem_session(
+    globus_options_handle_t             opts_handle,
+    char *                              cmd,
+    char **                             opt,
+    void *                              arg,
+    int *                               out_parms_used)
+{
+    globus_result_t                     result;
+    globus_off_t                        val;
+
+    result = gfs_l_gfork_opts_kmgint(opt[0], &val);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+    gfs_l_memlimiting = GLOBUS_TRUE;
+    gfs_l_memlimit_per_session = (int)val;
+
+    return GLOBUS_SUCCESS;
+error:
+    return result;
+}
+
 globus_options_entry_t                   gfork_l_opts_table[] =
 {
     {"help", "h", NULL, NULL,
@@ -1348,6 +1629,12 @@ globus_options_entry_t                   gfork_l_opts_table[] =
     {"update-interval", "u", NULL, "<int>",
         "Number of seconds between registration updates.",
         1, gfs_l_gfork_opts_updatetime},
+    {"tcp-mem-limit", "m", NULL, "<long>",
+        "Total TCP memory limit.",
+        1, gfs_l_gfork_opts_tcp_mem_limit},
+    {"tcp-mem-session-limit", "M", NULL, "<long>",
+        "TCP memory limit per session",
+        1, gfs_l_gfork_opts_tmp_mem_session},
     {NULL, NULL, NULL, NULL, NULL, 0, NULL}
 };
 
