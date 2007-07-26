@@ -35,9 +35,6 @@
         <javac srcdir="src" destdir="${build.dest}"
             debug="${java.debug}">
             <include name="**/*.java"/>
-            <exclude name="**/SendReceiveTester.java"/>
-            <exclude name="**/GridFTPPacketHandler.java"/>
-            <exclude name="**/UnitTester.java"/>
             <classpath>
                 <fileset dir="${deploy.dir}/lib">
                     <include name="**/*.jar"/>
@@ -96,11 +93,6 @@
             <batchtest fork="yes" todir="${reports.tests}">
                <fileset dir="src">
                   <include name="**/*Test*.java"/>
-                  <!--
-                  <exclude name="**/ReceiverThreadTester.java"/>
-                  -->
-                  <exclude name="**/SendReceiveTester.java"/>
-                  <exclude name="**/UnitTester.java"/>
                </fileset>
             </batchtest>
 	</junit>
