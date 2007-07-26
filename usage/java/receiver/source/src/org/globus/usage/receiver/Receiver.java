@@ -89,33 +89,6 @@ public class Receiver {
         
     }
 
-    /*I don't recommend using this method, which blocks until a packet
-      comes in, then returns the packet.  I wrote it just to test the
-      receiver*/
-    public UsageMonitorPacket blockingGetPacket() {
-        CustomByteBuffer bufFromRing;
-        UsageMonitorPacket packet;
-        short code;
-
-        bufFromRing = theRing.getNext();
-        code = bufFromRing.getShort();
-        switch (code) {
-            case 0:
-                packet = new org.globus.usage.packets.GFTPMonitorPacket();
-                break;
-            case 69:
-                packet = new IPTimeMonitorPacket();
-                break;
-            default:
-                packet = new UsageMonitorPacket();
-        }
-
-        bufFromRing.rewind();
-        packet.parseByteArray(bufFromRing.array());
-
-        return packet;
-    }
-
     public String getStatus(boolean doReset) {
 	/*Return a string with the following metadata:
 	  --Number of packets logged, total and in each protocol, since last
@@ -233,7 +206,6 @@ class ReceiverThread extends Thread {
 
             try {
                 socket.receive(packet);
-
                 storage = CustomByteBuffer.fitToData(buf, packet.getLength());
                 log.debug("Packet received");
                 this.packetsReceived++;
@@ -249,7 +221,6 @@ class ReceiverThread extends Thread {
                     log.info("Queue size: " + theRing.getNumObjects());
                     lastTime = System.currentTimeMillis() + period;
                 }
-
             } catch (IOException e) {
                 if (stillGood) {
                     log.error("Error during receive", e);
