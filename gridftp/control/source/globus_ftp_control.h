@@ -225,12 +225,6 @@ typedef union globus_ftp_control_parallelism_u
     globus_ftp_parallelism_fixed_t           fixed;
 } globus_ftp_control_parallelism_t;
 
-globus_result_t
-globus_ftp_control_data_add_closed_cb(
-    globus_ftp_control_handle_t *                control_handle,
-    globus_ftp_control_callback_t                close_callback_func,
-    void *                                       close_arg);
-
 typedef struct globus_ftp_control_host_port_s
 {
     int                                         host[16];
