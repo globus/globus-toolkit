@@ -327,7 +327,7 @@ globus_l_gfs_gfork_incoming_cb(
             case GFS_GFORK_MSG_TYPE_KILL:
                 globus_i_gfs_log_message(
                     GLOBUS_I_GFS_LOG_WARN, "Kill message received.\n");
-                exit(1);
+                exit(2);
                 break;
         }
     }

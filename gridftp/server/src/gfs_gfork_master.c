@@ -821,7 +821,7 @@ gfs_l_gfork_kill_send(
     iov.iov_len = GF_KILL_MSG_LEN;
 
     gfs_l_gfork_log(
-        GLOBUS_SUCCESS, 3, "sending to pid %d\n", to_pid);
+        GLOBUS_SUCCESS, 3, "sending kill to pid %d\n", to_pid);
     result = globus_gfork_send(
         handle,
         to_pid,
@@ -832,7 +832,7 @@ gfs_l_gfork_kill_send(
     if(result != GLOBUS_SUCCESS)
     {
         gfs_l_gfork_log(
-            result, 3, "failed to send to %d\n", to_pid);
+            result, 3, "failed to send kill to %d\n", to_pid);
     }
 }
 
@@ -942,11 +942,15 @@ gfs_l_gfork_closed_cb(
         g_connection_count--;
         gfs_l_gfork_log(
             GLOBUS_SUCCESS, 2, "Closed called for pid %d\n", from_pid);
+
+        /* if we have it as a memory entry */
         entry = (gfs_l_memlimit_entry_t *) globus_hashtable_remove(
             &gfs_l_memlimit_table, (void *) from_pid);
-
-        gfs_l_memlimit_available += entry->mem_size;
-        globus_free(entry);
+        if(entry != NULL)
+        {
+            gfs_l_memlimit_available += entry->mem_size;
+            globus_free(entry);
+        }
     }
     globus_mutex_unlock(&g_mutex);
 }

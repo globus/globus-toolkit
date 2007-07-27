@@ -2193,7 +2193,8 @@ globus_l_gfs_data_handle_init(
 
         globus_i_gfs_log_message(
             GLOBUS_I_GFS_LOG_WARN,
-            "Limiting TCP memory to: %d\n", tcp_mem_limit);
+            "Limiting TCP memory to: %d on %d\n",
+            tcp_mem_limit, handle->info.nstreams);
         tcpbuffer.mode = GLOBUS_FTP_CONTROL_TCPBUFFER_FIXED;
         tcpbuffer.fixed.size = tcp_mem_limit / handle->info.nstreams;
 
