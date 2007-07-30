@@ -32,6 +32,67 @@ static gfork_i_options_t                gfork_l_options;
 static gfork_i_handle_t                 gfork_l_handle;
 static char *                           g_contact_string;
 
+static globus_hashtable_t               gfork_l_keepenvs;
+
+static
+void
+gfork_gather_envs()
+{
+    int                                 i;
+    char *                              env_s;
+
+    globus_hashtable_init(
+        &gfork_l_keepenvs,
+        128,
+        globus_hashtable_string_hash,
+        globus_hashtable_string_keyeq);
+
+    for(i = 0; gfork_l_keep_envs[i] != NULL; i++)
+    {
+        env_s = globus_libc_getenv(gfork_l_keep_envs[i]);
+        if(env_s != NULL)
+        {
+            globus_hashtable_insert(
+                &gfork_l_keepenvs,
+                gfork_l_keep_envs[i],
+                env_s);
+        }
+    }
+}
+
+static
+void
+gfork_kid_set_keeper_envs(
+    int                                 read_fd,
+    int                                 write_fd)
+{
+    int                                 i;
+    char *                              val_s;
+    char                                tmp_str[64];
+
+    for(i = 0; gfork_l_keep_envs[i] != NULL; i++)
+    {
+        val_s = globus_hashtable_lookup(
+            &gfork_l_keepenvs,
+            gfork_l_keep_envs[i]);
+        if(val_s != NULL)
+        {
+            globus_libc_setenv(gfork_l_keep_envs[i], val_s, 1);
+        }
+    }
+
+    /* set extra envs */
+    sprintf(tmp_str, "%d", read_fd);
+    globus_libc_setenv(GFORK_CHILD_READ_ENV, tmp_str, 1);
+    sprintf(tmp_str, "%d", write_fd);
+    globus_libc_setenv(GFORK_CHILD_WRITE_ENV, tmp_str, 1);
+
+    globus_libc_setenv(GFORK_CHILD_CS_ENV, g_contact_string, 1);
+
+    sprintf(tmp_str, "%d", gfork_l_options.instances);
+    globus_libc_setenv(GFORK_CHILD_INSTANCE_ENV, tmp_str, 1);
+}
+
 static
 void
 gfork_l_writev_cb(
@@ -332,7 +393,6 @@ gfork_l_spawn_master()
     int                                 write_fd;
     int                                 rc;
     gfork_i_options_t *                 gfork_h;
-    char                                tmp_str[32];
     globus_result_t                     result;
     gfork_i_msg_t *                     msg;
     GForkFuncName(gfork_l_spawn_master);
@@ -372,12 +432,9 @@ gfork_l_spawn_master()
         environ = gfork_l_handle.env_argv;
 
         nice(gfork_l_handle.opts->nice);
+
+        gfork_kid_set_keeper_envs(read_fd, write_fd);
         /* set up the state pipe and envs */
-        sprintf(tmp_str, "%d", read_fd);
-        globus_libc_setenv(GFORK_CHILD_READ_ENV, tmp_str, 1);
-        sprintf(tmp_str, "%d", write_fd);
-        globus_libc_setenv(GFORK_CHILD_WRITE_ENV, tmp_str, 1);
-        globus_libc_setenv(GFORK_CHILD_CS_ENV, g_contact_string, 1);
 
         gfork_log(2, "Master Child FDs %s %s\n",
             globus_libc_getenv(GFORK_CHILD_READ_ENV),
@@ -929,10 +986,7 @@ gfork_new_child(
 
     environ = gfork_handle->env_argv;
     /* set up the state pipe and envs */
-    sprintf(tmp_str, "%d", read_fd);
-    globus_libc_setenv(GFORK_CHILD_READ_ENV, tmp_str, 1);
-    sprintf(tmp_str, "%d", write_fd);
-    globus_libc_setenv(GFORK_CHILD_WRITE_ENV, tmp_str, 1);
+    gfork_kid_set_keeper_envs(read_fd, write_fd);
 
     /* dup the incoming socket */
     rc = dup2(socket_handle, STDIN_FILENO);
@@ -1313,6 +1367,8 @@ main(
         gfork_log(1, "Activation error\n");
         goto error_act;
     }
+
+    gfork_gather_envs();
 
     globus_hashtable_init(
         &gfork_l_pid_table,

@@ -49,6 +49,9 @@
 #define GFSGForkFuncName(func) static const char * _gfs_gfork_func_name = #func
 #endif
 
+#define GFSGforkTopNiceShare(_val) ((_val * 9) / 10) 
+
+
 typedef struct gfs_l_memlimit_entry_s
 {
     int                                 mem_size;
@@ -69,6 +72,7 @@ static FILE *                           g_log_fptr;
 static int                              g_repo_count = 0;
 static gfork_child_handle_t             g_handle;
 static int                              g_connection_count = 0;
+static int                              g_connection_count_max_observed = 0;
 static globus_hashtable_t               g_gfork_be_table;
 static globus_bool_t                    g_backend = GLOBUS_FALSE;
 static globus_xio_attr_t                g_attr;
@@ -82,9 +86,7 @@ static uint32_t                         g_total_cons;
 /* memory limiting globals */
 static globus_bool_t                    gfs_l_memlimiting = GLOBUS_FALSE;
 static globus_off_t                     gfs_l_memlimit_available;
-static globus_off_t                     gfs_l_memlimit_threshold = 0;
-static int                              gfs_l_memlimit_per_session = 
-        32*1024*1024;
+static globus_off_t                     gfs_l_memlimit;
 static globus_hashtable_t               gfs_l_memlimit_table;
 
 static
@@ -762,6 +764,62 @@ gfs_l_gfork_free_write_cb(
 }
 
 static
+globus_off_t
+gfs_l_gfork_mem_limit_calc(
+    pid_t                               from_pid)
+{
+    char *                              env_s;
+    globus_off_t                        mem_given;
+    int                                 nice_share_count;
+    int                                 sc;
+    int                                 instance;
+
+    if(gfs_l_memlimit_available <= 0)
+    {
+        return -1;
+    }
+
+    env_s = globus_libc_getenv(GFORK_CHILD_INSTANCE_ENV);
+    /* this is strange, shouldnt happen.   would onyl happen if ran
+        master outside of gfork, which shouldnt be done */
+    globus_assert(env_s != NULL);
+
+    sc = sscanf(env_s, "%d", &instance);
+    globus_assert(sc == 1);
+
+    /* find connection count tier */
+    if(instance <= 0)
+    {
+        nice_share_count = 2;
+    }
+    else
+    {
+        nice_share_count = instance - GFSGforkTopNiceShare(instance);
+    }
+
+    if(g_connection_count <= nice_share_count)
+    {
+        mem_given = GFSGforkTopNiceShare(gfs_l_memlimit);
+        mem_given = mem_given / nice_share_count;
+    }
+    else
+    {
+        mem_given = gfs_l_memlimit_available / 2;
+    }
+    gfs_l_gfork_log(
+        GLOBUS_SUCCESS, 2, "HIII %"GLOBUS_OFF_T_FORMAT": %d : %d : %d\n",
+        mem_given, nice_share_count, g_connection_count, instance);
+
+    if(mem_given <= 0)
+    {
+        /* gotta kill it */
+        return -1;
+    }
+
+    return mem_given;
+}
+
+static
 void
 gfs_l_gfork_mem_limit_send(
     gfork_child_handle_t                handle,
@@ -772,6 +830,7 @@ gfs_l_gfork_mem_limit_send(
     globus_xio_iovec_t                  iov;
     globus_byte_t *                     buffer;
     globus_result_t                     result;
+
 
     n = (uint32_t) limit;
     buffer = globus_malloc(GF_MEM_MSG_LEN);
@@ -792,11 +851,11 @@ gfs_l_gfork_mem_limit_send(
         1,
         gfs_l_gfork_free_write_cb,
         NULL);
-        if(result != GLOBUS_SUCCESS)
-        {
-            gfs_l_gfork_log(
-                result, 3, "failed to send to %d\n", to_pid);
-        }
+    if(result != GLOBUS_SUCCESS)
+    {
+        gfs_l_gfork_log(
+            result, 3, "failed to send to %d\n", to_pid);
+    }
 }
 
 static
@@ -877,8 +936,8 @@ gfs_l_gfork_open_cb(
     void *                              user_arg,
     pid_t                               from_pid)
 {
-    gfs_l_memlimit_entry_t *            entry;
     int                                 mem_given;
+    gfs_l_memlimit_entry_t *            entry;
 
     gfs_l_gfork_log(
         GLOBUS_SUCCESS, 2, "Open called for pid %d\n", from_pid);
@@ -886,6 +945,10 @@ gfs_l_gfork_open_cb(
     globus_mutex_lock(&g_mutex);
     {
         g_connection_count++;
+        if(g_connection_count > g_connection_count_max_observed)
+        {
+            g_connection_count_max_observed = g_connection_count;
+        }
 
         if(!g_backend)
         {
@@ -895,10 +958,9 @@ gfs_l_gfork_open_cb(
         /* if we are using a memory limit */
         if(gfs_l_memlimiting)
         {
-            /* if there is enough memory to give */
-            if(gfs_l_memlimit_available > gfs_l_memlimit_threshold)
+            mem_given = gfs_l_gfork_mem_limit_calc(from_pid);
+            if(mem_given > 0)
             {
-                mem_given = gfs_l_memlimit_per_session;
                 gfs_l_memlimit_available -= mem_given;
                 if(gfs_l_memlimit_available < 0)
                 {
@@ -907,7 +969,7 @@ gfs_l_gfork_open_cb(
                 }
 
                 entry = (gfs_l_memlimit_entry_t *) globus_calloc(
-                        1, sizeof(gfs_l_memlimit_entry_t));
+                    1, sizeof(gfs_l_memlimit_entry_t));
                 entry->mem_size = mem_given;
 
                 globus_hashtable_insert(
@@ -1574,31 +1636,7 @@ gfs_l_gfork_opts_tcp_mem_limit(
 
     gfs_l_memlimiting = GLOBUS_TRUE;
     gfs_l_memlimit_available = val;
-
-    return GLOBUS_SUCCESS;
-error:
-    return result;
-}
-
-static
-globus_result_t
-gfs_l_gfork_opts_tmp_mem_session(
-    globus_options_handle_t             opts_handle,
-    char *                              cmd,
-    char **                             opt,
-    void *                              arg,
-    int *                               out_parms_used)
-{
-    globus_result_t                     result;
-    globus_off_t                        val;
-
-    result = gfs_l_gfork_opts_kmgint(opt[0], &val);
-    if(result != GLOBUS_SUCCESS)
-    {
-        goto error;
-    }
-    gfs_l_memlimiting = GLOBUS_TRUE;
-    gfs_l_memlimit_per_session = (int)val;
+    gfs_l_memlimit = val;
 
     return GLOBUS_SUCCESS;
 error:
@@ -1636,9 +1674,6 @@ globus_options_entry_t                   gfork_l_opts_table[] =
     {"tcp-mem-limit", "m", NULL, "<long>",
         "Total TCP memory limit.",
         1, gfs_l_gfork_opts_tcp_mem_limit},
-    {"tcp-mem-session-limit", "M", NULL, "<long>",
-        "TCP memory limit per session",
-        1, gfs_l_gfork_opts_tmp_mem_session},
     {NULL, NULL, NULL, NULL, NULL, 0, NULL}
 };
 
