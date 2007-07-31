@@ -104,7 +104,6 @@ BUNDLE gt4-mds
 BUNDLE gt4-mds-test
         globus_wsrf_mds_index_test
         globus_wsrf_mds_trigger_test
-        globus_wsrf_mds_archive_test
         globus_wsrf_mds_aggregator_test
         globus_wsrf_mds_usefulrp_test
 
