@@ -1,0 +1,213 @@
+#include "xacml_i.h"
+
+#include <iterator>
+using namespace xacml;
+
+int
+xacml_request_init(
+    xacml_request_t *             request)
+{
+    try
+    {
+        *request = new xacml_request_s;
+    }
+    catch(...)
+    {
+        return 1;
+    }
+
+    return 0;
+}
+
+void
+xacml_request_destroy(
+    xacml_request_t               request)
+{
+    delete request;
+}
+
+int
+xacml_request_add_subject_attribute(
+    xacml_request_t                     request,
+    const char *                        subject_category,
+    const char *                        attribute_id,
+    const char *                        data_type,
+    const char *                        issuer,
+    const char *                        value)
+{
+    attribute_set &                     set = request->subjects[subject_category];
+    attributes &                        attributes = set[issuer ? issuer : ""];
+    attribute                           attr;
+
+    attr.attribute_id = attribute_id;
+    attr.data_type = data_type;
+    attr.value = value;
+
+    attributes.push_back(attr);
+
+    return 0;
+}
+/* xacml_request_add_subject_attribute() */
+
+int
+xacml_request_get_subject_attribute_count(
+    const xacml_request_t         request,
+    size_t *                            count)
+{
+    size_t                              c = 0;
+
+    for (subject::iterator i = request->subjects.begin();
+         i != request->subjects.end();
+         i++)
+    {
+        for (attribute_set::iterator j = i->second.begin();
+             j != i->second.end();
+             j++)
+        {
+            for (attributes::iterator k = j->second.begin();
+                 k != j->second.end();
+                 k++)
+            {
+                c++;
+            }
+        }
+    }
+    *count = c;
+
+    return 0;
+}
+
+int
+xacml_request_get_subject_attribute(
+    const xacml_request_t         request,
+    size_t                              num,
+    const char **                       subject_category,
+    const char **                       attribute_id,
+    const char **                       data_type,
+    const char **                       issuer,
+    const char **                       value)
+{
+    size_t c = 0;
+    
+    for (subject::iterator i = request->subjects.begin();
+         i != request->subjects.end();
+         i++)
+    {
+        for (attribute_set::iterator j = i->second.begin();
+             j != i->second.end();
+             j++)
+        {
+            for (attributes::iterator k = j->second.begin();
+                 k != j->second.end();
+                 k++)
+            {
+                if (c == num)
+                {
+                    *subject_category = i->first.c_str();
+                    *issuer = j->first.c_str() == "" ? NULL : j->first.c_str();
+                    *attribute_id = k->attribute_id.c_str();
+                    *data_type = k->data_type.c_str();
+                    *value = k->value.c_str();
+                }
+                c++;
+            }
+        }
+    }
+
+    return 0;
+}
+/* xacml_request_get_subject_attribute() */
+
+int
+xacml_request_add_resource_attribute(
+    xacml_request_t                     request,
+    const char *                        attribute_id,
+    const char *                        data_type,
+    const char *                        issuer,
+    const char *                        value)
+{
+    const char * aid[] = { attribute_id, NULL };
+    const char * dt[] = { data_type, NULL };
+    const char * i[] = { issuer, NULL };
+    const char * v[] = { value, NULL };
+
+    return xacml_request_add_resource_attributes(request, aid, dt, i, v);
+}
+
+int
+xacml_request_add_resource_attributes(
+    xacml_request_t                     request,
+    const char *                        attribute_id[],
+    const char *                        data_type[],
+    const char *                        issuer[],
+    const char *                        value[])
+{
+    attribute_set                       resource;
+
+    for (int i = 0; attribute_id[i] != NULL; i++)
+    {
+        attribute                       attr;
+        const std::string               iss = issuer[i] ? issuer[i] : "";
+        attributes &attributes = resource[iss];
+
+        attr.attribute_id = attribute_id[i];
+        attr.data_type = data_type[i];
+        attr.value = value[i];
+
+        attributes.push_back(attr);
+    }
+    request->resource_attributes.push_back(resource);
+
+    return 0;
+}
+/* xacml_request_add_resource_attributes() */
+
+int
+xacml_request_add_action_attribute(
+    xacml_request_t                     request,
+    const char *                        attribute_id,
+    const char *                        data_type,
+    const char *                        issuer,
+    const char *                        value)
+{
+    attribute                           attr;
+
+    attr.attribute_id = attribute_id;
+    attr.data_type = data_type;
+    attr.value = value;
+
+    request->action_attributes[issuer ? issuer : ""].push_back(attr);
+
+    return 0;
+}
+/* xacml_request_add_action_attribute() */
+
+int
+xacml_request_add_environment_attribute(
+    xacml_request_t                     request,
+    const char *                        attribute_id,
+    const char *                        data_type,
+    const char *                        issuer,
+    const char *                        value)
+{
+    attribute                           attr;
+
+    attr.attribute_id = attribute_id;
+    attr.data_type = data_type;
+    attr.value = value;
+
+    request->environment_attributes[issuer ? issuer : ""].push_back(attr);
+
+    return 0;
+}
+/* xacml_request_add_environment_attribute() */
+
+int 
+xacml_request_set_subject(  
+    xacml_request_t                     request,
+    const char *                        subject)
+{
+    request->subject = subject;
+
+    return 0;
+}
