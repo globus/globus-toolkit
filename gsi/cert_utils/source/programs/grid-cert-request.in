@@ -584,7 +584,7 @@ get_host_CN ()
 
                 *)
                     ${GLOBUS_SH_ECHO-echo} "Aborting" 1>&2
-                    exit 1
+                    return 1
                     ;;
             esac
         fi
@@ -593,6 +593,7 @@ get_host_CN ()
     fi
 
     echo ${_common_name}
+    return 0
 }
 
 
@@ -825,6 +826,9 @@ if test "${SERVICE}" = "user"; then
     COMMON_NAME="`get_user_CN`"
 else
     COMMON_NAME="`get_host_CN`"
+    if [ $? -ne 0 ]; then
+        exit 1
+    fi
 fi
 
 # do clean up on abort
