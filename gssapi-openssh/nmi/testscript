@@ -1,13 +1,5 @@
 #!/bin/sh
 set -e # exit on any error
-if test "$NMI_PLATFORM" = "ia64_sles_9" -o \
-        "$NMI_PLATFORM" = "sun4u_sol_5.9"; then
-  GT_INSTALLER=gt4.0.4-all-source-installer.tar.gz
-  GT_INSTALLER_URL=http://www.globus.org/ftppub/gt4/4.0/4.0.4/installers/src/$GT_INSTALLER
-else
-  GT_INSTALLER=gt4.0.4-$NMI_PLATFORM-installer.tar.gz
-  GT_INSTALLER_URL=http://www.globus.org/ftppub/gt4/4.0/4.0.4/installers/bin/$GT_INSTALLER
-fi
 GLOBUS_LOCATION=$_CONDOR_SCRATCH_DIR/globus
 ZLIB_LOCATION=$_CONDOR_SCRATCH_DIR/zlib
 LOGNAME=$USER
@@ -20,12 +12,6 @@ env
 echo ==================================================
 echo Directory contents:
 ls -Rl
-echo ==================================================
-echo PATHs:
-echo `which wget`
-echo `which curl`
-echo `which ncftpget`
-echo `which ftp`
 echo ==================================================
 if test -d /prereq/zlib-1.2.3; then
   ZLIB_LOCATION=/prereq/zlib-1.2.3
@@ -40,12 +26,7 @@ else
 fi
 echo ==================================================
 echo Installing Globus Toolkit...
-if test -x `which wget`; then
-  wget $GT_INSTALLER_URL
-else
-  curl $GT_INSTALLER_URL > $GT_INSTALLER
-fi
-tar xfz $GT_INSTALLER
+tar xfj gt*-all-source-installer.tar.bz2
 cd gt*-installer
 ./configure --prefix=$GLOBUS_LOCATION --with-buildopts="-verbose" \
             --with-gsiopensshargs="--with-zlib=$ZLIB_LOCATION"
