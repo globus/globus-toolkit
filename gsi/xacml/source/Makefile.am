@@ -23,6 +23,8 @@ noinst_LTLIBRARIES = libxacml_common.la \
                      libxacml_soap_client.la \
                      libxacml_soap_server.la
 
+include_HEADERS = xacml_client.h xacml_server.h xacml.h xacml_datatypes.h
+
 bin_PROGRAMS = xacml-client xacml-server
 
 libxacml_common_la_SOURCES = xacml_response.cpp \
