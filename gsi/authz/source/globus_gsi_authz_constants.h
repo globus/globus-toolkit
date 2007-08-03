@@ -34,12 +34,16 @@
  */
 typedef enum
 {
+
+    /** Success */
     GLOBUS_GSI_AUTHZ_ERROR_SUCCESS = 0,
+    /** Error with system call */
     GLOBUS_GSI_AUTHZ_ERROR_ERRNO = 1,
+    /** Invalid parameter */
     GLOBUS_GSI_AUTHZ_ERROR_BAD_PARAMETER = 2,
+    /** Callout returned an error */
     GLOBUS_GSI_AUTHZ_ERROR_CALLOUT = 3,
     GLOBUS_GSI_AUTHZ_ERROR_LAST = 4
 } globus_gsi_authz_error_t;
 
 #endif
-
