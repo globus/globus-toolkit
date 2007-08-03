@@ -23,7 +23,7 @@ else
 fi
 echo ==================================================
 echo Installing Globus Toolkit...
-tar xfj gt*-all-source-installer.tar.bz2
+tar xfz gt*-all-source-installer.tar.gz
 cd gt4*-installer
 ./configure --prefix=$GLOBUS_LOCATION --with-buildopts="-verbose"
 make gsi-myproxy install
