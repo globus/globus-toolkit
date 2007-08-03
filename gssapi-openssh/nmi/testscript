@@ -26,7 +26,7 @@ else
 fi
 echo ==================================================
 echo Installing Globus Toolkit...
-tar xfj gt*-all-source-installer.tar.bz2
+tar xfz gt*-all-source-installer.tar.gz
 cd gt*-installer
 ./configure --prefix=$GLOBUS_LOCATION --with-buildopts="-verbose" \
             --with-gsiopensshargs="--with-zlib=$ZLIB_LOCATION"
