@@ -17,38 +17,34 @@
 package org.globus.usage.packets;
 
 import java.net.InetAddress;
-import java.net.Inet6Address;
 import java.net.UnknownHostException;
-import java.sql.Timestamp;
-import java.sql.PreparedStatement;
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.util.Date;
-import java.util.Calendar;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 public class RLSMonitorPacket extends CStylePacket {
+    public static final short COMPONENT_CODE = 7;
+    public static final short PACKET_VERSION = 0;
+    public String versionString;
+    public long uptime; //number of seconds
+    public boolean lrc;
+    public boolean rli;
+    public int lfn;
+    public int pfn;
+    public int map;
+    public int rlilfn;
+    public int rlilrc;
+    public int rliSenders;
+    public int rliMap;
+    public int threads;
+    public int connections;
 
-    private String versionString;
-    private long uptime; //number of seconds
-    private boolean lrc;
-    private boolean rli;
-    private int lfn;
-    private int pfn;
-    private int map;
-    private int rlilfn;
-    private int rlilrc;
-    private int rliSenders;
-    private int rliMap;
-    private int threads;
-    private int connections;
-
-    /*Code is 7, version is 0*/
+    public void RLSMonitorPacket() {
+        setComponentCode(COMPONENT_CODE);
+        setPacketVersion(PACKET_VERSION);
+    }
 
     public void unpackCustomFields(CustomByteBuffer buf) {
-
 	super.unpackCustomFields(buf);
 	PacketFieldParser parser = parseTextSection(buf);
 
@@ -70,30 +66,4 @@ public class RLSMonitorPacket extends CStylePacket {
 	this.threads = parser.getInt("THRD");
 	this.connections = parser.getInt("CONN");
     }
-
-    public PreparedStatement toSQL(Connection con, String tablename) throws SQLException {
-	PreparedStatement ps;
-	ps = con.prepareStatement("INSERT INTO "+tablename+" (component_code, version_code, send_time, ip_address, rls_version, uptime, lrc, rli, lfn, pfn, mappings, rli_lfns, rli_lrcs, rli_senders, rli_mappings, threads, connections) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);");
-	
-	ps.setShort(1, this.getComponentCode());
-	ps.setShort(2, this.getPacketVersion());
-	ps.setTimestamp(3, new Timestamp(this.getTimestamp()));
-	ps.setString(4, Util.getAddressAsString(getHostIP()));
-
-	ps.setString(5, this.versionString);
-	ps.setLong(6, this.uptime);
-	ps.setBoolean(7, this.lrc);
-	ps.setBoolean(8, this.rli);
-	ps.setInt(9, this.lfn);
-	ps.setInt(10, this.pfn);
-	ps.setInt(11, this.map);
-	ps.setInt(12, this.rlilfn);
-	ps.setInt(13, this.rlilrc);
-	ps.setInt(14, this.rliSenders);
-	ps.setInt(15, this.rliMap);
-	ps.setInt(16, this.threads);
-	ps.setInt(17, this.connections);
-	return ps;
-    }
-
 }

@@ -27,6 +27,7 @@ import org.globus.wsrf.container.usage.ContainerUsageBasePacketV2;
 import org.globus.wsrf.container.usage.ContainerUsageStartPacketV2;
 import org.globus.wsrf.container.usage.ContainerUsageStopPacketV2;
 
+import java.util.Properties;
 import java.sql.SQLException;
 import java.sql.PreparedStatement;
 import java.sql.Timestamp;
@@ -36,9 +37,10 @@ public class JavaCorePacketHandler extends DefaultPacketHandler {
     private static Log log = 
         LogFactory.getLog(JavaCorePacketHandler.class);
 
-    public JavaCorePacketHandler(String db, String table)
+    public JavaCorePacketHandler(Properties props)
         throws SQLException {
-        super(db, table);
+        super(props.getProperty("database-pool"),
+              props.getProperty("jws-core-table", "java_ws_core_packets"));
     }
     
     public String getDescription() {

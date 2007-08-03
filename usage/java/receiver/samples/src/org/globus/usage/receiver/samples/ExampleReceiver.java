@@ -38,6 +38,7 @@ import org.globus.usage.receiver.handlers.CCorePacketHandler;
 import org.globus.usage.receiver.handlers.GRAMPacketHandler;
 import org.globus.usage.receiver.handlers.RLSPacketHandler;
 import org.globus.usage.receiver.handlers.MDSAggregatorPacketHandler;
+import org.globus.usage.receiver.handlers.MPIGPacketHandler;
 
 /*An example of how the Receiver class can be used in a program:*/
 public class ExampleReceiver {
@@ -61,7 +62,8 @@ public class ExampleReceiver {
 	GRAMPacketHandler gramHandler;
 	RLSPacketHandler rlsHandler;
         MDSAggregatorPacketHandler mdsHandler;
-
+        MPIGPacketHandler mpigHandler;
+    
         /*Open properties file (which gets compiled into jar) to read
           default port and database connection information:*/
 

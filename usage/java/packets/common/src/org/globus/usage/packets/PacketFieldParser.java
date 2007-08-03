@@ -17,6 +17,7 @@
 package org.globus.usage.packets;
 
 import java.util.HashMap;
+import java.util.StringTokenizer;
 
 /*General-purpose parser for GridFTP, RLS, and C WS Core usage
 packets, which contain text-formatted fields of the form KEY=VALUE
@@ -34,59 +35,93 @@ public class PacketFieldParser {
     }
 
     public void parseString(String input) {
-	boolean containsQuotes = false;
-	String[] fields;
-	String[] substrings;
-	int i, j;
+        final int BEGIN = 0;
+        final int ESCAPE = 1;
+        final int EQUAL = 2;
+        final int VAL = 3;
+        final int QUOTED_VAL = 4;
+        final int INVALID = 5;
+        final int UNQUOTED_VAL = 6;
 
 	this.pairs = new HashMap();
 
-	/*First, identify any quoted substrings.  Break the string up into
-	  quoted and non-quoted substrings.  Parse each non-quoted section
-	  separately.*/
+        StringTokenizer st = new StringTokenizer(input, " \\\"=", true);
 
-	substrings = input.split("\"");
+        int state = BEGIN;
+        String var = null;
+        String val = null;
 
-	for (i = 0; i < substrings.length; i += 2) {
-	    String quoted;
-	    String nonQuoted;
+        while (state != INVALID && st.hasMoreTokens()) {
+            String token = st.nextToken();
 
-	    /*Odd-numbered substrings are unquoted, even-numbered are quoted.
-	      That's why we're counting by twos.*/
-	    nonQuoted = substrings[i];
-	    if (i + 1 < substrings.length) {
-		quoted = substrings[i + 1];
-	    } else {
-		quoted = null;
-	    }
+            switch (state) {
+                case BEGIN:
+                    var = null;
+                    val = null;
+                    if (token.equals(" ")) {
+                        state = BEGIN;
+                    } else if (token.equals("\"") || token.equals("=")) {
+                        state = INVALID;
+                    } else {
+                        var = token;
+                        state = EQUAL;
+                    }
+                    break;
+                case EQUAL:
+                    if (token.equals("=")) {
+                        state = VAL;
+                    } else {
+                        state = INVALID;
+                    }
+                    break;
+                case VAL:
+                    if (token.equals("\"")) {
+                        val = "";
+                        state = QUOTED_VAL;
+                    } else {
+                        val = token;
+                        state = UNQUOTED_VAL;
+                    }
+                    break;
+                case UNQUOTED_VAL:
+                    if (token.equals(" ")) {
+                        this.pairs.put(var, val);
+                        var = null;
+                        val = null;
+                        state = BEGIN;
+                    } else {
+                        val = val + token;
+                        state = UNQUOTED_VAL;
+                    }
+                    break;
+                case QUOTED_VAL:
+                    if (token.equals("\\")) {
+                        state = ESCAPE;
+                    } else if (token.equals("\"")) {
+                        state = BEGIN;
+                        this.pairs.put(var, val);
+                        var = null;
+                        val = null;
+                    } else {
+                        /* Remain in QUOTED_VAL state */
+                        val = val + token;
+                    }
+                    break;
+                case ESCAPE:
+                    if (token.equals("\\") || token.equals("\"")) {
+                        val = val + token;
+                    } else {
+                        /* INVALID ESCAPE */
+                        state = INVALID;
+                    }
+                    break;
+            }
+        }
 
-	    /*To parse a non-quoted section, first split on space, then split
-	      each result of that on '=' to get key and value; store both
-	      in a hash as strings.*/
-	    
-	    fields = nonQuoted.split(" ");
-	    
-	    for (j = 0; j< fields.length; j++) {
-		String[] temp;
-		
-		temp = fields[j].split("=");
-		//now temp[0] is key, temp[1] is value
-
-		if (temp.length > 1) {
-		    //the value is after the equals.
-		    this.pairs.put(temp[0], temp[1]);
-		} else
-		if (j == fields.length - 1 && quoted != null) {
-		    /*If this is the last field of a nonquoted substring
-		      and there's a quoted substring after this, use the
-		      whole quoted substring as the value:*/
-		    this.pairs.put(temp[0], quoted);
-		}
-		else {
-		    //Probably leftovers from the split; ignore.
-		}
-	    }
-	}
+        if (state == VAL || state == UNQUOTED_VAL)
+        {
+            this.pairs.put(var, val);
+        }
     }
 
     public int countFields() {

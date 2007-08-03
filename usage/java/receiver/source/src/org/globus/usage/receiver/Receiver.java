@@ -16,9 +16,15 @@
 
 package org.globus.usage.receiver;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.LinkedList;
 import java.util.ListIterator;
 import java.util.Date;
@@ -33,60 +39,77 @@ import org.globus.usage.packets.UsageMonitorPacket;
 import org.globus.usage.receiver.handlers.PacketHandler;
 
 public class Receiver {
+    private static final String defaultHandlers =
+            "org.globus.usage.receiver.handlers.CCorePacketHandler " +
+            "org.globus.usage.receiver.handlers.CCorePacketHandlerV2 " +
+            "org.globus.usage.receiver.handlers.GRAMPacketHandler " +
+            "org.globus.usage.receiver.handlers.GridFTPPacketHandler " +
+            "org.globus.usage.receiver.handlers.JavaCorePacketHandler " +
+            "org.globus.usage.receiver.handlers.JavaCorePacketHandlerV2 " +
+            "org.globus.usage.receiver.handlers.MDSAggregatorPacketHandler " +
+            "org.globus.usage.receiver.handlers.RFTPacketHandler " +
+            "org.globus.usage.receiver.handlers.RLSPacketHandler " +
+            "org.globus.usage.receiver.handlers.OGSADAIPacketHandler " +
+            "org.globus.usage.receiver.handlers.DRSPacketHandler " +
+            "org.globus.usage.receiver.handlers.MPIGPacketHandler";
+
     private static Log log = LogFactory.getLog(Receiver.class);
     public static final int DEFAULT_PORT = 4810;
+    public static final String DEFAULT_PORT_STRING = "4810";
+    private final static String RING_BUFFER_SIZE_STRING = "1024";
     private final static int RING_BUFFER_SIZE = 1024;
 
     private Date lastResetDate;
     
-    RingBuffer theRing; /*receiver thread puts packets in here; handler
-                          thread reads them out and pass them through the 
-                          handlers.*/
-    LinkedList handlerList; /*Every handler in this list gets a crack at
-                              the incoming packets.*/
+    RingBuffer theRing; /* receiver thread puts packets in here; handler
+                           thread reads them out and pass them through the 
+                           handlers.*/
     ReceiverThread theRecvThread;
     HandlerThread theHandleThread;
     
-
     /*Creates a receiver which will listen on the given port and write
       packets to the given database.*/
-    public Receiver(int port, 
-                    int ringBufferSize,
-                    Properties props) 
+    public Receiver(Properties props) 
         throws IOException {
 
-        theRing = new RingBufferFile(1000); //Array(ringBufferSize);
-        handlerList = new LinkedList();
+        int ringBufferSize;
+        
+        try
+        {
+            ringBufferSize = Integer.parseInt(props.getProperty("ringbuffer-size",
+                                              RING_BUFFER_SIZE_STRING));
+
+            if (ringBufferSize <= 0)
+            {
+                ringBufferSize = RING_BUFFER_SIZE;
+            }
+        }
+        catch(Exception e)
+        {
+            ringBufferSize = RING_BUFFER_SIZE;
+        }
+
+        theRing = new RingBufferFile(ringBufferSize);
 
         /*Start two threads: a listener thread which listens on the port, and
           a handler thread to take packets out of the ring buffer and
           pass them through all registered handlers...*/
-        theRecvThread = new ReceiverThread(port, theRing);
-        theRecvThread.start();
-        theHandleThread = new HandlerThread(handlerList, theRing, props);
-        theHandleThread.start();
-        lastResetDate = new Date();
-    }
 
-    /*Constructor with no specified ringBuffer size uses default*/
-    public Receiver(int port, Properties props) 
-        throws IOException {
-        this(port, RING_BUFFER_SIZE, props);
-    }
-
-
-    public void registerHandler(PacketHandler myHandler) {
-
-        /*once the handler is registered, it will be called every time a
-          packet comes in bearing a matching component code and packet version
-          code.  If multiple handlers are installed that handle the same code,
-          ALL will be triggered!  Starting with the most recently registered.
-        */
-
-        synchronized (handlerList) {
-            handlerList.addFirst(myHandler);
+        if (props.getProperty("database-url") != null)
+        {
+            props.setProperty("database-pool", DatabaseHandlerThread.dbPoolName);
+            theHandleThread = new DatabaseHandlerThread(theRing, props);
         }
-        
+        else
+        {
+            theHandleThread = new HandlerThread(theRing, props);
+        }
+        theHandleThread.start();
+
+        theRecvThread = new ReceiverThread(theRing, props);
+        theRecvThread.start();
+
+        lastResetDate = new Date();
     }
 
     public String getStatus(boolean doReset) {
@@ -133,17 +156,11 @@ public class Receiver {
         buf.append("Breakdown by component:");
         buf.append(newline);
 
-        // Now we have to loop through all registered handlers, combine the strings, append...
-        ListIterator it = handlerList.listIterator();
-        while (it.hasNext()) {
-            PacketHandler oneHandler = (PacketHandler)it.next();
-            buf.append(oneHandler.getStatus());
-            buf.append(newline);
-            if (doReset) {
-                oneHandler.resetCounts();
-            }
-        }
+        // Now we have to loop through all registered handlers, combine the
+        // strings, append...
+        String handlerStatus = theHandleThread.getStatus(doReset);
 
+        buf.append(handlerStatus);
         if (doReset) {
             theRecvThread.resetCounts();
             theHandleThread.resetCounts();
@@ -162,98 +179,171 @@ public class Receiver {
             // ignore it
         }
     }
+
+    public static void main(String[] args) {
+        int port = 0;
+        String databaseURL;
+        Properties props = new Properties();
+        InputStream propsIn;
+        final Receiver receiver;
+
+        // Open properties file (which gets compiled into jar) to read
+        // default port and database connection information:
+
+        String file = "/etc/globus_usage_receiver/receiver.properties";
+        propsIn = Receiver.class.getResourceAsStream(file);
+        if (propsIn == null) {
+            System.err.println("Can't open properties file: " + file);
+            System.exit(1);
+        }
+
+        int controlPort = 4811;
+
+        try {
+            props.load(propsIn);
+            
+            databaseURL = props.getProperty("database-url");
+
+            if (props.getProperty("control-port") != null) {
+                controlPort = Integer.parseInt(
+                                      props.getProperty("control-port"));
+            }
+
+            if (args.length == 1) {
+                /*Get listening port number from command line*/
+                port = Integer.parseInt(args[0]);
+                props.setProperty("listening-port", args[0]);
+            } else {
+                /*or else, read port from properties file:*/
+                port = Integer.parseInt(
+                        props.getProperty("listening-port", DEFAULT_PORT_STRING));
+            }
+
+            if (props.getProperty("handlers") == null) {
+                log.warn("Using default handler set");
+                props.setProperty("handlers", defaultHandlers);
+            }
+
+            int ringBufferSize;
+            
+            try
+            {
+                ringBufferSize = Integer.parseInt(props.getProperty("ringbuffer-size",
+                                                  RING_BUFFER_SIZE_STRING));
+
+                if (ringBufferSize <= 0)
+                {
+                    ringBufferSize = RING_BUFFER_SIZE;
+                }
+            }
+            catch(Exception e)
+            {
+                ringBufferSize = RING_BUFFER_SIZE;
+            }
+            
+            
+            /* When creating the receiver, pass it the port to listen on,
+               the database connection class to use, the url to connect to your
+               database, and the database table where default packets will be
+               written if no other handler takes them: */
+            System.out.println("Starting receiver on port "+port);
+            System.out.println("Database address "+databaseURL);
+            System.out.println("Ringbuffer size is "+ringBufferSize);
+            
+            receiver = new Receiver(props);
+            
+            Thread shutdownThread = (new Thread() {
+                public void run() {
+                    System.out.println("Shutting down...");
+                    receiver.shutDown();
+                }
+            });
+            Runtime.getRuntime().addShutdownHook(shutdownThread);
+
+	    //start the control socket thread:
+	    new ControlSocketThread(receiver, controlPort).start();
+            System.out.println("Starting control socket at: "  + controlPort);
+        }
+        catch (IOException e) {
+            log.fatal("An IOException occurred when trying to create Receiver:" +e.getMessage());
+        }
+        catch (Exception e) {
+            log.fatal("An exception occurred: " + e.getMessage(), e);
+        }
+
+        /*That's all... this thread ends, but the receiver has started listener
+          and handler threads which will write incoming packets to the database.*/
+    }
 }
 
-/*Should this actually be an inner class of Receiver?*/
-class ReceiverThread extends Thread {
+/*Thread used for interprocess communication, so that the receiver can be
+  started/stopped/monitored remotely.  Accepts TCP socket connections on the control port.*/
+class ControlSocketThread extends Thread {
 
-    private static Log log = LogFactory.getLog(ReceiverThread.class);
+    private ServerSocket serverSocket;
+    private boolean shutDown;
+    private Receiver receiver;
 
-    protected DatagramSocket socket = null;
-    protected int listeningPort;
-    private RingBuffer theRing; /*a reference to the one in Receiver*/
-    private boolean stillGood = true;
-    private int packetsLost;
-    private int packetsReceived;
+    static Log log = LogFactory.getLog(ControlSocketThread.class);
 
-    public ReceiverThread(int port, RingBuffer ring) throws IOException {
-        super("UDPReceiverThread");
+    public ControlSocketThread (Receiver receiver, int controlPort) 
+        throws IOException {
+        super("ReceiverControlThread");
 
-        this.listeningPort = port;
-        this.theRing = ring;
-        socket = new DatagramSocket(listeningPort);
-        log.info("Receiver is listening on port " + port);
-        this.packetsLost = 0;
-        this.packetsReceived = 0;
+	this.receiver = receiver;
+	this.shutDown = false;
+
+        this.serverSocket = new ServerSocket(controlPort);
     }
 
     public void run() {
-        byte[] buf;
-        DatagramPacket packet;
-        CustomByteBuffer storage;
+	/*When we get a connection on the control socket, either respond with
+	  the receiver.getStatus(), or shut down the receiver.*/
 
-        long period = 1000 * 60 * 5;
-        long lastTime = System.currentTimeMillis() + period;
+	PrintWriter out;
+	BufferedReader in;
+	String inputLine, outputLine;
 
-        buf = new byte[UsageMonitorPacket.MAX_PACKET_SIZE];
-        /* this is a reusable receiving buffer big enough to hold any
-	       packet.  After receiving the packet, put it into a CustomByteBuffer
-	       only as large as the packet data itself, so as to avoid writing
-	       tons of zero bytes into the database. */
-        while(stillGood) {
+	while (!shutDown) {
+            Socket clientSocket = null;
+	    try {
+		clientSocket = serverSocket.accept();
+		out = new PrintWriter(clientSocket.getOutputStream(), true);
+		in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 
-            packet = new DatagramPacket(buf, buf.length);
-
-            try {
-                socket.receive(packet);
-                storage = CustomByteBuffer.fitToData(buf, packet.getLength());
-                log.debug("Packet received");
-                this.packetsReceived++;
-                
-                /*Put packet into ring buffer:*/
-                if (!theRing.insert(storage)) {
-                    //failed == ring is full
-                    log.error("Ring buffer is FULL.  We are LOSING PACKETS!");
-                    this.packetsLost ++;
+                inputLine = in.readLine();
+                if (inputLine != null) {
+                    if (inputLine.equals("check")) {
+                        out.println(receiver.getStatus(false));
+                    } else if (inputLine.equals("clear")) {
+                        out.println(receiver.getStatus(true));
+                    } else if (inputLine.equals("stop")) {
+                        allShutDown();
+                        out.println("OK");
+                    } else {
+                        out.println("Error: Invalid command");
+                    }
                 }
-
-                if (System.currentTimeMillis() > lastTime) {
-                    log.info("Queue size: " + theRing.getNumObjects());
-                    lastTime = System.currentTimeMillis() + period;
-                }
-            } catch (IOException e) {
-                if (stillGood) {
-                    log.error("Error during receive", e);
+		out.close();
+	    } catch (IOException e) {
+		log.error("Error processing control request", e);
+	    } finally {
+                if (clientSocket != null) {
+                    try {
+                        clientSocket.close();
+                    } catch (Exception e) {}
                 }
             }
-            /*Todo: if the socket is no longer open here, for some reason,
-              should we maybe try to open a new socket?*/
-        }
+	}
 
-        theRing.close();
-    }
-
-    public int getPacketsLost() {
-        return this.packetsLost;
-    }
-    
-    public int getPacketsReceived() {
-        return this.packetsReceived;
-    }
-    
-    public void resetCounts() {
-        this.packetsLost = 0;
-        this.packetsReceived = 0;
+	try {
+	    serverSocket.close();
+	} catch (Exception e) {}
     }
 
-    public int getRingFullness() {
-        return theRing.getNumObjects();
+    /*Shuts down both this thread and the receiver.*/
+    public void allShutDown() {
+	this.shutDown = true;
+	receiver.shutDown();
     }
-
-    public void shutDown() {
-        stillGood = false; //lets the loop in run() finish.
-        try {
-            socket.close();
-        } catch (Exception e) {}
-        }
 }

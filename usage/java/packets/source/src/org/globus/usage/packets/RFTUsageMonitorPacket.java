@@ -16,17 +16,12 @@
 
 package org.globus.usage.packets;
 
-import java.net.Inet6Address;
-import java.sql.Timestamp;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Connection;
-import java.util.Date;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-/*RFT GRAM usage monitor packets, in addition to the fields in IPTimeMonitorPacket,
+import java.util.Date;
+
+/*RFT usage monitor packets, in addition to the fields in IPTimeMonitorPacket,
 include the following:
     - RFT Factory start time
     - transfer request created timestamp
@@ -122,26 +117,5 @@ public class RFTUsageMonitorPacket extends IPTimeMonitorPacket {
         log.info("Number of RFT Resources : " + this.numberOfResources);
         log.info("Resource creation Time: " + this.resourceCreationTime);
         log.info("RFT Factory start time : " + this.factoryStartTime);
-    }
-
-
-    public PreparedStatement toSQL(Connection con, String tablename) throws SQLException{
-
-	PreparedStatement ps;
-	ps = con.prepareStatement("INSERT INTO "+tablename+" (component_code, version_code, send_time, ip_address, request_type, number_of_files, number_of_bytes, number_of_resources, creation_time, factory_start_time) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?);");
-
-	ps.setShort(1, this.getComponentCode());
-	ps.setShort(2, this.getPacketVersion());
-	ps.setTimestamp(3, new Timestamp(this.getTimestamp()));
-	ps.setString(4, Util.getAddressAsString(getHostIP()));
-
-	ps.setByte(5, this.requestType);
-	ps.setLong(6, this.numberOfFiles);
-	ps.setLong(7, this.numberOfBytes);
-	ps.setLong(8, this.numberOfResources);
-	ps.setLong(9, this.resourceCreationTime.getTime());
-	ps.setLong(10, this.factoryStartTime.getTime());
-
-	return ps;
     }
 } 

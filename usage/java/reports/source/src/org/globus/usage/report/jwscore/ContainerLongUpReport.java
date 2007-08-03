@@ -86,6 +86,8 @@ public class ContainerLongUpReport extends BaseContainerUpReport {
             "  -step <day|month>        Specifies step type (default: 'day')\n" +
             "  -n <steps>               Specifies number of steps to do to\n" +
             "                           determine end date (default: 1)\n" +
+            "  -table TABLENAME                Use TABLENAME instead of the\n" +
+            "                                  java_ws_core_packets table\n" +
             "\n";
         
         if (args.length == 0) {
@@ -97,7 +99,9 @@ public class ContainerLongUpReport extends BaseContainerUpReport {
             System.exit(1);
         }
 
-        String baseQuery = "select event_type,send_time,ip_address,container_id,version_code from java_ws_core_packets where ";
+        String baseQueryStart = "select event_type,send_time,ip_address,container_id,version_code from ";
+        String table = "java_ws_core_packets";
+        String baseQueryEnd = " where ";
         int n = 1;
         String containerType = "all";
         String stepStr = "day";
@@ -106,13 +110,15 @@ public class ContainerLongUpReport extends BaseContainerUpReport {
             if (args[i].equals("-n")) {
                 n = Integer.parseInt(args[++i]);
             } else if (args[i].equals("-type")) {
-                baseQuery += " container_type = " + args[++i] + " and ";
+                baseQueryEnd += " container_type = " + args[++i] + " and ";
             } else if (args[i].equals("-step")) {
                 stepStr = args[++i];
             } else if (args[i].equalsIgnoreCase("-help")) {
                 System.err.println(USAGE);
                 System.err.println(HELP);
                 System.exit(1);
+            } else if (args[i].equals("-table")) {
+                table = args[++i];
             } else {
                 System.err.println("Unknown argument: " + args[i]);
                 System.exit(1);
@@ -159,7 +165,8 @@ public class ContainerLongUpReport extends BaseContainerUpReport {
             String timeFilter = "send_time >= '" + startDateStr + 
                 "' and send_time < '" + endDateStr + "'";
                 
-            String query = baseQuery + timeFilter + " order by send_time";
+            String query = baseQueryStart + table + baseQueryEnd + timeFilter
+                         + " order by send_time";
 
             System.out.println("<container-long-uptime-report container_type=\"" + 
                                containerType + "\">");

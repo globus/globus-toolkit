@@ -28,10 +28,10 @@ import org.globus.usage.packets.CustomByteBuffer;
 import org.globus.usage.receiver.handlers.RFTPacketHandler;
 
 
+
 public class RFTPacketHandlerTester extends TestCase {
     static private java.util.Random random = new java.util.Random();
     static private RFTPacketHandler handler = null;
-    static private org.globus.usage.receiver.HandlerThread handlerThread = null;
     
     public RFTPacketHandlerTester(String name) {
 	super(name);
@@ -40,19 +40,9 @@ public class RFTPacketHandlerTester extends TestCase {
     public void setUp() throws Exception {
         String dburl = System.getProperty("dburl");
 
-        if (dburl != null && !dburl.equals("${dburl}"))
-        {
-            java.util.Properties props = new java.util.Properties();
+        java.util.Properties props = new java.util.Properties();
 
-            props.put("database-driver", "org.postgresql.Driver");
-            props.put("database-url", dburl);
-            props.put("default-table", "unknown_packets");
-
-            handlerThread = new  org.globus.usage.receiver.HandlerThread(
-                    null, null, props);
-
-            handler = new RFTPacketHandler(dburl, "rft_packets");
-        }
+        handler = new RFTPacketHandler(props);
     }
 
     private RFTUsageMonitorPacket createPacket()
@@ -85,11 +75,6 @@ public class RFTPacketHandlerTester extends TestCase {
       * packets.
       */
     public void testInstantiatePacket() {
-        if (handler == null)
-        {
-            System.out.println("Skipping testInstantiatePacket");
-            return;
-        }
         RFTUsageMonitorPacket rftPack;
         org.globus.usage.packets.RFTUsageMonitorPacket rftPack2;
         byte array[];
@@ -142,11 +127,6 @@ public class RFTPacketHandlerTester extends TestCase {
     }
 
     public void testRFTHandler() {
-        if (handler == null)
-        {
-            System.out.println("Skipping testRFTHandler");
-            return;
-        }
         RFTUsageMonitorPacket rftPack;
         org.globus.usage.packets.RFTUsageMonitorPacket rftPack2;
         try
@@ -168,9 +148,6 @@ public class RFTPacketHandlerTester extends TestCase {
             Assert.fail(e.toString());
             return;
         }
-        System.out.println("handler="+handler.toString());
-        System.out.println("rftPack="+rftPack.toString());
         handler.handlePacket(rftPack2);
-        // TODO query DB
     }
 }

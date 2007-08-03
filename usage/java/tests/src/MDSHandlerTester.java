@@ -28,7 +28,6 @@ import org.globus.usage.receiver.handlers.MDSAggregatorPacketHandler;
 public class MDSHandlerTester extends TestCase {
     static private java.util.Random random = new java.util.Random();
     static private MDSAggregatorPacketHandler handler = null;
-    static private org.globus.usage.receiver.HandlerThread handlerThread = null;
     
     public MDSHandlerTester(String name) {
 	super(name);
@@ -37,19 +36,9 @@ public class MDSHandlerTester extends TestCase {
     public void setUp() throws Exception {
         String dburl = System.getProperty("dburl");
 
-        if (dburl != null && !dburl.equals("${dburl}"))
-        {
-            java.util.Properties props = new java.util.Properties();
+        java.util.Properties props = new java.util.Properties();
 
-            props.put("database-driver", "org.postgresql.Driver");
-            props.put("database-url", dburl);
-            props.put("default-table", "unknown_packets");
-
-            handlerThread = new  org.globus.usage.receiver.HandlerThread(
-                    null, null, props);
-
-            handler = new MDSAggregatorPacketHandler(dburl, "mds_packets");
-        }
+        handler = new MDSAggregatorPacketHandler(props);
     }
 
     private MDSAggregatorMonitorPacket createPacket()
@@ -81,11 +70,6 @@ public class MDSHandlerTester extends TestCase {
       * packets.
       */
     public void testInstantiatePacket() {
-        if (handler == null)
-        {
-            System.out.println("Skipping testInstantiatePacket");
-            return;
-        }
         MDSAggregatorMonitorPacket mdsPack;
         MDSAggregatorMonitorPacket mdsPack2;
         byte array[];
@@ -136,11 +120,6 @@ public class MDSHandlerTester extends TestCase {
     }
 
     public void testMDSHandler() {
-        if (handler == null)
-        {
-            System.out.println("Skipping testMDSHandler");
-            return;
-        }
         MDSAggregatorMonitorPacket mdsPack;
         MDSAggregatorMonitorPacket mdsPack2;
         try
@@ -161,9 +140,6 @@ public class MDSHandlerTester extends TestCase {
             Assert.fail(e.toString());
             return;
         }
-        System.out.println("handler="+handler.toString());
-        System.out.println("mdsPack="+mdsPack.toString());
         handler.handlePacket(mdsPack2);
-        // TODO query DB
     }
 }
