@@ -51,7 +51,7 @@ if test -d openssh; then
   ./install-autotools $GLOBUS_LOCATION
   cd ..
   echo ==================================================
-  cd openssh
+  cd gssapi-openssh/openssh
   if test -f make_gpt_dist; then
     echo Building GSI-OpenSSH GPT package from CVS...
     ./make_gpt_dist
@@ -66,7 +66,7 @@ if test -d openssh; then
       --with-privsep-user=$USER --with-privsep-path=$GLOBUS_LOCATION/var/empty
     make install
   fi
-  cd ..
+  cd ../..
 fi
 if test -f nightly.tar.gz; then
     echo ==================================================
@@ -96,7 +96,7 @@ if test -f nightly.tar.gz; then
         ./install-autotools $GLOBUS_LOCATION
         cd ..
         echo ==================================================
-        cd openssh
+        cd gssapi-openssh/openssh
         if test -f make_gpt_dist; then
             echo Building GSI-OpenSSH GPT package from CVS...
             gpt-build -force -verbose gsi_openssh-*.tar.gz $GLOBUS_FLAVOR_NAME \
