@@ -56,13 +56,15 @@ $be_cmd = "$globus_location/libexec/gfs-dynbe-client $register_args";
 print "registering be: $be_cmd\n";
 &register_db();
 $SIG{ALRM} = \&register_db;
-alarm 60;
+#alarm 60;
 
 # run tests
 print "starting tests\n";
 
 my $rc;
 my $rc = system("cd $globus_location/test/globus_ftp_client_test; ./globus-ftp-client-run-tests.pl");
+
+&clean_up();
 
 exit $rc;
 

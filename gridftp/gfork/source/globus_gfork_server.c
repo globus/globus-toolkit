@@ -4,7 +4,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
-#define GFORK_WAIT_FOR_KILL         15
+#define GFORK_WAIT_FOR_KILL         5
 
 extern char **environ;
 
@@ -33,6 +33,7 @@ static gfork_i_handle_t                 gfork_l_handle;
 static char *                           g_contact_string;
 
 static globus_hashtable_t               gfork_l_keepenvs;
+static globus_reltime_t                 gfork_l_sigchild_fake;
 
 static
 void
@@ -167,7 +168,7 @@ gfork_l_stop_posting(
     }
 
     gfork_l_done = GLOBUS_TRUE;
-    globus_xio_server_close(gfork_l_handle.server_xio);
+    globus_xio_server_register_close(gfork_l_handle.server_xio, NULL, NULL);
     globus_cond_signal(&gfork_l_cond);
 }
 
@@ -654,8 +655,7 @@ gfork_l_sigchld(
     int                                 child_rc;
     globus_result_t                     res;
 
-    gfork_log(2, "Sigchld\n");
-
+    gfork_log(2, "Sigint child\n");
     globus_mutex_lock(&gfork_l_mutex);
     {
         while((child_pid = waitpid(-1, &child_status, WNOHANG)) > 0)
@@ -683,14 +683,34 @@ gfork_l_sigchld(
             gfork_log(2, "Child %d completed\n", child_pid);
         }
 
-        res = globus_callback_register_signal_handler(
-            SIGCHLD,
-            GLOBUS_FALSE,
-            gfork_l_sigchld,
-            user_arg);
+#       ifdef BUILD_LITE
+        {
+            res = globus_callback_register_signal_handler(
+                SIGCHLD,
+                GLOBUS_FALSE,
+                gfork_l_sigchld,
+                user_arg);
+        }
+#       else
+        {
+            res = globus_callback_register_oneshot(
+                NULL,
+                &gfork_l_sigchild_fake,
+                gfork_l_sigchld,
+                user_arg);
+        }
+#       endif
         globus_assert(res == GLOBUS_SUCCESS);
     }
     globus_mutex_unlock(&gfork_l_mutex);
+}
+
+static
+void
+gfork_l_int_thats_it_cb(
+    void *                              user_arg)
+{
+    exit(1);
 }
 
 static
@@ -700,7 +720,9 @@ gfork_l_int_delay_cb(
 {
     pid_t                               kid_pid;
     globus_list_t *                     list;
+    globus_reltime_t                    delay;
 
+    gfork_log(2, "Sigint delay cb\n");
     globus_mutex_lock(&gfork_l_mutex);
     {
         /* kill the kids */
@@ -713,6 +735,12 @@ gfork_l_int_delay_cb(
 
             kill(SIGKILL, kid_pid);
         }
+        GlobusTimeReltimeSet(delay, GFORK_WAIT_FOR_KILL, 0);
+        globus_callback_register_oneshot(
+            NULL,
+            &delay,
+            gfork_l_int_thats_it_cb,
+            NULL);
     }
     globus_mutex_unlock(&gfork_l_mutex);
 
@@ -731,26 +759,28 @@ gfork_l_int(
 
     globus_mutex_lock(&gfork_l_mutex);
     {
-        gfork_l_dead_master(GLOBUS_FALSE);
-        gfork_l_stop_posting(GLOBUS_SUCCESS);
-
-        /* kill the kids */
-        list = gfork_l_pid_list;
-        while(!globus_list_empty(list))
         {
-            kid_pid = (pid_t) globus_list_first(list);
+            gfork_l_dead_master(GLOBUS_FALSE);
+            gfork_l_stop_posting(GLOBUS_SUCCESS);
 
-            list = globus_list_rest(list);
+            /* kill the kids */
+            list = gfork_l_pid_list;
+            while(!globus_list_empty(list))
+            {
+                kid_pid = (pid_t) globus_list_first(list);
 
-            kill(SIGINT, kid_pid);
+                list = globus_list_rest(list);
+
+                kill(SIGINT, kid_pid);
+            }
+
+            GlobusTimeReltimeSet(delay, GFORK_WAIT_FOR_KILL, 0);
+            globus_callback_register_oneshot(
+                NULL,
+                &delay,
+                gfork_l_int_delay_cb,
+                NULL);
         }
-
-        GlobusTimeReltimeSet(delay, GFORK_WAIT_FOR_KILL, 0);
-        globus_callback_register_oneshot(
-            NULL,
-            &delay,
-            gfork_l_int_delay_cb,
-            NULL);
     }
     globus_mutex_unlock(&gfork_l_mutex);
 }
@@ -770,6 +800,7 @@ gfork_l_server_accept_cb(
     globus_xio_system_socket_t          socket_handle;
     gfork_i_child_handle_t *            kid_handle;
     gfork_i_handle_t *                  gfork_handle;
+    char *                              err_msg;
     GForkFuncName(gfork_l_server_accept_cb);
 
     gfork_handle = (gfork_i_handle_t *) user_arg;
@@ -917,9 +948,10 @@ error_inpipe:
     globus_xio_register_close(handle, NULL, NULL, NULL);
 error_accept:
     globus_mutex_unlock(&gfork_l_mutex);
-    gfork_log(1, "GFORK has stopped accepting connections: %s\n",
-        globus_error_print_friendly(globus_error_peek(result)));
 
+    err_msg = globus_error_print_friendly(globus_error_peek(result));
+    gfork_log(1, "GFORK has stopped accepting connections: %s\n", err_msg);
+    globus_free(err_msg);
     /* log an error */
     return;
 }
@@ -941,6 +973,7 @@ gfork_init_server()
         goto error_contact;
     }
     gfork_log(0, "Listening on: %s\n", g_contact_string);
+    fprintf(stdout, "Listening on: %s\n", g_contact_string);
 
     /* start the master program */
     res = gfork_l_spawn_master(gfork_h);
@@ -979,7 +1012,6 @@ gfork_new_child(
 {
     globus_result_t                     res;
     int                                 rc = 1;
-    char                                tmp_str[32];
     GlobusGForkFuncName(gfork_new_child);
 
     gfork_log(1, "starting child %s\n", gfork_handle->server_argv[0]);
@@ -1417,17 +1449,32 @@ main(
         goto error_opts;
     }
 
+    GlobusTimeReltimeSet(gfork_l_sigchild_fake, 1, 0);
     globus_mutex_lock(&gfork_l_mutex);
     {
+        /* crappy linux thread work around */
+#       ifdef BUILD_LITE
+        {
+            result = globus_callback_register_signal_handler(
+                SIGCHLD,
+                GLOBUS_FALSE,
+                gfork_l_sigchld,
+                &gfork_l_options);
+        }
+#       else
+        {
+            result = globus_callback_register_oneshot(
+                NULL,
+                &gfork_l_sigchild_fake,
+                gfork_l_sigchld,
+                &gfork_l_options);
+        }
+#       endif
+
         result = globus_callback_register_signal_handler(
             SIGINT,
-            GLOBUS_FALSE,
+            GLOBUS_TRUE,
             gfork_l_int,
-            &gfork_l_options);
-        result = globus_callback_register_signal_handler(
-            SIGCHLD,
-            GLOBUS_FALSE,
-            gfork_l_sigchld,
             &gfork_l_options);
         if(result != GLOBUS_SUCCESS)
         {

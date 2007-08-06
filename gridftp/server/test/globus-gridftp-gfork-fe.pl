@@ -59,12 +59,12 @@ my $rc = system("cd $globus_location/test/globus_ftp_client_test; ./globus-ftp-c
 
 exit $rc;
 
-sub eatfd_db()
-{
-    my $junk = <SERVER>;
-    $SIG{ALRM} = \&eatfd_db;
-    alarm 20;
-}
+#sub eatfd_db()
+#{
+#    my $junk = <SERVER>;
+#    $SIG{ALRM} = \&eatfd_db;
+#    alarm 20;
+#}
 
 sub clean_up()
 {

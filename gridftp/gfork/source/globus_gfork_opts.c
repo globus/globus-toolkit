@@ -597,7 +597,7 @@ gfork_l_opts_log_file(
     }
     else
     {
-        gfork_h->log_fptr = fopen(opt[0], "w");
+        fptr = fopen(opt[0], "w");
         if(fptr == NULL)
         {
             result = GForkErrorStr("Could not open log file");

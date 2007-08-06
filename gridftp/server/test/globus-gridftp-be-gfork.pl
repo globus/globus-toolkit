@@ -50,28 +50,36 @@ if((0 != system("grid-proxy-info -exists -hours 2 >/dev/null 2>&1") / 256) && !d
 }
 
 # start registration program
+my $done = 0;
+$SIG{ALRM} = \&eatfd_db;
+alarm 20;
 
-#$SIG{ALRM} = \&eatfd_db;
-#alarm 20;
-
-#sub eatfd_db()
-#{
-#    my $junk = <SERVER>;
-#    $junk = <BE_SERVER>;
-#    $SIG{ALRM} = \&eatfd_db;
-#    alarm 20;
-#}
 
 # run tests
 print "starting tests\n";
 
-my $rc;
 my $rc = system("cd $globus_location/test/globus_ftp_client_test; ./globus-ftp-client-run-tests.pl");
 
+print "tests done\n";
+$done = 1;
+alarm 0;
+&clean_up();
 exit $rc;
+
+sub eatfd_db()
+{
+    my $junk = <SERVER>;
+    $junk = <BE_SERVER>;
+    if($done == 0)
+    {
+        $SIG{ALRM} = \&eatfd_db;
+        alarm 20;
+    }
+}
 
 sub clean_up()
 {
+    print "Cleaning up $gfork_be_pid and $gfork_pid\n";
     if($gfork_be_pid)
     {
         kill(9,-$gfork_be_pid);
