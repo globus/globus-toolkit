@@ -172,18 +172,13 @@ globus_l_gsi_cred_subject_cmp(
 
 /**
  * @name Read Credential
- * @ingroup globus_gsi_cred_operations
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_cred_operations
  * Read a Credential from a filesystem location. The credential
  * to read will be determined by the search order specified in the handle
  * attributes.  
- * NOTE:  This function always searches for the desired credential.
- *        If you don't want to perform a search, then don't use this
- *        function.  The search goes in the order of the handle
- *        attributes' search order.
- *
  * @param handle
  *        The credential handle to set.  This credential handle
  *        should already be initialized using globus_gsi_cred_handle_init.
@@ -197,8 +192,14 @@ globus_l_gsi_cred_subject_cmp(
  *        GLOBUS_SUCCESS if no errors occured, otherwise, an error object
  *        identifier is returned.
  *
- * @see globus_gsi_cred_read_proxy
- * @see globus_gsi_cred_read_cert_and_key
+ * @see globus_gsi_cred_read_proxy()
+ * @see globus_gsi_cred_read_cert_and_key()
+ *
+ * @note  This function always searches for the desired credential.
+ *        If you don't want to perform a search, then don't use this
+ *        function.  The search goes in the order of the handle
+ *        attributes' search order.
+ *
  */
 globus_result_t globus_gsi_cred_read(
     globus_gsi_cred_handle_t            handle,
@@ -804,10 +805,10 @@ globus_result_t globus_gsi_cred_read(
 
 /**
  * @name Reading Proxy Credentials
- * @ingroup globus_gsi_cred_operations
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_cred_operations
  * Read a proxy from a PEM file.
  *
  * @param handle
@@ -872,6 +873,7 @@ globus_result_t globus_gsi_cred_read_proxy(
 }
 
 /**
+ * @ingroup globus_gsi_cred_operations
  * Read a Proxy Credential from a BIO stream and set the 
  * credential handle to represent the read credential.
  * The values read from the stream, in order, will be
@@ -1031,10 +1033,10 @@ globus_gsi_cred_read_proxy_bio(
 
 /**
  * @name Read Key
- * @ingroup globus_gsi_cred_operations
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_cred_operations
  * Read a key from a PEM file.
  *
  * @param handle
@@ -1122,10 +1124,10 @@ globus_gsi_cred_read_key(
 
 /**
  * @name Read Cert
- * @ingroup globus_gsi_cred_operations
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_cred_operations
  * Read a cert from a file.  Cert should be in PEM format.
  *
  * @param handle
@@ -1246,10 +1248,10 @@ globus_result_t globus_gsi_cred_read_cert(
 
 /**
  * @name Read Cert & Key in PKCS12 Format
- * @ingroup globus_gsi_cred_operations
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_cred_operations
  * Read a cert & key from a file. The file should be in PKCS12 format.
  *
  * @param handle
@@ -1491,10 +1493,10 @@ globus_result_t globus_gsi_cred_read_pkcs12(
 
 /**
  * @name Write Credential
- * @ingroup globus_gsi_cred_operations
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_cred_operations
  * Write out a credential to a BIO.  The credential parameters written,
  * in order, are the signed certificate, the RSA private key,
  * and the certificate chain (a set of X509 certificates).
@@ -1577,6 +1579,7 @@ globus_result_t globus_gsi_cred_write(
 }    
     
 /**
+ * @ingroup globus_gsi_cred_operations
  * Write out a credential to a file.  The credential parameters written,
  * in order, are the signed certificate, the RSA private key,
  * and the certificate chain (a set of X509 certificates).
@@ -1704,10 +1707,10 @@ globus_result_t globus_gsi_cred_write_proxy(
 
 /**
  * @name Get the X509 certificate type (EEC, CA, proxy type, etc.)
- * @ingroup globus_gsi_cred_operations
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_cred_operations
  * Determine the type of the given X509 certificate For the list of possible
  * values returned, see globus_gsi_cert_utils_cert_type_t.
  *
@@ -1746,10 +1749,10 @@ globus_gsi_cred_get_cert_type(
 
 /**
  * @name Get PROXYCERTINFO Struct
- * @ingroup globus_i_gsi_cred
  */
 /* @{ */
 /** 
+ * @ingroup globus_i_gsi_cred
  * Get the PROXYCERTINFO struct from the X509 struct.
  * The PROXYCERTINFO struct that gets set must be freed
  * with a call to PROXYCERTINFO_free.

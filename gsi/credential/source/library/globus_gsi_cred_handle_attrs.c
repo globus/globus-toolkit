@@ -45,10 +45,10 @@
 
 /**
  * @name Credential Handle Attributes Initialization and Destruction
- * @ingroup globus_gsi_cred_handle_attrs
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_cred_handle_attrs
  * Initializes the immutable Credential Handle Attributes
  * The handle attributes are initialized as follows:
  *
@@ -115,6 +115,7 @@ globus_gsi_cred_handle_attrs_init(
 /* globus_gsi_cred_handle_attrs_init */
 
 /**
+ * @ingroup globus_gsi_cred_handle_attrs
  * Destroy the Credential Handle Attributes.  This function
  * does some cleanup and deallocation of the handle attributes.
  * 
@@ -150,10 +151,10 @@ globus_result_t globus_gsi_cred_handle_attrs_destroy(
 
 /**
  * @name Copy Credential Handle Attributes
- * @ingroup globus_gsi_cred_handle_attrs
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_cred_handle_attrs
  * Copy the Credential Handle Attributes. 
  *
  * @param source
@@ -231,10 +232,10 @@ globus_gsi_cred_handle_attrs_copy(
     
 /** 
  * @name Seting and Getting the CA Cert Dir
- * @ingroup globus_gsi_cred_handle_attrs
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_cred_handle_attrs
  * Set the Trusted CA Certificate Directory Location
  *
  * @param handle_attrs
@@ -278,6 +279,7 @@ globus_gsi_cred_handle_attrs_set_ca_cert_dir(
 
 /** 
  * Get the trusted ca cert directory
+ * @ingroup globus_gsi_cred_handle_attrs
  *
  * @param handle_attrs
  *        the credential handle attributes to get the trusted ca cert 
@@ -338,10 +340,10 @@ globus_gsi_cred_handle_attrs_get_ca_cert_dir(
 
 /**
  * @name Setting and Getting the Search Order
- * @ingroup globus_gsi_cred_handle_attrs
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_cred_handle_attrs
  * Set the search order for finding a user certificate.  The
  * default value is {SERVICE, HOST, PROXY, USER}
  *
@@ -402,6 +404,7 @@ globus_result_t globus_gsi_cred_handle_attrs_set_search_order(
 }
 
 /**
+ * @ingroup globus_gsi_cred_handle_attrs
  * Get the search order of the handle attributes
  *
  * @param handle_attrs

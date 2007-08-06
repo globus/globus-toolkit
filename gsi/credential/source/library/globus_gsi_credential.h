@@ -29,27 +29,20 @@
 #ifndef GLOBUS_INCLUDE_GLOBUS_GSI_CREDENTIAL_H
 #define GLOBUS_INCLUDE_GLOBUS_GSI_CREDENTIAL_H
 
-#ifndef EXTERN_C_BEGIN
-#    ifdef __cplusplus
-#        define EXTERN_C_BEGIN extern "C" {
-#        define EXTERN_C_END }
-#    else
-#        define EXTERN_C_BEGIN
-#        define EXTERN_C_END
-#    endif
-#endif
-
-EXTERN_C_BEGIN
-
 #include "globus_common.h"
 #include "globus_error_openssl.h"
 #include "globus_gsi_cred_constants.h"
 #include "globus_gsi_callback.h"
 #include "globus_gsi_cert_utils.h"
+#include "globus_gsi_cred_constants.h"
 
 #include "openssl/x509.h"
 #include "openssl/bio.h"
 #include "openssl/ssl.h"
+#include "globus_error_generic.h"
+#include "globus_error_openssl.h"
+
+EXTERN_C_BEGIN
 
 /**
  * @mainpage Globus GSI Credential
@@ -141,8 +134,6 @@ globus_module_descriptor_t              globus_i_gsi_credential_module;
  * Credential handles.
  */
 
-#include "globus_gsi_cred_constants.h"
-
 /**
  * GSI Credential Handle.
  * @ingroup globus_gsi_cred_handle
@@ -170,11 +161,6 @@ typedef struct globus_l_gsi_cred_handle_s *
 typedef struct globus_l_gsi_cred_handle_attrs_s *
                                         globus_gsi_cred_handle_attrs_t;
 
-
-#ifndef DOXYGEN
-
-#include "globus_error_generic.h"
-#include "globus_error_openssl.h"
 
 globus_result_t globus_gsi_cred_handle_init(
     globus_gsi_cred_handle_t *          handle,
@@ -336,7 +322,5 @@ globus_result_t globus_gsi_cred_handle_attrs_get_search_order(
     globus_gsi_cred_type_t *            search_order[]);/*{PROXY,USER,HOST}*/
 
 EXTERN_C_END
-
-#endif /* DOXYGEN */
 
 #endif /* GLOBUS_INCLUDE_GLOBUS_GSI_CREDENTIAL_H */

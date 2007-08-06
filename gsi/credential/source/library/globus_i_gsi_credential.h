@@ -179,11 +179,6 @@ extern FILE *                           globus_i_gsi_cred_debug_fstream;
 extern char *                    globus_l_gsi_cred_error_strings[];
 
 /**
- * Handle attributes.
- * @ingroup globus_gsi_credential_handle_attrs
- */
-
-/**
  * GSI Credential handle attributes implementation
  * @ingroup globus_gsi_credential_handle
  * @internal
