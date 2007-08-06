@@ -17,11 +17,13 @@
 #include "gaa.h"
 #include "gaa_private.h"
 #include <stdio.h>
+
+/** @defgroup gaa_core GAA Core Runtime
+ */
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 #define DEFAULT_STRSIZE 2048
 
-/** @defgroup gaa_str_static "static routines from gaa_core/gaa_str.c"
- */
-/** @defgroup gaa_core "gaacore routines"
+/** @defgroup gaa_str_static Static-scoped functions from gaa_str.c
  */
 
 struct strtbl {
@@ -57,8 +59,7 @@ gaa_l_str_int2str(int in, strtbl *stbl, char *buf, int bsize);
 static char *
 gaa_l_str_flags2str(int in, strtbl *stbl, char *buf, int bsize);
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_str_int2str()
+/**
  *
  *  @ingroup gaa_str_static
  * 
@@ -73,7 +74,6 @@ gaa_l_str_flags2str(int in, strtbl *stbl, char *buf, int bsize);
  *  @param bsize
  *         input size of buf
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static char *
 gaa_l_str_int2str(int			in,
 		  strtbl *		stbl,
@@ -89,8 +89,7 @@ gaa_l_str_int2str(int			in,
     return(buf);
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_str_flags2str()
+/**
  *
  *  @ingroup gaa_str_static
  * 
@@ -105,7 +104,6 @@ gaa_l_str_int2str(int			in,
  *  @param bsize
  *         input size of buf
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static char *
 gaa_l_str_flags2str(int			in,
 		    strtbl *		stbl,
@@ -130,8 +128,7 @@ gaa_l_str_flags2str(int			in,
     return(buf);
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_str_get()
+/**
  *
  *  @ingroup gaa_str_static
  * 
@@ -142,7 +139,6 @@ gaa_l_str_flags2str(int			in,
  *  @param sinfo
  *         input string info
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static char *
 gaa_l_str_get(gaaint_strinfo *sinfo)
 {
@@ -183,8 +179,7 @@ gaa_l_str_get(gaaint_strinfo *sinfo)
     return(sp ? (*sp) : 0);
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_str_free_sp()
+/**
  *
  *  @ingroup gaa_str_static
  *
@@ -194,7 +189,6 @@ gaa_l_str_get(gaaint_strinfo *sinfo)
  *  @param sp
  *         input/output pointer to free.
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static void
 gaa_l_str_free_sp(void *sp)
 {
@@ -207,8 +201,7 @@ gaa_l_str_free_sp(void *sp)
     }
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_str_set()
+/**
  *
  *  @ingroup gaa_str_static
  *
@@ -219,7 +212,6 @@ gaa_l_str_free_sp(void *sp)
  *  @param s
  *         input value to set sinfo's thread-specific data to
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static 
 gaa_l_str_set(gaaint_strinfo *		sinfo,
 	      char			*s)
@@ -231,8 +223,9 @@ gaa_l_str_set(gaaint_strinfo *		sinfo,
     str[sinfo->size-1] = '\0';
     return(GAA_STATUS(GAA_S_SUCCESS, 0));
 }
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
-/** gaacore_set_err()
+/**
  *
  *  @ingroup gaa_core
  *
@@ -247,7 +240,7 @@ gaacore_set_err(char *s)
     return(gaa_l_str_set(&Errinfo, s));
 }
 
-/** gaa_get_err()
+/**
  *
  *  @ingroup gaa
  *
@@ -259,7 +252,7 @@ gaa_get_err()
     return(gaa_l_str_get(&Errinfo));
 }
 
-/** gaa_get_err()
+/**
  *
  *  @ingroup gaa
  *
@@ -274,7 +267,7 @@ gaa_set_callback_err(char *s)
     return(gaa_l_str_set(&Callback_errinfo, s));
 }
 
-/** gaa_get_err()
+/**
  *
  *  @ingroup gaa
  *
@@ -286,7 +279,7 @@ gaa_get_callback_err()
     return(gaa_l_str_get(&Callback_errinfo));
 }
 
-/** gaacore_condstat2str()
+/**
  *
  *  @ingroup gaa_core
  *
@@ -312,7 +305,7 @@ gaacore_condstat2str(int status)
     return(0);
 }
 
-/** gaacore_majstat_str()
+/**
  *
  *  @ingroup gaa_core
  *
@@ -375,13 +368,13 @@ gaacore_majstat_str(int status)
 }
 
 
-/** gaacore_right_type_to_string()
+/**
  *
  *  @ingroup gaa_core
  *
  *  Return a string representation of the right type.
  *
- *  @param type
+ *  @param rtype
  *         input right type
  */
 char *
@@ -400,13 +393,13 @@ gaacore_right_type_to_string(gaa_right_type rtype)
     return(0);
 }
 
-/** gaacore_cred_type_to_string()
+/**
  *
  *  @ingroup gaa_core
  *
  *  Return a string representation of the credential type.
  *
- *  @param type
+ *  @param ctype
  *         input credential type
  */
 char *

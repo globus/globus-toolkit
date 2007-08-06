@@ -18,11 +18,15 @@
 #include "gaa_private.h"
 #include <string.h>
 
-/** @defgroup gaa "gaa"
+/** @defgroup gaa Generic Authorization and Access Control API
  */
-/** @defgroup gaa_c_static "static routines from gaa_core/gaa.c"
+
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
+ * @file gaa.c GAA Core
  */
-/** @defgroup gaa_internal "internal gaa routines"
+/**
+ * @defgroup gaa_c_static Static-scope functions in gaa.c
  */
 static int
 gaa_l_order_mechinfo(void *d1, void *d2);
@@ -126,8 +130,9 @@ gaa_l_checkdiff_authr_info(gaa_authr_info *a1, gaa_authr_info *a2);
 
 static int
 gaa_l_checkdiff_creds(void *c1, void *c2);
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
-/** gaa_new_condition()
+/**
  *
  * @ingroup gaa
  *
@@ -200,7 +205,7 @@ gaa_new_condition(gaa_condition **	cond,
     return(status);
 }
 
-/** gaa_free_condition()
+/**
  *
  *  @ingroup gaa
  *
@@ -221,13 +226,15 @@ gaa_free_condition(gaa_condition *cond)
     free(cond);
 }
 
-/** gaa_new_request_right()
+/**
  *
  *  @ingroup gaa
  *
  *  Allocate a new request right structure and fill it in with the specified
  *  values.
  *
+ *  @param gaa
+ *         the gaa pointer to inspect
  *  @param right
  *         output right pointer
  *  @param authority
@@ -288,7 +295,7 @@ gaa_new_request_right(gaa_ptr		  gaa,
     return(gaa_new_request_right_rawval(gaa, right, authority, value));
 }
 
-/** gaa_new_request_right_rawval()
+/**
  *
  *  @ingroup gaa
  *
@@ -301,7 +308,7 @@ gaa_new_request_right(gaa_ptr		  gaa,
  *         output right pointer
  *  @param authority
  *         input authority
- *  @param val
+ *  @param value
  *         input value
  *
  *  @retval GAA_S_SUCCESS
@@ -386,7 +393,7 @@ gaa_new_request_right_rawval(gaa_ptr	         gaa,
     return(status);
 }
 
-/** gaa_free_request_right()
+/**
  *
  *  @ingroup gaa
  *
@@ -409,9 +416,8 @@ gaa_free_request_right(gaa_request_right *right)
     free(right);
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-
-/** gaa_l_free_gaaint_request_right()
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
  *
  *  @ingroup gaa_c_static
  *
@@ -420,15 +426,15 @@ gaa_free_request_right(gaa_request_right *right)
  *  @param i
  *         input/output internal request right to free.
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static void
 gaa_l_free_gaaint_request_right(gaaint_request_right *i)
 {
     if (i)
 	free(i);
 }
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
-/** gaa_add_condition()
+/**
  *
  *  @ingroup gaa
  *
@@ -449,7 +455,7 @@ gaa_add_condition(gaa_policy_right *	right,
     return(gaa_i_list_add_entry(right->conditions, condition));
 }
 
-/** gaa_new_gaa()
+/**
  *
  *  @ingroup gaa
  *
@@ -515,7 +521,7 @@ gaa_new_gaa(gaa_ptr *gaa)
     return(status);
 }
 
-/** gaa_new_sc()
+/**
  *
  *  @ingroup gaa
  *
@@ -597,7 +603,7 @@ gaa_new_sc(gaa_sc_ptr *sc)
     return(status);
 }
 
-/** gaa_new_sec_attrb()
+/**
  *
  *  @ingroup gaa
  *
@@ -640,7 +646,7 @@ gaa_new_sec_attrb(gaa_sec_attrb **	a,
     return(gaa_l_init_sec_attrb(*a, type, authority, value));
 }
 
-/** gaa_free_sec_attrb()
+/**
  *
  *  @ingroup gaa
  *
@@ -659,7 +665,7 @@ gaa_free_sec_attrb(gaa_sec_attrb *a)
     }
 }
 
-/** gaa_new_identity_info()
+/**
  *
  *  @ingroup gaa
  *
@@ -710,8 +716,7 @@ gaa_new_identity_info(gaa_ptr gaa, gaa_identity_info **info)
     return(status);
 }
 
-/** gaa_new_cred()
- *
+/**
  *  @ingroup gaa
  *
  *  Create a new credential and fill it in with appropriate values.
@@ -720,6 +725,8 @@ gaa_new_identity_info(gaa_ptr gaa, gaa_identity_info **info)
  *         input gaa pointer
  *  @param sc
  *         input security context
+ *  @param cred
+ *         credential to initialize
  *  @param mech_type
  *         input credential mechanism type
  *  @param mech_spec_cred
@@ -791,7 +798,7 @@ gaa_new_cred(gaa_ptr			gaa,
     return(status);
 }
 
-/** gaa_free_identity_info()
+/**
  *
  *  @ingroup gaa
  *
@@ -809,7 +816,7 @@ gaa_free_identity_info(gaa_identity_info *info)
     free(info);
 }
 
-/** gaa_new_authr_info()
+/**
  *
  *  @ingroup gaa
  *
@@ -866,7 +873,7 @@ gaa_new_authr_info(gaa_ptr	    gaa,
     return(status);
 }
 
-/** gaa_free_authr_info()
+/**
  *
  *  @ingroup gaa
  *
@@ -886,7 +893,7 @@ gaa_free_authr_info(gaa_authr_info *info)
     free(info);
 }
 
-/** gaa_add_cred()
+/**
  *
  *  @ingroup gaa
  *
@@ -941,8 +948,8 @@ gaa_add_cred(gaa_ptr	gaa,
     }
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_free_getpolicy_callback()
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
  *
  *  @ingroup gaa_c_static
  *  
@@ -951,7 +958,6 @@ gaa_add_cred(gaa_ptr	gaa,
  *  @param getp
  *         input/output structure to free
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static void
 gaa_l_free_getpolicy_callback(gaaint_getpolicy_callback *getp)
 {
@@ -972,8 +978,7 @@ gaa_l_x_free_authorization_identity_callback(gaaint_x_get_authorization_identity
     free(gc);
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_free_matchrights_callback()
+/**
  *
  *  @ingroup gaa_c_static
  *  
@@ -982,7 +987,6 @@ gaa_l_x_free_authorization_identity_callback(gaaint_x_get_authorization_identity
  *  @param mr
  *         input/output structure to free
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static void
 gaa_l_free_matchrights_callback(gaaint_matchrights_callback *mr)
 {
@@ -993,8 +997,7 @@ gaa_l_free_matchrights_callback(gaaint_matchrights_callback *mr)
     free(mr);
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_new_getpolicy_callback()
+/**
  *
  *  @ingroup gaa_c_static
  *  
@@ -1019,7 +1022,6 @@ gaa_l_free_matchrights_callback(gaaint_matchrights_callback *mr)
  *  gaa_l_free_getpolicy_callback().  This will happen automatically
  *  if this structure is part of a gaa structure freed with gaa_free_gaa().
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static gaa_status
 gaa_l_new_getpolicy_callback(gaaint_getpolicy_callback **gp,
 			     gaa_getpolicy_func		 func,
@@ -1039,8 +1041,7 @@ gaa_l_new_getpolicy_callback(gaaint_getpolicy_callback **gp,
     return(status);
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_new_matchrights_callback()
+/**
  *
  *  @ingroup gaa_c_static
  *  
@@ -1064,7 +1065,6 @@ gaa_l_new_getpolicy_callback(gaaint_getpolicy_callback **gp,
  *  gaa_l_free_matchrights_callback().  This will happen automatically
  *  if this structure is part of a gaa structure freed with gaa_free_gaa().
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static gaa_status
 gaa_l_new_matchrights_callback(gaaint_matchrights_callback **m,
 			       gaa_matchrights_func          func,
@@ -1082,15 +1082,15 @@ gaa_l_new_matchrights_callback(gaaint_matchrights_callback **m,
     return(status);
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_x_new_get_authorization_identity_callback()
+/**
  *
  *  @ingroup gaa_c_static
  *  
- *  Create a gaaint_x_get_authorization_identity_callback structure and fill it with
- *  appropriate values.  Called by gaa_x_set_authorization_identity_callback().
+ *  Create a gaaint_x_get_authorization_identity_callback structure and fill it
+ *  with appropriate values.  Called by
+ *  gaa_x_set_authorization_identity_callback().
  *
- *  @param ap
+ *  @param gp
  *         output structure to create
  *  @param func
  *         input callback function
@@ -1108,7 +1108,6 @@ gaa_l_new_matchrights_callback(gaaint_matchrights_callback **m,
  *  gaa_l_free_getpolicy_callback().  This will happen automatically
  *  if this structure is part of a gaa structure freed with gaa_free_gaa().
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static gaa_status
 gaa_l_x_new_get_authorization_identity_callback(gaaint_x_get_authorization_identity_callback **gp,
 			     gaa_x_get_authorization_identity_func		 func,
@@ -1127,9 +1126,10 @@ gaa_l_x_new_get_authorization_identity_callback(gaaint_x_get_authorization_ident
     (*gp)->free = freefunc;
     return(status);
 }
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 
-/** gaa_set_getpolicy_callback()
+/**
  *
  *  @ingroup gaa
  *
@@ -1166,7 +1166,7 @@ gaa_set_getpolicy_callback(gaa_ptr	      gaa,
     return(gaa_l_new_getpolicy_callback(&gaa->getpolicy, func, param, freefunc));
 }
 
-/** gaa_x_set_get_authorization_identity_callback()
+/**
  *
  *  @ingroup gaa
  *
@@ -1200,7 +1200,7 @@ gaa_x_set_get_authorization_identity_callback(gaa_ptr	      gaa,
     return(gaa_l_x_new_get_authorization_identity_callback(&gaa->authorization_identity_callback, func, param, freefunc));
 }
 
-/** gaa_set_matchrights_callback()
+/**
  *
  *  @ingroup gaa
  *
@@ -1237,7 +1237,7 @@ gaa_set_matchrights_callback(gaa_ptr	          gaa,
 					  freefunc));
 }
 
-/** gaa_free_sc()
+/**
  *
  *  @ingroup gaa
  *
@@ -1259,7 +1259,7 @@ gaa_free_sc(gaa_sc_ptr sc)
     free(sc);
 }
 
-/** gaa_free_gaa()
+/**
  *
  *  @ingroup gaa
  *
@@ -1282,8 +1282,8 @@ gaa_free_gaa(gaa_ptr gaa)
     free(gaa);
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_new_mechinfo()
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
  *
  *  @ingroup gaa_c_static
  *
@@ -1315,7 +1315,6 @@ gaa_free_gaa(gaa_ptr gaa)
  *  gaa_l_free_mechinfo().  This will happen automatically if this structure
  *  is part of a gaa structure freed with gaa_free_gaa().
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static gaa_status
 gaa_l_new_mechinfo(gaaint_mechinfo **	minfo,
 		   gaa_string_data	mech_type,
@@ -1351,8 +1350,7 @@ gaa_l_new_mechinfo(gaaint_mechinfo **	minfo,
     return(status);
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_free_mechinfo()
+/**
  *
  *  @ingroup gaa_c_static
  *
@@ -1361,7 +1359,6 @@ gaa_l_new_mechinfo(gaaint_mechinfo **	minfo,
  *  @param minfo
  *         input/output structure to free.
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static void
 gaa_l_free_mechinfo(gaaint_mechinfo *minfo)
 {
@@ -1373,8 +1370,7 @@ gaa_l_free_mechinfo(gaaint_mechinfo *minfo)
     free(minfo);
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_order_mechinfo()
+/**
  *
  *  @ingroup gaa_c_static
  *
@@ -1387,7 +1383,6 @@ gaa_l_free_mechinfo(gaaint_mechinfo *minfo)
  *  @param d2
  *         input mechinfo to compare
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static int
 gaa_l_order_mechinfo(void *d1,
 		     void *d2)
@@ -1404,8 +1399,9 @@ gaa_l_order_mechinfo(void *d1,
 
     return(strcmp(m1->mech_type, m2->mech_type));
 }
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
-/** gaa_add_mech_info()
+/**
  *
  *  @ingroup gaa
  *
@@ -1436,7 +1432,7 @@ gaa_l_order_mechinfo(void *d1,
  *  @param param
  *         input mechinfo parameter -- passed as an argument to cred_pull,
  *         cred_eval, and cred_verify whenever they're called.
- *  @param freeparam
+ *  @param freeparams
  *         input freeparam function -- called to free param when the
  *         gaa pointer is freed.
  *
@@ -1470,8 +1466,8 @@ gaa_add_mech_info(gaa_ptr		gaa,
     return(gaa_i_list_add_entry(gaa->mechinfo, minfo));
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_find_mechinfo()
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
  *
  *  @ingroup gaa_c_static
  *
@@ -1486,7 +1482,6 @@ gaa_add_mech_info(gaa_ptr		gaa,
  *  @retval 0
  *          No appropriate mechinfo was found.
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static gaaint_mechinfo *
 gaa_l_find_mechinfo(gaa_ptr		gaa,
 		    gaa_string_data	mech_type)
@@ -1505,8 +1500,9 @@ gaa_l_find_mechinfo(gaa_ptr		gaa,
 	}
     return(0);
 }
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
-/** gaa_get_object_policy_info()
+/**
  *
  *  @ingroup gaa
  *
@@ -1542,8 +1538,8 @@ gaa_get_object_policy_info(gaa_string_data	object,
     return(gaa->getpolicy->func(gaa, policy, object, gaa->getpolicy->param));
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_new_gaaint_cond()
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
  *
  *  @ingroup gaa_c_static
  *
@@ -1557,7 +1553,6 @@ gaa_get_object_policy_info(gaa_string_data	object,
  *  @retval GAA_S_SUCCESS
  *          success
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static gaa_status
 gaa_l_new_gaaint_cond(gaaint_cond **ic, gaa_condition *cond)
 {
@@ -1567,8 +1562,7 @@ gaa_l_new_gaaint_cond(gaaint_cond **ic, gaa_condition *cond)
     return(GAA_S_SUCCESS);
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_new_gaaint_request_right()
+/**
  *
  *  @ingroup gaa_c_static
  *
@@ -1583,7 +1577,6 @@ gaa_l_new_gaaint_cond(gaaint_cond **ic, gaa_condition *cond)
  *  @retval GAA_S_SUCCESS
  *          success
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static gaa_status
 gaa_l_new_gaaint_request_right(gaaint_request_right **i,
 			       gaa_freefunc	      freefunc)
@@ -1597,8 +1590,7 @@ gaa_l_new_gaaint_request_right(gaaint_request_right **i,
     return(GAA_S_SUCCESS);
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_init_sec_attrb()
+/**
  *
  *  @ingroup gaa_c_static
  *
@@ -1616,7 +1608,6 @@ gaa_l_new_gaaint_request_right(gaaint_request_right **i,
  *  @retval GAA_S_SUCCESS
  *          success
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static gaa_status
 gaa_l_init_sec_attrb(gaa_sec_attrb *	a,
 		     gaa_cred_type	type,
@@ -1640,8 +1631,7 @@ gaa_l_init_sec_attrb(gaa_sec_attrb *	a,
     return(status);
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_clear_sec_attrb()
+/**
  *
  *  @ingroup gaa_c_static
  *
@@ -1651,7 +1641,6 @@ gaa_l_init_sec_attrb(gaa_sec_attrb *	a,
  *  @param a
  *         input/output sec attrb to clear
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static void
 gaa_l_clear_sec_attrb(gaa_sec_attrb *a)
 {
@@ -1663,8 +1652,9 @@ gaa_l_clear_sec_attrb(gaa_sec_attrb *a)
 	a->value = 0;
     }
 }
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
-/** gaa_pull_creds()
+/**
  *
  *  @ingroup gaa
  *
@@ -1740,7 +1730,7 @@ gaa_pull_creds(gaa_ptr			gaa,
     return(status);
 }
 
-/** gaa_new_cond_eval_callback()
+/**
  *
  *  @ingroup gaa
  *
@@ -1803,7 +1793,7 @@ gaa_new_cond_eval_callback(gaa_cond_eval_callback_ptr *cb,
     return(GAA_S_SUCCESS);
 }
 
-/** gaa_free_cond_eval_callback()
+/**
  *
  *  @ingroup gaa
  *
@@ -1834,8 +1824,8 @@ gaa_free_cond_eval_callback(gaa_cond_eval_callback_ptr cb)
     }
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_new_cond_eval_entry()
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
  *
  *  @ingroup gaa_c_static
  *
@@ -1860,7 +1850,6 @@ gaa_free_cond_eval_callback(gaa_cond_eval_callback_ptr cb)
  *  @retval GAA_S_INVALID_ARG
  *          ce is null
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static gaa_status
 gaa_l_new_cond_eval_entry(gaaint_cond_eval_entry **  ce,
 			  char *		     type,
@@ -1904,8 +1893,7 @@ gaa_l_new_cond_eval_entry(gaaint_cond_eval_entry **  ce,
     return(status);
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_free_cond_eval_entry()
+/**
  *
  *  @ingroup gaa_c_static
  *
@@ -1915,7 +1903,6 @@ gaa_l_new_cond_eval_entry(gaaint_cond_eval_entry **  ce,
  *  @param ce
  *  input/output entry to free.
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static void
 gaa_l_free_cond_eval_entry(gaaint_cond_eval_entry *ce)
 {
@@ -1927,8 +1914,7 @@ gaa_l_free_cond_eval_entry(gaaint_cond_eval_entry *ce)
     free(ce);
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_order_cond_eval_entry()
+/**
  *
  *  @ingroup gaa_c_static
  *
@@ -1943,7 +1929,6 @@ gaa_l_free_cond_eval_entry(gaaint_cond_eval_entry *ce)
  *  @param c2
  *         input entry to compare
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static int
 gaa_l_order_cond_eval_entry(gaaint_cond_eval_entry *c1,
 			    gaaint_cond_eval_entry *c2)
@@ -1987,8 +1972,9 @@ gaa_l_order_cond_eval_entry(gaaint_cond_eval_entry *c1,
      */
     return(0);
 }
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
-/** gaa_add_cond_eval_callback()
+/**
  *
  *  @ingroup gaa
  *
@@ -2045,7 +2031,7 @@ gaa_add_cond_eval_callback(gaa_ptr		      gaa,
     return(gaa_i_list_add_entry(gaa->cond_callbacks, ce));
 }
 
-/** gaa_getcreds()
+/**
  *
  *  @ingroup gaa
  *
@@ -2107,8 +2093,8 @@ gaa_getcreds(gaa_ptr			gaa,
     return(status);
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_free_gaaint_cond()
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
  *
  *  @ingroup gaa_c_static
  * 
@@ -2118,14 +2104,12 @@ gaa_getcreds(gaa_ptr			gaa,
  *  @param c
  *         input/output gaaint_cond to free.
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static void
 gaa_l_free_gaaint_cond(gaaint_cond *c)
 {
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_order_cond_eval_entry()
+/**
  *
  *  @ingroup gaa_c_static
  *
@@ -2138,7 +2122,6 @@ gaa_l_free_gaaint_cond(gaaint_cond *c)
  *  @param a2
  *         input entry to compare
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static int
 gaa_l_order_authinfo(gaaint_authinfo *a1, gaaint_authinfo *a2)
 {
@@ -2154,8 +2137,9 @@ gaa_l_order_authinfo(gaaint_authinfo *a1, gaaint_authinfo *a2)
 	return(1);
     return(0);
 }
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
-/** gaa_new_req_rightlist()
+/**
  *
  *  @ingroup gaa
  *
@@ -2170,7 +2154,7 @@ gaa_new_req_rightlist()
     return(gaa_i_new_silo((gaa_freefunc)gaa_free_request_right));
 }
 
-/** gaa_add_request_right()
+/**
  *
  *  @ingroup gaa
  *
@@ -2188,7 +2172,7 @@ gaa_add_request_right(gaa_list_ptr	 rightlist,
     return(gaa_i_list_add_entry(rightlist, right));
 }
 
-/** gaa_add_option()
+/**
  *
  *  @ingroup gaa
  *
@@ -2233,8 +2217,8 @@ gaa_add_option(gaa_request_right *	right,
     return(gaa_i_list_add_entry(right->options, opt));
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_new_option()
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
  *
  *  @ingroup gaa_c_static
  *
@@ -2248,11 +2232,10 @@ gaa_add_option(gaa_request_right *	right,
  *         input option authority
  *  @param value
  *         input option value
- *  @param freefunc
+ *  @param freeval
  *         optional input function to be called to free value when
  *         opt is freed.
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static gaa_status
 gaa_l_new_option(gaa_request_option **	opt,
 		 char *			type,
@@ -2292,8 +2275,7 @@ gaa_l_new_option(gaa_request_option **	opt,
     return(status);
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_new_gaaint_request_option()
+/**
  *
  *  @ingroup gaa_c_static
  *
@@ -2306,7 +2288,6 @@ gaa_l_new_option(gaa_request_option **	opt,
  *         optional input function to be called to free the request
  *         option's value when that option is freed.
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static gaa_status
 gaa_l_new_gaaint_request_option(gaaint_request_option **i,
 				gaa_freefunc		freefunc)
@@ -2320,8 +2301,7 @@ gaa_l_new_gaaint_request_option(gaaint_request_option **i,
     return(GAA_S_SUCCESS);
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_free_request_option()
+/**
  *
  *  @ingroup gaa_c_static
  *
@@ -2331,7 +2311,6 @@ gaa_l_new_gaaint_request_option(gaaint_request_option **i,
  *  @param option
  *         input/output option to free
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static void
 gaa_l_free_request_option(gaa_request_option *option)
 {
@@ -2346,25 +2325,24 @@ gaa_l_free_request_option(gaa_request_option *option)
     free(option);
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_free_gaaint_request_option()
+/**
  *
  *  @ingroup gaa_c_static
  *
  *  Free the internal representation of a request option.  Called by
  *  gaa_l_free_request_option().
  *
- *  @param option
+ *  @param i
  *         input/output option to free
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static void
 gaa_l_free_gaaint_request_option(gaaint_request_option *i)
 {
     gaa_i_free_simple(i);
 }
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
-/** gaa_free_cred()
+/**
  *
  *  @ingroup gaa
  *
@@ -2412,7 +2390,7 @@ gaa_free_cred(gaa_cred *cred)
     free(cred);
 }
 
-/** gaa_new_attribute_info()
+/**
  *
  *  @ingroup gaa
  *
@@ -2511,7 +2489,7 @@ gaa_free_attribute_info(gaa_attribute_info *info)
     free(info);
 }
 
-/** gaa_add_cred_condition()
+/**
  *
  *  @ingroup gaa
  *
@@ -2567,7 +2545,7 @@ gaa_add_cred_condition(gaa_cred	*	cred,
     }
 }
 
-/** gaa_add_authr_right()
+/**
  *
  *  @ingroup gaa
  *
@@ -2610,7 +2588,7 @@ gaa_add_authr_right(gaa_cred *		cred,
 				  right));
 }
 
-/** gaa_request_rightval_string()
+/**
  *
  *  @ingroup gaa
  *
@@ -2656,7 +2634,7 @@ gaa_request_rightval_string(gaa_ptr	gaa,
     return(ai->rvinfo->val2str(authority, val, buf, bsize, ai->params));
 }
 
-/** gaa_policy_rightval_string()
+/**
  *
  *  @ingroup gaa
  *
@@ -2698,8 +2676,8 @@ gaa_policy_rightval_string(gaa_ptr gaa, char *authority, void *val, char *buf, i
     return(ai->pvinfo->val2str(authority, val, buf, bsize, ai->params));
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_checkdiff_conditions()
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
  *
  *  @ingroup gaa_c_static
  *
@@ -2716,7 +2694,6 @@ gaa_policy_rightval_string(gaa_ptr gaa, char *authority, void *val, char *buf, i
  *  @retval 1
  *          conditions are different
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static int
 gaa_l_checkdiff_conditions(gaa_condition *c1,
 			   gaa_condition *c2)
@@ -2746,17 +2723,16 @@ gaa_l_checkdiff_conditions(gaa_condition *c1,
     return(0);
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_checkdiff_creds()
+/**
  *
  *  @ingroup gaa_c_static
  *
  *  Check to see whether two credentials are different.  Used by
  *  gaa_add_cred() to avoid adding the same credential twice.
  *
- *  @param c1
+ *  @param cred1
  *         input credential to compare
- *  @param c2
+ *  @param cred2
  *         input credential to compare
  *
  *  @retval 0
@@ -2764,7 +2740,6 @@ gaa_l_checkdiff_conditions(gaa_condition *c1,
  *  @retval 1
  *          credentials are different
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static int
 gaa_l_checkdiff_creds(void *cred1,
 		      void *cred2)
@@ -2807,8 +2782,7 @@ gaa_l_checkdiff_creds(void *cred1,
     }
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_checkdiff_id_info()
+/**
  *
  *  @ingroup gaa_c_static
  *
@@ -2825,7 +2799,6 @@ gaa_l_checkdiff_creds(void *cred1,
  *  @retval 1
  *          structures are different
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static int
 gaa_l_checkdiff_id_info(gaa_identity_info *i1,
 			gaa_identity_info *i2)
@@ -2838,8 +2811,7 @@ gaa_l_checkdiff_id_info(gaa_identity_info *i1,
     return(gaa_l_checkdiff_condlists(i1->conditions, i2->conditions));
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_checkdiff_sec_attrb()
+/**
  *
  *  @ingroup gaa_c_static
  *
@@ -2856,7 +2828,6 @@ gaa_l_checkdiff_id_info(gaa_identity_info *i1,
  *  @retval 1
  *          structures are different
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static int
 gaa_l_checkdiff_sec_attrb(gaa_sec_attrb *a1,
 			  gaa_sec_attrb *a2)
@@ -2884,8 +2855,7 @@ gaa_l_checkdiff_sec_attrb(gaa_sec_attrb *a1,
     return(0);
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_checkdiff_authr_info()
+/**
  *
  *  @ingroup gaa_c_static
  *
@@ -2905,15 +2875,13 @@ gaa_l_checkdiff_sec_attrb(gaa_sec_attrb *a1,
  *  @note
  *  In this implementation, this function always returns 1.
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static int
 gaa_l_checkdiff_authr_info(gaa_authr_info *a1, gaa_authr_info *a2)
 {
     return(1);
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_checkdiff_attr_info()
+/**
  *
  *  @ingroup gaa_c_static
  *
@@ -2930,7 +2898,6 @@ gaa_l_checkdiff_authr_info(gaa_authr_info *a1, gaa_authr_info *a2)
  *  @retval 1
  *          structures are different
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static int
 gaa_l_checkdiff_attr_info(gaa_attribute_info *a1,
 			  gaa_attribute_info *a2)
@@ -2965,8 +2932,7 @@ gaa_l_checkdiff_attr_info(gaa_attribute_info *a1,
 }
 
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_checkdiff_condlists()
+/**
  *
  *  @ingroup gaa_c_static
  *
@@ -2983,7 +2949,6 @@ gaa_l_checkdiff_attr_info(gaa_attribute_info *a1,
  *  @retval 1
  *          lists are different
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static int
 gaa_l_checkdiff_condlists(gaa_list_ptr l1,
 			  gaa_list_ptr l2)
@@ -3005,8 +2970,9 @@ gaa_l_checkdiff_condlists(gaa_list_ptr l1,
     else
 	return(0);
 }
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
-/** gaa_verify_cred()
+/**
  *
  *  @ingroup gaa
  *
@@ -3032,13 +2998,11 @@ gaa_verify_cred(gaa_cred *cred)
 }
 
 /**
- * gaa_x_getpolicy_param
- *
  * Returns the parameter for the installed getpolicy plugin.
  *
  * @param gaa
  *        input -- the gaa pointer to inspect
- * @param gaa
+ * @param param
  *        output  -- a pointer to the getpolicy callback's parameter.
 
  *  @retval GAA_S_SUCCESS

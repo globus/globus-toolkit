@@ -18,7 +18,8 @@
 #include "gaa_private.h"
 #include <string.h>
 
-/** @defgroup gaa_authinfo_static "static routines from gaa_core/gaa_authinfo.c"
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/** @defgroup gaa_authinfo_static Static-scoped functions from gaa_authinfo.c
  */
 
 static gaa_status
@@ -26,9 +27,10 @@ gaa_l_new_authinfo(gaaint_authinfo **ai, char *authority,
 		   gaa_valinfo_ptr pvinfo, gaa_valinfo_ptr rvinfo,
 		   gaa_valmatch_func match, void *params,
 		   gaa_freefunc freeparams);
+#endif
 
 
-/** gaa_add_authinfo()
+/**
  *
  *  @ingroup gaa
  *
@@ -83,7 +85,7 @@ gaa_add_authinfo(gaa_ptr		gaa,
     return(status);
 }
 
-/** gaa_i_find_authinfo()
+/**
  *
  *  @ingroup gaa_internal
  *
@@ -103,7 +105,7 @@ gaa_i_find_authinfo(gaa_ptr		gaa,
     return(gaa_i_auth2authinfo(gaa, right->authority));
 }
 
-/** gaa_i_auth2authinfo()
+/**
  *
  *  @ingroup gaa_internal
  *
@@ -130,7 +132,7 @@ gaa_i_auth2authinfo(gaa_ptr		gaa,
     return(0);
 }
 
-/** gaa_i_free_authinfo()
+/**
  *
  *  @ingroup gaa_internal
  *
@@ -155,7 +157,7 @@ gaa_i_free_authinfo(gaaint_authinfo *ai)
 }
 
 #ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_new_authinfo()
+/**
  *
  *  @ingroup gaa_authinfo_static
  *
@@ -222,7 +224,7 @@ gaa_l_new_authinfo(gaaint_authinfo **	ai,
 }
 
 
-/** gaa_new_valinfo()
+/**
  *
  *  @ingroup gaa
  *
@@ -299,7 +301,7 @@ gaa_free_valinfo(gaa_valinfo_ptr valinfo)
     gaa_i_free_simple(valinfo);
 }
 
-/** gaacore_has_matchrights_callback()
+/**
  *
  * @ingroup gaa_core
  *
@@ -320,7 +322,7 @@ gaacore_has_matchrights_callback(gaa_ptr gaa)
     return(gaa->matchrights != 0);
 }
 
-/** gaacore_has_default_authinfo_callback()
+/**
  *
  * @ingroup gaa_core
  *
