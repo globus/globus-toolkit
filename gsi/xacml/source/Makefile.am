@@ -31,11 +31,11 @@ libxacml_common_la_SOURCES = xacml_response.cpp \
                                    xacml_request.cpp \
                                    xacml_i.h xacml.h \
                                    xacml_datatypes.h xacml_datatypes.cpp
+libxacml_common_la_LIBADD = -lgsoapssl++ -lssl -lcrypto
 
 nodist_libxacml_soap_common_la_SOURCES = soapStub.h soapH.h soapC.cpp
 libxacml_soap_common_la_SOURCES = stlvector.h
 libxacml_soap_common_la_LIBADD = -lgsoapssl++ -lssl -lcrypto
-
 
 nodist_libxacml_soap_client_la_SOURCES = soapClient.cpp soapStub.h soapH.h
 libxacml_soap_client_la_SOURCES = xacml_client.cpp xacml_client.h
