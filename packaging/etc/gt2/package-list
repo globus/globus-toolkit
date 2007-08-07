@@ -69,6 +69,10 @@ globus_gridftp_server_control	gridftp/server-lib/src
 globus_gridftp_server		    gridftp/server/src
 globus_gridftp_sshftp_setup     gridftp/sshftp/setup
 globus_gridftp_server_acl_example     gridftp/server/acl/example
+globus_gfork                    gridftp/gfork/source
+globus_gridftp_server_test      gridftp/server/test
+globus_gwtftp                   gridftp/gwtftp/source
+globus_gfork_test_plugin        gridftp/gfork/test_plugin
 globus_gridmap_callout_error    gsi/gridmap_callout/error
 globus_gsi_callback		gsi/callback/source
 globus_gsi_cert_utils		gsi/cert_utils/source
@@ -88,6 +92,7 @@ globus_xio_popen_driver         xio/drivers/popen/source
 globus_xio_gsi_driver           xio/drivers/gsi
 globus_xio_udt_ref_driver       xio/drivers/udt_ref
 globus_xio_skeleton_driver      xio/drivers/skeleton/source
+globus_xio_blockz_driver        xio/drivers/blockz
 globus_xio			xio/src
 globus_xio_test			xio/test
 globus_xioperf			xio/xioperf/source
