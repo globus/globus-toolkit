@@ -73,6 +73,61 @@ static globus_hashtable_t               globus_l_ipc_request_table;
 globus_xio_stack_t                      globus_i_gfs_ipc_xio_stack;
 globus_xio_driver_t                     globus_i_gfs_tcp_driver = GLOBUS_NULL;
 
+int _lock_line;
+
+typedef struct _lock_bs_s
+{
+    globus_bool_t   locked;
+    globus_mutex_t  m;
+    int             l_line;
+} _lock_bs_t;
+
+/*
+#define globus_mutex_init(_ptr, _n) \
+do \
+{ \
+    _lock_bs_t * x;\
+    void * _lptr = (void *) _ptr; \
+    x = (_lock_bs_t *) globus_calloc(1, sizeof(_lock_bs_t)); \
+    globus_mutex_init(&x->m, NULL); \
+    memcpy(_lptr, &x, sizeof(_lock_bs_t *)); \
+}while(0)
+
+#define globus_mutex_lock(_ptr) \
+do\
+{\
+    _lock_bs_t * x;\
+    void * _l = (void *) _ptr; \
+    memcpy(&x, _l, sizeof(_lock_bs_t *)); \
+    globus_mutex_lock(&x->m);\
+    x->l_line = __LINE__;\
+    x->locked = GLOBUS_TRUE;\
+} while(0)
+
+#define globus_mutex_unlock(_ptr) \
+do\
+{\
+    _lock_bs_t * x;\
+    void * _l = (void *) _ptr; \
+    memcpy(&x, _l, sizeof(_lock_bs_t *)); \
+    x->l_line = __LINE__;\
+    x->locked = GLOBUS_FALSE;\
+    globus_mutex_unlock(&x->m);\
+} while(0)
+
+#define globus_mutex_destroy(_ptr) \
+do\
+{\
+    _lock_bs_t * x;\
+    void * _l = (void *) _ptr; \
+    memcpy(&x, _l, sizeof(_lock_bs_t *)); \
+    if(x->locked) { printf("LOCKED AT LINE %d\n", x->l_line); }\
+    globus_mutex_destroy(&x->m);\
+    globus_free(x); \
+} while(0)
+
+*/
+
 typedef enum globus_l_gfs_ipc_state_s
 {
     GLOBUS_GFS_IPC_STATE_OPENING,
@@ -726,7 +781,7 @@ globus_l_gfs_session_info_free(
         }
         if(session_info->free_cred && session_info->del_cred != NULL)
         {
-            gss_release_cred(&min_rc, &session_info->del_cred);
+            /*gss_release_cred(&min_rc, &session_info->del_cred); */
         }
         globus_free(session_info);
     }
@@ -749,6 +804,7 @@ globus_i_gfs_ipc_stop()
     globus_result_t                     result;
     globus_list_t *                     list;
     globus_i_gfs_ipc_handle_t *         ipc;
+    globus_bool_t                       ipc_destroy = GLOBUS_FALSE;
     GlobusGFSName(globus_i_gfs_ipc_stop);
     GlobusGFSDebugEnter();
 
@@ -813,7 +869,7 @@ globus_i_gfs_ipc_stop()
                                     globus_list_search(
                                         globus_l_ipc_handle_list, ipc));
                                 ipc->state = GLOBUS_GFS_IPC_STATE_CLOSED;
-                                globus_l_gfs_ipc_handle_destroy(ipc);
+                                ipc_destroy = GLOBUS_TRUE;
                             }
                             break;
 
@@ -830,6 +886,11 @@ globus_i_gfs_ipc_stop()
                 }
             }
             globus_mutex_unlock(&ipc->mutex);
+
+            if(ipc_destroy)
+            {
+                globus_l_gfs_ipc_handle_destroy(ipc);
+            }
         }
 
         while(!globus_list_empty(globus_l_ipc_handle_list))
@@ -1041,7 +1102,6 @@ globus_l_gfs_ipc_reply_ss_body_cb(
     }
 
     /* at this point we can start getting ipc_close calls */
-    globus_free(start_buf);
     globus_mutex_lock(&ipc->mutex);
     {
         switch(ipc->state)
@@ -1078,6 +1138,7 @@ globus_l_gfs_ipc_reply_ss_body_cb(
     }
     globus_mutex_unlock(&ipc->mutex);
 
+    globus_free(start_buf);
     GlobusGFSDebugExit();
     return;
 
@@ -1269,9 +1330,13 @@ error:
     {
         globus_i_gfs_log_result_warn(
             "a close failed, can lead to a barrier race", result);
-        globus_l_gfs_ipc_reply_close_kickout(ipc);
     }
     globus_mutex_unlock(&ipc->mutex);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        globus_l_gfs_ipc_reply_close_kickout(ipc);
+    }
 
     GlobusGFSDebugExitWithError();
 }
@@ -1653,7 +1718,7 @@ error_mem:
 error:
     ipc->state = error_state;
     ipc->cached_res = res;
-    globus_mutex_unlock(&ipc->mutex);
+    res = GLOBUS_SUCCESS;
     if(error_state == GLOBUS_GFS_IPC_STATE_ERROR)
     {
         res = globus_xio_register_close(
@@ -1665,8 +1730,12 @@ error:
         {
             globus_i_gfs_log_result_warn(
                 "a close failed, can lead to a barrier race", res);
-            globus_l_gfs_ipc_reply_close_kickout(ipc);
         }
+    }
+    globus_mutex_unlock(&ipc->mutex);
+    if(res != GLOBUS_SUCCESS)
+    {
+        globus_l_gfs_ipc_reply_close_kickout(ipc);
     }
 
     GlobusGFSDebugExitWithError();
@@ -2061,6 +2130,7 @@ globus_gfs_ipc_handle_create(
     return GLOBUS_SUCCESS;
 
 handle_error:
+    globus_mutex_unlock(&globus_l_ipc_mutex);
     globus_l_gfs_ipc_handle_destroy(ipc);
 attr_error:
     globus_xio_attr_destroy(xio_attr);
@@ -2144,7 +2214,6 @@ error:
         ipc->open_cb(ipc, result, NULL, ipc->user_arg);
     }
 
-
     GlobusGFSDebugExitWithError();
 }
 
@@ -2165,14 +2234,13 @@ globus_l_gfs_ipc_client_open_cb(
 
     ipc = (globus_i_gfs_ipc_handle_t *) user_arg;
 
-    if(result != GLOBUS_SUCCESS)
-    {
-        ipc->cached_res = result;
-        goto error;
-    }
-    
     globus_mutex_lock(&ipc->mutex);
     {
+        if(result != GLOBUS_SUCCESS)
+        {
+            ipc->cached_res = result;
+            goto error;
+        }
         buffer = globus_malloc(ipc->buffer_size);
         if(buffer == NULL)
         {
@@ -2544,9 +2612,13 @@ globus_l_gfs_ipc_close_cb_kickout(
 
     globus_mutex_lock(&globus_l_ipc_mutex);
     {
+        globus_mutex_lock(&ipc->mutex);
+
         globus_list_remove(&globus_l_ipc_handle_list, 
             globus_list_search(globus_l_ipc_handle_list, ipc));
         globus_cond_signal(&globus_l_ipc_cond);
+
+        globus_mutex_unlock(&ipc->mutex);
     }
     globus_mutex_unlock(&globus_l_ipc_mutex);
 
@@ -4105,7 +4177,6 @@ err:
     globus_l_gfs_ipc_request_destroy(request);
     ipc->state = error_state;
     ipc->cached_res = result;
-    globus_mutex_unlock(&ipc->mutex);
     if(error_state == GLOBUS_GFS_IPC_STATE_ERROR)
     {
         result = globus_xio_register_close(
@@ -4121,7 +4192,11 @@ err:
                 the cloes barrier.  log an error */
             globus_i_gfs_log_result_warn(
                 "a close failed, can lead to a barrier race", result);
-            globus_l_gfs_ipc_reply_close_kickout(ipc);
+            globus_callback_register_oneshot(
+                NULL,
+                NULL,
+                globus_l_gfs_ipc_reply_close_kickout,
+                ipc);
         }
     }
     else if(error_state == GLOBUS_GFS_IPC_STATE_ERROR_WAIT ||
@@ -4138,6 +4213,7 @@ err:
         }
     }
 error_already:
+    globus_mutex_unlock(&ipc->mutex);
     globus_free(buffer);
 
     GlobusGFSDebugExitWithError();
@@ -4291,7 +4367,7 @@ decode_err:
 error:
     ipc->state = error_state;
     ipc->cached_res = result;
-    globus_mutex_unlock(&ipc->mutex);
+    result = GLOBUS_SUCCESS;
     if(error_state == GLOBUS_GFS_IPC_STATE_ERROR)
     {
         result = globus_xio_register_close(
@@ -4303,10 +4379,15 @@ error:
         {
             globus_i_gfs_log_result_warn(
                 "a close failed, can lead to a barrier race", result);
-            globus_l_gfs_ipc_reply_close_kickout(ipc);
+            globus_callback_register_oneshot(
+                NULL,
+                NULL,
+                globus_l_gfs_ipc_reply_close_kickout,
+                ipc);
         }
     }
 error_already:
+    globus_mutex_unlock(&ipc->mutex);
     globus_free(buffer);
 
     GlobusGFSDebugExitWithError();
@@ -4493,7 +4574,6 @@ globus_l_gfs_ipc_reply_cb(
 error:
     ipc->state = error_state;
     ipc->cached_res = result;
-    globus_mutex_unlock(&ipc->mutex);
     if(error_state == GLOBUS_GFS_IPC_STATE_ERROR)
     {
         result = globus_xio_register_close(
@@ -4505,10 +4585,15 @@ error:
         {
             globus_i_gfs_log_result_warn(
                 "a close failed, can lead to a barrier race", result);
-            globus_l_gfs_ipc_reply_close_kickout(ipc);
+            globus_callback_register_oneshot(
+                NULL,
+                NULL,
+                globus_l_gfs_ipc_reply_close_kickout,
+                ipc);
         }
     }
 error_already:
+    globus_mutex_unlock(&ipc->mutex);
     return;
 }
 
@@ -4768,7 +4853,6 @@ error_mem:
 error:
     ipc->state = error_state;
     ipc->cached_res = res;
-    globus_mutex_unlock(&ipc->mutex);
     if(error_state == GLOBUS_GFS_IPC_STATE_ERROR)
     {
         res = globus_xio_register_close(
@@ -4780,9 +4864,14 @@ error:
         {
             globus_i_gfs_log_result_warn(
                 "a close failed, can lead to a barrier race", res);
-            globus_l_gfs_ipc_reply_close_kickout(ipc);
+            globus_callback_register_oneshot(
+                NULL,
+                NULL,
+                globus_l_gfs_ipc_reply_close_kickout,
+                ipc);
         }
     }
+    globus_mutex_unlock(&ipc->mutex);
 
     GlobusGFSDebugExitWithError();
     return GLOBUS_SUCCESS; /* we should make this a void type function */
@@ -4807,6 +4896,7 @@ globus_gfs_ipc_reply_event(
     int                                 msg_size;
     int                                 error_state;
     globus_bool_t                       send_event = GLOBUS_FALSE;
+    char *                              tmp_str;
     GlobusGFSName(globus_gfs_ipc_reply_event);
     GlobusGFSDebugEnter();
 
@@ -4836,7 +4926,10 @@ globus_gfs_ipc_reply_event(
                 break;
 
             default:
-                globus_assert(0 && "memory corruption or api misuse");
+                tmp_str = globus_common_create_string(
+                    "memory corruption or api misuse: state = %d",
+                    ipc->state);
+                globus_assert_string(0, tmp_str);
         }
 
         if(send_event)

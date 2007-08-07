@@ -6945,6 +6945,27 @@ globus_l_ftp_control_reuse_connect_callback(
     globus_free(connect_cb_info);
 }
 
+globus_result_t
+globus_ftp_control_data_add_closed_cb(
+    globus_ftp_control_handle_t *                control_handle,
+    globus_ftp_control_callback_t                close_callback_func,
+    void *                                       close_arg)
+{
+    globus_result_t                              result = GLOBUS_SUCCESS;
+    globus_i_ftp_dc_handle_t *                   dc_handle;
+
+    dc_handle = &control_handle->dc_handle;
+    globus_mutex_lock(&dc_handle->mutex);
+    {
+        dc_handle->close_callback = close_callback_func;
+        dc_handle->close_callback_arg = close_arg;
+    }
+    globus_mutex_unlock(&dc_handle->mutex);
+
+    return result;
+}
+
+
 /*
  *  globus_i_ftp_control_data_cc_init()
  *  -----------------------------------
