@@ -48,10 +48,11 @@ recho() {
 
 find_ca_dir() {
     cahash=$1
+    shift
 
-    for i in `my_seq 0 $trusted_dircount`; do
-        if test -f "${trusted_certs_dirs[$i]}/$cahash.0"; then
-            echo ${trusted_certs_dirs[$i]}
+    for x in "$@"; do
+        if test -f "$x/$cahash.0"; then
+            echo "${x}"
             return 0
         fi
     done
@@ -62,9 +63,9 @@ get_security_dir() {
 
     if test ! -z "${GRID_SECURITY_DIR}" ; then
         echo "${GRID_SECURITY_DIR}"
-    elif test "$cadir" -ef "/etc/grid-security/certificates"; then
+    elif test "$cadir" = "/etc/grid-security/certificates"; then
         echo "/etc/grid-security"
-    elif test "$cadir" -ef "${GLOBUS_LOCATION}/share/certificates"; then
+    else
         echo "${GLOBUS_LOCATION}/etc"
     fi
 }
@@ -89,12 +90,12 @@ show_default() {
     DEFAULTCACONFFILE=`${GLOBUS_SH_LS-ls} -l "$gsconf" 2>/dev/null | ${GLOBUS_SH_SED-sed} -e "s|.*-> \(.*\)|\1|"`
     DEFAULTCAHASH=`echo "$DEFAULTCACONFFILE" | ${GLOBUS_SH_SED-sed} -e "s|.*\.\(.*\)$|\1|"`
 
-    for i in `my_seq 0 $trusted_dircount`; do
-        if test -f "${trusted_certs_dirs[$i]}/$DEFAULTCAHASH.0"; then
-            DEFAULT_SUBJECT=`openssl x509 -in ${trusted_certs_dirs[$i]}/$DEFAULTCAHASH.0 -noout -subject | ${GLOBUS_SH_SED-sed} -e "s|subject= ||"`
+    for x in "$@"; do
+        if test -f "${x}/$DEFAULTCAHASH.0"; then
+            DEFAULT_SUBJECT=`openssl x509 -in ${x}/$DEFAULTCAHASH.0 -noout -subject | ${GLOBUS_SH_SED-sed} -e "s|subject= ||"`
             echo
             echo "The default CA is: $DEFAULT_SUBJECT"
-            echo "         Location: ${trusted_certs_dirs[$i]}/$DEFAULTCAHASH.0"
+            echo "         Location: ${x}/$DEFAULTCAHASH.0"
             echo
 	    break
 	fi
@@ -109,12 +110,11 @@ ca_list() {
     
     index=1
 
-    for i in `my_seq 0 $trusted_dircount`; do
-
-	cert_hashes=`get_hashes ${trusted_certs_dirs[$i]}`
+    for x in "$@"; do
+	cert_hashes=`get_hashes ${x}`
         if test -n "${cert_hashes}"; then
  
-        echo "Directory: ${trusted_certs_dirs[$i]}"
+        echo "Directory: ${x}"
         echo
 
         for cert in ${cert_hashes}; do
@@ -134,32 +134,40 @@ ca_list() {
         fi 
     done
 
-    show_default
+    show_default "$@"
 }
 
 interactive() {
     
-    ca_list
+    ca_list "$@"
 
-    echo
-    recho "Enter the index number of the CA to set as the default: "
-    read CA_CHOSEN_INDEX
+    CA_CHOSEN_INDEX=""
 
     while [ -z "$CA_CHOSEN_INDEX" ]
     do
         echo
-        recho "Enter the index number of the CA to set as the default: "
+        recho "Enter the index number of the CA to set as the default [q to quit]: "
         read CA_CHOSEN_INDEX
+
+        if [ "${CA_CHOSEN_INDEX}" = "" ] || \
+           [ "${CA_CHOSEN_INDEX}" = "q" ]; then
+           exit 1;
+        fi
+        # Check for number
+        if test ${CA_CHOSEN_INDEX} -eq ${CA_CHOSEN_INDEX} 2>/dev/null ; then
+            if [ 1 -gt ${CA_CHOSEN_INDEX} ] || [ $index -le ${CA_CHOSEN_INDEX} ]; then
+                echo "${CA_CHOSEN_INDEX} is not a valid index!"
+                CA_CHOSEN_INDEX=""
+            fi
+        else
+            echo "${CA_CHOSEN_INDEX} is not a valid index!"
+            CA_CHOSEN_INDEX=""
+        fi
     done
-    
-    if [ 1 -gt ${CA_CHOSEN_INDEX} ] || [ $index -le ${CA_CHOSEN_INDEX} ]; then
-        echo "${CA_CHOSEN_INDEX} is not a valid index!"
-        exit 1
-    fi
     
     eval "CA_SUBJECT=\${CA_SUBJECT${CA_CHOSEN_INDEX}}"
     eval "CA_CERT=\${CA${CA_CHOSEN_INDEX}}"
-    CA_CERT_DIR=`echo $CA_CERT | ${GLOBUS_SH_SED-sed} -e "s|[^\/]*\.0||"`
+    CA_CERT_DIR=`echo $CA_CERT | ${GLOBUS_SH_SED-sed} -e "s|/[^\/]*$||"`
 }
 
 readCommandLine () {
@@ -180,6 +188,10 @@ readCommandLine () {
             -ca)
                 ca_to_use="$2"
                 shift ; shift
+                ;;
+            -dir)
+                X509_CERT_DIR="$2"
+                shift; shift;
                 ;;
             *)
                 globus_args_unrecognized_option "$1"
@@ -252,38 +264,29 @@ short_usage="$PROGRAM_NAME [-help] [ options ...]"
 
 readCommandLine "$@"
 
-trusted_dircount=0
+# reset positional parameters
+for x in "$@"; do
+    shift
+done
 
 # look for trusted certs directories
 if test -n "${X509_CERT_DIR}" ; then
-    trusted_certs_dirs[$trusted_dircount]="${X509_CERT_DIR}"
+    set -- "${X509_CERT_DIR}"
     if test -n "${GRID_SECURITY_DIR}"; then
-        security_dirs[$trusted_dircount]="${GRID_SECURITY_DIR}"
+        set -- "$@" "${GRID_SECURITY_DIR}"
     fi
-    trusted_dircount=`expr ${trusted_dircount} + 1`
 fi
 
-if test -z "${trusted_certs_dirs[0]}" ||
-   test ! ${trusted_certs_dirs[0]} -ef "/etc/grid-security/certificates"; then
-    trusted_certs_dirs[$trusted_dircount]="/etc/grid-security/certificates"
-    security_dirs[$trusted_dircount]="/etc/grid-security"
-    trusted_dircount=`expr ${trusted_dircount} + 1`
-elif test -z "${GRID_SECURITY_DIR}"; then
-    security_dirs[0]="/etc/grid-security"
+if test -d "/etc/grid-security/certificates/." ; then
+    set -- "$@" "/etc/grid-security/certificates" 
 fi
-
-if test -z "${trusted_certs_dirs[0]}" ||
-   test ! ${trusted_certs_dirs[0]} -ef "${GLOBUS_LOCATION}/share/certificates"; then
-    trusted_certs_dirs[$trusted_dircount]="${GLOBUS_LOCATION}/share/certificates"
-    security_dirs[$trusted_dircount]="${GLOBUS_LOCATION}/etc"
-    trusted_dircount=`expr ${trusted_dircount} + 1`
-elif test -z "${GRID_SECURITY_DIR}"; then
-    security_dirs[0]="${GLOBUS_LOCATION}/share/certificates"
+if test -d "${GLOBUS_LOCATION}/share/certificates/."; then
+    set -- "$@" "${GLOBUS_LOCATION}/share/certificates"
 fi
 
 found_ca=0
-for i in `my_seq 0 $trusted_dircount`; do
-    if test -n "`get_hashes ${trusted_certs_dirs[$i]}`"; then
+for x in "$@"; do
+    if test -n "`get_hashes ${x}`"; then
         found_ca=1
     fi
 done
@@ -293,8 +296,8 @@ if test $found_ca -eq 0; then
     echo "There does not appear to be a valid CA"
     echo "located in any of the following directories:"
     echo ""
-    for i in `my_seq 0 $trusted_dircount`; do
-        echo "    ${trusted_certs_dirs[$i]}"
+    for x in "$@"; do
+        echo "    ${x}"
     done
     echo ""
     echo "To specify a different location where the grid security"
@@ -305,14 +308,14 @@ if test $found_ca -eq 0; then
 fi
 
 if [ -n "$JUSTLIST" ]; then
-    ca_list
+    ca_list "$@"
     exit
 fi
 
 if [ -z "$ca_to_use" ]; then
-    interactive
+    interactive "$@"
 else
-    CA_CERT_DIR=`find_ca_dir $ca_to_use`
+    CA_CERT_DIR=`find_ca_dir $ca_to_use "$@"`
     CA_CERT="$CA_CERT_DIR/$ca_to_use.0"
     if test ! -r "${CA_CERT}" ; then
         echo
@@ -393,7 +396,7 @@ if [ -w ${DIRECTIONS_FILE} ]; then
     ${GLOBUS_SH_LN-ln} -s ${DIRECTIONS_FILE} \
 	    	          ${secconfdir}/directions
 else
-    if test -e ${secconfdir}/directions ; then
+    if test -r ${secconfdir}/directions ; then
         echo "removing link ${secconfdir}/directions"
         echo
         ${GLOBUS_SH_RM-rm} -f ${secconfdir}/directions
