@@ -318,7 +318,7 @@ sub flavor_filelist {
     # Append the flavor to each library file.
     if ($f =~ m!lib/!)
       {
-        $name =~ s!(lib[^.]+)\.!$ {1}_$flavor.!;
+        $name =~ s!(lib[^.-]+)!$ {1}_$flavor!;
         
         if ($name =~ m!\.(?:s[ol]|dylib)\.?!) {
 
