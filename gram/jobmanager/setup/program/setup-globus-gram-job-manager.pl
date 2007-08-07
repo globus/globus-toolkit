@@ -161,9 +161,10 @@ sub setup_job_manager_conf
     my ($toolkit_version);
     my $jm_conf	= "${sysconfdir}/globus-job-manager.conf";
     my $conf_file;
-    my $toolkit_version = `globus-version`;
+    my $toolkit_version = `${globusdir}/bin/globus-version` || "unknown";
 
     chomp($toolkit_version);
+
 
     ($gatekeeper_subject, $gatekeeper_port) =
 	&get_gatekeeper_info("${sysconfdir}/globus-gatekeeper.conf");
