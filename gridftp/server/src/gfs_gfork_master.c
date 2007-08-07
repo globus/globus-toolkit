@@ -1219,6 +1219,17 @@ error_param:
 }
 
 static
+globus_bool_t
+gfs_l_gfork_backend_timeout_true(
+    globus_xio_handle_t                 handle,
+    globus_xio_operation_type_t         type,
+    void *                              user_arg)
+{
+    return GLOBUS_TRUE;
+}
+
+
+static
 void
 gfs_l_gfork_backend_timer(
     void *                              user_arg)
@@ -1228,14 +1239,20 @@ gfs_l_gfork_backend_timer(
     globus_xio_attr_t                   xio_attr;
     globus_reltime_t                    to;
 
-    globus_xio_attr_copy(&xio_attr, g_attr);
+    gfs_l_gfork_log(GLOBUS_SUCCESS, 0,
+        "Backend timer enter\n");
+
+    result = globus_xio_attr_copy(&xio_attr, g_attr);
+    globus_assert(result == GLOBUS_SUCCESS);
 
     GlobusTimeReltimeSet(to, 15, 0);
     globus_xio_attr_cntl(
         xio_attr,
         NULL,
         GLOBUS_XIO_ATTR_SET_TIMEOUT_ALL,
-        &to);
+        gfs_l_gfork_backend_timeout_true,
+        &to,
+        NULL);
 
     result = globus_xio_handle_create(&xio_handle, g_stack);
     if(result != GLOBUS_SUCCESS)
