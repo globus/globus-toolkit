@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Format_Version="0.02" Name="globus_gram_job_manager_setup_pbs" >
 
-  <Aging_Version Age="1" Major="2" Minor="6" />
+  <Aging_Version Age="1" Major="2" Minor="7" />
   <Description >PBS Job Manager Setup</Description>
   <Functional_Group >GRAM</Functional_Group>
   <Version_Stability Release="Beta" />

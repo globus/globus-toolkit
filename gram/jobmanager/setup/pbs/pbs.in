@@ -43,7 +43,7 @@ BEGIN
 sub myceil ($)
 {
     my $x = shift;
-    ( abs($x-int($x)) < 1E-12 ) ? $x : int($x < 0 ? $x : $x+1.0);
+    ( abs($x-int($x)) < 1E-12 ) ? int($x) : int($x < 0 ? $x : $x+1.0);
 }
 
 sub submit
