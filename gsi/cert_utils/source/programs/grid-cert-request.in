@@ -798,8 +798,15 @@ if test -z "$trusted_certs_dir"; then
         echo "Please make sure that you have installed and " \
              "setup a CA setup package."
     else
+        echo "Error reading"
+        echo "    /etc/grid-security/globus-user-ssl.conf"
+        echo "    /etc/grid-security/globus-host-ssl.conf"
+        echo "    \${GLOBUS_LOCATION}/etc/globus-user-ssl.conf"
+        echo "    \${GLOBUS_LOCATION}/etc/globus-host-ssl.conf"
+        echo ""
         echo "Can't find valid CA config files. Please make sure"
-        echo "that you have installed and setup a CA setup package."
+        echo "that the grid administrator has installed a CA setup "
+        echo "package and run gpt-postinstall."
     fi
 
     echo ""
