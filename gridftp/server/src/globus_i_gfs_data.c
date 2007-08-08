@@ -3669,7 +3669,7 @@ globus_gridftp_server_finished_stat_custom_list(
     }
     globus_mutex_unlock(&op->session_handle->mutex);
     globus_assert(destroy_op);
-    globus_l_gfs_data_operation_destroy(op, destroy_session);
+    globus_l_gfs_data_operation_destroy(op);
 
     globus_free(data_op->stat_wrapper);
 
