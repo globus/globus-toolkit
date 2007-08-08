@@ -1929,7 +1929,7 @@ globus_i_gsi_gss_SSL_read_bio(
     
     ssl_result = ssl_handle->method->ssl3_enc->change_cipher_state(
         ssl_handle,
-        SSL3_CHANGE_CIPHER_SERVER_WRITE);
+        (!ssl_handle->server)?SSL3_CHANGE_CIPHER_CLIENT_WRITE:SSL3_CHANGE_CIPHER_SERVER_WRITE);
     if (!ssl_result)
     {
         GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
@@ -1957,7 +1957,8 @@ globus_i_gsi_gss_SSL_read_bio(
 
     ssl_result = ssl_handle->method->ssl3_enc->change_cipher_state(
         ssl_handle,
-        SSL3_CHANGE_CIPHER_SERVER_READ);
+        (!ssl_handle->server)?SSL3_CHANGE_CIPHER_CLIENT_READ:SSL3_CHANGE_CIPHER_SERVER_READ); 
+    
     if (!ssl_result)
     {
         GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(

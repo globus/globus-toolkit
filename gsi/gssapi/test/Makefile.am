@@ -12,6 +12,7 @@ Scripts= \
 	TESTS.pl \
 	gssapi-anonymous-test.pl \
 	gssapi-delegation-test.pl \
+        gssapi-import-context-test.pl \
 	gssapi-limited-delegation-test.pl \
 	gssapi-delegation-compat-test.pl \
 	gssapi-thread-test.pl \
@@ -46,6 +47,7 @@ EXTRA_DIST = $(Scripts) $(Data)
 test_PROGRAMS= \
 	gssapi-anonymous-test \
 	gssapi-delegation-test \
+        gssapi-import-context-test \
 	gssapi-limited-delegation-test \
 	gssapi-delegation-compat-test \
 	gssapi-thread-test \
@@ -147,6 +149,8 @@ gssapi_module_test_LDFLAGS = $(GPT_LDFLAGS)
 
 gssapi_module_test_LDADD = $(GPT_PGM_LINKS)
 
+gssapi_import_context_test_LDFLAGS = $(GPT_LDFLAGS)
+gssapi_import_context_test_LDADD = $(GPT_PGM_LINKS)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
