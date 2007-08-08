@@ -1,7 +1,7 @@
 service gridftp2
 {
   instances = 100
-  log_level = 5
+  log_level = 0
    log_file = @GLOBUS_LOCATION@/test/globus_gridftp_server_test/gfork.log
   env = GLOBUS_LOCATION=@GLOBUS_LOCATION@
   env += LD_LIBRARY_PATH=@GLOBUS_LOCATION@/lib
