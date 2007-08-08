@@ -839,6 +839,7 @@ globus_i_gsi_gss_handshake(
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
+    ERR_clear_error();
     /*
      * do the BIO_do_handshake which may produce output,
      * and endup waiting for input.

@@ -239,6 +239,7 @@ GSS_CALLCONV gss_unwrap(
             goto exit;
         }
 
+        ERR_clear_error();
         /* now get the data from SSL. 
          * We don't know how big it is, so assume the max?
          */
