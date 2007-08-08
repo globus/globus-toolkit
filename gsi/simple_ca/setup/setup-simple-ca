@@ -821,10 +821,10 @@ CA_UTILS_PACKAGE=$CA_UTILS_PACKAGE_DIR.tar.gz
 #./bootstrap
 
 if test -n "$verbose"; then
-    export GLOBUS_LOCATION=${GLOBUS_LOCATION};cd ${tmp_ca_setup_dir};./configure $outlog
+    cd ${tmp_ca_setup_dir};./configure $outlog
     RES=$?
 else
-    export GLOBUS_LOCATION=${GLOBUS_LOCATION};cd ${tmp_ca_setup_dir};./configure $outlog > configure.log 2>&1
+    cd ${tmp_ca_setup_dir};./configure $outlog > configure.log 2>&1
     RES=$?
 fi
 
@@ -836,10 +836,10 @@ if test $RES -ne 0; then
 fi
 
 if test -n "$verbose"; then
-    export GLOBUS_LOCATION=${GLOBUS_LOCATION};cd ${tmp_ca_setup_dir};make distdir
+    cd ${tmp_ca_setup_dir};make distdir
     RES=$?
 else
-    export GLOBUS_LOCATION=${GLOBUS_LOCATION};cd ${tmp_ca_setup_dir};make distdir > make.log 2>&1
+    cd ${tmp_ca_setup_dir};make distdir > make.log 2>&1
     RES=$?
 fi
 
@@ -946,7 +946,7 @@ do_trap() {
 
 currentwd=${PWD}
 if test -z "${currentwd}"; then
-    currentwd=`cwd`
+    currentwd=`pwd`
     if test -z "${currentwd}"; then
         echo ""
         echo "ERROR: Failed to get current working directory"
@@ -955,34 +955,18 @@ if test -z "${currentwd}"; then
     fi
 fi
 
-thiscommand=${0}
-currenthome=${HOME}
-mycommand=
-
-##  expand . and ~
-firstchar=`echo ${thiscommand} | cut -b 1`
-if test "${firstchar}" = "."; then
-    rest=`echo ${thiscommand} | cut -b 2-`
-    mycommand="${currentwd}/${rest}"
-elif test "${firstchar}" = "~"; then
-    rest=`echo "${thiscommand}" | cut -b 2-`
-    mycommand="${currenthome}/${rest}"
-elif test "${firstchar}" = "/"; then
-    mycommand="${thiscommand}"
-else
-    mycommand="${currentwd}/${rest}"
-fi
-
-if test ! -x ${mycommand}; then
-   echo ""
-   echo "ERROR: Failed to parse ${mycommand} into a the path for this script"
-   echo ""
-   exit 1
-fi
 
 if test -z "${GLOBUS_LOCATION}"; then
+    dirname="`dirname \"$0\"`"
+
+    if test `echo "$dirname" | cut -b 1` != "/" ; then
+        # Relative path
+        dirname="`echo \"$currentwd/$dirname\" | sed -e 's|/\./|/|g' -e 's|/\.$||'`"
+    fi
     
-    GLOBUS_LOCATION=`echo ${mycommand} | sed -e "s|\(.*\)/setup/globus/setup-simple-ca|\1|"`
+    GLOBUS_LOCATION="`echo \"$dirname\" | sed -e 's|/[^/]*/[^/]*$||'`"
+
+    export GLOBUS_LOCATION
     echo ""
     echo "WARNING: GLOBUS_LOCATION not set, assuming:"
     echo "         GLOBUS_LOCATION=${GLOBUS_LOCATION}"
@@ -991,6 +975,7 @@ fi
 
 if test -z "${GPT_LOCATION}"; then
     GPT_LOCATION=${GLOBUS_LOCATION}
+    export GPT_LOCATION
     echo ""
     echo "WARNING: GPT_LOCATION not set, assuming:"
     echo "         GPT_LOCATION=${GPT_LOCATION}"
