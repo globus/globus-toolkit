@@ -17,6 +17,7 @@
 #include "gaa.h"
 #include "gaa_core.h"
 #include "gaa_debug.h"
+#include <string.h>
 
 #define BSIZE 2048
 
@@ -31,7 +32,6 @@ static char *gaadebug_cond_eval_entry_string(char *out, int osize, gaaint_cond_e
 char *
 gaadebug_condstr_r(gaa_condition *cond, char *buf, int bsize)
 {
-    char *s;
     if (cond)
 	snprintf(buf, bsize, "type=%s, auth=%s, val=\"%s\", status=%s",
 		 (cond->type ? cond->type : ""),
@@ -48,7 +48,6 @@ gaadebug_condstr_r(gaa_condition *cond, char *buf, int bsize)
 char *
 gaadebug_request_right_string(gaa_ptr gaa, char *out, int osize, gaa_request_right *right)
 {
-    void *cent;
     char *s;
     int len;
 
@@ -118,7 +117,6 @@ gaadebug_policy_right_string(gaa_ptr gaa, char *out, int osize, gaa_policy_right
 char *
 gaadebug_policy_entry_string(gaa_ptr gaa, char *out, int osize, gaa_policy_entry *ent)
 {
-    char buf[BSIZE];
     int len;
     char *s;
 
@@ -356,8 +354,6 @@ gaadebug_cred_string(char *out, int osize, gaa_ptr gaa, gaa_cred *cred)
 {
     int len;
     char *s;
-    gaa_list_entry_ptr ent;
-    gaa_condition *cond;
     
     if (out == 0)
 	return(0);
@@ -418,7 +414,7 @@ gaadebug_id_info_string(gaa_identity_info *id, char *out, int osize)
 
     s = out;
     for (ent = gaa_list_first(id->conditions); ent; ent = gaa_list_next(ent))
-	if (cond = (gaa_condition *)gaa_list_entry_value(ent)) {
+	if ((cond = (gaa_condition *)gaa_list_entry_value(ent)) != NULL) {
 	    snprintf(s, osize, "\tcond: ");
 	    len = sizeof("\tcond: ") - 1;
 	    s += len;
@@ -466,7 +462,7 @@ gaadebug_authr_info_string(gaa_ptr gaa, gaa_authr_info *a, char *out, int osize)
 
     if (a) {
 	for (s = out, ent = gaa_list_first(a->access_rights); ent; ent = gaa_list_next(ent))
-	    if (right = (gaa_policy_right *)gaa_list_entry_value(ent)) {
+	    if ((right = (gaa_policy_right *)gaa_list_entry_value(ent))!=NULL) {
 		gaadebug_policy_right_string(gaa, s, osize, right);
 		len = strlen(s);
 		s += len;
@@ -496,7 +492,7 @@ gaadebug_attr_info_string(gaa_attribute_info *a, char *out, int osize)
 	if ((osize -= len) < 2)
 	    return(out);
 	for (ent = gaa_list_first(a->conditions); ent; ent = gaa_list_next(ent))
-	    if (cond = (gaa_condition *)gaa_list_entry_value(ent)) {
+	    if ((cond = (gaa_condition *)gaa_list_entry_value(ent))!=NULL) {
 		gaadebug_condstr_r(cond, s, osize);
 		len = strlen(s);
 		s += len;
@@ -523,8 +519,8 @@ gaadebug_sec_attrb_string(char *out, int osize, gaa_sec_attrb *a)
     return(out);
 }
 
-/** gaadebug_answer_string()
- * 
+/**
+ * @ingroup gaa_debug
  *  Express the answer in a string.
  *
  *  @param gaa

@@ -17,6 +17,9 @@
 #ifndef _GAA_DEBUG_H_
 #define _GAA_DEBUG_H_
 
+/**
+ * @defgroup gaa_debug GAA Debug API
+ */
 extern char *
 gaadebug_condstr_r(gaa_condition *cond, char *buf, int bsize);
 
