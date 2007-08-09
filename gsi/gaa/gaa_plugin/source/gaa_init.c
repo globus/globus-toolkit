@@ -22,7 +22,8 @@
 #include "gaa_plugin.h"
 #include "gaa_plugin_private.h"
 
-/** @defgroup gaa_plugin_init_static "gaa plugin init static functions"
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/** @defgroup gaa_plugin_init_static Static-scoped functions for gaa_init.c
  */
 #define DEF_CFINFO_SIZE 16
 
@@ -95,6 +96,7 @@ gaa_l_plugin_init_cfinfo(gaa_l_plugin_cfg_info *cfinfo, int i, int cfisize,
 
 static gaa_status gaa_l_init(gaa_ptr *			gaa,
 			     gaa_string_data		cfname);
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 gaa_status
 gaa_initialize(gaa_ptr *	gaa,
@@ -145,7 +147,8 @@ gaa_initialize(gaa_ptr *	gaa,
     return(status);
 }
 	    
-/** gaa_l_init()
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
  *
  * Create a gaa structure and initialize GAA, reading plugin information
  * from the specified configuration file (if specified).
@@ -154,7 +157,7 @@ gaa_initialize(gaa_ptr *	gaa,
  *
  * @param gaa
  *        output gaa pointer.
- * @param param
+ * @param cfname
  *        input name of configuration file.
  *
  * @retval GAA_S_SUCCESS
@@ -297,8 +300,7 @@ gaa_l_init(gaa_ptr *			gaa,
     return(GAA_S_SUCCESS);
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_plugin_read_miargs()
+/**
  *
  *  @ingroup gaa_plugin_init_static
  * 
@@ -318,7 +320,6 @@ gaa_l_init(gaa_ptr *			gaa,
  * @retval GAA_S_CONFIG_ERR
  *         syntax error in mechinfo entry.
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static gaa_status
 gaa_l_plugin_read_miargs(gaa_plugin_mechinfo_args *miargs,
 			 FILE *			   cffile,
@@ -397,8 +398,7 @@ gaa_l_plugin_read_miargs(gaa_plugin_mechinfo_args *miargs,
     return(gaa_l_plugin_read_cfinfo(cfinfo, cffile, next, firstbrace));
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_plugin_read_ceargs()
+/**
  *
  *  @ingroup gaa_plugin_init_static
  * 
@@ -418,7 +418,6 @@ gaa_l_plugin_read_miargs(gaa_plugin_mechinfo_args *miargs,
  * @retval GAA_S_CONFIG_ERR
  *         syntax error in entry.
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static gaa_status
 gaa_l_plugin_read_ceargs(gaa_plugin_cond_eval_args *ceargs,
 			 FILE *		            cffile,
@@ -495,8 +494,7 @@ gaa_l_plugin_read_ceargs(gaa_plugin_cond_eval_args *ceargs,
     return(gaa_l_plugin_read_cfinfo(cfinfo, cffile, next, firstbrace));
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_plugin_read_aiargs()
+/**
  *
  *  @ingroup gaa_plugin_init_static
  * 
@@ -516,7 +514,6 @@ gaa_l_plugin_read_ceargs(gaa_plugin_cond_eval_args *ceargs,
  * @retval GAA_S_CONFIG_ERR
  *         syntax error in authinfo entry.
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static gaa_status
 gaa_l_plugin_read_aiargs(gaa_plugin_authinfo_args *aiargs,
 			 FILE *		           cffile,
@@ -591,8 +588,7 @@ gaa_l_plugin_read_aiargs(gaa_plugin_authinfo_args *aiargs,
     return(gaa_l_plugin_read_cfinfo(cfinfo, cffile, next, firstbrace));
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_plugin_read_matchrights()
+/**
  *
  *  @ingroup gaa_plugin_init_static
  * 
@@ -612,7 +608,6 @@ gaa_l_plugin_read_aiargs(gaa_plugin_authinfo_args *aiargs,
  * @retval GAA_S_CONFIG_ERR
  *         syntax error in matchrights entry.
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static gaa_status
 gaa_l_plugin_read_matchrights(gaa_plugin_matchrights_args *mrargs,
 			      FILE *			   cffile,
@@ -667,8 +662,7 @@ gaa_l_plugin_read_matchrights(gaa_plugin_matchrights_args *mrargs,
     return(gaa_l_plugin_read_cfinfo(cfinfo, cffile, next, firstbrace));
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_plugin_read_getpolicy()
+/**
  *
  *  @ingroup gaa_plugin_init_static
  * 
@@ -688,7 +682,6 @@ gaa_l_plugin_read_matchrights(gaa_plugin_matchrights_args *mrargs,
  * @retval GAA_S_CONFIG_ERR
  *         syntax error in getpolicy entry.
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static gaa_status
 gaa_l_plugin_read_getpolicy(gaa_plugin_getpolicy_args *gpargs,
 			    FILE *		       cffile,
@@ -745,14 +738,13 @@ gaa_l_plugin_read_getpolicy(gaa_plugin_getpolicy_args *gpargs,
     return(gaa_l_plugin_read_cfinfo(cfinfo, cffile, next, firstbrace));
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_plugin_read_getpolicy()
+/**
  *
  *  @ingroup gaa_plugin_init_static
  * 
  * Read getpolicy args from a configuration file.  Called by gaa_init().
  *
- * @param gpargs
+ * @param azargs
  *        output args to fill in
  * @param cffile
  *        input config file
@@ -766,7 +758,6 @@ gaa_l_plugin_read_getpolicy(gaa_plugin_getpolicy_args *gpargs,
  * @retval GAA_S_CONFIG_ERR
  *         syntax error in getpolicy entry.
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static gaa_status
 gaa_l_x_plugin_read_authz_id(gaa_plugin_authz_id_args *azargs,
 			    FILE *		     cffile,
@@ -823,8 +814,7 @@ gaa_l_x_plugin_read_authz_id(gaa_plugin_authz_id_args *azargs,
     return(gaa_l_plugin_read_cfinfo(cfinfo, cffile, next, firstbrace));
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_plugin_parse_boolean()
+/**
  *
  *  @ingroup gaa_plugin_init_static
  * 
@@ -844,7 +834,6 @@ gaa_l_x_plugin_read_authz_id(gaa_plugin_authz_id_args *azargs,
  * @retval GAA_S_CONFIG_ERR
  *         syntax error in string
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static gaa_status
 gaa_l_plugin_parse_boolean(int *result, char *str)
 {
@@ -873,8 +862,7 @@ gaa_l_plugin_parse_boolean(int *result, char *str)
     return(GAA_S_SUCCESS);
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_plugin_read_valinfo()
+/**
  *
  *  @ingroup gaa_plugin_init_static
  * 
@@ -893,7 +881,6 @@ gaa_l_plugin_parse_boolean(int *result, char *str)
  * @retval GAA_S_CONFIG_ERR
  *         syntax error in valinfo entry.
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static gaa_status
 gaa_l_plugin_read_valinfo(gaa_plugin_valinfo_args *viargs,
 			  FILE *		   cffile,
@@ -952,8 +939,7 @@ gaa_l_plugin_read_valinfo(gaa_plugin_valinfo_args *viargs,
     return(gaa_l_plugin_read_cfinfo(cfinfo, cffile, next, firstbrace));
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_plugin_read_cfinfo()
+/**
  *
  *  @ingroup gaa_plugin_init_static
  * 
@@ -962,7 +948,7 @@ gaa_l_plugin_read_valinfo(gaa_plugin_valinfo_args *viargs,
  * gaa_l_plugin_read_aiargs(), gaa_l_plugin_read_matchrights(),
  * gaa_l_plugin_read_getpolicy(), and gaa_l_plugin_read_valinfo().
  *
- * @param cfingo
+ * @param cfinfo
  *        input/output config info
  * @param cffile
  *        input config file
@@ -979,7 +965,6 @@ gaa_l_plugin_read_valinfo(gaa_plugin_valinfo_args *viargs,
  * @retval GAA_S_CONFIG_ERR
  *         syntax error in entry.
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static gaa_status
 gaa_l_plugin_read_cfinfo(gaa_l_plugin_cfg_info *cfinfo,
 			 FILE *			cffile,
@@ -1061,8 +1046,7 @@ gaa_l_plugin_read_cfinfo(gaa_l_plugin_cfg_info *cfinfo,
     return(status);
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_plugin_parse_param()
+/**
  *
  *  @ingroup gaa_plugin_init_static
  * 
@@ -1083,7 +1067,6 @@ gaa_l_plugin_read_cfinfo(gaa_l_plugin_cfg_info *cfinfo,
  * @retval GAA_S_CONFIG_ERR
  *         bad parameter type.
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static gaa_status
 gaa_l_plugin_parse_param(gaa_plugin_parameter *    param,
 			 char *			   str,
@@ -1135,8 +1118,7 @@ gaa_l_plugin_parse_param(gaa_plugin_parameter *    param,
     return(status);
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_plugin_parse_symdesc()
+/**
  *
  *  @ingroup gaa_plugin_init_static
  * 
@@ -1156,7 +1138,6 @@ gaa_l_plugin_parse_param(gaa_plugin_parameter *    param,
  * @retval GAA_S_CONFIG_ERR
  *         syntax error in string.
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static gaa_status
 gaa_l_plugin_parse_symdesc(gaa_plugin_symbol_desc *symdesc, char *str)
 {
@@ -1185,8 +1166,7 @@ gaa_l_plugin_parse_symdesc(gaa_plugin_symbol_desc *symdesc, char *str)
 }
 
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_plugin_init_cfinfo()
+/**
  *
  *  @ingroup gaa_plugin_init_static
  * 
@@ -1212,7 +1192,6 @@ gaa_l_plugin_parse_symdesc(gaa_plugin_symbol_desc *symdesc, char *str)
  * @retval GAA_S_INTERNAL_ERR
  *         i is too big for this size cfinfo array.
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static gaa_status
 gaa_l_plugin_init_cfinfo(gaa_l_plugin_cfg_info * cfinfo,
 			 int		         i,
@@ -1241,8 +1220,7 @@ gaa_l_plugin_init_cfinfo(gaa_l_plugin_cfg_info * cfinfo,
 }
 
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_plugin_read_mxargs()
+/**
  *
  *  @ingroup gaa_plugin_init_static
  * 
@@ -1262,7 +1240,6 @@ gaa_l_plugin_init_cfinfo(gaa_l_plugin_cfg_info * cfinfo,
  * @retval GAA_S_CONFIG_ERR
  *         syntax error in mutex arg entry.
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static gaa_status
 gaa_l_plugin_read_mxargs(gaa_plugin_mutex_args *mxargs,
 			 FILE *			cffile,
@@ -1344,3 +1321,4 @@ gaa_l_plugin_read_mxargs(gaa_plugin_mutex_args *mxargs,
 
     return(gaa_l_plugin_read_cfinfo(cfinfo, cffile, next, firstbrace));
 }
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
