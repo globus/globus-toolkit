@@ -31,10 +31,10 @@
 
 /**
  * @name Accept Security Context
- * @group globus_gsi_gss_assist
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_gss_assist
  * This routine accepts a GSSAPI security context and 
  * is called by the gram_gatekeeper. It isolates 
  * the GSSAPI from the rest of the gram code. 
@@ -267,10 +267,10 @@ globus_gss_assist_accept_sec_context(
 
 /**
  * @name Accept Security Context Asyncronous
- * @ingroup globus_gsi_gss_assist
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_gss_assist
  * This is a asynchronous version of the
  * globus_gss_assist_accept_sec_context() function. Instead of looping
  * itself it passes in and out the read and written buffers and

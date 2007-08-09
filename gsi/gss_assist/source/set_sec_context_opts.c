@@ -34,10 +34,10 @@ const gss_OID_desc * const gss_proxycertinfo_extension;
 
 /**
  * @name Will Handle Restrictions
- * @ingroup globus_gsi_gss_assist
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_gss_assist
  * Sets the context to handle restrictions
  *
  * @param minor_status

@@ -32,10 +32,10 @@ extern gss_OID gss_nt_service_name;
 
 /**
  * @name Init Security Context
- * @ingroup globus_gsi_gss_assist
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_gss_assist
  * Initialize a gssapi security connection. Used by the client.  
  * The context_handle is returned, and there is one for each
  * connection.  This routine will take cake of the looping
@@ -290,10 +290,10 @@ globus_gss_assist_init_sec_context(
 
 /**
  * @name Init Security Context Async
- * @ingroup globus_gsi_gss_assist
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_gss_assist
  * This is a asynchronous version of the
  * globus_gss_assist_init_sec_context() function. Instead of looping
  * itself it passes in and out the read and written buffers and

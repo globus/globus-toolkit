@@ -34,11 +34,7 @@
 #ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 
 /**
- * @name globus_gss_assist_strcatr
- * @ingroup globus_i_gsi_gss_assist
- */
-/* @{ */
-/**
+ * @ingroup globus_gsi_gss_assist
  * Concatenate the four message strings, realloc if needed.
  *
  *
@@ -108,16 +104,14 @@ globus_gss_assist_strcatr(
     GLOBUS_I_GSI_GSS_ASSIST_DEBUG_EXIT;
     return new;
 }
-/* @} */
-
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 /**
  * @name Display Status
- * @ingroup globus_gsi_gss_assist
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_gss_assist
  * Display the messages for the major and minor status
  * on the file pointed at by fp.
  * Takes care of the overloaded major_status if there
@@ -162,14 +156,12 @@ globus_gss_assist_display_status(
 }
 /* @} */
 
-#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
-
 /**
  * @name Display Status String
- * @ingroup globus_i_gsi_gss_assist
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_gss_assist
  * Display the messages for the major and minor status
  * and return a string with the messages.
  * Takes care of the overloaded major_status if there
@@ -350,5 +342,3 @@ globus_gss_assist_display_status_str(
     return 0;
 }
 /* @} */
-
-#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */

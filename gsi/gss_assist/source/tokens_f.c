@@ -26,7 +26,7 @@
 #endif
 
 /**
- * @defgroup globus_gsi_gss_assist_tokens
+ * @defgroup globus_gsi_gss_assist_tokens Security Token Transport
  * Token routines using fread and fwrite
  *
  * Additional code has been added to detect tokens which 
@@ -46,11 +46,11 @@
 #include <stdlib.h>
 
 /**
- * @name
- * @ingroup globus_gsi_gss_assist_tokens
+ * @name Token Get File Descriptor
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_gss_assist_tokens
  * Use a open file discriptor to get a token.  This function
  * provides parameter types that allow it to be passed to
  * @ref globus_gss_assist_init_sec_context and 
@@ -244,10 +244,10 @@ globus_gss_assist_token_get_fd(
 
 /**
  * @name Token Send File Descriptor
- * @ingroup globus_gsi_gss_assist_token
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_gss_assist_tokens
  * Write a token to the open file descriptor.  WIll write it with a 4 byte
  * length.  This function provides parameter types that allow 
  * it to be passed to
@@ -290,10 +290,10 @@ globus_gss_assist_token_send_fd(
 
 /**
  * @name Token Send File Descriptor Without Length
- * @ingroup globus_gsi_gss_assist_token
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_gss_assist_tokens
  * Write a token to the open file descripter. 
  * Will write it without a length. so as to 
  */
@@ -321,10 +321,10 @@ globus_gss_assist_token_send_fd_without_length(
 
 /**
  * @name Token Send File Descriptor Flag EX
- * @ingroup globus_gsi_gss_assist_token
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_gss_assist_tokens
  * Write a token to the open file descripter. 
  * will look at the flag to determine if the length field need
  * to be written.

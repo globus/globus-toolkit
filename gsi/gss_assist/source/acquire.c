@@ -51,10 +51,10 @@ static char * oid_names[] = {
 
 /**
  * @name Acquire Credential
- * @ingroup globus_gsi_gss_assist
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_gss_assist
  * Called once at the start of the process, to 
  * obtain the credentials the process is running under. 
  * The 
@@ -87,10 +87,10 @@ globus_gss_assist_acquire_cred(
 
 /**
  * @name Acquire Credential Extension
- * @ingroup globus_gsi_gss_assist
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_gss_assist
  * Called once at the start of the process, to 
  * obtain the credentials the process is running under. 
  * All the parameters of the gss_acquire_cred,

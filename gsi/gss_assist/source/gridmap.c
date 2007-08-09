@@ -114,10 +114,10 @@ globus_l_gss_assist_gridmap_lookup(
 
 /**
  * @name Gridmap
- * @ingroup globus_gsi_gss_assist
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_gss_assist
  * 
  * Routines callable from globus based code to 
  * map a globusID to a local unix user
@@ -249,10 +249,10 @@ globus_gss_assist_gridmap(
 
 /**
  * @name User OK
- * @ingroup globus_gsi_gss_assist
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_gss_assist
  * Check to see if a particular globusid is authorized to access
  * the given local user account.
  *
@@ -364,10 +364,10 @@ globus_gss_assist_userok(
 
 /**
  * @name Map Local User
- * @ingroup 
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_gss_assist
  * Routine for returning the default globus ID associated with
  * a local user name. This is somewhat of a hack since there is
  * not a guarenteed one-to-one mapping. What we do is look for
@@ -493,10 +493,10 @@ globus_gss_assist_map_local_user(
 
 /**
  * @name Gridmap Find DN
- * @ingroup globus_i_gsi_gss_assist
  */
 /* @{ */
 /**
+ * @ingroup globus_i_gsi_gss_assist
  * Locate the entry for the given DN in the default gridmap file
  *
  * @param dn
@@ -629,10 +629,10 @@ globus_i_gss_assist_gridmap_find_dn(
 
 /**
  * @name Find Local User
- * @ingroup globus_i_gsi_gss_assist
  */
 /* @{ */
 /**
+ * @ingroup globus_i_gsi_gss_assist
  * Locate the first entry with the given local user as the default in the
  * default gridmap file.
  *
@@ -759,10 +759,10 @@ globus_i_gss_assist_gridmap_find_local_user(
 
 /**
  * @name Gridmap Parse Line
- * @ingroup globus_i_gsi_gss_assist
  */
 /* @{ */
 /**
+ * @ingroup globus_i_gsi_gss_assist
  * 
  * Given a line from the gridmap file, parse it returning
  * a gridmap_line_t structure. line is modified during parsing.
@@ -1016,10 +1016,10 @@ globus_i_gss_assist_gridmap_parse_line(
 
 /**
  * @name globus_i_gsi_gss_assist
- * @ingroup globus_i_gsi_gss_assist
  */
 /* @{ */
 /**
+ * @ingroup globus_i_gsi_gss_assist
  * Frees all memory allocated to a gridmap_line_t structure.
  *
  * @param gline
@@ -1065,10 +1065,10 @@ globus_i_gss_assist_gridmap_line_free(
 
 /**
  * @name Gridmap Parse Globusid
- * @ingroup globus_i_gsi_gss_assist
  */
 /* @{ */
 /**
+ * @ingroup globus_i_gsi_gss_assist
  * Given a pointer to a string containing the globusid from the
  * gridmap file, return a pointer to a string containing the
  * parsed from of the id.
@@ -1227,10 +1227,10 @@ globus_i_gss_assist_gridmap_parse_globusid(
 
 /**
  * @name Hexadecimal Digit to Integer
- * @ingroup globus_i_gsi_gss_assist
  */
 /* @{ */
 /**
+ * @ingroup globus_i_gsi_gss_assist
  * Convert an ascii character representing a hexadecimal digit
  * into an integer.
  *
@@ -1263,6 +1263,7 @@ globus_i_gss_assist_xdigit_to_value(
 
 
 /**
+ * @ingroup globus_i_gsi_gss_assist
  * Look up all globus ids associated with a given user id.
  *
  * @param username
@@ -1546,6 +1547,7 @@ globus_gss_assist_map_and_authorize(
 }
 /* globus_gss_assist_map_and_authorize */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 static
 globus_result_t
 globus_l_gss_assist_gridmap_lookup(
@@ -1684,3 +1686,4 @@ globus_l_gss_assist_gridmap_lookup(
  error:
     return result;
 }
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */

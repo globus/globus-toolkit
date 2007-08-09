@@ -81,6 +81,11 @@ EXTERN_C_BEGIN
 extern
 globus_module_descriptor_t              globus_i_gsi_gss_assist_module;
 
+/**
+ * @defgroup globus_gsi_gss_assist Utility Functions
+ *
+ * Utility functions for GSSAPI
+ */
 #define _GASL(s) globus_common_i18n_get_string( \
 		    GLOBUS_GSI_GSS_ASSIST_MODULE, \
 		    s)
