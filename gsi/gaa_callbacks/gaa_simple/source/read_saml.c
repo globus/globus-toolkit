@@ -39,7 +39,7 @@ gaa_simple_l_add_ads_rights (gaa_ptr		gaa,
 			     int		ebuflen);
 
 
-/** gaa_simple_read_saml()
+/**
  *
  * @ingroup gaa_simple
  *
@@ -261,20 +261,26 @@ gaa_simple_l_name_matches(char *	policyname,
     return(matches);
 }
 
-/** gaa_simple_l_add_ads_rights
+/**
  *
  * Add all policy rights from this ads.
  *
+ * @param gaa
+ *        input gaa pointer
  * @param policy
  *	  input/output - policy to add rights to.
  * @param ads
  * 	  input - ads to read rights from
- * @param found_rights
- *	  output - 1 if any rights were added, 0 otherwise
+ * @param NotBefore
+ *        input - NotBefore attribute
+ * @param NotOnOrAfter
+ *        input - NotOnOrAfter attribute
  * @param ebuf
  *	  output - buffer to hold error string
  * @param ebuflen
  *        input - length of ebuf
+ * @param found_rights
+ *	  output - 1 if any rights were added, 0 otherwise
  */
 static gaa_status
 gaa_simple_l_add_ads_rights (gaa_ptr 		gaa,

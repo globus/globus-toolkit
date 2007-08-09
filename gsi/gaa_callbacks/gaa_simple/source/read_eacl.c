@@ -18,7 +18,7 @@
 #include "gaa_simple.h"
 #include "gaa_util.h"
 
-/** gaa_simple_read_eacl()
+/**
  *
  * @ingroup gaa_simple
  *

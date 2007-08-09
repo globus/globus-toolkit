@@ -18,6 +18,10 @@
 #define _GAA_SIMPLE_H_
 
 #include <stdio.h>
+
+/**
+ * @defgroup gaa_simple GAA Simple Callback API
+ */
 struct gaa_simple_eacl_args {
     char *dirname;
     FILE *errfile;

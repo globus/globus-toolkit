@@ -21,10 +21,10 @@
 #include "string.h"
 #define MY_MECHNAME "gss"
 
-/** @defgroup gaa_gss_generic "gaa generic gss callbacks"
+/** @defgroup gaa_gss_generic GAA Generic GSSAPI Callbacks
  */
 
-/** gaa_gss_generic_cred_pull()
+/**
  *
  * @ingroup gaa_gss_generic
  *
@@ -66,7 +66,7 @@ gaa_gss_generic_cred_pull(gaa_ptr		gaa,
     return(gaa_add_cred(gaa, sc, cred));
 }
 
-/** gaa_gss_generic_cred_eval()
+/**
  *
  * @ingroup gaa_gss_generic
  *
@@ -151,7 +151,7 @@ gaa_gss_generic_cred_eval(gaa_ptr		gaa,
     return(GAA_S_SUCCESS);
 }
 
-/** gaaglobus_map_cred_verify()
+/**
  *
  * @ingroup gaa_gss_generic
  *

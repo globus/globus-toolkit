@@ -18,7 +18,7 @@
 #include "gaa_simple.h"
 #include <string.h>
 
-/** gaa_simple_assert_cred_pull()
+/**
  *
  * @ingroup gaa_simple
  *
@@ -75,7 +75,7 @@ gaa_simple_assert_cred_pull(gaa_ptr	gaa,
     return(status);
 }
 
-/** gaa_simple_assert_cred_eval()
+/**
  *
  * @ingroup gaa_simple
  *
@@ -132,7 +132,7 @@ gaa_simple_assert_cred_eval(gaa_ptr	gaa,
     return(status);
 }
 
-/** gaa_simple_assert_cred_verify()
+/**
  *
  * @ingroup gaa_simple
  *
