@@ -19,10 +19,6 @@ package org.globus.usage.packets;
 import java.net.InetAddress;
 import java.net.Inet6Address;
 import java.net.UnknownHostException;
-import java.sql.Timestamp;
-import java.sql.PreparedStatement;
-import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.Date;
 import java.util.Calendar;
 
@@ -235,40 +231,5 @@ HOSTNAME=mayed.mcs.anl.gov START=20050225073026.426286 END=20050225073026.560613
 	} else {
 	    return 4;
 	}
-    }
-
-    public PreparedStatement toSQL(Connection con, String tablename) throws SQLException{
-
-	PreparedStatement ps;
-	StringBuffer sqlContents = new StringBuffer();
-	sqlContents.append("INSERT INTO ");
-	sqlContents.append(tablename);
-	sqlContents.append(" (component_code, version_code, send_time, ip_version, hostname, gftp_version, stor_or_retr, start_time, end_time, num_bytes, num_stripes, num_streams, buffer_size, block_size, ftp_return_code) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);");
-	ps = con.prepareStatement(sqlContents.toString());
-
-	ps.setShort(1, getComponentCode());
-	ps.setShort(2, getPacketVersion());
-	ps.setTimestamp(3, new Timestamp(timeSent));
-	ps.setByte(4, getIPVersion());
-        ps.setString(5, Util.getAddressAsString(senderAddress));
-	ps.setString(6, gridFTPVersion);
-	ps.setByte(7, storOrRetr);
-	if (startTime == null)
-	    ps.setLong(8, 0L);
-	else
-	    ps.setTimestamp(8, new Timestamp(startTime.getTime()));
-	if (endTime == null)
-	    ps.setLong(9, 0L);
-	else
-	    ps.setTimestamp(9, new Timestamp(endTime.getTime()));
-	ps.setLong(10, numBytes);
-	ps.setLong(11, numStripes);
-	ps.setLong(12, numStreams);
-	ps.setLong(13, bufferSize);
-	ps.setLong(14, blockSize);
-	ps.setLong(15, ftpReturnCode);
-	
-	return ps;
-
     }
 }

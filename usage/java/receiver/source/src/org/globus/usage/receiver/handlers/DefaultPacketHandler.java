@@ -20,6 +20,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.PreparedStatement;
+import java.util.Properties;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -35,8 +36,8 @@ public class DefaultPacketHandler implements PacketHandler {
 
     private static Log log = LogFactory.getLog(DefaultPacketHandler.class);
 
-    protected String dburl;
     protected String table;
+    protected String poolName;
     protected Connection con;
 
     /* Get a connection from the pool only when we need it, in handlePacket,
@@ -44,10 +45,18 @@ public class DefaultPacketHandler implements PacketHandler {
     protected long packetCount;
     protected long lostCount;
 
+    public DefaultPacketHandler(Properties props) {
+        this(props.getProperty("database-pool"),
+             props.getProperty("default-table", "unknown_packets"));
+    }
+
     /*Gets a database connection from the pool created by the HandlerThread.
      table is the name of the table in that database to write packets to.*/
-    public DefaultPacketHandler(String dburl, String table) throws SQLException {
-	//        this.dburl = dburl;
+    public DefaultPacketHandler(String poolName, String table) {
+        this.con = null;
+        this.packetCount = 0;
+        this.lostCount = 0;
+        this.poolName = poolName;
         this.table = table;
     }
 
@@ -95,22 +104,30 @@ public class DefaultPacketHandler implements PacketHandler {
 	this.packetCount++;
 
         try {
-	    con = DriverManager.getConnection(HandlerThread.dbPoolName);
-
-            if (log.isDebugEnabled()) {
-                log.debug("Will write this packet to database table "
-                          + table + ": ");
-                log.debug(pack.toString());
+            if (poolName != null)
+            {
+                con = DriverManager.getConnection(poolName);
+                if (log.isDebugEnabled()) {
+                    log.debug("Will write this packet to database table "
+                              + table + ": ");
+                    log.debug(pack.toString());
+                }
+                
+                stmt = makeSQLInsert(pack);
+                stmt.executeUpdate();
+            } else {
+                this.lostCount++;
+                log.error("No database pool defined.");
+                log.error(pack.toString());
+                log.error("Packet contents:");
+                log.error(getPacketContentsBinary(pack));
             }
-	    
-	    stmt = makeSQLInsert(pack);
-	    stmt.executeUpdate();
         } catch(SQLException e) {
             this.lostCount++;
             log.error(e.getMessage());
             log.error(pack.toString());
             String packetData = getPacketContentsBinary(pack);
-	    log.error("Packet contents:");
+            log.error("Packet contents:");
             log.error(packetData);
         } finally {
             if (stmt != null) {
@@ -121,6 +138,7 @@ public class DefaultPacketHandler implements PacketHandler {
             if (con != null) {
                 try {
                     con.close();
+                    con = null;
                 } catch (SQLException e) {}
             }
         }

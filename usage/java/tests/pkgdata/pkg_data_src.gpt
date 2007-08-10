@@ -57,6 +57,11 @@
                 <Simple_Version Major="0"/>
             </Version>
         </Dependency>
+        <Dependency Name="globus_java_ws_core_test_base" Package="pgm">
+            <Version>
+                <Simple_Version Major="0"/>
+            </Version>
+        </Dependency>
     </Source_Dependencies>
 
     <Build_Instructions>

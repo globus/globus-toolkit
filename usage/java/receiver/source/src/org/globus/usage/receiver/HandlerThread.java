@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.LinkedList;
 import java.util.ListIterator;
 import java.util.Properties;
+import java.lang.reflect.Constructor;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -40,59 +41,49 @@ import org.apache.commons.dbcp.DriverManagerConnectionFactory;
 
 
 public class HandlerThread extends Thread {
-
-    public static final String dbPoolName = "jdbc:apache:commons:dbcp:usagestats";
-    private static final String POOL_NAME = "usagestats";
-
     private static Log log = LogFactory.getLog(HandlerThread.class);
 
     private LinkedList handlerList; /*a reference to the one in Receiver*/
     private RingBuffer theRing; /*a reference to the one in Receiver*/
-    private boolean stillGood = true;
-    private DefaultPacketHandler theDefaultHandler;
+    protected boolean stillGood = true;
+    protected PacketHandler theDefaultHandler;
 
     private int packetsLogged;
     private int errorCount;
     private int unknownPackets;
 
-    public HandlerThread(LinkedList list, RingBuffer ring, Properties props) {
-        super("UDPHandlerThread");
+    public HandlerThread(RingBuffer ring, Properties props) {
+        super("HandlerThread");
 
-        this.handlerList = list;
+        handlerList = new LinkedList();
         this.theRing = ring;
+        this.theDefaultHandler = null;
 
-        String driverClass = props.getProperty("database-driver");
-        String dburl = props.getProperty("database-url");
-        String table = props.getProperty("default-table");
-         
-	try {
-	    Class.forName(driverClass);
-	    setUpDatabaseConnectionPool(dburl, props);
-	    theDefaultHandler = new DefaultPacketHandler(dburl, table);
-	} catch (Exception e) {
-	    log.error("Can't start handler thread: " + e.getMessage());
-	    stillGood = false;
-	}
+        String handlerProp = props.getProperty("handlers");
+
+        if (handlerProp == null)
+        {
+            throw new RuntimeException("handler set not configured");
+        }
+
+        String [] handlers = handlerProp.split("\\s");
+
+        Class parameterTypes[] = { java.util.Properties.class };
+        Object parameters[] = { props };
+
+        for (int i = 0; i < handlers.length; i++) {
+            try {
+                Class handlerClass = Class.forName(handlers[i]);
+                Constructor constructor = handlerClass.getConstructor(parameterTypes);
+                PacketHandler p = (PacketHandler) constructor.newInstance(parameters);
+
+                handlerList.add(p);
+            } catch (Exception e) {
+                log.error("Error loading handler class for " + handlers[i], e);
+            }
+        }
     }
 
-    private void setUpDatabaseConnectionPool(String dburl, Properties props) 
-        throws Exception {
-	/*Set up database connection pool:  all handlers which need a 
-	  database connection (which, so far, is all handlers) can take
-	  connections from this pool.*/
-        
-        String dbuser = props.getProperty("database-user");
-        String dbpwd = props.getProperty("database-pwd");
-        String dbValidationQuery = props.getProperty("database-validation-query");
-
-	GenericObjectPool connectionPool = new GenericObjectPool(null);
-	ConnectionFactory connectionFactory = new DriverManagerConnectionFactory(dburl, dbuser, dbpwd);
-	PoolableConnectionFactory poolableConnectionFactory = 
-            new PoolableConnectionFactory(connectionFactory, connectionPool, null, 
-                                          dbValidationQuery, false, true);
-	PoolingDriver driver = new PoolingDriver();
-	driver.registerPool(POOL_NAME, connectionPool);
-    }
 
     /*The handler thread maintains counts of the number of packets 
       successfully written to database and the number that could not
@@ -113,6 +104,13 @@ public class HandlerThread extends Thread {
 	this.packetsLogged = 0;
 	this.errorCount = 0;
         this.unknownPackets = 0;
+
+        ListIterator it = handlerList.listIterator();
+        while (it.hasNext()) {
+            PacketHandler oneHandler = (PacketHandler)it.next();
+
+            oneHandler.resetCounts();
+        }
     }
 
     /*This thread waits on the RingBuffer; when packets come in, it starts
@@ -121,7 +119,7 @@ public class HandlerThread extends Thread {
         short componentCode, versionCode;
         CustomByteBuffer bufFromRing = null;
 
-        while(stillGood) {
+        while (stillGood) {
             try {
                 /*If ring is empty, this call will result in a thread wait
                   and will not return until there's something to read.*/
@@ -149,15 +147,14 @@ public class HandlerThread extends Thread {
                   maybe restart the connection right here.*/
             }
 	}
-
-        closeDatabaseConnectionPool();
     }
 
     /*Use component code and version code in packet to decide
       which handler to use:*/
     private void tryHandlers(CustomByteBuffer bufFromRing,
                              short componentCode,
-                             short versionCode) {
+                             short versionCode)
+    throws Exception {
         UsageMonitorPacket packet;
         boolean hasBeenHandled;
         PacketHandler handler;
@@ -177,7 +174,7 @@ public class HandlerThread extends Thread {
                     hasBeenHandled = true;
                 }
             }
-            if (!hasBeenHandled) {
+            if ((!hasBeenHandled) && theDefaultHandler != null) {
                 packet = theDefaultHandler.instantiatePacket(bufFromRing);
                 packet.parseByteArray(bufFromRing.array());
                 theDefaultHandler.handlePacket(packet);
@@ -187,6 +184,8 @@ public class HandlerThread extends Thread {
                     log.debug("Unknown packet: " +
                        DefaultPacketHandler.getPacketContentsBinary(packet));
                 }
+            } else if (!hasBeenHandled) {
+                throw new Exception("Unhandled packet");
             }
         }
         /*If multiple handlers return true for doCodesMatch, each
@@ -195,18 +194,23 @@ public class HandlerThread extends Thread {
           handlers trigger.*/        
     }
 
-    protected void closeDatabaseConnectionPool() {
-        log.info("Closing database connection pool");
-	try {
-	    PoolingDriver driver = 
-                (PoolingDriver)DriverManager.getDriver("jdbc:apache:commons:dbcp:");
-	    driver.closePool(POOL_NAME);
-	} catch(Exception e) {
-	    log.warn(e.getMessage());
-	}
-    }
-
     public void shutDown() {
         stillGood = false; //lets the loop in run() finish
+    }
+
+    String getStatus(boolean doReset) {
+        StringBuffer buf = new StringBuffer();
+        String newline = System.getProperty("line.separator");
+
+        ListIterator it = handlerList.listIterator();
+        while (it.hasNext()) {
+            PacketHandler oneHandler = (PacketHandler)it.next();
+            buf.append(oneHandler.getStatus());
+            buf.append(newline);
+            if (doReset) {
+                oneHandler.resetCounts();
+            }
+        }
+        return buf.toString();
     }
 }

@@ -19,15 +19,17 @@ package org.globus.usage.receiver.handlers;
 import org.globus.usage.packets.CustomByteBuffer;
 import org.globus.usage.packets.UsageMonitorPacket;
 
-public interface PacketHandler {
-    /*I separate instantiating and handling the packet to make it easier
-      to reuse code -- in case, for instance, you want to write two handlers
-      which instantiate the same packet subclass, but do two different
-      things to the resulting packet... or vice-versa.*/
+import java.util.Properties;
 
+public interface PacketHandler {
+    /* Indicate willingness to handle the packet */
     public boolean doCodesMatch(short componentCode, short versionCode);
+    /* Allocate the appropriate packet type for the handler to consume */
     public UsageMonitorPacket instantiatePacket(CustomByteBuffer rawBytes);
+    /* Handle packet */
     public void handlePacket(UsageMonitorPacket pack);
+    /* Clear count of handled/dropped packets */
     public void resetCounts();
+    /* Get status string related to handler-specific processing */
     public String getStatus();
 }

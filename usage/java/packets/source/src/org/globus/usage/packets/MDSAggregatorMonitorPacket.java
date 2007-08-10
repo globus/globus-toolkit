@@ -17,11 +17,6 @@ package org.globus.usage.packets;
 
 import java.util.Date;
 
-import java.sql.Timestamp;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Connection;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -140,22 +135,4 @@ public class MDSAggregatorMonitorPacket
     public void display() {
         log.info(this.toString());
     }
-    
-    public PreparedStatement toSQL(Connection con, String tablename) throws SQLException{
-
-	PreparedStatement ps;
-	ps = con.prepareStatement("INSERT INTO "+tablename+" (component_code, version_code, send_time, ip_address, service_name, lifetime_reg_count, current_reg_count, resource_creation_time) VALUES(?, ?, ?, ?, ?, ?, ?, ?);");
-
-	ps.setShort(1, this.getComponentCode());
-	ps.setShort(2, this.getPacketVersion());
-	ps.setTimestamp(3, new Timestamp(this.getTimestamp()));
-	ps.setString(4, Util.getAddressAsString(getHostIP()));
-
-        ps.setString(5, this.serviceName);
-	ps.setLong(6, this.lifetimeRegistrationCount);
-        ps.setLong(7, this.currentRegistrantCount);
-	ps.setTimestamp(8, new Timestamp(this.resourceCreationTime.getTime()));
-
-	return ps;
-    }    
 } 

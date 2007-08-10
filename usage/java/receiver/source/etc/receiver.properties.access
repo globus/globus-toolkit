@@ -17,4 +17,4 @@ cws-core-table = c_ws_core_packets
 gram-table = gram_packets
 rls-table = rls_packets
 mds-table = mds_packets
-
+ogsadai-table = ogsadai_packets

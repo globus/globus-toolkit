@@ -22,6 +22,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Date;
 import java.util.Calendar;
+import java.util.TimeZone;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -111,7 +112,7 @@ public class CStylePacket extends UsageMonitorPacket {
 
 	Calendar epoch;
 	int secondsSinceEpoch;
-	epoch = Calendar.getInstance();
+	epoch = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
         secondsSinceEpoch = buf.getIntBigEndian();
         epoch.clear();
         epoch.set(Calendar.MILLISECOND, 0);

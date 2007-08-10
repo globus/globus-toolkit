@@ -22,17 +22,22 @@ import org.apache.commons.logging.LogFactory;
 import org.globus.usage.packets.CWSMonitorPacket;
 import org.globus.usage.packets.CustomByteBuffer;
 import org.globus.usage.packets.UsageMonitorPacket;
+import org.globus.usage.packets.Util;
 
+import java.util.Properties;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 
 /*Handler which writes GramUsageMonitor packets to database.*/
 public class CCorePacketHandler extends DefaultPacketHandler {
 
     private static Log log = LogFactory.getLog(CCorePacketHandler.class);
 
-    public CCorePacketHandler(String dburl, String table) throws SQLException {
-        super(dburl, table);
+    public CCorePacketHandler(Properties props) throws SQLException {
+
+        super(props.getProperty("database-pool"),
+              props.getProperty("cws-core-table", "c_ws_core_packets"));
     }
 
     public boolean doCodesMatch(short componentCode, short versionCode) {
@@ -49,14 +54,24 @@ public class CCorePacketHandler extends DefaultPacketHandler {
    
     //uses DefaultPacketHandler's handlePacket().
 
-    protected PreparedStatement makeSQLInsert(UsageMonitorPacket pack) throws SQLException{
+    protected PreparedStatement makeSQLInsert(UsageMonitorPacket pack) throws SQLException {
         if (!(pack instanceof CWSMonitorPacket)) {
             log.error("Can't happen.");
             throw new SQLException();
         }
 
-        CWSMonitorPacket cPack= (CWSMonitorPacket)pack;
-        return cPack.toSQL(this.con, this.table);
+        CWSMonitorPacket cPack= (CWSMonitorPacket) pack;
+
+	PreparedStatement ps;
+
+	ps = con.prepareStatement("INSERT INTO "+table+" (component_code, version_code, send_time, ip_address) VALUES (?, ?, ?, ?);");
+	
+	ps.setShort(1, cPack.getComponentCode());
+	ps.setShort(2, cPack.getPacketVersion());
+	ps.setTimestamp(3, new Timestamp(cPack.getTimestamp()));
+	ps.setString(4, Util.getAddressAsString(cPack.getHostIP()));
+
+	return ps;
     }
 }
 

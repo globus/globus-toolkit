@@ -30,16 +30,16 @@ import org.globus.wsrf.container.usage.ContainerUsageStopPacketV2;
 import java.sql.SQLException;
 import java.sql.PreparedStatement;
 import java.sql.Timestamp;
+import java.util.Properties;
 
 public class JavaCorePacketHandlerV2 extends DefaultPacketHandler {
-
     private static Log log = 
         LogFactory.getLog(JavaCorePacketHandlerV2.class);
-
     
-    public JavaCorePacketHandlerV2(String db, String table) 
+    public JavaCorePacketHandlerV2(Properties props)
         throws SQLException {
-        super(db, table);
+        super(props.getProperty("database-pool"),
+              props.getProperty("jws-core-table", "java_ws_core_packets"));
     }
 
     public String getDescription() {

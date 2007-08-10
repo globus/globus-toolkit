@@ -22,16 +22,20 @@ import org.apache.commons.logging.LogFactory;
 import org.globus.usage.packets.CustomByteBuffer;
 import org.globus.usage.packets.MDSAggregatorMonitorPacket;
 import org.globus.usage.packets.UsageMonitorPacket;
+import org.globus.usage.packets.Util;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.util.Properties;
 
 public class MDSAggregatorPacketHandler extends DefaultPacketHandler {
 
     private static Log log = LogFactory.getLog(MDSAggregatorPacketHandler.class);
 
-    public MDSAggregatorPacketHandler(String dburl, String table) throws SQLException {
-        super(dburl, table);
+    public MDSAggregatorPacketHandler(Properties props) throws SQLException {
+        super(props.getProperty("database-pool"),
+              props.getProperty("mds-table", "mds_packets"));
     }
 
     public boolean doCodesMatch(short componentCode, short versionCode) {
@@ -49,7 +53,20 @@ public class MDSAggregatorPacketHandler extends DefaultPacketHandler {
         }
 
         MDSAggregatorMonitorPacket mds = (MDSAggregatorMonitorPacket)packet;
-        
-        return mds.toSQL(this.con, this.table);
+
+	PreparedStatement ps;
+	ps = con.prepareStatement("INSERT INTO "+table+" (component_code, version_code, send_time, ip_address, service_name, lifetime_reg_count, current_reg_count, resource_creation_time) VALUES(?, ?, ?, ?, ?, ?, ?, ?);");
+
+	ps.setShort(1, mds.getComponentCode());
+	ps.setShort(2, mds.getPacketVersion());
+	ps.setTimestamp(3, new Timestamp(mds.getTimestamp()));
+	ps.setString(4, Util.getAddressAsString(mds.getHostIP()));
+
+        ps.setString(5, mds.getServiceName());
+	ps.setLong(6, mds.getLifetimeRegistrationCount());
+        ps.setLong(7, mds.getCurrentRegistrantCount());
+	ps.setTimestamp(8, new Timestamp(mds.getResourceCreationTime().getTime()));
+
+	return ps;
     }
 }

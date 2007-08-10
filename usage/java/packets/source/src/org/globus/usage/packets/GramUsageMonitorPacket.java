@@ -21,10 +21,6 @@
 package org.globus.usage.packets;
 
 import java.net.Inet6Address;
-import java.sql.Timestamp;
-import java.sql.PreparedStatement;
-import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.Date;
 
 import org.apache.commons.logging.Log;
@@ -360,29 +356,6 @@ public class GramUsageMonitorPacket
         logger.info("jobType = "+jobType);
         logger.info("gt2ErrorCode = "+gt2ErrorCode);
         logger.info("faultClass = "+faultClass);
-    }
-
-
-    public PreparedStatement toSQL(Connection con, String tablename) throws SQLException {
-	PreparedStatement ps;
-	ps = con.prepareStatement("INSERT INTO "+tablename+" (component_code, version_code, send_time, ip_address, creation_time, scheduler_type, job_credential_endpoint_used, file_stage_in_used, file_stage_out_used, file_clean_up_used, clean_up_hold_used, job_type, gt2_error_code, fault_class) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);");
-	
-	ps.setShort(1, this.getComponentCode());
-	ps.setShort(2, this.getPacketVersion());
-	ps.setTimestamp(3, new Timestamp(this.getTimestamp()));
-        ps.setString(4, Util.getAddressAsString(getHostIP()));
-	ps.setTimestamp(5, new Timestamp(this.creationTime.getTime()));
-	ps.setString(6, this.localResourceManager);
-	ps.setBoolean(7, this.jobCredentialEndpointUsed);
-	ps.setBoolean(8, this.fileStageInUsed);
-	ps.setBoolean(9, this.fileStageOutUsed);
-	ps.setBoolean(10, this.fileCleanUpUsed);
-	ps.setBoolean(11, this.cleanUpHoldUsed);
-	ps.setByte(12, this.jobType);
-	ps.setInt(13, this.gt2ErrorCode);
-	ps.setByte(14, this.faultClass);
-
-	return ps;
     }
 }
 

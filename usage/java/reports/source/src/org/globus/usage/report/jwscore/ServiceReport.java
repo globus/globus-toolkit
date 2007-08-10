@@ -103,6 +103,8 @@ public class ServiceReport {
             "  -step <day|month>        Specifies step type (default: 'day')\n" +
             "  -n <steps>               Specifies number of steps to do to\n" +
             "                           determine end date (default: 1)\n" +
+            "  -table TABLENAME         Use TABLENAME instead of the\n" +
+            "                           java_ws_core_packets table\n" +
             "\n";
         
         if (args.length == 0) {
@@ -114,7 +116,9 @@ public class ServiceReport {
             System.exit(1);
         }
 
-        String baseQuery = "select service_list,container_type,ip_address from java_ws_core_packets where event_type = 1 and ";
+        String baseQueryStart = "select service_list,container_type,ip_address from ";
+        String table = "java_ws_core_packets";
+        String baseQueryEnd = " where event_type = 1 and ";
         int n = 1;
         String containerType = "all";
         String stepStr = "day";
@@ -123,13 +127,15 @@ public class ServiceReport {
             if (args[i].equals("-n")) {
                 n = Integer.parseInt(args[++i]);
             } else if (args[i].equals("-type")) {
-                baseQuery += " container_type = " + args[++i] + " and ";
+                baseQueryEnd += " container_type = " + args[++i] + " and ";
             } else if (args[i].equals("-step")) {
                 stepStr = args[++i];
             } else if (args[i].equalsIgnoreCase("-help")) {
                 System.err.println(USAGE);
                 System.err.println(HELP);
                 System.exit(1);
+            } else if (args[i].equals("-table")) {
+                table = args[++i];
             } else {
                 System.err.println("Unknown argument: " + args[i]);
                 System.exit(1);
@@ -182,7 +188,7 @@ public class ServiceReport {
             System.out.println("  <end-date>" + endDateStr + "</end-date>");
 
 
-            String query = baseQuery + timeFilter;
+            String query = baseQueryStart + table + baseQueryEnd + timeFilter;
 
             ResultSet rs = db.retrieve(query);
 

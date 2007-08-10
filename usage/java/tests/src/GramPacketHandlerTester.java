@@ -29,7 +29,6 @@ import org.globus.usage.receiver.handlers.GRAMPacketHandler;
 public class GramPacketHandlerTester extends TestCase {
     static private java.util.Random random = new java.util.Random();
     static private GRAMPacketHandler handler = null;
-    static private org.globus.usage.receiver.HandlerThread handlerThread;
     
     public GramPacketHandlerTester(String name) {
 	super(name);
@@ -38,22 +37,9 @@ public class GramPacketHandlerTester extends TestCase {
     public void setUp() throws Exception {
         String dburl = System.getProperty("dburl");
 
-        if (dburl != null && !dburl.equals("${dburl}"))
-        {
-            System.out.println("Not skipping handler tests");
-            java.util.Properties props = new java.util.Properties();
+        java.util.Properties props = new java.util.Properties();
 
-            props.put("database-driver", "org.postgresql.Driver");
-            props.put("database-url", dburl);
-            props.put("default-table", "unknown_packets");
-
-            handlerThread = new  org.globus.usage.receiver.HandlerThread(
-                    null, null, props);
-
-            handler = new GRAMPacketHandler(
-                    dburl,
-                    "gram_packets");
-        }
+        handler = new GRAMPacketHandler(props);
     }
 
     private GramUsageMonitorPacket createPacket()
@@ -89,11 +75,6 @@ public class GramPacketHandlerTester extends TestCase {
       * packets.
       */
     public void testInstantiatePacket() {
-        if (handler == null)
-        {
-            System.out.println("Skipped testInstantiatePacket");
-            return;
-        }
         String testRM = "Test" + Integer.toString(random.nextInt());
         GramUsageMonitorPacket gramPack;
         org.globus.usage.packets.GramUsageMonitorPacket gramPack2;
@@ -199,11 +180,6 @@ public class GramPacketHandlerTester extends TestCase {
     }
 
     public void testGramHandler() {
-        if (handler == null)
-        {
-            System.out.println("Skipped testGramHandler");
-            return;
-        }
         GramUsageMonitorPacket gramPack;
         org.globus.usage.packets.GramUsageMonitorPacket gramPack2;
         try
@@ -215,7 +191,7 @@ public class GramPacketHandlerTester extends TestCase {
             gramPack.packCustomFields(buf);
             buf.rewind();
 
-            /* Is this the intended design? */
+            /* Is this the intended design to instantiate and parse in separate steps? */
             gramPack2 = (org.globus.usage.packets.GramUsageMonitorPacket)
                             handler.instantiatePacket(buf);
             gramPack2.parseByteArray(buf.array());
@@ -225,8 +201,6 @@ public class GramPacketHandlerTester extends TestCase {
             Assert.fail(e.toString());
             return;
         }
-        System.out.println("handler="+handler.toString());
-        System.out.println("gramPack="+gramPack.toString());
         handler.handlePacket(gramPack2);
     }
     static Object invokePrivateStaticMethod(Class targetClass, Object concreteObject,

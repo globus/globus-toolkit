@@ -34,14 +34,26 @@ Build Instructions:
              target="generateLauncher">
             <property name="launcher-name" value="globus-usage-receiver"/>
             <property name="class.name" 
-                value="org.globus.usage.receiver.samples.ExampleReceiver"/>
+                value="org.globus.usage.receiver.Receiver"/>
         </ant>
         <ant antfile="${build.launcher}" 
              target="generateLauncher">
             <property name="launcher-name" value="globus-usage-babysitter"/>
             <property name="class.name" 
-                value="org.globus.usage.receiver.samples.Babysitter"/>
+                value="org.globus.usage.receiver.Babysitter"/>
         </ant>
+        <ant antfile="${build.launcher}" 
+             target="generateLauncher">
+            <property name="launcher-name" value="globus-usage-dumper"/>
+            <property name="class.name" 
+                value="org.globus.usage.receiver.PacketDumper"/>
+        </ant>
+        <copy file="etc/receiver.properties.sample"
+              tofile="${deploy.dir}/etc/globus_usage_receiver/receiver.properties">
+              <filterset>
+                <filter token="USER" value="${user.name}"/>
+              </filterset>
+        </copy>
     </target>
         
 </project>

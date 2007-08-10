@@ -29,7 +29,7 @@ import java.util.Properties;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import org.globus.usage.packets.GFTPMonitorPacket;
+import org.globus.usage.packets.GFTPTextPacket;
 import org.globus.usage.packets.IPTimeMonitorPacket;
 import org.globus.usage.packets.UsageMonitorPacket;
 
@@ -71,7 +71,7 @@ public class ExampleGFTPSender {
                            long bufferSize, long blockSize, long ftpReturn,
                            String gftpVersion) {
 
-        GFTPMonitorPacket pack = new GFTPMonitorPacket();
+        GFTPTextPacket pack = new GFTPTextPacket();
         
         try {
             pack.setOperationType (opType);
@@ -85,8 +85,8 @@ public class ExampleGFTPSender {
             pack.setFTPReturnCode(ftpReturn);
             pack.setGridFTPVersion(gftpVersion) ;
 
-            pack.setComponentCode(GFTPMonitorPacket.COMPONENT_CODE);
-            pack.setPacketVersion(GFTPMonitorPacket.VERSION_CODE);
+            pack.setComponentCode(GFTPTextPacket.COMPONENT_CODE);
+            pack.setPacketVersion(GFTPTextPacket.VERSION_CODE);
             pack.setHostIP(InetAddress.getLocalHost());
             pack.setDateTime(new Date());
 
@@ -134,7 +134,7 @@ public class ExampleGFTPSender {
             sendPacket(outgoing);
             
             //full-fledged GFTP packet:
-            sendPacket(GFTPMonitorPacket.STOR_CODE,
+            sendPacket(GFTPTextPacket.STOR_CODE,
                           startDate, endDate, (long)65535,
                           (long)7, (long)3, (long)32000, (long)64000,
                           (long)227, "Version1");

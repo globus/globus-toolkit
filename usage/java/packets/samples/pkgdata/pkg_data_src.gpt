@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Format_Version="0.01" Name="globus_usage_packets_samples">
 
-  <Aging_Version Age="0" Major="0" Minor="1" />
+  <Aging_Version Age="0" Major="0" Minor="2" />
   <Description> GT4 Usage Packet Samples</Description>
   <Functional_Group>Usage</Functional_Group>
   <Version_Stability Release="alpha"/>
