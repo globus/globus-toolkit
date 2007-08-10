@@ -24,7 +24,8 @@ package org.globus.exec.monitoring;
  * shut down (normally or abnormally).
  * </p>
  */
-public interface JobStateRecoveryListener {
+public interface JobStateRecoveryListener
+{
     /**
      * Update the value of the timestamp used for recovering this
      * JobStatemonitor instance.
