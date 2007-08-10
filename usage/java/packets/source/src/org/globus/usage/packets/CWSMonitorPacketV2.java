@@ -36,8 +36,8 @@ public class CWSMonitorPacketV2 extends CStylePacket {
 
     static public int START_EVENT = 1;
     static public int STOP_EVENT = 2;
-    private Integer id;
-    private Integer event;
+    private int id;
+    private int event;
     private String services;
 
     public CWSMonitorPacketV2() {
@@ -47,19 +47,19 @@ public class CWSMonitorPacketV2 extends CStylePacket {
     }
 
     public int getId() {
-        return id.intValue();
+        return id;
     }
 
     public void setId(int id) {
-        this.id = new Integer(id);
+        this.id =id;
     }
 
     public int getEvent() {
-        return event.intValue();
+        return event;
     }
 
     public void setEvent(int event) {
-        this.event = new Integer(event);
+        this.event = event;
     }
 
     public String getServices() {
@@ -85,11 +85,11 @@ public class CWSMonitorPacketV2 extends CStylePacket {
         log.debug("Parsing fields");
 
         id = parser.getInt("ID");
-        log.debug("ID = " + id.toString());
+        log.debug("ID = " + Integer.toString(id));
         event = parser.getInt("EVENT");
-        log.debug("EVENT = " + event.toString());
+        log.debug("EVENT = " + Integer.toString(event));
         services = parser.getString("SERVICES");
-        log.debug("SERVICES = " + event.toString());
+        log.debug("SERVICES = " + services);
     }
 
     public PreparedStatement toSQL(Connection con, String tablename) throws SQLException {
