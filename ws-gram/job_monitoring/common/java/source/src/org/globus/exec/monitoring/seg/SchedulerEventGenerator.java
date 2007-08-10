@@ -40,6 +40,9 @@ class SchedulerEventGenerator extends Thread {
     /** Reference to the runtime used to start the SEG process */
     private static Runtime runtime = Runtime.getRuntime();
 
+    private static final String SEG_EXECUTABLE_NAME = 
+    	"globus-scheduler-event-generator";
+    
     /** Path to the SEG executable */
     private File path;
     /**
@@ -99,13 +102,12 @@ class SchedulerEventGenerator extends Thread {
      *     Indicates whether the SEG should be started as daemon or not
      */
     public SchedulerEventGenerator(
-        File                                path,
+        String                              globusLocation,
         String                              userName,
         String                              schedulerName,
         JobStateMonitor                     monitor,
         boolean                             segDaemon) 
     {
-        this.path = path;
         this.userName = userName;
         this.schedulerName = schedulerName;
         this.proc = null;
@@ -113,6 +115,9 @@ class SchedulerEventGenerator extends Thread {
         this.timeStamp = null;
         this.monitor = monitor;
         this.setDaemon(segDaemon);
+        this.path = new File(globusLocation +
+                File.separator + "libexec" +
+                File.separator + SEG_EXECUTABLE_NAME);
         lastRestart = 0;
     }
     
