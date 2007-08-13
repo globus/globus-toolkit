@@ -33,6 +33,7 @@ BUNDLE gt4-c-ws-core
         globus_c_wsrf_core_bindings
         globus_c_wsrf_core_tools
         globus_c_wsrf_sample_counter_bindings
+        globus_notification_consumer_factory_bindings
         globus_c_wsrf_sample_counter_client_test
         globus_c_wsrf_sample_secure_counter_service
 	globus_handler_ws_addressing
@@ -57,6 +58,7 @@ BUNDLE gt4-c-ws-core-test
         globus_java_ws_core_test_base
         globus_java_ws_core_test_interop
         globus_c_wsrf_core_test_interop_bindings
+        globus_c_wsrf_widget_notification_bindings
         globus_c_wsrf_core_test_interop_client_test
         globus_utp
         globus_c_wsrf_core_performance_test

@@ -119,6 +119,8 @@ globus_c_wsrf_sample_counter_client_test    wsrf/c/samples/counter/test gpt
 globus_c_wsrf_sample_counter_bindings       wsrf/c/samples/counter/source gpt
 globus_c_wsrf_sample_secure_counter_service wsrf/c/samples/counter/secure-service gpt
 globus_c_wsrf_core_test_interop_bindings    wsrf/c/core/tests/interop/source gpt
+globus_c_wsrf_widget_notification_bindings   wsrf/c/core/tests/interop/widget_notification gpt
+globus_notification_consumer_factory_bindings wsrf/c/core/tests/interop/notification_consumer_factory gpt
 globus_c_wsrf_core_performance_test         wsrf/c/core/tests/performance/ gpt
 globus_c_wsrf_providers_test_service_bindings wsrf/c/core/providers/test_service/ gpt
 globus_c_wsrf_providers_notification_test_bindings wsrf/c/core/providers/notification_test_service/ gpt
