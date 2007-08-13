@@ -707,10 +707,25 @@ globus_gram_job_manager_state_machine(
 	    rc = globus_gram_job_manager_state_file_read(request);
 	    if(rc != GLOBUS_SUCCESS)
 	    {
-                globus_gram_job_manager_request_set_status(request, GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
-		request->failure_code = rc;
-		request->jobmanager_state =
-		    GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
+                /* Short circuit to done when job manager is still alive */
+                if (rc == GLOBUS_GRAM_PROTOCOL_ERROR_OLD_JM_ALIVE)
+                {
+                    globus_gram_job_manager_request_set_status(
+                            request,
+                            GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
+                    request->failure_code = rc;
+                    rc = globus_l_gram_job_manager_reply(request);
+                    request->jobmanager_state = GLOBUS_GRAM_JOB_MANAGER_STATE_DONE;
+                }
+                else
+                {
+                    globus_gram_job_manager_request_set_status(
+                            request,
+                            GLOBUS_GRAM_PROTOCOL_JOB_STATE_FAILED);
+                    request->failure_code = rc;
+                    request->jobmanager_state =
+                        GLOBUS_GRAM_JOB_MANAGER_STATE_EARLY_FAILED;
+                }
 		break;
 	    }
 
