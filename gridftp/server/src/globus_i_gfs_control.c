@@ -2149,6 +2149,39 @@ error:
     return result;
 }
 
+void
+globus_i_gfs_control_end_421(
+    const char *                        msg)
+{
+    int                                 i;
+    int                                 kill_count;
+    globus_list_t *                     list;
+    globus_l_gfs_server_instance_t *    instance;
+    GlobusGFSName(globus_i_gfs_control_end_421);
+    GlobusGFSDebugEnter();
+
+    globus_mutex_lock(&globus_l_gfs_control_mutex);
+    {
+        kill_count = globus_list_size(globus_l_gfs_server_handle_list);
+
+        for(i = 0, list = globus_l_gfs_server_handle_list;
+            i < kill_count && !globus_list_empty(list);
+            i++, list = globus_list_rest(list))
+        {
+            instance = (globus_l_gfs_server_instance_t *)
+                globus_list_first(list);
+
+            globus_gridftp_server_control_421_end(
+                instance->server_handle,
+                msg);
+        }
+    }
+    globus_mutex_unlock(&globus_l_gfs_control_mutex);
+
+    GlobusGFSDebugExit();
+}
+
+
 globus_result_t
 globus_i_gfs_control_start(
     globus_xio_handle_t                 handle,

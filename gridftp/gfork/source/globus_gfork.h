@@ -96,6 +96,10 @@ globus_gfork_send(
     globus_xio_iovec_callback_t         cb,
     void *                              user_arg);
 
+globus_result_t
+globus_gfork_child_stop(
+    gfork_child_handle_t                in_handle);
+
 extern globus_module_descriptor_t       globus_i_gfork_parent_module;
 #define GLOBUS_GFORK_PARENT_MODULE &globus_i_gfork_parent_module
 extern globus_module_descriptor_t       globus_i_gfork_child_module;

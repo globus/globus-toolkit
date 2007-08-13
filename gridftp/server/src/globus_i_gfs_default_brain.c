@@ -278,6 +278,14 @@ error_cs:
 
 static
 void
+gfs_l_brain_killer_cb(
+    void *                              user_arg)
+{
+    exit(2);
+}
+
+static
+void
 globus_l_gfs_gfork_incoming_cb(
     gfork_child_handle_t                handle,
     void *                              user_arg,
@@ -285,6 +293,7 @@ globus_l_gfs_gfork_incoming_cb(
     globus_byte_t *                     buffer,
     globus_size_t                       len)
 {
+    globus_reltime_t                    delay;
     uint32_t                            n32;
     GlobusGFSName(globus_l_gfs_gfork_incoming_cb);
     
@@ -327,6 +336,16 @@ globus_l_gfs_gfork_incoming_cb(
             case GFS_GFORK_MSG_TYPE_KILL:
                 globus_i_gfs_log_message(
                     GLOBUS_I_GFS_LOG_WARN, "Kill message received.\n");
+
+                globus_i_gfs_control_end_421(
+                    "421 Server load too high. Try again later.\r\n");
+
+                GlobusTimeReltimeSet(delay, 5, 0);
+                globus_callback_register_oneshot(
+                    NULL,
+                    &delay,
+                    gfs_l_brain_killer_cb,
+                    NULL);
                 exit(2);
                 break;
         }

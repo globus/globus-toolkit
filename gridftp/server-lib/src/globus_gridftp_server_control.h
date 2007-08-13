@@ -787,6 +787,12 @@ globus_gridftp_server_control_event_send_restart(
     globus_gridftp_server_control_op_t      op,
     globus_range_list_t                     restart);
 
+
+void
+globus_gridftp_server_control_421_end(
+    globus_gridftp_server_control_t     server,
+    char *                              reply_msg);
+
 extern globus_module_descriptor_t      globus_i_gsc_module;
 
 #define GLOBUS_GRIDFTP_SERVER_CONTROL_MODULE (&globus_i_gsc_module)

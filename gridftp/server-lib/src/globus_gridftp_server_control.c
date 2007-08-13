@@ -1034,6 +1034,32 @@ i
 }
 
 void
+globus_gridftp_server_control_421_end(
+    globus_gridftp_server_control_t     server,
+    char *                              reply_msg)
+{
+    globus_i_gsc_server_handle_t *      server_handle;
+    GlobusGridFTPServerName(globus_gridftp_server_control_421_end);
+
+    GlobusGridFTPServerDebugInternalEnter();
+
+    server_handle = server;
+    globus_mutex_lock(&server_handle->mutex);
+    {
+        if(server_handle->outstanding_op != NULL)
+        {
+            globus_l_gsc_959_finished_command(
+                server_handle->outstanding_op, reply_msg);
+        }
+        globus_l_gsc_terminate(server_handle);
+    }
+    globus_mutex_unlock(&server_handle->mutex);
+
+    GlobusGridFTPServerDebugInternalExit();
+}
+
+
+void
 globus_gsc_959_terminate(
     globus_i_gsc_op_t *                 op,
     char *                              reply_msg)
