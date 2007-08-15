@@ -79,21 +79,6 @@ public class ExampleReceiver {
         try {
             props.load(propsIn);
             
-            databaseDriverClass = props.getProperty("database-driver");
-            databaseURL = props.getProperty("database-url");
-            defaultTable = props.getProperty("default-table");
-            gftpTable = props.getProperty("gftp-table");
-            gftpFilterTable = props.getProperty("gftp-filtered-out-table");
-            domainsToFilter = props.getProperty("gftp-filter-domains");
-            rftTable = props.getProperty("rft-table");
-            jwsCoreTable = props.getProperty("jws-core-table");
-            cCoreTable = props.getProperty("cws-core-table");
-            gramTable = props.getProperty("gram-table");
-            rlsTable = props.getProperty("rls-table");
-            mdsTable = props.getProperty("mds-table");
-            
-            ringBufferSize = Integer.parseInt(props.getProperty("ringbuffer-size"));
-
             if (props.getProperty("control-port") != null) {
                 controlPort = Integer.parseInt(
                                       props.getProperty("control-port"));
@@ -110,6 +95,8 @@ public class ExampleReceiver {
             if (port == 0) {
                 throw new Exception("You must specify listening port either on the command line or in the properties file.");
             }
+
+	    databaseURL = props.getProperty("database-url");
             
             /*When creating the receiver, pass it the port to listen on,
               the database connection class to use, the url to connect to your
@@ -119,7 +106,7 @@ public class ExampleReceiver {
             System.out.println("Database addresst "+databaseURL);
             System.out.println("Ringbuffer size is "+ringBufferSize);
             
-            receiver = new Receiver(port, ringBufferSize, props);
+            receiver = new Receiver(props);
             
             Thread shutdownThread = (new Thread() {
                 public void run() {
@@ -128,33 +115,6 @@ public class ExampleReceiver {
                 }
             });
             Runtime.getRuntime().addShutdownHook(shutdownThread);
-
-            /*gftpHandler is an example of a PacketHandler subclass.  I create
-              one here, giving it the neccessary database information, and then
-              register it to the receiver; it knows what to do with all
-	      incoming GFTP usage packets.*/
-            gftpHandler = new GridFTPPacketHandler(databaseURL, gftpFilterTable,
-                                                   gftpTable, domainsToFilter);
-            receiver.registerHandler(gftpHandler);
-	    
-	    /*Let's handle RFT usage packets too.  All packets that aren't
-	      GFTP or RFT will end up in the unknown_packets table.*/
-	    rftHandler = new RFTPacketHandler(databaseURL, rftTable);
-	    receiver.registerHandler(rftHandler);
-
-            receiver.registerHandler(
-                  new JavaCorePacketHandler(databaseURL, jwsCoreTable));
-            receiver.registerHandler(
-                  new JavaCorePacketHandlerV2(databaseURL, jwsCoreTable));
-
-	    cCoreHandler = new CCorePacketHandler(databaseURL, cCoreTable);
-	    receiver.registerHandler(cCoreHandler);
-	    gramHandler = new GRAMPacketHandler(databaseURL, gramTable);
-	    receiver.registerHandler(gramHandler);
-	    rlsHandler = new RLSPacketHandler(databaseURL, rlsTable);
-	    receiver.registerHandler(rlsHandler);
-            mdsHandler = new MDSAggregatorPacketHandler(databaseURL, mdsTable);
-	    receiver.registerHandler(mdsHandler);
 
 	    //start the control socket thread:
 	    new ControlSocketThread(receiver, controlPort).start();
