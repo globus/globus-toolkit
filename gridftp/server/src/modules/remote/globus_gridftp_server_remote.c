@@ -1660,7 +1660,7 @@ globus_l_gfs_remote_passive(
     num_nodes = data_info->max_cs;
     if(num_nodes < 1)
     {
-        num_nodes = globus_i_gfs_config_int("best_stripe_count");
+        num_nodes = globus_gfs_config_get_int("best_stripe_count");
     }
     if(num_nodes < 1)
     {
