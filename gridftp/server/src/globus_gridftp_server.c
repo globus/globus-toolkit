@@ -1127,7 +1127,8 @@ error:
 
 static
 void
-globus_l_gfs_server_build_child_args()
+globus_l_gfs_server_build_child_args(
+    globus_bool_t                       detach)
 {
     int                                 i;
     int                                 j;
@@ -1160,13 +1161,35 @@ globus_l_gfs_server_build_child_args()
     }
     for(i = 1, j = 1; prog_argv[i] != NULL; i++)
     {
-        if(strcmp(prog_argv[i], "-S") != 0 &&
-            strcmp(prog_argv[i], "-s") != 0)
+        char *                          arg = prog_argv[i];
+        
+        while(*arg == '-')
         {
-            globus_l_gfs_child_argv[j++] = prog_argv[i];
+            arg++;
         }
+        if(!detach)
+        {
+            if(!strcmp(arg, "s") || !strcmp(arg, "daemon"))
+            {
+                continue;
+            }
+        }
+        if(!strcmp(arg, "S") || !strcmp(arg, "detach"))
+        {
+            continue;
+        }
+
+        globus_l_gfs_child_argv[j++] = prog_argv[i];
     }
-    globus_l_gfs_child_argv[j++] = "-i";
+    
+    if(detach)
+    {
+        globus_l_gfs_child_argv[j++] = "-no-detach";
+    }
+    else
+    {
+        globus_l_gfs_child_argv[j++] = "-inetd";
+    }
     globus_l_gfs_child_argv[j] = NULL;
     globus_l_gfs_child_argc = j;
 }
@@ -1179,8 +1202,7 @@ globus_l_gfs_server_detached()
     pid_t                               pid;
     GlobusGFSName(globus_l_gfs_server_detached);
 
-    globus_l_gfs_server_build_child_args();
-    globus_l_gfs_child_argv[globus_l_gfs_child_argc-1] = "-s";
+    globus_l_gfs_server_build_child_args(GLOBUS_TRUE);
 
     pid = fork();
     if(pid < 0)
@@ -1496,7 +1518,7 @@ main(
         }
         else
         {
-            globus_l_gfs_server_build_child_args();
+            globus_l_gfs_server_build_child_args(GLOBUS_FALSE);
             globus_i_gfs_log_message(
                 GLOBUS_I_GFS_LOG_INFO,
                 "Server started in daemon mode.\n");
