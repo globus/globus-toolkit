@@ -1,3 +1,7 @@
+BUNDLE gsi_openssh_bundle
+	gsi_openssh
+	gsi_openssh_setup
+
 BUNDLE gt3-all-src
 	cas
 	servicegroup

@@ -1456,6 +1456,8 @@ sub package_sources()
             package_source_pnb($package, $subdir, $tree);
         } elsif ( $custom eq "tar" ) { 
             package_source_tar($package, $subdir);
+        } elsif ( $custom eq "make_gpt_dist" ) {
+            package_source_make_gpt_dist($package, $subdir);
         } else {
             print "You probably listed --trees, and need a package not from your list:\n";
             die "ERROR: Unknown custom packaging type '$custom' for $package.\n";
@@ -1557,6 +1559,8 @@ sub package_source_bootstrap()
     } elsif ( $custom eq "tar" ) {
        log_system("cp pkgdata/pkg_data_src.gpt pkgdata/pkg_data_src.gpt.in", "$pkglog/$package");
        log_system("cp pkgdata/filelist filelist", "$pkglog/$package");
+    } elsif ( $custom eq "make_gpt_dist" ) {
+       log_system("make -f Makefile.in distprep", "$pkglog/$package");
     }
 }
 
@@ -1759,6 +1763,17 @@ sub package_source_tar()
         paranoia "tar failed for $package.";
         return "$package_output/$tarfile.tar.gz";
     }
+}
+
+# --------------------------------------------------------------------
+sub package_source_make_gpt_dist()
+# --------------------------------------------------------------------
+{
+    my ($package, $subdir) = @_;
+
+    chdir "$subdir";
+    log_system("./make_gpt_dist", "$pkglog/$package");
+    log_system("mv ${package}*.tar.gz $package_output", "$pkglog/$package");
 }
 
 #TODO: Add bundle logging.

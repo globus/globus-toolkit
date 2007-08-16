@@ -43,3 +43,4 @@ rips_condor_provider_setup	information_services/rips-condor-provider-setup	gpt
 mmjfs_lsf_setup		program_execution/mmjfs-lsf-setup/		gpt
 mjs_lsf_setup		program_execution/mjs-lsf-setup/		gpt
 rips_lsf_provider_setup		information_services/rips-lsf-provider-setup	gpt
+gsi_openssh                     gssapi-openssh/openssh	make_gpt_dist

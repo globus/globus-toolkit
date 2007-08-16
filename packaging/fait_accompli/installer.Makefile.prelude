@@ -5,8 +5,9 @@ GLOBUS_IODBC_INCLUDES=@globus_iodbc_includes@
 GLOBUS_IODBC_LIBS=@globus_iodbc_libs@
 GLOBUS_UNIXODBC_INCLUDES=@globus_unixodbc_includes@
 GLOBUS_UNIXODBC_LIBS=@globus_unixodbc_libs@
+GSI_OPENSSH_ARGS=@gsiopensshargs@
 export GLOBUS_IODBC_INCLUDES GLOBUS_IODBC_LIBS GPT_LOCATION GLOBUS_LOCATION 
-export GLOBUS_UNIXODBC_INCLUDES GLOBUS_UNIXODBC_LIBS
+export GLOBUS_UNIXODBC_INCLUDES GLOBUS_UNIXODBC_LIBS GSI_OPENSSH_ARGS
 
 BUILD_OPTS=@buildopts@
 FLAVOR=@flavor@
@@ -49,17 +50,5 @@ gpt: @gptlocation@/sbin/gpt-postinstall
 install: postinstall
 postinstall:
 	${GPT_LOCATION}/sbin/gpt-postinstall
-
-# NCSA targets
-gsi-myproxy: gpt globus-gsi myproxy
-myproxy-only: gpt 
-	${GPT_LOCATION}/sbin/gpt-build ${BUILD_OPTS} -srcdir=source-trees/myproxy-3.7 ${FLAVOR}
-myproxy: gpt globus_gss_assist globus_gssapi_gsi
-	${GPT_LOCATION}/sbin/gpt-build ${BUILD_OPTS} -srcdir=source-trees/myproxy-3.7 ${FLAVOR}
-gsi-openssh: gpt globus-gsi gsi_openssh gsi_openssh_setup
-gsi_openssh: gpt globus_openssl globus_gss_assist
-	${GPT_LOCATION}/sbin/gpt-build ${BUILD_OPTS} -srcdir=source-trees/gsi_openssh-4.0-src ${FLAVOR} @gsiopensshargs@
-gsi_openssh_setup: gpt
-	${GPT_LOCATION}/sbin/gpt-build ${BUILD_OPTS} -srcdir=source-trees/gsi_openssh_setup-4.0-src ${FLAVOR}
 
 # Bundle dependencies, expressed in packages.

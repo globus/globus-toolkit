@@ -4,11 +4,9 @@ VERSION=TRUNK
 INSTALLER=gt$VERSION-all-source-installer
 AUTOTOOLS=source-trees/autotools/autotools/autoconf-2.59/config
 GPT=gpt*.tar.gz
-# Pre-made tarfiles for gsi-openssh/myproxy
-TARFILES="gsi_openssh-4.0-src.tar.gz gsi_openssh_setup-4.0-src.tar.gz myproxy-3.7.tar.gz"
 
-BUNDLES=globus-resource-management-server,globus-resource-management-client,globus-resource-management-sdk,globus-data-management-server,globus-data-management-client,globus-data-management-sdk,globus-rls-server,gt4-java-ws-core,gt4-java-admin,gt4-mds,gt4-delegation,gt4-rft,gt4-gram,gt4-gram-pbs,gt4-gram-condor,gt4-gram-lsf,gt4-cas,gt4-c-ws-core,prews-test,globus-internationalization,gt4-java-ws-core-test,gt4-c-ws-core-test,gt4-mds-test,gt4-gram-test,gt4-cas-delegation-test,gt4-rft-test,gt4-webmds,gt4-webmds-test,globus-gsi,gt4-replicator,gt4-wsrls
-PACKAGES=globus_rendezvous,globus_xio_udt_ref_driver,globus_xio_skeleton_driver,globus_rls_client_java
+BUNDLES=globus-resource-management-server,globus-resource-management-client,globus-resource-management-sdk,globus-data-management-server,globus-data-management-client,globus-data-management-sdk,globus-rls-server,gt4-java-ws-core,gt4-java-admin,gt4-mds,gt4-delegation,gt4-rft,gt4-gram,gt4-gram-pbs,gt4-gram-condor,gt4-gram-lsf,gt4-cas,gt4-c-ws-core,prews-test,globus-internationalization,gt4-java-ws-core-test,gt4-c-ws-core-test,gt4-mds-test,gt4-gram-test,gt4-cas-delegation-test,gt4-rft-test,gt4-webmds,gt4-webmds-test,globus-gsi,gt4-replicator,gt4-wsrls,gsi_openssh_bundle
+PACKAGES=globus_rendezvous,globus_xio_udt_ref_driver,globus_xio_skeleton_driver,globus_rls_client_java,myproxy
 
 
 echo Making configure/make installer
@@ -20,7 +18,7 @@ if [ $? -ne 0 ]; then
 fi
 
 echo Step: Checking out source code.
-./make-packages.pl --bundles=$BUNDLES --packages=$PACKAGES --skippackage --skipbundle --deps $@
+./make-packages.pl --trees=gt2,gt3,gt4 --gt3-tag=OPENSSH_3_1P1_GSSAPI_GPT-branch --bundles=$BUNDLES --packages=$PACKAGES --skippackage --skipbundle --deps $@
 if [ $? -ne 0 ]; then
 	echo There was trouble checking out sources
 	exit 8
@@ -41,7 +39,7 @@ if [ -d patches ]; then
 fi
 
 echo "Step: Creating installer Makefile and bootstrapping."
-./make-packages.pl --bundles=$BUNDLES --packages=$PACKAGES -n --list-packages --deps --deporder $@ --installer=farfleblatt
+./make-packages.pl --trees=gt2,gt3,gt4 --bundles=$BUNDLES --packages=$PACKAGES -n --list-packages --deps --deporder $@ --installer=farfleblatt
 
 if [ $? -ne 0 ]; then
 	echo There was trouble making the installer.
@@ -79,6 +77,7 @@ fi
 
 cp -${CPOPTS} source-trees/wsrf-cvs/* $INSTALLER/source-trees
 cp -${CPOPTS} source-trees/gt2-cvs/* $INSTALLER/source-trees
+cp -${CPOPTS} source-trees/ogsa-cvs/* $INSTALLER/source-trees
 
 HAVE_LNDIR=0
 if [ `uname` = HP-UX ]; then
