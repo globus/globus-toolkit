@@ -91,6 +91,22 @@ Build Instructions:
                 value="org.globus.usage.report.rft.DomainReport"/>
         </ant>
 
+        <!-- MDS Reports -->
+        <ant antfile="${build.launcher}"
+             target="generateLauncher">
+            <property name="launcher-name"
+            value="mds-registration-report"/>
+            <property name="class.name"
+                value="org.globus.usage.report.mds.RegistrationReport"/>
+        </ant>
+        <ant antfile="${build.launcher}"
+             target="generateLauncher">
+            <property name="launcher-name"
+            value="mds-domain-report"/>
+            <property name="class.name"
+                value="org.globus.usage.report.mds.DomainReport"/>
+        </ant>
+
 
         <!-- Gram Reports -->
         <ant antfile="${build.launcher}"
