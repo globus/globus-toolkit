@@ -15,3 +15,4 @@
 # in addition to the first matching regex or "DEFAULT".
 ALL perl $CVSROOT/cvs_scripts/commit_prep.pl %r/%p %s
 # ALL perl $CVSROOT/dirt_active/scripts/lock.pl
+ALL /usr/bin/loginfo  --commitinfo
