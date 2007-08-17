@@ -62,12 +62,12 @@ public class OGSADAIPacketTester extends TestCase {
         packet.packCustomFields(buf);
         buf.rewind();
 
-
         OGSADAIMonitorPacket packet2 = new OGSADAIMonitorPacket();
         packet2.unpackCustomFields(buf);
 
-        Assert.assertEquals(packet2.getComponentCode(), 8);
-        Assert.assertEquals(packet2.getPacketVersion(), 1);
-        Assert.assertEquals(packet2.getCurrentActivity(), packet.getCurrentActivity());
+        Assert.assertEquals(10, packet2.getComponentCode());
+        Assert.assertEquals(1, packet2.getPacketVersion());
+        Assert.assertEquals(packet.getCurrentActivity(),
+                            packet2.getCurrentActivity());
     }
 }
