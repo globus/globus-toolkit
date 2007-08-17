@@ -197,7 +197,7 @@ AC_ARG_ENABLE(myproxy, AC_HELP_STRING([--disable-myproxy],\
    [Don't build myproxy.  Default is enabled.]),
    [if test $enableval = "no"; then myproxy=" "; fi], [])
 AC_SUBST(myproxy, $myproxy)
-gsiopenssh="gsi-openssh"
+gsiopenssh="gsi_openssh"
 AC_ARG_ENABLE(gsiopenssh, AC_HELP_STRING([--disable-gsiopenssh],\
    [Don't build gsiopenssh.  Default is enabled.]),
    [if test $enableval = "no"; then gsiopenssh=" "; fi], [])
