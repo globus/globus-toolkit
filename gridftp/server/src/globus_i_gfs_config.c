@@ -1366,6 +1366,7 @@ globus_l_gfs_config_format_line(
                                    
     len = strlen(in_str);
     count = 0;
+    last = 0;
     memset(out_buffer, 0, rows * columns);
     
     for(i = 0; i < rows && count < len; i++)
@@ -1955,6 +1956,18 @@ globus_l_gfs_config_misc()
         globus_l_gfs_config_set("single", 1, NULL);
     }
 
+    if(globus_i_gfs_config_string("usage_stats_target") != NULL &&
+        globus_i_gfs_config_bool("disable_usage_stats"))
+    {
+        globus_l_gfs_config_set("disable_usage_stats", GLOBUS_FALSE, NULL);        
+    }
+    
+    if(globus_i_gfs_config_bool("data_node") &&
+        !globus_i_gfs_config_bool("disable_usage_stats"))
+    {
+        globus_l_gfs_config_set("disable_usage_stats", GLOBUS_TRUE, NULL);        
+    }
+
     if(globus_i_gfs_config_string("remote_nodes") != NULL &&
         globus_i_gfs_config_bool("data_node"))
     {
@@ -2331,7 +2344,7 @@ globus_i_gfs_config_get_module_name(
 {
     globus_list_t *                     module_list;
     globus_list_t *                     list;
-    const char *                        module;
+    const char *                        module = NULL;
     const char *                        out_module = NULL;
     char *                              alias;
     globus_bool_t                       found = GLOBUS_FALSE;

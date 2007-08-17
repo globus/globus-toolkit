@@ -62,7 +62,7 @@
  */
 #include "globus_i_gridftp_server.h"
 
-static const char * globus_l_gfs_local_version = "IPC Version 0.2";
+static const char * globus_l_gfs_local_version = "IPC Version 1.1";
 
 /* single mutex, assuming low contention, only used for handle tables,
    not ipc communication */
@@ -1426,6 +1426,7 @@ globus_l_gfs_ipc_send_start_session(
     buffer = globus_malloc(ipc->buffer_size);
     if(buffer == NULL)
     {
+        res = GlobusGFSErrorMemory("buffer");
         goto alloc_error;
     }
     ptr = buffer;
@@ -1639,7 +1640,7 @@ globus_gfs_ipc_reply_session(
             buffer = globus_malloc(ipc->buffer_size);
             if(buffer == NULL)
             {
-                res = GlobusGFSErrorMemory("new_buf");
+                res = GlobusGFSErrorMemory("buffer");
                 goto error;
             }
             ptr = buffer;
@@ -1848,6 +1849,7 @@ globus_l_gfs_ipc_server_open_cb(
     buffer = globus_malloc(GFS_IPC_HEADER_SIZE);
     if(buffer == NULL)
     {
+        result = GlobusGFSErrorMemory("buffer");
         goto error;
     }
     result = globus_xio_register_read(
@@ -2244,6 +2246,7 @@ globus_l_gfs_ipc_client_open_cb(
         buffer = globus_malloc(ipc->buffer_size);
         if(buffer == NULL)
         {
+            result = GlobusGFSErrorMemory("buffer");
             goto error;
         }
         ptr = buffer;
@@ -2428,6 +2431,7 @@ globus_l_gfs_ipc_handle_connect(
                 if(maj_stat != GSS_S_COMPLETE || 
                     target_name == GSS_C_NO_NAME)
                 {
+                    result = GlobusGFSErrorParameter("target_name");
                     goto ipc_error;
                 }
 
@@ -2440,6 +2444,7 @@ globus_l_gfs_ipc_handle_connect(
             }
             else
             {
+                result = GlobusGFSErrorParameter("auth_mode");
                 goto ipc_error;
             }
               
@@ -2650,7 +2655,7 @@ globus_l_gfs_ipc_requestor_start_close(
     buffer = globus_malloc(ipc_handle->buffer_size);
     if(buffer == NULL)
     {
-        res = GlobusGFSErrorGeneric("malloc failed");
+        res = GlobusGFSErrorMemory("buffer");
         goto error;
     }
     ptr = buffer;
@@ -2939,9 +2944,7 @@ globus_l_gfs_ipc_unpack_reply(
             break;
 
         case GLOBUS_GFS_OP_TRANSFER:
-/*            GFSDecodeUInt64(
-                buffer, len, reply->info.transfer.bytes_transferred);
-*/            break;
+            break;
             
         case GLOBUS_GFS_OP_LIST:
             break;
@@ -3117,6 +3120,7 @@ globus_l_gfs_ipc_unpack_event_reply(
         case GLOBUS_GFS_EVENT_TRANSFER_BEGIN:
             GFSDecodeUInt32P(buffer, len, reply->event_arg);
             GFSDecodeUInt32(buffer, len, reply->event_mask);
+            GFSDecodeUInt32(buffer, len, reply->node_count);
             break;
             
         case GLOBUS_GFS_EVENT_DISCONNECTED:
@@ -3125,6 +3129,7 @@ globus_l_gfs_ipc_unpack_event_reply(
             
         case GLOBUS_GFS_EVENT_BYTES_RECVD:
             GFSDecodeUInt64(buffer, len, reply->recvd_bytes);
+            GFSDecodeUInt32(buffer, len, reply->node_count);
             break;
             
         case GLOBUS_GFS_EVENT_RANGES_RECVD:
@@ -4662,7 +4667,7 @@ globus_gfs_ipc_reply_finished(
                 (void *)reply->id);
             if(request == NULL)
             {
-                res = GlobusGFSErrorGeneric("malloc failed");
+                res = GlobusGFSErrorParameter("request");
                 goto error;
             }
             /* don't need the request anymore */
@@ -4672,7 +4677,7 @@ globus_gfs_ipc_reply_finished(
             buffer = globus_malloc(ipc->buffer_size);
             if(buffer == NULL)
             {
-                res = GlobusGFSErrorGeneric("malloc failed");
+                res = GlobusGFSErrorMemory("buffer");
                 goto error;
             }
             ptr = buffer;
@@ -4716,10 +4721,7 @@ globus_gfs_ipc_reply_finished(
                     break;
 
                 case GLOBUS_GFS_OP_TRANSFER:
-/*                    GFSEncodeUInt64(
-                        buffer, ipc->buffer_size, ptr, 
-                        reply->info.transfer.bytes_transferred);                    
-*/                    break;
+                    break;
 
                 case GLOBUS_GFS_OP_STAT:
                     GFSEncodeUInt32(
@@ -4938,6 +4940,7 @@ globus_gfs_ipc_reply_event(
             buffer = globus_malloc(ipc->buffer_size);
             if(buffer == NULL)
             {
+                res = GlobusGFSErrorMemory("buffer");
                 goto error;
             }
             ptr = buffer;
@@ -4962,6 +4965,8 @@ globus_gfs_ipc_reply_event(
                         buffer, ipc->buffer_size, ptr, reply->event_arg);
                     GFSEncodeUInt32(
                         buffer, ipc->buffer_size, ptr, reply->event_mask);
+                    GFSEncodeUInt32(
+                        buffer, ipc->buffer_size, ptr, reply->node_count);
                     break;
                     
                 case GLOBUS_GFS_EVENT_DISCONNECTED:
@@ -4972,6 +4977,8 @@ globus_gfs_ipc_reply_event(
                 case GLOBUS_GFS_EVENT_BYTES_RECVD:
                     GFSEncodeUInt64(
                         buffer, ipc->buffer_size, ptr, reply->recvd_bytes);
+                    GFSEncodeUInt32(
+                        buffer, ipc->buffer_size, ptr, reply->node_count);
                     break;
                     
                 case GLOBUS_GFS_EVENT_RANGES_RECVD:
@@ -5619,6 +5626,7 @@ globus_gfs_ipc_request_command(
         buffer = globus_malloc(ipc->buffer_size);
         if(buffer == NULL)
         {
+            result = GlobusGFSErrorMemory("buffer");
             goto request_error;
         }
         ptr = buffer;
@@ -5717,7 +5725,7 @@ globus_gfs_ipc_request_transfer_event(
         buffer = globus_malloc(ipc->buffer_size);
         if(buffer == NULL)
         {
-            result = GlobusGFSErrorIPC();
+            result = GlobusGFSErrorMemory("buffer");
             goto error;
         }
         ptr = buffer;
@@ -6056,6 +6064,7 @@ globus_gfs_ipc_request_stat(
             globus_calloc(1, sizeof(globus_gfs_ipc_request_t));
         if(request == NULL)
         {
+            res = GlobusGFSErrorParameter("request");
             goto err;
         }
         request->cb = cb;
@@ -6157,6 +6166,7 @@ globus_gfs_ipc_request_data_destroy(
             globus_calloc(1, sizeof(globus_gfs_ipc_request_t));
         if(request == NULL)
         {
+            res = GlobusGFSErrorParameter("request");
             goto err;
         }
         request->ipc = ipc_handle;

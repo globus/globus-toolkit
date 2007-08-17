@@ -1020,7 +1020,9 @@ globus_l_gfs_ipc_event_cb(
                 }   
                 break;
             default:
-                if(!bounce_info->event_pending)
+                if(!bounce_info->event_pending || 
+                    reply->type == GLOBUS_GFS_EVENT_BYTES_RECVD ||
+                    reply->type == GLOBUS_GFS_EVENT_RANGES_RECVD)
                 {
                     finish = GLOBUS_TRUE;
                 }

@@ -72,7 +72,7 @@ globus_i_gfs_log_open()
     char *                              module;
     char *                              module_str;
     globus_logging_module_t *           log_mod;
-    void *                              log_arg;
+    void *                              log_arg = NULL;
     char *                              logfilename = NULL;
     char *                              log_filemode = NULL;
     char *                              logunique = NULL;

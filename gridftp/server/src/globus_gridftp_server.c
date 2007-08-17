@@ -238,7 +238,7 @@ globus_l_gfs_sigchld(
                 GLOBUS_I_GFS_LOG_INFO, 
                 "Child process %d killed by signal %d\n",
                 child_pid, 
-                WTERMSIG(child_rc));
+                WTERMSIG(child_status));
         }
     
         globus_mutex_lock(&globus_l_gfs_mutex);

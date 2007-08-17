@@ -1367,7 +1367,7 @@ globus_l_gfs_data_authorize(
                 {
                     rc = globus_gss_assist_userok(
                         session_info->subject, session_info->username);
-                    usr = session_info->username;
+                    usr = globus_libc_strdup(session_info->username);
                     if(rc != 0)
                     {
                         GlobusGFSErrorGenericStr(res,
@@ -1382,7 +1382,7 @@ globus_l_gfs_data_authorize(
                 {
                     globus_free(session_info->username);
                 }
-                session_info->username = globus_libc_strdup(usr);
+                session_info->username = usr;
             }
         }
         else
@@ -3891,6 +3891,22 @@ globus_l_gfs_data_finish_connected(
     {
         if(op->writing)
         {
+            if(op->event_callback == NULL)
+            {
+                /* send bytes transferred as a writing backend, to sync up 
+                 * frontend for logging 
+                 */
+                globus_gfs_event_info_t        event_reply;
+                memset(&event_reply, '\0', sizeof(globus_gfs_event_info_t));
+                event_reply.id = op->id;
+                event_reply.recvd_bytes = op->bytes_transferred;
+                event_reply.type = GLOBUS_GFS_EVENT_BYTES_RECVD;
+                
+                globus_gfs_ipc_reply_event(
+                    op->ipc_handle,
+                    &event_reply);
+            }        
+
             if(op->node_ndx != 0 ||
                 op->stripe_count == 1 ||
                 op->eof_ready)
@@ -4283,29 +4299,6 @@ globus_l_gfs_data_end_transfer_kickout(
         "Finished transferring \"%s\".\n",
             ((globus_gfs_transfer_info_t *) op->info_struct)->pathname);
 
-    /* XXX send final byte total to frontends if wasn't already sent */
-    if(op->data_handle->is_mine && 
-        (op->data_handle->info.mode != 'E' || op->writing))
-    {
-        globus_gfs_event_info_t        event_reply;
-        memset(&event_reply, '\0', sizeof(globus_gfs_event_info_t));
-        event_reply.id = op->id;
-        event_reply.recvd_bytes = op->bytes_transferred;
-        event_reply.node_ndx = op->node_ndx;
-
-        event_reply.type = GLOBUS_GFS_EVENT_BYTES_RECVD;
-        if(op->event_callback != NULL)
-        {
-            /* do nothing */
-        }
-        else
-        {
-            globus_gfs_ipc_reply_event(
-                op->ipc_handle,
-                &event_reply);
-        }
-    }
-
     if(disconnect && op->data_handle->is_mine)
     {
         memset(&event_reply, '\0', sizeof(globus_gfs_event_info_t));
@@ -4331,8 +4324,8 @@ globus_l_gfs_data_end_transfer_kickout(
     if(op->node_ndx == 0 && 
         op->cached_res == GLOBUS_SUCCESS &&
         (globus_i_gfs_config_string("log_transfer") || 
-        (!globus_i_gfs_config_bool("disable_usage_stats") 
-            && op->data_handle->is_mine)))
+        (!globus_l_gfs_data_is_remote_node && 
+        !globus_i_gfs_config_bool("disable_usage_stats"))))
     {
         char *                          type;
         globus_gfs_transfer_info_t *    info;
@@ -4385,7 +4378,7 @@ globus_l_gfs_data_end_transfer_kickout(
         {
             globus_i_gfs_log_transfer(
                 op->node_count,
-                op->node_count * op->data_handle->info.nstreams,
+                op->data_handle->info.nstreams,
                 &op->start_timeval,
                 &end_timeval,
                 op->remote_ip ? op->remote_ip : "0.0.0.0",
@@ -4398,12 +4391,12 @@ globus_l_gfs_data_end_transfer_kickout(
                 type,
                 op->session_handle->username);
         }
-        if(!globus_i_gfs_config_string("disable_usage_stats")
-            && op->data_handle->is_mine)
+        if(!globus_l_gfs_data_is_remote_node && 
+            !globus_i_gfs_config_string("disable_usage_stats"))
         {
             globus_i_gfs_log_usage_stats(
                 op->node_count,
-                op->node_count * op->data_handle->info.nstreams,
+                op->data_handle->info.nstreams,
                 &op->start_timeval,
                 &end_timeval,
                 op->remote_ip ? op->remote_ip : "0.0.0.0",
@@ -4455,7 +4448,6 @@ globus_l_gfs_data_end_transfer_kickout(
     reply.type = GLOBUS_GFS_OP_TRANSFER;
     reply.id = op->id;
     reply.result = op->cached_res;
-    reply.info.transfer.bytes_transferred = op->bytes_transferred;
 
     globus_assert(!op->writing ||
         (op->sent_partial_eof == 1 || op->stripe_count == 1 ||
@@ -4542,11 +4534,19 @@ globus_l_gfs_data_end_read_kickout(
     if(op->data_handle->info.mode == 'E')
     {
         globus_gfs_event_info_t        event_reply;
+
+        /* update actual number of streams that connected */
+        globus_ftp_control_data_get_total_data_channels(
+            &op->data_handle->data_channel,
+            &op->data_handle->info.nstreams,
+            0);
+
         memset(&event_reply, '\0', sizeof(globus_gfs_event_info_t));
         event_reply.id = op->id;
         event_reply.recvd_bytes = op->recvd_bytes;
         event_reply.recvd_ranges = op->recvd_ranges;
         event_reply.node_ndx = op->node_ndx;
+        event_reply.node_count = op->data_handle->info.nstreams;
 
         event_reply.type = GLOBUS_GFS_EVENT_BYTES_RECVD;
         if(op->event_callback != NULL)
@@ -4576,6 +4576,22 @@ globus_l_gfs_data_end_read_kickout(
                 &event_reply);
         }
     }
+    else if(op->event_callback == NULL)
+    {
+        /* send bytes transferred to sync up frontend 
+         * for logging 
+         */
+        globus_gfs_event_info_t        event_reply;
+        memset(&event_reply, '\0', sizeof(globus_gfs_event_info_t));
+        event_reply.id = op->id;
+        event_reply.recvd_bytes = op->bytes_transferred;
+        event_reply.node_count = 1;
+        event_reply.type = GLOBUS_GFS_EVENT_BYTES_RECVD;
+        
+        globus_gfs_ipc_reply_event(
+            op->ipc_handle,
+            &event_reply);
+    }        
 
     recv_info = op->info_struct;
     object.name = recv_info->pathname;
@@ -4930,9 +4946,9 @@ globus_l_gfs_data_trev_kickout(
     void *                              user_arg)
 {
     globus_l_gfs_data_trev_bounce_t *   bounce_info;
-    globus_gfs_event_info_t *      event_reply;
+    globus_gfs_event_info_t *           event_reply;
     void *                              remote_data_arg = NULL;
-    globus_bool_t                       pass;
+    globus_bool_t                       pass = GLOBUS_FALSE;
     globus_bool_t                       destroy_session = GLOBUS_FALSE;
     globus_bool_t                       destroy_op = GLOBUS_FALSE;
     globus_gfs_event_info_t             event_info;
@@ -5752,6 +5768,12 @@ globus_gridftp_server_begin_transfer(
     event_reply.id = op->id;
     event_reply.event_mask =
         GLOBUS_GFS_EVENT_TRANSFER_ABORT | GLOBUS_GFS_EVENT_TRANSFER_COMPLETE;
+
+    if(op->data_handle->is_mine)
+    {
+        event_reply.node_count = op->node_count;
+    }
+    
     if(!op->data_handle->is_mine || op->data_handle->info.mode == 'E')
     {
         event_reply.event_mask |=
@@ -6129,11 +6151,6 @@ globus_gridftp_server_operation_finished(
         case GLOBUS_GFS_OP_RECV:
         case GLOBUS_GFS_OP_SEND:
         case GLOBUS_GFS_OP_TRANSFER:
-            if(!op->data_handle->is_mine)
-            {
-                op->bytes_transferred += 
-                    finished_info->info.transfer.bytes_transferred;
-            }
             globus_gridftp_server_finished_transfer(
                 op, finished_info->result);
             kickout = GLOBUS_FALSE;
@@ -6166,6 +6183,9 @@ globus_gridftp_server_operation_finished(
             {
                 globus_panic(NULL, result, "small malloc failure, no recovery");
             }
+
+            memcpy(&data_handle->info, op->info_struct, 
+                sizeof(globus_gfs_data_info_t));
             data_handle->session_handle = op->session_handle;
             data_handle->remote_data_arg = finished_info->info.data.data_arg;
             data_handle->is_mine = GLOBUS_FALSE;
@@ -6212,6 +6232,7 @@ globus_gridftp_server_operation_event(
     globus_result_t                     result,
     globus_gfs_event_info_t *           event_info)
 {
+    globus_bool_t                       pass = GLOBUS_FALSE;
     GlobusGFSName(globus_gridftp_server_operation_event);
     GlobusGFSDebugEnter();
 
@@ -6221,32 +6242,43 @@ globus_gridftp_server_operation_event(
     switch(event_info->type)
     {
         case GLOBUS_GFS_EVENT_TRANSFER_BEGIN:
+            op->node_count = event_info->node_count;
             globus_gridftp_server_begin_transfer(
                 op, event_info->event_mask, event_info->event_arg);
             break;
         case GLOBUS_GFS_EVENT_BYTES_RECVD:
-            if(!op->data_handle->is_mine)
-            {
-                op->bytes_transferred = event_info->recvd_bytes;
-            }
-            if(op->writing || op->data_handle->info.mode != 'E')
-            {
-                break;
-            }
-        default:
             if(op->event_callback != NULL)
             {
-                op->event_callback(
-                    event_info,
-                    op->user_arg);
+                if(event_info->node_count > op->data_handle->info.nstreams)
+                {
+                    op->data_handle->info.nstreams = 
+                        event_info->node_count;
+                }
+                op->bytes_transferred += event_info->recvd_bytes;
             }
-            else
+            if(op->data_handle->info.mode == 'E')
             {
-                globus_gfs_ipc_reply_event(
-                    op->ipc_handle,
-                    event_info);
+                pass = GLOBUS_TRUE;
             }
+        default:
+            pass = GLOBUS_TRUE;
             break;
+    }
+
+    if(pass)
+    {
+        if(op->event_callback != NULL)
+        { 
+            op->event_callback(
+                event_info,
+                op->user_arg);
+        }
+        else
+        {
+            globus_gfs_ipc_reply_event(
+                op->ipc_handle,
+                event_info);
+        }
     }
 
     GlobusGFSDebugExit();
