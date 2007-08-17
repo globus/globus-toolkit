@@ -126,7 +126,6 @@ globus_i_opts_to_handle(
             if(result != GLOBUS_SUCCESS)
             {
             }
-
         }
     }
 
@@ -135,8 +134,19 @@ globus_i_opts_to_handle(
         if(opts->port != 0)
         {
             globus_xio_attr_cntl(
-                attr, driver, GLOBUS_XIO_TCP_SET_PORT, opts->port);
+                attr, handle->tcp_driver, GLOBUS_XIO_TCP_SET_PORT, opts->port);
         }
+
+/*
+    int                                 backlog = -1;
+        if(opts->instances > 1)
+        {
+            backlog = opts->instances / 2;
+            backlog = 2;
+        }
+        globus_xio_attr_cntl(
+            attr, handle->tcp_driver, GLOBUS_XIO_TCP_SET_BACKLOG, backlog);
+*/
     }
 
     result = globus_xio_server_create(

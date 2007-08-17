@@ -718,7 +718,7 @@ globus_gridftp_server_embed_init(
     globus_i_gfs_data_init();
     globus_gfs_ipc_init(!globus_i_gfs_config_bool("data_node"));
     globus_i_gfs_control_init();
-    globus_i_gfs_brain_init();
+    globus_i_gfs_brain_init(globus_l_gfs_data_brain_ready, NULL);
 
     /* initialize handle */
     handle = (globus_l_gfs_embed_handle_t *) 

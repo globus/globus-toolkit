@@ -51,6 +51,11 @@ globus_off_t                            globus_l_gfs_bytes_transferred;
 globus_mutex_t                          globus_l_gfs_global_counter_lock;
 globus_extension_registry_t             globus_i_gfs_acl_registry;
 
+
+static globus_mutex_t                   gfs_l_data_brain_mutex;
+static globus_list_t *                  gfs_l_data_brain_ready_list = NULL;
+static globus_bool_t                    gfs_l_data_brain_ready = GLOBUS_FALSE;
+
 typedef enum
 {
     GLOBUS_L_GFS_DATA_REQUESTING = 1,
@@ -314,6 +319,38 @@ static
 globus_result_t
 globus_l_gfs_set_stack(
     globus_l_gfs_data_handle_t *        handle);
+
+static
+void
+globus_l_gfs_data_brain_ready_delay_cb(
+    void *                              user_arg);
+
+void
+globus_l_gfs_data_brain_ready(
+    void *                              user_arg)
+{
+    void *                              arg;
+    globus_list_t *                     list;
+
+    globus_i_gfs_log_message(
+        GLOBUS_I_GFS_LOG_ERR, 
+        "Brain Ready\n");
+    
+    globus_mutex_lock(&gfs_l_data_brain_mutex);
+    {
+        gfs_l_data_brain_ready = GLOBUS_TRUE;
+        list = gfs_l_data_brain_ready_list;
+        gfs_l_data_brain_ready_list = NULL;
+    }
+    globus_mutex_unlock(&gfs_l_data_brain_mutex);
+
+    while(!globus_list_empty(list))
+    {
+        arg = globus_list_remove(&list, list);
+
+        globus_l_gfs_data_brain_ready_delay_cb(arg);
+    }
+}
 
 static
 void *
@@ -1109,14 +1146,10 @@ type_error:
     return NULL;
 }
 
-
 static
 void
-globus_l_gfs_data_auth_init_cb(
-    globus_gfs_acl_object_desc_t *      object,
-    globus_gfs_acl_action_t             action,
-    void *                              user_arg,
-    globus_result_t                     result)
+globus_l_gfs_data_brain_ready_delay_cb(
+    void *                              user_arg)
 {
     void *                              remote_data_arg = NULL;
     globus_bool_t                       destroy_session = GLOBUS_FALSE;
@@ -1124,17 +1157,13 @@ globus_l_gfs_data_auth_init_cb(
     globus_l_gfs_data_operation_t *     op;
     globus_gfs_session_info_t *         session_info;
     globus_gfs_finished_info_t          finished_info;
-    GlobusGFSName(globus_l_gfs_data_auth_init_cb);
+    GlobusGFSName(globus_l_gfs_data_brain_ready_delay_cb);
     GlobusGFSDebugEnter();
 
     op = (globus_l_gfs_data_operation_t *) user_arg;
     session_info = (globus_gfs_session_info_t *) op->info_struct;
 
     memset(&finished_info, '\0', sizeof(globus_gfs_finished_info_t));
-    if(result != GLOBUS_SUCCESS)
-    {
-        goto error;
-    }
 
     op->session_handle->username = globus_libc_strdup(session_info->username);
 
@@ -1175,6 +1204,51 @@ globus_l_gfs_data_auth_init_cb(
         globus_l_gfs_data_fire_cb(op, remote_data_arg, destroy_session);
 
         globus_l_gfs_data_operation_destroy(op);
+    }
+
+    GlobusGFSDebugExit();
+}
+
+static
+void
+globus_l_gfs_data_auth_init_cb(
+    globus_gfs_acl_object_desc_t *      object,
+    globus_gfs_acl_action_t             action,
+    void *                              user_arg,
+    globus_result_t                     result)
+{
+    void *                              remote_data_arg = NULL;
+    globus_bool_t                       destroy_session = GLOBUS_FALSE;
+    globus_bool_t                       destroy_op = GLOBUS_FALSE;
+    globus_l_gfs_data_operation_t *     op;
+    globus_gfs_session_info_t *         session_info;
+    globus_gfs_finished_info_t          finished_info;
+    globus_bool_t                       ready = GLOBUS_FALSE;
+    GlobusGFSName(globus_l_gfs_data_auth_init_cb);
+    GlobusGFSDebugEnter();
+
+    op = (globus_l_gfs_data_operation_t *) user_arg;
+    session_info = (globus_gfs_session_info_t *) op->info_struct;
+
+    memset(&finished_info, '\0', sizeof(globus_gfs_finished_info_t));
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+
+    globus_mutex_lock(&gfs_l_data_brain_mutex);
+    {
+        ready = gfs_l_data_brain_ready;
+        if(!gfs_l_data_brain_ready)
+        {
+            globus_list_insert(&gfs_l_data_brain_ready_list, user_arg);
+        }
+    }
+    globus_mutex_unlock(&gfs_l_data_brain_mutex);
+
+    if(ready)
+    {
+        globus_l_gfs_data_brain_ready_delay_cb(user_arg);
     }
 
     GlobusGFSDebugExit();
@@ -5378,6 +5452,8 @@ globus_i_gfs_data_session_start(
     session_handle->ref = 1;
     session_handle->del_cred = session_info->del_cred;
 
+    globus_mutex_init(&gfs_l_data_brain_mutex, NULL);
+
     result = globus_l_gfs_data_operation_init(&op, session_handle);
     if(result != GLOBUS_SUCCESS)
     {
@@ -6229,8 +6305,13 @@ globus_gridftp_server_get_block_size(
     globus_gfs_operation_t              op,
     globus_size_t *                     block_size)
 {
+    int                                 concur;
+    int                                 tcp_mem_limit;
     GlobusGFSName(globus_gridftp_server_get_block_size);
     GlobusGFSDebugEnter();
+
+    tcp_mem_limit = globus_gfs_config_get_int("tcp_mem_limit");
+
     if(op->data_handle != NULL && op->data_handle->is_mine)
     {
         *block_size = op->data_handle->info.blocksize;
@@ -6238,6 +6319,16 @@ globus_gridftp_server_get_block_size(
     else
     {
         *block_size = (globus_size_t) globus_i_gfs_config_int("blocksize");
+    }
+
+    if(tcp_mem_limit > 0)
+    {
+        globus_gridftp_server_get_optimal_concurrency(op, &concur);
+        tcp_mem_limit = tcp_mem_limit / concur;
+        if(tcp_mem_limit < *block_size)
+        {
+            *block_size = tcp_mem_limit;
+        }
     }
     GlobusGFSDebugExit();
 }

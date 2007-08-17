@@ -6,6 +6,10 @@
 
 #define GFORK_WAIT_FOR_KILL         5
 
+/* we cant keep this */
+#define GFORK_CROWED_MESSAGE "421 Too busy!\r\n"
+#define GFORK_CROWED_MESSAGE_LEN strlen(GFORK_CROWED_MESSAGE)
+
 extern char **environ;
 
 char *                                  gfork_l_keep_envs[] =
@@ -34,6 +38,29 @@ static char *                           g_contact_string;
 
 static globus_hashtable_t               gfork_l_keepenvs;
 static globus_reltime_t                 gfork_l_sigchild_fake;
+
+static int                              gfork_l_connection_count = 0;
+static globus_bool_t                    gfork_l_accepting;
+
+static
+void
+gfork_l_server_accept_cb(
+    globus_xio_server_t                 server,
+    globus_xio_handle_t                 handle,
+    globus_result_t                     result,
+    void *                              user_arg);
+
+static
+globus_bool_t
+gfork_accept_allowed()
+{
+    if(gfork_l_options.instances <= 0)
+    {
+        return GLOBUS_TRUE;
+    }
+ 
+    return (gfork_l_connection_count < gfork_l_options.instances);
+}
 
 static
 void
@@ -167,8 +194,11 @@ gfork_l_stop_posting(
         free(tmp_msg);
     }
 
-    gfork_l_done = GLOBUS_TRUE;
-    globus_xio_server_register_close(gfork_l_handle.server_xio, NULL, NULL);
+    if(!gfork_l_done)
+    {
+        gfork_l_done = GLOBUS_TRUE;
+        globus_xio_server_register_close(gfork_l_handle.server_xio, NULL, NULL);
+    }
     globus_cond_signal(&gfork_l_cond);
 }
 
@@ -563,11 +593,8 @@ gfork_l_dead_kid(
 
 
 
-/* if the master program dies all associated state dies.
-   we dont want to kill the service (ie: this process) or 
-    any children.  the children may end up dieing anyway, but
-    that is their problem.  here we just make sure we remove
-    them all from the comm list and try to restart the server
+/*
+ * if the master dies (and there was a master) we take down the service
  */
 void
 gfork_l_dead_master(
@@ -584,6 +611,7 @@ gfork_l_dead_master(
         return;
     }
 
+    gfork_l_stop_posting(GLOBUS_SUCCESS);
     globus_hashtable_to_list(&gfork_l_pid_table, &list);
 
     while(!globus_list_empty(list))
@@ -673,10 +701,12 @@ gfork_l_sigchld(
             if(gfork_l_master_child_handle != NULL &&
                 child_pid == gfork_l_master_child_handle->pid)
             {
+                /* if the master dies */
                 gfork_l_dead_master(GLOBUS_TRUE);
             }
             else
             {
+                gfork_l_connection_count--;
                 gfork_i_dead_kid(child_pid, GLOBUS_TRUE);
             }
 
@@ -759,180 +789,159 @@ gfork_l_int(
 
     globus_mutex_lock(&gfork_l_mutex);
     {
+        gfork_l_stop_posting(GLOBUS_SUCCESS);
+
+        /* kill the kids */
+        list = gfork_l_pid_list;
+        while(!globus_list_empty(list))
         {
-            gfork_l_dead_master(GLOBUS_FALSE);
-            gfork_l_stop_posting(GLOBUS_SUCCESS);
+            kid_pid = (pid_t) globus_list_first(list);
 
-            /* kill the kids */
-            list = gfork_l_pid_list;
-            while(!globus_list_empty(list))
-            {
-                kid_pid = (pid_t) globus_list_first(list);
+            list = globus_list_rest(list);
 
-                list = globus_list_rest(list);
-
-                kill(SIGINT, kid_pid);
-            }
-
-            GlobusTimeReltimeSet(delay, GFORK_WAIT_FOR_KILL, 0);
-            globus_callback_register_oneshot(
-                NULL,
-                &delay,
-                gfork_l_int_delay_cb,
-                NULL);
+            kill(SIGINT, kid_pid);
         }
+
+        GlobusTimeReltimeSet(delay, GFORK_WAIT_FOR_KILL, 0);
+        globus_callback_register_oneshot(
+            NULL,
+            &delay,
+            gfork_l_int_delay_cb,
+            NULL);
     }
     globus_mutex_unlock(&gfork_l_mutex);
 }
 
+
 static
 void
-gfork_l_server_accept_cb(
+gfork_l_server_accepted(
     globus_xio_server_t                 server,
     globus_xio_handle_t                 handle,
-    globus_result_t                     result,
-    void *                              user_arg)
+    gfork_i_handle_t *                  gfork_handle)
 {
+    globus_result_t                     result;
     pid_t                               pid;
     int                                 infds[2];
     int                                 outfds[2];
     int                                 rc;
     globus_xio_system_socket_t          socket_handle;
     gfork_i_child_handle_t *            kid_handle;
-    gfork_i_handle_t *                  gfork_handle;
-    char *                              err_msg;
     GForkFuncName(gfork_l_server_accept_cb);
 
-    gfork_handle = (gfork_i_handle_t *) user_arg;
-
-    globus_mutex_lock(&gfork_l_mutex);
+    rc = pipe(infds);
+    if(rc != 0)
     {
-        if(result != GLOBUS_SUCCESS)
-        {
-            goto error_accept;
-        }
-
-        rc = pipe(infds);
-        if(rc != 0)
-        {
-            result = GForkErrorErrno(strerror(errno), errno);
-            goto error_inpipe;
-        }
-        rc = pipe(outfds);
-        if(rc != 0)
-        {
-            result = GForkErrorErrno(strerror(errno), errno);
-            goto error_outpipe;
-        }
-
-        result = globus_xio_handle_cntl(
-            handle,
-            gfork_handle->tcp_driver,
-            GLOBUS_XIO_TCP_GET_HANDLE,
-            &socket_handle);
-        if(result != GLOBUS_SUCCESS)
-        {
-            goto error_getsocket;
-        }
-
-        pid = fork();
-        if(pid < 0)
-        {
-            /* error */
-            result = GForkErrorErrno(strerror(errno), errno);
-            goto error_fork;
-        }
-        else if(pid == 0)
-        {
-            int                         read_fd;
-            int                         write_fd;
-
-            read_fd = outfds[0];
-            write_fd = infds[1];
-            close(outfds[1]);
-            close(infds[0]);
-            if(gfork_l_master_child_handle == NULL)
-            {
-                close(outfds[1]);
-                close(infds[0]);
-
-                read_fd = -1;
-                write_fd = -1;
-            }
-
-            gfork_new_child(&gfork_l_handle, socket_handle, read_fd, write_fd);
-
-            /* hsould not return from this, if we do it is an error */
-            goto error_fork;
-        }
-        else
-        {
-            /* server */
-            fcntl(outfds[1], F_SETFD, FD_CLOEXEC);
-            fcntl(infds[0], F_SETFD, FD_CLOEXEC);
-
-            close(outfds[0]);
-            close(infds[1]);
-
-            close(socket_handle);
-            globus_list_insert(&gfork_l_pid_list, (void *)pid);
-            gfork_log(2, "Started child %d\n", pid);
-        }
-        /* i think we dont care when the close happens */
-        globus_xio_register_close(handle, NULL, NULL, NULL);
-
-        /* only make a child handle if we have a master */
-        if(gfork_l_master_child_handle != NULL)
-        {
-            kid_handle = (gfork_i_child_handle_t *)
-                globus_calloc(1, sizeof(gfork_i_child_handle_t));
-            kid_handle->pid = pid;
-            kid_handle->whos_my_daddy = gfork_handle;
-            kid_handle->write_fd = outfds[1];
-            kid_handle->read_fd = infds[0];
-            kid_handle->state = GFORK_STATE_OPENING;
-            kid_handle->state = gfork_i_state_next(
-                GFORK_STATE_NONE, GFORK_EVENT_ACCEPT_CB);
-
-            globus_fifo_init(&kid_handle->write_q);
-
-            result = gfork_i_make_xio_handle(
-                &kid_handle->write_xio_handle, kid_handle->write_fd);
-            if(result != GLOBUS_SUCCESS)
-            {
-                gfork_log(1, "write handle make failed %s\n",
-                    globus_error_print_friendly(globus_error_get(result)));
-            }
-            result = gfork_i_make_xio_handle(
-                &kid_handle->read_xio_handle, kid_handle->read_fd);
-            if(result != GLOBUS_SUCCESS)
-            {
-                gfork_log(1, "read handle make failed %s\n",
-                    globus_error_print_friendly(globus_error_get(result)));
-            }
-            globus_hashtable_insert(
-                &gfork_l_pid_table,
-                (void *)pid,
-                kid_handle);
-
-            gfork_i_write_open(kid_handle);
-        }
-        else
-        {
-            close(outfds[1]);
-            close(infds[0]);
-        }
-
-        result = globus_xio_server_register_accept(
-            gfork_handle->server_xio,
-            gfork_l_server_accept_cb,
-            gfork_handle);
-        if(result != GLOBUS_SUCCESS)
-        {
-            gfork_l_stop_posting(result);
-        }
+        result = GForkErrorErrno(strerror(errno), errno);
+        goto error_inpipe;
     }
-    globus_mutex_unlock(&gfork_l_mutex);
+    rc = pipe(outfds);
+    if(rc != 0)
+    {
+        result = GForkErrorErrno(strerror(errno), errno);
+        goto error_outpipe;
+    }
+
+    result = globus_xio_handle_cntl(
+        handle,
+        gfork_handle->tcp_driver,
+        GLOBUS_XIO_TCP_GET_HANDLE,
+        &socket_handle);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_getsocket;
+    }
+
+    pid = fork();
+    if(pid < 0)
+    {
+        /* error */
+        result = GForkErrorErrno(strerror(errno), errno);
+        goto error_fork;
+    }
+    else if(pid == 0)
+    {
+        int                         read_fd;
+        int                         write_fd;
+
+        nice(gfork_l_handle.opts->nice);
+        read_fd = outfds[0];
+        write_fd = infds[1];
+        close(outfds[1]);
+        close(infds[0]);
+        if(gfork_l_master_child_handle == NULL)
+        {
+            close(outfds[1]);
+            close(infds[0]);
+
+            read_fd = -1;
+            write_fd = -1;
+        }
+
+        gfork_new_child(&gfork_l_handle, socket_handle, read_fd, write_fd);
+
+        /* hsould not return from this, if we do it is an error */
+        goto error_fork;
+    }
+    else
+    {
+        /* server */
+        fcntl(outfds[1], F_SETFD, FD_CLOEXEC);
+        fcntl(infds[0], F_SETFD, FD_CLOEXEC);
+
+        close(outfds[0]);
+        close(infds[1]);
+
+        close(socket_handle);
+        globus_list_insert(&gfork_l_pid_list, (void *)pid);
+        gfork_log(2, "Started child %d\n", pid);
+
+        gfork_l_connection_count++;
+    }
+    /* i think we dont care when the close happens */
+    globus_xio_register_close(handle, NULL, NULL, NULL);
+
+    /* only make a child handle if we have a master */
+    if(gfork_l_master_child_handle != NULL)
+    {
+        kid_handle = (gfork_i_child_handle_t *)
+            globus_calloc(1, sizeof(gfork_i_child_handle_t));
+        kid_handle->pid = pid;
+        kid_handle->whos_my_daddy = gfork_handle;
+        kid_handle->write_fd = outfds[1];
+        kid_handle->read_fd = infds[0];
+        kid_handle->state = GFORK_STATE_OPENING;
+        kid_handle->state = gfork_i_state_next(
+            GFORK_STATE_NONE, GFORK_EVENT_ACCEPT_CB);
+
+        globus_fifo_init(&kid_handle->write_q);
+
+        result = gfork_i_make_xio_handle(
+            &kid_handle->write_xio_handle, kid_handle->write_fd);
+        if(result != GLOBUS_SUCCESS)
+        {
+            gfork_log(1, "write handle make failed %s\n",
+                globus_error_print_friendly(globus_error_get(result)));
+        }
+        result = gfork_i_make_xio_handle(
+            &kid_handle->read_xio_handle, kid_handle->read_fd);
+        if(result != GLOBUS_SUCCESS)
+        {
+            gfork_log(1, "read handle make failed %s\n",
+                globus_error_print_friendly(globus_error_get(result)));
+        }
+        globus_hashtable_insert(
+            &gfork_l_pid_table,
+            (void *)pid,
+            kid_handle);
+
+        gfork_i_write_open(kid_handle);
+    }
+    else
+    {
+        close(outfds[1]);
+        close(infds[0]);
+    }
 
     return;
 
@@ -946,6 +955,80 @@ error_outpipe:
     close(infds[1]);
 error_inpipe:
     globus_xio_register_close(handle, NULL, NULL, NULL);
+    /* log an error */
+    return;
+}
+
+static
+void
+gfork_crowded_write_cb(
+    globus_xio_handle_t                 handle,
+    globus_result_t                     result,
+    globus_byte_t *                     buffer,
+    globus_size_t                       len,
+    globus_size_t                       nbytes,
+    globus_xio_data_descriptor_t        data_desc,
+    void *                              user_arg)
+{
+    globus_xio_register_close(handle, NULL, NULL, NULL);
+}
+
+static
+void
+gfork_l_server_accept_cb(
+    globus_xio_server_t                 server,
+    globus_xio_handle_t                 handle,
+    globus_result_t                     result,
+    void *                              user_arg)
+{
+    gfork_i_handle_t *                  gfork_handle;
+    char *                              err_msg;
+    GForkFuncName(gfork_l_server_accept_cb);
+
+    gfork_handle = (gfork_i_handle_t *) user_arg;
+
+    globus_mutex_lock(&gfork_l_mutex);
+    {
+        gfork_l_accepting = GLOBUS_FALSE;
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error_accept;
+        }
+        if(gfork_accept_allowed())
+        {
+            gfork_l_server_accepted(server, handle, gfork_handle);
+        }
+        else
+        {
+            result = globus_xio_register_write(
+                handle,
+                GFORK_CROWED_MESSAGE,
+                GFORK_CROWED_MESSAGE_LEN,
+                GFORK_CROWED_MESSAGE_LEN,
+                NULL,
+                gfork_crowded_write_cb,
+                NULL);
+            if(result != GLOBUS_SUCCESS)
+            {
+                globus_xio_register_close(handle, NULL, NULL, NULL);
+            }
+        }
+
+        result = globus_xio_server_register_accept(
+            gfork_handle->server_xio,
+            gfork_l_server_accept_cb,
+            gfork_handle);
+        if(result != GLOBUS_SUCCESS)
+        {
+            gfork_l_stop_posting(result);
+        }
+        else
+        {
+            gfork_l_accepting = GLOBUS_TRUE;
+        }
+    }
+    globus_mutex_unlock(&gfork_l_mutex);
+
 error_accept:
     globus_mutex_unlock(&gfork_l_mutex);
 
@@ -955,7 +1038,6 @@ error_accept:
     /* log an error */
     return;
 }
-
 
 static
 globus_result_t
@@ -990,6 +1072,8 @@ gfork_init_server()
     {
         goto error_register;
     }
+    gfork_l_accepting = GLOBUS_TRUE;
+
     return GLOBUS_SUCCESS;
 
 error_register:

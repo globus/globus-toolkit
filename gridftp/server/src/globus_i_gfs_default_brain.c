@@ -60,6 +60,9 @@ static globus_hashtable_t               gfs_l_db_repo_table;
 static gfs_l_db_repo_t *                gfs_l_db_default_repo = NULL;
 
 static gfork_child_handle_t             globus_l_gfs_gfork_handle;
+static globus_bool_t                    globus_l_gfs_gfork_ready = GLOBUS_FALSE;
+static globus_callback_func_t           globus_l_gfs_gfork_ready_cb = NULL;
+static void *                           globus_l_gfs_gfork_ready_cb_arg;
 
 static
 int
@@ -331,22 +334,32 @@ globus_l_gfs_gfork_incoming_cb(
             case GFS_GFORK_MSG_TYPE_READY:
                 globus_i_gfs_log_message(
                     GLOBUS_I_GFS_LOG_WARN, "Ready message received.\n");
+                globus_l_gfs_gfork_ready = GLOBUS_TRUE;
+                if(globus_l_gfs_gfork_ready_cb != NULL)
+                {
+                    globus_callback_register_oneshot(
+                        NULL,
+                        NULL,
+                        globus_l_gfs_gfork_ready_cb,
+                        globus_l_gfs_gfork_ready_cb_arg);
+                }
                 break;
 
             case GFS_GFORK_MSG_TYPE_KILL:
+                printf("421 KILLING!\r\n");
                 globus_i_gfs_log_message(
                     GLOBUS_I_GFS_LOG_WARN, "Kill message received.\n");
 
                 globus_i_gfs_control_end_421(
                     "421 Server load too high. Try again later.\r\n");
 
-                GlobusTimeReltimeSet(delay, 5, 0);
+                globus_gfs_config_set_int("tcp_mem_limit", 32);
+                GlobusTimeReltimeSet(delay, 2, 0);
                 globus_callback_register_oneshot(
                     NULL,
                     &delay,
                     gfs_l_brain_killer_cb,
                     NULL);
-                exit(2);
                 break;
         }
     }
@@ -361,7 +374,9 @@ error:
 
 static
 globus_result_t
-globus_l_gfs_default_brain_init()
+globus_l_gfs_default_brain_init(
+    globus_callback_func_t              ready_cb,
+    void *                              ready_cb_arg)
 {
     gfs_l_db_repo_t *                   default_repo;
     char *                              remote_list;
@@ -430,6 +445,8 @@ globus_l_gfs_default_brain_init()
         globus_gfs_config_set_int("data_connection_max", -1);
 
 
+        globus_l_gfs_gfork_ready_cb = ready_cb;
+        globus_l_gfs_gfork_ready_cb_arg = ready_cb_arg;
         /* try setting up gfork stuff */
         result = globus_gfork_child_worker_start(
             &globus_l_gfs_gfork_handle,
@@ -442,6 +459,17 @@ globus_l_gfs_default_brain_init()
             globus_i_gfs_log_result_warn(
                 "GFork functionality not enabled: globus_gfork_child_worker_start() failed",
                 result);
+
+            globus_l_gfs_gfork_ready = GLOBUS_TRUE;
+
+            if(globus_l_gfs_gfork_ready_cb != NULL)
+            {
+                globus_callback_register_oneshot(
+                    NULL,
+                    NULL,
+                    globus_l_gfs_gfork_ready_cb,
+                    globus_l_gfs_gfork_ready_cb_arg);
+            }
         }
     }
     globus_mutex_unlock(&globus_l_brain_mutex);

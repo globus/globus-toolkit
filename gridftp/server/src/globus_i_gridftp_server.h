@@ -74,11 +74,17 @@ void
 globus_i_gfs_control_init();
 
 globus_result_t
-globus_i_gfs_brain_init();
+globus_i_gfs_brain_init(
+    globus_callback_func_t              ready_cb,
+    void *                              ready_cb_arg);
 
 void
 globus_i_gfs_control_end_421(
     const char *                        msg);
+
+void
+globus_l_gfs_data_brain_ready(
+    void *                              user_arg);
 
 #define GlobusGFSErrorGenericStr(_res, _fmt)                           \
 do                                                                     \
