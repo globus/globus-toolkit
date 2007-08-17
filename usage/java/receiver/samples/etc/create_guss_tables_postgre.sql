@@ -12,7 +12,7 @@ CREATE TABLE gftp_packets(
     id SERIAL,
     component_code SMALLINT NOT NULL,
     version_code SMALLINT NOT NULL,
-    send_time DATETIME,
+    send_time TIMESTAMP,
     ip_version SMALLINT,
     ip_address VARCHAR(64) NOT NULL,
     gftp_version VARCHAR(64),

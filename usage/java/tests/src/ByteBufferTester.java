@@ -67,6 +67,23 @@ public class ByteBufferTester extends TestCase {
 	Assert.assertEquals(buf.getShort(), c);
     }
 
+    public void testShortArrayInOut() {
+        byte shortPacket[] = { 0, -1 };
+        byte shortPacketLE[] = { -1, 0 };
+        short shortVal;
+        CustomByteBuffer buf;
+
+        buf = CustomByteBuffer.wrap(shortPacket);
+        shortVal = buf.getShort();
+        Assert.assertEquals(255, shortVal);
+
+        buf = CustomByteBuffer.wrap(shortPacketLE);
+        buf.setLittleEndian();
+
+        shortVal = buf.getShort();
+        Assert.assertEquals(255, shortVal);
+    }
+
 
     public void testBytesInOut() {
 	byte a = 42;
@@ -87,15 +104,37 @@ public class ByteBufferTester extends TestCase {
 	long a = 259450;
 	long b = 872642;
 	long c = 999183;
+        byte [] array;
 
 	buf.putLong(a);
 	buf.putLong(b);
 	buf.putLong(c);
 	buf.rewind();
-	Assert.assertEquals(buf.getLong(), a);
-	Assert.assertEquals(buf.getLong(), b);
-	Assert.assertEquals(buf.getLong(), c);
+
+        array = buf.array();
+
+	Assert.assertEquals(a, buf.getLong());
+	Assert.assertEquals(b, buf.getLong());
+	Assert.assertEquals(c, buf.getLong());
     }
+
+    public void testLongArrayInOut() {
+        byte longPacket[] = { 0, 0, 0, 0, 0, 0, -1, 0 };
+        byte longPacketLE[] = { 0, -1, 0, 0, 0, 0, 0, 0 };
+        long longVal;
+        CustomByteBuffer buf;
+
+        buf = CustomByteBuffer.wrap(longPacket);
+        longVal = buf.getLong();
+        Assert.assertEquals(65280, longVal);
+
+        buf = CustomByteBuffer.wrap(longPacketLE);
+        buf.setLittleEndian();
+
+        longVal = buf.getLong();
+        Assert.assertEquals(65280, longVal);
+    }
+
 
     public void testToBytesAndBack() {
 	byte[] bytes;

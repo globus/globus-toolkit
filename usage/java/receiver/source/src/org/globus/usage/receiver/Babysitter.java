@@ -32,14 +32,16 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 
 public class Babysitter {
-
-    private static final int controlPort = 4811;
-
     public static void main(String[] args) throws IOException {
+        int controlPort = 4811;
 
         if (args.length < 1) {
-            System.err.println("Usage: java Babysitter <command>");
+            System.err.println("Usage: java Babysitter <command> [port]");
             System.exit(1);
+        }
+
+        if (args.length == 2) {
+            controlPort = Integer.parseInt(args[1]);
         }
 
         Socket controlSocket = null;

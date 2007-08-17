@@ -320,6 +320,12 @@ class ControlSocketThread extends Thread {
                     } else if (inputLine.equals("stop")) {
                         allShutDown();
                         out.println("OK");
+		    } else if (inputLine.equals("flush")) {
+			if (receiver.theRing instanceof RingBufferFile) {
+			    ((RingBufferFile) receiver.theRing).flush();
+			    out.println("Flushed");
+			}
+			out.println("N/A");
                     } else {
                         out.println("Error: Invalid command");
                     }

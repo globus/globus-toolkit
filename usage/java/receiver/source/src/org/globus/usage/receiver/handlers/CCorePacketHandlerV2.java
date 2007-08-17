@@ -29,14 +29,20 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.Properties;
 
-public class CCorePacketHandlerV2 extends CCorePacketHandler {
+public class CCorePacketHandlerV2 extends DefaultPacketHandler {
     private static Log log = LogFactory.getLog(CCorePacketHandlerV2.class);
 
     public CCorePacketHandlerV2(Properties props) throws SQLException {
-        super(props);
+        super(props.getProperty("database-pool"),
+              props.getProperty("cws-core-table", "c_ws_core_packets"));
     }
 
     public boolean doCodesMatch(short componentCode, short versionCode) {
+	if (log.isDebugEnabled()) {
+		log.debug("Checking to see if (component, version) = (" + 
+		componentCode + ", " + versionCode + ") is handled");
+	}
+
         return (componentCode == 4 && versionCode == 2);
     }
 

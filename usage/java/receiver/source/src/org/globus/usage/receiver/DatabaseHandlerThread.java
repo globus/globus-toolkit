@@ -49,7 +49,7 @@ public class DatabaseHandlerThread extends HandlerThread {
 
         String driverClass = props.getProperty("database-driver");
         String dburl = props.getProperty("database-url");
-        String table = props.getProperty("default-table");
+        String table = props.getProperty("default-table", "unknown_packets");
          
 	try {
             Class theClass = null;

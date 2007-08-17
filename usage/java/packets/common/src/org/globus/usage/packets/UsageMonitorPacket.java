@@ -40,7 +40,7 @@ public class UsageMonitorPacket {
     
     private static Log log = 
         LogFactory.getLog(UsageMonitorPacket.class.getName());
-    
+
     public static final int DEFAULT_PORT = 4810;
     public static final int MAX_PACKET_SIZE = 1472; //bytes
     
@@ -102,7 +102,7 @@ public class UsageMonitorPacket {
         
         this.componentCode = buf.getShort();
         this.packetVersion = buf.getShort();
-        
+
         unpackCustomFields(buf);
 
         this.binaryContents = input; //save this... it'll go into database.

@@ -35,7 +35,7 @@ public class OGSADAIMonitorPacket extends IPTimeMonitorPacket
 
     private String currentActivity;
 
-    private static short COMPONENT_CODE = 8;
+    private static short COMPONENT_CODE = 10;
     private static short PACKET_VERSION = 1;
 
     public OGSADAIMonitorPacket() 

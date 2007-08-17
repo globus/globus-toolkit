@@ -42,7 +42,6 @@ import org.apache.commons.dbcp.DriverManagerConnectionFactory;
 
 public class HandlerThread extends Thread {
     private static Log log = LogFactory.getLog(HandlerThread.class);
-
     private LinkedList handlerList; /*a reference to the one in Receiver*/
     private RingBuffer theRing; /*a reference to the one in Receiver*/
     protected boolean stillGood = true;
@@ -130,6 +129,7 @@ public class HandlerThread extends Thread {
                 componentCode = bufFromRing.getShort();
                 versionCode = bufFromRing.getShort();
                 bufFromRing.rewind();
+
                 tryHandlers(bufFromRing, componentCode, versionCode);
 	    
                 this.packetsLogged ++;

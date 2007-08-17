@@ -45,6 +45,7 @@ public class PacketFieldParserTester extends TestCase {
 	CustomByteBuffer buf;
 
 	buf = CustomByteBuffer.wrap(packet1bytes);
+        buf.setLittleEndian();
 
 	Assert.assertEquals("First short should be 4",buf.getShort(), 4);
 	Assert.assertEquals("Second short should be 4",buf.getShort(), 4);
@@ -68,6 +69,7 @@ public class PacketFieldParserTester extends TestCase {
 
 
 	buf = CustomByteBuffer.wrap(packet2bytes);
+        buf.setLittleEndian();
 	Assert.assertEquals("First short should be 4",buf.getShort(), 4);
 	Assert.assertEquals("Second short should be 4",buf.getShort(), 4);
 	buf.get(ipBytes);
@@ -86,6 +88,7 @@ public class PacketFieldParserTester extends TestCase {
 
 
 	buf = CustomByteBuffer.wrap(packet3bytes);
+        buf.setLittleEndian();
 	Assert.assertEquals("First short should be 4",buf.getShort(), 4);
 	Assert.assertEquals("Second short should be 4",buf.getShort(), 4);
 	buf.get(ipBytes);

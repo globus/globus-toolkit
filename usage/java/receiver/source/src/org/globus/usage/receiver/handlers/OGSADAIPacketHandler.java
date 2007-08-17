@@ -42,7 +42,9 @@ public class OGSADAIPacketHandler extends DefaultPacketHandler
 
     public boolean doCodesMatch(short componentCode, short versionCode)
     {
-        return ((componentCode == 8) && (versionCode == 1));
+	/* OGSA DAI used 8:1 for prior to inclusion in the core handlers */
+        return (((componentCode == 8) && (versionCode == 1)) ||
+		((componentCode == 10) &&(versionCode == 1)));
     }
 
     public UsageMonitorPacket instantiatePacket(CustomByteBuffer rawBytes)
