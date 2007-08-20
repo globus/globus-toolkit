@@ -173,6 +173,8 @@ $passphrase = sprintf "%010.d", int(rand(0x7fffffff));
 $trustrootdir = "$ENV{HOME}/.globus/certificates.test.$$";
 $origtrustrootdir = $ENV{'X509_CERT_DIR'} if defined($ENV{'X509_CERT_DIR'});
 
+&opensslsanitycheck();
+
 # all temporary files accessible only by running user
 umask(0077);
 
@@ -1337,6 +1339,22 @@ sub verifytrustroots {
     return (0, "");
 }
 
+sub opensslsanitycheck {
+  $testkey = "/tmp/myproxy-test.$$.key";
+  $cmd = "openssl rsa -des3 -passout stdin -in $ENV{'X509_USER_KEY'} -out $testkey";
+  ($exitstatus, $output) = &runtest($cmd, $passphrase . "\n");
+  if ($exitstatus) {
+    print STDERR "openssl rsa encrypt failed:\n", $cmd, "\n", $output;
+    die;
+  }
+  $cmd = "openssl rsa -passin stdin -in $testkey > /dev/null";
+  ($exitstatus, $output) = &runtest($cmd, $passphrase . "\n");
+  if ($exitstatus) {
+    print STDERR "openssl rsa decrypt failed:\n", $cmd, "\n", $output;
+    die;
+  }
+  unlink($testkey);
+}
 
 sub debug {
     print STDERR join('', @_), "\n" if ($verbose);
