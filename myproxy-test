@@ -124,6 +124,13 @@ die "grid-proxy-info -subject failed, stopped"
     if (!defined($cert_subject) || $cert_subject eq "");
 $cert_subject = (split(/\/CN=proxy|\/CN=limited proxy|\/CN=\d+/,
 		       $cert_subject))[0];
+chomp($proxy_path = `$grid_proxy_info -path 2>/dev/null`);
+die "grid-proxy-info -path failed, stopped" if (!(-e $proxy_path));
+($exitstatus, $output) = &verifyproxy($proxy_path);
+if ($exitstatus) {
+  print STDERR $output;
+  die if ($exitstatus);
+}
 
 #
 # check for the commands I want to run
@@ -1257,7 +1264,7 @@ sub verifyproxy {
     if ($proxytype =~ /legacy/) {
 	$oldproxy = "-old";
     }
-    local($output) = `$grid_proxy_init $oldproxy -debug -verify -cert $proxyfile -key $proxyfile -valid 0:1 -out /tmp/tmpproxy.$$ 2>&1`;
+    $output = `$grid_proxy_init $oldproxy -debug -verify -cert $proxyfile -key $proxyfile -valid 0:1 -out /tmp/tmpproxy.$$ 2>&1`;
     if ($? != 0) {
 	$output = "failed to verify proxy\n" . $output;
 	unlink("/tmp/tmpproxy.$$");
