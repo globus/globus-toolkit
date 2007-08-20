@@ -61,7 +61,7 @@ if test -f nightly.tar.gz; then
     tar xfz nightly.tar.gz
     cd gtTRUNK-all-source-installer
     ./configure --prefix=$GLOBUS_LOCATION --with-buildopts="-verbose"
-    make myproxy install
+    make gsi-myproxy install
     . $GLOBUS_LOCATION/etc/globus-user-env.sh
     echo ==================================================
     flavor=`gpt-query -name=myproxy | perl -n -e 'if (/myproxy-(.*)-pgm/){print "$1\n";}'|head -1`
