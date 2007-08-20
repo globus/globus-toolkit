@@ -76,7 +76,7 @@ if test -f nightly.tar.gz; then
     cd gtTRUNK-all-source-installer
     ./configure --prefix=$GLOBUS_LOCATION --with-buildopts="-verbose" \
                 --with-gsiopensshargs="--with-zlib=$ZLIB_LOCATION"
-    make gsi-openssh install
+    make gsi_openssh install
     . $GLOBUS_LOCATION/etc/globus-user-env.sh
     cd ..
     echo ==================================================
