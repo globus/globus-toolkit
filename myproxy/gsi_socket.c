@@ -362,8 +362,6 @@ GSI_SOCKET_destroy(GSI_SOCKET *self)
     }
 
     free(self);
-
-    globus_module_deactivate(GLOBUS_GSI_GSS_ASSIST_MODULE);
 }
 
 
