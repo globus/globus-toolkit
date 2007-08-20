@@ -1399,14 +1399,14 @@ myproxy_creds_change_passphrase(const struct myproxy_creds *creds,
     }
 
     /* overwrite old passphrase with new */
-    if (new_passphrase)
+    if (new_passphrase && new_passphrase[0])
 	tmp_creds.passphrase = strdup(new_passphrase);
 
     if (write_data_file(&tmp_creds, data_path, data_file_mode) == -1) {
 	verror_put_string ("Error writing data file");
        	goto error;
     }
-    if (ssl_proxy_store_to_file(ssl_creds, creds_path, new_passphrase) !=
+    if (ssl_proxy_store_to_file(ssl_creds, creds_path, tmp_creds.passphrase) !=
 	SSL_SUCCESS) {
 	goto error;
     }
