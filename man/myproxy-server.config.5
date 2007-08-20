@@ -1,4 +1,4 @@
-.TH myproxy-server.config 5 "2007-07-17" "NCSA" "MyProxy"
+.TH myproxy-server.config 5 "2007-08-20" "NCSA" "MyProxy"
 .SH NAME
 myproxy-server.config \- myproxy-server configuration file
 .SH DESCRIPTION
@@ -170,9 +170,13 @@ By default, clients that match
 .B authorized_retrievers 
 must perform additional authentication (such as passphrase, PAM, or
 SASL) to retrieve credentials.  However, authenticated clients that
-match 
+match both
+.B authorized_retrievers 
+and
 .B trusted_retrievers 
-do not need to perform additional authentication.
+do not need to perform additional authentication,
+unless the credentials are protected by a passphrase,
+in which case the passphrase is still required.
 .TP
 .BI default_trusted_retrievers " \*(lqDN regex\*(rq"
 If a user doesn't set a trusted retrieval policy with the credential
