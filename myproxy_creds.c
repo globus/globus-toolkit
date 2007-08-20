@@ -1620,8 +1620,8 @@ myproxy_get_certs(const char cert_dir[])
 	return NULL;
     }
     while ((de = readdir(dir)) != NULL) {
-	if (!strcmp(de->d_name, ".") || !strcmp(de->d_name, "..")) {
-	    continue;
+	if (de->d_type != DT_REG) { /* only regular files, please */
+        continue;
 	}
 	if (curr == NULL) {
 	    curr = head = (myproxy_certs_t *)malloc(sizeof(myproxy_certs_t));
