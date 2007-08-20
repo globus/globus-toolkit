@@ -192,12 +192,12 @@ AC_ARG_ENABLE(wstests, AC_HELP_STRING([--disable-wstests],\
    [Don't build webservices [test] packages.  Default is enabled.]),
    [if test $enableval = "no"; then wstests=" "; fi], [])
 AC_SUBST(wstests, $wstests)
-myproxy="myproxy"
+myproxy="gsi-myproxy"
 AC_ARG_ENABLE(myproxy, AC_HELP_STRING([--disable-myproxy],\
    [Don't build myproxy.  Default is enabled.]),
    [if test $enableval = "no"; then myproxy=" "; fi], [])
 AC_SUBST(myproxy, $myproxy)
-gsiopenssh="gsi_openssh"
+gsiopenssh="gsi-openssh"
 AC_ARG_ENABLE(gsiopenssh, AC_HELP_STRING([--disable-gsiopenssh],\
    [Don't build gsiopenssh.  Default is enabled.]),
    [if test $enableval = "no"; then gsiopenssh=" "; fi], [])
