@@ -180,10 +180,10 @@ globus_l_gsi_proxy_deactivate(void)
     
 /**
  * @name Create Request
- * @ingroup globus_gsi_proxy_operations
  */
 /*@{*/
 /**
+ * @ingroup globus_gsi_proxy_operations
  * Create a proxy credential request
  *
  * This function creates a proxy credential request, ie. a unsigned 
@@ -503,10 +503,10 @@ globus_gsi_proxy_create_req(
 
 /**
  * @name Inquire Request
- * @ingroup globus_gsi_proxy_operations
  */
 /*@{*/
 /**
+ * @ingroup globus_gsi_proxy_operations
  * Inquire a proxy credential request
  *
  * This function reads the public part of a proxy credential request
@@ -713,10 +713,10 @@ globus_gsi_proxy_inquire_req(
 
 /**
  * @name Resign Certificate
- * @ingroup globus_gsi_proxy_operations
  */
 /*@{*/
 /**
+ * @ingroup globus_gsi_proxy_operations
  * Resign a existing certificate into a proxy
  *
  * This function use the public key in a existing certificate
@@ -733,7 +733,7 @@ globus_gsi_proxy_inquire_req(
  * @param peer_credential
  *        The credential structure that contains the certificate to
  *        be resigned.
- * @param resgined_credential
+ * @param resigned_credential
  *        A credential structure that upon return will contain the resigned
  *        certificate and associated certificate chain.
  * @return
@@ -911,10 +911,10 @@ globus_gsi_proxy_resign_cert(
 
 /**
  * @name Sign Request
- * @ingroup globus_gsi_proxy_operations
  */
 /*@{*/
 /**
+ * @ingroup globus_gsi_proxy_operations
  * Sign a proxy certificate request
  *
  * This function signs the public part of a proxy credential request,
@@ -1593,10 +1593,10 @@ globus_l_gsi_proxy_sign_key(
 
 /**
  * @name Create Signed
- * @ingroup globus_gsi_proxy_operations
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_proxy_operations
  * Create Signed Proxy Certificate
  *
  * @param handle
@@ -1804,10 +1804,10 @@ globus_gsi_proxy_create_signed(
 
 /**
  * @name Assemble credential
- * @ingroup globus_gsi_proxy_operations
  */
 /*@{*/
 /**
+ * @ingroup globus_gsi_proxy_operations
  * Assemble a proxy credential
  *
  * This function assembles a proxy credential. It reads a signed proxy

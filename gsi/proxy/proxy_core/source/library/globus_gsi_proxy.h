@@ -118,13 +118,13 @@ globus_module_descriptor_t		globus_i_gsi_proxy_module;
  *
  * An GSI Proxy handle is used to associate state with a group of
  * operations. Handles can have immutable
- * @ref globus_gsi_proxy_handle_attrs_t "attributes"
+ * @ref globus_gsi_proxy_handle_attrs "attributes"
  * associated with them. All proxy @link
  * globus_gsi_proxy_operations operations @endlink take a handle pointer
  * as a parameter.
  *
  * @see globus_gsi_proxy_handle_init(),
- * globus_gsi_proxy_handle_destroy(), globus_gsi_proxy_handle_attrs_t
+ * globus_gsi_proxy_handle_destroy(), @ref globus_gsi_proxy_handle_attrs
  */
 
 typedef struct globus_l_gsi_proxy_handle_s * 
@@ -135,12 +135,12 @@ typedef struct globus_l_gsi_proxy_handle_s *
  * @ingroup globus_gsi_proxy_handle_attrs
  * 
  * A GSI Proxy handle attributes type is used to associate immutable
- * parameter values with a @ref globus_gsi_proxy_handle_t handle.
+ * parameter values with a @ref globus_gsi_proxy_handle handle.
  * A handle attributes object should be created with immutable parameters
  * and then passed to the proxy handle init 
- * function @ref globus_gsi_proxy_handle_init().
+ * function globus_gsi_proxy_handle_init().
  *
- * @see globus_gsi_proxy_handle_t, @ref globus_gsi_proxy_handle_attrs
+ * @see @ref globus_gsi_proxy_handle
  */
 
 typedef struct 
