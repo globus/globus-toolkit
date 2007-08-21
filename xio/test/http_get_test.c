@@ -367,8 +367,8 @@ globus_l_xio_test_server_request_callback(
         goto error_exit;
     }
 
-    http_test_server_close_handle(test_server);
     http_test_server_shutdown(test_server);
+    http_test_server_close_handle(test_server);
 
     return;
 
@@ -381,8 +381,8 @@ error_respond_exit:
             0);
 
 error_exit:
-    http_test_server_close_handle(test_server);
     http_test_server_shutdown(test_server);
+    http_test_server_close_handle(test_server);
 
 }
 /* globus_l_xio_test_server_request_callback() */

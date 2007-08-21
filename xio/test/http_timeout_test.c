@@ -103,7 +103,7 @@ main(
     char *                              argv[])
 {
     int                                 rc;
-    char *                              contact;
+    char *                              contact = NULL;
     globus_result_t                     result;
     globus_l_timeout_info_t             client_timeout_info;
     globus_l_timeout_info_t             server_timeout_info;
@@ -309,6 +309,7 @@ main(
     server_timeout_info.state = GLOBUS_XIO_OPERATION_TYPE_ACCEPT;
     server_timeout_info.handle = NULL;
     server_timeout_info.result = GLOBUS_SUCCESS;
+    server_timeout_info.contact = NULL;
     result = globus_xio_server_create(
             &server_timeout_info.server,
             server_timeout_info.attr,
@@ -554,6 +555,7 @@ state_machine(
                 &delay,
                 state_machine,
                 info);
+        globus_mutex_unlock(&lock);
         return;
     }
 
