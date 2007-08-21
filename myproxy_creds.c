@@ -1623,8 +1623,8 @@ myproxy_get_certs(const char cert_dir[])
     while ((de = readdir(dir)) != NULL) {
 	snprintf(path, MAXPATHLEN, "%s/%s", cert_dir, de->d_name);
     if (stat(path, &s) < 0) {
-        verror_put_string("stat(%s) failed", path);
-        verror_put_errno(errno);
+        myproxy_log("stat(%s) failed: %s", path, strerror(errno));
+        continue;
     }
 	if (!S_ISREG(s.st_mode)) { /* only regular files, please */
         continue;
