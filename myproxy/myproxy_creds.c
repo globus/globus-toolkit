@@ -1614,13 +1614,19 @@ myproxy_get_certs(const char cert_dir[])
     struct dirent *de = NULL;
     myproxy_certs_t *head=NULL, *curr=NULL;
     char path[MAXPATHLEN];
+    struct stat s;
 
     if ((dir = opendir(cert_dir)) == NULL) {
 	verror_put_string("failed to open %s", cert_dir);
 	return NULL;
     }
     while ((de = readdir(dir)) != NULL) {
-	if (de->d_type != DT_REG) { /* only regular files, please */
+	snprintf(path, MAXPATHLEN, "%s/%s", cert_dir, de->d_name);
+    if (stat(path, &s) < 0) {
+        verror_put_string("stat(%s) failed", path);
+        verror_put_errno(errno);
+    }
+	if (!S_ISREG(s.st_mode)) { /* only regular files, please */
         continue;
 	}
 	if (curr == NULL) {
@@ -1631,7 +1637,6 @@ myproxy_get_certs(const char cert_dir[])
 	}
 	memset(curr, 0, sizeof(myproxy_certs_t));
 	curr->filename = strdup(de->d_name);
-	snprintf(path, MAXPATHLEN, "%s/%s", cert_dir, curr->filename);
 	if (buffer_from_file(path, (unsigned char **)&curr->contents,
 			     NULL) < 0) {
 	    goto failure;
