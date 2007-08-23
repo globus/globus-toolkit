@@ -780,8 +780,8 @@ globus_ftp_client_operationattr_init(
     i_attr->cwd_first                   = GLOBUS_FALSE;
     i_attr->authz_assert                = GLOBUS_NULL;
     i_attr->delayed_pasv                = GLOBUS_FALSE;
-
-    i_attr->module_alg_str = NULL;
+    i_attr->net_stack_str               = GLOBUS_NULL;
+    i_attr->module_alg_str              = GLOBUS_NULL;
 
     tmp_name = globus_libc_strdup("anonymous");
     if(tmp_name == GLOBUS_NULL)
@@ -877,7 +877,13 @@ globus_ftp_client_operationattr_destroy(
     }
     if(i_attr->module_alg_str != NULL)
     {
-        free(i_attr->module_alg_str);
+        globus_libc_free(i_attr->module_alg_str);
+        i_attr->module_alg_str = GLOBUS_NULL;
+    }
+    if(i_attr->net_stack_str != NULL)
+    {
+        globus_libc_free(i_attr->net_stack_str);
+        i_attr->net_stack_str = GLOBUS_NULL;
     }
     if(i_attr->authz_assert)
     {
@@ -1027,6 +1033,109 @@ error_exit:
     return globus_error_put(err);
 }
 /* globus_ftp_client_operationattr_get_storage_module() */
+/* @} */
+
+/**
+ * @name Custom Data Channel Driver Stack
+ */
+/* @{ */
+
+/**
+ * Set/Get the gridftp xio driver stack used for the data channel.
+ * @ingroup globus_ftp_client_operationattr
+ *
+ * This attribute allows the user to control which xio drivers will be used
+ * for data transport.  The driver MUST be installed and allowed by the
+ * server or the transfer/get/put will result in an error.
+ *
+ *
+ * @param attr
+ *        The attribute set to query or modify.
+ * @param driver_list
+ *        driver list in the following format:
+ *          driver1[:driver1opts][,driver2[:driver2opts]][...].
+ *        The string "default" will reset the stack list to the server
+ *        default.
+ *        
+ * @note This is a GridFTP extension, and may not be supported on all FTP
+ * servers.
+ */
+globus_result_t
+globus_ftp_client_operationattr_set_net_stack(
+    globus_ftp_client_operationattr_t *     attr,
+    const char *                            driver_list)
+{
+    globus_object_t *                       err;
+    globus_i_ftp_client_operationattr_t *   i_attr;
+    GlobusFuncName(globus_ftp_client_operationattr_set_net_stack);
+
+    if(attr == GLOBUS_NULL)
+    {
+        err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr");
+        goto error_exit;
+    }
+    i_attr = *(globus_i_ftp_client_operationattr_t **) attr;
+
+    if(driver_list != GLOBUS_NULL)
+    {
+        i_attr->net_stack_str = globus_libc_strdup(driver_list);
+    }
+    else
+    {
+        if(i_attr->net_stack_str != GLOBUS_NULL)
+        {
+            globus_free(i_attr->net_stack_str);
+        }
+        i_attr->net_stack_str = GLOBUS_NULL;
+    }
+    return GLOBUS_SUCCESS;
+
+error_exit:
+    return globus_error_put(err);
+}
+/* globus_ftp_client_operationattr_set_net_stack() */
+
+globus_result_t
+globus_ftp_client_operationattr_get_net_stack(
+    const globus_ftp_client_operationattr_t *   attr,
+    char **                                     driver_list)
+{
+    char *                                      d_list = NULL;
+    globus_object_t *                           err;
+    const globus_i_ftp_client_operationattr_t * i_attr;
+    GlobusFuncName(globus_ftp_client_operationattr_get_net_stack);
+
+    if(attr == GLOBUS_NULL)
+    {
+        err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr");
+        goto error_exit;
+    }
+    if(driver_list == GLOBUS_NULL)
+    {
+        err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("driver_list");
+        goto error_exit;
+    }
+    i_attr = *(const globus_i_ftp_client_operationattr_t **) attr;
+
+    if(i_attr->net_stack_str == NULL)
+    {
+        d_list = NULL;
+    }
+    else
+    {
+        d_list = globus_libc_strdup(i_attr->net_stack_str);
+    }
+    if(driver_list != NULL)
+    {
+        *driver_list = d_list;
+    }
+
+    return GLOBUS_SUCCESS;
+
+error_exit:
+    return globus_error_put(err);
+}
+/* globus_ftp_client_operationattr_get_net_stack() */
 /* @} */
 
 /**
@@ -2996,6 +3105,16 @@ globus_ftp_client_operationattr_copy(
     if(result)
     {
 	goto destroy_exit;
+    }
+
+    if(i_src->net_stack_str)
+    {
+        result = globus_ftp_client_operationattr_set_net_stack(
+            dst, i_src->net_stack_str);
+        if(result)
+        {
+            goto destroy_exit;
+        }
     }
 
     if (i_src->authz_assert)

@@ -984,7 +984,6 @@ gfs_l_gfork_mem_try(
 {
     int                                 mem_given;
     gfs_l_memlimit_entry_t *            entry;
-    gfs_l_memlimit_entry_t *            next_entry;
 
     entry = (gfs_l_memlimit_entry_t *) user_arg;
 
@@ -1114,7 +1113,6 @@ static
 void
 gfs_l_gfork_fire_delayed()
 {
-    globus_bool_t                       done = GLOBUS_FALSE;
     gfs_l_memlimit_entry_t *            next_entry;
 
     /* go through them all, if not enough mem they will be re-queue

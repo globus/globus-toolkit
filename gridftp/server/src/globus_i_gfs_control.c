@@ -1056,6 +1056,17 @@ globus_l_gfs_request_command(
         globus_gsc_959_finished_command(op, version_string);
         done = GLOBUS_TRUE;
     }
+    else if(strcmp(cmd_array[0], "SITE") == 0 &&
+        strcmp(cmd_array[1], "SETNETSTACK") == 0)
+    {
+        command_info->command = GLOBUS_GFS_CMD_SITE_SETNETSTACK;
+        command_info->pathname = strdup(cmd_array[2]);
+        if(command_info->pathname == NULL)
+        {
+            goto err;
+        }
+        type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_SITE;
+    }
     else
     {
         goto err;
@@ -2135,6 +2146,19 @@ globus_l_gfs_add_commands(
         2,
         2,
         "SITE VERSION",
+        instance);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+    result = globus_gsc_959_command_add(
+        control_handle,
+        "SITE SETNETSTACK",
+        globus_l_gfs_request_command,
+        GLOBUS_GSC_COMMAND_POST_AUTH,
+        3,
+        3,
+        "SITE SETNETSTACK <sp> comma seperated list of xio drivers for the data channel",
         instance);
     if(result != GLOBUS_SUCCESS)
     {

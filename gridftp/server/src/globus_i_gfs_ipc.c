@@ -753,7 +753,6 @@ void
 globus_l_gfs_session_info_free(
     globus_gfs_session_info_t *         session_info)
 {
-    OM_uint32                           min_rc;
     GlobusGFSName(globus_l_gfs_session_info_free);
     GlobusGFSDebugEnter();
 

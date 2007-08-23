@@ -973,6 +973,7 @@ globus_l_ftp_client_target_new(
     target->cached_data_conn.dest = GLOBUS_NULL;
     target->cached_data_conn.operation = GLOBUS_FTP_CLIENT_IDLE;
     target->authz_assert = GLOBUS_NULL;
+    target->net_stack_str = GLOBUS_NULL;
     target->delayed_pasv = GLOBUS_FALSE;
 
     /* Make a local copy of the desired FTP client attributes */
@@ -1177,6 +1178,10 @@ globus_l_ftp_client_target_delete(
     if(target->auth_info.auth_gssapi_subject)
     {
         globus_libc_free(target->auth_info.auth_gssapi_subject);
+    }
+    if(target->net_stack_str)
+    {
+        globus_libc_free(target->net_stack_str);
     }
     if(target->authz_assert)
     {

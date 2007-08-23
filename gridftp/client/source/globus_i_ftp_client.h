@@ -152,7 +152,7 @@ typedef struct globus_i_ftp_client_operationattr_t
     char *                                      authz_assert;
     globus_bool_t                               cache_authz_assert;
     globus_bool_t                               delayed_pasv;
-
+    char *                                      net_stack_str;
     char *                                      module_alg_str;
 }
 globus_i_ftp_client_operationattr_t;
@@ -322,6 +322,8 @@ typedef enum
     GLOBUS_FTP_CLIENT_TARGET_PORT,
     GLOBUS_FTP_CLIENT_TARGET_SETUP_AUTHZ_ASSERT,
     GLOBUS_FTP_CLIENT_TARGET_AUTHZ_ASSERT,
+    GLOBUS_FTP_CLIENT_TARGET_SETUP_SETNETSTACK,
+    GLOBUS_FTP_CLIENT_TARGET_SETNETSTACK,
     GLOBUS_FTP_CLIENT_TARGET_SETUP_ALLO,
     GLOBUS_FTP_CLIENT_TARGET_ALLO,
     GLOBUS_FTP_CLIENT_TARGET_SETUP_REST_STREAM,
@@ -657,6 +659,7 @@ typedef struct globus_i_ftp_client_target_s
     globus_ftp_control_layout_t			layout;
     globus_ftp_control_parallelism_t		parallelism;
     char *                                      authz_assert;
+    char *                                      net_stack_str;
     globus_bool_t                               delayed_pasv;
     
     /** Requested settings */

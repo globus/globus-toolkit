@@ -1584,7 +1584,6 @@ error_exit:
     return result;
 }
 
-static
 globus_result_t
 globus_i_gfs_config_stack(
     char *                              value,
@@ -1598,9 +1597,14 @@ globus_i_gfs_config_stack(
     char *                              driver_name;
     globus_xio_driver_t                 driver;
     gfs_i_stack_entry_t *               stack_ent;
+    char *                              approved;
     globus_bool_t                       tcp_used = GLOBUS_FALSE;
     globus_bool_t                       gsi_used = GLOBUS_FALSE;
+    GlobusGFSName(globus_i_gfs_config_stack);
+    GlobusGFSDebugEnter();
 
+    approved = globus_i_gfs_config_string("protocol_stack");
+    
     if(value != NULL)
     {
         while(!done)
@@ -1635,6 +1639,13 @@ globus_i_gfs_config_stack(
             }
             else
             {
+                if(approved == NULL || strstr(approved, driver_name) == NULL)
+                {
+                    GlobusGFSErrorGenericStr(result,
+                        ("%s driver is not allowed.", driver_name));
+                    goto error_load;
+                }
+
                 result = globus_xio_driver_load(driver_name, &driver);
                 if(result != GLOBUS_SUCCESS)
                 {
@@ -1681,6 +1692,8 @@ globus_i_gfs_config_stack(
         globus_list_insert(&driver_list, stack_ent);
     }
     globus_l_gfs_config_set(config_name, 0, driver_list);
+
+    GlobusGFSDebugExit();
     return GLOBUS_SUCCESS;
 
 error_load:
@@ -1690,6 +1703,7 @@ error_load:
                 globus_error_print_friendly(
                     globus_error_peek((globus_result_t) result)));
 
+    GlobusGFSDebugExitWithError();
     return result;
 }
 
@@ -2027,14 +2041,6 @@ globus_l_gfs_config_misc()
         globus_l_gfs_config_set("ipc_user_name", 0, 
             globus_libc_strdup(pwent->pw_name));
     }
-
-    value = globus_i_gfs_config_string("protocol_stack");
-    result = globus_i_gfs_config_stack(value, "net_stack_list");
-    if(result != GLOBUS_SUCCESS)
-    {
-        goto error_exit;
-    }
-
     
     GlobusGFSDebugExit();
     return GLOBUS_SUCCESS;

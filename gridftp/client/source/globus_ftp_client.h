@@ -832,6 +832,16 @@ globus_ftp_client_operationattr_get_storage_module(
     char **                                 module_args);
 
 globus_result_t
+globus_ftp_client_operationattr_set_net_stack(
+    globus_ftp_client_operationattr_t *         attr,
+    const char *                                driver_list);
+
+globus_result_t
+globus_ftp_client_operationattr_get_net_stack(
+    const globus_ftp_client_operationattr_t *   attr,
+    char **                                     driver_list);
+
+globus_result_t
 globus_ftp_client_operationattr_set_authz_assert(
     globus_ftp_client_operationattr_t *         attr,
     const char *                                authz_assert,
@@ -1113,6 +1123,7 @@ typedef enum
     GLOBUS_FTP_CLIENT_FEATURE_CKSM,
     GLOBUS_FTP_CLIENT_FEATURE_CHMOD,
     GLOBUS_FTP_CLIENT_FEATURE_AUTHZ_ASSERT,
+    GLOBUS_FTP_CLIENT_FEATURE_SITE_SETNETSTACK,
     GLOBUS_FTP_CLIENT_FEATURE_DELAYED_PASV,
     GLOBUS_FTP_CLIENT_FEATURE_MLST,
     GLOBUS_FTP_CLIENT_FEATURE_MAX,

@@ -109,7 +109,8 @@ typedef enum globus_gfs_command_type_e
     GLOBUS_GFS_CMD_RNFR,
     GLOBUS_GFS_CMD_CKSM,
     GLOBUS_GFS_CMD_SITE_CHMOD,
-    GLOBUS_GFS_CMD_SITE_DSI
+    GLOBUS_GFS_CMD_SITE_DSI,
+    GLOBUS_GFS_CMD_SITE_SETNETSTACK
 } globus_gfs_command_type_t;
 
 /*

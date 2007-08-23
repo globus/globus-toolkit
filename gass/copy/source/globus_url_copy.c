@@ -103,10 +103,12 @@ typedef struct
     globus_off_t			partial_offset;
     globus_off_t			partial_length;
     globus_bool_t                       list_uses_data_mode;
+    globus_bool_t                       udt;
     globus_bool_t                       ipv6;
     globus_bool_t                       allo;
     globus_bool_t                       delayed_pasv;
     globus_bool_t                       pipeline;
+    char *                              net_stack_str;
     char *                              src_authz_assert;
     char *                              dst_authz_assert;
     globus_bool_t                       cache_src_authz_assert;
@@ -493,6 +495,8 @@ enum
     arg_fast,
     arg_list,
     arg_ipv6,
+    arg_udt,
+    arg_net_stack_str,
     arg_authz_assert,
     arg_src_authz_assert,
     arg_dst_authz_assert,
@@ -555,6 +559,7 @@ flagdef(arg_rfc1738, "-rp", "-relative-paths");
 flagdef(arg_create_dest, "-cd", "-create-dest");
 flagdef(arg_fast, "-fast", "-fast-data-channels");
 flagdef(arg_ipv6, "-ipv6","-IPv6");
+flagdef(arg_udt, "-u","-udt");
 flagdef(arg_delayed_pasv, "-dp","-delayed-pasv");
 flagdef(arg_pipeline, "-pp","-pipeline");
 flagdef(arg_allo, "-allo","-allocate");
@@ -585,6 +590,7 @@ oneargdef(arg_rst_interval, "-rst-interval", "-restart-interval", test_integer, 
 oneargdef(arg_rst_timeout, "-rst-timeout", "-restart-timeout", test_integer, GLOBUS_NULL);
 oneargdef(arg_partial_offset, "-off", "-partial-offset", test_integer, GLOBUS_NULL);
 oneargdef(arg_partial_length, "-len", "-partial-length", test_integer, GLOBUS_NULL);
+oneargdef(arg_net_stack_str, "-dcstack", "-data-channel-stack", GLOBUS_NULL, GLOBUS_NULL);
 oneargdef(arg_authz_assert, "-aa", "-authz-assert", GLOBUS_NULL, GLOBUS_NULL);
 oneargdef(arg_src_authz_assert, "-saa", "-src-authz-assert", GLOBUS_NULL, GLOBUS_NULL);
 oneargdef(arg_dst_authz_assert, "-daa", "-dst-authz-assert", GLOBUS_NULL, GLOBUS_NULL);
@@ -632,7 +638,9 @@ static globus_args_option_descriptor_t args_options[arg_num];
     setupopt(arg_create_dest);          \
     setupopt(arg_fast);	                \
     setupopt(arg_list);	                \
+    setupopt(arg_udt);                  \
     setupopt(arg_ipv6);         	\
+    setupopt(arg_net_stack_str);        \
     setupopt(arg_authz_assert);         \
     setupopt(arg_src_authz_assert);     \
     setupopt(arg_dst_authz_assert);     \
@@ -794,7 +802,9 @@ globus_l_guc_ext(
     ext_info.partial_offset = guc_info->partial_offset;
     ext_info.partial_length = guc_info->partial_length;
     ext_info.list_uses_data_mode = guc_info->list_uses_data_mode;
+    ext_info.udt = guc_info->udt;
     ext_info.ipv6 = guc_info->ipv6;
+    ext_info.net_stack_str = guc_info->net_stack_str;
     ext_info.src_authz_assert = guc_info->src_authz_assert;
     ext_info.dst_authz_assert = guc_info->dst_authz_assert;
     ext_info.cache_src_authz_assert = guc_info->cache_src_authz_assert;
@@ -1914,6 +1924,7 @@ globus_l_guc_parse_arguments(
     guc_info->partial_length = -1;
     guc_info->rfc1738 = GLOBUS_FALSE;
     guc_info->list_uses_data_mode = GLOBUS_FALSE;
+    guc_info->udt = GLOBUS_FALSE;
     guc_info->ipv6 = GLOBUS_FALSE;
     guc_info->allo = GLOBUS_TRUE;
     guc_info->delayed_pasv = GLOBUS_FALSE;
@@ -1923,6 +1934,7 @@ globus_l_guc_parse_arguments(
     guc_info->src_module_name = GLOBUS_NULL;
     guc_info->dst_module_args = GLOBUS_NULL;
     guc_info->src_module_args = GLOBUS_NULL;
+    guc_info->net_stack_str = GLOBUS_NULL;
     guc_info->src_authz_assert = GLOBUS_NULL;
     guc_info->dst_authz_assert = GLOBUS_NULL;
     guc_info->cache_src_authz_assert = GLOBUS_FALSE;
@@ -2130,9 +2142,15 @@ globus_l_guc_parse_arguments(
 	case arg_striped:
 	    guc_info->striped = GLOBUS_TRUE;
 	    break;
+	case arg_udt:
+	    guc_info->udt = GLOBUS_TRUE;
+	    break;
 	case arg_ipv6:
 	    guc_info->ipv6 = GLOBUS_TRUE;
 	    break;
+        case arg_net_stack_str:
+            guc_info->net_stack_str = globus_libc_strdup(instance->values[0]);
+            break;
         case arg_authz_assert:
             result = globus_l_guc_file_to_string(
                                instance->values[0], &authz_assert);
@@ -2317,7 +2335,12 @@ globus_l_guc_parse_arguments(
     {
         guc_info->num_streams = 1;
     }
-
+    
+    if(guc_info->udt)
+    {
+        guc_info->net_stack_str = globus_libc_strdup("udt,gsi");
+    }
+    
     /* check arguemnt validity */
     if((guc_info->options & GLOBUS_URL_COPY_ARG_ASCII) &&
        (guc_info->options & GLOBUS_URL_COPY_ARG_BINARY) )
@@ -3088,6 +3111,13 @@ globus_l_guc_gass_attr_init(
             globus_ftp_client_operationattr_set_data_protection(
                 ftp_attr,
                 GLOBUS_FTP_CONTROL_PROTECTION_SAFE);
+        }
+
+        if(guc_info->net_stack_str)
+        {
+            globus_ftp_client_operationattr_set_net_stack(
+                ftp_attr,
+                guc_info->net_stack_str);
         }
 
         globus_gass_copy_attr_set_ftp(gass_copy_attr, ftp_attr);

@@ -635,7 +635,6 @@ globus_l_gfs_new_server_cb(
 
 error_start:
     globus_free(remote_contact);   
-error2:
     globus_free(local_contact);
 error:
     result = globus_xio_register_close(

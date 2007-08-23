@@ -469,7 +469,6 @@ globus_l_gfs_remote_select_nodes(
             node_info->callback = callback;
             node_info->user_arg = user_arg;
             node_info->my_handle = my_handle;
-            node_info->bounce = bounce;
             bounce->ndx_offset++;
     
             my_handle->session_info.host_id = node_info->brain_node->host_id;

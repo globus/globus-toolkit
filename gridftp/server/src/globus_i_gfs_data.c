@@ -2077,6 +2077,25 @@ globus_i_gfs_data_request_command(
                 globus_gridftp_server_finished_command(op, result, NULL);
             }
             break;
+        case GLOBUS_GFS_CMD_SITE_SETNETSTACK:
+            if(strcasecmp(cmd_info->pathname, "default") == 0)
+            {
+                /* clear stack */
+            }
+            else
+            {
+                result = globus_i_gfs_config_stack(
+                    cmd_info->pathname, "net_stack_list");
+            }
+            if(result != GLOBUS_SUCCESS)
+            {
+                result = GlobusGFSErrorWrapFailed(
+                    "Setting data channel driver stack", result);
+            }
+
+            call = GLOBUS_FALSE;
+            globus_gridftp_server_finished_command(op, result, NULL);
+            break;
 
         case GLOBUS_GFS_CMD_DELE:
         case GLOBUS_GFS_CMD_SITE_RDEL:
