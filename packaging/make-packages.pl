@@ -393,7 +393,7 @@ sub create_makefile_installer
          open(PAC, ">$top_dir/pacman_cache/$bun.pacman");
 
          my ($flavor, $flag, @packs) = @{$bundle_list{$bun}};
-         my $suffix = " ";
+         my $suffix = "";
          my @sdkbundle;
 
          print INS "$bun: ";
@@ -402,7 +402,7 @@ sub create_makefile_installer
 
          if ( $flavor =~ /thr/ )
          {
-              $suffix = "-thr ";
+              $suffix = "-thr";
          }
 
          # We have the dependency sorted list of packages in our build list.
@@ -412,8 +412,8 @@ sub create_makefile_installer
          {
               if ( grep /^$pack$/, @packs )
               {
-                  print INS "$pack$suffix";
-                  print PAC "package('$pack$suffix')\n";
+                  print INS "$pack$suffix ";
+                  print PAC "package('$pack$suffix');\n";
                   push @sdkbundle, "$pack" . "-thr";
               }
          }
@@ -431,7 +431,7 @@ sub create_makefile_installer
              foreach my $pack ( @sdkbundle )
              {
                  print INS "$pack ";
-                 print PAC "package('$pack')\n";
+                 print PAC "package('$pack');\n";
              }
         }
         print INS "\n";
@@ -460,7 +460,7 @@ sub create_makefile_installer
               if ( $package_dep_hash{$pack}{$deppack} eq 1 )
               {
                    print INS " $deppack" unless ( $pack eq $deppack );
-                   print PAC "package('$deppack')\n" unless ( $pack eq $deppack );
+                   print PAC "package('$deppack');\n" unless ( $pack eq $deppack );
               }
          }
          print INS "\n";
