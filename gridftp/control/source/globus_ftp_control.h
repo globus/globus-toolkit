@@ -824,6 +824,23 @@ globus_result_t
 globus_i_ftp_control_client_set_stack(
     globus_ftp_control_handle_t *               handle,
     globus_xio_stack_t                          stack);
+    
+globus_result_t
+globus_i_ftp_control_load_xio_drivers(
+    char *                                      driver_string,
+    globus_list_t **                            driver_list);
+
+void
+globus_i_ftp_control_unload_xio_drivers(
+    globus_list_t *                             driver_list);
+
+globus_result_t
+globus_i_ftp_control_create_stack(
+    globus_ftp_control_handle_t *               handle,
+    globus_list_t *                             driver_list,
+    globus_xio_stack_t  *                       stack);
+
+
 
 /*****************************************************************
  *  standard layout functions 

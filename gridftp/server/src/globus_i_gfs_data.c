@@ -134,6 +134,7 @@ typedef struct
 
     globus_handle_table_t               handle_table;
     int                                 node_ndx;
+    globus_list_t *                     net_stack_list;
 } globus_l_gfs_data_session_t;
 
 typedef struct
@@ -220,7 +221,7 @@ typedef struct globus_l_gfs_data_operation_s
     int                                 sent_partial_eof;
 
     void *                              stat_wrapper;
-
+    
     /* sort of a state cheat.  for case where:
         start_abort
             -- connecting to abort_closing
@@ -635,6 +636,12 @@ globus_l_gfs_free_session_handle(
     {
         globus_free(session_handle->gid_array);
     }
+    if(session_handle->net_stack_list)    
+    {
+        globus_i_ftp_control_unload_xio_drivers(
+            session_handle->net_stack_list);
+    }
+
     globus_handle_table_destroy(&session_handle->handle_table);
     globus_i_gfs_acl_destroy(&session_handle->acl_handle);
     globus_free(session_handle);
@@ -2080,12 +2087,21 @@ globus_i_gfs_data_request_command(
         case GLOBUS_GFS_CMD_SITE_SETNETSTACK:
             if(strcasecmp(cmd_info->pathname, "default") == 0)
             {
-                /* clear stack */
+                globus_i_ftp_control_unload_xio_drivers(
+                    op->session_handle->net_stack_list);
+                op->session_handle->net_stack_list = NULL;
             }
             else
             {
-                result = globus_i_gfs_config_stack(
-                    cmd_info->pathname, "net_stack_list");
+                if(op->session_handle->net_stack_list)
+                {
+                    globus_i_ftp_control_unload_xio_drivers(
+                        op->session_handle->net_stack_list);
+                    op->session_handle->net_stack_list = NULL;
+                }
+                   
+                result = globus_i_ftp_control_load_xio_drivers(
+                    cmd_info->pathname, &op->session_handle->net_stack_list);
             }
             if(result != GLOBUS_SUCCESS)
             {
@@ -2179,7 +2195,8 @@ static
 globus_result_t
 globus_l_gfs_data_handle_init(
     globus_l_gfs_data_handle_t **       u_handle,
-    globus_gfs_data_info_t *            data_info)
+    globus_gfs_data_info_t *            data_info,
+    globus_list_t *                     net_stack_list)
 {
     int                                 tcp_mem_limit;
     globus_l_gfs_data_handle_t *        handle;
@@ -2360,6 +2377,38 @@ globus_l_gfs_data_handle_init(
             goto error_control;
         }
     }
+
+    if(!globus_list_empty(net_stack_list))
+    {
+        globus_xio_stack_t              stack;
+        
+        result = globus_i_ftp_control_create_stack(
+            &handle->data_channel, net_stack_list, &stack);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error_control;
+
+            globus_i_gfs_log_message(
+                GLOBUS_I_GFS_LOG_WARN,
+                "set stack failed: %s\n",
+                globus_error_print_friendly(globus_error_peek(result)));
+        }
+        
+        result = globus_i_ftp_control_data_set_stack(
+            &handle->data_channel, stack);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error_control;
+
+            globus_i_gfs_log_message(
+                GLOBUS_I_GFS_LOG_WARN,
+                "set stack failed: %s\n",
+                globus_error_print_friendly(globus_error_peek(result)));
+        }
+        
+        globus_xio_stack_destroy(stack);
+    }
+/*
     {
         result = globus_l_gfs_set_stack(handle);
         if(result != GLOBUS_SUCCESS)
@@ -2370,6 +2419,7 @@ globus_l_gfs_data_handle_init(
                 globus_error_print_friendly(globus_error_peek(result)));
         }
     }
+*/
 
     *u_handle = handle;
 
@@ -2982,7 +3032,8 @@ globus_i_gfs_data_request_passive(
         {
             data_info->del_cred = session_handle->del_cred;
         }
-        result = globus_l_gfs_data_handle_init(&handle, data_info);
+        result = globus_l_gfs_data_handle_init(
+            &handle, data_info, session_handle->net_stack_list);
         if(result != GLOBUS_SUCCESS)
         {
             result = GlobusGFSErrorWrapFailed(
@@ -3234,7 +3285,8 @@ globus_i_gfs_data_request_active(
         {
             data_info->del_cred = session_handle->del_cred;
         }
-        result = globus_l_gfs_data_handle_init(&handle, data_info);
+        result = globus_l_gfs_data_handle_init(
+            &handle, data_info, session_handle->net_stack_list);
         if(result != GLOBUS_SUCCESS)
         {
             result = GlobusGFSErrorWrapFailed(

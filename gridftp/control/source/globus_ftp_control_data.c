@@ -657,6 +657,238 @@ globus_i_ftp_control_data_set_netlogger(
     return GLOBUS_SUCCESS;
 }
 
+typedef struct globus_i_ftp_control_stack_entry_s
+{
+    globus_xio_driver_t                 driver;
+    char *                              driver_name;
+    char *                              opts;
+} globus_i_ftp_control_stack_entry_t;
+
+globus_result_t
+globus_i_ftp_control_create_stack(
+    globus_ftp_control_handle_t *               handle,
+    globus_list_t *                             driver_list,
+    globus_xio_stack_t *                        stack)
+{
+    globus_result_t                             result;
+    globus_i_ftp_dc_handle_t *                  dc_handle;
+    globus_object_t *                           err;
+    globus_xio_attr_t                           xio_attr;
+    globus_i_ftp_control_stack_entry_t *        driver_ent;
+    globus_list_t *                             list;
+    static char *                               myname =
+                                        "globus_i_ftp_control_create_stack";
+
+    if(handle == GLOBUS_NULL)
+    {
+        err = globus_io_error_construct_null_parameter(
+                  GLOBUS_FTP_CONTROL_MODULE,
+                  GLOBUS_NULL,
+                  "handle",
+                  1,
+                  myname);
+        return globus_error_put(err);
+    }
+    if(driver_list == GLOBUS_NULL)
+    {
+        err = globus_io_error_construct_null_parameter(
+                  GLOBUS_FTP_CONTROL_MODULE,
+                  GLOBUS_NULL,
+                  "driver_list",
+                  2,
+                  myname);
+        return globus_error_put(err);
+    }
+
+    dc_handle = &handle->dc_handle;
+    GlobusFTPControlDataTestMagic(dc_handle);
+    if(!dc_handle->initialized)
+    {
+        err = globus_io_error_construct_not_initialized(
+                  GLOBUS_FTP_CONTROL_MODULE,
+                  GLOBUS_NULL,
+                  "handle",
+                  1,
+                  myname);
+        return globus_error_put(err);
+    }
+
+    globus_xio_stack_init(stack, NULL);
+
+    globus_i_ftp_control_data_get_attr(
+        handle, &xio_attr);
+
+    for(list = driver_list;
+        !globus_list_empty(list);
+        list = globus_list_rest(list))
+    {
+        driver_ent = 
+            (globus_i_ftp_control_stack_entry_t *) globus_list_first(list);
+
+        result = GLOBUS_SUCCESS;
+
+        if(dc_handle->dcau.mode == GLOBUS_FTP_CONTROL_DCAU_NONE &&
+            strcmp(driver_ent->driver_name, "gsi") == 0)
+        {
+            continue;
+        }
+
+        result = globus_xio_stack_push_driver(
+            *stack, driver_ent->driver);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error;
+        }
+
+        if(driver_ent->opts != NULL)
+        {
+            /* ignore error */
+            globus_xio_attr_cntl(
+                xio_attr,
+                driver_ent->driver,
+                GLOBUS_XIO_SET_STRING_OPTIONS,
+                driver_ent->opts);
+        }
+    }
+    
+    return GLOBUS_SUCCESS;
+
+error:
+    globus_xio_stack_destroy(*stack);
+    return result;
+    
+}
+
+void
+globus_i_ftp_control_unload_xio_drivers(
+    globus_list_t *                        driver_list)
+{
+    globus_i_ftp_control_stack_entry_t *   driver_ent;
+
+    while(!globus_list_empty(driver_list))
+    {
+        driver_ent = (globus_i_ftp_control_stack_entry_t *)
+            globus_list_first(driver_list);
+        
+        if(strcmp(driver_ent->driver_name, "tcp") != 0 && 
+            strcmp(driver_ent->driver_name, "gsi") != 0)
+        {
+            globus_xio_driver_unload(driver_ent->driver);
+        }
+        if(driver_ent->opts)
+        {
+            globus_free(driver_ent->opts);
+        }
+        if(driver_ent->driver_name)
+        {
+            globus_free(driver_ent->driver_name);
+        }
+        globus_free(driver_ent);
+        
+        globus_list_remove(&driver_list, driver_list);
+    }
+}
+   
+globus_result_t
+globus_i_ftp_control_load_xio_drivers(
+    char *                              driver_string,
+    globus_list_t **                    driver_list)
+{
+    globus_result_t                     result;
+    globus_bool_t                       done = GLOBUS_FALSE;
+    char *                              opts;
+    char *                              ptr;
+    char *                              driver_str;
+    char *                              driver_name;
+    char *                              tmp_str;
+    globus_xio_driver_t                 driver;
+    globus_list_t *                     list = NULL;
+    globus_i_ftp_control_stack_entry_t *stack_ent;
+
+    if(driver_string != NULL)
+    {
+        driver_str = globus_libc_strdup(driver_string);
+        tmp_str = driver_str;
+        while(!done)
+        {
+            driver_name = tmp_str;
+            ptr = strchr(driver_name, ',');
+            if(ptr != NULL)
+            {
+                *ptr = '\0';
+                tmp_str = ptr+1; 
+            }
+            else
+            {
+                done = GLOBUS_TRUE;
+            }
+            opts = strchr(driver_name, ':');
+            if(opts != NULL)
+            {
+                *opts = '\0';
+                opts++;
+            }
+
+            if(strcmp(driver_name, "tcp") == 0)
+            {
+                driver = globus_io_compat_get_tcp_driver();
+            }
+            else if(strcmp(driver_name, "gsi") == 0)
+            {
+                driver = globus_io_compat_get_gsi_driver();
+            }
+            else
+            {
+                result = globus_xio_driver_load(driver_name, &driver);
+                if(result != GLOBUS_SUCCESS)
+                {
+                    goto error_load;
+                }
+            }
+            stack_ent = (globus_i_ftp_control_stack_entry_t *)
+                globus_calloc(1, sizeof(globus_i_ftp_control_stack_entry_t));
+            stack_ent->opts = globus_libc_strdup(opts);
+            stack_ent->driver = driver;
+            stack_ent->driver_name = globus_libc_strdup(driver_name);
+
+            globus_list_insert(&list, stack_ent);
+        }
+        
+        globus_free(driver_str);
+    }
+    else
+    {
+        stack_ent = (globus_i_ftp_control_stack_entry_t *)
+            globus_calloc(1, sizeof(globus_i_ftp_control_stack_entry_t));
+        stack_ent->opts = NULL;
+        stack_ent->driver = globus_io_compat_get_gsi_driver();
+        stack_ent->driver_name = globus_libc_strdup("gsi");
+        globus_list_insert(&list, stack_ent);
+
+        stack_ent = (globus_i_ftp_control_stack_entry_t *)
+            globus_calloc(1, sizeof(globus_i_ftp_control_stack_entry_t));
+        stack_ent->opts = NULL;
+        stack_ent->driver = globus_io_compat_get_tcp_driver();
+        stack_ent->driver_name = globus_libc_strdup("tcp");
+        globus_list_insert(&list, stack_ent);
+    }
+    
+    *driver_list = list;
+    
+    return GLOBUS_SUCCESS;
+
+error_load:
+    globus_free(driver_str);
+/*    globus_i_gfs_log_message(
+        GLOBUS_I_GFS_LOG_ERR,
+        "Unable to set data channel stack.: %s\n",
+                globus_error_print_friendly(
+                    globus_error_peek((globus_result_t) result)));
+*/
+    return result;
+}
+
+
 globus_result_t
 globus_i_ftp_control_data_set_stack(
     globus_ftp_control_handle_t *               handle,
@@ -666,6 +898,7 @@ globus_i_ftp_control_data_set_stack(
     globus_object_t *                           err;
     static char *                               myname =
                                       "globus_i_ftp_control_data_set_stack";
+
     /*
      *  error checking
      */
@@ -679,7 +912,7 @@ globus_i_ftp_control_data_set_stack(
                   myname);
         return globus_error_put(err);
     }
-    if(stack == NULL)
+    if(stack == GLOBUS_NULL)
     {
         err = globus_io_error_construct_null_parameter(
                   GLOBUS_FTP_CONTROL_MODULE,
@@ -749,6 +982,8 @@ globus_list_remove_element(
 
     return GLOBUS_FALSE;
 }
+
+
 
 /**
  * Create an incoming FTP data connection.

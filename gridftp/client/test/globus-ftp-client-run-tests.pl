@@ -98,9 +98,10 @@ my ($source_host, $source_file, $local_copy1) = setup_remote_source();
 my ($local_copy2) = setup_local_source();
 my ($dest_host, $dest_file) = setup_remote_dest();
 
-if(0 != system("./globus-ftp-client-get-test -s $proto$source_host$source_file  >/dev/null 2>&1") / 256)
+if(0 != system("./globus-ftp-client-get-test -p -s $proto$source_host$source_file  >sanitycheck.log 2>&1") / 256)
 {
     print "Sanity check of source ($proto$source_host$source_file) failed.\n";
+    system("cat sanitycheck.log");
     if(defined($server_pid))
     {
         kill(9,$server_pid);

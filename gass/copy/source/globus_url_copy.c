@@ -2338,7 +2338,7 @@ globus_l_guc_parse_arguments(
     
     if(guc_info->udt)
     {
-        guc_info->net_stack_str = globus_libc_strdup("udt,gsi");
+        guc_info->net_stack_str = globus_libc_strdup("gsi,udt");
     }
     
     /* check arguemnt validity */

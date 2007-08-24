@@ -28,6 +28,7 @@
 #include "globus_ftp_client.h"
 #include "globus_ftp_client_plugin.h"
 #include "globus_error_string.h"
+#include "globus_xio.h"
 
 #define SSH_EXEC_SCRIPT "gridftp-ssh"
 
