@@ -402,12 +402,17 @@ b64_encode(const char *input, char **output)
 
     assert(input != NULL);
 
+    inlen = strlen(input);
+    if (inlen == 0) {
+        *output = strdup("");
+        return 0;
+    }
+
     mbio = BIO_new(BIO_s_mem());
     b64bio = BIO_new(BIO_f_base64());
     BIO_set_flags(b64bio, BIO_FLAGS_BASE64_NO_NL);
     bio = BIO_push(b64bio, mbio);
 
-    inlen = strlen(input);
     if (BIO_write(bio, input, inlen) != inlen) {
 	verror_put_string("error in BIO_write when base64 encoding");
 	return -1;
@@ -437,12 +442,17 @@ b64_decode(const char *input, char **output)
     assert(input != NULL);
     assert(output != NULL);
 
+    inlen = strlen(input);
+    if (inlen == 0) {
+        *output = strdup("");
+        return 0;
+    }
+
     mbio = BIO_new_mem_buf((void *)input, -1);
     b64bio = BIO_new(BIO_f_base64());
     BIO_set_flags(b64bio, BIO_FLAGS_BASE64_NO_NL);
     bio = BIO_push(b64bio, mbio);
 
-    inlen = strlen(input);
     outlen = inlen*2;
 
     *output = malloc(outlen+1);
