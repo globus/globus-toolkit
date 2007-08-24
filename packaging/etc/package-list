@@ -215,7 +215,7 @@ globus_wsrf_mds_hawkeye                     ws-mds/hawkeye/source	tar
 globus_wsrf_mds_providers                   ws-mds/providers gpt
 globus_wsrf_servicegroup                    ws-mds/servicegroup/source	tar
 globus_wsrf_servicegroup_schema             ws-mds/servicegroup/schema	tar
-globus_ws_core_schema                       wsrf/schema/ tar
+globus_ws_core_schema                       wsrf/schema tar
 globus_wsrf_xindice                         wsrf/java/xindice	tar
 globus_java_container_admin_tools           wsrf/java/container_tools/source gpt
 globus_java_container_admin_tools_setup     wsrf/java/container_tools/setup gpt
