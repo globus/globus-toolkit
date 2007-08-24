@@ -18,7 +18,7 @@ if [ $? -ne 0 ]; then
 fi
 
 echo Step: Checking out source code.
-./make-packages.pl --trees=gt2,gt3,gt4 --gt3-tag=OPENSSH_3_1P1_GSSAPI_GPT-branch --bundles=$BUNDLES --packages=$PACKAGES --skippackage --skipbundle --deps $@
+./make-packages.pl --trees=gt --bundles=$BUNDLES --packages=$PACKAGES --skippackage --skipbundle --deps $@
 if [ $? -ne 0 ]; then
 	echo There was trouble checking out sources
 	exit 8
@@ -39,7 +39,7 @@ if [ -d patches ]; then
 fi
 
 echo "Step: Creating installer Makefile and bootstrapping."
-./make-packages.pl --trees=gt2,gt3,gt4 --bundles=$BUNDLES --packages=$PACKAGES -n --list-packages --deps --deporder $@ --installer=farfleblatt
+./make-packages.pl --trees=gt --bundles=$BUNDLES --packages=$PACKAGES -n --list-packages --deps --deporder $@ --installer=farfleblatt
 
 if [ $? -ne 0 ]; then
 	echo There was trouble making the installer.
@@ -75,9 +75,7 @@ else
 fi
 
 
-cp -${CPOPTS} source-trees/wsrf-cvs/* $INSTALLER/source-trees
-cp -${CPOPTS} source-trees/gt2-cvs/* $INSTALLER/source-trees
-cp -${CPOPTS} source-trees/ogsa-cvs/* $INSTALLER/source-trees
+cp -${CPOPTS} source-trees/* $INSTALLER/source-trees
 
 HAVE_LNDIR=0
 if [ `uname` = HP-UX ]; then

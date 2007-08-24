@@ -36,13 +36,8 @@ my %prereq_archives = (
                        );
 
 # tree_name => [ cvs directory, module, checkout-dir tag ]
-# TODO: Add explicit CVSROOT
-# TODO: Allow per-package module specification
 my %cvs_archives = (
-     'gt2' => [ "/home/globdev/CVS/globus-packages", "gp", $cvs_prefix . "gt2-cvs", "HEAD" ],
-     'gt3' => [ "/home/globdev/CVS/globus-packages", "gs", $cvs_prefix . "ogsa-cvs", "HEAD" ],
-     'gt4' => [ "/home/globdev/CVS/globus-packages", "ws", $cvs_prefix . "wsrf-cvs", "HEAD" ],
-     'cbindings' => [ "/home/globdev/CVS/globus-packages", "wsc", $cvs_prefix . "cbindings", "HEAD" ],
+     'gt' => [ "/home/globdev/CVS/globus-packages", "all", $cvs_prefix, "HEAD" ],
      'autotools' => [ "/home/globdev/CVS/globus-packages", "autotools", $cvs_prefix . "autotools", "globus_4_0_branch" ]
       );
 
@@ -52,7 +47,8 @@ my %virtual_packages = ("trusted_ca_setup" => 1,
                         "mjs_service_setup" => 1,
                          "simple_ca_setup" => 1);
 
-# package_name => [ tree, subdir, custom_build, (patch-n-build file, if exists) ]
+# package_name => [ tree, subdir, build_type, 
+#                   (patch-n-build file, if exists), (per-package tag) ]
 my %package_list;
 
 # bundle_name => [ flavor, flags, @package_array ]
@@ -81,13 +77,13 @@ my $thread = "pthr";
 my ($install, $installer, $anonymous, $force,
     $noupdates, $help, $man, $verbose, $skippackage,
     $skipbundle, $faster, $paranoia, $version, $uncool, $avoid_bootstrap,
-    $binary, $deporder, $inplace, $restart_package, $gt3dir, $doxygen,
+    $binary, $deporder, $inplace, $restart_package, $doxygen,
     $deps, $graph, $listpack, $listbun, $cvsuser,
     $autotools, $gpt, $core, $enable_64bit ) =
    (0, 0, 0, 0,
     0, 0, 0, 0, 0, 
     0, 0, 1, "1.0", 0, 0,
-    0, 0, "no", 0, "", 0,
+    0, 0, "no", 0, 0,
     0, 0, 0, 0, "",
     1, 1, 1, "");
 
@@ -102,12 +98,8 @@ GetOptions( 'i|install=s' => \$install,
             'faster!' => \$faster,
             'ab|avoid-bootstrap!' => \$avoid_bootstrap,
             'flavor=s' => \$flavor,
-            'd2|gt2-dir=s' => \$cvs_archives{gt2}[2],
-            't2|gt2-tag=s' => \$cvs_archives{gt2}[3],
-            'd3|gt3-dir=s' => \$gt3dir,
-            't3|gt3-tag=s' => \$cvs_archives{gt3}[3],
-            'd4|gt4-dir=s' => \$cvs_archives{gt4}[2],
-            't4|gt4-tag=s' => \$cvs_archives{gt4}[3],
+            'd|gt-dir=s' => \$cvs_archives{gt}[2],
+            't|gt-tag=s' => \$cvs_archives{gt}[3],
             'autotools-dir=s' => \$cvs_archives{autotools}[2],
             'v|verbose!' => \$verbose,
             'skippackage!' => \$skippackage,
@@ -172,11 +164,8 @@ else
             $inplace = cwd() . "/$inplace";
         }
 
-        $cvs_archives{gt2}[2] = $inplace;
+        $cvs_archives{gt}[2] = $inplace;
         $cvs_archives{autotools}[2] = $inplace;
-        $cvs_archives{gt3}[2] = $inplace;
-        $cvs_archives{gt4}[2] = $inplace;
-        $cvs_archives{cbindings}[2] = $inplace;
     }
     
     $inplace = 1;
@@ -185,12 +174,6 @@ else
 if($inplace && !$install)
 {
     $install = cwd() . "/INSTALL";
-}
-
-if ( $gt3dir )
-{
-    $cvs_archives{gt3}[2] = $gt3dir;
-    $cvs_archives{cbindings}[2] = $gt3dir;
 }
 
 if ( $flavor =~ /64/ ) {
@@ -209,11 +192,8 @@ exit if ( $listpack or $listbun );
 
 if ( not $noupdates )
 {
-    # Need autotools for gt2 or gt3
-    if ($cvs_build_hash{'gt2'} eq 1 or
-        $cvs_build_hash{'gt3'} eq 1 or
-        $cvs_build_hash{'gt4'} eq 1 or
-        $cvs_build_hash{'cbindings'} eq 1)
+    # Need autotools for gt
+    if ($cvs_build_hash{'gt'} eq 1)
     {
         if ( $cvs_build_hash{'autotools'} ne 1)
         {
@@ -276,12 +256,11 @@ sub generate_build_list()
 # --------------------------------------------------------------------
 {
     print "Generating package build list ...\n";
-    $cvs_archives{'autotools'}[3] = $cvs_archives{'gt2'}[3];
-    $cvs_archives{'cbindings'}[3] = $cvs_archives{'gt3'}[3];
+    $cvs_archives{'autotools'}[3] = $cvs_archives{'gt'}[3];
 
     if ( not defined(@cvs_build_list) )
     {
-        @cvs_build_list = ("autotools", "gt2", "gt4");
+        @cvs_build_list = ("autotools", "gt");
     }
 
     foreach my $tree (@cvs_build_list)
@@ -511,10 +490,13 @@ sub import_package_dependencies
             print "PNB detected for $pack.\n";
             my $cvs_dir = $package_list{$pack}[0];
             my $tarfile = $package_list{$pack}[3];
+            my $pkgtag = $package_list{$pack}[4];
+
             if ( ! -e "$cvs_dir/tarfiles/$tarfile" )
             {
                 print "checking out $cvs_dir/tarfiles/$tarfile\n";
-                cvs_checkout_subdir( $cvs_dir, "tarfiles/$tarfile") unless $noupdates;
+                cvs_checkout_subdir( $cvs_dir, "tarfiles/$tarfile",
+                                     $pkgtag ) unless $noupdates;
             }
         }
 
@@ -571,9 +553,7 @@ sub setup_environment()
 
     print "Setting up build environment.\n";
 
-    #TODO: figure out package list first, then set
-    # cvs_build_hash appropriately.q
-    if ( $cvs_build_hash{'gt3'} eq 1  )
+    if ( $cvs_build_hash{'gt'} eq 1  )
     {
         check_java_env();
     }
@@ -698,24 +678,18 @@ sub populate_package_list
     my ($tree) = @_;
     my $build_default;
 
-    if (-d "$top_dir/etc/$tree")
-    {
-        chdir "$top_dir/etc/$tree";
-    } else {
-        print "INFO: No packages defined for tree $tree.\n";
-        return;
-    }
+    return if ( $tree eq "autotools" );
 
-    open(DEFAULT, "build-default");
-    $build_default = <DEFAULT>;
-    chomp $build_default;
+    chdir "$top_dir/etc/";
+
+    $build_default = "gpt";
 
     open(PKG, "package-list");
 
     while ( <PKG> )
     {
-        my ($pkg, $subdir, $custom, $pnb) = split(' ', $_);
-        chomp $pnb;
+        my ($pkg, $subdir, $custom, $pnb, $pkgtag) = split(' ', $_);
+        chomp $pkgtag;
 
         next if substr($pkg, 0, 1) eq "#";
 
@@ -724,12 +698,10 @@ sub populate_package_list
             $custom = $build_default;
         }
 
-        $package_list{$pkg} = [ $tree, $subdir, $custom, $pnb ];
+        $package_list{$pkg} = [ $tree, $subdir, $custom, $pnb, $pkgtag ];
     }
 }
 
-# TODO: Use the GT2 bundle.def files for this instead.
-# TODO: Add the NMI GT3 bundle.xml files for this also.
 # --------------------------------------------------------------------
 sub populate_bundle_list
 # --------------------------------------------------------------------
@@ -737,7 +709,7 @@ sub populate_bundle_list
     my ($tree) = @_;
     my $bundle;
 
-    chdir "$top_dir/etc/$tree";
+    chdir "$top_dir/etc/";
     open(BUN, "bundles");
 
     while ( <BUN> )
@@ -791,8 +763,6 @@ sub populate_bundle_build_list()
     {
         my $bundle = "user_def";
 
-        #TODO: How do I know what flavor for the user_def bundle?
-        # Also, how do I know what flags?  For now, empty string.
         push @{$bundle_list{$bundle}}, $flavor;
         push @{$bundle_list{$bundle}}, "";
         push @{$bundle_list{$bundle}}, @user_packages;
@@ -868,19 +838,13 @@ sub build_prerequisites()
     install_gpt() if $gpt;
 
     if ( $cvs_build_hash{'autotools'} eq 1 or
-         $cvs_build_hash{'gt2'} eq 1 or
-         $cvs_build_hash{'gt3'} eq 1 or
-         $cvs_build_hash{'gt4'} eq 1 or
-         $cvs_build_hash{'cbindings'})
+         $cvs_build_hash{'gt'} eq 1 )
     {
         install_gt2_autotools() if $autotools;
     }
 
     if ( $core and
-         (  $cvs_build_hash{'gt2'} eq 1 or 
-            $cvs_build_hash{'gt3'} eq 1 or
-            $cvs_build_hash{'gt4'} eq 1 or
-            $cvs_build_hash{'cbindings'} eq 1))
+         (  $cvs_build_hash{'gt'} eq 1 ))
     {
         install_globus_core();
     }
@@ -1017,7 +981,6 @@ sub gpt_get_version
     return $version;
 }
 
-#TODO: Let them specify a path to autotools
 # --------------------------------------------------------------------
 sub install_gt2_autotools()
 # --------------------------------------------------------------------
@@ -1073,7 +1036,7 @@ sub install_globus_core()
 {
     system("mkdir -p $pkglog");
     if ( $inplace ) {
-        my $dir = $cvs_archives{gt2}[2];
+        my $dir = $cvs_archives{gt}[2];
         my $_cwd = cwd();
         chdir $dir . "/core/source";
         if ( !$avoid_bootstrap || ! -e 'configure') {
@@ -1099,7 +1062,6 @@ sub cvs_check_tag
 {
     my ( $tree ) = @_;
 
-    # TODO: Need to find a way to do this even if -noupdates is set.
     if ( -e "CVS/Tag" )
     {
         open(TAG, "CVS/Tag");
@@ -1190,7 +1152,7 @@ sub set_cvsroot
 sub cvs_checkout_subdir
 # --------------------------------------------------------------------
 {
-    my ( $tree, $dir ) = @_;
+    my ( $tree, $dir, $pkgtag ) = @_;
     my $cvs_logs = $log_dir . "/cvs-logs";
     my ($cvsroot, $module, $cvs_dir, $tag) = @{$cvs_archives{$tree}};
     my $cvsopts = "-r $tag";
@@ -1210,6 +1172,11 @@ sub cvs_checkout_subdir
     elsif ( $tag =~ m/\d{4}-\d{2}-\d{2}/)
     {
         $cvsopts = "-D $tag";
+    }
+
+    if ( $pkgtag )
+    {
+        $cvsopts = "-r $pkgtag";
     }
 
     $locallog = $dir;
@@ -1232,6 +1199,7 @@ sub cvs_checkout_package
     my ( $package ) = @_;
     my $tree = package_tree($package);
     my $subdir = $package_list{$package}[1];
+    my $pkgtag = $package_list{$package}[4];
 
     if (! defined($tree)) {
         print "ERROR: There was a dependency on package $package which I know nothing about.\n";
@@ -1239,7 +1207,7 @@ sub cvs_checkout_package
     }
 
     print "Checking out $subdir from $tree.\n";
-    cvs_checkout_subdir($tree, $subdir);
+    cvs_checkout_subdir($tree, $subdir, $pkgtag);
 }
 
 # --------------------------------------------------------------------
@@ -1776,7 +1744,6 @@ sub package_source_make_gpt_dist()
     log_system("mv ${package}*.tar.gz $package_output", "$pkglog/$package");
 }
 
-#TODO: Add bundle logging.
 # --------------------------------------------------------------------
 sub bundle_sources()
 # --------------------------------------------------------------------
@@ -1810,7 +1777,6 @@ sub bundle_sources()
     }
 }
 
-#TODO: Allow users to specify pre-existing binary bundles too.
 # --------------------------------------------------------------------
 sub install_bundles
 # --------------------------------------------------------------------
@@ -1893,18 +1859,14 @@ Options:
     --force                 Force
     --faster                Don't repackage if packages exist already
     --flavor=<flv>          Set flavor base.  Default gcc32dbg
-    --gt2-tag (-t2)         Set GT2 and autotools tags.  Default HEAD
-    --gt3-tag (-t3)         Set GT3 and cbindings tags.  Default HEAD
-    --gt4-tag (-t4)         Set GT4 tags.  Default HEAD
-    --gt2-dir (-d2)         Set GT2 CVS directory.
-    --gt3-dir (-d3)         Set GT3 and cbindings CVS directory.
-    --gt4-dir (-d4)         Set GT4 CVS directory.
+    --gt-tag (-t)           Set GT and autotools tags.  Default HEAD
+    --gt-dir (-d)           Set GT CVS directory.
     --autotools-dir         Set autotools CVS directory.
     --verbose               Be verbose.  Also sends logs to screen.
     --bundles="b1,b2,..."   Create bundles b1,b2,...
     --packages="p1,p2,..."  Create packages p1,p2,...
     --deps                    Automatically include dependencies
-    --trees="t1,t2,..."     Work on trees t1,t2,... Default "gt2,gt3,gt4,cbindings"
+    --trees="t1,t2,..."     Work on trees t1,t2,... Default "autotools,gt"
     --noparanoia            Don't exit at first error.
     --inplace[=<dir>]       Build inplace. <dir> overrides the cvs directory
                             for all trees. (ie, a dir you did a 'cvs co all' in)
@@ -1979,10 +1941,9 @@ Set flavor base.  Default gcc32dbg.  You might want to
 switch it to vendorcc.  Threading type is currently always
 "pthr" if necessary.
 
-=item B<--gt2-tag=TAG3, --gt3-tag=TAG3, --gt4-tag=TAG4>
+=item B<--gt-tag=TAG>
 
-Set GT2, GT3, or GT4 tag.  Default HEAD.  Short version is "-t2=",
-"-t3=", or "-t4".
+Set GT tag.  Default HEAD.  Short version is "-t=".
 
 =item B<--verbose>
 
