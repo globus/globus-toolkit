@@ -247,32 +247,36 @@ parse_xacml_response(
         }
     }
 
-    assert(resp->__union_32 == SOAP_UNION__samlp__union_32_saml__Assertion);
-
-    std::vector<saml__AssertionType *> * assertions =
-        resp->union_32.saml__Assertion;
     XACMLassertion__XACMLAuthzDecisionStatementType * xacml_decision = NULL;
 
-    for (std::vector<saml__AssertionType *>::iterator i = assertions->begin();
-         i != assertions->end();
-         i++)
+    for (int i = 0; i < resp->__size_32; i++)
     {
-        if ((*i)->__union_1 ==
-            SOAP_UNION__saml__union_1_XACMLassertion__XACMLAuthzDecisionStatement)
+        switch (resp->__union_32[i].__union_32)
         {
-            std::vector<class XACMLassertion__XACMLAuthzDecisionStatementType *>
-                    *decisions = (*i)->union_1.
-                            XACMLassertion__XACMLAuthzDecisionStatement;
+        case SOAP_UNION__samlp__union_32_saml__Assertion:
+            saml__AssertionType * assertion = 
+                    resp->__union_32[i].union_32.saml__Assertion;
 
-            for (std::vector<class 
-                    XACMLassertion__XACMLAuthzDecisionStatementType *>::
-                    iterator j = decisions->begin();
-                 j != decisions->end();
-                 j++)
+            for (int j = 0; j < assertion->__size_1; j++)
             {
-                xacml_decision = *j;
-                break;
+                switch (assertion->__union_1[i].__union_1)
+                {
+                case SOAP_UNION__saml__union_1_saml__Statement:
+                    std::cout << assertion->__union_1[i].union_1.saml__Statement->soap_type() << std::endl;
+                    xacml_decision =
+                            static_cast<XACMLassertion__XACMLAuthzDecisionStatementType *>(assertion->__union_1[i].union_1.saml__Statement);
+                    break;
+                case SOAP_UNION__saml__union_1_saml__AuthnStatement:
+                case SOAP_UNION__saml__union_1_saml__AuthzDecisionStatement:
+                case SOAP_UNION__saml__union_1_saml__AttributeStatement:
+                    assert(assertion->__union_1[i].__union_1 ==
+                                SOAP_UNION__saml__union_1_saml__Statement);
+                    break;
+                }
             }
+        case SOAP_UNION__samlp__union_32_saml__EncryptedAssertion:
+            assert(resp->__union_32[i].__union_32 ==
+                   SOAP_UNION__samlp__union_32_saml__Assertion);
         }
     }
 
