@@ -98,7 +98,7 @@ GetOptions( 'i|install=s' => \$install,
             'faster!' => \$faster,
             'ab|avoid-bootstrap!' => \$avoid_bootstrap,
             'flavor=s' => \$flavor,
-            'd|gt2-dir|gt4-dir|gt-dir=s' => \$cvs_archives{gt}[2],
+            'dir|gt2-dir|gt4-dir|gt-dir=s' => \$cvs_archives{gt}[2],
             't|gt2-tag|gt4-tag|gt-tag=s' => \$cvs_archives{gt}[3],
             'autotools-dir=s' => \$cvs_archives{autotools}[2],
             'v|verbose!' => \$verbose,
@@ -269,11 +269,8 @@ sub generate_build_list()
     }
 
     # Figure out what bundles and packages exist.
-    for my $tree (@cvs_build_list)
-    {
-        populate_bundle_list($tree);
-        populate_package_list($tree);
-    }
+    populate_bundle_list();
+    populate_package_list();
 
     # Out of what exists, what shall we build?
     populate_bundle_build_list();
@@ -675,10 +672,7 @@ sub cleanup()
 sub populate_package_list
 # --------------------------------------------------------------------
 {
-    my ($tree) = @_;
     my $build_default;
-
-    return if ( $tree eq "autotools" );
 
     chdir "$top_dir/etc/";
 
@@ -698,7 +692,7 @@ sub populate_package_list
             $custom = $build_default;
         }
 
-        $package_list{$pkg} = [ $tree, $subdir, $custom, $pnb, $pkgtag ];
+        $package_list{$pkg} = [ "gt", $subdir, $custom, $pnb, $pkgtag ];
     }
 }
 
@@ -706,7 +700,6 @@ sub populate_package_list
 sub populate_bundle_list
 # --------------------------------------------------------------------
 {
-    my ($tree) = @_;
     my $bundle;
 
     chdir "$top_dir/etc/";
