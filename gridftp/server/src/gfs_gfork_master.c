@@ -54,7 +54,7 @@
 #define GFSGforkSizeOfIdleServer        (2*1024*1024)
 
 /* 1/3 of this next value is the minimum TCP buffer size */
-#define GFSGforkMinMem                  (1024*128*3)
+#define GFSGforkMinMem                  (1024*512*3)
 
 #define GFS_GFORK_MIN_DELAY             1
 #define GFS_GFORK_MAX_DELAY             30
@@ -1098,6 +1098,10 @@ gfs_l_gfork_open_cb(
         if(!g_backend)
         {
             gfs_l_gfork_dyn_be_open(handle, user_arg, from_pid);
+        }
+        if(!gfs_l_memlimiting)
+        {
+            gfs_l_gfork_ready_send(handle, from_pid);
         }
     }
     globus_mutex_unlock(&g_mutex);
