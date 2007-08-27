@@ -1260,6 +1260,10 @@ globus_l_guc_info_destroy(
     {
         globus_free(guc_info->dest_subject);
     }
+    if(guc_info->net_stack_str)
+    {
+        globus_free(guc_info->net_stack_str);
+    }
 
     /* destroy the list */
 }
@@ -2338,7 +2342,7 @@ globus_l_guc_parse_arguments(
     
     if(guc_info->udt)
     {
-        guc_info->net_stack_str = globus_libc_strdup("gsi,udt");
+        guc_info->net_stack_str = globus_libc_strdup("udt_ref,gsi");
     }
     
     /* check arguemnt validity */
