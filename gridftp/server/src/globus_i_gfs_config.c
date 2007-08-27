@@ -1634,10 +1634,18 @@ globus_l_gfs_config_misc()
         globus_l_gfs_config_set("fork", GLOBUS_FALSE, NULL);
         globus_l_gfs_config_set("bad_signal_exit", GLOBUS_FALSE, NULL);
         globus_l_gfs_config_set("chdir", GLOBUS_FALSE, NULL);
-        if(globus_i_gfs_config_string("log_module") == NULL)
+        if((value = globus_i_gfs_config_string("log_module")) == NULL)
         {
             globus_l_gfs_config_set(
                 "log_module", 0, globus_libc_strdup("stdio:buffer=0"));
+        }
+        else if(strchr(value, ':') == NULL)
+        {
+            globus_l_gfs_config_set(
+                "log_module", 
+                0, 
+                globus_common_create_string("%s:buffer=0", value));
+            globus_free(value);
         }
     }
 

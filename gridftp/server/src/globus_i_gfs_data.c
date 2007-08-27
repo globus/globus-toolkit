@@ -317,11 +317,6 @@ globus_l_gfs_data_operation_destroy(
     globus_l_gfs_data_operation_t *     op);
 
 static
-globus_result_t
-globus_l_gfs_set_stack(
-    globus_l_gfs_data_handle_t *        handle);
-
-static
 void
 globus_l_gfs_data_brain_ready_delay_cb(
     void *                              user_arg);
@@ -333,8 +328,8 @@ globus_l_gfs_data_brain_ready(
     void *                              arg;
     globus_list_t *                     list;
 
-    globus_i_gfs_log_message(
-        GLOBUS_I_GFS_LOG_ERR, 
+    globus_gfs_log_message(
+        GLOBUS_GFS_LOG_ERR, 
         "Brain Ready\n");
     
     globus_mutex_lock(&gfs_l_data_brain_mutex);
@@ -1066,8 +1061,8 @@ globus_i_gfs_data_new_dsi(
         rc = globus_extension_activate(buf);
         if(rc != GLOBUS_SUCCESS)
         {
-            globus_i_gfs_log_message(
-                GLOBUS_I_GFS_LOG_ERR, 
+            globus_gfs_log_message(
+                GLOBUS_GFS_LOG_ERR, 
                 "Unable to activate %s: %s\n", 
                 buf,
                 globus_error_print_friendly(
@@ -1313,6 +1308,15 @@ globus_l_gfs_data_authorize(
     int                                 auth_level;
     GlobusGFSName(globus_l_gfs_data_authorize);
     GlobusGFSDebugEnter();
+
+    globus_gfs_log_event(
+        GLOBUS_GFS_LOG_INFO,
+        GLOBUS_GFS_LOG_EVENT_START,
+        "session.authz",
+        0,
+        "user=%s DN=\"%s\"",
+        session_info->username, 
+        session_info->subject ? session_info->subject : "");
 
     auth_level = globus_i_gfs_config_int("auth_level");
     pw_file = (char *) globus_i_gfs_config_string("pw_file");
@@ -1648,6 +1652,15 @@ globus_l_gfs_data_authorize(
         op->session_handle->real_username = globus_libc_strdup(pwent->pw_name);
     }
     
+    globus_gfs_log_event(
+        GLOBUS_GFS_LOG_INFO,
+        GLOBUS_GFS_LOG_EVENT_END,
+        "session.authz",
+        0,
+        "localuser=%s DN=\"%s\"",
+        op->session_handle->real_username, 
+        session_info->subject ? session_info->subject : "");
+
     rc = globus_i_gfs_acl_init(
         &op->session_handle->acl_handle,
         context,
@@ -1668,7 +1681,7 @@ globus_l_gfs_data_authorize(
     {
         globus_l_gfs_data_auth_init_cb(NULL, GFS_ACL_ACTION_INIT, op, res);
     }
-
+    
     globus_l_gfs_pw_free(pwent);
     globus_l_gfs_gr_free(grent);
 
@@ -1678,6 +1691,15 @@ globus_l_gfs_data_authorize(
 acl_error:
 uid_error:
 pwent_error:
+
+    globus_gfs_log_event(
+        GLOBUS_GFS_LOG_INFO,
+        GLOBUS_GFS_LOG_EVENT_END,
+        "session.authz",
+        res,
+        "DN=\"%s\"", 
+        session_info->subject ? session_info->subject : "");
+    
     if(pwent != NULL)
     {
         globus_l_gfs_pw_free(pwent);
@@ -1746,8 +1768,8 @@ globus_i_gfs_data_init()
         rc = globus_extension_activate(buf);
         if(rc != GLOBUS_SUCCESS)
         {
-            globus_i_gfs_log_message(
-                GLOBUS_I_GFS_LOG_ERR, 
+            globus_gfs_log_message(
+                GLOBUS_GFS_LOG_ERR, 
                 "Unable to activate %s: %s\n", 
                 buf,
                 globus_error_print_friendly(
@@ -1761,8 +1783,8 @@ globus_i_gfs_data_init()
 
     if(!globus_l_gfs_dsi)
     {
-        globus_i_gfs_log_message(
-           GLOBUS_I_GFS_LOG_ERR, "Couldn't find the %s extension\n", dsi_name);
+        globus_gfs_log_message(
+           GLOBUS_GFS_LOG_ERR, "Couldn't find the %s extension\n", dsi_name);
         exit(1);
     }
 
@@ -2326,8 +2348,8 @@ globus_l_gfs_data_handle_init(
     {
         globus_ftp_control_tcpbuffer_t  tcpbuffer;
 
-        globus_i_gfs_log_message(
-            GLOBUS_I_GFS_LOG_WARN,
+        globus_gfs_log_message(
+            GLOBUS_GFS_LOG_WARN,
             "Limiting TCP memory to: %d on %d\n",
             tcp_mem_limit, handle->info.nstreams);
         tcpbuffer.mode = GLOBUS_FTP_CONTROL_TCPBUFFER_FIXED;
@@ -2388,8 +2410,8 @@ globus_l_gfs_data_handle_init(
         {
             goto error_control;
 
-            globus_i_gfs_log_message(
-                GLOBUS_I_GFS_LOG_WARN,
+            globus_gfs_log_message(
+                GLOBUS_GFS_LOG_WARN,
                 "set stack failed: %s\n",
                 globus_error_print_friendly(globus_error_peek(result)));
         }
@@ -2400,8 +2422,8 @@ globus_l_gfs_data_handle_init(
         {
             goto error_control;
 
-            globus_i_gfs_log_message(
-                GLOBUS_I_GFS_LOG_WARN,
+            globus_gfs_log_message(
+                GLOBUS_GFS_LOG_WARN,
                 "set stack failed: %s\n",
                 globus_error_print_friendly(globus_error_peek(result)));
         }
@@ -3980,8 +4002,8 @@ globus_l_gfs_data_finish_connected(
                     op);
                 if(result != GLOBUS_SUCCESS)
                 {
-                    globus_i_gfs_log_result_warn(
-                        "write_eof error", result);
+                    globus_gfs_log_result(
+                        GLOBUS_GFS_LOG_WARN, "write_eof error", result);
                     op->cached_res = result;
                     globus_callback_register_oneshot(
                         NULL,
@@ -4126,19 +4148,20 @@ globus_l_gfs_data_begin_cb(
             {
                 char * tmp_err_str = 
                     globus_error_print_friendly(globus_error_peek(res));
-                globus_i_gfs_log_message(
-                    GLOBUS_I_GFS_LOG_WARN,
+                globus_gfs_log_message(
+                    GLOBUS_GFS_LOG_WARN,
                     "Buffer size may not be properly set: %s\n",
                     tmp_err_str);
                 free(tmp_err_str);
             }
             if(op->writing)
             {
-                if(rcvbuf != op->data_handle->info.tcp_bufsize
+                if(op->data_handle->info.tcp_bufsize &&
+                    rcvbuf != op->data_handle->info.tcp_bufsize
                     && res == GLOBUS_SUCCESS)
                 {
-                    globus_i_gfs_log_message(
-                        GLOBUS_I_GFS_LOG_WARN,
+                    globus_gfs_log_message(
+                        GLOBUS_GFS_LOG_WARN,
                         "RECV buffer size may not be properly set.  "
                         "Requested size = %d, actualy size = %d\n",
                         op->data_handle->info.tcp_bufsize, rcvbuf);
@@ -4149,16 +4172,17 @@ globus_l_gfs_data_begin_cb(
             {
                 if(res != GLOBUS_SUCCESS)
                 {
-                    globus_i_gfs_log_message(
-                        GLOBUS_I_GFS_LOG_WARN,
+                    globus_gfs_log_message(
+                        GLOBUS_GFS_LOG_WARN,
                         "Request to get socket buffer size failed\n");
                 }
                 else
                 {
-                    if(sndbuf != op->data_handle->info.tcp_bufsize)
+                    if(op->data_handle->info.tcp_bufsize &&
+                        sndbuf != op->data_handle->info.tcp_bufsize)
                     {
-                        globus_i_gfs_log_message(
-                            GLOBUS_I_GFS_LOG_WARN,
+                        globus_gfs_log_message(
+                            GLOBUS_GFS_LOG_WARN,
                             "SEND buffer size may not be properly set.  "
                             "Requested size = %d, actualy size = %d\n",
                             op->data_handle->info.tcp_bufsize, sndbuf);
@@ -4167,10 +4191,18 @@ globus_l_gfs_data_begin_cb(
                 }
             }
 
-            globus_i_gfs_log_message(
-                GLOBUS_I_GFS_LOG_INFO,
+            globus_gfs_log_message(
+                GLOBUS_GFS_LOG_INFO,
                 "Starting to transfer \"%s\".\n", 
                     ((globus_gfs_transfer_info_t *) op->info_struct)->pathname);
+            globus_gfs_log_event(
+                GLOBUS_GFS_LOG_INFO,
+                GLOBUS_GFS_LOG_EVENT_START,
+                "transfer",
+                0,
+                "file=\"%s\"", 
+                ((globus_gfs_transfer_info_t *) op->info_struct)->pathname);
+
         }
     }
     globus_mutex_unlock(&op->session_handle->mutex);
@@ -4353,11 +4385,99 @@ globus_l_gfs_data_end_transfer_kickout(
     }
     globus_mutex_unlock(&op->session_handle->mutex);
 
-    globus_i_gfs_log_message(
-        GLOBUS_I_GFS_LOG_INFO,
-        "Finished transferring \"%s\".\n",
-            ((globus_gfs_transfer_info_t *) op->info_struct)->pathname);
+    if(op->cached_res == GLOBUS_SUCCESS)
+    {
+        char *                          msg;
+        char *                          type;
+        globus_gfs_transfer_info_t *    info;
 
+        info = (globus_gfs_transfer_info_t *) op->info_struct;
+
+        if(op->writing)
+        {
+            if(info->list_type)
+            {
+                if(strncmp(info->list_type, "LIST:", 5) == 0)
+                {
+                    type = "LIST";
+                }
+                else if(strncmp(info->list_type, "NLST:", 5) == 0)
+                {
+                    type = "NLST";
+                }
+                else
+                {
+                    type = "MLSD";
+                }
+            }
+            else if(info->module_name || info->partial_offset != 0 ||
+                info->partial_length != -1)
+            {
+                type = "ERET";
+            }
+            else
+            {
+                type = "RETR";
+            }
+        }
+        else
+        {
+            if(info->module_name || info->partial_offset != 0 ||
+                 !info->truncate)
+            {
+                type = "ESTO";
+            }
+            else
+            {
+                type = "STOR";
+            }
+        }        
+        
+        globus_gfs_log_message(
+            GLOBUS_GFS_LOG_INFO,
+            "Finished transferring \"%s\".\n",
+                ((globus_gfs_transfer_info_t *) op->info_struct)->pathname);
+
+        msg = globus_i_gfs_log_create_transfer_event_msg(
+            op->node_count,
+            op->data_handle->info.nstreams,
+            op->remote_ip ? op->remote_ip : "0.0.0.0",
+            op->data_handle->info.blocksize,
+            op->data_handle->info.tcp_bufsize,
+            info->pathname,
+            op->bytes_transferred,
+            type,
+            op->session_handle->username);
+            
+        globus_gfs_log_event(
+            GLOBUS_GFS_LOG_INFO,
+            GLOBUS_GFS_LOG_EVENT_END,
+            "transfer",
+            0,
+            "%s", 
+            msg);
+            
+        globus_free(msg);
+    }
+    else
+    {
+        globus_gfs_log_message(
+            GLOBUS_GFS_LOG_INFO,
+            "Failure attempting to transfer \"%s\".\n",
+                ((globus_gfs_transfer_info_t *) op->info_struct)->pathname);
+        globus_gfs_log_result(
+            GLOBUS_GFS_LOG_INFO,
+            "Transfer failure",
+            op->cached_res);
+
+        globus_gfs_log_event(
+            GLOBUS_GFS_LOG_INFO,
+            GLOBUS_GFS_LOG_EVENT_ERROR,
+            "transfer",
+            op->cached_res,
+            "file=\"%s\"", 
+            ((globus_gfs_transfer_info_t *) op->info_struct)->pathname);
+    }
     if(disconnect && op->data_handle->is_mine)
     {
         memset(&event_reply, '\0', sizeof(globus_gfs_event_info_t));
@@ -4794,8 +4914,8 @@ globus_l_gfs_data_write_eof_cb(
             could still get events or disconnects, but the abort process
             does not touch the data_handle->state */
         op->cached_res = globus_error_put(globus_object_copy(error));
-        globus_i_gfs_log_result_warn(
-            "write_eof_cb error", op->cached_res);
+        globus_gfs_log_result(
+            GLOBUS_GFS_LOG_WARN, "write_eof_cb error", op->cached_res);
         globus_l_gfs_data_cb_error(op->data_handle);
         end = GLOBUS_TRUE;
     }
@@ -4846,8 +4966,8 @@ globus_l_gfs_data_write_eof_cb(
                     }
                     if(result != GLOBUS_SUCCESS)
                     {
-                        globus_i_gfs_log_result_warn(
-                            "ERROR", result);
+                        globus_gfs_log_result(
+                            GLOBUS_GFS_LOG_WARN, "ERROR", result);
                         op->cached_res = result;
                         end = GLOBUS_TRUE;
                     }
@@ -4907,8 +5027,8 @@ globus_l_gfs_data_send_eof(
                     op);
                 if(result != GLOBUS_SUCCESS)
                 {
-                    globus_i_gfs_log_result_warn(
-                        "send_eof error", result);
+                    globus_gfs_log_result(
+                        GLOBUS_GFS_LOG_WARN, "send_eof error", result);
                     op->cached_res = result;
 
                 if(op->data_handle->state == GLOBUS_L_GFS_DATA_HANDLE_VALID)
@@ -5351,8 +5471,10 @@ globus_i_gfs_data_request_transfer_event(
                                 op);
                             if(result != GLOBUS_SUCCESS)
                             {
-                                globus_i_gfs_log_result_warn(
-                                    "force_close", result);
+                                globus_gfs_log_result(
+                                    GLOBUS_GFS_LOG_WARN, 
+                                    "force_close", 
+                                    result);
                                 globus_l_gfs_data_fc_return(op);
                                 pass = GLOBUS_TRUE;
                             }

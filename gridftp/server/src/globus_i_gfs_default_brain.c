@@ -156,8 +156,8 @@ globus_l_brain_log_socket(
         peer_contact = strdup("could get peer addr");
     }
     
-    globus_i_gfs_log_message(
-        GLOBUS_I_GFS_LOG_WARN,
+    globus_gfs_log_message(
+        GLOBUS_GFS_LOG_WARN,
         "[%s]  %s", peer_contact, msg);
     globus_free(peer_contact);
 }
@@ -170,7 +170,7 @@ globus_l_gfs_gfork_close_cb(
     void *                              user_arg,
     pid_t                               from_pid)
 {
-    globus_i_gfs_log_message(GLOBUS_I_GFS_LOG_WARN, "GFork closed.");
+    globus_gfs_log_message(GLOBUS_GFS_LOG_WARN, "GFork closed.");
 }
 
 static
@@ -193,8 +193,8 @@ globus_l_gfs_gfork_dyn_reg(
     char *                              cookie_id;
     GlobusGFSName(globus_l_gfs_gfork_dyn_reg);
 
-    globus_i_gfs_log_message(
-        GLOBUS_I_GFS_LOG_WARN,
+    globus_gfs_log_message(
+        GLOBUS_GFS_LOG_WARN,
         "[%s] enter", "globus_l_gfs_gfork_dyn_reg");
 
     memcpy(&tmp_32, &buffer[GF_AT_ONCE_NDX], sizeof(uint32_t));
@@ -258,8 +258,8 @@ globus_l_gfs_gfork_dyn_reg(
         node->current_connection = 0;
         node->max_connection = con_max;
         node->total_max_connections = total_max;
-        globus_i_gfs_log_message(
-            GLOBUS_I_GFS_LOG_WARN,
+        globus_gfs_log_message(
+            GLOBUS_GFS_LOG_WARN,
             "A new backend registered, contact string: [%s] %s\n"
             "  max=[%d]\n  total=[%d]\n id=[%s]\n",
             node->repo_name,
@@ -300,8 +300,8 @@ globus_l_gfs_gfork_incoming_cb(
     uint32_t                            n32;
     GlobusGFSName(globus_l_gfs_gfork_incoming_cb);
     
-    globus_i_gfs_log_message(
-        GLOBUS_I_GFS_LOG_WARN,
+    globus_gfs_log_message(
+        GLOBUS_GFS_LOG_WARN,
         "[%s] enter", "globus_l_gfs_gfork_incoming_cb()");
     globus_mutex_lock(&globus_l_brain_mutex);
     {
@@ -326,14 +326,14 @@ globus_l_gfs_gfork_incoming_cb(
                 memcpy(&n32, &buffer[GF_MEM_LIMIT_NDX], sizeof(uint32_t));
                 globus_gfs_config_set_int("tcp_mem_limit", (int)n32);
 
-                globus_i_gfs_log_message(
-                    GLOBUS_I_GFS_LOG_WARN,
+                globus_gfs_log_message(
+                    GLOBUS_GFS_LOG_WARN,
                     "TCP mem limit set to: %d\n", (int)n32);
                 break;
 
             case GFS_GFORK_MSG_TYPE_READY:
-                globus_i_gfs_log_message(
-                    GLOBUS_I_GFS_LOG_WARN, "Ready message received.\n");
+                globus_gfs_log_message(
+                    GLOBUS_GFS_LOG_WARN, "Ready message received.\n");
                 globus_l_gfs_gfork_ready = GLOBUS_TRUE;
                 if(globus_l_gfs_gfork_ready_cb != NULL)
                 {
@@ -347,8 +347,8 @@ globus_l_gfs_gfork_incoming_cb(
 
             case GFS_GFORK_MSG_TYPE_KILL:
                 printf("421 KILLING!\r\n");
-                globus_i_gfs_log_message(
-                    GLOBUS_I_GFS_LOG_WARN, "Kill message received.\n");
+                globus_gfs_log_message(
+                    GLOBUS_GFS_LOG_WARN, "Kill message received.\n");
 
                 globus_i_gfs_control_end_421(
                     "421 Server load too high. Try again later.\r\n");
@@ -388,8 +388,8 @@ globus_l_gfs_default_brain_init(
     rc = globus_module_activate(GLOBUS_GFORK_CHILD_MODULE);
     if(rc != 0)
     {
-        globus_i_gfs_log_message(
-            GLOBUS_I_GFS_LOG_WARN,
+        globus_gfs_log_message(
+            GLOBUS_GFS_LOG_WARN,
             "Could not activate GFork\n");
     }
 
@@ -456,7 +456,8 @@ globus_l_gfs_default_brain_init(
             NULL);
         if(result != GLOBUS_SUCCESS)
         {
-            globus_i_gfs_log_result_warn(
+            globus_gfs_log_result(
+                GLOBUS_GFS_LOG_WARN, 
                 "GFork functionality not enabled: globus_gfork_child_worker_start() failed",
                 result);
 
@@ -529,8 +530,8 @@ globus_l_gfs_default_brain_select_nodes(
         goto error_paramater;
     }
 
-    globus_i_gfs_log_message(
-        GLOBUS_I_GFS_LOG_INFO,
+    globus_gfs_log_message(
+        GLOBUS_GFS_LOG_INFO,
         "[%s] enter", "globus_l_gfs_default_brain_select_nodes\n");
 
     repo_name = (char *) r_name;
@@ -622,8 +623,8 @@ error_short:
         node = (gfs_l_db_node_t *) node_array[i];
         node->current_connection--;
         globus_priority_q_enqueue(&repo->node_q, node, node);
-        globus_i_gfs_log_message(
-            GLOBUS_I_GFS_LOG_WARN,
+        globus_gfs_log_message(
+            GLOBUS_GFS_LOG_WARN,
             "Not enough nodes available: [%s] %s: %d, %d, %d\n",
             node->repo_name,
             node->host_id,
@@ -635,8 +636,8 @@ error_short:
 error:
     globus_mutex_unlock(&globus_l_brain_mutex);
 error_paramater:
-    globus_i_gfs_log_message(
-        GLOBUS_I_GFS_LOG_WARN,
+    globus_gfs_log_message(
+        GLOBUS_GFS_LOG_WARN,
         "No nodes given because paramater error: %d: %d: %s\n", 
         min_count, count,
         globus_error_print_friendly(globus_error_peek(result)));
@@ -696,8 +697,8 @@ globus_l_gfs_default_brain_release_node(
         switch(reason)
         {
             case GLOBUS_GFS_BRAIN_REASON_ERROR:
-                globus_i_gfs_log_message(
-                    GLOBUS_I_GFS_LOG_WARN,
+                globus_gfs_log_message(
+                    GLOBUS_GFS_LOG_WARN,
                     "Node released with error: [%s] %s\n",
                     node->repo_name,
                     node->host_id);

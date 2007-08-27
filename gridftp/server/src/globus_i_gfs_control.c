@@ -365,10 +365,17 @@ globus_l_gfs_channel_close_cb(
 
     instance = (globus_l_gfs_server_instance_t *) user_arg;
 
-    globus_i_gfs_log_message(
-        GLOBUS_I_GFS_LOG_INFO,
+    globus_gfs_log_message(
+        GLOBUS_GFS_LOG_INFO,
         _FSSL("Closed connection from %s\n",NULL),
         instance->remote_contact);
+    globus_gfs_log_event(
+        GLOBUS_GFS_LOG_INFO,
+        GLOBUS_GFS_LOG_EVENT_END,
+        "session",
+        0,
+        "remotehost=%s", instance->remote_contact);
+
 
     if(instance->session_arg != NULL)
     {
@@ -464,14 +471,14 @@ globus_l_gfs_auth_session_cb(
     {
         if(auth_info->session_info->subject != NULL)
         {
-            globus_i_gfs_log_message(
-                GLOBUS_I_GFS_LOG_INFO,
+            globus_gfs_log_message(
+                GLOBUS_GFS_LOG_INFO,
                 "DN %s successfully authorized.\n",
                 auth_info->session_info->subject);
         }
 
-        globus_i_gfs_log_message(
-            GLOBUS_I_GFS_LOG_INFO,
+        globus_gfs_log_message(
+            GLOBUS_GFS_LOG_INFO,
             "User %s successfully authorized.\n",
             reply->info.session.username);
 
@@ -540,6 +547,15 @@ globus_l_gfs_request_auth(
     {
         goto session_error;
     }
+
+    globus_gfs_log_event(
+        GLOBUS_GFS_LOG_INFO,
+        GLOBUS_GFS_LOG_EVENT_END,
+        "session.authn",
+        0,
+        "user=%s DN=\"%s\"",
+        user_name, 
+        subject ? subject : "");
 
     result = globus_gridftp_server_control_get_data_auth(
         control_op,
@@ -1126,8 +1142,8 @@ globus_l_gfs_request_transfer_event(
             break;
         case GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_ABORT:
             event_info.type = GLOBUS_GFS_EVENT_TRANSFER_ABORT;
-            globus_i_gfs_log_message(
-                GLOBUS_I_GFS_LOG_INFO,
+            globus_gfs_log_message(
+                GLOBUS_GFS_LOG_INFO,
                 "Requesting abort...\n");
             break;
         case GLOBUS_GRIDFTP_SERVER_CONTROL_EVENT_TRANSFER_COMPLETE:
@@ -1952,7 +1968,7 @@ globus_l_gfs_control_log(
     void *                              user_arg)
 {
     globus_l_gfs_server_instance_t *    instance;
-    globus_i_gfs_log_type_t             log_type;
+    char *                              msg;
     GlobusGFSName(globus_l_gfs_control_log);
     GlobusGFSDebugEnter();
 
@@ -1963,25 +1979,50 @@ globus_l_gfs_control_log(
         goto error;
     }
 
+    msg = globus_libc_strdup(message);
+    globus_i_gfs_log_tr(msg, '\"', '\'');
+    globus_i_gfs_log_tr(msg, '\r', ' ');
+    
     switch(type)
     {
       case GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_REPLY:
-        log_type = GLOBUS_I_GFS_LOG_DUMP;
-        globus_i_gfs_log_message(log_type, "%s: [SERVER]: %s",
+        globus_gfs_log_message(GLOBUS_GFS_LOG_DUMP, "%s: [SERVER]: %s",
             instance->remote_contact, message);
+        globus_gfs_log_event(
+            GLOBUS_GFS_LOG_DUMP,
+            GLOBUS_GFS_LOG_EVENT_MESSAGE,
+            "session",
+            GLOBUS_SUCCESS,
+            "sender=server msg=\"%s\"",
+            msg);
         break;
-      case GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_ERROR:
-        log_type = GLOBUS_I_GFS_LOG_WARN;
-        globus_i_gfs_log_message(log_type, "%s: [CLIENT ERROR]: %s",
-            instance->remote_contact, message);
-         break;
-      default:
-        log_type = GLOBUS_I_GFS_LOG_DUMP;
-        globus_i_gfs_log_message(log_type, "%s: [CLIENT]: %s",
-            instance->remote_contact, message);
-         break;
-    }
 
+      case GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_ERROR:
+        globus_gfs_log_message(GLOBUS_GFS_LOG_WARN, "%s: [CLIENT ERROR]: %s",
+            instance->remote_contact, message);
+        globus_gfs_log_event(
+            GLOBUS_GFS_LOG_WARN,
+            GLOBUS_GFS_LOG_EVENT_MESSAGE,
+            "session",
+            GLOBUS_SUCCESS,
+            "sender=client msg=\"%s\"",
+            msg);
+        break;
+
+      default:
+        globus_gfs_log_message(GLOBUS_GFS_LOG_DUMP, "%s: [CLIENT]: %s",
+            instance->remote_contact, message);
+        globus_gfs_log_event(
+            GLOBUS_GFS_LOG_DUMP,
+            GLOBUS_GFS_LOG_EVENT_MESSAGE,
+            "session",
+            GLOBUS_SUCCESS,
+            "sender=client msg=\"%s\"",
+            msg);
+        break;
+    }
+    
+    globus_free(msg);
 
     GlobusGFSDebugExit();
     return;
@@ -2420,6 +2461,14 @@ globus_i_gfs_control_start(
         {
             goto error_start;
         }
+        
+        globus_gfs_log_event(
+            GLOBUS_GFS_LOG_INFO,
+            GLOBUS_GFS_LOG_EVENT_START,
+            "session.authn",
+            0,
+            NULL);
+
         result = globus_gridftp_server_control_start(
             instance->server_handle,
             attr,

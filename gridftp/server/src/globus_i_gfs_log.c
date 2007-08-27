@@ -28,6 +28,8 @@ static globus_logging_handle_t          globus_l_gfs_log_handle = NULL;
 static globus_usage_stats_handle_t      globus_l_gfs_usage_handle = NULL;
 static FILE *                           globus_l_gfs_log_file = NULL;
 static FILE *                           globus_l_gfs_transfer_log_file = NULL;
+static globus_bool_t                    globus_l_gfs_log_events = GLOBUS_FALSE;
+
 
 int
 globus_l_gfs_log_matchlevel(
@@ -39,27 +41,27 @@ globus_l_gfs_log_matchlevel(
 
     if(strcasecmp(tag, "ERROR") == 0)
     {   
-        out = GLOBUS_I_GFS_LOG_ERR;
+        out = GLOBUS_GFS_LOG_ERR;
     }             
     else if(strcasecmp(tag, "WARN") == 0)
     {   
-        out = GLOBUS_I_GFS_LOG_WARN;
+        out = GLOBUS_GFS_LOG_WARN;
     }             
     else if(strcasecmp(tag, "INFO") == 0)
     {   
-        out = GLOBUS_I_GFS_LOG_INFO;
+        out = GLOBUS_GFS_LOG_INFO;
     }             
     else if(strcasecmp(tag, "STATUS") == 0)
     {   
-        out = GLOBUS_I_GFS_LOG_STATUS;
+        out = GLOBUS_GFS_LOG_STATUS;
     }             
     else if(strcasecmp(tag, "DUMP") == 0)
     {   
-        out = GLOBUS_I_GFS_LOG_DUMP;
+        out = GLOBUS_GFS_LOG_DUMP;
     }             
     else if(strcasecmp(tag, "ALL") == 0)
     {   
-        out = GLOBUS_I_GFS_LOG_ALL;
+        out = GLOBUS_GFS_LOG_ALL;
     } 
     
     GlobusGFSDebugExit();
@@ -203,6 +205,16 @@ globus_i_gfs_log_open()
     {
         log_mod = &globus_logging_syslog_module;
     }
+    else if(strcmp(module, "stdio_ng") == 0)
+    {
+        log_mod = &globus_logging_stdio_ng_module;
+        globus_l_gfs_log_events = GLOBUS_TRUE;
+    }
+    else if(strcmp(module, "syslog_ng") == 0)
+    {
+        log_mod = &globus_logging_syslog_ng_module;
+        globus_l_gfs_log_events = GLOBUS_TRUE;
+    }
     else
     {
         globus_libc_fprintf(stderr, 
@@ -210,7 +222,8 @@ globus_i_gfs_log_open()
         log_mod = &globus_logging_stdio_module;
     }
 
-    if(log_mod == &globus_logging_stdio_module)
+    if(log_mod == &globus_logging_stdio_module || 
+        log_mod == &globus_logging_stdio_ng_module )
     {          
         logfilename = globus_i_gfs_config_string("log_single");
         if(logfilename == NULL)
@@ -261,7 +274,8 @@ globus_i_gfs_log_open()
         }
     }
        
-    if(!(log_mod == &globus_logging_stdio_module && log_arg == NULL))
+    if(!((log_mod == &globus_logging_stdio_module || 
+        log_mod == &globus_logging_stdio_ng_module) && log_arg == NULL))
     {
         globus_logging_init(
             &globus_l_gfs_log_handle,
@@ -351,7 +365,7 @@ globus_gfs_log_message(
     GlobusGFSName(globus_gfs_log_message);
     GlobusGFSDebugEnter();
 
-    if(globus_l_gfs_log_handle != NULL)
+    if(globus_l_gfs_log_handle != NULL && !globus_l_gfs_log_events)
     {
         va_start(ap, format);
         globus_logging_vwrite(globus_l_gfs_log_handle, type, format, ap);
@@ -379,57 +393,162 @@ globus_gfs_log_result(
     {
         message = globus_libc_strdup("(unknown error)");
     }
-    globus_i_gfs_log_message(type, "%s:\n%s\n", lead, message);
+    globus_gfs_log_message(type, "%s:\n%s\n", lead, message);
     globus_free(message);
 
     GlobusGFSDebugExit();
 }
 
 
-void
-globus_i_gfs_log_result_warn(
-    const char *                        lead,
-    globus_result_t                     result)
+void 
+globus_i_gfs_log_tr(
+    char *                              msg,
+    char                                from,
+    char                                to)
 {
-    char *                              message;
-    GlobusGFSName(globus_i_gfs_log_result_warn);
+    char *                              ptr;
+    GlobusGFSName(globus_l_gfs_log_tr);
     GlobusGFSDebugEnter();
     
-    if(result != GLOBUS_SUCCESS)
+    ptr = strchr(msg, from);
+    while(ptr != NULL)
     {
-        message = globus_error_print_friendly(globus_error_peek(result));
+        *ptr = to;
+        ptr = strchr(ptr, from);
     }
-    else
-    {
-        message = globus_libc_strdup("(unknown error)");
-    }
-    globus_i_gfs_log_message(GLOBUS_I_GFS_LOG_WARN, "%s:\n%s\n", lead, message);
-    globus_free(message);
-
     GlobusGFSDebugExit();
 }
 
-void
-globus_i_gfs_log_result(
-    const char *                        lead,
-    globus_result_t                     result)
-{
-    char *                              message;
-    GlobusGFSName(globus_i_gfs_log_result);
-    GlobusGFSDebugEnter();
-    
-    if(result != GLOBUS_SUCCESS)
-    {
-        message = globus_error_print_friendly(globus_error_peek(result));
-    }
-    else
-    {
-        message = globus_libc_strdup("(unknown error)");
-    }
-    globus_i_gfs_log_message(GLOBUS_I_GFS_LOG_ERR, "%s:\n%s\n", lead, message);
-    globus_free(message);
 
+void
+globus_gfs_log_event(
+    globus_gfs_log_type_t               type,
+    globus_gfs_log_event_type_t         event_type,
+    const char *                        event_name,
+    globus_result_t                     result,
+    const char *                        format,
+    ...)
+{
+    va_list                             ap;
+    char *                              msg;
+    char *                              tmp = NULL;
+    char *                              startend;
+    char *                              status;
+    char *                              message = NULL;
+    GlobusGFSName(globus_gfs_log_message);
+    GlobusGFSDebugEnter();
+
+    if(globus_l_gfs_log_handle != NULL && globus_l_gfs_log_events)
+    {
+        if(format)
+        {
+            va_start(ap, format);
+            tmp = globus_common_v_create_string(format, ap); 
+            va_end(ap);
+            
+            globus_i_gfs_log_tr(tmp, '\n', ' ');
+        }
+        
+        if(result != GLOBUS_SUCCESS)
+        {
+            message = globus_error_print_friendly(globus_error_peek(result));
+            globus_i_gfs_log_tr(message, '\n', ' ');
+            globus_i_gfs_log_tr(message, '\"', '\'');
+        }
+
+        switch(event_type)
+        {
+            case GLOBUS_GFS_LOG_EVENT_START:
+                startend = "start";
+                status = NULL;
+                break;
+            case GLOBUS_GFS_LOG_EVENT_END:
+                startend = "end";
+                if(result == GLOBUS_SUCCESS)
+                {
+                    status = " status=0";
+                }
+                else
+                {
+                    status = " status=-1";
+                }
+                break;
+            case GLOBUS_GFS_LOG_EVENT_MESSAGE:
+                startend = "message";
+                status = NULL;
+                break;
+            default:
+                startend = "error";
+                status = " status=-1";
+                break;
+        }
+        
+        msg = globus_common_create_string(
+            "event=globus-gridftp-server%s%s.%s%s%s%s%s%s%s\n", 
+            event_name ? "." : "", 
+            event_name ? event_name : "", 
+            startend, 
+            tmp ? " " : "",
+            tmp ? tmp : "",
+            message ? " msg=\"" : "",
+            message ? message : "",
+            message ? "\"" : "",
+            status ? status : "");
+ 
+        globus_logging_write(globus_l_gfs_log_handle, type, msg);
+        
+        globus_free(msg);
+        if(tmp)
+        {
+            globus_free(tmp);
+        }
+        if(message)
+        {
+            globus_free(message);
+        }
+    }
+    
     GlobusGFSDebugExit();
+}
+
+char *
+globus_i_gfs_log_create_transfer_event_msg(
+    int                                 stripe_count,
+    int                                 stream_count, 
+    char *                              dest_ip,
+    globus_size_t                       blksize,
+    globus_size_t                       tcp_bs,
+    const char *                        fname,
+    globus_off_t                        nbytes,
+    char *                              type,
+    char *                              username)
+{
+    char *                              transfermsg;
+    GlobusGFSName(globus_i_gfs_log_transfer);
+    GlobusGFSDebugEnter();
+
+    transfermsg = globus_common_create_string( 
+        "localuser=%s "
+        "file=%s "
+        "tcpbuffer=%ld "
+        "blocksize=%ld "
+        "bytes=%"GLOBUS_OFF_T_FORMAT" "
+        "streams=%d "
+        "stripes=%d "
+        "remoteIP=%s " 
+        "type=%s ",
+        username,
+        fname,
+        (long) tcp_bs,
+        (long) blksize,
+        nbytes,
+        stream_count, 
+        stripe_count,
+        dest_ip,
+        type);
+        
+    GlobusGFSDebugExit();
+    return transfermsg;    
 }
 
 void

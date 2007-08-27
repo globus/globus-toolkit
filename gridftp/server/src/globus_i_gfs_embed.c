@@ -220,8 +220,8 @@ globus_l_gfs_server_closed_cb(
 
         tmp_str = globus_error_print_friendly(error);
         /* XXX find out why we get (false) error here  */
-        globus_i_gfs_log_message(
-            GLOBUS_I_GFS_LOG_WARN,
+        globus_gfs_log_message(
+            GLOBUS_GFS_LOG_WARN,
             "Control connection closed with error: %s\n",
              tmp_str);
         globus_free(tmp_str);
@@ -319,8 +319,8 @@ globus_l_gfs_new_server_cb(
         }
         if(!globus_i_gfs_config_allow_addr(remote_contact, GLOBUS_FALSE))
         {
-            globus_i_gfs_log_message(
-                GLOBUS_I_GFS_LOG_WARN,
+            globus_gfs_log_message(
+                GLOBUS_GFS_LOG_WARN,
                 "Connection disallowed by configuration from: %s\n", 
                 remote_contact);
             goto error;
@@ -336,8 +336,8 @@ globus_l_gfs_new_server_cb(
             goto error;
         }
         
-        globus_i_gfs_log_message(
-            GLOBUS_I_GFS_LOG_INFO,
+        globus_gfs_log_message(
+            GLOBUS_GFS_LOG_INFO,
             "New connection from: %s\n", remote_contact);
 
         if(handle->event_cb)
@@ -389,7 +389,8 @@ globus_l_gfs_new_server_cb(
         }
         if(result != GLOBUS_SUCCESS)
         {
-            globus_i_gfs_log_result("Connection failed", result);
+            globus_gfs_log_result(
+                GLOBUS_GFS_LOG_ERR, "Connection failed", result);
             goto error_start;
         }
     }
@@ -502,8 +503,10 @@ globus_l_gfs_server_accept_cb(
             result = globus_l_gfs_open_new_server(handle, xio_handle);
             if(result != GLOBUS_SUCCESS)
             {
-                globus_i_gfs_log_result(
-                    _GSSL("Could not open new handle"), result);
+                globus_gfs_log_result(
+                    GLOBUS_GFS_LOG_ERR, 
+                    _GSSL("Could not open new handle"), 
+                    result);
                 result = GLOBUS_SUCCESS;
             }
         }
@@ -783,8 +786,8 @@ globus_gridftp_server_embed_stop(
     GlobusGFSName(globus_gridftp_server_embed_stop);
     GlobusGFSDebugEnter();    
 
-    globus_i_gfs_log_message(
-        GLOBUS_I_GFS_LOG_ERR, 
+    globus_gfs_log_message(
+        GLOBUS_GFS_LOG_ERR, 
         "Server is shutting down...\n");
 
     globus_mutex_lock(&handle->mutex);
@@ -793,8 +796,8 @@ globus_gridftp_server_embed_stop(
         {
             globus_gfs_config_set_int(
                 "open_connections_count", 0);
-            globus_i_gfs_log_message(
-                GLOBUS_I_GFS_LOG_ERR, 
+            globus_gfs_log_message(
+                GLOBUS_GFS_LOG_ERR, 
                 "Forcing unclean shutdown.\n");
         }
         if(handle->xio_server)
