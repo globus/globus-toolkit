@@ -2408,18 +2408,6 @@ globus_l_gfs_data_handle_init(
         
         globus_xio_stack_destroy(stack);
     }
-/*
-    {
-        result = globus_l_gfs_set_stack(handle);
-        if(result != GLOBUS_SUCCESS)
-        {
-            globus_i_gfs_log_message(
-                GLOBUS_I_GFS_LOG_WARN,
-                "set stack failed: %s\n",
-                globus_error_print_friendly(globus_error_peek(result)));
-        }
-    }
-*/
 
     *u_handle = handle;
 
@@ -7013,63 +7001,4 @@ globus_i_gfs_data_request_buffer_send(
 
     GlobusGFSDebugExit();
     return;
-}
-
-static
-globus_result_t
-globus_l_gfs_set_stack(
-    globus_l_gfs_data_handle_t *        handle)
-{
-    globus_result_t                     result;
-    gfs_i_stack_entry_t *               stack_ent;
-    globus_list_t *                     driver_list;
-    globus_list_t *                     list;
-    globus_xio_stack_t                  stack;
-
-    globus_xio_stack_init(&stack, NULL);
-    driver_list = (globus_list_t *) globus_i_gfs_config_list("net_stack_list");
-    globus_i_ftp_control_data_get_attr(&handle->data_channel, &handle->xio_attr);
-    for(list = driver_list;
-        !globus_list_empty(list);
-        list = globus_list_rest(list))
-    {
-        stack_ent = (gfs_i_stack_entry_t *) globus_list_first(list);
-
-        result = GLOBUS_SUCCESS;
-        if(strcmp(stack_ent->driver_name, "gsi") == 0)
-        {
-            if(handle->info.dcau != 'N')
-            {
-                result = globus_xio_stack_push_driver(
-                    stack, stack_ent->driver);
-            }
-        }
-        else
-        {
-            result=globus_xio_stack_push_driver(stack, stack_ent->driver);
-        }
-        if(result != GLOBUS_SUCCESS)
-        {
-            goto error_control;
-        }
-        /* this should go away after demo? */
-        if(stack_ent->opts != NULL)
-        {
-            /* ignore error */
-            globus_xio_attr_cntl(
-                handle->xio_attr,
-                stack_ent->driver,
-                GLOBUS_XIO_SET_STRING_OPTIONS,
-                stack_ent->opts);
-        }
-    }
-    globus_i_ftp_control_data_set_stack(&handle->data_channel, stack);
-
-    globus_xio_stack_destroy(stack);
-
-    return GLOBUS_SUCCESS;
-error_control:
-
-    globus_xio_stack_destroy(stack);
-    return result;
 }
