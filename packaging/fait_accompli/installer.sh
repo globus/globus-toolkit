@@ -5,7 +5,7 @@ INSTALLER=gt$VERSION-all-source-installer
 AUTOTOOLS=source-trees/autotools/autotools/autoconf-2.59/config
 GPT=gpt*.tar.gz
 
-BUNDLES=globus-resource-management-server,globus-resource-management-client,globus-resource-management-sdk,globus-data-management-server,globus-data-management-client,globus-data-management-sdk,globus-rls-server,gt4-java-ws-core,gt4-java-admin,gt4-mds,gt4-delegation,gt4-rft,gt4-gram,gt4-gram-pbs,gt4-gram-condor,gt4-gram-lsf,gt4-cas,gt4-c-ws-core,prews-test,globus-internationalization,gt4-java-ws-core-test,gt4-c-ws-core-test,gt4-mds-test,gt4-gram-test,gt4-cas-delegation-test,gt4-rft-test,gt4-webmds,gt4-webmds-test,globus-gsi,gt4-replicator,gt4-wsrls,gsi_openssh_bundle
+BUNDLES=globus-resource-management-server,globus-resource-management-client,globus-resource-management-sdk,globus-data-management-server,globus-data-management-client,globus-data-management-sdk,globus-rls-server,gt4-java-ws-core,gt4-java-admin,gt4-mds,gt4-delegation,gt4-rft,gt4-gram,gt4-gram-pbs,gt4-gram-condor,gt4-gram-lsf,gt4-cas,gt4-c-ws-core,prews-test,globus-internationalization,gt4-java-ws-core-test,gt4-c-ws-core-test,gt4-mds-test,gt4-gram-test,gt4-cas-delegation-test,gt4-rft-test,gt4-webmds,gt4-webmds-test,globus-gsi,gt4-replicator,gt4-wsrls,gsi_openssh_bundle,gridshib_bundle
 PACKAGES=globus_rendezvous,globus_xio_udt_ref_driver,globus_xio_skeleton_driver,globus_rls_client_java,myproxy
 
 
@@ -78,17 +78,9 @@ fi
 cp -${CPOPTS} source-trees/* $INSTALLER/source-trees
 
 HAVE_LNDIR=0
-if [ `uname` = HP-UX ]; then
-    if which lndir | grep "^no " > /dev/null 2>&1; then
-        HAVE_LNDIR=0
-    else
-        HAVE_LNDIR=1
-    fi
-else
-    which lndir > /dev/null 2>&1;
-    if [ $? -eq 0 ]; then
-        HAVE_LNDIR=1
-    fi
+lndir > /dev/null 2>&1;
+if [ $? -eq 1 ]; then
+    HAVE_LNDIR=1
 fi
 
 if [ "X$HAVE_LNDIR" = "X1" ]; then

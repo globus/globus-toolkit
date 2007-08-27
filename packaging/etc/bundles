@@ -828,3 +828,10 @@ BUNDLE gt4-wsrls
 BUNDLE gsi_openssh_bundle
 	gsi_openssh
 	gsi_openssh_setup
+
+BUNDLE gridshib_bundle
+	gridshib_common
+	gridshib_schema
+	gridshib_core
+	gridshib_echo
+	gridshib_tests
