@@ -872,19 +872,18 @@ globus_i_ftp_control_load_xio_drivers(
         stack_ent->driver_name = globus_libc_strdup("tcp");
         globus_list_insert(&list, stack_ent);
     }
-    
-    *driver_list = list;
+
+    /* reverse list */
+    while(!globus_list_empty(list))
+    {
+        globus_list_insert(driver_list, globus_list_first(list));
+        globus_list_remove(&list, list);
+    }
     
     return GLOBUS_SUCCESS;
 
 error_load:
     globus_free(driver_str);
-/*    globus_i_gfs_log_message(
-        GLOBUS_I_GFS_LOG_ERR,
-        "Unable to set data channel stack.: %s\n",
-                globus_error_print_friendly(
-                    globus_error_peek((globus_result_t) result)));
-*/
     return result;
 }
 

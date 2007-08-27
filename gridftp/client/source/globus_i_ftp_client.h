@@ -679,8 +679,9 @@ typedef struct globus_i_ftp_client_target_s
     globus_abstime_t                            last_access;
     
     globus_bool_t                               src_command_sent;
-    globus_bool_t                               dst_command_sent;    
-
+    globus_bool_t                               dst_command_sent;
+    
+    globus_list_t *                             net_stack_list;
 } globus_i_ftp_client_target_t;
 
 /**

@@ -729,8 +729,9 @@ redo:
 
     case GLOBUS_FTP_CLIENT_TARGET_SETUP_SETNETSTACK:
         target->state = GLOBUS_FTP_CLIENT_TARGET_SETNETSTACK;
-        if(target->net_stack_str == NULL ||  
-            strcmp(target->attr->net_stack_str, target->net_stack_str) == 0)
+        if(target->attr->net_stack_str == NULL ||  
+            (target->net_stack_str != NULL && 
+            strcmp(target->attr->net_stack_str, target->net_stack_str) == 0))
         {
             goto skip_setnetstack;
         }
@@ -783,46 +784,51 @@ redo:
         if((!error) &&
            response->response_class == GLOBUS_FTP_POSITIVE_COMPLETION_REPLY)
         {
-            globus_list_t *             net_stack_list = NULL;
             globus_xio_stack_t          stack;
             
             if(target->net_stack_str)
             {
                 globus_free(target->net_stack_str);
             }
-
             target->net_stack_str = 
                 globus_libc_strdup(target->attr->net_stack_str);
-                
-            result = globus_i_ftp_control_load_xio_drivers(
-                target->net_stack_str, &net_stack_list);
-            if(result != GLOBUS_SUCCESS)
-            {
-                target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_CONNECTION;
-    
-                goto notify_fault;
-            }
-            result = globus_i_ftp_control_create_stack(
-                target->control_handle, net_stack_list, &stack);
-            if(result != GLOBUS_SUCCESS)
-            {
-                target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_CONNECTION;
-    
-                goto notify_fault;
-            }
-        
-            result = globus_i_ftp_control_data_set_stack(
-                target->control_handle, stack);
-            if(result != GLOBUS_SUCCESS)
-            {
-                target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_CONNECTION;
-    
-                goto notify_fault;
-            }
             
-            globus_i_ftp_control_unload_xio_drivers(net_stack_list);
-            globus_xio_stack_destroy(stack);
-               
+            if(client_handle->op != GLOBUS_FTP_CLIENT_TRANSFER)
+            {
+                if(target->net_stack_list)
+                {
+                    globus_i_ftp_control_unload_xio_drivers(
+                        target->net_stack_list);
+                    target->net_stack_list = GLOBUS_NULL;
+                }
+                        
+                result = globus_i_ftp_control_load_xio_drivers(
+                    target->net_stack_str, &target->net_stack_list);
+                if(result != GLOBUS_SUCCESS)
+                {
+                    target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_CONNECTION;
+        
+                    goto notify_fault;
+                }
+                result = globus_i_ftp_control_create_stack(
+                    target->control_handle, target->net_stack_list, &stack);
+                if(result != GLOBUS_SUCCESS)
+                {
+                    target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_CONNECTION;
+        
+                    goto notify_fault;
+                }
+            
+                result = globus_i_ftp_control_data_set_stack(
+                    target->control_handle, stack);
+                if(result != GLOBUS_SUCCESS)
+                {
+                    target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_CONNECTION;
+        
+                    goto notify_fault;
+                }
+                globus_xio_stack_destroy(stack);
+            }      
         }
         else
         {
