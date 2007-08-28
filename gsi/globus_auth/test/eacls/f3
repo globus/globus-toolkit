@@ -1,4 +1,0 @@
-pos_access_right file read
-
-neg_access_right file read
-cond_access_id assertion laura
