@@ -316,7 +316,6 @@ globus_wsrf_replicator_common_java          ws-replica/replicator/common/java/so
 globus_wsrf_replicator_common_schema        ws-replica/replicator/common/schema	tar
 globus_wsrf_replicator_service_java         ws-replica/replicator/service/java/source	tar
 
-globus_wsrf_gram_reliable_create_test       ws-gram/client/reliable_create_test gpt
 globus_scheduler_event_generator_job_manager       ws-gram/job_monitoring/job-manager/c/source gpt
 globus_scheduler_event_generator_job_manager_setup ws-gram/job_monitoring/job-manager/c/setup gpt
 globus_c_static_container_gen               wsrf/c/parser/static_container gpt
