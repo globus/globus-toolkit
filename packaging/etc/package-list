@@ -145,8 +145,6 @@ globus_wsrf_rft_service_java_usage          ws-transfer/reliable/service/java/us
 globus_wsrf_rft_service_java_setup          ws-transfer/reliable/service/java/setup	tar
 globus_wsrf_rendezvous_common_schema        ws-rendezvous/common/schema	tar
 globus_wsrf_rendezvous_common_java          ws-rendezvous/common/java/source	tar
-globus_wsrf_gram_adapter_common_java        ws-gram/adapter/common/java/source	tar
-globus_wsrf_gram_adapter_perl_java          ws-gram/adapter/perl/java/source	tar
 globus_wsrf_rendezvous_service_java         ws-rendezvous/service/java/source	tar
 globus_wsrf_gram_service_java               ws-gram/service/java/source 	tar
 globus_wsrf_gram_service_java_usage         ws-gram/service/java/usage	tar
