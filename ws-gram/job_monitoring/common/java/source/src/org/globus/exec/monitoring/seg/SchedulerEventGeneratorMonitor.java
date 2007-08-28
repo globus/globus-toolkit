@@ -152,7 +152,7 @@ public class SchedulerEventGeneratorMonitor implements JobStateMonitor
      *     Indicates whether to make the SEG a daemon thread or not
      */
      public static SchedulerEventGeneratorMonitor getInstance(
-            java.io.File                        segPath,
+            String                              globusLocation,
             String                              userName,
             String                              schedulerName,
             JobStateChangeListener              listener,
@@ -168,7 +168,7 @@ public class SchedulerEventGeneratorMonitor implements JobStateMonitor
                  listener,
                  recoveryListener,
                  new SchedulerEventGenerator(
-                         segPath,
+                         globusLocation,
                          userName,
                          schedulerName,
                          monitor, 

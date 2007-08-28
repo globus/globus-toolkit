@@ -22,7 +22,6 @@ import org.globus.exec.monitoring.seg.SchedulerEventGeneratorMonitor;
 
 public class EventDispatchThread extends Thread
 {
-
     /** Log4J logger */
     private static Log logger = LogFactory.getLog(EventDispatchThread.class);
     private boolean done = false;

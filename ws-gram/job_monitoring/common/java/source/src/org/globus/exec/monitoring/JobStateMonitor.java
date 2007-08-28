@@ -16,7 +16,6 @@
 package org.globus.exec.monitoring;
 
 import org.globus.wsrf.ResourceKey;
-import org.globus.exec.generated.StateEnumeration;
 
 /**
  * The JobStateMonitor (JSM) is a scheduler-indpendent object which provides
@@ -49,11 +48,7 @@ import org.globus.exec.generated.StateEnumeration;
  * </p>
  */
 
-import java.io.IOException;
 import java.util.Date;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 
 public interface JobStateMonitor
 {
