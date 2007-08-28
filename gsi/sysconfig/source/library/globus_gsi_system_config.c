@@ -529,7 +529,7 @@ globus_i_gsi_sysconfig_create_key_string(
 
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
-#ifdef WIN32  /* define all the *_win32 functions */
+#if defined(WIN32) || defined(DOXYGEN)  /* define all the *_win32 functions */
 
 /* These UNIX Macros are undefined on the windows side */
 #define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)
@@ -538,10 +538,10 @@ globus_i_gsi_sysconfig_create_key_string(
 
 /**
  * @name Win32 - Set Key Permissions
- * @ingroup globus_gsi_sysconfig_win32
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_sysconfig_win32
  * Set the file permissions of a file to read only by the user
  * which are the permissions that should be set for all private keys.
  *
@@ -651,10 +651,10 @@ globus_gsi_sysconfig_set_key_permissions_win32(
 
 /**
  * @name Win32 - Get HOME Directory
- * @ingroup globus_i_gsi_sysconfig_win32
  */
 /* @{ */
 /**
+ * @ingroup globus_i_gsi_sysconfig_win32
  * Get the HOME directory, currently c:\windows
  * 
  * @param home_dir
@@ -743,14 +743,13 @@ globus_gsi_sysconfig_get_home_dir_win32(
 
 /**
  * @name Win32 - File Exists
- * @ingroup globus_gsi_sysconfig_win32
  */
 /* @{ */
 /**
  * Check that the file exists
+ * @ingroup globus_gsi_sysconfig_win32
  *
  * @param filename the file to check
- * @param status   the status of the file
  *
  * @return 
  *        GLOBUS_SUCCESS (even if the file doesn't exist) - in some
@@ -846,14 +845,13 @@ globus_gsi_sysconfig_file_exists_win32(
 
 /**
  * @name Win32 - Directory Exists
- * @ingroup globus_gsi_sysconfig_win32
  */
 /* @{ */
 /**
  * Check that the directory exists
+ * @ingroup globus_gsi_sysconfig_win32
  *
  * @param filename the file to check
- * @param status   the status of the file
  *
  * @return 
  *        GLOBUS_SUCCESS if the directory exists, otherwise an error
@@ -934,10 +932,10 @@ globus_gsi_sysconfig_dir_exists_win32(
 
 /**
  * @name Win32 - Check File Status for Key
- * @ingroup globus_i_gsi_sysconfig_win32
  */
 /* @{ */
 /**
+ * @ingroup globus_i_gsi_sysconfig_win32
  * This is a convenience function used to check the status of a 
  * private key file.  The desired status is only the current user has
  * ownership and read permissions, everyone else should not be able
@@ -1052,10 +1050,10 @@ globus_gsi_sysconfig_check_keyfile_win32(
 
 /**
  * @name Win32 - Check File Status for Cert
- * @ingroup globus_i_gsi_sysconfig_win32
  */
 /* @{ */
 /**
+ * @ingroup globus_i_gsi_sysconfig_win32
  * This is a convenience function used to check the status of a 
  * certificate file.  The desired status is the current user has
  * ownership and read/write permissions, while group and others only
@@ -1166,11 +1164,11 @@ globus_gsi_sysconfig_check_certfile_win32(
 
 /**
  * @name Win32 - Get Current Working Directory
- * @ingroup globus_gsi_sysconfig_win32
  */
 /* @{ */
 /**
  * Get the current working directory on a windows system
+ * @ingroup globus_gsi_sysconfig_win32
  *
  * @param working_dir
  *        The working directory to get
@@ -1241,10 +1239,10 @@ globus_gsi_sysconfig_get_current_working_dir_win32(
 
 /**
  * @name Win32 - Make Absolute Path
- * @ingroup globus_gsi_sysconfig_win32
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_sysconfig_win32
  * Make the filename into an absolute path string based
  * on the current working directory.
  *
@@ -1318,10 +1316,10 @@ globus_gsi_sysconfig_make_absolute_path_for_filename_win32(
 
 /**
  * @name Win32 - Split Directory and Filename
- * @ingroup globus_gsi_sysconfig_win32
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_sysconfig_win32
  * Split the directory and filename portions of a filename string
  * into two separate strings
  *
@@ -1407,12 +1405,11 @@ globus_gsi_sysconfig_split_dir_and_filename_win32(
 
 /**
  * @name Win32 - Get User ID
- * @ingroup globus_i_gsi_sysconfig_win32
  */
 /* @{ */
 /**
+ * @ingroup globus_i_gsi_sysconfig_win32
  * Get a unique string representing the current user.  
- * On Windows, SLANG: NOT DETERMINED
  */
 globus_result_t
 globus_gsi_sysconfig_get_user_id_string_win32(
@@ -1435,10 +1432,10 @@ globus_gsi_sysconfig_get_user_id_string_win32(
 
 /**
  * @name Win32 - Get Username
- * @ingroup globus_i_gsi_sysconfig_win32
  */
 /* @{ */
 /**
+ * @ingroup globus_i_gsi_sysconfig_win32
  * Get the username of the current user.  
  */
 globus_result_t
@@ -1485,12 +1482,11 @@ globus_gsi_sysconfig_get_username_win32(
 
 /**
  * @name Win32 - Get Process ID
- * @ingroup globus_i_gsi_sysconfig_win32
  */
 /* @{ */
 /**
+ * @ingroup globus_i_gsi_sysconfig_win32
  * Get a unique string representing the current process.  
- * On Windows, SLANG: NOT DETERMINED
  */
 globus_result_t
 globus_gsi_sysconfig_get_proc_id_string_win32(
@@ -1530,10 +1526,10 @@ globus_gsi_sysconfig_get_proc_id_string_win32(
 
 /**
  * @name Win32 - Get Trusted CA Cert Dir
- * @ingroup globus_gsi_sysconfig_win32
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_sysconfig_win32
  * Get the Trusted Certificate Directory containing the trusted
  * Certificate Authority certificates.  This directory is determined
  * in the order shown below.  Failure in one method results in attempting
@@ -1547,16 +1543,15 @@ globus_gsi_sysconfig_get_proc_id_string_win32(
  * <li> <b>"x509_cert_dir" registry key</b> - If
  * this registry key is set on windows, the directory it points to should
  * contain the trusted certificates.  The path to the registry key is
- * software\Globus\GSI
- * <li> <b>\<user home directory\>\.globus\certificates</b> - If this
+ * software\\Globus\\GSI
+ * <li> <b>\\&lt;user home directory&gt;\\.globus\\certificates</b> - If this
  * directory exists, and the previous methods of determining the trusted
  * certs directory failed, this directory will be used.  
  * <li> <b>Host Trusted Cert Dir</b> - This location is intended
  * to be independant of the globus installation ($GLOBUS_LOCATION), and 
  * is generally only writeable by the host system administrator.  
- * SLANG: This value is not currently set for WINDOWS
  * <li> <b>Globus Install Trusted Cert Dir</b> - this
- * is $GLOBUS_LOCATION\share\certificates.  
+ * is $GLOBUS_LOCATION\\share\\certificates.  
  * </ol>
  *
  * @param cert_dir
@@ -1717,20 +1712,20 @@ globus_gsi_sysconfig_get_cert_dir_win32(
 
 /**
  * @name Win32 - Get User Certificate Filename
- * @ingroup globus_gsi_sysconfig_win32
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_sysconfig_win32
  * Get the User Certificate Filename based on the current user's
  * environment.  The following locations are searched for cert and key
  * files in order:
  * 
  * <ol>
  * <li>environment variables X509_USER_CERT and X509_USER_KEY
- * <li>registry keys x509_user_cert and x509_user_key in software\Globus\GSI
- * <li><users home directory>\.globus\usercert.pem and 
- *     <users home directory>\.globus\userkey.pem
- * <li><users home directory\.globus\usercred.p12 - this is a PKCS12 credential
+ * <li>registry keys x509_user_cert and x509_user_key in software\\Globus\\GSI
+ * <li>&lt;users home directory&gt;\\.globus\\usercert.pem and 
+ *     &lt;users home directory&gt;\\.globus\\userkey.pem
+ * <li>&lt;users home directory&gt;\\.globus\\usercred.p12 - this is a PKCS12 credential
  * </ol>
  *
  * @param user_cert
@@ -1960,20 +1955,19 @@ globus_gsi_sysconfig_get_user_cert_filename_win32(
 
 /**
  * @name Win32 - Get Host Certificate and Key Filenames
- * @ingroup globus_gsi_sysconfig_win32
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_sysconfig_win32
  * Get the Host Certificate and Key Filenames based on the current user's
  * environment.  The host cert and key are searched for in the following 
  * locations (in order):
  *
  * <ol>
  * <li>X509_USER_CERT and X509_USER_KEY environment variables
- * <li>registry keys x509_user_cert and x509_user_key in software\Globus\GSI
- * <li>SLANG: NOT DETERMINED - this is the default location
- * <li><GLOBUS_LOCATION>\etc\host[cert|key].pem
- * <li><users home directory>\.globus\host[cert|key].pem
+ * <li>registry keys x509_user_cert and x509_user_key in software\\Globus\\GSI
+ * <li>&lt;GLOBUS_LOCATION&gt;\\etc\\host[cert|key].pem
+ * <li>&lt;users home directory&gt;\\.globus\\host[cert|key].pem
  * </ol>
  * 
  * @param host_cert
@@ -2227,23 +2221,22 @@ globus_gsi_sysconfig_get_host_cert_filename_win32(
 
 /**
  * @name Win32 - Get Service Certificate and Key Filenames
- * @ingroup globus_gsi_sysconfig_win32
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_sysconfig_win32
  * Get the Service Certificate Filename based on the current user's
  * environment.  The host cert and key are searched for in the following 
  * locations (in order):
  *
  * <ol>
  * <li>X509_USER_CERT and X509_USER_KEY environment variables
- * <li>registry keys x509_user_cert and x509_user_key in software\Globus\GSI
- * <li>SLANG: NOT DETERMINED - this is the default location
- * <li>GLOBUS_LOCATION\etc\{service_name}\{service_name}[cert|key].pem
+ * <li>registry keys x509_user_cert and x509_user_key in software\\Globus\\GSI
+ * <li>GLOBUS_LOCATION\\etc\\{service_name}\\{service_name}[cert|key].pem
  *     So for example, if my service was named: myservice, the location
  *     of the certificate would be: 
- *     GLOBUS_LOCATION\etc\myservice\myservicecert.pem
- * <li><users home>\.globus\{service_name}\{service_name}[cert|key].pem
+ *     GLOBUS_LOCATION\\etc\\myservice\\myservicecert.pem
+ * <li>&lt;users home&gt;\\.globus\\{service_name}\\{service_name}[cert|key].pem
  * </ol>
  * 
  * @param service_name
@@ -2548,10 +2541,10 @@ globus_gsi_sysconfig_get_service_cert_filename_win32(
 
 /**
  * @name Win32 - Get Proxy Filename
- * @ingroup globus_gsi_sysconfig_win32
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_sysconfig_win32
  * Get the proxy cert filename based on the following
  * search order:
  * 
@@ -2578,12 +2571,15 @@ globus_gsi_sysconfig_get_service_cert_filename_win32(
  * <li> Check the default location for the proxy file.  The default
  * location should be 
  * set to reside in the temp directory on that host, with the filename
- * taking the format:  x509_u<user id>
- * where <user id> is some unique string for that user on the host
+ * taking the format:  x509_u&lt;user id&gt;
+ * where &lt;user id&gt; is some unique string for that user on the host
  * </ol>
  *
  * @param user_proxy
  *        the proxy filename of the user
+ * @param proxy_file_type
+ *        Switch for determining whether to return a existing proxy filename or
+ *        if a filename suitable for creating a proxy should be returned
  *
  * @return
  *        GLOBUS_SUCCESS or an error object identifier
@@ -2711,10 +2707,10 @@ globus_gsi_sysconfig_get_proxy_filename_win32(
 
 /**
  * @name Win32 - Get CA Cert Filenames
- * @ingroup globus_gsi_sysconfig_win32
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_sysconfig_win32
  * Gets a list of trusted CA certificate filenames in 
  * a trusted CA certificate directory.  
  *
@@ -2855,10 +2851,10 @@ globus_gsi_sysconfig_get_ca_cert_files_win32(
 
 /**
  * @name Win32 - Remove all proxies owned by current uid
- * @ingroup globus_gsi_sysconfig_win32
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_sysconfig_win32
  * Removes all proxies (ie. all delegated and grid-proxy-init generated
  * proxies) found in the secure tmp directory that are owned by the
  * current user.
@@ -2971,11 +2967,11 @@ globus_gsi_sysconfig_remove_all_owned_files_win32(
 
 /**
  * @name Win32 - Get the path and file name of the grid map file
- * @ingroup globus_gsi_sysconfig_win32
  */
 /* @{ */
 /**
  * Get the path and file name of the grid map file.
+ * @ingroup globus_gsi_sysconfig_win32
  *
  * @param filename
  *        Contains the location of the grid map file upon successful return
@@ -3080,10 +3076,10 @@ globus_gsi_sysconfig_get_gridmap_filename_win32(
 
 /**
  * @name Win32 - Get the path and file name of the grid map file
- * @ingroup globus_gsi_sysconfig_win32
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_sysconfig_win32
  * Get the path and file name of the authorization callback
  * configuration file 
  *
@@ -3448,10 +3444,10 @@ globus_gsi_sysconfig_get_authz_lib_conf_filename_win32(
 
 /**
  * @name Win32 - Get the path and file name of the gaa config file
- * @ingroup globus_gsi_sysconfig_win32
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_sysconfig_win32
  * Get the path and file name of the gaa config configuration file .
  *
  * @param filename
@@ -3630,11 +3626,11 @@ globus_gsi_sysconfig_get_gaa_conf_filename_win32(
 
 /**
  * @name Win32 - Check if the current user is root
- * @ingroup globus_gsi_sysconfig_win32
  */
 /* @{ */
 /**
  * Checks whether the current user is root.
+ * @ingroup globus_gsi_sysconfig_win32
  *
  * @param is_superuser
  *        1 if the user is the superuser
@@ -3664,10 +3660,10 @@ globus_gsi_sysconfig_is_superuser_win32(
 
 /**
  * @name Win32 - Get Signing Policy Filename
- * @ingroup globus_gsi_sysconfig_win32
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_sysconfig_win32
  * Get the Signing Policy Filename on the current system,
  * based on the CA's subject name, and the trusted certificates
  * directory
@@ -3770,20 +3766,20 @@ globus_gsi_sysconfig_get_signing_policy_filename_win32(
     return result;
 }
 /* @} */
-
+#endif
 
 /* END WIN32 SYSCONFIG DEFINITIONS */
 
-#else
+#if defined(DOXYGEN) || !defined(WIN32)
 
 /* BEGIN UNIX SYSCONFIG DEFINITIONS */
 
 /**
  * @name UNIX - Set Key Permissions
- * @ingroup globus_gsi_sysconfig_unix
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_sysconfig_unix
  * Set the file permissions of a file to read-write only by the user
  * which are the permissions that should be set for all private keys.
  *
@@ -3905,10 +3901,10 @@ globus_gsi_sysconfig_set_key_permissions_unix(
 
 /**
  * @name UNIX - Get User ID
- * @ingroup globus_gsi_sysconfig_unix
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_sysconfig_unix
  * Get a unique string representing the current user.  This is just
  * the uid converted to a string.  
  *
@@ -3969,11 +3965,11 @@ globus_gsi_sysconfig_get_user_id_string_unix(
 
 /**
  * @name UNIX - Get Username
- * @ingroup globus_gsi_sysconfig_unix
  */
 /* @{ */
 /**
  * Get the username of the current user.
+ * @ingroup globus_gsi_sysconfig_unix
  *
  * @param username
  *        This parameter will contain the current user name upon a successful
@@ -4075,10 +4071,10 @@ globus_gsi_sysconfig_get_username_unix(
 
 /**
  * @name UNIX - Get Process ID
- * @ingroup globus_gsi_sysconfig_unix
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_sysconfig_unix
  * Get a unique string representing the current process.  This is just
  * the pid converted to a string.  
  *
@@ -4127,10 +4123,10 @@ globus_gsi_sysconfig_get_proc_id_string_unix(
 
 /**
  * @name UNIX - Make Absolute Path
- * @ingroup globus_gsi_sysconfig_unix
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_sysconfig_unix
  * Make the filename into an absolute path string based
  * on the current working directory.
  *
@@ -4205,10 +4201,10 @@ globus_gsi_sysconfig_make_absolute_path_for_filename_unix(
 
 /**
  * @name UNIX - Split Directory and Filename
- * @ingroup globus_gsi_sysconfig_unix
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_sysconfig_unix
  * Split the directory and filename portions of a filename string
  * into two separate strings
  *
@@ -4305,10 +4301,10 @@ globus_gsi_sysconfig_split_dir_and_filename_unix(
 
 /**
  * @name UNIX - Get Current Working Directory
- * @ingroup globus_gsi_sysconfig_unix
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_sysconfig_unix
  * Get the current working directory on the system.  
  *
  * @param working_dir
@@ -4391,10 +4387,10 @@ globus_gsi_sysconfig_get_current_working_dir_unix(
 
 /**
  * @name UNIX - Get HOME Directory
- * @ingroup globus_gsi_sysconfig_unix
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_sysconfig_unix
  * Get the HOME Directory of the current user.  Should
  * be the $HOME environment variable.
  *
@@ -4519,11 +4515,11 @@ globus_gsi_sysconfig_get_home_dir_unix(
 
 /**
  * @name UNIX - File Exists
- * @ingroup globus_gsi_sysconfig_unix
  */
 /* @{ */
 /**
  * Check if the file exists
+ * @ingroup globus_gsi_sysconfig_unix
  *
  * @param filename
  *        The filename of the file to check for
@@ -4642,11 +4638,11 @@ globus_gsi_sysconfig_file_exists_unix(
 
 /**
  * @name UNIX - Directory Exists
- * @ingroup globus_gsi_sysconfig_unix
  */
 /* @{ */
 /**
  * Check if the directory exists
+ * @ingroup globus_gsi_sysconfig_unix
  *
  * @param filename
  *        The filename of the directory to check for
@@ -4756,10 +4752,10 @@ globus_gsi_sysconfig_dir_exists_unix(
 
 /**
  * @name UNIX - Check File Status for Key
- * @ingroup globus_gsi_sysconfig_unix
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_sysconfig_unix
  * This is a convenience function used to check the status of a 
  * private key file.  The desired status is only the current user has
  * ownership and read permissions, everyone else should not be able
@@ -4890,10 +4886,10 @@ globus_gsi_sysconfig_check_keyfile_unix(
 
 /**
  * @name UNIX - Check File Status for Cert
- * @ingroup globus_gsi_sysconfig_unix
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_sysconfig_unix
  * This is a convenience function used to check the status of a 
  * certificate file.  The desired status is the current user has
  * ownership and read/write permissions, while group and others only
@@ -5022,10 +5018,10 @@ globus_gsi_sysconfig_check_certfile_unix(
 
 /**
  * @name UNIX - Get Trusted CA Cert Dir
- * @ingroup globus_gsi_sysconfig_unix
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_sysconfig_unix
  * Get the Trusted Certificate Directory containing the trusted
  * Certificate Authority certificates.  This directory is determined
  * in the order shown below.  Failure in one method results in attempting
@@ -5203,10 +5199,10 @@ globus_gsi_sysconfig_get_cert_dir_unix(
 
 /**
  * @name UNIX - Get User Certificate and Key Filenames
- * @ingroup globus_gsi_sysconfig_unix
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_sysconfig_unix
  * Get the User Certificate Filename based on the current user's
  * environment.  The following locations are searched for cert and key
  * files in order:
@@ -5445,10 +5441,10 @@ globus_gsi_sysconfig_get_user_cert_filename_unix(
 
 /**
  * @name UNIX - Get Host Certificate and Key Filenames
- * @ingroup globus_gsi_sysconfig_unix
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_sysconfig_unix
  * Get the Host Certificate and Key Filenames based on the current user's
  * environment.  The host cert and key are searched for in the following 
  * locations (in order):
@@ -5456,7 +5452,6 @@ globus_gsi_sysconfig_get_user_cert_filename_unix(
  * <ol>
  * <li>X509_USER_CERT and X509_USER_KEY environment variables</li>
  * <li>registry keys x509_user_cert and x509_user_key in software\\Globus\\GSI</li>
- * <li>SLANG: NOT DETERMINED - this is the default location</li>
  * <li>\\<GLOBUS_LOCATION\\>\\etc\\host[cert|key].pem</li>
  * <li>\\<users home directory\\>\\.globus\\host[cert|key].pem</li>
  * </ol>
@@ -5712,10 +5707,10 @@ globus_gsi_sysconfig_get_host_cert_filename_unix(
 
 /**
  * @name UNIX - Get Service Certificate and Key Filenames
- * @ingroup globus_gsi_sysconfig_unix
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_sysconfig_unix
  * Get the Service Certificate Filename based on the current user's
  * environment.  The host cert and key are searched for in the following 
  * locations (in order):
@@ -6032,10 +6027,10 @@ globus_gsi_sysconfig_get_service_cert_filename_unix(
 
 /**
  * @name UNIX - Get Proxy Filename
- * @ingroup globus_gsi_sysconfig_unix
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_sysconfig_unix
  * Get the proxy cert filename based on the following
  * search order:
  * 
@@ -6188,10 +6183,10 @@ globus_gsi_sysconfig_get_proxy_filename_unix(
 
 /**
  * @name UNIX - Get Signing Policy Filename
- * @ingroup globus_gsi_sysconfig_unix
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_sysconfig_unix
  * Get the Signing Policy Filename on the current system,
  * based on the CA's subject name, and the trusted certificates
  * directory
@@ -6297,10 +6292,10 @@ globus_gsi_sysconfig_get_signing_policy_filename_unix(
 
 /**
  * @name UNIX - Get CA Cert Filenames
- * @ingroup globus_gsi_sysconfig_unix
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_sysconfig_unix
  * Gets a list of trusted CA certificate filenames in 
  * a trusted CA certificate directory.  
  *
@@ -6442,10 +6437,10 @@ globus_gsi_sysconfig_get_ca_cert_files_unix(
 
 /**
  * @name UNIX - Remove all proxies owned by current uid
- * @ingroup globus_gsi_sysconfig_unix
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_sysconfig_unix
  * Removes all proxies (ie. all delegated and grid-proxy-init generated
  * proxies) found in the secure tmp directory that are owned by the
  * current user.
@@ -6559,11 +6554,11 @@ globus_gsi_sysconfig_remove_all_owned_files_unix(
 
 /**
  * @name UNIX - Check if the current user is root
- * @ingroup globus_gsi_sysconfig_unix
  */
 /* @{ */
 /**
  * Checks whether the current user is root.
+ * @ingroup globus_gsi_sysconfig_unix
  *
  * @param is_superuser
  *        1 if the user is the superuser
@@ -6601,11 +6596,11 @@ globus_gsi_sysconfig_is_superuser_unix(
 
 /**
  * @name UNIX - Get the path and file name of the grid map file
- * @ingroup globus_gsi_sysconfig_unix
  */
 /* @{ */
 /**
  * Get the path and file name of the grid map file.
+ * @ingroup globus_gsi_sysconfig_unix
  *
  * @param filename
  *        Contains the location of the grid map file upon successful return
@@ -6709,10 +6704,10 @@ globus_gsi_sysconfig_get_gridmap_filename_unix(
 
 /**
  * @name UNIX - Get the path and file name of the authorization callback configuration file 
- * @ingroup globus_gsi_sysconfig_unix
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_sysconfig_unix
  * Get the path and file name of the authorization callback
  * configuration file 
  *
@@ -6889,10 +6884,10 @@ globus_gsi_sysconfig_get_authz_conf_filename_unix(
 
 /**
  * @name UNIX - Get the path and file name of the authorization callback configuration file 
- * @ingroup globus_gsi_sysconfig_unix
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_sysconfig_unix
  * Get the path and file name of the authorization callback
  * configuration file 
  *
@@ -7074,11 +7069,11 @@ globus_gsi_sysconfig_get_authz_lib_conf_filename_unix(
 
 /**
  * @name UNIX - Get the path and file name of the gaa configuration file 
- * @ingroup globus_gsi_sysconfig_unix
  */
 /* @{ */
 /**
  * Get the path and file name of the GAA configuration file 
+ * @ingroup globus_gsi_sysconfig_unix
  *
  * @param filename
  *        Contains the location of the GAA callback configuration
@@ -7256,10 +7251,10 @@ globus_gsi_sysconfig_get_gaa_conf_filename_unix(
 
 /**
  * @name Get Unique Proxy Filename
- * @ingroup globus_gsi_sysconfig_shared
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_sysconfig_shared
  * Get a unique proxy cert filename.  This is mostly used
  * for delegated proxy credentials.  Each filename returned
  * is going to be unique for each time the function is called.

@@ -198,19 +198,3 @@ globus_i_gsi_sysconfig_error_chain_result(
 }
 
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
