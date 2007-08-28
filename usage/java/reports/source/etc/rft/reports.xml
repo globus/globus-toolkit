@@ -1,8 +1,0 @@
-<?xml version="1.0"?>
-
-<project default="gnuplot-byte-histogram">
-	
-	<target name="clean">
-	</target>
-	
-</project>
