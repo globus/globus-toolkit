@@ -82,8 +82,7 @@ ws -a \
 	ws-delegation\
 	ws-replica\
 	wsrf\
-	database\
-	usage
+	database
 
 wsc -a \
 	ogsa-c\
