@@ -90,6 +90,6 @@ wsc -a \
         chosting
 
 all -a \
+	autotools\
         gp\
-        gs\
         ws
