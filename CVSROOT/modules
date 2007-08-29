@@ -54,7 +54,7 @@ gp -a \
         utp\
         xio \
         callout\
-        usage\
+        usage/c\
 	icu4c
 
 gs -a \
@@ -82,7 +82,8 @@ ws -a \
 	ws-delegation\
 	ws-replica\
 	wsrf\
-	database
+	database\
+        usage/java
 
 wsc -a \
 	ogsa-c\
