@@ -262,7 +262,6 @@ parse_xacml_response(
                 switch (assertion->__union_1[i].__union_1)
                 {
                 case SOAP_UNION__saml__union_1_saml__Statement:
-                    std::cout << assertion->__union_1[i].union_1.saml__Statement->soap_type() << std::endl;
                     xacml_decision =
                             static_cast<XACMLassertion__XACMLAuthzDecisionStatementType *>(assertion->__union_1[i].union_1.saml__Statement);
                     break;
@@ -374,7 +373,8 @@ xacml_request_add_obligation_handler(
     info.handler = handler;
     info.handler_arg = handler_arg;
 
-    request->obligation_handlers[obligation_id] = info;
+    request->obligation_handlers[obligation_id == NULL ? "" : obligation_id] =
+            info;
 
     return 0;
 }
@@ -467,8 +467,12 @@ xacml_query(
          i != response->obligations.end();
          i++)
     {
-        if (request->obligation_handlers.find(i->obligation_id) !=
-            request->obligation_handlers.end())
+        xacml::obligation_handlers::iterator ii;
+
+        if (((ii = request->obligation_handlers.find(i->obligation_id)) !=
+            request->obligation_handlers.end()) ||
+            ((ii = request->obligation_handlers.find("")) !=
+            request->obligation_handlers.end()))
         {
             size_t s = i->attributes.size();
 
@@ -486,8 +490,7 @@ xacml_query(
             data_types[s] = NULL;
             values[s] = NULL;
 
-            xacml::obligation_handler_info &info =
-                    request->obligation_handlers[i->obligation_id];
+            xacml::obligation_handler_info &info = ii->second;
 
             rc = info.handler(info.handler_arg,
                           response,
