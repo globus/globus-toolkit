@@ -254,23 +254,25 @@ parse_xacml_response(
         switch (resp->__union_32[i].__union_32)
         {
         case SOAP_UNION__samlp__union_32_saml__Assertion:
-            saml__AssertionType * assertion = 
-                    resp->__union_32[i].union_32.saml__Assertion;
-
-            for (int j = 0; j < assertion->__size_1; j++)
             {
-                switch (assertion->__union_1[i].__union_1)
+                saml__AssertionType * assertion = 
+                        resp->__union_32[i].union_32.saml__Assertion;
+
+                for (int j = 0; j < assertion->__size_1; j++)
                 {
-                case SOAP_UNION__saml__union_1_saml__Statement:
-                    xacml_decision =
-                            static_cast<XACMLassertion__XACMLAuthzDecisionStatementType *>(assertion->__union_1[i].union_1.saml__Statement);
-                    break;
-                case SOAP_UNION__saml__union_1_saml__AuthnStatement:
-                case SOAP_UNION__saml__union_1_saml__AuthzDecisionStatement:
-                case SOAP_UNION__saml__union_1_saml__AttributeStatement:
-                    assert(assertion->__union_1[i].__union_1 ==
-                                SOAP_UNION__saml__union_1_saml__Statement);
-                    break;
+                    switch (assertion->__union_1[i].__union_1)
+                    {
+                    case SOAP_UNION__saml__union_1_saml__Statement:
+                        xacml_decision =
+                                static_cast<XACMLassertion__XACMLAuthzDecisionStatementType *>(assertion->__union_1[i].union_1.saml__Statement);
+                        break;
+                    case SOAP_UNION__saml__union_1_saml__AuthnStatement:
+                    case SOAP_UNION__saml__union_1_saml__AuthzDecisionStatement:
+                    case SOAP_UNION__saml__union_1_saml__AttributeStatement:
+                        assert(assertion->__union_1[i].__union_1 ==
+                                    SOAP_UNION__saml__union_1_saml__Statement);
+                        break;
+                    }
                 }
             }
         case SOAP_UNION__samlp__union_32_saml__EncryptedAssertion:
