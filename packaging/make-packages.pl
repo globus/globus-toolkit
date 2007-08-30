@@ -31,14 +31,8 @@ my $bin_bundle_output = $top_dir . "/bin-bundle-output";
 my @cleanup_dirs = ('log-output', '$bundle_ouput/BUILD');
 
 # tree_name => [ cvs directory, module, checkout-dir tag ]
-my %prereq_archives = (
-     'autotools' => [ "/home/globdev/CVS/globus-packages", "side_tools", "autotools", "HEAD" ],
-                       );
-
-# tree_name => [ cvs directory, module, checkout-dir tag ]
 my %cvs_archives = (
      'gt' => [ "/home/globdev/CVS/globus-packages", "all", $cvs_prefix, "HEAD" ],
-     'autotools' => [ "/home/globdev/CVS/globus-packages", "autotools", $cvs_prefix . "autotools", "globus_4_0_branch" ]
       );
 
 my %virtual_packages = ("trusted_ca_setup" => 1,
@@ -100,7 +94,6 @@ GetOptions( 'i|install=s' => \$install,
             'flavor=s' => \$flavor,
             'dir|gt2-dir|gt4-dir|gt-dir=s' => \$cvs_archives{gt}[2],
             't|gt2-tag|gt4-tag|gt-tag=s' => \$cvs_archives{gt}[3],
-            'autotools-dir=s' => \$cvs_archives{autotools}[2],
             'v|verbose!' => \$verbose,
             'skippackage!' => \$skippackage,
             'skipbundle!' => \$skipbundle,
@@ -165,7 +158,6 @@ else
         }
 
         $cvs_archives{gt}[2] = $inplace;
-        $cvs_archives{autotools}[2] = $inplace;
     }
     
     $inplace = 1;
@@ -192,24 +184,14 @@ exit if ( $listpack or $listbun );
 
 if ( not $noupdates )
 {
-    # Need autotools for gt
-    if ($cvs_build_hash{'gt'} eq 1)
+    if ( $deps  )
     {
-        if ( $cvs_build_hash{'autotools'} ne 1)
-        {
-            $cvs_build_hash{'autotools'} = 1;
-            push @cvs_build_list, 'autotools';
-        }
-    }
-    if ( $deps && $cvs_build_hash{'autotools'} )
-    {
-        cvs_checkout_generic("autotools");
+        cvs_checkout_subdir("gt", "autotools");
     } else {
         get_sources();
     }
 } else {
     print "Not checking out sources with -no-updates set.\n";
-    print "INFO: This means CVS Tags are not being checked either.\n";
 }
 
 build_prerequisites();
@@ -256,11 +238,10 @@ sub generate_build_list()
 # --------------------------------------------------------------------
 {
     print "Generating package build list ...\n";
-    $cvs_archives{'autotools'}[3] = $cvs_archives{'gt'}[3];
 
     if ( not defined(@cvs_build_list) )
     {
-        @cvs_build_list = ("autotools", "gt");
+        @cvs_build_list = ("gt");
     }
 
     foreach my $tree (@cvs_build_list)
@@ -550,11 +531,6 @@ sub setup_environment()
 
     print "Setting up build environment.\n";
 
-    if ( $cvs_build_hash{'gt'} eq 1  )
-    {
-        check_java_env();
-    }
-    
     if ( $install )
     {
         $ENV{GLOBUS_LOCATION} = $install;
@@ -585,32 +561,6 @@ sub setup_environment()
 
 
     report_environment();
-}
-
-# --------------------------------------------------------------------
-sub check_java_env()
-# --------------------------------------------------------------------
-{
-    if ( $ENV{'JAVA_HOME'} eq "" ) 
-    {
-        if ( -e "/usr/java/j2sdk1.4.1_02/" ) 
-        {
-            $ENV{'JAVA_HOME'} = "/usr/java/j2sdk1.4.1_02/";
-        } elsif ( -e "/home/dsl/javapkgs/java-env-setup.sh" )
-        {
-            system("source /home/dsl/javapkgs/java-env-setup.sh");
-        } elsif ( -e "/usr/java/jdk1.3.1_07" )
-        {
-            $ENV{'JAVA_HOME'} = "/usr/java/jdk1.3.1_07";
-        } else {
-            print "INFO: Could not find JAVA_HOME for your system.\n";
-        }
-    }
-    system("ant -h > /dev/null");
-    if ( $? != 0 )
-    {
-        print "INFO: ant -h returned an error.  Make sure ant is on your path.\n";
-    }
 }
 
 # --------------------------------------------------------------------
@@ -830,14 +780,12 @@ sub build_prerequisites()
 {
     install_gpt() if $gpt;
 
-    if ( $cvs_build_hash{'autotools'} eq 1 or
-         $cvs_build_hash{'gt'} eq 1 )
+    if ( $autotools )
     {
-        install_gt2_autotools() if $autotools;
+        install_gt2_autotools();
     }
 
-    if ( $core and
-         (  $cvs_build_hash{'gt'} eq 1 ))
+    if ( $core && $gpt )
     {
         install_globus_core();
     }
@@ -979,7 +927,7 @@ sub install_gt2_autotools()
 # --------------------------------------------------------------------
 {
     my $res;
-    chdir cvs_subdir('autotools');
+    chdir cvs_subdir('gt'). "/autotools";
 
     if ( -e 'bin/automake' )
     {
@@ -988,10 +936,9 @@ sub install_gt2_autotools()
         print "Building GT2 autotools.\n";
         print "Logging to ${log_dir}/gt2-autotools.log\n";
 
-        if ( -e "autotools/install-autotools" )
+        if ( -e "install-autotools" )
         {            
-            chdir('autotools');
-            $res = log_system("./install-autotools " . cvs_subdir('autotools'),
+            $res = log_system("./install-autotools `pwd`",
                     "${log_dir}/gt2-autotools.log");
         } else {
             die "ERROR: autotools/install-autotools doesn't exist.  Check cvs logs.";
@@ -1002,7 +949,7 @@ sub install_gt2_autotools()
             print "\tAutotools dies the first time through sometimes due to\n";
             print "\temacs .texi issues.  I am trying again.\n";
 
-            log_system("./install-autotools " . cvs_subdir('autotools'),
+            log_system("./install-autotools `pwd`", 
                     "${log_dir}/gt2-autotools.log");
             if ( $? ne 0 )
             {
@@ -1013,7 +960,7 @@ sub install_gt2_autotools()
         }
     }
 
-    $ENV{'PATH'} = cvs_subdir('autotools') . "/bin:$ENV{'PATH'}";
+    $ENV{'PATH'} = cwd() . "/bin:$ENV{'PATH'}";
 
     print "\n";
 }
@@ -1043,28 +990,6 @@ sub install_globus_core()
         print "$ENV{PWD}";
         log_system("$ENV{GPT_LOCATION}/sbin/gpt-build -nosrc $verbose $flavor", "$pkglog/globus_core");
         paranoia("gpt-build of globus_core from GPT failed.");
-    }
-}
-
-
-# Double-check that the existing checkout has the right tag for the user.
-# Assumes you are somewhere where a CVS/Tag exists.
-# --------------------------------------------------------------------
-sub cvs_check_tag
-# --------------------------------------------------------------------
-{
-    my ( $tree ) = @_;
-
-    if ( -e "CVS/Tag" )
-    {
-        open(TAG, "CVS/Tag");
-        my $cvstag = <TAG>;
-        chomp $cvstag;
-        $cvstag = substr($cvstag, 1);
-        if ( $cvstag ne cvs_tag($tree) )
-        {
-            die "ERROR: Want to build tag " . cvs_tag($tree) . ", CVS checkout is from $cvstag.\n";
-        }
     }
 }
 
@@ -1112,7 +1037,13 @@ sub get_sources()
     foreach my $tree ( @cvs_build_list )
     {
         print "Checking out cvs tree $tree.\n";
-        cvs_checkout_generic( $tree );
+        if ( $tree eq "autotools" )
+        {
+            cvs_checkout_subdir("gt", "autotools");
+        } else
+        {
+            cvs_checkout_generic( $tree );
+        }
     }
 }
 
@@ -1217,7 +1148,34 @@ sub cvs_checkout_generic ()
     chdir $cvs_prefix;
     $cvsroot = set_cvsroot($cvsroot);
 
-    if ( not -e $dir )
+
+    if ( -d "$dir" ) {
+        if ( $noupdates )
+        {
+            print "Skipping CVS update of $cvsroot\n";
+            print "INFO: This means that I'm not checking the CVS tag for you, either.\n";
+        } else
+        {
+            my @update_list;
+            print "Updating CVS checkout of $cvsroot\n";
+            chdir $dir;
+
+            for my $f ( <*> )
+            {
+                chdir $f;
+                if ( -d "CVS" )
+                {
+                    print "Queueing $f on update command.\n";
+                    push @update_list, $f;
+                }
+                chdir '..';
+            }
+            print "Logging to ${cvs_logs}/" . $tree . ".log\n";
+
+            log_system("cvs -d $cvsroot -z3 up -dP @update_list", "${cvs_logs}/" . $tree . ".log");
+            paranoia "Trouble with cvs up on tree $tree."; 
+        }
+    } else 
     {
         print "Making fresh CVS checkout of \n";
         print "$cvsroot, module $module, tag $tag\n";
@@ -1236,47 +1194,19 @@ sub cvs_checkout_generic ()
         {
             $cvsopts = "-D $tag";
         }
-
+    
         log_system("cvs -d $cvsroot co -P $cvsopts $module",
                    "$cvs_logs/" . $tree . ".log");
-
+    
         if ( $? ne 0 )
         {
             chdir "..";
             rmdir $dir;
             die "ERROR: There was an error checking out $cvsroot with module $module, tag $tag.\n";
         }
+    
+        print "\n";
     }
-    else {
-        if ( $noupdates )
-        {
-            print "Skipping CVS update of $cvsroot\n";
-            print "INFO: This means that I'm not checking the CVS tag for you, either.\n";
-        }
-        else {
-            my @update_list;
-            print "Updating CVS checkout of $cvsroot\n";
-            chdir $dir;
-
-            for my $f ( <*> ) 
-            {
-                chdir $f;
-                cvs_check_tag($tree);
-                if ( -d "CVS" )
-                {
-                    print "Queueing $f on update command.\n";
-                    push @update_list, $f;
-                }
-                chdir '..';
-            }
-            print "Logging to ${cvs_logs}/" . $tree . ".log\n";
-
-            log_system("cvs -d $cvsroot -z3 up -dP @update_list", "${cvs_logs}/" . $tree . ".log");
-            paranoia "Trouble with cvs up on tree $tree.";
-        }
-    }
-
-    print "\n";
 }
 
 sub topol_sort
@@ -1859,7 +1789,7 @@ Options:
     --bundles="b1,b2,..."   Create bundles b1,b2,...
     --packages="p1,p2,..."  Create packages p1,p2,...
     --deps                    Automatically include dependencies
-    --trees="t1,t2,..."     Work on trees t1,t2,... Default "autotools,gt"
+    --trees="t1,t2,..."     Work on trees t1,t2,... Default "gt"
     --noparanoia            Don't exit at first error.
     --inplace[=<dir>]       Build inplace. <dir> overrides the cvs directory
                             for all trees. (ie, a dir you did a 'cvs co all' in)
