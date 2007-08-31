@@ -614,8 +614,6 @@ BUNDLE gt4-mds
         globus_wsrf_mds_trigger
         globus_wsrf_mds_usefulrp
         globus_wsrf_mds_usefulrp_schema
-        globus_wsrf_mds_archive
-        globus_wsrf_mds_archive_schema
         globus_wsrf_servicegroup
         globus_wsrf_servicegroup_schema
         globus_wsrf_mds_hawkeye
@@ -795,7 +793,6 @@ BUNDLE gt4-cas-delegation-test
         globus_wsrf_delegation_service_java_test
 
 BUNDLE gt4-mds-archiver
-        globus_wsrf_xindice
         globus_wsrf_mds_archive
         globus_wsrf_mds_archive_schema
 
