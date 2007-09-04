@@ -677,6 +677,7 @@ gfork_l_opts_crowded(
 
     gfork_h->crowded_msg = strdup(opt[0]);
     gfork_h->crowded_msg_len = strlen(gfork_h->crowded_msg);
+    *out_parms_used = 1;
 
     return GLOBUS_SUCCESS;
 }
