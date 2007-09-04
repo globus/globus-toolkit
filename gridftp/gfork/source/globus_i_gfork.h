@@ -4,6 +4,8 @@
 #include "globus_xio_file_driver.h"
 #include "globus_gfork.h"
 
+#define GFORK_CROWDED_MESSAGE "421 Too busy!\r\n"
+
 
 #if !defined(GFORK_I_H)
 #define GFORK_I_H 1
@@ -151,6 +153,9 @@ typedef struct gfork_i_options_s
     char *                              conf_file;
     int                                 log_level;
     FILE *                              log_fptr;
+
+    char *                              crowded_msg;
+    int                                 crowded_msg_len;
 } gfork_i_options_t;
 
 typedef struct gfork_i_handle_s

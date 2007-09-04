@@ -6,10 +6,6 @@
 
 #define GFORK_WAIT_FOR_KILL         5
 
-/* we cant keep this */
-#define GFORK_CROWED_MESSAGE "421 Too busy!\r\n"
-#define GFORK_CROWED_MESSAGE_LEN strlen(GFORK_CROWED_MESSAGE)
-
 extern char **environ;
 
 char *                                  gfork_l_keep_envs[] =
@@ -1002,9 +998,9 @@ gfork_l_server_accept_cb(
         {
             result = globus_xio_register_write(
                 handle,
-                GFORK_CROWED_MESSAGE,
-                GFORK_CROWED_MESSAGE_LEN,
-                GFORK_CROWED_MESSAGE_LEN,
+                gfork_l_options.crowded_msg,
+                gfork_l_options.crowded_msg_len,
+                gfork_l_options.crowded_msg_len,
                 NULL,
                 gfork_crowded_write_cb,
                 NULL);

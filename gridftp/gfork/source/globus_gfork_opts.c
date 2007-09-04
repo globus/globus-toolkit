@@ -129,6 +129,17 @@ globus_i_opts_to_handle(
         }
     }
 
+    if(opts->crowded_msg == NULL)
+    {
+        opts->crowded_msg = GFORK_CROWDED_MESSAGE;
+        opts->crowded_msg_len = strlen(opts->crowded_msg);
+    }
+
+    if(opts->instances <= 0)
+    {
+        opts->instances = 100;
+    }
+
     if(handle->tcp_driver != NULL)
     {
         if(opts->port != 0)
@@ -651,6 +662,25 @@ gfork_l_opts_quiet(
     return GLOBUS_SUCCESS;
 }
 
+static
+globus_result_t
+gfork_l_opts_crowded(
+    globus_options_handle_t             opts_handle,
+    char *                              cmd,
+    char **                             opt,
+    void *                              arg,
+    int *                               out_parms_used)
+{   
+    gfork_i_options_t *                 gfork_h;
+
+    gfork_h = (gfork_i_options_t *) arg;
+
+    gfork_h->crowded_msg = strdup(opt[0]);
+    gfork_h->crowded_msg_len = strlen(gfork_h->crowded_msg);
+
+    return GLOBUS_SUCCESS;
+}
+
 /* 
  *  for xinetd, ignoting type, flags, disable, socket_type, user, group
  */
@@ -713,5 +743,8 @@ globus_options_entry_t                   gfork_l_opts_table[] =
     {"quiet", "q", NULL, "<true|false>",
         "Turn off all output",
         1, gfork_l_opts_quiet},
+    {"crowded", "C", NULL, "<message>",
+        "Turn off all output",
+        1, gfork_l_opts_crowded},
     {NULL, NULL, NULL, NULL, NULL, 0, NULL}
 };
