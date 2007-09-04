@@ -176,3 +176,56 @@ trusted.  An example client invocation is:
 
 % gfs-dynbe-client -G y <backend host>:<backend port> <master host>:<master port>
 
+==============================
+GridFTP with Memory Management
+==============================
+
+Another feature that gfork with the GridFTP plugin brings memory usage
+limiting.  Under extreme client loads it is possible that GridFTP servers
+require more memory than the system has.  Due to common kernel memory
+allocation scheme known as optimistic provisioning this situation can 
+lead to a full consumption of memory resources and thus triggering the
+out of memory handler.  The OOM handler will kill processes in a difficult
+to predict way, in order to free up memory.  This will leave the system 
+in an unpredicatable and unstable state, therefor this is a situation that
+we want to avoid.  
+
+To control this situation the GridFTP gfork plugin has a memory limiting
+option.  This will attempt to limit memory usage to a given value or
+to the maximum amount of RAM in the system.  Most of the memory is given 
+to the first few connections, but when the plugin detects that it is
+overloaded, each session is limited to half the available memory.
+
+To enable this feature one of two options must be passed to the master 
+program:
+
+   -m                : limits memory consuption to amount if RAM in the system
+   -M <formated int> : limit memory to the give value.
+
+Another important option should be provided in the gfork config file.  When
+a client connects to gfork a gridftp server instance is executed.  This 
+instance requires a certain amount of RAM.  If connections are comming in
+to fast this can act as DOS attack.  Limiting the number of allowed
+simultaneous connections will help the memory management algorithm do its
+job.  This limit is set with:
+
+    instance = <int>
+
+We recommend a value of 100 or |RAM|/2M, whichever is smaller.
+
+An example gfork config is:
+
+service gridftp2
+{
+  instance = 100  
+  env += GLOBUS_LOCATION=<path to GL>
+  env += LD_LIBRARY_PATH=<path to GL>/lib
+  server = <path to GL>/sbin/globus-gridftp-server
+  server_args = -i
+  server_args += -dn
+  master = <path to GL>/libexec/gfs-gfork-master
+  master_args = -M 512M
+}
+
+
+
