@@ -108,6 +108,8 @@ static int                              gfs_l_max_instance;
 
 static globus_list_t *                  gfs_l_gfork_mem_retry_list = NULL;
 
+static int                              gfs_l_gfork_nice_share_count = 2;
+
 static
 globus_result_t
 gfs_gfork_master_options(
@@ -155,16 +157,6 @@ gfs_l_gfork_log(
     vfprintf(g_log_fptr, fmt, ap);
     va_end(ap);
     fflush(g_log_fptr);
-}
-
-
-static
-void
-gfs_l_gfork_info_timer(
-    void *                              user_arg)
-{
-    gfs_l_gfork_log(GLOBUS_SUCCESS, 0, "#################### Current vals: %"
-        GLOBUS_OFF_T_FORMAT"\n", gfs_l_memlimit_available);
 }
 
 static 
@@ -810,26 +802,16 @@ globus_off_t
 gfs_l_gfork_mem_limit_calc()
 {
     globus_off_t                        mem_given;
-    int                                 nice_share_count;
 
     if(gfs_l_memlimit_available <= 0)
     {
         return -1;
     }
 
-    if(gfs_l_max_instance > 0)
-    {
-        nice_share_count = 2;
-    }
-    else
-    {
-        nice_share_count = gfs_l_max_instance -
-            GFSGforkTopNiceShare(gfs_l_max_instance);
-    }
-    if(g_connection_count <= nice_share_count)
+    if(g_connection_count <= gfs_l_gfork_nice_share_count)
     {
         mem_given = GFSGforkTopNiceShare(gfs_l_memlimit);
-        mem_given = mem_given / nice_share_count;
+        mem_given = mem_given / gfs_l_gfork_nice_share_count;
     }
     else
     {
@@ -1463,7 +1445,6 @@ main(
     int                                 argc,
     char **                             argv)
 {
-    globus_reltime_t                    tmr;
     globus_result_t                     result;
     int                                 rc;
 
@@ -1478,14 +1459,6 @@ main(
     {
         goto error_opts;
     }
-
-    GlobusTimeReltimeSet(tmr, 5, 0);
-    globus_callback_register_periodic(
-        NULL,
-        &tmr,
-        &tmr,
-        gfs_l_gfork_info_timer,
-        NULL);
 
     if(gfs_l_memlimiting)
     {
@@ -1859,6 +1832,39 @@ gfs_l_gfork_opts_mem_limit(
 }
 
 
+static
+globus_result_t
+gfs_l_gfork_opts_nice_share(
+    globus_options_handle_t             opts_handle,
+    char *                              cmd,
+    char **                             opt,
+    void *                              arg,
+    int *                               out_parms_used)
+{   
+    globus_result_t                     result;
+    int                                 sc;
+    int                                 n;
+    GFSGForkFuncName(gfs_l_gfork_opts_stripe_count);
+
+    sc = sscanf(opt[0], "%d", &n);
+    if(sc != 1 || n <= 0)
+    {
+        result = GFSGforkError("nice_share count must be a positive integer",
+            GFS_GFORK_ERROR_PARAMETER);
+        goto error_format;
+    }
+    
+    gfs_l_gfork_nice_share_count = n;
+    *out_parms_used = 1;
+    
+    return GLOBUS_SUCCESS;
+error_format:
+    return result;
+    
+}
+
+
+
 globus_options_entry_t                   gfork_l_opts_table[] =
 {
     {"help", "h", NULL, NULL,
@@ -1893,6 +1899,10 @@ globus_options_entry_t                   gfork_l_opts_table[] =
     {"mem-limit", "m", NULL, "<long>",
         "Limit memory usage.  System will decide how.",
         0, gfs_l_gfork_opts_mem_limit},
+    {"nice-share", "ns", NULL, "<int>",
+        "Sets the number of connections which will share 90% of the memory."
+        "  Default is 2",
+        0, gfs_l_gfork_opts_nice_share},
     {NULL, NULL, NULL, NULL, NULL, 0, NULL}
 };
 

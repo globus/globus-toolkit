@@ -346,9 +346,7 @@ globus_l_gfs_gfork_incoming_cb(
                 break;
 
             case GFS_GFORK_MSG_TYPE_KILL:
-                printf("421 KILLING!\r\n");
-                globus_gfs_log_message(
-                    GLOBUS_GFS_LOG_WARN, "Kill message received.\n");
+                globus_gfs_config_set_int("tcp_mem_limit", 32);
 
                 globus_i_gfs_control_end_421(
                     "421 Server load too high. Try again later.\r\n");
