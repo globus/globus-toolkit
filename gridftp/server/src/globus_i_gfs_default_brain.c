@@ -63,6 +63,7 @@ static gfork_child_handle_t             globus_l_gfs_gfork_handle;
 static globus_bool_t                    globus_l_gfs_gfork_ready = GLOBUS_FALSE;
 static globus_callback_func_t           globus_l_gfs_gfork_ready_cb = NULL;
 static void *                           globus_l_gfs_gfork_ready_cb_arg;
+static globus_bool_t                    globus_l_gfs_gfork_on = GLOBUS_FALSE;
 
 static
 int
@@ -289,6 +290,62 @@ gfs_l_brain_killer_cb(
 
 static
 void
+globus_l_gfs_mem_release_write_cb(
+    globus_xio_handle_t                 handle,
+    globus_result_t                     result,
+    globus_xio_iovec_t *                iovec,
+    int                                 count,
+    globus_size_t                       nbytes,
+    globus_xio_data_descriptor_t        data_desc,
+    void *                              user_arg)
+{
+    globus_byte_t *                     buffer;
+
+    buffer = (globus_byte_t *) user_arg;
+
+    globus_free(buffer);
+}
+
+static
+void
+globus_l_gfs_mem_limit_release_cb(
+    const char *                        opt_name,
+    int                                 val,
+    void *                              user_arg)
+{
+    globus_xio_iovec_t                  iov[1];
+    globus_result_t                     result;
+    globus_byte_t *                     buffer;
+    uint32_t                            tmp32;
+
+    if(globus_l_gfs_gfork_on)
+    {
+        globus_mutex_lock(&globus_l_brain_mutex);
+        {
+            tmp32 = (uint32_t)val;
+            buffer = globus_malloc(GF_RELEASE_MSG_LEN);
+            buffer[GF_VERSION_NDX] = GF_VERSION;
+            buffer[GF_MSG_TYPE_LEN] = GFS_GFORK_MSG_TYPE_RELEASE;
+            memcpy(&buffer[GF_RELEASE_COUNT_NDX], &tmp32, sizeof(uint32_t));
+
+            iov[0].iov_base = buffer;
+            iov[0].iov_len = GF_RELEASE_MSG_LEN;
+
+            result = globus_gfork_send(
+                globus_l_gfs_gfork_handle,
+                -1, /* to the master */
+                iov,
+                1,
+                globus_l_gfs_mem_release_write_cb,
+                buffer);
+        }
+        globus_mutex_unlock(&globus_l_brain_mutex);
+    }
+}
+
+
+static
+void
 globus_l_gfs_gfork_incoming_cb(
     gfork_child_handle_t                handle,
     void *                              user_arg,
@@ -296,6 +353,7 @@ globus_l_gfs_gfork_incoming_cb(
     globus_byte_t *                     buffer,
     globus_size_t                       len)
 {
+    globus_i_gfs_config_option_cb_ent_t * cb_handle;
     globus_reltime_t                    delay;
     uint32_t                            n32;
     GlobusGFSName(globus_l_gfs_gfork_incoming_cb);
@@ -329,6 +387,12 @@ globus_l_gfs_gfork_incoming_cb(
                 globus_gfs_log_message(
                     GLOBUS_GFS_LOG_WARN,
                     "TCP mem limit set to: %d\n", (int)n32);
+
+                globus_gfs_config_add_cb(
+                    &cb_handle,
+                    "tcp_mem_limit",
+                    globus_l_gfs_mem_limit_release_cb,
+                    NULL);
                 break;
 
             case GFS_GFORK_MSG_TYPE_READY:
@@ -346,12 +410,11 @@ globus_l_gfs_gfork_incoming_cb(
                 break;
 
             case GFS_GFORK_MSG_TYPE_KILL:
-                globus_gfs_config_set_int("tcp_mem_limit", 32);
-
+                n32 = 1024;
                 globus_i_gfs_control_end_421(
                     "421 Server load too high. Try again later.\r\n");
 
-                globus_gfs_config_set_int("tcp_mem_limit", 32);
+                globus_gfs_config_set_int("tcp_mem_limit", (int)n32);
                 GlobusTimeReltimeSet(delay, 2, 0);
                 globus_callback_register_oneshot(
                     NULL,
@@ -469,6 +532,10 @@ globus_l_gfs_default_brain_init(
                     globus_l_gfs_gfork_ready_cb,
                     globus_l_gfs_gfork_ready_cb_arg);
             }
+        }
+        else
+        {
+            globus_l_gfs_gfork_on = GLOBUS_TRUE;
         }
     }
     globus_mutex_unlock(&globus_l_brain_mutex);

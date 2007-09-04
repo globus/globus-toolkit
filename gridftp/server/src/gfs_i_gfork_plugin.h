@@ -87,6 +87,12 @@
 /* ready message */
 #define GF_READY_MSG_LEN            (GF_MSG_TYPE_NDX+GF_MSG_TYPE_LEN)
 
+/* release message */
+#define GF_RELEASE_COUNT_NDX        (GF_MSG_TYPE_NDX+GF_MSG_TYPE_LEN)
+#define GF_RELEASE_COUNT_LEN        (sizeof(uint32_t))
+
+#define GF_RELEASE_MSG_LEN          (GF_RELEASE_COUNT_NDX+GF_RELEASE_COUNT_LEN)
+
 typedef enum gfs_gfork_msg_type_e
 {
     GFS_GFORK_MSG_TYPE_DYNBE = 1,
@@ -95,7 +101,8 @@ typedef enum gfs_gfork_msg_type_e
     GFS_GFORK_MSG_TYPE_READY,
     GFS_GFORK_MSG_TYPE_ACK,
     GFS_GFORK_MSG_TYPE_NACK,
-    GFS_GFORK_MSG_TYPE_CC
+    GFS_GFORK_MSG_TYPE_CC,
+    GFS_GFORK_MSG_TYPE_RELEASE
 } gfs_gfork_msg_type_t;
 
 

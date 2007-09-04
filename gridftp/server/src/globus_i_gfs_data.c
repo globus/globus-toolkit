@@ -2344,26 +2344,35 @@ globus_l_gfs_data_handle_init(
     }
 
     tcp_mem_limit = globus_gfs_config_get_int("tcp_mem_limit");
-    if(tcp_mem_limit > 0 && tcp_mem_limit < handle->info.tcp_bufsize)
+    if(tcp_mem_limit > 0)
     {
-        globus_ftp_control_tcpbuffer_t  tcpbuffer;
-
-        globus_gfs_log_message(
-            GLOBUS_GFS_LOG_WARN,
-            "Limiting TCP memory to: %d on %d\n",
-            tcp_mem_limit, handle->info.nstreams);
-        tcpbuffer.mode = GLOBUS_FTP_CONTROL_TCPBUFFER_FIXED;
-        tcpbuffer.fixed.size = tcp_mem_limit / handle->info.nstreams;
-
-        result = globus_ftp_control_local_tcp_buffer(
-            &handle->data_channel, &tcpbuffer);
-        if(result != GLOBUS_SUCCESS)
+        /* if they want too much */
+        if(tcp_mem_limit < handle->info.tcp_bufsize)
         {
-            result = GlobusGFSErrorWrapFailed(
-                "globus_ftp_control_local_tcp_buffer", result);
-            goto error_control;
-        }
+            globus_ftp_control_tcpbuffer_t  tcpbuffer;
 
+            globus_gfs_log_message(
+                GLOBUS_GFS_LOG_WARN,
+                "Limiting TCP memory to: %d on %d\n",
+                tcp_mem_limit, handle->info.nstreams);
+            tcpbuffer.mode = GLOBUS_FTP_CONTROL_TCPBUFFER_FIXED;
+            tcpbuffer.fixed.size = tcp_mem_limit / handle->info.nstreams;
+
+            result = globus_ftp_control_local_tcp_buffer(
+                &handle->data_channel, &tcpbuffer);
+            if(result != GLOBUS_SUCCESS)
+            {
+                result = GlobusGFSErrorWrapFailed(
+                    "globus_ftp_control_local_tcp_buffer", result);
+                goto error_control;
+            }
+        }
+        /* if they dont use it all */
+        else
+        {
+            globus_gfs_config_set_int(
+                "tcp_mem_limit", handle->info.tcp_bufsize);
+        }
     }
 
     dcau.mode = handle->info.dcau;

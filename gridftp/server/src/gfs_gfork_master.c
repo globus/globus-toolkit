@@ -63,6 +63,7 @@
 typedef struct gfs_l_memlimit_entry_s
 {
     int                                 mem_size;
+    int                                 tcp_buffer_mem;
     pid_t                               pid;
     int                                 count;
     gfork_child_handle_t                handle;
@@ -1002,11 +1003,13 @@ gfs_l_gfork_mem_try(
         gfs_l_memlimit_available -= mem_given;
 
         entry->mem_size += mem_given;
+        entry->tcp_buffer_mem = mem_given / 3;
     
         globus_hashtable_insert(
             &gfs_l_memlimit_table, (void *) entry->pid, entry);
 
-        gfs_l_gfork_mem_limit_send(entry->handle, entry->pid, mem_given/3);
+        gfs_l_gfork_mem_limit_send(
+            entry->handle, entry->pid, entry->tcp_buffer_mem);
         gfs_l_gfork_ready_send(entry->handle, entry->pid);
     }
 }
@@ -1159,6 +1162,66 @@ gfs_l_gfork_incoming_cb(
     globus_byte_t *                     buffer,
     globus_size_t                       len)
 {
+    uint32_t                            tmp32;
+    gfs_l_memlimit_entry_t *            entry;
+    int                                 diff;
+
+    globus_mutex_lock(&g_mutex);
+    {
+        if(buffer[GF_VERSION_NDX] != GF_VERSION)
+        {
+            gfs_l_gfork_log(GLOBUS_SUCCESS, 0, 
+                "Incoming message with bad version, ignoring.");
+            goto error;
+        }
+
+        entry = (gfs_l_memlimit_entry_t *) globus_hashtable_lookup(
+            &gfs_l_memlimit_table, (void *) from_pid);
+        if(entry == NULL)
+        {
+            gfs_l_gfork_log(GLOBUS_SUCCESS, 0, 
+                "Incoming message from unknown pid %d", from_pid);
+            goto error;
+        }
+
+        switch(buffer[GF_MSG_TYPE_NDX])
+        {
+            case GFS_GFORK_MSG_TYPE_RELEASE:
+
+                memcpy(&tmp32, 
+                    &buffer[GF_RELEASE_COUNT_NDX], GF_RELEASE_COUNT_LEN);
+                if(tmp32 > 0)
+                {
+                    gfs_l_gfork_log(GLOBUS_SUCCESS, 0, 
+                        "Pid %d returning %d bytes.\n", from_pid, (int)tmp32);
+
+                    diff = entry->tcp_buffer_mem - tmp32;
+                    if(diff > 0)
+                    {
+                        entry->tcp_buffer_mem = tmp32;
+                        diff *= 3;
+                        gfs_l_memlimit_available += diff;
+                        entry->mem_size -= diff;
+                    }
+                }
+                break;
+
+            default:
+                gfs_l_gfork_log(GLOBUS_SUCCESS, 0,
+                    "Incoming message with bad type, ignoring.");
+                goto error;
+
+                break;
+        }
+    }
+    globus_mutex_unlock(&g_mutex);
+
+    return;
+
+error:
+    globus_mutex_unlock(&g_mutex);
+    gfs_l_gfork_log(GLOBUS_SUCCESS, 0,
+        "Error in incoming message.");
 }
 
 static
