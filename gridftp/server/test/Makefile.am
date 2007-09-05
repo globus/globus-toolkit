@@ -7,6 +7,7 @@ SUBDIRS= \
 globusperldir = $(GLOBUS_LOCATION)/lib/perl/Globus
 
 Scripts= \
+    globus-gridftp-gfork-mem.pl \
 	globus-gridftp-dyn-be.pl \
     globus-gridftp-gfork-fe.pl \
     globus-gridftp-be-gfork.pl
@@ -14,6 +15,7 @@ Scripts= \
 test_SCRIPTS = $(Scripts)
 
 Data = \
+    gfork_mem_conf.in \
 	gfork_conf.in \
     gfork_single_conf.in \
 	gfork_be_conf.in
