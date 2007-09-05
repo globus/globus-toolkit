@@ -1877,21 +1877,35 @@ gfs_l_gfork_opts_mem_limit(
     void *                              arg,
     int *                               out_parms_used)
 {
-    globus_off_t                        page_count;
-    globus_off_t                        page_size;
+    globus_result_t                     result;
+    globus_off_t                        page_count = -1;
+    globus_off_t                        page_size = -1;
+    GFSGForkFuncName(gfs_l_gfork_opts_mem_limit);
 
     gfs_l_memlimiting = GLOBUS_TRUE;
-    page_count = (globus_off_t) sysconf(_SC_PHYS_PAGES);
-    page_size =  (globus_off_t) sysconf(_SC_PAGESIZE);
+
+#   if defined(_SC_PHYS_PAGES)
+#       if defined(_SC_PAGESIZE)
+        {
+            page_count = (globus_off_t) sysconf(_SC_PHYS_PAGES);
+            page_size =  (globus_off_t) sysconf(_SC_PAGESIZE);
+        }
+#       endif
+#   endif
 
     if(page_count < 0 || page_size < 0)
     {
-        /* die with error */
+        result = GFSGforkError("Cannot automatically determine memory size. "
+            "Use the -M option\n",
+            GFS_GFORK_ERROR_PARAMETER);
+        goto error;
     }
 
     gfs_l_memlimit_available = (page_count * page_size);
 
     return GLOBUS_SUCCESS;
+error:
+    return result;
 }
 
 
