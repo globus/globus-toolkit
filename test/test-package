@@ -73,10 +73,10 @@ if [ $? -ne 0 ]; then
    cp $GLOBUS_LOCATION/etc/globus_wsrf_core/global_sec_desc.xml.old\
       $GLOBUS_LOCATION/etc/globus_wsrf_core/global_security_descriptor.xml 
    rm $GLOBUS_LOCATION/etc/globus_wsrf_core/global_sec_desc.xml.old
-   /bin/false
+   exit 1
 fi
 
-rm $GLOBUS_LOCATION/etc/globus_wsrf_core/global_sec_desc.xml.old
 cp $GLOBUS_LOCATION/etc/globus_wsrf_core/global_sec_desc.xml.old\
       $GLOBUS_LOCATION/etc/globus_wsrf_core/global_security_descriptor.xml 
-/bin/true
+rm $GLOBUS_LOCATION/etc/globus_wsrf_core/global_sec_desc.xml.old
+exit 0
