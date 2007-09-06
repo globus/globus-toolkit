@@ -44,7 +44,7 @@ echo Copying in test security descriptor
 
 cp $GLOBUS_LOCATION/etc/globus_wsrf_core/global_security_descriptor.xml \
    $GLOBUS_LOCATION/etc/globus_wsrf_core/global_sec_desc.xml.old
-cp $GLOBUS_LOCATION/test/globus_test/global_security/descriptor.xml \
+cp $GLOBUS_LOCATION/test/globus_test/global_security_descriptor.xml \
    $GLOBUS_LOCATION/etc/globus_wsrf_core
 
 ./TESTS.pl
