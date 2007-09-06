@@ -8,6 +8,7 @@
 #include "globus_xio_gssapi_ftp.h"
 #include "globus_error_generic.h"
 #include "globus_xio_gsi.h"
+#include <unistd.h>
 
 #if !defined(GLOBUS_I_FTP2GRID_H)
 #define GLOBUS_I_FTP2GRID_H 1
