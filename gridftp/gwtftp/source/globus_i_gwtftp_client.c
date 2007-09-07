@@ -346,7 +346,8 @@ error:
 
 globus_result_t
 gwtftp_i_new_connection(
-    globus_xio_handle_t                 handle)
+    globus_xio_handle_t                 handle,
+    globus_xio_attr_t                   attr)
 {
     globus_result_t                     result;
     gwtftp_l_client_session_t *       auth_session;
@@ -360,14 +361,8 @@ gwtftp_i_new_connection(
     }
     auth_session->client_xio = handle;
 
-    /* verify that we allow this IP  */
-    result = gwtftp_i_ip_ok(handle);
-    if(result != GLOBUS_SUCCESS)
-    {
-        goto error_ip;
-    }
     result = globus_xio_register_open(
-        handle, NULL, NULL, gwtftp_l_client_open_cb, auth_session);
+        handle, NULL, attr, gwtftp_l_client_open_cb, auth_session);
     if(result != GLOBUS_SUCCESS)
     {
         goto error_open;
@@ -375,7 +370,6 @@ gwtftp_i_new_connection(
 
     return GLOBUS_SUCCESS;
 error_open:
-error_ip:
     gwtftp_i_close(auth_session->client_xio, NULL, NULL);
     free(auth_session);
 error_mem:

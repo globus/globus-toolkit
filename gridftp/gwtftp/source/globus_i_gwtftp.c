@@ -1,4 +1,9 @@
 #include "globus_i_gwtftp.h"
+#include <sys/types.h>
+#include <sys/wait.h>
+
+#define GWTFTP_CHILD_CLIENT_FD  "GWTFTP_CHILD_CLIENT_FD"
+#define GWTFTP_CHILD_SERVER_URL "GWTFTP_CHILD_SERVER_URL"
 
 /* 
  *  This file contains the main routine, the arugment parsing and 
@@ -26,10 +31,11 @@ static globus_bool_t                    gwtftp_l_child = GLOBUS_FALSE;
 static int                              gwtftp_l_log_level = 255;
 static FILE *                           gwtftp_l_log_fptr;
 static const char *                     gwtftp_l_pw_file = NULL;
+static const char *                     gwtftp_l_log_filename = NULL;
 static int                              gwtftp_l_listen_port = 0;
 static globus_list_t *                  gwtftp_l_ip_list;
 
-static char **                          gwtftp_l_exec_program;
+static char  *                          gwtftp_l_exec_program;
 
 static globus_list_t *                  gwtftp_l_connection_list = NULL;
 
@@ -116,10 +122,26 @@ gwtftp_l_accept_cb(
             goto error_over;
         }
 
-        /* only pass it on to the next level after we know we are not
-            immediately about to kill it off */
-        gwtftp_i_new_connection(handle);
+        /* verify that we allow this IP  */
+        result = gwtftp_i_ip_ok(handle);
+        if(result != GLOBUS_SUCCESS)
+        {
+            globus_object_t *           obj;
+            char *                      err_s;
 
+            obj = globus_error_get(result);
+            err_s = globus_error_print_friendly(obj);
+            globus_object_free(obj);
+            gwtftp_i_log(FTP2GRID_LOG_ERROR,
+                "Rejecting a client based in IP: %s\n", err_s);
+            globus_free(err_s);
+        }
+        else
+        {
+            /* only pass it on to the next level after we know we are not
+                immediately about to kill it off */
+            gwtftp_i_new_connection(handle, NULL);
+        }
     }
     globus_mutex_unlock(&gwtftp_l_mutex);
 
@@ -265,6 +287,117 @@ gwtftp_l_interrupt_cb(
 
 static
 globus_result_t
+gwtftp_l_child_start()
+{
+    char *                              tmp_env;
+    int                                 fd;
+    int                                 sc;
+    globus_xio_attr_t                   xio_attr;
+    globus_xio_handle_t                 handle;
+    globus_xio_handle_t                 server_xio;
+    globus_result_t                     result;
+    char *                              cs;
+
+    globus_xio_attr_init(&xio_attr);
+
+    globus_mutex_lock(&gwtftp_l_mutex);
+    {
+        result = globus_xio_attr_cntl(xio_attr, gwtftp_l_telnet_driver,
+            GLOBUS_XIO_TELNET_BUFFER, GLOBUS_TRUE);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error_telnet;
+        }
+
+        cs = globus_libc_getenv(GWTFTP_CHILD_SERVER_URL);
+        if(cs == NULL)
+        {
+            goto error_env;
+        }
+
+        /* get the FD for the client CC */
+        tmp_env = globus_libc_getenv(GWTFTP_CHILD_CLIENT_FD);
+        if(tmp_env == NULL)
+        {
+            goto error_env;
+        }
+        sc = sscanf(tmp_env, "%d", &fd);
+        if(sc != 1)
+        {
+            goto error_env;
+        }
+        result = globus_xio_attr_cntl(
+            xio_attr,
+            gwtftp_l_tcp_driver,
+            GLOBUS_XIO_TCP_SET_HANDLE,
+            fd);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error_tcp;
+        }
+        result = globus_xio_attr_cntl(
+            xio_attr,
+            gwtftp_l_telnet_driver,
+            GLOBUS_XIO_TELNET_FORCE_SERVER,
+            GLOBUS_TRUE);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error_fs;
+        }
+
+        result = globus_xio_handle_create(&handle, gwtftp_l_client_stack);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error_create;
+        }
+        result = globus_xio_open(handle, NULL, xio_attr);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error_create;
+        }
+
+        globus_list_insert(&gwtftp_l_connection_list, handle);
+
+        result = globus_xio_handle_create(
+            &server_xio, gwtftp_l_server_stack);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error_scheme;
+        }
+
+
+        result = gwtftp_i_server_conn_open(server_xio, cs, handle);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error_open;
+        }
+        globus_list_insert(&gwtftp_l_connection_list, server_xio);
+
+        while(!globus_list_empty(gwtftp_l_connection_list))
+        {
+            globus_cond_wait(&gwtftp_l_cond, &gwtftp_l_mutex);
+        }
+        globus_xio_attr_destroy(xio_attr);
+    }
+    globus_mutex_unlock(&gwtftp_l_mutex);
+
+    return GLOBUS_SUCCESS;
+
+error_open:
+error_scheme:
+error_create:
+error_fs:
+error_tcp:
+error_env:
+error_telnet:
+    globus_mutex_unlock(&gwtftp_l_mutex);
+    globus_xio_attr_destroy(xio_attr);
+
+    return result;
+}
+
+static
+globus_result_t
 gwtftp_l_master_start()
 {
     globus_xio_attr_t                   xio_attr;
@@ -387,6 +520,8 @@ gwtftp_i_close(
             globus_list_remove(&gwtftp_l_connection_list, list);
 
             globus_xio_register_close(handle, NULL, close_cb, user_arg);
+
+            globus_cond_signal(&gwtftp_l_cond);
         }
     }
     globus_mutex_unlock(&gwtftp_l_mutex);
@@ -398,7 +533,6 @@ gwtftp_i_options(
     int                                 argc,
     char **                             argv)
 {
-    int                                 i;
     globus_i_gwtftp_cmd_opts_t          cmd_opts;
     globus_options_handle_t             opt_h;
     globus_result_t                     result;
@@ -423,8 +557,7 @@ gwtftp_i_options(
     }
     if(cmd_opts.log_file != NULL)
     {
-        gwtftp_l_log_fptr = fopen(cmd_opts.log_file, "w");
-
+        gwtftp_l_log_fptr = fopen(cmd_opts.log_file, "a");
         if(gwtftp_l_log_fptr == NULL)
         {
             gwtftp_l_log_fptr = stderr;
@@ -436,8 +569,9 @@ gwtftp_i_options(
         }
     }
 
+    gwtftp_l_child = cmd_opts.child;
     gwtftp_l_pw_file = cmd_opts.pw_file;
-    if(gwtftp_l_pw_file == NULL)
+    if(gwtftp_l_pw_file == NULL && !gwtftp_l_child)
     {
         /* WARN */
         gwtftp_i_log(FTP2GRID_LOG_MUST,
@@ -455,22 +589,8 @@ gwtftp_i_options(
         globus_list_insert(&gwtftp_l_ip_list, (void *)"[::1]");
     }
 
-    gwtftp_l_exec_program = (char **) globus_calloc(argc+2, sizeof(char *));
-    if(gwtftp_l_exec_program == NULL)
-    {
-        result = GlobusFTP2GridError("Small malloc failure.",
-            GLOBUS_FTP2GRID_ERROR_MALLOC);
-        goto error;
-    }
-    for(i = 0; i < argc; i++)
-    {
-        gwtftp_l_exec_program[i] = argv[i];
-    }
-    gwtftp_l_exec_program[i] = "-CH";
-    i++;
-    gwtftp_l_exec_program[i] = NULL;
-
-    gwtftp_l_child = cmd_opts.child;
+    gwtftp_l_log_filename = cmd_opts.log_file;
+    gwtftp_l_exec_program = argv[0];
 
     globus_options_destroy(opt_h);
 
@@ -480,13 +600,59 @@ error:
     return result;
 }
 
+static
+void
+gwtftp_l_sigchld(
+    void *                              user_arg)
+{
+    int                                 child_pid;
+    int                                 child_rc;
+    int                                 child_status;
+
+    while((child_pid = waitpid(-1, &child_status, WNOHANG)) > 0)
+    {
+        if(WIFEXITED(child_status))
+        {
+            /* normal exit */
+            child_rc = WEXITSTATUS(child_status);
+        }
+        if(child_rc != 0)
+        {
+            gwtftp_i_log(
+                FTP2GRID_LOG_WARN, "Child pid %d finished with rc %d\n",
+                child_pid, child_rc);
+        }
+    }
+#   ifdef BUILD_LITE
+    {
+        globus_callback_register_signal_handler(
+            SIGCHLD,
+            GLOBUS_FALSE,
+            gwtftp_l_sigchld,
+            user_arg);
+    }
+#   else
+    {
+        globus_reltime_t            delay;
+
+        GlobusTimeReltimeSet(delay, 5, 0);
+
+        globus_callback_register_oneshot(
+            NULL,
+            &gfork_l_sigchild_fake,
+            gwtftp_l_sigchld,
+            user_arg);
+    }
+#   endif
+}
+
 int
 main(
     int                                 argc,
     char **                             argv)
 {
     globus_result_t                     result;
-
+    
     globus_module_activate(GLOBUS_XIO_MODULE);
     globus_module_activate(GLOBUS_GRIDFTP_SERVER_CONTROL_MODULE);
 
@@ -507,9 +673,36 @@ main(
     gwtftp_i_server_init();
     if(gwtftp_l_child)
     {
+        /* convert FDs to a handle */
+        result = gwtftp_l_child_start();
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error;
+        }
     }
     else
     {
+        if(gwtftp_l_daemon)
+        {
+#           ifdef BUILD_LITE
+            {
+                result = globus_callback_register_signal_handler(
+                    SIGCHLD,
+                    GLOBUS_FALSE,
+                    gwtftp_l_sigchld,
+                    NULL);
+            }
+#           else
+            {
+                result = globus_callback_register_oneshot(
+                    NULL,
+                    &gfork_l_sigchild_fake,
+                    gwtftp_l_sigchld,
+                    NULL);
+            }
+#       endif
+        }
+
         result = gwtftp_l_master_start();
         if(result != GLOBUS_SUCCESS)
         {
@@ -672,21 +865,24 @@ gwtftp_i_exec__unix(
     globus_xio_handle_t                 client_xio,
     globus_url_t *                      url)
 {
+    int                                 i;
     globus_xio_system_socket_t          socket_handle;
     pid_t                               pid;
     int                                 rc;
+    char                                env_str[64];
+    char *                              exec_program[32];
+    char *                              cs;
     globus_result_t                     result;
 
+    gwtftp_i_log(FTP2GRID_LOG_INFO, "Forking a child.\n");
     pid = fork();
     if(pid == 0)
     {
-        /* do i set the uid or do i let a sudo thing do it */
-        rc = setuid(uid);
-        if(rc != 0)
-        {
-            gwtftp_i_log(FTP2GRID_LOG_WARN, "Child setuid failed.\n");
-            exit(rc);
-        }
+        cs = globus_common_create_string("%s:%d", url->host, url->port);
+        globus_libc_setenv(GWTFTP_CHILD_SERVER_URL, cs, 1);
+
+        gwtftp_i_log(FTP2GRID_LOG_INFO, "Child processing seting uid to %d.\n",
+            uid);
         /* extract the FD */
         result = globus_xio_handle_cntl(
             client_xio,
@@ -698,20 +894,52 @@ gwtftp_i_exec__unix(
             gwtftp_i_log(FTP2GRID_LOG_WARN, "Failed to extract socket.\n");
             exit(1);
         }
-        rc = dup2(socket_handle, STDIN_FILENO);
-        if(rc < 0)
+        /* all xio sockets will close on exec */
+        sprintf(env_str, "%d", socket_handle);
+        globus_libc_setenv(GWTFTP_CHILD_CLIENT_FD, env_str, 1);
+
+        exec_program[0] = strdup(gwtftp_l_exec_program);
+        exec_program[1] = strdup("-CH");
+        i = 2;
+        if(gwtftp_l_log_filename != NULL)
         {
-            gwtftp_i_log(FTP2GRID_LOG_WARN, "Failed to dup2 socket.\n");
+            exec_program[i] = strdup("-l");
+            i++;
+            exec_program[i] = globus_common_create_string("%s.%d", 
+                gwtftp_l_log_filename, getpid());
+            i++;
+        }
+        exec_program[i] = strdup("-lm");
+        i++;
+        exec_program[i] = globus_common_create_string("%d", gwtftp_l_log_level);
+        i++;
+        exec_program[i] = NULL;
+
+        gwtftp_i_log(FTP2GRID_LOG_INFO, "Execing child process: ");
+        for(i = 0; exec_program[i] != NULL; i++)
+        {
+            gwtftp_i_log(FTP2GRID_LOG_INFO, "%s ", exec_program[i]);
+        }
+        gwtftp_i_log(FTP2GRID_LOG_INFO, "\n");
+        rc = setuid(uid);
+        if(rc != 0)
+        {
+            gwtftp_i_log(FTP2GRID_LOG_WARN, "Child setuid failed.\n");
             exit(rc);
         }
-        /* all xio sockets will close on exec */
+        fflush(gwtftp_l_log_fptr);
 
-        rc = execvp(gwtftp_l_exec_program[0], gwtftp_l_exec_program);
+        rc = execvp(exec_program[0], exec_program);
+        for(i = 0; exec_program[i] != NULL; i++)
+        {
+            free(exec_program[i]);
+        }
+        gwtftp_i_log(FTP2GRID_LOG_ERROR, "Exec failed\n");
         exit(rc);
     }
     else if(pid < 0)
     {
-        gwtftp_i_log(FTP2GRID_LOG_INFO, "Failed to fork\n");
+        gwtftp_i_log(FTP2GRID_LOG_ERROR, "Failed to fork\n");
     }
 }
 

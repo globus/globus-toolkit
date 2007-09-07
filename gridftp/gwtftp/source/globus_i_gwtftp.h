@@ -136,7 +136,8 @@ gwtftp_i_pass_ok(
 
 globus_result_t
 gwtftp_i_new_connection(
-    globus_xio_handle_t                 handle);
+    globus_xio_handle_t                 handle,
+    globus_xio_attr_t                   attr);
 
 globus_result_t
 gwtftp_i_server_conn_open(

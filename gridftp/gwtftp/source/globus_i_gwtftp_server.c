@@ -136,7 +136,7 @@ gwtftp_l_write_next_opening_cmd(
     return;
 error:
     gwtftp_i_log_result(FTP2GRID_LOG_WARN, result,
-        "Error sending openning commands, closing: %s\n");
+        "Error sending openning commands, closing\n");
     gwtftp_i_close(session->client_xio, NULL, NULL);
     gwtftp_i_close(session->server_xio, NULL, NULL);
     globus_free(session->greeting);
