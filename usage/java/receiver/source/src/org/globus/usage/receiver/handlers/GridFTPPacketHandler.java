@@ -127,7 +127,7 @@ public class GridFTPPacketHandler extends DefaultPacketHandler {
 	StringBuffer sqlContents = new StringBuffer();
 	sqlContents.append("INSERT INTO ");
 	sqlContents.append(table);
-	sqlContents.append(" (component_code, version_code, send_time, ip_version, ip_address, gftp_version, stor_or_retr, start_time, end_time, num_bytes, num_stripes, num_streams, buffer_size, block_size, ftp_return_code) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);");
+	sqlContents.append(" (component_code, version_code, send_time, ip_version, hostname, gftp_version, stor_or_retr, start_time, end_time, num_bytes, num_stripes, num_streams, buffer_size, block_size, ftp_return_code) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);");
 	ps = con.prepareStatement(sqlContents.toString());
 
 	ps.setShort(1, gmp.getComponentCode());
