@@ -76,7 +76,6 @@
 #include "authfd.h"
 #include "pathnames.h"
 
-
 /* -- channel core */
 
 /*

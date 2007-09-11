@@ -1465,6 +1465,7 @@ control_client(const char *path)
 		flags |= SSHMUX_FLAG_AGENT_FWD;
 	if (options.num_local_forwards > 0)
 		flags |= SSHMUX_FLAG_PORTFORWARD;
+
 	buffer_init(&m);
 
 	/* Send our command to server */

@@ -955,7 +955,7 @@ client_process_control(fd_set *readset)
 		window >>= 1;
 		packetmax >>= 1;
 	}
-
+	
 	c = channel_new("session", SSH_CHANNEL_OPENING,
 	    new_fd[0], new_fd[1], new_fd[2], window, packetmax,
 	    CHAN_EXTENDED_WRITE, "client-session", /*nonblock*/0);
@@ -1871,8 +1871,6 @@ client_request_tun_fwd(int tun_mode, int local_tun, int remote_tun)
 				options.hpn_buffer_size, CHAN_TCP_PACKET_DEFAULT,
 				0, "tun", 1);
 	c->datagram = 1;
-
-
 
 #if defined(SSH_TUN_FILTER)
 	if (options.tun_open == SSH_TUNMODE_POINTOPOINT)
