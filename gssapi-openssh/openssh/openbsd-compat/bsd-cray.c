@@ -751,8 +751,6 @@ cray_job_termination_handler(int sig)
 	char *login = NULL;
 	struct jtab jtab;
 
-	debug("received signal %d",sig);
-
 	if ((jid = waitjob(&jtab)) == -1 ||
 	    (login = uid2nam(jtab.j_uid)) == NULL)
 		return;

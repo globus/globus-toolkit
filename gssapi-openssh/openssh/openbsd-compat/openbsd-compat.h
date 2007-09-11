@@ -140,6 +140,7 @@ int writev(int, struct iovec *, int);
 /* Home grown routines */
 #include "bsd-misc.h"
 #include "bsd-waitpid.h"
+#include "bsd-poll.h"
 
 #ifndef HAVE_GETPEEREID
 int getpeereid(int , uid_t *, gid_t *);
