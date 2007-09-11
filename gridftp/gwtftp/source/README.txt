@@ -96,10 +96,10 @@ Daemon
 gwtftp can be used as a service daemon as well.  If run as root on a unix
 based machine with the -S flag, it can be used to service many clients.  
 Client connected and authenticate with it via the clear text RFC959
-protocol (thus it should be run only on trusted networks).  Once authenitcated
-the daemon will fork/setuid/exec a new process running as the auntenticated
+protocol (thus it should be run only on trusted networks).  Once authenticated
+the daemon will fork/setuid/exec a new process running as the authenticated
 user.  Note: the user must have an active proxy in their environment in
-order to use GSI with the final enpoint gridftp server.
+order to use GSI with the final endpoint gridftp server.
 
 
 Security Concerns
