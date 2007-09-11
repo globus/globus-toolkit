@@ -103,32 +103,6 @@ ssh_gssapi_server_check_mech(Gssctxt **dum, gss_OID oid, const char *data) {
 	return (res);
 }
 
-/* Unprivileged */
-void
-ssh_gssapi_supported_oids(gss_OID_set *oidset)
-{
-	int i = 0;
-	OM_uint32 min_status;
-	int present;
-	gss_OID_set supported;
-
-	gss_create_empty_oid_set(&min_status, oidset);
-	/* Ask priviledged process what mechanisms it supports. */
-	PRIVSEP(gss_indicate_mechs(&min_status, &supported));
-
-	while (supported_mechs[i]->name != NULL) {
-		if (GSS_ERROR(gss_test_oid_set_member(&min_status,
-		    &supported_mechs[i]->oid, supported, &present)))
-			present = 0;
-		if (present)
-			gss_add_oid_set_member(&min_status,
-			    &supported_mechs[i]->oid, oidset);
-		i++;
-	}
-
-	gss_release_oid_set(&min_status, &supported);
-}
-
 /*
  * Acquire credentials for a server running on the current host.
  * Requires that the context structure contains a valid OID
@@ -182,6 +156,33 @@ ssh_gssapi_server_ctx(Gssctxt **ctx, gss_OID oid)
 	ssh_gssapi_set_oid(*ctx, oid);
 	return (ssh_gssapi_acquire_cred(*ctx));
 }
+
+/* Unprivileged */
+void
+ssh_gssapi_supported_oids(gss_OID_set *oidset)
+{
+	int i = 0;
+	OM_uint32 min_status;
+	int present;
+	gss_OID_set supported;
+
+	gss_create_empty_oid_set(&min_status, oidset);
+	/* Ask priviledged process what mechanisms it supports. */
+	PRIVSEP(gss_indicate_mechs(&min_status, &supported));
+
+	while (supported_mechs[i]->name != NULL) {
+		if (GSS_ERROR(gss_test_oid_set_member(&min_status,
+		    &supported_mechs[i]->oid, supported, &present)))
+			present = 0;
+		if (present)
+			gss_add_oid_set_member(&min_status,
+			    &supported_mechs[i]->oid, oidset);
+		i++;
+	}
+
+	gss_release_oid_set(&min_status, &supported);
+}
+
 
 /* Wrapper around accept_sec_context
  * Requires that the context contains:
@@ -425,6 +426,9 @@ ssh_gssapi_userok(char *user)
 		debug("ssh_gssapi_userok: Unknown GSSAPI mechanism");
 	return (0);
 }
+
+/* ssh_gssapi_checkmic() moved to gss-genr.c so it can be called by
+   kexgss_client(). */
 
 /* Priviledged */
 int
