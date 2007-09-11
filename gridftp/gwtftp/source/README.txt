@@ -91,6 +91,17 @@ Notice the the username was 'gsiftp://wiggum.mcs.anl.gov:2811/'.  This
 shows how the client connects to gwtftp and tells it where it wants
 to ultimately go.
 
+Daemon
+------
+gwtftp can be used as a service daemon as well.  If run as root on a unix
+based machine with the -S flag, it can be used to service many clients.  
+Client connected and authenticate with it via the clear text RFC959
+protocol (thus it should be run only on trusted networks).  Once authenitcated
+the daemon will fork/setuid/exec a new process running as the auntenticated
+user.  Note: the user must have an active proxy in their environment in
+order to use GSI with the final enpoint gridftp server.
+
+
 Security Concerns
 -----------------
 It is highly recommended that security options are enabled when running 
