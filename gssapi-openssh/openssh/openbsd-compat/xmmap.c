@@ -38,12 +38,14 @@
 #endif
 #include <errno.h>
 #include <stdarg.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
 #include "log.h"
 
-void *xmmap(size_t size)
+void *
+xmmap(size_t size)
 {
 #ifdef HAVE_MMAP
 	void *address;

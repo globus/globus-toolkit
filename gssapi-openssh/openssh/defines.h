@@ -68,7 +68,7 @@ enum
 # endif
 #endif
 
-#ifndef MAXSYMLINKS
+#if defined(HAVE_DECL_MAXSYMLINKS) && HAVE_DECL_MAXSYMLINKS == 0
 # define MAXSYMLINKS 5
 #endif
 
@@ -318,6 +318,10 @@ struct winsize {
 
 /* Paths */
 
+#ifndef _PATH_BSHELL
+# define _PATH_BSHELL "/bin/sh"
+#endif
+
 #ifdef USER_PATH
 # ifdef _PATH_STDPATH
 #  undef _PATH_STDPATH
@@ -443,6 +447,10 @@ struct winsize {
 # define __bounded__(x, y, z)
 #endif
 
+#if !defined(HAVE_ATTRIBUTE__NONNULL__) && !defined(__nonnull__)
+# define __nonnull__(x)
+#endif
+
 /* *-*-nto-qnx doesn't define this macro in the system headers */
 #ifdef MISSING_HOWMANY
 # define howmany(x,y)	(((x)+((y)-1))/(y))
@@ -481,7 +489,7 @@ struct winsize {
 	 (struct cmsghdr *)NULL)
 #endif /* CMSG_FIRSTHDR */
 
-#ifndef offsetof
+#if defined(HAVE_DECL_OFFSETOF) && HAVE_DECL_OFFSETOF == 0
 # define offsetof(type, member) ((size_t) &((type *)0)->member)
 #endif
 
@@ -690,7 +698,8 @@ struct winsize {
 # define CUSTOM_SYS_AUTH_PASSWD 1
 #endif
 
-#ifdef HAVE_LIBIAF
+#if defined(HAVE_LIBIAF) && defined(HAVE_SET_ID) && !defined(BROKEN_LIBIAF)
+# define USE_LIBIAF
 # define CUSTOM_SYS_AUTH_PASSWD 1
 #endif
 

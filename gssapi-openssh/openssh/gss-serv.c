@@ -1,4 +1,4 @@
-/* $OpenBSD: gss-serv.c,v 1.20 2006/08/03 03:34:42 deraadt Exp $ */
+/* $OpenBSD: gss-serv.c,v 1.21 2007/06/12 08:20:00 djm Exp $ */
 
 /*
  * Copyright (c) 2001-2006 Simon Wilkinson. All rights reserved.
@@ -29,6 +29,7 @@
 #ifdef GSSAPI
 
 #include <sys/types.h>
+#include <sys/param.h>
 
 #include <stdarg.h>
 #include <string.h>
@@ -128,22 +129,14 @@ ssh_gssapi_supported_oids(gss_OID_set *oidset)
 	gss_release_oid_set(&min_status, &supported);
 }
 
-OM_uint32
-ssh_gssapi_server_ctx(Gssctxt **ctx, gss_OID oid)
-{
-	if (*ctx)
-		ssh_gssapi_delete_ctx(ctx);
-	ssh_gssapi_build_ctx(ctx);
-	ssh_gssapi_set_oid(*ctx, oid);
-	return (ssh_gssapi_acquire_cred(*ctx));
-}
-
-/* Acquire credentials for a server running on the current host.
+/*
+ * Acquire credentials for a server running on the current host.
  * Requires that the context structure contains a valid OID
  */
 
 /* Returns a GSSAPI error code */
-OM_uint32
+/* Privileged (called from ssh_gssapi_server_ctx) */
+static OM_uint32
 ssh_gssapi_acquire_cred(Gssctxt *ctx)
 {
 	OM_uint32 status;
@@ -178,6 +171,17 @@ ssh_gssapi_acquire_cred(Gssctxt *ctx)
 	return GSS_S_COMPLETE;
 }
 
+
+/* Privileged */
+OM_uint32
+ssh_gssapi_server_ctx(Gssctxt **ctx, gss_OID oid)
+{
+	if (*ctx)
+		ssh_gssapi_delete_ctx(ctx);
+	ssh_gssapi_build_ctx(ctx);
+	ssh_gssapi_set_oid(*ctx, oid);
+	return (ssh_gssapi_acquire_cred(*ctx));
+}
 
 /* Wrapper around accept_sec_context
  * Requires that the context contains:

@@ -1,4 +1,4 @@
-/* $OpenBSD: myproposal.h,v 1.21 2006/03/25 22:22:43 djm Exp $ */
+/* $OpenBSD: myproposal.h,v 1.22 2007/06/07 19:37:34 pvalchev Exp $ */
 
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
@@ -49,7 +49,7 @@
 #define KEX_ENCRYPT_INCLUDE_NONE KEX_DEFAULT_ENCRYPT \
 	",none"
 #define	KEX_DEFAULT_MAC \
-	"hmac-md5,hmac-sha1,hmac-ripemd160," \
+	"hmac-md5,hmac-sha1,umac-64@openssh.com,hmac-ripemd160," \
 	"hmac-ripemd160@openssh.com," \
 	"hmac-sha1-96,hmac-md5-96"
 #define	KEX_DEFAULT_COMP	"none,zlib@openssh.com,zlib"
