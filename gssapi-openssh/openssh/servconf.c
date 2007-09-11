@@ -318,8 +318,6 @@ fill_default_server_options(ServerOptions *options)
 	if (use_privsep == -1)
 		use_privsep = 1;
 
-
-
 #ifndef HAVE_MMAP
 	if (use_privsep && options->compression == 1) {
 		error("This platform does not support both privilege "

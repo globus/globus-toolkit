@@ -73,7 +73,6 @@
 extern char *client_version_string;
 extern char *server_version_string;
 extern Options options;
-extern Kex *xxx_kex;
 
 /* tty_flag is set in ssh.c. use this in ssh_userauth2 */
 /* if it is set then prevent the switch to the null cipher */
@@ -140,8 +139,7 @@ ssh_kex2(char *host, struct sockaddr *hostaddr)
 	if (options.ciphers != NULL) {
 		myproposal[PROPOSAL_ENC_ALGS_CTOS] =
 		myproposal[PROPOSAL_ENC_ALGS_STOC] = options.ciphers;
-	} 
-
+	}
 	myproposal[PROPOSAL_ENC_ALGS_CTOS] =
 	    compat_cipher_proposal(myproposal[PROPOSAL_ENC_ALGS_CTOS]);
 	myproposal[PROPOSAL_ENC_ALGS_STOC] =

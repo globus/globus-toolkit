@@ -510,7 +510,6 @@ parse_flag:
 		intptr = &options->verify_host_key_dns;
 		goto parse_yesnoask;
 
-
 	case oStrictHostKeyChecking:
 		intptr = &options->strict_host_key_checking;
 parse_yesnoask:

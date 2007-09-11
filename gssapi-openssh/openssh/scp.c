@@ -585,7 +585,7 @@ source(int argc, char **argv)
 	off_t i, amt, statbytes;
 	size_t result;
 	int fd = -1, haderr, indx;
-	char *last, *name, buf[2048], encname[MAXPATHLEN];
+	char *last, *name, buf[16384], encname[MAXPATHLEN];
 	int len;
 
 	for (indx = 0; indx < argc; ++indx) {

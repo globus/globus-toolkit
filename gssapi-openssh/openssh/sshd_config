@@ -116,6 +116,7 @@ Protocol 2
 # override default of no subsystems
 Subsystem	sftp	/usr/libexec/sftp-server
 
+
 # the following are HPN related configuration options
 # tcp receive buffer polling. enable in autotuning kernels
 #TcpRcvBufPoll no

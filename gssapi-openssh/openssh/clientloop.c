@@ -1862,9 +1862,17 @@ client_request_tun_fwd(int tun_mode, int local_tun, int remote_tun)
 		return -1;
 	}
 
-	c = channel_new("tun", SSH_CHANNEL_OPENING, fd, fd, -1,
-	    CHAN_TCP_WINDOW_DEFAULT, CHAN_TCP_PACKET_DEFAULT, 0, "tun", 1);
+	if(options.hpn_disabled)
+		c = channel_new("tun", SSH_CHANNEL_OPENING, fd, fd, -1,
+				CHAN_TCP_WINDOW_DEFAULT, CHAN_TCP_PACKET_DEFAULT,
+				0, "tun", 1);
+	else
+		c = channel_new("tun", SSH_CHANNEL_OPENING, fd, fd, -1,
+				options.hpn_buffer_size, CHAN_TCP_PACKET_DEFAULT,
+				0, "tun", 1);
 	c->datagram = 1;
+
+
 
 #if defined(SSH_TUN_FILTER)
 	if (options.tun_open == SSH_TUNMODE_POINTOPOINT)
