@@ -1,7 +1,7 @@
-/* $OpenBSD: gss-genr.c,v 1.17 2006/08/29 12:02:30 dtucker Exp $ */
+/* $OpenBSD: gss-genr.c,v 1.19 2007/06/12 11:56:15 dtucker Exp $ */
 
 /*
- * Copyright (c) 2001-2006 Simon Wilkinson. All rights reserved.
+ * Copyright (c) 2001-2007 Simon Wilkinson. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -392,9 +392,6 @@ ssh_gssapi_import_name(Gssctxt *ctx, const char *host)
 OM_uint32
 ssh_gssapi_sign(Gssctxt *ctx, gss_buffer_t buffer, gss_buffer_t hash)
 {
-	if (ctx == NULL) 
-		return -1;
-
 	if ((ctx->major = gss_get_mic(&ctx->minor, ctx->context,
 	    GSS_C_QOP_DEFAULT, buffer, hash)))
 		ssh_gssapi_error(ctx);
@@ -403,16 +400,17 @@ ssh_gssapi_sign(Gssctxt *ctx, gss_buffer_t buffer, gss_buffer_t hash)
 }
 
 /* Priviledged when used by server */
+/* Moved here from gss-serv.c because called by kexgss_client(). */
 OM_uint32
 ssh_gssapi_checkmic(Gssctxt *ctx, gss_buffer_t gssbuf, gss_buffer_t gssmic)
 {
-	if (ctx == NULL)
-		return -1;
+       if (ctx == NULL)
+               return -1;
 
-	ctx->major = gss_verify_mic(&ctx->minor, ctx->context,
-	    gssbuf, gssmic, NULL);
+       ctx->major = gss_verify_mic(&ctx->minor, ctx->context,
+           gssbuf, gssmic, NULL);
 
-	return (ctx->major);
+       return (ctx->major);
 }
 
 void

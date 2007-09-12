@@ -1,4 +1,4 @@
-/* $OpenBSD: gss-serv.c,v 1.20 2006/08/03 03:34:42 deraadt Exp $ */
+/* $OpenBSD: gss-serv.c,v 1.21 2007/06/12 08:20:00 djm Exp $ */
 
 /*
  * Copyright (c) 2001-2006 Simon Wilkinson. All rights reserved.
@@ -29,6 +29,7 @@
 #ifdef GSSAPI
 
 #include <sys/types.h>
+#include <sys/param.h>
 
 #include <stdarg.h>
 #include <string.h>
@@ -102,48 +103,14 @@ ssh_gssapi_server_check_mech(Gssctxt **dum, gss_OID oid, const char *data) {
 	return (res);
 }
 
-/* Unprivileged */
-void
-ssh_gssapi_supported_oids(gss_OID_set *oidset)
-{
-	int i = 0;
-	OM_uint32 min_status;
-	int present;
-	gss_OID_set supported;
-
-	gss_create_empty_oid_set(&min_status, oidset);
-	/* Ask priviledged process what mechanisms it supports. */
-	PRIVSEP(gss_indicate_mechs(&min_status, &supported));
-
-	while (supported_mechs[i]->name != NULL) {
-		if (GSS_ERROR(gss_test_oid_set_member(&min_status,
-		    &supported_mechs[i]->oid, supported, &present)))
-			present = 0;
-		if (present)
-			gss_add_oid_set_member(&min_status,
-			    &supported_mechs[i]->oid, oidset);
-		i++;
-	}
-
-	gss_release_oid_set(&min_status, &supported);
-}
-
-OM_uint32
-ssh_gssapi_server_ctx(Gssctxt **ctx, gss_OID oid)
-{
-	if (*ctx)
-		ssh_gssapi_delete_ctx(ctx);
-	ssh_gssapi_build_ctx(ctx);
-	ssh_gssapi_set_oid(*ctx, oid);
-	return (ssh_gssapi_acquire_cred(*ctx));
-}
-
-/* Acquire credentials for a server running on the current host.
+/*
+ * Acquire credentials for a server running on the current host.
  * Requires that the context structure contains a valid OID
  */
 
 /* Returns a GSSAPI error code */
-OM_uint32
+/* Privileged (called from ssh_gssapi_server_ctx) */
+static OM_uint32
 ssh_gssapi_acquire_cred(Gssctxt *ctx)
 {
 	OM_uint32 status;
@@ -176,6 +143,44 @@ ssh_gssapi_acquire_cred(Gssctxt *ctx)
 		ctx->creds = GSS_C_NO_CREDENTIAL;
 	}
 	return GSS_S_COMPLETE;
+}
+
+
+/* Privileged */
+OM_uint32
+ssh_gssapi_server_ctx(Gssctxt **ctx, gss_OID oid)
+{
+	if (*ctx)
+		ssh_gssapi_delete_ctx(ctx);
+	ssh_gssapi_build_ctx(ctx);
+	ssh_gssapi_set_oid(*ctx, oid);
+	return (ssh_gssapi_acquire_cred(*ctx));
+}
+
+/* Unprivileged */
+void
+ssh_gssapi_supported_oids(gss_OID_set *oidset)
+{
+	int i = 0;
+	OM_uint32 min_status;
+	int present;
+	gss_OID_set supported;
+
+	gss_create_empty_oid_set(&min_status, oidset);
+	/* Ask priviledged process what mechanisms it supports. */
+	PRIVSEP(gss_indicate_mechs(&min_status, &supported));
+
+	while (supported_mechs[i]->name != NULL) {
+		if (GSS_ERROR(gss_test_oid_set_member(&min_status,
+		    &supported_mechs[i]->oid, supported, &present)))
+			present = 0;
+		if (present)
+			gss_add_oid_set_member(&min_status,
+			    &supported_mechs[i]->oid, oidset);
+		i++;
+	}
+
+	gss_release_oid_set(&min_status, &supported);
 }
 
 
@@ -421,6 +426,9 @@ ssh_gssapi_userok(char *user)
 		debug("ssh_gssapi_userok: Unknown GSSAPI mechanism");
 	return (0);
 }
+
+/* ssh_gssapi_checkmic() moved to gss-genr.c so it can be called by
+   kexgss_client(). */
 
 /* Priviledged */
 int

@@ -29,6 +29,11 @@
 #endif
 
 #ifdef USE_BUILTIN_RIJNDAEL
+# include "rijndael.h"
+# define AES_KEY rijndael_ctx
+# define AES_BLOCK_SIZE 16
+# define AES_encrypt(a, b, c)		rijndael_encrypt(c, a, b)
+# define AES_set_encrypt_key(a, b, c)	rijndael_set_key(c, (char *)a, b, 1)
 # define EVP_aes_128_cbc evp_rijndael
 # define EVP_aes_192_cbc evp_rijndael
 # define EVP_aes_256_cbc evp_rijndael
