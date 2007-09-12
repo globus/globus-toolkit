@@ -60,6 +60,13 @@ gwtftp_l_pasv227(
     globus_size_t                       len);
 
 static
+globus_bool_t
+gwtftp_l_port(
+    gwtftp_l_connection_t *             conn,
+    globus_byte_t *                     buffer,
+    globus_size_t                       len);
+
+static
 void
 gwtftp_l_read_cb(
     globus_xio_handle_t                 handle,
@@ -79,6 +86,7 @@ gwtftp_l_write(
 
 static gwtftp_l_command_ent_t         gwtftp_l_cmd_table[] =
 {
+    {"PORT", gwtftp_l_port},
     {"227", gwtftp_l_pasv227},
     {"221", gwtftp_l_quit},
     {NULL, gwtftp_l_route}
@@ -348,6 +356,90 @@ error_write:
 
 static
 char *
+gwtftp_l_port_cs_to_cmd(
+    char *                              cs)
+{
+    int                                 sc;
+    char *                              cmd;
+    int                                 host[4];
+    int                                 hi;
+    int                                 low;
+    int                                 port;
+
+    sc = sscanf(cs, "%d.%d.%d.%d:%d",
+        &host[0],    
+        &host[1],    
+        &host[2],    
+        &host[3],
+        &port);    
+    if(sc != 5)
+    {
+        return NULL;
+    }
+
+    hi = port / 256;
+    low = port % 256;
+
+    cmd = globus_common_create_string("PORT %d,%d,%d,%d,%d,%d\r\n",
+        host[0],
+        host[1],
+        host[2],
+        host[3],
+        hi,
+        low);
+
+    return cmd;
+}
+
+static
+char *
+gwtftp_l_port_cmd_to_cs(
+    int                                 type,
+    char *                              cmd,
+    globus_size_t                       len)
+{
+    int                                 sc;
+    char *                              tmp_ptr;
+    char *                              cs;
+    int                                 host[4];
+    int                                 hi;
+    int                                 low;
+
+    if(type == 1)
+    {
+        tmp_ptr = memchr(cmd, ' ', len);
+        if(tmp_ptr == NULL)
+        {
+            goto error;
+        }
+        sc = sscanf(tmp_ptr, "%d,%d,%d,%d,%d,%d",
+            &host[0],
+            &host[1],
+            &host[2],
+            &host[3],
+            &hi,
+            &low);
+        if(sc != 6)
+        {
+            goto error;
+        }
+        cs = globus_common_create_string("%d.%d.%d.%d:%d",
+            host[0], host[1], host[2], host[3], hi*256+low);
+    }
+    else
+    {
+        goto error;
+    }
+
+    return cs;
+
+error:
+
+    return NULL;
+}
+
+static
+char *
 gwtftp_l_pasv_reply_to_cs(
     int                                 type,
     char *                              reply,
@@ -448,6 +540,70 @@ gwtftp_l_pasv_cs_to_reply(
 error_dots:
     globus_free(reply);
     return NULL;
+}
+
+static
+globus_bool_t
+gwtftp_l_port(
+    gwtftp_l_connection_t *             conn,
+    globus_byte_t *                     buffer,
+    globus_size_t                       len)
+{
+    char *                              cs;
+    gwtftp_l_connection_pair_t *        conn_pair;
+    globus_result_t                     result;
+    char *                              passive_cs;
+    char *                              cmd;
+    int                                 type = 1;
+    globus_bool_t                       post;
+
+    conn_pair = conn->whos_my_daddy;
+
+    cs = gwtftp_l_port_cmd_to_cs(type, buffer, len);
+    if(cs == NULL)
+    {
+        /* forward through */
+    }
+
+    /* create a listener */
+    if(conn_pair->data_listening)
+    {
+        conn_pair->data_listening = GLOBUS_FALSE;
+        /* close the open server */
+        gwtftp_i_data_close(conn_pair->data);
+    }
+
+    /* parse passive response */
+    result = gwtftp_i_data_new(
+        &conn_pair->data,
+        gwtftp_l_data_tcp_stack,
+        gwtftp_l_data_gsi_stack,
+        cs,
+        &passive_cs,
+        gwtftp_l_cmd_error_data_close_cb,
+        conn_pair);
+    globus_free(cs);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+    conn_pair->ref++;
+    conn_pair->data_listening = GLOBUS_TRUE;
+
+    cmd = gwtftp_l_port_cs_to_cmd(passive_cs);
+    free(passive_cs);
+
+    /* form new message */
+    post = gwtftp_l_route(&conn_pair->c2s, cmd, strlen(cmd));
+    globus_free(buffer);
+    
+    return post;
+error:
+    globus_free(buffer);
+    gwtftp_l_error(conn_pair, result);
+
+    return GLOBUS_FALSE;
+
 }
 
 static

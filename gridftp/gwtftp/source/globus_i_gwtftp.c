@@ -5,12 +5,15 @@
 #define GWTFTP_CHILD_CLIENT_FD  "GWTFTP_CHILD_CLIENT_FD"
 #define GWTFTP_CHILD_SERVER_URL "GWTFTP_CHILD_SERVER_URL"
 
+#define URL_SUBJECT_DELIM       "##"
+
 /* 
  *  This file contains the main routine, the arugment parsing and 
  *  list code that listens for connections and accepts.  Once accepted
  *  it hands the new connection to connect.c for the FTP handlshake processing
  */
 
+globus_xio_driver_t                     gwtftp_l_gssapi_driver;
 globus_xio_driver_t                     gwtftp_l_tcp_driver;
 globus_xio_driver_t                     gwtftp_l_gsi_driver;
 globus_xio_stack_t                      gwtftp_l_data_tcp_stack;
@@ -20,7 +23,6 @@ static globus_xio_stack_t               gwtftp_l_client_stack;
 static globus_xio_stack_t               gwtftp_l_server_stack;
 static globus_xio_stack_t               gwtftp_l_client_stack;
 static globus_xio_driver_t              gwtftp_l_telnet_driver;
-static globus_xio_driver_t              gwtftp_l_gssapi_driver;
 static globus_xio_server_t              gwtftp_l_server;
 
 static globus_mutex_t                   gwtftp_l_mutex;
@@ -366,7 +368,7 @@ gwtftp_l_child_start()
         }
 
 
-        result = gwtftp_i_server_conn_open(server_xio, cs, handle);
+        result = gwtftp_i_server_conn_open(server_xio, cs, handle, NULL);
         if(result != GLOBUS_SUCCESS)
         {
             goto error_open;
@@ -1023,6 +1025,7 @@ gwtftp_i_authorized_user(
     globus_url_t                        g_url;
     char *                              url_retry = NULL;
     char *                              tmp_ptr;
+    char *                              subject = NULL;
 
     gwtftp_i_log(FTP2GRID_LOG_INFO,
         "Authorizing: %s\n", full_username);
@@ -1030,6 +1033,18 @@ gwtftp_i_authorized_user(
     {
         list = globus_list_search(gwtftp_l_connection_list, client_xio);
         globus_assert(list != NULL);
+
+        /* pull out local user name and  subject if they are there */
+
+        tmp_ptr = strstr(full_username, URL_SUBJECT_DELIM);
+        if(tmp_ptr != NULL)
+        {
+            subject = strdup(full_username);
+            full_username = tmp_ptr + strlen(URL_SUBJECT_DELIM);
+            tmp_ptr = strstr(subject, URL_SUBJECT_DELIM);
+            globus_assert(tmp_ptr != NULL);
+            *tmp_ptr = '\0';
+        }
 
         rc = globus_url_parse(full_username, &g_url);
         if(rc == GLOBUS_URL_ERROR_BAD_SCHEME)
@@ -1096,7 +1111,7 @@ gwtftp_i_authorized_user(
                     "%s:%d", g_url.host, g_url.port);
 
                 result = gwtftp_i_server_conn_open(
-                    server_xio, cs, client_xio);
+                    server_xio, cs, client_xio, subject);
                 globus_free(cs);
                 if(result != GLOBUS_SUCCESS)
                 {

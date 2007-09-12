@@ -143,7 +143,8 @@ globus_result_t
 gwtftp_i_server_conn_open(
     globus_xio_handle_t                 server_xio,
     char *                              cs,
-    globus_xio_handle_t                 client_xio);
+    globus_xio_handle_t                 client_xio,
+    char *                              subject);
 
 void
 gwtftp_i_authorized_user(
@@ -158,5 +159,7 @@ extern globus_xio_driver_t             gwtftp_l_tcp_driver;
 extern globus_xio_driver_t             gwtftp_l_gsi_driver;
 extern globus_xio_stack_t              gwtftp_l_data_tcp_stack;
 extern globus_xio_stack_t              gwtftp_l_data_gsi_stack;
+
+extern globus_xio_driver_t             gwtftp_l_gssapi_driver;
 
 #endif

@@ -414,18 +414,32 @@ gwtftp_l_data_server_close_cb(
 {
     gwtftp_i_data_t *                   data_h;
     globus_result_t                     result;
+    globus_xio_attr_t                   xio_attr;
 
     data_h = (gwtftp_i_data_t *) user_arg;
 
     globus_mutex_lock(&data_h->mutex);
     {
+        globus_xio_attr_init(&xio_attr);
+        /* ignore return.  allow gsi driver to not b e on stack */
+        globus_xio_attr_cntl(xio_attr, gwtftp_l_gsi_driver,
+            GLOBUS_XIO_GSI_SET_AUTHORIZATION_MODE,
+            GLOBUS_XIO_GSI_SELF_AUTHORIZATION);
+        globus_xio_attr_cntl(xio_attr, gwtftp_l_gsi_driver,
+            GLOBUS_XIO_GSI_SET_DELEGATION_MODE,
+            GLOBUS_XIO_GSI_DELEGATION_MODE_NONE);
+        globus_xio_attr_cntl(xio_attr, gwtftp_l_gsi_driver,
+            GLOBUS_XIO_GSI_SET_PROTECTION_LEVEL,
+            GLOBUS_XIO_GSI_PROTECTION_LEVEL_NONE);
+
         data_h->state = GWTFTP_DATA_STATE_PASSIVE_OPENING;
         result = globus_xio_register_open(
             data_h->passive_xio,
             NULL,
-            NULL,
+            xio_attr,
             gwtftp_l_data_passive_open_cb,
             data_h);
+        globus_xio_attr_destroy(xio_attr);
         if(result != GLOBUS_SUCCESS)
         {
             goto error_open;

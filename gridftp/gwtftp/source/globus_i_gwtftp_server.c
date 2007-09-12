@@ -462,10 +462,12 @@ globus_result_t
 gwtftp_i_server_conn_open(
     globus_xio_handle_t                 server_xio,
     char *                              cs,
-    globus_xio_handle_t                 client_xio)
+    globus_xio_handle_t                 client_xio,
+    char *                              subject)
 {
+    globus_xio_attr_t                   xio_attr;
     globus_result_t                     result;
-    gwtftp_l_server_session_t *       session;
+    gwtftp_l_server_session_t *         session;
 
     gwtftp_i_log(FTP2GRID_LOG_INFO,
         "Connecting to server: %s\n", cs);
@@ -480,12 +482,23 @@ gwtftp_i_server_conn_open(
     session->server_xio = server_xio;
     session->openning_command_q = globus_fifo_copy(&gwtftp_l_open_cmd_q);
 
+    globus_xio_attr_init(&xio_attr);
+    if(subject != NULL)
+    {
+        globus_xio_attr_cntl(
+            xio_attr,
+            gwtftp_l_gssapi_driver,
+            GLOBUS_XIO_GSSAPI_ATTR_TYPE_SUBJECT,
+            subject);
+    }
+
     result = globus_xio_register_open(
         server_xio,
         cs,
-        NULL,
+        xio_attr,
         gwtftp_l_server_open_cb,
         session);
+    globus_xio_attr_destroy(xio_attr);
     if(result != GLOBUS_SUCCESS)
     {
         goto error_open;
