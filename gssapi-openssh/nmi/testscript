@@ -44,7 +44,7 @@ if test -f gsi_openssh_bundle-*.tar.gz; then
   gpt-build -force -verbose gsi_openssh_bundle-*.tar.gz $GLOBUS_FLAVOR_NAME \
     GSI_OPENSSH_GPTMACRO="--with-zlib=$ZLIB_LOCATION"
 fi
-if test -d openssh; then
+if test -d gssapi-openssh/openssh; then
   echo ==================================================
   echo Installing autotools...
   cd autotools
@@ -89,7 +89,7 @@ if test -f nightly.tar.gz; then
         gpt-build -force -verbose gsi_openssh_bundle-*.tar.gz $GLOBUS_FLAVOR_NAME \
             GSI_OPENSSH_GPTMACRO="--with-zlib=$ZLIB_LOCATION"
     fi
-    if test -d openssh; then
+    if test -d gssapi-openssh/openssh; then
         echo ==================================================
         echo Installing autotools...
         cd autotools
