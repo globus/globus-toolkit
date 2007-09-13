@@ -26,7 +26,7 @@ globus_test/testcred-setup.sh
 
 # Setup container env vars to deal with potential missing persistence dir
 # Also avoid weird debian container IPv6 startup problems
-GLOBUS_OPTIONS="-Dorg.globus.wsrf.container.peristence.dir=$GLOBUS_LOCATION/test -Djava.net.preferIPv4Stack=true"
+GLOBUS_OPTIONS="-Dorg.globus.wsrf.container.persistence.dir=$GLOBUS_LOCATION/test -Djava.net.preferIPv4Stack=true"
 export GLOBUS_OPTIONS
 
 if [ ${TEST} = "myproxy_test" ]; then
