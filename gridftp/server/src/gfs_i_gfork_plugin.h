@@ -49,28 +49,33 @@
 #define GF_VERSION_TIMEOUT         'F'
 #define GF_REGISTRATION_TIMEOUT    600
 
+/* header for all */
 #define GF_VERSION_LEN             1
+#define GF_HEADER_RESERVE_LEN      5
 #define GF_MSG_TYPE_LEN            1
 
-/* dyn be messaging */
-#define GF_AT_ONCE_LEN             (sizeof(uint32_t))
-#define GF_TOTAL_LEN               (sizeof(uint32_t))
-#define GF_HEADER_RESERVE_LEN      5
-#define GF_COOKIE_LEN              32
-#define GF_REPO_LEN                108
-#define GF_CS_LEN                  108
-
 #define GF_VERSION_NDX             0
-#define GF_MSG_TYPE_NDX            (GF_VERSION_NDX+GF_VERSION_LEN)
+#define GF_HEADER_RESERVE_NDX      (GF_VERSION_NDX+GF_VERSION_LEN)
+#define GF_MSG_TYPE_NDX            (GF_HEADER_RESERVE_NDX+GF_HEADER_RESERVE_LEN)
 
-#define GF_AT_ONCE_NDX             (GF_MSG_TYPE_NDX+GF_MSG_TYPE_LEN)
-#define GF_TOTAL_NDX               (GF_AT_ONCE_NDX+GF_AT_ONCE_LEN)
-#define GF_HEADER_RESERVE_NDX      (GF_TOTAL_NDX+GF_TOTAL_LEN)
-#define GF_COOKIE_NDX              (GF_HEADER_RESERVE_NDX+GF_COOKIE_LEN)
-#define GF_REPO_NDX                (GF_COOKIE_NDX+GF_COOKIE_NDX)
-#define GF_CS_NDX                  (GF_REPO_NDX+GF_REPO_LEN)
 
-#define GF_REG_PACKET_LEN          (GF_CS_LEN+GF_CS_NDX)
+/* dyn be messaging */
+#define GF_DYN_AT_ONCE_LEN         (sizeof(uint32_t))
+#define GF_DYN_TOTAL_LEN           (sizeof(uint32_t))
+#define GF_DYN_ENTRY_COUNT_LEN     (sizeof(uint32_t))
+#define GF_DYN_COOKIE_LEN          32
+#define GF_DYN_REPO_LEN            108
+#define GF_DYN_CS_LEN              108
+
+
+#define GF_DYN_AT_ONCE_NDX         (GF_MSG_TYPE_NDX+GF_MSG_TYPE_LEN)
+#define GF_DYN_TOTAL_NDX           (GF_DYN_AT_ONCE_NDX+GF_DYN_AT_ONCE_LEN)
+#define GF_DYN_ENTRY_COUNT_NDX     (GF_DYN_TOTAL_NDX+GF_DYN_TOTAL_LEN)
+#define GF_DYN_COOKIE_NDX      (GF_DYN_ENTRY_COUNT_NDX+GF_DYN_ENTRY_COUNT_LEN)
+#define GF_DYN_REPO_NDX            (GF_DYN_COOKIE_NDX+GF_DYN_COOKIE_NDX)
+#define GF_DYN_CS_NDX              (GF_DYN_REPO_NDX+GF_DYN_REPO_LEN)
+
+#define GF_DYN_PACKET_LEN          (GF_DYN_CS_LEN+GF_DYN_CS_NDX)
 
 /* mem messaging */
 #define GF_MEM_LIMIT_NDX            (GF_MSG_TYPE_NDX+GF_MSG_TYPE_LEN)

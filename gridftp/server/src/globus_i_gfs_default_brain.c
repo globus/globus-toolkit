@@ -188,9 +188,9 @@ globus_l_gfs_gfork_dyn_reg(
     gfs_l_db_repo_t *                   repo = NULL;
     int                                 con_max;
     int                                 total_max;
-    char                                repo_name[GF_REPO_LEN];
-    char                                cs[GF_CS_LEN];
-    char                                cookie[GF_COOKIE_LEN];
+    char                                repo_name[GF_DYN_REPO_LEN];
+    char                                cs[GF_DYN_CS_LEN];
+    char                                cookie[GF_DYN_COOKIE_LEN];
     char *                              cookie_id;
     GlobusGFSName(globus_l_gfs_gfork_dyn_reg);
 
@@ -198,19 +198,19 @@ globus_l_gfs_gfork_dyn_reg(
         GLOBUS_GFS_LOG_WARN,
         "[%s] enter", "globus_l_gfs_gfork_dyn_reg");
 
-    memcpy(&tmp_32, &buffer[GF_AT_ONCE_NDX], sizeof(uint32_t));
+    memcpy(&tmp_32, &buffer[GF_DYN_AT_ONCE_NDX], sizeof(uint32_t));
     con_max = (int) ntohl(tmp_32);
 
-    memcpy(&tmp_32, &buffer[GF_TOTAL_NDX], sizeof(uint32_t));
+    memcpy(&tmp_32, &buffer[GF_DYN_TOTAL_NDX], sizeof(uint32_t));
     total_max = (int) ntohl(tmp_32);
     if(total_max == 0)
     {
         total_max = -1;
     }
 
-    memcpy(cookie, &buffer[GF_COOKIE_NDX], GF_COOKIE_LEN);
-    memcpy(cs, &buffer[GF_CS_NDX], GF_CS_LEN);
-    memcpy(repo_name, &buffer[GF_REPO_NDX], GF_REPO_LEN);
+    memcpy(cookie, &buffer[GF_DYN_COOKIE_NDX], GF_DYN_COOKIE_LEN);
+    memcpy(cs, &buffer[GF_DYN_CS_NDX], GF_DYN_CS_LEN);
+    memcpy(repo_name, &buffer[GF_DYN_REPO_NDX], GF_DYN_REPO_LEN);
 
     if(*cs == '\0')
     {
@@ -277,7 +277,7 @@ globus_l_gfs_gfork_dyn_reg(
         free(cookie_id);
     }
 error_cs:
-    globus_free(buffer);
+    return;
 }
 
 static
@@ -353,11 +353,16 @@ globus_l_gfs_gfork_incoming_cb(
     globus_byte_t *                     buffer,
     globus_size_t                       len)
 {
+    globus_size_t                       off;
     globus_i_gfs_config_option_cb_ent_t * cb_handle;
     globus_reltime_t                    delay;
     uint32_t                            n32;
+    int                                 count;
+    int                                 i;
+    char *                              tmp_buf;
     GlobusGFSName(globus_l_gfs_gfork_incoming_cb);
-    
+
+
     globus_gfs_log_message(
         GLOBUS_GFS_LOG_WARN,
         "[%s] enter", "globus_l_gfs_gfork_incoming_cb()");
@@ -372,12 +377,46 @@ globus_l_gfs_gfork_incoming_cb(
         switch(buffer[GF_MSG_TYPE_NDX])
         {
             case GFS_GFORK_MSG_TYPE_DYNBE:
-                globus_l_gfs_gfork_dyn_reg(
-                    handle,
-                    user_arg,
-                    from_pid,
-                    buffer,
-                    len);
+
+                off = 0;
+                memcpy(&n32, &buffer[GF_DYN_ENTRY_COUNT_NDX], sizeof(uint32_t));
+                count = n32;
+                globus_gfs_log_message(
+                        GLOBUS_GFS_LOG_ERR,
+                        "[%s] received %d registrations\n",
+                            "globus_l_gfs_gfork_incoming_cb()", n32);
+                for(i = 0; i < count && len >= GF_DYN_PACKET_LEN; i++)
+                {
+                    tmp_buf = &buffer[off];
+                    memcpy(&n32,
+                        &tmp_buf[GF_DYN_ENTRY_COUNT_NDX], sizeof(uint32_t));
+
+                    if(len < GF_DYN_PACKET_LEN)
+                    {
+                        globus_gfs_log_message(
+                            GLOBUS_GFS_LOG_ERR,
+                            "[%s] error in dyn reg size\n", 
+                            "globus_l_gfs_gfork_incoming_cb()");
+                    }
+                    else
+                    {
+                        globus_gfs_log_message(
+                            GLOBUS_GFS_LOG_INFO,
+                            "[%s] registering a new backend %d\n", 
+                            "globus_l_gfs_gfork_incoming_cb()",
+                            n32);
+                        globus_l_gfs_gfork_dyn_reg(
+                            handle,
+                            user_arg,
+                            from_pid,
+                            tmp_buf,
+                            GF_DYN_PACKET_LEN);
+                    }
+                    off += GF_DYN_PACKET_LEN;
+                    len -= GF_DYN_PACKET_LEN;
+                }
+                globus_free(buffer);
+
                 break;
 
             case GFS_GFORK_MSG_TYPE_MEM:

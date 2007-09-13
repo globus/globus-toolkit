@@ -81,7 +81,6 @@ static char *                           g_allowed_dn_file = NULL;
 static globus_xio_driver_t              g_tcp_driver;
 static globus_xio_driver_t              g_gsi_driver;
 static FILE *                           g_log_fptr;
-static int                              g_repo_count = 0;
 static gfork_child_handle_t             g_handle;
 static int                              g_connection_count = 0;
 static int                              g_connection_count_max_observed = 0;
@@ -125,9 +124,8 @@ typedef struct gfs_l_gfork_master_entry_s
     char *                              table_key;
     globus_callback_handle_t            callback_handle;
     int                                 timeout_count;
-    globus_byte_t                       buffer[GF_REG_PACKET_LEN];
+    globus_byte_t                       buffer[GF_DYN_PACKET_LEN];
 } gfs_l_gfork_master_entry_t;
-
 
 
 static
@@ -177,7 +175,7 @@ gfs_l_gfork_timeout(
         {
             gfs_l_gfork_log(
                 GLOBUS_SUCCESS, 2, "Backend registration for %s expired\n",
-                &buffer[GF_CS_NDX]);
+                &buffer[GF_DYN_CS_NDX]);
             ent_buf->buffer[GF_VERSION_NDX] = GF_VERSION_TIMEOUT;
             ent_buf = (gfs_l_gfork_master_entry_t *) globus_hashtable_remove(
                 &g_gfork_be_table, ent_buf->table_key);
@@ -254,7 +252,7 @@ gfs_l_gfork_read_cb(
         /* we are only ok if the string ends in a \0 */
         done = GLOBUS_FALSE;
         ok = GLOBUS_TRUE;
-        for(i = GF_CS_NDX; i < GF_CS_NDX + GF_CS_LEN && !done; i++)
+        for(i = GF_DYN_CS_NDX; i < GF_DYN_CS_NDX + GF_DYN_CS_LEN && !done; i++)
         {
             if(buffer[i] == '\0')
             {
@@ -275,13 +273,13 @@ gfs_l_gfork_read_cb(
 
         /* registering client may not be same byte order but worker child
             will be */
-        memcpy(&tmp_32, &buffer[GF_AT_ONCE_NDX], sizeof(uint32_t));
+        memcpy(&tmp_32, &buffer[GF_DYN_AT_ONCE_NDX], sizeof(uint32_t));
         converted_32 = ntohl(tmp_32);
-        memcpy(&buffer[GF_AT_ONCE_NDX], &converted_32, sizeof(uint32_t));
+        memcpy(&buffer[GF_DYN_AT_ONCE_NDX], &converted_32, sizeof(uint32_t));
 
-        memcpy(&tmp_32, &buffer[GF_TOTAL_NDX], sizeof(uint32_t));
+        memcpy(&tmp_32, &buffer[GF_DYN_TOTAL_NDX], sizeof(uint32_t));
         converted_32 = ntohl(tmp_32);
-        memcpy(&buffer[GF_TOTAL_NDX], &converted_32, sizeof(uint32_t));
+        memcpy(&buffer[GF_DYN_TOTAL_NDX], &converted_32, sizeof(uint32_t));
 
         if(!ok)
         {
@@ -291,7 +289,7 @@ gfs_l_gfork_read_cb(
         }
 
         GlobusTimeReltimeSet(delay, GF_REGISTRATION_TIMEOUT, 0);
-        table_key = (char *)&buffer[GF_CS_NDX];
+        table_key = (char *)&buffer[GF_DYN_CS_NDX];
         ent_buf = (gfs_l_gfork_master_entry_t *) globus_hashtable_lookup(
             &g_gfork_be_table, table_key);
         if(ent_buf != NULL)
@@ -333,8 +331,8 @@ gfs_l_gfork_read_cb(
         result = globus_xio_register_write(
             handle,
             write_ent->buffer,
-            GF_REG_PACKET_LEN,
-            GF_REG_PACKET_LEN,
+            GF_DYN_PACKET_LEN,
+            GF_DYN_PACKET_LEN,
             NULL,
             gfs_l_gfork_write_cb,
             write_ent);
@@ -348,11 +346,11 @@ gfs_l_gfork_read_cb(
             globus_free(write_ent);
         }
         iov[0].iov_base = buffer;
-        iov[0].iov_len = GF_REG_PACKET_LEN;
+        iov[0].iov_len = GF_DYN_PACKET_LEN;
 
         gfs_l_gfork_log(
             GLOBUS_SUCCESS, 2, "Successful registration from: %s\n",
-            &buffer[GF_CS_NDX]);
+            &buffer[GF_DYN_CS_NDX]);
         /* TODO: keep an "in need" list.  if only 3 were available at
             the time the client asked but wanted 4, send this message,
             otherwise, do not send.
@@ -380,8 +378,8 @@ error_version:
     result = globus_xio_register_write(
         handle,
         write_ent->buffer,
-        GF_REG_PACKET_LEN,
-        GF_REG_PACKET_LEN,
+        GF_DYN_PACKET_LEN,
+        GF_DYN_PACKET_LEN,
         NULL,
         gfs_l_gfork_write_cb,
         write_ent);
@@ -541,8 +539,8 @@ gfs_l_gfork_open_server_cb(
     result = globus_xio_register_read(
         handle,
         ent_buf->buffer,
-        GF_REG_PACKET_LEN,
-        GF_REG_PACKET_LEN,
+        GF_DYN_PACKET_LEN,
+        GF_DYN_PACKET_LEN,
         NULL,
         gfs_l_gfork_read_cb,
         ent_buf);
@@ -561,8 +559,8 @@ error_not_allowed:
     result = globus_xio_register_write(
         handle,
         ent_buf->buffer,
-        GF_REG_PACKET_LEN,
-        GF_REG_PACKET_LEN,
+        GF_DYN_PACKET_LEN,
+        GF_DYN_PACKET_LEN,
         NULL,
         gfs_l_gfork_write_cb,
         ent_buf);
@@ -694,6 +692,7 @@ gfs_l_gfork_dyn_be_open(
     void *                              user_arg,
     pid_t                               from_pid)
 {
+    uint32_t                            n32;
     globus_result_t                     result;
     globus_xio_iovec_t *                iov;
     int                                 i = 0;
@@ -705,7 +704,7 @@ gfs_l_gfork_dyn_be_open(
         globus_fifo_size(&gfs_l_gfork_be_q),
         sizeof(globus_xio_iovec_t));
 
-    while(!done && (i < g_repo_count || g_repo_count == 0))
+    while(!done && (i < g_stripe_count || g_stripe_count == 0))
     {
         if(globus_fifo_empty(&gfs_l_gfork_be_q))
         {
@@ -720,7 +719,7 @@ gfs_l_gfork_dyn_be_open(
             {
                 gfs_l_gfork_log(
                     GLOBUS_SUCCESS, 2, "Freeing timed-out buffer %s\n",
-                    &ent_buf->buffer[GF_CS_NDX]);
+                    &ent_buf->buffer[GF_DYN_CS_NDX]);
                 globus_free(ent_buf);
             }
             else
@@ -730,7 +729,7 @@ gfs_l_gfork_dyn_be_open(
                 /* temparily assign ent_buf here, we ultimatale 
                     want ent_buf-> buffer */
                 iov[i].iov_base = ent_buf;
-                iov[i].iov_len = GF_REG_PACKET_LEN;
+                iov[i].iov_len = GF_DYN_PACKET_LEN;
                 i++;
             }
         }
@@ -742,8 +741,13 @@ gfs_l_gfork_dyn_be_open(
         ent_buf = (gfs_l_gfork_master_entry_t *) iov[i].iov_base;
         globus_fifo_enqueue(&gfs_l_gfork_be_q, ent_buf);
         iov[i].iov_base = ent_buf->buffer;
+
+        n32 = iovc - i;
+        memcpy(&ent_buf->buffer[GF_DYN_ENTRY_COUNT_NDX],&n32,sizeof(uint32_t));
         gfs_l_gfork_log(
-            GLOBUS_SUCCESS, 2, "Re-enqueue\n");
+            GLOBUS_SUCCESS, 2, "Re-enqueue %d\n", n32);
+
+        assert(GFS_GFORK_MSG_TYPE_DYNBE == ent_buf->buffer[GF_MSG_TYPE_NDX]);
     }
     /* put them back in */
     if(iovc > 0)
@@ -1347,8 +1351,8 @@ gfs_l_gfork_backend_xio_write_cb(
     result = globus_xio_register_read(
         handle,
         buffer,
-        GF_REG_PACKET_LEN,
-        GF_REG_PACKET_LEN,
+        GF_DYN_PACKET_LEN,
+        GF_DYN_PACKET_LEN,
         NULL,
         gfs_l_gfork_backend_xio_read_cb,
         NULL);
@@ -1382,18 +1386,18 @@ gfs_l_gfork_backend_xio_open_cb(
         goto error_param;
     }
 
-    buffer = globus_calloc(1, GF_REG_PACKET_LEN);
+    buffer = globus_calloc(1, GF_DYN_PACKET_LEN);
     buffer[GF_VERSION_NDX] = GF_VERSION;
     buffer[GF_MSG_TYPE_NDX] = GFS_GFORK_MSG_TYPE_DYNBE;
-    memcpy(&buffer[GF_AT_ONCE_NDX], &g_at_once, sizeof(uint32_t));
-    memcpy(&buffer[GF_TOTAL_NDX], &g_total_cons, sizeof(uint32_t));
-    strncpy((char *)&buffer[GF_CS_NDX], g_be_cs, GF_CS_LEN);
+    memcpy(&buffer[GF_DYN_AT_ONCE_NDX], &g_at_once, sizeof(uint32_t));
+    memcpy(&buffer[GF_DYN_TOTAL_NDX], &g_total_cons, sizeof(uint32_t));
+    strncpy((char *)&buffer[GF_DYN_CS_NDX], g_be_cs, GF_DYN_CS_LEN);
 
     result = globus_xio_register_write(
         handle,
         buffer,
-        GF_REG_PACKET_LEN,
-        GF_REG_PACKET_LEN,
+        GF_DYN_PACKET_LEN,
+        GF_DYN_PACKET_LEN,
         NULL,
         gfs_l_gfork_backend_xio_write_cb,
         NULL);
@@ -1822,7 +1826,7 @@ gfs_l_gfork_opts_updatetime(
     globus_result_t                     result;
     int                                 sc;
     int                                 tm;
-    GFSGForkFuncName(gfs_l_gfork_opts_stripe_count);
+    GFSGForkFuncName(gfs_l_gfork_opts_updatetime);
 
     sc = sscanf(opt[0], "%d", &tm);
     if(sc != 1)
@@ -1921,7 +1925,7 @@ gfs_l_gfork_opts_nice_share(
     globus_result_t                     result;
     int                                 sc;
     int                                 n;
-    GFSGForkFuncName(gfs_l_gfork_opts_stripe_count);
+    GFSGForkFuncName(gfs_l_gfork_opts_nice_share);
 
     sc = sscanf(opt[0], "%d", &n);
     if(sc != 1 || n <= 0)

@@ -161,7 +161,7 @@ main(
 {
     globus_result_t                     result;
     int                                 rc;
-    globus_byte_t                       buffer[GF_REG_PACKET_LEN];
+    globus_byte_t                       buffer[GF_DYN_PACKET_LEN];
     uint32_t                            tmp32;
     char *                              be_cs;
     char *                              reg_cs;
@@ -195,17 +195,20 @@ main(
         goto error_xio;
     }
 
-    memset(buffer, '\0', GF_REG_PACKET_LEN);
+    memset(buffer, '\0', GF_DYN_PACKET_LEN);
     buffer[GF_VERSION_NDX] = GF_VERSION;
     buffer[GF_MSG_TYPE_NDX] = GFS_GFORK_MSG_TYPE_DYNBE;
 
     tmp32 = htonl(g_at_once);
-    memcpy(&buffer[GF_AT_ONCE_NDX], &g_at_once, sizeof(uint32_t));
+    memcpy(&buffer[GF_DYN_AT_ONCE_NDX], &tmp32, sizeof(uint32_t));
 
     tmp32 = htonl(g_total_cons);
-    memcpy(&buffer[GF_TOTAL_NDX], &g_total_cons, sizeof(uint32_t));
+    memcpy(&buffer[GF_DYN_TOTAL_NDX], &tmp32, sizeof(uint32_t));
 
-    strncpy(&buffer[GF_CS_NDX], be_cs, GF_CS_LEN);
+    tmp32 = htonl(1);
+    memcpy(&buffer[GF_DYN_ENTRY_COUNT_NDX], &tmp32, sizeof(uint32_t));
+
+    strncpy(&buffer[GF_DYN_CS_NDX], be_cs, GF_DYN_CS_LEN);
 
     result = globus_xio_open(g_xio_handle, reg_cs, NULL);
     if(result != GLOBUS_SUCCESS)
@@ -214,7 +217,7 @@ main(
     }
     result = globus_xio_write(
         g_xio_handle, buffer, 
-        GF_REG_PACKET_LEN, GF_REG_PACKET_LEN, &nbytes, NULL);
+        GF_DYN_PACKET_LEN, GF_DYN_PACKET_LEN, &nbytes, NULL);
     if(result != GLOBUS_SUCCESS)
     {
         goto error_write;
@@ -222,7 +225,7 @@ main(
     /* read reply */
     result = globus_xio_read(
         g_xio_handle, buffer,
-        GF_REG_PACKET_LEN, GF_REG_PACKET_LEN, &nbytes, NULL);
+        GF_DYN_PACKET_LEN, GF_DYN_PACKET_LEN, &nbytes, NULL);
     if(result != GLOBUS_SUCCESS)
     {
         gfs_l_dynclient_log(GLOBUS_SUCCESS, 0,
