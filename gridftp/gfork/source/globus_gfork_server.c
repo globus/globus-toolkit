@@ -677,6 +677,7 @@ gfork_l_sigchld(
     int                                 child_pid;
     int                                 child_status;
     int                                 child_rc;
+    globus_reltime_t                    delay;
     globus_result_t                     res;
 
     gfork_log(2, "Sigint child\n");
@@ -719,8 +720,12 @@ gfork_l_sigchld(
         }
 #       else
         {
+            globus_reltime_t            delay;
+
+            GlobusTimeReltimeSet(delay, 5, 0);
+            
             res = globus_callback_register_oneshot(
-                NULL,
+                &delay,
                 &gfork_l_sigchild_fake,
                 gfork_l_sigchld,
                 user_arg);
@@ -1543,8 +1548,12 @@ main(
         }
 #       else
         {
+            globus_reltime_t            delay;
+
+            GlobusTimeReltimeSet(delay, 5, 0);
+
             result = globus_callback_register_oneshot(
-                NULL,
+                &delay,
                 &gfork_l_sigchild_fake,
                 gfork_l_sigchld,
                 &gfork_l_options);

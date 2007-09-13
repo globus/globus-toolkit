@@ -120,6 +120,8 @@ gfork_l_child_read_body_cb(
         goto error_incoming;
     }
 
+    globus_assert(nbytes == handle->header.size);
+
     handle->incoming_cb(
         handle,
         handle->user_arg,
