@@ -68,6 +68,7 @@ typedef struct globus_i_gwtftp_cmd_opts_s
     char *                              log_file;
     char *                              pw_file;
     globus_list_t *                     ip_list;
+    globus_bool_t                       allow_all;
 } globus_i_gwtftp_cmd_opts_t;
 
 typedef struct gwtftp_l_data_s
@@ -161,5 +162,7 @@ extern globus_xio_stack_t              gwtftp_l_data_tcp_stack;
 extern globus_xio_stack_t              gwtftp_l_data_gsi_stack;
 
 extern globus_xio_driver_t             gwtftp_l_gssapi_driver;
+
+extern char *                           gwtftp_i_data_interface;
 
 #endif

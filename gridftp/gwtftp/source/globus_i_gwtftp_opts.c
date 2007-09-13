@@ -58,6 +58,27 @@ gwtftp_l_opts_child(
 
 static
 globus_result_t
+gwtftp_l_opts_data_iface(
+    globus_options_handle_t             opts_handle,
+    char *                              cmd,
+    char **                             opt,
+    void *                              arg,
+    int *                               out_parms_used)
+{
+    globus_i_gwtftp_cmd_opts_t *        opts;
+    GlobusFTP2GridFuncName(gwtftp_l_opts_ip_mask);
+
+    opts = (globus_i_gwtftp_cmd_opts_t *) arg;
+
+    gwtftp_i_data_interface = opt[0];
+
+    *out_parms_used = 1;
+    return GLOBUS_SUCCESS;
+}
+
+
+static
+globus_result_t
 gwtftp_l_opts_ip_mask(
     globus_options_handle_t             opts_handle,
     char *                              cmd,
@@ -76,6 +97,25 @@ gwtftp_l_opts_ip_mask(
     return GLOBUS_SUCCESS;
 }
 
+static
+globus_result_t
+gwtftp_l_opts_ip_all(
+    globus_options_handle_t             opts_handle,
+    char *                              cmd,
+    char **                             opt,
+    void *                              arg,
+    int *                               out_parms_used)
+{
+    globus_i_gwtftp_cmd_opts_t *        opts;
+    GlobusFTP2GridFuncName(gwtftp_l_opts_ip_all);
+
+    opts = (globus_i_gwtftp_cmd_opts_t *) arg;
+
+    opts->allow_all = GLOBUS_TRUE;
+
+    *out_parms_used = 0;
+    return GLOBUS_SUCCESS;
+}
 
 static
 globus_result_t
@@ -219,6 +259,12 @@ globus_options_entry_t                   globus_i_gwtftp_opts_table[] =
     {"authorized-hosts", "ah", NULL, NULL,
         "Comma seperated list of authorized IP masks.", 
         1, gwtftp_l_opts_ip_mask},
+    {"allow-all-hosts", "A", NULL, NULL,
+        "Allow any host to connect.", 
+        0, gwtftp_l_opts_ip_all},
+    {"data-interface", "di", NULL, NULL,
+        "Set the data interface to use (helps avoid localhost only problems).", 
+        1, gwtftp_l_opts_data_iface},
     {"port", "p", NULL, NULL,
         "Port to listen where incoming clinet connections are accepted.", 
         1, gwtftp_l_opts_port},

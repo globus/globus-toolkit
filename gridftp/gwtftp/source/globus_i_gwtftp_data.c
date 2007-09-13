@@ -505,6 +505,7 @@ gwtftp_i_data_new(
     globus_xio_callback_t               close_cb,
     void *                              user_arg)
 {
+    globus_xio_attr_t                   xio_attr;
     gwtftp_i_data_t *                   data_h;
     globus_result_t                     result;
     char *                              cs;
@@ -523,8 +524,18 @@ gwtftp_i_data_new(
     data_h->active_stack = active_stack;
     data_h->passive_stack = passive_stack;
 
+    globus_xio_attr_init(&xio_attr);
+    if(gwtftp_i_data_interface != NULL)
+    {
+        globus_xio_attr_cntl(
+            xio_attr,
+            gwtftp_l_tcp_driver,
+            GLOBUS_XIO_TCP_SET_INTERFACE,
+            gwtftp_i_data_interface);
+    }
     result = globus_xio_server_create(
-        &data_h->server, NULL, data_h->passive_stack);
+        &data_h->server, xio_attr, data_h->passive_stack);
+    globus_xio_attr_destroy(xio_attr);
     if(result != GLOBUS_SUCCESS)
     {
         goto error_create;

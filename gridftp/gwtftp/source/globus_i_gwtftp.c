@@ -13,6 +13,7 @@
  *  it hands the new connection to connect.c for the FTP handlshake processing
  */
 
+char *                                  gwtftp_i_data_interface = NULL;
 globus_xio_driver_t                     gwtftp_l_gssapi_driver;
 globus_xio_driver_t                     gwtftp_l_tcp_driver;
 globus_xio_driver_t                     gwtftp_l_gsi_driver;
@@ -37,6 +38,7 @@ static const char *                     gwtftp_l_log_filename = NULL;
 static int                              gwtftp_l_listen_port = 0;
 static globus_list_t *                  gwtftp_l_ip_list;
 
+static globus_bool_t                    gwtftp_l_allow_all = GLOBUS_FALSE;
 static char  *                          gwtftp_l_exec_program;
 
 static globus_list_t *                  gwtftp_l_connection_list = NULL;
@@ -594,6 +596,8 @@ gwtftp_i_options(
     gwtftp_l_log_filename = cmd_opts.log_file;
     gwtftp_l_exec_program = argv[0];
 
+    gwtftp_l_allow_all = cmd_opts.allow_all;
+
     globus_options_destroy(opt_h);
 
     return GLOBUS_SUCCESS;
@@ -784,6 +788,11 @@ gwtftp_i_ip_ok(
     globus_bool_t                       ok = GLOBUS_FALSE;
     globus_list_t *                     list;
     GlobusFTP2GridFuncName(gwtftp_i_ip_ok);
+
+    if(gwtftp_l_allow_all)
+    {
+        return GLOBUS_SUCCESS;
+    }
 
     result = globus_xio_handle_cntl(
         handle,
