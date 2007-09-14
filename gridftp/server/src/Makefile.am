@@ -10,6 +10,9 @@ SUBDIRS = \
 	doxygen
 
 EXTRA_DIST = \
+    gridftp.gfork.in \
+    gridftp-fe.gfork.in \
+    gridftp-be.gfork.in \
 	version.h.in \
 	extensions.h.in \
 	configure.in.in
@@ -100,6 +103,11 @@ sbin_SCRIPTS = \
 libexec_PROGRAMS= \
     gfs-gfork-master \
     gfs-dynbe-client
+
+scriptsysconf_SCRIPTS=\
+    gridftp.gfork \
+    gridftp-fe.gfork \
+    gridftp-be.gfork
 
 # _SOURCES is an automake macro which contains
 # a list of sources needed to compile the library.
