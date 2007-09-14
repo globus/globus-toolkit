@@ -14,6 +14,8 @@ service gridftp2
   port = 5000
 }
 
+*note: example configuration file exist in $GLOBUS_LOCATION/gridftp???.gfork 
+
 That portion is identical to xinetd.  In fact an existing xinetd 
 configuration file should work.  Once you have a configuration file 
 gfork is run with:
