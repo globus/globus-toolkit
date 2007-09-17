@@ -338,7 +338,7 @@ globus_rls_client_java			    replica/rls/client/java/source	tar
 
 myproxy		myproxy	gpt
 
-gsi_openssh	gssapi-openssh/openssh	make_gpt_dist	null OPENSSH_3_1P1_GSSAPI_GPT-branch
+gsi_openssh	gssapi-openssh/openssh	make_gpt_dist	null GPT-branch
 gsi_openssh_setup	gssapi-openssh/setup	make_gpt_dist
 
 gridshib_common	gridshib/gt/common/java/source tar null gridshib_gt_0_6_0_branch
@@ -347,4 +347,4 @@ gridshib_echo gridshib/gt/echoservice/java tar null gridshib_gt_0_6_0_branch
 gridshib_core gridshib/gt/interceptors/java/source tar null gridshib_gt_0_6_0_branch
 gridshib_tests gridshib/gt/service/java/test tar null gridshib_gt_0_6_0_branch
 
-#gridway	gridway	tar	null	globus_4_0_branch
+gridway	gridway	tar	null	globus_4_0_branch
