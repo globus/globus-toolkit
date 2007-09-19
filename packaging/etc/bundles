@@ -97,6 +97,7 @@ BUNDLE globus-resource-management-client
 	globus_core
 	globus_common
 	globus_common_setup
+        globus_hostname_lookup
 	globus_libtool
         globus_callout
 	globus_data_conversion
@@ -209,6 +210,7 @@ BUNDLE globus-data-management-client
 	globus_core
 	globus_common
 	globus_common_setup
+        globus_hostname_lookup
 	globus_libtool
         globus_callout
 	globus_openssl
