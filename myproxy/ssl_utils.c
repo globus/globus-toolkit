@@ -1857,7 +1857,10 @@ ssl_verify_gsi_chain(SSL_CREDENTIALS *chain)
    X509_STORE_CTX        csc;
    SSL                   *ssl = NULL;
    SSL_CTX               *sslContext = NULL;
+
+   int                                 callback_data_index;
    globus_gsi_cert_utils_cert_type_t   cert_type;
+   globus_gsi_callback_data_t          callback_data = NULL;
 
    memset(&csc, 0, sizeof(csc));
    cert_store=X509_STORE_new();
@@ -1918,6 +1921,17 @@ ssl_verify_gsi_chain(SSL_CREDENTIALS *chain)
 
    X509_STORE_CTX_set_depth(&csc, 100); /* allow more than 9 certs in chain */
 
+#if defined(X509_V_FLAG_ALLOW_PROXY_CERTS)
+   X509_STORE_CTX_set_flags(&csc, X509_V_FLAG_ALLOW_PROXY_CERTS);
+#endif
+
+   globus_gsi_callback_data_init(&callback_data);
+   globus_gsi_callback_set_cert_dir(callback_data, certdir);
+   globus_gsi_callback_get_X509_STORE_callback_data_index(&callback_data_index);
+   X509_STORE_CTX_set_ex_data(&csc, callback_data_index, (void *)callback_data);
+   X509_STORE_set_verify_cb_func(&csc,
+                                     globus_gsi_callback_create_proxy_callback);
+
    if(!X509_verify_cert(&csc)) {
       verror_put_string("X509_verify_cert() failed: %s",
 			(char *)X509_verify_cert_error_string(csc.error));
@@ -1968,6 +1982,7 @@ end:
       free(certdir);
    if (cert_store)
       X509_STORE_free(cert_store);
+   globus_gsi_callback_data_destroy(callback_data);
 
    return return_status;
 }
