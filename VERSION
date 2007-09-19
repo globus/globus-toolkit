@@ -5,7 +5,7 @@ Binary compatibility of the C API is not guaranteed between releases.
 Version History
 ---------------
 v4.2 XX Xxx 2007
-  - ...
+  - fixes for newer OpenSSL versions used in GT 4.2
 
 v4.1 10 Sep 2007
   - in myproxy-server, listen on $MYPROXY_SERVER_PORT if defined
