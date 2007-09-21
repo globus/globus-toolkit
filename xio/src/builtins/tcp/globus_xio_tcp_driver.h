@@ -205,6 +205,8 @@ typedef enum
      *      The service name to use when setting up the listener.  If the 
      *      service name cannot be resolved, the port (if one is set) will
      *      be used instead.
+     *
+     * string opt: port=<string>
      */
     /* const char *                     service_name */
     GLOBUS_XIO_TCP_SET_SERVICE,
@@ -231,6 +233,8 @@ typedef enum
      *      The port number to use when setting up the listener.  If the 
      *      service name is also set, this will only be used if that can't be
      *      resolved.
+     *
+     * string opt: port=<int>
      */
     /* int                              listener_port */
     GLOBUS_XIO_TCP_SET_PORT,
@@ -285,6 +289,8 @@ typedef enum
      *      The upper bound on the listener port. (default 0 -- no bound)
      * 
      * @see GLOBUS_XIO_TCP_SET_RESTRICT_PORT
+     *
+     * string opt: listen_range=<int>,<int>
      */
     /* int                              listener_min_port,
      * int                              listener_max_port */
@@ -336,6 +342,8 @@ typedef enum
      * 
      * @param interface
      *      The interface to use.  Can be a hostname or numeric IP
+     *
+     * string opt: iface=<string>
      */
     /* const char *                     interface */
     GLOBUS_XIO_TCP_SET_INTERFACE,
@@ -387,6 +395,8 @@ typedef enum
      * 
      * @param resuseaddr
      *      GLOBUS_TRUE to allow, GLOBUS_FALSE to disallow (default)
+     *
+     * string opt: reuse=<bool>
      */
     /* globus_bool_t                    resuseaddr */
     GLOBUS_XIO_TCP_SET_REUSEADDR,
@@ -410,6 +420,8 @@ typedef enum
      * 
      * @param no_ipv6
      *      GLOBUS_TRUE to disallow ipv6, GLOBUS_FALSE to allow (default)
+     *
+     * string opt: noipv6=<bool>
      */
     /* globus_bool_t                    no_ipv6 */
     GLOBUS_XIO_TCP_SET_NO_IPV6,
@@ -469,6 +481,8 @@ typedef enum
      * 
      * @param keepalive
      *      GLOBUS_TRUE to enable, GLOBUS_FALSE to disable (default)
+     *
+     * string opt: keepalive=<bool>
      */
     /* globus_bool_t                    keepalive */
     GLOBUS_XIO_TCP_SET_KEEPALIVE,
@@ -554,6 +568,8 @@ typedef enum
      * 
      * @param sndbuf
      *      The send buffer size in bytes to use. (default is system specific)
+     *
+     * string opt: sndbuf=<formatted int>
      */
     /* int                              sndbuf */
     GLOBUS_XIO_TCP_SET_SNDBUF,
@@ -579,6 +595,8 @@ typedef enum
      * 
      * @param rcvbuf
      *      The receive buffer size in bytes. (default is system specific)
+     *
+     * string opt: rcvbuf=<formatted int>
      */
     /* int                              rcvbuf */
     GLOBUS_XIO_TCP_SET_RCVBUF,
@@ -604,6 +622,8 @@ typedef enum
      * 
      * @param nodelay
      *      GLOBUS_TRUE to disable nagle, GLOBUS_FALSE to enable (default)
+     *
+     * string opt: nodelay=<bool>
      */
     /* globus_bool_t                    nodelay */
     GLOBUS_XIO_TCP_SET_NODELAY,
