@@ -68,7 +68,7 @@ If you want to install the Data Replication Service tech preview:
 You do not have to build every subcomponent of this release.  The
 makefile specifies subtargets for different functional subpieces.
 See the component map at
-http://www-unix.globus.org/toolkit/docs/4.0/GT4Facts/index.html
+http://www.globus.org/toolkit/docs/4.0/admin/docbook/apb.html
 for more details.
 
 Makefile targets:
