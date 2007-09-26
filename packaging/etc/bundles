@@ -613,7 +613,7 @@ BUNDLE gt4-mds
         globus_wsrf_mds_aggregator_schema
         globus_wsrf_mds_index
         globus_wsrf_mds_index_schema
-        globus_wsrf_mds_trigger
+        #globus_wsrf_mds_trigger
         globus_wsrf_mds_usefulrp
         globus_wsrf_mds_usefulrp_schema
         globus_wsrf_servicegroup
@@ -625,7 +625,7 @@ BUNDLE gt4-mds
 
 BUNDLE gt4-mds-test
         globus_wsrf_mds_index_test
-        globus_wsrf_mds_trigger_test
+        #globus_wsrf_mds_trigger_test
         globus_wsrf_mds_aggregator_test
         globus_wsrf_mds_usefulrp_test
 
