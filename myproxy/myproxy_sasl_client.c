@@ -241,6 +241,7 @@ auth_sasl_negotiate_client(myproxy_socket_attrs_t *attrs,
 	goto error;
     }
 
+    myproxy_debug("SASL service: %s/%s", service, fqdn);
     result = sasl_client_new(service, fqdn, iplocal, ipremote, NULL, 0, &conn);
     if (result != SASL_OK) {
         verror_put_string("Allocating sasl connection state failed");
