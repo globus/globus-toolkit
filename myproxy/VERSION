@@ -6,6 +6,7 @@ Version History
 ---------------
 v4.2 XX Xxx 2007
   - fixes for newer OpenSSL versions used in GT 4.2
+  - fixes for MIT Kerberos 1.6 support (via SASL)
 
 v4.1 10 Sep 2007
   - in myproxy-server, listen on $MYPROXY_SERVER_PORT if defined

@@ -210,8 +210,15 @@ static OM_uint32 (*p_krb5_gss_wrap)
      gss_buffer_t);
 static OM_uint32 (*p_krb5_gss_wrap_size_limit)
     (OM_uint32 *, gss_ctx_id_t, int, gss_qop_t, OM_uint32, OM_uint32 *);
-
-
+static OM_uint32 (*p_krb5_gss_add_cred)
+    (OM_uint32 *, gss_cred_id_t, gss_name_t, gss_OID,  gss_cred_usage_t,
+     OM_uint32, OM_uint32, gss_cred_id_t *, gss_OID_set *,  OM_uint32 *, 
+     OM_uint32 *);
+static OM_uint32 (*p_krb5_gss_seal)
+     (OM_uint32 *, gss_ctx_id_t, int, int, gss_buffer_t, int *,
+      gss_buffer_t);
+static OM_uint32 (*p_krb5_gss_unseal)
+     (OM_uint32 *, gss_ctx_id_t, gss_buffer_t, gss_buffer_t, int *, int *);
 
 static int
 sasl_gss_lib_init(const sasl_utils_t *utils)
@@ -247,6 +254,9 @@ sasl_gss_lib_init(const sasl_utils_t *utils)
     SASL_GSS_DLSYM(gss_unwrap);
     SASL_GSS_DLSYM(gss_wrap);
     SASL_GSS_DLSYM(gss_wrap_size_limit);
+    SASL_GSS_DLSYM(gss_add_cred);
+    SASL_GSS_DLSYM(gss_seal);
+    SASL_GSS_DLSYM(gss_unseal);
 
     return SASL_OK;
 
@@ -1703,4 +1713,67 @@ int gssapiv2_client_plug_init(const sasl_utils_t *utils __attribute__((unused)),
     
     return SASL_OK;
 }
+
+/*****************************  Symbol Binding  *****************************/
+
+/* This is fragile. If we call a Kerberos GSSAPI function which itself
+   calls a GSSAPI function, it will be routed to the GSI GSSAPI
+   library.  So far we've been lucky with minimal conflicts between
+   MIT Kerberos and GSI.  If we have to resort to linking against
+   mechglue, things will get very messy. */
+
+/* MIT Kerberos GSSAPI functions call gss_add_cred(), gss_seal(), and
+   gss_unseal() internally, and we want to route them back to Kerberos
+   rather than GSI.  Luckly GSI does not call these functions.  Our
+   luck may not last forever. */
+
+OM_uint32
+gss_add_cred(
+             OM_uint32		*minor_status,
+             gss_cred_id_t	input_cred_handle,
+             gss_name_t		desired_name,
+             gss_OID		desired_mech,
+             gss_cred_usage_t	cred_usage,
+             OM_uint32		initiator_time_req,
+             OM_uint32		acceptor_time_req,
+             gss_cred_id_t	*output_cred_handle,
+             gss_OID_set		*actual_mechs,
+             OM_uint32		*initiator_time_rec,
+             OM_uint32		*acceptor_time_rec)
+{
+    return((*p_krb5_gss_add_cred)(minor_status, input_cred_handle,
+                                  desired_name,
+                                  desired_mech, cred_usage, initiator_time_req,
+                                  acceptor_time_req, output_cred_handle,
+                                  actual_mechs, initiator_time_rec,
+                                  acceptor_time_rec));
+}
+
+OM_uint32
+gss_seal(OM_uint32 *minor_status,
+         gss_ctx_id_t context_handle,
+         int conf_req_flag,
+         int qop_req,
+         gss_buffer_t input_message_buffer,
+         int *conf_state,
+         gss_buffer_t output_message_buffer)
+{
+   return((*p_krb5_gss_seal)(minor_status, context_handle,
+			conf_req_flag, qop_req, input_message_buffer,
+			conf_state, output_message_buffer));
+}
+
+OM_uint32
+gss_unseal(OM_uint32 *minor_status,
+           gss_ctx_id_t context_handle,
+           gss_buffer_t input_message_buffer,
+           gss_buffer_t output_message_buffer,
+           int *conf_state,
+           int *qop_state)
+{
+   return((*p_krb5_gss_unseal)(minor_status, context_handle,
+			  input_message_buffer, output_message_buffer,
+			  conf_state, qop_state));
+}
+
 #endif
