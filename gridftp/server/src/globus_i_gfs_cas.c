@@ -21,7 +21,32 @@
 
 #define FTP_SERVICE_NAME "file"
 
-static void
+static
+char * 
+globus_gfs_acl_cas_action_to_string(
+    globus_gfs_acl_action_t             action)
+{
+    switch(action)
+    {
+        case GFS_ACL_ACTION_DELETE:
+            return "delete";
+        case GFS_ACL_ACTION_WRITE:
+            return "write";
+        case GFS_ACL_ACTION_CREATE:
+            return "create";
+        case GFS_ACL_ACTION_READ:
+            return "read";
+        case GFS_ACL_ACTION_LOOKUP:
+            return "lookup";
+        case GFS_ACL_ACTION_AUTHZ_ASSERT:
+            return "authz_assert";
+        default:
+            return NULL;
+    }
+}
+
+static
+void
 globus_gfs_acl_cas_cb(
     void *                              callback_arg,
     globus_gsi_authz_handle_t           handle,
@@ -76,14 +101,15 @@ static
 int
 globus_gfs_acl_cas_authorize(
     void *                              out_handle,
-    const char *                        action,
-    const char *                        object,
+    globus_gfs_acl_action_t             action,
+    globus_gfs_acl_object_desc_t *      object,
     globus_gfs_acl_info_t *             acl_info,
     globus_gfs_acl_handle_t             acl_handle,
     globus_result_t *                   out_res)
 {
     globus_gsi_authz_handle_t           cas_handle;
     char *                              full_object;
+    char *                              action_str;
     GlobusGFSName(globus_gfs_acl_cas_authorize);
     GlobusGFSDebugEnter();
 
@@ -97,18 +123,21 @@ globus_gfs_acl_cas_authorize(
      * received over the gridftp control channel - just pass it unmodified to
      * the authz callout
      */
-    if (strcmp(action, "authz_assert"))
+    if(action == GFS_ACL_ACTION_AUTHZ_ASSERT)
     {
         full_object = globus_common_create_string(
-            "ftp://%s%s", acl_info->hostname, object);
+            "ftp://%s%s", acl_info->hostname, object->name);
     }
     else
     {
-        full_object = globus_libc_strdup(object);
+        full_object = globus_libc_strdup(object->name);
     }    
+
+    action_str = globus_gfs_acl_cas_action_to_string(action);
+
     *out_res = globus_gsi_authorize(
         cas_handle,
-        action,
+        action_str,
         full_object,
         globus_gfs_acl_cas_cb,
         acl_handle);
@@ -126,30 +155,22 @@ globus_gfs_acl_cas_authorize(
     return GLOBUS_GFS_ACL_COMPLETE;
 }
 
-static void
+static
+void
 globus_gfs_acl_cas_destroy_cb(
     void *                              callback_arg,
     globus_gsi_authz_handle_t           handle,
     globus_result_t                     result)
 {
-    GlobusGFSName(globus_gfs_acl_cas_cb);
+    GlobusGFSName(globus_gfs_acl_cas_destroy_cb);
     GlobusGFSDebugEnter();
 
 
     GlobusGFSDebugExit();
 }
 
-
-static void
-globus_gfs_acl_cas_audit(
-    void *                              out_handle,
-    const char *                        action,
-    const char *                        object,
-    const char *                        message)
-{
-}
-
-static void
+static
+void
 globus_gfs_acl_cas_destroy(
     void *                              out_handle)
 {
@@ -169,6 +190,6 @@ globus_gfs_acl_module_t                 globus_gfs_acl_cas_module =
     globus_gfs_acl_cas_init,
     globus_gfs_acl_cas_authorize,
     globus_gfs_acl_cas_destroy,
-    globus_gfs_acl_cas_audit
+    NULL
 };
 

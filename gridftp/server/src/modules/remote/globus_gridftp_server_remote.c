@@ -51,7 +51,6 @@ typedef struct globus_l_gfs_remote_handle_s
     struct globus_l_gfs_remote_node_info_s *   control_node;
     void *                              state;
     globus_gfs_session_info_t           session_info;
-    int                                 max_nodes;
     int                                 striped_mode;
     globus_bool_t                       control_used_for_data;
 } globus_l_gfs_remote_handle_t;
@@ -334,7 +333,6 @@ globus_l_gfs_remote_node_error_kickout(
     void *                              arg)
 {
     globus_l_gfs_remote_node_info_t *   node_info;
-    globus_l_gfs_remote_control_node_bounce_t * bounce;
     globus_result_t                     result;
 
     node_info = (globus_l_gfs_remote_node_info_t *) arg;
@@ -471,7 +469,6 @@ globus_l_gfs_remote_select_nodes(
             node_info->callback = callback;
             node_info->user_arg = user_arg;
             node_info->my_handle = my_handle;
-            node_info->bounce = bounce;
             bounce->ndx_offset++;
     
             my_handle->session_info.host_id = node_info->brain_node->host_id;
@@ -525,10 +522,6 @@ globus_l_gfs_remote_node_request(
         goto error;
     }
 
-    if(num_nodes == 0)
-    {
-        num_nodes = my_handle->max_nodes;
-    }
 
     if(my_handle->control_node && !my_handle->control_used_for_data)
     {
@@ -555,7 +548,7 @@ globus_l_gfs_remote_node_request(
     }
     num_nodes -= nodes_created;
     
-    if(num_nodes > 0)
+    if(num_nodes > 0 || nodes_created == 0)
     {   
         bounce = (globus_l_gfs_remote_control_node_bounce_t *) globus_calloc(
             1, sizeof(globus_l_gfs_remote_control_node_bounce_t));
@@ -1026,7 +1019,9 @@ globus_l_gfs_ipc_event_cb(
                 }   
                 break;
             default:
-                if(!bounce_info->event_pending)
+                if(!bounce_info->event_pending || 
+                    reply->type == GLOBUS_GFS_EVENT_BYTES_RECVD ||
+                    reply->type == GLOBUS_GFS_EVENT_RANGES_RECVD)
                 {
                     finish = GLOBUS_TRUE;
                 }
@@ -1662,9 +1657,18 @@ globus_l_gfs_remote_passive(
     
     result = globus_l_gfs_remote_init_bounce_info(
         &bounce_info, op, data_info, my_handle);
-                
-    num_nodes = (data_info->max_cs == -1)
-        ? my_handle->max_nodes : data_info->max_cs;
+
+    num_nodes = data_info->max_cs;
+    if(num_nodes < 1)
+    {
+        num_nodes = globus_gfs_config_get_int("best_stripe_count");
+    }
+    if(num_nodes < 1)
+    {
+        globus_gfs_brain_get_available(NULL, NULL, &num_nodes);
+    }
+    /* it could still be 0 */
+
     bounce_info->nodes_requesting = num_nodes;
 
     globus_mutex_lock(&my_handle->mutex);
@@ -1890,9 +1894,6 @@ globus_l_gfs_remote_session_start(
     my_handle->striped_mode = 1;
     my_handle->op = op;
 
-    globus_gfs_brain_get_available(
-        NULL, NULL, &my_handle->max_nodes);
-    
     result = globus_l_gfs_remote_node_request(
         my_handle,
         nodes_requesting,

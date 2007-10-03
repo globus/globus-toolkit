@@ -27,7 +27,9 @@ globus_extension_registry_t             brain_i_registry;
 
 
 globus_result_t
-globus_i_gfs_brain_init()
+globus_i_gfs_brain_init(
+    globus_callback_func_t              ready_cb,
+    void *                              ready_cb_arg)
 {
     globus_result_t                     result;
     int                                 rc;
@@ -59,7 +61,7 @@ globus_i_gfs_brain_init()
 
     if(brain_l_module->init_func != NULL)
     {
-        result = brain_l_module->init_func();
+        result = brain_l_module->init_func(ready_cb, ready_cb_arg);
         if(result != GLOBUS_SUCCESS)
         {
             goto error;

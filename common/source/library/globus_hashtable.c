@@ -695,30 +695,19 @@ error_param:
     return;
 }
 
-/**
- * hashpjw() is derived from an algorithm found in Aho, Sethi and Ullman's
- * {Compilers: Principles, Techniques and Tools}, published by Addison-Wesley. 
- * This algorithm comes from P.J. Weinberger's C compiler. 
- */
 int
 globus_hashtable_string_hash(
     void *                              string,
     int                                 limit)
 {
     unsigned long                       h = 0;
-    unsigned long                       g;
     char *                              key;
 
     key = (char *) string;
-
+    
     while(*key)
     {
-        h = (h << 4) + *key++;
-        if((g = (h & 0xF0UL)))
-        {
-            h ^= g >> 24;
-            h ^= g;
-        }
+        h = 131 * h + *key++;
     }
     
     return h % limit;

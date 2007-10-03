@@ -12,6 +12,11 @@
 #define GlobusXIOGForkName(func) static const char * _gfork_func_name = #func
 #endif
 
+#define GFORK_CHILD_READ_ENV "GFORK_CHILD_READ_ENV"
+#define GFORK_CHILD_WRITE_ENV "GFORK_CHILD_WRITE_ENV"
+#define GFORK_CHILD_CS_ENV "GFORK_CHILD_CS_ENV"
+#define GFORK_CHILD_INSTANCE_ENV "GFORK_CHILD_INSTANCE_ENV"
+
 typedef void *                          gfork_child_handle_t;
 
 typedef enum
@@ -77,10 +82,23 @@ globus_gfork_child_master_start(
 globus_result_t
 globus_gfork_broadcast(
     gfork_child_handle_t                handle,
-    globus_byte_t *                     data,
-    globus_size_t                       len,
-    globus_xio_data_callback_t          cb,
+    globus_xio_iovec_t *                iov,
+    int                                 iovc,
+    globus_xio_iovec_callback_t         cb,
     void *                              user_arg);
+
+globus_result_t
+globus_gfork_send(
+    gfork_child_handle_t                handle,
+    uid_t                               pid,
+    globus_xio_iovec_t *                iov,
+    int                                 iovc,
+    globus_xio_iovec_callback_t         cb,
+    void *                              user_arg);
+
+globus_result_t
+globus_gfork_child_stop(
+    gfork_child_handle_t                in_handle);
 
 extern globus_module_descriptor_t       globus_i_gfork_parent_module;
 #define GLOBUS_GFORK_PARENT_MODULE &globus_i_gfork_parent_module

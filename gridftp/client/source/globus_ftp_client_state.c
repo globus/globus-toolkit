@@ -723,8 +723,124 @@ redo:
         }
 
     skip_authz_assert:
-	target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_MODE;
+	target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_SETNETSTACK;
 	goto redo;
+
+
+    case GLOBUS_FTP_CLIENT_TARGET_SETUP_SETNETSTACK:
+        target->state = GLOBUS_FTP_CLIENT_TARGET_SETNETSTACK;
+        if(target->attr->net_stack_str == NULL ||  
+            (target->net_stack_str != NULL && 
+            strcmp(target->attr->net_stack_str, target->net_stack_str) == 0))
+        {
+            goto skip_setnetstack;
+        }
+        
+        memset(&target->cached_data_conn,
+               '\0',
+               sizeof(globus_i_ftp_client_data_target_t));
+
+        target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_TRANSFER_PARAMETERS;
+        globus_i_ftp_client_plugin_notify_command(
+            client_handle,
+            target->url_string,
+            target->mask,
+            "SITE SETNETSTACK %s" CRLF,
+            target->attr->net_stack_str);
+
+        if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
+            client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
+            client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE)
+        {
+            break;
+        }
+
+        globus_assert(
+            client_handle->state ==
+            GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION ||
+            client_handle->state ==
+            GLOBUS_FTP_CLIENT_HANDLE_DEST_SETUP_CONNECTION);
+
+        result = globus_ftp_control_send_command(
+            target->control_handle,
+            "SITE SETNETSTACK %s" CRLF,
+            globus_i_ftp_client_response_callback,
+            target,
+            target->attr->net_stack_str);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto result_fault;
+        }
+
+        break;
+
+    case GLOBUS_FTP_CLIENT_TARGET_SETNETSTACK:
+        globus_assert(
+            client_handle->state ==
+            GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION ||
+            client_handle->state ==
+            GLOBUS_FTP_CLIENT_HANDLE_DEST_SETUP_CONNECTION);
+
+        if((!error) &&
+           response->response_class == GLOBUS_FTP_POSITIVE_COMPLETION_REPLY)
+        {
+            globus_xio_stack_t          stack;
+            
+            if(target->net_stack_str)
+            {
+                globus_free(target->net_stack_str);
+            }
+            target->net_stack_str = 
+                globus_libc_strdup(target->attr->net_stack_str);
+            
+            if(client_handle->op != GLOBUS_FTP_CLIENT_TRANSFER)
+            {
+                if(target->net_stack_list)
+                {
+                    globus_i_ftp_control_unload_xio_drivers(
+                        target->net_stack_list);
+                    target->net_stack_list = GLOBUS_NULL;
+                }
+                        
+                result = globus_i_ftp_control_load_xio_drivers(
+                    target->net_stack_str, &target->net_stack_list);
+                if(result != GLOBUS_SUCCESS)
+                {
+                    target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_CONNECTION;
+        
+                    goto notify_fault;
+                }
+                result = globus_i_ftp_control_create_stack(
+                    target->control_handle, target->net_stack_list, &stack);
+                if(result != GLOBUS_SUCCESS)
+                {
+                    target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_CONNECTION;
+        
+                    goto notify_fault;
+                }
+            
+                result = globus_i_ftp_control_data_set_stack(
+                    target->control_handle, stack);
+                if(result != GLOBUS_SUCCESS)
+                {
+                    target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_CONNECTION;
+        
+                    goto notify_fault;
+                }
+                globus_xio_stack_destroy(stack);
+            }      
+        }
+        else
+        {
+            target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_CONNECTION;
+
+            goto notify_fault;
+        }
+
+    skip_setnetstack:
+        target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_MODE;
+        goto redo;
+        
 
     case GLOBUS_FTP_CLIENT_TARGET_SETUP_MODE:
 	target->state = GLOBUS_FTP_CLIENT_TARGET_MODE;

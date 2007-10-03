@@ -13,7 +13,8 @@
 #include "globus_xio_driver.h"
 #include <stdarg.h>
 #include "version.h"
-#include "nl_log.h"
+#include "nl.h"
+#include "nlsumm.h"
 
 #define GlobusXIONetloggerError(_r)                                         \
     globus_error_put(GlobusXIONetloggerErrorObj(_r))
@@ -56,16 +57,6 @@ enum globus_l_xio_netlogger_error_levels
     GLOBUS_L_XIO_NETLOGGER_DEBUG_CNTLS                = 4
 };
 
-#define NL_XIO_ID_FLD                   4
-#define NL_XIO_SOCK_FLD                 5
-#define NL_XIO_BUFLEN_FLD               6
-#define NL_XIO_BYTES_FLD                7
-
-#define NL_XIO_RECSZ                    7
-#define NL_XIO_B_RECSZ                  8
-#define NL_XIO_BB_RECSZ                 9
-
-#define NL_MAXREC 1024
 typedef struct xio_l_netlogger_handle_s
 {
     int                                 log_flag;
@@ -73,7 +64,7 @@ typedef struct xio_l_netlogger_handle_s
     char *                              id;
     char *                              type;
 
-    NL_log_t *                          nl_log;
+    NL_log_T                            nl_log;
 
     char *                              accept_start_event;
     char *                              accept_stop_event;
@@ -128,17 +119,19 @@ xio_l_netlogger_create_handle(
     handle->write_stop_event = globus_common_create_string(
         "xio.%s.write.stop", handle->type);
 
-    handle->nl_log = NL_log();
+    handle->nl_log = NL_open(handle->filename);
+/*    NL_set_summ(handle->nl_log, NL_summ(NULL)); */
+    NL_set_level(handle->nl_log, NL_LVL_DEBUG);
 
-    hostname = ipaddr(); /* defined in nl_log.h */
+    hostname = NL_get_ipaddr(); /* defined in nl_log.h */
     if(hostname == NULL)
     {
         hostname = strdup("0.0.0.0");
     }
 
-    NL_log_open(handle->nl_log, 0, handle->filename); /* XXX ERRORS? */
-    NL_log_const(handle->nl_log, 0, "HOST:s", hostname);
-    NL_log_level(handle->nl_log, 0, NL_LVL_INFO);
+/*    NL_open(handle->nl_log, 0, handle->filename);  */
+    NL_set_const(handle->nl_log, 0, "HOST:s", hostname);
+    NL_set_level(handle->nl_log, NL_LVL_INFO);
 
     GlobusXIONetloggerDebugExit();
     return handle;
@@ -243,7 +236,7 @@ globus_l_xio_netlogger_attr_init(
     {
         attr->id = strdup("default");
     }
-    attr->filename = strdup("/tmp/xio_netlogger.txt");
+    attr->filename = NULL;
 
     *out_attr = attr;
 
@@ -478,7 +471,7 @@ globus_l_xio_netlogger_accept_cb(
     handle = (xio_l_netlogger_handle_t *) user_arg;
     if(handle->log_flag & GLOBUS_XIO_NETLOGGER_LOG_ACCEPT)
     {
-        NL_log_write(handle->nl_log, NL_LVL_INFO, 0, handle->accept_stop_event,
+        NL_write(handle->nl_log, NL_LVL_INFO, handle->accept_stop_event,
             "sock=i uuid=s",
             (int)handle, handle->id);
     }
@@ -505,7 +498,7 @@ globus_l_xio_netlogger_accept(
     xio_l_netlogger_create_handle(handle);
     if(handle->log_flag & GLOBUS_XIO_NETLOGGER_LOG_ACCEPT)
     {
-        NL_log_write(handle->nl_log, NL_LVL_INFO, 0,
+        NL_write(handle->nl_log, NL_LVL_INFO,
             handle->accept_start_event, "sock=i uuid=s",
             (int)handle, handle->id);
     }
@@ -538,7 +531,7 @@ globus_l_xio_netlogger_open_cb(
     handle = (xio_l_netlogger_handle_t *) user_arg;
     if(handle->log_flag & GLOBUS_XIO_NETLOGGER_LOG_OPEN)
     {
-        NL_log_write(handle->nl_log, NL_LVL_INFO, 0, handle->open_stop_event,
+        NL_write(handle->nl_log, NL_LVL_INFO, handle->open_stop_event,
             "sock=i uuid=s",
             (int)handle, handle->id);
     }
@@ -583,7 +576,7 @@ globus_l_xio_netlogger_open(
 
     if(handle->log_flag & GLOBUS_XIO_NETLOGGER_LOG_OPEN)
     {
-        NL_log_write(handle->nl_log, NL_LVL_INFO, 0, handle->open_start_event,
+        NL_write(handle->nl_log, NL_LVL_INFO, handle->open_start_event,
             "sock=i uuid=s",
             (int)handle, handle->id);
     }
@@ -617,7 +610,7 @@ globus_l_xio_netlogger_read_cb(
     handle = (xio_l_netlogger_handle_t *) user_arg;
     if(handle->log_flag & GLOBUS_XIO_NETLOGGER_LOG_READ)
     {
-        NL_log_write(handle->nl_log, NL_LVL_INFO, 0, handle->read_stop_event,
+        NL_write(handle->nl_log, NL_LVL_INFO, handle->read_stop_event,
             "sock=i uuid=s buflen=i bytes=i",
             (int)handle, handle->id, (int)handle->read_buflen, (int)nbytes);
     }
@@ -646,7 +639,7 @@ globus_l_xio_netlogger_read(
     if(handle->log_flag & GLOBUS_XIO_NETLOGGER_LOG_READ)
     {
         GlobusXIOUtilIovTotalLength(handle->read_buflen, iovec, iovec_count);
-        NL_log_write(handle->nl_log, NL_LVL_INFO, 0, handle->read_start_event,
+        NL_write(handle->nl_log, NL_LVL_INFO, handle->read_start_event,
             "sock=i uuid=s buflen=i",
             (int)handle, handle->id, handle->read_buflen);
     }
@@ -682,7 +675,7 @@ globus_l_xio_netlogger_write_cb(
     handle = (xio_l_netlogger_handle_t *) user_arg;
     if(handle->log_flag & GLOBUS_XIO_NETLOGGER_LOG_WRITE)
     {
-        NL_log_write(handle->nl_log, NL_LVL_INFO, 0, handle->write_stop_event,
+        NL_write(handle->nl_log, NL_LVL_INFO, handle->write_stop_event,
             "sock=i uuid=s buflen=i bytes=i",
             (int)handle, handle->id, handle->write_buflen, nbytes);
     }
@@ -710,7 +703,7 @@ globus_l_xio_netlogger_write(
     if(handle->log_flag & GLOBUS_XIO_NETLOGGER_LOG_WRITE)
     {
         GlobusXIOUtilIovTotalLength(handle->write_buflen, iovec, iovec_count);
-        NL_log_write(handle->nl_log, NL_LVL_INFO, 0, handle->write_start_event,
+        NL_write(handle->nl_log, NL_LVL_INFO, handle->write_start_event,
             "sock=i uuid=s buflen=i",
             (int)handle, handle->id, handle->write_buflen);
     }
@@ -745,11 +738,11 @@ globus_l_xio_netlogger_close_cb(
     handle = (xio_l_netlogger_handle_t *) user_arg;
     if(handle->log_flag & GLOBUS_XIO_NETLOGGER_LOG_CLOSE)
     {
-        NL_log_write(handle->nl_log, NL_LVL_INFO, 0, handle->close_stop_event,
+        NL_write(handle->nl_log, NL_LVL_INFO, handle->close_stop_event,
             "sock=i uuid=s",
             (int)handle, handle->id);
     }
-    NL_log_del(handle->nl_log);
+    NL_close(handle->nl_log);
 
     globus_xio_driver_finished_close(op, result);
     GlobusXIONetloggerDebugExit();
@@ -772,7 +765,7 @@ globus_l_xio_netlogger_close(
     handle = (xio_l_netlogger_handle_t *) driver_handle;
     if(handle->log_flag & GLOBUS_XIO_NETLOGGER_LOG_CLOSE)
     {
-        NL_log_write(handle->nl_log, NL_LVL_INFO, 0, handle->close_start_event,
+        NL_write(handle->nl_log, NL_LVL_INFO, handle->close_start_event,
             "sock=i uuid=s",
             (int)handle, handle->id);
     }

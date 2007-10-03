@@ -973,7 +973,9 @@ globus_l_ftp_client_target_new(
     target->cached_data_conn.dest = GLOBUS_NULL;
     target->cached_data_conn.operation = GLOBUS_FTP_CLIENT_IDLE;
     target->authz_assert = GLOBUS_NULL;
+    target->net_stack_str = GLOBUS_NULL;
     target->delayed_pasv = GLOBUS_FALSE;
+    target->net_stack_list = GLOBUS_NULL;
 
     /* Make a local copy of the desired FTP client attributes */
     if(attr)
@@ -1178,6 +1180,17 @@ globus_l_ftp_client_target_delete(
     {
         globus_libc_free(target->auth_info.auth_gssapi_subject);
     }
+    if(target->net_stack_str)
+    {
+        globus_libc_free(target->net_stack_str);
+    }
+/*
+    if(target->net_stack_list)
+    {
+        globus_i_ftp_control_unload_xio_drivers(
+            target->net_stack_list);
+    }
+*/
     if(target->authz_assert)
     {
         globus_libc_free(target->authz_assert);
@@ -1212,7 +1225,6 @@ globus_l_ftp_client_target_delete(
 					  GLOBUS_SUCCESS,
 					  (void*) 0);
     }
-    
     globus_i_ftp_client_debug_printf(1, 
         (stderr, "globus_l_ftp_client_target_delete() exiting\n"));
 

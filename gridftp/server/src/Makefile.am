@@ -10,6 +10,9 @@ SUBDIRS = \
 	doxygen
 
 EXTRA_DIST = \
+    gridftp.gfork.in \
+    gridftp-fe.gfork.in \
+    gridftp-be.gfork.in \
 	version.h.in \
 	extensions.h.in \
 	configure.in.in
@@ -40,6 +43,7 @@ Sources = \
 	globus_i_gfs_ipc.c 		        \
 	globus_i_gfs_ipc.h 		        \
 	globus_i_gfs_control.c 		    \
+    gfs_i_gfork_plugin.h            \
 	globus_i_gfs_control.h
 
 # INCLUDES is an automake macro which contains 
@@ -95,7 +99,16 @@ sbin_PROGRAMS= \
 
 sbin_SCRIPTS = \
     gridftp-password.pl
-	
+
+libexec_PROGRAMS= \
+    gfs-gfork-master \
+    gfs-dynbe-client
+
+scriptsysconf_SCRIPTS=\
+    gridftp.gfork \
+    gridftp-fe.gfork \
+    gridftp-be.gfork
+
 # _SOURCES is an automake macro which contains
 # a list of sources needed to compile the library.
 globus_gridftp_server_SOURCES = globus_gridftp_server.c
@@ -116,6 +129,15 @@ globus_gridftp_server_LDFLAGS = $(LDFLHACK) $(GPT_LDFLAGS)
 globus_gridftp_server_LDADD = \
         ./libglobus_gridftp_server_$(GLOBUS_FLAVOR_NAME).la \
         $(GPT_PGM_LINKS)
+
+
+gfs_gfork_master_SOURCES = gfs_gfork_master.c
+gfs_gfork_master_LDFLAGS = $(GPT_LDFLAGS)
+gfs_gfork_master_LDADD = $(GPT_PGM_LINKS)
+
+gfs_dynbe_client_SOURCES = gfs_dynbe_client.c
+gfs_dynbe_client_LDFLAGS = $(GPT_LDFLAGS)
+gfs_dynbe_client_LDADD = $(GPT_PGM_LINKS)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top

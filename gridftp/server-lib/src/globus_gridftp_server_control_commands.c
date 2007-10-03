@@ -400,6 +400,7 @@ globus_l_gsc_cmd_mode(
     void *                                  user_arg)
 {
     char *                                  msg;
+    char *                                  tmp_ptr;
     char                                    ch;
 
     globus_i_gsc_log(op->server_handle, full_command,
@@ -407,6 +408,11 @@ globus_l_gsc_cmd_mode(
     ch = (char)toupper((int)cmd_a[1][0]);
     if(strchr(op->server_handle->modes, ch) == NULL)
     {
+        tmp_ptr = strstr(full_command, "\r\n");
+        if(tmp_ptr != NULL)
+        {
+            *tmp_ptr = '\0';
+        }
         msg = globus_common_create_string(
             _FSMSL("501 '%s' unrecognized transfer mode.\r\n"), full_command);
     }

@@ -51,9 +51,6 @@ static globus_mutex_t                   globus_i_gfs_config_mutex;
 
 static const globus_l_gfs_config_option_t option_list[] = 
 { 
- {"acl", "acl", NULL, "acl", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
-    "list of acl modules",
-    NULL, NULL,GLOBUS_FALSE, NULL}, 
 {NULL, "Informational Options", NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL, GLOBUS_FALSE, NULL},
  {"help", "help", NULL, "help", "h", GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
     "Show usage information and exit.", NULL, NULL,GLOBUS_FALSE, NULL},
@@ -142,6 +139,9 @@ static const globus_l_gfs_config_option_t option_list[] =
  {"connections_disabled", "connections_disabled", NULL, "connections-disabled", NULL, GLOBUS_L_GFS_CONFIG_BOOL, GLOBUS_FALSE, NULL,
     "Disable all new connections.  Does not affect ongoing connections.  This would have be set "
     "in the configuration file and then the server issued a SIGHUP in order to reload that config.", NULL, NULL,GLOBUS_FALSE, NULL},
+ {"acl", "acl", NULL, "acl", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+    "A comma seperated list of ACL modules to load.",
+    NULL, NULL,GLOBUS_FALSE, NULL}, 
 {NULL, "Logging Options", NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL,GLOBUS_FALSE, NULL},
  {"log_level", "log_level", NULL, "log-level", "d", GLOBUS_L_GFS_CONFIG_STRING, 0, "ERROR",
     "Log level. A comma seperated list of levels from: 'ERROR, WARN, INFO, DUMP, ALL'. "
@@ -202,8 +202,8 @@ static const globus_l_gfs_config_option_t option_list[] =
     "the range specified in the restart marker has actually been committed to disk. "
     "This option will probably impact performance, and may result in different behavior "
     "on different storage systems. See the manpage for sync() for more information.", NULL, NULL,GLOBUS_FALSE, NULL},
- {"repo_count", "repo_count", NULL, "repo-count", NULL, GLOBUS_L_GFS_CONFIG_INT, 4, NULL,
-    "Maximum number of connections per transfer.", NULL, NULL,GLOBUS_FALSE, NULL},
+ {"best_stripe_count", "best_stripe_count", NULL, "best-stripe-count", NULL, GLOBUS_L_GFS_CONFIG_INT, 1, NULL,
+    "Ideal number of stripes per transfer.", NULL, NULL,GLOBUS_FALSE, NULL},
 {NULL, "Network Options", NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL,GLOBUS_FALSE, NULL},
  {"port", "port", NULL, "port", "p", GLOBUS_L_GFS_CONFIG_INT, 0, NULL,
     "Port on which a frontend will listend for client control channel connections, "
@@ -222,9 +222,6 @@ static const globus_l_gfs_config_option_t option_list[] =
     "Effectively sets the above control_interface, data_interface and ipc_interface options.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"ipc_port", "ipc_port", NULL, "ipc-port", NULL, GLOBUS_L_GFS_CONFIG_INT, 0, NULL,
     "Port on which the frontend will listen for data node connections.", NULL, NULL,GLOBUS_FALSE, NULL},
- {"brain_listen", "brain_listen", NULL, "brain-listen", NULL, GLOBUS_L_GFS_CONFIG_INT, 0, NULL,
-    "State if the brain will allow for connection back.  Should be used with --ipc-port.  This is an experimental feature.", NULL, NULL,GLOBUS_FALSE, NULL},
-{NULL, "Timeouts", NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL,GLOBUS_FALSE, NULL},
  {"control_preauth_timeout", "control_preauth_timeout", NULL, "control-preauth-timeout", NULL, GLOBUS_L_GFS_CONFIG_INT, 30, NULL,
     "Time in seconds to allow a client to remain connected to the control "
     "channel without activity before authenticating.", NULL, NULL,GLOBUS_FALSE, NULL},
@@ -334,6 +331,8 @@ static const globus_l_gfs_config_option_t option_list[] =
     "Number of backends registered.", NULL, NULL,GLOBUS_TRUE, NULL},
  {"data_connection_max", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_INT, 0, NULL,
     "Data node connection count.", NULL, NULL,GLOBUS_TRUE, NULL},
+ {"tcp_mem_limit", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_INT, 0, NULL,
+    "TCP memory limit", NULL, NULL,GLOBUS_TRUE, NULL},
  {"max_bw", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_INT,
     0, "0", NULL, NULL, NULL,GLOBUS_TRUE, NULL},
  {"current_bw", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_INT,
@@ -341,7 +340,9 @@ static const globus_l_gfs_config_option_t option_list[] =
  {"file_transfer_count", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_INT,
     0, "0", NULL, NULL, NULL,GLOBUS_TRUE, NULL},
  {"byte_transfer_count", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING,
-    0, "0", NULL, NULL, NULL,GLOBUS_TRUE, NULL}
+    0, "0", NULL, NULL, NULL,GLOBUS_TRUE, NULL},
+ {"disable_command_list", "disable_command_list", NULL, "disable-command-list", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+    "A comma seperated list of client commands that will be disabled.", NULL, NULL,GLOBUS_FALSE, NULL}
 };
 
 static int option_count = sizeof(option_list) / sizeof(globus_l_gfs_config_option_t);
@@ -1367,6 +1368,7 @@ globus_l_gfs_config_format_line(
                                    
     len = strlen(in_str);
     count = 0;
+    last = 0;
     memset(out_buffer, 0, rows * columns);
     
     for(i = 0; i < rows && count < len; i++)
@@ -1586,115 +1588,6 @@ error_exit:
 
 static
 globus_result_t
-globus_i_gfs_config_stack(
-    char *                              value,
-    char *                              config_name)
-{
-    globus_result_t                     result;
-    globus_list_t *                     driver_list = NULL;
-    globus_bool_t                       done = GLOBUS_FALSE;
-    char *                              opts;
-    char *                              ptr;
-    char *                              driver_name;
-    globus_xio_driver_t                 driver;
-    gfs_i_stack_entry_t *               stack_ent;
-    globus_bool_t                       tcp_used = GLOBUS_FALSE;
-    globus_bool_t                       gsi_used = GLOBUS_FALSE;
-
-    if(value != NULL)
-    {
-        while(!done)
-        {
-            driver_name = value;
-            ptr = strchr(driver_name, ',');
-            if(ptr != NULL)
-            {
-                *ptr = '\0';
-                value = ptr+1; 
-            }
-            else
-            {
-                done = GLOBUS_TRUE;
-            }
-            opts = strchr(driver_name, ':');
-            if(opts != NULL)
-            {
-                *opts = '\0';
-                opts++;
-            }
-
-            if(strcmp(driver_name, "tcp") == 0)
-            {
-                tcp_used = GLOBUS_TRUE;
-                driver = globus_io_compat_get_tcp_driver();
-            }
-            else if(strcmp(driver_name, "gsi") == 0)
-            {
-                gsi_used = GLOBUS_TRUE;
-                driver = globus_io_compat_get_gsi_driver();
-            }
-            else
-            {
-                result = globus_xio_driver_load(driver_name, &driver);
-                if(result != GLOBUS_SUCCESS)
-                {
-                    goto error_load;
-                }
-            }
-            stack_ent = (gfs_i_stack_entry_t *)
-                globus_calloc(1, sizeof(gfs_i_stack_entry_t));
-            stack_ent->opts = opts;
-            stack_ent->driver = driver;
-            stack_ent->driver_name = strdup(driver_name);
-
-            globus_list_insert(&driver_list, stack_ent);
-        }
-        if(!tcp_used)
-        {
-            globus_i_gfs_log_message(
-                GLOBUS_I_GFS_LOG_WARN,
-                "TCP not on stack.  No problem as long as you have set"
-                " a different transport protocol.\n");
-        }
-        if(!gsi_used)
-        {
-            globus_i_gfs_log_message(
-                GLOBUS_I_GFS_LOG_WARN,
-                "GSI not on stack.  No problem as long as you have set"
-                " a different security driver.\n");
-        }
-    }
-    else
-    {
-        stack_ent = (gfs_i_stack_entry_t *)
-            globus_calloc(1, sizeof(gfs_i_stack_entry_t));
-        stack_ent->opts = NULL;
-        stack_ent->driver = globus_io_compat_get_gsi_driver();
-        stack_ent->driver_name = "gsi";
-        globus_list_insert(&driver_list, stack_ent);
-
-        stack_ent = (gfs_i_stack_entry_t *)
-            globus_calloc(1, sizeof(gfs_i_stack_entry_t));
-        stack_ent->opts = NULL;
-        stack_ent->driver = globus_io_compat_get_tcp_driver();
-        stack_ent->driver_name = "tcp";
-        globus_list_insert(&driver_list, stack_ent);
-    }
-    globus_l_gfs_config_set(config_name, 0, driver_list);
-    return GLOBUS_SUCCESS;
-
-error_load:
-    globus_i_gfs_log_message(
-        GLOBUS_I_GFS_LOG_ERR,
-        "Unable to set data channel stack.: %s\n",
-                globus_error_print_friendly(
-                    globus_error_peek((globus_result_t) result)));
-
-    return result;
-}
-
-static
-globus_result_t
 globus_l_gfs_config_misc()
 {
     globus_list_t *                     module_list = NULL;
@@ -1743,10 +1636,18 @@ globus_l_gfs_config_misc()
         globus_l_gfs_config_set("fork", GLOBUS_FALSE, NULL);
         globus_l_gfs_config_set("bad_signal_exit", GLOBUS_FALSE, NULL);
         globus_l_gfs_config_set("chdir", GLOBUS_FALSE, NULL);
-        if(globus_i_gfs_config_string("log_module") == NULL)
+        if((value = globus_i_gfs_config_string("log_module")) == NULL)
         {
             globus_l_gfs_config_set(
                 "log_module", 0, globus_libc_strdup("stdio:buffer=0"));
+        }
+        else if(strchr(value, ':') == NULL)
+        {
+            globus_l_gfs_config_set(
+                "log_module", 
+                0, 
+                globus_common_create_string("%s:buffer=0", value));
+            globus_free(value);
         }
     }
 
@@ -1888,7 +1789,8 @@ globus_l_gfs_config_misc()
     {
         if(value)
         {
-            if(globus_i_gfs_config_string("load_dsi_module") == NULL)
+            if(globus_i_gfs_config_string("load_dsi_module") == NULL &&
+                !globus_i_gfs_config_bool("data_node"))
             {
                 globus_l_gfs_config_set("load_dsi_module", 0, globus_libc_strdup("remote"));    
             }            
@@ -1955,6 +1857,18 @@ globus_l_gfs_config_misc()
         globus_l_gfs_config_set("single", 1, NULL);
     }
 
+    if(globus_i_gfs_config_string("usage_stats_target") != NULL &&
+        globus_i_gfs_config_bool("disable_usage_stats"))
+    {
+        globus_l_gfs_config_set("disable_usage_stats", GLOBUS_FALSE, NULL);        
+    }
+    
+    if(globus_i_gfs_config_bool("data_node") &&
+        !globus_i_gfs_config_bool("disable_usage_stats"))
+    {
+        globus_l_gfs_config_set("disable_usage_stats", GLOBUS_TRUE, NULL);        
+    }
+
     if(globus_i_gfs_config_string("remote_nodes") != NULL &&
         globus_i_gfs_config_bool("data_node"))
     {
@@ -2014,14 +1928,6 @@ globus_l_gfs_config_misc()
         globus_l_gfs_config_set("ipc_user_name", 0, 
             globus_libc_strdup(pwent->pw_name));
     }
-
-    value = globus_i_gfs_config_string("protocol_stack");
-    result = globus_i_gfs_config_stack(value, "net_stack_list");
-    if(result != GLOBUS_SUCCESS)
-    {
-        goto error_exit;
-    }
-
     
     GlobusGFSDebugExit();
     return GLOBUS_SUCCESS;
@@ -2331,7 +2237,7 @@ globus_i_gfs_config_get_module_name(
 {
     globus_list_t *                     module_list;
     globus_list_t *                     list;
-    const char *                        module;
+    const char *                        module = NULL;
     const char *                        out_module = NULL;
     char *                              alias;
     globus_bool_t                       found = GLOBUS_FALSE;

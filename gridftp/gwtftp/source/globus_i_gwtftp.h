@@ -8,6 +8,7 @@
 #include "globus_xio_gssapi_ftp.h"
 #include "globus_error_generic.h"
 #include "globus_xio_gsi.h"
+#include <unistd.h>
 
 #if !defined(GLOBUS_I_FTP2GRID_H)
 #define GLOBUS_I_FTP2GRID_H 1
@@ -67,6 +68,7 @@ typedef struct globus_i_gwtftp_cmd_opts_s
     char *                              log_file;
     char *                              pw_file;
     globus_list_t *                     ip_list;
+    globus_bool_t                       allow_all;
 } globus_i_gwtftp_cmd_opts_t;
 
 typedef struct gwtftp_l_data_s
@@ -135,13 +137,15 @@ gwtftp_i_pass_ok(
 
 globus_result_t
 gwtftp_i_new_connection(
-    globus_xio_handle_t                 handle);
+    globus_xio_handle_t                 handle,
+    globus_xio_attr_t                   attr);
 
 globus_result_t
 gwtftp_i_server_conn_open(
     globus_xio_handle_t                 server_xio,
     char *                              cs,
-    globus_xio_handle_t                 client_xio);
+    globus_xio_handle_t                 client_xio,
+    char *                              subject);
 
 void
 gwtftp_i_authorized_user(
@@ -156,5 +160,9 @@ extern globus_xio_driver_t             gwtftp_l_tcp_driver;
 extern globus_xio_driver_t             gwtftp_l_gsi_driver;
 extern globus_xio_stack_t              gwtftp_l_data_tcp_stack;
 extern globus_xio_stack_t              gwtftp_l_data_gsi_stack;
+
+extern globus_xio_driver_t             gwtftp_l_gssapi_driver;
+
+extern char *                           gwtftp_i_data_interface;
 
 #endif

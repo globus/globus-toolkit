@@ -578,8 +578,8 @@ globus_l_xio_http_server_write_response_callback(
     }
     else
     {
-        globus_mutex_unlock(&http_handle->mutex);
         http_handle->parse_state = GLOBUS_XIO_HTTP_PRE_REQUEST_LINE;
+        globus_mutex_unlock(&http_handle->mutex);
     }
     return;
 

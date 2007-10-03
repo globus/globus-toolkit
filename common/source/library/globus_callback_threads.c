@@ -25,11 +25,12 @@
 #include "globus_handle_table.h"
 #include "globus_libc.h"
 #include "globus_print.h"
-#include <unistd.h>
-#include <sys/types.h>
+#ifdef HAVE_SYS_SYSCTL_H
 #include <sys/sysctl.h>
+#endif
 
-#define GLOBUS_CALLBACK_POLLING_THREADS (getnumcpus() + 1)
+#define GLOBUS_CALLBACK_POLLING_THREADS_MAX 9 
+#define GLOBUS_CALLBACK_POLLING_THREADS_DEFAULT (getnumcpus() + 1)
 
 #define GLOBUS_L_CALLBACK_INFO_BLOCK_SIZE 32
 #define GLOBUS_L_CALLBACK_SPACE_BLOCK_SIZE 16
@@ -194,7 +195,7 @@ getnumcpus()
 #ifdef _SC_NPROCESSORS_CONF
     return sysconf(_SC_NPROCESSORS_CONF);
 #else
-#ifdef HW_NCPU
+#if defined(HW_NCPU) && defined(HAVE_SYS_SYSCTL_H)
     int mib[2] = {CTL_HW, HW_NCPU};
     int ncpus;
     size_t len = sizeof(ncpus);
@@ -489,7 +490,14 @@ globus_l_callback_activate()
     globus_thread_key_create(
         &globus_l_callback_restart_info_key, GLOBUS_NULL);
     
-    globus_l_callback_max_polling_threads = GLOBUS_CALLBACK_POLLING_THREADS;
+    globus_l_callback_max_polling_threads = 
+        GLOBUS_CALLBACK_POLLING_THREADS_DEFAULT;
+    if(globus_l_callback_max_polling_threads > 
+        GLOBUS_CALLBACK_POLLING_THREADS_MAX)
+    {
+        globus_l_callback_max_polling_threads = 
+            GLOBUS_CALLBACK_POLLING_THREADS_MAX;
+    }
     tmp_string = globus_module_getenv("GLOBUS_CALLBACK_POLLING_THREADS");
     if(tmp_string)
     {

@@ -2466,13 +2466,18 @@ globus_l_xio_gsi_write_cb(
 /*
  * write interface function
  */
+typedef struct gsi_l_write_bounce_s
+{
+    void *                              driver_specific_handle;
+    int                                 iovec_count;
+    globus_xio_operation_t              op;
+    globus_xio_iovec_t                  iovec[1];
+} gsi_l_write_bounce_t;
+
 static
-globus_result_t
-globus_l_xio_gsi_write(
-    void *                              driver_specific_handle,
-    const globus_xio_iovec_t *          iovec,
-    int                                 iovec_count,
-    globus_xio_operation_t              op)
+void
+globus_l_xio_gsi_write_bounce(
+    void *                              user_arg)
 {
     globus_l_handle_t *                 handle;
     globus_result_t                     result = GLOBUS_SUCCESS;
@@ -2487,72 +2492,28 @@ globus_l_xio_gsi_write(
     int                                 conf_state;
     globus_size_t                       iovec_offset;
     size_t                              write_iovec_count = 0;
-    
-    GlobusXIOName(globus_l_xio_gsi_write);
+    /* for bounce */
+    void *                              driver_specific_handle;
+    int                                 iovec_count;
+    globus_xio_operation_t              op;
+    globus_xio_iovec_t *                iovec;
+    gsi_l_write_bounce_t *              bounce;
+
+    GlobusXIOName(globus_l_xio_gsi_write_bounce);
     GlobusXIOGSIDebugEnter();
 
-    if(!driver_specific_handle)
-    {
-        result = GlobusXIOErrorParameter("driver_specific_handle");
-        goto error;
-    }
+    bounce = (gsi_l_write_bounce_t *) user_arg;
+    driver_specific_handle = bounce->driver_specific_handle;
+    op = bounce->op;
+    iovec_count = bounce->iovec_count;
+    iovec = bounce->iovec;
 
     handle = (globus_l_handle_t *) driver_specific_handle;
 
-    /* get wait_for here */
-    
-    wait_for = globus_xio_operation_get_wait_for(op);
-        
-    if(iovec_count < 1)
-    {
-        if(wait_for > 0)
-        {
-            result = GlobusXIOErrorParameter("iovec_count");
-        }
-        goto error;
-    }
-
-    /* no protection -> just pass the write with a null callback */
-    
-    if(handle->attr->prot_level == GLOBUS_XIO_GSI_PROTECTION_LEVEL_NONE)
-    {
-        
-        GlobusXIOGSIDebugPrintf(
-            GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,
-            (_XIOSL("[%s:%d] Passed through. No protection\n"),
-             _xio_name, handle->connection_id));
-        result = globus_xio_driver_pass_write(
-            op, (globus_xio_iovec_t *)iovec, iovec_count, wait_for,
-            NULL, handle);
-        GlobusXIOGSIDebugExit();
-        return result;
-    }
-    
-    handle->frame_writes = GLOBUS_FALSE;
-    handle->bytes_written = 0;
-
-    /* find first non empty iovec */
-    
     j = 0;
-    
     while(j < iovec_count && iovec[j].iov_len == 0)
     {
         j++;
-    }
-
-    /* if all iovecs are empty then we are done */
-    
-    if(j == iovec_count)
-    {
-        GlobusXIOGSIDebugPrintf(
-            GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,
-            (_XIOSL("[%s:%d] Passed through. Empty iovecs\n"),
-             _xio_name, handle->connection_id));
-        result = globus_xio_driver_pass_write(
-                    op, (globus_xio_iovec_t *)iovec, iovec_count, wait_for,
-                    NULL, handle);
-        GlobusXIOGSIDebugExit();
-        return result;
     }
 
     /* wrap first iovec up to max wrap size */
@@ -2753,8 +2714,13 @@ globus_l_xio_gsi_write(
     result = globus_xio_driver_pass_write(op, handle->write_iovec,
                              write_iovec_count, wait_for,
                              globus_l_xio_gsi_write_cb, handle);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+    globus_free(bounce);
     GlobusXIOGSIDebugExit();
-    return result;
+    return;
     
  free_wrapped:
     if(handle->frame_writes == GLOBUS_FALSE)
@@ -2782,10 +2748,120 @@ globus_l_xio_gsi_write(
         }
     }    
  error:
+    globus_free(bounce);
+    globus_xio_driver_finished_write(op, result, 0);
+
+    GlobusXIOGSIDebugExitWithError();
+
+    return;
+}
+
+static
+globus_result_t
+globus_l_xio_gsi_write(
+    void *                              driver_specific_handle,
+    const globus_xio_iovec_t *          iovec,
+    int                                 iovec_count,
+    globus_xio_operation_t              op)
+{
+    globus_l_handle_t *                 handle;
+    globus_result_t                     result;
+    int                                 i;
+    int                                 j;
+    globus_size_t                       wait_for;
+    gsi_l_write_bounce_t *              bounce;
+    int                                 sz;
+    GlobusXIOName(globus_l_xio_gsi_write);
+    GlobusXIOGSIDebugEnter();
+
+    if(!driver_specific_handle)
+    {
+        result = GlobusXIOErrorParameter("driver_specific_handle");
+        goto error;
+    }
+
+    handle = (globus_l_handle_t *) driver_specific_handle;
+
+    /* get wait_for here */
+    wait_for = globus_xio_operation_get_wait_for(op);
+
+    /* see if we have nothing to do */
+    if(iovec_count < 1)
+    {
+        /* if trying to wait for more than we pass in error out */
+        if(wait_for > 0)
+        {
+            result = GlobusXIOErrorParameter("iovec_count");
+            goto error;
+        }
+    }
+
+    /* no protection -> just pass the write with a null callback */
+    if(handle->attr->prot_level == GLOBUS_XIO_GSI_PROTECTION_LEVEL_NONE)
+    {
+        GlobusXIOGSIDebugPrintf(
+            GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,
+            (_XIOSL("[%s:%d] Passed through. No protection\n"),
+             _xio_name, handle->connection_id));
+        result = globus_xio_driver_pass_write(
+            op, (globus_xio_iovec_t *)iovec, iovec_count, wait_for,
+            NULL, handle);
+        GlobusXIOGSIDebugExit();
+        return result;
+    }
+    
+    handle->frame_writes = GLOBUS_FALSE;
+    handle->bytes_written = 0;
+
+    /* find first non empty iovec */
+    j = 0;
+    while(j < iovec_count && iovec[j].iov_len == 0)
+    {
+        j++;
+    }
+
+    /* if all iovecs are empty then we are done */
+    if(j == iovec_count)
+    {
+        GlobusXIOGSIDebugPrintf(
+            GLOBUS_XIO_GSI_DEBUG_INTERNAL_TRACE,
+            (_XIOSL("[%s:%d] Passed through. Empty iovecs\n"),
+             _xio_name, handle->connection_id));
+        result = globus_xio_driver_pass_write(
+                    op, (globus_xio_iovec_t *)iovec, iovec_count, wait_for,
+                    NULL, handle);
+         GlobusXIOGSIDebugExit();
+        return result;
+    }
+
+    sz = iovec_count > 0 ? (iovec_count-1)*sizeof(globus_xio_iovec_t) : 0;
+    sz += sizeof(gsi_l_write_bounce_t);
+
+    bounce = (gsi_l_write_bounce_t *) globus_malloc(sz);
+
+    bounce->driver_specific_handle = driver_specific_handle;
+    bounce->op = op;
+    bounce->iovec_count = iovec_count;
+    for(i = 0; i < iovec_count; i++)
+    {
+        bounce->iovec[i].iov_base = iovec[i].iov_base;
+        bounce->iovec[i].iov_len = iovec[i].iov_len;
+    }
+    globus_callback_register_oneshot(
+        NULL,
+        NULL,
+        globus_l_xio_gsi_write_bounce,
+        bounce);
+
+/*
+    globus_l_xio_gsi_write_bounce(bounce);
+*/
+    return GLOBUS_SUCCESS;
+error:
     GlobusXIOGSIDebugExitWithError();
     return result;
-
 }
+
 
 
 

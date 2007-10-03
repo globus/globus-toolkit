@@ -15,6 +15,7 @@ AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION)
 
 dnl Build hooks for all 'builtin' modules
 echo -n "Checking for builtin modules... "
+GLOBUS_LOCATION=$GLOBUS_LOCATION
 MODULE_DIRS=.
 MODULE_LIBS=
 BUILTIN_EXTENSIONS_DEC=
@@ -38,6 +39,22 @@ else
   echo "none found"
 fi
 
+if test "X$GRIDMAP" != "X" ; then
+    GRIDMAP_CONF="-df $GRIDMAP"
+else
+    if test -e $HOME/.gridmap ; then
+        GRIDMAP_CONF="-df $HOME/.gridmap"
+    else
+        if test -e /etc/grid-security/grid-mapfile ; then
+            GRIDMAP_CONF="-df /etc/grid-security/grid-mapfile"
+        else
+            GRIDMAP_CONF=""
+        fi
+    fi
+fi
+
+AC_SUBST(GRIDMAP_CONF)
+AC_SUBST(GLOBUS_LOCATION)
 AC_SUBST(MODULE_DIRS)
 AC_SUBST(MODULE_LIBS)
 AC_SUBST(BUILTIN_EXTENSIONS_DEC)
@@ -64,6 +81,9 @@ AC_SUBST(LDFLHACK)
 GLOBUS_FINALIZE
 
 AC_OUTPUT(
+    gridftp.gfork
+    gridftp-fe.gfork
+    gridftp-be.gfork
 	Makefile
 	embed/Makefile
     pkgdata/Makefile

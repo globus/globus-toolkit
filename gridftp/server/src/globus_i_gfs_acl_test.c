@@ -40,13 +40,12 @@ globus_gfs_acl_test_init(
     globus_gfs_acl_handle_t             acl_handle,
     globus_result_t *                   out_res)
 {
-    char *                              fail_str;
+    globus_gfs_acl_action_t             fail_str;
     GlobusGFSName(globus_gfs_acl_test_init);
     GlobusGFSDebugEnter();
 
-    fail_str = globus_i_gfs_config_string("test_acl");
-    if(fail_str != NULL && (strstr(fail_str, "ALL") || 
-        strstr(fail_str, "init")))
+    fail_str = globus_i_gfs_config_int("test_acl");
+    if(fail_str == -1 || fail_str == GFS_ACL_ACTION_INIT)
     {
         *out_res = GlobusACLTestFailure();
     }
@@ -54,7 +53,7 @@ globus_gfs_acl_test_init(
     {
         *out_res = GLOBUS_SUCCESS;
     }
-    if(strstr(fail_str, "BLOCK"))
+    if(fail_str & 0x1000) /*  "BLOCK")) */
     {
         globus_gfs_acl_authorized_finished(acl_handle, *out_res);
         GlobusGFSDebugExit();
@@ -71,19 +70,18 @@ static
 int
 globus_gfs_acl_test_authorize(
     void *                              out_handle,
-    const char *                        action,
-    const char *                        object,
+    globus_gfs_acl_action_t             action,
+    globus_gfs_acl_object_desc_t *      object,
     globus_gfs_acl_info_t *             acl_info,
     globus_gfs_acl_handle_t             acl_handle,
     globus_result_t *                   out_res)
 {
-    char *                              fail_str;
+    globus_gfs_acl_action_t             fail_str;
     GlobusGFSName(globus_gfs_acl_test_authorize);
     GlobusGFSDebugEnter();
 
-    fail_str = globus_i_gfs_config_string("test_acl");
-    if(fail_str != NULL && (strstr(fail_str, "ALL") || 
-        strstr(fail_str, action)))
+    fail_str = globus_i_gfs_config_int("test_acl");
+    if(fail_str == -1 || fail_str == action)
     {
         *out_res = GlobusACLTestFailure();
     }
@@ -92,7 +90,7 @@ globus_gfs_acl_test_authorize(
         *out_res = GLOBUS_SUCCESS;
     }
 
-    if(strstr(fail_str, "BLOCK"))
+    if(fail_str & 0x1000) /* if BLOCK */
     {
         globus_gfs_acl_authorized_finished(acl_handle, *out_res);
         GlobusGFSDebugExit();

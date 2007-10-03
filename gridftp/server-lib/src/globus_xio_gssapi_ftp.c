@@ -2670,7 +2670,7 @@ globus_l_xio_gssapi_ftp_client_read_cb(
     int                                 ndx;
     int                                 tmp_i;
     globus_byte_t *                     out_buffer = NULL;
-    globus_byte_t *                     in_buffer;
+    globus_byte_t *                     in_buffer = NULL;
     globus_size_t                       out_length;
     char *                              send_buffer;
     globus_l_xio_gssapi_ftp_handle_t *  handle;
@@ -2684,7 +2684,6 @@ globus_l_xio_gssapi_ftp_client_read_cb(
     globus_mutex_lock(&handle->mutex);
     {
         globus_assert(handle->state == GSSAPI_FTP_STATE_OPEN);
-        in_buffer = handle->read_iov[0].iov_base;
 
         handle->read_posted = GLOBUS_FALSE;
         if(result != GLOBUS_SUCCESS)
@@ -2693,6 +2692,7 @@ globus_l_xio_gssapi_ftp_client_read_cb(
             goto err;
         }
 
+        in_buffer = handle->read_iov[0].iov_base;
         send_buffer = (char *) handle->read_iov[0].iov_base;
         if(send_buffer[0] == '6')
         {
@@ -2889,6 +2889,8 @@ globus_l_xio_gssapi_ftp_handle_cntl(
                 *out_cred = ds_handle->cred_handle;
                 *out_del_cred = ds_handle->delegated_cred_handle;
                 *out_subject = ds_handle->auth_gssapi_subject;
+
+                ds_handle->delegated_cred_handle = GSS_C_NO_CREDENTIAL;
                 break;
 
             default:

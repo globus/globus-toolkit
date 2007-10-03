@@ -175,8 +175,6 @@ static globus_xio_string_cntl_table_t tcp_l_string_opts_table[] =
         globus_xio_string_cntl_bool},
     {"keepalive", GLOBUS_XIO_TCP_SET_KEEPALIVE,
         globus_xio_string_cntl_bool},
-    {"linger", GLOBUS_XIO_TCP_SET_LINGER,
-        globus_xio_string_cntl_bool},
     {"sndbuf", GLOBUS_XIO_TCP_SET_SNDBUF,
         globus_xio_string_cntl_formated_int},
     {"rcvbuf", GLOBUS_XIO_TCP_SET_RCVBUF,

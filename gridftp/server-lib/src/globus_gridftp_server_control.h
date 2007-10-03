@@ -771,6 +771,11 @@ globus_gsc_959_command_add(
     const char *                            help,
     void *                                  user_arg);
 
+globus_result_t
+globus_gsc_959_command_remove(
+    globus_gridftp_server_control_t         server,
+    const char *                        command_name);
+
 void
 globus_gsc_959_finished_command(
     globus_gsc_959_op_t                     op,
@@ -786,6 +791,12 @@ globus_result_t
 globus_gridftp_server_control_event_send_restart(
     globus_gridftp_server_control_op_t      op,
     globus_range_list_t                     restart);
+
+
+void
+globus_gridftp_server_control_421_end(
+    globus_gridftp_server_control_t     server,
+    char *                              reply_msg);
 
 extern globus_module_descriptor_t      globus_i_gsc_module;
 
