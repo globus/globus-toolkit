@@ -3191,6 +3191,48 @@ globus_gsc_959_command_add(
     return res;
 }
 
+globus_result_t
+globus_gsc_959_command_remove(
+    globus_i_gsc_server_handle_t *      server_handle,
+    const char *                        command_name)
+{
+    globus_result_t                     res;
+    globus_list_t *                     list;
+    globus_l_gsc_cmd_ent_t *            cmd_ent;
+    GlobusGridFTPServerName(globus_gsc_command_add);
+
+    globus_mutex_lock(&server_handle->mutex);
+    {
+        list = (globus_list_t *) globus_hashtable_remove(
+            &server_handle->cmd_table, command_name);
+
+        if(list == NULL)
+        {
+            res = GlobusGridFTPServerErrorParameter("command_name");
+            goto error_notexist;
+        }
+
+        while(!globus_list_empty(list))
+        {
+            cmd_ent = (globus_l_gsc_cmd_ent_t *)
+                globus_list_remove(&list, list);
+
+            if(cmd_ent->help)
+            {
+                globus_free(cmd_ent->help);
+            }
+            globus_free(cmd_ent->cmd_name);
+            globus_free(cmd_ent);
+        }
+    }
+    globus_mutex_lock(&server_handle->mutex);
+
+    return GLOBUS_SUCCESS;
+
+error_notexist:
+    return res;
+}
+
 char *
 globus_i_gsc_get_help(
     globus_i_gsc_server_handle_t *      server_handle,

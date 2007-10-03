@@ -2256,6 +2256,7 @@ globus_i_gfs_control_start(
     globus_i_gfs_server_close_cb_t      close_func,
     void *                              close_arg)
 {
+    char *                              value;
     globus_result_t                     result;
     globus_gridftp_server_control_attr_t attr;
     globus_l_gfs_server_instance_t *    instance;
@@ -2412,7 +2413,7 @@ globus_i_gfs_control_start(
         }
         globus_free(alias);
     } 
-    
+
     result = globus_gridftp_server_control_attr_set_list(
         attr, globus_l_gfs_request_list, instance);
     if(result != GLOBUS_SUCCESS)
@@ -2453,6 +2454,21 @@ globus_i_gfs_control_start(
     if(result != GLOBUS_SUCCESS)
     {
         goto error_add_commands;
+    }
+
+    /* disable commands if the user says to */
+    if((value = globus_i_gfs_config_string("disable_command_list")) != NULL)
+    {
+        char *                          cmd;
+        globus_list_t *                 bad_list;
+
+        bad_list = globus_list_from_string(value, ',', NULL);
+        while(!globus_list_empty(bad_list))
+        {
+            cmd = (char *) globus_list_remove(&bad_list, bad_list);
+            globus_gsc_959_command_remove(instance->server_handle, cmd);
+            globus_free(cmd);
+        }
     }
 
     globus_mutex_lock(&globus_l_gfs_control_mutex);

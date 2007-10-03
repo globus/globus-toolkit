@@ -771,6 +771,11 @@ globus_gsc_959_command_add(
     const char *                            help,
     void *                                  user_arg);
 
+globus_result_t
+globus_gsc_959_command_remove(
+    globus_gridftp_server_control_t         server,
+    const char *                        command_name);
+
 void
 globus_gsc_959_finished_command(
     globus_gsc_959_op_t                     op,

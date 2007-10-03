@@ -340,7 +340,9 @@ static const globus_l_gfs_config_option_t option_list[] =
  {"file_transfer_count", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_INT,
     0, "0", NULL, NULL, NULL,GLOBUS_TRUE, NULL},
  {"byte_transfer_count", NULL, NULL, NULL, NULL, GLOBUS_L_GFS_CONFIG_STRING,
-    0, "0", NULL, NULL, NULL,GLOBUS_TRUE, NULL}
+    0, "0", NULL, NULL, NULL,GLOBUS_TRUE, NULL},
+ {"disable_command_list", "disable_command_list", NULL, "disable-command-list", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
+    "A comma seperated list of client commands that will be disabled.", NULL, NULL,GLOBUS_FALSE, NULL}
 };
 
 static int option_count = sizeof(option_list) / sizeof(globus_l_gfs_config_option_t);
