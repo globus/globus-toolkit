@@ -1192,7 +1192,7 @@ if test "x$gsi_path" != "xno" ; then
 	fi
 	. ./gpt_build_temp.sh
 	if test -n "${need_dash_r}"; then
-		GSI_LDFLAGS="-L${gsi_path}/lib -R{gsi_path}/lib"
+		GSI_LDFLAGS="-L${gsi_path}/lib -R${gsi_path}/lib"
 	else
 		GSI_LDFLAGS="-L${gsi_path}/lib"
 	fi
