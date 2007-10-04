@@ -1172,7 +1172,7 @@ if test "x$gsi_path" != "xno" ; then
 		AC_MSG_ERROR(Cannot find globus-makefile-header: Globus installation is incomplete)
 	fi
 	if test -n "${need_dash_r}"; then
-		GSI_LDFLAGS="-L${gsi_path}/lib -R{gsi_path}/lib"
+		GSI_LDFLAGS="-L${gsi_path}/lib -R${gsi_path}/lib"
 	else
 		GSI_LDFLAGS="-L${gsi_path}/lib"
 	fi
