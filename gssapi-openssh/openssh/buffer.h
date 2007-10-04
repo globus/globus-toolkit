@@ -15,6 +15,7 @@
 
 #ifndef BUFFER_H
 #define BUFFER_H
+#define BUFFER_MAX_LEN_HPN      0x4000000 /* 64MB */
 
 typedef struct {
 	u_char	*buf;		/* Buffer for data. */
