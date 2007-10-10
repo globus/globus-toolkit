@@ -296,6 +296,7 @@ typedef struct globus_l_xio_gssapi_ftp_handle_s
 
     globus_byte_t *                     write_buffer;
     globus_bool_t                       write_posted;
+    globus_xio_operation_t              op;
 } globus_l_xio_gssapi_ftp_handle_t;
 
 /*
@@ -1796,6 +1797,8 @@ globus_l_xio_gssapi_ftp_client_adat(
     char **                             out_buffer,
     globus_bool_t *                     complete)
 {
+    globus_result_t                     result;
+    char *                              contact_string = NULL;
     gss_buffer_desc                     send_tok;
     gss_buffer_desc                     recv_tok;
     gss_buffer_desc *                   token_ptr;
@@ -1805,8 +1808,8 @@ globus_l_xio_gssapi_ftp_client_adat(
     globus_result_t                     res;
     globus_byte_t *                     radix_buf;
     globus_size_t                       length;
-    char                                hostname[128+5];
     gss_OID                             name_type;
+    globus_xio_driver_handle_t          xio_driver_handle;
     GlobusXIOName(globus_l_xio_gssapi_ftp_client_adat);
 
     GlobusXIOGssapiftpDebugEnter();
@@ -1817,10 +1820,22 @@ globus_l_xio_gssapi_ftp_client_adat(
 
             if(handle->subject == NULL)
             {
-                sprintf(hostname, "host@%s", handle->host);
+                xio_driver_handle = 
+                    globus_xio_operation_get_driver_handle(handle->op);
 
-                send_tok.value = hostname;
-                send_tok.length = strlen(hostname) + 1;
+                result = globus_xio_driver_handle_cntl(
+                    xio_driver_handle,
+                    GLOBUS_XIO_QUERY,
+                    GLOBUS_XIO_GET_REMOTE_NUMERIC_CONTACT,
+                    &contact_string);
+                if(result != GLOBUS_SUCCESS)
+                {
+                    contact_string = globus_common_create_string(
+                        "host@%s", handle->host);
+                }
+
+                send_tok.value = contact_string;
+                send_tok.length = strlen(contact_string) + 1;
                 name_type = GSS_C_NT_HOSTBASED_SERVICE;
             }
             else
@@ -1834,6 +1849,10 @@ globus_l_xio_gssapi_ftp_client_adat(
                             &send_tok,
                             name_type,
                             &handle->target_name);
+            if(contact_string != NULL)
+            {
+                globus_free(contact_string);
+            }
             if(maj_stat != GSS_S_COMPLETE)
             {
                 res = GlobusXIOGssapiFTPGSIAuthFailure(maj_stat, min_stat);
@@ -2028,6 +2047,8 @@ globus_l_xio_gssapi_ftp_preauth_client_read_cb(
                 {
                     GlobusXIOGssapiftpDebugChangeState(handle,
                         GSSAPI_FTP_STATE_CLIENT_ADAT_INIT);
+
+                    handle->op = op;
                     res = globus_l_xio_gssapi_ftp_client_adat(
                         handle,
                         NULL,
