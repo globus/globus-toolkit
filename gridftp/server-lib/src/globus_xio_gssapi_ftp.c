@@ -1810,6 +1810,7 @@ globus_l_xio_gssapi_ftp_client_adat(
     globus_size_t                       length;
     gss_OID                             name_type;
     globus_xio_driver_handle_t          xio_driver_handle;
+    globus_xio_contact_t                contact_info;
     GlobusXIOName(globus_l_xio_gssapi_ftp_client_adat);
 
     GlobusXIOGssapiftpDebugEnter();
@@ -1826,12 +1827,29 @@ globus_l_xio_gssapi_ftp_client_adat(
                 result = globus_xio_driver_handle_cntl(
                     xio_driver_handle,
                     GLOBUS_XIO_QUERY,
-                    GLOBUS_XIO_GET_REMOTE_NUMERIC_CONTACT,
+                    GLOBUS_XIO_GET_REMOTE_CONTACT,
                     &contact_string);
                 if(result != GLOBUS_SUCCESS)
                 {
                     contact_string = globus_common_create_string(
                         "host@%s", handle->host);
+                }
+                else
+                {
+                    result = globus_xio_contact_parse(
+                        &contact_info, contact_string);
+                    globus_free(contact_string);
+                    if(result != GLOBUS_SUCCESS)
+                    {
+                        contact_string = globus_common_create_string(
+                            "host@%s", handle->host);
+                    }
+                    else
+                    {
+                        contact_string = globus_common_create_string(
+                            "host@%s", contact_info.host);
+                        globus_xio_contact_destroy(&contact_info);
+                    }
                 }
 
                 send_tok.value = contact_string;
