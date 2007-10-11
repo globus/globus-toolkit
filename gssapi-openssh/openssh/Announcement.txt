@@ -1,4 +1,4 @@
-GSI-OpenSSH 4.0, based on OpenSSH 4.6p1, is now available from:
+GSI-OpenSSH 4.1, based on OpenSSH 4.7p1, is now available from:
 
   <http://grid.ncsa.uiuc.edu/ssh/download.html>
 
@@ -7,34 +7,32 @@ For installation instructions, please see:
   <http://grid.ncsa.uiuc.edu/ssh/install.html>
 
 We appreciate your feedback and help in testing this version.
-Please use our bugzilla system to report GSI-OpenSSH bugs:
+Please use Bugzilla to report GSI-OpenSSH bugs:
 
-  <http://bugzilla.ncsa.uiuc.edu/enter_bug.cgi?product=GSI-enabled%20OpenSSH>
+  <http://bugzilla.globus.org/globus/enter_bug.cgi?product=GSI-OpenSSH>
 
-GSI-OpenSSH 4.0 Major changes
+GSI-OpenSSH 4.1 Major changes
 
    New features
 
-      * Upgraded to OpenSSH 4.6p1.
+      * Upgraded to OpenSSH 4.7p1.
 
-      * Upgraded to HPN12v17 patch from
+      * Upgraded to HPN12v18 patch from
         <http://www.psc.edu/networking/projects/hpn-ssh/>.
-
-      * Fixed Tru64 build failure
-        (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=5142).
 
    Bugs fixed
 
-      * None.
+      * Fixed AIX build failure
+        (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=5201).
 
 SHA1 checksums:
-a4723e7b59cb1f1c8c1b5179c03b653c6eb2a754  gsi_openssh-4.0-src.tar.gz
-94bc92018b3dde8de9ee3403a97ca446be4c1a60  gsi_openssh_bundle-4.0-src.tar.gz
-4731543ae80193d8192d43752fc76f93f4ac28b8  gsi_openssh_compat-4.0-src.tar.gz
-8a66cfd29b6618befeab19ab845ca038a157be32  gsi_openssh_setup-4.0-src.tar.gz
+ba69bf26fd16170b7caf8b4b2f74fd80d18d1e50  gsi_openssh-4.1-src.tar.gz
+069b85b183b9f773f288778bdbd4402b425e7d8e  gsi_openssh_bundle-4.1-src.tar.gz
+1c2dc0ca44d20abde3fec5606eda2917adf88c23  gsi_openssh_compat-4.1-src.tar.gz
+8d5bb81e746a9ec757b90f50ca54883f76140125  gsi_openssh_setup-4.1-src.tar.gz
 
 MD5 checksums:
-3821983e51e04f30e2da99445cbcfca0  gsi_openssh-4.0-src.tar.gz
-710f5b91b3e32f69a603290191ac96c9  gsi_openssh_bundle-4.0-src.tar.gz
-283a7044731ca39e7da53fb12d58a8ae  gsi_openssh_compat-4.0-src.tar.gz
-6c79558e257d92c0196aa61ec35c4ee9  gsi_openssh_setup-4.0-src.tar.gz
+bafb21cc64548dbc5321caa142852aa5  gsi_openssh-4.1-src.tar.gz
+72fe5962f7b55662ce20703d9e89bc51  gsi_openssh_bundle-4.1-src.tar.gz
+1afb13fc5d06dc51b776c93de71879c7  gsi_openssh_compat-4.1-src.tar.gz
+3d23d8ee45732173f24b824684a7e3a1  gsi_openssh_setup-4.1-src.tar.gz
