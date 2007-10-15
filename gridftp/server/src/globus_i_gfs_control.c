@@ -1083,6 +1083,17 @@ globus_l_gfs_request_command(
         }
         type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_SITE;
     }
+    else if(strcmp(cmd_array[0], "SITE") == 0 &&
+        strcmp(cmd_array[1], "SETDISKSTACK") == 0)
+    {
+        command_info->command = GLOBUS_GFS_CMD_SITE_SETDISKSTACK;
+        command_info->pathname = strdup(cmd_array[2]);
+        if(command_info->pathname == NULL)
+        {
+            goto err;
+        }
+        type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_SITE;
+    }
     else
     {
         goto err;
@@ -1318,7 +1329,7 @@ globus_l_gfs_data_transfer_cb(
         globus_gridftp_server_control_finished_transfer(
             op,
             GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS,
-            GLOBUS_NULL);
+            reply->msg);
     }
     if(destroy_req)
     {
@@ -2200,6 +2211,19 @@ globus_l_gfs_add_commands(
         3,
         3,
         "SITE SETNETSTACK <sp> comma seperated list of xio drivers for the data channel",
+        instance);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+    result = globus_gsc_959_command_add(
+        control_handle,
+        "SITE SETDISKSTACK",
+        globus_l_gfs_request_command,
+        GLOBUS_GSC_COMMAND_POST_AUTH,
+        3,
+        3,
+        "SITE SETDISKSTACK <sp> comma seperated list of xio drivers for the disk channel",
         instance);
     if(result != GLOBUS_SUCCESS)
     {
