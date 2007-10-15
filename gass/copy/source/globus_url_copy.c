@@ -104,11 +104,13 @@ typedef struct
     globus_off_t			partial_length;
     globus_bool_t                       list_uses_data_mode;
     globus_bool_t                       udt;
+    globus_bool_t                       nl_bottleneck;
     globus_bool_t                       ipv6;
     globus_bool_t                       allo;
     globus_bool_t                       delayed_pasv;
     globus_bool_t                       pipeline;
     char *                              net_stack_str;
+    char *                              disk_stack_str;
     char *                              src_authz_assert;
     char *                              dst_authz_assert;
     globus_bool_t                       cache_src_authz_assert;
@@ -239,7 +241,10 @@ typedef struct globus_l_guc_plugin_op_s
     my_monitor_t                        monitor;
 } globus_l_guc_plugin_op_t;
 
-globus_extension_registry_t      globus_guc_plugin_registry;
+globus_extension_registry_t             globus_guc_client_plugin_registry;
+globus_extension_registry_t             globus_guc_plugin_registry;
+static globus_list_t *                  g_client_lib_plugin_list = NULL;
+
 
 /*****************************************************************************
                           Module specific variables
@@ -461,6 +466,7 @@ enum
     arg_b, 
     arg_c, 
     arg_ext,
+    arg_plugin,
     arg_modname,
     arg_modargs,
     arg_src_modname,
@@ -496,7 +502,9 @@ enum
     arg_list,
     arg_ipv6,
     arg_udt,
+    arg_nl_bottleneck,
     arg_net_stack_str,
+    arg_disk_stack_str,
     arg_authz_assert,
     arg_src_authz_assert,
     arg_dst_authz_assert,
@@ -560,6 +568,7 @@ flagdef(arg_create_dest, "-cd", "-create-dest");
 flagdef(arg_fast, "-fast", "-fast-data-channels");
 flagdef(arg_ipv6, "-ipv6","-IPv6");
 flagdef(arg_udt, "-u","-udt");
+flagdef(arg_nl_bottleneck, "-nlb","-nl-bottleneck");
 flagdef(arg_delayed_pasv, "-dp","-delayed-pasv");
 flagdef(arg_pipeline, "-pp","-pipeline");
 flagdef(arg_allo, "-allo","-allocate");
@@ -570,6 +579,7 @@ flagdef(arg_cache_dst_authz_assert, "-cache-daa","-cache-dst-authz-assert");
 
 oneargdef(arg_list, "-list", "-list-url", NULL, NULL);
 oneargdef(arg_ext, "-X", "-extentions", NULL, NULL);
+oneargdef(arg_plugin, "-CP", "-plugin", NULL, NULL);
 oneargdef(arg_modname, "-mn", "-module-name", NULL, NULL);
 oneargdef(arg_modargs, "-mp", "-module-parameters", NULL, NULL);
 oneargdef(arg_src_modname, "-smn", "-src-module-name", NULL, NULL);
@@ -591,6 +601,7 @@ oneargdef(arg_rst_timeout, "-rst-timeout", "-restart-timeout", test_integer, GLO
 oneargdef(arg_partial_offset, "-off", "-partial-offset", test_integer, GLOBUS_NULL);
 oneargdef(arg_partial_length, "-len", "-partial-length", test_integer, GLOBUS_NULL);
 oneargdef(arg_net_stack_str, "-dcstack", "-data-channel-stack", GLOBUS_NULL, GLOBUS_NULL);
+oneargdef(arg_disk_stack_str, "-fsstack", "-file-system-stack", GLOBUS_NULL, GLOBUS_NULL);
 oneargdef(arg_authz_assert, "-aa", "-authz-assert", GLOBUS_NULL, GLOBUS_NULL);
 oneargdef(arg_src_authz_assert, "-saa", "-src-authz-assert", GLOBUS_NULL, GLOBUS_NULL);
 oneargdef(arg_dst_authz_assert, "-daa", "-dst-authz-assert", GLOBUS_NULL, GLOBUS_NULL);
@@ -605,6 +616,7 @@ static globus_args_option_descriptor_t args_options[arg_num];
     setupopt(arg_f);                    \
     setupopt(arg_c);                    \
     setupopt(arg_ext);                  \
+    setupopt(arg_plugin);               \
     setupopt(arg_modname);              \
     setupopt(arg_modargs);              \
     setupopt(arg_src_modname);          \
@@ -639,8 +651,10 @@ static globus_args_option_descriptor_t args_options[arg_num];
     setupopt(arg_fast);	                \
     setupopt(arg_list);	                \
     setupopt(arg_udt);                  \
+    setupopt(arg_nl_bottleneck);        \
     setupopt(arg_ipv6);         	\
     setupopt(arg_net_stack_str);        \
+    setupopt(arg_disk_stack_str);        \
     setupopt(arg_authz_assert);         \
     setupopt(arg_src_authz_assert);     \
     setupopt(arg_dst_authz_assert);     \
@@ -802,9 +816,10 @@ globus_l_guc_ext(
     ext_info.partial_offset = guc_info->partial_offset;
     ext_info.partial_length = guc_info->partial_length;
     ext_info.list_uses_data_mode = guc_info->list_uses_data_mode;
-    ext_info.udt = guc_info->udt;
+    ext_info.nl_bottleneck = guc_info->nl_bottleneck;
     ext_info.ipv6 = guc_info->ipv6;
     ext_info.net_stack_str = guc_info->net_stack_str;
+    ext_info.disk_stack_str = guc_info->disk_stack_str;
     ext_info.src_authz_assert = guc_info->src_authz_assert;
     ext_info.dst_authz_assert = guc_info->dst_authz_assert;
     ext_info.cache_src_authz_assert = guc_info->cache_src_authz_assert;
@@ -1263,6 +1278,10 @@ globus_l_guc_info_destroy(
     if(guc_info->net_stack_str)
     {
         globus_free(guc_info->net_stack_str);
+    }
+    if(guc_info->disk_stack_str)
+    {
+        globus_free(guc_info->disk_stack_str);
     }
 
     /* destroy the list */
@@ -1929,6 +1948,7 @@ globus_l_guc_parse_arguments(
     guc_info->rfc1738 = GLOBUS_FALSE;
     guc_info->list_uses_data_mode = GLOBUS_FALSE;
     guc_info->udt = GLOBUS_FALSE;
+    guc_info->nl_bottleneck = GLOBUS_FALSE;
     guc_info->ipv6 = GLOBUS_FALSE;
     guc_info->allo = GLOBUS_TRUE;
     guc_info->delayed_pasv = GLOBUS_FALSE;
@@ -1939,6 +1959,7 @@ globus_l_guc_parse_arguments(
     guc_info->dst_module_args = GLOBUS_NULL;
     guc_info->src_module_args = GLOBUS_NULL;
     guc_info->net_stack_str = GLOBUS_NULL;
+    guc_info->disk_stack_str = GLOBUS_NULL;
     guc_info->src_authz_assert = GLOBUS_NULL;
     guc_info->dst_authz_assert = GLOBUS_NULL;
     guc_info->cache_src_authz_assert = GLOBUS_FALSE;
@@ -2018,6 +2039,10 @@ globus_l_guc_parse_arguments(
                         realloc(g_ext_args, ext_arg_size*sizeof(char *));
                 }
             }
+            break;
+        case arg_plugin:
+            g_client_lib_plugin_list = globus_list_from_string(
+                instance->values[0], ',', NULL);
             break;
         case arg_modname:
             guc_info->src_module_name = globus_libc_strdup(instance->values[0]);
@@ -2149,11 +2174,17 @@ globus_l_guc_parse_arguments(
 	case arg_udt:
 	    guc_info->udt = GLOBUS_TRUE;
 	    break;
+	case arg_nl_bottleneck:
+	    guc_info->nl_bottleneck = GLOBUS_TRUE;
+	    break;
 	case arg_ipv6:
 	    guc_info->ipv6 = GLOBUS_TRUE;
 	    break;
         case arg_net_stack_str:
             guc_info->net_stack_str = globus_libc_strdup(instance->values[0]);
+            break;
+        case arg_disk_stack_str:
+            guc_info->disk_stack_str = globus_libc_strdup(instance->values[0]);
             break;
         case arg_authz_assert:
             result = globus_l_guc_file_to_string(
@@ -2343,6 +2374,49 @@ globus_l_guc_parse_arguments(
     if(guc_info->udt)
     {
         guc_info->net_stack_str = globus_libc_strdup("udt_ref,gsi");
+    }
+    if(guc_info->nl_bottleneck)
+    {
+        globus_uuid_t                   uuid;
+        char *                          netlog_str;
+        char *                          disk_stack_str;
+        char *                          net_stack_str;
+
+        globus_uuid_create(&uuid);
+
+        netlog_str = globus_common_create_string(
+            "netlogger:uuid=%s;mask=255",
+            uuid.text);
+
+        if(guc_info->net_stack_str != NULL)
+        {
+            net_stack_str = globus_common_create_string(
+                "%s,%s", guc_info->net_stack_str, netlog_str);
+            globus_free(guc_info->net_stack_str);
+
+            guc_info->net_stack_str = net_stack_str;
+        }
+        else
+        {
+            guc_info->net_stack_str = globus_common_create_string(
+                "tcp,gsi,%s", netlog_str);
+        }
+
+        if(guc_info->disk_stack_str != NULL)
+        {
+            disk_stack_str = globus_common_create_string(
+                "%s,%s", guc_info->disk_stack_str, netlog_str);
+            globus_free(guc_info->net_stack_str);
+
+            guc_info->disk_stack_str = disk_stack_str;
+        }
+        else
+        {
+            guc_info->disk_stack_str = globus_common_create_string(
+                "file,%s", netlog_str);
+        }
+
+        globus_free(netlog_str);
     }
     
     /* check arguemnt validity */
@@ -2789,6 +2863,15 @@ globus_l_guc_init_gass_copy_handle(
     globus_gass_copy_handle_t *                     gass_copy_handle,
     globus_l_guc_info_t *                           guc_info)
 {
+    globus_ftp_client_plugin_t                      plugin;
+    globus_list_t *                                 list;
+    int                                             rc;
+    globus_extension_handle_t                       ext_handle;
+    globus_guc_client_plugin_funcs_t *              funcs;
+    char *                                          plugin_name;
+    char *                                          plugin_arg;
+    char *                                          tmp_s;
+    char *                                          func_name;
     globus_ftp_client_handleattr_t                  ftp_handleattr;
     globus_result_t                                 result;
     globus_ftp_client_plugin_t                      debug_plugin;
@@ -2810,6 +2893,57 @@ globus_l_guc_init_gass_copy_handle(
     }
 
     globus_ftp_client_handleattr_set_cache_all(&ftp_handleattr, GLOBUS_TRUE);
+
+    memset(&ext_handle, '\0', sizeof(globus_extension_handle_t));
+    for(list = g_client_lib_plugin_list;
+        !globus_list_empty(list);
+        list = globus_list_rest(list))
+    {
+        plugin_name = globus_list_first(list);
+        plugin_arg = NULL;
+        tmp_s = strchr(plugin_name, ':');
+        if(tmp_s != NULL)
+        {
+            *tmp_s = '\0';
+            plugin_arg = tmp_s + 1;
+        }
+        rc = globus_extension_activate(plugin_name);
+        if(rc != 0)
+        {
+            fprintf(stderr, "Failed to load extension %s\n", plugin_name);
+        }
+    
+        func_name = globus_common_create_string("%s_funcs", plugin_name);
+
+        funcs = (globus_guc_client_plugin_funcs_t *) globus_extension_lookup(
+            &ext_handle, &globus_guc_client_plugin_registry, func_name);
+        if(funcs == NULL)
+        {
+            fprintf(stderr, "Failed to find extension structure %s.\n",
+                func_name);
+        }
+        else
+        {
+            result = funcs->init_func(&plugin, plugin_arg);
+            if(result != GLOBUS_SUCCESS)
+            {
+                fprintf(stderr,
+                    _GASCSL("Error: Unable to init extension plugin %s\n"),
+                    globus_error_print_friendly(globus_error_peek(result)));
+            }
+
+            result = globus_ftp_client_handleattr_add_plugin(
+                &ftp_handleattr,
+                &plugin);
+            if(result != GLOBUS_SUCCESS)
+            {
+                fprintf(stderr,
+                    _GASCSL("Error: Unable to register extension plugin %s\n"),
+                    globus_error_print_friendly(globus_error_peek(result)));
+            }
+        }
+    }
+
 
     if(g_use_debug)
     {
@@ -3122,6 +3256,12 @@ globus_l_guc_gass_attr_init(
             globus_ftp_client_operationattr_set_net_stack(
                 ftp_attr,
                 guc_info->net_stack_str);
+        }
+        if(guc_info->disk_stack_str)
+        {
+            globus_ftp_client_operationattr_set_disk_stack(
+                ftp_attr,
+                guc_info->disk_stack_str);
         }
 
         globus_gass_copy_attr_set_ftp(gass_copy_attr, ftp_attr);
