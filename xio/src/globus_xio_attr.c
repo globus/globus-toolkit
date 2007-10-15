@@ -91,6 +91,299 @@ globus_xio_attr_init(
     return res;
 }
 
+globus_xio_driver_list_ent_t *
+globus_xio_driver_list_find_driver(
+    globus_list_t *                     driver_list,
+    const char *                        driver_name)
+{
+    globus_xio_driver_list_ent_t *      ent;
+    globus_list_t *                     list;
+
+
+    for(list = driver_list;
+        !globus_list_empty(list);
+        list = globus_list_rest(list))
+    {
+        ent = (globus_xio_driver_list_ent_t *) globus_list_first(list);
+
+        if(strcmp(ent->driver_name, driver_name) == 0)
+        {
+            return ent;
+        }
+    }
+
+    return NULL;
+}
+
+void
+globus_xio_driver_list_destroy(
+    globus_list_t *                     driver_list,
+    globus_bool_t                       unload)
+{
+    globus_xio_driver_list_ent_t *      ent;
+    globus_list_t *                     list;
+
+    for(list = driver_list;
+        !globus_list_empty(list);
+        list = globus_list_rest(list))
+    {
+        ent = (globus_xio_driver_list_ent_t *) globus_list_first(list);
+
+        if(ent->driver_name != NULL)
+        {
+            globus_free(ent->driver_name);
+        }
+        if(ent->opts != NULL)
+        {
+            globus_free(ent->opts);
+        }
+        if(unload)
+        {
+            globus_xio_driver_unload(ent->driver);
+        }
+        globus_free(ent);
+    }
+}
+
+globus_result_t
+globus_xio_driver_list_to_stack_attr(
+    globus_list_t *                     driver_list,
+    globus_xio_stack_t                  stack,
+    globus_xio_attr_t                   attr)
+{
+    globus_xio_driver_list_ent_t *      ent; 
+    globus_list_t *                     list;
+
+    for(list = driver_list;
+        !globus_list_empty(list);
+        list = globus_list_rest(list))
+    {
+        ent = (globus_xio_driver_list_ent_t *) globus_list_first(list);
+
+        globus_xio_stack_push_driver(stack, ent->driver);
+
+        if(ent->opts != NULL)
+        {
+            /* ignore error */
+            globus_xio_attr_cntl(
+                attr,
+                ent->driver,
+                GLOBUS_XIO_SET_STRING_OPTIONS,
+                ent->opts);
+        }
+    }
+
+    return GLOBUS_SUCCESS;
+}
+
+globus_result_t
+globus_xio_driver_safe_table_from_string(
+    char *                              driver_string,
+    globus_hashtable_t *                safe_table)
+{
+    globus_result_t                     result;
+    globus_xio_driver_list_ent_t *      d_ent;
+    globus_list_t *                     driver_list = NULL;
+
+    /* take advantage of xio function to load drivers */
+
+    result = globus_xio_driver_list_from_string(
+        driver_string, &driver_list, NULL);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+
+    while(!globus_list_empty(driver_list))
+    {
+        d_ent = (globus_xio_driver_list_ent_t *)
+            globus_list_remove(&driver_list, driver_list);
+
+        globus_hashtable_insert(safe_table, d_ent->driver_name, d_ent);
+    }
+
+    return GLOBUS_SUCCESS;
+
+error:
+
+    return result;
+}
+
+globus_result_t
+globus_xio_driver_list_create_ent(
+    const char *                        driver_desc,
+    globus_xio_driver_t                 driver_in,
+    globus_bool_t                       load,
+    globus_xio_driver_list_ent_t **     ent_out)
+{   
+    globus_xio_driver_t                 driver;
+    globus_xio_driver_list_ent_t *      list_ent;
+    char *                              driver_name;
+    char *                              opts;
+    globus_result_t                     result;
+
+    driver_name = strdup(driver_desc);
+    opts = strchr(driver_name, ':');
+    if(opts != NULL)
+    {
+        *opts = '\0';
+        opts++; 
+    }
+
+    if(load)
+    {
+        result = globus_xio_driver_load(driver_name, &driver);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error_load;
+        }
+    }
+    else
+    {
+        driver = driver_in;
+    }
+
+    list_ent = (globus_xio_driver_list_ent_t *)
+        globus_calloc(1, sizeof(globus_xio_driver_list_ent_t));
+    list_ent->opts = globus_libc_strdup(opts);
+    list_ent->driver = driver;
+    list_ent->driver_name = driver_name;
+    list_ent->loaded = load;
+
+    *ent_out = list_ent;
+
+    return GLOBUS_SUCCESS;
+
+error_load:
+    globus_free(driver_name);
+    return result;
+}   
+
+
+/* driver list stuff */
+globus_result_t
+globus_xio_driver_list_from_string(
+    char *                              driver_string,
+    globus_list_t **                    driver_list,
+    globus_hashtable_t *                safe_table)
+{
+    globus_result_t                     result;
+    globus_bool_t                       done = GLOBUS_FALSE;
+    globus_bool_t                       loaded;
+    char *                              opts;
+    char *                              ptr;
+    char *                              driver_str;
+    char *                              driver_name;
+    char *                              tmp_str;
+    globus_xio_driver_t                 driver;
+    globus_list_t *                     list = NULL;
+    globus_xio_driver_list_ent_t *      list_ent;
+    GlobusXIOName(globus_xio_driver_list_from_string);
+
+    *driver_list = NULL;
+
+    if(driver_string == NULL) 
+    {
+        result = GlobusXIOErrorParameter("driver_string");
+        goto error_param;
+    }
+
+    driver_str = globus_libc_strdup(driver_string);
+    tmp_str = driver_str;
+    while(!done)
+    {
+        loaded = GLOBUS_FALSE;
+        driver_name = tmp_str;
+        ptr = strchr(driver_name, ',');
+        if(ptr != NULL)
+        {
+            *ptr = '\0';
+            tmp_str = ptr+1;
+        }
+        else
+        {
+            done = GLOBUS_TRUE;
+        }
+        opts = strchr(driver_name, ':');
+        if(opts != NULL)
+        {
+            *opts = '\0';
+            opts++;
+        }
+
+        /* check against the safe list */
+        if(safe_table != NULL)
+        {
+            char *                      err_str;
+
+            list_ent = (globus_xio_driver_list_ent_t *)
+                globus_hashtable_lookup(safe_table, driver_name);
+
+            if(list_ent == NULL)
+            {
+                err_str = globus_common_create_string(
+                    "%s driver not whitelisted", driver_name);
+                result = GlobusXIOErrorString(err_str);
+                globus_free(err_str);
+                goto error_load;
+            }
+            driver = list_ent->driver;
+        }
+        else
+        {
+            result = globus_xio_driver_load(driver_name, &driver);
+            if(result != GLOBUS_SUCCESS)
+            {
+                goto error_load;
+            }
+
+            loaded = GLOBUS_TRUE;
+        }
+
+        list_ent = (globus_xio_driver_list_ent_t *)
+            globus_calloc(1, sizeof(globus_xio_driver_list_ent_t));
+        list_ent->opts = globus_libc_strdup(opts);
+        list_ent->driver = driver;
+        list_ent->driver_name = globus_libc_strdup(driver_name);
+        list_ent->loaded = loaded;
+
+        globus_list_insert(&list, list_ent);
+    }
+
+    globus_free(driver_str);
+
+    /* reverse list */
+    while(!globus_list_empty(list))
+    {
+        globus_list_insert(driver_list, globus_list_first(list));
+        globus_list_remove(&list, list);
+    }
+
+    return GLOBUS_SUCCESS;
+
+error_load:
+    globus_free(driver_str);
+    while(!globus_list_empty(list))
+    {
+        list_ent = (globus_xio_driver_list_ent_t *)
+            globus_list_remove(&list, list);
+
+        if(list_ent->loaded)
+        {
+            globus_xio_driver_unload(list_ent->driver);
+        }
+        globus_free(list_ent->driver_name);
+        if(list_ent->opts != NULL)
+        {
+            globus_free(list_ent->opts);
+        }
+        globus_free(list_ent);
+    }
+error_param:
+    return result;
+}
+
+
 /*
  *
  */

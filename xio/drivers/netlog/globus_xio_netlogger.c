@@ -195,13 +195,31 @@ globus_l_xio_netlogger_activate(void)
     {
         goto error_xio_system_activate;
     }
-    GlobusXIORegisterDriver(netlogger);
 
     /* setup global NL stuff */
     xio_l_nl_log = NL_open(NULL);
-    NL_transfer_init(xio_l_nl_summ, 0, NL_LVL_DEBUG);
+    if(xio_l_nl_log == NULL)
+    {
+        rc = -1;
+        goto error_xio_system_activate;
+    }
+    xio_l_nl_summ = NL_summ();
+    if(xio_l_nl_summ == NULL)
+    {
+        rc = -1;
+        goto error_xio_system_activate;
+    }
+    rc = NL_transfer_init(xio_l_nl_summ, 0, NL_LVL_DEBUG);
+    if(rc != 0)
+    {
+        goto error_summ;
+    }
     NL_set_level(xio_l_nl_log, NL_LVL_INFO);
-    NL_summ_add_log(xio_l_nl_summ, xio_l_nl_log);
+    rc = NL_summ_add_log(xio_l_nl_summ, xio_l_nl_log);
+    if(rc != 0)
+    {
+        goto error_summ;
+    }
 
     handle = (xio_l_netlogger_handle_t *)
         globus_calloc(1, sizeof(xio_l_netlogger_handle_t));
@@ -211,9 +229,12 @@ globus_l_xio_netlogger_activate(void)
     globus_l_xio_netlogger_default_handle = 
         xio_l_netlogger_create_handle(handle);
 
+    GlobusXIORegisterDriver(netlogger);
     GlobusXIONetloggerDebugExit();
     return GLOBUS_SUCCESS;
 
+error_summ:
+    /* close NL handle */
 error_xio_system_activate:
     GlobusXIONetloggerDebugExitWithError();
     GlobusDebugDestroy(GLOBUS_XIO_NETLOGGER);

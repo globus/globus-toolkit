@@ -96,8 +96,21 @@ globus_xio_contact_copy(
 #define GlobusXIOName(func) static const char * _xio_name = #func
 #endif
 
+#define GlobusXIOErrorString(_str)                                          \
+    globus_error_put(GlobusXIOErrorObjString(_str))
+
+#define GlobusXIOErrorObjString(_str)                                       \
+    globus_error_construct_error(                                           \
+        GLOBUS_XIO_MODULE,                                                  \
+        GLOBUS_NULL,                                                        \
+        GLOBUS_XIO_ERROR_STRING,                                            \
+        __FILE__,                                                           \
+        _xio_name,                                                          \
+        __LINE__,                                                           \
+        _XIOSL("XIO error: %s"), (_str)) 
+                                         
 #define GlobusXIOErrorCanceled()                                            \
-    globus_error_put(GlobusXIOErrorObjCanceled())                                           
+    globus_error_put(GlobusXIOErrorObjCanceled())
 
 #define GlobusXIOErrorObjCanceled()                                         \
     globus_error_construct_error(                                           \

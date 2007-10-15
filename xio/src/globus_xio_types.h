@@ -93,7 +93,8 @@ typedef enum
     GLOBUS_XIO_ERROR_NOT_ACTIVATED,
     GLOBUS_XIO_ERROR_UNLOADED,
     GLOBUS_XIO_ERROR_TIMEOUT,
-    GLOBUS_XIO_ERROR_PARSE
+    GLOBUS_XIO_ERROR_PARSE,
+    GLOBUS_XIO_ERROR_STRING
 } globus_xio_error_type_t;
 
 
@@ -238,6 +239,15 @@ typedef struct
     char *                              subject;
 } globus_xio_contact_t;
 
+
+typedef struct globus_xio_driver_list_ent_s
+{
+    globus_xio_driver_t                 driver;
+    char *                              driver_name;
+    char *                              opts;
+    void *                              user_arg;
+    globus_bool_t                       loaded;
+}globus_xio_driver_list_ent_t;
 
 EXTERN_C_END
 

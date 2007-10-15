@@ -15,7 +15,7 @@ INCLUDES = $(GPT_INCLUDES) -I $(NETLOGGER_PATH)/include
 lib_LTLIBRARIES = libglobus_xio_netlogger_driver_$(GLOBUS_FLAVOR_NAME).la
 
 libglobus_xio_netlogger_driver___GLOBUS_FLAVOR_NAME__la_LIBADD = \
-	@GPT_LIB_LINKS@ $(NETLOGGER_PATH)/lib/libnl.la
+	@GPT_LIB_LINKS@ $(NETLOGGER_PATH)/lib/libnl.a
 libglobus_xio_netlogger_driver___GLOBUS_FLAVOR_NAME__la_SOURCES = \
 	globus_xio_netlogger.c
 libglobus_xio_netlogger_driver___GLOBUS_FLAVOR_NAME__la_LDFLAGS = \
