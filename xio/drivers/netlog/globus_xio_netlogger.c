@@ -442,6 +442,10 @@ globus_l_xio_netlogger_cntl(
             {
                 *str_out = strdup("HELLO");
             }
+            else
+            {
+                *str_out = NULL;
+            }
             break;
     }
 
