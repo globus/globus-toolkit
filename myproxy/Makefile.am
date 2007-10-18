@@ -84,6 +84,8 @@ flavorinclude_HEADERS= \
 	myproxy_server.h \
 	verror.h
 
+INCLUDES = $(GPT_INCLUDES)
+
 lib_LTLIBRARIES = libmyproxy_$(GLOBUS_FLAVOR_NAME).la
 
 libmyproxy___GLOBUS_FLAVOR_NAME__la_SOURCES = $(LibSources)
