@@ -97,6 +97,7 @@ globus_l_gfs_file_make_stack(
     globus_xio_attr_t                   attr,
     globus_xio_stack_t                  stack)
 {
+    globus_xio_driver_t                 driver;
     globus_result_t                     result;
     globus_list_t *                     driver_list = NULL;
     globus_xio_driver_list_ent_t *      ent;
@@ -124,11 +125,13 @@ globus_l_gfs_file_make_stack(
 
             if(strcmp(ent->driver_name, "file") == 0)
             {
+                driver = globus_l_gfs_file_driver;
                 result = globus_xio_stack_push_driver(
                     stack, globus_l_gfs_file_driver);
             }
             else
             {
+                driver = ent->driver;
                 result = globus_xio_stack_push_driver(stack, ent->driver);
             }
             if(result != GLOBUS_SUCCESS)
@@ -136,6 +139,16 @@ globus_l_gfs_file_make_stack(
                 result = GlobusGFSErrorWrapFailed(
                     "globus_xio_stack_push_driver", result);
                 goto error_push;
+            }
+
+            if(ent->opts != NULL)
+            {
+                /* ignore error */
+                globus_xio_attr_cntl(
+                    attr,
+                    driver,
+                    GLOBUS_XIO_SET_STRING_OPTIONS,
+                    ent->opts);
             }
         }
     }

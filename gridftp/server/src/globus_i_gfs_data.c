@@ -4508,20 +4508,19 @@ globus_l_gfs_data_get_nl_msg(
     }
 
     ent = globus_xio_driver_list_find_driver(
-        op->session_handle->net_stack_list,
+        op->session_handle->disk_stack_list,
         "netlogger");
     if(ent == NULL || ent->opts == NULL)
     {
         return NULL;
     }
 
-    tmp_ptr = strstr("uuid=",  ent->opts);
+    tmp_ptr = strstr(ent->opts, "uuid=");
     if(tmp_ptr == NULL)
     {
         return NULL;
     }
 
-    tmp_ptr += 5;
     uuid = strdup(tmp_ptr);
     tmp_ptr = strchr(uuid, ';');
     if(tmp_ptr != NULL)
