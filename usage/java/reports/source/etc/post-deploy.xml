@@ -74,6 +74,71 @@ Build Instructions:
                 value="org.globus.usage.report.jwscore.ContainerEventReport"/>
         </ant>
 
+        <!-- Combined Reports -->
+        <ant antfile="${build.launcher}"
+             target="generateLauncher">
+            <property name="launcher-name"
+            value="combined-mdsusagediff-report"/>
+            <property name="class.name"
+                value="org.globus.usage.report.combined.MDSUsageDiff"/>
+        </ant>
+        <ant antfile="${build.launcher}"
+             target="generateLauncher">
+            <property name="launcher-name"
+            value="combined-gramusagediff-report"/>
+            <property name="class.name"
+                value="org.globus.usage.report.combined.GRAMUsageDiff"/>
+        </ant>
+        <ant antfile="${build.launcher}"
+             target="generateLauncher">
+            <property name="launcher-name"
+            value="combined-rftusagediff-report"/>
+            <property name="class.name"
+                value="org.globus.usage.report.combined.RFTUsageDiff"/>
+        </ant>
+        <ant antfile="${build.launcher}"
+             target="generateLauncher">
+            <property name="launcher-name"
+            value="combined-gftpusagediff-report"/>
+            <property name="class.name"
+                value="org.globus.usage.report.combined.GFTPUsageDiff"/>
+        </ant>
+        <ant antfile="${build.launcher}"
+             target="generateLauncher">
+            <property name="launcher-name"
+            value="combined-rlsusagediff-report"/>
+            <property name="class.name"
+                value="org.globus.usage.report.combined.RLSUsageDiff"/>
+        </ant>
+        <ant antfile="${build.launcher}"
+             target="generateLauncher">
+            <property name="launcher-name"
+            value="combined-gftpfreqdist-report"/>
+            <property name="class.name"
+                value="org.globus.usage.report.combined.GFTPFreqDist"/>
+        </ant>
+        <ant antfile="${build.launcher}"
+             target="generateLauncher">
+            <property name="launcher-name"
+            value="combined-rlsfreqdist-report"/>
+            <property name="class.name"
+                value="org.globus.usage.report.combined.RLSFreqDist"/>
+        </ant>
+        <ant antfile="${build.launcher}"
+             target="generateLauncher">
+            <property name="launcher-name"
+            value="combined-gramfreqdist-report"/>
+            <property name="class.name"
+                value="org.globus.usage.report.combined.GRAMFreqDist"/>
+        </ant>
+        <ant antfile="${build.launcher}"
+             target="generateLauncher">
+            <property name="launcher-name"
+            value="combined-rftfreqdist-report"/>
+            <property name="class.name"
+                value="org.globus.usage.report.combined.RFTFreqDist"/>
+        </ant>
+
 
         <!-- RFT Reports -->
         <ant antfile="${build.launcher}"
