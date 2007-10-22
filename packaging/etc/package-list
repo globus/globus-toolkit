@@ -93,6 +93,7 @@ globus_xio_gsi_driver	xio/drivers/gsi	gpt
 globus_xio_udt_ref_driver	xio/drivers/udt_ref	gpt
 globus_xio_skeleton_driver      xio/drivers/skeleton/source	gpt
 globus_xio_blockz_driver        xio/drivers/blockz	gpt
+globus_xio_netlogger_driver     xio/drivers/netlog  gpt
 globus_xio	xio/src	gpt
 globus_xio_test	xio/test	gpt
 globus_xioperf	xio/xioperf/source	gpt
