@@ -227,8 +227,6 @@ xio_l_netlogger_create_handle(
     NL_set_const(handle->nl_log, 0, "HOST:s", hostname);
     NL_set_level(handle->nl_log, NL_LVL_DEBUG);
 
-    handle->read_event = NL_TRANSFER_NET_READ;
-    handle->write_event = NL_TRANSFER_NET_WRITE;
 
     GlobusXIONetloggerDebugExit();
     return handle;
@@ -362,6 +360,8 @@ globus_l_xio_netlogger_attr_init(
     attr->type = strdup("default");
 
     attr->filename = NULL;
+    attr->read_event = NL_TRANSFER_DISK_READ;
+    attr->write_event = NL_TRANSFER_DISK_WRITE;
 
     *out_attr = attr;
 
@@ -394,6 +394,9 @@ globus_l_xio_netlogger_attr_copy(
     {
         dst_attr->id = strdup(src_attr->id);
     }
+    dst_attr->read_event = src_attr->read_event;
+    dst_attr->write_event = dst_attr->write_event;
+
     *dst = dst_attr;
 
     return GLOBUS_SUCCESS;

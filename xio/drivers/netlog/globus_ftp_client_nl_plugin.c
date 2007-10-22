@@ -158,6 +158,9 @@ nl_l_final_received(
     ent->return_count++;
     if(2 == ent->return_count)
     {
+printf("1] %s\n\n", ent->msgs[0]);
+printf("2] %s\n\n", ent->msgs[1]);
+
         rc = NL_transfer_get_bottleneck(ent->msgs[0], ent->msgs[1],
             &bottleneck);
         if(rc != 0)
