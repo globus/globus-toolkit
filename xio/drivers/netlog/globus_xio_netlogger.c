@@ -94,6 +94,14 @@ typedef struct xio_l_netlogger_handle_s
     globus_size_t                       write_buflen;
 } xio_l_netlogger_handle_t;
 
+typedef struct xio_l_nl_handle_ent_s
+{
+    NL_log_T                            nl_log;
+    NL_summ_T                           nl_summ;
+    char *                              uuid;
+    int                                 ref;
+} xio_l_nl_handle_ent_t;
+
 static
 globus_result_t
 globus_l_xio_netlogger_attr_init(
@@ -102,13 +110,15 @@ globus_l_xio_netlogger_attr_init(
 xio_l_netlogger_handle_t *     globus_l_xio_netlogger_default_handle = NULL;
 
 static globus_hashtable_t               nl_l_handle_table;
-
+static globus_mutex_t                   xio_l_nl_mutex;
 
 static
 xio_l_netlogger_handle_t *
 xio_l_netlogger_create_handle(
     xio_l_netlogger_handle_t *          handle)
 {
+    xio_l_nl_handle_ent_t *             ent;
+    int                                 rc;
     globus_uuid_t                       uuid;
     char *                              hostname;
     GlobusXIOName(xio_l_netlogger_create_handle);
@@ -161,7 +171,6 @@ xio_l_netlogger_create_handle(
             handle->id = strdup("default");
         }
 
-        handle->close_nl = GLOBUS_FALSE;
         if(handle->nl_log == NULL)
         {
             handle->nl_log = xio_l_nl_log;
@@ -175,12 +184,13 @@ xio_l_netlogger_create_handle(
         one if needed */
     else
     {
-        ent = (*) globus_hashtable_lookup(
+        ent = (xio_l_nl_handle_ent_t *) globus_hashtable_lookup(
             &nl_l_handle_table, handle->id);
 
         if(ent == NULL)
         {
-            ent = ( *) globus_calloc(1, sizeof(*));
+            ent = (xio_l_nl_handle_ent_t *)
+                globus_calloc(1, sizeof(xio_l_nl_handle_ent_t));
             ent->nl_log = NL_open(NULL);
             if(ent->nl_log == NULL)
             {
@@ -191,12 +201,24 @@ xio_l_netlogger_create_handle(
             {
                 goto error_summ;
             }
+            rc = NL_transfer_init(ent->nl_summ, 0, NL_LVL_DEBUG);
+            if(rc != 0)
+            {
+                goto error_summ;
+            }
+            NL_set_level(ent->nl_log, NL_LVL_DEBUG);
+            rc = NL_summ_add_log(ent->nl_summ, ent->nl_log);
+            if(rc != 0)
+            {
+                goto error_summ;
+            }
+
             ent->uuid = strdup(handle->id);
 
             globus_hashtable_insert(&nl_l_handle_table, ent->uuid, ent);
         }
 
-        ent->ref++:
+        ent->ref++;
         handle->nl_log = ent->nl_log;
         handle->nl_summ = ent->nl_summ;
     }
@@ -213,7 +235,7 @@ xio_l_netlogger_create_handle(
 
 error_log:
 
-error_sum:
+error_summ:
 
     return NULL;
 }
@@ -277,13 +299,19 @@ globus_l_xio_netlogger_activate(void)
         goto error_summ;
     }
 
+    globus_mutex_init(&xio_l_nl_mutex, NULL);
+    globus_hashtable_init(
+        &nl_l_handle_table,
+        128,
+        globus_hashtable_string_hash,
+        globus_hashtable_string_keyeq);
+
     handle = (xio_l_netlogger_handle_t *)
         globus_calloc(1, sizeof(xio_l_netlogger_handle_t));
 
     globus_l_xio_netlogger_attr_init((void **)&handle);
 
-    globus_l_xio_netlogger_default_handle = 
-        xio_l_netlogger_create_handle(handle);
+    globus_l_xio_netlogger_default_handle = handle;
 
     GlobusXIORegisterDriver(netlogger);
     GlobusXIONetloggerDebugExit();
@@ -326,7 +354,6 @@ globus_result_t
 globus_l_xio_netlogger_attr_init(
     void **                             out_attr)
 {
-    int                                 rc;
     xio_l_netlogger_handle_t *          attr;
 
     /* intiialize everything to 0 */
@@ -397,6 +424,7 @@ globus_l_xio_netlogger_cntl(
     char *                              tmp_str;
     globus_xio_netlogger_log_event_t    event;
     xio_l_netlogger_handle_t *          attr;
+    xio_l_nl_handle_ent_t *             ent;
     GlobusXIOName(globus_l_xio_netlogger_cntl);
 
     GlobusXIONetloggerDebugEnter();
@@ -487,17 +515,17 @@ globus_l_xio_netlogger_cntl(
 
             if(strncmp(tmp_str, "uuid=", 5) == 0)
             {
-                ent = (*) globus_hashtable_remove(
-                    &nl_l_handle_table, handle->id);
+                uuid = tmp_str + 5;
+                ent = (xio_l_nl_handle_ent_t *) globus_hashtable_remove(
+                    &nl_l_handle_table, uuid);
 
                 if(ent == NULL)
                 {
-                    return;
+                    return GLOBUS_SUCCESS;
                 }
                 NL_transfer_finalize(ent->nl_summ);
 
-                uuid = tmp_str + 5;
-                tmp_str = NL_transfer_get_result_string(xio_l_nl_summ, uuid);
+                tmp_str = NL_transfer_get_result_string(ent->nl_summ, uuid);
                 if(tmp_str == NULL)
                 {
                     tmp_str = "nothing";

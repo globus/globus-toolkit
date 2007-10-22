@@ -320,8 +320,6 @@ l_time_command(
         return;
     }
 
-printf("HI!!!!!!\n");
-
     tmp_ptr += sizeof("uuid=");
     uuid = strdup(tmp_ptr);
 
@@ -417,7 +415,6 @@ l_time_third_party_transfer(
     const globus_ftp_client_operationattr_t *   dest_attr,
     globus_bool_t               restart)
 {
-    printf("3PT!\n");   
 }
 
 static
