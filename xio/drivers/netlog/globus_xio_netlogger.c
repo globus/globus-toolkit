@@ -15,6 +15,7 @@
 #include "version.h"
 #include "nl.h"
 #include "nlsumm.h"
+#include "nltransfer.h"
 
 #define GlobusXIONetloggerError(_r)                                         \
     globus_error_put(GlobusXIONetloggerErrorObj(_r))
@@ -59,12 +60,19 @@ enum globus_l_xio_netlogger_error_levels
 
 typedef struct xio_l_netlogger_handle_s
 {
+    int                                 block_id;
     int                                 log_flag;
     char *                              filename;
     char *                              id;
     char *                              type;
 
+    NL_transfer_op_t                    read_event;
+    NL_transfer_op_t                    write_event;
+
+    NL_level_t                          nl_level;
+
     NL_log_T                            nl_log;
+    NL_summ_T                           nl_summ;
 
     char *                              accept_start_event;
     char *                              accept_stop_event;
@@ -119,9 +127,13 @@ xio_l_netlogger_create_handle(
     handle->write_stop_event = globus_common_create_string(
         "xio.%s.write.stop", handle->type);
 
+    handle->nl_level = NL_LVL_DEBUG;
     handle->nl_log = NL_open(handle->filename);
 /*    NL_set_summ(handle->nl_log, NL_summ(NULL)); */
-    NL_set_level(handle->nl_log, NL_LVL_DEBUG);
+    NL_set_level(handle->nl_log, NL_LVL_INFO);
+
+    NL_transfer_init(handle->nl_summ, 0, NL_LVL_DEBUG);
+    NL_summ_add_log(handle->nl_summ, handle->nl_log);
 
     hostname = NL_get_ipaddr(); /* defined in nl_log.h */
     if(hostname == NULL)
@@ -132,6 +144,9 @@ xio_l_netlogger_create_handle(
 /*    NL_open(handle->nl_log, 0, handle->filename);  */
     NL_set_const(handle->nl_log, 0, "HOST:s", hostname);
     NL_set_level(handle->nl_log, NL_LVL_INFO);
+
+    handle->read_event = NL_TRANSFER_NET_READ;
+    handle->write_event = NL_TRANSFER_NET_WRITE;
 
     GlobusXIONetloggerDebugExit();
     return handle;
@@ -349,6 +364,26 @@ globus_l_xio_netlogger_cntl(
             attr->type = strdup(tmp_str);
             GlobusXIONetloggerDebugPrintf(GLOBUS_L_XIO_NETLOGGER_DEBUG_CNTLS,
             ("GLOBUS_XIO_NETLOGGER_CNTL_SET_TRANSFER_TYPE: %d\n", attr->type));
+            break;
+
+        case GLOBUS_XIO_NETLOGGER_CNTL_SET_SUM_TYPES:
+            attr->read_event = va_arg(ap, NL_transfer_op_t);
+            attr->write_event = va_arg(ap, NL_transfer_op_t);
+            break;
+
+        case GLOBUS_XIO_NETLOGGER_CNTL_SET_STRING_SUM_TYPES:
+            tmp_str = va_arg(ap, char *);
+
+            if(strncmp("disk", tmp_str, 4) == 0)
+            {
+                attr->read_event = NL_TRANSFER_DISK_READ;
+                attr->write_event = NL_TRANSFER_DISK_WRITE;
+            }
+            else
+            {
+                attr->read_event = NL_TRANSFER_NET_READ;
+                attr->write_event = NL_TRANSFER_NET_WRITE;
+            }
             break;
     }
 
@@ -610,9 +645,16 @@ globus_l_xio_netlogger_read_cb(
     handle = (xio_l_netlogger_handle_t *) user_arg;
     if(handle->log_flag & GLOBUS_XIO_NETLOGGER_LOG_READ)
     {
-        NL_write(handle->nl_log, NL_LVL_INFO, handle->read_stop_event,
-            "sock=i uuid=s buflen=i bytes=i",
-            (int)handle, handle->id, (int)handle->read_buflen, (int)nbytes);
+        NL_transfer_end(
+            handle->nl_log,
+            handle->nl_level,
+            handle->read_event,
+            handle->id,
+            (int)handle,
+            handle->block_id,
+            (double)nbytes);
+        /* next line is thread safe because only permit serial access */
+        handle->block_id++;
     }
 
     globus_xio_driver_finished_read(op, result, nbytes);
@@ -639,9 +681,13 @@ globus_l_xio_netlogger_read(
     if(handle->log_flag & GLOBUS_XIO_NETLOGGER_LOG_READ)
     {
         GlobusXIOUtilIovTotalLength(handle->read_buflen, iovec, iovec_count);
-        NL_write(handle->nl_log, NL_LVL_INFO, handle->read_start_event,
-            "sock=i uuid=s buflen=i",
-            (int)handle, handle->id, handle->read_buflen);
+        NL_transfer_start(
+            handle->nl_log,
+            handle->nl_level, 
+            handle->read_event, 
+            handle->id,
+            (int)handle,
+            handle->block_id);
     }
     wait_for = globus_xio_operation_get_wait_for(op);
     res = globus_xio_driver_pass_read(op,
@@ -675,9 +721,16 @@ globus_l_xio_netlogger_write_cb(
     handle = (xio_l_netlogger_handle_t *) user_arg;
     if(handle->log_flag & GLOBUS_XIO_NETLOGGER_LOG_WRITE)
     {
-        NL_write(handle->nl_log, NL_LVL_INFO, handle->write_stop_event,
-            "sock=i uuid=s buflen=i bytes=i",
-            (int)handle, handle->id, handle->write_buflen, nbytes);
+        NL_transfer_end(
+            handle->nl_log,
+            handle->nl_level,
+            handle->write_event,
+            handle->id,
+            (int)handle,
+            handle->block_id,
+            (double)nbytes);
+        /* next line is thread safe because only permit serial access */
+        handle->block_id++;
     }
 
     globus_xio_driver_finished_write(op, result, nbytes);
@@ -703,9 +756,13 @@ globus_l_xio_netlogger_write(
     if(handle->log_flag & GLOBUS_XIO_NETLOGGER_LOG_WRITE)
     {
         GlobusXIOUtilIovTotalLength(handle->write_buflen, iovec, iovec_count);
-        NL_write(handle->nl_log, NL_LVL_INFO, handle->write_start_event,
-            "sock=i uuid=s buflen=i",
-            (int)handle, handle->id, handle->write_buflen);
+        NL_transfer_start(
+            handle->nl_log,
+            handle->nl_level,
+            handle->write_event,
+            handle->id,
+            (int)handle,
+            handle->block_id);
     }
     wait_for = globus_xio_operation_get_wait_for(op);
     res = globus_xio_driver_pass_write(op,
@@ -742,6 +799,8 @@ globus_l_xio_netlogger_close_cb(
             "sock=i uuid=s",
             (int)handle, handle->id);
     }
+
+    NL_transfer_finalize(handle->nl_summ);
     NL_close(handle->nl_log);
 
     globus_xio_driver_finished_close(op, result);

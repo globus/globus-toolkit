@@ -87,6 +87,7 @@ typedef struct xio_l_udt_ref_attr_s
     int                                 rcvtimeo;
     globus_bool_t                       reuseaddr;
     int                                 port;
+    int                                 fd;
 } xio_l_udt_ref_attr_t;
 
 static
@@ -133,7 +134,7 @@ globus_l_xio_udt_ref_activate(void)
     GlobusXIORegisterDriver(udt_ref);
     GlobusXIOUDTRefDebugExit();
 
-
+    globus_l_xio_udt_ref_attr_default.fd = -1;
     globus_l_xio_udt_ref_attr_default.mss = -1;
     globus_l_xio_udt_ref_attr_default.sndsyn = XIO_UDT_BOOL_UNDEF;
     globus_l_xio_udt_ref_attr_default.rcvsyn = XIO_UDT_BOOL_UNDEF;
@@ -283,6 +284,10 @@ globus_l_xio_udt_ref_attr_cntl(
 
         case GLOBUS_XIO_UDT_SET_LOCAL_PORT:
             attr->port = va_arg(ap, int);
+            break;
+
+        case GLOBUS_XIO_UDT_SET_FD:
+            attr->fd = va_arg(ap, int);
             break;
 
         default:
@@ -767,14 +772,21 @@ globus_l_xio_udt_ref_open(
             max = handle->port;
         }
 
-        result = globus_l_xio_udt_ref_bind(
-            handle->sock,
-            (struct sockaddr *)&my_addr,
-            sizeof(my_addr),
-            min, max);
-        if(result != GLOBUS_SUCCESS)
+        if(attr->fd == -1)
         {
-            goto error_socket;
+            result = globus_l_xio_udt_ref_bind(
+                handle->sock,
+                (struct sockaddr *)&my_addr,
+                sizeof(my_addr),
+                min, max);
+            if(result != GLOBUS_SUCCESS)
+            {
+                goto error_socket;
+            }
+        }
+        else
+        {
+            UDT::setFD(handle->sock, attr->fd);
         }
         if(UDT::connect(
             handle->sock, addrinfo->ai_addr, addrinfo->ai_addrlen))

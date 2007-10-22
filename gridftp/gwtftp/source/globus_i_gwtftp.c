@@ -1060,7 +1060,7 @@ gwtftp_i_authorized_user(
         {
             /* try to recover */
             url_retry = globus_common_create_string(
-                "gsiftp://%s", full_username);
+                "gsiftp://%s/", full_username);
             tmp_ptr = strchr(url_retry, '!');
             if(tmp_ptr != NULL)
             {

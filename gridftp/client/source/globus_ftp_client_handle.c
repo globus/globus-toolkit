@@ -1184,13 +1184,11 @@ globus_l_ftp_client_target_delete(
     {
         globus_libc_free(target->net_stack_str);
     }
-/*
     if(target->net_stack_list)
     {
         globus_i_ftp_control_unload_xio_drivers(
             target->net_stack_list);
     }
-*/
     if(target->authz_assert)
     {
         globus_libc_free(target->authz_assert);

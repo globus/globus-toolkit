@@ -773,7 +773,7 @@ globus_i_ftp_control_unload_xio_drivers(
         if(strcmp(driver_ent->driver_name, "tcp") != 0 && 
             strcmp(driver_ent->driver_name, "gsi") != 0)
         {
-            globus_xio_driver_unload(driver_ent->driver);
+    /*        globus_xio_driver_unload(driver_ent->driver); */
         }
         if(driver_ent->opts)
         {
