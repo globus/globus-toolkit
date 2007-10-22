@@ -519,6 +519,11 @@ BUNDLE globus-gridftp
         globus_gridmap_callout_error
         globus_gridftp_sshftp_setup
 
+BUNDLE globus-xio-extra-drivers
+        globus_xio_skeleton_driver
+        globus_xio_udt_ref_driver
+        globus_xio_netlogger_driver
+
 BUNDLE globus-internationalization
         globus_icu4c
         globus_i18n
