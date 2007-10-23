@@ -174,7 +174,9 @@ static const globus_l_gfs_config_option_t option_list[] =
     "Disable transmission of per-transfer usage statistics.  See the Usage Statistics "
     "section in the online documentation for more information.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"usage_stats_target", "usage_stats_target", NULL, "usage-stats-target", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
-    "Comma seperated list of contact strings for usage statistics listeners.", NULL, NULL,GLOBUS_FALSE, NULL},
+    "Comma seperated list of contact strings (host:port) for usage statistics listeners.  The usage stats sent to "
+    "a particular target may be customized by configuring it with a taglist (host:port;taglist)  The taglist is a list "
+    "of characters that each correspond to a usage stats tag.  See available tags.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"usage_stats_id", "usage_stats_id", NULL, "usage-stats-id", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Identifying tag to include in usage statistics data.", NULL, NULL, GLOBUS_FALSE, NULL},
 {NULL, "Single and Striped Remote Data Node Options", NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL,GLOBUS_FALSE, NULL},
@@ -1733,23 +1735,25 @@ globus_l_gfs_config_misc()
     else if(globus_i_gfs_config_string("banner") == GLOBUS_NULL)
     {
             data = globus_common_create_string(
-                "%s GridFTP Server %d.%d (%s, %d-%d) ready.",
+                "%s GridFTP Server %d.%d (%s, %d-%d) [%s] ready.",
                 globus_i_gfs_config_string("fqdn"),
                 local_version.major,
                 local_version.minor,
                 build_flavor,
                 local_version.timestamp,
-                local_version.branch_id);
+                local_version.branch_id,
+                toolkit_id);
             globus_l_gfs_config_set("banner", 0, data);
     }
 
     data = globus_common_create_string(
-            "%d.%d (%s, %d-%d)",
+            "%d.%d (%s, %d-%d) [%s]",
             local_version.major,
             local_version.minor,
             build_flavor,
             local_version.timestamp,
-            local_version.branch_id);
+            local_version.branch_id,
+            toolkit_id);
     globus_l_gfs_config_set("version_string", 0, data);
             
     if((value = globus_i_gfs_config_string("login_msg_file")) != GLOBUS_NULL)
