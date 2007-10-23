@@ -23,7 +23,7 @@ globus_source ${libexecdir}/globus-sh-tools.sh
 #
 # Displays the Globus version
 #
-# Synopsis: globus-version [-help] [-dirt]
+# Synopsis: globus-version [-help] [-full] [-dirt]
 #
 
 set -f
@@ -37,6 +37,7 @@ set -f
 #  information about this.
 #
 GLOBUS_VERSION="4.1.0"
+GLOBUS_FULL_VERSION="Globus Toolkit $GLOBUS_VERSION"
 
 DIRT_TIMESTAMP="@DIRT_TIMESTAMP@"
 DIRT_BRANCH_ID="@DIRT_BRANCH_ID@"
@@ -47,13 +48,14 @@ usage()
 {
     ${GLOBUS_SH_CAT-cat} 1>&2 <<EOF
 
-globus-version [-help] [-dirt]
+globus-version [-help] [-full] [-dirt]
 
     Displays the installed Globus version. Can also show the dirt
     timestamp and tag id.
 
     Options:
         -help        Shows help and exits
+        -full        Show expanded version description
         -dirt        Shows dirt info and exits
 
     If no option is given, displays the Globus version.
@@ -70,6 +72,10 @@ case "$1" in
         ;;
     -dirt)
         echo "$DIRT_TIMESTAMP-$DIRT_BRANCH_ID"
+        exit 0
+        ;;
+    -full)
+        echo $GLOBUS_FULL_VERSION
         exit 0
         ;;
     *)
