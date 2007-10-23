@@ -2033,7 +2033,7 @@ globus_xio_handle_create(
     /* allocate and intialize the handle structure */
     ihandle = (globus_i_xio_handle_t *)
         globus_calloc(1, sizeof(globus_i_xio_handle_t));
-    if(handle == NULL)
+    if(ihandle == NULL)
     {
         res = GlobusXIOErrorMemory("ihandle");
         goto error_handle;
