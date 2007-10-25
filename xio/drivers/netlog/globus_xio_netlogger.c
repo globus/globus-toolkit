@@ -395,7 +395,7 @@ globus_l_xio_netlogger_attr_copy(
         dst_attr->id = strdup(src_attr->id);
     }
     dst_attr->read_event = src_attr->read_event;
-    dst_attr->write_event = dst_attr->write_event;
+    dst_attr->write_event = src_attr->write_event;
 
     *dst = dst_attr;
 
