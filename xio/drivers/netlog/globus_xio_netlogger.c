@@ -505,10 +505,15 @@ globus_l_xio_netlogger_cntl(
                 attr->read_event = NL_TRANSFER_DISK_READ;
                 attr->write_event = NL_TRANSFER_DISK_WRITE;
             }
-            else
+            else if(strncmp("net", tmp_str, 3) == 0)
             {
                 attr->read_event = NL_TRANSFER_NET_READ;
                 attr->write_event = NL_TRANSFER_NET_WRITE;
+            }
+            else
+            {
+                attr->read_event = -1;
+                attr->write_event = -1;
             }
             break;
 
@@ -533,7 +538,8 @@ globus_l_xio_netlogger_cntl(
                 {
                     tmp_str = "nothing";
                 }
-                *str_out = globus_common_create_string(NL_COOKIE"%s;%s", uuid, tmp_str);
+                *str_out = globus_common_create_string(
+                    NL_COOKIE"%s;%s", uuid, tmp_str);
             }
             else
             {
