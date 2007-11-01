@@ -521,7 +521,7 @@ globus_l_gfs_default_brain_init(
         {
             node =(gfs_l_db_node_t *)globus_calloc(1, sizeof(gfs_l_db_node_t));
 
-            node->host_id = (char *) globus_list_first(list);
+            node->host_id = (char *) globus_list_remove(&list, list);
             node->repo_name = strdup(default_repo->name);
             node->max_connection = 0;
             node->total_max_connections = -1; /* -1 is infinite */
@@ -536,9 +536,7 @@ globus_l_gfs_default_brain_init(
             globus_hashtable_insert(
                 &gfs_l_db_default_repo->node_table, node->cookie_id, node);
             globus_priority_q_enqueue(&default_repo->node_q, node, node);
-            list = globus_list_rest(list);
         }
-        globus_list_free(list);
         globus_hashtable_insert(
             &gfs_l_db_repo_table, default_repo->name, default_repo);
 
@@ -619,6 +617,7 @@ globus_l_gfs_default_brain_select_nodes(
     int                                 best_count;
     int                                 count;
     int                                 e_count;
+    int                                 loop_count;
     int                                 i;
     globus_i_gfs_brain_node_t **        node_array;
     gfs_l_db_node_t *                   node;
@@ -658,6 +657,10 @@ globus_l_gfs_default_brain_select_nodes(
         {
             best_count = max_count;
         }
+        if(best_count < min_count)
+        {
+            best_count = min_count;
+        }
 
         node_array = (globus_i_gfs_brain_node_t **)
             globus_calloc(max_count, sizeof(globus_i_gfs_brain_node_t *));
@@ -668,50 +671,61 @@ globus_l_gfs_default_brain_select_nodes(
         }
         count = 0;
         e_count = count;
-        while(!done && count < best_count)
+     
+        do
         {
-            node = (gfs_l_db_node_t *)globus_priority_q_dequeue(&repo->node_q);
-            if(node == NULL)
+            loop_count = 0;
+            done = GLOBUS_FALSE;
+            while(!done && count < best_count)
             {
-                done = GLOBUS_TRUE;
+                node = (gfs_l_db_node_t *)
+                    globus_priority_q_dequeue(&repo->node_q);
+                if(node == NULL)
+                {
+                    done = GLOBUS_TRUE;
+                }
+                /* if we have exceed the current connection count for a node,
+                    or we have exceeded the total connection count for the
+                    node, we do not use it */
+                else if(
+                    (node->current_connection >= node->max_connection &&
+                     node->max_connection < 0) ||
+                    (node->total_max_connections > 0 && 
+                        node->total_connections >= node->total_max_connections))
+                {
+                    /* need to up everything for sake of nice clean up*/
+                    node->current_connection++;
+                    node_array[count] = (globus_i_gfs_brain_node_t *) node;
+                    e_count = count + 1;
+                    done = GLOBUS_TRUE;
+                }
+                else
+                {
+                    node->current_connection++;
+                    node_array[count] = (globus_i_gfs_brain_node_t *) node;
+                    loop_count++;
+                    count++;
+                    e_count = count;
+                }
             }
-            /* if we have exceed the current connection count for a node,
-                or we have exceeded the total connection count for the
-                node, we do not use it */
-            else if(
-                (node->current_connection >= node->max_connection &&
-                 node->max_connection < 0) ||
-                (node->total_max_connections > 0 && 
-                    node->total_connections >= node->total_max_connections))
+            if(done && count == 0)
             {
-                /* need to up everything for sake of nice clean up*/
-                node->current_connection++;
-                node_array[count] = (globus_i_gfs_brain_node_t *)node;
-                e_count = count + 1;
-                done = GLOBUS_TRUE;
+                result = globus_error_put(
+                    GlobusGFSErrorObjParameter("No nodes available."));
+                goto error_short;
             }
-            else
+            
+           /* if we are here we were successful and must re-enqueue the nodes 
+            * we just took out with new order */
+            for(i = count - loop_count; i < count; i++)
             {
-                node->current_connection++;
-                node_array[count] = (globus_i_gfs_brain_node_t *)node;
-                count++;
-                e_count = count;
+                node = (gfs_l_db_node_t *) node_array[i];
+                node->total_connections++;
+                globus_priority_q_enqueue(
+                    &repo->node_q, node_array[i], node_array[i]);
             }
         }
-        if(count < min_count)
-        {
-            result = globus_error_put(GlobusGFSErrorObjParameter("not enough nodes"));
-            goto error_short;
-        }
-        /* if we are here we were successful and must re-enque nodes with
-            new order */
-        for(i = 0; i < count; i++)
-        {
-            node = (gfs_l_db_node_t *) node_array[i];
-            node->total_connections++;
-            globus_priority_q_enqueue(
-                &repo->node_q, node_array[i], node_array[i]);
-        }
+        while(!(done && count == 0) && count < min_count);
 
         *out_node_array = node_array;
         *out_array_length = count;

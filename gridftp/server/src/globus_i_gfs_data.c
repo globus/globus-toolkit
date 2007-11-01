@@ -2843,7 +2843,6 @@ globus_i_gfs_data_request_handle_destroy(
                     {
                         data_handle->state =
                             GLOBUS_L_GFS_DATA_HANDLE_CLOSED_AND_DESTROYED;
-                        pass = GLOBUS_TRUE;
                         session_handle->ref--;
 
                         /* we should be able to set it to free here, however
@@ -2878,6 +2877,7 @@ globus_i_gfs_data_request_handle_destroy(
                 if(!data_handle->is_mine)
                 {
                     pass = GLOBUS_TRUE;
+                    free_it = GLOBUS_TRUE;
                     data_handle->state =
                         GLOBUS_L_GFS_DATA_HANDLE_CLOSING_AND_DESTROYED;
                 }
