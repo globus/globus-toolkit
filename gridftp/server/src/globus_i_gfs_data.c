@@ -328,10 +328,6 @@ globus_l_gfs_data_brain_ready(
     void *                              arg;
     globus_list_t *                     list;
 
-    globus_gfs_log_message(
-        GLOBUS_GFS_LOG_ERR, 
-        "Brain Ready\n");
-    
     globus_mutex_lock(&gfs_l_data_brain_mutex);
     {
         gfs_l_data_brain_ready = GLOBUS_TRUE;

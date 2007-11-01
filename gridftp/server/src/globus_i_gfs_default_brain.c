@@ -652,7 +652,7 @@ globus_l_gfs_default_brain_select_nodes(
             goto error;
         }
 
-        best_count = globus_i_gfs_config_int("best_stripe_count");
+        best_count = globus_i_gfs_config_int("stripe_count");
         if(best_count > max_count || best_count <= 0)
         {
             best_count = max_count;

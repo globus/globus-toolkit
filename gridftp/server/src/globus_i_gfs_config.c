@@ -186,6 +186,9 @@ static const globus_l_gfs_config_option_t option_list[] =
     "This server is a backend data node.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"stripe_blocksize", "stripe_blocksize", NULL, "stripe-blocksize", "sbs", GLOBUS_L_GFS_CONFIG_INT, (1024 * 1024), NULL,
     "Size in bytes of sequential data that each stripe will transfer.", NULL, NULL,GLOBUS_FALSE, NULL},
+ {"stripe_count", "stripe_count", NULL, "stripe-count", NULL, GLOBUS_L_GFS_CONFIG_INT, -1, NULL,
+    "Number of number stripes to use per transfer when this server controls that number.  If remote nodes are statically "
+    "configured (via -r or remote_nodes), this will be set to that number of nodes, otherwise the default is 1.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"brain", "brain", NULL, "brain", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "switch out the default remote brain [unsuported]", NULL, NULL, GLOBUS_FALSE, NULL},
  {"stripe_layout", "stripe_layout", NULL, "stripe-layout", "sl", GLOBUS_L_GFS_CONFIG_INT, GLOBUS_GFS_LAYOUT_BLOCKED, NULL,
@@ -204,8 +207,6 @@ static const globus_l_gfs_config_option_t option_list[] =
     "the range specified in the restart marker has actually been committed to disk. "
     "This option will probably impact performance, and may result in different behavior "
     "on different storage systems. See the manpage for sync() for more information.", NULL, NULL,GLOBUS_FALSE, NULL},
- {"best_stripe_count", "best_stripe_count", NULL, "best-stripe-count", NULL, GLOBUS_L_GFS_CONFIG_INT, 1, NULL,
-    "Ideal number of stripes per transfer.", NULL, NULL,GLOBUS_FALSE, NULL},
 {NULL, "Network Options", NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL,GLOBUS_FALSE, NULL},
  {"port", "port", NULL, "port", "p", GLOBUS_L_GFS_CONFIG_INT, 0, NULL,
     "Port on which a frontend will listend for client control channel connections, "
@@ -1796,9 +1797,35 @@ globus_l_gfs_config_misc()
             if(globus_i_gfs_config_string("load_dsi_module") == NULL &&
                 !globus_i_gfs_config_bool("data_node"))
             {
-                globus_l_gfs_config_set("load_dsi_module", 0, globus_libc_strdup("remote"));    
-            }            
-        }            
+                globus_l_gfs_config_set(
+                    "load_dsi_module", 0, globus_libc_strdup("remote"));    
+            }
+            
+            /* if stripe_count wasn't set, set it to the number of 
+             * nodes configured */
+            if(globus_i_gfs_config_int("stripe_count") == -1)
+            {
+                int                         node_count = 1;
+                char *                      ptr;
+                
+                ptr = value;
+                while(ptr && *ptr && (ptr = strchr(ptr, ',')) != NULL)
+                {
+                    ptr++;
+                    node_count++;
+                }            
+                globus_l_gfs_config_set("stripe_count", node_count, NULL);
+            }
+        }
+        else
+        {
+            /* if no nodes configured and stripe_count not set, set it to 1 */
+            if(globus_i_gfs_config_int("stripe_count") == -1)
+            {
+                globus_l_gfs_config_set("stripe_count", 1, NULL);
+            }
+        }
+                       
     }
     if(globus_i_gfs_config_string("load_dsi_module") == NULL)
     {
