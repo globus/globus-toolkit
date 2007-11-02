@@ -57,7 +57,6 @@ typedef struct globus_guc_info_s
     globus_bool_t                       list_uses_data_mode;
     globus_bool_t                       ipv6;
     globus_bool_t                       udt;
-    globus_bool_t                       nl_bottleneck;
     globus_bool_t                       allo;
     char *                              net_stack_str;
     char *                              disk_stack_str;

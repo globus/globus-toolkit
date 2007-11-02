@@ -105,6 +105,8 @@ typedef struct
     globus_bool_t                       list_uses_data_mode;
     globus_bool_t                       udt;
     globus_bool_t                       nl_bottleneck;
+    int                                 nl_level;
+    int                                 nl_interval;
     globus_bool_t                       ipv6;
     globus_bool_t                       allo;
     globus_bool_t                       delayed_pasv;
@@ -503,6 +505,7 @@ enum
     arg_ipv6,
     arg_udt,
     arg_nl_bottleneck,
+    arg_nl_interval,
     arg_net_stack_str,
     arg_disk_stack_str,
     arg_authz_assert,
@@ -568,7 +571,6 @@ flagdef(arg_create_dest, "-cd", "-create-dest");
 flagdef(arg_fast, "-fast", "-fast-data-channels");
 flagdef(arg_ipv6, "-ipv6","-IPv6");
 flagdef(arg_udt, "-u","-udt");
-flagdef(arg_nl_bottleneck, "-nlb","-nl-bottleneck");
 flagdef(arg_delayed_pasv, "-dp","-delayed-pasv");
 flagdef(arg_pipeline, "-pp","-pipeline");
 flagdef(arg_allo, "-allo","-allocate");
@@ -578,6 +580,8 @@ flagdef(arg_cache_src_authz_assert, "-cache-saa","-cache-src-authz-assert");
 flagdef(arg_cache_dst_authz_assert, "-cache-daa","-cache-dst-authz-assert");
 
 oneargdef(arg_list, "-list", "-list-url", NULL, NULL);
+oneargdef(arg_nl_bottleneck, "-nlb","-nl-bottleneck", NULL, NULL);
+oneargdef(arg_nl_interval, "-nli","-nl-interval", NULL, NULL);
 oneargdef(arg_ext, "-X", "-extentions", NULL, NULL);
 oneargdef(arg_plugin, "-CP", "-plugin", NULL, NULL);
 oneargdef(arg_modname, "-mn", "-module-name", NULL, NULL);
@@ -652,6 +656,7 @@ static globus_args_option_descriptor_t args_options[arg_num];
     setupopt(arg_list);	                \
     setupopt(arg_udt);                  \
     setupopt(arg_nl_bottleneck);        \
+    setupopt(arg_nl_interval);        \
     setupopt(arg_ipv6);         	\
     setupopt(arg_net_stack_str);        \
     setupopt(arg_disk_stack_str);        \
@@ -816,7 +821,6 @@ globus_l_guc_ext(
     ext_info.partial_offset = guc_info->partial_offset;
     ext_info.partial_length = guc_info->partial_length;
     ext_info.list_uses_data_mode = guc_info->list_uses_data_mode;
-    ext_info.nl_bottleneck = guc_info->nl_bottleneck;
     ext_info.ipv6 = guc_info->ipv6;
     ext_info.net_stack_str = guc_info->net_stack_str;
     ext_info.disk_stack_str = guc_info->disk_stack_str;
@@ -1912,6 +1916,7 @@ globus_l_guc_parse_arguments(
     char **                                         argv,
     globus_l_guc_info_t *                           guc_info)
 {
+    int                                             sc;
     char *                                          program;
     globus_list_t *                                 options_found = NULL;
     char *                                          subject = NULL;
@@ -1949,6 +1954,8 @@ globus_l_guc_parse_arguments(
     guc_info->list_uses_data_mode = GLOBUS_FALSE;
     guc_info->udt = GLOBUS_FALSE;
     guc_info->nl_bottleneck = GLOBUS_FALSE;
+    guc_info->nl_level = 0;
+    guc_info->nl_interval = 0;
     guc_info->ipv6 = GLOBUS_FALSE;
     guc_info->allo = GLOBUS_TRUE;
     guc_info->delayed_pasv = GLOBUS_FALSE;
@@ -2176,7 +2183,30 @@ globus_l_guc_parse_arguments(
 	    break;
 	case arg_nl_bottleneck:
 	    guc_info->nl_bottleneck = GLOBUS_TRUE;
+        sc = sscanf(instance->values[0], "%d", &guc_info->nl_level);
+        if(sc != 1)
+        {
+		    fprintf(stderr, 
+               _GASCSL("Error: Argument to nl-bottleneck must be a 4 bit mask"
+                "\n"));
+            return -1;
+        }
 	    break;
+
+    case arg_nl_interval:
+        guc_info->nl_bottleneck = GLOBUS_TRUE;
+        sc = sscanf(instance->values[0], "%d", &guc_info->nl_interval);
+        if(sc != 1)
+        {
+            fprintf(stderr,
+               _GASCSL("Error: Argument to nl-bottleneck must be a 4 bit mask"
+                "\n"));
+            return -1;
+        } 
+        guc_info->nl_level |= 4;  /* turn on interval debugging */
+        break;
+
+
 	case arg_ipv6:
 	    guc_info->ipv6 = GLOBUS_TRUE;
 	    break;
@@ -2385,8 +2415,8 @@ globus_l_guc_parse_arguments(
         globus_uuid_create(&uuid);
 
         netlog_str = globus_common_create_string(
-            "netlogger:uuid=%s;mask=255",
-            uuid.text);
+            "netlogger:uuid=%s;mask=255;interval=%d;level=%d",
+            uuid.text, guc_info->nl_interval, guc_info->nl_level);
 
         if(guc_info->net_stack_str != NULL)
         {
