@@ -2408,20 +2408,24 @@ globus_l_guc_parse_arguments(
     if(guc_info->nl_bottleneck)
     {
         globus_uuid_t                   uuid;
-        char *                          netlog_str;
+        char *                          net_netlog_str;
+        char *                          disk_netlog_str;
         char *                          disk_stack_str;
         char *                          net_stack_str;
 
         globus_uuid_create(&uuid);
 
-        netlog_str = globus_common_create_string(
-            "netlogger:uuid=%s;mask=255;interval=%d;level=%d",
+        net_netlog_str = globus_common_create_string(
+            "netlogger:uuid=%s;mask=255i;io_type=net;interval=%d;level=%d",
+            uuid.text, guc_info->nl_interval, guc_info->nl_level);
+        disk_netlog_str = globus_common_create_string(
+            "netlogger:uuid=%s;mask=255i;io_type=disk;interval=%d;level=%d",
             uuid.text, guc_info->nl_interval, guc_info->nl_level);
 
         if(guc_info->net_stack_str != NULL)
         {
             net_stack_str = globus_common_create_string(
-                "%s,%s", guc_info->net_stack_str, netlog_str);
+                "%s,%s", guc_info->net_stack_str, net_netlog_str);
             globus_free(guc_info->net_stack_str);
 
             guc_info->net_stack_str = net_stack_str;
@@ -2429,13 +2433,13 @@ globus_l_guc_parse_arguments(
         else
         {
             guc_info->net_stack_str = globus_common_create_string(
-                "tcp,gsi,%s", netlog_str);
+                "tcp,gsi,%s", net_netlog_str);
         }
 
         if(guc_info->disk_stack_str != NULL)
         {
             disk_stack_str = globus_common_create_string(
-                "%s,%s", guc_info->disk_stack_str, netlog_str);
+                "%s,%s", guc_info->disk_stack_str, disk_netlog_str);
             globus_free(guc_info->net_stack_str);
 
             guc_info->disk_stack_str = disk_stack_str;
@@ -2443,10 +2447,11 @@ globus_l_guc_parse_arguments(
         else
         {
             guc_info->disk_stack_str = globus_common_create_string(
-                "file,%s", netlog_str);
+                "file,%s", disk_netlog_str);
         }
 
-        globus_free(netlog_str);
+        globus_free(net_netlog_str);
+        globus_free(disk_netlog_str);
     }
     
     /* check arguemnt validity */
