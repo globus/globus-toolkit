@@ -255,6 +255,10 @@ xio_l_netlogger_create_handle(
                 {
                     goto error_summ;
                 }
+                if(handle->log_level & GLOBUS_L_XIO_NETLOGGER_FULL)
+                {
+                     NL_transfer_set_passthrough(ent->nl_summ);
+                }
 
                 rc = NL_summ_add_log(ent->nl_summ, ent->nl_log);
                 if(rc != 0)
