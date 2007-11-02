@@ -474,6 +474,8 @@ globus_l_gfs_data_post_transfer_event_cb(
         return NULL;
     }
 
+    data_handle->outstanding_op = NULL;
+
         switch(data_handle->state)
         {
             case GLOBUS_L_GFS_DATA_HANDLE_TE_PRE_CLOSED:
@@ -3444,18 +3446,26 @@ globus_i_gfs_data_request_recv(
 
     session_handle = (globus_l_gfs_data_session_t *) session_arg;
 
-    data_handle = (globus_l_gfs_data_handle_t *) globus_handle_table_lookup(
-        &session_handle->handle_table, (int) recv_info->data_arg);
-    if(data_handle == NULL)
+    /* YOU ARE ENTERING THE UGLY HACK ZONE */
+    globus_mutex_lock(&session_handle->mutex);
     {
-        result = GlobusGFSErrorData("Data handle not found");
-        goto error_handle;
-    }
+
+        data_handle = (globus_l_gfs_data_handle_t *) globus_handle_table_lookup(
+            &session_handle->handle_table, (int) recv_info->data_arg);
+        if(data_handle == NULL)
+        {
+            result = GlobusGFSErrorData("Data handle not found");
+        globus_mutex_unlock(&session_handle->mutex);
+            goto error_handle;
+        }
     
-    if(!data_handle->is_mine)
-    {
-        recv_info->data_arg = data_handle->remote_data_arg;
+        if(!data_handle->is_mine)
+        {
+            recv_info->data_arg = data_handle->remote_data_arg;
+        }
     }
+    globus_mutex_unlock(&session_handle->mutex);
+    /* YOU ARE leaving THE UGLY HACK ZONE */
 
     result = globus_l_gfs_data_operation_init(&op, session_handle);
     if(result != GLOBUS_SUCCESS)
@@ -3464,7 +3474,7 @@ globus_i_gfs_data_request_recv(
             "globus_l_gfs_data_operation_init", result);
         goto error_op;
     }
-    globus_assert(data_handle->outstanding_op == NULL);
+    /* globus_assert(data_handle->outstanding_op == NULL); */
     data_handle->outstanding_op = op;
     
     op->ipc_handle = ipc_handle;
@@ -3489,6 +3499,7 @@ globus_i_gfs_data_request_recv(
         function */
     globus_assert(data_handle->state == GLOBUS_L_GFS_DATA_HANDLE_VALID);
     data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_INUSE;
+
 
     op->dsi = globus_l_gfs_data_new_dsi(session_handle, recv_info->module_name);
     if(op->dsi == NULL)
@@ -3559,17 +3570,24 @@ globus_i_gfs_data_request_send(
     
     session_handle = (globus_l_gfs_data_session_t *) session_arg;
 
-    data_handle = (globus_l_gfs_data_handle_t *) globus_handle_table_lookup(
-        &session_handle->handle_table, (int) send_info->data_arg);
-    if(data_handle == NULL)
+    /* YOU ARE ENTRERING THE UGLY HACK ZONE */
+    globus_mutex_lock(&session_handle->mutex);
     {
-        result = GlobusGFSErrorData(_FSSL("Data handle not found",NULL));
-        goto error_handle;
+        data_handle = (globus_l_gfs_data_handle_t *) globus_handle_table_lookup(
+            &session_handle->handle_table, (int) send_info->data_arg);
+        if(data_handle == NULL)
+        {
+            result = GlobusGFSErrorData(_FSSL("Data handle not found",NULL));
+            globus_mutex_unlock(&session_handle->mutex);
+            goto error_handle;
+        }
+        if(!data_handle->is_mine)
+        {
+            send_info->data_arg = data_handle->remote_data_arg;
+        }
     }
-    if(!data_handle->is_mine)
-    {
-        send_info->data_arg = data_handle->remote_data_arg;
-    }
+    globus_mutex_unlock(&session_handle->mutex);
+    /* YOU ARE leaving THE UGLY HACK ZONE */
 
     result = globus_l_gfs_data_operation_init(&op, session_handle);
     if(result != GLOBUS_SUCCESS)
@@ -3578,7 +3596,7 @@ globus_i_gfs_data_request_send(
             "globus_l_gfs_data_operation_init", result);
         goto error_op;
     }
-    globus_assert(data_handle->outstanding_op == NULL);
+    /*globus_assert(data_handle->outstanding_op == NULL); */
     data_handle->outstanding_op = op;
 
     op->ipc_handle = ipc_handle;
@@ -4029,10 +4047,10 @@ globus_l_gfs_data_finish_connected(
     }
     else
     {
-                if(op->data_handle->state == GLOBUS_L_GFS_DATA_HANDLE_VALID)
-                {
-                    op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_TE_VALID;
-                }
+        if(op->data_handle->state == GLOBUS_L_GFS_DATA_HANDLE_VALID)
+        {
+            op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_TE_VALID;
+        }
         globus_callback_register_oneshot(
             NULL,
             NULL,
@@ -4372,6 +4390,7 @@ globus_l_gfs_data_end_transfer_kickout(
 
             case GLOBUS_L_GFS_DATA_HANDLE_INUSE:
                 op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_TE_VALID;
+                op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_VALID;
                 break;
 
             case GLOBUS_L_GFS_DATA_HANDLE_CLOSING:
@@ -4633,6 +4652,9 @@ globus_l_gfs_data_end_transfer_kickout(
     reply.id = op->id;
     reply.result = op->cached_res;
 
+
+
+/* RIGHT HERE I CAN GET ANOTHER SEND/RECV.  LEAVES IN TE STATE */
     globus_assert(!op->writing ||
         (op->sent_partial_eof == 1 || op->stripe_count == 1 ||
         (op->node_ndx == 0 && op->eof_ready)));
@@ -5040,11 +5062,11 @@ globus_l_gfs_data_send_eof(
                 {
                     op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_TE_VALID;
                 }
-                    globus_callback_register_oneshot(
-                        NULL,
-                        NULL,
-                        globus_l_gfs_data_end_transfer_kickout,
-                        op);
+                globus_callback_register_oneshot(
+                    NULL,
+                    NULL,
+                    globus_l_gfs_data_end_transfer_kickout,
+                    op);
                 }
                 break;
             case GLOBUS_L_GFS_DATA_CONNECTED:
