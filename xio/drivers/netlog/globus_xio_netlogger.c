@@ -496,7 +496,7 @@ globus_l_xio_netlogger_cntl(
 
         case GLOBUS_XIO_NETLOGGER_CNTL_INTERVAL:
             attr->log_level |= GLOBUS_L_XIO_NETLOGGER_INTERVAL;
-            attr->interval = va_arg(ap, int);
+            attr->interval = va_arg(ap, int) * 1000000;
             break;
 
         case GLOBUS_XIO_NETLOGGER_CNTL_SET_HANDLE:
