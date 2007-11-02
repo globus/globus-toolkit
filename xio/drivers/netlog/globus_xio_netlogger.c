@@ -60,6 +60,15 @@ enum globus_l_xio_netlogger_error_levels
     GLOBUS_L_XIO_NETLOGGER_DEBUG_CNTLS                = 4
 };
 
+enum globus_l_xio_netlogger_log_levels
+{
+    GLOBUS_L_XIO_NETLOGGER_LOG_DEFAULT              = 0x1,
+    GLOBUS_L_XIO_NETLOGGER_LOG_BN                   = 0x2,
+    GLOBUS_L_XIO_NETLOGGER_INTERVAL                 = 0x4,
+    GLOBUS_L_XIO_NETLOGGER_FULL                     = 0x8
+};
+
+
 static NL_log_T                        xio_l_nl_log;
 static NL_summ_T                       xio_l_nl_summ;
 
@@ -69,6 +78,7 @@ typedef struct xio_l_netlogger_handle_s
     int                                 log_flag;
     char *                              filename;
     char *                              id;
+    char *                              trans_uuid;
     char *                              type;
 
     NL_transfer_op_t                    read_event;
@@ -92,6 +102,9 @@ typedef struct xio_l_netlogger_handle_s
 
     globus_size_t                       read_buflen;
     globus_size_t                       write_buflen;
+
+    int                                 log_level;
+    int                                 interval;
 } xio_l_netlogger_handle_t;
 
 typedef struct xio_l_nl_handle_ent_s
@@ -117,6 +130,8 @@ xio_l_netlogger_handle_t *
 xio_l_netlogger_create_handle(
     xio_l_netlogger_handle_t *          handle)
 {
+    int                                 level;
+    globus_bool_t                       use_summ;
     xio_l_nl_handle_ent_t *             ent;
     int                                 rc;
     globus_uuid_t                       uuid;
@@ -146,7 +161,7 @@ xio_l_netlogger_create_handle(
     handle->write_stop_event = globus_common_create_string(
         "xio.%s.write.stop", handle->type);
 
-    handle->nl_level = NL_LVL_DEBUG;
+    handle->nl_level = NL_LVL_INFO;
 
     if(handle->filename != NULL)
     {
@@ -156,6 +171,34 @@ xio_l_netlogger_create_handle(
     if(hostname == NULL)
     {
         hostname = strdup("0.0.0.0");
+    }
+
+    use_summ = GLOBUS_FALSE;
+    /* determine level */
+    if(handle->log_level == GLOBUS_L_XIO_NETLOGGER_LOG_DEFAULT)
+    {
+        level = NL_LVL_INFO;
+    }
+    else if(handle->log_level == GLOBUS_L_XIO_NETLOGGER_FULL)
+    {
+        level = NL_LVL_DEBUG2;
+    }
+    else
+    {
+        if(handle->log_level & GLOBUS_L_XIO_NETLOGGER_FULL)
+        {
+            level = NL_LVL_DEBUG2;
+        }
+        else
+        {
+            level = NL_LVL_DEBUG;
+        }
+
+        use_summ = GLOBUS_TRUE;
+        if(!(handle->log_level & GLOBUS_L_XIO_NETLOGGER_LOG_DEFAULT))
+        {
+             handle->nl_level = NL_LVL_USER;
+        }
     }
 
     /* if the user didnt get a id create one, and use the defaul handle */
@@ -179,6 +222,7 @@ xio_l_netlogger_create_handle(
         {
             handle->nl_summ = xio_l_nl_summ;
         }
+        NL_set_level(handle->nl_log, NL_LVL_DEBUG);
     }
     /* if they did set an id, check the table for it, and create a new
         one if needed */
@@ -196,23 +240,28 @@ xio_l_netlogger_create_handle(
             {
                 goto error_log;
             }
-            ent->nl_summ =  NL_summ();
-            if(ent->nl_summ == NULL)
+            NL_set_level(ent->nl_log, level);
+            if(use_summ)
             {
-                goto error_summ;
-            }
-            rc = NL_transfer_init(ent->nl_summ, 0, NL_LVL_DEBUG);
-            if(rc != 0)
-            {
-                goto error_summ;
-            }
-            NL_set_level(ent->nl_log, NL_LVL_DEBUG);
-            rc = NL_summ_add_log(ent->nl_summ, ent->nl_log);
-            if(rc != 0)
-            {
-                goto error_summ;
-            }
+                ent->nl_summ =  NL_summ();
+                if(ent->nl_summ == NULL)
+                {
+                    goto error_summ;
+                }
+                NL_summ_set_shared_output(ent->nl_summ, ent->nl_log);
+                rc = NL_transfer_init(
+                    ent->nl_summ, handle->interval, NL_LVL_DEBUG);
+                if(rc != 0)
+                {
+                    goto error_summ;
+                }
 
+                rc = NL_summ_add_log(ent->nl_summ, ent->nl_log);
+                if(rc != 0)
+                {
+                    goto error_summ;
+                }
+            }
             ent->uuid = strdup(handle->id);
 
             globus_hashtable_insert(&nl_l_handle_table, ent->uuid, ent);
@@ -225,8 +274,6 @@ xio_l_netlogger_create_handle(
 
 /*    NL_open(handle->nl_log, 0, handle->filename);  */
     NL_set_const(handle->nl_log, 0, "HOST:s", hostname);
-    NL_set_level(handle->nl_log, NL_LVL_DEBUG);
-
 
     GlobusXIONetloggerDebugExit();
     return handle;
@@ -362,6 +409,7 @@ globus_l_xio_netlogger_attr_init(
     attr->filename = NULL;
     attr->read_event = NL_TRANSFER_DISK_READ;
     attr->write_event = NL_TRANSFER_DISK_WRITE;
+    attr->log_level = GLOBUS_L_XIO_NETLOGGER_LOG_DEFAULT;
 
     *out_attr = attr;
 
@@ -396,6 +444,8 @@ globus_l_xio_netlogger_attr_copy(
     }
     dst_attr->read_event = src_attr->read_event;
     dst_attr->write_event = src_attr->write_event;
+    dst_attr->interval = src_attr->interval;
+    dst_attr->log_level = src_attr->log_level;
 
     *dst = dst_attr;
 
@@ -409,6 +459,10 @@ static globus_xio_string_cntl_table_t  netlog_l_string_opts_table[] =
     {"mask", GLOBUS_XIO_NETLOGGER_CNTL_SET_MASK, globus_xio_string_cntl_int},
     {"type", GLOBUS_XIO_NETLOGGER_CNTL_SET_TYPE, globus_xio_string_cntl_int},
     {"uuid", GLOBUS_XIO_NETLOGGER_CNTL_SET_ID, globus_xio_string_cntl_string},
+    {"interval", GLOBUS_XIO_NETLOGGER_CNTL_INTERVAL, 
+        globus_xio_string_cntl_int},
+    {"level", GLOBUS_XIO_NETLOGGER_CNTL_LEVEL, 
+        globus_xio_string_cntl_int},
     {"io_type", GLOBUS_XIO_NETLOGGER_CNTL_SET_STRING_SUM_TYPES, 
         globus_xio_string_cntl_string},
     {NULL, 0, NULL}
@@ -436,6 +490,15 @@ globus_l_xio_netlogger_cntl(
 
     switch(cmd)
     {
+        case GLOBUS_XIO_NETLOGGER_CNTL_LEVEL:
+            attr->log_level = va_arg(ap, int);
+            break;
+
+        case GLOBUS_XIO_NETLOGGER_CNTL_INTERVAL:
+            attr->log_level |= GLOBUS_L_XIO_NETLOGGER_INTERVAL;
+            attr->interval = va_arg(ap, int);
+            break;
+
         case GLOBUS_XIO_NETLOGGER_CNTL_SET_HANDLE:
             attr->nl_log = va_arg(ap, NL_log_T);
             break;
