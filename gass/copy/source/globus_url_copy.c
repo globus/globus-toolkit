@@ -2413,6 +2413,10 @@ globus_l_guc_parse_arguments(
         char *                          disk_stack_str;
         char *                          net_stack_str;
 
+        /* stick in plugin */
+        globus_list_insert(
+            &g_client_lib_plugin_list, "client_netlogger_plugin");
+
         globus_uuid_create(&uuid);
 
         net_netlog_str = globus_common_create_string(
