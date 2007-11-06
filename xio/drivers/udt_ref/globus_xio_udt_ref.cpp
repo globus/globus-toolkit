@@ -147,7 +147,7 @@ globus_l_xio_udt_ref_activate(void)
     globus_l_xio_udt_ref_attr_default.sndtimeo = -1;
     globus_l_xio_udt_ref_attr_default.rcvtimeo = -1;
     globus_l_xio_udt_ref_attr_default.reuseaddr = XIO_UDT_BOOL_UNDEF;
-    globus_l_xio_udt_ref_attr_default.port = -1;
+    globus_l_xio_udt_ref_attr_default.port = 0;
 
     return GLOBUS_SUCCESS;
 
@@ -322,7 +322,10 @@ globus_l_xio_udt_ref_attr_destroy(
     void *                              driver_attr)
 {
     /* this is fine for now (no pointers in it) */
-    globus_free(driver_attr);
+    if(driver_attr)
+    {
+        globus_free(driver_attr);
+    }
 
     return GLOBUS_SUCCESS;
 }
@@ -414,7 +417,8 @@ globus_l_xio_udt_ref_server_init(
     xio_l_udt_ref_attr_t *              attr;
     GlobusXIOName(globus_l_xio_udt_ref_server_init);
 
-    attr = (xio_l_udt_ref_attr_t *) driver_attr;
+    attr = (xio_l_udt_ref_attr_t *) 
+        (driver_attr ? driver_attr : &globus_l_xio_udt_ref_attr_default);
 
     server_handle = (xio_l_udt_ref_server_handle_t *)
         globus_calloc(1, sizeof(xio_l_udt_ref_server_handle_t));
@@ -719,7 +723,8 @@ globus_l_xio_udt_ref_open(
     xio_l_udt_ref_handle_t *            handle;
     GlobusXIOName(globus_l_xio_udt_ref_open);
 
-    attr = (xio_l_udt_ref_attr_t *) driver_attr;
+    attr = (xio_l_udt_ref_attr_t *) 
+        (driver_attr ? driver_attr : &globus_l_xio_udt_ref_attr_default);
 
     if(driver_link == NULL)
     {
@@ -786,7 +791,7 @@ globus_l_xio_udt_ref_open(
         }
         else
         {
-            UDT::setFD(handle->sock, attr->fd);
+            /* UDT::setFD(handle->sock, attr->fd); */
         }
         if(UDT::connect(
             handle->sock, addrinfo->ai_addr, addrinfo->ai_addrlen))

@@ -14,14 +14,29 @@ AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION)
 
 LAC_DOXYGEN("../", "", "$GLOBUS_LOCATION/sbin/globus-vararg-enums-doxygen-filter.pl")
 
-AC_SUBST( UDT_PATH)
-
-
+AC_MSG_CHECKING(for UDT)
 AC_ARG_WITH( udt-path,
-[  --with-udt-path=DIR    location of srb ],
-    CONFIG_UDT_PATH="${withval}", AC_MSG_ERROR( [must specify udt path: --with-udt-path] ))
+[  --with-udt-path=DIR    location of udt ],
+    CONFIG_UDT_PATH="${withval}", )
+
+if test "X${CONFIG_UDT_PATH}" = "X"; then
+  if test -f udt.sdk*.tar.gz; then
+    tar xfz udt.sdk*.tar.gz
+    cd udt4
+    make >build.log 2>&1
+    cd ..
+    CONFIG_UDT_PATH="udt4"	
+    AC_MSG_RESULT(UDT package found and built)
+  else
+    AC_MSG_ERROR(UDT package not found and udt-path not set)
+  fi
+else
+  AC_MSG_RESULT(${CONFIG_UDT_PATH})
+fi
 
 UDT_PATH=${CONFIG_UDT_PATH}
+
+AC_SUBST(UDT_PATH)
 
 GLOBUS_FINALIZE
 
