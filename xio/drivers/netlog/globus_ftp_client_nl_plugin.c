@@ -51,29 +51,7 @@ nl_print_bottleneck(
     NL_transfer_btl_t *                 bottleneck)
 {
     printf("Bottleneck is ");
-    switch (bottleneck->result) {
-    case NL_BTL_KNOWN:
-        printf("known: ");
-        switch (bottleneck->location) {
-        case NL_BTL_DISK_READ:
-            printf("disk read\n");
-            break;
-        case NL_BTL_DISK_WRITE:
-            printf("disk write\n");
-            break;
-        case NL_BTL_DISK:
-            printf("either disk read or write\n");
-            break;
-        case NL_BTL_NET:
-            printf("the friggin' network!\n");
-            break;
-        default:
-            printf("unkown bottleneck code (?)\n");
-        }
-        break;
-    default:
         printf("not known\n");
-    }
 }
 
 static
@@ -137,11 +115,17 @@ nl_l_final_received(
     tmp_ptr++;
 
     nl_str = strdup(tmp_ptr);
-    /* remove trailing 226 final line if it exists */
+
+/*    printf("RAW MSG: %s\n", nl_str);
+ */   /* remove trailing 226 final line if it exists */
     tmp_ptr = strstr(nl_str, "\r\n226 ");
     if(tmp_ptr != NULL)
     {
         *tmp_ptr = '\0';
+    }
+    else
+    {
+        printf("Error: final 226 token not found\n");
     }
 
     /* have to remove all of the \r\n226 messages*/
@@ -183,6 +167,8 @@ error_ent:
 error_uuid:
     free(uuid);
 error_response:
+
+printf("ERROR OUT\n");
 
     return;
 }
