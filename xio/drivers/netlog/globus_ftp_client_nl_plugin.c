@@ -138,7 +138,7 @@ nl_l_final_received(
 
     nl_str = strdup(tmp_ptr);
     /* remove trailing 226 final line if it exists */
-    tmp_ptr = strstr(nl_str, "226 ");
+    tmp_ptr = strstr(nl_str, "\r\n226 ");
     if(tmp_ptr != NULL)
     {
         *tmp_ptr = '\0';
