@@ -120,6 +120,7 @@ globus_rls_server	replica/rls/server	gpt
 globus_rls_server_setup	replica/rls/setup	gpt
 globus_rls_client_java	replica/rls/client/java/source	gpt
 globus_rls_test		replica/rls/test/unit	gpt
+globus_rls_script	replica/rls/script	gpt
 globus_rsl	gram/rsl/source	gpt
 globus_rsl_assist	gram/rsl_assist/source	gpt
 globus_sasl_gssapi_gsi	gsi/sasl/gssplugins	gpt
