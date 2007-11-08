@@ -2420,10 +2420,10 @@ globus_l_guc_parse_arguments(
         globus_uuid_create(&uuid);
 
         net_netlog_str = globus_common_create_string(
-            "netlogger:uuid=%s;mask=255i;io_type=net;interval=%d;level=%d",
+            "netlogger:uuid=%s;mask=255;io_type=net;interval=%d;level=%d",
             uuid.text, guc_info->nl_interval, guc_info->nl_level);
         disk_netlog_str = globus_common_create_string(
-            "netlogger:uuid=%s;mask=255i;io_type=disk;interval=%d;level=%d",
+            "netlogger:uuid=%s;mask=255;io_type=disk;interval=%d;level=%d",
             uuid.text, guc_info->nl_interval, guc_info->nl_level);
 
         if(guc_info->net_stack_str != NULL)
