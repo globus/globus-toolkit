@@ -303,6 +303,7 @@ BUNDLE globus-rls-server THREADED
         globus_database_sqlite
         globus_database_sqliteodbc
         globus_rls_client
+        globus_rls_script
         globus_rls_server
         globus_rls_server_setup
         globus_xio
