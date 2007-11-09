@@ -71,6 +71,84 @@ add_entry(char **entries,
     return new_entries;
 }
 
+static void
+free_ptr(char **p)
+{
+    if (!p) return;
+    if (!*p) return;
+    free(*p);
+    p = NULL;
+}
+
+static void
+free_array_list(char ***listp)
+{
+    char *entry, **list;
+
+    if (!listp) return;
+    list = *listp;
+    if (!list) return;
+    for (entry = list[0]; *entry; entry++) { free(entry); }
+    free(list);
+    *listp = NULL;
+}
+
+/*
+ * clear_server_context()
+ *
+ * Initialize the server context before filling in the configuration
+ * values.  Enables myproxy_server_config_read() to be called
+ * multiple times on changes to the config file.
+ */
+static void
+clear_server_context(myproxy_server_context_t *context)
+{
+    free_array_list(&context->accepted_credential_dns);
+    free_array_list(&context->authorized_retriever_dns);
+    free_array_list(&context->default_retriever_dns);
+    free_array_list(&context->authorized_renewer_dns);
+    free_array_list(&context->default_renewer_dns);
+    free_array_list(&context->authorized_key_retrievers_dns);
+    free_array_list(&context->default_key_retrievers_dns);
+    free_array_list(&context->trusted_retriever_dns);
+    free_array_list(&context->default_trusted_retriever_dns);
+    free_ptr(&context->passphrase_policy_pgm);
+    context->max_proxy_lifetime = 0;
+    context->limited_proxy = 0;
+    free_ptr(&context->cert_dir);
+    free_ptr(&context->pam_policy);
+    free_ptr(&context->pam_id);
+    free_ptr(&context->sasl_policy);
+    free_ptr(&context->certificate_issuer_program);
+    free_ptr(&context->certificate_issuer_cert);
+    free_ptr(&context->certificate_issuer_key);
+    free_ptr(&context->certificate_issuer_key_passphrase);
+    free_ptr(&context->certificate_openssl_engine_id);
+    free_ptr(&context->certificate_openssl_engine_lockfile);
+    free_array_list(&context->certificate_openssl_engine_pre);
+    free_array_list(&context->certificate_openssl_engine_post);
+    free_ptr(&context->certificate_issuer_email_domain);
+    free_ptr(&context->certificate_extfile);
+    free_ptr(&context->certificate_extapp);
+    free_ptr(&context->certificate_mapfile);
+    free_ptr(&context->certificate_mapapp);
+    context->max_cert_lifetime = 0;
+    free_ptr(&context->certificate_serialfile);
+    free_ptr(&context->certificate_out_dir);
+    free_ptr(&context->ca_ldap_server);
+    free_ptr(&context->ca_ldap_searchbase);
+    free_ptr(&context->ca_ldap_connect_dn);
+    free_ptr(&context->ca_ldap_connect_passphrase);
+    free_ptr(&context->ca_ldap_uid_attribute);
+    free_ptr(&context->ca_ldap_dn_attribute);
+    free_ptr(&context->pubcookie_cert);
+    free_ptr(&context->pubcookie_key);
+    free_ptr(&context->accepted_credentials_mapfile);
+    free_ptr(&context->accepted_credentials_mapapp);
+    context->check_multiple_credentials = 0;
+    free_ptr(&context->syslog_ident);
+}
+
 /*
  * line_parse_callback()
  *
@@ -770,11 +848,14 @@ myproxy_server_config_read(myproxy_server_context_t *context)
 			  context->config_file);
 	goto error;
     }
-    myproxy_debug("reading configuration file %s", context->config_file);
+    myproxy_log("reading configuration file %s", context->config_file);
     
     /* Clear any outstanding error */
     verror_clear();
-    
+
+    /* Clear any existing configuration */
+    clear_server_context(context);
+
     rc = vparse_stream(config_stream,
 		       NULL /* Default vparse options */,
 		       line_parse_callback,

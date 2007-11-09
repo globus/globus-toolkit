@@ -327,6 +327,51 @@ if (defined($origtrustrootdir)) {
   delete $ENV{'X509_CERT_DIR'};
 }
 
+if (defined($serverconf)) {
+system("touch $serverconf") && die "failed to touch $serverconf, stopped";
+($exitstatus, $output) =
+    &runtest("myproxy-logon -t 1 -o /tmp/myproxy-test.$$ -v -S",
+	     $passphrase . "\n");
+print "MyProxy Test 3R1 (retrieve stored credential after server reconfig): ";
+if ($exitstatus == 0) {
+    ($exitstatus, $output) =
+	&verifyproxy("/tmp/myproxy-test.$$");
+}
+if ($exitstatus == 0) {
+    print "SUCCEEDED\n"; $SUCCESSES++;
+} else {
+    print "FAILED\n"; $FAILURES++; print STDERR $output;
+}
+system("touch $serverconf") && die "failed to touch $serverconf, stopped";
+($exitstatus, $output) =
+    &runtest("myproxy-logon -t 1 -o /tmp/myproxy-test.$$ -v -S",
+	     $passphrase . "\n");
+print "MyProxy Test 3R2 (retrieve stored credential after server reconfig): ";
+if ($exitstatus == 0) {
+    ($exitstatus, $output) =
+	&verifyproxy("/tmp/myproxy-test.$$");
+}
+if ($exitstatus == 0) {
+    print "SUCCEEDED\n"; $SUCCESSES++;
+} else {
+    print "FAILED\n"; $FAILURES++; print STDERR $output;
+}
+system("touch $serverconf") && die "failed to touch $serverconf, stopped";
+($exitstatus, $output) =
+    &runtest("myproxy-logon -t 1 -o /tmp/myproxy-test.$$ -v -S",
+	     $passphrase . "\n");
+print "MyProxy Test 3R3 (retrieve stored credential after server reconfig): ";
+if ($exitstatus == 0) {
+    ($exitstatus, $output) =
+	&verifyproxy("/tmp/myproxy-test.$$");
+}
+if ($exitstatus == 0) {
+    print "SUCCEEDED\n"; $SUCCESSES++;
+} else {
+    print "FAILED\n"; $FAILURES++; print STDERR $output;
+}
+}
+
 ($exitstatus, $output) =
     &runtest("myproxy-logon -t 1 -o /tmp/myproxy-test.$$ -v -S",
 	     "badpassphrase\n");
