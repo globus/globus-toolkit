@@ -121,7 +121,8 @@ nl_l_final_received(
     tmp_ptr = strstr(nl_str, "\r\n226 ");
     if(tmp_ptr != NULL)
     {
-        *tmp_ptr = '\0';
+        *tmp_ptr = '\n';
+        tmp_ptr[1] = '\0';
     }
     else
     {
