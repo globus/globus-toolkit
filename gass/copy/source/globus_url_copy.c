@@ -687,11 +687,6 @@ static globus_bool_t g_continue = GLOBUS_FALSE;
 static char *        g_err_msg;
 static my_monitor_t                     g_monitor;
 
-
-#if defined(GLOBUS_BUILD_WITH_NETLOGGER)
-    globus_netlogger_handle_t                       gnl_handle;
-#endif
-
 static
 void
 globus_l_guc_glob_list_cb(
@@ -926,9 +921,6 @@ globus_l_guc_interrupt_handler(
     globus_mutex_unlock(&monitor->mutex);
 }
 
-/*
-#define GLOBUS_BUILD_WITH_NETLOGGER 1
-*/
 /******************************************************************************
 Function: main()
 Description:
@@ -945,13 +937,6 @@ main(int argc, char **argv)
     globus_gass_copy_handle_t               gass_copy_handle;
     globus_result_t                         result;
     globus_l_guc_info_t                     guc_info;
-
-#if defined(GLOBUS_BUILD_WITH_NETLOGGER)
-    globus_netlogger_handle_t               gnl_handle;
-    globus_io_attr_t                        io_attr;
-    char                                    my_hostname[64];
-    char                                    buffer[64];
-#endif
 
     err = globus_module_activate(GLOBUS_GASS_COPY_MODULE);
     if ( err != GLOBUS_SUCCESS )
@@ -985,20 +970,6 @@ main(int argc, char **argv)
 
     globus_gass_copy_attr_init(&source_gass_copy_attr);
     globus_gass_copy_attr_init(&dest_gass_copy_attr);
-
-#   if defined(GLOBUS_BUILD_WITH_NETLOGGER)
-    {
-        globus_io_fileattr_init(&io_attr);
-        globus_io_attr_netlogger_set_handle(&io_attr, &gnl_handle);
-
-        globus_gass_copy_attr_set_io(
-            &source_gass_copy_attr,
-            &io_attr);
-        globus_gass_copy_attr_set_io(
-            &dest_gass_copy_attr,
-            &io_attr);
-    }
-#   endif
 
     /* parse user parms */
     if(globus_l_guc_parse_arguments(
@@ -2400,10 +2371,15 @@ globus_l_guc_parse_arguments(
     {
         guc_info->num_streams = 1;
     }
-    
+   
+
+    if(guc_info->no_dcau)
+    {
+        /* decide if gsi is on stack */
+    }
     if(guc_info->udt)
     {
-        guc_info->net_stack_str = globus_libc_strdup("udt_ref,gsi");
+        guc_info->net_stack_str = globus_libc_strdup("udt_ref");
     }
     if(guc_info->nl_bottleneck)
     {
@@ -2437,7 +2413,7 @@ globus_l_guc_parse_arguments(
         else
         {
             guc_info->net_stack_str = globus_common_create_string(
-                "tcp,gsi,%s", net_netlog_str);
+                "tcp,%s", net_netlog_str);
         }
 
         if(guc_info->disk_stack_str != NULL)
@@ -3045,29 +3021,6 @@ globus_l_guc_init_gass_copy_handle(
         }
     }
 
-#   if defined(GLOBUS_BUILD_WITH_NETLOGGER)
-    {
-        char                                        my_hostname[64];
-        char                                        buffer[64];
-
-        sprintf(buffer, "%d", getpid());
-        globus_libc_gethostname(my_hostname, MAXHOSTNAMELEN);
-
-        globus_netlogger_handle_init(
-            &gnl_handle,
-            my_hostname,
-            "globus-url-copy",
-            buffer);
-        globus_netlogger_set_desc(
-            &gnl_handle,
-            "DISK");
-
-        globus_ftp_client_handleattr_set_netlogger(
-            &ftp_handleattr,
-            &gnl_handle);
-    }
-#   endif
-
     if(guc_info->rfc1738)
     {
         result = globus_ftp_client_handleattr_set_rfc1738_url(
@@ -3185,6 +3138,7 @@ globus_l_guc_gass_attr_init(
     globus_ftp_control_parallelism_t                parallelism;
     globus_ftp_control_dcau_t                       dcau;
     globus_ftp_control_layout_t                     layout;
+    char *                              gsi_stack = "";
     
     globus_url_parse(url, &url_info);
     globus_gass_copy_get_url_mode(url, &url_mode);
@@ -3276,6 +3230,13 @@ globus_l_guc_gass_attr_init(
                 ftp_attr,
                 &dcau);
         }
+        else
+        {
+            if(url_info.scheme == GLOBUS_URL_SCHEME_GSIFTP)
+            {
+                gsi_stack = "gsi,";
+            }
+        }
         
         if (guc_info->data_private)
         {
@@ -3292,9 +3253,14 @@ globus_l_guc_gass_attr_init(
 
         if(guc_info->net_stack_str)
         {
+            char *  tmp_stack;
+
+            tmp_stack = globus_common_create_string(
+                "%s%s", gsi_stack, guc_info->net_stack_str);
             globus_ftp_client_operationattr_set_net_stack(
                 ftp_attr,
-                guc_info->net_stack_str);
+                tmp_stack);
+            free(tmp_stack);
         }
         if(guc_info->disk_stack_str)
         {
