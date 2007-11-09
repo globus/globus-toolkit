@@ -323,7 +323,7 @@ globus_xio_driver_list_from_string(
             {
                 err_str = globus_common_create_string(
                     "%s driver not whitelisted", driver_name);
-                result = GlobusXIOErrorString(err_str);
+                result = GlobusXIOErrorParameter(err_str);
                 globus_free(err_str);
                 goto error_load;
             }
