@@ -65,6 +65,8 @@ int init_arguments(int argc,
 
 int myproxy_init_server(myproxy_socket_attrs_t *server_attrs);
 
+int handle_config(myproxy_server_context_t *server_context);
+
 int handle_client(myproxy_socket_attrs_t *server_attrs, 
                   myproxy_server_context_t *server_context);
 
@@ -216,32 +218,14 @@ main(int argc, char *argv[])
     /* If process is killed or Ctrl-C */
     my_signal(SIGTERM, sig_exit); 
     my_signal(SIGINT,  sig_exit); 
-    
+
     /* Read my configuration */
-    if (myproxy_server_config_read(server_context) == -1) {
+    if (handle_config(server_context) < 0) {
         myproxy_log_verror();
         myproxy_log("Exiting.");
         exit(1);
     }
-
-    /* Check to see if config file had syslog_ident specified. */
-    /* If so, then re-open the syslog with the new name.       */
-    if ((!debug) && (server_context->syslog_ident != NULL)) {
-        closelog();
-        myproxy_log_use_syslog(LOG_DAEMON,server_context->syslog_ident);
-    }
-
-    /* 
-     * set up gridmap file if explicitly defined.
-     * if not, default to the usual place, but do not over write
-     * the env var if previously defined.
-     */
-    if ( server_context->certificate_mapfile != NULL ) {
-      setenv( "GRIDMAP", server_context->certificate_mapfile, 1 );
-    } else {
-      setenv( "GRIDMAP", "/etc/grid-security/grid-mapfile", 0 );
-    }
-
+   
     /* Make sure all's well with the storage directory. */
     if (myproxy_check_storage_dir() == -1) {
 	myproxy_log_verror();
@@ -276,6 +260,10 @@ main(int argc, char *argv[])
 					   (struct sockaddr *) &client_addr,
 					   &client_addr_len);
 	  myproxy_log("Connection from %s", inet_ntoa(client_addr.sin_addr));
+      if (handle_config(server_context) < 0) {
+          myproxy_log_verror();
+          my_failure("error in handle_config()");
+      }
 	  if (socket_attrs->socket_fd < 0) {
 	     if (errno == EINTR) {
 		continue; 
@@ -313,6 +301,68 @@ main(int argc, char *argv[])
     }
     return 0;
 }   
+
+int
+handle_config(myproxy_server_context_t *server_context)
+{
+    static time_t last_update = 0;
+
+    if (last_update) {          /* not the first time */
+        struct stat s;
+        if (!server_context->config_file) {
+            verror_put_string("config_file is null!");
+            return -1;
+        }
+        if (stat(server_context->config_file, &s) < 0) {
+            verror_put_string("stat(%s) failed", server_context->config_file);
+            verror_put_errno(errno);
+            return -1;
+        }
+        if (s.st_mtime == last_update) {
+            return 0;           /* no updates */
+        }
+        myproxy_log("%s modified. re-reading.", server_context->config_file);
+        last_update = s.st_mtime;
+    }
+
+    if (myproxy_server_config_read(server_context) == -1) {
+        return -1;
+    }
+
+    if (!last_update) {
+        struct stat s;
+        if (!server_context->config_file) {
+            verror_put_string("config_file is null!");
+            return -1;
+        }
+        if (stat(server_context->config_file, &s) < 0) {
+            verror_put_string("stat(%s) failed", server_context->config_file);
+            verror_put_errno(errno);
+            return -1;
+        }
+        last_update = s.st_mtime;
+    }
+
+    /* Check to see if config file had syslog_ident specified. */
+    /* If so, then re-open the syslog with the new name.       */
+    if ((!debug) && (server_context->syslog_ident != NULL)) {
+        closelog();
+        myproxy_log_use_syslog(LOG_DAEMON,server_context->syslog_ident);
+    }
+
+    /* 
+     * set up gridmap file if explicitly defined.
+     * if not, default to the usual place, but do not over write
+     * the env var if previously defined.
+     */
+    if ( server_context->certificate_mapfile != NULL ) {
+      setenv( "GRIDMAP", server_context->certificate_mapfile, 1 );
+    } else {
+      setenv( "GRIDMAP", "/etc/grid-security/grid-mapfile", 0 );
+    }
+
+    return 0;
+}
 
 int
 handle_client(myproxy_socket_attrs_t *attrs,

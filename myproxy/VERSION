@@ -5,6 +5,7 @@ Binary compatibility of the C API is not guaranteed between releases.
 Version History
 ---------------
 v4.2 XX Xxx 2007
+  - in myproxy-server, re-read config file automatically on changes
   - fixes for newer OpenSSL versions used in GT 4.2
   - fixes for MIT Kerberos 1.6 support (via SASL)
 
