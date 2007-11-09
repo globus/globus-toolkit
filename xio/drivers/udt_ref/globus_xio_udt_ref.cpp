@@ -31,11 +31,11 @@
         __LINE__,                                                           \
         _XIOSL(_reason))                                
 
-GlobusDebugDefine(GLOBUS_XIO_UDT_REF);
-GlobusXIODeclareDriver(udt_ref);
+GlobusDebugDefine(GLOBUS_XIO_UDT);
+GlobusXIODeclareDriver(udt);
 
 #define GlobusXIOUDTRefDebugPrintf(level, message)                           \
-    GlobusDebugPrintf(GLOBUS_XIO_UDT_REF, level, message)
+    GlobusDebugPrintf(GLOBUS_XIO_UDT, level, message)
 
 #define GlobusXIOUDTRefDebugEnter()                                          \
     GlobusXIOUDTRefDebugPrintf(                                              \
@@ -104,9 +104,9 @@ globus_l_xio_udt_attr_to_socket(
     xio_l_udt_ref_attr_t *              attr,
     int                                 sock);
 
-GlobusXIODefineModule(udt_ref) =
+GlobusXIODefineModule(udt) =
 {
-    "globus_xio_udt_ref",
+    "globus_xio_udt",
     globus_l_xio_udt_ref_activate,
     globus_l_xio_udt_ref_deactivate,
     NULL,
@@ -124,14 +124,14 @@ globus_l_xio_udt_ref_activate(void)
     int rc;
     GlobusXIOName(globus_l_xio_udt_ref_activate);
 
-    GlobusDebugInit(GLOBUS_XIO_UDT_REF, TRACE);
+    GlobusDebugInit(GLOBUS_XIO_UDT, TRACE);
     GlobusXIOUDTRefDebugEnter();
     rc = globus_module_activate(GLOBUS_XIO_MODULE);
     if (rc != GLOBUS_SUCCESS)
     {
         goto error_xio_system_activate;
     }
-    GlobusXIORegisterDriver(udt_ref);
+    GlobusXIORegisterDriver(udt);
     GlobusXIOUDTRefDebugExit();
 
     globus_l_xio_udt_ref_attr_default.fd = -1;
@@ -153,7 +153,7 @@ globus_l_xio_udt_ref_activate(void)
 
 error_xio_system_activate:
     GlobusXIOUDTRefDebugExitWithError();
-    GlobusDebugDestroy(GLOBUS_XIO_UDT_REF);
+    GlobusDebugDestroy(GLOBUS_XIO_UDT);
     return rc;
 }
 
@@ -166,19 +166,19 @@ globus_l_xio_udt_ref_deactivate(void)
     GlobusXIOName(globus_l_xio_udt_ref_deactivate);
     
     GlobusXIOUDTRefDebugEnter();
-    GlobusXIOUnRegisterDriver(udt_ref);
+    GlobusXIOUnRegisterDriver(udt);
     rc = globus_module_deactivate(GLOBUS_XIO_MODULE);
     if (rc != GLOBUS_SUCCESS)
     {   
         goto error_deactivate;
     }
     GlobusXIOUDTRefDebugExit();
-    GlobusDebugDestroy(GLOBUS_XIO_UDT_REF);
+    GlobusDebugDestroy(GLOBUS_XIO_UDT);
     return GLOBUS_SUCCESS;
 
 error_deactivate:
     GlobusXIOUDTRefDebugExitWithError();
-    GlobusDebugDestroy(GLOBUS_XIO_UDT_REF);
+    GlobusDebugDestroy(GLOBUS_XIO_UDT);
     return rc;
 }
 
@@ -907,7 +907,7 @@ globus_l_xio_udt_ref_init(
     GlobusXIOName(globus_l_xio_udt_ref_init);
 
     GlobusXIOUDTRefDebugEnter();
-    result = globus_xio_driver_init(&driver, "udt_ref", NULL);
+    result = globus_xio_driver_init(&driver, "udt", NULL);
     if(result != GLOBUS_SUCCESS)
     {
         result = GlobusXIOErrorWrapFailed(
@@ -964,6 +964,6 @@ globus_l_xio_udt_ref_destroy(
 
 
 GlobusXIODefineDriver(
-    udt_ref,
+    udt,
     globus_l_xio_udt_ref_init,
     globus_l_xio_udt_ref_destroy);

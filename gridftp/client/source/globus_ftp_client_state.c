@@ -838,9 +838,96 @@ redo:
         }
 
     skip_setnetstack:
+        target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_SETDISKSTACK;
+        goto redo;
+
+
+    case GLOBUS_FTP_CLIENT_TARGET_SETUP_SETDISKSTACK:
+        target->state = GLOBUS_FTP_CLIENT_TARGET_SETDISKSTACK;
+        if(target->attr->disk_stack_str == NULL ||  
+            (target->disk_stack_str != NULL && 
+            strcmp(target->attr->disk_stack_str, target->disk_stack_str) == 0))
+        {
+            goto skip_setdiskstack;
+        }
+        
+        memset(&target->cached_data_conn,
+               '\0',
+               sizeof(globus_i_ftp_client_data_target_t));
+
+        target->mask = GLOBUS_FTP_CLIENT_CMD_MASK_TRANSFER_PARAMETERS;
+        globus_i_ftp_client_plugin_notify_command(
+            client_handle,
+            target->url_string,
+            target->mask,
+            "SITE SETDISKSTACK %s" CRLF,
+            target->attr->disk_stack_str);
+
+        if(client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_ABORT ||
+            client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_RESTART ||
+            client_handle->state == GLOBUS_FTP_CLIENT_HANDLE_FAILURE)
+        {
+            break;
+        }
+
+        globus_assert(
+            client_handle->state ==
+            GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION ||
+            client_handle->state ==
+            GLOBUS_FTP_CLIENT_HANDLE_DEST_SETUP_CONNECTION);
+
+        result = globus_ftp_control_send_command(
+            target->control_handle,
+            "SITE SETDISKSTACK %s" CRLF,
+            globus_i_ftp_client_response_callback,
+            target,
+            target->attr->disk_stack_str);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto result_fault;
+        }
+
+        break;
+
+    case GLOBUS_FTP_CLIENT_TARGET_SETDISKSTACK:
+        globus_assert(
+            client_handle->state ==
+            GLOBUS_FTP_CLIENT_HANDLE_SOURCE_SETUP_CONNECTION ||
+            client_handle->state ==
+            GLOBUS_FTP_CLIENT_HANDLE_DEST_SETUP_CONNECTION);
+
+        if((!error) &&
+           response->response_class == GLOBUS_FTP_POSITIVE_COMPLETION_REPLY)
+        {
+            globus_xio_stack_t          stack;
+            
+            if(target->disk_stack_str)
+            {
+                globus_free(target->disk_stack_str);
+            }
+            target->disk_stack_str = 
+                globus_libc_strdup(target->attr->disk_stack_str);
+            
+            if(client_handle->op != GLOBUS_FTP_CLIENT_TRANSFER)
+            {
+                /* if not a 3pt gotta set stack on local deal 
+                for now this will eb an error */
+                target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_CONNECTION;
+
+                goto notify_fault;
+            }      
+        }
+        else
+        {
+            target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_CONNECTION;
+
+            goto notify_fault;
+        }
+
+    skip_setdiskstack:
         target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_MODE;
         goto redo;
-        
+
 
     case GLOBUS_FTP_CLIENT_TARGET_SETUP_MODE:
 	target->state = GLOBUS_FTP_CLIENT_TARGET_MODE;

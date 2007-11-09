@@ -110,7 +110,8 @@ typedef enum globus_gfs_command_type_e
     GLOBUS_GFS_CMD_CKSM,
     GLOBUS_GFS_CMD_SITE_CHMOD,
     GLOBUS_GFS_CMD_SITE_DSI,
-    GLOBUS_GFS_CMD_SITE_SETNETSTACK
+    GLOBUS_GFS_CMD_SITE_SETNETSTACK,
+    GLOBUS_GFS_CMD_SITE_SETDISKSTACK
 } globus_gfs_command_type_t;
 
 /*
@@ -916,6 +917,12 @@ void
 globus_gridftp_server_get_config_string(
     globus_gfs_operation_t              op,
     char **                             config_string);
+
+
+void
+globus_gfs_data_get_file_stack_list(
+    globus_gfs_operation_t              in_op,
+    globus_list_t **                    out_list);
 
 /*
  * get read_range

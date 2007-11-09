@@ -970,6 +970,35 @@ globus_xio_server_register_signal_handler(
     void *                                  user_arg);
  */
 
+
+globus_xio_driver_list_ent_t *
+globus_xio_driver_list_find_driver(
+    globus_list_t *                     driver_list,
+    const char *                        driver_name);
+
+void
+globus_xio_driver_list_destroy(
+    globus_list_t *                     driver_list,
+    globus_bool_t                       unload);
+
+globus_result_t
+globus_xio_driver_list_to_stack_attr(
+    globus_list_t *                     driver_list,
+    globus_xio_stack_t                  stack,
+    globus_xio_attr_t                   attr);
+
+globus_result_t
+globus_xio_driver_list_from_string(
+    char *                              driver_string,
+    globus_list_t **                    driver_list,
+    globus_hashtable_t *                safe_table);
+
+globus_result_t
+globus_xio_driver_safe_table_from_string(
+    char *                              driver_string,
+    globus_hashtable_t *                safe_table);
+
+
 extern globus_module_descriptor_t       globus_i_xio_module;
 #define GLOBUS_XIO_MODULE &globus_i_xio_module
 

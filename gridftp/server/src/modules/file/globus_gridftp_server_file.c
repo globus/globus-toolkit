@@ -92,25 +92,20 @@ static globus_xio_driver_t              globus_l_gfs_file_driver;
 static
 globus_result_t
 globus_l_gfs_file_make_stack(
+    globus_gfs_operation_t              op,
     globus_l_file_monitor_t *           mon,
     globus_xio_attr_t                   attr,
     globus_xio_stack_t                  stack)
 {
-    char *                              value;
-    char *                              driver_name;
-    char *                              ptr;
-    char *                              opts;
-    globus_result_t                     result;
-    globus_bool_t                       done = GLOBUS_FALSE;
-    gfs_l_file_stack_entry_t *          stack_ent;
     globus_xio_driver_t                 driver;
-    globus_list_t *                     list;
+    globus_result_t                     result;
     globus_list_t *                     driver_list = NULL;
+    globus_xio_driver_list_ent_t *      ent;
     GlobusGFSName(globus_l_gfs_file_make_stack);
 
-    value = globus_gfs_config_get_string("file_stack");
+    globus_gfs_data_get_file_stack_list(op, &driver_list);
 
-    if(value == NULL)
+    if(driver_list == NULL)
     {
         result = globus_xio_stack_push_driver(
             stack, globus_l_gfs_file_driver);
@@ -123,79 +118,42 @@ globus_l_gfs_file_make_stack(
     }
     else
     {
-        value = strdup(value);
-        while(!done)
+        while(!globus_list_empty(driver_list))
         {
-            driver_name = value;
-            ptr = strchr(driver_name, ',');
-            if(ptr != NULL)
-            {
-                *ptr = '\0';
-                value = ptr+1; /* move to next line */
-            }
-            else
-            {
-                done = GLOBUS_TRUE;
-            }
-            opts = strchr(driver_name, ':');
-            if(opts != NULL)
-            {
-                *opts = '\0';
-                opts++;
-            }
+            ent = (globus_xio_driver_list_ent_t *)
+                globus_list_remove(&driver_list, driver_list);
 
-            if(strcmp(driver_name, "file") == 0)
+            if(strcmp(ent->driver_name, "file") == 0)
             {
                 driver = globus_l_gfs_file_driver;
+                result = globus_xio_stack_push_driver(
+                    stack, globus_l_gfs_file_driver);
             }
             else
             {
-                result = globus_xio_driver_load(driver_name, &driver);
-                if(result != GLOBUS_SUCCESS)
-                {
-                    goto error_load;
-                }
+                driver = ent->driver;
+                result = globus_xio_stack_push_driver(stack, ent->driver);
             }
-            stack_ent = (gfs_l_file_stack_entry_t *)
-                globus_calloc(1, sizeof(gfs_l_file_stack_entry_t));
-            stack_ent->opts = opts;
-            stack_ent->driver = driver;
-            stack_ent->driver_name = driver_name;
-
-            globus_list_insert(&driver_list, stack_ent);
-        }
-        for(list = driver_list;
-            !globus_list_empty(list);
-            list = globus_list_rest(list))
-        {
-            stack_ent = (gfs_l_file_stack_entry_t *) globus_list_first(list);
-
-            result = globus_xio_stack_push_driver(stack, stack_ent->driver);
             if(result != GLOBUS_SUCCESS)
             {
                 result = GlobusGFSErrorWrapFailed(
                     "globus_xio_stack_push_driver", result);
                 goto error_push;
             }
-            /* this should go away after demo? */
-            if(stack_ent->opts != NULL)
+
+            if(ent->opts != NULL)
             {
+                /* ignore error */
                 globus_xio_attr_cntl(
                     attr,
-                    stack_ent->driver,
+                    driver,
                     GLOBUS_XIO_SET_STRING_OPTIONS,
-                    stack_ent->opts);
+                    ent->opts);
             }
         }
-        
-        globus_list_destroy_all(driver_list, globus_libc_free);
-        globus_free(value);
     }
-    return GLOBUS_SUCCESS;
 
-error_load:
-    globus_list_destroy_all(driver_list, globus_libc_free);
-    globus_free(value);
+    return GLOBUS_SUCCESS;
 
 error_push:
     return result;
@@ -1758,11 +1716,14 @@ globus_l_gfs_file_open(
     globus_xio_file_flag_t              open_flags,
     void *                              arg)
 {
+    globus_l_file_monitor_t *           monitor;
     globus_result_t                     result;
     globus_xio_attr_t                   attr;
     globus_xio_stack_t                  stack;
     GlobusGFSName(globus_l_gfs_file_open);
     GlobusGFSFileDebugEnter();
+
+    monitor = (globus_l_file_monitor_t *) arg;
     
     result = globus_xio_attr_init(&attr);
     if(result != GLOBUS_SUCCESS)
@@ -1791,7 +1752,7 @@ globus_l_gfs_file_open(
         result = GlobusGFSErrorWrapFailed("globus_xio_stack_init", result);
         goto error_stack;
     }
-    result = globus_l_gfs_file_make_stack(arg, attr, stack);
+    result = globus_l_gfs_file_make_stack(monitor->op, arg, attr, stack);
     if(result != GLOBUS_SUCCESS)
     {
         goto error_push;

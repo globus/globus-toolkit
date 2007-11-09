@@ -974,6 +974,7 @@ globus_l_ftp_client_target_new(
     target->cached_data_conn.operation = GLOBUS_FTP_CLIENT_IDLE;
     target->authz_assert = GLOBUS_NULL;
     target->net_stack_str = GLOBUS_NULL;
+    target->disk_stack_str = GLOBUS_NULL;
     target->delayed_pasv = GLOBUS_FALSE;
     target->net_stack_list = GLOBUS_NULL;
 
@@ -1184,10 +1185,9 @@ globus_l_ftp_client_target_delete(
     {
         globus_libc_free(target->net_stack_str);
     }
-    if(target->net_stack_list)
+    if(target->disk_stack_str)
     {
-        globus_i_ftp_control_unload_xio_drivers(
-            target->net_stack_list);
+        globus_libc_free(target->disk_stack_str);
     }
     if(target->authz_assert)
     {

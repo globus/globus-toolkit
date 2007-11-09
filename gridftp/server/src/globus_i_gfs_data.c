@@ -56,6 +56,10 @@ static globus_mutex_t                   gfs_l_data_brain_mutex;
 static globus_list_t *                  gfs_l_data_brain_ready_list = NULL;
 static globus_bool_t                    gfs_l_data_brain_ready = GLOBUS_FALSE;
 
+static globus_hashtable_t               gfs_l_data_net_allowed_drivers;
+static globus_hashtable_t               gfs_l_data_disk_allowed_drivers;
+
+
 typedef enum
 {
     GLOBUS_L_GFS_DATA_REQUESTING = 1,
@@ -135,6 +139,7 @@ typedef struct
     globus_handle_table_t               handle_table;
     int                                 node_ndx;
     globus_list_t *                     net_stack_list;
+    globus_list_t *                     disk_stack_list;
 } globus_l_gfs_data_session_t;
 
 typedef struct
@@ -631,8 +636,8 @@ globus_l_gfs_free_session_handle(
     }
     if(session_handle->net_stack_list)    
     {
-        globus_i_ftp_control_unload_xio_drivers(
-            session_handle->net_stack_list);
+        globus_xio_driver_list_destroy(
+            session_handle->net_stack_list, GLOBUS_FALSE);
     }
 
     globus_handle_table_destroy(&session_handle->handle_table);
@@ -1743,6 +1748,51 @@ pwent_error:
     GlobusGFSDebugExitWithError();
 }
 
+static
+void
+globus_l_gfs_load_safe(
+    const char *                        conf_name,
+    const char *                        defaults,
+    globus_hashtable_t *                safe_table)
+{
+    globus_xio_driver_list_ent_t *      ent;
+    char *                              value;
+    char *                              driver_desc;
+    globus_list_t *                     list;
+    globus_result_t                     result;
+
+    value = globus_i_gfs_config_string(conf_name);
+    if(value == NULL)
+    {
+        value = globus_common_create_string(defaults);
+    }
+    list = globus_list_from_string(value, ',', NULL);
+
+    while(!globus_list_empty(list))
+    {
+        driver_desc = (char *) globus_list_remove(&list, list);
+
+        result = globus_xio_driver_list_create_ent(
+            driver_desc,
+            NULL,
+            GLOBUS_TRUE,
+            &ent);
+        if(result != GLOBUS_SUCCESS)
+        {
+            /* just log the error */
+            globus_gfs_log_message(
+                GLOBUS_GFS_LOG_ERR,
+                "Some network stack drivers failed to load: %s\n",
+                globus_error_print_friendly(globus_error_get(result)));
+        }
+        else
+        {
+            /* add to the table */
+            globus_hashtable_insert(safe_table, ent->driver_name, ent);
+        }
+    }
+}
+
 void
 globus_i_gfs_data_init()
 {
@@ -1797,6 +1847,24 @@ globus_i_gfs_data_init()
         globus_mutex_init(&globus_l_gfs_global_counter_lock, NULL);
         globus_gfs_config_set_ptr("byte_transfer_count", str_transferred);
     }
+
+    /* initialize hashtable */
+    globus_hashtable_init(
+        &gfs_l_data_net_allowed_drivers,
+        64,
+        globus_hashtable_string_hash,
+        globus_hashtable_string_keyeq);
+    globus_l_gfs_load_safe(
+        "dc_whitelist", "gsi,tcp", &gfs_l_data_net_allowed_drivers);
+
+    globus_hashtable_init(
+        &gfs_l_data_disk_allowed_drivers,
+        64,
+        globus_hashtable_string_hash,
+        globus_hashtable_string_keyeq);
+    globus_l_gfs_load_safe(
+        "fs_whitelist", "file", &gfs_l_data_disk_allowed_drivers);
+
     GlobusGFSDebugExit();
 }
 
@@ -2107,28 +2175,63 @@ globus_i_gfs_data_request_command(
         case GLOBUS_GFS_CMD_SITE_SETNETSTACK:
             if(strcasecmp(cmd_info->pathname, "default") == 0)
             {
-                globus_i_ftp_control_unload_xio_drivers(
-                    op->session_handle->net_stack_list);
+                globus_xio_driver_list_destroy(
+                    op->session_handle->net_stack_list,
+                    GLOBUS_FALSE);
                 op->session_handle->net_stack_list = NULL;
             }
             else
             {
                 if(op->session_handle->net_stack_list)
                 {
-                    globus_i_ftp_control_unload_xio_drivers(
-                        op->session_handle->net_stack_list);
+                    globus_xio_driver_list_destroy(
+                        op->session_handle->net_stack_list,
+                        GLOBUS_FALSE);
                     op->session_handle->net_stack_list = NULL;
                 }
-                   
-                result = globus_i_ftp_control_load_xio_drivers(
-                    cmd_info->pathname, &op->session_handle->net_stack_list);
-            }
-            if(result != GLOBUS_SUCCESS)
-            {
-                result = GlobusGFSErrorWrapFailed(
-                    "Setting data channel driver stack", result);
+                result = globus_xio_driver_list_from_string(
+                    cmd_info->pathname,
+                    &op->session_handle->net_stack_list,
+                    &gfs_l_data_net_allowed_drivers);
+                if(result != GLOBUS_SUCCESS)
+                {
+                    result = GlobusGFSErrorWrapFailed(
+                        "Setting data channel driver stack", result);
+                }
             }
 
+            call = GLOBUS_FALSE;
+            globus_gridftp_server_finished_command(op, result, NULL);
+            break;
+
+        case GLOBUS_GFS_CMD_SITE_SETDISKSTACK:
+            if(strcasecmp(cmd_info->pathname, "default") == 0)
+            {
+                globus_xio_driver_list_destroy(
+                    op->session_handle->disk_stack_list,
+                    GLOBUS_FALSE);
+                op->session_handle->disk_stack_list = NULL;
+            }
+            else
+            {
+                if(op->session_handle->disk_stack_list)
+                {
+                    globus_xio_driver_list_destroy(
+                        op->session_handle->disk_stack_list,
+                        GLOBUS_FALSE);
+                    op->session_handle->disk_stack_list = NULL;
+                }
+                result = globus_xio_driver_list_from_string(
+                    cmd_info->pathname,
+                    &op->session_handle->disk_stack_list,
+                    &gfs_l_data_disk_allowed_drivers);
+                if(result != GLOBUS_SUCCESS)
+                {   
+                    result = GlobusGFSErrorWrapFailed(
+                        "Setting data channel driver stack", result);
+                }
+            }
+            
             call = GLOBUS_FALSE;
             globus_gridftp_server_finished_command(op, result, NULL);
             break;
@@ -2210,6 +2313,26 @@ error_op:
     globus_l_gfs_authorize_cb(&object, action, op, result);
     GlobusGFSDebugExitWithError();
 }
+
+void
+globus_gfs_data_get_file_stack_list(
+    globus_gfs_operation_t              in_op,
+    globus_list_t **                    out_list)
+{
+    globus_l_gfs_data_operation_t *     op;
+
+    op = (globus_l_gfs_data_operation_t *) in_op;
+
+    if(op->session_handle->disk_stack_list == NULL)
+    {
+        *out_list = NULL;
+    }
+    else
+    {
+        *out_list = globus_list_copy(op->session_handle->disk_stack_list);
+    }
+}
+
 
 static
 globus_result_t
@@ -2410,29 +2533,43 @@ globus_l_gfs_data_handle_init(
     if(!globus_list_empty(net_stack_list))
     {
         globus_xio_stack_t              stack;
-        
-        result = globus_i_ftp_control_create_stack(
-            &handle->data_channel, net_stack_list, &stack);
+        globus_xio_attr_t               xio_attr;
+
+
+        result = globus_i_ftp_control_data_get_attr(
+            &handle->data_channel, 
+            &xio_attr);
         if(result != GLOBUS_SUCCESS)
         {
-            goto error_control;
-
             globus_gfs_log_message(
                 GLOBUS_GFS_LOG_WARN,
                 "set stack failed: %s\n",
                 globus_error_print_friendly(globus_error_peek(result)));
+            goto error_control;
+        }
+
+        globus_xio_stack_init(&stack, NULL);
+
+        result = globus_xio_driver_list_to_stack_attr(
+            net_stack_list, stack, xio_attr);
+        if(result != GLOBUS_SUCCESS)
+        {
+            globus_gfs_log_message(
+                GLOBUS_GFS_LOG_WARN,
+                "set stack failed: %s\n",
+                globus_error_print_friendly(globus_error_peek(result)));
+            goto error_control;
         }
         
         result = globus_i_ftp_control_data_set_stack(
             &handle->data_channel, stack);
         if(result != GLOBUS_SUCCESS)
         {
-            goto error_control;
-
             globus_gfs_log_message(
                 GLOBUS_GFS_LOG_WARN,
                 "set stack failed: %s\n",
                 globus_error_print_friendly(globus_error_peek(result)));
+            goto error_control;
         }
         
         globus_xio_stack_destroy(stack);
@@ -4358,6 +4495,66 @@ globus_l_gfs_data_begin_kickout(
     GlobusGFSDebugExit();
 }
 
+static
+char *
+globus_l_gfs_data_get_nl_msg(
+    globus_l_gfs_data_operation_t *     op)
+{
+    globus_xio_driver_list_ent_t *      ent;
+    globus_result_t                     result;
+    char *                              tmp_ptr;
+    char *                              uuid;
+    char *                              msg_out;
+    globus_xio_attr_t                   xio_attr;
+
+    /* we assume the user had the same uuid on nl for disk and 
+        net.  if they did not then the results they get back will 
+        be just for the net stack */
+
+    if(op->session_handle->net_stack_list == NULL)
+    {
+        return NULL;
+    }
+
+    ent = globus_xio_driver_list_find_driver(
+        op->session_handle->disk_stack_list,
+        "netlogger");
+    if(ent == NULL || ent->opts == NULL)
+    {
+        return NULL;
+    }
+
+    tmp_ptr = strstr(ent->opts, "uuid=");
+    if(tmp_ptr == NULL)
+    {
+        return NULL;
+    }
+
+    uuid = strdup(tmp_ptr);
+    tmp_ptr = strchr(uuid, ';');
+    if(tmp_ptr != NULL)
+    {
+        *tmp_ptr = '\0';
+    }
+
+    /* fake the attr cntl just to get into NL process space */
+    globus_xio_attr_init(&xio_attr);
+    result = globus_xio_attr_cntl(
+        xio_attr,
+        ent->driver,
+        1024,
+        uuid,
+        &msg_out);
+    globus_xio_attr_destroy(xio_attr);
+    globus_free(uuid);
+    if(result != GLOBUS_SUCCESS)
+    {
+        return NULL;
+    }
+
+    return msg_out;
+}
+
 
 static
 void
@@ -4523,6 +4720,8 @@ globus_l_gfs_data_end_transfer_kickout(
         }
     }
 
+    
+
     /* log transfer */
     if(op->node_ndx == 0 && 
         op->cached_res == GLOBUS_SUCCESS &&
@@ -4658,6 +4857,11 @@ globus_l_gfs_data_end_transfer_kickout(
     globus_assert(!op->writing ||
         (op->sent_partial_eof == 1 || op->stripe_count == 1 ||
         (op->node_ndx == 0 && op->eof_ready)));
+
+
+    /* DO NETLOGGER STUFF */
+    reply.msg = globus_l_gfs_data_get_nl_msg(op);
+
     /* tell the control side the finished was called */
     if(op->callback != NULL)
     {
