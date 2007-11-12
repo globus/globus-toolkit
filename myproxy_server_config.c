@@ -77,18 +77,19 @@ free_ptr(char **p)
     if (!p) return;
     if (!*p) return;
     free(*p);
-    p = NULL;
+    *p = NULL;
 }
 
 static void
 free_array_list(char ***listp)
 {
-    char *entry, **list;
+    char **list;
+    int i;
 
     if (!listp) return;
     list = *listp;
     if (!list) return;
-    for (entry = list[0]; *entry; entry++) { free(entry); }
+    for (i=0; list[i]; i++) { free(list[i]); }
     free(list);
     *listp = NULL;
 }
