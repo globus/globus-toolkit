@@ -172,6 +172,28 @@ Build Instructions:
                 value="org.globus.usage.report.mds.DomainReport"/>
         </ant>
 
+        <!-- RLS Reports -->
+        <ant antfile="${build.launcher}"
+             target="generateLauncher">
+            <property name="launcher-name"
+            value="rls-domain-report"/>
+            <property name="class.name"
+                value="org.globus.usage.report.rls.DomainReport"/>
+        </ant>
+        <ant antfile="${build.launcher}"
+             target="generateLauncher">
+            <property name="launcher-name"
+            value="rls-replica-report"/>
+            <property name="class.name"
+                value="org.globus.usage.report.rls.ReplicaReport"/>
+        </ant>
+        <ant antfile="${build.launcher}"
+             target="generateLauncher">
+            <property name="launcher-name"
+            value="rls-uptime-report"/>
+            <property name="class.name"
+                value="org.globus.usage.report.rls.UptimeReport"/>
+        </ant>
 
         <!-- Gram Reports -->
         <ant antfile="${build.launcher}"
