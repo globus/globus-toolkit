@@ -9,7 +9,7 @@
 #ifdef __GNUC__
 #define GlobusGForkFuncName(func) static const char * _gfork_func_name __attribute__((__unused__)) = #func
 #else
-#define GlobusXIOGForkName(func) static const char * _gfork_func_name = #func
+#define GlobusGForkFuncName(func) static const char * _gfork_func_name = #func
 #endif
 
 #define GFORK_CHILD_READ_ENV "GFORK_CHILD_READ_ENV"

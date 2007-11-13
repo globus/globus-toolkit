@@ -42,10 +42,10 @@ fi
 if test "X$GRIDMAP" != "X" ; then
     GRIDMAP_CONF="-df $GRIDMAP"
 else
-    if test -e $HOME/.gridmap ; then
+    if test -f $HOME/.gridmap ; then
         GRIDMAP_CONF="-df $HOME/.gridmap"
     else
-        if test -e /etc/grid-security/grid-mapfile ; then
+        if test -f /etc/grid-security/grid-mapfile ; then
             GRIDMAP_CONF="-df /etc/grid-security/grid-mapfile"
         else
             GRIDMAP_CONF=""
