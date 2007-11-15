@@ -1488,7 +1488,7 @@ myproxy_creds_verify_passphrase(const struct myproxy_creds *creds,
     }
     else if (creds->passphrase &&
 	     strlen(passphrase) >= MIN_PASS_PHRASE_LEN &&
-	     (tmp = (char *)des_crypt(passphrase,
+	     (tmp = (char *)DES_crypt(passphrase,
 		   &creds->owner_name[strlen(creds->owner_name)-3])) != NULL &&
 	     strcmp(creds->passphrase, tmp) == 0) {
 	return_code = 1;
