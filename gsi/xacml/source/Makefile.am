@@ -1,6 +1,6 @@
 AUTOMAKE_OPTIONS=foreign
 
-EXTRA_DIST=typemap.dat
+EXTRA_DIST=typemap.dat abstract-inheritance.diff
 
 SCHEMA=$(SCHEMA_DIR)/xacml_authz_service.wsdl
 GSOAP_FILE = xacml_auth_service.gsoap 
@@ -56,6 +56,7 @@ $(GSOAP_FILE): $(SCHEMA) typemap.dat
 	$(WSDL2H) -a -x -f $(SCHEMA) -o $@
 
 $(GSOAP_SOURCE_FILES): $(GSOAP_FILE)
+	patch -p0 < abstract-inheritance.diff
 	$(SOAPCPP2) -1 -w -x $(GSOAP_FILE) || true
 
 CLEANFILES=$(GSOAP_FILE) $(GSOAP_SOURCE_FILES) \

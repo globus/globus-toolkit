@@ -97,65 +97,7 @@ extract_attribute_value(
     class xsd__anyType *                attribute,
     std::string &                       value)
 {
-    switch (attribute->soap_type())
-    {
-    case SOAP_TYPE_xsd__anyType:
-        {
-            value = attribute->__item;
-            break;
-        }
-
-    case SOAP_TYPE_xsd__string:
-        {
-            xsd__string * strtype = dynamic_cast<xsd__string *>(attribute);
-            assert(strtype);
-            value = strtype->__item;
-        }
-        break;
-
-    case SOAP_TYPE_xsd__anyURI_:
-        {
-            xsd__anyURI_ * anyuritype = dynamic_cast<xsd__anyURI_ *>(attribute);
-            assert(anyuritype);
-            value = anyuritype->__item;
-        }
-        break;
-
-    case SOAP_TYPE_xsd__integer_:
-        {
-            xsd__integer_ * inttype = dynamic_cast<xsd__integer_ *>(attribute);
-            value = inttype->__item;
-        }
-        break;
-
-    case SOAP_TYPE_xsd__dateTime:
-        {
-            xsd__dateTime * d = dynamic_cast<xsd__dateTime *>(attribute);
-            assert(d);
-            time_t t = d->__item;
-            struct tm * tm = gmtime(&t);
-
-            {
-                using namespace std;
-
-                ostringstream os;
-
-                os << setw(4) << setfill('0') << (tm->tm_year+1900) << '-'
-                   << setw(2) << setfill('0') << (tm->tm_mon+1) << '-'
-                   << setw(2) << setfill('0') << tm->tm_mday << 'T'
-                   << setw(2) << setfill('0') << tm->tm_hour << ':'
-                   << setw(2) << setfill('0') << tm->tm_min << ':'
-                   << setw(2) << setfill('0') << tm->tm_sec << 'Z';
-
-                value = os.str();
-            }
-        }
-
-        break;
-
-    default:
-        assert(0);
-    }
+    value = attribute->__item;
 }
 
 int
@@ -188,7 +130,7 @@ parse_xacml_query(
             j != (*i)->XACMLcontext__Attribute.end();
             j++)
         {
-            for (std::vector<class xsd__anyType *>::iterator k =
+            for (std::vector<class XACMLcontext__AttributeValueType *>::iterator k =
                         (*j)->XACMLcontext__AttributeValue.begin();
                  k != (*j)->XACMLcontext__AttributeValue.end();
                  k++)
@@ -220,7 +162,7 @@ parse_xacml_query(
             j != (*i)->XACMLcontext__Attribute.end();
             j++)
         {
-            for (std::vector<class xsd__anyType *>::iterator k =
+            for (std::vector<class XACMLcontext__AttributeValueType *>::iterator k =
                         (*j)->XACMLcontext__AttributeValue.begin();
                  k != (*j)->XACMLcontext__AttributeValue.end();
                  k++)
@@ -241,7 +183,7 @@ parse_xacml_query(
             j != (*i)->XACMLcontext__Attribute.end();
             j++)
         {
-            for (std::vector<class xsd__anyType *>::iterator k =
+            for (std::vector<class XACMLcontext__AttributeValueType *>::iterator k =
                         (*j)->XACMLcontext__AttributeValue.begin();
                  k != (*j)->XACMLcontext__AttributeValue.end();
                  k++)
@@ -270,7 +212,7 @@ parse_xacml_query(
          i != req->XACMLcontext__Action->XACMLcontext__Attribute.end();
          i++)
     {
-        for (std::vector<class xsd__anyType *>::iterator j =
+        for (std::vector<class XACMLcontext__AttributeValueType *>::iterator j =
                     (*i)->XACMLcontext__AttributeValue.begin();
              j != (*i)->XACMLcontext__AttributeValue.end();
              j++)
@@ -292,7 +234,7 @@ parse_xacml_query(
          i != req->XACMLcontext__Environment->XACMLcontext__Attribute.end();
          i++)
     {
-        for (std::vector<class xsd__anyType *>::iterator j =
+        for (std::vector<class XACMLcontext__AttributeValueType *>::iterator j =
                     (*i)->XACMLcontext__AttributeValue.begin();
              j != (*i)->XACMLcontext__AttributeValue.end();
              j++)
@@ -338,24 +280,48 @@ prepare_response(
     samlp__Response->Version = "2.0";
 
     samlp__Response->IssueInstant = time(NULL);
-    samlp__Response->__union_32 = SOAP_UNION__samlp__union_32_saml__Assertion;
-    samlp__Response->union_32.saml__Assertion = new std::vector<saml__AssertionType *>;
+    samlp__Response->__size_32 = 1;
+    samlp__Response->__union_32 = new __samlp__union_32();
+    
+    samlp__Response->__union_32->__union_32 =
+            SOAP_UNION__samlp__union_32_saml__Assertion;
+    samlp__Response->__union_32->union_32.saml__Assertion =
+            new saml__AssertionType();
 
-    saml__AssertionType * response_assertion = new saml__AssertionType();
+    samlp__Response->__union_32->union_32.saml__Assertion->IssueInstant =
+            time(NULL);
 
-    samlp__Response->union_32.saml__Assertion->push_back(response_assertion);
+    samlp__Response->__union_32->union_32.saml__Assertion->saml__Issuer =
+            new saml__NameIDType();
+    samlp__Response->__union_32->union_32.saml__Assertion->saml__Issuer->Format
+            =
+            new std::string("urn:oasis:names:tc:SAML:2.0:nameid-format:entity");
 
-    response_assertion->__union_1 =
-            SOAP_UNION__saml__union_1_XACMLassertion__XACMLAuthzDecisionStatement;
-    response_assertion->union_1.XACMLassertion__XACMLAuthzDecisionStatement =
-            new std::vector<class XACMLassertion__XACMLAuthzDecisionStatementType *>;
+    const char * issuer;
 
-    XACMLassertion__XACMLAuthzDecisionStatementType * xacml_decision =
+    if (xacml_response_get_issuer(response, &issuer) != 0)
+    {
+        return SOAP_SVR_FAULT;
+    }
+    samlp__Response->__union_32->union_32.saml__Assertion->__item = 
+            new char[strlen(issuer)+1];
+    strcpy(samlp__Response->__union_32->union_32.saml__Assertion->__item,
+           issuer);
+
+    saml__AssertionType * response_assertion =
+            samlp__Response->__union_32->union_32.saml__Assertion;
+
+    response_assertion->__size_1 = 1;
+    response_assertion->__union_1 = new __saml__union_1();
+
+    response_assertion->__union_1->__union_1 =
+            SOAP_UNION__saml__union_1_saml__Statement;
+    response_assertion->__union_1->union_1.saml__Statement =
             new XACMLassertion__XACMLAuthzDecisionStatementType();
 
-    response_assertion->union_1.XACMLassertion__XACMLAuthzDecisionStatement
-            ->push_back(xacml_decision);
-
+    XACMLassertion__XACMLAuthzDecisionStatementType * xacml_decision =
+            dynamic_cast<XACMLassertion__XACMLAuthzDecisionStatementType *>
+                (response_assertion->__union_1->union_1.saml__Statement);
 
     xacml_decision->XACMLcontext__Response =
             new XACMLcontext__ResponseType();

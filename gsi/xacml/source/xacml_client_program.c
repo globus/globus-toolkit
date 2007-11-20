@@ -4,6 +4,21 @@
 #include <unistd.h>
 
 int
+default_handler(
+    void *                              handler_arg,
+    const xacml_response_t              response,
+    const char *                        obligation_id,
+    xacml_effect_t                      fulfill_on,
+    const char *                        attribute_ids[],
+    const char *                        datatypes[],
+    const char *                        values[])
+{
+    printf("Unknown obligation: %s\n", obligation_id);
+
+    return 1;
+}
+
+int
 local_user_name_handler(
     void *                              handler_arg,
     const xacml_response_t              response,
@@ -101,6 +116,12 @@ int main(int argc, char *argv[])
             local_user_name_handler,
             NULL,
             "urn:globus:local-user-name:obj");
+
+    xacml_request_add_obligation_handler(
+            request,
+            default_handler,
+            NULL,
+            NULL);
 
     if (cert != NULL || key != NULL || ca_path != NULL)
     {

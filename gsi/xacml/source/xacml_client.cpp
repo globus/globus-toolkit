@@ -15,7 +15,7 @@ xacml_create_attribute(
     const std::string &                 issuer = "")
 {
     XACMLcontext__AttributeType *       attr = new XACMLcontext__AttributeType();
-    xsd__anyType *                      val;
+    XACMLcontext__AttributeValueType *  val = new XACMLcontext__AttributeValueType();
 
     attr->AttributeId = attribute.attribute_id;
     attr->DataType = attribute.data_type;
@@ -25,76 +25,11 @@ xacml_create_attribute(
         attr->Issuer = new std::string(issuer);
     }
 
-#if 1
-    if (attribute.data_type == XACML_DATATYPE_X500_NAME ||
-        attribute.data_type == XACML_DATATYPE_RFC822_NAME ||
-        attribute.data_type == XACML_DATATYPE_IP_ADDRESS ||
-        attribute.data_type == XACML_DATATYPE_DNS_NAME ||
-        attribute.data_type == XACML_DATATYPE_STRING)
-    {
-        xsd__string * s = new  xsd__string();
+    val = new XACMLcontext__AttributeValueType();
 
-        s->__item = attribute.value;
+    val->__mixed = new char[attribute.value.length()+1];
+    std::strcpy(val->__mixed, attribute.value.c_str());
 
-        val = s;
-    }
-    else if (attribute.data_type == XACML_DATATYPE_ANY_URI)
-    {
-        xsd__anyURI_ * u = new xsd__anyURI_();
-
-        u->__item = attribute.value;
-        val = u;
-    }
-    else if (attribute.data_type == XACML_DATATYPE_BOOLEAN)
-    {
-        xsd__boolean * b = new xsd__boolean();
-
-        if (attribute.value == "true" || attribute.value == "1")
-        {
-            b->__item = 1;
-        }
-        else
-        {
-            b->__item = 0;
-        }
-        val = b;
-    }
-    else if (attribute.data_type == XACML_DATATYPE_INTEGER)
-    {
-        xsd__integer_ * i = new xsd__integer_();
-
-        i->__item = attribute.value;
-        val = i;
-    }
-    else if (attribute.data_type == XACML_DATATYPE_DATE_TIME)
-    {
-        xsd__dateTime * d = new xsd__dateTime();
-        struct tm tm;
-
-        memset(&tm, 0, sizeof(struct tm));
-
-        sscanf(attribute.value.c_str(), "%d-%d-%dT%d%d%dZ",
-               &tm.tm_year,
-               &tm.tm_mon,
-               &tm.tm_mday,
-               &tm.tm_hour,
-               &tm.tm_min,
-               &tm.tm_sec);
-
-        tm.tm_year -= 1900;
-        tm.tm_mon -= 1;
-
-        d->__item = timegm(&tm);
-        val = d;
-    }
-    else
-    {
-#endif
-        val = new xsd__anyType();
-
-        val->__item = new char[attribute.value.length()+1];
-        std::strcpy(val->__item, attribute.value.c_str());
-    }
     attr->XACMLcontext__AttributeValue.push_back(val);
 
     return attr;
@@ -247,32 +182,37 @@ parse_xacml_response(
         }
     }
 
-    assert(resp->__union_32 == SOAP_UNION__samlp__union_32_saml__Assertion);
-
-    std::vector<saml__AssertionType *> * assertions =
-        resp->union_32.saml__Assertion;
     XACMLassertion__XACMLAuthzDecisionStatementType * xacml_decision = NULL;
 
-    for (std::vector<saml__AssertionType *>::iterator i = assertions->begin();
-         i != assertions->end();
-         i++)
+    for (int i = 0; i < resp->__size_32; i++)
     {
-        if ((*i)->__union_1 ==
-            SOAP_UNION__saml__union_1_XACMLassertion__XACMLAuthzDecisionStatement)
+        switch (resp->__union_32[i].__union_32)
         {
-            std::vector<class XACMLassertion__XACMLAuthzDecisionStatementType *>
-                    *decisions = (*i)->union_1.
-                            XACMLassertion__XACMLAuthzDecisionStatement;
-
-            for (std::vector<class 
-                    XACMLassertion__XACMLAuthzDecisionStatementType *>::
-                    iterator j = decisions->begin();
-                 j != decisions->end();
-                 j++)
+        case SOAP_UNION__samlp__union_32_saml__Assertion:
             {
-                xacml_decision = *j;
-                break;
+                saml__AssertionType * assertion = 
+                        resp->__union_32[i].union_32.saml__Assertion;
+
+                for (int j = 0; j < assertion->__size_1; j++)
+                {
+                    switch (assertion->__union_1[i].__union_1)
+                    {
+                    case SOAP_UNION__saml__union_1_saml__Statement:
+                        xacml_decision =
+                                static_cast<XACMLassertion__XACMLAuthzDecisionStatementType *>(assertion->__union_1[i].union_1.saml__Statement);
+                        break;
+                    case SOAP_UNION__saml__union_1_saml__AuthnStatement:
+                    case SOAP_UNION__saml__union_1_saml__AuthzDecisionStatement:
+                    case SOAP_UNION__saml__union_1_saml__AttributeStatement:
+                        assert(assertion->__union_1[i].__union_1 ==
+                                    SOAP_UNION__saml__union_1_saml__Statement);
+                        break;
+                    }
+                }
             }
+        case SOAP_UNION__samlp__union_32_saml__EncryptedAssertion:
+            assert(resp->__union_32[i].__union_32 ==
+                   SOAP_UNION__samlp__union_32_saml__Assertion);
         }
     }
 
@@ -370,7 +310,8 @@ xacml_request_add_obligation_handler(
     info.handler = handler;
     info.handler_arg = handler_arg;
 
-    request->obligation_handlers[obligation_id] = info;
+    request->obligation_handlers[obligation_id == NULL ? "" : obligation_id] =
+            info;
 
     return 0;
 }
@@ -463,8 +404,12 @@ xacml_query(
          i != response->obligations.end();
          i++)
     {
-        if (request->obligation_handlers.find(i->obligation_id) !=
-            request->obligation_handlers.end())
+        xacml::obligation_handlers::iterator ii;
+
+        if (((ii = request->obligation_handlers.find(i->obligation_id)) !=
+            request->obligation_handlers.end()) ||
+            ((ii = request->obligation_handlers.find("")) !=
+            request->obligation_handlers.end()))
         {
             size_t s = i->attributes.size();
 
@@ -482,8 +427,7 @@ xacml_query(
             data_types[s] = NULL;
             values[s] = NULL;
 
-            xacml::obligation_handler_info &info =
-                    request->obligation_handlers[i->obligation_id];
+            xacml::obligation_handler_info &info = ii->second;
 
             rc = info.handler(info.handler_arg,
                           response,
