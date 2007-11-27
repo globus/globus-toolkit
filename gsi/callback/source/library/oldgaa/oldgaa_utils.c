@@ -556,7 +556,7 @@ oldgaa_parse_regex(char * str)
 {
   char **subject_regexes = NULL; 
   int    num_regexes     = 0;      /* Number of subject regexes we've parse */
-  char   new_str[MAX_STRING_SIZE]; /* Pointer to the string*/
+  char  *new_str; /* Pointer to the string*/
   int    i      = 0,               /* Pointer to our current location in str */
          j,                        /* Pointer to our current location in new_str */
          length = strlen(str);			
@@ -575,6 +575,8 @@ fprintf(stderr, "\noldgaa_parse_regex:\n");
  		
   subject_regexes[0] = NULL;
 
+
+  new_str = malloc(strlen(str)+1);
 
   if (QUOTING != str[i]) strcpy(new_str, str);
 
@@ -625,6 +627,7 @@ fprintf(stderr, "\noldgaa_parse_regex:\n");
     {
       oldgaa_handle_error(&parse_error,
 		   "oldgaa_globus_parse_conditions: error parsing rfc1779 name");
+      free(new_str);
       return NULL;
     }
 
@@ -636,6 +639,7 @@ fprintf(stderr, "\noldgaa_parse_regex:\n");
     {
      oldgaa_handle_error(&parse_error,
 		  "oldgaa_globus_parse_conditions: error parsing regular expression"); 
+     free(new_str);
      return NULL;
     }
 
@@ -647,6 +651,7 @@ fprintf(stderr, "\noldgaa_parse_regex:\n");
     {
       oldgaa_handle_error(&parse_error, "oldgaa_globus_parse_conditions: out of memory");
       free(cnv_regex);
+      free(new_str);
       return NULL;
     }
 
@@ -666,10 +671,12 @@ fprintf(stderr, "\noldgaa_parse_regex:\n");
   
     oldgaa_handle_error(&parse_error,
    		    "oldgaa_globus_parse_conditions: no subject regexes found");
+    free(new_str);
     return NULL;
 
   }
 
+ free(new_str);
  return subject_regexes;
 
 }

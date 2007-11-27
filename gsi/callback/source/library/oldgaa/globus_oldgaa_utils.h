@@ -78,9 +78,11 @@ EXTERN_C_BEGIN
 typedef struct policy_file_context_struct  policy_file_context, 
                                           *policy_file_context_ptr;
 struct policy_file_context_struct {
- FILE  *stream;	     
  char  *str;
  char  *parse_error;  
+ char  *buf;
+ long  buflen;
+ long  index;
 };
 
 /**********************************************************************
