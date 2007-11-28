@@ -652,6 +652,9 @@ globus_l_xio_udt_attr_to_socket(
             goto error;
         }
     }
+
+    /* XXX force this to be false so THAT IT WILL WORK! */
+    attr->reuseaddr = 0;
     if(attr->reuseaddr != XIO_UDT_BOOL_UNDEF)
     {
         rc = UDT::setsockopt(sock, 0,
