@@ -886,6 +886,7 @@ globus_i_gsi_callback_check_revoked(
     X509_OBJECT                         x509_object;
     int					contents_freed = 1;
     int                                 i, n;
+    long                                err = 0;
     globus_result_t                     result = GLOBUS_SUCCESS;
     static char *                       _function_name_ =
         "globus_i_gsi_callback_check_revoked";
@@ -1077,6 +1078,19 @@ globus_i_gsi_callback_check_revoked(
 
                 OPENSSL_free(subject_string);
             }
+        }
+    }
+    else
+    {
+        /* Error reading CRL or CRL not available */
+        err = ERR_get_error();
+
+        if (err != X509_V_OK)
+        {
+            GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
+                result,
+                GLOBUS_GSI_CALLBACK_ERROR_INVALID_CRL,
+                (_CLS("Couldn't verify that the available CRL is valid")));
         }
     }
 

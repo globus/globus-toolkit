@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Name="globus_gsi_callback" Format_Version="0.01">
 
-    <Aging_Version Major="0" Minor="25" Age="0"/>
+    <Aging_Version Major="0" Minor="26" Age="0"/>
     <Description> Globus GSI Callback Library</Description>
     <Functional_Group >Security</Functional_Group>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
