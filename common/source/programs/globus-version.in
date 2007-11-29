@@ -17,9 +17,6 @@
 # 
 
 
-. ${GLOBUS_LOCATION}/libexec/globus-script-initializer
-globus_source ${libexecdir}/globus-sh-tools.sh
-
 #
 # Displays the Globus version
 #
@@ -46,6 +43,9 @@ DIRT_BRANCH_ID="@DIRT_BRANCH_ID@"
 
 usage()
 {
+    . ${GLOBUS_LOCATION}/libexec/globus-script-initializer
+    globus_source ${libexecdir}/globus-sh-tools.sh
+
     ${GLOBUS_SH_CAT-cat} 1>&2 <<EOF
 
 globus-version [-help] [-full] [-dirt]
