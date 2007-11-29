@@ -225,7 +225,7 @@ static const globus_l_gfs_config_option_t option_list[] =
     "Effectively sets the above control_interface, data_interface and ipc_interface options.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"ipc_port", "ipc_port", NULL, "ipc-port", NULL, GLOBUS_L_GFS_CONFIG_INT, 0, NULL,
     "Port on which the frontend will listen for data node connections.", NULL, NULL,GLOBUS_FALSE, NULL},
- {"control_preauth_timeout", "control_preauth_timeout", NULL, "control-preauth-timeout", NULL, GLOBUS_L_GFS_CONFIG_INT, 30, NULL,
+ {"control_preauth_timeout", "control_preauth_timeout", NULL, "control-preauth-timeout", NULL, GLOBUS_L_GFS_CONFIG_INT, 120, NULL,
     "Time in seconds to allow a client to remain connected to the control "
     "channel without activity before authenticating.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"control_idle_timeout", "control_idle_timeout", NULL, "control-idle-timeout", NULL, GLOBUS_L_GFS_CONFIG_INT, 600, NULL,
