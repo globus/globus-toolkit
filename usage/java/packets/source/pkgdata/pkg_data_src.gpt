@@ -25,7 +25,7 @@
     
         <Dependency Name="globus_java_ws_core" Package="pgm"> 
             <Version>
-                <Simple_Version Major="0"/>
+                <Simple_Version Major="1"/>
             </Version>
         </Dependency>
     
