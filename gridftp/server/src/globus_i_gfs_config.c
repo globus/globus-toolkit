@@ -17,7 +17,7 @@
 #include "globus_i_gridftp_server.h"
 #include "version.h"
 
-#define GLOBUS_GFS_HELP_ROWS            20
+#define GLOBUS_GFS_HELP_ROWS            60
 #define GLOBUS_GFS_HELP_COLS            45
 #define GLOBUS_GFS_HELP_WIDTH           80
 
@@ -174,9 +174,35 @@ static const globus_l_gfs_config_option_t option_list[] =
     "Disable transmission of per-transfer usage statistics.  See the Usage Statistics "
     "section in the online documentation for more information.", NULL, NULL,GLOBUS_FALSE, NULL},
  {"usage_stats_target", "usage_stats_target", NULL, "usage-stats-target", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
-    "Comma seperated list of contact strings (host:port) for usage statistics listeners.  The usage stats sent to "
-    "a particular target may be customized by configuring it with a taglist (host:port;taglist)  The taglist is a list "
-    "of characters that each correspond to a usage stats tag.  See available tags.", NULL, NULL,GLOBUS_FALSE, NULL},
+    "Comma seperated list of contact strings (host:port) for usage statistics receivers.  The usage stats sent to "
+    "a particular receiver may be customized by configuring it with a taglist (host:port!taglist)  The taglist is a list "
+    "of characters that each correspond to a usage stats tag.  When this option is unset, stats are reported to "
+    "usage-stats.globus.org:4810.  If you set your own receiver, and wish to continue reporting to the Globus receiver, "
+    "you will need to add it manually.  The list of available tags follow. Tags marked * are reported by default.\n\t\n"
+    "*(e) START - start time of transfer\n"
+    "*(E) END - end time of transfer\n"
+    "*(v) VER - version string of gridftp server\n"
+    "*(b) BUFFER - tcp buffer size used for transfer\n"
+    "*(B) BLOCK - disk blocksize used for transfer\n"
+    "*(N) NBYTES - number of bytes transferred\n"
+    "*(s) STREAMS - number of parallel streams used\n"
+    "*(S) STRIPES - number of stripes used\n"
+    "*(t) TYPE - transfer command: RETR, STOR, LIST, etc\n"
+    "*(c) CODE - ftp result code (226 = success, 5xx = fail)\n"
+    "*(D) DSI - DSI module in use\n"
+    "*(A) EM - event modules in use\n"
+    "*(T) SCHEMA - ftp, gsiftp, sshftp, etc. (client supplied)\n"
+    "*(a) APP - guc, rft, generic library app, etc. (client supplied)\n"
+    "*(V) APPVER - version string of above. (client supplied)\n"
+    "(f) FILE - name of file/data transferred\n"
+    "(i) CLIENTIP - ip address of host running client (control channel)\n"
+    "(I) DATAIP - ip address of source/dest host of data (data channel)\n"
+    "(u) USERNAME - local user name the transfer was performed as\n"
+    "(d) USERDN - DN that was mapped to user id\n"
+    "(C) CONFID - ID defined by -usage-stats-id config option\n"
+    "(U) SESSID - unique id that can be used to match transfers in a session and\n"
+    "           transfers across source/dest of a third party transfer. (client supplied)\n"
+    , NULL, NULL,GLOBUS_FALSE, NULL},
  {"usage_stats_id", "usage_stats_id", NULL, "usage-stats-id", NULL, GLOBUS_L_GFS_CONFIG_STRING, 0, NULL,
     "Identifying tag to include in usage statistics data.", NULL, NULL, GLOBUS_FALSE, NULL},
 {NULL, "Single and Striped Remote Data Node Options", NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL,GLOBUS_FALSE, NULL},
@@ -1384,13 +1410,18 @@ globus_l_gfs_config_format_line(
             {
                 last = count;
             }
-            out_buffer[i*columns+j] = in_str[count];
+            if(in_str[count] == '\n')
+            {
+                last = count;
+                break;
+            }
+            out_buffer[i * columns + j] = in_str[count];
         }
         if(count < len && in_str[count] != ' ')
         {
             blanks = count - last;
-            count = last+1;
-            out_buffer[i*columns+j-blanks] = 0;
+            count = last + 1;
+            out_buffer[i * columns + j - blanks] = 0;
         }
         while(count < len && in_str[count] == ' ')
         {
@@ -1551,10 +1582,10 @@ globus_i_gfs_config_display_usage()
 }
 
 globus_result_t
-globus_l_gfs_config_hostname_to_address_string(
+globus_i_gfs_config_hostname_to_address_string(
     char *                              hostname,
     char *                              out_buf,
-    int                                 out_buf_len)                              
+    int                                 out_buf_len)
 {
     globus_addrinfo_t                   hints;
     globus_addrinfo_t *                 addrinfo;
@@ -1669,7 +1700,7 @@ globus_l_gfs_config_misc()
         globus_i_gfs_config_string("control_interface")) != GLOBUS_NULL)
     {        
         memset(ipaddr, 0, sizeof(ipaddr));
-        result = globus_l_gfs_config_hostname_to_address_string(
+        result = globus_i_gfs_config_hostname_to_address_string(
             value, ipaddr, sizeof(ipaddr));  
         if(result != GLOBUS_SUCCESS)
         {   
@@ -1683,7 +1714,7 @@ globus_l_gfs_config_misc()
         globus_i_gfs_config_string("data_interface")) != GLOBUS_NULL)
     {        
         memset(ipaddr, 0, sizeof(ipaddr));
-        result = globus_l_gfs_config_hostname_to_address_string(
+        result = globus_i_gfs_config_hostname_to_address_string(
             value, ipaddr, sizeof(ipaddr));  
         if(result != GLOBUS_SUCCESS)
         {   
@@ -1698,7 +1729,7 @@ globus_l_gfs_config_misc()
         globus_l_gfs_config_set("fqdn", 0, globus_libc_strdup(value));
         
         memset(ipaddr, 0, sizeof(ipaddr));
-        result = globus_l_gfs_config_hostname_to_address_string(
+        result = globus_i_gfs_config_hostname_to_address_string(
             value, ipaddr, sizeof(ipaddr));  
         if(result != GLOBUS_SUCCESS)
         {   

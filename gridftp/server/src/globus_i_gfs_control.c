@@ -1094,6 +1094,17 @@ globus_l_gfs_request_command(
         }
         type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_SITE;
     }
+    else if(strcmp(cmd_array[0], "SITE") == 0 &&
+        strcmp(cmd_array[1], "CLIENTINFO") == 0)
+    {
+        command_info->command = GLOBUS_GFS_CMD_SITE_CLIENTINFO;
+        command_info->pathname = strdup(cmd_array[2]);
+        if(command_info->pathname == NULL)
+        {
+            goto err;
+        }
+        type = GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_SITE;
+    }
     else
     {
         goto err;
@@ -2224,6 +2235,19 @@ globus_l_gfs_add_commands(
         3,
         3,
         "SITE SETDISKSTACK <sp> comma seperated list of xio drivers for the disk channel",
+        instance);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+    result = globus_gsc_959_command_add(
+        control_handle,
+        "SITE CLIENTINFO",
+        globus_l_gfs_request_command,
+        GLOBUS_GSC_COMMAND_POST_AUTH,
+        3,
+        3,
+        "SITE CLIENTINFO <sp> appname=\"<name of app>\";version=\"<version string>\";schema=\"<ftp,gsiftp,sshftp>\";anyother=\"<interesting client info>\";",
         instance);
     if(result != GLOBUS_SUCCESS)
     {
