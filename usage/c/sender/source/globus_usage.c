@@ -83,6 +83,7 @@ typedef struct globus_usage_stats_handle_s
     globus_list_t *                     xio_desc_list;
     const char *                        optout;
     int                                 header_length;
+    int                                 data_length;
     unsigned char                       data[PACKET_SIZE];
 } globus_i_usage_stats_handle_t;
 
@@ -204,7 +205,6 @@ globus_usage_stats_handle_init(
     globus_sockaddr_t                   addr;
     int                                 host[16];
     int                                 count;
-    size_t                              data_length = 0;
     char                                hostname[255];
     int                                 rc = 0;
 
@@ -234,13 +234,13 @@ globus_usage_stats_handle_init(
 
     memset(new_handle->data, 0, 1472);
 
-    memcpy(new_handle->data + data_length, 
+    memcpy(new_handle->data + new_handle->data_length, 
            (void *)&new_handle->code, 2);
-    data_length += 2;
+    new_handle->data_length += 2;
 
-    memcpy(new_handle->data + data_length, 
+    memcpy(new_handle->data + new_handle->data_length, 
            (void *)&new_handle->version, 2);
-    data_length += 2;
+    new_handle->data_length += 2;
 
     rc = globus_libc_gethostaddr(&addr);
     if(rc != 0)
@@ -274,22 +274,22 @@ globus_usage_stats_handle_init(
 
     if(count == 4)
     {
-        memset(new_handle->data + data_length, 0, 12);
-        data_length += 12;
+        memset(new_handle->data + new_handle->data_length, 0, 12);
+        new_handle->data_length += 12;
     }
 
-    memcpy(new_handle->data + data_length, host, count);
-    data_length += count;
+    memcpy(new_handle->data + new_handle->data_length, host, count);
+    new_handle->data_length += count;
 
     /* timestamp will go here */
-    data_length += 4;
+    new_handle->data_length += 4;
 
     if(globus_libc_gethostname(hostname, 255) == 0)
     {
-        data_length += sprintf(new_handle->data + data_length,
+        new_handle->data_length += sprintf(new_handle->data + new_handle->data_length,
                                "HOSTNAME=%s", hostname);
     }
-    new_handle->header_length = data_length;
+    new_handle->header_length = new_handle->data_length;
     
     if(targets)
     {
@@ -404,6 +404,160 @@ globus_usage_stats_handle_destroy(
 }
 
 globus_result_t
+globus_l_usage_stats_write_packet(
+    globus_usage_stats_handle_t         handle)
+{
+    globus_result_t                     result = GLOBUS_SUCCESS;
+#ifndef TARGET_ARCH_ARM
+    globus_result_t                     save_result = GLOBUS_SUCCESS;
+    globus_list_t *                     targets_list;
+    globus_list_t *                     server_list;
+    globus_abstime_t                    stamp;
+    uint32_t                            nstamp;
+    globus_size_t                       written;
+
+
+    GlobusTimeAbstimeGetCurrent(stamp);
+    nstamp = htonl(stamp.tv_sec);
+    memcpy(handle->data + GLOBUS_L_USAGE_STATS_TIMESTAMP_OFFSET, 
+           (void *)&nstamp, 4);
+
+    targets_list = handle->xio_desc_list;
+    server_list = handle->targets;
+    while(targets_list)
+    {
+        GlobusUsageStatsDebugPrintf(
+            GLOBUS_L_USAGE_STATS_DEBUG_MESSAGES,
+            ("\n==========SENDING USAGE INFO: %s==(length: %d)===\n",
+             (char *)globus_list_first(server_list), handle->data_length));
+        GlobusUsageStatsDebugDump(
+            GLOBUS_L_USAGE_STATS_DEBUG_MESSAGES,
+            handle->data,
+            handle->data_length);
+        GlobusUsageStatsDebugPrintf(
+            GLOBUS_L_USAGE_STATS_DEBUG_MESSAGES,
+            ("\n=========================================================\n"));
+
+        result = globus_xio_write(
+            handle->xio_handle,
+            handle->data,
+            handle->data_length,
+            0,
+            &written,
+            *(globus_xio_data_descriptor_t *) 
+                globus_list_first(targets_list));
+        if(result != GLOBUS_SUCCESS)
+        {
+            save_result = result;
+        }
+
+        targets_list = globus_list_rest(targets_list);
+        server_list = globus_list_rest(server_list);
+    }
+
+    result = save_result;
+
+#endif
+    return result;
+}   
+
+globus_result_t
+globus_usage_stats_send_array(
+    globus_usage_stats_handle_t         handle,
+    int                                 param_count,
+    char **                             key_array,
+    char **                             value_array)
+{
+    globus_result_t                     result = GLOBUS_SUCCESS;
+#ifndef TARGET_ARCH_ARM
+    int                                 i = 0;
+
+    if(handle == NULL)
+    {
+        return globus_error_put(
+            globus_error_construct_error(
+                GLOBUS_USAGE_MODULE,
+                NULL,
+                GLOBUS_USAGE_STATS_ERROR_TYPE_OOM,
+                __FILE__,
+                _globus_func_name,
+                __LINE__,
+                "Handle is NULL."));
+    }
+                
+    if(handle->optout)
+    {
+        return result;
+    }
+
+    globus_mutex_lock(&globus_l_usage_stats_mutex);
+
+    handle->data_length = handle->header_length;
+    
+    if(param_count > 0)
+    {
+        memcpy(handle->data + handle->data_length, " ", 1);
+        handle->data_length += 1;
+
+        for(i = 0; i < param_count; ++i)
+        {
+            const char *                key;
+            const char *                value;
+            int                         length; 
+
+            key = key_array[i];
+            value = value_array[i];
+            
+            length = strlen(key) + strlen(value);
+
+            if(index(value, ' '))
+            {
+                if((PACKET_SIZE - handle->data_length) < (length + 5))
+                {
+                    return globus_error_put(
+                        globus_error_construct_error(
+                            GLOBUS_USAGE_MODULE,
+                            NULL,
+                            GLOBUS_USAGE_STATS_ERROR_TYPE_TOO_BIG,
+                            __FILE__,
+                            _globus_func_name,
+                            __LINE__,
+                            "Parameters don't fit into one packet"));
+                }
+                handle->data_length += sprintf(
+                    handle->data + handle->data_length,
+                    "%s=\"%s\" ", key, value);
+            }
+            else
+            {
+                if((PACKET_SIZE - handle->data_length) < (length + 3))
+                {
+                    return globus_error_put(
+                        globus_error_construct_error(
+                            GLOBUS_USAGE_MODULE,
+                            NULL,
+                            GLOBUS_USAGE_STATS_ERROR_TYPE_TOO_BIG,
+                            __FILE__,
+                            _globus_func_name,
+                            __LINE__,
+                            "Parameters don't fit into one packet"));
+                }
+                handle->data_length += sprintf(
+                    handle->data + handle->data_length,
+                    "%s=%s ", key, value);
+            }
+        }
+    }
+    
+    globus_l_usage_stats_write_packet(handle);
+    
+    globus_mutex_unlock(&globus_l_usage_stats_mutex);
+
+#endif
+    return result;
+}   
+
+globus_result_t
 globus_usage_stats_send(
     globus_usage_stats_handle_t         handle,
     int                                 param_count,
@@ -432,12 +586,6 @@ globus_usage_stats_vsend(
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
 #ifndef TARGET_ARCH_ARM
-    globus_list_t *                     targets_list;
-    globus_list_t *                     server_list;
-    size_t                              data_length = 0;
-    globus_abstime_t                    stamp;
-    uint32_t                            nstamp;
-    globus_size_t                       written;
     int                                 i = 0;
 
     if(handle == NULL)
@@ -460,17 +608,12 @@ globus_usage_stats_vsend(
 
     globus_mutex_lock(&globus_l_usage_stats_mutex);
 
-    GlobusTimeAbstimeGetCurrent(stamp);
-    nstamp = htonl(stamp.tv_sec);
-    memcpy(handle->data + GLOBUS_L_USAGE_STATS_TIMESTAMP_OFFSET, 
-           (void *)&nstamp, 4);
-
-    data_length = handle->header_length;
-
+    handle->data_length = handle->header_length;
+    
     if(param_count > 0)
     {
-        memcpy(handle->data + data_length, " ", 1);
-        data_length += 1;
+        memcpy(handle->data + handle->data_length, " ", 1);
+        handle->data_length += 1;
 
         for(i = 0; i < param_count; ++i)
         {
@@ -481,7 +624,7 @@ globus_usage_stats_vsend(
 
             if(index(value, ' '))
             {
-                if((PACKET_SIZE - data_length) < (length + 5))
+                if((PACKET_SIZE - handle->data_length) < (length + 5))
                 {
                     return globus_error_put(
                         globus_error_construct_error(
@@ -493,13 +636,13 @@ globus_usage_stats_vsend(
                             __LINE__,
                             "Parameters don't fit into one packet"));
                 }
-                data_length += sprintf(
-                    handle->data + data_length,
+                handle->data_length += sprintf(
+                    handle->data + handle->data_length,
                     "%s=\"%s\" ", key, value);
             }
             else
             {
-                if((PACKET_SIZE - data_length) < (length + 3))
+                if((PACKET_SIZE - handle->data_length) < (length + 3))
                 {
                     return globus_error_put(
                         globus_error_construct_error(
@@ -511,48 +654,17 @@ globus_usage_stats_vsend(
                             __LINE__,
                             "Parameters don't fit into one packet"));
                 }
-                data_length += sprintf(
-                    handle->data + data_length,
+                handle->data_length += sprintf(
+                    handle->data + handle->data_length,
                     "%s=%s ", key, value);
             }
         }
     }
-
-    targets_list = handle->xio_desc_list;
-    server_list = handle->targets;
-    while(targets_list)
-    {
-        GlobusUsageStatsDebugPrintf(
-            GLOBUS_L_USAGE_STATS_DEBUG_MESSAGES,
-            ("\n==========SENDING USAGE INFO: %s==(length: %d)===\n",
-             (char *)globus_list_first(server_list), data_length));
-        GlobusUsageStatsDebugDump(
-            GLOBUS_L_USAGE_STATS_DEBUG_MESSAGES,
-            handle->data,
-            data_length);
-        GlobusUsageStatsDebugPrintf(
-            GLOBUS_L_USAGE_STATS_DEBUG_MESSAGES,
-            ("\n=========================================================\n"));
-
-        result = globus_xio_write(
-            handle->xio_handle,
-            handle->data,
-            data_length,
-            0,
-            &written,
-            *(globus_xio_data_descriptor_t *) 
-                globus_list_first(targets_list));
-        if(result != GLOBUS_SUCCESS)
-        {
-            goto exit;
-        }
-
-        targets_list = globus_list_rest(targets_list);
-        server_list = globus_list_rest(server_list);
-    }
-
-exit:
+    
+    globus_l_usage_stats_write_packet(handle);
+    
     globus_mutex_unlock(&globus_l_usage_stats_mutex);
+
 #endif
     return result;
 }

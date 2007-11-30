@@ -56,6 +56,13 @@ globus_usage_stats_vsend(
     int                                 count,
     va_list                             ap);
 
+globus_result_t
+globus_usage_stats_send_array(
+    globus_usage_stats_handle_t         handle,
+    int                                 count,
+    char **                             key_array,
+    char **                             value_array);
+
 EXTERN_C_END
 
 #endif
