@@ -80,7 +80,8 @@ eval "require $manager_class";
 if($@)
 {
     my $error_string = $@;
-
+    warn $error_string;
+    
     if (defined($job_description) && defined($job_description->logfile()))
     {
         my $log = $job_description->logfile;
