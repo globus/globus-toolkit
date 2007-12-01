@@ -427,6 +427,7 @@ sub remove_scratchdir
 	return {};
     }
     $self->log("Removing $scratch_directory");
+    chdir("/");
     $count = File::Path::rmtree($scratch_directory);
     $self->log("Removed $count files");
 
@@ -758,7 +759,7 @@ sub cache_cleanup
     }
 
     $self->log("Cleaning files in job dir $job_path");
-
+    chdir("/");
     my $count = File::Path::rmtree($job_path);
 
     $self->log("Removed $count files from $job_path");
