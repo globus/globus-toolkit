@@ -5097,7 +5097,8 @@ globus_gsi_sysconfig_get_cert_dir_unix(
                 FILE_SEPERATOR,
                 X509_LOCAL_TRUSTED_CERT_DIR);
             if(result != GLOBUS_SUCCESS &&
-               !GLOBUS_GSI_SYSCONFIG_FILE_DOES_NOT_EXIST(result))
+               !GLOBUS_GSI_SYSCONFIG_FILE_DOES_NOT_EXIST(result) &&
+               !GLOBUS_GSI_SYSCONFIG_FILE_HAS_BAD_PERMISSIONS(result))
             {
                 GLOBUS_GSI_SYSCONFIG_ERROR_CHAIN_RESULT(
                     result,
@@ -5124,7 +5125,8 @@ globus_gsi_sysconfig_get_cert_dir_unix(
             &installed_cert_dir,
             X509_DEFAULT_TRUSTED_CERT_DIR);
         if(result != GLOBUS_SUCCESS &&
-           !GLOBUS_GSI_SYSCONFIG_FILE_DOES_NOT_EXIST(result))
+           !GLOBUS_GSI_SYSCONFIG_FILE_DOES_NOT_EXIST(result) &&
+           !GLOBUS_GSI_SYSCONFIG_FILE_HAS_BAD_PERMISSIONS(result))
         {
             GLOBUS_GSI_SYSCONFIG_ERROR_CHAIN_RESULT(
                 result,
@@ -5148,7 +5150,8 @@ globus_gsi_sysconfig_get_cert_dir_unix(
                 FILE_SEPERATOR,
                 X509_INSTALLED_TRUSTED_CERT_DIR);
             if(result != GLOBUS_SUCCESS &&
-               !GLOBUS_GSI_SYSCONFIG_FILE_DOES_NOT_EXIST(result))
+               !GLOBUS_GSI_SYSCONFIG_FILE_DOES_NOT_EXIST(result) &&
+               !GLOBUS_GSI_SYSCONFIG_FILE_HAS_BAD_PERMISSIONS(result))
             {
                 GLOBUS_GSI_SYSCONFIG_ERROR_CHAIN_RESULT(
                     result,
