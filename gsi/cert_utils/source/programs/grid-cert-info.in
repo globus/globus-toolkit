@@ -80,6 +80,20 @@ ${short_usage}
 EOF
 }
 
+# See http://www-unix.globus.org/toolkit/docs/4.0/admin/docbook/ch05.html#prewsaa-env-credentials
+find_default_credential()
+{
+    if [ -n "$X509_USER_CERT" ]; then
+        echo "$X509_USER_CERT"
+    elif [ -r "${HOME}/.globus/usercert.pem" ]; then
+        echo "${HOME}/.globus/usercert.pem"
+    elif [ -r "${HOME}/.globus/usercred.p12" ]; then
+        echo "${HOME}/.globus/usercred.p12"
+    else
+        echo ""
+    fi
+}
+
 globus_source $libexecdir/globus-args-parser-header $@
 
 
@@ -89,18 +103,13 @@ SSL_EXEC="${GLOBUS_LOCATION}/bin/openssl"
 	
 
 # DEFault Generated Files
-DEF_GLOBUS_DIR="${HOME}/.globus"
-DEF_CERT_FILE="${DEF_GLOBUS_DIR}/usercert.pem"
+cert_format=x509
 
 toprint=""
 
 # set default location of certificate (may be overridden by --file)
 #
-certfile=${DEF_CERT_FILE}
-if [ -n "$X509_USER_CERT" ]; then
-   certfile=${X509_USER_CERT}
-fi
-
+certfile=`find_default_credential`
 
 while [ "X$1" != "X" ]; do
     case $1 in
@@ -141,6 +150,18 @@ while [ "X$1" != "X" ]; do
     shift
 done
 
+if test "$certfile" = ""; then
+    echo "Error: Cannot locate certificate" 1>&2
+    exit 1;
+elif echo "$certfile" | grep '\.p12' > /dev/null 2>&1 ; then
+    cert_format=pkcs12
+elif echo "$certfile" | grep '\.pem' > /dev/null 2>&1 ; then
+    cert_format=x509
+else
+    echo "Error: certificate file \"$certfile\" is not .pem or .p12" 1>&2
+    exit 1;
+fi
+
 if [ "X$toprint" = "X" ]; then
     toprint="-text"
 fi
@@ -150,10 +171,21 @@ if [ ! \( -f "${certfile}" -a -r "${certfile}" \) ]; then
     exit 1
 fi
  
-command_stub="${SSL_EXEC} x509 -noout -in ${certfile}"
+if [ "$cert_format" = pkcs12 ]; then
+    echo "Credentials are in pkcs12 format, OpenSSL will prompt for p12 password"
+    cert_data="`${SSL_EXEC} pkcs12 -nokeys -clcerts -nomacver -in ${certfile}`"
+    command_stub="${SSL_EXEC} x509 -noout "
+else
+    command_stub="${SSL_EXEC} x509 -noout -in ${certfile}"
+fi
+
 
 # Will probably need this...
-subject=`eval ${command_stub} -subject` 
+if [ "$cert_format" = pkcs12 ]; then
+    subject=`echo "$cert_data" | eval ${command_stub} -subject`
+else
+    subject=`eval ${command_stub} -subject` 
+fi
 
 if test $? -ne 0 ; then
     exit 1
@@ -165,7 +197,7 @@ eval set -- "$toprint"
 for i in "$@"; do
     case "$i" in
     -*)
-	eval "{ ${command_stub} $i || exit $?; } | ${GLOBUS_SH_SED-sed} 's/^[a-zA-Z]*=[ ]*//'"
+	echo "$cert_data" | eval "{ ${command_stub} $i || exit $?; } | ${GLOBUS_SH_SED-sed} 's/^[a-zA-Z]*=[ ]*//'"
 	;;
     SUBJECT)
 	# Do not show the proxy levels
