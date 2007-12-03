@@ -1025,8 +1025,13 @@ sub package_subdir
 # --------------------------------------------------------------------
 {
     my ( $package ) = @_;
+    my ( $package_subdir ) = cvs_subdir( package_tree($package) ) . "/" . $package_list{$package}[1];
 
-    return cvs_subdir( package_tree($package) ) . "/" . $package_list{$package}[1];
+    if ( $package_subdir eq '/')
+    {
+        die "ERROR: No known source directory for package \"$package\".\n";
+    }
+    return $package_subdir;
 }
 
 
