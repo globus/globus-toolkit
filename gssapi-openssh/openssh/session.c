@@ -2276,11 +2276,11 @@ session_set_fds(Session *s, int fdin, int fdout, int fderr)
 	if (s->chanid == -1)
 		fatal("no channel for session %d", s->self);
 	if(options.hpn_disabled) 
-		channel_set_fds(s->chanid,
-		    fdout, fdin, fderr,
-		    fderr == -1 ? CHAN_EXTENDED_IGNORE : CHAN_EXTENDED_READ,
-		    1,
-		    CHAN_SES_WINDOW_DEFAULT);
+	channel_set_fds(s->chanid,
+	    fdout, fdin, fderr,
+	    fderr == -1 ? CHAN_EXTENDED_IGNORE : CHAN_EXTENDED_READ,
+	    1,
+	    CHAN_SES_WINDOW_DEFAULT);
 	else
 		channel_set_fds(s->chanid,
 		    fdout, fdin, fderr,

@@ -118,8 +118,8 @@ Subsystem	sftp	/usr/libexec/sftp-server
 
 
 # the following are HPN related configuration options
-# tcp receive buffer polling. enable in autotuning kernels
-#TcpRcvBufPoll no
+# tcp receive buffer polling. disable in non autotuning kernels
+#TcpRcvBufPoll yes
  
 # allow the use of the none cipher
 #NoneEnabled no
@@ -127,7 +127,7 @@ Subsystem	sftp	/usr/libexec/sftp-server
 # disable hpn performance boosts. 
 #HPNDisabled no
 
-# buffer size for hpn to non-hn connections
+# buffer size for hpn to non-hpn connections
 #HPNBufferSize 2048
 
 

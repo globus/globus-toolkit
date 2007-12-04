@@ -138,6 +138,9 @@ int deny_severity = LOG_WARNING;
 #define REEXEC_CONFIG_PASS_FD		(STDERR_FILENO + 3)
 #define REEXEC_MIN_FREE_FD		(STDERR_FILENO + 4)
 
+int myflag = 0;
+
+
 extern char *__progname;
 
 /* Server configuration options. */
@@ -984,7 +987,7 @@ server_listen(void)
 			error("setsockopt SO_REUSEADDR: %s", strerror(errno));
 
 		debug("Bind to port %s on %s.", strport, ntop);
-	
+
 		getsockopt(listen_sock, SOL_SOCKET, SO_RCVBUF, 
 				   &socksize, &socksizelen);
 		debug("Server TCP RWIN socket size: %d", socksize);
@@ -2169,6 +2172,8 @@ do_ssh2_kex(void)
 {
 	Kex *kex;
 
+	myflag++;
+	debug ("MYFLAG IS %d", myflag);
 	if (options.ciphers != NULL) {
 		myproposal[PROPOSAL_ENC_ALGS_CTOS] =
 		myproposal[PROPOSAL_ENC_ALGS_STOC] = options.ciphers;

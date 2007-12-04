@@ -1208,7 +1208,7 @@ ssh_session2_open(void)
 	/* window the window would get stuck at the initial buffer */
 	/* size generally less than 96k. Therefore we need to set the */
 	/* maximum ssh window size to the maximum hpn buffer size */
-	/* unless the user hasspecifically set the hpnrcvbufpoll */
+	/* unless the user has specifically set the tcprcvbufpoll */
 	/* to no. In which case we *can* just set the window to the */
 	/* minimum of the hpn buffer size and tcp receive buffer size */
 	
@@ -1463,24 +1463,12 @@ control_client(const char *path)
 		flags |= SSHMUX_FLAG_X11_FWD;
 	if (options.forward_agent)
 		flags |= SSHMUX_FLAG_AGENT_FWD;
-	if (options.num_local_forwards > 0)
-		flags |= SSHMUX_FLAG_PORTFORWARD;
 
 	buffer_init(&m);
 
 	/* Send our command to server */
 	buffer_put_int(&m, mux_command);
 	buffer_put_int(&m, flags);
-	if (options.num_local_forwards > 0)
-        {
-		if (options.local_forwards[0].listen_host == NULL)
- 			buffer_put_string(&m,"LOCALHOST",11);
-		else
-			buffer_put_string(&m,options.local_forwards[0].listen_host,512);
-		buffer_put_int(&m,options.local_forwards[0].listen_port);
-		buffer_put_string(&m,options.local_forwards[0].connect_host,512);	
-		buffer_put_int(&m,options.local_forwards[0].connect_port);
-	}
 	if (ssh_msg_send(sock, SSHMUX_VER, &m) == -1)
 		fatal("%s: msg_send", __func__);
 	buffer_clear(&m);

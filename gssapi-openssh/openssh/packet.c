@@ -1575,8 +1575,8 @@ packet_send_ignore(int nbytes)
 		rnd >>= 8;
 	}
 }
-int rekey_requested = 0;
 
+int rekey_requested = 0;
 void
 packet_request_rekeying(void)
 {
@@ -1617,4 +1617,10 @@ void
 packet_set_authenticated(void)
 {
 	after_authentication = 1;
+}
+
+int
+packet_authentication_state(void)
+{
+	return(after_authentication);
 }

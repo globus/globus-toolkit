@@ -110,7 +110,7 @@ typedef struct {
 
 	int	enable_ssh_keysign;
 	int	rekey_limit;
-	int	none_switch;	/* use none cipher */
+	int	none_switch;	/* Use none cipher */
 	int	none_enabled;	/* Allow none to be used */
 	int	no_host_authentication_for_localhost;
 	int	identities_only;

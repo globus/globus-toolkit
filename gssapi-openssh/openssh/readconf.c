@@ -1262,21 +1262,23 @@ fill_default_options(Options * options)
 	        options->hpn_disabled = 0;
 	if (options->hpn_buffer_size > -1)
 	{
+	  /* if a user tries to set the size to 0 set it to 1KB */
 		if (options->hpn_buffer_size == 0)
-		options->hpn_buffer_size = 1;
+		options->hpn_buffer_size = 1024;
 		/*limit the buffer to 64MB*/
-			if (options->hpn_buffer_size > 65536)
+		if (options->hpn_buffer_size > 65536)
 		{
-			options->hpn_buffer_size = 65536;
+			options->hpn_buffer_size = 65536*1024;
 			debug("User requested buffer larger than 64MB. Request reverted to 64MB");
 		}
-		options->hpn_buffer_size *=1024;
 		debug("hpn_buffer_size set to %d", options->hpn_buffer_size);
 	}
 	if (options->tcp_rcv_buf == 0)
 		options->tcp_rcv_buf = 1;
 	if (options->tcp_rcv_buf > -1) 
 		options->tcp_rcv_buf *=1024;
+	if (options->tcp_rcv_buf_poll == -1)
+		options->tcp_rcv_buf_poll = 1;
 	if (options->control_master == -1)
 		options->control_master = 0;
 	if (options->hash_known_hosts == -1)

@@ -37,6 +37,7 @@ void     packet_set_interactive(int);
 int      packet_is_interactive(void);
 void     packet_set_server(void);
 void     packet_set_authenticated(void);
+int	 packet_authentication_state(void);
 
 void     packet_start(u_char);
 void     packet_put_char(int ch);

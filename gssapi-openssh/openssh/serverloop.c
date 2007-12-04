@@ -958,9 +958,9 @@ server_request_direct_tcpip(void)
 	if (sock < 0)
 		return NULL;
 	if (options.hpn_disabled)
-		c = channel_new("direct-tcpip", SSH_CHANNEL_CONNECTING,
-		    sock, sock, -1, CHAN_TCP_WINDOW_DEFAULT,
-		    CHAN_TCP_PACKET_DEFAULT, 0, "direct-tcpip", 1);
+	c = channel_new("direct-tcpip", SSH_CHANNEL_CONNECTING,
+	    sock, sock, -1, CHAN_TCP_WINDOW_DEFAULT,
+	    CHAN_TCP_PACKET_DEFAULT, 0, "direct-tcpip", 1);
 	else
 		c = channel_new("direct-tcpip", SSH_CHANNEL_CONNECTING,
 		    sock, sock, -1, options.hpn_buffer_size,
@@ -1000,8 +1000,8 @@ server_request_tun(void)
 	if (sock < 0)
 		goto done;
 	if (options.hpn_disabled)
-		c = channel_new("tun", SSH_CHANNEL_OPEN, sock, sock, -1,
-		    CHAN_TCP_WINDOW_DEFAULT, CHAN_TCP_PACKET_DEFAULT, 0, "tun", 1);
+	c = channel_new("tun", SSH_CHANNEL_OPEN, sock, sock, -1,
+	    CHAN_TCP_WINDOW_DEFAULT, CHAN_TCP_PACKET_DEFAULT, 0, "tun", 1);
 	else
 		c = channel_new("tun", SSH_CHANNEL_OPEN, sock, sock, -1,
 		    options.hpn_buffer_size, CHAN_TCP_PACKET_DEFAULT, 0, "tun", 1);

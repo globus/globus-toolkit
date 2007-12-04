@@ -725,10 +725,6 @@ client_process_control(fd_set *readset)
 	u_int i, len, env_len, command, flags;
 	uid_t euid;
 	gid_t egid;
-	int listen_port = 0;
-	int connect_port = 0;
-	char * listen_host = NULL;
-	char * connect_host = NULL;
 
 	/*
 	 * Accept connection on control socket
@@ -777,13 +773,6 @@ client_process_control(fd_set *readset)
 	command = buffer_get_int(&m);
 	flags = buffer_get_int(&m);
 
-	if (SSHMUX_FLAG_PORTFORWARD & flags)
-	{
-		listen_host = buffer_get_string(&m,NULL);
-		listen_port = buffer_get_int(&m);
-		connect_host = buffer_get_string(&m,NULL);
-		connect_port = buffer_get_int(&m);
-	}
 	buffer_clear(&m);
 
 	switch (command) {
@@ -822,31 +811,6 @@ client_process_control(fd_set *readset)
 		close(client_fd);
 		return;
 	}
-
-	if (allowed && (SSHMUX_FLAG_PORTFORWARD & flags) && listen_host && connect_host)
-	{
-		int ret;
-		Forward * fwd;
-
-		fwd = &options.local_forwards[options.num_local_forwards++];
-		fwd->listen_host = xstrdup(listen_host);
-		fwd->listen_port = listen_port;
-		fwd->connect_host = xstrdup(connect_host);
-		fwd->connect_port = connect_port;
-		ret = channel_setup_local_fwd_listener(
-			options.local_forwards[options.num_local_forwards-1].listen_host,
-			options.local_forwards[options.num_local_forwards-1].listen_port,
-			options.local_forwards[options.num_local_forwards-1].connect_host,
-	                options.local_forwards[options.num_local_forwards-1].connect_port,
-                        options.gateway_ports, options.hpn_disabled, options.hpn_buffer_size);
-
-        }
-
-	
-	if (listen_host)
-		xfree(listen_host);
-	if (connect_host)
-		xfree(connect_host);
 
 	/* Reply for SSHMUX_COMMAND_OPEN */
 	buffer_clear(&m);
@@ -947,9 +911,10 @@ client_process_control(fd_set *readset)
 	set_nonblock(client_fd);
 
 	if (options.hpn_disabled) 
-	  window = options.hpn_buffer_size;
-	else
 	  window = CHAN_SES_WINDOW_DEFAULT;
+	else
+	  window = options.hpn_buffer_size;
+
 	packetmax = CHAN_SES_PACKET_DEFAULT;
 	if (cctx->want_tty) {
 		window >>= 1;
@@ -1758,10 +1723,10 @@ client_request_forwarded_tcpip(const char *request_type, int rchan)
 		return NULL;
 	}
 	if (options.hpn_disabled) 
-		c = channel_new("forwarded-tcpip",
-		    SSH_CHANNEL_CONNECTING, sock, sock, -1,
-		    CHAN_TCP_WINDOW_DEFAULT, CHAN_TCP_WINDOW_DEFAULT, 0,
-		    originator_address, 1);
+	c = channel_new("forwarded-tcpip",
+	    SSH_CHANNEL_CONNECTING, sock, sock, -1,
+	    CHAN_TCP_WINDOW_DEFAULT, CHAN_TCP_WINDOW_DEFAULT, 0,
+	    originator_address, 1);
 	else
 		c = channel_new("forwarded-tcpip",
 		    SSH_CHANNEL_CONNECTING, sock, sock, -1,
@@ -1800,10 +1765,11 @@ client_request_x11(const char *request_type, int rchan)
 	sock = x11_connect_display();
 	if (sock < 0)
 		return NULL;
+	/* again is this really necessary for X11? */
 	if (options.hpn_disabled) 
-		c = channel_new("x11",
-		    SSH_CHANNEL_X11_OPEN, sock, sock, -1,
-		    CHAN_TCP_WINDOW_DEFAULT, CHAN_X11_PACKET_DEFAULT, 0, "x11", 1);
+	c = channel_new("x11",
+	    SSH_CHANNEL_X11_OPEN, sock, sock, -1,
+	    CHAN_TCP_WINDOW_DEFAULT, CHAN_X11_PACKET_DEFAULT, 0, "x11", 1);
 	else 
 		c = channel_new("x11",
 		    SSH_CHANNEL_X11_OPEN, sock, sock, -1,
@@ -1826,11 +1792,12 @@ client_request_agent(const char *request_type, int rchan)
 	sock = ssh_get_authentication_socket();
 	if (sock < 0)
 		return NULL;
+	/* not sure this is really needed here either */
 	if (options.hpn_disabled) 
-		c = channel_new("authentication agent connection",
-		    SSH_CHANNEL_OPEN, sock, sock, -1,
-		    CHAN_X11_WINDOW_DEFAULT, CHAN_TCP_WINDOW_DEFAULT, 0,
-		    "authentication agent connection", 1);
+	c = channel_new("authentication agent connection",
+	    SSH_CHANNEL_OPEN, sock, sock, -1,
+	    CHAN_X11_WINDOW_DEFAULT, CHAN_TCP_WINDOW_DEFAULT, 0,
+	    "authentication agent connection", 1);
 	else
 		c = channel_new("authentication agent connection",
 		    SSH_CHANNEL_OPEN, sock, sock, -1,
@@ -1863,11 +1830,11 @@ client_request_tun_fwd(int tun_mode, int local_tun, int remote_tun)
 	}
 
 	if(options.hpn_disabled)
-		c = channel_new("tun", SSH_CHANNEL_OPENING, fd, fd, -1,
+	c = channel_new("tun", SSH_CHANNEL_OPENING, fd, fd, -1,
 				CHAN_TCP_WINDOW_DEFAULT, CHAN_TCP_PACKET_DEFAULT,
 				0, "tun", 1);
 	else
-		c = channel_new("tun", SSH_CHANNEL_OPENING, fd, fd, -1,
+	c = channel_new("tun", SSH_CHANNEL_OPENING, fd, fd, -1,
 				options.hpn_buffer_size, CHAN_TCP_PACKET_DEFAULT,
 				0, "tun", 1);
 	c->datagram = 1;

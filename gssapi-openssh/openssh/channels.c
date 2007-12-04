@@ -770,10 +770,13 @@ int channel_tcpwinsz () {
         u_int32_t tcpwinsz = 0;
         socklen_t optsz = sizeof(tcpwinsz);
 	int ret = -1;
+
+	/* if we aren't on a socket return 128KB*/
 	if(!packet_connection_is_on_socket()) 
-	    return(131072);
+	    return(128*1024);
 	ret = getsockopt(packet_get_connection_in(),
 			 SOL_SOCKET, SO_RCVBUF, &tcpwinsz, &optsz);
+	/* return no more than 64MB */
 	if ((ret == 0) && tcpwinsz > BUFFER_MAX_LEN_HPN)
 	    tcpwinsz = BUFFER_MAX_LEN_HPN;
 	debug2("tcpwinsz: %d for connection: %d", tcpwinsz, 
@@ -787,10 +790,8 @@ channel_pre_open(Channel *c, fd_set *readset, fd_set *writeset)
 	u_int limit = compat20 ? c->remote_window : packet_get_maxsize();
 
         /* check buffer limits */
-	if (!c->tcpwinsz) 
+	if ((!c->tcpwinsz) || (c->dynamic_window > 0))
     	    c->tcpwinsz = channel_tcpwinsz();
-	if (c->dynamic_window > 0)
-	    c->tcpwinsz = channel_tcpwinsz();
 	
 	limit = MIN(limit, 2 * c->tcpwinsz);
 	
@@ -1688,7 +1689,8 @@ channel_check_window(Channel *c)
 		u_int addition = 0;
 		/* adjust max window size if we are in a dynamic environment */
 		if (c->dynamic_window && (c->tcpwinsz > c->local_window_max)) {
-			addition = c->tcpwinsz - c->local_window_max;
+			/* grow the window somewhat aggressively to maintain pressure */
+			addition = 1.5*(c->tcpwinsz - c->local_window_max);
 			c->local_window_max += addition;
 		}
 		packet_start(SSH2_MSG_CHANNEL_WINDOW_ADJUST);
@@ -2488,9 +2490,9 @@ channel_setup_fwd_listener(int type, const char *listen_addr, u_short listen_por
 		/* Allocate a channel number for the socket. */
 		/* explicitly test for hpn disabled option. if true use smaller window size */
 		if (hpn_disabled)
-			c = channel_new("port listener", type, sock, sock, -1,
-		    	  CHAN_TCP_WINDOW_DEFAULT, CHAN_TCP_PACKET_DEFAULT,
-		    	  0, "port listener", 1); 
+		c = channel_new("port listener", type, sock, sock, -1,
+		    CHAN_TCP_WINDOW_DEFAULT, CHAN_TCP_PACKET_DEFAULT,
+		    0, "port listener", 1);
 		else
 			c = channel_new("port listener", type, sock, sock, -1,
 		    	  hpn_buffer_size, CHAN_TCP_PACKET_DEFAULT,
@@ -2990,11 +2992,12 @@ x11_create_display_inet(int x11_display_offset, int x11_use_localhost,
 	*chanids = xcalloc(num_socks + 1, sizeof(**chanids));
 	for (n = 0; n < num_socks; n++) {
 		sock = socks[n];
+		/* Is this really necassary? */
 		if (hpn_disabled) 
-			nc = channel_new("x11 listener",
-			    SSH_CHANNEL_X11_LISTENER, sock, sock, -1,
-			    CHAN_X11_WINDOW_DEFAULT, CHAN_X11_PACKET_DEFAULT,
-			    0, "X11 inet listener", 1);
+		nc = channel_new("x11 listener",
+		    SSH_CHANNEL_X11_LISTENER, sock, sock, -1,
+		    CHAN_X11_WINDOW_DEFAULT, CHAN_X11_PACKET_DEFAULT,
+		    0, "X11 inet listener", 1);
 		else 
 			nc = channel_new("x11 listener",
 			    SSH_CHANNEL_X11_LISTENER, sock, sock, -1,

@@ -275,16 +275,12 @@ fill_default_server_options(ServerOptions *options)
 	if (options->hpn_disabled == -1) 
 		options->hpn_disabled = 0;
 
-	if (options->hpn_buffer_size == -1) 
-	{
+	if (options->hpn_buffer_size == -1) {
 		/* option not explicitly set. Now we have to figure out */
 		/* what value to use */
-		if (options->hpn_disabled == 1) 
-		{
+		if (options->hpn_disabled == 1) {
 			options->hpn_buffer_size = CHAN_SES_WINDOW_DEFAULT;
-		}
-		else 
-		{
+		} else {
 			/* get the current RCV size and set it to that */
 			/*create a socket but don't connect it */
 			/* we use that the get the rcv socket size */
@@ -296,22 +292,20 @@ fill_default_server_options(ServerOptions *options)
 			debug ("HPN Buffer Size: %d", options->hpn_buffer_size);
 			
 		} 
-	}
-	else 
-	{
+	} else {
 		/* we have to do this incase the user sets both values in a contradictory */
 		/* manner. hpn_disabled overrrides hpn_buffer_size*/
-		if (options->hpn_disabled <= 0) 
-		{
-			if (options->hpn_buffer_size == 0)
-				options->hpn_buffer_size = 1;
-			/* limit the maximum buffer to 64MB */
-			if (options->hpn_buffer_size > 64*1024)
-				options->hpn_buffer_size = 64*1024;
-			options->hpn_buffer_size *=1024;
-		}
-		else
-			options->hpn_buffer_size = CHAN_SES_WINDOW_DEFAULT;
+ 		if (options->hpn_disabled <= 0) {
+  			if (options->hpn_buffer_size == 0)
+  				options->hpn_buffer_size = 1;
+  			/* limit the maximum buffer to 64MB */
+			if (options->hpn_buffer_size > 64*1024) {
+				options->hpn_buffer_size = 64*1024*1024;
+			} else {
+				options->hpn_buffer_size *= 1024;
+			}
+		} else
+			options->hpn_buffer_size = CHAN_TCP_WINDOW_DEFAULT;
 	}
 
 	/* Turn privilege separation on by default */
