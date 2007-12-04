@@ -84,10 +84,19 @@ typedef struct {
 						 * /etc/passwd */
 	int     kerberos_ticket_cleanup;	/* If true, destroy ticket
 						 * file on logout. */
+#ifdef SESSION_HOOKS
+        int     session_hooks_allow;        /* If true, permit user hooks */
+        char*   session_hooks_startup_cmd;  /* cmd to be executed before */
+        char*   session_hooks_shutdown_cmd; /* cmd to be executed after */
+#endif
 	int     kerberos_get_afs_token;		/* If true, try to get AFS token if
 						 * authenticated with Kerberos. */
 	int     gss_authentication;	/* If true, permit GSSAPI authentication */
+	int 	gss_keyex;		/* If true, permit GSSAPI key exchange */
 	int     gss_cleanup_creds;	/* If true, destroy cred cache on logout */
+	int 	gss_strict_acceptor;	/* If true, restrict the GSSAPI acceptor name */
+	char*   gss_creds_path;	/* If true, destroy cred cache on logout */
+	int     gsi_allow_limited_proxy;	/* If true, accept limited proxies */
 	int     password_authentication;	/* If true, permit password
 						 * authentication. */
 	int     kbd_interactive_authentication;	/* If true, permit */
@@ -137,6 +146,10 @@ typedef struct {
 	char   *adm_forced_command;
 
 	int	use_pam;		/* Enable auth via PAM */
+        int     none_enabled;           /* enable NONE cipher switch */
+        int     tcp_rcv_buf_poll;       /* poll tcp rcv window in autotuning kernels*/
+	int	hpn_disabled;		/* disable hpn functionality. false by default */
+	int	hpn_buffer_size;	/* set the hpn buffer size - default 3MB */
 
 	int	permit_tun;
 

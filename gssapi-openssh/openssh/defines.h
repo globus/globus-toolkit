@@ -341,6 +341,8 @@ struct winsize {
 # define _PATH_DEVNULL "/dev/null"
 #endif
 
+#ifndef PATH_MAILDIR_IN_PATHS_H
+
 #ifndef MAIL_DIRECTORY
 # define MAIL_DIRECTORY "/var/spool/mail"
 #endif
@@ -352,6 +354,8 @@ struct winsize {
 #if !defined(_PATH_MAILDIR) && defined(MAILDIR)
 # define _PATH_MAILDIR MAILDIR
 #endif /* !defined(_PATH_MAILDIR) && defined(MAILDIR) */
+
+#endif /* PATH_MAILDIR_IN_PATHS_H */
 
 #ifndef _PATH_NOLOGIN
 # define _PATH_NOLOGIN "/etc/nologin"

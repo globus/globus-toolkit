@@ -1576,12 +1576,24 @@ packet_send_ignore(int nbytes)
 	}
 }
 
+int rekey_requested = 0;
+void
+packet_request_rekeying(void)
+{
+	rekey_requested = 1;
+}
+
 #define MAX_PACKETS	(1U<<31)
 int
 packet_need_rekeying(void)
 {
 	if (datafellows & SSH_BUG_NOREKEY)
 		return 0;
+	if (rekey_requested == 1)
+	{
+		rekey_requested = 0;
+		return 1;
+	}
 	return
 	    (p_send.packets > MAX_PACKETS) ||
 	    (p_read.packets > MAX_PACKETS) ||
@@ -1605,4 +1617,10 @@ void
 packet_set_authenticated(void)
 {
 	after_authentication = 1;
+}
+
+int
+packet_authentication_state(void)
+{
+	return(after_authentication);
 }
