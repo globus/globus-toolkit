@@ -867,11 +867,16 @@ sub install_gpt()
     # create a copy of 'gpt' with the version number and a tar.gz
     # to be used by other projects
     chdir($top_dir);
-    system("rm -rf $gpt_ver gpt_ver.tar.gz");
-    system("cp -Rp gpt $gpt_ver");
-    paranoia("Trouble making a copy of gpt to $gpt_ver");
-    system("tar czf $gpt_ver.tar.gz gpt");
-    paranoia("Trouble taring up $gpt_ver");
+    if ( ! -d "$gpt_ver" ) 
+    {
+        system("cp -Rp gpt $gpt_ver");
+        paranoia("Trouble making a copy of gpt to $gpt_ver");
+    }
+    if ( ! -f "$gpt_ver.tar.gz" )
+    {
+        system("tar czf $gpt_ver.tar.gz gpt");
+        paranoia("Trouble taring up $gpt_ver");
+    }
 
     if ( $install )
     {
@@ -883,10 +888,10 @@ sub install_gpt()
     $ENV{'GPT_LOCATION'} = $target;
     @INC = ("$ENV{GPT_LOCATION}/lib/perl", @INC);
 
-    if ( -e "$target/sbin/gpt-build" )
+    if ( -f "$target/sbin/gpt-build" )
     {
         print "GPT is already built, skipping.\n";
-        print "\tDelete $target to force rebuild.\n";
+        print "Delete $target to force rebuild.\n";
     } else {
         print "Installing $gpt_ver to $target\n";
         print "Logging to ${log_dir}/$gpt_ver.log\n";
