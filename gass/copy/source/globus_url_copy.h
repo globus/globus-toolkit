@@ -39,6 +39,7 @@ typedef struct globus_guc_info_s
     globus_size_t                       block_size;
     globus_size_t                       tcp_buffer_size;
     int                                 num_streams;
+    int                                 conc;
     globus_bool_t                       no_3pt;
     globus_bool_t                       no_dcau;
     globus_bool_t                       data_safe;
