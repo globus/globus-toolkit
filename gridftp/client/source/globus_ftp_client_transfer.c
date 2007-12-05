@@ -5171,201 +5171,102 @@ globus_i_ftp_client_transfer_complete(
     client_handle->state = GLOBUS_FTP_CLIENT_HANDLE_FINALIZE;
     globus_i_ftp_client_plugin_notify_complete(client_handle);
     
-    if(globus_fifo_empty(&client_handle->src_response_pending_queue) && 
-        globus_fifo_empty(&client_handle->dst_response_pending_queue))
+    /*
+     * cache data connection info if possible.
+     */
+    if(!globus_i_ftp_client_can_reuse_data_conn(client_handle))
     {
-        /*
-         * cache data connection info if possible.
-         */
-        if(!globus_i_ftp_client_can_reuse_data_conn(client_handle))
-        {
-            if(client_handle->source)
-            {
-                memset(&client_handle->source->cached_data_conn,
-                       '\0',
-                       sizeof(globus_i_ftp_client_data_target_t));
-            }
-            if(client_handle->dest)
-            {
-                memset(&client_handle->dest->cached_data_conn,
-                       '\0',
-                       sizeof(globus_i_ftp_client_data_target_t));
-            }
-        }
-        /* Release any ftp targets back to the client handle's cache,
-         * if requested by the user.
-         *
-         * If one of the targets went bad, it should be in such a state
-         * that the call to release will destroy it.
-         */
         if(client_handle->source)
         {
-            globus_i_ftp_client_target_release(client_handle,
-                                               client_handle->source);
-            client_handle->source = GLOBUS_NULL;
+            memset(&client_handle->source->cached_data_conn,
+                   '\0',
+                   sizeof(globus_i_ftp_client_data_target_t));
         }
         if(client_handle->dest)
         {
-            globus_i_ftp_client_target_release(client_handle,
-                                               client_handle->dest);
-            client_handle->dest = GLOBUS_NULL;
-        }
-    
-        /*
-         * Save information from the handle, and then reset it to it's default
-         * condition for after this callback completes.
-         */
-        callback = client_handle->callback;
-        client_handle->callback = GLOBUS_NULL;
-        
-        callback_arg = client_handle->callback_arg;
-        client_handle->callback_arg = GLOBUS_NULL;
-        
-        error = client_handle->err;
-        client_handle->err = GLOBUS_NULL;
-    
-        client_handle->state = GLOBUS_FTP_CLIENT_HANDLE_START;
-        client_handle->op = GLOBUS_FTP_CLIENT_IDLE;
-        if(client_handle->source_url)
-        {
-            globus_libc_free(client_handle->source_url);
-            client_handle->source_url = GLOBUS_NULL;
-        }
-        if(client_handle->dest_url)
-        {
-            globus_libc_free(client_handle->dest_url);
-            client_handle->dest_url = GLOBUS_NULL;
-        }
-        client_handle->source_size = 0;
-    
-        client_handle->read_all_biggest_offset = 0;
-        client_handle->base_offset = 0;
-    
-        client_handle->partial_offset = -1;
-        client_handle->partial_end_offset = -1;
-    
-        if(client_handle->pasv_address != GLOBUS_NULL)
-        {
-            globus_libc_free(client_handle->pasv_address);
-            client_handle->pasv_address = GLOBUS_NULL;
-        }
-        client_handle->num_pasv_addresses = 0;
-    
-        globus_ftp_client_restart_marker_destroy(&client_handle->restart_marker);
-        
-        /*
-         * Call back to the user. After this callback, we can not
-         * touch the handle from this callback scope.
-         */
-        handle = client_handle->handle;
-        globus_i_ftp_client_handle_unlock(client_handle);
-    
-        globus_i_ftp_client_handle_is_not_active(handle);
-
-        (*callback)(callback_arg,
-                        handle,
-                        error);
-        
-        if(error)
-        {
-            globus_object_free(error);
+            memset(&client_handle->dest->cached_data_conn,
+                   '\0',
+                   sizeof(globus_i_ftp_client_data_target_t));
         }
     }
-    else
+    /* Release any ftp targets back to the client handle's cache,
+     * if requested by the user.
+     *
+     * If one of the targets went bad, it should be in such a state
+     * that the call to release will destroy it.
+     */
+    if(client_handle->source)
     {
-        globus_i_ftp_client_url_ent_t *  url_ent;
-
-        switch(client_handle->op)
-        {
-            case GLOBUS_FTP_CLIENT_PUT:
-                client_handle->state = GLOBUS_FTP_CLIENT_HANDLE_DEST_STOR_OR_ESTO;
-                client_handle->dest->state = GLOBUS_FTP_CLIENT_TARGET_STOR;
-                client_handle->dest->dst_command_sent = GLOBUS_TRUE;
-
-                url_ent = globus_fifo_dequeue(
-                    &client_handle->dst_response_pending_queue);                
-                break;
-            
-            case GLOBUS_FTP_CLIENT_GET:
-                client_handle->state = GLOBUS_FTP_CLIENT_HANDLE_SOURCE_RETR_OR_ERET;
-                client_handle->source->state = GLOBUS_FTP_CLIENT_TARGET_RETR;
-                client_handle->source->src_command_sent = GLOBUS_TRUE;
-
-                url_ent = globus_fifo_dequeue(
-                    &client_handle->src_response_pending_queue);                
-                break;
-        
-            case GLOBUS_FTP_CLIENT_TRANSFER:
-                client_handle->state = GLOBUS_FTP_CLIENT_HANDLE_THIRD_PARTY_TRANSFER;
-                /*client_handle->state = GLOBUS_FTP_CLIENT_HANDLE_DEST_SETUP_CONNECTION;*/
-                if(client_handle->source->state == 
-                    GLOBUS_FTP_CLIENT_TARGET_COMPLETED_OPERATION)
-                {
-                    url_ent = globus_fifo_dequeue(
-                        &client_handle->src_response_pending_queue); 
-                    client_handle->source->state = GLOBUS_FTP_CLIENT_TARGET_RETR;
-                    if(url_ent)
-                    {
-                        if(client_handle->source->url_string)
-                        {
-                            globus_free(client_handle->source->url_string);
-                            client_handle->source->url_string = 
-                                globus_libc_strdup(url_ent->source_url);
-                        }
-                        if(client_handle->source_url)
-                        {
-                            globus_free(client_handle->source_url);
-                            client_handle->source_url = url_ent->source_url;
-                        }
-                        globus_url_destroy(&url_ent->src_url);
-                        globus_free(url_ent);
-                    }
-                }
-                else
-                {
-                    url_ent = globus_fifo_dequeue(
-                        &client_handle->dst_response_pending_queue); 
-                    client_handle->dest->state = GLOBUS_FTP_CLIENT_TARGET_STOR;
-                    if(url_ent)
-                    {
-                        if(client_handle->dest->url_string)
-                        {
-                            globus_free(client_handle->dest->url_string);
-                            client_handle->dest->url_string = 
-                                globus_libc_strdup(url_ent->dest_url);
-                        }
-                        if(client_handle->dest_url)
-                        {
-                            globus_free(client_handle->dest_url);
-                            client_handle->dest_url = url_ent->dest_url;
-                        }
-                        globus_url_destroy(&url_ent->dst_url);
-                        globus_free(url_ent);
-                    }
-                }                    
-                               
-                break;
-
-            default:
-            break;
-        }
-
-/*
-        if(!client_handle->no_callback_count)
-        {
-            (*client_handle->callback)(client_handle->callback_arg,
-                client_handle->handle,
-                client_handle->err);
-        }
-        else
-        {
-            client_handle->no_callback_count--;
-        }
-        client_handle->err = GLOBUS_NULL;            
-*/            
-
+        globus_i_ftp_client_target_release(client_handle,
+                                           client_handle->source);
+        client_handle->source = GLOBUS_NULL;
     }
-            
+    if(client_handle->dest)
+    {
+        globus_i_ftp_client_target_release(client_handle,
+                                           client_handle->dest);
+        client_handle->dest = GLOBUS_NULL;
+    }
+
+    /*
+     * Save information from the handle, and then reset it to it's default
+     * condition for after this callback completes.
+     */
+    callback = client_handle->callback;
+    client_handle->callback = GLOBUS_NULL;
+    
+    callback_arg = client_handle->callback_arg;
+    client_handle->callback_arg = GLOBUS_NULL;
+    
+    error = client_handle->err;
+    client_handle->err = GLOBUS_NULL;
+
+    client_handle->state = GLOBUS_FTP_CLIENT_HANDLE_START;
+    client_handle->op = GLOBUS_FTP_CLIENT_IDLE;
+    if(client_handle->source_url)
+    {
+        globus_libc_free(client_handle->source_url);
+        client_handle->source_url = GLOBUS_NULL;
+    }
+    if(client_handle->dest_url)
+    {
+        globus_libc_free(client_handle->dest_url);
+        client_handle->dest_url = GLOBUS_NULL;
+    }
+    client_handle->source_size = 0;
+
+    client_handle->read_all_biggest_offset = 0;
+    client_handle->base_offset = 0;
+
+    client_handle->partial_offset = -1;
+    client_handle->partial_end_offset = -1;
+
+    if(client_handle->pasv_address != GLOBUS_NULL)
+    {
+        globus_libc_free(client_handle->pasv_address);
+        client_handle->pasv_address = GLOBUS_NULL;
+    }
+    client_handle->num_pasv_addresses = 0;
+
+    globus_ftp_client_restart_marker_destroy(&client_handle->restart_marker);
+    
+    /*
+     * Call back to the user. After this callback, we can not
+     * touch the handle from this callback scope.
+     */
+    handle = client_handle->handle;
+    globus_i_ftp_client_handle_unlock(client_handle);
+
+    globus_i_ftp_client_handle_is_not_active(handle);
+
+    (*callback)(callback_arg,
+                    handle,
+                    error);
+    
+    if(error)
+    {
+        globus_object_free(error);
+    }
         
     
     globus_i_ftp_client_debug_printf(1, 

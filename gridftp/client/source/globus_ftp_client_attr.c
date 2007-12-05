@@ -72,6 +72,7 @@ globus_ftp_client_handleattr_init(
     i_attr->outstanding_commands = 4;
     i_attr->pipeline_callback = GLOBUS_NULL;
     i_attr->pipeline_arg = GLOBUS_NULL;
+    i_attr->pipeline_done = GLOBUS_FALSE;
     *attr = i_attr;
     
     return GLOBUS_SUCCESS;
@@ -3360,6 +3361,7 @@ globus_i_ftp_client_handleattr_copy(
     dest->outstanding_commands = src->outstanding_commands;
     dest->pipeline_callback = src->pipeline_callback;
     dest->pipeline_arg = src->pipeline_arg;
+    dest->pipeline_done = src->pipeline_done;
     tmp = src->url_cache;
 
     while(!globus_list_empty(tmp))

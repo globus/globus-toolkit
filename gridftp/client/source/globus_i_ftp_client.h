@@ -223,6 +223,7 @@ typedef struct globus_i_ftp_client_handleattr_t
     globus_size_t                               outstanding_commands;
     globus_ftp_client_pipeline_callback_t       pipeline_callback;
     void *                                      pipeline_arg;
+    globus_bool_t                               pipeline_done;
     
     /*
      *  NETLOGGER
