@@ -3232,7 +3232,7 @@ globus_l_guc_gass_attr_init(
         }
         else
         {
-            if(url_info.scheme == GLOBUS_URL_SCHEME_GSIFTP)
+            if(url_info.scheme_type == GLOBUS_URL_SCHEME_GSIFTP)
             {
                 gsi_stack = "gsi,";
             }
