@@ -4167,7 +4167,7 @@ globus_i_gfs_data_request_list(
             "globus_l_gfs_data_operation_init", result);
         goto error_op;
     }
-    globus_assert(data_handle->outstanding_op == NULL);
+    /* globus_assert(data_handle->outstanding_op == NULL); */
     data_handle->outstanding_op = data_op;
 
     data_op->ipc_handle = ipc_handle;
