@@ -4,7 +4,7 @@ use strict;
 use POSIX;
 use POSIX "sys_wait_h";
 use Test;
-use Cwd;
+use Cwd qw(cwd);
 
 my @tests;
 my @todo;

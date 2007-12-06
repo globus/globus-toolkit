@@ -12,7 +12,7 @@ common library.
 use strict;
 use POSIX;
 use Test;
-use Cwd;
+use Cwd qw(cwd);
 
 my $test_prog = 'gssapi-limited-delegation-test';
 

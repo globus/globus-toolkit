@@ -11,10 +11,15 @@ INCLUDES = \
 	-I$(top_srcdir) \
 	-I$(top_srcdir)/include \
 	-I$(GLOBUS_LOCATION)/include/libxml2 \
+        $(GPT_INCLUDES) \
 	$(XMLSEC_DEFINES) \
 	$(LIBXSLT_CFLAGS) \
 	$(LIBXML_CFLAGS) \
 	$(NULL)
+
+CFLAGS = $(GPT_CFLAGS)
+LDFLAGS = $(GPT_LDFLAGS)
+LIBADD = $(GPT_LIB_LINKS)
 
 EXTRA_DIST = \
 	globals.h \

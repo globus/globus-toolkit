@@ -9,11 +9,16 @@ INCLUDES = \
 	-DPACKAGE=\"@PACKAGE@\" \
 	-I$(top_srcdir) \
 	-I$(top_srcdir)/include \
+        $(GPT_INCLUDES) \
 	$(XMLSEC_DEFINES) \
 	$(GNUTLS_CFLAGS) \
 	$(LIBXSLT_CFLAGS) \
 	$(LIBXML_CFLAGS) \
 	$(NULL)
+
+CFLAGS = $(GPT_CFLAGS)
+LDFLAGS = $(GPT_LDFLAGS)
+LIBADD = $(GPT_LIB_LINKS)
 
 lib_LTLIBRARIES = \
 	libxmlsec1-gnutls.la \

@@ -2105,6 +2105,13 @@ globus_i_gsi_gssapi_init_ssl_context(
         goto exit;
     }
 
+    /*
+     * post-0.9.8 versions of the SSL library seem to move part of the 
+     * cipher setup code into SSL_library_init(). Without this call, the
+     * SSL_CTX_new routine comaplains at not being able to initialize the 
+     * list of ciphers.
+     */
+    SSL_library_init();
     cred_handle->ssl_context = SSL_CTX_new(SSLv23_method());
     if(cred_handle->ssl_context == NULL)
     {
@@ -2165,8 +2172,20 @@ globus_i_gsi_gssapi_init_ssl_context(
      */
     SSL_CTX_set_purpose(cred_handle->ssl_context, X509_PURPOSE_ANY);
 
+    /*
+     * post OpenSSL-0.9.8, existence of this call creates problem when
+     * the server (for eg. GridFTP server) is run as a user and thus the
+     * cert presented is proxy cert. As the OpenSSL code does not 
+     * recognize Globus legacy proxies, we need to explicitly set the
+     * proxy flag in the cert and we do it only when our callback is
+     * called by OpenSSL with the critical extension error, so this call
+     * is removed for post OpenSSL-0.9.8.
+     */
+     
+    #if (OPENSSL_VERSION_NUMBER < 0x0090707fL)
     X509_STORE_set_flags(SSL_CTX_get_cert_store(cred_handle->ssl_context),
                          X509_V_FLAG_IGNORE_CRITICAL);
+    #endif
     
     if(anon_ctx != GLOBUS_I_GSI_GSS_ANON_CONTEXT)
     {

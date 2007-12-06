@@ -3,6 +3,9 @@ include $(top_srcdir)/globus_automake_pre
 
 SUBDIRS = include src pkgdata man docs
 
+INCLUDES=$(GPT_INCLUDES)
+LDFLAGS=$(GPT_LDFLAGS)
+LIBADD=$(GPT_LIB_LINKS)
 
 NULL =
 

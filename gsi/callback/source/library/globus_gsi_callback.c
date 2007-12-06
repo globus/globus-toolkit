@@ -380,6 +380,22 @@ globus_gsi_callback_X509_verify_cert(
      * we want to override so we  can replace some of the checks.
      */
     context->check_issued = globus_gsi_callback_check_issued;
+    /*
+     * If this is not set, OpenSSL-0.9.8 assumes the proxy cert 
+     * as an EEC and the next level cert in the chain as a CA cert
+     * and throws an invalid CA error. If we set this, the callback
+     * (globus_gsi_callback_handshake_callback) gets called with 
+     * preverify_ok = 0 with an error "unhandled critical extension" 
+     * and "path length exceeded".
+     * globus_i_gsi_callback_cred_verify() called by 
+     * globus_gsi_callback_handshake_callback() checks for these 
+     * errors and returns success. globus_i_gsi_callback_cred_verify() 
+     * will check the critical extension later.
+     */
+    #if (OPENSSL_VERSION_NUMBER >= 0x0090800fL)
+    X509_STORE_CTX_set_flags(
+                   context, X509_V_FLAG_ALLOW_PROXY_CERTS);
+    #endif
     result = X509_verify_cert(context);
 
     GLOBUS_I_GSI_CALLBACK_DEBUG_EXIT;
@@ -631,7 +647,9 @@ globus_i_gsi_callback_cred_verify(
     X509_STORE_CTX *                    x509_context)
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
+    globus_gsi_cert_utils_cert_type_t   cert_type;
     X509 *                              tmp_cert = NULL;
+    X509 *                              prev_cert = NULL;
     static char *                       _function_name_ = 
         "globus_i_gsi_callback_cred_verify";
 
@@ -646,6 +664,14 @@ globus_i_gsi_callback_cred_verify(
         {
         case X509_V_ERR_PATH_LENGTH_EXCEEDED:
 
+	/*
+	 * OpenSSL-0.9.8 has this error (0.9.7d did not have this)
+	 * So we will ignore the errors now and do our checks later
+	 * on (as explained below).
+	 */
+	#if (OPENSSL_VERSION_NUMBER >= 0x0090800fL)
+        case X509_V_ERR_PROXY_PATH_LENGTH_EXCEEDED:
+
             GLOBUS_I_GSI_CALLBACK_DEBUG_PRINT(
                 2, "X509_V_ERR_PATH_LENGTH_EXCEEDED\n");
             /*
@@ -657,7 +683,82 @@ globus_i_gsi_callback_cred_verify(
              */
             result = GLOBUS_SUCCESS;
             break;
+	#endif
+	#if (OPENSSL_VERSION_NUMBER >= 0x0090706fL)
+	/*
+	 * In the later version (097g+) OpenSSL does know about 
+	 * proxies, but not non-rfc compliant proxies, it will 
+	 * count them as unhandled critical extensions.
+	 * So we will ignore the errors and do our
+	 * own checks later on, when we check the last
+	 * certificate in the chain we will check the chain.
+	 * As OpenSSL does not recognize legacy proxies
+	 */
+        case X509_V_ERR_UNHANDLED_CRITICAL_EXTENSION:
+            GLOBUS_I_GSI_CALLBACK_DEBUG_PRINT(
+                2, "X509_V_ERR_UNHANDLED_CRITICAL_EXTENSION\n");
+	    /*
+	     * Setting this for 098 or later versions avoid the invalid
+	     * CA error but would result in proxy path len exceeded which
+	     * is handled above. For versions less than 098 and greater
+	     * than or equal to 097g causes a seg fault in 
+	     * check_chain_extensions (line 498 in crypto/x509/x509_vfy.c)
+	     * If this flag is set, openssl assumes proxy extensions would
+	     * definitely be there and tries to access the extensions but
+	     * the extension is not there really, as it not recognized by
+	     * openssl. So openssl versions >= 097g and < 098 would
+	     * consider our proxy as an EEC and higher level proxy in the
+	     * cert chain (if any) or EEC as a CA cert and thus would throw 
+	     * as invalid CA error. We handle that error below.
+	     */
+	    #if (OPENSSL_VERSION_NUMBER >= 0x0090800fL)
+            x509_context->current_cert->ex_flags |= EXFLAG_PROXY;
+	    #endif
+            result = GLOBUS_SUCCESS;
+            break;
+        case X509_V_ERR_INVALID_PURPOSE:
+            /*
+             * Invalid purpose if we init sec context with a server that does
+             * not have the SSL Server Netscape extension (occurs with 0.9.7
+             * servers)
+             */
+            result = GLOBUS_SUCCESS;
+            break;
+	#endif
 
+        #if (OPENSSL_VERSION_NUMBER < 0x0090800fL)
+	#if (OPENSSL_VERSION_NUMBER >= 0x0090706fL)
+	case X509_V_ERR_INVALID_CA:
+	    /*
+	     * If the previous cert in the chain is a proxy cert then
+	     * we get this error just because openssl does not recognize 
+	     * our proxy and treats it as an EEC. And thus, it would
+	     * treat higher level proxies (if any) or EEC as CA cert 
+	     * (which are not actually CA certs) and would throw this
+	     * error. As long as the previous cert in the chain is a
+	     * proxy cert, we ignore this error.
+	     */
+	    prev_cert = sk_X509_value(
+		    x509_context->chain, x509_context->error_depth-1);
+	    result = globus_gsi_cert_utils_get_cert_type(prev_cert, &cert_type);
+	    if(result != GLOBUS_SUCCESS)
+	    {
+		result = (globus_result_t)GLOBUS_FAILURE;
+	    }
+	    else 
+	    {
+		if(GLOBUS_GSI_CERT_UTILS_IS_PROXY(cert_type))
+		{
+		    result = GLOBUS_SUCCESS;
+		}
+		else
+		{
+		    result = (globus_result_t)GLOBUS_FAILURE;
+		}
+            }
+	    break;
+        #endif	
+        #endif	
         default:
             result = (globus_result_t)GLOBUS_FAILURE;
             break;

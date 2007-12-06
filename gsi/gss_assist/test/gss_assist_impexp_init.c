@@ -39,7 +39,7 @@ int main(int argc, char * argv[])
     char *                              print_buffer = NULL;
     char *                              recv_buffer = NULL;
     char *                              verbose_env = NULL;
-    int                                 buffer_length;
+    size_t                              buffer_length;
     struct sockaddr_in                  sockaddr;
     struct hostent *                    hostname;
     gss_buffer_desc                     export_token;
@@ -65,7 +65,7 @@ int main(int argc, char * argv[])
         exit(2);
     }
 
-    bcopy(hostname->h_addr, &sockaddr.sin_addr, hostname->h_length);
+    memcpy(&sockaddr.sin_addr, hostname->h_addr, hostname->h_length);
     sockaddr.sin_port = htons(atoi(argv[2]));
 
     if(connect(sock, (struct sockaddr *) &sockaddr, sizeof(sockaddr)) < 0)
@@ -128,7 +128,6 @@ int main(int argc, char * argv[])
                 ": Initiator successfully created context\n", __LINE__);
     }
     /* export sec context doesn't work for init */
-    /*
     context_outfile = fopen(INIT_CONTEXT_FILE, "w");
     if(!context_outfile)
     {
@@ -225,12 +224,10 @@ int main(int argc, char * argv[])
     if(verbose_env)
     {
         fprintf(stdout,
-                "INITIATOR: "__FILE__":%d: Initiator successfully "
+                "INITIATOR: "__FILE__":Initiator successfully "
                 "exported/imported context\n");
     }
 
-    */
-    
     major_status = globus_gss_assist_wrap_send(
         &minor_status,
         init_context,

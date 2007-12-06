@@ -499,7 +499,18 @@ xmlSecOpenSSLX509StoreInitialize(xmlSecKeyDataStorePtr store) {
 	}    
 	X509_LOOKUP_add_dir(lookup, (char*)path, X509_FILETYPE_DEFAULT);
     }
-    ctx->xst->depth = 9; /* the default cert verification path in openssl */	
+
+    /*
+     * post OpenSSL-0.9.8, ctx->xst does not have depth anymore, 
+     * it has been moved to ctx->xst->param. 
+     */
+    #if (OPENSSL_VERSION_NUMBER >= 0x00908000L) 
+    /* the default cert verification path in openssl */
+    ctx->xst->param->depth = 9;
+    #else
+    /* the default cert verification path in openssl */
+    ctx->xst->depth = 9;  
+    #endif
 	
     ctx->untrusted = sk_X509_new_null();
     if(ctx->untrusted == NULL) {

@@ -1736,6 +1736,17 @@ globus_gsi_cred_verify_cert_chain(
             callback_data_index, 
             (void *)callback_data);
                  
+        /*
+         * If this is not set, OpenSSL-0.9.8 (check_chain_extensions()
+         * called by x509_verify_cert()) treats the cert next to proxy
+         * in the chain to be CA cert and throws invalid CA error
+         */ 
+
+        #if (OPENSSL_VERSION_NUMBER >= 0x0090800fL)
+	X509_STORE_CTX_set_flags(
+                        store_context, X509_V_FLAG_ALLOW_PROXY_CERTS);
+        #endif
+
         if(!X509_verify_cert(store_context))
         {
             globus_result_t             callback_error;
