@@ -1070,6 +1070,7 @@ main(int argc, char **argv)
     memset(&guc_info, '\0', sizeof(globus_l_guc_info_t));
     globus_fifo_init(&guc_info.user_url_list);
     globus_fifo_init(&guc_info.expanded_url_list);
+    globus_fifo_init(&guc_info.matched_url_list);
 
     /* parse user parms */
     if(globus_l_guc_parse_arguments(
@@ -1180,6 +1181,7 @@ main(int argc, char **argv)
 
     globus_l_guc_destroy_url_list(&guc_info.user_url_list);
     globus_l_guc_destroy_url_list(&guc_info.expanded_url_list);
+    globus_fifo_destroy(&guc_info.matched_url_list);
 
     guc_info.handles = (globus_l_guc_handle_t **) 
         globus_calloc(guc_info.conc, sizeof(globus_l_guc_handle_t *));
@@ -2788,7 +2790,6 @@ globus_l_guc_expand_single_url(
     globus_bool_t                       dst_is_file;
     int				        files_matched;    
                 
-    globus_fifo_init(&guc_info->matched_url_list);
 
     src_url = url_pair->src_url;
     dst_url = url_pair->dst_url;
@@ -2869,9 +2870,6 @@ globus_l_guc_expand_single_url(
             expanded_url_pair);
     }
     
-    
-    globus_fifo_destroy(&guc_info->matched_url_list);
-    
     return GLOBUS_SUCCESS;
     
 error_too_many_matches:
@@ -2883,7 +2881,6 @@ error_too_many_matches:
             "destination url:\n%s\n"),
             dst_url));                    
 error_expand:
-    globus_fifo_destroy(&guc_info->matched_url_list);
      
     return result;                
 }
