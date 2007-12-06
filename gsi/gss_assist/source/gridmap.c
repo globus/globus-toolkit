@@ -372,7 +372,9 @@ globus_gss_assist_userok(
  * a local user name. This is somewhat of a hack since there is
  * not a guarenteed one-to-one mapping. What we do is look for
  * the first entry in the gridmap file that has the local
- * user as the default login.
+ * user as the default login. If the user is not a default on any 
+ * entry, we find the first entry in which the user exists as a 
+ * secondary mapping.
  *
  * @param local_user
  *        the local username to find the DN for
@@ -634,7 +636,8 @@ globus_i_gss_assist_gridmap_find_dn(
 /**
  * @ingroup globus_i_gsi_gss_assist
  * Locate the first entry with the given local user as the default in the
- * default gridmap file.
+ * default gridmap file.  If the user is not a default on any entry, locate the
+ * first entry in which the user exists as a secondary mapping.
  *
  * @param local_user
  *        the name to search for
@@ -663,6 +666,8 @@ globus_i_gss_assist_gridmap_find_local_user(
     int					found = 0;
     globus_i_gss_assist_gridmap_line_t *			
                                         gline_tmp;
+    char ** 	                        useridp;
+    char *                              nondefault_line = NULL;
     globus_result_t                     result = GLOBUS_SUCCESS;
     static char *                       _function_name_ =
         "globus_i_gss_assist_gridmap_find_local_user";
@@ -702,12 +707,15 @@ globus_i_gss_assist_gridmap_find_local_user(
     do
     {
 	char 				line[1024];
-
+        char                            save_line[1024];
+        
 	if (fgets(line, sizeof(line), gmap_stream) == NULL)
         {
 	    break;		/* EOF or error */
         }
 
+        strncpy(save_line, line, sizeof(save_line));
+        
 	result = globus_i_gss_assist_gridmap_parse_line(line, &gline_tmp);
         if(result != GLOBUS_SUCCESS)
         {
@@ -720,18 +728,43 @@ globus_i_gss_assist_gridmap_find_local_user(
 	    continue;
 	}
 
-	if((gline_tmp->user_ids != NULL) &&
-           (gline_tmp->user_ids[0] != NULL) &&
-           (strcmp(local_user, gline_tmp->user_ids[0]) == 0))
-	{
-	    found = 1;
-	}
-	else
+        for(useridp = gline_tmp->user_ids; 
+            *useridp != NULL && !found; 
+            useridp++)
+        {
+            if(strcmp(local_user, *useridp) == 0)
+            {
+                /* check all names, but only stop looking if we match a 
+                 * default name.  save the first nondefault match til 
+                 * we've checked all the defaults */
+                if(*useridp == gline_tmp->user_ids[0])
+                {
+                    found = 1;
+                }
+                else if(nondefault_line == NULL)
+                {
+                    nondefault_line = strdup(save_line);
+                }
+            }
+        }
+        if(!found)
 	{
 	    globus_i_gss_assist_gridmap_line_free(gline_tmp);
 	}
 
     } while (!found);
+    
+    if(nondefault_line != NULL)
+    {
+	result = globus_i_gss_assist_gridmap_parse_line(
+	    nondefault_line, &gline_tmp);
+        free(nondefault_line);
+        if(result != GLOBUS_SUCCESS)
+        {
+	    goto exit;
+        }
+        found = 1;
+    }        
 
     fclose(gmap_stream);
     gmap_stream = NULL;
