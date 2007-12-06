@@ -109,7 +109,9 @@ globus_mds_test		mds/tests	gpt
 globus_mp	mp/source	gpt
 globus_nexus	nexus/source	gpt
 globus_openldap	mds/openldap/patch-n-build pnb openldap-2.0.22.tar.gz
-globus_openssl	gsi/openssl_gpt	gpt
+#globus_openssl	gsi/openssl_gpt	gpt
+globus_openssl	gsi/openssl/source	gpt
+globus_openssl_setup	gsi/openssl/setup	gpt
 globus_openssl_error_test	gsi/openssl_error/test	gpt
 globus_openssl_module	gsi/openssl_module/source	gpt
 globus_proxy_ssl_test	gsi/proxy/proxy_ssl/test	gpt
