@@ -906,21 +906,28 @@ globus_l_gass_copy_glob_parse_ftp_list(
             startline++;
             
         }
-        
-        endline = startline;
-        while(endline + 1 < info->list_buffer + info->buffer_length && 
-            (*endline != '\r' || *(endline + 1) != '\n'))
-        {
-            endline++;
-        } 
-        *endline = '\0';
     
-        if (info->list_op == GLOBUS_GASS_COPY_FTP_OP_NLST)
+        if(info->list_op == GLOBUS_GASS_COPY_FTP_OP_NLST)
         {
+            endline = startline;
+            while(endline < info->list_buffer + info->buffer_length &&
+                *endline != '\r' && *endline != '\n') 
+            {
+                endline++;
+            } 
+            *endline = '\0';
             filename = startline;
         }
         else 
         {
+            endline = startline;
+            while(endline + 1 < info->list_buffer + info->buffer_length && 
+                (*endline != '\r' || *(endline + 1) != '\n'))
+            {
+                endline++;
+            } 
+            *endline = '\0';
+
             space = strchr(startline, ' ');
             if (space == GLOBUS_NULL)
             {
@@ -1056,7 +1063,8 @@ globus_l_gass_copy_glob_parse_ftp_list(
     
         if(*matched_url &&
             (type == GLOBUS_GASS_COPY_GLOB_ENTRY_DIR || 
-            type == GLOBUS_GASS_COPY_GLOB_ENTRY_FILE) &&
+            type == GLOBUS_GASS_COPY_GLOB_ENTRY_FILE ||
+            type == GLOBUS_GASS_COPY_GLOB_ENTRY_UNKNOWN) &&
             !(filename[0] == '.' && (filename[1] == '\0' || 
             (filename[1] == '.' && filename[2] == '\0'))) )
         {
