@@ -8,7 +8,7 @@ nodist_flavorincludedir = $(flavorincludedir)
 
 SUBDIRS = pkgdata
 
-EXTRA_DIST = 
+EXTRA_DIST = dirt.sh
 
 libglobus_openssl_version___GLOBUS_FLAVOR_NAME__la_SOURCES = \
     globus_openssl_version.c

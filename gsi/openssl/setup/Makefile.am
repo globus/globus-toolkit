@@ -6,7 +6,7 @@ setup_SCRIPTS = $(Scripts)
 
 SUBDIRS = pkgdata
 
-EXTRA_DIST = $(Scripts) 
+EXTRA_DIST = dirt.sh $(Scripts) 
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
