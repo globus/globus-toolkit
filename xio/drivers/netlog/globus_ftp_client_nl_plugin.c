@@ -50,8 +50,37 @@ void
 nl_print_bottleneck(
     NL_transfer_btl_t *                 bottleneck)
 {
+	char *s = NL_transfer_bottleneck_str(bottleneck);
+	if (s) {
+	    printf("Bottleneck: %s\n", s);
+		free(s);
+	}
+#if 0
+    switch (bottleneck->result) {
+    case NL_BTL_KNOWN:
+        printf("known: ");
+        switch (bottleneck->location) {
+        case NL_BTL_DISK_READ:
+            printf("disk read\n");
+            break;
+        case NL_BTL_DISK_WRITE:
+            printf("disk write\n");
+            break;
+        case NL_BTL_DISK:
+            printf("either disk read or write\n");
+            break;
+        case NL_BTL_NET:
+            printf("the friggin' network!\n");
+            break;
+        default:
+            printf("unkown bottleneck code (?)\n");
+        }
+        break;
+    default:
     printf("Bottleneck is ");
         printf("not known\n");
+    }
+#endif
 }
 
 static
@@ -143,16 +172,39 @@ nl_l_final_received(
     ent->return_count++;
     if(2 == ent->return_count)
     {
-printf("1] %s\n\n", ent->msgs[0]);
-printf("2] %s\n\n", ent->msgs[1]);
+		int i, n;
+/*
+		printf("1] %s\n\n", ent->msgs[0]);
+		printf("2] %s\n\n", ent->msgs[1]);
+*/
+		for (i=0; i < 2; i++) {
+			n = strlen(ent->msgs[i]);
+		    if (ent->msgs[i][n-1] != '\n') {
+               char *tmp, *cpy = malloc(n + 2);
+			   strcpy(cpy, ent->msgs[i]);
+			   strcat(cpy,"\n");
+			   tmp = ent->msgs[i];
+			   ent->msgs[i] = cpy;
+			   free(tmp);
+			}
+		}
 
+        NL_err_clear();
         rc = NL_transfer_get_bottleneck(ent->msgs[0], ent->msgs[1],
             &bottleneck);
         if(rc != 0)
         {
+			printf("Error getting bottleneck: %s\n", NL_err_str());
         }
-        nl_print_bottleneck(&bottleneck);   
-
+		else {
+		    NL_transfer_op_t op;
+			printf("\n\nTotal instantaneous throughput:\n");
+		    for (op = 0; op < NL_TRANSFER_NOEVENT; op++) {
+				double mbs =  bottleneck.inst_thru[op] * 8. / 1000000.;
+			    printf("  %-12s = %.1lf Mbits/s\n", NL_transfer_op_name(op), mbs); 
+			}
+            nl_print_bottleneck(&bottleneck);   
+        }
         globus_hashtable_remove(&globus_l_nl_uuid_table, uuid);
         /* clean up the entry */
         free(ent->msgs[0]);
