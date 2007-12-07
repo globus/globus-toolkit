@@ -32,6 +32,7 @@
 #include "globus_gsi_system_config.h"
 #include "globus_gsi_proxy.h"
 #include "globus_gsi_credential.h"
+#include "globus_stdio_ui.h"
 #include "proxycertinfo.h"
 #include "openssl/asn1.h"
 #ifdef WIN32
@@ -797,6 +798,10 @@ main(
 
     if(strstr(user_cert_filename, ".p12"))
     {
+        if (pw_cb != NULL)
+        {
+            globus_module_activate(GLOBUS_STDIO_UI_MODULE);
+        }
         /* we have a pkcs12 credential */
         result = globus_gsi_cred_read_pkcs12(
             cred_handle,
@@ -808,6 +813,10 @@ main(
                 "\nERROR: Couldn't read in PKCS12 credential "
                 "from file: %s\n", user_cert_filename);
             GLOBUS_I_GSI_PROXY_UTILS_PRINT_ERROR;
+        }
+        if (pw_cb != NULL)
+        {
+            globus_module_deactivate(GLOBUS_STDIO_UI_MODULE);
         }
 
         if (!quiet)
