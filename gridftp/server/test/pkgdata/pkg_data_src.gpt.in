@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Format_Version="0.02" Name="globus_gridftp_server_test">
 
-    <Aging_Version Age="0" Major="1" Minor="8"/>
+    <Aging_Version Age="1" Major="2" Minor="0"/>
     <Description>Test programs for the FTP Client Library</Description>
     <Functional_Group>FileAccess</Functional_Group>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
