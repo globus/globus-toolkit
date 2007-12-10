@@ -46,6 +46,11 @@
                     <Simple_Version Major="0"/>
                 </Version>
             </Dependency>
+            <Dependency Name="globus_gridftp_server_test" Package="pgm">
+                <Version>
+                    <Simple_Version Major="2"/>
+                </Version>
+            </Dependency>
         </Source_Dependencies>
 
         <With_Flavors build="no"/>

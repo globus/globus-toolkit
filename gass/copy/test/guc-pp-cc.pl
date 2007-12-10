@@ -24,6 +24,10 @@ use Getopt::Long;
 require 5.005;
 use File::Temp qw/ tempfile tempdir /;
 
+push(@INC, $ENV{GLOBUS_LOCATION} . "/test/globus_gridftp_server_test");
+
+require "gfs_common.pl";
+
 my @tests;
 my @todo;
 
@@ -52,7 +56,7 @@ if(defined($nogsi))
 }
 else
 {
-    $subject = setup_security_env();
+    $subject = gfs_setup_security_env();
 
     push(@dc_opts, "-nodcau -subject \"$subject\"");
     push(@dc_opts, "-subject \"$subject\"");
@@ -64,12 +68,13 @@ else
 
 my @concur;
 push(@concur, "");
-for(my $i = 1; $i < 2; $i++)
+for(my $i = 1; $i < 32; $i++)
 {
     push(@concur, "-cc $i");
 }
 # tests here
-$server_pid,$server_cs = setup_server();
+#$server_pid,$server_cs = gfs_setup_server_basic();
+$server_pid,$server_cs = gfs_setup_server_fe();
 # setup dirs
 my $work_dir = tempdir( CLEANUP => 1);
 mkdir("$work_dir/etc");
@@ -112,91 +117,15 @@ sub run_guc_test()
         my $rc = system($cmd);
         if($rc != 0)
         {
-            clean_up();
+            gfs_cleanup();
             print "ERROR\n";
             exit 1;
         }
         $rc = system("diff -r $work_dir/etc/ $work_dir/etc2/");
         if($rc != 0)
         {
-            clean_up();
+            gfs_cleanup();
             print "ERROR\n";
             exit 1;
         }
 }
-
-
-sub clean_up()
-{
-    if($server_pid)
-    {
-        kill(9,$server_pid);
-        $server_pid=0;
-    }
-}
-
-exit 0;
-
-sub setup_server()
-{
-    my $server_pid;
-    my $server_prog = "$globus_location/sbin/globus-gridftp-server";
-    my $server_host = "localhost";
-    my $server_cs;
-    my $server_port = 0;
-    my $server_nosec = "-aa";
-    my $subject;
-
-    my $server_args = "-no-fork -no-chdir -d 0 -p $server_port $server_nosec";
-    
-    $server_pid = open(SERVER, "$server_prog $server_args |");
-     
-    if($server_pid == -1)
-    {
-        print "Unable to start server\n";
-        exit 1;
-    }
-
-    select((select(SERVER), $| = 1)[0]);
-    $server_cs = <SERVER>;
-    $server_cs =~ s/Server listening at //;
-    chomp($server_cs);
-
-    print "Started server at port $server_cs\n";
-
-    # sleep a second, some hosts are slow....
-    sleep 1;
-    
-    return $server_pid,$server_cs;
-}
-
-
-sub setup_security_env()
-{
-    my $subject;
-
-    if(0 != system("grid-proxy-info -exists -hours 2 >/dev/null 2>&1") / 256)
-    {
-        $ENV{X509_CERT_DIR} = cwd();
-        $ENV{X509_USER_PROXY} = cwd() . "/testcred.pem";
-    }
-
-    system('chmod go-rw testcred.pem');
-
-    $subject = `grid-proxy-info -identity`;
-    chomp($subject);
-
-    $ENV{GRIDMAP} = cwd() . "/gridmap";
-    if ( -f $ENV{GRIDMAP})
-    {
-        system('mv $GRIDMAP $GRIDMAP.old');
-    }
-    if( 0 != system("grid-mapfile-add-entry -dn \"$subject\" -ln `whoami` -f $ENV{GRIDMAP} >/dev/null 2>&1") / 256)
-    {
-        print "Unable to create gridmap file\n";
-        exit 1;
-    }
-
-    return $subject;
-}
-
