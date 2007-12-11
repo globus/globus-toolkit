@@ -5525,6 +5525,7 @@ globus_l_gfs_data_trev_kickout(
                 break;
 
             case GLOBUS_L_GFS_DATA_FINISH:
+            case GLOBUS_L_GFS_DATA_FINISH_WITH_ERROR:
                 pass = GLOBUS_FALSE;
                 break;
 
