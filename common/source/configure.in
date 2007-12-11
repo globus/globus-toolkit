@@ -26,6 +26,13 @@ GPT_SET_LIBS(["$EXTERNAL_LIBS"])
 
 AC_SUBST(GLOBUS_THREADS)
 
+if test x"$GLOBUS_VERSIONNAME" = "x" ; then
+    GLOBUS_PACKAGER="Globus Toolkit"
+else
+    GLOBUS_PACKAGER="$GLOBUS_VERSIONNAME"
+fi
+AC_SUBST(GLOBUS_PACKAGER)
+
 if test "$GLOBUS_THREADS" = "none" ; then
     GLOBUS_CALLBACK_BUILD="nothreads"
 else
