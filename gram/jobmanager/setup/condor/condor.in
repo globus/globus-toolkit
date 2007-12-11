@@ -78,6 +78,21 @@ sub new
         }
         $self->{condor_logfile} = "$log_dir/gram_condor_log";
     }
+    if(! -e $self->{condor_logfile}) 
+    {
+        # We make sure that the log file exists with the correct 
+        # permissions. If we just let Condor create it, it will
+        # have 664 permissions, and when another user submits a job
+        # they will be unable to write to the log file. We create the 
+        # file in append mode to avoid a race condition, in case
+        # multiple instantiations of this script open and write
+        # to the log file. 
+        if ( open(CONDOR_LOG_FILE, '>>' . $self->{condor_logfile}) ) 
+        {
+            close(CONDOR_LOG_FILE);
+        }
+        chmod(0666, $self->{condor_logfile});
+    }
 
     if($description->jobtype() eq 'multiple' && $description->count > 1)
     {
