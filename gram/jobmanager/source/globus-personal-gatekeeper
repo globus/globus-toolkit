@@ -24,6 +24,13 @@ if test -z "${GLOBUS_LOCATION}"; then
     exit 1 
 fi 
 
+if [ -x /bin/true ]; then
+    TRUE=/bin/true
+elif [ -x /usr/bin/true ]; then
+    TRUE=/usr/bin/true
+else
+    TRUE="sh -c \"true\""
+fi
 
 DELIM=
 if [ -n "$LD_LIBRARY_PATH" ]; then
@@ -127,7 +134,7 @@ killem ()
 	user=`${GLOBUS_SH_WHOAMI}`
     fi
     for dir in `${GLOBUS_SH_FIND-find} ${file_location} \
-        -name .gass_cache -prune -exec /bin/true {} \; -o \
+        -name .gass_cache -prune -exec $TRUE {} \; -o \
         -name ${file_prefix}\* -type d -print 2>/dev/null`
     do
         if [ -n "${dir}" ]; then
@@ -177,7 +184,7 @@ findit ()
 {
     foundit=false
     for dir in `${GLOBUS_SH_FIND-find} ${file_location} \
-        -name .gass_cache -prune -exec /bin/true {} \; -o \
+        -name .gass_cache -prune -exec $TRUE {} \; -o \
         -name ${file_prefix}\* -type d -print 2>/dev/null`
     do
         if [ -n "${dir}" ]; then
@@ -185,7 +192,7 @@ findit ()
             if [ -r ${dir}/gatekeeper.log ]; then
                 contact="`${GLOBUS_SH_GREP-grep} 'GRAM contact' ${dir}/gatekeeper.log |
                     ${GLOBUS_SH_TAIL-tail} -1 |
-                    ${GLOBUS_SH_SED-sed} s/\^.\*$host/$host/`"
+                    ${GLOBUS_SH_SED-sed} 's/^.*GRAM contact: //'`"
 
                 if [ "$1" = "$contact" ]; then
                     foundit=true
@@ -206,7 +213,7 @@ listem ()
     found=false
     foundold=false
     for dir in `${GLOBUS_SH_FIND-find} ${file_location} \
-        -name .gass_cache -prune -exec /bin/true {} \; -o \
+        -name .gass_cache -prune -exec $TRUE {} \; -o \
         -name ${file_prefix}\* -type d -print 2>/dev/null`
     do
         if [ -n "${dir}" ]; then
@@ -214,7 +221,7 @@ listem ()
             if [ -r ${dir}/gatekeeper.log ]; then
                 contact="`${GLOBUS_SH_GREP-grep} 'GRAM contact' ${dir}/gatekeeper.log |
                     ${GLOBUS_SH_TAIL-tail} -1 |
-                    ${GLOBUS_SH_SED-sed} s/\^.\*$host\:/$host\:/`"
+                    ${GLOBUS_SH_SED-sed} 's/^.*GRAM contact: //'`"
                 ${debug} "found contact= [${contact}]"
                 ${bindir}/globusrun -a -r "${contact}" 1>/dev/null 2>/dev/null
                 if [ $? -eq 0 ]; then
@@ -256,7 +263,7 @@ port=
 docleanup=false
 startnew=false
 host=`${bindir}/globus-hostname`
-file_location="$HOME/.globus"
+file_location="$HOME/.globus/."
 file_prefix="personal-gatekeeper.$host"
 log=never
 seg=0
