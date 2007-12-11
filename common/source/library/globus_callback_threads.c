@@ -2853,6 +2853,7 @@ globus_l_callback_thread_signal_poll(
                 sizeof(current_sigset));
         }
         
+#ifdef TARGET_ARCH_AIX
         if(globus_l_callback_signal_active_count == 0)
         {
             /* this is another cancellation point.  I sleep here instead of
@@ -2863,6 +2864,7 @@ globus_l_callback_thread_signal_poll(
                 &globus_l_callback_thread_lock);
             continue;
         }
+#endif
         
         locked = GLOBUS_FALSE;
         globus_mutex_unlock(&globus_l_callback_thread_lock);
