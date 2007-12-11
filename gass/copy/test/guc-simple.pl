@@ -66,20 +66,12 @@ else
     push(@proto, "gsiftp://");
 }
 
-my @concur;
-push(@concur, "");
-for(my $i = 1; $i < 10; $i += 3)
-{
-    push(@concur, "-cc $i");
-}
 # tests here
 #$server_pid,$server_cs = gfs_setup_server_basic();
 # setup dirs
 my $work_dir = tempdir( CLEANUP => 1);
-mkdir("$work_dir/etc");
 
-print "Setting up source transfer dir\n";
-system("cp -rL $globus_location/include/* $work_dir/etc/ >/dev/null 2>&1");
+system("dd if=/dev/urandom of=$work_dir/src.data count=10240 bs=1024 >/dev/null 2>&1");
 
 my $test_ndx = 0;
 my $cnt=0;
@@ -91,30 +83,25 @@ while($test_ndx != -1)
     foreach(@proto)
     {
         my $p=$_;
-        my $server_port = $server_cs;
-        $server_port =~ s/.*://;
-        my $dst_url = "$p"."127.0.0.1:$server_port"."$work_dir/etc2/";
-        my $src_url = "$p"."localhost:$server_port"."$work_dir/etc/";
+        my $src_url = "$p"."$server_cs"."$work_dir/src.data";
+        my $dst_url = "$p"."$server_cs"."$work_dir/dst.data";
 
         foreach(@dc_opts)
         {
             my $dc_opt=$_;
 
-            foreach(@concur)
-            {
-                my $cc=$_;
-                my $cmd = "globus-url-copy -pp $cc $dc_opt -cd -r $src_url $dst_url";
+            my $cmd = "globus-url-copy -stripe -tcp-bs 131072 $dc_opt $src_url $dst_url";
 
-                &run_guc_test($cmd);
-                system("rm -rf $work_dir/etc2/");
-                $cnt++;
-            }
+            &run_guc_test($cmd);
+            system("rm -rf $work_dir/dst.data");
+            $cnt++;
         }
     }
+    print "Done $cnt\n";
     ($server_pid, $server_cs, $test_ndx) = gfs_next_test($test_ndx);
 }
 
-
+print "Success\n";
 
 sub run_guc_test()
 {
@@ -127,8 +114,7 @@ sub run_guc_test()
             print "ERROR\n";
             exit 1;
         }
-        print "Transfer successful, checking results...\n";
-        $rc = system("diff -r $work_dir/etc/ $work_dir/etc2/");
+        $rc = system("diff -r $work_dir/src.data $work_dir/dst.data");
         if($rc != 0)
         {
             gfs_cleanup();
