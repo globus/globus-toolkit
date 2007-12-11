@@ -67,6 +67,12 @@ if test "x$AIX" = "xyes"; then
 fi
 AC_SUBST(aixargs,$aixargs)
 
+AC_ARG_WITH(versionname, AC_HELP_STRING([--with-versionname="packager"],\
+   [The name to be displayed by globus-version.  Default is "Globus Toolkit".]),
+\
+   [versionname=$withval], [])
+AC_SUBST(versionname, $versionname)
+
 AC_ARG_WITH(buildopts, AC_HELP_STRING([--with-buildopts="args"],\
    [Arguments to pass to gpt-build, like "--verbose" or "--force".]),\
    [buildopts=$withval], [])
