@@ -114,8 +114,11 @@ if (!defined($timeleft) || $timeleft eq "" || ($timeleft < 60*60*3)) {
     `$grid_proxy_init -pwstdin </dev/null >/dev/null 2>&1`;
     $timeleft = `$grid_proxy_info -timeleft 2>/dev/null`;
 }
-die "grid-proxy-info failed, stopped"
-    if (!defined($timeleft) || $timeleft eq "");
+if (!defined($timeleft) || $timeleft eq "") {
+  print STDERR "grid-proxy-info failed:\n";
+  system("$grid_proxy_info -timeleft"); # show the error
+  die "stopped";
+}
 die "proxy expired, stopped" if ($timeleft < 60);
 die "proxy lifetime too short, stopped" if ($timeleft < 60*60*3);
 die "proxy is limited, stopped" if (`$grid_proxy_info -type` =~ /limited/);
