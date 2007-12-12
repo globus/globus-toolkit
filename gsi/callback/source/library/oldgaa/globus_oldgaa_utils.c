@@ -508,6 +508,7 @@ oldgaa_globus_policy_file_open(const char *filename)
     if (!pcontext->buf) out_of_memory();
  
     rc = fread(pcontext->buf, pcontext->buflen, 1, stream);
+    pcontext->buf[pcontext->buflen] = 0;
 
     if (rc != 1)
     {
