@@ -29,6 +29,10 @@ elif test -n "${_NMI_PREREQ_openssl_0_9_7_ROOT}"; then
     export PKG_CONFIG_PATH
     export OPENSSL_CFLAGS OPENSSL_INCLUDES OPENSSL_LDFLAGS OPENSSL_LIBS
 fi
+if test -n "${LD_LIBRARY_PATH}" -a -z "${LIBPATH}"; then
+    LIBPATH=$LD_LIBRARY_PATH
+    export LIBPATH
+fi
 echo ==================================================
 echo Environment variables:
 env
