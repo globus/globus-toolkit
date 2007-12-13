@@ -1,4 +1,4 @@
 method = cvs
 cvs_root = :pserver:anonymous@cvs.globus.org:/home/globdev/CVS/globus-packages
 cvs_subdir = gssapi-openssh/openssh
-#cvs_tag = OPENSSH_3_1P1_GSSAPI_GPT-branch
+#cvs_tag = GPT-branch
