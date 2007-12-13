@@ -58,7 +58,7 @@ typedef enum globus_i_gfs_log_usage_tag_e
     GLOBUS_I_GFS_USAGE_SCHEMA   = 'T',
     GLOBUS_I_GFS_USAGE_APP      = 'a',
     GLOBUS_I_GFS_USAGE_APPVER   = 'V',
-    GLOBUS_I_GFS_USAGE_SESSID   = 'U',
+    GLOBUS_I_GFS_USAGE_SESSID   = 'U'
 } globus_i_gfs_log_usage_tag_t;
 
 typedef struct globus_l_gfs_log_usage_ent_s
