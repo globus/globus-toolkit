@@ -6,6 +6,27 @@ LOGNAME=$USER
 X509_CERT_DIR=$GLOBUS_LOCATION/share/certificates
 export GLOBUS_LOCATION LOGNAME X509_CERT_DIR
 (
+if test -n "${_NMI_PREREQ_openssl_0_9_8e_shared_ROOT}"; then
+    PKG_CONFIG_PATH="${_NMI_PREREQ_openssl_0_9_8e_shared_ROOT}/lib/pkgconfig"
+    OPENSSL_CFLAGS="-I${_NMI_PREREQ_openssl_0_9_8e_shared_ROOT}/include"
+    OPENSSL_INCLUDES="-I${_NMI_PREREQ_openssl_0_9_8e_shared_ROOT}/include"
+    OPENSSL_LDFLAGS="-L${_NMI_PREREQ_openssl_0_9_8e_shared_ROOT}/lib"
+    OPENSSL_LIBS="-lssl -lcrypto"
+    export PKG_CONFIG_PATH
+    export OPENSSL_CFLAGS OPENSSL_INCLUDES OPENSSL_LDFLAGS OPENSSL_LIBS
+elif test -n "${_NMI_PREREQ_openssl_0_9_7_shared_ROOT}"; then
+    PKG_CONFIG_PATH="${_NMI_PREREQ_openssl_0_9_7_shared_ROOT}/lib/pkgconfig"
+    OPENSSL_CFLAGS="-I${_NMI_PREREQ_openssl_0_9_7_shared_ROOT}/include"
+    OPENSSL_INCLUDES="-I${_NMI_PREREQ_openssl_0_9_7_shared_ROOT}/include"
+    OPENSSL_LDFLAGS="-L${_NMI_PREREQ_openssl_0_9_7_shared_ROOT}/lib"
+    OPENSSL_LIBS="-lssl -lcrypto"
+    export PKG_CONFIG_PATH
+    export OPENSSL_CFLAGS OPENSSL_INCLUDES OPENSSL_LDFLAGS OPENSSL_LIBS
+fi
+if test -n "${LD_LIBRARY_PATH}" -a -z "${LIBPATH}"; then
+    LIBPATH=$LD_LIBRARY_PATH
+    export LIBPATH
+fi
 echo ==================================================
 echo Environment variables:
 env
@@ -33,6 +54,9 @@ cd gt*-installer
 make gsi-openssh install
 . $GLOBUS_LOCATION/etc/globus-user-env.sh
 cd ..
+echo ==================================================
+echo Environment variables:
+env
 echo ==================================================
 GLOBUS_FLAVOR_NAME=`gpt-query -name=gsi_openssh | perl -n -e 'if (/gsi_openssh-(.*)-pgm/){print "$1\n";}'|head -1`
 export GLOBUS_FLAVOR_NAME
@@ -79,6 +103,9 @@ if test -f nightly.tar.gz; then
     make gsi-openssh install
     . $GLOBUS_LOCATION/etc/globus-user-env.sh
     cd ..
+    echo ==================================================
+    echo Environment variables:
+    env
     echo ==================================================
     GLOBUS_FLAVOR_NAME=`gpt-query -name=gsi_openssh | perl -n -e 'if (/gsi_openssh-(.*)-pgm/){print "$1\n";}'|head -1`
     export GLOBUS_FLAVOR_NAME
