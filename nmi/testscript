@@ -20,14 +20,6 @@ elif test -n "${_NMI_PREREQ_openssl_0_9_7_shared_ROOT}"; then
     OPENSSL_LIBS="-lssl -lcrypto"
     export PKG_CONFIG_PATH
     export OPENSSL_CFLAGS OPENSSL_INCLUDES OPENSSL_LDFLAGS OPENSSL_LIBS
-elif test -n "${_NMI_PREREQ_openssl_0_9_7_ROOT}"; then
-    PKG_CONFIG_PATH="${_NMI_PREREQ_openssl_0_9_7_ROOT}/lib/pkgconfig"
-    OPENSSL_CFLAGS="-I${_NMI_PREREQ_openssl_0_9_7_ROOT}/include"
-    OPENSSL_INCLUDES="-I${_NMI_PREREQ_openssl_0_9_7_ROOT}/include"
-    OPENSSL_LDFLAGS="-L${_NMI_PREREQ_openssl_0_9_7_ROOT}/lib"
-    OPENSSL_LIBS="-lssl -lcrypto"
-    export PKG_CONFIG_PATH
-    export OPENSSL_CFLAGS OPENSSL_INCLUDES OPENSSL_LDFLAGS OPENSSL_LIBS
 fi
 if test -n "${LD_LIBRARY_PATH}" -a -z "${LIBPATH}"; then
     LIBPATH=$LD_LIBRARY_PATH
