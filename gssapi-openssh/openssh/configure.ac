@@ -1158,33 +1158,29 @@ if test "x$gsi_path" != "xno" ; then
                 AC_MSG_ERROR(--with-globus-flavor=TYPE must specify a flavor type)
 	fi
 
-	GLOBUS_INCLUDE="${gsi_path}/include/${globus_flavor_type}"
-	if test ! -d "$GLOBUS_INCLUDE" ; then
-		AC_MSG_ERROR(Cannot find Globus flavor-specific include directory: ${GLOBUS_INCLUDE})
-	fi
-	GSI_CPPFLAGS="-I${GLOBUS_INCLUDE}"
-	
 	if test -x ${gsi_path}/bin/globus-makefile-header ; then
-		GSI_LIBS=`${gsi_path}/bin/globus-makefile-header --flavor=${globus_flavor_type} ${gsi_static} globus_gss_assist | perl -n -e 'if (/GLOBUS_PKG_LIBS = (.*)/){print $1;}'`
+		${gsi_path}/bin/globus-makefile-header --flavor=${globus_flavor_type} ${gsi_static} globus_gss_assist | sed 's/ = \(.*\)/="\1"/' > ./gpt_build_tmp.sh
 	elif test -x ${gsi_path}/sbin/globus-makefile-header ; then
-		GSI_LIBS=`${gsi_path}/sbin/globus-makefile-header --flavor=${globus_flavor_type} ${gsi_static} globus_gss_assist | perl -n -e 'if (/GLOBUS_PKG_LIBS = (.*)/){print $1;}'`
+		${gsi_path}/sbin/globus-makefile-header --flavor=${globus_flavor_type} ${gsi_static} globus_gss_assist | sed 's/ = \(.*\)/="\1"/' > ./gpt_build_tmp.sh
 	else
 		AC_MSG_ERROR(Cannot find globus-makefile-header: Globus installation is incomplete)
 	fi
+    . ./gpt_build_tmp.sh
 	if test -n "${need_dash_r}"; then
 		GSI_LDFLAGS="-L${gsi_path}/lib -R${gsi_path}/lib"
 	else
 		GSI_LDFLAGS="-L${gsi_path}/lib"
 	fi
-	if test -z "$GSI_LIBS" ; then
+	if test -z "$GLOBUS_PKG_LIBS" ; then
 		AC_MSG_ERROR(globus-makefile-header failed)
 	fi
 
 	AC_DEFINE(HAVE_GSSAPI_H)
 
-	LIBS="$LIBS $GSI_LIBS"
-	LDFLAGS="$LDFLAGS $GSI_LDFLAGS"
-	CPPFLAGS="$CPPFLAGS $GSI_CPPFLAGS"
+	LIBS="$LIBS $GLOBUS_LIBS $GLOBUS_PKG_LIBS"
+	LDFLAGS="$LDFLAGS $GLOBUS_LDFLAGS"
+	CPPFLAGS="$CPPFLAGS $GLOBUS_CPPFLAGS $GLOBUS_INCLUDES"
+    CFLAGS="$CFLAGS $GLOBUS_CFLAGS"
 
 	# test that we got the libraries OK
 	AC_TRY_LINK(
