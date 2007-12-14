@@ -1,0 +1,45 @@
+AC_INIT(Makefile.am)
+AM_INIT_AUTOMAKE(xacml, 1.0)
+AM_PROG_LIBTOOL
+AC_PROG_CXX
+
+AC_ARG_WITH(schema-dir,
+    [  --with-schema-dir=DIR   Search for XACML schemas in DIR 
+                          [[default: search $GLOBUS_LOCATION]]],
+    [SCHEMA_DIR=$withval],
+    [SCHEMA_DIR=$GLOBUS_LOCATION/share/schema/core/security/authorization/xacml])
+
+AC_ARG_WITH(gsoap,
+    [  --with-gsoap=DIR        Search for gsoap in DIR [[default: ../INSTALL]]],
+    [GSOAP_DIR=$withval],
+    [GSOAP_DIR=../INSTALL])
+
+AC_MSG_CHECKING([for XACML service schemas])
+
+if test -r "$SCHEMA_DIR/xacml_authz_service.wsdl"; then
+    AC_MSG_RESULT([ok])
+else
+    AC_MSG_ERROR([not found])
+fi
+
+AC_MSG_CHECKING([for gsoap's wsdl2h])
+WSDL2H="$GSOAP_DIR/bin/wsdl2h" 
+if test ! -x "$WSDL2H"; then
+    AC_MSG_ERROR([wsdl2h not found])
+fi
+AC_MSG_RESULT([ok])
+
+AC_MSG_CHECKING([for gsoap's soapcpp2])
+SOAPCPP2="$GSOAP_DIR/bin/soapcpp2" 
+if test ! -x "$SOAPCPP2"; then
+    AC_MSG_ERROR([soapcpp2 not found])
+fi
+AC_MSG_RESULT([ok])
+
+AC_SUBST(GSOAP_DIR)
+AC_SUBST(SCHEMA_DIR)
+AC_SUBST(WSDL2H)
+AC_SUBST(SOAPCPP2)
+AC_SUBST(GLOBUS_LOCATION)
+
+AC_OUTPUT(Makefile)
