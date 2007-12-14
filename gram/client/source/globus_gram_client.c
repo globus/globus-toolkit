@@ -696,15 +696,26 @@ globus_gram_client_version(void)
 } /* globus_gram_client_version() */
 
 
-/*
- * globus_gram_client_set_credentials()
+/**
+ * Set the default GRAM credential
+ * @ingroup globus_gram_client
+ *
+ * Set the credential to use by default for all future GRAM network operations.
+ * These include job requests, job signals, callback registration, and job
+ * state callbacks. The credential must no longer be used by the caller, and
+ * will be freed by GRAM when no longer needed.
+ *
+ * @param new_credentials
+ *     New GSSAPI credential to use.
+ *
+ * @return This function returns GLOBUS_SUCCESS if the default credential has
+ * been set.
  */
 int
 globus_gram_client_set_credentials(gss_cred_id_t new_credentials)
 {
     return globus_gram_protocol_set_credentials(new_credentials);
 }
-
 
 /**
  * Verify that a gatekeeper is running (nonblocking).
