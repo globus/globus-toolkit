@@ -17,7 +17,7 @@
                 </Version>
             </Dependency>
         </Source_Dependencies>
-        <Source_Dependencies Type="compile">
+        <Source_Dependencies Type="pgm_runtime">
             <Dependency Name="globus_proxy_utils" Package="pgm">
                 <Version>
                     <Simple_Version Major="0"/>
