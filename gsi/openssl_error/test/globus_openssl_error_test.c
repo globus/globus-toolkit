@@ -62,8 +62,13 @@ int main(int argc, char * argv[])
 
     globus_module_activate(GLOBUS_GSI_OPENSSL_ERROR_TEST_MODULE);
 
+#if defined(ASN1_F_X509_NAME_NEW)
     ERR_put_error(ERR_LIB_ASN1, ASN1_F_X509_NAME_NEW, ASN1_R_TOO_LONG,
                   __FILE__, __LINE__);
+#elif defined(ASN1_F_X509_NAME_EX_NEW)
+    ERR_put_error(ERR_LIB_ASN1, ASN1_F_X509_NAME_EX_NEW, ASN1_R_TOO_LONG,
+                  __FILE__, __LINE__);
+#endif
     
     ERR_put_error(ERR_LIB_BIO, BIO_F_BIO_WRITE, BIO_R_BROKEN_PIPE,
                   __FILE__, __LINE__);
