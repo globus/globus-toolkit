@@ -1811,6 +1811,7 @@ globus_l_gfs_load_safe(
         value = globus_common_create_string(defaults);
     }
     list = globus_list_from_string(value, ',', NULL);
+    globus_free(value);
 
     while(!globus_list_empty(list))
     {
@@ -3095,7 +3096,7 @@ globus_i_gfs_data_request_handle_destroy(
                 else
                 {
                     data_handle->state =
-                        GLOBUS_L_GFS_DATA_HANDLE_TE_PRE_AND_DESTROYED;
+                        GLOBUS_L_GFS_DATA_HANDLE_CLOSING_AND_DESTROYED;
                     session_handle->ref++;
                     /* set directly to closed so that when callback
                         returns we clean it up */
