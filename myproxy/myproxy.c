@@ -169,6 +169,9 @@ myproxy_bootstrap_trust(myproxy_socket_attrs_t *attrs)
 	globus_module_activate(GLOBUS_GSI_CREDENTIAL_MODULE);
 	globus_module_activate(GLOBUS_GSI_CERT_UTILS_MODULE);
 
+	SSL_load_error_strings();
+	OpenSSL_add_ssl_algorithms();
+
     /* Make writable only by user */
     umask(S_IWGRP|S_IWOTH);
 
