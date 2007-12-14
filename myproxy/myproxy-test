@@ -656,29 +656,29 @@ if ($exitstatus == 0) {
 #
 
 ($exitstatus, $output) =
-    &runtest("myproxy-retrieve -c /tmp/myproxy-test.cert.$$ -y /tmp/myproxy-test.key.$$ -v -S",
+    &runtest("myproxy-retrieve -c /tmp/myproxy-test.cert.$$.pem -y /tmp/myproxy-test.key.$$.pem -v -S",
 	     $passphrase . "\n");
 print "MyProxy Test 20 (retrieve stored credential): ";
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
-	&verifycert("/tmp/myproxy-test.cert.$$", "/tmp/myproxy-test.key.$$");
+	&verifycert("/tmp/myproxy-test.cert.$$.pem", "/tmp/myproxy-test.key.$$.pem");
 }
 if ($exitstatus == 0) {
     print "SUCCEEDED\n"; $SUCCESSES++;
 } else {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
 }
-unlink( "/tmp/myproxy-test.cert.$$" );
-unlink( "/tmp/myproxy-test.key.$$" );
+unlink( "/tmp/myproxy-test.cert.$$.pem" );
+unlink( "/tmp/myproxy-test.key.$$.pem" );
 
 $ENV{'X509_CERT_DIR'} = $trustrootdir;
 ($exitstatus, $output) =
-  &runtest("myproxy-retrieve -T -c /tmp/myproxy-test.cert.$$ -y /tmp/myproxy-test.key.$$ -v -S",
+  &runtest("myproxy-retrieve -T -c /tmp/myproxy-test.cert.$$.pem -y /tmp/myproxy-test.key.$$.pem -v -S",
            $passphrase . "\n");
 print "MyProxy Test 20T (retrieve stored credential w/ trustroots): ";
 if ($exitstatus == 0) {
   ($exitstatus, $output) =
-    &verifycert("/tmp/myproxy-test.cert.$$", "/tmp/myproxy-test.key.$$");
+    &verifycert("/tmp/myproxy-test.cert.$$.pem", "/tmp/myproxy-test.key.$$.pem");
 }
 if ($exitstatus == 0) {
   ($exitstatus, $output) =
@@ -689,8 +689,8 @@ if ($exitstatus == 0) {
 } else {
   print "FAILED\n"; $FAILURES++; print STDERR $output;
 }
-unlink( "/tmp/myproxy-test.cert.$$" );
-unlink( "/tmp/myproxy-test.key.$$" );
+unlink( "/tmp/myproxy-test.cert.$$.pem" );
+unlink( "/tmp/myproxy-test.key.$$.pem" );
 if (defined($origtrustrootdir)) {
   $ENV{'X509_CERT_DIR'} = $origtrustrootdir;
 } else {
@@ -714,7 +714,7 @@ if ($exitstatus != 0 && $output =~ /invalid pass phrase/) {
 # Test 22
 #
 ($exitstatus, $output) =
-    &runtest("myproxy-retrieve -c /tmp/myproxy-test-cert.$$ -y /tmp/myproxy-test-key.$$ -v -S",
+    &runtest("myproxy-retrieve -c /tmp/myproxy-test-cert.$$.pem -y /tmp/myproxy-test-key.$$.pem -v -S",
 	     "badpassphrase\n");
 print "MyProxy Test 22 (verify passphrase checking on myproxy-retrieve): ";
 if ($exitstatus != 0 && $output =~ /invalid pass phrase/) {
@@ -722,8 +722,8 @@ if ($exitstatus != 0 && $output =~ /invalid pass phrase/) {
 } else {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
 }
-unlink( "/tmp/myproxy-test.cert.$$" );
-unlink( "/tmp/myproxy-test.key.$$" );
+unlink( "/tmp/myproxy-test.cert.$$.pem" );
+unlink( "/tmp/myproxy-test.key.$$.pem" );
 
 #
 # Test 23
@@ -741,15 +741,15 @@ if ($exitstatus != 0) {
 # Test 24
 #
 ($exitstatus, $output) =
-    &runtest("myproxy-retrieve -a \$X509_USER_PROXY  -c /tmp/myproxy-test-cert.$$ -y /tmp/myproxy-test-key.$$ -v", undef);
+    &runtest("myproxy-retrieve -a \$X509_USER_PROXY  -c /tmp/myproxy-test-cert.$$.pem -y /tmp/myproxy-test-key.$$.pem -v", undef);
 print "MyProxy Test 24 (verify myproxy-retrieve default renewal policy): ";
 if ($exitstatus != 0) {
     print "SUCCEEDED\n"; $SUCCESSES++;
 } else {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
 }
-unlink( "/tmp/myproxy-test-cert.$$" );
-unlink( "/tmp/myproxy-test-key.$$" );
+unlink( "/tmp/myproxy-test-cert.$$.pem" );
+unlink( "/tmp/myproxy-test-key.$$.pem" );
 
 #
 # Test 25
@@ -825,16 +825,16 @@ if ($exitstatus == 0) {
 # Test 29
 #
 ($exitstatus, $output) =
-    &runtest("myproxy-retrieve -k 'mine' -c /tmp/myproxy-test.cert.12.1.$$ -y /tmp/myproxy-test.key.12.1.$$ -v -S",
+    &runtest("myproxy-retrieve -k 'mine' -c /tmp/myproxy-test.cert.12.1.$$.pem -y /tmp/myproxy-test.key.12.1.$$.pem -v -S",
 	     $passphrase . "\n");
 print "MyProxy Test 29 (verify myproxy-retrieve retrieval policies): ";
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
-	&verifycert("/tmp/myproxy-test.cert.12.1.$$", "/tmp/myproxy-test.key.12.1.$$");
+	&verifycert("/tmp/myproxy-test.cert.12.1.$$.pem", "/tmp/myproxy-test.key.12.1.$$.pem");
 }
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
-	&runtest("myproxy-retrieve -k 'nobody' -c /tmp/myproxy-test.cert.12.2.$$ -y /tmp/myproxy-test.key.12.2.$$ -v -S",
+	&runtest("myproxy-retrieve -k 'nobody' -c /tmp/myproxy-test.cert.12.2.$$.pem -y /tmp/myproxy-test.key.12.2.$$.pem -v -S",
 		 $passphrase . "\n");
     if ($exitstatus != 0) {
 	print "SUCCEEDED\n"; $SUCCESSES++;
@@ -848,7 +848,7 @@ if ($exitstatus == 0) {
 }
 &runtest("myproxy-destroy -v -k 'mine'", undef);
 &runtest("myproxy-destroy -v -k 'nobody'", undef);
-`rm -f /tmp/myproxy-test.*.12.*.$$`;
+`rm -f /tmp/myproxy-test.*.12.*.$$.pem`;
 
 #
 # Test 30
@@ -983,16 +983,16 @@ if ($exitstatus == 0 && $output =~ /username/) {
 # Test 36
 #
 ($exitstatus, $output) =
-    &runtest("myproxy-retrieve -k 'mine' -c /tmp/myproxy-test.cert.12.1.$$ -y /tmp/myproxy-test.key.12.1.$$ -v -S",
+    &runtest("myproxy-retrieve -k 'mine' -c /tmp/myproxy-test.cert.12.1.$$.pem -y /tmp/myproxy-test.key.12.1.$$.pem -v -S",
 	     $passphrase . "\n");
 print "MyProxy Test 36 (verify myproxy-retrieve key retrieval policies): ";
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
-	&verifycert("/tmp/myproxy-test.cert.12.1.$$", "/tmp/myproxy-test.key.12.1.$$");
+	&verifycert("/tmp/myproxy-test.cert.12.1.$$.pem", "/tmp/myproxy-test.key.12.1.$$.pem");
 }
 if ($exitstatus == 0) {
     ($exitstatus, $output) =
-	&runtest("myproxy-retrieve -k 'nobody' -c /tmp/myproxy-test.cert.12.2.$$ -y /tmp/myproxy-test.key.12.2.$$ -v -S",
+	&runtest("myproxy-retrieve -k 'nobody' -c /tmp/myproxy-test.cert.12.2.$$.pem -y /tmp/myproxy-test.key.12.2.$$.pem -v -S",
 		 $passphrase . "\n");
     if ($exitstatus != 0) {
 	print "SUCCEEDED\n"; $SUCCESSES++;
@@ -1007,8 +1007,8 @@ if ($exitstatus == 0) {
 end_of_store_tests:
 &runtest("myproxy-destroy -v -k 'mine'", undef);
 &runtest("myproxy-destroy -v -k 'nobody'", undef);
-`rm -f /tmp/myproxy-test.*.12.*.$$`;
-unlink("/tmp/myproxy-test.$$.key");
+`rm -f /tmp/myproxy-test.*.12.*.$$.pem`;
+unlink("/tmp/myproxy-test.$$.key.pem");
 
 #
 # Test 37
