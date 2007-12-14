@@ -153,7 +153,7 @@ auth_sasl_negotiate_server(myproxy_socket_attrs_t *attrs,
 
    char *mech = NULL, /* can force mechanism here if needed */
        *iplocal = NULL, *ipremote = NULL, *service = "myproxy",
-       *localdomain = NULL, *userdomain = NULL;
+       *serverFQDN = NULL, *user_realm = NULL;
 
    myproxy_debug("Server: begin SASL negotiation...");
    myproxy_sasl_authenticated = 0;
@@ -164,7 +164,7 @@ auth_sasl_negotiate_server(myproxy_socket_attrs_t *attrs,
 	myproxy_debug("$SASL_PATH isn't set. Using /usr/lib/sasl2.");
     }	
 
-   result = sasl_server_init(callbacks, "myproxy");
+   result = sasl_server_init(callbacks, service);
    if (result != SASL_OK) {
        myproxy_log("Initializing libsasl failed.");
        return -1;
@@ -173,8 +173,8 @@ auth_sasl_negotiate_server(myproxy_socket_attrs_t *attrs,
    atexit(&sasl_done);
 
    result = sasl_server_new(service,
-                           localdomain,
-                           userdomain,
+                           serverFQDN,
+                           user_realm,
                            iplocal,
                            ipremote,
                            NULL,
