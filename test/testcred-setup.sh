@@ -8,6 +8,8 @@ SUBJECT=`grid-proxy-info -identity`;
 
 if [ $? -ne 0 ]; then
    echo Unable to determine identity from proxy file ${X509_USER_PROXY}
+   echo Output of command:
+   grid-proxy-info -identity
    exit 1
 fi
 
