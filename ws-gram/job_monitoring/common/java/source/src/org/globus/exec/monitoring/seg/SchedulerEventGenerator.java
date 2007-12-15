@@ -27,87 +27,94 @@ import org.globus.exec.monitoring.SchedulerEvent;
 /**
  * Scheduler Event Generator monitor thread.
  * 
- * The Seg object creates a Scheduler Event Generator process to 
- * monitor job state changes associated with a particular scheduler.
- *
+ * The Seg object creates a Scheduler Event Generator process to monitor job
+ * state changes associated with a particular scheduler.
+ * 
  * The Seg object will repeatedly start the SEG process if it terminates
  * prematurely, until its shutdown() method is called.
  */
-class SchedulerEventGenerator extends Thread {
+class SchedulerEventGenerator
+    extends Thread {
+    
     private static Log logger =
-            LogFactory.getLog(SchedulerEventGenerator.class);
+        LogFactory.getLog(SchedulerEventGenerator.class);
 
     /** Reference to the runtime used to start the SEG process */
     private static Runtime runtime = Runtime.getRuntime();
 
-    private static final String SEG_EXECUTABLE_NAME = 
-    	"globus-scheduler-event-generator";
-    
+    private static final String SEG_EXECUTABLE_NAME =
+        "globus-scheduler-event-generator";
+
     /** Path to the SEG executable */
     private File path;
     /**
-     * Username of the account to run the SEG as.
-     * <b>This is currently ignored.</b>
+     * Username of the account to run the SEG as. <b>This is currently ignored.</b>
      */
     private String userName;
+    
     /** Path to the SEG executable */
     private String schedulerName;
+    
     /** SEG Process handle */
     private Process proc;
+    
     /**
-     * Flag indicating that the SEG process should no longer be
-     * restarted and the thread should terminate.
+     * Flag indicating that the SEG process should no longer be restarted and
+     * the thread should terminate.
      */
     private boolean shutdownCalled;
+    
     /**
      * Timestamp of last event we've received from a SEG.
      */
     private java.util.Date timeStamp;
 
     /**
-     * Monitor which created this SchedulerEventGenerator.
-     * We call its addEvent() method when a new event is read from the
-     * SEG process.
+     * Monitor which created this SchedulerEventGenerator. We call its
+     * addEvent() method when a new event is read from the SEG process.
      */
     private JobStateMonitor monitor;
 
     /**
-     * Used to keep track of the last restart time for the SEG process---if
-     * it was too recent (less than our THROTTLE_RESTART_THRESHOLD) wait 
+     * Used to keep track of the last restart time for the SEG process---if it
+     * was too recent (less than our THROTTLE_RESTART_THRESHOLD) wait
      * THROTTLE_RESTART_TIME before trying again.
      */
     private long lastRestart = 0;
+    
     /**
-     * When throttling process restarts, wait this many milliseconds before
-     * next restart attempt.
+     * When throttling process restarts, wait this many milliseconds before next
+     * restart attempt.
      */
     private final long THROTTLE_RESTART_TIME = 2 * 60 * 1000;
+    
     /**
      * When SEG terminates within this amount of time of being started, assume
      * something might be wrong and delay again.
      */
     private final long THROTTLE_RESTART_THRESHOLD = 2 * 1000;
+
     /**
      * SEG constructor.
-     *
+     * 
      * @param path
-     *     Path to the Scheduler Event Generator executable.
+     *            Path to the Scheduler Event Generator executable.
      * @param userName
-     *     Username to sudo(8) to start the SEG.
+     *            Username to sudo(8) to start the SEG.
      * @param schedulerName
-     *     Name of the scheduler SEG module to use (fork, lsf, etc).
+     *            Name of the scheduler SEG module to use (fork, lsf, etc).
      * @param monitor
-     *     JobStateMonitor that will be notified if and Event comes in
+     *            JobStateMonitor that will be notified if and Event comes in
      * @param segDaemon
-     *     Indicates whether the SEG should be started as daemon or not
+     *            Indicates whether the SEG should be started as daemon or not
      */
     public SchedulerEventGenerator(
-        String                              globusLocation,
-        String                              userName,
-        String                              schedulerName,
-        JobStateMonitor                     monitor,
-        boolean                             segDaemon) 
-    {
+        String globusLocation,
+        String userName,
+        String schedulerName,
+        JobStateMonitor monitor,
+        boolean segDaemon) {
+
         this.userName = userName;
         this.schedulerName = schedulerName;
         this.proc = null;
@@ -115,47 +122,45 @@ class SchedulerEventGenerator extends Thread {
         this.timeStamp = null;
         this.monitor = monitor;
         this.setDaemon(segDaemon);
-        this.path = new File(globusLocation +
-                File.separator + "libexec" +
-                File.separator + SEG_EXECUTABLE_NAME);
+        this.path =
+            new File(globusLocation
+                + File.separator + "libexec" + File.separator
+                + SEG_EXECUTABLE_NAME);
         lastRestart = 0;
     }
-    
 
     /**
      * Start and monitor a SEG process.
-     *
-     * When the SEG terminates by itself for whatever reason, this thread
-     * will restart it using the timestamp of the last item which was in
-     * the event cache.
+     * 
+     * When the SEG terminates by itself for whatever reason, this thread will
+     * restart it using the timestamp of the last item which was in the event
+     * cache.
      */
     public void run() {
+
         try {
             while (startSegProcess(timeStamp)) {
                 java.io.BufferedReader stdout;
-                String input; 
+                String input;
 
                 logger.debug("getting seg input");
-                stdout = new java.io.BufferedReader(
-                        new java.io.InputStreamReader(
-                                proc.getInputStream()));
+                stdout =
+                    new java.io.BufferedReader(new java.io.InputStreamReader(
+                        proc.getInputStream()));
                 if (logger.isDebugEnabled()) {
                     logger.debug("Seg input buffer is "
-                    + (stdout.ready()?"read":"not ready"));
-                    try
-                    {
+                        + (stdout.ready() ? "read" : "not ready"));
+                    try {
                         int rc = proc.exitValue();
                         logger.error("SEG terminated with return code " + rc);
-                    }
-                    catch (IllegalThreadStateException itse)
-                    {
+                    } catch (IllegalThreadStateException itse) {
                         logger.debug("SEG still running...");
                     }
                 }
                 while ((input = stdout.readLine()) != null) {
                     logger.debug("seg input line: " + input);
                     java.util.StringTokenizer tok =
-                            new java.util.StringTokenizer(input, ";");
+                        new java.util.StringTokenizer(input, ";");
                     String tokens[] = new String[tok.countTokens()];
 
                     for (int i = 0; i < tokens.length; i++) {
@@ -193,12 +198,10 @@ class SchedulerEventGenerator extends Thread {
                                 se = null;
                         }
 
-                        SchedulerEvent e = new SchedulerEvent(
-                            new java.util.Date(
-                                Long.parseLong(tokens[1])*1000),
-                            tokens[2],
-                            se,
-                            Integer.parseInt(tokens[4]));
+                        SchedulerEvent e =
+                            new SchedulerEvent(new java.util.Date(Long
+                                .parseLong(tokens[1]) * 1000), tokens[2], se,
+                                Integer.parseInt(tokens[4]));
 
                         timeStamp = e.getTimeStamp();
 
@@ -209,11 +212,12 @@ class SchedulerEventGenerator extends Thread {
                 }
                 // if / when we get here, SEG has terminated, check stderr
                 java.io.BufferedReader stderr;
-                stderr = new java.io.BufferedReader(
-                        new java.io.InputStreamReader(
-                                proc.getErrorStream()));
+                stderr =
+                    new java.io.BufferedReader(new java.io.InputStreamReader(
+                        proc.getErrorStream()));
                 while ((input = stderr.readLine()) != null) {
-                    logger.error("SEG Terminated with " + input);
+                    logger.error("SEG Terminated with "
+                        + input);
                 }
                 stderr.close();
 
@@ -226,21 +230,21 @@ class SchedulerEventGenerator extends Thread {
     /**
      * Start a scheduler event generator process.
      * 
-     * This function is called to start a new scheduler event generator
-     * process. This process will monitor the output of the scheduler
-     * and send this object job state change notifications via the
-     * processes's standard output stream.
-     *
-     * If the shutdown method of this object has been called, then the
-     * process will not be started.
-     *
+     * This function is called to start a new scheduler event generator process.
+     * This process will monitor the output of the scheduler and send this
+     * object job state change notifications via the processes's standard output
+     * stream.
+     * 
+     * If the shutdown method of this object has been called, then the process
+     * will not be started.
+     * 
      * @retval true New process started.
      * @reval false Did not create a new seg process.
      */
     private synchronized boolean startSegProcess(
-        Date                                timeStamp)
-        throws                              IOException
-    {
+        Date timeStamp)
+        throws IOException {
+
         cleanProcess();
 
         proc = null;
@@ -249,25 +253,25 @@ class SchedulerEventGenerator extends Thread {
 
         if (!this.shutdownCalled) {
             logger.debug("Starting seg process");
-            String [] cmd;
+            String[] cmd;
 
             // TODO: sudo integration here
             if (timeStamp != null) {
-                cmd = new String[] {
-                    this.path.toString(),
-                    "-s", this.schedulerName,
-                    "-t", Long.toString(
-                            timeStamp.getTime() / 1000)};
+                cmd =
+                    new String[] { this.path.toString(), "-s",
+                        this.schedulerName, "-t",
+                        Long.toString(timeStamp.getTime() / 1000) };
             } else {
-                cmd = new String[] {
-                    this.path.toString(), "-s", this.schedulerName
-                };
+                cmd =
+                    new String[] { this.path.toString(), "-s",
+                        this.schedulerName };
             }
             if (logger.isDebugEnabled()) {
                 logger.debug("executing command: ");
-                for (int i = 0; i  < cmd.length; i++) {
+                for (int i = 0; i < cmd.length; i++) {
                     if (cmd[i] != null) {
-                        logger.debug("->" + cmd[i]);
+                        logger.debug("->"
+                            + cmd[i]);
                     }
                 }
             }
@@ -282,22 +286,26 @@ class SchedulerEventGenerator extends Thread {
     /**
      * Delay THROTTLE_RESTART_TIME before returning unless either
      * <ul>
-     * <li>The SEG process wasn't restarted within
-     *    THROTTLE_RESTART_THRESHOLD</li>
+     * <li>The SEG process wasn't restarted within 
+     *     THROTTLE_RESTART_THRESHOLD</li>
      * <li>The shutdown method has been called</li>
      * </ul>
      */
     private synchronized void throttleRestart() {
+
         logger.debug("throttleRestart called");
 
         long thisTime = new java.util.Date().getTime();
-        long endOfWait = thisTime + THROTTLE_RESTART_TIME;
+        long endOfWait = thisTime
+            + THROTTLE_RESTART_TIME;
 
-        while ((!this.shutdownCalled) &&
-                    ((thisTime - lastRestart) < THROTTLE_RESTART_THRESHOLD)) {
-            logger.debug("Throttling the restart as we just restarted the SEG");
+        while (   (!this.shutdownCalled)
+               && ((thisTime - lastRestart) < THROTTLE_RESTART_THRESHOLD)) {
+            logger.debug(
+                "Throttling the restart as we just restarted the SEG");
             try {
-                wait(endOfWait - thisTime);
+                wait(endOfWait
+                    - thisTime);
             } catch (InterruptedException ie) {
             }
             thisTime = new java.util.Date().getTime();
@@ -306,22 +314,29 @@ class SchedulerEventGenerator extends Thread {
     }
 
     private synchronized void cleanProcess() {
+
         if (proc != null) {
-            try { proc.getInputStream().close(); } catch (Exception e) {}
-            try { proc.getOutputStream().close(); } catch (Exception e) {}
-            try { proc.getErrorStream().close(); } catch (Exception e) {}
+            try {
+                proc.getInputStream().close();
+            } catch (Exception e) {}
+            try {
+                proc.getOutputStream().close();
+            } catch (Exception e) {}
+            try {
+                proc.getErrorStream().close();
+            } catch (Exception e) {}
         }
     }
 
     /**
      * Tell a SEG process to terminate.
      * 
-     * This function will cause the thread associated with this
-     * object to terminate once all input has been processed.
+     * This function will cause the thread associated with this object to
+     * terminate once all input has been processed.
      */
     public synchronized void shutdown()
-            throws java.io.IOException
-    {
+        throws java.io.IOException {
+
         if (this.shutdownCalled) {
             return;
         } else {
@@ -335,8 +350,9 @@ class SchedulerEventGenerator extends Thread {
             logger.debug("done");
         }
     }
-    
+
     public void start(java.util.Date timeStamp) {
+
         logger.debug("Starting seg thread");
         this.timeStamp = timeStamp;
 

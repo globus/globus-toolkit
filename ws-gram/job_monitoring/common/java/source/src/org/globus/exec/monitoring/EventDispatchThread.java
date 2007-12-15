@@ -20,8 +20,9 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.globus.exec.monitoring.seg.SchedulerEventGeneratorMonitor;
 
-public class EventDispatchThread extends Thread
-{
+public class EventDispatchThread
+    extends Thread {
+    
     /** Log4J logger */
     private static Log logger = LogFactory.getLog(EventDispatchThread.class);
     private boolean done = false;
@@ -29,78 +30,67 @@ public class EventDispatchThread extends Thread
     private SchedulerEventGeneratorMonitor monitor = null;
     private JobStateChangeListener listener = null;
 
-    EventDispatchThread (String                 name,
-                         EventDispatchQueue     queue)
-    {
+    EventDispatchThread(
+        String name,
+        EventDispatchQueue queue) {
+
         super(name);
         this.dispatchQueue = queue;
         this.monitor = queue.getMonitor();
         this.listener = queue.getMonitor().getListener();
     }
 
-    public synchronized void terminate()
-    {
+    public synchronized void terminate() {
+
         this.done = true;
     }
 
-    public void run()
-    {
-        while (!this.done)
-        {
+    public void run() {
+
+        while (!this.done) {
             SchedulerEvent event;
 
-            synchronized (this.dispatchQueue)
-            {
-                while ((!this.done) && (dispatchQueue.size() == 0))
-                {
-                    try
-                    {
+            synchronized (this.dispatchQueue) {
+                while ((!this.done)
+                    && (dispatchQueue.size() == 0)) {
+                    try {
                         dispatchQueue.wait();
+                    } catch (InterruptedException e) {
                     }
-                    catch (InterruptedException e) { }
                 }
             }
 
-            do
-            {
-                synchronized (dispatchQueue)
-                {
-                    if (dispatchQueue.size() > 0)
-                    {
+            do {
+                synchronized (dispatchQueue) {
+                    if (dispatchQueue.size() > 0) {
                         event = (SchedulerEvent) dispatchQueue.remove();
-                        logger.debug("DispatchQueueSize: "+
-                                     dispatchQueue.size());
-                    }
-                    else
-                    {
+                        logger.debug("DispatchQueueSize: "
+                            + dispatchQueue.size());
+                    } else {
                         event = null;
                     }
                 }
 
-                if (event != null)
-                {
+                if (event != null) {
                     ResourceKey resourceKey =
-                             monitor.getMapping(
-                                event.getLocalId());
+                        monitor.getMapping(event.getLocalId());
 
                     // only if the resource has not been unregistered
                     // in the meantime
                     if (resourceKey != null) {
-                             listener.jobStateChanged(
-                                  resourceKey,
-                                  event.getLocalId(),
-                                  event.getTimeStamp(),
-                                  event.getState(),
-                                  event.getExitCode());
+                        listener.jobStateChanged(resourceKey, event
+                            .getLocalId(), event.getTimeStamp(), event
+                            .getState(), event.getExitCode());
 
-                       logger.debug("Job "+resourceKey.getValue()+
-                                    ": EventQueueThread: dispatched event "+
-                                    event.getState());
+                        logger.debug("Job "
+                            + resourceKey.getValue()
+                            + ": EventQueueThread: dispatched event "
+                            + event.getState());
                     }
 
                 }
-            }
-            while ((!done) && (event != null));
+            } while ((!done)
+                && (event != null));
         }
     }
 }

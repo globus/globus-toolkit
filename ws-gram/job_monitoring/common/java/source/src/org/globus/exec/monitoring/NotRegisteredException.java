@@ -21,13 +21,14 @@ package org.globus.exec.monitoring;
  * Thrown when a jobid is requested for unregistration which has not been
  * registered.
  */
-public class NotRegisteredException extends Exception
-{
+public class NotRegisteredException
+    extends Exception {
+    
     String localId;
 
+    public NotRegisteredException(
+        String localId) {
 
-    public NotRegisteredException(String localId)
-    {
         this.localId = localId;
     }
 }
