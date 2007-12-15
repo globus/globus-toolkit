@@ -1949,7 +1949,7 @@ AC_ARG_WITH(ssl-dir,
 		fi
 	]
 )
-if test -z "$GSI_LIBS" ; then
+if test -z "$GSI_LDFLAGS" ; then
 LIBS="-lcrypto $LIBS"
 fi
 AC_TRY_LINK_FUNC(RAND_add, AC_DEFINE(HAVE_OPENSSL, 1,
