@@ -533,6 +533,10 @@ globus_i_gsc_op_destroy(
         {
             globus_free(op->gid_array);
         }
+        if(op->glob_match_str != NULL)
+        {
+            globus_free(fact_str);
+        }
 
         GlobusLServerRefDec(op->server_handle);
         globus_l_gsc_server_ref_check(op->server_handle);
@@ -4478,18 +4482,9 @@ globus_i_gsc_list(
     }
     else
     {
-        if(op->glob_match_str != NULL)
-        {
-            globus_free(fact_str);
-        }
         return GlobusGridFTPServerControlErrorSyntax();
     }
 
-    if(op->glob_match_str != NULL)
-    {
-        globus_free(fact_str);
-    }
-    
     GlobusGridFTPServerDebugInternalExit();
     return GLOBUS_SUCCESS;
 }
