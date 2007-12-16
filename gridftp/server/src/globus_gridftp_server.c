@@ -295,7 +295,7 @@ globus_l_gfs_signal_init()
     GlobusGFSName(globus_l_gfs_signal_init);
     GlobusGFSDebugEnter();
    
-/* 
+
 #   ifdef SIGINT
     globus_callback_register_signal_handler(
         SIGINT,
@@ -303,7 +303,6 @@ globus_l_gfs_signal_init()
         globus_l_gfs_sigint,
         NULL);
 #   endif
-*/
 #   ifdef SIGHUP
     globus_callback_register_signal_handler(
         SIGHUP,

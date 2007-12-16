@@ -393,6 +393,8 @@ globus_l_gfs_data_check(
         case GLOBUS_L_GFS_DATA_HANDLE_CLOSED:
             break;
 
+        case GLOBUS_L_GFS_DATA_HANDLE_TE_PRE_AND_DESTROYED:
+            data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_CLOSING_AND_DESTROYED;
         case GLOBUS_L_GFS_DATA_HANDLE_CLOSING_AND_DESTROYED:
             if(!data_handle->is_mine)
             {
@@ -4691,6 +4693,8 @@ void
 globus_l_gfs_data_end_transfer_kickout(
     void *                              user_arg)
 {
+    globus_bool_t                       free_data = GLOBUS_FALSE;
+    globus_l_gfs_data_handle_t *        data_handle;
     globus_l_gfs_data_operation_t *     op;
     globus_gfs_event_info_t        event_reply;
     globus_gfs_finished_info_t              reply;
@@ -4716,13 +4720,16 @@ globus_l_gfs_data_end_transfer_kickout(
                 break;
 
             case GLOBUS_L_GFS_DATA_HANDLE_INUSE:
-                op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_TE_VALID;
                 op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_VALID;
                 break;
 
-            case GLOBUS_L_GFS_DATA_HANDLE_CLOSING:
             case GLOBUS_L_GFS_DATA_HANDLE_TE_PRE_CLOSED:
+                disconnect = GLOBUS_TRUE;
+                break;
             case GLOBUS_L_GFS_DATA_HANDLE_TE_PRE_AND_DESTROYED:
+                disconnect = GLOBUS_TRUE;
+                break;
+            case GLOBUS_L_GFS_DATA_HANDLE_CLOSING:
                 disconnect = GLOBUS_TRUE;
                 break;
 
@@ -5015,6 +5022,26 @@ globus_l_gfs_data_end_transfer_kickout(
         ready to finish */
     globus_mutex_lock(&op->session_handle->mutex);
     {
+            switch(op->data_handle->state)
+            {
+                case GLOBUS_L_GFS_DATA_HANDLE_TE_VALID:
+                    /* leave this state until after TC event? */
+                    break;
+                case GLOBUS_L_GFS_DATA_HANDLE_TE_PRE_CLOSED:
+                    op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_CLOSED;
+                    break;
+                case GLOBUS_L_GFS_DATA_HANDLE_TE_PRE_AND_DESTROYED:
+                    op->data_handle->state =
+                        GLOBUS_L_GFS_DATA_HANDLE_CLOSING_AND_DESTROYED;
+                    free_data = GLOBUS_TRUE;
+                    data_handle = op->data_handle;
+                    /* gotta free it here */
+                    break;
+
+                default:
+                    break;
+            }
+
         GFSDataOpDec(op, destroy_op, destroy_session);
 
         if(destroy_op)
@@ -5052,6 +5079,10 @@ globus_l_gfs_data_end_transfer_kickout(
 
         globus_l_gfs_data_fire_cb(op, remote_data_arg, destroy_session);
         globus_l_gfs_data_operation_destroy(op);
+    }
+    if(free_data)
+    {
+        globus_l_gfs_data_handle_free(data_handle);
     }
 
     GlobusGFSDebugExit();

@@ -893,6 +893,7 @@ globus_l_gfs_request_command(
     int                                 argc,
     void *                              user_arg)
 {
+    char *                              msg_for_log;
     int                                 type;
     globus_l_gfs_server_instance_t *    instance;
     globus_gfs_command_info_t *         command_info;
@@ -901,6 +902,8 @@ globus_l_gfs_request_command(
     globus_bool_t                       done = GLOBUS_FALSE;
     GlobusGFSName(globus_l_gfs_request_command);
     GlobusGFSDebugEnter();
+
+    msg_for_log = strdup(full_command);
 
     instance = (globus_l_gfs_server_instance_t *) user_arg;
 
@@ -1120,8 +1123,9 @@ globus_l_gfs_request_command(
             globus_l_gfs_data_command_cb,
             request);
     }
-    globus_l_gfs_control_log(instance->server_handle, full_command,
+    globus_l_gfs_control_log(instance->server_handle, msg_for_log,
         type, instance);
+    free(msg_for_log);
     
     GlobusGFSDebugExit();
     return;
@@ -1129,8 +1133,9 @@ globus_l_gfs_request_command(
 err:   
 error_init:
 
-    globus_l_gfs_control_log(instance->server_handle, full_command,
+    globus_l_gfs_control_log(instance->server_handle, msg_for_log,
         GLOBUS_GRIDFTP_SERVER_CONTROL_LOG_ERROR, instance);
+    free(msg_for_log);
     globus_gsc_959_finished_command(op,
         "501 Invalid command arguments.\r\n");
 
