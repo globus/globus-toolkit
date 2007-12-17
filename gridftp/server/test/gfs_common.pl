@@ -30,6 +30,7 @@ my @cleanup_pids;
 my @cleanup_files;
 my $gfs_working_dir=$ENV{GLOBUS_LOCATION}."/test/globus_gridftp_server_test";
 my $gfs_subject;
+my $g_server_args="-disable-usage-stats -no-fork -control-interface 127.0.0.1";
 
 sub gfs_next_test()
 {
@@ -39,6 +40,19 @@ sub gfs_next_test()
 
     $test_ndx = $test_ndx + 1;
     gfs_cleanup();
+
+    if($ENV{GRID_FTP_SERVER_CS})
+    {
+        $cs = $ENV{GRID_FTP_SERVER_CS};
+        if($test_ndx == 1)
+        {
+            return -1,$cs,$test_ndx;
+        }
+        else
+        {
+            return -1,$cs,-1;
+        }
+    }
 
     if($test_ndx == 1)
     {
@@ -68,7 +82,16 @@ sub gfs_next_test()
     else
     {
         $test_ndx = -1;
+        print "No more tests.\n";
+        return $pid,$cs,$test_ndx;
     }
+
+    print "Setting up src/dst server on $cs\n";
+
+    $cs =~ s/.*:/localhost:/;
+    
+    $ENV{FTP_TEST_SOURCE_HOST} = $cs;
+    $ENV{FTP_TEST_DEST_HOST} = $cs;
 
     return $pid,$cs,$test_ndx;
 }
@@ -99,7 +122,7 @@ sub gfs_setup_server_basic()
     my $subject;
     my $server_fd;
 
-    my $server_args = "-disable-usage-stats -no-chdir -d 0 ".$server_args;
+    my $server_args = "-no-chdir -d 0 ".$server_args." ".$g_server_args;
    
     print "$server_prog $server_args\n"; 
     $server_pid = open($server_fd, "$server_prog $server_args |");

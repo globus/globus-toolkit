@@ -23,13 +23,20 @@ require "gfs_common.pl";
 # limitations under the License.
 # 
 
-$ENV{'FTP_TEST_NO_GSI'}=1;
+my  $subject = gfs_setup_security_env();
 my $test_ndx = 0;
+my $pid;
+my $cs;
 my $cnt=0;
-gfs_next_test($test_ndx);
-while($test_ndx != -1)
+($pid,$cs,$test_ndx) = gfs_next_test($test_ndx);
+while($test_ndx >= 0)
 {
-    exit (0 != system('./globus-ftp-client-run-tests.pl'));
-    gfs_next_test($test_ndx);
+    my $rc = system('./globus-ftp-client-run-tests.pl');
+    if($rc != 0)
+    {
+        exit $rc;
+    }
+    ($pid,$cs,$test_ndx) = gfs_next_test($test_ndx);
 }
 
+exit 0;

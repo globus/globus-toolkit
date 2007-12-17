@@ -16,5 +16,13 @@
 # limitations under the License.
 # 
 
+my $rc;
 
-exit (0 != system('./globus-ftp-client-run-tests.pl -runserver'));
+$rc = system('./globus-ftp-client-run-tests.pl -runserver');
+if($rc != 0)
+{
+    exit $rc;
+}
+
+$rc = system('./globus-ftp-client-many-server.pl');
+exit $rc;
