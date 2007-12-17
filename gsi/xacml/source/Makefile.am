@@ -46,10 +46,10 @@ libxacml_soap_server_la_SOURCES = xacml_server.cpp xacml_server.h
 libxacml_soap_server_la_LIBADD = libxacml_soap_common.la -lpthread
 
 xacml_server_SOURCES = xacml_server_example.c xacml_ns.cpp 
-xacml_server_LDADD = $(LDADD) libxacml_soap_server.la libxacml_common.la 
+xacml_server_LDADD = $(LDADD) libxacml_soap_server.la libxacml_common.la -lgsoapssl++ -lssl -lcrypto
 
 xacml_client_SOURCES = xacml_ns.cpp xacml_client_program.c 
-xacml_client_LDADD = $(LDADD) libxacml_soap_client.la libxacml_common.la 
+xacml_client_LDADD = $(LDADD) libxacml_soap_client.la libxacml_common.la -lgsoapssl++ -lssl -lcrypto
 
 # Rules to create gsoap files
 $(GSOAP_FILE): $(SCHEMA) typemap.dat
@@ -62,3 +62,6 @@ $(GSOAP_SOURCE_FILES): $(GSOAP_FILE)
 CLEANFILES=$(GSOAP_FILE) $(GSOAP_SOURCE_FILES) \
 	soapXACMLAuthorizationPortTypeSOAPBindingObject.h \
 	soapXACMLAuthorizationPortTypeSOAPBindingProxy.h
+
+doc:
+	@DOXYGEN@

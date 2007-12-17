@@ -1,3 +1,19 @@
+/*
+ * Copyright 1999-2006 University of Chicago
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #ifndef XACML_H
 #define XACML_H
 
@@ -5,7 +21,29 @@
 
 #include <time.h>
 
+#ifndef DONT_DOCUMENT_INTERNAL
 EXTERN_C_BEGIN
+#endif
+
+/**
+ * @mainpage SAML 2.0 profile of XACML v2.0 Implementation
+ *
+ * This API provides a basic implementation of the SAML 2.0 profile of XACML
+ * v2.0, including support for obligations in XACML response messages. It aids
+ * in writing XACML clients and servers.
+ *
+ * - @link xacml_common Common Library Functions @endlink
+ * - @link xacml_client Client Library Functions @endlink
+ * - @link xacml_server Server Library functions @endlink
+ */
+
+/** 
+ * @defgroup xacml_common Common Library Functions and Constants
+ */
+
+/**
+ * @defgroup xacml_server Server Library Functions
+ */
 
 int
 xacml_init(void);
@@ -134,14 +172,29 @@ xacml_response_get_xacml_status_code(
     xacml_status_code_t *               status_code);
 
 int
+xacml_obligation_init(
+    xacml_obligation_t *                obligation,
+    const char *                        obligation_id,
+    xacml_effect_t                      fulfill_on);
+
+void
+xacml_obligation_destroy(
+    xacml_obligation_t                  obligation);
+
+int
+xacml_obligation_add_attribute(
+    xacml_obligation_t                  obligation,
+    const char *                        attribute_id,
+    const char *                        data_type,
+    const char *                        value);
+
+int
 xacml_response_add_obligation(
     xacml_response_t                    response,
-    const char *                        obligation_id,
-    xacml_effect_t                      fulfill_on,
-    const char *                        attribute_id[],
-    const char *                        data_type[],
-    const char *                        value[]);
+    const xacml_obligation_t            obligation);
 
+#ifndef DONT_DOCUMENT_INTERNAL
 EXTERN_C_END
+#endif
 
 #endif /* XACML_H */

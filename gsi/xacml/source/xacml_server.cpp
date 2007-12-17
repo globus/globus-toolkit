@@ -1,3 +1,19 @@
+/*
+ * Copyright 1999-2006 University of Chicago
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "soapH.h"
 
 #include "xacml_server.h"
@@ -14,6 +30,7 @@
 #   define _POSIX_HOST_NAME_MAX 255
 #endif
 
+#ifndef DONT_DOCUMENT_INTERNAL
 namespace xacml
 {
 void *
@@ -396,13 +413,41 @@ prepare_response(
     return SOAP_OK;
 }
 } // namespace xacml
+#endif /* DONT_DOCUMENT_INTERNAL */
 
+/**
+ * Initialize XACML server
+ * @ingroup xacml_server
+ *
+ * Create a new XACML authorization server instance. This service, when
+ * started with xacml_server_start(), will accept TCP/IP connections, parse an
+ * XACML authorization query, and then call the @a handler callback function
+ * with the request information. By default, the server will listen for
+ * connections on TCP port 8080.
+ * 
+ * @param server 
+ *     Pointer to the service handle to intialize.
+ * @param handler
+ *     Callback function to perform authorization and create obligations.
+ * @param arg
+ *     Application-specific argument to @a handler.
+ *
+ * @retval XACML_RESULT_SUCCESS
+ *     Success.
+ * @retval XACML_RESULT_INVALID_PARAMETER
+ *     Invalid parameter.
+ * @see xacml_server_start(), xacml_server_destroy()
+ */
 int
 xacml_server_init(
     xacml_server_t *                    server,
     xacml_authorization_handler_t       handler,
     void *                              arg)
 {
+    if (server == NULL || handler == NULL)
+    {
+        return XACML_RESULT_INVALID_PARAMETER;
+    }
     (*server) = new xacml_server_s;
     (*server)->port = 8080;
     (*server)->started = false;
@@ -412,43 +457,117 @@ xacml_server_init(
     pthread_mutex_init(&(*server)->lock, NULL);
     pthread_cond_init(&(*server)->cond, NULL);
 
-    return 0;
+    return XACML_RESULT_SUCCESS;
 }
+/* xacml_server_init() */
 
+/**
+ * Set the TCP port for a server
+ * @ingroup xacml_server
+ *
+ * Change the TCP port to use for an XACML server. This must be called
+ * before the server has been started, or an @a XACML_RESULT_INVALID_STATE
+ * error will result.
+ *
+ * @param server
+ *     Server to modify.
+ * @param port
+ *     TCP port number to use for connections.
+ *
+ * @retval XACML_RESULT_SUCCESS
+ *     Success.
+ * @retval XACML_RESULT_INVALID_PARAMETER
+ *     Invalid parameter.
+ * @retval XACML_RESULT_INVALID_STATE
+ *     Invalid state.
+ *
+ * @see xacml_server_get_port()
+ */
 int
 xacml_server_set_port(
     xacml_server_t                      server,
     unsigned short                      port)
 {
-    server->port = port;
+    int rc = XACML_RESULT_SUCCESS;
 
-    return 0;
+    if (server == NULL)
+    {
+        rc = XACML_RESULT_INVALID_PARAMETER;
+        goto out;
+    }
+
+    pthread_mutex_lock(&server->lock);
+    if (server->started)
+    {
+        rc = XACML_RESULT_INVALID_STATE;
+    }
+    else
+    {
+        server->port = port;
+    }
+    pthread_mutex_unlock(&server->lock);
+
+out:
+    return rc;
 }
+/* xacml_server_set_port() */
 
+
+/**
+ * Get the TCP port for a server
+ * @ingroup xacml_server
+ *
+ * Return the TCP port to use for an XACML server. 
+ *
+ * @param server
+ *     Server to query.
+ * @param port
+ *     Pointer to be set to the TCP port number to use for connections.
+ *
+ * @retval XACML_RESULT_SUCCESS
+ *     Success.
+ * @retval XACML_RESULT_INVALID_PARAMETER
+ *     Invalid parameter.
+ *
+ * @see xacml_server_get_port()
+ */
 int
 xacml_server_get_port(
     const xacml_server_t                server,
     unsigned short *                    port)
 {
+    if (server == NULL || port == NULL)
+    {
+        return XACML_RESULT_INVALID_PARAMETER;
+    }
+    pthread_mutex_lock(&server->lock);
     *port = server->port;
+    pthread_mutex_unlock(&server->lock);
 
-    return 0;
+    return XACML_RESULT_SUCCESS;
 }
+/* xacml_server_get_port() */
 
-int
-xacml_server_use_ssl(
-    xacml_server_t                      server,
-    const char *                        certificate_path,
-    const char *                        key_path,
-    const char *                        ca_path)
-{
-    server->cert_path = certificate_path;
-    server->key_path = key_path;
-    server->ca_path = ca_path;
-
-    return 0;
-}
-
+/**
+ * Start processing XACML Authorization Queries
+ * @ingroup xacml_server
+ *
+ * Creates a thread to procss XACML authorization queries. This thread
+ * will continue to do so until xacml_server_destroy() is called. When
+ * a legitimate XACML query has been parsed, the authorization handler
+ * function passed to xacml_server_init() will be called with the parsed
+ * XACML Authorization query and the application specific argument.
+ *
+ * @param server
+ *     XACML server to start.
+ *
+ * @retval XACML_RESULT_SUCCESS
+ *     Success
+ * @retval XACML_RESULT_INVALID_PARAMETER
+ *     Invalid parameter
+ *
+ * @see xacml_server_init(), xacml_server_destroy()
+ */
 int
 xacml_server_start(
     xacml_server_t                      server)
@@ -469,12 +588,31 @@ out:
 
     return rc;
 }
+/* xacml_server_start() */
 
+/**
+ * Destroy an XACML server
+ * @ingroup xacml_server
+ *
+ * Stop servicing XACML authorization queries, and destroy the server
+ * handle. The @a server should not be used after this function returns.
+ *
+ * @param server
+ *     Server to destroy.
+ *
+ * @return void
+ * @see xacml_server_init(), xacml_server_start()
+ */
 void
 xacml_server_destroy(
     xacml_server_t                      server)
 {
     void *arg;
+
+    if (server == NULL)
+    {
+        return;
+    }
 
     pthread_mutex_lock(&server->lock);
     server->stopped = true;
@@ -495,7 +633,7 @@ xacml_server_destroy(
 }
 
 
-
+#ifndef DONT_DOCUMENT_INTERNAL
 int
 __XACMLService__Authorize(
     struct soap *                       soap,
@@ -540,3 +678,4 @@ __XACMLService__Authorize(
     return SOAP_OK;
 }
 /* __XACMLService__Authorize() */
+#endif /* DONT_DOCUMENT_INTERNAL */

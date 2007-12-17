@@ -1,3 +1,19 @@
+/*
+ * Copyright 1999-2006 University of Chicago
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #ifndef XACML_DATATYPES_H
 #define XACML_DATATYPES_H
 
@@ -11,11 +27,33 @@
 #    endif
 #endif
 
+#ifndef DONT_DOCUMENT_INTERNAL
 EXTERN_C_BEGIN
+#endif
 
+/**
+ XACML Request Handle
+ @ingroup xacml_common
+ @see xacml_request_init(), xacml_request_destroy()
+ */
 typedef struct xacml_request_s * xacml_request_t;
+
+/**
+ XACML Response Handle
+ @ingroup xacml_common
+ */
 typedef struct xacml_response_s * xacml_response_t;
 
+/**
+ XACML Obligation Handle
+ @ingroup xacml_common
+ */
+typedef struct xacml_obligation_s * xacml_obligation_t;
+
+/**
+ SAML Status Codes
+ @ingroup xacml_common
+ */
 typedef enum
 {
     SAML_STATUS_Success,
@@ -44,8 +82,33 @@ typedef enum
 }
 saml_status_code_t;
 
+/**
+ * XCAML API Return Values
+ * @ingroup xacml_common
+ */
+typedef enum
+{
+    /** Success */
+    XACML_RESULT_SUCCESS,
+    /** Invalid parameter */
+    XACML_RESULT_INVALID_PARAMETER,
+    /** Obligation could not be processed */
+    XACML_RESULT_OBLIGATION_FAILED,
+    /** Invalid state */
+    XACML_RESULT_INVALID_STATE
+}
+xacml_result_t;
+
+/**
+ SAML Status Code Strings
+ @ingroup xacml_common
+ */
 extern const char *saml_status_code_strings[];
 
+/**
+ XACML Status Codes
+ @ingroup xacml_common
+ */
 typedef enum
 {
     XACML_STATUS_missing_attribute,
@@ -55,9 +118,16 @@ typedef enum
 }
 xacml_status_code_t;
 
+/**
+ XACML Status Code Strings
+ @ingroup xacml_common
+ */
 extern const char *xacml_status_code_strings[];
 
-
+/**
+ XACML Decisions
+ @ingroup xacml_common
+ */
 typedef enum
 {
     XACML_DECISION_Permit,
@@ -67,6 +137,10 @@ typedef enum
 }
 xacml_decision_t;
 
+/**
+ XACML Effects
+ @ingroup xacml_common
+ */
 typedef enum
 {
     XACML_EFFECT_Permit,
@@ -74,6 +148,25 @@ typedef enum
 }
 xacml_effect_t;
 
+/**
+ Obligation Handler Callback
+ @ingroup xacml_client
+
+ @param handler_arg
+     Application-specification handler argument.
+ @param response
+     Server response value.
+ @param obligation_id
+     Name of the obligation contained in the response
+ @param fulfill_on
+     Effect indicating when the obligation applies.
+ @param attribute_ids
+     XACML attribute names associated with the obligation values
+ @param datatypes
+     XACML attribute datatypes associated with the obligation values
+ @param values
+     String representation of the obligation values
+ */
 typedef int (*xacml_obligation_handler_t) (
     void *                              handler_arg,
     const xacml_response_t              response,
@@ -207,6 +300,8 @@ typedef int (*xacml_authorization_handler_t) (
 #define SAML_NAME_ID_FORMAT_TRANSIENT \
         "urn:oasis:names:tc:SAML:2.0:nameid-format:transient"
 
+#ifndef DONT_DOCUMENT_INTERNAL
 EXTERN_C_END
+#endif
 
 #endif /* XACML_DATATYPES_H */

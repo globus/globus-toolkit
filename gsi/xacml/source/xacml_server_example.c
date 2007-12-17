@@ -1,3 +1,19 @@
+/*
+ * Copyright 1999-2006 University of Chicago
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "xacml_server.h"
 
 #include <stdlib.h>
@@ -49,15 +65,19 @@ xacml_authorize(
 
         if (userid)
         {
-            const char *obligation_id = "urn:globus:local-user-name:obj";
-            const char *attribute_id[] = { XACML_SUBJECT_ATTRIBUTE_SUBJECT_ID, NULL };
-            const char *data_type[] = { XACML_DATATYPE_STRING, NULL };
-            const char *value[] = { (const char *) userid, NULL };
+            xacml_obligation_t          obligation;
+
+            xacml_obligation_init(&obligation, "urn:globus:local-user-name:obj",
+                                  XACML_EFFECT_Permit);
+            xacml_obligation_add_attribute(obligation,
+                                           XACML_SUBJECT_ATTRIBUTE_SUBJECT_ID,
+                                           XACML_DATATYPE_STRING,
+                                           userid);
+
             xacml_response_set_saml_status_code(response, SAML_STATUS_Success);
             xacml_response_set_xacml_status_code(response, XACML_STATUS_ok);
-            xacml_response_add_obligation(response, obligation_id,
-                                                XACML_EFFECT_Permit,
-                                                attribute_id, data_type, value);
+            xacml_response_add_obligation(response, obligation);
+            xacml_obligation_destroy(obligation);
             xacml_response_set_xacml_decision(response, XACML_DECISION_Permit);
             return 0;
         }
@@ -114,7 +134,7 @@ int main(int argc, char *argv[])
     }
     if (cert != NULL || key != NULL) 
     {
-        xacml_server_use_ssl(server, cert, key, ca_path);
+        abort();
     }
 
     signal(SIGINT, siginthandler);

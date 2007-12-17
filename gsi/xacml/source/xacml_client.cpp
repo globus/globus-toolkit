@@ -1,3 +1,19 @@
+/*
+ * Copyright 1999-2006 University of Chicago
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "xacml_i.h"
 #include "xacml_client.h"
 #include "soapStub.h"
@@ -7,6 +23,7 @@
 #include <sstream>
 #include <iomanip>
 
+#ifndef DONT_DOCUMENT_INTERNAL
 namespace xacml
 {
 XACMLcontext__AttributeType *
@@ -297,7 +314,34 @@ parse_xacml_response(
 }
 /* parse_xacml_response() */
 }
+#endif /* DONT_DOCUMENT_INTERNAL */
 
+/**
+ Add an obligation handler to an XACML request handle
+ @ingroup xacml_client
+
+ Creates a new obligation handler for the Obligation named @a obligation_id.
+ When an XACML response is sent that includes such an obligation, this
+ function will be invoked. See @ref xacml_obligation_handler_t for a
+ description of the parameters to the handler. 
+ 
+ @param request
+     Client request to add the obligation handler to.
+ @param handler
+     Callback function to invoke when an obligation matching @a obligation_id
+     is encountered while processing an XACML response.
+ @param handler_arg
+     Application-specific parameter to @a handler.
+ @param obligation_id
+     If this is NULL, then this handler will be invoked as a default
+     obligation handler when no other obligation handler matches the
+     @a obligation_id name.
+ 
+ @retval XACML_RESULT_SUCCESS
+     XACML handler successfully registered with the request.
+ @retval XACML_RESULT_INVALID_PARAMETER
+     Invalid parameter.
+ */
 int
 xacml_request_add_obligation_handler(
     xacml_request_t                     request,
@@ -306,6 +350,11 @@ xacml_request_add_obligation_handler(
     const char *                        obligation_id)
 {
     xacml::obligation_handler_info      info;
+
+    if (request == NULL || handler == NULL)
+    {
+        return XACML_RESULT_INVALID_PARAMETER;
+    }
 
     info.handler = handler;
     info.handler_arg = handler_arg;
@@ -317,29 +366,32 @@ xacml_request_add_obligation_handler(
 }
 /* xacml_request_add_obligation_handler() */
 
-int
-xacml_request_use_ssl(
-    xacml_request_t                     request,
-    const char *                        certificate_path,
-    const char *                        key_path,
-    const char *                        ca_dir)
-{
-    if (certificate_path)
-    {
-        request->certificate_path = certificate_path;
-    }
-    if (key_path)
-    {
-        request->key_path = key_path;
-    }
-    if (ca_dir)
-    {
-        request->certificate_dir = ca_dir;
-    }
 
-    return 0;
-}
+/**
+ Perform an XACML authorization query
+ @ingroup xacml_client
 
+ Contact an XACML server processing requests at the named endpoint and present
+ an authorization query. After the server responds, obligation handlers
+ registered with @ref xacml_request_add_obligation_handler() will be invoked.
+ Any failure returned from the obligation handlers will cause this function
+ to return an error value.
+
+ @param endpoint
+     Endpoint of the authorization service to contact.
+ @param request
+     Request handle containing the authorization request information.
+ @param response
+     Initialized response handle which will be populated with the status values
+     from the authorization service.
+
+ @retval XACML_RESULT_SUCCESS
+     Success.
+ @retval XACML_RESULT_INVALID_PARAMETER
+     Invalid parameter.
+ @retval XACML_RESULT_OBLIGATION_FAILED
+     Failed obligation processing.
+ */
 int
 xacml_query(
     const char *                        endpoint,
@@ -353,6 +405,10 @@ xacml_query(
     int                                 rc;
     std::ostringstream                  ostr;
 
+    if (endpoint == NULL || request == NULL || response == NULL)
+    {
+        return XACML_RESULT_INVALID_PARAMETER;
+    }
 
     query = new XACMLsamlp__XACMLAuthzDecisionQueryType;
 
@@ -377,7 +433,9 @@ xacml_query(
         request->certificate_path != "" ||
         request->key_path != "")
     {
-        soap_ssl_client_context(&soap, SOAP_SSL_NO_AUTHENTICATION|SOAP_SSL_SKIP_HOST_CHECK,
+        soap_ssl_client_context(&soap,
+                                SOAP_SSL_NO_AUTHENTICATION |
+                                SOAP_SSL_SKIP_HOST_CHECK,
                                 request->certificate_path.c_str(),
                                 request->key_path.c_str(),
                                 NULL,
@@ -438,6 +496,7 @@ xacml_query(
                           values);
             if (rc != 0)
             {
+                rc = XACML_RESULT_OBLIGATION_FAILED;
                 goto out;
             }
         }
@@ -446,4 +505,4 @@ xacml_query(
 out:
     return rc;
 }
-/* query() */
+/* xacml_query() */

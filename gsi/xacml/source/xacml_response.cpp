@@ -1,3 +1,19 @@
+/*
+ * Copyright 1999-2006 University of Chicago
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "xacml_i.h"
 
 int
@@ -105,30 +121,57 @@ xacml_response_get_xacml_status_code(
 }
 
 int
+xacml_obligation_init(
+    xacml_obligation_t *                obligation,
+    const char *                        obligation_id,
+    xacml_effect_t                      fulfill_on)
+{
+    xacml_obligation_s *                o;
+
+    o = new xacml_obligation_s();
+
+    o->obligation.obligation_id = obligation_id;
+    o->obligation.fulfill_on = fulfill_on;
+
+    *obligation = o;
+
+    return 0;
+}
+
+void
+xacml_obligation_destroy(
+    xacml_obligation_t                  obligation)
+{
+    delete obligation;
+}
+
+int
+xacml_obligation_add_attribute(
+    xacml_obligation_t                  obligation,
+    const char *                        attribute_id,
+    const char *                        data_type,
+    const char *                        value)
+{
+    xacml::obligation                   o = obligation->obligation;
+    xacml::attribute                    attribute;
+
+    attribute.attribute_id = attribute_id;
+    attribute.data_type = data_type;
+    attribute.value = value;
+
+    o.attributes.push_back(attribute);
+
+    return 0;
+}
+
+int
 xacml_response_add_obligation(
     xacml_response_t                    response,
-    const char *                        obligation_id,
-    xacml_effect_t                      fulfill_on,
-    const char *                        attribute_id[],
-    const char *                        data_type[],
-    const char *                        value[])
+    const xacml_obligation_t            obligation)
 {
-    xacml::obligation                   obligation;
+    xacml::obligation                   o = obligation->obligation;
 
-    obligation.obligation_id = obligation_id;
-    obligation.fulfill_on = fulfill_on;
-
-    for (int i = 0; attribute_id[i] != NULL; i++)
-    {
-        xacml::attribute                attribute;
-
-        attribute.attribute_id = attribute_id[i];
-        attribute.data_type = data_type[i];
-        attribute.value = value[i];
-
-        obligation.attributes.push_back(attribute);
-    }
-    response->obligations.push_back(obligation);
+    response->obligations.push_back(o);
 
     return 0;
 }

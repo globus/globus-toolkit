@@ -34,6 +34,8 @@ SOAPCPP2="$GSOAP_DIR/bin/soapcpp2"
 if test ! -x "$SOAPCPP2"; then
     AC_MSG_ERROR([soapcpp2 not found])
 fi
+AC_PATH_PROG(DOXYGEN, doxygen, true)
+
 AC_MSG_RESULT([ok])
 
 AC_SUBST(GSOAP_DIR)

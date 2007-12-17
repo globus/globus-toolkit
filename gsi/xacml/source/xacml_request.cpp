@@ -1,7 +1,22 @@
+/*
+ * Copyright 1999-2006 University of Chicago
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "xacml_i.h"
 
 #include <iterator>
-using namespace xacml;
 
 int
 xacml_request_init(
@@ -35,9 +50,9 @@ xacml_request_add_subject_attribute(
     const char *                        issuer,
     const char *                        value)
 {
-    attribute_set &                     set = request->subjects[subject_category];
-    attributes &                        attributes = set[issuer ? issuer : ""];
-    attribute                           attr;
+    xacml::attribute_set &              set = request->subjects[subject_category];
+    xacml::attributes &                 attributes = set[issuer ? issuer : ""];
+    xacml::attribute                    attr;
 
     attr.attribute_id = attribute_id;
     attr.data_type = data_type;
@@ -56,15 +71,15 @@ xacml_request_get_subject_attribute_count(
 {
     size_t                              c = 0;
 
-    for (subject::iterator i = request->subjects.begin();
+    for (xacml::subject::iterator i = request->subjects.begin();
          i != request->subjects.end();
          i++)
     {
-        for (attribute_set::iterator j = i->second.begin();
+        for (xacml::attribute_set::iterator j = i->second.begin();
              j != i->second.end();
              j++)
         {
-            for (attributes::iterator k = j->second.begin();
+            for (xacml::attributes::iterator k = j->second.begin();
                  k != j->second.end();
                  k++)
             {
@@ -89,15 +104,15 @@ xacml_request_get_subject_attribute(
 {
     size_t c = 0;
     
-    for (subject::iterator i = request->subjects.begin();
+    for (xacml::subject::iterator i = request->subjects.begin();
          i != request->subjects.end();
          i++)
     {
-        for (attribute_set::iterator j = i->second.begin();
+        for (xacml::attribute_set::iterator j = i->second.begin();
              j != i->second.end();
              j++)
         {
-            for (attributes::iterator k = j->second.begin();
+            for (xacml::attributes::iterator k = j->second.begin();
                  k != j->second.end();
                  k++)
             {
@@ -142,13 +157,13 @@ xacml_request_add_resource_attributes(
     const char *                        issuer[],
     const char *                        value[])
 {
-    attribute_set                       resource;
+    xacml::attribute_set                resource;
 
     for (int i = 0; attribute_id[i] != NULL; i++)
     {
-        attribute                       attr;
+        xacml::attribute                attr;
         const std::string               iss = issuer[i] ? issuer[i] : "";
-        attributes &attributes = resource[iss];
+        xacml::attributes &             attributes = resource[iss];
 
         attr.attribute_id = attribute_id[i];
         attr.data_type = data_type[i];
@@ -170,7 +185,7 @@ xacml_request_add_action_attribute(
     const char *                        issuer,
     const char *                        value)
 {
-    attribute                           attr;
+    xacml::attribute                    attr;
 
     attr.attribute_id = attribute_id;
     attr.data_type = data_type;
@@ -190,7 +205,7 @@ xacml_request_add_environment_attribute(
     const char *                        issuer,
     const char *                        value)
 {
-    attribute                           attr;
+    xacml::attribute                    attr;
 
     attr.attribute_id = attribute_id;
     attr.data_type = data_type;
