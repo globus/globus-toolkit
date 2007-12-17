@@ -49,7 +49,7 @@ my @dc_opts;
 
 my @proto;
 
-if(defined($nogsi))
+if(!defined($ENV{FTP_TEST_NO_GSI}))
 {
     push(@dc_opts, "");
     push(@proto, "ftp://");

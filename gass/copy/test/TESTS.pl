@@ -36,7 +36,9 @@ use strict;
 use Cwd;
 
 my @tests = qw(
-               guc-simple.pl
+                guc-simple.pl
+                guc-stack.pl
+                guc-cc.pl
                );
 
 foreach (@tests)

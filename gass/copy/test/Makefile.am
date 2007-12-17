@@ -10,8 +10,10 @@ SUBDIRS= \
 # Scripts contains all of the scripts in this directory
 Scripts= \
 	TESTS.pl \
+    guc-stack.pl \
     guc-simple.pl \
     guc-pp-cc.pl \
+    guc-cc.pl \
 	globus-gass-copy-check-for-commands.pl \
 	globus-gass-copy-local-test.pl \
 	globus-gass-copy-remote-test.pl
