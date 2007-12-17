@@ -31,11 +31,11 @@
 
 /**
  * @name Token Get Nexus
- * @ingroup globus_gsi_gss_assist_token
  */
 /* @{ */
 /**
  * Use a nexus socket to get the tokens
+ * @ingroup globus_gsi_gss_assist_tokens
  *
  * Additional code has been added to detect tokens which 
  * are sent without a length field. These can currently be
@@ -241,10 +241,10 @@ globus_gss_assist_token_get_nexus(
 
 /**
  * @name Token Send Nexus
- * @ingroup globus_gsi_gss_assist_token
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_gss_assist_tokens
  * Write a token to the nexus io handle. 
  * This function provides parameter types that allow 
  * it to be passed to
@@ -288,13 +288,13 @@ globus_gss_assist_token_send_nexus(
 
 /**
  * @name Token Send Nexus Without Length
- * @ingroup globus_gsi_gss_assist_token
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_gss_assist_tokens
  * Send a token on a nexus IO handle.  Using this function
- * the length is not sent.  See 
- * @ref globus_gss_assist_token_get_nexus for further info.
+ * the length is not sent.
+ * @see globus_gss_assist_token_get_nexus() for further info.
  */
 int
 globus_gss_assist_token_send_nexus_without_length(
@@ -321,10 +321,10 @@ globus_gss_assist_token_send_nexus_without_length(
 
 /**
  * @name Token Send Nexus EX
- * @ingroup globus_gsi_gss_assist_token
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_gss_assist_tokens
  * Write a token to the open file descripter.
  * will look at the flag to determine if the length field need
  * to be written.

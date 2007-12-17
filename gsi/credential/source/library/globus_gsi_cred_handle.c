@@ -27,6 +27,8 @@
 
 #include "globus_i_gsi_credential.h"
 #include "globus_gsi_system_config.h"
+#include "globus_gsi_callback.h"
+#include "globus_gsi_callback_constants.h"
 #include "openssl/pem.h"
 #include "openssl/x509.h"
 #include "openssl/x509v3.h"
@@ -46,10 +48,10 @@
 
 /**
  * @name Initializing and Destroying a Handle
- * @ingroup globus_gsi_cred_handle
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_cred_handle
  * Initializes a credential handle to be used credential
  * handling functions.  Takes a set of handle attributes
  * that are immutable to the handle.  The handle attributes
@@ -137,6 +139,7 @@ globus_gsi_cred_handle_init(
 
 /**
  * Destroys the credential handle
+ * @ingroup globus_gsi_cred_handle
  *
  * @param handle
  *        The credential handle to be destroyed
@@ -183,10 +186,10 @@ globus_gsi_cred_handle_destroy(
 
 /**
  * @name Copying a Handle
- * @ingroup globus_gsi_cred_handle
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_cred_handle
  * Copies a credential handle.
  *
  * @param source
@@ -294,10 +297,10 @@ globus_gsi_cred_handle_copy(
         
 /**
  * @name Getting the Handle Attributes
- * @ingroup globus_gsi_cred_handle
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_cred_handle
  * This function retreives a copy of the credential handle attributes
  *
  * @param handle
@@ -357,10 +360,10 @@ globus_gsi_cred_get_handle_attrs(
 
 /**
  * @name Getting the Credential Expiration
- * @ingroup globus_gsi_cred_handle
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_cred_handle
  * This function retreives the expiration time of the credential contained
  * in the handle
  *
@@ -406,10 +409,10 @@ globus_gsi_cred_get_goodtill(
 
 /**
  * @name Getting the Credential Lifetime
- * @ingroup globus_gsi_cred_handle
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_cred_handle
  * This function retreives the lifetime of the credential contained
  * in a handle
  *
@@ -462,10 +465,10 @@ globus_gsi_cred_get_lifetime(
 
 /**
  * @name Getting the Credential Strength
- * @ingroup globus_gsi_cred_handle
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_cred_handle
  * This function retreives the key strength of the credential contained
  * in a handle
  *
@@ -549,10 +552,10 @@ globus_gsi_cred_get_key_bits(
 
 /**
  * @name Setting and Getting the Certificate
- * @ingroup globus_gsi_cred_handle
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_cred_handle
  * Set the Credential's Certificate.  The X509 cert
  * that is passed in should be a valid X509 certificate
  * object
@@ -623,6 +626,7 @@ globus_gsi_cred_set_cert(
 }
 
 /**
+ * @ingroup globus_gsi_cred_handle
  * Get the certificate of a credential 
  *
  * @param handle
@@ -678,10 +682,10 @@ globus_gsi_cred_get_cert(
 
 /**
  * @name Setting and Getting the Credential Key
- * @ingroup globus_gsi_cred_handle
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_cred_handle
  * Set the private key of the credential handle
  *
  * @param handle
@@ -765,6 +769,7 @@ globus_gsi_cred_set_key(
 
 /**
  * Get the credential handle's private key
+ * @ingroup globus_gsi_cred_handle
  *
  * @param handle
  *        The credential handle containing the private key to get
@@ -833,10 +838,10 @@ globus_gsi_cred_get_key(
     
 /**
  * @name Setting and Getting the Certificate Chain
- * @ingroup globus_gsi_cred_handle
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_cred_handle
  * Set the certificate chain of the credential handle
  *
  * @param handle
@@ -933,6 +938,7 @@ globus_gsi_cred_set_cert_chain(
 
 /**
  * Get the certificate chain of the credential handle
+ * @ingroup globus_gsi_cred_handle
  *
  * @param handle
  *        The credential handle containing the certificate
@@ -1011,10 +1017,10 @@ globus_gsi_cred_get_cert_chain(
 
 /**
  * @name Get Cred Cert X509 Subject Name object
- * @ingroup globus_gsi_cred_handle
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_cred_handle
  * Get the credential handle's certificate subject name
  *
  * @param handle
@@ -1076,10 +1082,10 @@ globus_result_t globus_gsi_cred_get_X509_subject_name(
 
 /**
  * @name Get X509 Identity Name
- * @ingroup globus_gsi_cred_handle
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_cred_handle
  * Get the identity's X509 subject name from the credential handle
  *
  * @param handle
@@ -1167,10 +1173,10 @@ globus_result_t globus_gsi_cred_get_X509_identity_name(
 
 /**
  * @name Get Cred Cert Subject Name
- * @ingroup globus_gsi_cred_handle
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_cred_handle
  * Get the credential handle's certificate subject name
  *
  * @param handle
@@ -1231,10 +1237,10 @@ globus_result_t globus_gsi_cred_get_subject_name(
 
 /**
  * @name Get Policies from Cert Chain 
- * @ingroup globus_gsi_cred_handle
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_cred_handle
  * Get the Policies from the Cert Chain in the handle.  The policies
  * will be null-terminated as they are added to the handle.
  * If a policy for a cert in the chain doesn't exist, the string
@@ -1392,10 +1398,10 @@ globus_gsi_cred_get_policies(
 
 /**
  * @name Get Policy Languages from Cert Chain 
- * @ingroup globus_gsi_cred_handle
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_cred_handle
  * Get the policy languages from the cert chain in the handle.
  *
  * @param handle
@@ -1510,10 +1516,10 @@ globus_gsi_cred_get_policy_languages(
 
 /**
  * @name Get Issuer Name
- * @ingroup globus_gsi_cred_handle
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_cred_handle
  * Get the issuer's subject name from the credential handle
  *
  * @param handle
@@ -1578,10 +1584,10 @@ globus_result_t globus_gsi_cred_get_issuer_name(
 
 /**
  * @name Get Identity Name
- * @ingroup globus_gsi_cred_handle
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_cred_handle
  * Get the identity's subject name from the credential handle
  *
  * @param handle
@@ -1660,10 +1666,10 @@ globus_result_t globus_gsi_cred_get_identity_name(
 
 /**
  * @name Credential validation functions
- * @ingroup globus_gsi_cred_handle
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_cred_handle
  * This function performs path valiadtion on the certificate chain contained in
  * the credential handle.
  *
@@ -1697,6 +1703,7 @@ globus_gsi_cred_verify_cert_chain(
     cert_store = X509_STORE_new();
     X509_STORE_set_verify_cb_func(cert_store, 
                                   globus_gsi_callback_create_proxy_callback);
+    X509_STORE_set_depth(cert_store, GLOBUS_GSI_CALLBACK_VERIFY_DEPTH);
 
     result = globus_gsi_callback_get_cert_dir(callback_data, &cert_dir);
     if(result != GLOBUS_SUCCESS)
@@ -1715,6 +1722,8 @@ globus_gsi_cred_verify_cert_chain(
         store_context = X509_STORE_CTX_new();
         X509_STORE_CTX_init(store_context, cert_store, cert,
                             cred_handle->cert_chain);
+        X509_STORE_CTX_set_depth(store_context,
+                                 GLOBUS_GSI_CALLBACK_VERIFY_DEPTH);
 
         /* override the check_issued with our version */
         store_context->check_issued = globus_gsi_callback_check_issued;
@@ -1727,6 +1736,17 @@ globus_gsi_cred_verify_cert_chain(
             callback_data_index, 
             (void *)callback_data);
                  
+        /*
+         * If this is not set, OpenSSL-0.9.8 (check_chain_extensions()
+         * called by x509_verify_cert()) treats the cert next to proxy
+         * in the chain to be CA cert and throws invalid CA error
+         */ 
+
+        #if (OPENSSL_VERSION_NUMBER >= 0x0090800fL)
+	X509_STORE_CTX_set_flags(
+                        store_context, X509_V_FLAG_ALLOW_PROXY_CERTS);
+        #endif
+
         if(!X509_verify_cert(store_context))
         {
             globus_result_t             callback_error;
@@ -1781,6 +1801,7 @@ globus_gsi_cred_verify_cert_chain(
 }
 
 /**
+ * @ingroup globus_gsi_cred_handle
  * This function ensures that the certificate and private key in the credential
  * handle match.
  *
@@ -1847,10 +1868,10 @@ globus_gsi_cred_verify(
 
 /**
  * @name Good Till
- * @ingroup globus_gsi_cred_operations
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_cred_operations
  * Get the amount of time this credential is good for (time at
  * which it expires.  Each of the certs in the cert chain as well
  * as the cert associated with the cred are checked.  Whichever

@@ -17,7 +17,8 @@
 #include "gaa.h"
 #include "gaa_private.h"
 
-/** @defgroup gaa_list_static "static routines from gaa_core/gaa_list.c"
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/** @defgroup gaa_list_static Static-scoped functions from gaa_list.c
  */
 static gaaint_list *
 gaa_l_list_new(gaaint_listaddfunc addfunc, gaa_listcompfunc compare,
@@ -36,8 +37,7 @@ gaa_l_list_add_sorted(gaaint_list *list, void *data,
 static
 gaa_l_list_has_dup(gaaint_list *list, gaa_listcompfunc checkdups, void *data);
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_list_prepend()
+/**
  *
  * @ingroup gaa_list_static
  *
@@ -55,7 +55,6 @@ gaa_l_list_has_dup(gaaint_list *list, gaa_listcompfunc checkdups, void *data);
  *         the data item will not be added.
  * 
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static gaa_status
 gaa_l_list_prepend(gaaint_list *	list,
 		   void *		data,
@@ -87,8 +86,7 @@ gaa_l_list_prepend(gaaint_list *	list,
     return(GAA_S_SUCCESS);
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_list_append()
+/**
  *
  * @ingroup gaa_list_static
  *
@@ -106,7 +104,6 @@ gaa_l_list_prepend(gaaint_list *	list,
  *         the data item will not be added.
  * 
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static gaa_status
 gaa_l_list_append(gaaint_list *		list,
 		  void *		data,
@@ -137,8 +134,7 @@ gaa_l_list_append(gaaint_list *		list,
     return(GAA_S_SUCCESS);
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_list_new()
+/**
  *
  * @ingroup gaa_list_static
  *
@@ -162,7 +158,6 @@ gaa_l_list_append(gaaint_list *		list,
  *          An error has occurred.
  * 
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static gaaint_list *
 gaa_l_list_new(gaaint_listaddfunc	addfunc,
 	       gaa_listcompfunc		compare,
@@ -188,8 +183,7 @@ gaa_l_list_new(gaaint_listaddfunc	addfunc,
     return(list);
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_list_add_sorted()
+/**
  *
  * @ingroup gaa_list_static
  *
@@ -207,7 +201,6 @@ gaa_l_list_new(gaaint_listaddfunc	addfunc,
  *         the data item will not be added.
  * 
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static gaa_status
 gaa_l_list_add_sorted(gaaint_list *	list,
 		      void *		data,
@@ -260,7 +253,7 @@ gaa_l_list_add_sorted(gaaint_list *	list,
     return(GAA_S_SUCCESS);
 }
 
-/** gaa_i_new_stack()
+/**
  *
  *  @ingroup gaa_internal
  *
@@ -276,7 +269,7 @@ gaa_i_new_stack(gaa_freefunc freefunc)
     return(gaa_l_list_new(gaa_l_list_prepend, 0, freefunc));
 }
 
-/** gaa_i_new_stack()
+/**
  *
  *  @ingroup gaa_internal
  *
@@ -292,7 +285,7 @@ gaa_i_new_silo(gaa_freefunc freefunc)
     return(gaa_l_list_new(gaa_l_list_append, 0, freefunc));
 }
 
-/** gaa_i_new_sorted_list()
+/**
  *
  *  @ingroup gaa_internal
  *
@@ -311,7 +304,7 @@ gaa_i_new_sorted_list(gaa_listcompfunc compare, gaa_freefunc freefunc)
     return(gaa_l_list_new(gaa_l_list_add_sorted, compare, freefunc));
 }
 
-/** gaa_i_list_add_entry()
+/**
  *
  *  @ingroup gaa_internal
  *
@@ -331,7 +324,7 @@ gaa_i_list_add_entry(gaa_list_ptr list, void *data)
     return(list->addfunc(list, data, 0));
 }
 
-/** gaa_i_list_add_unique_entry()
+/**
  *
  *  @ingroup gaa_internal
  *
@@ -352,8 +345,9 @@ gaa_i_list_add_unique_entry(gaa_list_ptr list, void *data, gaa_listcompfunc chec
 	return(GAA_STATUS(GAA_S_INTERNAL_ERR, 0));
     return(list->addfunc(list, data, checkdups));
 }
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
-/** gaa_list_first()
+/**
  *
  *  @ingroup gaa
  * 
@@ -375,7 +369,7 @@ gaa_list_first(gaa_list_ptr list)
     return(list->entries);
 }
 
-/** gaa_list_next()
+/**
  *
  *  @ingroup gaa
  * 
@@ -398,7 +392,7 @@ gaa_list_next(gaa_list_entry_ptr entry)
 }
 
 
-/** gaa_list_entry_value()
+/**
  *
  *  @ingroup gaa
  * 
@@ -421,7 +415,8 @@ gaa_list_entry_value(gaa_list_entry_ptr entry)
 }
 
 
-/** gaa_i_list_clear()
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
  *
  *  @ingroup gaa_internal
  * 
@@ -447,8 +442,9 @@ gaa_i_list_clear(gaaint_list *list)
     list->last = 0;
     gaacore_mutex_unlock(list->mutex);
 }
+#endif
 
-/** gaa_list_free()
+/**
  *
  *  @ingroup gaa
  *
@@ -471,7 +467,8 @@ gaa_list_free (gaa_list_ptr list)
     free(list);
 }
 
-/** gaa_i_policy_order()
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
  *
  *  @ingroup gaa_internal
  *
@@ -515,7 +512,7 @@ gaa_i_policy_order(gaa_policy_entry *e1,
     return(0);
 }
 
-/** gaa_i_list_empty()
+/**
  *
  *  @ingroup gaa_internal
  *
@@ -534,7 +531,7 @@ gaa_i_list_empty(gaaint_list *list)
     return(list->entries == 0);
 }
 
-/** gaa_i_list_merge()
+/**
  *
  *  @ingroup gaa_internal
  *
@@ -557,8 +554,7 @@ gaa_i_list_merge(gaaint_list *dest, gaaint_list *src)
     return(status);
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_list_has_dup()
+/**
  *
  *  @ingroup gaa_list_static
  *
@@ -578,8 +574,6 @@ gaa_i_list_merge(gaaint_list *dest, gaaint_list *src)
  *          list does not have an entry equivalent to the specified data
  * 
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
-   
 static
 gaa_l_list_has_dup(gaaint_list *list, gaa_listcompfunc checkdups, void *data)
 {
@@ -591,3 +585,4 @@ gaa_l_list_has_dup(gaaint_list *list, gaa_listcompfunc checkdups, void *data)
 	    return(1);
     return(0);
 }
+#endif

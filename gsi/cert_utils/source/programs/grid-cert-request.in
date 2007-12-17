@@ -62,13 +62,6 @@ if [ ! -z "${GRID_SECURITY_DIR}" ] ; then
         else
             trusted_certs_dir="${secconfdir}/certificates"
         fi
-    else
-        echo "Can't find valid CA config files in " \
-             "GRID_SECURITY_DIR  = ${GRID_SECURITY_DIR}." 
-        echo "Please make sure that you have installed and " \
-             "setup a CA setup package."
-        echo ""
-        exit 1   
     fi
 elif [ -r "/etc/grid-security/globus-user-ssl.conf" ] && 
      [ -r "/etc/grid-security/globus-host-ssl.conf" ] ; then
@@ -86,11 +79,6 @@ elif [ -r "${GLOBUS_LOCATION}/etc/globus-user-ssl.conf" ] &&
     else
         trusted_certs_dir="${GLOBUS_LOCATION}/share/certificates"
     fi
-else
-    echo "Can't find valid CA config files. Please make sure"
-    echo "that you have installed and setup a CA setup package."
-    echo ""
-    exit 1
 fi
 
 #
@@ -596,7 +584,7 @@ get_host_CN ()
 
                 *)
                     ${GLOBUS_SH_ECHO-echo} "Aborting" 1>&2
-                    exit 1
+                    return 1
                     ;;
             esac
         fi
@@ -605,6 +593,7 @@ get_host_CN ()
     fi
 
     echo ${_common_name}
+    return 0
 }
 
 
@@ -637,7 +626,7 @@ create_certs () {
     umask 066
     ${GLOBUS_SH_TOUCH-touch} ${RAND_TEMP}
     if [ -r /dev/urandom ] ; then
-        head -c 1000 /dev/urandom >> ${RAND_TEMP} 2>&1
+        head -1000 /dev/urandom >> ${RAND_TEMP} 2>&1
     fi
     date >> ${RAND_TEMP} 2>&1
     netstat -in >> ${RAND_TEMP} 2>&1
@@ -802,6 +791,28 @@ CERTREQ="${bindir}/grid-cert-request"
 
 read_command_line "$@"
 
+if test -z "$trusted_certs_dir"; then
+    if test -n "$GRID_SECURITY_DIR"; then
+        echo "Can't find valid CA config files in " \
+             "GRID_SECURITY_DIR \"${GRID_SECURITY_DIR}\"." 
+        echo "Please make sure that you have installed and " \
+             "setup a CA setup package."
+    else
+        echo "Error reading"
+        echo "    /etc/grid-security/globus-user-ssl.conf"
+        echo "    /etc/grid-security/globus-host-ssl.conf"
+        echo "    \${GLOBUS_LOCATION}/etc/globus-user-ssl.conf"
+        echo "    \${GLOBUS_LOCATION}/etc/globus-host-ssl.conf"
+        echo ""
+        echo "Can't find valid CA config files. Please make sure"
+        echo "that the grid administrator has installed a CA setup "
+        echo "package and run gpt-postinstall."
+    fi
+
+    echo ""
+    exit 1   
+fi
+
 # set temporary files
 REQ_HEAD=${TARGET_DIR}/$PROGRAM_NAME.$$.head
 REQ_INPUT=${TARGET_DIR}/$PROGRAM_NAME.$$.input
@@ -822,6 +833,9 @@ if test "${SERVICE}" = "user"; then
     COMMON_NAME="`get_user_CN`"
 else
     COMMON_NAME="`get_host_CN`"
+    if [ $? -ne 0 ]; then
+        exit 1
+    fi
 fi
 
 # do clean up on abort

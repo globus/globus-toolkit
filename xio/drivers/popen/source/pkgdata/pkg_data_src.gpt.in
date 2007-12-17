@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE gpt_package_metadata SYSTEM "globus_package.dtd">
+
+<gpt_package_metadata Name="globus_xio_popen_driver" Format_Version="0.01">
+
+    <Aging_Version Major="0" Minor="2" Age="0"/>
+    <Description> Globus XIO BW Limit Driver</Description>
+    <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
+
+    <src_pkg>
+
+        <Source_Dependencies Type="compile">
+            <Dependency Name="globus_xio">
+                <Version>
+                    <Simple_Version Major="0"/>
+                </Version>
+            </Dependency>
+
+        </Source_Dependencies>
+
+        <Source_Dependencies Type="pgm_link">
+            <Dependency Name="globus_xio">
+                <Version>
+                    <Simple_Version Major="0"/>
+                </Version>
+            </Dependency>
+        </Source_Dependencies>
+
+        <Source_Dependencies Type="doc_runtime">
+            <Dependency Name="globus_xio" Package="doc">
+                <Version>
+                    <Simple_Version Major="0"/>
+                </Version>
+            </Dependency>
+        </Source_Dependencies>
+
+        <With_Flavors build="yes"/>
+
+        <Build_Environment>
+            <cflags>@GPT_PKG_CFLAGS@</cflags>
+            <external_includes>@GPT_EXTERNAL_INCLUDES@</external_includes>
+            <external_libs>@GPT_EXTERNAL_LIBS@</external_libs>
+            <pkg_libs></pkg_libs>
+        </Build_Environment>
+
+    </src_pkg>
+
+</gpt_package_metadata>
+~
+~

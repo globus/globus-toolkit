@@ -30,10 +30,10 @@
 
 /**
  * @name Get Unwrap
- * @ingroup globus_gsi_gss_assist
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_gss_assist
  * Gets a token using the specific tokenizing functions,
  * and performs the GSS unwrap of that token
  *

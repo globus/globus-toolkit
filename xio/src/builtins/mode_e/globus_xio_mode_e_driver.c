@@ -265,6 +265,13 @@ GlobusXIODefineModule(mode_e) =
             "Header error: %s", (reason)))
 
 
+static globus_xio_string_cntl_table_t mode_e_l_string_opts_table[] =
+{
+    {"streams", GLOBUS_XIO_MODE_E_SET_NUM_STREAMS, globus_xio_string_cntl_int},
+    {NULL, 0, NULL}
+};
+
+
 static
 int
 globus_l_xio_mode_e_activate(void)
@@ -389,7 +396,7 @@ globus_l_xio_mode_e_handle_destroy(
             "globus_l_xio_mode_e_attr_destroy", result);
         goto error;
     }
-    globus_error_put(handle->error);
+    globus_object_free(handle->error);
     globus_fifo_destroy(&handle->connection_q);
     globus_fifo_destroy(&handle->eod_q);
     globus_fifo_destroy(&handle->io_q);
@@ -701,7 +708,7 @@ globus_l_xio_mode_e_save_error(
     handle->state = GLOBUS_XIO_MODE_E_ERROR;
     if (handle->error == GLOBUS_NULL)
     {
-        handle->error = globus_error_get(result);
+	handle->error = globus_object_copy(globus_error_peek(result));
     }
     GlobusXIOModeEDebugExit();
 }
@@ -2347,7 +2354,7 @@ globus_l_xio_mode_e_read(
             }
             break;
         case GLOBUS_XIO_MODE_E_ERROR:
-            result = globus_error_put(handle->error);
+            result = globus_error_put(globus_object_copy(handle->error));
             goto error_invalid_state;
         default:
             result = GlobusXIOErrorInvalidState(handle->state);
@@ -2847,7 +2854,7 @@ globus_l_xio_mode_e_write(
             }
             break;
         case GLOBUS_XIO_MODE_E_ERROR:
-            result = globus_error_put(handle->error);
+            result = globus_error_put(globus_object_copy(handle->error));
             goto error_invalid_state;
         default:
             result = GlobusXIOErrorInvalidState(handle->state);
@@ -3349,7 +3356,7 @@ globus_l_xio_mode_e_cntl(
             }
             break;
         case GLOBUS_XIO_MODE_E_ERROR:
-            result = globus_error_put(handle->error);
+            result = globus_error_put(globus_object_copy(handle->error));
             goto error;
         default:
             result = GlobusXIOErrorInvalidCommand(cmd);
@@ -3598,6 +3605,11 @@ globus_l_xio_mode_e_init(
         globus_l_xio_mode_e_attr_copy,
         globus_l_xio_mode_e_attr_cntl,
         globus_l_xio_mode_e_attr_destroy);
+
+    globus_xio_driver_string_cntl_set_table(
+        driver,
+        mode_e_l_string_opts_table);
+
     *out_driver = driver;
     GlobusXIOModeEDebugExit();
     return GLOBUS_SUCCESS;

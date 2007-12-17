@@ -134,6 +134,9 @@
 
 extern int                              globus_i_gsi_gssapi_debug_level;
 extern FILE *                           globus_i_gsi_gssapi_debug_fstream;
+extern globus_mutex_t                   globus_i_gssapi_activate_mutex;
+extern globus_bool_t                    globus_i_gssapi_active;
+
 
 #ifdef BUILD_DEBUG
 

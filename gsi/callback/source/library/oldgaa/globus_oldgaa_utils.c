@@ -456,8 +456,10 @@ Returns:
 policy_file_context_ptr 
 oldgaa_globus_policy_file_open(const char *filename)
 {
-    char *		   open_mode = "r";
-    policy_file_context_ptr  pcontext  = NULL;
+    char *		                open_mode = "r";
+    policy_file_context_ptr             pcontext  = NULL;
+    FILE *                              stream = NULL;
+    int                                 rc;
 
 #ifdef DEBUG
     fprintf(stderr, "\noldgaa_globus_policy_file_open:\n");
@@ -467,34 +469,61 @@ oldgaa_globus_policy_file_open(const char *filename)
     if (filename == NULL)
     {
         errno = ERRNO_INVALID_ARGUMENT;
-        return NULL;
+        pcontext = NULL;
+
+        goto exit;
     }
 
     /* allocate and fill in pcontext structure */
     pcontext = malloc(sizeof(*pcontext));
     if (!pcontext) out_of_memory();
 
-    pcontext->stream      = NULL;
     pcontext->parse_error = NULL;
     pcontext->str         = NULL;
+    pcontext->index       = 0;
 
     oldgaa_handle_error(&(pcontext->parse_error),"not defined");
     oldgaa_handle_error(&(pcontext->str),"not defined");
 
-
-    pcontext->stream = fopen(filename, open_mode);
-
-    if (pcontext->stream == NULL)
+    stream = fopen(filename, open_mode);
+    if (stream == NULL)
     {
-        free(pcontext);
-        return NULL;
+        goto error_exit;
     }
+    rc = fseek(stream, 0, SEEK_END);
+    if (rc != 0)
+    {
+        goto error_exit;
+    }
+
+    pcontext->buflen = ftell(stream);
+
+    rc = fseek(stream, 0, SEEK_SET);
+    if (rc != 0)
+    {
+        goto error_exit;
+    }
+
+    pcontext->buf = malloc(pcontext->buflen + 1);
+    if (!pcontext->buf) out_of_memory();
  
+    rc = fread(pcontext->buf, pcontext->buflen, 1, stream);
+    pcontext->buf[pcontext->buflen] = 0;
 
+    if (rc != 1)
+    {
+error_exit:
+        free(pcontext);
+        pcontext = NULL;
+    }
+
+exit:
+    if (stream)
+    {
+        fclose(stream);
+    }
     return pcontext;
-
 } /* policy_file_open() */
-
 
 
 /**********************************************************************
@@ -523,8 +552,7 @@ oldgaa_globus_policy_file_close(policy_file_context_ptr  pcontext)
 
     if (pcontext)
     {
-        if(pcontext->stream) fclose(pcontext->stream);
-
+        free(pcontext->buf);
         free(pcontext->str);
         free(pcontext->parse_error);
         free(pcontext);
@@ -586,11 +614,18 @@ oldgaa_globus_read_string (policy_file_context_ptr  pcontext,
                            char                    *str,
                            char                    **errstring)
 {   
-    if (fscanf(pcontext->stream, "%s",str) == EOF) 
+    int len;
+    int rc;
+
+    if (pcontext->index >= (pcontext->buflen - 1))
     {
         end_of_file = TRUE; 
         return 0; 
     }
+
+    rc = sscanf(pcontext->buf + pcontext->index, "%s%n", str, &len);
+
+    pcontext->index += len;
 
     oldgaa_handle_error(&(pcontext->str),str); /* set the string value to
                                                   report it in the case there is an error */
@@ -654,12 +689,12 @@ oldgaa_globus_get_string_with_whitespaces(policy_file_context_ptr  pcontext,
     int  i=0, j=1, len = strlen(str); /* j=1 because ignore first ' */
     int  chr, esc = 0;
 
-    while(i < MAX_STRING_SIZE) /* read chars from the stream 
+    while(i < pcontext->buflen) /* read chars from the stream 
                                   untill see STRING_DELIMITER */
     {  
-        chr = (j<len) ? str[j++] : fgetc(pcontext->stream);
+        chr = (j<len) ? str[j++] : pcontext->buf[pcontext->index++];
 
-        if(chr == EOF)  
+        if(pcontext->index == pcontext->buflen)  
         {     
             end_of_file = TRUE;
 
@@ -672,8 +707,7 @@ oldgaa_globus_get_string_with_whitespaces(policy_file_context_ptr  pcontext,
         if (!esc) { str[i] = chr; i++; }            /* don't print out the \ */
     }
 
-
-    if(i >= MAX_STRING_SIZE)/* string is too long */
+    if(i >= pcontext->buflen)/* string is too long */
     {
         oldgaa_handle_error(&(pcontext->parse_error),
                             "get_string_with_white_spaces: String is too long");
@@ -707,12 +741,13 @@ oldgaa_globus_omit_comment_line(policy_file_context_ptr  pcontext)
 {
     int chr;  
  
-    while((chr = fgetc(pcontext->stream))!= EOF)
-    {         
-        if (chr == END_OF_LINE) break;          
+    while(pcontext->index < pcontext->buflen)
+    {
+        chr = pcontext->buf[pcontext->index++];
+        if (chr == END_OF_LINE) break;
     }
 
-    if (chr == EOF) end_of_file = TRUE;
+    if (pcontext->index == pcontext->buflen) end_of_file = TRUE;
 
     return 0;
 }   
@@ -753,12 +788,14 @@ oldgaa_globus_parse_policy (policy_file_context_ptr  pcontext,
     oldgaa_cond_bindings_ptr cond_bind        = NULL;
     oldgaa_error_code        oldgaa_error;
 
-    char                  str[MAX_STRING_SIZE] = {NUL};
+    char                  *str;
     int                   cond_present     = FALSE;
     int                   new_entry        = TRUE; 
-
     oldgaa_rights_ptr old_rights = 0;
- 
+
+    str = malloc(pcontext->buflen);
+    str[0] = 0;
+
     end_of_file    = 0;
     *policy_handle = NULL;
 
@@ -884,6 +921,7 @@ oldgaa_globus_parse_policy (policy_file_context_ptr  pcontext,
  print_oldgaa_principal_ptr(*policy_handle);
 #endif  /* LDEBUG */
 
+    free(str);
     return OLDGAA_SUCCESS;
 
  err:
@@ -891,8 +929,8 @@ oldgaa_globus_parse_policy (policy_file_context_ptr  pcontext,
     oldgaa_release_principals(&m_status, policy_handle);
     oldgaa_globus_policy_file_close(pcontext);
 
+    free(str);
     return OLDGAA_RETRIEVE_ERROR;
-      
 }
 
 /**********************************************************************
@@ -923,9 +961,11 @@ oldgaa_globus_parse_principals(policy_file_context_ptr  pcontext,
                                oldgaa_principals_ptr      *start,
                                oldgaa_principals_ptr    *added_principal)
 {
-    char               str[MAX_STRING_SIZE],*type;
+    char               *str,*type;
     int                first     = TRUE;
     oldgaa_principals_ptr principal = NULL;
+
+    str = malloc(pcontext->buflen);
 
 #ifdef DEBUG
     fprintf(stderr, "\noldgaa_globus_parse principals:\n");
@@ -934,7 +974,10 @@ oldgaa_globus_parse_principals(policy_file_context_ptr  pcontext,
     if (*policy == NULL) /* first principal in the policy file */
     {
         if (oldgaa_globus_help_read_string(pcontext, str,"parse principals: Empty policy"))
- return OLDGAA_RETRIEVE_ERROR;   
+        {
+            free(str);
+            return OLDGAA_RETRIEVE_ERROR;   
+        }
     }
     else strcpy(str, tmp_str); /* get the value of read principal from tmp_str */
 
@@ -962,6 +1005,7 @@ oldgaa_globus_parse_principals(policy_file_context_ptr  pcontext,
  {
      oldgaa_handle_error(&(pcontext->parse_error), 
                          "parse_principals: Bad principal type");
+     free(str);
      return OLDGAA_RETRIEVE_ERROR;
  }
           
@@ -979,14 +1023,20 @@ oldgaa_globus_parse_principals(policy_file_context_ptr  pcontext,
         {  
             if (oldgaa_globus_help_read_string(pcontext, str,
                                                "parse_principals: Missing principal defining authority"))
- return OLDGAA_RETRIEVE_ERROR;
+            {
+                free(str);
+                return OLDGAA_RETRIEVE_ERROR;
+            }
         
             if (str) /* expecting defining authority */ 
  principal->authority = oldgaa_strcopy(str, principal->authority);     
 
             if (oldgaa_globus_help_read_string(pcontext, str,
                                                "parse_principals: Missing principals value"))
- return OLDGAA_RETRIEVE_ERROR;
+            {
+                free(str);
+                return OLDGAA_RETRIEVE_ERROR;
+            }
         
             if (str) /* expecting value */ 
  principal->value = oldgaa_strcopy(str, principal->value);
@@ -1002,16 +1052,23 @@ oldgaa_globus_parse_principals(policy_file_context_ptr  pcontext,
 
         if (oldgaa_globus_help_read_string(pcontext, str,
                                            "parse_principals: Missing rights"))
- return OLDGAA_RETRIEVE_ERROR;
+        {
+            free(str);
+            return OLDGAA_RETRIEVE_ERROR;
+        }
 
         strcpy(tmp_str, str); /* return the read string */
 
         if( !strcmp(str,POSITIVE_RIGHTS) ||
             !strcmp(str,NEGATIVE_RIGHTS) )  /* operation set starts */  
- return OLDGAA_SUCCESS;    
+        {
+            free(str);
+            return OLDGAA_SUCCESS;    
+        }
 
     } while(!end_of_file);
    
+    free(str);
     return  OLDGAA_SUCCESS;
 }
 
@@ -1044,10 +1101,11 @@ oldgaa_globus_parse_rights(policy_file_context_ptr  pcontext,
                            int                     *cond_present,
                            int                     *end_of_entry)
 {
-    char            str[MAX_STRING_SIZE];
+    char           *str;
     int             first  = TRUE;
     oldgaa_rights_ptr  rights = NULL;
   
+    str = malloc(pcontext->buflen);
 #ifdef DEBUG
     fprintf(stderr, "\noldgaa_globus_parse rights:\n");
 #endif /* DEBUG */
@@ -1060,6 +1118,7 @@ oldgaa_globus_parse_rights(policy_file_context_ptr  pcontext,
                                                                      set starts */
         {
             oldgaa_handle_error(&(pcontext->parse_error), "Bad right type");
+            free(str);
             return OLDGAA_RETRIEVE_ERROR;
 	}
  
@@ -1072,14 +1131,20 @@ oldgaa_globus_parse_rights(policy_file_context_ptr  pcontext,
       
         if (oldgaa_globus_help_read_string(pcontext, str,
                                            "parse_rights: Missing right authority"))
- return OLDGAA_RETRIEVE_ERROR;  
+        {
+            free(str);
+            return OLDGAA_RETRIEVE_ERROR;  
+        }
  
         if (str) /* expecting defining authority */ 
  rights->authority = oldgaa_strcopy(str, rights->authority);
      
         if(oldgaa_globus_help_read_string(pcontext, str,
                                           "parse_rights: Missing right value"))
- return OLDGAA_RETRIEVE_ERROR;  
+        {
+            free(str);
+            return OLDGAA_RETRIEVE_ERROR;  
+        }
   
         if (str)/* expecting value */      
  rights->value = oldgaa_strcopy(str, rights->value);
@@ -1088,13 +1153,17 @@ oldgaa_globus_parse_rights(policy_file_context_ptr  pcontext,
         else oldgaa_add_rights(start, rights);
 
         if (oldgaa_globus_read_string(pcontext, str, NULL))     
- return OLDGAA_RETRIEVE_ERROR;
+        {
+            free(str);
+            return OLDGAA_RETRIEVE_ERROR;
+        }
       
         strcpy(tmp_str, str); /* return the read string */
        
         if(!strncmp(str,COND_PREFIX, 5))  /* condition set starts */
         {
             *cond_present = TRUE;
+            free(str);
             return OLDGAA_SUCCESS;   
         }
    
@@ -1102,11 +1171,13 @@ oldgaa_globus_parse_rights(policy_file_context_ptr  pcontext,
            !strncmp(str,PRINCIPAL_GRANTOR_PREFIX, 7))  /* new entry starts */        
         {
             *end_of_entry = TRUE;      
+            free(str);
             return OLDGAA_SUCCESS; 
         }     
 
     } while(!end_of_file);
 
+    free(str);
     return OLDGAA_SUCCESS;
 }
 
@@ -1139,11 +1210,13 @@ oldgaa_globus_parse_conditions(policy_file_context_ptr  pcontext,
                                oldgaa_cond_bindings_ptr   *list, 
                                int                     *end_of_entry )
 {
-    char                  str[MAX_STRING_SIZE];
+    char *                str;
     int                   first = TRUE;
     oldgaa_conditions_ptr    cond;
     oldgaa_cond_bindings_ptr cond_bind;
     uint32        inv_minor_status = 0;
+
+    str = malloc(pcontext->buflen);
 
 #ifdef DEBUG
     fprintf(stderr, "\noldgaa_globus_parse conditions:\n");
@@ -1156,6 +1229,7 @@ oldgaa_globus_parse_conditions(policy_file_context_ptr  pcontext,
         if(strncmp(str,"cond_", 5) != 0)/* expecting condition set starts */
         {
             oldgaa_handle_error(&(pcontext->parse_error),"Bad condition type");
+            free(str);
             return OLDGAA_RETRIEVE_ERROR;
         }
 
@@ -1166,13 +1240,19 @@ oldgaa_globus_parse_conditions(policy_file_context_ptr  pcontext,
     
         if (oldgaa_globus_help_read_string(pcontext, str,
                                            "parse_conditions: Missing condition authority"))
- return OLDGAA_RETRIEVE_ERROR;
+        {
+            free(str);
+            return OLDGAA_RETRIEVE_ERROR;
+        }
 
         if (str) cond->authority = oldgaa_strcopy(str, cond->authority);
    
         if (oldgaa_globus_help_read_string(pcontext, str,
                                            "parse_conditions: Missing condition value"))
- return OLDGAA_RETRIEVE_ERROR;
+        {
+            free(str);
+            return OLDGAA_RETRIEVE_ERROR;
+        }
 
         if (str) cond->value = oldgaa_strcopy(str, cond->value);
     
@@ -1199,9 +1279,16 @@ oldgaa_globus_parse_conditions(policy_file_context_ptr  pcontext,
         else  oldgaa_add_cond_binding(list, cond_bind);
  
         if (oldgaa_globus_read_string(pcontext, str, NULL))    
- return OLDGAA_RETRIEVE_ERROR;
+        {
+            free(str);
+            return OLDGAA_RETRIEVE_ERROR;
+        }
       
-        if(end_of_file == TRUE)  return  OLDGAA_SUCCESS;
+        if(end_of_file == TRUE)
+        {
+            free(str);
+            return  OLDGAA_SUCCESS;
+        }
     
         strcpy(tmp_str, str); /* return the read string */
 
@@ -1209,16 +1296,19 @@ oldgaa_globus_parse_conditions(policy_file_context_ptr  pcontext,
            !strncmp(str,PRINCIPAL_GRANTOR_PREFIX, 7))  /* new entry starts */        
         {
             *end_of_entry = TRUE;      
+            free(str);
             return OLDGAA_SUCCESS; 
         }  
 
         if(!strncmp(str,POS_RIGHTS_PREFIX, 3) ||
-           !strncmp(str,NEG_RIGHTS_PREFIX, 3)) /* new rights set starts */          
- return OLDGAA_SUCCESS;
-     
-
+           !strncmp(str,NEG_RIGHTS_PREFIX, 3)) /* new rights set starts */
+        {
+            free(str);
+            return OLDGAA_SUCCESS;
+        }
     } while (!end_of_file);
 
+    free(str);
     return  OLDGAA_SUCCESS;
 }
 

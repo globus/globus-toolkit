@@ -39,9 +39,9 @@ int main(int argc, char * argv[])
     FILE *                              outfd;
     char *                              print_buffer = NULL;
     char *                              recv_buffer = NULL;
-    int                                 buffer_length;
+    size_t                              buffer_length;
     struct sockaddr_in                  sockaddr;
-    int                                 length;
+    socklen_t                           length;
     char *                              init_name;
     char *                              verbose_env = NULL;
     

@@ -30,6 +30,7 @@ static char *rcsid = "$Id$";
 #include "globus_i_gsi_gss_utils.h"
 #include "globus_gsi_credential.h"
 #include "globus_gsi_callback.h"
+#include "globus_gsi_callback_constants.h"
 #include "globus_gsi_system_config.h"
 #include "openssl/ssl3.h"
 
@@ -282,7 +283,7 @@ globus_i_gsi_gss_create_and_fill_context(
     }
     
     /* get the local credential */
-    if (cred_handle == GSS_C_NO_CREDENTIAL)
+    if (cred_handle == GSS_C_NO_CREDENTIAL || (req_flags & GSS_C_ANON_FLAG))
     {
         if(req_flags & GSS_C_ANON_FLAG)
         {
@@ -838,6 +839,7 @@ globus_i_gsi_gss_handshake(
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_ENTER;
 
+    ERR_clear_error();
     /*
      * do the BIO_do_handshake which may produce output,
      * and endup waiting for input.
@@ -1927,7 +1929,7 @@ globus_i_gsi_gss_SSL_read_bio(
     
     ssl_result = ssl_handle->method->ssl3_enc->change_cipher_state(
         ssl_handle,
-        SSL3_CHANGE_CIPHER_SERVER_WRITE);
+        (!ssl_handle->server)?SSL3_CHANGE_CIPHER_CLIENT_WRITE:SSL3_CHANGE_CIPHER_SERVER_WRITE);
     if (!ssl_result)
     {
         GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
@@ -1955,7 +1957,8 @@ globus_i_gsi_gss_SSL_read_bio(
 
     ssl_result = ssl_handle->method->ssl3_enc->change_cipher_state(
         ssl_handle,
-        SSL3_CHANGE_CIPHER_SERVER_READ);
+        (!ssl_handle->server)?SSL3_CHANGE_CIPHER_CLIENT_READ:SSL3_CHANGE_CIPHER_SERVER_READ); 
+    
     if (!ssl_result)
     {
         GLOBUS_GSI_GSSAPI_OPENSSL_ERROR_RESULT(
@@ -2102,6 +2105,13 @@ globus_i_gsi_gssapi_init_ssl_context(
         goto exit;
     }
 
+    /*
+     * post-0.9.8 versions of the SSL library seem to move part of the 
+     * cipher setup code into SSL_library_init(). Without this call, the
+     * SSL_CTX_new routine comaplains at not being able to initialize the 
+     * list of ciphers.
+     */
+    SSL_library_init();
     cred_handle->ssl_context = SSL_CTX_new(SSLv23_method());
     if(cred_handle->ssl_context == NULL)
     {
@@ -2151,6 +2161,9 @@ globus_i_gsi_gssapi_init_ssl_context(
     SSL_CTX_set_verify(cred_handle->ssl_context, SSL_VERIFY_PEER,
                        globus_gsi_callback_handshake_callback);
 
+    SSL_CTX_set_verify_depth(cred_handle->ssl_context,
+                             GLOBUS_GSI_CALLBACK_VERIFY_DEPTH);
+
     /*
      * for now we will accept any purpose, as Globus does
      * not have any restrictions such as this is an SSL client
@@ -2159,8 +2172,20 @@ globus_i_gsi_gssapi_init_ssl_context(
      */
     SSL_CTX_set_purpose(cred_handle->ssl_context, X509_PURPOSE_ANY);
 
+    /*
+     * post OpenSSL-0.9.8, existence of this call creates problem when
+     * the server (for eg. GridFTP server) is run as a user and thus the
+     * cert presented is proxy cert. As the OpenSSL code does not 
+     * recognize Globus legacy proxies, we need to explicitly set the
+     * proxy flag in the cert and we do it only when our callback is
+     * called by OpenSSL with the critical extension error, so this call
+     * is removed for post OpenSSL-0.9.8.
+     */
+     
+    #if (OPENSSL_VERSION_NUMBER < 0x0090707fL)
     X509_STORE_set_flags(SSL_CTX_get_cert_store(cred_handle->ssl_context),
                          X509_V_FLAG_IGNORE_CRITICAL);
+    #endif
     
     if(anon_ctx != GLOBUS_I_GSI_GSS_ANON_CONTEXT)
     {

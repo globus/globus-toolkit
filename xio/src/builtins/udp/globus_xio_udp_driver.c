@@ -1069,6 +1069,7 @@ globus_l_xio_udp_open(
     globus_l_handle_t *                 handle;
     const globus_l_attr_t *             attr;
     globus_result_t                     result;
+    char *                              port;
     GlobusXIOName(globus_l_xio_udp_open);
     
     attr = (globus_l_attr_t *) 
@@ -1122,15 +1123,16 @@ globus_l_xio_udp_open(
     
     /* if a peer has been chosen, bind them */
     /* XXX need to check into ipv4/6 mismatches between local and remote */
-    if(contact_info->host && contact_info->port)
+    port = contact_info->port ? contact_info->port : contact_info->scheme;
+    if(contact_info->host && port)
     {
         result = globus_l_xio_udp_connect(
-            handle, contact_info->host, contact_info->port);
+            handle, contact_info->host, port);
         if(result != GLOBUS_SUCCESS)
         {
             result = GlobusXIOErrorWrapFailedWithMessage2(result,
                 "Unable to connect to %s:%s",
-                contact_info->host, contact_info->port);
+                contact_info->host, port);
             goto error_connect;
         }
     }
@@ -1467,15 +1469,17 @@ globus_l_xio_udp_cntl(
             goto error_connect;
         }
         
-        if(contact_info.host && contact_info.port)
+        in_string = contact_info.port
+            ? contact_info.port : contact_info.scheme;
+        if(contact_info.host && in_string)
         {
             result = globus_l_xio_udp_connect(
-                handle, contact_info.host, contact_info.port);
+                handle, contact_info.host, in_string);
             if(result != GLOBUS_SUCCESS)
             {
                 result = GlobusXIOErrorWrapFailedWithMessage2(result,
                     "Unable to connect to %s:%s",
-                    contact_info.host, contact_info.port);
+                    contact_info.host, in_string);
                 globus_xio_contact_destroy(&contact_info);
                 goto error_connect;
             }

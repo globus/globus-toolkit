@@ -239,6 +239,7 @@ GSS_CALLCONV gss_unwrap(
             goto exit;
         }
 
+        ERR_clear_error();
         /* now get the data from SSL. 
          * We don't know how big it is, so assume the max?
          */
@@ -317,7 +318,8 @@ GSS_CALLCONV gss_unwrap(
 
         if (conf_state)
         {
-            if (context->gss_ssl->session->cipher->algorithms & SSL_eNULL)
+            if (SSL_CIPHER_get_bits(
+                    SSL_get_current_cipher(context->gss_ssl), NULL) == 0)
             {
                 *conf_state = GSS_INTEGRITY_ONLY;
             }

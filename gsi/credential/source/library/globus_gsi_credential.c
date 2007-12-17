@@ -172,18 +172,13 @@ globus_l_gsi_cred_subject_cmp(
 
 /**
  * @name Read Credential
- * @ingroup globus_gsi_cred_operations
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_cred_operations
  * Read a Credential from a filesystem location. The credential
  * to read will be determined by the search order specified in the handle
  * attributes.  
- * NOTE:  This function always searches for the desired credential.
- *        If you don't want to perform a search, then don't use this
- *        function.  The search goes in the order of the handle
- *        attributes' search order.
- *
  * @param handle
  *        The credential handle to set.  This credential handle
  *        should already be initialized using globus_gsi_cred_handle_init.
@@ -197,8 +192,14 @@ globus_l_gsi_cred_subject_cmp(
  *        GLOBUS_SUCCESS if no errors occured, otherwise, an error object
  *        identifier is returned.
  *
- * @see globus_gsi_cred_read_proxy
- * @see globus_gsi_cred_read_cert_and_key
+ * @see globus_gsi_cred_read_proxy()
+ * @see globus_gsi_cred_read_cert_and_key()
+ *
+ * @note  This function always searches for the desired credential.
+ *        If you don't want to perform a search, then don't use this
+ *        function.  The search goes in the order of the handle
+ *        attributes' search order.
+ *
  */
 globus_result_t globus_gsi_cred_read(
     globus_gsi_cred_handle_t            handle,
@@ -804,10 +805,10 @@ globus_result_t globus_gsi_cred_read(
 
 /**
  * @name Reading Proxy Credentials
- * @ingroup globus_gsi_cred_operations
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_cred_operations
  * Read a proxy from a PEM file.
  *
  * @param handle
@@ -872,6 +873,7 @@ globus_result_t globus_gsi_cred_read_proxy(
 }
 
 /**
+ * @ingroup globus_gsi_cred_operations
  * Read a Proxy Credential from a BIO stream and set the 
  * credential handle to represent the read credential.
  * The values read from the stream, in order, will be
@@ -994,6 +996,7 @@ globus_gsi_cred_read_proxy_bio(
             /* appears to continue reading after EOF and
              * so an error occurs here
              */
+            ERR_clear_error();
             break;
         }
         
@@ -1030,10 +1033,10 @@ globus_gsi_cred_read_proxy_bio(
 
 /**
  * @name Read Key
- * @ingroup globus_gsi_cred_operations
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_cred_operations
  * Read a key from a PEM file.
  *
  * @param handle
@@ -1121,10 +1124,10 @@ globus_gsi_cred_read_key(
 
 /**
  * @name Read Cert
- * @ingroup globus_gsi_cred_operations
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_cred_operations
  * Read a cert from a file.  Cert should be in PEM format.
  *
  * @param handle
@@ -1245,10 +1248,10 @@ globus_result_t globus_gsi_cred_read_cert(
 
 /**
  * @name Read Cert & Key in PKCS12 Format
- * @ingroup globus_gsi_cred_operations
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_cred_operations
  * Read a cert & key from a file. The file should be in PKCS12 format.
  *
  * @param handle
@@ -1490,10 +1493,10 @@ globus_result_t globus_gsi_cred_read_pkcs12(
 
 /**
  * @name Write Credential
- * @ingroup globus_gsi_cred_operations
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_cred_operations
  * Write out a credential to a BIO.  The credential parameters written,
  * in order, are the signed certificate, the RSA private key,
  * and the certificate chain (a set of X509 certificates).
@@ -1576,6 +1579,7 @@ globus_result_t globus_gsi_cred_write(
 }    
     
 /**
+ * @ingroup globus_gsi_cred_operations
  * Write out a credential to a file.  The credential parameters written,
  * in order, are the signed certificate, the RSA private key,
  * and the certificate chain (a set of X509 certificates).
@@ -1595,11 +1599,19 @@ globus_result_t globus_gsi_cred_write_proxy(
 {
     globus_result_t                     result = GLOBUS_SUCCESS;
     BIO *                               proxy_bio = NULL;
-
+    mode_t                              oldmask;
+    FILE *                              temp_proxy_fp = NULL;
+    int                                 temp_proxy_fd = -1;
+    
     static char *                       _function_name_ =
         "globus_gsi_cred_write_proxy";
 
     GLOBUS_I_GSI_CRED_DEBUG_ENTER;
+
+    /*
+     * For systems that does not support a third (mode) argument in open()
+     */
+    oldmask = globus_libc_umask(0077);
 
     if(handle == NULL)
     {
@@ -1610,23 +1622,57 @@ globus_result_t globus_gsi_cred_write_proxy(
         goto exit;
     }
 
-    if(!(proxy_bio = BIO_new_file(proxy_filename, "w")))
-    {
-        GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
-            result,
-            GLOBUS_GSI_CRED_ERROR_WRITING_PROXY_CRED,
-            (_GCRSL("Can't open bio stream for writing to file: %s"), proxy_filename));
-        goto exit;
-    }
+    /* 
+     * We always unlink the file first; it is the only way to be
+     * certain that the file we open has never in its entire lifetime
+     * had the world-readable bit set.  
+     */
+    unlink(proxy_filename);
 
-    result = GLOBUS_GSI_SYSCONFIG_SET_KEY_PERMISSIONS(proxy_filename);
-    if(result != GLOBUS_SUCCESS)
+    /* 
+     * Now, we must open w/ O_EXCL to make certain that WE are 
+     * creating the file, so we know that the file was BORN w/ mode 0600.
+     * As a bonus, O_EXCL flag will cause a failure in the presence
+     * of a symlink, so we are safe from zaping a file due to the
+     * presence of a symlink.
+     */
+    if ((temp_proxy_fd = globus_libc_open(
+              proxy_filename, O_WRONLY|O_EXCL|O_CREAT, S_IRUSR|S_IWUSR)) < 0)
     {
         GLOBUS_GSI_CRED_ERROR_CHAIN_RESULT(
             result,
             GLOBUS_GSI_CRED_ERROR_WRITING_PROXY_CRED);
         goto exit;
     }
+
+    /* Finally, we have a safe fd.  Make it a stream like ssl wants. */
+    temp_proxy_fp = fdopen(temp_proxy_fd,"w");
+
+    /* Hand the stream over to ssl */
+    if( !(temp_proxy_fp) || 
+        !(proxy_bio = BIO_new_fp(temp_proxy_fp, BIO_CLOSE)))
+    {
+        GLOBUS_GSI_CRED_OPENSSL_ERROR_RESULT(
+            result,
+            GLOBUS_GSI_CRED_ERROR_WRITING_PROXY_CRED,
+            (_GCRSL("Can't open bio stream for writing to file: %s"), proxy_filename));
+        if ( temp_proxy_fp ) 
+        {
+            fclose(temp_proxy_fp);
+        } 
+        else if (temp_proxy_fd >= 0 ) 
+        {
+            /* close underlying fd if we do not have a stream */
+            close(temp_proxy_fd);
+        }
+
+        goto exit;
+    }
+
+    /* 
+     * Note: at this point, calling BIO_free(proxy_bio) will
+     * fclose the temp_proxy_fp, which in turn should close temp_proxy_fd.
+     */
 
     result = globus_gsi_cred_write(handle, proxy_bio);
     if(result != GLOBUS_SUCCESS)
@@ -1653,7 +1699,7 @@ globus_result_t globus_gsi_cred_write_proxy(
     }
 
  exit:
-
+    globus_libc_umask(oldmask);
     GLOBUS_I_GSI_CRED_DEBUG_EXIT;
     return result;
 }    
@@ -1661,10 +1707,10 @@ globus_result_t globus_gsi_cred_write_proxy(
 
 /**
  * @name Get the X509 certificate type (EEC, CA, proxy type, etc.)
- * @ingroup globus_gsi_cred_operations
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_cred_operations
  * Determine the type of the given X509 certificate For the list of possible
  * values returned, see globus_gsi_cert_utils_cert_type_t.
  *
@@ -1703,10 +1749,10 @@ globus_gsi_cred_get_cert_type(
 
 /**
  * @name Get PROXYCERTINFO Struct
- * @ingroup globus_i_gsi_cred
  */
 /* @{ */
 /** 
+ * @ingroup globus_i_gsi_cred
  * Get the PROXYCERTINFO struct from the X509 struct.
  * The PROXYCERTINFO struct that gets set must be freed
  * with a call to PROXYCERTINFO_free.

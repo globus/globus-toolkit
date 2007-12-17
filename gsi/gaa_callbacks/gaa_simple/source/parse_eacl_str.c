@@ -50,7 +50,7 @@ static char *cleanup(char *line)
 }        
 
 
-/** gaasimple_parse_restrictions()
+/**
  *
  * @ingroup gaa_simple
  *
@@ -61,7 +61,7 @@ static char *cleanup(char *line)
  *        input gaa pointer
  * @param policy
  *        output policy pointer
- * @param object
+ * @param in_object
  *        input object (filename or dirname) to get policy for
  * @param params
  *        structure containing the restrictions, the actions and

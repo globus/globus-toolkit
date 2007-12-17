@@ -42,8 +42,9 @@ xioperf_l_kmint(
 static
 globus_result_t
 xioperf_l_opts_format(
+    globus_options_handle_t             opts_handle,
     char *                              cmd,
-    char *                              opt,
+    char **                             opt,
     void *                              arg,
     int *                               out_parms_used)
 {
@@ -52,7 +53,7 @@ xioperf_l_opts_format(
 
     info = (globus_i_xioperf_info_t *) arg;
 
-    switch(*opt)
+    switch(*opt[0])
     {
         case 'G':
         case 'g':
@@ -60,7 +61,7 @@ xioperf_l_opts_format(
         case 'k':
         case 'M':
         case 'm':
-            info->format = toupper(*opt);
+            info->format = toupper(*opt[0]);
             *out_parms_used = 1;
             break;
 
@@ -76,8 +77,9 @@ xioperf_l_opts_format(
 static
 globus_result_t
 xio_perf_l_opts_interval(
+    globus_options_handle_t             opts_handle,
     char *                              cmd,
-    char *                              opt,
+    char **                             opt,
     void *                              arg,
     int *                               out_parms_used)
 {
@@ -88,7 +90,7 @@ xio_perf_l_opts_interval(
 
     info = (globus_i_xioperf_info_t *) arg;
 
-    sc = sscanf(opt, "%d", &i);
+    sc = sscanf(opt[0], "%d", &i);
     if(sc != 1)
     {
         return GlobusXIOPerfError(
@@ -105,8 +107,9 @@ xio_perf_l_opts_interval(
 static
 globus_result_t
 xioperf_l_opts_quiet(
+    globus_options_handle_t             opts_handle,
     char *                              cmd,
-    char *                              opt,
+    char **                             opt,
     void *                              arg,
     int *                               out_parms_used)
 {
@@ -121,9 +124,23 @@ xioperf_l_opts_quiet(
 
 static
 globus_result_t
-xioperf_l_opts_len(
+xioperf_l_opts_help(
+    globus_options_handle_t             opts_handle,
     char *                              cmd,
-    char *                              opt,
+    char **                             opt,
+    void *                              arg,
+    int *                               out_parms_used)
+{
+    globus_options_help(opts_handle);
+    exit(0);
+}
+
+static
+globus_result_t
+xioperf_l_opts_len(
+    globus_options_handle_t             opts_handle,
+    char *                              cmd,
+    char **                             opt,
     void *                              arg,
     int *                               out_parms_used)
 {
@@ -131,14 +148,15 @@ xioperf_l_opts_len(
 
     info = (globus_i_xioperf_info_t *) arg;
     *out_parms_used = 1;
-    return xioperf_l_kmint(opt, &info->len);
+    return xioperf_l_kmint(opt[0], &info->len);
 }
 
 static
 globus_result_t
 xioperf_l_opts_port(
+    globus_options_handle_t             opts_handle,
     char *                              cmd,
-    char *                              opt,
+    char **                             opt,
     void *                              arg,
     int *                               out_parms_used)
 {
@@ -149,7 +167,7 @@ xioperf_l_opts_port(
 
     info = (globus_i_xioperf_info_t *) arg;
 
-    sc = sscanf(opt, "%d", &i);
+    sc = sscanf(opt[0], "%d", &i);
     if(sc != 1)
     {
         return GlobusXIOPerfError(
@@ -164,8 +182,9 @@ xioperf_l_opts_port(
 static
 globus_result_t
 xioperf_l_opts_blocksize(
+    globus_options_handle_t             opts_handle,
     char *                              cmd,
-    char *                              opt,
+    char **                             opt,
     void *                              arg,
     int *                               out_parms_used)
 {
@@ -175,7 +194,7 @@ xioperf_l_opts_blocksize(
 
     info = (globus_i_xioperf_info_t *) arg;
     *out_parms_used = 1;
-    result = xioperf_l_kmint(opt, &bs);
+    result = xioperf_l_kmint(opt[0], &bs);
     info->block_size = (globus_size_t) bs;
     return result;
 }
@@ -183,8 +202,9 @@ xioperf_l_opts_blocksize(
 static
 globus_result_t
 xioperf_l_opts_window(
+    globus_options_handle_t             opts_handle,
     char *                              cmd,
-    char *                              opt,
+    char **                             opt,
     void *                              arg,
     int *                               out_parms_used)
 {
@@ -192,21 +212,22 @@ xioperf_l_opts_window(
 
     info = (globus_i_xioperf_info_t *) arg;
     *out_parms_used = 1;
-    return xioperf_l_kmint(opt, &info->window);
+    return xioperf_l_kmint(opt[0], &info->window);
 }
 
 static
 globus_result_t
 xioperf_l_opts_bind(
+    globus_options_handle_t             opts_handle,
     char *                              cmd,
-    char *                              opt,
+    char **                             opt,
     void *                              arg,
     int *                               out_parms_used)
 {
     globus_i_xioperf_info_t *           info;
 
     info = (globus_i_xioperf_info_t *) arg;
-    info->bind_addr = strdup(opt);
+    info->bind_addr = strdup(opt[0]);
     *out_parms_used = 1;
     return GLOBUS_SUCCESS;
 }
@@ -214,8 +235,9 @@ xioperf_l_opts_bind(
 static
 globus_result_t
 xioperf_l_opts_nodelay(
+    globus_options_handle_t             opts_handle,
     char *                              cmd,
-    char *                              opt,
+    char **                             opt,
     void *                              arg,
     int *                               out_parms_used)
 {
@@ -230,8 +252,9 @@ xioperf_l_opts_nodelay(
 static
 globus_result_t
 xioperf_l_opts_server(
+    globus_options_handle_t             opts_handle,
     char *                              cmd,
-    char *                              opt,
+    char **                             opt,
     void *                              arg,
     int *                               out_parms_used)
 {
@@ -254,8 +277,9 @@ xioperf_l_opts_server(
 static
 globus_result_t
 xioperf_l_opts_bandwidth(
+    globus_options_handle_t             opts_handle,
     char *                              cmd,
-    char *                              opt,
+    char **                             opt,
     void *                              arg,
     int *                               out_parms_used)
 {
@@ -273,8 +297,9 @@ xioperf_l_opts_bandwidth(
 static
 globus_result_t
 xioperf_l_opts_client(
+    globus_options_handle_t             opts_handle,
     char *                              cmd,
-    char *                              opt,
+    char **                             opt,
     void *                              arg,
     int *                               out_parms_used)
 {
@@ -284,7 +309,7 @@ xioperf_l_opts_client(
     info = (globus_i_xioperf_info_t *) arg;
 
     info->server = GLOBUS_FALSE;
-    info->client = strdup(opt);
+    info->client = strdup(opt[0]);
     *out_parms_used = 1;
     return GLOBUS_SUCCESS;
 }
@@ -292,8 +317,9 @@ xioperf_l_opts_client(
 static
 globus_result_t
 xioperf_l_opts_num(
+    globus_options_handle_t             opts_handle,
     char *                              cmd,
-    char *                              opt,
+    char **                             opt,
     void *                              arg,
     int *                               out_parms_used)
 {
@@ -301,21 +327,22 @@ xioperf_l_opts_num(
 
     info = (globus_i_xioperf_info_t *) arg;
     *out_parms_used = 1;
-    return xioperf_l_kmint(opt, &info->bytes_to_transfer);
+    return xioperf_l_kmint(opt[0], &info->bytes_to_transfer);
 }
 
 static
 globus_result_t
 xioperf_l_opts_file(
+    globus_options_handle_t             opts_handle,
     char *                              cmd,
-    char *                              opt,
+    char **                             opt,
     void *                              arg,
     int *                               out_parms_used)
 {
     globus_i_xioperf_info_t *           info;
 
     info = (globus_i_xioperf_info_t *) arg;
-    info->file = strdup(opt);
+    info->file = strdup(opt[0]);
     *out_parms_used = 1;
     return GLOBUS_SUCCESS;
 }
@@ -323,8 +350,9 @@ xioperf_l_opts_file(
 static
 globus_result_t
 xioperf_l_opts_parallel(
+    globus_options_handle_t             opts_handle,
     char *                              cmd,
-    char *                              opt,
+    char **                             opt,
     void *                              arg,
     int *                               out_parms_used)
 {
@@ -335,7 +363,7 @@ xioperf_l_opts_parallel(
 
     info = (globus_i_xioperf_info_t *) arg;
 
-    sc = sscanf(opt, "%d", &i);
+    sc = sscanf(opt[0], "%d", &i);
     if(sc != 1)
     {
         return GlobusXIOPerfError(
@@ -350,8 +378,9 @@ xioperf_l_opts_parallel(
 static
 globus_result_t
 xioperf_l_opts_time(
+    globus_options_handle_t             opts_handle,
     char *                              cmd,
-    char *                              opt,
+    char **                             opt,
     void *                              arg,
     int *                               out_parms_used)
 {
@@ -361,7 +390,7 @@ xioperf_l_opts_time(
     GlobusXIOPerfFuncName(xioperf_l_opts_time);
 
     info = (globus_i_xioperf_info_t *) arg;
-    sc = sscanf(opt, "%d", &i);
+    sc = sscanf(opt[0], "%d", &i);
     if(sc != 1)
     {
         return GlobusXIOPerfError(
@@ -377,8 +406,9 @@ xioperf_l_opts_time(
 static
 globus_result_t
 xioperf_l_opts_recv(
+    globus_options_handle_t             opts_handle,
     char *                              cmd,
-    char *                              opt,
+    char **                             opt,
     void *                              arg,
     int *                               out_parms_used)
 {
@@ -394,8 +424,9 @@ xioperf_l_opts_recv(
 static
 globus_result_t
 xioperf_l_opts_send(
+    globus_options_handle_t             opts_handle,
     char *                              cmd,
-    char *                              opt,
+    char **                             opt,
     void *                              arg,
     int *                               out_parms_used)
 {
@@ -411,8 +442,9 @@ xioperf_l_opts_send(
 static
 globus_result_t
 xioperf_l_opts_daemon(
+    globus_options_handle_t             opts_handle,
     char *                              cmd,
-    char *                              opt,
+    char **                             opt,
     void *                              arg,
     int *                               out_parms_used)
 {
@@ -428,8 +460,9 @@ xioperf_l_opts_daemon(
 static
 globus_result_t
 xioperf_l_opts_subject_dn(
+    globus_options_handle_t             opts_handle,
     char *                              cmd,
-    char *                              opt,
+    char **                             opt,
     void *                              arg,
     int *                               out_parms_used)
 {
@@ -437,7 +470,7 @@ xioperf_l_opts_subject_dn(
 
     info = (globus_i_xioperf_info_t *) arg;
 
-    info->subject = strdup(opt);
+    info->subject = strdup(opt[0]);
 
     return GLOBUS_SUCCESS;
 }
@@ -445,8 +478,9 @@ xioperf_l_opts_subject_dn(
 static
 globus_result_t
 xioperf_l_opts_driver(
+    globus_options_handle_t             opts_handle,
     char *                              cmd,
-    char *                              opt,
+    char **                             opt,
     void *                              arg,
     int *                               out_parms_used)
 {
@@ -455,7 +489,7 @@ xioperf_l_opts_driver(
 
     info = (globus_i_xioperf_info_t *) arg;
 
-    driver_name = strdup(opt);
+    driver_name = strdup(opt[0]);
 
     globus_fifo_enqueue(&info->driver_name_q, driver_name);
     *out_parms_used = 1;
@@ -466,8 +500,9 @@ xioperf_l_opts_driver(
 static
 globus_result_t
 xioperf_l_opts_version(
+    globus_options_handle_t             opts_handle,
     char *                              cmd,
-    char *                              opt,
+    char **                             opt,
     void *                              arg,
     int *                               out_parms_used)
 {
@@ -496,6 +531,9 @@ globus_options_entry_t                   globus_i_xioperf_opts_table[] =
     {"len", "l", NULL, "#[KM]",
         "length of buffer to read or write (default 8 KB)", 
         1, xioperf_l_opts_len},
+    {"help", "h", NULL, "#[KM]",
+        "print the help message",
+        0, xioperf_l_opts_help},
     {"port", "p", NULL, "#",
         "server port to listen on/connect to", 
         1, xioperf_l_opts_port},

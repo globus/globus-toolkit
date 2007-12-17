@@ -110,6 +110,13 @@ GSS_CALLCONV gss_acquire_cred(
         &once_control,
         globus_l_gsi_gssapi_activate_once);
 
+    globus_mutex_lock(&globus_i_gssapi_activate_mutex);
+    if (!globus_i_gssapi_active)
+    {
+        globus_module_activate(GLOBUS_GSI_GSSAPI_MODULE);
+    }
+    globus_mutex_unlock(&globus_i_gssapi_activate_mutex);
+    
     if (actual_mechs != NULL)
     {
         major_status = gss_indicate_mechs(&local_minor_status,

@@ -158,6 +158,31 @@ static globus_l_attr_t                  globus_l_xio_tcp_attr_default =
 static int                              globus_l_xio_tcp_port_range_state_file;
 static globus_mutex_t                   globus_l_xio_tcp_port_range_state_lock;
 
+/* string parse options table.  this rable has all of the options that
+    the use can set via strings */
+static globus_xio_string_cntl_table_t tcp_l_string_opts_table[] =
+
+{
+    {"port", GLOBUS_XIO_TCP_SET_SERVICE,
+        globus_xio_string_cntl_string},
+    {"listen_range", GLOBUS_XIO_TCP_SET_LISTEN_RANGE,
+        globus_xio_string_cntl_int_int},
+    {"iface", GLOBUS_XIO_TCP_SET_INTERFACE,
+        globus_xio_string_cntl_string},
+    {"reuse", GLOBUS_XIO_TCP_SET_REUSEADDR,
+        globus_xio_string_cntl_bool},
+    {"noipv6", GLOBUS_XIO_TCP_SET_NO_IPV6,
+        globus_xio_string_cntl_bool},
+    {"keepalive", GLOBUS_XIO_TCP_SET_KEEPALIVE,
+        globus_xio_string_cntl_bool},
+    {"sndbuf", GLOBUS_XIO_TCP_SET_SNDBUF,
+        globus_xio_string_cntl_formated_int},
+    {"rcvbuf", GLOBUS_XIO_TCP_SET_RCVBUF,
+        globus_xio_string_cntl_formated_int},
+    {"nodelay", GLOBUS_XIO_TCP_SET_NODELAY,
+        globus_xio_string_cntl_bool},
+    {NULL, 0, NULL}
+};
 /*
  *  server structure
  */
@@ -2065,19 +2090,22 @@ globus_l_xio_tcp_open(
     handle->use_blocking_io = attr->use_blocking_io;
     if(!driver_link && attr->fd == GLOBUS_XIO_TCP_INVALID_HANDLE)
     {
-        if(!(contact_info->host && contact_info->port))
+        char *                          port;
+        
+        port = contact_info->port ? contact_info->port : contact_info->scheme;
+        if(!(contact_info->host && port))
         {
             result = GlobusXIOErrorContactString("missing host or port");
             goto error_contact_string;
         }
         
         result = globus_l_xio_tcp_connect(
-            op, handle, attr, contact_info->host, contact_info->port);
+            op, handle, attr, contact_info->host, port);
         if(result != GLOBUS_SUCCESS)
         {
             result = GlobusXIOErrorWrapFailedWithMessage2(result,
                 "Unable to connect to %s:%s",
-                contact_info->host, contact_info->port);
+                contact_info->host,  port);
             goto error_connect;
         }
     }
@@ -2752,6 +2780,10 @@ globus_l_xio_tcp_init(
         globus_l_xio_tcp_attr_copy,
         globus_l_xio_tcp_attr_cntl,
         globus_l_xio_tcp_attr_destroy);
+
+    globus_xio_driver_string_cntl_set_table(
+        driver,
+        tcp_l_string_opts_table);
     
     *out_driver = driver;
     
@@ -2861,3 +2893,4 @@ globus_l_xio_tcp_deactivate(void)
     
     return GLOBUS_SUCCESS;
 }
+

@@ -18,7 +18,8 @@
 #include "gaa_private.h"
 #include <string.h>
 
-/** gaa_i_new_string()
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
  *
  *  @ingroup gaa_internal
  *
@@ -39,7 +40,7 @@ gaa_i_new_string(char **dest, char *src)
     return(GAA_S_SUCCESS);
 }
 
-/** gaa_i_free_simple()
+/**
  *
  *  @ingroup gaa_internal
  *
@@ -54,3 +55,4 @@ gaa_i_free_simple(void *val)
     if (val)
 	free(val);
 }
+#endif

@@ -14,12 +14,6 @@
  * limitations under the License.
  */
 
-/**
- * @file globus_gsi_authz.c
- * Globus Authorization API
- *
- *
- */
 #include "globus_common.h"
 #include "version.h"
 #include "globus_i_gsi_authz.h"
@@ -27,6 +21,16 @@
 #include "globus_gsi_system_config.h"
 #include "globus_gsi_authz_callout_error.h"
 
+
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
+ * @file globus_gsi_authz.c
+ * Globus Authorization API
+ *
+ * $RCSfile$
+ * $Revision$
+ * $Date$
+ */
 static int globus_l_gsi_authz_activate(void);
 static int globus_l_gsi_authz_deactivate(void);
 
@@ -275,18 +279,26 @@ static void callback_wrapper(
 
     return;
 }
-
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
 /**
- * Initialize Handle
- * @ingroup globus_gsi_authz_handle
+ * @name Initialize Handle
  */
 /* @{ */
 /**
- * Initializes a handle.
+ * Initializes a handle
+ * @ingroup globus_gsi_authz
  *
  * @param handle
  *        Pointer to the handle that is to be initialized
+ * @param service_name
+ *        Service to authorize access to
+ * @param context
+ *        Security context used to contact the service
+ * @param callback
+ *        Callback function to call when authz handle init completes
+ * @param callback_arg
+ *        Argument to callback function
  * @return
  *        GLOBUS_SUCCESS if successful
  *        A Globus error object on failure:
@@ -391,18 +403,23 @@ globus_gsi_authz_handle_init(
 
 
 /**
- * Authorization decision made here
- * @ingroup globus_gsi_authorize
+ * @name Authorization decision made here
  */
+/*@{*/
 /**
  * Authorization decision made here
+ * @ingroup globus_gsi_authz
  *
  * @param handle
  *        Pointer to the handle that is to be initialized
- *         action
- *         object,
- *         callback,
- *         callback_arg
+ * @param action
+ *        Action to authorize
+ * @param object
+ *        Object that the action pertains to.
+ * @param callback
+ *        Callback function to call when authorization completes
+ * @param callback_arg
+ *        Argument to callback function
  *
  * @return
  *        GLOBUS_SUCCESS if successful
@@ -495,7 +512,7 @@ globus_gsi_authorize(
     GLOBUS_I_GSI_AUTHZ_DEBUG_EXIT;  
     return result;
 }
-
+/*@}*/
 
 globus_result_t
 globus_gsi_cancel_authz(
@@ -528,11 +545,15 @@ globus_gsi_cancel_authz(
  */
 /*@{*/
 /**
- * Destroy a Globus GSI authz  Handle
- * @ingroup globus_gsi_authz_handle
+ * Destroy a Globus GSI authz handle
+ * @ingroup globus_gsi_authz
  *
  * @param handle
  *        The handle that is to be destroyed
+ * @param callback
+ *        Callback function to call when handle is destroyed
+ * @param callback_arg
+ *        Argument to callback function
  * @return
  *        GLOBUS_SUCCESS
  */
@@ -620,12 +641,22 @@ globus_gsi_authz_handle_destroy(
  */
 /*@{*/
 /**
- *  @param (identity_ptr)
- *        output: the authorization identity.  This is malloc'd and should
- *        be freed by the caller.  If the value is 0 (and this function returned
- *	  GLOBUS_SUCCESS), the caller should use the authenticated identity.
+ * Query for authorization identity
+ * @ingroup globus_gsi_authz
  *
- *  @return 
+ * @param handle
+ *        The handle that is to be used for the identity check.
+ * @param identity_ptr
+ *        The authorization identity determined by the authorization handle.
+ *        This is must be freed by the caller.  If the value is NULL (and this
+ *        function returned GLOBUS_SUCCESS), the caller should use the
+ *        authenticated identity.
+ * @param callback
+ *        Callback function to call when identity is determined.
+ * @param callback_arg
+ *        Argument to callback function.
+ *
+ * @return 
  *        GLOBUS_SUCCESS
  */
 globus_result_t
@@ -722,6 +753,5 @@ globus_gsi_authz_get_authorization_identity(
     GLOBUS_I_GSI_AUTHZ_DEBUG_EXIT;    
     return result;
 }
-
-/*globus_gsi_authz_handle_destroy*/
+/* globus_gsi_authz_get_authorization_identity() */
 /*@}*/

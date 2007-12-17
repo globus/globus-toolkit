@@ -40,19 +40,3 @@ globus_l_gsi_authz_error_strings[GLOBUS_GSI_AUTHZ_ERROR_LAST] =
 };
 
 #endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

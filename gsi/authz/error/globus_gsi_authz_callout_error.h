@@ -54,11 +54,17 @@ EXTERN_C_BEGIN
  */
 typedef enum
 {
+    /** Authz callout error */
     GLOBUS_GSI_AUTHZ_CALLOUT_AUTHZ_CALLOUT_ERROR = 0,
+    /** Authorization denied by callout */
     GLOBUS_GSI_AUTHZ_CALLOUT_AUTHZ_DENIED_BY_CALLOUT = 1,
+    /** Configuration Error */
     GLOBUS_GSI_AUTHZ_CALLOUT_CONFIGURATION_ERROR = 2,
+    /** System Error */
     GLOBUS_GSI_AUTHZ_CALLOUT_SYSTEM_ERROR = 3,
+    /** Credentials Error */
     GLOBUS_GSI_AUTHZ_CALLOUT_CREDENTIAL_ERROR = 4,
+    /** A invalid paramater was detected */
     GLOBUS_GSI_AUTHZ_CALLOUT_BAD_ARGUMENT_ERROR = 5,
     GLOBUS_GSI_AUTHZ_CALLOUT_ERROR_LAST = 6
 }

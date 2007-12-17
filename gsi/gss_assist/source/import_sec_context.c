@@ -38,10 +38,10 @@
  */
 
 /* @name Import Security Context
- * @ingroup globus_gsi_gss_assist
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_gss_assist
  * Import the security context from a file
  *
  * @param minor_status 

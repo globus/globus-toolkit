@@ -448,7 +448,13 @@ globus_l_xio_telnet_attr_copy(
     globus_l_xio_telnet_attr_t *       dest_attr;
     globus_result_t                     res;
     GlobusXIOName(globus_l_xio_telnet_attr_init);
-    
+
+    if(src_driver_attr == NULL)
+    {
+        *out_driver_attr = NULL;
+        return GLOBUS_SUCCESS;
+    }
+
     res = globus_l_xio_telnet_attr_init((void **) &dest_attr);
     if(res == GLOBUS_SUCCESS)
     {
@@ -500,13 +506,49 @@ globus_l_xio_telnet_attr_cntl(
     return GLOBUS_SUCCESS;
 }
 
+static
+globus_result_t
+globus_l_xio_telnet_server_destroy(
+    void *                              driver_server)
+{
+    return globus_l_xio_telnet_attr_destroy(driver_server);
+}
+
+static
+globus_result_t
+globus_l_xio_telnet_server_init(
+    void *                              driver_attr,
+    const globus_xio_contact_t *        contact_info,
+    globus_xio_operation_t              op)
+{
+    globus_result_t                     res;
+    globus_l_xio_telnet_attr_t *        attr;
+    GlobusXIOName(globus_l_xio_telnet_server_init);
+
+    res = globus_l_xio_telnet_attr_copy((void **)&attr, driver_attr);
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
+    res = globus_xio_driver_pass_server_init(op, contact_info, attr);
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto error_pass;
+    }
+    return GLOBUS_SUCCESS;
+error_pass:
+    globus_l_xio_telnet_server_destroy(attr);
+error:
+    return res;
+}
+
 static void
 globus_l_xio_telnet_accept_cb(
     globus_xio_operation_t              op,
     globus_result_t                     result,
     void *                              user_arg)
 {
-    globus_xio_driver_finished_accept(op, (void *) 0x01, result);
+    globus_xio_driver_finished_accept(op, user_arg, result);
 }
 
 static globus_result_t
@@ -515,11 +557,33 @@ globus_l_xio_telnet_accept(
     globus_xio_operation_t              accept_op)
 {
     globus_result_t                     res;
-
+    globus_l_xio_telnet_attr_t *        attr;
+    GlobusXIOName(globus_l_xio_telnet_accept);
+   
+    res = globus_l_xio_telnet_attr_copy((void **)&attr, driver_server);
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto error;
+    }
     res = globus_xio_driver_pass_accept(
-        accept_op, globus_l_xio_telnet_accept_cb, NULL);
-
+        accept_op, globus_l_xio_telnet_accept_cb, attr);
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto error_pass;
+    }
+    return GLOBUS_SUCCESS;
+error_pass:
+    globus_l_xio_telnet_server_destroy(attr);
+error:
     return res;
+}
+
+static
+globus_result_t
+globus_l_xio_telnet_link_destroy(
+    void *                              driver_link)
+{
+    return globus_l_xio_telnet_server_destroy(driver_link);
 }
 
 /************************************************************************
@@ -560,14 +624,27 @@ globus_l_xio_telnet_open(
     globus_l_xio_telnet_handle_t *     handle;
     GlobusXIOName(globus_l_xio_telnet_open);
 
-    attr = (globus_l_xio_telnet_attr_t *) driver_attr;
-    
+    /* decide what attr to use */
+    if(driver_attr != NULL)
+    {
+        attr = (globus_l_xio_telnet_attr_t *) driver_attr;
+    }
+    else if(driver_link != NULL)
+    {
+        attr = (globus_l_xio_telnet_attr_t *) driver_link;
+    }
+    else
+    {
+        /* default */
+        attr = NULL;
+    }
+
     handle = (globus_l_xio_telnet_handle_t *) globus_calloc(
         sizeof(globus_l_xio_telnet_handle_t), 1);
     if(handle == NULL)
     {
         res = GlobusXIOErrorMemory("handle");
-        return res;
+        goto error_handle_alloc;
     }
 
     if(attr != NULL && attr->force_server)
@@ -575,28 +652,41 @@ globus_l_xio_telnet_open(
         handle->client = GLOBUS_FALSE;
     }
     else
-    {    
+    {       
         handle->client = driver_link ? GLOBUS_FALSE : GLOBUS_TRUE;
     }
-    handle->create_buffer_mode = attr 
-        ? attr->create_buffer_mode : GLOBUS_FALSE;
 
     handle->read_buffer_length = GLOBUS_L_XIO_TELNET_DEFAULT_BUFFER_SIZE;
     handle->read_buffer = globus_malloc(handle->read_buffer_length);
     if(handle->read_buffer == NULL)
     {
         res = GlobusXIOErrorMemory("buffer");
-        return res;
+        goto error_buffer_alloc;
     }
     globus_mutex_init(&handle->mutex, NULL);
     globus_fifo_init(&handle->write_q);
+
+    handle->create_buffer_mode = attr 
+        ? attr->create_buffer_mode : GLOBUS_FALSE;
 
     res = globus_xio_driver_pass_open(
         op,
         contact_info,
         globus_l_xio_telnet_open_cb,
         handle);
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto error_pass;
+    }
 
+    return GLOBUS_SUCCESS;
+error_pass:
+    globus_free(handle->read_buffer);
+    globus_mutex_destroy(&handle->mutex);
+    globus_fifo_destroy(&handle->write_q);
+error_buffer_alloc:
+    globus_free(handle);
+error_handle_alloc:
     return res;
 }
 
@@ -718,12 +808,12 @@ globus_l_xio_telnet_init(
 
     globus_xio_driver_set_server(
         driver,
-        NULL,
+        globus_l_xio_telnet_server_init,
         globus_l_xio_telnet_accept,
+        globus_l_xio_telnet_server_destroy,
         NULL,
         NULL,
-        NULL,
-        NULL);
+        globus_l_xio_telnet_link_destroy);
     
     globus_xio_driver_set_attr(
         driver,

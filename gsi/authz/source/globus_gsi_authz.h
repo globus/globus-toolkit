@@ -14,16 +14,22 @@
  * limitations under the License.
  */
 
+#ifndef GLOBUS_GSI_AUTHZ_H
+#define GLOBUS_GSI_AUTHZ_H 1
+
+#include "globus_common.h"
 #include "gssapi.h"
+
+EXTERN_C_BEGIN
 
 #define GLOBUS_GSI_AUTHZ_MODULE         (&globus_i_gsi_authz_module)
 
 extern
 globus_module_descriptor_t    globus_i_gsi_authz_module;
 
+/** @defgroup globus_gsi_authz GSI Authorization API
+ */
 
-/* callout handle initialization would happen in module activation  */
-/* authz handle init initializes the authz state for the connection */
 
 typedef struct globus_i_gsi_authz_handle_s *
     globus_gsi_authz_handle_t;
@@ -53,9 +59,12 @@ globus_result_t
 globus_gsi_cancel_authz(
     globus_gsi_authz_handle_t           handle);
 
-
 globus_result_t
 globus_gsi_authz_handle_destroy(
     globus_gsi_authz_handle_t           handle,
     globus_gsi_authz_cb_t               callback,
     void *                              callback_arg);
+
+EXTERN_C_END
+
+#endif /* GLOBUS_GSI_AUTHZ_H */

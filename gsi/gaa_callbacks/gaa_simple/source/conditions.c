@@ -24,7 +24,8 @@
 #include <sys/stat.h>
 #include <errno.h>
 
-/** @defgroup gaa_simple_conditions_static "gaa simple conditions.c static routines"
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/** @defgroup gaa_simple_conditions_static GAA Simple conditions.c static routines
  */
 
 const gaa_cred_type		gaa_identity = GAA_IDENTITY;
@@ -45,8 +46,9 @@ gaa_simple_l_check_id_cond(gaa_ptr		gaa,
 			  void *		params,
 			  int			matchcase);
 
+#endif
 
-/** gaa_simple_check_id_cond()
+/**
  *
  * @ingroup gaa_simple
  *
@@ -92,7 +94,7 @@ gaa_simple_check_id_cond(gaa_ptr		gaa,
 				    req_options, output_flags, params, 1));
 }
 
-/** gaa_simple_check_id_cond_nocase()
+/**
  *
  * @ingroup gaa_simple
  *
@@ -139,8 +141,8 @@ gaa_simple_check_id_cond_nocase(gaa_ptr		gaa,
 				    req_options, output_flags, params, 0));
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_simple_l_check_id_cond()
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
  *
  * @ingroup gaa_simple_conditions_static
  *
@@ -177,8 +179,6 @@ gaa_simple_check_id_cond_nocase(gaa_ptr		gaa,
  *         success
  * @retval standard gaa error returns
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
-
 static gaa_status
 gaa_simple_l_check_id_cond(gaa_ptr		gaa,
 			  gaa_sc_ptr		sc,
@@ -324,9 +324,9 @@ gaa_simple_l_check_id_cond(gaa_ptr		gaa,
 	}
     return(GAA_S_SUCCESS);
 }
+#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 
-
-/** gaa_simple_check_group_cond()
+/**
  *
  * @ingroup gaa_simple
  *
@@ -434,7 +434,8 @@ gaa_simple_check_trivial_cond(gaa_ptr		gaa,
     return(GAA_S_SUCCESS);
 }
 
-/* gaa_simple_check_local_access
+/*
+ * @ingroup gaa_simple
  * 
  * Checks if the user has permissions to perform the requested action 
  * (in the condition) on the object (in the options). It maps the possible
@@ -586,7 +587,7 @@ gaa_simple_check_local_access (gaa_ptr		gaa,
 
 
 
-/** gaasimple_utc_time_notbefore_cond()
+/**
  * @ingroup gaa_simple
  *
  * Checks the time condition.  Checks whether the current time is within
@@ -718,7 +719,7 @@ gaasimple_utc_time_notbefore_cond(gaa_ptr            gaa,
 /* End of gaasimple_utc_time_notbefore_cond() */                     
 
 
-/** gaasimple_utc_time_notonorafter_cond()
+/**
  * @ingroup gaa_simple
  *
  * Checks the time condition.  Checks whether the current time is within

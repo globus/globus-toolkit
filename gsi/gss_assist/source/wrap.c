@@ -30,11 +30,10 @@
 
 /**
  * @name Wrap
- * @ingroup globus_gsi_gss_assist
  */
 /* @{ */
 /**
- * @see gss_wrap
+ * @ingroup globus_gsi_gss_assist
  *
  * @param minor_status
  *        GSSAPI return code.  If the call was successful, the minor 
@@ -59,6 +58,8 @@
  * @return
  *        GSS_S_COMPLETE on sucess
  *        Other gss errors on failure.  
+ *
+ * @see gss_wrap()
  */
 OM_uint32
 globus_gss_assist_wrap_send(

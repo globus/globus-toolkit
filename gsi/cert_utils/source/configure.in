@@ -29,7 +29,7 @@ AC_TRY_COMPILE(
 )
 if test "X$answer" = "Xyes" ; then
    AC_MSG_RESULT(yes)
-   AC_DEFINE(HAVE_TIME_T_TIMEZONE)
+   AC_DEFINE(HAVE_TIME_T_TIMEZONE, [], [if time_t timezone is in <time.h>])
 else
    dnl
    dnl only place this should occur is on CYGWIN B20, which has an
@@ -50,11 +50,12 @@ else
    )
    if test "X$answer" = "Xyes" ; then   
        AC_MSG_RESULT(yes)
-       AC_DEFINE(HAVE_TIME_T__TIMEZONE)
+       AC_DEFINE(HAVE_TIME_T__TIMEZONE, [], [existence of time_t _timezone])
    else
        AC_MSG_RESULT(no)
    fi
 fi
+AC_CHECK_FUNCS(timegm)
 
 GLOBUS_FINALIZE
 
@@ -65,7 +66,6 @@ AC_OUTPUT(
 	library/Makefile
         programs/Makefile
 	programs/grid-cert-info
-        programs/grid-cert-renew
         programs/grid-change-pass-phrase
         programs/grid-cert-request
         programs/grid-default-ca

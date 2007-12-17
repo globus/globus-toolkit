@@ -285,6 +285,46 @@ GSS_CALLCONV gss_init_delegation(
             context->delegation_state = GSS_DELEGATION_DONE;
             goto mutex_unlock;
         }
+        /* set the requested time */
+
+        if(time_req != 0)
+        {
+            if(time_req%60)
+            {
+                /* round up */
+                time_req += 60;
+            }
+            
+            local_result = globus_gsi_proxy_handle_set_time_valid(
+                context->proxy_handle,
+                time_req/60);
+
+            if(local_result != GLOBUS_SUCCESS)
+            {
+                GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                    minor_status, local_result,
+                    GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_PROXY);
+                major_status = GSS_S_FAILURE;
+                context->delegation_state = GSS_DELEGATION_DONE;
+                goto mutex_unlock;            
+            }
+        }
+        
+        /* clear the proxycertinfo */
+        
+        local_result =
+            globus_gsi_proxy_handle_clear_cert_info(context->proxy_handle);
+        
+        if(local_result != GLOBUS_SUCCESS)
+        {
+            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
+                minor_status, local_result,
+                GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_PROXY);
+            major_status = GSS_S_FAILURE;
+            context->delegation_state = GSS_DELEGATION_DONE;
+            goto mutex_unlock;            
+        }
+        
 
         if(cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_CA)
         {
@@ -338,46 +378,6 @@ GSS_CALLCONV gss_init_delegation(
             goto mutex_unlock;            
         }    
 
-        /* set the requested time */
-
-        if(time_req != 0)
-        {
-            if(time_req%60)
-            {
-                /* round up */
-                time_req += 60;
-            }
-            
-            local_result = globus_gsi_proxy_handle_set_time_valid(
-                context->proxy_handle,
-                time_req/60);
-
-            if(local_result != GLOBUS_SUCCESS)
-            {
-                GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-                    minor_status, local_result,
-                    GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_PROXY);
-                major_status = GSS_S_FAILURE;
-                context->delegation_state = GSS_DELEGATION_DONE;
-                goto mutex_unlock;            
-            }
-        }
-        
-        /* clear the proxycertinfo */
-        
-        local_result =
-            globus_gsi_proxy_handle_clear_cert_info(context->proxy_handle);
-        
-        if(local_result != GLOBUS_SUCCESS)
-        {
-            GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
-                minor_status, local_result,
-                GLOBUS_GSI_GSSAPI_ERROR_WITH_GSI_PROXY);
-            major_status = GSS_S_FAILURE;
-            context->delegation_state = GSS_DELEGATION_DONE;
-            goto mutex_unlock;            
-        }
-        
         /* set the proxycertinfo here */
         if(extension_oids != GSS_C_NO_OID_SET)
         {

@@ -17,6 +17,7 @@
 #include "gaa.h"
 #include "gaa_private.h"
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 struct gaaint_mutex_callback {
     gaacore_mutex_create_func create;
     gaacore_mutex_destroy_func destroy;
@@ -31,9 +32,11 @@ struct gaaint_mutex_callback {
 typedef struct gaaint_mutex_callback gaaint_mutex_callback;
 
 static gaaint_mutex_callback *mutex_callback = 0;
+#endif
 
-/** gaacore_set_mutex_callback()
+/**
  *
+ * @ingroup gaa_core
  *  Sets the mutex callback functions.
  *
  *  @param create
@@ -96,8 +99,9 @@ gaacore_set_mutex_callback(gaacore_mutex_create_func	create,
     return(GAA_S_SUCCESS);
 }
 
-/** gaacore_mutex_lock()
+/**
  *
+ * @ingroup gaa_core
  *  Calls the mutex lock callback to lock a mutex.
  *
  *  @param mutex
@@ -118,8 +122,9 @@ gaacore_mutex_lock(void *mutex)
     return(GAA_S_SUCCESS);
 }
 
-/** gaacore_mutex_unlock()
+/**
  *
+ * @ingroup gaa_core
  *  Calls the mutex unlock callback to unlock a mutex.
  *
  *  @param mutex
@@ -140,8 +145,9 @@ gaacore_mutex_unlock(void *mutex)
     return(GAA_S_SUCCESS);
 }
 
-/** gaacore_mutex_create()
+/**
  *
+ * @ingroup gaa_core
  *  Calls the mutex create callback to create a mutex.
  *
  *  @param mutex_ptr
@@ -166,7 +172,8 @@ gaacore_mutex_create(void **mutex_ptr)
     return(GAA_S_SUCCESS);
 }
 
-/** gaacore_mutex_destroy()
+/**
+ * @ingroup gaa_core
  *
  *  Calls the mutex destroy callback to destroy a mutex.
  *
@@ -181,7 +188,8 @@ gaacore_mutex_destroy(void *mutex)
 	mutex_callback->destroy(mutex, mutex_callback->params);
 }
 
-/** gaacore_tsdata_create()
+/**
+ * @ingroup gaa_core
  *
  *  Calls the mutex tscreate callback to create a key to be used for subsequent
  *  calls to the tsget and tsset callbacks.
@@ -189,7 +197,7 @@ gaacore_mutex_destroy(void *mutex)
  *  @param tsdata
  *     input/output tsdata to create.  The elements of this structure
  *     should be initialized to 0.
- *  @param freefunc
+ *  @param freedata
  *     input function to be used (by the underlying thread mechanism)
  *     to free the thread-specific data when the thread exits.
  *
@@ -210,7 +218,8 @@ gaacore_tsdata_create(gaacore_tsdata *tsdata, gaa_freefunc freedata)
     return(GAA_S_SUCCESS);
 }
 
-/** gaacore_tsdata_set()
+/**
+ * @ingroup gaa_core
  *
  *  Calls the mutex tsset callback to set thread-specific data.
  *
@@ -237,7 +246,8 @@ gaacore_tsdata_set(gaacore_tsdata *tsdata, void *data)
     return(GAA_S_SUCCESS);
 }
 
-/** gaacore_tsdata_get()
+/**
+ * @ingroup gaa_core
  *
  *  Calls the mutex tsget callback to get thread-specific data.
  *
@@ -258,7 +268,8 @@ gaacore_tsdata_get(gaacore_tsdata *tsdata)
     return(mutex_callback->tsget(tsdata->key, mutex_callback->params));
 }
 
-/** gaa_i_tsdata_supported()
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
  *
  *  Check to see whether thread-specific callbacks have been installed.
  *
@@ -271,3 +282,4 @@ gaa_i_tsdata_supported()
 {
     return(mutex_callback && mutex_callback->tscreate);
 }
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */

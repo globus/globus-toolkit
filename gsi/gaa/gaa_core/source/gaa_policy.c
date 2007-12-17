@@ -18,11 +18,11 @@
 #include "gaa_private.h"
 #include <string.h>
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 static char *rcsid = "$Header$";
 
-/** @defgroup gaa_policy_static "static routines from gaa_core/gaa_policy.c"
+/** @defgroup gaa_policy_static Static-scope functions in gaa_policy.c
  */
-
 static gaa_status
 gaa_l_reset_answer(gaa_answer *answer);
 
@@ -103,8 +103,9 @@ gaa_l_new_time_period(gaa_time_period **time_period, time_t start_time,
 static gaa_status
 gaa_l_new_policy_entry(gaa_policy_entry **ent, gaa_policy_right *right,
 		       int priority, int num);
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
-/** gaa_check_authorization()
+/**
  *
  *  @ingroup gaa
  *  
@@ -197,7 +198,7 @@ gaa_check_authorization(gaa_ptr		gaa,
 	return(status);
 }
 
-/** gaa_inquire_policy_info()
+/**
  *
  *  @ingroup gaa
  *
@@ -277,7 +278,7 @@ gaa_inquire_policy_info(gaa_ptr		gaa,
     return(status);
 }
 
-/** gaa_match_rights()
+/**
  *
  *  @ingroup gaa
  *
@@ -332,7 +333,7 @@ gaa_match_rights(gaa_ptr		gaa,
     return(GAA_S_SUCCESS);
 }
 
-/** gaa_check_condition()
+/**
  *
  *  @ingroup gaa
  *
@@ -341,6 +342,8 @@ gaa_match_rights(gaa_ptr		gaa,
  *
  *  @param gaa
  *         input gaa pointer
+ *  @param sc
+ *         input security context
  *  @param cond
  *         input condition to evaluate
  *  @param vtp
@@ -382,7 +385,7 @@ gaa_check_condition(gaa_ptr		gaa,
     return(gaa_l_check_condition(gaa, sc, cond, vtp, options, ynm, ce));
 }
 
-/** gaa_new_answer()
+/**
  *
  *  @ingroup gaa
  *
@@ -415,7 +418,7 @@ gaa_new_answer(gaa_answer **answer)
     return(gaa_l_init_answer(*answer));
 }
 
-/** gaa_free_answer()
+/**
  *
  *  @ingroup gaa
  *
@@ -433,7 +436,7 @@ gaa_free_answer(gaa_answer *answer)
     free(answer);
 }
 
-/** gaa_new_policy()
+/**
  *
  *  @ingroup gaa
  *
@@ -466,7 +469,7 @@ gaa_new_policy(gaa_policy **policy)
     return(gaa_init_policy(*policy));
 }
 
-/** gaa_init_policy()
+/**
  *
  *  @ingroup gaa
  *
@@ -491,7 +494,7 @@ gaa_init_policy(gaa_policy *policy)
     return(gaa_l_init_policy(policy, 1));
 }
 
-/** gaa_clear_policy()
+/**
  *
  *  @ingroup gaa
  *
@@ -508,7 +511,7 @@ gaa_clear_policy(gaa_policy *policy)
     gaa_i_list_clear(policy->entries);
 }
 
-/** gaa_free_policy()
+/**
  *
  *  @ingroup gaa
  *
@@ -528,8 +531,8 @@ gaa_free_policy(gaa_policy *policy)
     }
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_new_policy_entry()
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
  *
  *  @ingroup gaa_policy_static
  *
@@ -549,7 +552,7 @@ gaa_free_policy(gaa_policy *policy)
  *  @retval GAA_S_INVALID_ARG
  *          ent or right is null
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
+static
 gaa_status
 gaa_l_new_policy_entry(gaa_policy_entry **ent,
 		       gaa_policy_right * right,
@@ -568,8 +571,9 @@ gaa_l_new_policy_entry(gaa_policy_entry **ent,
     (*ent)->right = right;
     return(GAA_S_SUCCESS);
 }
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
-/** gaa_add_policy_entry()
+/**
  *
  *  @ingroup gaa
  *
@@ -612,7 +616,7 @@ gaa_add_policy_entry(gaa_policy *	policy,
     return(gaa_i_list_add_entry(policy->entries, ent));
 }
 
-/** gaa_free_policy_entry()
+/**
  *
  *  @ingroup gaa
  *
@@ -636,7 +640,7 @@ gaa_free_policy_entry(gaa_policy_entry *ent)
     }
 }
 
-/** gaa_new_policy_right()
+/**
  *
  *  @ingroup gaa
  *
@@ -716,7 +720,7 @@ gaa_new_policy_right(gaa_ptr		gaa,
     return(status);
 }
 
-/** gaa_new_policy_right_rawval()
+/**
  *
  *  @ingroup gaa
  *
@@ -806,7 +810,7 @@ gaa_new_policy_right_rawval(gaa_ptr		gaa,
     return(status);
 }
 
-/** gaa_free_policy_right()
+/**
  *
  *  @ingroup gaa
  *
@@ -835,8 +839,8 @@ gaa_free_policy_right(gaa_policy_right *right)
     free(right);
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_free_gaaint_policy()
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/**
  *
  *  @ingroup gaa_policy_static
  *
@@ -845,14 +849,12 @@ gaa_free_policy_right(gaa_policy_right *right)
  *  @param i
  *         input/output object to free.
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static void
 gaa_l_free_gaaint_policy(gaaint_policy *i)
 {
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_reset_answer()
+/**
  *
  *  @ingroup gaa_policy_static
  *
@@ -862,7 +864,6 @@ gaa_l_free_gaaint_policy(gaaint_policy *i)
  *  @param answer
  *         input/output answer to clear.
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static gaa_status
 gaa_l_reset_answer(gaa_answer *answer)
 {
@@ -870,8 +871,7 @@ gaa_l_reset_answer(gaa_answer *answer)
     return(gaa_l_init_answer(answer));
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_check_one_right()
+/**
  *
  *  @ingroup gaa_policy_static
  *
@@ -915,7 +915,6 @@ gaa_l_reset_answer(gaa_answer *answer)
  *  GAA_C_MAYBE if there were any positive entries that it could not
  *  evaluate, and GAA_C_NO if there weren't.
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static gaa_status
 gaa_l_check_one_right(gaa_ptr		 gaa,
 		      gaaint_sc *	 sc,
@@ -1028,8 +1027,7 @@ gaa_l_check_one_right(gaa_ptr		 gaa,
     return(status);
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_arbitrate_status()
+/**
  *
  *  @ingroup gaa_policy_static
  *
@@ -1049,7 +1047,6 @@ gaa_l_check_one_right(gaa_ptr		 gaa,
  *          neither current nor aggregate was GAA_C_NO, and at least
  *          one of them was GAA_C_MAYBE.
  */ 
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static
 gaa_l_arbitrate_status(int aggregate, int current)
 {
@@ -1068,8 +1065,7 @@ gaa_l_arbitrate_status(int aggregate, int current)
     }
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_clear_answer()
+/**
  *
  *  @ingroup gaa_policy_static
  *
@@ -1079,7 +1075,6 @@ gaa_l_arbitrate_status(int aggregate, int current)
  *  @param answer
  *         input/output answer to clear.
  */ 
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static void
 gaa_l_clear_answer(gaa_answer *answer)
 {
@@ -1091,8 +1086,7 @@ gaa_l_clear_answer(gaa_answer *answer)
     answer->rights = 0;
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_init_answer()
+/**
  *
  *  @ingroup gaa_policy_static
  *
@@ -1102,7 +1096,6 @@ gaa_l_clear_answer(gaa_answer *answer)
  *  @param answer
  *         input/output answer to initialize.
  */ 
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static gaa_status
 gaa_l_init_answer(gaa_answer *answer)
 {
@@ -1125,8 +1118,7 @@ gaa_l_init_answer(gaa_answer *answer)
     return(status);
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_check_simple()
+/**
  *
  *  @ingroup gaa_policy_static
  *
@@ -1164,7 +1156,6 @@ gaa_l_init_answer(gaa_answer *answer)
  *          bad return value from cond_eval callback
  *
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static gaa_status
 gaa_l_check_simple(gaa_ptr		gaa,
 		   gaaint_sc *		sc,
@@ -1236,8 +1227,7 @@ gaa_l_check_simple(gaa_ptr		gaa,
     return(status);
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_intersect_times()
+/**
  *
  *  @ingroup gaa_policy_static
  *
@@ -1249,7 +1239,6 @@ gaa_l_check_simple(gaa_ptr		gaa,
  *  @param from
  *         input time period
  */ 
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static void
 gaa_l_intersect_times(gaa_time_period *to, gaa_time_period *from)
 {
@@ -1262,8 +1251,7 @@ gaa_l_intersect_times(gaa_time_period *to, gaa_time_period *from)
 	to->end_time = MIN(to->start_time, to->end_time);
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_set_times()
+/**
  *
  *  @ingroup gaa_policy_static
  *
@@ -1275,7 +1263,6 @@ gaa_l_intersect_times(gaa_time_period *to, gaa_time_period *from)
  *  @param from
  *         input time period to copy from
  */ 
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static void
 gaa_l_set_times(gaa_time_period *to, gaa_time_period *from)
 {
@@ -1285,8 +1272,7 @@ gaa_l_set_times(gaa_time_period *to, gaa_time_period *from)
     to->end_time = from->end_time;
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_free_time_period()
+/**
  *
  *  @ingroup gaa_policy_static
  *
@@ -1295,7 +1281,6 @@ gaa_l_set_times(gaa_time_period *to, gaa_time_period *from)
  *  @param time_period
  *         input/output time period to free.
  */ 
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static void
 gaa_l_free_time_period(gaa_time_period *time_period)
 {
@@ -1303,8 +1288,7 @@ gaa_l_free_time_period(gaa_time_period *time_period)
 	free(time_period);
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_init_policy()
+/**
  *
  *  @ingroup gaa_policy_static
  *
@@ -1324,7 +1308,6 @@ gaa_l_free_time_period(gaa_time_period *time_period)
  *  @retval GAA_S_SUCCESS
  *          success
  */ 
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static gaa_status
 gaa_l_init_policy(gaa_policy *		policy,
 		  int			freerights)
@@ -1346,8 +1329,7 @@ gaa_l_init_policy(gaa_policy *		policy,
     return(GAA_S_SUCCESS);
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_new_gaaint_request_option()
+/**
  *
  *  @ingroup gaa_policy_static
  *
@@ -1357,7 +1339,6 @@ gaa_l_init_policy(gaa_policy *		policy,
  *  @param i
  *         output structure to create
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static gaa_status
 gaa_l_new_gaaint_policy(gaaint_policy **i)
 {
@@ -1367,8 +1348,7 @@ gaa_l_new_gaaint_policy(gaaint_policy **i)
     return(GAA_S_SUCCESS);
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_clone_policy_right()
+/**
  *
  *  @ingroup gaa_policy_static
  *
@@ -1388,7 +1368,6 @@ gaa_l_new_gaaint_policy(gaaint_policy **i)
  *  @retval GAA_S_NO_AUTHINFO_CALLBACK
  *          no authinfo callback was found.
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static gaa_status
 gaa_l_clone_policy_right(gaa_ptr	    gaa,
 			 gaa_policy_right **new,
@@ -1437,8 +1416,7 @@ gaa_l_clone_policy_right(gaa_ptr	    gaa,
     return(status);
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_clone_condition()
+/**
  *
  *  @ingroup gaa_policy_static
  *
@@ -1450,7 +1428,6 @@ gaa_l_clone_policy_right(gaa_ptr	    gaa,
  *  @param old
  *         inpur condition to copy
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static gaa_status
 gaa_l_clone_condition(gaa_condition **new, gaa_condition *old)
 {
@@ -1459,8 +1436,7 @@ gaa_l_clone_condition(gaa_condition **new, gaa_condition *old)
     return(gaa_new_condition(new, old->type, old->authority, old->value));
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_free_policy_entry_noright()
+/**
  *
  *  @ingroup gaa_policy_static
  *
@@ -1470,7 +1446,6 @@ gaa_l_clone_condition(gaa_condition **new, gaa_condition *old)
  *  @param ent
  *         input/output policy entry to free.
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static void
 gaa_l_free_policy_entry_noright(gaa_policy_entry *ent)
 {
@@ -1478,8 +1453,7 @@ gaa_l_free_policy_entry_noright(gaa_policy_entry *ent)
 	free(ent);
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_match_authority()
+/**
  *
  *  @ingroup gaa_policy_static
  *
@@ -1495,7 +1469,6 @@ gaa_l_free_policy_entry_noright(gaa_policy_entry *ent)
  *  @retval GAA_S_SUCCESS
  *          success
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static gaa_status
 gaa_l_match_authority(gaa_request_right *	rright,
 		      gaa_policy_right *	pright,
@@ -1508,8 +1481,7 @@ gaa_l_match_authority(gaa_request_right *	rright,
     return(GAA_S_SUCCESS);
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_free_gaaint_policy_right()
+/**
  *
  *  @ingroup gaa_policy_static
  *
@@ -1519,7 +1491,6 @@ gaa_l_match_authority(gaa_request_right *	rright,
  *  @param i
  *         input/output pointer to free
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static void
 gaa_l_free_gaaint_policy_right(gaaint_policy_right *i)
 {
@@ -1527,8 +1498,7 @@ gaa_l_free_gaaint_policy_right(gaaint_policy_right *i)
 	free(i);
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_new_gaaint_policy_right()
+/**
  *
  *  @ingroup gaa_policy_static
  *
@@ -1543,7 +1513,6 @@ gaa_l_free_gaaint_policy_right(gaaint_policy_right *i)
  *  @retval GAA_S_SUCCESS
  *          success
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static gaa_status
 gaa_l_new_gaaint_policy_right(gaaint_policy_right **i,
 			      gaa_freefunc	    freefunc)
@@ -1556,8 +1525,7 @@ gaa_l_new_gaaint_policy_right(gaaint_policy_right **i,
     return(GAA_S_SUCCESS);
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_find_cond_eval_entry()
+/**
  *
  *  @ingroup gaa_policy_static
  *
@@ -1574,7 +1542,6 @@ gaa_l_new_gaaint_policy_right(gaaint_policy_right **i,
  *  @retval 0
  *          no cond_eval entry was found
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static gaaint_cond_eval_entry *
 gaa_l_find_cond_eval_entry(gaa_ptr gaa, gaa_condition *cond)
 {
@@ -1594,8 +1561,7 @@ gaa_l_find_cond_eval_entry(gaa_ptr gaa, gaa_condition *cond)
     return(0);
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_check_condition()
+/**
  *
  *  @ingroup gaa_policy_static
  *
@@ -1622,7 +1588,6 @@ gaa_l_find_cond_eval_entry(gaa_ptr gaa, gaa_condition *cond)
  *  @retval GAA_S_BAD_CALLBACK_RETURN
  *          bad return value from cond_eval callback.
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static gaa_status
 gaa_l_check_condition(gaa_ptr		      gaa,
 		      gaa_sc_ptr	      sc,
@@ -1666,8 +1631,7 @@ gaa_l_check_condition(gaa_ptr		      gaa,
     return(GAA_S_SUCCESS);
 }
 
-#ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_new_time_period()
+/**
  *
  *  @ingroup gaa_policy_static
  *
@@ -1684,7 +1648,6 @@ gaa_l_check_condition(gaa_ptr		      gaa,
  *  @retval GAA_S_SUCCESS
  *          success
  */
-#endif /* DOCUMENT_INTERNAL_FUNCTIONS */
 static gaa_status
 gaa_l_new_time_period(gaa_time_period **time_period,
 		      time_t		start_time,
@@ -1699,3 +1662,4 @@ gaa_l_new_time_period(gaa_time_period **time_period,
     (*time_period)->end_time = 0;
     return(status);
 }
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */

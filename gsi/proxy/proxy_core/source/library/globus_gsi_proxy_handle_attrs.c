@@ -45,10 +45,10 @@
 
 /**
  * @name Initialize & Destroy
- * @ingroup globus_gsi_proxy_handle_attrs
  */
 /*@{*/
 /**
+ * @ingroup globus_gsi_proxy_handle_attrs
  * Initialize GSI Proxy Handle Attributes.
  *
  * Initialize proxy handle attributes, which
@@ -146,10 +146,10 @@ globus_gsi_proxy_handle_attrs_destroy(
 
 /**
  * @name Get/Set Key Bits
- * @ingroup globus_gsi_proxy_handle_attrs
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_proxy_handle_attrs
  * Set the length of the public key pair
  * used by the proxy certificate
  *
@@ -207,10 +207,10 @@ globus_gsi_proxy_handle_attrs_get_keybits(
 
 /**
  * @name Get/Set Initial Prime Number
- * @ingroup globus_gsi_proxy_handle_attrs
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_proxy_handle_attrs
  * Set the initial prime number used for
  * generating public key pairs in the RSA
  * algorithm
@@ -272,10 +272,10 @@ globus_gsi_proxy_handle_attrs_get_init_prime(
 
 /**
  * @name Get/Set Signing Algorithm
- * @ingroup globus_gsi_proxy_handle_attrs
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_proxy_handle_attrs
  * Sets the Signing Algorithm to be used to sign
  * the certificate request.  In most cases, the
  * signing party will ignore this value, and sign
@@ -371,10 +371,10 @@ globus_gsi_proxy_handle_attrs_get_signing_algorithm(
 
 /**
  * @name Get/Set Clock Skew Allowable
- * @ingroup globus_gsi_proxy_handle_attrs
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_proxy_handle_attrs
  * Sets the clock skew in minutes of the proxy cert request
  * so that time differences between hosts won't
  * cause problems.  This value defaults to 5 minutes.
@@ -462,10 +462,10 @@ globus_gsi_proxy_handle_attrs_get_clock_skew_allowable(
 
 /**
  * @name Get/Set Key Gen Callback 
- * @ingroup globus_gsi_proxy_handle_attrs
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_proxy_handle_attrs
  * Get the public/private key generation callback that provides status
  * during the generation of the keys
  * 
@@ -552,10 +552,10 @@ globus_gsi_proxy_handle_attrs_set_key_gen_callback(
 
 /**
  * @name Copy Attributes
- * @ingroup globus_gsi_proxy_handle_attrs
  */
 /*@{*/
 /**
+ * @ingroup globus_gsi_proxy_handle_attrs
  * Make a copy of GSI Proxy handle attributes
  *
  * @param a 

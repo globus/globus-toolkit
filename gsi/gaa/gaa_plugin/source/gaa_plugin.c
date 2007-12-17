@@ -22,9 +22,11 @@
 #include "gaa_plugin.h"
 #include "gaa_plugin_private.h"
 
-/** @defgroup gaa_plugin "gaa plugin implementation"
+/** @defgroup gaa_plugin GAA Plugin Implementation
  */
-/** @defgroup gaa_plugin_static "gaa plugin static functions"
+
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
+/** @defgroup gaa_plugin_static Static-scope functions for gaa_plugin.c
  */
 
 /* use libtool_mutex to lock all calls to libtdl routines */
@@ -65,8 +67,9 @@ static const struct gaa_l_plugin_subst_t substitutions[] =
 
 static gaa_status
 gaa_l_plugin_init_mutex();
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */
 
-/** gaa_plugin_add_libdir()
+/**
  *
  *  @ingroup gaa_plugin
  *
@@ -109,7 +112,7 @@ gaa_plugin_add_libdir(char *		libdir)
 }
 
 #ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_i_plugin_init_libtool()
+/**
  *
  *  Called by gaa_init() to initialize libltdl.
  *
@@ -142,7 +145,7 @@ gaa_i_plugin_init_libtool()
     return(GAA_S_SUCCESS);
 }
 
-/** gaa_plugin_install_mechinfo()
+/**
  *
  *  @ingroup gaa_plugin
  *
@@ -203,7 +206,7 @@ gaa_plugin_install_mechinfo(gaa_ptr		      gaa,
 }
 
 #ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_plugin_find_symbol()
+/**
  *
  *  @ingroup gaa_plugin_static
  *
@@ -285,7 +288,7 @@ gaa_l_plugin_find_symbol(lt_ptr *		 sym,
     return(GAA_S_SUCCESS);
 }
 
-/** gaa_plugin_install_cond_eval()
+/**
  *
  *  @ingroup gaa_plugin
  *
@@ -339,7 +342,7 @@ gaa_plugin_install_cond_eval(gaa_ptr		        gaa,
 				      ceargs->is_idcred));
 }
 
-/** gaa_plugin_init_mechinfo_args()
+/**
  *
  *  @ingroup gaa_plugin
  *
@@ -364,7 +367,7 @@ gaa_plugin_init_mechinfo_args(gaa_plugin_mechinfo_args *miargs)
     return(GAA_S_SUCCESS);
 }
 
-/** gaa_plugin_init_cond_eval_args()
+/**
  *
  *  @ingroup gaa_plugin
  *
@@ -389,7 +392,7 @@ gaa_plugin_init_cond_eval_args(gaa_plugin_cond_eval_args *ceargs)
     return(GAA_S_SUCCESS);
 }
 
-/** gaa_plugin_init_param()
+/**
  *
  *  @ingroup gaa_plugin
  *
@@ -414,7 +417,7 @@ gaa_plugin_init_param(gaa_plugin_parameter *param)
 }
 
 #ifdef DOCUMENT_INTERNAL_FUNCTIONS
-/** gaa_l_plugin_param_value()
+/**
  *
  *  @ingroup gaa_plugin_static
  *
@@ -466,7 +469,7 @@ gaa_l_plugin_param_value(void **	       val,
     return(status);
 }
 
-/** gaa_plugin_install_authinfo()
+/**
  *
  *  @ingroup gaa_plugin
  *
@@ -518,7 +521,7 @@ gaa_plugin_install_authinfo(gaa_ptr	              gaa,
 			    param, freeparam));
 }
 
-/** gaa_plugin_parse_valinfo()
+/**
  *
  *  @ingroup gaa_plugin
  *
@@ -566,7 +569,7 @@ gaa_l_plugin_parse_valinfo(gaa_valinfo_ptr *	    valinfo,
 }
 
 
-/** gaa_plugin_init_authinfo_args()
+/**
  *
  *  @ingroup gaa_plugin
  *
@@ -590,7 +593,7 @@ gaa_plugin_init_authinfo_args(gaa_plugin_authinfo_args *aiargs)
     return(GAA_S_SUCCESS);
 }
 
-/** gaa_plugin_init_matchrights_args()
+/**
  *
  *  @ingroup gaa_plugin
  *
@@ -613,7 +616,7 @@ gaa_plugin_init_matchrights_args(gaa_plugin_matchrights_args *args)
     return(GAA_S_SUCCESS);
 }
 
-/** gaa_plugin_init_getpolicy_args()
+/**
  *
  *  @ingroup gaa_plugin
  *
@@ -636,7 +639,7 @@ gaa_plugin_init_getpolicy_args(gaa_plugin_getpolicy_args *args)
     return(GAA_S_SUCCESS);
 }
 
-/** gaa_plugin_init_authz_id_args()
+/**
  *
  *  @ingroup gaa_plugin
  *
@@ -659,7 +662,7 @@ gaa_plugin_init_authz_id_args(gaa_plugin_authz_id_args *args)
     return(GAA_S_SUCCESS);
 }
 
-/** gaa_plugin_install_matchrights()
+/**
  *
  *  @ingroup gaa_plugin
  *
@@ -705,7 +708,7 @@ gaa_plugin_install_matchrights(gaa_ptr			    gaa,
 }
 
 
-/** gaa_plugin_install_getpolicy()
+/**
  *
  *  @ingroup gaa_plugin
  *
@@ -750,7 +753,7 @@ gaa_plugin_install_getpolicy(gaa_ptr		        gaa,
     return(gaa_set_getpolicy_callback(gaa, getpolicy, param, freeparam));
 }
 
-/** gaa_plugin_install_getpolicy()
+/**
  *
  *  @ingroup gaa_plugin
  *
@@ -803,15 +806,13 @@ gaa_l_plugin_init_mutex()
     return(GAA_S_SUCCESS);
 }
 
-/** gaa_plugin_install_mutex_callbacks()
+/**
  *
  *  @ingroup gaa_plugin
  *
  *  Find the appropriate dynamically-linked mechinfo routines and
  *  parameters, and call gaa_add_mech_info() to install the callback.
  *
- *  @param gaa
- *         input/output gaa pointer
  *  @param mxargs
  *         input mutex callback args to install.
  * 
@@ -871,7 +872,7 @@ gaa_plugin_install_mutex_callbacks(gaa_plugin_mutex_args *mxargs)
 				      tscreate, tsset, tsget, param));
 }
 
-/** gaa_plugin_init_mutex_args()
+/**
  *
  *  @ingroup gaa_plugin
  *

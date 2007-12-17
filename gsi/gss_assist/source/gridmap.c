@@ -114,10 +114,10 @@ globus_l_gss_assist_gridmap_lookup(
 
 /**
  * @name Gridmap
- * @ingroup globus_gsi_gss_assist
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_gss_assist
  * 
  * Routines callable from globus based code to 
  * map a globusID to a local unix user
@@ -249,10 +249,10 @@ globus_gss_assist_gridmap(
 
 /**
  * @name User OK
- * @ingroup globus_gsi_gss_assist
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_gss_assist
  * Check to see if a particular globusid is authorized to access
  * the given local user account.
  *
@@ -364,15 +364,17 @@ globus_gss_assist_userok(
 
 /**
  * @name Map Local User
- * @ingroup 
  */
 /* @{ */
 /**
+ * @ingroup globus_gsi_gss_assist
  * Routine for returning the default globus ID associated with
  * a local user name. This is somewhat of a hack since there is
  * not a guarenteed one-to-one mapping. What we do is look for
  * the first entry in the gridmap file that has the local
- * user as the default login.
+ * user as the default login. If the user is not a default on any 
+ * entry, we find the first entry in which the user exists as a 
+ * secondary mapping.
  *
  * @param local_user
  *        the local username to find the DN for
@@ -493,10 +495,10 @@ globus_gss_assist_map_local_user(
 
 /**
  * @name Gridmap Find DN
- * @ingroup globus_i_gsi_gss_assist
  */
 /* @{ */
 /**
+ * @ingroup globus_i_gsi_gss_assist
  * Locate the entry for the given DN in the default gridmap file
  *
  * @param dn
@@ -629,12 +631,13 @@ globus_i_gss_assist_gridmap_find_dn(
 
 /**
  * @name Find Local User
- * @ingroup globus_i_gsi_gss_assist
  */
 /* @{ */
 /**
+ * @ingroup globus_i_gsi_gss_assist
  * Locate the first entry with the given local user as the default in the
- * default gridmap file.
+ * default gridmap file.  If the user is not a default on any entry, locate the
+ * first entry in which the user exists as a secondary mapping.
  *
  * @param local_user
  *        the name to search for
@@ -663,6 +666,8 @@ globus_i_gss_assist_gridmap_find_local_user(
     int					found = 0;
     globus_i_gss_assist_gridmap_line_t *			
                                         gline_tmp;
+    char ** 	                        useridp;
+    char *                              nondefault_line = NULL;
     globus_result_t                     result = GLOBUS_SUCCESS;
     static char *                       _function_name_ =
         "globus_i_gss_assist_gridmap_find_local_user";
@@ -702,12 +707,15 @@ globus_i_gss_assist_gridmap_find_local_user(
     do
     {
 	char 				line[1024];
-
+        char                            save_line[1024];
+        
 	if (fgets(line, sizeof(line), gmap_stream) == NULL)
         {
 	    break;		/* EOF or error */
         }
 
+        strncpy(save_line, line, sizeof(save_line));
+        
 	result = globus_i_gss_assist_gridmap_parse_line(line, &gline_tmp);
         if(result != GLOBUS_SUCCESS)
         {
@@ -720,18 +728,43 @@ globus_i_gss_assist_gridmap_find_local_user(
 	    continue;
 	}
 
-	if((gline_tmp->user_ids != NULL) &&
-           (gline_tmp->user_ids[0] != NULL) &&
-           (strcmp(local_user, gline_tmp->user_ids[0]) == 0))
-	{
-	    found = 1;
-	}
-	else
+        for(useridp = gline_tmp->user_ids; 
+            *useridp != NULL && !found; 
+            useridp++)
+        {
+            if(strcmp(local_user, *useridp) == 0)
+            {
+                /* check all names, but only stop looking if we match a 
+                 * default name.  save the first nondefault match til 
+                 * we've checked all the defaults */
+                if(*useridp == gline_tmp->user_ids[0])
+                {
+                    found = 1;
+                }
+                else if(nondefault_line == NULL)
+                {
+                    nondefault_line = strdup(save_line);
+                }
+            }
+        }
+        if(!found)
 	{
 	    globus_i_gss_assist_gridmap_line_free(gline_tmp);
 	}
 
     } while (!found);
+    
+    if(nondefault_line != NULL)
+    {
+	result = globus_i_gss_assist_gridmap_parse_line(
+	    nondefault_line, &gline_tmp);
+        free(nondefault_line);
+        if(result != GLOBUS_SUCCESS)
+        {
+	    goto exit;
+        }
+        found = 1;
+    }        
 
     fclose(gmap_stream);
     gmap_stream = NULL;
@@ -759,10 +792,10 @@ globus_i_gss_assist_gridmap_find_local_user(
 
 /**
  * @name Gridmap Parse Line
- * @ingroup globus_i_gsi_gss_assist
  */
 /* @{ */
 /**
+ * @ingroup globus_i_gsi_gss_assist
  * 
  * Given a line from the gridmap file, parse it returning
  * a gridmap_line_t structure. line is modified during parsing.
@@ -848,6 +881,12 @@ globus_i_gss_assist_gridmap_parse_line(
 
 	do
 	{
+            /* If loop below resolves bug 4979 */
+            if (strchr(ESCAPING_CHARS, *(dn_end - 1))) 
+            {
+                dn_end++;
+            }
+	    
 	    dn_end += strcspn(dn_end, QUOTING_CHARS);
 
 	    if (*dn_end == NUL)
@@ -1010,10 +1049,10 @@ globus_i_gss_assist_gridmap_parse_line(
 
 /**
  * @name globus_i_gsi_gss_assist
- * @ingroup globus_i_gsi_gss_assist
  */
 /* @{ */
 /**
+ * @ingroup globus_i_gsi_gss_assist
  * Frees all memory allocated to a gridmap_line_t structure.
  *
  * @param gline
@@ -1059,10 +1098,10 @@ globus_i_gss_assist_gridmap_line_free(
 
 /**
  * @name Gridmap Parse Globusid
- * @ingroup globus_i_gsi_gss_assist
  */
 /* @{ */
 /**
+ * @ingroup globus_i_gsi_gss_assist
  * Given a pointer to a string containing the globusid from the
  * gridmap file, return a pointer to a string containing the
  * parsed from of the id.
@@ -1221,10 +1260,10 @@ globus_i_gss_assist_gridmap_parse_globusid(
 
 /**
  * @name Hexadecimal Digit to Integer
- * @ingroup globus_i_gsi_gss_assist
  */
 /* @{ */
 /**
+ * @ingroup globus_i_gsi_gss_assist
  * Convert an ascii character representing a hexadecimal digit
  * into an integer.
  *
@@ -1257,6 +1296,7 @@ globus_i_gss_assist_xdigit_to_value(
 
 
 /**
+ * @ingroup globus_i_gsi_gss_assist
  * Look up all globus ids associated with a given user id.
  *
  * @param username
@@ -1540,6 +1580,7 @@ globus_gss_assist_map_and_authorize(
 }
 /* globus_gss_assist_map_and_authorize */
 
+#ifndef GLOBUS_DONT_DOCUMENT_INTERNAL
 static
 globus_result_t
 globus_l_gss_assist_gridmap_lookup(
@@ -1678,3 +1719,4 @@ globus_l_gss_assist_gridmap_lookup(
  error:
     return result;
 }
+#endif /* GLOBUS_DONT_DOCUMENT_INTERNAL */

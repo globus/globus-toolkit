@@ -65,7 +65,7 @@ globus_l_gsi_openssl_error_activate(void)
     static char *                       _function_name_ =
         "globus_l_gsi_openssl_error_activate";
 
-    tmp_string = globus_module_getenv("GLOBUS_GIS_OPENSSL_ERROR_DEBUG_LEVEL");
+    tmp_string = globus_module_getenv("GLOBUS_GSI_OPENSSL_ERROR_DEBUG_LEVEL");
     if(tmp_string != GLOBUS_NULL)
     {
         globus_i_gsi_openssl_error_debug_level = atoi(tmp_string);
@@ -136,10 +136,10 @@ globus_l_gsi_openssl_error_deactivate(void)
 
 /**
  * @name Get Error Code
- * @ingroup globus_openssl_error_object
  */
 /* @{ */
 /**
+ * @ingroup globus_openssl_error_object
  * Get the openssl error code which represents the openssl error
  * from the openssl error handle
  *
@@ -175,10 +175,10 @@ globus_openssl_error_handle_get_error_code(
 
 /**
  * @name Get Error Data
- * @ingroup globus_openssl_error_object
  */
 /* @{ */
 /**
+ * @ingroup globus_openssl_error_object
  * Get the openssl error data which contains additional data about the error
  * from the openssl error handle 
  *
@@ -213,10 +213,10 @@ globus_openssl_error_handle_get_data(
 /* @} */
 /**
  * @name Get Error Data Flags
- * @ingroup globus_openssl_error_object
  */
 /* @{ */
 /**
+ * @ingroup globus_openssl_error_object
  * Get the openssl error data flags from the openssl error handle
  *
  * @param handle
@@ -251,10 +251,10 @@ globus_openssl_error_handle_get_data_flags(
 
 /**
  * @name Get Filename
- * @ingroup globus_openssl_error_object
  */
 /* @{ */
 /**
+ * @ingroup globus_openssl_error_object
  * Get the filename where the openssl error occurred
  *  from the openssl error handle
  *
@@ -290,10 +290,10 @@ globus_openssl_error_handle_get_filename(
 
 /**
  * @name Get Linenumber
- * @ingroup globus_openssl_error_object
  */
 /* @{ */
 /**
+ * @ingroup globus_openssl_error_object
  * Get the linenumber on which the openssl error occurred
  * from the openssl error handle
  *
@@ -329,10 +329,10 @@ globus_openssl_error_handle_get_linenumber(
 
 /**
  * @name Get Library
- * @ingroup globus_openssl_error_object
  */
 /* @{ */
 /**
+ * @ingroup globus_openssl_error_object
  * Get the library name where the openssl error occurred in
  * from the openssl error handle
  *
@@ -369,10 +369,10 @@ globus_openssl_error_handle_get_library(
 
 /**
  * @name Get Function
- * @ingroup globus_openssl_error_object
  */
 /* @{ */
 /**
+ * @ingroup globus_openssl_error_object
  * Get the function name where the openssl error occurred 
  * from the openssl error handle
  *
@@ -408,10 +408,10 @@ done:
 
 /**
  * @name Get Reason
- * @ingroup globus_openssl_error_object
  */
 /* @{ */
 /**
+ * @ingroup globus_openssl_error_object
  * Get the reason string which caused the openssl error 
  * from the openssl error handle
  *
@@ -447,12 +447,12 @@ done:
 
 /**
  * @name Construct Error
- * @ingroup globus_openssl_error_object
  */
 /*@{*/
 /**
+ * @ingroup globus_openssl_error_object
  * Allocate and initialize an error of type GLOBUS_ERROR_TYPE_OPENSSL
- * This function, combined with @ref globus_error_initialize_openssl_error
+ * This function, combined with globus_error_initialize_openssl_error()
  * will recursively generate globus error objects (of type globus_object_t)
  * from the errors on openssl's static error stack.  The errors will
  * be chained in a causal fashion to provide a path to the root cause
