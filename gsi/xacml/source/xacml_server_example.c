@@ -95,32 +95,24 @@ int main(int argc, char *argv[])
     xacml_server_t server;
     int ch;
     unsigned short port = 0;
-    char * key = NULL;
-    char * cert = NULL;
-    char * ca_path = NULL;
+    char * io_module_name = NULL;
 
     xacml_init();
 
-    while ((ch = getopt(argc, argv, "p:c:k:a:h")) != -1) 
+    while ((ch = getopt(argc, argv, "p:i:h")) != -1) 
     {
         switch (ch)
         {
         case 'p':
             port = atoi(optarg);
             break;
-        case 'c':
-            cert = optarg;
-            break;
-        case 'k':
-            key = optarg;
-            break;
-        case 'a':
-            ca_path = optarg;
+        case 'i':
+            io_module_name = optarg;
             break;
         case 'h':
         case '?':
         default:
-            printf("Usage: %s [-p port] [-c cert] [-k key] [-a CA-path]\n",
+            printf("Usage: %s [-p PORT] [-i IO MODULE NAME]\n",
                     argv[0]);
             exit(0);
         }
@@ -132,9 +124,10 @@ int main(int argc, char *argv[])
     {
         xacml_server_set_port(server, port);
     }
-    if (cert != NULL || key != NULL) 
+
+    if (io_module_name)
     {
-        abort();
+        xacml_server_set_io_module(server, io_module_name);
     }
 
     signal(SIGINT, siginthandler);

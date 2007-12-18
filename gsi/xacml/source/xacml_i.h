@@ -74,6 +74,14 @@ struct xacml_request_s
     xacml::subject_type                 subject;
     std::string                         endpoint;
     xacml::obligation_handlers          obligation_handlers;
+
+    void                               *io_module;
+    xacml_io_accept_t                   accept_func;
+    xacml_io_connect_t                  connect_func;
+    xacml_io_send_t                     send_func;
+    xacml_io_recv_t                     recv_func;
+    xacml_io_close_t                    close_func;
+    void                               *io_arg;
 };
 
 struct xacml_response_s
@@ -101,12 +109,48 @@ struct xacml_server_s
     std::string                         cert_path;
     std::string                         key_path;
     std::string                         ca_path;
+
+    void *                              io_module;
+    xacml_io_accept_t                   accept_func;
+    xacml_io_connect_t                  connect_func;
+    xacml_io_send_t                     send_func;
+    xacml_io_recv_t                     recv_func;
+    xacml_io_close_t                    close_func;
 };
 
 typedef struct xacml_obligation_s
 {
     xacml::obligation                   obligation;
 };
+
+
+extern "C"
+int
+xacml_i_connect(
+    struct soap                        *soap,
+    const char                         *endpoint,
+    const char                         *host,
+    int                                 port);
+
+extern "C"
+int
+xacml_i_send(
+    struct soap                        *soap,
+    const char                         *data,
+    size_t                              size);
+
+extern "C"
+size_t
+xacml_i_recv(
+    struct soap                        *soap,
+    char                               *data,
+    size_t                              size);
+
+extern "C"
+int
+xacml_i_close(
+    struct soap                        *soap);
+
 #endif /* DONT_DOCUMENT_INTERNAL */
 
 #endif /* I_XACML_H */

@@ -16,6 +16,7 @@
 
 #include "xacml_i.h"
 
+#include <dlfcn.h>
 #include <iterator>
 
 int
@@ -38,6 +39,10 @@ void
 xacml_request_destroy(
     xacml_request_t               request)
 {
+    if (request->io_module)
+    {
+        dlclose(request->io_module);
+    }
     delete request;
 }
 

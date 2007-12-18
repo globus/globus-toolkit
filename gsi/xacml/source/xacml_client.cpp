@@ -428,20 +428,14 @@ xacml_query(
 
     soap_init(&soap);
 
-    if (strncmp(endpoint, "https:", 5) == 0 ||
-        request->certificate_dir != "" ||
-        request->certificate_path != "" ||
-        request->key_path != "")
+    if (request->connect_func != NULL)
     {
-        soap_ssl_client_context(&soap,
-                                SOAP_SSL_NO_AUTHENTICATION |
-                                SOAP_SSL_SKIP_HOST_CHECK,
-                                request->certificate_path.c_str(),
-                                request->key_path.c_str(),
-                                NULL,
-                                NULL,
-                                request->certificate_dir.c_str(),
-                                NULL);
+        /* Use custom I/O handler wrappers */
+        soap.user = request;
+        soap.fopen = xacml_i_connect;
+        soap.fsend = xacml_i_send;
+        soap.frecv = xacml_i_recv;
+        soap.fclose = xacml_i_close;
     }
 
     rc = soap_call___XACMLService__Authorize(&soap, endpoint, NULL, query,

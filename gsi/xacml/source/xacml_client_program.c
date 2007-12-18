@@ -15,8 +15,11 @@
  */
 
 #include "xacml_client.h"
+#include "xacml_io_example.h"
+
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <unistd.h>
 
 int
@@ -63,12 +66,13 @@ int main(int argc, char *argv[])
     char * key = NULL;
     char * ca_path = NULL;
     char * endpoint = NULL;
+    char * use_io_module = NULL;
     xacml_response_t response;
     const char *resattr[2];
 
     xacml_init();
 
-    while ((ch = getopt(argc, argv, "e:c:k:a:h")) != -1)
+    while ((ch = getopt(argc, argv, "e:c:k:a:i:h")) != -1)
     {
         switch (ch)
         {
@@ -83,6 +87,9 @@ int main(int argc, char *argv[])
             break;
         case 'a':
             ca_path = optarg;
+            break;
+        case 'i':
+            use_io_module = optarg;
             break;
         case 'h':
         case '?':
@@ -142,6 +149,13 @@ int main(int argc, char *argv[])
     if (cert != NULL || key != NULL || ca_path != NULL)
     {
         abort();
+    }
+
+    if (use_io_module)
+    {
+        xacml_request_set_io_module(
+            request,
+            use_io_module);
     }
 
     if (endpoint == NULL)

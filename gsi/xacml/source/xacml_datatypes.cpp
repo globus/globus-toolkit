@@ -31,7 +31,6 @@ extern "C"
 int
 xacml_init(void)
 {
-    soap_ssl_init();
     return 0;
 }
 

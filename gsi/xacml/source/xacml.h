@@ -56,6 +56,12 @@ void
 xacml_request_destroy(
     xacml_request_t                     request);
 
+
+int
+xacml_request_set_io_module(
+    xacml_request_t                     request,
+    const char *                        module);
+
 int
 xacml_request_add_subject_attribute(
     xacml_request_t                     request,

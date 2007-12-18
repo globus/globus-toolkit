@@ -27,6 +27,9 @@
 #    endif
 #endif
 
+#include <stdlib.h>
+#include <sys/socket.h>
+
 #ifndef DONT_DOCUMENT_INTERNAL
 EXTERN_C_BEGIN
 #endif
@@ -49,6 +52,44 @@ typedef struct xacml_response_s * xacml_response_t;
  @ingroup xacml_common
  */
 typedef struct xacml_obligation_s * xacml_obligation_t;
+
+/**
+ @defgroup xacml_io XACML I/O Callbacks
+ */
+
+typedef void* (*xacml_io_connect_t)(
+    const char                         *endpoint,
+    const char                         *host,
+    int                                 port);
+
+typedef int (*xacml_io_send_t)(
+    void                               *arg,
+    const char                         *data,
+    size_t                              size);
+
+typedef size_t (*xacml_io_recv_t)(
+    void                               *arg,
+    char                               *data,
+    size_t                              size);
+
+typedef int (*xacml_io_close_t)(
+    void                               *arg);
+
+typedef void * (*xacml_io_accept_t)(
+    int                                 socket,
+    struct sockaddr                    *addr,
+    socklen_t                          *addr_len);
+
+typedef struct
+{
+    char *                              name;
+    xacml_io_accept_t                   accept_func;
+    xacml_io_connect_t                  connect_func;
+    xacml_io_send_t                     send_func;
+    xacml_io_recv_t                     recv_func;
+    xacml_io_close_t                    close_func;
+}
+xacml_io_descriptor_t;
 
 /**
  SAML Status Codes

@@ -52,6 +52,11 @@ void
 xacml_server_destroy(
     xacml_server_t                      server);
 
+int
+xacml_server_set_io_module(
+    xacml_server_t                      server,
+    const char *                        module);
+
 #ifndef DONT_DOCUMENT_INTERNAL
 EXTERN_C_END
 #endif

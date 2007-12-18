@@ -21,6 +21,7 @@
 
 #include <limits.h>
 #include <unistd.h>
+#include <dlfcn.h>
 
 #include <cassert>
 #include <sstream>
@@ -30,13 +31,20 @@
 #   define _POSIX_HOST_NAME_MAX 255
 #endif
 
+extern "C"
+int
+xacml_i_accept(
+    struct soap                        *soap,
+    int                                 socket,
+    struct sockaddr                    *addr,
+    int                                *n);
+
 #ifndef DONT_DOCUMENT_INTERNAL
 namespace xacml
 {
 void *
 service_thread(void * arg)
 {
-    bool use_ssl = false;
     xacml_server_t server = (xacml_server_t) arg;
     struct soap soap;
     char hostname[_POSIX_HOST_NAME_MAX+1];
@@ -52,20 +60,15 @@ service_thread(void * arg)
     soap.bind_flags = SO_REUSEADDR;
     soap.user = server;
 
-    if (server->cert_path != "" ||
-        server->key_path != "" ||
-        server->ca_path != "")
+    if (server->accept_func != NULL)
     {
-        use_ssl = true;
-        soap_ssl_server_context(&soap, SOAP_SSL_DEFAULT | SOAP_SSL_SKIP_HOST_CHECK,
-                                server->cert_path.c_str(),
-                                server->key_path.c_str(),
-                                NULL,
-                                NULL,
-                                server->ca_path.c_str(),
-                                NULL,
-                                NULL,
-                                NULL);
+        /* Use custom I/O handler wrappers */
+        soap.user = server;
+        soap.faccept = xacml_i_accept;
+        soap.fopen = xacml_i_connect;
+        soap.fsend = xacml_i_send;
+        soap.frecv = xacml_i_recv;
+        soap.fclose = xacml_i_close;
     }
 
     server->listener = soap_bind(&soap, hostname, server->port, 100);
@@ -80,20 +83,11 @@ service_thread(void * arg)
         pthread_mutex_unlock(&server->lock);
 
         int s;
-        int rc;
 
+        soap.user = server;
         s = soap_accept(&soap);
         if (s < 0)
             continue;
-        if (use_ssl)
-        {
-            rc = soap_ssl_accept(&soap);
-
-            if (rc != SOAP_OK)
-            {
-                soap_print_fault(&soap, stderr);
-            }
-        }
         soap_serve(&soap);
         soap_destroy(&soap);
         soap_end(&soap);
@@ -629,9 +623,40 @@ xacml_server_destroy(
     pthread_mutex_destroy(&server->lock);
     pthread_cond_destroy(&server->cond);
 
+    if (server->io_module)
+    {
+        dlclose(server->io_module);
+    }
+
     delete server;
 }
 
+
+int
+xacml_server_set_io_module(
+    xacml_server_t                      server,
+    const char                         *module)
+{
+    void                               *mod;
+    const xacml_io_descriptor_t        *desc;
+    std::string                         module_name;
+
+    module_name = module;
+    module_name += ".so";
+
+    mod = dlopen(module_name.c_str(), RTLD_NOW|RTLD_LOCAL);
+    desc = reinterpret_cast<xacml_io_descriptor_t *>(dlsym(mod, module));
+
+    server->io_module = mod;
+    server->accept_func = desc->accept_func;
+    server->connect_func = desc->connect_func;
+    server->send_func = desc->send_func;
+    server->recv_func = desc->recv_func;
+    server->close_func = desc->close_func;
+
+    return XACML_RESULT_SUCCESS;
+}
+/* xacml_server_set_io_module() */
 
 #ifndef DONT_DOCUMENT_INTERNAL
 int
@@ -678,4 +703,45 @@ __XACMLService__Authorize(
     return SOAP_OK;
 }
 /* __XACMLService__Authorize() */
+
+extern "C"
+int
+xacml_i_accept(
+    struct soap                        *soap,
+    int                                 socket,
+    struct sockaddr                    *addr,
+    int                                *n)
+{
+    xacml_server_t                      server = (xacml_server_t) soap->user;
+    xacml_request_t                     request;
+    socklen_t                           len;
+    int                                 rc;
+    void *                              io_arg;
+
+    io_arg = server->accept_func(socket, addr, &len);
+
+    if (io_arg == NULL)
+    {
+        soap->error = SOAP_ERR;
+        return -1;
+    }
+    *n = len;
+
+    rc = xacml_request_init(&request);
+    if (rc < 0)
+    {
+        soap->error = SOAP_ERR;
+        return -1;
+    }
+    request->connect_func = server->connect_func;
+    request->send_func = server->send_func;
+    request->recv_func = server->recv_func;
+    request->close_func = server->close_func;
+    request->io_arg = io_arg;
+    soap->user = request;
+
+    return SOAP_OK;
+}
+/* xacml_i_accept() */
+
 #endif /* DONT_DOCUMENT_INTERNAL */
