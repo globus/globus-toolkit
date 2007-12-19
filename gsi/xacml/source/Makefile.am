@@ -32,25 +32,25 @@ libxacml_common_la_SOURCES = xacml_response.cpp xacml_io.cpp \
                                    xacml_request.cpp \
                                    xacml_i.h xacml.h \
                                    xacml_datatypes.h xacml_datatypes.cpp
-libxacml_common_la_LIBADD = -lgsoap++ 
+libxacml_common_la_LIBADD = -lgsoap++ -ldl
 
 nodist_libxacml_soap_common_la_SOURCES = soapStub.h soapH.h soapC.cpp
 libxacml_soap_common_la_SOURCES = stlvector.h xacml_io.cpp
-libxacml_soap_common_la_LIBADD = -lgsoap++ 
+libxacml_soap_common_la_LIBADD = -lgsoap++  -ldl
 
 nodist_libxacml_soap_client_la_SOURCES = soapClient.cpp soapStub.h soapH.h
 libxacml_soap_client_la_SOURCES = xacml_client.cpp xacml_client.h
-libxacml_soap_client_la_LIBADD = libxacml_soap_common.la
+libxacml_soap_client_la_LIBADD = libxacml_soap_common.la -ldl
 
 nodist_libxacml_soap_server_la_SOURCES = soapServer.cpp soapStub.h soapH.h 
 libxacml_soap_server_la_SOURCES = xacml_server.cpp xacml_server.h
-libxacml_soap_server_la_LIBADD = libxacml_soap_common.la -lpthread
+libxacml_soap_server_la_LIBADD = libxacml_soap_common.la -lpthread -ldl
 
 xacml_server_SOURCES = xacml_server_example.c xacml_ns.cpp 
-xacml_server_LDADD = $(LDADD) libxacml_soap_server.la libxacml_common.la -lgsoap++
+xacml_server_LDADD = $(LDADD) libxacml_soap_server.la libxacml_common.la -lgsoap++ -ldl
 
 xacml_client_SOURCES = xacml_ns.cpp xacml_client_program.c xacml_io_example.h xacml_io_example.c
-xacml_client_LDADD = $(LDADD) libxacml_soap_client.la libxacml_common.la -lgsoap++
+xacml_client_LDADD = $(LDADD) libxacml_soap_client.la libxacml_common.la -lgsoap++ -ldl
 
 # Rules to create gsoap files
 $(GSOAP_FILE): $(SCHEMA) typemap.dat

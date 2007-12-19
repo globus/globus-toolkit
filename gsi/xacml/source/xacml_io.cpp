@@ -32,7 +32,8 @@ xacml_request_set_io_module(
     module_name += ".so";
 
     mod = dlopen(module_name.c_str(), RTLD_NOW|RTLD_LOCAL);
-    desc = reinterpret_cast<xacml_io_descriptor_t *>(dlsym(mod, module));
+    desc = reinterpret_cast<xacml_io_descriptor_t *>(dlsym(mod,
+            XACML_IO_DESCRIPTOR));
 
     request->io_module = mod;
     request->accept_func = desc->accept_func;
@@ -107,7 +108,7 @@ xacml_i_close(
     xacml_request_t                     request = (xacml_request_t) soap->user;
     int                                 rc;
 
-    if (request->io_arg == NULL)
+    if ((!request) || (request->io_arg == NULL))
     {
         return SOAP_OK;
     }

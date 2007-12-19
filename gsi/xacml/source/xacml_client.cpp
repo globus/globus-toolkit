@@ -275,39 +275,43 @@ parse_xacml_response(
 
         XACMLpolicy__ObligationsType * obligations =
                 (*i)->XACMLpolicy__Obligations;
-        for (std::vector<class XACMLpolicy__ObligationType *>::iterator j = 
-                    obligations->XACMLpolicy__Obligation.begin();
-             j != obligations->XACMLpolicy__Obligation.end();
-             j++)
+
+        if (obligations)
         {
-            xacml::obligation obligation;
-
-            obligation.obligation_id = (*j)->ObligationId;
-
-            switch ((*j)->FulfillOn)
+            for (std::vector<class XACMLpolicy__ObligationType *>::iterator j = 
+                        obligations->XACMLpolicy__Obligation.begin();
+                 j != obligations->XACMLpolicy__Obligation.end();
+                 j++)
             {
-            case XACMLpolicy__EffectType__Permit:
-                obligation.fulfill_on = XACML_EFFECT_Permit;
-                break;
-            case XACMLpolicy__EffectType__Deny:
-                obligation.fulfill_on = XACML_EFFECT_Deny;
-                break;
+                xacml::obligation obligation;
+
+                obligation.obligation_id = (*j)->ObligationId;
+
+                switch ((*j)->FulfillOn)
+                {
+                case XACMLpolicy__EffectType__Permit:
+                    obligation.fulfill_on = XACML_EFFECT_Permit;
+                    break;
+                case XACMLpolicy__EffectType__Deny:
+                    obligation.fulfill_on = XACML_EFFECT_Deny;
+                    break;
+                }
+
+                for (std::vector<class XACMLpolicy__AttributeAssignmentType *>::iterator k =
+                        (*j)->XACMLpolicy__AttributeAssignment.begin();
+                     k != (*j)->XACMLpolicy__AttributeAssignment.end();
+                     k++)
+                {
+                    xacml::attribute attribute;
+
+                    attribute.attribute_id = (*k)->AttributeId;
+                    attribute.data_type = (*k)->DataType;
+                    attribute.value = (*k)->__mixed;
+
+                    obligation.attributes.push_back(attribute);
+                }
+                response->obligations.push_back(obligation);
             }
-
-            for (std::vector<class XACMLpolicy__AttributeAssignmentType *>::iterator k =
-                    (*j)->XACMLpolicy__AttributeAssignment.begin();
-                 k != (*j)->XACMLpolicy__AttributeAssignment.end();
-                 k++)
-            {
-                xacml::attribute attribute;
-
-                attribute.attribute_id = (*k)->AttributeId;
-                attribute.data_type = (*k)->DataType;
-                attribute.value = (*k)->__mixed;
-
-                obligation.attributes.push_back(attribute);
-            }
-            response->obligations.push_back(obligation);
         }
     }
     return 0;

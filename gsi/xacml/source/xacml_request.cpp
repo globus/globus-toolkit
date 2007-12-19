@@ -26,6 +26,10 @@ xacml_request_init(
     try
     {
         *request = new xacml_request_s;
+        (*request)->io_module = NULL;
+        (*request)->io_arg = NULL;
+        (*request)->connect_func = NULL;
+        (*request)->close_func = NULL;
     }
     catch(...)
     {

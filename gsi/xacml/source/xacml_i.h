@@ -82,6 +82,8 @@ struct xacml_request_s
     xacml_io_recv_t                     recv_func;
     xacml_io_close_t                    close_func;
     void                               *io_arg;
+
+    struct xacml_server_s              *server;
 };
 
 struct xacml_response_s
@@ -106,16 +108,14 @@ struct xacml_server_s
     xacml_authorization_handler_t       handler;
     void *                              handler_arg;
 
-    std::string                         cert_path;
-    std::string                         key_path;
-    std::string                         ca_path;
-
     void *                              io_module;
     xacml_io_accept_t                   accept_func;
     xacml_io_connect_t                  connect_func;
     xacml_io_send_t                     send_func;
     xacml_io_recv_t                     recv_func;
     xacml_io_close_t                    close_func;
+
+    xacml_request_t                     request;
 };
 
 typedef struct xacml_obligation_s

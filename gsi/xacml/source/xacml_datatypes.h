@@ -34,6 +34,8 @@
 EXTERN_C_BEGIN
 #endif
 
+#define XACML_IO_DESCRIPTOR "xacml_io_descriptor"
+
 /**
  XACML Request Handle
  @ingroup xacml_common
@@ -78,7 +80,8 @@ typedef int (*xacml_io_close_t)(
 typedef void * (*xacml_io_accept_t)(
     int                                 socket,
     struct sockaddr                    *addr,
-    socklen_t                          *addr_len);
+    socklen_t                          *addr_len,
+    int                                *sock_out);
 
 typedef struct
 {

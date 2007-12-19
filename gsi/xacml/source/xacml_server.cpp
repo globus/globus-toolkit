@@ -46,10 +46,10 @@ void *
 service_thread(void * arg)
 {
     xacml_server_t server = (xacml_server_t) arg;
+    struct sockaddr addr;
+    socklen_t namelen;
     struct soap soap;
-    char hostname[_POSIX_HOST_NAME_MAX+1];
-
-    gethostname(hostname, _POSIX_HOST_NAME_MAX);
+    char serv[6];
 
     pthread_mutex_lock(&server->lock);
 
@@ -71,12 +71,17 @@ service_thread(void * arg)
         soap.fclose = xacml_i_close;
     }
 
-    server->listener = soap_bind(&soap, hostname, server->port, 100);
+    server->listener = soap_bind(&soap, NULL, server->port, 100);
     if (server->listener < 0)
     {
         server->started = false;
         goto out;
     }
+    namelen = sizeof(&addr);
+    getsockname(soap.master, &addr, &namelen);
+    getnameinfo(&addr, namelen, NULL, 0, serv, sizeof(serv), NI_NUMERICSERV);
+
+    sscanf(serv, "%hu", &server->port);
 
     while (! server->stopped) 
     {
@@ -88,13 +93,24 @@ service_thread(void * arg)
         s = soap_accept(&soap);
         if (s < 0)
             continue;
+        if (server->request == NULL)
+        {
+            xacml_request_init(&server->request);
+            server->request->server = server;
+            soap.user = server->request;
+        }
         soap_serve(&soap);
         soap_destroy(&soap);
         soap_end(&soap);
 
+        xacml_request_destroy(server->request);
+        server->request = NULL;
+
         pthread_mutex_lock(&server->lock);
     }
 out:
+    server->request = NULL;
+    soap.user = NULL;
     server->started = false;
     soap_done(&soap);
     pthread_cond_signal(&server->cond);
@@ -115,12 +131,9 @@ int
 parse_xacml_query(
     const struct XACMLsamlp__XACMLAuthzDecisionQueryType *
                                         query,
-    xacml_request_t *                   requestp)
+    xacml_request_t                     request)
 {
-    xacml_request_t                     request;
     XACMLcontext__RequestType *         req = query->XACMLcontext__Request;
-
-    xacml_request_init(&request);
 
     xacml_request_set_subject(
             request,
@@ -262,7 +275,6 @@ parse_xacml_query(
                 envval.c_str());
         }
     }
-    *requestp = request;
 
     return 0;
 }
@@ -448,6 +460,8 @@ xacml_server_init(
     (*server)->stopped = true;
     (*server)->handler = handler;
     (*server)->handler_arg = arg;
+    (*server)->io_module = NULL;
+    (*server)->accept_func = NULL;
     pthread_mutex_init(&(*server)->lock, NULL);
     pthread_cond_init(&(*server)->cond, NULL);
 
@@ -523,7 +537,7 @@ out:
  * @retval XACML_RESULT_INVALID_PARAMETER
  *     Invalid parameter.
  *
- * @see xacml_server_get_port()
+ * @see xacml_server_set_port()
  */
 int
 xacml_server_get_port(
@@ -645,7 +659,8 @@ xacml_server_set_io_module(
     module_name += ".so";
 
     mod = dlopen(module_name.c_str(), RTLD_NOW|RTLD_LOCAL);
-    desc = reinterpret_cast<xacml_io_descriptor_t *>(dlsym(mod, module));
+    desc = reinterpret_cast<xacml_io_descriptor_t *>(dlsym(mod, 
+            XACML_IO_DESCRIPTOR));
 
     server->io_module = mod;
     server->accept_func = desc->accept_func;
@@ -671,7 +686,10 @@ __XACMLService__Authorize(
     xacml_request_t                     request;
     xacml_response_t                    response;
 
-    rc = xacml::parse_xacml_query(XACMLsamlp__XACMLAuthzDecisionQuery, &request);
+    request = reinterpret_cast<xacml_request_t>(soap->user);
+    server = request->server;
+
+    rc = xacml::parse_xacml_query(XACMLsamlp__XACMLAuthzDecisionQuery, request);
 
     if (rc != 0)
     {
@@ -684,8 +702,6 @@ __XACMLService__Authorize(
         return SOAP_SVR_FAULT;
     }
 
-    server = (xacml_server_t) soap->user;
-
     rc = server->handler(server->handler_arg, request, response);
     if (rc != 0)
     {
@@ -697,7 +713,6 @@ __XACMLService__Authorize(
     {
         return SOAP_SVR_FAULT;
     }
-    xacml_request_destroy(request);
     xacml_response_destroy(response);
 
     return SOAP_OK;
@@ -714,11 +729,12 @@ xacml_i_accept(
 {
     xacml_server_t                      server = (xacml_server_t) soap->user;
     xacml_request_t                     request;
-    socklen_t                           len;
+    socklen_t                           len = *n;
     int                                 rc;
+    int                                 sock_out = 0;
     void *                              io_arg;
 
-    io_arg = server->accept_func(socket, addr, &len);
+    io_arg = server->accept_func(socket, addr, &len, &sock_out);
 
     if (io_arg == NULL)
     {
@@ -738,9 +754,11 @@ xacml_i_accept(
     request->recv_func = server->recv_func;
     request->close_func = server->close_func;
     request->io_arg = io_arg;
+    request->server = server;
+    server->request = request;
     soap->user = request;
 
-    return SOAP_OK;
+    return sock_out;
 }
 /* xacml_i_accept() */
 

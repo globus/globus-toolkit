@@ -80,7 +80,7 @@ example_gss_connect(
     OM_uint32                           maj_stat, min_stat;
     gss_buffer_desc                     inbuf, token, *input;
 
-    state = malloc(sizeof(example_gss_state_t));
+    state = calloc(1, sizeof(example_gss_state_t));
     if (state == NULL)
     {
         goto out;
@@ -115,6 +115,8 @@ example_gss_connect(
     rc = XACML_RESULT_SUCCESS;
 
     input = NULL;
+    inbuf.value = NULL;
+    inbuf.length = 0;
     do
     {
         maj_stat = gss_init_sec_context(
@@ -156,18 +158,21 @@ example_gss_connect(
             }
             gss_release_buffer(&min_stat, &token);
         }
-        input = &inbuf;
-        if (inbuf.value == NULL)
+        if (maj_stat == GSS_S_CONTINUE_NEEDED)
         {
-            inbuf.value = malloc(1024);
+            input = &inbuf;
+            if (inbuf.value == NULL)
+            {
+                inbuf.value = malloc(1024);
+            }
+            inbuf.length = 1024;
+            rc = recv(state->socket, inbuf.value, inbuf.length, 0);
+            if (rc < 0)
+            {
+                goto close;
+            }
+            inbuf.length = rc;
         }
-        inbuf.length = 1024;
-        rc = recv(state->socket, inbuf.value, inbuf.length, 0);
-        if (rc < 0)
-        {
-            goto close;
-        }
-        inbuf.length = rc;
     }
     while (maj_stat == GSS_S_CONTINUE_NEEDED);
 
@@ -312,6 +317,9 @@ example_gss_recv(
     input.value = data;
     input.length = r;
 
+    output.value = NULL;
+    output.length = 0;
+
     maj_stat = gss_unwrap(&min_stat, state->ctx, &input, &output, NULL, NULL);
 
     if (GSS_ERROR(maj_stat))
@@ -397,7 +405,8 @@ void *
 example_gss_accept(
     int                                 socket,
     struct sockaddr                    *addr,
-    socklen_t                          *addr_len)
+    socklen_t                          *addr_len,
+    int                                *sock_out)
 {
     example_gss_state_t                 *state;
     int                                 rc;
@@ -407,20 +416,23 @@ example_gss_accept(
     state = malloc(sizeof(example_gss_state_t));
 
     state->socket = accept(socket, addr, addr_len);
+
     if (state->socket < 0)
     {
         rc = -1;
         goto err;
     }
+    *sock_out = state->socket;
 
+    state->ctx = GSS_C_NO_CONTEXT;
+    state->buffer.value = NULL;
+    state->buffer.length = 0;
+
+    inbuf.value = malloc(1024);
     do
     {
-        /* Read token */
-        if (inbuf.value == NULL)
-        {
-            inbuf.value = malloc(1024);
-        }
         inbuf.length = 1024;
+        /* Read token */
         rc = recv(state->socket, inbuf.value, inbuf.length, 0);
         if (rc < 0)
         {
@@ -465,6 +477,8 @@ example_gss_accept(
                 }
             }
             gss_release_buffer(&min_stat, &token);
+            token.value = NULL;
+            token.length = 0;
         }
     }
     while (maj_stat == GSS_S_CONTINUE_NEEDED);
@@ -486,10 +500,10 @@ err:
     }
     return state;
 }
-/* xacml_io_accept_t() */
+/* example_gss_accept() */
 
 xacml_io_descriptor_t
-libxacml_gss_io =
+xacml_io_descriptor =
 {
     "xacml_gss_io",
     example_gss_accept,

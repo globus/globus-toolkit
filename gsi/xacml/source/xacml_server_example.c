@@ -99,12 +99,15 @@ int main(int argc, char *argv[])
 
     xacml_init();
 
+    xacml_server_init(&server, xacml_authorize, NULL);
+
     while ((ch = getopt(argc, argv, "p:i:h")) != -1) 
     {
         switch (ch)
         {
         case 'p':
             port = atoi(optarg);
+            xacml_server_set_port(server, port);
             break;
         case 'i':
             io_module_name = optarg;
@@ -118,13 +121,6 @@ int main(int argc, char *argv[])
         }
     }
 
-    xacml_server_init(&server, xacml_authorize, NULL);
-
-    if (port != 0)
-    {
-        xacml_server_set_port(server, port);
-    }
-
     if (io_module_name)
     {
         xacml_server_set_io_module(server, io_module_name);
@@ -133,6 +129,8 @@ int main(int argc, char *argv[])
     signal(SIGINT, siginthandler);
 
     xacml_server_start(server);
+    xacml_server_get_port(server, &port);
+    printf("Server ready... listening on port %hu.\n", port);
 
     while (!done)
     {
