@@ -16,7 +16,7 @@ lib_LTLIBRARIES = libglobus_xio_netlogger_driver_$(GLOBUS_FLAVOR_NAME).la \
                libclient_netlogger_plugin_$(GLOBUS_FLAVOR_NAME).la
 
 libclient_netlogger_plugin___GLOBUS_FLAVOR_NAME__la_LIBADD = \
-    @GPT_LIB_LINKS@  $(NETLOGGER_PATH)/lib/libnl.a
+    @GPT_LIB_LINKS@  $(NETLOGGER_PATH)/lib/libnl.a -luuid
 libclient_netlogger_plugin___GLOBUS_FLAVOR_NAME__la_SOURCES = \
     globus_ftp_client_nl_plugin.c
 libclient_netlogger_plugin___GLOBUS_FLAVOR_NAME__la_LDFLAGS = \
@@ -24,7 +24,7 @@ libclient_netlogger_plugin___GLOBUS_FLAVOR_NAME__la_LDFLAGS = \
 
 
 libglobus_xio_netlogger_driver___GLOBUS_FLAVOR_NAME__la_LIBADD = \
-	@GPT_LIB_LINKS@ $(NETLOGGER_PATH)/lib/libnl.a
+	@GPT_LIB_LINKS@ $(NETLOGGER_PATH)/lib/libnl.a -luuid
 libglobus_xio_netlogger_driver___GLOBUS_FLAVOR_NAME__la_SOURCES = \
 	globus_xio_netlogger.c
 libglobus_xio_netlogger_driver___GLOBUS_FLAVOR_NAME__la_LDFLAGS = \
