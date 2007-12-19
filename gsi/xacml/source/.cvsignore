@@ -1,4 +1,5 @@
 .deps
+*.nsmap
 autom4te.cache
 Makefile.in
 aclocal.m4
