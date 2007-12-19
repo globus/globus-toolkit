@@ -17,30 +17,87 @@
 #include "xacml_i.h"
 #include "soapH.h"
 
+#include <iostream>
 #include <dlfcn.h>
 
+/**
+ * Load and use an I/O module from a shared object for a request
+ * @ingroup xacml_io
+ * Open the module named by @a module and configures the @a request handle
+ * to use the I/O descriptor named "xacml_io_descriptor" in that module.
+ *
+ * @param request
+ *     XACML request handle.
+ * @param module
+ *     Name of a shared object containing the xacml_io_descriptor_t.
+ *
+ * @see xacml_request_set_io_descriptor()
+ */
 int
 xacml_request_set_io_module(
     xacml_request_t                     request,
     const char                         *module)
 {
-    void                               *mod;
     const xacml_io_descriptor_t        *desc;
-    std::string                         module_name;
+    int                                 rc;
 
-    module_name = module;
-    module_name += ".so";
+    if (request == NULL || module == NULL)
+    {
+        return XACML_RESULT_INVALID_PARAMETER;
+    }
 
-    mod = dlopen(module_name.c_str(), RTLD_NOW|RTLD_LOCAL);
-    desc = reinterpret_cast<xacml_io_descriptor_t *>(dlsym(mod,
-            XACML_IO_DESCRIPTOR));
+    request->io_module = dlopen(module, RTLD_NOW|RTLD_LOCAL);
+    if (request->io_module == NULL)
+    {
+        std::cerr << "Error loading module " << module << " "
+             << dlerror() << std::endl;
 
-    request->io_module = mod;
-    request->accept_func = desc->accept_func;
-    request->connect_func = desc->connect_func;
-    request->send_func = desc->send_func;
-    request->recv_func = desc->recv_func;
-    request->close_func = desc->close_func;
+        rc = XACML_RESULT_INVALID_PARAMETER;
+    }
+    desc = reinterpret_cast<xacml_io_descriptor_t *>(
+            dlsym(request->io_module, XACML_IO_DESCRIPTOR));
+
+    rc = xacml_request_set_io_descriptor(request, desc);
+
+    if (rc != XACML_RESULT_SUCCESS)
+    {
+        dlclose(request->io_module);
+        request->io_module = NULL;
+    }
+    return rc;
+}
+/* xacml_request_set_io_module() */
+
+
+/**
+ * Use an I/O module for a request
+ * @ingroup xacml_io
+ * 
+ * Configure a request handle to use the I/O callbacks contained in the
+ * descriptor. 
+ *
+ * @param request
+ *     XACML request handle.
+ * @param descriptor
+ *     Descriptor with the I/O callbacks to be used when processing 
+ *     @a request.
+ *
+ * @see xacml_request_set_io_descriptor()
+ */
+int
+xacml_request_set_io_descriptor(
+    xacml_request_t                     request,
+    const xacml_io_descriptor_t        *descriptor)
+{
+    if (request == NULL || descriptor == NULL)
+    {
+        return XACML_RESULT_INVALID_PARAMETER;
+    }
+    request->accept_func = descriptor->accept_func;
+    request->connect_func = descriptor->connect_func;
+    request->send_func = descriptor->send_func;
+    request->recv_func = descriptor->recv_func;
+    request->close_func = descriptor->close_func;
 
     return XACML_RESULT_SUCCESS;
 }

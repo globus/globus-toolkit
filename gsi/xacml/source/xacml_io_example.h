@@ -18,26 +18,6 @@
 
 EXTERN_C_BEGIN
 
-void *
-example_connect(
-    const char                         *endpoint,
-    const char                         *host,
-    int                                 port);
-
-int
-example_send(
-    void                               *arg,
-    const char                         *data,
-    size_t                              size);
-
-size_t
-example_recv(
-    void                               *arg,
-    char                               *data,
-    size_t                              size);
-
-int
-example_close(
-    void                               *arg);
+xacml_io_descriptor_t xacml_io_example_descriptor;
 
 EXTERN_C_END

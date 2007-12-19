@@ -27,6 +27,39 @@ typedef struct
 }
 example_io_state_t;
 
+static
+void *
+example_accept(
+    int                                 socket,
+    struct sockaddr                    *addr,
+    socklen_t                          *addr_len,
+    int                                *sock_out)
+{
+    int                                 rc;
+    example_io_state_t                 *state;
+
+    state = malloc(sizeof(example_io_state_t));
+
+    state->socket = accept(socket, addr, addr_len);
+
+    if (state->socket < 0)
+    {
+        rc = -1;
+        goto err;
+    }
+    *sock_out = state->socket;
+
+err:
+    if (rc < 0)
+    {
+        free(state);
+        state = NULL;
+    }
+    return state;
+}
+/* example_accept() */
+
+static
 void *
 example_connect(
     const char                         *endpoint,
@@ -90,6 +123,7 @@ out:
 }
 /* example_connect() */
 
+static
 int
 example_send(
     void                               *arg,
@@ -118,6 +152,7 @@ example_send(
 }
 /* example_send() */
 
+static
 size_t
 example_recv(
     void                               *arg,
@@ -130,6 +165,7 @@ example_recv(
 }
 /* example_recv() */
 
+static
 int
 example_close(
     void                               *arg)
@@ -142,3 +178,15 @@ example_close(
     return 0;
 }
 /* example_close() */
+
+xacml_io_descriptor_t
+xacml_io_example_descriptor =
+{
+    "xacml_io_example_descriptor",
+    example_accept,
+    example_connect,
+    example_send,
+    example_recv,
+    example_close
+};
+

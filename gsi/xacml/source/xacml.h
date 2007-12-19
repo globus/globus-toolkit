@@ -33,6 +33,7 @@ EXTERN_C_BEGIN
  * in writing XACML clients and servers.
  *
  * - @link xacml_common Common Library Functions @endlink
+ * - @link xacml_io XACML I/O handlers @endlink
  * - @link xacml_client Client Library Functions @endlink
  * - @link xacml_server Server Library functions @endlink
  */
@@ -61,6 +62,11 @@ int
 xacml_request_set_io_module(
     xacml_request_t                     request,
     const char *                        module);
+
+int
+xacml_request_set_io_descriptor(
+    xacml_request_t                     request,
+    const xacml_io_descriptor_t        *descriptor);
 
 int
 xacml_request_add_subject_attribute(

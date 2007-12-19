@@ -57,6 +57,11 @@ xacml_server_set_io_module(
     xacml_server_t                      server,
     const char *                        module);
 
+int
+xacml_server_set_io_descriptor(
+    xacml_server_t                      server,
+    const xacml_io_descriptor_t        *descriptor);
+
 #ifndef DONT_DOCUMENT_INTERNAL
 EXTERN_C_END
 #endif

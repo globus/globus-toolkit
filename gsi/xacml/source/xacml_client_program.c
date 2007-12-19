@@ -71,8 +71,9 @@ int main(int argc, char *argv[])
     const char *resattr[2];
 
     xacml_init();
+    xacml_request_init(&request);
 
-    while ((ch = getopt(argc, argv, "e:c:k:a:i:h")) != -1)
+    while ((ch = getopt(argc, argv, "e:c:k:a:im:h")) != -1)
     {
         switch (ch)
         {
@@ -88,8 +89,12 @@ int main(int argc, char *argv[])
         case 'a':
             ca_path = optarg;
             break;
+        case 'm':
+            xacml_request_set_io_module(request, optarg);
+            break;
         case 'i':
-            use_io_module = optarg;
+            xacml_request_set_io_descriptor(request,
+                        &xacml_io_example_descriptor);
             break;
         case 'h':
         case '?':
@@ -100,7 +105,6 @@ int main(int argc, char *argv[])
         }
     }
 
-    xacml_request_init(&request);
     xacml_response_init(&response);
     xacml_request_set_subject(
             request,
@@ -149,13 +153,6 @@ int main(int argc, char *argv[])
     if (cert != NULL || key != NULL || ca_path != NULL)
     {
         abort();
-    }
-
-    if (use_io_module)
-    {
-        xacml_request_set_io_module(
-            request,
-            use_io_module);
     }
 
     if (endpoint == NULL)

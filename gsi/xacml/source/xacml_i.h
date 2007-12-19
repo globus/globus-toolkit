@@ -96,11 +96,20 @@ struct xacml_response_s
     xacml::obligations                  obligations;
 };
 
+typedef enum
+{
+    XACML_SERVER_NEW,
+    XACML_SERVER_STARTED,
+    XACML_SERVER_READY,
+    XACML_SERVER_STOPPING,
+    XACML_SERVER_STOPPED
+}
+xacml_server_state_t;
+
 struct xacml_server_s
 {
     unsigned short                      port;
-    bool                                started;
-    bool                                stopped;
+    xacml_server_state_t                state;
     int                                 listener;
     pthread_t                           service_thread;
     pthread_mutex_t                     lock;

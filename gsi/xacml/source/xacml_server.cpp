@@ -53,6 +53,11 @@ service_thread(void * arg)
 
     pthread_mutex_lock(&server->lock);
 
+    if (server->state != XACML_SERVER_STARTED)
+    {
+        /* stopped before this thread started */
+        goto out;
+    }
     soap_init(&soap);
     soap.send_timeout = 10; 
     soap.recv_timeout = 10;
@@ -74,16 +79,18 @@ service_thread(void * arg)
     server->listener = soap_bind(&soap, NULL, server->port, 100);
     if (server->listener < 0)
     {
-        server->started = false;
         goto out;
     }
     namelen = sizeof(&addr);
-    getsockname(soap.master, &addr, &namelen);
+    getsockname(server->listener, &addr, &namelen);
     getnameinfo(&addr, namelen, NULL, 0, serv, sizeof(serv), NI_NUMERICSERV);
 
     sscanf(serv, "%hu", &server->port);
+    server->state = XACML_SERVER_READY;
 
-    while (! server->stopped) 
+    pthread_cond_signal(&server->cond);
+
+    while (server->state == XACML_SERVER_READY)
     {
         pthread_mutex_unlock(&server->lock);
 
@@ -92,7 +99,10 @@ service_thread(void * arg)
         soap.user = server;
         s = soap_accept(&soap);
         if (s < 0)
+        {
+            pthread_mutex_lock(&server->lock);
             continue;
+        }
         if (server->request == NULL)
         {
             xacml_request_init(&server->request);
@@ -111,7 +121,24 @@ service_thread(void * arg)
 out:
     server->request = NULL;
     soap.user = NULL;
-    server->started = false;
+    switch (server->state)
+    {
+        case XACML_SERVER_NEW:
+            assert(server->state != XACML_SERVER_NEW);
+            break;
+        case XACML_SERVER_STARTED:
+            server->state = XACML_SERVER_STOPPED;
+            break;
+        case XACML_SERVER_READY:
+            assert(server->state != XACML_SERVER_READY);
+            break;
+        case XACML_SERVER_STOPPING:
+            server->state = XACML_SERVER_STOPPED;
+            break;
+        case XACML_SERVER_STOPPED:
+            assert(server->state != XACML_SERVER_STOPPED);
+            break;
+    }
     soap_done(&soap);
     pthread_cond_signal(&server->cond);
     pthread_mutex_unlock(&server->lock);
@@ -456,8 +483,7 @@ xacml_server_init(
     }
     (*server) = new xacml_server_s;
     (*server)->port = 8080;
-    (*server)->started = false;
-    (*server)->stopped = true;
+    (*server)->state = XACML_SERVER_NEW;
     (*server)->handler = handler;
     (*server)->handler_arg = arg;
     (*server)->io_module = NULL;
@@ -505,13 +531,17 @@ xacml_server_set_port(
     }
 
     pthread_mutex_lock(&server->lock);
-    if (server->started)
+    switch (server->state)
     {
-        rc = XACML_RESULT_INVALID_STATE;
-    }
-    else
-    {
-        server->port = port;
+        case XACML_SERVER_NEW:
+        case XACML_SERVER_STARTED:
+            server->port = port;
+            break;
+        case XACML_SERVER_READY:
+        case XACML_SERVER_STOPPING:
+        case XACML_SERVER_STOPPED:
+            rc = XACML_RESULT_INVALID_STATE;
+            break;
     }
     pthread_mutex_unlock(&server->lock);
 
@@ -549,6 +579,10 @@ xacml_server_get_port(
         return XACML_RESULT_INVALID_PARAMETER;
     }
     pthread_mutex_lock(&server->lock);
+    while (server->state == XACML_SERVER_STARTED)
+    {
+        pthread_cond_wait(&server->cond, &server->lock);
+    }
     *port = server->port;
     pthread_mutex_unlock(&server->lock);
 
@@ -573,6 +607,8 @@ xacml_server_get_port(
  *     Success
  * @retval XACML_RESULT_INVALID_PARAMETER
  *     Invalid parameter
+ * @retval XACML_RESULT_INVALID_STATE;
+ *     Invalid state
  *
  * @see xacml_server_init(), xacml_server_destroy()
  */
@@ -580,18 +616,39 @@ int
 xacml_server_start(
     xacml_server_t                      server)
 {
-    int rc;
+    int rc = XACML_RESULT_SUCCESS;
 
     pthread_mutex_lock(&server->lock);
-    if (server->started)
+    switch (server->state)
     {
-        rc = 0;
-        goto out;
+        case XACML_SERVER_NEW:
+            rc = pthread_create(&server->service_thread, NULL,
+                                xacml::service_thread, server);
+            if (rc == 0)
+            {
+                server->state = XACML_SERVER_STARTED;
+            }
+            else
+            {
+                rc = XACML_RESULT_INVALID_STATE;
+            }
+            break;
+
+        case XACML_SERVER_STARTED:
+            while (server->state == XACML_SERVER_STARTED)
+            {
+                pthread_cond_wait(&server->cond, &server->lock);
+            }
+        case XACML_SERVER_READY:
+            rc = 0;
+            break;
+        case XACML_SERVER_STOPPING:
+            rc = XACML_RESULT_INVALID_STATE;
+            break;
+        case XACML_SERVER_STOPPED:
+            assert(server->state != XACML_SERVER_STOPPED);
+            break;
     }
-    rc = pthread_create(&server->service_thread, NULL, xacml::service_thread, server);
-    server->started = true;
-    server->stopped = false;
-out:
     pthread_mutex_unlock(&server->lock);
 
     return rc;
@@ -623,13 +680,27 @@ xacml_server_destroy(
     }
 
     pthread_mutex_lock(&server->lock);
-    server->stopped = true;
-    while (server->started)
+    switch (server->state)
     {
-        pthread_cond_wait(&server->cond, &server->lock);
+        case XACML_SERVER_NEW:
+            server->state = XACML_SERVER_STOPPED;
+            break;
+
+        case XACML_SERVER_STARTED:
+        case XACML_SERVER_READY:
+            server->state = XACML_SERVER_STOPPING;
+
+            /* FALLSTHROUGH */
+        case XACML_SERVER_STOPPING:
+            while (server->state == XACML_SERVER_STOPPING)
+            {
+                pthread_cond_wait(&server->cond, &server->lock);
+            }
+            break;
+        case XACML_SERVER_STOPPED:
+            assert(server->state != XACML_SERVER_STOPPED);
+            break;
     }
-    server->started = false;
-    server->stopped = true;
     pthread_mutex_unlock(&server->lock);
 
     pthread_join(server->service_thread, &arg);
@@ -646,32 +717,96 @@ xacml_server_destroy(
 }
 
 
+
+/**
+ * Load and use an I/O module from a shared object for a server's requests
+ * @ingroup xacml_io
+ * Open the module named by @a module and configures the @a server handle
+ * to use the I/O descriptor named "xacml_io_descriptor" in that module to
+ * handle the server's I/O.
+ *
+ * @param server
+ *     XACML server handle.
+ * @param module
+ *     Name of a shared object containing the xacml_io_descriptor_t.
+ *
+ * @retval XACML_RESULT_SUCCESS
+ *     Success.
+ * @retval XACML_RESULT_INVALID_PARAMETER
+ *     Invalid parameter.
+ * 
+ * @note
+ *     If an error occurs loading the I/O module, an error message will be
+ *     sent to stderr.
+ * @see xacml_request_set_io_descriptor()
+ */
 int
 xacml_server_set_io_module(
     xacml_server_t                      server,
     const char                         *module)
 {
-    void                               *mod;
     const xacml_io_descriptor_t        *desc;
-    std::string                         module_name;
+    int                                 rc;
 
-    module_name = module;
-    module_name += ".so";
+    server->io_module = dlopen(module, RTLD_NOW|RTLD_LOCAL);
+    if (server->io_module == NULL)
+    {
+        std::cerr << "Error loading module " << module << " "
+             << dlerror() << std::endl;
+        return XACML_RESULT_INVALID_PARAMETER;
+    }
+    desc = reinterpret_cast<xacml_io_descriptor_t *>(
+            dlsym(server->io_module, XACML_IO_DESCRIPTOR));
 
-    mod = dlopen(module_name.c_str(), RTLD_NOW|RTLD_LOCAL);
-    desc = reinterpret_cast<xacml_io_descriptor_t *>(dlsym(mod, 
-            XACML_IO_DESCRIPTOR));
+    rc = xacml_server_set_io_descriptor(server, desc);
 
-    server->io_module = mod;
-    server->accept_func = desc->accept_func;
-    server->connect_func = desc->connect_func;
-    server->send_func = desc->send_func;
-    server->recv_func = desc->recv_func;
-    server->close_func = desc->close_func;
+    if (rc !=  XACML_RESULT_SUCCESS)
+    {
+        dlclose(server->io_module);
+        server->io_module = NULL;
+    }
+
+    return rc;
+}
+/* xacml_server_set_io_module() */
+
+/**
+ * Use an I/O module for a server
+ * @ingroup xacml_io
+ * 
+ * Configure a server handle to use the I/O callbacks contained in the
+ * descriptor. 
+ *
+ * @param server
+ *     XACML server handle.
+ * @param descriptor
+ *     Descriptor with the I/O callbacks to be used when processing 
+ *     @a request.
+ *
+ * @retval XACML_RESULT_SUCCESS
+ *     Success.
+ * @retval XACML_RESULT_INVALID_PARAMETER
+ *     Invalid parameter.
+ * @see xacml_request_set_io_descriptor()
+ */
+int
+xacml_server_set_io_descriptor(
+    xacml_server_t                      server,
+    const xacml_io_descriptor_t        *descriptor)
+{
+    if (server == NULL || descriptor == NULL)
+    {
+        return XACML_RESULT_INVALID_PARAMETER;
+    }
+    server->accept_func = descriptor->accept_func;
+    server->connect_func = descriptor->connect_func;
+    server->send_func = descriptor->send_func;
+    server->recv_func = descriptor->recv_func;
+    server->close_func = descriptor->close_func;
 
     return XACML_RESULT_SUCCESS;
 }
-/* xacml_server_set_io_module() */
+/* xacml_server_set_io_descriptor() */
 
 #ifndef DONT_DOCUMENT_INTERNAL
 int

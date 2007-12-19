@@ -30,9 +30,9 @@ if test "$SOAPCPP2" = "no"; then
     AC_MSG_ERROR([Unable to locate gSOAP])
 fi
 
-SOAP_ROOT="[`echo $SOAPCPP2 | sed -e s',/[^/]*/[^/]*$,,'`]"
-CPPFLAGS="$CPPFLAGS -I$SOAP_ROOT/include"
-LDFLAGS="$CPPFLAGS -L$SOAP_ROOT/lib"
+GSOAP_DIR="[`echo $SOAPCPP2 | sed -e s',/[^/]*/[^/]*$,,'`]"
+CPPFLAGS="$CPPFLAGS -I$GSOAP_DIR/include"
+LDFLAGS="$CPPFLAGS -L$GSOAP_DIR/lib"
 AC_CHECK_HEADER(stdsoap2.h, true, AC_MSG_ERROR(unable to find stdsoap2.h))
 
 AC_PATH_PROG(DOXYGEN, doxygen, true)
