@@ -17,12 +17,26 @@
 # 
 
 my $rc;
+my $count = 1;
 
-$rc = system('./globus-ftp-client-run-tests.pl -runserver');
-if($rc != 0)
+if(!defined($ENV{FTP_TEST_NO_GSI}))
 {
-    exit $rc;
+    $count = 2;
 }
 
-$rc = system('./globus-ftp-client-many-server.pl');
+for(my $i = 0; $i < $count; $i++)
+{
+    $rc = system('./globus-ftp-client-run-tests.pl -runserver');
+    if($rc != 0)
+    {
+        exit $rc;
+    }
+
+    $rc = system('./globus-ftp-client-many-server.pl');
+    if($rc != 0)
+    {
+        exit $rc;
+    }
+    $ENV{FTP_TEST_NO_GSI} = 1;
+}
 exit $rc;

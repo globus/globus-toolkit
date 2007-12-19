@@ -513,16 +513,16 @@ globus_l_gfs_data_post_transfer_event_cb(
                 data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_VALID;
                 break;
 
+            case GLOBUS_L_GFS_DATA_HANDLE_CLOSING_AND_DESTROYED:
             case GLOBUS_L_GFS_DATA_HANDLE_VALID:
                 break;
 
-            case GLOBUS_L_GFS_DATA_HANDLE_CLOSING_AND_DESTROYED:
                 /* this cant happen because TE_PRE state prevents */
             case GLOBUS_L_GFS_DATA_HANDLE_CLOSING:
                 /* havent even gotten a close, how did this happen? */
             case GLOBUS_L_GFS_DATA_HANDLE_INUSE:
             case GLOBUS_L_GFS_DATA_HANDLE_CLOSED:
-            default:
+            case GLOBUS_L_GFS_DATA_HANDLE_CLOSED_AND_DESTROYED:
                 /* these shouldnt be possible */
                 globus_assert(0);
                 break;
@@ -3097,8 +3097,17 @@ globus_i_gfs_data_request_handle_destroy(
                 }
                 else
                 {
-                    data_handle->state =
-                        GLOBUS_L_GFS_DATA_HANDLE_CLOSING_AND_DESTROYED;
+                    if(data_handle->state == GLOBUS_L_GFS_DATA_HANDLE_TE_VALID)
+                    {
+                        data_handle->state =
+                            GLOBUS_L_GFS_DATA_HANDLE_TE_PRE_AND_DESTROYED;
+                    }
+                    else
+                    {
+                        data_handle->state =
+                            GLOBUS_L_GFS_DATA_HANDLE_CLOSING_AND_DESTROYED;
+                    }
+
                     session_handle->ref++;
                     /* set directly to closed so that when callback
                         returns we clean it up */
@@ -4720,7 +4729,7 @@ globus_l_gfs_data_end_transfer_kickout(
                 break;
 
             case GLOBUS_L_GFS_DATA_HANDLE_INUSE:
-                op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_VALID;
+                op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_TE_VALID;
                 break;
 
             case GLOBUS_L_GFS_DATA_HANDLE_TE_PRE_CLOSED:
@@ -5028,7 +5037,7 @@ globus_l_gfs_data_end_transfer_kickout(
                     /* leave this state until after TC event? */
                     break;
                 case GLOBUS_L_GFS_DATA_HANDLE_TE_PRE_CLOSED:
-                    op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_CLOSED;
+                    op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_CLOSING;
                     break;
                 case GLOBUS_L_GFS_DATA_HANDLE_TE_PRE_AND_DESTROYED:
                     op->data_handle->state =
