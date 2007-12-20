@@ -2485,6 +2485,40 @@ globus_l_guc_parse_arguments(
         char *                          disk_stack_str;
         char *                          net_stack_str;
 
+
+        ent = (globus_l_guc_src_dst_pair_t *)
+            globus_fifo_peek(&guc_info->user_url_list);
+
+        /* we must verify that we are doing a 3pt.  this means that
+            both src and dst url must be ftp:// or gsiftp:// 
+            obviously this doesnt work for the case where there is
+            a file full or url transfers and the first is 3pt fpt transfers
+            but the remainder are not.  that case is a PITA.  For now
+            we nicely error out here. */
+        if(ent == NULL)
+        {
+            globus_url_copy_l_args_error(
+                "-nl-bottle options requires third party transfers between "
+                "ftp:// or gsiftp:// urls.");
+            return -1;
+        }
+        if(strncmp(ent->src_url, "ftp://", 6) != 0 &&
+            strncmp(ent->src_url, "gsiftp://", 9) != 0)
+        {
+            globus_url_copy_l_args_error(
+                "-nl-bottle options requires third party transfers between "
+                "ftp:// or gsiftp:// urls.");
+            return -1;
+        }
+        if(strncmp(ent->dst_url, "ftp://", 6) != 0 &&
+            strncmp(ent->dst_url, "gsiftp://", 9) != 0)
+        {
+            globus_url_copy_l_args_error(
+                "-nl-bottle options requires third party transfers between "
+                "ftp:// or gsiftp:// urls.");
+            return -1;
+        }
+
         /* stick in plugin */
         globus_list_insert(
             &g_client_lib_plugin_list, "client_netlogger_plugin");
