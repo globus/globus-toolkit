@@ -1310,11 +1310,13 @@ sub verifyproxy {
 	return (1, $output);
     }
     chomp (my $proxytype = `$grid_proxy_info -file $proxyfile -type`);
-    local($oldproxy) = "";
+    local($typeopt) = "";
     if ($proxytype =~ /legacy/) {
-	$oldproxy = "-old";
+      $typeopt = "-old";
+    } elsif ($proxytype =~ /RFC 3820 compliant/) {
+      $typeopt = "-rfc";
     }
-    $output = `$grid_proxy_init $oldproxy -debug -verify -cert $proxyfile -key $proxyfile -valid 0:1 -out /tmp/tmpproxy.$$ 2>&1`;
+    $output = `$grid_proxy_init $typeopt -debug -verify -cert $proxyfile -key $proxyfile -valid 0:1 -out /tmp/tmpproxy.$$ 2>&1`;
     if ($? != 0) {
 	$output = "failed to verify proxy\n" . $output;
 	unlink("/tmp/tmpproxy.$$");
@@ -1342,12 +1344,20 @@ sub verifyproxy {
 sub verifycert {
     local($certfile, $keyfile) = @_;
 
-    chomp (my $subject = `$grid_cert_info -file $certfile -subject`);
-    local($oldproxy) = "";
-    if ($subject =~ /CN=proxy|\/CN=limited proxy/) {
-	$oldproxy = "-old";
+    chomp (my $info = `$grid_cert_info -file $certfile`);
+    local($proxytype) = "";
+    if ($info =~ /Subject: .* CN=proxy|\/CN=limited proxy/) {
+      $proxytype = "-old";
+    } elsif ($info =~ /1.3.6.1.4.1.3536.1.222/) {
+      # no option for this -- hope for the best
+    } elsif ($info =~ /1.3.6.1.5.5.7.1.14/) {
+      $proxytype = "-rfc";
+    } elsif ($info =~ /Proxy Certificate Information/) {
+      $proxytype = "-rfc";
+    } else {
+      # shrug
     }
-    local($output) = &runtest("$grid_proxy_init $oldproxy -debug -verify -cert $certfile -key $keyfile -valid 0:1 -out /tmp/tmpproxy.$$ -pwstdin", $passphrase);
+    local($output) = &runtest("$grid_proxy_init $proxytype -debug -verify -cert $certfile -key $keyfile -valid 0:1 -out /tmp/tmpproxy.$$ -pwstdin", $passphrase);
     if ($? != 0) {
 	$output = "failed to verify certificate from: $certfile and $keyfile\n" . $output;
 	unlink("/tmp/tmpproxy.$$");

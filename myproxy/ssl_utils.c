@@ -1181,9 +1181,7 @@ ssl_proxy_delegation_init(SSL_CREDENTIALS	**new_creds,
     globus_result_t		local_result;
     globus_gsi_proxy_handle_attrs_t proxy_handle_attrs = NULL;
     BIO	      			*bio = NULL;
-#if defined(GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY)
     char                        *GT_PROXY_MODE = NULL;
-#endif
 
     my_init();
     
@@ -1205,17 +1203,24 @@ ssl_proxy_delegation_init(SSL_CREDENTIALS	**new_creds,
 	verror_put_string("globus_gsi_proxy_handle_init() failed");
 	goto error;
     }
-#if defined(GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY)
     GT_PROXY_MODE = getenv("GT_PROXY_MODE");
-    if (GT_PROXY_MODE && strcmp(GT_PROXY_MODE, "old") == 0) {
-	local_result = globus_gsi_proxy_handle_set_type((*new_creds)->proxy_req,
-			      GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_PROXY);
+    if (GT_PROXY_MODE) {
+        if (strcmp(GT_PROXY_MODE, "old") == 0) {
+            local_result =
+                globus_gsi_proxy_handle_set_type((*new_creds)->proxy_req,
+                       GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_PROXY);
+#if defined(GLOBUS_GSI_CERT_UTILS_IS_RFC_PROXY)
+        } else if (strcmp(GT_PROXY_MODE, "rfc") == 0) {
+            local_result =
+                globus_gsi_proxy_handle_set_type((*new_creds)->proxy_req,
+                       GLOBUS_GSI_CERT_UTILS_TYPE_RFC_IMPERSONATION_PROXY);
+#endif
+        }
+    }
 	if (local_result != GLOBUS_SUCCESS) {
 	    verror_put_string("globus_gsi_proxy_handle_set_type() failed");
 	    goto error;
 	}
-    }
-#endif
     bio = BIO_new(BIO_s_mem());
     if (bio == NULL) {
 	verror_put_string("BIO_new() failed");
@@ -1347,12 +1352,9 @@ ssl_proxy_delegation_sign(SSL_CREDENTIALS		*creds,
     unsigned char		number_of_certs;
     int				index;
     globus_gsi_proxy_handle_t	proxy_handle = NULL;
-    globus_gsi_proxy_handle_attrs_t proxy_handle_attrs = NULL;
     globus_gsi_cred_handle_t	cred_handle = NULL;
     globus_result_t		local_result;
-#if defined(GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY) /* handle API changes */
     globus_gsi_cert_utils_cert_type_t   cert_type;
-#endif
     
     assert(creds != NULL);
     assert(creds->certificate);
@@ -1387,29 +1389,14 @@ ssl_proxy_delegation_sign(SSL_CREDENTIALS		*creds,
 	goto error;
     }
 
-    /* Set lifetime in proxy_handle_attrs for GT 2.2 compatibility. */
-    globus_gsi_proxy_handle_attrs_init(&proxy_handle_attrs);
-#if !defined(GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY)
-    if (!restrictions || !restrictions->lifetime) {
-	globus_gsi_proxy_handle_attrs_set_time_valid(proxy_handle_attrs, PROXY_DEFAULT_LIFETIME/60);
-    } else if (restrictions->lifetime > 0) {
-	globus_gsi_proxy_handle_attrs_set_time_valid(proxy_handle_attrs, restrictions->lifetime/60);
-    }
-#endif
-
     /* proxy handle is the proxy we're going to sign */
-    local_result = globus_gsi_proxy_handle_init(&proxy_handle,
-						proxy_handle_attrs);
-
-    /* done with proxy_handle_attrs now */
-    globus_gsi_proxy_handle_attrs_destroy(proxy_handle_attrs);
+    local_result = globus_gsi_proxy_handle_init(&proxy_handle, NULL);
 
     if (local_result != GLOBUS_SUCCESS) {
 	verror_put_string("globus_gsi_proxy_handle_init() failed");
 	goto error;
     }
 
-#if defined(GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY)
     /* what type of certificate do we have in the repository? */
     local_result = globus_gsi_cert_utils_get_cert_type(creds->certificate,
 						       &cert_type);
@@ -1417,27 +1404,6 @@ ssl_proxy_delegation_sign(SSL_CREDENTIALS		*creds,
 	verror_put_string("globus_gsi_cert_utils_get_cert_type() failed");
 	goto error;
     }
-    /* if we don't have an RFC or GSI3 proxy in the repository,
-       i.e., we have a GSI2 proxy or an EEC,
-       then remove RFC/GSI3 proxy cert info from our proxy_handle so
-       we take on the proxy type in the request */
-    if (GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY(cert_type) == 0) {
-#if defined(GLOBUS_GSI_CERT_UTILS_IS_RFC_PROXY)
-    if (GLOBUS_GSI_CERT_UTILS_IS_RFC_PROXY(cert_type) == 0) {
-#endif
-	local_result =
-	    globus_gsi_proxy_handle_set_proxy_cert_info(proxy_handle,
-							NULL);
-	if (local_result != GLOBUS_SUCCESS) {
-	    verror_put_string("globus_gsi_proxy_handle_set_proxy_cert_info() "
-			      "failed");
-	    goto error;
-	}
-#if defined(GLOBUS_GSI_CERT_UTILS_IS_RFC_PROXY)
-    }
-#endif
-    }
-#endif
 
     /* get proxy request */
     bio = BIO_new(BIO_s_mem());
@@ -1458,7 +1424,6 @@ ssl_proxy_delegation_sign(SSL_CREDENTIALS		*creds,
     bio = NULL;
 
     /* Set lifetime and limited options on proxy before signing. */
-#if defined(GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY)
     if (GLOBUS_GSI_CERT_UTILS_IS_PROXY(cert_type)) {
 	local_result = globus_gsi_proxy_handle_set_type(proxy_handle,
 							cert_type);
@@ -1493,11 +1458,6 @@ ssl_proxy_delegation_sign(SSL_CREDENTIALS		*creds,
 	globus_gsi_proxy_handle_set_time_valid(proxy_handle,
 					       restrictions->lifetime/60);
     }
-#else
-    if (restrictions && restrictions->limited_proxy) {
-	globus_gsi_proxy_handle_set_is_limited(proxy_handle, 1);
-    }
-#endif
 
     /* send number of certificates in reply for backward compatibility */
     bio = BIO_new(BIO_s_mem());
@@ -1733,14 +1693,10 @@ ssl_get_base_subject(SSL_CREDENTIALS *creds, char **subject)
       return SSL_ERROR;
    }
 
-#if defined(GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY) /* gotta love API changes */
    sk_unshift(creds->certificate_chain, (char *)creds->certificate);
    globus_gsi_cert_utils_get_base_name(client_subject,
 				       creds->certificate_chain);
    sk_shift(creds->certificate_chain);
-#else   
-   globus_gsi_cert_utils_get_base_name(client_subject);
-#endif
 
    X509_NAME_oneline(client_subject, client, sizeof(client));
    *subject = strdup(client);
