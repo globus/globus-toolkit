@@ -84,6 +84,9 @@ credential.
 To delegate a "legacy globus proxy", set the
 .B GT_PROXY_MODE
 environment variable to "old".
+To delegate an "RFC 3820 compliant proxy", set the
+.B GT_PROXY_MODE
+environment variable to "rfc".
 .SH OPTIONS
 .TP
 .B -h, --help
@@ -330,6 +333,8 @@ or a proxy (ex.
 .B GT_PROXY_MODE
 Set to "old" to store a "legacy globus proxy" in the MyProxy
 repository.
+Set to "rfc" to store an "RFC 3820 compliant proxy"
+in the MyProxy repository.
 .TP
 .B MYPROXY_TCP_PORT_RANGE
 Specifies a range of valid port numbers 

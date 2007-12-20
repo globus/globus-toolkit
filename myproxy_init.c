@@ -515,13 +515,17 @@ grid_proxy_init(int seconds,
     int cmdlen;
     int hours;
     char *proxy_mode;
-    int old=0;
-      
+    char *proxyopt = "";
+
     hours = seconds / SECONDS_PER_HOUR;
 
     proxy_mode = getenv("GT_PROXY_MODE");
-    if (proxy_mode && strcmp(proxy_mode, "old") == 0) {
-	old=1;
+    if (proxy_mode) {
+        if (strcmp(proxy_mode, "old") == 0) {
+            proxyopt = " -old";
+        } else if (strcmp(proxy_mode, "rfc") == 0) {
+            proxyopt = " -rfc";
+        }
     }
     
     cmdlen = 250;
@@ -543,7 +547,7 @@ grid_proxy_init(int seconds,
 	    outfile ? " -out " : "",
 	    outfile ? outfile : "",
 	    read_passwd_from_stdin ? " -pwstdin" : "",
-	    verbose ? " -debug" : "", old ? " -old" : "");
+	    verbose ? " -debug" : "", proxyopt);
     rc = system(command);
     free(command);
 
