@@ -1027,6 +1027,9 @@ char *SSL_CIPHER_description(SSL_CIPHER *cipher, char *buf, int len)
 		default: enc="AES(?""?""?)"; break;
 			}
 		break;
+        case SSL_AES_CTR:
+                enc="AES(128)-CTR";
+                break;
 	default:
 		enc="unknown";
 		break;
