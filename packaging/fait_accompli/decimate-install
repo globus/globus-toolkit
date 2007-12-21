@@ -25,15 +25,15 @@ fi
 echo About to decimate $1 ...
 
 cd $1
-find etc/gpt/packages -name \*.filelist 
-if [ $? eq 0 ]; then
+find etc/gpt/packages -name \*.filelist > /dev/null
+if [ $? -ne 0 ]; then
    echo find etc/gpt/packages -name \*.filelist failed in $1
    echo Are you sure it is a GLOBUS_LOCATION you want to decimate?
    exit 3
 fi
 
 find etc/gpt/packages -name \*.filelist | xargs cat > bigfilelist
-if [ $? eq 0 ]; then
+if [ $? -ne 0 ]; then
    echo Unable to create $1/bigfilelist with cat.  Disk full?
    exit 4
 fi
@@ -42,3 +42,5 @@ echo Decimating, may take a few minutes.
 while read filename; do
    rm -f $PWD/$filename
 done < bigfilelist
+
+echo Decimated.
