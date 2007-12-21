@@ -42,6 +42,7 @@ Sources= \
 
 if !MINIMAL_SSL
     Sources += e_idea.c \
+    	cipher-ctr.c \
 	e_rc4.c \
 	e_rc2.c \
 	e_rc5.c \

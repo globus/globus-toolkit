@@ -151,9 +151,9 @@ void OpenSSL_add_all_ciphers(void)
 	EVP_add_cipher(EVP_aes_128_cbc());
 	EVP_add_cipher(EVP_aes_128_cfb());
 	EVP_add_cipher(EVP_aes_128_ofb());
-#if 0
+/* GLOBUS */
 	EVP_add_cipher(EVP_aes_128_ctr());
-#endif
+/* END GLOBUS */
 	EVP_add_cipher_alias(SN_aes_128_cbc,"AES128");
 	EVP_add_cipher_alias(SN_aes_128_cbc,"aes128");
 	EVP_add_cipher(EVP_aes_192_ecb());
