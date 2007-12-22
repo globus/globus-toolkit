@@ -440,6 +440,16 @@ globus_i_gsi_gss_create_and_fill_context(
             goto free_cert_dir;   
         }
     }
+    else
+    {
+        char *cipher_list;
+
+        cipher_list = getenv("GLOBUS_SSL_CIPHERS");
+        if (cipher_list)
+        {
+            SSL_set_cipher_list(context->gss_ssl, cipher_list);
+        }
+    }
     
     GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
         3, (globus_i_gsi_gssapi_debug_fstream,
