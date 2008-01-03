@@ -6,7 +6,9 @@
 my $package;
 my $deps;
 
-while (<>)
+open FH, "<$ARGV[0]";
+
+while (<FH>)
 {
    # The -only: and -only-thr: targets only make sense for source.
    # Skip 'em.  The undef setting on package will also keep us
