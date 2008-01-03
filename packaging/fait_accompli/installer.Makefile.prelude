@@ -51,6 +51,7 @@ gpt: @gptlocation@/sbin/gpt-postinstall
 	cd gpt && OBJECT_MODE=32 ./build_gpt
 install: postinstall
 postinstall:
+	ln -sf ${GLOBUS_LOCATION}/etc/gpt/packages ${GLOBUS_LOCATION}/etc/globus_packages
 	${GPT_LOCATION}/sbin/gpt-postinstall
 
 gsi-myproxy: gpt globus-gsi myproxy
