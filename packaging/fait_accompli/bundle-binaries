@@ -63,7 +63,7 @@ cd ../
 
 echo Generating configure/Makefile.in for binary installer
 if [ -f $SOURCE_MAKEFILE ]; then
-   fait_accompli/binary-makefile-generator < $SOURCE_MAKEFILE > tmp/Makefile.in
+   fait_accompli/binary-makefile-generator $SOURCE_MAKEFILE > tmp/Makefile.in
 else
    cp fait_accompli/binary.Makefile.in tmp/Makefile.in
 fi
