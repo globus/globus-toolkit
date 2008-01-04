@@ -260,6 +260,7 @@ BUNDLE	prews-test
 	globus_authz_test
         globus_xio_test
 	gaa_simple_test
+        globus_proxy_utils_test
 BUNDLE globus-gsi
 	globus_gss_assist
 	globus_proxy_utils
