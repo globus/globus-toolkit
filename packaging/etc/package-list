@@ -116,6 +116,7 @@ globus_openssl_error_test	gsi/openssl_error/test	gpt
 globus_openssl_module	gsi/openssl_module/source	gpt
 globus_proxy_ssl_test	gsi/proxy/proxy_ssl/test	gpt
 globus_proxy_utils	gsi/proxy/proxy_utils/source	gpt
+globus_proxy_utils_test	gsi/proxy/proxy_utils/test	gpt
 globus_proxy_wrapper	gsi/proxy/proxy_utils/wrapper	gpt
 globus_rls_client	replica/rls/client	gpt
 globus_rls_server	replica/rls/server	gpt
