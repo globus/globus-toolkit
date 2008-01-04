@@ -181,7 +181,8 @@ main(
     globus_gsi_cred_handle_t            cred_handle = NULL;
     globus_gsi_cred_handle_t            proxy_cred_handle = NULL;
     globus_gsi_cert_utils_cert_type_t   cert_type =
-        GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_IMPERSONATION_PROXY;
+        GLOBUS_GSI_CERT_UTILS_TYPE_RFC_IMPERSONATION_PROXY;
+    globus_bool_t                       draft_proxy = GLOBUS_FALSE;
     globus_bool_t                       rfc_proxy = GLOBUS_FALSE;
     globus_bool_t                       old_proxy = GLOBUS_FALSE;
     globus_bool_t                       limited_proxy = GLOBUS_FALSE;
@@ -372,20 +373,28 @@ main(
         }
         else if(strcmp(argp, "-old") == 0)
         {
-            if(rfc_proxy == GLOBUS_TRUE)
+            if(rfc_proxy || draft_proxy)
             {
                 args_error(argp, 
-                           "-old and -rfc are mutually exclusive");
+                           "-old, -rfc, and -draft are mutually exclusive");
             }
             old_proxy = GLOBUS_TRUE;
         }
         else if(strcmp(argp, "-rfc") == 0)
         {
-            if(old_proxy == GLOBUS_TRUE)
+            if(draft_proxy || old_proxy)
             {
-                args_error(argp, "-old and -rfc are mutually exclusive");
+                args_error(argp, "-old, -rfc, and -draft are mutually exclusive");
             }
             rfc_proxy = GLOBUS_TRUE;
+        }
+        else if(strcmp(argp, "-draft") == 0)
+        {
+            if(rfc_proxy || old_proxy)
+            {
+                args_error(argp, "-old, -rfc, and -draft are mutually exclusive");
+            }
+            draft_proxy = GLOBUS_TRUE;
         }
         else if(strcmp(argp, "-verify") == 0)
         {
@@ -463,8 +472,28 @@ main(
             cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_PROXY;
         }
     }
-    else if(rfc_proxy == GLOBUS_TRUE)
+    else if (draft_proxy)
     {
+        if(limited_proxy == GLOBUS_TRUE)
+        {
+            cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_LIMITED_PROXY;
+        }
+        else if(restricted_proxy == GLOBUS_TRUE)
+        {
+            cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_RESTRICTED_PROXY;
+        }
+        else if(independent_proxy == GLOBUS_TRUE)
+        {
+            cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_INDEPENDENT_PROXY;
+        }
+        else
+        {
+            cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_IMPERSONATION_PROXY;
+        }
+    }
+    else
+    {
+        /* rfc proxy is default */
         if(limited_proxy == GLOBUS_TRUE)
         {
             cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_RFC_LIMITED_PROXY;
@@ -480,21 +509,6 @@ main(
         else
         {
             cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_RFC_IMPERSONATION_PROXY;
-        }
-    }
-    else
-    {
-        if(limited_proxy == GLOBUS_TRUE)
-        {
-            cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_LIMITED_PROXY;
-        }
-        else if(restricted_proxy == GLOBUS_TRUE)
-        {
-            cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_RESTRICTED_PROXY;
-        }
-        else if(independent_proxy == GLOBUS_TRUE)
-        {
-            cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_INDEPENDENT_PROXY;
         }
     }
    
