@@ -76,10 +76,6 @@ main(
     int                                 argc,
     char **                             argv)
 {
-    globus_module_activate(GLOBUS_COMMON_MODULE);
-    globus_module_activate(GLOBUS_GSI_GSSAPI_MODULE);
-    globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE);
-
     char                                realhostname[NI_MAXHOST];
     globus_result_t                     result = GLOBUS_SUCCESS;
     char *                              hostname;
@@ -92,6 +88,10 @@ main(
     globus_list_t *                     list = NULL;
     globus_list_t *                     list_p = NULL;
     char *                              hostenv;
+
+    globus_module_activate(GLOBUS_COMMON_MODULE);
+    globus_module_activate(GLOBUS_GSI_GSSAPI_MODULE);
+    globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE);
     
     if(argc < 2)
     {
