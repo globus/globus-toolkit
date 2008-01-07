@@ -55,6 +55,23 @@ sub find_basic_block
         return;
     }
     if (/^.*\.bb\z/s) {
+        $self->find_basic_block3(@_);
+    }
+    elsif (/^.*\.gcno\z/s) {
+        $self->find_basic_block4(@_);
+    }
+}
+
+sub find_basic_block3
+{
+    my $self = shift;
+    my $package_info = $self->{PACKAGE};
+
+    if (/^\.libs\z/s && ($File::Find::prune = 1))
+    {
+        return;
+    }
+    if (/^.*\.bb\z/s) {
         my $fileinfo = new Globus::Coverage::File();
         my $in;
         local(*PIPE);
@@ -117,6 +134,90 @@ sub find_basic_block
                 $self->parse_gcov_file($fileinfo, "$gcovfile");
 
                 $fileinfo = new Globus::Coverage::File();
+            }
+        }
+    }
+}
+
+sub find_basic_block4
+{
+    my $self = shift;
+    my $type;
+    my $name;
+    my $package_info = $self->{PACKAGE};
+
+    if (/^\.libs\z/s && ($File::Find::prune = 1))
+    {
+        return;
+    }
+    if (/(^.*\.gcno\z)/s) {
+        my $fileinfo = new Globus::Coverage::File();
+        my $in;
+        local(*PIPE);
+
+        open(PIPE, "gcov -f -p -l -b -o .libs \"$_\" | sed -e s\"/Function '_/Function '__/\" | c++filt|") || return;
+
+        while ($in = <PIPE>) {
+            chomp;
+
+            if ($in =~ m/(Function|File) '(\S+)'/)
+            {
+                $type = $1;
+                $name = $2;
+            }
+            elsif ($in =~ m/Lines executed:([0-9.]+)% of (\d+)/) {
+                my $statements = $2;
+                my $covered = sprintf('%.0f', ($2 * $1 * 0.01));
+
+                if ($type eq 'Function') {
+                    my $funcinfo = $fileinfo->function($name);
+
+                    $funcinfo->statement_coverage($statements, $covered);
+                } elsif ($type eq 'File') {
+                    $fileinfo->statement_coverage($statements, $covered);
+                }
+            } elsif ($in =~ m/No executable lines/) {
+                if ($type eq 'Function') {
+                    my $funcinfo = $fileinfo->function($name);
+                    $funcinfo->statement_coverage(0, 0);
+                } elsif ($type eq 'File') {
+                    $fileinfo->statement_coverage(0, 0);
+                }
+            } elsif ($in =~ m/Branches executed:([0-9.]+)% of (\d+)/) {
+                my $branches = $2;
+                my $covered = sprintf('%.0f', ($2 * $1 * 0.01));
+
+                if ($type eq 'Function') {
+                    my $funcinfo = $fileinfo->function($name);
+                    $funcinfo->branch_coverage($branches, $covered);
+                } elsif ($type = 'File') {
+                    $fileinfo->branch_coverage($branches, $covered);
+                }
+            } elsif ($in =~ m/No branches/) {
+                if ($type eq 'Function') {
+                    my $funcinfo = $fileinfo->function($name);
+                    $funcinfo->statement_coverage(0, 0);
+                } elsif ($type eq 'File') {
+                    $fileinfo->statement_coverage(0, 0);
+                }
+            } elsif ($in =~ m/([^:]*):creating '(\S+)'$/) {
+                my $sourcename = $1;
+                my $gcovfile = $2;
+
+                if ($sourcename =~ m|^/| || 
+                    $sourcename !~ m/\.(c|cpp)$/) {
+                    next;
+                }
+
+                $sourcename =~ s|/|#|g;
+
+                $fileinfo->name($sourcename);
+                $package_info->file($sourcename, $fileinfo);
+                $self->parse_gcov_file($fileinfo, "$gcovfile");
+
+                $fileinfo = new Globus::Coverage::File();
+                $type = '';
+                $name = '';
             }
         }
     }
