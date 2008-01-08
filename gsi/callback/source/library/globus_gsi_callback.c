@@ -726,7 +726,6 @@ globus_i_gsi_callback_cred_verify(
             break;
 	#endif
 
-        #if (OPENSSL_VERSION_NUMBER < 0x0090800fL)
 	#if (OPENSSL_VERSION_NUMBER >= 0x0090706fL)
 	case X509_V_ERR_INVALID_CA:
 	    /*
@@ -757,7 +756,6 @@ globus_i_gsi_callback_cred_verify(
 		}
             }
 	    break;
-        #endif	
         #endif	
         default:
             result = (globus_result_t)GLOBUS_FAILURE;
