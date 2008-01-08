@@ -549,12 +549,16 @@ BUNDLE gt4-java-ws-core
         globus_java_ws_core_usage 
         globus_java_ws_core_tools
         globus_java_ws_core
+        globus_java_authz_base_providers
         globus_java_ws_core_management_sample
         globus_java_ws_core_counter_sample
         globus_java_ws_core_authz_sample
         globus_java_ws_core_logging_sample
         globus_java_ws_core_registry
         globus_java_ws_core_deployment
+        globus_java_authz_saml_schema
+        globus_java_authz_saml_source
+        globus_java_authz_saml_samples
 
 BUNDLE gt4-java-admin
         globus_core
@@ -570,6 +574,8 @@ BUNDLE gt4-java-ws-core-test
 	globus_java_authzFramework_test
         globus_java_ws_core_test_interop
         globus_java_ws_core_test_unit
+        globus_java_authz_base_providers_test
+        globus_java_authz_saml_test
 
 BUNDLE gt4-c-ws-core
         globus_c_wsdl_parser
