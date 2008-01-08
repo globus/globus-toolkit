@@ -222,8 +222,18 @@ globus_ws_core_schema                       wsrf/schema tar
 globus_wsrf_xindice                         wsrf/java/xindice	tar
 globus_java_container_admin_tools           wsrf/java/container_tools/source gpt
 globus_java_container_admin_tools_setup     wsrf/java/container_tools/setup gpt
-globus_java_authzFramework		    wsrf/java/authzFramework/engine/source	tar
-globus_java_authzFramework_test		    wsrf/java/authzFramework/engine/test	tar
+
+#Java Authorization
+globus_java_authzFramework		    authorization/java/engine/source	tar
+globus_java_authzFramework_test		    authorization/java/engine/test	tar
+globus_java_authz_base_providers            authorization/java/base/source	tar
+globus_java_authz_base_providers_test       authorization/java/base/test	tar
+globus_java_authz_saml_schema               authorization/java/saml/schema	tar
+globus_java_authz_saml_source               authorization/java/saml/source	tar
+globus_java_authz_saml_test                 authorization/java/saml/test	tar
+globus_java_authz_saml_samples              authorization/java/saml/samples	tar
+
+#Java WSRF Core
 globus_java_ws_core_common                  wsrf/java/common/source	tar
 globus_java_ws_core_tools                   wsrf/java/tools/source	tar
 globus_java_ws_core_tools_test              wsrf/java/tools/test	tar
@@ -233,7 +243,6 @@ globus_java_ws_core_test_interop            wsrf/java/core/test/interop	tar
 globus_java_ws_core_test_unit               wsrf/java/core/test/unit	tar
 globus_java_ws_core_management_sample       wsrf/java/core/samples/management	tar
 globus_java_ws_core_counter_sample          wsrf/java/core/samples/counter	tar
-globus_java_ws_core_authz_sample            wsrf/java/core/samples/authzService	tar
 globus_java_ws_core_logging_sample          wsrf/java/core/samples/logging	tar
 globus_java_ws_core_registry                wsrf/java/registry/source	tar
 globus_java_ws_core_deployment              wsrf/java/deployment/source	tar
