@@ -110,6 +110,8 @@ if test -f nightly.tar.gz; then
     MY_X509_CERT_DIR=$GLOBUS_LOCATION/share/certificates
     mkdir $MY_X509_CERT_DIR
     cp nmi/*.0 nmi/*.signing_policy $MY_X509_CERT_DIR
+    chmod 0600 nmi/userkey.pem
+    grid-proxy-init -debug -verify -cert nmi/usercert.pem -key nmi/userkey.pem
     myproxy-test -startserver $valgrind
     myproxy-test-replicate
 fi
