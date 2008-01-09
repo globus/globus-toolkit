@@ -160,7 +160,7 @@ sub find_basic_block4
         while ($in = <PIPE>) {
             chomp;
 
-            if ($in =~ m/(Function|File) '(\S+)'/)
+            if ($in =~ m/(Function|File) '([^']+)'/)
             {
                 $type = $1;
                 $name = $2;
