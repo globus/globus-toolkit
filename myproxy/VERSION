@@ -1,10 +1,10 @@
-This is MyProxy v4.2 XX Xxx 2007.
+This is MyProxy v4.2 10 Jan 2008.
 This version should be protocol compatible with all versions since v0.2.
 Binary compatibility of the C API is not guaranteed between releases.
 
 Version History
 ---------------
-v4.2 XX Xxx 2007
+v4.2 10 Jan 2008
   - add support for $GT_PROXY_MODE="rfc" in myproxy-init
   - in the myproxy-server, no longer default to issuing a "legacy
     globus proxy" from an end-entity certificate; instead, issue
