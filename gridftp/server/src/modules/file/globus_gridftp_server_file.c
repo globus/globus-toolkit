@@ -1569,15 +1569,6 @@ globus_l_gfs_file_server_read_cb(
         buf_info->offset = offset;
         buf_info->length = nbytes;
         
-        rc = globus_priority_q_enqueue(
-            &monitor->queue, buf_info, buf_info);
-        if(rc != GLOBUS_SUCCESS)
-        {
-            monitor->error = GlobusGFSErrorObjGeneric(
-                "globus_priority_q_enqueue failed");
-            goto error_enqueue;
-        }
-
         monitor->concurrency_check--;
         if(monitor->concurrency_check == 0 && !eof)
         {
@@ -1591,19 +1582,25 @@ globus_l_gfs_file_server_read_cb(
                 "globus_l_gfs_file_dispatch_write", result);
             goto error_dispatch;
         }
+
+        rc = globus_priority_q_enqueue(
+            &monitor->queue, buf_info, buf_info);
+        if(rc != GLOBUS_SUCCESS)
+        {
+            monitor->error = GlobusGFSErrorObjGeneric(
+                "globus_priority_q_enqueue failed");
+            goto error_enqueue;
+        }
     }
     globus_mutex_unlock(&monitor->lock);
     
     GlobusGFSFileDebugExit();
     return;
     
+error_enqueue:
 error_dispatch:
     /* can't free buf_info, its in queue */
-    if(0)
-    {
-error_enqueue:
-        globus_free(buf_info);
-    }
+    globus_free(buf_info);
     
 error_alloc:
 error:
