@@ -14,6 +14,7 @@ my $globus_location = $ENV{GLOBUS_LOCATION};
             xacml-obligation-test.pl
             xacml-server-test.pl
             xacml-client-test.pl
+            xacml-io-test.pl
            );
 
 $ENV{VALGRIND} = 1 if ($ARGV[0] eq '-valgrind');

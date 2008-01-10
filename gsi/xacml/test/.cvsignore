@@ -8,6 +8,7 @@ config.sub
 configure
 depcomp
 html
+*.tar.gz
 install-sh
 libtool
 ltmain.sh
