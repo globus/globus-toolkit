@@ -1,4 +1,4 @@
-GSI-OpenSSH 4.1, based on OpenSSH 4.7p1, is now available from:
+GSI-OpenSSH 4.2, based on OpenSSH 4.7p1, is now available from:
 
   <http://grid.ncsa.uiuc.edu/ssh/download.html>
 
@@ -11,28 +11,25 @@ Please use Bugzilla to report GSI-OpenSSH bugs:
 
   <http://bugzilla.globus.org/globus/enter_bug.cgi?product=GSI-OpenSSH>
 
-GSI-OpenSSH 4.1 Major changes
+GSI-OpenSSH 4.2 Major changes
 
    New features
 
-      * Upgraded to OpenSSH 4.7p1.
-
-      * Upgraded to HPN12v18 patch from
-        <http://www.psc.edu/networking/projects/hpn-ssh/>.
+      * Added support for new OpenSSL packages in GT 4.2.
 
    Bugs fixed
 
-      * Fixed AIX build failure
-        (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=5201).
+      * Fixed configure script typo in RPATH ld string
+        (http://bugzilla.globus.org/bugzilla/show_bug.cgi?id=5614).
 
 SHA1 checksums:
-ba69bf26fd16170b7caf8b4b2f74fd80d18d1e50  gsi_openssh-4.1-src.tar.gz
-069b85b183b9f773f288778bdbd4402b425e7d8e  gsi_openssh_bundle-4.1-src.tar.gz
-1c2dc0ca44d20abde3fec5606eda2917adf88c23  gsi_openssh_compat-4.1-src.tar.gz
-8d5bb81e746a9ec757b90f50ca54883f76140125  gsi_openssh_setup-4.1-src.tar.gz
+36cc4a69c0dabd6084be2a589b4a0ad58d782c72  gsi_openssh-4.2-src.tar.gz
+f7f65d9cf402ad5264a002d7a23e46e9c0b45ab9  gsi_openssh_bundle-4.2-src.tar.gz
+e8241d22a9b69e0ee392a98bba9d18b1b8036d5e  gsi_openssh_compat-4.2-src.tar.gz
+1aa8942cecb6b0b9021477599d29d5902777485b  gsi_openssh_setup-4.2-src.tar.gz
 
 MD5 checksums:
-bafb21cc64548dbc5321caa142852aa5  gsi_openssh-4.1-src.tar.gz
-72fe5962f7b55662ce20703d9e89bc51  gsi_openssh_bundle-4.1-src.tar.gz
-1afb13fc5d06dc51b776c93de71879c7  gsi_openssh_compat-4.1-src.tar.gz
-3d23d8ee45732173f24b824684a7e3a1  gsi_openssh_setup-4.1-src.tar.gz
+22c48183022459126866e37041b6aa7e  gsi_openssh-4.2-src.tar.gz
+309399f5f786580111887414d0221429  gsi_openssh_bundle-4.2-src.tar.gz
+fd63b2fa181afc5e31dea3f39ee0c0bf  gsi_openssh_compat-4.2-src.tar.gz
+5f9d67dfc63f6c0c6bf43fbbf07761ba  gsi_openssh_setup-4.2-src.tar.gz
