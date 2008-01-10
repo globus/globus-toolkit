@@ -1,5 +1,5 @@
 /*
- * Copyright 1999-2006 University of Chicago
+ * Copyright 1999-2008 University of Chicago
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,13 +33,13 @@
  *
  * @see xacml_request_set_io_descriptor()
  */
-int
+xacml_result_t
 xacml_request_set_io_module(
     xacml_request_t                     request,
     const char                         *module)
 {
     const xacml_io_descriptor_t        *desc;
-    int                                 rc;
+    xacml_result_t                      rc;
 
     if (request == NULL || module == NULL)
     {
@@ -84,7 +84,7 @@ xacml_request_set_io_module(
  *
  * @see xacml_request_set_io_descriptor()
  */
-int
+xacml_result_t
 xacml_request_set_io_descriptor(
     xacml_request_t                     request,
     const xacml_io_descriptor_t        *descriptor)
@@ -103,6 +103,7 @@ xacml_request_set_io_descriptor(
 }
 /* xacml_request_set_io_module() */
 
+#ifndef DONT_DOCUMENT_INTERNAL
 extern "C"
 int
 xacml_i_connect(
@@ -175,3 +176,4 @@ xacml_i_close(
     return rc;
 }
 /* xacml_i_close() */
+#endif // DONT_DOCUMENT_INTERNAL

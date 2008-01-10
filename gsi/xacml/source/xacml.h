@@ -1,5 +1,5 @@
 /*
- * Copyright 1999-2006 University of Chicago
+ * Copyright 1999-2008 University of Chicago
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,10 +32,10 @@ EXTERN_C_BEGIN
  * v2.0, including support for obligations in XACML response messages. It aids
  * in writing XACML clients and servers.
  *
- * - @link xacml_common Common Library Functions @endlink
- * - @link xacml_io XACML I/O handlers @endlink
- * - @link xacml_client Client Library Functions @endlink
- * - @link xacml_server Server Library functions @endlink
+ * - @link xacml_common Datatypes @endlink
+ * - @link xacml_client Client Functions @endlink
+ * - @link xacml_server Server functions @endlink
+ * - @link xacml_io I/O Handlers @endlink
  */
 
 /** 
@@ -46,10 +46,10 @@ EXTERN_C_BEGIN
  * @defgroup xacml_server Server Library Functions
  */
 
-int
+xacml_result_t
 xacml_init(void);
 
-int
+xacml_result_t
 xacml_request_init(
     xacml_request_t *                   request);
 
@@ -58,17 +58,17 @@ xacml_request_destroy(
     xacml_request_t                     request);
 
 
-int
+xacml_result_t
 xacml_request_set_io_module(
     xacml_request_t                     request,
     const char *                        module);
 
-int
+xacml_result_t
 xacml_request_set_io_descriptor(
     xacml_request_t                     request,
     const xacml_io_descriptor_t        *descriptor);
 
-int
+xacml_result_t
 xacml_request_add_subject_attribute(
     xacml_request_t                     request,
     const char *                        subject_category,
@@ -77,12 +77,12 @@ xacml_request_add_subject_attribute(
     const char *                        issuer,
     const char *                        value);
 
-int
+xacml_result_t
 xacml_request_get_subject_attribute_count(
     const xacml_request_t               request,
     size_t *                            count);
 
-int
+xacml_result_t
 xacml_request_get_subject_attribute(
     const xacml_request_t               request,
     size_t                              num,
@@ -92,23 +92,53 @@ xacml_request_get_subject_attribute(
     const char **                       issuer,
     const char **                       value);
 
-int
-xacml_request_add_resource_attribute(
-    xacml_request_t                     request,
+xacml_result_t
+xacml_resource_attribute_init(
+    xacml_resource_attribute_t *        attribute);
+
+xacml_result_t
+xacml_resource_attribute_add(
+    xacml_resource_attribute_t          attribute,
     const char *                        attribute_id,
     const char *                        data_type,
     const char *                        issuer,
     const char *                        value);
 
-int
-xacml_request_add_resource_attributes(
-    xacml_request_t                     request,
-    const char *                        attribute_id[],
-    const char *                        data_type[],
-    const char *                        issuer[],
-    const char *                        value[]);
+void
+xacml_resource_attribute_destroy(
+    xacml_resource_attribute_t          attribute);
 
-int
+xacml_result_t
+xacml_resource_attribute_get_count(
+    xacml_resource_attribute_t          attribute,
+    size_t *                            count);
+
+xacml_result_t
+xacml_resource_attribute_get_attribute(
+    const xacml_resource_attribute_t    attribute,
+    size_t                              num,
+    const char **                       attribute_id,
+    const char **                       data_type,
+    const char **                       issuer,
+    const char **                       value);
+
+xacml_result_t
+xacml_request_add_resource_attribute(
+    xacml_request_t                     request,
+    const xacml_resource_attribute_t    attribute);
+
+xacml_result_t
+xacml_request_get_resource_attribute_count(
+    const xacml_request_t               request,
+    size_t *                            count);
+
+xacml_result_t
+xacml_request_get_resource_attribute(
+    const xacml_request_t               request,
+    size_t                              num,
+    xacml_resource_attribute_t *        attribute);
+
+xacml_result_t
 xacml_request_add_action_attribute(
     xacml_request_t                     request,
     const char *                        attribute_id,
@@ -116,7 +146,21 @@ xacml_request_add_action_attribute(
     const char *                        issuer,
     const char *                        value);
 
-int
+xacml_result_t
+xacml_request_get_action_attribute_count(
+    const xacml_request_t               request,
+    size_t *                            count);
+
+xacml_result_t
+xacml_request_get_action_attribute(
+    const xacml_request_t               request,
+    size_t                              num,
+    const char **                       attribute_id,
+    const char **                       data_type,
+    const char **                       issuer,
+    const char **                       value);
+
+xacml_result_t
 xacml_request_add_environment_attribute(
     xacml_request_t                     request,
     const char *                        attribute_id,
@@ -124,13 +168,32 @@ xacml_request_add_environment_attribute(
     const char *                        issuer,
     const char *                        value);
 
-int
+xacml_result_t
+xacml_request_get_environment_attribute_count(
+    const xacml_request_t               request,
+    size_t *                            count);
+
+xacml_result_t
+xacml_request_get_environment_attribute(
+    const xacml_request_t               request,
+    size_t                              num,
+    const char **                       attribute_id,
+    const char **                       data_type,
+    const char **                       issuer,
+    const char **                       value);
+
+xacml_result_t
 xacml_request_set_subject(
     xacml_request_t                     request,
     const char *                        subject);
 
-/* Client Response */
-int
+xacml_result_t
+xacml_request_get_subject(
+    const xacml_request_t               request,
+    const char **                       subject);
+
+/* XACML Response */
+xacml_result_t
 xacml_response_init(
     xacml_response_t *                  response);
 
@@ -138,52 +201,57 @@ void
 xacml_response_destroy(
     xacml_response_t                    response);
 
-int
+xacml_result_t
+xacml_response_set_issue_instant(
+    xacml_response_t                    response,
+    time_t                              issue_instant);
+
+xacml_result_t
 xacml_response_get_issue_instant(
     xacml_response_t                    response,
     time_t *                            issue_instant);
 
-int
+xacml_result_t
 xacml_response_set_issuer(
     xacml_response_t                    response,
     const char *                        issuer);
 
-int
+xacml_result_t
 xacml_response_get_issuer(
     xacml_response_t                    response,
     const char **                       issuer);
 
-int
+xacml_result_t
 xacml_response_set_saml_status_code(
     xacml_response_t                    response,
     saml_status_code_t                  status_code);
 
-int
+xacml_result_t
 xacml_response_get_saml_status_code(
     const xacml_response_t              response,
     saml_status_code_t *                status_code);
 
-int
+xacml_result_t
 xacml_response_set_xacml_decision(
     xacml_response_t                    response,
     xacml_decision_t                    decision);
 
-int
+xacml_result_t
 xacml_response_get_xacml_decision(
     const xacml_response_t              response,
     xacml_decision_t *                  decision);
 
-int
+xacml_result_t
 xacml_response_set_xacml_status_code(
     xacml_response_t                    response,
     xacml_status_code_t                 status_code);
 
-int
+xacml_result_t
 xacml_response_get_xacml_status_code(
     const xacml_response_t              response,
     xacml_status_code_t *               status_code);
 
-int
+xacml_result_t
 xacml_obligation_init(
     xacml_obligation_t *                obligation,
     const char *                        obligation_id,
@@ -193,17 +261,51 @@ void
 xacml_obligation_destroy(
     xacml_obligation_t                  obligation);
 
-int
+xacml_result_t
 xacml_obligation_add_attribute(
     xacml_obligation_t                  obligation,
     const char *                        attribute_id,
     const char *                        data_type,
     const char *                        value);
 
-int
+xacml_result_t
+xacml_obligation_get_id(
+    const xacml_obligation_t            obligation,
+    const char **                       obligation_id);
+
+xacml_result_t
+xacml_obligation_get_effect(
+    const xacml_obligation_t            obligation,
+    xacml_effect_t *                    fulfill_on);
+
+xacml_result_t
+xacml_obligation_get_attribute_count(
+    const xacml_obligation_t            obligation,
+    size_t *                            count);
+
+xacml_result_t
+xacml_obligation_get_attribute(
+    const xacml_obligation_t            obligation,
+    size_t                              num,
+    const char **                       attribute_id,
+    const char **                       data_type,
+    const char **                       value);
+
+xacml_result_t
 xacml_response_add_obligation(
     xacml_response_t                    response,
     const xacml_obligation_t            obligation);
+
+xacml_result_t
+xacml_response_get_obligation_count(
+    const xacml_response_t              response,
+    size_t *                            count);
+
+xacml_result_t
+xacml_response_get_obligation(
+    const xacml_response_t              response,
+    size_t                              num,
+    xacml_obligation_t *                obligation);
 
 #ifndef DONT_DOCUMENT_INTERNAL
 EXTERN_C_END

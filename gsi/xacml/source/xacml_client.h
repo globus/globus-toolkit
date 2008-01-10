@@ -1,5 +1,5 @@
 /*
- * Copyright 1999-2006 University of Chicago
+ * Copyright 1999-2008 University of Chicago
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,14 +27,14 @@ EXTERN_C_BEGIN
 /**
  * @defgroup xacml_client Client Library Functions
  */
-int
+xacml_result_t
 xacml_request_add_obligation_handler(
     xacml_request_t                     request,
     xacml_obligation_handler_t          handler,
     void *                              handler_arg,
     const char *                        obligation_id);
 
-int
+xacml_result_t
 xacml_query(
     const char *                        endpoint,
     xacml_request_t                     request,

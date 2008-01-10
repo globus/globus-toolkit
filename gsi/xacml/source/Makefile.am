@@ -1,7 +1,7 @@
 AUTOMAKE_OPTIONS=foreign
 
 SUBDIRS=examples
-EXTRA_DIST=typemap.dat abstract-inheritance.diff
+EXTRA_DIST=typemap.dat abstract-inheritance.diff Doxyfile doxygen.head doxygen.foot
 
 SCHEMA=$(SCHEMA_DIR)/xacml_authz_service.wsdl
 GSOAP_FILE = xacml_auth_service.gsoap 
@@ -26,11 +26,14 @@ include_HEADERS = xacml_client.h xacml_server.h xacml.h xacml_datatypes.h
 bin_PROGRAMS = xacml-client xacml-server
 
 libxacml_la_SOURCES = \
+        xacml_ns.cpp \
         xacml_client.cpp \
         xacml_datatypes.cpp \
         xacml_io.cpp \
+        xacml_obligation.cpp \
         xacml_request.cpp \
         xacml_response.cpp \
+        xacml_resource_attribute.cpp \
         xacml_server.cpp \
         stlvector.h \
         xacml.h \
@@ -41,10 +44,10 @@ libxacml_la_SOURCES = \
 nodist_libxacml_la_SOURCES = soapStub.h soapH.h soapC.cpp soapClient.cpp soapServer.cpp
 libxacml_la_LIBADD = -lgsoap++ -lpthread -ldl
 
-xacml_server_SOURCES = xacml_server_example.c xacml_ns.cpp 
+xacml_server_SOURCES = xacml_server_example.c 
 xacml_server_LDADD = $(LDADD) libxacml.la -lgsoap++ -lpthread -ldl
 
-xacml_client_SOURCES = xacml_ns.cpp xacml_client_program.c xacml_io_example.h xacml_io_example.c
+xacml_client_SOURCES = xacml_client_program.c xacml_io_example.h xacml_io_example.c
 xacml_client_LDADD = $(LDADD) libxacml.la -lgsoap++ -lpthread -ldl
 
 # Rules to create gsoap files

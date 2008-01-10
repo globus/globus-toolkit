@@ -1,5 +1,5 @@
 /*
- * Copyright 1999-2006 University of Chicago
+ * Copyright 1999-2008 University of Chicago
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,6 +68,7 @@ int main(int argc, char *argv[])
     char * endpoint = NULL;
     char * use_io_module = NULL;
     xacml_response_t response;
+    xacml_resource_attribute_t ra;
     const char *resattr[2];
 
     xacml_init();
@@ -108,7 +109,7 @@ int main(int argc, char *argv[])
     xacml_response_init(&response);
     xacml_request_set_subject(
             request,
-            "/DC=org/DC=doegrids/OU=People/CN=Joseph Bester 912390");
+            "CN=Joseph Bester 912390,OU=People,DC=doegrids,DC=org");
     xacml_request_add_subject_attribute(
             request,
             XACML_SUBJECT_CATEGORY_ACCESS_SUBJECT,
@@ -118,13 +119,18 @@ int main(int argc, char *argv[])
             "CN=Joseph Bester,OU=People,DC=doegrids,DC=org");
 
     resattr[0] = "https://140.221.36.11:8081/wsrf/services/SecureCounterService";
-    resattr[1] = NULL;
-    xacml_request_add_resource_attribute(
-            request,
+    xacml_resource_attribute_init(&ra);
+
+    xacml_resource_attribute_add(
+            ra,
             XACML_RESOURCE_ATTRIBUTE_RESOURCE_ID,
             XACML_DATATYPE_STRING,
             "",
             resattr[0]);
+
+    xacml_request_add_resource_attribute(request, ra);
+    xacml_resource_attribute_destroy(ra);
+
     xacml_request_add_action_attribute(
             request,
             XACML_ACTION_ATTRIBUTE_ACTION_NAMESPACE,

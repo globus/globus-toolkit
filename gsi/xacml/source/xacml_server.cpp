@@ -1,5 +1,5 @@
 /*
- * Copyright 1999-2006 University of Chicago
+ * Copyright 1999-2008 University of Chicago
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -110,6 +110,8 @@ service_thread(void * arg)
             soap.user = server->request;
         }
         soap_serve(&soap);
+        soap.user = server->request;
+
         soap_destroy(&soap);
         soap_end(&soap);
 
@@ -154,7 +156,7 @@ extract_attribute_value(
     value = attribute->__item;
 }
 
-int
+xacml_result_t
 parse_xacml_query(
     const struct XACMLsamlp__XACMLAuthzDecisionQueryType *
                                         query,
@@ -222,13 +224,8 @@ parse_xacml_query(
             }
         }
 
-        const char *attribute_id[attribute_count+1];
-        const char *data_type[attribute_count+1];
-        const char *issuer[attribute_count+1];
-        const char *value[attribute_count+1];
-        std::string values[attribute_count+1];
+        xacml_resource_attribute_s ra;
 
-        size_t ind = 0;
         for (std::vector<class XACMLcontext__AttributeType * >::iterator j =
                 (*i)->XACMLcontext__Attribute.begin();
             j != (*i)->XACMLcontext__Attribute.end();
@@ -239,24 +236,20 @@ parse_xacml_query(
                  k != (*j)->XACMLcontext__AttributeValue.end();
                  k++)
             {
-                attribute_id[ind] = (*j)->AttributeId.c_str();
-                data_type[ind] = (*j)->DataType.c_str();
-                issuer[ind] = (*j)->Issuer ? (*j)->Issuer->c_str() : NULL;
-                extract_attribute_value(*k, values[ind]);
-                value[ind] = values[ind].c_str();
-                ind++;
+                std::string val;
+                
+                extract_attribute_value(*k, val);
+                xacml_resource_attribute_add(
+                        &ra,
+                        (*j)->AttributeId.c_str(),
+                        (*j)->DataType.c_str(),
+                        (*j)->Issuer ? (*j)->Issuer->c_str() : NULL,
+                        val.c_str());
             }
         }
-        attribute_id[ind] = NULL;
-        data_type[ind] = NULL;
-        issuer[ind] = NULL;
-        value[ind] = NULL;
-        xacml_request_add_resource_attributes(
+        xacml_request_add_resource_attribute(
                 request,
-                attribute_id,
-                data_type,
-                issuer,
-                value);
+                &ra);
     }
     for (std::vector<class XACMLcontext__AttributeType *>::iterator i =
                 req->XACMLcontext__Action->XACMLcontext__Attribute.begin();
@@ -303,7 +296,7 @@ parse_xacml_query(
         }
     }
 
-    return 0;
+    return XACML_RESULT_SUCCESS;
 }
 
 int
@@ -329,7 +322,9 @@ prepare_response(
 
     samlp__Response->Version = "2.0";
 
-    samlp__Response->IssueInstant = time(NULL);
+    samlp__Response->IssueInstant =
+            response->issue_instant ? response->issue_instant : time(NULL);
+
     samlp__Response->__size_32 = 1;
     samlp__Response->__union_32 = new __samlp__union_32();
     
@@ -349,7 +344,8 @@ prepare_response(
 
     const char * issuer;
 
-    if (xacml_response_get_issuer(response, &issuer) != 0)
+    if (xacml_response_get_issuer(response, &issuer) != XACML_RESULT_SUCCESS ||
+        issuer == NULL)
     {
         return SOAP_SVR_FAULT;
     }
@@ -414,9 +410,9 @@ prepare_response(
             result->XACMLpolicy__Obligations->
                     XACMLpolicy__Obligation.push_back(obligation);
 
-            obligation->ObligationId = i->obligation_id;
+            obligation->ObligationId = i->obligation.obligation_id;
 
-            switch (i->fulfill_on)
+            switch (i->obligation.fulfill_on)
             {
                 case XACML_EFFECT_Permit:
                     obligation->FulfillOn = XACMLpolicy__EffectType__Permit;
@@ -428,8 +424,8 @@ prepare_response(
                     return SOAP_SVR_FAULT;
             }
 
-            for (xacml::attributes::iterator j = i->attributes.begin();
-                 j != i->attributes.end();
+            for (xacml::attributes::iterator j = i->obligation.attributes.begin();
+                 j != i->obligation.attributes.end();
                  j++)
             {
                 XACMLpolicy__AttributeAssignmentType * attr =
@@ -471,7 +467,7 @@ prepare_response(
  *     Invalid parameter.
  * @see xacml_server_start(), xacml_server_destroy()
  */
-int
+xacml_result_t
 xacml_server_init(
     xacml_server_t *                    server,
     xacml_authorization_handler_t       handler,
@@ -488,6 +484,7 @@ xacml_server_init(
     (*server)->handler_arg = arg;
     (*server)->io_module = NULL;
     (*server)->accept_func = NULL;
+    (*server)->request = NULL;
     pthread_mutex_init(&(*server)->lock, NULL);
     pthread_cond_init(&(*server)->cond, NULL);
 
@@ -517,12 +514,12 @@ xacml_server_init(
  *
  * @see xacml_server_get_port()
  */
-int
+xacml_result_t
 xacml_server_set_port(
     xacml_server_t                      server,
     unsigned short                      port)
 {
-    int rc = XACML_RESULT_SUCCESS;
+    xacml_result_t rc = XACML_RESULT_SUCCESS;
 
     if (server == NULL)
     {
@@ -534,9 +531,9 @@ xacml_server_set_port(
     switch (server->state)
     {
         case XACML_SERVER_NEW:
-        case XACML_SERVER_STARTED:
             server->port = port;
             break;
+        case XACML_SERVER_STARTED:
         case XACML_SERVER_READY:
         case XACML_SERVER_STOPPING:
         case XACML_SERVER_STOPPED:
@@ -569,7 +566,7 @@ out:
  *
  * @see xacml_server_set_port()
  */
-int
+xacml_result_t
 xacml_server_get_port(
     const xacml_server_t                server,
     unsigned short *                    port)
@@ -612,19 +609,20 @@ xacml_server_get_port(
  *
  * @see xacml_server_init(), xacml_server_destroy()
  */
-int
+xacml_result_t
 xacml_server_start(
     xacml_server_t                      server)
 {
-    int rc = XACML_RESULT_SUCCESS;
+    int                                 r;
+    xacml_result_t                      rc = XACML_RESULT_SUCCESS;
 
     pthread_mutex_lock(&server->lock);
     switch (server->state)
     {
         case XACML_SERVER_NEW:
-            rc = pthread_create(&server->service_thread, NULL,
+            r = pthread_create(&server->service_thread, NULL,
                                 xacml::service_thread, server);
-            if (rc == 0)
+            if (r == 0)
             {
                 server->state = XACML_SERVER_STARTED;
             }
@@ -635,17 +633,14 @@ xacml_server_start(
             break;
 
         case XACML_SERVER_STARTED:
-            while (server->state == XACML_SERVER_STARTED)
-            {
-                pthread_cond_wait(&server->cond, &server->lock);
-            }
         case XACML_SERVER_READY:
-            rc = 0;
-            break;
         case XACML_SERVER_STOPPING:
             rc = XACML_RESULT_INVALID_STATE;
             break;
         case XACML_SERVER_STOPPED:
+            /* This state only occurs when the server is already being
+             * destroyed 
+             */
             assert(server->state != XACML_SERVER_STOPPED);
             break;
     }
@@ -696,14 +691,13 @@ xacml_server_destroy(
             {
                 pthread_cond_wait(&server->cond, &server->lock);
             }
+            pthread_join(server->service_thread, &arg);
             break;
         case XACML_SERVER_STOPPED:
             assert(server->state != XACML_SERVER_STOPPED);
             break;
     }
     pthread_mutex_unlock(&server->lock);
-
-    pthread_join(server->service_thread, &arg);
 
     pthread_mutex_destroy(&server->lock);
     pthread_cond_destroy(&server->cond);
@@ -740,13 +734,13 @@ xacml_server_destroy(
  *     sent to stderr.
  * @see xacml_request_set_io_descriptor()
  */
-int
+xacml_result_t
 xacml_server_set_io_module(
     xacml_server_t                      server,
     const char                         *module)
 {
     const xacml_io_descriptor_t        *desc;
-    int                                 rc;
+    xacml_result_t                      rc;
 
     server->io_module = dlopen(module, RTLD_NOW|RTLD_LOCAL);
     if (server->io_module == NULL)
@@ -789,7 +783,7 @@ xacml_server_set_io_module(
  *     Invalid parameter.
  * @see xacml_request_set_io_descriptor()
  */
-int
+xacml_result_t
 xacml_server_set_io_descriptor(
     xacml_server_t                      server,
     const xacml_io_descriptor_t        *descriptor)

@@ -1,5 +1,5 @@
 /*
- * Copyright 1999-2006 University of Chicago
+ * Copyright 1999-2008 University of Chicago
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,23 +28,23 @@ EXTERN_C_BEGIN
 
 typedef struct xacml_server_s * xacml_server_t;
 
-int
+xacml_result_t
 xacml_server_init(
     xacml_server_t *                    server,
     xacml_authorization_handler_t       handler,
     void *                              arg);
 
-int
+xacml_result_t
 xacml_server_set_port(
     xacml_server_t                      server,
     unsigned short                      port);
 
-int
+xacml_result_t
 xacml_server_get_port(
     const xacml_server_t                server,
     unsigned short *                    port);
 
-int
+xacml_result_t
 xacml_server_start(
     xacml_server_t                      server);
 
@@ -52,12 +52,12 @@ void
 xacml_server_destroy(
     xacml_server_t                      server);
 
-int
+xacml_result_t
 xacml_server_set_io_module(
     xacml_server_t                      server,
     const char *                        module);
 
-int
+xacml_result_t
 xacml_server_set_io_descriptor(
     xacml_server_t                      server,
     const xacml_io_descriptor_t        *descriptor);

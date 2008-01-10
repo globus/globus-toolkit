@@ -1,5 +1,5 @@
 /*
- * Copyright 1999-2006 University of Chicago
+ * Copyright 1999-2008 University of Chicago
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ namespace xacml
     typedef std::vector<attribute> attributes;
     typedef std::map<issuer, attributes> attribute_set;
     typedef std::map<subject_type, attribute_set> subject;
-    typedef std::vector<attribute_set> resource;
+    typedef std::vector<struct xacml_resource_attribute_s> resource;
 
     struct obligation
     {
@@ -51,7 +51,7 @@ namespace xacml
         xacml_effect_t                  fulfill_on;
     };
 
-    typedef std::vector<obligation> obligations;
+    typedef std::vector<struct xacml_obligation_s> obligations;
 
     struct obligation_handler_info
     {
@@ -61,6 +61,11 @@ namespace xacml
 
     typedef std::map<obligation_id, obligation_handler_info> obligation_handlers;
 }
+
+struct xacml_resource_attribute_s
+{
+    xacml::attribute_set                attributes;
+};
 
 struct xacml_request_s
 {

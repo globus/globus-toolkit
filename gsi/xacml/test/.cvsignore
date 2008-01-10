@@ -1,0 +1,15 @@
+.deps
+*.nsmap
+autom4te.cache
+Makefile.in
+aclocal.m4
+config.guess
+config.sub
+configure
+depcomp
+html
+install-sh
+libtool
+ltmain.sh
+missing
+mkinstalldirs

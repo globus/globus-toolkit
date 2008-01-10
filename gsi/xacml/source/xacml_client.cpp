@@ -1,5 +1,5 @@
 /*
- * Copyright 1999-2006 University of Chicago
+ * Copyright 1999-2008 University of Chicago
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -117,7 +117,9 @@ create_xacml_request(
         XACMLcontext__ResourceType *    resource =
                 new XACMLcontext__ResourceType();
 
-        for (attribute_set::iterator j = i->begin(); j != i->end(); j++)
+        for (attribute_set::iterator j = i->attributes.begin();
+             j != i->attributes.end();
+             j++)
         {
             for (attributes::iterator k = j->second.begin();
                  k != j->second.end();
@@ -173,9 +175,120 @@ create_xacml_request(
                 xacml_create_current_date_time_attribute());
     }
 
+    // Add Environment attribute indicating what obligations we understand
+    for (xacml::obligation_handlers::iterator i =
+                request->obligation_handlers.begin();
+         i != request->obligation_handlers.end();
+         i++)
+    {
+        xacml::attribute a;
+
+        a.attribute_id = "supportedObligations";
+        a.data_type = XACML_DATATYPE_ANY_URI;
+        a.value = i->first;
+
+        env->XACMLcontext__Attribute.push_back(
+                xacml_create_attribute(a));
+    }
+
     return req;
 }
 /* create_xacml_request() */
+
+void
+destroy_xacml_request(
+    XACMLcontext__RequestType *         r)
+{
+    for (std::vector<class XACMLcontext__SubjectType * >::iterator i =
+                r->XACMLcontext__Subject.begin();
+         i != r->XACMLcontext__Subject.end();
+         i++)
+    {
+        for (std::vector<class XACMLcontext__AttributeType * >::iterator j =
+                    (*i)->XACMLcontext__Attribute.begin();
+             j != (*i)->XACMLcontext__Attribute.end();
+             j++)
+        {
+            while (! (*j)->XACMLcontext__AttributeValue.empty())
+            {
+                XACMLcontext__AttributeValueType * v;
+
+                v = (*j)->XACMLcontext__AttributeValue.back();
+                (*j)->XACMLcontext__AttributeValue.pop_back();
+
+                delete v;
+            }
+            if ((*j)->Issuer)
+            {
+                delete (*j)->Issuer;
+            }
+        }
+    }
+
+    for (std::vector<class XACMLcontext__ResourceType * >::iterator i =
+                r->XACMLcontext__Resource.begin();
+         i != r->XACMLcontext__Resource.end();
+         i++)
+    {
+    }
+
+    if (r->XACMLcontext__Action)
+    {
+        while (! r->XACMLcontext__Action->XACMLcontext__Attribute.empty())
+        {
+            XACMLcontext__AttributeType * v;
+
+            v = r->XACMLcontext__Action->XACMLcontext__Attribute.back();
+            r->XACMLcontext__Action->XACMLcontext__Attribute.pop_back();
+
+            while (! v->XACMLcontext__AttributeValue.empty())
+            {
+                XACMLcontext__AttributeValueType * av;
+
+                av = v->XACMLcontext__AttributeValue.back();
+                v->XACMLcontext__AttributeValue.pop_back();
+
+                delete av;
+            }
+
+            if (v->Issuer)
+            {
+                delete v->Issuer;
+            }
+            delete v;
+        }
+        delete r->XACMLcontext__Action;
+    }
+
+    if (r->XACMLcontext__Environment)
+    {
+        while (! r->XACMLcontext__Environment->XACMLcontext__Attribute.empty())
+        {
+            XACMLcontext__AttributeType * v;
+
+            v = r->XACMLcontext__Environment->XACMLcontext__Attribute.back();
+            r->XACMLcontext__Environment->XACMLcontext__Attribute.pop_back();
+
+            while (! v->XACMLcontext__AttributeValue.empty())
+            {
+                XACMLcontext__AttributeValueType * av;
+
+                av = v->XACMLcontext__AttributeValue.back();
+                v->XACMLcontext__AttributeValue.pop_back();
+
+                delete av;
+            }
+
+            if (v->Issuer)
+            {
+                delete v->Issuer;
+            }
+            delete v;
+        }
+        delete r->XACMLcontext__Environment;
+    }
+}
+/* destroy_xacml_request() */
 
 int
 parse_xacml_response(
@@ -283,17 +396,17 @@ parse_xacml_response(
                  j != obligations->XACMLpolicy__Obligation.end();
                  j++)
             {
-                xacml::obligation obligation;
+                struct xacml_obligation_s obligation;
 
-                obligation.obligation_id = (*j)->ObligationId;
+                obligation.obligation.obligation_id = (*j)->ObligationId;
 
                 switch ((*j)->FulfillOn)
                 {
                 case XACMLpolicy__EffectType__Permit:
-                    obligation.fulfill_on = XACML_EFFECT_Permit;
+                    obligation.obligation.fulfill_on = XACML_EFFECT_Permit;
                     break;
                 case XACMLpolicy__EffectType__Deny:
-                    obligation.fulfill_on = XACML_EFFECT_Deny;
+                    obligation.obligation.fulfill_on = XACML_EFFECT_Deny;
                     break;
                 }
 
@@ -308,7 +421,7 @@ parse_xacml_response(
                     attribute.data_type = (*k)->DataType;
                     attribute.value = (*k)->__mixed;
 
-                    obligation.attributes.push_back(attribute);
+                    obligation.obligation.attributes.push_back(attribute);
                 }
                 response->obligations.push_back(obligation);
             }
@@ -346,7 +459,7 @@ parse_xacml_response(
  @retval XACML_RESULT_INVALID_PARAMETER
      Invalid parameter.
  */
-int
+xacml_result_t
 xacml_request_add_obligation_handler(
     xacml_request_t                     request,
     xacml_obligation_handler_t          handler,
@@ -366,7 +479,7 @@ xacml_request_add_obligation_handler(
     request->obligation_handlers[obligation_id == NULL ? "" : obligation_id] =
             info;
 
-    return 0;
+    return XACML_RESULT_SUCCESS;
 }
 /* xacml_request_add_obligation_handler() */
 
@@ -396,7 +509,7 @@ xacml_request_add_obligation_handler(
  @retval XACML_RESULT_OBLIGATION_FAILED
      Failed obligation processing.
  */
-int
+xacml_result_t
 xacml_query(
     const char *                        endpoint,
     xacml_request_t                     request,
@@ -404,9 +517,10 @@ xacml_query(
 {
     struct soap                         soap;
     XACMLsamlp__XACMLAuthzDecisionQueryType  *
-                                        query;
+                                        query = NULL;
     samlp__ResponseType                 resp;
-    int                                 rc;
+    int                                 r;
+    xacml_result_t                      rc = XACML_RESULT_SUCCESS;
     std::ostringstream                  ostr;
 
     if (endpoint == NULL || request == NULL || response == NULL)
@@ -442,17 +556,18 @@ xacml_query(
         soap.fclose = xacml_i_close;
     }
 
-    rc = soap_call___XACMLService__Authorize(&soap, endpoint, NULL, query,
+    r = soap_call___XACMLService__Authorize(&soap, endpoint, NULL, query,
             &resp);
 
-    if (rc == SOAP_OK)
+    if (r == SOAP_OK)
     {
-        rc = xacml::parse_xacml_response(&resp, response);
+        r = xacml::parse_xacml_response(&resp, response);
     }
 
-    if (rc != SOAP_OK)
+    if (r != XACML_RESULT_SUCCESS)
     {
         soap_print_fault(&soap, stderr);
+        rc = XACML_RESULT_SOAP_ERROR;
 
         goto out;
     }
@@ -462,12 +577,12 @@ xacml_query(
     {
         xacml::obligation_handlers::iterator ii;
 
-        if (((ii = request->obligation_handlers.find(i->obligation_id)) !=
+        if (((ii = request->obligation_handlers.find(i->obligation.obligation_id)) !=
             request->obligation_handlers.end()) ||
             ((ii = request->obligation_handlers.find("")) !=
             request->obligation_handlers.end()))
         {
-            size_t s = i->attributes.size();
+            size_t s = i->obligation.attributes.size();
 
             const char *attribute_ids[s+1];
             const char *data_types[s+1];
@@ -475,9 +590,9 @@ xacml_query(
 
             for (size_t j = 0; j < s; j++)
             {
-                attribute_ids[j] = i->attributes[j].attribute_id.c_str();
-                data_types[j] = i->attributes[j].data_type.c_str();
-                values[j] = i->attributes[j].value.c_str();
+                attribute_ids[j] = i->obligation.attributes[j].attribute_id.c_str();
+                data_types[j] = i->obligation.attributes[j].data_type.c_str();
+                values[j] = i->obligation.attributes[j].value.c_str();
             }
             attribute_ids[s] = NULL;
             data_types[s] = NULL;
@@ -485,14 +600,14 @@ xacml_query(
 
             xacml::obligation_handler_info &info = ii->second;
 
-            rc = info.handler(info.handler_arg,
+            r = info.handler(info.handler_arg,
                           response,
-                          i->obligation_id.c_str(),
-                          i->fulfill_on,
+                          i->obligation.obligation_id.c_str(),
+                          i->obligation.fulfill_on,
                           attribute_ids,
                           data_types,
                           values);
-            if (rc != 0)
+            if (r != 0)
             {
                 rc = XACML_RESULT_OBLIGATION_FAILED;
                 goto out;
@@ -501,6 +616,36 @@ xacml_query(
     }
 
 out:
+    if (query)
+    {
+        if (query->saml__Issuer)
+        {
+            if (query->saml__Issuer->Format)
+            {
+                delete query->saml__Issuer->Format;
+            }
+            delete query->saml__Issuer;
+        }
+        if (query->dsig__Signature)
+        {
+            delete query->dsig__Signature;
+        }
+        if (query->Destination)
+        {
+            delete query->Destination;
+        }
+        if (query->Consent)
+        {
+            delete query->Consent;
+        }
+        if (query->XACMLcontext__Request)
+        {
+            xacml::destroy_xacml_request(query->XACMLcontext__Request);
+            query->XACMLcontext__Request;
+            delete query->XACMLcontext__Request;
+        }
+        delete query;
+    }
     return rc;
 }
 /* xacml_query() */
