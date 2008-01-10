@@ -939,9 +939,9 @@ redo:
             target->disk_stack_str = 
                 globus_libc_strdup(target->attr->disk_stack_str);
             
-            if(client_handle->op != GLOBUS_FTP_CLIENT_TRANSFER)
+            if(client_handle->op == GLOBUS_FTP_CLIENT_GET)
             {
-                /* if not a 3pt gotta set stack on local deal 
+                /* if not a 3pt or put gotta set stack on local deal 
                 for now this will eb an error */
                 target->state = GLOBUS_FTP_CLIENT_TARGET_SETUP_CONNECTION;
 
