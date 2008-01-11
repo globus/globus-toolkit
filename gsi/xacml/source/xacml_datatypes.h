@@ -328,7 +328,13 @@ xacml_decision_t;
  */
 typedef enum
 {
+    /**
+     * The requested access is permitted.
+     */
     XACML_EFFECT_Permit,
+    /**
+     * The requested access is denied.
+     */
     XACML_EFFECT_Deny,
 }
 xacml_effect_t;

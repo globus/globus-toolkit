@@ -73,9 +73,6 @@ struct xacml_request_s
     xacml::resource                     resource_attributes;
     xacml::attribute_set                action_attributes;
     xacml::attribute_set                environment_attributes;
-    std::string                         certificate_path;
-    std::string                         key_path;
-    std::string                         certificate_dir;
     xacml::subject_type                 subject;
     std::string                         endpoint;
     xacml::obligation_handlers          obligation_handlers;
