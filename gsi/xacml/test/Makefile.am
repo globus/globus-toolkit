@@ -1,8 +1,8 @@
 AUTOMAKE_OPTIONS=foreign
 
-INCLUDES=-I../source
+INCLUDES=-I$(exec_prefix)/include
 CFLAGS=-g -O0
-LDADD=../source/libxacml.la -lgsoap++ -lpthread -ldl
+LDADD=-L$(exec_prefix)/lib -lxacml -lgsoap++ -lpthread -ldl
 
 testdir = $(exec_prefix)/test/@PACKAGE@
 

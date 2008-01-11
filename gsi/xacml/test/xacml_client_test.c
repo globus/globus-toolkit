@@ -457,6 +457,7 @@ test_auth_handler(
     xacml_response_t                    response)
 {
     int                                 rc;
+    size_t                              i, count;
     xacml_request_t                     orig_request = handler_arg;
 
     rc = xacml_response_set_issuer(response, "me");
@@ -476,6 +477,47 @@ test_auth_handler(
     rc = test_compare_resource_attributes(request, orig_request);
     TEST_ASSERTION(rc == XACML_RESULT_SUCCESS,
                    "test_compare_resource_attributes");
+
+    /* If there's an obligation handler, add that obligation to the response */
+    rc = xacml_request_get_environment_attribute_count(
+            request,
+            &count);
+    TEST_ASSERTION(rc == XACML_RESULT_SUCCESS,
+                   "xacml_request_get_environment_attribute_count");
+
+    for (i = 0; i < count; i++)
+    {
+        xacml_obligation_t              obligation;
+        const char *                    attribute_id;
+        const char *                    data_type;
+        const char *                    issuer;
+        const char *                    value;
+
+        rc = xacml_request_get_environment_attribute(
+                request,
+                i,
+                &attribute_id,
+                &data_type,
+                &issuer,
+                &value);
+        TEST_ASSERTION(rc == XACML_RESULT_SUCCESS,
+                       "xacml_request_get_environment_attribute");
+
+        if (strcmp(attribute_id, "supportedObligations") == 0)
+        {
+            rc = xacml_obligation_init(
+                    &obligation,
+                    value,
+                    XACML_EFFECT_Permit);
+            TEST_ASSERTION(rc == XACML_RESULT_SUCCESS,
+                           "xacml_obligation_init");
+
+            rc = xacml_response_add_obligation(response, obligation);
+            TEST_ASSERTION(rc == XACML_RESULT_SUCCESS,
+                           "xacml_response_add_obligation");
+            xacml_obligation_destroy(obligation);
+        }
+    }
 
     return rc;
 }
@@ -506,10 +548,22 @@ query_test(void)
     rc = xacml_server_get_port(server, &port);
     TEST_ASSERTION(rc == XACML_RESULT_SUCCESS, "xacml_server_get_port");
 
-    sprintf(endpoint, "http://localhost:%hu", port);
-
     rc = xacml_response_init(&response);
     TEST_ASSERTION(rc == XACML_RESULT_SUCCESS, "xacml_response_init");
+
+    rc = xacml_query(endpoint, request, response);
+    TEST_ASSERTION(rc == XACML_RESULT_SOAP_ERROR, "xacml_query");
+
+    sprintf(endpoint, "http://localhost:%hu", port);
+
+    rc = xacml_query(NULL, request, response);
+    TEST_ASSERTION(rc == XACML_RESULT_INVALID_PARAMETER, "xacml_query");
+
+    rc = xacml_query(endpoint, NULL, response);
+    TEST_ASSERTION(rc == XACML_RESULT_INVALID_PARAMETER, "xacml_query");
+
+    rc = xacml_query(endpoint, request, NULL);
+    TEST_ASSERTION(rc == XACML_RESULT_INVALID_PARAMETER, "xacml_query");
 
     rc = xacml_query(endpoint, request, response);
     TEST_ASSERTION(rc == XACML_RESULT_SUCCESS, "xacml_query");
