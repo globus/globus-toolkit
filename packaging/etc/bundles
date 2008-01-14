@@ -542,6 +542,7 @@ BUNDLE globus-xio-extra-drivers
 BUNDLE globus-internationalization
         globus_icu4c
         globus_i18n
+
 BUNDLE gt4-java-ws-core
         globus_ws_core_schema
         globus_java_ws_core_common
@@ -552,7 +553,6 @@ BUNDLE gt4-java-ws-core
         globus_java_authz_base_providers
         globus_java_ws_core_management_sample
         globus_java_ws_core_counter_sample
-        globus_java_ws_core_authz_sample
         globus_java_ws_core_logging_sample
         globus_java_ws_core_registry
         globus_java_ws_core_deployment
