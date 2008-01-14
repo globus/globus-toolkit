@@ -1,0 +1,40 @@
+dnl
+
+AC_REVISION($Revision$)
+AC_INIT(Makefile.am)
+
+GLOBUS_INIT
+
+AM_PROG_LIBTOOL
+
+dnl config header goes here
+
+dnl Initialize the automake rules the last argument
+AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION)
+
+# Where GAA should find it's load libraries
+GAA_LIB_DIR=${GLOBUS_LOCATION}/lib
+
+AC_SUBST(GAA_LIB_DIR)
+
+LAC_DOXYGEN([".."])
+
+GLOBUS_FINALIZE
+
+AC_OUTPUT(
+	Makefile
+	globus_gaa.conf
+	globus_gaa_custom.conf
+	pkgdata/Makefile
+	pkgdata/pkg_data_src.gpt
+        doxygen/Makefile
+        doxygen/Doxyfile 
+        doxygen/Doxyfile-internal
+	,
+	$GPT_LOCATION/sbin/gpt_generate_bin_pkg_data \
+	--flavor=$GLOBUS_FLAVOR_NAME "./pkgdata/pkg_data_src.gpt"
+	,
+	GLOBUS_FLAVOR_NAME=$GLOBUS_FLAVOR_NAME
+	GLOBUS_LOCATION=$GLOBUS_LOCATION
+	GPT_LOCATION=$GPT_LOCATION
+)

@@ -164,7 +164,18 @@ int X509_load_cert_file(X509_LOOKUP *ctx, const char *file, int type)
 					}
 				}
 			i=X509_STORE_add_cert(ctx->store_ctx,x);
-			if (!i) goto err;
+			if (!i)
+			        { 
+				if ((ERR_GET_REASON(ERR_peek_error()) ==
+				     X509_R_CERT_ALREADY_IN_HASH_TABLE))
+			                {
+			                ERR_clear_error();
+				        }
+				else
+				        {
+					goto err;    
+					}
+				}
 			count++;
 			X509_free(x);
 			x=NULL;
@@ -180,8 +191,19 @@ int X509_load_cert_file(X509_LOOKUP *ctx, const char *file, int type)
 			goto err;
 			}
 		i=X509_STORE_add_cert(ctx->store_ctx,x);
-		if (!i) goto err;
-		ret=i;
+		if (!i)
+                        { 
+                        if ((ERR_GET_REASON(ERR_peek_error()) ==
+                             X509_R_CERT_ALREADY_IN_HASH_TABLE))
+                                {
+                                ERR_clear_error();
+                                }
+                        else
+                                {
+                                goto err;    
+                                }
+                        }
+		ret=1;
 		}
 	else
 		{

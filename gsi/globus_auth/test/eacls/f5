@@ -1,0 +1,17 @@
+pos_access_right file read
+cond_access_id_anyone
+
+pos_access_right file write,truncate
+cond_access_id_anyone globus-map
+
+pos_access_right file execute
+cond_access_id_anyone X509
+
+pos_access_right file append
+cond_access_group simple g1
+
+pos_access_right file rename,create
+cond_access_group simple g2
+
+pos_access_right file delete
+cond_access_id X509 "/C=US/O=Globus/OU=isi.edu/CN=Laura Pearlman"

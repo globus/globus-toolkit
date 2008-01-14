@@ -1,0 +1,69 @@
+
+Applied two patches:
+
+diff -u -r openssl-0.9.6c/crypto/asn1/a_bitstr.c openssl-0.9.6c-patched/crypto/asn1/a_bitstr.c
+--- openssl-0.9.6c/crypto/asn1/a_bitstr.c	Sat Aug  5 20:35:03 2000
++++ openssl-0.9.6c-patched/crypto/asn1/a_bitstr.c	Mon Feb 25 16:54:05 2002
+@@ -230,7 +230,7 @@
+ 	if (a == NULL) return(0);
+ 	if ((a->length < (w+1)) || (a->data == NULL))
+ 		{
+-		if (!value) return(1); /* Don't need to set */
++                if (!value) return(1); /* Don't need to set */
+ 		if (a->data == NULL)
+ 			c=(unsigned char *)OPENSSL_malloc(w+1);
+ 		else
+@@ -240,7 +240,12 @@
+ 		a->data=c;
+ 		a->length=w+1;
+ 	}
+-	a->data[w]=((a->data[w])&iv)|v;
++        
++        if(value)
++                a->data[w] |= v;
++        else
++                a->data[w] &= iv;
++        
+ 	while ((a->length > 0) && (a->data[a->length-1] == 0))
+ 		a->length--;
+ 	return(1);
+diff -u -r openssl-0.9.6c/crypto/asn1/a_d2i_fp.c openssl-0.9.6c-patched/crypto/asn1/a_d2i_fp.c
+--- openssl-0.9.6c/crypto/asn1/a_d2i_fp.c	Fri Apr 23 17:08:07 1999
++++ openssl-0.9.6c-patched/crypto/asn1/a_d2i_fp.c	Mon Feb 25 16:54:05 2002
+@@ -169,13 +169,17 @@
+ 					ASN1err(ASN1_F_ASN1_D2I_BIO,ERR_R_MALLOC_FAILURE);
+ 					goto err;
+ 					}
+-				i=BIO_read(in,&(b->data[len]),want);
+-				if (i <= 0)
+-					{
+-					ASN1err(ASN1_F_ASN1_D2I_BIO,ASN1_R_NOT_ENOUGH_DATA);
+-					goto err;
+-					}
+-				len+=i;
++				    while(want)
++                                        {
++                                        i=BIO_read(in,&(b->data[len]),want);
++                                        if (i <= 0)
++					        {
++					        ASN1err(ASN1_F_ASN1_D2I_BIO,ASN1_R_NOT_ENOUGH_DATA);
++					        goto err;
++					        }
++				        len+=i;
++                                        want-=i;
++                                        }
+ 				}
+ 			off+=(int)c.slen;
+ 			if (eos <= 0)
+
+
+Changed
+
+crypto/buildinf.h.in
+crypto/opensslconf.h.in
+tools/c_rehash.in
+apps/CA.pl.in
+
+
+
+

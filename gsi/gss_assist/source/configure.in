@@ -1,0 +1,35 @@
+dnl
+
+AC_REVISION($Revision$)
+AC_INIT(Makefile.am)
+
+GLOBUS_INIT
+
+
+AM_PROG_LIBTOOL
+
+dnl config header goes here
+
+dnl Initialize the automake rules the last argument
+AM_INIT_AUTOMAKE($GPT_NAME, $GPT_VERSION)
+
+dnl GPT_SET_LIBS(-lglobus_gssapi_gsi_$GLOBUS_FLAVOR_NAME)
+
+GLOBUS_FINALIZE
+
+LAC_DOXYGEN(["../"])
+
+AC_OUTPUT(
+	Makefile
+	pkgdata/Makefile
+	pkgdata/pkg_data_src.gpt
+        programs/Makefile
+        programs/grid-mapfile-add-entry
+        programs/grid-mapfile-delete-entry
+        programs/grid-mapfile-check-consistency
+        doxygen/Makefile
+        doxygen/Doxyfile
+        doxygen/Doxyfile-internal
+        version.h
+)
+

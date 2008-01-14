@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE gpt_package_metadata SYSTEM "package.dtd">
+
+<gpt_package_metadata Name="globus_gss_ext_compat" Format_Version="0.02">
+
+    <Aging_Version Major="2" Minor="0" Age="0"/>
+    <Description >GSS Extensions Compatability library</Description>
+    <Functional_Group >Security</Functional_Group>
+    <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
+
+    <src_pkg>
+
+        <Source_Dependencies Type="compile">
+            <Dependency Name="globus_gssapi_gsi">
+                <Version>
+                    <Simple_Version Major="4"/>
+                </Version>
+            </Dependency>
+        </Source_Dependencies>
+
+        <With_Flavors build="yes"/>
+
+        <Build_Environment>
+            <cflags></cflags>
+            <external_includes></external_includes>
+            <external_libs></external_libs>
+            <pkg_libs>-lglobus_gss_ext_compat</pkg_libs>
+        </Build_Environment>
+
+    </src_pkg>
+
+</gpt_package_metadata>
+

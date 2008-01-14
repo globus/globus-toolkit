@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE gpt_package_metadata SYSTEM "globus_package.dtd">
+<gpt_package_metadata Format_Version="0.02" Name="globus_auth_test" >
+<Aging_Version Age="0" Major="1" Minor="1" />
+<Description >Globus authorization library tests</Description>
+<Functional_Group >Security</Functional_Group>
+<Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@" />
+<src_pkg >
+<With_Flavors build="yes" />
+<Source_Dependencies Type="compile" >
+<Dependency Name="gaa_debug" >
+<Version >
+<Simple_Version Major="1" />
+</Version>
+</Dependency>
+<Dependency Name="globus_auth" >
+<Version >
+<Simple_Version Major="1" />
+</Version>
+</Dependency>
+<Dependency Name="globus_core" >
+<Version >
+<Simple_Version Major="4" />
+</Version>
+</Dependency>
+</Source_Dependencies>
+<Source_Dependencies Type="pgm_link" >
+<Dependency Name="gaa_debug" >
+<Version >
+<Simple_Version Major="1" />
+</Version>
+</Dependency>
+<Dependency Name="globus_auth" >
+<Version >
+<Simple_Version Major="1" />
+</Version>
+</Dependency>
+</Source_Dependencies>
+<Build_Environment >
+<cflags >@GPT_CFLAGS@</cflags>
+<external_includes >@GPT_EXTERNAL_INCLUDES@</external_includes>
+<pkg_libs ></pkg_libs>
+<external_libs >@GPT_EXTERNAL_LIBS@</external_libs>
+</Build_Environment>
+</src_pkg>
+</gpt_package_metadata>

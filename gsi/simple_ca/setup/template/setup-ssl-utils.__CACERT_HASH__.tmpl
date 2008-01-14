@@ -1,0 +1,6 @@
+#!/bin/sh
+. $GLOBUS_LOCATION/setup/globus/globus-sh-tools-vars.sh
+tmpcwd=`${GLOBUS_SH_PWD-pwd}`
+cd $GLOBUS_LOCATION/setup/globus_simple_ca___CACERT_HASH___setup
+./setup-ssl-utils
+cd $tmpcwd

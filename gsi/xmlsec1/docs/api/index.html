@@ -1,0 +1,286 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<title>XML Security Library Reference Manual</title>
+<meta name="GENERATOR" content="Modular DocBook HTML Stylesheet Version 1.76b+
+">
+<link rel="NEXT" title="XML Security Library Tutorial" href="xmlsec-notes.html">
+</head>
+<body><table witdh="100%" valign="top"><tr valign="top">
+<td valign="top" align="left" width="210">
+<img src="../images/logo.gif" alt="XML Security Library" border="0"><p></p>
+<ul>
+<li><a href="../index.html">Home</a></li>
+<li><a href="../download.html">Download</a></li>
+<li><a href="../news.html">News</a></li>
+<li><a href="../documentation.html">Documentation</a></li>
+<ul>
+<li><a href="../faq.html">FAQ</a></li>
+<li><a href="../api/xmlsec-notes.html">Tutorial</a></li>
+<li><a href="../api/xmlsec-reference.html">API reference</a></li>
+<li><a href="../api/xmlsec-examples.html">Examples</a></li>
+</ul>
+<li><a href="../xmldsig.html">XML Digital Signature</a></li>
+<ul><li><a href="http://www.aleksey.com/xmlsec/xmldsig-verifier.html">Online Verifier</a></li></ul>
+<li><a href="../xmlenc.html">XML Encryption</a></li>
+<li><a href="../c14n.html">XML Canonicalization</a></li>
+<li><a href="../bugs.html">Reporting Bugs</a></li>
+<li><a href="http://www.aleksey.com/pipermail/xmlsec">Mailing list</a></li>
+<li><a href="../related.html">Related</a></li>
+<li><a href="../authors.html">Authors</a></li>
+</ul>
+<table width="100%">
+<tr>
+<td width="15"></td>
+<td><a href="http://xmlsoft.org/"><img src="../images/libxml2-logo.png" alt="LibXML2" border="0"></a></td>
+</tr>
+<tr>
+<td width="15"></td>
+<td><a href="http://xmlsoft.org/XSLT"><img src="../images/libxslt-logo.png" alt="LibXSLT" border="0"></a></td>
+</tr>
+<tr>
+<td width="15"></td>
+<td><a href="http://www.openssl.org/"><img src="../images/openssl-logo.png" alt="OpenSSL" border="0"></a></td>
+</tr>
+</table>
+</td>
+<td valign="top"><table width="100%" valign="top">
+<tr><td valign="top" align="left" id="xmlsecContent">
+<div class="BOOK">
+<div class="TITLEPAGE">
+<table width="100%" border="0" bgcolor="#000000" cellpadding="1" cellspacing="0"><tr><th align="center" valign="center"><font color="#FFFFFF" size="7"><p class="TITLE"><a name="AEN2">XML Security Library Reference Manual</a></p></font></th></tr></table>
+<h3 class="AUTHOR">
+<a name="AEN5"></a>Aleksey Sanin</h3>
+<div class="AFFILIATION"><div class="ADDRESS"><p class="ADDRESS">	    aleksey@aleksey.com<br>
+	  </p></div></div>
+<p class="COPYRIGHT">Copyright © 2002-2003 by Aleksey Sanin</p>
+<div><div class="ABSTRACT">
+<a name="AEN18"></a><p></p>
+<p>This manual documents the interfaces of the xmlsec
+      library and has some short notes to help get you up to speed
+      with using the library.</p>
+<p></p>
+</div></div>
+<div class="LEGALNOTICE">
+<a name="AEN14"></a><p></p>
+<p>Permission is granted to make and distribute verbatim
+      copies of this manual provided the copyright notice and this
+      permission notice are preserved on all copies.</p>
+<p>Permission is granted to copy and distribute modified
+      versions of this manual under the conditions for verbatim
+      copying, provided also that the entire resulting derived work is
+      distributed under the terms of a permission notice identical to
+      this one.</p>
+<p>Permission is granted to copy and distribute translations
+      of this manual into another language, under the above conditions
+      for modified versions.</p>
+<p></p>
+</div>
+</div>
+<div class="TOC"><dl>
+<dt><b>Table of Contents</b></dt>
+<dt>I. <a href="xmlsec-notes.html">XML Security Library Tutorial</a>
+</dt>
+<dd><dl>
+<dt><a href="xmlsec-notes-overview.html">Overview.</a></dt>
+<dt><a href="xmlsec-notes-structure.html">XML Security Library Structure.</a></dt>
+<dt><a href="xmlsec-notes-compiling.html">Building the application with XML Security Library.</a></dt>
+<dd><dl>
+<dt><a href="xmlsec-notes-compiling.html#XMLSEC-NOTES-COMPILING-OVERVIEW">Overview.</a></dt>
+<dt><a href="xmlsec-notes-include-files.html">Include files.</a></dt>
+<dt><a href="xmlsec-notes-compiling-unix.html">Compiling and linking on Unix.</a></dt>
+<dt><a href="xmlsec-notes-compiling-windows.html">Compiling and linking on Windows.</a></dt>
+<dt><a href="xmlsec-notes-compiling-others.html">Compiling and linking on other systems.</a></dt>
+</dl></dd>
+<dt><a href="xmlsec-notes-init-shutdown.html">Initialization and shutdown.</a></dt>
+<dt><a href="xmlsec-notes-sign-encrypt.html">Signing and encrypting documents.</a></dt>
+<dd><dl>
+<dt><a href="xmlsec-notes-sign-encrypt.html#XMLSEC-NOTES-SIGN-ENCRYPT-OVERVIEW">Overview.</a></dt>
+<dt><a href="xmlsec-notes-sign.html">Signing a document.</a></dt>
+<dt><a href="xmlsec-notes-encrypt.html">Encrypting data.</a></dt>
+</dl></dd>
+<dt><a href="xmlsec-notes-templates.html">Creating dynamic templates.</a></dt>
+<dd><dl>
+<dt><a href="xmlsec-notes-templates.html#XMLSEC-NOTES-TEMPLATES-OVERVIEW">Overview.</a></dt>
+<dt><a href="xmlsec-notes-dynamic-signature-templates.html">Creating dynamic signature templates.</a></dt>
+<dt><a href="xmlsec-notes-dynamic-encryption-templates.html">Creating dynamic encryption templates.</a></dt>
+</dl></dd>
+<dt><a href="xmlsec-notes-verify-decrypt.html">Verifing and decrypting documents.</a></dt>
+<dd><dl>
+<dt><a href="xmlsec-notes-verify-decrypt.html#XMLSEC-NOTES-VERIFY-DECRYPT-OVERVIEW">Overview.</a></dt>
+<dt><a href="xmlsec-notes-verify.html">Verifying a signed document</a></dt>
+<dt><a href="xmlsec-notes-decrypt.html">Decrypting an encrypted document</a></dt>
+</dl></dd>
+<dt><a href="xmlsec-notes-keys.html">Keys.</a></dt>
+<dt><a href="xmlsec-notes-keysmngr.html">Keys manager.</a></dt>
+<dd><dl>
+<dt><a href="xmlsec-notes-keysmngr.html#XMLSEC-NOTES-KEYSMNGR-OVERVIEW">Overview.</a></dt>
+<dt><a href="xmlsec-notes-simple-keys-store.html">Simple keys store.</a></dt>
+<dt><a href="xmlsec-notes-keys-manager-sign-enc.html">Using keys manager for signatures/encryption.</a></dt>
+<dt><a href="xmlsec-notes-keys-mngr-verify-decrypt.html">Using keys manager for verification/decryption.</a></dt>
+<dt><a href="xmlsec-notes-custom-keys-store.html">Implementing a custom keys store.</a></dt>
+</dl></dd>
+<dt><a href="xmlsec-notes-x509.html">Using X509 Certificates.</a></dt>
+<dd><dl>
+<dt><a href="xmlsec-notes-x509.html#XMLSEC-NOTES-X509-OVERVIEW">Overview.</a></dt>
+<dt><a href="xmlsec-notes-sign-x509.html">Signing data with X509 certificate.</a></dt>
+<dt><a href="xmlsec-notes-verify-x509.html">Verifing document signed with X509 certificates.</a></dt>
+</dl></dd>
+<dt><a href="xmlsec-notes-transforms.html">Transforms and transforms chain.</a></dt>
+<dt><a href="xmlsec-notes-contexts.html">Using context objects.</a></dt>
+<dt><a href="xmlsec-notes-new-crypto.html">Adding support for new cryptographic library.</a></dt>
+<dd><dl>
+<dt><a href="xmlsec-notes-new-crypto.html#XMLSEC-NOTES-NEW-CRYPTO-OVERVIEW">Overview.</a></dt>
+<dt><a href="xmlsec-notes-new-crypto-skeleton.html">Creating a framework from the skeleton.</a></dt>
+<dt><a href="xmlsec-notes-new-crypto-functions.html">xmlSecCryptoApp* functions.</a></dt>
+<dt><a href="xmlsec-notes-new-crypto-klasses.html">Klasses and objects.</a></dt>
+<dt><a href="xmlsec-notes-new-crypto-transforms.html">Cryptographic transforms.</a></dt>
+<dt><a href="xmlsec-notes-new-crypto-keys.html">Keys data and keys data stores.</a></dt>
+<dt><a href="xmlsec-notes-new-crypto-simple-keys-mngr.html">Default keys manager.</a></dt>
+<dt><a href="xmlsec-notes-new-crypto-sharing-results.html">Sharing the results.</a></dt>
+</dl></dd>
+<dt><a href="xmlsec-examples.html">Examples.</a></dt>
+<dd><dl>
+<dt><a href="xmlsec-examples.html#XMLSEC-EXAMPLES-OVERVIEW">XML Security Library Examples.</a></dt>
+<dt><a href="xmlsec-examples-sign-template-file.html">Signing a template file.</a></dt>
+<dt><a href="xmlsec-examples-sign-dynamimc-template.html">Signing a dynamicaly created template.</a></dt>
+<dt><a href="xmlsec-examples-sign-x509.html">Signing with X509 certificate.</a></dt>
+<dt><a href="xmlsec-verify-with-key.html">Verifying a signature with a single key.</a></dt>
+<dt><a href="xmlsec-verify-with-keys-mngr.html">Verifying a signature with keys manager.</a></dt>
+<dt><a href="xmlsec-verify-with-x509.html">Verifying a signature with X509 certificates.</a></dt>
+<dt><a href="xmlsec-verify-with-restrictions.html">Verifying a signature with additional restrictions.</a></dt>
+<dt><a href="xmlsec-encrypt-template-file.html">Encrypting data with a template file.</a></dt>
+<dt><a href="xmlsec-encrypt-dynamic-template.html">Encrypting data with a dynamicaly created template.</a></dt>
+<dt><a href="xmlsec-encrypt-with-session-key.html">Encrypting data with a session key.</a></dt>
+<dt><a href="xmlsec-decrypt-with-signle-key.html">Decrypting data with a single key.</a></dt>
+<dt><a href="xmlsec-decrypt-with-keys-mngr.html">Decrypting data with keys manager.</a></dt>
+<dt><a href="xmlsec-custom-keys-manager.html">Writing a custom keys manager.</a></dt>
+</dl></dd>
+<dt><a href="xmlsec-signature-klasses.html">APPENDIX A. XML Security Library Signature Klasses.</a></dt>
+<dt><a href="xmlsec-encryption-klasses.html">APPENDIX B. XML Security Library Encryption Klasses.</a></dt>
+</dl></dd>
+<dt>II. <a href="xmlsec-reference.html">XML Security Library API Reference.</a>
+</dt>
+<dd><dl>
+<dt><a href="xmlsec-ref.html">XML Security Core Library API Reference.</a></dt>
+<dd><dl>
+<dt>
+<a href="xmlsec-app.html">app</a> -- </dt>
+<dt>
+<a href="xmlsec-base64.html">base64</a> -- </dt>
+<dt>
+<a href="xmlsec-bn.html">bn</a> -- </dt>
+<dt>
+<a href="xmlsec-buffer.html">buffer</a> -- </dt>
+<dt>
+<a href="xmlsec-dl.html">dl</a> -- </dt>
+<dt>
+<a href="xmlsec-errors.html">errors</a> -- </dt>
+<dt>
+<a href="xmlsec-io.html">io</a> -- </dt>
+<dt>
+<a href="xmlsec-keyinfo.html">keyinfo</a> -- </dt>
+<dt>
+<a href="xmlsec-keysdata.html">keysdata</a> -- </dt>
+<dt>
+<a href="xmlsec-keys.html">keys</a> -- </dt>
+<dt>
+<a href="xmlsec-keysmngr.html">keysmngr</a> -- </dt>
+<dt>
+<a href="xmlsec-list.html">list</a> -- </dt>
+<dt>
+<a href="xmlsec-membuf.html">membuf</a> -- </dt>
+<dt>
+<a href="xmlsec-nodeset.html">nodeset</a> -- </dt>
+<dt>
+<a href="xmlsec-parser.html">parser</a> -- </dt>
+<dt>
+<a href="xmlsec-templates.html">templates</a> -- </dt>
+<dt>
+<a href="xmlsec-transforms.html">transforms</a> -- </dt>
+<dt>
+<a href="xmlsec-version.html">version</a> -- </dt>
+<dt>
+<a href="xmlsec-xmldsig.html">xmldsig</a> -- </dt>
+<dt>
+<a href="xmlsec-xmlenc.html">xmlenc</a> -- </dt>
+<dt>
+<a href="xmlsec-xmlsec.html">xmlsec</a> -- </dt>
+<dt>
+<a href="xmlsec-xmltree.html">xmltree</a> -- </dt>
+<dt>
+<a href="xmlsec-x509.html">x509</a> -- </dt>
+</dl></dd>
+<dt><a href="xmlsec-openssl-ref.html">XML Security Library for OpenSLL API Reference.</a></dt>
+<dd><dl>
+<dt>
+<a href="xmlsec-openssl-app.html">app</a> -- </dt>
+<dt>
+<a href="xmlsec-openssl-bn.html">bn</a> -- </dt>
+<dt>
+<a href="xmlsec-openssl-crypto.html">crypto</a> -- </dt>
+<dt>
+<a href="xmlsec-openssl-evp.html">evp</a> -- </dt>
+<dt>
+<a href="xmlsec-openssl-x509.html">x509</a> -- </dt>
+</dl></dd>
+<dt><a href="xmlsec-gnutls-ref.html">XML Security Library for GnuTLS API Reference.</a></dt>
+<dd><dl>
+<dt>
+<a href="xmlsec-gnutls-app.html">app</a> -- </dt>
+<dt>
+<a href="xmlsec-gnutls-crypto.html">crypto</a> -- </dt>
+</dl></dd>
+<dt><a href="xmlsec-nss-ref.html">XML Security Library for NSS API Reference.</a></dt>
+<dd><dl>
+<dt>
+<a href="xmlsec-nss-app.html">app</a> -- </dt>
+<dt>
+<a href="xmlsec-nss-bignum.html">bignum</a> -- </dt>
+<dt>
+<a href="xmlsec-nss-crypto.html">crypto</a> -- </dt>
+<dt>
+<a href="xmlsec-nss-keysstore.html">keysstore</a> -- </dt>
+<dt>
+<a href="xmlsec-nss-pkikeys.html">pkikeys</a> -- </dt>
+<dt>
+<a href="xmlsec-nss-x509.html">x509</a> -- </dt>
+</dl></dd>
+<dt><a href="xmlsec-mscrypto-ref.html">XML Security Library for MSCrypto API Reference.</a></dt>
+<dd><dl>
+<dt>
+<a href="xmlsec-mscrypto-app.html">app</a> -- </dt>
+<dt>
+<a href="xmlsec-mscrypto-certkeys.html">certkeys</a> -- </dt>
+<dt>
+<a href="xmlsec-mscrypto-crypto.html">crypto</a> -- </dt>
+<dt>
+<a href="xmlsec-mscrypto-keysstore.html">keysstore</a> -- </dt>
+<dt>
+<a href="xmlsec-mscrypto-x509.html">x509</a> -- </dt>
+</dl></dd>
+<dt><a href="xmlsec-index.html">XML Security Library Reference Index</a></dt>
+</dl></dd>
+</dl></div>
+</div>
+<div class="NAVFOOTER">
+<br clear="all"><br><table width="100%" border="0" bgcolor="#000000" cellpadding="1" cellspacing="0">
+<tr>
+<td width="25%" bgcolor="#C00000" align="left"> </td>
+<td width="25%" bgcolor="#0000C0" align="center"><font color="#FFFFFF" size="3"><b> </b></font></td>
+<td width="25%" bgcolor="#00C000" align="center"><font color="#FFFFFF" size="3"><b> </b></font></td>
+<td width="25%" bgcolor="#C00000" align="right"><a href="xmlsec-notes.html"><font color="#FFFFFF" size="3"><b>Next Page &gt;&gt;&gt;</b></font></a></td>
+</tr>
+<tr>
+<td colspan="2" align="left"> </td>
+<td colspan="2" align="right"><font color="#FFFFFF" size="3"><b>XML Security Library Tutorial</b></font></td>
+</tr>
+</table>
+</div>
+</td></tr>
+<tr><td>
+<br><br><p><a href="../bugs.html">Aleksey Sanin</a></p>
+</td></tr>
+</table></td>
+</tr></table></body>
+</html>
