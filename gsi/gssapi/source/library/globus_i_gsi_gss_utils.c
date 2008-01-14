@@ -667,9 +667,9 @@ globus_i_gsi_gss_put_token(
         {
             BIO *                       debug_bio;
             fprintf(globus_i_gsi_gssapi_debug_fstream,
-                    "input token: length = %u\n"
+                    "input token: length = %lu\n"
                     "              value  = \n",
-                    input_token->length);
+                    (unsigned long) input_token->length);
         
             debug_bio = BIO_new_fp(globus_i_gsi_gssapi_debug_fstream, 
                                    BIO_NOCLOSE);
@@ -683,14 +683,15 @@ globus_i_gsi_gss_put_token(
     {
         GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
             3, (globus_i_gsi_gssapi_debug_fstream,
-                "input_token: length = %u\n", input_token->length));
+                "input_token: length = %lu\n",
+                (unsigned long) input_token->length));
 
         major_status = GSS_S_DEFECTIVE_TOKEN;
         GLOBUS_GSI_GSSAPI_ERROR_RESULT(
             minor_status,
             GLOBUS_GSI_GSSAPI_ERROR_TOKEN_FAIL,
-            (_GGSL("The input token has an invalid length of: %u\n"), 
-             input_token->length));
+            (_GGSL("The input token has an invalid length of: %lu\n"), 
+             (unsigned long) input_token->length));
         goto exit;
     }
 
@@ -783,9 +784,9 @@ globus_i_gsi_gss_get_token(
         {
             BIO *                       debug_bio;
             fprintf(globus_i_gsi_gssapi_debug_fstream,
-                    "output token: length = %u\n"
+                    "output token: length = %lu\n"
                     "              value  = \n",
-                    output_token->length);
+                    (unsigned long) output_token->length);
         
             debug_bio = BIO_new_fp(globus_i_gsi_gssapi_debug_fstream, 
                                    BIO_NOCLOSE);
@@ -2462,13 +2463,13 @@ globus_i_gsi_gssapi_get_hostname(
         {
             length = name_entry->value->length;
             data = name_entry->value->data;
-            if ( length > 5 && !strncasecmp(data, (unsigned char*)"host/", 5))
+            if ( length > 5 && !strncasecmp((char *) data, "host/", 5))
             {
                 length -= 5;
                 data += 5;
             }
             else if ( length > 4 && 
-                      !strncasecmp(data, (unsigned char*)"ftp/", 4))
+                      !strncasecmp((char *) data, "ftp/", 4))
             {
                 length -= 4;
                 data += 4;

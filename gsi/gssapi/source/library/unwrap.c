@@ -31,7 +31,6 @@ static char *rcsid = "$Id$";
 #include "globus_i_gsi_gss_utils.h"
 #include "gssapi_openssl.h"
 #include <string.h>
-#include "ssl_locl.h"
 
 /**
  * @name Unwrap
@@ -152,7 +151,7 @@ GSS_CALLCONV gss_unwrap(
             *qop_state = GSS_C_QOP_GLOBUS_GSSAPI_OPENSSL_BIG;
         }
 
-        N2S(input_value, mic_buf->length);
+        N2S((char *) input_value, mic_buf->length);
         input_value += 2;
         mic_buf->value = input_value; 
         data_buf->value = input_value + mic_buf->length;
@@ -161,15 +160,15 @@ GSS_CALLCONV gss_unwrap(
         input_value += GSS_SSL3_WRITE_SEQUENCE_SIZE; 
 
         /* get data length */
-        N2L(input_value, data_buf->length);  
+        N2L((char *) input_value, data_buf->length);  
         input_value += 4;
 
         GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
             2, (globus_i_gsi_gssapi_debug_fstream,
-                "gss_unwrap input_len=%u mic_len=%u data_len=%u\n",
-                input_message_buffer->length,
-                mic_buf->length,
-                data_buf->length));
+                "gss_unwrap input_len=%lu mic_len=%lu data_len=%lu\n",
+                (unsigned long) input_message_buffer->length,
+                (unsigned long) mic_buf->length,
+                (unsigned long) data_buf->length));
 
         if (input_message_buffer->length != 
             (5 + mic_buf->length + data_buf->length))
@@ -304,9 +303,9 @@ GSS_CALLCONV gss_unwrap(
         {
             BIO *                       debug_bio;
             fprintf(globus_i_gsi_gssapi_debug_fstream,
-                    "output message: length = %u\n"
+                    "output message: length = %lu\n"
                     "                value  = \n",
-                    output_message_buffer->length);
+                    (unsigned long) output_message_buffer->length);
         
             debug_bio = BIO_new_fp(globus_i_gsi_gssapi_debug_fstream, 
                                    BIO_NOCLOSE);

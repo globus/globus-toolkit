@@ -32,8 +32,6 @@ static char *rcsid = "$Id$";
 #include "gssapi_openssl.h"
 #include <string.h>
 
-#include "ssl_locl.h"
-
 /**
  * @name Wrap Size Limit
  * @ingroup globus_gsi_gssapi
@@ -175,7 +173,7 @@ GSS_CALLCONV gss_wrap(
         fprintf(globus_i_gsi_gssapi_debug_fstream,
                 "input message: length = %u\n"
                 "               value = \n",
-                input_message_buffer->length);
+                (unsigned) input_message_buffer->length);
 
         debug_bio = BIO_new_fp(globus_i_gsi_gssapi_debug_fstream,
                                BIO_NOCLOSE);
@@ -275,7 +273,7 @@ GSS_CALLCONV gss_wrap(
         *message_value++ = SSL3_RT_GSSAPI_OPENSSL;
         *message_value++ = 3;
         *message_value++ = 0;
-        S2N(mic_buf->length, message_value);
+        S2N(mic_buf->length, (char *) message_value);
         message_value += 2;
         memcpy(message_value, mic_buf->value, mic_buf->length);
         message_value = message_value + mic_buf->length;
