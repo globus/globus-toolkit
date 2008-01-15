@@ -74,21 +74,12 @@ int main(int argc, char *argv[])
     xacml_init();
     xacml_request_init(&request);
 
-    while ((ch = getopt(argc, argv, "e:c:k:a:im:h")) != -1)
+    while ((ch = getopt(argc, argv, "e:im:h")) != -1)
     {
         switch (ch)
         {
         case 'e':
             endpoint = optarg;
-            break;
-        case 'c':
-            cert = optarg;
-            break;
-        case 'k':
-            key = optarg;
-            break;
-        case 'a':
-            ca_path = optarg;
             break;
         case 'm':
             xacml_request_set_io_module(request, optarg);
@@ -100,8 +91,9 @@ int main(int argc, char *argv[])
         case 'h':
         case '?':
         default:
-            printf("Usage %s [-e endpoint] [-c certfile] [-k keyfile] [-a CA-path]\n",
+            printf("Usage %s [-e endpoint] [-m IO-MODULE-NAME] [-i]\n",
                     argv[0]);
+            printf("    -i                              Use example I/O module\n");
             exit(0);
         }
     }
@@ -155,11 +147,6 @@ int main(int argc, char *argv[])
             default_handler,
             NULL,
             NULL);
-
-    if (cert != NULL || key != NULL || ca_path != NULL)
-    {
-        abort();
-    }
 
     if (endpoint == NULL)
     {

@@ -36,7 +36,7 @@ example_accept(
     socklen_t                          *addr_len,
     int                                *sock_out)
 {
-    int                                 rc;
+    int                                 rc = 0;
     example_io_state_t                 *state = 0;
 
     state = malloc(sizeof(example_io_state_t));

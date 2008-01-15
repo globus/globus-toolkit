@@ -15,6 +15,7 @@
  */
 
 #include "xacml_server.h"
+#include "xacml_io_example.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -102,7 +103,7 @@ int main(int argc, char *argv[])
 
     xacml_server_init(&server, xacml_authorize, NULL);
 
-    while ((ch = getopt(argc, argv, "p:i:h")) != -1) 
+    while ((ch = getopt(argc, argv, "p:m:ih")) != -1) 
     {
         switch (ch)
         {
@@ -111,13 +112,20 @@ int main(int argc, char *argv[])
             xacml_server_set_port(server, port);
             break;
         case 'i':
+            xacml_server_set_io_descriptor(
+                    server,
+                    &xacml_io_example_descriptor);
+            break;
+        case 'm':
             io_module_name = optarg;
             break;
         case 'h':
         case '?':
         default:
-            printf("Usage: %s [-p PORT] [-i IO MODULE NAME]\n",
+            printf("Usage: %s [-p PORT] [-m IO MODULE NAME] [-i]\n",
                     argv[0]);
+            printf("    -i                              Use example I/O module\n");
+            
             exit(0);
         }
     }

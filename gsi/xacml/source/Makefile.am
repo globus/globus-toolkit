@@ -44,7 +44,7 @@ libxacml_la_SOURCES = \
 nodist_libxacml_la_SOURCES = soapStub.h soapH.h soapC.cpp soapClient.cpp soapServer.cpp
 libxacml_la_LIBADD = -lgsoap++ -lpthread -ldl
 
-xacml_server_SOURCES = xacml_server_example.c 
+xacml_server_SOURCES = xacml_server_example.c xacml_io_example.h xacml_io_example.c
 xacml_server_LDADD = $(LDADD) libxacml.la -lgsoap++ -lpthread -ldl
 
 xacml_client_SOURCES = xacml_client_program.c xacml_io_example.h xacml_io_example.c
