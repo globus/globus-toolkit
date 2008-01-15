@@ -16,6 +16,7 @@ Scripts = \
 	globus-gram-client-register-callback-test.pl \
 	globus-gram-client-register-cancel-test.pl \
 	globus-gram-client-register-refresh-credentials-test.pl \
+        globus-gram-client-set-credentials-test.pl \
 	globus-gram-client-status-test.pl \
         globus-gram-client-stdio-size-test.pl \
 	globus-gram-client-stop-manager-test.pl \
@@ -43,6 +44,7 @@ test_PROGRAMS= \
 	globus-gram-client-register-cancel-test \
 	globus-gram-client-register-refresh-credentials-test \
 	globus-gram-client-register-status-test \
+        globus-gram-client-set-credentials-test \
 	globus-gram-client-status-test \
         globus-gram-client-stdio-size-test \
 	globus-gram-client-stdio-update-test \
@@ -86,6 +88,9 @@ globus_gram_client_register_status_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_gram_client_register_test_SOURCES = globus_gram_client_register_test.c
 globus_gram_client_register_test_LDFLAGS = $(GPT_LDFLAGS)
+
+globus_gram_client_set_credentials_test_SOURCES = globus_gram_client_set_credentials_test.c
+globus_gram_client_set_credentials_test_LDFLAGS = $(GPT_LDFLAGS)
 
 globus_gram_client_status_test_SOURCES = globus_gram_client_status_test.c
 globus_gram_client_status_test_LDFLAGS = $(GPT_LDFLAGS)
