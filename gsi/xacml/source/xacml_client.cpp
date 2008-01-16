@@ -181,6 +181,12 @@ create_xacml_request(
          i != request->obligation_handlers.end();
          i++)
     {
+        // Ignore default obligation handler
+        if (i->first == "")
+        {
+            continue;
+        }
+
         xacml::attribute a;
 
         a.attribute_id = "supportedObligations";
