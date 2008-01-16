@@ -16,6 +16,7 @@ Scripts= \
 	test-toolkit testcred.pem b38b4d8c.0 \
 	test-package b38b4d8c.signing_policy \
 	global_security_descriptor.xml.in \
+	usercert.pem userkey.pem \
         testcred-env.sh testcred-setup.sh
 
 globustestingperl_DATA = \
