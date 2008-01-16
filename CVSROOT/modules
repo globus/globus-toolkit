@@ -82,6 +82,7 @@ ws -a \
 	ws-delegation\
 	ws-replica\
 	wsrf\
+	authorization\
 	database\
         usage/java
 
