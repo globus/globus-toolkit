@@ -13,8 +13,8 @@ SUBDIRS= \
 
 # Scripts contains all of the scripts in this directory
 Scripts= \
-	test-toolkit testcred.pem dc31a685.0 \
-	test-package dc31a685.signing_policy \
+	test-toolkit testcred.pem b38b4d8c.0 \
+	test-package b38b4d8c.signing_policy \
 	global_security_descriptor.xml.in \
         testcred-env.sh testcred-setup.sh
 
