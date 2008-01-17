@@ -14,6 +14,27 @@
  * limitations under the License.
  */
 
+
+/*
+ *  This multiplexes buffer across many gridftp client library handles,
+ *  and passes that buffer down the stack.  The main (and likely only)
+ *  use is for multicast broad casts in the gridftp server.
+ *
+ *  If an error occurs on any one gridftp handle it is not imediately
+ *  reported to the user.  It is reecorded and no futher buffers will be 
+ *  passed down that connection.  Upon closing the handle all errors 
+ *  are reported.
+ *
+ *  However, if a pass error occurs it is reported immediately and all
+ *  active ftp connections are terminated. 
+ *
+ *  The user is not required to actually pass data down the stack.  In
+ *  some cases they will want buffers to hop around servers in a network
+ *  overlay, but not actually write them to disk.  In this case, errors
+ *  are reported at close OR when there are no connects left to forward
+ *  the buffer to.
+ *
+ */
 #include "globus_xio_driver.h"
 #include "globus_xio_gridftp_multicast_driver.h"
 #include "globus_ftp_client.h"  
@@ -54,6 +75,7 @@ GlobusXIODeclareDriver(gridftp_multicast);
         __LINE__,                                                           \
         _XIOSL(_reason))                                
 
+#define GMC_ERROR_TOKEN "GMC_ERROR=\n"
 
 enum xio_l_error_levels
 {
@@ -77,6 +99,7 @@ typedef struct xio_l_gridftp_multicast_attr_s
     globus_size_t                       tcp_bs;
     int                                 cast_count;
     globus_bool_t                       pass_write;
+    char *                              subject;
 } xio_l_gridftp_multicast_attr_t;
 
 typedef struct
@@ -90,6 +113,7 @@ typedef struct
     char *                              url;
     int                                 ndx;
     globus_fifo_t                       url_q;
+    globus_result_t                     result;
     struct xio_l_gridftp_multicast_handle_s *   whos_my_daddy;
     globus_byte_t                       mt_buf[1];
 } xio_l_gmc_ftp_handle_t;
@@ -104,14 +128,15 @@ typedef struct xio_l_gridftp_multicast_handle_s
     int                                 op_count;
     int                                 write_op_count;
     int                                 ftps;
+    int                                 ftps_total;
     globus_bool_t                       pass_write;
     xio_l_gmc_state_t                   state;
-    globus_result_t                     result;
     globus_off_t                        offset;
     char *                              local_url;
     int                                 P;
     int                                 tcp_bs;
     globus_size_t                       nbytes;
+    globus_result_t                     result;
 } xio_l_gridftp_multicast_handle_t;
 
 static
@@ -138,6 +163,7 @@ static
 globus_result_t
 xio_l_gmc_setup_forwarder(
     xio_l_gmc_ftp_handle_t *            ftp_handle,
+    gss_cred_id_t                       cred,
     globus_fifo_t *                     url_q,
     int                                 max_str_len,
     int                                 each_cast_count);
@@ -168,51 +194,200 @@ xio_l_gmc_handle_destroy(
 }
 
 static
-globus_result_t
-xio_l_gmc_merge_error(
-    globus_result_t                     old_result,
-    globus_object_t *                   new_err_obj,
-    char *                              url,
-    char *                              stack_str,
-    const char *                        func_name,
-    int                                 line)
+globus_list_t *
+xio_l_gmc_make_ftp_error_list(
+    xio_l_gmc_ftp_handle_t *            ftp_handle)
 {
-    globus_object_t *                   err;
-    char *                              old_string;
-    char *                              new_reason;
-    char *                              reason;
+    char *                              start_str;
+    char *                              end_str;
+    int                                 len;
+    char *                              error_url;
+    globus_list_t *                     url_error_list = NULL;
+    char *                              err_str;
+    char *                              tmp_str;
+    globus_url_t                        url_info;
+    int                                 rc;
+    int                                 i;
+    globus_object_t *                   err_obj;
 
-    if(old_result != GLOBUS_SUCCESS)
+    if(ftp_handle->result == GLOBUS_SUCCESS)
     {
-        err = globus_error_get(old_result);
-        old_string = globus_error_print_friendly(err);
-        globus_object_free(err);
+        return NULL;
     }
-    else
+
+    err_obj = globus_error_get(ftp_handle->result);
+    if(err_obj == NULL)
     {
-        old_string = strdup("");
+        goto error;
     }
-    new_reason = globus_error_print_friendly(new_err_obj);
+    err_str = globus_error_print_friendly(err_obj);
+    if(err_str == NULL)
+    {
+        goto error;
+    }
+    tmp_str = strstr(err_str, GMC_ERROR_TOKEN);
+    if(tmp_str == NULL)
+    {
+        goto error;
+    }
+    /* just parse out the ones that failed if anything in parsing fails,
+        then we fail everything */
+    tmp_str += sizeof(GMC_ERROR_TOKEN);
+    start_str = tmp_str;
+    while(start_str != '\0')
+    {
+        end_str = strstr(start_str, "\n");
+        if(end_str == NULL)
+        {
+            end_str = strstr(start_str, "\0");
+        }
+        len = end_str - start_str;
+        end_str = '\0';
 
-    reason = globus_common_create_string(
-        "FAIL: %s: %s\n%s", url, new_reason, old_string);
+        rc = globus_url_parse(start_str, &url_info);
+        if(rc != GLOBUS_URL_SUCCESS)
+        {
+            goto error;
+        }
 
-    err = globus_error_construct_error(
-         GlobusXIOMyModule(gridftp_multicast),
-         NULL,
-         GLOBUS_XIO_GRIDFTP_MULTICAST_ERROR_TRANSFER_FAILURES,
-         __FILE__,
-        func_name,
-       __LINE__,
-        reason);
+        /* we only allow the 2 types of urls */
+        if(url_info.scheme_type != GLOBUS_URL_SCHEME_FTP &&
+            url_info.scheme_type != GLOBUS_URL_SCHEME_GSIFTP)
+        {
+            goto error;
+        }
 
-    globus_free(old_string);
-    globus_free(new_reason);
-    globus_free(reason);
+        error_url = strdup(start_str);
+        globus_list_insert(&url_error_list, error_url);
+    }
 
-    return globus_error_put(err);
+    return url_error_list;
+error:
+
+    while(!globus_list_empty(url_error_list))
+    {
+        error_url = (char*)globus_list_remove(&url_error_list,url_error_list);
+        free(error_url);
+    }
+
+    /* if this token is not found we must assume that this link,
+        and all of its children failed */
+    for(i = 0; i < globus_fifo_size(&ftp_handle->url_q); i++)
+    {
+        error_url = (char *) globus_fifo_dequeue(&ftp_handle->url_q);
+        globus_fifo_enqueue(&ftp_handle->url_q, error_url);
+
+        globus_list_insert(&url_error_list, strdup(error_url));
+    }
+    /* gotta include its own url */
+    error_url = strdup(ftp_handle->url);
+    globus_list_insert(&url_error_list, error_url);
+
+    return url_error_list;
 }
 
+/* while writing we do not return an error until everyone is 
+    broken */
+static
+globus_result_t
+xio_l_gmc_get_write_error(
+    xio_l_gridftp_multicast_handle_t *  handle)
+{
+    globus_object_t *                   err_obj;
+    int                                 i;
+    int                                 open_cnt;
+
+    open_cnt = handle->ftps_total;
+
+    for(i = 0; i < handle->ftps_total; i++)
+    {
+        if(handle->ftp_handles[i].result != GLOBUS_SUCCESS)
+        {
+            open_cnt--;
+        }
+    }
+
+    if(handle->result != GLOBUS_SUCCESS)
+    {
+        open_cnt--;
+    }
+
+    if(open_cnt == 0)
+    {
+        err_obj = globus_error_construct_string(
+            NULL,
+            NULL,
+            "Everyone in multicast session is down");
+
+        return globus_error_put(err_obj);
+    }
+
+    return GLOBUS_SUCCESS;
+}
+
+
+static
+globus_result_t
+xio_l_gmc_get_error(
+    xio_l_gridftp_multicast_handle_t *  handle)
+{
+    char *                              url_str;
+    char *                              tmp_err_str;
+    char *                              n_ch;
+    char *                              err_str;
+    int                                 i;
+    globus_list_t *                     list;
+    globus_list_t *                     tmp_list;
+    globus_list_t *                     error_list = NULL;
+    globus_object_t *                   err_obj;
+
+    for(i = 0; i < handle->ftps_total; i++)
+    {
+        list = xio_l_gmc_make_ftp_error_list(&handle->ftp_handles[i]);
+        tmp_list = globus_list_concat(error_list, list);
+        globus_list_free(list);
+        globus_list_free(error_list);
+
+        error_list = tmp_list;
+    }
+
+    if(handle->result != GLOBUS_SUCCESS)
+    {
+        /* it doesnt matter why the error happened, we stick it in
+            the list no matter what */
+
+        globus_list_insert(&error_list, handle->local_url);
+    }
+
+    /* call this when there are no errors in the close case */
+    if(globus_list_empty(error_list))
+    {
+        return GLOBUS_SUCCESS;
+    }
+
+    err_str = globus_libc_strdup("");
+    n_ch = "";
+    while(!globus_list_empty(error_list))
+    {
+        url_str = globus_list_remove(&error_list, error_list);
+        tmp_err_str = globus_common_create_string(
+            "%s%s%s", err_str, n_ch, url_str);
+
+        globus_free(err_str);
+        globus_free(url_str);
+        err_str = tmp_err_str;
+        n_ch = "\n";
+    }
+
+    err_obj = globus_error_construct_string(
+        NULL,
+        NULL,
+        "%s%s",
+        GMC_ERROR_TOKEN,
+        err_str);
+
+    return globus_error_put(err_obj);
+}
 
 static
 int
@@ -308,7 +483,8 @@ xio_l_gmc_put_done(
         switch(handle->state)
         {
             case XIO_GMC_STATE_OPEN:
-                /* XXX this is a premature end?  must close all the others */
+                /* this is a premature end?  let the others finish
+                    properly if they can */
                 handle->state = XIO_GMC_STATE_ERROR;
                 break;
 
@@ -316,7 +492,6 @@ xio_l_gmc_put_done(
                 break;
 
             case XIO_GMC_STATE_OPENING_ERROR:
-                result = handle->result;
                 handle->op_count--;
                 if(handle->op_count == 0)
                 {
@@ -347,6 +522,7 @@ xio_l_gmc_put_done(
 
     if(finish_open)
     {
+        result = xio_l_gmc_get_error(handle);
         globus_xio_driver_finished_open(handle, handle->open_op, result);
 
         if(result != GLOBUS_SUCCESS)
@@ -356,7 +532,8 @@ xio_l_gmc_put_done(
     }
     if(finish_close)
     {
-        globus_xio_driver_finished_close(handle->close_op, handle->result);
+        result = xio_l_gmc_get_error(handle);
+        globus_xio_driver_finished_close(handle->close_op, result);
 
         xio_l_gmc_handle_destroy(handle);
     }
@@ -365,18 +542,12 @@ xio_l_gmc_put_done(
 
 error:
 
-    handle->result = xio_l_gmc_merge_error(
-        handle->result,
-        err,
-        ftp_handle->url,
-        ftp_handle->stack_str,
-        _xio_name,
-        __LINE__);
+    ftp_handle->result = globus_error_put(globus_object_copy(err));
     switch(handle->state)
     {
         case XIO_GMC_STATE_OPEN:
             handle->state = XIO_GMC_STATE_ERROR;
-            /* walk through and close all the others */
+            /* let the others finish if they can */
             break;
 
         case XIO_GMC_STATE_ERROR:
@@ -391,13 +562,6 @@ error:
             }
         case XIO_GMC_STATE_OPENING_ERROR:
             /* set the error */
-            handle->result = xio_l_gmc_merge_error(
-                handle->result,
-                err,
-                ftp_handle->url,
-                ftp_handle->stack_str,
-                _xio_name,
-                __LINE__);
 
             handle->op_count--;
             if(handle->op_count == 0)
@@ -418,13 +582,15 @@ error:
 
     if(finish_open)
     {
+        result = xio_l_gmc_get_error(handle);
         globus_xio_driver_finished_open(handle, handle->open_op, result);
 
         xio_l_gmc_handle_destroy(handle);
     }
     if(finish_close)
     {
-        globus_xio_driver_finished_close(handle->close_op, handle->result);
+        result = xio_l_gmc_get_error(handle);
+        globus_xio_driver_finished_close(handle->close_op, result);
 
         xio_l_gmc_handle_destroy(handle);
     }
@@ -465,7 +631,7 @@ xio_l_gridftp_multicast_open_cb(
                 {
                     finish_open = GLOBUS_TRUE;
                 }
-                result = handle->result;
+                result = xio_l_gmc_get_error(handle);
                 break;
 
             case XIO_GMC_STATE_ERROR:
@@ -489,8 +655,7 @@ xio_l_gridftp_multicast_open_cb(
     return;
 
 error:
-
-    /* XXX need to merge in result */
+    handle->result = result;
 
     switch(handle->state)
     {
@@ -555,6 +720,7 @@ xio_l_gridftp_multicast_open(
     globus_result_t                     result = GLOBUS_SUCCESS;
     int                                 str_max_len = 0;
     globus_fifo_t                       url_q;
+    gss_cred_id_t                       cred = NULL;
     GlobusXIOName(xio_l_gridftp_multicast_open);
 
     attr = (xio_l_gridftp_multicast_attr_t *) driver_attr;
@@ -572,6 +738,15 @@ xio_l_gridftp_multicast_open(
     handle->P = attr->P;    
     handle->tcp_bs = attr->tcp_bs;
     handle->pass_write = attr->pass_write;
+
+    result = globus_xio_operation_attr_cntl(
+        op,
+        GLOBUS_XIO_ATTR_GET_CREDENTIAL,
+        &cred);
+    if(result == GLOBUS_SUCCESS && cred != NULL)
+    {
+        /* we can just ignore this */
+    }
 
     /* move the list in the attr to a fifo */
     globus_fifo_init(&url_q);
@@ -626,6 +801,7 @@ xio_l_gridftp_multicast_open(
             {
                 result = xio_l_gmc_setup_forwarder(
                     &handle->ftp_handles[i],
+                    cred,
                     &url_q, str_max_len, each_cast_count);
                 if(result != GLOBUS_SUCCESS)
                 {
@@ -636,6 +812,7 @@ xio_l_gridftp_multicast_open(
                 error_cast_count++;
                 handle->op_count++;
                 handle->ftps++;
+                handle->ftps_total++;
             }
         }
 
@@ -697,12 +874,20 @@ xio_l_gmc_destroy_forwarder(
 
     ftp_handle->closing = GLOBUS_TRUE;
     result = globus_ftp_client_abort(&ftp_handle->client_h);
+    
+    /* not the ost interesting error, but we will hang onto it if there
+        wasnt a better one around */
+    if(result != GLOBUS_SUCCESS && ftp_handle->result == GLOBUS_SUCCESS)
+    {
+        ftp_handle->result = result;
+    }
 }
 
 static
 globus_result_t
 xio_l_gmc_setup_forwarder(
     xio_l_gmc_ftp_handle_t *            ftp_handle,
+    gss_cred_id_t                       cred,
     globus_fifo_t *                     url_q,
     int                                 max_str_len,
     int                                 each_cast_count)
@@ -741,6 +926,16 @@ xio_l_gmc_setup_forwarder(
     globus_ftp_client_handleattr_init(&ftp_handle->handle_attr);
     globus_ftp_client_operationattr_init(&ftp_handle->op_attr);
 
+    if(cred != NULL)
+    {
+        result = globus_ftp_client_operationattr_set_authorization(
+            &ftp_handle->op_attr,
+            cred,
+            NULL,
+            NULL,
+            NULL,
+            NULL);
+    }
     result = globus_ftp_client_operationattr_set_mode(
         &ftp_handle->op_attr,
         GLOBUS_FTP_CONTROL_MODE_EXTENDED_BLOCK);
@@ -815,6 +1010,7 @@ xio_l_gmc_ftp_write_cb(
     globus_off_t                        offset,
     globus_bool_t                       eof)
 {
+    globus_result_t                     result;
     globus_bool_t                       finish_write = GLOBUS_FALSE;
     xio_l_gridftp_multicast_handle_t *  handle;
     xio_l_gmc_ftp_handle_t *            ftp_handle;
@@ -828,13 +1024,7 @@ xio_l_gmc_ftp_write_cb(
         handle->write_op_count--;
         if(err != NULL)
         {
-            handle->result = xio_l_gmc_merge_error(
-                handle->result,
-                err,
-                ftp_handle->url,
-                ftp_handle->stack_str,
-                _xio_name,
-                __LINE__);
+            ftp_handle->result = globus_error_put(globus_object_copy(err));
         }
         if(handle->write_op_count == 0 && handle->write_op != NULL)
         {
@@ -845,8 +1035,10 @@ xio_l_gmc_ftp_write_cb(
 
     if(finish_write)
     {
+        result = xio_l_gmc_get_write_error(handle);
+
         globus_xio_driver_finished_write(
-            handle->write_op, handle->result, handle->nbytes);
+            handle->write_op, result, handle->nbytes);
     }
 }
 
@@ -858,6 +1050,7 @@ xio_l_gmc_disk_write_cb(
     globus_size_t                       nbytes,
     void *                              user_arg)
 {
+    int                                 i;
     globus_bool_t                       finish_write = GLOBUS_FALSE;
     xio_l_gridftp_multicast_handle_t *  handle;
     GlobusXIOName(xio_l_gmc_disk_write_cb);
@@ -869,13 +1062,12 @@ xio_l_gmc_disk_write_cb(
         handle->write_op_count--;
         if(result != GLOBUS_SUCCESS)
         {
-            handle->result = xio_l_gmc_merge_error(
-                handle->result,
-                globus_error_get(result),
-                handle->local_url,
-                "",
-                _xio_name,
-                __LINE__);
+            handle->result = result;
+            /* disk error means clean all the ftp conenctsions */
+            for(i = 0; i < handle->ftps; i++)
+            {
+                xio_l_gmc_destroy_forwarder(&handle->ftp_handles[i]);
+            }
         }
         if(handle->write_op_count == 0)
         {
@@ -886,8 +1078,9 @@ xio_l_gmc_disk_write_cb(
 
     if(finish_write)
     {
+        result = xio_l_gmc_get_write_error(handle);
         globus_xio_driver_finished_write(
-            handle->write_op, handle->result, handle->nbytes);
+            handle->write_op, result, handle->nbytes);
     }
 }
 
@@ -944,8 +1137,11 @@ xio_l_gridftp_multicast_write(
                 for(i = 0; i < handle->ftps; i++)
                 {
                     ftp_handle = &handle->ftp_handles[i];
-                    offset = 0;
-                    for(j = 0; j < iovec_count; j++)
+                    offset = handle->offset;
+                    for(j = 0; 
+                        j < iovec_count && 
+                            ftp_handle->result == GLOBUS_SUCCESS;
+                        j++)
                     {
                         if(iovec[j].iov_len > 0)
                         {
@@ -953,26 +1149,31 @@ xio_l_gridftp_multicast_write(
                                 &ftp_handle->client_h,
                                 iovec[j].iov_base,
                                 iovec[j].iov_len,
-                                handle->offset,
+                                offset,
                                 GLOBUS_FALSE,
                                 xio_l_gmc_ftp_write_cb,
                                 ftp_handle);
                             if(result != GLOBUS_SUCCESS)
                             {
-                                goto error_register;
+                                ftp_handle->result = result;
+                            }
+                            else
+                            {
+                                handle->write_op_count++;
                             }
                             offset += iovec[j].iov_len;
-                            handle->write_op_count++;
                         }
                     }
                 }
-                handle->offset += offset;
 
+                /* count seperatly in case we are not forwarding to
+                    anyone one */
                 wait_for = 0;
                 for(i = 0; i < iovec_count; i++)
                 {
                     wait_for += iovec[i].iov_len;
                 }
+                handle->offset += wait_for;
                 handle->nbytes = wait_for;
                 if(handle->pass_write)
                 {
@@ -1005,18 +1206,26 @@ xio_l_gridftp_multicast_write(
                 globus_assert(0 && "bad state");
                 break;
         }
+
+        if(handle->write_op_count == 0)
+        {
+            /* this is an error case */
+            result = GlobusXIOGMCNoOpError(
+                "Error to disk, or no disk an all ftp handles errored out");
+            goto error_pass;
+        }
     }
     globus_mutex_unlock(&handle->mutex);
 
     return GLOBUS_SUCCESS;
 
+error_state:
 error_pass:
-error_register:
+    /* take down all ftp handles when there is a disk error */
     for(i = 0; i < handle->ftps; i++)
     {
         xio_l_gmc_destroy_forwarder(&handle->ftp_handles[i]);
     }
-error_state:
 
     handle->write_op = NULL;
 
@@ -1047,8 +1256,7 @@ xio_l_gmc_eof_cb(
     {
         if(err != NULL)
         {
-            /* XXX merge in result */
-            handle->result = globus_error_put(err);
+            ftp_handle->result = globus_error_put(globus_object_copy(err));
         }
     }
     globus_mutex_unlock(&handle->mutex);
@@ -1072,7 +1280,6 @@ xio_l_gmc_close_cb(
 
         if(result != GLOBUS_SUCCESS)
         {
-            /* XXX merge in result */
             handle->result = result;
         }
         if(handle->op_count == 0)
@@ -1084,7 +1291,8 @@ xio_l_gmc_close_cb(
 
     if(finish_close)
     {
-        globus_xio_driver_finished_close(handle->close_op, handle->result);
+        result = xio_l_gmc_get_error(handle);
+        globus_xio_driver_finished_close(handle->close_op, result);
     }
 }
 
@@ -1120,19 +1328,29 @@ xio_l_gridftp_multicast_close(
                 for(i = 0; i < handle->ftps; i++)
                 {
                     ftp_handle = &handle->ftp_handles[i];
-                    result = globus_ftp_client_register_write(
-                        &ftp_handle->client_h,
-                        ftp_handle->mt_buf,
-                        0,
-                        handle->offset,
-                        GLOBUS_TRUE,
-                        xio_l_gmc_eof_cb,
-                        ftp_handle);
-                    if(result != GLOBUS_SUCCESS)
+
+                    if(ftp_handle->result == GLOBUS_SUCCESS)
                     {
-                        /* XXX record error, but then treat as normal.
+                        result = globus_ftp_client_register_write(
+                            &ftp_handle->client_h,
+                            ftp_handle->mt_buf,
+                            0,
+                            handle->offset,
+                            GLOBUS_TRUE,
+                            xio_l_gmc_eof_cb,
+                            ftp_handle);
+                        if(result != GLOBUS_SUCCESS)
+                        {
+                            /*  record error, but then treat as normal.
                             no matter what we need to get all the done
                             callbacks. so nothing to sweat */
+                            ftp_handle->result = result;
+
+                            /* might need to abort the transfer.  for
+                                now assume the registration error means
+                                more errors hav ecome or a re coming.
+                                if hangs, revisit XXX */
+                        }
                     }
                 }
 
@@ -1175,7 +1393,33 @@ xio_l_gridftp_multicast_cntl(
     int                                 cmd,
     va_list                             ap)
 {
-    return GLOBUS_SUCCESS;
+    globus_result_t                     result = GLOBUS_SUCCESS;
+    globus_off_t                        in_offset;
+    xio_l_gridftp_multicast_handle_t *  handle;
+    GlobusXIOName(xio_l_gridftp_multicast_cntl);
+
+    handle = (xio_l_gridftp_multicast_handle_t *) driver_specific_handle;
+
+    globus_mutex_lock(&handle->mutex);
+    {
+        switch(cmd)
+        {
+            case GLOBUS_XIO_SEEK:
+                in_offset = va_arg(ap, globus_off_t);
+                handle->offset = in_offset;
+
+                /* let it keep going */
+                result = (globus_result_t) GLOBUS_XIO_QUERY;
+                break;
+
+            default:
+                result = (globus_result_t) GLOBUS_XIO_QUERY;
+                break;
+        }
+    }
+    globus_mutex_unlock(&handle->mutex);
+
+    return result;
 }
 
 static
@@ -1210,6 +1454,8 @@ static globus_xio_string_cntl_table_t
         globus_xio_string_cntl_string_list},
     {"local_write", GLOBUS_XIO_GRIDFTP_MULTICAST_ATTR_LOCAL_WRITE,
         globus_xio_string_cntl_bool},
+    {"subject", GLOBUS_XIO_GRIDFTP_MULTICAST_ATTR_SUBJECT,
+        globus_xio_string_cntl_string},
     {NULL, 0, NULL}
 };
 
@@ -1223,6 +1469,7 @@ xio_l_gridftp_multicast_attr_cntl(
     char **                             argv;
     int                                 i;
     xio_l_gridftp_multicast_attr_t *    attr;
+    char *                              sbj;
 
     attr = (xio_l_gridftp_multicast_attr_t *) driver_attr;
 
@@ -1248,6 +1495,14 @@ xio_l_gridftp_multicast_attr_cntl(
 
         case GLOBUS_XIO_GRIDFTP_MULTICAST_ATTR_LOCAL_WRITE:
             attr->pass_write = (globus_bool_t) va_arg(ap, globus_bool_t);
+            break;
+
+        case GLOBUS_XIO_GRIDFTP_MULTICAST_ATTR_SUBJECT:
+            sbj = va_arg(ap, char *);
+            if(sbj != NULL)
+            {
+                attr->subject = strdup(sbj);
+            }
             break;
     }
 
