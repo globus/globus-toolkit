@@ -23,6 +23,11 @@
                     <Simple_Version Major="0"/>
                 </Version>
             </Dependency>
+            <Dependency Name="globus_gss_assist" Package="pgm">
+                <Version>
+                    <Simple_Version Major="3"/>
+                </Version>
+            </Dependency>
         </Source_Dependencies>
 
         <With_Flavors build="no"/>
