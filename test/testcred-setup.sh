@@ -3,6 +3,8 @@
 . $GLOBUS_LOCATION/test/globus_test/testcred-env.sh
 
 chmod 0600 ${X509_USER_PROXY}
+chmod 0644 ${X509_CERT_DIR}/usercert.pem
+chmod 0600 ${X509_CERT_DIR}/userkey.pem
 
 SUBJECT=`grid-proxy-info -identity`;
 

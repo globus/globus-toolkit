@@ -519,11 +519,22 @@ sub setup_env
 
 sub testcred_env
 {
-    $ENV{X509_CERT_DIR} = "$ENV{GLOBUS_LOCATION}/test/globus_test";
-    $ENV{X509_USER_CERT} = "$ENV{X509_CERT_DIR}/testcred.pem";
-    $ENV{X509_USER_KEY} = "$ENV{X509_CERT_DIR}/testcred.pem";
-    $ENV{X509_USER_PROXY}="$ENV{X509_CERT_DIR}/testcred.pem";
-    $ENV{GRIDMAP} = "$ENV{X509_CERT_DIR}/grid-mapfile";
+    if (exists($_[0]) && $_[0])
+    {
+        $ENV{X509_CERT_DIR} = "$ENV{GLOBUS_LOCATION}/test/globus_test";
+        $ENV{X509_USER_CERT} = "$ENV{X509_CERT_DIR}/usercert.pem";
+        $ENV{X509_USER_KEY} = "$ENV{X509_CERT_DIR}/userkey.pem";
+        $ENV{X509_USER_PROXY}="$ENV{X509_CERT_DIR}/testcred.pem";
+        $ENV{GRIDMAP} = "$ENV{X509_CERT_DIR}/grid-mapfile";
+    }
+    else
+    {
+        $ENV{X509_CERT_DIR} = "$ENV{GLOBUS_LOCATION}/test/globus_test";
+        $ENV{X509_USER_CERT} = "$ENV{X509_CERT_DIR}/testcred.pem";
+        $ENV{X509_USER_KEY} = "$ENV{X509_CERT_DIR}/testcred.pem";
+        $ENV{X509_USER_PROXY}="$ENV{X509_CERT_DIR}/testcred.pem";
+        $ENV{GRIDMAP} = "$ENV{X509_CERT_DIR}/grid-mapfile";
+    }
     $ENV{SECURITY_DESCRIPTOR} = "$ENV{X509_CERT_DIR}/global_security_descriptor.xml";
 
     return 0;
@@ -531,7 +542,7 @@ sub testcred_env
 
 sub testcred_setup
 {
-    testcred_env();
+    testcred_env(@_);
 
     system(". $ENV{GLOBUS_LOCATION}/test/globus_test/testcred-setup.sh");
 
