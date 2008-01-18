@@ -5,7 +5,7 @@ use Test;
 use File::Temp;
 use Globus::Testing::Utilities;
 
-Globus::Testing::Utilities::testcred_setup() || die("Unable to set up creds");
+Globus::Testing::Utilities::testcred_setup(1) || die("Unable to set up creds");
 
 my ($proxy_fh, $proxy_file) = mkstemp( "/tmp/proxytest.XXXXXXXX" );
 
@@ -39,6 +39,7 @@ sub test_proxy
     chomp($result);
 
     ok($result, $expect);
+    truncate($proxy_fh, 0);
 }
 
 my @tests = (
@@ -54,8 +55,7 @@ my @tests = (
 
     [ "", "-independent", "RFC 3820 compliant independent proxy" ],
     [ "-draft", "-independent", "Proxy draft (pre-RFC) compliant independent proxy" ],
-    [ "-rfc", "-independent", "RFC 3820 compliant independent proxy" ],
-    [ "-old", "-independent", "full legacy globus proxy" ]
+    [ "-rfc", "-independent", "RFC 3820 compliant independent proxy" ]
 );
 
 plan tests => scalar(@tests);

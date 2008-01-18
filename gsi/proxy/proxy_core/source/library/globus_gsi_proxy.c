@@ -58,6 +58,13 @@ globus_l_gsi_proxy_sign_key(
     EVP_PKEY *                          public_key,
     X509 **                             signed_cert);
 
+static
+globus_result_t
+globus_l_gsi_proxy_determine_type(
+    globus_gsi_proxy_handle_t           handle,
+    globus_gsi_cred_handle_t            issuer,
+    globus_gsi_cert_utils_cert_type_t * out_proxy_type);
+
 /**
  * Module descriptor static initializer.
  */
@@ -352,7 +359,7 @@ globus_gsi_proxy_create_req(
     {
         pci_NID = OBJ_sn2nid(PROXYCERTINFO_OLD_SN);
     }
-    else if(GLOBUS_GSI_CERT_UTILS_IS_RFC_PROXY(handle->type))
+    else if(!GLOBUS_GSI_CERT_UTILS_IS_GSI_2_PROXY(handle->type))
     {
         pci_NID = OBJ_sn2nid(PROXYCERTINFO_SN);
     }
@@ -1050,7 +1057,7 @@ globus_l_gsi_proxy_sign_key(
     EVP_PKEY *                          issuer_pkey = NULL;
     globus_result_t                     result = GLOBUS_SUCCESS;
     ASN1_INTEGER *                      serial_number = NULL;
-    globus_gsi_cert_utils_cert_type_t   issuer_type;
+    globus_gsi_cert_utils_cert_type_t   proxy_type = 0;
     
     static char *                       _function_name_ =
         "globus_l_gsi_proxy_sign_key";
@@ -1114,11 +1121,20 @@ globus_l_gsi_proxy_sign_key(
         goto done;
     }
 
-    if(GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY(handle->type))
+    result = globus_l_gsi_proxy_determine_type(
+        handle,
+        issuer_credential,
+        &proxy_type);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto done;
+    }
+
+    if(GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY(proxy_type))
     {
         pci_NID = OBJ_sn2nid(PROXYCERTINFO_OLD_SN);
     }
-    else if(GLOBUS_GSI_CERT_UTILS_IS_RFC_PROXY(handle->type))
+    else if(GLOBUS_GSI_CERT_UTILS_IS_RFC_PROXY(proxy_type))
     {
         pci_NID = OBJ_sn2nid(PROXYCERTINFO_SN);
     }
@@ -1231,7 +1247,7 @@ globus_l_gsi_proxy_sign_key(
             goto done;
         }
     }
-    else if(handle->type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY)
+    else if(proxy_type == GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY)
     {
         common_name = LIMITED_PROXY_NAME;
         serial_number = X509_get_serialNumber(issuer_cert);
@@ -1621,6 +1637,7 @@ globus_gsi_proxy_create_signed(
     int                                 chain_index = 0;
     globus_gsi_proxy_handle_t           inquire_handle = NULL;
     globus_result_t                     result = GLOBUS_SUCCESS;
+    globus_gsi_cert_utils_cert_type_t   requested_cert_type = 0;
     BIO *                               rw_mem_bio = NULL;
     static char *                       _function_name_ =
         "globus_gsi_proxy_create_signed";
@@ -1663,9 +1680,21 @@ globus_gsi_proxy_create_signed(
         goto exit;
     }
 
+    /* Now we try to figure out whether we're being asked to sign something
+     * reasonable, or apply a default if the type / format is unspecified
+     */
+    result = globus_l_gsi_proxy_determine_type(
+        handle,
+        issuer,
+        &requested_cert_type);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto exit;
+    }
+
     result = globus_gsi_proxy_handle_set_type(
         inquire_handle,
-        handle->type);
+        requested_cert_type);
 
     if(result != GLOBUS_SUCCESS)
     {
@@ -2180,5 +2209,233 @@ globus_i_gsi_proxy_set_subject(
     GLOBUS_I_GSI_PROXY_DEBUG_EXIT;
     return result;
 }
+
+/**
+ * Determines the type of proxy to sign based on the requested type and
+ * the issuing certificate. Error if we are asked to sign a different format
+ * (GSI2 vs GSI3 vs RFC) than the issuer or if the restrictions are invalid
+ * (Limited signing non-limited, etc)
+ * In this patch, we also allow support for default proxy types:
+ * - if format is unspecified, use issuer format (if that is unspecified, use
+ *   RFC)
+ * - if type is unspecified use same type as issuer (if that is unspecified,
+ *   use Impersonation proxy type)
+ *
+ * @param handle
+ *     Proxy handle with a possibly partially-specified proxy certificate type.
+ * @param issuer
+ *     Issuer credential.
+ * @param out_proxy_type
+ *     Output parameter. The value pointed to by this will be set to a
+ *     proxy type that satisfies the constraints in the handle requested type
+ *     and the issuer credential type.
+ */
+static
+globus_result_t
+globus_l_gsi_proxy_determine_type(
+    globus_gsi_proxy_handle_t           handle,
+    globus_gsi_cred_handle_t            issuer,
+    globus_gsi_cert_utils_cert_type_t * out_proxy_type)
+{
+    globus_gsi_cert_utils_cert_type_t   issuer_cert_type = 0;
+    globus_gsi_cert_utils_cert_type_t   requested_cert_type;
+    globus_result_t                     result;
+    static char *                       _function_name_ =
+        "globus_l_gsi_proxy_determine_type";
+
+    result = globus_gsi_cred_get_cert_type(
+        issuer,
+        &issuer_cert_type);
+    if (result != GLOBUS_SUCCESS)
+    {
+        GLOBUS_GSI_PROXY_ERROR_CHAIN_RESULT(
+            result,
+            GLOBUS_GSI_PROXY_ERROR_WITH_HANDLE);
+        goto exit;
+    }
+
+    if ((handle->type & GLOBUS_GSI_CERT_UTILS_TYPE_FORMAT_MASK) == 0)
+    {
+        /* Didn't specify format of the proxy. Choose based on the issuer's
+         * format, defaulting to RFC-compliant proxies if the issuer is an
+         * EEC
+         */
+         switch (issuer_cert_type & GLOBUS_GSI_CERT_UTILS_TYPE_FORMAT_MASK)
+         {
+            case GLOBUS_GSI_CERT_UTILS_TYPE_RFC:
+            case GLOBUS_GSI_CERT_UTILS_TYPE_EEC:
+                requested_cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_RFC;
+                break;
+            case GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2:
+                requested_cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2;
+                break;
+            case GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3:
+                requested_cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3;
+                break;
+            case GLOBUS_GSI_CERT_UTILS_TYPE_CA:
+                {
+                    GLOBUS_GSI_PROXY_ERROR_RESULT(
+                                result,
+                                GLOBUS_GSI_PROXY_ERROR_SETTING_HANDLE_TYPE,
+                                ("CA Certificates can't sign proxies"));
+                    goto exit;
+                }
+            default:
+                {
+                    GLOBUS_GSI_PROXY_ERROR_RESULT(
+                                result,
+                                GLOBUS_GSI_PROXY_ERROR_SETTING_HANDLE_TYPE,
+                                ("Proxy type inconsistent with issuing "
+                                "certificate"));
+                    goto exit;
+                }
+         }
+    }
+    else
+    {
+        /* Verify that only one certificate format was selected, fail if
+         * the format is EEC or CA---we can't sign those as proxies
+         */
+        switch (handle->type & GLOBUS_GSI_CERT_UTILS_TYPE_FORMAT_MASK)
+        {
+            case GLOBUS_GSI_CERT_UTILS_TYPE_RFC:
+                requested_cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_RFC;
+                break;
+            case GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2:
+                requested_cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2;
+                break;
+            case GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3:
+                requested_cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3;
+                break;
+            case GLOBUS_GSI_CERT_UTILS_TYPE_EEC:
+            case GLOBUS_GSI_CERT_UTILS_TYPE_CA:
+                {
+                    GLOBUS_GSI_PROXY_ERROR_RESULT(
+                                result,
+                                GLOBUS_GSI_PROXY_ERROR_SETTING_HANDLE_TYPE,
+                                ("Cannot sign CA or EEC as proxy"));
+                    goto exit;
+                }
+            default:
+                {
+                    GLOBUS_GSI_PROXY_ERROR_RESULT(
+                                result,
+                                GLOBUS_GSI_PROXY_ERROR_SETTING_HANDLE_TYPE,
+                                ("Unable to determine proxy type"));
+                    goto exit;
+                }
+        }
+    }
+
+    /* Verify that the selected proxy type is compatible with the issuer's
+     * proxy format
+     */
+    if (((requested_cert_type & GLOBUS_GSI_CERT_UTILS_TYPE_FORMAT_MASK) !=
+         (issuer_cert_type & GLOBUS_GSI_CERT_UTILS_TYPE_FORMAT_MASK)) &&
+         ! (issuer_cert_type & GLOBUS_GSI_CERT_UTILS_TYPE_EEC))
+    {
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_PROXY_ERROR_SETTING_HANDLE_TYPE,
+                    ("Proxy type inconsistent with issuing certificate"));
+        goto exit;
+    }
+
+    if ((handle->type & GLOBUS_GSI_CERT_UTILS_TYPE_PROXY_MASK) == 0 &&
+         handle->extensions)
+    {
+        requested_cert_type |= GLOBUS_GSI_CERT_UTILS_TYPE_RESTRICTED_PROXY;
+    }
+    else if ((handle->type & GLOBUS_GSI_CERT_UTILS_TYPE_PROXY_MASK) == 0)
+    {
+        /* Didn't specify type of the proxy (Impersonation, Limited,
+         * Independent, Restricted). Choose based on the issuer's
+         * format, defaulting to impersonation proxies.
+         */
+         switch (issuer_cert_type & GLOBUS_GSI_CERT_UTILS_TYPE_PROXY_MASK)
+         {
+             case 0: /* issuer not a proxy */
+             case GLOBUS_GSI_CERT_UTILS_TYPE_IMPERSONATION_PROXY:
+                requested_cert_type |= GLOBUS_GSI_CERT_UTILS_TYPE_IMPERSONATION_PROXY;
+                break;
+             case GLOBUS_GSI_CERT_UTILS_TYPE_LIMITED_PROXY:
+                requested_cert_type |= GLOBUS_GSI_CERT_UTILS_TYPE_LIMITED_PROXY;
+                break;
+             case GLOBUS_GSI_CERT_UTILS_TYPE_RESTRICTED_PROXY:
+                requested_cert_type |= GLOBUS_GSI_CERT_UTILS_TYPE_RESTRICTED_PROXY;
+                break;
+             case GLOBUS_GSI_CERT_UTILS_TYPE_INDEPENDENT_PROXY:
+                requested_cert_type |= GLOBUS_GSI_CERT_UTILS_TYPE_INDEPENDENT_PROXY;
+                break;
+             default:
+                {
+                    GLOBUS_GSI_PROXY_ERROR_RESULT(
+                                result,
+                                GLOBUS_GSI_PROXY_ERROR_SETTING_HANDLE_TYPE,
+                                ("Unable to determine proxy type"));
+                    goto exit;
+                }
+         }
+    }
+    else
+    {
+        /* Verify that only one certificate type was selected */
+        switch (handle->type & GLOBUS_GSI_CERT_UTILS_TYPE_PROXY_MASK)
+        {
+            case GLOBUS_GSI_CERT_UTILS_TYPE_IMPERSONATION_PROXY:
+                requested_cert_type |= GLOBUS_GSI_CERT_UTILS_TYPE_IMPERSONATION_PROXY;
+                break;
+            case GLOBUS_GSI_CERT_UTILS_TYPE_INDEPENDENT_PROXY:
+                requested_cert_type |= GLOBUS_GSI_CERT_UTILS_TYPE_INDEPENDENT_PROXY;
+                break;
+            case GLOBUS_GSI_CERT_UTILS_TYPE_RESTRICTED_PROXY:
+                requested_cert_type |= GLOBUS_GSI_CERT_UTILS_TYPE_RESTRICTED_PROXY;
+                break;
+            case GLOBUS_GSI_CERT_UTILS_TYPE_LIMITED_PROXY:
+                requested_cert_type |= GLOBUS_GSI_CERT_UTILS_TYPE_LIMITED_PROXY;
+                break;
+            default:
+                {
+                    GLOBUS_GSI_PROXY_ERROR_RESULT(
+                                result,
+                                GLOBUS_GSI_PROXY_ERROR_SETTING_HANDLE_TYPE,
+                                ("Unable to determine proxy type"));
+                    goto exit;
+                }
+        }
+    }
+    /* Verify that the selected proxy type is compatible with the issuer's
+     * type. Impersonation or EEC can sign anything, otherwise, the type 
+     * must be the same?
+     */
+    if (((requested_cert_type & GLOBUS_GSI_CERT_UTILS_TYPE_PROXY_MASK) !=
+         (issuer_cert_type & GLOBUS_GSI_CERT_UTILS_TYPE_PROXY_MASK)) &&
+         ! (issuer_cert_type & (GLOBUS_GSI_CERT_UTILS_TYPE_EEC |
+                                GLOBUS_GSI_CERT_UTILS_TYPE_IMPERSONATION_PROXY)))
+    {
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_PROXY_ERROR_SETTING_HANDLE_TYPE,
+                    ("Proxy type inconsistent with issuing certificate"));
+        goto exit;
+    }
+    /**
+     * Finally, verify that we're not trying to use a restriced or independent
+     * proxy with the legacy proxy format
+     */
+    if (GLOBUS_GSI_CERT_UTILS_IS_GSI_2_PROXY(requested_cert_type) &&
+        (requested_cert_type & (GLOBUS_GSI_CERT_UTILS_TYPE_RESTRICTED_PROXY|GLOBUS_GSI_CERT_UTILS_TYPE_INDEPENDENT_PROXY)))
+    {
+        GLOBUS_GSI_PROXY_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_PROXY_ERROR_SETTING_HANDLE_TYPE,
+                    ("Invalid legacy proxy type"));
+        goto exit;
+    }
+exit:
+    *out_proxy_type = requested_cert_type;
+    return result;
+}
+/* globus_l_gsi_proxy_determine_type() */
 
 #endif

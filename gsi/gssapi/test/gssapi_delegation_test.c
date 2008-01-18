@@ -68,22 +68,7 @@ int main()
     globus_module_activate(GLOBUS_GSI_GSS_ASSIST_MODULE);
     globus_module_activate(GLOBUS_GSI_GSSAPI_MODULE);
 
-
-/*      oid_buffer.value = malloc(EXT_SIZE); */
-/*      oid_buffer.length = EXT_SIZE; */
-
-/*      buf = (char *) oid_buffer.value; */
-    
-/*      memset(buf,'A',EXT_SIZE); */
-/*      buf[EXT_SIZE-1]='\0'; */
-
-/*      oid_buffers.count = 1; */
-/*      oid_buffers.elements = &oid_buffer; */
-/*      oid_set.count = 1; */
-/*      oid_set.elements = gss_restrictions_extension; */
-    
     /* acquire the credential */
-
     maj_stat = gss_acquire_cred(&min_stat,
                                 NULL,
                                 GSS_C_INDEFINITE,
@@ -228,16 +213,12 @@ int main()
      * insert a restriction extension into the delegated credential.
      * This is a post GT 2.0 feature.
      */
-
-
     init_maj_stat = gss_init_delegation(&min_stat,
                                         init_context,
                                         cred_handle,
                                         GSS_C_NO_OID,
                                         GSS_C_NO_OID_SET,
                                         GSS_C_NO_BUFFER_SET,
-/*                                        &oid_set, */
-/*                                        &oid_buffers, */
                                         token_ptr,
                                         0,
                                         0,
@@ -294,8 +275,6 @@ int main()
                                             GSS_C_NO_OID,
                                             GSS_C_NO_OID_SET,
                                             GSS_C_NO_BUFFER_SET,
-/*                                            &oid_set, */
-/*                                            &oid_buffers, */
                                             &recv_tok,
                                             0,
                                             0,
@@ -342,6 +321,51 @@ int main()
         exit(1);
     }
 
+    /* Check delegated proxy type--should be RFC-compliant */
+    {
+        globus_result_t                     result;
+        globus_gsi_cred_handle_t            cred_handle;
+        BIO                                *b;
+        globus_gsi_cert_utils_cert_type_t   type;
+
+
+        result = globus_gsi_cred_handle_init(&cred_handle, NULL);
+
+        if (result != GLOBUS_SUCCESS)
+        {
+            printf("\nLINE %d ERROR: \%s\n\n",
+                        globus_error_print_friendly(globus_error_peek(result)));
+            exit(1);
+        }
+
+        b = BIO_new(BIO_s_mem());
+
+        BIO_write(b, send_tok.value, send_tok.length);
+
+        globus_gsi_cred_read_proxy_bio(cred_handle, b);
+
+        BIO_free(b);
+
+        result = globus_gsi_cred_get_cert_type(cred_handle, &type);
+        if (result != GLOBUS_SUCCESS)
+        {
+            printf("\nLINE %d ERROR: \%s\n\n",
+                        globus_error_print_friendly(globus_error_peek(result)));
+            exit(1);
+        }
+        if (type != GLOBUS_GSI_CERT_UTILS_TYPE_RFC_IMPERSONATION_PROXY)
+        {
+            printf("\nLINE %d ERROR: Expected RFC Impersonation proxy, got %d\n",
+                    __LINE__,
+                    (int) type);
+            exit(1);
+        }
+
+        printf("%s:%d: Successfully got expected RFC proxy type\n",
+               __FILE__,
+               __LINE__);
+    }
+
     
     maj_stat = gss_import_cred(&min_stat,
                                &imported_cred,
@@ -368,57 +392,7 @@ int main()
            __FILE__,
            __LINE__);
 
-/*    free(oid_buffer.value); */
-    
-/*    oid_buffer.value = (void *) &oid_set; */
-/*    oid_buffer.length = 1; */
-
-
-    /* Tell the GSS that we will handle restriction extensions */
-    /* This is a post GT 2.0 feature */
-    
-/*      maj_stat = gss_set_sec_context_option( */
-/*          &min_stat, */
-/*          &del_init_context, */
-/*          (gss_OID) GSS_APPLICATION_WILL_HANDLE_EXTENSIONS, */
-/*          &oid_buffer); */
-    
-
-/*      if(maj_stat != GSS_S_COMPLETE) */
-/*      { */
-/*          globus_gss_assist_display_status_str(&error_str, */
-/*                                               NULL, */
-/*                                               maj_stat, */
-/*                                               min_stat, */
-/*                                               0); */
-/*          printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str); */
-/*          globus_print_error((globus_result_t) min_stat); */
-/*          exit(1); */
-/*      } */
-    
-
-/*      maj_stat = gss_set_sec_context_option( */
-/*          &min_stat, */
-/*          &del_accept_context, */
-/*          (gss_OID) GSS_APPLICATION_WILL_HANDLE_EXTENSIONS, */
-/*          &oid_buffer); */
-    
-
-/*      if(maj_stat != GSS_S_COMPLETE) */
-/*      { */
-/*          globus_gss_assist_display_status_str(&error_str, */
-/*                                               NULL, */
-/*                                               maj_stat, */
-/*                                               min_stat, */
-/*                                               0); */
-/*          printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str); */
-/*          globus_print_error((globus_result_t) min_stat); */
-/*          exit(1); */
-/*      } */
-
-
     /* set up another security context using the delegated credential */
-    
     init_maj_stat = gss_init_sec_context(&min_stat,
                                          imported_cred,
                                          &del_init_context,
@@ -515,33 +489,6 @@ int main()
     printf("%s:%d: Successfully established security context with delegated credential\n",
            __FILE__,
            __LINE__);
-
-    /* Extract and print the restrictions extension from the security
-     * context.
-     * This is a post GT 2.0 feature.
-     */
-    
-/*      maj_stat = gss_inquire_sec_context_by_oid(&min_stat, */
-/*                                                del_accept_context, */
-/*                                                gss_restrictions_extension, */
-/*                                                &inquire_buffers); */
-
-    
-/*      if(maj_stat != GSS_S_COMPLETE) */
-/*      { */
-/*          globus_gss_assist_display_status_str(&error_str, */
-/*                                               NULL, */
-/*                                               init_maj_stat, */
-/*                                               min_stat, */
-/*                                               0); */
-/*          printf("\nLINE %d ERROR: %s\n\n", __LINE__, error_str); */
-/*          exit(1); */
-/*      } */
-    
-/*      printf("%s:%d: Security context contains restriction extension %s\n", */
-/*             __FILE__, */
-/*             __LINE__, */
-/*             (char *) inquire_buffers->elements[0].value); */
 
     globus_module_deactivate_all();
 
