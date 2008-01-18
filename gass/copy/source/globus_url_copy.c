@@ -135,6 +135,8 @@ typedef struct
     globus_bool_t                       cache_dst_authz_assert;
     globus_l_guc_src_dst_pair_t *       free_pair;
     
+    char *                              mc_file;
+
     char *                              list_url;
     int                                 conc_outstanding;
     globus_l_guc_handle_t **            handles;
@@ -483,6 +485,7 @@ enum
     arg_c, 
     arg_ext,
     arg_plugin,
+    arg_mc,
     arg_modname,
     arg_modargs,
     arg_src_modname,
@@ -535,7 +538,7 @@ enum
     arg_pipeline,
     arg_stripe_bs,
     arg_striped,
-    arg_num = arg_striped
+    arg_num = arg_striped,
 };
 
 #define listname(x) x##_aliases
@@ -598,6 +601,7 @@ oneargdef(arg_list, "-list", "-list-url", NULL, NULL);
 oneargdef(arg_nl_bottleneck, "-nlb","-nl-bottleneck", NULL, NULL);
 oneargdef(arg_nl_interval, "-nli","-nl-interval", NULL, NULL);
 oneargdef(arg_ext, "-X", "-extentions", NULL, NULL);
+oneargdef(arg_mc, "-MC", "-multicast", NULL, NULL);
 oneargdef(arg_plugin, "-CP", "-plugin", NULL, NULL);
 oneargdef(arg_modname, "-mn", "-module-name", NULL, NULL);
 oneargdef(arg_modargs, "-mp", "-module-parameters", NULL, NULL);
@@ -636,6 +640,7 @@ static globus_args_option_descriptor_t args_options[arg_num];
     setupopt(arg_f);                    \
     setupopt(arg_c);                    \
     setupopt(arg_ext);                  \
+    setupopt(arg_mc);                   \
     setupopt(arg_plugin);               \
     setupopt(arg_modname);              \
     setupopt(arg_modargs);              \
@@ -1973,6 +1978,65 @@ error_open:
 } 
 
 static
+char *
+guc_build_mc_str(
+    char *                              fname)
+{
+    int                                 count = 0;
+    char *                              ptr;
+    char *                              url_str;
+    char *                              tmp_url_str;
+    FILE *                              fptr;
+    char                                url_line[512];
+    globus_url_t                        url_info;
+    int                                 rc;
+
+    fptr = fopen(fname, "r");
+    if(fptr == NULL)
+    {
+        /* XXX log error? */
+        return NULL;
+    }
+
+    url_str = strdup("gridftp_multicast:urls=");
+    ptr = fgets(url_line, 512, fptr);
+    while(ptr != NULL)
+    {
+        ptr = strchr(url_line, '\n');
+        if(ptr != NULL)
+        {
+            *ptr = '\0';
+        }
+        rc = globus_url_parse(url_line, &url_info);
+        if(rc != 0)
+        {
+            goto error;
+        }
+
+        tmp_url_str = globus_common_create_string("%s#%s", url_str, url_line);
+        globus_free(url_str);
+        url_str = tmp_url_str;
+
+        count++;
+        ptr = fgets(url_line, 512, fptr);
+    }
+
+    if(count == 0)
+    {
+        goto error;
+    }
+    fclose(fptr);
+
+    return url_str;
+
+error:
+    fclose(fptr);
+    free(url_str);
+
+    return NULL;
+}
+
+static
 int
 globus_l_guc_parse_arguments(
     int                                             argc,
@@ -2110,6 +2174,9 @@ globus_l_guc_parse_arguments(
                         realloc(g_ext_args, ext_arg_size*sizeof(char *));
                 }
             }
+            break;
+        case arg_mc:
+            guc_info->mc_file = globus_libc_strdup(instance->values[0]);
             break;
         case arg_plugin:
             g_client_lib_plugin_list = globus_list_from_string(
@@ -2467,16 +2534,41 @@ globus_l_guc_parse_arguments(
     {
         guc_info->num_streams = 1;
     }
-   
 
-    if(guc_info->no_dcau)
-    {
-        /* decide if gsi is on stack */
-    }
     if(guc_info->udt)
     {
         guc_info->net_stack_str = globus_libc_strdup("udt");
     }
+
+    if(guc_info->mc_file != NULL)
+    {
+        char *                          mc_fs_str;
+        char *                          tmp_str;
+
+        mc_fs_str = guc_build_mc_str(guc_info->mc_file);
+        if(mc_fs_str == NULL)
+        {
+            /* XXX log error */
+        }
+        else
+        {
+            if(guc_info->disk_stack_str != NULL)
+            {
+                tmp_str = guc_info->disk_stack_str;
+
+                guc_info->disk_stack_str = globus_common_create_string(
+                    "%s,%s", mc_fs_str, tmp_str);
+
+                globus_free(tmp_str);
+            }
+            else
+            {
+                guc_info->disk_stack_str = globus_common_create_string(
+                    "file,%s", mc_fs_str);
+            }
+        }
+    }
+
     if(guc_info->nl_bottleneck)
     {
         globus_uuid_t                   uuid;
