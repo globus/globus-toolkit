@@ -56,6 +56,7 @@ typedef struct
     globus_off_t                        file_offset;
     globus_off_t                        read_offset;
     globus_off_t                        read_length;
+
 /*    
     globus_off_t                        write_delta;
     globus_off_t                        transfer_delta; */
@@ -70,6 +71,10 @@ typedef struct
     globus_bool_t                       aborted;
     int                                 concurrency_check;
     int                                 concurrency_check_interval;
+    /* added for multicast stuff, but cold be genreally useful */
+    gss_cred_id_t                       del_cred;
+
+    globus_result_t                     finish_result;
 } globus_l_file_monitor_t;
 
 
@@ -95,7 +100,8 @@ globus_l_gfs_file_make_stack(
     globus_gfs_operation_t              op,
     globus_l_file_monitor_t *           mon,
     globus_xio_attr_t                   attr,
-    globus_xio_stack_t                  stack)
+    globus_xio_stack_t                  stack,
+    gss_cred_id_t                       cred)
 {
     globus_xio_driver_t                 driver;
     globus_result_t                     result;
@@ -104,6 +110,13 @@ globus_l_gfs_file_make_stack(
     GlobusGFSName(globus_l_gfs_file_make_stack);
 
     globus_gfs_data_get_file_stack_list(op, &driver_list);
+
+    /* set the cred in case anyone wants it */
+    globus_xio_attr_cntl(
+        attr,
+        NULL,
+        GLOBUS_XIO_ATTR_SET_CREDENTIAL,
+        cred);
 
     if(driver_list == NULL)
     {
@@ -257,19 +270,6 @@ error_alloc:
 
 static
 void
-globus_l_gfs_file_close_cb(
-    globus_xio_handle_t                 handle,
-    globus_result_t                     result,
-    void *                              user_arg)
-{
-    GlobusGFSName(globus_l_gfs_file_close_cb);
-    GlobusGFSFileDebugEnter();
-    /* dont need to do anything here */
-    GlobusGFSFileDebugExit();
-}
-
-static
-void
 globus_l_gfs_file_monitor_destroy(
     globus_l_file_monitor_t *           monitor)
 {
@@ -279,15 +279,6 @@ globus_l_gfs_file_monitor_destroy(
     GlobusGFSName(globus_l_gfs_file_monitor_destroy);
     GlobusGFSFileDebugEnter();
     
-    if(monitor->file_handle)
-    {
-        globus_xio_register_close(
-            monitor->file_handle,
-            NULL,
-            globus_l_gfs_file_close_cb,
-            NULL);
-    }
-            
     while(!globus_priority_q_empty(&monitor->queue))
     {
         buf_info = (globus_l_buffer_info_t *)
@@ -317,6 +308,90 @@ globus_l_gfs_file_monitor_destroy(
     globus_free(monitor);
 
     GlobusGFSFileDebugExit();
+}
+
+static
+void
+globus_l_gfs_file_close_cb(
+    globus_xio_handle_t                 handle,
+    globus_result_t                     result,
+    void *                              user_arg)
+{
+    globus_l_file_monitor_t *           monitor;
+    GlobusGFSName(globus_l_gfs_file_close_cb);
+
+    monitor = (globus_l_file_monitor_t *) user_arg;
+
+    GlobusGFSFileDebugEnter();
+
+    if(monitor->finish_result == GLOBUS_SUCCESS)
+    {
+        monitor->finish_result = result;
+    }
+
+    globus_gridftp_server_finished_transfer(
+        monitor->op, monitor->finish_result);
+
+    globus_l_gfs_file_monitor_destroy(monitor);
+
+    GlobusGFSFileDebugExit();
+}
+
+static
+void
+globus_l_gfs_file_close_kickout(
+    void *                              arg)
+{
+    globus_l_file_monitor_t *           monitor;
+
+    monitor = (globus_l_file_monitor_t *) arg;
+
+    globus_gridftp_server_finished_transfer(
+        monitor->op, monitor->finish_result);
+
+    globus_l_gfs_file_monitor_destroy(monitor);
+}
+
+static
+void
+globus_l_gfs_file_close(
+    globus_l_file_monitor_t *           monitor,
+    globus_result_t                     in_result)
+{
+    globus_bool_t                       oneshot = GLOBUS_FALSE;
+    globus_result_t                     result;
+
+    monitor->finish_result = in_result;
+    if(monitor->file_handle)
+    {
+        result = globus_xio_register_close(
+            monitor->file_handle,
+            NULL,
+            globus_l_gfs_file_close_cb,
+            monitor);
+        if(result != GLOBUS_SUCCESS)
+        {
+            oneshot = GLOBUS_TRUE;
+
+            if(monitor->finish_result == GLOBUS_SUCCESS)
+            {
+                monitor->finish_result = result;
+            }
+        }
+    }
+    else
+    {
+        oneshot = GLOBUS_TRUE;
+    }
+
+    if(oneshot)
+    {
+        globus_callback_register_oneshot(
+            NULL,
+            NULL,
+            globus_l_gfs_file_close_kickout,
+            monitor);
+    }
 }
 
 /**
@@ -1041,9 +1116,9 @@ globus_l_gfs_file_open_cksm_cb(
     {
         result = globus_xio_handle_cntl(
             handle,
-            globus_l_gfs_file_driver,
-            GLOBUS_XIO_FILE_SEEK,
-            &monitor->offset,
+            GLOBUS_XIO_QUERY,
+            GLOBUS_XIO_SEEK,
+            monitor->offset,
             GLOBUS_XIO_FILE_SEEK_SET);
         if(result != GLOBUS_SUCCESS)
         {
@@ -1353,10 +1428,9 @@ globus_l_gfs_file_write_cb(
         if(monitor->pending_reads == 0 && monitor->pending_writes == 0)
         {
             globus_assert(monitor->eof || monitor->aborted);
+
+            globus_l_gfs_file_close(monitor, GLOBUS_SUCCESS);
             globus_mutex_unlock(&monitor->lock);
-            globus_gridftp_server_finished_transfer(
-                monitor->op, GLOBUS_SUCCESS);
-            globus_l_gfs_file_monitor_destroy(monitor);
         }
         else
         {
@@ -1379,11 +1453,9 @@ error_dispatch:
         GlobusGFSFileDebugExitWithError();
         return;
     }
-    globus_mutex_unlock(&monitor->lock);
 
-    globus_gridftp_server_finished_transfer(
-        monitor->op, globus_error_put(monitor->error));
-    globus_l_gfs_file_monitor_destroy(monitor);
+    globus_l_gfs_file_close(monitor, globus_error_put(monitor->error));
+    globus_mutex_unlock(&monitor->lock);
 
     GlobusGFSFileDebugExitWithError();
 }
@@ -1414,9 +1486,9 @@ globus_l_gfs_file_dispatch_write(
 
                 result = globus_xio_handle_cntl(
                     monitor->file_handle,
-                    globus_l_gfs_file_driver,
-                    GLOBUS_XIO_FILE_SEEK,
-                    &seek_tmp,
+                    GLOBUS_XIO_QUERY,
+                    GLOBUS_XIO_SEEK,
+                    seek_tmp,
                     GLOBUS_XIO_FILE_SEEK_SET);
                 if(result != GLOBUS_SUCCESS)
                 {
@@ -1613,11 +1685,8 @@ error:
         GlobusGFSFileDebugExitWithError();
         return;
     }
+    globus_l_gfs_file_close(monitor, globus_error_put(monitor->error));
     globus_mutex_unlock(&monitor->lock);
-
-    globus_gridftp_server_finished_transfer(
-        monitor->op, globus_error_put(monitor->error));
-    globus_l_gfs_file_monitor_destroy(monitor);
 
     GlobusGFSFileDebugExitWithError();
 }
@@ -1749,7 +1818,8 @@ globus_l_gfs_file_open(
         result = GlobusGFSErrorWrapFailed("globus_xio_stack_init", result);
         goto error_stack;
     }
-    result = globus_l_gfs_file_make_stack(monitor->op, arg, attr, stack);
+    result = globus_l_gfs_file_make_stack(
+        monitor->op, arg, attr, stack, monitor->del_cred);
     if(result != GLOBUS_SUCCESS)
     {
         goto error_push;
@@ -1827,6 +1897,7 @@ globus_l_gfs_file_recv(
             "globus_l_gfs_file_monitor_init", result);
         goto error_alloc;
     }
+    monitor->del_cred = (gss_cred_id_t) user_arg;
     
     globus_gridftp_server_get_write_range(
         op,
@@ -1913,9 +1984,9 @@ globus_l_gfs_file_dispatch_read(
                 
                 result = globus_xio_handle_cntl(
                     monitor->file_handle,
-                    globus_l_gfs_file_driver,
-                    GLOBUS_XIO_FILE_SEEK,
-                    &seek_tmp,
+                    GLOBUS_XIO_QUERY,
+                    GLOBUS_XIO_SEEK,
+                    seek_tmp,
                     GLOBUS_XIO_FILE_SEEK_SET);
             
                 if(result != GLOBUS_SUCCESS)
@@ -2016,10 +2087,8 @@ globus_l_gfs_file_server_write_cb(
         if(monitor->pending_reads == 0 && monitor->pending_writes == 0)
         {
             globus_assert(monitor->eof || monitor->aborted);
+            globus_l_gfs_file_close(monitor, GLOBUS_SUCCESS);
             globus_mutex_unlock(&monitor->lock);
-            globus_gridftp_server_finished_transfer(
-                monitor->op, GLOBUS_SUCCESS);
-            globus_l_gfs_file_monitor_destroy(monitor);
         }
         else
         {
@@ -2040,11 +2109,8 @@ error:
         GlobusGFSFileDebugExitWithError();
         return;
     }
+    globus_l_gfs_file_close(monitor, globus_error_put(monitor->error));
     globus_mutex_unlock(&monitor->lock);
-
-    globus_gridftp_server_finished_transfer(
-        monitor->op, globus_error_put(monitor->error));
-    globus_l_gfs_file_monitor_destroy(monitor);
 
     GlobusGFSFileDebugExitWithError();
 }
@@ -2133,10 +2199,8 @@ globus_l_gfs_file_read_cb(
         if(monitor->pending_reads == 0 && monitor->pending_writes == 0)
         {
             globus_assert(monitor->eof || monitor->aborted);
+            globus_l_gfs_file_close(monitor, GLOBUS_SUCCESS);
             globus_mutex_unlock(&monitor->lock);
-            globus_gridftp_server_finished_transfer(
-                monitor->op, GLOBUS_SUCCESS);
-            globus_l_gfs_file_monitor_destroy(monitor);
         }
         else
         {
@@ -2158,11 +2222,8 @@ error:
         GlobusGFSFileDebugExitWithError();
         return;
     }
+    globus_l_gfs_file_close(monitor, globus_error_put(monitor->error));
     globus_mutex_unlock(&monitor->lock);
-
-    globus_gridftp_server_finished_transfer(
-        monitor->op, globus_error_put(monitor->error));
-    globus_l_gfs_file_monitor_destroy(monitor);
 
     GlobusGFSFileDebugExitWithError();
 }
@@ -2203,10 +2264,9 @@ globus_l_gfs_file_open_read_cb(
     if(monitor->pending_reads == 0 && monitor->pending_writes == 0)
     {
         globus_assert(monitor->eof || monitor->aborted);
+
+        globus_l_gfs_file_close(monitor, GLOBUS_SUCCESS);
         globus_mutex_unlock(&monitor->lock);
-        globus_gridftp_server_finished_transfer(
-            monitor->op, GLOBUS_SUCCESS);
-        globus_l_gfs_file_monitor_destroy(monitor);
     }
     else
     {
@@ -2260,6 +2320,7 @@ globus_l_gfs_file_send(
         buffer = globus_memory_pop_node(&monitor->mem);
         globus_list_insert(&monitor->buffer_list, buffer);
     }
+    monitor->del_cred = (gss_cred_id_t) user_arg;
 
     monitor->op = op;
     open_flags = GLOBUS_XIO_FILE_BINARY | GLOBUS_XIO_FILE_RDONLY;
@@ -2318,6 +2379,21 @@ globus_l_gfs_file_event(
 }
 
 static
+void
+globus_l_gfs_file_init(
+    globus_gfs_operation_t              op,
+    globus_gfs_session_info_t *         session_info)
+{
+    /* just make it so we can get the cred. */
+    globus_gridftp_server_finished_session_start(
+        op,
+        GLOBUS_SUCCESS,
+        session_info->del_cred,
+        NULL,
+        NULL);
+}
+
+static
 int
 globus_l_gfs_file_activate(void);
 
@@ -2328,7 +2404,7 @@ globus_l_gfs_file_deactivate(void);
 static globus_gfs_storage_iface_t       globus_l_gfs_file_dsi_iface = 
 {
     GLOBUS_GFS_DSI_DESCRIPTOR_SENDER,
-    NULL, /* globus_l_gfs_file_init, */
+    globus_l_gfs_file_init,
     NULL, /* globus_l_gfs_file_destroy, */
     NULL, /* list */
     globus_l_gfs_file_send,

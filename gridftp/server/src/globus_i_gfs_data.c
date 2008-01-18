@@ -2845,8 +2845,10 @@ globus_l_gfs_data_complete_fc_cb(
         GFSDataOpDec(op, destroy_op, destroy_session);
         if(destroy_op)
         {
-            globus_assert(op->state == GLOBUS_L_GFS_DATA_COMPLETING &&
+            globus_assert(op->state == GLOBUS_L_GFS_DATA_COMPLETING);
+/* XXX XXX &&
                 op->data_handle != NULL);
+*/
             remote_data_arg = globus_l_gfs_data_check(
                 op->session_handle, op->data_handle);
         }
