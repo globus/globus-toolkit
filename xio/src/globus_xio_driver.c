@@ -2287,7 +2287,7 @@ globus_xio_operation_attr_cntl(
             out_cred = va_arg(ap, gss_cred_id_t *);
             if(out_cred != NULL)
             {
-                *out_cred = globus_libc_strdup(op->user_open_cred);
+                *out_cred = op->user_open_cred;
             }
             tmp_ptr = va_arg(ap, char **);
             if(tmp_ptr != NULL)
