@@ -1980,7 +1980,8 @@ error_open:
 static
 char *
 guc_build_mc_str(
-    char *                              fname)
+    char *                              fname,
+    char **                             out_first)
 {
     int                                 count = 0;
     char *                              ptr;
@@ -1990,6 +1991,7 @@ guc_build_mc_str(
     char                                url_line[512];
     globus_url_t                        url_info;
     int                                 rc;
+    char **                             l_out_first = out_first;
 
     fptr = fopen(fname, "r");
     if(fptr == NULL)
@@ -2007,17 +2009,36 @@ guc_build_mc_str(
         {
             *ptr = '\0';
         }
+        ptr = strchr(url_line, '?');
+        if(ptr != NULL)
+        {
+            *ptr = '\0';
+        }
         rc = globus_url_parse(url_line, &url_info);
         if(rc != 0)
         {
             goto error;
         }
+        /* put the question mark back if there was one */
+        if(ptr != NULL)
+        {
+            *ptr = '?';
+        }
 
-        tmp_url_str = globus_common_create_string("%s#%s", url_str, url_line);
-        globus_free(url_str);
-        url_str = tmp_url_str;
+        if(l_out_first != NULL)
+        {
+            *l_out_first = strdup(url_line);
+            l_out_first = NULL;
+        }
+        else
+        {
+            tmp_url_str = globus_common_create_string(
+                "%s#%s", url_str, url_line);
+            globus_free(url_str);
+            url_str = tmp_url_str;
 
-        count++;
+            count++;
+        }
         ptr = fgets(url_line, 512, fptr);
     }
 
@@ -2043,6 +2064,7 @@ globus_l_guc_parse_arguments(
     char **                                         argv,
     globus_l_guc_info_t *                           guc_info)
 {
+    char *                              mc_fs_str = NULL;
     int                                             sc;
     char *                                          program;
     globus_list_t *                                 options_found = NULL;
@@ -2450,7 +2472,55 @@ globus_l_guc_parse_arguments(
     }
 
     globus_args_option_instance_list_free(&options_found);
-    
+
+    /* if we are doing multicast allow no dest option by adding the first 
+        url in the file */
+    if(guc_info->mc_file != NULL)
+    {
+        char **                         first_dst_ptr = NULL;
+        char *                          first_dst = NULL;
+        char *                          str_ptr;
+        char *                          new_mc_str;
+
+        if(file_name != NULL)
+        {
+            /* echo error */
+            globus_url_copy_l_args_error("iCannot use -mc and -f");
+            return -1;
+        }
+
+        if(argc == 2)
+        {
+            first_dst_ptr = &first_dst;
+        }
+
+        mc_fs_str = guc_build_mc_str(guc_info->mc_file, first_dst_ptr);
+        if(mc_fs_str == NULL && first_dst_ptr == NULL)
+        {
+            globus_url_copy_l_args_error("There is no destination set");
+            return -1;
+        }
+
+        /* lie to the rest of the code b tacking on a new first dest */
+        if(first_dst_ptr != NULL)
+        {
+            argc++;
+            argv[argc-1] = first_dst;
+        }
+
+        /* TODO pull the ?.* off the url for extra opts */
+        str_ptr = strchr(argv[argc-1], '?');
+        if(str_ptr != NULL)
+        {
+            *str_ptr = '\0';
+            str_ptr++;
+        }
+        new_mc_str = globus_common_create_string("%s;%s",
+            mc_fs_str, str_ptr);
+
+        free(mc_fs_str);
+        mc_fs_str = new_mc_str;
+    }
 
     if(file_name != NULL)
     {
@@ -2540,32 +2610,23 @@ globus_l_guc_parse_arguments(
         guc_info->net_stack_str = globus_libc_strdup("udt");
     }
 
-    if(guc_info->mc_file != NULL)
+    /* if we need to take on the multicast string */
+    if(mc_fs_str != NULL)
     {
-        char *                          mc_fs_str;
-        char *                          tmp_str;
 
-        mc_fs_str = guc_build_mc_str(guc_info->mc_file);
-        if(mc_fs_str == NULL)
+        if(guc_info->disk_stack_str != NULL)
         {
-            /* XXX log error */
+            tmp_str = guc_info->disk_stack_str;
+
+            guc_info->disk_stack_str = globus_common_create_string(
+                "%s,%s", mc_fs_str, tmp_str);
+
+            globus_free(tmp_str);
         }
         else
         {
-            if(guc_info->disk_stack_str != NULL)
-            {
-                tmp_str = guc_info->disk_stack_str;
-
-                guc_info->disk_stack_str = globus_common_create_string(
-                    "%s,%s", mc_fs_str, tmp_str);
-
-                globus_free(tmp_str);
-            }
-            else
-            {
-                guc_info->disk_stack_str = globus_common_create_string(
-                    "file,%s", mc_fs_str);
-            }
+            guc_info->disk_stack_str = globus_common_create_string(
+                "file,%s", mc_fs_str);
         }
     }
 
