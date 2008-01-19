@@ -93,7 +93,7 @@ typedef enum xio_l_gmc_state_e
 
 typedef struct xio_l_gridftp_multicast_attr_s
 {
-    globus_list_t *                     urls;
+    globus_fifo_t                       url_q;
     int                                 P;
     globus_size_t                       tcp_bs;
     int                                 cast_count;
@@ -110,6 +110,7 @@ typedef struct
     globus_bool_t                       closed;
     globus_bool_t                       closing;
     char *                              url;
+    char *                              str_opts;
     int                                 ndx;
     globus_fifo_t                       url_q;
     globus_result_t                     result;
@@ -163,6 +164,10 @@ globus_result_t
 xio_l_gmc_setup_forwarder(
     xio_l_gmc_ftp_handle_t *            ftp_handle,
     gss_cred_id_t                       cred,
+    char *                              sbj,
+    char *                              username,
+    char *                              pw,
+    xio_l_gridftp_multicast_attr_t *    attr,
     globus_fifo_t *                     url_q,
     int                                 max_str_len,
     int                                 each_cast_count);
@@ -722,7 +727,6 @@ xio_l_gridftp_multicast_open(
     int                                 total_url_count;
     int                                 cast_count;
     char *                              str;
-    globus_list_t *                     list;
     int                                 i;
     xio_l_gridftp_multicast_attr_t *    attr;
     xio_l_gridftp_multicast_handle_t *  handle;
@@ -730,6 +734,10 @@ xio_l_gridftp_multicast_open(
     int                                 str_max_len = 0;
     globus_fifo_t                       url_q;
     gss_cred_id_t                       cred = NULL;
+    char *                              sbj;
+    char *                              username;
+    char *                              pw;
+    char *                              str_ptr;
     GlobusXIOName(xio_l_gridftp_multicast_open);
 
     attr = (xio_l_gridftp_multicast_attr_t *) driver_attr;
@@ -751,7 +759,10 @@ xio_l_gridftp_multicast_open(
     result = globus_xio_operation_attr_cntl(
         op,
         GLOBUS_XIO_ATTR_GET_CREDENTIAL,
-        &cred);
+        &cred,
+        &sbj,
+        &username,
+        &pw);
     if(result == GLOBUS_SUCCESS && cred != NULL)
     {
         /* we can just ignore this */
@@ -759,11 +770,10 @@ xio_l_gridftp_multicast_open(
 
     /* move the list in the attr to a fifo */
     globus_fifo_init(&url_q);
-    for(list = attr->urls;
-        !globus_list_empty(list);
-        list = globus_list_rest(list))
+    for(i = 0; i < globus_fifo_size(&attr->url_q); i++)
     {
-        str = (char *) globus_list_first(list);
+        str = (char *) globus_fifo_dequeue(&attr->url_q);
+        globus_fifo_enqueue(&attr->url_q, str);
         globus_fifo_enqueue(&url_q, globus_libc_strdup(str));
 
         /* get the largest possible string length for later mem management */
@@ -793,6 +803,16 @@ xio_l_gridftp_multicast_open(
                 handle->ftp_handles[i].whos_my_daddy = handle;
                 handle->ftp_handles[i].url = (char *)
                     globus_fifo_dequeue(&url_q);
+
+                str_ptr = strchr(handle->ftp_handles[i].url, '?');
+                if(str_ptr != NULL)
+                {
+                    *str_ptr = '\0';
+
+                    str_ptr++;
+                    handle->ftp_handles[i].str_opts = strdup(str_ptr);
+                }
+
                 handle->ftp_handles[i].ndx = i;
                 globus_fifo_init(&handle->ftp_handles[i].url_q);
             }
@@ -811,6 +831,10 @@ xio_l_gridftp_multicast_open(
                 result = xio_l_gmc_setup_forwarder(
                     &handle->ftp_handles[i],
                     cred,
+                    sbj,
+                    username,
+                    pw,
+                    attr,
                     &url_q, str_max_len, each_cast_count);
                 if(result != GLOBUS_SUCCESS)
                 {
@@ -897,6 +921,10 @@ globus_result_t
 xio_l_gmc_setup_forwarder(
     xio_l_gmc_ftp_handle_t *            ftp_handle,
     gss_cred_id_t                       cred,
+    char *                              sbj,
+    char *                              username,
+    char *                              pw,
+    xio_l_gridftp_multicast_attr_t *    attr,
     globus_fifo_t *                     url_q,
     int                                 max_str_len,
     int                                 each_cast_count)
@@ -910,6 +938,7 @@ xio_l_gmc_setup_forwarder(
     char                                delim = '#';
     xio_l_gridftp_multicast_handle_t *  handle;
     globus_ftp_control_parallelism_t    para;
+    globus_ftp_control_tcpbuffer_t      tcp_buffer;
 
     handle = ftp_handle->whos_my_daddy;
 
@@ -935,14 +964,14 @@ xio_l_gmc_setup_forwarder(
     globus_ftp_client_handleattr_init(&ftp_handle->handle_attr);
     globus_ftp_client_operationattr_init(&ftp_handle->op_attr);
 
-    if(cred != NULL)
+    if(cred != NULL || username != NULL)
     {
         result = globus_ftp_client_operationattr_set_authorization(
             &ftp_handle->op_attr,
             cred,
-            NULL,
-            NULL,
-            NULL,
+            sbj,
+            username,
+            pw,
             NULL);
     }
     result = globus_ftp_client_operationattr_set_mode(
@@ -963,11 +992,30 @@ xio_l_gmc_setup_forwarder(
         goto error_attr;
     }
 
+    tcp_buffer.mode = GLOBUS_FTP_CONTROL_TCPBUFFER_FIXED;
+    tcp_buffer.fixed.size = attr->tcp_bs;
+    result = globus_ftp_client_operationattr_set_tcp_buffer(
+        &ftp_handle->op_attr,
+        &tcp_buffer);
+
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_attr;
+    }
+
     if(*stack_str != '\0')
     {
-        ftp_handle->stack_str = globus_common_create_string(
-            "file,gridftp_multicast:urls=%s", stack_str);
-
+        if(ftp_handle->str_opts)
+        {
+            ftp_handle->stack_str = globus_common_create_string(
+                "file,gridftp_multicast:urls=%s;%s",
+                stack_str, ftp_handle->str_opts);
+        }
+        else
+        {
+            ftp_handle->stack_str = globus_common_create_string(
+                "file,gridftp_multicast:urls=%s", stack_str);
+        }
         result = globus_ftp_client_operationattr_set_disk_stack(
             &ftp_handle->op_attr,
             ftp_handle->stack_str);
@@ -1239,7 +1287,6 @@ xio_l_gridftp_multicast_write(
 
     return GLOBUS_SUCCESS;
 
-error_state:
 error_pass:
     /* take down all ftp handles when there is a disk error */
     for(i = 0; i < handle->ftps; i++)
@@ -1454,6 +1501,8 @@ xio_l_gridftp_multicast_attr_init(
     attr = (xio_l_gridftp_multicast_attr_t *) 
         globus_calloc(1, sizeof(xio_l_gridftp_multicast_attr_t));
 
+    globus_fifo_init(&attr->url_q);
+
     attr->P = xio_l_gmc_default_attr.P;
     attr->tcp_bs = xio_l_gmc_default_attr.tcp_bs;
     attr->cast_count = xio_l_gmc_default_attr.cast_count;
@@ -1511,7 +1560,7 @@ xio_l_gridftp_multicast_attr_cntl(
             argv = (char **) va_arg(ap, char **);
             for(i = 0; argv[i] != NULL; i++)
             {
-                globus_list_insert(&attr->urls, globus_libc_strdup(argv[i]));
+                globus_fifo_enqueue(&attr->url_q, globus_libc_strdup(argv[i]));
             }
             break;
 
@@ -1538,11 +1587,10 @@ xio_l_gridftp_multicast_attr_copy(
     void **                             dst,
     void *                              src)
 {
+    int                                 i;
     char *                              str;
     xio_l_gridftp_multicast_attr_t *    dst_attr; 
     xio_l_gridftp_multicast_attr_t *    src_attr;
-    globus_list_t *                     list; 
-    globus_fifo_t                       q;
 
     src_attr = (xio_l_gridftp_multicast_attr_t *) src;
     xio_l_gridftp_multicast_attr_init((void **)&dst_attr);
@@ -1552,16 +1600,12 @@ xio_l_gridftp_multicast_attr_copy(
     dst_attr->cast_count = src_attr->cast_count;
     dst_attr->pass_write = src_attr->pass_write;
 
-    globus_fifo_init(&q);
-    for(list = src_attr->urls;
-        !globus_list_empty(list);
-        list = globus_list_rest(list))
+    for(i = 0; i < globus_fifo_size(&src_attr->url_q); i++)
     {
-        str = (char *) globus_list_first(list);
-        globus_fifo_enqueue(&q, globus_libc_strdup(str));
+        str = (char *) globus_fifo_dequeue(&src_attr->url_q);
+        globus_fifo_enqueue(&src_attr->url_q, str);
+        globus_fifo_enqueue(&dst_attr->url_q, globus_libc_strdup(str));
     }
-    dst_attr->urls = globus_fifo_convert_to_list(&q);
-    globus_fifo_destroy(&q);
 
     *dst = dst_attr;
 
@@ -1579,12 +1623,12 @@ xio_l_gridftp_multicast_attr_destroy(
 
     attr = (xio_l_gridftp_multicast_attr_t *) driver_attr;
 
-    while(!globus_list_empty(attr->urls))
+    while(!globus_fifo_empty(&attr->url_q))
     {
-        str = (char *) globus_list_remove(&attr->urls, attr->urls);
+        str = (char *) globus_fifo_dequeue(&attr->url_q);
         globus_free(str);
     }
-    globus_list_free(attr->urls);
+    globus_fifo_destroy(&attr->url_q);
     globus_free(attr);
 
     return GLOBUS_SUCCESS;
@@ -1629,8 +1673,7 @@ xio_l_gridftp_multicast_init(
 
     *out_driver = driver;
 
-
-    xio_l_gmc_default_attr.urls = NULL;
+    globus_fifo_init(&xio_l_gmc_default_attr.url_q);
     xio_l_gmc_default_attr.P = 1;
     xio_l_gmc_default_attr.tcp_bs = 131072;
     xio_l_gmc_default_attr.cast_count = 2;
