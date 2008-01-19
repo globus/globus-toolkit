@@ -2139,6 +2139,10 @@ globus_xio_register_open(
 
     if(attr != NULL)
     {
+        op->user_open_cred = attr->user_open_cred;
+        op->user_open_sbj = globus_libc_strdup(attr->user_open_sbj);
+        op->user_open_username = globus_libc_strdup(attr->user_open_username);
+        op->user_open_pw = globus_libc_strdup(attr->user_open_pw);
         space =  attr->space;
         
         /* set entries in structures */
@@ -2946,6 +2950,7 @@ globus_xio_open(
 
     if(attr != NULL)
     {
+        op->user_open_cred = attr->user_open_cred;
         space =  attr->space;
         
         /* set entries in structures */

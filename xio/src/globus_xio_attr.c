@@ -488,7 +488,20 @@ globus_xio_attr_destroy(
         }
     }
     globus_mutex_unlock(&globus_i_xio_mutex);
-    
+
+    if(attr->user_open_sbj)
+    {
+        globus_free(attr->user_open_sbj);
+    }
+    if(attr->user_open_username)
+    {
+        globus_free(attr->user_open_username);
+    }
+    if(attr->user_open_pw)
+    {
+        globus_free(attr->user_open_pw);
+    }
+ 
     globus_callback_space_destroy(attr->space);
     globus_free(attr->entry);
     globus_free(attr);

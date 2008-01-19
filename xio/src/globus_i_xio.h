@@ -216,6 +216,9 @@ do                                                                          \
  *                 ---------------------------
  **************************************************************************/
 
+/* forward declare for setting cred */
+typedef struct gss_cred_id_desc_struct * gss_cred_id_t;
+
 extern char * globus_i_xio_context_state_name_table[];
 
 typedef enum globus_i_xio_context_state_e
@@ -322,6 +325,11 @@ typedef struct globus_i_xio_attr_s
 
     globus_bool_t                       no_cancel;
     void *                              timeout_arg;
+
+    gss_cred_id_t                       user_open_cred;
+    char *                              user_open_sbj;
+    char *                              user_open_username;
+    char *                              user_open_pw;
 
     globus_callback_space_t             space;
 
@@ -579,6 +587,13 @@ typedef struct globus_i_xio_op_s
     globus_bool_t                       blocking;
     globus_thread_t                     blocked_thread;
     globus_bool_t                       finished_delayed;
+
+    /* just stash away the cred to open so that the driver can interigate
+        it.  */
+    gss_cred_id_t                       user_open_cred;
+    char *                              user_open_sbj;
+    char *                              user_open_username;
+    char *                              user_open_pw;
     
     /* result code saved in op for kickouts */
     globus_object_t *                   cached_obj;
