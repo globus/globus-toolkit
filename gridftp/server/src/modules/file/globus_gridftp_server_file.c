@@ -45,6 +45,14 @@ GlobusDebugDefine(GLOBUS_GRIDFTP_SERVER_FILE);
 
 #define GLOBUS_L_GFS_FILE_CKSM_BS 1024*1024
 
+typedef struct 
+{
+    gss_cred_id_t                       cred;
+    char *                              sbj;
+    char *                              username;
+    char *                              pw;
+} gfs_l_file_session_t;
+
 typedef struct
 {
     globus_mutex_t                      lock;
@@ -72,7 +80,7 @@ typedef struct
     int                                 concurrency_check;
     int                                 concurrency_check_interval;
     /* added for multicast stuff, but cold be genreally useful */
-    gss_cred_id_t                       del_cred;
+    gfs_l_file_session_t *              session;
 
     globus_result_t                     finish_result;
 } globus_l_file_monitor_t;
@@ -101,7 +109,7 @@ globus_l_gfs_file_make_stack(
     globus_l_file_monitor_t *           mon,
     globus_xio_attr_t                   attr,
     globus_xio_stack_t                  stack,
-    gss_cred_id_t                       cred)
+    gfs_l_file_session_t *              session_h)
 {
     globus_xio_driver_t                 driver;
     globus_result_t                     result;
@@ -116,7 +124,10 @@ globus_l_gfs_file_make_stack(
         attr,
         NULL,
         GLOBUS_XIO_ATTR_SET_CREDENTIAL,
-        cred);
+        session_h->cred,
+        session_h->sbj,
+        session_h->username,
+        session_h->pw);
 
     if(driver_list == NULL)
     {
@@ -1819,7 +1830,7 @@ globus_l_gfs_file_open(
         goto error_stack;
     }
     result = globus_l_gfs_file_make_stack(
-        monitor->op, arg, attr, stack, monitor->del_cred);
+        monitor->op, arg, attr, stack, monitor->session);
     if(result != GLOBUS_SUCCESS)
     {
         goto error_push;
@@ -1897,7 +1908,7 @@ globus_l_gfs_file_recv(
             "globus_l_gfs_file_monitor_init", result);
         goto error_alloc;
     }
-    monitor->del_cred = (gss_cred_id_t) user_arg;
+    monitor->session = (gfs_l_file_session_t *) user_arg;
     
     globus_gridftp_server_get_write_range(
         op,
@@ -2320,7 +2331,7 @@ globus_l_gfs_file_send(
         buffer = globus_memory_pop_node(&monitor->mem);
         globus_list_insert(&monitor->buffer_list, buffer);
     }
-    monitor->del_cred = (gss_cred_id_t) user_arg;
+    monitor->session = (gfs_l_file_session_t *) user_arg;
 
     monitor->op = op;
     open_flags = GLOBUS_XIO_FILE_BINARY | GLOBUS_XIO_FILE_RDONLY;
@@ -2384,13 +2395,47 @@ globus_l_gfs_file_init(
     globus_gfs_operation_t              op,
     globus_gfs_session_info_t *         session_info)
 {
+    gfs_l_file_session_t *              session_h;
+
+    session_h = (gfs_l_file_session_t *) globus_calloc(
+        1, sizeof(gfs_l_file_session_t));
+    session_h->cred = session_info->del_cred;
+    session_h->sbj = globus_libc_strdup(session_info->subject);
+    session_h->username = globus_libc_strdup(session_info->username);
+    session_h->pw = globus_libc_strdup(session_info->password);
+
     /* just make it so we can get the cred. */
     globus_gridftp_server_finished_session_start(
         op,
         GLOBUS_SUCCESS,
-        session_info->del_cred,
+        session_h,
         NULL,
         NULL);
+}
+
+static
+void
+globus_l_gfs_file_destroy(
+    void *                              user_arg)
+{
+    gfs_l_file_session_t *              session_h;
+/*
+    session_h = (gfs_l_file_session_t *) user_arg;
+
+    if(session_h->sbj != NULL)
+    {
+        globus_free(session_h->sbj);
+    }
+    if(session_h->username != NULL)
+    {
+        globus_free(session_h->sbj);
+    }
+    if(session_h->pw != NULL)
+    {
+        globus_free(session_h->sbj);
+    }
+    globus_free(session_h);
+*/
 }
 
 static
@@ -2405,7 +2450,7 @@ static globus_gfs_storage_iface_t       globus_l_gfs_file_dsi_iface =
 {
     GLOBUS_GFS_DSI_DESCRIPTOR_SENDER,
     globus_l_gfs_file_init,
-    NULL, /* globus_l_gfs_file_destroy, */
+    globus_l_gfs_file_destroy,
     NULL, /* list */
     globus_l_gfs_file_send,
     globus_l_gfs_file_recv,
