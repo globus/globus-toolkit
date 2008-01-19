@@ -412,6 +412,68 @@ xio_l_gmc_get_error(
 }
 
 static
+globus_result_t
+xio_l_gmc_error_strings(
+    xio_l_gridftp_multicast_handle_t *  handle)
+{
+    char *                              new_err;
+    char *                              tmp_str;
+    char *                              err_str;
+    int                                 i;
+    int                                 err_count = 0;
+    globus_object_t *                   err_obj;
+
+
+    err_str = strdup("");
+    for(i = 0; i < handle->ftps_total; i++)
+    {
+        if(handle->ftp_handles[i].result != GLOBUS_SUCCESS)
+        {
+            tmp_str = globus_error_print_friendly(
+                globus_error_peek(handle->ftp_handles[i].result));
+
+            new_err = globus_common_create_string("%s\n%s",
+                err_str, tmp_str);
+
+            globus_free(tmp_str);
+            globus_free(err_str);
+            err_str = tmp_str;
+
+            err_count++;
+        }
+    }
+
+    if(handle->result != GLOBUS_SUCCESS)
+    {
+        tmp_str = globus_error_print_friendly(
+            globus_error_peek(handle->result));
+
+        new_err = globus_common_create_string("%s\n%s",
+            err_str, tmp_str);
+
+        globus_free(tmp_str);
+        globus_free(err_str);
+        err_str = tmp_str;
+
+        err_count++;
+    }
+
+    /* call this when there are no errors in the close case */
+    if(err_count == 0)
+    {
+        return GLOBUS_SUCCESS;
+    }
+
+    err_obj = globus_error_construct_string(
+        NULL,
+        NULL,
+        "%s",
+        err_str);
+
+    return globus_error_put(err_obj);
+}
+
+static
 int
 xio_l_gridftp_multicast_activate()
 {
@@ -738,6 +800,7 @@ xio_l_gridftp_multicast_open(
     char *                              username;
     char *                              pw;
     char *                              str_ptr;
+    globus_bool_t                       finish_open = GLOBUS_FALSE;
     GlobusXIOName(xio_l_gridftp_multicast_open);
 
     attr = (xio_l_gridftp_multicast_attr_t *) driver_attr;
@@ -867,10 +930,19 @@ xio_l_gridftp_multicast_open(
             result = GlobusXIOGMCNoOpError("Nothing to open");
             goto error_no_operations;
         }
-
         handle->state = XIO_GMC_STATE_OPENING;
+        if(!handle->pass_write)
+        {
+            handle->state = XIO_GMC_STATE_OPEN;
+            finish_open = GLOBUS_TRUE;
+        }
     }
     globus_mutex_unlock(&handle->mutex);
+
+    if(finish_open)
+    {
+        globus_xio_driver_finished_open(handle, op, GLOBUS_SUCCESS);
+    }
 
     return GLOBUS_SUCCESS;
 
@@ -969,10 +1041,14 @@ xio_l_gmc_setup_forwarder(
         result = globus_ftp_client_operationattr_set_authorization(
             &ftp_handle->op_attr,
             cred,
-            sbj,
             username,
             pw,
-            NULL);
+            NULL,
+            sbj);
+        if(result != GLOBUS_SUCCESS)
+        {
+            goto error_attr;
+        }
     }
     result = globus_ftp_client_operationattr_set_mode(
         &ftp_handle->op_attr,
@@ -1198,6 +1274,7 @@ xio_l_gridftp_multicast_write(
     xio_l_gmc_ftp_handle_t *            ftp_handle;
     globus_result_t                     result;
     globus_off_t                        offset;
+    globus_bool_t                       finish_write = GLOBUS_FALSE;
     GlobusXIOName(xio_l_gridftp_multicast_write);
     
     handle = (xio_l_gridftp_multicast_handle_t *) driver_specific_handle;
@@ -1209,7 +1286,7 @@ xio_l_gridftp_multicast_write(
         {
             case XIO_GMC_STATE_OPEN:
                 /* this is the standard case */
-                for(i = 0; i < handle->ftps; i++)
+                for(i = 0; i < handle->ftps_total; i++)
                 {
                     ftp_handle = &handle->ftp_handles[i];
                     offset = handle->offset;
@@ -1237,6 +1314,10 @@ xio_l_gridftp_multicast_write(
                                 handle->write_op_count++;
                             }
                             offset += iovec[j].iov_len;
+                        }
+                        else
+                        {
+                            /* XXX 0 len writes */
                         }
                     }
                 }
@@ -1277,13 +1358,28 @@ xio_l_gridftp_multicast_write(
 
         if(handle->write_op_count == 0)
         {
-            /* this is an error case */
-            result = GlobusXIOGMCNoOpError(
-                "Error to disk, or no disk an all ftp handles errored out");
-            goto error_pass;
+            if(wait_for == 0)
+            {
+                /* just finish the write */
+                finish_write = GLOBUS_TRUE;
+            }
+            else
+            {
+                /* this is an error case */
+                result = xio_l_gmc_error_strings(handle);
+                goto error_pass;
+            }
         }
     }
     globus_mutex_unlock(&handle->mutex);
+
+    if(finish_write)
+    {
+        /* should only happen witha wait for of 0 */
+        globus_assert(wait_for == 0);
+        globus_xio_driver_finished_write(
+            handle->write_op, GLOBUS_SUCCESS, 0);
+    }
 
     return GLOBUS_SUCCESS;
 
@@ -1478,7 +1574,14 @@ xio_l_gridftp_multicast_cntl(
                 handle->offset = in_offset;
 
                 /* let it keep going */
-                result = GlobusXIOErrorInvalidCommand(cmd);
+                if(handle->pass_write)
+                {
+                    result = GlobusXIOErrorInvalidCommand(cmd);
+                }
+                else
+                {
+                    result = GLOBUS_SUCCESS;
+                }
                 break;
 
             default:
@@ -1519,6 +1622,8 @@ static globus_xio_string_cntl_table_t
 {
     {"P", GLOBUS_XIO_GRIDFTP_MULTICAST_ATTR_PARALLEL,
         globus_xio_string_cntl_int},
+    {"cc", GLOBUS_XIO_GRIDFTP_MULTICAST_ATTR_CAST_COUNT,
+        globus_xio_string_cntl_int},
     {"tcpbs", GLOBUS_XIO_GRIDFTP_MULTICAST_ATTR_TCPBS,
         globus_xio_string_cntl_formated_int},
     {"urls", GLOBUS_XIO_GRIDFTP_MULTICAST_ATTR_URLS,
@@ -1550,10 +1655,12 @@ xio_l_gridftp_multicast_attr_cntl(
             attr->P = va_arg(ap, int);
             break;
 
-        case GLOBUS_XIO_GRIDFTP_MULTICAST_ATTR_TCPBS:
-            attr->tcp_bs = (globus_size_t) va_arg(ap, int);
+        case GLOBUS_XIO_GRIDFTP_MULTICAST_ATTR_CAST_COUNT:
+            attr->cast_count = va_arg(ap, int);
             break;
 
+        case GLOBUS_XIO_GRIDFTP_MULTICAST_ATTR_TCPBS:
+            attr->tcp_bs = (globus_size_t) va_arg(ap, int);
             break;
 
         case GLOBUS_XIO_GRIDFTP_MULTICAST_ATTR_URLS:
