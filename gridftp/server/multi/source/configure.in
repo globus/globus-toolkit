@@ -19,9 +19,6 @@ GLOBUS_FINALIZE
 AC_OUTPUT(
 	Makefile
 	pkgdata/Makefile
-        doxygen/Makefile
-        doxygen/Doxyfile 
-        doxygen/Doxyfile-internal
 	pkgdata/pkg_data_src.gpt
         version.h
 )
