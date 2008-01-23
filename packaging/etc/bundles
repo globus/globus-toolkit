@@ -533,6 +533,7 @@ BUNDLE globus-gridftp
         globus_authz_gaa_callout
         globus_gridmap_callout_error
         globus_gridftp_sshftp_setup
+        globus_xio_gridftp_multicast
 
 BUNDLE globus-xio-extra-drivers
         globus_xio_skeleton_driver
