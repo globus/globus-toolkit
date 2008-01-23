@@ -309,6 +309,9 @@ globus_xio_driver_list_from_string(
         {
             *opts = '\0';
             opts++;
+
+            /* decode the string */
+            globus_url_string_hex_decode(opts);
         }
 
         /* check against the safe list */
