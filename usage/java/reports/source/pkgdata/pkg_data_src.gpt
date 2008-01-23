@@ -23,7 +23,7 @@
     <Source_Dependencies Type="compile" >
         <Dependency Name="globus_java_ws_core" Package="pgm"> 
             <Version>
-                <Simple_Version Major="0"/>
+                <Simple_Version Major="2"/>
             </Version>
         </Dependency>
         <Dependency Name="globus_usage_packets_common" Package="pgm"> 
