@@ -76,6 +76,7 @@ GlobusXIODeclareDriver(gridftp_multicast);
         _XIOSL(_reason))                                
 
 #define GMC_ERROR_TOKEN "GMC_ERROR=\n"
+#define GMC_URL_ENC_CHAR "#;:=+ ,"
 
 enum xio_l_error_levels
 {
@@ -555,6 +556,9 @@ xio_l_gmc_put_done(
 
     globus_mutex_lock(&handle->mutex);
     {
+        /* This is open count */
+        handle->op_count--;
+
         ftp_handle->closed = GLOBUS_TRUE;
         handle->ftps--;
         globus_ftp_client_handle_destroy(&ftp_handle->client_h);
@@ -575,7 +579,6 @@ xio_l_gmc_put_done(
                 break;
 
             case XIO_GMC_STATE_OPENING_ERROR:
-                handle->op_count--;
                 if(handle->op_count == 0)
                 {
                     finish_open = GLOBUS_TRUE;
@@ -583,7 +586,6 @@ xio_l_gmc_put_done(
                 break;
 
             case XIO_GMC_STATE_OPENING:
-                handle->op_count--;
                 if(handle->op_count == 0)
                 {
                     finish_open = GLOBUS_TRUE;
@@ -592,7 +594,6 @@ xio_l_gmc_put_done(
                 break;
 
             case XIO_GMC_STATE_CLOSING:
-                handle->op_count--;
                 if(handle->op_count == 0)
                 {
                     finish_close = GLOBUS_TRUE;
@@ -641,7 +642,6 @@ error:
         case XIO_GMC_STATE_OPENING_ERROR:
             /* set the error */
 
-            handle->op_count--;
             if(handle->op_count == 0)
             {
                 finish_open = GLOBUS_TRUE;
@@ -649,7 +649,6 @@ error:
             break;
 
         case XIO_GMC_STATE_CLOSING:
-            handle->op_count--;
             if(handle->op_count == 0)
             {
                 finish_close = GLOBUS_TRUE;
@@ -898,7 +897,9 @@ xio_l_gridftp_multicast_open(
                     username,
                     pw,
                     attr,
-                    &url_q, str_max_len, each_cast_count);
+                    &url_q,
+                    str_max_len,
+                    each_cast_count);
                 if(result != GLOBUS_SUCCESS)
                 {
                     goto error_forward_setup;
@@ -1002,10 +1003,12 @@ xio_l_gmc_setup_forwarder(
     int                                 each_cast_count)
 {
     int                                 cast_count;
+    char *                              driver_del;
     char *                              stack_str;
     int                                 stack_str_ndx;
     int                                 i;
     char *                              str;
+    char *                              tmp_ss;
     globus_result_t                     result;
     char                                delim = '#';
     xio_l_gridftp_multicast_handle_t *  handle;
@@ -1015,7 +1018,7 @@ xio_l_gmc_setup_forwarder(
     handle = ftp_handle->whos_my_daddy;
 
     cast_count = 0;
-    stack_str = malloc(max_str_len);
+    stack_str = malloc(max_str_len*3); /* 3x for url encoding */
     stack_str_ndx = 0;
     for(i = 0; i < each_cast_count; i++)
     {
@@ -1024,10 +1027,14 @@ xio_l_gmc_setup_forwarder(
             str = (char *) globus_fifo_dequeue(url_q);
             globus_fifo_enqueue(&ftp_handle->url_q, str);
 
+            str = globus_url_string_hex_encode(str, GMC_URL_ENC_CHAR);
+
             stack_str[stack_str_ndx] = delim;
             stack_str_ndx++;
             strcpy(&stack_str[stack_str_ndx], str);
             stack_str_ndx += strlen(str);
+
+            free(str);
             cast_count++;
         }
         stack_str[stack_str_ndx] = '\0';
@@ -1079,27 +1086,41 @@ xio_l_gmc_setup_forwarder(
         goto error_attr;
     }
 
+    driver_del = "";
     if(*stack_str != '\0')
     {
-        if(ftp_handle->str_opts)
-        {
-            ftp_handle->stack_str = globus_common_create_string(
-                "file,gridftp_multicast:urls=%s;%s",
-                stack_str, ftp_handle->str_opts);
-        }
-        else
-        {
-            ftp_handle->stack_str = globus_common_create_string(
-                "file,gridftp_multicast:urls=%s", stack_str);
-        }
-        result = globus_ftp_client_operationattr_set_disk_stack(
-            &ftp_handle->op_attr,
-            ftp_handle->stack_str);
-        if(result != GLOBUS_SUCCESS)
-        {
-            goto error_attr;
-        }
+        tmp_ss = stack_str;
+        stack_str = globus_common_create_string("urls=%s;", tmp_ss);
+        globus_free(tmp_ss);
+        driver_del = ":";
     }
+
+    /* add on the opts if there are any */
+    if(ftp_handle->str_opts != NULL)
+    {
+        tmp_ss = stack_str;
+        stack_str = globus_common_create_string(
+            "%s%s", tmp_ss, ftp_handle->str_opts);
+        globus_free(tmp_ss);
+        driver_del = ":";
+    }
+
+    tmp_ss = stack_str;
+    stack_str = globus_url_string_hex_encode(tmp_ss, GMC_URL_ENC_CHAR);
+    globus_free(tmp_ss);
+
+    /* XXX what if they put other things on the stack too ? */
+    ftp_handle->stack_str = globus_common_create_string(
+            "file,gridftp_multicast%s%s", driver_del, stack_str);
+
+    result = globus_ftp_client_operationattr_set_disk_stack(
+        &ftp_handle->op_attr,
+        ftp_handle->stack_str);
+    if(result != GLOBUS_SUCCESS)
+    {
+        goto error_attr;
+    }
+
     result = globus_ftp_client_handle_init(
         &ftp_handle->client_h, &ftp_handle->handle_attr);
     if(result != GLOBUS_SUCCESS)
@@ -1365,8 +1386,13 @@ xio_l_gridftp_multicast_write(
             }
             else
             {
-                /* this is an error case */
-                result = xio_l_gmc_error_strings(handle);
+                result = xio_l_gmc_get_error(handle);
+                if(result == GLOBUS_SUCCESS)
+                {
+                    /* could be no errors, but nothing to write to
+                        because there was never anything opened. */
+                    result = GlobusXIOGMCNoOpError("Nothing to open");
+                }
                 goto error_pass;
             }
         }
@@ -1514,6 +1540,9 @@ xio_l_gridftp_multicast_close(
                                 more errors hav ecome or a re coming.
                                 if hangs, revisit XXX */
                         }
+                        else
+                        {
+                        }
                     }
                 }
 
@@ -1523,6 +1552,10 @@ xio_l_gridftp_multicast_close(
                         op, xio_l_gmc_close_cb, handle);
                     if(result != GLOBUS_SUCCESS)
                     {
+                        if(handle->result == GLOBUS_SUCCESS)
+                        {
+                            handle->result = result;
+                        }
                         goto error_pass;
                     }
                     handle->op_count++;
@@ -1536,6 +1569,11 @@ xio_l_gridftp_multicast_close(
                 globus_assert(0 && "bad state");
                 break;
         }
+
+        if(handle->op_count == 0)
+        {
+            goto error_pass;
+        }
     }
     globus_mutex_unlock(&handle->mutex);
 
@@ -1544,6 +1582,7 @@ xio_l_gridftp_multicast_close(
 error_pass:
     globus_mutex_unlock(&handle->mutex);
 
+    result = xio_l_gmc_get_error(handle);
     xio_l_gmc_handle_destroy(handle);
 
     return result;
@@ -1646,6 +1685,7 @@ xio_l_gridftp_multicast_attr_cntl(
     int                                 i;
     xio_l_gridftp_multicast_attr_t *    attr;
     char *                              sbj;
+    char *                              url;
 
     attr = (xio_l_gridftp_multicast_attr_t *) driver_attr;
 
@@ -1667,7 +1707,9 @@ xio_l_gridftp_multicast_attr_cntl(
             argv = (char **) va_arg(ap, char **);
             for(i = 0; argv[i] != NULL; i++)
             {
-                globus_fifo_enqueue(&attr->url_q, globus_libc_strdup(argv[i]));
+                url = strdup(argv[i]);
+                globus_url_string_hex_decode(url);
+                globus_fifo_enqueue(&attr->url_q, url);
             }
             break;
 
