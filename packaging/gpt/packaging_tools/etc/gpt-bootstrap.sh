@@ -6,16 +6,7 @@ error()
     exit 1
 }
 
-
-# check for autotools
-
-for program in libtoolize automake aclocal autoconf autoheader
-    do
-    ($program --version ) > /dev/null 2>&1 || { 
-    echo "ERROR: $program not found" >&2
-    exit 1
-    }
-done
+# Removed check for autotools.  CAB 01/08
 
 # Always include globus macros
 config="$aclocal_includes -I $GLOBUS_LOCATION/share/globus_aclocal"
