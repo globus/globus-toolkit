@@ -60,6 +60,10 @@ my %package_dep_hash;
 # Track package versions.  $package_version_hash{$pkg} = version(pkg1)
 my %package_version_hash;
 
+# Track version requirements.  $package_require_hash{$pkg1}{$pkgs2} = X
+# implies that pkgs2 depends on pkg1 having major version X
+my %package_require_hash;
+
 # Which of the CVS trees should I operate on?
 my @cvs_build_list;
 my %cvs_build_hash;
@@ -323,10 +327,30 @@ sub generate_build_list()
            create_makefile_installer("$top_dir/$installer");
        } else
        {
+           my @errors;
            print "Final package build list:\n";
            foreach my $dpk ( @package_build_list )
            {
-                print "$dpk\n";
+                my $high = $package_version_hash{$dpk}{'major'};
+                my $age = $package_version_hash{$dpk}{'age'};
+                my $low = $high - $age;
+                print "$dpk at version $package_version_hash{$dpk}{'major'}\n";
+                foreach my $depender ( keys %{$package_require_hash{$dpk}} )
+                {
+                   my $req = $package_require_hash{$dpk}{$depender};
+                   next if ( ($low le $req) && ( $req le $high ) );
+                   push @errors, "$dpk has version $high and age $age, but $depender wants version $req\n";
+                }
+           }
+           if ( @errors )
+           {
+              print "ERROR: Bad dependencies found: \n";
+              foreach my $badguy ( @errors )
+              {
+                 print $badguy;
+              }
+
+              exit 1;
            }
        }
     }
@@ -414,7 +438,7 @@ sub create_makefile_installer
          print INS "$pack: gpt";
          foreach my $deppack ( @package_build_list )
          {
-              if ( $package_dep_hash{$pack}{$deppack} eq 1 )
+              if ( $package_dep_hash{$pack}{$deppack} )
               {
                    print INS " $deppack" unless ( $pack eq $deppack );
                    print PAC "package('$deppack');\n" unless ( $pack eq $deppack );
@@ -433,7 +457,7 @@ sub create_makefile_installer
          print INS "${pack}-thr: gpt";
          foreach my $deppack ( @package_build_list )
          {
-              if ( $package_dep_hash{$pack}{$deppack} eq 1 )
+              if ( $package_dep_hash{$pack}{$deppack} )
               {
                    print INS " ${deppack}-thr" unless ( $pack eq $deppack );
               }
@@ -493,7 +517,9 @@ sub import_package_dependencies
         
         print "Reading in metadata for $pack.\n";
         $pkg->read_metadata_file("$metadatafile");
-        $package_version_hash{$pack} = $pkg->{'Version'}->label();
+
+        $package_version_hash{$pack}{'major'} = $pkg->{'Version'}->{'major'};
+        $package_version_hash{$pack}{'age'} = $pkg->{'Version'}->{'age'};
 
         for my $dep (keys %{$pkg->{'Source_Dependencies'}->{'pkgname-list'}})
         {
@@ -1251,6 +1277,7 @@ sub topol_sort
     my $pkg = new Grid::GPT::V1::Package;
 
     $pkg->read_metadata_file("$metadatafile");
+
     my @deptypes = (keys %{$pkg->{'Source_Dependencies'}->{'deptype-list'}});
     for my $deptype (@deptypes)
     {
@@ -1258,7 +1285,15 @@ sub topol_sort
                        or ($deptype eq "lib_link") );
         for my $dep (keys %{$pkg->{'Source_Dependencies'}->{'table'}->{$deptype}})
         {
-            $package_dep_hash{$node}{$dep} = 1;
+            # This loop goes through the list of required packages and
+            # stores the major version required by $node of $dep
+            for my $pkgtype (keys %{$pkg->{'Source_Dependencies'}->{'table'}->{$deptype}->{$dep}->{'ANY'}})
+            {
+                my $numdeps = scalar @{$pkg->{'Source_Dependencies'}->{'table'}->{$deptype}->{$dep}->{'ANY'}->{$pkgtype}->{'versions'}};
+                my %ref = %{$pkg->{'Source_Dependencies'}->{'table'}->{$deptype}->{$dep}->{'ANY'}->{$pkgtype}->{'versions'}[$numdeps - 1]};
+		$package_require_hash{$dep}{$node} = $ref{'major'};
+            }
+
             if(exists $package_build_hash{$dep})
             {
                 $in_call_stack->{$node} = $node;
