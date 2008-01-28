@@ -309,7 +309,7 @@ globus_gsi_proxy_handle_set_req(
     
     if(handle->req)
     {
-        X509_REQ_free(req);
+        X509_REQ_free(handle->req);
         handle->req = NULL;
     }
 
