@@ -1285,6 +1285,7 @@ sub topol_sort
                        or ($deptype eq "lib_link") );
         for my $dep (keys %{$pkg->{'Source_Dependencies'}->{'table'}->{$deptype}})
         {
+            $package_dep_hash{$node}{$dep} = 1;
             # This loop goes through the list of required packages and
             # stores the major version required by $node of $dep
             for my $pkgtype (keys %{$pkg->{'Source_Dependencies'}->{'table'}->{$deptype}->{$dep}->{'ANY'}})
