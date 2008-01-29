@@ -935,12 +935,12 @@ globus_l_xio_tb_attr_cntl(
     {
         case GLOBUS_XIO_TOKEN_BUCKET_SET_RATE:
             attr->read_attr.rate = va_arg(ap, globus_size_t);
-            attr->write_attr.rate = va_arg(ap, globus_size_t);
+            attr->write_attr.rate = attr->read_attr.rate;
             break;
 
         case GLOBUS_XIO_TOKEN_BUCKET_SET_PERIOD:
             attr->read_attr.us_period = va_arg(ap, int);
-            attr->write_attr.us_period = va_arg(ap, int);
+            attr->write_attr.us_period = attr->read_attr.us_period;
             break;
 
         case GLOBUS_XIO_TOKEN_BUCKET_SET_READ_RATE:
