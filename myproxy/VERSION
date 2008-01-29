@@ -5,7 +5,15 @@ Binary compatibility of the C API is not guaranteed between releases.
 Version History
 ---------------
 v4.3 XX Xxx 2008
-  - ...
+  - improve MyProxy CA error message on incorrect passphrase.
+    specifically, in myproxy-server, if passphrase in the request is
+    non-empty, fail immediately if it can't be verified, rather than
+    trying other methods; this forces other authentication methods
+    (SASL, renewal) to send an empty passphrase (which current clients
+    do by default), but it results in a better error message in the
+    common case when an incorrect passphrase is given.  also stop
+    appending "invalid pass phrase" to the more specific error
+    message from PAM or OpenSSL.
 
 v4.2 10 Jan 2008
   - add support for $GT_PROXY_MODE="rfc" in myproxy-init

@@ -1808,7 +1808,7 @@ authenticate_client(myproxy_socket_attrs_t *attrs,
 	   if (i == AUTHORIZETYPE_PASSWD) {
 	       if (verify_passphrase(creds, client_request,
 				     client_name, config) != 1) {
-		   verror_put_string("invalid pass phrase");
+               /* verify_passphrase() will set verror */
 		   goto end;
 	       }
 	       authcnt++;
@@ -1837,7 +1837,12 @@ authenticate_client(myproxy_socket_attrs_t *attrs,
 	   if (verify_passphrase(creds, client_request,
 				 client_name, config) == 1) {
 	       authcnt++;
-	   }
+	   } else {
+           /* if given password was bad,
+              fail immediately for a more helpful error message */
+           /* verify_passphrase() will set verror */
+		   goto end;
+       }
        }
    }
    if (authcnt == 0) {
