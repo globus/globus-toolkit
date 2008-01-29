@@ -379,7 +379,7 @@ if ($exitstatus == 0) {
     &runtest("myproxy-logon -t 1 -o /tmp/myproxy-test.$$ -v -S",
 	     "badpassphrase\n");
 print "MyProxy Test 4 (verify passphrase checking on retrieve): ";
-if ($exitstatus != 0 && $output =~ /invalid pass phrase/) {
+if ($exitstatus != 0 && $output =~ /invalid credential passphrase/) {
     print "SUCCEEDED\n"; $SUCCESSES++;
 } else {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
@@ -389,7 +389,7 @@ if ($exitstatus != 0 && $output =~ /invalid pass phrase/) {
     &runtest("myproxy-logon -t 1 -N -v -S",
 	     "badpassphrase\n");
 print "MyProxy Test 4N (verify passphrase checking on authenticate): ";
-if ($exitstatus != 0 && $output =~ /invalid pass phrase/) {
+if ($exitstatus != 0 && $output =~ /invalid credential passphrase/) {
     print "SUCCEEDED\n"; $SUCCESSES++;
 } else {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
@@ -425,7 +425,7 @@ if ($exitstatus == 0) {
     &runtest("myproxy-logon -t 1 -o /tmp/myproxy-test.$$ -v -S",
 	     $old_passphrase . "\n");
 print "MyProxy Test 7 (verify old passphrase fails): ";
-if ($exitstatus != 0 && $output =~ /invalid pass phrase/) {
+if ($exitstatus != 0 && $output =~ /invalid credential passphrase/) {
     print "SUCCEEDED\n"; $SUCCESSES++;
 } else {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
@@ -704,7 +704,7 @@ if (defined($origtrustrootdir)) {
     &runtest("myproxy-logon -t 1 -o /tmp/myproxy-test.$$ -v -S",
 	     "badpassphrase\n");
 print "MyProxy Test 21 (verify passphrase checking on myproxy-logon): ";
-if ($exitstatus != 0 && $output =~ /invalid pass phrase/) {
+if ($exitstatus != 0 && $output =~ /invalid credential passphrase/) {
     print "SUCCEEDED\n"; $SUCCESSES++;
 } else {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
@@ -717,7 +717,7 @@ if ($exitstatus != 0 && $output =~ /invalid pass phrase/) {
     &runtest("myproxy-retrieve -c /tmp/myproxy-test-cert.$$.pem -y /tmp/myproxy-test-key.$$.pem -v -S",
 	     "badpassphrase\n");
 print "MyProxy Test 22 (verify passphrase checking on myproxy-retrieve): ";
-if ($exitstatus != 0 && $output =~ /invalid pass phrase/) {
+if ($exitstatus != 0 && $output =~ /invalid credential passphrase/) {
     print "SUCCEEDED\n"; $SUCCESSES++;
 } else {
     print "FAILED\n"; $FAILURES++; print STDERR $output;
@@ -1280,6 +1280,29 @@ sub docogtests {
         print "FAILED\n"; $FAILURES++; print STDERR $output;
     }
 
+    ($exitstatus, $output) =
+        &runtest("$cogmyproxy put -n -x -R '$cert_subject' -k 'mine' -c 1 -t 1",
+                 $passphrase . "\n");
+    print "MyProxy CoG Test 8 (store credential with renewal policy): ";
+    if ($exitstatus == 0) {
+      print "SUCCEEDED\n"; $SUCCESSES++;
+    } else {
+      print "FAILED\n"; $FAILURES++; print STDERR $output;
+    }
+
+    ($exitstatus, $output) =
+      &runtest("$cogmyproxy get -k 'mine' -a $ENV{'X509_USER_PROXY'} -t 1 -o /tmp/myproxy-test.$$", undef);
+    print "MyProxy CoG Test 9 (renew credential): ";
+    if ($exitstatus == 0) {
+      ($exitstatus, $output) =
+        &verifyproxy("/tmp/myproxy-test.$$");
+    }
+    if ($exitstatus == 0) {
+      print "SUCCEEDED\n"; $SUCCESSES++;
+    } else {
+      print "FAILED\n"; $FAILURES++; print STDERR $output;
+    }
+    &runtest("myproxy-destroy -v -k 'mine' -d", undef);
 }
 
 #
