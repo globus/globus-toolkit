@@ -56,6 +56,7 @@ static char *  LONG_USAGE = \
 "    -pwstdin                  Allows passphrase from stdin\n" \
 "    -limited                  Creates a limited proxy\n" \
 "    -independent              Creates a independent proxy\n" \
+"    -draft                    Creates a draft (GSI-3) proxy\n" \
 "    -old                      Creates a legacy globus proxy\n" \
 "    -rfc                      Creates a RFC 3820 compliant proxy\n" \
 "    -valid <h:m>              Proxy is valid for h hours and m \n" \
