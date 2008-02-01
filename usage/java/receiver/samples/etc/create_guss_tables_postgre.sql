@@ -1,5 +1,3 @@
-USE guss;
-
 CREATE TABLE  unknown_packets(
     id SERIAL,
     componentcode SMALLINT NOT NULL,
@@ -13,23 +11,19 @@ CREATE TABLE gftp_packets(
     component_code SMALLINT NOT NULL,
     version_code SMALLINT NOT NULL,
     send_time TIMESTAMP,
-    ip_version SMALLINT,
     ip_address INET,
     hostname VARCHAR(64) NOT NULL,
     gftp_version VARCHAR(64),
     stor_or_retr SMALLINT,
-    start_time BIGINT NOT NULL,
-    end_time BIGINT NOT NULL,
+    start_time TIMESTAMP NOT NULL,
+    end_time TIMESTAMP,
     num_bytes BIGINT,
     num_stripes INT,
     num_streams INT,
     buffer_size INT,
     block_size  INT,
     ftp_return_code INT,
-    sequence_number BIGINT,
-    src_id BIGINT,
-    dest_id BIGINT,
-    reserved BIGINT,
+    ip_version INT,
     PRIMARY KEY (id)
 );
 
