@@ -16,6 +16,10 @@
 
 #include "globus_gram_job_manager.h"
 
+#ifdef BUILD_LITE
+#define asctime_r(a, b) asctime(a)
+#endif
+
 static
 int
 globus_l_gram_audit_get_username(
