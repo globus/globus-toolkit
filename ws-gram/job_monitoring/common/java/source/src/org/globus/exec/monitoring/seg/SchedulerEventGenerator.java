@@ -115,6 +115,7 @@ class SchedulerEventGenerator
         JobStateMonitor monitor,
         boolean segDaemon) {
 
+        super("SEG-" + schedulerName + "-Thread");
         this.userName = userName;
         this.schedulerName = schedulerName;
         this.proc = null;

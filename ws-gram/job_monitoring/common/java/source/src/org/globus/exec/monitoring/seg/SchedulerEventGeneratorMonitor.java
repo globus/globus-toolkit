@@ -17,6 +17,7 @@ package org.globus.exec.monitoring.seg;
 
 import java.io.IOException;
 import java.util.Date;
+import java.util.concurrent.ExecutorService;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.globus.exec.monitoring.AlreadyRegisteredException;
@@ -25,7 +26,7 @@ import org.globus.exec.monitoring.JobStateMonitor;
 import org.globus.exec.monitoring.JobStateRecoveryListener;
 import org.globus.exec.monitoring.NotRegisteredException;
 import org.globus.exec.monitoring.SchedulerEvent;
-import org.globus.exec.monitoring.EventDispatchQueue;
+import org.globus.exec.monitoring.EventDispatchTask;
 import org.globus.wsrf.ResourceKey;
 
 /**
@@ -76,10 +77,10 @@ public class SchedulerEventGeneratorMonitor
     private JobStateChangeListener listener;
     
     /**
-     * EventDispatchQueue which will take all events that must be dispatched to
-     * avoid blocking in the JobStateMonitor
+     * thread pool which will take all events that must
+     * be dispatched to avoid blocking in the JobStateMonitor
      */
-    private EventDispatchQueue dispatchQueue;
+    private ExecutorService executorService;
     
     /**
      * JobStateRecoveryListener which will be notified when the JSM decides that
@@ -166,12 +167,13 @@ public class SchedulerEventGeneratorMonitor
      * @param segDaemon
      *            Indicates whether to make the SEG a daemon thread or not
      */
-    public static SchedulerEventGeneratorMonitor getInstance(
+    public static SchedulerEventGeneratorMonitor createNewInstance(
         String globusLocation,
         String userName,
         String schedulerName,
         JobStateChangeListener listener,
         JobStateRecoveryListener recoveryListener,
+        ExecutorService gramExecutorService,
         boolean segDaemon) {
 
         logger.debug("Constructing JobStateMonitor");
@@ -181,7 +183,7 @@ public class SchedulerEventGeneratorMonitor
 
         monitor.initialize(listener, recoveryListener,
             new SchedulerEventGenerator(globusLocation, userName,
-                schedulerName, monitor, segDaemon));
+                schedulerName, monitor, segDaemon), gramExecutorService);
 
         logger.debug("Initialized SEGM (SEG daemon status "
             + segDaemon + ")");
@@ -211,7 +213,8 @@ public class SchedulerEventGeneratorMonitor
     void initialize(
         JobStateChangeListener listener,
         JobStateRecoveryListener recoveryListener,
-        SchedulerEventGenerator seg) {
+        SchedulerEventGenerator seg,
+        ExecutorService gramExecutorService) {
 
         this.cacheFlushTask = null;
         this.recoveryTask = null;
@@ -221,7 +224,7 @@ public class SchedulerEventGeneratorMonitor
         this.mapping = new java.util.HashMap();
         this.cachedEvents =
             new java.util.TreeSet(SchedulerEvent.getComparator());
-        this.dispatchQueue = new EventDispatchQueue(this);
+        this.executorService = gramExecutorService;
     }
 
     /**
@@ -260,7 +263,8 @@ public class SchedulerEventGeneratorMonitor
                 java.util.Iterator i = events.iterator();
                 while (i.hasNext()) {
                     SchedulerEvent e = (SchedulerEvent) i.next();
-                    dispatchQueue.add(e);
+                    executorService.execute(
+                        new EventDispatchTask(e, this));
 
                     synchronized (cachedEvents) {
                         if (cachedEvents.remove(e)
@@ -329,7 +333,6 @@ public class SchedulerEventGeneratorMonitor
             logger.debug("creating recovery update task");
             recoveryTask = new java.util.TimerTask() {
                 public void run() {
-
                     updateRecoveryInfo();
                 }
             };
@@ -410,16 +413,19 @@ public class SchedulerEventGeneratorMonitor
 
     private void updateRecoveryInfo() {
 
-        logger.debug("Entering updateRecoveryInfo()");
-
+        if (logger.isDebugEnabled()) {
+            logger.debug("Entering updateRecoveryInfo()");
+        }
+        
         java.util.Date d;
-
         synchronized (recoveryTask) {
             d = lastEventTimestamp;
         }
 
         recoveryListener.updateJobMonitorRecoveryTimeStamp(this, d);
-        logger.debug("Exiting updateRecoveryInfo()");
+        if (logger.isDebugEnabled()) {
+            logger.debug("Exiting updateRecoveryInfo()");
+        }
     }
 
     /**
@@ -524,12 +530,15 @@ public class SchedulerEventGeneratorMonitor
             ResourceKey mapping = getMapping(localId);
 
             if (mapping != null) {
-                logger.debug("Dispatching event "
-                    + e.getLocalId() + " to job " + mapping.getValue());
-                dispatchQueue.add(e);
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Dispatching event "
+                        + e.getLocalId() + " to job " + mapping.getValue());
+                }
+                executorService.execute(new EventDispatchTask(e, this));
             } else {
-                logger.debug("Caching event "
-                    + e.getLocalId());
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Caching event " + e.getLocalId());
+                }
                 cacheEvent(e);
             }
         }
