@@ -102,6 +102,10 @@ if test $CONDOR_ARCH = 'no'; then
       esac
 fi
 
+if test "$CONDOR_CONFIG" = ''; then
+    AC_MSG_WARN([CONDOR_CONFIG not set in environment, condor will search default paths])
+fi
+AC_SUBST(CONDOR_CONFIG)
 AC_SUBST(CONDOR_OS)
 AC_SUBST(CONDOR_ARCH)
 

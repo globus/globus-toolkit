@@ -31,12 +31,18 @@ package Globus::GRAM::JobManager::condor;
 
 @ISA = qw(Globus::GRAM::JobManager);
 
-my ($condor_submit, $condor_rm);
+my ($condor_submit, $condor_rm, $condor_config);
 
 BEGIN
 {
     $condor_submit 	= '@CONDOR_SUBMIT@';
     $condor_rm	 	= '@CONDOR_RM@';
+    $condor_config      = '@CONDOR_CONFIG@';
+
+    if ($condor_config ne '')
+    {
+        $ENV{CONDOR_CONFIG} = $condor_config;
+    }
 }
 
 sub new
