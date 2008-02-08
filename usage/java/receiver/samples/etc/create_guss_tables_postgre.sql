@@ -69,7 +69,17 @@ CREATE TABLE java_ws_core_packets(
     container_type SMALLINT,
     event_type SMALLINT,
     service_list TEXT,
-    optional_val INT
+    optional_val INT,
+    version_major SMALLINT,
+    version_minor SMALLINT,
+    version_micro SMALLINT,
+    port_number INT,
+    thread_pool_size SMALLINT,
+    thread_count SMALLINT,
+    max_threads SMALLINT,
+    threads_high_water_mark SMALLINT,
+    service_request_count INT,
+    jvm_info VARCHAR(64)
 );
 
 CREATE TABLE gram_packets( 

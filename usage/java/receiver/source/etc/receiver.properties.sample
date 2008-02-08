@@ -43,6 +43,7 @@ ringbuffer-size = 8192
 #           org.globus.usage.receiver.handlers.GridFTPPacketHandler \
 #           org.globus.usage.receiver.handlers.JavaCorePacketHandler \
 #           org.globus.usage.receiver.handlers.JavaCorePacketHandlerV2 \
+#           org.globus.usage.receiver.handlers.JavaCorePacketHandlerV3 \
 #           org.globus.usage.receiver.handlers.MDSAggregatorPacketHandler \
 #           org.globus.usage.receiver.handlers.RFTPacketHandler \
 #           org.globus.usage.receiver.handlers.RLSPacketHandler \
