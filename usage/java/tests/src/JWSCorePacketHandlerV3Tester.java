@@ -21,7 +21,7 @@ import junit.framework.TestSuite;
 
 import org.globus.wsrf.utils.Version;
 import org.globus.usage.packets.CustomByteBuffer;
-import org.globus.wsrf.container.usage.ContainerUsagePacketV3;
+import org.globus.usage.packets.ContainerUsagePacketV3;
 import org.globus.usage.receiver.handlers.JavaCorePacketHandlerV3;
 
 public class JWSCorePacketHandlerV3Tester extends TestCase 

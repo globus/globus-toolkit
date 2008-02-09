@@ -20,8 +20,8 @@ import org.apache.commons.logging.LogFactory;
 
 import org.globus.usage.packets.CustomByteBuffer;
 import org.globus.usage.packets.UsageMonitorPacket;
-import org.globus.wsrf.container.usage.ContainerUsageBasePacket;
-import org.globus.wsrf.container.usage.ContainerUsagePacketV3;
+import org.globus.usage.packets.ContainerUsageBasePacket;
+import org.globus.usage.packets.ContainerUsagePacketV3;
 
 import java.sql.SQLException;
 import java.sql.PreparedStatement;

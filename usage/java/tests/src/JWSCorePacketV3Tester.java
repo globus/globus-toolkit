@@ -20,8 +20,9 @@ import junit.framework.Assert;
 import junit.framework.TestSuite;
 
 import org.globus.wsrf.utils.Version;
-import org.globus.wsrf.container.usage.ContainerUsagePacketV3;
 import org.globus.usage.packets.CustomByteBuffer;
+import org.globus.usage.packets.ContainerUsageBasePacket;
+import org.globus.usage.packets.ContainerUsagePacketV3;
 
 public class JWSCorePacketV3Tester extends TestCase 
 {
