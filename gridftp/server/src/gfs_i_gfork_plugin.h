@@ -107,7 +107,8 @@ typedef enum gfs_gfork_msg_type_e
     GFS_GFORK_MSG_TYPE_ACK,
     GFS_GFORK_MSG_TYPE_NACK,
     GFS_GFORK_MSG_TYPE_CC,
-    GFS_GFORK_MSG_TYPE_RELEASE
+    GFS_GFORK_MSG_TYPE_RELEASE,
+    GFS_GFORK_MSG_TYPE_REMOVE_DYNBE
 } gfs_gfork_msg_type_t;
 
 

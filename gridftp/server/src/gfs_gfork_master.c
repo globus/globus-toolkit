@@ -116,6 +116,13 @@ gfs_gfork_master_options(
     int                                 argc,
     char **                             argv);
 
+static
+globus_result_t
+gfs_l_gfork_read_dynbe(
+    globus_xio_handle_t                 handle,
+    globus_byte_t *                     buffer,
+    globus_size_t                       len);
+
 #define GFS_421_NO_TCP_MEM \
     "421 Not enough memory for TCP buffers.  Try later."
 
@@ -171,14 +178,17 @@ gfs_l_gfork_timeout(
     globus_mutex_lock(&g_mutex);
     {
         ent_buf->timeout_count--;
-        if(ent_buf->timeout_count == 0)
+        if(ent_buf->timeout_count < 0)
         {
             gfs_l_gfork_log(
                 GLOBUS_SUCCESS, 2, "Backend registration for %s expired\n",
                 &buffer[GF_DYN_CS_NDX]);
             ent_buf->buffer[GF_VERSION_NDX] = GF_VERSION_TIMEOUT;
-            ent_buf = (gfs_l_gfork_master_entry_t *) globus_hashtable_remove(
+            globus_hashtable_remove(
                 &g_gfork_be_table, ent_buf->table_key);
+
+            globus_free(ent_buf->table_key);
+            globus_free(ent_buf);
         }
     }
     globus_mutex_unlock(&g_mutex);
@@ -195,10 +205,7 @@ gfs_l_gfork_write_cb(
     globus_xio_data_descriptor_t        data_desc,
     void *                              user_arg)
 {
-    gfs_l_gfork_master_entry_t *        ent_buf;
-
-    ent_buf = (gfs_l_gfork_master_entry_t *) user_arg;
-    globus_free(ent_buf);
+    globus_free(buffer);
 
     globus_xio_register_close(
         handle,
@@ -207,6 +214,86 @@ gfs_l_gfork_write_cb(
         NULL);
 }
 
+static
+globus_result_t
+gfs_l_gfork_read_remove_dynbe(
+    globus_xio_handle_t                 handle,
+    globus_byte_t *                     buffer,
+    globus_size_t                       len)
+{
+    globus_result_t                     result;
+    gfs_l_gfork_master_entry_t *        ent_buf;
+    globus_bool_t                       ok;
+    globus_bool_t                       done;
+    int                                 i;
+    char *                              table_key;
+    GFSGForkFuncName(gfs_l_gfork_read_remove_dynbe);
+
+        /* we are only ok if the string ends in a \0 */
+    done = GLOBUS_FALSE;
+    ok = GLOBUS_TRUE;
+    for(i = GF_DYN_CS_NDX; i < GF_DYN_CS_NDX + GF_DYN_CS_LEN && !done; i++)
+    {
+        if(buffer[i] == '\0')
+        {
+            ok = !ok;
+            done = GLOBUS_TRUE;
+        }
+        else if(!isalnum(buffer[i]) && buffer[i] != '.' &&
+            buffer[i] != '-' && buffer[i] != ':')
+        {
+            ok = GLOBUS_FALSE;
+            done = GLOBUS_TRUE;
+        }
+        else
+        {
+            ok = GLOBUS_FALSE;
+        }
+    }
+
+    if(!ok)
+    {
+        gfs_l_gfork_log(
+            GLOBUS_SUCCESS, 2, "Registration message not ok\n");
+        goto error_cs;
+    }
+
+    table_key = (char *)&buffer[GF_DYN_CS_NDX];
+    ent_buf = (gfs_l_gfork_master_entry_t *) globus_hashtable_remove(
+        &g_gfork_be_table, table_key);
+    if(ent_buf == NULL)
+    {
+        buffer[GF_VERSION_NDX] = GF_VERSION;
+        buffer[GF_MSG_TYPE_NDX] = GFS_GFORK_MSG_TYPE_NACK;
+    }
+    else
+    {
+        memset(buffer, '\0', GF_DYN_PACKET_LEN);
+        buffer[GF_VERSION_NDX] = GF_VERSION;
+        buffer[GF_MSG_TYPE_NDX] = GFS_GFORK_MSG_TYPE_ACK;
+    }
+    result = globus_xio_register_write(
+        handle,
+        buffer,
+        GF_DYN_PACKET_LEN,
+        GF_DYN_PACKET_LEN,
+        NULL,
+        gfs_l_gfork_write_cb,
+        NULL);
+    if(result != GLOBUS_SUCCESS)
+    {
+        globus_xio_register_close(
+            handle,
+            NULL,
+            NULL,
+            NULL);
+        globus_free(buffer);
+    }
+    return GLOBUS_TRUE;
+
+error_cs:
+    return GLOBUS_FALSE;
+}
 static
 void
 gfs_l_gfork_read_cb(
@@ -218,16 +305,6 @@ gfs_l_gfork_read_cb(
     globus_xio_data_descriptor_t        data_desc,
     void *                              user_arg)
 {
-    gfs_l_gfork_master_entry_t *        ent_buf;
-    gfs_l_gfork_master_entry_t *        write_ent;
-    globus_xio_iovec_t                  iov[1];
-    globus_bool_t                       ok;
-    globus_bool_t                       done;
-    int                                 i;
-    globus_reltime_t                    delay;
-    uint32_t                            tmp_32;
-    uint32_t                            converted_32;
-    char *                              table_key;
     GFSGForkFuncName(gfs_l_gfork_read_cb);
 
     gfs_l_gfork_log(
@@ -244,145 +321,46 @@ gfs_l_gfork_read_cb(
         {
             goto error_version;
         }
-        if(buffer[GF_MSG_TYPE_NDX] != GFS_GFORK_MSG_TYPE_DYNBE)
+
+        switch(buffer[GF_MSG_TYPE_NDX])
         {
-            goto error_version;
+            case GFS_GFORK_MSG_TYPE_DYNBE:
+                result = gfs_l_gfork_read_dynbe(handle, buffer, len);
+                break;
+
+            case GFS_GFORK_MSG_TYPE_REMOVE_DYNBE:
+                result = gfs_l_gfork_read_remove_dynbe(handle, buffer, len);
+                break;
+
+            default:
+                result = GFSGforkError("unkown registration command", 0);
+                gfs_l_gfork_log(
+                    result, 2, "Registration command not found\n");
+                break;
         }
 
-        /* we are only ok if the string ends in a \0 */
-        done = GLOBUS_FALSE;
-        ok = GLOBUS_TRUE;
-        for(i = GF_DYN_CS_NDX; i < GF_DYN_CS_NDX + GF_DYN_CS_LEN && !done; i++)
-        {
-            if(buffer[i] == '\0')
-            {
-                ok = !ok;
-                done = GLOBUS_TRUE;
-            }
-            else if(!isalnum(buffer[i]) && buffer[i] != '.' &&
-                buffer[i] != '-' && buffer[i] != ':')
-            {
-                ok = GLOBUS_FALSE;
-                done = GLOBUS_TRUE;
-            }
-            else
-            {
-                ok = GLOBUS_FALSE;
-            }
-        }
-
-        /* registering client may not be same byte order but worker child
-            will be */
-        memcpy(&tmp_32, &buffer[GF_DYN_AT_ONCE_NDX], sizeof(uint32_t));
-        converted_32 = ntohl(tmp_32);
-        memcpy(&buffer[GF_DYN_AT_ONCE_NDX], &converted_32, sizeof(uint32_t));
-
-        memcpy(&tmp_32, &buffer[GF_DYN_TOTAL_NDX], sizeof(uint32_t));
-        converted_32 = ntohl(tmp_32);
-        memcpy(&buffer[GF_DYN_TOTAL_NDX], &converted_32, sizeof(uint32_t));
-
-        if(!ok)
-        {
-            gfs_l_gfork_log(
-                GLOBUS_SUCCESS, 2, "Registration message not ok\n");
-            goto error_cs;
-        }
-
-        GlobusTimeReltimeSet(delay, GF_REGISTRATION_TIMEOUT, 0);
-        table_key = (char *)&buffer[GF_DYN_CS_NDX];
-        ent_buf = (gfs_l_gfork_master_entry_t *) globus_hashtable_lookup(
-            &g_gfork_be_table, table_key);
-        if(ent_buf != NULL)
-        {
-            /* this is a new one */
-            write_ent = (gfs_l_gfork_master_entry_t *) user_arg;
-            memset(write_ent, '\0', sizeof(gfs_l_gfork_master_entry_t));
-        }
-        else
-        {
-            /* this is a new one */
-            ent_buf = (gfs_l_gfork_master_entry_t *) user_arg;
-            ent_buf->table_key = table_key;
-            globus_hashtable_insert(
-                &g_gfork_be_table,
-                table_key,
-                ent_buf);
-            globus_fifo_enqueue(&gfs_l_gfork_be_q, ent_buf);
-
-            write_ent = (gfs_l_gfork_master_entry_t *) 
-                globus_calloc(1, sizeof(gfs_l_gfork_master_entry_t));
-        }
-
-        /* count the timeout callbacks.  For each refresh there will
-            be a timeout oneshot.  They all must come back before it is
-            considered dead.  this way we gaurentee that the latest
-            refresh got at least its fair share of time */
-        ent_buf->timeout_count++;
-        globus_callback_register_oneshot(
-            &ent_buf->callback_handle,
-            &delay,
-            gfs_l_gfork_timeout,
-            ent_buf);
-
-        /* write ack */
-        write_ent->buffer[GF_VERSION_NDX] = GF_VERSION;
-        write_ent->buffer[GF_MSG_TYPE_NDX] = GFS_GFORK_MSG_TYPE_ACK;
-
-        result = globus_xio_register_write(
-            handle,
-            write_ent->buffer,
-            GF_DYN_PACKET_LEN,
-            GF_DYN_PACKET_LEN,
-            NULL,
-            gfs_l_gfork_write_cb,
-            write_ent);
         if(result != GLOBUS_SUCCESS)
         {
-            globus_xio_register_close(
-                handle,
-                NULL,
-                NULL,
-                NULL);
-            globus_free(write_ent);
+            goto error_cmd;
         }
-        iov[0].iov_base = buffer;
-        iov[0].iov_len = GF_DYN_PACKET_LEN;
-
-        gfs_l_gfork_log(
-            GLOBUS_SUCCESS, 2, "Successful registration from: %s\n",
-            &buffer[GF_DYN_CS_NDX]);
-        /* TODO: keep an "in need" list.  if only 3 were available at
-            the time the client asked but wanted 4, send this message,
-            otherwise, do not send.
-
-            for now this is fine because all children have knowledge
-            of all servers and choose themselves. */
-        result = globus_gfork_broadcast(
-            g_handle,
-            iov,
-            1,
-            NULL,
-            NULL);
-        gfs_l_gfork_log(
-            result, 3, "Broadcasted new registration\n");
     }
     globus_mutex_unlock(&g_mutex);
 
     return;
 
-error_cs:
+error_cmd:
 error_version:
     /* reuse the buffer we already have */
     buffer[GF_VERSION_NDX] = GF_VERSION;
     buffer[GF_MSG_TYPE_NDX] = GFS_GFORK_MSG_TYPE_NACK;
     result = globus_xio_register_write(
         handle,
-        write_ent->buffer,
+        buffer,
         GF_DYN_PACKET_LEN,
         GF_DYN_PACKET_LEN,
         NULL,
         gfs_l_gfork_write_cb,
-        write_ent);
+        NULL);
     if(result != GLOBUS_SUCCESS)
     {
         globus_xio_register_close(
@@ -390,15 +368,150 @@ error_version:
             NULL,
             NULL,
             NULL);
-        globus_free(write_ent);
-        gfs_l_gfork_log(
-            result, 3, "Write NACK failed.\n");
+        globus_free(buffer);
+        gfs_l_gfork_log(result, 3, "Write NACK failed.\n");
     }
 error:
     gfs_l_gfork_log(
         result, 3, "Reading registration exit it error.\n");
-
     globus_mutex_unlock(&g_mutex);
+}
+
+static
+globus_result_t
+gfs_l_gfork_read_dynbe(
+    globus_xio_handle_t                 handle,
+    globus_byte_t *                     buffer,
+    globus_size_t                       len)
+{
+    globus_result_t                     result;
+    gfs_l_gfork_master_entry_t *        ent_buf;
+    globus_xio_iovec_t                  iov[1];
+    globus_bool_t                       ok;
+    globus_bool_t                       done;
+    int                                 i;
+    globus_reltime_t                    delay;
+    uint32_t                            tmp_32;
+    uint32_t                            converted_32;
+    char *                              table_key;
+    GFSGForkFuncName(gfs_l_gfork_read_dynbe);
+
+        /* we are only ok if the string ends in a \0 */
+    done = GLOBUS_FALSE;
+    ok = GLOBUS_TRUE;
+    for(i = GF_DYN_CS_NDX; i < GF_DYN_CS_NDX + GF_DYN_CS_LEN && !done; i++)
+    {
+        if(buffer[i] == '\0')
+        {
+            ok = !ok;
+            done = GLOBUS_TRUE;
+        }
+        else if(!isalnum(buffer[i]) && buffer[i] != '.' &&
+            buffer[i] != '-' && buffer[i] != ':')
+        {
+            ok = GLOBUS_FALSE;
+            done = GLOBUS_TRUE;
+        }
+        else
+        {
+            ok = GLOBUS_FALSE;
+        }
+    }
+
+    /* registering client may not be same byte order but worker child
+        will be */
+    memcpy(&tmp_32, &buffer[GF_DYN_AT_ONCE_NDX], sizeof(uint32_t));
+    converted_32 = ntohl(tmp_32);
+    memcpy(&buffer[GF_DYN_AT_ONCE_NDX], &converted_32, sizeof(uint32_t));
+
+    memcpy(&tmp_32, &buffer[GF_DYN_TOTAL_NDX], sizeof(uint32_t));
+    converted_32 = ntohl(tmp_32);
+    memcpy(&buffer[GF_DYN_TOTAL_NDX], &converted_32, sizeof(uint32_t));
+
+    if(!ok)
+    {
+        gfs_l_gfork_log(
+            GLOBUS_SUCCESS, 2, "Registration message not ok\n");
+        result = GFSGforkError("bad contact string", 0);
+        goto error_cs;
+    }
+
+    GlobusTimeReltimeSet(delay, GF_REGISTRATION_TIMEOUT, 0);
+    table_key = (char *)&buffer[GF_DYN_CS_NDX];
+    ent_buf = (gfs_l_gfork_master_entry_t *) globus_hashtable_lookup(
+        &g_gfork_be_table, table_key);
+    if(ent_buf == NULL)
+    {
+        ent_buf = (gfs_l_gfork_master_entry_t *) 
+            globus_calloc(1, sizeof(gfs_l_gfork_master_entry_t));
+        memcpy(ent_buf->buffer, buffer, GF_DYN_PACKET_LEN);
+
+        ent_buf->table_key = strdup(table_key);
+        globus_hashtable_insert(
+            &g_gfork_be_table,
+            table_key,
+            ent_buf);
+        globus_fifo_enqueue(&gfs_l_gfork_be_q, ent_buf);
+    }
+    memset(buffer, '\0', GF_DYN_PACKET_LEN);
+
+    /* count the timeout callbacks.  For each refresh there will
+        be a timeout oneshot.  They all must come back before it is
+        considered dead.  this way we gaurentee that the latest
+        refresh got at least its fair share of time */
+    ent_buf->timeout_count++;
+    globus_callback_register_oneshot(
+        &ent_buf->callback_handle,
+        &delay,
+        gfs_l_gfork_timeout,
+        ent_buf);
+
+    /* write ack */
+    buffer[GF_VERSION_NDX] = GF_VERSION;
+    buffer[GF_MSG_TYPE_NDX] = GFS_GFORK_MSG_TYPE_ACK;
+
+    result = globus_xio_register_write(
+        handle,
+        buffer,
+        GF_DYN_PACKET_LEN,
+        GF_DYN_PACKET_LEN,
+        NULL,
+        gfs_l_gfork_write_cb,
+        NULL);
+    if(result != GLOBUS_SUCCESS)
+    {
+        globus_xio_register_close(
+            handle,
+            NULL,
+            NULL,
+            NULL);
+        globus_free(buffer);
+    }
+    iov[0].iov_base = malloc(GF_DYN_PACKET_LEN);
+    memcpy(iov[0].iov_base, buffer, GF_DYN_PACKET_LEN);
+    iov[0].iov_len = GF_DYN_PACKET_LEN;
+
+    gfs_l_gfork_log(
+        GLOBUS_SUCCESS, 2, "Successful registration from: %s\n",
+        &buffer[GF_DYN_CS_NDX]);
+    /* TODO: keep an "in need" list.  if only 3 were available at
+        the time the client asked but wanted 4, send this message,
+        otherwise, do not send.
+
+        for now this is fine because all children have knowledge
+        of all servers and choose themselves. */
+    result = globus_gfork_broadcast(
+        g_handle,
+        iov,
+        1,
+        NULL,
+        NULL);
+    gfs_l_gfork_log(
+        result, 3, "Broadcasted new registration\n");
+    return GLOBUS_SUCCESS;
+
+error_cs:
+    return result;
 }
 
 static
@@ -515,16 +628,14 @@ gfs_l_gfork_open_server_cb(
     globus_result_t                     result,
     void *                              user_arg)
 {
-    gfs_l_gfork_master_entry_t *        ent_buf;
-
-    ent_buf = (gfs_l_gfork_master_entry_t *) globus_calloc(
-        1, sizeof(gfs_l_gfork_master_entry_t));
+    globus_byte_t *                     buffer;
 
     if(result != GLOBUS_SUCCESS)
     {
         goto error_accept;
     }
 
+    buffer = malloc(GF_DYN_PACKET_LEN);
     if(g_use_gsi)
     {
         /* verify we are ok with the sender */
@@ -538,12 +649,12 @@ gfs_l_gfork_open_server_cb(
 
     result = globus_xio_register_read(
         handle,
-        ent_buf->buffer,
+        buffer,
         GF_DYN_PACKET_LEN,
         GF_DYN_PACKET_LEN,
         NULL,
         gfs_l_gfork_read_cb,
-        ent_buf);
+        NULL);
     if(result != GLOBUS_SUCCESS)
     {
         goto error_read;
@@ -554,16 +665,16 @@ gfs_l_gfork_open_server_cb(
 error_read:
 error_not_allowed:
 
-    ent_buf->buffer[GF_VERSION_NDX] = GF_VERSION;
-    ent_buf->buffer[GF_MSG_TYPE_NDX] = GFS_GFORK_MSG_TYPE_NACK;
+    buffer[GF_VERSION_NDX] = GF_VERSION;
+    buffer[GF_MSG_TYPE_NDX] = GFS_GFORK_MSG_TYPE_NACK;
     result = globus_xio_register_write(
         handle,
-        ent_buf->buffer,
+        buffer,
         GF_DYN_PACKET_LEN,
         GF_DYN_PACKET_LEN,
         NULL,
         gfs_l_gfork_write_cb,
-        ent_buf);
+        NULL);
     if(result != GLOBUS_SUCCESS)
     {
         globus_xio_register_close(
@@ -571,7 +682,7 @@ error_not_allowed:
             NULL,
             NULL,
             NULL);
-        globus_free(ent_buf);
+        globus_free(buffer);
         gfs_l_gfork_log(result, 3, "Write NACK failed.\n");
     }
 error_accept:
