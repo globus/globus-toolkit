@@ -157,6 +157,8 @@ typedef enum
      *      A bitwise OR of all the modes desired
      * 
      * @see globus_xio_file_mode_t
+     *
+     * string opt: mode=<int>
      */
     /* int                              mode */
     GLOBUS_XIO_FILE_SET_MODE,
@@ -181,6 +183,8 @@ typedef enum
      *      A bitwise OR of all the flags desired
      * 
      * @see globus_xio_file_flag_t
+     *
+     * string opt: flags=<int>
      */
     /* int                              flags */
     GLOBUS_XIO_FILE_SET_FLAGS,
@@ -261,6 +265,8 @@ typedef enum
      * 
      * @param use_blocking_io_out
      *      The flag will be set here.  GLOBUS_TRUE for enabled.
+     *
+     * string opt: blocking=<bool>
      */
     /* globus_bool_t *                  use_blocking_io_out */
     GLOBUS_XIO_FILE_GET_BLOCKING_IO,
