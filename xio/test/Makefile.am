@@ -33,6 +33,7 @@ test_PROGRAMS=                          \
 	http_get_test			\
 	http_pingpong_test		\
 	http_timeout_test 		\
+    handle_create_from_url_test \
 	http_throughput_test
 
 Data =                                  \
@@ -110,6 +111,9 @@ http_throughput_test_LDFLAGS = $(GPT_LDFLAGS)
 
 http_timeout_test_SOURCES = http_timeout_test.c $(HTTP_COMMON_Sources) 		
 http_timeout_test_LDFLAGS = $(GPT_LDFLAGS)
+
+handle_create_from_url_test_SOURCES = handle_create_from_url_test.c
+handle_create_from_url_test_LDFLAGS = $(GPT_LDFLAGS)
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
