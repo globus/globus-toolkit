@@ -22,6 +22,11 @@
 #include "globus_gram_protocol.h"
 #include "version.h"
 
+enum
+{
+    GLOBUS_SEG_INPUT_BUFFER_SIZE = 256
+};
+
 static
 globus_result_t
 globus_l_seg_register_write(
@@ -69,7 +74,8 @@ static globus_xio_handle_t              globus_l_seg_output_handle;
 static globus_xio_handle_t              globus_l_seg_input_handle;
 static globus_xio_stack_t               globus_l_seg_file_stack;
 static globus_xio_driver_t              globus_l_seg_file_driver;
-static char                             globus_l_seg_input_buffer[1];
+static globus_byte_t *                  globus_l_seg_input_buffer;
+static size_t                           globus_l_seg_input_buffer_size;
 static time_t                           globus_l_seg_timestamp;
 static globus_fifo_t                    globus_l_seg_buffers;
 static globus_bool_t                    globus_l_seg_write_registered;
@@ -288,10 +294,13 @@ globus_l_seg_stdout_activate(void)
         goto destroy_mutex_error;
     }
 
+    globus_l_seg_input_buffer_size = GLOBUS_SEG_INPUT_BUFFER_SIZE;
+    globus_l_seg_input_buffer = malloc(globus_l_seg_input_buffer_size);
+
     result = globus_xio_register_read(
             globus_l_seg_input_handle,
             globus_l_seg_input_buffer,
-            sizeof(globus_l_seg_input_buffer),
+            globus_l_seg_input_buffer_size,
             1,
             NULL,
             globus_l_xio_read_eof_callback,
@@ -425,7 +434,7 @@ globus_l_stdout_scheduler_event(
     va_end(ap);
 
     globus_mutex_lock(&globus_l_seg_mutex);
-    result = globus_l_seg_register_write(buf);
+    result = globus_l_seg_register_write((globus_byte_t *) buf);
     globus_mutex_unlock(&globus_l_seg_mutex);
 
 error:
@@ -444,18 +453,60 @@ globus_l_xio_read_eof_callback(
     globus_xio_data_descriptor_t        data_desc,
     void *                              user_arg)
 {
+    globus_byte_t *                     tmp;
+    ptrdiff_t                           offset;
+    unsigned long                       stamp;
+    globus_byte_t                      *next, *prev, *end;
+
+    if (nbytes == len)
+    {
+        offset = buffer - globus_l_seg_input_buffer;
+
+        len += globus_l_seg_input_buffer_size;
+        globus_l_seg_input_buffer_size *= 2;
+        tmp = realloc(globus_l_seg_input_buffer,
+                      globus_l_seg_input_buffer_size * 2);
+        globus_assert (tmp != NULL);
+        globus_l_seg_input_buffer = tmp;
+        
+        buffer = globus_l_seg_input_buffer + offset;
+    }
+
+    end = buffer + nbytes;
+    *(end+1) = 0;
+
+    prev = globus_l_seg_input_buffer;
+    next = globus_l_seg_input_buffer;
+
+    while (NULL != (next = (globus_byte_t *) strchr((char *) next, '\n')))
+    {
+        *next = '\0';
+        if (sscanf((char *) prev, "200 %lu", &stamp) == 1)
+        {
+            globus_scheduler_event_generator_set_timestamp((time_t) stamp);
+        }
+        next++;
+        prev = next;
+    }
+
+    if (prev != globus_l_seg_input_buffer)
+    {
+        memmove(globus_l_seg_input_buffer,
+                prev,
+                end - prev); 
+    }
 
     if (result == GLOBUS_SUCCESS)
     {
-        /* shouldn't be reading stuff here!?! */
         result = globus_xio_register_read(
                 globus_l_seg_input_handle,
-                globus_l_seg_input_buffer,
-                sizeof(globus_l_seg_input_buffer),
+                globus_l_seg_input_buffer + (end - prev),
+                globus_l_seg_input_buffer_size - (end - prev),
                 1,
                 NULL,
                 globus_l_xio_read_eof_callback,
                 NULL);
+        return;
     }
 
     globus_scheduler_event_generator_fault(result);

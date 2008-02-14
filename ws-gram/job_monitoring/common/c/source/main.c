@@ -155,10 +155,6 @@ main(int argc, char *argv[])
 
         if (result != GLOBUS_SUCCESS)
         {
-            fprintf(stderr,
-                    "Error setting timestamp: %s\n",
-                    globus_object_printable_to_string(
-                            globus_error_peek(result)));
             goto deactivate_error;
         }
     }
@@ -196,6 +192,13 @@ main(int argc, char *argv[])
     return 0;
 
 deactivate_error:
+    if (result != GLOBUS_SUCCESS)
+    {
+        fprintf(stderr,
+                "%s\n",
+                globus_object_printable_to_string(
+                        globus_error_peek(result)));
+    }
     globus_module_deactivate_all();
 error:
     return 1;
@@ -208,9 +211,20 @@ globus_l_fault_handler(
     void *                              user_arg,
     globus_result_t                     fault)
 {
+    globus_object_t *                   err = NULL;
+
+    if (fault != GLOBUS_SUCCESS)
+    {
+        err = globus_error_peek(fault);
+    }
+
+    if (! globus_error_match(err, GLOBUS_XIO_MODULE, GLOBUS_XIO_ERROR_CANCELED))
+    {
+        fprintf(stderr, "Fault: %s\n",
+                globus_object_printable_to_string(globus_error_peek(fault)));
+    }
+
     globus_mutex_lock(&shutdown_mutex);
-    fprintf(stderr, "Fault: %s\n",
-            globus_object_printable_to_string(globus_error_peek(fault)));
     shutdown_called = GLOBUS_TRUE;
     globus_cond_signal(&shutdown_cond);
     globus_mutex_unlock(&shutdown_mutex);

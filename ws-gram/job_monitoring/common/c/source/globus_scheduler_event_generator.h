@@ -95,7 +95,7 @@ typedef void (*globus_scheduler_event_generator_fault_t)(
             MYNAME, \
             __LINE__, \
             "Unable to dlopen module \"%s\": %s", \
-            module_name, \
+            module, \
             dlerr_msg)
 
 #define GLOBUS_SEG_ERROR_NULL \

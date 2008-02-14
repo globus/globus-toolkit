@@ -397,7 +397,9 @@ globus_scheduler_event_generator_get_timestamp(
     {
         return GLOBUS_SEG_ERROR_NULL;
     }
+    globus_mutex_lock(&globus_l_seg_mutex);
     *timestamp = globus_l_seg_timestamp;
+    globus_mutex_unlock(&globus_l_seg_mutex);
 
     return GLOBUS_SUCCESS;
 }
@@ -411,7 +413,7 @@ globus_scheduler_event_generator_set_timestamp(
     globus_result_t                     result = GLOBUS_SUCCESS;
 
     globus_mutex_lock(&globus_l_seg_mutex);
-    if (globus_l_seg_timestamp != 0)
+    if (globus_l_seg_timestamp > timestamp)
     {
         result = GLOBUS_SEG_ERROR_ALREADY_SET;
         goto error;
@@ -500,7 +502,8 @@ globus_scheduler_event_generator_load_module(
 
     if (globus_l_seg_scheduler_handle == NULL)
     {
-        result = GLOBUS_SEG_ERROR_LOADING_MODULE(module_name,
+        result = GLOBUS_SEG_ERROR_LOADING_MODULE(
+                module_path ? module_path : module_name,
                 lt_dlerror());
 
         goto free_module_path_error;
