@@ -7,6 +7,7 @@ SUBDIRS= \
 globusperldir = $(GLOBUS_LOCATION)/lib/perl/Globus
 
 Scripts= \
+    gfs_common.pl \
     globus-gridftp-gfork-mem.pl \
 	globus-gridftp-dyn-be.pl \
     globus-gridftp-gfork-fe.pl \
@@ -15,6 +16,9 @@ Scripts= \
 test_SCRIPTS = $(Scripts)
 
 Data = \
+    dc31a685.signing_policy \
+    dc31a685.0 \
+    testcred.pem \
     gfork_mem_conf.in \
 	gfork_conf.in \
     gfork_single_conf.in \

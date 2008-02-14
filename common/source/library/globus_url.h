@@ -151,6 +151,16 @@ int globus_url_copy(globus_url_t * dest, const globus_url_t * src);
 int globus_url_get_scheme(const char *url_string,
 			  globus_url_scheme_t *scheme_type);
 
+
+void
+globus_url_string_hex_decode(
+    char *                              s);
+
+char *
+globus_url_string_hex_encode(
+    const char *                        s,
+    const char *                        enc);
+
 /* Return conditions */
 #define GLOBUS_URL_SUCCESS 0
 #define GLOBUS_URL_ERROR_NULL_STRING -1

@@ -842,6 +842,16 @@ globus_ftp_client_operationattr_get_net_stack(
     char **                                     driver_list);
 
 globus_result_t
+globus_ftp_client_operationattr_set_disk_stack(
+    globus_ftp_client_operationattr_t *         attr,
+    const char *                                driver_list);
+
+globus_result_t
+globus_ftp_client_operationattr_get_disk_stack(
+    const globus_ftp_client_operationattr_t *   attr,
+    char **                                     driver_list);
+
+globus_result_t
 globus_ftp_client_operationattr_set_authz_assert(
     globus_ftp_client_operationattr_t *         attr,
     const char *                                authz_assert,

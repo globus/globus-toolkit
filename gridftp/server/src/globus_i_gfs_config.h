@@ -48,6 +48,12 @@ globus_i_gfs_config_allow_addr(
     const char *                        remote_addr,
     globus_bool_t                       ipc);
 
+globus_result_t
+globus_i_gfs_config_hostname_to_address_string(
+    char *                              hostname,
+    char *                              out_buf,
+    int                                 out_buf_len);
+
 void
 globus_i_gfs_config_display_usage();
 

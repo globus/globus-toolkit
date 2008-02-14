@@ -1,4 +1,5 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!-- file.template -->
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
       <title>Code Coverage for <TMPL_VAR NAME=FILE></title>
@@ -11,8 +12,8 @@
         <tr>
           <th>
             <a href="index.html"><TMPL_VAR NAME=BUNDLE></a> -&gt;
-            <a href="package-<TMPL_VAR NAME=PACKAGE>"><TMPL_VAR NAME=PACKAGE></a> -&gt;
-            <a href="summary-<TMPL_VAR NAME=FILE>"><TMPL_VAR NAME=FILE></a>
+            <a href="package-<TMPL_VAR NAME=PACKAGE>.html"><TMPL_VAR NAME=PACKAGE></a> -&gt;
+            <a href="summary-<TMPL_VAR NAME=FILE>.html"><TMPL_VAR NAME=FILE></a>
           </th>
         </tr>
       </table>
@@ -48,7 +49,7 @@
 
         <TMPL_LOOP NAME=FUNCTION>
           <tr <TMPL_UNLESS NAME=PARITY>class="odd"</TMPL_UNLESS>>
-              <td><TMPL_VAR NAME=FUNCTION></td>
+              <td><TMPL_VAR ESCAPE=HTML NAME=FUNCTION></td>
               <td><TMPL_VAR NAME=BRANCH_PERCENTAGE>%</td>
               <td><TMPL_VAR NAME=STATEMENT_PERCENTAGE>%</td>
               <td> 

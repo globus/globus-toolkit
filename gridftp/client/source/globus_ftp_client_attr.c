@@ -72,6 +72,7 @@ globus_ftp_client_handleattr_init(
     i_attr->outstanding_commands = 4;
     i_attr->pipeline_callback = GLOBUS_NULL;
     i_attr->pipeline_arg = GLOBUS_NULL;
+    i_attr->pipeline_done = GLOBUS_FALSE;
     *attr = i_attr;
     
     return GLOBUS_SUCCESS;
@@ -781,6 +782,7 @@ globus_ftp_client_operationattr_init(
     i_attr->authz_assert                = GLOBUS_NULL;
     i_attr->delayed_pasv                = GLOBUS_FALSE;
     i_attr->net_stack_str               = GLOBUS_NULL;
+    i_attr->disk_stack_str               = GLOBUS_NULL;
     i_attr->module_alg_str              = GLOBUS_NULL;
 
     tmp_name = globus_libc_strdup("anonymous");
@@ -884,6 +886,11 @@ globus_ftp_client_operationattr_destroy(
     {
         globus_libc_free(i_attr->net_stack_str);
         i_attr->net_stack_str = GLOBUS_NULL;
+    }
+    if(i_attr->disk_stack_str != NULL)
+    {
+        globus_libc_free(i_attr->disk_stack_str);
+        i_attr->disk_stack_str = NULL;
     }
     if(i_attr->authz_assert)
     {
@@ -1138,6 +1145,107 @@ error_exit:
 /* globus_ftp_client_operationattr_get_net_stack() */
 /* @} */
 
+/**
+ * @name Custom Server File Driver Stack
+ */
+/* @{ */
+
+/**
+ * Set/Get the gridftp xio driver stack used for the file storage.
+ * @ingroup globus_ftp_client_operationattr
+ *
+ * This attribute allows the user to control which xio drivers will be used
+ * for file DSI only.  This is an experimental feature of the gridftp server.
+ * Only works for third party transfers.
+ *
+ * @param attr
+ *        The attribute set to query or modify.
+ * @param driver_list
+ *        driver list in the following format:
+ *          driver1[:driver1opts][,driver2[:driver2opts]][...].
+ *        The string "default" will reset the stack list to the server
+ *        default.
+ *        
+ * @note This is a GridFTP extension, and may not be supported on all FTP
+ * servers.
+ */
+globus_result_t
+globus_ftp_client_operationattr_set_disk_stack(
+    globus_ftp_client_operationattr_t *     attr,
+    const char *                            driver_list)
+{
+    globus_object_t *                       err;
+    globus_i_ftp_client_operationattr_t *   i_attr;
+    GlobusFuncName(globus_ftp_client_operationattr_set_net_stack);
+
+    if(attr == GLOBUS_NULL)
+    {
+        err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr");
+        goto error_exit;
+    }
+    i_attr = *(globus_i_ftp_client_operationattr_t **) attr;
+
+    if(driver_list != GLOBUS_NULL)
+    {
+        i_attr->disk_stack_str = globus_libc_strdup(driver_list);
+    }
+    else
+    {
+        if(i_attr->disk_stack_str != GLOBUS_NULL)
+        {
+            globus_free(i_attr->disk_stack_str);
+        }
+        i_attr->disk_stack_str = GLOBUS_NULL;
+    }
+    return GLOBUS_SUCCESS;
+
+error_exit:
+    return globus_error_put(err);
+}
+/* globus_ftp_client_operationattr_set_net_stack() */
+
+globus_result_t
+globus_ftp_client_operationattr_get_disk_stack(
+    const globus_ftp_client_operationattr_t *   attr,
+    char **                                     driver_list)
+{
+    char *                                      d_list = NULL;
+    globus_object_t *                           err;
+    const globus_i_ftp_client_operationattr_t * i_attr;
+    GlobusFuncName(globus_ftp_client_operationattr_get_net_stack);
+
+    if(attr == GLOBUS_NULL)
+    {
+        err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("attr");
+        goto error_exit;
+    }
+    if(driver_list == GLOBUS_NULL)
+    {
+        err = GLOBUS_I_FTP_CLIENT_ERROR_NULL_PARAMETER("driver_list");
+        goto error_exit;
+    }
+    i_attr = *(const globus_i_ftp_client_operationattr_t **) attr;
+
+    if(i_attr->disk_stack_str == NULL)
+    {
+        d_list = NULL;
+    }
+    else
+    {
+        d_list = globus_libc_strdup(i_attr->disk_stack_str);
+    }
+    if(driver_list != NULL)
+    {
+        *driver_list = d_list;
+    }
+
+    return GLOBUS_SUCCESS;
+
+error_exit:
+    return globus_error_put(err);
+}
+/* globus_ftp_client_operationattr_get_net_stack() */
+/* @} */
 /**
  * @name Parallelism
  */
@@ -3117,6 +3225,16 @@ globus_ftp_client_operationattr_copy(
         }
     }
 
+    if(i_src->disk_stack_str)
+    {
+        result = globus_ftp_client_operationattr_set_disk_stack(
+            dst, i_src->disk_stack_str);
+        if(result)
+        {
+            goto destroy_exit;
+        }
+    }
+
     if (i_src->authz_assert)
     {
         result =
@@ -3243,6 +3361,7 @@ globus_i_ftp_client_handleattr_copy(
     dest->outstanding_commands = src->outstanding_commands;
     dest->pipeline_callback = src->pipeline_callback;
     dest->pipeline_arg = src->pipeline_arg;
+    dest->pipeline_done = src->pipeline_done;
     tmp = src->url_cache;
 
     while(!globus_list_empty(tmp))

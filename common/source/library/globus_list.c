@@ -537,7 +537,7 @@ globus_list_from_string(
     {
         goto error_params;
     }
-    
+
     string = globus_libc_strdup(in_string);
     if(string != NULL)
     {

@@ -106,6 +106,59 @@ char * globus_i_xio_context_state_name_table[] =
     "GLOBUS_XIO_CONTEXT_STATE_CLOSED",
 };
 
+/*
+ *  globus_l_xio_prt_ent_s, globus_l_xio_parsed_driver_s, xio_l_scheme,
+ *  and xio_l_scheme_drl_tbl are used in association with the 
+ *  globus_xio_handle_create_from_url function.
+ *
+ *  globus_l_xio_handle_create_from_url_init and
+ *  globus_l_xio_handle_create_from_url_cleanup are used to initialize the
+ *  driver hash table and free its resources, respectively.
+ *  globus_l_xio_handle_create_from_url_drv_unload is used to perform
+ *  the unloads and frees.
+ */
+
+#define XIO_MAX_DRIVER_SIZE  16
+
+typedef struct globus_l_xio_prt_ent_s
+{
+    char *  prt_name;
+    char * driver_list[XIO_MAX_DRIVER_SIZE];
+} globus_l_xio_prt_ent_t;
+
+typedef struct globus_l_xio_parsed_driver_s
+{
+    globus_xio_driver_t                 driver;
+    globus_result_t                     res;
+    char *                              driver_name;
+} globus_l_xio_parsed_driver_t;
+
+
+
+static globus_l_xio_prt_ent_t           xio_l_scheme[] =
+{
+    {"http", {"tcp", "http"}},
+    {"https", {"tcp", "http", "gsi"}},
+    {"tcp", {"tcp"}},
+    {"tcps", {"tcp", "gsi"}},
+//    {"udt", {"udt_ref"}},
+//    {"udts", {"tcp", "udt_ref"}},
+    {"file", {"file"}},
+    {NULL}
+};
+
+static globus_hashtable_t               xio_l_scheme_drv_tbl;
+
+void
+globus_l_xio_handle_create_from_url_init();
+
+void
+globus_l_xio_handle_create_from_url_cleanup();
+
+void
+globus_l_xio_handle_create_from_url_drv_unload(
+    void *                              datum);
+
                                                                                 
 globus_i_xio_timer_t                    globus_i_xio_timeout_timer;
 globus_list_t *                         globus_i_xio_outstanding_handles_list;
@@ -754,6 +807,8 @@ globus_l_xio_activate()
     
     globus_i_xio_load_init();
 
+    globus_l_xio_handle_create_from_url_init();
+
     GlobusDebugInit(GLOBUS_XIO,
         ERROR WARNING TRACE INTERNAL_TRACE INFO STATE INFO_VERBOSE);
     
@@ -770,6 +825,8 @@ globus_l_xio_deactivate()
     GlobusXIOName(globus_l_xio_deactivate);
 
     GlobusXIODebugInternalEnter();
+
+    globus_l_xio_handle_create_from_url_cleanup();
 
     globus_mutex_destroy(&globus_i_xio_mutex);
     globus_cond_destroy(&globus_i_xio_cond);
@@ -2033,7 +2090,7 @@ globus_xio_handle_create(
     /* allocate and intialize the handle structure */
     ihandle = (globus_i_xio_handle_t *)
         globus_calloc(1, sizeof(globus_i_xio_handle_t));
-    if(handle == NULL)
+    if(ihandle == NULL)
     {
         res = GlobusXIOErrorMemory("ihandle");
         goto error_handle;
@@ -2139,6 +2196,10 @@ globus_xio_register_open(
 
     if(attr != NULL)
     {
+        op->user_open_cred = attr->user_open_cred;
+        op->user_open_sbj = globus_libc_strdup(attr->user_open_sbj);
+        op->user_open_username = globus_libc_strdup(attr->user_open_username);
+        op->user_open_pw = globus_libc_strdup(attr->user_open_pw);
         space =  attr->space;
         
         /* set entries in structures */
@@ -2946,6 +3007,7 @@ globus_xio_open(
 
     if(attr != NULL)
     {
+        op->user_open_cred = attr->user_open_cred;
         space =  attr->space;
         
         /* set entries in structures */
@@ -3626,5 +3688,202 @@ globus_xio_close(
   alloc_error:
   param_error:
     GlobusXIODebugExitWithError();
+    return res;
+}
+
+void
+globus_l_xio_handle_create_from_url_init()
+{
+    int                             i;
+    int                             j;
+    globus_l_xio_parsed_driver_t *  ent;
+
+    globus_hashtable_init(
+        &xio_l_scheme_drv_tbl,
+        256,
+        globus_hashtable_string_hash,
+        globus_hashtable_string_keyeq);
+    for(i = 0; xio_l_scheme[i].prt_name != NULL; i++)
+    {
+        for(j = 0; xio_l_scheme[i].driver_list[j] != NULL; j++)
+        {
+            if(globus_hashtable_lookup(
+                &xio_l_scheme_drv_tbl,
+                (void *)xio_l_scheme[i].driver_list[j]) == NULL)
+            {
+                ent = (globus_l_xio_parsed_driver_t *)
+                    globus_malloc(sizeof(globus_l_xio_parsed_driver_t));
+
+                ent->driver_name = strdup(xio_l_scheme[i].driver_list[j]);
+                ent->res = globus_xio_driver_load(
+                    xio_l_scheme[i].driver_list[j],
+                    &ent->driver);
+                globus_hashtable_insert(
+                    &xio_l_scheme_drv_tbl,
+                    (void *)xio_l_scheme[i].driver_list[j],
+                    (void *)ent);
+            }
+        }
+    }
+}
+
+void
+globus_l_xio_handle_create_from_url_cleanup()
+{
+    globus_hashtable_destroy_all(
+        &xio_l_scheme_drv_tbl,
+        globus_l_xio_handle_create_from_url_drv_unload);
+}
+
+void
+globus_l_xio_handle_create_from_url_drv_unload(
+    void *                          datum)
+{
+    globus_l_xio_parsed_driver_t *  ent;
+
+    ent = (globus_l_xio_parsed_driver_t *) datum;
+
+    globus_xio_driver_unload(ent->driver);
+    free(ent);
+}
+
+globus_result_t
+globus_xio_handle_create_from_url(
+    globus_xio_handle_t *           out_h,
+    const char *                    in_scheme,
+    globus_xio_attr_t               attr,
+    char *                          param_string)
+{
+    globus_url_t                    url;
+    globus_result_t                 res;
+    globus_xio_stack_t              stack;
+    int                             i;
+    int                             j;
+    char *                          scheme;
+    globus_l_xio_parsed_driver_t *  ent;
+    globus_list_t *                 proto_list = NULL;
+    int                             list_size;
+    char *                          list_string;
+    char *                          driver_opts;
+    int                             driver_match;
+
+    res = globus_url_parse(
+            in_scheme,
+            &url);
+    if(res != GLOBUS_SUCCESS)
+    {
+        scheme = strdup(in_scheme);
+    }
+    else
+    {
+        scheme = strdup(url.scheme);
+        globus_url_destroy(&url);
+    }
+
+    res = globus_xio_stack_init(
+            &stack,
+            NULL);
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto error_stack;
+    }
+
+    for(i = 0; xio_l_scheme[i].prt_name != NULL; i++)
+    {
+        if(strcmp(xio_l_scheme[i].prt_name, scheme) == 0)
+        {
+            for(j = 0; xio_l_scheme[i].driver_list[j] != NULL; j++)
+            {
+                ent = (globus_l_xio_parsed_driver_t * )globus_hashtable_lookup(
+                    &xio_l_scheme_drv_tbl,
+                    (void *)xio_l_scheme[i].driver_list[j]);
+                globus_assert(ent != NULL);
+
+                if(ent->res != GLOBUS_SUCCESS)
+                {
+                    goto error_lookup;
+                }
+
+
+                if(param_string != NULL)
+                {
+                    proto_list = globus_list_from_string(
+                        param_string, ',', NULL);
+                    list_size = globus_list_size(proto_list);
+
+                    while(list_size > 0)
+                    {
+
+                        list_string = (char *)globus_list_remove(
+                            &proto_list, proto_list);
+
+
+                        driver_opts = strstr(list_string, ":") + 1;
+
+                        /* check if the driver name matches the param string */
+                        driver_match = strncmp(
+                                        list_string,
+                                        ent->driver_name,
+                                        strlen(ent->driver_name));
+
+                        if(attr != NULL && driver_opts != NULL &&
+                            driver_match == 0)
+                        {
+                            res = globus_xio_attr_cntl(
+                                attr,
+                                ent->driver,
+                                GLOBUS_XIO_SET_STRING_OPTIONS,
+                                driver_opts);
+                        }
+
+
+                        free((void *)list_string);
+
+                        if(res != GLOBUS_SUCCESS)
+                        {
+                            goto error_attr_cntl;
+                        }
+                        list_size--;
+                    }
+
+                }
+
+                res = globus_xio_stack_push_driver(
+                    stack, ent->driver);
+                if(res != GLOBUS_SUCCESS)
+                {
+                    goto error_push;
+                }
+            }
+        }
+    }
+
+    res = globus_xio_handle_create(out_h, stack);
+    if(res != GLOBUS_SUCCESS)
+    {
+        goto error_destroy_handle;
+    }
+
+    globus_xio_stack_destroy(stack);
+    free(scheme);
+
+    return GLOBUS_SUCCESS;
+
+error_destroy_handle:
+error_push:
+error_attr_cntl:
+    if(proto_list != NULL)
+    {
+        while(globus_list_size(proto_list) > 0)
+        {
+            free(globus_list_remove(&proto_list, proto_list));
+        }
+    }
+error_lookup:
+    globus_xio_stack_destroy(stack);
+
+error_stack:
+    free(scheme);
+
     return res;
 }

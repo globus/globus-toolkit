@@ -1206,6 +1206,15 @@ globus_xio_driver_get_user_data(
  *  @ingroup driver_pgm
  */
 globus_result_t
+globus_xio_operation_attr_cntl(
+    globus_xio_operation_t              op,
+    globus_xio_attr_cmd_t               cmd,
+    ...);
+
+/**
+ *  @ingroup driver_pgm
+ */
+globus_result_t
 globus_xio_driver_destroy(
     globus_xio_driver_t                 driver);
 

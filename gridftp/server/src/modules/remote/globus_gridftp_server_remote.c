@@ -59,6 +59,7 @@ typedef struct globus_l_gfs_remote_node_handle_s
 {
     struct globus_l_gfs_remote_node_info_s ** nodes;
     int                                 count;
+    int                                 destroy;
 } globus_l_gfs_remote_node_handle_t;
 
 typedef struct globus_l_gfs_remote_ipc_bounce_s
@@ -1661,7 +1662,7 @@ globus_l_gfs_remote_passive(
     num_nodes = data_info->max_cs;
     if(num_nodes < 1)
     {
-        num_nodes = globus_gfs_config_get_int("best_stripe_count");
+        num_nodes = globus_gfs_config_get_int("stripe_count");
     }
     if(num_nodes < 1)
     {
@@ -1706,6 +1707,7 @@ globus_l_gfs_remote_data_destroy(
     void *                              data_arg,
     void *                              user_arg)
 {
+    globus_bool_t                       free_node = GLOBUS_FALSE;
     int                                 i;
     globus_result_t                     result;
     globus_l_gfs_remote_handle_t *      my_handle;
@@ -1717,37 +1719,51 @@ globus_l_gfs_remote_data_destroy(
     my_handle = (globus_l_gfs_remote_handle_t *) user_arg;
     node_handle = (globus_l_gfs_remote_node_handle_t *) data_arg;
 
-    for(i = 0; i < node_handle->count; i++)
-    {
-        node_info = (globus_l_gfs_remote_node_info_t *) node_handle->nodes[i];
+    globus_mutex_lock(&my_handle->mutex);
+    {    
+        for(i = 0; i < node_handle->count; i++)
+        {
+            node_info = (globus_l_gfs_remote_node_info_t *)
+                node_handle->nodes[i];
   
-        result = globus_gfs_ipc_request_data_destroy(
-            node_info->ipc_handle,
-            node_info->data_arg); 
-        if(result != GLOBUS_SUCCESS)
-        {
-            globus_gfs_log_result(
-                GLOBUS_GFS_LOG_ERR, 
-                "IPC ERROR: remote_data_destroy: ipc call", result);
+            result = globus_gfs_ipc_request_data_destroy(
+                node_info->ipc_handle,
+                node_info->data_arg); 
+            if(result != GLOBUS_SUCCESS)
+            {
+                globus_gfs_log_result(
+                    GLOBUS_GFS_LOG_ERR, 
+                    "IPC ERROR: remote_data_destroy: ipc call", result);
+            }
+            if(node_info->cs != NULL)
+            {
+                globus_free(node_info->cs);
+            }
+            node_info->data_arg = NULL;
+            node_info->stripe_count = 0;
+            result = globus_l_gfs_remote_node_release(
+                node_info, my_handle->ipc_release_reason);
+            if(result != GLOBUS_SUCCESS)
+            {
+                globus_gfs_log_result(
+                    GLOBUS_GFS_LOG_ERR,
+                    "ERROR: remote_data_destroy: handle_release", result);
+            }
         }
-        if(node_info->cs != NULL)
+
+        node_handle->destroy++;
+        if(node_handle->destroy == 2)
         {
-            globus_free(node_info->cs);
-        }
-        node_info->data_arg = NULL;
-        node_info->stripe_count = 0;
-        result = globus_l_gfs_remote_node_release(
-            node_info, my_handle->ipc_release_reason);
-        if(result != GLOBUS_SUCCESS)
-        {
-            globus_gfs_log_result(
-                GLOBUS_GFS_LOG_ERR,
-                "ERROR: remote_data_destroy: handle_release", result);
+            free_node = GLOBUS_TRUE;
         }
     }
-    globus_free(node_handle->nodes);
-    globus_free(node_handle);
-                        
+    globus_mutex_unlock(&my_handle->mutex);
+
+    if(free_node)
+    {
+        globus_free(node_handle->nodes);
+        globus_free(node_handle);
+    }                
     GlobusGFSRemoteDebugExit();
 }
 
@@ -1758,6 +1774,7 @@ globus_l_gfs_remote_trev(
     globus_gfs_event_info_t *           event_info,
     void *                              user_arg)
 {
+    globus_bool_t                       free_node = GLOBUS_FALSE;
     int                                 i;
     globus_result_t                     result;
     globus_l_gfs_remote_handle_t *      my_handle;
@@ -1783,29 +1800,43 @@ globus_l_gfs_remote_trev(
             node_info->ipc_handle,
             &new_event_info);
     }
-            
-    if(event_info->type == GLOBUS_GFS_EVENT_TRANSFER_COMPLETE)
-    {
-        for(i = 0; i < bounce_info->node_handle->count; i++)
+    
+    globus_mutex_lock(&my_handle->mutex);
+    {    
+        if(event_info->type == GLOBUS_GFS_EVENT_TRANSFER_COMPLETE)
         {
-            node_info = bounce_info->node_handle->nodes[i];
-
-            if(node_info->info && node_info->info_needs_free)
+            for(i = 0; i < bounce_info->node_handle->count; i++)
             {
-                globus_free(node_info->info);
-                node_info->info = NULL;
-                node_info->info_needs_free = GLOBUS_FALSE;
-            }
-            node_info->event_arg = NULL;
-            node_info->event_mask = 0;
-        }
-        if(bounce_info->eof_count != NULL)
-        {
-            globus_free(bounce_info->eof_count);
-        }
-        globus_free(bounce_info);
-    }
+                node_info = bounce_info->node_handle->nodes[i];
 
+                if(node_info->info && node_info->info_needs_free)
+                {
+                    globus_free(node_info->info);
+                    node_info->info = NULL;
+                    node_info->info_needs_free = GLOBUS_FALSE;
+                }
+                node_info->event_arg = NULL;
+                node_info->event_mask = 0;
+            }
+            if(bounce_info->eof_count != NULL)
+            {
+                globus_free(bounce_info->eof_count);
+            }
+            bounce_info->node_handle->destroy++;
+            if(bounce_info->node_handle->destroy == 2)
+            {
+                free_node = GLOBUS_TRUE;
+            }
+            globus_free(bounce_info);
+        }
+    }
+    globus_mutex_unlock(&my_handle->mutex);
+
+    if(free_node)
+    {
+        globus_free(bounce_info->node_handle->nodes);
+        globus_free(bounce_info->node_handle);
+    }
     GlobusGFSRemoteDebugExit();
 }
 

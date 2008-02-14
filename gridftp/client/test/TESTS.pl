@@ -16,5 +16,27 @@
 # limitations under the License.
 # 
 
+my $rc;
+my $count = 1;
 
-exit (0 != system('./globus-ftp-client-run-tests.pl -runserver'));
+if(!defined($ENV{FTP_TEST_NO_GSI}))
+{
+    $count = 2;
+}
+
+for(my $i = 0; $i < $count; $i++)
+{
+    $rc = system('./globus-ftp-client-run-tests.pl -runserver');
+    if($rc != 0)
+    {
+        exit $rc;
+    }
+
+    $rc = system('./globus-ftp-client-many-server.pl');
+    if($rc != 0)
+    {
+        exit $rc;
+    }
+    $ENV{FTP_TEST_NO_GSI} = 1;
+}
+exit $rc;

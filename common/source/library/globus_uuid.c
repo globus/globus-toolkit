@@ -226,6 +226,7 @@ globus_uuid_create(
     globus_mutex_lock(&globus_l_uuid_lock);
     {
         GlobusTimeAbstimeGetCurrent(current_time);
+        current_time.tv_nsec /= 100;
         if(globus_abstime_cmp(&current_time, &globus_l_uuid_last_time) <= 0)
         {
             sequence = globus_l_uuid_sequence;
@@ -235,15 +236,15 @@ globus_uuid_create(
                  * clock on us, get new sequence number */
                 globus_l_uuid_sequence = ((uint16_t) rand() & 0x3fff) | 0x8000;
             } while(globus_l_uuid_sequence == sequence);
-            memcpy(&globus_l_uuid_last_time,
-                &current_time, sizeof(current_time));
         }
+        memcpy(&globus_l_uuid_last_time,
+            &current_time, sizeof(current_time));
         sequence = globus_l_uuid_sequence;
     }
     globus_mutex_unlock(&globus_l_uuid_lock);
     
     timestamp = (uint64_t) current_time.tv_sec * 10000000;
-    timestamp += (uint64_t) current_time.tv_nsec / 100;
+    timestamp += (uint64_t) current_time.tv_nsec;
     /* offset to gregorian time */
     timestamp += (uint64_t) 0x01b21dd2 << 32;
     timestamp += 0x13814000;

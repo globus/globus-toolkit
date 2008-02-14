@@ -23,5 +23,6 @@ globus_version_t local_version =
     @DIRT_BRANCH_ID@
 };
 
+static const char toolkit_id[] = "@GLOBUS_TOOLKIT_ID@";
 static const char build_flavor[] = "@GLOBUS_FLAVOR_NAME@";
 static const char local_package_name[] = "@PACKAGE@";

@@ -1,4 +1,5 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!-- source.template -->
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
       <title>Code Coverage for <TMPL_VAR NAME=FILE></title>
@@ -12,7 +13,7 @@
         <tr>
           <td class="lineCount<TMPL_IF NAME=EXECUTABLE>Hilight</TMPL_IF>"><TMPL_VAR NAME=LINE></td>
           <td class="coverageCount<TMPL_UNLESS NAME=COUNT><TMPL_IF NAME=EXECUTABLE>Hilight</TMPL_IF></TMPL_UNLESS>"><TMPL_VAR NAME=COUNT></td>
-          <td class="srcCell"><span class="srcLine<TMPL_UNLESS NAME=COUNT><TMPL_IF NAME=EXECUTABLE>Hilight</TMPL_IF></TMPL_UNLESS>"><TMPL_VAR NAME=TEXT></span></td>
+          <td class="srcCell"><span class="srcLine<TMPL_UNLESS NAME=COUNT><TMPL_IF NAME=EXECUTABLE>Hilight</TMPL_IF></TMPL_UNLESS>"><TMPL_VAR ESCAPE=HTML NAME=TEXT></span></td>
         </tr>
       </TMPL_LOOP>
       </table>

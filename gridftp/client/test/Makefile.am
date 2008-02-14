@@ -10,6 +10,7 @@ globusperl_DATA = URL.pm
 
 Scripts= \
 	TESTS.pl \
+    globus-ftp-client-many-server.pl \
 	FtpTestLib.pm \
     globus-ftp-client-dir-test.pl \
     globus-ftp-client-run-backend-tests.pl  \

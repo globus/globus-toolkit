@@ -2209,3 +2209,93 @@ globus_url_copy(
 }
 /* globus_url_copy() */
 
+
+char *
+globus_url_string_hex_encode(
+    const char *                        s,
+    const char *                        enc)
+{
+    char *                              e;
+    char *                              encoded;
+    static char                         hexchars[] = "0123456789ABCDEF";
+
+    if(!s)
+    {
+        return NULL;
+    }
+
+    if(!enc)
+    {
+        return globus_libc_strdup(s);
+    }
+
+
+    encoded = (char *) globus_malloc((3 * strlen(s) + 1) * sizeof(char));
+    if(encoded)
+    {
+        e = encoded;
+        while(*s)
+        {
+            unsigned                    n = (unsigned) *s;
+
+            if(n <= 0x1F || n >= 0x7F || *s == '%' || (*enc && strchr(enc, n)))
+            {
+                *(e++) = '%';
+                *(e++) = hexchars[n >> 4];
+                *(e++) = hexchars[n & 15];
+                s++;
+            }
+            else
+            {
+                *(e++) = *(s++);
+            }
+        }
+
+        *e = 0;
+    }
+
+    return encoded;
+}
+
+void
+globus_url_string_hex_decode(
+    char *                              s)
+{
+    char *                              d;
+    char                                t;
+
+    if(!s || !(s = strchr(s, '%')))
+    {
+        return;
+    } 
+    d = s;
+
+    while(*s)
+    {
+        t = *s;
+        if(t == '%')
+        {
+            if(*(s + 1) == '%')
+            {
+                s++;
+            }
+            else if(isxdigit(*(s + 1)) && isxdigit(*(s + 2)))
+            {
+                char                    hexstring[3];
+                
+                hexstring[0] = *(++s);
+                hexstring[1] = *(++s);
+                hexstring[2] = 0;
+
+                t = (char) strtol(hexstring, NULL, 16);
+            }
+        }
+
+        *d = t;
+        s++;
+        d++;
+    }
+
+    *d = 0;
+}
+

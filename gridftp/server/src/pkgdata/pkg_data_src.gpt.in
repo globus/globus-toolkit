@@ -2,7 +2,7 @@
 <!DOCTYPE gpt_package_metadata SYSTEM "package.dtd">
 
 <gpt_package_metadata Format_Version="0.02" Name="globus_gridftp_server">
-    <Aging_Version Age="3" Major="3" Minor="7"/>
+    <Aging_Version Age="3" Major="3" Minor="8"/>
     <Description>Globus GridFTP Server</Description>
     <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@"/>
     <src_pkg>
@@ -47,7 +47,7 @@
         <Source_Dependencies Type="compile">
             <Dependency Name="globus_usage">
                 <Version>
-                    <Simple_Version Major="0"/>
+                    <Simple_Version Major="1"/>
                 </Version>
             </Dependency>
         </Source_Dependencies>
@@ -94,7 +94,7 @@
         <Source_Dependencies Type="pgm_link">
             <Dependency Name="globus_usage"> 
                 <Version>
-                    <Simple_Version Major="0"/>
+                    <Simple_Version Major="1"/>
                 </Version>
             </Dependency>
         </Source_Dependencies>

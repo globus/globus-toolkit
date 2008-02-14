@@ -1119,6 +1119,7 @@ globus_i_xio_driver_attr_cntl(
     int                                 cmd,
     va_list                             ap)
 {
+    char *                              tmp_str;
     globus_result_t                     res = GLOBUS_SUCCESS;
     void *                              ds;
     globus_xio_attr_cmd_t               general_cmd;
@@ -1284,7 +1285,17 @@ globus_i_xio_driver_attr_cntl(
             case GLOBUS_XIO_ATTR_CLOSE_NO_CANCEL:
                 attr->no_cancel = va_arg(ap, globus_bool_t);
                 break;
-                
+
+            case GLOBUS_XIO_ATTR_SET_CREDENTIAL:
+                attr->user_open_cred = va_arg(ap, gss_cred_id_t);
+                tmp_str = va_arg(ap, char *);
+                attr->user_open_sbj = globus_libc_strdup(tmp_str);
+                tmp_str = va_arg(ap, char *);
+                attr->user_open_username = globus_libc_strdup(tmp_str);
+                tmp_str = va_arg(ap, char *);
+                attr->user_open_pw = globus_libc_strdup(tmp_str);
+                break;
+    
             default:
                 res = GlobusXIOErrorInvalidCommand(general_cmd);
                 goto err;
@@ -2241,6 +2252,76 @@ globus_xio_operation_get_driver_self_handle(
 {
     return &op->_op_context->entry[op->ndx - 1];
 }
+
+globus_result_t
+globus_xio_operation_attr_cntl(
+    globus_xio_operation_t              op,
+    globus_xio_attr_cmd_t               cmd,
+    ...)
+{
+    char **                             tmp_ptr;
+    globus_result_t                     result;
+    gss_cred_id_t *                     out_cred;
+    va_list                             ap;
+    GlobusXIOName(globus_xio_operation_attr_cntl);
+ 
+    if(op == NULL)
+    {
+        result = GlobusXIOErrorParameter("op");
+        goto error_param;
+    }
+
+#   ifdef HAVE_STDARG_H
+    {
+        va_start(ap, cmd);
+    }
+#   else
+    {
+        va_start(ap);
+    }
+#   endif
+
+    switch(cmd)
+    {
+        case GLOBUS_XIO_ATTR_GET_CREDENTIAL:
+            out_cred = va_arg(ap, gss_cred_id_t *);
+            if(out_cred != NULL)
+            {
+                *out_cred = op->user_open_cred;
+            }
+            tmp_ptr = va_arg(ap, char **);
+            if(tmp_ptr != NULL)
+            {
+                *tmp_ptr = globus_libc_strdup(op->user_open_sbj);
+            }
+            tmp_ptr = va_arg(ap, char **);
+            if(tmp_ptr != NULL)
+            {
+                *tmp_ptr = globus_libc_strdup(op->user_open_username);
+            }
+            tmp_ptr = va_arg(ap, char **);
+            if(tmp_ptr != NULL)
+            {
+                *tmp_ptr = globus_libc_strdup(op->user_open_pw);
+            }
+            break;
+
+        default:
+            result = GlobusXIOErrorParameter("cmd");
+            goto error_cmd;
+    }
+    va_end(ap);
+
+
+    return GLOBUS_SUCCESS;
+
+error_cmd:
+error_param:
+    va_end(ap);
+
+    return result;
+}
+
 
 void *
 globus_xio_operation_get_data_descriptor(

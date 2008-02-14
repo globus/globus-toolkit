@@ -4398,6 +4398,7 @@ globus_i_gsc_list(
     globus_i_gsc_transfer_cb_t          list_cb,
     void *                              user_arg)
 {
+    globus_bool_t                       free_fact = GLOBUS_FALSE;
     char *                              fact_str;
     globus_gridftp_server_control_list_cb_t user_cb;
     GlobusGridFTPServerName(globus_i_gsc_list);
@@ -4467,6 +4468,10 @@ globus_i_gsc_list(
             break;
     }
 
+    if(op->glob_match_str != NULL)
+    {
+        free_fact = GLOBUS_TRUE;
+    }
     if(user_cb != NULL)
     {
         user_cb(
@@ -4478,18 +4483,13 @@ globus_i_gsc_list(
     }
     else
     {
-        if(op->glob_match_str != NULL)
-        {
-            globus_free(fact_str);
-        }
         return GlobusGridFTPServerControlErrorSyntax();
     }
-
-    if(op->glob_match_str != NULL)
+    if(free_fact)
     {
         globus_free(fact_str);
     }
-    
+
     GlobusGridFTPServerDebugInternalExit();
     return GLOBUS_SUCCESS;
 }

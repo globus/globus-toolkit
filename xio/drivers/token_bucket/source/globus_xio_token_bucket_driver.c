@@ -914,6 +914,9 @@ static globus_xio_string_cntl_table_t  tb_l_string_opts_table[] =
     {"period", GLOBUS_XIO_TOKEN_BUCKET_SET_PERIOD, globus_xio_string_cntl_formated_int},
     {"read_period", GLOBUS_XIO_TOKEN_BUCKET_SET_READ_PERIOD, globus_xio_string_cntl_formated_int},
     {"write_period", GLOBUS_XIO_TOKEN_BUCKET_SET_WRITE_PERIOD, globus_xio_string_cntl_formated_int},
+    {"burst", GLOBUS_XIO_TOKEN_BUCKET_SET_BURST, globus_xio_string_cntl_formated_int},
+    {"read_burst", GLOBUS_XIO_TOKEN_BUCKET_SET_READ_BURST, globus_xio_string_cntl_formated_int},
+    {"write_burst", GLOBUS_XIO_TOKEN_BUCKET_SET_WRITE_BURST, globus_xio_string_cntl_formated_int},
     {NULL, 0, NULL}
 };
 
@@ -935,12 +938,12 @@ globus_l_xio_tb_attr_cntl(
     {
         case GLOBUS_XIO_TOKEN_BUCKET_SET_RATE:
             attr->read_attr.rate = va_arg(ap, globus_size_t);
-            attr->write_attr.rate = va_arg(ap, globus_size_t);
+            attr->write_attr.rate = attr->read_attr.rate;
             break;
 
         case GLOBUS_XIO_TOKEN_BUCKET_SET_PERIOD:
             attr->read_attr.us_period = va_arg(ap, int);
-            attr->write_attr.us_period = va_arg(ap, int);
+            attr->write_attr.us_period = attr->read_attr.us_period;
             break;
 
         case GLOBUS_XIO_TOKEN_BUCKET_SET_READ_RATE:
@@ -985,6 +988,19 @@ globus_l_xio_tb_attr_cntl(
                 goto error;
             }
             attr->write_attr.group_name = strdup(group);
+            break;
+
+        case GLOBUS_XIO_TOKEN_BUCKET_SET_BURST:
+            attr->read_attr.burst_size = va_arg(ap, globus_size_t);
+            attr->write_attr.burst_size = attr->read_attr.burst_size;
+            break;
+
+        case GLOBUS_XIO_TOKEN_BUCKET_SET_READ_BURST:
+            attr->read_attr.burst_size = va_arg(ap, globus_size_t);
+            break;
+
+        case GLOBUS_XIO_TOKEN_BUCKET_SET_WRITE_BURST:
+            attr->write_attr.burst_size = va_arg(ap, globus_size_t);
             break;
 
         default:

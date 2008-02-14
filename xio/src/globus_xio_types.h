@@ -107,7 +107,9 @@ typedef enum
     GLOBUS_XIO_ATTR_SET_TIMEOUT_WRITE,
     GLOBUS_XIO_ATTR_SET_TIMEOUT_ACCEPT,
     GLOBUS_XIO_ATTR_SET_SPACE,
-    GLOBUS_XIO_ATTR_CLOSE_NO_CANCEL
+    GLOBUS_XIO_ATTR_CLOSE_NO_CANCEL,
+    GLOBUS_XIO_ATTR_SET_CREDENTIAL,
+    GLOBUS_XIO_ATTR_GET_CREDENTIAL
 } globus_xio_attr_cmd_t;
 
 /** doxygen varargs filter stuff
@@ -238,6 +240,15 @@ typedef struct
     char *                              subject;
 } globus_xio_contact_t;
 
+
+typedef struct globus_xio_driver_list_ent_s
+{
+    globus_xio_driver_t                 driver;
+    char *                              driver_name;
+    char *                              opts;
+    void *                              user_arg;
+    globus_bool_t                       loaded;
+}globus_xio_driver_list_ent_t;
 
 EXTERN_C_END
 

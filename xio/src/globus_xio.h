@@ -970,12 +970,76 @@ globus_xio_server_register_signal_handler(
     void *                                  user_arg);
  */
 
+
+globus_xio_driver_list_ent_t *
+globus_xio_driver_list_find_driver(
+    globus_list_t *                     driver_list,
+    const char *                        driver_name);
+
+void
+globus_xio_driver_list_destroy(
+    globus_list_t *                     driver_list,
+    globus_bool_t                       unload);
+
+globus_result_t
+globus_xio_driver_list_to_stack_attr(
+    globus_list_t *                     driver_list,
+    globus_xio_stack_t                  stack,
+    globus_xio_attr_t                   attr);
+
+globus_result_t
+globus_xio_driver_list_from_string(
+    char *                              driver_string,
+    globus_list_t **                    driver_list,
+    globus_hashtable_t *                safe_table);
+
+globus_result_t
+globus_xio_driver_safe_table_from_string(
+    char *                              driver_string,
+    globus_hashtable_t *                safe_table);
+
+
 extern globus_module_descriptor_t       globus_i_xio_module;
 #define GLOBUS_XIO_MODULE &globus_i_xio_module
 
 #define _XIOSL(s) globus_common_i18n_get_string( \
 		     GLOBUS_XIO_MODULE, \
 		     s)
+
+/**
+ *  @ingroup GLOBUS_XIO_API
+ *  Initializes a handle based on the scheme given.
+ *
+ *  @param out_h
+ *         An uninitialized handle that will be initialized in the function
+ *         to correspond to the scheme given. This handle should be used
+ *         for any I/O operations.
+ *
+ *  @param scheme
+ *         A string containing the protocol which the handle should be
+ *         initialized to. The string can either be a protocol by itself,
+ *         for example, "http", or a complete scheme such as 
+ *         "http://www.example.com".
+ *
+ *  @param attr
+ *         Attribute to be used for setting parameter string. It is
+ *         initialized by the function. Can be NULL if attributes
+ *         are not being used.
+ *
+ *  @param param_string
+ *         A string containing attributes to be set for the drivers
+ *         associated with the scheme. This should be in the form
+ *         "protocol1:option1=value1;option2=value2,protocol2:option1=value1;
+ *         option2=value2" Can be NULL if attributes are not being used.
+ */
+
+globus_result_t
+globus_xio_handle_create_from_url(
+    globus_xio_handle_t *           out_h,
+    const char *                    scheme,
+    globus_xio_attr_t               attr,
+    char *                          param_string);
+
 EXTERN_C_END
 
 #endif

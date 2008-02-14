@@ -1739,6 +1739,7 @@ globus_l_gsc_cmd_pasv_cb(
     unsigned short                          port;
     int                                     sc;
     char *                                  msg = NULL;
+    char *                                  err_msg = NULL;
     globus_i_gsc_cmd_wrapper_t *            wrapper = NULL;
     GlobusGridFTPServerName(globus_l_gsc_cmd_pasv_cb);
 
@@ -1748,12 +1749,12 @@ globus_l_gsc_cmd_pasv_cb(
     if(response_type != GLOBUS_GRIDFTP_SERVER_CONTROL_RESPONSE_SUCCESS)
     {
         /* TODO: evaulated error type */
-        globus_gsc_959_finished_command(op, _FSMSL("500 Command failed.\r\n"));
+        err_msg = "500 Command failed.\r\n";
         goto err;
     }
     else if(addr_count > wrapper->max && wrapper->max != -1)
     {
-        globus_gsc_959_finished_command(wrapper->op, _FSMSL("500 Command failed.\r\n"));
+        err_msg = "500 Command failed.\r\n";
         goto err;
     }
     else if(wrapper->dc_parsing_alg == 0)
@@ -1764,14 +1765,12 @@ globus_l_gsc_cmd_pasv_cb(
             if(globus_libc_contact_string_to_ints(
                 cs[0], host_ip, &ip_count, &port) != GLOBUS_SUCCESS)
             {
-                globus_gsc_959_finished_command(
-                    wrapper->op, "500 Resource error.\r\n");
+                err_msg = "500 Resource error.\r\n";
                 goto err;
             }
             if(ip_count > 4)
             {
-                globus_gsc_959_finished_command(
-                    wrapper->op, "522 Network protocol not supported.\r\n");
+                err_msg = "522 Network protocol not supported.\r\n";
                 goto err;
             }
             
@@ -1800,14 +1799,12 @@ globus_l_gsc_cmd_pasv_cb(
                 if(globus_libc_contact_string_to_ints(
                     cs[ctr], host_ip, &ip_count, &port) != GLOBUS_SUCCESS)
                 {
-                    globus_gsc_959_finished_command(
-                        wrapper->op, "500 Resource problem.\r\n");
+                    err_msg = "500 Resource problem.\r\n";
                     goto err;
                 }
                 if(ip_count > 4)
                 {
-                    globus_gsc_959_finished_command(
-                       wrapper->op, "522 Network protocol not supported.\r\n");
+                    err_msg = "522 Network protocol not supported.\r\n";
                     goto err;
                 }
             
@@ -1822,8 +1819,7 @@ globus_l_gsc_cmd_pasv_cb(
                     (int) (port % 256));
                 if(tmp_ptr == NULL)
                 {
-                    globus_gsc_959_finished_command(
-                        wrapper->op, "500 Resource error.\r\n");
+                    err_msg = "500 Resource error.\r\n";
                     goto err;
                 }
                 globus_free(msg);
@@ -1833,8 +1829,7 @@ globus_l_gsc_cmd_pasv_cb(
                 msg, wrapper->reply_code);
             if(tmp_ptr == NULL)
             {
-                globus_gsc_959_finished_command(
-                    wrapper->op, "500 Resource error.\r\n");
+                err_msg = "500 Resource error.\r\n";
                 goto err;
             }
             globus_free(msg);
@@ -1852,8 +1847,7 @@ globus_l_gsc_cmd_pasv_cb(
             host = globus_libc_strdup(cs[0]);
             if(!host)
             {
-                globus_gsc_959_finished_command(
-                    wrapper->op, "500 Resource error.\r\n");
+                err_msg = "500 Resource error.\r\n";
                 goto err;
             }
             
@@ -1861,8 +1855,7 @@ globus_l_gsc_cmd_pasv_cb(
             if(!p || p == host)
             {
                 globus_free(host);
-                globus_gsc_959_finished_command(
-                    wrapper->op, "500 Internal Parse error.\r\n");
+                err_msg = "500 Internal Parse error.\r\n";
                 goto err;
             }
             
@@ -1882,8 +1875,7 @@ globus_l_gsc_cmd_pasv_cb(
             if(sc != 1)
             {
                 globus_free(host);
-                globus_gsc_959_finished_command(
-                    wrapper->op, "500 Internal Parse error.\r\n");
+                err_msg = "500 Internal Parse error.\r\n";
                 goto err;
             }
             
@@ -1912,8 +1904,7 @@ globus_l_gsc_cmd_pasv_cb(
                 host = globus_libc_strdup(cs[ctr]);
                 if(!host)
                 {
-                    globus_gsc_959_finished_command(
-                        wrapper->op, "500 Resource error.\r\n");
+                    err_msg = "500 Resource error.\r\n";
                     goto err;
                 }
                 
@@ -1921,8 +1912,7 @@ globus_l_gsc_cmd_pasv_cb(
                 if(!p || p == host)
                 {
                     globus_free(host);
-                    globus_gsc_959_finished_command(
-                        wrapper->op, "500 Internal Parse error.\r\n");
+                    err_msg = "500 Internal Parse error.\r\n";
                     goto err;
                 }
                 
@@ -1942,8 +1932,7 @@ globus_l_gsc_cmd_pasv_cb(
                 if(sc != 1)
                 {
                     globus_free(host);
-                    globus_gsc_959_finished_command(
-                        wrapper->op, "500 Internal Parse error.\r\n");
+                    err_msg = "500 Internal Parse error.\r\n";
                     goto err;
                 }
                 
@@ -1956,8 +1945,7 @@ globus_l_gsc_cmd_pasv_cb(
                 globus_free(host);
                 if(tmp_ptr == NULL)
                 {
-                    globus_gsc_959_finished_command(
-                        wrapper->op, "500 Resource error.\r\n");
+                    err_msg = "500 Resource error.\r\n";
                     goto err;
                 }
                 globus_free(msg);
@@ -1967,8 +1955,7 @@ globus_l_gsc_cmd_pasv_cb(
                 msg, wrapper->reply_code);
             if(tmp_ptr == NULL)
             {
-                globus_gsc_959_finished_command(
-                    wrapper->op, "500 Resource error.\r\n");
+                err_msg = "500 Resource error.\r\n";
                 goto err;
             }
             globus_free(msg);
@@ -2005,6 +1992,7 @@ globus_l_gsc_cmd_pasv_cb(
         globus_free(msg);
     }
     op->server_handle->pasv_info = NULL;
+    globus_gsc_959_finished_command(op, err_msg);
     globus_free(wrapper);
 }
 

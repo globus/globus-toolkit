@@ -97,7 +97,7 @@ globus_xio_contact_copy(
 #endif
 
 #define GlobusXIOErrorCanceled()                                            \
-    globus_error_put(GlobusXIOErrorObjCanceled())                                           
+    globus_error_put(GlobusXIOErrorObjCanceled())
 
 #define GlobusXIOErrorObjCanceled()                                         \
     globus_error_construct_error(                                           \

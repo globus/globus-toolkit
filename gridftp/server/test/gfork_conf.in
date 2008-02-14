@@ -8,7 +8,8 @@ service gridftp2
   env += @SEC_ENVS@
   server = @GLOBUS_LOCATION@/sbin/globus-gridftp-server
   server_args = -i -aa -l @GLOBUS_LOCATION@/test/globus_gridftp_server_test/server.log
-  server_args += -dsi remote -ia self -d WARN
+  server_args += -dsi remote -ia self -d WARN --disable-usage-stats
+  server_args += -control-interface 127.0.0.1
   nice = 10
   master = @GLOBUS_LOCATION@/libexec/gfs-gfork-master
   master_args = -port @REG_PORT@ -G @GSI@
