@@ -192,6 +192,64 @@ if test -z "$GLOBUS_CC" ; then
 fi
 
 case ${host}--$1 in
+    i*86*solaris2*)
+        dnl On Solaris, avoid the pre-ansi BSD compatibility compiler
+
+        if test "$GLOBUS_CC" = "mpicc"; then
+            AC_PATH_PROGS(lac_cv_CC,  $CC  mpicc)
+            AC_PATH_PROGS(lac_cv_CXX, $CXX mpicxx mpic++ mpiCC)
+            AC_PATH_PROGS(lac_cv_F77, $F77 mpif77)
+            AC_PATH_PROGS(lac_cv_F90, $F90 mpif90)
+        else
+            if test "$GLOBUS_CC" = "gcc"; then
+                AC_PATH_PROGS(lac_cv_CC, $CC gcc)
+                AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC g++)
+                AC_PATH_PROGS(lac_cv_F77, $F77 g77)
+            else
+                AC_PATH_PROGS(lac_cv_CC, $CC cc $lac_cv_CC)
+                AC_PATH_PROGS(lac_cv_CXX, $CXX $CCC CC)
+                AC_PATH_PROGS(lac_cv_F77, $F77 f77)
+                AC_PATH_PROGS(lac_cv_F90, $F90 f90)
+            fi
+        fi
+        CC="$lac_cv_CC"
+
+        if test "$CC" = "/usr/ucb/cc" ; then
+            AC_MSG_ERROR([The compiler found was /usr/ucb/cc (not supported)])
+            exit 1
+        fi
+
+        LAC_PROG_CC_GNU($lac_cv_CC,
+                        [if test "$1" = "solaristhreads" -o "$1" = "pthreads" ; then
+                                lac_CFLAGS="-D_REENTRANT $lac_CFLAGS"
+                         fi],
+                        [if test "$1" = "solaristhreads" -o "$1" = "pthreads" ; then
+                                lac_CFLAGS="-mt $lac_CFLAGS"
+                         fi
+                         lac_cflags_opt="-xO3"])
+
+        LAC_PROG_CC_GNU($lac_cv_CXX,
+                        [if test "$1" = "solaristhreads" -o "$1" = "pthreads" ; then
+                                lac_CXXFLAGS="-D_REENTRANT $lac_CXXFLAGS"
+                         fi
+                        ],
+                        [if test "$1" = "solaristhreads" -o "$1" = "pthreads" ; then
+                                lac_CXXFLAGS="-mt $lac_CXXFLAGS"
+                         fi
+                         lac_cxxflags_opt="-xO3"
+                        ])
+
+        if test "$lac_cv_build_64bit" = "yes"; then
+                    lac_CFLAGS="$lac_CFLAGS -m64"
+                    lac_CXXFLAGS="$lac_CXXFLAGS -m64"
+                    lac_LDFLAGS="$lac_LDFLAGS -m64"
+        else
+                    lac_CFLAGS="$lac_CFLAGS -m32"
+                    lac_CXXFLAGS="$lac_CXXFLAGS -m32"
+                    lac_LDFLAGS="$lac_LDFLAGS -m32"
+        fi
+
+        ;;
     *solaris2*)
         dnl On Solaris, avoid the pre-ansi BSD compatibility compiler
 
