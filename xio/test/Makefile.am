@@ -109,9 +109,6 @@ http_timeout_test_LDFLAGS = $(GPT_LDFLAGS)
 http_throughput_test_SOURCES = http_throughput_test.c $(HTTP_PERFORMANCE_Sources)
 http_throughput_test_LDFLAGS = $(GPT_LDFLAGS)
 
-http_timeout_test_SOURCES = http_timeout_test.c $(HTTP_COMMON_Sources) 		
-http_timeout_test_LDFLAGS = $(GPT_LDFLAGS)
-
 handle_create_from_url_test_SOURCES = handle_create_from_url_test.c
 handle_create_from_url_test_LDFLAGS = $(GPT_LDFLAGS)
 

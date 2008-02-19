@@ -1,5 +1,5 @@
-#include <stdio.h>
 #include "globus_xio.h"
+#include <stdio.h>
 
 #define LINE_LEN 1024
 
