@@ -293,9 +293,11 @@ sub getDevLines
 
     $cflagslist =~ s:\s+: :g;
     $cflagslist =~ s:^\s|\s$::g;
+    $cflagslist =~ s:\\::g;
 
     $includeslist =~ s:\s+: :g;
     $includeslist =~ s:^\s|\s$::g;
+    $includeslist =~ s:\\::g;
 
     $libslist =~ s:\s+: :g;
     $libslist =~ s:^\s|\s$::g;
