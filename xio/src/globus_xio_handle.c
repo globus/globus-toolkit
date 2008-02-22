@@ -141,8 +141,6 @@ static globus_l_xio_prt_ent_t           xio_l_scheme[] =
     {"https", {"tcp", "http", "gsi"}},
     {"tcp", {"tcp"}},
     {"tcps", {"tcp", "gsi"}},
-//    {"udt", {"udt_ref"}},
-//    {"udts", {"tcp", "udt_ref"}},
     {"file", {"file"}},
     {NULL}
 };
