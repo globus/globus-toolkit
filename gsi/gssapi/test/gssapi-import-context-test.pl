@@ -3,9 +3,11 @@
 use strict;
 use POSIX;
 use Test;
-use Cwd qw(cwd);
+use Globus::Testing::Utilities;
 
 my $test_prog = 'gssapi-import-context-test';
+Globus::Testing::Utilities::testcred_setup
+    || die "Unable to set up test credentials\n";
 
 sub basic_func
 {

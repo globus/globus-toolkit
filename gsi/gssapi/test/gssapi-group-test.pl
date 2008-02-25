@@ -1,32 +1,22 @@
 #!/usr/bin/env perl
 
-=pod
-
-=head1 Tests for the globus common error object code
-
-Tests to exercise the error object functionality of the globus
-common library.
-
-=cut
-
 use strict;
 use POSIX;
 use Test;
-use Cwd qw(cwd);
+use Globus::Testing::Utilities;
 
 my $test_prog = 'gssapi-group-test';
 
 my $diff = 'diff';
 my @tests;
 my @todo;
+Globus::Testing::Utilities::testcred_setup
+    || die "Unable to set up test credentials\n";
 
 sub basic_func
 {
     my ($errors,$rc) = ("",0);
    
-    $ENV{X509_CERT_DIR} = cwd();
-    $ENV{X509_USER_PROXY} = "testcred.pem";
-
     $rc = system("./$test_prog 1>$test_prog.log.stdout 2>$test_prog.log.stderr") / 256;
 
     if($rc != 0)
@@ -34,7 +24,7 @@ sub basic_func
         $errors .= "Test exited with $rc. ";
     }
 
-    if(-r 'core')
+    if($rc & 128)
     {
         $errors .= "\n# Core file generated.";
     }

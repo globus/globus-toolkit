@@ -30,8 +30,7 @@ Data= \
 	gssapi-anonymous-test.stderr \
 	gssapi-delegation-test.stderr \
 	gssapi-limited-delegation-test.stderr \
-	gssapi-delegation-compat-test.stderr \
-	testcred.pem
+	gssapi-delegation-compat-test.stderr
 
 test_DATA = $(Data)
 
