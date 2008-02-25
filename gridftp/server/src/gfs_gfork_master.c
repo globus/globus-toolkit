@@ -265,6 +265,8 @@ gfs_l_gfork_read_remove_dynbe(
     {
         buffer[GF_VERSION_NDX] = GF_VERSION;
         buffer[GF_MSG_TYPE_NDX] = GFS_GFORK_MSG_TYPE_NACK;
+        gfs_l_gfork_log(
+            GLOBUS_SUCCESS, 2, "Cannot find entry to unregister.\n");
     }
     else
     {
@@ -289,10 +291,10 @@ gfs_l_gfork_read_remove_dynbe(
             NULL);
         globus_free(buffer);
     }
-    return GLOBUS_TRUE;
+    return GLOBUS_SUCCESS;
 
 error_cs:
-    return GLOBUS_FALSE;
+    return GLOBUS_SUCCESS;
 }
 static
 void
@@ -375,6 +377,25 @@ error:
     gfs_l_gfork_log(
         result, 3, "Reading registration exit it error.\n");
     globus_mutex_unlock(&g_mutex);
+}
+
+static
+void
+gfs_l_gfork_read_dynbe_bc_cb(
+    globus_xio_handle_t                 xio_handle,
+    globus_result_t                     result,
+    globus_xio_iovec_t *                iovec,
+    int                                 count,
+    globus_size_t                       nbytes,
+    globus_xio_data_descriptor_t        data_desc,
+    void *                              user_arg)
+{
+    int                                 i;
+
+    for(i = 0; i < count; i++)
+    { 
+        globus_free(iovec[i].iov_base);
+    }
 }
 
 static
@@ -491,6 +512,9 @@ gfs_l_gfork_read_dynbe(
     memcpy(iov[0].iov_base, buffer, GF_DYN_PACKET_LEN);
     iov[0].iov_len = GF_DYN_PACKET_LEN;
 
+    buffer = iov[0].iov_base;
+    buffer[GF_MSG_TYPE_NDX] = GFS_GFORK_MSG_TYPE_DYNBE;
+
     gfs_l_gfork_log(
         GLOBUS_SUCCESS, 2, "Successful registration from: %s\n",
         &buffer[GF_DYN_CS_NDX]);
@@ -504,7 +528,7 @@ gfs_l_gfork_read_dynbe(
         g_handle,
         iov,
         1,
-        NULL,
+        gfs_l_gfork_read_dynbe_bc_cb,
         NULL);
     gfs_l_gfork_log(
         result, 3, "Broadcasted new registration\n");
@@ -1491,6 +1515,7 @@ gfs_l_gfork_backend_xio_open_cb(
     void *                              user_arg)
 {
     globus_byte_t *                     buffer;
+    uint32_t                            converted_32;
 
     if(result != GLOBUS_SUCCESS)
     {
@@ -1500,8 +1525,10 @@ gfs_l_gfork_backend_xio_open_cb(
     buffer = globus_calloc(1, GF_DYN_PACKET_LEN);
     buffer[GF_VERSION_NDX] = GF_VERSION;
     buffer[GF_MSG_TYPE_NDX] = GFS_GFORK_MSG_TYPE_DYNBE;
-    memcpy(&buffer[GF_DYN_AT_ONCE_NDX], &g_at_once, sizeof(uint32_t));
-    memcpy(&buffer[GF_DYN_TOTAL_NDX], &g_total_cons, sizeof(uint32_t));
+    converted_32 = htonl(g_at_once);
+    memcpy(&buffer[GF_DYN_AT_ONCE_NDX], &converted_32, sizeof(uint32_t));
+    converted_32 = htonl(g_total_cons);
+    memcpy(&buffer[GF_DYN_TOTAL_NDX], &converted_32, sizeof(uint32_t));
     strncpy((char *)&buffer[GF_DYN_CS_NDX], g_be_cs, GF_DYN_CS_LEN);
 
     result = globus_xio_register_write(

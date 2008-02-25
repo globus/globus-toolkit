@@ -199,10 +199,10 @@ globus_l_gfs_gfork_dyn_reg(
         "[%s] enter", "globus_l_gfs_gfork_dyn_reg");
 
     memcpy(&tmp_32, &buffer[GF_DYN_AT_ONCE_NDX], sizeof(uint32_t));
-    con_max = (int) ntohl(tmp_32);
+    con_max = (int) tmp_32;
 
     memcpy(&tmp_32, &buffer[GF_DYN_TOTAL_NDX], sizeof(uint32_t));
-    total_max = (int) ntohl(tmp_32);
+    total_max = (int) tmp_32;
     if(total_max == 0)
     {
         total_max = -1;
@@ -461,6 +461,12 @@ globus_l_gfs_gfork_incoming_cb(
                     gfs_l_brain_killer_cb,
                     NULL);
                 break;
+
+            default:
+               globus_gfs_log_message(
+                    GLOBUS_GFS_LOG_WARN, 
+                    "Unknown GFork message type received.\n");
+                break; 
         }
     }
     globus_mutex_unlock(&globus_l_brain_mutex);
