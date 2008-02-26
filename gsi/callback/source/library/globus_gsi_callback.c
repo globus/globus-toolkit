@@ -766,6 +766,9 @@ globus_i_gsi_callback_cred_verify(
         {
 	    char *                      subject_name =
 	      X509_NAME_oneline(X509_get_subject_name(x509_context->current_cert), 0, 0);
+            unsigned long               issuer_hash =
+                    X509_issuer_name_hash(x509_context->current_cert);
+            char *                      cert_dir;
 
             if (x509_context->error == X509_V_ERR_CERT_NOT_YET_VALID)
             {
@@ -778,11 +781,20 @@ globus_i_gsi_callback_cred_verify(
             else if (x509_context->error == 
                      X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY)
             {
+                cert_dir = NULL;
+                GLOBUS_GSI_SYSCONFIG_GET_CERT_DIR(
+                    &cert_dir);
                 GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
                     result,
                     GLOBUS_GSI_CALLBACK_ERROR_CANT_GET_LOCAL_CA_CERT,
-                    (_CLS("Cannot find issuer certificate for "
-		     "local credential with subject: %s"), subject_name));
+                    (_CLS("Cannot find trusted CA certificate "
+		     "with hash %lx%s%s"),
+                     issuer_hash, cert_dir ? " in " : "",
+                     cert_dir ? cert_dir : ""));
+                if (cert_dir)
+                {
+                    free(cert_dir);
+                }
             }
             else if (x509_context->error == X509_V_ERR_CERT_HAS_EXPIRED)
             {
