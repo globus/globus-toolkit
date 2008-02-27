@@ -47,29 +47,29 @@ UNAME_VERSION=`(uname -v) 2> /dev/null ` || UNAME_VERSION=unknown
 
 if test $CONDOR_OS = 'no'; then
     case "${UNAME_MACHINE}:${UNAME_SYSTEM}:${UNAME_RELEASE}" in
+       *:FreeBSD:6*)
+         CONDOR_OS=FREEBSD6
+         ;;
        *:Linux:*)
 	 CONDOR_OS=LINUX
 	 ;;
        *:OSF1:*)
 	 CONDOR_OS=OSF1
 	 ;;
-       *:SunOS:5.6)
-	 CONDOR_OS=SOLARIS26
+       *:SunOS:5.[[6-9]])
+	 CONDOR_OS=SOLARIS`echo ${UNAME_RELEASE} | sed -e 's:5\.\(.\):2\1:'`
 	 ;;
-       *:SunOS:5.7)
-	 CONDOR_OS=SOLARIS27
-	 ;;
-       *:SunOS:5.8)
-	 CONDOR_OS=SOLARIS28
-	 ;;
-       *:SunOS:5.9)
-         CONDOR_OS=SOLARIS29
-         ;;
        *:SunOS:5.10)
          CONDOR_OS=SOLARIS5.10
          ;;
+       *:HP-UX:*)
+         CONDOR_OS=HPUX11
+         ;;
        *:Darwin:*)
          CONDOR_OS=OSX
+         ;;
+       *:AIX:*)
+         CONDOR_OS=AIX${UNAME_VERSION}${UNAME_RELEASE}
          ;;
        *)
          AC_MSG_ERROR([unknown CONDOR_OS])
@@ -82,21 +82,27 @@ if test $CONDOR_ARCH = 'no'; then
         alpha:*:*)
 	  CONDOR_ARCH=ALPHA
 	  ;;
-        i?86*:*:*)
-	  CONDOR_ARCH=INTEL
-	  ;;
-        ia64:*:*)
-          CONDOR_ARCH=IA64
-          ;;
         x86_64:*:*)
           CONDOR_ARCH=x86_64
           ;;
-        sun4*:*:*)
-	  CONDOR_ARCH=`uname -m | tr '[a-z]' '[A-Z]'`
+        i?86*:*:*)
+	  CONDOR_ARCH=INTEL
 	  ;;
+        sun4*:*:*)
+	  CONDOR_ARCH=`uname -m | sed -e 's:sun4\(.\):SUN4\1:'`
+	  ;;
+        9000/?00:*:*)
+          CONDOR_ARCH=HPPA2
+          ;;
+        ia64:*:*)
+          CONDOR_ARCH=IA64
+          ;;
         "Power Macintosh":*:*)
           CONDOR_ARCH=PPC
           ;;
+         *:AIX:[[23]]) 
+          CONDOR_ARCH=PWR3II 
+          ;; 
        *)
          AC_MSG_ERROR([unknown CONDOR_ARCH])
       esac
