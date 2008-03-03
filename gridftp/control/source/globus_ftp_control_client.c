@@ -1130,12 +1130,13 @@ globus_l_ftp_control_end_of_reply(
 
         if((response->response_buffer)[last+1] == '6')
         {
+            globus_size_t copy_len = response->response_length * 2;
             last=-1;
             current=0;
             length=0;
             total_length=0;
 
-            out_buf = globus_libc_malloc(response->response_length + 4);
+            out_buf = globus_libc_malloc(copy_len);
             
             if( out_buf == GLOBUS_NULL)
             {
@@ -1178,6 +1179,12 @@ globus_l_ftp_control_end_of_reply(
                     if(((char *) unwrapped_token.value)[unwrapped_token.length - 1] == '\0')
                     {
                         unwrapped_token.length--;
+                    }
+
+                    if(total_length+unwrapped_token.length >= copy_len)
+                    {
+                        copy_len *= 2;
+                        out_buf = globus_realloc(out_buf, copy_len);
                     }
 
                     memcpy(&(out_buf[total_length]),
