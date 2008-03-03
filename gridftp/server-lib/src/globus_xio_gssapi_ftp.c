@@ -1023,7 +1023,7 @@ globus_l_xio_gssapi_ftp_unwrap(
     GlobusXIOGssapiftpDebugEnter();
 
     /* allocate out buffer same size as in, assuming unwrap will be samller */
-    buf =  globus_malloc(in_length+2); /* + 2 is likely not needed since
+    buf = globus_malloc(in_length+3); /* + 2 is likely not needed since
                                          buffer will be big enough anyway
                                          but there maybe some crazy special
                                          case */
@@ -1060,8 +1060,9 @@ globus_l_xio_gssapi_ftp_unwrap(
     }
 
     /* copy the unwrapped token in */
-    memcpy(buf, unwrapped_token.value, unwrapped_token.length);
     len = unwrapped_token.length;
+    buf = globus_malloc(len+3);
+    memcpy(buf, unwrapped_token.value, unwrapped_token.length);
 
     /* get rid of terminating NULL */
     if(buf[len - 1] == '\0')
