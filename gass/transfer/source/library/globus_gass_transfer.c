@@ -153,6 +153,12 @@ globus_l_gass_transfer_deactivate(void)
 	    req,
 	    globus_i_gass_transfer_deactivate_callback,
 	    GLOBUS_NULL);
+
+        if (rc == GLOBUS_GASS_TRANSFER_ERROR_DONE)
+        {
+            rc = globus_i_gass_transfer_request_destroy(tmp);
+            globus_assert(rc == 0);
+        }
     }
 
     rest = globus_i_gass_transfer_listeners;

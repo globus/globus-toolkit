@@ -2006,6 +2006,8 @@ globus_l_gram_job_manager_gass_open_callback(
 	      request->output->open_failure_code =
 		  GLOBUS_GRAM_PROTOCOL_ERROR_OPENING_STDERR;
 	  }
+          globus_gass_transfer_request_destroy(gass_request);
+
 	  break;
 	case GLOBUS_GASS_TRANSFER_REQUEST_INVALID:
 	case GLOBUS_GASS_TRANSFER_REQUEST_FAILED:
