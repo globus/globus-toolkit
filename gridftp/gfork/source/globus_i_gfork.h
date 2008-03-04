@@ -147,6 +147,7 @@ typedef struct gfork_i_options_s
     globus_list_t *                     env_list;
     uid_t                               master_user;
     char *                              master;
+    int                                 master_nice;
     globus_list_t *                     master_arg_list;
     void *                              user_arg;
     globus_bool_t                       quiet;
@@ -156,6 +157,8 @@ typedef struct gfork_i_options_s
 
     char *                              crowded_msg;
     int                                 crowded_msg_len;
+
+    globus_list_t *                     master_list;
 } gfork_i_options_t;
 
 typedef struct gfork_i_handle_s
@@ -168,6 +171,8 @@ typedef struct gfork_i_handle_s
     globus_xio_driver_t                 tcp_driver;
     globus_xio_server_t                 server_xio;
     gfork_i_options_t *                 opts;
+
+    globus_list_t *                     master_list;
 } gfork_i_handle_t;
 
 typedef struct gfork_i_child_handle_s
@@ -202,6 +207,15 @@ typedef struct gfork_i_lib_handle_s
     globus_fifo_t                       write_q;
     globus_bool_t                       writing;
 } gfork_i_lib_handle_t;
+
+typedef struct gfork_i_master_program_ent_s
+{
+    char *                              master;
+    uid_t                               master_uid;
+    int                                 master_nice;
+    globus_list_t *                     master_arg_list;    
+    globus_list_t *                     master_env;
+} gfork_i_master_program_ent_t;
 
 globus_result_t
 gfork_i_make_xio_handle(

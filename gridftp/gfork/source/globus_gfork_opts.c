@@ -51,30 +51,20 @@ globus_i_opts_to_handle(
     }
     if(opts->master != NULL)
     {
-        handle->master_argv = (char **) globus_calloc(
-            globus_list_size(opts->master_arg_list) + 2, sizeof(char *));
-        handle->master_argv[0] = opts->master;
+        gfork_i_master_program_ent_t *  m_ent;
 
-        i = 1;
-        for(list = opts->master_arg_list;
-            !globus_list_empty(list);
-            list = globus_list_rest(list))
-        {
-            handle->master_argv[i] = (char *) globus_list_first(list);
-            i++;
-        }
-    }
+        /* add the last one to the list */
+        m_ent = (gfork_i_master_program_ent_t *) globus_calloc(
+            1, sizeof(gfork_i_master_program_ent_t));
+        m_ent->master = opts->master;
+        m_ent->master_arg_list = opts->master_arg_list;
+        m_ent->master_uid = opts->master_user;
+        m_ent->master_nice = opts->master_nice;
+        m_ent->master_env = opts->env_list;
 
-    handle->env_argv = (char **) globus_calloc(
-        globus_list_size(opts->env_list) + 1, sizeof(char *));
-    i = 0;
-    for(list = opts->env_list;
-        !globus_list_empty(list);
-        list = globus_list_rest(list))
-    {
-        handle->env_argv[i] = (char *) globus_list_first(list);
-        i++;
+        globus_list_insert(&opts->master_list, m_ent);
     }
+    handle->master_list = opts->master_list;
 
     if(globus_list_empty(opts->protocol_list))
     {
@@ -232,7 +222,6 @@ error_format:
     return 0x1;
 }
 
-
 static
 globus_result_t
 gfork_l_opts_master(
@@ -242,10 +231,29 @@ gfork_l_opts_master(
     void *                              arg,
     int *                               out_parms_used)
 {
+    gfork_i_master_program_ent_t *      m_ent;
     gfork_i_options_t *                 gfork_h;
 
     gfork_h = (gfork_i_options_t *) arg;
 
+    if(gfork_h->master != NULL)
+    {
+        m_ent = (gfork_i_master_program_ent_t *) globus_calloc(
+            1, sizeof(gfork_i_master_program_ent_t));
+        m_ent->master = gfork_h->master;
+        m_ent->master_arg_list = gfork_h->master_arg_list;
+        m_ent->master_uid = gfork_h->master_user;
+        m_ent->master_env = gfork_h->env_list;
+        m_ent->master_nice = gfork_h->master_nice;
+
+        gfork_h->env_list = NULL;
+        gfork_h->master = NULL;
+        gfork_h->master_arg_list = NULL;
+        gfork_h->master_user = 0;
+        gfork_h->master_nice = 0;
+
+        globus_list_insert(&gfork_h->master_list, m_ent);
+    }
     gfork_h->master = strdup(opt[0]);
 
     *out_parms_used = 1;
