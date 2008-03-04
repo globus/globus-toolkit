@@ -972,10 +972,9 @@ case ${host}--$1 in
         CC="$lac_cv_CC"
       ;;
     *-darwin* )
-        dnl No 64bit support yet
         if test "$lac_cv_build_64bit" = "yes"; then
-                AC_MSG_ERROR(64 bits not supported on this platform)
-                exit 1
+            lac_CFLAGS="$lac_CFLAGS -m64"
+            lac_LDFLAGS="$lac_LDFLAGS -m64"
         fi
 
         if test "$GLOBUS_CC" = "mpicc"; then
@@ -997,11 +996,6 @@ case ${host}--$1 in
             AC_PATH_PROGS(lac_cv_F90, $F90 f90)
         fi
         CC="$lac_cv_CC"
-
-        # for now assume fink is installed in /sw
-
-        lac_CPPFLAGS="$lac_CPPFLAGS -I/sw/include -DBIND_8_COMPAT"
-        lac_LDFLAGS="$lac_LDFLAGS -L/sw/lib"
       ;;
     * )
         dnl No 64bit support yet
