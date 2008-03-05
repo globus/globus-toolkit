@@ -54,6 +54,19 @@ public class GFTPTextPacket extends CStylePacket {
     protected long ftpReturnCode;
     protected String gridFTPVersion;
     protected String hostname;
+    protected String loadedDSI;
+    protected String eventModules;
+    protected String accessSchema;
+    protected String clientApp;
+    protected String clientAppver;
+    protected String fileName;
+    protected String clientIP;
+    protected String dataIP;
+    protected String userName;
+    protected String userDN;
+    protected String confID;
+    protected String sessionID;
+
 
     public boolean isStorOperation() {
         return storOrRetr == STOR_CODE;
@@ -88,6 +101,42 @@ public class GFTPTextPacket extends CStylePacket {
     public String getGridFTPVersion() {
         return gridFTPVersion;
     }
+    public String getLoadedDSI() {
+        return loadedDSI;
+    }
+    public String getEventModules() {
+        return eventModules;
+    }
+    public String getAccessSchema() {
+        return accessSchema;
+    }
+    public String getClientApp() {
+        return clientApp;
+    }
+    public String getClientAppver() {
+        return clientAppver;
+    }
+    public String getFileName() {
+        return fileName;
+    }
+    public String getClientIP() {
+        return clientIP;
+    }
+    public String getDataIP() {
+        return dataIP;
+    }
+    public String getUserName() {
+        return userName;
+    }
+    public String getUserDN() {
+        return userDN;
+    }
+    public String getConfID() {
+        return confID;
+    }
+    public String getSessionID() {
+        return sessionID;
+    }
 
     public void setOperationType (byte newType) {
         storOrRetr = newType;
@@ -118,6 +167,42 @@ public class GFTPTextPacket extends CStylePacket {
     }
     public void setGridFTPVersion(String v) {
         gridFTPVersion = v;
+    }
+    public void setLoadedDSI(String x) {
+        loadedDSI = x;
+    }
+    public void setEventModules(String x) {
+        eventModules = x;
+    }
+    public void setAccessSchema(String x) {
+        accessSchema = x;
+    }
+    public void setClientApp(String x) {
+        clientApp = x;
+    }
+    public void setClientAppver(String x) {
+        clientAppver = x;
+    }
+    public void setFileName(String x) {
+        fileName = x;
+    }
+    public void setClientIP(String x) {
+        clientIP = x;
+    }
+    public void setDataIP(String x) {
+        dataIP = x;
+    }
+    public void setUserName(String x) {
+        userName = x;
+    }
+    public void setUserDN(String x) {
+        userDN = x;
+    }
+    public void setConfID(String x) {
+        confID = x;
+    }
+    public void setSessionID(String x) {
+        sessionID = x;
     }
 
     public boolean isInDomain(String[] domainList) {
@@ -172,7 +257,20 @@ HOSTNAME=mayed.mcs.anl.gov START=20050225073026.426286 END=20050225073026.560613
 		storOrRetr = OTHER_TYPE_CODE;
 	    }
 	    
-	    ftpReturnCode = parser.getLong("CODE"); 
+	    ftpReturnCode = parser.getLong("CODE");
+            loadedDSI = parser.getString("DSI");
+            eventModules = parser.getString("EM");
+            accessSchema = parser.getString("SCHEMA");
+            clientApp = parser.getString("APP");
+            clientAppver = parser.getString("APPVER");
+            fileName = parser.getString("FILE");
+            clientIP = parser.getString("CLIENTIP");
+            dataIP = parser.getString("DATAIP");
+            userName = parser.getString("USER");
+            userDN = parser.getString("USERDN");
+            confID = parser.getString("CONFID");
+            sessionID = parser.getString("SESSID");
+	   
 	}
 	catch (Exception e) {
 	    //do logger error output when I get a packet I totally can't parse, and
@@ -219,8 +317,19 @@ HOSTNAME=mayed.mcs.anl.gov START=20050225073026.426286 END=20050225073026.560613
         log.info("bufferSize = "+bufferSize);
         log.info("blockSize = "+blockSize);
         log.info("ftpReturnCode = "+ftpReturnCode);
+        log.info("loadedDSI = "+loadedDSI);
+        log.info("eventModules = "+eventModules);
+        log.info("accessSchema = "+accessSchema);
+        log.info("clientApp = "+clientApp);
+        log.info("clientAppver = "+clientAppver);
+        log.info("fileName = "+fileName);
+        log.info("clientIP = "+clientIP);
+        log.info("dataIP = "+dataIP);
+        log.info("userName = "+userName);
+        log.info("userDN = "+userDN);
+        log.info("confID = "+confID);
+        log.info("sessionID = "+sessionID);
     }
-
     /*returns 4 if this is IPv4, 6 if this is IPv6.*/
     public byte getIPVersion() {
 	if (senderAddress == null) {

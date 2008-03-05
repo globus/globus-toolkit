@@ -127,7 +127,8 @@ public class GridFTPPacketHandler extends DefaultPacketHandler {
 	StringBuffer sqlContents = new StringBuffer();
 	sqlContents.append("INSERT INTO ");
 	sqlContents.append(table);
-	sqlContents.append(" (component_code, version_code, send_time, ip_version, hostname, gftp_version, stor_or_retr, start_time, end_time, num_bytes, num_stripes, num_streams, buffer_size, block_size, ftp_return_code) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);");
+	sqlContents.append(" (component_code, version_code, send_time, ip_version, hostname, gftp_version, stor_or_retr, start_time, end_time, num_bytes, num_stripes, num_streams, buffer_size, block_size, ftp_return_code, loaded_dsi, event_modules, access_schema, client_app, client_appver, file_name, client_ip, data_ip, user_name, user_dn, conf_id, session_id )");
+	sqlContents.append(" VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);");
 	ps = con.prepareStatement(sqlContents.toString());
 
 	ps.setShort(1, gmp.getComponentCode());
@@ -151,7 +152,18 @@ public class GridFTPPacketHandler extends DefaultPacketHandler {
 	ps.setLong(13, gmp.getBufferSize());
 	ps.setLong(14, gmp.getBlockSize());
 	ps.setLong(15, gmp.getFTPReturnCode());
-	
+        ps.setString(16, gmp.getLoadedDSI());	
+        ps.setString(17, gmp.getEventModules());	
+        ps.setString(18, gmp.getAccessSchema());	
+        ps.setString(19, gmp.getClientApp());	
+        ps.setString(20, gmp.getClientAppver());	
+        ps.setString(21, gmp.getFileName());	
+        ps.setString(22, gmp.getClientIP());	
+        ps.setString(23, gmp.getDataIP());	
+        ps.setString(24, gmp.getUserName());	
+        ps.setString(25, gmp.getUserDN());	
+        ps.setString(26, gmp.getConfID());	
+        ps.setString(27, gmp.getSessionID());	
 	return ps;
     }
 }

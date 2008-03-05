@@ -24,8 +24,35 @@ CREATE TABLE gftp_packets(
     block_size  INT,
     ftp_return_code INT,
     ip_version INT,
+    loaded_dsi VARCHAR(64),
+    event_modules TEXT,
+    access_schema VARCHAR(16),
+    client_app VARCHAR(128),
+    client_appver VARCHAR(64),
+    file_name TEXT,
+    client_ip VARCHAR(64),
+    data_ip VARCHAR(64),
+    user_name VARCHAR(32),
+    user_dn VARCHAR(128),
+    conf_id TEXT,
+    session_id VARCHAR(64),
     PRIMARY KEY (id)
 );
+-- To upgrade from previous version:
+-- ALTER TABLE gftp_packets ADD loaded_dsi VARCHAR(64);
+-- ALTER TABLE gftp_packets ADD event_modules TEXT;
+-- ALTER TABLE gftp_packets ADD access_schema VARCHAR(16);
+-- ALTER TABLE gftp_packets ADD client_app VARCHAR(128);
+-- ALTER TABLE gftp_packets ADD client_appver VARCHAR(64);
+-- ALTER TABLE gftp_packets ADD file_name TEXT;
+-- ALTER TABLE gftp_packets ADD client_ip VARCHAR(64);
+-- ALTER TABLE gftp_packets ADD data_ip VARCHAR(64);
+-- ALTER TABLE gftp_packets ADD user_name VARCHAR(32);
+-- ALTER TABLE gftp_packets ADD user_dn VARCHAR(128);
+-- ALTER TABLE gftp_packets ADD conf_id TEXT;
+-- ALTER TABLE gftp_packets ADD session_id VARCHAR(64);
+-- and do the same for the mcs_internal_gftp_packets or whatever you
+-- are using for gftp-filtered-out-table if applicable
 
 CREATE TABLE rft_packets(
     id SERIAL,
