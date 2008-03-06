@@ -701,9 +701,9 @@ const EVP_CIPHER *EVP_aes_128_ecb(void);
 const EVP_CIPHER *EVP_aes_128_cbc(void);
 const EVP_CIPHER *EVP_aes_128_cfb(void);
 const EVP_CIPHER *EVP_aes_128_ofb(void);
-/* Globus Version */
+#if 0
 const EVP_CIPHER *EVP_aes_128_ctr(void);
-/* End Globus */
+#endif
 const EVP_CIPHER *EVP_aes_192_ecb(void);
 const EVP_CIPHER *EVP_aes_192_cbc(void);
 const EVP_CIPHER *EVP_aes_192_cfb(void);

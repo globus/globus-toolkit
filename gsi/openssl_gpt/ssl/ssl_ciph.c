@@ -70,8 +70,7 @@
 #define SSL_ENC_NULL_IDX	6
 #define SSL_ENC_AES128_IDX	7
 #define SSL_ENC_AES256_IDX	8
-#define SSL_ENC_AES128_CTR_IDX  9
-#define SSL_ENC_NUM_IDX		10
+#define SSL_ENC_NUM_IDX		9
 
 static const EVP_CIPHER *ssl_cipher_methods[SSL_ENC_NUM_IDX]={
 	NULL,NULL,NULL,NULL,NULL,NULL,
@@ -179,8 +178,6 @@ static void load_ciphers(void)
 	  EVP_get_cipherbyname(SN_aes_128_cbc);
 	ssl_cipher_methods[SSL_ENC_AES256_IDX]=
 	  EVP_get_cipherbyname(SN_aes_256_cbc);
-        ssl_cipher_methods[SSL_ENC_AES128_CTR_IDX] =
-          EVP_aes_128_ctr();
 
 	ssl_digest_methods[SSL_MD_MD5_IDX]=
 		EVP_get_digestbyname(SN_md5);
@@ -249,10 +246,6 @@ int ssl_cipher_get_evp(SSL_SESSION *s, const EVP_CIPHER **enc,
 		default: i=-1; break;
 			}
 		break;
-        case SSL_AES_CTR:
-                i=SSL_ENC_AES128_CTR_IDX;
-                break;
-
 	default:
 		i= -1;
 		break;
@@ -339,7 +332,6 @@ static unsigned long ssl_cipher_get_disabled(void)
 	mask |= (ssl_cipher_methods[SSL_ENC_IDEA_IDX] == NULL) ? SSL_IDEA:0;
 	mask |= (ssl_cipher_methods[SSL_ENC_eFZA_IDX] == NULL) ? SSL_eFZA:0;
 	mask |= (ssl_cipher_methods[SSL_ENC_AES128_IDX] == NULL) ? SSL_AES:0;
-	mask |= (ssl_cipher_methods[SSL_ENC_AES128_CTR_IDX] == NULL) ? SSL_AES_CTR:0;
 
 	mask |= (ssl_digest_methods[SSL_MD_MD5_IDX ] == NULL) ? SSL_MD5 :0;
 	mask |= (ssl_digest_methods[SSL_MD_SHA1_IDX] == NULL) ? SSL_SHA1:0;
@@ -1027,9 +1019,6 @@ char *SSL_CIPHER_description(SSL_CIPHER *cipher, char *buf, int len)
 		default: enc="AES(?""?""?)"; break;
 			}
 		break;
-        case SSL_AES_CTR:
-                enc="AES(128)-CTR";
-                break;
 	default:
 		enc="unknown";
 		break;

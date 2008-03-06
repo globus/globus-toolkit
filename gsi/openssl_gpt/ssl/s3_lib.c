@@ -114,7 +114,6 @@
 #include "ssl_locl.h"
 #include "kssl_lcl.h"
 #include <openssl/md5.h>
-#include "aes128-ctr-cipher.h"
 
 const char *ssl3_version_str="SSLv3" OPENSSL_VERSION_PTEXT;
 
@@ -987,19 +986,6 @@ OPENSSL_GLOBAL SSL_CIPHER ssl3_ciphers[]={
 	    SSL_ALL_CIPHERS,
 	    SSL_ALL_STRENGTHS,
 	    },
-
-            {
-	    1,
-	    SSL3_TXT_RSA_WITH_AES_128_CTR_SHA,
-	    SSL3_CK_RSA_WITH_AES_128_CTR_SHA,
-            SSL_kRSA|SSL_aRSA|SSL_AES_CTR|SSL_SHA|SSL_SSLV3,
-	    SSL_NOT_EXP|SSL_MEDIUM,
-	    0,
-	    128,
-	    128,
-	    SSL_ALL_CIPHERS,
-	    SSL_ALL_STRENGTHS,
-            },
 
 /* end of list */
 	};

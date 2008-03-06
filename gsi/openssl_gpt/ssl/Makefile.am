@@ -2,7 +2,6 @@ include $(top_srcdir)/globus_automake_pre
 include $(top_srcdir)/globus_openssl_pre
 
 Sources= \
-	aes128-ctr-cipher.h \
 	s2_meth.c s2_srvr.c s2_clnt.c s2_lib.c s2_enc.c s2_pkt.c \
 	s3_meth.c s3_srvr.c s3_clnt.c s3_lib.c s3_enc.c s3_pkt.c s3_both.c \
 	s23_meth.c s23_srvr.c s23_clnt.c s23_lib.c s23_pkt.c \
