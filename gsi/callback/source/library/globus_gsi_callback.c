@@ -796,6 +796,22 @@ globus_i_gsi_callback_cred_verify(
                     free(cert_dir);
                 }
             }
+            else if (x509_context->error == X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN)
+            {
+                cert_dir = NULL;
+                GLOBUS_GSI_SYSCONFIG_GET_CERT_DIR(
+                    &cert_dir);
+                GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
+                    result,
+                    GLOBUS_GSI_CALLBACK_ERROR_CANT_GET_LOCAL_CA_CERT,
+                    (_CLS("Untrusted self-signed certificate in chain "
+		     "with hash %lx"),
+                     issuer_hash));
+                if (cert_dir)
+                {
+                    free(cert_dir);
+                }
+            }
             else if (x509_context->error == X509_V_ERR_CERT_HAS_EXPIRED)
             {
                 GLOBUS_GSI_CALLBACK_OPENSSL_ERROR_RESULT(
