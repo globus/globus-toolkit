@@ -197,7 +197,7 @@ static const globus_l_gfs_config_option_t option_list[] =
     "(f) FILE - name of file/data transferred\n"
     "(i) CLIENTIP - ip address of host running client (control channel)\n"
     "(I) DATAIP - ip address of source/dest host of data (data channel)\n"
-    "(u) USERNAME - local user name the transfer was performed as\n"
+    "(u) USER - local user name the transfer was performed as\n"
     "(d) USERDN - DN that was mapped to user id\n"
     "(C) CONFID - ID defined by -usage-stats-id config option\n"
     "(U) SESSID - unique id that can be used to match transfers in a session and\n"
@@ -464,6 +464,7 @@ globus_l_gfs_config_load_config_file(
     int                                 optlen;
     char *                              p;
     globus_off_t                        tmp_off;
+    globus_bool_t                       found;
     GlobusGFSName(globus_l_gfs_config_load_config_file);
     GlobusGFSDebugEnter();
 
@@ -537,8 +538,9 @@ globus_l_gfs_config_load_config_file(
         {
             goto error_parse;
         }
-
-        for(i = 0; i < option_count; i++)
+        
+        found = GLOBUS_FALSE;
+        for(i = 0; !found && i < option_count; i++)
         {
             if(option_list[i].option_name == NULL)
             {
@@ -549,6 +551,8 @@ globus_l_gfs_config_load_config_file(
             {
                 continue;
             }
+            
+            found = GLOBUS_TRUE;
             
             option = (globus_l_gfs_config_option_t *) globus_hashtable_remove(
                     &option_table, option_list[i].option_name);   
@@ -588,6 +592,13 @@ globus_l_gfs_config_load_config_file(
                 /* XXX error, log something */
             }
         }
+        if(!found)
+        {
+            fprintf(stderr, "Problem parsing config file %s: line %d. "
+                "Unknown option '%s'.\n", 
+                filename, line_num, file_option);
+            goto error_param;
+        }
     }
 
     fclose(fptr);
@@ -597,8 +608,9 @@ globus_l_gfs_config_load_config_file(
 
 error_parse:
     fclose(fptr);
-    fprintf(stderr, "Problem parsing config file %s: line %d\n", 
+    fprintf(stderr, "Problem parsing config file %s: line %d.\n", 
         filename, line_num);
+error_param:
     GlobusGFSDebugExitWithError();
     return -1;
 

@@ -34,7 +34,9 @@ static globus_bool_t                    globus_l_gfs_log_events = GLOBUS_FALSE;
 #define GLOBUS_L_GFS_USAGE_VER 0
 
 #define GLOBUS_GFS_DEFAULT_TAGLIST "eEvbBNsStcDATaV"
+#define GLOBUS_GFS_ALL_TAGLIST "eEvbBNsStcfiIudCDATaVU"
 #define GLOBUS_GFS_MAX_TAGCOUNT 25
+
 typedef enum globus_i_gfs_log_usage_tag_e
 {
     GLOBUS_I_GFS_USAGE_START    = 'e',
@@ -59,6 +61,7 @@ typedef enum globus_i_gfs_log_usage_tag_e
     GLOBUS_I_GFS_USAGE_APP      = 'a',
     GLOBUS_I_GFS_USAGE_APPVER   = 'V',
     GLOBUS_I_GFS_USAGE_SESSID   = 'U'
+    /* !! ADD to ALL_TAGLIST above when adding here */
 } globus_i_gfs_log_usage_tag_t;
 
 typedef struct globus_l_gfs_log_usage_ent_s
@@ -155,6 +158,12 @@ globus_l_gfs_log_usage_stats_init()
                 usage_ent->taglist = 
                     globus_libc_strdup(GLOBUS_GFS_DEFAULT_TAGLIST);
             }                
+            else if(strcasecmp(usage_ent->taglist, "all") == 0)
+            {
+                globus_free(usage_ent->taglist);
+                usage_ent->taglist = 
+                    globus_libc_strdup(GLOBUS_GFS_ALL_TAGLIST);
+            }                
             
             usage_ent->target = entry;
 
@@ -188,6 +197,12 @@ globus_l_gfs_log_usage_stats_init()
                 globus_free(usage_ent->taglist);
                 usage_ent->taglist = 
                     globus_libc_strdup(GLOBUS_GFS_DEFAULT_TAGLIST);
+            }                
+            else if(strcasecmp(usage_ent->taglist, "all") == 0)
+            {
+                globus_free(usage_ent->taglist);
+                usage_ent->taglist = 
+                    globus_libc_strdup(GLOBUS_GFS_ALL_TAGLIST);
             }                
 
             usage_ent->target = entry;
