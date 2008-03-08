@@ -335,10 +335,16 @@ globus_l_gfs_file_close_cb(
 
     GlobusGFSFileDebugEnter();
 
-    if(monitor->finish_result == GLOBUS_SUCCESS)
+    /* must lock/unlock or we can get to the destroy before the 
+       registeration locak has actually released... crazy threads */
+    globus_mutex_lock(&monitor->lock);
     {
-        monitor->finish_result = result;
+        if(monitor->finish_result == GLOBUS_SUCCESS)
+        {
+            monitor->finish_result = result;
+        }
     }
+    globus_mutex_unlock(&monitor->lock);
 
     globus_gridftp_server_finished_transfer(
         monitor->op, monitor->finish_result);
