@@ -10,6 +10,8 @@ SUBDIRS = \
 	doxygen
 
 EXTRA_DIST = \
+    dsi_bones \
+    embed \
     gridftp.gfork.in \
     gridftp-fe.gfork.in \
     gridftp-be.gfork.in \
