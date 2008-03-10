@@ -7,10 +7,8 @@ setup_SCRIPTS = \
 
 SUBDIRS = pkgdata
 
-EXTRA_DIST =
+EXTRA_DIST = setup-globus-gridftp-sshftp.pl setup-globus-gridftp-sshftp
 
 include $(top_srcdir)/globus_automake_post
 include $(top_srcdir)/globus_automake_post_top
-
-
 
