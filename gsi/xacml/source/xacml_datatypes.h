@@ -85,7 +85,7 @@ typedef int (*xacml_io_close_t)(
     void                               *arg);
 
 typedef void * (*xacml_io_accept_t)(
-    int                                 socket,
+    int                                 sock,
     struct sockaddr                    *addr,
     socklen_t                          *addr_len,
     int                                *sock_out);
@@ -335,7 +335,7 @@ typedef enum
     /**
      * The requested access is denied.
      */
-    XACML_EFFECT_Deny,
+    XACML_EFFECT_Deny
 }
 xacml_effect_t;
 

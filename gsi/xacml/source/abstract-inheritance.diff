@@ -1,6 +1,6 @@
---- xacml_auth_service.gsoap.old	2007-08-27 15:48:05.000000000 -0400
-+++ xacml_auth_service.gsoap	2007-08-27 15:43:15.000000000 -0400
-@@ -2249,7 +2249,7 @@
+--- xacml_auth_service.gsoap.orig	2008-03-06 16:25:55.000000000 -0500
++++ xacml_auth_service.gsoap	2008-03-06 16:28:45.000000000 -0500
+@@ -2293,7 +2293,7 @@
  };
  
  /// "urn:oasis:names:tc:SAML:2.0:assertion":AuthnStatementType is a complexType with complexContent extension of "urn:oasis:names:tc:SAML:2.0:assertion":StatementAbstractType.
@@ -9,7 +9,7 @@
  { public:
  /// INHERITED FROM saml__StatementAbstractType:
  //  END OF INHERITED
-@@ -2266,7 +2266,7 @@
+@@ -2310,7 +2310,7 @@
  };
  
  /// "urn:oasis:names:tc:SAML:2.0:assertion":AuthzDecisionStatementType is a complexType with complexContent extension of "urn:oasis:names:tc:SAML:2.0:assertion":StatementAbstractType.
@@ -18,7 +18,7 @@
  { public:
  /// INHERITED FROM saml__StatementAbstractType:
  //  END OF INHERITED
-@@ -2290,7 +2290,7 @@
+@@ -2334,7 +2334,7 @@
  };
  
  /// "urn:oasis:names:tc:SAML:2.0:assertion":AttributeStatementType is a complexType with complexContent extension of "urn:oasis:names:tc:SAML:2.0:assertion":StatementAbstractType.
@@ -27,19 +27,19 @@
  { public:
  /// INHERITED FROM saml__StatementAbstractType:
  //  END OF INHERITED
-@@ -2383,7 +2383,7 @@
+@@ -2433,7 +2433,7 @@
  };
  
- /// "urn:oasis:xacml:2.0:saml:assertion:schema:os":XACMLAuthzDecisionStatementType is a complexType with complexContent extension of "urn:oasis:names:tc:SAML:2.0:assertion":StatementAbstractType.
+ /// "urn:oasis:names:tc:xacml:2.0:profile:saml2.0:v2:schema:assertion":XACMLAuthzDecisionStatementType is a complexType with complexContent extension of "urn:oasis:names:tc:SAML:2.0:assertion":StatementAbstractType.
 -class XACMLassertion__XACMLAuthzDecisionStatementType
 +class XACMLassertion__XACMLAuthzDecisionStatementType : public saml__StatementAbstractType
  { public:
  /// INHERITED FROM saml__StatementAbstractType:
  //  END OF INHERITED
-@@ -2394,7 +2394,7 @@
+@@ -2444,7 +2444,7 @@
  };
  
- /// "urn:oasis:xacml:2.0:saml:assertion:schema:os":XACMLPolicyStatementType is a complexType with complexContent extension of "urn:oasis:names:tc:SAML:2.0:assertion":StatementAbstractType.
+ /// "urn:oasis:names:tc:xacml:2.0:profile:saml2.0:v2:schema:assertion":XACMLPolicyStatementType is a complexType with complexContent extension of "urn:oasis:names:tc:SAML:2.0:assertion":StatementAbstractType.
 -class XACMLassertion__XACMLPolicyStatementType
 +class XACMLassertion__XACMLPolicyStatementType : public saml__StatementAbstractType
  { public:

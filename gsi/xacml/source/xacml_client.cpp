@@ -320,14 +320,14 @@ parse_xacml_response(
 
     XACMLassertion__XACMLAuthzDecisionStatementType * xacml_decision = NULL;
 
-    for (int i = 0; i < resp->__size_32; i++)
+    for (int i = 0; i < resp->__size_33; i++)
     {
-        switch (resp->__union_32[i].__union_32)
+        switch (resp->__union_33[i].__union_33)
         {
-        case SOAP_UNION__samlp__union_32_saml__Assertion:
+        case SOAP_UNION__samlp__union_33_saml__Assertion:
             {
                 saml__AssertionType * assertion = 
-                        resp->__union_32[i].union_32.saml__Assertion;
+                        resp->__union_33[i].union_33.saml__Assertion;
 
                 for (int j = 0; j < assertion->__size_1; j++)
                 {
@@ -346,9 +346,9 @@ parse_xacml_response(
                     }
                 }
             }
-        case SOAP_UNION__samlp__union_32_saml__EncryptedAssertion:
-            assert(resp->__union_32[i].__union_32 ==
-                   SOAP_UNION__samlp__union_32_saml__Assertion);
+        case SOAP_UNION__samlp__union_33_saml__EncryptedAssertion:
+            assert(resp->__union_33[i].__union_33 ==
+                   SOAP_UNION__samlp__union_33_saml__Assertion);
         }
     }
 

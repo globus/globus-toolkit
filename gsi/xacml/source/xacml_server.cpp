@@ -273,26 +273,29 @@ parse_xacml_query(
                 action.c_str());
         }
     }
-    for (std::vector<class XACMLcontext__AttributeType *>::iterator i =
-                req->XACMLcontext__Environment->XACMLcontext__Attribute.begin();
-         i != req->XACMLcontext__Environment->XACMLcontext__Attribute.end();
-         i++)
+    if (req->XACMLcontext__Environment)
     {
-        for (std::vector<class XACMLcontext__AttributeValueType *>::iterator j =
-                    (*i)->XACMLcontext__AttributeValue.begin();
-             j != (*i)->XACMLcontext__AttributeValue.end();
-             j++)
+        for (std::vector<class XACMLcontext__AttributeType *>::iterator i =
+                    req->XACMLcontext__Environment->XACMLcontext__Attribute.begin();
+             i != req->XACMLcontext__Environment->XACMLcontext__Attribute.end();
+             i++)
         {
-            std::string envval;
+            for (std::vector<class XACMLcontext__AttributeValueType *>::iterator j =
+                        (*i)->XACMLcontext__AttributeValue.begin();
+                 j != (*i)->XACMLcontext__AttributeValue.end();
+                 j++)
+            {
+                std::string envval;
 
-            extract_attribute_value(*j, envval);
+                extract_attribute_value(*j, envval);
 
-            xacml_request_add_environment_attribute(
-                request,
-                (*i)->AttributeId.c_str(),
-                (*i)->DataType.c_str(),
-                (*i)->Issuer ? (*i)->Issuer->c_str() : NULL,
-                envval.c_str());
+                xacml_request_add_environment_attribute(
+                    request,
+                    (*i)->AttributeId.c_str(),
+                    (*i)->DataType.c_str(),
+                    (*i)->Issuer ? (*i)->Issuer->c_str() : NULL,
+                    envval.c_str());
+            }
         }
     }
 
@@ -325,20 +328,20 @@ prepare_response(
     samlp__Response->IssueInstant =
             response->issue_instant ? response->issue_instant : time(NULL);
 
-    samlp__Response->__size_32 = 1;
-    samlp__Response->__union_32 = new __samlp__union_32();
+    samlp__Response->__size_33 = 1;
+    samlp__Response->__union_33 = new __samlp__union_33();
     
-    samlp__Response->__union_32->__union_32 =
-            SOAP_UNION__samlp__union_32_saml__Assertion;
-    samlp__Response->__union_32->union_32.saml__Assertion =
+    samlp__Response->__union_33->__union_33 =
+            SOAP_UNION__samlp__union_33_saml__Assertion;
+    samlp__Response->__union_33->union_33.saml__Assertion =
             new saml__AssertionType();
 
-    samlp__Response->__union_32->union_32.saml__Assertion->IssueInstant =
+    samlp__Response->__union_33->union_33.saml__Assertion->IssueInstant =
             time(NULL);
 
-    samlp__Response->__union_32->union_32.saml__Assertion->saml__Issuer =
+    samlp__Response->__union_33->union_33.saml__Assertion->saml__Issuer =
             new saml__NameIDType();
-    samlp__Response->__union_32->union_32.saml__Assertion->saml__Issuer->Format
+    samlp__Response->__union_33->union_33.saml__Assertion->saml__Issuer->Format
             =
             new std::string("urn:oasis:names:tc:SAML:2.0:nameid-format:entity");
 
@@ -349,13 +352,13 @@ prepare_response(
     {
         return SOAP_SVR_FAULT;
     }
-    samlp__Response->__union_32->union_32.saml__Assertion->__item = 
+    samlp__Response->__union_33->union_33.saml__Assertion->__item = 
             new char[strlen(issuer)+1];
-    strcpy(samlp__Response->__union_32->union_32.saml__Assertion->__item,
+    strcpy(samlp__Response->__union_33->union_33.saml__Assertion->__item,
            issuer);
 
     saml__AssertionType * response_assertion =
-            samlp__Response->__union_32->union_32.saml__Assertion;
+            samlp__Response->__union_33->union_33.saml__Assertion;
 
     response_assertion->__size_1 = 1;
     response_assertion->__union_1 = new __saml__union_1();

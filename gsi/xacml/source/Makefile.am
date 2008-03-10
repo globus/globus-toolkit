@@ -1,9 +1,9 @@
 AUTOMAKE_OPTIONS=foreign
 
-SUBDIRS=examples
+SUBDIRS=examples schema
 EXTRA_DIST=typemap.dat abstract-inheritance.diff Doxyfile doxygen.head doxygen.foot
 
-SCHEMA=$(SCHEMA_DIR)/xacml_authz_service.wsdl
+SCHEMA=schema/xacml_authz_service.wsdl
 GSOAP_FILE = xacml_auth_service.gsoap 
 GSOAP_SOURCE_FILES= soapStub.h \
                     soapH.h \

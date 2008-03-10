@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wsdl:definitions name="XACMLAuthorization" targetNamespace="http://www.globus.org/security/XACMLAuthorization/bindings" xmlns:porttype="http://www.globus.org/security/XACMLAuthorization" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">
+  <wsdl:import namespace="http://www.globus.org/security/XACMLAuthorization" location="xacml_authz_port_type.wsdl"/>
+  <wsdl:binding name="XACMLAuthorizationPortTypeSOAPBinding" type="porttype:XACMLAuthorizationPortType">
+    <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+    <wsdl:operation name="Authorize">
+      <soap:operation soapAction="http://www.globus.org/security/XACMLAuthorization/XACMLAuthorizationPortType/AuthorizeRequest"/>
+      <wsdl:input>
+        <soap:body use="literal"/>
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal"/>
+      </wsdl:output>
+      <wsdl:fault name="XACMLFault">
+        <soap:fault name="XACMLFault" use="literal"/>
+      </wsdl:fault>
+    </wsdl:operation>
+  </wsdl:binding>
+</wsdl:definitions>

@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wsdl:definitions name="XACMLAuthorization"
+	targetNamespace="http://www.globus.org/security/XACMLAuthorization"
+	xmlns:tns="http://www.globus.org/security/XACMLAuthorization"
+	xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+	xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+	xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+	xmlns:xacml-context="urn:oasis:names:tc:xacml:2.0:context:schema:os"
+	xmlns:xacml-policy="urn:oasis:names:tc:xacml:2.0:policy:schema:os"
+	xmlns:xacml-assertion="urn:oasis:names:tc:xacml:2.0:profile:saml2.0:v2:schema:assertion"
+	xmlns:xacml-samlp="urn:oasis:names:tc:xacml:2.0:profile:saml2.0:v2:schema:protocol"
+	xmlns:saml-assertion="urn:oasis:names:tc:SAML:2.0:assertion"
+	xmlns:saml-protocol="urn:oasis:names:tc:SAML:2.0:protocol">
+	<wsdl:types>
+		<xsd:schema
+			targetNamespace="http://www.globus.org/security/XACMLAuthorization"
+			xmlns:tns="http://www.globus.org/security/XACMLAuthorization"
+			xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+
+            <xsd:import namespace="urn:oasis:names:tc:SAML:2.0:assertion"
+			schemaLocation="saml-schema-assertion-2.0.xsd" />
+
+             <xsd:import namespace="urn:oasis:names:tc:xacml:2.0:profile:saml2.0:v2:schema:protocol"
+		        schemaLocation="xacml-2.0-profile-saml2.0-v2-schema-protocol-wd-5.xsd" />
+
+	      <xsd:import namespace="urn:oasis:names:tc:xacml:2.0:context:schema:os"
+			schemaLocation="access_control-xacml-2.0-context-schema-os-v3.xsd" />
+
+	       <xsd:import namespace="urn:oasis:names:tc:xacml:2.0:profile:saml2.0:v2:schema:assertion"
+			schemaLocation="xacml-2.0-profile-saml2.0-v2-schema-assertion-wd-5.xsd" />
+
+		<xsd:import namespace="urn:oasis:names:tc:xacml:2.0:policy:schema:os"
+			schemaLocation="access_control-xacml-2.0-policy-schema-os-v3.xsd" />
+
+		<xsd:import namespace="urn:oasis:names:tc:SAML:2.0:protocol"
+		       schemaLocation="saml-schema-protocol-2.0.xsd" />
+
+
+            <xsd:element name="XACMLAuthorizationFault" type="xsd:string"/>
+        </xsd:schema>
+	</wsdl:types>
+	<wsdl:message name="XACMLAuthzDecisionQuery">
+		<wsdl:part name="XACMLAuthzDecisionQuery"
+			element="xacml-samlp:XACMLAuthzDecisionQuery" />
+	</wsdl:message>
+	<wsdl:message name="XACMLAuthzResponse">
+		<wsdl:part name="XACMLAuthzResponse" element="saml-protocol:Response" />
+	</wsdl:message>
+	<wsdl:message name="XACMLAuthorizationFault">
+		<wsdl:part name="XACMLAuthorizationFault"
+			element="tns:XACMLAuthorizationFault">
+		</wsdl:part>
+	</wsdl:message>
+	<wsdl:portType name="XACMLAuthorizationPortType">
+		<wsdl:operation name="Authorize">
+			<wsdl:input message="tns:XACMLAuthzDecisionQuery" />
+			<wsdl:output message="tns:XACMLAuthzResponse" />
+			<wsdl:fault name="XACMLFault"
+				message="tns:XACMLAuthorizationFault">
+			</wsdl:fault>
+		</wsdl:operation>
+	</wsdl:portType>
+</wsdl:definitions>
