@@ -513,12 +513,11 @@ globus_l_gfs_data_post_transfer_event_cb(
                 data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_VALID;
                 break;
 
+            case GLOBUS_L_GFS_DATA_HANDLE_CLOSING:
             case GLOBUS_L_GFS_DATA_HANDLE_CLOSING_AND_DESTROYED:
             case GLOBUS_L_GFS_DATA_HANDLE_VALID:
                 break;
 
-                /* this cant happen because TE_PRE state prevents */
-            case GLOBUS_L_GFS_DATA_HANDLE_CLOSING:
                 /* havent even gotten a close, how did this happen? */
             case GLOBUS_L_GFS_DATA_HANDLE_INUSE:
             case GLOBUS_L_GFS_DATA_HANDLE_CLOSED:
