@@ -82,7 +82,7 @@ globus_gsi_openssl_error	gsi/openssl_error/source	gpt
 globus_gsi_proxy_core	gsi/proxy/proxy_core/source	gpt
 globus_gsi_proxy_ssl	gsi/proxy/proxy_ssl/source	gpt
 globus_gsi_sysconfig	gsi/sysconfig/source	gpt
-globus_gssapi_gsi	gsi/gssapi/source	gpt
+globus_gssapi_gsi	gsi/gssapi/source	gpt null openssl_aes128_ctr
 globus_gssapi_gsi_test	gsi/gssapi/test	gpt
 globus_gss_assist	gsi/gss_assist/source	gpt
 globus_gss_assist_test	gsi/gss_assist/test	gpt
@@ -111,9 +111,7 @@ globus_mds_test		mds/tests	gpt
 globus_mp	mp/source	gpt
 globus_nexus	nexus/source	gpt
 globus_openldap	mds/openldap/patch-n-build pnb openldap-2.0.22.tar.gz
-#globus_openssl	gsi/openssl_gpt	gpt
-globus_openssl	gsi/openssl/source	gpt
-globus_openssl_setup	gsi/openssl/setup	gpt
+globus_openssl	gsi/openssl_gpt	gpt null openssl_aes128_ctr
 globus_openssl_error_test	gsi/openssl_error/test	gpt
 globus_openssl_module	gsi/openssl_module/source	gpt
 globus_proxy_ssl_test	gsi/proxy/proxy_ssl/test	gpt
