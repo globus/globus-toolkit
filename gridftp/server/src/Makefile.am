@@ -12,6 +12,7 @@ SUBDIRS = \
 EXTRA_DIST = \
     dsi_bones \
     embed \
+    gridftp-password.pl \
     gridftp.gfork.in \
     gridftp-fe.gfork.in \
     gridftp-be.gfork.in \
