@@ -44,6 +44,14 @@ my $subject;
 
 GetOptions('nogsi' => \$nogsi);
 
+my @mode;
+push(@mode, "");
+push(@mode, " -fast ");
+push(@mode, " -p 2 ");
+push(@mode, " -p 4 ");
+push(@mode, " -stripe ");
+push(@mode, " -stripe -p 4 ");
+
 
 my @dc_opts;
 
@@ -100,26 +108,30 @@ while($test_ndx != -1)
 {
     print "Server config $test_ndx\n";
 
-    foreach(@proto)
+    foreach(@mode)
     {
-        my $p=$_;
-        my $server_port = $server_cs;
-        $server_port =~ s/.*://;
-        my $dst_url = "$p"."127.0.0.1:$server_port"."$work_dir/GL2/";
-        my $src_url = "$p"."localhost:$server_port"."$work_dir/GL/";
-
-        foreach(@dc_opts)
+        my $md = $_;
+        foreach(@proto)
         {
-            my $dc_opt=$_;
+            my $p=$_;
+            my $server_port = $server_cs;
+            $server_port =~ s/.*://;
+            my $dst_url = "$p"."127.0.0.1:$server_port"."$work_dir/GL2/";
+            my $src_url = "$p"."localhost:$server_port"."$work_dir/GL/";
 
-            foreach(@concur)
+            foreach(@dc_opts)
             {
-                my $cc=$_;
-                my $cmd = "globus-url-copy $cc $dc_opt -cd -r $src_url $dst_url";
+                my $dc_opt=$_;
 
-                &run_guc_test($cmd);
-                system("rm -rf $work_dir/GL2/");
-                $cnt++;
+                foreach(@concur)
+                {
+                    my $cc=$_;
+                    my $cmd = "globus-url-copy $md $cc $dc_opt -cd -r $src_url $dst_url";
+
+                    &run_guc_test($cmd);
+                    system("rm -rf $work_dir/GL2/");
+                    $cnt++;
+                }
             }
         }
     }

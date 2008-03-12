@@ -66,6 +66,12 @@ else
     push(@proto, "gsiftp://");
 }
 
+my @mode;
+push(@mode, "");
+push(@mode, " -fast ");
+push(@mode, " -p 2 ");
+push(@mode, " -p 4 ");
+
 # tests here
 #$server_pid,$server_cs = gfs_setup_server_basic();
 # setup dirs
@@ -80,21 +86,25 @@ while($test_ndx != -1)
 {
     print "Server config $test_ndx\n";
 
-    foreach(@proto)
+    foreach(@mode)
     {
-        my $p=$_;
-        my $src_url = "$p"."$server_cs"."$work_dir/src.data";
-        my $dst_url = "$p"."$server_cs"."$work_dir/dst.data";
-
-        foreach(@dc_opts)
+        my $md=$_;
+        foreach(@proto)
         {
-            my $dc_opt=$_;
+            my $p=$_;
+            my $src_url = "$p"."$server_cs"."$work_dir/src.data";
+            my $dst_url = "$p"."$server_cs"."$work_dir/dst.data";
 
-            my $cmd = "globus-url-copy -stripe -tcp-bs 131072 $dc_opt $src_url $dst_url";
+            foreach(@dc_opts)
+            {
+                my $dc_opt=$_;
 
-            &run_guc_test($cmd);
-            system("rm -rf $work_dir/dst.data");
-            $cnt++;
+                my $cmd = "globus-url-copy $md -stripe -tcp-bs 131072 $dc_opt $src_url $dst_url";
+
+                &run_guc_test($cmd);
+                system("rm -rf $work_dir/dst.data");
+                $cnt++;
+            }
         }
     }
     print "Done $cnt\n";
