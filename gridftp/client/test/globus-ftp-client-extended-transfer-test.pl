@@ -53,7 +53,7 @@ sub basic_func
     my ($parallelism) = (shift);
     my ($errors,$rc) = ("",0);
 
-    my $command = "$test_exec -P $parallelism -s $proto$source_host$source_file -d $proto$dest_host$dest_file >/dev/null 2>&1";
+    my $command = "$test_exec -P $parallelism -s $proto$source_host$source_file -d $proto$dest_host$dest_file";
     $errors = run_command($command, 0);
     if($errors eq "")
     {
@@ -86,7 +86,7 @@ sub bad_url_src
 {
     my ($errors,$rc) = ("",0);
 
-    my $command = "$test_exec -s $proto$source_host/no-such-file-here -d $proto$dest_host$dest_file >/dev/null 2>&1";
+    my $command = "$test_exec -s $proto$source_host/no-such-file-here -d $proto$dest_host$dest_file";
     $errors = run_command($command, 1);
     if($errors eq "")
     {
@@ -109,7 +109,7 @@ sub bad_url_dest
 {
     my ($errors,$rc) = ("",0);
 
-    my $command = "$test_exec -s $proto$source_host$source_file -d $proto$dest_host/no-such-file-here >/dev/null 2>&1";
+    my $command = "$test_exec -s $proto$source_host$source_file -d $proto$dest_host/no-such-file-here";
     $errors = run_command($command, 1);
     if($errors eq "")
     {
@@ -133,7 +133,7 @@ sub abort_test
     my ($abort_point) = shift;
     my ($par) = shift;
 
-    my $command = "$test_exec -P $par -a $abort_point -s $proto$source_host$source_file -d $proto$dest_host$dest_file >/dev/null 2>&1";
+    my $command = "$test_exec -P $par -a $abort_point -s $proto$source_host$source_file -d $proto$dest_host$dest_file";
     $errors = run_command($command, -2);
     if($errors eq "")
     {
@@ -166,7 +166,7 @@ sub restart_test
     my ($restart_point) = shift;
     my ($par) = shift;
 
-    my $command = "$test_exec -P $par -r $restart_point -s $proto$source_host$source_file -d $proto$dest_host$dest_file >/dev/null 2>&1";
+    my $command = "$test_exec -P $par -r $restart_point -s $proto$source_host$source_file -d $proto$dest_host$dest_file";
     $errors = run_command($command, 0);
     if($errors eq "")
     {
@@ -207,7 +207,7 @@ sub perf_test
 {
     my ($errors,$rc) = ("",0);
 
-    my $command = "$test_exec -M -s $proto$source_host$source_file -d $proto$dest_host$dest_file >/dev/null 2>&1";
+    my $command = "$test_exec -M -s $proto$source_host$source_file -d $proto$dest_host$dest_file";
     $errors = run_command($command, 0);
     if($errors eq "")
     {
@@ -235,7 +235,7 @@ sub throughput_test
 {
     my ($errors,$rc) = ("",0);
 
-    my $command = "$test_exec -T -s $proto$source_host$source_file -d $proto$dest_host$dest_file >/dev/null 2>&1";
+    my $command = "$test_exec -T -s $proto$source_host$source_file -d $proto$dest_host$dest_file";
     $errors = run_command($command, 0);
     if($errors eq "")
     {

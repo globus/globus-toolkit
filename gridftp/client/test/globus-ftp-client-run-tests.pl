@@ -86,7 +86,7 @@ elsif(defined($runwuserver))
     $server_pid = setup_wuserver();
 }
 
-if((0 != system("grid-proxy-info -exists -hours 2 >/dev/null 2>&1") / 256) && !defined($nogsi))
+if(run_command("grid-proxy-info -exists -hours 2", 0) && !defined($nogsi))
 {
     print "Security proxy required to run the tests.\n";
     exit 1;
@@ -98,7 +98,7 @@ my ($source_host, $source_file, $local_copy1) = setup_remote_source();
 my ($local_copy2) = setup_local_source();
 my ($dest_host, $dest_file) = setup_remote_dest();
 
-if(0 != system("./globus-ftp-client-get-test -p -s $proto$source_host$source_file  >sanitycheck.log 2>&1") / 256)
+if(run_command("./globus-ftp-client-get-test -p -s $proto$source_host$source_file", 0, "sanitycheck.log", "sanitycheck.log"))
 {
     print "Sanity check of source ($proto$source_host$source_file) failed.\n";
     system("cat sanitycheck.log");
@@ -109,7 +109,7 @@ if(0 != system("./globus-ftp-client-get-test -p -s $proto$source_host$source_fil
     
     exit 1;
 }
-if(0 != system("./globus-ftp-client-put-test -d $proto$dest_host$dest_file < $local_copy2 ") / 256)
+if(run_command("./globus-ftp-client-put-test -d $proto$dest_host$dest_file < $local_copy2", 0))
 {
     print "Sanity check of local source ($local_copy2) to dest ($proto$dest_host$dest_file) failed.\n";
     clean_remote_file($dest_host, $dest_file);

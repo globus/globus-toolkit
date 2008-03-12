@@ -100,11 +100,9 @@ sub gfs_cleanup()
 {
     my $pid;
 
+    kill 2, @cleanup_pids;
+    sleep 5;
     kill 9, @cleanup_pids;
-    while($#cleanup_pids > 0)
-    {
-        $pid = pop(@cleanup_pids);
-    }
     while($#cleanup_files > 0)
     {
         $pid = pop(@cleanup_files);

@@ -1881,7 +1881,7 @@ globus_l_xio_system_try_read(
                         "Changing file position to %" GLOBUS_OFF_T_FORMAT "\n",
                             handle->fd, offset));
                 
-                /* assume success as only failures are ignorable */
+                /* assume success as possible failures are ignorable */
                 lseek(handle->fd, offset, SEEK_SET);
                 handle->file_position = offset;
             }
@@ -2031,7 +2031,7 @@ globus_l_xio_system_try_write(
                         "Changing file position to %" GLOBUS_OFF_T_FORMAT "\n",
                             handle->fd, offset));
                 
-                /* assume success as only failures are ignorable */
+                /* assume success as possible failures are ignorable */
                 lseek(handle->fd, offset, SEEK_SET);
                 handle->file_position = offset;
             }

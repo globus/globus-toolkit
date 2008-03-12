@@ -221,7 +221,16 @@ globus_debug_init(
                 if(*filename == '#')
                 {
                     filename += 1;
+#ifndef WIN32
                     truncate(filename, 0);
+#else
+                    {
+                        /* lazy way to truncate by name */
+                        FILE * h = fopen(filename, "w");
+                        if(h)
+                            fclose(h);
+                    }
+#endif
                 }
                 
                 handle->file = fopen(filename, "a");

@@ -37,6 +37,8 @@ require Exporter;
 
 BEGIN { push(@INC, $ENV{GLOBUS_LOCATION} . '/lib/perl'); }
 
+my $default_big_file = "/bin/sh";
+my $default_small_file = "/etc/group";
 my $self = {};
 use strict;
 
@@ -45,6 +47,7 @@ use Carp;
 use Sys::Hostname;
 use Data::Dumper;
 use File::Copy;
+use File::Spec;
 use Cwd;
 use Config;
 defined $Config{sig_name} || die "No sigs?";
@@ -173,20 +176,28 @@ sub compare_local_files($$)
 {
     my($a,$b) = @_;
     my $diffs;
-
+    my $tmpfile = POSIX::tmpnam();
+    my $script =
+        'binmode(STDOUT); binmode(STDIN);' .
+        'while(<>) { s/\[restart plugin\].*?\n//g; print; }';
+    
+    `perl -e "$script" < "$b" > "$tmpfile"`;
+    
     if(-B $a or -B $b)
     {
-	$diffs = `perl -pe 's/\\[restart plugin\\].*\\n//' < $b | (cmp '$a' - 2>&1 ) | sed -e 's/^/# /'`;
+        $diffs = `(cmp "$a" "$tmpfile" 2>&1) | sed -e "s/^/# /"`;
     }
     else
     {
-        $diffs = `perl -pe 's/\\[restart plugin\\].*\\n//' < $b | (diff '$a' - 2>&1) | sed -e 's/^/# /'`;
+        $diffs = `(diff "$a" "$tmpfile" 2>&1) | sed -e "s/^/# /"`;
     }
 
     if($diffs ne '')
     {
         $diffs = "\n# Differences between $a and $b.\n" . $diffs;
     }
+    
+    unlink $tmpfile;
     
     return $diffs;
 }
@@ -250,11 +261,11 @@ sub setup_remote_source(;$)
     $source_host = ($ENV{FTP_TEST_SOURCE_HOST} or 'localhost');
     if($use_big_file)
     {
-        $source_file = ($ENV{FTP_TEST_SOURCE_BIGFILE} or '/bin/sh');
+        $source_file = ($ENV{FTP_TEST_SOURCE_BIGFILE} or $default_big_file);
     }
     else
     {
-        $source_file = ($ENV{FTP_TEST_SOURCE_FILE} or '/etc/group');
+        $source_file = ($ENV{FTP_TEST_SOURCE_FILE} or $default_small_file);
     }
     
     $local_copy = get_remote_file($source_host, $source_file, 1);
@@ -270,11 +281,11 @@ sub setup_local_source(;$)
     
     if($use_big_file)
     {
-        $local_copy = ($ENV{FTP_TEST_LOCAL_BIGFILE} or '/bin/sh');
+        $local_copy = ($ENV{FTP_TEST_LOCAL_BIGFILE} or $default_big_file);
     }
     else
     {
-        $local_copy = ($ENV{FTP_TEST_LOCAL_FILE} or '/etc/group');
+        $local_copy = ($ENV{FTP_TEST_LOCAL_FILE} or $default_small_file);
     }
     
     return ($local_copy);
@@ -334,7 +345,7 @@ sub clean_remote_file($$)
             $user = '';
         }
         
-        system("ssh -q $user$_host 'rm -f $file'") == 0 or die "ssh failed";
+        system("ssh -q $user$_host \"rm -f $file\"") == 0 or die "ssh failed";
     }
 }
 
@@ -402,12 +413,35 @@ sub ftp_commands()
             'LIST', 'NLST', 'MDTM', 'MKD', 'RMD', 'RNFR', 'RNTO', 'NOOP' );
 }
 
-sub run_command($$)
+sub run_command
 {
     my $command = shift;
     my $expected_rc = shift;
+    my $stdout = shift;
+    my $stderr = shift;
     my $errors = "";
     my $rc;
+    
+    if($^O eq "MSWin32")
+    {
+        $command =~ s,\',\",g;
+        $command =~ s,^\./,,;
+        
+        # win32 exes are not named correctly yet, remove this when they are
+        my @parts = split(/ /, $command, 2);
+        $parts[0] =~ s/\-/_/g;
+        $command = join(" ", @parts);
+    }
+    
+    $command .= ' >"' . ($stdout or File::Spec::->devnull()) . '"';
+    if(!$stdout && !$stderr || $stdout && $stderr && $stdout eq $stderr)
+    {
+        $command .= ' 2>&1';
+    }
+    else
+    {
+        $command .= ' 2>"' . ($stderr or File::Spec::->devnull()) . '"';
+    }
     
     if(defined($ENV{"FTP_TEST_EF"}))
     {

@@ -42,7 +42,7 @@ sub create_destroy
 {
     my ($errors,$rc) = ("",0);
 
-    my $command = "$test_exec >/dev/null 2>&1";
+    my $command = "$test_exec";
     $errors = run_command($command, 0);
     if($errors eq "")
     {

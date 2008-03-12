@@ -68,11 +68,11 @@ sub correct_auth
 
     chomp($hostname);
     
-    my $command = "$test_exec -s $proto$source_host$source_file -A '$hostname' >$tmpname 2>/dev/null";
-    $errors = run_command($command, 0);
+    my $command = "$test_exec -s $proto$source_host$source_file -A '$hostname'";
+    $errors = run_command($command, 0, $tmpname);
     if($errors eq "")
     {
-        my $diffs = `diff $local_copy $tmpname | sed -e 's/^/# /'`;
+        my $diffs = `diff $local_copy $tmpname | sed -e "s/^/# /"`;
         if($? != 0)
         {
             $errors .= "\n# Differences between /etc/group and output.";
@@ -102,8 +102,8 @@ sub incorrect_auth
     my ($hostname) = ("googly_goodness");
     unlink($tmpname);
 
-    my $command = "$test_exec -s $proto$source_host$source_file -A 'host\@$hostname' >$tmpname 2>/dev/null";
-    $errors = run_command($command, 1);
+    my $command = "$test_exec -s $proto$source_host$source_file -A 'host\@$hostname'";
+    $errors = run_command($command, 1, $tmpname);
     if($errors eq "")
     {
         ok('success', 'success');

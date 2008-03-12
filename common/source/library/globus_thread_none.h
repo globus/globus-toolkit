@@ -164,8 +164,6 @@ typedef int globus_thread_once_t;
 #define globus_macro_thread_self() \
     (0)
 
-#define globus_thread_get_threadID_as_long() globus_macro_thread_self()
-
 #define globus_macro_thread_equal(T1, T2) \
     ((T1) == (T2))
 

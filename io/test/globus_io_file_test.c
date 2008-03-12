@@ -65,7 +65,7 @@ main(int argc, char **argv)
 #else
     result = globus_io_file_open( argv[1],
 				 O_RDONLY,
-				 0,
+				 0600,
 				 GLOBUS_NULL,
 				 &handle);
 #endif

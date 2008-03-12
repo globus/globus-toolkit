@@ -156,7 +156,8 @@ GlobusDebugDeclare(GLOBUS_XIO_SYSTEM);
 #define GlobusIXIOSystemFreeIovec(count, iovec)                             \
     do                                                                      \
     {                                                                       \
-        if((count) < 10)                                                    \
+        int                             _count = (count);                   \
+        if(_count < 10)                                                     \
         {                                                                   \
             globus_memory_push_node(                                        \
                 &globus_i_xio_system_iov_memory, (iovec));                  \

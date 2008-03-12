@@ -16,7 +16,9 @@
 
 
 #include "globus_io.h"
+#ifndef TARGET_ARCH_WIN32
 #include <arpa/inet.h>
+#endif
 #include <gssapi.h>
 #include <globus_error_gssapi.h>
 
@@ -1858,11 +1860,18 @@ globus_l_io_file_open(
     }
     else
     {
+        globus_xio_system_file_t        file;
+
+#ifndef WIN32
+        file = fd;
+#else
+        file = (globus_xio_system_file_t) _get_osfhandle(fd);
+#endif
          result = globus_xio_attr_cntl(
             iattr->attr,
             globus_l_io_file_driver,
             GLOBUS_XIO_FILE_SET_HANDLE,
-            fd);
+            file);
         if(result != GLOBUS_SUCCESS)
         {
             goto error_cntl;

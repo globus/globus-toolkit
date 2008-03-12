@@ -234,9 +234,9 @@ xio_l_gmc_handle_destroy(
             globus_free(ftp_handle->stack_str);
         }
 
+        globus_ftp_client_handleattr_destroy(&ftp_handle->handle_attr);
+        globus_ftp_client_operationattr_destroy(&ftp_handle->op_attr);
         /* free up the client lib stuff 
-            globus_ftp_client_handleattr_t      handle_attr;
-            globus_ftp_client_operationattr_t   op_attr;
             globus_ftp_client_handle_t          client_h;
         */
     }

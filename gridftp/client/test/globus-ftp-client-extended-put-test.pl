@@ -52,7 +52,7 @@ sub basic_func
     my ($parallelism) = (shift);
     my ($errors,$rc) = ("",0);
 
-    my $command = "$test_exec -P $parallelism -d $proto$dest_host$dest_file < $local_copy >/dev/null 2>&1";
+    my $command = "$test_exec -P $parallelism -d $proto$dest_host$dest_file < $local_copy";
     $errors = run_command($command, 0);
     if($errors eq "")
     {
@@ -84,7 +84,7 @@ sub bad_url
 {
     my ($errors,$rc) = ("",0);
 
-    my $command = "$test_exec -d $proto$dest_host/no/such/file/here < $local_copy >/dev/null 2>&1";
+    my $command = "$test_exec -d $proto$dest_host/no/such/file/here < $local_copy";
     $errors = run_command($command, 1);
     if($errors eq "")
     {
@@ -107,7 +107,7 @@ sub abort_test
     my ($errors,$rc) = ("", 0);
     my ($abort_point) = shift;
 
-    my $command = "$test_exec -a $abort_point -d $proto$dest_host$dest_file < $local_copy >/dev/null 2>&1";
+    my $command = "$test_exec -a $abort_point -d $proto$dest_host$dest_file < $local_copy";
     $errors = run_command($command, -2);
     if($errors eq "")
     {
@@ -136,7 +136,7 @@ sub restart_test
     my ($errors,$rc) = ("",0);
     my ($restart_point) = shift;
 
-    my $command = "$test_exec -r $restart_point -d $proto$dest_host$dest_file < $local_copy >/dev/null 2>&1";
+    my $command = "$test_exec -r $restart_point -d $proto$dest_host$dest_file < $local_copy";
     $errors = run_command($command, 0);
     if($errors eq "")
     {
@@ -179,7 +179,7 @@ sub perf_test
 {
     my ($errors,$rc) = ("",0);
 
-    my $command = "$test_exec -d $proto$dest_host$dest_file -M < $local_copy >/dev/null 2>&1";
+    my $command = "$test_exec -d $proto$dest_host$dest_file -M < $local_copy";
     $errors = run_command($command, 0);
     if($errors eq "")
     {
@@ -207,7 +207,7 @@ sub throughput_test
 {
     my ($errors,$rc) = ("",0);
 
-    my $command = "$test_exec -d $proto$dest_host$dest_file -T < $local_copy >/dev/null 2>&1";
+    my $command = "$test_exec -d $proto$dest_host$dest_file -T < $local_copy";
     $errors = run_command($command, 0);
     if($errors eq "")
     {

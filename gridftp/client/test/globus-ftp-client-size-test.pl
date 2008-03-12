@@ -27,6 +27,7 @@ use strict;
 use POSIX;
 use Test;
 use FtpTestLib;
+use File::Spec;
 
 my $test_exec = './globus-ftp-client-size-test';
 my @tests;
@@ -52,7 +53,7 @@ sub check_size
 
     unlink('core');
     
-    my $command = "$test_exec -s $src_url 2>/dev/null";
+    my $command = "$test_exec -s $src_url 2>" . File::Spec::->devnull();
     $checked_size = `$command`;
     chomp($checked_size);
     $rc = $?;

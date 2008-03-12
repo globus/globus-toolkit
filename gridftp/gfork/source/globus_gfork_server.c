@@ -788,7 +788,7 @@ gfork_l_int(
 
             list = globus_list_rest(list);
 
-            kill(SIGINT, kid_pid);
+            kill(SIGTERM, kid_pid);
         }
 
         GlobusTimeReltimeSet(delay, GFORK_WAIT_FOR_KILL, 0);

@@ -27,6 +27,7 @@ use strict;
 use POSIX;
 use Test;
 use FtpTestLib;
+use File::Spec;
 
 my $test_exec = './globus-ftp-client-put-test';
 my @tests;
@@ -74,9 +75,9 @@ sub basic_func
 
     if($use_proxy == 0)
     {
-        FtpTestLib::push_proxy('/dev/null');
+        FtpTestLib::push_proxy(File::Spec::->devnull());
     }
-    my $command = "$test_exec -d $proto$dest_host$dest_file < $local_copy >/dev/null 2>&1";
+    my $command = "$test_exec -d $proto$dest_host$dest_file < $local_copy";
     $errors = run_command($command, $use_proxy ? 0 : -1);
     if($use_proxy && $errors eq '')
     {
@@ -125,7 +126,7 @@ sub bad_url
 {
     my ($errors,$rc) = ("",0);
 
-    my $command = "$test_exec -d $proto$dest_host/no/such/file/here < $local_copy >/dev/null 2>&1";
+    my $command = "$test_exec -d $proto$dest_host/no/such/file/here < $local_copy";
     $errors = run_command($command, 1);
     if($errors eq "")
     {
@@ -154,7 +155,7 @@ sub abort_test
     my ($errors,$rc) = ("", 0);
     my ($abort_point) = shift;
 
-    my $command = "$test_exec -a $abort_point -d $proto$dest_host$dest_file < $local_copy >/dev/null 2>&1";
+    my $command = "$test_exec -a $abort_point -d $proto$dest_host$dest_file < $local_copy";
     $errors = run_command($command, -2);
     if($errors eq "")
     {
@@ -185,7 +186,7 @@ sub restart_test
     my ($errors,$rc) = ("",0);
     my ($restart_point) = shift;
 
-    my $command = "$test_exec -r $restart_point -d $proto$dest_host$dest_file < $local_copy >/dev/null 2>&1";
+    my $command = "$test_exec -r $restart_point -d $proto$dest_host$dest_file < $local_copy";
     $errors = run_command($command, 0);
     if($errors eq "")
     {
@@ -243,7 +244,7 @@ sub dcau_test
     my ($errors,$rc) = ("",0);
     my ($dcau, $desired_rc) = @_;
 
-    my $command = "$test_exec -c $dcau -d $proto$dest_host$dest_file < $local_copy 2>&1";
+    my $command = "$test_exec -c $dcau -d $proto$dest_host$dest_file < $local_copy";
     $errors = run_command($command, $desired_rc);
     if($errors eq "" && $desired_rc == 0)
     {
@@ -307,7 +308,7 @@ sub prot_test
     my ($errors,$rc) = ("",0);
     my ($prot, $desired_rc) = @_;
 
-    my $command = "$test_exec -c self -t $prot -d $proto$dest_host$dest_file < $local_copy >/dev/null 2>&1";
+    my $command = "$test_exec -c self -t $prot -d $proto$dest_host$dest_file < $local_copy";
     $errors = run_command($command, $desired_rc);
     if($errors eq "" && $desired_rc == 0)
     {
@@ -344,7 +345,7 @@ sub perf_test
 {
     my ($errors,$rc) = ("",0);
 
-    my $command = "$test_exec -d $proto$dest_host$dest_file -M < $local_copy >/dev/null 2>&1";
+    my $command = "$test_exec -d $proto$dest_host$dest_file -M < $local_copy";
     $errors = run_command($command, 0);
     if($errors eq "")
     {
@@ -372,7 +373,7 @@ sub throughput_test
 {
     my ($errors,$rc) = ("",0);
 
-    my $command = "$test_exec -d $proto$dest_host$dest_file -M -T < $local_copy >/dev/null 2>&1";
+    my $command = "$test_exec -d $proto$dest_host$dest_file -M -T < $local_copy";
     $errors = run_command($command, 0);
     if($errors eq "")
     {
@@ -409,7 +410,7 @@ sub restart_plugin_test
 	$other_args = "";
     }
 
-    my $command = "$test_exec -d $proto$dest_host$dest_file -f 0,0,0,0 $other_args < $local_copy >/dev/null 2>&1";
+    my $command = "$test_exec -d $proto$dest_host$dest_file -f 0,0,0,0 $other_args < $local_copy";
     $errors = run_command($command, 0);
     if($errors eq "")
     {

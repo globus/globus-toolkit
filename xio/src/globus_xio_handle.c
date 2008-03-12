@@ -781,7 +781,7 @@ globus_i_xio_register_oneshot(
 }
 
 static int
-globus_l_xio_activate()
+globus_l_xio_activate(void)
 {
     int                                 rc;
     GlobusXIOName(globus_l_xio_activate);
@@ -817,7 +817,7 @@ globus_l_xio_activate()
 
 
 static int
-globus_l_xio_deactivate()
+globus_l_xio_deactivate(void)
 {
     int                                 rc;
     GlobusXIOName(globus_l_xio_deactivate);

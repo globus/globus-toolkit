@@ -16,6 +16,10 @@
 
 #include "globus_common.h"
 
+#ifdef TARGET_ARCH_WIN32
+#define EAFNOSUPPORT WSAEAFNOSUPPORT
+#endif
+
 #ifdef GLOBUS_IMPLEMENT_INET_PTON
 int
 inet_pton(

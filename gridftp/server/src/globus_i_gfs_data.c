@@ -5035,6 +5035,7 @@ globus_l_gfs_data_end_transfer_kickout(
             switch(op->data_handle->state)
             {
                 case GLOBUS_L_GFS_DATA_HANDLE_TE_VALID:
+                    /* XXX --> op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_VALID; */
                     /* leave this state until after TC event? */
                     break;
                 case GLOBUS_L_GFS_DATA_HANDLE_TE_PRE_CLOSED:
@@ -6018,6 +6019,7 @@ globus_i_gfs_data_request_transfer_event(
                         op->session_handle, op->data_handle);
                 }
                 globus_mutex_unlock(&op->session_handle->mutex);
+            
             }
             
             if(event_info->type == GLOBUS_GFS_EVENT_TRANSFER_COMPLETE && 
