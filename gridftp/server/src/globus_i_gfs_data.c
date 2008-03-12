@@ -5079,10 +5079,6 @@ globus_l_gfs_data_end_transfer_kickout(
             {
                 remote_data_arg = globus_l_gfs_data_post_transfer_event_cb(
                     op->session_handle, op->data_handle);
-                if(op->data_handle->state == GLOBUS_L_GFS_DATA_HANDLE_TE_VALID)
-                {
-                    op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_VALID;
-                }
             }
             globus_mutex_unlock(&op->session_handle->mutex);
         }
@@ -6023,6 +6019,13 @@ globus_i_gfs_data_request_transfer_event(
                 }
                 globus_mutex_unlock(&op->session_handle->mutex);
             }
+            
+            if(event_info->type == GLOBUS_GFS_EVENT_TRANSFER_COMPLETE && 
+                op->data_handle->state == GLOBUS_L_GFS_DATA_HANDLE_TE_VALID)
+            {
+                op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_VALID;
+            }
+
             globus_l_gfs_data_fire_cb(op, remote_data_arg, destroy_session);
             /* destroy the op */
             globus_l_gfs_data_operation_destroy(op);
