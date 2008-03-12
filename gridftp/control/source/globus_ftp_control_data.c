@@ -6230,7 +6230,7 @@ globus_l_ftp_data_eb_poll(
                             io_vec[0].iov_len =
                                  sizeof(globus_l_ftp_eb_header_t);
                             io_vec[1].iov_base = tmp_buf;
-                            io_vec[1].iov_len = entry->length;
+                            io_vec[1].iov_len = tmp_len;
 
                             res = globus_io_register_writev(
                                          &data_conn->io_handle,
@@ -6268,9 +6268,22 @@ globus_l_ftp_data_eb_poll(
                             globus_malloc(sizeof(globus_l_ftp_eb_header_t));
                         eb_header->descriptor = 0;
 
+                        tmp_buf = entry->buffer;
+                        tmp_len = entry->length;
+                        if(stripe->whos_my_daddy->whos_my_daddy->type ==
+                               GLOBUS_FTP_CONTROL_TYPE_ASCII)
+                        {
+                            entry->ascii_buffer =
+                                globus_l_ftp_control_add_ascii(
+                                    entry->buffer,
+                                    entry->length,
+                                    &tmp_len);
+                            tmp_buf = entry->ascii_buffer;
+                        }
+
                         globus_l_ftp_control_data_encode(
                              eb_header->count,
-                             entry->length);
+                             tmp_len);
                         globus_l_ftp_control_data_encode(
                              eb_header->offset,
                              entry->offset);
@@ -6281,8 +6294,8 @@ globus_l_ftp_data_eb_poll(
                         /* populate the header */
                         io_vec[0].iov_base = eb_header;
                         io_vec[0].iov_len = sizeof(globus_l_ftp_eb_header_t);
-                        io_vec[1].iov_base = entry->buffer;
-                        io_vec[1].iov_len = entry->length;
+                        io_vec[1].iov_base = tmp_buf;
+                        io_vec[1].iov_len = tmp_len;
 
                         res = globus_io_register_writev(
                                   &data_conn->io_handle,
