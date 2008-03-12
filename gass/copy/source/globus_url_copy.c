@@ -960,14 +960,13 @@ globus_l_guc_transfer_kickout(
     globus_l_guc_src_dst_pair_t *       url_pair;
     globus_result_t                     result;
     globus_l_guc_transfer_t *           transfer_info;
+    globus_bool_t                       retry = GLOBUS_FALSE;
 
     
     transfer_info = (globus_l_guc_transfer_t * )  user_arg;
 
     globus_mutex_lock(&g_monitor.mutex);
-    {
-        transfer_info->guc_info->conc_outstanding--;
-        
+    {        
         if(!g_monitor.done && !transfer_info->guc_info->cancelled &&
             !globus_fifo_empty(&transfer_info->guc_info->expanded_url_list))
         {        
@@ -982,12 +981,15 @@ globus_l_guc_transfer_kickout(
         }
         else
         {
-            g_monitor.done = GLOBUS_TRUE;                
-        }
-        
-        if(g_monitor.done && transfer_info->guc_info->conc_outstanding == 0)
-        {
-            globus_cond_signal(&g_monitor.cond);
+            if(transfer_info->guc_info->conc_outstanding == 0)
+            {
+                g_monitor.done = GLOBUS_TRUE;
+                globus_cond_signal(&g_monitor.cond);
+            }
+            else
+            {
+                retry = GLOBUS_TRUE;
+            }
         }
     }
     globus_mutex_unlock(&g_monitor.mutex);
@@ -1025,15 +1027,26 @@ globus_l_guc_transfer_kickout(
     }
     else
     {
-        if(transfer_info->src_url)
+        if(retry)
         {
-            globus_free(transfer_info->src_url);
+            globus_callback_register_oneshot(
+                NULL,
+                NULL,
+                globus_l_guc_transfer_kickout,
+                transfer_info);
         }
-        if(transfer_info->dst_url)
+        else
         {
-            globus_free(transfer_info->dst_url);
+            if(transfer_info->src_url)
+            {
+                globus_free(transfer_info->src_url);
+            }
+            if(transfer_info->dst_url)
+            {
+                globus_free(transfer_info->dst_url);
+            }
+            globus_free(transfer_info);
         }
-        globus_free(transfer_info);
     }
     return;
 }
@@ -1194,8 +1207,6 @@ main(int argc, char **argv)
     globus_l_guc_destroy_url_list(&guc_info.expanded_url_list);
     globus_fifo_destroy(&guc_info.matched_url_list);
 
-    guc_info.handles = (globus_l_guc_handle_t **) 
-        globus_calloc(guc_info.conc, sizeof(globus_l_guc_handle_t *));
     for(i = 0; i < guc_info.conc; i++)
     {
         globus_gass_copy_handle_destroy(
@@ -1233,21 +1244,28 @@ globus_l_url_copy_monitor_callback(
     globus_gass_copy_handle_t *         handle,
     globus_object_t *                   error)
 {    
-    if(error != GLOBUS_SUCCESS)
+    globus_l_guc_transfer_t *           transfer_info;
+    
+    transfer_info = (globus_l_guc_transfer_t *)  callback_arg;
+    
+    globus_mutex_lock(&g_monitor.mutex);
     {
-        globus_mutex_lock(&g_monitor.mutex);
-
-        g_monitor.done = GLOBUS_TRUE;
-        g_monitor.use_err = GLOBUS_TRUE;
-        g_monitor.err = globus_object_copy(error);
+        if(error != NULL)
+        {
+            g_monitor.done = GLOBUS_TRUE;
+            g_monitor.use_err = GLOBUS_TRUE;
+            g_monitor.err = globus_object_copy(error);
+        }
         
-        globus_mutex_unlock(&g_monitor.mutex);
+        transfer_info->guc_info->conc_outstanding--;
     }
+    globus_mutex_unlock(&g_monitor.mutex);
+    
     globus_callback_register_oneshot(
         NULL,
         NULL,
         globus_l_guc_transfer_kickout,
-        callback_arg);
+        transfer_info);
         
     return;
 } /* globus_l_url_copy_monitor_callback() */
@@ -1336,13 +1354,12 @@ globus_l_guc_entry_cb(
     guc_info = (globus_l_guc_info_t *) user_arg;
     
     globus_mutex_lock(&g_monitor.mutex);
-
+    
     if(guc_info->recurse && info_stat &&
         info_stat->type == GLOBUS_GASS_COPY_GLOB_ENTRY_DIR &&
         info_stat->unique_id && *info_stat->unique_id)
     {
         tmp_unique = globus_libc_strdup(info_stat->unique_id);
-
         retval = globus_hashtable_insert(
             &guc_info->recurse_hash,
             tmp_unique,
@@ -1747,8 +1764,8 @@ globus_l_guc_transfer(
             {
                 result = GLOBUS_SUCCESS;
             }
-    
-            globus_l_guc_transfer_kickout(transfer_info);
+            globus_l_url_copy_monitor_callback(
+                transfer_info, &handle->gass_copy_handle, NULL);
         }
         else
         {
@@ -1793,10 +1810,10 @@ globus_l_guc_transfer(
     {
         globus_free(dst_url_base);
     }
-
+/*
     globus_ftp_client_operationattr_destroy(&handle->source_ftp_attr);
     globus_ftp_client_operationattr_destroy(&handle->dest_ftp_attr);
-
+*/
     return result;  
     
 error_transfer:
@@ -1836,7 +1853,7 @@ globus_l_guc_transfer_files(
     g_monitor.done = GLOBUS_FALSE;
     g_monitor.use_err = GLOBUS_FALSE;
     guc_info->cancelled = GLOBUS_FALSE;
-    guc_info->conc_outstanding = guc_info->conc;
+    guc_info->conc_outstanding = 0;
     
     for(i = 0; i < guc_info->conc; i++)
     {
@@ -3116,7 +3133,11 @@ globus_l_guc_expand_single_url(
 
     src_url = url_pair->src_url;
     dst_url = url_pair->dst_url;
-               
+    
+    globus_mutex_lock(&g_monitor.mutex);
+    guc_info->conc_outstanding++;
+    globus_mutex_unlock(&g_monitor.mutex);
+    
     result = globus_gass_copy_glob_expand_url(
                 &handle->gass_copy_handle,
                 src_url,
@@ -3193,6 +3214,10 @@ globus_l_guc_expand_single_url(
             expanded_url_pair);
     }
     
+    globus_mutex_lock(&g_monitor.mutex);
+    guc_info->conc_outstanding--;
+    globus_mutex_unlock(&g_monitor.mutex);
+
     return GLOBUS_SUCCESS;
     
 error_too_many_matches:
@@ -3204,7 +3229,10 @@ error_too_many_matches:
             "destination url:\n%s\n"),
             dst_url));                    
 error_expand:
-     
+    globus_mutex_lock(&g_monitor.mutex);
+    guc_info->conc_outstanding--;
+    globus_mutex_unlock(&g_monitor.mutex);
+
     return result;                
 }
 
