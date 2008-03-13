@@ -69,9 +69,16 @@ Protocol 2
 #KerberosTicketCleanup yes
 #KerberosGetAFSToken no
 
+# Session hooks: if allowed, specify the commands to execute
+#AllowSessionHooks yes
+#SessionHookStartupCmd /bin/true
+#SessionHookShutdownCmd /bin/true
+
 # GSSAPI options
-#GSSAPIAuthentication no
+#GSSAPIAuthentication yes
 #GSSAPICleanupCredentials yes
+#GSSAPIStrictAcceptorCheck yes
+#GSSAPIKeyExchange yes
 
 # Set this to 'yes' to enable PAM authentication, account processing, 
 # and session processing. If this is enabled, PAM authentication will 
@@ -108,6 +115,21 @@ Protocol 2
 
 # override default of no subsystems
 Subsystem	sftp	/usr/libexec/sftp-server
+
+
+# the following are HPN related configuration options
+# tcp receive buffer polling. disable in non autotuning kernels
+#TcpRcvBufPoll yes
+ 
+# allow the use of the none cipher
+#NoneEnabled no
+
+# disable hpn performance boosts. 
+#HPNDisabled no
+
+# buffer size for hpn to non-hpn connections
+#HPNBufferSize 2048
+
 
 # Example of overriding settings on a per-user basis
 #Match User anoncvs

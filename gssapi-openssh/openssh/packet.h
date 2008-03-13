@@ -20,6 +20,9 @@
 
 #include <openssl/bn.h>
 
+void
+packet_request_rekeying(void);
+
 void     packet_set_connection(int, int);
 void     packet_set_nonblocking(void);
 int      packet_get_connection_in(void);
@@ -34,6 +37,7 @@ void     packet_set_interactive(int);
 int      packet_is_interactive(void);
 void     packet_set_server(void);
 void     packet_set_authenticated(void);
+int	 packet_authentication_state(void);
 
 void     packet_start(u_char);
 void     packet_put_char(int ch);
@@ -43,7 +47,7 @@ void     packet_put_bignum2(BIGNUM * value);
 void     packet_put_string(const void *buf, u_int len);
 void     packet_put_cstring(const char *str);
 void     packet_put_raw(const void *buf, u_int len);
-void     packet_send(void);
+int      packet_send(void);
 
 int      packet_read(void);
 void     packet_read_expect(int type);
@@ -71,8 +75,8 @@ void	 packet_set_state(int, u_int32_t, u_int64_t, u_int32_t);
 int	 packet_get_ssh1_cipher(void);
 void	 packet_set_iv(int, u_char *);
 
-void     packet_write_poll(void);
-void     packet_write_wait(void);
+int      packet_write_poll(void);
+int      packet_write_wait(void);
 int      packet_have_data_to_write(void);
 int      packet_not_very_much_data_to_write(void);
 
