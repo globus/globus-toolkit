@@ -127,7 +127,9 @@ restart:
 
 	/* Increase the size of the buffer and retry. */
 	newlen = roundup(buffer->alloc + len, BUFFER_ALLOCSZ);
-	if (newlen > BUFFER_MAX_LEN_HPN)
+	/* need it to be slightly larger than the MAX LEN for this */
+	/* still investigating *why* but this works for now -cjr */
+	if (newlen > (BUFFER_MAX_LEN_HPN + BUFFER_MAX_LEN)) 
 		fatal("buffer_append_space: alloc %u not supported",
 		    newlen);
 	buffer->buf = xrealloc(buffer->buf, 1, newlen);

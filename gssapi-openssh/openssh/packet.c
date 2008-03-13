@@ -710,7 +710,7 @@ packet_enable_delayed_compress(void)
 /*
  * Finalize packet in SSH2 format (compress, mac, encrypt, enqueue)
  */
-static void
+static int
 packet_send2_wrapped(void)
 {
 	u_char type, *cp, *macbuf = NULL;
@@ -822,11 +822,13 @@ packet_send2_wrapped(void)
 		set_newkeys(MODE_OUT);
 	else if (type == SSH2_MSG_USERAUTH_SUCCESS && server_side)
 		packet_enable_delayed_compress();
+	return(packet_length);
 }
 
-static void
+static int
 packet_send2(void)
 {
+        static int packet_length = 0;
 	static int rekeying = 0;
 	struct packet *p;
 	u_char type, *cp;
@@ -844,7 +846,7 @@ packet_send2(void)
 			memcpy(&p->payload, &outgoing_packet, sizeof(Buffer));
 			buffer_init(&outgoing_packet);
 			TAILQ_INSERT_TAIL(&outgoing, p, next);
-			return;
+			return(sizeof(Buffer));
 		}
 	}
 
@@ -852,7 +854,7 @@ packet_send2(void)
 	if (type == SSH2_MSG_KEXINIT)
 		rekeying = 1;
 
-	packet_send2_wrapped();
+	packet_length = packet_send2_wrapped();
 
 	/* after a NEWKEYS message we can send the complete queue */
 	if (type == SSH2_MSG_NEWKEYS) {
@@ -865,19 +867,22 @@ packet_send2(void)
 			    sizeof(Buffer));
 			TAILQ_REMOVE(&outgoing, p, next);
 			xfree(p);
-			packet_send2_wrapped();
+			packet_length += packet_send2_wrapped();
 		}
 	}
+	return(packet_length);
 }
 
-void
+int
 packet_send(void)
 {
+  int packet_len = 0;
 	if (compat20)
-		packet_send2();
+		packet_len = packet_send2();
 	else
 		packet_send1();
 	DBG(debug("packet_send done"));
+	return(packet_len);
 }
 
 /*
@@ -1415,21 +1420,23 @@ packet_disconnect(const char *fmt,...)
 
 /* Checks if there is any buffered output, and tries to write some of the output. */
 
-void
+int
 packet_write_poll(void)
 {
-	int len = buffer_len(&output);
+	int len = 0;
+	len = buffer_len(&output);
 
 	if (len > 0) {
 		len = write(connection_out, buffer_ptr(&output), len);
 		if (len <= 0) {
 			if (errno == EAGAIN)
-				return;
+			  return (0);
 			else
 				fatal("Write failed: %.100s", strerror(errno));
 		}
 		buffer_consume(&output, len);
 	}
+	return(len);
 }
 
 /*
@@ -1437,14 +1444,15 @@ packet_write_poll(void)
  * written.
  */
 
-void
+int
 packet_write_wait(void)
 {
 	fd_set *setp;
+	u_int bytes_sent = 0;
 
 	setp = (fd_set *)xcalloc(howmany(connection_out + 1, NFDBITS),
 	    sizeof(fd_mask));
-	packet_write_poll();
+	bytes_sent += packet_write_poll();
 	while (packet_have_data_to_write()) {
 		memset(setp, 0, howmany(connection_out + 1, NFDBITS) *
 		    sizeof(fd_mask));
@@ -1452,9 +1460,10 @@ packet_write_wait(void)
 		while (select(connection_out + 1, NULL, setp, NULL, NULL) == -1 &&
 		    (errno == EAGAIN || errno == EINTR))
 			;
-		packet_write_poll();
+		bytes_sent += packet_write_poll();
 	}
 	xfree(setp);
+	return (bytes_sent);
 }
 
 /* Returns true if there is buffered data to write to the connection. */

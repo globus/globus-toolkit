@@ -197,7 +197,7 @@ void	 channel_input_window_adjust(int, u_int32_t, void *);
 
 void	 channel_prepare_select(fd_set **, fd_set **, int *, u_int*, int);
 void     channel_after_select(fd_set *, fd_set *);
-void     channel_output_poll(void);
+int      channel_output_poll(void);
 
 int      channel_not_very_much_buffered_data(void);
 void     channel_close_all(void);
