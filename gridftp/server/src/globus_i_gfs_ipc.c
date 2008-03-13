@@ -5727,11 +5727,13 @@ globus_gfs_ipc_request_transfer_event(
 
     globus_mutex_lock(&ipc->mutex);
     {
+        /*
         if(ipc_handle->state != GLOBUS_GFS_IPC_STATE_REPLY_WAIT)
         {
             result = GlobusGFSErrorParameter("ipc");
             goto error;
         }
+        */
         request = (globus_gfs_ipc_request_t *) 
             globus_calloc(1, sizeof(globus_gfs_ipc_request_t));
         if(request == NULL)

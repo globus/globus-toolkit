@@ -705,6 +705,7 @@ globus_l_gfs_ipc_passive_cb(
 
     if(finished)
     {
+        bounce_info->node_handle->destroy++;
         globus_gridftp_server_operation_finished(
             bounce_info->op,
             finished_info.result,
@@ -813,6 +814,7 @@ globus_l_gfs_ipc_active_cb(
 
     if(finished)
     {
+        bounce_info->node_handle->destroy++;
         globus_gridftp_server_operation_finished(
             bounce_info->op,
             finished_info.result,
@@ -1166,6 +1168,7 @@ globus_l_gfs_remote_list(
          
     bounce_info->node_handle = (globus_l_gfs_remote_node_handle_t *) 
         transfer_info->data_arg;
+    bounce_info->node_handle->destroy++;
                  
     node_info = bounce_info->node_handle->nodes[0];
         
@@ -1301,6 +1304,7 @@ globus_l_gfs_remote_recv(
            we need to do this primarily to make sure the file is opened 
            in TRUNC mode only the first time */
        
+        bounce_info->node_handle->destroy++;
         node_count = bounce_info->node_handle->count;
         if(node_count > 1)
         {
@@ -1381,6 +1385,7 @@ globus_l_gfs_remote_send(
     
         bounce_info->node_handle = (globus_l_gfs_remote_node_handle_t *)
             transfer_info->data_arg;
+        bounce_info->node_handle->destroy++;
 
         node_count = bounce_info->node_handle->count;
 
@@ -1751,8 +1756,8 @@ globus_l_gfs_remote_data_destroy(
             }
         }
 
-        node_handle->destroy++;
-        if(node_handle->destroy == 2)
+        node_handle->destroy--;
+        if(node_handle->destroy == 0)
         {
             free_node = GLOBUS_TRUE;
         }
@@ -1781,6 +1786,7 @@ globus_l_gfs_remote_trev(
     globus_l_gfs_remote_node_info_t *   node_info;
     globus_gfs_event_info_t             new_event_info;
     globus_l_gfs_remote_ipc_bounce_t *  bounce_info;
+    globus_l_gfs_remote_node_handle_t * free_nh = NULL;
     GlobusGFSName(globus_l_gfs_remote_trev);
     GlobusGFSRemoteDebugEnter();
     
@@ -1822,10 +1828,11 @@ globus_l_gfs_remote_trev(
             {
                 globus_free(bounce_info->eof_count);
             }
-            bounce_info->node_handle->destroy++;
-            if(bounce_info->node_handle->destroy == 2)
+            bounce_info->node_handle->destroy--;
+            if(bounce_info->node_handle->destroy == 0)
             {
                 free_node = GLOBUS_TRUE;
+                free_nh = bounce_info->node_handle;
             }
             globus_free(bounce_info);
         }
@@ -1834,8 +1841,8 @@ globus_l_gfs_remote_trev(
 
     if(free_node)
     {
-        globus_free(bounce_info->node_handle->nodes);
-        globus_free(bounce_info->node_handle);
+        globus_free(free_nh->nodes);
+        globus_free(free_nh);
     }
     GlobusGFSRemoteDebugExit();
 }

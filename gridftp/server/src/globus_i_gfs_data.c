@@ -488,44 +488,49 @@ globus_l_gfs_data_post_transfer_event_cb(
 
     data_handle->outstanding_op = NULL;
 
-        switch(data_handle->state)
-        {
-            case GLOBUS_L_GFS_DATA_HANDLE_TE_PRE_CLOSED:
-                /* cant free until destroy cb, put in full closed state */
-                data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_CLOSED;
-                break;
+    switch(data_handle->state)
+    {
+        /* occurs if the next transfer comand happens before this function
+            is called to switch out of the TE_VALID state
+        case GLOBUS_L_GFS_DATA_HANDLE_INUSE:
+            break;
+*/
 
-            case GLOBUS_L_GFS_DATA_HANDLE_TE_PRE_AND_DESTROYED:
-                /* can free it */
-                data_handle->state =
-                    GLOBUS_L_GFS_DATA_HANDLE_CLOSING_AND_DESTROYED;
-                if(!data_handle->is_mine)
-                {
-                    remote_data_arg = data_handle->remote_data_arg;
-                }
-                if(remote_data_arg != NULL)
-                {
-                    session_handle->ref++;
-                }
-                break;
+        case GLOBUS_L_GFS_DATA_HANDLE_TE_PRE_CLOSED:
+            /* cant free until destroy cb, put in full closed state */
+            data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_CLOSED;
+            break;
 
-            case GLOBUS_L_GFS_DATA_HANDLE_TE_VALID:
-                data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_VALID;
-                break;
+        case GLOBUS_L_GFS_DATA_HANDLE_TE_PRE_AND_DESTROYED:
+            /* can free it */
+            data_handle->state =
+                GLOBUS_L_GFS_DATA_HANDLE_CLOSING_AND_DESTROYED;
+            if(!data_handle->is_mine)
+            {
+                remote_data_arg = data_handle->remote_data_arg;
+            }
+            if(remote_data_arg != NULL)
+            {
+                session_handle->ref++;
+            }
+            break;
 
-            case GLOBUS_L_GFS_DATA_HANDLE_CLOSING:
-            case GLOBUS_L_GFS_DATA_HANDLE_CLOSING_AND_DESTROYED:
-            case GLOBUS_L_GFS_DATA_HANDLE_VALID:
-                break;
+        case GLOBUS_L_GFS_DATA_HANDLE_TE_VALID:
+            data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_VALID;
+            break;
+
+        case GLOBUS_L_GFS_DATA_HANDLE_CLOSING:
+        case GLOBUS_L_GFS_DATA_HANDLE_CLOSING_AND_DESTROYED:
+        case GLOBUS_L_GFS_DATA_HANDLE_VALID:
+            break;
 
                 /* havent even gotten a close, how did this happen? */
-            case GLOBUS_L_GFS_DATA_HANDLE_INUSE:
-            case GLOBUS_L_GFS_DATA_HANDLE_CLOSED:
-            case GLOBUS_L_GFS_DATA_HANDLE_CLOSED_AND_DESTROYED:
-                /* these shouldnt be possible */
-                globus_assert(0);
-                break;
-        }
+        case GLOBUS_L_GFS_DATA_HANDLE_CLOSED:
+        case GLOBUS_L_GFS_DATA_HANDLE_CLOSED_AND_DESTROYED:
+            /* these shouldnt be possible */
+            globus_assert(0);
+            break;
+    }
 
     return remote_data_arg;
 }
@@ -2867,13 +2872,13 @@ globus_l_gfs_data_complete_fc_cb(
                 &event_info,
                 op->session_handle->session_arg);
 
+        }
             globus_mutex_lock(&op->session_handle->mutex);
             {
                 remote_data_arg = globus_l_gfs_data_post_transfer_event_cb(
                     op->session_handle, op->data_handle);
             }
             globus_mutex_unlock(&op->session_handle->mutex);
-        }
         /* destroy the op */
         globus_l_gfs_data_fire_cb(op, remote_data_arg, destroy_session);
         globus_l_gfs_data_operation_destroy(op);
@@ -3777,6 +3782,7 @@ globus_i_gfs_data_request_recv(
     /* events and disconnects cannot happen while i am in this
         function */
     globus_assert(data_handle->state == GLOBUS_L_GFS_DATA_HANDLE_VALID);
+/*        || data_handle->state == GLOBUS_L_GFS_DATA_HANDLE_TE_VALID);*/
     data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_INUSE;
 
 
@@ -3905,6 +3911,8 @@ globus_i_gfs_data_request_send(
     /* events and disconnects cannot happen while i am in this
         function */
     globus_assert(data_handle->state == GLOBUS_L_GFS_DATA_HANDLE_VALID);
+/*
+        || data_handle->state == GLOBUS_L_GFS_DATA_HANDLE_TE_VALID); */
     data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_INUSE;
 
     op->dsi = globus_l_gfs_data_new_dsi(session_handle, send_info->module_name);
@@ -4210,6 +4218,9 @@ globus_i_gfs_data_request_list(
     /* events and disconnects cannot happen while i am in this
         function */
     globus_assert(data_handle->state == GLOBUS_L_GFS_DATA_HANDLE_VALID);
+/*
+        || data_handle->state == GLOBUS_L_GFS_DATA_HANDLE_TE_VALID);
+*/
     data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_INUSE;
 
     if(session_handle->dsi->list_func != NULL)
@@ -4593,13 +4604,13 @@ globus_l_gfs_data_begin_cb(
             op->session_handle->dsi->trev_func(
                 &event_info,
                 op->session_handle->session_arg);
+        }
             globus_mutex_lock(&op->session_handle->mutex);
             {
                 remote_data_arg = globus_l_gfs_data_post_transfer_event_cb(
                     op->session_handle, op->data_handle);
             }
             globus_mutex_unlock(&op->session_handle->mutex);
-        }
 
         globus_l_gfs_data_fire_cb(op, remote_data_arg, destroy_session);
         /* destroy the op */
@@ -5035,7 +5046,6 @@ globus_l_gfs_data_end_transfer_kickout(
             switch(op->data_handle->state)
             {
                 case GLOBUS_L_GFS_DATA_HANDLE_TE_VALID:
-                    /* XXX --> op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_VALID; */
                     /* leave this state until after TC event? */
                     break;
                 case GLOBUS_L_GFS_DATA_HANDLE_TE_PRE_CLOSED:
@@ -5076,13 +5086,13 @@ globus_l_gfs_data_end_transfer_kickout(
             op->session_handle->dsi->trev_func(
                 &event_info,
                 op->session_handle->session_arg);
+        }
             globus_mutex_lock(&op->session_handle->mutex);
             {
                 remote_data_arg = globus_l_gfs_data_post_transfer_event_cb(
                     op->session_handle, op->data_handle);
             }
             globus_mutex_unlock(&op->session_handle->mutex);
-        }
 
         globus_l_gfs_data_fire_cb(op, remote_data_arg, destroy_session);
         globus_l_gfs_data_operation_destroy(op);
@@ -5664,13 +5674,13 @@ globus_l_gfs_data_trev_kickout(
             bounce_info->op->session_handle->dsi->trev_func(
                 &event_info,
                 bounce_info->op->session_handle->session_arg);
+        }
             globus_mutex_lock(&bounce_info->op->session_handle->mutex);
             {
                 remote_data_arg = globus_l_gfs_data_post_transfer_event_cb(
                     bounce_info->op->session_handle, bounce_info->op->data_handle);
             }
             globus_mutex_unlock(&bounce_info->op->session_handle->mutex);
-        }
         globus_l_gfs_data_fire_cb(
             bounce_info->op, remote_data_arg, destroy_session);
         globus_l_gfs_data_operation_destroy(bounce_info->op);
@@ -5979,6 +5989,7 @@ globus_i_gfs_data_request_transfer_event(
             {
                 globus_assert(op->state == GLOBUS_L_GFS_DATA_COMPLETING &&
                     op->data_handle != NULL);
+
                 remote_data_arg = globus_l_gfs_data_check(
                     op->session_handle, op->data_handle);
             }
@@ -6013,21 +6024,21 @@ globus_i_gfs_data_request_transfer_event(
                 session_handle->dsi->trev_func(
                     event_info,
                     op->session_handle->session_arg);
+            }
                 globus_mutex_lock(&op->session_handle->mutex);
                 {
                     remote_data_arg = globus_l_gfs_data_post_transfer_event_cb(
                         op->session_handle, op->data_handle);
                 }
                 globus_mutex_unlock(&op->session_handle->mutex);
-            
-            }
-            
+
+/*
             if(event_info->type == GLOBUS_GFS_EVENT_TRANSFER_COMPLETE && 
                 op->data_handle->state == GLOBUS_L_GFS_DATA_HANDLE_TE_VALID)
             {
                 op->data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_VALID;
             }
-
+*/
             globus_l_gfs_data_fire_cb(op, remote_data_arg, destroy_session);
             /* destroy the op */
             globus_l_gfs_data_operation_destroy(op);
@@ -6548,13 +6559,13 @@ globus_gridftp_server_begin_transfer(
             op->session_handle->dsi->trev_func(
                 &event_info,
                 op->session_handle->session_arg);
+        }
             globus_mutex_lock(&op->session_handle->mutex);
             {
                 remote_data_arg = globus_l_gfs_data_post_transfer_event_cb(
                     op->session_handle, op->data_handle);
             }
             globus_mutex_unlock(&op->session_handle->mutex);
-        }
         /* destroy the op */
         globus_l_gfs_data_fire_cb(op, remote_data_arg, destroy_session);
         globus_l_gfs_data_operation_destroy(op);
@@ -6772,26 +6783,31 @@ globus_gridftp_server_operation_finished(
 
         case GLOBUS_GFS_OP_PASSIVE:
         case GLOBUS_GFS_OP_ACTIVE:
-            data_handle = (globus_l_gfs_data_handle_t *)
-                globus_calloc(1, sizeof(globus_l_gfs_data_handle_t));
-            if(data_handle == NULL)
-            {
-                globus_panic(NULL, result, "small malloc failure, no recovery");
-            }
 
-            memcpy(&data_handle->info, op->info_struct,
-                sizeof(globus_gfs_data_info_t));
-            data_handle->session_handle = op->session_handle;
-            data_handle->remote_data_arg = finished_info->info.data.data_arg;
-            data_handle->is_mine = GLOBUS_FALSE;
-            data_handle->info.mode  =
-                ((globus_gfs_data_info_t *)op->info_struct)->mode;
-            data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_VALID;
-            finished_info->info.data.data_arg =
-                (void *) globus_handle_table_insert(
-                    &data_handle->session_handle->handle_table,
-                    data_handle,
-                    1);
+            if(finished_info->result == GLOBUS_SUCCESS)
+            {
+                data_handle = (globus_l_gfs_data_handle_t *)
+                    globus_calloc(1, sizeof(globus_l_gfs_data_handle_t));
+                if(data_handle == NULL)
+                {
+                    globus_panic(NULL, result,
+                        "small malloc failure, no recovery");
+                }
+
+                memcpy(&data_handle->info, op->info_struct,
+                    sizeof(globus_gfs_data_info_t));
+                data_handle->session_handle = op->session_handle;
+                data_handle->remote_data_arg = finished_info->info.data.data_arg;
+                data_handle->is_mine = GLOBUS_FALSE;
+                data_handle->info.mode  =
+                    ((globus_gfs_data_info_t *)op->info_struct)->mode;
+                data_handle->state = GLOBUS_L_GFS_DATA_HANDLE_VALID;
+                finished_info->info.data.data_arg =
+                    (void *) globus_handle_table_insert(
+                        &data_handle->session_handle->handle_table,
+                        data_handle,
+                        1);
+            }
             break;
 
         default:
