@@ -339,7 +339,7 @@ sub generate_build_list()
                 {
                    my $req = $package_require_hash{$dpk}{$depender};
                    next if ( ($low le $req) && ( $req le $high ) );
-                   push @errors, "$dpk has version $high and age $age, but $depender wants version $req\n";
+                   push @errors, "$depender wants $dpk at $req, but it is $high with age $age\n";
                 }
            }
            if ( @errors )
