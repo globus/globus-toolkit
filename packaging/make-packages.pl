@@ -421,21 +421,34 @@ sub create_makefile_installer
          
     foreach my $pack ( @package_build_list )
     {
+         my $packname = $pack;
+         # In 4.2, we now use system openssl if available, but we
+         # still provide a backup copy of our 4.0.x openssl package.
+         # There's a redirector in the configure/makefile of the installer
+         # that will point globus_openssl at either the system wrapper or
+         # the backup, so we change the packagename here.
+         if ( $pack eq "globus_openssl" )
+         {
+              $packname = "globus_system_openssl";
+         }
+
          open(PAC, ">$top_dir/pacman_cache/$pack.pacman");
          print PAC "packageName($pack)\n";
          print PAC "version($package_version_hash{$pack});\n";
 
          my $extras="";
 
+         # This package gets run in a sudo environment that doesn't
+         # have LD_LIBRARY_PATH set, so we want it to always be static.
          if ( $pack=~/globus_gridmap_and_execute/ )
          {
               $extras = "-static ";
          }
 
-         print INS "${pack}-only: gpt\n";
+         print INS "${packname}-only: gpt\n";
          print INS "\t\$\{GPT_LOCATION\}/sbin/gpt-build $extras \$\{BUILD_OPTS\} -srcdir=source-trees/" . $package_list{$pack}[1] . " \${FLAVOR}\n";
 
-         print INS "$pack: gpt";
+         print INS "$packname: gpt";
          foreach my $deppack ( @package_build_list )
          {
               if ( $package_dep_hash{$pack}{$deppack} )
@@ -452,9 +465,9 @@ sub create_makefile_installer
 
          print INS "\t\$\{GPT_LOCATION\}/sbin/gpt-build $extras \$\{BUILD_OPTS\} -srcdir=source-trees/" . $package_list{$pack}[1] . " \${FLAVOR}\n";
 
-         print INS "${pack}-only-thr: gpt\n";
+         print INS "${packname}-only-thr: gpt\n";
          print INS "\t\$\{GPT_LOCATION\}/sbin/gpt-build $extras \$\{BUILD_OPTS\} -srcdir=source-trees-thr/" . $package_list{$pack}[1] . " \${FLAVOR}\${THR}\n";
-         print INS "${pack}-thr: gpt";
+         print INS "${packname}-thr: gpt";
          foreach my $deppack ( @package_build_list )
          {
               if ( $package_dep_hash{$pack}{$deppack} )
