@@ -122,11 +122,9 @@ if (!defined($timeleft) || $timeleft eq "") {
 die "proxy expired, stopped" if ($timeleft < 60);
 die "proxy lifetime too short, stopped" if ($timeleft < 60*60*3);
 die "proxy is limited, stopped" if (`$grid_proxy_info -type` =~ /limited/);
-chomp($cert_subject = `$grid_proxy_info -subject`);
-die "grid-proxy-info -subject failed, stopped"
+chomp($cert_subject = `$grid_proxy_info -identity`);
+die "grid-proxy-info -identity failed, stopped"
     if (!defined($cert_subject) || $cert_subject eq "");
-$cert_subject = (split(/\/CN=proxy|\/CN=limited proxy|\/CN=\d+/,
-		       $cert_subject))[0];
 chomp($proxy_path = `$grid_proxy_info -path 2>/dev/null`);
 die "grid-proxy-info -path failed, stopped" if (!(-e $proxy_path));
 ($exitstatus, $output) = &verifyproxy($proxy_path);
