@@ -20,7 +20,7 @@ AC_SUBST(rndvz, $rndvz)
 rls=""
 AC_SUBST(rls, $rls)
 
-openssl="globus_openssl"
+openssl="globus_binary_openssl"
 AC_SUBST(globus_openssl, $openssl)
 
 prewsgram="prewsgram"
