@@ -25,11 +25,20 @@
 
 const EVP_CIPHER *evp_aes_128_ctr(void);
 void ssh_aes_ctr_iv(EVP_CIPHER_CTX *, int, u_char *, u_int);
+typedef int (*aes_get_fd_callback_t)(void);
+static aes_get_fd_callback_t aes_get_fd_callback = NULL;
+
+void
+aes_set_fd_callback_func(aes_get_fd_callback_t func)
+{
+    aes_get_fd_callback = func;
+}
 
 struct ssh_aes_ctr_ctx
 {
 	AES_KEY		aes_ctx;
 	u_char		aes_counter[AES_BLOCK_SIZE];
+        int             fd;
 };
 
 /*
@@ -55,19 +64,30 @@ ssh_aes_ctr(EVP_CIPHER_CTX *ctx, u_char *dest, const u_char *src,
 	u_int n = 0;
 	u_char buf[AES_BLOCK_SIZE];
 
+        /*fprintf(stderr, "ssh_aes_ctr enter: %p\n", ctx);*/
 	if (len == 0)
 		return (1);
 	if ((c = EVP_CIPHER_CTX_get_app_data(ctx)) == NULL)
 		return (0);
 
-	while ((len--) > 0) {
-		if (n == 0) {
-			AES_encrypt(c->aes_counter, buf, &c->aes_ctx);
-			ssh_ctr_inc(c->aes_counter, AES_BLOCK_SIZE);
-		}
-		*(dest++) = *(src++) ^ buf[n];
-		n = (n + 1) % AES_BLOCK_SIZE;
-	}
+        if (c->fd < 0)
+        {
+            /*fprintf(stderr, "ssh_aes_ctr software crypto: [ctx = %p]\n", ctx);*/
+            while ((len--) > 0) {
+                    if (n == 0) {
+                            AES_encrypt(c->aes_counter, buf, &c->aes_ctx);
+                            ssh_ctr_inc(c->aes_counter, AES_BLOCK_SIZE);
+                    }
+                    *(dest++) = *(src++) ^ buf[n];
+                    n = (n + 1) % AES_BLOCK_SIZE;
+            }
+        }
+        else
+        {
+            /*fprintf(stderr, "ssh_aes_ctr flagged crypto: [ctx = %p]\n", ctx);*/
+            memcpy(dest, src, len);
+        }
+        /*fprintf(stderr, "ssh_aes_ctr exit: %p\n", ctx);*/
 	return (1);
 }
 
@@ -77,7 +97,10 @@ ssh_aes_ctr_init(EVP_CIPHER_CTX *ctx, const u_char *key, const u_char *iv,
 {
 	struct ssh_aes_ctr_ctx *c;
 
+        /*fprintf(stderr, "ssh_aes_ctr_init: enter [%p]\n", ctx);*/
+
 	if ((c = EVP_CIPHER_CTX_get_app_data(ctx)) == NULL) {
+                /*fprintf(stderr, "ssh_aes_ctr_init: allocate data [%p]\n", ctx);*/
 		c = malloc(sizeof(*c));
 		EVP_CIPHER_CTX_set_app_data(ctx, c);
 	}
@@ -86,6 +109,14 @@ ssh_aes_ctr_init(EVP_CIPHER_CTX *ctx, const u_char *key, const u_char *iv,
 		    &c->aes_ctx);
 	if (iv != NULL)
 		memcpy(c->aes_counter, iv, AES_BLOCK_SIZE);
+        if (aes_get_fd_callback != NULL)
+        {
+            c->fd = (*aes_get_fd_callback)();
+        }
+        else
+        {
+            c->fd = -1;
+        }
 	return (1);
 }
 
@@ -94,11 +125,15 @@ ssh_aes_ctr_cleanup(EVP_CIPHER_CTX *ctx)
 {
 	struct ssh_aes_ctr_ctx *c;
 
+        /*fprintf(stderr, "ssh_aes_ctr_cleanup: enter [%p]\n", ctx);*/
+
 	if ((c = EVP_CIPHER_CTX_get_app_data(ctx)) != NULL) {
+                /*fprintf(stderr, "ssh_aes_ctr_cleanup: freeing data [%p]\n", ctx);*/
 		memset(c, 0, sizeof(*c));
 		free(c);
 		EVP_CIPHER_CTX_set_app_data(ctx, NULL);
 	}
+        /*fprintf(stderr, "ssh_aes_ctr_cleanup: exit [%p]\n", ctx);*/
 	return (1);
 }
 
@@ -107,15 +142,18 @@ ssh_aes_ctr_iv(EVP_CIPHER_CTX *evp, int doset, u_char * iv, u_int len)
 {
 	struct ssh_aes_ctr_ctx *c;
 
+        /*fprintf(stderr, "ssh_aes_ctr_iv: enter [evp=%p]\n", evp);*/
+
 	if ((c = EVP_CIPHER_CTX_get_app_data(evp)) == NULL)
         {
-            fprintf(stderr, "ssh_aes_ctr_iv: no context");
+            /*fprintf(stderr, "ssh_aes_ctr_iv: no context");*/
             abort();
         }
 	if (doset)
 		memcpy(c->aes_counter, iv, len);
 	else
 		memcpy(iv, c->aes_counter, len);
+        /*fprintf(stderr, "ssh_aes_ctr_iv: exit [evp=%p]\n", evp);*/
 }
 
 const EVP_CIPHER *

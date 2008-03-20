@@ -75,6 +75,7 @@ GSS_CALLCONV gss_accept_sec_context(
     OM_uint32                           local_major_status;
     globus_result_t                     local_result;
     OM_uint32                           nreq_flags = 0;
+    int                                 channel_fd;
     char                                dbuf[1];
     STACK_OF(X509) *                    cert_chain = NULL;
     globus_gsi_cert_utils_cert_type_t   cert_type;
@@ -115,6 +116,24 @@ GSS_CALLCONV gss_accept_sec_context(
     }
     globus_mutex_unlock(&globus_i_gssapi_activate_mutex);
     
+    if (getenv("AES128_CRYPTO_PRESENT") &&
+        input_chan_bindings != GSS_C_NO_CHANNEL_BINDINGS)
+    {
+        if (input_chan_bindings->initiator_addrtype != GSS_C_AF_INET ||
+            input_chan_bindings->acceptor_addrtype != GSS_C_AF_INET)
+        {
+            major_status = GSS_S_BAD_BINDINGS;
+            GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+                minor_status,
+                GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
+                (_GGSL("Unsupported channel bindings")));
+            goto exit;
+        }
+        channel_fd = * (int *) input_chan_bindings->application_data.value;
+
+        globus_thread_setspecific(globus_i_gsi_gssapi_aes_fd_key, &channel_fd);
+    }
+
     if (context == (gss_ctx_id_t) GSS_C_NO_CONTEXT ||
         !(context->ctx_flags & GSS_I_CTX_INITIALIZED))
     {
@@ -595,6 +614,7 @@ GSS_CALLCONV gss_accept_sec_context(
             (unsigned int) context->ret_flags));
 
  exit:
+    globus_thread_setspecific(globus_i_gsi_gssapi_aes_fd_key, NULL);
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;

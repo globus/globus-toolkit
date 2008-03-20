@@ -359,4 +359,6 @@ unsigned char *
 globus_i_gsi_gssapi_get_hostname(
     const gss_name_desc *               name);
 
+extern globus_thread_key_t globus_i_gsi_gssapi_aes_fd_key;
+
 #endif /* GLOBUS_I_GSI_GSS_UTILS_H */

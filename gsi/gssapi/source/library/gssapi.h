@@ -344,6 +344,7 @@ typedef struct gss_channel_bindings_struct
 #define GSS_C_AF_DSS        18
 #define GSS_C_AF_OSI        19
 #define GSS_C_AF_X25        21
+#define GSS_C_AF_AES_HW     22 /* Globus Extension for HW-assisted AES128-CTR */
 
 #define GSS_C_AF_NULLADDR   255
 

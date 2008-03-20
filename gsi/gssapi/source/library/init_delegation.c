@@ -335,38 +335,13 @@ GSS_CALLCONV gss_init_delegation(
             context->delegation_state = GSS_DELEGATION_DONE;
             goto mutex_unlock;            
         }
-        else if(req_flags & GSS_C_GLOBUS_DELEGATE_LIMITED_PROXY_FLAG)
-        {
-            if(GLOBUS_GSI_CERT_UTILS_IS_GSI_2_PROXY(cert_type))
-            { 
-                cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY;
-            }
-            else if(GLOBUS_GSI_CERT_UTILS_IS_RFC_PROXY(cert_type))
-            {
-                cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_RFC_LIMITED_PROXY;
-            }
-            else
-            {
-                cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_LIMITED_PROXY;
-            }
-        }
-        else if(cert_type == GLOBUS_GSI_CERT_UTILS_TYPE_EEC)
-        {
-            cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_IMPERSONATION_PROXY;
-        }
-        else if(GLOBUS_GSI_CERT_UTILS_IS_GSI_2_PROXY(cert_type))
-        {
-            cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_PROXY;
-        }
-        else if(GLOBUS_GSI_CERT_UTILS_IS_RFC_PROXY(cert_type))
-        {
-            cert_type = GLOBUS_GSI_CERT_UTILS_TYPE_RFC_IMPERSONATION_PROXY;
-        }
         
         local_result =
             globus_gsi_proxy_handle_set_type(
                 context->proxy_handle,
-                cert_type);
+                (req_flags & GSS_C_GLOBUS_DELEGATE_LIMITED_PROXY_FLAG)
+                ? GLOBUS_GSI_CERT_UTILS_TYPE_LIMITED_PROXY 
+                : GLOBUS_GSI_CERT_UTILS_TYPE_IMPERSONATION_PROXY);
         
         if(local_result != GLOBUS_SUCCESS)
         {
@@ -381,7 +356,7 @@ GSS_CALLCONV gss_init_delegation(
         /* set the proxycertinfo here */
         if(extension_oids != GSS_C_NO_OID_SET)
         {
-            if(!GLOBUS_GSI_CERT_UTILS_IS_GSI_3_PROXY(cert_type))
+            if(GLOBUS_GSI_CERT_UTILS_IS_GSI_2_PROXY(cert_type))
             {
                 GLOBUS_GSI_GSSAPI_ERROR_RESULT(
                     minor_status,

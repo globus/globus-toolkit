@@ -290,6 +290,15 @@ GSS_CALLCONV gss_wrap(
     else
     {
         int rc;
+        SSL_CIPHER * current_cipher;
+
+        current_cipher = SSL_get_current_cipher(context->gss_ssl);
+
+        GLOBUS_I_GSI_GSSAPI_DEBUG_FPRINTF(
+            2, (globus_i_gsi_gssapi_debug_fstream,
+                "using cipher: %s\n",
+                current_cipher->name));
+
         rc = SSL_write(context->gss_ssl,
                        input_message_buffer->value,
                        input_message_buffer->length);

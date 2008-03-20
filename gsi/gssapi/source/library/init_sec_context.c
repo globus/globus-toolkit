@@ -54,17 +54,15 @@ GSS_CALLCONV gss_init_sec_context(
     OM_uint32 *                         ret_flags,
     OM_uint32 *                         time_rec) 
 {
-    globus_gsi_cert_utils_cert_type_t   proxy_type =
-        GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_IMPERSONATION_PROXY;
     gss_ctx_id_desc *                   context = NULL;
     OM_uint32                           major_status = GSS_S_COMPLETE;
     OM_uint32                           local_minor_status;
     OM_uint32                           local_major_status;
     globus_result_t                     local_result;
+    int                                 channel_fd;
     int                                 rc;
     char                                cbuf[1];
     globus_gsi_cert_utils_cert_type_t   cert_type;
-
     static char *                       _function_name_ = 
         "gss_init_sec_context";
 
@@ -126,6 +124,23 @@ GSS_CALLCONV gss_init_sec_context(
         goto error_exit;
     }
 
+    if (getenv("AES128_CRYPTO_PRESENT") &&
+        input_chan_bindings != GSS_C_NO_CHANNEL_BINDINGS)
+    {
+        if (input_chan_bindings->initiator_addrtype != GSS_C_AF_INET ||
+            input_chan_bindings->acceptor_addrtype != GSS_C_AF_INET)
+        {
+            major_status = GSS_S_BAD_BINDINGS;
+            GLOBUS_GSI_GSSAPI_ERROR_RESULT(
+                minor_status,
+                GLOBUS_GSI_GSSAPI_ERROR_BAD_ARGUMENT,
+                (_GGSL("Unsupported channel bindings")));
+            goto error_exit;
+        }
+        channel_fd = * (int *) input_chan_bindings->application_data.value;
+
+        globus_thread_setspecific(globus_i_gsi_gssapi_aes_fd_key, &channel_fd);
+    }
     
     if ((context == (gss_ctx_id_t) GSS_C_NO_CONTEXT) ||
         !(context->ctx_flags & GSS_I_CTX_INITIALIZED))
@@ -400,35 +415,13 @@ GSS_CALLCONV gss_init_sec_context(
             context->gss_state = GSS_CON_ST_DONE;
             goto error_exit;
         }
-
-        if(context->req_flags & GSS_C_GLOBUS_DELEGATE_LIMITED_PROXY_FLAG)
-        {
-            if(GLOBUS_GSI_CERT_UTILS_IS_GSI_2_PROXY(cert_type))
-            { 
-                proxy_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_LIMITED_PROXY;
-            }
-            else if(GLOBUS_GSI_CERT_UTILS_IS_RFC_PROXY(cert_type))
-            {
-                proxy_type = GLOBUS_GSI_CERT_UTILS_TYPE_RFC_LIMITED_PROXY;
-            }
-            else
-            {
-                proxy_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_3_LIMITED_PROXY;
-            }
-        }
-        else if(GLOBUS_GSI_CERT_UTILS_IS_GSI_2_PROXY(cert_type))
-        {
-            proxy_type = GLOBUS_GSI_CERT_UTILS_TYPE_GSI_2_PROXY;
-        }
-        else if(GLOBUS_GSI_CERT_UTILS_IS_RFC_PROXY(cert_type))
-        {
-            proxy_type = GLOBUS_GSI_CERT_UTILS_TYPE_RFC_IMPERSONATION_PROXY;
-        }
         
         local_result =
             globus_gsi_proxy_handle_set_type(
                 context->proxy_handle,
-                proxy_type);
+                (context->req_flags & GSS_C_GLOBUS_DELEGATE_LIMITED_PROXY_FLAG)
+                ? GLOBUS_GSI_CERT_UTILS_TYPE_LIMITED_PROXY
+                : GLOBUS_GSI_CERT_UTILS_TYPE_IMPERSONATION_PROXY);
         if(local_result != GLOBUS_SUCCESS)
         {
             GLOBUS_GSI_GSSAPI_ERROR_CHAIN_RESULT(
@@ -539,6 +532,7 @@ GSS_CALLCONV gss_init_sec_context(
     *context_handle_P = (gss_ctx_id_t) context;
  
  exit:
+    globus_thread_setspecific(globus_i_gsi_gssapi_aes_fd_key, NULL);
 
     GLOBUS_I_GSI_GSSAPI_DEBUG_EXIT;
     return major_status;
