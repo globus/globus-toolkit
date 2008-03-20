@@ -63,6 +63,6 @@ globus_openssl-thr: @globus_openssl@-thr
 globus_openssl-only: @globus_openssl@-only
 globus_openssl-only-thr: @globus_openssl@-only-thr
 globus_binary_openssl:
-	tar -C ${GLOBUS_LOCATION} -xzf binary-trees/globus_openssl-*
+	tar -C ${GLOBUS_LOCATION} -xzf binary-trees/globus_openssl-*/*.tar.gz
 
 # Bundle dependencies, expressed in packages.
