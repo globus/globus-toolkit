@@ -1556,8 +1556,8 @@ globus_i_xio_driver_handle_cntl(
         {
             called = GLOBUS_FALSE;
             
-            if(driver == context->entry[ctr].driver ||
-                driver == GLOBUS_XIO_QUERY)
+            if (driver == GLOBUS_XIO_QUERY ||
+                driver->hook == context->entry[ctr].driver->hook)
             {
                 if(context->entry[ctr].state == GLOBUS_XIO_CONTEXT_STATE_NONE
                     && context->entry[ctr].driver->link_cntl_func)

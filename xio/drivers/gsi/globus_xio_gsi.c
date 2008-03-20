@@ -15,6 +15,8 @@
  */
 
 #include "globus_i_xio_gsi.h"
+#include "globus_xio_system.h"
+#include "globus_xio_tcp_driver.h"
 #include "version.h"
 
 /* 32 MB */
@@ -39,6 +41,7 @@ static globus_l_attr_t                  globus_l_xio_gsi_attr_default =
 
 static int                              connection_count = 0;
 static globus_mutex_t                   connection_mutex;
+static globus_xio_driver_t              globus_l_gsi_tcp_driver;
 
 
 static
@@ -69,6 +72,12 @@ globus_l_xio_gsi_close_cb(
     globus_xio_operation_t              op,
     globus_result_t                     result,
     void *                              user_arg);
+
+static
+void
+globus_l_xio_gsi_setup_channel_bindings(
+    globus_l_handle_t *                 handle,
+    globus_xio_operation_t              op);
 
 static int
 globus_l_xio_gsi_activate();
@@ -1160,6 +1169,10 @@ globus_l_xio_gsi_read_token_cb(
             }
             else
             {
+                if (! handle->attr->channel_bindings)
+                {
+                    globus_l_xio_gsi_setup_channel_bindings(handle, op);
+                }
                 major_status = gss_accept_sec_context(
                     &minor_status,
                     &handle->context,
@@ -1495,6 +1508,11 @@ globus_l_xio_gsi_open_cb(
         OM_uint32                       major_status;
         OM_uint32                       minor_status;
         gss_buffer_desc 	        output_token = GSS_C_EMPTY_BUFFER;
+
+        if (! handle->attr->channel_bindings)
+        {
+            globus_l_xio_gsi_setup_channel_bindings(handle, op);
+        }
 
         major_status = gss_init_sec_context(&minor_status,
                                             handle->attr->credential,
@@ -3846,6 +3864,15 @@ globus_l_xio_gsi_activate(void)
     GlobusXIORegisterDriver(gsi);
     globus_mutex_init(&connection_mutex,NULL);
     GlobusXIOGSIDebugExit();
+    rc = globus_xio_driver_load("tcp", &globus_l_gsi_tcp_driver);
+    if (rc != GLOBUS_SUCCESS)
+    {
+        globus_mutex_destroy(&connection_mutex);
+
+        globus_module_deactivate(GLOBUS_XIO_MODULE);
+        GlobusXIOGSIDebugExitWithError();
+        GlobusDebugDestroy(GLOBUS_XIO_GSI);
+    }
     return rc;
 }
 
@@ -3860,6 +3887,7 @@ globus_l_xio_gsi_deactivate(void)
     GlobusXIOName(globus_l_xio_gsi_deactivate);
     GlobusXIOGSIDebugEnter();
     GlobusXIOUnRegisterDriver(gsi);
+    globus_xio_driver_unload(globus_l_gsi_tcp_driver);
     rc = globus_module_deactivate(GLOBUS_XIO_MODULE);
     rc += globus_module_deactivate(GLOBUS_GSI_GSS_ASSIST_MODULE);
     globus_mutex_destroy(&connection_mutex);
@@ -3992,4 +4020,60 @@ globus_l_xio_gsi_setup_target_name(
  error:
     GlobusXIOGSIDebugInternalExitWithError();    
     return result;
+}
+
+static
+void
+globus_l_xio_gsi_setup_channel_bindings(
+    globus_l_handle_t *                 handle,
+    globus_xio_operation_t              op)
+{
+    gss_channel_bindings_t              bindings;
+    globus_xio_driver_handle_t          driver_handle;
+    globus_xio_system_socket_t          socket_fd;
+    struct sockaddr                     initname;
+    globus_socklen_t                    initnamelen = sizeof(initname);
+    struct sockaddr                     acceptname;
+    globus_socklen_t                    acceptnamelen = sizeof(acceptname);
+    globus_result_t                     result;
+
+    driver_handle = globus_xio_operation_get_driver_handle(op);
+    result = globus_xio_driver_handle_cntl(
+            driver_handle,
+            globus_l_gsi_tcp_driver,
+            GLOBUS_XIO_TCP_GET_HANDLE,
+            &socket_fd);
+    if (result == GLOBUS_SUCCESS && socket_fd >= 0)
+    {
+        result = globus_xio_system_socket_getsockname(
+            socket_fd,
+            handle->attr->init ? (&initname) : (&acceptname),
+            handle->attr->init ? (&initnamelen) : (&acceptnamelen));
+    }
+    if (result == GLOBUS_SUCCESS && socket_fd >= 0)
+    {
+        result = globus_xio_system_socket_getpeername(
+            socket_fd,
+            handle->attr->init ? (&acceptname) : (&initname),
+            handle->attr->init ? (&acceptnamelen) : (&initnamelen));
+    }
+    if (result == GLOBUS_SUCCESS)
+    {
+        if (initname.sa_family == AF_INET &&
+            acceptname.sa_family == AF_INET)
+        {
+            bindings = malloc(sizeof (struct gss_channel_bindings_struct));
+
+            bindings->initiator_addrtype = GSS_C_AF_INET;
+            bindings->initiator_address.value = &initname;
+            bindings->initiator_address.length = initnamelen;
+            bindings->acceptor_addrtype = GSS_C_AF_INET;
+            bindings->acceptor_address.value = &acceptname;
+            bindings->acceptor_address.length = acceptnamelen;
+            bindings->application_data.value = &socket_fd;
+            bindings->application_data.length = sizeof(socket_fd);
+
+            handle->attr->channel_bindings = bindings;
+        }
+    }
 }
