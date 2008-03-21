@@ -546,6 +546,7 @@ globus_l_callback_activate()
         sigemptyset(&action.sa_mask);
         action.sa_handler = globus_l_callback_dummy_handler;
         sigaction(SIGSYS, &action, NULL);
+        globus_l_callback_signal_active_count++;
     }
 #endif
 
@@ -2853,11 +2854,13 @@ globus_l_callback_thread_signal_poll(
                 sizeof(current_sigset));
         }
         
-#ifdef TARGET_ARCH_AIX
+#ifndef TARGET_ARCH_LINUX
         if(globus_l_callback_signal_active_count == 0)
         {
             /* this is another cancellation point.  I sleep here instead of
-             * sigwait because aix doesnt like empty sigsets
+             * sigwait because at least aix and solaris don't like empty sigsets
+             * linux is ok with it, and this bit causes a hang on debian
+             * bug 5481 and 5938
              */
             globus_cond_wait(
                 &globus_l_callback_thread_cond,
