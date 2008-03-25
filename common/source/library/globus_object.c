@@ -35,15 +35,23 @@ typedef globus_mutex_t local_mutex_t;
 #endif
 
 static local_mutex_t                   s_object_ref_mutex;
+static globus_bool_t                    globus_l_object_active = GLOBUS_FALSE;
 
 static int s_object_init (void)
 {
-    return local_mutex_init(&s_object_ref_mutex, GLOBUS_NULL);
+    int                                 rc = 0;
+
+    if(!globus_l_object_active)
+    {
+        rc = local_mutex_init(&s_object_ref_mutex, GLOBUS_NULL);
+        globus_l_object_active = !rc;
+    }
+    return rc;
 }
 
 static int s_object_destroy (void)
 {
-    return local_mutex_destroy(&s_object_ref_mutex);
+//    return local_mutex_destroy(&s_object_ref_mutex);
 }
 
 #include "version.h"
