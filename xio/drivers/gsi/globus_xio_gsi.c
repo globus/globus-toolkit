@@ -15,6 +15,7 @@
  */
 
 #include "globus_i_xio_gsi.h"
+#include "globus_xio_util.h"
 #include "version.h"
 
 /* 32 MB */
@@ -925,6 +926,9 @@ globus_l_xio_gsi_write_token_cb(
 
     if(result != GLOBUS_SUCCESS)
     {
+        result = GlobusXIOErrorWrapFailedWithMessage(result,
+            "The GSI XIO driver failed to establish a scure contect.  %s",
+            "The failure occured during a handshake write.");
         goto error_pass_close;
     }
     
@@ -963,6 +967,9 @@ globus_l_xio_gsi_write_token_cb(
                                 globus_l_xio_gsi_read_token_cb, handle);
         if(result != GLOBUS_SUCCESS)
         {
+            result = GlobusXIOErrorWrapFailedWithMessage(result,
+                "The GSI XIO driver failed to establish a scure contect.  %s",
+                "The failure occured while posting a handshake read.");
             goto error_pass_close;
         }
     }
@@ -1024,6 +1031,9 @@ globus_l_xio_gsi_read_token_cb(
 
     if(result != GLOBUS_SUCCESS)
     {
+        result = GlobusXIOErrorWrapFailedWithMessage(result,
+            "The GSI XIO driver failed to establish a scure contect.  %s",
+            "The failure occured during a handshake read.");
         if(globus_xio_error_is_eof(result) == GLOBUS_TRUE)
         {
             handle->eof = GLOBUS_TRUE;
@@ -1118,6 +1128,9 @@ globus_l_xio_gsi_read_token_cb(
                         globus_l_xio_gsi_read_token_cb, handle);
                     if(result != GLOBUS_SUCCESS)
                     {
+                        result = GlobusXIOErrorWrapFailedWithMessage(result,
+                "The GSI XIO driver failed to establish a scure contect.  %s",
+                "The failure occured while posting a handshake read.");
                         goto error_pass_close;
                     }
                     GlobusXIOGSIDebugInternalExit();
@@ -1433,6 +1446,9 @@ globus_l_xio_gsi_read_token_cb(
                                 globus_l_xio_gsi_read_token_cb, handle);
         if(result != GLOBUS_SUCCESS)
         {
+            result = GlobusXIOErrorWrapFailedWithMessage(result,
+                "The GSI XIO driver failed to establish a scure contect.  %s",
+                "The failure occured while posting a handshake read.");
             goto error_pass_close;
         }
     }
@@ -1481,6 +1497,9 @@ globus_l_xio_gsi_open_cb(
     
     if(result != GLOBUS_SUCCESS)
     {
+        result = GlobusXIOErrorWrapFailedWithMessage(result,
+            "The GSI XIO driver failed to establish a connection%s",
+            " with via the underlying protocol (TCP).");
         goto error_destroy_handle;
     }
     
@@ -1605,6 +1624,9 @@ globus_l_xio_gsi_open_cb(
                                  globus_l_xio_gsi_write_token_cb, handle);
         if(result != GLOBUS_SUCCESS)
         {
+            result = GlobusXIOErrorWrapFailedWithMessage(result,
+                "The GSI XIO driver failed to post a write%s",
+                ".");
             gss_release_buffer(&minor_status, &output_token);
             handle->read_iovec[1].iov_base = handle->read_buffer;
             handle->read_iovec[1].iov_len = handle->attr->buffer_size;
@@ -1623,6 +1645,9 @@ globus_l_xio_gsi_open_cb(
                                 globus_l_xio_gsi_read_token_cb, handle);
         if(result != GLOBUS_SUCCESS)
         {
+            result = GlobusXIOErrorWrapFailedWithMessage(result,
+                "The GSI XIO driver failed to post a read %s",
+                "during the secure handshake.");
             goto  error_pass_close;
         }
     }
