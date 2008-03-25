@@ -4030,7 +4030,6 @@ globus_l_xio_gsi_setup_channel_bindings(
 {
     gss_channel_bindings_t              bindings;
     globus_xio_driver_handle_t          driver_handle;
-    globus_xio_system_socket_t          socket_fd;
     struct sockaddr                     initname;
     globus_socklen_t                    initnamelen = sizeof(initname);
     struct sockaddr                     acceptname;
@@ -4042,18 +4041,18 @@ globus_l_xio_gsi_setup_channel_bindings(
             driver_handle,
             globus_l_gsi_tcp_driver,
             GLOBUS_XIO_TCP_GET_HANDLE,
-            &socket_fd);
-    if (result == GLOBUS_SUCCESS && socket_fd >= 0)
+            &handle->socket_fd);
+    if (result == GLOBUS_SUCCESS && handle->socket_fd >= 0)
     {
         result = globus_xio_system_socket_getsockname(
-            socket_fd,
+            handle->socket_fd,
             handle->attr->init ? (&initname) : (&acceptname),
             handle->attr->init ? (&initnamelen) : (&acceptnamelen));
     }
-    if (result == GLOBUS_SUCCESS && socket_fd >= 0)
+    if (result == GLOBUS_SUCCESS && handle->socket_fd >= 0)
     {
         result = globus_xio_system_socket_getpeername(
-            socket_fd,
+            handle->socket_fd,
             handle->attr->init ? (&acceptname) : (&initname),
             handle->attr->init ? (&acceptnamelen) : (&initnamelen));
     }
@@ -4070,8 +4069,8 @@ globus_l_xio_gsi_setup_channel_bindings(
             bindings->acceptor_addrtype = GSS_C_AF_INET;
             bindings->acceptor_address.value = &acceptname;
             bindings->acceptor_address.length = acceptnamelen;
-            bindings->application_data.value = &socket_fd;
-            bindings->application_data.length = sizeof(socket_fd);
+            bindings->application_data.value = &handle->socket_fd;
+            bindings->application_data.length = sizeof(handle->socket_fd);
 
             handle->attr->channel_bindings = bindings;
         }

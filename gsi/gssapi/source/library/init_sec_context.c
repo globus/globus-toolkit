@@ -124,8 +124,7 @@ GSS_CALLCONV gss_init_sec_context(
         goto error_exit;
     }
 
-    if (getenv("AES128_CRYPTO_PRESENT") &&
-        input_chan_bindings != GSS_C_NO_CHANNEL_BINDINGS)
+    if (input_chan_bindings != GSS_C_NO_CHANNEL_BINDINGS)
     {
         if (input_chan_bindings->initiator_addrtype != GSS_C_AF_INET ||
             input_chan_bindings->acceptor_addrtype != GSS_C_AF_INET)

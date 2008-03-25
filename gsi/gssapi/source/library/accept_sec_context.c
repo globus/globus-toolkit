@@ -116,8 +116,7 @@ GSS_CALLCONV gss_accept_sec_context(
     }
     globus_mutex_unlock(&globus_i_gssapi_activate_mutex);
     
-    if (getenv("AES128_CRYPTO_PRESENT") &&
-        input_chan_bindings != GSS_C_NO_CHANNEL_BINDINGS)
+    if (input_chan_bindings != GSS_C_NO_CHANNEL_BINDINGS)
     {
         if (input_chan_bindings->initiator_addrtype != GSS_C_AF_INET ||
             input_chan_bindings->acceptor_addrtype != GSS_C_AF_INET)
