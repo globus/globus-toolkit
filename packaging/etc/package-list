@@ -91,12 +91,12 @@ globus_io	io/compat	gpt
 globus_io_test	io/test	gpt
 globus_xio_token_bucket_driver	xio/drivers/token_bucket/source	gpt
 globus_xio_popen_driver	xio/drivers/popen/source	gpt
-globus_xio_gsi_driver	xio/drivers/gsi	gpt openssl_aes128_ctr
+globus_xio_gsi_driver	xio/drivers/gsi	gpt null openssl_aes128_ctr
 globus_xio_udt_ref_driver	xio/drivers/udt_ref	gpt
 globus_xio_skeleton_driver      xio/drivers/skeleton/source	gpt
 globus_xio_blockz_driver        xio/drivers/blockz	gpt
 globus_xio_netlogger_driver     xio/drivers/netlog  gpt
-globus_xio	xio/src	gpt openssl_aes128_ctr
+globus_xio	xio/src	gpt null openssl_aes128_ctr
 globus_xio_test	xio/test	gpt
 globus_xioperf	xio/xioperf/source	gpt
 globus_ldapmodules	mds/openldap/ldapmodules	gpt
@@ -111,7 +111,9 @@ globus_mds_test		mds/tests	gpt
 globus_mp	mp/source	gpt
 globus_nexus	nexus/source	gpt
 globus_openldap	mds/openldap/patch-n-build pnb openldap-2.0.22.tar.gz
-globus_openssl	gsi/openssl_gpt	gpt null openssl_aes128_ctr
+globus_openssl_backup	gsi/openssl_gpt	        gpt null openssl_aes128_ctr
+globus_openssl	gsi/openssl/source	gpt
+globus_openssl_setup	gsi/openssl/setup	gpt
 globus_openssl_error_test	gsi/openssl_error/test	gpt
 globus_openssl_module	gsi/openssl_module/source	gpt
 globus_proxy_ssl_test	gsi/proxy/proxy_ssl/test	gpt
