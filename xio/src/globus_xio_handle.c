@@ -3692,37 +3692,11 @@ globus_xio_close(
 void
 globus_l_xio_handle_create_from_url_init()
 {
-    int                             i;
-    int                             j;
-    globus_l_xio_parsed_driver_t *  ent;
-
     globus_hashtable_init(
         &xio_l_scheme_drv_tbl,
         256,
         globus_hashtable_string_hash,
         globus_hashtable_string_keyeq);
-    for(i = 0; xio_l_scheme[i].prt_name != NULL; i++)
-    {
-        for(j = 0; xio_l_scheme[i].driver_list[j] != NULL; j++)
-        {
-            if(globus_hashtable_lookup(
-                &xio_l_scheme_drv_tbl,
-                (void *)xio_l_scheme[i].driver_list[j]) == NULL)
-            {
-                ent = (globus_l_xio_parsed_driver_t *)
-                    globus_malloc(sizeof(globus_l_xio_parsed_driver_t));
-
-                ent->driver_name = strdup(xio_l_scheme[i].driver_list[j]);
-                ent->res = globus_xio_driver_load(
-                    xio_l_scheme[i].driver_list[j],
-                    &ent->driver);
-                globus_hashtable_insert(
-                    &xio_l_scheme_drv_tbl,
-                    (void *)xio_l_scheme[i].driver_list[j],
-                    (void *)ent);
-            }
-        }
-    }
 }
 
 void
@@ -3795,6 +3769,21 @@ globus_xio_handle_create_from_url(
                 ent = (globus_l_xio_parsed_driver_t * )globus_hashtable_lookup(
                     &xio_l_scheme_drv_tbl,
                     (void *)xio_l_scheme[i].driver_list[j]);
+
+                if(ent == NULL)
+                {
+                    ent = (globus_l_xio_parsed_driver_t *)
+                        globus_malloc(sizeof(globus_l_xio_parsed_driver_t));
+                    ent->driver_name = strdup(xio_l_scheme[i].driver_list[j]);
+                    ent->res = globus_xio_driver_load(
+                        xio_l_scheme[i].driver_list[j],
+                        &ent->driver);
+                    globus_hashtable_insert(
+                        &xio_l_scheme_drv_tbl,
+                        (void *)xio_l_scheme[i].driver_list[j],
+                        (void *)ent);
+                }
+
                 globus_assert(ent != NULL);
 
                 if(ent->res != GLOBUS_SUCCESS)
