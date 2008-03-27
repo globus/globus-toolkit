@@ -86,13 +86,19 @@ class SchedulerEventGenerator
      * When throttling process restarts, wait this many milliseconds before next
      * restart attempt.
      */
-    private final long THROTTLE_RESTART_TIME = 2 * 60 * 1000;
+    private final long THROTTLE_RESTART_TIME = 10 * 1000;
     
     /**
      * When SEG terminates within this amount of time of being started, assume
      * something might be wrong and delay again.
      */
     private final long THROTTLE_RESTART_THRESHOLD = 2 * 1000;
+
+    /**
+     * Number of retries in a row after which the startup of the SEG
+     * is considered to be failed.
+     */
+    private static final int MAX_SEG_RESTART_COUNT = 5;
 
     /**
      * SEG constructor.
@@ -138,152 +144,161 @@ class SchedulerEventGenerator
      * cache.
      */
     public void run() {
+        
+        int segRestartCount = 0;
 
-        try {
-            while (startSegProcess(timeStamp)) {
-                java.io.BufferedReader stdout;
-                String input;
-
-                logger.debug("getting seg input");
-                stdout =
-                    new java.io.BufferedReader(new java.io.InputStreamReader(
-                        proc.getInputStream()));
+        while (segRestartCount < MAX_SEG_RESTART_COUNT) {
+        
+            if (startSegProcess(timeStamp)) {
                 if (logger.isDebugEnabled()) {
-                    logger.debug("Seg input buffer is "
-                        + (stdout.ready() ? "read" : "not ready"));
-                    try {
-                        int rc = proc.exitValue();
-                        logger.error("SEG terminated with return code " + rc);
-                    } catch (IllegalThreadStateException itse) {
-                        logger.debug("SEG still running...");
-                    }
+                    logger.debug("Started SEG process for local resource"
+                        + " manager " + this.schedulerName);
                 }
-                while ((input = stdout.readLine()) != null) {
-                    logger.debug("seg input line: " + input);
-                    java.util.StringTokenizer tok =
-                        new java.util.StringTokenizer(input, ";");
-                    String tokens[] = new String[tok.countTokens()];
+                segRestartCount = 0;
+                try {    
+                    java.io.BufferedReader stdout;
+                    String input; 
 
-                    for (int i = 0; i < tokens.length; i++) {
-                        tokens[i] = tok.nextToken();
+                    logger.debug("getting seg input");
+                    stdout = new java.io.BufferedReader(
+                        new java.io.InputStreamReader(
+                                proc.getInputStream()));
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("Seg input buffer is "
+                        + (stdout.ready()?"read":"not ready"));
                     }
+                    while ((input = stdout.readLine()) != null) {
+                        logger.debug("seg input line: " + input);
+                        java.util.StringTokenizer tok =
+                            new java.util.StringTokenizer(input, ";");
+                        String tokens[] = new String[tok.countTokens()];
 
-                    if (tokens[0].equals("001")) {
-                        // Job state change message
-                        if (tokens.length < 5) {
-                            // Invalid message
+                        for (int i = 0; i < tokens.length; i++) {
+                            tokens[i] = tok.nextToken();
                         }
 
-                        StateEnumeration se;
+                        if (tokens[0].equals("001")) {
+                            // Job state change message
+                            if (tokens.length < 5) {
+                                // Invalid message
+                            }
 
-                        switch (Integer.parseInt(tokens[3])) {
-                            case 1:
-                                se = StateEnumeration.Pending;
-                                break;
-                            case 2:
-                                se = StateEnumeration.Active;
-                                break;
-                            case 4:
-                                se = StateEnumeration.Failed;
-                                break;
-                            case 8:
-                                se = StateEnumeration.Done;
-                                break;
-                            case 16:
-                                se = StateEnumeration.Suspended;
-                                break;
-                            case 32:
-                                se = StateEnumeration.Unsubmitted;
-                                break;
-                            default:
-                                se = null;
-                        }
+                            StateEnumeration se;
 
-                        SchedulerEvent e =
-                            new SchedulerEvent(new java.util.Date(Long
-                                .parseLong(tokens[1]) * 1000), tokens[2], se,
+                            switch (Integer.parseInt(tokens[3])) {
+                                case 1:
+                                    se = StateEnumeration.Pending;
+                                    break;
+                                case 2:
+                                    se = StateEnumeration.Active;
+                                    break;
+                                case 4:
+                                    se = StateEnumeration.Failed;
+                                    break;
+                                case 8:
+                                    se = StateEnumeration.Done;
+                                    break;
+                                case 16:
+                                    se = StateEnumeration.Suspended;
+                                    break;
+                                case 32:
+                                    se = StateEnumeration.Unsubmitted;
+                                    break;
+                                default:
+                                    se = null;
+                            }
+
+                            SchedulerEvent e = new SchedulerEvent(
+                                new java.util.Date(
+                                    Long.parseLong(tokens[1])*1000),
+                                tokens[2],
+                                se,
                                 Integer.parseInt(tokens[4]));
 
-                        timeStamp = e.getTimeStamp();
-
-                        monitor.addEvent(e);
-                    } else {
-                        // Unknown message type
+                            timeStamp = e.getTimeStamp();
+                            monitor.addEvent(e);
+                        } else {
+                            // Unknown message type
+                        }
                     }
+                    // when we get here, SEG has terminated, check stderr
+                    java.io.BufferedReader stderr;
+                    stderr = new java.io.BufferedReader(
+                        new java.io.InputStreamReader(
+                            proc.getErrorStream()));
+                    while ((input = stderr.readLine()) != null) {
+                        logger.error("SEG Terminated with " + input);
+                    }
+                    stderr.close();
+                } catch (Exception e) {
+                    logger.error("Exception while reading data from the SEG. ",
+                        e);
                 }
-                // if / when we get here, SEG has terminated, check stderr
-                java.io.BufferedReader stderr;
-                stderr =
-                    new java.io.BufferedReader(new java.io.InputStreamReader(
-                        proc.getErrorStream()));
-                while ((input = stderr.readLine()) != null) {
-                    logger.error("SEG Terminated with "
-                        + input);
+            } else {
+                segRestartCount++;
+                if (segRestartCount == MAX_SEG_RESTART_COUNT) {
+                    logger.error("max # retries to start the SEG for local"
+                        + " resource manager " + this.schedulerName
+                        + " reached. Giving up. No information about job"
+                        + " status will be available for this local resource"
+                        + " manager.");
                 }
-                stderr.close();
-
             }
-        } catch (java.io.IOException ioe) {
-            throw new RuntimeException(ioe);
         }
     }
 
     /**
      * Start a scheduler event generator process.
      * 
-     * This function is called to start a new scheduler event generator process.
-     * This process will monitor the output of the scheduler and send this
-     * object job state change notifications via the processes's standard output
-     * stream.
-     * 
-     * If the shutdown method of this object has been called, then the process
-     * will not be started.
-     * 
-     * @retval true New process started.
-     * @reval false Did not create a new seg process.
+     * This function is called to start a new scheduler event generator
+     * process. This process will monitor the output of the scheduler
+     * and send this object job state change notifications via the
+     * processes's standard output stream.
+     *
+     * If the shutdown method of this object has been called, then the
+     * process will not be started.
+     *
+     * @return true new seg process started.
      */
-    private synchronized boolean startSegProcess(
-        Date timeStamp)
-        throws IOException {
+    private synchronized boolean startSegProcess(java.util.Date timeStamp)
+    {
+        boolean success = false;
+        
+        try {
+            cleanProcess();
+            proc = null;
+            throttleRestart();
 
-        cleanProcess();
+            if (!shutdownCalled) {
+                logger.debug("Starting seg process");
+                String [] cmd;
 
-        proc = null;
-
-        throttleRestart();
-
-        if (!this.shutdownCalled) {
-            logger.debug("Starting seg process");
-            String[] cmd;
-
-            // TODO: sudo integration here
-            if (timeStamp != null) {
-                cmd =
-                    new String[] { this.path.toString(), "-s",
-                        this.schedulerName, "-t",
-                        Long.toString(timeStamp.getTime() / 1000) };
-            } else {
-                cmd =
-                    new String[] { this.path.toString(), "-s",
-                        this.schedulerName };
-            }
-            if (logger.isDebugEnabled()) {
-                logger.debug("executing command: ");
-                for (int i = 0; i < cmd.length; i++) {
-                    if (cmd[i] != null) {
-                        logger.debug("->"
-                            + cmd[i]);
+                // TODO: sudo integration here
+                if (timeStamp != null) {
+                    cmd = new String[] { path.toString(), "-s", schedulerName,
+                        "-t", Long.toString(timeStamp.getTime() / 1000)};
+                } else {
+                    cmd = new String[] {path.toString(), "-s", schedulerName};
+                }
+                if (logger.isDebugEnabled()) {
+                    logger.debug("executing command: ");
+                    for (int i = 0; i  < cmd.length; i++) {
+                        if (cmd[i] != null) {
+                            logger.debug("->" + cmd[i]);
+                        }
                     }
                 }
-            }
-            proc = runtime.exec(cmd);
-            logger.debug("seg exec returned");
-            return true;
-        } else {
-            return false;
-        }
-    }
 
+                proc = runtime.exec(cmd);
+                success = true;
+            }
+        } catch (Exception e) {
+            logger.warn("Failed to start SEG for local resource manager "
+                + this.schedulerName, e);
+        }
+        return success;
+    }
+    
     /**
      * Delay THROTTLE_RESTART_TIME before returning unless either
      * <ul>
@@ -356,7 +371,6 @@ class SchedulerEventGenerator
 
         logger.debug("Starting seg thread");
         this.timeStamp = timeStamp;
-
         start();
     }
 }
