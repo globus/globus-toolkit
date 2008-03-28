@@ -15,6 +15,9 @@
  */
 package org.globus.exec.monitoring.seg;
 
+import java.io.IOException;
+import java.util.Date;
+import java.util.concurrent.ExecutorService;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.globus.exec.monitoring.AlreadyRegisteredException;
@@ -23,219 +26,230 @@ import org.globus.exec.monitoring.JobStateMonitor;
 import org.globus.exec.monitoring.JobStateRecoveryListener;
 import org.globus.exec.monitoring.NotRegisteredException;
 import org.globus.exec.monitoring.SchedulerEvent;
-import org.globus.exec.monitoring.EventDispatchQueue;
+import org.globus.exec.monitoring.EventDispatchTask;
 import org.globus.wsrf.ResourceKey;
 
 /**
- * The SchedulerEventGeneratorMonitor (JSM) is a scheduler-indpendent object which provides
- * notifications of job state changes to the Managed Job Service (MJS).
- *
+ * The SchedulerEventGeneratorMonitor (JSM) is a scheduler-indpendent object
+ * which provides notifications of job state changes to the Managed Job Service
+ * (MJS).
+ * 
  * <p>
  * It provides an interface between the process monitoring of the Scheduler
- * Event Generator (SEG) and the Managed Job Resources which contain the
- * state of a job created by the ManagedJobService (MJS).
+ * Event Generator (SEG) and the Managed Job Resources which contain the state
+ * of a job created by the ManagedJobService (MJS).
  * </p>
  * <p>
  * The JSM contains a registry mapping scheduler-specific job identifiers to
- * Object keys which the MJS can use to map job state changes to particular
- * job resources.
+ * Object keys which the MJS can use to map job state changes to particular job
+ * resources.
  * </p>
  * <p>
- * The JSM also contains a soft-state cache of SEG events which aren't
- * yet associated with MJR keys in its registry. Events in this cache are
- * replayed if and when the MJS creates an association between a local Job
- * ID and an Object key. Events which aren't used for some
- * interval are automatically discarded by the JSM.
+ * The JSM also contains a soft-state cache of SEG events which aren't yet
+ * associated with MJR keys in its registry. Events in this cache are replayed
+ * if and when the MJS creates an association between a local Job ID and an
+ * Object key. Events which aren't used for some interval are automatically
+ * discarded by the JSM.
  * </p>
  * <p>
- * The JSM also provides a persistent state callback to periodically update
- * the persistent state information. If this information is passed back to
- * the start() method of the JSM, it will be able to resume processing
- * from where its last event and not lose any events. Some events may be
- * repeated when restarts are done, and the user of this class must be
- * prepared to handle that.
+ * The JSM also provides a persistent state callback to periodically update the
+ * persistent state information. If this information is passed back to the
+ * start() method of the JSM, it will be able to resume processing from where
+ * its last event and not lose any events. Some events may be repeated when
+ * restarts are done, and the user of this class must be prepared to handle
+ * that.
  * </p>
  */
 
-public class SchedulerEventGeneratorMonitor implements JobStateMonitor
-{
-    private static Log logger = LogFactory.getLog(SchedulerEventGeneratorMonitor.class);
+public class SchedulerEventGeneratorMonitor
+    implements JobStateMonitor {
+    
+    private static Log logger =
+        LogFactory.getLog(SchedulerEventGeneratorMonitor.class);
 
     /** Reference to the SEG-monitoring thread. */
     private SchedulerEventGenerator seg;
+    
     /**
-     * JobStateChangeListener which will be notified of job state
-     * changes for registered job IDs.
+     * JobStateChangeListener which will be notified of job state changes for
+     * registered job IDs.
      */
     private JobStateChangeListener listener;
+    
     /**
-     * EventDispatchQueue which will take all events that must
+     * thread pool which will take all events that must
      * be dispatched to avoid blocking in the JobStateMonitor
      */
-    private EventDispatchQueue dispatchQueue;
+    private ExecutorService executorService;
+    
     /**
-     * JobStateRecoveryListener which will be notified when the JSM decides
-     * that its recovery information should be updated.
+     * JobStateRecoveryListener which will be notified when the JSM decides that
+     * its recovery information should be updated.
      */
     private JobStateRecoveryListener recoveryListener;
+    
     /** Mapping of Job IDs to Object keys */
     private java.util.HashMap mapping;
+    
     /** Time-sorted soft-state cache of events */
     private java.util.SortedSet cachedEvents;
+    
     /**
      * Maximum age of the oldest event in the soft-state cache.
      */
     private static final int MAX_CACHE_AGE = 5 * 60 * 1000;
+    
     /**
      * Period of time between running the cache flush task.
      */
     private static final long CACHE_FLUSH_PERIOD = 1 * 60 * 1000;
+    
     /**
      * Period of time between running the recovery update task.
      */
     private static final long RECOVERY_PERIOD = 15 * 60 * 1000;
+    
     /**
      * Timer to handle all cache flushing and recovery timestamp update tasks.
      */
     private static java.util.Timer timer = new java.util.Timer(true);
+    
     /**
      * Cache flushing task.
-     *
+     * 
      * Every CACHE_FLUSH_PERIOD milliseconds, cache entries older than
      * MAX_CACHE_AGE will be discarded.
      */
     private java.util.TimerTask cacheFlushTask;
+    
     /**
      * Recovery data update task.
-     *
+     * 
      * Every RECOVERY_PERIOD milliseconds, recoveryListener's
-     * updateJobMonitorRecoveryTimeStamp() will be called to have it update
-     * the persistent state of the SchedulerEventGeneratorMonitor.
+     * updateJobMonitorRecoveryTimeStamp() will be called to have it update the
+     * persistent state of the SchedulerEventGeneratorMonitor.
      */
     private java.util.TimerTask recoveryTask;
 
     /**
      * Timestamp of the last dispatched event.
-     *
-     * This timestamp is used as the safe-recovery timestamp when the
-     * soft-state event cache is empty, but some events have been dispatched
-     * to their JobStateChangeListener or discarded from the soft-state cache
-     * by the cacheFlushTask.
+     * 
+     * This timestamp is used as the safe-recovery timestamp when the soft-state
+     * event cache is empty, but some events have been dispatched to their
+     * JobStateChangeListener or discarded from the soft-state cache by the
+     * cacheFlushTask.
      */
     private java.util.Date lastEventTimestamp;
 
-
     /**
      * Construct a new SchedulerEventGeneratorMonitor.
-     *
-     * The new SchedulerEventGeneratorMonitor will not begin the Scheduler Event Generator
-     * automatically.  Services which create a SchedulerEventGeneratorMonitor may register
-     * any number of job ID mappings before calling start() to start
-     * the SEG.
-     *
+     * 
+     * The new SchedulerEventGeneratorMonitor will not begin the Scheduler Event
+     * Generator automatically. Services which create a
+     * SchedulerEventGeneratorMonitor may register any number of job ID mappings
+     * before calling start() to start the SEG.
+     * 
      * @param segPath
-     *     Path to the SEG executable.
+     *            Path to the SEG executable.
      * @param userName
-     *     User name that the SEG should run as (via sudo(8)).
-     *     (Currently ignored).
+     *            User name that the SEG should run as (via sudo(8)). (Currently
+     *            ignored).
      * @param schedulerName
-     *     Name of the scheduler SEG module to use.
+     *            Name of the scheduler SEG module to use.
      * @param listener
-     *     Reference to the JobStateChangeListener which will be notified
-     *     when notifications relating to Job ID which has a mapping
-     *     registered to it.
+     *            Reference to the JobStateChangeListener which will be notified
+     *            when notifications relating to Job ID which has a mapping
+     *            registered to it.
      * @param recoveryListener
-     *     Reference to a JobStateRecoveryListener which will be notified
-     *     periodically when the SchedulerEventGeneratorMonitor wants to update its recovery
-     *     checkpoint timestamp.
+     *            Reference to a JobStateRecoveryListener which will be notified
+     *            periodically when the SchedulerEventGeneratorMonitor wants to
+     *            update its recovery checkpoint timestamp.
      * @param segDaemon
-     *     Indicates whether to make the SEG a daemon thread or not
+     *            Indicates whether to make the SEG a daemon thread or not
      */
-     public static SchedulerEventGeneratorMonitor getInstance(
-            String                              globusLocation,
-            String                              userName,
-            String                              schedulerName,
-            JobStateChangeListener              listener,
-            JobStateRecoveryListener            recoveryListener,
-            boolean                             segDaemon)
-        {
-            logger.debug("Constructing JobStateMonitor");
+    public static SchedulerEventGeneratorMonitor createNewInstance(
+        String globusLocation,
+        String userName,
+        String schedulerName,
+        JobStateChangeListener listener,
+        JobStateRecoveryListener recoveryListener,
+        ExecutorService gramExecutorService,
+        boolean segDaemon) {
 
-            SchedulerEventGeneratorMonitor monitor =
-                     new SchedulerEventGeneratorMonitor();
-            
-            monitor.initialize (
-                 listener,
-                 recoveryListener,
-                 new SchedulerEventGenerator(
-                         globusLocation,
-                         userName,
-                         schedulerName,
-                         monitor, 
-                         segDaemon));
+        logger.debug("Constructing JobStateMonitor");
 
-            logger.debug("Initialized SEGM (SEG daemon status " +
-                         segDaemon + ")");
+        SchedulerEventGeneratorMonitor monitor =
+            new SchedulerEventGeneratorMonitor();
 
-            return monitor;
-        }
+        monitor.initialize(listener, recoveryListener,
+            new SchedulerEventGenerator(globusLocation, userName,
+                schedulerName, monitor, segDaemon), gramExecutorService);
 
-     /**
-      *  Private constructor
-      */
-     private SchedulerEventGeneratorMonitor() {}
-    
-     
-     /**
-      * Initializes a new JobStateMonitor.
-      *
-      * @param listener
-      *     Reference to the JobStateChangeListener which will be notified
-      *     when notifications relating to Job ID which has a mapping
-      *     registered to it.
-      * @param recoveryListener
-      *     Reference to a JobStateRecoveryListener which will be notified
-      *     periodically when the JobStateMonitor wants to update its recovery
-      *     checkpoint timestamp.
-      * @param seg
-      *     SchedulerEventGenerator corresponding to that JobStateMonitor
-      */
-     void initialize(
-         JobStateChangeListener              listener,
-         JobStateRecoveryListener            recoveryListener,
-         SchedulerEventGenerator             seg)
-     {
-         this.cacheFlushTask = null;
-         this.recoveryTask = null;
-         this.listener = listener;
-         this.recoveryListener = recoveryListener;
-         this.seg = seg;
-         this.mapping = new java.util.HashMap();
-         this.cachedEvents
-             = new java.util.TreeSet(SchedulerEvent.getComparator());
-         this.dispatchQueue = new EventDispatchQueue(this);
-     }    
-     
+        logger.debug("Initialized SEGM (SEG daemon status "
+            + segDaemon + ")");
+
+        return monitor;
+    }
+
+    /**
+     * Private constructor
+     */
+    private SchedulerEventGeneratorMonitor() {}
+
+    /**
+     * Initializes a new JobStateMonitor.
+     * 
+     * @param listener
+     *            Reference to the JobStateChangeListener which will be notified
+     *            when notifications relating to Job ID which has a mapping
+     *            registered to it.
+     * @param recoveryListener
+     *            Reference to a JobStateRecoveryListener which will be notified
+     *            periodically when the JobStateMonitor wants to update its
+     *            recovery checkpoint timestamp.
+     * @param seg
+     *            SchedulerEventGenerator corresponding to that JobStateMonitor
+     */
+    void initialize(
+        JobStateChangeListener listener,
+        JobStateRecoveryListener recoveryListener,
+        SchedulerEventGenerator seg,
+        ExecutorService gramExecutorService) {
+
+        this.cacheFlushTask = null;
+        this.recoveryTask = null;
+        this.listener = listener;
+        this.recoveryListener = recoveryListener;
+        this.seg = seg;
+        this.mapping = new java.util.HashMap();
+        this.cachedEvents =
+            new java.util.TreeSet(SchedulerEvent.getComparator());
+        this.executorService = gramExecutorService;
+    }
+
     /**
      * Register a mapping from local scheduler job ID to a resource key.
-     *
-     * Once this method has been called for a particular local job
-     * identifier, the JobStateChangeListener associated with the
-     * JobStatemonitor may receive notifications until the unregisterJobIDMap
-     * method has been called.
-     *
+     * 
+     * Once this method has been called for a particular local job identifier,
+     * the JobStateChangeListener associated with the JobStatemonitor may
+     * receive notifications until the unregisterJobIDMap method has been
+     * called.
+     * 
      * @param localId
-     *     Local job identifier. This is presumably generated by the
-     *     scheduler when the job is created.
+     *            Local job identifier. This is presumably generated by the
+     *            scheduler when the job is created.
      * @param resourceKey
-     *     Resource key associated with the job. This object will be
-     *     passed to the JobStateChangeListener's jobStateChange method.
+     *            Resource key associated with the job. This object will be
+     *            passed to the JobStateChangeListener's jobStateChange method.
      */
-    public synchronized void registerJobID(String localId, ResourceKey resourceKey)
-            throws AlreadyRegisteredException
-    {
+    public synchronized void registerJobID(
+        String localId,
+        ResourceKey resourceKey)
+        throws AlreadyRegisteredException {
+
         if (logger.isDebugEnabled()) {
-            logger.debug("Entering registerJobID: " + localId);
+            logger.debug("Entering registerJobID: "
+                + localId);
         }
         synchronized (mapping) {
             if (mapping.containsKey(localId)) {
@@ -248,20 +262,21 @@ public class SchedulerEventGeneratorMonitor implements JobStateMonitor
             if (events != null) {
                 java.util.Iterator i = events.iterator();
                 while (i.hasNext()) {
-                   SchedulerEvent e = (SchedulerEvent) i.next();
-                   dispatchQueue.add(e);
-                   
-                   synchronized (cachedEvents) {
-                      if (cachedEvents.remove(e) && cachedEvents.isEmpty()) {
-                         if (recoveryTask != null) {
-                            synchronized (recoveryTask) {
-                               lastEventTimestamp = e.getTimeStamp();
-                            }
-                         }
-                      }
-                   }
+                    SchedulerEvent e = (SchedulerEvent) i.next();
+                    executorService.execute(
+                        new EventDispatchTask(e, this));
 
-               }
+                    synchronized (cachedEvents) {
+                        if (cachedEvents.remove(e)
+                            && cachedEvents.isEmpty()) {
+                            if (recoveryTask != null) {
+                                synchronized (recoveryTask) {
+                                    lastEventTimestamp = e.getTimeStamp();
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
         logger.debug("Exiting registerJobID");
@@ -269,23 +284,24 @@ public class SchedulerEventGeneratorMonitor implements JobStateMonitor
 
     /**
      * Start processing SEG events.
-     *
-     * Starts the SEG thread processing events from the scheduler, as
-     * well as some background tasks to flush cache of old job
-     * events and to update the persistent timestamp used for restarting
-     * the SchedulerEventGeneratorMonitor.
-     *
-     *
+     * 
+     * Starts the SEG thread processing events from the scheduler, as well as
+     * some background tasks to flush cache of old job events and to update the
+     * persistent timestamp used for restarting the
+     * SchedulerEventGeneratorMonitor.
+     * 
+     * 
      * @param timestamp
-     *     Date from which to start processing events. If <b>null</b>, then
-     *     the SEG will process events generated from the time the function
-     *     is called.
+     *            Date from which to start processing events. If <b>null</b>,
+     *            then the SEG will process events generated from the time the
+     *            function is called.
      * @throws IllegalThreadStateException
-     *     This method has already been called.
+     *             This method has already been called.
      */
-    public void start(java.util.Date timestamp)
-            throws IllegalThreadStateException
-    {
+    public void start(
+        Date timestamp)
+        throws IllegalThreadStateException {
+
         logger.debug("Entering start()");
 
         if (timestamp == null) {
@@ -293,7 +309,8 @@ public class SchedulerEventGeneratorMonitor implements JobStateMonitor
         }
 
         if (logger.isDebugEnabled()) {
-            logger.debug("starting seg with timestamp " + timestamp.toString());
+            logger.debug("starting seg with timestamp "
+                + timestamp.toString());
         }
 
         this.seg.start(timestamp);
@@ -308,10 +325,11 @@ public class SchedulerEventGeneratorMonitor implements JobStateMonitor
             };
 
             timer.schedule(cacheFlushTask, CACHE_FLUSH_PERIOD,
-                    CACHE_FLUSH_PERIOD);
+                CACHE_FLUSH_PERIOD);
         }
 
-        if (recoveryTask == null && recoveryListener != null) {
+        if (recoveryTask == null
+            && recoveryListener != null) {
             logger.debug("creating recovery update task");
             recoveryTask = new java.util.TimerTask() {
                 public void run() {
@@ -326,20 +344,18 @@ public class SchedulerEventGeneratorMonitor implements JobStateMonitor
 
     /**
      * Stop processing SEG events.
-     *
-     * Blocks the current thread until the SEG has terminated. No furthur
-     * SEG events will be issued after method returns until the start() method
-     * is called again.
+     * 
+     * Blocks the current thread until the SEG has terminated. No furthur SEG
+     * events will be issued after method returns until the start() method is
+     * called again.
      */
     public void stop()
-            throws java.io.IOException
-    {
+        throws IOException {
+
         logger.debug("Entering stop()");
-
         boolean done = false;
-
         seg.shutdown();
-
+        
         while (!done) {
             try {
                 logger.debug("joining SEG thread");
@@ -352,14 +368,11 @@ public class SchedulerEventGeneratorMonitor implements JobStateMonitor
         logger.debug("Exiting stop()");
     }
 
-    private void flushCache()
-    {
+    private void flushCache() {
+
         logger.debug("Entering flushCache()");
-
         java.util.Calendar flushCalendar = java.util.Calendar.getInstance();
-
         flushCalendar.add(java.util.Calendar.MILLISECOND, -MAX_CACHE_AGE);
-
         java.util.Date flushDate = flushCalendar.getTime();
 
         synchronized (cachedEvents) {
@@ -373,17 +386,18 @@ public class SchedulerEventGeneratorMonitor implements JobStateMonitor
                     /* Remove older than MAX_CACHE_AGE */
                     i.remove();
                 } else {
-                    /* Sorted, so we don't need to continue once we find
-                     * a non-old timestamp
+                    /*
+                     * Sorted, so we don't need to continue once we find a
+                     * non-old timestamp
                      */
                     break;
                 }
             }
 
-            if (d != null)
-            {
+            if (d != null) {
                 if (d.compareTo(lastEventTimestamp) > 0) {
-                    /* Newer than the oldest safe recovery point, so we'll
+                    /*
+                     * Newer than the oldest safe recovery point, so we'll
                      * update that date
                      */
                     if (recoveryTask != null) {
@@ -397,66 +411,73 @@ public class SchedulerEventGeneratorMonitor implements JobStateMonitor
         logger.debug("Exiting flushCache()");
     }
 
-    private void updateRecoveryInfo()
-    {
-        logger.debug("Entering updateRecoveryInfo()");
+    private void updateRecoveryInfo() {
 
+        if (logger.isDebugEnabled()) {
+            logger.debug("Entering updateRecoveryInfo()");
+        }
+        
         java.util.Date d;
-
         synchronized (recoveryTask) {
             d = lastEventTimestamp;
         }
 
         recoveryListener.updateJobMonitorRecoveryTimeStamp(this, d);
-        logger.debug("Exiting updateRecoveryInfo()");
+        if (logger.isDebugEnabled()) {
+            logger.debug("Exiting updateRecoveryInfo()");
+        }
     }
 
     /**
      * Get all cached events associated with a Job ID.
-     *
+     * 
      * @param localId
-     *     Job identifier to look up.
-     *
+     *            Job identifier to look up.
+     * 
      * @return Returns a list of SchedulerEvents associated with the Job ID.
      */
-     private java.util.List getCachedEvents(String localId)
-     {
-         logger.debug("Entering getCachedEvents()");
-         java.util.List result = null;
+    private java.util.List getCachedEvents(
+        String localId) {
 
-         synchronized (cachedEvents) {
-             java.util.Iterator i = cachedEvents.iterator();
+        logger.debug("Entering getCachedEvents()");
+        java.util.List result = null;
 
-             while (i.hasNext()) {
-                 SchedulerEvent e = (SchedulerEvent) i.next();
+        synchronized (cachedEvents) {
+            java.util.Iterator i = cachedEvents.iterator();
 
-                 if (e.getLocalId().equals(localId)) {
-                     if (result == null) {  
-                         result = new java.util.ArrayList(4);
-                     }
-                     logger.debug("adding " + e.toString()
-                                  + "to list to replay");
-                     result.add(e);
-                 }
-             }
-         }
-         logger.debug("Exiting getCachedEvents()");
-         return result;
+            while (i.hasNext()) {
+                SchedulerEvent e = (SchedulerEvent) i.next();
+
+                if (e.getLocalId().equals(localId)) {
+                    if (result == null) {
+                        result = new java.util.ArrayList(4);
+                    }
+                    logger.debug("adding "
+                        + e.toString() + "to list to replay");
+                    result.add(e);
+                }
+            }
+        }
+        logger.debug("Exiting getCachedEvents()");
+        return result;
     }
+
     /**
-     * Unregister a local scheduler job ID for event propagation.
-     * Once this method has been called for a particular local job
-     * identifier, the JobStateChangeListener associated with the
-     * JobStatemonitor will no longer receive notifications about this job.
-     *
+     * Unregister a local scheduler job ID for event propagation. Once this
+     * method has been called for a particular local job identifier, the
+     * JobStateChangeListener associated with the JobStatemonitor will no longer
+     * receive notifications about this job.
+     * 
      * @param localId
-     *     Local job identifier.
+     *            Local job identifier.
      */
-    public void unregisterJobID(String localId)
-        throws NotRegisteredException
-    {
+    public void unregisterJobID(
+        String localId)
+        throws NotRegisteredException {
+
         if (logger.isDebugEnabled()) {
-            logger.debug("Entering unregisterJobID: " + localId);
+            logger.debug("Entering unregisterJobID: "
+                + localId);
         }
 
         synchronized (mapping) {
@@ -472,11 +493,13 @@ public class SchedulerEventGeneratorMonitor implements JobStateMonitor
     /**
      * Store an event in the SchedulerEventGeneratorMonitor's cache
      */
-    private void cacheEvent(SchedulerEvent e)
-    {
+    private void cacheEvent(
+        SchedulerEvent e) {
+
         logger.debug("Entering cacheEvent()");
         synchronized (cachedEvents) {
-            logger.debug("caching " + e.toString());
+            logger.debug("caching "
+                + e.toString());
             cachedEvents.add(e);
         }
         logger.debug("Exiting cacheEvent()");
@@ -485,39 +508,45 @@ public class SchedulerEventGeneratorMonitor implements JobStateMonitor
     /**
      * Look up the localId to ResourceKey mapping for a specified id.
      */
-    public ResourceKey getMapping(String localId)
-    {
+    public ResourceKey getMapping(
+        String localId) {
+
         synchronized (mapping) {
             return (ResourceKey) mapping.get(localId);
         }
     }
 
-    public void addEvent(SchedulerEvent e)
-    {
-        
+    public void addEvent(
+        SchedulerEvent e) {
+
         if (logger.isDebugEnabled()) {
-            logger.debug(" JSM receiving scheduler event " + e);
+            logger.debug(" JSM receiving scheduler event "
+                + e);
         }
         String localId = e.getLocalId();
 
         synchronized (mapping) {
-            
+
             ResourceKey mapping = getMapping(localId);
 
             if (mapping != null) {
-                logger.debug("Dispatching event " + e.getLocalId()
-                             + " to job " + mapping.getValue());
-                dispatchQueue.add(e);
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Dispatching event "
+                        + e.getLocalId() + " to job " + mapping.getValue());
+                }
+                executorService.execute(new EventDispatchTask(e, this));
             } else {
-                logger.debug("Caching event " + e.getLocalId());
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Caching event " + e.getLocalId());
+                }
                 cacheEvent(e);
             }
         }
     }
 
-    public JobStateChangeListener getListener ()
-    {
-    return this.listener;
+    public JobStateChangeListener getListener() {
+
+        return this.listener;
     }
-    
+
 }
