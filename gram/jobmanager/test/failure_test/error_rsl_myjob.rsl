@@ -1,3 +1,0 @@
-(* GLOBUS_GRAM_PROTOCOL_ERROR_RSL_MYJOB *)
-&(executable=/bin/true)
- (gram_my_job = (collective))
