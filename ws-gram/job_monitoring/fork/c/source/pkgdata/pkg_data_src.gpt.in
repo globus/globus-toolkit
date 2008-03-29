@@ -3,7 +3,7 @@
 
 <gpt_package_metadata Format_Version="0.02" Name="globus_scheduler_event_generator_fork" >
 
-  <Aging_Version Age="1" Major="1" Minor="5" />
+  <Aging_Version Age="1" Major="1" Minor="6" />
   <Description >Scheduler Event Generator Fork Module</Description>
   <Functional_Group >ResourceManagement</Functional_Group>
   <Version_Stability Release="Experimental" Dirt="@DIRT_TIMESTAMP@-@DIRT_BRANCH_ID@" />
