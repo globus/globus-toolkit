@@ -318,6 +318,9 @@ BUNDLE globus-rls-server THREADED
         globus_rls_server_setup
         globus_xio
 
+BUNDLE globus-rls-server-test
+        globus_rls_test
+
 BUNDLE gt2-unthreaded
 	gaa_core
 	gaa_debug
