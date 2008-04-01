@@ -121,11 +121,11 @@ globus_proxy_utils	gsi/proxy/proxy_utils/source	gpt
 globus_proxy_utils_test	gsi/proxy/proxy_utils/test	gpt
 globus_proxy_wrapper	gsi/proxy/proxy_utils/wrapper	gpt
 globus_rls_client	replica/rls/client	gpt
-globus_rls_client_java	replica/rls/client/java/source	gpt
+globus_rls_client_java	replica/rls/client/java/source	tar
 globus_rls_client_jni	replica/rls/client/java	gpt
 globus_rls_server	replica/rls/server	gpt
 globus_rls_server_setup	replica/rls/setup	gpt
-globus_rls_test		replica/rls/test/unit	gpt
+globus_rls_test		replica/rls/test/unit	tar
 globus_rls_script	replica/rls/script	gpt
 globus_rsl	gram/rsl/source	gpt
 globus_rsl_assist	gram/rsl_assist/source	gpt
@@ -354,7 +354,6 @@ globus_index_util                           ws-mds/index/c/index_add gpt
 globus_c_wsrf_index_bindings                ws-mds/index/c/bindings  gpt
 globus_wsrf_mds_gkrellm                     ws-mds/gkrellm/source	tar
 globus_wsrf_mds_gkrellm_schema              ws-mds/gkrellm/schema	tar
-globus_rls_client_java			    replica/rls/client/java/source	tar
 
 myproxy		myproxy	gpt	null	MYPROXY_4_2
 
