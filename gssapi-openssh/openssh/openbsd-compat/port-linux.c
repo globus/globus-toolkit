@@ -36,7 +36,7 @@
 #include <selinux/get_context_list.h>
 
 /* Wrapper around is_selinux_enabled() to log its return value once only */
-static int
+int
 ssh_selinux_enabled(void)
 {
 	static int enabled = -1;

@@ -17,7 +17,7 @@
  */
 
 #include "includes.h"
-#if !defined(HAVE_POLL) && defined(HAVE_SELECT)
+#if !defined(HAVE_POLL)
 
 #ifdef HAVE_SYS_SELECT_H
 # include <sys/select.h>
