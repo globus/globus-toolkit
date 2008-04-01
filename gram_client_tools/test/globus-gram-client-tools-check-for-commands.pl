@@ -19,7 +19,7 @@ sub check_for_commands
 {
     my $rc;
     my $output;
-    my $u = new Utilities;
+    my $u = new Globus::Testing::Utilities(); 
     $u->announce("Checking for commands");
     
     my @commands = 
@@ -36,7 +36,6 @@ sub check_for_commands
            globus-personal-gatekeeper
            globus-gatekeeper
            grid-cert-info
-           grid-cert-renew
            grid-cert-request
            grid-change-pass-phrase
            grid-proxy-destroy

@@ -19,7 +19,7 @@ test_gram_local();
 # ------------------------------------------------------------------------
 sub test_gram_local 
 {
-    my $u = new Utilities();
+    my $u = new Globus::Testing::Utilities(); 
     $u->announce("Testing GRAM locally");
 
     my $gatekeeper_url;

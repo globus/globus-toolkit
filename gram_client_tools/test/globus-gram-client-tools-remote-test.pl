@@ -19,7 +19,7 @@ if ($ENV{'TEST_REMOTE'})
 # ------------------------------------------------------------------------
 sub test_gram_remote 
 {
-    my $u = new Utilities();
+    my $u = new Globus::Testing::Utilities();
     $u->announce("Testing GRAM remotely against host: ".$u->remote);
 
     my $gatekeeper_url = $u->remote;
