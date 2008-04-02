@@ -205,8 +205,14 @@ globus_gram_job_manager_auditing_file_write(
     /* success_flag */
     rc = globus_l_gram_audit_write_string(auditing_file,
             request->status == GLOBUS_GRAM_PROTOCOL_JOB_STATE_DONE ? "true" : "false",
-            "\n");
+            ",");
+    if (rc != 0)
+    {
+        goto close_filename_out;
+    }
 
+    /* finished_flag */
+    rc = globus_l_gram_audit_write_string(auditing_file,"true","\n");
     if (rc != 0)
     {
         goto close_filename_out;
