@@ -31,7 +31,7 @@ my $url         = 'jdbc:postgresql://localhost/auditDatabase';
 my $driverclass = 'org.postgresql.Driver';
 my $default_user = (getpwuid($<))[0];  
 my $username    = $default_user;
-my $password    = 'dummy';
+my $password    = 'audit';
 my $config_file = "$sysconfdir/globus-job-manager-audit.conf";
 
 GetOptions('url|u=s' => \$url,
@@ -73,7 +73,7 @@ Options:
                               [default: org.postgresql.Driver]
     -n | --username USERNAME  Use USERNAME as the Database username.
                               [default: $default_user]
-    -p | --password PASSWORD  Use PASSWORD as the Database password [default: dummy].
+    -p | --password PASSWORD  Use PASSWORD as the Database password [default: audit].
     -u | --url DATABASE-URL   Use DATABASE-URL as the contact for the audit database.
                               [default: jdbc:postgresql://localhost/auditDatabase]
 EOF
