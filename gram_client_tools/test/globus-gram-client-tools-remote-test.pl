@@ -99,6 +99,9 @@ sub test_gram_remote
         $u->command("globus-job-submit \"$gatekeeper_url\" " .
                     "/bin/sh -c \'echo I ran;sleep 120\'");
 
+    # without sleeping the job status is UNSUBMITTED and not ACTIVE
+    sleep(5);
+
     # globus-job-status from gatekeeper_url of jobid $job_id.
     ($rc, $output) = $u->command("globus-job-status $job_id");
     $output =~ /ACTIVE/ && $rc == 0 ? 

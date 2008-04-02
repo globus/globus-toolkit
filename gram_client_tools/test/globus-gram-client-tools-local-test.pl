@@ -140,6 +140,9 @@ sub test_gram_local
 
     if($rc == 0)
     {
+        # without sleeping the job status is UNSUBMITTED and not ACTIVE
+        sleep(5);
+
         # globus-job-status from gatekeeper_url of jobid $job_id.
         ($rc, $output) = $u->command("globus-job-status $job_id");
         $output =~ /ACTIVE/ && $rc == 0 ? 
